@@ -66,18 +66,15 @@ class EB_Siesta(ConfigureMake):
         start_dir = self.cfg['start_dir']
         obj_dir = os.path.join(start_dir, 'Obj')
         arch_make = os.path.join(obj_dir, 'arch.make')
-        bindir = os.path.join(self.cfg['start_dir'], 'bin')
-
-        netcdff_loc = get_software_root('NetCDF-Fortran')
+        bindir = os.path.join(start_dir, 'bin')
 
         par = ''
-        if LooseVersion(self.version) >= LooseVersion("4.1"):
+        if LooseVersion(self.version) >= LooseVersion('4.1'):
             par = '-j %s' % self.cfg['parallel']
 
         # enable OpenMP support if desired
         env_var_suff = ''
-        openmp = self.toolchain.options.get('openmp', None)
-        if openmp:
+        if self.toolchain.options.get('openmp', None):
             env_var_suff = '_MT'
 
         scalapack = os.environ['LIBSCALAPACK' + env_var_suff]
@@ -86,6 +83,8 @@ class EB_Siesta(ConfigureMake):
         blas = os.environ['LIBBLAS' + env_var_suff]
         if get_software_root('imkl') or get_software_root('FFTW'):
             fftw = os.environ['LIBFFT' + env_var_suff]
+        else:
+            fftw = None
 
         regex_subs = [
             ('dc_lapack.a', ''),
@@ -96,13 +95,15 @@ class EB_Siesta(ConfigureMake):
             (r"^(LDFLAGS\s*=).*$", r"\1 %s %s" % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
         ]
 
+        netcdff_loc = get_software_root('netCDF-Fortran')
         if netcdff_loc:
             # Needed for gfortran at least
             regex_subs.append((r"^(ARFLAGS_EXTRA\s*=.*)$", r"\1\nNETCDF_INCFLAGS = -I%s/include" % netcdff_loc))
 
         if fftw:
-            fftw_inc, fftw_lib = os.environ['FFTW_INC_DIR'], os.environ['FFTW_LIB_DIR']
-            regex_subs.append((r'(FPPFLAGS\s*=.*)$', r'\1\nFFTW_INCFLAGS = -I%s\nFFTW_LIBS = -L%s %s' % (fftw_inc, fftw_lib, fftw)))
+            fft_inc, fft_lib = os.environ['FFT_INC_DIR'], os.environ['FFT_LIB_DIR']
+            fppflags = r"\1\nFFTW_INCFLAGS = -I%s\nFFTW_LIBS = -L%s %s" % (fft_inc, fft_lib, fftw)
+            regex_subs.append((r'(FPPFLAGS\s*=.*)$', fppflags))
 
         # Make a temp installdir during the build of the various parts
         mkdir(bindir)
@@ -113,7 +114,7 @@ class EB_Siesta(ConfigureMake):
         # Populate start_dir with makefiles
         run_cmd(os.path.join(start_dir, 'Src', 'obj_setup.sh'), log_all=True, simple=True, log_output=True)
 
-        if LooseVersion(self.version) < LooseVersion("4.1-b2"):
+        if LooseVersion(self.version) < LooseVersion('4.1-b2'):
             # MPI?
             if self.toolchain.options.get('usempi', None):
                 self.cfg.update('configopts', '--enable-mpi')
@@ -133,7 +134,7 @@ class EB_Siesta(ConfigureMake):
             # Configure is run in obj_dir, configure script is in ../Src
             super(EB_Siesta, self).configure_step(cmd_prefix='../Src/')
 
-            if LooseVersion(self.version) > LooseVersion("4.0"):
+            if LooseVersion(self.version) > LooseVersion('4.0'):
                 regex_subs_Makefile = [
                     (r'CFLAGS\)-c', r'CFLAGS) -c'),
                 ]
@@ -178,7 +179,7 @@ class EB_Siesta(ConfigureMake):
         run_cmd('make %s' % par, log_all=True, simple=True, log_output=True)
 
         # Put binary in temporary install dir
-        copy_file(os.path.join(self.cfg['start_dir'], 'Obj', 'siesta'), bindir)
+        copy_file(os.path.join(obj_dir, 'siesta'), bindir)
 
         if self.cfg['with_utils']:
             # Make the utils
@@ -188,7 +189,7 @@ class EB_Siesta(ConfigureMake):
             adjust_permissions('./clean_all.sh', stat.S_IXUSR, recursive=False, relative=True)
             run_cmd('./clean_all.sh', log_all=True, simple=True, log_output=True)
 
-            if LooseVersion(self.version) >= LooseVersion("4.1"):
+            if LooseVersion(self.version) >= LooseVersion('4.1'):
                 regex_subs_TS = [
                     (r"^default:.*$", r""),
                     (r"^EXE\s*=.*$", r""),
@@ -196,7 +197,7 @@ class EB_Siesta(ConfigureMake):
                     (r"^(INCFLAGS.*)$", r"\1 -I%s" % obj_dir),
                 ]
 
-                makefile = os.path.join(self.cfg['start_dir'], 'Util', 'TS', 'tshs2tshs', 'Makefile')
+                makefile = os.path.join(start_dir, 'Util', 'TS', 'tshs2tshs', 'Makefile')
                 apply_regex_substitutions(makefile, regex_subs_TS)
 
             # SUFFIX rules in wrong place
@@ -204,17 +205,17 @@ class EB_Siesta(ConfigureMake):
                 (r'^(\.SUFFIXES:.*)$', r''),
                 (r'^(include\s*\$\(ARCH_MAKE\).*)$', r'\1\n.SUFFIXES:\n.SUFFIXES: .c .f .F .o .a .f90 .F90'),
             ]
-            makefile = os.path.join(self.cfg['start_dir'], 'Util', 'Sockets', 'Makefile')
+            makefile = os.path.join(start_dir, 'Util', 'Sockets', 'Makefile')
             apply_regex_substitutions(makefile, regex_subs_suffix)
-            makefile = os.path.join(self.cfg['start_dir'], 'Util', 'SiestaSubroutine', 'SimpleTest', 'Src', 'Makefile')
+            makefile = os.path.join(start_dir, 'Util', 'SiestaSubroutine', 'SimpleTest', 'Src', 'Makefile')
             apply_regex_substitutions(makefile, regex_subs_suffix)
 
             regex_subs_UtilLDFLAGS = [
                 (r'(\$\(FC\)\s*-o\s)', r'$(FC) %s %s -o ' % (os.environ['FCFLAGS'], os.environ['LDFLAGS'])),
             ]
-            makefile = os.path.join(self.cfg['start_dir'], 'Util', 'Optimizer', 'Makefile')
+            makefile = os.path.join(start_dir, 'Util', 'Optimizer', 'Makefile')
             apply_regex_substitutions(makefile, regex_subs_UtilLDFLAGS)
-            makefile = os.path.join(self.cfg['start_dir'], 'Util', 'JobList', 'Src', 'Makefile')
+            makefile = os.path.join(start_dir, 'Util', 'JobList', 'Src', 'Makefile')
             apply_regex_substitutions(makefile, regex_subs_UtilLDFLAGS)
 
             run_cmd('./build_all.sh', log_all=True, simple=True, log_output=True)
@@ -253,13 +254,13 @@ class EB_Siesta(ConfigureMake):
                 'WFS/readwfx', 'WFS/wfsnc2wfsx', 'WFS/readwf', 'WFS/wfs2wfsx',
             ]
 
-            if LooseVersion(self.version) <= LooseVersion("4.0"):
+            if LooseVersion(self.version) <= LooseVersion('4.0'):
                 expected_utils.extend([
                     'Bands/new.gnubands',
                     'TBTrans/tbtrans',
                 ])
 
-            if LooseVersion(self.version) >= LooseVersion("4.0"):
+            if LooseVersion(self.version) >= LooseVersion('4.0'):
                 expected_utils.extend([
                     'SiestaSubroutine/ProtoNEB/Src/protoNEB',
                     'SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel',
@@ -267,7 +268,7 @@ class EB_Siesta(ConfigureMake):
                     'Sockets/f2fmaster', 'Sockets/f2fslave',
                 ])
 
-            if LooseVersion(self.version) >= LooseVersion("4.1"):
+            if LooseVersion(self.version) >= LooseVersion('4.1'):
                 expected_utils.extend([
                     'Bands/gnubands',
                     'Grimme/fdf2grimme',
@@ -276,7 +277,7 @@ class EB_Siesta(ConfigureMake):
                 ])
 
             for util in expected_utils:
-                copy_file(os.path.join(self.cfg['start_dir'], 'Util', util), bindir)
+                copy_file(os.path.join(start_dir, 'Util', util), bindir)
 
         if self.cfg['with_transiesta']:
             # Build transiesta
@@ -285,17 +286,14 @@ class EB_Siesta(ConfigureMake):
             run_cmd('make clean', log_all=True, simple=True, log_output=True)
             run_cmd('make %s transiesta' % par, log_all=True, simple=True, log_output=True)
 
-            copy_file(os.path.join(self.cfg['start_dir'], 'Obj', 'transiesta'),
-                        bindir)
+            copy_file(os.path.join(obj_dir, 'transiesta'), bindir)
 
     def build_step(self):
         """No build step for Siesta."""
         pass
 
     def install_step(self):
-        """Custom install procedure for Siesta."""
-
-        # binary
+        """Custom install procedure for Siesta: copy binaries."""
         bindir = os.path.join(self.installdir, 'bin')
         copy_dir(os.path.join(self.cfg['start_dir'], 'bin'), bindir)
 
