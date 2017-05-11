@@ -107,7 +107,10 @@ class EB_NAMD(MakeCp):
 
         # compiler (options)
         self.cfg.update('namd_cfg_opts', '--cc "%s" --cc-opts "%s"' % (os.environ['CC'], os.environ['CFLAGS']))
-        self.cfg.update('namd_cfg_opts', '--cxx "%s --std=c++11" --cxx-opts "%s"' % (os.environ['CXX'], os.environ['CXXFLAGS']))
+        cxxflags = os.environ['CXXFLAGS']
+        if LooseVersion(self.version) >= LooseVersion('2.12'):
+            cxxflags += ' --std=c++11'
+        self.cfg.update('namd_cfg_opts', '--cxx "%s" --cxx-opts "%s"' % (os.environ['CXX'], cxxflags))
 
         # NAMD dependencies: CUDA, TCL, FFTW
         cuda = get_software_root('CUDA')
