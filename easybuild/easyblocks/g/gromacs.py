@@ -36,7 +36,6 @@ import os
 import re
 import shutil
 from distutils.version import LooseVersion
-from vsc.utils.missing import any
 
 import easybuild.tools.environment as env
 import easybuild.tools.toolchain as toolchain
@@ -76,20 +75,17 @@ class EB_GROMACS(CMakeMake):
         # check whether PLUMED is loaded as a dependency
         plumed_root = get_software_root('PLUMED')
         if plumed_root:
-            # Need to check if plumed has an engine for this version
+            # Need to check if PLUMED has an engine for this version
             engine = 'gromacs-%s' % self.version
 
-            plumed_cmd = 'plumed patch -l'
-            (out, _) = run_cmd(plumed_cmd, log_all=True, simple=False)
-            find_engine = re.compile(engine)
-            if not find_engine.search(out):
-                raise EasyBuildError("There is no support in PLUMED version %s for GROMACS %s" %
-                    (get_software_version('PLUMED'), self.version))
+            (out, _) = run_cmd("plumed patch -l", log_all=True, simple=False)
+            if not re.search(engine, out):
+                raise EasyBuildError("There is no support in PLUMED version %s for GROMACS %s: %s",
+                                     get_software_version('PLUMED'), self.version, out)
 
             # PLUMED patching must be done at different stages depending on
-            # version of gromacs. Just prepare first part of cmd here
+            # version of GROMACS. Just prepare first part of cmd here
             plumed_cmd = "plumed patch -p -e %s" % engine
-
 
         if LooseVersion(self.version) < LooseVersion('4.6'):
             self.log.info("Using configure script for configuring GROMACS build.")
@@ -122,12 +118,12 @@ class EB_GROMACS(CMakeMake):
             # actually run configure via ancestor (not direct parent)
             ConfigureMake.configure_step(self)
 
-            # Now patch gromacs for plumed between configure and build
+            # Now patch GROMACS for PLUMED between configure and build
             if plumed_root:
                 run_cmd(plumed_cmd, log_all=True, simple=True)
 
         else:
-            # Now patch gromacs for plumed before cmake
+            # Now patch GROMACS for PLUMED before cmake
             if plumed_root:
                 if LooseVersion(self.version) >= LooseVersion('5.1'):
                     # Use shared or static patch depending on 
