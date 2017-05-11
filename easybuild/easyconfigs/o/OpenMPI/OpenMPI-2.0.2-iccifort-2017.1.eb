@@ -15,10 +15,17 @@ source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/d
 configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
 configopts += '--with-hwloc=$NIXUSER_PROFILE '  # hwloc support
-configopts += '--disable-dlopen '  # statically link component, don't do dynamic loading
+configopts += '--without-usnic ' # No usnic-via-libfabric
 configopts += '--disable-wrapper-rpath ' # rpath is already done by Nix ld wrapper
 
-postinstallcmds = ['rm %(installdir)s/lib/*.la']
+# enumerate all mca's that should be compiled as plugins (only those that link to system-specific
+# libraries (lustre, fabric, and scheduler)
+configopts += '--enable-mca-dso=common-libfabric,common-verbs,atomic-mxm,btl-openib,btl-scif,'
+configopts += 'coll-fca,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,'
+configopts += 'oob-ud,plm-tm,pml-yalla,ras-tm,scoll-mca,sec-munge,spml-ikrit '
+
+
+postinstallcmds = ['rm %(installdir)s/lib/*.la %(installdir)s/lib/*/*.la']
 
 libs = ["mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte"]
 sanity_check_paths = {
