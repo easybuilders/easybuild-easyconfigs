@@ -1,0 +1,55 @@
+diff -ru gpaw-0.9.0.8965.orig/customize.py gpaw-0.9.0.8965/customize.py
+--- gpaw-0.11.0.orig/customize.py	2012-03-07 15:17:58.000000000 +0100
++++ gpaw-0.11.0/customize.py	2012-08-30 14:05:59.285776631 +0200
+@@ -58,18 +58,30 @@
+ 
+ #platform_id = ''
+ 
+-#hdf5 = True
++# Clean out any autodetected things, we only want the EasyBuild
++# definitions to be used.
++libraries = []
++include_dirs = []
++
++if 'MPICC' in os.environ:
++    mpicompiler = os.getenv('MPICC')
++    mpilinker = mpicompiler
++
++hdf5 = ('EBROOTHDF5' in os.environ)
++
++if hdf5:
++    libraries += ['hdf5']
++    include_dirs += [os.getenv('EBROOTHDF5') + '/include']
+ 
+ # Valid values for scalapack are False, or True:
+ # False (the default) - no ScaLapack compiled in
+ # True - ScaLapack compiled in
+ # Warning! At least scalapack 2.0.1 is required!
+ # See https://trac.fysik.dtu.dk/projects/gpaw/ticket/230
+-scalapack = False
++scalapack = ('SCALAPACK_MT_STATIC_LIBS' in os.environ)
+ 
+ if scalapack:
+-    libraries += ['scalapack']
+-    library_dirs += []
++    libraries += [libfile[3:-2] for libfile in os.getenv('SCALAPACK_MT_STATIC_LIBS').split(',')]
+     define_macros += [('GPAW_NO_UNDERSCORE_CBLACS', '1')]
+     define_macros += [('GPAW_NO_UNDERSCORE_CSCALAPACK', '1')]
+ 
+@@ -83,3 +95,16 @@
+ #include_dirs += ['/home/user/libxc-2.0.1-1/include']
+ #library_dirs += ['/home/user/libxc-2.0.1-1/lib']
+ #if 'xc' not in libraries: libraries.append('xc')
++
++# Add LAPACK/BLAS libs
++libraries += [libfile[3:-2] for libfile in os.getenv('LAPACK_MT_STATIC_LIBS').split(',')]
++
++libxc = ('EBROOTLIBXC' in os.environ)
++
++if libxc:
++    if 'xc' not in libraries:
++	libraries += ['xc']
++    include_dirs += [os.getenv('EBROOTLIBXC') + '/include']
++
++# Now add a "cover-all-bases" library_dirs
++library_dirs = os.getenv('LD_LIBRARY_PATH').split(':')

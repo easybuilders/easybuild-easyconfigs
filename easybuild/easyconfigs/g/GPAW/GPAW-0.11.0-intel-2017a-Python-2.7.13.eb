@@ -1,0 +1,36 @@
+easyblock = "PythonPackage"
+
+name = 'GPAW'
+version = '0.11.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
+description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
+ method and the atomic simulation environment (ASE). It uses real-space uniform grids and multigrid methods or 
+ atom-centered basis-functions."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = [('https://gitlab.com/gpaw/gpaw/repository', '?ref=%(version)s')]
+sources = ['archive.tar.gz']
+
+patches = [
+    'GPAW-%(version)s-customize.patch',
+]
+
+dependencies = [
+    ('Python', '2.7.13'),
+    ('ASE', '3.9.1', versionsuffix),
+    ('libxc', '3.0.0'),
+    ('HDF5', '1.10.0-patch1'),
+    ('GPAW-setups', '0.9.20000', '', True),
+]
+
+#prebuildopts = 'export GPAW_MPI=1 && '
+
+sanity_check_paths = {
+    'files': ['bin/gpaw%s' % x for x in ['', '-basis', '-mpisim', '-python', '-setup', '-test']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/']
+}
+
+moduleclass = 'chem'
