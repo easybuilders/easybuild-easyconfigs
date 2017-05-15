@@ -193,11 +193,9 @@ class EB_NCL(EasyBlock):
 
     def install_step(self):
         """Build in install dir using build_step."""
-        paracmd = ''
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
 
-        run_cmd("make %s Everything" % paracmd, log_all=True, simple=True)
+        cmd = "make Everything"
+        run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
         """
