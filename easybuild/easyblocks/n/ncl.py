@@ -202,8 +202,8 @@ class EB_NCL(EasyBlock):
         Custom sanity check for NCL
         """
         custom_paths = {
-            'files': ["bin/ncl", "lib/libncl.a", "lib/libncarg.a"],
-            'dirs': ["include/ncarg"],
+            'files': ['bin/fontc', 'bin/ncl', 'lib/libncl.a', 'lib/libncarg.a'],
+            'dirs': ['include/ncarg', 'lib/ncarg/fontcaps'],
         }
         super(EB_NCL, self).sanity_check_step(custom_paths=custom_paths)
 
