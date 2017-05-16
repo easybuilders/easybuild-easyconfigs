@@ -193,19 +193,17 @@ class EB_NCL(EasyBlock):
 
     def install_step(self):
         """Build in install dir using build_step."""
-        paracmd = ''
-        if self.cfg['parallel']:
-            paracmd = "-j %s" % self.cfg['parallel']
 
-        run_cmd("make %s Everything" % paracmd, log_all=True, simple=True)
+        cmd = "make Everything"
+        run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
         """
         Custom sanity check for NCL
         """
         custom_paths = {
-            'files': ["bin/ncl", "lib/libncl.a", "lib/libncarg.a"],
-            'dirs': ["include/ncarg"],
+            'files': ['bin/fontc', 'bin/ncl', 'lib/libncl.a', 'lib/libncarg.a'],
+            'dirs': ['include/ncarg', 'lib/ncarg/fontcaps'],
         }
         super(EB_NCL, self).sanity_check_step(custom_paths=custom_paths)
 
