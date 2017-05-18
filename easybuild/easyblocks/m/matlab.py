@@ -37,6 +37,8 @@ import os
 import shutil
 import stat
 
+from distutils.version import LooseVersion
+
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
@@ -107,6 +109,12 @@ class EB_MATLAB(PackedBinary):
         # make sure install script is executable
         adjust_permissions(src, stat.S_IXUSR)
 
+        if LooseVersion(self.version) >= LooseVersion('2017a'):
+            jdir = os.path.join(self.cfg['start_dir'], 'sys', 'java', 'jre', 'glnxa64', 'jre', 'bin')
+            for perm_file in [os.path.join(self.cfg['start_dir'], 'bin', 'glnxa64'), jdir]:
+                adjust_permissions(perm_file, stat.S_IXUSR)
+
+
         # make sure $DISPLAY is not defined, which may lead to (hard to trace) problems
         # this is a workaround for not being able to specify --nodisplay to the install scripts
         if 'DISPLAY' in os.environ:
@@ -114,7 +122,14 @@ class EB_MATLAB(PackedBinary):
 
         if not '_JAVA_OPTIONS' in self.cfg['preinstallopts']:
             self.cfg['preinstallopts'] = ('export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']) + self.cfg['preinstallopts']
-        cmd = "%s ./install -v -inputFile %s %s" % (self.cfg['preinstallopts'], self.configfile, self.cfg['installopts'])
+        chdircmd = ' '
+        installerpath = '.'
+        if LooseVersion(self.version) >= LooseVersion('2017a'):
+            chdircmd = 'cd %s &&' % self.builddir 
+            installerpath = self.cfg['start_dir']
+
+        cmd = "%s %s %s/install -v -inputFile %s %s" % (self.cfg['preinstallopts'], chdircmd, installerpath, self.configfile,
+                                                        self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
