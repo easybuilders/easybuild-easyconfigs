@@ -114,7 +114,6 @@ class EB_MATLAB(PackedBinary):
             for perm_dir in [os.path.join(self.cfg['start_dir'], 'bin', 'glnxa64'), jdir]:
                 adjust_permissions(perm_dir, stat.S_IXUSR)
 
-
         # make sure $DISPLAY is not defined, which may lead to (hard to trace) problems
         # this is a workaround for not being able to specify --nodisplay to the install scripts
         if 'DISPLAY' in os.environ:
