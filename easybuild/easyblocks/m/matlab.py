@@ -122,14 +122,10 @@ class EB_MATLAB(PackedBinary):
 
         if not '_JAVA_OPTIONS' in self.cfg['preinstallopts']:
             self.cfg['preinstallopts'] = ('export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']) + self.cfg['preinstallopts']
-        chdircmd = ' '
-        installerpath = '.'
         if LooseVersion(self.version) >= LooseVersion('2017a'):
-            chdircmd = 'cd %s &&' % self.builddir 
-            installerpath = self.cfg['start_dir']
+            run_cmd('cd %s' % self.builddir, log_all=True, simple=True)
 
-        cmd = "%s %s %s/install -v -inputFile %s %s" % (self.cfg['preinstallopts'], chdircmd, installerpath, self.configfile,
-                                                        self.cfg['installopts'])
+        cmd = "%s %s -v -inputFile %s %s" % (self.cfg['preinstallopts'], src, self.configfile, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def sanity_check_step(self):
