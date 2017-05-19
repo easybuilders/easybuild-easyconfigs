@@ -91,7 +91,6 @@ class EB_Inspector(IntelBase):
 
         guesses.update({
             'CPATH': [os.path.join(self.subdir, 'include')],
-            'FPATH': [os.path.join(self.subdir, 'include')],
             'MANPATH': [os.path.join(self.subdir, 'man')],
         })
 

@@ -24,7 +24,7 @@ from easybuild.easyblocks.generic.makecp import MakeCp
 from easybuild.framework.easyconfig import CUSTOM, MANDATORY
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import build_option
-from easybuild.tools.filetools import extract_file
+from easybuild.tools.filetools import apply_regex_substitutions, change_dir, extract_file
 from easybuild.tools.modules import get_software_root, get_software_version
 from easybuild.tools.run import run_cmd
 
@@ -54,12 +54,23 @@ class EB_NAMD(MakeCp):
         super(EB_NAMD, self).__init__(*args, **kwargs)
         self.namd_arch = None
 
+    def extract_step(self):
+        """Custom extract step for NAMD, we need to extract charm++ so we can patch it."""
+        super(EB_NAMD, self).extract_step()
+
+        change_dir(self.src[0]['finalpath'])
+        self.charm_tarballs = glob.glob('charm-*.tar')
+        if len(self.charm_tarballs) != 1:
+            raise EasyBuildError("Expected to find exactly one tarball for Charm++, found: %s", self.charm_tarballs)
+
+        extract_file(self.charm_tarballs[0], os.getcwd())
+
     def configure_step(self):
         """Custom configure step for NAMD, we build charm++ first (if required)."""
 
         # complete Charm ++ and NAMD architecture string with compiler family
         comp_fam = self.toolchain.comp_family()
-        if self.toolchain.options['usempi']:
+        if self.toolchain.options.get('usempi', False):
             charm_arch_comp = 'mpicxx'
         else:
             charm_arch_comps = {
@@ -74,32 +85,44 @@ class EB_NAMD(MakeCp):
         namd_comp = namd_comps.get(comp_fam, None)
         if charm_arch_comp is None or namd_comp is None:
             raise EasyBuildError("Unknown compiler family, can't complete Charm++/NAMD target architecture.")
+
+        # NOTE: important to add smp BEFORE the compiler
+        # charm arch style is: mpi-linux-x86_64-smp-mpicxx
+        # otherwise the setting of name_charm_arch below will get things
+        # in the wrong order
+        if self.toolchain.options.get('openmp', False):
+            self.cfg.update('charm_arch', 'smp')
         self.cfg.update('charm_arch', charm_arch_comp)
 
         self.log.info("Updated 'charm_arch': %s" % self.cfg['charm_arch'])
         self.namd_arch = '%s-%s' % (self.cfg['namd_basearch'], namd_comp)
         self.log.info("Completed NAMD target architecture: %s" % self.namd_arch)
 
-        charm_tarballs = glob.glob('charm-*.tar')
-        if len(charm_tarballs) != 1:
-            raise EasyBuildError("Expected to find exactly one tarball for Charm++, found: %s", charm_tarballs)
-
-        extract_file(charm_tarballs[0], os.getcwd())
 
         tup = (self.cfg['charm_arch'], self.cfg['charm_opts'], self.cfg['parallel'], os.environ['CXXFLAGS'])
-        cmd = "./build charm++ %s %s -j%s %s -DMPICH_IGNORE_CXX_SEEK" % tup
-        charm_subdir = '.'.join(os.path.basename(charm_tarballs[0]).split('.')[:-1])
+        cmd = "./build charm++ %s %s --with-numa -j%s %s -DMPICH_IGNORE_CXX_SEEK" % tup
+        charm_subdir = '.'.join(os.path.basename(self.charm_tarballs[0]).split('.')[:-1])
         self.log.debug("Building Charm++ using cmd '%s' in '%s'" % (cmd, charm_subdir))
         run_cmd(cmd, path=charm_subdir)
 
         # compiler (options)
         self.cfg.update('namd_cfg_opts', '--cc "%s" --cc-opts "%s"' % (os.environ['CC'], os.environ['CFLAGS']))
-        self.cfg.update('namd_cfg_opts', '--cxx "%s" --cxx-opts "%s"' % (os.environ['CXX'], os.environ['CXXFLAGS']))
+        cxxflags = os.environ['CXXFLAGS']
+        if LooseVersion(self.version) >= LooseVersion('2.12'):
+            cxxflags += ' --std=c++11'
+        self.cfg.update('namd_cfg_opts', '--cxx "%s" --cxx-opts "%s"' % (os.environ['CXX'], cxxflags))
 
-        # NAMD dependencies: CUDA, FFTW
+        # NAMD dependencies: CUDA, TCL, FFTW
         cuda = get_software_root('CUDA')
         if cuda:
             self.cfg.update('namd_cfg_opts', "--with-cuda --cuda-prefix %s" % cuda)
+
+        tcl = get_software_root('Tcl')
+        if tcl:
+            self.cfg.update('namd_cfg_opts', '--with-tcl --tcl-prefix %s' % tcl)
+            tclversion = '.'.join(get_software_version('Tcl').split('.')[0:2])
+            tclv_subs = [(r'-ltcl[\d.]*\s', '-ltcl%s ' % tclversion)]
+            apply_regex_substitutions(os.path.join('arch', '%s.tcl' % self.cfg['namd_basearch']), tclv_subs)
 
         fftw = get_software_root('FFTW')
         if fftw:
@@ -112,7 +135,7 @@ class EB_NAMD(MakeCp):
                 self.cfg.update('namd_cfg_opts', "--with-fftw")
             self.cfg.update('namd_cfg_opts', "--fftw-prefix %s" % fftw)
 
-        namd_charm_arch = "--charm-arch %s" % '-'.join(self.cfg['charm_arch'].strip().split(' '))
+        namd_charm_arch = "--charm-arch %s" % '-'.join(self.cfg['charm_arch'].strip().split())
         cmd = "./config %s %s %s " % (self.namd_arch, namd_charm_arch, self.cfg["namd_cfg_opts"])
         run_cmd(cmd)
 
@@ -131,8 +154,12 @@ class EB_NAMD(MakeCp):
             namdcmd = os.path.join(self.cfg['start_dir'], self.namd_arch, 'namd%s' % self.version.split('.')[0])
             if self.cfg['charm_arch'].startswith('mpi'):
                 namdcmd = self.toolchain.mpi_cmd_for(namdcmd, 2)
-            cmd = "%(namd)s %(testdir)s" % {
+            ppn = ''
+            if self.toolchain.options.get('openmp', False):
+                ppn = '+ppn 2'
+            cmd = "%(namd)s %(ppn)s %(testdir)s" % {
                 'namd': namdcmd,
+                'ppn': ppn,
                 'testdir': os.path.join(self.cfg['start_dir'], self.namd_arch, 'src', 'alanin'),
             }
             out, ec = run_cmd(cmd, simple=False)

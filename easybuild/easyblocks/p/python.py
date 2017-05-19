@@ -32,6 +32,7 @@ EasyBuild support for building and installing Python, implemented as an easybloc
 @author: Jens Timmerman (Ghent University)
 """
 import copy
+import glob
 import os
 import re
 import fileinput
@@ -41,6 +42,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_libdir, get_software_libdir, get_software_root, get_software_version
+from easybuild.tools.filetools import remove_file, symlink
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -141,17 +143,14 @@ class EB_Python(ConfigureMake):
 
         python_binary_path = os.path.join(self.installdir, 'bin', 'python')
         if not os.path.isfile(python_binary_path):
-            pythonver = '.'.join(self.version.split('.')[0:2])
-            srcbin = "%s%s" % (python_binary_path, pythonver)
-            try:
-                os.symlink(srcbin, python_binary_path)
-            except OSError, err:
-                raise EasyBuildError("Failed to symlink %s to %s: %s", srcbin, python_binary_path, err)
+            pyver = '.'.join(self.version.split('.')[:2])
+            symlink(python_binary_path + pyver, python_binary_path)
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""
 
-        pyver = "python%s" % '.'.join(self.version.split('.')[0:2])
+        pyver = 'python' + '.'.join(self.version.split('.')[:2])
+        shlib_ext = get_shared_lib_ext()
 
         try:
             fake_mod_data = self.load_fake_module()
@@ -169,18 +168,34 @@ class EB_Python(ConfigureMake):
                 abiflags = abiflags.strip()
 
         custom_paths = {
-            'files': ["bin/%s" % pyver, "lib/lib%s%s.%s" % (pyver, abiflags, get_shared_lib_ext())],
-            'dirs': ["include/%s%s" % (pyver, abiflags), "lib/%s" % pyver],
+            'files': [os.path.join('bin', pyver), os.path.join('lib', 'lib' + pyver + abiflags + '.' + shlib_ext)],
+            'dirs': [os.path.join('include', pyver + abiflags), os.path.join('lib', pyver)],
         }
 
         # cleanup
         self.clean_up_fake_module(fake_mod_data)
 
         custom_commands = [
-            ('python', '--version'),
-            ('python', '-c "import _ctypes"'),  # make sure that foreign function interface (libffi) works
-            ('python', '-c "import _ssl"'),  # make sure SSL support is enabled one way or another
-            ('python', '-c "import readline"'),  # make sure readline support was built correctly
+            "python --version",
+            "python -c 'import _ctypes'",  # make sure that foreign function interface (libffi) works
+            "python -c 'import _ssl'",  # make sure SSL support is enabled one way or another
+            "python -c 'import readline'",  # make sure readline support was built correctly
         ]
+
+        if get_software_root('Tk'):
+            # also check whether importing tkinter module works, name is different for Python v2.x and v3.x
+            if LooseVersion(self.version) >= LooseVersion('3'):
+                tkinter = 'tkinter'
+            else:
+                tkinter = 'Tkinter'
+            custom_commands.append("python -c 'import %s'" % tkinter)
+
+            # check whether _tkinter*.so is found, exact filename doesn't matter
+            tkinter_so = os.path.join(self.installdir, 'lib', pyver, 'lib-dynload', '_tkinter*.' + shlib_ext)
+            tkinter_so_hits = glob.glob(tkinter_so)
+            if len(tkinter_so_hits) == 1:
+                self.log.info("Found exactly one _tkinter*.so: %s", tkinter_so_hits[0])
+            else:
+                raise EasyBuildError("Expected to find exactly one _tkinter*.so: %s", tkinter_so_hits)
 
         super(EB_Python, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)

@@ -71,6 +71,12 @@ class EB_imkl(IntelBase):
         # make sure $MKLROOT isn't set, it's known to cause problems with the installation
         self.cfg.update('unwanted_env_vars', ['MKLROOT'])
 
+    def prepare_step(self):
+        if LooseVersion(self.version) >= LooseVersion('2017.2.174'):
+            super(EB_imkl, self).prepare_step(requires_runtime_license=False)
+        else:
+            super(EB_imkl, self).prepare_step()
+
     def install_step(self):
         """
         Actual installation
@@ -109,7 +115,6 @@ class EB_imkl(IntelBase):
                     'LIBRARY_PATH': ['lib/intel64', 'mkl/lib/intel64'],
                     'MANPATH': ['man', 'man/en_US'],
                     'CPATH': ['mkl/include', 'mkl/include/fftw'],
-                    'FPATH': ['mkl/include', 'mkl/include/fftw'],
                 }
                 if LooseVersion(self.version) >= LooseVersion('11.0'):
                     if LooseVersion(self.version) >= LooseVersion('11.3'):
@@ -127,7 +132,6 @@ class EB_imkl(IntelBase):
                     'LIBRARY_PATH': ['lib', 'lib/32'],
                     'MANPATH': ['man', 'share/man', 'man/en_US'],
                     'CPATH': ['include'],
-                    'FPATH': ['include']
                 }
 
             else:
@@ -137,7 +141,6 @@ class EB_imkl(IntelBase):
                     'LIBRARY_PATH': ['lib', 'lib/em64t'],
                     'MANPATH': ['man', 'share/man', 'man/en_US'],
                     'CPATH': ['include'],
-                    'FPATH': ['include'],
                 }
 
     def make_module_extra(self):

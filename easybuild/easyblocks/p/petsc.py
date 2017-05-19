@@ -61,6 +61,9 @@ class EB_PETSc(ConfigureMake):
             'papi_inc': ['/usr/include', "Path for PAPI include files", CUSTOM],
             'papi_lib': ['/usr/lib64/libpapi.so', "Path for PAPI library", CUSTOM],
             'runtest': ['test', "Make target to test build", BUILD],
+            'download_deps_static': [[], "Dependencies that should be downloaded and installed static", CUSTOM],
+            'download_deps_shared': [[], "Dependencies that should be downloaded and installed shared", CUSTOM],
+            'download_deps': [[], "Dependencies that should be downloaded and installed", CUSTOM]
         }
         return ConfigureMake.extra_options(extra_vars)
 
@@ -79,6 +82,18 @@ class EB_PETSc(ConfigureMake):
         Configure procedure is much more concise for older versions (< v3).
         """
         if LooseVersion(self.version) >= LooseVersion("3"):
+            # make the install dir first if we are doing a download install, then keep it for the rest of the way
+            deps = self.cfg["download_deps"] + self.cfg["download_deps_static"] + self.cfg["download_deps_shared"]
+            if deps:
+                self.log.info("Creating the installation directory before the configure.")
+                self.make_installdir()
+                self.cfg["keeppreviousinstall"] = True
+                for dep in set(deps):
+                    self.cfg.update('configopts', '--download-%s=1' % dep)
+                for dep in self.cfg["download_deps_static"]:
+                    self.cfg.update('configopts', '--download-%s-shared=0' % dep)
+                for dep in self.cfg["download_deps_shared"]:
+                    self.cfg.update('configopts', '--download-%s-shared=1' % dep)
 
             # compilers
             self.cfg.update('configopts', '--with-cc="%s"' % os.getenv('CC'))
