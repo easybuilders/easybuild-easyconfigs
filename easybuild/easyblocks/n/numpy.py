@@ -31,6 +31,7 @@ EasyBuild support for building and installing numpy, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+import glob
 import os
 import re
 import tempfile
@@ -40,7 +41,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.fortranpythonpackage import FortranPythonPackage
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import mkdir, rmtree2
+from easybuild.tools.filetools import change_dir, mkdir, rmtree2
 from easybuild.tools.modules import get_software_root
 from easybuild.tools.run import run_cmd
 from distutils.version import LooseVersion
@@ -287,6 +288,12 @@ class EB_numpy(FortranPythonPackage):
         except OSError as err:
             raise EasyBuildError("Failed to clean up numpy build dir %s: %s", builddir, err)
 
+    def run(self):
+        """Install numpy as an extension"""
+        super(EB_numpy, self).run()
+
+        return self.make_module_extra_numpy_include()
+
     def sanity_check_step(self, *args, **kwargs):
         """Custom sanity check for numpy."""
 
@@ -316,3 +323,31 @@ class EB_numpy(FortranPythonPackage):
         os.environ['PYTHONPATH'] = ':'.join([self.pylibdir, pythonpath])
 
         return super(EB_numpy, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
+
+    def make_module_extra_numpy_include(self):
+        """
+        Return update statements for $CPATH specifically for numpy
+        """
+        numpy_core_subdir = os.path.join('numpy', 'core', 'include')
+        numpy_core_dirs = []
+        cwd = change_dir(self.installdir)
+        for pylibdir in self.all_pylibdirs:
+            numpy_core_dirs.extend(glob.glob(os.path.join(pylibdir, numpy_core_subdir)))
+            numpy_core_dirs.extend(glob.glob(os.path.join(pylibdir, 'numpy*.egg', numpy_core_subdir)))
+        change_dir(cwd)
+
+        txt = ''
+        for numpy_core_dir in numpy_core_dirs:
+            txt += self.module_generator.prepend_paths('CPATH', os.path.join(numpy_core_dir, 'include'))
+            for lib_env_var in ('LD_LIBRARY_PATH', 'LIBRARY_PATH'):
+                txt += self.module_generator.prepend_paths(lib_env_var, os.path.join(numpy_core_dir, 'lib'))
+
+        return txt
+
+    def make_module_extra(self):
+        """
+        Add additional update statements in module file specific to numpy
+        """
+        txt = super(EB_numpy, self).make_module_extra()
+        txt += self.make_module_extra_numpy_include()
+        return txt
