@@ -328,7 +328,7 @@ class EB_numpy(FortranPythonPackage):
         """
         Return update statements for $CPATH specifically for numpy
         """
-        numpy_core_subdir = os.path.join('numpy', 'core', 'include')
+        numpy_core_subdir = os.path.join('numpy', 'core')
         numpy_core_dirs = []
         cwd = change_dir(self.installdir)
         for pylibdir in self.all_pylibdirs:
