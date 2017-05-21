@@ -39,8 +39,13 @@ install:
     - if [ ! -z $ENV_MOD_VERSION ]; then source $(which install_eb_dep.sh) modules-${ENV_MOD_VERSION} $HOME; fi
     - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) lua-5.1.4.8 $HOME; fi
     - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) Lmod-${LMOD_VERSION} $HOME; fi
+before_script:
+    - cd $TRAVIS_BUILD_DIR
+    # pull in develop so we can diff against it
+    - git fetch -v origin ${TRAVIS_BRANCH}:${TRAVIS_BRANCH}
+    # get list of filenames for modified/added files, use '...' to compare with merge base of develop and branch
+    - git diff --name-only --diff-filter=AM ${TRAVIS_BRANCH}...HEAD
 script:
-    - echo $TRAVIS_COMMIT_RANGE
-    - cd $TRAVIS_BUILD_DIR; git diff --name-only $(echo $TRAVIS_COMMIT_RANGE | sed 's/\.//'); cd - > /dev/null
+    - cd $HOME
     - export PYTHONPATH=$TRAVIS_BUILD_DIR
     - python -O -m test.easyconfigs.suite
