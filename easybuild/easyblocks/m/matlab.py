@@ -42,7 +42,7 @@ from distutils.version import LooseVersion
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions, read_file, write_file
+from easybuild.tools.filetools import adjust_permissions, change_dir, read_file, write_file
 from easybuild.tools.run import run_cmd
 from easybuild.tools.systemtools import get_shared_lib_ext
 
@@ -122,7 +122,7 @@ class EB_MATLAB(PackedBinary):
         if not '_JAVA_OPTIONS' in self.cfg['preinstallopts']:
             self.cfg['preinstallopts'] = ('export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']) + self.cfg['preinstallopts']
         if LooseVersion(self.version) >= LooseVersion('2017a'):
-            run_cmd('cd %s' % self.builddir, log_all=True, simple=True)
+            change_dir(self.builddir)
 
         cmd = "%s %s -v -inputFile %s %s" % (self.cfg['preinstallopts'], src, self.configfile, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
