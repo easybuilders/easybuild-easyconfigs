@@ -46,7 +46,7 @@ from easybuild.tools.modules import get_software_root
 from easybuild.tools.systemtools import get_shared_lib_ext
 
 
-class EB_TkinterPython(EB_Python):
+class EB_Tkinter(EB_Python):
     """Support for building/installing the Python Tkinter module
     based on the normal Python module. We build a normal python
     but only install the Tkinter bits.
@@ -58,11 +58,11 @@ class EB_TkinterPython(EB_Python):
         if not tk:
             raise EasyBuildError("Tk is mandatory to build Tkinter")
 
-        super(EB_TkinterPython, self).configure_step()
+        super(EB_Tkinter, self).configure_step()
 
     def install_step(self):
         """Install python but only keep the bits we need"""
-        super(EB_TkinterPython, self).install_step()
+        super(EB_Tkinter, self).install_step()
 
         tmpname = "eb-tmp"
         tmpdir = os.path.join(self.installdir, tmpname)
@@ -113,7 +113,7 @@ class EB_TkinterPython(EB_Python):
 
     def make_module_extra(self):
         """Set PYTHONPATH"""
-        txt = super(EB_TkinterPython, self).make_module_extra()
+        txt = super(EB_Tkinter, self).make_module_extra()
         pyver = '.'.join(self.version.split('.')[:2])
         txt += self.module_generator.prepend_paths('PYTHONPATH', os.path.join("lib", "python%s" % pyver))
 
