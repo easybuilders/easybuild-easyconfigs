@@ -72,14 +72,14 @@ class EB_TkinterPython(EB_Python):
         libdir = os.path.join(self.installdir, "lib", "python%s" % pyver)
         tkdirs = ["lib-tk", "lib-dynload/_tkinter.so"]
 
-        copy([os.path.join(self.libdir, x) for x in tkdirs], tmpdir)
+        copy([os.path.join(libdir, x) for x in tkdirs], tmpdir)
 
         delete_dirs = [x for x in os.listdir(self.installdir) if not x == tmpname]
 
         for deldir in delete_dirs:
             rmtree2(os.path.join(self.installdir, deldir))
 
-        mkdir(self.libdir, parents=True)
+        mkdir(libdir, parents=True)
         shutil.move(os.path.join(tmpdir, tkdirs[0]), libdir)
         shutil.move(os.path.join(tmpdir, os.path.basename(tkdirs[1])), libdir)
 
