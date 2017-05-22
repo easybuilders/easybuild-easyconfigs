@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'ROI_PAC'
+version = '3.0.1'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://roipac.org/'
+description = """Repeat Orbit Interferometry PACkage (ROI_PAC), software for processing synthetic aperture radar data
+ to produce differential interferograms"""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+# download of ROI_PAC tarball requires registration, see http://www.openchannelfoundation.org/projects/ROI_PAC
+sources = ['ROI_PAC_%s.tgz' % '_'.join(version.split('.'))]
+
+# make_raw_alos.pl via http://roipac.org/cgi-bin/moin.cgi/ALOS_PALSAR?action=AttachFile&do=get&target=make_raw_alos.pl
+patches = [
+    ('make_raw_alos.pl', 'ROI_PAC/INT_SCR'),
+    'ROI_PAC-%(version)s_fix-IntSim.patch',
+]
+checksums = [
+    'db50e9cd99183291eb9cfe7c74750cc6',  # ROI_PAC_3_0_1.tgz
+    '284faa43c12626670810c1e14d393159',  # make_raw_alos.pl
+]
+
+builddependencies = [('Autotools', '20150215')]
+dependencies = [
+    ('FFTW', '3.3.6'),
+    ('GETORB', '2.3.2'),
+    ('Perl', '5.24.1'),
+]
+
+start_dir = 'ROI_PAC'
+
+installopts = "&& cd fip && $CC $CFLAGS -o add_rmgAmpPhs add_rmgAmpPhs.c && cp -a add_rmgAmpPhs %(installdir)s/bin"
+
+postinstallcmds = [
+    # symlink to getorb requires in /bin subdirectory
+    "cd %(installdir)s/bin && ln -s $(which getorb)",
+    # also copy scripts
+    "cp -a INT_SCR/* %(installdir)s/bin",
+    # fix shebang in Perl scripts
+    "sed -i 's@^#!.*/bin/perl.*@#!/usr/bin/env perl@g' %(installdir)s//bin/*.pl",
+]
+
+sanity_check_paths = {
+    'files': ['bin/add_rmgAmpPhs', 'bin/getorb', 'bin/make_raw.pl', 'bin/make_raw_alos.pl', 'bin/roi'],
+    'dirs': [],
+}
+
+modextrapaths = {'PERL5LIB': 'bin'}
+modextravars = {
+    'INT_BIN': '%(installdir)s/bin',
+    'INT_SCR': '%(installdir)s/bin',
+    'MY_BIN': '%(installdir)s/bin',
+    'ROI_PAC': '%(installdir)s',
+}
+
+modloadmsg = "These environment variables should be defined: $INS_DIR, $POR_DIR, $SAR_ODR_DIR, $SAR_PRC_DIR, $VOR_DIR\n"
+
+moduleclass = 'geo'
