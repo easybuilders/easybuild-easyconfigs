@@ -33,7 +33,7 @@ import os
 import shutil
 
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import copy_file, copytree
+from easybuild.tools.filetools import copy_file, copy_dir
 from easybuild.tools.run import run_cmd
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 
@@ -101,7 +101,7 @@ class EB_DL_underscore_POLY_underscore_Classic(ConfigureMake):
         # create a 'bin' subdir, this way we also get $PATH to be set correctly automatically
         install_path = os.path.join(self.cfg['start_dir'], 'execute')
         bin_path = os.path.join(self.installdir, 'bin')
-        copytree(install_path, bin_path)
+        copy_dir(install_path, bin_path)
 
     def sanity_check_step(self):
         """Custom sanity check step for DL_POLY Classic"""
