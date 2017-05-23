@@ -1,0 +1,130 @@
+Removed q and a and perl scripting environment set accordingly.
+Author: Fokke Dijkstra (University of Groningen)
+diff -ru bio-tools-psort-all/lib/Bio/Tools/PSort/Install.pm bio-tools-psort-all.new/lib/Bio/Tools/PSort/Install.pm
+--- bio-tools-psort-all/lib/Bio/Tools/PSort/Install.pm	2010-07-29 00:12:43.000000000 +0200
++++ bio-tools-psort-all.new/lib/Bio/Tools/PSort/Install.pm	2015-11-26 13:50:18.000000000 +0100
+@@ -77,7 +77,12 @@
+ 		}
+ 	    }
+ 	} else {
+-	    $input = ExtUtils::MakeMaker::prompt("\n$lib was not found in the dynamic linker path, is there somewhere else we should check? ", "/usr/local/lib$sixtyfour");
++            if (exists($ENV{EBROOTLIBPSORTB})) {
++               $input = "$ENV{EBROOTLIBPSORTB}/lib$sixtyfour";
++            } else {
++               $input = "/usr/local/lib$sixtyfour";
++            }
++	    $input = ExtUtils::MakeMaker::prompt("\n$lib was not found in the dynamic linker path, is there somewhere else we should check? ", $input);
+ 	    if($path = Bio::Tools::PSort::Install->findLib("-L$input -l$lib")) {
+ 		$passed = 1;
+ 		$libpath = $input;
+diff -ru bio-tools-psort-all/Makefile.PL bio-tools-psort-all.new/Makefile.PL
+--- bio-tools-psort-all/Makefile.PL	2010-07-28 23:40:19.000000000 +0200
++++ bio-tools-psort-all.new/Makefile.PL	2015-11-30 12:03:14.000000000 +0100
+@@ -97,7 +97,12 @@
+ }
+ 
+ sub get_psort_root {
+-    my $root = prompt("Where do you plan to install the psort configuration files?", '/usr/local/psortb');
++    if(exists($ENV{PSORTROOT})) {
++       $root = $ENV{PSORTROOT};
++    } else {
++       $root = '/usr/local/psortb';
++    }
++    my $root = prompt("Where do you plan to install the psort configuration files?", $root);
+     $PSORT_ROOT = $root;
+ }
+ 
+Only in bio-tools-psort-all: .Makefile.PL.swp
+diff -ru bio-tools-psort-all/psort/bin/check-sig bio-tools-psort-all.new/psort/bin/check-sig
+--- bio-tools-psort-all/psort/bin/check-sig	2003-07-25 18:48:03.000000000 +0200
++++ bio-tools-psort-all.new/psort/bin/check-sig	2015-11-26 13:51:19.000000000 +0100
+@@ -1,4 +1,4 @@
+-#! /usr/bin/perl
++#! /usr/bin/env perl
+ 
+ use Getopt::Long;
+ 
+diff -ru bio-tools-psort-all/psort/bin/psort bio-tools-psort-all.new/psort/bin/psort
+--- bio-tools-psort-all/psort/bin/psort	2010-05-26 23:51:55.000000000 +0200
++++ bio-tools-psort-all.new/psort/bin/psort	2015-11-26 13:50:58.000000000 +0100
+@@ -1,4 +1,4 @@
+-#! /usr/bin/perl
++#! /usr/bin/env perl
+ 
+ use Bio::Tools::PSort::Report::Formatter;
+ use Bio::Tools::PSort;
+diff -ru bio-tools-psort-all/psort/bin/psort.tmpt bio-tools-psort-all.new/psort/bin/psort.tmpt
+--- bio-tools-psort-all/psort/bin/psort.tmpt	2009-11-10 22:46:09.000000000 +0100
++++ bio-tools-psort-all.new/psort/bin/psort.tmpt	2015-11-26 13:51:01.000000000 +0100
+@@ -1,4 +1,4 @@
+-#! /usr/bin/perl
++#! /usr/bin/env perl
+ 
+ use Bio::Tools::PSort::Report::Formatter;
+ use Bio::Tools::PSort;
+diff -ru bio-tools-psort-all/psort/conf/analysis/signal/archaea/check-sig bio-tools-psort-all.new/psort/conf/analysis/signal/archaea/check-sig
+--- bio-tools-psort-all/psort/conf/analysis/signal/archaea/check-sig	2008-10-01 18:57:37.000000000 +0200
++++ bio-tools-psort-all.new/psort/conf/analysis/signal/archaea/check-sig	2015-11-26 13:52:00.000000000 +0100
+@@ -1,4 +1,4 @@
+-#! /usr/bin/perl
++#! /usr/bin/env perl
+ 
+ use Getopt::Long;
+ 
+diff -ru bio-tools-psort-all/psort/conf/analysis/signal/gramneg/check-sig bio-tools-psort-all.new/psort/conf/analysis/signal/gramneg/check-sig
+--- bio-tools-psort-all/psort/conf/analysis/signal/gramneg/check-sig	2004-02-25 08:50:44.000000000 +0100
++++ bio-tools-psort-all.new/psort/conf/analysis/signal/gramneg/check-sig	2015-11-26 13:52:02.000000000 +0100
+@@ -1,4 +1,4 @@
+-#! /usr/bin/perl
++#! /usr/bin/env perl
+ 
+ use Getopt::Long;
+ 
+diff -ru bio-tools-psort-all/psort/conf/analysis/signal/grampos/check-sig bio-tools-psort-all.new/psort/conf/analysis/signal/grampos/check-sig
+--- bio-tools-psort-all/psort/conf/analysis/signal/grampos/check-sig	2004-04-02 20:23:28.000000000 +0200
++++ bio-tools-psort-all.new/psort/conf/analysis/signal/grampos/check-sig	2015-11-26 13:52:05.000000000 +0100
+@@ -1,4 +1,4 @@
+-#! /usr/bin/perl
++#! /usr/bin/env perl
+ 
+ use Getopt::Long;
+ 
+diff -ru bio-tools-psort-all/psort/server/rpc/classify.xpl bio-tools-psort-all.new/psort/server/rpc/classify.xpl
+--- bio-tools-psort-all/psort/server/rpc/classify.xpl	2004-03-05 20:47:06.000000000 +0100
++++ bio-tools-psort-all.new/psort/server/rpc/classify.xpl	2015-11-26 13:52:20.000000000 +0100
+@@ -14,7 +14,7 @@
+ </help>
+ <code language="perl">
+ <![CDATA[
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ use Apache::Bio::Tools::PSort;
+ use Bio::Seq;
+ use Data::Dumper;
+diff -ru bio-tools-psort-all/psort/server/startup.pl bio-tools-psort-all.new/psort/server/startup.pl
+--- bio-tools-psort-all/psort/server/startup.pl	2006-08-16 23:41:43.000000000 +0200
++++ bio-tools-psort-all.new/psort/server/startup.pl	2015-11-26 13:51:29.000000000 +0100
+@@ -1,4 +1,4 @@
+-#! /usr/bin/perl
++#! /usr/bin/env perl
+ 
+ use Apache::Bio::Tools::PSort ();
+ use Apache::RPC::Server ();
+diff -ru bio-tools-psort-all/psort/server/www/results.pl bio-tools-psort-all.new/psort/server/www/results.pl
+--- bio-tools-psort-all/psort/server/www/results.pl	2005-03-01 21:38:17.000000000 +0100
++++ bio-tools-psort-all.new/psort/server/www/results.pl	2015-11-26 13:51:41.000000000 +0100
+@@ -1,4 +1,4 @@
+-#! /usr/bin/perl -w
++#! /usr/bin/env perl -w
+ 
+ use Bio::Tools::PSort::Report::Formatter;
+ use Bio::Tools::PSort::XMLRPC::Client;
+diff -ru bio-tools-psort-all/t/sclblast.pl bio-tools-psort-all.new/t/sclblast.pl
+--- bio-tools-psort-all/t/sclblast.pl	2008-10-01 18:57:37.000000000 +0200
++++ bio-tools-psort-all.new/t/sclblast.pl	2015-11-26 13:52:29.000000000 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 

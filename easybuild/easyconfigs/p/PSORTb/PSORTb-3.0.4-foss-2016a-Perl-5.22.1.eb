@@ -1,0 +1,44 @@
+easyblock = 'PerlModule'
+
+name = 'PSORTb'
+version = '3.0.4'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://psort.org/psortb/index.html'
+description = """PSORTb v3.0.4 is the most precise bacterial localization prediction tool available."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+source_urls = ['http://www.psort.org/download/']
+sources = ['bio-tools-psort-all.%(version)s.tar.gz']
+
+patches = [
+    'PSORTb-%(version)s-libpsortb.patch',
+]
+
+dependencies = [
+    ('Perl', '5.22.1'),
+    ('libpsortb', '1.0'),
+    ('BioPerl', '1.6.924', '-Perl-5.22.1'),
+    ('BLAST', '2.2.26', '-Linux_x86_64', True),
+    ('pftoolsV3', '20160324'),
+]
+
+options = {'modulename': 'Bio::Tools::PSort'}
+
+preconfigopts = "export PSORTROOT=%(installdir)s && "
+
+prebuildopts = 'sed -i "s/CC = cc/CC ?= gcc/" bio-tools-psort-modhmm/Makefile && '
+
+postinstallcmds = [
+    "cp -r psort/* %(installdir)s/.",
+]
+
+sanity_check_paths = {
+    'files': ['lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/Algorithm/HMM.pm',
+              'lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/Bio/Tools/PSort.pm'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/Algorithm/HMM',
+             'lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/Bio/Tools/PSort'],
+}
+
+moduleclass = 'bio'
