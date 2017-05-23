@@ -73,8 +73,8 @@ class EB_Tkinter(EB_Python):
         try:
             shutil.move(os.path.join(tmpdir, tkparts[0]), pylibdir)
             shutil.move(os.path.join(tmpdir, os.path.basename(tkparts[1])), pylibdir)
-        except:
-            raise EasyBuildError("Failed to move Tkinter back to the install directory")
+        except (IOError, OSError) as err:
+            raise EasyBuildError("Failed to move Tkinter back to the install directory: %s", err)
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""
