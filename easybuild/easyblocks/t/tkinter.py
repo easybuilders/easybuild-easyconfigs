@@ -35,7 +35,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 from easybuild.easyblocks.generic.pythonpackage import det_pylibdir
-from easybuild.easyblocks.p.python import EB_Python
+from easybuild.easyblocks.python import EB_Python
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.filetools import copy, mkdir, rmtree2
 from easybuild.tools.modules import get_software_root
@@ -70,8 +70,11 @@ class EB_Tkinter(EB_Python):
         rmtree2(self.installdir)
 
         mkdir(pylibdir, parents=True)
-        shutil.move(os.path.join(tmpdir, tkparts[0]), pylibdir)
-        shutil.move(os.path.join(tmpdir, os.path.basename(tkparts[1])), pylibdir)
+        try:
+            shutil.move(os.path.join(tmpdir, tkparts[0]), pylibdir)
+            shutil.move(os.path.join(tmpdir, os.path.basename(tkparts[1])), pylibdir)
+        except:
+            raise EasyBuildError("Failed to move Tkinter back to the install directory")
 
     def sanity_check_step(self):
         """Custom sanity check for Python."""
@@ -88,7 +91,6 @@ class EB_Tkinter(EB_Python):
             'files': ['%s/_tkinter.%s' % (pylibdir, shlib_ext)],
             'dirs': ['lib']
         }
-
         super(EB_Python, self).sanity_check_step(custom_commands=custom_commands, custom_paths=custom_paths)
 
     def make_module_extra(self):
