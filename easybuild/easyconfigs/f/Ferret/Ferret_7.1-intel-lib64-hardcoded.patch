@@ -1,0 +1,140 @@
+--- FERRET/platform_specific.mk.x86_64-linux.orig	2017-02-16 01:29:46.000000000 +0100
++++ FERRET/platform_specific.mk.x86_64-linux	2017-05-24 09:46:00.271219520 +0200
+@@ -40,7 +40,7 @@
+ 
+ 	CPP_FLAGS       = $(INCLUDES) \
+ 			  -m64 \
+-			  -fPIC -Dunix -Dgfortran   \
++			  -fPIC -Dunix -Dgfortran -DF90_SYSTEM_ERROR_CALLS  \
+ 			  -DNO_OPEN_SHARED \
+ 			  -DNO_OPEN_RECORDTYPE \
+ 			  -DX_REFRESH -Dreclen_in_bytes  \
+@@ -62,14 +62,10 @@
+ 			  -DFULL_GUI_VERSION -DX_REFRESH -DXT_CODE -Dsun4 
+ # Flags for compiling the PlotPlus FORTRAN code (ppl subdirectory)
+ 	PPLUS_FFLAGS	= $(CPP_FLAGS) \
+-			  -fno-automatic -fno-second-underscore \
+-			  -fdollar-ok -ffixed-line-length-132 $(FINCLUDES)
++			  -132 $(FINCLUDES)
+ # Flags for compiling non-PlotPlus FORTRAN code
+ 	FFLAGS		= $(CPP_FLAGS) \
+-			  -fno-automatic -fno-second-underscore \
+-			  -fdollar-ok -ffixed-line-length-132 -ffpe-trap=overflow \
+-			  -fimplicit-none \
+-			  -fdefault-real-8 -fdefault-double-8 $(FINCLUDES)
++			  -132 -r8 -i8 $(FINCLUDES)
+ 
+ 	OPT_FLAGS	= -O -DNDEBUG
+ 	PPLUS_OPT_FLAGS	= -O0
+@@ -83,10 +79,9 @@
+ 	LDFLAGS		= -v --verbose -m64 -fPIC -export-dynamic
+ 
+ 	SYSLIB		= -lX11 \
+-			  -lcurl \
++			  -L$(EBROOTCURL)/lib -lcurl \
+ 			  -ldl \
+-			  $(LIBZ_DIR)/lib64/libz.a \
+-			  -Wl,-Bstatic -lgfortran -Wl,-Bdynamic \
++			  -L$(EBROOTZLIB)/lib -lz \
+ 			  -lm
+ 
+ # -static-libgfortran can be used with gfortran 4.4 but not 4.1
+@@ -96,11 +91,11 @@
+ 
+ # For netCDF4 using new hdf5 and new zlib
+ 
+-	CDFLIB		= $(NETCDF4_DIR)/lib64/libnetcdff.a \
+-			  $(NETCDF4_DIR)/lib64/libnetcdf.a \
+-			  $(HDF5_DIR)/lib64/libhdf5_hl.a \
+-			  $(HDF5_DIR)/lib64/libhdf5.a \
+-			  $(LIBZ_DIR)/lib64/libz.a
++	CDFLIB		= -L$(NETCDOF_DIR)/lib* -lnetcdff \
++			  -L$(NETCDF4_DIR)/lib* -lnetcdf \
++			  -L$(HDF5_DIR)/lib -lhdf5_hl \
++			  -L$(HDF5_DIR)/lib -lhdf5 -L$(EBROOTSZIP)/lib -lsz \
++			  -L$(EBROOTZLIB)/lib -lz
+ 
+ 	LINUX_OBJS	= special/linux_routines.o \
+ 			  dat/*.o \
+@@ -112,12 +107,12 @@
+ # builds.
+ # (But use the system ncurses.so.5 for running.)
+ 
+-	TERMCAPLIB	= -L/usr/local/lib64 -lncurses
++	TERMCAPLIB	= -L$(EBROOTNCURSES)/lib -lncurses
+ 
+ # For statically linking in the readline and history libraries
+ #	READLINELIB = -L$(READLINE_DIR)/lib64 -Wl,-Bstatic -lreadline -lhistory -Wl,-Bdynamic
+ # For linking against the shared-object libraries (if they exist)
+-	READLINELIB = -L$(READLINE_DIR)/lib64 -lreadline -lhistory
++	READLINELIB = -L$(EBROOTLIBREADLINE)/lib -lreadline -lhistory
+ 
+ ## cancel the default rule for .f -> .o to prevent objects from being built
+ ## from .f files that are out-of-date with respect to their corresponding .F file
+--- FERRET/site_specific.mk.orig	2017-05-23 15:15:01.513025941 +0200
++++ FERRET/site_specific.mk	2017-05-23 15:18:45.550700119 +0200
+@@ -25,6 +25,7 @@
+ # NETCDF4_DIR	= /usr
+ # NETCDF4_DIR	= /usr/local
+ NETCDF4_DIR	= /usr/local/netcdf-4.4.0
++NETCDOF_DIR     = $(EBROOTNETCDFMINFORTRAN)
+ 
+ ## Installation directory for readline static libraries
+ ## (contains include and lib or lib64 subdirectories)
+@@ -48,7 +48,7 @@
+ # JAVA_HOME	= /usr/java/latest
+ # JAVA_HOME	= /usr/lib/jvm/java-oracle
+ # JAVA_HOME	= /usr/lib/jvm/java-sun
+-JAVA_HOME	= /usr/lib/jvm/java
++JAVA_HOME	= $(EBROOTJAVA)
+ # JAVA_HOME	= /Library/Java/JavaVirtualMachines/jdk1.8.0_60.jdk/Contents/Home
+ 
+ ##
+--- FERRET/external_functions/ef_utility/platform_specific.mk.x86_64-linux.orig	2017-02-16 01:28:51.000000000 +0100
++++ FERRET/external_functions/ef_utility/platform_specific.mk.x86_64-linux	2017-05-24 12:25:53.743392407 +0200
+@@ -5,18 +5,18 @@
+ # platform specific macros
+ # ACM 2/2001 debug flags
+ 
+-INCLUDES	= -I. -I../ef_utility -I../ef_utility/ferret_cmn
++CPP_FLAGS	= -I. -I../ef_utility -I../ef_utility/ferret_cmn
+ 
+ CCSHFLAG	=
+ CC		= gcc
+-CFLAGS		= -fPIC -m64 -O2 $(INCLUDES)
++CFLAGS		= $(CPP_FLAGS) \
++
+ 
+ FC		= gfortran
+ F77		= gfortran
+ F77SHFLAG	=
+-FFLAGS		= -fPIC -m64 -Ddouble_p -fno-second-underscore \
+-		  -fno-backslash -fdollar-ok -ffixed-line-length-132 \
+-		  -fdefault-real-8 -fdefault-double-8 $(INCLUDES)
++FFLAGS		= $(CPP_FLAGS) \
++		  -132 -r8 -i8 
+ 
+ RANLIB		= /usr/bin/ranlib
+ 
+@@ -25,7 +25,7 @@
+ SYSLIBS		=
+ 
+ CPP		= /lib/cpp
+-CPP_FLAGS	= -P -traditional -Ddouble_p $(INCLUDES)
++#CPP_FLAGS	= -P -traditional -Ddouble_p $(INCLUDES)
+ CFLAGS_DEBUG	= -O0 -g -Ddebug
+ FFLAGS_DEBUG	= -O0 -g  -fbounds-check -Ddebug
+ 
+--- FERRET/gksm2ps/Makefile.orig	2017-02-16 01:28:02.000000000 +0100
++++ FERRET/gksm2ps/Makefile	2017-05-24 13:18:23.229887393 +0200
+@@ -68,8 +68,8 @@
+ 
+ x86_64-linux:	
+ 	${MAKE} gksm2ps \
+-		CC=gcc \
+-		CFLAGS="-m64 -I../xgks/port -I../xgks/src/lib -I../xgks/src/lib/gksm" \
++		CC=$(CC) \
++		CFLAGS="$(CFLAGS) -I../xgks/port -I../xgks/src/lib -I../xgks/src/lib/gksm" \
+ 		LDFLAGS= \
+ 		GKLIB="../xgks/src/lib/libxgks.a" \
+ 		LIB="-lX11 -lm"
