@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'ED2'
+version = '20170201'
+commit = '0146fa4'
+versionsuffix = '-serial'
+
+homepage = 'https://github.com/EDmodel/ED2'
+description = """The Ecosystem Demography Biosphere Model (ED2) is an integrated terrestrial biosphere model
+ incorporating hydrology, land-surface biophysics, vegetation dynamics, and soil carbon and nitrogen biogeochemistry"""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = ['https://github.com/EDmodel/ED2/archive/']
+sources = ['%s.tar.gz' % commit]
+
+patches = [
+    'ED2_install-without-make.patch',
+    'ED2_fix-type.patch',
+]
+
+dependencies = [('HDF5', '1.10.0-patch1')]
+
+start_dir = 'ED/build'
+
+# rely on install.sh to prepare everything, but run 'make' command ourselves to take control over compiler options
+prebuildopts = "./install.sh --kind E --platform intel --gitoff && cd bin-opt-E && "
+
+buildopts = "OPT=opt KIND_COMP=E GIT_TAG= HDF5_PATH=$EBROOTHDF5 PAR_LIBS='' PAR_DEFS='' "
+buildopts += 'F_COMP="$FC" C_COMP="$CC" LOADER="$FC" F_OPTS="$FFLAGS" C_OPTS="$CFLAGS" F_LOWO_OPTS="$FFLAGS" && cd -'
+
+files_to_copy = [(['ED/build/ed_2.1-opt'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/ed_2.1-opt'],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
