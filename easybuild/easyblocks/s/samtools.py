@@ -45,8 +45,8 @@ class EB_SAMtools(ConfigureMake):
         self.include_files = ["bam.h", "bam2bcf.h", "bam_endian.h", 
                               "sam.h", "sam_header.h", "sample.h"]
 
-        if LooseVersion(self.version) <= LooseVersion('0.1.18'):
-            # seqtk is no longer there in v0.1.19
+        if LooseVersion(self.version) == LooseVersion('0.1.18'):
+            # seqtk is no longer there in v0.1.19 and seqtk is not in 0.1.17
             self.bin_files += ["misc/seqtk"]
         elif LooseVersion(self.version) >= LooseVersion('0.1.19'):
             # new tools in v0.1.19
