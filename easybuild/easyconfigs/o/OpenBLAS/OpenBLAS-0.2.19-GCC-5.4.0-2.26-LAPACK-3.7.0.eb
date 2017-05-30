@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenBLAS'
+version = '0.2.19'
+
+lapackver = '3.7.0'
+versionsuffix = '-LAPACK-%s' % lapackver
+
+homepage = 'http://xianyi.github.com/OpenBLAS/'
+description = """OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0-2.26'}
+
+lapack_src = 'lapack-%s.tgz' % lapackver
+large_src = 'large.tgz'
+timing_src = 'timing.tgz'
+
+lapack_unpack_cmd = 'cd %(name)s-%(version)s; rm -rf lapack-netlib;'
+lapack_unpack_cmd += 'mkdir lapack-netlib;'
+lapack_unpack_cmd += 'tar -C lapack-netlib --strip-components=1 -zxf %s; cd -'
+
+sources = [
+    'v%(version)s.tar.gz',
+    (lapack_src, lapack_unpack_cmd),
+    large_src,
+    timing_src,
+]
+source_urls = [
+    # order matters, trying to download the LAPACK tarball from GitHub causes trouble
+    "http://www.netlib.org/lapack/",
+    "http://www.netlib.org/lapack/timing/",
+    "https://github.com/xianyi/OpenBLAS/archive/",
+]
+
+patches = [
+    (large_src, '.'),
+    (timing_src, '.'),
+    'OpenBLAS-%(version)s_LAPACK-3.7.0-fixes.patch',
+]
+
+skipsteps = ['configure']
+
+buildopts = 'BINARY=64 USE_THREAD=1 CC="$CC" FC="$F77" NO_AFFINITY=1'
+installopts = "USE_THREAD=1 PREFIX=%(installdir)s"
+
+# extensive testing can be enabled by uncommenting the line below
+# runtest = 'PATH=.:$PATH lapack-timing'
+
+sanity_check_paths = {
+    'files': ['include/cblas.h', 'include/f77blas.h', 'include/lapacke_config.h', 'include/lapacke.h',
+              'include/lapacke_mangling.h', 'include/lapacke_utils.h', 'include/openblas_config.h',
+              'lib/libopenblas.a', 'lib/libopenblas.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
