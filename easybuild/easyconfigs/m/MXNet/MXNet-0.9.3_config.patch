@@ -1,0 +1,141 @@
+#Obey EB compiler and compileropts and use OpenBLAS.
+# February 10th 2017 by B. Hajgato (VUB)
+--- make/config.mk.orig	2017-01-22 20:07:09.000000000 +0100
++++ make/config.mk	2017-02-10 13:34:36.168189097 +0100
+@@ -20,9 +20,9 @@
+ # choice of compiler
+ #--------------------
+ 
+-export CC = gcc
+-export CXX = g++
+-export NVCC = nvcc
++export CC ?= gcc
++export CXX ?= g++
++export NVCC ?= nvcc
+ 
+ # whether compile with options for MXNet developer
+ DEV = 0
+@@ -98,7 +98,7 @@
+ ifeq ($(UNAME_S), Darwin)
+ USE_BLAS = apple
+ else
+-USE_BLAS = atlas
++USE_BLAS = openblas
+ endif
+ 
+ # add path to intel library, you may need it for MKL, if you did not add the path
+--- Makefile.orig	2017-02-10 14:35:38.000000000 +0100
++++ Makefile	2017-02-10 15:00:18.933591447 +0100
+@@ -29,19 +29,9 @@
+ 
+ # all tge possible warning tread
+ WARNFLAGS= -Wall
+-CFLAGS = -DMSHADOW_FORCE_STREAM $(WARNFLAGS)
++CFLAGS += -DMSHADOW_FORCE_STREAM $(WARNFLAGS)
+ 
+-ifeq ($(DEV), 1)
+-	CFLAGS += -g -Werror
+-endif
+-
+-# CFLAGS for debug
+-ifeq ($(DEBUG), 1)
+-	CFLAGS += -g -O0 -DDMLC_LOG_FATAL_THROW=0
+-else
+-	CFLAGS += -O3
+-endif
+-CFLAGS += -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
++CFLAGS += -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
+ LDFLAGS = -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
+ ifeq ($(DEBUG), 1)
+ 	NVCCFLAGS = -std=c++11 -Xcompiler -D_FORCE_INLINES -g -G -O0 -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
+@@ -67,10 +57,6 @@
+ 	CFLAGS+= -DMXNET_USE_OPENCV=0
+ endif
+ 
+-ifeq ($(USE_OPENMP), 1)
+-	CFLAGS += -fopenmp
+-endif
+-
+ ifeq ($(USE_NNPACK), 1)
+ 	CFLAGS += -DMXNET_USE_NNPACK=1
+ 	LDFLAGS += -lnnpack
+--- nnvm/dmlc-core/Makefile.orig	2017-02-10 14:35:34.000000000 +0100
++++ nnvm/dmlc-core/Makefile	2017-02-10 15:23:33.349938501 +0100
+@@ -10,8 +10,8 @@
+ include make/dmlc.mk
+ 
+ # this is the common build script for dmlc lib
+-export LDFLAGS= -pthread -lm
+-export CFLAGS = -O3 -Wall -Wno-unknown-pragmas -Iinclude  -std=c++0x
++export LDFLAGS += -pthread -lm
++export CFLAGS += -Wall -Wno-unknown-pragmas -Iinclude 
+ LDFLAGS+= $(DMLC_LDFLAGS)
+ CFLAGS+= $(DMLC_CFLAGS)
+ 
+@@ -19,10 +19,6 @@
+ 	USE_SSE = 1
+ endif
+ 
+-ifeq ($(USE_SSE), 1)
+-	CFLAGS += -msse2
+-endif
+-
+ ifdef DEPS_PATH
+ CFLAGS+= -I$(DEPS_PATH)/include
+ LDFLAGS+= -L$(DEPS_PATH)/lib
+--- dmlc-core/Makefile.orig	2017-02-10 14:35:34.000000000 +0100
++++ dmlc-core/Makefile	2017-02-10 15:23:33.349938501 +0100
+@@ -10,8 +10,8 @@
+ include make/dmlc.mk
+ 
+ # this is the common build script for dmlc lib
+-export LDFLAGS= -pthread -lm
+-export CFLAGS = -O3 -Wall -Wno-unknown-pragmas -Iinclude  -std=c++0x
++export LDFLAGS += -pthread -lm
++export CFLAGS += -Wall -Wno-unknown-pragmas -Iinclude 
+ LDFLAGS+= $(DMLC_LDFLAGS)
+ CFLAGS+= $(DMLC_CFLAGS)
+ 
+@@ -19,10 +19,6 @@
+ 	USE_SSE = 1
+ endif
+ 
+-ifeq ($(USE_SSE), 1)
+-	CFLAGS += -msse2
+-endif
+-
+ ifdef DEPS_PATH
+ CFLAGS+= -I$(DEPS_PATH)/include
+ LDFLAGS+= -L$(DEPS_PATH)/lib
+--- nnvm/Makefile.orig	2017-02-10 14:35:31.000000000 +0100
++++ nnvm/Makefile	2017-02-10 15:53:32.663243843 +0100
+@@ -9,8 +9,8 @@
+ endif
+ include $(config)
+ 
+-export LDFLAGS = -pthread -lm
+-export CFLAGS = -std=c++11 -Wall -O2 -Iinclude -fPIC
++export LDFLAGS += -pthread -lm
++export CFLAGS += -Wall -Iinclude
+ 
+ ifdef DMLC_CORE_PATH
+   CFLAGS += -I$(DMLC_CORE_PATH)/include
+--- mshadow/make/mshadow.mk.orig	2017-02-10 14:35:29.000000000 +0100
++++ mshadow/make/mshadow.mk	2017-02-27 14:00:40.287062917 +0100
+@@ -17,11 +17,11 @@
+ 	USE_SSE=1
+ endif
+ 
+-ifeq ($(USE_SSE), 1)
+-	MSHADOW_CFLAGS += -msse3
+-else
+-	MSHADOW_CFLAGS += -DMSHADOW_USE_SSE=0
+-endif
++#ifeq ($(USE_SSE), 1)
++#	MSHADOW_CFLAGS += -msse3
++#else
++#	MSHADOW_CFLAGS += -DMSHADOW_USE_SSE=0
++#endif
+ 
+ ifeq ($(USE_CUDA), 0)
+ 	MSHADOW_CFLAGS += -DMSHADOW_USE_CUDA=0
