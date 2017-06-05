@@ -86,6 +86,7 @@ class EB_Siesta(ConfigureMake):
         else:
             fftw = None
 
+        regex_newlines = []
         regex_subs = [
             ('dc_lapack.a', ''),
             (r'^NETCDF_INTERFACE\s*=.*$', ''),
@@ -98,12 +99,12 @@ class EB_Siesta(ConfigureMake):
         netcdff_loc = get_software_root('netCDF-Fortran')
         if netcdff_loc:
             # Needed for gfortran at least
-            regex_subs.append((r"^(ARFLAGS_EXTRA\s*=.*)$", r"\1\nNETCDF_INCFLAGS = -I%s/include" % netcdff_loc))
+            regex_newlines.append((r"^(ARFLAGS_EXTRA\s*=.*)$", r"\1\nNETCDF_INCFLAGS = -I%s/include" % netcdff_loc))
 
         if fftw:
             fft_inc, fft_lib = os.environ['FFT_INC_DIR'], os.environ['FFT_LIB_DIR']
             fppflags = r"\1\nFFTW_INCFLAGS = -I%s\nFFTW_LIBS = -L%s %s" % (fft_inc, fft_lib, fftw)
-            regex_subs.append((r'(FPPFLAGS\s*=.*)$', fppflags))
+            regex_newlines.append((r'(FPPFLAGS\s*=.*)$', fppflags))
 
         # Make a temp installdir during the build of the various parts
         mkdir(bindir)
@@ -154,8 +155,8 @@ class EB_Siesta(ConfigureMake):
                     (r"^(CC\s*=\s*).*$", r"\1%s" % os.environ['MPICC']),
                     (r"^(FC\s*=\s*).*$", r"\1%s" % os.environ['MPIF90']),
                     (r"^(FPPFLAGS\s*=.*)$", r"\1 -DMPI"),
-                    (r"^(FPPFLAGS\s*=.*)$", r"\1\nMPI_INTERFACE = libmpi_f90.a\nMPI_INCLUDE = ."),
                 ])
+                regex_newlines.append((r"^(FPPFLAGS\s*=.*)$", r"\1\nMPI_INTERFACE = libmpi_f90.a\nMPI_INCLUDE = ."))
                 complibs = scalapack
             else:
                 complibs = lapack
@@ -163,18 +164,22 @@ class EB_Siesta(ConfigureMake):
             regex_subs.extend([
                 (r"^(LIBS\s*=\s).*$", r"\1 %s" % complibs),
                 # Needed for a couple of the utils
-                (r"^(COMP_LIBS\s*=.*)$", r"\1\nWXML = libwxml.a"),
                 (r"^(FFLAGS\s*=\s*).*$", r"\1 -fPIC %s" % os.environ['FCFLAGS']),
             ])
+            regex_newlines.append((r"^(COMP_LIBS\s*=.*)$", r"\1\nWXML = libwxml.a"))
 
             if netcdff_loc:
                 regex_subs.extend([
-                    (r"^(COMP_LIBS\s*=.*)$", r"\1\nNETCDF_LIBS = -lnetcdff"),
                     (r"^(LIBS\s*=.*)$", r"\1 $(NETCDF_LIBS)"),
                     (r"^(FPPFLAGS\s*=.*)$", r"\1 -DCDF"),
                 ])
+                regex_newlines.append((r"^(COMP_LIBS\s*=.*)$", r"\1\nNETCDF_LIBS = -lnetcdff"))
 
         apply_regex_substitutions(arch_make, regex_subs)
+
+        # individually apply substitutions that add lines
+        for regex_nl in regex_newlines:
+            apply_regex_substitutions(arch_make, [regex_nl])
 
         run_cmd('make %s' % par, log_all=True, simple=True, log_output=True)
 
@@ -312,5 +317,9 @@ class EB_Siesta(ConfigureMake):
             'files': bins,
             'dirs': [],
         }
+        custom_commands = []
+        if self.toolchain.options.get('usempi', None):
+            # make sure Siesta was indeed built with support for running in parallel
+            custom_commands.append("echo 'SystemName test' | mpirun -np 2 siesta 2>/dev/null | grep PARALLEL")
 
-        super(EB_Siesta, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Siesta, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
