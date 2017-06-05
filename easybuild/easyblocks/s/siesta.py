@@ -317,5 +317,9 @@ class EB_Siesta(ConfigureMake):
             'files': bins,
             'dirs': [],
         }
+        custom_commands = []
+        if self.toolchain.options.get('usempi', None):
+            # make sure Siesta was indeed built with support for running in parallel
+            custom_commands.append("echo 'SystemName test' | mpirun -np 2 siesta 2>/dev/null | grep PARALLEL")
 
-        super(EB_Siesta, self).sanity_check_step(custom_paths=custom_paths)
+        super(EB_Siesta, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
