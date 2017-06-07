@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'StaMPS'
+version = '3.3b1'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://homepages.see.leeds.ac.uk/~earahoo/stamps/'
+description = """A software package to extract ground displacements from time series of synthetic aperture radar
+ (SAR) acquisitions."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = ['http://homepages.see.leeds.ac.uk/~earahoo/stamps/']
+sources = ['%(name)s_v%(version)s.tar.gz']
+
+dependencies = [
+    ('Perl', '5.24.1'),
+    ('ROI_PAC', '3.0.1', versionsuffix),
+    ('Doris', '4.02'),
+    ('Triangle', '1.6'),
+    ('snaphu', '1.4.2'),
+]
+
+skipsteps = ['configure']
+
+start_dir = 'src'
+
+buildopts = 'CC="$CXX" CFLAGS="$CXXFLAGS $LDFLAGS"'
+
+preinstallopts = 'cp -a ../bin %(installdir)s/bin && '
+installopts = 'INSTALL_DIR=%(installdir)s/bin && cd .. && cp -a {DORIS_SCR,matlab,ROI_PAC_SCR} %(installdir)s/'
+
+postinstallcmds = [
+    # fix shebang in Perl scripts
+    "sed -i 's@^#!.*/bin/perl.*@#!/usr/bin/env perl@g' %(installdir)s//*_SCR/*.pl",
+]
+
+sanity_check_paths = {
+    'files': ['bin/calamp', 'bin/cpxsum', 'bin/pscdem', 'bin/psclonlat', 'bin/pscphase', 'bin/selpsc_patch',
+              'bin/selsbc_patch', 'bin/selsbc_patch_new'],
+    'dirs': ['DORIS_SCR', 'matlab', 'ROI_PAC_SCR'],
+}
+
+modextravars = {
+    'DORIS_SCR': '%(installdir)s/DORIS_SCR',
+    'MY_SCR': '%(installdir)s/ROI_PAC_SCR',
+    'STAMPS': '%(installdir)s',
+}
+
+moduleclass = 'geo'
