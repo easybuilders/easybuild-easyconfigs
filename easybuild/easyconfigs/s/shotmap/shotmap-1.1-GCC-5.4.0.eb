@@ -1,0 +1,50 @@
+# @author: Masao Fujinaga
+
+easyblock = "CmdCp"
+
+name = 'shotmap'
+version = '1.1'
+
+homepage = 'https://github.com/sharpton/shotmap'
+description = """Shotmap is a software workflow that functionally annotates and compares shotgun metagenomes. Specifically, it will:
+
+1. Compared unassembled or assembled metagenomic sequences to a protein family database
+2. Calculate metagenome functional abundance and diversity
+3. Compare metagenomes using a variety of statistical and ecological tools
+4. Identify protein families that differentiate metagenomes using robust statistical tests
+Shotmap can be run on a multicore computer or can optionally interface with an SGE-configured computing cluste (i.e., a cloud). Shotmap can also optionally manage the information and data associated with this workflow in a relational database."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+dependencies = [
+    ('Boost', '1.60.0'),
+    ('Perl', '5.22.2', '-nix'),
+]
+
+sources = ['master.zip']
+source_urls = ['https://github.com/sharpton/shotmap/archive/']
+
+patches = ['shotmap-1.1-installer_alg_data.txt.patch']
+
+cmds_map = [('.*', " export SHOTMAP_LOCAL=%(builddir)s/shotmap-master;perl install.pl")]
+
+files_to_copy = ["pkg",
+                 "bin", "db", "data", "docs", "inc", "lib", "ext", "scripts",
+]
+
+sanity_check_paths = {
+    'files': ['scripts/shotmap.pl'],
+    'dirs': ['bin','lib', 'ext', 'scripts', 'pkg/MicrobeCensus-1.0.5'],
+}
+
+modextrapaths = {
+    'PATH': 'pkg//MicrobeCensus-1.0.5/scripts',
+    'PYTHONPATH': 'pkg//MicrobeCensus-1.0.5/',
+    'PERL5LIB': ['lib', 'ext/lib'],
+}
+
+modextravars = {
+    'SHOTMAP_LOCAL': '%(installdir)s',
+}
+
+moduleclass = 'bio'
