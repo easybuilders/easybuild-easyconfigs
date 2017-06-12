@@ -1,0 +1,52 @@
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Author: Daniel D. Kinnamon
+# Division of Human Genetics
+# The Ohio State University Wexner Medical Center
+
+easyblock = 'ConfigureMake'
+skipsteps = ['configure', 'install']
+
+name = 'git-annex'
+version = '6.20170519'
+
+homepage = 'https://git-annex.branchable.com'
+description = """git-annex allows managing files with git, without
+checking the file contents into git. While that may seem paradoxical,
+it is useful when dealing with files larger than git can currently
+easily handle, whether due to limitations in memory, time, or disk
+space."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+builddependencies = [
+    ('Stack', '1.4.0')
+]
+dependencies = [
+    ('git', '2.12.3')
+]
+
+# Makefile must be run sequentially because it calls 'stack setup' to
+# install GHC, which is required for subsequent targets
+parallel = 1
+# Build environment variables. The STACK_ROOT variable creates an
+# isolated Stack root in the build directory. 'GIT_MERGE_AUTOEDIT=no'
+# environment setting is necessary to prevent editors from popping up
+# during the unit tests.
+prebuildopts = 'export STACK_ROOT=%(builddir)s/.stack && export GIT_MERGE_AUTOEDIT=no && '
+# This is the only way to get a specified version of the git-annex source
+prebuildopts += 'git clone git://git-annex.branchable.com/ %(builddir)s && git checkout %(version)s && '
+# Specify Stack resolver version for reproducible build
+prebuildopts += "stack config set resolver lts-8.17 && "
+# Build, run tests, and install in the build step to ensure consistent
+# environment settings. NOTE: git-annex unit tests may have issues on NFS
+# mounts due to lock files. Use /dev/shm or a non-NFS filesystem.
+buildopts = "build test install BUILDER=stack GHC='stack ghc --' PREFIX=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/git-annex'],
+    'dirs': ['bin', 'share/man']
+}
+
+sanity_check_commands = ['git annex version', 'man git-annex']
+
+moduleclass = 'tools'
