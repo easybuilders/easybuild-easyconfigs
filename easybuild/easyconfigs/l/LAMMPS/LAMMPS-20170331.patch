@@ -1,0 +1,134 @@
+diff -Naur lammps-stable_31Mar2017_orig/lib/atc/Makefile.lammps.installed lammps-stable_31Mar2017_iomkl_mpi/lib/atc/Makefile.lammps.installed
+--- lammps-stable_31Mar2017_orig/lib/atc/Makefile.lammps.installed	2017-03-30 16:07:27.000000000 +0000
++++ lammps-stable_31Mar2017_iomkl_mpi/lib/atc/Makefile.lammps.installed	2017-04-29 21:13:34.885005212 +0000
+@@ -1,5 +1,5 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ 
+-user-atc_SYSINC =
+-user-atc_SYSLIB = -lblas -llapack
+-user-atc_SYSPATH =
++user-atc_SYSINC = -I${MKLROOT}/include                                 
++user-atc_SYSLIB = -L${MKLROOT}/lib/intel64 -lmkl_rt -ldl -lpthread -lm      
++user-atc_SYSPATH = -L${MKLROOT}/lib/intel64 
+diff -Naur lammps-stable_31Mar2017_orig/lib/awpmd/Makefile.lammps.installed lammps-stable_31Mar2017_iomkl_mpi/lib/awpmd/Makefile.lammps.installed
+--- lammps-stable_31Mar2017_orig/lib/awpmd/Makefile.lammps.installed	2017-03-30 16:07:27.000000000 +0000
++++ lammps-stable_31Mar2017_iomkl_mpi/lib/awpmd/Makefile.lammps.installed	2017-04-29 21:35:36.195388876 +0000
+@@ -1,5 +1,5 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ 
+-user-awpmd_SYSINC =
+-user-awpmd_SYSLIB = -lblas -llapack
+-user-awpmd_SYSPATH =
++user-awpmd_SYSINC =                   
++user-awpmd_SYSLIB = -lmkl_rt -ldl -lpthread -lm      
++user-awpmd_SYSPATH = 
+diff -Naur lammps-stable_31Mar2017_orig/lib/voronoi/voro++-0.4.6/config.mk lammps-stable_31Mar2017_iomkl_mpi/lib/voronoi/voro++-0.4.6/config.mk
+--- lammps-stable_31Mar2017_orig/lib/voronoi/voro++-0.4.6/config.mk	1970-01-01 00:00:00.000000000 +0000
++++ lammps-stable_31Mar2017_iomkl_mpi/lib/voronoi/voro++-0.4.6/config.mk	2017-04-29 21:52:36.345655485 +0000
+@@ -0,0 +1,30 @@
++# Voro++, a 3D cell-based Voronoi library
++#
++# Author : Chris H. Rycroft (LBL / UC Berkeley)
++# Email  : chr@alum.mit.edu
++# Date   : August 28th 2011
++
++# This a common configuration file that includes definitions used by all
++# the Makefiles.
++
++# C++ compiler
++CXX=icc
++
++# Flags for the C++ compiler
++CFLAGS=-Wall -ansi -pedantic -O3 -fPIC 
++
++# Relative include and library paths for compilation of the examples
++E_INC=-I../../src
++E_LIB=-L../../src
++
++# Installation directory
++PREFIX=/usr/local
++
++# Install command
++INSTALL=install
++
++# Flags for install command for executable
++IFLAGS_EXEC=-m 0755
++
++# Flags for install command for non-executable files
++IFLAGS=-m 0644
+diff -Naur lammps-stable_31Mar2017_orig/lib/voronoi/voro++-0.4.6/Makefile lammps-stable_31Mar2017_iomkl_mpi/lib/voronoi/voro++-0.4.6/Makefile
+--- lammps-stable_31Mar2017_orig/lib/voronoi/voro++-0.4.6/Makefile	1970-01-01 00:00:00.000000000 +0000
++++ lammps-stable_31Mar2017_iomkl_mpi/lib/voronoi/voro++-0.4.6/Makefile	2017-04-29 21:52:43.875583683 +0000
+@@ -0,0 +1,72 @@
++# Voro++ makefile
++#
++# Author : Chris H. Rycroft (LBL / UC Berkeley)
++# Email  : chr@alum.mit.edu
++# Date   : August 30th 2011
++
++# Tell make that these are phony targets
++.PHONY: all help clean install uninstall
++
++include config.mk
++
++# Build all of the executable files
++all:
++	$(MAKE) -C src
++	$(MAKE) -C examples
++
++# Build the help files (with Doxygen)
++help:
++	$(MAKE) -C src help
++
++# Clean up the executable files
++clean:
++	$(MAKE) -C src clean
++	$(MAKE) -C examples clean
++
++# Install the executable, man page, and shared library
++install:
++	$(MAKE) -C src
++	$(INSTALL) -d $(IFLAGS_EXEC) $(PREFIX)/bin
++	$(INSTALL) -d $(IFLAGS_EXEC) $(PREFIX)/lib
++	$(INSTALL) -d $(IFLAGS_EXEC) $(PREFIX)/man
++	$(INSTALL) -d $(IFLAGS_EXEC) $(PREFIX)/man/man1
++	$(INSTALL) -d $(IFLAGS_EXEC) $(PREFIX)/include
++	$(INSTALL) -d $(IFLAGS_EXEC) $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS_EXEC) src/voro++ $(PREFIX)/bin
++	$(INSTALL) $(IFLAGS) man/voro++.1 $(PREFIX)/man/man1
++	$(INSTALL) $(IFLAGS) src/libvoro++.a $(PREFIX)/lib
++	$(INSTALL) $(IFLAGS) src/voro++.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/c_loops.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/cell.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/common.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/config.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/container.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/container_prd.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/rad_option.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/pre_container.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/unitcell.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/v_base.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/v_compute.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/wall.hh $(PREFIX)/include/voro++
++	$(INSTALL) $(IFLAGS) src/worklist.hh $(PREFIX)/include/voro++
++
++# Uninstall the executable, man page, and shared library
++uninstall:
++	rm -f $(PREFIX)/bin/voro++
++	rm -f $(PREFIX)/man/man1/voro++.1
++	rm -f $(PREFIX)/lib/libvoro++.a
++	rm -f $(PREFIX)/include/voro++/voro++.hh
++	rm -f $(PREFIX)/include/voro++/c_loops.hh
++	rm -f $(PREFIX)/include/voro++/cell.hh
++	rm -f $(PREFIX)/include/voro++/common.hh
++	rm -f $(PREFIX)/include/voro++/config.hh
++	rm -f $(PREFIX)/include/voro++/container.hh
++	rm -f $(PREFIX)/include/voro++/container_prd.hh
++	rm -f $(PREFIX)/include/voro++/pre_container.hh
++	rm -f $(PREFIX)/include/voro++/rad_option.hh
++	rm -f $(PREFIX)/include/voro++/unitcell.hh
++	rm -f $(PREFIX)/include/voro++/v_base.hh
++	rm -f $(PREFIX)/include/voro++/v_compute.hh
++	rm -f $(PREFIX)/include/voro++/wall.hh
++	rm -f $(PREFIX)/include/voro++/worklist.hh
++	rmdir $(PREFIX)/include/voro++

@@ -1,0 +1,102 @@
+# Contributor: 
+# Ali Kerrache, April 2017.
+
+# Lammps: Stable Version - 31Mar2017 
+
+# List of packages: Total = 60; Installed = 50, Not Installed = 10 
+
+# ASPHERE BODY CLASS2 COLLOID COMPRESS CORESHELL DIPOLE GPU GRANULAR KIM KOKKOS KSPACE 
+# MANYBODY MC MEAM MISC MOLECULE MPIIO MSCG OPT PERI POEMS PYTHON QEQ REAX REPLICA RIGID 
+# SHOCK SNAP SRD VORONOI USER-ATC USER-AWPMD USER-CG-CMM USER-CGDNA USER-COLVARS 
+# USER-DIFFRACTION USER-DPD USER-DRUDE USER-EFF USER-FEP USER-H5MD USER-INTEL USER-LB 
+# USER-MANIFOLD USER-MGPT USER-MISC USER-MOLFILE USER-NC-DUMP USER-OMP USER-PHONON 
+# USER-QMMM USER-QTB USER-QUIP USER-REAXC USER-SMD USER-SMTBQ USER-SPH USER-TALLY USER-VTK
+
+# Packages not included in this version:
+# GPU, KIM, KOKKOS, MSCG, OPT, USER-INTEL, USER-MISC, USER-OMP, USER-QUIP, USER-VTK
+
+easyblock = 'MakeCp'
+
+name = 'LAMMPS'
+version = "20170331"
+
+homepage = 'http://lammps.sandia.gov/'
+
+description = """ LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator) is 
+a classical molecular dynamics simulation. LAMMPS has potentials for solid-state materials 
+(metals, semiconductors) and soft matter (biomolecules, polymers) and coarse-grained or 
+mesoscopic systems. It can be used to model atoms or, more generically, as a parallel 
+particle simulator at the atomic, meso, or continuum scale. It can be coupled to various 
+programs. The following packages are not included within this version: 
+GPU, KIM, KOKKOS, MSCG, OPT, USER-INTEL, USER-MISC, USER-OMP, USER-QUIP, USER-VTK"""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4'}
+
+source_urls = [ 'https://github.com/lammps/lammps/archive/' ]
+
+sources = [ 'stable_31Mar2017.tar.gz' ]
+
+dependencies = [
+	('HDF5','1.8.18'), 
+	('Eigen', '3.3.2'), 
+	('Voro++', '0.4.6'),
+]
+
+patches = [ 'LAMMPS-20170331.patch' ]
+
+prebuildopts = ''
+prebuildopts += ' cd %(builddir)s/lammps-stable_31Mar2017/src && '
+prebuildopts += ' make yes-ASPHERE && make yes-BODY && make yes-CLASS2 && make yes-COLLOID && '
+prebuildopts += ' make yes-COMPRESS && make yes-CORESHELL && make yes-DIPOLE && '
+prebuildopts += ' make yes-SHOCK && make yes-SNAP && make yes-SRD && make yes-USER-CGDNA && '
+prebuildopts += ' make yes-USER-DIFFRACTION && make yes-USER-DPD && make yes-USER-DRUDE && '
+prebuildopts += ' make yes-GRANULAR && make yes-KSPACE && make yes-MANYBODY && make yes-MC && '
+prebuildopts += ' make yes-MOLECULE && make yes-MISC && make yes-PERI && make yes-QEQ && '
+prebuildopts += ' make yes-REPLICA && make yes-RIGID && make yes-USER-EFF && make yes-USER-H5MD && ' 
+prebuildopts += ' make yes-USER-FEP && make yes-USER-LB && make yes-USER-MANIFOLD && '
+prebuildopts += ' make yes-USER-MGPT && make yes-USER-MOLFILE && make yes-USER-NC-DUMP && '
+prebuildopts += ' make yes-USER-PHONON && make yes-USER-QTB && make yes-USER-SMTBQ && '
+prebuildopts += ' make yes-USER-CG-CMM && make yes-USER-TALLY && make yes-USER-QMMM && '
+prebuildopts += ' make yes-USER-SPH && make yes-PYTHON && make yes-POEMS && make yes-MPIIO && '
+prebuildopts += ' make yes-REAX && make yes-USER-REAXC && make yes-USER-QMMM && '
+prebuildopts += ' make yes-USER-ATC && make yes-MEAM && make yes-USER-AWPMD && '
+prebuildopts += ' make yes-USER-COLVARS && make yes-VORONOI && make yes-USER-SMD && '
+
+prebuildopts += ' pushd ../lib/qmmm    && make -f Makefile.ifort     &&  popd  && '
+prebuildopts += ' pushd ../lib/poems   && make -f Makefile.icc       &&  popd  && '
+prebuildopts += ' pushd ../lib/reax    && make -f Makefile.gfortran  &&  popd  && '
+prebuildopts += ' pushd ../lib/atc     && make -f Makefile.mpic++    &&  popd  && '
+prebuildopts += ' pushd ../lib/meam    && make -f Makefile.gfortran  &&  popd  && '
+prebuildopts += ' pushd ../lib/awpmd   && make -f Makefile.mpicc     &&  popd  && '
+prebuildopts += ' pushd ../lib/colvars && make -f Makefile.g++       &&  popd  && '
+prebuildopts += ' pushd ../lib/h5md && make && popd && '
+
+prebuildopts += ' make no-OPT && make no-USER-MISC && make no-MSCG && make no-USER-OMP && '
+prebuildopts += ' make no-GPU && make no-KIM && make no-KOKKOS && '
+prebuildopts += ' make no-USER-VTK && make no-USER-QUIP && make no-USER-INTEL && '
+
+prebuildopts += ' echo "Supported Packages:          "  > list-packages.txt && '
+prebuildopts += ' make package-status | grep -a "YES:" >> list-packages.txt && '
+prebuildopts += ' echo "Not Supported Packages:      " >> list-packages.txt && '
+prebuildopts += ' make package-status | grep -a "NO:"  >> list-packages.txt && '
+prebuildopts += ' make package-update && '
+
+buildopts = [ ' mpi && make mode=shlib mpi && make mode=lib mpi ' ] 
+
+files_to_copy = [(['src/lmp_mpi'], "bin"),
+                 (['src/liblammps*'], "lib"),
+                 (['src/list-packages.txt'], ""),
+                 (['examples'], ""),
+                 (['potentials'], ""),
+                 (['README'],""),
+                 (['LICENSE'],""),
+]
+
+sanity_check_paths = {
+    'files': ['bin/lmp_mpi'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
+
+# End of EasyBuild file.
