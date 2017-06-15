@@ -1,0 +1,69 @@
+##
+## This is a contribution from Phoenix HPC Service, The University of Adelaide, Australia
+## Homepage: https://www.adelaide.edu.au/phoenix/
+##
+## Copyright::  Copyright 2014-2017 adelaide.edu.au/phoenix
+## Authors::    Robert Qiao <robert.qiao@adelaide.edu.au>, Exequiel Sepulveda <exequiel.sepulveda@gmail.com>
+## License::    Copyright © 2009 - 2015 Broad Institute, Inc. and Harvard Medical School. All rights reserved.
+##
+## Notes::
+###
+
+easyblock = 'Tarball'
+
+name = 'GenomeSTRiP'
+version = '2.00.1747'
+
+homepage = 'http://software.broadinstitute.org/software/genomestrip/'
+description = """Genome STRiP (Genome STRucture In Populations) is a suite of tools 
+for discovering and genotyping structural variations using sequencing data. 
+The methods are designed to detect shared variation using data from multiple individuals.
+"""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'usempi': True}
+
+sources = ['svtoolkit_2.00.1747.tar']
+
+dependencies = [
+    ('SAMtools', '1.3.1'),
+    ('BWA', '0.7.15'),
+    ('Java', '1.8.0_121', '', True),
+    ('R', '3.4.0'),
+]
+
+files_to_copy = [ 
+    'lib', 'bwa', 'conf', 'qscript', 'R', 'scripts', 'wdl', 'cookbook', 'installtest', 'misc', 'LICENSE.txt',
+]
+
+sanity_check_paths = {
+    'files': ["lib/SVToolkit.jar"],
+    'dirs': ["lib/gatk", "lib/depend"],
+}
+
+modextravars = {
+    'SV_DIR': '$EBROOTGENOMESTRIP',
+}
+
+modloadmsg = { 
+     """
+     Genome STRiP uses the Queue workflow engine (developed by the Broad Institute GSA group) to implement executable analysis pipelines. \
+     A workflow will look similar to following: \ 
+     classpath="${SV_DIR}/lib/SVToolkit.jar:${SV_DIR}/lib/gatk/GenomeAnalysisTK.jar:${SV_DIR}/lib/gatk/Queue.jar" \
+     java -Xmx4g -cp ${classpath} \
+      org.broadinstitute.gatk.queue.QCommandLine \
+      -S ${SV_DIR}/qscript/SVQScript.q \
+      -S pipeline_script_to_run.q \
+      -cp ${classpath} \
+      -gatk ${SV_DIR}/lib/gatk/GenomeAnalysisTK.jar \
+      -jobProject project_name \
+      -jobQueue queue_name \
+      -jobLogDir log_directory \
+      -jobRunner workflow_manager \
+      -gatkJobRunner workflow_manager \
+      -jobNative workflow_manager_options \
+      -run
+      """
+}
+
+moduleclass = 'bio'
