@@ -217,12 +217,13 @@ EULA=accept
         if self.cfg['set_mpi_wrapper_aliases_gcc'] or self.cfg['set_mpi_wrappers_all']:
             # force mpigcc/mpigxx to use GCC compilers, as would be expected based on their name
             txt += self.module_generator.set_alias('mpigcc', 'mpigcc -cc=gcc')
-            txt += self.module_generator.set_alias('mpigxx', 'mpigxx -cc=g++')
+            txt += self.module_generator.set_alias('mpigxx', 'mpigxx -cxx=g++')
 
         if self.cfg['set_mpi_wrapper_aliases_intel'] or self.cfg['set_mpi_wrappers_all']:
             # do the same for mpiicc/mpiipc/mpiifort to be consistent, even if they may not exist
             txt += self.module_generator.set_alias('mpiicc', 'mpiicc -cc=icc')
-            txt += self.module_generator.set_alias('mpiicpc', 'mpiicpc -cc=icpc')
-            txt += self.module_generator.set_alias('mpiifort', 'mpiifort -cc=ifort')
+            txt += self.module_generator.set_alias('mpiicpc', 'mpiicpc -cxx=icpc')
+            # -fc also works, but -f90 takes precedence
+            txt += self.module_generator.set_alias('mpiifort', 'mpiifort -f90=ifort')
 
         return txt
