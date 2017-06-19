@@ -26,7 +26,13 @@ prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
 prebuildopts += 'sed -i "s|\$(MKLROOT)/interfaces/fftw3xf|\$(FFTW_LIB_DIR)|" makefile.include && '
 
 # remove mkl flag to prevent mixing dynamic libs with the static libs in LIBBLACS/SCALAPACK
-prebuildopts += 'sed -i "s|-mkl=sequential||" makefile.include && '
+prebuildopts += 'sed -i "s|-mkl=sequential|-mkl=paralel|" makefile.include && '
+
+# OFLAG      = -O2 -xAVX
+prebuildopts += 'sed -i "s|OFLAG      = -O2|OFLAG      = -O3 -xAVX|" makefile.include && '
+
+# objects add MKLROOT
+prebuildopts += 'sed -i "s|OBJECTS    = fftmpiw.o fftmpi_map.o fft3dlib.o fftw3d.o|OBJECTS    = fftmpiw.o fftmpi_map.o fft3dlib.o fftw3d.o \$\(MKLROOT\)/lib/intel64_lin/libfftw3xf_intel.a|" makefile.include && '
 
 # VASP uses LIBS as a list of folders
 prebuildopts += 'unset LIBS && '
