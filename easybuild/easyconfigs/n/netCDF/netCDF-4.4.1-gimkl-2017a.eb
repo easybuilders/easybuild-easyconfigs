@@ -1,0 +1,38 @@
+name = 'netCDF'
+version = '4.4.1'
+
+homepage = 'http://www.unidata.ucar.edu/software/netcdf/'
+description = """NetCDF (network Common Data Form) is a set of software libraries 
+ and machine-independent data formats that support the creation, access, and sharing of array-oriented 
+ scientific data."""
+
+toolchain = {'name': 'gimkl', 'version': '2017a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = [
+    'https://github.com/Unidata/netcdf-c/archive/'
+]
+
+dependencies = [
+    ('HDF5', '1.8.18'),
+    ('cURL', '7.52.1'),
+    ('Szip', '2.1'),
+]
+
+builddependencies = [
+    ('CMake', '3.6.1', '', True),
+    ('Doxygen', '1.8.13'),
+]
+
+# patch for installing netcdf_par.h
+patches = ['netCDF-4.4.1_cmake_parallel.patch']
+
+# make sure both static and shared libs are built 
+supplementary_config_opts = "-DHDF5_LIBRARY_DIR=$EBROOTHDF5/lib -DSZIP_LIBRARY_DIR=$EBROOTSZIP/lib -DZLIB_LIBRARY_DIR=$EBROOTZLIB/lib -DCURL_LIBRARY_DIR=$EBROOTCURL/lib -DHDF5_INCLUDE_DIR=$EBROOTHDF5/include -DSZIP_INCLUDE_DIR=$EBROOTSZIP/include -DZLIB_INCLUDE_DIRS=$EBROOTZLIB/include -DCURL_INCLUDE_DIRS=$EBROOTCURL/include"
+configopts = [ 
+    "-DBUILD_SHARED_LIBS=OFF %s " % supplementary_config_opts,
+    "-DBUILD_SHARED_LIBS=ON %s " % supplementary_config_opts,
+]
+
+moduleclass = 'data'
