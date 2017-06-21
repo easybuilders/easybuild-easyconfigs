@@ -47,7 +47,11 @@ class EB_ANSYS(PackedBinary):
     def install_step(self):
         """Custom install procedure for ANSYS."""
         licserv = self.cfg['license_server']
+        if licserv is None:
+            licserv = os.getenv('EB_ANSYS_LICENSE_SERVER', 'license.example.com')
         licport = self.cfg['license_server_port']
+        if licport is None:
+            licport = os.getenv('EB_ANSYS_LICENSE_SERVER_PORT', '2325:1055')
 
         cmd = "./INSTALL -silent -install_dir %s -licserverinfo %s:%s" % (self.installdir, licport, licserv)
         run_cmd(cmd, log_all=True, simple=True)
