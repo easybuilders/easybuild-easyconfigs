@@ -66,9 +66,18 @@ class EB_MATLAB(PackedBinary):
     def configure_step(self):
         """Configure MATLAB installation: create license file."""
 
-        # create license file
         licserv = self.cfg['license_server']
+        if licserv is None:
+            licserv = os.getenv('EB_MATLAB_LICENSE_SERVER', 'license.example.com')
         licport = self.cfg['license_server_port']
+        if licport is None:
+            licport = os.getenv('EB_MATLAB_LICENSE_SERVER_PORT', '00000')
+
+        key = self.cfg['key']
+        if key is None:
+            key = os.getenv('EB_MATLAB_KEY', '00000-00000-00000-00000-00000-00000-00000-00000-00000-00000')
+
+        # create license file
         lictxt = '\n'.join([
             "SERVER %s 000000000000 %s" % (licserv, licport),
             "USE_SERVER",
