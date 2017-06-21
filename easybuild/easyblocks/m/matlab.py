@@ -97,7 +97,6 @@ class EB_MATLAB(PackedBinary):
             reglicpath = re.compile(r"^# licensePath=.*", re.M)
 
             config = regdest.sub("destinationFolder=%s" % self.installdir, config)
-            key = self.cfg['key']
             config = regkey.sub("fileInstallationKey=%s" % key, config)
             config = regagree.sub("agreeToLicense=Yes", config)
             config = regmode.sub("mode=silent", config)
