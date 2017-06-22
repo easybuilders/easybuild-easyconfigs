@@ -25,11 +25,35 @@ dependencies = [
 
 preconfigopts = 'autoreconf --install --force --symlink && '
 
-executables = ['eqtlbma']
+#
+# Disable rebuilding of docs to prevent dependency hell on texinfo.
+#
+prebuildopts = "perl -pi -e 's|SUBDIRS = src/eqtlbma src doc tests scripts|SUBDIRS = src/eqtlbma src tests scripts|' Makefile && "
+#
+# Copy the PDF version of the manual to the install dir.
+#
+postinstallcmds = ['mkdir %(installdir)s/doc/ && cp doc/manual_eqtlbma.pdf %(installdir)s/doc/']
+
+executables = [
+    'eqtlbma_avg_bfs',
+    'eqtlbma_bf',
+    'eqtlbma_bf_parallel.bash',
+    'eqtlbma_hm',
+    'tutorial_eqtlbma.R',
+]
+
+libraries = [
+    'libeqtlbma.a',
+    'libeqtlbma.la',
+    'libeqtlbma.so',
+]
 
 sanity_check_paths = {
-    'files': ['bin/%s' % x for x in executables],
-    'dirs': [],
+    'files':
+        ['bin/%s' % x for x in executables] +
+        ['lib/%s' % y for y in libraries] +
+        ['doc/manual_eqtlbma.pdf'],
+    'dirs': ['bin', 'lib', 'doc'],
 }
 
 moduleclass = 'bio'
