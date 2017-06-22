@@ -4,11 +4,11 @@ env:
   matrix:
     - ENV_MOD_VERSION=3.2.10 EASYBUILD_MODULES_TOOL=EnvironmentModulesC EASYBUILD_MODULE_SYNTAX=Tcl
     - LMOD_VERSION=5.8
-    - LMOD_VERSION=5.8 EASYBUILD_MODULE_SYNTAX=Lua
+    - LMOD_VERSION=5.8 EASYBUILD_MODULE_SYNTAX=Tcl
     - LMOD_VERSION=6.6.3
-    - LMOD_VERSION=6.6.3 EASYBUILD_MODULE_SYNTAX=Lua
+    - LMOD_VERSION=6.6.3 EASYBUILD_MODULE_SYNTAX=Tcl
     - LMOD_VERSION=7.0
-    - LMOD_VERSION=7.0 EASYBUILD_MODULE_SYNTAX=Lua
+    - LMOD_VERSION=7.0 EASYBUILD_MODULE_SYNTAX=Tcl
 matrix:
   # mark build as finished as soon as job has failed
   fast_finish: true
@@ -39,6 +39,13 @@ install:
     - if [ ! -z $ENV_MOD_VERSION ]; then source $(which install_eb_dep.sh) modules-${ENV_MOD_VERSION} $HOME; fi
     - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) lua-5.1.4.8 $HOME; fi
     - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) Lmod-${LMOD_VERSION} $HOME; fi
+before_script:
+    - cd $TRAVIS_BUILD_DIR
+    # pull in develop so we can diff against it
+    - git fetch -v origin ${TRAVIS_BRANCH}:${TRAVIS_BRANCH}
+    # get list of filenames for modified/added files, use '...' to compare with merge base of develop and branch
+    - git diff --name-only --diff-filter=AM ${TRAVIS_BRANCH}...HEAD
 script:
+    - cd $HOME
     - export PYTHONPATH=$TRAVIS_BUILD_DIR
     - python -O -m test.easyconfigs.suite
