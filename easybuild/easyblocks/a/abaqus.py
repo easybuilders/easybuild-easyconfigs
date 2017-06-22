@@ -31,13 +31,14 @@ EasyBuild support for ABAQUS, implemented as an easyblock
 @author: Pieter De Baets (Ghent University)
 @author: Jens Timmerman (Ghent University)
 """
+from distutils.version import LooseVersion
 import os
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
-from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.run import run_cmd
-from distutils.version import LooseVersion
+from easybuild.tools.environment import setvar
+from easybuild.tools.filetools import change_dir, write_file
+from easybuild.tools.run import run_cmd_qa
 
 
 class EB_ABAQUS(Binary):
@@ -54,7 +55,12 @@ class EB_ABAQUS(Binary):
 
     def configure_step(self):
         """Configure ABAQUS installation."""
-        try:
+        if LooseVersion(self.version) >= LooseVersion('2016'):
+            # skip checking of Linux version
+            setvar('DSY_Force_OS', 'linux_a64')
+            # skip checking of license server
+            setvar('NOLICENSECHECK', 'true')
+        else:
             self.replayfile = os.path.join(self.builddir, "installer.properties")
             txt = '\n'.join([
                 "INSTALLER_UI=SILENT",
@@ -69,31 +75,63 @@ class EB_ABAQUS(Binary):
                 "TMPDIR=%s" % self.builddir,
                 "INSTALL_MPI=1",
             ])
-            f = file(self.replayfile, "w")
-            f.write(txt)
-            f.close()
-        except IOError, err:
-            raise EasyBuildError("Failed to create install properties file used for replaying installation: %s", err)
+            write_file(self.replayfile, txt)
 
     def install_step(self):
         """Install ABAQUS using 'setup'."""
-        os.chdir(self.builddir)
-        if self.cfg['install_cmd'] is None:
-            self.cfg['install_cmd'] = "%s/%s-%s/setup" % (self.builddir, self.name, self.version.split('-')[0])
-            self.cfg['install_cmd'] += " -replay %s" % self.replayfile
-            if LooseVersion(self.version) < LooseVersion("6.13"):
-                self.cfg['install_cmd'] += " -nosystemcheck"
-        super(EB_ABAQUS, self).install_step()
+        if LooseVersion(self.version) >= LooseVersion('2016'):
+            change_dir(os.path.join(self.cfg['start_dir'], '1'))
+            qa = {
+                "Enter selection (default: Install):": '',
+            }
+            no_qa = [
+                '___',
+            ]
+            std_qa = {
+                # disable installation of Tosca (6) and Isight (7)
+                "Isight\nEnter selection \(default: Next\):": '6\n7\n\n',
+                "(?<!Isight)\nEnter selection \(default: Next\):": '',
+                r"SIMULIA[0-9]*doc.*:": os.path.join(self.installdir, 'doc'),
+                r"SimulationServices.*:": os.path.join(self.installdir, 'sim'),
+                r"Choose the CODE installation directory.*:\n.*\n\n.*:": os.path.join(self.installdir, 'sim'),
+                r"SIMULIA/CAE.*:": os.path.join(self.installdir, 'cae'),
+                r"location of your Abaqus services \(solvers\).*(\n.*){8}:\s*": os.path.join(self.installdir, 'sim'),
+                r"Default.*SIMULIA/Commands\]:\s*": os.path.join(self.installdir, 'Commands'),
+                r"Default.*SIMULIA/CAE/plugins.*:\s*": os.path.join(self.installdir, 'plugins'),
+                r"License Server 1\s*(\n.*){3}:": 'abaqusfea',  # bypass value for license server
+                r"License Server . \(redundant\)\s*(\n.*){3}:": '',
+                r"Please choose an action:": '1',
+                r"SIMULIA/Tosca.*:": os.path.join(self.installdir, 'tosca'),
+                r"location of your existing ANSA installation.*(\n.*){8}:": '',
+                r"FLUENT Path.*(\n.*){7}:": '', 
+            }
+            run_cmd_qa('./StartTUI.sh', qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True, maxhits=100)
+        else:
+            change_dir(self.builddir)
+            if self.cfg['install_cmd'] is None:
+                self.cfg['install_cmd'] = "%s/%s-%s/setup" % (self.builddir, self.name, self.version.split('-')[0])
+                self.cfg['install_cmd'] += " -replay %s" % self.replayfile
+                if LooseVersion(self.version) < LooseVersion("6.13"):
+                    self.cfg['install_cmd'] += " -nosystemcheck"
+            super(EB_ABAQUS, self).install_step()
 
     def sanity_check_step(self):
         """Custom sanity check for ABAQUS."""
-            
-        verparts = self.version.split('-')[0].split('.')
         custom_paths = {
-            'files': [os.path.join("Commands", "abaqus")],
-            'dirs': ["%s-%s" % ('.'.join(verparts[0:2]), verparts[2])]
+            'files': [os.path.join('Commands', 'abaqus')],
+            'dirs': [],
         }
-        custom_commands = [('abaqus', 'information=all')]
+        custom_commands = []
+
+        if LooseVersion(self.version) >= LooseVersion('2016'):
+            custom_paths['dirs'].extend(['cae', 'Commands', 'doc', 'sim'])
+            # 'all' also check license server, but lmstat is usually not available
+            custom_commands.append("abaqus information=system")
+        else:
+            verparts = self.version.split('-')[0].split('.')
+            custom_paths['dirs'].append('%s-%s' % ('.'.join(verparts[0:2]), verparts[2]))
+            custom_commands.append("abaqus information=all")
+
         super(EB_ABAQUS, self).sanity_check_step(custom_paths=custom_paths, custom_commands=custom_commands)
 
     def make_module_req_guess(self):
