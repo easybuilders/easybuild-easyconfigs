@@ -117,7 +117,7 @@ class EB_MATLAB(PackedBinary):
         # make sure install script is executable
         adjust_permissions(src, stat.S_IXUSR)
 
-        if LooseVersion(self.version) >= LooseVersion('2017a'):
+        if LooseVersion(self.version) >= LooseVersion('2016b'):
             jdir = os.path.join(self.cfg['start_dir'], 'sys', 'java', 'jre', 'glnxa64', 'jre', 'bin')
             for perm_dir in [os.path.join(self.cfg['start_dir'], 'bin', 'glnxa64'), jdir]:
                 adjust_permissions(perm_dir, stat.S_IXUSR)
@@ -129,7 +129,7 @@ class EB_MATLAB(PackedBinary):
 
         if not '_JAVA_OPTIONS' in self.cfg['preinstallopts']:
             self.cfg['preinstallopts'] = ('export _JAVA_OPTIONS="%s" && ' % self.cfg['java_options']) + self.cfg['preinstallopts']
-        if LooseVersion(self.version) >= LooseVersion('2017a'):
+        if LooseVersion(self.version) >= LooseVersion('2016b'):
             change_dir(self.builddir)
 
         cmd = "%s %s -v -inputFile %s %s" % (self.cfg['preinstallopts'], src, self.configfile, self.cfg['installopts'])
