@@ -1,0 +1,105 @@
+
+#
+# This EasyBuild config file for R was generated with generateEasyConfig.R
+#
+
+name = 'R'
+version = '3.3.1'
+versionsuffix = '-bare'
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+moduleclass = 'lang'
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+
+#
+# Configure options.
+#
+# NOTE: LAPACK support is built into BLAS, which will be detected correctly when LAPACK_LIBS is *not* specified.
+#       The summary at the end of the configure output should contain:
+#           External libraries: ...., BLAS(OpenBLAS), LAPACK(in blas), ....
+#
+#preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+preconfigopts = 'BLAS_LIBS="$LIBBLAS"'
+configopts = '--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib'
+configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
+
+#
+# Enable graphics capabilities for plotting.
+#
+configopts += ' --with-cairo --with-libpng --with-jpeglib --with-libtiff'
+#
+# Some recommended packages may fail in a parallel build (e.g. Matrix) and we're installing them anyway below.
+#
+configopts += ' --with-recommended-packages=no'
+
+dependencies = [
+    ('libreadline', '6.3'),
+    ('ncurses', '5.9'),
+    ('bzip2', '1.0.6'),
+    ('XZ', '5.2.2'),
+    ('libpng', '1.6.21'),            # For plotting in R
+    ('libjpeg-turbo', '1.4.2'),      # For plotting in R
+    ('LibTIFF', '4.0.4'),            # For plotting in R
+    ('Tcl', '8.6.4'),                # For Tcl/Tk
+    ('Tk', '8.6.4', '-no-X11'),      # For Tcl/Tk
+    ('cURL', '7.47.1'),              # For RCurl
+    ('libxml2', '2.9.2'),            # For XML
+    ('cairo', '1.14.6'),             # For plotting in R
+    ('Java', '1.8.0_45', '', True),  # Java bindings are built if Java is found, might as well provide it.
+    ('PCRE', '8.38'),                # For rphast package.
+]
+
+package_name_tmpl = '%(name)s_%(version)s.tar.gz'
+
+cran_options = {
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/',
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+    ],
+    'source_tmpl': package_name_tmpl,
+}
+
+bioconductor_options = {
+    'source_urls': [
+        'http://www.bioconductor.org/packages/release/bioc/src/contrib/',
+        'http://www.bioconductor.org/packages/release/data/annotation/src/contrib/',
+        'http://www.bioconductor.org/packages/release/data/experiment/src/contrib/',
+        'http://bioconductor.org/packages/3.3/bioc/src/contrib/',
+        'http://bioconductor.org/packages/3.3/data/annotation/src/contrib/',
+        'http://bioconductor.org/packages/3.3/data/experiment/src/contrib/',
+        'http://bioconductor.org/packages/3.3/extra/src/contrib/',
+    ],
+    'source_tmpl': package_name_tmpl,
+}
+
+
+#
+# R package list.
+#   * Order of packages is important!
+#   * Packages should be specified with fixed versions!
+#
+exts_list = [
+        # 
+        # Default libraries; only here to sanity check their presence.
+        #
+        'base',
+        'compiler',
+        'datasets',
+        'graphics',
+        'grDevices',
+        'grid',
+        'methods',
+        'parallel',
+        'splines',
+        'stats',
+        'stats4',
+        'tcltk',
+        'tools',
+        'utils',
+        #
+        # Other packages.
+        #
+]
