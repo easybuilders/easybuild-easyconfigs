@@ -32,7 +32,8 @@ from vsc.utils.missing import nub
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.config import build_option
-from easybuild.tools.systemtools import AARCH32, AARCH64, POWER, X86_64, get_cpu_architecture, get_cpu_features
+from easybuild.tools.systemtools import AARCH32, AARCH64, POWER, X86_64
+from easybuild.tools.systemtools import get_cpu_architecture, get_cpu_features, get_shared_lib_ext
 from easybuild.tools.toolchain.compiler import OPTARCH_GENERIC
 
 
@@ -60,6 +61,7 @@ class EB_FFTW(ConfigureMake):
             'use_fma': [None, "Configure with --enable-avx-128-fma (DEPRECATED, use 'use_fma4' instead)", CUSTOM],
             'with_mpi': [True, "Enable building of FFTW MPI library", CUSTOM],
             'with_openmp': [True, "Enable building of FFTW OpenMP library", CUSTOM],
+            'with_shared': [True, "Enable building of shared FFTW libraries", CUSTOM],
             'with_threads': [True, "Enable building of FFTW threads library", CUSTOM],
         }
 
@@ -157,7 +159,7 @@ class EB_FFTW(ConfigureMake):
                 if self.toolchain.options['pic']:
                     prec_configopts.append('--with-pic')
 
-                for libtype in ['openmp', 'threads']:
+                for libtype in ['openmp', 'shared', 'threads']:
                     if self.cfg['with_%s' % libtype]:
                         prec_configopts.append('--enable-%s' % libtype)
 
@@ -194,6 +196,8 @@ class EB_FFTW(ConfigureMake):
             'dirs': ['lib/pkgconfig'],
         }
 
+        shlib_ext = get_shared_lib_ext()
+
         extra_files = []
         for (prec, letter) in [('double', ''), ('long_double', 'l'), ('quad', 'q'), ('single', 'f')]:
             if self.cfg['with_%s_prec' % prec]:
@@ -220,6 +224,8 @@ class EB_FFTW(ConfigureMake):
                     # MPI is not compatible with quad precision
                     if variant == '' or self.cfg['with_%s' % variant] and not (prec == 'quad' and variant == 'mpi'):
                         extra_files.append('lib/libfftw3%s%s.a' % (letter, suff))
+                        if self.cfg['with_shared']:
+                            extra_files.append('lib/libfftw3%s%s.%s' % (letter, suff, shlib_ext))
 
         # some additional files to check for when MPI is enabled
         if self.cfg['with_mpi']:

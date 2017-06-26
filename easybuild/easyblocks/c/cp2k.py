@@ -49,6 +49,7 @@ import easybuild.tools.toolchain as toolchain
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.environment import setvar
 from easybuild.tools.filetools import write_file
 from easybuild.tools.config import build_option
 from easybuild.tools.modules import get_software_root, get_software_version
@@ -92,19 +93,20 @@ class EB_CP2K(EasyBlock):
     @staticmethod
     def extra_options():
         extra_vars = {
-            'type': ['popt', "Type of build ('popt' or 'psmp')", CUSTOM],
-            'typeopt': [True, "Enable optimization", CUSTOM],
-            'modincprefix': ['', "IMKL prefix for modinc include dir", CUSTOM],
-            'modinc': [[], ("List of modinc's to use (*.f90], or 'True' to use "
-                            "all found at given prefix"), CUSTOM],
             'extracflags': ['', "Extra CFLAGS to be added", CUSTOM],
             'extradflags': ['', "Extra DFLAGS to be added", CUSTOM],
             'ignore_regtest_fails': [False, ("Ignore failures in regression test "
                                              "(should be used with care)"), CUSTOM],
             'maxtasks': [4, ("Maximum number of CP2K instances run at "
                              "the same time during testing"), CUSTOM],
+            'modinc': [[], ("List of modinc's to use (*.f90], or 'True' to use "
+                            "all found at given prefix"), CUSTOM],
+            'modincprefix': ['', "IMKL prefix for modinc include dir", CUSTOM],
             'runtest': [True, "Build and run CP2K tests", CUSTOM],
+            'omp_num_threads': [None, "Value to set $OMP_NUM_THREADS to during testing", CUSTOM],
             'plumed': [None, "Enable PLUMED support", CUSTOM],
+            'type': ['popt', "Type of build ('popt' or 'psmp')", CUSTOM],
+            'typeopt': [True, "Enable optimization", CUSTOM],
         }
         return EasyBlock.extra_options(extra_vars)
 
@@ -647,6 +649,9 @@ class EB_CP2K(EasyBlock):
             if not build_option('mpi_tests'):
                 self.log.info("Skipping testing of CP2K since MPI testing is disabled")
                 return
+
+            if self.cfg['omp_num_threads']:
+                setvar('OMP_NUM_THREADS', self.cfg['omp_num_threads'])
 
             # change to root of build dir
             try:
