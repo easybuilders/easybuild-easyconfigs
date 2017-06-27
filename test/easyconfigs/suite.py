@@ -30,7 +30,6 @@ Usage: "python -m easybuild.easyconfigs.test.suite.py" or "./easybuild/easyconfi
 @author: Toon Willems (Ghent University)
 @author: Kenneth Hoste (Ghent University)
 """
-import glob
 import os
 import shutil
 import sys
@@ -41,6 +40,7 @@ from vsc.utils import fancylogger
 
 import easybuild.tools.build_log  # initialize EasyBuild logging, so we disable it
 import test.easyconfigs.easyconfigs as e
+import test.easyconfigs.styletests as s
 
 # disable all logging to significantly speed up tests
 fancylogger.disableDefaultHandlers()
@@ -52,7 +52,7 @@ os.environ['EASYBUILD_DEPRECATED'] = '10000'
 os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
 # call suite() for each module and then run them all
-SUITE = unittest.TestSuite([x.suite() for x in [e]])
+SUITE = unittest.TestSuite([x.suite() for x in [e, s]])
 
 # uses XMLTestRunner if possible, so we can output an XML file that can be supplied to Jenkins
 xml_msg = ""
