@@ -32,10 +32,12 @@ EasyBuild support for ABAQUS, implemented as an easyblock
 @author: Jens Timmerman (Ghent University)
 """
 from distutils.version import LooseVersion
+import glob
 import os
 
 from easybuild.easyblocks.generic.binary import Binary
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.environment import setvar
 from easybuild.tools.filetools import change_dir, write_file
 from easybuild.tools.run import run_cmd_qa
@@ -103,7 +105,7 @@ class EB_ABAQUS(Binary):
                 r"Please choose an action:": '1',
                 r"SIMULIA/Tosca.*:": os.path.join(self.installdir, 'tosca'),
                 r"location of your existing ANSA installation.*(\n.*){8}:": '',
-                r"FLUENT Path.*(\n.*){7}:": '', 
+                r"FLUENT Path.*(\n.*){7}:": '',
             }
             run_cmd_qa('./StartTUI.sh', qa, no_qa=no_qa, std_qa=std_qa, log_all=True, simple=True, maxhits=100)
         else:
@@ -114,6 +116,43 @@ class EB_ABAQUS(Binary):
                 if LooseVersion(self.version) < LooseVersion("6.13"):
                     self.cfg['install_cmd'] += " -nosystemcheck"
             super(EB_ABAQUS, self).install_step()
+
+        if LooseVersion(self.version) >= LooseVersion('2016'):
+            # also install hot fixes (if any)
+            hotfixes = [src for src in self.src if 'CFA' in src['name']]
+            if hotfixes:
+                # first install Part_3DEXP_SimulationServices hotfix(es)
+                hotfix_dir = os.path.join(self.builddir, 'Part_3DEXP_SimulationServices.Linux64', '1', 'Software')
+                change_dir(hotfix_dir)
+
+                # SIMULIA_ComputeServices part
+                subdirs = glob.glob('HF_SIMULIA_ComputeServices.HF*.Linux64')
+                if len(subdirs) == 1:
+                    subdir = subdirs[0]
+                else:
+                    raise EasyBuildError("Failed to find expected subdir for hotfix: %s", subdirs)
+
+                cwd = change_dir(os.path.join(subdir, '1'))
+                std_qa = {
+                    "Enter selection \(default: Next\):": '',
+                    "Choose the .*installation directory.*\n.*\n\n.*:": os.path.join(self.installdir, 'sim'),
+                    "Enter selection \(default: Install\):": '',
+                }
+                run_cmd_qa('./StartTUI.sh', {}, std_qa=std_qa, log_all=True, simple=True, maxhits=100)
+
+                # F_CAASIMULIAComputeServicesBuildTime part
+                change_dir(cwd)
+                subdirs = glob.glob('HF_CAASIMULIAComputeServicesBuildTime.HF*.Linux64')
+                if len(subdirs) == 1:
+                    subdir = subdirs[0]
+                else:
+                    raise EasyBuildError("Failed to find expected subdir for hotfix: %s", subdirs)
+
+                change_dir(os.path.join(cwd, subdir, '1'))
+                run_cmd_qa('./StartTUI.sh', {}, std_qa=std_qa, log_all=True, simple=True, maxhits=100)
+
+                # next install Part_SIMULIA_Abaqus_CAE hotfix
+                # FIXME
 
     def sanity_check_step(self):
         """Custom sanity check for ABAQUS."""
