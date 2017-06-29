@@ -1,5 +1,5 @@
 name = 'R'
-version = '3.3.1'
+version = '3.3.3'
 versionsuffix = '-bare'
 homepage = 'http://www.r-project.org/'
 description = """R is a free software environment for statistical computing and graphics."""
@@ -8,7 +8,7 @@ toolchain = {'name': 'foss', 'version': '2015b'}
 
 sources = [SOURCE_TAR_GZ]
 source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
-checksums = ['f50a659738b73036e2f5635adbd229c5']
+checksums = ['0ac211ec15e813a24f8f4a5a634029a4']
 
 #
 # Configure options.
@@ -31,21 +31,36 @@ configopts += ' --with-cairo --with-libpng --with-jpeglib --with-libtiff'
 #
 configopts += ' --with-recommended-packages=no'
 
+#
+# You may need to include a more recent Python to download R packages from HTTPS based URLs
+# when the Python that comes with your OS is too old and you encounter:
+#     SSL routines:SSL23_GET_SERVER_HELLO:sslv3 alert handshake failure
+# In that case make sure to include a Python as builddependency. 
+# This Python should not be too new: it's dependencies like for example on ncursus should be compatible with R's dependencies.
+# For example Python 2.7.11 is too new as it requires ncurses 6.0 whereas our R requires ncurses 5.9.
+# The alternative is to replace the https URLs with http URLs in the generated EasyConfig.
+#
+#builddependencies = [
+#    ('Python', '2.7.10')
+#]
+
 dependencies = [
     ('libreadline', '6.3'),
     ('ncurses', '5.9'),
     ('bzip2', '1.0.6'),
     ('XZ', '5.2.2'),
-    ('libpng', '1.6.21'),            # For plotting in R
+    ('libpng', '1.6.29'),            # For plotting in R
     ('libjpeg-turbo', '1.4.2'),      # For plotting in R
     ('LibTIFF', '4.0.4'),            # For plotting in R
     ('Tcl', '8.6.4'),                # For Tcl/Tk
     ('Tk', '8.6.4', '-no-X11'),      # For Tcl/Tk
     ('cURL', '7.47.1'),              # For RCurl
     ('libxml2', '2.9.2'),            # For XML
-    ('cairo', '1.14.6'),             # For plotting in R
+    ('cairo', '1.14.10'),            # For plotting in R
+    ('Pango', '1.40.6'),             # For plotting in R.
     ('Java', '1.8.0_45', '', True),  # Java bindings are built if Java is found, might as well provide it.
     ('PCRE', '8.38'),                # For rphast package.
+    ('GMP', '6.1.1'),                # For igraph
 ]
 
 #
