@@ -109,9 +109,9 @@ class EB_OpenFOAM(EasyBlock):
         self.cfg['start_dir'] = os.path.join(self.installdir, self.openfoamdir)
         super(EB_OpenFOAM, self).patch_step(beginpath=self.cfg['start_dir'])
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Prepare for OpenFOAM install procedure."""
-        super(EB_OpenFOAM, self).prepare_step()
+        super(EB_OpenFOAM, self).prepare_step(*args, **kwargs)
 
         comp_fam = self.toolchain.comp_family()
         if comp_fam == toolchain.GCC:  # @UndefinedVariable

@@ -208,9 +208,11 @@ class IntelBase(EasyBlock):
         except OSError, err:
             raise EasyBuildError("Failed to symlink %s to %s: %s", self.home_subdir_local, self.home_subdir, err)
 
-    def prepare_step(self, requires_runtime_license=True):
+    def prepare_step(self, *args, **kwargs):
         """Custom prepare step for IntelBase. Set up the license"""
-        super(IntelBase, self).prepare_step()
+        requires_runtime_license = kwargs.pop('requires_runtime_license', True)
+
+        super(IntelBase, self).prepare_step(*args, **kwargs)
 
         # Decide if we need a license or not (default is True because of defaults of individual Booleans)
         self.requires_runtime_license = self.cfg['requires_runtime_license'] and requires_runtime_license

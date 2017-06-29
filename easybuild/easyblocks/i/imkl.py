@@ -71,11 +71,12 @@ class EB_imkl(IntelBase):
         # make sure $MKLROOT isn't set, it's known to cause problems with the installation
         self.cfg.update('unwanted_env_vars', ['MKLROOT'])
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         if LooseVersion(self.version) >= LooseVersion('2017.2.174'):
-            super(EB_imkl, self).prepare_step(requires_runtime_license=False)
+            kwargs['requires_runtime_license'] = False
+            super(EB_imkl, self).prepare_step(*args, **kwargs)
         else:
-            super(EB_imkl, self).prepare_step()
+            super(EB_imkl, self).prepare_step(*args, **kwargs)
 
     def install_step(self):
         """

@@ -111,9 +111,9 @@ class EB_MXNet(MakeCp):
         rmtree2(newdir)
         symlink(olddir, newdir)
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Prepare for building and installing MXNet."""
-        super(EB_MXNet, self).prepare_step()
+        super(EB_MXNet, self).prepare_step(*args, **kwargs)
         self.py_ext.prepare_python()
 
     def configure_step(self):
