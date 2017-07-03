@@ -127,9 +127,9 @@ class EB_TAU(ConfigureMake):
 
         return super(EB_TAU, self).run_all_steps(*args, **kwargs)
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Custom prepare step for Tau: check required dependencies and collect information on them."""
-        super(EB_TAU, self).prepare_step()
+        super(EB_TAU, self).prepare_step(*args, **kwargs)
 
         # install prefixes for selected backends
         self.backend_opts = {'tau': ''}

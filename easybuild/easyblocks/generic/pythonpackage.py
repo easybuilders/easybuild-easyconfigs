@@ -359,9 +359,9 @@ class PythonPackage(ExtensionEasyBlock):
         super(PythonPackage, self).prerun()
         self.prepare_python()
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Prepare for building and installing this Python package."""
-        super(PythonPackage, self).prepare_step()
+        super(PythonPackage, self).prepare_step(*args, **kwargs)
         self.prepare_python()
 
     def configure_step(self):

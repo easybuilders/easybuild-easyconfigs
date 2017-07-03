@@ -58,11 +58,12 @@ class EB_impi(IntelBase):
         }
         return IntelBase.extra_options(extra_vars)
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         if LooseVersion(self.version) >= LooseVersion('2017.2.174'):
-            super(EB_impi, self).prepare_step(requires_runtime_license=False)
+            kwargs['requires_runtime_license'] = False
+            super(EB_impi, self).prepare_step(*args, **kwargs)
         else:
-            super(EB_impi, self).prepare_step()
+            super(EB_impi, self).prepare_step(*args, **kwargs)
 
     def install_step(self):
         """
