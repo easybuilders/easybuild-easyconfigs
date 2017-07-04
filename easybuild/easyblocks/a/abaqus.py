@@ -88,6 +88,7 @@ class EB_ABAQUS(Binary):
             }
             no_qa = [
                 '___',
+                '\(\d+ MB\)',
             ]
             std_qa = {
                 # disable installation of Tosca (6) and Isight (7)
@@ -152,7 +153,23 @@ class EB_ABAQUS(Binary):
                 run_cmd_qa('./StartTUI.sh', {}, std_qa=std_qa, log_all=True, simple=True, maxhits=100)
 
                 # next install Part_SIMULIA_Abaqus_CAE hotfix
-                # FIXME
+                hotfix_dir = os.path.join(self.builddir, 'Part_SIMULIA_Abaqus_CAE.Linux64', '1', 'Software')
+                change_dir(hotfix_dir)
+
+                subdirs = glob.glob('SIMULIA_Abaqus_CAE.HF*.Linux64')
+                if len(subdirs) == 1:
+                    subdir = subdirs[0]
+                else:
+                    raise EasyBuildError("Failed to find expected subdir for hotfix: %s", subdirs)
+
+                cwd = change_dir(os.path.join(subdir, '1'))
+                std_qa = {
+                    "Enter selection \(default: Next\):": '',
+                    "Choose the .*installation directory.*\n.*\n\n.*:": os.path.join(self.installdir, 'cae'),
+                    "Enter selection \(default: Install\):": '',
+                    "Please choose an action:": '',
+                }
+                run_cmd_qa('./StartTUI.sh', {}, std_qa=std_qa, log_all=True, simple=True, maxhits=100)
 
     def sanity_check_step(self):
         """Custom sanity check for ABAQUS."""
