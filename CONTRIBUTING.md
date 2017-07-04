@@ -23,7 +23,7 @@ under different terms from the Initial License or this Contributor Agreement.
 
 ### Fork easybuild-easyblocks
 
-First, you'll need to fork [easybuild-easyblocks on GitHub](http://github.com/hpcugent/easybuild-easyblocks).
+First, you'll need to fork [easybuild-easyblocks on GitHub](https://github.com/easybuilders/easybuild-easyblocks).
 
 If you do not have a (free) GitHub account yet, you'll need to get one.
 
@@ -43,10 +43,10 @@ Pull the _develop_ branch from the main easybuild-easyblocks repository:
 
 ```bash
 cd easybuild
-git remote add github_hpcugent git@github.com:hpcugent/easybuild-easyblocks.git
+git remote add github_easybuilders git@github.com:easybuilders/easybuild-easyblocks.git
 git branch develop
 git checkout develop
-git pull github_hpcugent develop
+git pull github_easybuilders develop
 ```
 
 ### Keep develop up-to-date
@@ -57,7 +57,7 @@ Make sure you update it every time you create a feature branch (see below):
 
 ```bash
 git checkout develop
-git pull github_hpcugent develop
+git pull github_easybuilders develop
 ```
 
 
@@ -67,7 +67,7 @@ git pull github_hpcugent develop
 ### Pick a branch name
 
 Please try and follow these guidelines when picking a branch name:
- * use the number of the issue as a prefix for your branch name, e.g. `86_` for issue [#86](https://github.com/hpcugent/easybuild-framework/issues/86)
+ * use the number of the issue as a prefix for your branch name, e.g. `86_` for issue [#86](https://github.com/easybuilders/easybuild-framework/issues/86)
  * append a short but descriptive branch name, in which words are joined by underscores, e.g. `86_encoding_scheme`
 
 ### Create branch
@@ -131,7 +131,7 @@ If you're contributing code to an existing issue you can also convert the issue 
 GITHUBUSER=your_username && PASSWD=your_password && BRANCH=branch_name && ISSUE=issue_number && \
 curl --user "$GITHUBUSER:$PASSWD" --request POST \
 --data "{\"issue\": \"$ISSUE\", \"head\": \"$GITHUBUSER:$BRANCH\", \"base\": \"develop\"}" \
-https://api.github.com/repos/hpcugent/easybuild-easyblocks/pulls
+https://api.github.com/repos/easybuilders/easybuild-easyblocks/pulls
 ```
 This is currently only supported by github from the command line and not via the web interface.
 You might also want to look into [hub](https://github.com/defunkt/hub) for more command line features.
