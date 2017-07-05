@@ -1,0 +1,44 @@
+--- Makefile.orig	2017-07-05 17:26:36.867366009 +0000
++++ Makefile	2017-07-05 17:28:39.919216094 +0000
+@@ -1,5 +1,6 @@
+ VERSION	       = v0.3.3
+-override LIBS += -lz
++override LIBS += -lz -lcurl
++ROOTSYS = $(EBROOTROOT)
+ 
+ ifneq ($(wildcard $(ROOTSYS)/lib/root),)
+         ROOTLIBS = -L$(ROOTSYS)/lib/root -lCore -lRIO -lHist -lGraf -lGpad -lTree -lMathCore
+@@ -8,17 +9,17 @@
+ endif
+ 
+ ifneq ($(wildcard $(ROOTSYS)/include/root),)
+-        INC = -I$(ROOTSYS)/include/root -I$(SAMDIR)
++        INC = -I$(ROOTSYS)/include/root -I$(SAMDIR)/include/bam
+ else
+-        INC = -I$(ROOTSYS)/include      -I$(SAMDIR)
++        INC = -I$(ROOTSYS)/include      -I$(SAMDIR)/include/bam
+ endif
+ 
+-SAMDIR = samtools
+-SAMLIB = $(SAMDIR)/libbam.a
+-HTSDIR = $(wildcard $(SAMDIR)/htslib-*)
++SAMDIR = $(EBROOTSAMTOOLS)
++SAMLIB = $(SAMDIR)/lib/libbam.a
++HTSDIR = $(EBROOTHTSLIB)
+ ifneq ($(HTSDIR),)
+-        SAMLIB += $(HTSDIR)/libhts.a
+-        INC    += -I$(HTSDIR)
++        SAMLIB += $(HTSDIR)/lib/libhts.a
++        INC    += -I$(HTSDIR)/include
+ endif
+ 
+ ifeq ($(OMP),no)
+@@ -36,7 +37,7 @@
+         INC += -I$(YEPPPINCLUDEDIR) -DUSE_YEPPP
+ endif
+ 
+-CXX    = g++ -O3 -std=c++11 -DCNVNATOR_VERSION=\"$(VERSION)\" $(OMPFLAGS)
++CXX    = g++ -O3 -std=c++1y -DCNVNATOR_VERSION=\"$(VERSION)\" $(OMPFLAGS)
+ 
+ OBJDIR = obj
+ OBJS   = $(OBJDIR)/cnvnator.o  \
