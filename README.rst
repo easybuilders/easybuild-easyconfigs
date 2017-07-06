@@ -1,4 +1,4 @@
-.. image:: http://easybuilders.github.io/easybuild/images/easybuild_logo_small.png
+.. image:: https://easybuilders.github.io/easybuild/images/easybuild_logo_small.png
    :align: center
 
 `EasyBuild <https://easybuilders.github.io/easybuild>`_ is a software build
