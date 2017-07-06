@@ -240,6 +240,15 @@ def template_easyconfig_test(self, spec):
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
     self.assertFalse(res, error_msg % res)
 
+    # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
+    old_urls = [
+        'github.com/hpcugent/easybuild',
+        'hpcugent.github.com/easybuild',
+        'hpcugent.github.io/easybuild',
+    ]
+    for old_url in old_urls:
+        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
+
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
     specfn = os.path.basename(spec)
