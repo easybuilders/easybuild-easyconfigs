@@ -79,7 +79,7 @@ setup(
     description = """Python modules which implement support for installing particular (groups of) software packages with EasyBuild.""",
     license = "GPLv2",
     keywords = "software build building installation installing compilation HPC scientific",
-    url = "http://easybuilders.github.io/easybuild",
+    url = "https://easybuilders.github.io/easybuild",
     packages = ["easybuild", "easybuild.easyblocks", "easybuild.easyblocks.generic"],
     package_dir = {"easybuild.easyblocks": "easybuild/easyblocks"},
     package_data = {'easybuild.easyblocks': ["[a-z0-9]/*.py"]},
