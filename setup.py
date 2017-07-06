@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ setup(
     description = """Python modules which implement support for installing particular (groups of) software packages with EasyBuild.""",
     license = "GPLv2",
     keywords = "software build building installation installing compilation HPC scientific",
-    url = "http://hpcugent.github.com/easybuild",
+    url = "https://easybuilders.github.io/easybuild",
     packages = ["easybuild", "easybuild.easyblocks", "easybuild.easyblocks.generic"],
     package_dir = {"easybuild.easyblocks": "easybuild/easyblocks"},
     package_data = {'easybuild.easyblocks': ["[a-z0-9]/*.py"]},
