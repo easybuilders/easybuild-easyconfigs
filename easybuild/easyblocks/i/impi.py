@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -58,11 +58,12 @@ class EB_impi(IntelBase):
         }
         return IntelBase.extra_options(extra_vars)
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         if LooseVersion(self.version) >= LooseVersion('2017.2.174'):
-            super(EB_impi, self).prepare_step(requires_runtime_license=False)
+            kwargs['requires_runtime_license'] = False
+            super(EB_impi, self).prepare_step(*args, **kwargs)
         else:
-            super(EB_impi, self).prepare_step()
+            super(EB_impi, self).prepare_step(*args, **kwargs)
 
     def install_step(self):
         """

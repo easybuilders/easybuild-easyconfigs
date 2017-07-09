@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -359,9 +359,9 @@ class PythonPackage(ExtensionEasyBlock):
         super(PythonPackage, self).prerun()
         self.prepare_python()
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Prepare for building and installing this Python package."""
-        super(PythonPackage, self).prepare_step()
+        super(PythonPackage, self).prepare_step(*args, **kwargs)
         self.prepare_python()
 
     def configure_step(self):

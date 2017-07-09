@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,10 +47,10 @@ class VersionIndependentPythonPackage(PythonPackage):
         """No build procedure."""
         pass
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Set pylibdir"""
         self.pylibdir = 'lib'
-        super(VersionIndependentPythonPackage, self).prepare_step()
+        super(VersionIndependentPythonPackage, self).prepare_step(*args, **kwargs)
 
     def install_step(self):
         """Custom install procedure to skip selection of python package versions."""

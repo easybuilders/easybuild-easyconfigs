@@ -1,5 +1,5 @@
 ##
-# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
 #
 # Copyright:: Copyright 2012-2017 Uni.Lu/LCSB, NTUA
 # Copyright:: Copyright 2016-2017 Forschungszentrum Juelich

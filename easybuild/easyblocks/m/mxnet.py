@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -111,9 +111,9 @@ class EB_MXNet(MakeCp):
         rmtree2(newdir)
         symlink(olddir, newdir)
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Prepare for building and installing MXNet."""
-        super(EB_MXNet, self).prepare_step()
+        super(EB_MXNet, self).prepare_step(*args, **kwargs)
         self.py_ext.prepare_python()
 
     def configure_step(self):

@@ -1,5 +1,5 @@
 ##
-# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
 #
 # Copyright:: Copyright 2013-2017 CaSToRC, The Cyprus Institute
 # Authors::   George Tsouloupas <g.tsouloupas@cyi.ac.cy>

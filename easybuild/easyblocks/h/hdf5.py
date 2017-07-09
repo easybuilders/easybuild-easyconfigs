@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ EasyBuild support for building and installing HDF5, implemented as an easyblock
 import os
 
 import easybuild.tools.environment as env
+import easybuild.tools.toolchain as toolchain
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.modules import get_software_root
@@ -65,6 +66,9 @@ class EB_HDF5(ConfigureMake):
         # also returns False if MPI is not supported by this toolchain
         if self.toolchain.options.get('usempi', None):
             self.cfg.update('configopts', "--enable-unsupported --enable-parallel")
+            mpich_mpi_families = [toolchain.INTELMPI, toolchain.MPICH, toolchain.MPICH2, toolchain.MVAPICH2]
+            if self.toolchain.mpi_family() in mpich_mpi_families:
+                self.cfg.update('buildopts', 'CXXFLAGS="$CXXFLAGS -DMPICH_IGNORE_CXX_SEEK"')
         else:
             self.cfg.update('configopts', "--disable-parallel")
 
@@ -102,3 +106,9 @@ class EB_HDF5(ConfigureMake):
             'dirs': ['include'],
         }
         super(EB_HDF5, self).sanity_check_step(custom_paths=custom_paths)
+
+    def make_module_extra(self):
+        """Also define $HDF5_DIR to installation directory."""
+        txt = super(EB_HDF5, self).make_module_extra()
+        txt += self.module_generator.set_environment('HDF5_DIR', self.installdir)
+        return txt

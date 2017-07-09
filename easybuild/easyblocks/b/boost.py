@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -119,8 +119,9 @@ class EB_Boost(EasyBlock):
             else:
                 raise EasyBuildError("Unknown compiler used, don't know what to specify to --with-toolset, aborting.")
 
-        cmd = "./bootstrap.sh --with-toolset=%s --prefix=%s %s" % (toolset, self.objdir, self.cfg['configopts'])
-        run_cmd(cmd, log_all=True, simple=True)
+        cmd = "%s ./bootstrap.sh --with-toolset=%s --prefix=%s %s"
+        tup = (self.cfg['preconfigopts'], toolset, self.objdir, self.cfg['configopts'])
+        run_cmd(cmd % tup, log_all=True, simple=True)
 
         if self.cfg['boost_mpi']:
 
@@ -157,12 +158,14 @@ class EB_Boost(EasyBlock):
 
             write_file('user-config.jam', txt, append=True)
 
-    def build_boost_variant(self,bjamoptions,paracmd):
+    def build_boost_variant(self, bjamoptions, paracmd):
         """Build Boost library with specified options for bjam."""
         # build with specified options
-        run_cmd("./bjam %s %s" % (bjamoptions, paracmd), log_all=True, simple=True)
+        cmd = "%s ./bjam %s %s %s" % (self.cfg['prebuildopts'], bjamoptions, paracmd, self.cfg['buildopts'])
+        run_cmd(cmd, log_all=True, simple=True)
         # install built Boost library
-        run_cmd("./bjam %s  install %s" % (bjamoptions, paracmd), log_all=True, simple=True)
+        cmd = "%s ./bjam %s install %s %s" % (self.cfg['preinstallopts'], bjamoptions, paracmd, self.cfg['installopts'])
+        run_cmd(cmd, log_all=True, simple=True)
         # clean up before proceeding with next build    
         run_cmd("./bjam --clean-all", log_all=True, simple=True)
 
@@ -206,7 +209,7 @@ class EB_Boost(EasyBlock):
         # install remainder of boost libraries
         self.log.info("Installing boost libraries")
 
-        cmd = "./bjam %s install %s" % (bjamoptions, paracmd)
+        cmd = "%s ./bjam %s install %s %s" % (self.cfg['preinstallopts'], bjamoptions, paracmd, self.cfg['installopts'])
         run_cmd(cmd, log_all=True, simple=True)
 
     def install_step(self):
