@@ -104,7 +104,7 @@ setup(
     version = VERSION,
     author = "EasyBuild community",
     author_email = "easybuild@lists.ugent.be",
-    description = """Easyconfig files are simple build specification files for EasyBuild,
+    description = """Easyconfig files are simple build specification files for EasyBuild, \
 that specify the build parameters for software packages (version, compiler toolchain, dependency \
 versions, etc.).""",
     license = "GPLv2",
