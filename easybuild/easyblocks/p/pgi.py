@@ -12,7 +12,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ default($if($LIBRARY_PATH,-L$replace($LIBRARY_PATH,":", -L)));
 append LDLIBARGS=$library_path;
 
 # also include the location where libm & co live on Debian-based systems
-# cfr. https://github.com/hpcugent/easybuild-easyblocks/pull/919
+# cfr. https://github.com/easybuilders/easybuild-easyblocks/pull/919
 append LDLIBARGS=-L/usr/lib/x86_64-linux-gnu;
 """
 
@@ -169,7 +169,7 @@ class EB_PGI(PackedBinary):
             dirs[key] = [os.path.join(self.pgi_install_subdir, d) for d in dirs[key]]
 
         # $CPATH should not be defined in module for PGI, it causes problems
-        # cfr. https://github.com/hpcugent/easybuild-easyblocks/issues/830
+        # cfr. https://github.com/easybuilders/easybuild-easyblocks/issues/830
         if 'CPATH' in dirs:
             self.log.info("Removing $CPATH entry: %s", dirs['CPATH'])
             del dirs['CPATH']

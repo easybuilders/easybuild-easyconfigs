@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,9 +50,9 @@ class EB_DL_underscore_POLY_underscore_Classic(ConfigureMake):
 
     # create PLUMED patch in prepare_step rather than patch_step,
     # so we can rely on being in the unpacked source directory
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Generate PLUMED patch if PLUMED is listed as a dependency."""
-        super(EB_DL_underscore_POLY_underscore_Classic, self).prepare_step()
+        super(EB_DL_underscore_POLY_underscore_Classic, self).prepare_step(*args, **kwargs)
 
         if self.with_plumed:
             # see https://groups.google.com/d/msg/plumed-users/cWaIDU5F6Bw/bZUW3J9cCAAJ

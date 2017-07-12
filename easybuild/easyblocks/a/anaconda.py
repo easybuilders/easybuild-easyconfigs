@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 # along with EasyBuild.  If not, see <http://www.gnu.org/licenses/>.
 ##
 """
-EasyBuild support for building and installing Anaconda, implemented as an easyblock
+EasyBuild support for building and installing Anaconda/Miniconda, implemented as an easyblock
 
 @author: Jillian Rowe (New York University Abu Dhabi)
 @author: Kenneth Hoste (HPC-UGent)
@@ -41,7 +41,7 @@ from easybuild.tools.run import run_cmd
 
 
 class EB_Anaconda(Binary):
-    """Support for building/installing Anaconda."""
+    """Support for building/installing Anaconda and Miniconda."""
 
     def install_step(self):
         """Copy all files in build directory to the install directory"""
@@ -67,10 +67,10 @@ class EB_Anaconda(Binary):
 
     def sanity_check_step(self):
         """
-        Custom sanity check for Anaconda
+        Custom sanity check for Anaconda and Miniconda
         """
         custom_paths = {
-            'files': [os.path.join('bin', x) for x in ['2to3', 'conda', 'ipython', 'pydoc', 'python', 'sqlite3']],
+            'files': [os.path.join('bin', x) for x in ['2to3', 'conda', 'pydoc', 'python', 'sqlite3']],
             'dirs': ['bin', 'etc', 'lib', 'pkgs'],
         }
         super(EB_Anaconda, self).sanity_check_step(custom_paths=custom_paths)

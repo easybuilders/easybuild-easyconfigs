@@ -8,7 +8,7 @@
 # the Hercules foundation (http://www.herculesstichting.be/in_English)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -64,9 +64,9 @@ class EB_Paraver(ConfigureMake):
 
         return super(EB_Paraver, self).run_all_steps(*args, **kwargs)
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Custom prepare step for Paraver: check required dependencies and collect information on them."""
-        super(EB_Paraver, self).prepare_step()
+        super(EB_Paraver, self).prepare_step(*args, **kwargs)
 
         # determine value to pass to --with-wxpropgrid (library name)
         self.wxpropgrid = None

@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -127,9 +127,9 @@ class EB_TAU(ConfigureMake):
 
         return super(EB_TAU, self).run_all_steps(*args, **kwargs)
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Custom prepare step for Tau: check required dependencies and collect information on them."""
-        super(EB_TAU, self).prepare_step()
+        super(EB_TAU, self).prepare_step(*args, **kwargs)
 
         # install prefixes for selected backends
         self.backend_opts = {'tau': ''}

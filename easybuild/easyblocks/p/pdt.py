@@ -1,5 +1,5 @@
 ##
-# This is an easyblock for EasyBuild, see https://github.com/hpcugent/easybuild
+# This is an easyblock for EasyBuild, see https://github.com/easybuilders/easybuild
 #
 # Copyright:: Copyright 2015 Juelich Supercomputing Centre, Germany
 # Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
@@ -35,9 +35,9 @@ class EB_PDT(ConfigureMake):
         self.machine = out.strip()
         self.log.info("Using '%s' as machine label", self.machine)
 
-    def prepare_step(self):
+    def prepare_step(self, *args, **kwargs):
         """Custom prepare step for PDT."""
-        super(EB_PDT, self).prepare_step()
+        super(EB_PDT, self).prepare_step(*args, **kwargs)
 
         # create install directory and make sure it does not get cleaned up again in the install step;
         # the first configure iteration already puts things in place in the install directory,
