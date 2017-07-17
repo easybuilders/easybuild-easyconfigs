@@ -17,12 +17,17 @@ sources = ['v' + version + '.tar.gz']
 #  this problem.  EJS.
 prebuildopts = "sed -i 's/PROJECT_SOURCE_DIR\}\/lib/CMAKE_INSTALL_PREFIX\}\/lib/g' CMakeLists.txt && sed -i 's/PROJECT_SOURCE_DIR\}\/include/CMAKE_INSTALL_PREFIX\}\/include/g' CMakeLists.txt && "
 
+# In older versions of spglib, the header files were installed in
+# include/spglib, rather than just in include.  We add this fix
+# for back-compatibility with older codes.  EJS.
+postinstallcmds = ["cd %(installdir)s && mkdir -p include/spglib && ln -s ../spglib.h include/spglib/spglib.h"]
 
 #separate_build_dir = True
 
 sanity_check_paths = {
-    'files': ['lib/libsymspg.a', 'lib/libsymspg.%s' % SHLIB_EXT],
-    'dirs': ['include'],
+    'files': ['lib/libsymspg.a', 'lib/libsymspg.%s' % SHLIB_EXT,
+    	     'include/spglib.h'],
+    'dirs': [],
 }
 
 moduleclass = 'phys'
