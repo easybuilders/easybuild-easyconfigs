@@ -1,0 +1,54 @@
+easyblock = 'Bundle'
+
+name = 'Tensorflow'
+version = '1.2.1'
+pythonsuffix = '-Python-%(pyver)s'
+versionsuffix = '-GPU' + pythonsuffix
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+pyver = '3.5.2'
+pyshortver = '35'
+
+dependencies = [
+    ('Python', pyver),
+    ('protobuf-python', '3.3.0', pythonsuffix),
+    ('CUDA', '8.0.44', '', ('dummy', '')),
+    ('cuDNN', '5.1', '-CUDA-8.0.44', ('dummy', '')),
+]
+
+exts_list = [
+    ('backports.weakref', '1.0rc1', {
+        'modulename': 'backports.weakref',
+        'source_urls': ['https://pypi.python.org/packages/source/b/backports.weakref'],
+    }),
+    ('Werkzeug', '0.12.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/w/Werkzeug'],
+    }),
+    ('tensorflow', version, {
+        'source_urls': ['https://pypi.python.org/packages/source/t/tensorflow-gpu'],
+        'source_tmpl': 'tensorflow_gpu-%%(version)s-cp%(pyshortver)s-cp%(pyshortver)sm-manylinux1_x86_64.whl' %
+                       {'pyshortver': pyshortver},
+        'checksums': ['21707e62e773f97342f1f9715612216fcc002ef17127e4c9374fa7f2f4bc73c2'],
+        'use_pip': True,
+        'unpack_sources': False,
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/tensorboard'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'lib'
