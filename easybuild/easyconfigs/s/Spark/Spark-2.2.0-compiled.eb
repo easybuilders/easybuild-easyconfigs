@@ -19,11 +19,28 @@ source_urls = [
 
 patches = [('Spark-2.2.0.patch', 1)]
 
-
 builddependencies = [('iimkl', '2016.4'), ('R', '3.4.0', '-bare', ('iimkl', '2016.4'))]
 dependencies = [('Java', '1.8.0_121')]
 
-cmds_map = [('.*', "./dev/make-distribution.sh -Phadoop-2.7 -Psparkr")]
+cmds_map = [('.*', "./dev/make-distribution.sh -Phadoop-2.7 -Psparkr -Pnetlib-lgpl")]
+
+postinstallcmds = [
+'mkdir %(installdir)s/lib',
+'ln -sf $MKLROOT/lib/intel64/libmkl_rt.so 		%(installdir)s/lib/libblas.so.3',
+'ln -sf $MKLROOT/lib/intel64/libmkl_rt.so 		%(installdir)s/lib/liblapack.so.3',
+'ln -sf $MKLROOT/lib/intel64/libmkl_core.so 		%(installdir)s/lib/',
+'ln -sf $MKLROOT/lib/intel64/libmkl_intel_thread.so 	%(installdir)s/lib/',
+'ln -sf $MKLROOT/lib/intel64/libmkl_intel_lp64.so	%(installdir)s/lib/',
+'ln -sf $MKLROOT/lib/intel64/libmkl_def.so		%(installdir)s/lib/',
+'ln -sf $EBROOTIMKL/lib/intel64/libiomp5.so		%(installdir)s/lib/',
+'mkdir netlib',
+'unzip -j %(installdir)s/jars/netlib-native_system-linux-x86_64-1.1-natives.jar -d netlib/ netlib-native_system-linux-x86_64.so',
+'$(dirname $EASYBUILD_CONFIGFILES)/bin/setrpaths.sh --path netlib --add_path=%(installdir)s/lib',
+'jar -uf %(installdir)s/jars/netlib-native_system-linux-x86_64-1.1-natives.jar -C netlib/ netlib-native_system-linux-x86_64.so',
+'rm -rf netlib',
+'rm -f %(installdir)s/jars/netlib-{*native_ref*,*osx*,*win*,*linux-armhf*,*linux*i686*}.jar',
+'rm %(installdir)s/bin/*.cmd',
+]
 
 files_to_copy = ['dist/*']
 
