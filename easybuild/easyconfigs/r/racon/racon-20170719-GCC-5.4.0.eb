@@ -1,0 +1,33 @@
+# Copyright Compute Canada
+# Author: Belaid Moa et al.
+
+easyblock = 'MakeCp'
+
+name = 'racon'
+version = '20170719'
+
+homepage = 'https://github.com/isovic/racon/'
+description = """Ultrafast consensus module for raw de novo genome assembly of long uncorrected reads."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+toolchainopts = {'pic': True}
+sources = ['master.zip']
+source_urls = ['https://github.com/isovic/%(name)s/archive/']
+
+
+dependencies =[ 
+     ('zlib', '1.2.8')
+]
+#unforunately git is required to get the git inside the Makefile to find the proper submodules.
+#This could be done without the sources but let us just do it :-)
+prebuildopts='git clone https://github.com/isovic/%(name)s.git && cd racon && sed -i "s/^LIB_DIRS/#LIB_DIRS/g" Makefile && '
+prebuildopts+='sed -i \'s@-I"/usr/include/"@@g\' Makefile && '
+buildopts=' modules && make tools && make -j'
+
+files_to_copy = ['racon/scripts', 'racon/tools', (['racon/bin/*'],'bin')]
+
+sanity_check_paths = {
+    'files': ["bin/racon","tools/minimap/minimap"],
+    'dirs': [],
+}
+moduleclass = 'bio'
