@@ -22,10 +22,11 @@ dependencies =[
 #This could be done without the sources but let us just do it :-)
 prebuildopts='git clone https://github.com/isovic/%(name)s.git && cd racon && sed -i "s/^LIB_DIRS/#LIB_DIRS/g" Makefile && '
 prebuildopts+='sed -i \'s@-I"/usr/include/"@@g\' Makefile && '
-buildopts=' modules && make tools && make -j'
+buildopts=' modules && make tools && make -j && '
+#cleanup as much as we can - leave the executables of course.
+buildopts+="find . -type d \( -name '.git' -o -name 'doc' -o -name 'codebase' \) -exec rm -rf {} + && find . -regex '.*\.\(c\|cpp\|h\|o\|png\|html\|js\|swf\|css\|cc\|out\)$' -exec rm -rf {} + "
 
-files_to_copy = ['racon/scripts', 'racon/tools', (['racon/bin/*'],'bin')]
-
+files_to_copy = ['racon/scripts', 'racon/tools', (['racon/bin/*'],'bin'),(['racon/*.sh'],'scripts')]
 sanity_check_paths = {
     'files': ["bin/racon","tools/minimap/minimap"],
     'dirs': [],
