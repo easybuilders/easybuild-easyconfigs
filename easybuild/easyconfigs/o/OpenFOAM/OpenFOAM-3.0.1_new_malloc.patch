@@ -1,0 +1,47 @@
+# This patch changes the signature of the malloc function to be compatible with newer glibc
+# Maxime Boissonneault <maxime.boissonneault@calculquebec.ca>
+diff -ru OpenFOAM-3.0.x-version-3.0.1.orig/src/OSspecific/POSIX/signals/sigFpe.C OpenFOAM-3.0.x-version-3.0.1/src/OSspecific/POSIX/signals/sigFpe.C
+--- OpenFOAM-3.0.x-version-3.0.1.orig/src/OSspecific/POSIX/signals/sigFpe.C	2015-12-15 12:20:08.000000000 +0100
++++ OpenFOAM-3.0.x-version-3.0.1/src/OSspecific/POSIX/signals/sigFpe.C	2017-07-10 15:52:00.000000000 -0500
+@@ -59,7 +59,7 @@
+     extern void* __libc_malloc(size_t size);
+
+     // Override the GLIBC malloc to support mallocNan
+-    void* malloc(size_t size)
++    void* malloc(size_t size) __THROW __wur
+     {
+         if (Foam::sigFpe::mallocNanActive_)
+         {
+diff -ru OpenFOAM-3.0.x-version-3.0.1.orig/src/conversion/ensight/part/ensightPart.C OpenFOAM-3.0.x-version-3.0.1/src/conversion/ensight/part/ensightPart.C
+--- OpenFOAM-3.0.x-version-3.0.1.orig/src/conversion/ensight/part/ensightPart.C	2017-07-11 12:35:34.741404306 +0000
++++ OpenFOAM-3.0.x-version-3.0.1/src/conversion/ensight/part/ensightPart.C	2017-07-11 12:34:14.279159103 +0000
+@@ -51,7 +51,7 @@
+         {
+             const label id = idList[i];
+
+-            if (id >= field.size() || isnan(field[id]))
++            if (id >= field.size() || std::isnan(field[id]))
+             {
+                 return false;
+             }
+diff -ru OpenFOAM-3.0.x-version-3.0.1.orig/src/conversion/ensight/part/ensightPartIO.C OpenFOAM-3.0.x-version-3.0.1/src/conversion/ensight/part/ensightPartIO.C
+--- OpenFOAM-3.0.x-version-3.0.1.orig/src/conversion/ensight/part/ensightPartIO.C	2017-07-11 12:35:34.741404306 +0000
++++ OpenFOAM-3.0.x-version-3.0.1/src/conversion/ensight/part/ensightPartIO.C	2017-07-11 12:34:24.979058729 +0000
+@@ -63,7 +63,7 @@
+     {
+         forAll(idList, i)
+         {
+-            if (idList[i] >= field.size() || isnan(field[idList[i]]))
++            if (idList[i] >= field.size() || std::isnan(field[idList[i]]))
+             {
+                 os.writeUndef();
+             }
+@@ -80,7 +80,7 @@
+         // no idList => perNode
+         forAll(field, i)
+         {
+-            if (isnan(field[i]))
++            if (std::isnan(field[i]))
+             {
+                 os.writeUndef();
+             }
