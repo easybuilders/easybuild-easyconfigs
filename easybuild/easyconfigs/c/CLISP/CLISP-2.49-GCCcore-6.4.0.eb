@@ -1,0 +1,51 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'CLISP'
+version = '2.49'
+
+homepage = 'http://www.clisp.org/'
+
+description = """
+ Common Lisp is a high-level, general-purpose, object-oriented, dynamic,
+ functional programming language.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['8132ff353afaa70e6b19367a25ae3d5a43627279c25647c220641fed00f8e890']
+
+builddependencies = [
+    ('binutils', '2.28'),
+]
+
+dependencies = [
+    ('DB', '6.2.32'),
+    ('libffcall', '1.13'),
+    ('libreadline', '7.0'),
+    ('libsigsegv', '2.11'),
+    ('PCRE', '8.41'),
+    ('zlib', '1.2.11'),
+]
+
+prebuildopts = """
+    sed -e 's/ac_cv_have_decl_rl_readline_state" = x""yes/ac_cv_have_decl_rl_readline_state" = x""JKP/'\
+        -i.eb modules/readline/configure
+    cd src
+"""
+
+preinstallopts = """
+    cd src
+"""
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/clisp', 'lib/%(namelower)s-%(version)s/base/lisp.a'],
+    'dirs': ['share/aclocal', 'share/doc'],
+}
+
+moduleclass = 'lang'
