@@ -1,0 +1,37 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = "CMakeMake"
+
+name = 'ViennaCL'
+version = '1.7.1'
+
+homepage = 'http://viennacl.sourceforge.net/'
+description = """ViennaCL is a free open-source linear algebra library for computations on many-core architectures (GPUs, MIC) and multi-core CPUs. The library is written in C++ and supports CUDA, OpenCL, and OpenMP (including switches at runtime)."""
+
+toolchain = {'name': 'gmklc', 'version': '2016.4'}
+
+source_urls = ['https://downloads.sourceforge.net/project/viennacl/1.7.x/']
+sources = ['%(name)s-%(version)s.tar.gz']
+
+separate_build_dir = True
+
+configopts = "-DENABLE_EIGEN=ON "
+configopts += "-DEIGEN_INCLUDE_DIR=${EBROOTEIGEN}/include  "
+configopts += "-DOPENCL_INCLUDE_DIR=${EBROOTCUDA}/include -DOPENCL_LIBRARY=${EBROOTCUDA}/lib64/libOpenCL.so"
+
+
+dependencies = [
+    ('Eigen', '3.3.2'),
+]
+
+postinstallcmds =  ['cp -r examples %(installdir)s']
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['include/viennacl', 'lib/cmake', 'examples'],
+}
+
+moduleclass = 'bio'
