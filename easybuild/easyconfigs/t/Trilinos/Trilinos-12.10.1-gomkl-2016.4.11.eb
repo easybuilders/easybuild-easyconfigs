@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+name = 'Trilinos'
+version = '12.10.1'
+versionsuffix = '-Python-2.7.13'
+
+homepage = 'http://trilinos.sandia.gov/'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'gomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['http://trilinos.csbsju.edu/download/files/']
+sources = ['%(namelower)s-%(version)s-Source.tar.gz']
+
+#patches = ['fix-parmetis.patch']
+
+separate_build_dir = True
+
+configure_cmd_prefix = ' CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 '
+configopts = '  -DTrilinos_ENABLE_Amesos=ON '
+configopts += ' -DTrilinos_ENABLE_Epetra=ON '
+configopts += ' -DTrilinos_ENABLE_Ifpack=ON '
+configopts += ' -DTrilinos_ENABLE_AztecOO=ON '
+configopts += ' -DTrilinos_ENABLE_Sacado=ON '
+configopts += ' -DTrilinos_ENABLE_Teuchos=ON '
+configopts += ' -DTrilinos_ENABLE_MueLu=ON '
+configopts += ' -DTrilinos_ENABLE_ML=ON '
+configopts += ' -DTrilinos_VERBOSE_CONFIGURE=OFF '
+configopts += ' -DTPL_ENABLE_MPI=ON '
+configopts += ' -DBUILD_SHARED_LIBS=ON '
+configopts += ' -DCMAKE_VERBOSE_MAKEFILE=OFF '
+configopts += ' -DCMAKE_BUILD_TYPE=RELEASE '
+
+configopts += ' -DTPL_ENABLE_MKL=ON '
+configopts += ' -DMKL_INCLUDE_DIRS=$MKLROOT/include '
+configopts += ' -DMKL_LIBRARY_DIRS=$MKLROOT/lib/intel64 '
+configopts += ' -DTPL_BLAS_LIBRARIES="-L$MKLROOT/lib/intel64  -lmkl_rt -lmkl_gf_lp64 -lmkl_core -lmkl_sequential -lpthread -lm" '
+configopts += ' -DTPL_LAPACK_LIBRARIES="-L$MKLROOT/lib/intel64  -lmkl_rt -lmkl_gf_lp64 -lmkl_core -lmkl_sequential -lpthread -lm" '
+configopts += ' -DTrilinos_ENABLE_TESTS=ON '
+
+
+builddependencies = [('CMake', '3.4.1')]
+
+# STK Classic is deprecated/broken, STKDoc_tests needs to be disabled too because of it
+# see https://trilinos.org/oldsite/release_notes-11.10.html and https://github.com/trilinos/Trilinos/issues/19
+#skip_exts = ['STKClassic', 'STKDoc_tests']
+
+# too parallel is too slow, and may cause build/tests to fail
+maxparallel = 10
+
+sanity_check_paths = {
+    'files': [('lib/libtriutils.so.12')],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'numlib'
