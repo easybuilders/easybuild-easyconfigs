@@ -1,16 +1,26 @@
---- rungms.orig	2017-04-26 00:24:06.000000000 -0230
-+++ rungms	2017-07-25 12:00:24.196318563 -0230
-@@ -61,8 +61,7 @@
+--- rungms.orig	2017-07-25 21:33:36.519894483 +0000
++++ rungms	2017-07-25 21:43:21.226984782 +0000
+@@ -61,8 +61,17 @@
  #       See also a very old LoadLeveler "ll-gms" for some IBM systems.
  #
  set TARGET=sockets
 -set SCR=/scr/$USER
 -set USERSCR=/u1/$USER/scr
-+if (null$USRSCR == null) set USERSCR=/scratch/$USER
++if (! $?USERSCR) then
++   if (-d /scratch/$USER ) then
++      set USERSCR=/scratch/$USER
++   else
++      if ($?TMPDIR) then
++         set USERSCR=$TMPDIR
++      else
++         set USERSCR=/tmp
++      endif
++   endif
++endif
  set GMSPATH=/u1/mike/gamess
  #
  set JOB=$1      # name of the input file xxx.inp, give only the xxx part
-@@ -87,6 +86,7 @@
+@@ -87,6 +96,7 @@
                        set SCHED=none
  if ($?PBS_O_LOGNAME)  set SCHED=PBS
  if ($?SGE_O_LOGNAME)  set SCHED=SGE
@@ -18,29 +28,35 @@
  if ($SCHED == SGE) then
     set SCR=$TMPDIR
     echo "SGE has assigned the following compute nodes to this run:"
-@@ -102,6 +102,21 @@
+@@ -102,6 +112,27 @@
     echo "PBS has assigned the following compute nodes to this run:"
     uniq $PBS_NODEFILE
  endif
 +if ($SCHED == SLURM) then
 +   # CC GPx: Point $SCR to per-job localscratch location
 +   # unless user requests it to go somewhere else:
-+   if (null$SCR == null) set SCR=/localscratch/$USER/$SLURM_JOBID
++   if (! $?SCR && $?SLURM_TMPDIR && -d $SLURM_TMPDIR) then
++      set SCR=$SLURM_TMPDIR
++   endif
 +   echo "SLURM has assigned the following compute nodes to this run:"
 +   scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq
 +endif
 +#  In case of interactive invocations (tests), find an existing location:
-+if (null$SCR == null) then
++if (! $?SCR) then
 +   if (-d /scratch/$USER ) then
 +      set SCR=/scratch/$USER
 +   else
-+      set SCR=/tmp
++      if ($?TMPDIR) then
++         set SCR=$TMPDIR
++      else
++         set SCR=/tmp
++      endif
 +   endif
 +endif
  #
  echo "Available scratch disk space (Kbyte units) at beginning of the job is"
  df -k $SCR
-@@ -656,6 +671,11 @@
+@@ -656,6 +687,11 @@
           set NNODES=`wc -l $HOSTFILE`
           set NNODES=$NNODES[1]
        endif
@@ -52,7 +68,7 @@
     endif
     #           uncomment next lines if you need to debug host configuration.
     #--echo '-----debug----'
-@@ -930,8 +950,12 @@
+@@ -930,8 +966,12 @@
           unset echo
        endif
        set echo
@@ -66,7 +82,7 @@
        unset echo
        breaksw
  
-@@ -1028,6 +1052,11 @@
+@@ -1028,6 +1068,11 @@
           set NNODES=`wc -l $HOSTFILE`
           set NNODES=$NNODES[1]
        endif
