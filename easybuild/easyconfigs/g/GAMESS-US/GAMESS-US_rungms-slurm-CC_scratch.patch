@@ -1,0 +1,80 @@
+--- rungms.orig	2017-04-26 00:24:06.000000000 -0230
++++ rungms	2017-07-25 12:00:24.196318563 -0230
+@@ -61,8 +61,7 @@
+ #       See also a very old LoadLeveler "ll-gms" for some IBM systems.
+ #
+ set TARGET=sockets
+-set SCR=/scr/$USER
+-set USERSCR=/u1/$USER/scr
++if (null$USRSCR == null) set USERSCR=/scratch/$USER
+ set GMSPATH=/u1/mike/gamess
+ #
+ set JOB=$1      # name of the input file xxx.inp, give only the xxx part
+@@ -87,6 +86,7 @@
+                       set SCHED=none
+ if ($?PBS_O_LOGNAME)  set SCHED=PBS
+ if ($?SGE_O_LOGNAME)  set SCHED=SGE
++if ($?SLURM_JOB_ID)   set SCHED=SLURM
+ if ($SCHED == SGE) then
+    set SCR=$TMPDIR
+    echo "SGE has assigned the following compute nodes to this run:"
+@@ -102,6 +102,21 @@
+    echo "PBS has assigned the following compute nodes to this run:"
+    uniq $PBS_NODEFILE
+ endif
++if ($SCHED == SLURM) then
++   # CC GPx: Point $SCR to per-job localscratch location
++   # unless user requests it to go somewhere else:
++   if (null$SCR == null) set SCR=/localscratch/$USER/$SLURM_JOBID
++   echo "SLURM has assigned the following compute nodes to this run:"
++   scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq
++endif
++#  In case of interactive invocations (tests), find an existing location:
++if (null$SCR == null) then
++   if (-d /scratch/$USER ) then
++      set SCR=/scratch/$USER
++   else
++      set SCR=/tmp
++   endif
++endif
+ #
+ echo "Available scratch disk space (Kbyte units) at beginning of the job is"
+ df -k $SCR
+@@ -656,6 +671,11 @@
+          set NNODES=`wc -l $HOSTFILE`
+          set NNODES=$NNODES[1]
+       endif
++      if ($SCHED == SLURM) then
++         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
++         set NNODES=`wc -l $HOSTFILE`
++         set NNODES=$NNODES[1]
++      endif
+    endif
+    #           uncomment next lines if you need to debug host configuration.
+    #--echo '-----debug----'
+@@ -930,8 +950,12 @@
+          unset echo
+       endif
+       set echo
+-      mpiexec.hydra -f $PROCFILE -n $NPROCS \
++      if ($SCHED == SLURM) then
++         srun $GMSPATH/gamess.$VERNO.x < /dev/null
++      else
++         mpiexec.hydra -f $PROCFILE -n $NPROCS \
+             $GMSPATH/gamess.$VERNO.x < /dev/null
++      endif
+       unset echo
+       breaksw
+ 
+@@ -1028,6 +1052,11 @@
+          set NNODES=`wc -l $HOSTFILE`
+          set NNODES=$NNODES[1]
+       endif
++      if ($SCHED == SLURM) then
++         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
++         set NNODES=`wc -l $HOSTFILE`
++         set NNODES=$NNODES[1]
++      endif
+    endif
+    #           uncomment next lines if you need to debug host configuration.
+    #--echo '-----debug----'
