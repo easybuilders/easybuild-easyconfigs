@@ -1,5 +1,9 @@
 ##
+<<<<<<< HEAD
+# Copyright 2009-2017 Ghent University
+=======
 # Copyright 2009-2013 Ghent University
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
