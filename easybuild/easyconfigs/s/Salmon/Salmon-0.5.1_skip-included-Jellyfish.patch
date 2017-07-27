@@ -1,0 +1,56 @@
+* skip downloading & building of Jellyfish, since it's provided via EasyBuild already
+* don't hardcode $CMAKE_CXX_FLAGS
+author: Kenneth Hoste (HPC-UGent)
+--- CMakeLists.txt.orig	2015-11-14 19:24:15.000000000 +0100
++++ CMakeLists.txt	2015-12-07 14:26:45.208199682 +0100
+@@ -26,7 +26,7 @@
+ 
+ ## Set the standard required compile flags
+ # Nov 18th --- removed -DHAVE_CONFIG_H
+-set (CMAKE_CXX_FLAGS "-pthread -funroll-loops -fPIC -fomit-frame-pointer -Ofast -DRAPMAP_SALMON_SUPPORT -DHAVE_ANSI_TERM -DHAVE_SSTREAM -Wall -Wno-reorder -Wno-unused-variable -std=c++11 -Wreturn-type -Werror=return-type")
++set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L$ENV{EBROOTJELLYFISH}/lib -ljellyfish-2.0 -pthread -DRAPMAP_SALMON_SUPPORT -DHAVE_ANSI_TERM -DHAVE_SSTREAM -Wall -Wno-reorder -Wno-unused-variable -std=c++11 -Wreturn-type -Werror=return-type")
+ 
+ ##
+ # OSX is strange (some might say, stupid in this regard).  Deal with it's quirkines here.
+@@ -378,23 +387,6 @@
+     BUILD_IN_SOURCE TRUE
+ )
+ 
+-message("Build system will fetch and build Jellyfish")
+-message("==================================================================")
+-ExternalProject_Add(libjellyfish
+-    DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external
+-    DOWNLOAD_COMMAND curl -k -L https://github.com/gmarcais/Jellyfish/releases/download/v2.2.3/jellyfish-2.2.3.tar.gz -o jellyfish-2.2.3.tgz &&
+-        rm -fr jellyfish-2.2.3 &&
+-        tar -xzvf jellyfish-2.2.3.tgz
+-   SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.3
+-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/install
+-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.3/configure --prefix=<INSTALL_DIR> CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+-    BUILD_COMMAND ${MAKE} CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+-    BUILD_IN_SOURCE 1
+-    INSTALL_COMMAND make install &&
+-                    cp config.h <INSTALL_DIR>/include/jellyfish-2.2.3/jellyfish/ &&
+-                    cp config.h <INSTALL_DIR>/include/
+-)
+-
+ find_package(TBB)
+ 
+ ##
+--- src/CMakeLists.txt.orig	2015-11-14 19:24:15.000000000 +0100
++++ src/CMakeLists.txt	2015-12-07 15:10:26.694823435 +0100
+@@ -4,7 +4,6 @@
+ ${GAT_SOURCE_DIR}/external
+ ${GAT_SOURCE_DIR}/external/cereal/include
+ ${GAT_SOURCE_DIR}/external/install/include
+-${GAT_SOURCE_DIR}/external/install/include/jellyfish-2.2.3
+ ${GAT_SOURCE_DIR}/external/install/include/bwa
+ ${ZLIB_INCLUDE_DIR}
+ ${TBB_INCLUDE_DIRS}
+@@ -128,7 +127,6 @@
+     ${ZLIB_LIBRARY}
+     ${SUFFARRAY_LIB}
+     ${SUFFARRAY64_LIB}
+-    ${GAT_SOURCE_DIR}/external/install/lib/libjellyfish-2.0.a
+     ${GAT_SOURCE_DIR}/external/install/lib/libbwa.a
+     m
+     ${LIBLZMA_LIBRARIES}

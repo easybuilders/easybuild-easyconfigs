@@ -1,0 +1,38 @@
+patch Makefile to pick up HTSlib, GSL and zlib provided thorugh EasyBuild
+author: Kenneth Hoste (HPC-UGent)
+--- bcftools-1.3/Makefile.orig	2015-12-15 22:58:35.000000000 +0100
++++ bcftools-1.3/Makefile	2016-03-02 15:22:03.656821071 +0100
+@@ -29,11 +29,10 @@
+ all: $(PROG) $(TEST_PROG)
+ 
+ # Adjust $(HTSDIR) to point to your top-level htslib directory
+-HTSDIR = htslib-1.3
+-include $(HTSDIR)/htslib.mk
+-HTSLIB = $(HTSDIR)/libhts.a
+-BGZIP  = $(HTSDIR)/bgzip
+-TABIX  = $(HTSDIR)/tabix
++HTSDIR = $(EBROOTHTSLIB)/include
++HTSLIB = $(EBROOTHTSLIB)/lib/libhts.a
++BGZIP  = $(EBROOTHTSLIB)/bin/bgzip
++TABIX  = $(EBROOTHTSLIB)/bin/tabix
+ 
+ CC       = gcc
+ CPPFLAGS =
+@@ -57,7 +56,7 @@
+ ifdef USE_GPL
+     EXTRA_CPPFLAGS += -DUSE_GPL
+     OBJS += polysomy.o peakfit.o
+-    GSL_LIBS = -lgsl -lcblas
++    GSL_LIBS = -L${EBROOTGSL}/lib -lgsl -lcblas
+ endif
+ 
+ prefix      = /usr/local
+@@ -181,7 +180,7 @@
+ 	$(CC) $(LDFLAGS) -o $@ $^ -lm $(LIBS)
+ 
+ bcftools: $(HTSLIB) $(OBJS)
+-	$(CC) -rdynamic $(LDFLAGS) -o $@ $(OBJS) $(HTSLIB) -lpthread -lz -lm -ldl $(GSL_LIBS) $(LIBS)
++	$(CC) -rdynamic $(LDFLAGS) -o $@ $(OBJS) $(HTSLIB) -lpthread -L${EBROOTZLIB}/lib -lz -lm -ldl $(GSL_LIBS) $(LIBS)
+ 
+ doc/bcftools.1: doc/bcftools.txt
+ 	cd doc && a2x -adate="$(DOC_DATE)" -aversion=$(DOC_VERSION) --doctype manpage --format manpage bcftools.txt

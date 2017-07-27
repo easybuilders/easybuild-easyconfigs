@@ -1,0 +1,36 @@
+name = 'ATLAS'
+version = '3.10.1'
+
+homepage = 'http://math-atlas.sourceforge.net'
+description = """ATLAS (Automatically Tuned Linear Algebra Software) is the application of
+ the AEOS (Automated Empirical Optimization of Software) paradigm, with the present emphasis 
+ on the Basic Linear Algebra Subprograms (BLAS), a widely used, performance-critical, linear 
+ algebra kernel library."""
+
+toolchain = {'name': 'gompi', 'version': '1.5.12-no-OFED'}
+toolchainopts = {'pic': True}
+
+lapackver = '3.4.2'
+versionsuffix = '-LAPACK-%s' % lapackver
+
+source_urls = [
+    ('http://sourceforge.net/projects/math-atlas/files/Stable/%(version)s', 'download'),
+    'http://www.netlib.org/lapack/',
+]
+sources = [
+    '%(namelower)s%(version)s.tar.bz2',
+    'lapack-%s.tgz' % lapackver,
+]
+
+# build full LAPACK library with supplied netlib LAPACK
+full_lapack = True
+
+# fix for http://math-atlas.sourceforge.net/errata.html#sharedProbe
+configopts = "-Ss f77lib '-L$(EBROOTGCC)/lib64 -lgfortran'"
+
+# ignore check done by ATLAS for CPU throttling;
+# you should set this to False (or remove it)
+# and disable CPU throttling (requires root privileges) if you can
+ignorethrottling = True
+
+moduleclass = 'numlib'

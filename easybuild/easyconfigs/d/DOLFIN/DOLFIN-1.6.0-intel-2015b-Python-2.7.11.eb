@@ -1,0 +1,67 @@
+name = 'DOLFIN'
+version = '1.6.0'
+
+homepage = 'https://bitbucket.org/fenics-project/dolfin'
+description = """DOLFIN is the C++/Python interface of FEniCS, providing a consistent PSE
+  (Problem Solving Environment) for ordinary and partial differential equations."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+toolchainopts = {'usempi': True, 'pic': True, 'packed-linker-options': True}
+
+majver = version.split('.')
+if majver[0] == '0':
+    majver = majver[0]
+else:
+    majver = '.'.join(majver[0:2])
+
+source_urls = ['https://bitbucket.org/fenics-project/dolfin/downloads/']
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = [
+    'DOLFIN-%(version)s_petsc-slepc-libs.patch',
+    'DOLFIN-%(version)s_fix-SuiteSparse-4.3.patch',
+]
+
+pyver = '2.7.11'
+versionsuffix = '-Python-%s' % pyver
+
+builddependencies = [
+    ('CMake', '3.4.1'),
+    ('SWIG', '3.0.8', versionsuffix),
+    ('patchelf', '0.8', '', ('GNU', '4.9.3-2.25')),
+]
+dependencies = [
+    ('Python', pyver),
+    ('Boost', '1.59.0', versionsuffix),
+    ('FFC', version, versionsuffix),
+    ('FIAT', version, versionsuffix),
+    ('Instant', version, versionsuffix),
+    ('UFL', version, versionsuffix),
+    ('SCOTCH', '6.0.4'),
+    ('SuiteSparse', '4.4.6', '-ParMETIS-4.0.3'),
+    ('CGAL', '4.7', versionsuffix),
+    ('PETSc', '3.6.3', versionsuffix),
+    ('SLEPc', '3.6.2', versionsuffix),
+    ('MTL4', '4.0.9555', '', True),
+    ('HDF5', '1.8.15-patch1'),
+    ('Trilinos', '12.4.2', versionsuffix),
+    ('Sphinx', '1.3.3', versionsuffix),
+    ('zlib', '1.2.8'),
+    ('libxml2', '2.9.3', versionsuffix),
+    ('Eigen', '3.2.7'),
+    ('PLY', '3.8', versionsuffix),
+    ('VTK', '6.3.0', versionsuffix),
+    ('petsc4py', '3.6.0', versionsuffix),
+    ('slepc4py', '3.6.0', versionsuffix),
+    ('PaStiX', '5.2.2.22'),
+    ('CppUnit', '1.12.1'),
+    ('Qt', '4.8.7', versionsuffix),
+]
+
+# supply path to libsuitesparseconfig.a for CHOLMOD/UMFPACK, see also patch file
+configopts = "-DSUITESPARSECONFIG_DIR=$EBROOTSUITESPARSE/SuiteSparse_config "
+
+# demos run as tests fail with 'bad X server connection', skipping for now
+runtest = False
+
+moduleclass = 'math'

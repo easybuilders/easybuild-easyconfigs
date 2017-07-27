@@ -1,5 +1,6 @@
 We'd love you to contribute back to EasyBuild, and here's how you can do it: the branch - hack - pull request cycle.
 
+<<<<<<< HEAD
 # License
 Contributions can be made under the MIT or 
 BSD licenses (in the three-clause and two-clause forms, though not the original four-clause form).
@@ -24,26 +25,51 @@ under different terms from the Initial License or this Contributor Agreement.
 ### Fork easybuild-easyblocks
 
 First, you'll need to fork [easybuild-easyblocks on GitHub](https://github.com/easybuilders/easybuild-easyblocks).
+=======
+
+## Preparation
+
+### Fork easybuild-easyconfigs
+
+First, you'll need to fork [easybuild-easyconfigs on GitHub](https://github.com/easybuilders/easybuild-easyconfigs).
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
 
 If you do not have a (free) GitHub account yet, you'll need to get one.
 
 You should also register an SSH public key, so you can easily clone, push to and pull from your repository.
 
+<<<<<<< HEAD
 ### Clone your easybuild-easyblocks repository
 
 Clone your fork of the easybuild-easyblocks repository to your favorite workstation. 
 
 ```bash
 git clone git@github.com:YOUR\_GITHUB\_LOGIN/easybuild-easyblocks.git
+=======
+### Clone your easybuild-easyconfigs repository
+
+Clone your fork of the easybuild-easyconfigs repository to your favorite workstation. 
+
+```bash
+git clone git@github.com:YOUR\_GITHUB\_LOGIN/easybuild-easyconfigs.git
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
 ```
 
 ### Pull in the develop branch
 
+<<<<<<< HEAD
 Pull the _develop_ branch from the main easybuild-easyblocks repository:
 
 ```bash
 cd easybuild
 git remote add github_easybuilders git@github.com:easybuilders/easybuild-easyblocks.git
+=======
+Pull the _develop_ branch from the main easybuild-easyconfigs repository:
+
+```bash
+cd easybuild
+git remote add github_easybuilders git@github.com:easybuilders/easybuild-easyconfigs.git
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
 git branch develop
 git checkout develop
 git pull github_easybuilders develop
@@ -51,7 +77,11 @@ git pull github_easybuilders develop
 
 ### Keep develop up-to-date
 
+<<<<<<< HEAD
 The _develop_ branch hosts the latest bleeding-edge version of easybuild-easyblocks, and is merged into _master_ regularly (after thorough testing). 
+=======
+The _develop_ branch hosts the latest bleeding-edge version of easybuild-easyconfigs, and is merged into _master_ regularly (after thorough testing). 
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
 
 Make sure you update it every time you create a feature branch (see below):
 
@@ -103,11 +133,19 @@ If you are working on several things at the same time, try and keep things isola
 
 ## Pull request
 
+<<<<<<< HEAD
 When you've finished the implementation of a particular contribution, here's how to get it into the main easybuild-easyblocks repository (also see https://help.github.com/articles/using-pull-requests/)
 
 ### Push your branch
 
 Push your branch to your easybuild-easyblocks repository on GitHub:
+=======
+When you've finished the implementation of a particular contribution, here's how to get it into the main easybuild-easyconfigs repository (also see https://help.github.com/articles/using-pull-requests/)
+
+### Push your branch
+
+Push your branch to your easybuild-easyconfigs repository on GitHub:
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
  
 ```bash
 git push origin <BRANCH_NAME>
@@ -116,11 +154,19 @@ git push origin <BRANCH_NAME>
 
 ### Issue a pull request
 
+<<<<<<< HEAD
 Issue a pull request for your branch into the main easybuild-easyblocks repository, as follows:
 
  * go to github.com/YOUR\_GITHUB\_LOGIN/easybuild-easyblocks, and make sure the branch you just pushed is selected (not _master_, but _<BRANCH_NAME>_)
 
  * issue a pull request (see button at the top of the page) for your branch to the **_develop_** branch of the main easybuild-easyblocks repository; **note**: don't issue a pull request to the _master_ branch, as it will be simply closed by the EasyBuild team
+=======
+Issue a pull request for your branch into the main easybuild-easyconfigs repository, as follows:
+
+ * go to github.com/YOUR\_GITHUB\_LOGIN/easybuild-easyconfigs, and make sure the branch you just pushed is selected (not _master_, but _<BRANCH_NAME>_)
+
+ * issue a pull request (see button at the top of the page) for your branch to the **_develop_** branch of the main easybuild-easyconfigs repository; **note**: don't issue a pull request to the _master_ branch, as it will be simply closed by the EasyBuild team
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
 
  * make sure to reference the corresponding issue number in the pull request, using the notation # followed by a number, e.g. `#83`
 
@@ -131,7 +177,11 @@ If you're contributing code to an existing issue you can also convert the issue 
 GITHUBUSER=your_username && PASSWD=your_password && BRANCH=branch_name && ISSUE=issue_number && \
 curl --user "$GITHUBUSER:$PASSWD" --request POST \
 --data "{\"issue\": \"$ISSUE\", \"head\": \"$GITHUBUSER:$BRANCH\", \"base\": \"develop\"}" \
+<<<<<<< HEAD
 https://api.github.com/repos/easybuilders/easybuild-easyblocks/pulls
+=======
+https://api.github.com/repos/easybuilders/easybuild-easyconfigs/pulls
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
 ```
 This is currently only supported by github from the command line and not via the web interface.
 You might also want to look into [hub](https://github.com/defunkt/hub) for more command line features.
@@ -147,6 +197,10 @@ Try and act on the remarks made, either by commiting additional changes to your 
 
 ### Aftermath
 
+<<<<<<< HEAD
 Once your pull request has been reviewed and remarks have been processed, your contribution will be merged into the _develop_ branch of the main easybuild-easyblocks repository.
+=======
+Once your pull request has been reviewed and remarks have been processed, your contribution will be merged into the _develop_ branch of the main easybuild-easyconfigs repository.
+>>>>>>> 22ab263e7049b39a53a588652d8579107c1255f3
 
 On frequent occasions, the _develop_ branch is merged into the _master_ branch and a new version is tagged, and your contribution truly becomes part of EasyBuild.

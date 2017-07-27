@@ -1,0 +1,76 @@
+diff -ru samtools-0.1.18.orig/Makefile samtools-0.1.18/Makefile
+--- samtools-0.1.18.orig/Makefile	2011-07-07 04:59:22.000000000 +0200
++++ samtools-0.1.18/Makefile	2013-03-28 14:50:00.994423062 +0100
+@@ -10,10 +10,10 @@
+ 			bamtk.o kaln.o bam2bcf.o bam2bcf_indel.o errmod.o sample.o \
+ 			cut_target.o phase.o bam2depth.o
+ PROG=		samtools
+-INCLUDES=	-I.
++INCLUDES=	-I$(EBROOTNCURSES)/include -I$(EBROOTZLIB)/include -I.
+ SUBDIRS=	. bcftools misc
+-LIBPATH=
+-LIBCURSES=	-lcurses # -lXCurses
++LIBPATH= -L$(EBROOTZLIB)/lib 
++LIBCURSES=	-L$(EBROOTNCURSES)/lib -lcurses -L$(EBROOTZLIB)/lib -lz # -lXCurses
+ 
+ .SUFFIXES:.c .o
+ 
+@@ -44,10 +44,10 @@
+ 		$(CC) $(CFLAGS) -o $@ $(AOBJS) -Lbcftools $(LIBPATH) libbam.a -lbcf $(LIBCURSES) -lm -lz
+ 
+ razip:razip.o razf.o $(KNETFILE_O)
+-		$(CC) $(CFLAGS) -o $@ razf.o razip.o $(KNETFILE_O) -lz
++		$(CC) $(CFLAGS) -o $@ razf.o razip.o $(KNETFILE_O) -L$(EBROOTZLIB)/lib -lz
+ 
+ bgzip:bgzip.o bgzf.o $(KNETFILE_O)
+-		$(CC) $(CFLAGS) -o $@ bgzf.o bgzip.o $(KNETFILE_O) -lz
++		$(CC) $(CFLAGS) -o $@ bgzf.o bgzip.o $(KNETFILE_O) -L$(EBROOTZLIB)/lib -lz
+ 
+ razip.o:razf.h
+ bam.o:bam.h razf.h bam_endian.h kstring.h sam_header.h
+@@ -73,10 +73,10 @@
+ 
+ 
+ libbam.1.dylib-local:$(LOBJS)
+-		libtool -dynamic $(LOBJS) -o libbam.1.dylib -lc -lz
++		libtool -dynamic $(LOBJS) -o libbam.1.dylib -lc -L$(EBROOTZLIB)/lib  -lz
+ 
+ libbam.so.1-local:$(LOBJS)
+-		$(CC) -shared -Wl,-soname,libbam.so -o libbam.so.1 $(LOBJS) -lc -lz
++		$(CC) -shared -Wl,-soname,libbam.so -o libbam.so.1 $(LOBJS) -lc -L$(EBROOTZLIB)/lib  -lz
+ 
+ dylib:
+ 		@$(MAKE) cleanlocal; \
+diff -ru samtools-0.1.18.orig/misc/Makefile samtools-0.1.18/misc/Makefile
+--- samtools-0.1.18.orig/misc/Makefile	2011-09-02 18:58:46.000000000 +0200
++++ samtools-0.1.18/misc/Makefile	2013-03-28 14:46:44.454306248 +0100
+@@ -28,13 +28,13 @@
+ lib:
+ 
+ seqtk:seqtk.o
+-		$(CC) $(CFLAGS) -o $@ seqtk.o -lm -lz
++		$(CC) $(CFLAGS) -o $@ seqtk.o -lm -L$(EBROOTZLIB)/lib  -lz
+ 
+ wgsim:wgsim.o
+-		$(CC) $(CFLAGS) -o $@ wgsim.o -lm -lz
++		$(CC) $(CFLAGS) -o $@ wgsim.o -lm -L$(EBROOTZLIB)/lib  -lz
+ 
+ md5fa:md5.o md5fa.o md5.h ../kseq.h
+-		$(CC) $(CFLAGS) -o $@ md5.o md5fa.o -lz
++		$(CC) $(CFLAGS) -o $@ md5.o md5fa.o -L$(EBROOTZLIB)/lib  -lz
+ 
+ md5sum-lite:md5sum-lite.o
+ 		$(CC) $(CFLAGS) -o $@ md5sum-lite.o
+@@ -43,10 +43,10 @@
+ 		$(CC) -c $(CFLAGS) -DMD5SUM_MAIN -o $@ md5.c
+ 
+ maq2sam-short:maq2sam.c
+-		$(CC) $(CFLAGS) -o $@ maq2sam.c -lz
++		$(CC) $(CFLAGS) -o $@ maq2sam.c -L$(EBROOTZLIB)/lib  -lz
+ 
+ maq2sam-long:maq2sam.c
+-		$(CC) $(CFLAGS) -DMAQ_LONGREADS -o $@ maq2sam.c -lz
++		$(CC) $(CFLAGS) -DMAQ_LONGREADS -o $@ maq2sam.c -L$(EBROOTZLIB)/lib  -lz
+ 
+ md5fa.o:md5.h md5fa.c
+ 		$(CC) $(CFLAGS) -c -I.. -o $@ md5fa.c

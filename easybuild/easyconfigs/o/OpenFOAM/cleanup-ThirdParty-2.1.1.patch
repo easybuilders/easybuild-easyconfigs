@@ -1,0 +1,55 @@
+diff -ru ThirdParty-2.1.1.ORIG/Allwmake ThirdParty-2.1.1/Allwmake
+--- ThirdParty-2.1.1.ORIG/Allwmake	2011-12-19 11:45:08.000000000 +0100
++++ ThirdParty-2.1.1/Allwmake	2014-07-08 00:46:01.362976778 +0200
+@@ -109,12 +109,12 @@
+     ;;
+ 
+ MPICH)
+-    if [ -r $MPI_ARCH_PATH/lib/libmpich.so ]
++    if [ -r $MPI_ARCH_PATH/lib64/libmpich.so ]
+     then
+         echo "    have $WM_MPLIB shared library ($FOAM_MPI)"
+         echo
+         echo
+-    elif [ -r $MPI_ARCH_PATH/lib/libmpich.a ]
++    elif [ -r $MPI_ARCH_PATH/lib64/libmpich.a ]
+     then
+         echo "    have $WM_MPLIB static library ($FOAM_MPI)"
+         echo
+@@ -194,6 +194,13 @@
+     echo "    scotch header in $SCOTCH_ARCH_PATH/include"
+     echo "    scotch libs   in $FOAM_EXT_LIBBIN"
+     echo
++elif [ -f $SCOTCH_ARCH_PATH/include/scotch.h \
++  -a \( -r $SCOTCH_ARCH_PATH/lib/libscotch.so        -o -r $SCOTCH_ARCH_PATH/lib/libscotch.a        \) \
++  -a \( -r $SCOTCH_ARCH_PATH/lib/libscotcherrexit.so -o -r $SCOTCH_ARCH_PATH/lib/libscotcherrexit.a \) ]
++then
++    echo "    scotch header in $SCOTCH_ARCH_PATH/include"
++    echo "    scotch libs   in $SCOTCH_ARCH_PATH/lib"
++    echo
+ else
+ (
+     set -x
+@@ -255,6 +262,13 @@
+         echo "    ptscotch header in $SCOTCH_ARCH_PATH/include/$FOAM_MPI"
+         echo "    ptscotch libs   in $FOAM_EXT_LIBBIN/$FOAM_MPI"
+         echo
++    elif [ -f $SCOTCH_ARCH_PATH/include/ptscotch.h \
++      -a \( -r $SCOTCH_ARCH_PATH/lib/libptscotch.so        -o -r $SCOTCH_ARCH_PATH/lib/libptscotch.a        \) \
++      -a \( -r $SCOTCH_ARCH_PATH/lib/libptscotcherrexit.so -o -r $SCOTCH_ARCH_PATH/lib/libptscotcherrexit.a \) ]
++    then
++        echo "    ptscotch header in $SCOTCH_ARCH_PATH/include"
++        echo "    ptscotch libs   in $SCOTCH_ARCH_PATH/lib"
++        echo
+     else
+     (
+         set -x
+@@ -295,7 +309,7 @@
+     fi
+ 
+     # verify existence of scotch include
+-    [ -f $SCOTCH_ARCH_PATH/include/$FOAM_MPI/ptscotch.h ] || {
++    [ -f $SCOTCH_ARCH_PATH/include/$FOAM_MPI/ptscotch.h -o -f $SCOTCH_ARCH_PATH/include/ptscotch.h ] || {
+         echo
+         echo "    WARNING: required include file 'ptscotch.h' not found!"
+         echo

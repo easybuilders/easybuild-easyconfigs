@@ -1,0 +1,505 @@
+fix using BLAS95/LAPACK95 interface for recent Intel MKL versions
+author: Kenneth Hoste (HPC-UGent)
+diff -ru periodic_nbo.orig/matutil.f90 periodic_nbo/matutil.f90
+--- periodic_nbo.orig/matutil.f90	2015-03-04 18:06:25.000000000 +0100
++++ periodic_nbo/matutil.f90	2016-05-12 10:17:54.673546000 +0200
+@@ -93,7 +93,7 @@
+   END FUNCTION matdet
+ 
+   FUNCTION matsqrt_real(dmat)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     REAL*8 , DIMENSION(:,:) :: dmat
+     REAL*8 , DIMENSION(SIZE(dmat,1),SIZE(dmat,2)) :: matsqrt_real, vecs
+@@ -115,14 +115,14 @@
+     FORALL (i=1:n1) matsqrt_real(i,i) = SQRT(abs(vals(i)))
+     !matsqrt_real = MATMUL(vecs, MATMUL(matsqrt_real, TRANSPOSE(vecs)))
+ 
+-    CALL DGEMM_MKL95(vecs,matsqrt_real,dummy,'N','N',1.d0,0.d0)
+-    CALL DGEMM_MKL95(dummy,vecs,matsqrt_real,'N','T',1.d0,0.d0)
++    CALL DGEMM(vecs,matsqrt_real,dummy,'N','N',1.d0,0.d0)
++    CALL DGEMM(dummy,vecs,matsqrt_real,'N','T',1.d0,0.d0)
+ 
+ 
+   END FUNCTION matsqrt_real
+ 
+   FUNCTION matsqrt_complex(cmat)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     COMPLEX*16 , DIMENSION(:,:) :: cmat
+     COMPLEX*16 , DIMENSION(SIZE(cmat,1),SIZE(cmat,2)) :: matsqrt_complex, vecs
+@@ -140,13 +140,13 @@
+     FORALL (i=1:n1) matsqrt_complex(i,i) = SQRT(abs(vals(i)))
+     !matsqrt_complex = MATMUL(vecs, MATMUL(matsqrt_complex, TRANSPOSE(CONJG(vecs))))
+ 
+-    CALL ZGEMM_MKL95(vecs,matsqrt_complex,dummy,'N','N',(1.d0,0.d0),(0.d0,0.d0))
+-    CALL ZGEMM_MKL95(dummy,vecs,matsqrt_complex,'N','C',(1.d0,0.d0),(0.d0,0.d0))
++    CALL ZGEMM(vecs,matsqrt_complex,dummy,'N','N',(1.d0,0.d0),(0.d0,0.d0))
++    CALL ZGEMM(dummy,vecs,matsqrt_complex,'N','C',(1.d0,0.d0),(0.d0,0.d0))
+ 
+   END FUNCTION matsqrt_complex
+ 
+   FUNCTION matinvsqrt_real(dmat)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     REAL*8 , DIMENSION(:,:) :: dmat
+     REAL*8 , DIMENSION(SIZE(dmat,1),SIZE(dmat,2)) :: matinvsqrt_real, vecs
+@@ -164,13 +164,13 @@
+     FORALL (i=1:n1) matinvsqrt_real(i,i) = 1.d0/SQRT(abs(vals(i)))
+     !matinvsqrt_real = MATMUL(vecs, MATMUL(matinvsqrt_real, TRANSPOSE(vecs)))
+ 
+-    CALL DGEMM_MKL95(vecs,matinvsqrt_real,dummy,'N','N',1.d0,0.d0)
+-    CALL DGEMM_MKL95(dummy,vecs,matinvsqrt_real,'N','T',1.d0,0.d0)
++    CALL DGEMM(vecs,matinvsqrt_real,dummy,'N','N',1.d0,0.d0)
++    CALL DGEMM(dummy,vecs,matinvsqrt_real,'N','T',1.d0,0.d0)
+ 
+   END FUNCTION matinvsqrt_real
+ 
+   FUNCTION matinvsqrt_complex(cmat)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     COMPLEX*16 , DIMENSION(:,:) :: cmat
+     COMPLEX*16 , DIMENSION(SIZE(cmat,1),SIZE(cmat,2)) :: matinvsqrt_complex, vecs
+@@ -199,13 +199,13 @@
+ 
+     !matinvsqrt_complex = MATMUL(vecs, MATMUL(matinvsqrt_complex, TRANSPOSE(CONJG(vecs))))
+ 
+-    CALL ZGEMM_MKL95(vecs,matinvsqrt_complex,dummy,'N','N',(1.d0,0.d0),(0.d0,0.d0))
+-    CALL ZGEMM_MKL95(dummy,vecs,matinvsqrt_complex,'N','C',(1.d0,0.d0),(0.d0,0.d0))
++    CALL ZGEMM(vecs,matinvsqrt_complex,dummy,'N','N',(1.d0,0.d0),(0.d0,0.d0))
++    CALL ZGEMM(dummy,vecs,matinvsqrt_complex,'N','C',(1.d0,0.d0),(0.d0,0.d0))
+ 
+   END FUNCTION matinvsqrt_complex
+ 
+   FUNCTION matexp(dmat)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     REAL*8 , DIMENSION(:,:) :: dmat
+     REAL*8 , DIMENSION(SIZE(dmat,1),SIZE(dmat,2)) :: matexp, vecs
+@@ -222,8 +222,8 @@
+     matexp = 0.d0
+     FORALL (i=1:n1) matexp(i,i) = EXP(vals(i))
+     !matexp = MATMUL(vecs, MATMUL(matexp, TRANSPOSE(vecs)))
+-    CALL DGEMM_MKL95(vecs,matexp,dummy,'N','N',1.d0,0.d0)
+-    CALL DGEMM_MKL95(dummy,vecs,matexp,'N','T',1.d0,0.d0)
++    CALL DGEMM(vecs,matexp,dummy,'N','N',1.d0,0.d0)
++    CALL DGEMM(dummy,vecs,matexp,'N','T',1.d0,0.d0)
+ 
+   END FUNCTION matexp
+ 
+@@ -246,8 +246,8 @@
+ 
+   ! solves the generalized eigenvalue equations D c=S c*lambda
+   SUBROUTINE diag_general(dmat,smat,dvals,dvecs)
+-    USE MKL95_BLAS
+-    USE MKL95_LAPACK
++    USE BLAS95
++    USE LAPACK95
+     IMPLICIT NONE
+     REAL*8 , DIMENSION(:,:) :: dmat, smat, dvecs
+     REAL*8 , DIMENSION(:)   :: dvals
+@@ -277,14 +277,14 @@
+ 
+     ! transform to the coordinates of the normal eigensystem
+     !dmat = MATMUL(TRANSPOSE(shalfi),MATMUL(dmat,shalfi))
+-    CALL DGEMM_MKL95(shalfi,dmat,dummy,'T','N',1.d0,0.d0)
+-    CALL DGEMM_MKL95(dummy,shalfi,dmat,'N','N',1.d0,0.d0)
++    CALL DGEMM(shalfi,dmat,dummy,'T','N',1.d0,0.d0)
++    CALL DGEMM(dummy,shalfi,dmat,'N','N',1.d0,0.d0)
+     ! get the normal eigenvalues and vectors
+     call jacobi(dmat,n1,n1,dvals,dvecs,nrot)
+     ! transform the eigenvectors BACK to the original coordinate system
+     !dvecs = MATMUL(shalfi, dvecs)
+     dummy = dvecs
+-    CALL DGEMM_MKL95(shalfi,dummy,dvecs,'N','N',1.d0,0.d0)
++    CALL DGEMM(shalfi,dummy,dvecs,'N','N',1.d0,0.d0)
+     CALL eigsrt(dvals,dvecs,n1,n1)
+ 
+     !WRITE(6,*)'Eigenvalues'
+@@ -294,7 +294,7 @@
+   END SUBROUTINE diag_general
+ 
+   FUNCTION matinv_real(dmat)
+-    USE MKL95_LAPACK
++    USE LAPACK95
+     IMPLICIT NONE
+     REAL*8 , DIMENSION(:,:) :: dmat
+     REAL*8 , DIMENSION(SIZE(dmat,1),SIZE(dmat,2)) :: matinv_real
+@@ -306,12 +306,12 @@
+     IF (n1.NE.n2) STOP 'Attempting to invert a non-square matrix'
+ 
+     matinv_real=dmat
+-    CALL DGETRF_MKL95(matinv_real,ipiv,info)
+-    CALL DGETRI_MKL95(matinv_real,ipiv,info)
++    CALL DGETRF(matinv_real,ipiv,info)
++    CALL DGETRI(matinv_real,ipiv,info)
+   END FUNCTION matinv_real
+ 
+   FUNCTION matinv_complex(cmat)
+-    USE MKL95_LAPACK
++    USE LAPACK95
+     IMPLICIT NONE
+     COMPLEX*16 , DIMENSION(:,:) :: cmat
+     COMPLEX*16 , DIMENSION(SIZE(cmat,1),SIZE(cmat,2)) :: matinv_complex
+@@ -328,7 +328,7 @@
+ 
+ 
+     !evecs = cmat
+-    !CALL ZHEEV_MKL95(evecs,evals,'V','U',INFO)
++    !CALL ZHEEV(evecs,evals,'V','U',INFO)
+     !DO info=1,SIZE(evals,1)
+     !   WRITE(6,'(F10.5)')evals(info)
+     !ENDDO
+@@ -337,8 +337,8 @@
+ 
+ 
+     matinv_complex=cmat
+-    CALL ZGETRF_MKL95(matinv_complex,ipiv,info)
+-    CALL ZGETRI_MKL95(matinv_complex,ipiv,info)
++    CALL ZGETRF(matinv_complex,ipiv,info)
++    CALL ZGETRI(matinv_complex,ipiv,info)
+   END FUNCTION matinv_complex
+ 
+   FUNCTION outer_product(x,y)
+@@ -351,7 +351,7 @@
+ 
+ !Fortran 90 wrappers for diag routines
+   SUBROUTINE matdiag_real(dmat,evals,evecs)
+-    USE MKL95_LAPACK
++    USE LAPACK95
+     IMPLICIT NONE
+     REAL*8 , DIMENSION(:,:) :: dmat
+     REAL*8 , DIMENSION(SIZE(dmat,1)) :: evals
+@@ -363,7 +363,7 @@
+     IF (n1.NE.n2) STOP 'Attempting to diagonalize a non-square matrix'
+ 
+     evecs=dmat
+-    !CALL dsyev_mkl95(evecs,evals,'V','U',info)
++    !CALL dsyev(evecs,evals,'V','U',info)
+     CALL diag(dmat,n1,n1,evals,evecs)
+ 
+     !WRITE(6,*)'using real symmetrizing routine'
+@@ -373,7 +373,7 @@
+   END SUBROUTINE matdiag_real
+ 
+   SUBROUTINE matdiag_complex(cmat,evals,evecs)
+-    USE MKL95_LAPACK
++    USE LAPACK95
+     IMPLICIT NONE
+     COMPLEX*16 , DIMENSION(:,:) :: cmat
+     REAL*8 , DIMENSION(SIZE(cmat,1)) :: evals
+@@ -389,11 +389,11 @@
+ 
+     evecs=cmat
+ 
+-    CALL zheev_mkl95(evecs,evals,'V','U',info)
++    CALL zheev(evecs,evals,'V','U',info)
+     IF (info.NE.0) STOP 'Error in matdiag_complex'
+ 
+     !dummy=cmat
+-    !CALL ZGESVD_MKL95(dummy,sing_value,u_matrix,v_matrix)
++    !CALL ZGESVD(dummy,sing_value,u_matrix,v_matrix)
+ 
+ 
+     !IF( evals(1) .LE. -1.d-13 )WRITE(6,*)'WHOOOOOOOOOAAAAAAAAAAAAAAA!!!   Negative eigenvalues'
+@@ -436,31 +436,31 @@
+   END FUNCTION matiden
+ 
+   FUNCTION matunitary_trans_real(A,U) RESULT(Ap)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     REAL*8,DIMENSION(:,:) :: A,U
+     REAL*8,DIMENSION(SIZE(U,1),SIZE(U,1)) :: Ap
+     REAL*8,DIMENSION(SIZE(A,1),SIZE(U,1)) :: dummy
+ 
+     !Ap=MATMUL(U,MATMUL(A,TRANSPOSE(U)))
+-    CALL DGEMM_MKL95(A,U,dummy,'N','T',1.d0,0.d0)
+-    CALL DGEMM_MKL95(U,dummy,Ap,'N','N',1.d0,0.d0)
++    CALL DGEMM(A,U,dummy,'N','T',1.d0,0.d0)
++    CALL DGEMM(U,dummy,Ap,'N','N',1.d0,0.d0)
+   END FUNCTION matunitary_trans_real
+ 
+   FUNCTION matunitary_trans_complex(A,U) RESULT(Ap)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     COMPLEX*16,DIMENSION(:,:) :: A,U
+     COMPLEX*16,DIMENSION(SIZE(U,1),SIZE(U,1)) :: Ap
+     COMPLEX*16,DIMENSION(SIZE(A,1),SIZE(U,1)) :: dummy
+ 
+     !Ap=MATMUL(U,MATMUL(A,CONJG(TRANSPOSE(U))))
+-    CALL ZGEMM_MKL95(A,U,dummy,'N','C',(1.d0,0.d0),(0.d0,0.d0))
+-    CALL ZGEMM_MKL95(U,dummy,Ap,'N','N',(1.d0,0.d0),(0.d0,0.d0))
++    CALL ZGEMM(A,U,dummy,'N','C',(1.d0,0.d0),(0.d0,0.d0))
++    CALL ZGEMM(U,dummy,Ap,'N','N',(1.d0,0.d0),(0.d0,0.d0))
+   END FUNCTION matunitary_trans_complex
+ 
+   FUNCTION matunitary_trans_complex2(A,U) RESULT(Ap)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     COMPLEX*16,DIMENSION(:,:) :: A
+     REAL*8,DIMENSION(:,:) :: U
+@@ -470,8 +470,8 @@
+ 
+     U_comp = U
+     !Ap=MATMUL(U,MATMUL(A,TRANSPOSE(U)))
+-    CALL ZGEMM_MKL95(A,U_comp,dummy,'N','C',(1.d0,0.d0),(0.d0,0.d0))
+-    CALL ZGEMM_MKL95(U_comp,dummy,Ap,'N','N',(1.d0,0.d0),(0.d0,0.d0))
++    CALL ZGEMM(A,U_comp,dummy,'N','C',(1.d0,0.d0),(0.d0,0.d0))
++    CALL ZGEMM(U_comp,dummy,Ap,'N','N',(1.d0,0.d0),(0.d0,0.d0))
+   END FUNCTION matunitary_trans_complex2
+ 
+   
+diff -ru periodic_nbo.orig/nbo.f90 periodic_nbo/nbo.f90
+--- periodic_nbo.orig/nbo.f90	2015-03-04 18:06:25.000000000 +0100
++++ periodic_nbo/nbo.f90	2016-05-12 09:55:32.463039731 +0200
+@@ -1,6 +1,6 @@
+ MODULE nbo
+   USE nbo_shared
+-  USE MKL95_BLAS
++  USE BLAS95
+   PRIVATE
+   PUBLIC :: do_nbo, output
+ 
+@@ -336,7 +336,7 @@
+                   !IF( jg /= ig )Pi = Pi - outer_product(bond_coeff(:,2*ibondorlp+1-inbo,jg),bond_coeff(:,2*ibondorlp+1-inbo,jg))
+                   !proj_dummy = P
+                   !P = MATMUL(Pi,P)
+-                  !CALL DGEMM_MKL95(Pi,proj_dummy,P,'N','N',1.d0,0.d0)
++                  !CALL DGEMM(Pi,proj_dummy,P,'N','N',1.d0,0.d0)
+ 
+                   rhoat=0.d0
+                   rhoat(iifirst:iilast,iifirst:iilast)=inp%rho0(ifirst:ilast,ifirst:ilast,ig,ispin)
+@@ -379,8 +379,8 @@
+ 
+       !Now project out all of the bonding and antibonding density, to leave solely the dentisy associated with Rydberg states
+       !inp%rho0(:,:,1) = MATMUL(P,(MATMUL(inp%rho0(:,:,1),P)))
+-      !CALL DGEMM_MKL95(inp%rho0(:,:,1),P,proj_dummy,'N','N',1.d0,0.d0)
+-      !CALL DGEMM_MKL95(P,proj_dummy,inp%rho0(:,:,1),'N','N',1.d0,0.d0)
++      !CALL DGEMM(inp%rho0(:,:,1),P,proj_dummy,'N','N',1.d0,0.d0)
++      !CALL DGEMM(P,proj_dummy,inp%rho0(:,:,1),'N','N',1.d0,0.d0)
+ 
+ 
+       !PRINT *, 'made it to doing rydberg search'
+@@ -552,7 +552,7 @@
+          Pi=Pi-outer_product(lpcontrib,lpcontrib)
+          Pdummy=P
+          !P=MATMUL(Pi,P)
+-         CALL DGEMM_MKL95(Pi,Pdummy,P,'N','N',1.d0,0.d0)
++         CALL DGEMM(Pi,Pdummy,P,'N','N',1.d0,0.d0)
+ 
+          !IF( occ > core_thresh*DBLE(3-inp%nspins) )THEN
+          !   PRINT *, 'Removing CR from atom',iatom
+@@ -563,8 +563,8 @@
+       !PRINT *
+ 
+       !inp%rho0(:,:,1) = MATMUL(P,(MATMUL(inp%rho0(:,:,1),P)))
+-      CALL DGEMM_MKL95(inp%rho0(:,:,1,ispin),P,Pdummy,'N','N',1.d0,0.d0)
+-      CALL DGEMM_MKL95(P,Pdummy,inp%rho0(:,:,1,ispin),'N','N',1.d0,0.d0)
++      CALL DGEMM(inp%rho0(:,:,1,ispin),P,Pdummy,'N','N',1.d0,0.d0)
++      CALL DGEMM(P,Pdummy,inp%rho0(:,:,1,ispin),'N','N',1.d0,0.d0)
+ 
+ 
+     END SUBROUTINE do_1c_search
+@@ -966,7 +966,7 @@
+ 
+     FUNCTION schmidt_orthog_matrix(S,n) RESULT(Os)
+       USE matutil
+-      USE MKL95_BLAS
++      USE BLAS95
+       IMPLICIT NONE
+       REAL*8,DIMENSION(:,:) :: S
+       REAL*8,DIMENSION(n,n) :: Sinv
+@@ -981,7 +981,7 @@
+       !onto the remaining basis function n+1:nbasis
+       Sinv=matinv(S(1:n,1:n))
+       !proj=MATMUL(Sinv,S(1:n,n+1:nbasis))
+-      CALL DGEMM_MKL95(Sinv,S(1:n,n+1:nbasis),proj,'N','N',1.d0,0.d0)
++      CALL DGEMM(Sinv,S(1:n,n+1:nbasis),proj,'N','N',1.d0,0.d0)
+ 
+       !Now do gs orthogonalization using those projections
+       Os=0.d0
+diff -ru periodic_nbo.orig/nbo_shared.f90 periodic_nbo/nbo_shared.f90
+--- periodic_nbo.orig/nbo_shared.f90	2015-03-04 18:06:25.000000000 +0100
++++ periodic_nbo/nbo_shared.f90	2016-05-12 09:55:32.463039731 +0200
+@@ -151,7 +151,7 @@
+   !Calculates the number of electrons in the unit cell
+   !
+   SUBROUTINE calc_nelec(inp,is_orthog)
+-    USE MKL95_BLAS
++    USE BLAS95
+     USE matutil
+     IMPLICIT NONE
+     TYPE(nbo_input) :: inp
+@@ -167,9 +167,9 @@
+ 
+     DO ispin=1,inp%nspins
+        DO ik=1,nk
+-          CALL ZGEMM_MKL95(inp%rhok(:,:,ik,ispin),inp%sk(:,:,ik),nelec_dummy,'N','C',(1.d0,0.d0),(0.d0,0.d0))
++          CALL ZGEMM(inp%rhok(:,:,ik,ispin),inp%sk(:,:,ik),nelec_dummy,'N','C',(1.d0,0.d0),(0.d0,0.d0))
+           nelec=nelec+inp%kpt_wt(ik)*mattrace(nelec_dummy) 
+-          CALL ZGEMM_MKL95(inp%rhok(:,:,ik,ispin),inp%fockk(:,:,ik,ispin),nelec_dummy,'N','C',(1.d0,0.d0),(0.d0,0.d0))
++          CALL ZGEMM(inp%rhok(:,:,ik,ispin),inp%fockk(:,:,ik,ispin),nelec_dummy,'N','C',(1.d0,0.d0),(0.d0,0.d0))
+           nenergy=nenergy+inp%kpt_wt(ik)*mattrace(nelec_dummy)
+        ENDDO
+     ENDDO
+diff -ru periodic_nbo.orig/periodic_matutil.f90 periodic_nbo/periodic_matutil.f90
+--- periodic_nbo.orig/periodic_matutil.f90	2015-03-04 18:06:25.000000000 +0100
++++ periodic_nbo/periodic_matutil.f90	2016-05-12 09:55:32.463039731 +0200
+@@ -41,7 +41,7 @@
+   !Multiples two periodic matrices.
+   !
+   FUNCTION periodic_matmul(a,b) RESULT(c)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     REAL*8,DIMENSION(:,:,:), INTENT(in) :: a,b
+     REAL*8,DIMENSION(SIZE(a,1),SIZE(a,2),SIZE(a,3)) :: c
+@@ -101,7 +101,7 @@
+ !$OMP END CRITICAL
+           IF (idg.GT.0.AND.normab.GT.thresh) THEN
+ !             c(:,:,ig)=c(:,:,ig)+MATMUL(a(:,:,igp),b(:,:,idg))
+-             CALL DGEMM_MKL95(a(:,:,igp),b(:,:,idg),c(:,:,ig),'N','N',1.d0,1.d0)
++             CALL DGEMM(a(:,:,igp),b(:,:,idg),c(:,:,ig),'N','N',1.d0,1.d0)
+ !$OMP CRITICAL
+              imul=imul+1
+ !$OMP END CRITICAL
+@@ -118,7 +118,7 @@
+   END FUNCTION periodic_matmul
+ 
+   FUNCTION periodic_matvecmul(a,b) RESULT(c)
+-    USE MKL95_BLAS
++    USE BLAS95
+     IMPLICIT NONE
+     REAL*8,DIMENSION(:,:,:), INTENT(in) :: a
+     REAL*8,DIMENSION(:,:), INTENT(IN)   :: b
+@@ -165,7 +165,7 @@
+           IF (idg.GT.0) THEN
+              !WRITE(6,*)'non zero matrix',idg,indexg(:,idg)
+              c(:,ig)=c(:,ig)+MATMUL(a(:,:,idg),b(:,igp))
+-             !CALL DGEMM_MKL95(a(:,:,igp),b(:,:,idg),c(:,:,ig),'N','N',1.d0,1.d0)
++             !CALL DGEMM(a(:,:,igp),b(:,:,idg),c(:,:,ig),'N','N',1.d0,1.d0)
+              imul=imul+1
+           ENDIF
+ 
+diff -ru periodic_nbo.orig/pre_nao.f90 periodic_nbo/pre_nao.f90
+--- periodic_nbo.orig/pre_nao.f90	2015-03-04 18:06:25.000000000 +0100
++++ periodic_nbo/pre_nao.f90	2016-05-12 10:18:03.939451000 +0200
+@@ -1,5 +1,5 @@
+ MODULE pre_nao
+-  USE MKL95_BLAS
++  USE BLAS95
+   PRIVATE
+   PUBLIC :: do_pre_nao
+ 
+@@ -18,7 +18,7 @@
+     USE matutil
+     USE periodic_matutil
+     USE nbo_shared
+-    USE mkl95_LAPACK
++    USE LAPACK95
+     IMPLICIT NONE
+ 
+     TYPE(nbo_input) :: inp
+@@ -135,9 +135,9 @@
+     num_elec = 0.d0
+     DO ispin=1,nspins
+        DO ik=1,nk
+-          CALL ZGEMM_MKL95(inp%rhok(:,:,ik,ispin),inp%fockk(:,:,ik,ispin),energy_test,'N','C',(1.d0,0.d0),(0.d0,0.d0))
++          CALL ZGEMM(inp%rhok(:,:,ik,ispin),inp%fockk(:,:,ik,ispin),energy_test,'N','C',(1.d0,0.d0),(0.d0,0.d0))
+           energy_sum = energy_sum + inp%kpt_wt(ik)*mattrace(energy_test)
+-          !CALL ZGEMM_MKL95(inp%rhok(:,:,ik,ispin),sk(:,:,ik),elec_test,'N','C',(1.d0,0.d0),(0.d0,0.d0))
++          !CALL ZGEMM(inp%rhok(:,:,ik,ispin),sk(:,:,ik),elec_test,'N','C',(1.d0,0.d0),(0.d0,0.d0))
+           num_elec = num_elec + inp%kpt_wt(ik)*mattrace(inp%rhok(:,:,ik,ispin))  !sk should be the identity matrix now
+        ENDDO
+     ENDDO
+@@ -193,8 +193,8 @@
+ !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(nk,rhok,sk)
+ !$OMP DO SCHEDULE(STATIC)
+       DO ik=1,nk
+-         CALL ZGEMM_MKL95(rhok(:,:,ik),sk(:,:,ik),dummy,'N','N',(1.d0,0.d0),(0.d0,0.d0))
+-         CALL zGEMM_MKL95(sk(:,:,ik),dummy,rhok(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
++         CALL ZGEMM(rhok(:,:,ik),sk(:,:,ik),dummy,'N','N',(1.d0,0.d0),(0.d0,0.d0))
++         CALL zGEMM(sk(:,:,ik),dummy,rhok(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
+       ENDDO
+ !$OMP END DO NOWAIT
+ !$OMP END PARALLEL
+@@ -298,7 +298,7 @@
+          sk(:,:,ik)=matunitary_trans(sk(:,:,ik),TRANSPOSE(N))
+          rhok(:,:,ik)=matunitary_trans(rhok(:,:,ik),TRANSPOSE(N))
+          dummy = idenk(:,:,ik)
+-         CALL ZGEMM_MKL95(N,dummy,idenk(:,:,ik),'C','N',(1.d0,0.d0),(0.d0,0.d0))
++         CALL ZGEMM(N,dummy,idenk(:,:,ik),'C','N',(1.d0,0.d0),(0.d0,0.d0))
+       ENDDO
+ !$OMP END DO NOWAIT
+ !$OMP END PARALLEL
+@@ -365,7 +365,7 @@
+          sk(:,:,ik)=matunitary_trans(sk(:,:,ik),Os)
+          rhok(:,:,ik)=matunitary_trans(rhok(:,:,ik),Os)
+          dummy = idenk(:,:,ik)
+-         CALL ZGEMM_MKL95(Os,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
++         CALL ZGEMM(Os,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
+ 
+       !Step 3c:  Restoration of natural character of NRB
+       !(Omitted; doesn't seem important at all)
+@@ -451,7 +451,7 @@
+          sk(:,:,ik)=matunitary_trans(sk(:,:,ik),Ow)
+          rhok(:,:,ik)=matunitary_trans(rhok(:,:,ik),Ow)
+          dummy = idenk(:,:,ik)
+-         CALL ZGEMM_MKL95(Ow,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
++         CALL ZGEMM(Ow,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
+ 
+          !WRITE(6,*)'hi occ ryd orthog'
+ 
+@@ -461,7 +461,7 @@
+          sk(:,:,ik)=matunitary_trans(sk(:,:,ik),Ow)
+          rhok(:,:,ik)=matunitary_trans(rhok(:,:,ik),Ow)
+          dummy = idenk(:,:,ik)
+-         CALL ZGEMM_MKL95(Ow,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
++         CALL ZGEMM(Ow,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
+ 
+          !Finally with the low occupancy NRB
+          !Here we first do a Gram-Schmidt orthogonalization of the low occupancy states to the remainder
+@@ -469,7 +469,7 @@
+          sk(:,:,ik)=matunitary_trans(sk(:,:,ik),Os)
+          rhok(:,:,ik)=matunitary_trans(rhok(:,:,ik),Os)
+          dummy = idenk(:,:,ik)
+-         CALL ZGEMM_MKL95(Os,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
++         CALL ZGEMM(Os,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
+ 
+          !WRITE(6,*)'lo occ ryd orthog'
+ 
+@@ -480,7 +480,7 @@
+          sk(:,:,ik)=matunitary_trans(sk(:,:,ik),Ow)
+          rhok(:,:,ik)=matunitary_trans(rhok(:,:,ik),Ow)
+          dummy = idenk(:,:,ik)
+-         CALL ZGEMM_MKL95(Ow,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
++         CALL ZGEMM(Ow,dummy,idenk(:,:,ik),'N','N',(1.d0,0.d0),(0.d0,0.d0))
+ 
+          !Now restore the expected order of the basis functions
+          sk(:,:,ik)=remap_matrix(sk(:,:,ik),irydbasisremap,.TRUE.)
+@@ -656,7 +656,7 @@
+       !onto the remaining basis function n+1:nbasis
+       Sinv=matinv(S(1:n,1:n))
+       !proj=MATMUL(Sinv,S(1:n,n+1:nbasis))
+-      CALL ZGEMM_MKL95(Sinv,S(1:n,n+1:nbasis),proj,'N','N',(1.d0,0.d0),(0.d0,0.d0))
++      CALL ZGEMM(Sinv,S(1:n,n+1:nbasis),proj,'N','N',(1.d0,0.d0),(0.d0,0.d0))
+ 
+       !Now do gs orthogonalization using those projections
+       Os=0.d0
+@@ -707,7 +707,7 @@
+       nbasis=SIZE(N,1)
+       IF (PRESENT(S)) THEN
+          !overlap=MATMUL(matsqrt(S),N)
+-         CALL DGEMM_MKL95(matsqrt(S),N,overlap,'N','N',1.d0,0.d0)
++         CALL DGEMM(matsqrt(S),N,overlap,'N','N',1.d0,0.d0)
+       ELSE
+          overlap=N
+       ENDIF

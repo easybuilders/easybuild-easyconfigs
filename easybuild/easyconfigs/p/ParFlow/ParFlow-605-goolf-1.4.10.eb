@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'ParFlow'
+version = '605'
+
+homepage = 'http://computation.llnl.gov/casc/parflow/'
+description = """ParFlow is an integrated, parallel watershed model that makes use of high-performance computing
+to simulate surface and subsurface fluid flow."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'opt': True, 'pic': True, 'usempi': True}
+
+sources = ['%(namelower)s.r%(version)s.tar.gz']
+source_urls = ['http://inside.mines.edu/~rmaxwell/']
+
+dependencies = [
+    ('Silo', '4.9.1'),
+    ('Hypre', '2.8.0b'),
+    ('Tcl', '8.5.14'),
+]
+
+preconfigopts = [
+    'cd pfsimulator &&',
+    'cd pftools &&',
+]
+# copies of preconfigopts are required, not references, hence the [:]
+prebuildopts = preconfigopts[:]
+preinstallopts = preconfigopts[:]
+
+configopts = [
+    ' --with-amps=mpi1 --enable-timing  --with-clm --with-silo=$EBROOTSILO --with-hypre=$EBROOTHYPRE',
+    ' --with-amps=mpi1 --enable-timing  --with-clm --with-silo=$EBROOTSILO --with-tcl=$EBROOTTCL',
+]
+
+buildopts = [
+    'LDLIBS="$(LDLIBS_EXTRA) -lHYPRE -lsilo -lmpi -lgfortran -lm -lgcc_s -lgcc -lquadmath"',
+    'LDLIBS="$(LDLIBS_EXTRA) $(PARFLOW_TOOLS_LIBS) -lsilo -ltcl8.5  -lgfortran -lm -lgcc_s -lgcc -lquadmath"',
+]
+
+binaries = ['batchmc', 'bgmsfem2pfsol', 'bootmc', 'freemc', 'getmc', 'gmssol2pfsol', 'gmstinvertices',
+            'gmstriangulate', 'killmc', 'parflow', 'peekmc', 'pfhelp', 'pfwell_cat', 'pfsbtosa', 'pfbtosa',
+            'pfstrip', 'pfbtovis', 'projecttin', 'run']
+libraries = ['libamps.a', 'libamps_common.a', 'libclm.a', 'libkinsol.a', 'libparflow.a']
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in binaries] + ["lib/%s" % x for x in libraries],
+    'dirs': [],
+}
+
+moduleclass = 'cae'

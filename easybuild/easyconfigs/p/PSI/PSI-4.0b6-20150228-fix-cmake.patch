@@ -1,0 +1,182 @@
+# This fixes several issues with the CMake build system:
+# - Sync the CMakeLists for libPsiUtil with the other libs
+# - Let the plugin makefile system work with our install system: patch the
+#   directory path to correspond with our install directory
+# - Add the git revision in the version (as we download a git snapshot for the moment)
+# - Fix a bug in the CMakeLists of the documentation (target didn't exists)
+# 02/03/2015 - wpoely86@gmail.com
+diff -ur psi4public-3815c4672b20557818d653694ff2cb5c78819708.org/src/lib/libPsiUtil/CMakeLists.txt psi4public-3815c4672b20557818d653694ff2cb5c78819708/src/lib/libPsiUtil/CMakeLists.txt
+--- psi4public-3815c4672b20557818d653694ff2cb5c78819708.org/src/lib/libPsiUtil/CMakeLists.txt	2015-02-18 19:36:31.000000000 +0100
++++ psi4public-3815c4672b20557818d653694ff2cb5c78819708/src/lib/libPsiUtil/CMakeLists.txt	2015-02-26 10:36:56.000000000 +0100
+@@ -1,21 +1,41 @@
+-set(SRC ProgressBar.h
+-        PsiMap.h
+-        PsiRdmNumGen.h
+-        PythonFxn.h
+-        Timer.h
+-        Units.h
+-        AtomicData.h
+-        Implementations/UnitsGuts.hh
+-        Implementations/PrefixConverter.cc
+-        Implementations/Timer.cc
+-        Implementations/BaseUnitConverter.cc
+-        Implementations/PythonFxnGuts.cc
+-        Implementations/AtomicData.cc
+-        Implementations/ProgressBar.cc
+-)
+-add_library(PsiUtil ${SRC})
++set(headers_list "")
++# List of headers
++list(APPEND ProgressBar.h PsiMap.h PsiRdmNumGen.h PythonFxn.h Timer.h Units.h AtomicData.h Implementations/UnitsGuts.hh )
++
++# If you want to remove some headers specify them explictly here
++if(DEVELOPMENT_CODE)
++   list(REMOVE_ITEM headers_list "")
++else()
++   list(REMOVE_ITEM headers_list "")
++endif()
++# Sort alphabetically
++list(SORT headers_list)
++
++set(sources_list "")
++# List of sources
++list(APPEND sources_list Implementations/PrefixConverter.cc Implementations/Timer.cc Implementations/BaseUnitConverter.cc Implementations/PythonFxnGuts.cc Implementations/AtomicData.cc Implementations/ProgressBar.cc )
++
++# If you want to remove some sources specify them explictly here
++if(DEVELOPMENT_CODE)
++   list(REMOVE_ITEM sources_list "")
++else()
++   list(REMOVE_ITEM sources_list "")
++endif()
++
++# Write list of files to be passed to cloc for counting lines of code.
++# Only files that are actually compiled are counted.
++set(to_count "${sources_list}" "${headers_list}")
++write_to_cloc_list("${to_count}")
++
++# Build static library
++add_library(PsiUtil STATIC ${sources_list})
++# Specify dependencies for the library (if any)
+ add_dependencies(PsiUtil parallel2)
+-include_directories(libparallel2)
++set(libs_to_merge PsiUtil ${libs_to_merge} PARENT_SCOPE)
+ if(BUILD_CUSTOM_BOOST)
+    add_dependencies(PsiUtil custom_boost)
+ endif()
++install(TARGETS PsiUtil ARCHIVE DESTINATION lib)
++
++# Sets install directory for all the headers in the list
++install_list_FILES("${headers_list}" include/libPsiUtil)
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -203,8 +203,12 @@ if(NOT LIBINT_OPT_AM)
+    set(LIBINT_OPT_AM 5)
+ endif()
+ 
++get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
++set(include_dir_externals ${dirs})
++
+ # Psi4-specific includes and libraries
+ set(CMAKE_INCLUDE_CURRENT_DIR ON)
++
+ include_directories(
+     ${PROJECT_BINARY_DIR}/include 
+     ${PROJECT_SOURCE_DIR}/include
+@@ -303,9 +308,11 @@ add_subdirectory(lib)
+ # Handle creation of Makefile for plugins
+ get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+ get_property(defs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_DEFINITIONS)
+-foreach(dir ${dirs})
++foreach(dir ${include_dir_externals})
+     set(PLUGIN_INCLUDE_DIRECTORIES "-I${dir} ${PLUGIN_INCLUDE_DIRECTORIES}")
+ endforeach()
++set(PLUGIN_INCLUDE_DIRECTORIES "-I$ENV{PSI_SRC_INSTALL_DIR}/include -I$ENV{PSI_SRC_INSTALL_DIR}/src/lib/ -I$ENV{PSI_OBJ_INSTALL_DIR}/include -I$ENV{PSI_OBJ_INSTALL_DIR}/src/lib/ ${PLUGIN_INCLUDE_DIRECTORIES}")
++
+ foreach(def ${defs})
+     set(PLUGIN_DEFINES "-D${def} ${PLUGIN_DEFINES}")
+ endforeach()
+diff --git a/include/psiconfig.h.cmake.in b/include/psiconfig.h.cmake.in
+--- a/include/psiconfig.h.cmake.in
++++ b/include/psiconfig.h.cmake.in
+@@ -20,7 +20,7 @@
+ #define PLUGIN_DEFINES "@PLUGIN_DEFINES@"
+ #define PLUGIN_FLAGS "@CXX_FLAGS_PLUGIN@"
+ #define PLUGIN_INCLUDES "@PLUGIN_INCLUDE_DIRECTORIES@"
+-#define PLUGIN_OBJDIR "@PROJECT_BINARY_DIR@"
++#define PLUGIN_OBJDIR "@CMAKE_INSTALL_PREFIX@/obj"
+ 
+ /* The PSI4 Datadir */
+ #define INSTALLEDPSIDATADIR "@CMAKE_INSTALL_PREFIX@/share/psi"
+diff -ur psi4public-3815c4672b20557818d653694ff2cb5c78819708.orig/src/bin/psi4/gitversion.py.in psi4public-3815c4672b20557818d653694ff2cb5c78819708/src/bin/psi4/gitversion.py.in
+--- psi4public-3815c4672b20557818d653694ff2cb5c78819708.orig/src/bin/psi4/gitversion.py.in      2015-02-18 19:36:31.000000000 +0100
++++ psi4public-3815c4672b20557818d653694ff2cb5c78819708/src/bin/psi4/gitversion.py.in   2015-02-26 22:27:18.000000000 +0100
+@@ -47,4 +47,6 @@
+ except:
+     branch = "detached?"
+ 
++version = "14c78eabdca86f8e094576890518d93d300d2500"
++branch = "master"
+ write_version(version, branch)
+diff --git a/doc/sphinxman/CMakeLists.txt b/doc/sphinxman/CMakeLists.txt
+--- a/doc/sphinxman/CMakeLists.txt
++++ b/doc/sphinxman/CMakeLists.txt
+@@ -256,6 +256,24 @@ if(PERL_FOUND AND SPHINX_FOUND)
+         add_custom_target(sphinxpdf
+             DEPENDS sphinxman
+             COMMENT "Preparing Sphinx HTML and PDF documentation build")
++
++        # * full, proper build with latex builder
++        add_custom_command(
++            TARGET sphinxpdf POST_BUILD
++            COMMAND ${SPHINX_EXECUTABLE} 
++                -b latex              # builder
++                -d ${CCBD}/_doctrees  # cache w/ pickled reST
++                -c ${CCBD}/source     # whereabouts of conf.py
++                ${CCBD}/source        # build from
++                ${CCBD}/latex         # build to
++            COMMENT "Building latex documentation ...")
++        add_custom_command(
++            TARGET sphinxpdf POST_BUILD
++            COMMAND ${PDFLATEX_COMPILER}
++                -interaction=nonstopmode 
++                "Psi4.tex" > /dev/null 2>&1
++            WORKING_DIRECTORY ${CCBD}/latex
++            COMMENT "Building remarkably ugly PDF documentation from LaTeX ... (ignore the make exit error)")
+     endif()
+ 
+ 
+@@ -295,24 +313,5 @@ if(PERL_FOUND AND SPHINX_FOUND)
+             ${CCBD}/html
+         COMMENT "Building abridged html documentation ...")
+ 
+-    # * full, proper build with latex builder
+-    add_custom_command(
+-        TARGET sphinxpdf POST_BUILD
+-        COMMAND ${SPHINX_EXECUTABLE} 
+-            -b latex              # builder
+-            -d ${CCBD}/_doctrees  # cache w/ pickled reST
+-            -c ${CCBD}/source     # whereabouts of conf.py
+-            ${CCBD}/source        # build from
+-            ${CCBD}/latex         # build to
+-        COMMENT "Building latex documentation ...")
+-    add_custom_command(
+-        TARGET sphinxpdf POST_BUILD
+-        COMMAND ${PDFLATEX_COMPILER}
+-            -interaction=nonstopmode 
+-            "Psi4.tex" > /dev/null 2>&1
+-        WORKING_DIRECTORY ${CCBD}/latex
+-        COMMENT "Building remarkably ugly PDF documentation from LaTeX ... (ignore the make exit error)")
+-
+-
+ endif(PERL_FOUND AND SPHINX_FOUND)
+
+diff --git a/tests/psitest.pl b/tests/psitest.pl
+--- a/tests/psitest.pl
++++ b/tests/psitest.pl
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl 
++#!/usr/bin/env perl 
+ 
+ #
+ # Rules of use:

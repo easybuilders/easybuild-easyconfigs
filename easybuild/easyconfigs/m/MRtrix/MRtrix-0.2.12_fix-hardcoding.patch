@@ -1,0 +1,36 @@
+fix hardcoding of g++ and compiler flags
+author: Kenneth Hoste (HPC-UGent)
+--- mrtrix-0.2-0.2.12/sysconf/linux.py.orig	2015-12-12 23:09:22.643749720 +0100
++++ mrtrix-0.2-0.2.12/sysconf/linux.py	2015-12-12 23:10:20.705181981 +0100
+@@ -1,3 +1,4 @@
++import os
+ from sysconf.common import *
+ 
+ obj_suffix = '.o'
+@@ -5,14 +6,14 @@
+ lib_prefix = 'lib'
+ lib_suffix = '.so'
+ 
+-cpp = [ 'g++', '-c', '$flags$', '$gtk$', '$path$', '$src$', '-o', '$obj$' ]
++cpp = [ os.getenv('CXX', 'g++'), '-c', '$flags$', '$gtk$', '$path$', '$src$', '-o', '$obj$' ]
+ cpp_flags = [ '-Wall', '-pedantic', '-march=native', '-fPIC', '-fno-strict-aliasing', '-DGL_GLEXT_PROTOTYPES', '-DUSE_TR1' ]
+ 
+-ld = [ 'g++', '$flags$', '$path$', '$obj$', '$mrtrix$', '$gsl$', '$gtk$', '$lz$', '-o', '$bin$' ]
++ld = [ os.getenv('CXX', 'g++'), '$flags$', '$path$', '$obj$', '$mrtrix$', '$gsl$', '$gtk$', '$lz$', '-o', '$bin$' ]
+ ld_flags = [ '-Wl,-rpath,$ORIGIN/../lib' ]
+ ld_flags_lib_prefix = '-l'
+ 
+-ld_lib = [ 'g++', '-shared', '$flags$', '$obj$', '-o', '$lib$' ]
++ld_lib = [ os.getenv('CXX', 'g++'), '-shared', '$flags$', '$obj$', '-o', '$lib$' ]
+ ld_lib_flags = []
+ 
+ cpp_flags_debug = cpp_flags + [ '-g' ]
+@@ -23,7 +24,7 @@
+ ld_flags_profile = ld_flags_debug + [ '-pg' ]
+ ld_lib_flags_profile = ld_lib_flags_debug + [ '-pg' ]
+ 
+-cpp_flags += [ '-O2' ]
++cpp_flags += [ os.getenv('CXXFLAGS', '-O2') ]
+ 
+ cpp_flags_release = [ '-DNDEBUG' ]
+ 

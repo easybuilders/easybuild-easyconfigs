@@ -1,0 +1,41 @@
+name = 'WRF'
+version = '3.4'
+
+homepage = 'http://www.wrf-model.org'
+description = """The Weather Research and Forecasting (WRF) Model is a next-generation mesoscale
+ numerical weather prediction system designed to serve both operational forecasting and atmospheric
+ research needs."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'opt': False}  # don't use agressive optimization, stick to -O2
+
+sources = ['%(name)sV%(version)s.TAR.gz']
+source_urls = [
+    'http://www2.mmm.ucar.edu/wrf/src/',
+    'http://www.mmm.ucar.edu/wrf/src/',
+]
+
+# csh is used by WRF install scripts
+builddependencies = [('tcsh', '6.18.01')]
+
+dependencies = [
+    ('JasPer', '1.900.1'),
+    ('netCDF', '4.2.1.1'),
+    ('netCDF-Fortran', '4.2'),
+]
+
+patches = [
+    'WRF_parallel_build_fix.patch',
+    'WRF_netCDF-Fortran_separate_path.patch',
+    'WRF_no-GCC-graphite-loop-opts.patch',
+    'WRF-%s_known_problems.patch' % version,
+    'WRF_tests_limit-runtimes.patch',
+]
+
+# limit parallel build to 20
+maxparallel = 20
+
+buildtype = "dmpar"
+versionsuffix = '-%s' % buildtype
+
+moduleclass = 'geo'

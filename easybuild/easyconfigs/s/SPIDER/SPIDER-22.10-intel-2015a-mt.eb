@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'SPIDER'
+version = '22.10'
+versionsuffix = '-mt'
+
+homepage = 'http://spider.wadsworth.org/spider_doc/spider/docs/spider.html'
+description = """SPIDER (System for Processing Image Data from Electron microscopy and Related fields) is
+ an image processing system for electron microscopy."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'static': True, 'openmp': True}
+
+source_urls = ['http://spider.wadsworth.org/spider_doc/spider/download/']
+sources = ['spiderweb.%(version)s.tar.gz']
+
+patches = ['SPIDER-%(version)s_fix-syntax-ifort.patch']
+
+dependencies = [('FFTW', '3.3.4')]
+
+start_dir = 'spider/src'
+
+buildininstalldir = True
+
+parallel = 1
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = "rm ../bin/spider* && rm ../src/spider*.[ao] && "
+buildopts = '-f Makefile_linux_mp COMP="$F90" EXE=spider FFTWLIBDIR=$EBROOTFFTW/lib '
+buildopts += 'FFLAGS="$F90FLAGS -DSP_LIBFFTW3 -DSP_LINUX -DSP_IFC -fpp -c -DSP_MP" LF="$F90FLAGS"'
+
+modextrapaths = {'PATH': ['spider/bin']}
+
+sanity_check_paths = {
+    'files': ['spider/bin/spider'],
+    'dirs': [''],
+}
+
+moduleclass = 'vis'

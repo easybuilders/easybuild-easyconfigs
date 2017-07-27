@@ -1,0 +1,126 @@
+patch out hard requirement for SAMtools and HTSlib locations that provides sources, there's no reason at all for it,
+and link to SAMtools and HTSlib libraries provided through EasyBuild instead;
+undefine bam_nt16_nt4_table symbol to dance around https://github.com/CSB5/lofreq/issues/28
+author: Kenneth Hoste (HPC-UGent)
+diff -ur lofreq_star-2.1.2.orig/configure lofreq_star-2.1.2/configure
+--- lofreq_star-2.1.2.orig/configure	2015-05-19 07:40:54.000000000 +0200
++++ lofreq_star-2.1.2/configure	2016-11-22 11:10:50.084224167 +0100
+@@ -14376,78 +14376,6 @@
+ #AC_LIB_LINKFLAGS([hts])
+ #AC_LIB_LINKFLAGS([bam])
+ 
+-if test x"$SAMTOOLS" = x""; then
+-   { { $as_echo "$as_me:$LINENO: error: Samtools directory not defined. Please use SAMTOOLS=/fullpath/to/samtoolsdir/" >&5
+-$as_echo "$as_me: error: Samtools directory not defined. Please use SAMTOOLS=/fullpath/to/samtoolsdir/" >&2;}
+-   { (exit 1); exit 1; }; }
+-fi
+-
+-if test x"$HTSLIB" = x""; then
+-   { { $as_echo "$as_me:$LINENO: error: Htslib directory not defined. Please use HTSLIB=/fullpath/to/htslibdir/" >&5
+-$as_echo "$as_me: error: Htslib directory not defined. Please use HTSLIB=/fullpath/to/htslibdir/" >&2;}
+-   { (exit 1); exit 1; }; }
+-fi
+-as_ac_File=`$as_echo "ac_cv_file_${SAMTOOLS}/bam.h" | $as_tr_sh`
+-{ $as_echo "$as_me:$LINENO: checking for ${SAMTOOLS}/bam.h" >&5
+-$as_echo_n "checking for ${SAMTOOLS}/bam.h... " >&6; }
+-if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then
+-  $as_echo_n "(cached) " >&6
+-else
+-  test "$cross_compiling" = yes &&
+-  { { $as_echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+-$as_echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+-   { (exit 1); exit 1; }; }
+-if test -r "${SAMTOOLS}/bam.h"; then
+-  eval "$as_ac_File=yes"
+-else
+-  eval "$as_ac_File=no"
+-fi
+-fi
+-ac_res=`eval 'as_val=${'$as_ac_File'}
+-		 $as_echo "$as_val"'`
+-	       { $as_echo "$as_me:$LINENO: result: $ac_res" >&5
+-$as_echo "$ac_res" >&6; }
+-as_val=`eval 'as_val=${'$as_ac_File'}
+-		 $as_echo "$as_val"'`
+-   if test "x$as_val" = x""yes; then
+-  :
+-else
+-  { { $as_echo "$as_me:$LINENO: error: bam.h not found" >&5
+-$as_echo "$as_me: error: bam.h not found" >&2;}
+-   { (exit 1); exit 1; }; }
+-fi
+-
+-as_ac_File=`$as_echo "ac_cv_file_${HTSLIB}/htslib/hts.h" | $as_tr_sh`
+-{ $as_echo "$as_me:$LINENO: checking for ${HTSLIB}/htslib/hts.h" >&5
+-$as_echo_n "checking for ${HTSLIB}/htslib/hts.h... " >&6; }
+-if { as_var=$as_ac_File; eval "test \"\${$as_var+set}\" = set"; }; then
+-  $as_echo_n "(cached) " >&6
+-else
+-  test "$cross_compiling" = yes &&
+-  { { $as_echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+-$as_echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+-   { (exit 1); exit 1; }; }
+-if test -r "${HTSLIB}/htslib/hts.h"; then
+-  eval "$as_ac_File=yes"
+-else
+-  eval "$as_ac_File=no"
+-fi
+-fi
+-ac_res=`eval 'as_val=${'$as_ac_File'}
+-		 $as_echo "$as_val"'`
+-	       { $as_echo "$as_me:$LINENO: result: $ac_res" >&5
+-$as_echo "$ac_res" >&6; }
+-as_val=`eval 'as_val=${'$as_ac_File'}
+-		 $as_echo "$as_val"'`
+-   if test "x$as_val" = x""yes; then
+-  :
+-else
+-  { { $as_echo "$as_me:$LINENO: error: hts.h not found" >&5
+-$as_echo "$as_me: error: hts.h not found" >&2;}
+-   { (exit 1); exit 1; }; }
+-fi
+-
+-
+ 
+ 
+ 
+diff -ur lofreq_star-2.1.2.orig/src/lofreq/Makefile.in lofreq_star-2.1.2/src/lofreq/Makefile.in
+--- lofreq_star-2.1.2.orig/src/lofreq/Makefile.in	2015-05-19 07:40:55.000000000 +0200
++++ lofreq_star-2.1.2/src/lofreq/Makefile.in	2016-11-22 11:10:52.064187293 +0100
+@@ -58,7 +58,7 @@
+ 	samutils.$(OBJEXT) snpcaller.$(OBJEXT) utils.$(OBJEXT) \
+ 	vcf.$(OBJEXT) viterbi.$(OBJEXT)
+ lofreq_OBJECTS = $(am_lofreq_OBJECTS)
+-lofreq_DEPENDENCIES = @HTSLIB@/libhts.a @SAMTOOLS@/libbam.a \
++lofreq_DEPENDENCIES = $(EBROOTHTSLIB)/lib/libhts.a $(EBROOTSAMTOOLS)/lib/libbam.a \
+ 	../cdflib90/libcdf.a
+ DEFAULT_INCLUDES = -I.@am__isrc@
+ depcomp = $(SHELL) $(top_srcdir)/depcomp
+@@ -80,7 +80,7 @@
+ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+ ACLOCAL = @ACLOCAL@
+ AMTAR = @AMTAR@
+-AM_CFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Wall -I../cdflib90/ -I../uthash -I@HTSLIB@ -I@SAMTOOLS@ @AM_CFLAGS@
++AM_CFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Wall -I../cdflib90/ -I../uthash -I$(EBROOTHTSLIB)/include -I$(EBROOTSAMTOOLS)/include/bam @AM_CFLAGS@
+ AM_LDFLAGS = @AM_LDFLAGS@
+ AR = @AR@
+ AUTOCONF = @AUTOCONF@
+@@ -234,7 +234,7 @@
+ 
+ # note: order matters
+ #lofreq_LDADD = @htslib_dir@/libhts.a @samtools_dir@/libbam.a
+-lofreq_LDADD = @HTSLIB@/libhts.a @SAMTOOLS@/libbam.a ../cdflib90/libcdf.a
++lofreq_LDADD = $(EBROOTHTSLIB)/lib/libhts.a $(EBROOTSAMTOOLS)/lib/libbam.a ../cdflib90/libcdf.a
+ all: all-am
+ 
+ .SUFFIXES:
+ 
+--- lofreq_star-2.1.2.orig/src/lofreq/bam_md_ext.h	2016-11-22 12:36:36.740198311 +0100
++++ lofreq_star-2.1.2/src/lofreq/bam_md_ext.h	2016-11-22 12:36:46.820255151 +0100
+@@ -31,4 +31,6 @@
+                             int baq_flag, int ext_baq, int idaq_flag);
+ 
+ 
++#undef bam_nt16_nt4_table
++
+ #endif

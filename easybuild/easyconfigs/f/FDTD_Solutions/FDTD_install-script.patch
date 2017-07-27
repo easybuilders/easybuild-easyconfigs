@@ -1,0 +1,48 @@
+--- FDTD_Solutions-8.6.2/install.sh.orig	2013-06-14 21:39:50.000000000 +0200
++++ FDTD_Solutions-8.6.2/install.sh	2013-08-08 11:51:23.355266920 +0200
+@@ -11,10 +11,10 @@
+ cd $TOPDIR
+ TOPDIR=`pwd`
+ 
+-if [ "$UID" != "0" ]; then
+-   echo "This program must be run as user root"
+-   exit 1
+-fi
++#if [ "$UID" != "0" ]; then
++#   echo "This program must be run as user root"
++#   exit 1
++#fi
+ 
+ clear
+ echo "Lumerical $PRODUCT install utility"
+@@ -33,7 +33,7 @@
+ echo
+ echo -n "Press <enter> to continue and display the license agreement"
+ read RESP
+-more license.txt
++cat license.txt
+ echo
+ echo
+ echo "If you accept the terms above, type ACCEPT, otherwise"
+@@ -95,8 +95,8 @@
+    RPMARGS=""
+    INSTALLDIR=/opt/lumerical/$PACKAGE
+ else
+-   RPMARGS="--prefix=$RESP"
+    INSTALLDIR=$RESP
++   RPMARGS="--relocate /=$INSTALLDIR"
+ fi
+ 
+ #uninstall all old packages
+@@ -110,9 +110,10 @@
+    fi
+ done
+ 
++rpm --initdb --dbpath /rpm --root $INSTALLDIR
+ for CRPM in $RPMLIST; do
+    echo "Installing RPM: $CRPM"
+-   if ! rpm -i --replacefiles $RPMARGS $CRPM; then
++   if ! rpm -i --nodeps --dbpath $INSTALLDIR/rpm --nopost --replacefiles $RPMARGS $CRPM; then
+       echo "Warning:RPM command reported error. You may need to troubleshoot install"
+    fi
+ done      

@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'FFTW'
+version = '3.3.3'
+
+homepage = 'http://www.fftw.org'
+description = """FFTW is a C subroutine library for computing the discrete Fourier transform (DFT)
+ in one or more dimensions, of arbitrary input size, and of both real and complex data."""
+
+toolchain = {'name': 'gmvapich2', 'version': '1.7.12rc1'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = [homepage]
+
+common_configopts = "--enable-threads --enable-openmp --with-pic"
+
+configopts = [
+    common_configopts + " --enable-single --enable-sse2 --enable-mpi",
+    common_configopts + " --enable-long-double --enable-mpi",
+    common_configopts + " --enable-quad-precision",
+    common_configopts + " --enable-sse2 --enable-mpi",  # default as last
+]
+
+sanity_check_paths = {
+    'files': ['bin/fftw%s' % x for x in ['-wisdom', '-wisdom-to-conf', 'f-wisdom',
+                                         'l-wisdom', 'q-wisdom']] +
+             ['include/fftw3%s' % x for x in ['-mpi.f03', '-mpi.h', '.f', '.f03',
+                                              '.h', 'l-mpi.f03', 'l.f03', 'q.f03']] +
+             ['lib/libfftw3%s%s.a' % (x, y) for x in ['', 'f', 'l'] for y in ['', '_mpi', '_omp', '_threads']] +
+             ['lib/libfftw3q.a', 'lib/libfftw3q_omp.a'],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'numlib'

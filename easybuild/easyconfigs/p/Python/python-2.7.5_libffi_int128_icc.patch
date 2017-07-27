@@ -1,0 +1,27 @@
+diff -ur Python-2.7.4.orig/Modules/_ctypes/libffi/src/x86/ffi64.c Python-2.7.4/Modules/_ctypes/libffi/src/x86/ffi64.c
+--- Python-2.7.4.orig/Modules/_ctypes/libffi/src/x86/ffi64.c	2013-04-06 16:02:35.000000000 +0200
++++ Python-2.7.4/Modules/_ctypes/libffi/src/x86/ffi64.c	2013-05-13 10:28:22.935090082 +0200
+@@ -56,6 +56,8 @@
+   UINT128 i128;
+ };
+ 
++typedef struct { int64_t m[2]; } __int128_t;
++
+ struct register_args
+ {
+   /* Registers for argument passing.  */
+@@ -507,10 +509,12 @@
+ 		  break;
+ 		case X86_64_SSE_CLASS:
+ 		case X86_64_SSEDF_CLASS:
+-		  reg_args->sse[ssecount++].i64 = *(UINT64 *) a;
++ 		  reg_args->sse[ssecount++].m[0] = *(UINT64 *) a;
++ 		  reg_args->sse[ssecount++].m[1] = 0;
+ 		  break;
+ 		case X86_64_SSESF_CLASS:
+-		  reg_args->sse[ssecount++].i32 = *(UINT32 *) a;
++ 		  reg_args->sse[ssecount++].m[0] = *(UINT32 *) a;
++ 		  reg_args->sse[ssecount++].m[1] = 0;
+ 		  break;
+ 		default:
+ 		  abort();

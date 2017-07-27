@@ -1,0 +1,31 @@
+easyblock = 'ConfigureMake'
+
+name = 'FFTW'
+version = '3.3.3'
+versionsuffix = '-single'
+
+homepage = 'http://www.fftw.org'
+description = """FFTW is a C subroutine library for computing the discrete Fourier transform (DFT)
+ in one or more dimensions, of arbitrary input size, and of both real and complex data."""
+
+toolchain = {'name': 'ictce', 'version': '4.1.13'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = [homepage]
+
+# single precision
+configopts = "--enable-sse --enable-single"
+
+# the MPI opts from FFTW2 are valid options but unused until FFTW3.3
+configopts += " --enable-threads --enable-openmp --with-pic --enable-mpi"
+
+sanity_check_paths = {
+    'files': ['bin/fftw%s' % x for x in ['-wisdom-to-conf', 'f-wisdom']] +
+             ['include/fftw3%s' % x for x in ['-mpi.f03', '-mpi.h', '.f', '.f03',
+                                              '.h', 'l-mpi.f03', 'l.f03', 'q.f03']] +
+             ['lib/libfftw3f%s.a' % x for x in ['', '_mpi', '_omp', '_threads']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'numlib'

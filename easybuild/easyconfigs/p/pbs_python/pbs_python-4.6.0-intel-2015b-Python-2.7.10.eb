@@ -1,0 +1,44 @@
+easyblock = 'ConfigureMake'
+
+name = 'pbs_python'
+version = '4.6.0'
+
+homepage = 'https://oss.trac.surfsara.nl/pbs_python'
+description = """The pbs_python package is a wrapper class for the Torque C library. With this package you now can
+ write utilities/extensions in Python instead of C. We developed this package because we want to replace xpbsmon by
+ an ascii version named pbsmon. PBSQuery is also included in this package. This is a python module build on top of
+ the pbs python module to simplify querying the batch server, eg: how many jobs, how many nodes, ..."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+
+source_urls = ['http://ftp.sara.nl/pub/outgoing/']
+sources = [SOURCE_TAR_GZ]
+
+patches = [
+    'pbs_python-%(version)s_CC.patch',
+    'pbs_python-%(version)s_remove-printf.patch',
+]
+
+python = 'Python'
+pythonver = '2.7.10'
+pythonshortver = '.'.join(pythonver.split('.')[:2])
+versionsuffix = '-%s-%s' % (python, pythonver)
+
+dependencies = [(python, pythonver)]
+
+osdependencies = ['torque-devel']
+
+# this is needed for setup.py script
+configopts = "--datarootdir=%(installdir)s --docdir=%(installdir)s"
+prebuildopts = 'export CFLAGS="$CFLAGS -I/usr/include/torque/" && '
+preinstallopts = prebuildopts
+
+pythonpath = 'lib/python%s/site-packages' % pythonshortver
+modextrapaths = {"PYTHONPATH": pythonpath}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ["%s/pbs" % pythonpath]
+}
+
+moduleclass = 'tools'

@@ -1,0 +1,42 @@
+# Contributed by 
+# Luca Marsella (CSCS)
+# Guilherme Peretti-Pezzi (CSCS)
+#
+# Copyright:: Copyright 2012-2013 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC, Ghent University
+# Authors::   Wiktor Jurkowski <wiktor.jurkowski@uni.lu>, Fotis Georgatos <fotis.georgatos@uni.lu>, \
+#             George Tsouloupas <g.tsouloupas@cyi.ac.cy>, Kenneth Hoste
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-93.html
+
+name = 'GROMACS'
+version = "5.1.2"
+cudaversion = '7.0.28'
+versionsuffix = '-cuda-%s-hybrid' % cudaversion
+
+homepage = 'http://www.gromacs.org'
+description = """GROMACS is a versatile package to perform molecular dynamics,
+ i.e. simulate the Newtonian equations of motion for systems with hundreds to millions of particles."""
+
+toolchain = {'name': 'CrayGNU', 'version': '2016.03'}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True, 'verbose': False}
+
+source_urls = ['ftp://ftp.gromacs.org/pub/gromacs/']
+sources = [SOURCELOWER_TAR_GZ]
+
+configopts = '-DCUDA_NVCC_FLAGS="-arch sm_35"'
+
+builddependencies = [
+    ('CMake', '3.5.0'),
+    ('cudatoolkit/%s-1.0502.10742.5.1' % cudaversion, EXTERNAL_MODULE),
+    ('fftw/3.3.4.3', EXTERNAL_MODULE),
+    ('Boost', '1.60.0', '-Python-2.7.11'),
+    ('libxml2', '2.9.3'),
+]
+
+# skip tests as they call the MPI executable gmx_mpi and would fail on the login nodes
+runtest = False
+
+moduleclass = 'bio'

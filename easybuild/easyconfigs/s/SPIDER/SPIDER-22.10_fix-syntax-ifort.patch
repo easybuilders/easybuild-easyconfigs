@@ -1,0 +1,202 @@
+fix syntax issues that trip Intel Fortran compiler (ifort)
+author: Kenneth Hoste (HPC-UGent)
+--- spider/src/copyfromtif.f.orig	2014-11-20 17:31:58.000000000 +0100
++++ spider/src/copyfromtif.f	2015-05-21 12:04:17.049891641 +0200
+@@ -88,7 +88,7 @@
+         INTEGER(KIND=1),  ALLOCATABLE :: I1VALS(:)
+         INTEGER(KIND=4),  ALLOCATABLE :: I4VALS(:)
+ 
+-        CHARACTER(LEN=1), ALLOCATABLE :: CVAL(:)
++        CHARACTER(LEN=:), ALLOCATABLE :: CVAL
+ 
+         CHARACTER(LEN=24)             :: CDATE
+ 
+@@ -290,7 +290,7 @@
+               IF ( ICOUNT  > ICVAL_LEN) THEN
+                  IF (ALLOCATED(CVAL)) DEALLOCATE(CVAL)
+                  ICVAL_LEN = ICOUNT
+-                 ALLOCATE(CVAL(1)(ICVAL_LEN), STAT=IRTFLG)
++                 ALLOCATE(CHARACTER(LEN=ICVAL_LEN) :: CVAL, STAT=IRTFLG)
+                 
+                  IF (IRTFLG .NE. 0) THEN
+                    CALL ERRT(46,'COPYFROMTIF; CVAL...',ICVAL_LEN)
+@@ -432,9 +432,9 @@
+               GOTRESU = .TRUE.
+ 
+            ELSEIF (ITAG == 306) THEN
+-             CDATE = CVAL(1)(1:22)
++             CDATE = CVAL(1:22)
+ c            IF (DEBUG) WRITE(NOUT,'(2X,A,1X,200A)')'DATE & TIME:',
+-c     &                                    CVAL(1)(1:ICOUNT)
++c     &                                    CVAL(1:ICOUNT)
+              GOTDATE = .TRUE.
+ 
+            ELSE
+--- spider/src/copypos.f.orig	2015-05-20 21:21:12.693293000 +0200
++++ spider/src/copypos.f	2015-05-20 21:21:37.499077116 +0200
+@@ -269,7 +269,7 @@
+           ENDIF
+ 
+ C         GREATER OF (0 AND (THE SMALLER OF RVAL AND 255))
+-          IVAL = MAX(0,MIN(RVAL, 255.))
++          IVAL = MAX(0.,MIN(RVAL, 255.))
+ 
+           IF (FLIP)   THEN
+              IVAL = 255 - IVAL
+--- spider/src/hisd.f.orig	2015-05-20 21:30:04.788208000 +0200
++++ spider/src/hisd.f	2015-05-20 21:30:29.848221000 +0200
+@@ -146,9 +146,7 @@
+      &           'OUTPUT DOC FILE (OR * IF NONE)',ISOLD,APPEND,MESSAGE,
+      &            NEWFILE,IRTFLG)
+ 
+-        WANTDOC = (IRTFLG == 0)
+-
+-        IF (WANTDOC) THEN
++        IF (IRTFLG == 0) THEN
+ C          OUTPUT TO DOC FILE
+ 
+ C                    123456789 123456789 123456789 123456789 123456789 
+--- spider/src/star2doc.f.orig	2015-05-20 21:41:24.588241000 +0200
++++ spider/src/star2doc.f	2015-05-20 21:41:50.069338858 +0200
+@@ -82,6 +82,7 @@
+       CHARACTER(LEN=1)         :: CDUM  
+       INTEGER                  :: LUNDOCT,ILOC,IT,NLIST,ILAST
+       INTEGER                  :: IHI,I,IKEY,IRTFLG,LENREC,IVAR,ITOK
++      INTEGER                  :: NSPI
+ 
+       LOGICAL                  :: ISOPEN,EX,CALLERRT,ASKNAM
+       LOGICAL                  :: ADDEXT,GETNAME
+--- spider/src/Makebody.inc.orig	2015-05-21 09:53:57.937621000 +0200
++++ spider/src/Makebody.inc	2015-05-21 09:52:36.558197000 +0200
+@@ -14,4 +14,4 @@
+ .f.a:
+ 	$(COMP) $(FFLAGS) $<
+ 	$(AR) $(AFLAGS) $(LIB) $*.o
+-	@\rm $*.o
++#	@\rm $*.o
+--- spider/src/four_fq.f.orig	2015-05-21 10:37:01.109541000 +0200
++++ spider/src/four_fq.f	2015-05-21 10:36:37.703908871 +0200
+@@ -1028,13 +1028,11 @@
+ C                   BUTTERWORTH ELLIPTIC LOWPASS FILTER *********       
+                     CALL ERRT(101,
+      &                 'OPTION NOT IMPLEMENTED FOR VOLUMES',IOPT)
+-                    RETURN
+ 
+                  ELSEIF (IOPT == 12) THEN
+ C                   BUTTERWORTH ELLIPTIC HIGHPASS FILTER *********      
+                     CALL ERRT(101,
+      &                 'OPTION NOT IMPLEMENTED FOR VOLUMES',IOPT)
+-                    RETURN
+ 
+  
+                  ELSEIF (IOPT == 13) THEN
+--- spider/src/spider.f.orig	2015-04-21 15:30:40.000000000 +0200
++++ spider/src/spider.f	2015-05-21 15:03:36.159704166 +0200
+@@ -195,9 +195,15 @@
+ 
+ #ifndef USE_MPI
+ #ifndef __APPLE__
++#ifdef SP_IFC
++        isiz1 = kmp_get_stacksize()
++        CALL kmp_set_stacksize(65536)
++        isiz2 = kmp_get_stacksize()
++#else
+         isiz1 = omp_get_stack_size()
+         CALL omp_set_stack_size(65536)
+         isiz2 = omp_get_stack_size()
++#endif
+         !write(6,*) ' OMP Stack size: ',isiz1,' -->',isiz2
+ 
+ #endif
+--- spider/src/lundoc.f.orig	2015-03-27 14:08:10.000000000 +0100
++++ spider/src/lundoc.f	2015-05-21 15:26:30.008871936 +0200
+@@ -1252,7 +1252,7 @@
+         INCLUDE 'CMBLOCK.INC' 
+ 
+         INTEGER             :: NDOC,MAXKEYT,MAXREGT,KEYSINUSE,IRTFLG
+-        LOGICAL             :: SAYIT
++        LOGICAL             :: SAYIT, EOF
+ 
+         REAL, POINTER       :: IPQ(:)
+         CHARACTER(LEN=80)   :: RECLIN  ! ONLY NEEDS START
+@@ -1319,15 +1319,15 @@
+               BACKSPACE(NDOC)   ! REREAD LINE
+               READ(NDOC,*,END=100,IOSTAT=IER) RECLIN
+ 
+-              ENDFILE = .TRUE.    
++              EOF = .TRUE.    
+               READ(NDOC,*,END=100,IOSTAT=IER) NKEY,NREGPLINE
+-              ENDFILE = .FALSE.
++              EOF = .FALSE.
+            ENDIF
+ 
+             
+- 100       CALL BCAST_MPI('LUNDOCINFO','ENDFILE',ENDFILE,1,'L',ICOMM)
++ 100       CALL BCAST_MPI('LUNDOCINFO','EOF',EOF,1,'L',ICOMM)
+            CALL BCAST_MPI('LUNDOCINFO','IER',IER,1,'I',ICOMM)
+-           IF (ENDFILE) GOTO 799
++           IF (EOF) GOTO 799
+ 
+            CALL BCAST_MPI('LUNDOCINFO','NKEY',NKEY,1,'I',ICOMM)
+            CALL BCAST_MPI('LUNDOCINFO','NREGPLINE',NREGPLINE,1,
+@@ -1434,7 +1434,7 @@
+ 
+         REAL               :: PLIST(*)
+         CHARACTER(LEN=180) :: RECLIN
+-        LOGICAL            :: TILLEND
++        LOGICAL            :: TILLEND, EOF, ERRFILE
+ 
+         CALL SET_MPI(ICOMM,MYPID,MPIERR) ! SETS ICOMM AND MYPID
+ 
+@@ -1464,18 +1464,18 @@
+ 10      CONTINUE   
+         IF (MYPID == 0) THEN
+            ERRFILE = .TRUE.
+-           ENDFILE = .TRUE.
++           EOF = .TRUE.
+            READ (LUNDOC,81,ERR=100,END=200) RECLIN
+ 81         FORMAT(A120)
+            ERRFILE = .FALSE.
+-           ENDFILE = .FALSE. 
++           EOF = .FALSE. 
+         ENDIF
+ 
+ 100     CALL BCAST_MPI('LUNDOCGETCOM','ERRFILE',ERRFILE,1,'L',ICOMM)
+         IF (ERRFILE) GOTO 998
+ 
+-200     CALL BCAST_MPI('LUNDOCGETCOM','ENDFILE',ENDFILE,1,'L',ICOMM)
+-        IF (ENDFILE) GOTO 997
++200     CALL BCAST_MPI('LUNDOCGETCOM','EOF',EOF,1,'L',ICOMM)
++        IF (EOF) GOTO 997
+ 
+         CALL BCAST_MPI('LUNDOCGETCOM','RECLIN',RECLIN,180,'C',ICOMM)
+ 
+@@ -1580,7 +1580,7 @@
+         CHARACTER *120 RECLIN
+ #ifdef USE_MPI
+         include 'mpif.h'
+-        LOGICAL ENDFILE, ERRFILE
++        LOGICAL EOF, ERRFILE
+         ICOMM   = MPI_COMM_WORLD
+         CALL MPI_COMM_RANK(ICOMM, MYPID, MPIERR)
+ #else
+@@ -1595,15 +1595,15 @@
+ #ifdef USE_MPI
+ 10      IF (MYPID == 0) THEN
+            ERRFILE = .TRUE.
+-           ENDFILE = .TRUE.
++           EOF = .TRUE.
+            READ (LUNDOC,81,ERR=100,END=100) RECLIN
+            ERRFILE = .FALSE.
+-           ENDFILE = .FALSE.
++           EOF = .FALSE.
+         ENDIF
+ 
+-100     CALL BCAST_MPI('LUNDOCSAYHDR','ENDFILE',ENDFILE,1,'L',ICOMM)
++100     CALL BCAST_MPI('LUNDOCSAYHDR','EOF',EOF,1,'L',ICOMM)
+         CALL BCAST_MPI('LUNDOCSAYHDR','ERRFILE',ERRFILE,1,'L',ICOMM)
+-        IF (ENDFILE .OR. ERRFILE) GOTO 999
++        IF (EOF .OR. ERRFILE) GOTO 999
+ 
+         CALL BCAST_MPI('LUNDOCSAYHDR','RECLIN',RECLIN,120,'C',ICOMM)
+ #else

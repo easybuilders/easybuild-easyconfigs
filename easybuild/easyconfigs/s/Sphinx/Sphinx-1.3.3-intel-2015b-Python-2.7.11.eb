@@ -1,0 +1,70 @@
+easyblock = 'Bundle'
+
+name = 'Sphinx'
+version = '1.3.3'
+
+homepage = 'http://sphinx.pocoo.org/'
+description = """Sphinx is a tool that makes it easy to create intelligent and beautiful documentation.
+ It was originally created for the new Python documentation, and it has excellent facilities for the 
+ documentation of Python projects, but C/C++ is already supported as well, and it is planned to add 
+ special support for other languages as well."""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+pyver = '2.7.11'
+pyshortver = '.'.join(pyver.split('.')[0:2])
+versionsuffix = '-Python-%s' % pyver
+
+dependencies = [
+    ('Python', pyver),
+]
+
+exts_list = [
+    ('Docutils', '0.12', {
+        'source_tmpl': 'docutils-%(version)s.tar.gz',
+        'source_urls': [('http://sourceforge.net/projects/docutils/files/docutils/%(version)s/', 'download')],
+    }),
+    ('Jinja2', '2.8', {
+        'source_urls': ['https://pypi.python.org/packages/source/J/Jinja2/'],
+    }),
+    ('Pygments', '2.0.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/P/Pygments'],
+    }),
+    ('snowballstemmer', '1.2.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/snowballstemmer/'],
+    }),
+    ('Babel', '2.2.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/B/Babel/'],
+    }),
+    ('alabaster', '0.7.7', {
+        'source_urls': ['https://pypi.python.org/packages/source/a/alabaster/'],
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/S/Sphinx/'],
+    }),
+    # sphinx_rtd_theme depends on Sphinx, and should be there to make the tests work
+    ('sphinx_rtd_theme', '0.1.9', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/sphinx_rtd_theme/'],
+    }),
+]
+
+# Sphinx unit tests *after* installing extensions
+postinstallcmds = [' && '.join([
+    "cd %(builddir)s/%(name)s/%(name)s-%(version)s/",
+    "PYTHONPATH=%%(installdir)s/lib/python%s/site-packages/:$PYTHONPATH make test" % pyshortver,
+])]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/sphinx-%s' % x for x in ['apidoc', 'autogen', 'build', 'quickstart']],
+    'dirs': ['lib/python%s/site-packages' % pyshortver],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%s/site-packages' % pyshortver]}
+
+moduleclass = 'vis'

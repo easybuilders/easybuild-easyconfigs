@@ -1,0 +1,70 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenCV'
+version = '2.4.9'
+
+homepage = 'http://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {'name': 'intel', 'version': '2014.06'}
+toolchainopts = {'opt': True, 'optarch': True}
+
+sources = [SOURCELOWER_ZIP]
+source_urls = [('http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/%(version)s', 'download')]
+
+patches = ['OpenCV-%(version)s_with_IPP.patch']
+
+osdependencies = ['gtk2-devel']
+
+builddependencies = [
+    ('CMake', '3.0.0'),
+]
+
+dependencies = [
+    ('Python', '2.7.8'),
+    ('zlib', '1.2.8'),
+    ('FFmpeg', '2.4'),
+    ('libjpeg-turbo', '1.3.1'),
+    ('libpng', '1.6.12'),
+    ('LibTIFF', '4.0.3'),
+    ('JasPer', '1.900.1'),
+    ('Java', '1.7.0_79', '', True),
+    ('ant', '1.9.3', '-Java-%(javaver)s', True),
+    ('GLib', '2.40.0')
+]
+
+preconfigopts = 'export IPPROOT=$EBROOTICC/ipp && '
+
+configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts += '-DBUILD_PYTHON_SUPPORT=ON '
+configopts += '-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+configopts += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
+configopts += '-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.so '
+configopts += '-DZLIB_INCLUDE_DIR=$EBROOTZLIB/include '
+configopts += '-DTIFF_LIBRARY=$EBROOTLIBTIFF/lib/libtiff.so '
+configopts += '-DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include '
+configopts += '-DPNG_LIBRARY=$EBROOTLIBPNG/lib/libpng.so '
+configopts += '-DPNG_INCLUDE_DIR=$EBROOTLIBPNG/include '
+configopts += '-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib/libjpeg.so '
+configopts += '-DJPEG_INCLUDE_DIR=$EBROOTLIBJPEGMINTURBO/include '
+configopts += '-DJASPER_LIBRARY=$EBROOTJASPER/lib/libjasper.a '
+configopts += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
+configopts += '-DWITH_IPP=ON '
+configopts += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
+configopts += '-DWITH_CUDA=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/libopencv_core.%s' % SHLIB_EXT, 'lib/python%(pyshortver)s/site-packages/cv2.so'] +
+             ['bin/opencv_%s' % x for x in ['haartraining', 'createsamples', 'performance', 'traincascade']],
+    'dirs': ['include']
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'CLASSPATH': 'share/OpenCV/java',
+}
+
+moduleclass = 'vis'

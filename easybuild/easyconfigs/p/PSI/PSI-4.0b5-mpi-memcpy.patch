@@ -1,0 +1,63 @@
+diff -ur psi4.0b5.orig/src/lib/libparallel/elem.h psi4.0b5/src/lib/libparallel/elem.h
+--- psi4.0b5.orig/src/lib/libparallel/elem.h	2013-09-12 19:58:45.675482999 +0200
++++ psi4.0b5/src/lib/libparallel/elem.h	2013-09-12 17:56:02.259640817 +0200
+@@ -140,7 +140,7 @@
+             if (receive_buffer == 0) {
+                 receive_buffer = new type[nelem];
+                 elem::mpi::AllReduce(&data[0], receive_buffer, nelem, elem::mpi::SUM, comm_);
+-                ::memcpy(data, receive_buffer, nelem*sizeof(type));
++                std::memcpy(data, receive_buffer, nelem*sizeof(type));
+                 delete receive_buffer;
+             }
+             else
+diff -ur psi4.0b5.orig/src/lib/libparallel/local.h psi4.0b5/src/lib/libparallel/local.h
+--- psi4.0b5.orig/src/lib/libparallel/local.h	2013-09-12 19:58:54.605171643 +0200
++++ psi4.0b5/src/lib/libparallel/local.h	2013-09-12 17:56:02.259640817 +0200
+@@ -137,7 +137,7 @@
+     inline void sum(type data, int nelem, type *receive_buffer=0, int target=-1)
+     {
+         if (receive_buffer != 0)
+-            ::memcpy(receive_buffer, data, sizeof(type) * nelem);
++            std::memcpy(receive_buffer, data, sizeof(type) * nelem);
+     }
+ 
+     /**
+diff -ur psi4.0b5.orig/src/lib/libparallel/mpi_wrapper.h psi4.0b5/src/lib/libparallel/mpi_wrapper.h
+--- psi4.0b5.orig/src/lib/libparallel/mpi_wrapper.h	2013-09-12 19:58:37.556766089 +0200
++++ psi4.0b5/src/lib/libparallel/mpi_wrapper.h	2013-09-12 19:55:22.506570968 +0200
+@@ -22,6 +22,7 @@
+ 
+ #if defined(HAVE_MPI)
+ 
++#include <cstring>
+ #include <mpi.h>
+ 
+ namespace psi {
+@@ -99,7 +100,7 @@
+     void sum(double* data, size_t nelem) {
+         double *receive_buffer = new double[nelem];
+         MPI_Allreduce(static_cast<void*>(data), static_cast<void*>(receive_buffer), nelem, MPI_DOUBLE, MPI_SUM, comm_);
+-        ::memcpy(static_cast<void*>(data), static_cast<void*>(receive_buffer), sizeof(double)*nelem);
++        std::memcpy(static_cast<void*>(data), static_cast<void*>(receive_buffer), sizeof(double)*nelem);
+         delete[] receive_buffer;
+     }
+ 
+@@ -118,7 +119,7 @@
+             MPI_Allreduce(static_cast<void*>(data), static_cast<void*>(receive_buffer), n, M, MPI_SUM, comm_); \
+      \
+         if (alloc) { \
+-            ::memcpy(static_cast<void*>(data), static_cast<void*>(receive_buffer), sizeof(T)*n); \
++            std::memcpy(static_cast<void*>(data), static_cast<void*>(receive_buffer), sizeof(T)*n); \
+             delete[] receive_buffer; \
+         } \
+     }
+--- psi4.0b5/src/lib/libmints/wavefunction.h.orig    2013-10-10 21:41:48.177679312 +0200
++++ psi4.0b5/src/lib/libmints/wavefunction.h   2013-10-10 21:41:37.884807311 +0200
+@@ -28,7 +28,8 @@
+ 
+ #include "typedefs.h"
+ #include <libparallel/parallel.h>
++#include <liboptions/liboptions.h>
+ 
+ #define MAX_IOFF 30000
+ extern size_t ioff[MAX_IOFF];

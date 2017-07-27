@@ -1,0 +1,36 @@
+easyblock = "Toolchain"
+
+name = 'cgmpolf'
+version = '1.1.6'
+
+homepage = '(none)'
+description = """Clang and GFortran based compiler toolchain,
+ MPICH for MPI support, OpenBLAS (BLAS and LAPACK support), FFTW and ScaLAPACK."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+comp = ('GCC', '4.7.3')
+
+blaslib = 'OpenBLAS'
+blasver = '0.2.6'
+blassuff = '-LAPACK-3.4.2'
+blas = '-%s-%s%s' % (blaslib, blasver, blassuff)
+
+# toolchain used to build goolf dependencies
+comp_mpi_tc_name = 'cgmpich'
+comp_mpi_tc_ver = "%s" % version
+comp_mpi_tc = (comp_mpi_tc_name, comp_mpi_tc_ver)
+
+# Compiler toolchain dependencies
+# We need ClangGCC and MPICH as explicit dependencies instead of cgmpich toolchain
+# because of toolchain definition being verified against list of modules.
+dependencies = [
+    comp,
+    ('Clang', '3.2', '', comp),
+    ('MPICH', '3.0.3', '', ('ClangGCC', '1.1.3')),  # part of cgmpich-1.1.6
+    (blaslib, blasver, blassuff, comp_mpi_tc),
+    ('FFTW', '3.3.3', '', comp_mpi_tc),
+    ('ScaLAPACK', '2.0.2', blas, comp_mpi_tc),
+]
+
+moduleclass = 'toolchain'

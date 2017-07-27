@@ -1,0 +1,74 @@
+patch file for 'old' WPS v3.5.1 tarball (with MD5 checksum 0dd6b0b51321c836d3e60764f00ecb85)
+alternative patch available for last (?) version of v3.5.1 tarball (checksum ce0eb551d29e04f688e02d522d327c2c),
+see WPS-3.5.1_netCDF-Fortran_seperate_path.patch
+diff -ru WPS.orig/arch/Config.pl WPS/arch/Config.pl
+--- WPS.orig/arch/Config.pl	2012-04-07 00:07:24.000000000 +0200
++++ WPS/arch/Config.pl	2012-06-19 15:33:40.998567539 +0200
+@@ -36,6 +36,7 @@
+     if(substr( $ARGV[0], 1, 8 ) eq "netcdff=")
+     {
+         $sw_netcdff_lib = substr( $ARGV[0], 9);
++        $sw_netcdff_lib =~ s/!/ /g ;
+     }
+     if(substr( $ARGV[0], 1, 6 ) eq "phdf5=")
+     {
+diff -ru WPS.orig/configure WPS/configure
+--- WPS.orig/configure	2012-04-07 00:07:19.000000000 +0200
++++ WPS/configure	2012-06-19 15:34:35.543132843 +0200
+@@ -119,9 +119,14 @@
+   echo "Will use NETCDF in dir: $NETCDF"
+   # for 3.6.2 and greater there might be a second library, libnetcdff.a .  Check for this and use
+   # if available
+-  NETCDFF=" "
+-  if [ -f "$NETCDF/lib/libnetcdff.a" ] ; then
+-    NETCDFF="-lnetcdff"
++  USENETCDFF=" "
++  # for netCDF 4.2 and greater, the Fortran library is a seperate install
++  if [ -z "$NETCDFF" ]
++  then
++    NETCDFF=$NETCDF
++  fi
++  if [ -f "$NETCDFF/lib/libnetcdff.a" ] ; then
++    USENETCDFF="-L$NETCDFF/lib!-lnetcdff"
+   fi
+ else
+   echo "Will configure for use without NetCDF"
+@@ -151,7 +156,7 @@
+ fi
+ 
+ # Found perl, so proceed with configuration
+-perl arch/Config.pl -perl=$PERL -netcdf=$NETCDF -netcdff=$NETCDFF -os=$os -mach=$mach 
++perl arch/Config.pl -perl=$PERL -netcdf=$NETCDF -netcdff=$USENETCDFF -os=$os -mach=$mach 
+ 
+ 
+ #Checking cross-compiling capability for some particular environment 
+@@ -319,9 +324,9 @@
+         end program
+ EOF
+     FFLAGS=`grep ^FFLAGS configure.wps | cut -d"=" -f2-`
+-    cp $NETCDF/include/netcdf.inc .
++    cp $NETCDFF/include/netcdf.inc .
+     FC=`grep ^SFC configure.wps | cut -d"=" -f2-`
+-    $FC ${FFLAGS} fort_netcdf.f -o fort_netcdf -L${NETCDF}/lib -lnetcdf $NETCDFF > /dev/null 2>&1 
++    $FC ${FFLAGS} fort_netcdf.f -o fort_netcdf -L${NETCDF}/lib -lnetcdf $USENETCDFF > /dev/null 2>&1 
+     if [ -f "fort_netcdf" ] ; then
+       fort_netcdf > /dev/null 2>&1
+       if [ $? = 0 ]; then
+Only in WPS: configure.wps
+diff -ru WPS.orig/util/src/Makefile WPS/util/src/Makefile
+--- WPS.orig/util/src/Makefile	2012-04-07 00:07:26.000000000 +0200
++++ WPS/util/src/Makefile	2012-06-19 15:36:39.849421166 +0200
+@@ -40,11 +40,11 @@
+ 		write_met_module.o misc_definitions_module.o met_data_module.o
+ 	$(SFC) $(LDFLAGS) -o $@ elev_angle.o cio.o module_debug.o gridinfo_module.o \
+ 		write_met_module.o misc_definitions_module.o met_data_module.o \
+-		-L$(NETCDF)/lib -I$(NETCDF)/include -lnetcdf
++		-L$(NETCDFF)/lib -I$(NETCDFF)/include -lnetcdff
+ 
+ elev_angle.o: elev_angle.F cio.o module_debug.o gridinfo_module.o \
+ 		write_met_module.o misc_definitions_module.o
+-	$(SFC) -c elev_angle.F -I$(NETCDF)/include
++	$(SFC) -c elev_angle.F -I$(NETCDFF)/include
+ 
+ calc_ecmwf_p.exe: calc_ecmwf_p.o cio.o module_debug.o module_stringutil.o gridinfo_module.o read_met_module.o \
+ 		write_met_module.o module_date_pack.o misc_definitions_module.o met_data_module.o constants_module.o

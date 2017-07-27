@@ -1,0 +1,173 @@
+#Let configure(.ac) determine the absolute path to basename, rather
+#than having Makefile.in.top hardcode /usr/bin/basename, which fails on
+#at least stock CentOS 6 (which supplies only /bin/basename).
+#http://www.ncbi.nlm.nih.gov/viewvc/v1?view=revision&revision=65204
+#B. Hajgato 02/18/2015
+--- trunk/c++/src/build-system/Makefile.in.top	2014/11/12 15:16:56	65203
++++ trunk/c++/src/build-system/Makefile.in.top	2014/11/12 16:41:55	65204
+@@ -11,6 +11,7 @@
+ libdir 	     = @libdir@
+ includedir   = @includedir@
+ pincludedir  = $(includedir)/$(PACKAGE_NAME)
++BASENAME     = @BASENAME@
+ INSTALL      = @INSTALL@
+ LN_S         = @LN_S@
+ 
+@@ -46,7 +47,7 @@
+ 	-rm -f $(libdir)/lib*-static.a
+ 	cd $(libdir)  && \
+ 	    for x in *.a; do \
+-	        $(LN_S) "$$x" "`/usr/bin/basename \"$$x\" .a`-static.a"; \
++	        $(LN_S) "$$x" "`$(BASENAME) \"$$x\" .a`-static.a"; \
+ 	    done
+ 	cd $(includedir0) && find * -name CVS -prune -o -print |\
+             cpio -pd $(pincludedir)
+--- trunk/c++/src/build-system/configure	2014/11/12 15:16:56	65203
++++ trunk/c++/src/build-system/configure	2014/11/12 16:41:55	65204
+@@ -682,6 +682,7 @@
+ DISTCC
+ CCACHE
+ TAIL
++BASENAME
+ SED
+ TOUCH
+ GREP
+@@ -8413,6 +8414,46 @@
+ echo "${ECHO_T}no" >&6; }
+ fi
+ 
++# Extract the first word of "basename", so it can be a program name with args.
++set dummy basename; ac_word=$2
++{ echo "$as_me:$LINENO: checking for $ac_word" >&5
++echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
++if test "${ac_cv_path_BASENAME+set}" = set; then
++  echo $ECHO_N "(cached) $ECHO_C" >&6
++else
++  case $BASENAME in
++  [\\/]* | ?:[\\/]*)
++  ac_cv_path_BASENAME="$BASENAME" # Let the user override the test with a path.
++  ;;
++  *)
++  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
++for as_dir in $PATH
++do
++  IFS=$as_save_IFS
++  test -z "$as_dir" && as_dir=.
++  for ac_exec_ext in '' $ac_executable_extensions; do
++  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; }; then
++    ac_cv_path_BASENAME="$as_dir/$ac_word$ac_exec_ext"
++    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
++    break 2
++  fi
++done
++done
++IFS=$as_save_IFS
++
++  ;;
++esac
++fi
++BASENAME=$ac_cv_path_BASENAME
++if test -n "$BASENAME"; then
++  { echo "$as_me:$LINENO: result: $BASENAME" >&5
++echo "${ECHO_T}$BASENAME" >&6; }
++else
++  { echo "$as_me:$LINENO: result: no" >&5
++echo "${ECHO_T}no" >&6; }
++fi
++
++
+ # Extract the first word of "sed", so it can be a program name with args.
+ set dummy sed; ac_word=$2
+ { echo "$as_me:$LINENO: checking for $ac_word" >&5
+@@ -41750,6 +41791,7 @@
+ DISTCC!$DISTCC$ac_delim
+ CCACHE!$CCACHE$ac_delim
+ TAIL!$TAIL$ac_delim
++BASENAME!$BASENAME$ac_delim
+ SED!$SED$ac_delim
+ TOUCH!$TOUCH$ac_delim
+ GREP!$GREP$ac_delim
+@@ -41772,7 +41814,6 @@
+ GCRYPT_INCLUDE!$GCRYPT_INCLUDE$ac_delim
+ GCRYPT_LIBS!$GCRYPT_LIBS$ac_delim
+ LIBGNUTLS_CONFIG!$LIBGNUTLS_CONFIG$ac_delim
+-GNUTLS_INCLUDE!$GNUTLS_INCLUDE$ac_delim
+ _ACEOF
+ 
+   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
+@@ -41814,6 +41855,7 @@
+ ac_delim='%!_!# '
+ for ac_last_try in false false false false false :; do
+   cat >conf$$subs.sed <<_ACEOF
++GNUTLS_INCLUDE!$GNUTLS_INCLUDE$ac_delim
+ GNUTLS_LIBS!$GNUTLS_LIBS$ac_delim
+ OPENSSL_INCLUDE!$OPENSSL_INCLUDE$ac_delim
+ OPENSSL_LIBS!$OPENSSL_LIBS$ac_delim
+@@ -41910,7 +41952,6 @@
+ status_dir!$status_dir$ac_delim
+ builddir!$builddir$ac_delim
+ runpath!$runpath$ac_delim
+-ncbi_runpath!$ncbi_runpath$ac_delim
+ _ACEOF
+ 
+   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
+@@ -41952,6 +41993,7 @@
+ ac_delim='%!_!# '
+ for ac_last_try in false false false false false :; do
+   cat >conf$$subs.sed <<_ACEOF
++ncbi_runpath!$ncbi_runpath$ac_delim
+ c_ncbi_runpath!$c_ncbi_runpath$ac_delim
+ LINK!$LINK$ac_delim
+ C_LINK!$C_LINK$ac_delim
+@@ -42048,7 +42090,6 @@
+ BZ2_LIB!$BZ2_LIB$ac_delim
+ PCREPOSIX_LIBS!$PCREPOSIX_LIBS$ac_delim
+ PCRE_LIB!$PCRE_LIB$ac_delim
+-OPENSSL_STATIC_LIBS!$OPENSSL_STATIC_LIBS$ac_delim
+ _ACEOF
+ 
+   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
+@@ -42090,6 +42131,7 @@
+ ac_delim='%!_!# '
+ for ac_last_try in false false false false false :; do
+   cat >conf$$subs.sed <<_ACEOF
++OPENSSL_STATIC_LIBS!$OPENSSL_STATIC_LIBS$ac_delim
+ TLS_INCLUDE!$TLS_INCLUDE$ac_delim
+ TLS_LIBS!$TLS_LIBS$ac_delim
+ SYBASE_PATH!$SYBASE_PATH$ac_delim
+@@ -42186,7 +42228,6 @@
+ AVRO_STATIC_LIBS!$AVRO_STATIC_LIBS$ac_delim
+ MONGODB_STATIC_LIBS!$MONGODB_STATIC_LIBS$ac_delim
+ ncbi_xreader_pubseqos!$ncbi_xreader_pubseqos$ac_delim
+-ncbi_xreader_pubseqos2!$ncbi_xreader_pubseqos2$ac_delim
+ _ACEOF
+ 
+   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
+@@ -42228,6 +42269,7 @@
+ ac_delim='%!_!# '
+ for ac_last_try in false false false false false :; do
+   cat >conf$$subs.sed <<_ACEOF
++ncbi_xreader_pubseqos2!$ncbi_xreader_pubseqos2$ac_delim
+ UNLESS_PUBSEQOS!$UNLESS_PUBSEQOS$ac_delim
+ PERL_INCLUDE!$PERL_INCLUDE$ac_delim
+ PERL_LIBS!$PERL_LIBS$ac_delim
+@@ -42266,7 +42308,7 @@
+ LTLIBOBJS!$LTLIBOBJS$ac_delim
+ _ACEOF
+ 
+-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 36; then
++  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 37; then
+     break
+   elif $ac_last_try; then
+     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
+--- trunk/c++/src/build-system/configure.ac	2014/11/12 15:16:56	65203
++++ trunk/c++/src/build-system/configure.ac	2014/11/12 16:41:55	65204
+@@ -2255,6 +2255,7 @@
+    AC_MSG_RESULT(no)
+ fi
+ 
++AC_PATH_PROG(BASENAME, basename)
+ AC_PATH_PROG(SED, sed)
+ AC_PATH_PROG(TOUCH, touch, [], /bin:/usr/bin:$PATH)
+ dnl AC_PATH_PROG(GREP, grep)
+

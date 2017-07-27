@@ -1,0 +1,2469 @@
+this patch file is a concatenation of various patches for motif-2.2.4, obtained from the source RPM
+the following patch files are included in here:
+PrintableString.diff openmotif-2.2.4.diff openmotif-uil.diff openmotif-xpm.diff openmotif22-add_LONG64_define.diff
+openmotif22-strcmp.diff sentinel.diff warn.patch datadir.patch XmResizeHashTable.patch mkdir.patch
+--- lib/Xm/TextF.c
++++ lib/Xm/TextF.c
+@@ -3723,15 +3723,15 @@
+       cache_ptr = tmp = XmStackAlloc(buf_size, cache);
+    
+       tmp_str = (wchar_t *)str;
+-      ret_val = wctomb(tmp, *tmp_str);
++      ret_val = 0;
+       count = 0;
+-      while ( (ret_val > 0)&& (buf_size >= MB_CUR_MAX) && (count < n) )
++      while (count < n && buf_size >= MB_CUR_MAX &&
++	     (ret_val = wctomb(tmp, *tmp_str)) > 0)
+ 	{
+ 	  count += 1;
+ 	  tmp += ret_val;
+ 	  buf_size -= ret_val;
+ 	  tmp_str++;
+-	  ret_val = wctomb(tmp, *tmp_str);
+ 	}
+          
+       if (ret_val == -1)    /* bad character */
+--- Makefile.am
++++ Makefile.am
+@@ -28,6 +28,5 @@
+              include \
+              tools \
+              clients \
+-             doc \
+-             demos
+-AUTOMAKE_OPTIONS = 1.4
++             doc
++AUTOMAKE_OPTIONS = 1.4 foreign
+--- clients/uil/Makefile.am
++++ clients/uil/Makefile.am
+@@ -6,7 +6,7 @@
+ #
+ bin_PROGRAMS = uil
+ 
+-LDFLAGS = -version-info @CURRENT@:@REVISION@:@AGE@
++libUil_la_LDFLAGS = -version-info @CURRENT@:@REVISION@:@AGE@
+ 
+ UilParser.lo: UilParser.c
+ 	$(LTCOMPILE) -DCALLABLE -c UilParser.c
+@@ -42,7 +42,7 @@
+ 		UilLstMac.c	UilSemVal.c	UilSemCSet.c	UilDB.c
+ 
+ SRCS =		$(COMMON_SRC)
+-SRCS2 =		$(COMMON_SRC)	UilMain.c
++SRCS2 =		UilMain.c
+ 
+ HEADERS_1 = 	Uil.h		UilSymGl.h	UilSymDef.h \
+ 		UilDef.h	XmAppl.uil
+@@ -72,6 +72,7 @@
+ 	$(LN_S) $(srcdir)/../../tools/wml/UilDBDef.h UilDBDef.h
+ 
+ uil_SOURCES = $(SRCS2)
++uil_LDADD += libUil.la
+ 
+ if MessageCatalog
+ 
+--- config/cf/Imake.cf
++++ config/cf/Imake.cf
+@@ -570,6 +570,9 @@
+ # ifdef i386
+ #  define i386Architecture
+ #  undef i386
++#  undef i486
++#  undef i586
++#  undef i686
+ # endif /* i386 */
+ # ifdef __i386__
+ #  ifndef i386Architecture
+@@ -593,6 +596,32 @@
+ #  define PowerPCArchitecture
+ #  undef powerpc
+ # endif
++# ifdef __s390__
++#  define s390Architecture
++#  undef __s390__
++# endif
++# ifdef __s390x__
++#  define s390xArchitecture
++#  undef __s390x__
++# endif
++# ifdef __x86_64__
++#  define x86_64Architecture
++#  undef __x86_64__
++# endif
++# ifdef mips
++#  define MipsArchitecture
++#  undef mips
++# endif
++# ifdef sparc
++#  define SparcArchitecture
++#  undef sparc
++# endif
++# ifdef __sparc__
++#  ifndef SparcArchitecture
++#   define SparcArchitecture
++#  endif
++#  undef __sparc__
++# endif
+ # if defined(arm) || defined(__arm__)
+ #   define ArmArchitecture
+ #   undef arm
+@@ -607,6 +636,10 @@
+ #     undef __ARM_ARCH_3__
+ #   endif
+ # endif
++# ifdef __ia64__
++#  define ia64Architecture
++#  undef __ia64__
++# endif /* __ia64__ */
+ #endif /* linux */
+ 
+ #if (defined(__Lynx__) || defined(Lynx)) && (defined(i386) || defined(__i386__) || defined(__x86__) || defined(__powerpc__) || defined(__sparc__) || defined(sparc))
+--- config/cf/Imake.tmpl
++++ config/cf/Imake.tmpl
+@@ -502,14 +502,18 @@
+ #define	DefaultUsrBin /usr/bin
+ #endif
+ 
++#ifndef LibDirName
++# define LibDirName lib
++#endif
++
+ #ifndef UsrLibDir
+ #ifdef ProjectRoot
+-#define UsrLibDir Concat(ProjectRoot,/lib)
++#define UsrLibDir Concat3(ProjectRoot,/,LibDirName)
+ #ifndef AlternateUsrLibDir
+ #define AlternateUsrLibDir YES
+ #endif
+ #else
+-#define UsrLibDir /usr/lib
++#define UsrLibDir Concat(/usr/,LibDirName)
+ #ifndef AlternateUsrLibDir
+ #define AlternateUsrLibDir NO
+ #endif
+--- config/cf/linux.cf
++++ config/cf/linux.cf
+@@ -41,8 +41,9 @@
+ /* Set some defaults for the Default* values in case imake doesn't find them */
+ #ifndef DefaultLinuxCLibMajorVersion
+ #if defined(AlphaArchitecture) || defined(PowerPCArchitecture) || \
+-    defined(SparcArchitecture) || defined(ArmArchitecure) || \
+-    defined(i386Architecture)
++    defined(SparcArchitecture) || defined(ArmArchitecure) || defined(MipsArchitecure) || \
++    defined(i386Architecture)  || defined(ia64Architecture) || defined(s390Architecture) || \
++    defined(s390xArchitecture) || defined(x86_64Architecture)
+ #define DefaultLinuxCLibMajorVersion	6
+ #else
+ #define DefaultLinuxCLibMajorVersion	5
+@@ -159,7 +160,24 @@
+ #define UseStaticTermcapLib	NO
+ #endif
+ 
++#ifndef HaveLib64
++# if defined (x86_64Architecture) || defined (s390xArchitecture)
++#  define HaveLib64 YES
++# else
++#  define HaveLib64 NO
++# endif
++#endif
++
+ #define MkdirHierCmd		mkdir -p
++
++#ifndef HaveLib64
++# if defined (x86_64Architecture) || defined (s390xArchitecture)
++#  define HaveLib64 YES
++# else
++#  define HaveLib64 NO
++# endif
++#endif
++
+ #if LinuxElfDefault
+ #if UseElfFormat
+ #define CcCmd			gcc
+@@ -234,7 +252,7 @@
+ #endif
+ #define CppCmd			/lib/cpp
+ #ifdef USE_BYACC
+-#define YaccCmd			byacc
++#define YaccCmd			yacc
+ #else
+ #define YaccCmd			bison -y
+ #endif
+@@ -261,6 +279,35 @@
+ #define ServerExtraDefines	-DGCCUSESGAS XFree86ServerDefines -D_XSERVER64
+ #endif /* AlphaArchitecture */
+ 
++#ifdef s390xArchitecture
++#define DefaultCCOptions	-fsigned-char
++#define OptimizedCDebugFlags	-O2
++#define LinuxMachineDefines	-D__s390x__
++#define ServerOSDefines		XFree86ServerOSDefines -DDDXTIME -DPART_NET
++#define ServerExtraDefines	-DGCCUSESGAS XFree86ServerDefines -D_XSERVER64
++#else
++#ifdef s390Architecture
++#define OptimizedCDebugFlags	-O2
++#define LinuxMachineDefines	-D__s390__
++#define ServerOSDefines		XFree86ServerOSDefines -DDDXTIME -DPART_NET
++#define ServerExtraDefines	-DGCCUSESGAS XFree86ServerDefines
++#endif /* s390Architecture */
++#endif /* s390xArchitecture */
++
++#ifdef ia64Architecture
++#define OptimizedCDebugFlags  -O2
++#define LinuxMachineDefines   -D__ia64__
++#define ServerOSDefines       XFree86ServerOSDefines -DDDXTIME -DPART_NET
++#define ServerExtraDefines    -DGCCUSESGAS XFree86ServerDefines -D_XSERVER64
++#endif /* ia64Architecture */
++
++#ifdef x86_64Architecture
++#define OptimizedCDebugFlags  -O2
++#define LinuxMachineDefines   -D__x86_64__
++#define ServerOSDefines       XFree86ServerOSDefines -DDDXTIME -DPART_NET
++#define ServerExtraDefines    -DGCCUSESGAS XFree86ServerDefines -D_XSERVER64
++#endif /* ia64Architecture */
++
+ #ifdef Mc68020Architecture
+ #define OptimizedCDebugFlags	-O2
+ #define LinuxMachineDefines 	-D__mc68000__
+@@ -276,6 +323,14 @@
+ #define ServerExtraDefines	-DGCCUSESGAS XFree86ServerDefines
+ #endif /* PowerPCArchitecture */
+ 
++#ifdef MipsArchitecture
++#define DefaultCCOptions        -fsigned-char
++#define OptimizedCDebugFlags	-O2 -mips2
++#define LinuxMachineDefines 	-D__mips__
++#define ServerOSDefines		XFree86ServerOSDefines -DDDXTIME -DPART_NET
++#define ServerExtraDefines	-DGCCUSESGAS XFree86ServerDefines
++#endif /* MipsArchitecture */
++
+ #ifdef ArmArchitecture
+ #define DefaultCCOptions        -fsigned-char
+ #define OptimizedCDebugFlags   -O2
+@@ -284,6 +339,19 @@
+ #define ServerExtraDefines     -DGCCUSESGAS XFree86ServerDefines
+ #endif /* Arm */
+ 
++#ifdef SparcArchitecture
++#define OptimizedCDebugFlags    -O2
++#define LinuxMachineDefines     -D__sparc__
++#define ServerOSDefines         XFree86ServerOSDefines -DDDXTIME -DPART_NET
++#define ServerExtraDefines      -DGCCUSESGAS XFree86ServerDefines
++#define AsVISOption -Av9a
++#ifdef Sparc64Architecture
++#define AsOutputArchSize 64
++#else
++#define AsOutputArchSize 32
++#endif
++#endif
++
+ #define StandardDefines		-Dlinux LinuxMachineDefines LinuxSourceDefines
+ 
+ #ifndef TermcapLibrary
+@@ -348,5 +416,11 @@
+ #define MakeNamedTargetSubdir(dir,flags,subname)\
+ 	$(MAKE) -C dir $(MFLAGS) $(PARALLELMFLAGS) flags subname
+ 
++#if HaveLib64
++# ifndef LibDirName
++#  define LibDirName lib64
++# endif
++#endif
++
+ #include <lnxLib.rules>
+ #include <xfree86.cf>
+--- config/imake/imakemdep.h
++++ config/imake/imakemdep.h
+@@ -333,6 +333,18 @@
+ # ifdef __i386__
+ 	"-D__i386__",
+ # endif
++# ifdef __ia64__
++	"-D__ia64__",
++# endif
++# ifdef __s390__
++	"-D__s390__",
++# endif
++# ifdef __s390x__
++	"-D__s390x__",
++# endif
++# ifdef __x86_64__
++	"-D__x86_64__",
++# endif
+ # ifdef __sparc__
+ 	"-D__sparc__",
+ # endif
+@@ -936,6 +948,18 @@
+ #ifdef __alpha__
+ 	{"__alpha__", "1"},
+ #endif
++#ifdef __ia64__
++	{"__ia64__", "1"},
++#endif
++#ifdef __x86_64__
++	{"__x86_64__", "1"},
++#endif
++#ifdef __s390__
++	{"__s390__", "1"},
++#endif
++#ifdef __s390x__
++	{"__s390x__", "1"},
++#endif
+ #ifdef __DECC
+ 	{"__DECC",  "1"},
+ #endif
+--- configure.in
++++ configure.in
+@@ -53,12 +53,13 @@
+ save_CFLAGS="$CFLAGS"
+ LIBS="$X_LIBS $LIBS"
+ CFLAGS="$X_CFLAGS $CFLAGS"
+-AC_CHECK_HEADERS(X11/Xmu/Editres.h,
+-AC_CHECK_LIB(Xmu, _XEditResCheckMessages,
++AC_CHECK_HEADERS(X11/Xmu/Editres.h, [
++AC_CHECK_LIB(Xmu, _XEditResCheckMessages, [
+ X_XMU=-lXmu
+-AC_DEFINE(HAVE_LIBXMU)
+-, X_XMU="", -lXt -lX11)
+-)
++AC_DEFINE(HAVE_LIBXMU, 1, [ ])
++], X_XMU="", -lXt -lX11)
++], [],
++[#include <X11/Intrinsic.h>])
+ AC_SUBST(X_XMU)
+ LIBS="$save_LIBS"
+ CFLAGS="$save_CFLAGS"
+@@ -140,8 +141,8 @@
+ AC_HEADER_STDC
+ AC_HEADER_SYS_WAIT
+ AC_CHECK_HEADERS(fcntl.h limits.h malloc.h sys/malloc.h strings.h sys/file.h sys/time.h unistd.h wchar.h)
+-AC_CHECK_HEADERS(wctype.h, AC_DEFINE(HAS_WIDECHAR_FUNCTIONS))
+-AC_CHECK_HEADER(langinfo.h,,AC_DEFINE(CSRG_BASED))
++AC_CHECK_HEADERS(wctype.h, [AC_DEFINE(HAS_WIDECHAR_FUNCTIONS, 1, [Define if wctype.h is available])])
++AC_CHECK_HEADER(langinfo.h,,[AC_DEFINE(CSRG_BASED, 1, [ ])])
+ 
+ dnl Checks for typedefs, structures, and compiler characteristics.
+ AC_C_CONST
+@@ -164,23 +165,23 @@
+ AC_FUNC_VPRINTF
+ AM_FUNC_VOID_SPRINTF
+ AC_CHECK_FUNCS(wcslen wcscpy wcsncpy wcschr wcscat wcsncat getcwd gettimeofday mkdir re_comp regcmp select strcspn strerror strstr strtod strtol uname)
+-AC_CHECK_FUNCS(strdup,,AC_DEFINE(NEED_STRDUP))
+-AC_CHECK_FUNCS(strcasecmp,,AC_DEFINE(NEED_STRCASECMP))
+-AC_CHECK_FUNCS(putenv,,AC_DEFINE(NO_PUTENV))
+-AC_CHECK_FUNCS(regcomp,,AC_DEFINE(NO_REGCOMP))
+-AC_CHECK_FUNCS(memmove,,AC_DEFINE(NO_MEMMOVE))
++AC_CHECK_FUNCS(strdup,,AC_DEFINE(NEED_STRDUP, 1, [ ]))
++AC_CHECK_FUNCS(strcasecmp,,AC_DEFINE(NEED_STRCASECMP, 1, [ ]))
++AC_CHECK_FUNCS(putenv,,AC_DEFINE(NO_PUTENV, 1, [ ]))
++AC_CHECK_FUNCS(regcomp,,AC_DEFINE(NO_REGCOMP, 1, [ ]))
++AC_CHECK_FUNCS(memmove,,AC_DEFINE(NO_MEMMOVE, 1, [ ]))
+ 
+ AC_ARG_ENABLE(message-catalog, [  --enable-message-catalog
+                           Enable building of the message catalog (default=no)])
+ if test "$enable_message_catalog" != "yes"
+ then
+-    AC_DEFINE(NO_MESSAGE_CATALOG)
++    AC_DEFINE(NO_MESSAGE_CATALOG, 1, [define to avoid building the message catalog])
+ fi
+ AM_CONDITIONAL(MessageCatalog, test x$enable_message_catalog = xyes)
+ 
+ if test -f $srcdir/lib/Xm/SlideC.h
+ then
+-    AC_DEFINE(HAVE_SLIDEC_H)
++    AC_DEFINE(HAVE_SLIDEC_H, 1, [ ])
+     SLIDE_DIST="SlideC.c SlideC.h SlideCP.h"
+ fi
+ AC_SUBST(SLIDE_DIST)
+@@ -190,7 +191,7 @@
+ then
+     CFLAGS="$CFLAGS -Wall -Wno-unused -Wno-comment"
+ fi
+-AC_DEFINE(NO_OL_COMPAT)
++AC_DEFINE(NO_OL_COMPAT, 1, [Define to disable OpenLook compatibility])
+ 
+ CDE_INSTALLATION_TOP="\${prefix}/dt"
+ AC_SUBST(CDE_INSTALLATION_TOP)
+@@ -198,13 +199,13 @@
+ CDE_CONFIGURATION_TOP="\${prefix}/etc/dt"
+ AC_SUBST(CDE_CONFIGURATION_TOP)
+ 
+-LIBDIR="${libdir}/X11"
++LIBDIR="${datadir}/X11"
+ AC_SUBST(LIBDIR)
+ 
+ INCDIR="${includedir}/X11"
+ AC_SUBST(INCDIR)
+ 
+-XMBINDDIR_FALLBACK="${libdir}/X11/bindings"
++XMBINDDIR_FALLBACK="${datadir}/X11/bindings"
+ AC_SUBST(XMBINDDIR_FALLBACK)
+ 
+ case "$target_os" in
+--- demos/programs/Column/column.c
++++ demos/programs/Column/column.c
+@@ -4,6 +4,7 @@
+ #include <Xm/XmAll.h>
+ #include <Xm/Column.h>
+ #include <Xm/DataF.h>
++#include <Xm/TabStack.h>
+ 
+ 
+ #define phone_width 16
+--- demos/programs/DropDown/dropdown.c
++++ demos/programs/DropDown/dropdown.c
+@@ -3,6 +3,7 @@
+ #include <Xm/Xm.h>
+ #include <Xm/DropDown.h>
+ #include <Xm/XmAll.h>
++#include <Xm/TabStack.h>
+ 
+ static int done = 0;
+ 
+--- demos/programs/getsubres/getsubres.c
++++ demos/programs/getsubres/getsubres.c
+@@ -384,7 +384,8 @@
+ }
+ 
+ static String fallbacks[] = {
+-    "*help_manager.helpFile: getsubres"
++    "*help_manager.helpFile: getsubres",
++    NULL
+ };
+ 
+ #define APP_CLASS "XmdGetsubres"
+--- lib/Mrm/Makefile.am
++++ lib/Mrm/Makefile.am
+@@ -8,7 +8,7 @@
+ 
+ libMrm_la_LIBADD = ../Xm/libXm.la ${X_LIBS} -lXt ${X_PRE_LIBS} -lX11 ${X_EXTRA_LIBS}
+ 
+-LDFLAGS = -version-info @CURRENT@:@REVISION@:@AGE@
++libMrm_la_LDFLAGS = -version-info @CURRENT@:@REVISION@:@AGE@
+ 
+ lib_LTLIBRARIES = libMrm.la
+ 
+--- lib/Mrm/MrmIheader.c
++++ lib/Mrm/MrmIheader.c
+@@ -226,12 +226,7 @@
+ 			    file_id, NULL, MrmNOT_VALID);
+     }
+ 
+-  {
+-    /* sscanf() may call ungetc(), which would write the XmConst string. */
+-    char buf[XtNumber(idb__database_version) + 1];
+-    strcpy(buf, idb__database_version);
+-    sscanf(buf, "URM %d.%d", &db_major, &db_minor);
+-  }
++  sscanf(idb__database_version, "URM %d.%d", &db_major, &db_minor);
+     
+   if ((file_major > db_major) ||
+       ((file_major == db_major) && (file_minor > db_minor)))
+--- lib/Mrm/MrmItop.c
++++ lib/Mrm/MrmItop.c
+@@ -642,10 +642,12 @@
+    *  Local variables
+    */
+   Cardinal	result ;		/* function results */
++  IDBResource resource_id;
+ 
+   if ( (result=Idb__FIL_Valid((IDBFile)file_id)) != MrmSUCCESS ) return result ;
+   result = Idb__RID_NextRID ((IDBFile)file_id, 
+-			     (IDBResource *)resource_id_return) ;
++			     &resource_id) ;
++  *resource_id_return = resource_id;
+   return result ;
+ 
+ }
+--- lib/Xm/EditresCom.c
++++ lib/Xm/EditresCom.c
+@@ -1772,7 +1772,7 @@
+     XtFree((char *)widget_list);
+ }
+ 
+-#if 0
++#if 1
+ /************************************************************
+  *
+  * All of the following routines are public.
+@@ -1923,7 +1923,7 @@
+  *	Returns: TRUE if sucessful.
+  */
+ 
+-Boolean
++Bool
+ _XEditResGet8(stream, val)
+ ProtocolStream * stream;
+ unsigned char * val;
+@@ -1943,7 +1943,7 @@
+  *	Returns: TRUE if sucessful.
+  */
+ 
+-Boolean
++Bool
+ _XEditResGet16(stream, val)
+ ProtocolStream * stream;
+ unsigned short * val;
+@@ -1964,7 +1964,7 @@
+  *	Returns: TRUE if sucessful.
+  */
+ 
+-Boolean
++Bool
+ _XEditResGetSigned16(stream, val)
+ ProtocolStream * stream;
+ short * val;
+@@ -1993,7 +1993,7 @@
+  *	Returns: TRUE if sucessful.
+  */
+ 
+-Boolean
++Bool
+ _XEditResGet32(stream, val)
+ ProtocolStream * stream;
+ unsigned long * val;
+@@ -2015,7 +2015,7 @@
+  *	Returns: True if retrieval was successful.
+  */
+ 
+-Boolean
++Bool
+ _XEditResGetString8(stream, str)
+ ProtocolStream * stream;
+ char ** str;
+@@ -2048,7 +2048,7 @@
+  *	Returns: True if retrieval was successful.
+  */
+ 
+-Boolean
++Bool
+ _XEditResGetWidgetInfo(stream, info)
+ ProtocolStream * stream;
+ WidgetInfo * info;
+--- lib/Xm/FontS.c
++++ lib/Xm/FontS.c
+@@ -2865,7 +2865,7 @@
+ 
+     XmFontS_use_scaling(fsw) = info->set;
+     if (!info->set) {
+-	Boolean map_bad = (map = SizeMapping(cf->point_size) == 0);
++	Boolean map_bad = (map = SizeMapping(cf->point_size)) == 0;
+ 	Boolean bad_75 = (CheckFlag(XmFontS_user_state(fsw), DPI_75) && 
+ 			  !CheckLongFlag(family->sizes_75, map));
+ 	Boolean bad_100 = (CheckFlag(XmFontS_user_state(fsw), DPI_100) && 
+--- lib/Xm/Makefile.am
++++ lib/Xm/Makefile.am
+@@ -9,7 +9,7 @@
+            ${X_CFLAGS}
+ xmdir = $(includedir)/Xm
+ 
+-LDFLAGS = -version-info @CURRENT@:@REVISION@:@AGE@
++libXm_la_LDFLAGS = -version-info @CURRENT@:@REVISION@:@AGE@
+ 
+ lib_LTLIBRARIES = libXm.la
+ 
+--- lib/Xm/Resolve.c
++++ lib/Xm/Resolve.c
+@@ -149,11 +149,11 @@
+     *  Update the part size value (initially, it is the size of this part)
+     */
+    w_class->core_class.widget_size =
+-       _ALIGN(w_class->core_class.widget_size) + super->core_class.widget_size;
++       _ALIGN(w_class->core_class.widget_size) + _ALIGN(super->core_class.widget_size);
+    if (cc && scc)
+        cc->constraint_class.constraint_size =
+ 	   _ALIGN(cc->constraint_class.constraint_size) +
+-	       scc->constraint_class.constraint_size;
++	       _ALIGN(scc->constraint_class.constraint_size);
+ 
+    /*
+     *  Count the number of superclasses and allocate the offset record(s)
+@@ -186,7 +186,7 @@
+ 	    scc = (ConstraintWidgetClass)(scc->core_class.superclass), i--)
+ 	   if (IsConstraintClass((WidgetClass)scc))
+ 	       (*constraint_offset)[i] = 
+-		   scc->constraint_class.constraint_size;
++		   _ALIGN(scc->constraint_class.constraint_size);
+ 	   else
+ 	       (*constraint_offset)[i] = 0;
+ 	
+--- lib/Xm/XmRenderT.c
++++ lib/Xm/XmRenderT.c
+@@ -1461,6 +1461,7 @@
+   else {
+     union {
+       long	longval;
++      int	intval;
+       short	shortval;
+       char	charval;
+       char*	charptr;
+@@ -1468,6 +1469,7 @@
+     } u;
+     char *p = (char*)&u;
+     if      (size == sizeof(long))	    u.longval = (long)src;
++    else if (size == sizeof(int))	    u.longval = (int)src;
+     else if (size == sizeof(short))	    u.shortval = (short)src;
+     else if (size == sizeof(char))	    u.charval = (char)src;
+     else if (size == sizeof(XtPointer))	    u.ptr = (XtPointer)src;
+@@ -1486,6 +1488,7 @@
+      * but preserve for compatibility as long as arglist contains NULL.
+      */
+     if	    (size == sizeof(long))	   *dst = (XtArgVal)*(long*)src;
++    else if (size == sizeof(int))	   *dst = (XtArgVal)*(int*)src;
+     else if (size == sizeof(short))    *dst = (XtArgVal)*(short*)src;
+     else if (size == sizeof(char))	   *dst = (XtArgVal)*(char*)src;
+     else if (size == sizeof(XtPointer)) *dst = (XtArgVal)*(XtPointer*)src;
+@@ -1496,6 +1499,7 @@
+   else {
+     /* proper GetValues semantics: argval is pointer to destination */
+     if	(size == sizeof(long))	   *((long*)*dst) = *(long*)src;
++    else if (size == sizeof(int))    *((int*)*dst) = *(int*)src;
+     else if (size == sizeof(short))    *((short*)*dst) = *(short*)src;
+     else if (size == sizeof(char))	   *((char*)*dst) = *(char*)src;
+     else if (size == sizeof(XtPointer)) *((XtPointer*)*dst) = *(XtPointer*)src;
+--- localized/util/mkcatdefs.c
++++ localized/util/mkcatdefs.c
+@@ -76,9 +76,8 @@
+ #include <limits.h>
+ #include <string.h>
+ 
+-#ifndef NL_TEXTMAX
++#undef NL_TEXTMAX
+ #define NL_TEXTMAX 8192
+-#endif
+ 
+ #ifndef PATH_MAX
+ #define PATH_MAX 1024
+--- clients/uil/UilDiags.c
++++ clients/uil/UilDiags.c
+@@ -207,9 +207,9 @@
+     va_list	ap;			/* ptr to variable length parameter */
+     int		severity;		/* severity of message */
+     int		message_number;		/* message number */
+-    char	msg_buffer[132];	/* buffer to construct message */
++    char	*msg_buffer = 0;	/* buffer to construct message */
+     char	ptr_buffer[buf_size];	/* buffer to construct pointer */
+-    char	loc_buffer[132];	/* buffer to construct location */
++    char	*loc_buffer = 0;	/* buffer to construct location */
+     char	src_buffer[buf_size];	/* buffer to hold source line */
+ 
+     /*
+@@ -293,19 +293,18 @@
+     va_start(ap, l_start_column);
+ 
+ #ifndef NO_MESSAGE_CATALOG
+-    vsprintf( msg_buffer, 
++    vasprintf(&msg_buffer, 
+ 	      catgets(uil_catd, UIL_SET1, msg_cat_table[ message_number ],
+ 		      diag_rz_msg_table[ message_number ].ac_text), 
+ 	     ap );
+ #else
+-    vsprintf( msg_buffer, 
++    vasprintf(&msg_buffer, 
+ 	      diag_rz_msg_table[ message_number ].ac_text, 
+ 	      ap );
+ #endif
+     va_end(ap);
+ 
+     src_buffer[ 0 ] = 0;
+-    loc_buffer[ 0 ] = 0;
+     ptr_buffer[ 0 ] = 0;
+ 
+     if (az_src_rec != diag_k_no_source) 
+@@ -317,13 +316,13 @@
+ 	    */
+ 
+ #ifndef NO_MESSAGE_CATALOG
+-	    sprintf( loc_buffer,
++	    asprintf(&loc_buffer,
+ 		     catgets(uil_catd, UIL_SET_MISC,
+ 			     UIL_MISC_0, "\t\t line: %d  file: %s"),
+ 		     az_src_rec->w_line_number,
+ 		     src_get_file_name( az_src_rec ) );
+ #else
+-	    sprintf( loc_buffer,
++	    asprintf(&loc_buffer,
+ 		     "\t\t line: %d  file: %s",
+ 		     az_src_rec->w_line_number,
+ 		     src_get_file_name( az_src_rec ) );
+@@ -371,7 +370,7 @@
+ 
+ 	    if (l_start_column != diag_k_no_column)
+ #ifndef NO_MESSAGE_CATALOG
+-	      sprintf(loc_buffer,
++	      asprintf(&loc_buffer,
+ 		      catgets(uil_catd, UIL_SET_MISC,
+ 			      UIL_MISC_1, 
+ 			      "\t\t line: %d  position: %d  file: %s"),
+@@ -379,7 +378,7 @@
+ 		      l_start_column + 1,
+ 		      src_get_file_name( az_src_rec ) );
+ #else
+-	      sprintf(loc_buffer,
++	      asprintf(&loc_buffer,
+ 		      "\t\t line: %d  position: %d  file: %s",
+ 		      az_src_rec->w_line_number,
+ 		      l_start_column + 1,
+@@ -387,13 +386,13 @@
+ #endif
+ 	    else
+ #ifndef NO_MESSAGE_CATALOG
+-		sprintf( loc_buffer, catgets(uil_catd, UIL_SET_MISC,
++		asprintf(&loc_buffer, catgets(uil_catd, UIL_SET_MISC,
+ 					     UIL_MISC_0,
+ 					     "\t\t line: %d  file: %s"),
+ 			 az_src_rec->w_line_number,
+ 			 src_get_file_name( az_src_rec ) );
+ #else
+-		sprintf( loc_buffer,
++		asprintf(&loc_buffer,
+ 			 "\t\t line: %d  file: %s",
+ 			 az_src_rec->w_line_number,
+ 			 src_get_file_name( az_src_rec ) );
+@@ -406,7 +405,8 @@
+     */
+ 
+     write_msg_to_standard_error
+-	( message_number, src_buffer, ptr_buffer, msg_buffer, loc_buffer );
++	( message_number, src_buffer, ptr_buffer, msg_buffer,
++	  loc_buffer ? loc_buffer : "");
+ 
+     /* 
+     **	if we have a listing, place message in the source structure
+@@ -428,6 +428,8 @@
+ 	uil_exit( uil_k_severe_status );
+     }
+ 
++    free (loc_buffer);
++    free (msg_buffer);
+ }
+ 
+ /*
+--- clients/uil/UilIODef.h
++++ clients/uil/UilIODef.h
+@@ -75,7 +75,7 @@
+     char	*c_buffer;
+     boolean	v_position_before_get;
+     z_key	last_key;
+-    char	expanded_name[ 256 ];
++    char	*expanded_name;
+ } uil_fcb_type;
+ 
+ #endif /* UilIODef_h */
+--- clients/uil/UilSrcSrc.c
++++ clients/uil/UilSrcSrc.c
+@@ -271,6 +271,7 @@
+ 				   diag_k_no_source, diag_k_no_column,
+ 				   src_az_source_file_table[i]->expanded_name);
+ 	    }
++	_free_memory (src_az_source_file_table[i]->expanded_name);
+ 	_free_memory ((char*)src_az_source_file_table [i]);
+ 	src_az_source_file_table[i] = NULL;
+ 	}
+@@ -626,12 +627,13 @@
+     static unsigned short	main_dir_len = 0;
+     boolean			main_file;
+     int				i;  /* loop index through include files */
+-    char			buffer[256];
++    char			*buffer;
+ 
+ 
+     /* place the file name in the expanded_name buffer */
+ 
+-    strcpy(buffer, c_file_name);
++    buffer = _get_memory (strlen (c_file_name) + 1);
++    strcpy (buffer, c_file_name);
+ 
+ /*    Determine if this is the main file or an include file.  */
+ 
+@@ -673,11 +675,10 @@
+ 	    }
+ 
+ 	if (!specific_directory) {
++	    buffer = XtRealloc (buffer, main_dir_len + strlen (c_file_name) + 1);
+ 	    _move (buffer, main_fcb -> expanded_name, main_dir_len);
+ 	    _move (& buffer [main_dir_len],
+ 		   c_file_name, strlen (c_file_name) + 1);  /* + NULL */
+-	} else {
+-	    strcpy (buffer, c_file_name);
+ 	}
+ 
+ /*    Open the include file.    */
+@@ -700,6 +701,7 @@
+ 	    if (inc_dir_len == 0) {
+ 		search_user_include = False;
+ 		}
++	    buffer = XtRealloc (buffer, inc_dir_len + strlen (c_file_name) + 1);
+ 	    _move (buffer, Uil_cmd_z_command.ac_include_dir[i], inc_dir_len);
+ 
+ 	/*  Add '/' if not specified at end of directory  */
+@@ -723,6 +725,7 @@
+ 
+ /*    Look in the default include directory.    */
+ 	if (search_user_include) {
++	  buffer = XtRealloc (buffer, sizeof c_include_dir - 1 + strlen (c_file_name) + 1);
+ 	  _move(buffer, c_include_dir, sizeof c_include_dir - 1); /* no NULL */
+ 	  _move(&buffer[sizeof c_include_dir - 1], 
+ 		c_file_name, strlen (c_file_name) + 1);  /* + NULL */
+@@ -736,14 +739,16 @@
+ 
+     /* check the open status. */
+ 
+-    if (az_fcb->az_file_ptr == NULL)
++    if (az_fcb->az_file_ptr == NULL) {
++        _free_memory (buffer);
+ 	return src_k_open_error;
++    }
+ 
+     /* open succeeded - place buffer address in fcb */
+ 
+     az_fcb->c_buffer = az_source_buffer->c_text;
+     az_fcb->c_buffer[ src_k_max_source_line_length ] = 0;
+-    strcpy(az_fcb->expanded_name, buffer);
++    az_fcb->expanded_name = buffer;
+ 
+     return src_k_open_normal;
+ }
+--- tools/wml/Uil.y
++++ tools/wml/Uil.y
+@@ -559,7 +559,7 @@
+ 
+ object_specification
+     : CLASS_NAME
+-	{ sar_set_object_class (&$1); }
++	{ sar_set_object_class (&$1); $$ = gz_yynullval;}
+       opt_create_proc_ref
+       opt_variant
+       object_spec
+--- lib/Xm/XpmAttrib.c
++++ lib/Xm/XpmAttrib.c
+@@ -41,7 +41,7 @@
+ #include "XpmI.h"
+ 
+ /* 3.2 backward compatibility code */
+-LFUNC(CreateOldColorTable, int, (XpmColor *ct, unsigned int ncolors,
++LFUNC(CreateOldColorTable, int, (XpmColor *ct, int ncolors,
+ 				 XpmColor ***oldct));
+ 
+ LFUNC(FreeOldColorTable, void, (XpmColor **colorTable, int ncolors));
+@@ -52,15 +52,12 @@
+ static int
+ CreateOldColorTable(ct, ncolors, oldct)
+     XpmColor *ct;
+-    unsigned int ncolors;
++    int ncolors;
+     XpmColor ***oldct;
+ {
+     XpmColor **colorTable, **color;
+     int a;
+ 
+-    if (ncolors >= SIZE_MAX / sizeof(XpmColor *)) 
+-	return XpmNoMemory;
+-
+     colorTable = (XpmColor **) XpmMalloc(ncolors * sizeof(XpmColor *));
+     if (!colorTable) {
+ 	*oldct = NULL;
+--- lib/Xm/XpmCrBufFrI.c
++++ lib/Xm/XpmCrBufFrI.c
+@@ -43,20 +43,20 @@
+ 
+ #include "XpmI.h"
+ 
+-LFUNC(WriteColors, int, (char **dataptr, unsigned int *data_size,
+-			 unsigned int *used_size, XpmColor *colors,
++LFUNC(WriteColors, int, (char **dataptr, size_t *data_size,
++			 size_t *used_size, XpmColor *colors,
+ 			 unsigned int ncolors, unsigned int cpp));
+ 
+-LFUNC(WritePixels, void, (char *dataptr, unsigned int *used_size,
++LFUNC(WritePixels, void, (char *dataptr, size_t *used_size,
+ 			  unsigned int width, unsigned int height,
+ 			  unsigned int cpp, unsigned int *pixels,
+ 			  XpmColor *colors));
+ 
+-LFUNC(WriteExtensions, void, (char *dataptr, unsigned int *used_size,
++LFUNC(WriteExtensions, void, (char *dataptr, size_t *used_size,
+ 			      XpmExtension *ext, unsigned int num));
+ 
+-LFUNC(ExtensionsSize, int, (XpmExtension *ext, unsigned int num));
+-LFUNC(CommentsSize, int, (XpmInfo *info));
++LFUNC(ExtensionsSize, size_t, (XpmExtension *ext, unsigned int num));
++LFUNC(CommentsSize, size_t, (XpmInfo *info));
+ 
+ int
+ XpmCreateBufferFromImage(display, buffer_return, image, shapeimage, attributes)
+@@ -113,10 +113,11 @@
+     /* calculation variables */
+     int ErrorStatus;
+     char buf[BUFSIZ];
+-    unsigned int cmts, extensions, ext_size = 0;
+-    unsigned int l, cmt_size = 0;
++    unsigned int cmts, extensions;
++    size_t ext_size = 0;
++    size_t l, cmt_size = 0;
+     char *ptr = NULL, *p;
+-    unsigned int ptr_size, used_size;
++    size_t ptr_size, used_size;
+ 
+     *buffer_return = NULL;
+ 
+@@ -253,8 +254,8 @@
+ static int
+ WriteColors(dataptr, data_size, used_size, colors, ncolors, cpp)
+     char **dataptr;
+-    unsigned int *data_size;
+-    unsigned int *used_size;
++    size_t *data_size;
++    size_t *used_size;
+     XpmColor *colors;
+     unsigned int ncolors;
+     unsigned int cpp;
+@@ -299,7 +300,7 @@
+ static void
+ WritePixels(dataptr, used_size, width, height, cpp, pixels, colors)
+     char *dataptr;
+-    unsigned int *used_size;
++    size_t *used_size;
+     unsigned int width;
+     unsigned int height;
+     unsigned int cpp;
+@@ -329,12 +330,13 @@
+     *used_size += s - dataptr;
+ }
+ 
+-static int
++static size_t
+ ExtensionsSize(ext, num)
+     XpmExtension *ext;
+     unsigned int num;
+ {
+-    unsigned int x, y, a, size;
++    unsigned int x, y, a;
++    size_t size;
+     char **line;
+ 
+     size = 0;
+@@ -353,7 +355,7 @@
+ static void
+ WriteExtensions(dataptr, used_size, ext, num)
+     char *dataptr;
+-    unsigned int *used_size;
++    size_t *used_size;
+     XpmExtension *ext;
+     unsigned int num;
+ {
+@@ -384,11 +386,11 @@
+     *used_size += s - dataptr + 13;
+ }
+ 
+-static int
++static size_t
+ CommentsSize(info)
+     XpmInfo *info;
+ {
+-    int size = 0;
++    size_t size = 0;
+ 
+     /* 5 = 2 (for "/_*") + 3 (for "*_/\n") */
+     if (info->hints_cmt)
+--- lib/Xm/XpmCrDatFrI.c
++++ lib/Xm/XpmCrDatFrI.c
+@@ -134,8 +134,6 @@
+      */
+     header_nlines = 1 + image->ncolors;
+     header_size = sizeof(char *) * header_nlines;
+-    if (header_size >= SIZE_MAX / sizeof(char *))
+-	return (XpmNoMemory);
+     header = (char **) XpmCalloc(header_size, sizeof(char *));
+     if (!header)
+ 	return (XpmNoMemory);
+--- lib/Xm/XpmI.h
++++ lib/Xm/XpmI.h
+@@ -179,26 +179,14 @@
+ 		boundCheckingCalloc((long)(nelem),(long) (elsize))
+ #endif
+ 
+-#if defined(SCO) || defined(__USLC__)
+-#include <stdint.h>	/* For SIZE_MAX */
+-#endif
+-#include <limits.h>
+-#ifndef SIZE_MAX
+-# ifdef ULONG_MAX
+-#  define SIZE_MAX ULONG_MAX
+-# else 
+-#  define SIZE_MAX UINT_MAX
+-# endif
+-#endif
+-
+ #define XPMMAXCMTLEN BUFSIZ
+ typedef struct {
+     unsigned int type;
+     union {
+ 	FILE *file;
+-	char **data;
++	unsigned char **data;
+     }     stream;
+-    char *cptr;
++    unsigned char *cptr;
+     unsigned int line;
+     int CommentLength;
+     char Comment[XPMMAXCMTLEN];
+@@ -288,9 +276,9 @@
+ }      *xpmHashAtom;
+ 
+ typedef struct {
+-    unsigned int size;
+-    unsigned int limit;
+-    unsigned int used;
++    int size;
++    int limit;
++    int used;
+     xpmHashAtom *atomTable;
+ }      xpmHashTable;
+ 
+--- lib/Xm/XpmRdFToI.c
++++ lib/Xm/XpmRdFToI.c
+@@ -124,6 +124,27 @@
+     return (ErrorStatus);
+ }
+ 
++
++/* Quote filename and prepend prefix. */
++static char *quote_file(prefix, filename, len)
++    const char *prefix, *filename;
++    size_t len;
++{
++    char *buf = XpmMalloc(strlen(prefix) + len * 2 + 1);
++    char *p = buf, *q;
++
++    if (!buf)
++	return 0;
++    strcpy(p, prefix);
++    p += strlen(p);
++    for (q = filename; *q; q++) {
++	*p++ = '\\';
++	*p++ = *q;
++    }
++    return buf;
++}
++  
++
+ /*
+  * open the given file to be read as an xpmData which is returned.
+  */
+@@ -133,7 +154,7 @@
+     xpmData *mdata;
+ {
+ #ifndef NO_ZPIPE
+-    char *compressfile, buf[(2*MAXPATHLEN) + 1];
++    char *compressfile, *buf;
+ # ifdef STAT_ZFILE
+     struct stat status;
+ # endif
+@@ -144,17 +165,25 @@
+ 	mdata->type = XPMFILE;
+     } else {
+ #ifndef NO_ZPIPE
+-	int len = strlen(filename);
++	size_t len = strlen(filename);
+ 	if ((len > 2) && !strcmp(".Z", filename + (len - 2))) {
+ 	    mdata->type = XPMPIPE;
+-	    sprintf(buf, "uncompress -c \"%s\"", filename);
+-	    if (!(mdata->stream.file = popen(buf, "r")))
++	    buf = quote_file("uncompress -c ", filename, len);
++	    if (!buf)
++		return (XpmNoMemory);
++	    mdata->stream.file = popen(buf, "r");
++	    XpmFree(buf);
++	    if (!mdata->stream.file)
+ 		return (XpmOpenFailed);
+ 
+ 	} else if ((len > 3) && !strcmp(".gz", filename + (len - 3))) {
+ 	    mdata->type = XPMPIPE;
+-	    sprintf(buf, "gunzip -qc \"%s\"", filename);
+-	    if (!(mdata->stream.file = popen(buf, "r")))
++	    buf = quote_file("gunzip -qc ", filename, len);
++	    if (!buf)
++		return (XpmNoMemory);
++	    mdata->stream.file = popen(buf, "r");
++	    XpmFree(buf);
++	    if (!mdata->stream.file)
+ 		return (XpmOpenFailed);
+ 
+ 	} else {
+@@ -164,28 +193,32 @@
+ 
+ 	    sprintf(compressfile, "%s.Z", filename);
+ 	    if (!stat(compressfile, &status)) {
+-		sprintf(buf, "uncompress -c \"%s\"", compressfile);
+-		if (!(mdata->stream.file = popen(buf, "r"))) {
+-		    XpmFree(compressfile);
++		buf = quote_file("uncompress -c ", compressfile, len + 2);
++		XpmFree(compressfile);
++		if (!buf)
++		    return (XpmNoMemory);
++		mdata->stream.file = popen(buf, "r");
++		XpmFree(buf);
++		if (!mdata->stream.file)
+ 		    return (XpmOpenFailed);
+-		}
+ 		mdata->type = XPMPIPE;
+ 	    } else {
+ 		sprintf(compressfile, "%s.gz", filename);
+ 		if (!stat(compressfile, &status)) {
+-		    sprintf(buf, "gunzip -c \"%s\"", compressfile);
+-		    if (!(mdata->stream.file = popen(buf, "r"))) {
+-			XpmFree(compressfile);
++		    buf = quote_file("gunzip -c ", compressfile, len + 3);
++		    XpmFree(compressfile);
++		    if (!buf)
++			return (XpmNoMemory);
++		    mdata->stream.file = popen(buf, "r");
++		    XpmFree(buf);
++		    if (!mdata->stream.file)
+ 			return (XpmOpenFailed);
+-		    }
+ 		    mdata->type = XPMPIPE;
+ 		} else {
++		    XpmFree(compressfile);
+ # endif
+ #endif
+ 		    if (!(mdata->stream.file = fopen(filename, "r"))) {
+-#if !defined(NO_ZPIPE) && defined(STAT_ZFILE)
+-			XpmFree(compressfile);
+-#endif
+ 			return (XpmOpenFailed);
+ 		    }
+ 		    mdata->type = XPMFILE;
+@@ -193,7 +226,6 @@
+ # ifdef STAT_ZFILE
+ 		}
+ 	    }
+-	    XpmFree(compressfile);
+ # endif
+ 	}
+ #endif
+--- lib/Xm/XpmWrFFrI.c
++++ lib/Xm/XpmWrFFrI.c
+@@ -117,7 +117,8 @@
+ #endif
+ 	/* let's try to make a valid C syntax name */
+ 	if ((dot = index(name, '.'))) {
+-	    strcpy(new_name, name);
++	    strncpy(new_name, name, sizeof(new_name));
++	    new_name[sizeof(new_name) - 1] = 0;
+ 	    /* change '.' to '_' */
+ 	    name = s = new_name;
+ 	    while ((dot = index(s, '.'))) {
+@@ -127,7 +128,8 @@
+ 	}
+ 	if ((dot = index(name, '-'))) {
+ 	    if (name != new_name) {
+-		strcpy(new_name, name);
++		strncpy(new_name, name, sizeof(new_name));
++		new_name[sizeof(new_name) - 1] = 0;
+ 		name = new_name;
+ 	    }
+ 	    /* change '-' to '_' */
+@@ -243,10 +245,13 @@
+     char *s, *p, *buf;
+     unsigned int x, y, h;
+ 
++    if (height == 0)
++	return XpmFileInvalid;
++
+     h = height - 1;
+-    if (cpp != 0 && width >= (SIZE_MAX - 3)/cpp) 
++    if (cpp != 0 && width >= ((size_t)-1 - 3)/cpp) 
+ 	return XpmNoMemory;    
+-    p = buf = (char *) XpmMalloc(width * cpp + 3);
++    p = buf = (char *) XpmMalloc((size_t)width * cpp + 3);
+     if (!buf)
+ 	return (XpmNoMemory);
+     *buf = '"';
+@@ -293,6 +298,25 @@
+     fprintf(file, ",\n\"XPMENDEXT\"");
+ }
+ 
++/* Quote filename and prepend prefix. */
++static char *quote_file(prefix, filename, len)
++    const char *prefix, *filename;
++    size_t len;
++{
++    char *buf = XpmMalloc(strlen(prefix) + len * 2 + 1);
++    char *p = buf, *q;
++
++    if (!buf)
++	return 0;
++    strcpy(p, prefix);
++    p += strlen(p);
++    for (q = filename; *q; q++) {
++	*p++ = '\\';
++	*p++ = *q;
++    }
++    return buf;
++}
++
+ /*
+  * open the given file to be written as an xpmData which is returned
+  */
+@@ -302,7 +326,7 @@
+     xpmData *mdata;
+ {
+ #ifndef NO_ZPIPE
+-    char buf[BUFSIZ];
++    char *buf;
+ 
+ #endif
+ 
+@@ -311,16 +335,24 @@
+ 	mdata->type = XPMFILE;
+     } else {
+ #ifndef NO_ZPIPE
+-	int len = strlen(filename);
++	size_t len = strlen(filename);
+ 	if (len > 2 && !strcmp(".Z", filename + (len - 2))) {
+-	    sprintf(buf, "compress > \"%s\"", filename);
+-	    if (!(mdata->stream.file = popen(buf, "w")))
++	    buf = quote_file("compress > ", filename, len);
++	    if (!buf)
++		return XpmNoMemory;
++	    mdata->stream.file = popen(buf, "w");
++	    XpmFree(buf);
++	    if (!mdata->stream.file)
+ 		return (XpmOpenFailed);
+ 
+ 	    mdata->type = XPMPIPE;
+ 	} else if (len > 3 && !strcmp(".gz", filename + (len - 3))) {
+-	    sprintf(buf, "gzip -q > \"%s\"", filename);
+-	    if (!(mdata->stream.file = popen(buf, "w")))
++	    buf = quote_file("gzip -q > ", filename, len);
++	    if (!buf)
++		return XpmNoMemory;
++	    mdata->stream.file = popen(buf, "w");
++	    XpmFree(buf);
++	    if (!mdata->stream.file)
+ 		return (XpmOpenFailed);
+ 
+ 	    mdata->type = XPMPIPE;
+--- lib/Xm/Xpmcreate.c
++++ lib/Xm/Xpmcreate.c
+@@ -804,9 +804,6 @@
+ 
+     ErrorStatus = XpmSuccess;
+ 
+-    if (image->ncolors >= SIZE_MAX / sizeof(Pixel)) 
+-	return (XpmNoMemory);
+-
+     /* malloc pixels index tables */
+     image_pixels = (Pixel *) XpmMalloc(sizeof(Pixel) * image->ncolors);
+     if (!image_pixels)
+@@ -950,8 +947,6 @@
+ 	return (XpmNoMemory);
+ 
+ #ifndef FOR_MSW
+-    if (height != 0 && (*image_return)->bytes_per_line >= SIZE_MAX / height)
+-        return (XpmNoMemory);
+     /* now that bytes_per_line must have been set properly alloc data */
+     (*image_return)->data =
+ 	(char *) XpmMalloc((*image_return)->bytes_per_line * height);
+@@ -1997,9 +1992,6 @@
+ 	xpmGetCmt(data, &colors_cmt);
+ 
+     /* malloc pixels index tables */
+-    if (ncolors >= SIZE_MAX / sizeof(Pixel)) 
+-	return XpmNoMemory;
+-
+     image_pixels = (Pixel *) XpmMalloc(sizeof(Pixel) * ncolors);
+     if (!image_pixels)
+ 	RETURN(XpmNoMemory);
+@@ -2215,9 +2207,6 @@
+ 	{
+ 	    unsigned short colidx[256];
+ 
+- 	    if (ncolors > 256)
+- 		return (XpmFileInvalid);
+-
+ 	    bzero((char *)colidx, 256 * sizeof(short));
+ 	    for (a = 0; a < ncolors; a++)
+ 		colidx[(unsigned char)colorTable[a].string[0]] = a + 1;
+@@ -2316,9 +2305,6 @@
+ 	    char *s;
+ 	    char buf[BUFSIZ];
+ 
+-	    if (cpp >= sizeof(buf))
+-		return (XpmFileInvalid);
+-
+ 	    buf[cpp] = '\0';
+ 	    if (USE_HASHTABLE) {
+ 		xpmHashAtom *slot;
+--- lib/Xm/Xpmdata.c
++++ lib/Xm/Xpmdata.c
+@@ -297,7 +297,7 @@
+ 
+     if (!mdata->type || mdata->type == XPMBUFFER) {
+ 	if (mdata->cptr) {
+-	    char *start = mdata->cptr;
++	    unsigned char *start = mdata->cptr;
+ 	    while ((c = *mdata->cptr) && c != mdata->Eos)
+ 		mdata->cptr++;
+ 	    n = mdata->cptr - start + 1;
+@@ -376,7 +376,7 @@
+ {
+     if (!mdata->type)
+ 	*cmt = NULL;
+-    else if (mdata->CommentLength != 0 && mdata->CommentLength < SIZE_MAX - 1) {
++    else if (mdata->CommentLength) {
+ 	*cmt = (char *) XpmMalloc(mdata->CommentLength + 1);
+ 	strncpy(*cmt, mdata->Comment, mdata->CommentLength);
+ 	(*cmt)[mdata->CommentLength] = '\0';
+--- lib/Xm/Xpmhashtab.c
++++ lib/Xm/Xpmhashtab.c
+@@ -141,17 +141,17 @@
+     xpmHashTable *table;
+ {
+     xpmHashAtom *atomTable = table->atomTable;
+-    unsigned int size = table->size;
++    int size = table->size;
+     xpmHashAtom *t, *p;
+     int i;
+     int oldSize = size;
+ 
+     t = atomTable;
+     HASH_TABLE_GROWS
+-	table->size = size;
+-    table->limit = size / 3;
+-    if (size >= SIZE_MAX / sizeof(*atomTable)) 
++    if (size <= 0)
+ 	return (XpmNoMemory);
++    table->size = size;
++    table->limit = size / 3;
+     atomTable = (xpmHashAtom *) XpmMalloc(size * sizeof(*atomTable));
+     if (!atomTable)
+ 	return (XpmNoMemory);
+@@ -212,8 +212,6 @@
+     table->size = INITIAL_HASH_SIZE;
+     table->limit = table->size / 3;
+     table->used = 0;
+-    if (table->size >= SIZE_MAX / sizeof(*atomTable))
+-	return (XpmNoMemory);
+     atomTable = (xpmHashAtom *) XpmMalloc(table->size * sizeof(*atomTable));
+     if (!atomTable)
+ 	return (XpmNoMemory);
+--- lib/Xm/Xpmmisc.c
++++ lib/Xm/Xpmmisc.c
+@@ -52,7 +52,7 @@
+     char *s1;
+ {
+     char *s2;
+-    int l = strlen(s1) + 1;
++    size_t l = strlen(s1) + 1;
+ 
+     if (s2 = (char *) XpmMalloc(l))
+ 	strcpy(s2, s1);
+--- lib/Xm/Xpmparse.c
++++ lib/Xm/Xpmparse.c
+@@ -46,25 +46,6 @@
+ 
+ #include "XpmI.h"
+ #include <ctype.h>
+-#include <string.h>
+- 
+-#ifdef HAS_STRLCAT
+-# define STRLCAT(dst, src, dstsize) { \
+-       if (strlcat(dst, src, dstsize) >= (dstsize)) \
+-           return (XpmFileInvalid); }
+-# define STRLCPY(dst, src, dstsize) { \
+-       if (strlcpy(dst, src, dstsize) >= (dstsize)) \
+-           return (XpmFileInvalid); }
+-#else
+-# define STRLCAT(dst, src, dstsize) { \
+-       if ((strlen(dst) + strlen(src)) < (dstsize)) \
+-           strcat(dst, src); \
+-       else return (XpmFileInvalid); }
+-# define STRLCPY(dst, src, dstsize) { \
+-       if (strlen(src) < (dstsize)) \
+-           strcpy(dst, src); \
+-       else return (XpmFileInvalid); }
+-#endif
+ 
+ LFUNC(ParsePixels, int, (xpmData *data, unsigned int width,
+ 			 unsigned int height, unsigned int ncolors,
+@@ -234,7 +215,7 @@
+     unsigned int *extensions;
+ {
+     unsigned int l;
+-    char buf[BUFSIZ + 1];
++    char buf[BUFSIZ];
+ 
+     if (!data->format) {		/* XPM 2 or 3 */
+ 
+@@ -332,6 +313,17 @@
+ 	*hotspot = 0;
+ 	*extensions = 0;
+     }
++
++    /* Do some plausibility checks.  */
++    if (*width == 0 || *height == 0 || *ncolors == 0 || *cpp == 0)
++	return XpmFileInvalid;
++    if (*cpp > 8)
++	return XpmFileInvalid;
++    if (*width > (1 << (sizeof(int) * 8 - 4)) / *height)
++	return XpmFileInvalid;
++    if (*ncolors > (1 << (sizeof(int) * 8 - 4)) / (*width * *height))
++	return XpmFileInvalid;
++
+     return (XpmSuccess);
+ }
+ 
+@@ -343,10 +335,10 @@
+     XpmColor **colorTablePtr;
+     xpmHashTable *hashtable;
+ {
+-    unsigned int key, l, a, b, len;
++    unsigned int key, l, a, b;
+     unsigned int curkey;		/* current color key */
+     unsigned int lastwaskey;		/* key read */
+-    char buf[BUFSIZ + 1];
++    char buf[BUFSIZ];
+     char curbuf[BUFSIZ];		/* current buffer */
+     char **sptr, *s;
+     XpmColor *color;
+@@ -354,8 +346,6 @@
+     char **defaults;
+     int ErrorStatus;
+ 
+-    if (ncolors >= SIZE_MAX / sizeof(XpmColor))
+-        return (XpmNoMemory);
+     colorTable = (XpmColor *) XpmCalloc(ncolors, sizeof(XpmColor));
+     if (!colorTable)
+ 	return (XpmNoMemory);
+@@ -367,10 +357,6 @@
+ 	    /*
+ 	     * read pixel value
+ 	     */
+-	    if (cpp >= SIZE_MAX - 1) {
+-	        xpmFreeColorTable(colorTable, ncolors);
+-		return (XpmNoMemory);
+-	    }
+ 	    color->string = (char *) XpmMalloc(cpp + 1);
+ 	    if (!color->string) {
+ 		xpmFreeColorTable(colorTable, ncolors);
+@@ -408,14 +394,13 @@
+ 		}
+ 		if (!lastwaskey && key < NKEYS) {	/* open new key */
+ 		    if (curkey) {	/* flush string */
+-		        len = strlen(curbuf) + 1;
+-			s = (char *) XpmMalloc(len);
++			s = (char *) XpmMalloc(strlen(curbuf) + 1);
+ 			if (!s) {
+ 			    xpmFreeColorTable(colorTable, ncolors);
+ 			    return (XpmNoMemory);
+ 			}
+ 			defaults[curkey] = s;
+-			memcpy(s, curbuf, len);
++			strcpy(s, curbuf);
+ 		    }
+ 		    curkey = key + 1;	/* set new key  */
+ 		    *curbuf = '\0';	/* reset curbuf */
+@@ -425,10 +410,14 @@
+ 			xpmFreeColorTable(colorTable, ncolors);
+ 			return (XpmFileInvalid);
+ 		    }
++		    if (strlen(curbuf) + l + 2 >= sizeof(curbuf)) {
++			xpmFreeColorTable(colorTable, ncolors);
++			return (XpmNoMemory);
++		    }
+ 		    if (!lastwaskey)
+-		        STRLCAT(curbuf, " ", sizeof(curbuf)); /* append space */
++			strcat(curbuf, " ");	/* append space */
+ 		    buf[l] = '\0';
+-		    STRLCAT(curbuf, buf, sizeof(curbuf));/* append buf */
++		    strcat(curbuf, buf);/* append buf */
+ 		    lastwaskey = 0;
+ 		}
+ 	    }
+@@ -436,13 +425,12 @@
+ 		xpmFreeColorTable(colorTable, ncolors);
+ 		return (XpmFileInvalid);
+ 	    }
+-	    len = strlen(curbuf) + 1;
+-	    s = defaults[curkey] = (char *) XpmMalloc(len);
++	    s = defaults[curkey] = (char *) XpmMalloc(strlen(curbuf) + 1);
+ 	    if (!s) {
+ 		xpmFreeColorTable(colorTable, ncolors);
+ 		return (XpmNoMemory);
+ 	    }
+-	    memcpy(s, curbuf, len);
++	    strcpy(s, curbuf);
+ 	}
+     } else {				/* XPM 1 */
+ 	/* get to the beginning of the first string */
+@@ -455,10 +443,6 @@
+ 	    /*
+ 	     * read pixel value
+ 	     */
+-	    if (cpp >= SIZE_MAX - 1) {
+-	        xpmFreeColorTable(colorTable, ncolors);
+-		return (XpmNoMemory);
+-	    }
+ 	    color->string = (char *) XpmMalloc(cpp + 1);
+ 	    if (!color->string) {
+ 		xpmFreeColorTable(colorTable, ncolors);
+@@ -486,18 +470,21 @@
+ 	    xpmNextString(data);	/* get to the next string */
+ 	    *curbuf = '\0';		/* init curbuf */
+ 	    while ((l = xpmNextWord(data, buf, BUFSIZ))) {
++		if (strlen(curbuf) + l + 2 >= sizeof(curbuf)) {
++		    xpmFreeColorTable(colorTable, ncolors);
++		    return (XpmNoMemory);
++		}
+ 		if (*curbuf != '\0')
+-		    STRLCAT(curbuf, " ", sizeof(curbuf));/* append space */
++		    strcat(curbuf, " ");/* append space */
+ 		buf[l] = '\0';
+-		STRLCAT(curbuf, buf, sizeof(curbuf));   /* append buf */
++		strcat(curbuf, buf);	/* append buf */
+ 	    }
+-	    len = strlen(curbuf) + 1;
+-	    s = (char *) XpmMalloc(len);
++	    s = (char *) XpmMalloc(strlen(curbuf) + 1);
+ 	    if (!s) {
+ 		xpmFreeColorTable(colorTable, ncolors);
+ 		return (XpmNoMemory);
+ 	    }
+-	    memcpy(s, curbuf, len);
++	    strcpy(s, curbuf);
+ 	    color->c_color = s;
+ 	    *curbuf = '\0';		/* reset curbuf */
+ 	    if (a < ncolors - 1)
+@@ -522,9 +509,6 @@
+     unsigned int *iptr, *iptr2;
+     unsigned int a, x, y;
+ 
+-    if ((height > 0 && width >= SIZE_MAX / height) ||
+-	width * height >= SIZE_MAX / sizeof(unsigned int)) 
+-        return XpmNoMemory;
+ #ifndef FOR_MSW
+     iptr2 = (unsigned int *) XpmMalloc(sizeof(unsigned int) * width * height);
+ #else
+@@ -548,9 +532,6 @@
+ 	{
+ 	    unsigned short colidx[256];
+ 
+-	    if (ncolors > 256)
+-	        return (XpmFileInvalid);
+-
+ 	    bzero((char *)colidx, 256 * sizeof(short));
+ 	    for (a = 0; a < ncolors; a++)
+ 		colidx[(unsigned char)colorTable[a].string[0]] = a + 1;
+@@ -585,7 +566,7 @@
+ 
+ 	    bzero((char *)cidx, 256 * sizeof(unsigned short *)); /* init */
+ 	    for (a = 0; a < ncolors; a++) {
+-		char1 = colorTable[a].string[0];
++		char1 = (unsigned char)colorTable[a].string[0];
+ 		if (cidx[char1] == NULL) { /* get new memory */
+ 		    cidx[char1] = (unsigned short *)
+ 			XpmCalloc(256, sizeof(unsigned short));
+@@ -628,9 +609,6 @@
+ 	    char *s;
+ 	    char buf[BUFSIZ];
+ 
+-	    if (cpp >= sizeof(buf))
+-	        return (XpmFileInvalid);
+-
+ 	    buf[cpp] = '\0';
+ 	    if (USE_HASHTABLE) {
+ 		xpmHashAtom *slot;
+--- lib/Xm/Xpmscan.c
++++ lib/Xm/Xpmscan.c
+@@ -98,8 +98,7 @@
+ LFUNC(ScanTransparentColor, int, (XpmColor *color, unsigned int cpp,
+ 				  XpmAttributes *attributes));
+ 
+-LFUNC(ScanOtherColors, int, (Display *display, XpmColor *colors, 
+-			     unsigned int ncolors, 
++LFUNC(ScanOtherColors, int, (Display *display, XpmColor *colors, int ncolors,
+ 			     Pixel *pixels, unsigned int mask,
+ 			     unsigned int cpp, XpmAttributes *attributes));
+ 
+@@ -226,17 +225,11 @@
+     else
+ 	cpp = 0;
+ 
+-    if ((height > 0 && width >= SIZE_MAX / height) ||
+-	width * height >= SIZE_MAX / sizeof(unsigned int))
+-	RETURN(XpmNoMemory);
+     pmap.pixelindex =
+ 	(unsigned int *) XpmCalloc(width * height, sizeof(unsigned int));
+     if (!pmap.pixelindex)
+ 	RETURN(XpmNoMemory);
+ 
+-    if (pmap.size >= SIZE_MAX / sizeof(Pixel)) 
+-	RETURN(XpmNoMemory);
+-
+     pmap.pixels = (Pixel *) XpmMalloc(sizeof(Pixel) * pmap.size);
+     if (!pmap.pixels)
+ 	RETURN(XpmNoMemory);
+@@ -291,8 +284,7 @@
+      * get rgb values and a string of char, and possibly a name for each
+      * color
+      */
+-    if (pmap.ncolors >= SIZE_MAX / sizeof(XpmColor))
+-	RETURN(XpmNoMemory);
++
+     colorTable = (XpmColor *) XpmCalloc(pmap.ncolors, sizeof(XpmColor));
+     if (!colorTable)
+ 	RETURN(XpmNoMemory);
+@@ -340,8 +332,6 @@
+ 
+     /* first get a character string */
+     a = 0;
+-    if (cpp >= SIZE_MAX - 1)
+-	return (XpmNoMemory);
+     if (!(s = color->string = (char *) XpmMalloc(cpp + 1)))
+ 	return (XpmNoMemory);
+     *s++ = printable[c = a % MAXPRINTABLE];
+@@ -389,7 +379,7 @@
+ ScanOtherColors(display, colors, ncolors, pixels, mask, cpp, attributes)
+     Display *display;
+     XpmColor *colors;
+-    unsigned int ncolors;
++    int ncolors;
+     Pixel *pixels;
+     unsigned int mask;
+     unsigned int cpp;
+@@ -433,8 +423,6 @@
+     }
+ 
+     /* first get character strings and rgb values */
+-    if (ncolors >= SIZE_MAX / sizeof(XColor) || cpp >= SIZE_MAX - 1)
+-	return (XpmNoMemory);
+     xcolors = (XColor *) XpmMalloc(sizeof(XColor) * ncolors);
+     if (!xcolors)
+ 	return (XpmNoMemory);
+--- lib/Xm/XpmI.h
++++ lib/Xm/XpmI.h
+@@ -110,6 +110,7 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <X11/Xmd.h>
+ /* stdio.h doesn't declare popen on a Sequent DYNIX OS */
+ #ifdef sequent
+ extern FILE *popen();
+--- lib/Xm/XmString.c
++++ lib/Xm/XmString.c
+@@ -7707,7 +7707,7 @@
+     case XmMULTIBYTE_TEXT:
+       /* Non-NULL values (except _MOTIF_DEFAULT_LOCALE)
+          are not accepted in Motif 2.0. */
+-      if (tag != NULL && !(tag == _MOTIF_DEFAULT_LOCALE ||
++      if (tag != NULL && !(/* tag == _MOTIF_DEFAULT_LOCALE || */
+ 			   strcmp(tag, _MOTIF_DEFAULT_LOCALE) == 0))
+       {
+ 	_XmProcessUnlock();
+@@ -8317,7 +8317,7 @@
+ 	_XmProcessUnlock();
+ 	return NULL;
+       }
+-      if ((value != _MOTIF_DEFAULT_LOCALE) &&
++      if (/* (value != _MOTIF_DEFAULT_LOCALE) && */
+ 	  (strcmp((char*) value, _MOTIF_DEFAULT_LOCALE) != 0)) {
+ 	_XmProcessUnlock();
+ 	return NULL;
+--- clients/mwm/WmFunction.c
++++ clients/mwm/WmFunction.c
+@@ -1124,12 +1124,12 @@
+ 		directory, then we must call execlp and not execl
+ 		*/
+ 		shellname = shell;
+-		execlp (shell, shellname, "-c", args, 0);
++		execlp (shell, shellname, "-c", args, (char *) 0);
+ 	    }
+ 	    else
+ 	    {
+ 		shellname++;
+-		execl (shell, shellname, "-c", args, 0);
++		execl (shell, shellname, "-c", args, (char *) 0);
+ 	    }
+ 	}
+ 
+@@ -1138,9 +1138,9 @@
+ 	 * Try /bin/sh .
+ 	 */
+ #ifdef SVR4
+-        execl ("/usr/bin/sh", "sh", "-c", args, 0);
++        execl ("/usr/bin/sh", "sh", "-c", args, (char *) 0);
+ #else
+-        execl ("/bin/sh", "sh", "-c", args, 0);
++        execl ("/bin/sh", "sh", "-c", args, (char *) 0);
+ #endif
+ 
+ 
+--- demos/lib/Xmd/onHelp.c
++++ demos/lib/Xmd/onHelp.c
+@@ -66,7 +66,7 @@
+   Widget dismiss;
+ 
+   toplevel = XtVaAppInitialize(&app_context, "HelpOnHelp", NULL, 0, 
+-			       &argc, argv, NULL, 0);
++			       &argc, argv, NULL, NULL);
+   n = 0;
+   XtSetArg(args[n], XmdNhelpFile, "helpOn"); n++;
+   help = XmdCreateHelp(toplevel, "help", args, n);
+--- demos/programs/Exm/simple_app/simpleDemo.c
++++ demos/programs/Exm/simple_app/simpleDemo.c
+@@ -162,7 +162,7 @@
+ 
+   menu = XmCreatePulldownMenu(menuBar, "FileMenu", NULL, 0);
+ 
+-  XtVaSetValues(cascade, XmNsubMenuId, menu, 0);
++  XtVaSetValues(cascade, XmNsubMenuId, menu, NULL);
+ 
+   str = XmStringCreateLocalized("Quit");
+   menuitem = XtVaCreateManagedWidget("item", xmPushButtonWidgetClass,
+--- demos/programs/filemanager/actions.c
++++ demos/programs/filemanager/actions.c
+@@ -91,7 +91,7 @@
+   XtVaSetValues(fileviewer,
+ 		XmNlayoutType, spatial,
+ 		XmNentryViewType, size,
+-		0, 0);
++		NULL);
+ 
+   fixViewerSize(XtParent(fileviewer), NULL, NULL);
+ 
+--- demos/programs/filemanager/filemanager.c
++++ demos/programs/filemanager/filemanager.c
+@@ -118,7 +118,7 @@
+ 
+   XtSetArg(args[n], XmNallowShellResize, True);  n++;
+   toplevel = XtVaAppInitialize(&app_context, APP_CLASS, NULL, 0, &argc, argv,
+-			       fallback_resources, 0);
++			       fallback_resources, NULL);
+ 
+   app_class_quark = XrmStringToQuark(APP_CLASS);
+   app_quark = XrmStringToQuark(argv[0]);
+--- demos/programs/fileview/text.c
++++ demos/programs/fileview/text.c
+@@ -160,7 +160,7 @@
+       XtSetValues(XtParent(new->text), args, n);
+       XmTextSetTopCharacter(new->text,
+ 			    XmTextGetTopCharacter(this->current_pane->text));
+-      XtVaSetValues(target, XmNheight, (Dimension) height/2);
++      XtVaSetValues(target, XmNheight, (Dimension) height/2, NULL);
+    }
+    printf("source text set\n");
+    XtManageChild(new->text);
+--- demos/programs/popups/autopopups.c
++++ demos/programs/popups/autopopups.c
+@@ -83,7 +83,7 @@
+   XmString	str, tmp1, tmp2;
+ 
+   shell     = XtVaAppInitialize(&context, APP_CLASS, NULL, 0, &argc, argv,
+-				NULL, 0);
++				NULL, NULL);
+ 
+   frame1 = XmCreateFrame(shell, "outerframe", NULL, 0);
+   XtManageChild(frame1);
+--- demos/programs/setdate/setDate.c
++++ demos/programs/setdate/setDate.c
+@@ -95,7 +95,7 @@
+   char *str;
+ 
+   shell     = XtVaAppInitialize(&context, APP_CLASS, NULL, 0, &argc, argv,
+-				fallback_resources, 0);
++				fallback_resources, NULL);
+ 
+   time(&timer);
+   thetime = localtime(&timer);
+--- demos/programs/todo/todo.c
++++ demos/programs/todo/todo.c
+@@ -150,7 +150,7 @@
+   shell		= XtVaAppInitialize(&context, APP_CLASS,
+ 				    optionDesc, XtNumber(optionDesc), 
+ 				    &argc, argv,
+-				    fallback_resources, 0);
++				    fallback_resources, NULL);
+ 
+   XtGetApplicationResources(shell, (XtPointer) &options,
+ 			    resources, XtNumber(resources), (Arg *) NULL, 0);
+--- lib/Xm/Label.c
++++ lib/Xm/Label.c
+@@ -2595,7 +2595,7 @@
+ {
+   XmString value;
+   
+-  XtVaGetValues(w, XmNlabelString, &value, 0);
++  XtVaGetValues(w, XmNlabelString, &value, NULL);
+   
+   if (type == XmFORMAT_XmSTRING) 
+     {
+--- demos/programs/ButtonBox/bboxdemo.c
++++ demos/programs/ButtonBox/bboxdemo.c
+@@ -668,4 +668,5 @@
+     XtRealizeWidget(top);
+ 
+     XtAppMainLoop(app);
++    return 0;
+ }
+--- demos/programs/ColorSel/bxutil-c.c
++++ demos/programs/ColorSel/bxutil-c.c
+@@ -3471,6 +3471,7 @@
+     default:
+         return -1;
+     }
++    abort();
+ }
+ 
+ 
+@@ -3494,6 +3495,7 @@
+     default:
+         return -1;
+     }
++    abort();
+ }
+ 
+ /*
+--- demos/programs/FontSel/fontsel.c
++++ demos/programs/FontSel/fontsel.c
+@@ -68,6 +68,7 @@
+  * Returns:       nothing
+  *
+  */
++void
+ InitializeDemoForm(Widget form)
+ {
+     Widget w;
+@@ -119,5 +120,6 @@
+     XtRealizeWidget(top);
+ 
+     XtAppMainLoop(app);
++    return 0;
+ }
+ 
+--- demos/programs/MultiList/bxutil-c.c
++++ demos/programs/MultiList/bxutil-c.c
+@@ -3469,6 +3469,7 @@
+         }
+         return (c);
+     }
++    abort();
+ }
+ 
+ 
+@@ -3490,6 +3491,7 @@
+             mdata->InsideString = !mdata->InsideString;
+         return (ungetc(c, mdata->stream.file));
+     }
++    abort();
+ }
+ 
+ /*
+--- demos/programs/Tree/bxutil-c.c
++++ demos/programs/Tree/bxutil-c.c
+@@ -3471,6 +3471,7 @@
+     default:
+     	return -1;
+     }
++    abort();
+ }
+ 
+ 
+@@ -3494,6 +3495,7 @@
+     default:
+ 	return -1;
+     }
++    abort();
+ }
+ 
+ /*
+--- tools/wml/wmlresolve.c
++++ tools/wml/wmlresolve.c
+@@ -69,6 +69,7 @@
+ 
+ #if defined(__STDC__)
+ #include <stdlib.h>
++#include <string.h>
+ #endif
+ #include <stdio.h>
+ 
+--- demos/programs/ButtonBox/Makefile.am
++++ demos/programs/ButtonBox/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/ButtonBox
++pkgdatadir = $(datadir)/Xm/ButtonBox
+ 
+ bin_PROGRAMS = bboxdemo
+ EXTRA_DIST = Imakefile
+ bboxdemo_SOURCES = bboxdemo.c
+-data_DATA = $(EXTRA_DIST) $(bboxdemo_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(bboxdemo_SOURCES)
+ TOPDIR = ../../..
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ 
+--- demos/programs/ColorSel/Makefile.am
++++ demos/programs/ColorSel/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/Color
++pkgdatadir = $(datadir)/Xm/Color
+ 
+ bin_PROGRAMS = colordemo
+ colordemo_SOURCES = bxutil-c.c colordemo.c
+ EXTRA_DIST = Imakefile
+-data_DATA = $(colordemo_SOURCES) $(EXTRA_DIST)
++pkgdata_DATA = $(colordemo_SOURCES) $(EXTRA_DIST)
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ TOPDIR = ../../..
+ INCLUDES = -I$(TOPDIR)/lib -I$(srcdir)/$(TOPDIR)/lib ${X_CFLAGS} 
+--- demos/programs/Column/Makefile.am
++++ demos/programs/Column/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/Column
++pkgdatadir = $(datadir)/Xm/Column
+ 
+ bin_PROGRAMS = column
+ column_SOURCES = column.c
+ EXTRA_DIST = Imakefile Column.ad
+-data_DATA = $(EXTRA_DIST) $(column_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(column_SOURCES)
+ TOPDIR = ../../..
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ INCLUDES = -I$(TOPDIR)/lib -I$(srcdir)/$(TOPDIR)/lib ${X_CFLAGS} 
+--- demos/programs/DropDown/Makefile.am
++++ demos/programs/DropDown/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/DropDown
++pkgdatadir = $(datadir)/Xm/DropDown
+ 
+ bin_PROGRAMS = dropdown
+ EXTRA_DIST = DropDown.ad Imakefile
+ dropdown_SOURCES = dropdown.c
+-data_DATA = $(EXTRA_DIST) $(dropdown_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(dropdown_SOURCES)
+ TOPDIR = ../../..
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ INCLUDES = -I$(TOPDIR)/lib -I$(srcdir)/$(TOPDIR)/lib ${X_CFLAGS} 
+--- demos/programs/Exm/app_in_c/Makefile.am
++++ demos/programs/Exm/app_in_c/Makefile.am
+@@ -1,10 +1,9 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-bindir = ${prefix}/share/Xm/Exm/app_in_c
+-datadir = ${prefix}/share/Xm/Exm/app_in_c
++pkgdatadir = $(datadir)/Xm/Exm/app_in_c
+ 
+ man_MANS = exm_in_c.man
+-bin_PROGRAMS = exm_in_c
++pkgdata_PROGRAMS = exm_in_c
+ exm_in_c_SOURCES = exm_in_c.c
+ 
+ EXTRA_DIST = exm_in_c.man Imakefile
+--- demos/programs/Exm/simple_app/Makefile.am
++++ demos/programs/Exm/simple_app/Makefile.am
+@@ -1,7 +1,7 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-bindir = ${prefix}/share/Xm/Exm/simple_app
+-datadir = ${prefix}/share/Xm/Exm/simple_app
++bindir = @datadir@/Xm/Exm/simple_app
++datadir = @datadir@/Xm/Exm/simple_app
+ 
+ data_DATA = README
+ man_MANS = simpleDemo.man
+--- demos/programs/FontSel/Makefile.am
++++ demos/programs/FontSel/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/fontsel
++pkgdatadir = $(datadir)/Xm/fontsel
+ 
+ bin_PROGRAMS = fontsel
+ fontsel_SOURCES = callbacks-c.c creation-c.c fontsel.c fontsel.h
+ EXTRA_DIST = Imakefile
+-data_DATA = $(EXTRA_DIST) $(fontsel_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(fontsel_SOURCES)
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ TOPDIR = ../../..
+ INCLUDES = -I$(TOPDIR)/lib -I$(srcdir)/$(TOPDIR)/lib ${X_CFLAGS} 
+--- demos/programs/IconB/Makefile.am
++++ demos/programs/IconB/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/Icon
++pkgdatadir= $(datadir)/Xm/Icon
+ 
+ EXTRA_DIST = Imakefile small.bm
+ bin_PROGRAMS = iconbuttondemo
+ iconbuttondemo_SOURCES = misc.c  iconbuttondemo.c
+-data_DATA = $(iconbuttondemo_SOURCES) $(EXTRA_DIST)
++pkgdata_DATA = $(iconbuttondemo_SOURCES) $(EXTRA_DIST)
+ TOPDIR = ../../..
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ 
+--- demos/programs/MultiList/Makefile.am
++++ demos/programs/MultiList/Makefile.am
+@@ -1,13 +1,13 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/MultiList
++pkgdatadir = $(datadir)/Xm/MultiList
+ 
+ bin_PROGRAMS = multilist
+ SUBDIRS = pixmaps
+ multilist_SOURCES = bxutil-c.c callbacks-c.c creation.c multilist.c \
+          extlist.h
+ EXTRA_DIST = Imakefile
+-data_DATA = $(EXTRA_DIST) $(multilist_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(multilist_SOURCES)
+ TOPDIR = ../../..
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ 
+--- demos/programs/MultiList/pixmaps/Makefile.am
++++ demos/programs/MultiList/pixmaps/Makefile.am
+@@ -1,6 +1,6 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/MultiList/pixmaps
++pkgdatadir = $(datadir)/Xm/MultiList/pixmaps
+ 
+ EXTRA_DIST = clown.xbm crab.xpm eye.xpm porsche.xpm stopsign.xpm
+-data_DATA = $(EXTRA_DIST)
++pkgdata_DATA = $(EXTRA_DIST)
+--- demos/programs/Outline/Makefile.am
++++ demos/programs/Outline/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/Outline
++pkgdatadir = $(datadir)/Xm/Outline
+ 
+ EXTRA_DIST = Imakefile
+ bin_PROGRAMS = outline
+ outline_SOURCES = outline.c
+-data_DATA = $(outline_SOURCES) $(EXTRA_DIST)
++pkgdata_DATA = $(outline_SOURCES) $(EXTRA_DIST)
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ TOPDIR = ../../..
+ INCLUDES = -I$(TOPDIR)/lib -I$(srcdir)/$(TOPDIR)/lib ${X_CFLAGS} 
+--- demos/programs/Paned/Makefile.am
++++ demos/programs/Paned/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/Paned2
++pkgdatadir = $(datadir)/Xm/Paned2
+ 
+ EXTRA_DIST = Imakefile
+ bin_PROGRAMS = paned
+ paned_SOURCES = creation-c.c paned.c
+-data_DATA = $(EXTRA_DIST) $(paned_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(paned_SOURCES)
+ TOPDIR = ../../..
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ 
+--- demos/programs/TabStack/Makefile.am
++++ demos/programs/TabStack/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/Tabstack
++pkgdatadir = $(datadir)/Xm/Tabstack
+ 
+ bin_PROGRAMS = tabstack
+ tabstack_SOURCES = bxutils.c callbacks.c creation.c main.c creation.h
+ EXTRA_DIST = Imakefile
+-data_DATA = $(tabstack_SOURCES) $(EXTRA_DIST)            
++pkgdata_DATA = $(tabstack_SOURCES) $(EXTRA_DIST)            
+ TOPDIR = ../../..
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ 
+--- demos/programs/Tree/Makefile.am
++++ demos/programs/Tree/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/Tree
++pkgdatadir = $(datadir)/Xm/Tree
+ 
+ EXTRA_DIST = Imakefile
+ bin_PROGRAMS = tree
+ tree_SOURCES = bxutil-c.c  tree.c
+-data_DATA = $(EXTRA_DIST) $(tree_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(tree_SOURCES)
+ TOPDIR = ../../..
+ LDADD = $(TOPDIR)/lib/Xm/libXm.la
+ 
+--- demos/programs/airport/Makefile.am
++++ demos/programs/airport/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/airport
++pkgdatadir = $(datadir)/Xm/airport
+ 
+ bin_PROGRAMS = airport
+ airport_SOURCES = main.c dragsource.c dropsite.c airport.h \
+                   dragsource.h dropsite.h main.h
+ EXTRA_DIST = Imakefile XmdAirport.ad README
+-data_DATA = $(airport_SOURCES) $(EXTRA_DIST)
++pkgdata_DATA = $(airport_SOURCES) $(EXTRA_DIST)
+ LDADD = ../../../lib/Xm/libXm.la
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/animate/Makefile.am
++++ demos/programs/animate/Makefile.am
+@@ -1,6 +1,7 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/animate
++pkgdatadir = $(datadir)/Xm/animate
++uiddir = $(datadir)/X11/uid
+ 
+ EXTRA_DIST = dog.uil plane.uil superman.uil xmanimate.uil \
+     superman1.xbm superman2.xbm superman3.xbm superman4.xbm \
+@@ -11,8 +12,8 @@
+ 
+ CLEANFILES =  dog.uid plane.uid superman.uid xmanimate.uid
+ 
+-data_DATA = dog.uid plane.uid superman.uid xmanimate.uid $(xmanimate_SOURCES) \
+-            $(EXTRA_DIST)
++pkgdata_DATA = $(xmanimate_SOURCES) $(EXTRA_DIST)
++uid_DATA = dog.uid plane.uid superman.uid xmanimate.uid
+ 
+ bin_PROGRAMS = xmanimate
+ 
+--- demos/programs/draw/Makefile.am
++++ demos/programs/draw/Makefile.am
+@@ -1,10 +1,10 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/draw
++pkgdatadir = $(datadir)/Xm/draw
+ 
+ bin_PROGRAMS = draw
+ draw_SOURCES = draw.c
+ EXTRA_DIST = Imakefile XmdDraw.ad README draw.help draw.man
+-data_DATA = $(EXTRA_DIST) $(draw_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(draw_SOURCES)
+ LDADD = ../../lib/Xmd/libXmd.a ../../../lib/Xm/libXm.la
+ INCLUDES = -I$(srcdir)/../../lib -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/earth/Makefile.am
++++ demos/programs/earth/Makefile.am
+@@ -1,10 +1,10 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/earth
++pkgdatadir = $(datadir)/Xm/earth
+ 
+ bin_PROGRAMS = earth
+ earth_SOURCES = earth.c
+ EXTRA_DIST = terre.xbm earth.man Imakefile README
+-data_DATA = $(EXTRA_DIST) $(earth_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(earth_SOURCES)
+ LDADD = ../../../lib/Xm/libXm.la
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/filemanager/Makefile.am
++++ demos/programs/filemanager/Makefile.am
+@@ -1,6 +1,6 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/filemanager
++pkgdatadir = $(datadir)/Xm/filemanager
+ 
+ bin_PROGRAMS = filemanager
+ filemanager_SOURCES = filemanager.c actions.c readdir.c convert.c \
+@@ -9,7 +9,7 @@
+            Imakefile code.xpm dir.xpm exec.xpm file.xpm none.xpm \
+            obj.xpm pix.xpm s_dir.xpm s_exec.xpm s_file.xpm \
+            s_none.xpm s_pix.xpm
+-data_DATA = $(EXTRA_DIST) $(filemanager_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(filemanager_SOURCES)
+ LDADD = ../../lib/Xmd/libXmd.a ../../../lib/Xm/libXm.la
+ INCLUDES = -I$(srcdir)/../../lib -I$(srcdir)/../../../lib ${X_CFLAGS} 
+ 
+--- demos/programs/fileview/Makefile.am
++++ demos/programs/fileview/Makefile.am
+@@ -1,12 +1,14 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/fileview
++pkgdatadir = $(datadir)/Xm/fileview
++uiddir = $(datadir)/X11/uid
+ 
+ bin_PROGRAMS = fileview
+ fileview_SOURCES = main.c text.c file.c file.h fileE.h fileview.h main.h \
+                    mainE.h text.h textE.h
+ EXTRA_DIST = $(UILS) English.df French.df German.df README Fileview.ad
+-data_DATA = French.uid German.uid English.uid $(fileview_SOURCES) $(EXTRA_DIST)
++pkgdata_DATA = $(fileview_SOURCES) $(EXTRA_DIST)
++uid_DATA = French.uid German.uid English.uid
+ 
+ UILS= French.uil German.uil English.uil
+ 
+--- demos/programs/getsubres/Makefile.am
++++ demos/programs/getsubres/Makefile.am
+@@ -1,10 +1,10 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/getsubres
++pkgdatadir = $(datadir)/Xm/getsubres
+ 
+ bin_PROGRAMS = getsubres
+ EXTRA_DIST = getsubres.help getsubres.man README Imakefile
+ getsubres_SOURCES = getsubres.c
+-data_DATA = $(EXTRA_DIST) $(getsubres_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(getsubres_SOURCES)
+ LDADD = ../../lib/Xmd/libXmd.a ../../../lib/Xm/libXm.la
+ INCLUDES = -I$(srcdir)/../../lib -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/hellomotif/Makefile.am
++++ demos/programs/hellomotif/Makefile.am
+@@ -1,11 +1,13 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/hellomotif
++pkgdatadir = $(datadir)/Xm/hellomotif
++uiddir = $(datadir)/X11/uid
+ 
+ bin_PROGRAMS = hellomotif
+ EXTRA_DIST = hellomotif.uil Imakefile README
+ hellomotif_SOURCES = hellomotif.c
+-data_DATA = $(EXTRA_DIST) $(hellomotif_SOURCES) hellomotif.uid
++pkgdata_DATA = $(EXTRA_DIST) $(hellomotif_SOURCES)
++uid_DATA = hellomotif.uid
+ LDADD = ../../../lib/Xm/libXm.la ../../../lib/Mrm/libMrm.la
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+ 
+--- demos/programs/hellomotifi18n/Makefile.am
++++ demos/programs/hellomotifi18n/Makefile.am
+@@ -1,13 +1,15 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/helloint
++pkgdatadir = $(datadir)/Xm/helloint
++uiddir = $(datadir)/X11/uid
+ 
+ SUBDIRS = C english french hebrew japan japanese swedish
+ EXTRA_DIST = README helloint.uil Imakefile helloint.man
+ CLEANFILES = helloint.uid
+ helloint_SOURCES = helloint.c
+ bin_PROGRAMS = helloint
+-data_DATA = $(EXTRA_DIST) $(helloint_SOURCES) helloint.uid
++pkgdata_DATA = $(EXTRA_DIST) $(helloint_SOURCES)
++uid_DATA = helloint.uid
+ helloint_DEPENDENCIES = helloint.uid C/uid/l_strings.uid english/uid/l_strings.uid french/uid/l_strings.uid hebrew/uid/l_strings.uid japan/uid/l_strings.uid japanese/uid/l_strings.uid swedish/uid/l_strings.uid
+ 
+ INCLUDES = -I$(top_srcdir)/lib ${X_CFLAGS} 
+--- demos/programs/i18ninput/Makefile.am
++++ demos/programs/i18ninput/Makefile.am
+@@ -1,12 +1,12 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/i18ninput
++pkgdatadir = $(datadir)/Xm/i18ninput
+ 
+ bin_PROGRAMS = i18ninput
+ i18ninput_SOURCES = i18ninput.c input.c 
+ EXTRA_DIST = XmdI18nInput.ad README i18ninput.man i18ninput.help \
+              Imakefile
+-data_DATA = $(EXTRA_DIST) $(i18ninput_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(i18ninput_SOURCES)
+ LDADD = ../../lib/Xmd/libXmd.a ../../../lib/Xm/libXm.la
+ 
+ INCLUDES = -I$(srcdir)/../../lib -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/panner/Makefile.am
++++ demos/programs/panner/Makefile.am
+@@ -1,10 +1,10 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/panner
++pkgdatadir = $(datadir)/Xm/panner
+ 
+ bin_PROGRAMS = panner
+ panner_SOURCES = panner.c
+ EXTRA_DIST = README panner.man Imakefile
+-data_DATA = $(EXTRA_DIST) $(panner_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(panner_SOURCES)
+ LDADD = ../../../lib/Xm/libXm.la
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/periodic/Makefile.am
++++ demos/programs/periodic/Makefile.am
+@@ -1,11 +1,13 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/periodic
++pkgdatadir = $(datadir)/Xm/periodic
++uiddir = $(datadir)/X11/uid
+ 
+ bin_PROGRAMS = periodic
+ EXTRA_DIST = periodic.uil periodic_l.uil XmdPeriodic.ad Imakefile README
+ periodic_SOURCES = periodic.c
+-data_DATA = $(EXTRA_DIST) $(periodic_SOURCES) periodic.uid
++pkgdata_DATA = $(EXTRA_DIST) $(periodic_SOURCES)
++uid_DATA = periodic.uid
+ LDADD = ../../../lib/Xm/libXm.la ../../../lib/Mrm/libMrm.la
+ 
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/piano/Makefile.am
++++ demos/programs/piano/Makefile.am
+@@ -1,12 +1,12 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/piano
++pkgdatadir = $(datadir)/Xm/piano
+ 
+ bin_PROGRAMS = piano
+ piano_SOURCES = piano.c
+ EXTRA_DIST = piano.images README Inv8_part1.piano Inv8_part2.piano \
+              piano.man Imakefile
+-data_DATA  = $(EXTRA_DIST) $(piano_SOURCES) 
++pkgdata_DATA  = $(EXTRA_DIST) $(piano_SOURCES) 
+ LDADD = ../../../lib/Xm/libXm.la -lm
+ 
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/pixmaps/Makefile.am
++++ demos/programs/pixmaps/Makefile.am
+@@ -1,7 +1,7 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/pixmaps
++pkgdatadir = $(datadir)/Xm/pixmaps
+ 
+ EXTRA_DIST  = crab.xpm eye.xpm porsche.xpm stopsign.xpm clown.xbm
+ 
+-data_DATA = $(EXTRA_DIST)
++pkgdata_DATA = $(EXTRA_DIST)
+--- demos/programs/popups/Makefile.am
++++ demos/programs/popups/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/autopopups
++pkgdatadir = $(datadir)/Xm/autopopups
+ 
+ bin_PROGRAMS = autopopups
+ autopopups_SOURCES = autopopups.c
+ EXTRA_DIST = README autopopups.man Imakefile
+-data_DATA = $(EXTRA_DIST) $(autopopups_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(autopopups_SOURCES)
+ LDADD = ../../../lib/Xm/libXm.la
+ 
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/sampler2_0/Makefile.am
++++ demos/programs/sampler2_0/Makefile.am
+@@ -1,6 +1,6 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/sampler2_0
++pkgdatadir = $(datadir)/Xm/sampler2_0
+ 
+ EXTRA_DIST = bee.xpm bomb.xpm cherry.xpm da.xpm girlface.xpm k7.xpm \
+              labir.xpm main.xpm pile.xpm prev.xpm spir.xpm stack.xpm \
+@@ -8,7 +8,7 @@
+              XmdSampler2_0.ad
+ bin_PROGRAMS = sampler2_0
+ sampler2_0_SOURCES = sampler2_0.c
+-data_DATA = $(sampler2_0_SOURCES) $(EXTRA_DIST)
++pkgdata_DATA = $(sampler2_0_SOURCES) $(EXTRA_DIST)
+ LDADD = ../../lib/Xmd/libXmd.a ../../../lib/Xm/libXm.la
+ 
+ INCLUDES = -I$(srcdir)/../../lib -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/setdate/Makefile.am
++++ demos/programs/setdate/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/setDate
++pkgdatadir = $(datadir)/Xm/setDate
+ 
+ bin_PROGRAMS = setDate
+ EXTRA_DIST = XmdSetDate.ad README setDate.man Imakefile
+ setDate_SOURCES = setDate.c
+-data_DATA = $(EXTRA_DIST) $(setDate_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(setDate_SOURCES)
+ LDADD = ../../../lib/Xm/libXm.la
+ 
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/todo/Makefile.am
++++ demos/programs/todo/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/todo
++pkgdatadir = $(datadir)/Xm/todo
+ 
+ EXTRA_DIST = README XmdTodo.ad example.todo todo.man todo.help Imakefile
+ bin_PROGRAMS = todo
+ todo_SOURCES = todo.c io.c actions.c page.h
+-data_DATA = $(EXTRA_DIST) $(todo_SOURCES)
++pkgdata_DATA = $(EXTRA_DIST) $(todo_SOURCES)
+ 
+ INCLUDES = -I$(srcdir)/../../../lib -I$(srcdir)/../../lib ${X_CFLAGS} 
+ LDADD = -L../../lib/Xmd -lXmd -L../../lib/Exm -lExm ../../../lib/Xm/libXm.la 
+--- demos/programs/tooltips/Makefile.am
++++ demos/programs/tooltips/Makefile.am
+@@ -1,11 +1,11 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/tooltips
++pkgdatadir = $(datadir)/Xm/tooltips
+ 
+ EXTRA_DIST = Imakefile
+ bin_PROGRAMS = tooltips
+ tooltips_SOURCES = tooltips.c
+-data_DATA = $(tooltips_SOURCES) $(EXTRA_DIST)
++pkgdata_DATA = $(tooltips_SOURCES) $(EXTRA_DIST)
+ LDADD = ../../../lib/Xm/libXm.la
+ 
+ INCLUDES = -I$(srcdir)/../../../lib ${X_CFLAGS} 
+--- demos/programs/workspace/Makefile.am
++++ demos/programs/workspace/Makefile.am
+@@ -1,6 +1,6 @@
+ MAINTAINERCLEANFILES = Makefile.in
+ 
+-datadir = ${prefix}/share/Xm/wsm
++pkgdatadir = $(datadir)/Xm/wsm
+ 
+ EXTRA_DIST = Imakefile README wsm.man
+ bin_PROGRAMS = wsm
+@@ -8,6 +8,6 @@
+               wsmSend.c wsmStruct.c wsm_cb.c wsm_create.c xrmLib.c \
+               command_ui.h wsm_cb.h wsm_create.h wsmData.h wsmDebug.h \
+               wsm.h wsmSend.h wsmStruct.h wsm_ui.h xrmLib.h
+-data_DATA = $(wsm_SOURCES) $(EXTRA_DIST)
++pkgdata_DATA = $(wsm_SOURCES) $(EXTRA_DIST)
+ INCLUDES = -I$(srcdir)/../../../lib -I$(srcdir)/../../lib ${X_CFLAGS} 
+ LDADD = ../../../lib/Xm/libXm.la -L../../lib/Wsm -lWsm
+--- lib/Xm/Hash.c
++++ lib/Xm/Hash.c
+@@ -198,6 +198,8 @@
+ 	} else {
+ 	  table -> buckets[index] = current;
+ 	}
++      } else {
++	last = current;
+       }
+       current = next;
+     }
+--- Makefile.in.orig	2004-10-13 19:58:10.000000000 +0200
++++ Makefile.in	2013-08-02 12:20:30.518131626 +0200
+@@ -405,7 +405,7 @@ libdir = @libdir@
+ libexecdir = @libexecdir@
+ localstatedir = @localstatedir@
+ mandir = @mandir@
+-mkdir_p = @mkdir_p@
++mkdir_p = mkdir -p -- .
+ oldincludedir = @oldincludedir@
+ prefix = @prefix@
+ program_transform_name = @program_transform_name@

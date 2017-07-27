@@ -1,0 +1,37 @@
+name = 'R'
+version = '3.0.1'
+versionsuffix = '-bare'  # bare, as in no extensions included
+
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'ictce', 'version': '4.0.6'}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+
+preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib"
+# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
+configopts += " --with-recommended-packages=no"
+
+dependencies = [
+    ('libreadline', '6.2'),
+    ('ncurses', '5.9'),
+    ('libpng', '1.6.2'),  # for plotting in R
+    ('Java', '1.7.0_21', '', True),  # Java bindings are built if Java is found, might as well provide it
+]
+
+exts_list = []  # just to make it explicit this module doesn't include any extensions
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
+             ['lib64/R/include/%s' % x for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
+                                                 'R.h', 'Rinterface.h', 'Rinternals.h',
+                                                 'Rmath.h', 'Rversion.h', 'S.h']] +
+             ['lib64/R/modules/%s' % x for x in ['internet.%s' % SHLIB_EXT, 'lapack.%s' % SHLIB_EXT, 'vfonts.%s' % SHLIB_EXT]] +
+             ['lib64/R/lib/libR.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'lang'

@@ -1,0 +1,62 @@
+# This is an ugly workaround for a icpc bug: https://software.intel.com/en-us/comment/1882560
+# If the struct/class is local, icpc gives a faulty error. We move the class to be non-local.
+# Remove this patch as soon as icpc is fixed.
+# Ward Poelmans <wpoely86@gmail.com>
+diff -ur qt-everywhere-opensource-src-5.7.0.orig/qtdeclarative/src/quick/items/qquickitemanimation.cpp qt-everywhere-opensource-src-5.7.0/qtdeclarative/src/quick/items/qquickitemanimation.cpp
+--- qt-everywhere-opensource-src-5.7.0.orig/qtdeclarative/src/quick/items/qquickitemanimation.cpp	2016-06-11 14:05:08.000000000 +0200
++++ qt-everywhere-opensource-src-5.7.0/qtdeclarative/src/quick/items/qquickitemanimation.cpp	2016-08-29 12:42:35.880738297 +0200
+@@ -200,6 +200,27 @@
+     }
+ }
+
++struct QQuickParentAnimationData : public QAbstractAnimationAction
++{
++    QQuickParentAnimationData() : reverse(false) {}
++    ~QQuickParentAnimationData() { qDeleteAll(pc); }
++
++    QQuickStateActions actions;
++    //### reverse should probably apply on a per-action basis
++    bool reverse;
++    QList<QQuickParentChange *> pc;
++    void doAction() Q_DECL_OVERRIDE
++    {
++        for (int ii = 0; ii < actions.count(); ++ii) {
++            const QQuickStateAction &action = actions.at(ii);
++            if (reverse)
++                action.event->reverse();
++            else
++                action.event->execute();
++        }
++    }
++};
++
+ QAbstractAnimationJob* QQuickParentAnimation::transition(QQuickStateActions &actions,
+                         QQmlProperties &modified,
+                         TransitionDirection direction,
+@@ -207,26 +228,6 @@
+ {
+     Q_D(QQuickParentAnimation);
+
+-    struct QQuickParentAnimationData : public QAbstractAnimationAction
+-    {
+-        QQuickParentAnimationData() : reverse(false) {}
+-        ~QQuickParentAnimationData() { qDeleteAll(pc); }
+-
+-        QQuickStateActions actions;
+-        //### reverse should probably apply on a per-action basis
+-        bool reverse;
+-        QList<QQuickParentChange *> pc;
+-        void doAction() Q_DECL_OVERRIDE
+-        {
+-            for (int ii = 0; ii < actions.count(); ++ii) {
+-                const QQuickStateAction &action = actions.at(ii);
+-                if (reverse)
+-                    action.event->reverse();
+-                else
+-                    action.event->execute();
+-            }
+-        }
+-    };
+
+     QQuickParentAnimationData *data = new QQuickParentAnimationData;
+     QQuickParentAnimationData *viaData = new QQuickParentAnimationData;

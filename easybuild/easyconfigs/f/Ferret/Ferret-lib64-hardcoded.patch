@@ -1,0 +1,55 @@
+diff -ru FERRET.orig/fer/platform_specific_flags.mk.x86_64-linux FERRET/fer/platform_specific_flags.mk.x86_64-linux
+--- FERRET.orig/fer/platform_specific_flags.mk.x86_64-linux	2011-09-13 23:34:09.000000000 +0200
++++ FERRET/fer/platform_specific_flags.mk.x86_64-linux	2013-03-13 08:05:07.106543458 +0100
+@@ -73,9 +73,9 @@
+ 	LDFLAGS		= -v --verbose -m64 -fPIC -export-dynamic
+ 
+ 	SYSLIB		= -lX11 \
+-			  -lcurl \
++			  $(EBROOTCURL)/lib/libcurl.a \
+ 			  -ldl \
+-			  $(LIBZ_DIR)/lib64/libz.a \
++			  $(EBROOTZLIB)/lib/libz.a \
+ 			  -Wl,-Bstatic -lgfortran -Wl,-Bdynamic \
+ 			  -lm
+ 
+@@ -88,11 +88,11 @@
+ 
+ # For netCDF4 using new hdf5 and new zlib
+ 
+-	CDFLIB		= $(NETCDF4_DIR)/lib64/libnetcdff.a \
+-			  $(NETCDF4_DIR)/lib64/libnetcdf.a \
+-			  $(HDF5_DIR)/lib64/libhdf5_hl.a \
+-			  $(HDF5_DIR)/lib64/libhdf5.a \
+-			  $(LIBZ_DIR)/lib64/libz.a
++	CDFLIB		= $(NETCDF4_DIR)/lib/libnetcdff.a \
++			  $(NETCDF4_DIR)/lib/libnetcdf.a \
++			  $(HDF5_DIR)/lib/libhdf5_hl.a \
++			  $(HDF5_DIR)/lib/libhdf5.a $(EBROOTSZIP)/lib/libsz.a \
++			  $(EBROOTZLIB)/lib/libz.a
+ 
+ 	LINUX_OBJS	= special/linux_routines.o \
+ 			  dat/*.o \
+@@ -104,10 +104,10 @@
+ # builds.
+ # (But use the system ncurses.so.5 for running.)
+ 
+-	TERMCAPLIB	= -L/usr/local/lib64 -lncurses
++	TERMCAPLIB	= -L$(EBROOTNCURSES)/lib -lncurses
+ 
+-	READLINELIB	= $(READLINE_DIR)/lib64/libreadline.a \
+-			  $(READLINE_DIR)/lib64/libhistory.a
++	READLINELIB	= $(EBROOTLIBREADLINE)/lib/libreadline.a \
++			  $(EBROOTLIBREADLINE)/lib/libhistory.a
+ 
+ # cancel the default rule for .f -> .o to prevent objects from being built
+ # from .f files that are out-of-date with respect to their corresponding .F file
+diff -ru FERRET1/site_specific.mk FERRET/site_specific.mk
+--- FERRET1/site_specific.mk	2013-03-12 15:45:53.938844117 +0200
++++ FERRET/site_specific.mk	2013-03-13 12:00:45.115724056 +0200
+@@ -57,6 +57,6 @@
+ # JAVA_HOME	= /usr/java/latest
+ # JAVA_HOME	= /usr/lib/jvm/java-1.6.0-sun
+ # JAVA_HOME	= /usr/lib/jvm/java-6-sun
+-JAVA_HOME	= /usr/lib/jvm/java-sun
++JAVA_HOME	= $(EBROOTJAVA)

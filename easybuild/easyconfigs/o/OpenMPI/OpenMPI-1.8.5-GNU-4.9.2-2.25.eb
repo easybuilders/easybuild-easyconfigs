@@ -1,0 +1,32 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '1.8.5'
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'GNU', 'version': '4.9.2-2.25'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+
+dependencies = [('hwloc', '1.10.1')]
+
+configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
+configopts += '--disable-dlopen '  # statically link component, don't do dynamic loading
+
+# needed for --with-verbs
+osdependencies = [('libibverbs-dev', 'libibverbs-devel')]
+
+libs = ["mpi_cxx", "mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte", "vt", "vt-hyb", "vt-mpi", "vt-mpi-unify"]
+sanity_check_paths = {
+    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
+    'dirs': ["include/openmpi/ompi/mpi/cxx"],
+}
+
+moduleclass = 'mpi'

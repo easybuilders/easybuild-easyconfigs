@@ -1,0 +1,43 @@
+# see http://www2.mmm.ucar.edu/wrf/users/wrfv3.6/known-prob-3.6.1.html
+--- WRFV3.orig/dyn_em/module_initialize_real.F	2014-08-13 04:03:11.000000000 +0200
++++ WRFV3/dyn_em/module_initialize_real.F	2014-10-08 18:40:04.000000000 +0200
+@@ -4666,13 +4666,13 @@
+                CALL lagrange_setup ( var_type , interp_type , &
+                     ordered_porig(kinterp_start:kinterp_end) , &
+                     ordered_forig(kinterp_start:kinterp_end) , &
+-                    count , lagrange_order , extrap_type , &
++                    kinterp_end-kinterp_start+1 , lagrange_order , extrap_type , &
+                     ordered_pnew(kstart:kend)  , ordered_fnew  , kend-kstart+1 ,i,j)
+             ELSE
+                CALL lagrange_setup ( var_type , interp_type , &
+                 LOG(ordered_porig(kinterp_start:kinterp_end)) , &
+                     ordered_forig(kinterp_start:kinterp_end) , &
+-                    count , lagrange_order , extrap_type , &
++                    kinterp_end-kinterp_start+1 , lagrange_order , extrap_type , &
+                 LOG(ordered_pnew(kstart:kend)) , ordered_fnew  , kend-kstart+1 ,i,j)
+             END IF
+ 
+--- WRFV3.orig/dyn_em/module_em.F	2014-01-10 22:04:29.000000000 +0100
++++ WRFV3/dyn_em/module_em.F	2014-10-08 22:17:10.000000000 +0200
+@@ -2109,8 +2109,8 @@
+    REAL , DIMENSION( ims:ime , jms:jme  ) ,              &
+                                         INTENT(IN   ) ::xlong, xlat
+ 
+-  real, dimension(kms:kme), intent(inout) :: traj_i,traj_j,traj_k
+-  real, dimension(kms:kme), intent(inout) :: traj_long,traj_lat
++  real, dimension(1:config_flags%num_traj), intent(inout) :: traj_i,traj_j,traj_k
++  real, dimension(1:config_flags%num_traj), intent(inout) :: traj_long,traj_lat
+   real, dimension(ims:ime,kms:kme,jms:jme),intent(in) :: rdzw
+   real, dimension(ims:ime,kms:kme,jms:jme)::u,v,w
+   real, dimension(ims:ime,jms:jme),intent(in)::msft,msfu,msfv
+--- WRFV3.orig/frame/module_io_quilt.F	2014-08-08 22:53:35.000000000 +0200
++++ WRFV3/frame/module_io_quilt.F	2014-10-08 20:21:28.000000000 +0200
+@@ -2620,7 +2620,7 @@
+       CALL wrf_get_dm_communicator( mpi_comm_here )
+ 
+       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
+-      CALL mpi_x_comm_size ( mpi_comm_here, ntasks, ierr ) ;
++      CALL mpi_x_comm_size( mpi_comm_here, ntasks, ierr ) ;
+ 
+       IF ( mytask .EQ. 0 ) THEN
+         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )

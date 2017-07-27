@@ -1,0 +1,26 @@
+patch to fix make install issue, obtained from http://u14183.blogspot.be/2012/06/installing-ncbi-c-toolkit.html
+diff -ru ncbi_cxx--9_0_0.orig/src/build-system/Makefile.in.top ncbi_cxx--9_0_0/src/build-system/Makefile.in.top
+--- ncbi_cxx--9_0_0.orig/src/build-system/Makefile.in.top	2012-04-11 17:34:46.000000000 +0200
++++ ncbi_cxx--9_0_0/src/build-system/Makefile.in.top	2013-01-17 20:43:04.698601646 +0100
+@@ -39,7 +39,20 @@
+ 	-$(RMDIR) $(pincludedir)
+ 	$(INSTALL) -d $(bindir) $(libdir) $(pincludedir)
+ 	$(INSTALL) $(lbindir)/* $(bindir)
+-	$(INSTALL) -m 644 $(llibdir)/* $(libdir)
++	cd $(llibdir) && \
++		for l in `find . -type f`; do $(INSTALL) -m 644 "$$l" $(libdir); done
++	mkdir $(libdir)/ncbi
++	mkdir $(libdir)/ncbi/mod
++	mkdir $(libdir)/schemas
++	mkdir $(libdir)/wmod
++	cd $(llibdir)/ncbi && \
++		for l in `find . -type f`; do $(INSTALL) -m 644 "$$l" $(libdir)/ncbi; done
++	cd $(llibdir)/ncbi/mod && \
++		for l in `find . -type f`; do $(INSTALL) -m 644 "$$l" $(libdir)/ncbi/mod; done
++	cd $(llibdir)/ncbi/schemas && \
++		for l in `find . -type f`; do $(INSTALL) -m 644 "$$l" $(libdir)/schemas; done
++	cd $(llibdir)/ncbi/wmod && \
++		for l in `find . -type f`; do $(INSTALL) -m 644 "$$l" $(libdir)/ncbi/wmod; done
+ 	-rm -f $(libdir)/lib*-static.a
+ 	cd $(libdir)  && \
+ 	    for x in *.a; do ln -s "$$x" "`basename \"$$x\" .a`-static.a"; done

@@ -1,0 +1,29 @@
+--- setup.py.orig	2013-11-06 16:32:26.174723922 +0100
++++ setup.py	2013-11-06 16:53:09.735778282 +0100
+@@ -83,19 +83,20 @@
+ if enable_libint:
+     # Libint Extension compilation stuff
+     libint_static = [] # Libint object files
++    libint_prefix = os.environ["EBROOTLIBINT"]
+     for part in ["libint","libderiv","libr12"]:
+-        libint_static += glob.glob("libint-1.1.4/src/lib/%s/tmp/%s/.libs/*.o"%(part,part))
+-        
++        libint_static += glob.glob("%s/lib/%s.a"%(libint_prefix,part))
++
+     # Error checking
+     if libint_static == []:
+         raise Exception("Object files not found, have you compiled libint with configure --enable-shared ?")
+-    
++
+     # Preparing the extension
+-    libint_includes = ["libint-1.1.4/include/libint"] # Libint include dir
+-    
++    libint_includes = ["%s/include/libint"%libint_prefix] # Libint include dir
++
+     lib_clibint =["Src/lib/clibint.c"] + lib_shell      # Thin libint wrapper (actually one function, shell_compute)
+     clibint_ext_src = ["Src/PyQuante/clibint.c"] + lib_clibint # Need to add libint_static when linking
+-    
++
+     clibint_ext = Extension("PyQuante.clibint",
+                             clibint_ext_src,
+                             include_dirs = lib_includes + libint_includes ,

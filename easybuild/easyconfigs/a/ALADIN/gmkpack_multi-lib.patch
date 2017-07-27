@@ -1,0 +1,54 @@
+diff -ru gmkpack.6.5.0.orig/util/gmkfilemaker gmkpack.6.5.0/util/gmkfilemaker
+--- gmkpack.6.5.0.orig/util/gmkfilemaker	2010-06-08 09:34:13.000000000 +0200
++++ gmkpack.6.5.0/util/gmkfilemaker	2012-12-21 14:26:41.575856849 +0100
+@@ -539,7 +539,7 @@
+     else
+ #     Search a possible library in the last specified directory:
+       if [ "$EXPANDED_ABSOLUTE_LIB" ] ; then
+-        EXPANDED_ABSOLUTE_DIR=$(dirname $EXPANDED_ABSOLUTE_LIB)
++        EXPANDED_ABSOLUTE_DIR=$(dirname `echo $EXPANDED_ABSOLUTE_LIB | cut -f1 -d' '`)
+ #       First, find a file which matches the exact name, following the links :
+         N_LIBS=$(find $EXPANDED_ABSOLUTE_DIR -follow -name "lib${LIB}.a" -type f -print 2>/dev/null | wc -l)
+         if [ $N_LIBS -eq 1 ] ; then
+@@ -629,7 +629,7 @@
+ #         A trick to resolve the exported variables :
+           EXPANDED_ABSOLUTE_LIB=$(eval "echo $ABSOLUTE_LIB")
+           iecho=$(\ls -1 $EXPANDED_ABSOLUTE_LIB 2>/dev/null | wc -l)
+-          if [ $iecho -eq 1 ] ; then
++          if [ $iecho -ne 0 ] ; then
+             if [ "$LIBTEST" != "BROKEN" ] ; then
+               $COMPILER $LDOPT libtest.o $EXPANDED_ABSOLUTE_LIB 2>/dev/null
+               ierr=$?
+diff -ru gmkpack.6.5.0.orig/util/gmkpack gmkpack.6.5.0/util/gmkpack
+--- gmkpack.6.5.0.orig/util/gmkpack	2010-06-08 09:34:13.000000000 +0200
++++ gmkpack.6.5.0/util/gmkpack	2012-12-21 19:29:04.683723420 +0100
+@@ -1288,11 +1288,13 @@
+     for var in $(cat $dir/system_libs) ; do
+       unset VAR
+       VAR=$(grep "^export ${var}=" $GMKWRKDIR/gmkpack_env_variables | cut -d "=" -f2- | cut -d '"' -f2)
+-      if [ "$VAR" ] ; then
+-        extension=$(echo $VAR | $AWK -F "." '{print $NF}')
++      for ONEVAR in $VAR;
++      do
++      if [ "$ONEVAR" ] ; then
++        extension=$(echo $ONEVAR | $AWK -F "." '{print $NF}')
+         if [ "$extension" = "a" ] || [ "$extension" = "so" ] ; then
+-          MyLibPath=$(dirname $VAR)
+-          MyLibName=$(echo $(basename $VAR) | sed "s/^lib//" | sed "s/\.$extension$//")
++          MyLibPath=$(dirname $ONEVAR)
++          MyLibName=$(echo $(basename $ONEVAR) | sed "s/^lib//" | sed "s/\.$extension$//")
+           if [ "$MyLibPath" = "$MyLastLibPath" ] ; then
+ #           Increment libraries sequence
+             MyLibSeq="$MyLibSeq -l${MyLibName}"
+@@ -1311,9 +1313,10 @@
+             unset MyLastLibPath
+             unset MyLibSeq
+           fi
+-          echo "-l${VAR}" >> $ICS_TMP
++          echo "-l${ONEVAR}" >> $ICS_TMP
+         fi
+       fi
++      done
+     done
+ #   last library sequence
+     if [ "$MyLibSeq" ] ; then

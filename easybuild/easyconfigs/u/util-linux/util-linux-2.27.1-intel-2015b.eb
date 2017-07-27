@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'util-linux'
+version = '2.27.1'
+
+homepage = 'http://www.kernel.org/pub/linux/utils/util-linux'
+description = """Set of Linux utilities"""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+
+source_urls = ['%s/v%%(version_major_minor)s' % homepage]
+sources = [SOURCELOWER_TAR_GZ]
+
+# disable account related utilities (they need OS dependant pam-devel files)
+# disable wall and friends (requires group changing permissions for install user)
+# install systemd service files in install dir
+# install bash completion files in install dir
+configopts = "--disable-chfn-chsh --disable-login --disable-su "
+configopts += "--disable-wall --disable-use-tty-group "
+configopts += "--disable-makeinstall-chown --disable-makeinstall-setuid "
+configopts += "--with-systemdsystemunitdir='${prefix}/systemd' "
+configopts += "--with-bashcompletiondir='${prefix}/share/bash-completion/completions' "
+# disable building Python bindings (since we don't include Python as a dep)
+configopts += "--without-python "
+
+dependencies = [('ncurses', '5.9')]
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.a' % x for x in ['blkid', 'mount', 'uuid']],
+    'dirs': ['include', 'bin', 'share', 'sbin'],
+}
+
+moduleclass = 'tools'
