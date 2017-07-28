@@ -1,0 +1,90 @@
+This patch is tailored to the setup of Compute Canada's new national systems
+Cedar (GP2) and Graham (GP3).
+It allows users to define locations for SCR and USERSCR outside of
+rungms. If none are defines it will fallback to defaults.
+If sumbitted as SLURM job, it detects the number of CPUs to use from
+$SLURM_CPUS_PER_TASK.
+
+USERSCR:
+  * use `/scratch/$USER` (net scratch) if it exsists,
+  * otherwise use $TMPDIR if it exsists or
+  * fall back to /tmp
+
+SCR:
+  * use `$SLURM_TMPDIR` if exists and sumbitted as SLURM job
+  * otherwise use same location as USERSCR
+
+In this setup a net-scratch us located at `/scratch/$USER`,
+and a per-job local scratch at $SLURM_TMPDIR which is purged after the job.
+
+Written by Oliver Stueker, ACENET/Compute Canada
+Memorial University of Newfoundland, St. John's, Canada
+--- rungms.orig	2015-01-29 17:39:53.359679532 +1300
++++ rungms	2017-07-19 16:55:39.627358245 +0000
+@@ -61,8 +61,21 @@
+ #       See also a very old LoadLeveler "ll-gms" for some IBM systems.
+ #
+ set TARGET=sockets
+-set SCR=/scr/$USER
+-set USERSCR=/u1/$USER/scr
++# CC: Determine SCR during/after Scheduler detection
++# set SCR=/scr/$USER
++# CC: Preferably set USERSCR to /scratch/$USER (net scratch)
++# set USERSCR=/u1/$USER/scr
++if (! $?USERSCR) then
++   if (-d /scratch/$USER ) then
++      set USERSCR=/scratch/$USER
++   else
++      if ($?TMPDIR) then
++         set USERSCR=$TMPDIR
++      else
++         set USERSCR=/tmp
++      endif
++   endif
++endif
+ set GMSPATH=/u1/mike/gamess
+ #
+ set JOB=$1      # name of the input file xxx.inp, give only the xxx part
+@@ -71,7 +84,8 @@
+ #
+ # provide defaults if last two arguments are not given to this script
+ if (null$VERNO == null) set VERNO=00
+-if (null$NCPUS == null) set NCPUS=1
++# CC: Determine $NCPUS after SCHEDULER has been determined
++# if (null$NCPUS == null) set NCPUS=1
+ #
+ #  ---- the top third of the script is input and other file assignments ----
+ #
+@@ -104,12 +118,21 @@
+    uniq $PBS_NODEFILE
+ endif
+ if ($SCHED == SLURM) then
+-   # SCR is for large binary temporary files. Accordingly, it should only be
+-   # set to a network file system if the connection to that file system is fast.
+-   set SCR=$SCRATCH_DIR
++   if (null$NCPUS == null && $?SLURM_CPUS_PER_TASK) set NCPUS=$SLURM_CPUS_PER_TASK
++   # CC: Point $SCR to per-job localscratch location
++   #     unless user requests it to go somewhere else:
++   if (! $?SCR && $?SLURM_TMPDIR && -d $SLURM_TMPDIR) then
++      set SCR=$SLURM_TMPDIR
++   endif
+    echo "SLURM has assigned the following compute nodes to this run:"
+    scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq
+ endif
++# CC: In case of interactive invocations (tests), find an existing location:
++if (! $?SCR) then
++   set SCR=$USERSCR
++endif
++# provide defaults if NCPUS argument is not given to this script
++if (null$NCPUS == null) set NCPUS=1
+ #
+ echo "Available scratch disk space (Kbyte units) at beginning of the job is"
+ df -k $SCR
+@@ -546,6 +569,7 @@
+    #      all nodes are presumed to have equal numbers of cores.
+    #
+    set PPN=$4
++   if (null$PPN == null) set PPN=1 # make sure PPN is initialized
+    #
+    #      Allow for compute process and data servers (one pair per core)
+    #      note that NCPUS = #cores, and NPROCS = #MPI processes

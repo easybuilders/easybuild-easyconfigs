@@ -26,7 +26,15 @@ ddi_comm = 'sockets'
 sources = ['gamess-%(version)s.tar.gz']
 checksums = ['e9fa2e725ccbd69f4d996ab68bb65ff2']
 
-patches = ['GAMESS-US_rungms-slurm.patch']
+patches = [
+    'GAMESS-US_rungms-slurm.patch',
+    'GAMESS-US_rungms-sockets-CC.patch',
+]
+
+# Don't have the easyblock set $SCR and $USRSCR to the same value.
+# Set them via `GAMESS-US_rungms-slurm-CC_scratch.patch` instead,
+# allowing a user to override them by setting the variables explicitly.
+scratch_dir = None
 
 # increase these numbers if your system is bigger in terms of cores-per-node or number of nodes
 # it's OK if these values are larger than what your system provides
@@ -41,6 +49,7 @@ postinstallcmds = [
     'chmod a-x rungms.orig',
     'ln -s     gamess.%(version)s.x  gamess.01.x',
     "sed -i 's@#!/bin/csh@#!/usr/bin/env csh@'  rungms  runall  gms-files.csh  install.info",
+    'rm -R graphics misc qmnuc tools'
 ]
 
 moduleclass = 'chem'
