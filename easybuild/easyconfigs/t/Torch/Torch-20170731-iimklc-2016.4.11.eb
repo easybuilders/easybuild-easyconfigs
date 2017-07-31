@@ -1,0 +1,44 @@
+name = 'Torch'
+version = '20170731'
+
+homepage = 'http://torch.ch/'
+description = """Torch is a scientific computing framework with wide support for machine learning algorithms 
+that puts GPUs first. It is easy to use and efficient, thanks to an easy and fast scripting language, LuaJIT, 
+and an underlying C/CUDA implementation.
+"""
+
+toolchain = {'name': 'iimklc', 'version': '2016.4.11'}
+toolchainopts = {'pic': True, 'strict': True}
+
+# need to make your own tarball, because Torch doesn't do releases
+# git clone https://github.com/torch/distro.git torch --recursive
+# cd torch; tar cfvz torch-20170731.tar.gz torch
+sources = ['%(namelower)s-%(version)s.tar.gz']
+
+dependencies = [
+    ('cuDNN', '5.1'),
+    ('FFTW', '3.3.6'),
+    ('magma', '2.2.0'),
+    ('HDF5', '1.8.18')
+]
+
+with_magma = True
+extra_ext = [ "fn", "util", "logroll", "totem", "penlight", "hdf5" ]
+
+postinstallcmds = [
+	# Fixing luarock's mistakes in not defining HDF5_INCLUDE_PATH
+	"""sed -i -e "s;HDF5_INCLUDE_PATH = \\"\\",;HDF5_INCLUDE_PATH = \\"$EBROOTHDF5/include\\",;g" %(installdir)s/share/lua/5.1/hdf5/config.lua""",
+	"patchelf --set-rpath '$ORIGIN/../../../lib':$(patchelf --print-rpath %(installdir)s/lib/lua/5.1/libtorch.so) %(installdir)s/lib/lua/5.1/libtorch.so"
+]
+builddependencies = [('CMake', '3.4.1')]
+modluafooter = """
+prepend_path{"LUA_CPATH",";;",delim=";"}
+prepend_path{"LUA_CPATH",root .. "/lib/lua/5.1/?.so",delim=";"}
+prepend_path{"LUA_CPATH",root .. "/lib/?.so",delim=";"}
+prepend_path{"LUA_PATH",";;",delim=";"}
+prepend_path{"LUA_PATH",root .. "/share/lua/5.1/?.lua",delim=";"}
+prepend_path{"LUA_PATH",root .. "/share/lua/5.1/?/init.lua",delim=";"}
+setenv("CUDNN_PATH",os.getenv("EBROOTCUDNN") .. "/lib64/libcudnn.so")
+"""
+
+moduleclass = 'numlib'
