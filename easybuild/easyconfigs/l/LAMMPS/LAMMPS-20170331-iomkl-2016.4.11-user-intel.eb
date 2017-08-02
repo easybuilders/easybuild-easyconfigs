@@ -1,0 +1,90 @@
+# Contributor: 
+# Ali Kerrache, April 2017.
+# Maxime Boissonneault, June 2017
+
+# Lammps: Stable Version - 31Mar2017 
+
+# List of packages: Total = 60; Installed = 50, Not Installed = 10 
+
+# ASPHERE BODY CLASS2 COLLOID COMPRESS CORESHELL DIPOLE GPU GRANULAR KIM KOKKOS KSPACE 
+# MANYBODY MC MEAM MISC MOLECULE MPIIO MSCG OPT PERI POEMS PYTHON QEQ REAX REPLICA RIGID 
+# SHOCK SNAP SRD VORONOI USER-ATC USER-AWPMD USER-CG-CMM USER-CGDNA USER-COLVARS 
+# USER-DIFFRACTION USER-DPD USER-DRUDE USER-EFF USER-FEP USER-H5MD USER-INTEL USER-LB 
+# USER-MANIFOLD USER-MGPT USER-MISC USER-MOLFILE USER-NC-DUMP USER-OMP USER-PHONON 
+# USER-QMMM USER-QTB USER-QUIP USER-REAXC USER-SMD USER-SMTBQ USER-SPH USER-TALLY USER-VTK
+
+# Packages not included in this version:
+# -MSCG, -GPU, -KOKKOS, -KIM, -USER-QUIP, -USER-VTK, -QEQ, -USER-ATC, -MANYBODY"""
+
+name = 'LAMMPS'
+
+# see http://lammps.sandia.gov/bug.html 
+# for overview of stable versions and matching date/SVN rev/Git tag
+
+version = '20170331'
+versionsuffix = '-user-intel'
+modaltsoftname = 'lammps-user-intel'
+
+homepage = 'http://lammps.sandia.gov/'
+description = """ LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator) is 
+a classical molecular dynamics simulation. LAMMPS has potentials for solid-state materials 
+(metals, semiconductors) and soft matter (biomolecules, polymers) and coarse-grained or 
+mesoscopic systems. It can be used to model atoms or, more generically, as a parallel 
+particle simulator at the atomic, meso, or continuum scale. It can be coupled to various 
+programs. The following packages are not included within this version: 
+ -MSCG, -GPU, -KOKKOS, -KIM, -USER-QUIP, -USER-VTK, -QEQ, -USER-ATC, -MANYBODY"""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+ 
+source_urls = [ 'https://github.com/lammps/lammps/archive/' ]
+sources = [ 'stable_31Mar2017.tar.gz' ]
+
+dependencies = [
+	('HDF5','1.8.18'), 
+	('Eigen', '3.3.2'), 
+	('Voro++', '0.4.6'),
+        ('tbb', '2017.2.132'),
+        ('netCDF', '4.4.1.1'),
+]
+
+patches = [ 'LAMMPS-20170331.patch' ]
+
+# Will go to the lib/PKGLIB folder and use "make -f <makefile>" where <makefile> is the 
+# most appropriate makefile (in order, mpicc, mpic++, cc, cxx, f90, gcc, g++, gfortran, 
+# lammps) for each PKGLIB in packaged_libraries:
+
+packaged_libraries = [
+	'qmmm', 
+	'poems', 
+	('reax', 'Makefile.gfortran'),
+	'atc', 
+	('meam', 'Makefile.gfortran'),
+	'awpmd', 
+	('colvars', 'Makefile.g++'),
+	'h5md']
+
+# Will run "make yes-PKG" for each PKG in this list:
+
+packages_yes = ['ASPHERE', 'BODY', 'CLASS2', 'COLLOID', 'COMPRESS', 'CORESHELL', 'DIPOLE', 'GRANULAR', 
+		'KSPACE', 'MC', 'MEAM', 'MISC', 'MOLECULE', 'MPIIO', 'OPT', 'PERI', 'POEMS', 'PYTHON', 
+		'QEQ', 'REAX', 'REPLICA', 'RIGID', 'SHOCK', 'SNAP', 'SRD', 'USER-AWPMD', 'USER-CG-CMM', 
+		'USER-CGDNA', 'USER-COLVARS', 'USER-DIFFRACTION', 'USER-DPD', 'USER-DRUDE', 'USER-EFF', 'USER-FEP', 
+		'USER-H5MD', 'USER-LB', 'USER-MANIFOLD', 'USER-MGPT', 'USER-MISC', 'USER-MOLFILE', 'USER-NC-DUMP', 
+		'USER-OMP', 'USER-PHONON', 'USER-QMMM', 'USER-QTB', 'USER-REAXC', 'USER-SMD', 'USER-SMTBQ', 
+		'USER-SPH', 'USER-TALLY', 'VORONOI', 'USER-INTEL' ] 
+
+# Will run "make no-PKG" for each PKG in this list:
+
+packages_no = [ 'GPU', 'KIM', 'KOKKOS', 'MANYBODY', 'MSCG', 'QEQ', 'USER-ATC', 'USER-QUIP', 'USER-VTK' ]
+
+build_type = "intel_cpu_openmpi"
+
+build_shared_libs = False
+build_static_libs = False
+ 
+moduleclass = 'chem'
+modluafooter = """
+family("lammps")
+"""
+
+# End of EasyBuild file.
