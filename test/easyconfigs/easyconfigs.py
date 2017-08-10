@@ -186,8 +186,8 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
-    def test_checksums(self):
-        """Check whether checksums are available for easyconfigs touched by PR."""
+    def test_sha256_checksums(self):
+        """Check whether SHA256 checksums are available for easyconfigs touched by PR."""
 
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
         if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
