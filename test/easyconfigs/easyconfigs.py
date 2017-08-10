@@ -52,7 +52,7 @@ from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parame
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.config import build_option
-from easybuild.tools.filetools import write_file
+from easybuild.tools.filetools import change_dir, write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
@@ -197,6 +197,10 @@ class EasyConfigTest(TestCase):
 
                 if not self.parsed_easyconfigs:
                     self.process_all_easyconfigs()
+
+                # relocate to top-level directory of repository to run 'git diff' command
+                top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
+                change_dir(top_dir)
 
                 # get list of touched easyconfigs
                 out, ec = run_cmd("git diff --name-only --diff-filter=AM develop...HEAD", simple=False)
