@@ -1,0 +1,137 @@
+Only in prepareGenFromBeagle4/bin: prepareGenFromBeagle4
+Only in prepareGenFromBeagle4_correct/bin: test.gg.hap.gz
+Only in prepareGenFromBeagle4_correct/bin: test.gg.hap.sample
+Only in prepareGenFromBeagle4_correct: last_2_lines.txt
+Only in prepareGenFromBeagle4_correct: .last_2_lines.txt.swp
+diff -ru prepareGenFromBeagle4/makefile prepareGenFromBeagle4_correct/makefile
+--- prepareGenFromBeagle4/makefile	2014-04-16 16:36:47.000000000 +0200
++++ prepareGenFromBeagle4_correct/makefile	2017-01-11 13:41:25.000000000 +0100
+@@ -31,7 +31,7 @@
+ #include path
+ ISTDP= -Isrc
+ IBAMP= -Ilib
+-ICL3P= -I/users/delaneau/BOOST/include
++ICL3P= -I${BOOST_ROOT}include/
+ 
+ #library path
+ LSTDP= -Llib
+@@ -41,7 +41,7 @@
+ OBOST=
+ 
+ #default
+-all: dynamic
++all: cluster
+ 
+ #dynamic release
+ dynamic: CFLAG=$(COPTI) $(CWARN) $(CSHV1)
+@@ -65,7 +65,8 @@
+ cluster: CFLAG=$(COPTI) $(CWARN) $(CSHV1)
+ cluster: LFLAG=$(LOPTI) $(LCL3S)
+ cluster: IFLAG=$(ISTDP) $(ICL3P)
+-cluster: OBOST=~/BOOST/lib/libboost_iostreams.a ~/BOOST/lib/libboost_program_options.a
++#cluster: OBOST=${BOOST_ROOT}/lib/libboost_iostreams.a ${BOOST_ROOT}/lib/libboost_program_options.a
++OBOST=-lz ${BOOST_ROOT}/lib/libboost_iostreams.a
+ cluster: $(EFILE)
+ 
+ $(EFILE): $(OFILE)
+@@ -84,4 +85,4 @@
+ 	cp $(EFILE) ~/bin/.
+ 	
+ install:
+-	cp $(EFILE) /usr/local/bin/.
++	cp $(EFILE) ./tmp/
+Only in prepareGenFromBeagle4/obj: chunk.o
+Only in prepareGenFromBeagle4/obj: data.o
+Only in prepareGenFromBeagle4/obj: prepareGenFromBeagle4.o
+Only in prepareGenFromBeagle4/obj: utils.o
+Only in prepareGenFromBeagle4: output_beagle4.2.vcf.gz
+Only in prepareGenFromBeagle4: output_beagle4.vcf.gz
+diff -ru prepareGenFromBeagle4/src/data.cpp prepareGenFromBeagle4_correct/src/data.cpp
+--- prepareGenFromBeagle4/src/data.cpp	2014-06-04 15:09:15.000000000 +0200
++++ prepareGenFromBeagle4_correct/src/data.cpp	2017-01-12 15:41:03.000000000 +0100
+@@ -17,6 +17,11 @@
+ 	cout << "Reading Likelihoods Map in [" << id << "]" << endl;
+ 	int line = 0;
+ 	ifile fd(id);
++	string last_tok_0;
++	string last_tok_1;
++	string last_tok_2;
++	string last_tok_3;
++	string last_tok_4;
+ 	while(getline(fd, buffer, '\n')) {
+ 		if (buffer[0] == '#' && buffer[1] == 'C' && buffer[2] == 'H' && buffer[3] == 'R' && buffer[4] == 'O') {
+ 			tok = sutils::tokenize(buffer, "\t");
+@@ -30,11 +35,17 @@
+ 			vector < string > alleles_alt = sutils::tokenize(tok[4], ",");
+ 			if (alleles_alt[0] != "." && alleles_alt[0] != "0" && alleles_alt.size() == 1)
+ 				M.push(new snp (atoi(tok[0].c_str()), tok[2], atoi(tok[1].c_str()), tok[3], tok[4], M.size()));
++				last_tok_0 = tok[0];
++				last_tok_1 = tok[1];
++				last_tok_2 = tok[2];
++				last_tok_3 = tok[3];
++				last_tok_4 = tok[4];
+ 		}
+ 
+ 		if (line > 0 && line % 1000 == 0) { cout << "\r" << line ;cout.flush();}
+ 		line ++;
+ 	}
++	cout << "last pos:" << last_tok_1 << endl;
+ 	cout << "\r  * #sites = " << M.size() << endl;
+ }
+ 
+@@ -59,16 +70,19 @@
+ 	string buffer;
+ 	vector < string > tok, field, prob;
+ 	chunk * c = new chunk(vcf);
++	string last_pos;
+ 
+ 	cout << "Reading Posteriors Map in [" << vcf << "]";
+ 	ifile fd(vcf);
+-	while(getline(fd, buffer)) {
++	while(getline(fd, buffer,'\n')) {
+ 		if (buffer[0] == '#' && buffer[1] == 'C' && buffer[2] == 'H' && buffer[3] == 'R' && buffer[4] == 'O') {
+ 			tok = sutils::tokenize(buffer, "\t");
+ 			for (int i = 9 ; i < tok.size() ; i ++) if (I[i-9] != tok[i]) { cout << "Sample inconsistency like=" << I[i-9] << " post=" << tok[i] << endl;exit(1); }
+ 			c->switches = vector < bool > (I.size(), false);
+ 		} else if (buffer[0] != '#') {
+ 			tok = sutils::tokenize(buffer, "\t", 5);
++			last_pos = tok[1];
++
+ 			vector < string > alleles_alt = sutils::tokenize(tok[4], ",");
+ 			if (alleles_alt[0] != "." && alleles_alt[0] != "0" && alleles_alt.size() == 1) {
+ 				snp * s = M.get(atoi(tok[1].c_str()), tok[3], tok[4]);
+@@ -92,6 +106,34 @@
+ 			}
+ 		}
+ 	}
++	cout << endl;
++	getline(fd, buffer,'\n');
++	tok = sutils::tokenize(buffer, "\t");
++	if (tok[1] != last_pos){
++		cout << "Last line position: " << last_pos << " != " << tok[1] << "... adding the extra line." << endl;
++		vector < string > alleles_alt = sutils::tokenize(tok[4], ",");                
++		if (alleles_alt[0] != "." && alleles_alt[0] != "0" && alleles_alt.size() == 1) {
++	                snp * s = M.get(atoi(tok[1].c_str()), tok[3], tok[4]);
++        	        if (s == NULL) { cout << "\nSite unfound in likelihoods file! pos = " << atoi(tok[1].c_str()) << endl; exit(1); }
++                	c->mappingS.push_back(s->idx);
++
++	                int n_tok = 9 + I.size();
++        	        int n_cha = buffer.size();
++                	int i_cha = 0;
++	                c->H.push_back(vector < bool > (2 * I.size(), false));
++        	        for (int t = 0 ; t < n_tok ; t ++) {
++                	        if (t >= 9) {
++                        	        if (buffer[i_cha+0] == '0') c->H.back()[(t-9) * 2 + 0] = false;
++                                	else c->H.back()[(t-9) * 2 + 0] = true;
++	                                if (buffer[i_cha+2] == '0') c->H.back()[(t-9) * 2 + 1] = false;
++        	                        else c->H.back()[(t-9) * 2 + 1] = true;
++                	        }
++                        	for (; buffer[i_cha] != '\t' && i_cha < n_cha ; i_cha ++);
++	                        i_cha ++;
++        	        }
++        	}
++	}
++
+ 	cout << "\t[#sites = " << c->mappingS.size() << ", first=" << M.vec_snp[c->mappingS[0]]->pos << ", last =" << M.vec_snp[c->mappingS.back()]->pos << "]" << endl;
+ 	C.push_back(c);
+ }

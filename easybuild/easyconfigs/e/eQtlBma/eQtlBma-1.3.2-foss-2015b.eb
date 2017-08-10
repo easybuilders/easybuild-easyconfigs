@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'eQtlBma'
+version = '1.3.2'
+
+homepage = 'https://github.com/timflutre/eqtlbma'
+description = """Bayesian statistical methods to detect eQTLs jointly in multiple tissues."""
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = [
+    'https://github.com/timflutre/eqtlbma/archive/',
+]
+checksums = ['d57af3a1e552d075c5fe47a52dfa2308']
+
+builddependencies = [
+    ('Autotools', '20150215'),
+]
+
+dependencies = [
+    ('zlib', '1.2.8'),
+    ('GSL', '1.16'),
+]
+
+preconfigopts = 'autoreconf --install --force --symlink && '
+
+#
+# Disable rebuilding of docs to prevent dependency hell on texinfo.
+#
+prebuildopts = "perl -pi -e 's|SUBDIRS = src/eqtlbma src doc tests scripts|SUBDIRS = src/eqtlbma src tests scripts|' Makefile && "
+#
+# Copy the PDF version of the manual to the install dir.
+#
+postinstallcmds = ['mkdir %(installdir)s/doc/ && cp doc/manual_eqtlbma.pdf %(installdir)s/doc/']
+
+executables = [
+    'eqtlbma_avg_bfs',
+    'eqtlbma_bf',
+    'eqtlbma_bf_parallel.bash',
+    'eqtlbma_hm',
+    'tutorial_eqtlbma.R',
+]
+
+libraries = [
+    'libeqtlbma.a',
+    'libeqtlbma.la',
+    'libeqtlbma.so',
+]
+
+sanity_check_paths = {
+    'files':
+        ['bin/%s' % x for x in executables] +
+        ['lib/%s' % y for y in libraries] +
+        ['doc/manual_eqtlbma.pdf'],
+    'dirs': ['bin', 'lib', 'doc'],
+}
+
+moduleclass = 'bio'
