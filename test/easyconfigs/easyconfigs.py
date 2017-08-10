@@ -58,6 +58,7 @@ from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
+from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
 
 
@@ -184,6 +185,64 @@ class EasyConfigTest(TestCase):
                     # only exception: TEMPLATE.eb
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+
+    def test_checksums(self):
+        """Check whether checksums are available for easyconfigs touched by PR."""
+
+        # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
+        if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
+
+            # target branch should be develop
+            if os.environ.get('TRAVIS_BRANCH') == 'develop':
+
+                if not self.parsed_easyconfigs:
+                    self.process_all_easyconfigs()
+
+                # get list of touched easyconfigs
+                out, ec = run_cmd("git diff --name-only --diff-filter=AM develop...HEAD", simple=False)
+                touched_easyconfigs = [f for f in out.strip().split('\n') if f.endswith('.eb')]
+
+                checksum_issues = []
+
+                for ecfile in touched_easyconfigs:
+                    for ec in self.parsed_easyconfigs:
+                        if ec['spec'].endswith(ecfile):
+
+                            ecfile = os.path.basename(ecfile)
+
+                            # check whether a checksum if available for every source + patch
+                            source_cnt = len(ec['ec']['sources'])
+                            patch_cnt = len(ec['ec']['patches'])
+                            checksum_cnt = len(ec['ec']['checksums'])
+                            if source_cnt + patch_cnt != checksum_cnt:
+                                msg = "Checksums missing for one or more sources/patches in %s: " % ecfile
+                                msg += "found %d sources + %d patches " % (source_cnt, patch_cnt)
+                                msg += "vs %d checksums" % checksum_cnt
+                                checksum_issues.append(msg)
+
+                            checksums = zip(ec['ec']['sources'] + ec['ec']['patches'], ec['ec']['checksums'])
+
+                            # also check checksums for extensions
+                            for (ext_name, ext_ver, ext_opts) in ec['ec']['exts_list']:
+                                source_cnt = 1  # only a single source per extension is supported (see source_tmpl)
+                                patch_cnt = len(ext_opts.get('patches', []))
+                                checksum_cnt = len(ext_opts.get('checksums', []))
+                                if source_cnt + patch_cnt != checksum_cnt:
+                                    msg = "Checksums missing for extension %s in %s: " % (ext_name, ecfile)
+                                    msg += "found %d sources + %d patches " % (source_cnt, patch_cnt)
+                                    msg += "vs %d checksums" % checksum_cnt
+                                    checksum_issues.append(msg)
+
+                            # make sure all provided checksums are SHA256
+                            sha256_re = re.compile('^[0-9a-f]{64}$')
+                            for (fn, chksum) in checksums:
+                                if not sha256_re.match(chksum):
+                                    msg = "Checksum '%s' for %s in %s must be a SHA256 checksum" % (chksum, fn, ecfile)
+                                    checksum_issues.append(msg)
+
+                            break
+
+                self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
