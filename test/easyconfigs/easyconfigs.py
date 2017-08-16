@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -239,6 +239,15 @@ def template_easyconfig_test(self, spec):
     res = re.findall('.*\$root.*', ec.rawtxt, re.M)
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
     self.assertFalse(res, error_msg % res)
+
+    # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
+    old_urls = [
+        'github.com/hpcugent/easybuild',
+        'hpcugent.github.com/easybuild',
+        'hpcugent.github.io/easybuild',
+    ]
+    for old_url in old_urls:
+        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
