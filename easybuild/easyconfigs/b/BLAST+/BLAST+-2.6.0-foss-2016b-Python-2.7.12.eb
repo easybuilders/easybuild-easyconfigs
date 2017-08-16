@@ -1,0 +1,44 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'ConfigureMake'
+
+name = 'BLAST+'
+version = '2.6.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://blast.ncbi.nlm.nih.gov/'
+description = """Basic Local Alignment Search Tool, or BLAST, is an algorithm
+ for comparing primary biological sequence information, such as the amino-acid
+ sequences of different proteins or the nucleotides of DNA sequences."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'cstd': 'c++14'}
+
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+source_urls = ['http://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/%(version)s/']
+
+checksums = ['0510e1d607d0fb4389eca50d434d5a0be787423b6850b3a4f315abc2ef19c996']
+
+patches = ['BLAST+-%(version)s_fix-make-install.patch']
+
+dependencies = [
+    ('zlib', '1.2.8'),
+    ('bzip2', '1.0.6'),
+    ('PCRE', '8.39'),
+    ('Python', '2.7.12'),
+    ('Boost', '1.63.0', versionsuffix),
+    ('GMP', '6.1.1'),
+    ('libpng', '1.6.26'),
+    ('libjpeg-turbo', '1.5.0'),
+]
+
+configopts = "--with-64 --with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 --with-pcre=$EBROOTPCRE "
+configopts += "--with-python=$EBROOTPYTHON --with-boost=$EBROOTBOOST --with-gmp=$EBROOTGMP "
+configopts += "--with-png=$EBROOTLIBPNG --with-jpeg=$EBROOTLIBJPEGMINTURBO "
+
+sanity_check_paths = {
+    'files': ['bin/blastn', 'bin/blastp', 'bin/blastx'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
