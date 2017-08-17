@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'NCBI-Toolkit'
+version = '18.0.0'
+
+homepage = 'http://ncbi.github.io/cxx-toolkit/'
+description = """The NCBI Toolkit is a collection of utilities developed for the
+  production and distribution of GenBank, Entrez, BLAST, and related services
+  by the National Center for Biotechnology Information."""
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = [
+    'ftp://ftp.ncbi.nih.gov/toolbox/ncbi_tools++/CURRENT',
+    'ftp://ftp.ncbi.nih.gov/toolbox/ncbi_tools++/ARCHIVE/2017/Jan_10_2017/',
+]
+sources = ['ncbi_cxx--%s.tar.gz' % '_'.join(version.split('.'))]
+patches = ['NCBI-Toolkit-%(version)s_fix-make-install.patch']
+checksums = [
+    'f9c47db64e5e31fcb8fdebb165c3eb895cb1668e419f4b917414aadf70f1bdf5',  # ncbi_cxx--18_0_0.tar.gz
+    'c3e0fe8dcf5bd95c9efd9dcf3613bb053a16597eb40d4c23b8f1f7ae5e19951a',  # NCBI-Toolkit-18.0.0_fix-make-install.patch
+]
+
+dependencies = [
+    ('Boost', '1.58.0'),
+    ('SAMtools', '1.4.1'),
+    ('HTSlib', '1.4.1'),
+    ('Python', '2.7.13'),
+    ('libxslt', '1.1.29'),
+    ('DB', '6.2.32'),
+]
+
+preconfigopts = 'export CFLAGS="$CFLAGS -wd3377" && export CXXFLAGS="$CXXFLAGS -wd3377" && '
+preconfigopts += 'export LIBS="$LIBS -lstdc++" && '
+configopts = '--with-boost=$EBROOTBOOST --with-python=$EBROOTPYTHON '
+configopts += '--with-libxml=$EBROOTLIBXML2 --with-libxslt=$EBROOTLIBXSLT '
+configopts += '--with-dll --with-bin-release --with-mt '
+configopts += '--without-debug --without-ccache'
+
+buildopts = 'SAMTOOLS=$EBROOTSAMTOOLS SAMTOOLS_INCLUDE="-I$EBROOTSAMTOOLS/include/bam -I$EBROOTHTSLIB/include" '
+buildopts += 'SAMTOOLS_LIBS="-L$EBROOTSAMTOOLS/lib -lbam -L$EBROOTHTSLIB/lib -lhts"'
+
+sanity_check_paths = {
+    'files': ['bin/blastn', 'bin/blastp', 'bin/blastx', 'bin/table2asn'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
