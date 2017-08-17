@@ -1,0 +1,67 @@
+
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'freebayes'
+#the version is more specifically this commit: d784cf8f4fdbf8200aa1b45e8a81dcd500b15efb
+version = '1.1.0'
+
+homepage = 'https://github.com/ekg/freebayes'
+description = """ Bayesian haplotype-based polymorphism discovery and genotyping. """
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+# no direct download url. The download has been done with git
+# in addition the tagged version 1.1.0 didn't compile properly, missing function
+# definitions to functions within the freebayes code base. I have found that
+# the current master HEAD (commit: d784cf8f4fdbf8200aa1b45e8a81dcd500b15efb)
+# does build correctly. To ensure any future builds use this version also I have
+# included a git checkout for this specific commit in the instructions below.
+# $ git clone --recursive https://github.com/ekg/freebayes.git
+# $ cd freebayes
+# $ git checkout d784cf8f4fdbf8200aa1b45e8a81dcd500b15efb
+# $ cd ..
+# $ mv freebayes freebayes-1.1.0
+# $ tar -czf freebayes-1.1.0.tar.gz freebayes-1.1.0
+#
+sources = [SOURCELOWER_TAR_GZ]
+
+#option to also build vcflib, this will add these commands to the end of the 
+#build command, and run them if the build completes
+buildopts = ' && cd vcflib && make && cd ..'
+
+builddependencies = [('CMake', '3.2.1', '', ('GCC', '5.4.0'))]
+
+parallel = 1
+
+# workaround to avoid the error "The C compiler identification is unknown"
+prebuildopts = "unset CC && unset CXX && "
+
+#files_to_copy = ["bin", "README.md", "examples", "scripts", "python"]
+files_to_copy = ["bin", "README.md", "examples", "scripts", "python",(["vcflib/bin/*"],"bin")]
+#([src1, src2], targetdir)
+
+sanity_check_paths = {
+        'files': ["bin/freebayes", "bin/bamleftalign"],
+        'dirs': [""]
+}
+
+# add scripts dir to PATH
+modextrapaths = { 
+    'PATH': "scripts",
+}
+
+moduleclass = 'bio'
+
+#to run tests:
+# 1) $ cd freebayes-1.1.0/tests
+# 2) edit the Makefile to point at the installation location of freebayes and vcfuniq executables
+#   for example:
+#     freebayes=/home/cgeroux/.local/easybuild/software/2017/avx2/Compiler/gcc5.4/freebayes/1.1.0/bin/freebayes
+#     vcfuniq=/home/cgeroux/.local/easybuild/software/2017/avx2/Compiler/gcc5.4/freebayes/1.1.0/bin/vcfuniq
+# 3) $ module load samtools/1.5
+# 4) $ make
