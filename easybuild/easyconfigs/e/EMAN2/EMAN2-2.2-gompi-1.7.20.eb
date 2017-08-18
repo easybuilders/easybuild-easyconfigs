@@ -1,0 +1,37 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock='Binary'
+
+name = "EMAN2"
+version = "2.2"
+
+homepage = 'http://blake.bcm.edu/emanwiki/EMAN2'
+description = """EMAN2 is the successor to EMAN1. It is a broadly based greyscale scientific image 
+ processing suite with a primary focus on processing data from transmission electron microscopes"""
+
+toolchain = {'name': 'gompi', 'version': '1.7.20'}
+
+# no direct download url. 
+# This easyconfig installs the binary distribution (anaconda based) 
+# http://blake.bcm.edu/emanwiki/EMAN2#Download_EMAN2
+sources = ['eman%(version)s.linux64.centos7.sh']
+
+install_cmd = 'bash %s -f -b -p %%(installdir)s' % sources[0]
+
+# this is required to use the mpi library installed in the cluster
+# http://blake.bcm.edu/emanwiki/EMAN2/Install/BinaryInstallAnaconda#Linux_Clusters
+postinstallcmds = [
+    'export PATH=%(installdir)s/bin:${PATH} && yes | bash %(installdir)s/utils/uninstall_openmpi.sh',
+    'export PATH=%(installdir)s/bin:${PATH} && yes | bash %(installdir)s/utils/build_pydusa_numpy.sh 1.8 --no-test',
+    'export PATH=%(installdir)s/bin:${PATH} && yes | bash %(installdir)s/utils/install_pydusa_numpy.sh 1.8',
+]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["e2version.py", "e2speedtest.py", "e2display.py", "e2proc2d.py"]],
+    'dirs': ['.']
+}
+
+moduleclass = 'bio'
