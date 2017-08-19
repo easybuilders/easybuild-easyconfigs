@@ -1,0 +1,123 @@
+From: https://github.com/boostorg/mpi/commit/f5bdcc1ebfe954bb64835f2a0efd94471da42207
+
+
+From f5bdcc1ebfe954bb64835f2a0efd94471da42207 Mon Sep 17 00:00:00 2001
+From: Jonathan Wakely <github@kayari.org>
+Date: Thu, 23 Feb 2017 02:18:58 +0000
+Subject: [PATCH] Replace boost::serialization::detail::get_data function.
+ (#39)
+
+---
+ include/boost/mpi/detail/mpi_datatype_primitive.hpp | 19 ++++++++++++-------
+ include/boost/mpi/detail/packed_iprimitive.hpp      |  8 ++++++--
+ include/boost/mpi/detail/packed_oprimitive.hpp      |  8 ++++++--
+ 3 files changed, 24 insertions(+), 11 deletions(-)
+
+diff --git a/include/boost/mpi/detail/mpi_datatype_primitive.hpp b/include/boost/mpi/detail/mpi_datatype_primitive.hpp
+index c230055..b95fc38 100644
+--- a/include/boost/mpi/detail/mpi_datatype_primitive.hpp
++++ b/include/boost/mpi/detail/mpi_datatype_primitive.hpp
+@@ -25,7 +25,6 @@ namespace std{
+ #include <boost/assert.hpp>
+ #include <boost/mpl/placeholders.hpp>
+ #include <boost/serialization/array.hpp>
+-#include <boost/serialization/detail/get_data.hpp>
+ #include <stdexcept>
+ #include <iostream>
+ #include <vector>
+@@ -80,18 +79,18 @@ class mpi_datatype_primitive
+        BOOST_MPI_CHECK_RESULT(MPI_Type_create_struct,
+                     (
+                       addresses.size(),
+-                      boost::serialization::detail::get_data(lengths),
+-                      boost::serialization::detail::get_data(addresses),
+-                      boost::serialization::detail::get_data(types),
++                      get_data(lengths),
++                      get_data(addresses),
++                      get_data(types),
+                       &datatype_
+                     ));
+ #else
+         BOOST_MPI_CHECK_RESULT(MPI_Type_struct,
+                                (
+                                 addresses.size(),
+-                                boost::serialization::detail::get_data(lengths),
+-                                boost::serialization::detail::get_data(addresses),
+-                                boost::serialization::detail::get_data(types),
++                                get_data(lengths),
++                                get_data(addresses),
++                                get_data(types),
+                                 &datatype_
+                                 ));
+ #endif
+@@ -129,6 +128,12 @@ class mpi_datatype_primitive
+       lengths.push_back(l);
+     }
+ 
++    template <class T>
++    static T* get_data(std::vector<T>& v)
++    {
++      return v.empty() ? 0 : &(v[0]);
++    }
++
+     std::vector<MPI_Aint> addresses;
+     std::vector<MPI_Datatype> types;
+     std::vector<int> lengths;
+diff --git a/include/boost/mpi/detail/packed_iprimitive.hpp b/include/boost/mpi/detail/packed_iprimitive.hpp
+index 7080cbf..227dc8e 100644
+--- a/include/boost/mpi/detail/packed_iprimitive.hpp
++++ b/include/boost/mpi/detail/packed_iprimitive.hpp
+@@ -16,7 +16,6 @@
+ #include <boost/mpi/exception.hpp>
+ #include <boost/assert.hpp>
+ #include <boost/serialization/array.hpp>
+-#include <boost/serialization/detail/get_data.hpp>
+ #include <vector>
+ #include <boost/mpi/allocator.hpp>
+ 
+@@ -104,7 +103,12 @@ class BOOST_MPI_DECL packed_iprimitive
+     void load_impl(void * p, MPI_Datatype t, int l)
+     {
+       BOOST_MPI_CHECK_RESULT(MPI_Unpack,
+-        (const_cast<char*>(boost::serialization::detail::get_data(buffer_)), buffer_.size(), &position, p, l, t, comm));
++        (get_data(buffer_), buffer_.size(), &position, p, l, t, comm));
++    }
++
++    static buffer_type::value_type* get_data(buffer_type& b)
++    {
++      return b.empty() ? 0 : &(b[0]);
+     }
+ 
+     buffer_type & buffer_;
+diff --git a/include/boost/mpi/detail/packed_oprimitive.hpp b/include/boost/mpi/detail/packed_oprimitive.hpp
+index fbcde9a..3c81a70 100644
+--- a/include/boost/mpi/detail/packed_oprimitive.hpp
++++ b/include/boost/mpi/detail/packed_oprimitive.hpp
+@@ -15,7 +15,6 @@
+ 
+ #include <boost/mpi/datatype.hpp>
+ #include <boost/mpi/exception.hpp>
+-#include <boost/serialization/detail/get_data.hpp>
+ #include <boost/serialization/array.hpp>
+ #include <boost/assert.hpp>
+ #include <vector>
+@@ -103,13 +102,18 @@ class BOOST_MPI_DECL packed_oprimitive
+ 
+       // pack the data into the buffer
+       BOOST_MPI_CHECK_RESULT(MPI_Pack,
+-      (const_cast<void*>(p), l, t, boost::serialization::detail::get_data(buffer_), buffer_.size(), &position, comm));
++      (const_cast<void*>(p), l, t, get_data(buffer_), buffer_.size(), &position, comm));
+       // reduce the buffer size if needed
+       BOOST_ASSERT(std::size_t(position) <= buffer_.size());
+       if (std::size_t(position) < buffer_.size())
+           buffer_.resize(position);
+     }
+ 
++    static buffer_type::value_type* get_data(buffer_type& b)
++    {
++      return b.empty() ? 0 : &(b[0]);
++    }
++
+   buffer_type& buffer_;
+   mutable std::size_t size_;
+   MPI_Comm comm;
