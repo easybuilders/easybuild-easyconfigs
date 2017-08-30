@@ -1,0 +1,81 @@
+easyblock = 'EB_Python'
+
+name = 'Python-core'
+version = '2.7.13'
+
+homepage = 'http://python.org/'
+
+description = """
+ Python is a programming language that lets you work more quickly and
+ integrate your systems more effectively.
+
+ Note: this (hidden) module is intended to only be used as a build dependency.
+       Software built and installed with it will require a full Python installation
+       to be included as a dependency.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.python.org/ftp/python/%(version)s/']
+sources = ['Python-%(version)s.tgz']
+checksums = ['a4f05a0720ce0fd92626f0278b6b433eee9a6173ddf2bced7957dfb599a5ece1']
+
+builddependencies = [
+    ('binutils', '2.28'),
+]
+
+dependencies = [
+    ('bzip2', '1.0.6'),
+    ('libreadline', '7.0'),
+    ('ncurses', '6.0'),
+    ('SQLite', '3.20.1'),
+    ('zlib', '1.2.11'),
+    ('libyaml', '0.1.7'),  # required for PyYAML
+]
+
+osdependencies = [
+    # rely upon distribution for timely security updates
+    ('openssl-devel', 'libssl-dev', 'libopenssl-devel'),
+]
+
+# lightweight 'core' installation, only include basic set of extensions
+exts_list = [
+    ('setuptools', '36.3.0', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/s/setuptools/'],
+        'checksums': [
+            'e9fa391c1183b40fc6a1298bee02d554743f23c805a3b75dbb18def0f0755fb1',  # setuptools-36.3.0.zip
+        ],
+    }),
+    ('Cython', '0.26.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/c/cython/'],
+        'checksums': [
+            'c2e63c4794161135adafa8aa4a855d6068073f421c83ffacc39369497a189dd5',  # Cython-0.26.1.tar.gz
+        ],
+    }),
+    ('six', '1.10.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/six/'],
+        'checksums': [
+            '105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a',  # six-1.10.0.tar.gz
+        ],
+    }),
+    ('PyYAML', '3.12', {
+        'modulename': 'yaml',
+        'source_urls': ['https://pypi.python.org/packages/source/P/PyYAML/'],
+        'checksums': [
+            '592766c6303207a20efc445587778322d7f73b161bd994f227adaa341ba212ab',  # PyYAML-3.12.tar.gz
+        ],
+    }),
+]
+
+# hide this module by default, to avoid that it is being used as a replacement for a full Python installation
+hidden = True
+
+# define $EB{ROOT|VERSION}PYTHON deal with install procedures that rely on get_software_{root|version}('Python')
+modextravars = {
+    'EBROOTPYTHON': '%(installdir)s',
+    'EBVERSIONPYTHON': '%(version)s',
+}
+
+moduleclass = 'lang'
