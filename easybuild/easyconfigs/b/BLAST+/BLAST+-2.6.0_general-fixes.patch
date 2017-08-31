@@ -1,0 +1,29 @@
+diff -ru ncbi-blast-2.6.0+-src-orig/c++/configure ncbi-blast-2.6.0+-src/c++/configure
+diff -ru ncbi-blast-2.6.0+-src-orig/c++/src/build-system/Makefile.in.top ncbi-blast-2.6.0+-src/c++/src/build-system/Makefile.in.top
+# Patches:
+# - Configure script in the 2.6.0 release was not clean and imposed some options
+#   that caused a failure of the build process
+# - make install-toolkit produced an error that had make return an error code.
+#   The include file in common may not be needed, but will be copied to the install
+#   directory just to be sure.
+#
+# Developed by Kurt Lust (UAntwerpen)
+--- ncbi-blast-2.6.0+-src-orig/c++/configure	2016-12-07 20:38:29.000000000 +0100
++++ ncbi-blast-2.6.0+-src/c++/configure	2016-12-07 20:38:29.000000000 +0100
+@@ -1,3 +1,3 @@
+ #!/bin/sh
+ srcdir=`dirname $0`
+-exec $srcdir/configure.orig --without-debug --with-strip --with-openmp --with-mt --without-vdb --with-build-root=$srcdir/ReleaseMT ${1+"$@"}
++exec $srcdir/src/build-system/configure --srcdir=$srcdir ${1+"$@"}
+--- ncbi-blast-2.6.0+-src-orig/c++/src/build-system/Makefile.in.top	2014-11-12 17:41:55.000000000 +0100
++++ ncbi-blast-2.6.0+-src/c++/src/build-system/Makefile.in.top	2017-02-22 10:33:50.510622000 +0100
+@@ -51,7 +51,8 @@
+ 	    done
+ 	cd $(includedir0) && find * -name CVS -prune -o -print |\
+             cpio -pd $(pincludedir)
+-	$(INSTALL) -m 644 $(incdir)/* $(pincludedir)
++	$(INSTALL) -m 644 $(incdir)/*.h $(pincludedir)
++	$(INSTALL) -m 644 $(incdir)/common/*.h $(pincludedir)/common
+ ## set up appropriate build and status directories somewhere under $(libdir)?
+ 
+ install-gbench:

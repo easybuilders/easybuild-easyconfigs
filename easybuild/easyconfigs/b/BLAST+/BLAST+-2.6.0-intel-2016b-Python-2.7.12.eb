@@ -1,0 +1,78 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste (UGent)
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'BLAST+'
+version = '2.6.0'
+versionsuffix = '-Python-2.7.12'
+
+homepage = 'http://blast.ncbi.nlm.nih.gov/'
+description = """Basic Local Alignment Search Tool, or BLAST, is an algorithm
+ for comparing primary biological sequence information, such as the amino-acid
+ sequences of different proteins or the nucleotides of DNA sequences."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+source_urls = ['http://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/%(version)s/']
+
+# See the patch file for a description of the fixes.
+patches = ['%(name)s-%(version)s_general-fixes.patch']
+
+# START OF CONFIGURATION OF BLAST+
+
+dependencies = []
+
+# Select library type
+configopts  = '--with-static '   # Build failed when --with-dll was added.
+# Options for the executables
+configopts += '--with-static-exe --with-bin-release --without-debug --with-strip '
+
+# Enable three built-in modules.
+# This avoids having to figure out compatible versions of these libraries for each
+# installation.
+configopts += '--without-z --without-bz2 --without-pcre '
+
+# Include a downloaded SRA/VDB (from GitHub).
+configopts += '--with-downloaded-vdb '
+
+# Uncomment/comment the following lines to enable/disable support for a Python module.
+# Make sure it is compatible with the Python used by Boost should you enable
+# support for a Boost module with Python support
+dependencies.append( ('Python', '2.7.12') )
+configopts += '--with-python=$EBROOTPYTHON '
+
+# Uncomment/comment the following lines to enable/disable Boost
+dependencies.append( ('Boost', '1.63.0', '-Python-2.7.12') )
+configopts += '--with-boost=$EBROOTBOOST '
+
+# Uncomment/comment to enable/disable the use of GMP
+dependencies.append( ('GMP', '6.1.1') )
+configopts += '--with-gmp=$EBROOTGMP '
+
+# Uncomment/comment to enable/disable PNG-support
+dependencies.append( ('libpng', '1.6.26') )
+configopts += '--with-png=$EBROOTLIBPNG '
+
+# Uncomment/comment to enable/disable JPEG-support
+dependencies.append( ('libjpeg-turbo', '1.5.0') )
+configopts += '--with-jpeg=$EBROOTLIBJPEGMINTURBO '
+
+# END OF CINFIGURATION OF BLAST+
+
+sanity_check_paths = {
+    'files': ["bin/blastn", "bin/blastp", "bin/blastx"],
+    'dirs': []
+}
+
+moduleclass = 'bio'
