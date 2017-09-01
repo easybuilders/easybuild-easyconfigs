@@ -1,0 +1,59 @@
+##
+# Built with EasyBuild version 3.3.0-re50b70af25207aec9b965a5c4aaa47ba992c9aa6 on 2017-07-12_15-02-11
+# Contributors: 
+# @Author: Ali Kerrache, Compute Canada.
+# @Date: Aug 2017.
+##
+
+easyblock = 'MakeCp'
+
+name = 'MaxBin'
+version = '2.2.4'
+
+# see: https://sourceforge.net/projects/maxbin/
+
+homepage = 'https://downloads.jbei.org/data/microbial_communities/MaxBin/MaxBin.html'
+
+description = """
+ MaxBin is software for binning assembled metagenomic sequences based on an 
+ Expectation-Maximization algorithm. Users can understand the underlying bins (genomes) of 
+ the microbes in their metagenomes by simply providing assembled metagenomic sequences and 
+ the reads coverage information or sequencing reads. For users convenience MaxBin will 
+ report genome-related statistics, including estimated completeness, GC content and genome 
+ size in the binning summary page. Users can use MEGAN or similar software on MaxBin bins 
+ to find the taxonomy of each bin after the binning process is finished.
+"""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [ 'https://sourceforge.net/projects/maxbin/files/' ]
+sources = [ 'MaxBin-%(version)s.tar.gz' ]
+
+dependencies = [
+                ('Perl', '5.22.2','-nix'),
+]
+
+prebuildopts = ' cd %(builddir)s/MaxBin-%(version)s && '
+prebuildopts += ' ./autobuild_auxiliary && cd src && '
+
+files_to_copy = [
+        (['src/MaxBin'], "bin"),
+        (['auxiliary/bowtie2-2.2.3'], "auxiliary"),
+        (['auxiliary/FragGeneScan1.30'], "auxiliary"),
+        (['auxiliary/hmmer-3.1b1'], "auxiliary"),
+        (['auxiliary/idba-1.1.1'], "auxiliary"),
+] 
+
+sanity_check_paths = {
+     'files': [ 'bin/MaxBin' ], 
+     'dirs': [ ('auxiliary', 'bowtie2-2.2.3', 'FragGeneScan1.30', 'hmmer-3.1b1', 'idba-1.1.1')],
+}
+
+modextrapaths = {
+     'PATH': ['auxiliary/bowtie2-2.2.3', 'auxiliary/bowtie2-2.2.3', 'auxiliary/FragGeneScan1.30', 'auxiliary/hmmer-3.1b1/src', 'auxiliary/idba-1.1.1/bin'], 
+}
+
+moduleclass = 'bio'
+
+# End of EasyBuild file.
