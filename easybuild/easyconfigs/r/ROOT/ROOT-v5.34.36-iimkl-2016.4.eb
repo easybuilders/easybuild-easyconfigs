@@ -1,0 +1,62 @@
+name = 'ROOT'
+version = 'v5.34.36'
+
+homepage = 'http://root.cern.ch/drupal/'
+description = """The ROOT system provides a set of OO frameworks with all the functionality
+    needed to handle and analyze large amounts of data in a very efficient way."""
+
+toolchain = {'name': 'iimkl', 'version': '2016.4'}
+toolchainopts = {'pic': True}
+
+sources = ['%(namelower)s_%(version)s.source.tar.gz']
+source_urls = ['https://root.cern.ch/download/']
+checksums = ['6a1ad549b3b79b10bbb1f116b49067ee']
+
+patches = [
+    'configure_FftwFromMkl_28.patch',
+    'ROOT-v5_recent-ifort.patch',
+    'ROOT-v5.34.26_libX-nix.patch',
+]
+
+dependencies = [
+    ('GSL', '2.2.1'),
+    ('Mesa', '11.1.2'),
+    ('libxml2', '2.9.3'),
+    ('PCRE', '8.38'),
+    ('CFITSIO', '3.38'),
+    ('freetype', '2.6.2'),
+    ('Python', '2.7.13'),
+    ('zlib', '1.2.8'),
+    ('libXft', '2.3.2'),
+    ('libXpm', '3.5.11'),
+    ('libXext', '1.3.3'),
+    ('Java', '1.8.0_121'),
+]
+
+# use nix paths
+preconfigopts = 'env ZLIB=$NIXUSER_PROFILE ASIMAGE=$NIXUSER_PROFILE XMLDIR=$NIXUSER_PROFILE LZMA=$NIXUSER_PROFILE GVIZ=$NIXUSER_PROFILE '
+
+# architecture
+arch = 'linuxx8664icc'
+
+# disable features
+configopts = ' --cflags="-I$NIXUSER_PROFILE/include" --cxxflags="-I$NIXUSER_PROFILE/include" '
+configopts += ' --disable-xrootd --disable-mysql --disable-krb5 --disable-odbc '
+configopts += ' --disable-oracle --disable-pgsql --disable-qt --disable-sqlite'
+# enable features
+configopts += ' --enable-unuran --enable-table --enable-explicitlink --enable-minuit2 --enable-roofit'
+configopts += ' --with-gsl-incdir=$EBROOTGSL/include/gsl --with-gsl-libdir=$EBROOTGSL/lib'
+configopts += ' --with-fftw3-incdir=$MKLROOT/include/fftw --with-fftw3-libdir=$MKLROOT/lib/intel64'
+configopts += ' --with-xml-incdir=$NIXUSER_PROFILE/include/libxml2/libxml --with-xml-libdir=$NIXUSER_PROFILE/lib'
+configopts += ' --with-python-libdir=$EBROOTPYTHON/lib'
+configopts += ' --with-cfitsio-incdir=$NIXUSER_PROFILE/include --with-cfitsio-libdir=$NIXUSER_PROFILE/lib'
+configopts += ' --with-opengl-incdir=$NIXUSER_PROFILE/include --with-opengl-libdir=$NIXUSER_PROFILE/lib'
+configopts += ' --with-x11-libdir=$NIXUSER_PROFILE/lib --with-xext-libdir=$NIXUSER_PROFILE/lib'
+configopts += ' --with-xft-libdir=$NIXUSER_PROFILE/lib'
+configopts += ' --with-xpm-incdir=$NIXUSER_PROFILE/include --with-xpm-libdir=$NIXUSER_PROFILE/lib'
+
+sanity_check_commands = ["python -c 'import ROOT'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/root/'}
+
+moduleclass = 'data'
