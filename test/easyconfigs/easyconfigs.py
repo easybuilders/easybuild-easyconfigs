@@ -249,6 +249,17 @@ def template_easyconfig_test(self, spec):
     for old_url in old_urls:
         self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
 
+    # make sure binutils is included as a build dep if toolchain is GCCcore
+    if ec['toolchain']['name'] == 'GCCcore':
+        # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
+        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
+        # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
+        requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
+
+        if requires_binutils:
+            dep_names = [d['name'] for d in ec['builddependencies']]
+            self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
+
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
     specfn = os.path.basename(spec)
