@@ -1,0 +1,59 @@
+name = 'ROOT'
+version = '5.34.36'
+
+homepage = 'http://root.cern.ch/drupal/'
+description = """The ROOT system provides a set of OO frameworks with all the functionality
+    needed to handle and analyze large amounts of data in a very efficient way."""
+
+toolchain = {'name': 'GCC', 'version': '4.8.5'}
+toolchainopts = {'pic': True}
+
+sources = ['%(namelower)s_v%(version)s.source.tar.gz']
+source_urls = ['https://root.cern.ch/download/']
+checksums = ['6a1ad549b3b79b10bbb1f116b49067ee']
+
+patches = [
+    'ROOT-v5.34.26_libX.patch',
+    'recent_rdputils.patch',
+]
+
+dependencies = [
+    ('FFTW', '3.3.6'),
+    ('GSL', '2.2.1'),
+    ('Mesa', '11.1.2'),
+    ('libxml2', '2.9.3'),
+    ('PCRE', '8.38'),
+    ('CFITSIO', '3.38'),
+    ('freetype', '2.6.2'),
+    ('Python', '2.7.13'),
+    ('zlib', '1.2.8'),
+    ('libXft', '2.3.2'),
+    ('libXpm', '3.5.11'),
+    ('libXext', '1.3.3'),
+    ('Java', '1.8.0_121'),
+]
+
+# use nix paths
+preconfigopts = 'env ZLIB=$NIXUSER_PROFILE '
+# architecture
+arch = 'linuxx8664gcc'
+
+# disable features
+configopts = ' --with-finkdir=$NIXUSER_PROFILE '
+configopts += ' --disable-xrootd --disable-mysql --disable-krb5 --disable-odbc '
+configopts += ' --disable-oracle --disable-pgsql --disable-qt --disable-sqlite'
+# enable features
+configopts += ' --enable-unuran --enable-table --enable-explicitlink --enable-minuit2 --enable-roofit'
+configopts += ' --with-gsl-incdir=$EBROOTGSL/include/gsl --with-gsl-libdir=$EBROOTGSL/lib'
+configopts += ' --with-fftw3-incdir=$EBROOTFFTW/include/fftw --with-fftw3-libdir=$EBROOTFFTW/lib'
+configopts += ' --with-xml-incdir=$NIXUSER_PROFILE/include/libxml2/libxml '
+configopts += ' --with-python-libdir=$EBROOTPYTHON/lib'
+configopts += ' --with-opengl-incdir=$(readlink $NIXUSER_PROFILE/include/GL/gl.h | sed "s#/GL/gl.h##")'
+
+postinstallcmds = ["for i in %(installdir)s/lib/root/lib*.so; do patchelf --set-rpath '$ORIGIN':$(patchelf --print-rpath $i) $i; done"]
+
+sanity_check_commands = ["python -c 'import ROOT'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/root/'}
+
+moduleclass = 'data'
