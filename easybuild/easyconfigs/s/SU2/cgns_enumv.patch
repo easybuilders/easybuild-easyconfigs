@@ -1,0 +1,439 @@
+diff -ur SU2-5.0.0.orig/Common/src/geometry_structure.cpp SU2-5.0.0/Common/src/geometry_structure.cpp
+--- SU2-5.0.0.orig/Common/src/geometry_structure.cpp	2017-01-20 00:21:43.000000000 +0000
++++ SU2-5.0.0/Common/src/geometry_structure.cpp	2017-09-11 12:41:24.853509588 +0000
+@@ -6887,11 +6887,11 @@
+   char basename[CGNS_STRING_SIZE], zonename[CGNS_STRING_SIZE];
+   char coordname[CGNS_STRING_SIZE];
+   cgsize_t* cgsize; cgsize = new cgsize_t[3];
+-  ZoneType_t zonetype;
+-  DataType_t datatype;
++  CGNS_ENUMV( ZoneType_t ) zonetype;
++  CGNS_ENUMV( DataType_t ) datatype;
+   passivedouble** coordArray = NULL;
+   passivedouble*** gridCoords = NULL;
+-  ElementType_t elemType;
++  CGNS_ENUMV( ElementType_t ) elemType;
+   cgsize_t range_min, range_max, startE, endE;
+   range_min = 1;
+   string currentElem;
+@@ -7209,7 +7209,7 @@
+         
+         /*--- Always retrieve the grid coords in su2double precision. ---*/
+         
+-        if (datatype != RealDouble) {
++        if (datatype != CGNS_ENUMV( RealDouble )) {
+           printf("\n\n   !!! Error !!!\n" );
+           printf(" CGNS coordinates are not su2double precision.\n");
+           printf(" Now exiting...\n\n");
+@@ -7350,7 +7350,7 @@
+         /*--- Find the number of nodes required to represent
+          this type of element. ---*/
+         
+-        ElementType_t elmt_type;
++        CGNS_ENUMV( ElementType_t ) elmt_type;
+         if (cg_npe(elemType, &npe)) cg_error_exit();
+         
+         /*--- Loop through all of the elements in this section to get more
+@@ -7362,8 +7362,8 @@
+           /*--- If we have a mixed element section, we need to check the elem
+            type one by one. Set the flag to true if mixed. ---*/
+           
+-          if (elemType == MIXED) {
+-            elmt_type = ElementType_t(connElemCGNS[counter]);
++          if (elemType == CGNS_ENUMV(MIXED)) {
++            elmt_type = CGNS_ENUMV(ElementType_t)(connElemCGNS[counter]);
+             cg_npe(elmt_type, &npe);
+             counter++; for ( int jj = 0; jj < npe; jj++ ) counter++;
+             isMixed[ii] = true;
+@@ -7388,43 +7388,43 @@
+            their VTK number. ---*/
+           
+           switch (elmt_type) {
+-            case NODE:
++            case CGNS_ENUMV(NODE):
+               currentElem   = "Vertex";
+               elemTypes[ii] = 1;
+               break;
+-            case BAR_2:
++            case CGNS_ENUMV(BAR_2):
+               currentElem   = "Line";
+               elemTypes[ii] = 3;
+               break;
+-            case BAR_3:
++            case CGNS_ENUMV(BAR_3):
+               currentElem   = "Line";
+               elemTypes[ii] = 3;
+               break;
+-            case TRI_3:
++            case CGNS_ENUMV(TRI_3):
+               currentElem   = "Triangle";
+               elemTypes[ii] = 5;
+               break;
+-            case QUAD_4:
++            case CGNS_ENUMV(QUAD_4):
+               currentElem   = "Quadrilateral";
+               elemTypes[ii] = 9;
+               break;
+-            case TETRA_4:
++            case CGNS_ENUMV(TETRA_4):
+               currentElem   = "Tetrahedron";
+               elemTypes[ii] = 10;
+               break;
+-            case HEXA_8:
++            case CGNS_ENUMV(HEXA_8):
+               currentElem   = "Hexahedron";
+               elemTypes[ii] = 12;
+               break;
+-            case PENTA_6:
++            case CGNS_ENUMV(PENTA_6):
+               currentElem   = "Prism";
+               elemTypes[ii] = 13;
+               break;
+-            case PYRA_5:
++            case CGNS_ENUMV(PYRA_5):
+               currentElem   = "Pyramid";
+               elemTypes[ii] = 14;
+               break;
+-            case HEXA_20:
++            case CGNS_ENUMV(HEXA_20):
+               if (rank == MASTER_NODE) {
+                 printf("\n\n   !!! Error !!!\n" );
+                 printf(" HEXA-20 element type not supported\n");
+@@ -7561,34 +7561,34 @@
+              SU2 recognizes elements by their VTK number. ---*/
+             
+             switch (elemType) {
+-              case NODE:
++              case CGNS_ENUMV(NODE):
+                 elemTypeVTK[j-1][s-1] = 1;
+                 break;
+-              case BAR_2:
++              case CGNS_ENUMV(BAR_2):
+                 elemTypeVTK[j-1][s-1] = 3;
+                 break;
+-              case BAR_3:
++              case CGNS_ENUMV(BAR_3):
+                 elemTypeVTK[j-1][s-1] = 3;
+                 break;
+-              case TRI_3:
++              case CGNS_ENUMV(TRI_3):
+                 elemTypeVTK[j-1][s-1] = 5;
+                 break;
+-              case QUAD_4:
++              case CGNS_ENUMV(QUAD_4):
+                 elemTypeVTK[j-1][s-1] = 9;
+                 break;
+-              case TETRA_4:
++              case CGNS_ENUMV(TETRA_4):
+                 elemTypeVTK[j-1][s-1] = 10;
+                 break;
+-              case HEXA_8:
++              case CGNS_ENUMV(HEXA_8):
+                 elemTypeVTK[j-1][s-1] = 12;
+                 break;
+-              case PENTA_6:
++              case CGNS_ENUMV(PENTA_6):
+                 elemTypeVTK[j-1][s-1] = 13;
+                 break;
+-              case PYRA_5:
++              case CGNS_ENUMV(PYRA_5):
+                 elemTypeVTK[j-1][s-1] = 14;
+                 break;
+-              case HEXA_20:
++              case CGNS_ENUMV(HEXA_20):
+                 printf( "\n\n   !!! Error !!!\n" );
+                 printf( " HEXA-20 element type not supported\n");
+                 printf(" Section %d, npe=%d\n", s, npe);
+@@ -7602,7 +7602,7 @@
+                 MPI_Finalize();
+ #endif
+                 break;
+-              case MIXED:
++              case CGNS_ENUMV(MIXED):
+                 currentElem = "Mixed";
+                 elemTypeVTK[j-1][s-1] = -1;
+                 break;
+@@ -7646,7 +7646,7 @@
+             if (elemTypeVTK[j-1][s-1] == -1) {
+               int counter = 0;
+               for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
+-                ElementType_t elmt_type = ElementType_t(connElemTemp[counter]);
++                CGNS_ENUMV( ElementType_t ) elmt_type = CGNS_ENUMV( ElementType_t ) (connElemTemp[counter]);
+                 cg_npe( elmt_type, &npe);
+                 counter++;
+                 connElems[j-1][s-1][0][ii] = elmt_type;
+@@ -8352,19 +8352,19 @@
+                 
+                 /*--- Mixed-element support. Check the elem type. ---*/
+                 
+-                ElementType_t elmt_type = ElementType_t(connElems[k][s][0][i]);
++                CGNS_ENUMV( ElementType_t ) elmt_type = CGNS_ENUMV( ElementType_t ) (connElems[k][s][0][i]);
+                 cg_npe( elmt_type, &npe);
+                 
+                 switch (elmt_type) {
+-                  case NODE:    VTK_Type = 1;  break;
+-                  case BAR_2:   VTK_Type = 3;  break;
+-                  case BAR_3:   VTK_Type = 3;  break;
+-                  case TRI_3:   VTK_Type = 5;  break;
+-                  case QUAD_4:  VTK_Type = 9;  break;
+-                  case TETRA_4: VTK_Type = 10; break;
+-                  case HEXA_8:  VTK_Type = 12; break;
+-                  case PENTA_6: VTK_Type = 13; break;
+-                  case PYRA_5:  VTK_Type = 14; break;
++                  case CGNS_ENUMV(NODE):    VTK_Type = 1;  break;
++                  case CGNS_ENUMV(BAR_2):   VTK_Type = 3;  break;
++                  case CGNS_ENUMV(BAR_3):   VTK_Type = 3;  break;
++                  case CGNS_ENUMV(TRI_3):   VTK_Type = 5;  break;
++                  case CGNS_ENUMV(QUAD_4):  VTK_Type = 9;  break;
++                  case CGNS_ENUMV(TETRA_4): VTK_Type = 10; break;
++                  case CGNS_ENUMV(HEXA_8):  VTK_Type = 12; break;
++                  case CGNS_ENUMV(PENTA_6): VTK_Type = 13; break;
++                  case CGNS_ENUMV(PYRA_5):  VTK_Type = 14; break;
+                   default:
+                     cout << "Kind of element not suppported!" << endl;
+ #ifndef HAVE_MPI
+Only in SU2-5.0.0/Common/src: geometry_structure.cpp~
+diff -ur SU2-5.0.0.orig/SU2_CFD/src/output_cgns.cpp SU2-5.0.0/SU2_CFD/src/output_cgns.cpp
+--- SU2-5.0.0.orig/SU2_CFD/src/output_cgns.cpp	2017-01-20 00:21:43.000000000 +0000
++++ SU2-5.0.0/SU2_CFD/src/output_cgns.cpp	2017-09-11 13:03:59.966672675 +0000
+@@ -86,12 +86,12 @@
+ //    if (cgns_err) cg_error_print();
+     
+     /*--- write CGNS node coordinates ---*/
+-    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"x", Coords[0], &cgns_coord);
++    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, CGNS_ENUMV(RealDouble),"x", Coords[0], &cgns_coord);
+     if (cgns_err) cg_error_print();
+-    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"y", Coords[1], &cgns_coord);
++    cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, CGNS_ENUMV(RealDouble),"y", Coords[1], &cgns_coord);
+     if (cgns_err) cg_error_print();
+     if (geometry->GetnDim() == 3) {
+-      cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"z", Coords[2], &cgns_coord);
++      cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, CGNS_ENUMV(RealDouble),"z", Coords[2], &cgns_coord);
+       if (cgns_err) cg_error_print();
+     }
+     
+@@ -119,7 +119,7 @@
+     isize[2][0] = 0;            // boundary vertex size (zero if elements not sorted)
+ 
+     /*--- write CGNS zone data ---*/
+-    cgns_err = cg_zone_write(cgns_file, cgns_base_results,"SU2 Zone", isize[0],Unstructured, &cgns_zone_results);
++    cgns_err = cg_zone_write(cgns_file, cgns_base_results,"SU2 Zone", isize[0],CGNS_ENUMV(Unstructured), &cgns_zone_results);
+     if (cgns_err) cg_error_print();
+ 
+     cgns_err = cg_goto(cgns_file, cgns_base_results,"Zone_t", cgns_zone_results,"end");
+@@ -129,12 +129,12 @@
+     if (config->GetGrid_Movement()) {
+       
+       /*--- write CGNS node coordinates ---*/
+-      cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, RealDouble,"x", Coords[0], &cgns_coord);
++      cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, CGNS_ENUMV(RealDouble),"x", Coords[0], &cgns_coord);
+       if (cgns_err) cg_error_print();
+-      cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, RealDouble,"y", Coords[1], &cgns_coord);
++      cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, CGNS_ENUMV(RealDouble),"y", Coords[1], &cgns_coord);
+       if (cgns_err) cg_error_print();
+       if (geometry->GetnDim() == 3) {
+-        cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, RealDouble,"z", Coords[2], &cgns_coord);
++        cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, CGNS_ENUMV(RealDouble),"z", Coords[2], &cgns_coord);
+         if (cgns_err) cg_error_print();
+       }
+     }
+@@ -230,18 +230,18 @@
+     if (cgns_err) cg_error_print();
+     switch (config->GetKind_Solver()) {
+       case EULER:
+-        cgns_err = cg_governing_write(Euler); break;
++        cgns_err = cg_governing_write(CGNS_ENUMV(Euler)); break;
+       case NAVIER_STOKES:
+-        cgns_err = cg_governing_write(NSLaminar); break;
++        cgns_err = cg_governing_write(CGNS_ENUMV(NSLaminar)); break;
+       case RANS:
+-        cgns_err = cg_governing_write(NSTurbulent); break;
++        cgns_err = cg_governing_write(CGNS_ENUMV(NSTurbulent)); break;
+       default:
+         break; // cgns_err = cg_governing_write(CG_UserDefined);
+     }
+     if (cgns_err) cg_error_print();
+     
+-    if (unsteady) cgns_err = cg_simulation_type_write(cgns_file, cgns_base, TimeAccurate);
+-    else cgns_err = cg_simulation_type_write(cgns_file, cgns_base, NonTimeAccurate);
++    if (unsteady) cgns_err = cg_simulation_type_write(cgns_file, cgns_base, CGNS_ENUMV(TimeAccurate));
++    else cgns_err = cg_simulation_type_write(cgns_file, cgns_base, CGNS_ENUMV(NonTimeAccurate));
+     if (cgns_err) cg_error_print();
+     
+     cgns_err = cg_descriptor_write("Solver Information","SU2");
+@@ -252,7 +252,7 @@
+     isize[2][0] = 0;            // boundary vertex size (zero if elements not sorted)
+     
+     /*--- write CGNS zone data ---*/
+-    cgns_err = cg_zone_write(cgns_file, cgns_base,"SU2 Zone", isize[0],Unstructured, &cgns_zone);
++    cgns_err = cg_zone_write(cgns_file, cgns_base,"SU2 Zone", isize[0],CGNS_ENUMV(Unstructured), &cgns_zone);
+     if (cgns_err) cg_error_print();
+ 
+     cgns_err = cg_goto(cgns_file, cgns_base,"Zone_t", cgns_zone,"end");
+@@ -269,37 +269,37 @@
+     if (nGlobal_Tria > 0) {
+       elem_start = 1; elem_end = (int)nGlobal_Tria;
+       cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,
+-                                  "Triangle Elements", TRI_3, elem_start, elem_end,
++                                  "Triangle Elements", CGNS_ENUMV(TRI_3), elem_start, elem_end,
+                                   0,(cgsize_t *)Conn_Tria, &cgns_section);
+     }
+     if (nGlobal_Quad > 0) {
+       elem_start = 1; elem_end = (int)nGlobal_Quad;
+-      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Quadrilateral Elements", QUAD_4,
++      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Quadrilateral Elements", CGNS_ENUMV(QUAD_4),
+                                   elem_start, elem_end,0,(cgsize_t *)Conn_Quad, &cgns_section);
+     }
+     if (nGlobal_Tetr > 0) {
+       elem_start = 1; elem_end = (int)nGlobal_Tetr;
+-      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Tetrahedral Elements", TETRA_4,
++      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Tetrahedral Elements", CGNS_ENUMV(TETRA_4),
+                                   elem_start, elem_end,0,(cgsize_t *)Conn_Tetr, &cgns_section);
+     }
+     if (nGlobal_Hexa > 0) {
+       elem_start = 1; elem_end = (int)nGlobal_Hexa;
+-      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Hexahedral Elements", HEXA_8,
++      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Hexahedral Elements", CGNS_ENUMV(HEXA_8),
+                                   elem_start, elem_end,0,(cgsize_t *)Conn_Hexa, &cgns_section);
+     }
+     if (nGlobal_Pyra > 0) {
+       elem_start = 1; elem_end = (int)nGlobal_Pyra;
+-      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Pyramid Elements", PYRA_5,
++      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Pyramid Elements", CGNS_ENUMV(PYRA_5),
+                                   elem_start, elem_end,0,(cgsize_t *)Conn_Pyra, &cgns_section);
+     }
+     if (nGlobal_Pris > 0) {
+       elem_start = 1; elem_end = (int)nGlobal_Pris;
+-      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Prism Elements", PENTA_6,
++      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Prism Elements", CGNS_ENUMV(PENTA_6),
+                                   elem_start, elem_end,0,(cgsize_t *)Conn_Pris, &cgns_section);
+     }
+     if (nGlobal_Line > 0) {
+       elem_start = 1; elem_end = (int)nGlobal_Line;
+-      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Line Elements", BAR_2,
++      cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Line Elements", CGNS_ENUMV(BAR_2),
+                                   elem_start, elem_end,0,(cgsize_t *)Conn_Line, &cgns_section);
+     }
+     if (cgns_err) cg_error_print();
+@@ -365,13 +365,13 @@
+       if (cgns_err) cg_error_print();
+       
+       /*--- Create a CGNS solution node ---*/
+-      cgns_err = cg_sol_write(cgns_file, cgns_base, cgns_zone,"Solution", Vertex, &cgns_flow);
++      cgns_err = cg_sol_write(cgns_file, cgns_base, cgns_zone,"Solution", CGNS_ENUMV(Vertex), &cgns_flow);
+       if (cgns_err) cg_error_print();
+       
+       cgns_err = cg_goto(cgns_file, cgns_base,"Zone_t", cgns_zone,"FlowSolution_t", cgns_flow,"end");
+       if (cgns_err) cg_error_print();
+       
+-      cgns_err = cg_gridlocation_write(Vertex);
++      cgns_err = cg_gridlocation_write(CGNS_ENUMV(Vertex));
+       if (cgns_err) cg_error_print();
+     }
+ 
+@@ -397,13 +397,13 @@
+     if (cgns_err) cg_error_print();
+     
+     /*--- Write a CGNS solution node for this time step ---*/
+-    cgns_err = cg_sol_write(cgns_file, cgns_base_results, cgns_zone_results,"Solution", Vertex, &cgns_flow);
++    cgns_err = cg_sol_write(cgns_file, cgns_base_results, cgns_zone_results,"Solution", CGNS_ENUMV(Vertex), &cgns_flow);
+     if (cgns_err) cg_error_print();
+     
+     cgns_err = cg_goto(cgns_file, cgns_base_results,"Zone_t", cgns_zone_results,"FlowSolution_t", cgns_flow,"end");
+     if (cgns_err) cg_error_print();
+     
+-    cgns_err = cg_gridlocation_write(Vertex);
++    cgns_err = cg_gridlocation_write(CGNS_ENUMV(Vertex));
+     if (cgns_err) cg_error_print();
+     
+       cgns_base = cgns_base_results;
+@@ -425,7 +425,7 @@
+   /*--- Write conservative variables to CGNS file ---*/
+   for (iVar = 0; iVar < nVar_Consv; iVar++) {
+     name.str(string()); name << "Conservative Variable " << iVar+1;
+-    cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,(char *)name.str().c_str(), Data[iVar], &cgns_field);
++    cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),(char *)name.str().c_str(), Data[iVar], &cgns_field);
+     if (cgns_err) cg_error_print();
+   }
+   
+@@ -433,7 +433,7 @@
+   if (config->GetWrt_Limiters()) {
+     for (jVar = 0; jVar < nVar_Consv; jVar++) {
+       name.str(string()); name << "Primitive Limiter " << jVar+1;
+-      cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,(char *)name.str().c_str(), Data[iVar], &cgns_field); iVar++;
++      cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),(char *)name.str().c_str(), Data[iVar], &cgns_field); iVar++;
+       if (cgns_err) cg_error_print();
+     }
+   }
+@@ -442,19 +442,19 @@
+   if (config->GetWrt_Residuals()) {
+     for (jVar = 0; jVar < nVar_Consv; jVar++) {
+       name.str(string()); name << "Conservative Residual " << jVar+1;
+-      cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,(char *)name.str().c_str(), Data[iVar], &cgns_field); iVar++;
++      cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),(char *)name.str().c_str(), Data[iVar], &cgns_field); iVar++;
+       if (cgns_err) cg_error_print();
+     }
+   }
+   
+   /*--- Write grid velocities to CGNS file, if applicable ---*/
+   if (config->GetGrid_Movement()) {
+-    cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Grid Velocity X", Data[iVar], &cgns_field); iVar++;
++    cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Grid Velocity X", Data[iVar], &cgns_field); iVar++;
+     if (cgns_err) cg_error_print();
+-    cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Grid Velocity Y", Data[iVar], &cgns_field); iVar++;
++    cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Grid Velocity Y", Data[iVar], &cgns_field); iVar++;
+     if (cgns_err) cg_error_print();
+     if (geometry->GetnDim() == 3) {
+-      cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Grid Velocity Z", Data[iVar], &cgns_field); iVar++;
++      cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Grid Velocity Z", Data[iVar], &cgns_field); iVar++;
+       if (cgns_err) cg_error_print();
+     }
+   }
+@@ -464,35 +464,35 @@
+         
+         /*--- Write pressure and Mach data to CGNS file ---*/
+       case EULER:
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Pressure", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Pressure", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Mach", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Mach", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+         break;
+         
+         /*--- Write temperature and laminar viscosity to CGNS file, if applicable ---*/
+       case NAVIER_STOKES:
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Pressure", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Pressure", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Mach", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Mach", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Temperature", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Temperature", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Viscosity", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Viscosity", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+         break;
+         
+         /*--- Write eddy viscosity to CGNS file, if applicable ---*/
+       case RANS:
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Pressure", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Pressure", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Mach", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Mach", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Temperature", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Temperature", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Viscosity", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Viscosity", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+-        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Eddy Viscosity", Data[iVar], &cgns_field); iVar++;
++        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, CGNS_ENUMV(RealDouble),"Eddy Viscosity", Data[iVar], &cgns_field); iVar++;
+         if (cgns_err) cg_error_print();
+         break;
+         
+Only in SU2-5.0.0/SU2_CFD/src: output_cgns.cpp~
