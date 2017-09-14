@@ -1,0 +1,55 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright (c) 2015 Virginia Bioinformatics Institute at Virginia Tech
+# Authors::   Dominik L. Borkowski <dominik.borkowski@gmail.com>
+# License::   MIT/GPL
+# $Id$
+#
+##
+
+easyblock = 'PythonPackage'
+
+name = 'gdc_client'
+version = '1.0.1'
+homepage = 'https://github.com/NCI-GDC/gdc-client/'
+description = "GDC Data Transfer Tool (gdc-client). Download tcga data from https://gdc-portal.nci.nih.gov/"
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+source_urls = [ 'https://github.com/NCI-GDC/%s/archive/' % (name.replace('_','-')) ]
+sources = [ 'v%s.zip' % (version)]
+
+python = 'Python'
+pyver = '2.7.11'
+pyshortver = '.'.join(pyver.split('.')[0:2])
+pylibdir = 'lib/python%s/site-packages' % pyshortver
+versionsuffix = "-%s-%s" % (python, pyver)
+
+#also pip is needed... but comes default with the devel version of python
+dependencies = [
+    (python, pyver),
+    ('parcel','e877469f72' , versionsuffix),
+    ('libxml2','2.9.4'),
+    ('libxslt','1.1.28'),
+]
+
+
+postinstallcmds = ["chmod -R a+rx %(installdir)s/bin/*"]
+options = {'modulename': name.replace('-','_') }
+
+# specify that this easyblock should run a full sanity check, rather than just trying to load the module
+#full_sanity_check = True
+
+sanity_check_paths = {
+    'files': [ '%s/%s-%s-py%s.egg' % (pylibdir, name.replace('-','_'), version, pyshortver)],
+    'dirs': [],
+}
+
+
+sanity_check_commands = [('python -c "import %s"' % (name.replace('-','_')) )]
+
+moduleclass = 'tools'
+
+
+checksums = ['6b67a8336d539d104d330888ed5347af']

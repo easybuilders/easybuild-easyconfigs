@@ -1,0 +1,35 @@
+easyblock = 'CMakeMake'
+
+name = 'CryptoMiniSat'
+version = '5.0.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/msoos/cryptominisat'
+description = "CryptoMiniSat is an advanced SAT solver"
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+source_urls = ['https://github.com/msoos/cryptominisat/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['CryptoMiniSat-%(version)s_fix-python-prefix.patch']
+
+dependencies = [
+    ('Python', '2.7.12'),
+    ('Boost', '1.61.0', versionsuffix),
+]
+builddependencies = [('CMake', '3.7.1')]
+
+separate_build_dir = True
+
+configopts = "-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages"
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/cryptominisat%(version_major)s', 'lib/libcryptominisat%%(version_major)s.%s' % SHLIB_EXT],
+    'dirs': ['include/cryptominisat%(version_major)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import pycryptosat'"]
+
+moduleclass = 'tools'

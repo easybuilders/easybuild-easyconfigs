@@ -1,0 +1,65 @@
+#
+# EasyConfig for the EgaCryptor.
+#
+
+easyblock = 'Tarball'
+
+name = 'EgaCryptor'
+version = '2014-02-11'
+
+homepage = 'https://ega-archive.org/submission/tools/egacryptor'
+description = """EgaCryptor is a JAVA based client, which enables submitters to 
+produce EGA compliant files by encrypting each file to be submitted and 
+generating the encrypted and unencrypted md5sum for each file."""
+
+#
+# Don't use 'dummy' as toolchain version to make sure dependencies are loaded
+# both at build as well as at runtime. With 'dummy' as toolchain version,
+# dependencies will only be loaded at runtime.
+#
+#toolchain = {'name': 'dummy', 'version': 'dummy'}
+toolchain = {'name': 'dummy', 'version': ''}
+
+dependencies = [
+    ('Java', '1.8.0_144', '-unlimited_JCE'),
+]
+
+#
+# Example URL: https://www.ebi.ac.uk/ega/sites/ebi.ac.uk.ega/files/documents/EgaCryptor.zip
+# WARNING: no version number in the download :o. Make sure to validate a checksum!
+#
+source_urls = ['https://www.ebi.ac.uk/ega/sites/ebi.ac.uk.ega/files/documents/']
+sources = ['%(name)s.zip']
+checksums = ['c50045fa09639e8aa7cd42fa3f942e6a'] # EgaCryptor.zip downloaded on 2017-08-14.
+
+start_dir = '%(name)s'
+
+#
+# list of libs.
+#
+dep_jars = [
+    'bcpg-jdk15on-150.jar',
+    'bcprov-jdk15on-150.jar',
+    'jcommander-1.33-SNAPSHOT.jar',
+    'sam-1.87.jar',
+    'webin-data-streamer-Cipher.jar',
+    'webin-data-streamer-Client.jar',
+    'webin-data-streamer-Server.jar',
+]
+
+sanity_check_paths = {
+    'files': ['%(name)s.jar']
+             + ['lib/%s' % x for x in dep_jars],
+    'dirs': ['lib'],
+}
+
+moduleclass = 'tools'
+modloadmsg = """
+=========================================================================================
+INFO: To execute EgaCryptor use:
+
+         java -jar ${EBROOTEGACRYPTOR}/EgaCryptor.jar -file [input]
+
+NOTE: output file(s) will we written to the same location as where the input is located.
+=========================================================================================
+"""

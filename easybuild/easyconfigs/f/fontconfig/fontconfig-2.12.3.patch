@@ -1,0 +1,46 @@
+diff -ru fontconfig-2.12.3.original/src/Makefile.am fontconfig-2.12.3.patched/src/Makefile.am
+--- fontconfig-2.12.3.original/src/Makefile.am	2016-12-02 04:22:19.000000000 +0100
++++ fontconfig-2.12.3.patched/src/Makefile.am	2017-06-29 00:15:41.000000000 +0200
+@@ -104,7 +104,11 @@
+ ../fc-lang/fclang.h:
+ 	cd ../fc-lang && $(MAKE) $(AM_MAKEFLAGS) fclang.h
+ 
+-fcobjshash.gperf: fcobjshash.gperf.h fcobjs.h
++fcobjshash.gperf: Makefile stamp-fcobjshash.gperf
++	-@$(RM) stamp-fcobjshash.gperf
++	@$(MAKE) stamp-fcobjshash.gperf
++	@touch -r stamp-fcobjshash.gperf $@
++stamp-fcobjshash.gperf: fcobjshash.gperf.h fcobjs.h
+ 	$(AM_V_GEN) $(CPP) -I$(top_srcdir) $< | \
+ 	$(SED) 's/^ *//;s/ *, */,/' | \
+ 	$(GREP) '^[^#]' | \
+@@ -113,16 +117,15 @@
+ 		/CUT_OUT_END/ { no_write=0; next; }; \
+ 		{ if (!no_write) print; next; }; \
+ 	' - > $@.tmp && \
+-	mv -f $@.tmp $@ || ( $(RM) $@.tmp && false )
++	mv -f $@.tmp fcobjshash.gperf && touch $@ || ( $(RM) $@.tmp && false )
+ 
+-fcobjshash.h: fcobjshash.gperf
+-	$(AM_V_GEN) $(GPERF) -m 100 $< > $@.tmp && \
++fcobjshash.h: Makefile fcobjshash.gperf
++	$(AM_V_GEN) $(GPERF) -m 100 fcobjshash.gperf > $@.tmp && \
+ 	mv -f $@.tmp $@ || ( $(RM) $@.tmp && false )
+ 
+ EXTRA_DIST += \
+ 	fcobjshash.gperf.h \
+-	fcobjshash.gperf \
+-	fcobjshash.h
++	fcobjshash.gperf
+ 
+ libfontconfig_la_SOURCES = \
+ 	fcarch.h \
+@@ -199,7 +202,7 @@
+ 	@touch $@
+ 
+ CLEANFILES = $(ALIAS_FILES) fontconfig.def
+-DISTCLEANFILES = stamp-fcstdint fcstdint.h
++DISTCLEANFILES = stamp-fcstdint fcstdint.h stamp-fcobjshash.gperf
+ 
+ fontconfig.def: $(PUBLIC_FILES) $(PUBLIC_FT_FILES)
+ 	echo Generating $@
