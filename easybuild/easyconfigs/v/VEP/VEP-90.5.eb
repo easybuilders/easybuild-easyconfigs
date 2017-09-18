@@ -5,9 +5,9 @@
 easyblock = 'Tarball'
 
 name = 'VEP'
-version = '86'
+version = '90.5'
 
-homepage = 'http://www.ensembl.org/info/docs/tools/vep/script/index.html'
+homepage = 'http://www.ensembl.org/vep'
 description = """Tool for analysis, annotation, and prioritization of genomic variants
 using (cached) Ensembl databases."""
 
@@ -24,34 +24,51 @@ osdependencies = [
 ]
 
 dependencies = [
-    ('PerlPlus', '5.22.0', '-v17.01.1', ('foss', '2015b')),
+    ('PerlPlus', '5.22.0', '-v17.08.1', ('foss', '2015b')),
 ]
 
-source_urls = ['https://github.com/Ensembl/ensembl-tools/archive/release/']
-sources = ['%(version)s.zip']
+source_urls = ['https://github.com/Ensembl/ensembl-vep/archive/release/']
+sources = ['%(version)s.tar.gz']
 patches = ['VEP-%(version)s.patch']
 checksums = [
-    '2e447947a4b10dc60e54f107b5e8629a', # 86.zip
-    'fa56f707a521c7ca0f1f244c3471803e', # VEP-86.patch
+    '4e75bf38f0f56762d717c632f4c2176e', # 90.5.tar.gz
+    'e315c868df31c45540417f52f5635f1d', # VEP-90.5.patch
 ]
 
 #
 # Customizations for the install step.
 #
-start_dir = 'scripts/variant_effect_predictor'
-perl_scripts = ['convert_cache.pl', 'filter_vep.pl', 'gtf2vep.pl', 'INSTALL.pl', 'variant_effect_predictor.pl']
-not_scripts = ['example_GRCh37.vcf', 'example_GRCh38.vcf', 'README.txt']
+#start_dir = 'scripts/variant_effect_predictor'
+perl_scripts = [
+    'INSTALL.pl',
+    'convert_cache.pl',
+    'filter_vep',
+    'haplo',
+    'variant_recoder',
+    'vep',
+]
+not_scripts = [
+    'modules/Bio/EnsEMBL/VEP/BaseVEP.pm',
+    'examples/homo_sapiens_GRCh37.vcf',
+    'examples/homo_sapiens_GRCh38.vcf',
+    'examples/mus_musculus_GRCm38.vcf',
+    'cpanfile',
+    'README.md',
+]
 #
 # Make scripts executable and run VEP installer.
-# (Mode may by masked by umask.)
+#  * Mode may by masked by umask.
+#  * The INSTALL.pl script will download the specified caches
+#    and convert them using convert_cache.pl: both may take quite some time!
 #
 import os
-vep_cache_dir = '%s/data/Ensembl/VEP/%s/' % (os.environ["EASYBUILD_INSTALLPATH"], version)
+vep_cache_dir = '%s/data/Ensembl/VEP/%s/' % (os.environ["EASYBUILD_INSTALLPATH"], '%(version_major)s')
 postinstallcmds = [
     'chmod    a+x            %(installdir)s/*.pl',
     'chmod -R g+rwX,o+rX,o-w %(installdir)s/*',
     'mkdir -p "%s"' % (vep_cache_dir),
     'PERL5LIB="%s:${PERL5LIB}" && %s/INSTALL.pl --AUTO acf --DESTDIR %s --CACHEDIR %s --SPECIES homo_sapiens --ASSEMBLY GRCh37' % ('%(installdir)s', '%(installdir)s', '%(installdir)s', vep_cache_dir),
+    'PERL5LIB="%s:${PERL5LIB}" && %s/INSTALL.pl --AUTO  cf --DESTDIR %s --CACHEDIR %s --SPECIES homo_sapiens --ASSEMBLY GRCh38' % ('%(installdir)s', '%(installdir)s', '%(installdir)s', vep_cache_dir),
     'chmod -R g+rwX,o+rX,o-w %s' % (vep_cache_dir),
 ]
 
@@ -60,7 +77,7 @@ postinstallcmds = [
 #
 sanity_check_paths = {
     'files': perl_scripts + not_scripts,
-    'dirs': ['Bio', vep_cache_dir],
+    'dirs': ['modules', 'examples', 't', vep_cache_dir],
 }
 
 #
@@ -69,15 +86,17 @@ sanity_check_paths = {
 moduleclass = 'bio'
 modextravars = {'VEP_CACHE_DIR': vep_cache_dir}
 modextrapaths = {
-    'PERL5LIB': '',
-    'PATH': 'htslib'
+    'PERL5LIB': 'modules',
+    'PATH': ['', 'htslib'],
 }
 modloadmsg = """
 ===================================================================================================================================================================
 WARNING: Do not violate Ensembl's reasonable use policy on the public servers by annotating large data sets (> 100 variants) as this will result in a network ban.
          Use the local cache instead by starting your command like this when executing the Variant Effect Predictor (VEP):
 
-\\${EBROOTVEP}/variant_effect_predictor.pl --cache --offline --dir \\${VEP_CACHE_DIR} --db_version=%(version)s --buffer 1000 --species homo_sapiens ...
+         vep --cache --offline --dir ${VEP_CACHE_DIR} --db_version=%(version_major)s --buffer 1000 --species homo_sapiens ...
+         
+         NB: caches for both GRCh37 and GRCh38 have been deployed with this module.
 
 ===================================================================================================================================================================
 """
