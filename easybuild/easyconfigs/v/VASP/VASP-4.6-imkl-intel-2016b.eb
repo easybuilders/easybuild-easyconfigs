@@ -1,0 +1,65 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '4.6'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version Transition State Tools for VASP (http://theory.cm.utexas.edu/vtsttools/)
+as well as VASPsol (https://github.com/henniggroup/VASPsol) has been implemented to the original vasp ."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['vasp.4.6.tar.gz']
+
+# uncommment after downloading patches from http://cms.mpi.univie.ac.at/wiki/index.php/Installing_VASP
+patches = [
+    'vasp-4.6.patch',
+    'vasp-4.6-fft3dlib.patch',
+    'vasp-4.6-mkbdr.patch'
+ ]
+
+checksums = [
+    'b2931fe01eb6ea073d921887def811af', #vasp.4.6.tar.gz
+    'acfcfe8b889b466a5c8e00e3581d3704', #vasp-4.6.patch
+    'bd2982b4614c1dd81f44c789ce68a263',  #vasp-4.6-fft3dlib.patch
+    'd3cb14c358ba7f0bcf58827cfa742780'  #vasp-4.6-mkbdr.patch
+]
+
+prebuildopts = 'cd vasp.4.lib &&'
+prebuildopts += 'unset LIBS && '
+prebuildopts += 'make -f makefile.linux_ifc_P4 &&'
+prebuildopts += 'cd .. &&'
+prebuildopts += 'wget http://theory.cm.utexas.edu/code/vtstcode_old/vtstcode_v2.03d.tar.gz &&'
+prebuildopts += 'tar xzf vtstcode_v2.03d.tar.gz && '
+prebuildopts += 'mv vtstcode vtstcode_v2.03d &&'
+prebuildopts += 'wget http://theory.cm.utexas.edu/code/vtstcode_old/vtstcode_v2.04a.tar.gz &&'
+prebuildopts += 'tar xzf vtstcode_v2.04a.tar.gz && '
+prebuildopts += 'mv vtstcode vtstcode_v2.04a &&'
+prebuildopts += 'mv vtstcode_v2.04a/mkbdrpro.pl vtstcode_v2.04a/bdr_changes src &&' 
+prebuildopts += 'rm -f vtstcode_v2.03d/dynamic.F vtstcode_v2.03d/dimer_save.F &&'
+prebuildopts += 'mv vtstcode_v2.03d/*.F src &&'
+prebuildopts += 'cd src && '
+prebuildopts += 'chmod u+x mkbdrpro.pl && '
+prebuildopts += './mkbdrpro.pl bdr_changes && '
+prebuildopts += "sed -i.orig 's|     #if defined(MPI_CHAIN)|#if defined(MPI_CHAIN)|'  dimer.F &&"
+prebuildopts += "sed -i.orig 's|     #endif|#endif|'  dimer.F &&"
+prebuildopts += 'cp makefile.linux_ifc_P4 makefile; make &&'
+prebuildopts += 'cp vasp vasp-gamma &&'
+#For gamma point
+prebuildopts += "sed -i.back 's|-DwNGZhalf -DNGZhalf -DCACHE_SIZE=4000 -DPGF90 -Davoidalloc |-DNGZhalf -DCACHE_SIZE=4000 -DPGF90 -Davoidalloc |' makefile &&"
+prebuildopts += 'make clean; make makeparam &&'
+
+parallel = 1
+
+files_to_copy = [(['src/vasp-gamma', 'src/makeparam', 'src/vasp'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp-gamma', 'bin/makeparam', 'bin/vasp'],
+    'dirs': []
+}
+group = "soft_vasp4"
+moduleclass = 'phys'

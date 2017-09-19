@@ -1,0 +1,65 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.1'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version Transition State Tools for VASP (http://theory.cm.utexas.edu/vtsttools/)
+as well as VASPsol (https://github.com/henniggroup/VASPsol) has been implemented to the original vasp ."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['vasp.5.4.1.05Feb16.tar.gz']
+
+# uncommment after downloading patches from http://cms.mpi.univie.ac.at/wiki/index.php/Installing_VASP
+patches = [
+    'vasp.5.4.1.14032016.patch',
+    'vasp.5.4.1.03082016.patch',
+    'vasp-5.4.1.patch'
+ ]
+
+checksums = [
+    'dfd537e43294e9df09c8b5c6916c6a2e', #vasp.5.4.1.05Feb16.tar.gz
+    'ee493a80272f1bffc8a177ae83b5d814',  # vasp.5.4.1.14032016.patch
+    '87523dc749918ac34b8a25e088bf7778',  # vasp.5.4.1.03082016.patch
+    'f8788a27845597e844cd1b007becf1f3' #vasp-5.4.1.patch
+]
+
+
+prebuildopts = 'cp arch/makefile.include.linux_intel_cuda ./makefile.include &&'
+prebuildopts += 'cp src/chain.F src/chain.F.orig && '
+prebuildopts += 'wget http://theory.cm.utexas.edu/code/vtstcode_old/vtstcode-173.tgz &&'
+prebuildopts += 'tar xzf vtstcode-173.tgz && '
+prebuildopts += 'cp vtstcode-173/* src && '
+prebuildopts += 'cd src && '
+prebuildopts += 'chmod u+x mkbdrpro.pl && '
+prebuildopts += './mkbdrpro.pl bdr_changes && '
+prebuildopts += 'cp solvation.F solvation.F.orig &&'
+prebuildopts += 'cp pot.F pot.F.orig &&'
+prebuildopts += 'git clone https://github.com/henniggroup/VASPsol &&'
+prebuildopts += 'cd VASPsol/ &&'
+prebuildopts += 'git checkout  77c8e74 &&'
+prebuildopts += 'cd .. &&'
+prebuildopts += 'cp VASPsol/src/solvation.F ./  &&'
+prebuildopts += 'patch pot.F < VASPsol/src/patches/pbz_patch_541 &&'
+prebuildopts += 'cd ..  &&'
+
+# VASP uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+#buildopts = 'all BLACS="$LIBBLACS" SCALAPACK="$LIBSCALAPACK"'
+
+parallel = 1
+
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': []
+}
+group = "soft_vasp5"
+moduleclass = 'phys'

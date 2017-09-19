@@ -1,0 +1,52 @@
+--- src/main.F.mkbdr	2009-02-17 02:28:20.000000000 -0800
++++ src/main.F	2013-09-06 14:57:09.603616968 -0700
+@@ -142,6 +142,9 @@
+ !-MM- Added to write AE charge densities
+       USE aedens
+ !-MM_ end of additions
++! include code for projections in Bader volumes
++      USE mbdrpro
++
+       IMPLICIT COMPLEX(q) (C)
+       IMPLICIT REAL(q) (A-B,D-H,O-Z)
+ 
+@@ -4010,17 +4013,38 @@
+        
+        ALLOCATE(PAR(WDES%NB_TOT,WDES%NKDIM,LPAR,T_INFO%NIONP,WDES%NCDIJ))
+ 
++       ! changed to calculate DOS projection in Bader volumes
++       ! if ICHAIN=5, the DOS projection is done in Bader volumes
++       ! for ICHAIN=5, only the l-projected DOS is calcualted in DOSCAR
++       ! the PROCAR and PROOUT files are projections in VASP built-in spheric volumes
++       ICHAIN=0
++       CALL RDATAB(.TRUE.,'INCAR',IO%IU5,'ICHAIN','=','#',';','I', &
++       &            ICHAIN,RDUM,CDUM,LDUM,CHARAC,N,1,IERR)
++       IF (((IERR/=0).AND.(IERR/=3)).OR.((IERR==0).AND.(N<1))) THEN
++         IF (IU0>=0) WRITE(IU0,*) "Error reading item ICHAIN from file INCAR."
++         STOP
++       ENDIF
+        IF (IO%LORBIT>=10) THEN
+           CALL SPHPRO_FAST( &
+           GRID,LATT_CUR,LATT_INI, P,T_INFO,W, WDES, 71,IO%IU6,&
+           INFO%LOVERL,LMDIM,CQIJ, LPAR, LDIMP, LMDIMP, .TRUE., IO%LORBIT,PAR)
++          IF (ICHAIN==5) THEN
++            IO%LORBIT=IO%LORBIT-10
++            CALL BDRPRO( &
++            GRID,LATT_CUR,LATT_INI, P,T_INFO,W,WDES, 71,IO%IU6, &
++            INFO%LOVERL,LMDIM,CQIJ, LPAR, LDIMP, LMDIMP, 1, IO%LORBIT,PAR)
++          END IF 
+        ELSE
+           CALL SPHPRO( &
+           GRID,LATT_CUR,LATT_INI, P,T_INFO,W, WDES, 71,IO%IU6,&
+           INFO%LOVERL,LMDIM,CQIJ, LPAR, LDIMP, LMDIMP, LTRUNC, IO%LORBIT,PAR)
++          IF (ICHAIN==5) THEN
++            CALL BDRPRO( &
++            GRID,LATT_CUR,LATT_INI, P,T_INFO,W,WDES, 71,IO%IU6, &
++            INFO%LOVERL,LMDIM,CQIJ, LPAR, LDIMP, LMDIMP, 1, IO%LORBIT,PAR)
++          END IF 
+        ENDIF
+ 
+-
+        CALL CHGLOC(WDES%NB_TOT,KPOINTS%NKDIM,LPAR,T_INFO%NIONS,WDES%ISPIN,PAR,W%FERWE)
+ 
+        !  get and write partial / projected DOS ...
