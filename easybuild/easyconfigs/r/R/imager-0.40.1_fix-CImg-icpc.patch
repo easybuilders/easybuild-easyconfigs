@@ -1,0 +1,301 @@
+fix compilation issues with Intel compilers in CImg.h
+cfr. https://github.com/dtschump/CImg/issues/123 and https://github.com/dahtah/imager/commit/b46e96efe0a9c596c9aca9d786123b10dd83adf2
+also include extra compiler option -wd308 to avoid 'member "std::complex<double>::_M_value" is inaccessible' errors
+patched composed by Kenneth Hoste (HPC-UGent)
+diff --git a/inst/include/CImg.h b/inst/include/CImg.h
+index 213d864..922edf8 100755
+--- a/inst/include/CImg.h
++++ b/inst/include/CImg.h
+@@ -15161,7 +15161,7 @@ namespace cimg_library_suffixed {
+                         const CImg<T>& img_input=CImg<T>::const_empty(), CImg<T> *const img_output=0,
+                         const CImgList<T> *const list_input=0, CImgList<T> *const list_output=0,
+                         const bool _is_fill=false):
+-        code(_code),p_break((CImg<ulongT>*)0 - 2),
++        code(_code),p_break((CImg<ulongT>*)(-2*sizeof(CImg<ulongT>))),
+         imgin(img_input),listin(list_input?*list_input:CImgList<T>::const_empty()),
+         imgout(img_output?*img_output:CImg<T>::empty()),listout(list_output?*list_output:CImgList<T>::empty()),
+         img_stats(_img_stats),list_stats(_list_stats),list_median(_list_median),user_macro(0),
+@@ -15222,6 +15222,7 @@ namespace cimg_library_suffixed {
+         memtype.assign(mem._width,1,1,1,0);
+         for (unsigned int i = 0; i<_cimg_mp_slot_x; ++i) memtype[i] = 1;
+         memtype[17] = 0;
++        memtype[_cimg_mp_slot_x] = memtype[_cimg_mp_slot_y] = memtype[_cimg_mp_slot_z] = memtype[_cimg_mp_slot_c] = -2;
+         mempos = _cimg_mp_slot_c + 1;
+         variable_pos.assign(8);
+ 
+@@ -15270,7 +15271,7 @@ namespace cimg_library_suffixed {
+       }
+ 
+       _cimg_math_parser():
+-        code(_code),p_code_end(0),p_break((CImg<ulongT>*)0 - 2),
++        code(_code),p_code_end(0),p_break((CImg<ulongT>*)(-2*sizeof(CImg<ulongT>))),
+         imgin(CImg<T>::const_empty()),listin(CImgList<T>::const_empty()),
+         imgout(CImg<T>::empty()),listout(CImgList<T>::empty()),
+         img_stats(_img_stats),list_stats(_list_stats),list_median(_list_median),debug_indent(0),
+@@ -15301,7 +15302,7 @@ namespace cimg_library_suffixed {
+         unsigned int *pd = res._data;
+         int level = 0;
+         for (const char *ps = expr._data; *ps && level>=0; ++ps) {
+-          if (!next_is_escaped && *ps=='\\') next_is_escaped = true;
++          if (!is_escaped && !next_is_escaped && *ps=='\\') next_is_escaped = true;
+           if (!is_escaped && *ps=='\'') { // Non-escaped character
+             if (!mode && ps>expr._data && *(ps - 1)=='[') next_mode = mode = 2; // Start vector-string
+             else if (mode==2 && *(ps + 1)==']') next_mode = !mode; // End vector-string
+@@ -20498,7 +20499,7 @@ namespace cimg_library_suffixed {
+         CImg<double> S(&_mp_arg(1) + 1,dx,dy,dz,dc,true);
+         const float opacity = (float)_mp_arg(12);
+ 
+-        if (img) {
++        if (img._data) {
+           if (mp.opcode[13]!=~0U) { // Opacity mask specified
+             const ulongT sizM = mp.opcode[14];
+             if (sizM<(ulongT)dx*dy*dz)
+@@ -20605,7 +20606,7 @@ namespace cimg_library_suffixed {
+           off = (longT)_mp_arg(2),
+           whds = (longT)img.size();
+         if (off>=0 && off<whds) return (double)img[off];
+-        if (img) switch (boundary_conditions) {
++        if (img._data) switch (boundary_conditions) {
+           case 3 : { // Mirror
+             const longT whds2 = 2*whds, moff = cimg::mod(off,whds2);
+             return (double)img[moff<whds?moff:whds2 - moff - 1];
+@@ -20707,7 +20708,7 @@ namespace cimg_library_suffixed {
+           off = img.offset(ox,oy,oz,oc) + (longT)_mp_arg(2),
+           whds = (longT)img.size();
+         if (off>=0 && off<whds) return (double)img[off];
+-        if (img) switch (boundary_conditions) {
++        if (img._data) switch (boundary_conditions) {
+           case 3 : { // Mirror
+             const longT whds2 = 2*whds, moff = cimg::mod(off,whds2);
+             return (double)img[moff<whds?moff:whds2 - moff - 1];
+@@ -20883,7 +20884,7 @@ namespace cimg_library_suffixed {
+           off = (longT)_mp_arg(3),
+           whds = (longT)img.size();
+         if (off>=0 && off<whds) return (double)img[off];
+-        if (img) switch (boundary_conditions) {
++        if (img._data) switch (boundary_conditions) {
+           case 3 : { // Mirror
+             const longT whds2 = 2*whds, moff = cimg::mod(off,whds2);
+             return (double)img[moff<whds?moff:whds2 - moff - 1];
+@@ -20967,7 +20968,7 @@ namespace cimg_library_suffixed {
+           off = img.offset(ox,oy,oz,oc) + (longT)_mp_arg(3),
+           whds = (longT)img.size();
+         if (off>=0 && off<whds) return (double)img[off];
+-        if (img) switch (boundary_conditions) {
++        if (img._data) switch (boundary_conditions) {
+           case 3 : { // Mirror
+             const longT whds2 = 2*whds, moff = cimg::mod(off,whds2);
+             return (double)img[moff<whds?moff:whds2 - moff - 1];
+@@ -21279,7 +21280,7 @@ namespace cimg_library_suffixed {
+           cimg_for_inC(img,0,vsiz - 1,c) { *(ptrd++) = *ptrs; ptrs+=whd; }
+           return cimg::type<double>::nan();
+         }
+-        if (img) switch (boundary_conditions) {
++        if (img._data) switch (boundary_conditions) {
+           case 3 : { // Mirror
+             const longT whd2 = 2*whd, moff = cimg::mod(off,whd2);
+             ptrs = &img[moff<whd?moff:whd2 - moff - 1];
+@@ -21385,7 +21386,7 @@ namespace cimg_library_suffixed {
+           cimg_for_inC(img,0,vsiz - 1,c) { *(ptrd++) = *ptrs; ptrs+=whd; }
+           return cimg::type<double>::nan();
+         }
+-        if (img) switch (boundary_conditions) {
++        if (img._data) switch (boundary_conditions) {
+           case 3 : { // Mirror
+             const longT whd2 = 2*whd, moff = cimg::mod(off,whd2);
+             ptrs = &img[moff<whd?moff:whd2 - moff - 1];
+@@ -22616,7 +22617,7 @@ namespace cimg_library_suffixed {
+           cimg_for_inC(img,0,vsiz - 1,c) { *(ptrd++) = *ptrs; ptrs+=whd; }
+           return cimg::type<double>::nan();
+         }
+-        if (img) switch (boundary_conditions) {
++        if (img._data) switch (boundary_conditions) {
+           case 3 : { // Mirror
+             const longT whd2 = 2*whd, moff = cimg::mod(off,whd2);
+             ptrs = &img[moff<whd?moff:whd2 - moff - 1];
+@@ -22722,7 +22723,7 @@ namespace cimg_library_suffixed {
+           cimg_for_inC(img,0,vsiz - 1,c) { *(ptrd++) = *ptrs; ptrs+=whd; }
+           return cimg::type<double>::nan();
+         }
+-        if (img) switch (boundary_conditions) {
++        if (img._data) switch (boundary_conditions) {
+           case 3 : { // Mirror
+             const longT whd2 = 2*whd, moff = cimg::mod(off,whd2);
+             ptrs = &img[moff<whd?moff:whd2 - moff - 1];
+@@ -28771,12 +28772,13 @@ namespace cimg_library_suffixed {
+             x0 = ((int)xc%width()) - width(),
+             y0 = ((int)yc%height()) - height(),
+             z0 = ((int)zc%depth()) - depth(),
+-            c0 = ((int)cc%spectrum()) - spectrum();
++            c0 = ((int)cc%spectrum()) - spectrum(),
++            dx = width(), dy = height(), dz = depth(), dc = spectrum();
+           cimg_pragma_openmp(parallel for collapse(3) cimg_openmp_if(res.size()>=65536))
+-          for (int c = c0; c<(int)sc; c+=spectrum())
+-            for (int z = z0; z<(int)sz; z+=depth())
+-              for (int y = y0; y<(int)sy; y+=height())
+-                for (int x = x0; x<(int)sx; x+=width())
++          for (int c = c0; c<(int)sc; c+=dc)
++            for (int z = z0; z<(int)sz; z+=dz)
++              for (int y = y0; y<(int)sy; y+=dy)
++                for (int x = x0; x<(int)sx; x+=dx)
+                   res.draw_image(x,y,z,c,*this);
+         } break;
+         case 1 : { // Neumann
+@@ -34824,8 +34826,7 @@ namespace cimg_library_suffixed {
+         _sigma_x = sigma_x>=0?sigma_x:-sigma_x*_width/100,
+         _sigma_y = sigma_y>=0?sigma_y:-sigma_y*_height/100,
+         _sigma_z = sigma_z>=0?sigma_z:-sigma_z*_depth/100,
+-        __sigma_r = sigma_r>=0?sigma_r:-sigma_r*(edge_max - edge_min)/100,
+-        _sigma_r = std::max(0.1f,__sigma_r),
++        _sigma_r = sigma_r>=0?sigma_r:-sigma_r*(edge_max - edge_min)/100,
+         _sampling_x = sampling_x?sampling_x:std::max(_sigma_x,1.0f),
+         _sampling_y = sampling_y?sampling_y:std::max(_sigma_y,1.0f),
+         _sampling_z = sampling_z?sampling_z:std::max(_sigma_z,1.0f),
+@@ -48076,9 +48077,13 @@ namespace cimg_library_suffixed {
+       else return load_other(filename);
+ #else
+       // Open file and check for PNG validity
+-      const char *volatile nfilename = filename; // two 'volatile' here to remove a g++ warning due to 'setjmp'.
++#if defined __GNUC__
++      const char *volatile nfilename = filename; // Use 'volatile' to avoid (wrong) g++ warning.
+       std::FILE *volatile nfile = file?file:cimg::fopen(nfilename,"rb");
+-
++#else
++      const char *nfilename = filename;
++      std::FILE *nfile = file?file:cimg::fopen(nfilename,"rb");
++#endif
+       unsigned char pngCheck[8] = { 0 };
+       cimg::fread(pngCheck,8,(std::FILE*)nfile);
+       if (png_sig_cmp(pngCheck,0,8)) {
+@@ -49017,11 +49022,11 @@ namespace cimg_library_suffixed {
+              rdr.ndim(2)?rdr.ndim(2):1,
+              rdr.ndim(3)?rdr.ndim(3):1,
+              rdr.ndim(4)?rdr.ndim(4):1);
+-      if(typeid(T)==typeid(unsigned char))
++      if (typeid(T)==typeid(unsigned char))
+         rdr.setup_read_byte();
+-      else if(typeid(T)==typeid(int))
++      else if (typeid(T)==typeid(int))
+         rdr.setup_read_int();
+-      else if(typeid(T)==typeid(double))
++      else if (typeid(T)==typeid(double))
+         rdr.setup_read_double();
+       else
+         rdr.setup_read_float();
+@@ -49312,7 +49317,7 @@ namespace cimg_library_suffixed {
+       *item = *tmp1 = *tmp2 = 0;
+       out[0] = std::fscanf(file,"%63s",item._data);
+       out[0] = out[1] = out[2] = out[3] = out[5] = 1; out[4] = out[6] = out[7] = -1;
+-      if(cimg::strncasecmp(item,"#INRIMAGE-4#{",13)!=0)
++      if (cimg::strncasecmp(item,"#INRIMAGE-4#{",13)!=0)
+         throw CImgIOException("CImg<%s>::load_inr(): INRIMAGE-4 header not found.",
+                               pixel_type());
+ 
+@@ -49342,17 +49347,17 @@ namespace cimg_library_suffixed {
+                                 tmp2._data);
+         }
+       }
+-      if(out[0]<0 || out[1]<0 || out[2]<0 || out[3]<0)
++      if (out[0]<0 || out[1]<0 || out[2]<0 || out[3]<0)
+         throw CImgIOException("CImg<%s>::load_inr(): Invalid dimensions (%d,%d,%d,%d) defined in header.",
+                               pixel_type(),
+                               out[0],out[1],out[2],out[3]);
+-      if(out[4]<0 || out[5]<0)
++      if (out[4]<0 || out[5]<0)
+         throw CImgIOException("CImg<%s>::load_inr(): Incomplete pixel type defined in header.",
+                               pixel_type());
+-      if(out[6]<0)
++      if (out[6]<0)
+         throw CImgIOException("CImg<%s>::load_inr(): Incomplete PIXSIZE field defined in header.",
+                               pixel_type());
+-      if(out[7]<0)
++      if (out[7]<0)
+         throw CImgIOException("CImg<%s>::load_inr(): Big/Little Endian coding type undefined in header.",
+                               pixel_type());
+     }
+@@ -52161,9 +52166,16 @@ namespace cimg_library_suffixed {
+                                  "save_png(): Unable to save data in '(*FILE)' unless libpng is enabled.",
+                                  cimg_instance);
+ #else
+-      const char *volatile nfilename = filename; // two 'volatile' here to remove a g++ warning due to 'setjmp'.
++
++#if defined __GNUC__
++      const char *volatile nfilename = filename; // Use 'volatile' to avoid (wrong) g++ warning.
+       std::FILE *volatile nfile = file?file:cimg::fopen(nfilename,"wb");
+       volatile double stmin, stmax = (double)max_min(stmin);
++#else
++      const char *nfilename = filename;
++      std::FILE *nfile = file?file:cimg::fopen(nfilename,"wb");
++      double stmin, stmax = (double)max_min(stmin);
++#endif
+ 
+       if (_depth>1)
+         cimg::warn(_cimg_instance
+@@ -52188,7 +52200,7 @@ namespace cimg_library_suffixed {
+       png_error_ptr user_error_fn = 0, user_warning_fn = 0;
+       png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,user_error_ptr, user_error_fn,
+                                                     user_warning_fn);
+-      if(!png_ptr){
++      if (!png_ptr){
+         if (!file) cimg::fclose(nfile);
+         throw CImgIOException(_cimg_instance
+                               "save_png(): Failed to initialize 'png_ptr' structure when saving file '%s'.",
+@@ -52921,17 +52933,17 @@ namespace cimg_library_suffixed {
+        wtr.open(filename, imitate_file);
+      else {
+        minc::minc_info di;
+-       if(width()) di.push_back(minc::dim_info(width(),width()*0.5,-1,minc::dim_info::DIM_X));
+-       if(height()) di.push_back(minc::dim_info(height(),height()*0.5,-1,minc::dim_info::DIM_Y));
+-       if(depth()) di.push_back(minc::dim_info(depth(),depth()*0.5,-1,minc::dim_info::DIM_Z));
+-       if(spectrum()) di.push_back(minc::dim_info(spectrum(),spectrum()*0.5,-1,minc::dim_info::DIM_TIME));
++       if (width()) di.push_back(minc::dim_info(width(),width()*0.5,-1,minc::dim_info::DIM_X));
++       if (height()) di.push_back(minc::dim_info(height(),height()*0.5,-1,minc::dim_info::DIM_Y));
++       if (depth()) di.push_back(minc::dim_info(depth(),depth()*0.5,-1,minc::dim_info::DIM_Z));
++       if (spectrum()) di.push_back(minc::dim_info(spectrum(),spectrum()*0.5,-1,minc::dim_info::DIM_TIME));
+        wtr.open(filename,di,1,NC_FLOAT,0);
+      }
+-     if(typeid(T)==typeid(unsigned char))
++     if (typeid(T)==typeid(unsigned char))
+        wtr.setup_write_byte();
+-     else if(typeid(T)==typeid(int))
++     else if (typeid(T)==typeid(int))
+        wtr.setup_write_int();
+-     else if(typeid(T)==typeid(double))
++     else if (typeid(T)==typeid(double))
+        wtr.setup_write_double();
+      else
+        wtr.setup_write_float();
+@@ -56443,7 +56455,7 @@ namespace cimg_library_suffixed {
+         }
+         if (disp.is_resized()) { disp.resize(false); visu0.assign(); }
+         if (ym>=0 && ym<13) { if (!text_down) { visu.assign(); text_down = true; }}
+-        else if (ym>=visu.height() - 13) { if(text_down) { visu.assign(); text_down = false; }}
++        else if (ym>=visu.height() - 13) { if (text_down) { visu.assign(); text_down = false; }}
+         if (!exit_on_anykey && key && key!=cimg::keyESC &&
+             (key!=cimg::keyW || (!disp.is_keyCTRLLEFT() && !disp.is_keyCTRLRIGHT()))) {
+           key = 0;
+@@ -57564,7 +57576,7 @@ namespace cimg_library_suffixed {
+         if (nlast_frame>=nb_images) nlast_frame = nb_images - 1;
+         assign(1 + (nlast_frame - nfirst_frame)/nstep_frame);
+         TIFFSetDirectory(tif,0);
+-#if cimg_verbosity>=3
++#if cimg_verbosity<3
+         TIFFSetWarningHandler(0);
+         TIFFSetErrorHandler(0);
+ #endif
+@@ -58324,7 +58336,6 @@ namespace cimg_library_suffixed {
+         throw CImgIOException(_cimglist_instance
+                               "save_gzip_external(): Specified filename is (null).",
+                               cimglist_instance);
+-
+       CImg<charT> command(1024), filename_tmp(256), body(256);
+       const char
+         *ext = cimg::split_filename(filename,body),
+--- imager/src/Makevars.in.orig	2017-04-04 18:02:36.525410690 +0200
++++ imager/src/Makevars.in	2017-04-04 18:04:52.818449342 +0200
+@@ -1,3 +1,5 @@
+ PKG_CPPFLAGS = $(SHLIB_OPENMP_CFLAGS) @CPPFLAGS@ @HAVE_FFTW@ @FFTW_CFLAGS@ @TIFF_CFLAGS@ -I../inst/include -DCIMG_COMPILING -Dcimg_use_rng -Dcimg_use_r -Dcimg_use_fftw3_singlethread -Dcimg_verbosity=1 -Dcimg_date='""' -Dcimg_time='""'
+ PKG_LIBS =  $(SHLIB_OPENMP_CFLAGS) @LIBS@  @HAVE_FFTW@ @FFTW_LIBS@ @TIFF_LIBS@ $(RCPP_LDFLAGS)
+ 
++# disable Intel C++ compiler (icpc) warning/error #308, to avoid 'member "std::complex<double>::_M_value" is inaccessible'
++PKG_CXXFLAGS = -wd308
