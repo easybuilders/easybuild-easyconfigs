@@ -22,11 +22,12 @@ dependencies = [
     ('cuDNN','7.0'),
 ]
 
+# For reproducibility: use a submodule checkout from the git checkout that was used when
+# Caffe2 was first installed.
 preconfigopts =  'git clone https://github.com/caffe2/caffe2.git . && '
-preconfigopts += 'git checkout tags/v%(version)s && '
-preconfigopts += 'git cherry-pick 3e2bce5ed5 && ' # Fix cub submodule
+preconfigopts += 'git checkout aa3ef5609 && '
 preconfigopts += 'git submodule update --init --recursive && '
-preconfigopts += 'cd third_party/gloo && git checkout 7def89c5 && cd ../.. && '
+preconfigopts += 'git checkout tags/v%(version)s && '
 preconfigopts += 'wget https://raw.githubusercontent.com/ComputeCanada/easybuild-easyconfigs/computecanada-master/easybuild/easyconfigs/c/Caffe2/ipoib.patch && '
 preconfigopts += 'patch -p0 < ipoib.patch && '
 
@@ -38,7 +39,8 @@ buildopts = 'install'
 # Install step rebuilds most of the code and therefore it is done during build in order to speed up
 skipsteps = ['install']
 
-postinstallcmds = ['pip install --prefix=%(installdir)s flask future graphviz hypothesis jupyter matplotlib numpy protobuf pydot python-nvd3 pyyaml requests scikit-image scipy setuptools six tornado --upgrade --ignore-installed nbformat && /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib']
+# We need specific versions for all packages that are installed for reproducibility
+postinstallcmds = ['pip install --prefix=%(installdir)s bleach==2.0.0 click==6.7 configparser==3.5.0 entrypoints==0.2.3 Flask==0.12.2 future==0.16.0 graphviz==0.8 html5lib==0.999999999 hypothesis==3.21.0 itsdangerous==0.24 jupyter==1.0.0 jupyter_console==5.2.0 nbconvert==5.2.1 networkx==1.11 olefile==0.44 pandocfilters==1.4.2 Pillow==4.2.1 protobuf==3.4.0 pydot==1.2.3 python_nvd3==0.14.2 python_slugify==1.1.4 PyWavelets==0.5.2 PyYAML==3.12 qtconsole==4.3.1 scikit_image==0.13.0 Unidecode==0.04.21 webencodings==0.5.1 Werkzeug==0.12.2 && /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib']
 
 
 modextrapaths = {'PYTHONPATH': ['','lib/python2.7/site-packages']}
