@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'igraph'
+version = '0.7.1'
+
+homepage = 'http://igraph.org'
+description = """igraph is a collection of network analysis tools with the emphasis on 
+efficiency, portability and ease of use. igraph is open source and free. igraph can be 
+programmed in R, Python and C/C++."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'pic': True}
+
+sources = ['igraph-%(version)s.tar.gz']
+source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
+
+builddependencies = [('Autotools', '20150215'),
+                    ('Python', '3.5.2', '-nix', ('dummy','dummy')),
+                    ]
+py2shortver = '2.7'
+py3shortver = '3.5'
+
+patches = [
+    'igraph-%(version)s-no-lapack-no-blas.patch',
+    'igraph-%(version)s-fix-aclocal-version.patch'
+]
+
+# link against MKL rather than blas/lapack
+preconfigopts = "env LDFLAGS='-lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm'"
+configopts = "--with-external-blas=yes --with-external-lapack=yes"
+
+installopts  = ' && pip2 install python-igraph --prefix=%(installdir)s'
+installopts += ' && pip3 install python-igraph --prefix=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['lib/libigraph.so', 'lib/libigraph.la', 'lib/pkgconfig/igraph.pc'] +
+             ['include/igraph/%s' % x for x in ['igraph_version.h', 'igraph_types.h', 'igraph_constants.h']],
+    'dirs': [],
+}
+
+modextrapaths = {
+# EBPYTHONPREFIXES directories for current python version X.Y to PYTHONPATH.
+    'EBPYTHONPREFIXES': [''], 
+}
+
+moduleclass = 'lib'
