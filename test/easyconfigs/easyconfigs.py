@@ -252,7 +252,14 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a build dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
-        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
+        # let's also exclude the very special case where the system GCC is used as GCCcore, and only apply this
+        # exception to the dependencies of binutils (since we should eventually build binutils with GCCcore)
+        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen'] and\
+                            (ec['toolchain']['version'] == 'system' and
+                             ec['name'] not in ['M4', 'Bison', 'flex', 'help2man'])
+
+        if requires_binutils:
+            requires_binutils = requires_binutils not in
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
 
