@@ -1,0 +1,21 @@
+name = 'FLUENT'
+version = '18.2'
+
+homepage = 'http://www.ansys.com/Products/Simulation+Technology/Fluid+Dynamics/Fluid+Dynamics+Products/ANSYS+Fluent'
+description = """ANSYS FLUENT software contains the broad physical modeling capabilities needed
+to model flow, turbulence, heat transfer, and reactions for industrial applications ranging from
+air flow over an aircraft wing to combustion in a furnace, from bubble columns to oil platforms,
+from blood flow to semiconductor manufacturing, and from clean room design to wastewater treatment plants."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+sources = ['FLUIDSTRUCTURES_%(version_major)s%(version_minor)s_LINX64.tar']
+postinstallcmds = [
+	# find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+	# rename the built-in libstdc++.so* to libstdc++.so*.bak because they are older than what we have in Nix, and cause problem with other binaries
+	"find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+	# call setrpaths.sh on all subdirectories called bin, lib or lib64, or lnamd64
+	"for d in $(find %(installdir)s -name 'bin' -o -name 'lib' -o -name 'lib64' -o -name 'lnamd64'); do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done"
+]
+moduleclass = 'cae'
