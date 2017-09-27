@@ -257,9 +257,7 @@ def template_easyconfig_test(self, spec):
         requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen'] and\
                             (ec['toolchain']['version'] == 'system' and
                              ec['name'] not in ['M4', 'Bison', 'flex', 'help2man'])
-
-        if requires_binutils:
-            requires_binutils = requires_binutils not in
+            
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
 
