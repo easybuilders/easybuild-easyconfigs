@@ -1,0 +1,263 @@
+--- src/makefile.linux_ifc_P4.orig	2017-06-21 19:10:42.841234278 +0000
++++ src/makefile.linux_ifc_P4	2017-06-21 23:06:52.077205526 +0000
+@@ -47,9 +47,9 @@
+ #-----------------------------------------------------------------------
+ # fortran compiler and linker
+ #-----------------------------------------------------------------------
+-FC=ifc 
++# FC=ifc 
+ # fortran linker
+-FCL=$(FC)
++# FCL=$(FC)
+ 
+ 
+ #-----------------------------------------------------------------------
+@@ -64,7 +64,7 @@
+ #
+ #  SUSE X.X, maybe some Red Hat distributions:
+ 
+-CPP_ =  ./preprocess <$*.F | /usr/bin/cpp -P -C -traditional >$*$(SUFFIX)
++CPP_ =  ./preprocess <$*.F | /usr/bin/cpp -P -C -traditional -nostdinc >$*$(SUFFIX)
+ 
+ #-----------------------------------------------------------------------
+ # possible options for CPP:
+@@ -77,15 +77,15 @@
+ # RACCMU_DGEMV        use DGEMV instead of DGEMM in RACC (depends on used BLAS)
+ #-----------------------------------------------------------------------
+ 
+-CPP     = $(CPP_)  -DHOST=\"LinuxIFC\" \
+-          -Dkind8 -DNGXhalf -DCACHE_SIZE=12000 -DPGF90 -Davoidalloc \
++#CPP     = $(CPP_)  -DHOST=\"LinuxIFC\" \
++#          -Dkind8 -DNGXhalf -DCACHE_SIZE=12000 -DPGF90 -Davoidalloc \
+ #          -DRPROMU_DGEMV  -DRACCMU_DGEMV
+ 
+ #-----------------------------------------------------------------------
+ # general fortran flags  (there must a trailing blank on this line)
+ #-----------------------------------------------------------------------
+ 
+-FFLAGS =  -FR -lowercase -assume byterecl 
++FFLAGS =  -free -assume byterecl 
+ 
+ #-----------------------------------------------------------------------
+ # optimization
+@@ -99,13 +99,13 @@
+ # -tpp7 P4 optimization
+ #-----------------------------------------------------------------------
+ 
+-OFLAG=-O3 -xW -tpp7
++OFLAG = -O3 
+ 
+ OFLAG_HIGH = $(OFLAG)
+ OBJ_HIGH = 
+ 
+ OBJ_NOOPT = 
+-DEBUG  = -FR -O0
++DEBUG  = -free -O0
+ INLINE = $(OFLAG)
+ 
+ 
+@@ -133,10 +133,10 @@
+ 
+ # even faster Kazushige Goto's BLAS
+ # http://www.cs.utexas.edu/users/kgoto/signup_first.html
+-BLAS=  /opt/libs/libgoto/libgoto_p4_512-r0.6.so
++# BLAS=  /opt/libs/libgoto/libgoto_p4_512-r0.6.so
+ 
+ # LAPACK, simplest use vasp.4.lib/lapack_double
+-LAPACK= ../vasp.4.lib/lapack_double.o
++#LAPACK= ../vasp.4.lib/lapack_double.o
+ 
+ # use atlas optimized part of lapack 
+ #LAPACK= ../vasp.4.lib/lapack_atlas.o  -llapack -lcblas
+@@ -146,9 +146,9 @@
+ 
+ #-----------------------------------------------------------------------
+ 
+-LIB  = -L../vasp.4.lib -ldmy \
+-     ../vasp.4.lib/linpack_double.o $(LAPACK) \
+-     $(BLAS)
++# LIB  = -L../vasp.4.lib -ldmy \
++#      ../vasp.4.lib/linpack_double.o $(LAPACK) \
++#      $(BLAS)
+ 
+ # options for linking (for compiler version 6.X, 7.1) nothing is required
+ LINK    = 
+@@ -163,7 +163,7 @@
+ #-----------------------------------------------------------------------
+ 
+ #FFT3D   = fft3dfurth.o fft3dlib.o
+-FFT3D   = fftw3d.o fft3dlib.o   /opt/libs/fftw-3.0.1/lib/libfftw3.a
++#FFT3D   = fftw3d.o fft3dlib.o   /opt/libs/fftw-3.0.1/lib/libfftw3.a
+ 
+ 
+ #=======================================================================
+@@ -198,8 +198,8 @@
+ # suggested above,  you can use the following line
+ #-----------------------------------------------------------------------
+ 
+-#FC=mpif77
+-#FCL=$(FC)
++FC=mpif77 -mkl -I$(MKLROOT)/include/fftw
++FCL=$(FC)
+ 
+ #-----------------------------------------------------------------------
+ # additional options for CPP in parallel version (see also above):
+@@ -208,9 +208,9 @@
+ # scaLAPACK             use scaLAPACK (usually slower on 100 Mbit Net)
+ #-----------------------------------------------------------------------
+ 
+-#CPP    = $(CPP_) -DMPI  -DHOST=\"LinuxIFC\" -DIFC \
+-#     -Dkind8 -DNGZhalf -DCACHE_SIZE=4000 -DPGF90 -Davoidalloc \
+-#     -DMPI_BLOCK=500  \
++CPP    = $(CPP_) -DMPI  -DHOST=\"LinuxIFC\" -DIFC \
++         -DwNGZhalf -DNGZhalf -DCACHE_SIZE=4000 -DPGF90 -Davoidalloc \
++         -DMPI_BLOCK=500
+ ##    -DRPROMU_DGEMV  -DRACCMU_DGEMV
+ 
+ #-----------------------------------------------------------------------
+@@ -218,27 +218,26 @@
+ # if you do not use SCALAPACK simply uncomment the line SCA
+ #-----------------------------------------------------------------------
+ 
+-BLACS=$(HOME)/archives/SCALAPACK/BLACS/
+-SCA_=$(HOME)/archives/SCALAPACK/SCALAPACK
+-
+-SCA= $(SCA_)/libscalapack.a  \
+- $(BLACS)/LIB/blacsF77init_MPI-LINUX-0.a $(BLACS)/LIB/blacs_MPI-LINUX-0.a $(BLACS)/LIB/blacsF77init_MPI-LINUX-0.a
+-
+-SCA=
++# BLACS = -lblacsF77init -lblacs
++BLACS      = -lmkl_blacs_intelmpi_lp64
++MKL_PATH   = $(MKLROOT)/lib/intel64
++SCA= $(MKL_PATH)/libmkl_scalapack_lp64.a $(BLACS)
++LAPACK =
+ 
+ #-----------------------------------------------------------------------
+ # libraries for mpi
+ #-----------------------------------------------------------------------
+ 
+-#LIB     = -L../vasp.4.lib -ldmy  \
+-#      ../vasp.4.lib/linpack_double.o $(LAPACK) \
+-#      $(SCA) $(BLAS)
++LIB     = -L../vasp.4.lib -ldmy  \
++          ../vasp.4.lib/linpack_double.o \
++          $(SCA) $(LAPACK)
+ 
+ # FFT: fftmpi.o with fft3dlib of Juergen Furthmueller
+ #FFT3D   = fftmpi.o fftmpi_map.o fft3dlib.o 
+ 
+ # fftw.3.0.1 is slighly faster and should be used if available
+-#FFT3D   = fftmpiw.o fftmpi_map.o fft3dlib.o   /opt/libs/fftw-3.0.1/lib/libfftw3.a
++FFT3D   = fftmpiw.o fftmpi_map.o fft3dlib.o  
++FFT3DLIB =
+ 
+ #-----------------------------------------------------------------------
+ # general rules and compile lines
+@@ -253,7 +252,9 @@
+          mix.o      charge.o   xcgrad.o   xcspin.o    potex1.o   potex2.o  \
+          metagga.o  constrmag.o pot.o      cl_shift.o force.o    dos.o      elf.o      \
+          tet.o      hamil.o    steep.o    \
+-         chain.o    dyna.o     relativistic.o LDApU.o sphpro.o  paw.o   us.o \
++         dimer.o    dynmat.o   neb.o      lanczos.o   instanton.o \
++         sd.o       cg.o       qm.o       lbfgs.o     bfgs.o  fire.o   opt.o \
++         chain.o    dyna.o     relativistic.o LDApU.o sphpro.o  bdrpro.o paw.o   us.o \
+          ebs.o      wavpre.o   wavpre_noio.o broyden.o \
+          dynbr.o    rmm-diis.o reader.o   writer.o   tutor.o xml_writer.o \
+          brent.o    stufak.o   fileio.o   opergrid.o stepver.o  \
+@@ -262,21 +263,21 @@
+          optics.o   constr_cell_relax.o   stm.o    finite_diff.o \
+          elpol.o    setlocalpp.o aedens.o 
+  
+-INC=
++INC = 
+ 
+-vasp: $(SOURCE) $(FFT3D) $(INC) main.o 
++vasp: $(SOURCE) $(FFT3D)  main.o 
+ 	rm -f vasp
+-	$(FCL) -o vasp $(LINK) main.o  $(SOURCE)   $(FFT3D) $(LIB) 
++	$(FCL) -o vasp $(LINK) main.o  $(SOURCE)   $(FFT3D)  $(LIB) 
+ makeparam: $(SOURCE) $(FFT3D) makeparam.o main.F $(INC)
+-	$(FCL) -o makeparam  $(LINK) makeparam.o $(SOURCE) $(FFT3D) $(LIB)
++	$(FCL) -o makeparam  $(LINK) makeparam.o $(SOURCE) $(FFT3D) $(FFT3DLIB) $(LIB)
+ zgemmtest: zgemmtest.o base.o random.o $(INC)
+ 	$(FCL) -o zgemmtest $(LINK) zgemmtest.o random.o base.o $(LIB)
+ dgemmtest: dgemmtest.o base.o random.o $(INC)
+ 	$(FCL) -o dgemmtest $(LINK) dgemmtest.o random.o base.o $(LIB) 
+ ffttest: base.o smart_allocate.o mpi.o mgrid.o random.o ffttest.o $(FFT3D) $(INC)
+-	$(FCL) -o ffttest $(LINK) ffttest.o mpi.o mgrid.o random.o smart_allocate.o base.o $(FFT3D) $(LIB)
+-kpoints: $(SOURCE) $(FFT3D) makekpoints.o main.F $(INC)
+-	$(FCL) -o kpoints $(LINK) makekpoints.o $(SOURCE) $(FFT3D) $(LIB)
++	$(FCL) -o ffttest $(LINK) ffttest.o mpi.o mgrid.o random.o smart_allocate.o base.o $(FFT3D) $(FFT3DLIB) $(LIB)
++kpoints: $(SOURCE) $(FFT3D) $(FFT3DLIB) makekpoints.o main.F $(INC)
++	$(FCL) -o kpoints $(LINK) makekpoints.o $(SOURCE) $(FFT3D) $(FFT3DLIB) $(LIB)
+ 
+ clean:	
+ 	-rm -f *.g *.f *.o *.L *.mod ; touch *.F
+@@ -340,40 +341,40 @@
+ 
+ fft3dlib.o : fft3dlib.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O1 -tpp7 -xW -unroll0 -e95 -vec_report3 -c $*$(SUFFIX)
++	$(FC) -free -O1  -unroll0 -vec_report3 -c $*$(SUFFIX)
+ fft3dfurth.o : fft3dfurth.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O1 -c $*$(SUFFIX)
++	$(FC) -free -O1 -c $*$(SUFFIX)
+ 
+ radial.o : radial.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O1 -c $*$(SUFFIX)
++	$(FC) -free -O1 -c $*$(SUFFIX)
+ 
+ symlib.o : symlib.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O1 -c $*$(SUFFIX)
++	$(FC) -free -O1 -c $*$(SUFFIX)
+ 
+ symmetry.o : symmetry.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O1 -c $*$(SUFFIX)
++	$(FC) -free -O1 -c $*$(SUFFIX)
+ 
+ dynbr.o : dynbr.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O1 -c $*$(SUFFIX)
++	$(FC) -free -O1 -c $*$(SUFFIX)
+ 
+ broyden.o : broyden.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O2 -c $*$(SUFFIX)
++	$(FC) -free -O2 -c $*$(SUFFIX)
+ 
+ us.o : us.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O1 -c $*$(SUFFIX)
++	$(FC) -free -O1 -c $*$(SUFFIX)
+ 
+ wave.o : wave.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O0 -c $*$(SUFFIX)
++	$(FC) -free -O0 -c $*$(SUFFIX)
+ 
+ LDApU.o : LDApU.F
+ 	$(CPP)
+-	$(FC) -FR -lowercase -O2 -c $*$(SUFFIX)
++	$(FC) -free -O2 -c $*$(SUFFIX)
+
+--- vasp.4.lib/makefile.linux_ifc_P4.orig        2013-09-16 18:59:55.000000000 -0700
++++ vasp.4.lib/makefile.linux_ifc_P4       2017-06-21 16:32:51.023921157 -0700
+@@ -16,11 +16,11 @@
+ 
+ # C-preprocessor
+ CPP     = gcc -E -P -C $*.F >$*.f
+-FC=ifc
++FC=ifort
+ 
+ CFLAGS = -O
+-FFLAGS = -O0 -FI
+-FREE   =  -FR
++FFLAGS = -O0 -axSSE4.2,SSE4.1 -xSSSE3 -ip -fixed
++FREE   =  -free
+ 
+ DOBJ =  preclib.o timing_.o derrf_.o dclock_.o  diolib.o dlexlib.o drdatab.o
+ 

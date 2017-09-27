@@ -1,0 +1,81 @@
+--- src/main.F.orig     2017-06-19 17:49:26.562295244 +0000
++++ src/main.F  2017-06-19 17:49:33.193231577 +0000
+@@ -3220,7 +3220,7 @@
+       CALL DYNMATFULL_ENERGY_FORCE(SCALEE, T_INFO%NIONS, DYN%POSION, TOTEN, TIFOR, LATT_CUR%A , IO%IU0)
+ 
+       CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
+-           LATT_CUR%A,LATT_CUR%B,IO%IU6)
++           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6)
+ 
+       CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
+            LATT_CUR%A,LATT_CUR%B,IO%IU6)
+
+--- src/.objects.orig	2017-06-15 09:59:01.000000000 -0700
++++ src/.objects	2017-06-15 12:10:36.000000000 -0700
+@@ -64,6 +64,19 @@
+ 	tet.o \
+ 	tetweight.o \
+ 	hamil_rot.o \
++	bfgs.o \
++	dynmat.o \
++	instanton.o \
++	lbfgs.o \
++	sd.o \
++	cg.o \
++	dimer.o \
++	bbm.o \
++	fire.o \
++	lanczos.o \
++	neb.o \
++	qm.o \
++	opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	k-proj.o \
+
+--- arch/makefile.include.linux_intel_cuda.orig 2017-06-28 05:38:50.220797971 +0000
++++ arch/makefile.include.linux_intel_cuda      2017-06-28 05:41:33.126235975 +0000
+@@ -2,13 +2,11 @@
+ CPP_OPTIONS= -DMPI -DHOST=\"LinuxIFC\" -DIFC \
+              -DCACHE_SIZE=4000 -DPGF90 -Davoidalloc \
+              -DMPI_BLOCK=8000 -Duse_collective \
+-             -DnoAugXCmeta -Duse_bse_te \
+-             -Duse_shmem -Dkind8 
+-
++             -Duse_bse_te -Duse_shmem -Dtbdyn
+ CPP        = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
+ 
+-FC         = mpiifort
+-FCL        = mpiifort -mkl -lstdc++
++FC         = mpifort
++FCL        = mpifort -mkl -lstdc++
+ 
+ FREE       = -free -names lowercase
+ 
+@@ -20,11 +18,10 @@
+ MKL_PATH   = $(MKLROOT)/lib/intel64
+ BLAS       =
+ LAPACK     =
+-BLACS      = -lmkl_blacs_intelmpi_lp64
++BLACS      = -lmkl_blacs_openmpi_lp64
+ SCALAPACK  = $(MKL_PATH)/libmkl_scalapack_lp64.a $(BLACS)
+ 
+-OBJECTS    = fftmpiw.o fftmpi_map.o fft3dlib.o fftw3d.o \
+-             $(MKLROOT)/interfaces/fftw3xf/libfftw3xf_intel.a
++OBJECTS    = fftmpiw.o fftmpi_map.o fft3dlib.o fftw3d.o 
+ 
+ INCS       =-I$(MKLROOT)/include/fftw
+ 
+@@ -57,9 +54,9 @@
+ OBJECTS_GPU = fftmpiw.o fftmpi_map.o fft3dlib.o fftw3d_gpu.o fftmpiw_gpu.o \
+               $(MKLROOT)/interfaces/fftw3xf/libfftw3xf_intel.a
+ 
+-CUDA_ROOT  := /usr/local/cuda/
+-NVCC       := $(CUDA_ROOT)/bin/nvcc
+-CUDA_LIB   := -L$(CUDA_ROOT)/lib64 -lnvToolsExt -lcudart -lcuda -lcufft -lcublas
++#CUDA_ROOT  := /usr/local/cuda/
++NVCC       := $(CUDA_PATH)/bin/nvcc
++CUDA_LIB   := -L$(CUDA_PATH)/lib64 -lnvToolsExt -lcudart -lcuda -lcufft -lcublas
+ 
+ GENCODE_ARCH    := -gencode=arch=compute_30,code=\"sm_30,compute_30\" -gencode=arch=compute_35,code=\"sm_35,compute_35\"
+ 
