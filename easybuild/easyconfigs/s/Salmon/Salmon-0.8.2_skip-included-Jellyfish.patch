@@ -1,0 +1,99 @@
+* skip downloading and building of Jellyfish, since it's provided via EasyBuild already
+* don't hardcode $CMAKE_CXX_FLAGS
+author: Paul Jähne
+--- CMakeLists.txt.orig 2017-07-05 08:07:10.000000000 +0200
++++ CMakeLists.txt      2017-07-05 08:15:13.000000000 +0200
+@@ -32,7 +32,7 @@
+ 
+ ## Set the standard required compile flags
+ # Nov 18th --- removed -DHAVE_CONFIG_H
+-set (CMAKE_CXX_FLAGS "-pthread -ftree-vectorize -funroll-loops -fPIC -fomit-frame-pointer -O3 -DRAPMAP_SALMON_SUPPORT -DHAVE_ANSI_TERM -DHAVE_SSTREAM -Wall -Wno-unknown-pragmas -Wno-reorder -Wno-unused-variable -std=c++11 -Wreturn-type -Werror=return-type")
++set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L$ENV{EBROOTJELLYFISH}/lib -ljellyfish-2.0 -pthread -DRAPMAP_SALMON_SUPPORT -DHAVE_ANSI_TERM -DHAVE_SSTREAM -Wall -Wno-reorder -Wno-unused-variable -std=c++11 -Wreturn-type -Werror=return-type")
+ 
+ ##
+ # OSX is strange (some might say, stupid in this regard).  Deal with it's quirkines here.
+@@ -459,33 +459,6 @@
+     BUILD_IN_SOURCE TRUE
+ )
+ 
+-find_package(Jellyfish 2.2.6)
+-
+-if (NOT JELLYFISH_FOUND)
+-message("Build system will fetch and build Jellyfish")
+-message("==================================================================")
+-ExternalProject_Add(libjellyfish
+-    DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external
+-    ##
+-    #URL  https://github.com/gmarcais/Jellyfish/releases/download/v2.2.6/jellyfish-2.2.6.tar.gz
+-    #DOWNLOAD_NAME jellyfish-2.2.6.tgz
+-    #URL_HASH SHA1=53819a57ea8ffae26e3f917babf978f8215ef117
+-    #TLS_VERIFY FALSE
+-    ##
+-    DOWNLOAD_COMMAND curl -k -L https://github.com/gmarcais/Jellyfish/releases/download/v2.2.6/jellyfish-2.2.6.tar.gz -o jellyfish-2.2.6.tgz &&
+-                     ${SHASUM} 4532fb003a0494f6473bb97d52467904f631b94f7f9afb0d45b398f6c413692e  jellyfish-2.2.6.tgz &&
+-    	rm -fr jellyfish-2.2.6 &&
+-     	tar -xzvf jellyfish-2.2.6.tgz
+-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.6
+-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/install
+-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.6/configure --prefix=<INSTALL_DIR> CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+-    BUILD_COMMAND ${MAKE} CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+-    BUILD_IN_SOURCE 1
+-    INSTALL_COMMAND make ${QUIET_MAKE} install
+-)
+-set (FETCHED_JELLYFISH TRUE)
+-endif()
+-
+ ## Try and find TBB first
+ find_package(TBB 4.4 COMPONENTS tbb tbbmalloc tbbmalloc_proxy )
+ 
+--- src/CMakeLists.txt.orig        2017-07-05 09:12:35.000000000 +0200
++++ src/CMakeLists.txt     2017-07-05 09:18:12.000000000 +0200
+@@ -4,7 +4,6 @@
+ ${GAT_SOURCE_DIR}/external
+ ${GAT_SOURCE_DIR}/external/cereal/include
+ ${GAT_SOURCE_DIR}/external/install/include
+-${GAT_SOURCE_DIR}/external/install/include/jellyfish-2.2.6
+ ${GAT_SOURCE_DIR}/external/install/include/bwa
+ ${ZLIB_INCLUDE_DIR}
+ ${TBB_INCLUDE_DIRS}
+@@ -12,12 +11,6 @@
+ ${GAT_SOURCE_DIR}/external/install/include/rapmap
+ )
+ 
+-if (JELLYFISH_FOUND)
+-    include_directories(${JELLYFISH_INCLUDE_DIR})
+-else()
+-    include_directories(${GAT_SOURCE_DIR}/external/install/include/jellyfish-2.2.6)
+-endif()
+-
+ set ( SALMON_MAIN_SRCS
+ QSufSort.c
+ is.c
+@@ -135,7 +128,6 @@
+     ${ZLIB_LIBRARY}
+     ${SUFFARRAY_LIB}
+     ${SUFFARRAY64_LIB}
+-    ${GAT_SOURCE_DIR}/external/install/lib/libjellyfish-2.0.a
+     ${GAT_SOURCE_DIR}/external/install/lib/libbwa.a
+     m
+     ${LIBLZMA_LIBRARIES}
+@@ -160,11 +152,6 @@
+    add_dependencies(salmon libboost)
+ endif()
+ 
+-if (${FETCHED_JELLYFISH})
+-   add_dependencies(salmon_core libjellyfish)
+-   add_dependencies(salmon libjellyfish)
+-endif()
+-
+ if (${FETCHED_TBB})
+    add_dependencies(salmon_core libtbb)
+    add_dependencies(salmon libtbb)
+@@ -193,7 +180,6 @@
+     ${ZLIB_LIBRARY}
+     ${SUFFARRAY_LIB}
+     ${SUFFARRAY64_LIB}
+-    ${GAT_SOURCE_DIR}/external/install/lib/libjellyfish-2.0.a
+     ${GAT_SOURCE_DIR}/external/install/lib/libbwa.a
+     m
+     ${LIBLZMA_LIBRARIES}
