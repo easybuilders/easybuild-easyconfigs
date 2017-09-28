@@ -247,16 +247,18 @@ def template_easyconfig_test(self, spec):
         'hpcugent.github.io/easybuild',
     ]
     for old_url in old_urls:
-        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' found in %s" % (old_url, spec))
+        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
 
     # make sure binutils is included as a build dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
+        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
+
         # let's also exclude the very special case where the system GCC is used as GCCcore, and only apply this
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
-        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen'] and\
-                            (ec['toolchain']['version'] == 'system' and
-                             ec['name'] not in ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils'])
+        binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
+        requires_binutils &= bool(ec['toolchain']['version'] == 'system' and
+                                  ec['name'] not in binutils_complete_dependencies)
             
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
