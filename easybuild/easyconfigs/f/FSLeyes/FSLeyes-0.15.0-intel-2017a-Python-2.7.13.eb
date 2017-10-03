@@ -1,0 +1,66 @@
+easyblock = 'Bundle'
+
+name = 'FSLeyes'
+version = '0.15.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://git.fmrib.ox.ac.uk/fsl/fsleyes/fsleyes'
+description = "FSLeyes is the FSL image viewer."
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+dependencies = [
+    ('Python', '2.7.13'),
+    ('matplotlib', '2.0.2', versionsuffix + '-libpng-1.6.29'),
+    ('wxPython', '3.0.2.0', versionsuffix),
+    ('NiBabel', '2.1.0', versionsuffix),
+    ('Pillow', '4.3.0', versionsuffix),
+]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('indexed-gzip', '0.6.0', {
+        # source tarball on PyPI is crippled, missing zran.h?
+        'source_urls': ['https://github.com/pauldmccarthy/indexed_gzip/archive/'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'modulename': 'indexed_gzip',
+    }),
+    ('PyOpenGL-accelerate', '3.1.1a1', {
+        'source_urls': ['https://pypi.python.org/packages/source/P/PyOpenGL-accelerate'],
+        'modulename': 'OpenGL_accelerate',
+    }),
+    ('PyOpenGL', '3.1.1a1', {
+        'source_urls': ['https://pypi.python.org/packages/source/P/PyOpenGL'],
+        'modulename': 'OpenGL',
+    }),
+    ('fsleyes-widgets', '0.0.6', {
+        'source_urls': ['https://pypi.python.org/packages/source/f/fsleyes-widgets'],
+        'modulename': 'fsleyes_widgets',
+    }),
+    ('fsleyes-props', '1.2.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/f/fsleyes-props'],
+        'modulename': 'fsleyes_props',
+    }),
+    ('fslpy', '1.2.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/f/fslpy'],
+        'modulename': 'fsl',
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/f/fsleyes'],
+        'source_tmpl': 'fsleyes-%(version)s.tar.gz',
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'vis'
