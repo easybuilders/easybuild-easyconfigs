@@ -1,0 +1,62 @@
+--- ./tools/cpp/cc_configure.bzl.orig	2017-09-28 16:17:20.762830355 +0000
++++ ./tools/cpp/cc_configure.bzl	2017-09-28 16:19:43.517551585 +0000
+@@ -122,7 +122,7 @@
+ 
+ def _get_tool_paths(repository_ctx, darwin, cc):
+   """Compute the path to the various tools. Doesn't %-escape the result!"""
+-  return {k: _which(repository_ctx, k, "/usr/bin/" + k)
++  return {k: _which(repository_ctx, k, "$NIXUSER_PROFILE/bin/" + k)
+           for k in [
+               "ld",
+               "cpp",
+@@ -134,8 +134,8 @@
+               "strip",
+           ]} + {
+               "gcc": cc,
+-              "ar": "/usr/bin/libtool"
+-                    if darwin else _which(repository_ctx, "ar", "/usr/bin/ar")
++              "ar": "$NIXUSER_PROFILE/bin/libtool"
++                    if darwin else _which(repository_ctx, "ar", "$NIXUSER_PROFILE/bin/ar")
+           }
+ 
+ 
+@@ -273,8 +273,8 @@
+           "-headerpad_max_install_names",
+           ] if darwin else [
+               "-B" + str(repository_ctx.path(cc).dirname),
+-              # Always have -B/usr/bin, see https://github.com/bazelbuild/bazel/issues/760.
+-              "-B/usr/bin",
++              # Always have -B$NIXUSER_PROFILE/bin, see https://github.com/bazelbuild/bazel/issues/760.
++              "-B$NIXUSER_PROFILE/bin",
+               # Gold linker only? Can we enable this by default?
+               # "-Wl,--warn-execstack",
+               # "-Wl,--detect-odr-violations"
+@@ -306,8 +306,8 @@
+           # Enable a few more warnings that aren't part of -Wall.
+       ] + (["-Wthread-safety", "-Wself-assign"] if darwin else [
+           "-B" + _escape_string(str(repository_ctx.path(cc).dirname)),
+-          # Always have -B/usr/bin, see https://github.com/bazelbuild/bazel/issues/760.
+-          "-B/usr/bin",
++          # Always have -B$NIXUSER_PROFILE/bin, see https://github.com/bazelbuild/bazel/issues/760.
++          "-B$NIXUSER_PROFILE/bin",
+       ]) + (
+           # Disable problematic warnings.
+           _add_option_if_supported(repository_ctx, cc, "-Wunused-but-set-parameter") +
+@@ -328,7 +328,7 @@
+   bazel_sh = _get_env_var(repository_ctx, "BAZEL_SH").replace("\\", "/").lower()
+   tokens = bazel_sh.rsplit("/", 1)
+   msys_root = None
+-  if tokens[0].endswith("/usr/bin"):
++  if tokens[0].endswith("$NIXUSER_PROFILE/bin"):
+     msys_root = tokens[0][:len(tokens[0]) - len("usr/bin")]
+   elif tokens[0].endswith("/bin"):
+     msys_root = tokens[0][:len(tokens[0]) - len("bin")]
+@@ -354,7 +354,7 @@
+       '   cxx_flag: "-std=gnu++0x"\n' +
+       '   linker_flag: "-lstdc++"\n' +
+       '   cxx_builtin_include_directory: "%s"\n' % escaped_msys_root +
+-      '   cxx_builtin_include_directory: "/usr/"\n' +
++      '   cxx_builtin_include_directory: "$NIXUSER_PROFILE/"\n' +
+       '   tool_path { name: "gcov" path: "%susr/bin/gcov" }\n' % escaped_msys_root +
+       '   tool_path { name: "ld" path: "%susr/bin/ld" }\n' % escaped_msys_root +
+       '   tool_path { name: "nm" path: "%susr/bin/nm" }\n' % escaped_msys_root +
