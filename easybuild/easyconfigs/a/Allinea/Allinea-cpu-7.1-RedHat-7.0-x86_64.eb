@@ -20,11 +20,26 @@ dependencies = [ ('Allinea', '7.1') ]
 
 moduleclass = 'tools'
 
-# For the conflict see bug: https://github.com/open-mpi/ompi/issues/3660
 modluafooter = """
-conflict ("openmpi/2.1.1")
+require("SitePackage")
+local found = find_and_define_license_file("ALLINEA_LICENSE_FILE","allinea-cpu")
+if (not found) then
+	local error_message = [[
+	We did not find a suitable license fo Allinea Forge. If you think this should not be correct, please contact technical support.
 
-setenv("ALLINEA_LICENCE_DIR", pathJoin("/cvmfs/restricted.computecanada.ca/config/licenses/allinea-cpu", os.getenv("CC_CLUSTER")))
+	Nous n'avons pas trouve de licence utilisable pour Allinea Forge. Si vous croyez qu'une licence devrait etre disponible, veuillez contacter le soutien technique.
+	]]
+	LmodError(error_message)
+end
+
+if is_loaded("openmpi/2.1.1") then
+	local error_message = [[
+	OpenMPI 2.1.1 is not compatible with Allinea Forge, please try 'module load openmpi/2.0.2'.
+	OpenMPI 2.1.1 n'est pas compatible avec Allinea Forge , veuillez essayer 'module load openmpi/2.0.2'.
+	https://github.com/open-mpi/ompi/issues/3660
+	]]
+	LmodError(error_message)
+endif
 
 add_property("type_","tools")
 
