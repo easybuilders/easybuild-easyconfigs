@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'Gdk-Pixbuf'
+version = '2.36.10'
+
+homepage = 'https://developer.gnome.org/gdk-pixbuf/stable/'
+description = """
+ The Gdk Pixbuf is a toolkit for image loading and pixel buffer manipulation.
+ It is used by GTK+ 2 and GTK+ 3 to load and manipulate images. In the past it
+ was distributed as part of GTK+ 2 but it was split off into a separate package
+ in preparation for the change to GTK+ 3.
+"""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = [FTPGNOME_SOURCE]
+sources = [SOURCELOWER_TAR_XZ]
+patches = ['Gdk-Pixbuf-%(version)s-disable-gio-sniffing.patch']
+checksums = [
+    'f8f6fa896b89475c73b6e9e8d2a2b062fc359c4b4ccb8e96470d6ab5da949ace',  # gdk-pixbuf-2.36.10.tar.xz
+    '840231db69ccc2a1335c4f29c305cdd0ba570254e779c2a274611aaff968878e',  # Gdk-Pixbuf-2.36.10-disable-gio-sniffing.patch
+]
+
+builddependencies = [
+    ('GObject-Introspection', '1.53.5', '-Python-2.7.13')
+]
+dependencies = [
+    ('GLib', '2.53.5'),
+    ('libjpeg-turbo', '1.5.2'),
+    ('libpng', '1.6.29'),
+    ('LibTIFF', '4.0.8'),
+]
+
+configopts = "--disable-maintainer-mode --enable-debug=no --enable-introspection=yes "
+configopts += "--disable-Bsymbolic --without-gdiplus --enable-shared --enable-static"
+
+sanity_check_paths = {
+    'files': ['lib/libgdk_pixbuf-%(version_major)s.0.a', 'lib/libgdk_pixbuf-%%(version_major)s.0.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include/gdk-pixbuf-%(version_major)s.0', 'lib/gdk-pixbuf-%(version_major)s.0', 'share'],
+}
+
+modextrapaths = {
+    'XDG_DATA_DIRS': 'share',
+}
+
+moduleclass = 'vis'

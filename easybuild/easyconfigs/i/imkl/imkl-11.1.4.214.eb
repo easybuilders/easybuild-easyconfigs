@@ -1,0 +1,53 @@
+# This is an easyconfig file for EasyBuild, see http://hpcugent.github.io/easybuild
+
+name = 'imkl'
+version = '11.1.4.214'
+
+homepage = 'http://software.intel.com/en-us/intel-mkl/'
+description = """Intel Math Kernel Library is a library of highly optimized,
+ extensively threaded math routines for science, engineering, and financial
+ applications that require maximum performance. Core math functions include
+ BLAS, LAPACK, ScaLAPACK, Sparse Solvers, Fast Fourier Transforms, Vector Math, and more."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+sources = ['l_mkl_%(version)s.tgz']
+
+# first and last are ignored because of syntax changes
+components = ['intel-compilerpro-common__noarch', 'intel-compilerpro-common', 'intel-mkl', 'intel-compilerpro-common__noarch']
+
+interfaces = False
+
+dontcreateinstalldir = 'True'
+
+# We let the non-hidden intel module define the run-time license
+license_file = "/cvmfs/soft.computecanada.ca/config/licenses/intel/computecanada.lic"
+skip_license_file_in_module = True
+
+postinstallcmds = [
+    # extract the examples
+    'tar xvzf %(installdir)s/mkl/examples/examples_cluster.tgz -C %(installdir)s/mkl/examples/',
+    'tar xvzf %(installdir)s/mkl/examples/examples_core.tgz -C %(installdir)s/mkl/examples/',
+    'tar xvzf %(installdir)s/mkl/examples/examples_f95.tgz -C %(installdir)s/mkl/examples/',
+    'tar xvzf %(installdir)s/mkl/examples/examples_mic.tgz -C %(installdir)s/mkl/examples/',
+    'mkdir -p %(installdir)s/lib/intel64/locale', # only to pass sanity check
+  '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
+     installdir=%(installdir)s
+     publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
+     for i in $(grep "mkl.*\.so" $installdir/composerxe/Documentation/en_US/mkl/redist.txt | cut -c 13-); do
+       if [ -f $installdir/$i ]; then
+         mkdir -p $(dirname $publicdir/$i)
+         cp -p $installdir/$i $publicdir/$i
+       fi
+     done'''
+]
+
+modextravars = {
+    'MKL_EXAMPLES': '%(installdir)s/mkl/examples/',
+}
+
+modluafooter = '''
+prepend_path("LIBRARY_PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "mkl/lib/intel64"))
+'''
+
+moduleclass = 'numlib'

@@ -1,0 +1,51 @@
+easyblock = 'Bundle'
+
+name = 'NiBabel'
+version = '2.1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://nipy.github.io/nibabel'
+description = """NiBabel provides read/write access to some common medical and neuroimaging file formats,
+ including: ANALYZE (plain, SPM99, SPM2 and later), GIFTI, NIfTI1, NIfTI2, MINC1, MINC2, MGH and ECAT
+ as well as Philips PAR/REC. We can read and write Freesurfer geometry, and read Freesurfer morphometry and
+ annotation files. There is some very limited support for DICOM. NiBabel is the successor of PyNIfTI."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+dependencies = [
+    ('Python', '2.7.13'),
+    ('Pillow', '4.3.0', versionsuffix),
+]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('pydicom', '0.9.9', {
+        'modulename': 'dicom',
+        'source_urls': ['https://pypi.python.org/packages/source/p/pydicom'],
+        'start_dir': 'source',
+        'checksums': [
+            '09b82896319d9b0e5e95dae64875c37413b6ca9b974f4bb785564875f617236a',  # pydicom-0.9.9.tar.gz
+        ],
+    }),
+    ('NiBabel', '2.1.0', {
+        'source_tmpl': 'nibabel-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/n/nibabel'],
+        'checksums': [
+            '9cc37ed9107319aca79177e3fed422da9677606bd72cf5697f14fc5a4b3a2738',  # nibabel-2.1.0.tar.gz
+        ],
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/nib-dicomfs', 'bin/nib-ls', 'bin/nib-nifti-dx', 'bin/parrec2nii'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/nibabel', 'lib/python%(pyshortver)s/site-packages/nisext'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'vis'
