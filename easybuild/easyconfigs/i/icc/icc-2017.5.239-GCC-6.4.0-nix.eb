@@ -1,0 +1,49 @@
+# This is an easyconfig file for EasyBuild, see http://hpcugent.github.io/easybuild
+
+name = 'icc'
+version = '2017.5.239'
+
+homepage = 'http://software.intel.com/en-us/intel-compilers/'
+description = "C and C++ compiler from Intel"
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+sources = ['parallel_studio_xe_%(version_major)s_update%(version_minor)s.tgz']
+
+checksums = ['36e496d1d1d7d7168cc3ba8f5bca9b52022339f30b62a87ed064b77a5cbccc09']
+
+dependencies = [
+    ('GCCcore', '6.4.0'),
+]
+
+# list of regex for components to install
+# full list of components can be obtained from pset/mediaconfig.xml in unpacked sources
+# cfr. https://software.intel.com/en-us/articles/intel-composer-xe-2015-silent-installation-guide
+components = ['intel-comp', 'intel-ccomp', 'intel-icc', 'intel-openmp', 'intel-ipsc?_']
+
+dontcreateinstalldir = 'True'
+
+# We let the non-hidden intel module define the run-time license
+license_file = "/cvmfs/soft.computecanada.ca/config/licenses/intel/computecanada.lic"
+skip_license_file_in_module = True
+
+#compilers_and_libraries_2017.5.239/licensing/compiler/en/credist.txt
+postinstallcmds = [
+  '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
+     installdir=%(installdir)s
+     publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
+     for i in $(grep "compiler.*\.so" $installdir/compilers_and_libraries_%(version)s/licensing/compiler/en/credist.txt | cut -c 13-); do
+       if [ -f $installdir/$i ]; then
+         mkdir -p $(dirname $publicdir/$i)
+         cp -p $installdir/$i $publicdir/$i
+       fi
+     done'''
+]
+
+modluafooter = '''
+prepend_path("LIBRARY_PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "composer_xe_%(version)s/compiler/lib/intel64"))
+'''
+
+hidden = True
+
+moduleclass = 'compiler'
