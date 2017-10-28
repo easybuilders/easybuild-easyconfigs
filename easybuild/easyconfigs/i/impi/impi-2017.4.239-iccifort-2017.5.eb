@@ -23,8 +23,14 @@ postinstallcmds = [
   '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
      installdir=%(installdir)s
      publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
+     for i in $(grep installdir.*licensing $installdir/compilers_and_libraries_2017.5.239/licensing/mpi/en/redist.txt | cut -c 13-); do
+       if [ -e $installdir/$i ]; then
+         mkdir -p $(dirname $publicdir/$i)
+         cp -a $installdir/$i $publicdir/$i
+       fi
+     done
      for i in $(grep installdir.*linux $installdir/compilers_and_libraries_2017.5.239/licensing/mpi/en/redist.txt | cut -c 59-); do
-       if [ -f $installdir/$i ]; then
+       if [ -e $installdir/$i ]; then
          mkdir -p $(dirname $publicdir/$i)
          cp -a $installdir/$i $publicdir/$i
        fi
@@ -38,12 +44,6 @@ postinstallcmds = [
      ln -s libmpigf.so %(installdir)s/lib64/libmpichf90.so
      ln -s libmpi.so %(installdir)s/lib64/libmpl.so
      ln -s libmpi.so %(installdir)s/lib64/libopa.so
-     ln -s libmpi.so $publicdir/lib64/libmpich.so
-     ln -s libmpigc4.so $publicdir/lib64/libmpichcxx.so
-     ln -s libmpigf.so $publicdir/lib64/libfmpich.so
-     ln -s libmpigf.so $publicdir/lib64/libmpichf90.so
-     ln -s libmpi.so $publicdir/lib64/libmpl.so
-     ln -s libmpi.so $publicdir/lib64/libopa.so
   '''
 ]
 
