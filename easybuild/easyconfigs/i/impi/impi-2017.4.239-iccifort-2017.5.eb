@@ -23,23 +23,36 @@ postinstallcmds = [
   '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
      installdir=%(installdir)s
      publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
-     for i in $(grep installdir $installdir/compilers_and_libraries_2017.5.239/licensing/mpi/en/redist.txt | cut -c 13-); do
+     for i in $(grep installdir.*linux $installdir/compilers_and_libraries_2017.5.239/licensing/mpi/en/redist.txt | cut -c 59-); do
        if [ -f $installdir/$i ]; then
          mkdir -p $(dirname $publicdir/$i)
-         cp -p $installdir/$i $publicdir/$i
+         cp -a $installdir/$i $publicdir/$i
        fi
-     done''',
-    'ln -s %(installdir)s/lib64/libmpi.so  %(installdir)s/lib64/libmpich.so',
-    'ln -s %(installdir)s/lib64/libmpigc4.so  %(installdir)s/lib64/libmpichcxx.so',
-    'ln -s %(installdir)s/lib64/libmpigf.so %(installdir)s/lib64/libfmpich.so',
-    'ln -s %(installdir)s/lib64/libmpigf.so %(installdir)s/lib64/libmpichf90.so',
-    'ln -s %(installdir)s/lib64/libmpi.so %(installdir)s/lib64/libmpl.so',
-    'ln -s %(installdir)s/lib64/libmpi.so %(installdir)s/lib64/libopa.so'
+     done
+     if [ ! -L $publicdir/lib64 ]; then
+       ln -s intel64/lib $publicdir/lib64
+     fi
+     ln -s libmpi.so  %(installdir)s/lib64/libmpich.so
+     ln -s libmpigc4.so  %(installdir)s/lib64/libmpichcxx.so
+     ln -s libmpigf.so %(installdir)s/lib64/libfmpich.so
+     ln -s libmpigf.so %(installdir)s/lib64/libmpichf90.so
+     ln -s libmpi.so %(installdir)s/lib64/libmpl.so
+     ln -s libmpi.so %(installdir)s/lib64/libopa.so
+     ln -s libmpi.so $publicdir/lib64/libmpich.so
+     ln -s libmpigc4.so $publicdir/lib64/libmpichcxx.so
+     ln -s libmpigf.so $publicdir/lib64/libfmpich.so
+     ln -s libmpigf.so $publicdir/lib64/libmpichf90.so
+     ln -s libmpi.so $publicdir/lib64/libmpl.so
+     ln -s libmpi.so $publicdir/lib64/libopa.so
+  '''
 ]
 
 moduleclass = 'mpi'
 
 modluafooter = """
+prepend_path("LIBRARY_PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "lib64"))
+prepend_path("PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "bin64"))
+
 add_property("type_","mpi")
 family("mpi")
 """
