@@ -1,0 +1,36 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'CmdCp'
+
+name = 'EEMS'
+version = '20171011'
+
+homepage = 'https://github.com/dipetkov/eems'
+description = """This repository contains an implementation of the EEMS method for analyzing and visualizing spatial population structure from geo-referenced genetic samples. EEMS uses the concept of effective migration to model the relationship between genetics and geography, and it outputs an estimated effective migration surface (hence, EEMS) - a visual representation of population structure that can highlight potential regions of higher-than-average and lower-than-average historic gene flow."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+source_urls = ['https://github.com/dipetkov/eems/archive/']
+sources = ['master.zip']
+
+dependencies = [
+               ('Boost', '1.60.0'),
+               ('Eigen', '3.3.2'),
+               ('libplinkio', '0.9.5'),
+]
+
+patches = ['EEMS-20171011-Makefiles.patch']
+cmds_map = [('.*', " cd bed2diffs/src && make linux && cd ../../ && cd runeems_sats/src && make linux && cd ../../ && cd runeems_snps/src && make linux && cd ../../")]
+
+
+files_to_copy = ['*',(['bed2diffs/src/bed2diffs_v1', 'runeems_sats/src/runeems_sats', 'runeems_snps/src/runeems_snps'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/bed2diffs_v1', 'bin/runeems_sats', 'bin/runeems_snps'],
+    'dirs': ['pipeline']
+}
+
+moduleclass = 'bio'
