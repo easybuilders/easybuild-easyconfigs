@@ -1,0 +1,95 @@
+Patch the customize.py file to pick up EasyBuild env variables for
+various dependencies.
+
+Originally written by mikstr in PR 4400 and pouillon in PR 4772.
+
+Redone by Åke Sandgren to incorporate more packages.
+2017-10-31
+diff -ru gpaw-1.3.0.orig/customize.py gpaw-1.3.0/customize.py
+--- gpaw-1.3.0.orig/customize.py	2017-08-14 12:26:22.000000000 +0200
++++ gpaw-1.3.0/customize.py	2017-10-31 10:51:39.864661717 +0100
+@@ -28,23 +28,49 @@
+     libraries += ['somelib', 'otherlib']
+ """
+ 
++# Convert static library specs from EasyBuild to GPAW
++def static_eblibs_to_gpawlibs(lib_specs):
++    return [libfile[3:-2] for libfile in os.getenv(lib_specs).split(',')]
++
+ # compiler = 'gcc'
+ # mpicompiler = 'mpicc'  # use None if you don't want to build a gpaw-python
+ # mpilinker = 'mpicc'
+ # platform_id = ''
+ # scalapack = False
+ 
++# Clean out any autodetected things, we only want the EasyBuild
++# definitions to be used.
++libraries = []
++mpi_libraries = []
++include_dirs = []
++
++# Use EasyBuild fftw from the active toolchain
++fftw = ('FFTW_STATIC_LIBS_MT' in os.environ)
++if fftw:
++    libraries += static_eblibs_to_gpawlibs('FFT_STATIC_LIBS_MT')
++
+ # Use ScaLAPACK:
+ # Warning! At least scalapack 2.0.1 is required!
+ # See https://trac.fysik.dtu.dk/projects/gpaw/ticket/230
++# Use EasyBuild scalapack from the active toolchain
++scalapack = ('SCALAPACK_MT_STATIC_LIBS' in os.environ)
+ if scalapack:
+-    libraries += ['scalapack-openmpi',
+-                  'blacsCinit-openmpi',
+-                  'blacs-openmpi']
+-    define_macros += [('GPAW_NO_UNDERSCORE_CBLACS', '1')]
+-    define_macros += [('GPAW_NO_UNDERSCORE_CSCALAPACK', '1')]
++    mpi_libraries += static_eblibs_to_gpawlibs('SCALAPACK_MT_STATIC_LIBS')
++    mpi_define_macros += [('GPAW_NO_UNDERSCORE_CBLACS', '1')]
++    mpi_define_macros += [('GPAW_NO_UNDERSCORE_CSCALAPACK', '1')]
++
++# Add EasyBuild LAPACK/BLAS libs
++libraries += static_eblibs_to_gpawlibs('LAPACK_MT_STATIC_LIBS')
++libraries += static_eblibs_to_gpawlibs('BLAS_MT_STATIC_LIBS')
+ 
+ # LibXC:
++# Use EasyBuild libxc
++libxc = ('EBROOTLIBXC' in os.environ)
++if libxc:
++    include_dirs += [os.getenv('EBROOTLIBXC') + '/include']
++    if 'xc' not in libraries:
++        libraries.append('xc')
++
+ # In order to link libxc installed in a non-standard location
+ # (e.g.: configure --prefix=/home/user/libxc-2.0.1-1), use:
+ 
+@@ -64,16 +90,20 @@
+     if 'xc' not in libraries:
+         libraries.append('xc')
+ 
+-
+ # libvdwxc:
+-if 0:
+-    libvdwxc = True
+-    path = '/home/user/libvdwxc'
+-    extra_link_args += ['-Wl,-rpath=%s/lib' % path]
+-    library_dirs += ['%s/lib' % path]
+-    include_dirs += ['%s/include' % path]
+-    libraries += ['vdwxc']
+-
++# Use EasyBuild libvdwxc
++libvdwxc = ('EBROOTLIBVDWXC' in os.environ)
++if libvdwxc:
++    include_dirs += [os.getenv('EBROOTLIBVDWXC') + '/include']
++    libraries.append('vdwxc')
++
++# Now add a EasyBuild "cover-all-bases" library_dirs
++library_dirs = os.getenv('LD_LIBRARY_PATH').split(':')
++
++# Build separate gpaw-python
++if 'MPICC' in os.environ:
++    mpicompiler = os.getenv('MPICC')
++    mpilinker = mpicompiler
+ 
+ # Build MPI-interface into _gpaw.so:
+ if 0:
