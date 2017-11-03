@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = "manta"
+version = '1.2.1'
+
+homepage = 'http://www.illumina.com/'
+description = """Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads."""
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+#
+# Example URL:
+# https://github.com/Illumina/manta/releases/download/v0.29.5/manta-0.29.5.release_src.tar.bz2
+#
+source_urls = [('https://github.com/Illumina/manta/releases/download/v%(version)s/')]
+sources = [('%s-%s.release_src.tar.bz2' % (name, version))]
+
+checksums = ['17e87a381098695142857f469e744de6']
+
+dependencies = [
+    ('ncurses', '6.0'),
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.8'),
+    ('Python', '2.7.11'),
+    ('cURL','7.47.1')
+]
+#fix samtools makefile for -lz #-L zlib path does not seem to work... try ill try to include the zlib headers
+configure_cmd_prefix = 'tar xjf redist/samtools-1.2.tar.bz2  && perl -i.bak -wpe  \'s!lz$!lz -L\'$EBROOTZLIB\'\/lib -I\'$EBROOTZLIB\'\/include!\' samtools-1.2/Makefile && tar cjf redist/samtools-1.2.tar.bz2  samtools-1.2/ && rm -r samtools-1.2/ && perl -i.bak -wpe \'if(m!\$\{SAMTOOLS_DIR\}\/\$\{HTSLIB_PREFIX\}!){print $_ ;warn $_;};s!\$\{SAMTOOLS_DIR\}\/\$\{HTSLIB_PREFIX\}!\$\{SAMTOOLS_DIR\}\/htslib-1.2.1!\' redist/CMakeLists.txt && mkdir build && cd build && ../'
+
+prebuildopts = 'cd build && '
+preinstallopts = 'cd build && '
+
+files_to_copy = ['bin', 'lib', 'libexec', 'share']
+
+sanity_check_paths = {
+    'files': ['bin/configManta.py', 'bin/configManta.py.ini', 'bin/runMantaWorkflowDemo.py'],
+    'dirs': ['bin', 'lib', 'libexec', 'share'],
+}
+
+moduleclass = 'bio'
+
+
