@@ -20,25 +20,35 @@ toolchainopts = {'usempi': True, 'openmp': True}
 # This package requires registration prior to download. Having registered,
 # you can download the source code from http://cpmd.org/download, then put
 # it in your local sources directory.
-sources = [SOURCELOWER_TAR_GZ]
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+# download via http://cpmd.org/downloadable-files/authentication/patches
+patches = [
+    # http://cpmd.org/downloadable-files/authentication/patches/patch_3808-3812.txt/view
+    '%(name)s-%(version)sr3812.patch',
+    # http://cpmd.org/downloadable-files/authentication/patches/Patch%2002/view
+    '%(name)s-%(version)sr3813.patch',
+    # http://cpmd.org/downloadable-files/authentication/patches/Patch%2003/view
+    '%(name)s-%(version)sr3816.patch',
+]
+checksums = [
+    'aeb65b61bcfa4d9f274302ef12bd2bddfc71592d901d1788bfc609d7a3c0a369',  # cpmd-v4.1.tar.gz
+    'a666a89b608757bffa8bdc9a1999d3d5f391e40e0f54c85fd92a8396b5779db5',  # CPMD-4.1r3812.patch
+    '5555e96fb0b372fb735d825884271fcd9dec32576f3e1ae1160885e623b9dbcb',  # CPMD-4.1r3813.patch
+    'f3ff22075f3856caa1be406d0161c71cf1689167bf9f9222b51b68838a7637ea',  # CPMD-4.1r3816.patch
+]
 
 unpack_options = '--strip-components=1'
 
-patches = [
-    '%(name)s-%(version)sr3812.patch',
-    '%(name)s-%(version)sr3813.patch',
-    '%(name)s-%(version)sr3816.patch',
-]
-
 install_cmd = './configure.sh -DEST=%(installdir)s -omp LINUX-X86_64-INTEL-MPI && '
 install_cmd += 'cd %(installdir)s && '
-install_cmd += 'make FC="${FC} -fpp" CC="${CC}" CFLAGS="-axCORE-AVX2,AVX,SSE4.2 ${CFLAGS}"'
-# "-fpp" flag required so the fortran preprocessor is used and comments in format /* */ removed https://software.intel.com/en-us/node/694581
+# "-fpp" flag required so the fortran preprocessor is used and comments in format /* */ removed,
+# see https://software.intel.com/en-us/node/694581
 # The generated binary includes optimization for few different archs using the -axCORE option
+install_cmd += 'make FC="${FC} -fpp" CC="${CC}" CFLAGS="-axCORE-AVX2,AVX,SSE4.2 ${CFLAGS}"'
 
 sanity_check_paths = {
-      'files': ['bin/cpmd.x', 'lib/libcpmd.a'],
-      'dirs': ['bin', 'lib'],
+    'files': ['bin/cpmd.x', 'lib/libcpmd.a'],
+    'dirs': ['bin', 'lib'],
 }
 
 moduleclass = 'chem'
