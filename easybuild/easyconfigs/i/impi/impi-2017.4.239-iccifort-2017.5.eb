@@ -23,6 +23,7 @@ postinstallcmds = [
   '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
      installdir=%(installdir)s
      publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
+     rm -rf $publicdir
      for i in $(grep installdir.*licensing $installdir/compilers_and_libraries_2017.5.239/licensing/mpi/en/redist.txt | cut -c 13-); do
        if [ -e $installdir/$i ]; then
          mkdir -p $(dirname $publicdir/$i)
@@ -35,15 +36,20 @@ postinstallcmds = [
          cp -a $installdir/$i $publicdir/$i
        fi
      done
-     if [ ! -L $publicdir/lib64 ]; then
-       ln -s intel64/lib $publicdir/lib64
-     fi
-     ln -s libmpi.so  %(installdir)s/lib64/libmpich.so
-     ln -s libmpigc4.so  %(installdir)s/lib64/libmpichcxx.so
+     ln -s libmpi.so %(installdir)s/lib64/libmpich.so
+     ln -s libmpigc4.so %(installdir)s/lib64/libmpichcxx.so
      ln -s libmpigf.so %(installdir)s/lib64/libfmpich.so
      ln -s libmpigf.so %(installdir)s/lib64/libmpichf90.so
      ln -s libmpi.so %(installdir)s/lib64/libmpl.so
      ln -s libmpi.so %(installdir)s/lib64/libopa.so
+     # copy all symlinks (not in redist.txt)
+     cd $installdir
+     for i in $(find -type l); do
+       mkdir -p $(dirname $publicdir/$i)
+       cp -a $i $publicdir/$i
+     done
+     # delete dead symlinks
+     find $publicdir -xtype l -delete
   '''
 ]
 
