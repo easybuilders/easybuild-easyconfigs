@@ -1,0 +1,30 @@
+easyblock = 'Nix'
+
+name = 'Python'
+version = '3.6.3'
+versionsuffix = '-nix'
+pyshortver = '.'.join(version.split('.')[:2])
+
+homepage = 'http://python.org/'
+description = "Python is a programming language that lets you work more quickly and integrate your systems more effectively."
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+nix_profile = '/cvmfs/soft.computecanada.ca/nix/var/nix/profiles/python-%(version)s'
+nix_attribute = 'python36 python36Packages.virtualenv python36Packages.pip python36Packages.wheel python36Packages.setuptools'
+
+allow_prepend_abs_path = True
+modextrapaths = {'PYTHONPATH': ['/cvmfs/soft.computecanada.ca/easybuild/python/site-packages']}
+
+moduleclass = 'lang'
+
+modluafooter = """
+local arch = os.getenv("RSNT_ARCH") or ""
+if arch == "avx2" then
+	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf")
+elseif arch == "avx" then
+	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip-avx.conf")
+else
+	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip.conf")
+end
+"""
