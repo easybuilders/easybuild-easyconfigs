@@ -20,7 +20,7 @@ components = ['intel-mpi', 'intel-psxe', 'intel-imb']
 # set_mpi_wrappers_all = 'True'
 
 postinstallcmds = [
-  '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
+  '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path='$ORIGIN/../lib'
      installdir=%(installdir)s
      publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
      rm -rf $publicdir
@@ -57,9 +57,18 @@ postinstallcmds = [
 
 moduleclass = 'mpi'
 
+modextravars = {'I_MPI_PMI_LIBRARY': 'libpmi.so'}
+
 modluafooter = """
 prepend_path("LIBRARY_PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "lib64"))
 prepend_path("PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "bin64"))
+
+setenv("TMI_CONFIG", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "etc64/tmi.conf")
+if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
+        setenv("I_MPI_FABRICS", "shm:ofi")
+else
+        setenv("I_MPI_FABRICS", "shm:ofa")
+end
 
 add_property("type_","mpi")
 family("mpi")
