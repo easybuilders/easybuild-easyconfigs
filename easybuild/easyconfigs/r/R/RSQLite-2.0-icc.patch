@@ -1,0 +1,44 @@
+fix installation of RSQlite with Intel compilers
+author: Kenneth Hoste (HPC-UGent)
+diff -ru RSQLite.orig/MD5 RSQLite/MD5
+--- RSQLite.orig/MD5	2017-06-19 13:51:07.000000000 +0200
++++ RSQLite/MD5	2017-11-16 15:27:13.346367480 +0100
+@@ -74,7 +74,7 @@
+ e812adec1b741804e5e7895fe7a08fb9 *src/utils.cpp
+ 507a300f2c9f7ccb2688eacae1175a7f *src/utils.h
+ d3355e96432617f2ed1778fe5268a0b6 *src/vendor/sqlite3/extension-functions.c
+-ce79722ef2e78781caecd313cd0ed7d3 *src/vendor/sqlite3/sqlite3.c
++45e5662247d070b20f901f75a1951bba *src/vendor/sqlite3/sqlite3.c
+ a0882f9a0fb2d443eb6e4f3cfc3cf843 *src/vendor/sqlite3/sqlite3.h
+ a0882f9a0fb2d443eb6e4f3cfc3cf843 *src/vendor/sqlite3/sqlite3.h.orig
+ 38eb1dc1199e48781c31ba7846919f6c *src/vendor/sqlite3/sqlite3ext.h
+diff -ru RSQLite.orig/src/vendor/sqlite3/sqlite3.c RSQLite/src/vendor/sqlite3/sqlite3.c
+--- RSQLite.orig/src/vendor/sqlite3/sqlite3.c	2017-06-19 00:12:10.000000000 +0200
++++ RSQLite/src/vendor/sqlite3/sqlite3.c	2017-11-16 15:26:36.866046038 +0100
+@@ -28932,7 +28932,7 @@
+ ** overflow, leave *pA unchanged and return 1.
+ */
+ SQLITE_PRIVATE int sqlite3AddInt64(i64 *pA, i64 iB){
+-#if GCC_VERSION>=5004000
++#if GCC_VERSION>=5004000 && !__INTEL_COMPILER
+   return __builtin_add_overflow(*pA, iB, pA);
+ #else
+   i64 iA = *pA;
+@@ -28952,7 +28952,7 @@
+ #endif
+ }
+ SQLITE_PRIVATE int sqlite3SubInt64(i64 *pA, i64 iB){
+-#if GCC_VERSION>=5004000
++#if GCC_VERSION>=5004000 && !__INTEL_COMPILER
+   return __builtin_sub_overflow(*pA, iB, pA);
+ #else
+   testcase( iB==SMALLEST_INT64+1 );
+@@ -28967,7 +28967,7 @@
+ #endif
+ }
+ SQLITE_PRIVATE int sqlite3MulInt64(i64 *pA, i64 iB){
+-#if GCC_VERSION>=5004000
++#if GCC_VERSION>=5004000 && !__INTEL_COMPILER
+   return __builtin_mul_overflow(*pA, iB, pA);
+ #else
+   i64 iA = *pA;
