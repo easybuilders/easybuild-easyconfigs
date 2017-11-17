@@ -15,35 +15,33 @@ toolchain = {'name': 'intel', 'version': '2016b'}
 
 sources = ['R-%(version)s.tar.gz']
 source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s/']
-checksums = ['f50a659738b73036e2f5635adbd229c5']
+checksums = ['3dc59ae5831f5380f83c169bac2103ad052efe0ecec4ffa74bde4d85a0fda9e2']
 
-# Copied from R-3.3.1-intel-2016b.eb.
-# Not sure if BLAS/LAPACK are needed/used when compiling R-math, R documentation doesn't specify this
-preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+dependencies = [
+    ('bzip2', '1.0.6'),
+    ('cURL', '7.49.1'),
+    ('libreadline', '6.3'),
+    ('PCRE', '8.38'),
+    ('XZ', '5.2.2'),
+    ('zlib', '1.2.8')
+]
 
 # Copied from R-3.3.1-intel-2016b.eb.
 # Again, unsure if these affect R-math: R documentation doesn't specify.
-configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no"
+configopts = "--with-pic --enable-threads --with-x=no"
 
 # Since we're only installing Rmath anyway, we don't care about R packages.
 configopts += " --with-recommended-packages=no"
 
-dependencies = [
-	('bzip2', '1.0.6'),
-	('cURL', '7.49.1'),
-	('libreadline', '6.3'),
-	('PCRE', '8.38'),
-	('XZ', '5.2.2'),
-	('zlib', '1.2.8')
-	]
-
-moduleclass = 'numlib'
-
-#To build Rmath, docs say you need to execute 'make' in src/nmath/standalone
+# To build Rmath, docs say you need to execute 'make' in src/nmath/standalone
+# https://cran.r-project.org/doc/manuals/r-devel/R-admin.html#Configuration-options
 prebuildopts = 'cd src/nmath/standalone;'
-preinstallopts = 'cd src/nmath/standalone;'
+preinstallopts = prebuildopts
 sanity_check_paths = {
-	'files': [],
-	'dirs': [('lib','lib64')]
+    'files': [('lib/libRmath.a', 'lib64/libRmath.so'),
+              ('lib/libRmath.%s' % SHLIB_EXT, 'lib64/libRmath.%s' % SHLIB_EXT),
+              'include/Rmath.h'],
+    'dirs': []
 }
 
+moduleclass = 'numlib'
