@@ -1,17 +1,17 @@
 easyblock = 'MakeCp'
 
 name = 'FastQTL'
-version = '2.184'
+version = 'v7'
 
 homepage = 'http://fastqtl.sourceforge.net/'
 description = """Fast and efficient QTL mapper for molecular phenotypes."""
 
-source_urls = ['http://fastqtl.sourceforge.net/files/']
-sources = ['%(name)s-%(version)s.linux.tgz']
+source_urls = ['https://github.com/francois-a/fastqtl/archive/']
+sources = ['%(version)s.tar.gz']
 patches = ['%(name)s-%(version)s.patch']
 checksums = [
-    '98a9ba48e82a62956fc27a58d040d7bf',  # FastQTL-2.184.linux.tgz
-    '7b8cd0068a4d4d577c659d8c021846f9',  # FastQTL-2.184.patch
+    '6456b3c79472fed4c8563f8dcc533a80',  # v7.tar.gz
+    '214c034d2cd3fccd29f57aa08240e8c2',  # FastQTL-v7.patch
 ]
 
 toolchain = {'name': 'foss', 'version': '2015b'}
@@ -23,20 +23,28 @@ dependencies = [
     ('Rmath', '3.3.3'),
 ]
 
+parallel = 1
 prebuildopts = 'make cleanall && '
+
+python_scripts = [
+    'annotate_outputs.py',
+    'merge_chunks.py',
+    'run_FastQTL_threaded.py',
+    'run_chunk.py',
+    'sort_index_pairs.py',
+]
 
 files_to_copy = [
     (['bin/fastQTL'], 'bin/'),
-    (['script/calulateNominalPvalueThresholds.R'], 'bin/'),
+    (['python/%s' % x for x in python_scripts], 'bin/'),
     'doc',
     'example',
     'LICENCE',
 ]
 
 sanity_check_paths = {
-    'files': ['bin/fastQTL',
-              'bin/calulateNominalPvalueThresholds.R',
-              'LICENCE'],
+    'files': ['bin/fastQTL', 'LICENCE'] + 
+             ['bin/%s' % x for x in python_scripts],
     'dirs': ['doc', 'example']
 }
 
