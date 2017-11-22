@@ -1,0 +1,41 @@
+
+# Author:: Jack Perdue <j-perdue@tamu.edu> - TAMU SC Facil.  http://sc.tamu.edu
+# Author:: Maxime Boissonneault <maxime.boissonneault@calculquebec.ca> - Calcul Quebec, Universite Laval
+
+name = 'VisIt'
+version = '2.13.0'
+
+homepage = 'https://wci.llnl.gov/simulation/computer-codes/visit'
+description = """ VisIt is an Open Source, interactive, scalable,
+    visualization, animation and analysis tool."""
+
+toolchain = {'name': 'gompi', 'version': '2016.4.11'}
+
+source_urls = ['http://portal.nersc.gov/svn/visit/trunk/releases/%(version)s/']
+build_visit = "build_visit%s" % version.replace('.', '_')
+sources = [{'filename': build_visit, 'extract_cmd': "cp %s build_visit2_13_0" } ] #, {'filename': 'Visit-2.13-cmake-skip-rpath.patch', 'extract_cmd': "cp %s Visit-2.13-cmake-skip-rpath.patch" } ]
+builddependencies = [('Python', '2.7.13', '-nix')]
+
+prebuildopts = "chmod +x build_visit2_13_0 && module load flex/2.5.39 && " #patch -p0 < Visit-2.13-cmake-skip-rpath.patch && "
+visit_options = "--mesa --cfitsio --hdf4 --hdf5 --netcdf --silo --szip --xdmf --zlib" #--system-cmake --system-python"
+
+#cmds_map = [(build_visit, '  \
+#    %(source)s \
+#        --prefix %(installdir)s \
+#	--thirdparty-path %(installdir)s/3rdparty \
+#	--mesa    --cfitsio --hdf4 --hdf5 --netcdf --silo --szip --xdmf --zlib    --qt5 \
+#        --cc $CC \
+#        --cxx $CXX \
+#    '),
+#]
+
+files_to_copy = [
+    ()
+]
+
+sanity_check_paths = {
+    'files': ['bin/visit'],
+    'dirs': ['bin', version],
+}
+
+moduleclass = 'vis'
