@@ -1,0 +1,29 @@
+easyblock = 'Binary'
+
+name = 'HDFView'
+version = '2.14'
+label = 'centos7'
+versionsuffix = '-Java-%%(javaver)s-%s' % label
+
+homepage = 'https://support.hdfgroup.org/products/java/hdfview/'
+description = "HDFView is a visual tool for browsing and editing HDF4 and HDF5 files."
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+source_urls = ['https://support.hdfgroup.org/ftp/HDF5/hdf-java/current/bin/']
+sources = ['%%(name)s-%%(version)s-%s_64.tar.gz' % label]
+checksums = ['03bce1062b84e1c326718e46aef6ba8031effa6dbb0df64a3d3a4fe6c4025af4']
+
+dependencies = [('Java', '1.8.0_152')]
+
+install_cmd = "tar xfvz *.tar.gz && ./HDFView-2.14.0-Linux.sh --prefix . --skip-license && "
+install_cmd += "cp -a HDFView/%(version)s.0/* %(installdir)s/ && "
+install_cmd += 'sed -i.bk "s@export JAVABIN=.*@export JAVABIN=$EBROOTJAVA/jre/bin@g" %(installdir)s/hdfview.sh && '
+install_cmd += 'sed -i.bk "s@export INSTALLDIR=.*@export INSTALLDIR=%(installdir)s@g" %(installdir)s/hdfview.sh'
+
+sanity_check_paths = {
+    'files': ['hdfview.sh'],
+    'dirs': ['jre', 'lib', 'share'],
+}
+
+moduleclass = 'vis'
