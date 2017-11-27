@@ -2,6 +2,7 @@ easyblock = "PythonPackage"
 
 name = 'GPAW'
 version = '1.3.0'
+versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
 description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
@@ -13,19 +14,18 @@ toolchain = {'name': 'intel', 'version': '2017b'}
 
 source_urls = ['https://pypi.python.org/packages/11/59/bfb6102911f9c0c35bfd0c1f3f51e0f4c31523b9f700674d18e4f60d7081/']
 sources = [SOURCELOWER_TAR_GZ]
-
 patches = [
     'GPAW-1.3.0-dynamic_linking.patch',  # removes LIBPL from -L as linker only finds static library in this directory
     'GPAW-1.3.0-mkl.patch',
 ]
-
-python = 'Python'
-pythonver = '2.7.14'
-pythonshortver = '.'.join(pythonver.split('.')[0:2])
-versionsuffix = '-%s-%s' % (python, pythonver)
+checksums = [
+    'cf601c69ac496421e36111682bcc1d23da2dba2aabc96be51accf73dea30655c',  # gpaw-1.3.0.tar.gz
+    '21090ca5b020a8bf846c04097a50879588bcd4f75391f19a0d649231e46e309d',  # GPAW-1.3.0-dynamic_linking.patch
+    'd322a1f92c9fb5ebd8acb196d64cd2d47217b66d3fa3634a6a289ca8ca74868e',  # GPAW-1.3.0-mkl.patch
+]
 
 dependencies = [
-    (python, pythonver),
+    ('Python', '2.7.14'),
     ('ASE', '3.15.0', versionsuffix),
     ('libxc', '3.0.0')
 ]
@@ -33,7 +33,7 @@ dependencies = [
 sanity_check_paths = {
     'files': ['bin/gpaw%s' % x for x in ['', '-analyse-basis', '-basis', '-mpisim', '-plot-parallel-timings',
                                          '-python', '-runscript', '-setup', '-upfplot']],
-    'dirs': ['lib/python%s/site-packages/%s' % (pythonshortver, name.lower())]
+    'dirs': ['lib/python%(pyshortver)s/site-packages/' + name.lower()]
 }
 
 moduleclass = 'chem'
