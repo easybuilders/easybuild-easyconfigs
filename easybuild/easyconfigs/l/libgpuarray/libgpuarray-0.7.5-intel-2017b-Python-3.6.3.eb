@@ -1,0 +1,33 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'libgpuarray'
+version = '0.7.5'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://deeplearning.net/software/libgpuarray/'
+description = "Library to manipulate tensors on the GPU."
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+source_urls = ['https://github.com/Theano/libgpuarray/releases/download/v%(version)s/']
+sources = ['libgpuarray-%(version)s.tar.gz']
+checksums = ['d802299cd97bc1831416e64e23a7711cff4895348f45acba345840c4de461bb8']
+
+builddependencies = [('CMake', '3.9.5')]
+dependencies = [('Python', '3.6.3')]
+
+runtest = False
+
+installopts = " && mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages "
+installopts += ' && export PYTHONPATH="%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH" '
+installopts += " && python setup.py build_ext -L %(installdir)s/lib -I %(installdir)s/include "
+installopts += " && python setup.py install --prefix %(installdir)s"
+
+options = {'modulename': 'pygpu'}
+
+sanity_check_paths = {
+    'files': ['lib/libgpuarray.%s' % SHLIB_EXT, 'lib/libgpuarray-static.a'],
+    'dirs': ['include/gpuarray', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'lib'
