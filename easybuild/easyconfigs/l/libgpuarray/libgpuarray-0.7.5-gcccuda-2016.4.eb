@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'libgpuarray'
+version = '0.7.5'
+
+homepage = "http://deeplearning.net/software/libgpuarray"
+description = """ """
+
+
+toolchain = {'name': 'gcccuda', 'version': '2016.4'}
+
+source_urls = ["https://github.com/Theano/libgpuarray/archive/"]
+sources = ["v%(version)s.tar.gz"]
+
+postinstallcmds = [
+	# install the python wrappers with each python version
+	"""
+	cd %(builddir)s/libgpuarray-%(version)s;
+	module load cuda;
+	mkdir -p %(installdir)s/lib/python{2.7,3.5}/site-packages;
+	CPATH=%(installdir)s/include:$CPATH;
+	LIBRARY_PATH=%(installdir)s/lib:$LIBRARY_PATH;
+	module load python/2.7 python27-scipy-stack
+	PYTHONPATH=%(installdir)s/lib/python2.7/site-packages:$PYTHONPATH python setup.py install --prefix=%(installdir)s;
+	module load python/3.5 python35-scipy-stack
+	PYTHONPATH=%(installdir)s/lib/python3.5/site-packages:$PYTHONPATH python setup.py install --prefix=%(installdir)s;
+	/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib
+	"""
+]
+builddependencies = [
+    ('CMake', '3.2.3'),
+]
+
+modextrapaths = {
+# EBPYTHONPREFIXES directories for current python version X.Y to PYTHONPATH.
+    'EBPYTHONPREFIXES': [''],
+}
+
+sanity_check_paths = {
+    'files': ['lib/libgpuarray.so', ],
+    'dirs': ['include/gpuarray', 'lib/python2.7/site-packages', 'lib/python3.5/site-packages'],
+}
+
+separate_build_dir = True
+
