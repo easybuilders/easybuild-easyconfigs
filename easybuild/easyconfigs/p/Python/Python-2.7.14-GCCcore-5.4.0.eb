@@ -1,0 +1,73 @@
+name = 'Python'
+version = '2.7.14'
+
+homepage = 'http://python.org/'
+description = """Python is a programming language that lets you work more quickly and integrate your systems
+ more effectively."""
+
+toolchain = {'name': 'GCCcore', 'version': '5.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.python.org/ftp/%(namelower)s/%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['304c9b202ea6fbd0a4a8e0ad3733715fbd4749f2204a9173a58ec53c32ea73e8']
+
+configopts = '--with-tcltk-includes=-I$NIXUSER_PROFILE/include --with-tcltk-libs="-L$NIXUSER_PROFILE/lib -ltcl8.6 -ltk8.6"'
+prebuildopts = 'sed -i -e "s;/usr;$NIXUSER_PROFILE;g" setup.py && '
+allow_prepend_abs_path = True
+modextrapaths = {'PYTHONPATH': ['/cvmfs/soft.computecanada.ca/easybuild/python/site-packages']}
+
+moduleclass = 'lang'
+
+modluafooter = """
+local arch = os.getenv("RSNT_ARCH") or ""
+if arch == "avx2" then
+	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf")
+elseif arch == "avx" then
+	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip-avx.conf")
+else
+	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip.conf")
+end
+"""
+# python needs bzip2 to build the bz2 package
+dependencies = [
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.11'),
+    ('libreadline', '7.0'),
+    ('ncurses', '6.0'),
+    ('SQLite', '3.20.1'),
+    ('GMP', '6.1.2'),  # required for pycrypto
+]
+
+# order is important!
+# package versions updated September 18th 2017
+exts_list = [
+    ('setuptools', '37.0.0', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/s/setuptools/'],
+    }),
+    ('pip', '9.0.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pip/'],
+        'checksums': [
+            '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d',  # pip-9.0.1.tar.gz
+        ],
+    }),
+    ('virtualenv', '15.1.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/v/virtualenv'],
+        'checksums': [
+            '02f8102c2436bb03b3ee6dede1919d1dac8a427541652e5ec95171ec8adbc93a',  # virtualenv-15.1.0.tar.gz
+        ],
+    }),
+    ('wheel', '0.30.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/w/wheel'],
+    }),
+    ('readline', '6.2.4.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/r/readline'],
+    }),
+    ('pysqlite', '2.8.3', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pysqlite'],
+	'modulename': 'sqlite3'
+    }),
+]
+
+moduleclass = 'lang'
