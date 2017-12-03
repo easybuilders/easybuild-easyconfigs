@@ -1,0 +1,75 @@
+Only in fastqtl-7.patched/: FastQTL-v7.patch
+diff -ru fastqtl-7.org/lib/Tabix/Makefile fastqtl-7.patched/lib/Tabix/Makefile
+--- fastqtl-7.org/lib/Tabix/Makefile	2017-10-24 23:56:50.000000000 +0200
++++ fastqtl-7.patched/lib/Tabix/Makefile	2017-11-06 15:33:23.000000000 +0100
+@@ -8,6 +8,7 @@
+ SUBDIRS=	.
+ LIBPATH=
+ LIBCURSES=	
++ZLIB=		-L$(EBROOTZLIB)/lib -lz
+ 
+ .SUFFIXES:.c .o
+ 
+@@ -29,19 +30,19 @@
+ lib:libtabix.a
+ 
+ libtabix.so.1:$(LOBJS)
+-		$(CC) -shared -Wl,-soname,libtabix.so -o $@ $(LOBJS) -lc -lz
++		$(CC) -shared -Wl,-soname,libtabix.so -o $@ $(LOBJS) -lc $(ZLIB)
+ 
+ libtabix.1.dylib:$(LOBJS)
+-		libtool -dynamic $(LOBJS) -o $@ -lc -lz
++		libtool -dynamic $(LOBJS) -o $@ -lc $(ZLIB)
+ 
+ libtabix.a:$(LOBJS)
+ 		$(AR) -csru $@ $(LOBJS)
+ 
+ tabix:lib $(AOBJS)
+-		$(CC) $(CFLAGS) -o $@ $(AOBJS) -L. -ltabix -lm $(LIBPATH) -lz
++		$(CC) $(CFLAGS) -o $@ $(AOBJS) -L. -ltabix -lm $(LIBPATH) $(ZLIB)
+ 
+ bgzip:bgzip.o bgzf.o knetfile.o
+-		$(CC) $(CFLAGS) -o $@ bgzip.o bgzf.o knetfile.o -lz
++		$(CC) $(CFLAGS) -o $@ bgzip.o bgzf.o knetfile.o $(ZLIB)
+ 
+ TabixReader.class:TabixReader.java
+ 		javac -cp .:sam.jar TabixReader.java
+diff -ru fastqtl-7.org/Makefile fastqtl-7.patched/Makefile
+--- fastqtl-7.org/Makefile	2017-10-24 23:56:50.000000000 +0200
++++ fastqtl-7.patched/Makefile	2017-11-06 16:37:21.000000000 +0100
+@@ -1,5 +1,5 @@
+ #PLEASE SPECIFY THE R path here where you built the R math library standalone 
+-RMATH=../../R-3.2.4/src
++RMATH=$(EBROOTRMATH)
+ 
+ #compiler
+ CXX=g++ -std=c++11
+@@ -28,7 +28,7 @@
+ #libraries
+ #LIB_BASE=-lm -lboost_iostreams -lboost_program_options -lz -lgsl -lblas
+ LIB_BASE=-lm -lz -lbz2 -lboost_iostreams -lboost_program_options -lgslcblas -lgsl -lblas
+-LIB_MATH=$(RMATH)/nmath/standalone/libRmath.a
++LIB_MATH=$(RMATH)/lib64/libRmath.a
+ LIB_TABX=$(PATH_TABX)/libtabix.a
+ LIB_MACX=-L/usr/local/lib/
+ 
+@@ -37,6 +37,7 @@
+ FILE_O=$(shell for file in `find src -name *.cpp`; do echo obj/$$(basename $$file .cpp).o; done)
+ FILE_H=$(shell find src -name *.h)
+ FILE_CPP=$(shell find src -name *.cpp)
++ODIR=obj
+ 
+ #default
+ all: linux
+@@ -69,7 +70,10 @@
+ $(FILE_BIN): $(FILE_O) $(LIB_TABX)
+ 	$(CXX) $(LDFLAG) $^ $(LIB) -o $@
+ 
+-obj/%.o: %.cpp $(FILE_H)
++$(ODIR):
++	mkdir $@
++
++obj/%.o: %.cpp $(FILE_H) $(ODIR)
+ 	$(CXX) $(CXXFLAG) -o $@ -c $< $(IFLAG)
+ 
+ clean: 

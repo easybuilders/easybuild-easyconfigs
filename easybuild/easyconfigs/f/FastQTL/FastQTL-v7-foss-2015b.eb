@@ -1,0 +1,51 @@
+easyblock = 'MakeCp'
+
+name = 'FastQTL'
+version = 'v7'
+
+homepage = 'http://fastqtl.sourceforge.net/'
+description = """Fast and efficient QTL mapper for molecular phenotypes."""
+
+source_urls = ['https://github.com/francois-a/fastqtl/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s.patch']
+checksums = [
+    '6456b3c79472fed4c8563f8dcc533a80',  # v7.tar.gz
+    '214c034d2cd3fccd29f57aa08240e8c2',  # FastQTL-v7.patch
+]
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+dependencies = [
+    ('zlib', '1.2.8'),
+    ('GSL', '2.3'),
+    ('Boost', '1.60.0', '-Python-2.7.11'),
+    ('Rmath', '3.3.3'),
+]
+
+parallel = 1
+prebuildopts = 'make cleanall && '
+
+python_scripts = [
+    'annotate_outputs.py',
+    'merge_chunks.py',
+    'run_FastQTL_threaded.py',
+    'run_chunk.py',
+    'sort_index_pairs.py',
+]
+
+files_to_copy = [
+    (['bin/fastQTL'], 'bin/'),
+    (['python/%s' % x for x in python_scripts], 'bin/'),
+    'doc',
+    'example',
+    'LICENCE',
+]
+
+sanity_check_paths = {
+    'files': ['bin/fastQTL', 'LICENCE'] + 
+             ['bin/%s' % x for x in python_scripts],
+    'dirs': ['doc', 'example']
+}
+
+moduleclass = 'bio'
