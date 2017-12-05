@@ -1,0 +1,74 @@
+diff --git a/src/utils/collections-info.cpp b/src/utils/collections-info.cpp
+index a51b4b2..08776fb 100644
+--- a/src/utils/collections-info.cpp
++++ b/src/utils/collections-info.cpp
+@@ -157,19 +157,19 @@ void collectionsInfo::listItems(
+   {
+     if (list_all)
+     {
+-      std::cout << (*itr)[0] << " "
+-                << (*itr)[1] << " "
+-                << (*itr)[2] << " "
+-                << (*itr)[3] << std::endl;
++      std::cout << (*itr)[IE_COLLECTION] << " "
++                << (*itr)[IE_NAME] << " "
++                << (*itr)[IE_DIR] << " "
++                << (*itr)[IE_VER] << std::endl;
+     }
+     else
+     {
+       if (name == (*itr)[1])
+       {
+-        std::cout << (*itr)[0] << " "
+-                  << (*itr)[1] << " "
+-                  << (*itr)[2] << " "
+-                  << (*itr)[3] << std::endl;
++        std::cout << (*itr)[IE_COLLECTION] << " "
++                  << (*itr)[IE_NAME] << " "
++                  << (*itr)[IE_DIR] << " "
++                  << (*itr)[IE_VER] << std::endl;
+         break;
+       }
+     }
+diff --git a/src/utils/collections-management.sh b/src/utils/collections-management.sh
+index 5d513e7..a44cbfc 100755
+--- a/src/utils/collections-management.sh
++++ b/src/utils/collections-management.sh
+@@ -125,13 +125,13 @@ get_build_install_item () {
+ 
+   # check for existing item
+   if test x"__MD_" = x`printf -- "${item_name}" | sed 's/.*\(__MD_\).*/\1/'`; then
+-    found_item=`${collections_info} model_drivers find "${item_name}"`
++    found_item="`${collections_info} model_drivers find "${item_name}"`"
+     item_type="MD"
+   elif test x"__MO_" = x`printf -- "${item_name}" | sed 's/.*\(__MO_\).*/\1/'`; then
+-    found_item=`${collections_info} models find "${item_name}"`
++    found_item="`${collections_info} models find "${item_name}"`"
+     item_type="MO"
+   elif test x"__SM_" = x`printf -- "${item_name}" | sed 's/.*\(__SM_\).*/\1/'`; then
+-    found_item=`${collections_info} models find "${item_name}"`
++    found_item="`${collections_info} models find "${item_name}"`"
+     item_type="SM"
+   elif test x"OpenKIM" = x"${item_name}"; then
+     found_item=""
+@@ -215,7 +215,7 @@ get_build_install_item () {
+             return 1
+           elif test x"ParameterizedModel" = x"`${make_command} -C \"${item_name}\" kim-item-type`"; then
+             dvr="`${make_command} -C \"${item_name}\" model-driver-name`"
+-            if test x"" != x`${collections_info} model_drivers find "${dvr}"`; then
++            if test x"" != x"`${collections_info} model_drivers find "${dvr}"`"; then
+               printf "*@using installed driver.......@%-50s\n" "${dvr}" | sed -e 's/ /./g' -e 's/@/ /g' || return 1
+             else
+               get_build_install_item "${install_collection}" "${dvr}" "${use_sudo}" "${PASSWORD}" || return 1
+@@ -246,9 +246,9 @@ remove_item () {
+   local item_type=""
+ 
+   # check for existing item
+-  found_item=`${collections_info} model_drivers find "${item_name}"`
++  found_item="`${collections_info} model_drivers find "${item_name}"`"
+   if test x"" = x"${found_itme}"; then
+-    found_item=`${collections_info} models find "${item_name}"`
++    found_item="`${collections_info} models find "${item_name}"`"
+     if test x"" = x"${found_item}"; then
+       printf "Item not installed.\n"
+       return 1
