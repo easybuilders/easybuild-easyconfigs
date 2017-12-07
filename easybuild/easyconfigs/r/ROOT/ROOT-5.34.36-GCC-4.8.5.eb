@@ -50,7 +50,11 @@ configopts += ' --with-xml-incdir=$NIXUSER_PROFILE/include/libxml2 --with-xml-li
 configopts += ' --with-python-libdir=$EBROOTPYTHON/lib'
 configopts += ' --with-opengl-incdir=$(readlink $NIXUSER_PROFILE/include/GL/gl.h | sed "s#/GL/gl.h##")'
 
-postinstallcmds = ["for i in %(installdir)s/lib/root/lib*.so; do patchelf --set-rpath '$ORIGIN':$(patchelf --print-rpath $i) $i; done"]
+postinstallcmds = [
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --path %(installdir)s --add_path %(installdir)s/lib/root",
+	# this file is not compatible with libstdc++.so from GCC 4.8.5
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --path %(installdir)s/lib/root/libGviz3d.so --add_path $NIXUSER_PROFILE/lib"
+	]
 
 sanity_check_commands = ["python -c 'import ROOT'"]
 
