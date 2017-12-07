@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'ANTs'
+version = '2.2.0'
+versionsuffix = '-Python-2.7.12'
+
+homepage = 'http://stnava.github.io/ANTs/'
+description = """ANTs extracts information from complex datasets that include imaging. ANTs is useful for managing,
+ interpreting and visualizing multidimensional data."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/stnava/ANTs/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['62f8f9ae141cb45025f4bb59277c053acf658d4a3ba868c9e0f609af72e66b4a']
+
+builddependencies = [('CMake', '3.7.1')]
+
+itkver = '4.12.2'
+itkshortver = '.'.join(itkver.split('.')[:2])
+dependencies = [
+    ('ITK', itkver, versionsuffix),
+    ('VTK', '6.3.0', versionsuffix),
+]
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_ITK=ON '
+configopts += '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF'
+configopts += '-DUSE_VTK=ON -DUSE_SYSTEM_VTK=ON -DITK_DIR=$EBROOTITK/lib/cmake/ITK-%s' % itkshortver
+
+skipsteps = ['install']
+buildopts = ' && mkdir -p %(installdir)s && cp -r * %(installdir)s/'
+
+parallel = 1
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['bin/ANTS'],
+    'dirs': ['lib'],
+}
+
+moduleclass = 'data'
