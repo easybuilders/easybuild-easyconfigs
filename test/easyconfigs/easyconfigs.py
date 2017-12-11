@@ -247,7 +247,7 @@ def template_easyconfig_test(self, spec):
         'hpcugent.github.io/easybuild',
     ]
     for old_url in old_urls:
-        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
+        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' found in %s" % (old_url, spec))
 
     # make sure binutils is included as a build dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
