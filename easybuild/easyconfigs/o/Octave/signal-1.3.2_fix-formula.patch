@@ -1,14 +1,25 @@
 fix for bug in gausswin making it produce wrong results
 see https://savannah.gnu.org/bugs/index.php?51657
-author: Kenneth Hoste (HPC-UGent)
---- signal-1.3.2/inst/gausswin.m.orig	2017-12-11 14:27:49.593981000 +0100
-+++ signal-1.3.2/inst/gausswin.m	2017-12-11 14:30:59.032409000 +0100
-@@ -37,7 +37,7 @@
+patch taken from https://sourceforge.net/p/octave/signal/ci/ae7ace06b8c6153fbbefed5235899174ad93c933/
+--- a/inst/gausswin.m
++++ b/inst/gausswin.m
+@@ -32,12 +32,17 @@
+   if (nargin < 1 || nargin > 2)
+     print_usage ();
+   elseif (! (isscalar (m) && (m == fix (m)) && (m > 0)))
+-    error ("gausswin: M must be a positive integer");
++    error ("Octave:invalid-input-arg", ...
++            "gausswin: M must be a positive integer");
+   elseif (nargin == 1)
      a = 2.5;
    endif
  
 -  w = exp ( -0.5 * ( a/m * [ -(m-1) : 2 : m-1 ]' ) .^ 2 );
-+  w = exp ( -0.5 * ( a/(m-1) * [ -(m-1) : 2 : m-1 ]' ) .^ 2 );
++  if m==1
++    w = 1;
++  else
++    w = exp ( -0.5 * ( a/(m-1) * [ -(m-1) : 2 : m-1 ]' ) .^ 2 );
++  endif
  
  endfunction
  
