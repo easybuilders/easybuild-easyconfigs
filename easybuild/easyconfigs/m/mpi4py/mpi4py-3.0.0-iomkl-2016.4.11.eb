@@ -1,0 +1,34 @@
+easyblock = 'Binary'
+# Note: 'Binary' looks odd but it does what we need to do, treating the tarball as a pip-processed blob
+
+name = 'mpi4py'
+version = '3.0.0'
+
+homepage = 'https://bitbucket.org/mpi4py/mpi4py'
+description = """MPI for Python (mpi4py) provides bindings of the Message Passing Interface (MPI) standard for
+ the Python programming language, allowing any Python program to exploit multiple processors."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+
+source_urls = [BITBUCKET_DOWNLOADS]
+sources = [SOURCE_TAR_GZ]
+checksums = ['b457b02d85bdd9a4775a097fac5234a20397b43e073f14d9e29b6cd78c68efd7']
+
+pyvers = ['2.7.14', '3.5.4', '3.6.3']
+pyshortvers = ['.'.join(pyver.split('.')[:2]) for pyver in pyvers]
+
+install_template = 'module load python/{0} && pip install --prefix=%(installdir)s ' + SOURCE_TAR_GZ
+install_cmd = ';'.join([install_template.format(pyver) for pyver in pyvers])
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+modluafooter = """
+prereq("python")
+"""
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%s/site-packages/mpi4py'%pyshortver for pyshortver in pyshortvers],
+}
+
+moduleclass = 'mpi'
