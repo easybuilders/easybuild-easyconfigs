@@ -1,0 +1,49 @@
+easyblock = 'Bundle'
+
+name = 'TensorFlow'
+version = '1.3.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+pymaj = '3'
+pymin = '6'
+pymajmin = pymaj + pymin
+
+dependencies = [
+    ('Python', '%s.%s.1' % (pymaj, pymin)),
+    ('protobuf-python', '3.4.0', versionsuffix),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+exts_list = [
+    ('backports.weakref', '1.0.post1', {
+        'modulename': 'backports.weakref',
+        'source_urls': ['https://pypi.python.org/packages/source/b/backports.weakref'],
+        'checksums': ['bc4170a29915f8b22c9e7c4939701859650f2eb84184aee80da329ac0b9825c2'],
+    }),
+    (name, version, {
+        'source_tmpl': 'tensorflow-%%(version)s-cp%(py)s-cp%(py)sm-manylinux1_x86_64.whl' % {'py': pymajmin},
+        'source_urls': ['https://pypi.python.org/packages/source/t/tensorflow'],
+        'unpack_sources': False,
+        'use_pip': True,
+        'checksums': ['a535a4a32aaaf5c59dc582ed472f321a86bf1786d17931c017c0ec7c8f1a1c02'],
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/tensorboard'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'lib'
