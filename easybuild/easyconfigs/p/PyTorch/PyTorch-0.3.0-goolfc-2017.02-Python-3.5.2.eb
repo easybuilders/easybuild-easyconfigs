@@ -1,0 +1,79 @@
+easyblock = 'PythonPackage'
+
+name = 'PyTorch'
+version = '0.3.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://pytorch.org/'
+description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+PyTorch is a deep learning framework that puts Python first."""
+
+toolchain = {'name': 'goolfc', 'version': '2017.02'}
+
+# This environment is needed to prevent setup.py from invoking git to determine version.
+prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1'
+
+pytorchdir = 'pytorch-%(version)s'
+extract_cmd_pattern = 'tar -C %s/%s --strip-components=1 -xf %%s'
+
+source_urls = [
+    'https://github.com/pytorch/pytorch/archive',
+    'https://github.com/facebookincubator/gloo/archive',
+    'https://github.com/google/googletest/archive',
+    'https://github.com/nanopb/nanopb/archive',
+    'https://github.com/pybind/pybind11/archive',
+    'https://github.com/wjakob/clang-cindex-python3/archive',
+]
+
+# PyTorch pulls in a bunch of submodules which don't have releases.
+# We download the submodule revisions from their repos.
+sources = [
+    'v%(version)s.tar.gz',  # PyTorch
+    {
+        'filename': '05ad98aeb66fabc7c8126e6068d4a70134d4b80d.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/gloo'),
+    },
+    {
+        'filename': 'ec44c6c1675c25b9827aacd08c02433cccde7780.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/gloo/third-party/googletest'),
+    },
+    {
+        'filename': '14efb1a47a496652ab08b1ebcefb0ea24ae4a5e4.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/nanopb'),
+    },
+    {
+        'filename': '9f6a636e547fc70a02fa48436449aad67080698f.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/pybind11'),
+    },
+    {
+        'filename': '6a00cbc4a9b8e68b71caf7f774b3f9c753ae84d5.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/pybind11/tools/clang'),
+    },
+]
+
+checksums = [
+    'f9f405f4e6a023af20ee3f005ca5213f6c71d3fd4ee0c58407f53f15fa55c85e',  # pytorch-0.3.0.tar.gz
+    'e19072df8b5f88cb81c6263e90b539c4b5ea93eeb9c68055603137eb7793dba7',  # gloo-05ad98a.tar.gz
+    '175a22300b3450e27e5f2e6f95cc9abca74617cbc21a1e0ed19bdfbd22ea0305',  # googletest-ec44c6c.tar.gz
+    '7d18b9bdc10de382da1643c2b1b0227131db47eef89998050b5e0a829d3bd0af',  # nanopb-14efb1a.tar.gz
+    '3a53dac15e87056a9724b9b6403343b47bb71fec26c090979562f71d7ec9ee98',  # pybind11-9f6a636.tar.gz
+    '828e0d6238e2129a9e08071750dc16ba10e38eacf96f21b8a71e501c2085b282',  # clang-cindex-python3-6a00cbc.tar.gz
+]
+
+options = {'modulename': 'torch'}
+
+builddependencies = [
+    ('CMake', '3.9.1'),
+]
+
+dependencies = [
+    ('Python', '3.5.2'),
+    ('PyYAML', '3.12', versionsuffix),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'devel'
