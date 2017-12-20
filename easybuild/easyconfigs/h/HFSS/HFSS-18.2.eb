@@ -1,0 +1,59 @@
+easyblock = 'Tarball'
+name = 'HFSS'
+version = '18.2'
+
+homepage = 'http://www.ansys.com/products/electronics/ansys-hfss'
+description = """ANSYS HFSS software is the industry standard for simulating high-frequency 
+electromagnetic fields. Its gold-standard accuracy, advanced solvers and high-performance 
+computing technologies make it an essential tool for engineers tasked with executing accurate 
+and rapid design in high-frequency and high-speed electronic devices and platforms. HFSS offers 
+state-of the-art solver technologies based on finite element, integral equation, asymptotic and 
+advanced hybrid methods to solve a wide range of microwave, RF and high-speed digital applications."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# be sure to copy both DVD content to the SAME directory, 
+# including the hidden files, especially .dvd1 and .dvd2 
+sources = [] #SOURCELOWER_TAR_GZ]
+
+skipsteps = ("fetch","ready","source","patch","prepare","configure","build","test","install")
+postinstallcmds = [
+	'''for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done''',
+	# move files libstdc++.so and libX11.so so that they are shadowing the ones from Nix
+	"find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+	"find %(installdir)s -name 'libX11.so*' -exec mv {} {}.bak \;",
+	'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s',
+	# skip the Linux bits in this file since it defines LD_LIBRARY_PATH to OS directories
+	'sed -i "1119s/Linux/Linux3/g" %(installdir)s/AnsysEM18.2/Linux64/.setup_runtime'
+]
+
+moduleclass = 'phys'
+
+modextrapaths = { 'PATH': 'AnsysEM18.2/Linux64' }
+
+sanity_check_paths = {
+	'files': [],
+	'dirs': ['AnsysEM18.2/Linux64/ansysedt'],
+}
+
+modluafooter = """
+setenv('ANS_IGNOREOS','yes')
+
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
+"""
+
+
+
