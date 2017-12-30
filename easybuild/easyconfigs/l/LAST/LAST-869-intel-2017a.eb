@@ -1,48 +1,26 @@
-easyblock = 'MakeCp'
+easyblock = 'ConfigureMake'
 
 name = 'LAST'
 version = '869'
 
 homepage = 'http://last.cbrc.jp/'
-description = """ LAST finds similar regions between sequences. The main technical innovation
- is that LAST finds initial matches based on their multiplicity,
- instead of using a fixed length (e.g. BLAST uses 11-mers)."""
+description = "LAST finds similar regions between sequences."
 
 toolchain = {'name': 'intel', 'version': '2017a'}
-toolchainopts = {'cstd': 'c++11', 'opt': True}
+toolchainopts = {'cstd': 'c++11'}
 
 source_urls = ['http://last.cbrc.jp/']
-sources = ['%(namelower)s-%(version)s.zip']
-patches = ['%(name)s-%(version)s_makefile.patch']
-checksums = [
-    '6371a6282bc1bb02a5e5013cc463625f2ce3e7746ff2ea0bdf9fe6b15605a67c',  # last-869.zip
-    'b7b697b048e22c913eb196449eb895fc70b22fb72db5cca1f8dc948cde164309',  # LAST-869_makefile.patch
-]
+sources = ['last-%(version)s.zip']
+checksums = ['6371a6282bc1bb02a5e5013cc463625f2ce3e7746ff2ea0bdf9fe6b15605a67c']
 
-list_of_scripts = [
-    'fastq-interleave', 'last-dotplot', 'last-map-probs', 'last-postmask', 'last-train', 'maf-convert', 'maf-join',
-    'maf-sort', 'maf-swap', 'parallel-fasta', 'parallel-fastq',
-]
+skipsteps = ['configure']
 
-list_of_executables = [
-    'lastal', 'lastal8', 'lastdb', 'lastdb8', 'last-merge-batches', 'last-pair-probs', 'last-split', 'last-split8',
-]
-
-files_to_copy = [
-    (['src/%s' % x for x in list_of_executables], "bin"),
-    (['scripts/%s' % x for x in list_of_scripts], "bin"),
-    'ChangeLog.txt',
-    'COPYING.txt',
-    'data',
-    'doc',
-    'examples',
-    'README.txt',
-    'src',
-]
+buildopts = 'CC="$CC" CXX="$CXX" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS -pthread -DHAS_CXX_THREADS"'
+installopts = 'prefix=%(installdir)s'
 
 sanity_check_paths = {
-    'files': ["bin/%s" % x for x in list_of_executables + list_of_scripts],
-    'dirs': ['data', 'doc', 'examples', 'src'],
+    'files': ['bin/lastal', 'bin/lastdb'],
+    'dirs': [],
 }
 
 moduleclass = 'bio'
