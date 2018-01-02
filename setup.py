@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ from distutils import log
 # recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
 #   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
 # This causes problems further up the dependency chain...
-VERSION = '3.3.0.dev0'
+VERSION = '3.5.1.dev0'
 
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
@@ -104,12 +104,12 @@ setup(
     version = VERSION,
     author = "EasyBuild community",
     author_email = "easybuild@lists.ugent.be",
-    description = """Easyconfig files are simple build specification files for EasyBuild,
+    description = """Easyconfig files are simple build specification files for EasyBuild, \
 that specify the build parameters for software packages (version, compiler toolchain, dependency \
 versions, etc.).""",
     license = "GPLv2",
     keywords = "software build building installation installing compilation HPC scientific",
-    url = "http://hpcugent.github.com/easybuild",
+    url = "https://easybuilders.github.io/easybuild/",
     data_files = get_data_files(),
     long_description = read("README.rst"),
     classifiers = [

@@ -11,15 +11,6 @@ toolchain = {'name': 'intel', 'version': '2017a'}
 sources = [SOURCE_TAR_GZ]
 source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
 
-preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
-configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib"
-# Actually use Tcl/Tk
-configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
-# Enable graphics capabilities for plotting.
-configopts += " --with-cairo --with-libpng --with-jpeglib --with-libtiff"
-# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
-configopts += " --with-recommended-packages=no"
-
 dependencies = [
     ('X11', x11ver),
     ('Mesa', '17.0.2'),
@@ -44,12 +35,22 @@ dependencies = [
     ('PROJ', '4.9.3'),  # for rgdal
     ('GMP', '6.1.2'),  # for igraph
     ('NLopt', '2.4.2'),  # for nloptr
+    ('FFTW', '3.3.6'),  # for fftw
+    ('libsndfile', '1.0.28'),  # for seewave
     # OS dependency should be preferred if the os version is more recent then this version,
     # it's nice to have an up to date openssl for security reasons
     # ('OpenSSL', '1.0.2h'),
 ]
 
 osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+
+configopts = "--with-pic --enable-threads --enable-R-shlib"
+# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
+configopts += " --with-recommended-packages=no"
+
+# specify that at least EasyBuild v3.5.0 is required,
+# since we rely on the updated easyblock for R to configure correctly w.r.t. BLAS/LAPACK
+easybuild_version = '3.5.0'
 
 name_tmpl = '%(name)s_%(version)s.tar.gz'
 ext_options = {
@@ -77,7 +78,7 @@ exts_list = [
     'tools',
     'utils',
     # non-standard libraries, should be specified with fixed versions!
-    ('Rmpi', '0.6-6', ext_options),
+    ('Rmpi', '0.6-6', dict(ext_options.items() + [('patches', ['Rmpi-0.6-5_impi5.patch'])])),
     ('abind', '1.4-5', ext_options),
     ('magic', '1.5-6', ext_options),
     ('geometry', '0.3-6', dict(ext_options.items() + [('patches', ['geometry-0.3-4-icc.patch'])])),
@@ -508,7 +509,57 @@ exts_list = [
     ('purrr', '0.2.2', ext_options),
     ('downloader', '0.4', ext_options),
     ('imager', '0.40.2', dict(ext_options.items() + [('patches', ['imager-0.40.2_icpc-wd308.patch'])])),
+    ('pracma', '2.0.4', ext_options),
+    ('signal', '0.7-6', ext_options),
+    ('tuneR', '1.3.2', ext_options),
+    ('pastecs', '1.3-18', ext_options),
+    ('audio', '0.1-5', ext_options),
+    ('fftw', '1.0-4', ext_options),
+    ('seewave', '2.0.5', ext_options),
+    ('gsw', '1.0-3', ext_options),
+    ('oce', '0.9-21', ext_options),
+    ('ineq', '0.2-13', ext_options),
+    ('soundecology', '1.3.2', ext_options),
+    ('memuse', '3.0-1', ext_options),
+    ('pinfsc50', '1.1.0', ext_options),
+    ('vcfR', '1.5.0', ext_options),
+    ('glmmML', '1.0.2', ext_options),
+    ('ucminf', '1.1-4', ext_options),
+    ('ordinal', '2015.6-28', ext_options),
+    ('Rtsne', '0.13', dict(ext_options.items() + [('patches', ['Rtsne-0.13_icpc-wd308.patch'])])),
+    ('cowplot', '0.7.0', ext_options),
+    ('tsne', '0.1-3', ext_options),
+    ('pbapply', '1.3-3', ext_options),
+    ('RcppProgress', '0.3', ext_options),
+    ('sn', '1.5-0', ext_options),
+    ('tclust', '1.2-7', ext_options),
+    ('ranger', '0.8.0', ext_options),
+    ('hexbin', '1.27.1', ext_options),
+    ('crosstalk', '1.0.0', ext_options),
+    ('pryr', '0.1.2', ext_options),
+    ('moments', '0.14', ext_options),
+    ('forcats', '0.2.0', ext_options),
+    ('laeken', '0.4.6', ext_options),
+    ('VIM', '4.7.0', ext_options),
+    ('proxy', '0.4-17', ext_options),
+    ('smoother', '1.1', ext_options),
+    ('dynamicTreeCut', '1.63-1', ext_options),
+    ('DT', '0.2', ext_options),
+    ('beeswarm', '0.2.3', ext_options),
+    ('vipor', '0.4.5', ext_options),
+    ('ggbeeswarm', '0.6.0', ext_options),
+    ('shinydashboard', '0.6.1', ext_options),
+    ('rrcov', '1.4-3', ext_options),
+    ('WriteXLS', '4.0.0', ext_options),
+    ('mpath', '0.2-4', ext_options),
+    ('timereg', '1.9.1', ext_options),
+    ('peperr', '1.1-7', ext_options),
+    ('heatmap3', '1.1.1', ext_options),
+    ('GlobalOptions', '0.0.12', ext_options),
+    ('circlize', '0.4.1', ext_options),
+    ('GetoptLong', '0.1.6', ext_options),
+    ('dendextend', '1.5.2', ext_options),
+    ('RInside', '0.2.14', ext_options),
 ]
 
 moduleclass = 'lang'
-
