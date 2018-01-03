@@ -1,0 +1,97 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+# foss-2016b modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'ConfigureMake'
+
+name = 'FASTX-Toolkit'
+version = '0.0.14'
+
+perl = 'Perl'
+perlver = '5.22.2'
+versionsuffix = '-%s-%s' % (perl, perlver)
+
+homepage = 'http://hannonlab.cshl.edu/fastx_toolkit/'
+description = """The FASTX-Toolkit is a collection of command line tools for 
+ Short-Reads FASTA/FASTQ files preprocessing."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/agordon/fastx_toolkit/releases/download/%(version)s']
+sources = ['fastx_toolkit-%(version)s.tar.bz2']
+
+#patches = ['fastx_toolkit-0.0.14-scripts.patch']
+builddependencies = [
+    ('libgtextutils', '0.7'),
+]
+
+
+dependencies = [
+    (perl, perlver,'-nix')
+]
+
+configopts = 'LDLOADLIBS="-shared -L$NIXUSER_PROFILE/lib -lz" '
+# these are the perl libraries dependencies
+exts_defaultclass = 'PerlModule'
+#exts_filter = ("perldoc -lm %(ext_name)s ", "")
+exts_filter = ("PERL5LIB=/cvmfs/soft.computecanada.ca/easybuild/software/2017/avx2/Compiler/gcc5.4/fastx-toolkit/0.0.14/lib/perl5/site_perl/5.22.2:$PERL5LIB && perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('PerlIO::gzip', '0.20', {
+        'source_tmpl': 'PerlIO-gzip-0.20.tar.gz',
+        'source_urls': ['http://cpan.metacpan.org/authors/id/N/NW/NWCLARK/'],
+    }),
+    ('GD::Text', '0.86', {
+        'source_tmpl': 'GDTextUtil-0.86.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MV/MVERB/'],
+    }),
+    ('GD::Graph', '1.43', {
+        'source_tmpl': 'GDGraph-1.43.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MV/MVERB/'],
+    }),
+    ('GD', '2.67', {
+        'source_tmpl': 'GD-2.67.tar.gz',
+        'source_urls': ['http://search.cpan.org/CPAN/authors/id/R/RU/RURBAN/']
+    }),
+]
+
+sanity_check_commands = [('perl', '-I%(installdir)s/lib/perl5/site_perl/%(perlver)s %(installdir)s/bin/fasta_clipping_histogram.pl > /dev/null')]
+modextrapaths = {
+    'PATH': "",  # add installation dir to PATH
+    'PERL5LIB': 'lib/perl5/site_perl/%s/' % (perlver)
+}
+
+
+postinstallcmds = [
+    "sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/bin/*.pl",  # fix shebang line
+    "chmod +x %(installdir)s/bin/*.pl",  # add execution permission
+]
+
+
+sanity_check_paths = {
+    'files':
+        ['bin/fastx_%s' % x for x in
+            ['clipper', 'trimmer', 'quality_stats', 'artifacts_filter', 'reverse_complement',
+             'collapser', 'uncollapser', 'renamer', 'barcode_splitter.pl', 'nucleotide_distribution_graph.sh',
+             'nucleotide_distribution_line_graph.sh']] +
+        ['bin/fasta_%s' % x for x in
+            ['clipping_histogram.pl', 'formatter', 'nucleotide_changer']] +
+        ['bin/fastq_%s' % x for x in
+            ['quality_boxplot_graph.sh', 'quality_converter', 'to_fasta', 'quality_filter',
+             'quality_trimmer', 'masker']],
+    'dirs': ['.']
+}
+
+moduleclass = 'bio'
