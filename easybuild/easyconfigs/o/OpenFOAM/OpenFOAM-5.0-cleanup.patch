@@ -1,18 +1,28 @@
+# This patch removes all need for the ThirdParty files of OpenFOAM:
+# we use EB dependencies for everything. It adjusts the paths, variables, etc
+# We also let the install dir, compiler, etc be set by EB.
+# Lastly, we also fix a small compile issue in 'ptscotchDecomp.C'
+# by Kenneth Hoste (HPC-UGent), based on patch for OpenFOAM 4.1 by Ward Poelmans <wpoely86@gmail.com>
 diff -ru OpenFOAM-5.x-version-5.0.orig/applications/utilities/mesh/manipulation/setSet/Allwmake OpenFOAM-5.x-version-5.0/applications/utilities/mesh/manipulation/setSet/Allwmake
---- OpenFOAM-5.x-version-5.0.orig/applications/utilities/mesh/manipulation/setSet/Allwmake	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/applications/utilities/mesh/manipulation/setSet/Allwmake	2017-08-03 14:52:59.868569521 +0000
-@@ -9,7 +9,7 @@
+--- OpenFOAM-5.x-version-5.0.orig/applications/utilities/mesh/manipulation/setSet/Allwmake	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/applications/utilities/mesh/manipulation/setSet/Allwmake	2017-09-05 13:24:24.551265000 +0200
+@@ -9,11 +9,11 @@
  #
  # use readline if available
  #
 -if [ -f /usr/include/readline/readline.h ]
-+if [ -f $NIXUSER_PROFILE/include/readline/readline.h ]
++if [ -f $EBROOTLIBREADLINE/include/readline/readline.h ]
  then
      echo "    found <readline/readline.h>  --  enabling readline support."
      export COMP_FLAGS="-DHAS_READLINE"
+-    export LINK_FLAGS="-lreadline"
++    export LINK_FLAGS="-L$EBROOTLIBREADLINE/lib -lreadline -L$EBROOTNCURSES -lncurses"
+ fi
+ 
+ wmake $targetType
 diff -ru OpenFOAM-5.x-version-5.0.orig/applications/utilities/postProcessing/graphics/PVReaders/Allwmake OpenFOAM-5.x-version-5.0/applications/utilities/postProcessing/graphics/PVReaders/Allwmake
---- OpenFOAM-5.x-version-5.0.orig/applications/utilities/postProcessing/graphics/PVReaders/Allwmake	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/applications/utilities/postProcessing/graphics/PVReaders/Allwmake	2017-08-03 14:53:53.719039149 +0000
+--- OpenFOAM-5.x-version-5.0.orig/applications/utilities/postProcessing/graphics/PVReaders/Allwmake	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/applications/utilities/postProcessing/graphics/PVReaders/Allwmake	2017-09-05 13:25:02.676363000 +0200
 @@ -14,8 +14,8 @@
          }
  
@@ -25,24 +35,24 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/applications/utilities/postProcessing/gra
          wmake $targetType vtkPVblockMesh
          wmake $targetType vtkPVFoam
 diff -ru OpenFOAM-5.x-version-5.0.orig/etc/bashrc OpenFOAM-5.x-version-5.0/etc/bashrc
---- OpenFOAM-5.x-version-5.0.orig/etc/bashrc	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/etc/bashrc	2017-08-03 14:56:42.063381128 +0000
-@@ -42,9 +42,8 @@
- #
+--- OpenFOAM-5.x-version-5.0.orig/etc/bashrc	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/etc/bashrc	2017-09-05 13:25:43.726219000 +0200
+@@ -43,8 +43,9 @@
  # Please set to the appropriate path if the default is not correct.
  #
--[ ${BASH_SOURCE:-$0} ] && \
+ [ ${BASH_SOURCE:-$0} ] && \
 -export FOAM_INST_DIR=$(cd $(dirname ${BASH_SOURCE:-$0})/../.. && pwd -P) || \
 -export FOAM_INST_DIR=$HOME/$WM_PROJECT
++#export FOAM_INST_DIR=$(cd $(dirname ${BASH_SOURCE:-$0})/../.. && pwd -P) || \
++#export FOAM_INST_DIR=$HOME/$WM_PROJECT
 +# For Easybuild: set by the module
-+#
  # export FOAM_INST_DIR=~$WM_PROJECT
  # export FOAM_INST_DIR=/opt/$WM_PROJECT
  # export FOAM_INST_DIR=/usr/local/$WM_PROJECT
 diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/CGAL OpenFOAM-5.x-version-5.0/etc/config.sh/CGAL
---- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/CGAL	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/etc/config.sh/CGAL	2017-08-03 14:55:13.013258180 +0000
-@@ -35,41 +35,7 @@
+--- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/CGAL	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/etc/config.sh/CGAL	2017-09-05 13:27:51.807286000 +0200
+@@ -35,33 +35,8 @@
  #
  #------------------------------------------------------------------------------
  
@@ -73,22 +83,21 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/CGAL OpenFOAM-5.x-version-5
 -else
 -    unset CGAL_ARCH_PATH
 -fi
--
--if [ "$FOAM_VERBOSE" -a "$PS1" ]
--then
--    echo "Using BOOST and CGAL" 1>&2
--    echo "    $boost_version at $BOOST_ARCH_PATH" 1>&2
--    echo "    $cgal_version at $CGAL_ARCH_PATH" 1>&2
--fi
--
--unset thirdPartyPath
 +export CGAL_ARCH_PATH=$EBROOTCGAL
 +export BOOST_ARCH_PATH=$EBROOTBOOST
  
+ if [ "$FOAM_VERBOSE" -a "$PS1" ]
+ then
+@@ -70,6 +45,4 @@
+     echo "    $cgal_version at $CGAL_ARCH_PATH" 1>&2
+ fi
+ 
+-unset thirdPartyPath
+-
  #------------------------------------------------------------------------------
 diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/gperftools OpenFOAM-5.x-version-5.0/etc/config.sh/gperftools
---- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/gperftools	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/etc/config.sh/gperftools	2017-08-03 14:52:59.869569511 +0000
+--- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/gperftools	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/etc/config.sh/gperftools	2017-09-05 13:02:34.810678000 +0200
 @@ -29,13 +29,7 @@
  #
  #------------------------------------------------------------------------------
@@ -101,13 +110,13 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/gperftools OpenFOAM-5.x-ver
 -
 -export PATH=$GPERFTOOLS_ARCH_PATH/bin:$PATH
 -export LD_LIBRARY_PATH=$GPERFTOOLS_ARCH_PATH/lib:$LD_LIBRARY_PATH
-+GPERFTOOLS_VERSION=gperftools-2.4
-+GPERFTOOLS_ARCH_PATH=$NIXUSER_PROFILE
++GPERFTOOLS_VERSION=gperftools-$EBVERSIONGPERFTOOLS
++GPERFTOOLS_ARCH_PATH=$EBROOTGPERFTOOLS
  
  #------------------------------------------------------------------------------
 diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/metis OpenFOAM-5.x-version-5.0/etc/config.sh/metis
---- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/metis	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/etc/config.sh/metis	2017-08-03 14:55:50.740886601 +0000
+--- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/metis	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/etc/config.sh/metis	2017-09-05 13:02:34.811995000 +0200
 @@ -34,7 +34,7 @@
  #
  #------------------------------------------------------------------------------
@@ -119,8 +128,8 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/metis OpenFOAM-5.x-version-
  
  #------------------------------------------------------------------------------
 diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/mpi OpenFOAM-5.x-version-5.0/etc/config.sh/mpi
---- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/mpi	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/etc/config.sh/mpi	2017-08-03 14:52:59.870569501 +0000
+--- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/mpi	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/etc/config.sh/mpi	2017-09-05 13:02:34.813715000 +0200
 @@ -249,6 +249,9 @@
      _foamAddPath    $MPI_ARCH_PATH/bin64
      _foamAddLib     $MPI_ARCH_PATH/lib64
@@ -132,8 +141,8 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/mpi OpenFOAM-5.x-version-5.
      export FOAM_MPI=dummy
      ;;
 diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/paraview OpenFOAM-5.x-version-5.0/etc/config.sh/paraview
---- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/paraview	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/etc/config.sh/paraview	2017-08-03 14:52:59.870569501 +0000
+--- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/paraview	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/etc/config.sh/paraview	2017-09-05 13:28:25.957902000 +0200
 @@ -41,21 +41,6 @@
          ) \
          && PATH="$cleaned"
@@ -156,9 +165,59 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/paraview OpenFOAM-5.x-versi
  
  #- ParaView version, automatically determine major version
  #export ParaView_VERSION=3.12.0
+@@ -65,7 +50,7 @@
+ #export ParaView_VERSION=4.4.0
+ #export ParaView_VERSION=5.0.0
+ #export ParaView_VERSION=5.0.1
+-export ParaView_VERSION=5.4.0
++export ParaView_VERSION=$EBVERSIONPARAVIEW
+ export ParaView_MAJOR=detect
+ 
+ 
+@@ -106,21 +91,15 @@
+ paraviewInstDir=$WM_THIRD_PARTY_DIR/ParaView-$ParaView_VERSION
+ paraviewArchName=ParaView-$ParaView_VERSION
+ 
+-export ParaView_DIR=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$paraviewArchName
++export ParaView_DIR=$EBROOTPARAVIEW
+ 
+ # Set paths if binaries or source are present
+ if [ -r $ParaView_DIR -o -r $paraviewInstDir ]
+ then
+     export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-$ParaView_MAJOR
+-    if [ ! -d $ParaView_INCLUDE_DIR -a -d $ParaView_DIR/include/paraview-3.0 ]
+-    then
+-        export ParaView_INCLUDE_DIR=$ParaView_DIR/include/paraview-3.0
+-    fi
+ 
+     ParaView_LIB_DIR=$ParaView_DIR/lib/paraview-$ParaView_MAJOR
+ 
+-    export PATH=$ParaView_DIR/bin:$PATH
+-    export LD_LIBRARY_PATH=$ParaView_LIB_DIR:$LD_LIBRARY_PATH
+     export PV_PLUGIN_PATH=$FOAM_LIBBIN/paraview-$ParaView_MAJOR
+ 
+     if [ "$FOAM_VERBOSE" -a "$PS1" ]
+@@ -132,17 +111,6 @@
+         echo "    PV_PLUGIN_PATH       : $PV_PLUGIN_PATH"
+     fi
+ 
+-    # Add in python libraries if required
+-    paraviewPython=$ParaView_DIR/Utilities/VTKPythonWrapping
+-    if [ -r $paraviewPython ]
+-    then
+-        if [ "$PYTHONPATH" ]
+-        then
+-            export PYTHONPATH=$PYTHONPATH:$paraviewPython:$ParaView_LIB_DIR
+-        else
+-            export PYTHONPATH=$paraviewPython:$ParaView_LIB_DIR
+-        fi
+-    fi
+ else
+     unset PV_PLUGIN_PATH
+ fi
 diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/scotch OpenFOAM-5.x-version-5.0/etc/config.sh/scotch
---- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/scotch	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/etc/config.sh/scotch	2017-08-03 14:52:59.870569501 +0000
+--- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/scotch	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/etc/config.sh/scotch	2017-09-05 13:02:34.818516000 +0200
 @@ -37,7 +37,7 @@
  #
  #------------------------------------------------------------------------------
@@ -170,8 +229,8 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/scotch OpenFOAM-5.x-version
  
  #------------------------------------------------------------------------------
 diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/settings OpenFOAM-5.x-version-5.0/etc/config.sh/settings
---- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/settings	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/etc/config.sh/settings	2017-08-03 14:52:59.870569501 +0000
+--- OpenFOAM-5.x-version-5.0.orig/etc/config.sh/settings	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/etc/config.sh/settings	2017-09-05 13:02:34.819666000 +0200
 @@ -61,11 +61,11 @@
          64)
              WM_ARCH=linux64
@@ -189,10 +248,9 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/etc/config.sh/settings OpenFOAM-5.x-versi
              ;;
          *)
              echo "Unknown WM_ARCH_OPTION '$WM_ARCH_OPTION', should be 32 or 64"\
-Seulement dans OpenFOAM-5.x-version-5.0/etc/config.sh: settings.orig
 diff -ru OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/ptscotchDecomp/Make/options OpenFOAM-5.x-version-5.0/src/parallel/decompose/ptscotchDecomp/Make/options
---- OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/ptscotchDecomp/Make/options	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/src/parallel/decompose/ptscotchDecomp/Make/options	2017-08-03 14:52:59.870569501 +0000
+--- OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/ptscotchDecomp/Make/options	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/src/parallel/decompose/ptscotchDecomp/Make/options	2017-09-05 13:29:35.759841000 +0200
 @@ -4,14 +4,7 @@
  EXE_INC = \
      $(PFLAGS) $(PINC) \
@@ -210,8 +268,8 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/ptscotchDecomp/Mak
 -    -lrt
 +    -L$(SCOTCH_ARCH_PATH)/lib -L$(FOAM_EXT_LIBBIN)/$(FOAM_MPI) -lptscotch -lptscotcherrexit -lscotch ${LINK_FLAGS} -lrt
 diff -ru OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C OpenFOAM-5.x-version-5.0/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C
---- OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2017-08-03 14:52:59.870569501 +0000
+--- OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/src/parallel/decompose/ptscotchDecomp/ptscotchDecomp.C	2017-09-05 13:02:34.826491000 +0200
 @@ -30,10 +30,11 @@
  #include "globalIndex.H"
  #include "SubField.H"
@@ -226,8 +284,8 @@ diff -ru OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/ptscotchDecomp/pts
  }
  
 diff -ru OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/scotchDecomp/Make/options OpenFOAM-5.x-version-5.0/src/parallel/decompose/scotchDecomp/Make/options
---- OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/scotchDecomp/Make/options	2017-07-25 16:43:40.000000000 +0000
-+++ OpenFOAM-5.x-version-5.0/src/parallel/decompose/scotchDecomp/Make/options	2017-08-03 14:52:59.870569501 +0000
+--- OpenFOAM-5.x-version-5.0.orig/src/parallel/decompose/scotchDecomp/Make/options	2017-07-25 18:43:40.000000000 +0200
++++ OpenFOAM-5.x-version-5.0/src/parallel/decompose/scotchDecomp/Make/options	2017-09-05 13:30:10.051665000 +0200
 @@ -8,7 +8,6 @@
  EXE_INC = \
      $(PFLAGS) $(PINC) \
