@@ -1,0 +1,48 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# It was auto-generated based on a template easyconfig, so it should be used with care.
+easyblock = 'ConfigureMake'
+
+name = 'HEASoft'
+version = '6.22.1'
+
+homepage = 'https://heasarc.nasa.gov/lheasoft/'
+description = """A Unified Release of the FTOOLS and XANADU Software Packages
+
+XANADU	High-level, multi-mission tasks for X-ray astronomical spectral, timing, and imaging data analysis
+FTOOLS	General and mission-specific tools to manipulate FITS files
+FITSIO	Core library responsible for reading and writing FITS files (distributed with FTOOLS)
+fv	General FITS file browser/editor/plotter with a graphical user interface (distributed with FTOOLS)
+XSTAR	Tool for calculating the physical conditions and emission spectra of photoionized gases
+"""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+toolchainopts = {}  # toolchain options, e.g. opt, pic, usempi, optarch, ...
+
+# For sources line to work correctly with --try-software-version, you MUST employ %s OR use a construct like SOURCE_TAR_GZ
+sources = ['%(namelower)s-%(version)ssrc.tar.gz']
+#The software will need to be downloaded separately
+source_urls = ['https://heasarc.gsfc.nasa.gov/lheasoft/download.html']
+
+patches = ['heasoft-6.22.1-tclreadline-configure.patch']
+
+dependencies = []
+
+start_dir = 'BUILD_DIR'
+configopts = ' --x-includes=${NIXUSER_PROFILE}/include '
+
+parallel = 1
+# The sanity test MUST be tuned before going production and submitting your contribution to upstream git repositories
+sanity_check_paths = {
+    'files': ['x86_64-unknown-linux-gnu-libc2.24/headas-init.sh','heacore/x86_64-unknown-linux-gnu-libc2.24/bin/fpack'],
+    'dirs': ["."]
+}
+
+modextravars = {'HEADAS': '%(installdir)s/x86_64-unknown-linux-gnu-libc2.24'}
+modloadmsg = """To initialize HEASoft, 
+do (sh, ash, ksh, and bash)
+              . $HEADAS/headas-init.sh
+or (csh, tcsh)
+              source $HEADAS/headas-init.csh"""
+# You SHOULD change the following line; Kindly consult other easyconfigs for possible options
+moduleclass = 'geo'
