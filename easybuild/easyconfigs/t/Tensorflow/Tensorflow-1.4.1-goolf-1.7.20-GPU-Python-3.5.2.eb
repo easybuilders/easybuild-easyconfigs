@@ -1,0 +1,76 @@
+easyblock = 'Bundle'
+
+name = 'Tensorflow'
+version = '1.4.1'
+versionsuffix = '-GPU-Python-%(pyver)s'
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+pyver = '3.5.2'
+pyshortver = ''.join(pyver.split('.')[:2])
+
+dependencies = [
+    ('Python', pyver),
+    ('numpy', '1.13.3', '-Python-%(pyver)s'),
+    ('protobuf-python', '3.3.0', '-Python-%(pyver)s'),
+    ('CUDA', '8.0.61_375.26', '', True),
+    ('cuDNN', '6.0', '-CUDA-8.0.61_375.26', True),
+]
+
+exts_list = [
+    ('six', '1.11.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/six'],
+    }),
+    ('enum34', '1.1.6', {
+        'source_urls': ['https://pypi.python.org/packages/source/e/enum34'],
+	'modulename': 'enum',
+    }),
+    ('webencodings', '0.5.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/w/webencodings'],
+    }),
+    ('html5lib', '0.99999999', {
+        'source_urls':  ['https://pypi.python.org/packages/source/h/html5lib'],
+    }),
+    ('Werkzeug', '0.13', {
+        'source_urls': ['https://pypi.python.org/packages/source/w/Werkzeug'],
+    }),
+    ('bleach', '2.0.0', {
+        'source_urls':  ['https://pypi.python.org/packages/source/b/bleach'],
+        'checksums': ['b9522130003e4caedf4f00a39c120a906dcd4242329c1c8f621f5370203cbc30'],
+    }),
+    ('Markdown', '2.6.8', {
+        'source_urls':  ['https://pypi.python.org/packages/source/m/Markdown'],
+    }),
+    ('tensorflow-tensorboard', '0.4.0rc3', {
+	'source_urls': ['https://pypi.python.org/packages/source/t/tensorflow-tensorboard'],
+	'source_tmpl': 'tensorflow_tensorboard-%%(version)s-py3-none-any.whl' % {'pyshortver': pyshortver},
+	'use_pip': True,
+	'unpack_sources': False,
+	'modulename': 'tensorflow',
+    }),
+    ('tensorflow', version, {
+        'source_urls': ['https://pypi.python.org/packages/source/t/tensorflow-gpu'],
+        'source_tmpl': 'tensorflow_gpu-%%(version)s-cp%(pyshortver)s-cp%(pyshortver)sm-manylinux1_x86_64.whl' %
+                       {'pyshortver': pyshortver},
+        'use_pip': True,
+        'unpack_sources': False,
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/tensorboard'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'lib'
