@@ -1,0 +1,67 @@
+easyblock = 'Binary'
+
+name = 'XMM-SAS'
+version = '16.1.0'
+
+homepage = 'https://www.cosmos.esa.int/web/xmm-newton/sas'
+description = """The Science Analysis System (SAS) is a collection of tasks, scripts and libraries, specifically designed to reduce and analyze data collected by the XMM-Newton observatory."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+sources = ['sas_16.1.0-RHEL6.8-64.tgz']
+#Needs to be downloaded separately
+source_urls = ['https://www.cosmos.esa.int/web/xmm-newton/sas-download']
+
+#preinstallopts = 'cd %(installdir)s && tar -xf %(builddir)s/sas_16.1.0-RHEL6.8-64.tgz &&'
+#install_cmd = './install.sh '
+
+sanity_check_paths = {
+    'files': ['xmmsas_20170719_1539/sas-setup.sh', 'xmmsas_20170719_1539/setsas.sh'],
+    'dirs': ['xmmsas_20170719_1539/bin', 'xmmsas_20170719_1539/lib'],
+}
+
+perl = 'Perl'
+perlver = '5.22.2'
+versionsuffix = '-%s-%s' % (perl, perlver)
+
+dependencies = [
+    ('HEASoft','6.22.1'),
+    (perl, perlver,'-nix')
+]
+
+# these are the perl libraries dependencies
+exts_defaultclass = 'PerlModule'
+#exts_filter = ("perldoc -lm %(ext_name)s ", "")
+exts_filter = ("PERL5LIB=/cvmfs/soft.computecanada.ca/easybuild/software/2017/avx2/Compiler/gcc5.4/xmm-sas/16.1.0/lib/perl5/site_perl/5.22.2:$PERL5LIB && perldoc -lm %(ext_name)s ", "")
+
+
+exts_list = [
+    ('Switch', '2.17', {
+        'source_tmpl': 'Switch-2.17.tar.gz',
+        'source_urls': ['http://search.cpan.org/CPAN/authors/id/C/CH/CHORNY/'],
+    }),
+    ('XML::LibXML', '2.0132', {
+        'source_tmpl': 'XML-LibXML-2.0132.tar.gz',
+        'source_urls': ['http://search.cpan.org/CPAN/authors/id/S/SH/SHLOMIF/'],
+    }),
+]
+
+
+postinstallcmds = [ "cd %(installdir)s && tar -xf %(builddir)s/sas_16.1.0-RHEL6.8-64.tgz && ./install.sh && /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path %(installdir)s/xmmsas_20170719_1539/lib:%(installdir)s/xmmsas_20170719_1539/libextra;cd %(installdir)s/xmmsas_20170719_1539/bin;for f in *;do file $f|grep Perl>/dev/null;if [ $? -eq 0 ];then sed -i 's/perl -w/env perl/' $f; fi; done" ]
+modextrapaths = {
+    'PATH': ['xmmsas_20170719_1539/bin'],
+    'PERL5LIB': ['lib/perl5/site_perl/%(perlver)s/', 'xmmsas_20170719_1539/lib/perl5'],
+}
+
+modextravars = {
+           	'SAS_DIR': '%(installdir)s/xmmsas_20170719_1539',
+                'SAS_PATH': '%(installdir)s/xmmsas_20170719_1539/config/ftools:%(installdir)s/xmmsas_20170719_1539',
+}
+
+modloadmsg = """To initialize XSS-SAS,
+  do (sh, ash, ksh, and bash)
+              . $EBROOTXMMMINSAS/xmmsas_20170719_1539/setsas.sh
+  or (csh, tcsh)
+              source $EBROOTXMMMINSAS/xmmsas_20170719_1539/setsas.csh 
+"""
+moduleclass = 'geo'
