@@ -1,0 +1,39 @@
+easyblock = "PythonPackage"
+
+name = 'GPAW'
+version = '1.3.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
+description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
+method and the atomic simulation environment (ASE). It uses real-space uniform grids and multigrid methods or 
+atom-centered basis-functions or plane waves."""
+toolchain = {'name': 'foss', 'version': '2017b'}
+source_urls = [PYPI_LOWER_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+
+# This patch modifies customize.py to look for BLAS, LAPACK, ScaLapack and
+# the Python main library in the places where EasyBuild has installed them,
+# avoiding the risk that the installation process picks up older libraries
+# installed by the OS.
+patches = ['GPAW-1.3.0-enable-scalapack-and-libs.patch']
+
+checksums = [
+    'cf601c69ac496421e36111682bcc1d23da2dba2aabc96be51accf73dea30655c',  # gpaw-1.3.0.tar.gz
+    '9df8b303b05cb0bd37b5488aff49a936104e62d0c2abaca2ff1e1c2b63d0d34b',  # GPAW-1.3.0-enable-scalapack-and-libs.patch
+]
+
+dependencies = [
+    ('Python', '3.6.3'),
+    ('ASE', '3.15.0', versionsuffix),
+    ('libxc', '3.0.1'),
+    ('libreadline', '7.0'),
+    ('GPAW-setups', '0.9.20000', '', True),  # Users may load older setups manually.
+]
+
+sanity_check_paths = {
+    'files': ['bin/gpaw'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s']
+}
+
+moduleclass = 'chem'
