@@ -6,14 +6,15 @@ homepage = 'http://www.gnu.org/software/octave/'
 description = """GNU Octave is a high-level interpreted language, primarily intended for numerical computations."""
 
 toolchain = {'name': 'intel', 'version': '2017a'}
-toolchainopts = {'cstd': 'c++11'}
+toolchainopts = {'cstd': 'c++11', 'pic': True}
 
 source_urls = [GNU_SOURCE]
 sources = [SOURCELOWER_TAR_GZ]
-patches = ['%(name)s-%(version)s_intel.patch']
+patches = ['%(name)s-%(version)s_intel.patch', '%(name)s-%(version)s_mkoctfile.patch']
 checksums = [
     '80c28f6398576b50faca0e602defb9598d6f7308b0903724442c2a35a605333b',  # octave-4.2.1.tar.gz
     'f35b6e28f1ceaf7e67c935544ad2547931a30cd03ab0a1587715c6bd94521de9',  # Octave-4.2.1_intel.patch
+    'ed014514cbaf0f65642b24ae2fe2f7f29adebc0dad7b25859ed9345bca161a9c',  # Octave-4.2.1_mkoctfile.patch
 ]
 
 builddependencies = [
@@ -48,6 +49,8 @@ dependencies = [
     ('SuiteSparse', '4.5.5', '-METIS-5.1.0'),
     ('GraphicsMagick', '1.3.25'),
     ('FFTW', '3.3.6'),
+    ('GSL', '2.3'),             # for gsl extension
+    ('PostgreSQL', '9.6.2', '-Python-2.7.13'),  # for io extension
 ]
 
 # link with multi-threaded BLAS/LAPACK library
@@ -60,9 +63,31 @@ configopts += '--enable-fortran-calling-convention=gfortran'
 pkg_url = 'https://downloads.sourceforge.net/project/octave/Octave%20Forge%20Packages/Individual%20Package%20Releases/'
 exts_default_options = {'source_urls': [pkg_url]}
 
+# order matters (deps first)
 exts_list = [
     ('control', '3.0.0', {
         'checksums': ['41e9a5627565444140cf8bb8cf978239245355a6fc7d61ff122327d8f822eca6'],
+    }),
+    ('general', '2.0.0', {
+        'checksums': ['80a6921bea3437ea233873ca4382bdc7c31c9e61bd1bcb9059da18db39df7194'],
+    }),
+    ('gsl', '2.1.0', {
+        'checksums': ['940142b7d655d9196e1ec5197b4176388c69671e03ba8da717782d9f040fcedb'],
+    }),
+    ('image', '2.6.2', {
+        'checksums': ['fe01e0683dd55de985662bd86eefcf4cd0dc46c53050fd15e65d17370b2833d9'],
+    }),
+    ('io', '2.4.9', {
+        'checksums': ['519493c9635d8461fec1ecf6240ce364d6ead2906743c612fe5a33a5dc6f8f7c'],
+    }),
+    ('struct', '1.0.14', {      # required by optim
+        'checksums': ['ad4e17687bc24650f032757271b20b70fe32c35513d4dd9ab1e549919df36b47'],
+    }),
+    ('optim', '1.5.2', {
+        'checksums': ['7b36033c5581559dc3e7616f97d402bc44dde0dfd74c0e3afdf47d452a76dddf'],
+    }),
+    ('parallel', '3.1.1', {
+        'checksums': ['4cd8f4619557c91c046882b056322da8de7f6047bfce6f102f40565bd4b4b37f'],
     }),
     ('signal', '1.3.2', {
         'patches': ['signal-1.3.2_fix-formula.patch'],
@@ -70,6 +95,9 @@ exts_list = [
             'a277f12e9f47cc66a8c56ab26284ac4839b223f32de13e35e710401fd0539b60',  # signal-1.3.2.tar.gz
             'e4971524077a19e655c7c70c11d9a27ca1a3aa2638150c5779e72ebce9ec38b5',  # signal-1.3.2_fix-formula.patch
         ],
+    }),
+    ('splines', '1.3.2', {
+        'checksums': ['61cb4c8420e23e7a9febd014ecfc4314d8977635976571edaae7749f651d2b1f'],
     }),
 ]
 

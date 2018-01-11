@@ -1,0 +1,24 @@
+fix mkoctfile mishandling of --fp-model source flag format
+# bug reported and fixed; this patch backported from
+# http://hg.savannah.gnu.org/hgweb/octave/rev/298c6a6bd869
+diff --git a/src/mkoctfile.in.cc b/src/mkoctfile.in.cc
+index 7309dd7..4556b4a 100644
+--- a/src/mkoctfile.in.cc
++++ b/src/mkoctfile.in.cc
+@@ -590,6 +590,16 @@ main (int argc, char **argv)
+         {
+           // Pass through any unrecognized options
+           pass_on_options += (" " + arg);
++          // Check for an additional argument following the option
++          if (i < argc-1)
++            {
++              arg = argv[i+1];
++              if (arg[0] != '-')
++                {
++                  pass_on_options += (' ' + arg);
++                  i++;
++                }
++            }
+         }
+       else
+         {
