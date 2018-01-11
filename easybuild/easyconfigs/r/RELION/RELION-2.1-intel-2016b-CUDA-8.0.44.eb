@@ -1,0 +1,109 @@
+# -------------------------------------------------------------
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    Caspar van Leeuwen <caspar.vanleeuwen@surfsara.nl>
+# Institute: SURFsara
+# -------------------------------------------------------------
+
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+version = '2.1'
+
+cudaversion = '8.0.44'
+versionsuffix = '-CUDA-%s' % cudaversion
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer
+ program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class
+ averages in electron cryo-microscopy (cryo-EM)."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/3dem/relion/archive/']
+sources = ['%s.tar.gz' % version]
+
+builddependencies = [
+    ('CMake', '3.6.2'),
+]
+
+dependencies = [
+    ('X11', '20160819'),
+    ('FFTW', '3.3.5'),
+    ('FLTK', '1.3.3'),
+    ('CUDA', cudaversion, '', True),
+]
+
+moduleclass = 'bio'
+
+# -------------------------------------------------------------
+# SYSTEM SPECIFIC PART - edit this to correspond to your system
+# -------------------------------------------------------------
+# To submit jobs, RELION requires a job template script to be defined
+# See https://www2.mrc-lmb.cam.ac.uk/relion/index.php/Download_%26_install#Set-up_queue_job_submission
+# -------------------------------------------------------------
+
+postinstallcmds = [
+    """cat <<EOF > %(installdir)s/bin/sbatch.csh
+#!/bin/bash
+#SBATCH -p XXXqueueXXX 
+#SBATCH -n XXXmpinodesXXX
+#SBATCH -c XXXthreadsXXX
+#SBATCH -N XXXnodesXXX
+#SBATCH -e XXXerrfileXXX
+#SBATCH -o XXXoutfileXXX
+#SBATCH -t XXXextra1XXX
+
+module load eb
+module load RELION/%(version)s-%(toolchain_name)s-%(toolchain_version)s-CUDA-{}
+srun XXXcommandXXX
+EOF
+""".format(cudaversion)
+]
+
+# Extra module variables related to the template job script
+
+modextravars = {
+    'RELION_QSUB_TEMPLATE': '$root/bin/sbatch.csh',
+    'RELION_QSUB_EXTRA1': 'Max. wall clock time',
+    'RELION_QSUB_EXTRA1_DEFAULT': '1-00:00:00',
+}
+
+# -------------------------------------------------------------
+# OPTIONAL DEPENDENCIES
+# -------------------------------------------------------------
+# RELION has a number of optional dependencies: it provides wrappers for pre/postprocessing steps.
+# -------------------------------------------------------------
+
+dependencies += [
+    ('ResMap', '1.1.4', '', True),
+    ('CTFFIND', '4.1.8'),
+    ('MotionCor2', '1.0.4', '', True),
+    ('unblur', '1.0.2', '', True),
+    ('summovie', '1.0.2', '', True),
+    ('Gctf', '1.06', '', True),
+]
+
+# To find the executables for these optional dependencies, RELION uses environment variables.
+# See: https://www2.mrc-lmb.cam.ac.uk/relion/index.php/Download_%26_install#Edit_the_environment_set-up
+# We generate simlinks to the binaries, and then point environment variables to the symlinks.
+
+postinstallcmds += [
+    """ln -s $EBROOTRESMAP/ResMap-1.1.4-linux64 %(installdir)s/bin/ResMap;
+ln -s $EBROOTCTFFIND/bin/ctffind %(installdir)s/bin/ctffind;
+ln -s $EBROOTMOTIONCOR2/MotionCor2_1.0.4 %(installdir)s/bin/MotionCor2;
+ln -s $EBROOTUNBLUR/bin/unblur_openmp_7_17_15.exe %(installdir)s/bin/unblur;
+ln -s $EBROOTSUMMOVIE/bin/sum_movie_openmp_7_17_15.exe %(installdir)s/bin/summovie;
+ln -s $EBROOTGCTF/bin/Gctf-v1.06_sm_30_cu8.0_x86_64 %(installdir)s/bin/Gctf;
+"""
+]
+
+modextravars.update({
+    'RELION_RESMAP_EXECUTABLE': '$root/bin/ResMap',
+    'RELION_CTFFIND_EXECUTABLE': '$root/bin/ctffind',
+    'RELION_MOTIONCOR2_EXECUTABLE': '$root/bin/MotionCor2',
+    'RELION_UNBLUR_EXECUTABLE': '$root/bin/unblur',
+    'RELION_SUMMOVIE_EXECUTABLE': '$root/bin/summovie',
+    'RELION_GCTF_EXECUTABLE': '$root/bin/Gctf',
+})

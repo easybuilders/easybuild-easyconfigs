@@ -1,0 +1,40 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    Caspar van Leeuwen <caspar.vanleeuwen@surfsara.nl>
+# Institute: SURFsara
+##
+
+easyblock = 'PackedBinary'
+
+name = 'MotionCor2'
+version = '1.0.4'
+
+homepage = 'http://msg.ucsf.edu/em/software/motioncor2.html'
+description = """MotionCor2 is a multi-GPU program that corrects beam-induced sample motion recorded
+on dose fractionated movie stacks"""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# Note: MotionCor2 is licensed for noncommercial use.
+# Please read and accept the license agreement, and register at http://tiny.cc/UCSFMotionCor2
+source_urls = ['http://msg.ucsf.edu/%(name)s/']
+sources = ['%(name)s-%(version)s.tar.gz']
+
+checksums = ['c75738160ac18d3f27c33677e78e63313d8ec2b023b5a46173428c3fa0451a94']
+
+builddependencies = [('patchelf', '0.9', '', True)]
+dependencies = [
+    ('CUDA', '8.0.44', '', True),
+    ('LibTIFF', '3.9.7', '', ('intel', '2016b'))
+]
+
+# Needed to set rpath for this binary installation
+postinstallcmds = ['patchelf --set-rpath $EBROOTCUDA/lib64:$EBROOTLIBTIFF/lib %(installdir)s/MotionCor2_1.0.4']
+
+sanity_check_paths = {
+    'files': ['MotionCor2_1.0.4'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

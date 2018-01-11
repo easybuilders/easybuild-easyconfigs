@@ -1,0 +1,50 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    Caspar van Leeuwen <caspar.vanleeuwen@surfsara.nl>
+# Institute: SURFsara
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'wxWidgets'
+version = '3.0.3'
+
+homepage = 'http://www.wxwidgets.org/'
+description = """wxWidgets is a C++ library that lets developers create applications for Windows,
+    Mac OS X, Linux and other platforms with a single code base.
+    It has language bindings for Python, Perl, Ruby and many other languages."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+source_urls = ['https://github.com/wxWidgets/wxWidgets/archive/']
+sources = ['v%(version)s.tar.gz']
+
+checksums = ['1ec3655765c33ad5f5fe2a7a028a13dbf20c350b97a4fe47c7d45c4a7d976042']
+
+builddependencies = [
+    ('Autoconf', '2.69')
+]
+
+dependencies = [
+    ('LibTIFF', '3.9.7'),
+    ('libpng', '1.6.24'),
+    ('libjpeg-turbo', '1.5.0'),
+    ('flex', '2.5.39'),
+    ('Bison', '3.0.4'),
+    ('M4', '1.4.17')
+]
+
+# Precompiled headers are not compatible with ICC, results in error
+# "Catastrophic error: the language mode (C or C++) must match mode used when precompiled header file XX was created"
+# Thus, disable.
+configopts = ['--disable-precomp-headers']
+
+sanity_check_paths = {
+    'files': ['bin/wxrc-3.0',
+              ('lib/libwx_gtk2u_core-3.0.so.0.3.0', 'lib64/libwx_gtk2u_core-3.0.so.0.3.0'),
+              'include/wx-3.0/wx/aboutdlg.h'],
+    'dirs': ['include', ('lib', 'lib64'), 'bin', 'share'],
+}
+
+moduleclass = 'devel'
