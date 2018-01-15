@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'pgplot'
+version = '5.2'
+
+homepage = 'http://www.astro.caltech.edu/~tjp/pgplot/'
+description = """The PGPLOT Graphics Subroutine Library is a Fortran- or C-callable, device-independent graphics package for making simple scientific graphs. It is intended for making graphical images of publication quality with minimum effort on the part of the user. For most applications, the program can be device-independent, and the output can be directed to the appropriate device at run time."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+source_urls = [ 'ftp://ftp.astro.caltech.edu/pub/pgplot/' ]
+sources = ['pgplot%(version)s.tar.gz']
+checksums = ['e8a6e8d0d5ef9d1709dfb567724525ae']
+
+parallel = 1
+patches =  ['pgplot.patch']
+prebuildopts = 'mkdir build &&'
+prebuildopts += 'here=$(pwd) &&'
+prebuildopts += 'cp drivers.list build &&'
+prebuildopts += 'cd build &&'
+prebuildopts += '../makemake  $here linux f77_gcc &&'
+
+
+files_to_copy = [(['build/libcpgplot.a', 'build/libcpgplot.so', 'build/libpgplot.a', 'build/libpgplot.so'], 'lib'),
+                 (['build/pgplot.doc', 'build/pgplot-routines.pdf', 'build/pgplot-routines.tex'], 'doc'),
+                 (['build/cpgplot.h'], 'include'),
+                 (['build/cpgdemo', 'build/pgxwin_server'], 'bin'),
+                  'build/rgb.txt','build/grfont.dat']
+
+
+sanity_check_paths = {
+    'files': ['lib/libcpgplot.so', 'lib/libpgplot.so', 'lib/libcpgplot.a', 'lib/libpgplot.a'],
+    'dirs': []
+}
+moduleclass = 'math'
+modluafooter = """
+local path = os.getenv("EBROOTPGPLOT")
+local font = pathJoin(path,"/grfont.dat")
+setenv("PGPLOT_FONT", font)
+"""
