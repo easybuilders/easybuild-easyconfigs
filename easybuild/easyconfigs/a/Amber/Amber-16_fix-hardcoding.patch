@@ -84,24 +84,42 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
              mkl_processor="intel64"
              mkl_procstring="intel64"
          fi
-@@ -2567,11 +2569,16 @@
+@@ -2567,15 +2569,30 @@
    else
      # A NetCDF directory was specified. Check that library exists and compiles
      printf "\tUsing external NetCDF in '$netcdf_dir'\n"
+-    netcdfinc="-I"$netcdf_dir"/include"
 +    # Support separate NetCDF-Fortran installation with --with-netcdf-fort
 +    if [ ! -e "$netcdf_fort_dir" ]; then
 +      netcdf_fort_dir="$netcdf_dir"
 +    fi
 +    printf "\tUsing external NetCDF-Fortran in '$netcdf_fort_dir'\n"
-     netcdfinc="-I"$netcdf_dir"/include"
++    netcdfinc="-I${netcdf_dir}/include"
++    if [ "${netcdf_fort_dir}" != "${netcdf_dir}" ]; then
++        netcdfinc="-I${netcdf_fort_dir}/include ${netcdfinc}"
++    fi
      if [ "${netcdf_dir}" != '/usr' -a "$netcdf_dir" != '/usr/' ]; then
-         netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
+-        netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
++        netcdf_flag="-L${netcdf_dir}/lib ${netcdf_flag}"
++    fi
++    if [ "${netcdf_fort_dir}" != "${netcdf_dir}" ]; then
++        netcdf_flag="-L${netcdf_fort_dir}/lib ${netcdf_flag}"
      fi
 -    netcdf=$netcdf_dir"/include/netcdf.mod"
-+    netcdf=$netcdf_fort_dir"/include/netcdf.mod"
++    netcdf="${netcdf_fort_dir}/include/netcdf.mod"
      if [ "$netcdfstatic" = 'no' ] ; then
        if [ "${netcdf_dir}" != '/usr' -a "${netcdf_dir}" != '/usr/' ]; then
-           netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
+-          netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
+-          netcdfflagf="-L${netcdf_dir}/lib -lnetcdff -lnetcdf"
++          netcdf_libdirs="-L${netcdf_dir}/lib"
++          if [ "${netcdf_fort_dir}" != "${netcdf_dir}" ]; then
++              netcdf_libdirs="-L${netcdf_fort_dir}/lib ${netcdf_libdirs}"
++          fi
++          netcdfflagc="${netcdf_libdirs} -lnetcdf"
++          netcdfflagf="${netcdf_libdirs} -lnetcdff -lnetcdf"
+       else
+           netcdfflagc="-lnetcdf"
+           netcdfflagf="-lnetcdff -lnetcdf"
 @@ -2587,7 +2594,7 @@
          echo "Error: '$netcdfflagc' not found."
          exit 1
@@ -111,7 +129,3 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
        if [ ! -e "$netcdfflagf" ]; then
          echo "Error: '$netcdfflagf' not found."
          exit 1
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src: configure2.orig
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src: configure2.rej
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/cpptraj: configure.orig
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/cpptraj: configure.rej
