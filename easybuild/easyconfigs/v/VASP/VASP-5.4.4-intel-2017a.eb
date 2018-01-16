@@ -1,0 +1,64 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.4'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+toolchainopts = {'usempi': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+#sources = ['vasp.5.4.4.tar.gz']
+sources = ['%(namelower)s.%(version)s.tar.gz']
+
+# uncommment after downloading patches from http://cms.mpi.univie.ac.at/wiki/index.php/Installing_VASP
+# patches = [
+#    'vasp.makefile_main.patch',
+#    'vasp.makefile_include.patch',
+#    'vasp.makefile_src.patch',
+# ]
+
+checksums = [
+    '5bd2449462386f01e575f9adf629c08cb03a13142806ffb6a71309ca4431cfb3',  # vasp.5.4.4.tar.gz
+]
+
+prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
+
+# path to libfftw3xf_intel.a is hardcoded in makefile.include
+prebuildopts += 'sed -i "s|\$(MKLROOT)/interfaces/fftw3xf|\$(FFTW_LIB_DIR)|" makefile.include && '
+
+# Massage the mkl flag to be multithreaded:
+prebuildopts += 'sed -i "s/-mkl=sequential/-mkl/" makefile.include && '
+
+# Setting more aggressive code opt; replacing first instance of O2 with more challenging options:
+prebuildopts += 'sed  -i "/^OFLAG      =/s/O2/O3 -ip -lp64 -xHost -static-intel/" makefile.include && '
+
+# Setting Wanier90 and LibBEEF options:
+prebuildopts += 'sed -i "/LLIBS      =/a LLIBS      += -L\$(EBROOTBEEF)/lib -lbeef" makefile.include && '
+prebuildopts += 'sed -i "/LLIBS      =/a LLIBS      += -L\$(EBROOTWANNIER90)/lib -lwannier" makefile.include && '
+prebuildopts += 'sed -i "/CPP        =/i CPP_OPTIONS+= -DVASP2WANNIER90v2 -Dlibbeef" makefile.include && '
+
+# VASP uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+# For future: Change scalapack lib to so? (in easyblock)
+
+parallel = 1
+
+dependencies = [
+	    ('Wannier90', '2.1.0'),
+	    ('BEEF', '0.1.1-r16'),
+]
+
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': []
+}
+
+moduleclass = 'phys'
