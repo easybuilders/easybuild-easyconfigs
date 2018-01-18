@@ -1,0 +1,50 @@
+name = 'CP2K'
+version = '3.0'
+
+homepage = 'http://www.cp2k.org/'
+description = """CP2K is a freely available (GPL) program, written in Fortran 95, to perform atomistic and molecular
+ simulations of solid state, liquid, molecular and biological systems. It provides a general framework for different
+ methods such as e.g. density functional theory (DFT) using a mixed Gaussian and plane waves approach (GPW), and
+ classical pair and many-body potentials. """
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCELOWER_TAR_BZ2]
+patches = [
+    'CP2K-2.6.0-ifort-compiler-bug-fix.patch',
+    'CP2K-2.4.0-fix_compile_date_lastsvn.patch',
+]
+checksums = [
+    '1acfacef643141045b7cbade7006f9b7538476d861eeecd9658c9e468dc61151',  # cp2k-3.0.tar.bz2
+    'b6d4e2ef29de13e93edd18b51d4bca530ad2fd405f730de3b07dafc83853e7f4',  # CP2K-2.6.0-ifort-compiler-bug-fix.patch
+    '02475cbe24c8d4ba27037c826adf8a534cad634c3c4e02c21d743f5284516bda',  # CP2K-2.4.0-fix_compile_date_lastsvn.patch
+]
+
+dependencies = [
+    ('Libint', '1.1.6'),
+    ('libxc', '2.2.3'),
+    ('PLUMED', '2.4.0'),
+    ('libxsmm', '1.8.2'),
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.4'),
+]
+
+# don't use parallel make, results in compilation failure
+# because Fortran module files aren't created before they are needed
+parallel = 1
+
+# values to use here are +1 those used for building Libint
+# see https://github.com/cp2k/cp2k/blob/master/cp2k/tools/hfx_tools/libint_tools/README_LIBINT
+extradflags = "-D__LIBINT_MAX_AM=6 -D__LIBDERIV_MAX_AM1=5"
+
+# regression test reports failures
+ignore_regtest_fails = True
+
+plumed = True
+
+moduleclass = 'chem'
