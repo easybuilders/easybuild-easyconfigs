@@ -1,0 +1,48 @@
+fix compilation issues that occur with Intel compilers
+error: no suitable conversion function from "std::basic_istream<char, std::char_traits<char>>" to "bool" exists
+
+author: Kenneth Hoste (HPC-UGent), with a bit of help from Ward Poelmans
+--- detonate-1.11/rsem-eval/SingleHit.h.orig	2018-01-23 11:01:34.269328898 +0100
++++ detonate-1.11/rsem-eval/SingleHit.h	2018-01-23 11:01:55.859848244 +0100
+@@ -43,7 +43,7 @@
+ 
+ bool SingleHit::read(std::istream& in) {
+ 	conprb = 0.0;
+-	return (in>>sid>>pos);
++	return static_cast<bool>(in>>sid>>pos);
+ }
+ 
+ void SingleHit::write(std::ostream& out) {
+--- detonate-1.11/rsem-eval/PairedEndHit.h.orig	2018-01-23 11:07:46.838260187 +0100
++++ detonate-1.11/rsem-eval/PairedEndHit.h	2018-01-23 11:08:12.628872625 +0100
+@@ -26,7 +26,7 @@
+ 
+ bool PairedEndHit::read(std::istream& in) {
+ 	conprb = 0.0;
+-    return (in>>sid>>pos>>insertL);
++    return static_cast<bool>(in>>pos>>insertL);
+ }
+ 
+ void PairedEndHit::write(std::ostream& out) {
+--- detonate-1.11/rsem-eval/buildReadIndex.cpp.orig	2018-01-23 13:58:46.313840541 +0100
++++ detonate-1.11/rsem-eval/buildReadIndex.cpp	2018-01-23 13:59:51.375415745 +0100
+@@ -35,15 +35,15 @@
+ 		streampos pos = fin.tellg();
+ 		success = true;
+ 
+-		success = (getline(fin, line));
++		success = static_cast<bool>(getline(fin, line));
+ 		if (!success) continue;
+-		success = (getline(fin, line));
++		success = static_cast<bool>(getline(fin, line));
+ 		if (!success) continue;
+ 
+ 		if (hasQ) {
+-			success = (getline(fin, line));
++			success = static_cast<bool>(getline(fin, line));
+ 			if (!success) continue;
+-			success = (getline(fin, line));
++			success = static_cast<bool>(getline(fin, line));
+ 			if (!success) continue;
+ 		}
+ 
