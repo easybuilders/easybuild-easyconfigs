@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'Dalton'
+version = '2016-130ffaa0'
+
+# This naming scheme is due to the current versioning scheme in the Dalton community for 2016. 
+# Due to issues related to cmake-settings; a separarate easyblock might be desirable; fixing path
+# in a more elegant way, like done with Gromacs.
+
+homepage = 'http://www.daltonprogram.org'
+description = """The Dalton code is a powerful tool for a wide range
+ of molecular properties at different levels of theory, whereas LSDalton
+ is a linear-scaling HF and DFT code suitable for large molecular systems,
+ now also with some CCSD capabilites."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+# source tarball needs to be created manually,
+# git clone --recursive https://gitlab.com/dalton/dalton.git
+# cd dalton && git reset --hard <commit_SHA> && cd -
+# commit_SHA = 130ffaa0613bb3af6cac766fc8183d6df7d68917
+# tar cfz dalton-<VERSION>.tar.gz dalton
+sources = [SOURCELOWER_TAR_GZ]
+
+checksums = ['7963ef7a75e925b1dbf3ce1acb84e3d3f8be0decfe48be9ca22a9e97fb943924']
+
+separate_build_dir = True
+
+builddependencies = [
+    ('CMake', '3.9.1'),
+]
+
+# For ref: ./setup in dalton source folder
+
+configopts = " -DMPI_ENABLE=ON -DOPENMP_ENABLE=ON -DCMAKE_BUILD_TYPE=release "
+configopts+= " -DMKL_FLAG='-mkl=parallel' -DENABLE_AUTO_BLAS=OFF -DENABLE_AUTO_LAPACK=OFF "
+configopts+= " -DCMAKE_Fortran_FLAGS='-qopenmp' "
+#configopts+= " -DCMAKE_Fortran_FLAGS='-liomp5' "
+#configopts+= " -DENABLE_GPU=OFF "
+
+sanity_check_paths = {
+    'files': ['dalton/dalton', 'dalton/dalton.x', 'dalton/VERSION'],
+    'dirs': ['dalton', 'dalton/basis', 'dalton/tools'],
+}
+
+modextrapaths	= {'PATH' : ['dalton', 'dalton/tools'] ,}
+#modextravars   = {'BASDIR' : ['dalton/basis'] ,}
+moduleclass = 'chem'
