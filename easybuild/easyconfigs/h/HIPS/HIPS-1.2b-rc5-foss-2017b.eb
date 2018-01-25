@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'HIPS'
+version = '1.2b-rc5'
+
+homepage = 'http://hips.gforge.inria.fr/'
+description = """ HIPS (Hierarchical Iterative Parallel Solver) is a scientific library that provides
+ an efficient parallel iterative solver for very large sparse linear systems. """
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['http://hips.gforge.inria.fr/release/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['db198f65dd4bbca25cffe537e1c659c7ca94cd5a64a32c8b9165caacb5b09603']
+
+dependencies = [
+    ('SCOTCH', '5.1.12b_esmumps'),
+]
+
+# options in makefile.inc are adapted from Makefile_Inc_Examples/makefile.inc.gnu
+prebuildopts = 'echo "COEFTYPE = -DTYPE_REAL" >makefile.inc && '
+prebuildopts += 'echo "PARTITIONER = -DSCOTCH_PART" >>makefile.inc && '
+prebuildopts += 'echo "ARCH = -DLINUX" >>makefile.inc && '
+prebuildopts += 'echo "LD = \$(FC)" >>makefile.inc && '
+prebuildopts += 'echo "MPILD = \$(MPIFC)" >>makefile.inc && '
+prebuildopts += 'echo "LBLAS = $LIBBLAS" >>makefile.inc && '
+prebuildopts += 'echo "MAKE = make" >>makefile.inc && '
+prebuildopts += 'echo "AR = ar" >>makefile.inc && '
+prebuildopts += 'echo "ARFLAGS = -crs" >>makefile.inc && '
+prebuildopts += 'echo "LN = ln" >>makefile.inc && '
+prebuildopts += 'echo "CP = cp" >>makefile.inc && '
+prebuildopts += 'echo "ISCOTCH = -I$EBROOTSCOTCH/include" >>makefile.inc && '
+prebuildopts += 'echo "LSCOTCH = -L$EBROOTSCOTCH/lib -lscotch -lscotcherr" >>makefile.inc && '
+
+# make all compiles both the library and the test programs
+buildopts = 'all'
+
+files_to_copy = [(['LIB/*'], 'lib')]
+
+sanity_check_paths = {
+    'files': ['lib/libhips.a', 'lib/libhipssequential.a'],
+    'dirs': []
+}
+
+moduleclass = 'math'
