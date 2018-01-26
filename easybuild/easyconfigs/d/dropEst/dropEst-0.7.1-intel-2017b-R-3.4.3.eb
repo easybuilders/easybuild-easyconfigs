@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'dropEst'
+version = '0.7.1'
+commit = '2dedc16'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/hms-dbmi/dropEst'
+description = "Pipeline for initial analysis of droplet-based single-cell RNA-seq data"
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+source_urls = ['https://github.com/hms-dbmi/dropEst/archive']
+sources = [{'filename': SOURCE_TAR_GZ, 'download_filename': '%s.tar.gz' % commit}]
+patches = ['dropEst-%(version)s_fix-Intel-compilation.patch']
+checksums = [
+    '39978270ade15ea669e4c103ff8c092b7c8745ef430165e222d54fdc2ff65fdb',  # dropEst-0.7.1.tar.gz
+    '6a7e589dcdfcc07e0be84ac92ed3cd7532abca582d86c0a476126bb4d1f73ff6',  # dropEst-0.7.1_fix-Intel-compilation.patch
+]
+
+builddependencies = [('CMake', '3.10.1')]
+dependencies = [
+    ('Boost', '1.66.0'),
+    ('BamTools', '2.5.0'),
+    ('zlib', '1.2.11'),
+    ('R', '3.4.3', '-X11-20171023'),
+]
+
+unpack_options = '--strip-components=1'
+buildininstalldir = True
+skipsteps = ['install']
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/lib64/R/library",
+    "R CMD INSTALL --library=%(installdir)s/lib64/R/library dropestr",
+]
+
+sanity_check_paths = {
+    'files': ['dropest', 'droptag', 'dropReport.Rsc'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "echo 'library(dropestr)' | R -q --no-save",
+    "dropReport.Rsc -h | grep 'Usage:.*dropReport.Rsc'",
+]
+
+modextrapaths = {
+    'PATH': '',
+    'R_LIBS': 'lib64/R/library',
+}
+
+moduleclass = 'bio'
