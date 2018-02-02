@@ -1,0 +1,75 @@
+--- branches/gcc-6-branch/libsanitizer/ChangeLog	2017/09/07 03:07:42	251827
++++ branches/gcc-6-branch/libsanitizer/ChangeLog	2017/09/07 07:15:24	251828
+@@ -1,3 +1,14 @@
++2017-09-07  Matthias Klose  <doko@ubuntu.com>
++
++	Backported from mainline
++	2017-07-14  Jakub Jelinek  <jakub@redhat.com>
++
++	PR sanitizer/81066
++	* sanitizer_common/sanitizer_linux.h: Cherry-pick upstream r307969.
++	* sanitizer_common/sanitizer_linux.cc: Likewise.
++	* sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cc: Likewise.
++	* tsan/tsan_platform_linux.cc: Likewise.
++
+ 2017-07-04  Release Manager
+ 
+ 	* GCC 6.4.0 released.
+
+--- branches/gcc-6-branch/libsanitizer/sanitizer_common/sanitizer_linux.cc	2016/04/15 14:52:49	235034
++++ branches/gcc-6-branch/libsanitizer/sanitizer_common/sanitizer_linux.cc	2017/09/07 07:15:24	251828
+@@ -546,8 +546,7 @@
+ }
+ #endif
+ 
+-uptr internal_sigaltstack(const struct sigaltstack *ss,
+-                         struct sigaltstack *oss) {
++uptr internal_sigaltstack(const void *ss, void *oss) {
+   return internal_syscall(SYSCALL(sigaltstack), (uptr)ss, (uptr)oss);
+ }
+
+--- branches/gcc-6-branch/libsanitizer/sanitizer_common/sanitizer_linux.h	2017/09/07 03:07:42	251827
++++ branches/gcc-6-branch/libsanitizer/sanitizer_common/sanitizer_linux.h	2017/09/07 07:15:24	251828
+@@ -19,7 +19,6 @@
+ #include "sanitizer_platform_limits_posix.h"
+ 
+ struct link_map;  // Opaque type returned by dlopen().
+-struct sigaltstack;
+ 
+ namespace __sanitizer {
+ // Dirent structure for getdents(). Note that this structure is different from
+@@ -28,8 +27,7 @@
+ 
+ // Syscall wrappers.
+ uptr internal_getdents(fd_t fd, struct linux_dirent *dirp, unsigned int count);
+-uptr internal_sigaltstack(const struct sigaltstack* ss,
+-                          struct sigaltstack* oss);
++uptr internal_sigaltstack(const void* ss, void* oss);
+ uptr internal_sigprocmask(int how, __sanitizer_sigset_t *set,
+     __sanitizer_sigset_t *oldset);
+ void internal_sigfillset(__sanitizer_sigset_t *set);
+
+--- branches/gcc-6-branch/libsanitizer/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cc	2017/09/07 03:07:42	251827
++++ branches/gcc-6-branch/libsanitizer/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cc	2017/09/07 07:15:24	251828
+@@ -267,7 +267,7 @@
+ 
+   // Alternate stack for signal handling.
+   InternalScopedBuffer<char> handler_stack_memory(kHandlerStackSize);
+-  struct sigaltstack handler_stack;
++  stack_t handler_stack;
+   internal_memset(&handler_stack, 0, sizeof(handler_stack));
+   handler_stack.ss_sp = handler_stack_memory.data();
+   handler_stack.ss_size = kHandlerStackSize;
+
+--- branches/gcc-6-branch/libsanitizer/tsan/tsan_platform_linux.cc	2017/09/07 03:07:42	251827
++++ branches/gcc-6-branch/libsanitizer/tsan/tsan_platform_linux.cc	2017/09/07 07:15:24	251828
+@@ -291,7 +291,7 @@
+ int ExtractResolvFDs(void *state, int *fds, int nfd) {
+ #if SANITIZER_LINUX
+   int cnt = 0;
+-  __res_state *statp = (__res_state*)state;
++  struct __res_state *statp = (struct __res_state*)state;
+   for (int i = 0; i < MAXNS && cnt < nfd; i++) {
+     if (statp->_u._ext.nsaddrs[i] && statp->_u._ext.nssocks[i] != -1)
+       fds[cnt++] = statp->_u._ext.nssocks[i];
+ 
