@@ -1,0 +1,69 @@
+fix hardcoding + use Boost built with EasyBuild
+author: Kenneth Hoste (HPC-UGent)
+--- mothur-1.39.5/makefile-internal.orig	2017-09-28 09:10:57.343989078 +0200
++++ mothur-1.39.5/makefile-internal	2017-09-28 09:11:48.795053042 +0200
+@@ -5,17 +5,17 @@
+ VERSION = "\"1.39.5\""
+ 
+ # Optimize to level 3:
+-    CXXFLAGS += -O3 -std=c++0x
+-    LDFLAGS += -std=c++0x
++    #CXXFLAGS += -O3 -std=c++0x
++    #LDFLAGS += -std=c++0x
+ 
+ ifeq  ($(strip $(64BIT_VERSION)),yes)
+     #if you are a mac user use the following line
+     #TARGET_ARCH += -arch x86_64
+ 
+     #if you using cygwin to build Windows the following line
+-    CXX = x86_64-w64-mingw32-g++
+-    CC = x86_64-w64-mingw32-g++
+-    TARGET_ARCH += -m64 -static
++    #CXX = x86_64-w64-mingw32-g++
++    #CC = x86_64-w64-mingw32-g++
++    #TARGET_ARCH += -m64 -static
+ 
+     #if you are a linux user use the following line - specific processor builds in future??
+     #CXXFLAGS += -mtune=generic
+@@ -37,8 +37,8 @@
+ #The boost libraries allow you to read gz files.
+ ifeq  ($(strip $(USEBOOST)),yes)
+     #statically link so the boost install is not required on users machine
+-    BOOST_INCLUDE_DIR="/usr/local/include"
+-    BOOST_LIBRARY_DIR="/usr/local/lib"
++    BOOST_INCLUDE_DIR=${EBROOTBOOST}/include
++    BOOST_LIBRARY_DIR=${EBROOTBOOST}/lib
+ 
+     CXXFLAGS += -DUSE_BOOST -I ${BOOST_INCLUDE_DIR}
+ 
+--- mothur-1.39.5/Makefile.orig	2017-03-20 19:24:08.000000000 +0100
++++ mothur-1.39.5/Makefile	2017-09-28 09:15:55.460121775 +0200
+@@ -19,9 +19,9 @@
+ OPTIMIZE ?= yes
+ USEREADLINE ?= yes
+ USEBOOST ?= yes
+-BOOST_LIBRARY_DIR="\"Enter_your_boost_library_path_here\""
+-BOOST_INCLUDE_DIR="\"Enter_your_boost_include_path_here\""
+-MOTHUR_FILES="\"Enter_your_default_path_here\""
++BOOST_LIBRARY_DIR=${EBROOTBOOST}/lib
++BOOST_INCLUDE_DIR=${EBROOTBOOST}/include
++MOTHUR_FILES=''
+ RELEASE_DATE = "\"3/20/2017\""
+ VERSION = "\"1.39.5\""
+ 
+@@ -31,13 +31,13 @@
+ 
+ # Fastest
+ ifeq  ($(strip $(OPTIMIZE)),yes)
+-    CXXFLAGS += -O3
++    #CXXFLAGS += -O3
+ endif
+ 
+ CXXFLAGS += -DRELEASE_DATE=${RELEASE_DATE} -DVERSION=${VERSION} -std=c++0x
+ LDFLAGS += -std=c++0x
+ 
+-ifeq  ($(strip $(MOTHUR_FILES)),"\"Enter_your_default_path_here\"")
++ifeq  ($(strip $(MOTHUR_FILES)),'')
+ else
+     CXXFLAGS += -DMOTHUR_FILES=${MOTHUR_FILES}
+ endif
