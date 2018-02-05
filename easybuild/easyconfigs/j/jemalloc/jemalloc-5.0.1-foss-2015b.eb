@@ -18,11 +18,21 @@ builddependencies = [
 ]
 
 preconfigopts = "./autogen.sh && "
-prebuildopts = "make dist && "
+#
+# Silly hack to avoid building docs, which will fail when XSLT processor is available.
+# There is no configure option to skip building the docs :(. Therefore:
+#  1. Do NOT "make dist"; just make instead to prevent trying to build the docs.
+#  2. Skip the install step as "make install" will try to copy doc files
+#     and error when they were not build.
+#  3. Use postinstallcmd to "make install_bin install_include install_lib",
+#     which will install everything except for the docs.
+#prebuildopts = "make dist && "
+skipsteps = ['install']
+postinstallcmds = ['make install_bin install_include install_lib']
 
 sanity_check_paths = {
-    'files': ['bin/jeprof', 'lib/libjemalloc.a', 'lib/libjemalloc_pic.a', 'lib/libjemalloc.%s' % SHLIB_EXT,
-              'include/jemalloc/jemalloc.h'],
+    'files': ['bin/jeprof', 'lib/libjemalloc.a', 'lib/libjemalloc_pic.a', 
+              'lib/libjemalloc.%s' % SHLIB_EXT, 'include/jemalloc/jemalloc.h'],
     'dirs': ['share'],
 }
 
