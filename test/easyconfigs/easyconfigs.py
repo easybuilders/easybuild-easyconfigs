@@ -1,5 +1,5 @@
 ##
-# Copyright 2013 Ghent University
+# Copyright 2013-2018 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -256,9 +256,9 @@ def template_easyconfig_test(self, spec):
 
         # let's also exclude the very special case where the system GCC is used as GCCcore, and only apply this
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
-        binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
-        requires_binutils &= bool(ec['toolchain']['version'] == 'system' and
-                                  ec['name'] not in binutils_complete_dependencies)
+        if ec['toolchain']['version'] == 'system':
+            binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
+            requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
             
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))

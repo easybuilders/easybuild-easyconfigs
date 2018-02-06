@@ -1,0 +1,33 @@
+easyblock = 'MakeCp'
+
+name = 'LevelDB'
+version = '1.18'
+
+homepage = 'https://github.com/google/leveldb'
+description = """LevelDB is a fast key-value storage library written at Google that provides an
+ ordered mapping from string keys to string values."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = ['https://github.com/google/leveldb/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['4aa1a7479bc567b95a59ac6fb79eba49f61884d6fd400f20b7af147d54c5cee5']
+
+files_to_copy = [
+    (['libleveldb.%s.%%(version)s' % SHLIB_EXT, 'libleveldb.a'], 'lib'),
+    (['include/leveldb/*.h'], 'include/leveldb')
+]
+
+cd_cmd = "cd %(installdir)s/lib && "
+postinstallcmds = [
+    cd_cmd + "ln -s libleveldb.%s.%%(version)s libleveldb.%s.%%(version_major)s" % (SHLIB_EXT, SHLIB_EXT),
+    cd_cmd + "ln -s libleveldb.%s.%%(version)s libleveldb.%s" % (SHLIB_EXT, SHLIB_EXT),
+]
+
+sanity_check_paths = {
+    'files': ['include/leveldb/cache.h', 'include/leveldb/table.h',
+              'lib/libleveldb.a', 'lib/libleveldb.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
