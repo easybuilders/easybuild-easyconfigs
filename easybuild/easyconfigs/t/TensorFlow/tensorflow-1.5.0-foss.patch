@@ -1,0 +1,92 @@
+diff -ruN tensorflow-1.5.0.original/simon_says_configure.bash tensorflow-1.5.0.patched/simon_says_configure.bash
+--- tensorflow-1.5.0.original/simon_says_configure.bash	1970-01-01 01:00:00.000000000 +0100
++++ tensorflow-1.5.0.patched/simon_says_configure.bash	2018-02-06 00:59:16.000000000 +0100
+@@ -0,0 +1,27 @@
++#!/bin/bash
++
++CONFIGURE_ANSWERS="configure.answers"
++
++echo "${EBROOTPYTHON}/bin/python" > "${CONFIGURE_ANSWERS}"
++echo "${PYTHON_LIB_PATH_FOR_CONFIGURE}" >> "${CONFIGURE_ANSWERS}"
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to use jemalloc as the malloc implementation? [Y/n]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to build TensorFlow with Google Cloud Platform support? [y/N]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to build TensorFlow with Hadoop File System support? [y/N]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to build TensorFlow with Amazon S3 File System support? [Y/n]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to build TensorFlow with the XLA just-in-time compiler (experimental)? [y/N]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to build TensorFlow with GDR support? [y/N]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to build TensorFlow with VERBS support? [y/N]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to build TensorFlow with OpenCL support? [y/N]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you want CUDA support? [y/N]:
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Do you wish to build TensorFlow with MPI support? [y/N]:
++echo '-march=native' >> "${CONFIGURE_ANSWERS}" # Please specify optimization flags to use during compilation when bazel option "--config=opt" is specified [Default is -march=native]: 
++echo 'n' >> "${CONFIGURE_ANSWERS}"             # Would you like to interactively configure ./WORKSPACE for Android builds? [y/N]:
++
++echo '#################################################################################################'
++echo 'simon_says_configure.bash will provide the following answers to questions from ./configure:'
++cat "${CONFIGURE_ANSWERS}"
++echo '#################################################################################################'
++
++./configure < "${CONFIGURE_ANSWERS}"
++
++exit
+diff -ruN tensorflow-1.5.0.original/tensorflow/tensorflow.bzl tensorflow-1.5.0.patched/tensorflow/tensorflow.bzl
+--- tensorflow-1.5.0.original/tensorflow/tensorflow.bzl	2018-01-25 23:22:10.000000000 +0100
++++ tensorflow-1.5.0.patched/tensorflow/tensorflow.bzl	2018-02-06 01:01:25.000000000 +0100
+@@ -264,7 +264,7 @@
+     name,
+     srcs=[],
+     deps=[],
+-    linkopts=[],
++    linkopts=['-lrt'],
+     framework_so=tf_binary_additional_srcs(),
+     **kwargs):
+   native.cc_binary(
+@@ -1019,6 +1019,7 @@
+   args += [src.path]
+   outputs = [ctx.outputs.cc_out, ctx.outputs.py_out]
+   ctx.action(
++      use_default_shell_env = True,
+       executable=ctx.executable._swig,
+       arguments=args,
+       inputs=list(inputs),
+@@ -1264,7 +1265,7 @@
+ )
+ 
+ def tf_extension_linkopts():
+-  return []  # No extension link opts
++  return ['-lrt']  # No extension link opts
+ 
+ def tf_extension_copts():
+   return []  # No extension c opts
+diff -ruN tensorflow-1.5.0.original/tensorflow/workspace.bzl tensorflow-1.5.0.patched/tensorflow/workspace.bzl
+--- tensorflow-1.5.0.original/tensorflow/workspace.bzl	2018-01-25 23:22:10.000000000 +0100
++++ tensorflow-1.5.0.patched/tensorflow/workspace.bzl	2018-02-06 01:02:22.000000000 +0100
+@@ -45,7 +45,8 @@
+   # We must check the bazel version before trying to parse any other BUILD
+   # files, in case the parsing of those build files depends on the bazel
+   # version we require here.
+-  check_version("0.5.4")
++  #check_version("0.5.4")
++  check_version("0.10.0-")
+   cuda_configure(name="local_config_cuda")
+   sycl_configure(name="local_config_sycl")
+   python_configure(name="local_config_python")
+diff -ruN tensorflow-1.5.0.original/WORKSPACE tensorflow-1.5.0.patched/WORKSPACE
+--- tensorflow-1.5.0.original/WORKSPACE	2018-01-25 23:22:10.000000000 +0100
++++ tensorflow-1.5.0.patched/WORKSPACE	2018-02-06 01:02:40.000000000 +0100
+@@ -2,11 +2,11 @@
+ 
+ http_archive(
+     name = "io_bazel_rules_closure",
+-    sha256 = "110fe68753413777944b473c25eed6368c4a0487cee23a7bac1b13cc49d3e257",
+-    strip_prefix = "rules_closure-4af89ef1db659eb41f110df189b67d4cf14073e1",
++    sha256 = "6691c58a2cd30a86776dd9bb34898b041e37136f2dc7e24cadaeaf599c95c657",
++    strip_prefix = "rules_closure-08039ba8ca59f64248bb3b6ae016460fe9c9914f",
+     urls = [
+-        "https://mirror.bazel.build/github.com/bazelbuild/rules_closure/archive/4af89ef1db659eb41f110df189b67d4cf14073e1.tar.gz",
+-        "https://github.com/bazelbuild/rules_closure/archive/4af89ef1db659eb41f110df189b67d4cf14073e1.tar.gz",  # 2017-08-28
++        "https://mirror.bazel.build/github.com/bazelbuild/rules_closure/archive/08039ba8ca59f64248bb3b6ae016460fe9c9914f.tar.gz",
++        "https://github.com/bazelbuild/rules_closure/archive/08039ba8ca59f64248bb3b6ae016460fe9c9914f.tar.gz",  # 2018-01-16
+     ],
+ )
+ 

@@ -1,4 +1,4 @@
-easyblock = 'Bundle'
+easyblock = 'CmdCPp'
 
 name = 'TensorFlow'
 version = '1.5.0'
@@ -9,76 +9,64 @@ description = "An open-source software library for Machine Intelligence"
 
 toolchain = {'name': 'foss', 'version': '2015b'}
 
-#
-# This is a bundle of extra Python packages to be used with a "bare" Python installation.
-#
-exts_defaultclass = 'PythonPackage'
-exts_filter = ('python -c "import %(ext_name)s"', "")
-
 pyver = '3.6.3'
 pyshortver = ''.join(pyver.split('.')[:2])
 
-dependencies = [
+builddependencies = [
     ('Bazel', '0.10.0'),
+]
+
+dependencies = [
     ('protobuf', '3.5.1'),
-    ('Python', pyver),
+    # Build fails on CentOS 6.x when TensorFlow is configured with jemalloc as malloc support.
+    #('jemalloc', '5.0.1'),
+    ('SWIG', '3.0.12', versionsuffix)
+    ('TensorFlowPyDepBundle', version, versionsuffix),
 ]
 
-exts_list = [
-    ('absl-py', '0.1.10', {
-        'modulename': 'absl',
-        'source_urls': ['https://pypi.python.org/packages/source/a/absl-py'],
-        'checksums': ['908eba9a96a37c10f10074aba57d685070b814906b02a1ea2cf54bb10a6b8c74'],
-    }),
-    ('backports.weakref', '1.0rc1', {
-        'modulename': 'backports.weakref',
-        'source_urls': ['https://pypi.python.org/packages/source/b/backports.weakref'],
-        'checksums': ['8813bf712a66b3d8b85dc289e1104ed220f1878cf981e2fe756dfaabe9a82892'],
-    }),
-    ('Werkzeug', '0.14.1', {
-        'source_urls': ['https://pypi.python.org/packages/source/w/Werkzeug'],
-        'checksums': ['c3fd7a7d41976d9f44db327260e263132466836cef6f91512889ed60ad26557c'],
-    }),
-    ('bleach', '2.0.0', {
-        'source_urls':  ['https://pypi.python.org/packages/source/b/bleach'],
-        'checksums': ['b9522130003e4caedf4f00a39c120a906dcd4242329c1c8f621f5370203cbc30'],
-    }),
-    ('Markdown', '2.6.8', {
-        'source_urls':  ['https://pypi.python.org/packages/source/m/Markdown'],
-        'checksums': ['0ac8a81e658167da95d063a9279c9c1b2699f37c7c4153256a458b3a43860e33'],
-    }),
-    ('protobuf', '3.5.1', {
-        'modulename': 'google.protobuf',
-        'source_urls': ['https://pypi.python.org/packages/source/p/protobuf'],
-        'checksums': ['95b78959572de7d7fafa3acb718ed71f482932ddddddbd29ba8319c10639d863'],
-    }),
-    #('protobuf', '3.5.1', {
-    #    'modulename': 'google.protobuf',
-    #    'source_urls': ['https://pypi.python.org/packages/source/p/protobuf'],
-    #    'source_tmpl': 'protobuf-3.5.1-cp%(pyshortver)s-cp%(pyshortver)sm-manylinux1_x86_64.whl' %
-    #                   {'pyshortver': pyshortver},
-    #    'checksums': ['b20f861b55efd8206428c13e017cc8e2c34b40b2a714446eb202bbf0ff7597a6'],
-    #    'use_pip': True,
-    #    'unpack_sources': False,
-    #}),
-    ('tensorflow', version, {
-        'source_urls': ['https://pypi.python.org/packages/source/t/tensorflow'],
-        'source_tmpl': 'tensorflow-%%(version)s-cp%(pyshortver)s-cp%(pyshortver)sm-manylinux1_x86_64.whl' %
-                       {'pyshortver': pyshortver},
-        'checksums': ['1257ff741bc7238329da5c48cee4e2def142e788084977416706e180dc3a65a7'],
-        'use_pip': True,
-        'unpack_sources': False,
-    }),
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/tensorflow/tensorflow/archive/']
+patches = [('tensorflow-v%(version)s-foss.patch')]
+checksums = [
+    '0642781c3a3a8c2c4834b91b86aec385f0b2ada7d721571458079478cc5b29c8', # tensorflow-1.5.0.tar.gz
+    'd9125fdf83e66945f62e1c85bfc4dbda005de2604d9d8edd617b9598952671c3', # tensorflow-1.5.0-foss.patch
 ]
 
-# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
-full_sanity_check = True
+#
+# Use custom configure + bazel build cmd to create a Python wheel file,
+# which will be installed with pip.
+#
+with_configure = False
+tf_wheel_file = "tensorflow-%(version)s-cp%(pyshortver)s-cp%(pyshortver)sm-linux_x86_64.whl"
+configure_and_build_cmd  = 'export TEST_TMPDIR=/dev/shm/$USER/bazelout/ && '
+configure_and_build_cmd += 'export PYTHON_LIB_PATH_FOR_CONFIGURE="%(installdir)s/lib/python%(pyshortver)s/site-packages" && ' # required for simon_says_configure.bash
+configure_and_build_cmd += 'chmod +x simon_says_configure.bash && '
+configure_and_build_cmd += './simon_says_configure.bash && '
+# 1.0.1
+#configure_and_build_cmd += "bazel build --verbose_failures --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1 "
+# 1.4.1
+#configure_and_build_cmd += "bazel build --config=cuda --verbose_failures --incompatible_load_argument_is_label=false --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1 --cxxopt='-D_GLIBCXX_USE_CXX11_ABI=0'"
+configure_and_build_cmd += 'bazel build --verbose_failures -c opt //tensorflow/tools/pip_package:build_pip_package && '
+configure_and_build_cmd += 'bazel-bin/tensorflow/tools/pip_package/build_pip_package %(builddir)s &&'
+configure_and_build_cmd += 'pip install --no-deps --prefix  %(builddir)s %(builddir)s/' + tf_wheel_file
 
-sanity_check_paths = {
-    'files': ['bin/tensorboard'],
+cmds_map = [
+    ('v%(version)s.tar.gz', configure_and_build_cmd),
+]
+
+files_to_copy = [
+    (['%(builddir)s/' + tf_wheel_file], '%(installdir)s'),
+    (['%(builddir)s/bin'], '%(installdir)s'),
+    (['%(builddir)s/lib'], '%(installdir)s'),
+]
+
+postinstallcmds = [ 'rm -rf /dev/shm/$USER/bazelout/' ]
+
+sanity_check_paths={
+    'files': [tf_wheel_file],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
-moduleclass = 'lib'
+moduleclass = 'lang'
