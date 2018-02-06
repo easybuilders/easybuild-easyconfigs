@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'DALTON'
+version = '2016.2'
+
+homepage = 'http://www.daltonprogram.org/'
+description = """
+The Dalton code is a powerful tool for a wide range of molecular
+properties at different levels of theory.
+Any published work arising from use of one of the Dalton2016 programs
+must acknowledge that by a proper reference,
+http://www.daltonprogram.org/www/citation.html.
+
+This is a OpenMP + MPI hybrid build.
+"""
+
+toolchain = {'name': 'gimkl', 'version': '2017b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+# Dalton is licensed software. Need to download by hand.
+sources = ['%(name)s%(version)s-Source.tar']
+
+patches = [
+    '%(name)s-%(version)s-fix-cmake-install.patch',
+    '%(name)s-%(version)s-use-EB-install-for-dalton-script.patch',
+    '%(name)s-%(version)s-fix-uninits.patch',
+    '%(name)s-%(version)s-fix-bad-includepath-add.patch',
+]
+
+builddependencies = [('CMake', '3.9.1')]
+
+separate_build_dir = True
+
+# -DENABLE_MPI=ON -DENABLE_OMP=ON -DENABLE_GPU=OFF -DENABLE_CUBLAS=OFF
+# -DENABLE_REAL_SP=OFF -DENABLE_STATIC_LINKING=OFF -DENABLE_SCALAPACK=ON
+# -DBLACS_IMPLEMENTATION=intelmpi -DMKL_FLAG="-mkl=parallel"
+# -DENABLE_AUTO_BLAS=OFF -DENABLE_AUTO_LAPACK=OFF
+# -DCMAKE_BUILD_TYPE=release
+
+configopts = '-DENABLE_MPI=ON -DENABLE_OMP=ON -DENABLE_SCALAPACK=ON '
+configopts += '-DBLACS_IMPLEMENTATION=intelmpi '
+configopts += '-DCMAKE_BUILD_TYPE=release'
+
+postinstallcmds = [
+    'chmod +x %(installdir)s/tools/*',
+]
+
+sanity_check_paths = {
+    'files': ['bin/dalton.x', 'bin/dalton'],
+    'dirs': ['basis', 'tools'],
+}
+
+moduleclass = 'bio'
