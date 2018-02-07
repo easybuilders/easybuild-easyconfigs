@@ -1,0 +1,20 @@
+# Patch Makefile so zlib provided by EasyBuild is picked up
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu 
+
+--- Makefile.orig	2017-07-12 22:16:56.931252958 -0500
++++ Makefile	2017-07-12 22:25:34.472386094 -0500
+@@ -1,12 +1,11 @@
+-CC=cc
+-CFLAGS=-O3 -Wall -Wextra
++ZLIB=-L$(EBROOTZLIB)/lib
+ LDFLAGS=
+ LIBS=-lm -lpthread -lz
+ ZOPFLI=zopfli/src/zopfli/
+ # use gcc and gmake on Solaris
+ 
+ pigz: pigz.o yarn.o try.o ${ZOPFLI}deflate.o ${ZOPFLI}blocksplitter.o ${ZOPFLI}tree.o ${ZOPFLI}lz77.o ${ZOPFLI}cache.o ${ZOPFLI}hash.o ${ZOPFLI}util.o ${ZOPFLI}squeeze.o ${ZOPFLI}katajainen.o
+-	$(CC) $(LDFLAGS) -o pigz $^ $(LIBS)
++	$(CC) $(LDFLAGS) -o pigz $^ $(ZLIB) $(LIBS)
+ 	ln -f pigz unpigz
+ 
+ pigz.o: pigz.c yarn.h try.h ${ZOPFLI}deflate.h ${ZOPFLI}util.h

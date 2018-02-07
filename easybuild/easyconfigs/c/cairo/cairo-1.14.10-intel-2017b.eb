@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'cairo'
+version = '1.14.10'
+
+homepage = 'http://cairographics.org'
+description = """Cairo is a 2D graphics library with support for multiple output devices.
+ Currently supported output targets include the X Window System (via both Xlib and XCB), Quartz, Win32, image buffers,
+ PostScript, PDF, and SVG file output. Experimental backends include OpenGL, BeOS, OS/2, and DirectFB"""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+source_urls = ['http://cairographics.org/releases/']
+sources = [SOURCE_TAR_XZ]
+checksums = ['7e87878658f2c9951a14fc64114d4958c0e65ac47530b8ac3078b2ce41b66a09']
+
+dependencies = [
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.11'),
+    ('libpng', '1.6.32'),
+    ('freetype', '2.8'),
+    ('pixman', '0.34.0'),
+    ('expat', '2.2.4'),
+    ('GLib', '2.53.5'),
+    ('X11', '20171023'),
+]
+
+# disable symbol lookup, which requires -lbfd, to avoid link issues with (non-PIC) libiberty.a provided by GCC
+configopts = "--enable-symbol-lookup=no --enable-gobject=yes --enable-svg=yes --enable-tee=yes --enable-xlib-xcb "
+
+# workaround for "hidden symbol .* in .* is referenced by DSO" and "ld: final link failed: Bad value"
+buildopts = 'LD="$CC" LDFLAGS="$LDFLAGS -shared-intel"'
+
+sanity_check_paths = {
+    'files': ['bin/cairo-trace', 'lib/cairo/libcairo-trace.%s' % SHLIB_EXT, 'lib/cairo/libcairo-trace.a',
+              'lib/libcairo.a', 'lib/libcairo-gobject.a', 'lib/libcairo-script-interpreter.a',
+              'lib/libcairo.%s' % SHLIB_EXT, 'lib/libcairo-gobject.%s' % SHLIB_EXT,
+              'lib/libcairo-script-interpreter.%s' % SHLIB_EXT] +
+             ['include/cairo/cairo%s.h' % x for x in ['', '-deprecated', '-features', '-ft', '-gobject', '-pdf', '-ps',
+                                                      '-script', '-script-interpreter', '-svg', '-version', '-xcb',
+                                                      '-xlib', '-xlib-xrender']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'vis'
