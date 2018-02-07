@@ -1,0 +1,79 @@
+diff -ru gcc-6.4.0-orig/libgcc/config/i386/linux-unwind.h gcc-6.4.0/libgcc/config/i386/linux-unwind.h
+--- gcc-6.4.0-orig/libgcc/config/i386/linux-unwind.h	2018-02-03 18:44:53.056936271 +0100
++++ gcc-6.4.0/libgcc/config/i386/linux-unwind.h	2018-02-03 19:03:11.950576631 +0100
+@@ -58,7 +58,7 @@
+   if (*(unsigned char *)(pc+0) == 0x48
+       && *(unsigned long long *)(pc+1) == RT_SIGRETURN_SYSCALL)
+     {
+-      struct ucontext *uc_ = context->cfa;
++      ucontext_t *uc_ = context->cfa;
+       /* The void * cast is necessary to avoid an aliasing warning.
+          The aliasing warning is correct, but should not be a problem
+          because it does not alias anything.  */
+@@ -138,7 +138,7 @@
+ 	siginfo_t *pinfo;
+ 	void *puc;
+ 	siginfo_t info;
+-	struct ucontext uc;
++	ucontext_t uc;
+       } *rt_ = context->cfa;
+       /* The void * cast is necessary to avoid an aliasing warning.
+          The aliasing warning is correct, but should not be a problem
+diff -ru gcc-6.4.0-orig/libsanitizer/sanitizer_common/sanitizer_linux.cc gcc-6.4.0/libsanitizer/sanitizer_common/sanitizer_linux.cc
+--- gcc-6.4.0-orig/libsanitizer/sanitizer_common/sanitizer_linux.cc	2018-02-03 18:44:52.908940980 +0100
++++ gcc-6.4.0/libsanitizer/sanitizer_common/sanitizer_linux.cc	2018-02-03 19:11:01.493331315 +0100
+@@ -546,8 +546,7 @@
+ }
+ #endif
+ 
+-uptr internal_sigaltstack(const struct sigaltstack *ss,
+-                         struct sigaltstack *oss) {
++uptr internal_sigaltstack(const void *ss, void *oss) {
+   return internal_syscall(SYSCALL(sigaltstack), (uptr)ss, (uptr)oss);
+ }
+ 
+diff -ru gcc-6.4.0-orig/libsanitizer/sanitizer_common/sanitizer_linux.h gcc-6.4.0/libsanitizer/sanitizer_common/sanitizer_linux.h
+--- gcc-6.4.0-orig/libsanitizer/sanitizer_common/sanitizer_linux.h	2018-02-03 18:44:52.908940980 +0100
++++ gcc-6.4.0/libsanitizer/sanitizer_common/sanitizer_linux.h	2018-02-03 19:11:25.940261591 +0100
+@@ -19,7 +19,6 @@
+ #include "sanitizer_platform_limits_posix.h"
+ 
+ struct link_map;  // Opaque type returned by dlopen().
+-struct sigaltstack;
+ 
+ namespace __sanitizer {
+ // Dirent structure for getdents(). Note that this structure is different from
+@@ -28,8 +27,7 @@
+ 
+ // Syscall wrappers.
+ uptr internal_getdents(fd_t fd, struct linux_dirent *dirp, unsigned int count);
+-uptr internal_sigaltstack(const struct sigaltstack* ss,
+-                          struct sigaltstack* oss);
++uptr internal_sigaltstack(const void* ss, void* oss);
+ uptr internal_sigprocmask(int how, __sanitizer_sigset_t *set,
+     __sanitizer_sigset_t *oldset);
+ void internal_sigfillset(__sanitizer_sigset_t *set);
+diff -ru gcc-6.4.0-orig/libsanitizer/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cc gcc-6.4.0/libsanitizer/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cc
+--- gcc-6.4.0-orig/libsanitizer/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cc	2018-02-03 18:44:52.908940980 +0100
++++ gcc-6.4.0/libsanitizer/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cc	2018-02-03 19:08:48.363763724 +0100
+@@ -267,7 +267,7 @@
+ 
+   // Alternate stack for signal handling.
+   InternalScopedBuffer<char> handler_stack_memory(kHandlerStackSize);
+-  struct sigaltstack handler_stack;
++  stack_t handler_stack;
+   internal_memset(&handler_stack, 0, sizeof(handler_stack));
+   handler_stack.ss_sp = handler_stack_memory.data();
+   handler_stack.ss_size = kHandlerStackSize;
+diff -ru gcc-6.4.0-orig/libsanitizer/tsan/tsan_platform_linux.cc gcc-6.4.0/libsanitizer/tsan/tsan_platform_linux.cc
+--- gcc-6.4.0-orig/libsanitizer/tsan/tsan_platform_linux.cc	2018-02-03 18:44:52.908940980 +0100
++++ gcc-6.4.0/libsanitizer/tsan/tsan_platform_linux.cc	2018-02-03 19:12:31.213581099 +0100
+@@ -291,7 +291,7 @@
+ int ExtractResolvFDs(void *state, int *fds, int nfd) {
+ #if SANITIZER_LINUX
+   int cnt = 0;
+-  __res_state *statp = (__res_state*)state;
++  struct __res_state *statp = (struct __res_state*)state;
+   for (int i = 0; i < MAXNS && cnt < nfd; i++) {
+     if (statp->_u._ext.nsaddrs[i] && statp->_u._ext.nssocks[i] != -1)
+       fds[cnt++] = statp->_u._ext.nssocks[i];
