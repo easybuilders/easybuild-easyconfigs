@@ -46,10 +46,8 @@ configure_and_build_cmd += 'export PYTHON_LIB_PATH_FOR_CONFIGURE="%s/lib/python%
 configure_and_build_cmd += 'mkdir -p ${PYTHON_LIB_PATH_FOR_CONFIGURE} && '
 configure_and_build_cmd += 'cd %s/%s-%s/ && chmod +x simon_says_configure.bash && ' % ('%(builddir)s', '%(namelower)s', version)
 configure_and_build_cmd += './simon_says_configure.bash && '
-# 1.0.1
-#configure_and_build_cmd += "bazel build --verbose_failures --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1 "
-# 1.4.1
-#configure_and_build_cmd += "bazel build --verbose_failures --incompatible_load_argument_is_label=false --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1 --cxxopt='-D_GLIBCXX_USE_CXX11_ABI=0'"
+# 1.0.1 opts: "bazel build --verbose_failures --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1"
+# 1.4.1 opts: "bazel build --verbose_failures --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1 --incompatible_load_argument_is_label=false --cxxopt='-D_GLIBCXX_USE_CXX11_ABI=0'"
 configure_and_build_cmd += 'bazel build --verbose_failures -c opt //tensorflow/tools/pip_package:build_pip_package && '
 configure_and_build_cmd += 'bazel-bin/tensorflow/tools/pip_package/build_pip_package %s && ' % ('%(builddir)s')
 configure_and_build_cmd += 'pip install --no-deps --prefix %s %s/' % ('%(installdir)s', '%(builddir)s') + tf_wheel_file + ' && '
@@ -72,7 +70,7 @@ executables = [
 
 sanity_check_paths = {
     'files': [tf_wheel_file] + ['bin/%s' % x for x in executables],
-    'dirs': ['bin', 'lib/python%s.%s/site-packages'  % (py_maj_ver, py_min_ver) ]
+    'dirs': ['bin', 'lib/python%s.%s/site-packages' % (py_maj_ver, py_min_ver)]
 }
 
 sanity_check_commands = [('python', '-c "import %(namelower)s"')]
@@ -80,6 +78,6 @@ sanity_check_commands = [('python', '-c "import %(namelower)s"')]
 #
 # Create module.
 #
-modextrapaths = {'PYTHONPATH': ['lib/python%s.%s/site-packages'  % (py_maj_ver, py_min_ver)]}
+modextrapaths = {'PYTHONPATH': ['lib/python%s.%s/site-packages' % (py_maj_ver, py_min_ver)]}
 
 moduleclass = 'lang'
