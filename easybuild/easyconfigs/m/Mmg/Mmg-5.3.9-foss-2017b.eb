@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'Mmg'
+version = '5.3.9'
+
+homepage = 'https://www.mmgtools.org/'
+description = """
+Mmg is an open source software for simplicial remeshing. It provides 3 applications and 4 libraries:
+    the mmg2d application and the libmmg2d library: adaptation and optimization of a two-dimensional triangulation
+        and generation of a triangulation from a set of points or from given boundary edges
+    the mmgs application and the libmmgs library: adaptation and optimization of a surface triangulation
+        and isovalue discretization
+    the mmg3d application and the libmmg3d library: adaptation and optimization of a tetrahedral mesh
+        and implicit domain meshing
+    the libmmg library gathering the libmmg2d, libmmgs and libmmg3d libraries
+"""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+
+source_urls = ['https://github.com/MmgTools/mmg/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['d1bc53dd231572c15ce17500dc63a9fd80fc2317ea630ef799190915155bed59']
+
+builddependencies = [('CMake', '3.10.1')]
+
+separate_build_dir = True
+
+dependencies = [
+    ('SCOTCH', '6.0.4'),
+]
+
+configopts = '-DUSE_SCOTCH=ON '
+configopts += '-DLIBMMG2D_SHARED=ON -DLIBMMG3D_SHARED=ON -DLIBMMGS_SHARED=ON -DLIBMMG_SHARED=ON '
+
+apps = ['mmg2d', 'mmg3d', 'mmgs']
+
+sanity_check_paths = {
+    'files': ['bin/%s_O3' % x for x in ['mmg2d', 'mmg3d', 'mmgs']] +
+        ['lib/lib%s.a' % x for x in ['mmg2d', 'mmg3d', 'mmgs', 'mmg']] +
+        ['lib/lib%s.%s' % (x, SHLIB_EXT) for x in ['mmg2d', 'mmg3d', 'mmgs', 'mmg']],
+    'dirs': ['include/mmg/%s' % x for x in ['mmg2d', 'mmg3d', 'mmgs']]
+}
+
+moduleclass = 'math'
