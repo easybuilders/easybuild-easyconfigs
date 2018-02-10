@@ -1,0 +1,55 @@
+easyblock = 'CMakeMake'
+
+name = 'Dalton'
+version = '2016'
+
+homepage = 'http://daltonprogram.org/'
+description = """The Dalton code is a powerful tool for a wide range of molecular properties
+ at different levels of theory.
+ Any published work arising from use of one of the Dalton2016 programs
+ must acknowledge that by a proper reference,
+ http://www.daltonprogram.org/www/citation.html."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'i8': True, 'usempi': True}
+
+# use git clone --recurse-submodules -b release/2016 git@gitlab.com:dalton/dalton.git
+# to fetch source, then make the bizpped tarball
+sources = [SOURCE_TAR_BZ2]
+patches = [
+    '%(name)s-%(version)s-fix-cmake-install.patch',
+    '%(name)s-%(version)s-use-EB-install-for-dalton-script.patch',
+    '%(name)s-%(version)s-fix-uninits.patch',
+    '%(name)s-%(version)s-fix-bad-includepath-add.patch',
+    '%(name)s-%(version)s_cmake-obey-EB-variables.patch',
+    '%(name)s-%(version)s_intel_lowopt.patch',
+]
+checksums = [
+    'c78bf22293a7fc75465d96079ef39bdaa1f134127766a936763e25eaeb8958a8',  # Dalton-2016.tar.bz2
+    '3159b03a488d6f5ee23d468be02ea62eacd08cbdf68cd64ef4e5a0d469a6718b',  # Dalton-2016-fix-cmake-install.patch
+    '570bd128fe0be69ef377c373b69bf64eb8d0908bc960903509cbc68ff275ae13',  # Dalton-2016-use-EB-install-for-dalton-script.patch
+    '5d93c59e8afa24d8b07a216bc73d7cc250230709a988cf8e1dd107f8a69543fc',  # Dalton-2016-fix-uninits.patch
+    '6d4dab7af92674e3e6713143f4d8886925ac1328f64c4cc5d071e6eee855c350',  # Dalton-2016-fix-bad-includepath-add.patch
+    'd7de83216a2090d46d9260f74891ad9ebf8b6038456b5cbc8a2c3a0f9924d3d8',  # Dalton-2016_cmake-obey-EB-variables.patch
+    '4942d95e77845fab8b196c88f390e630971559e51632ca280434dbc0eed26757',  # Dalton-2016_intel_lowopt.patch
+]
+
+builddependencies = [('CMake', '3.9.5')]
+
+separate_build_dir = True
+
+configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts += '-DENABLE_MPI=ON '
+configopts += '-DENABLE_OMP=ON '
+configopts += '-DENABLE_64BIT_INTEGERS=ON '
+configopts += '-DENABLE_AUTO_BLAS=OFF '
+configopts += '-DENABLE_AUTO_LAPACK=OFF '
+configopts += '-DEXPLICIT_BLAS_LIB="$LIBBLAS" '
+configopts += '-DEXPLICIT_LAPACK_LIB="$LIBLAPACK" '
+
+sanity_check_paths = {
+    'files': ['bin/dalton', 'bin/dalton.x'],
+    'dirs': ['basis'],
+}
+
+moduleclass = 'chem'
