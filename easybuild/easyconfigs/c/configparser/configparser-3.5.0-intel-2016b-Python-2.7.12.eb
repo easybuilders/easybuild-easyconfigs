@@ -12,25 +12,16 @@ toolchain = {'name': 'intel', 'version': '2016b'}
 source_urls = ['https://pypi.python.org/packages/7c/69/c2ce7e91c89dc073eb1aa74c0621c3eefbffe8216b3f9af9d3885265c01c/']
 sources = ['configparser-%(version)s.tar.gz']
 
-dependencies = [
-    ('Python', '2.7.12'),
-]
-builddependencies = [
-    ('pip', '8.1.2', versionsuffix),
-]
+patches = ['configparser-%(version)s_no-backports-namespace.patch']
+
+dependencies = [('Python', '2.7.12')]
 
 use_pip = True
-unpack_sources = False
 
 sanity_check_paths = {
     'files': ['lib/python%(pyshortver)s/site-packages/configparser.py'],
     'dirs': ['lib/python%(pyshortver)s/site-packages/backports/configparser'],
 }
-
-# XXX: hack! for some reason the sanity check imports fail, even though the
-# PYTHONPATH seems to point to the right directory?!? Creating the __init__.py
-# in backports makes it pass and hopefully does not break anything.
-postinstallcmds = ['touch %(installdir)s/lib/python%(pyshortver)s/site-packages/backports/__init__.py']
 
 sanity_check_commands = [
     ('python', "-c 'import configparser'"),

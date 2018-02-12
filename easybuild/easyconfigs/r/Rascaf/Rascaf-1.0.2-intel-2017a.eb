@@ -1,0 +1,33 @@
+easyblock = 'MakeCp'
+
+name = 'Rascaf'
+version = '1.0.2'
+
+homepage = 'https://github.com/mourisl/Rascaf'
+description = """Rascaf (RnA-seq SCAFfolder) uses continuity and order information from paired-end RNA-seq reads
+ to improve a draft assembly, particularly in the gene regions."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = ['https://github.com/mourisl/Rascaf/archive/']
+sources = ['v%(version)s.tar.gz']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('SAMtools', '0.1.20'),
+]
+
+# create fake libbam.a to skip building of included SAMtools
+prebuildopts = "touch samtools-0.1.19/libbam.a && "
+# empty LINKPATH to avoid that included SAMtools copy is used
+buildopts = 'CXX="$CXX" CXXFLAGS="$CXXFLAGS" LINKPATH=""'
+parallel = 1
+
+files_to_copy = [(['rascaf', 'rascaf-join'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/rascaf', 'bin/rascaf-join'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

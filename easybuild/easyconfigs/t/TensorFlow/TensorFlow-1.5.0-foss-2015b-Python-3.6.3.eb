@@ -1,0 +1,83 @@
+easyblock = 'PackedBinary'
+
+name = 'TensorFlow'
+version = '1.5.0'
+py_maj_ver = '3'
+py_min_ver = '6'
+py_rev_ver = '3'
+pyver = '%s.%s.%s' % (py_maj_ver, py_min_ver, py_rev_ver)
+pyshortver = ''.join(pyver.split('.')[:2])
+#versionsuffix = '-Python-%(pyver)s' # Fails when export EASYBUILD_VERIFY_EASYCONFIG_FILENAMES='True'
+versionsuffix = '-Python-%s' % pyver
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+builddependencies = [
+    ('Bazel', '0.10.0'),
+]
+
+dependencies = [
+    ('protobuf', '3.5.1'),
+    # Build fails on CentOS 6.x when TensorFlow is configured with jemalloc as malloc support.
+    #('jemalloc', '5.0.1'),
+    ('SWIG', '3.0.12', versionsuffix),
+    ('TensorFlowPyDepBundle', version, versionsuffix),
+]
+
+source_urls = ['https://github.com/tensorflow/tensorflow/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [('tensorflow-%(version)s-foss.patch')]
+checksums = [
+    '0642781c3a3a8c2c4834b91b86aec385f0b2ada7d721571458079478cc5b29c8', # tensorflow-1.5.0.tar.gz
+    'd9125fdf83e66945f62e1c85bfc4dbda005de2604d9d8edd617b9598952671c3', # tensorflow-1.5.0-foss.patch
+]
+
+#
+# Use custom configure + bazel build cmd to create a Python wheel file,
+# which will be installed with pip.
+#
+tf_wheel_file = 'tensorflow-%s-cp%s-cp%sm-linux_x86_64.whl' % (version, pyshortver, pyshortver)
+configure_and_build_cmd  = 'export TEST_TMPDIR=/dev/shm/${USER}/bazelout/ && '
+# Required paths for simon_says_configure.bash passed using ENVIRONMENT variables.
+configure_and_build_cmd += 'export PYTHON_LIB_PATH_FOR_CONFIGURE="%s/lib/python%s.%s/site-packages" && ' % ('%(installdir)s', py_maj_ver, py_min_ver)
+configure_and_build_cmd += 'mkdir -p ${PYTHON_LIB_PATH_FOR_CONFIGURE} && '
+configure_and_build_cmd += 'cd %s/%s-%s/ && chmod +x simon_says_configure.bash && ' % ('%(builddir)s', '%(namelower)s', version)
+configure_and_build_cmd += './simon_says_configure.bash && '
+# 1.0.1 opts: "bazel build --verbose_failures --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1"
+# 1.4.1 opts: "bazel build --verbose_failures --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1 --incompatible_load_argument_is_label=false --cxxopt='-D_GLIBCXX_USE_CXX11_ABI=0'"
+configure_and_build_cmd += 'bazel build --verbose_failures -c opt //tensorflow/tools/pip_package:build_pip_package && '
+configure_and_build_cmd += 'bazel-bin/tensorflow/tools/pip_package/build_pip_package %s && ' % ('%(builddir)s')
+configure_and_build_cmd += 'pip install --no-deps --prefix %s %s/' % ('%(installdir)s', '%(builddir)s') + tf_wheel_file + ' && '
+configure_and_build_cmd += 'cp  %s/' % ('%(builddir)s') + tf_wheel_file + ' %s/' % ('%(installdir)s/')
+
+install_cmd = '%s' % (configure_and_build_cmd)
+
+postinstallcmds = [ 'rm -rf /dev/shm/$USER/bazelout/' ]
+
+#
+# Sanity checking.
+#
+executables = [
+    'freeze_graph',
+    'saved_model_cli',
+    'tensorboard',
+    'toco',
+    'toco_from_protos',
+]
+
+sanity_check_paths = {
+    'files': [tf_wheel_file] + ['bin/%s' % x for x in executables],
+    'dirs': ['bin', 'lib/python%s.%s/site-packages' % (py_maj_ver, py_min_ver)]
+}
+
+sanity_check_commands = [('python', '-c "import %(namelower)s"')]
+
+#
+# Create module.
+#
+modextrapaths = {'PYTHONPATH': ['lib/python%s.%s/site-packages' % (py_maj_ver, py_min_ver)]}
+
+moduleclass = 'lang'
