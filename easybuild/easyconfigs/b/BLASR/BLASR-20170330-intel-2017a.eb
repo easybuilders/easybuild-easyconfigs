@@ -1,0 +1,36 @@
+easyblock = 'MakeCp'
+
+name = 'BLASR'
+commit = 'bed926d'
+version = '20170330'
+
+homepage = 'https://github.com/PacificBiosciences/blasr'
+description = """ BLASR (Basic Local Alignment with Successive Refinement) rapidly maps 
+ reads to genomes by finding the highest scoring local alignment or set of local alignments 
+ between the read and the genome. Optimized for PacBio's extraordinarily long reads and 
+ taking advantage of rich quality values, BLASR maps reads rapidly with high accuracy. """
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = ['https://github.com/PacificBiosciences/blasr/archive/']
+sources = ['%s.tar.gz' % commit]
+
+dependencies = [
+    ('HDF5', '1.8.18', '-serial'),
+    ('pbbam', '20170508'),
+    ('blasr_libcpp', '20170426'),
+]
+
+prebuildopts = "./configure.py --with-szlib HDF5_INCLUDE=$EBROOTHDF5/include HDF5_LIB=$EBROOTHDF5/lib && "
+
+binaries = ['blasr', 'utils/loadPulses', 'utils/pls2fasta', 'utils/samFilter', 'utils/samtoh5',
+            'utils/samtom4', 'utils/sawriter', 'utils/sdpMatcher', 'utils/toAfg']
+files_to_copy = [(binaries, 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/blasr', 'bin/loadPulses', 'bin/pls2fasta', 'bin/samFilter', 'bin/samtoh5', 'bin/samtom4',
+              'bin/sawriter', 'bin/sdpMatcher', 'bin/toAfg'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

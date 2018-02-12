@@ -1,0 +1,34 @@
+easyblock = 'CmdCp'
+
+name = 'GRNBoost'
+version = '20171009'
+commit = '26c836b'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://github.com/dmlc/xgboost'
+description = """XGBoost is an optimized distributed gradient boosting library designed to be highly efficient,
+ flexible and portable."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+source_urls = ['https://github.com/aertslab/GRNBoost/archive/']
+sources = [{'download_filename': '%s.tar.gz' % commit, 'filename': SOURCE_TAR_GZ}]
+
+builddependencies = [('sbt', '1.0.2', versionsuffix, True)]
+dependencies = [
+    ('Java', '1.8.0_152', '', True),
+    ('XGBoost', '20171120', versionsuffix),
+    ('Spark', '2.2.0', '-Hadoop-2.6' + versionsuffix, True),
+]
+
+sbt_args = "-Dsbt.global.base=%(builddir)s/sbt -Dsbt.ivy.home=%(builddir)s/ivy2 -Divy.home=%(builddir)s/ivy2"
+cmds_map = [('.*', "sbt %s assembly" % sbt_args)]
+
+files_to_copy = ['target/scala-*/GRNBoost.jar']
+
+sanity_check_paths = {
+    'files': ['GRNBoost.jar'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
