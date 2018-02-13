@@ -1,0 +1,67 @@
+easyblock = 'Tarball'
+
+name = 'faceswap'
+commit = '9181b1a'
+version = '20180212'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/deepfakes/faceswap'
+description = "Faceswap is a tool that utilizes deep learning to recognize and swap faces in pictures and videos."
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+
+source_urls = ['https://github.com/deepfakes/faceswap/archive/']
+sources = [{'filename': SOURCE_TAR_GZ, 'download_filename': '%s.tar.gz' % commit}]
+checksums = ['6e66bc19b126bd823bece1ef19964c2c001d3ea22f8f76c774253b3156f90ff6']
+
+builddependencies = [('CMake', '3.10.2')]
+
+dependencies = [
+    ('Python', '3.6.3'),
+    ('TensorFlow', '1.5.0', versionsuffix),
+    ('OpenCV', '3.3.0', versionsuffix),
+    ('h5py', '2.7.1', versionsuffix),
+    # must be Keras 2.1.2, 2.1.3 has a regression that leads to problems with faceswap
+    ('Keras', '2.1.2', versionsuffix),
+    ('scikit-image', '0.13.1', versionsuffix),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+exts_list = [
+    ('scandir', '1.6', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/scandir'],
+        'checksums': ['e0278a2d4bc6c0569aedbe66bf26c8ab5b2b08378b3289de49257f23ac624338'],
+    }),
+    ('dlib', '19.9.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/d/dlib'],
+        'checksums': ['33a9ec8b6e9fcf0538003d019d97968dc7601f2aaa60304a6146cf0f834259da'],
+        'buildopts': "--yes CMAKE_VERBOSE_MAKEFILE --no USE_SSE4_INSTRUCTIONS",
+    }),
+    ('face_recognition', '1.2.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/f/face_recognition'],
+        'checksums': ['bc914d0e83b515113f5bffda26a5943b1edc36a6df4b3f0a38167f03e7924b40'],
+    }),
+    ('tqdm', '4.19.5', {
+        'source_urls': ['https://pypi.python.org/packages/source/t/tqdm'],
+        'checksums': ['df32e6f127dc0ccbc675eadb33f749abbcb8f174c5cb9ec49c0cdb73aa737377'],
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["faceswap.py train --help"]
+
+modextrapaths = {
+    'PATH': [''],
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'vis'
