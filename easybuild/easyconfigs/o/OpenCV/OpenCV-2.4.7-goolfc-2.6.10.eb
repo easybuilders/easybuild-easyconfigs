@@ -1,0 +1,51 @@
+easyblock = "CMakeMake"
+
+name = "OpenCV"
+version = "2.4.7"
+
+homepage = 'http://opencv.org'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision and
+ machine learning software library. OpenCV was built to provide a common infrastructure for computer
+ vision applications and to accelerate the use of machine perception in the commercial products."""
+
+toolchain = {'name': 'goolfc', 'version': '2.6.10'}
+toolchainopts = {}  # toolchain options, e.g. opt, pic, usempi, optarch, ...
+
+# http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.7/opencv-2.4.7.tar.gz/download
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = [('http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/%(version)s', 'download')]
+
+# Build process driven by comments seen at:
+# * http://docs.opencv.org/trunk/doc/tutorials/introduction/linux_gcc_cmake/linux_gcc_cmake.html
+# * http://docs.opencv.org/trunk/doc/tutorials/introduction/linux_install/linux_install.html
+
+builddependencies = [
+    ('CMake', '2.8.11'),
+    ('pkg-config', '0.27.1'),
+]
+
+java = 'Java'
+javaver = '1.7.0_10'
+
+dependencies = [
+    (java, javaver, '', True),
+    ('ant', '1.8.4', '-%s-%s' % (java, javaver), True),
+    ('Python', '2.7.3'),
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.7'),
+    ('ipp', '7.0.5.233', '', True),
+    ('tbb', '4.0.5.339', '', True),
+    ('Eigen', '3.1.1'),
+]
+
+separate_build_dir = True
+commonopts1 = " -DWITH_EIGEN=ON -DWITH_BZIP2=ON -DWITH_ZLIB=ON -DWITH_IPP=ON -DWITH_TBB=ON -DBUILD_NEW_PYTHON_SUPPORT=ON -DWITH_GTK=OFF"
+commonopts2 = " -DWITH_CUDA=ON -DWITH_CUFFT=ON -DWITH_CUBLAS=ON -DHAVE_OPENMP=YES -DCMAKE_BUILD_TYPE=Release "
+configopts = ".. -DWITH_OPENCL=OFF " + commonopts1 + commonopts2
+
+sanity_check_paths = {
+    'files': ['bin/opencv_' + i for i in ['createsamples', 'haartraining', 'performance', 'traincascade']],
+    'dirs': ['include', 'lib']
+}
+
+moduleclass = 'vis'
