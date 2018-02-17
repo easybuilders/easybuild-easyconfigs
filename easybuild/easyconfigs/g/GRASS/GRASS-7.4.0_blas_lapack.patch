@@ -1,0 +1,216 @@
+# Make configure to take into account EB's BLAS and LAPACK libraries 
+# Use -parallel OMPCFLAG in case of intel icc compiler
+# Use -parallel LDFLAGS in case of intel icc compiler
+# Feb 16th 2018 by B. Hajgato (Free University Brussels - VUB)
+diff -ru grass-7.4.0.orig/configure grass-7.4.0/configure
+--- grass-7.4.0.orig/configure	2017-11-25 23:57:54.000000000 +0100
++++ grass-7.4.0/configure	2018-02-16 21:24:32.652439130 +0100
+@@ -1504,6 +1504,10 @@
+ 	    SHLIB_SUFFIX=".so"
+ 	    SHLIB_LD="${CC} -shared"
+             LDFLAGS="-Wl,--export-dynamic"
++	    if test ${CC} = "icc" ; then
++	            # Intel compiler
++	            LDFLAGS="-parallel -Wl,--export-dynamic"
++	    fi
+             LD_SEARCH_FLAGS='-Wl,-rpath-link,${LIB_RUNTIME_DIR}'
+             LD_LIBRARY_PATH_VAR="LD_LIBRARY_PATH"
+             ;;
+@@ -10650,12 +10654,12 @@
+ 
+ 
+ 
+-echo $ac_n "checking for dnrm2_ in -lblas""... $ac_c" 1>&6
+-echo "configure:10655: checking for dnrm2_ in -lblas" >&5
++echo $ac_n "checking for dnrm2_ in $LIBBLAS""... $ac_c" 1>&6
++echo "configure:10655: checking for dnrm2_ in $LIBBLAS" >&5
+ ac_lib_var=`echo blas'_'dnrm2_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-lblas $MATHLIB  $LIBS"
++LIBS="$LIBBLAS $MATHLIB  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 10661 "configure"
+ #include "confdefs.h"
+@@ -10682,16 +10686,16 @@
+ 
+ if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+-  BLASLIB="$BLASLIB -lblas "
++  BLASLIB="$BLASLIB $LIBBLAS "
+ else
+   echo "$ac_t""no" 1>&6
+ 
+-echo $ac_n "checking for dnrm2_ in -lblas""... $ac_c" 1>&6
+-echo "configure:10691: checking for dnrm2_ in -lblas" >&5
++echo $ac_n "checking for dnrm2_ in $LIBBLAS""... $ac_c" 1>&6
++echo "configure:10691: checking for dnrm2_ in $LIBBLAS" >&5
+ ac_lib_var=`echo blas'_'dnrm2_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-lblas $MATHLIB -lg2c $LIBS"
++LIBS="$LIBBLAS $MATHLIB -lg2c $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 10697 "configure"
+ #include "confdefs.h"
+@@ -10718,7 +10722,7 @@
+ 
+ if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+-  BLASLIB="$BLASLIB -lblas -lg2c"
++  BLASLIB="$BLASLIB $LIBBLAS -lg2c"
+ else
+   echo "$ac_t""no" 1>&6
+ 
+@@ -10901,12 +10905,12 @@
+ 
+ # BLAS in PhiPACK libraries? (requires generic BLAS, too)
+ if test $blas_ok = no; then
+-	echo $ac_n "checking for sgemm_ in -lblas""... $ac_c" 1>&6
+-echo "configure:10906: checking for sgemm_ in -lblas" >&5
++	echo $ac_n "checking for sgemm_ in $LIBBLAS""... $ac_c" 1>&6
++echo "configure:10906: checking for sgemm_ in $LIBBLAS" >&5
+ ac_lib_var=`echo blas'_'sgemm_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-lblas  $LIBS"
++LIBS="$LIBBLAS  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 10912 "configure"
+ #include "confdefs.h"
+@@ -10938,7 +10942,7 @@
+ ac_lib_var=`echo dgemm'_'dgemm_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-ldgemm -lblas $LIBS"
++LIBS="-ldgemm $LIBBLAS $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 10944 "configure"
+ #include "confdefs.h"
+@@ -10970,7 +10974,7 @@
+ ac_lib_var=`echo sgemm'_'sgemm_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-lsgemm -lblas $LIBS"
++LIBS="-lsgemm $LIBBLAS $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 10976 "configure"
+ #include "confdefs.h"
+@@ -10997,7 +11001,7 @@
+ 
+ if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+-  blas_ok=yes; BLASLIB="-lsgemm -ldgemm -lblas"
++  blas_ok=yes; BLASLIB="-lsgemm -ldgemm $LIBBLAS"
+ else
+   echo "$ac_t""no" 1>&6
+ fi
+@@ -11095,12 +11099,12 @@
+ 
+ # Generic BLAS library
+ if test $blas_ok = no; then
+-	echo $ac_n "checking for sgemm_ in -lblas""... $ac_c" 1>&6
+-echo "configure:11100: checking for sgemm_ in -lblas" >&5
++	echo $ac_n "checking for sgemm_ in $LIBBLAS""... $ac_c" 1>&6
++echo "configure:11100: checking for sgemm_ in $LIBBLAS" >&5
+ ac_lib_var=`echo blas'_'sgemm_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-lblas  $LIBS"
++LIBS="$LIBBLAS  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 11106 "configure"
+ #include "confdefs.h"
+@@ -11127,7 +11131,7 @@
+ 
+ if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+-  blas_ok=yes; BLASLIB="-lblas"
++  blas_ok=yes; BLASLIB="$LIBBLAS"
+ else
+   echo "$ac_t""no" 1>&6
+ fi
+@@ -11315,12 +11319,12 @@
+ if test $lapack_ok = no; then
+ 	save_libs="$LIBS"; LIBS="$BLASLIB $MATHLIB $LIBS"
+ 	save_LDFLAGS="$LDFLAGS"; LDFLAGS="$LAPACKLIB $LDFLAGS"
+-	echo $ac_n "checking for desgv_ in -llapack""... $ac_c" 1>&6
+-echo "configure:11320: checking for desgv_ in -llapack" >&5
++	echo $ac_n "checking for desgv_ in $LIBLAPACK""... $ac_c" 1>&6
++echo "configure:11320: checking for desgv_ in $LIBLAPACK" >&5
+ ac_lib_var=`echo lapack'_'desgv_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-llapack $FLIBS $LIBS"
++LIBS="$LIBLAPACK $FLIBS $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 11326 "configure"
+ #include "confdefs.h"
+@@ -11347,7 +11351,7 @@
+ 
+ if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+-  lapack_ok=yes; LAPACKLIB="-llapack"
++  lapack_ok=yes; LAPACKLIB="$LIBLAPACK"
+ else
+   echo "$ac_t""no" 1>&6
+ fi
+@@ -11364,12 +11368,12 @@
+ 
+ 
+ 
+-echo $ac_n "checking for dgesv_ in -llapack""... $ac_c" 1>&6
+-echo "configure:11369: checking for dgesv_ in -llapack" >&5
++echo $ac_n "checking for dgesv_ in $LIBLAPACK""... $ac_c" 1>&6
++echo "configure:11369: checking for dgesv_ in $LIBLAPACK" >&5
+ ac_lib_var=`echo lapack'_'dgesv_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-llapack $BLASLIB $MATHLIB  $LIBS"
++LIBS="$LIBLAPACK $BLASLIB $MATHLIB  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 11375 "configure"
+ #include "confdefs.h"
+@@ -11396,16 +11400,16 @@
+ 
+ if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+-  LAPACKLIB="$LAPACKLIB -llapack "
++  LAPACKLIB="$LAPACKLIB $LIBLAPACK "
+ else
+   echo "$ac_t""no" 1>&6
+ 
+-echo $ac_n "checking for dgesv_ in -llapack""... $ac_c" 1>&6
+-echo "configure:11405: checking for dgesv_ in -llapack" >&5
++echo $ac_n "checking for dgesv_ in $LIBLAPACK""... $ac_c" 1>&6
++echo "configure:11405: checking for dgesv_ in $LIBLAPACK" >&5
+ ac_lib_var=`echo lapack'_'dgesv_ | sed 'y%./+-%__p_%'`
+ 
+ ac_save_LIBS="$LIBS"
+-LIBS="-llapack $BLASLIB $MATHLIB -lg2c $LIBS"
++LIBS="$LIBLAPACK $BLASLIB $MATHLIB -lg2c $LIBS"
+ cat > conftest.$ac_ext <<EOF
+ #line 11411 "configure"
+ #include "confdefs.h"
+@@ -11432,7 +11436,7 @@
+ 
+ if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+-  LAPACKLIB="$LAPACKLIB -llapack -lg2c"
++  LAPACKLIB="$LAPACKLIB $LIBLAPACK -lg2c"
+ else
+   echo "$ac_t""no" 1>&6
+ 
+@@ -12835,9 +12839,10 @@
+ if test x$GCC = xyes ; then
+ 	# GNU C compiler (>= 4.2.1)
+ 	OMPCFLAGS=-fopenmp
+-elif test ${CC} = "icc" ; then
++fi
++if test ${CC} = "icc" ; then
+ 	# Intel compiler
+-	OMPCFLAGS=-openmp
++	OMPCFLAGS=-parallel
+ elif test ${CC} = "opencc" ; then
+ 	# AMD's x86 Open64 compiler
+ 	OMPCFLAGS=-mp
