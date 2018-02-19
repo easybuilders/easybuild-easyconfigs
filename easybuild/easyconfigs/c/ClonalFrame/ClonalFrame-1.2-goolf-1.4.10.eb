@@ -1,0 +1,54 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'ClonalFrame'
+version = '1.2'
+
+homepage = 'http://www.xavierdidelot.xtreemhost.com/clonalframe.htm'
+description = """ ClonalFrame is a computer package for the inference of bacterial 
+ microevolution using multilocus sequence data. In a nutshell, ClonalFrame identifies 
+ the clonal relationships between the members of a sample, while also estimating the 
+ chromosomal position of homologous recombination events that have disrupted the clonal 
+ inheritance. 
+
+ xmfa2struct is a program written in C which converts files in eXtended Multi-Fasta format 
+ (XMFA, the input format of ClonalFrame) into the input file format of Structure. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://www.stats.ox.ac.uk/~didelot/files/']
+sources = [SOURCE_TAR_GZ]
+
+dependencies = [
+    ('GSL', '1.16'), 
+    ('Qt', '4.8.4')
+]
+
+patches = [
+    # this is not a real patch file. It's just a .c file developers provide independently for the
+    # utility "xmfa2struct" so we download it to the source dir and compile it in premakeopts
+    ('xmfa2struct.c', '.'),
+    # this is a real patch we apply to ClonalFrame source code
+    'ClonalFrame-1.2.patch'
+]
+
+parallel = 1
+
+# compile the "xmfa2struct" utility
+premakeopts = '$CXX xmfa2struct.c -o xmfa2struct && '
+
+# run qmake before make to compile ClonalFrame
+premakeopts += ' qmake && '
+
+files_to_copy = [ (["bin/ClonalFrame", "xmfa2struct"], 'bin') ]
+
+sanity_check_paths = {
+    'files': ["bin/ClonalFrame", "bin/xmfa2struct"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
