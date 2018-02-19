@@ -1,0 +1,41 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock='MakeCp'
+
+name = 'SCALCE'
+version = '2.7'
+
+homepage = 'http://scalce.sourceforge.net'
+description = """ SCALCE [skeɪlz] is a FASTQ compression tool that uses locally consistent 
+ parsing to obtain better compression rate. SCALCE has been specifically designed for Illumina 
+ reads but it can handle other technologies (that generate base pair reads) if the read length 
+ is the same throughout the file. """
+
+toolchain = {'name': 'ictce', 'version': '6.2.5'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(namelower)s-v%(version)s-src.tar.gz']
+
+# firt move to folder zlib-1.2.8 to run make and generate libz.a
+# then run make in the parent folder
+premakeopts = "cd zlib-1.2.8 && make CC=icc && cd .. && "
+
+# force to use the intel g++ compiler
+makeopts = " CC=icpc"
+ 
+parallel = 1
+
+files_to_copy = [
+                (["scalce"], "bin"),
+                "HELP",
+]
+
+sanity_check_paths = {
+    'files': ['bin/scalce'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
