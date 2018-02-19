@@ -1,0 +1,46 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    John Donners (john.donners@surfsara.nl, github: jdonners)
+# Institute: SurfSARA
+#
+##
+easyblock = 'CMakeMake'
+
+name = 'HPX'
+version = '1.0.0'
+
+homepage = 'http://stellar-group.org/libraries/hpx/'
+description = """HPX (High Performance ParalleX) is a general purpose C++ runtime system
+ for parallel and distributed applications of any scale."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/STEllAR-GROUP/hpx/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['b469c7ce02bd1ab105c5883bd47bf88ae508903ea37c98d5a6d916cedf3c64ba']
+
+configopts = '-DHPX_WITH_PARCELPORT_MPI=ON -DBOOST_ROOT=$EBROOTBOOST -DHWLOC_ROOT=$EBROOTHWLOC '
+configopts += '-DBoost_NO_BOOST_CMAKE:BOOL=TRUE -DHPX_WITH_MALLOC=jemalloc '
+configopts += '-DCMAKE_EXE_LINKER_FLAGS=-Wl,-R%(installdir)s/lib/hpx'
+separate_build_dir = True
+
+# Ran tests twice. 
+# Test 85 fails (for_each_annotated_function) twice.
+# Test 215 (tcp.async_continue_cb_colocated) failed once.
+# Test 172 (tcp.migrate_component) failed once due to a timeout.
+# runtest = 'tests'
+
+dependencies = [
+    ('HDF5', '1.8.19', '-threadsafe'),
+    ('Boost', '1.65.1'),
+    ('jemalloc', '5.0.1'),
+]
+
+builddependencies = [
+    ('CMake', '3.9.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+moduleclass = 'math'

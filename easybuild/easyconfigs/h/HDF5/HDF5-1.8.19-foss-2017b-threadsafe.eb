@@ -1,0 +1,35 @@
+name = 'HDF5'
+version = '1.8.19'
+versionsuffix = '-threadsafe'
+
+homepage = 'https://support.hdfgroup.org/HDF5/'
+description = """HDF5 is a unique technology suite that makes possible the management of
+ extremely large and complex data collections."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%(version_major_minor)s/hdf5-%(version)s/src']
+
+# Patch is needed because the expected and actual info only differs on the time of configure, but who cares?
+patches = ['hdf5_patch_runparallel']
+
+sources = [SOURCELOWER_TAR_GZ]
+checksums = [
+    'a4335849f19fae88c264fd0df046bc321a78c536b2548fc508627a790564dc38',  # hdf5-1.8.19.tar.gz
+    'bf2892c7556c940e9a638cd7e71c49535ea129c7b5841383323d1a378cf86cf3',  # hdf5_patch_runparallel
+]
+
+# the mca option is needed for the test h_pflush1. That test is the first part of a test to see if the
+#   HDF5 library creates a valid file if MPI did not exit correctly, but pflush was called.
+#   See thread https://lists.hdfgroup.org/pipermail/hdf-forum_lists.hdfgroup.org/2016-January/009149.html
+configopts = '--enable-threadsafe RUNPARALLEL="mpiexec --gmca orte_allowed_exit_without_sync true -n \$\${NPROCS:=6}"'
+
+runtest = 'check'
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Szip', '2.1.1'),
+]
+
+moduleclass = 'data'
