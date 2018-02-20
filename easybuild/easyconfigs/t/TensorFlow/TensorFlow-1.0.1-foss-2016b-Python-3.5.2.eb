@@ -1,0 +1,69 @@
+# @author: 
+#      Marcel Schoengens (CSCS) 
+#      Guilherme Peretti-Pezzi (CSCS)
+#      Victor Holanda Rusu (CSCS)
+
+easyblock = "CmdCp"
+
+name = 'TensorFlow'
+version = '1.0.1'
+pyver = '3.5.2'
+versionsuffix = '-Python-%s' % pyver
+
+homepage = 'https://www.tensorflow.org/'
+description = """An open-source software library for Machine Intelligence."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+
+builddependencies = [
+    ('wheel', '0.30.0a0', '-Python-%(pyver)s'),
+    ('Bazel', '0.4.5'),
+]
+
+dependencies = [
+    ('Python', pyver),
+    ('SWIG', '3.0.10', '-Python-%(pyver)s'),
+    ('protobuf-python', '3.2.0', '-Python-%(pyver)s'),
+]
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/tensorflow/tensorflow/archive/']
+
+
+# Patch to remove hardcoded paths for GCC and Binutils
+patches = [('tensorflow-v%(version)s-Python-%(pyver)s-foss.patch')]
+
+with_configure = False
+
+whl_file = "tensorflow-%(version)s-cp35-cp35m-linux_x86_64.whl"
+
+build_str  = "export TEST_TMPDIR=/dev/shm/$USER/bazelout/ && "
+build_str += "chmod +x configure-cscs.sh && "
+build_str += "./configure-cscs.sh && "
+# Fix for Bazel that ignores LD_LIBRARY_PATH when building protobuf
+build_str += "find $TEST_TMPDIR -name protobuf.bzl -exec sed -i '/mnemonic=\"ProtoCompile\",/a\ \ \ \ \ \ \ \ use_default_shell_env=True,' {} \;  && "
+build_str += "bazel build --verbose_failures --copt=-mavx --copt=-mavx2 --copt=-mfma --copt=-msse4.2 --copt=-msse4.1 "
+build_str += "-c opt //tensorflow/tools/pip_package:build_pip_package && "
+build_str += "bazel-bin/tensorflow/tools/pip_package/build_pip_package %(builddir)s &&"
+build_str += "pip install --no-deps --prefix  %(builddir)s %(builddir)s/" + whl_file
+
+cmds_map = [
+    ('v%(version)s.tar.gz', build_str),
+]
+
+files_to_copy = [
+	      (['%(builddir)s/' + whl_file], '%(installdir)s'),
+	      (['%(builddir)s/bin'], '%(installdir)s'),
+	      (['%(builddir)s/lib'], '%(installdir)s'),
+]
+
+sanity_check_paths={
+    'files': [whl_file],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {                                                                  
+    'PYTHONPATH' : 'lib/python%(pyshortver)s/site-packages',
+}
+
+moduleclass = 'devel'

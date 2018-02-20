@@ -1,0 +1,46 @@
+# @author: Robert Schmidt (OHRI)
+# @author: Guilherme Peretti-Pezzi (CSCS) 
+
+easyblock = "CmdCp"
+
+name = 'Bazel'
+version = '0.4.5'
+
+homepage = 'http://bazel.io/'
+description = """Bazel is a build tool that builds code quickly and reliably. 
+It is used to build the majority of Google's software."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+
+sources = ['%(namelower)s-%(version)s-dist.zip']
+source_urls = ['https://github.com/bazelbuild/bazel/releases/download/%(version)s']
+
+dependencies = [
+    ('Java', '1.8.0_121', "", True),
+]
+
+# Remove hardcoded absolute paths from CROSSTOOL and cc_configure.bzl
+build_cmd = "sed -i s#'/usr/bin/ar'#$EBROOTBINUTILS'/bin/ar#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'/usr/bin/ld'#$EBROOTBINUTILS'/bin/ld#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'/usr/bin/cpp'#$EBROOTGCCCORE'/bin/cpp#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'/usr/bin/dwp'#$EBROOTBINUTILS'/bin/dwp#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'/usr/bin/gcc'#$EBROOTGCCCORE'/bin/gcc#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'-B/usr/bin/#-B'$EBROOTBINUTILS'/bin/#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'cxx_builtin_include_directory: \"/usr/lib/gcc/\"#cxx_builtin_include_directory: \"'$EBROOTGCCCORE'/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/include\"#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'cxx_builtin_include_directory: \"/usr/local/include\"#cxx_builtin_include_directory: \"'$EBROOTGCCCORE'/lib/gcc/x86_64-unknown-linux-gnu/5.3.0/include-fixed\"#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'cxx_builtin_include_directory: \"/usr/include\"#cxx_builtin_include_directory: \"'$EBROOTGCCCORE'/include/c++/5.3.0/\"#g' tools/cpp/CROSSTOOL && "
+build_cmd += "sed -i s#'\"/usr/bin/\" + k'#'\"'$EBROOTBINUTILS'/bin/\"#g' tools/cpp/cc_configure.bzl && "
+build_cmd += "sed -i s#'B/usr/bin'#'B'$EBROOTBINUTILS'/bin/#g' tools/cpp/cc_configure.bzl && "
+build_cmd += "export EXTRA_BAZEL_ARGS='--jobs=24' && "
+build_cmd += "./compile.sh"
+
+cmds_map = [('.*', build_cmd)]
+
+files_to_copy = [(['output/bazel'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/bazel'],
+    'dirs':  [],
+}
+
+moduleclass = 'devel'
