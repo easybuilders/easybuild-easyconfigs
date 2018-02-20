@@ -1,0 +1,60 @@
+easyblock = 'CmdCp'
+
+name = 'Spark'
+version = '2.2.1'
+versionsuffix = 'compiled'
+hadoop_version = '2.7'
+
+homepage = 'http://spark.apache.org'
+description = """Spark is Hadoop MapReduce done in memory"""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+sources = ['%(namelower)s-%(version)s.tgz']
+source_urls = [
+    'http://apache.belnet.be/%(namelower)s/%(namelower)s-%(version)s/',
+    'http://www.eu.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+    'http://www.us.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+]
+
+patches = [('Spark-2.2.1.patch', 1)]
+
+builddependencies = [('iimkl', '2016.4'), ('R', '3.4.0', '-bare', ('iimkl', '2016.4'))]
+dependencies = [('Java', '1.8.0_121')]
+
+cmds_map = [('.*', "./dev/make-distribution.sh -Phadoop-2.7 -Psparkr -Pnetlib-lgpl")]
+
+postinstallcmds = [
+'mkdir %(installdir)s/lib',
+'ln -sf $MKLROOT/lib/intel64/libmkl_rt.so 		%(installdir)s/lib/libblas.so.3',
+'ln -sf $MKLROOT/lib/intel64/libmkl_rt.so 		%(installdir)s/lib/liblapack.so.3',
+'ln -sf $MKLROOT/lib/intel64/libmkl_core.so 		%(installdir)s/lib/',
+'ln -sf $MKLROOT/lib/intel64/libmkl_intel_thread.so 	%(installdir)s/lib/',
+'ln -sf $MKLROOT/lib/intel64/libmkl_intel_lp64.so	%(installdir)s/lib/',
+'ln -sf $MKLROOT/lib/intel64/libmkl_def.so		%(installdir)s/lib/',
+'ln -sf $EBROOTIMKL/lib/intel64/libiomp5.so		%(installdir)s/lib/',
+'mkdir netlib',
+'unzip -j %(installdir)s/jars/netlib-native_system-linux-x86_64-1.1-natives.jar -d netlib/ netlib-native_system-linux-x86_64.so',
+'$(dirname $EASYBUILD_CONFIGFILES)/bin/setrpaths.sh --path netlib --add_path=%(installdir)s/lib',
+'jar -uf %(installdir)s/jars/netlib-native_system-linux-x86_64-1.1-natives.jar -C netlib/ netlib-native_system-linux-x86_64.so',
+'rm -rf netlib',
+'rm -f %(installdir)s/jars/netlib-{*native_ref*,*osx*,*win*,*linux-armhf*,*linux*i686*}.jar',
+'rm %(installdir)s/bin/*.cmd',
+]
+
+files_to_copy = ['dist/*']
+
+sanity_check_paths = {
+    'files': ['bin/spark-shell'],
+    'dirs': ['python']
+}
+
+modextrapaths = {'PYTHONPATH': ['python', 'python/lib/py4j-0.10.4-src.zip'],
+                 'R_LIBS_SITE': ['R/lib']}
+modextravars =  {'SPARK_HOME': '%(installdir)s'}
+modluafooter = """setenv("SPARK_CONF_DIR", pathJoin(os.getenv('HOME'), ".spark/%(version)s/conf"))
+setenv("SPARK_LOG_DIR", pathJoin(os.getenv('HOME'), ".spark/%(version)s/log"))
+setenv("SPARK_USER", os.getenv('USER'))
+"""
+
+moduleclass = 'devel'
