@@ -1,0 +1,39 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'DimSI'
+version = '1.0' # no version provided so we decide it's 1.0
+
+homepage = 'http://webpages.uidaho.edu/hohenlohe/software.html'
+description = """ DimSI uses data from mating trials among multiple populations to 
+ estimate the dimensionality of sexual isolation. For more details on the background 
+ and analysis, please consult Hohenlohe & Arnold (2010) and Nosil & Hohenlohe (2012)."""
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://webpages.uidaho.edu/hohenlohe/']
+sources = ['%(name)s_source_code.zip']
+
+start_dir = 'DimSI_source_code'
+
+# we run the compilation here. Lines like this:
+# gcc -O2 -march=native DimSI_Poisson.c -lm -o Poisson
+premakeopts = '$CC $OPTFLAGS DimSI_Poisson.c -lm -o Poisson && '
+premakeopts += '$CC $OPTFLAGS DimSI_binomial.c -lm -o binomial && '
+
+# with this hack we avoid the "make" command from MakeCp block to be executed
+premakeopts += 'echo compilation done. Avoiding to run make '
+
+files_to_copy = [(["Poisson", "binomial"], "bin")]
+        
+sanity_check_paths = {
+    'files': ["bin/Poisson", "bin/binomial"],
+    'dirs': [""],
+}
+
+moduleclass = 'bio'
+
