@@ -1,0 +1,74 @@
+diff -ru fastStructure-1.0/chooseK.py fastStructure-1.0-fixed/chooseK.py
+--- fastStructure-1.0/chooseK.py        2014-12-16 07:43:01.000000000 +0100
++++ fastStructure-1.0-fixed/chooseK.py  2017-05-30 10:43:40.292104948 +0200
+@@ -1,3 +1,4 @@
++#!/usr/bin/env python
+ import numpy as np
+ import getopt
+ import vars.utils as utils
+diff -ru fastStructure-1.0/distruct.py fastStructure-1.0-fixed/distruct.py
+--- fastStructure-1.0/distruct.py       2014-12-16 07:43:01.000000000 +0100
++++ fastStructure-1.0-fixed/distruct.py 2017-05-30 10:43:37.447999616 +0200
+@@ -1,3 +1,4 @@
++#!/usr/bin/env python
+ import numpy as np
+ import matplotlib.pyplot as plot
+ import colorsys
+diff -ru fastStructure-1.0/setup.py fastStructure-1.0-fixed/setup.py
+--- fastStructure-1.0/setup.py  2014-12-16 07:43:01.000000000 +0100
++++ fastStructure-1.0-fixed/setup.py    2017-05-30 10:57:42.275310140 +0200
+@@ -1,5 +1,6 @@
+ 
+ from distutils.core import setup
++from Cython.Build import cythonize
+ from distutils.extension import Extension
+ from Cython.Distutils import build_ext
+ import numpy
+@@ -34,3 +35,37 @@
+     include_dirs=[numpy.get_include(), '.', 'vars/'],
+     ext_modules = ext_modules
+ )
++
++setup(name ='structure',
++      scripts=['structure.py', 'distruct.py', 'chooseK.py']
++     )
++
++
++# setup utility functions
++ext_modules = [Extension("vars.utils", ["vars/utils.pyx"])]
++
++setup(
++    name = 'utility functions',
++    cmdclass = {'build_ext': build_ext},
++    include_dirs=[numpy.get_include(), 'vars'],
++    ext_modules = ext_modules
++)
++
++# setup variable updates 
++ext_modules = [Extension("vars.admixprop", sources=["vars/admixprop.pyx", "vars/C_admixprop.c"]),
++               Extension("vars.allelefreq", sources=["vars/allelefreq.pyx", "vars/C_allelefreq.c"],
++                libraries=["gsl","gslcblas"],
++                extra_compile_args=["-O3"]),
++               Extension("vars.marglikehood", sources=["vars/marglikehood.pyx", "vars/C_marglikehood.c"])]
++ext_modules = cythonize(ext_modules)
++
++setup(
++    name = 'variables',
++    author = 'Anil Raj',
++    version = '1.0',
++    author_email = 'rajanil@stanford.edu',
++    cmdclass = {'build_ext': build_ext},
++    include_dirs=[numpy.get_include(), 'vars'],
++    ext_modules = ext_modules,
++    packages=['vars']
++)
+diff -ru fastStructure-1.0/structure.py fastStructure-1.0-fixed/structure.py
+--- fastStructure-1.0/structure.py      2014-12-16 07:43:01.000000000 +0100
++++ fastStructure-1.0-fixed/structure.py        2017-05-30 10:43:43.728232207 +0200
+@@ -1,4 +1,4 @@
+-
++#!/usr/bin/env python
+ import numpy as np
+ import fastStructure 
+ import parse_bed
+
