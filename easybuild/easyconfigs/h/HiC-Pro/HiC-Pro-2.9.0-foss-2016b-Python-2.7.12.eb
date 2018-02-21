@@ -1,0 +1,62 @@
+easyblock = 'MakeCp'
+
+name = 'HiC-Pro'
+version = '2.9.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://nservant.github.io/HiC-Pro'
+description = """HiC-Pro was designed to process Hi-C data, from raw fastq files (paired-end Illumina data) 
+ to the normalized contact maps."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/nservant/HiC-Pro/archive/']
+
+# buildopts=" configure" 
+
+exts_defaultclass = 'PythonPackage'
+
+dependencies = [
+    ('Python', '2.7.12'),
+    ('Pysam', '0.9.1.4', versionsuffix),
+    ('bx-python', '0.7.4', versionsuffix),
+    ('Bowtie2', '2.3.2'),
+    ('SAMtools', '1.3.1'),
+    ('R', '3.2.3')
+]
+
+exts_list = [
+    ('iced', '0.4.2', {
+        'source_urls': ['https://github.com/hiclib/iced/archive/'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+    }),
+]
+
+skipsteps = ['configure']
+
+files_to_copy = [
+    (['scripts'], ''),
+    (['scripts/build_matrix', 'scripts/cutsite_trimming'], 'scripts'),
+    (['bin/utils', 'bin/HiC-Pro'], 'bin'),
+    (['config-system.txt'], '')
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
+    'SCRIPTS': ['scripts']
+}
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/ice', 'config-system.txt', 'scripts/build_matrix', 'scripts/cutsite_trimming', 'bin/HiC-Pro'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts', 'bin/utils'],
+}
+
+postinstallcmds = [
+    'ln -s %(installdir)s/bin/ice  %(installdir)s/scripts/ice'
+]
+
+moduleclass = 'bio'

@@ -1,0 +1,47 @@
+easyblock = 'Bundle'
+
+name = 'bx-python'
+version = '0.7.4'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/bxlab/bx-python'
+description = """The bx-python project is a Python library and associated set of scripts to allow for rapid
+ implementation of genome scale analyses."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+
+
+dependencies = [
+    ('Python', '2.7.12'),
+    ('LZO', '2.10'),
+]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+prebuildopts = "export CPATH=$EBROOTLZO/include/lzo:$CPATH && "
+
+exts_list = [
+    ('python-lzo', '1.11', {
+        'modulename': 'lzo',
+        'source_urls': ['https://pypi.python.org/packages/source/p/python-lzo/'],
+        'source_tmpl': 'python-lzo-%(version)s.tar.gz',
+    }),
+    (name, version, {
+        'modulename': 'bx',
+        'source_urls': ['https://github.com/bxlab/bx-python/archive/'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'bio'
