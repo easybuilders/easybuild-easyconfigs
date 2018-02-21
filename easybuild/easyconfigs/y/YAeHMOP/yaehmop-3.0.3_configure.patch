@@ -1,0 +1,167 @@
+diff -Naur yaehmop_orig/Makefile yaehmop/Makefile
+--- yaehmop_orig/Makefile	1970-01-01 00:00:00.000000000 +0000
++++ yaehmop/Makefile	2018-02-09 23:31:06.714320014 +0000
+@@ -0,0 +1,12 @@
++all:
++	cd kpoints && make 
++	cd tightbind && make 
++	cd tightbind/utils && make 
++	cd viewkel && make 
++
++clean:
++	cd kpoints && make clean 
++	cd tightbind && make veryclean 
++	cd viewkel && make clean 
++	cd tightbind/utils && make clean 
++
+diff -Naur yaehmop_orig/tightbind/Makefile yaehmop/tightbind/Makefile
+--- yaehmop_orig/tightbind/Makefile	2018-02-03 17:30:43.813647063 +0000
++++ yaehmop/tightbind/Makefile	2018-02-09 22:57:24.351323299 +0000
+@@ -8,6 +8,7 @@
+ # to change where the program looks for the extended hueckel parameters
+ #   change the following:
+ # This is the one for isolobal
++
+ PARM_FILE_LOC = \"/home/glandrum/yaehmop/tightbind/eht_parms.dat\"
+ 
+ # to use floats instead of doubles, insert -DUSE_FLOATS here.
+@@ -16,16 +17,22 @@
+ #     portions of the meschach libraries installed.
+ 
+ #stripped down with optimization and LAPACK
+-CFLAGS =  -g  -I/usr/local/include/ -DEHT_PARM_FILE=$(PARM_FILE_LOC) -DUNDERSCORE_FORTRAN -DANAL_ABOUT_PROTOTYPES
++
++CC=gcc
++FC=gfortran
++LC=$(FC)
++
++CFLAGS =  -fopenmp -DUSE_LAPACK -O2 -I$(OPENBLASROOT)/include -DEHT_PARM_FILE=$(PARM_FILE_LOC) -DUNDERSCORE_FORTRAN -DANAL_ABOUT_PROTOTYPES
+ 
+ # these are the flags that get passed to the fortran compiler
+ #F77FLAGS = -g
+-F77FLAGS = -O
++
++F77FLAGS = -O -fopenmp
+ 
+ #A linux box w/o complib (using GNU compilers)
+ #LIBS = -lm -lf2c 
+-LIBS = -lm 
+-LOCALLIBS = /usr/lib/liblapack.a /usr/lib/libblas.a -lg2c
++LIBS = -lm -lpthread -fopenmp 
++LOCALLIBS = $(OPENBLASROOT)/lib/libopenblas.a -lgfortran    
+ 
+ COBJS = main.o genutil.o fileio.o globals.o memory.o distance_mat.o \
+  R_overlap_mat.o mov.o R_hamil.o K_hamil.o kpoints.o K_overlap_mat.o \
+diff -Naur yaehmop_orig/tightbind/utils/fit_props.h yaehmop/tightbind/utils/fit_props.h
+--- yaehmop_orig/tightbind/utils/fit_props.h	2018-02-03 17:30:43.822646975 +0000
++++ yaehmop/tightbind/utils/fit_props.h	2018-02-09 23:22:09.435649593 +0000
+@@ -30,10 +30,10 @@
+ typedef float real;
+ #endif
+ 
+-#ifndef USE_BZERO
++/* #ifndef USE_BZERO
+ #define bzero(a,b) ( memset((void *)(a),0,(b)) )
+ #define bcopy(a,b,c) ( memcpy((void *)(b),(const void *)(a),(c)) )
+-#endif
++#endif */
+ 
+ /* this is the step size used to generate the smoothed data (in eV) */
+ #define ENERGY_STEP .01
+diff -Naur yaehmop_orig/tightbind/utils/fit_walsh.h yaehmop/tightbind/utils/fit_walsh.h
+--- yaehmop_orig/tightbind/utils/fit_walsh.h	2018-02-03 17:30:43.822646975 +0000
++++ yaehmop/tightbind/utils/fit_walsh.h	2018-02-09 23:22:25.523490051 +0000
+@@ -25,4 +25,4 @@
+   real *symmetries;
+   struct walsh_point_type_def *next;
+ } walsh_point_type;
+-  
++
+diff -Naur yaehmop_orig/tightbind/utils/makefile yaehmop/tightbind/utils/makefile
+--- yaehmop_orig/tightbind/utils/makefile	2018-02-03 17:30:43.822646975 +0000
++++ yaehmop/tightbind/utils/makefile	2018-02-09 23:29:42.786152844 +0000
+@@ -1,7 +1,8 @@
+ # to use floats instead of doubles, insert -DUSE_FLOATS here.
+ #CFLAGS = -g -I/usr/local/include/
+ #CFLAGS = -32 -O -I/usr/local/include/
+-CFLAGS =  -O -I/usr/local/include/
++
++CFLAGS =  -O -I$(OPENBLASROOT)/include -DUSE_FLOATS
+ 
+ DOS_OBJS = fit_dos.o genutil.o
+ COOP_OBJS = fit_coop.o genutil.o
+@@ -24,48 +25,48 @@
+ 	cp $(PROGS) ../../bin
+ 
+ fit_dos: $(DOS_OBJS)
+-	cc -o fit_dos $(CFLAGS) $(DOS_OBJS) -lm
++	gcc -o fit_dos $(CFLAGS) $(DOS_OBJS) -lm
+ 
+ moments: $(MOM_OBJS)
+-	cc -o moments $(CFLAGS) $(MOM_OBJS) -lm
++	gcc -o moments $(CFLAGS) $(MOM_OBJS) -lm
+ 
+ sub_dos: $(SUB_OBJS)
+-	cc -o sub_dos $(CFLAGS) $(SUB_OBJS) -lm
++	gcc -o sub_dos $(CFLAGS) $(SUB_OBJS) -lm
+ 
+ add_dos: $(ADD_OBJS)
+-	cc -o add_dos $(CFLAGS) $(ADD_OBJS) -lm
++	gcc -o add_dos $(CFLAGS) $(ADD_OBJS) -lm
+ 
+ fit_coop: $(COOP_OBJS)
+-	cc -o fit_coop $(CFLAGS) $(COOP_OBJS) -lm
++	gcc -o fit_coop $(CFLAGS) $(COOP_OBJS) -lm
+ 
+ fit_walsh: $(WALSH_OBJS)
+-	cc -o fit_walsh $(CFLAGS) $(WALSH_OBJS) -lm
++	gcc -o fit_walsh $(CFLAGS) $(WALSH_OBJS) -lm
+ 
+ dumb_walsh: $(DUMB_WALSH_OBJS)
+-	cc -o dumb_walsh $(CFLAGS) $(DUMB_WALSH_OBJS) -lm
++	gcc -o dumb_walsh $(CFLAGS) $(DUMB_WALSH_OBJS) -lm
+ 
+ matrix_view: $(MAT_OBJS)
+-	cc -o matrix_view $(CFLAGS) $(MAT_OBJS) -lm	
++	gcc -o matrix_view $(CFLAGS) $(MAT_OBJS) -lm	
+ 
+ perch: $(PERCH_OBJS)
+-	cc -o perch $(CFLAGS) $(PERCH_OBJS) -lm
++	gcc -o perch $(CFLAGS) $(PERCH_OBJS) -lm
+ 
+ cooperate: $(COOPER_OBJS)
+-	cc -o cooperate $(CFLAGS) $(COOPER_OBJS) -lm
++	gcc -o cooperate $(CFLAGS) $(COOPER_OBJS) -lm
+ 
+ 
+ grow_xtal: $(GROW_OBJS)
+-	cc -o grow_xtal $(CFLAGS) $(GROW_OBJS) -lm	
++	gcc -o grow_xtal $(CFLAGS) $(GROW_OBJS) -lm	
+ 
+ fit_FCO: $(FCO_OBJS)
+-	cc -o fit_FCO $(CFLAGS) $(FCO_OBJS) -lm	
++	gcc -o fit_FCO $(CFLAGS) $(FCO_OBJS) -lm	
+ 
+ 
+ .c.o: fit_props.h
+-	cc $(CFLAGS) -c $*.c
++	gcc $(CFLAGS) -c $*.c
+ 
+ 
+ clean: 
+-	rm -f *.o
++	rm -f *.o $(PROGS)
+ 
+ 
+diff -Naur yaehmop_orig/viewkel/Makefile yaehmop/viewkel/Makefile
+--- yaehmop_orig/viewkel/Makefile	2018-02-03 17:30:43.933645885 +0000
++++ yaehmop/viewkel/Makefile	2018-02-09 22:00:33.866033467 +0000
+@@ -24,7 +24,7 @@
+ CFLAGS = -g -DHIGHPREC -DPARM_FILE=$(PARM_FILE_LOC) $(OPT_FEATURES)\
+ -D_POSIX_SOURCE -DUSE_READLINE
+ 
+-LDFLAGS = -L/usr/X11R6/lib -L/usr/local/lib -lreadline -lhistory -L/usr/lib/termcap -ltermcap
++LDFLAGS = -L/usr/X11R6/lib -L$(OPENBLASROOT)/lib -lreadline -lhistory #-ltermcap
+ 
+ CC = gcc
+ 

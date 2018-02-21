@@ -1,0 +1,41 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+##
+
+easyblock = 'ConfigureMake'
+name = 'SGA'
+version = "0.10.15"
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'https://github.com/jts/sga/wiki'
+description = """SGA is a de novo genome assembler based on the concept of string graphs. The major goal of SGA is to be very memory efficient, which is achieved by using a compressed representation of DNA sequence reads.
+
+For running examples see src/examples and the sga wiki https://github.com/jts/sga/wiki
+
+For questions or support contact jared.simpson --at-- oicr.on.ca
+"""
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+
+source_urls = ['https://github.com/jts/sga/archive/']
+sources = ['v%(version)s.tar.gz']
+
+dependencies = [
+    ('Perl', '5.22.2', '-nix'),
+    ('BamTools', '2.4.1'),
+]
+
+start_dir = 'src'
+
+preconfigopts = " ./autogen.sh && "
+
+configopts = '--with-bamtools=$EBROOTBAMTOOLS'
+
+postinstallcmds =  ['cd %(builddir)s/%(namelower)s-%(version)s/ && cp -r Dockerfile Dockerfile.testing index.html README.md src/examples %(installdir)s/']
+
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in ['sga', 'sga-astat.py', 'sga-bam2de.pl', 'sga-mergeDriver.pl']], 'README.md'],
+    'dirs': ['bin', 'examples']
+}
+
+moduleclass = 'bio'
