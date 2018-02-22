@@ -1,0 +1,18 @@
+# PETSc > 3.5.0 changed the KSPSetOperators() function 
+# (See http://www.mcs.anl.gov/petsc/documentation/changes/35.html)
+# This part adopts the test to PETSc > 3.5.0
+# B. Hajgato August 25th 2014
+--- ./lib/test/AMRElliptic/testPetscCompGrid.cpp_orig	2014-08-25 14:42:48.000000000 +0200
++++ ./lib/test/AMRElliptic/testPetscCompGrid.cpp	2014-08-25 16:47:20.413636699 +0200
+@@ -495,7 +495,11 @@
+         ierr = MatGetVecs(A,&x,&b); CHKERRQ(ierr);
+         ierr = petscop.putChomboInPetsc(rhs2,b); CHKERRQ(ierr);
+         ierr = KSPCreate(PETSC_COMM_WORLD, &ksp); CHKERRQ(ierr);
++#if PETSC_VERSION_GE(3,5,0)
++        ierr = KSPSetOperators(ksp, A, A); CHKERRQ(ierr);
++#else
+         ierr = KSPSetOperators(ksp, A, A, DIFFERENT_NONZERO_PATTERN); CHKERRQ(ierr);
++#endif
+         ierr = KSPSetFromOptions(ksp); CHKERRQ(ierr);
+         ierr = KSPSolve(ksp, b, x); CHKERRQ(ierr);
+         ierr = KSPDestroy(&ksp); CHKERRQ(ierr); 
