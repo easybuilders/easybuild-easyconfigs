@@ -1,0 +1,42 @@
+easyblock = 'PackedBinary'
+
+name = 'PGPLOT'
+version = '5.2'
+
+homepage = 'http://www.astro.caltech.edu/~tjp/pgplot/'
+description = '''The PGPLOT Graphics Subroutine Library is a Fortran- or C-callable,
+ device-independent graphics package for making simple scientific graphs.'''
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+source_urls = ['ftp://ftp.astro.caltech.edu/pub/pgplot',
+               'http://fresh-center.net/linux/misc/old/']
+sources = ['%(namelower)s%(version)s.tar.gz']
+checksums = ['a5799ff719a510d84d26df4ae7409ae61fe66477e3f1e8820422a9a4727a5be4']
+
+builddependencies = [
+    ('binutils', '2.28'),
+]
+
+install_cmd = "cd %(installdir)s && "
+install_cmd += "cp %(builddir)s/pgplot/drivers.list . && "
+install_cmd += "cat << EOF >> ./drivers.list \n" \
+    + "  PSDRIV 1 /PS        PostScript printers, monochrome, landscape  Std F77  \n" \
+    + "  PSDRIV 2 /VPS       Postscript printers, monochrome, portrait   Std F77 \n" \
+    + "  PSDRIV 3 /CPS       PostScript printers, color, landscape   Std F77 \n" \
+    + "  PSDRIV 4 /VCPS      PostScript printers, color, portrait    Std F77 \n" \
+    + "  XWDRIV 1 /XWINDOW   Workstations running X Window System    C \n" \
+    + "EOF\n"
+install_cmd += "%(builddir)s/pgplot/makemake %(builddir)s/pgplot linux g77_gcc && "
+install_cmd += "make FCOMPL='gfortran' FFLAGC='-ffixed-form -ffixed-line-length-none -u -Wall -fPIC -O' && "
+install_cmd += "make clean && "
+install_cmd += "mkdir lib ; cd lib && "
+install_cmd += "ln -sf ../libpgplot.a . && "
+install_cmd += "ln -sf ../libpgplot.so . "
+
+sanity_check_paths = {
+    'files': ["libpgplot.a"],
+    'dirs': []
+}
+
+moduleclass = 'vis'
