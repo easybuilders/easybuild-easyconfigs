@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'igraph'
+version = '0.7.1'
+
+homepage = 'http://igraph.org'
+description = """igraph is a collection of network analysis tools with the emphasis on 
+efficiency, portability and ease of use. igraph is open source and free. igraph can be 
+programmed in R, Python and C/C++."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
+sources = ['igraph-%(version)s.tar.gz']
+patches = [
+    'igraph-%(version)s-no-lapack-no-blas.patch',
+    'igraph-%(version)s-fix-aclocal-version.patch'
+]
+checksums = [
+    'd978030e27369bf698f3816ab70aa9141e9baf81c56cc4f55efbe5489b46b0df',  # igraph-0.7.1.tar.gz
+    '4108be32d0105dbd12918ca38497a9787a263e4ddcc8608108a3ae08b592788b',  # igraph-0.7.1-no-lapack-no-blas.patch
+    '7f77b14a9b489f6c3e30d85bd9049e9d82889e7a8efd8cdb8e03deb226b35111',  # igraph-0.7.1-fix-aclocal-version.patch
+]
+
+builddependencies = [('Autotools', '20170619')]
+
+preconfigopts = "aclocal && autoconf && automake && libtoolize && "
+# link against MKL rather than blas/lapack
+preconfigopts += "env LDFLAGS='-lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm'"
+configopts = "--with-external-blas=yes --with-external-lapack=yes"
+
+sanity_check_paths = {
+    'files': ['lib/libigraph.so', 'lib/libigraph.la', 'lib/pkgconfig/igraph.pc'] +
+             ['include/igraph/%s' % x for x in ['igraph_version.h', 'igraph_types.h', 'igraph_constants.h']],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
