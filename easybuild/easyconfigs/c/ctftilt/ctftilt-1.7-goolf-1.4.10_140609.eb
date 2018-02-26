@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+# In the sources .tar.gz two apps are provided: "ctffind3" and "ctftilt" 
+# So if you are installing this one probably you also want to install 
+# ctffind3-3.5-goolf-1.4.10_140609.eb
+
+easyblock='MakeCp'
+
+name = 'ctftilt'
+version = '1.7'
+versionsuffix = '_140609'
+
+homepage = 'http://grigoriefflab.janelia.org/ctf'
+description = """ CTFFIND3 and CTFTILT are two programs for finding CTFs of electron micrographs [1]. 
+ The program CTFFIND3 is an updated version of the program CTFFIND2, which was developed in 1998 by 
+ Nikolaus Grigorieff at the MRC Laboratory of Molecular Biology in Cambridge, UK """ 
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['http://grigoriefflab.janelia.org/sites/default/files/']
+sources = ['ctf%(versionsuffix)s.tar.gz']
+
+# delete provided binaries
+premakeopts = 'rm -fr *.com && '
+premakeopts += 'rm -fr *.exe && '
+
+makeopts = ' -f Makefile_linux_amd64 && make -f Makefile_linux_amd64_mp'
+
+files_to_copy = [(["ctftilt*.exe"], "bin"),
+                "README.txt"
+] 
+
+sanity_check_paths = {
+    'files': ["bin/ctftilt.exe", "bin/ctftilt_mp.exe"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
+
