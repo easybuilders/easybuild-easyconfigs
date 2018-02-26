@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'graph-tool'
+version = '2.26'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://graph-tool.skewed.de/'
+description = """Graph-tool is an efficient Python module for manipulation and
+ statistical analysis of graphs (a.k.a. networks). Contrary to
+ most other python modules with similar functionality, the core
+ data structures and algorithms are implemented in C++, making
+ extensive use of template metaprogramming, based heavily on
+ the Boost Graph Library. This confers it a level of
+ performance that is comparable (both in memory usage and
+ computation time) to that of a pure C/C++ library."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'cstd': 'c++14'}
+
+source_urls = ['https://downloads.skewed.de/%(name)s/']
+sources = [SOURCE_TAR_BZ2]
+patches = ['graph-tool-%(version)s_Boost-fixes.patch']
+checksums = [
+    'df6273dc5ef327a0eaf1ef1c46751fce4c0b7573880944e544287b85a068f770',  # graph-tool-2.26.tar.bz2
+    'c350564a198a17c23c83cbb3bd98e23ac42e26b95e325617059761eb28055177',  # graph-tool-2.26_Boost-fixes.patch
+]
+
+dependencies = [
+    ('Python', '3.6.3'),
+    ('Boost', '1.65.1', versionsuffix),
+    ('expat', '2.2.4'),
+    ('CGAL', '4.11', versionsuffix),
+    ('sparsehash', '2.0.3'),
+    ('matplotlib', '2.1.0', versionsuffix),
+    ('PyCairo', '1.16.1', versionsuffix),
+    ('cairomm', '1.12.2'),
+]
+
+configopts = '--enable-openmp --with-boost=$EBROOTBOOST --with-cairo=$EBROOTCAIRO --with-expat=$EBROOTEXPAT '
+configopts += '--with-python-module-path=%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/graph_tool/all.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/graph_tool/include'],
+}
+
+sanity_check_commands = ["python -c 'from graph_tool.all import graph_draw'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'math'
