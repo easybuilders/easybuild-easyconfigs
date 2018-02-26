@@ -1,0 +1,43 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'ExaML'
+version = '2.0.4'
+versionsuffix ='-mpi-avx'
+
+homepage = 'https://github.com/stamatak/ExaML/'
+description = """ Exascale Maximum Likelihood (ExaML) code for phylogenetic inference using MPI. 
+ This code implements the popular RAxML search algorithm for maximum likelihood based inference 
+ of phylogenetic trees. It uses a radically new MPI parallelization approach that yields improved 
+ parallel efficiency, in particular on partitioned multi-gene or whole-genome datasets. 
+ It is up to 4 times faster than RAxML-Light """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+toolchainopts = {'usempi': True}
+
+sources = ['v%(version)s.zip']
+source_urls = ['https://github.com/stamatak/ExaML/archive']
+
+dependencies = [
+                ('zlib', '1.2.8'),
+                ('libxml2', '2.9.1')
+]
+
+start_dir = 'examl'
+
+makeopts = '-f Makefile.AVX.gcc && cd ../parser && make -f Makefile.SSE3.gcc'
+
+files_to_copy = [(["examl-AVX", "parser/parse-examl"], "bin"),
+                (["parser/USAGE"], "USAGE-parser"),
+                "README.md", "codeDocumentation", "manual", "testData"]
+
+sanity_check_paths = {
+    'files': ["bin/examl-AVX", "bin/parse-examl"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
