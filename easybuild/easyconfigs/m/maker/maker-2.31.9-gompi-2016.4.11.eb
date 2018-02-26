@@ -1,0 +1,55 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'Tarball'
+
+name = 'maker'
+version = '2.31.9'
+
+homepage = 'http://www.yandell-lab.org/software/maker.html'
+description = """MAKER is a portable and easily configurable genome annotation pipeline. Its purpose is to allow smaller eukaryotic and prokaryotic genome projects to independently annotate their genomes and to create genome databases. MAKER identifies repeats, aligns ESTs and proteins to a genome, produces ab-initio gene predictions and automatically synthesizes these data into gene annotations having evidence-based quality values."""
+
+toolchain = {'name': 'gompi', 'version': '2016.4.11'}
+toolchainopts = {'pic': True}
+
+#Needs registration for downloading
+#source_urls = ['http://yandell.topaz.genetics.utah.edu/cgi-bin/maker_license.cgi']
+sources = ['%(name)s-%(version)s.tgz']
+
+builddependencies = [
+    ('Perl','5.22.4'),
+]
+
+dependencies = [
+    ('BioPerl', '1.7.1', '-Perl-5.22.4'),
+    ('Exonerate', '2.4.0'),
+    ('BLAST+', '2.6.0'),
+    ('SNAP', '2013-11-29'),
+]
+
+
+postinstallcmds =  [" cd %(installdir)s/src && printf '%s\n\n' 'y'|perl Build.PL && printf '%s\n' 'n'|./Build repeatmasker && ./Build install	 "]
+
+
+
+sanity_check_paths = {
+    'files':
+        ['bin/maker'],
+    'dirs': ['bin']
+}
+
+#modextrapaths = {
+#    'PATH': '.',
+#}
+
+
+moduleclass = 'bio'
