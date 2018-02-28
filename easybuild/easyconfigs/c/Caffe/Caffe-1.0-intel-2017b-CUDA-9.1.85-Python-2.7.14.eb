@@ -48,18 +48,16 @@ dependencies = [
     ('cuDNN', '7.0.5', '-CUDA-' + cudaversion, True),
 ]
 
-configopts = (
-    '-DBLAS=mkl -DUSE_OPENCV=0 -DUSE_MKL2017_AS_DEFAULT_ENGINE=1 -DCPU_ONLY=0'
-    '-DUSE_CUDNN=1 -DCUDA_ARCH_BIN="35 60" -DCUDA_ARCH_NAME=Manual'
-)
+# Known NVIDIA GPU achitectures Caffe 1.0 can be compiled for, and not lower than 3.0 supported by CUDA 9.1:
+cuda_compute_capabilities = '"30 35 50 60 61"'
+
+configopts = '-DBLAS=mkl -DUSE_OPENCV=0 -DUSE_MKL2017_AS_DEFAULT_ENGINE=1 -DCPU_ONLY=0 '
+configopts += '-DUSE_CUDNN=1 -DCUDA_ARCH_BIN=%s -DCUDA_ARCH_NAME=Manual' % cuda_compute_capabilities
 
 modextrapaths = {'PYTHONPATH': ['python']}
 
 sanity_check_paths = {
-    'files': ['bin/caffe'] +
-             ['lib64/libproto.a', 'lib64/libcaffe.%s' % SHLIB_EXT] +
-             ['python/caffe/_caffe.%s' % SHLIB_EXT] +
-             ['include/caffe/proto/caffe.pb.h'],
+    'files': ['bin/caffe', 'include/caffe/proto/caffe.pb.h', 'lib64/libproto.a', 'lib64/libcaffe.%s' % SHLIB_EXT],
     'dirs': [],
 }
 
