@@ -1,0 +1,22 @@
+--- lib/IR/Attributes.cpp.orig	2018-02-12 10:42:20.493854152 +0000
++++ lib/IR/Attributes.cpp	2018-02-12 10:43:30.396005183 +0000
+@@ -792,7 +792,7 @@
+ ///   FunctionIndex: ~0U -> 0
+ ///   ReturnIndex:    0  -> 1
+ ///   FirstArgIndex: 1.. -> 2..
+-static constexpr unsigned attrIdxToArrayIdx(unsigned Index) {
++static unsigned attrIdxToArrayIdx(unsigned Index) {
+   // MSVC warns about '~0U + 1' wrapping around when this is called on
+   // FunctionIndex, so cast to int first.
+   return static_cast<int>(Index) + 1;
+@@ -810,8 +810,8 @@
+   static_assert(Attribute::EndAttrKinds <=
+                     sizeof(AvailableFunctionAttrs) * CHAR_BIT,
+                 "Too many attributes");
+-  static_assert(attrIdxToArrayIdx(AttributeList::FunctionIndex) == 0U,
+-                "function should be stored in slot 0");
++  assert(attrIdxToArrayIdx(AttributeList::FunctionIndex) == 0U);
++  //              "function should be stored in slot 0");
+   for (Attribute I : Sets[0]) {
+     if (!I.isStringAttribute())
+       AvailableFunctionAttrs |= 1ULL << I.getKindAsEnum();
