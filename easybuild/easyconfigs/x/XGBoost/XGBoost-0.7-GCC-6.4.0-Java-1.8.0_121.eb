@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'XGBoost'
+version = '0.7'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://github.com/dmlc/xgboost'
+description = """XGBoost is an optimized distributed gradient boosting library designed to be highly efficient,
+ flexible and portable."""
+
+toolchain = {'name': 'GCC', 'version': '6.4.0'}
+
+# No direct download url. The download has been done with git.
+
+# $ git clone --recursive https://github.com/dmlc/xgboost
+# $ mv xgboost xgboost-0.7
+# $ tar -czf xgboost-0.7.tar.gz xgboost-0.7
+
+sources = ['%(namelower)s-%(version)s.tar.gz']
+
+dependencies = [
+   ('Python', '2.7.14'),
+   #('Maven', '3.5.2'),
+   ('Java', '1.8.0_121'),
+]
+
+skipsteps = ['install']
+
+postinstallcmds =  ['cd %(builddir)s/%(namelower)s-%(version)s/ && cd jvm-packages && mvn -DskipTests install && mkdir -p %(installdir)s/bin && cd %(builddir)s/%(namelower)s-%(version)s/ && cp xgboost %(installdir)s/bin/ && cp -r lib %(installdir)s/ && cp -r ~/.m2/repository %(installdir)s/']
+
+files_to_copy = [['xgboost', 'lib'], '']
+
+sanity_check_paths = {
+    'files': ['bin/xgboost', 'lib/libxgboost.a', 'lib/libxgboost.so'],
+    'dirs': ['lib', 'repository'],
+}
+
+moduleclass = 'lib'
