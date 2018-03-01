@@ -1,0 +1,101 @@
+--- gpaw-1.2.0.old/customize.py	2017-01-06 10:52:59.000000000 +0100
++++ gpaw-1.2.0.new/customize.py	2017-06-27 13:59:05.711456673 +0200
+@@ -32,51 +32,84 @@
+ # mpicompiler = 'mpicc'  # use None if you don't want to build a gpaw-python
+ # mpilinker = 'mpicc'
+ # platform_id = ''
+-# scalapack = False
++scalapack = True
++
++
++# Convert library specs from EasyBuild to GPAW
++def eblibs_to_gpawlibs(lib_specs):
++    return [lib[2:] for lib in os.getenv(lib_specs).split()]
++
++
++# EasyBuild dynamically links to Python libraries
++path = os.environ['EBROOTPYTHON']
++extra_link_args += ['-Wl,-rpath=%s/lib' % path]
++
++
++# EasyBuild adds explicit dependencies on some libraries
++path = os.getenv('EBROOTLIBREADLINE')
++extra_link_args += ['-Wl,-rpath=%s/lib' % path]
++include_dirs += [os.path.join(path, 'include')]
++library_dirs += [os.path.join(path, 'lib')]
++libraries += ['readline']
++
++
++# Use BLAS and LAPACK libraries from EasyBuild
++path = os.getenv('BLAS_LAPACK_LIB_DIR')
++extra_link_args += ['-Wl,-rpath=%s' % path]
++library_dirs += [path]
++libraries += eblibs_to_gpawlibs('LIBLAPACK')
++include_dirs += [os.getenv('LAPACK_INC_DIR')]
++
+ 
+ # Use ScaLAPACK:
+ # Warning! At least scalapack 2.0.1 is required!
+ # See https://trac.fysik.dtu.dk/projects/gpaw/ticket/230
+ if scalapack:
+-    libraries += ['scalapack-openmpi',
+-                  'blacsCinit-openmpi',
+-                  'blacs-openmpi']
++    path = os.getenv('SCALAPACK_LIB_DIR')
++    extra_link_args += ['-Wl,-rpath=%s' % path]
++    mpi_library_dirs += [path]
++    mpi_libraries += eblibs_to_gpawlibs('LIBSCALAPACK_ONLY')
++    include_dirs += [os.getenv('SCALAPACK_INC_DIR')]
+     define_macros += [('GPAW_NO_UNDERSCORE_CBLACS', '1')]
+     define_macros += [('GPAW_NO_UNDERSCORE_CSCALAPACK', '1')]
+ 
++
+ # LibXC:
+ # In order to link libxc installed in a non-standard location
+ # (e.g.: configure --prefix=/home/user/libxc-2.0.1-1), use:
+ 
+ # - static linking:
+ if 0:
+-    include_dirs += ['/home/user/libxc-2.0.1-1/include']
+-    extra_link_args += ['/home/user/libxc-2.0.1-1/lib/libxc.a']
++    path = os.environ['EBROOTLIBXC']
++    include_dirs += [os.path.join(path, 'include')]
++    extra_link_args += [os.path.join(path, 'lib', 'libxc.a')]
+     if 'xc' in libraries:
+         libraries.remove('xc')
+ 
+ # - dynamic linking (requires rpath or setting LD_LIBRARY_PATH at runtime):
+-if 0:
+-    include_dirs += ['/home/user/libxc-2.0.1-1/include']
+-    library_dirs += ['/home/user/libxc-2.0.1-1/lib']
++if 1:
++    path = os.environ['EBROOTLIBXC']
++    extra_link_args += ['-Wl,-rpath=%s/lib' % path]
++    include_dirs += [os.path.join(path, 'include')]
++    library_dirs += [os.path.join(path, 'lib')]
+     # You can use rpath to avoid changing LD_LIBRARY_PATH:
+     # extra_link_args += ['-Wl,-rpath=/home/user/libxc-2.0.1-1/lib']
+-    if 'xc' not in libraries:
++    if not 'xc' in libraries:
+         libraries.append('xc')
+ 
+ 
+ # libvdwxc:
+ if 0:
+     libvdwxc = True
+-    path = '/home/user/libvdwxc'
++    path = os.environ['EBROOTLIBVDWXC']
+     extra_link_args += ['-Wl,-rpath=%s/lib' % path]
+-    library_dirs += ['%s/lib' % path]
+-    include_dirs += ['%s/include' % path]
++    include_dirs += [os.path.join(path, 'include')]
++    library_dirs += [os.path.join(path, 'lib')]
+     libraries += ['vdwxc']
+ 
+ 
+ # Build MPI-interface into _gpaw.so:
+ if 0:
+-    compiler = 'mpicc'
++    compiler = os.getenv('MPICC')
+     define_macros += [('PARALLEL', '1')]
+     mpicompiler = None
