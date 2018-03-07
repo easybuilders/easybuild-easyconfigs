@@ -2,13 +2,12 @@ language: python
 python: 2.6
 env:
   matrix:
-    #- ENV_MOD_VERSION=3.2.10 EASYBUILD_MODULES_TOOL=EnvironmentModulesC EASYBUILD_MODULE_SYNTAX=Tcl
+    - ENV_MOD_VERSION=3.2.10 EASYBUILD_MODULES_TOOL=EnvironmentModulesC EASYBUILD_MODULE_SYNTAX=Tcl
     - LMOD_VERSION=5.8
     - LMOD_VERSION=5.8 EASYBUILD_MODULE_SYNTAX=Tcl
-    - LMOD_VERSION=6.6.3
-    - LMOD_VERSION=6.6.3 EASYBUILD_MODULE_SYNTAX=Tcl
-    - LMOD_VERSION=7.0
-    - LMOD_VERSION=7.0 EASYBUILD_MODULE_SYNTAX=Tcl
+    - LMOD_VERSION=7.7.16
+    - LMOD_VERSION=7.7.16 EASYBUILD_MODULE_SYNTAX=Tcl
+    - ENV_MOD_VERSION=4.0.0 EASYBUILD_MODULES_TOOL=EnvironmentModules EASYBUILD_MODULE_SYNTAX=Tcl
 matrix:
   # mark build as finished as soon as job has failed
   fast_finish: true
@@ -49,6 +48,10 @@ before_script:
     # get list of filenames for modified/added files, use '...' to compare with merge base of develop and branch
     - git diff --name-only --diff-filter=AM ${TRAVIS_BRANCH}...HEAD
 script:
+    # make sure 'ml' alias is defined, otherwise sourcing the init script fails (silently) for Lmod (< 5.9.3)
+    - if [ ! -z $MOD_INIT ] && [ ! -z $LMOD_VERSION ]; then alias ml=foobar; fi
+    # set up environment for modules tool (if $MOD_INIT is defined)
+    - if [ ! -z $MOD_INIT ]; then source $MOD_INIT; type module; fi
     - cd $HOME
     - export PYTHONPATH=$TRAVIS_BUILD_DIR
     - export PATH=$TRAVIS_BUILD_DIR/test/bin:$PATH
