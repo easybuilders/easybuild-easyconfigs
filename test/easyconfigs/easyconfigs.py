@@ -51,6 +51,7 @@ from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, lette
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import build_option
 from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
@@ -65,6 +66,7 @@ from easybuild.tools.options import set_tmpdir
 # and that bigger tests (building dep graph, testing for conflicts, ...) can be run as well
 # other than optimizing for time, this also helps to get around problems like http://bugs.python.org/issue10949
 single_tests_ok = True
+
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
@@ -150,6 +152,58 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
                          "No conflicts detected")
+
+    def test_dep_versions_per_toolchain_generation(self):
+        """
+        Check whether there's only one dependency version per toolchain generation actively used.
+        This is enforced to try and limit the chance of running into conflicts when multiple modules built with
+        the same toolchain are loaded together.
+        """
+        if self.ordered_specs is None:
+            self.process_all_easyconfigs()
+
+        def get_deps_for(ec):
+            """Recursively get all dependencies for a particular easyconfig."""
+            return [d['full_mod_name'] for d in ec['ec']['dependencies']]
+
+        def get_deps_for(ec):
+            """Get list of dependencies for easyconfig."""
+            deps = []
+            for dep in ec['ec']['dependencies']:
+                dep_mod_name = dep['full_mod_name']
+                deps.append((dep['name'], dep['version'], dep['versionsuffix'], dep_mod_name))
+                res = [x for x in self.ordered_specs if x['full_mod_name'] == dep_mod_name]
+                if len(res) == 1:
+                    deps.extend(get_deps_for(res[0]))
+                else:
+                    raise EasyBuildError("Failed to find %s in ordered list of easyconfigs", dep_mod_name)
+
+            return deps
+
+        for tc_gen in ['2018a']:
+            all_deps = {}
+            tc_gen_regex = re.compile('^.*-%s.*\.eb$' % tc_gen)
+
+            # collect variants for all dependencies of easyconfigs that use a toolchain that matches
+            for ec in self.ordered_specs:
+                ec_file = os.path.basename(ec['spec'])
+                if tc_gen_regex.match(ec_file):
+                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
+                        dep_variants = all_deps.setdefault(dep_name, {})
+                        dep_variants.setdefault((dep_ver, dep_versuff), set()).add(ec['full_mod_name'])
+
+            # check which dependencies have more than 1 variant
+            multi_deps = []
+            for dep in sorted(all_deps.keys()):
+                dep_vars = all_deps[dep]
+                if len(dep_vars) > 1:
+                    multi_deps.append(dep)
+                    multi_deps_msg = "found %s variants of '%s' dependency: " % (len(dep_vars), dep)
+                    multi_deps_msg += '; '.join("%s as dep for %s" % (x, y) for (x, y) in sorted(dep_vars.items()))
+                    sys.stderr.write('%s\n' % multi_deps_msg)
+
+            error_msg = "No deps found with >1 variant for easyconfigs using '%s' toolchain" % tc_gen_regex.pattern
+            self.assertFalse(multi_deps, error_msg)
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
