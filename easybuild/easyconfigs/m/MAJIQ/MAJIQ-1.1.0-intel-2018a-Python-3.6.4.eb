@@ -10,15 +10,13 @@ description = """MAJIQ and Voila are two software packages that together detect,
  local splicing variations (LSV) from RNA-Seq data."""
 
 toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True}
 
-source_urls = ['https://bitbucket.org/biociphers/majiq_stable/get/']
-sources = [{
-    'download_filename': '%s.tar.gz' % commit,
-    'filename': SOURCE_TAR_GZ,
-    'extract_cmd': "tar xfvz %s && mv *majiq_stable* majiq",
-}]
-checksums = ['442580354f13bd4679fc17e0db573d2f887a06e7f8588b38a9a4ab36be11b675']
-
+builddependencies = [
+    # older version of Cython required to work around "AttributeError: ... has no attribute '__reduce_cython__'
+    # see https://github.com/cython/cython/issues/1953
+    ('Cython', '0.25.2', versionsuffix),
+]
 dependencies = [
     ('Python', '3.6.4'),
     ('Pysam', '0.14', versionsuffix),
@@ -28,7 +26,16 @@ dependencies = [
 
 use_pip_editable = True
 
+exts_defaultclass = 'PythonPackage'
+
 exts_list = [
+    # need numpy installed with pip because MAJIQ is installed with pip -e
+    # see https://github.com/numpy/numpy/issues/6551
+    ('numpy', '1.14.1', {
+        'source_tmpl': 'numpy-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/n/numpy/'],
+        'checksums': ['fa0944650d5d3fb95869eaacd8eedbd2d83610c85e271bd9d3495ffa9bc4dc9c'],
+    }),
     ('Jinja2', '2.10', {
         'source_urls': ['https://pypi.python.org/packages/source/J/Jinja2/'],
         'checksums': ['f84be1bb0040caca4cea721fcbbbbd61f9be9464ca236387158b0feea01914a4'],
@@ -48,6 +55,12 @@ exts_list = [
     ('SQLAlchemy', '1.2.5', {
         'source_urls': ['https://pypi.python.org/packages/source/S/SQLAlchemy/'],
         'checksums': ['249000654107a420a40200f1e0b555a79dfd4eff235b2ff60bc77714bd045f2d'],
+    }),
+    (name, version, {
+        'source_urls': ['https://bitbucket.org/biociphers/majiq_stable/get/'],
+        'source_tmpl': '%s.tar.gz' % commit,
+        'extract_cmd': "tar xfvz %s && mv *majiq_stable* majiq",
+        'checksums': ['442580354f13bd4679fc17e0db573d2f887a06e7f8588b38a9a4ab36be11b675'],
     }),
 ]
 
