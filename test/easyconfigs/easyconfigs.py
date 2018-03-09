@@ -163,10 +163,6 @@ class EasyConfigTest(TestCase):
             self.process_all_easyconfigs()
 
         def get_deps_for(ec):
-            """Recursively get all dependencies for a particular easyconfig."""
-            return [d['full_mod_name'] for d in ec['ec']['dependencies']]
-
-        def get_deps_for(ec):
             """Get list of dependencies for easyconfig."""
             deps = []
             for dep in ec['ec']['dependencies']:
@@ -180,30 +176,46 @@ class EasyConfigTest(TestCase):
 
             return deps
 
-        for tc_gen in ['2018a']:
+        def check_dep_vars(dep, dep_vars):
+            """Check whether available variants of a particular dependency are acceptable or not."""
+            res = False
+            if len(dep_vars) == 1:
+                res = True
+            elif len(dep_vars) == 2 and dep in ['Python', 'Tkinter']:
+                print dep, dep_vars
+                # for Python & Tkinter, it's OK to have on 2.x and one 3.x version
+                v2_dep_vars = [x for x in dep_vars.keys() if x.startswith('version: 2.')]
+                v3_dep_vars = [x for x in dep_vars.keys() if x.startswith('version: 3.')]
+                if len(v2_dep_vars) == 1 and len(v3_dep_vars) == 1:
+                    res = True
+
+            return res
+
+        for pattern in ['-2018a']:
             all_deps = {}
-            tc_gen_regex = re.compile('^.*-%s.*\.eb$' % tc_gen)
+            regex = re.compile('^.*%s.*\.eb$' % pattern)
 
             # collect variants for all dependencies of easyconfigs that use a toolchain that matches
             for ec in self.ordered_specs:
                 ec_file = os.path.basename(ec['spec'])
-                if tc_gen_regex.match(ec_file):
+                if regex.match(ec_file):
                     for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
                         dep_variants = all_deps.setdefault(dep_name, {})
-                        dep_variants.setdefault((dep_ver, dep_versuff), set()).add(ec['full_mod_name'])
+                        key = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
+                        dep_variants.setdefault(key, set()).add(ec['full_mod_name'])
 
             # check which dependencies have more than 1 variant
-            multi_deps = []
+            multi_dep_vars, multi_dep_vars_msg = [], ''
             for dep in sorted(all_deps.keys()):
                 dep_vars = all_deps[dep]
-                if len(dep_vars) > 1:
-                    multi_deps.append(dep)
-                    multi_deps_msg = "found %s variants of '%s' dependency: " % (len(dep_vars), dep)
-                    multi_deps_msg += '; '.join("%s as dep for %s" % (x, y) for (x, y) in sorted(dep_vars.items()))
-                    sys.stderr.write('%s\n' % multi_deps_msg)
+                if not check_dep_vars(dep, dep_vars):
+                    multi_dep_vars.append(dep)
+                    multi_dep_vars_msg += "\nfound %s variants of '%s' dependency:\n* " % (len(dep_vars), dep)
+                    multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
+                    multi_dep_vars_msg += '\n'
 
-            error_msg = "No deps found with >1 variant for easyconfigs using '%s' toolchain" % tc_gen_regex.pattern
-            self.assertFalse(multi_deps, error_msg)
+            error_msg = "No multi-variant deps found for '%s' easyconfigs:\n%s" % (regex.pattern, multi_dep_vars_msg)
+            self.assertFalse(multi_dep_vars, error_msg)
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
