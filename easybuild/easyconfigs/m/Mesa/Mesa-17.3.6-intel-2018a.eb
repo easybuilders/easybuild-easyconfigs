@@ -1,0 +1,72 @@
+# Automatically converted from Mesa-17.2.4-intel-2017b.eb
+# Original message:
+# the purpose of the easyconfig is to build a Mesa for software rendering,
+# not hardware rendering. This means you want at least SSE4.2. We build:
+# - llvmpipe: the high-performance Gallium LLVM driver
+# - swr: Intel's OpenSWR
+# it will try to use the llvmpipe by default. It you want swr, do:
+# GALLIUM_DRIVER=swr
+
+easyblock = 'ConfigureMake'
+
+name = 'Mesa'
+version = '17.3.6'
+
+homepage = 'http://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+# swr detects and builds parts specific for AVX and AVX2. If we use
+# -xHost, this always gets overwritten and will fail.
+toolchainopts = {'optarch': False}
+
+source_urls = [
+    'https://mesa.freedesktop.org/archive/',
+    'https://mesa.freedesktop.org/archive/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+]
+sources = [SOURCELOWER_TAR_XZ]
+patches = ['Mesa-%(version)s_fix-strip-llvm-flags.patch']
+checksums = [
+    'e5915680d44ac9d05defdec529db7459ac9edd441c9845266eff2e2d3e57fbf8',  # mesa-17.3.6.tar.xz
+    '5aa4e92ed96e3d47ffbecd1ec3a1642407dff11995c5585eb5e06c396654ee30',  # Mesa-17.3.6_fix-strip-llvm-flags.patch
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.4'),
+    ('Autotools', '20170619'),
+    ('pkg-config', '0.29.2'),
+    ('Mako', '1.0.7', '-Python-2.7.14'),
+    ('libxml2', '2.9.7'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('nettle', '3.4'),
+    ('libdrm', '2.4.91'),
+    ('LLVM', '5.0.1'),
+    ('X11', '20180131'),
+]
+
+# GLU is not part anymore of Mesa package!
+configopts = " --disable-osmesa --enable-gallium-osmesa --enable-gallium-llvm --enable-glx --disable-dri"
+configopts += " --disable-gbm --disable-driglx-direct --with-gallium-drivers='swrast,swr' --disable-egl"
+configopts += " --with-osmesa-bits=32 --enable-texture-float --enable-llvm-shared-libs "
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['lib/libGL.%s' % SHLIB_EXT, 'lib/libOSMesa.%s' % SHLIB_EXT,
+              'lib/libGLESv1_CM.%s' % SHLIB_EXT, 'lib/libGLESv2.%s' % SHLIB_EXT,
+              'include/GL/glext.h', 'include/GL/gl_mangle.h',
+              'include/GL/glx.h', 'include/GL/osmesa.h',
+              'include/GL/gl.h', 'include/GL/glxext.h',
+              'include/GL/glx_mangle.h', 'include/GLES/gl.h',
+              'include/GLES2/gl2.h', 'include/GLES3/gl3.h'],
+    'dirs': []
+}
+
+moduleclass = 'vis'
