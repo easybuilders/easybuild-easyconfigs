@@ -1,0 +1,33 @@
+name = 'ABAQUS'
+version = '6.11.3'
+versionsuffix = '-linux-x86_64'
+
+homepage = 'http://www.simulia.com/products/abaqus_fea.html'
+description = """Finite Element Analysis software for modeling, visualization and best-in-class implicit and explicit
+ dynamics FEA."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+sources = [SOURCE_TGZ]
+
+builddependencies = [('Java', '1.8.0_121')]
+
+preinstallopts = "export CHECK_DISK_SPACE=OFF && "
+
+moduleclass = 'cae'
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ABAQUS_LICENSE_FILE","abaqus")
+if (not found) then
+        local error_message = [[
+        We did not find a suitable license for Abaqus. If you have access to one, you can create the file $HOME/.licenses/abaqus.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it.
+
+        Nous n'avons pas trouve de licence utilisable pour Abaqus. Si vous avez acces a une licence de Abaqus, vous pouvez creer le fichier $HOME/.licenses/abaqus.lic avec l'information de la licence. Si vous pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+        ]]
+        LmodError(error_message)
+elseif (path) then
+    -- load the license file which should contain Lua commands to set the license path
+    assert(loadfile(path))()
+end
+"""
