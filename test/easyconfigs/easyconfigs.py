@@ -202,7 +202,7 @@ class EasyConfigTest(TestCase):
             return res
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
-        for pattern in ['201[89][ab]', '20[29][0-9][ab]']:
+        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]']:
             all_deps = {}
             regex = re.compile('^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
