@@ -1,0 +1,63 @@
+easyblock = 'Bundle'
+
+name = 'CNVkit'
+version = '0.9.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://github.com/etal/cnvkit'
+description = """A command-line toolkit and Python library for detecting copy number variants and alterations
+ genome-wide from high-throughput sequencing."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('Biopython', '1.70', versionsuffix),
+    ('matplotlib', '2.1.0', versionsuffix),
+    ('Pysam', '0.14', versionsuffix),
+    ('Pillow', '5.0.0', versionsuffix),
+    ('R-bundle-Bioconductor', '3.6', '-R-3.4.3'),
+    ('hmmlearn', '0.2.0', versionsuffix),
+]
+
+exts_list = [
+    ('reportlab', '3.4.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/r/reportlab'],
+        'checksums': ['5beaf35e59dfd5ebd814fdefd76908292e818c982bd7332b5d347dfd2f01c343'],
+    }),
+    ('pyfaidx', '0.5.3.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pyfaidx'],
+        'checksums': ['d94d4254f79869bbf61c6d8673cfa3c042a8240b2565e9816302c224979e4b56'],
+    }),
+    ('future', '0.16.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/f/future'],
+        'checksums': ['e39ced1ab767b5936646cedba8bcce582398233d6a627067d4c6a454c90cfedb'],
+    }),
+    ('futures', '3.2.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/f/futures'],
+        'checksums': ['9ec02aa7d674acb8618afb127e27fde7fc68994c0437ad759fa094a574adb265'],
+        'modulename': 'concurrent.futures',
+    }),
+    (name, version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/etal/cnvkit/archive/'],
+        'checksums': ['7ecda8bd3dcc16abe4906124cf220ca007eaac21c0d5c092cbae2f6559e49722'],
+        'modulename': 'cnvlib',
+        'installopts': "&& cd test && make && make test",
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/cnvkit.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'bio'
