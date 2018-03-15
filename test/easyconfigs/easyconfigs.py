@@ -199,6 +199,13 @@ class EasyConfigTest(TestCase):
                 if len(v2_dep_vars) == 1 and len(v3_dep_vars) == 1:
                     res = True
 
+            # two variants is OK if one is for Python 2.x and the other is for Python 3.x (based on versionsuffix)
+            elif len(dep_vars) == 2:
+                py2_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-2.' in x]
+                py3_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-3.' in x]
+                if len(py2_dep_vars) == 1 and len(py3_dep_vars) == 1:
+                    res = True
+
             return res
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
