@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'arrow'
+version = '0.8.0'
+
+homepage = 'https://arrow.apache.org'
+description = """Apache Arrow is a cross-language development platform for in-memory data."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0' }
+
+sources = ['apache-arrow-%(version)s.tar.gz']
+source_urls = ['https://github.com/apache/arrow/archive/']
+
+dependencies = [
+	('zlib', '1.2.11'),
+]
+builddependencies = [
+	('Boost', '1.60.0'),
+    	('Python', '3.6.3'),
+	('SciPy-Stack', '2017b'),
+	('CMake', '3.9.5'),
+]
+
+preconfigopts = ["module load python/2.7 && ", "module load python/3.5 && ", "module load python/3.6 && "]
+
+cfg_opts = "-DARROW_PYTHON=ON -DARROW_PLASMA=ON -DARROW_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python "
+configopts = [
+	cfg_opts for i in preconfigopts
+]
+prebuildopts = ["module load python/2.7 && ", "module load python/3.5 && ", "module load python/3.6 && "]
+preinstallopts = ["module load python/2.7 && ", "module load python/3.5 && ", "module load python/3.6 && "]
+
+
+installopts = [
+	" && cd %(builddir)s/arrow-*/python && export PYARROW_CMAKE_OPTIONS=\"" + cfg_opts + "\" && export ARROW_HOME=%(installdir)s && export PYARROW_BUILD_TYPE=Release && mkdir -p %(installdir)s/lib/python2.7/site-packages && cp %(installdir)s/lib64/libarrow_python.so* %(installdir)s/lib/python2.7 && export PYTHONPATH=%(installdir)s/lib/python2.7/site-packages:$PYTHONPATH && python setup.py build && python setup.py install --prefix=%(installdir)s && python setup.py clean",
+	" && cd %(builddir)s/arrow-*/python && export PYARROW_CMAKE_OPTIONS=\"" + cfg_opts + "\" && export ARROW_HOME=%(installdir)s && export PYARROW_BUILD_TYPE=Release && mkdir -p %(installdir)s/lib/python3.5/site-packages && cp %(installdir)s/lib64/libarrow_python.so* %(installdir)s/lib/python3.5 && export PYTHONPATH=%(installdir)s/lib/python3.5/site-packages:$PYTHONPATH && python setup.py build && python setup.py install --prefix=%(installdir)s && python setup.py clean",
+	" && cd %(builddir)s/arrow-*/python && export PYARROW_CMAKE_OPTIONS=\"" + cfg_opts + "\" && export ARROW_HOME=%(installdir)s && export PYARROW_BUILD_TYPE=Release && mkdir -p %(installdir)s/lib/python3.6/site-packages && cp %(installdir)s/lib64/libarrow_python.so* %(installdir)s/lib/python3.6 && export PYTHONPATH=%(installdir)s/lib/python3.6/site-packages:$PYTHONPATH && python setup.py build && python setup.py install --prefix=%(installdir)s && python setup.py clean",
+]
+
+#configopts = "-DARROW_PYTHON=ON -DARROW_PLASMA=ON -DARROW_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python "
+
+postinstallcmds = [
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --path %(installdir)s/lib --add_path '$ORIGIN/../../..:$ORIGIN/../../../../../lib64'",
+]
+start_dir = 'cpp'
+separate_build_dir = True
+
+#exts_defaultclass = 'PythonPackage'
+
+#exts_list = [
+#    ('pyarrow', version, {  # The python bindings of Arrow
+#        'start_dir': 'python',
+#        'source_tmpl': sources[0],
+##        'buildcmd': 'build_ext',
+#        'buildopts': '--with-plasma --inplace --build-type=release',
+#    }),
+#]
+
+modextrapaths = {'EBPYTHONPREFIXES':''}
+
+sanity_check_paths = {
+    'files': ['lib64/libarrow_python.so', 'lib64/libarrow.so', 'lib64/libplasma.so'],
+    'dirs': ['include/arrow', 'include/plasma']
+}
+
+moduleclass = 'data'
