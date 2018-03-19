@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'BLASR'
+version = '5.3.0'
+
+homepage = 'https://github.com/PacificBiosciences/blasr'
+description = """ BLASR (Basic Local Alignment with Successive Refinement) rapidly maps 
+ reads to genomes by finding the highest scoring local alignment or set of local alignments 
+ between the read and the genome. Optimized for PacBio's extraordinarily long reads and 
+ taking advantage of rich quality values, BLASR maps reads rapidly with high accuracy. """
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+
+#Need to get the source through git with
+#git clone git://github.com/PacificBiosciences/blasr.git && cd blasr
+# git submodule update --init --remote
+# cd ..;tar -czf blasr-5.3.0.tar.gz blasr
+source_urls = ['https://github.com/PacificBiosciences/blasr']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+
+dependencies = [
+    ('HDF5', '1.8.18'),
+    ('HTSlib', '1.5'),
+    ('Boost', '1.60.0'),
+]
+
+separate_build_dir = True
+configopts = '-GNinja && ninja install'
+skipsteps = ['build','install']
+
+#binaries = ['blasr', 'utils/loadPulses', 'utils/pls2fasta', 'utils/samFilter', 'utils/samtoh5',
+#            'utils/samtom4', 'utils/sawriter', 'utils/sdpMatcher', 'utils/toAfg']
+#files_to_copy = [(binaries, 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/blasr', 
+              'bin/sawriter',  'bin/toAfg'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
