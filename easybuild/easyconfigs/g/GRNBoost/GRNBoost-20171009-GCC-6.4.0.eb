@@ -1,0 +1,33 @@
+easyblock = 'CmdCp'
+
+name = 'GRNBoost'
+version = '20171009'
+
+homepage = 'https://github.com/aertslab/GRNBoost'
+description = """GRNBoost is a library built on top of Apache Spark that implements a scalable strategy for gene regulatory network (GRN) inference. Inferring a gene regulatory network (GRN) from gene expression data is a computationally expensive task, exacerbated by increasing data sizes due to advances in high-throughput gene profiling technology.
+ GRNBoost was inspired by GENIE3, a popular algorithm for GRN inference. GENIE3 breaks up the inference problem into a number of tree-based ensemble (Random Forest) nonlinear regressions, building a predictive model for the expression profile of each gene in the dataset in function of the expression profiles of a collection of candidate regulatory genes (transcription factors). The regression models act as a feature selection mechanism, they yield the most predictive regulators for the target genes as candidate links in the resulting gene regulatory network.."""
+
+toolchain = {'name': 'GCC', 'version': '6.4.0'}
+
+commit = '26c836b'
+source_urls = ['https://github.com/aertslab/GRNBoost/archive/']
+sources = [{'download_filename': '%s.tar.gz' % commit, 'filename': SOURCE_TAR_GZ}]
+
+builddependencies = [('sbt', '1.1.1')]
+
+dependencies = [
+    ('Java', '1.8.0_121'),
+    ('XGBoost', '0.7'),
+    ('Spark', '2.3.0', 'compiled', ('dummy','')),
+]
+
+sbt_args = "-Dsbt.global.base=%(builddir)s/sbt -Dsbt.ivy.home=%(builddir)s/ivy2 -Divy.home=%(builddir)s/ivy2"
+cmds_map = [('.*', "sbt %s assembly" % sbt_args)]
+
+files_to_copy = ['target/scala-*/GRNBoost.jar']
+sanity_check_paths = {
+    'files': ['GRNBoost.jar'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
