@@ -1,0 +1,46 @@
+From 57bf75b454f5cccaf150dd969e617b9564434479 Mon Sep 17 00:00:00 2001
+From: Ralph Castain <rhc@open-mpi.org>
+Date: Fri, 15 Dec 2017 21:03:36 -0800
+Subject: [PATCH] Ensure that daemons NEVER initiate connections to childs
+
+A debugger can generate a release message prior to the proc having fully initialized and established a connection to the daemon. This causes the daemon to initiate the connection, which ultimately collides with the proc's connection and causes very bad things to happen.
+
+Signed-off-by: Ralph Castain <rhc@open-mpi.org>
+---
+ orte/mca/oob/usock/oob_usock.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/orte/mca/oob/usock/oob_usock.c b/orte/mca/oob/usock/oob_usock.c
+index ecf459fb51..a87a0af272 100644
+--- a/orte/mca/oob/usock/oob_usock.c
++++ b/orte/mca/oob/usock/oob_usock.c
+@@ -13,7 +13,7 @@
+  *                         All rights reserved.
+  * Copyright (c) 2009-2015 Cisco Systems, Inc.  All rights reserved.
+  * Copyright (c) 2011      Oak Ridge National Labs.  All rights reserved.
+- * Copyright (c) 2013-2016 Intel, Inc.  All rights reserved.
++ * Copyright (c) 2013-2017 Intel, Inc. All rights reserved.
+  * Copyright (c) 2016      Research Organization for Information Science
+  *                         and Technology (RIST). All rights reserved.
+  * $COPYRIGHT$
+@@ -283,7 +283,7 @@ static void process_send(int fd, short args, void *cbdata)
+             /* try this again after a delay for N times */
+             op->reps++;
+             if (20 < op->reps) {
+-            /* we don't know how to talk to this proc,
++                /* we don't know how to talk to this proc,
+                  * so send this back up to the OOB base so it
+                  * can try another transport
+                  */
+@@ -326,6 +326,11 @@ static void process_send(int fd, short args, void *cbdata)
+      */
+     MCA_OOB_USOCK_QUEUE_PENDING(op->msg, peer);
+ 
++    /* if we are the HNP or daemon, we NEVER initiate connections */
++    if (ORTE_PROC_IS_HNP || ORTE_PROC_IS_DAEMON) {
++        return;
++    }
++
+     if (MCA_OOB_USOCK_CONNECTING != peer->state &&
+         MCA_OOB_USOCK_CONNECT_ACK != peer->state) {
+         /* we have to initiate the connection - again, we do not
