@@ -5,10 +5,9 @@ env:
     - ENV_MOD_VERSION=3.2.10 EASYBUILD_MODULES_TOOL=EnvironmentModulesC EASYBUILD_MODULE_SYNTAX=Tcl
     - LMOD_VERSION=5.8
     - LMOD_VERSION=5.8 EASYBUILD_MODULE_SYNTAX=Tcl
-    - LMOD_VERSION=6.6.3
-    - LMOD_VERSION=6.6.3 EASYBUILD_MODULE_SYNTAX=Tcl
-    - LMOD_VERSION=7.0
-    - LMOD_VERSION=7.0 EASYBUILD_MODULE_SYNTAX=Tcl
+    - LMOD_VERSION=7.7.16
+    - LMOD_VERSION=7.7.16 EASYBUILD_MODULE_SYNTAX=Tcl
+    - ENV_MOD_VERSION=4.0.0 EASYBUILD_MODULES_TOOL=EnvironmentModules EASYBUILD_MODULE_SYNTAX=Tcl
 matrix:
   # mark build as finished as soon as job has failed
   fast_finish: true
@@ -20,6 +19,9 @@ addons:
   apt:
     packages:
       - tcl8.5
+      # for testing OpenMPI-system*eb we need to have Open MPI installed
+      - libopenmpi-dev
+      - openmpi-bin
 install:
     # pydot (dep for python-graph-dot) 1.2.0 and more recent doesn't work with Python 2.6
     - if [ "x$TRAVIS_PYTHON_VERSION" == 'x2.6' ]; then pip install pydot==1.1.0; else pip install pydot; fi
@@ -44,6 +46,11 @@ before_script:
     # pull in develop so we can diff against it to obtain list of touched files
     - if [ "x$TRAVIS_BRANCH" = 'xdevelop' ]; then git fetch -v origin ${TRAVIS_BRANCH}:${TRAVIS_BRANCH}; fi
 script:
+    # make sure 'ml' alias is defined, otherwise sourcing the init script fails (silently) for Lmod (< 5.9.3)
+    - if [ ! -z $MOD_INIT ] && [ ! -z $LMOD_VERSION ]; then alias ml=foobar; fi
+    # set up environment for modules tool (if $MOD_INIT is defined)
+    - if [ ! -z $MOD_INIT ]; then source $MOD_INIT; type module; fi
     - cd $HOME
     - export PYTHONPATH=$TRAVIS_BUILD_DIR
+    - export PATH=$TRAVIS_BUILD_DIR/test/bin:$PATH
     - python -O -m test.easyconfigs.suite

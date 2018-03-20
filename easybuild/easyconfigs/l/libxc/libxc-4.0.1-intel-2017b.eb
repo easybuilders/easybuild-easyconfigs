@@ -1,0 +1,30 @@
+easyblock = 'ConfigureMake'
+
+name = 'libxc'
+version = '4.0.1'
+
+homepage = 'http://www.tddft.org/programs/octopus/wiki/index.php/Libxc'
+description = """Libxc is a library of exchange-correlation functionals for density-functional theory.
+ The aim is to provide a portable, well tested and reliable set of exchange and correlation functionals."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+# Results for some functionals (e.g. mgga_c_tpss) deviate with too aggressive optimization settings.
+# Tests also fail with Intel Compilers on Haswell when optarch is enabled.
+toolchainopts = {'lowopt': True, 'optarch': False}
+
+source_urls = ['http://www.tddft.org/programs/octopus/down.php?file=libxc/%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['836cb2f529bb9d1979a347d4d5460bf9a18c64f39b8127e88f3004471a72ab30']
+
+configopts = 'FC="$F77" FCFLAGS="$FFLAGS" --enable-shared --enable-fortran'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['lib/libxc%s.%s' % (x, y) for x in ['', 'f90'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['include'],
+}
+
+parallel = 1
+
+moduleclass = 'chem'

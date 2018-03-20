@@ -11,15 +11,6 @@ toolchain = {'name': 'intel', 'version': '2017a'}
 sources = [SOURCE_TAR_GZ]
 source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
 
-preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
-configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=yes --enable-R-shlib"
-# Actually use Tcl/Tk
-configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
-# Enable graphics capabilities for plotting.
-configopts += " --with-cairo --with-libpng --with-jpeglib --with-libtiff"
-# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
-configopts += " --with-recommended-packages=no"
-
 dependencies = [
     ('X11', x11ver),
     ('Mesa', '17.0.2'),
@@ -53,6 +44,14 @@ dependencies = [
 
 osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
 
+configopts = "--with-pic --enable-threads --enable-R-shlib"
+# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
+configopts += " --with-recommended-packages=no"
+
+# specify that at least EasyBuild v3.5.0 is required,
+# since we rely on the updated easyblock for R to configure correctly w.r.t. BLAS/LAPACK
+easybuild_version = '3.5.0'
+
 name_tmpl = '%(name)s_%(version)s.tar.gz'
 ext_options = {
     'source_urls': [
@@ -79,7 +78,7 @@ exts_list = [
     'tools',
     'utils',
     # non-standard libraries, should be specified with fixed versions!
-    ('Rmpi', '0.6-6', ext_options),
+    ('Rmpi', '0.6-6', dict(ext_options.items() + [('patches', ['Rmpi-0.6-5_impi5.patch'])])),
     ('abind', '1.4-5', ext_options),
     ('magic', '1.5-6', ext_options),
     ('geometry', '0.3-6', dict(ext_options.items() + [('patches', ['geometry-0.3-4-icc.patch'])])),
@@ -535,6 +534,32 @@ exts_list = [
     ('sn', '1.5-0', ext_options),
     ('tclust', '1.2-7', ext_options),
     ('ranger', '0.8.0', ext_options),
+    ('hexbin', '1.27.1', ext_options),
+    ('crosstalk', '1.0.0', ext_options),
+    ('pryr', '0.1.2', ext_options),
+    ('moments', '0.14', ext_options),
+    ('forcats', '0.2.0', ext_options),
+    ('laeken', '0.4.6', ext_options),
+    ('VIM', '4.7.0', ext_options),
+    ('proxy', '0.4-17', ext_options),
+    ('smoother', '1.1', ext_options),
+    ('dynamicTreeCut', '1.63-1', ext_options),
+    ('DT', '0.2', ext_options),
+    ('beeswarm', '0.2.3', ext_options),
+    ('vipor', '0.4.5', ext_options),
+    ('ggbeeswarm', '0.6.0', ext_options),
+    ('shinydashboard', '0.6.1', ext_options),
+    ('rrcov', '1.4-3', ext_options),
+    ('WriteXLS', '4.0.0', ext_options),
+    ('mpath', '0.2-4', ext_options),
+    ('timereg', '1.9.1', ext_options),
+    ('peperr', '1.1-7', ext_options),
+    ('heatmap3', '1.1.1', ext_options),
+    ('GlobalOptions', '0.0.12', ext_options),
+    ('circlize', '0.4.1', ext_options),
+    ('GetoptLong', '0.1.6', ext_options),
+    ('dendextend', '1.5.2', ext_options),
+    ('RInside', '0.2.14', ext_options),
 ]
 
 moduleclass = 'lang'

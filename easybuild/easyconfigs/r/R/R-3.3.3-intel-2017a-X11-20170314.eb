@@ -11,15 +11,6 @@ toolchain = {'name': 'intel', 'version': '2017a'}
 sources = [SOURCE_TAR_GZ]
 source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
 
-preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
-configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=yes --enable-R-shlib"
-# actually use Tcl/Tk
-configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
-# Enable graphics capabilities for plotting.
-configopts += " --with-cairo --with-libpng --with-jpeglib --with-libtiff"
-# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
-configopts += " --with-recommended-packages=no"
-
 dependencies = [
     ('X11', x11ver),
     ('Mesa', '17.0.2'),
@@ -51,6 +42,14 @@ dependencies = [
 
 osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
 
+configopts = "--with-pic --enable-threads --enable-R-shlib"
+# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
+configopts += " --with-recommended-packages=no"
+
+# specify that at least EasyBuild v3.5.0 is required,
+# since we rely on the updated easyblock for R to configure correctly w.r.t. BLAS/LAPACK
+easybuild_version = '3.5.0'
+
 name_tmpl = '%(name)s_%(version)s.tar.gz'
 ext_options = {
     'source_urls': [
@@ -77,7 +76,7 @@ exts_list = [
     'tools',
     'utils',
     # non-standard libraries, should be specified with fixed versions!
-    ('Rmpi', '0.6-6', ext_options),
+    ('Rmpi', '0.6-6', dict(ext_options.items() + [('patches', ['Rmpi-0.6-5_impi5.patch'])])),
     ('abind', '1.4-5', ext_options),
     ('magic', '1.5-6', ext_options),
     ('geometry', '0.3-6', dict(ext_options.items() + [('patches', ['geometry-0.3-4-icc.patch'])])),
