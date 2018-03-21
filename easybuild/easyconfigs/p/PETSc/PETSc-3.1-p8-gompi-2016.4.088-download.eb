@@ -1,0 +1,47 @@
+name = 'PETSc'
+version = '3.1-p8'
+
+homepage = 'http://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'foss', 'version': '2016.4.088'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://ftp.mcs.anl.gov/pub/petsc/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+
+shared_libs = 1
+pic = 1
+
+downloadinstall = True
+
+dependencies = [
+  #  ('HDF5','1.8.18','-mpi', ('gompi',toolchain['version'])),
+  #FFTW requires the complex precision, use --with-scalar-type=complex option.
+  #However, "hypre" doesn't work with complex scalars, so I chose to omit FFTW 
+  #and the --with-scalar-type=complex option
+  #('FFTW','3.3.6','-mpi', ('gompi',toolchain['version']))
+]
+#'prometheus' had problems downloading, seems the URL in this version of PETSc is dead
+download_deps_static = ['mumps', 'ptscotch', 'superlu', 'superlu_dist', 'parmetis', 'metis', 'ml', 'suitesparse', 'hypre']
+download_deps = ['triangle']
+
+#add "--with-scalar-type=complex" option if including FFTW and not 'hypre'
+configopts=["--with-c++-support --with-c-support --with-shared --with-x11=no"]
+
+builddependencies = [('CMake', '3.5.2'),('Perl', '5.16.3')]
+
+prebuildopts = "export PETSC_DIR=`pwd` && "
+buildopts = "all test"
+preinstallopts = " export PETSC_DIR=`pwd` && "
+
+#postinstallcmds = ['cd %(installdir)s/lib/linux-gnu-c-debug && mv * ../']
+#skipsteps = ['test']
+
+moduleclass = 'numlib'
+
+modluafooter = """
+family("petsc")
+"""
+

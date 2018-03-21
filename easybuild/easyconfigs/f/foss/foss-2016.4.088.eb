@@ -1,0 +1,39 @@
+easyblock = 'Toolchain'
+
+name = 'foss'
+version = '2016.4.088'
+
+homepage = '(none)'
+description = """GNU Compiler Collection (GCC) based compiler toolchain, including
+ OpenMPI for MPI support, OpenBLAS (BLAS and LAPACK support), BLACS, FFTW and ScaLAPACK."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+gccver = '5.4.0'
+
+blaslib = 'OpenBLAS'
+blasver = '0.2.20'
+blas = '%s-%s' % (blaslib, blasver)
+blacslib = 'BLACS'
+blacsver = '1.1'
+
+# toolchain used to build foss dependencies
+comp_mpi_tc_name = 'gompi'
+comp_mpi_tc = (comp_mpi_tc_name, version)
+
+# we need GCC and OpenMPI as explicit dependencies instead of gompi toolchain
+# because of toolchain preparation functions
+# For binutils, stick to http://wiki.osdev.org/Cross-Compiler_Successful_Builds
+dependencies = [
+    ('GCC', gccver),
+    ('OpenMPI', '1.8.8', '', ('GCC', gccver)),
+    (blaslib, blasver, '', ('GCC', gccver)),
+    (blacslib, blacsver, '', comp_mpi_tc),
+    ('FFTW', '3.3.6', '-mpi', comp_mpi_tc),
+    ('ScaLAPACK', '1.8.0', '', comp_mpi_tc),
+    ('gompi', version),
+]
+
+hidden = True
+
+moduleclass = 'toolchain'
