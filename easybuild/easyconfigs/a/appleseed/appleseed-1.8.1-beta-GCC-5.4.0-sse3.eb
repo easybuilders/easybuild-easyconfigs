@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'appleseed'
+version = '1.8.1-beta'
+
+homepage = 'https://github.com/appleseedhq/appleseed'
+description = """appleseed is an open source, physically-based global illumination rendering engine primarily designed for animation and visual effects."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0' }
+
+source_urls = ['https://github.com/appleseedhq/appleseed/archive/']
+sources = ['%(version)s.tar.gz']
+
+separate_build_dir = True
+builddependencies = [('CMake', '3.9.1')]
+
+dependencies = [
+	('Boost', '1.60.0'),
+	('SeExpr', '2.11'),
+	('OpenColorIO', '1.0.9'),
+	('OpenImageIO', '1.8.7'),
+	('OpenEXR', '2.2.1'),
+	('OSL','1.9.6'),
+	('Qt', '4.8.7'),
+	('Xerces-C++', '3.1.1')
+]
+
+configopts = "-DQT_QMAKE_EXECUTABLE=$EBROOTQT/bin/qmake "
+configopts += "-DUSE_EXTERNAL_EXR=ON -DOPENEXR_INCLUDE_DIR=$EBROOTOPENEXR/include -DOPENEXR_IMF_LIBRARY=$EBROOTOPENEXR/lib/libIlmImf.so -DIMATH_IEX_LIBRARY=$EBROOTOPENEXR/lib/libIexMath-2_2.so -DIMATH_MATH_LIBRARY=$EBROOTOPENEXR/lib/libImath-2_2.so "
+configopts += "-DUSE_EXTERNAL_OCIO=ON -DOPENCOLORIO_INCLUDE_DIR=$EBROOTOPENCOLORIO/include -DOPENCOLORIO_LIBRARY=$EBROOTOPENCOLORIO/lib/libOpenColorIO.so "
+configopts += "-DUSE_EXTERNAL_OIIO=ON -DOPENIMAGEIO_OIIOTOOL=$EBROOTOPENIMAGEIO/bin/oiiotool -DOPENIMAGEIO_INCLUDE_DIR=$EBROOTOPENIMAGEIO/include -DOPENIMAGEIO_LIBRARY=$EBROOTOPENIMAGEIO/lib/libOpenImageIO.so "
+configopts += "-DUSE_EXTERNAL_OSL=ON -DOSL_MAKETX=$EBROOTOPENIMAGEIO/bin/maketx -DOSLC_COMPILER=$EBROOTOSSL/bin/oslc "
+configopts += "-DUSE_EXTERNAL_PNG=ON "
+configopts += "-DUSE_EXTERNAL_SEEXPR=ON "
+configopts += "-DUSE_EXTERNAL_XERCES=ON -DXERCES_INCLUDE_DIR=$EBROOTXERCESMINCPLUSPLUS/include -DXERCES_LIBRARY=$EBROOTXERCESMINCPLUSPLUS/lib/libxerces-c.so "
+configopts += "-DUSE_EXTERNAL_ZLIB=ON "
+postinstallcmds = ['mkdir -p %(installdir)s/studio/plugins', '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --path %(installdir)s --add_path $EBROOTQT/lib']
+
+sanity_check_paths = {
+    'files': ['bin/appleseed.studio', 'bin/appleseed.cli', 'lib/libappleseed.so' ],
+    'dirs': ['include/', 'share/'],
+}
+
+moduleclass = 'lib'
