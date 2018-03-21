@@ -1,0 +1,60 @@
+see https://savannah.gnu.org/bugs/?51088
+
+# HG changeset patch
+# User John W. Eaton <jwe@octave.org>
+# Date 1496161844 14400
+# Node ID 25817ecc61231f95ec492bd3780dbadb624be401
+# Parent  14b61de53028bcc38365553f762a3aac7f477cca
+avoid possible double free at interpreter exit (bug #51088)
+
+* symtab.cc (symbol_table::cleanup): Remove pointer to symbol table
+from all_instances map before deleting it.
+* symtab.h (symbol_table::erase_scope): Likewise.
+
+diff --git a/libinterp/corefcn/symtab.cc b/libinterp/corefcn/symtab.cc
+--- a/libinterp/corefcn/symtab.cc
++++ b/libinterp/corefcn/symtab.cc
+@@ -1627,15 +1627,19 @@
+   clear_all (true);
+ 
+   // Delete all possibly remaining scopes.
+-  for (all_instances_iterator iter = all_instances.begin ();
+-       iter != all_instances.end (); iter++)
++
++  while (! all_instances.empty ())
+     {
+-      // First zero the table entry to avoid possible duplicate delete.
++      // Note that deleting a scope may have side effects such as
++      // deleting other scopes.  If another scope is deleted, it may
++      // invalidate ITER, so erase this map element first.
++
++      all_instances_iterator iter = all_instances.begin ();
++
+       symbol_table *inst = iter->second;
+-      iter->second = 0;
+ 
+-      // Now delete the scope.  Note that there may be side effects, such as
+-      // deleting other scopes.
++      all_instances.erase (iter);
++
+       delete inst;
+     }
+ 
+diff --git a/libinterp/corefcn/symtab.h b/libinterp/corefcn/symtab.h
+--- a/libinterp/corefcn/symtab.h
++++ b/libinterp/corefcn/symtab.h
+@@ -1222,10 +1222,12 @@
+ 
+     if (p != all_instances.end ())
+       {
+-        delete p->second;
++        symbol_table *inst = p->second;
+ 
+         all_instances.erase (p);
+ 
++        delete inst;
++
+         free_scope (scope);
+       }
+   }
+
