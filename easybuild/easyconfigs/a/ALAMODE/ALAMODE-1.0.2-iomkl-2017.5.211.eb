@@ -1,0 +1,47 @@
+easyblock = 'MakeCp'
+
+name = 'ALAMODE'
+version = '1.0.2'
+
+homepage = 'http://alamode.readthedocs.io/en/latest/index.html'
+description = """ALAMODE is an open source software designed for analyzing lattice anharmonicity and lattice thermal conductivity of solids. By using an external DFT package such as VASP and Quantum ESPRESSO, you can extract harmonic and anharmonic force constants straightforwardly with ALAMODE. 
+ Using the calculated anharmonic force constants, you can also estimate lattice thermal conductivity, phonon linewidth, and other anharmonic phonon properties from first principles.
+ The binary alm is multi-threaded (OpenMP), add this command to your SLURM script:
+ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK"""
+
+toolchain = {'name': 'iomkl', 'version': '2017.5.211'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/ttadano/alamode/archive/']
+sources = ['v.%(version)s.tar.gz']
+
+patches = [
+    '%(namelower)s-v.%(version)s_configure_intel.patch',
+]
+
+dependencies = [
+    ('Boost', '1.65.1'),
+    ('Eigen', '3.3.2'),
+]
+
+parallel = 1
+
+binary_files = [
+    "alm/alm", "anphon/anphon", "tools/analyze_phonons", "tools/dfc2", "tools/qe2alm",
+    "tools/analyze_phonons.py", "tools/extract.py", "tools/plotdos.py", "tools/displace.py", 
+    "tools/plotband.py",
+]
+
+files_to_copy = [([x for x in binary_files], 'bin'), (['analyzer', 'docs', 'example'],'')]
+
+sanity_check_paths = {
+    'files': ['bin/alm'],
+    'dirs': ['analyzer', "docs", "example"]
+}
+
+modextrapaths = {'PATH': 'analyzer'}
+
+moduleclass = 'chem'
+modluafooter = """
+depends_on("python")
+"""
