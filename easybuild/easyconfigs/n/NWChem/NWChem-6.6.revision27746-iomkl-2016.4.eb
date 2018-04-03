@@ -1,7 +1,7 @@
 name = 'NWChem'
 version = '6.6.revision27746'
 verdate = '2015-10-20'
-versionsuffix = '-%s-Python-%%(pyver)s' % verdate
+#versionsuffix = '-%s-Python-%%(pyver)s' % verdate
 
 homepage = 'http://www.nwchem-sw.org'
 description = """NWChem aims to provide its users with computational chemistry tools that are scalable both in
@@ -44,7 +44,7 @@ patches = [
     'NWChem-%(version)s-GNUmakefile.patch',
 ]
 
-dependencies = [('Python', '2.7.13')]
+builddependencies = [('Python', '2.7.14')]
 
 # This easyconfig is using the default for armci_network (OPENIB) and
 # thus needs infiniband libraries.
@@ -57,3 +57,35 @@ osdependencies = [
 modules = 'all python'
 
 moduleclass = 'chem'
+modluafooter = """
+depends_on("python/2.7")
+
+if mode() == "load" then
+	local posix = require "posix"
+	require "io"
+	require "os"
+
+	create_file_message = [[
+	Creating .nwchemrc ...
+	]]
+
+	local home = os.getenv("HOME")
+	local file = home .. "/.nwchemrc" 
+	local default = root .. "/data/default.nwchemrc"
+
+	if (posix.stat(file,"type") == 'regular') then
+		return
+	else
+		LmodMessage(create_file_message)
+		infile = io.open(default, "r")
+		instr = infile:read("*a")
+		infile:close()
+	
+		local outfile = io.open(file, "w")
+		if outfile then
+			outfile:write(instr)
+			outfile:close()
+		end
+	end
+end
+"""
