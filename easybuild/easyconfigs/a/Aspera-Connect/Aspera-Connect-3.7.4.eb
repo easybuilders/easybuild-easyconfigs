@@ -1,0 +1,34 @@
+easyblock = 'Binary'
+
+name = 'Aspera-Connect'
+version = '3.7.4'
+
+homepage = 'http://downloads.asperasoft.com/connect2/'
+description = """Commandline client for the high-speed Aspera data transfer protocol."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+source_urls = ['http://download.asperasoft.com/download/sw/connect/%(version)s/']
+sources = ['%(namelower)s-%(version)s.141527-linux-64.sh']
+checksums = ['37e667b90217fa6c00a61c0329637afa']
+
+# install script has ~/.aspera/connect hardcoded, but this can be overridden by redefining $HOME
+install_cmd = "HOME=%(builddir)s && "
+install_cmd += "./%(namelower)s-%(version)s.*.sh && "
+install_cmd += "cp -a %(builddir)s/.aspera/connect/* %(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ascp', 'asperaconnect', 'asperaconnect.bin', 'asperacrypt', 'asunprotect']],
+    'dirs': ['lib', 'etc'],
+}
+
+moduleclass = 'tools'
+modloadmsg = """
+===================================================================================================
+INFO: Keys and certificates distributed with Aspera Connect 
+      can be found in ${EBROOTASPERAMINCONNECT}/etc/.
+INFO: E.g. to use the asperaweb_id_dsa.openssh private key specify:
+
+      ascp -i ${EBROOTASPERAMINCONNECT}/etc/asperaweb_id_dsa.openssh [args] [source] [destination]
+===================================================================================================
+"""
