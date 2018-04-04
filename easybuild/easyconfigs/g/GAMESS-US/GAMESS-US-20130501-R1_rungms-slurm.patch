@@ -1,0 +1,99 @@
+This patch adds support for the SLURM scheduler (without removing support for
+the PBS or SGE schedulers).
+
+Written by Benjamin Roberts, New Zealand eScience Infrastructure
+University of Auckland, Auckland, New Zealand
+--- gamess.orig/rungms	2013-05-18 04:15:11.000000000 +1200
++++ gamess/rungms	2015-04-16 13:52:09.080836287 +1200
+@@ -86,6 +86,7 @@
+                       set SCHED=none
+ if ($?PBS_O_LOGNAME)  set SCHED=PBS
+ if ($?SGE_O_LOGNAME)  set SCHED=SGE
++if ($?SLURM_JOB_ID)   set SCHED=SLURM
+ if ($SCHED == SGE) then
+    set SCR=$TMPDIR
+    echo "SGE has assigned the following compute nodes to this run:"
+@@ -96,6 +97,13 @@
+    echo "PBS has assigned the following compute nodes to this run:"
+    uniq $PBS_NODEFILE
+ endif
++if ($SCHED == SLURM) then
++   # SCR is for large binary temporary files. Accordingly, it should only be
++   # set to a network file system if the connection to that file system is fast.
++   #set SCR=/path/to/scratch/directory
++   echo "SLURM has assigned the following compute nodes to this run:"
++   scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq
++endif
+ #
+ echo "Available scratch disk space (Kbyte units) at beginning of the job is"
+ df -k $SCR
+@@ -586,14 +594,17 @@
+              # Parallel run gets node names from schedular's assigned list:
+       if ($SCHED == SGE) then
+          uniq $TMPDIR/machines $HOSTFILE
+-         set NNODES=`wc -l $HOSTFILE`
+-         set NNODES=$NNODES[1]
+-      endif
+-      if ($SCHED == PBS) then
++      else if ($SCHED == PBS) then
+          uniq $PBS_NODEFILE $HOSTFILE
+-         set NNODES=`wc -l $HOSTFILE`
+-         set NNODES=$NNODES[1]
++      else if ($SCHED == SLURM) then
++         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
++      else
++         echo "Don't know how to get node names for scheduler '$SCHED'."
++         echo "Trying to run parallel tasks on current host ..."
++         echo `hostname` >> $HOSTFILE
+       endif
++      set NNODES=`wc -l $HOSTFILE`
++      set NNODES=$NNODES[1]
+    endif
+    #           uncomment next lines if you need to debug host configuration.
+    #--echo '-----debug----'
+@@ -743,6 +754,7 @@
+       setenv I_MPI_STATS 0
+       setenv I_MPI_FABRICS dapl
+       setenv I_MPI_DAT_LIBRARY libdat2.so
++      unsetenv I_MPI_PMI_LIBRARY
+       #      in case someone wants to try the "tag matching interface",
+       #      an option which unfortunately ignores the WAIT_MODE in 4.0.2!
+       #--setenv I_MPI_FABRICS tmi
+@@ -825,8 +837,12 @@
+          unset echo
+       endif
+       set echo
+-      mpiexec.hydra -f $PROCFILE -n $NPROCS \
++      if ($SCHED == SLURM && $USE_RDMA == False) then
++         srun $GMSPATH/gamess.$VERNO.x < /dev/null
++      else
++         mpiexec.hydra -f $PROCFILE -n $NPROCS \
+             $GMSPATH/gamess.$VERNO.x < /dev/null
++      endif
+       unset echo
+       breaksw
+    #
+@@ -898,14 +914,17 @@
+              # Parallel run gets node names from schedular's assigned list:
+       if ($SCHED == SGE) then
+          uniq $TMPDIR/machines $HOSTFILE
+-         set NNODES=`wc -l $HOSTFILE`
+-         set NNODES=$NNODES[1]
+-      endif
+-      if ($SCHED == PBS) then
++      else if ($SCHED == PBS) then
+          uniq $PBS_NODEFILE $HOSTFILE
+-         set NNODES=`wc -l $HOSTFILE`
+-         set NNODES=$NNODES[1]
++      else if ($SCHED == SLURM) then
++         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
++      else
++         echo "Don't know how to get node names for scheduler '$SCHED'."
++         echo "Trying to run parallel tasks on current host ..."
++         echo `hostname` >> $HOSTFILE
+       endif
++      set NNODES=`wc -l $HOSTFILE`
++      set NNODES=$NNODES[1]
+    endif
+    #           uncomment next lines if you need to debug host configuration.
+    #--echo '-----debug----'
