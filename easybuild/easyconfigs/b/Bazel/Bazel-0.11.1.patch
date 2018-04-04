@@ -1,0 +1,97 @@
+diff -Nru bazel-0.11.1.orig/tools/cpp/CROSSTOOL bazel-0.11.1/tools/cpp/CROSSTOOL
+--- bazel-0.11.1.orig/tools/cpp/CROSSTOOL	2018-03-06 18:32:16.000000000 +0000
++++ bazel-0.11.1/tools/cpp/CROSSTOOL	2018-03-30 14:36:36.212648137 +0000
+@@ -105,34 +105,33 @@
+   target_system_name: "local"
+   toolchain_identifier: "local_linux"
+ 
+-  tool_path { name: "ar" path: "/usr/bin/ar" }
+-  tool_path { name: "compat-ld" path: "/usr/bin/ld" }
+-  tool_path { name: "cpp" path: "/usr/bin/cpp" }
+-  tool_path { name: "dwp" path: "/usr/bin/dwp" }
+-  tool_path { name: "gcc" path: "/usr/bin/gcc" }
++  tool_path { name: "ar" path: "$NIXUSER_PROFILE/bin/ar" }
++  tool_path { name: "compat-ld" path: "$NIXUSER_PROFILE/bin/ld" }
++  tool_path { name: "cpp" path: "$NIXUSER_PROFILE/bin/cpp" }
++  tool_path { name: "dwp" path: "$NIXUSER_PROFILE/bin/dwp" }
++  tool_path { name: "gcc" path: "$NIXUSER_PROFILE/bin/gcc" }
+   cxx_flag: "-std=c++0x"
+   linker_flag: "-lstdc++"
+-  linker_flag: "-B/usr/bin/"
++  linker_flag: "-B$NIXUSER_PROFILE/bin/"
+ 
+   # TODO(bazel-team): In theory, the path here ought to exactly match the path
+   # used by gcc. That works because bazel currently doesn't track files at
+   # absolute locations and has no remote execution, yet. However, this will need
+   # to be fixed, maybe with auto-detection?
+-  cxx_builtin_include_directory: "/usr/lib/gcc/"
+-  cxx_builtin_include_directory: "/usr/local/include"
+-  cxx_builtin_include_directory: "/usr/include"
+-  tool_path { name: "gcov" path: "/usr/bin/gcov" }
++  cxx_builtin_include_directory: "$NIXUSER_PROFILE/lib/gcc/"
++  cxx_builtin_include_directory: "$NIXUSER_PROFILE/include"
++  tool_path { name: "gcov" path: "$NIXUSER_PROFILE/bin/gcov" }
+ 
+   # C(++) compiles invoke the compiler (as that is the one knowing where
+   # to find libraries), but we provide LD so other rules can invoke the linker.
+-  tool_path { name: "ld" path: "/usr/bin/ld" }
++  tool_path { name: "ld" path: "$NIXUSER_PROFILE/bin/ld" }
+ 
+-  tool_path { name: "nm" path: "/usr/bin/nm" }
+-  tool_path { name: "objcopy" path: "/usr/bin/objcopy" }
++  tool_path { name: "nm" path: "$NIXUSER_PROFILE/bin/nm" }
++  tool_path { name: "objcopy" path: "$NIXUSER_PROFILE/bin/objcopy" }
+   objcopy_embed_flag: "-I"
+   objcopy_embed_flag: "binary"
+-  tool_path { name: "objdump" path: "/usr/bin/objdump" }
+-  tool_path { name: "strip" path: "/usr/bin/strip" }
++  tool_path { name: "objdump" path: "$NIXUSER_PROFILE/bin/objdump" }
++  tool_path { name: "strip" path: "$NIXUSER_PROFILE/bin/strip" }
+ 
+   # Anticipated future default.
+   unfiltered_cxx_flag: "-no-canonical-prefixes"
+diff -Nru bazel-0.11.1.orig/tools/cpp/unix_cc_configure.bzl bazel-0.11.1/tools/cpp/unix_cc_configure.bzl
+--- bazel-0.11.1.orig/tools/cpp/unix_cc_configure.bzl	2018-03-06 18:32:16.000000000 +0000
++++ bazel-0.11.1/tools/cpp/unix_cc_configure.bzl	2018-03-30 14:26:16.752526826 +0000
+@@ -82,7 +82,7 @@
+   """Find a tool for repository, taking overriden tools into account."""
+   if tool in overriden_tools:
+     return overriden_tools[tool]
+-  return which(repository_ctx, tool, "/usr/bin/" + tool)
++  return which(repository_ctx, tool, "$NIXUSER_PROFILE/bin/" + tool)
+ 
+ def _get_tool_paths(repository_ctx, darwin, cc, overriden_tools):
+   """Compute the path to the various tools. Doesn't %-escape the result!"""
+@@ -98,8 +98,8 @@
+               "strip",
+           ]}.items() + {
+               "gcc": cc,
+-              "ar": "/usr/bin/libtool"
+-                    if darwin else which(repository_ctx, "ar", "/usr/bin/ar")
++              "ar": "$NIXUSER_PROFILE/bin/libtool"
++                    if darwin else which(repository_ctx, "ar", "$NIXUSER_PROFILE/bin/ar")
+           }.items())
+ 
+ 
+@@ -249,8 +249,8 @@
+           "dynamic_lookup",
+           "-headerpad_max_install_names",
+           ] if darwin else bin_search_flag + [
+-              # Always have -B/usr/bin, see https://github.com/bazelbuild/bazel/issues/760.
+-              "-B/usr/bin",
++              # Always have -B$NIXUSER_PROFILE/bin, see https://github.com/bazelbuild/bazel/issues/760.
++              "-B$NIXUSER_PROFILE/bin",
+               # Gold linker only? Can we enable this by default?
+               # "-Wl,--warn-execstack",
+               # "-Wl,--detect-odr-violations"
+@@ -278,8 +278,8 @@
+           "-Wall",
+           # Enable a few more warnings that aren't part of -Wall.
+       ] + (["-Wthread-safety", "-Wself-assign"] if darwin else bin_search_flag + [
+-          # Always have -B/usr/bin, see https://github.com/bazelbuild/bazel/issues/760.
+-          "-B/usr/bin",
++          # Always have -B$NIXUSER_PROFILE/bin, see https://github.com/bazelbuild/bazel/issues/760.
++          "-B$NIXUSER_PROFILE/bin",
+       ]) + (
+           # Disable problematic warnings.
+           _add_option_if_supported(repository_ctx, cc, "-Wunused-but-set-parameter") +
