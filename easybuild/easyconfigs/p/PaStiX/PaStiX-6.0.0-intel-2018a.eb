@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'PaStiX'
+version = '6.0.0'
+
+homepage = 'http://pastix.gforge.inria.fr/'
+description = """PaStiX (Parallel Sparse matriX package) is a scientific library that provides a high performance
+ parallel solver for very large sparse linear systems based on direct methods."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://gforge.inria.fr/frs/download.php/file/37244/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = [
+    '1dc37475964d7baa0df30c5909bfdf459dd0db66b866f9d9f566ab6fd7e12d7f',  # pastix-6.0.0.tar.gz
+    '2b898a2bc8c5e97272fa61c8365f6332222813fc02ea4188cbad089e72f50e92',  # pastix-intel.patch
+]
+
+patches = ['pastix-intel.patch']
+
+builddependencies = [
+    ('CMake', '3.9.1')
+]
+
+dependencies = [
+    ('hwloc', '1.11.8', '', ('GCCcore', '6.4.0')),
+    ('SCOTCH', '6.0.4', '', ('intel', '2018a')),
+]
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DPASTIX_INT64=OFF '
+configopts += '-DPASTIX_WITH_MPI=ON -DBUILD_DOCMENTATION=ON'
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['bin/pastix_env.sh', 'lib/libpastix.so', 'lib/pkgconfig/pastix.pc', 'include/pastix.h'],
+    'dirs': ['bin', 'examples', 'include', 'lib'],
+}
+
+moduleclass = 'math'

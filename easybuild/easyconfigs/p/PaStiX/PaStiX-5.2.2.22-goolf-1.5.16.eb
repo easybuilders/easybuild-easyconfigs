@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'PaStiX'
+version = '5.2.2.22'
+
+homepage = 'http://pastix.gforge.inria.fr/'
+description = """PaStiX (Parallel Sparse matriX package) is a scientific library that provides a high performance
+ parallel solver for very large sparse linear systems based on direct methods."""
+
+toolchain = {'name': 'goolf', 'version': '1.5.16'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://gforge.inria.fr/frs/download.php/file/35070/']
+sources = ['%(namelower)s_%(version)s.tar.bz2']
+checksums = [
+    '30f771a666719e6b116f549a6e4da451beabab99c2ecabc0745247c3654acbed',  # pastix_5.2.2.22.tar.bz2
+    '382311f53e855f19962abd0dfd4b543d734383f40f2fbeed586a2a6e1a6ff5d2',  # pastix-memory.patch
+]
+
+patches = ['pastix-memory.patch']
+
+dependencies = [
+    ('hwloc', '1.8.1', '', ('GCC', '4.8.3')),
+    ('SCOTCH', '6.0.4'),
+]
+
+skipsteps = ['configure']
+
+start_dir = 'src'
+
+prebuildopts = "cp -a config/LINUX-GNU.in config.in && "
+buildopts = 'BLASLIB="-L$BLAS_LIB_DIR $LIBBLAS" HWLOC_HOME=$EBROOTHWLOC SCOTCH_HOME=$EBROOTSCOTCH '
+# take control over compiler flags
+buildopts += 'CCFOPT="$CFLAGS -DMEMORY_USAGE -DWITH_SCOTCH" '
+
+runtest = "examples && ./example/bin/simple -lap 100"
+
+installopts = "PREFIX=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/pastix-conf', 'lib/libmatrix_driver.a', 'lib/libpastix.a', 'lib/libpastix_murge.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
