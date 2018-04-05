@@ -1,0 +1,55 @@
+easyblock = 'MakeCp'
+
+name = 'YAeHMOP'
+version = '3.0.3'
+
+homepage = 'http://yaehmop.sourceforge.net/'
+description = """"Yet Another extended Huckel Molecular Orbital Package (YAeHMOP) was developed by 
+ Greg Landrum whilest a graduate student in the research group of Professor Roald Hoffmann at Cornell 
+ University. YAeHMOP is intended to be an easy to use, transparent, extended Huckel calculation and 
+ visualization package which can perform calculations on both molecular and extended materials in 1,2, 
+ or 3 dimensions."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4'}
+
+source_urls = ['https://sourceforge.net/projects/yaehmop/files/yaehmop-all/%(versions)s/']
+sources = ['%(namelower)s.%(version)s.src.tar.gz']
+
+patches = [
+    '%(namelower)s-%(version)s_configure_intel.patch',
+]
+
+prebuildopts  = " mkdir -p %(installdir)s/etc && "
+prebuildopts += " cp tightbind/*.dat %(installdir)s/etc/ && "
+prebuildopts += " cp viewkel/*.dat %(installdir)s/etc/ && "
+prebuildopts += " export PARM_FILE_LOC=%(installdir)s/etc && "
+
+parallel = 1
+
+binary_files_kpoints = [
+     "bc_ortho", "btet", "chain", "crect", "fcc", "hex2d", "hex3d", 
+     "kpointer", "portho", "prect", "ptet", "rhom", "sc", "square",
+]
+
+binary_files_utils = [
+     "fit_dos", "fit_coop", "fit_walsh", "sub_dos", "matrix_view",
+     "add_dos", "cooperate", "fit_FCO", "dumb_walsh",
+]
+
+files_to_copy = [
+     (["docs", "examples"], ''),
+     ((["kpoints/%s" % x for x in binary_files_kpoints]), "bin"),
+     ((["tightbind/utils/%s" % x for x in binary_files_utils]), "bin"),
+     (["viewkel/viewkel", "tightbind/bind"], "bin"),
+     (["tightbind/*.dat", "viewkel/*.dat"], 'etc'),
+]
+
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in binary_files_kpoints], ['bin/%s' % x for x in binary_files_utils]],
+    'dirs': ['bin', 'etc', 'docs', 'examples'],
+}
+
+modextrapaths = {'PATH': 'etc'}
+modextravars =  {'PARM_FILE_LOC': '%(installdir)s/etc'}
+
+moduleclass = 'phys'
