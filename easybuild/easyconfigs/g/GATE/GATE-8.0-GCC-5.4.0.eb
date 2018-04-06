@@ -1,0 +1,47 @@
+name = 'GATE'
+version = '8.0'
+
+homepage = 'http://www.opengatecollaboration.org/'
+description = """GATE is an advanced opensource software developed by the international OpenGATE collaboration and
+ dedicated to the numerical simulations in medical imaging. It currently supports simulations of Emission Tomography
+ (Positron Emission Tomography - PET and Single Photon Emission Computed Tomography - SPECT), and Computed Tomography"""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+toolchainopts = {'openmp': True}
+
+sources = [{
+    'filename': '%(namelower)s_v%(version)s.tar.gz',
+    'extract_cmd': "tar xfvz %s",
+}]
+
+source_urls = ['http://www.opengatecollaboration.org/sites/default/files/']
+
+patches = [
+    '%(name)s-%(version)s_Makefile-prefix.patch',
+]
+
+dependencies = [
+    ('Geant4', '10.02.p03'),
+    ('CLHEP', '2.3.1.1'),
+    ('ROOT', '5.34.36'),
+]
+
+builddependencies = [('CMake', '3.7.2')]
+
+preconfigopts  = " export Geant4_DIR=$EBROOTGEANT4 && "
+preconfigopts += " export ROOTCINT_EXECUTABLE=$EBROOTROOT/bin/rootcint && "
+preconfigopts += " export ROOT_CONFIG_EXECUTABLE=$EBROOTROOT/bin/root-config && "
+preconfigopts += " export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$EBROOTROOT/lib && "
+preconfigopts += " export CPATH=$CPATH:$EBROOTROOT/include && "
+
+configopts  = '-DBUILD_TESTING=ON '
+configopts += '-DCMAKE_GATE_DOWNLOAD_BENCHMARKS_DATA=ON '
+configopts += '-DCMAKE_GATE_USE_ECAT7=ON '
+configopts += '-DCMAKE_GATE_USE_GPU=OFF '
+configopts += '-DCMAKE_GATE_USE_ITK=ON '
+configopts += '-DCMAKE_GATE_USE_RTK=ON '
+configopts += '-DCMAKE_GATE_USE_STDC11=ON '
+configopts += '-DCMAKE_GATE_USE_DAVIS=ON '
+configopts += '-DCMAKE_GEANT4_USE_SYSTEM_CLHEP=OFF '
+
+moduleclass = 'cae'
