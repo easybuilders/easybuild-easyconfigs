@@ -51,6 +51,7 @@ from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, lette
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import build_option
 from easybuild.tools.filetools import write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
@@ -65,6 +66,7 @@ from easybuild.tools.options import set_tmpdir
 # and that bigger tests (building dep graph, testing for conflicts, ...) can be run as well
 # other than optimizing for time, this also helps to get around problems like http://bugs.python.org/issue10949
 single_tests_ok = True
+
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
@@ -150,6 +152,100 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
                          "No conflicts detected")
+
+    def test_dep_versions_per_toolchain_generation(self):
+        """
+        Check whether there's only one dependency version per toolchain generation actively used.
+        This is enforced to try and limit the chance of running into conflicts when multiple modules built with
+        the same toolchain are loaded together.
+        """
+        if self.ordered_specs is None:
+            self.process_all_easyconfigs()
+
+        def get_deps_for(ec):
+            """Get list of (direct) dependencies for specified easyconfig."""
+            deps = []
+            for dep in ec['ec']['dependencies']:
+                dep_mod_name = dep['full_mod_name']
+                deps.append((dep['name'], dep['version'], dep['versionsuffix'], dep_mod_name))
+                res = [x for x in self.ordered_specs if x['full_mod_name'] == dep_mod_name]
+                if len(res) == 1:
+                    deps.extend(get_deps_for(res[0]))
+                else:
+                    raise EasyBuildError("Failed to find %s in ordered list of easyconfigs", dep_mod_name)
+
+            return deps
+
+        def check_dep_vars(dep, dep_vars):
+            """Check whether available variants of a particular dependency are acceptable or not."""
+
+            # 'guilty' until proven 'innocent'
+            res = False
+
+            # filter out binutils with empty versionsuffix which is used to build toolchain compiler
+            if dep == 'binutils':
+                empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
+                if len(empty_vsuff_vars) == 1:
+                    dep_vars = [(k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0]]
+            # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
+            elif dep in ['FFTW', 'imkl']:
+                serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
+                if len(serial_vsuff_vars) == 1:
+                    dep_vars = [(k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0]]
+
+            # only single variant is always OK
+            if len(dep_vars) == 1:
+                res = True
+
+            elif len(dep_vars) == 2 and dep in ['Python', 'Tkinter']:
+                # for Python & Tkinter, it's OK to have on 2.x and one 3.x version
+                v2_dep_vars = [x for x in dep_vars.keys() if x.startswith('version: 2.')]
+                v3_dep_vars = [x for x in dep_vars.keys() if x.startswith('version: 3.')]
+                if len(v2_dep_vars) == 1 and len(v3_dep_vars) == 1:
+                    res = True
+
+            # two variants is OK if one is for Python 2.x and the other is for Python 3.x (based on versionsuffix)
+            elif len(dep_vars) == 2:
+                py2_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-2.' in x]
+                py3_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-3.' in x]
+                if len(py2_dep_vars) == 1 and len(py3_dep_vars) == 1:
+                    res = True
+
+            return res
+
+        # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
+        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]']:
+            all_deps = {}
+            regex = re.compile('^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
+
+            # collect variants for all dependencies of easyconfigs that use a toolchain that matches
+            for ec in self.ordered_specs:
+                ec_file = os.path.basename(ec['spec'])
+                res = regex.match(ec_file)
+                if res:
+                    tc_gen = res.group('tc_gen')
+                    all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
+                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
+                        dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
+                        # a variant is defined by version + versionsuffix
+                        variant = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
+                        # keep track of which easyconfig this is a dependency
+                        dep_variants.setdefault(variant, set()).add(ec_file)
+
+            # check which dependencies have more than 1 variant
+            multi_dep_vars, multi_dep_vars_msg = [], ''
+            for tc_gen in sorted(all_deps.keys()):
+                for dep in sorted(all_deps[tc_gen].keys()):
+                    dep_vars = all_deps[tc_gen][dep]
+                    if not check_dep_vars(dep, dep_vars):
+                        multi_dep_vars.append(dep)
+                        multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
+                        multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
+                        multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
+                        multi_dep_vars_msg += '\n'
+
+            error_msg = "No multi-variant deps found for '%s' easyconfigs:\n%s" % (regex.pattern, multi_dep_vars_msg)
+            self.assertFalse(multi_dep_vars, error_msg)
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
