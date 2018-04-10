@@ -1,0 +1,372 @@
+#Adapted upstream development patch d4d41d94a
+#which adds a 27, 35 or 36 suffix to libboost_python*
+# Apr 10th 2018 by Bart Oldeman (Compute Canada - Calcul Quebec - McGill)
+diff --git a/libs/python/Jamfile b/libs/python/Jamfile
+new file mode 100644
+index 000000000..3a35dde04
+--- /dev/null
++++ b/libs/python/Jamfile
+@@ -0,0 +1,68 @@
++# Copyright (c) 2018 Stefan Seefeld
++# All rights reserved.
++#
++# Distributed under the Boost Software License, Version 1.0.
++# (See accompanying file LICENSE_1_0.txt or copy at
++# http://www.boost.org/LICENSE_1_0.txt)
++
++import option ;
++import regex ;
++import python ;
++
++#
++# The `version-suffix` rule really belongs into python.jam, and
++# should be moved there. `split-version` is only duplicated here
++# as a prerequisite. (See https://github.com/boostorg/build/pull/290)
++#
++
++
++# Validate the version string and extract the major/minor part we care about.
++#
++local rule split-version ( version )
++{
++    local major-minor = [ MATCH "^([0-9]+)\.([0-9]+)(.*)$" : $(version) : 1 2 3 ] ;
++    if ! $(major-minor[2]) || $(major-minor[3])
++    {
++        ECHO "Warning: \"using python\" expects a two part (major, minor) version number; got" $(version) instead ;
++
++        # Add a zero to account for the missing digit if necessary.
++        major-minor += 0 ;
++    }
++
++    return $(major-minor[1]) $(major-minor[2]) ;
++}
++
++# Define a version suffix for libraries depending on Python.
++# For example, Boost.Python built for Python 2.7 uses the suffix "27"
++rule version-suffix ( version )
++{
++    local major-minor = [ split-version $(version) ] ;
++    local suffix = $(major-minor:J="") ;
++    return $(suffix) ;
++}
++
++
++# Python build id (for Python libraries only).
++python-id = [ option.get "python-buildid" ] ;
++if $(python-id)
++{
++    PYTHON_ID = [ regex.replace $(python-id) [*\\/:.\"\'] _ ] ;
++}
++
++rule python-tag ( name : type ? : property-set )
++{
++    local result = $(name) ;
++    if $(type) in STATIC_LIB SHARED_LIB IMPORT_LIB
++    {
++        local version = [ $(property-set).get <python> ] ;
++        local lib-suffix = [ version-suffix $(version) ] ;
++        result = $(result)$(lib-suffix) ;
++    }
++    if $(type) in STATIC_LIB SHARED_LIB IMPORT_LIB && $(PYTHON_ID)
++    {
++        result = $(result)-$(PYTHON_ID) ;
++    }
++
++    # forward to the boost tagging rule
++    return  [ tag $(result) : $(type) : $(property-set) ] ;
++}
+diff --git a/libs/python/build/Jamfile b/libs/python/build/Jamfile
+index 1fd6d0301..98c386c74 100644
+--- a/libs/python/build/Jamfile
++++ b/libs/python/build/Jamfile
+@@ -7,7 +7,6 @@ import indirect ;
+ import modules ;
+ import feature ;
+ import property ;
+-
+ import python ;
+ 
+ if ! [ python.configured ] && ! ( --without-python in  [ modules.peek : ARGV ] )
+@@ -31,9 +30,6 @@ else
+         ;
+ }
+ 
+-py2-version = [ py-version 2 ] ;
+-py3-version = [ py-version 3 ] ;
+-
+ project boost/python
+   : source-location ../src
+   ;
+@@ -42,146 +38,95 @@ rule cond ( test ? : yes * : no * ) { if $(test) { return $(yes) ; } else { retu
+ rule unless ( test ? : yes * : no * ) { if ! $(test) { return $(yes) ; } else { return $(no) ; } }
+ local rule eq ( a : b ) { if $(a) = $(b) { return 1 ; } }
+ 
+-lib_boost_python(2) = boost_python ;
+-lib_boost_python(3) = boost_python3 ;
+-
+-lib_boost_python($(py2-version)) = $(lib_boost_python(2)) ;
+-lib_boost_python($(py3-version)) = $(lib_boost_python(3)) ;
+-
+-rule lib_boost_python ( version )
+-{
+-    lib $(lib_boost_python($(version)))
+-        : # sources
+-        list.cpp
+-        long.cpp
+-        dict.cpp
+-        tuple.cpp
+-        str.cpp
+-        slice.cpp
+-
+-        converter/from_python.cpp
+-        converter/registry.cpp
+-        converter/type_id.cpp
+-        object/enum.cpp
+-        object/class.cpp
+-        object/function.cpp
+-        object/inheritance.cpp
+-        object/life_support.cpp
+-        object/pickle_support.cpp
+-        errors.cpp
+-        module.cpp
+-        converter/builtin_converters.cpp
+-        converter/arg_to_python_base.cpp
+-        object/iterator.cpp
+-        object/stl_iterator.cpp
+-        object_protocol.cpp
+-        object_operators.cpp
+-        wrapper.cpp
+-        import.cpp
+-        exec.cpp
+-        object/function_doc_signature.cpp
+-        :   # requirements
+-            <link>static:<define>BOOST_PYTHON_STATIC_LIB 
+-            <define>BOOST_PYTHON_SOURCE
+-          
+-            # On Windows, all code using Python has to link to the Python
+-            # import library.
+-            #
+-            # On *nix we never link libboost_python to libpython.  When
+-            # extending Python, all Python symbols are provided by the
+-            # Python interpreter executable.  When embedding Python, the
+-            # client executable is expected to explicitly link to
+-            # /python//python (the target representing libpython) itself.
+-            #
+-            # python_for_extensions is a target defined by Boost.Build to
+-            # provide the Python include paths, and on Windows, the Python
+-            # import library, as usage requirements.
+-            [ cond [ python.configured ] : <library>/python//python_for_extensions ]
+-            
+-            # we prevent building when there is no python available
+-            # as it's not possible anyway, and to cause dependents to
+-            # fail to build
+-            [ unless [ python.configured ] : <build>no ]
+-            <dependency>config-warning
+-
+-            <python-debugging>on:<define>BOOST_DEBUG_PYTHON
+-            <python>$(version)
+-
+-            -<tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).tag
+-            <tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).python-tag
+-
+-            <conditional>@python.require-py
+-
+-        :   # default build
+-            <link>shared
+-        :   # usage requirements
+-            <link>static:<define>BOOST_PYTHON_STATIC_LIB
+-            <python-debugging>on:<define>BOOST_DEBUG_PYTHON
+-        ;
+-}
+-
+-lib_boost_numpy(2) = boost_numpy ;
+-lib_boost_numpy(3) = boost_numpy3 ;
+-
+-lib_boost_numpy($(py2-version)) = $(lib_boost_numpy(2)) ;
+-lib_boost_numpy($(py3-version)) = $(lib_boost_numpy(3)) ;
+-
+-rule lib_boost_numpy ( version )
+-{
+-    numpy-include = [ python.numpy-include ] ;
+-    lib $(lib_boost_numpy($(version)))
+-        : # sources
+-        numpy/dtype.cpp
+-        numpy/matrix.cpp
+-        numpy/ndarray.cpp
+-        numpy/numpy.cpp
+-        numpy/scalars.cpp
+-        numpy/ufunc.cpp
+-        :   # requirements
+-            <link>static:<define>BOOST_NUMPY_STATIC_LIB 
+-            <define>BOOST_NUMPY_SOURCE
+-            [ cond [ python.numpy ] : <library>/python//python_for_extensions ]
+-            [ unless [ python.numpy ] : <build>no ]
+-            <include>$(numpy-include)
+-            <library>$(lib_boost_python($(version)))
+-            <python-debugging>on:<define>BOOST_DEBUG_PYTHON
+-            <python>$(version)
+-
+-            -<tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).tag
+-            <tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).python-tag
+-
+-            <conditional>@python.require-py
+-
+-        :   # default build
+-            <link>shared
+-        :   # usage requirements
+-			<link>static:<define>BOOST_NUMPY_STATIC_LIB
+-            <python-debugging>on:<define>BOOST_DEBUG_PYTHON
+-        ;
+-}
+-
+-libraries = ;
+-
+-for local N in 2 3
+-{
+-    if $(py$(N)-version)
+-    {
+-        lib_boost_python $(py$(N)-version) ;
+-        libraries += $(lib_boost_python($(py$(N)-version))) ;
+-    }
+-    else
+-    {
+-        alias $(lib_boost_python($(N))) ;
+-    }
+-    if $(py$(N)-version) && [ python.numpy ]
+-    {
+-        lib_boost_numpy $(py$(N)-version) ;
+-        libraries += $(lib_boost_numpy($(py$(N)-version))) ;
+-    }
+-    else
+-    {
+-        alias $(lib_boost_numpy($(N))) ;
+-    }
+-}
+-
+-boost-install $(libraries) ;
++lib boost_python
++    : # sources
++    list.cpp
++    long.cpp
++    dict.cpp
++    tuple.cpp
++    str.cpp
++    slice.cpp
++
++    converter/from_python.cpp
++    converter/registry.cpp
++    converter/type_id.cpp
++    object/enum.cpp
++    object/class.cpp
++    object/function.cpp
++    object/inheritance.cpp
++    object/life_support.cpp
++    object/pickle_support.cpp
++    errors.cpp
++    module.cpp
++    converter/builtin_converters.cpp
++    converter/arg_to_python_base.cpp
++    object/iterator.cpp
++    object/stl_iterator.cpp
++    object_protocol.cpp
++    object_operators.cpp
++    wrapper.cpp
++    import.cpp
++    exec.cpp
++    object/function_doc_signature.cpp
++    :   # requirements
++        <link>static:<define>BOOST_PYTHON_STATIC_LIB
++        <define>BOOST_PYTHON_SOURCE
++
++        # On Windows, all code using Python has to link to the Python
++        # import library.
++        #
++        # On *nix we never link libboost_python to libpython.  When
++        # extending Python, all Python symbols are provided by the
++        # Python interpreter executable.  When embedding Python, the
++        # client executable is expected to explicitly link to
++        # /python//python (the target representing libpython) itself.
++        #
++        # python_for_extensions is a target defined by Boost.Build to
++        # provide the Python include paths, and on Windows, the Python
++        # import library, as usage requirements.
++        [ cond [ python.configured ] : <library>/python//python_for_extensions ]
++
++        # we prevent building when there is no python available
++        # as it's not possible anyway, and to cause dependents to
++        # fail to build
++        [ unless [ python.configured ] : <build>no ]
++        <dependency>config-warning
++        <python-debugging>on:<define>BOOST_DEBUG_PYTHON
++        -<tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).tag
++        <tag>@$(__name__).python-tag
++        <conditional>@python.require-py
++
++    :   # default build
++        <link>shared
++    :   # usage requirements
++        <link>static:<define>BOOST_PYTHON_STATIC_LIB
++        <python-debugging>on:<define>BOOST_DEBUG_PYTHON
++    ;
++
++numpy-include = [ python.numpy-include ] ;
++lib boost_numpy
++    : # sources
++    numpy/dtype.cpp
++    numpy/matrix.cpp
++    numpy/ndarray.cpp
++    numpy/numpy.cpp
++    numpy/scalars.cpp
++    numpy/ufunc.cpp
++    :   # requirements
++        <link>static:<define>BOOST_NUMPY_STATIC_LIB
++        <define>BOOST_NUMPY_SOURCE
++        [ cond [ python.numpy ] : <library>/python//python_for_extensions ]
++        [ unless [ python.numpy ] : <build>no ]
++        <include>$(numpy-include)
++        <library>boost_python
++        <python-debugging>on:<define>BOOST_DEBUG_PYTHON
++        -<tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).tag
++	<tag>@$(__name__).python-tag
++        <conditional>@python.require-py
++
++    :   # default build
++        <link>shared
++    :   # usage requirements
++        <link>static:<define>BOOST_NUMPY_STATIC_LIB
++        <python-debugging>on:<define>BOOST_DEBUG_PYTHON
++    ;
+diff --git a/boost/python/detail/config.hpp b/boost/python/detail/config.hpp
+index 3e4b7c9e5..acf588311 100644
+--- a/boost/python/detail/config.hpp
++++ b/boost/python/detail/config.hpp
+@@ -105,11 +105,7 @@
+ // Set the name of our library, this will get undef'ed by auto_link.hpp
+ // once it's done with it:
+ //
+-#if PY_MAJOR_VERSION == 2
+-#  define BOOST_LIB_NAME boost_python
+-#elif PY_MAJOR_VERSION == 3
+-#  define BOOST_LIB_NAME boost_python3
+-#endif
++#define BOOST_LIB_NAME boost_python##PY_MAJOR_VERSION##PY_MINOR_VERSION
+ //
+ // If we're importing code from a dll, then tell auto_link.hpp about it:
+ //
+diff --git a/boost/python/numpy/config.hpp b/boost/python/numpy/config.hpp
+index 97178906e..e6484bc51 100644
+--- a/boost/python/numpy/config.hpp
++++ b/boost/python/numpy/config.hpp
+@@ -62,11 +62,7 @@
+ // Set the name of our library, this will get undef'ed by auto_link.hpp
+ // once it's done with it:
+ //
+-#if PY_MAJOR_VERSION == 2
+-#  define BOOST_LIB_NAME boost_numpy
+-#elif PY_MAJOR_VERSION == 3
+-#  define BOOST_LIB_NAME boost_numpy3
+-#endif
++#define BOOST_LIB_NAME boost_numpy##PY_MAJOR_VERSION##PY_MINOR_VERSION
+ //
+ // If we're importing code from a dll, then tell auto_link.hpp about it:
+ //
