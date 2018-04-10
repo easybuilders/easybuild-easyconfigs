@@ -1,0 +1,36 @@
+easyblock = 'MakeCp'
+
+name = 'LevelDB'
+version = '1.20'
+
+homepage = 'https://github.com/google/leveldb'
+description = """LevelDB is a fast key-value storage library written at Google that provides an
+ ordered mapping from string keys to string values."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+source_urls = ['https://github.com/google/leveldb/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f5abe8b5b209c2f36560b75f32ce61412f39a2922f7045ae764a2c23335b6664']
+
+# LevelDB now puts .a extensions in out-static and .so in out-shared,
+# this breaks being found with other packages, so we put them back in lib
+files_to_copy = [
+    (['out-static/*'], 'lib'),
+    (['out-shared/libleveldb.%s.%%(version)s' % SHLIB_EXT], 'lib'),
+    (['include/leveldb/*.h'], 'include/leveldb'),
+]
+
+cd_cmd = "cd %(installdir)s/lib && "
+postinstallcmds = [
+    cd_cmd + "ln -s libleveldb.%s.%%(version)s libleveldb.%s.%%(version_major)s" % (SHLIB_EXT, SHLIB_EXT),
+    cd_cmd + "ln -s libleveldb.%s.%%(version)s libleveldb.%s" % (SHLIB_EXT, SHLIB_EXT),
+]
+
+sanity_check_paths = {
+    'files': ['include/leveldb/cache.h', 'include/leveldb/table.h',
+              'lib/libleveldb.a', 'lib/libleveldb.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
