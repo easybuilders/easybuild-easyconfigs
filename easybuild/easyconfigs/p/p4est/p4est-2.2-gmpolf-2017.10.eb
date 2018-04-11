@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'p4est'
+version = '2.2'
+
+homepage = 'http://www.p4est.org'
+description = """p4est is a C library to manage a collection (a forest) of multiple
+connected adaptive quadtrees or octrees in parallel."""
+
+toolchain = {'name': 'gmpolf', 'version': '2017.10'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/cburstedde/p4est/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['7df0e9a161b6ea680324dfdbc0ffc6e0d0a6c9c9b0ea5b37c973e71a054226c2']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('libsc', '2.8'),
+    ('METIS', '5.1.0')
+
+]
+
+builddependencies = [
+    ('Autotools', '20170619')
+]
+
+preconfigopts = 'echo "%(version)s" >> .tarball-version && ./bootstrap $EBROOTLIBSC/share/aclocal && '
+configopts = 'LIBS=" -fopenmp -lopenblas -lscalapack" '
+configopts += '--enable-mpi --with-metis --with-sc=$EBROOTLIBSC '
+configopts += '--without-blas --without-lapack '
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/p4est_simple', 'bin/p4est_step1', 'bin/p4est_step2', 'bin/p4est_step3', 'bin/p4est_step4',
+              'lib/libp4est-%%(version)s.%s' % SHLIB_EXT, 'lib/libp4est.%s' % SHLIB_EXT
+              ],
+    'dirs': []
+}
+
+moduleclass = 'math'
