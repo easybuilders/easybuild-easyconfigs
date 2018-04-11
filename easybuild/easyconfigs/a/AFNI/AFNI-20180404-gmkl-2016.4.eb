@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'AFNI'
+version = '20180404'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'gmkl', 'version': '2016.4'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+# download afni_src.tgz manually from http://afni.nimh.nih.gov/pub/dist/tgz/, and rename to include datestamp
+# detailed release notes are available at http://afni.nimh.nih.gov/pub/dist/doc/misc/history/afni_hist_level1_all.html
+# but last update doesn't match datestamp of most recent afni_src.tgz?
+sources = ['afni_src-%(version)s.tgz']
+checksums = ['8c952813f8a5aa0c4e25a5ddb4e41a1a5678a59b7628eaa67be0231d186e6d99']
+
+patches = ['AFNI-20180404_omp-pragma-statement-fix.patch']
+
+builddependencies = [
+    ('R', '3.3.3', '-bare'),
+    ('R-bundle-Bioconductor', '3.4', '-R-3.3.3'),
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('Qt', '4.8.7'),
+    ('GSL', '2.3'),
+]
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = "cp Makefile.linux_openmp_64 Makefile && "
+buildopts = 'totality LGIFTI="$EBROOTNIXPKGS/lib/libexpat.so" LDPYTHON="-lpython%(pyshortver)s" '
+buildopts += 'CC="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCVOL="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCFAST="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCOLD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCMIN="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCSVD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'LD="${CC} \$(CPROF)" LZLIB="${EBROOTNIXPKGS}/lib/libz.so" XLIBS="-lXm -lXt" '
+buildopts += 'IFLAGS="-I. -I$EBROOTPYTHON/include/python%(pyshortver)s '
+buildopts += '-I$EBROOTNIXPKGS/lib/glib-2.0/include -I$EBROOTNIXPKGS/include/glib-2.0"'
+buildopts += ' INSTALLDIR=%(installdir)s'
+
+parallel = 1
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['afni'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
+
+modluafooter = """
+depends_on("r-bundle-bioconductor")
+"""
+
