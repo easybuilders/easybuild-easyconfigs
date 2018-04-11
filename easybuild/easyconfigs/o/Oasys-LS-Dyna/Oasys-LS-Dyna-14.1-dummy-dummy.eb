@@ -1,4 +1,4 @@
-easyblock = "CmdCp"
+easyblock = "EB_OasysLSDyna"
 
 name = 'Oasys-LS-Dyna'
 version = '14.1'
@@ -9,8 +9,21 @@ markets and is used worldwide by many of the largest LS-DYNA customers."""
 
 toolchain = {'name': 'dummy', 'version': 'dummy' }
 postinstallcmds = [
-        '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --any_interpreter'
+        '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --any_interpreter --add_origin'
 ]
 
 sources = [ 'install_14_64.tar.gz' ]
 moduleclass = 'phys'
+
+modluafooter = """
+require("SitePackage")
+local found = find_and_define_license_file("LM_LICENSE_FILE","oasys-ls-dyna")
+if (not found) then
+        local error_message = [[
+	We did not find a suitable license for Oasys LS-DYNA. If you have access to one, you can create the file $HOME/.licenses/oasys-ls-dyna.lic with the license information. If you think you should have access to one as    part of your institution, please write to support@computecanada.ca so that we can configure it.
+
+	Nous n'avons pas trouve de licence utilisable pour Oasys LS-DYNA. Si vous avez acces a une licence de Oasys LS-DYNA, vous pouvez creer le fichier $HOME/.licenses/oasys-ls-dyna.lic avec l'information de la licence. Si vous    pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+	]]
+	LmodError(error_message)
+end
+"""
