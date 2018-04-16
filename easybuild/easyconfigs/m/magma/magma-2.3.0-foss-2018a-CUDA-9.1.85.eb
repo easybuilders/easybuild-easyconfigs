@@ -1,0 +1,35 @@
+easyblock = "ConfigureMake"
+
+name = 'magma'
+version = '2.3.0'
+cuda_ver = '9.1.85'
+versionsuffix = '-CUDA-%s' % cuda_ver
+
+homepage = 'http://icl.cs.utk.edu/magma/'
+description = """The MAGMA project aims to develop a dense linear algebra library similar to
+ LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://icl.cs.utk.edu/projectsfiles/magma/downloads/']
+
+patches = [('magma-%(version)s-fix-makefile.patch')]
+
+dependencies = [('CUDA', cuda_ver, '', True)]
+
+skipsteps = ['configure']
+
+prebuildopts = 'touch make.inc && '  # CFLAGS="-DADD_ $CFLAGS" CXXFLAGS="-DADD_ $CXXFLAGS" FFLAGS="-DADD_ $FFLAGS" FORT=$FC '
+prebuildopts += 'GPU_TARGET="Kepler Maxwell Pascal" '
+#prebuildopts += 'LIB="-fopenmp -lcublas -lcusparse -lcudart -lcudadevrt $LIBLAPACK $LIBS" '
+
+installopts = 'prefix=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['lib/libmagma.so', 'lib/libmagma.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
