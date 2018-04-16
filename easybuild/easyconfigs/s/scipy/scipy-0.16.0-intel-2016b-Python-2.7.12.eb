@@ -1,0 +1,33 @@
+name = 'scipy'
+version = '0.16.0'
+versionsuffix = '-Python-2.7.12'
+
+homepage = 'http://www.scipy.org'
+description = """SciPy is a collection of mathematical algorithms and convenience
+ functions built on the Numpy extension for Python."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+toolchainopts = {'pic': True}
+
+source_urls = [('http://sourceforge.net/projects/scipy/files/scipy/%(version)s', 'download')]
+sources = [SOURCE_TAR_GZ]
+
+patches = ['scipy-%(version)s_fix-failing-tests-mkl.patch']
+
+dependencies = [
+    ('numpy', '1.9.2', versionsuffix),
+]
+
+# recompile patch Cython source file
+prebuildopts = "cython scipy/linalg/_decomp_update.pyx && "
+
+# need to use pip rather than regular 'setup.py install'
+# to ensure that this scipy wins over the one in the Python installation;
+# using easy_install does not work...
+use_pip = True
+
+# install as zipped egg to get a .pth file in lib/python*/site-packages;
+# this enables shadowing of the scipy that is part of the Python installation
+zipped_egg = True
+
+moduleclass = 'math'

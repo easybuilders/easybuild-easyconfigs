@@ -1,15 +1,15 @@
 #!/usr/bin/python
 ##
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2018 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,16 +30,17 @@ Usage: "python -m easybuild.easyconfigs.test.suite.py" or "./easybuild/easyconfi
 @author: Toon Willems (Ghent University)
 @author: Kenneth Hoste (Ghent University)
 """
-import glob
 import os
 import shutil
 import sys
 import tempfile
 import unittest
-from vsc import fancylogger
+
+from vsc.utils import fancylogger
 
 import easybuild.tools.build_log  # initialize EasyBuild logging, so we disable it
 import test.easyconfigs.easyconfigs as e
+import test.easyconfigs.styletests as s
 
 # disable all logging to significantly speed up tests
 fancylogger.disableDefaultHandlers()
@@ -51,7 +52,7 @@ os.environ['EASYBUILD_DEPRECATED'] = '10000'
 os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
 # call suite() for each module and then run them all
-SUITE = unittest.TestSuite([x.suite() for x in [e]])
+SUITE = unittest.TestSuite([x.suite() for x in [e, s]])
 
 # uses XMLTestRunner if possible, so we can output an XML file that can be supplied to Jenkins
 xml_msg = ""

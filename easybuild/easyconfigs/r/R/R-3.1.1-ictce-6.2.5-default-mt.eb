@@ -12,9 +12,6 @@ toolchainopts = {'precise': True, 'opt': True}  # 'openmp' is enabled in R by de
 sources = [SOURCE_TAR_GZ]
 source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
 
-preconfigopts = 'BLAS_LIBS="$LIBBLAS_MT" LAPACK_LIBS="$LIBLAPACK_MT"'  # use multi-thread BLAS/LAPACK
-configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib"
-
 dependencies = [
     ('libreadline', '6.3'),
     ('ncurses', '5.9'),
@@ -23,15 +20,11 @@ dependencies = [
     ('Java', '1.7.0_60', '', True),  # Java bindings are built if Java is found, might as well provide it
 ]
 
-sanity_check_paths = {
-    'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
-             ['lib64/R/include/%s' % x for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
-                                                 'R.h', 'Rinterface.h', 'Rinternals.h',
-                                                 'Rmath.h', 'Rversion.h', 'S.h']] +
-             ['lib64/R/modules/%s' % x for x in ['internet.so', 'lapack.so', 'vfonts.so']] +
-             ['lib64/R/lib/libR.so'],
-    'dirs': []
-}
+configopts = "--with-pic --enable-threads --enable-R-shlib"
+
+# specify that at least EasyBuild v3.5.0 is required,
+# since we rely on the updated easyblock for R to configure correctly w.r.t. BLAS/LAPACK
+easybuild_version = '3.5.0'
 
 exts_list = [
     # default libraries, only here to sanity check their presence

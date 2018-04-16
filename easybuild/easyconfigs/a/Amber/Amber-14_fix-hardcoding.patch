@@ -1,0 +1,173 @@
+fix hardcoding of compilers & MKL lib dir, add support for separate netCDF-Fortran installation & recent CUDA
+author: Stephane Thiell (Stanford University)
+--- amber14/AmberTools/src/cpptraj/configure.orig	2015-11-25 21:25:27.219014394 -0800
++++ amber14/AmberTools/src/cpptraj/configure	2015-11-25 21:26:36.935069823 -0800
+@@ -676,9 +676,9 @@ fi
+ if [[ $USEMPI -eq 1 ]] ; then
+   echo "Using MPI"
+   DIRECTIVES="$DIRECTIVES -DMPI"
+-  CC=mpicc
+-  CXX=mpicxx
+-  FC=mpif90
++  CC=${CC}
++  CXX=${CXX}
++  FC=${F90}
+   SFX=".MPI"
+ fi
+ 
+--- amber14/AmberTools/src/configure2.orig	2015-11-25 21:18:37.473056279 -0800
++++ amber14/AmberTools/src/configure2	2015-11-27 00:05:54.009556748 -0800
+@@ -385,6 +385,7 @@ mpinab=''
+ mpi='no'
+ mtkpp='install_mtkpp'
+ netcdf_dir=''
++netcdf_fort_dir=''
+ netcdf_flag=''
+ netcdfstatic='no'
+ noX11='false'
+@@ -442,6 +443,7 @@ while [ $# -gt 0 ]; do
+         -lio)           lio='yes' ;; 
+         --with-python)  shift; python="$1";;
+         --with-netcdf)  shift; netcdf_dir="$1";;
++        --with-netcdf-fort)  shift; netcdf_fort_dir="$1";;
+         -netcdfstatic)  netcdfstatic='yes' ;;
+         -dragonegg)     shift; dragonegg="$1";;
+         -g95)           g95='yes' ;;
+@@ -594,7 +596,7 @@ flibs="-larpack -llapack -lblas "
+ #  Fortran versions, if compiled from source:
+ flibsf="-larpack -llapack -lblas"
+ # only used when the user requests a static build:
+-staticflag='-static'
++staticflag='-static-intel'
+ omp_flag=
+ mpi_flag=
+ lex=flex
+@@ -861,13 +863,13 @@ if [ "$cuda_SPFP" = 'yes' -o "$cuda_SPXP
+       echo "CUDA Version $cudaversion detected"
+       echo "Configuring for SM2.0 and SM3.0 - warning does not support Maxwell (GM200/GM204) cards [e.g. GTX970/980]"
+       nvccflags="$sm20flags $sm30flags"
+-    elif [ "$cudaversion" = "6.5" ]; then
++    elif [ "$cudaversion" = "6.5" -o  "$cudaversion" = "7.0" -o "$cudaversion" = "7.5" ]; then
+       echo "CUDA Version $cudaversion detected"
+       echo "Configuring for SM2.0, SM3.0 and SM5.0"
+       nvccflags="$sm20flags $sm30flags $sm50flags"
+     else
+       echo "Error: Unsupported CUDA version $cudaversion detected."
+-      echo "       AMBER requires CUDA version == 5.0 .or. 5.5 .or. 6.0 .or. 6.5"
++      echo "       AMBER requires CUDA version == 5.0 .or. 5.5 .or. 6.0 .or. 6.5 .or. 7.0 .or. 7.5"
+       exit 1
+     fi
+     nvcc="$nvcc $nvccflags"
+@@ -1058,7 +1060,7 @@ gnu)
+       fi
+       if [ "$mpi" = 'yes' -a "$intelmpi" = 'no' ]; then
+         if [ "$intelmpi" = 'no' ]; then
+-          mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++          mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         fi
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI  -DMPICH_IGNORE_CXX_SEEK"
+@@ -1354,7 +1356,7 @@ intel)
+       fi
+ 
+       if [ "$mpi" = 'yes' ]; then
+-          mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++          mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$pmemd_coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -1630,7 +1632,7 @@ EOF
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI  -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -1880,7 +1882,7 @@ clang)
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI  -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -1947,17 +1949,17 @@ if [ -n "$MKL_HOME" ]; then
+     blas=skip
+     flibs="-larpack "
+     flibsf="-larpack "
+-    mkll="$MKL_HOME/lib/32"
++    mkll="$MKL_HOME/mkl/lib/32"
+     mkl_processor="32"
+     mkl_procstring="ia32"
+     mklinterfacelayer='libmkl_intel.a'
+     if [ "$x86_64" = 'yes' ]; then
+-        if [ -d "$MKL_HOME/lib/em64t" ]; then
+-            mkll="$MKL_HOME/lib/em64t"
++        if [ -d "$MKL_HOME/mkl/lib/em64t" ]; then
++            mkll="$MKL_HOME/mkl/lib/em64t"
+             mkl_processor="em64t"
+             mkl_procstring="em64t"
+         else
+-            mkll="$MKL_HOME/lib/intel64"
++            mkll="$MKL_HOME/mkl/lib/intel64"
+             mkl_processor="intel64"
+             mkl_procstring="intel64"
+         fi
+@@ -2374,8 +2376,13 @@ if [ "$bintraj" = 'yes' ]; then
+   else 
+     # A NetCDF directory was specified. Check that library exists and compiles
+     printf "\tUsing external NetCDF in '$netcdf_dir'\n"
++    # Support separate NetCDF-Fortran installation with --with-netcdf-fort
++    if [ ! -e "$netcdf_fort_dir" ]; then
++      netcdf_fort_dir="$netcdf_dir"
++    fi
++    printf "\tUsing external NetCDF-Fortran in '$netcdf_fort_dir'\n"
+     netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
+-    netcdf=$netcdf_dir"/include/netcdf.mod"
++    netcdf=$netcdf_fort_dir"/include/netcdf.mod"
+     if [ ! -e "$netcdf" ]; then
+       echo "Error: '$netcdf' not found."
+       exit 1
+@@ -2385,7 +2392,7 @@ if [ "$bintraj" = 'yes' ]; then
+       netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
+       # Newer versions of NetCDF have a separate fortran library.
+       # If not found default to libnetcdf.a
+-      netcdfflagf=$netcdf_dir"/lib/libnetcdff"
++      netcdfflagf=$netcdf_fort_dir"/lib/libnetcdff"
+       if [ ! -e "${netcdfflagf}.a" -a ! -e "${netcdfflagf}.so" ]; then
+         echo "Does not exist!"
+         netcdfflagf=$netcdfflagc
+@@ -2399,7 +2406,7 @@ if [ "$bintraj" = 'yes' ]; then
+         echo "Error: '$netcdfflagc' not found."
+         exit 1
+       fi
+-      netcdfflagf=$netcdf_dir"/lib/libnetcdff.a"
++      netcdfflagf=$netcdf_fort_dir"/lib/libnetcdff.a"
+       if [ ! -e "$netcdfflagf" ]; then
+         netcdfflagf=$netcdfflagc
+       fi
+@@ -2814,14 +2821,14 @@ if [ "$mpi" = 'yes' ]; then
+       cplusplus="CC"
+       mpi_flag="-DMPI "
+   elif [ "$intelmpi" = 'yes' ]; then
+-     cc="mpiicc"
+-     fc="mpiifort"
+-     cplusplus="mpiicpc"
+-     mpi_flag="-DMPI "
++      cc=${CC}
++      fc=${F90}
++      cplusplus=${CXX}
++      mpi_flag="-DMPI "
+   else
+-      cc="mpicc"
+-      cplusplus="mpicxx"
+-      fc="mpif90"
++      cc=${CC}
++      fc=${F90}
++      cplusplus=${CXX}
+       mpi_flag="-DMPI "
+   
+       # Catch a corner-case of unusually setup intel compilers.

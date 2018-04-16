@@ -42,10 +42,11 @@ builddependencies = [
 ]
 
 patches = [
-   'Graphviz-2.38.0_icc_vmalloc.patch',
-   'Graphviz-2.38.0_icc_sfio.patch',
+    'Graphviz-2.38.0_icc_vmalloc.patch',
+    'Graphviz-2.38.0_icc_sfio.patch',
 ]
 
+preconfigopts = "sed -i 's/install-data-hook$//g' tclpkg/Makefile.in && "
 configopts = '--enable-guile=no --enable-lua=no --enable-ocaml=no '
 configopts += '--enable-r=no --enable-ruby=no '
 
@@ -53,9 +54,14 @@ prebuildopts = 'qmake -o cmd/gvedit/qMakefile cmd/gvedit/gvedit.pro && '
 
 sanity_check_paths = {
     'files': ['bin/cluster', 'bin/dot', 'bin/gvmap',
-              'lib/libcdt.so', 'lib/libgvc.so', 'lib/libxdot.so'],
-    'dirs': ['include']
+              'lib/libcdt.%s' % SHLIB_EXT, 'lib/libgvc.%s' % SHLIB_EXT, 'lib/libxdot.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/graphviz']
 }
+
+sanity_check_commands = [
+    ("test ! -d $EBROOTTCL/lib/*/graphviz", ''),
+    ("test ! -d $EBROOTTCL/lib64/*/graphviz", ''),
+]
 
 modextrapaths = {
     'PYTHONPATH': 'lib/graphviz/python',

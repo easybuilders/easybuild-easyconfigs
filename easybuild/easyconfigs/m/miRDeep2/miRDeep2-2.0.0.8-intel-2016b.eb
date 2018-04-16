@@ -1,0 +1,35 @@
+easyblock = 'PackedBinary'
+
+name = 'miRDeep2'
+version = '2.0.0.8'
+altver = '_'.join(version.split('.'))
+
+homepage = 'https://www.mdc-berlin.de/8551903/en/'
+description = "miRDeep2 is a completely overhauled tool which discovers microRNA genes by analyzing sequenced RNAs"
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+source_url_subdir = 'research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/'
+source_urls = ['https://www.mdc-berlin.de/45995549/en/' + source_url_subdir]
+sources = ['mirdeep%s.zip' % altver]
+
+dependencies = [
+    ('Perl', '5.24.0'),  # provides PDF::API2
+    ('Bowtie', '1.1.2'),
+    ('ViennaRNA', '2.2.3'),
+    ('randfold', '2.0.1'),  # also provides SQUID
+]
+
+install_cmd = "cp -a mirdeep*/src %(installdir)s/bin && chmod a+x %(installdir)s/bin/*.pl && "
+install_cmd += 'sed -i "s@#!/usr/bin/perl@#!$EBROOTPERL/bin/perl@" %(installdir)s/bin/*.pl && '
+install_cmd += "cp -a mirdeep*/Rfam_for_miRDeep.fa %(installdir)s && "
+
+# scripts include a hard check for a file called 'install_successful' in the install directory...
+install_cmd += "touch %(installdir)s/install_successful"
+
+sanity_check_paths = {
+    'files': ['bin/mapper.pl', 'bin/miRDeep2.pl'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

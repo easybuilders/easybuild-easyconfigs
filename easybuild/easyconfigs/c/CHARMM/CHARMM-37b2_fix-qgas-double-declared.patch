@@ -1,0 +1,53 @@
+reproduction of CHARMM SVN revision 272 (Check-in: http:/charmm.hanyang.ac.kr/6187)
+renamed qgas variable in pbeq to qgas1 and updated references in energy
+diff -ru c37b2.orig/source/energy/energy.src c37b2/source/energy/energy.src
+--- c37b2.orig/source/energy/energy.src	2012-09-29 08:01:42.000000000 +0200
++++ c37b2/source/energy/energy.src	2015-05-21 16:57:43.951197202 +0200
+@@ -266,7 +266,7 @@
+   use param
+   use pathm
+   use mpathint, only: qpint, epint  !##PATHINT
+-  use pbeq, only: qpbeq,qpbf,npbeq,qgsbp,pbforce,gsbp0,qgas,qsmbp,smbp0 !##PBEQ
++  use pbeq, only: qpbeq,qpbf,npbeq,qgsbp,pbforce,gsbp0,qgas1,qsmbp,smbp0 !##PBEQ
+   use pbound
+   use pert
+   use polarm, only: qpolar, polar1  !##POLAR
+@@ -3203,7 +3203,7 @@
+ 
+            CALL PBFORCE(NATOM,X,Y,Z,CG,ETERM(PBELEC),ETERM(PBNP), &
+                 DX,DY,DZ,NPBEQ,ecalls,.false. &
+-                ,QETERM(QMEL),ETERM(QMEL),QGAS &        !##SCCDFTB
++                ,QETERM(QMEL),ETERM(QMEL),QGAS1 &        !##SCCDFTB
+                 )
+            IF (TIMER.GT.1) &
+                 CALL WRTTIM('Poisson Boltzmann Solvation energy times:')
+diff -ru c37b2.orig/source/misc/pbeq.src c37b2/source/misc/pbeq.src
+--- c37b2.orig/source/misc/pbeq.src	2012-08-08 20:08:30.000000000 +0200
++++ c37b2/source/misc/pbeq.src	2015-05-21 16:55:47.871787533 +0200
+@@ -19,7 +19,7 @@
+   !public :: pbeq0,pbforce,gsbp0,srdist
+   !QC: export more
+   public :: pbeq0,pbforce,gsbp0,srdist,m3,dm3,rpowerl2,cosmphi2,sinmphi2,&
+-       alpol2,dalpol2,lpol2,dlpol2,pbeq1,oldpbeq1,mayer,pbeq2,qgas, &
++       alpol2,dalpol2,lpol2,dlpol2,pbeq1,oldpbeq1,mayer,pbeq2,qgas1, &
+        pbeq_iniall,smbp0
+ 
+   !variables
+@@ -115,7 +115,7 @@
+ 
+   !  The following is related to QM/MM implementation of gsbp and pb 
+   !  Xiao_QC_UW0609
+-  LOGICAL QPSC,QGAS
++  LOGICAL QPSC,QGAS1
+ ##IF SCCDFTB 
+   !
+   !     COEFX        -----> heap index for COEFX(NTPOL)
+@@ -2734,7 +2734,7 @@
+        ! XIAO_QC_UW0609  keyword for SCC/PB
+        MXTPSC = GTRMI(COMLYN,COMLEN,'MXPS',5000)
+        PSCTOL = GTRMF(COMLYN,COMLEN,'PSTL',1.0D-2)
+-       QGAS = INDXA(COMLYN,COMLEN,'IGAS').GT.0
++       QGAS1 = INDXA(COMLYN,COMLEN,'IGAS').GT.0
+        ! XIAO_QC_UW0609 add charge dependant radii
+        QCHDRAD = INDXA(COMLYN,COMLEN,'CHDR').GT.0
+        IF (QCHDRAD) THEN

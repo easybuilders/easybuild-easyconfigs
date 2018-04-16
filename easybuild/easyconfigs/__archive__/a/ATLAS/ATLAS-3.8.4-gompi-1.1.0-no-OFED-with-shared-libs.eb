@@ -1,0 +1,33 @@
+name = 'ATLAS'
+version = '3.8.4'
+versionsuffix = '-with-shared-libs'
+
+homepage = 'http://math-atlas.sourceforge.net'
+description = """ATLAS (Automatically Tuned Linear Algebra Software) is the application of
+ the AEOS (Automated Empirical Optimization of Software) paradigm, with the present emphasis 
+ on the Basic Linear Algebra Subprograms (BLAS), a widely used, performance-critical, linear 
+ algebra kernel library."""
+
+toolchain = {'name': 'gompi', 'version': '1.1.0-no-OFED'}
+toolchainopts = {'pic': True}
+
+sources = ['%(namelower)s%(version)s.tar.bz2']
+source_urls = [('http://sourceforge.net/projects/math-atlas/files/Stable/%(version)s', 'download')]
+
+patches = [
+    'ATLAS-%(version)s_illegal-instruction-fix.patch',
+    'ATLAS-%(version)s_make-install-shared.patch',
+]
+
+# fix for http://math-atlas.sourceforge.net/errata.html#sharedProbe
+configopts = "-Ss f77lib '-L${EBROOTGCC}/lib64 -lgfortran'"
+
+# ignore check done by ATLAS for CPU throttling;
+# you should set this to False (or remove it)
+# and disable CPU throttling (requires root privileges) if you can
+ignorethrottling = True
+
+# build shared libs
+sharedlibs = True
+
+moduleclass = 'numlib'

@@ -1,0 +1,92 @@
+# corrected parallel builds, no debug info and no vec reports
+# B. Hajgato Nov 13 2014
+--- src/config/makefile.h.orig	2014-09-10 20:08:39.000000000 +0200
++++ src/config/makefile.h	2014-11-12 11:33:06.449137413 +0100
+@@ -1231,7 +1231,7 @@
+     _FC=ifort
+ #ifort 9.1
+ #        LINK.f = ifort  $(LDFLAGS) 
+-        FOPTIONS   += -align    -mp1 -w -g -vec-report1
++        FOPTIONS   += -align    -mp1 -w 
+   ifdef  USE_GPROF
+     FOPTIONS += -qp
+   endif
+@@ -1394,7 +1394,7 @@
+     CORE_SUBDIRS_EXTRA = blas lapack
+          CC = gcc
+      RANLIB = ranlib
+-  MAKEFLAGS = -j 1 --no-print-directory
++  MAKEFLAGS = -j 8 --no-print-directory
+     INSTALL = @echo $@ is built
+         CPP = gcc -E -nostdinc -undef -P
+    FCONVERT = (/bin/cp $< /tmp/$$$$.c; \
+@@ -1527,7 +1527,7 @@
+        DEFINES  += -DGFORTRAN
+   endif
+   ifeq ($(_FC),ifc)
+-  FOPTIONS   =  -align    -mp1 -w -g -vec-report1
++  FOPTIONS   =  -align    -mp1 -w 
+   ifdef  USE_GPROF
+     FOPTIONS += -qp
+   endif
+@@ -1602,7 +1602,7 @@
+       endif
+ 
+   ifeq ($(CC),icc)
+-    COPTIONS   =   -mp1 -w -g -vec-report1
++    COPTIONS   =   -mp1 -w 
+     COPTIMIZE = -O3   -unroll 
+     ifeq ($(_CPU),i586)
+       COPTIMIZE +=  -tpp5 -xi # this are for PentiumII
+@@ -1814,7 +1814,7 @@
+         endif
+       endif
+       DEFINES  += -DEXT_INT
+-      MAKEFLAGS = -j 1 --no-print-directory
++      MAKEFLAGS = -j 8 --no-print-directory
+      _CPU = $(shell uname -m  )
+      ifeq ($(BLAS_LIB),)
+        CORE_SUBDIRS_EXTRA += blas
+@@ -1923,7 +1923,7 @@
+ endif # end of ia32 bit
+     ifeq ($(_CPU),x86_64)
+ #
+-      MAKEFLAGS = -j 2 --no-print-directory
++      MAKEFLAGS = -j 8 --no-print-directory
+       COPTIMIZE = -O1
+ ifeq ($(NWCHEM_TARGET),CATAMOUNT)
+       FC=pgf90
+@@ -1959,19 +1959,17 @@
+ 	   ifeq ($(_IFCV15ORNEWER), Y)
+ 	  FOPTIONS += -qopt-report-file=stderr
+           ifdef USE_OPTREPORT
+-	  FOPTIONS += -qopt-report=1 -qopt-report-phase=vec 
++	  FOPTIONS += -qopt-report=0 -qopt-report-phase=vec 
+           endif
+          ifdef USE_OPENMP
+            FOPTIONS += -qopenmp
+-           FOPTIONS += -qopt-report-phase=openmp
+            COPTIONS += -qopenmp
+            DEFINES+= -DUSE_OPENMP 
+          endif		   
+ 	   else
+-         FOPTIONS += -vec-report6
++         FOPTIONS += -vec-report0
+          ifdef USE_OPENMP
+            FOPTIONS += -openmp
+-           FOPTIONS += -openmp-report2
+            COPTIONS += -openmp
+            DEFINES+= -DUSE_OPENMP 
+          endif
+@@ -2086,9 +2084,9 @@
+ 	    ICCV15ORNEWER=$(shell icc -V  2>&1|egrep "Version "|head -n 1 | sed 's/.*Version \([0-9][0-9]\).*/\1/' | awk '{if ($$1 >= 15) {print "Y";exit}}')
+         COPTIONS   +=   -xHOST -ftz
+ 		ifeq ($(ICCV15ORNEWER), Y)
+-   	      COPTIONS   +=  -qopt-report-phase:openmp -vec-report=1
++   	      COPTIONS   +=  -qopt-report-phase:openmp 
+ 		else
+-   	      COPTIONS   +=  -openmp-report=2 -vec-report=1
++   	      COPTIONS   +=  -openmp-report0 
+ 		endif
+ #old        COPTIMIZE =  -O3 -hlo   -mP2OPT_hlo_level=2  
+         COPTIMIZE =  -O3

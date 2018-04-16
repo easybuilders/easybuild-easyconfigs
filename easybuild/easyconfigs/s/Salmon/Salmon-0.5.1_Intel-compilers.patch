@@ -1,0 +1,33 @@
+fix support for building Salmon 0.5.1 with Intel compilers
+* fix detection of C++11-compatible compiler in CMakeLists.txt
+* uncomment preprocessor directive that guard workaround for Intel compilers that is not required for recent versions
+author: Kenneth Hoste (HPC-UGent)
+--- CMakeLists.txt.orig    2015-06-15 02:31:09.000000000 +0200
++++ CMakeLists.txt 2015-08-18 21:40:37.514507995 +0200
+@@ -118,6 +118,15 @@
+     else()
+         set (PTHREAD_LIB "pthread")
+     endif()
++elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
++    execute_process(
++        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
++    set (INTEL TRUE)
++    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
++    set (BOOST_TOOLSET "intel-linux")
++    set (BOOST_CONFIGURE_TOOLSET "--with-toolset=intel-linux")
++   set (BCXX_FLAGS "-std=c++11")
++    set (BOOST_EXTRA_FLAGS toolset=intel-linux cxxflags=${BCXX_FLAGS})
+ else ()
+     message(FATAL_ERROR "Your C++ compiler does not support C++11.")
+ endif ()
+--- include/atomicops.h.orig	2015-10-09 21:47:24.315716433 +0200
++++ include/atomicops.h	2015-10-09 21:53:38.253775566 +0200
+@@ -78,7 +78,7 @@
+ 
+ }    // end namespace moodycamel
+ 
+-#if defined(AE_VCPP) || defined(AE_ICC)
++#if defined(AE_VCPP) // || defined(AE_ICC)
+ // VS2010 and ICC13 don't support std::atomic_*_fence, implement our own fences
+ 
+ #include <intrin.h>

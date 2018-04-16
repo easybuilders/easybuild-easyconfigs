@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'proovread'
+version = '2.14.1'
+commit = '21fecc0'
+
+homepage = 'https://github.com/BioInf-Wuerzburg/proovread'
+description = "PacBio hybrid error correction through iterative short read consensus"
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+source_urls = [
+    'https://github.com/BioInf-Wuerzburg/proovread/archive/',
+    'https://github.com/BioInf-Wuerzburg/SeqChunker/archive/',
+    'https://github.com/BioInf-Wuerzburg/SeqFilter/archive/',
+    'https://github.com/BioInf-Wuerzburg/bwa/archive/',
+]
+sources = [
+    {'download_filename': '%s.tar.gz' % commit, 'filename': SOURCE_TAR_GZ},
+    {'download_filename': '676b020.tar.gz', 'filename': 'SeqChunker-20160515.tar.gz'},
+    {'download_filename': 'add1396.tar.gz', 'filename': 'SeqFilter-20150910.tar.gz'},
+    {'download_filename': 'a0aadf4.tar.gz', 'filename': 'bwa-20150108.tar.gz'},
+]
+checksums = [
+    '112a33e597f332f788c918d6677226e901a6b86c19ffed1e83749ca124e62e89',  # proovread-2.14.1.tar.gz
+    'd1a559853ebb40d241652c751aa9c2b309a1b5ab52448f59c4a9dbed9a3bac93',  # SeqChunker-20160515.tar.gz
+    '6d90685050ca6ce0fe048c4f5d374405d6747745791722b4b01f4987138518ab',  # SeqFilter-20150910.tar.gz
+    '28883ca6e8246dd9bcd37afd5d57faa6da71142d49933d9744c4eff02a84352c',  # bwa-20150108.tar.gz
+]
+
+dependencies = [
+    ('Perl', '5.26.0'),
+    ('BLAST+', '2.7.1', '-Python-2.7.14'),
+    ('SAMtools', '1.6'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = "cp -a %(builddir)s/SeqChunker-*/* util/SeqChunker && "
+prebuildopts += "cp -a %(builddir)s/SeqFilter-*/* util/SeqFilter && "
+prebuildopts += "cp -a %(builddir)s/bwa-*/* util/bwa && cd util/bwa && "
+
+runtest = 'sample'
+
+installopts = 'PREFIX=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/proovread', 'bin/SeqChunker', 'bin/SeqFilter', 'bin/siamaera'],
+    'dirs': ['lib', 'util'],
+}
+
+moduleclass = 'bio'

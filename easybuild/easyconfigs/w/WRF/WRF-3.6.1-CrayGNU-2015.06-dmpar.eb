@@ -1,0 +1,41 @@
+name = 'WRF'
+version = '3.6.1'
+
+homepage = 'http://www.wrf-model.org'
+description = """The Weather Research and Forecasting (WRF) Model is a next-generation mesoscale
+ numerical weather prediction system designed to serve both operational forecasting and atmospheric
+ research needs."""
+
+toolchain = {'name': 'CrayGNU', 'version': '2015.06'}
+toolchainopts = {'opt': False}  # don't use agressive optimization, stick to -O2
+
+sources = ['%(name)sV%(version)s.TAR.gz']
+source_urls = [
+    'http://www2.mmm.ucar.edu/wrf/src/',
+    'http://www.mmm.ucar.edu/wrf/src/',
+]
+
+# csh is used by WRF install scripts
+builddependencies = [('tcsh', '6.18.01')]
+
+dependencies = [
+    ('JasPer', '1.900.1'),
+    ('cray-netcdf/4.3.2', EXTERNAL_MODULE),
+    ('cray-hdf5-parallel/1.8.13', EXTERNAL_MODULE),
+]
+
+patches = [
+    'WRF_parallel_build_fix.patch',
+    'WRF-3.6.1_known_problems.patch',
+    'WRF_tests_limit-runtimes.patch',
+]
+
+# limit parallel build to 20
+maxparallel = 20
+
+buildtype = "dmpar"
+versionsuffix = '-%s' % buildtype
+
+runtest = False
+
+moduleclass = 'geo'

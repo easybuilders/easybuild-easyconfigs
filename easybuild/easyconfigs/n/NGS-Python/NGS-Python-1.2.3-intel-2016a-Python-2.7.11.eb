@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'NGS-Python'
+version = '1.2.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ncbi/ngs'
+description = """NGS is a new, domain-specific API for accessing reads, alignments and pileups produced from
+ Next Generation Sequencing."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+
+source_urls = ['https://github.com/ncbi/ngs/archive/']
+sources = ['%(version)s.tar.gz']
+
+patches = ['NGS-Python-%(version)s_fix-prefix.patch']
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('NGS', version),
+    ('ncbi-vdb', '2.5.8-1'),
+]
+
+preconfigopts = "cd ngs-python && "
+
+# override default of using $HOME/ncbi-outdir
+configopts = "--build-prefix=%(builddir)s/ncbi-outdir "
+
+configopts += "--with-ngs-sdk-prefix=$EBROOTNGS "
+configopts += "--with-ncbi-vdb-prefix=$EBROOTNCBIMINVDB"
+
+buildopts = 'CC="$CC -c" CPP="$CXX" CP="$CXX -c" -C ngs-python'
+installopts = "-C ngs-python"
+
+parallel = 1
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python2.7/site-packages', 'share/examples-python'],
+}
+
+sanity_check_commands = [('python', "-c 'import ngs'")]
+
+moduleclass = 'bio'

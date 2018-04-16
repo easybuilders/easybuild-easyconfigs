@@ -1,0 +1,32 @@
+easyblock = 'ConfigureMake'
+
+name = 'cairo'
+version = '1.14.2'
+
+homepage = 'http://cairographics.org'
+description = """Cairo is a 2D graphics library with support for multiple output devices.
+ Currently supported output targets include the X Window System (via both Xlib and XCB), Quartz, Win32, image buffers,
+ PostScript, PDF, and SVG file output. Experimental backends include OpenGL, BeOS, OS/2, and DirectFB"""
+
+toolchain = {'name': 'intel', 'version': '2015b'}
+
+source_urls = ['http://cairographics.org/releases/']
+sources = [SOURCE_TAR_XZ]
+
+dependencies = [
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.8'),
+    ('libpng', '1.6.18'),
+    ('freetype', '2.6.1'),
+    ('pixman', '0.32.8'),
+    ('fontconfig', '2.11.94'),
+    ('expat', '2.1.0'),
+]
+
+# disable symbol lookup, which requires -lbfd, to avoid link issues with (non-PIC) libiberty.a provided by GCC
+configopts = "--enable-symbol-lookup=no"
+
+# workaround for "hidden symbol .* in .* is referenced by DSO" and "ld: final link failed: Bad value"
+buildopts = 'LD="$CC" LDFLAGS="$LDFLAGS -shared-intel"'
+
+moduleclass = 'vis'

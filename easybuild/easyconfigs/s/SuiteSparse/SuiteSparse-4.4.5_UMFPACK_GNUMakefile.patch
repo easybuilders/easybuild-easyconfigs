@@ -1,0 +1,56 @@
+# create libumfpack.so in SuiteSparse, as required by scikit-umfpack
+# author: Stefan Becuwe (derived from Makefile by Stefan Fuertinger, http://fuertinger.lima-city.de/research.html)
+--- SuiteSparse/UMFPACK/Lib/GNUmakefile.org	2014-03-21 20:16:16.000000000 +0100
++++ SuiteSparse/UMFPACK/Lib/GNUmakefile	2015-10-19 11:00:25.643072545 +0200
+@@ -2,16 +2,16 @@
+ # UMFPACK Makefile for compiling on Unix systems (for GNU Make)
+ #-------------------------------------------------------------------------------
+ 
+-default: libumfpack.a
++default: libumfpack.a libumfpack.so
+ 
+ include ../../SuiteSparse_config/SuiteSparse_config.mk
+ 
+ # UMFPACK can use CHOLMOD by default as an ordering option
+ ifneq (,$(findstring -DNCHOLMOD, $(UMFPACK_CONFIG)))
+-    I = -I../Include -I../Source -I../../AMD/Include -I../../SuiteSparse_config
++   I = -I../Include -I../Source -I../../AMD/Include -I../../SuiteSparse_config
+ else
+-    I = -I../Include -I../Source -I../../AMD/Include \
+-        -I../../SuiteSparse_config -I../../CHOLMOD/Include
++   I = -I../Include -I../Source -I../../AMD/Include \
++       -I../../SuiteSparse_config -I../../CHOLMOD/Include
+ endif
+ 
+ C = $(CC) $(CF) $(UMFPACK_CONFIG) $(I)
+@@ -69,7 +69,7 @@
+ 
+ # user-callable, only one version for int/SuiteSparse_long,
+ # real/complex, *.[ch] files:
+-GENERIC = umfpack_timer umfpack_tictoc
++GENERIC = umfpack_timer umfpack_tictoc umfpack_global
+ 
+ #-------------------------------------------------------------------------------
+ # include files:
+@@ -257,8 +257,11 @@
+ 	$(ARCHIVE)  libumfpack.a $^
+ 	- $(RANLIB) libumfpack.a
+ 
+-so: $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL)
+-	gcc -shared -Wl,-soname,libumfpack.so -o libumfpack.so $^
++libumfpack.so: $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL)
++	$(CC) -shared $^ -lm -L ../../CHOLMOD/Lib -lcholmod -L ../../CAMD/Lib -lcamd \
++	-L ../../COLAMD/Lib -lcolamd $(EBROOTMETIS)/lib/libmetis.a \
++	-L../../CCOLAMD/Lib -lccolamd -L ../../SuiteSparse_config -lsuitesparseconfig \
++	../../AMD/Lib/libamd.so -Wl,-soname -Wl,$@ -o libumfpack.so
+ 
+ #-------------------------------------------------------------------------------
+ # Remove all but the files in the original distribution
+@@ -266,6 +269,7 @@
+ 
+ purge: clean
+ 	- $(RM) libumfpack.a
++	- $(RM) libumfpack.so
+ 
+ clean:
+ 	- $(RM) $(CLEAN)

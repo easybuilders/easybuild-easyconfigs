@@ -1,0 +1,44 @@
+easyblock = 'EB_PSI'
+
+name = 'PSI4'
+version = '1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/psi4/psi4/archive/']
+sources = ['%(version)s.tar.gz']
+
+patches = [
+    'PSI4-%(version)s-plugin-fix.patch',
+    'PSI4-%(version)s-disable-ambit.patch',
+]
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('Boost', '1.61.0', versionsuffix),
+    ('PCMSolver', '1.1.4', versionsuffix),
+    ('CheMPS2', '1.7.2'),
+]
+
+builddependencies = [
+    ('CMake', '3.5.2'),
+    # ('Perl', '5.22.1', '-bare'),  # for the test suite
+]
+
+configopts = '-DENABLE_MPI=ON -DENABLE_OMP=ON -DENABLE_UNIT_TESTS=ON -DENABLE_CHEMPS2=ON -DENABLE_PLUGINS=ON'
+
+# CMake will pick mpiexec by default and this fails with intel MPI
+# configopts += ' -DMPIEXEC=$EBROOTIMPI/bin64/mpirun'
+
+# The tests don't work with MPI (most of them hang or fail)
+# ref: https://github.com/psi4/psi4/pull/436# issuecomment-230519769
+runtest = False
+
+moduleclass = 'chem'

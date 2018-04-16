@@ -1,0 +1,35 @@
+fixes to combine OpenBLAS 0.2.19 with LAPACK 3.7.0
+* upstream bugfix in Makefile for LAPACK 3.7.0, cfr. https://github.com/Reference-LAPACK/lapack/commit/c5788233f95fed2c7f008ea079e8257a85348287
+* fix copying of lapacke_mangling.h, since it was renamed in LAPACK 3.7.0
+author: Kenneth Hoste (HPC-UGent)
+--- OpenBLAS-0.2.19/Makefile.install.orig	2017-01-04 15:51:12.483541471 +0100
++++ OpenBLAS-0.2.19/Makefile.install	2017-01-04 15:51:27.583647000 +0100
+@@ -50,7 +50,7 @@
+ 	@echo Copying LAPACKE header files to $(DESTDIR)$(OPENBLAS_INCLUDE_DIR)
+ 	@-install -pm644 $(NETLIB_LAPACK_DIR)/LAPACKE/include/lapacke.h "$(DESTDIR)$(OPENBLAS_INCLUDE_DIR)/lapacke.h"
+ 	@-install -pm644 $(NETLIB_LAPACK_DIR)/LAPACKE/include/lapacke_config.h "$(DESTDIR)$(OPENBLAS_INCLUDE_DIR)/lapacke_config.h"
+-	@-install -pm644 $(NETLIB_LAPACK_DIR)/LAPACKE/include/lapacke_mangling_with_flags.h "$(DESTDIR)$(OPENBLAS_INCLUDE_DIR)/lapacke_mangling.h"
++	@-install -pm644 $(NETLIB_LAPACK_DIR)/LAPACKE/include/lapacke_mangling.h "$(DESTDIR)$(OPENBLAS_INCLUDE_DIR)/lapacke_mangling.h"
+ 	@-install -pm644 $(NETLIB_LAPACK_DIR)/LAPACKE/include/lapacke_utils.h "$(DESTDIR)$(OPENBLAS_INCLUDE_DIR)/lapacke_utils.h"
+ endif
+ 
+--- OpenBLAS-0.2.19/lapack-netlib/SRC/CMakeLists.txt.orig
++++ OpenBLAS-0.2.19/lapack-netlib/SRC/CMakeLists.txt
+@@ -454,7 +454,6 @@ set(ZLASRC
+    zgelqt.f zgelqt3.f zgemlqt.f
+    zgetsls.f zgeqr.f zlatsqr.f zlamtsqr.f zgemqr.f
+    zgelq.f zlaswlq.f zlamswlq.f zgemlq.f
+-   ztplqt.f ztplqt2.f ztpmlqt.f
+    zhetrd_2stage.f zhetrd_he2hb.f zhetrd_hb2st.F zhb2st_kernels.f
+    zheevd_2stage.f zheev_2stage.f zheevx_2stage.f zheevr_2stage.f
+    zhbev_2stage.f zhbevx_2stage.f zhbevd_2stage.f zhegv_2stage.f)
+--- OpenBLAS-0.2.19/lapack-netlib/SRC/Makefile.orig
++++ OpenBLAS-0.2.19/lapack-netlib/SRC/Makefile
+@@ -464,7 +464,6 @@ ZLASRC = \
+    zgelqt.o zgelqt3.o zgemlqt.o \
+    zgetsls.o zgeqr.o zlatsqr.o zlamtsqr.o zgemqr.o \
+    zgelq.o zlaswlq.o zlamswlq.o zgemlq.o \
+-   ztplqt.o ztplqt2.o ztpmlqt.o \
+    zhetrd_2stage.o zhetrd_he2hb.o zhetrd_hb2st.o zhb2st_kernels.o \
+    zheevd_2stage.o zheev_2stage.o zheevx_2stage.o zheevr_2stage.o \
+    zhbev_2stage.o zhbevx_2stage.o zhbevd_2stage.o zhegv_2stage.o

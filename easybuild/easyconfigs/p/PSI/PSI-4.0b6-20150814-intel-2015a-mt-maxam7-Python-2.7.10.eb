@@ -1,0 +1,40 @@
+name = 'PSI'
+version = '4.0b6-20150814'
+versionsuffix = '-mt-maxam7'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+toolchainopts = {'usempi': False}
+
+source_urls = ['https://github.com/psi4/psi4public/archive/']
+sources = ['7baee9b8ff6e30b39a7ee627750a518c39bd84f3.tar.gz']
+
+patches = [
+    'PSI-%(version)s-fix-gitversion.patch',
+]
+
+configopts = '-DLIBINT_OPT_AM=7 -DENABLE_PLUGINS=ON -DENABLE_DUMMY_PLUGIN=ON '
+
+python = 'Python'
+pyver = '2.7.10'
+pysuff = '-%s-%s' % (python, pyver)
+versionsuffix += pysuff
+
+dependencies = [
+    (python, pyver),
+    ('Boost', '1.59.0', pysuff),
+]
+
+builddependencies = [
+    ('CMake', '3.2.3'),
+    ('Perl', '5.20.1', '-bare'),  # for the test suite
+]
+
+# Execute only the 'quick' tests and run 4 in parallel
+runtest = 'ARGS="-V -L quicktests -j 4 -E \'pywrap-freq-e-sowreap|stability1|libefp-qchem-qmefp-puream-sp\'" test'
+
+moduleclass = 'chem'

@@ -1,0 +1,335 @@
+add extra functionality for timed pingpong
+an attempt was made to push this upstream, but it was deemed 'out of scope' for mpi4py
+author: Stijn De Weirdt (HPC-UGent)
+--- src/MPI/Comm.pyx.orig	2010-04-29 15:50:19.332105000 +0200
++++ src/MPI/Comm.pyx	2010-05-05 16:12:43.712720000 +0200
+@@ -146,6 +146,329 @@
+             rmsg.buf, rmsg.count, rmsg.dtype,
+             source, tag, self.ob_mpi, statusp) )
+ 
++
++
++    def PingpongSR(self, rbuf,sbuf, int rsource=0,int sdest=0, int rtag = 0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        cdef int i = 0
++        cdef double start = MPI_Wtime()
++        for i from 0 <= i < num:
++            with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++            with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++    def PingpongRS(self, rbuf, sbuf, int rsource=0, int sdest=0, int rtag=0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        cdef int i = 0
++        cdef double start = MPI_Wtime()
++        for i from 0 <= i < num:
++            with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++            with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++    def PingpongSR25(self, rbuf,sbuf, int rsource=0,int sdest=0, int rtag = 0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        cdef int i = 0
++        cdef int endl = 25
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double start = MPI_Wtime()
++        for i from 0 <= i < endl:
++            with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++            with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++    def PingpongRS25(self, rbuf, sbuf, int rsource=0, int sdest=0, int rtag=0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        cdef int i = 0
++        cdef int endl = 25
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double start = MPI_Wtime()
++        for i from 0 <= i < endl:
++            with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++            with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++
++    def PingpongSR10(self, rbuf,sbuf, int rsource=0,int sdest=0, int rtag = 0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        cdef int i = 0
++        cdef int endl = 10
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double start = MPI_Wtime()
++        for i from 0 <= i < endl:
++            with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++            with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++    def PingpongRS10(self, rbuf, sbuf, int rsource=0, int sdest=0, int rtag=0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        cdef int i = 0
++        cdef int endl = 10
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double start = MPI_Wtime()
++        for i from 0 <= i < endl:
++            with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++            with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++    def PingpongSR5(self, rbuf,sbuf, int rsource=0,int sdest=0, int rtag = 0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        cdef int i = 0
++        cdef int endl = 5
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double start = MPI_Wtime()
++        for i from 0 <= i < endl:
++            with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++            with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++    def PingpongRS5(self, rbuf, sbuf, int rsource=0, int sdest=0, int rtag=0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        cdef int i = 0
++        cdef int endl = 5
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double start = MPI_Wtime()
++        for i from 0 <= i < endl:
++            with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++            with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++
++
++    def PingpongSRU10(self, rbuf,sbuf, int rsource=0,int sdest=0, int rtag = 0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double start = MPI_Wtime()
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
++    def PingpongRSU10(self, rbuf, sbuf, int rsource=0, int sdest=0, int rtag=0,int stag=0, int num=1, Status rstatus=None):
++        cdef _p_msg_p2p rmsg = message_p2p_recv(rbuf, rsource)
++        cdef MPI_Status *rstatusp = arg_Status(rstatus)
++        cdef _p_msg_p2p smsg = message_p2p_send(sbuf, sdest)
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double start = MPI_Wtime()
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        with nogil: CHKERR( MPI_Recv(
++                rmsg.buf, rmsg.count, rmsg.dtype,
++                rsource, rtag, self.ob_mpi, rstatusp) )
++        with nogil: CHKERR( MPI_Send(
++                smsg.buf, smsg.count, smsg.dtype,
++                sdest, stag, self.ob_mpi) )
++        cdef double end = MPI_Wtime()
++        return (start,end)
++
+     # Send-Receive
+     # ------------
+ 

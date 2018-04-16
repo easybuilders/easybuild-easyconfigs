@@ -1,0 +1,50 @@
+easyblock = 'Bundle'
+
+name = 'R-bundle-pbd'
+version = '20150605'
+rver = '3.1.3'
+versionsuffix = '-R-%s' % rver
+
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'intel', 'version': '2015a'}
+
+# these are extensions for R
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+dependencies = [
+    ('R', rver),
+]
+
+name_tmpl = '%(name)s_%(version)s.tar.gz'
+ext_options = {
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'http://cran.r-project.org/src/contrib/',  # current version of packages
+        'http://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': name_tmpl,
+}
+
+# !! order of packages is important !!
+exts_list = [
+    ('pbdMPI', '0.2-5', ext_options),
+    ('pbdSLAP', '0.2-0', ext_options),
+    ('pbdBASE', '0.2-3', dict(ext_options.items() +
+                              [('patches', ['pbdBASE-02.3-0_ignore-BI_COMM_GLOBAL-for-intel-mpi.patch'])])),
+    ('pbdDMAT', '0.2-3', ext_options),
+    ('pbdDEMO', '0.2-0', ext_options),
+    ('pmclust', '0.1-6', ext_options),
+    ('EMCluster', '0.2-4', ext_options),
+]
+
+modextrapaths = {'R_LIBS': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['EMCluster', 'pbdBASE', 'pbdDEMO', 'pbdDMAT', 'pbdMPI', 'pbdSLAP', 'pmclust'],
+}
+
+moduleclass = 'lang'

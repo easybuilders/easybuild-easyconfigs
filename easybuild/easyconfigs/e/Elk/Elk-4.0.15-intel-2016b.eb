@@ -1,0 +1,47 @@
+easyblock = 'MakeCp'
+
+name = 'Elk'
+version = '4.0.15'
+
+homepage = 'http://elk.sourceforge.net/'
+description = """An all-electron full-potential linearised augmented-plane wave (FP-LAPW) code with
+many advanced features. Written originally at Karl-Franzens-Universität Graz as a milestone of the
+EXCITING EU Research and Training Network, the code is designed to be as simple as possible so that
+new developments in the field of density functional theory (DFT) can be added quickly and reliably.
+"""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+toolchainopts = {'usempi': True}
+
+sources = [SOURCELOWER_TGZ]
+source_urls = [SOURCEFORGE_SOURCE]
+
+checksums = [
+    '760623faf5aab9b1f49488edbaae65fb',  # elk-4.0.15.tgz
+]
+
+dependencies = [
+    ('libxc', '2.2.3'),
+]
+
+
+# make.inc file is generated interactively by "setup" command, creating it here
+prebuildopts = 'echo "F90_OPTS = $FFLAGS" > make.inc && '
+prebuildopts += 'echo "F77_OPTS = $FFLAGS" >> make.inc && '
+prebuildopts += 'echo "LIB_LPK = $LIBLAPACK" >> make.inc && '
+prebuildopts += 'echo "LIB_libxc = $EBROOTLIBXC/lib/libxcf90.a $EBROOTLIBXC/lib/libxc.a" >> make.inc && '
+prebuildopts += 'echo "SRC_libxc = libxc_funcs.f90 libxc.f90 libxcifc.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_FFT = zfftifc_fftw.f90" >> make.inc && '
+
+buildopts = 'all'
+
+parallel = 1
+
+files_to_copy = [(['src/elk', 'src/spacegroup/spacegroup', 'src/eos/eos'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/elk', 'bin/spacegroup', 'bin/eos'],
+    'dirs': []
+}
+
+moduleclass = 'phys'

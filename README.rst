@@ -1,7 +1,7 @@
-.. image:: http://hpcugent.github.io/easybuild/images/easybuild_logo_small.png
+.. image:: https://easybuilders.github.io/easybuild/images/easybuild_logo_small.png
    :align: center
 
-`EasyBuild <https://hpcugent.github.io/easybuild>`_ is a software build
+`EasyBuild <https://easybuilders.github.io/easybuild>`_ is a software build
 and installation framework that allows you to manage (scientific) software
 on High Performance Computing (HPC) systems in an efficient way.
 
@@ -15,7 +15,7 @@ The EasyBuild documentation is available at http://easybuild.readthedocs.org/.
 
 The easybuild-easyconfigs package is hosted on GitHub, along
 with an issue tracker for bug reports and feature requests, see
-http://github.com/hpcugent/easybuild-easyconfigs.
+https://github.com/easybuilders/easybuild-easyconfigs.
 
 Related Python packages:
 
@@ -23,33 +23,23 @@ Related Python packages:
 
   * the EasyBuild framework, which includes the ``easybuild.framework`` and ``easybuild.tools`` Python
     packages that provide general support for building and installing software
-  * GitHub repository: http://github.com/hpcugent/easybuild-framework
+  * GitHub repository: https://github.com/easybuilders/easybuild-framework
   * PyPi: https://pypi.python.org/pypi/easybuild-framework
 
 * **easybuild-easyblocks**
 
   * a collection of easyblocks that implement support for building and installing (groups of) software packages
-  * GitHub repository: http://github.com/hpcugent/easybuild-easyblocks
+  * GitHub repository: https://github.com/easybuilders/easybuild-easyblocks
   * package on PyPi: https://pypi.python.org/pypi/easybuild-easyblocks
 
 *Build status overview:*
 
-* **master** branch *(Python 2.4, Python 2.6, Python 2.7)*
+* **master** branch:
 
-  .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python24/badge/icon
-      :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python24/
+  .. image:: https://travis-ci.org/easybuilders/easybuild-easyconfigs.svg?branch=master
+      :target: https://travis-ci.org/easybuilders/easybuild-easyconfigs/branches
 
-  .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master/badge/icon
-      :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master/  
+* **develop** branch:
 
-  .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python27/badge/icon
-      :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_master-python27/ 
-
-* **develop** branch *(Python 2.4, Python 2.6, Python 2.7)*
-
-  .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop-python24/badge/icon
-      :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop-python24/  
-  .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop/badge/icon
-      :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop/  
-  .. image:: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop-python27/badge/icon
-      :target: https://jenkins1.ugent.be/view/EasyBuild/job/easybuild-easyconfigs_unit-test_hpcugent_develop-python27/
+  .. image:: https://travis-ci.org/easybuilders/easybuild-easyconfigs.svg?branch=develop
+      :target: https://travis-ci.org/easybuilders/easybuild-easyconfigs/branches

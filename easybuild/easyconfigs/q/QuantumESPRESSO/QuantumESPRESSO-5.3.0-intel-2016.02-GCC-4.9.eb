@@ -1,0 +1,68 @@
+name = 'QuantumESPRESSO'
+version = '5.3.0'
+
+homepage = 'http://www.pwscf.org/'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes
+ for electronic-structure calculations and materials modeling at the nanoscale.
+ It is based on density-functional theory, plane waves, and pseudopotentials
+  (both norm-conserving and ultrasoft)."""
+
+toolchain = {'name': 'intel', 'version': '2016.02-GCC-4.9'}
+toolchainopts = {'usempi': True}
+
+# major part of this list was determined from espresso/install/plugins_list
+sources = [
+    'espresso-%(version)s.tar.gz',
+    'wannier90-1.2.tar.gz',
+    'atomic-%(version)s.tar.gz',
+    'neb-%(version)s.tar.gz',
+    'PHonon-%(version)s.tar.gz',
+    # must be downloaded manually from
+    # http://qe-forge.org/gf/project/q-e/scmsvn/?action=browse&path=%2F%2Acheckout%2A%2Ftags%2FQE-5.2.1%2Fespresso%2Farchive%2Fplumed-1.3-qe.tar.gz&revision=11758
+    # gets updated without changes to filename, cfr. http://qe-forge.org/pipermail/q-e-commits/2015-June/007359.html
+    # 'plumed-1.3-qe-r11758.tar.gz',
+    'pwcond-%(version)s.tar.gz',
+    'tddfpt-%(version)s.tar.gz',
+    'want-2.5.1-base.tar.gz',
+    'yambo-3.4.2.tgz',
+    'xspectra-%(version)s.tar.gz',
+]
+missing_sources = [
+    'sax-2.0.3.tar.gz',  # nowhere to be found
+]
+source_urls = [
+    'http://files.qe-forge.org/index.php?file=',  # all sources, except espresso*.tar.gz
+    'http://qe-forge.org/gf/download/frsrelease/204/912/',  # espresso-5.3.0.tar.gz
+    'http://qe-forge.org/gf/download/frsrelease/153/618/',  # want-2.5.1-base.tar.gz
+    'http://qe-forge.org/gf/download/frsrelease/208/932/',  # yambo-3.4.2.tgz
+]
+
+patches = [
+    'QuantumESPRESSO-%(version)s_yambo-fixes.patch',
+    'QuantumESPRESSO-%(version)s_fftxlib-fixes.patch',
+]
+
+# source checksums
+checksums = [
+    '6848fcfaeb118587d6be36bd10b7f2c3',  # espresso-5.3.0.tar.gz
+    'a1e9611b9a82941c23426028d112186e',  # wannier90-1.2.tar.gz
+    'e713f74b78a04600265e697ca346bea1',  # atomic-5.3.0.tar.gz
+    '91157da66570deb4e7a353a23621a39f',  # neb-5.3.0.tar.gz
+    '994c89e72b5500bceb44dada7134cc12',  # PHonon-5.3.0.tar.gz
+    # 'f094031c6d13a0e00022daf4d7c847c7',  # plumed-1.3-qe-r11758.tar.gz
+    '897753893dc46502de24b81929694ee1',  # pwcond-5.3.0.tar.gz
+    'ac9d86386f2b2d28a6b00c902668669b',  # tddfpt-5.3.0.tar.gz
+    'ac365daebbe380bf4019235eacf71079',  # want-2.5.1-base.tar.gz
+    'f0820a0f42dfc81ce3811af647bed777',  # yambo-3.4.2.tgz
+    'fc7d9d80e00185afcab44307d3b70a65',  # xspectra-5.3.0.tar.gz
+]
+
+# gipaw excluded due to: configure: error: Cannot compile against this version of Quantum-Espresso
+# add plumed and uncomment the lines in sources and checksums if the package is downloaded manually
+# 'all' not used here because upftools are missing from 5.3.0 package
+buildopts = 'pw ph pp pwcond neb cp ld1 tddfpt w90 want yambo xspectra'  # plumed
+
+# parallel build tends to fail
+parallel = 1
+
+moduleclass = 'chem'

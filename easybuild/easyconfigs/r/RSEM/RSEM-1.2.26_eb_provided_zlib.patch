@@ -1,0 +1,162 @@
+#Use EB provided libz and use EB provided CXX and CXXFLAGS
+# January 11, 2016 by B. Hajgato (Vrije Ubiversiteit Brussel)
+--- Makefile.orig	2016-01-08 02:23:01.000000000 +0100
++++ Makefile	2016-01-18 12:02:56.406105229 +0100
+@@ -1,6 +1,6 @@
+-CC = g++
+-CFLAGS = -Wall -c -I.
+-COFLAGS = -Wall -O3 -ffast-math -c -I.
++#CC = g++
++#CFLAGS = -Wall -c -I.
++COFLAGS =  ${CXXFLAGS} -Wall -c -I.
+ PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads
+ 
+ .PHONY : all ebseq clean
+@@ -8,6 +8,8 @@
+ all : $(PROGRAMS)
+ 
+ sam/libbam.a :
++	sed -e 's/ -lz/ -L\$$\{EBROOTZLIB\}\/lib -lz/' -i sam/Makefile
++	sed -e 's/ -lz/ -L\$$\{EBROOTZLIB\}\/lib -lz/' -i sam/bcftools/Makefile
+ 	cd sam ; ${MAKE} all
+ 
+ Transcript.h : utils.h
+@@ -15,10 +17,10 @@
+ Transcripts.h : utils.h my_assert.h Transcript.h
+ 
+ rsem-extract-reference-transcripts : utils.h my_assert.h GTFItem.h Transcript.h Transcripts.h extractRef.cpp
+-	$(CC) -Wall -O3 extractRef.cpp -o rsem-extract-reference-transcripts
++	$(CXX) -Wall ${CXXFLAGS} extractRef.cpp -o rsem-extract-reference-transcripts
+ 
+ rsem-synthesis-reference-transcripts : utils.h my_assert.h Transcript.h Transcripts.h synthesisRef.cpp
+-	$(CC) -Wall -O3 synthesisRef.cpp -o rsem-synthesis-reference-transcripts
++	$(CXX) -Wall ${CXXFLAGS} synthesisRef.cpp -o rsem-synthesis-reference-transcripts
+ 
+ BowtieRefSeqPolicy.h : RefSeqPolicy.h
+ 
+@@ -28,10 +30,10 @@
+ 
+ 
+ rsem-preref : preRef.o
+-	$(CC) preRef.o -o rsem-preref
++	$(CXX) preRef.o -o rsem-preref
+ 
+ preRef.o : utils.h RefSeq.h Refs.h PolyARules.h RefSeqPolicy.h AlignerRefSeqPolicy.h preRef.cpp
+-	$(CC) $(COFLAGS) preRef.cpp
++	$(CXX) $(COFLAGS) preRef.cpp
+ 
+ 
+ SingleRead.h : Read.h
+@@ -52,14 +54,14 @@
+ 
+ 
+ rsem-parse-alignments : parseIt.o sam/libbam.a
+-	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz -lpthread 
++	$(CXX) -o rsem-parse-alignments parseIt.o sam/libbam.a -L${EBROOTZLIB}/lib -lz -lpthread 
+ 
+ parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h Transcripts.h sam/sam.h sam/bam.h parseIt.cpp
+-	$(CC) -Wall -O2 -c -I. parseIt.cpp
++	$(CXX) $(COFLAGS) parseIt.cpp
+ 
+ 
+ rsem-build-read-index : utils.h buildReadIndex.cpp
+-	$(CC) -O3 buildReadIndex.cpp -o rsem-build-read-index
++	$(CXX) ${CXXFLAGS} buildReadIndex.cpp -o rsem-build-read-index
+ 
+ 
+ simul.h : boost/random.hpp
+@@ -87,57 +89,57 @@
+ WriteResults.h : utils.h my_assert.h GroupInfo.h Transcript.h Transcripts.h RefSeq.h Refs.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h
+ 
+ rsem-run-em : EM.o sam/libbam.a
+-	$(CC) -o rsem-run-em EM.o sam/libbam.a -lz -lpthread
++	$(CXX) -o rsem-run-em EM.o sam/libbam.a -L${EBROOTZLIB}/lib -lz -lpthread
+ 
+ EM.o : utils.h my_assert.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h sam/bam.h sam/sam.h simul.h sam_rsem_aux.h sampling.h boost/random.hpp WriteResults.h EM.cpp
+-	$(CC) $(COFLAGS) EM.cpp
++	$(CXX) $(COFLAGS) EM.cpp
+ 
+ bc_aux.h : sam/bam.h
+ 
+ BamConverter.h : utils.h my_assert.h sam/sam.h sam/bam.h sam_rsem_aux.h sam_rsem_cvt.h bc_aux.h Transcript.h Transcripts.h
+ 
+ rsem-tbam2gbam : utils.h Transcripts.h Transcript.h bc_aux.h BamConverter.h sam/sam.h sam/bam.h sam/libbam.a sam_rsem_aux.h sam_rsem_cvt.h tbam2gbam.cpp sam/libbam.a
+-	$(CC) -O3 -Wall tbam2gbam.cpp sam/libbam.a -lz -lpthread -o $@
++	$(CXX) ${CXXFLAGS} -Wall tbam2gbam.cpp sam/libbam.a -L${EBROOTZLIB}/lib -lz -lpthread -o $@
+ 
+ rsem-bam2wig : utils.h my_assert.h wiggle.h wiggle.o sam/libbam.a bam2wig.cpp
+-	$(CC) -O3 -Wall bam2wig.cpp wiggle.o sam/libbam.a -lz -lpthread -o $@
++	$(CXX) ${CXXFLAGS} -Wall bam2wig.cpp wiggle.o sam/libbam.a -L${EBROOTZLIB}/lib -lz -lpthread -o $@
+ 
+ rsem-bam2readdepth : utils.h my_assert.h wiggle.h wiggle.o sam/libbam.a bam2readdepth.cpp
+-	$(CC) -O3 -Wall bam2readdepth.cpp wiggle.o sam/libbam.a -lz -lpthread -o $@
++	$(CXX) ${CXXFLAGS} -Wall bam2readdepth.cpp wiggle.o sam/libbam.a -L${EBROOTZLIB}/lib -lz -lpthread -o $@
+ 
+ wiggle.o: sam/bam.h sam/sam.h wiggle.cpp wiggle.h
+-	$(CC) $(COFLAGS) wiggle.cpp
++	$(CXX) $(COFLAGS) wiggle.cpp
+ 
+ rsem-simulate-reads : simulation.o
+-	$(CC) -o rsem-simulate-reads simulation.o
++	$(CXX) -o rsem-simulate-reads simulation.o
+ 
+ simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h boost/random.hpp WriteResults.h simulation.cpp
+-	$(CC) $(COFLAGS) simulation.cpp
++	$(CXX) $(COFLAGS) simulation.cpp
+ 
+ rsem-run-gibbs : Gibbs.o
+-	$(CC) -o rsem-run-gibbs Gibbs.o -lpthread
++	$(CXX) -o rsem-run-gibbs Gibbs.o -lpthread
+ 
+ #some header files are omitted
+ Gibbs.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h WriteResults.h Gibbs.cpp 
+-	$(CC) $(COFLAGS) Gibbs.cpp
++	$(CXX) $(COFLAGS) Gibbs.cpp
+ 
+ Buffer.h : my_assert.h
+ 
+ rsem-calculate-credibility-intervals : calcCI.o
+-	$(CC) -o rsem-calculate-credibility-intervals calcCI.o -lpthread
++	$(CXX) -o rsem-calculate-credibility-intervals calcCI.o -lpthread
+ 
+ #some header files are omitted
+ calcCI.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h WriteResults.h Buffer.h calcCI.cpp
+-	$(CC) $(COFLAGS) calcCI.cpp
++	$(CXX) $(COFLAGS) calcCI.cpp
+ 
+ rsem-get-unique : sam/bam.h sam/sam.h getUnique.cpp sam/libbam.a
+-	$(CC) -O3 -Wall getUnique.cpp sam/libbam.a -lz -lpthread -o $@
++	$(CXX) ${CXXFLAGS} -Wall getUnique.cpp sam/libbam.a -L${EBROOTZLIB}/lib -lz -lpthread -o $@
+ 
+ rsem-sam-validator : sam/bam.h sam/sam.h my_assert.h samValidator.cpp sam/libbam.a
+-	$(CC) -O3 -Wall samValidator.cpp sam/libbam.a -lz -lpthread -o $@
++	$(CXX) ${CXXFLAGS} -Wall samValidator.cpp sam/libbam.a -L${EBROOTZLIB}/lib -lz -lpthread -o $@
+ 
+ rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEndReads.cpp sam/libbam.a
+-	$(CC) -O3 -Wall scanForPairedEndReads.cpp sam/libbam.a -lz -lpthread -o $@
++	$(CXX) ${CXXFLAGS} -Wall scanForPairedEndReads.cpp sam/libbam.a -L${EBROOTZLIB}/lib -lz -lpthread -o $@
+ 
+ ebseq :
+ 	cd EBSeq ; ${MAKE} all
+--- sam/Makefile.orig	2016-01-08 02:23:01.000000000 +0100
++++ sam/Makefile	2016-01-18 12:08:43.769066188 +0100
+@@ -1,7 +1,7 @@
+-CC=			gcc
++#CC=			gcc
+ CFLAGS_EXTRA=
+ #CFLAGS_EXTRA= -L/usr/include/ncurses
+-CFLAGS=		-g -Wall -O2 $(CFLAGS_EXTRA)
++#CFLAGS=		-g -Wall -O2 $(CFLAGS_EXTRA)
+ #LDFLAGS=		-Wl,-rpath,\$$ORIGIN/../lib
+ DFLAGS_EXTRA=
+ #DFLAGS_EXTRA= -Dexpl=exp -Dlogl=log
+--- sam/bcftools/Makefile.orig	2016-01-08 02:23:01.000000000 +0100
++++ sam/bcftools/Makefile	2016-01-18 12:09:10.076063429 +0100
+@@ -1,5 +1,5 @@
+-CC=			gcc
+-CFLAGS=		-g -Wall -O2 #-m64 #-arch ppc
++#CC=			gcc
++#CFLAGS=		-g -Wall -O2 #-m64 #-arch ppc
+ DFLAGS=		-D_FILE_OFFSET_BITS=64 -D_USE_KNETFILE
+ LOBJS=		bcf.o vcf.o bcfutils.o prob1.o em.o kfunc.o kmin.o index.o fet.o mut.o bcf2qcall.o
+ OMISC=		..

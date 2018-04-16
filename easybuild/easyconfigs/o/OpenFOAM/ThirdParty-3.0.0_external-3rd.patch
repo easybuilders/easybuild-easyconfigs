@@ -1,0 +1,72 @@
+#Use external CGAL and METIS (via CGAL_ROOT, and METIS_ROOT in easyconfig)
+#B. Hajgato Nov 16 2015
+ echo ========================================
+ echo Build CGAL
+--- ThirdParty-3.0.0/Allwmake.orig	2015-11-16 11:33:12.114263189 +0100
++++ ThirdParty-3.0.0/Allwmake	2015-11-16 14:34:21.894507037 +0100
+@@ -326,34 +326,46 @@
+ echo ========================================
+ echo Build Metis decomposition
+ 
+-# get METIS_VERSION, METIS_ARCH_PATH
+-if settings=`$WM_PROJECT_DIR/bin/foamEtcFile config/metis.sh`
++if [ -n "$METIS_ROOT" ]
+ then
+-    . $settings
++    METIS_ARCH_PATH=$METIS_ROOT
+ fi
+-if [ -d "$METIS_VERSION" ]
+-then
+ 
+-    if [ -f $METIS_ARCH_PATH/include/metis.h \
+-      -a -r $FOAM_EXT_LIBBIN/libmetis.so ]
+-    then
++if [ -f $METIS_ARCH_PATH/include/metis.h \
++    -a -r $METIS_ARCH_PATH/lib/libmetis.so ]
++then
+         echo "    metis header in $METIS_ARCH_PATH/include"
+-        echo "    metis libs   in $FOAM_EXT_LIBBIN"
++        echo "    metis libs   in $METIS_ARCH_PATH/lib"
+         echo
++else
++    # get METIS_VERSION, METIS_ARCH_PATH
++    if settings=`$WM_PROJECT_DIR/bin/foamEtcFile config/metis.sh`
++    then
++        . $settings
++    fi
++    if [ -d "$METIS_VERSION" ]
++    then
++
++        if [ -f $METIS_ARCH_PATH/include/metis.h \
++          -a -r $FOAM_EXT_LIBBIN/libmetis.so ]
++        then
++            echo "    metis header in $METIS_ARCH_PATH/include"
++            echo "    metis libs   in $FOAM_EXT_LIBBIN"
++            echo
++        else
++        (
++            set -x
++            cd $METIS_VERSION  || exit 1
++            make config shared=1 prefix=$METIS_ARCH_PATH
++            make -j $WM_NCOMPPROCS install
++            cp $METIS_ARCH_PATH/lib/libmetis.so $FOAM_EXT_LIBBIN
++        )
++        fi
+     else
+-    (
+-        set -x
+-        cd $METIS_VERSION  || exit 1
+-        make config shared=1 prefix=$METIS_ARCH_PATH
+-        make -j $WM_NCOMPPROCS install
+-        cp $METIS_ARCH_PATH/lib/libmetis.so $FOAM_EXT_LIBBIN
+-    )
++        echo "    optional component Metis was not found"
+     fi
+-else
+-    echo "    optional component Metis was not found"
+ fi
+ 
+-
+ # CGAL is optional
+ echo ========================================
+ echo Build CGAL

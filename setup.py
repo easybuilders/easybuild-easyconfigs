@@ -1,14 +1,14 @@
 ##
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2018 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,7 +41,13 @@ from distutils import log
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
-VERSION = "2.1.0dev"
+#
+# important note: dev versions should follow the 'X.Y.Z.dev0' format
+# see https://www.python.org/dev/peps/pep-0440/#developmental-releases
+# recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
+#   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
+# This causes problems further up the dependency chain...
+VERSION = '3.6.0.dev0'
 
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
@@ -51,9 +57,11 @@ rc_regexp = re.compile("^.*(rc[0-9]*)$")
 res = rc_regexp.search(str(VERSION))
 if res:
     suff = res.group(1)
-dev_regexp = re.compile("^.*[0-9]dev$")
-if dev_regexp.match(VERSION):
-    suff = 'dev'
+
+dev_regexp = re.compile("^.*[0-9](.?dev[0-9])$")
+res = dev_regexp.search(VERSION)
+if res:
+    suff = res.group(1)
 
 API_VERSION += suff
 EB_VERSION += suff
@@ -96,12 +104,12 @@ setup(
     version = VERSION,
     author = "EasyBuild community",
     author_email = "easybuild@lists.ugent.be",
-    description = """Easyconfig files are simple build specification files for EasyBuild,
+    description = """Easyconfig files are simple build specification files for EasyBuild, \
 that specify the build parameters for software packages (version, compiler toolchain, dependency \
 versions, etc.).""",
     license = "GPLv2",
     keywords = "software build building installation installing compilation HPC scientific",
-    url = "http://hpcugent.github.com/easybuild",
+    url = "https://easybuilders.github.io/easybuild/",
     data_files = get_data_files(),
     long_description = read("README.rst"),
     classifiers = [

@@ -1,0 +1,26 @@
+ensure that Tcl/Tk library paths are correct, to fix segmentation fault that occurs when plotting because system
+libraries are picked up;
+the problem is that the query_tcktl method guesses the Tk library path based on the Tcl library path by simply
+replacing 'Tcl'/'tcl' with 'Tk'/'tk', which doesn't work if the Tk install prefix is different (e.g. due to a
+versionsuffix)
+author: Kenneth Hoste (HPC-UGent)
+-- matplotlib-1.5.1.orig/setupext.py	2016-01-11 04:06:08.000000000 +0100
++++ matplotlib-1.5.1/setupext.py	2016-04-29 15:43:21.280170000 +0200
+@@ -1560,7 +1560,16 @@
+ 
+             # Query Tcl/Tk system for library paths and version string
+             try:
+-                tcl_lib_dir, tk_lib_dir, tk_ver = self.query_tcltk()
++                tcl_lib_dir, tk_lib_dir, tk_ver = None, None, None
++                if 'EBROOTTCL' in os.environ and 'EBVERSIONTCL' in os.environ:
++                    tcl_ver = '.'.join(os.environ['EBVERSIONTCL'].split('.')[:2])
++                    tcl_lib_dir = os.path.join(os.environ['EBROOTTCL'], 'lib', 'tcl%s' % tcl_ver)
++                if 'EBROOTTK' in os.environ and 'EBVERSIONTK' in os.environ:
++                    tk_ver = '.'.join(os.environ['EBVERSIONTK'].split('.')[:2])
++                    tk_lib_dir = os.path.join(os.environ['EBROOTTK'], 'lib', 'tk%s' % tk_ver)
++
++                if tcl_lib_dir is None or tk_lib_dir is None or tk_ver is None:
++                        tcl_lib_dir, tk_lib_dir, tk_ver = self.query_tcltk()
+             except:
+                 tk_ver = ''
+                 result = self.hardcoded_tcl_config()

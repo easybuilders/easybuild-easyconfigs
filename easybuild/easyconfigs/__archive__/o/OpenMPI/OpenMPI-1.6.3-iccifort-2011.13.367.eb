@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '1.6.3'
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'iccifort', 'version': '2011.13.367'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+
+configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-openib '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
+
+dependencies = [('hwloc', '1.6')]
+
+# needed for --with-openib
+osdependencies = [('libibverbs-dev', 'libibverbs-devel')]
+
+libs = ["mca_common_sm", "mpi_cxx", "mpi_f77", "mpi_f90", "mpi", "ompitrace", "open-pal",
+        "otfaux", "otf", "open-rte", "vt", "vt-hyb", "vt-mpi", "vt-mpi-unify"]
+sanity_check_paths = {
+    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-common", "mpif-config", "mpif",
+                                           "mpif-mpi-io", "mpi", "mpi_portable_platform"]],
+    'dirs': ["include/openmpi/ompi/mpi/cxx"],
+}
+
+sanity_check_commands = [
+    ('mpicc --version | grep icc', ''),
+    ('mpicxx --version | grep icpc', ''),
+    ('mpif90 --version | grep ifort', ''),
+]
+
+moduleclass = 'mpi'

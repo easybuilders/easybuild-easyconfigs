@@ -1,0 +1,34 @@
+easyblock = 'ConfigureMake'
+
+name = 'igraph'
+version = '0.7.1'
+
+homepage = 'http://igraph.org'
+description = """igraph is a collection of network analysis tools with the emphasis on 
+efficiency, portability and ease of use. igraph is open source and free. igraph can be 
+programmed in R, Python and C/C++."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+toolchainopts = {'pic': True}
+
+sources = ['igraph-%(version)s.tar.gz']
+source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
+
+builddependencies = [('Autotools', '20150215')]
+
+patches = [
+    'igraph-%(version)s-no-lapack-no-blas.patch',
+    'igraph-%(version)s-fix-aclocal-version.patch'
+]
+
+# link against MKL rather than blas/lapack
+preconfigopts = "env LDFLAGS='-lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm'"
+configopts = "--with-external-blas=yes --with-external-lapack=yes"
+
+sanity_check_paths = {
+    'files': ['lib/libigraph.so', 'lib/libigraph.la', 'lib/pkgconfig/igraph.pc'] +
+             ['include/igraph/%s' % x for x in ['igraph_version.h', 'igraph_types.h', 'igraph_constants.h']],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,21 @@
+#If a system installed sequential HDF5 exist and we use an external
+#parallel HDF5 intsllation then the system installed h5cc will be used 
+#instead of the external h5pcc. Inspiration from netCDF 4.3.3.1
+#B. Hajgato March 1st 2015 
+--- netcdf-4.3.2/CMakeLists.txt.org	2014-04-23 23:35:20.000000000 +0200
++++ netcdf-4.3.2/CMakeLists.txt	2015-03-01 21:07:55.000000000 +0100
+@@ -637,8 +637,13 @@
+   ENDIF(NOT MSVC)
+ 
+   # Assert HDF5 version.
++  IF(HDF5_IS_PARALLEL)
++	SET(HDF5_CC h5pcc)
++  ELSE()
++	SET(HDF5_CC h5cc)
++  ENDIF()
+   SET(HDF5_VERSION_REQUIRED 1.8.6)
+-  execute_process(COMMAND sh -c "h5cc -showconfig | grep -i \"HDF5 version\" | sed 's/^.*[^0-9]\\([0-9]*\\.[0-9]*\\.[0-9]*\\).*$/\\1/'"
++  execute_process(COMMAND sh -c "${HDF5_CC} -showconfig | grep -i \"HDF5 version\" | sed 's/^.*[^0-9]\\([0-9]*\\.[0-9]*\\.[0-9]*\\).*$/\\1/'"
+     OUTPUT_VARIABLE HDF5_VERSION
+     ERROR_QUIET
+     )

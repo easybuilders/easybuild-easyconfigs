@@ -1,0 +1,40 @@
+fix for "error: directive bound to nonblock"
+author:  Kenneth Hoste (HPC-UGent)
+--- stacks-2.0Beta7c/src/gstacks.cc.orig	2018-01-18 12:38:51.142312176 +0100
++++ stacks-2.0Beta7c/src/gstacks.cc	2018-01-18 12:37:52.661082797 +0100
+@@ -212,7 +212,7 @@
+ 
+     bool eof = false;
+     #pragma omp parallel num_threads(num_threads)
+-    try {
++    { try {
+         LocusProcessor loc_proc (bam_mpopi->samples().size());
+         Timers& t = loc_proc.timers();
+ 
+@@ -222,7 +222,7 @@
+         while(omp_return == 0) {
+             t.reading.restart();
+             #pragma omp critical(read)
+-            try {
++            { try {
+                 if (!eof && omp_return == 0) {
+                     if (input_type == GStacksInputT::denovo_popmap || input_type == GStacksInputT::denovo_merger)
+                         eof = !bam_cloc_reader->read_one_locus(loc);
+@@ -232,7 +232,7 @@
+                 thread_eof = eof;
+             } catch (exception& e) {
+                 omp_return = stacks_handle_exceptions(e);
+-            }
++            } }
+             t.reading.stop();
+             if (thread_eof || omp_return != 0)
+                 break;
+@@ -327,7 +327,7 @@
+     } catch (exception& e) {
+         #pragma omp critical(exc)
+         omp_return = stacks_handle_exceptions(e);
+-    }
++    } }
+     if (omp_return != 0)
+         return omp_return;
+     t_parallel.stop();

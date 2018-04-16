@@ -1,0 +1,70 @@
+easyblock = 'Bundle'
+
+name = 'nanonet'
+version = '2.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/nanoporetech/nanonet'
+description = "Nanonet provides recurrent neural network basecalling for Oxford Nanopore MinION data."
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+dependencies = [
+    ('Python', '2.7.13'),
+    ('h5py', '2.7.1', versionsuffix),
+    ('netcdf4-python', '1.2.9', versionsuffix),
+    ('PyYAML', '3.12', versionsuffix),
+    ('Boost', '1.64.0', versionsuffix),  # must stick to 1.64.0, using 1.65.x leads to build failures
+]
+
+exts_list = [
+    ('myriad', '0.1.4', {
+        'source_tmpl': 'myriad-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/m/myriad'],
+        'checksums': [
+            'ae1d836f0e9c37b90b94c185555e485e2c7e36458a4709e39e4aefc3945fdfd5',  # myriad-0.1.4.zip
+        ],
+    }),
+    ('pathtools', '0.1.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pathtools'],
+        'checksums': [
+            '7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0',  # pathtools-0.1.2.tar.gz
+        ],
+    }),
+    ('argh', '0.26.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/a/argh'],
+        'checksums': [
+            'e9535b8c84dc9571a48999094fda7f33e63c3f1b74f3e5f3ac0105a58405bb65',  # argh-0.26.2.tar.gz
+        ],
+    }),
+    ('watchdog', '0.8.3', {
+        'source_urls': ['https://pypi.python.org/packages/source/w/watchdog'],
+        'checksums': [
+            '7e65882adb7746039b6f3876ee174952f8eaaa34491ba34333ddf1fe35de4162',  # watchdog-0.8.3.tar.gz
+        ],
+    }),
+    ('nanonet', '2.0.0', {
+        'installopts': 'with2d',
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/nanoporetech/nanonet/archive'],
+        'checksums': [
+            '9896fa8ecf012505a7cc5610afd54323271ec6b966ce0a0ac9fb7be4149da9d9',  # v2.0.0.tar.gz
+        ],
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': ['bin/nanonet2d', 'bin/nanonetcall', 'bin/nanonettrain'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = ["nanonet2d --help"]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'bio'

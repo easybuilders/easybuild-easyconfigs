@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'Tarball'
+
+name = 'MPJ-Express'
+version = '0.44'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'http://mpj-express.org/'
+description = """MPJ Express is an open source Java message passing library that allows application 
+ developers to write and execute parallel applications for multicore processors and compute clusters/clouds."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+source_urls = ['https://sourceforge.net/projects/mpjexpress/files/releases/']
+sources = ['mpj-v%s.tar.gz' % (version.replace('.', '_'))]
+
+builddependencies = [('CMake', '3.5.2')]
+
+dependencies = [
+    ('Java', '1.8.0_92', '', True),
+]
+
+# compile JNI wrapper library as described in docs
+# http://mpj-express.org/docs/readme/README
+postinstallcmds = [
+    "mkdir %(installdir)s/src/mpjdev/natmpjdev/lib/build",
+    "cd %(installdir)s/src/mpjdev/natmpjdev/lib/build && cmake .. && make && make install DESTDIR=%(installdir)s",
+]
+
+sanity_check_paths = {
+    'files': ['lib/libnativempjdev.so', 'bin/mpjrun.sh'],
+    'dirs': []
+}
+
+modextravars = {'MPJ_HOME': '%(installdir)s'}
+modextrapaths = {'CLASSPATH': 'lib'}
+
+moduleclass = 'lib'

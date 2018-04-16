@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'jhbuild'
+version = '3.15.92'
+
+homepage = 'https://wiki.gnome.org/action/show/Projects/Jhbuild'
+description = """JHBuild allows you to automatically download and compile “modules” (i.e. source code packages). 
+Modules are listed in “module set” files, which also include dependency information so that JHBuild can discover 
+what modules need to be built and in what order."""
+
+toolchain = {'name': 'GCCcore', 'version': '4.9.3'}
+
+sources = ['%(version)s.tar.gz']
+source_urls = [('https://github.com/GNOME/jhbuild/archive/')]
+
+# jhbuild is python so it has a python dependency, but we want to give people freedom to use whatever python they
+# chose during a build process
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+builddependencies = [
+    ('binutils', '2.25'),
+]
+
+dependencies = [
+    ('Autotools', '20150215'),
+    ('pkg-config', '0.29.1'),
+    ('gettext', '0.19.8'),
+    ('flex', '2.6.0'),
+    ('Bison', '3.0.4'),
+    ('M4', '1.4.17'),
+    ('CVS', '1.11.23'),
+]
+
+# We use the simple install method as per:
+# https://developer.gnome.org/jhbuild/stable/getting-started.html.en
+# to avoid unnecessary dependencies. This requires us to build in the install dir so that all libs are found.
+buildininstalldir = True
+skipsteps = ['configure']
+prebuildopts = './autogen.sh --prefix=%(installdir)s &&'
+
+# Make sure there are no "not found" in the sanitycheck output
+sanity_check_commands = [('! jhbuild', 'sanitycheck| grep not\ found')]
+
+sanity_check_paths = {
+    'files': ['bin/jhbuild'],
+    'dirs': [],
+}
+
+moduleclass = 'tools'

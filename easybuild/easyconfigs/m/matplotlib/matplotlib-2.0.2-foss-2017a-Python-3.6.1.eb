@@ -1,0 +1,51 @@
+easyblock = 'Bundle'
+
+name = 'matplotlib'
+version = '2.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+libpng_ver = '1.6.29'
+
+homepage = 'http://matplotlib.org'
+description = """matplotlib is a python 2D plotting library which produces publication quality figures in a variety of
+ hardcopy formats and interactive environments across platforms. matplotlib can be used in python scripts, the python
+ and ipython shell, web application servers, and six graphical user interface toolkits."""
+
+toolchain = {'name': 'foss', 'version': '2017a'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+dependencies = [
+    ('Python', '3.6.1'),
+    ('Tkinter', '%(pyver)s', versionsuffix),
+    ('libpng', libpng_ver),
+    ('freetype', '2.7.1', '-libpng-%s' % libpng_ver),
+]
+
+exts_list = [
+    ('Cycler', '0.10.0', {
+        'modulename': 'cycler',
+        'source_urls': ['https://pypi.python.org/packages/source/C/Cycler'],
+        'source_tmpl': 'cycler-%(version)s.tar.gz',
+        'checksums': ['cd7b2d1018258d7247a71425e9f26463dfb444d411c39569972f4ce586b0c9d8'],
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/m/matplotlib'],
+        'checksums': ['0ffbc44faa34a8b1704bc108c451ecf87988f900ef7ce757b8e2e84383121ff1'],
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["""python -c 'import matplotlib; matplotlib.use("TkAgg"); import matplotlib.pyplot' """]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'vis'

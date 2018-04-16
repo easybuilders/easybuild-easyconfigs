@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'PCMSolver'
+version = '1.1.4'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://pcmsolver.readthedocs.org'
+description = """An API for the Polarizable Continuum Model."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'cstd': 'c99'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/PCMSolver/pcmsolver/archive/']
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('zlib', '1.2.8'),
+    ('Boost', '1.61.0', versionsuffix),
+]
+
+builddependencies = [
+    ('CMake', '3.5.2'),
+    ('Eigen', '3.2.7'),
+]
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -DEIGEN3_ROOT=$EBROOTEIGEN'
+configopts += ' -DCMAKE_CXX_FLAGS="$CXXFLAGS $LIBLAPACK_MT -DEIGEN_USE_MKL_ALL"'
+
+separate_build_dir = True
+
+runtest = 'test'
+
+postinstallcmds = ["chmod +x %(installdir)s/bin/pcmsolver.py"]
+
+sanity_check_paths = {
+    'files': ['bin/pcmsolver.py', 'lib/libpcm.a', 'lib/libpcm.%s' % SHLIB_EXT],
+    'dirs': ['include']
+}
+
+moduleclass = 'chem'
