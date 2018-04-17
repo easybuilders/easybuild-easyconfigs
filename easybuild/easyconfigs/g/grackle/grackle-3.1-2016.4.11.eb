@@ -1,0 +1,46 @@
+####
+#Easyconfig for grackle
+#Copyright: Compute Canada
+#Author: Belaid Moa, et al.
+#Note: I am not happy with the quality of this.
+#      I believe we need a much beautiful easyblock that allows to do substitutions.
+#      I will be writing this but for now let us get things done ...
+####
+
+easyblock = 'ConfigureMake'
+name = 'grackle'
+version = '3.1'
+homepage = 'http://grackle.readthedocs.io'
+description = """Grackle is a chemistry and radiative cooling library 
+for astrophysical simulations and models."""
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+#https://bitbucket.org/grackle/grackle/get/grackle-2.1.tar.gz
+sources = ['grackle-%(version)s.tar.gz']
+source_urls = [
+    'https://bitbucket.org/grackle/grackle/get/'
+]
+
+dependencies = [
+    ('HDF5', '1.8.18'),
+    ('zlib', '1.2.8'),
+]
+
+
+prebuildopts='cd src/clib && cp Make.mach.tacc-stampede-intel Make.mach.computecanada-intel && '
+prebuildopts+='sed -i "s/unknown/computecanada-intel/g" Make.config.machine && '
+prebuildopts+='sed -i "s/[Ss]tampede/computecanada/g" Make.mach.computecanada-intel && '
+prebuildopts+='sed -i "s/tacc-//g" Make.mach.computecanada-intel && echo "MACH_LIBTOOL = libtool" >> Make.mach.computecanada-intel && '
+prebuildopts+='sed -i "s@TACC_HDF5_DIR@EBROOTHDF5@g" Make.mach.computecanada-intel && '
+prebuildopts+='sed -i "s@MACH_INSTALL_PREFIX = .*@MACH_INSTALL_PREFIX = %(installdir)s@g" Make.mach.computecanada-intel && '
+prebuildopts+='sed -i "s@MACH_DEFINES   = -DLINUX -DH5_USE_16_API@MACH_DEFINES   = -DLINUX -DH5_USE_16_API -fPIC@g" Make.mach.computecanada-intel && '
+prebuildopts+='sed -i "s@^LOCAL_LIBS_MACH@#LOCAL_LIBS_MACH@g" Make.mach.computecanada-intel && '
+buildopts='machine-computecanada-intel && make clean && make opt-high && '
+buildopts+='sed -i "s@VERBOSE     = 0@VERBOSE     = 1@g" Makefile &&  make'
+preinstallopts='cd src/ && '
+sanity_check_paths = {
+    'files': ['include/grackle.h', 'lib/libgrackle.so','lib/libgrackle-3.1.so'],
+    'dirs': []
+}
+
+moduleclass = 'phys'
