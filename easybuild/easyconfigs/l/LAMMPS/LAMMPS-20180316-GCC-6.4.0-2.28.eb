@@ -1,0 +1,48 @@
+easyblock = "MakeCp"
+
+name = "LAMMPS"
+version = "20180316"
+
+homepage = 'http://lammps.sandia.gov/'
+description = """LAMMPS is a classical molecular dynamics code,
+and an acronym for Large-scale Atomic/Molecular Massively Parallel Simulator."""
+
+toolchain = {'name': 'GCC', 'version': '6.4.0-2.28'}
+#toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/lammps/lammps/archive/']
+sources = ['stable_16Mar2018.tar.gz']
+
+builddependencies = [
+    ('OpenMPI', '2.1.2'),
+#    ('Python', '2.7.11'),
+#    ('libpng', '1.6.21'),
+]
+
+dependencies = [
+    ('OpenMPI', '2.1.2'),
+#    ('Python', '2.7.11'),
+#    ('libpng', '1.6.21'),
+]
+
+patches = ['LAMMPS-20180316_makefile-deps.patch']
+
+prebuildopts = 'mkdir bin && cd src && make yes-asphere yes-body yes-class2 yes-colloid yes-compress \
+yes-coreshell yes-dipole yes-granular yes-kspace yes-manybody yes-mc yes-misc yes-molecule \
+yes-opt yes-peri yes-python yes-qeq yes-replica yes-rigid yes-shock yes-snap yes-srd yes-user-cgdna \
+yes-user-cgsdk yes-user-diffraction yes-user-dpd yes-user-drude yes-user-eff yes-user-fep yes-user-lb \
+yes-user-mgpt yes-user-misc yes-user-manifold yes-user-meamc yes-user-meso yes-user-mofff \
+yes-user-phonon yes-user-qtb yes-user-reaxc yes-user-smtbq yes-user-sph yes-user-tally yes-user-uef \
+ &&'
+
+buildopts = '-j mpi && cp lmp_mpi ../bin'
+
+files_to_copy = ["bench", "bin", "doc", "examples", "lib", "LICENSE",
+                 "potentials", "python", "README", "src", "tools"]
+
+sanity_check_paths = {
+    'files': ['bin/lmp_mpi'],
+    'dirs': [],
+}
+moduleclass = 'chem'
+keepsymlinks = 'true'
