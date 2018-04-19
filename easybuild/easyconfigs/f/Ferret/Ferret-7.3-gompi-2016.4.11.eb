@@ -1,0 +1,49 @@
+easyblock = "ConfigureMake"
+name = 'Ferret'
+version = '7.3'
+
+homepage = 'http://ferret.pmel.noaa.gov/'
+description = """Ferret is an interactive computer visualization and analysis environment
+designed to meet the needs of oceanographers and meteorologists analyzing large and complex gridded data sets."""
+
+toolchain = {'name': 'gompi', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/NOAA-PMEL/Ferret/archive/']
+
+dependencies = [
+    ('netCDF', '4.4.1.1'),
+    ('netCDF-Fortran', '4.4.4'),
+    ('NCO', '4.6.6'),
+#    ('zlib', '1.2.7'),
+#    ('Szip', '2.1'),
+#    ('cURL', '7.27.0'),
+#    ('ncurses', '5.9'),
+#    ('libreadline', '6.2'),
+    ('Java', '1.8.0_121', '', True),
+]
+
+parallel = 1
+skipsteps = ['configure']
+
+patches = ['Ferret-7.3-platform_specific.mk.x86_64-linux.patch',
+           'Ferret-7.3-site_specific.mk.in.patch']
+
+prebuildopts = "cp site_specific.mk.in site_specific.mk && cp site_specific.mk external_functions/ef_utility && sed -i 's^BUILDDIR^%(builddir)s\/Ferret-7.3^' site_specific.mk && sed -i 's^INSTALLDIR^%(installdir)s^' site_specific.mk &&"
+buildopts = 'CPP_X11="$NIXUSER_PROFILE/include" LD="$CC"'
+
+sanity_check_paths = {
+    'files': ['bin/ferret'],
+    'dirs': ['bin'],
+}
+postinstallcmds =  [" cd %(builddir)s && wget https://github.com/NOAA-PMEL/FerretDatasets/archive/v7.4.tar.gz && cd %(installdir)s && tar -xf %(builddir)s/v7.4.tar.gz && printf '%s\n%s\n%s\n%s\n%s\n%s\n' '2' '%(installdir)s' '%(installdir)s/FerretDatasets-7.4' '%(installdir)s/bin' 'n' '3'|%(installdir)s/bin/Finstall "]
+
+modloadmsg = """To initialize Ferret,
+  do (sh, ash, ksh, and bash)
+              . $EBROOTFERRET/bin/ferret_paths.sh 
+  or (csh, tcsh)
+              source $EBROOTFERRET/bin/ferret_paths.csh
+"""
+
+moduleclass = 'geo'
