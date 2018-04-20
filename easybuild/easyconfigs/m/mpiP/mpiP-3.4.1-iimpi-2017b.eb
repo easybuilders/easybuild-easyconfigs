@@ -1,0 +1,54 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'mpiP'
+version = '3.4.1'
+
+homepage = 'http://mpip.sourceforge.net/'
+
+description = """
+ mpiP is a lightweight profiling library for MPI applications.  Because it
+ only collects statistical information about MPI functions, mpiP generates
+ considerably less overhead and much less data than tracing tools.  All the
+ information captured by mpiP is task-local. It only uses communication during
+ report generation, typically at the end of the experiment, to merge results
+ from all of the tasks into one output file.
+"""
+
+toolchain = {'name': 'iimpi', 'version': '2017b'}
+toolchainopts = {'usempi': True, 'strict': True, 'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['688bf37d73211e6a915f9fc59c358282a266d166c0a10af07a38a01a473296f0']
+
+builddependencies = [
+    ('binutils', '2.28'),
+]
+
+dependencies = [
+    ('libunwind', '1.2.1'),
+    ('zlib', '1.2.11'),
+]
+
+preconfigopts = """
+    sed -e 's,/home/chcham/workspace/mpiP,$EBROOTMPIP/lib,' -i bin/mpirun-mpip
+    sed -e 's,/usr/local/tools/mpip,$EBROOTMPIP,' -i bin/srun-mpip
+    CPPFLAGS="$CPPFLAGS -DPACKAGE -DPACKAGE_VERSION"
+"""
+
+buildopts = ' ; make shared'
+installopts = 'install-all'
+
+sanity_check_paths = {
+    'files': ['bin/mpirun-mpip', 'include/mpiP-API.h', 'lib/libmpiP.so',
+              'share/doc/mpip/README'],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'LD_PRELOAD': ['lib/libmpiP.%s' % SHLIB_EXT]
+}
+
+moduleclass = 'perf'
