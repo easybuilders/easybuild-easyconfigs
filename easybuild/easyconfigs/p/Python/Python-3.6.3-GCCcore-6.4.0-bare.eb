@@ -1,0 +1,60 @@
+name = 'Python'
+version = '3.6.3'
+versionsuffix = '-bare'
+
+homepage = 'http://python.org/'
+
+description = """
+ Python is a programming language that lets you work more quickly and
+ integrate your systems more effectively.
+
+Note: This module is meant to provide a builddependency for other Python
+      modules while using EasyBuild's --minimaltoolchain option.  Modules
+      built with it will require the full Python later
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.python.org/ftp/%(namelower)s/%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['ab6193af1921b30f587b302fe385268510e80187ca83ca82d2bfe7ab544c6f91']
+
+osdependencies = [
+    ('zlib-devel'),
+]
+
+builddependencies = [
+    ('binutils', '2.28'),
+]
+
+dependencies = [
+    ('bzip2', '1.0.6'),
+    ('libreadline', '7.0'),
+    ('ncurses', '6.0'),
+    ('SQLite', '3.20.1'),
+    #('zlib', '1.2.11'),
+]
+
+osdependencies = [
+    # rely upon distribution for timely security updates
+    ('openssl-devel', 'libssl-dev', 'libopenssl-devel'),
+]
+
+# We hide this by default since users should not use it in production,
+# high-performance Python should be delivered at compiler level with
+# a default extension set
+# hidden = True
+
+# bare installation: only known module deps for GCCcore tools included
+exts_list = []
+
+# Until such time that EasyBuild accepts 'rpath' as a toolchainopt...
+# add RPATH so this can be used as a builddependency for "bare" PythonPackages
+preconfigopts = """
+    sed -e\
+      's:LINKFORSHARED) -o $@ Programs/python.o:LINKFORSHARED) -Wl,-rpath=%(installdir)s/lib -o $@ Programs/python.o:'\
+      -i.eb Makefile.pre.in
+"""
+
+moduleclass = 'lang'
