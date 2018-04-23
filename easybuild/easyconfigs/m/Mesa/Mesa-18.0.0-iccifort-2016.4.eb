@@ -1,0 +1,62 @@
+easyblock = 'ConfigureMake'
+
+name = 'Mesa'
+version = '18.0.0'
+
+homepage = 'http://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+toolchainopts = {'optarch': True}
+
+sources = ['%(namelower)s-%(version)s.tar.gz']
+source_urls = ['https://mesa.freedesktop.org/archive/']
+
+#dependencies = [
+#    ('flex', '2.5.35'),
+#    ('Bison', '2.5'),
+#    ('makedepend', '1.0.4'),
+#    ('Python', pythonver),
+#    ('libxml2', '2.9.1'),
+#    ('glproto', '1.4.17'),
+#    ('libdrm', '2.4.27')
+#]
+
+#osdependencies = [
+#    'libX11-devel',            # Xlibs.h
+#    'xorg-x11-proto-devel',    # X.h, glproto, xproto
+#    'libXdamage-devel',
+#    'libXext-devel',
+#    'libXfixes-devel',
+#]
+
+preconfigopts = ' ./autogen.sh && '
+
+configopts  = "--enable-texture-float --enable-gallium-extra-hud "
+configopts += "--enable-glx --enable-xa --enable-glu --disable-osmesa " 
+configopts += "--enable-nine --enable-llvm --enable-profile "
+configopts += "--enable-selinux --enable-gallium-extra-hud --enable-xa "
+configopts += "--enable-gallium-tests --enable-mangling --enable-valgrind "
+
+keepsymlinks = True
+
+mesa_lib_files = [
+    "libgbm.la", "libEGL.la", "libGL.la", "libGLESv2.la", "libGLESv1_CM.la", "libglapi.la",
+    "libgbm.so", "libEGL.so", "libGL.so", "libGLESv2.so", "libGLESv1_CM.so", "libglapi.so", "libXvMCr600.so",
+]
+
+mesa_inc_files = [
+    "glcorearb.h", "glext.h", "gl.h", "gl_mangle.h", "glxext.h", "glx.h", "glx_mangle.h",
+]
+
+sanity_check_paths = {
+    'files': [
+           ['lib/%s' % x for x in mesa_lib_files], ['include/GL/%s' % x for x in mesa_inc_files]],
+    'dirs': ['etc', 'include', 'lib', 'include/EGL', ['include/%s' % x for x in ["GLES", "GLES2", "GLES3", "KHR"]]],
+}
+
+moduleclass = 'vis'
+modluafooter = """
+depends_on("python/2.7")
+"""
