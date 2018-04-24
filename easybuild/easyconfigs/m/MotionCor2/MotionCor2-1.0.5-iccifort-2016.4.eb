@@ -1,0 +1,36 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Ravi Tripathi
+# Email: ravi89@uab.edu
+
+#Need to add '--filter-env-vars=' when building
+
+easyblock = "Tarball"
+
+name = 'MotionCor2'
+version = '1.0.5'
+
+homepage = 'http://msg.ucsf.edu/em/software/motioncor2.html'
+description = """ Correction of electron beam-induced sample motion is one of the major factors contributing to the recent resolution breakthroughs in cryo-electron microscopy. Based on observations that the electron beam induces doming of the thin vitreous ice layer, we developed an algorithm to correct anisotropic image motion at the single pixel level across the whole frame, suitable for both single particle and tomographic images. Iterative, patch-based motion detection is combined with spatial and temporal constraints and dose weighting."""
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+
+#Need to agree to license to download
+#source_urls = ['http://tiny.cc/UCSFMotionCor2']
+sources = ['%(name)s-%(version)s.tar.gz']
+
+dependencies = [
+    ('CUDA', '8.0.44', '', ('iccifort', '2016.4')),
+]
+
+postinstallcmds = [
+                  'cd %(installdir)s && mkdir bin lib && mv MotionCor2_Cuda8.0_v%(version)s bin && cd bin && patchelf --set-interpreter $NIXUSER_PROFILE/lib/ld-linux-x86-64.so.2 MotionCor2_Cuda8.0_v%(version)s && patchelf --set-rpath $EBROOTCUDA/lib64:$NIXUSER_PROFILE/lib MotionCor2_Cuda8.0_v%(version)s && ln -s MotionCor2_Cuda8.0_v%(version)s MotionCor2 ',
+                  'cd %(installdir)s/lib && ln -s $NIXUSER_PROFILE/lib/libtiff.so libtiff.so.3 '
+]
+
+sanity_check_paths = {
+    'files': ["bin/MotionCor2"],
+    'dirs': ["bin", "lib"]
+}
+
+modextrapaths = {'LD_LIBRARY_PATH': 'lib:'}
+moduleclass = 'bio'
