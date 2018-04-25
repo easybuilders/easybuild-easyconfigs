@@ -1,0 +1,61 @@
+easyblock = 'MakeCp'
+
+name = 'LAMMPS'
+version = '20180316'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://lammps.sandia.gov/'
+description = """LAMMPS is a classical molecular dynamics code,
+and an acronym for Large-scale Atomic/Molecular Massively Parallel Simulator."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/lammps/lammps/archive/']
+sources = ['stable_16Mar2018.tar.gz']
+checksums = ['03f91d69f472c37a4008611dee13fad91b6bedc66dbf0393416cdacc751b57ff']
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('libpng', '1.6.34'),
+    ('libjpeg-turbo', '1.5.3'),
+    ('PCRE', '8.41'),
+    ('libxml2', '2.9.7'),
+    ('zlib', '1.2.11'),
+    ('gzip', '1.8'),
+    ('FFmpeg', '3.4.2'),
+]
+
+prebuildopts = "cd src &&"
+
+makevars = 'LMP_INC="-DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64 -DLAMMPS_JPG -DLAMMPS_PNG -DLAMMPS_FFMPEG" '
+makevars += 'MPI_INC="-I${EBROOTOPENMPI}/include" MPI_PATH="-L${EBROOTOPENMPI}/lib" MPI_LIB="-lmpi -lpthread" '
+makevars += 'FFT_INC="-DFFT_FFTW3" FFT_PATH="-L${EBROOTFFTW}/lib" FFT_LIB="-lfftw3" '
+makevars += 'JPG_INC="-I${EBROOTLIBJPEGMINTURBO}/include -I${EBROOTLIBPNG}/include" '
+makevars += 'JPG_PATH="-L${EBROOTLIBJPEGMINTURBO}/lib -L${EBROOTLIBPNG}/lib" JPG_LIB="-ljpeg -lpng" '
+buildopts = "-j mpi %s && " % makevars
+
+# also build & install Python bindings
+buildopts += "make -j mpi mode=shlib %s && " % makevars
+buildopts += "cd ../python && mkdir site-packages && python install.py site-packages"
+
+keepsymlinks = 'true'
+
+files_to_copy = [
+    'lib',  # must be copied first
+    (['src/lmp_mpi'], 'bin'),
+    (['python/site-packages'], 'lib/python%(pyshortver)s'),
+    'bench', 'doc', 'examples', 'LICENSE',
+    'potentials', 'python', 'README', 'src', 'tools',
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/lmp_mpi'],
+    'dirs': ['bench', 'doc', 'lib/python%(pyshortver)s/site-packages', 'python', 'tools'],
+}
+
+sanity_check_commands = ["python -c 'from lammps import lammps; lmp = lammps()'"]
+
+moduleclass = 'chem'
