@@ -1,0 +1,20 @@
+fix bug in Doris where string is missing first character after toupper is called,
+which only manifests with recent versions of GCC (4.8 or newer)
+example error: WARNING : Unknown keyword: "OMMENT"
+author: Kenneth Hosyte (HPC-UGent)
+diff -ru doris_v4.04beta4.orig/src/ioroutines.cc doris_v4.04beta4/src/ioroutines.cc
+--- doris_v4.04beta4.orig/src/ioroutines.cc	2010-12-06 20:10:33.000000000 +0100
++++ doris_v4.04beta4/src/ioroutines.cc	2018-03-30 17:55:39.017392000 +0200
+@@ -2482,8 +2482,10 @@
+   #ifdef WIN32
+     s = _strupr(s);// Jia
+   #else
+-  while (*s != '\0')
+-    *s++ = toupper(*s);                 // cctype
++  while (*s != '\0'){
++    *s = toupper(*s);
++    s++; 
++  }
+   #endif
+   }
+ 
