@@ -1,0 +1,33 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Ravi Tripathi
+# Email: ravi89@uab.edu
+
+#Need to add '--filter-env-vars=' when building
+
+easyblock = "Tarball"
+
+name = 'Gctf'
+version = '1.06'
+
+homepage = 'https://www.mrc-lmb.cam.ac.uk/kzhang/'
+description = """ Gctf: real-time CTF determination and correction"""
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+
+source_urls = ['http://www.mrc-lmb.cam.ac.uk/kzhang/Gctf/']
+sources = ['%(name)s_v%(version)s_and_examples.tar.gz']
+
+dependencies = [
+    ('CUDA', '8.0.44', '', ('iccifort', '2016.4')),
+]
+
+postinstallcmds = [
+                  'cd %(installdir)s/bin && patchelf --set-interpreter $NIXUSER_PROFILE/lib/ld-linux-x86-64.so.2  %(name)s-v%(version)s_sm_30_cu8.0_x86_64 && patchelf --set-rpath $EBROOTCUDA/lib64:$NIXUSER_PROFILE/lib %(name)s-v%(version)s_sm_30_cu8.0_x86_64 && rm -f *sm_20* ',
+]
+
+sanity_check_paths = {
+    'files': ["bin/%(name)s-v%(version)s_sm_30_cu8.0_x86_64"],
+    'dirs': ["bin", ]
+}
+
+moduleclass = 'bio'
