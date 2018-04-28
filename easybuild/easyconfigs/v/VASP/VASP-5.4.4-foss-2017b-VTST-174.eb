@@ -1,0 +1,77 @@
+# Author: migueldiascosta on GitHub
+# Updated by: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.4'
+vtstver = '174'
+versionsuffix = '-VTST-%s' % vtstver
+
+homepage = 'http://www.vasp.at'
+
+description = """
+ The Vienna Ab initio Simulation Package (VASP) is a computer program for
+ atomic scale materials modelling, e.g. electronic structure calculations
+ and quantum-mechanical molecular dynamics, from first principles.
+
+ Includes VTST from: http://theory.cm.utexas.edu/vtsttools/index.html
+"""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'usempi': True, 'optarch': True}
+
+# Vasp is proprietary software, see the following for how to get access
+# http://www.vasp.at/index.php/faqs
+sources = [
+    '%(namelower)s.%(version)s.tar.gz',
+    # Download from http://theory.cm.utexas.edu/vtsttools/index.html and rename to indicate version
+    'vtstcode-%s.tgz' % vtstver,
+]
+checksums = [
+    '5bd2449462386f01e575f9adf629c08cb03a13142806ffb6a71309ca4431cfb3',  # vasp.5.4.4.tar.gz
+    '16054beb7bec069a74f468dc34ba8ae6db3b6de169de8337eae5f60885967bcf',  # vtstcode-174.tgz
+]
+
+prebuildopts = """
+    chmod -R og-rwx .. # protect sources during build
+    cp arch/makefile.include.linux_gnu ./makefile.include
+    sed -e 's,/data1/gf01/fftw-3.3.4/lib/libfftw3.a,$(EBROOTFFTW)/lib/libfftw3.a,' -i.eb.fftw makefile.include
+    cat >> makefile.include << EEOOFF
+# EasyBuild
+LIBDIR     =
+BLAS       = -L$BLAS_LIB_DIR/lib $LIBBLAS
+LAPACK     = \$(BLAS)
+BLACS      =
+SCALAPACK  = -L$SCALAPACK_LIB_DIR $LIBSCALAPACK $(BLACS)
+INCS       = $CPPFLAGS
+EEOOFF
+    # add VTST bits - http://theory.cm.utexas.edu/vtsttools/installation.html
+    sed -e "3147s/LATT_CUR%A/TSIF,LATT_CUR%A/" -i.eb src/main.F
+    mv -v ../vtstcode-174/*.F src # version hard-coded for now
+    sed "s/chain.o/bfgs.o dynmat.o instanton.o lbfgs.o sd.o cg.o dimer.o bbm.o chain.o/" -i.eb.vtst.1 src/.objects
+    sed "s/chain.o/fire.o lanczos.o neb.o qm.o opt.o chain.o/" -i.eb.vtst.2 src/.objects
+    # VASP uses LIBS as a list of folders... unset or fail
+    unset LIBS
+"""
+
+# group = 'vasp'
+
+buildopts = 'all'
+
+parallel = 1
+
+files_to_copy = [(['bin/*'], 'bin')]
+
+# we have to do this AFTER EB's permission_step
+tests = [
+#    'fixperms',  # files in bin should be executible-only for group
+]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': []
+}
+
+moduleclass = 'phys'
+# EOF
