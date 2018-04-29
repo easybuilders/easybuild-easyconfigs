@@ -1,5 +1,3 @@
-easyblock = 'MakeCp'
-
 name = 'LAMMPS'
 version = '20180316'
 versionsuffix = '-Python-%(pyver)s'
@@ -25,37 +23,5 @@ dependencies = [
     ('gzip', '1.8'),
     ('FFmpeg', '3.4.2'),
 ]
-
-prebuildopts = "cd src &&"
-
-makevars = 'LMP_INC="-DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64 -DLAMMPS_JPG -DLAMMPS_PNG -DLAMMPS_FFMPEG" '
-makevars += 'MPI_INC="-I${MPI_INC_DIR}" MPI_PATH="-L${MPI_LIB_DIR}" MPI_LIB="-lmpi -lpthread" '
-makevars += 'FFT_INC="-DFFT_FFTW3" FFT_PATH="-L${EBROOTFFTW}/lib" FFT_LIB="-lfftw3" '
-makevars += 'JPG_INC="-I${EBROOTLIBJPEGMINTURBO}/include -I${EBROOTLIBPNG}/include" '
-makevars += 'JPG_PATH="-L${EBROOTLIBJPEGMINTURBO}/lib -L${EBROOTLIBPNG}/lib" JPG_LIB="-ljpeg -lpng" '
-buildopts = "-j mpi %s && " % makevars
-
-# also build & install Python bindings
-buildopts += "make -j mpi mode=shlib %s && " % makevars
-buildopts += "cd ../python && mkdir site-packages && python install.py site-packages"
-
-keepsymlinks = 'true'
-
-files_to_copy = [
-    'lib',  # must be copied first
-    (['src/lmp_mpi'], 'bin'),
-    (['python/site-packages'], 'lib/python%(pyshortver)s'),
-    'bench', 'doc', 'examples', 'LICENSE',
-    'potentials', 'python', 'README', 'src', 'tools',
-]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
-
-sanity_check_paths = {
-    'files': ['bin/lmp_mpi'],
-    'dirs': ['bench', 'doc', 'lib/python%(pyshortver)s/site-packages', 'python', 'tools'],
-}
-
-sanity_check_commands = ["python -c 'from lammps import lammps; lmp = lammps()'"]
 
 moduleclass = 'chem'
