@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '1.1.447'
+
+homepage = 'https://www.rstudio.com/'
+description = """RStudio Server enables you to provide a browser 
+based interface to a version of R running on a remote Linux 
+server, bringing the power and productivity of the 
+RStudio IDE to server-based deployments of R."""
+
+toolchain = {'name': 'iimkl', 'version': '2016.4'}
+
+source_urls = [
+    'https://github.com/rstudio/rstudio/archive/',
+]
+
+sources = [
+    'v%(version)s.zip',
+]
+
+patches = [('rstudio-1.1.447.patch', 1)]
+
+builddependencies = [
+    ('CMake', '3.5.2'),
+    ('Boost', '1.65.1'),
+    ('R', '3.4.3', '-bare'),
+]
+
+dependencies = [
+    ('Java', '1.8.0_121')
+]
+
+preconfigopts = """(cd dependencies/common && 
+./install-gwt && 
+./install-dictionaries && 
+./install-mathjax && 
+./install-pandoc && 
+./install-packages && 
+./install-libclang) && """
+
+configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts += '-DRSTUDIO_TARGET=Server '
+configopts += '-DRSTUDIO_GIT_REVISION_HASH=a6001eeff854a273aab1068bef987c61e1fc5c5f '
+
+sanity_check_paths = {
+    'files': ["bin/rsession", "bin/rserver", "bin/rserver-pam", "bin/rpostback"],
+    'dirs': ["R", "resources", "www", "www-symbolmaps"],
+}
+
+modluafooter = """
+depends_on('r')
+"""

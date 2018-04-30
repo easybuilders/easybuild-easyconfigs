@@ -1,0 +1,37 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+# Date: April 25, 2018.
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'LIS'
+version = '2.0.10'
+
+homepage = 'http://www.netlib.org/misc/lis/'
+description = """
+ Lis, a Library of Iterative Solvers for linear systems, is a parallel library for solving linear equations and eigenvalue problems that arise in the numerical solution of partial differential equations using iterative methods. The installation of Lis requires a C compiler. The Fortran interface requires a Fortran compiler, and the algebraic multigrid preconditioner requires a Fortran 90 compiler. For parallel computing environments, an OpenMP or MPI-1 library is used. Both the Harwell-Boeing and Matrix Market formats are supported to import and export user data.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['http://www.ssisc.org/lis/dl/']
+sources = [SOURCELOWER_ZIP]
+
+configopts  = '--enable-mpi  --enable-openmp --enable-f90  --enable-fortran '
+configopts  = '--enable-quad --enable-sse2 --enable-saamg --enable-shared '
+configopts += 'MPICC=mpicc  CC=gcc  FC=gfortran  F77=gfortran '
+configopts += 'FFLAGS="-O2 -fPIC" '
+configopts += 'FCFLAGS="-O2 -fPIC" '
+configopts += 'CFLAGS="-O2 -fPIC" '
+
+binary_files = ["esolve", "lsolve", "spmvtest1", "spmvtest2", "spmvtest3", "spmvtest4", "spmvtest5"]
+include_files = ["lis_config.h", "lisf.h", "lis.h"]
+
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in binary_files], 'lib/liblis.a', ['include/%s' % x for x in include_files]],
+    'dirs': ["bin", "include", "lib", "share"],
+}
+
+moduleclass = 'math'
