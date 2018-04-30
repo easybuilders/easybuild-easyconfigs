@@ -1,0 +1,59 @@
+easyblock = 'Bundle'
+
+name = 'matplotlib'
+version = '2.1.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://matplotlib.org'
+description = """matplotlib is a python 2D plotting library which produces publication quality figures in a variety of
+ hardcopy formats and interactive environments across platforms. matplotlib can be used in python scripts, the python
+ and ipython shell, web application servers, and six graphical user interface toolkits."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('libpng', '1.6.34'),
+    ('freetype', '2.9'),
+    ('Tkinter', '%(pyver)s', versionsuffix),
+]
+
+exts_list = [
+    ('Cycler', '0.10.0', {
+        'modulename': 'cycler',
+        'source_tmpl': 'cycler-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/C/Cycler'],
+        'checksums': ['cd7b2d1018258d7247a71425e9f26463dfb444d411c39569972f4ce586b0c9d8'],
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/m/matplotlib'],
+        'checksums': ['725a3f12739d133adfa381e1b33bd70c6f64db453bfc536e148824816e568894'],
+        'prebuildopts': "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && ",
+        'preinstallopts': "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && ",
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["""python -c 'import matplotlib; matplotlib.use("TkAgg"); import matplotlib.pyplot' """]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+# use non-interactive plotting backend as default
+# see https://matplotlib.org/tutorials/introductory/usage.html#what-is-a-backend
+modextravars = {'MPLBACKEND': 'Agg'}
+
+moduleclass = 'vis'

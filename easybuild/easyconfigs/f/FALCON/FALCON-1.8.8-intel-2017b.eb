@@ -1,0 +1,124 @@
+easyblock = 'Bundle'
+
+name = 'FALCON'
+# version is taken from https://github.com/PacificBiosciences/FALCON-integrate/releases
+version = '1.8.8'
+commit_id = '86cec61'
+
+homepage = 'https://github.com/PacificBiosciences/FALCON'
+description = "Falcon: a set of tools for fast aligning long reads for consensus and assembly"
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+dependencies = [('Python', '2.7.14')]
+
+default_easyblock = 'ConfigureMake'
+
+# commit IDs are determined via https://github.com/PacificBiosciences/FALCON-integrate/tree/1.8.8
+# datestamps match commit dates
+components = [
+    ('DAZZ_DB', '20170411', {
+        'source_urls': ['https://github.com/PacificBiosciences/DAZZ_DB/archive/'],
+        'sources': ['f29d27d.tar.gz'],
+        'checksums': ['e1a06eb07da120b291e62d9cecfe4c06899e719c788548a7def21d4f93e6fde1'],
+        'skipsteps': ['configure'],
+        'prebuildopts': "cd DAZZ_DB-* && ",
+        'buildopts': 'CFLAGS="$CFLAGS"',
+        'preinstallopts': "cd DAZZ_DB-* && mkdir %(installdir)s/{bin,include,lib} &&",
+        'installopts': "PREFIX=%(installdir)s",
+    }),
+    ('DALIGNER', '20170410', {
+        'source_urls': ['https://github.com/PacificBiosciences/DALIGNER/archive/'],
+        'sources': ['0fe5240.tar.gz'],
+        'checksums': ['f476281906cccb446126710b0e9a46200279eddea4b999456132c71ebd60c776'],
+        'skipsteps': ['configure'],
+        'prebuildopts': "cd DALIGNER-* && ",
+        'buildopts': 'CFLAGS="$CFLAGS" CPATH=%(installdir)s/include:$CPATH LIBRARY_PATH=%(installdir)s/lib',
+        'preinstallopts': "cd DALIGNER-* && ",
+        'installopts': "PREFIX=%(installdir)s",
+    }),
+    ('DAMASKER', '20170211', {
+        'source_urls': ['https://github.com/PacificBiosciences/DAMASKER/archive/'],
+        'sources': ['144244b.tar.gz'],
+        'checksums': ['61644a75605fddfd136ac41508d1b2caa5119fe68e70df6b19ccd8177413004c'],
+        'skipsteps': ['configure'],
+        'prebuildopts': "cd DAMASKER-* && ",
+        'buildopts': 'CFLAGS="$CFLAGS"',
+        'preinstallopts': "cd DAMASKER-* && ",
+        'installopts': "PREFIX=%(installdir)s",
+    }),
+    ('DEXTRACTOR', '20160809', {
+        'source_urls': ['https://github.com/PacificBiosciences/DEXTRACTOR/archive/'],
+        'sources': ['8972680.tar.gz'],
+        'checksums': ['236a6c10d226ab2ba4724fd0df9c84a2d8b88c1365cf47fb4228f1bdcad41bdf'],
+        'skipsteps': ['configure'],
+        'prebuildopts': "cd DEXTRACTOR-* && ",
+        'buildopts': 'CFLAGS="$CFLAGS"',
+        'preinstallopts': "cd DEXTRACTOR-* && ",
+        'installopts': "PREFIX=%(installdir)s",
+    }),
+    # only download, is used in sanity check to run smoke test(s)
+    ('FALCON-examples', '20170517', {
+        'source_urls': [
+            'https://github.com/pb-cdunn/FALCON-examples/archive/',
+            'https://downloads.pacbcloud.com/public/data/git-sym/',
+        ],
+        'sources': [
+            'b3b0917.tar.gz',
+            'synth5k.2016-11-02.tgz',
+        ],
+        'checksums': [
+            '6ad63ff783537a5f8d244796624b1439f4b8541fe09fad6e9b14fd839ca7a207',  # b3b0917.tar.gz
+            'd6a148c75e52bc45c628be97fde6ed9b83e841ed4668cd08e2aee5d5bf76943a',  # synth5k.2016-11-02.tgz
+        ],
+        'skipsteps': ['configure', 'build', 'install'],
+    }),
+]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('networkx', '1.10', {
+        'source_urls': ['https://pypi.python.org/packages/source/n/networkx'],
+        'checksums': ['ced4095ab83b7451cec1172183eff419ed32e21397ea4e1971d92a5808ed6fb8'],
+    }),
+    ('pypeFLOW', '20170504', {
+        'source_tmpl': 'f23a1b2.tar.gz',
+        'source_urls': ['https://github.com/PacificBiosciences/pypeFLOW/archive/'],
+        'checksums': ['3ea7bb390370b988dc4254ffed403c3e2b78da140fbef24556a93ce450ad20cb'],
+    }),
+    (name, version, {
+        'modulename': 'falcon_kit',
+        'source_tmpl': '86cec61.tar.gz',
+        'source_urls': ['https://github.com/PacificBiosciences/FALCON/archive/'],
+        'checksums': ['9470563d962546566fc21d3c41b7ab87dcf1ffdd52cda244a7cad54ffa3199a6'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/Catrack', 'bin/DBdump', 'bin/fasta2DB', 'include/DB.h', 'include/QV.h', 'lib/libdazzdb.a',  # DAZZ_DB
+              'bin/daligner', 'bin/DB2Falcon', 'bin/HPC.daligner', 'bin/LAmerge', 'bin/LAsort',  # DALIGNER
+              'bin/datander', 'bin/HPC.REPmask', 'bin/HPC.TANmask', 'bin/REPmask', 'bin/TANmask',  # DAMASKER
+              'bin/dexta', 'bin/undexta',  # DEXTRACTOR
+              'bin/heartbeat-wrapper', 'bin/pwatcher-main',  # pypeFLOW
+              'bin/fc_consensus', 'bin/fc_fetch_reads', 'bin/fc_run'],  # FALCON
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# cfr. https://github.com/pb-cdunn/FALCON-examples/blob/master/makefile
+sanity_check_commands = [
+    # remove broken symbolic link & move synth5k to right location
+    # needs to be done in two steps because of use of '*' in target path
+    "rm %(builddir)s/FALCON-examples*/run/synth0/data/synth5k",
+    "mv %(builddir)s/synth5k.2016-11-02 %(builddir)s/synth5k",
+    "mv %(builddir)s/synth5k %(builddir)s/FALCON-examples*/run/synth0/data/",
+    # set up test by running fc_run.py
+    "cd %(builddir)s/FALCON-examples* && cd run/synth0 && fc_run.py fc_run.cfg logging.ini",
+    # run actual integration test
+    "cd %(builddir)s/FALCON-examples* && make -C run/synth0 test",
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'bio'
