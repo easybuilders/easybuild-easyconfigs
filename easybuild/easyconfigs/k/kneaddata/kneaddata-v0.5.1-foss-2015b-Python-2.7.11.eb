@@ -1,7 +1,8 @@
-easyblock = 'Tarball'
+easyblock = 'PythonPackage'
 
 name = 'kneaddata'
 version = 'v0.5.1'
+versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'https://bitbucket.org/biobakery/kneaddata/wiki/Home'
 description = """KneadData is a tool designed to perform quality control on metagenomic and 
@@ -15,29 +16,24 @@ if one is trying to clean data derived from a human sequencing experiment, Knead
 to separate the human and the non-human reads."""
 
 toolchain = {'name': 'foss', 'version': '2015b'}
+
 source_urls = [('https://bitbucket.org/biobakery/%s/downloads/' % (name))]
 sources = [('%s_%s.tar.gz' % (name,version))]
-
 checksums = ['f127384dd5c1ba07915f418daefca3e1']
 
-python = 'Python'
-pythonversion = '2.7.11'
-pyshortver = '.'.join(pythonversion.split('.')[:2])
-
-versionsuffix = '-%s-%s' % (python, pythonversion)
-
 dependencies = [
-    (python, pythonversion),
+    ('Python', '2.7.11'),
+    ('FastQC', '0.11.5', '-Java-1.8.0_144-unlimited_JCE', ('dummy', '')),
+    ('Trimmomatic', '0.36', '-Java-1.8.0_144-unlimited_JCE', ('dummy', '')),
+    ('SAMtools', '1.3.1'),
+    ('Bowtie2', '2.3.4.1'),
 ]
 
-postinstallcmds = [
-    'cd %(installdir)s && python setup.py install',
-    'cd %(installdir)s && python %(installdir)s/setup.py test'
-]
-
+binaries = ['kneaddata', 'kneaddata_database', 'kneaddata_build_database']
 sanity_check_paths = {
-    'files': ['readme.md'],
-    'dirs': [],
+    'files': ['bin/%s' % x for x in binaries],
+    'dirs':  ['bin', 'lib/python%(pyshortver)s/site-packages'],
 }
 
-moduleclass = 'devel'
+moduleclass = 'bio'
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
