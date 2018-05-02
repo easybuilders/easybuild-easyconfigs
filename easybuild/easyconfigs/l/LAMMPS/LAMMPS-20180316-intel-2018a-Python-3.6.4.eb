@@ -1,5 +1,3 @@
-easyblock = 'MakeCp'
-
 name = 'LAMMPS'
 version = '20180316'
 versionsuffix = '-Python-%(pyver)s'
@@ -25,38 +23,23 @@ dependencies = [
     ('zlib', '1.2.11'),
     ('gzip', '1.8'),
     ('FFmpeg', '3.4.2'),
+    ('HDF5', '1.10.1'),
+    ('Eigen', '3.3.4', '', True),
+    ('Voro++', '0.4.6'),
 ]
 
-prebuildopts = "cd src &&"
+# run make in lib/<pkglib> for each of these (and use a particular Makefile, if specified)
+packaged_libraries = ['atc', 'awpmd', 'colvars', 'h5md', 'meam', 'poems', 'qmmm', 'reax']
 
-makevars = 'LMP_INC="-DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64 -DLAMMPS_JPG -DLAMMPS_PNG -DLAMMPS_FFMPEG" '
-makevars += 'MPI_INC="-I${MPI_INC_DIR}" MPI_PATH="-L${MPI_LIB_DIR}" MPI_LIB="-lmpi -lpthread" '
-makevars += 'FFT_INC="-DFFT_FFTW3" FFT_PATH="-L${EBROOTFFTW}/lib" FFT_LIB="-lfftw3" '
-makevars += 'JPG_INC="-I${EBROOTLIBJPEGMINTURBO}/include -I${EBROOTLIBPNG}/include" '
-makevars += 'JPG_PATH="-L${EBROOTLIBJPEGMINTURBO}/lib -L${EBROOTLIBPNG}/lib" JPG_LIB="-ljpeg -lpng" '
-buildopts = "-j mpi %s && " % makevars
+# run "make yes-<pkg>" for each of these
+packages_yes = ['ASPHERE', 'BODY', 'CLASS2', 'COLLOID', 'COMPRESS', 'CORESHELL', 'DIPOLE', 'GRANULAR',
+                'KSPACE', 'MANYBODY', 'MC', 'MEAM', 'MISC', 'MOLECULE', 'MPIIO', 'PERI', 'POEMS', 'PYTHON',
+                'QEQ', 'REAX', 'REPLICA', 'RIGID', 'SHOCK', 'SNAP', 'SRD', 'USER-ATC', 'USER-AWPMD', 'USER-CG-CMM',
+                'USER-CGDNA', 'USER-COLVARS', 'USER-DIFFRACTION', 'USER-DPD', 'USER-DRUDE', 'USER-EFF', 'USER-FEP',
+                'USER-H5MD', 'USER-LB', 'USER-MANIFOLD', 'USER-MGPT', 'USER-MOLFILE', 'USER-NC-DUMP', 'USER-PHONON',
+                'USER-QMMM', 'USER-QTB', 'USER-REAXC', 'USER-SMD', 'USER-SMTBQ', 'USER-SPH', 'USER-TALLY', 'VORONOI']
 
-# also build & install Python bindings
-buildopts += "make -j mpi mode=shlib %s && " % makevars
-buildopts += "cd ../python && mkdir site-packages && python install.py site-packages"
-
-keepsymlinks = 'true'
-
-files_to_copy = [
-    'lib',  # must be copied first
-    (['src/lmp_mpi'], 'bin'),
-    (['python/site-packages'], 'lib/python%(pyshortver)s'),
-    'bench', 'doc', 'examples', 'LICENSE',
-    'potentials', 'python', 'README', 'src', 'tools',
-]
-
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
-
-sanity_check_paths = {
-    'files': ['bin/lmp_mpi'],
-    'dirs': ['bench', 'doc', 'lib/python%(pyshortver)s/site-packages', 'python', 'tools'],
-}
-
-sanity_check_commands = ["python -c 'from lammps import lammps; lmp = lammps()'"]
+# run "make no-<pkg>" for each of these
+packages_no = ['GPU', 'KIM', 'KOKKOS', 'MSCG', 'OPT', 'USER-INTEL', 'USER-MISC', 'USER-OMP', 'USER-QUIP', 'USER-VTK']
 
 moduleclass = 'chem'
