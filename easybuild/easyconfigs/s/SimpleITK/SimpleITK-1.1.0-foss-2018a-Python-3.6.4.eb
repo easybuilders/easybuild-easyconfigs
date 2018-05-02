@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'SimpleITK'
+version = '1.1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/scikit-learn-contrib/imbalanced-learn'
+description = """imbalanced-learn is a Python package offering a number of re-sampling techniques commonly used in
+ datasets showing strong between-class imbalance."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+source_urls = ['https://github.com/SimpleITK/SimpleITK/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_XZ]
+checksums = ['43dfd76f3ce40904b5d15c5c6795f8bc071b9439d4c200e800db3c4bfbb0d6d8']
+
+builddependencies = [
+    ('CMake', '3.10.2'),
+    ('SWIG', '3.0.12', versionsuffix),
+]
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('ITK', '4.13.0', versionsuffix),
+]
+
+configopts = '-DWRAP_LUA=OFF -DWRAP_RUBY=OFF -DWRAP_TCL=OFF -DWRAP_JAVA=OFF -DWRAP_R=OFF -DWRAP_CSHARP=OFF '
+
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+pyinstpath = "%(installdir)s/lib/python%(pyshortver)s/site-packages"
+postinstallcmds = [
+    "mkdir -p %s" % pyinstpath,
+    "cd %%(builddir)s/easybuild_obj/Wrapping/Python/ && env PYTHONPATH=%s " % pyinstpath +
+    "python Packaging/setup.py install --prefix=%(installdir)s"
+]
+
+separate_build_dir = True
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['lib/libSimpleITKExplicit-%(version_major_minor)s.a'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'include/%(name)s-%(version_major_minor)s'],
+}
+
+sanity_check_commands = [('python', "-c 'import %(name)s'")]
+
+moduleclass = 'tools'
