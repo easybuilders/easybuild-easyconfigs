@@ -16,10 +16,26 @@ sources = ['v%(version)s.tar.gz']
 patches = ['%(name)s-%(version)s.patch']
 checksums = [
     '872f2580221dcc9bb4a8e3d04e032c168883c4c529d0733e3d94fe693f7732b2',  # v2.3.4.1.tar.gz
-    '51ea8908eef9259d291c679d89407d5e5f7e356b47980d8d32571dac518d5df8',  # Bowtie2-2.3.4.1.patch
+    '9ec01f9b634d889b1faac44deea69dc50d6cbb315b5d753192634609d62703bf',  # Bowtie2-2.3.4.1.patch
 ]
 
-dependencies = [('tbb', '2018_U3')]
+dependencies = [
+    ('tbb', '2018_U3')
+    ('zlib', '1.2.8')
+]
+
+#
+# Bowtie2 does not have a proper configure to figure out where tbb library is located and
+# tbb does not have a proper pkgconfig, which EasyBuild can pick up automagically 
+# to configure the build environment correctly. As a workaround we use the combination of
+#  * a patched Bowtie2 Makefile which introduces the TBBLIBDIR environment variable
+#    to point to the correct location of the tbb libs.
+#  * EasyConfig prebuildopts with some bash to parse the path to the tbb libs 
+#    from the LD_LIBRARY_PATH env var. This path contains the glibc version numbers 
+#    as well as the Linux kernel version and hence will vary on allmost every server 
+#    making it impossible to add it hardcoded to the patched Makefile.
+#
+prebuildopts = "export TBBLIBDIR=$(printf ${LD_LIBRARY_PATH} | grep -o '[^:]*/tbb/[^:]*_release') && "
 
 # disable warning on incompatible exception specification that is treated as an error
 buildopts = "EXTRA_FLAGS='-wd809'"
