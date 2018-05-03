@@ -1,0 +1,37 @@
+easyblock = 'MakeCp'
+
+name = 'frealign'
+version = '9.11'
+
+homepage = 'http://grigoriefflab.janelia.org/frealign'
+description = """Frealign is a program for high-resolution refinement of 3D reconstructions from cryo-EM images of single particles."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['http://grigoriefflab.janelia.org/sites/default/files/']
+sources = ['%(namelower)s_v%(version)s_151031.tar.gz']
+patches = ['%(namelower)s_v%(version)s_fix-makefile-intel.patch']
+
+dependencies = [
+     ('FFTW', '3.3.6'),
+]
+
+start_dir = 'src'
+
+parallel = 1
+
+# clean all included binaries first:
+
+prebuildopts = "rm -f ../bin/resample_mp.exe ../bin/merge_3d_mp.exe ../bin/frealign_v%(version_major)s_mp.exe && "
+
+buildopts = "-f Makefile_linux_amd64_intel_mp"
+
+files_to_copy = ['bin', 'mparameters', 'README.txt']
+
+sanity_check_paths = {
+    'files': ['bin/resample_mp.exe', 'bin/merge_3d_mp.exe', 'bin/frealign_v%(version_major)s_mp.exe'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'
