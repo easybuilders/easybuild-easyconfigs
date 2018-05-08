@@ -1,0 +1,45 @@
+name = 'ANSYS'
+version = '18.1'
+
+homepage = 'http://www.ansys.com'
+description = """ANSYS simulation software enables organizations to confidently predict 
+    how their products will operate in the real world. We believe that every product is 
+    a promise of something greater. """
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+# create a zip file from the 3 install iso files.
+# make sure all files of the iso's are in the same directory.
+sources = ['ANSYS-%(version)s.tar']
+
+postinstallcmds = [
+	# find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+	# rename the built-in libstdc++.so* to libstdc++.so*.bak because they are older than what we have in Nix, and cause problem with other binaries
+	"find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+	# call setrpaths.sh on all subdirectories called bin, lib or lib64, or lnamd64
+	"for d in $(find %(installdir)s -name 'bin' -o -name 'lib' -o -name 'lib64' -o -name 'lnamd64'); do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done"
+]
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
+if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
+	setenv("TMI_CONFIG",pathJoin(root,"v181/commonfiles/MPI/Intel/5.1.3.223/linx64/etc/tmi.conf"))
+end
+"""
+
+
+moduleclass = 'tools'
