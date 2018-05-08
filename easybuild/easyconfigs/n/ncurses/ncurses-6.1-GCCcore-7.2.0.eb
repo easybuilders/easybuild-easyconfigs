@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'ncurses'
+version = '6.1'
+
+homepage = 'http://www.gnu.org/software/ncurses/'
+
+description = """
+ The Ncurses (new curses) library is a free software emulation of curses in
+ System V Release 4.0, and more. It uses Terminfo format, supports pads and
+ color and multiple highlights and forms characters and function-key mapping,
+ and has all the other SYSV-curses enhancements over BSD Curses.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '7.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['aa057eeeb4a14d470101eff4597d5833dcef5965331be3528c08d99cebaa0d17']
+
+builddependencies = [
+    ('binutils', '2.29'),
+]
+
+common_configopts = "--with-shared --enable-overwrite --without-ada "
+configopts = [
+    # default build
+    common_configopts,
+    # the UTF-8 enabled version (ncursesw)
+    common_configopts + "--enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/",
+]
+
+libs = ["form", "menu", "ncurses", "panel"]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ["captoinfo", "clear", "infocmp",
+                                     "infotocap",
+                                     "ncurses%(version_major)s-config",
+                                     "reset", "tabs", "tic", "toe", "tput",
+                                     "tset"]] +
+             ['lib/lib%s%s.a' % (x, y) for x in libs for y in ['', '_g', 'w', 'w_g']] +
+             ['lib/lib%s%s.%s' % (x, y, SHLIB_EXT) for x in libs for y in ['', 'w']] +
+             ['lib/libncurses++%s.a' % x for x in ['', 'w']],
+    'dirs': ['include', 'include/ncursesw'],
+}
+
+moduleclass = 'devel'
