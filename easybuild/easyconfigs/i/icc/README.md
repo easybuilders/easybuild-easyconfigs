@@ -10,4 +10,4 @@ To install, you must configure EasyBuild to use the right `sourcepath` so it can
 * Set an environment variable: `export EASYBUILD_SOURCEPATH=/home/username/EB_Downloads ; eb icc-2018.2.199-GCC-6.4.0-2.28.eb -r`  
 * Configure a permanent location in ~/.config/easybuild/config.cfg before installing with `eb icc-2018.2.199-GCC-6.4.0-2.28.eb -r`
 > [config]  
-> sourcepath=~/EB_Downloads
+> sourcepath=/home/username/EB_Downloads
