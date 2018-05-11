@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+name = 'SuiteSparse'
+version = '5.1.2'
+metis_ver = '5.1.0'
+versionsuffix = '-METIS-%s' % metis_ver
+
+homepage = 'http://faculty.cse.tamu.edu/davis/suitesparse.html'
+description = """SuiteSparse is a collection of libraries manipulate sparse matrices."""
+
+toolchain = {'name': 'gmpolf', 'version': '2017.10'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['http://faculty.cse.tamu.edu/davis/SuiteSparse/']
+sources = [SOURCE_TAR_GZ]
+
+skipsteps = ['configure']
+
+buildopts = 'MY_METIS_LIB=\'-lmetis\' BLAS=\'-lopenblas\' LAPACK=\'-lopenblas\' '
+buildopts += 'CMAKE_OPTIONS=-DCMAKE_INSTALL_PREFIX:PATH=%(installdir)s '
+installopts = buildopts + 'INSTALL=%(installdir)s'
+
+dependencies = [('METIS', metis_ver)]
+
+lib_names = [
+    ('AMD', 'amd.h') ,
+    ('BTF', 'btf.h'),
+    ('CAMD', 'camd.h'),
+    ('COLAMD', 'colamd.h'),
+    ('CCOLAMD', 'ccolamd.h'),
+    ('CHOLMOD', 'cholmod.h'),
+    ('UMFPACK', 'umfpack.h'),
+    ('KLU', 'klu.h'),
+    ('SPQR', 'spqr.hpp'),
+    ('RBio', 'RBio.h'),
+    ('LDL', 'ldl.h'),
+    ('CXSPARSE', 'cs.h'),
+]
+
+libs = ["lib/lib%s.so" % lib.lower() for lib, _ in lib_names]
+includes = ["include/%s" % include for _, include in lib_names]
+
+sanity_check_paths = {
+    'files': libs + includes + ['lib64/libgraphblas.so'],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
