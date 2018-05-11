@@ -1,0 +1,30 @@
+easyblock = 'CMakeMake'
+
+name = 'SUNDIALS'
+version = '3.1.1'
+
+homepage = 'http://computation.llnl.gov/projects/sundials'
+description = "SUNDIALS: SUite of Nonlinear and DIfferential/ALgebraic Equation Solvers"
+
+toolchain = {'name': 'gmpich', 'version': '2017.08'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['http://computation.llnl.gov/projects/sundials/download/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['a24d643d31ed1f31a25b102a1e1759508ce84b1e4739425ad0e18106ab471a24']
+
+builddependencies = [('CMake', '3.10.3')]
+
+separate_build_dir = True
+
+configopts = "-DMPI_ENABLE=ON -DOPENMP_ENABLE=ON -DLAPACK_ENABLE=ON"
+
+solvers = ['arkode', 'cvode', 'cvodes', 'ida', 'idas', 'kinsol']
+sanity_check_paths = {
+    'files': ['lib/libsundials_%s.a' % s for s in solvers + ['nvecopenmp', 'nvecparallel', 'nvecserial']] +
+             ['lib/libsundials_%s.%s' % (s, SHLIB_EXT) for s in solvers + ['nvecopenmp', 'nvecparallel', 'nvecserial']],
+    'dirs': ['examples/%s' % s for s in solvers] + ['include/%s' % s for s in solvers] +
+            ['examples/nvector', 'include/nvector', 'include/sundials'],
+}
+
+moduleclass = 'math'
