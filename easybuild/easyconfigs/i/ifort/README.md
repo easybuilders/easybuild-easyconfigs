@@ -6,8 +6,8 @@ Next you must specify the license file. There are three options:
 * Set an environment variable: `export LM_LICENSE_FILE=/path/to/file.lic`
 
 To install, you must past eb the sourcepath to find the download. There are a number of ways to do this assuming the file is in ~/EB_Downloads.  
-* Pass it as a option on the command line: `eb ifort-2018.2.199-GCC-6.4.0-2.28.eb -r --sourcepath=~/EB_Downloads`  
-* Set an environment variable: `export EASYBUILD_SOURCEPATH=~/EB_Downloads ; eb ifort-2018.2.199-GCC-6.4.0-2.28.eb -r`  
+* Pass it as a option on the command line: `eb ifort-2018.2.199-GCC-6.4.0-2.28.eb -r --sourcepath=/home/username/EB_Downloads`  
+* Set an environment variable: `export EASYBUILD_SOURCEPATH=/home/username/EB_Downloads ; eb ifort-2018.2.199-GCC-6.4.0-2.28.eb -r`  
 * Configure a permanent location in ~/.config/easybuild/config.cfg before installing with `eb ifort-2018.2.199-GCC-6.4.0-2.28.eb -r`
 > [config]  
 > sourcepath=~/EB_Downloads
