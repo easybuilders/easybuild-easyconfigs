@@ -186,12 +186,12 @@ class EasyConfigTest(TestCase):
             if dep == 'binutils':
                 empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
                 if len(empty_vsuff_vars) == 1:
-                    dep_vars = [(k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0]]
+                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             elif dep in ['FFTW', 'imkl']:
                 serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
                 if len(serial_vsuff_vars) == 1:
-                    dep_vars = [(k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0]]
+                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
 
             # filter out some very specific variants
             for key in dep_vars.keys():
