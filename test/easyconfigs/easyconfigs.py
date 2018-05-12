@@ -193,11 +193,12 @@ class EasyConfigTest(TestCase):
                 if len(serial_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
 
-            # filter out some very specific variants
-            for key in dep_vars.keys():
-                # filter out variants that are specific to a particular version of CUDA
-                if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
-                    dep_vars.pop(key)
+            # filter out variants that are specific to a particular version of CUDA
+            cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
+            if len(dep_vars) > len(cuda_dep_vars):
+                for key in dep_vars.keys():
+                    if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
+                        dep_vars.pop(key)
 
             # only single variant is always OK
             if len(dep_vars) == 1:
