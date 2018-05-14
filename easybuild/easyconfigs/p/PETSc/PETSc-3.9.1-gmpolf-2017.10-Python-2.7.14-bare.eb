@@ -1,6 +1,9 @@
+easyblock = 'ConfigureMake'
 name = 'PETSc'
 version = '3.9.1'
 versionsuffix = '-Python-2.7.14-bare'
+metis = 'METIS'
+metis_ver = '5.1.0'
 
 homepage = 'http://www.mcs.anl.gov/petsc'
 description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
@@ -13,18 +16,33 @@ source_urls = ['http://ftp.mcs.anl.gov/pub/petsc/release-snapshots']
 sources = [SOURCELOWER_TAR_GZ]
 
 dependencies = [
-    ('Boost', '1.67.0', versionsuffix),
     ('Python', '2.7.14', '-bare'),
-    ('FIAT', '2017.2.0', versionsuffix),
-    ('METIS', '5.1.0'),
+    ('Boost', '1.67.0', versionsuffix),
+    ('numpy', '1.14.3', versionsuffix),
+    (metis, metis_ver),
     ('ParMETIS', '4.0.3'),
     ('SCOTCH', '6.0.4'),
-    ('SuiteSparse', '4.5.3', '-%s-%s' % (parmetis, parmetis_ver)),
+    ('SuiteSparse', '5.2.0', '-%s-%s' % (metis, metis_ver)),
+    ('SuperLU', '5.2.1'),
     ('Hypre', '2.11.2'),
 ]
 
 builddependencies = [('CMake', '3.10.3')]
 
-configopts = '--LIBS="$LIBS -lrt"'
+configopts = '--with-boost-dir=$EBROOTBOOST --with-numpy-dir=$EBROOTNUMPY '
+configopts += '--with-blaslapack-dir+=$EBROOTOPENBLAS --with-mpi-dir+=$EBROOTMPICH '
+configopts += '--with-parmetis-dir+=$EBROOTPARMETIS --with-superlu-dir+=$EBROOTSUPERLU '
+configopts += '--with-suitesparse-dir+=$EBROOTSUITESPARSE --with-hypre-dir+=$EBROOTHYPRE '
+configopts += '--with-ptscotch-dir+=$EBROOTPTSCOTCH --with-hypre-dir+=$EBROOTHYPRE '
+
+# Run tests also after install
+installopts = '&& make PETSC_DIR=%(installdir)s PETSC_ARCH="" test'
+
+sanity_check_paths = {
+    'files': ['lib/lib%(namelower)s.so',
+              'include/petsc.h',
+              ],
+    'dirs': ['include/%(namelower)s']
+}
 
 moduleclass = 'numlib'
