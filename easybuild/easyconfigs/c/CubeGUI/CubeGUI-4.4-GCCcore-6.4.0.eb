@@ -1,0 +1,54 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2018 Juelich Supercomputing Centre, Germany
+# Authors::   Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+
+easyblock = 'EB_Score_minus_P'
+
+name = 'CubeGUI'
+version = '4.4'
+
+homepage = 'http://www.scalasca.org/software/cube-4.x/download.html'
+description = """
+ Cube, which is used as performance report explorer for Scalasca and Score-P,
+ is a generic tool for displaying a multi-dimensional performance space
+ consisting of the dimensions (i) performance metric, (ii) call path, and
+ (iii) system resource. Each dimension can be represented as a tree, where
+ non-leaf nodes of the tree can be collapsed or expanded to achieve the
+ desired level of granularity.
+
+ This module provides the Cube graphical report explorer.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+source_urls = ['http://apps.fz-juelich.de/scalasca/releases/cube/%(version_major_minor)s/dist']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = [
+    '0620bae3ac357d0486ce7f5f97e448eeb2494c9a31865b679380ee08c6750e70',  # cubegui-4.4.tar.gz
+]
+
+dependencies = [
+    ('CubeLib', '4.4'),
+    ('Qt5', '5.10.1'),
+]
+
+builddependencies = [
+    # use same binutils version that was used when building GCCcore
+    ('binutils', '2.28'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cube', 'bin/cubegui-config',
+              ('lib/libcube4gui.a', 'lib64/libcube4gui.a'),
+              ('lib/libcube4gui.%s' % SHLIB_EXT, 'lib64/libcube4gui.%s' % SHLIB_EXT)],
+    'dirs': ['include/cubegui', 'lib/cube-plugins'],
+}
+
+moduleclass = 'perf'
