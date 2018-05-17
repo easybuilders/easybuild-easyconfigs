@@ -1,0 +1,53 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+# Date: May 17, 2018.
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'BigDFT'
+version = '1.7.6'
+
+homepage = 'http://bigdft.org/Wiki/index.php?title=BigDFT_website'
+description = """BigDFT is a DFT massively parallel electronic structure code using a wavelet basis set with the capability to use a linear scaling method. Wavelets form a real space basis set distributed on an adaptive mesh (two levels of resolution in our implementation).
+ GTH or HGH pseudopotentials are used to remove the core electrons. The code BigDFT is available in ABINIT v5.5 and higher but can also be downloaded in a standalone version from the website. Thanks to our Poisson solver based on a Green function formalism, periodic systems, surfaces and isolated systems can be simulated with explicit boundary conditions. The Poisson solver can also be downloaded and used independently and is integrated in ABINIT, Octopus and CP2K. The code is free software, available under GNU-GPL license and the BigDFT developer community encourages anyone willing to contribute to join the team."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://launchpad.net/bigdft/%(version_major_minor)s/%(version)s/+download/']
+sources = [SOURCELOWER_TAR_XZ]
+#sources = ['%(namelower)s-%(version)s.tar.gz']
+
+dependencies = [
+    #('libxc', '3.0.0'),
+    ('ETSF_IO', '1.0.4'),
+    ('netCDF', '4.4.1.1'),
+    ('netCDF-Fortran', '4.4.4'),
+]
+
+configopts  = 'FC=mpif90  F90=mpif90  F77=mpif77  CC=mpicc  CXX=mpicxx '
+configopts += 'FFLAGS="-O2 -mp1" F77FLAGS="-O2 -mp1" FCFLAGS="-O2 -mp1" '
+configopts += 'CFLAGS="-O2 -mp1" CXXLAGS="-O2 -mp1" '
+configopts += '--enable-mpi --with-mpi2 '
+configopts += '--with-ext-linalg=" -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread" '
+configopts += '--with-ext-linalg-path="-L$MKLROOT/lib/intel64" '
+configopts += '--with-etsf-io --with-etsf-io-path=$EBROOTETSF_IO '
+configopts += '--with-netcdf-incs="-I$EBROOTNETCDF/include -I$EBROOTNETCDFMINFORTRAN/include" '
+configopts += '--with-netcdf-libs="-L$EBROOTNETCDF/lib -lnetcdf -L$EBROOTNETCDFMINFORTRAN/lib -lnetcdff" '
+configopts += '--with-scalapack="$MKLROOT/lib/intel64/libmkl_scalapack_lp64.a" '
+#configopts += '--with-libxc-libs="-L$EBROOTLIBXC/lib -lxc" '
+#configopts += '--with-libxc-incs="-I$EBROOTLIBXC/include" '
+
+binary_files = [ 
+     "abscalc", "bader", "bigdft-tool", "frequencies", "matchrotation", "mhgps", 
+     "NEB_driver.sh", "rotate_posinp", "unitconversion_posinp", "analyze_georelax", 
+     "bigdft", "fermi", "global", "memguess", "NEB", "p_axis_posinp", "splsad", "wocc",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in binary_files],
+    'dirs': ['lib/pkgconfig', 'include', 'share'],
+}
+
+moduleclass = 'chem'
