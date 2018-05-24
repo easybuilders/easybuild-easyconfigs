@@ -1,0 +1,48 @@
+easyblock = 'PythonPackage'
+
+name = 'FSLeyes'
+version = '0.20.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://git.fmrib.ox.ac.uk/fsl/fsleyes/fsleyes'
+description = "FSLeyes is the FSL image viewer."
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = [PYPI_LOWER_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [
+    ('Python', '2.7.13'),
+    ('fslpy', '1.5.4', versionsuffix),
+    ('matplotlib', '2.0.2', versionsuffix + '-libpng-1.6.29'),
+    ('wxPython', '3.0.2.0', versionsuffix),
+
+    # These are provided explicitly because they otherwise would be
+    # installed in the build tree, and thus not available at runtime.
+    # This is apparently due to an issue in the FSLeyes setup.py?
+    ('Jinja2', '2.6', versionsuffix),
+    ('requests', '2.18.4', versionsuffix),
+    ('sphinx_rtd_theme', '0.2.5b2', versionsuffix),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    # Unfortunately, fsleyes currently requires an X11 connection for this.
+    # ('fsleyes', '--version'),
+]
+
+# Try to pick up 'hicolor-icon-theme' (ought to be GTK+ dep?)
+# Fails as this doesn't like absolute paths
+# modextrapaths = {
+#     'GI_TYPELIB_PATH': '/usr/share',
+#     'XDG_DATA_DIRS': '/usr/share',
+# }
+
+modextravars = {'FSLDIR': '%(installdir)s'}
+
+moduleclass = 'vis'
