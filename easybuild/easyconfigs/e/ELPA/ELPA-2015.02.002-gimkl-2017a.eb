@@ -1,0 +1,53 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   Inge Gutheil <i.gutheil@fz-juelich.de>, Alan O'Cais <a.ocais@fz-juelich.de>
+# License::   MIT/GPL
+# $Id$
+#
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'ELPA'
+version = '2015.02.002'
+
+homepage = 'http://elpa.rzg.mpg.de'
+description = """Eigenvalue SoLvers for Petaflop-Applications ."""
+
+toolchain = {'name': 'gimkl', 'version': '2017a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['http://elpa.mpcdf.mpg.de/html/Releases/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['c26201de0c226cb659350b048d74f555c316df3029a0eba7a95ff9903dfac872']
+
+builddependencies = [
+    ('Autotools', '20150215'),
+]
+
+preconfigopts = 'autoreconf && '
+
+common_configopts = 'FCFLAGS="-I$EBROOTIMKL/mkl/include/intel64/lp64 $FCFLAGS" '
+common_configopts += 'LDFLAGS="$LDFLAGS $LIBS" '
+common_configopts += 'LIBS="$LIBSCALAPACK" '
+
+configopts = [
+    common_configopts + '--enable-openmp ',
+    common_configopts,  # Default version last, so we can get the normal config.h/config-f90.h installed afterwards.
+]
+
+buildopts = ' V=1 '
+
+postinstallcmds = [
+    'cp config.h config-f90.h %(installdir)s/share/doc/elpa/examples',
+]
+
+sanity_check_paths = {
+    'files': ['lib/libelpa.a', 'lib/libelpa.%s' % SHLIB_EXT, 'lib/libelpa_openmp.a',
+              'lib/libelpa_openmp.%s' % SHLIB_EXT, 'share/doc/elpa/examples/config.h',
+              'share/doc/elpa/examples/config-f90.h'],
+    'dirs': ['bin', 'include/elpa-%(version)s/elpa', 'include/elpa-%(version)s/modules', 'lib/pkgconfig'],
+}
+
+moduleclass = 'math'
