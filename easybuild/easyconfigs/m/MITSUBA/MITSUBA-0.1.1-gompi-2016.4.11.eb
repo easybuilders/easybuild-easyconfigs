@@ -1,0 +1,36 @@
+easyblock = 'CMakeMake'
+
+name = 'MITSUBA'
+version = '0.1.1'
+
+homepage = 'https://www.mitsuba-renderer.org/index.html'
+description = """Mitsuba is a research-oriented rendering system in the style of PBRT, from which it derives much inspiration. It is written in portable C++, implements unbiased as well as biased techniques, and contains heavy optimizations targeted towards current CPU architectures. Mitsuba is extremely modular: it consists of a small set of core libraries and over 100 different plugins that implement functionality ranging from materials and light sources to complete rendering algorithms."""
+
+toolchain = {'name': 'gompi', 'version': '2016.4.11'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+sources = ['tip.zip']
+source_urls = ['https://www.mitsuba-renderer.org/repos/mitsuba/archive/']
+
+configopts ='-DEigen_INCLUDE_DIR=$EBROOTEIGEN/include '
+
+dependencies = [
+     ('Eigen', '3.3.2'),
+     ('Boost', '1.60.0'),
+]
+
+mitsuba_libs = [ "libmitsuba-bidir.so", "libmitsuba-hw.so", "libmitsuba-core.so", "libmitsuba-render.so" ]
+
+postinstallcmds =  ['cd %(installdir)s/ && mkdir -p lib bin && mv mitsuba mtssrv mtsutil bin/ && mv *.so lib/']
+
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in ["mitsuba", "mtssrv", "mtsutil"]], ['lib/%s' % x for x in mitsuba_libs]],
+    'dirs': ['data', 'plugins', 'sdk', 'python'],
+}
+
+modextrapaths = {
+    'CPATH': ['sdk/include'],
+    'LD_LIBRARY_PATH': ['plugins', 'python'],
+}
+
+moduleclass = 'vis'
