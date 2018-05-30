@@ -1,0 +1,74 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+# Date: May 30, 2018.
+##
+
+easyblock = 'MakeCp'
+
+name = 'SediFoam'
+version = "0.1"
+
+homepage = 'https://github.com/xiaoh/sediFoam'
+description = """SediFoam is a hybrid CFD-DEM solver for particle-laden flows based on two open-source codes: OpenFOAM, an object-oriented CFD platform by OpenCFD, and LAMMPS, a highly efficient molecular dynamics solver by Sandia National Laboratories. The solver has ben rigorously and extensively validated [Gupta2015b]. A capability demonstration of the present solver in the context of sediment transport is published in Sun and Xiao [Sun2016]. Other application include sand dune migration [Sun2016b], cohesive particle setteling [Sun2017cohesive], sediment transport of irregular partilces [Sun2017irregular], particle plume in stratified flows [Wang2016]."""
+
+toolchain = {'name': 'gomkl', 'version': '2016.4.11'}
+
+# Download from GitHub, rename to %(name)s-%(version), tar and gzip:
+# git clone https://github.com/xiaoh/sediFoam.git
+# mv sediFoam SediFoam-0.1 && tar -cvf SediFoam-0.1.tar SediFoam-0.1
+# gzip SediFoam-0.1.tar
+
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['ac4d0200fe42678f6e5834098e0252a2']
+
+patches = ['%(namelower)s-%(version)s_lammps_makefile.patch']
+
+dependencies = [
+     ('Python', '2.7.14'),
+     ('Eigen', '3.3.2'),
+     ('Voro++', '0.4.6'),
+     ('FFTW', '3.3.6', '-mpi'),
+     ('FFmpeg', '3.1.7', "-nix"),
+     ('OpenFOAM', '2.4.0'),
+]
+
+prebuildopts  = 'cd %(builddir)s/%(name)s-%(version)s/ && '
+prebuildopts += 'cp -r interfaceToLammps/* lammps-1Feb14/src/ && cd lammps-1Feb14/src/ && '
+prebuildopts += 'cd STUBS && make && cd ../ && '
+prebuildopts += 'make yes-GRANULAR && make yes-KSPACE && make yes-MANYBODY && make yes-MOLECULE && '
+prebuildopts += 'make yes-FLD && make yes-RIGID && make yes-MISC && make yes-VORONOI && '
+prebuildopts += 'make yes-ASPHERE && make yes-BODY && make yes-CLASS2 && '
+prebuildopts += 'make yes-COLLOID && make yes-DIPOLE && make yes-MC && make yes-MPIIO && '
+prebuildopts += 'make yes-OPT && make yes-PERI && make yes-REPLICA && make yes-SHOCK && '
+prebuildopts += 'make yes-SRD && make yes-XTC && make yes-USER-CG-CMM && make yes-USER-EFF && '
+prebuildopts += 'make yes-USER-LB && make yes-USER-MOLFILE && make yes-USER-PHONON && '
+prebuildopts += 'make yes-USER-SPH && make yes-GRANULAR && make yes-KSPACE && '
+prebuildopts += 'make yes-MANYBODY && make yes-MOLECULE && make yes-FLD && make yes-RIGID && '
+prebuildopts += 'make yes-MISC && make yes-VORONOI && '
+prebuildopts += 'make package-status > ../../list-packages.txt && '
+
+buildopts  = 'shanghailinux && make makeshlib && make -f Makefile.shlib shanghailinux && '
+buildopts += 'cd %(builddir)s/%(name)s-%(version)s/lammpsFoam && touch Make/options && '
+buildopts += 'echo "LAMMPS_DIR=%(builddir)s/%(name)s-%(version)s/lammps-1Feb14/src/" > Make/options && '
+buildopts += 'cat Make/options-linux-openmpi >> Make/options && '
+buildopts += 'wmake libso dragModels && wmake libso chPressureGrad && '
+buildopts += 'wmake libso lammpsFoamTurbulenceModels && wmake '
+
+files_to_copy = [
+      (['lammps-1Feb14/src/lmp_shanghailinux'], 'bin'), 
+      (['lammps-1Feb14/src/liblammps_shanghailinux.so'], 'lib'),
+      'readme', 'LICENSE', 'list-packages.txt', 'documentation', 'cases',
+]
+
+postinstallcmds =  ['cp $FOAM_USER_APPBIN/* %(installdir)s/bin/ && cp $FOAM_USER_LIBBIN/* %(installdir)s/lib/ && cd %(installdir)s/bin/ && ln -s liblammps_shanghailinux.so liblammps.so && ln -s lmp_shanghailinux lmp && cd %(installdir)s/lib/ && ln -s libchPressureGrad-DEM.so libchPressureGrad.so'] 
+
+binary_files = ["lmp_shanghailinux", "lammpsFoam"]
+
+lib_files = ["liblammps_shanghailinux.so"]
+
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in binary_files], ['lib/%s' % x for x in lib_files], 'LICENSE', 'readme'],
+    'dirs': ['bin', 'documentation', 'cases', 'lib'],
+}
+
+moduleclass = 'phys'
