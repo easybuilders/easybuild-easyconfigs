@@ -1,0 +1,34 @@
+easyblock = 'CMakeMake'
+
+name = 'RAxML-NG'
+version = '0.5.1b'
+
+homepage = 'https://github.com/amkozlov/raxml-ng'
+description = """RAxML-NG is a phylogenetic tree inference tool which uses maximum-likelihood (ML) optimality 
+    criterion. Its search heuristic is based on iteratively performing a series of Subtree Pruning and 
+    Regrafting (SPR) moves, which allows to quickly navigate to the best-known ML tree."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts ={'usempi': True}
+
+source_urls = ['https://github.com/amkozlov/raxml-ng/releases/download/0.5.1']
+sources = ['%(namelower)s_v%(version)s_linux_x86_64_MPI.zip']
+
+builddependencies = [('CMake', '3.10.2')]
+
+#Enable MPI and vectorization
+configopts = "-DUSE_MPI=ON"
+configopts += "-DENABLE_RAXML_SIMD=ON"
+configopts += "-DENABLE_PLLMOD_SIMD=ON"
+
+buildopts = " && cp -r bin/ %(installdir)s/"
+
+#Program has no "install" target
+skipsteps = ['install']
+
+sanity_check_paths = {
+    'files': ["bin/raxml-ng-mpi"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
