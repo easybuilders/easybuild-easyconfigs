@@ -1,0 +1,45 @@
+easyblock = 'PackedBinary'
+
+name = 'Nek5000'
+version = '17.0'
+
+homepage = 'https://nek5000.mcs.anl.gov/'
+description = "a fast and scalable high-order solver for computational fluid dynamics"
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/Nek5000/Nek5000/archive/']
+patches = ['%(name)s-%(version)s_hypre_blas.patch']
+
+builddependencies = [('CMake', '3.10.2')]
+
+dependencies = [('X11', '20180131')]
+
+buildininstalldir = True
+
+install_cmd = (
+    'mv %(name)s-%(version)s/{*,.[^.]*} . && rmdir %(name)s-%(version)s && cd tools && ./maketools all &&'
+    'cd ../3rd_party/gslib && env GSLIB_OPT="USREXIT=1 BLAS=2 PREFIX=gslib_ FPREFIX=fgslib_" ./install &&'
+    'cd ../cvode && ./install'
+)
+
+postinstallcmds = [
+    'sed -i -e "s|^#FC=.*|FC=$FC|" bin/makenek',
+    'sed -i -e "s|^#CC=.*|CC=$CC|" bin/makenek',
+    'sed -i -e "s|^#FFLAGS=.*|FFLAGS=\\"$FFLAGS\\"|" bin/makenek',
+    'sed -i -e "s|^#CFLAGS=.*|CFLAGS=\\"$CFLAGS\\"|" bin/makenek',
+]
+
+sanity_check_paths = {
+    'files': ['bin/amg_hypre', 'bin/genmap', 'bin/nekmerge', 'bin/prex', 'bin/genbox', 'bin/n2to3', 'bin/postx',
+              'bin/reatore2', 'bin/re2torea'],
+    'dirs': []
+}
+
+modextrapaths = {
+    'SOURCE_ROOT': '',
+}
+
+moduleclass = 'cae'
