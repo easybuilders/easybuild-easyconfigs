@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+version = '2.1'
+cuda_ver = '9.1.85'
+versionsuffix = '-CUDA-%s' % cuda_ver
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer
+ program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class
+ averages in electron cryo-microscopy (cryo-EM)."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+source_urls = ['https://github.com/3dem/relion/archive']
+sources = ['%(version)s.tar.gz']
+patches = ['RELION-2.1_cuda_capabilities.patch']
+checksums = [
+    '08729aac4fa0841e08df2c90a2c26cfe2aef52af2f5fb94a770ed2c11373b886',  # 2.1.tar.gz
+    '0a7119863d8a62dc99e65a036b7488478c9d9b9dc4f433be614bd92c2c8f2cb6',  # RELION-2.1_cuda_capabilities.patch
+]
+
+builddependencies = [('CMake', '3.10.1')]
+
+dependencies = [
+    ('CUDA', cuda_ver, '', True),
+    ('X11', '20180131'),
+    ('FLTK', '1.3.4'),
+]
+
+# lowest supported capability is 3.5
+cuda_compute_capabilities = ['3.5', '3.7', '5.0', '5.2', '5.3', '6.0', '6.1', '6.2', '7.0']
+capabilities = [''.join(x.split('.')) for x in cuda_compute_capabilities]
+cuda_arch = ';'.join(['-gencode arch=compute_%s,code=\"sm_%s,compute_%s\"' % (x, x, x) for x in capabilities])
+
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-lpthread' "
+configopts += '-DCUDA_ARCH=\'' + cuda_arch + '\''
+
+sanity_check_paths = {
+    'files': ['bin/relion'] + ['lib/librelion_%s.%s' % (x, SHLIB_EXT) for x in ['gpu_util', 'gui_lib', 'lib']],
+    'dirs': []
+}
+
+moduleclass = 'bio'
