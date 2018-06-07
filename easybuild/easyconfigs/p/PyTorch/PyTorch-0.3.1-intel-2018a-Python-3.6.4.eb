@@ -10,9 +10,6 @@ PyTorch is a deep learning framework that puts Python first."""
 
 toolchain = {'name': 'intel', 'version': '2018a'}
 
-# This environment is needed to prevent setup.py from invoking git to determine version.
-prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1'
-
 pytorchdir = 'pytorch-%(version)s'
 extract_cmd_pattern = 'tar -C %s/%s --strip-components=1 -xf %%s'
 
@@ -24,26 +21,33 @@ source_urls = [
     "https://github.com/pybind/pybind11/archive",
     "https://github.com/wjakob/clang-cindex-python3/archive",
 ]
+# PyTorch pulls in a bunch of submodules which don't have releases.
+# We download the submodule revisions from their repos.
 sources = [
     'v%(version)s.tar.gz',  # PyTorch
     {
-        'filename': 'cb002e4eb8d167c2c60fc3bdaae4e1844e0f9353.tar.gz',
+        'download_filename': 'cb002e4eb8d167c2c60fc3bdaae4e1844e0f9353.tar.gz',
+        'filename': 'gloo-20180105.tar.gz',
         'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/gloo'),
     },
     {
-        'filename': 'ec44c6c1675c25b9827aacd08c02433cccde7780.tar.gz',
+        'download_filename': 'ec44c6c1675c25b9827aacd08c02433cccde7780.tar.gz',
+        'filename': 'googletest-20160714.tar.gz',
         'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/gloo/third-party/googletest'),
     },
     {
-        'filename': '14efb1a47a496652ab08b1ebcefb0ea24ae4a5e4.tar.gz',
+        'download_filename': '14efb1a47a496652ab08b1ebcefb0ea24ae4a5e4.tar.gz',
+        'filename': 'nanopb-20170723.tar.gz',
         'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/nanopb'),
     },
     {
-        'filename': '9f6a636e547fc70a02fa48436449aad67080698f.tar.gz',
+        'download_filename': '9f6a636e547fc70a02fa48436449aad67080698f.tar.gz',
+        'filename': 'pybind11-20170821.tar.gz',
         'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/pybind11'),
     },
     {
-        'filename': '6a00cbc4a9b8e68b71caf7f774b3f9c753ae84d5.tar.gz',
+        'download_filename': '6a00cbc4a9b8e68b71caf7f774b3f9c753ae84d5.tar.gz',
+        'filename': 'clang-cindex-python3-20170330.tar.gz',
         'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/pybind11/tools/clang'),
     },
 ]
@@ -73,10 +77,6 @@ checksums = [
     '951d5fde89df3be98c1bc6750546259c1b3d0c77574fa3f9e67d9e8fe5b08161',  # PyTorch-0.3.1_fix_findAVX.patch
 ]
 
-# PyTorch pulls in a bunch of submodules which don't have releases.
-# We download the submodule revisions from their repos.
-options = {'modulename': 'torch'}
-
 builddependencies = [('CMake', '3.10.2')]
 
 dependencies = [
@@ -85,8 +85,17 @@ dependencies = [
     ('mkl-dnn', '0.13'),
 ]
 
+# This environment is needed to prevent setup.py from invoking git to determine version.
+prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1'
+
+# you can choice here: either give a list of CUDA cc version or tell it All
+# by default it does autodetect of the GPU on the local machine
+prebuildopts += ' TORCH_CUDA_ARCH_LIST="3.0 3.2 3.5 3.7 5.0 5.2 5.3 6.0 6.1 7.0"'
+
 runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/build/lib.linux-x86_64-%(pyshortver)s:$PYTHONPATH '
 runtest += '&& cd test && bash run_test.sh'
+
+options = {'modulename': 'torch'}
 
 sanity_check_paths = {
     'files': [],
