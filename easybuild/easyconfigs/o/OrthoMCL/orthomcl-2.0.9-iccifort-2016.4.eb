@@ -1,0 +1,39 @@
+easyblock = "Tarball"
+
+name = 'orthomcl'
+version = '2.0.9'
+
+homepage = 'http://orthomcl.org/'
+description = """OrthoMCL is a genome-scale algorithm for grouping orthologous protein sequences."""
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+
+source_urls = ['http://orthomcl.org/common/downloads/software/v%s/' % '.'.join(version.split('.')[:2])]
+sources = ['%(name)sSoftware-v%(version)s.tar.gz']
+
+# A Perl installation providing the DBI module is required:
+
+dependencies = [
+    ('MCL', '14.137'),
+]
+
+omcl_binary_files = [ 
+    "AdjustFasta", "BlastParser", "DropSchema", "DumpPairsFiles", "ExtractProteinIdsFromGroupsFile", 
+    "ExtractProteinPairsFromGroupsFile", "FilterFasta", "InstallSchema", "LoadBlast", "MclToGroups", 
+    "Pairs", "ReduceFasta", "ReduceGroups", "RemoveIdenticalGroups", "Singletons",
+    "SortGroupMembersByScore", "SortGroupsFile",
+]
+
+sanity_check_paths = {
+    'files': ['bin/orthomcl%s' % bin for bin in omcl_binary_files],
+    'dirs': ['lib/perl/OrthoMCLEngine'],
+}
+
+modextrapaths = {'PERL5LIB': 'lib/perl'}
+
+sanity_check_commands = [('perl', '-e "use OrthoMCLEngine::Main::Base"')]
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("perl")
+"""
