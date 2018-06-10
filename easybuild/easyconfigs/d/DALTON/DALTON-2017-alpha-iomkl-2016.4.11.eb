@@ -1,0 +1,74 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+# Date: May 28, 2018.
+##
+
+easyblock = 'MakeCp'
+
+name = 'DALTON'
+version = "2017-alpha"
+
+homepage = 'http://daltonprogram.org/'
+description = """The Dalton suite consists of two separate executables, Dalton and LSDalton. The Dalton code is a powerful tool for a wide range of molecular properties at different levels of theory, whereas LSDalton is a linear-scaling HF and DFT code suitable for large molecular systems, now also with some CCSD capabilites. Any published work arising from use of one of the Dalton programs must acknowledge that by a proper reference. The following list of capabilities of the Dalton programs should give you some indication of whether or not the Dalton suite is able to meet your requirements.."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
+
+# No direct download: download from GitLab using git clone:
+# git clone --recursive https://gitlab.com/dalton/dalton.git
+# mv dalton dalton-2017-alpha && tar -cvf dalton-2017-alpha.tar dalton-2017-alpha/
+# gzip dalton-2017-alpha.tar
+
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['104e1b2e6d706864f691ddb9f4dac993']   # dalton-2017-alpha.tar.gz
+
+builddependencies = [('CMake', '3.7.2')]
+
+skipsteps = ['configure', 'install']
+
+prebuildopts  = 'mkdir build && cd build && '
+prebuildopts += '../setup --type release --fc mpif90 --cc mpicc --cxx mpicxx --mpi --omp '
+prebuildopts += '--timings --coverage --csr --mkl=sequential --static '
+prebuildopts += '--blas=auto --lapack=auto '
+prebuildopts += '--blacs=openmpi  --scalapack . && '
+
+postinstallcmds =  ['cd %(builddir)s/%(namelower)s-%(version)s/build && mkdir -p %(installdir)s/bin && cp dalton dalton.x %(installdir)s/bin/ && cp -r GIT_HASH ../VERSION  lib  ../DALTON/test tools basis %(installdir)s/']
+
+files_to_copy = [
+    (['build/dalton', 'build/dalton.x'], 'bin'), 
+    'build/GIT_HASH', 'DALTON/test', 'build/lib', 'VERSION', 'basis', 'tools',
+]
+
+sanity_check_paths = {
+    'files': ['bin/dalton', 'bin/dalton.x', 'VERSION'],
+    'dirs': ['basis', 'lib', 'tools', 'test'],
+}
+
+modextrapaths = {
+    'PATH': 'basis',
+    'PATH': 'tools',
+}
+
+modextravars = {
+    'BASLIB': '%(installdir)s/basis',
+}
+
+modloadmsg = """ For more information type / Pour plus d'information tapez: dalton -h
+
+Note: Do not use / Ne pas utiliser : srun, mpirun, mpiexec
+
+Command line / Ligne de commande:
+
+  dalton [options] dalinp{.dal} [molinp{.mol} [potinp{.pot}] 
+
+To include the atomic basis add the option / Pour inclure les bases atomiques, ajoutez l'option:
+  
+  -b ${BASLIB}
+
+Example using 2 cores / Exemple avec 2 processeurs:
+
+  dalton  -b ${BASLIB} -N 2 -dal dft_rspexci_nosym.dal -mol H2O_cc-pVDZ_nosym.mol
+
+"""
+
+moduleclass = 'chem'
