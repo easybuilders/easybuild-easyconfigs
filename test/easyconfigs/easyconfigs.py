@@ -186,12 +186,19 @@ class EasyConfigTest(TestCase):
             if dep == 'binutils':
                 empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
                 if len(empty_vsuff_vars) == 1:
-                    dep_vars = [(k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0]]
+                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             elif dep in ['FFTW', 'imkl']:
                 serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
                 if len(serial_vsuff_vars) == 1:
-                    dep_vars = [(k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0]]
+                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
+
+            # filter out variants that are specific to a particular version of CUDA
+            cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
+            if len(dep_vars) > len(cuda_dep_vars):
+                for key in dep_vars.keys():
+                    if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
+                        dep_vars.pop(key)
 
             # only single variant is always OK
             if len(dep_vars) == 1:
