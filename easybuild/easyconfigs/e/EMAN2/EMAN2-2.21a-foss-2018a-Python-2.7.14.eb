@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'EMAN2'
+version = '2.21a'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://blake.bcm.edu/emanwiki/EMAN2'
+description = """EMAN2 is the successor to EMAN1. It is a broadly based greyscale scientific image processing suite
+ with a primary focus on processing data from transmission electron microscopes. """
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+source_urls = ['https://github.com/cryoem/eman2/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['EMAN2-%(version)s_fix-custom-install-prefix.patch']
+checksums = [
+    '8a7310b60852220103a6676c7116f4119b290776de572a1510b982783bff46f7',  # v2.21a.tar.gz
+    '7399b4645c7fda87dc102f4ce3f7011764e40833984bb6cac025f840ed177a19',  # EMAN2-2.21a_fix-custom-install-prefix.patch
+]
+
+builddependencies = [('CMake', '3.10.2')]
+
+dependencies = [
+    ('Boost', '1.63.0', versionsuffix),
+    ('freetype', '2.9'),
+    ('FTGL', '2.1.3-rc5'),  # this is the latest version of FTGL since 2008 (included in Ubuntu 16.04 and CentOS 7.4)
+    ('GSL', '2.4'),
+    ('HDF5', '1.10.1'),
+    ('IPython', '5.7.0', versionsuffix),
+    ('libGLU', '9.0.0'),
+    ('libjpeg-turbo', '1.5.3'),
+    ('LibTIFF', '4.0.9'),
+    ('libpng', '1.6.34'),
+    ('Mesa', '17.3.6'),
+    ('Python', '2.7.14'),
+    ('PyQt', '4.12.1', versionsuffix),
+]
+
+separate_build_dir = True
+
+preconfigopts = 'export CONDA_BUILD_STATE=BUILD && '
+preconfigopts += 'export PREFIX=%(installdir)s && '
+preconfigopts += 'export SP_DIR=%(installdir)s/lib/python%(pyshortver)s/site-packages && '
+preconfigopts += 'export FFTW3FDIR="$EBROOTFFTW" && '
+preconfigopts += 'export FFTW3DDIR="$EBROOTFFTW" && '
+preconfigopts += 'export HDF5DIR="$EBROOTHDF5" && '
+preconfigopts += 'export FTGLDIR="$EBROOTFTGL" && '
+
+sanity_check_paths = {
+    'files': ['bin/e2proc2d.py', 'bin/e2proc3d.py', 'bin/e2bdb.py', 'bin/e2iminfo.py', 'bin/e2display.py',
+              'bin/e2filtertool.py'],
+    'dirs': ['doc', 'examples', 'fonts', 'images', 'lib', 'recipes', 'test/rt', 'utils']
+}
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'
