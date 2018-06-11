@@ -187,11 +187,21 @@ class EasyConfigTest(TestCase):
                 empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
                 if len(empty_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
+
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             elif dep in ['FFTW', 'imkl']:
                 serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
                 if len(serial_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
+
+            # for Boost, we allow exceptions for software that depends on a particular version of Boost,
+            # as long as that's indicated by the versionsuffix
+            elif dep == 'Boost' and len(dep_vars) > 1:
+                for key in dep_vars.keys():
+                    boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    # filter out Boost version if all easyconfig filenames using it include specific Boost version
+                    if all(re.search('-Boost-%s' % boost_ver, v) for v in dep_vars[key]):
+                        dep_vars.pop(key)
 
             # filter out variants that are specific to a particular version of CUDA
             cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
