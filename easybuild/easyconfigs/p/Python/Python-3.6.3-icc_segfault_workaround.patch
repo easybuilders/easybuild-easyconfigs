@@ -1,0 +1,58 @@
+--- ./Modules/_sha3/kcp/KeccakP-1600-opt64.c.orig	2018-02-26 16:29:31.750301802 +0000
++++ ./Modules/_sha3/kcp/KeccakP-1600-opt64.c	2018-02-26 17:27:32.243042188 +0000
+@@ -463,12 +463,44 @@
+     UINT64 *inDataAsLanes = (UINT64*)data;
+ 
+     copyFromState(A, stateAsLanes)
++
+     while(dataByteLen >= laneCount*8) {
+         addInput(A, inDataAsLanes, laneCount)
+-        rounds24
++        //rounds24
++        // ACE 26/02/18 - icc segfaults on this - presumably because the line is too long for its buffer
++        // So the following is the output of the macro (with full unrolling enabled)
++        // start
++        prepareTheta
++        thetaRhoPiChiIotaPrepareTheta( 0, A, E)
++        thetaRhoPiChiIotaPrepareTheta( 1, E, A)
++        thetaRhoPiChiIotaPrepareTheta( 2, A, E)
++        thetaRhoPiChiIotaPrepareTheta( 3, E, A)
++        thetaRhoPiChiIotaPrepareTheta( 4, A, E)
++        thetaRhoPiChiIotaPrepareTheta( 5, E, A)
++        thetaRhoPiChiIotaPrepareTheta( 6, A, E)
++        thetaRhoPiChiIotaPrepareTheta( 7, E, A)
++        thetaRhoPiChiIotaPrepareTheta( 8, A, E)
++        thetaRhoPiChiIotaPrepareTheta( 9, E, A)
++        thetaRhoPiChiIotaPrepareTheta(10, A, E)
++        thetaRhoPiChiIotaPrepareTheta(11, E, A)
++        thetaRhoPiChiIotaPrepareTheta(12, A, E)
++        thetaRhoPiChiIotaPrepareTheta(13, E, A)
++        thetaRhoPiChiIotaPrepareTheta(14, A, E)
++        thetaRhoPiChiIotaPrepareTheta(15, E, A)
++        thetaRhoPiChiIotaPrepareTheta(16, A, E)
++        thetaRhoPiChiIotaPrepareTheta(17, E, A)
++        thetaRhoPiChiIotaPrepareTheta(18, A, E)
++        thetaRhoPiChiIotaPrepareTheta(19, E, A)
++        thetaRhoPiChiIotaPrepareTheta(20, A, E)
++        thetaRhoPiChiIotaPrepareTheta(21, E, A)
++        thetaRhoPiChiIotaPrepareTheta(22, A, E)
++        thetaRhoPiChiIota(23, E, A)
++        // end
++
+         inDataAsLanes += laneCount;
+         dataByteLen -= laneCount*8;
+     }
+     copyToState(stateAsLanes, A)
++
+     return originalDataByteLen - dataByteLen;
+ }
+--- setup.py.orig	2018-02-26 22:53:30.915149439 +0000
++++ setup.py	2018-02-26 22:53:01.409070915 +0000
+@@ -916,6 +916,7 @@
+         sha3_deps.append('hashlib.h')
+         exts.append( Extension('_sha3',
+                                ['_sha3/sha3module.c'],
++                               extra_compile_args=['-O0'],
+                                depends=sha3_deps))
+ 
+         # Modules that provide persistent dictionary-like semantics.  You will
