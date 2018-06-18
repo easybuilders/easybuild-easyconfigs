@@ -1,0 +1,36 @@
+easyblock = 'CMakeMake'
+
+name = 'Scrappie'
+version = '1.3.2'
+
+homepage = 'https://github.com/nanoporetech/scrappie'
+description = "Scrappie is a technology demonstrator for the Oxford Nanopore Research Algorithms group."
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/nanoporetech/scrappie/archive/']
+sources = ['release-%(version)s.tar.gz']
+patches = ['Scrappie-%(version)s_fix-cblas-include.patch']
+checksums = [
+    'c6ec2335be741228e214cbafdb2fd0d9d44aaca295ff36c90de0dadb4a9cb8a9',  # release-1.3.2.tar.gz
+    '47d08589bb9911d8572c70479760b4096018f3c32c9e63f71ce05e157f7fe7a3',  # Scrappie-1.3.2_fix-cblas-include.patch
+]
+
+builddependencies = [
+    ('CMake', '3.10.2'),
+    ('CUnit', '2.1-3'),
+]
+dependencies = [('HDF5', '1.10.1')]
+
+prebuildopts = 'sed -i "s/ -lblas / $LIBBLAS /g" CMakeFiles/scrappie.dir/link.txt && '
+prebuildopts += 'sed -i "s/ -lblas / $LIBBLAS /g" CMakeFiles/scrappie_unittest.dir/link.txt && '
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/scrappie', 'lib/libscrappie.a'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
