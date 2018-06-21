@@ -1,4 +1,4 @@
-easyblock = 'CMakePythonPackage'
+easyblock = 'CMakeMake'
 
 name = 'libgpuarray'
 version = '0.7.5'
@@ -16,15 +16,18 @@ checksums = ['d802299cd97bc1831416e64e23a7711cff4895348f45acba345840c4de461bb8']
 builddependencies = [('CMake', '3.9.5')]
 dependencies = [('Python', '3.6.3')]
 
-# no tests available, so disable running of tests
-runtest = False
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    (name, version, {
+        'source_urls': source_urls,
+        'source_tmpl': SOURCE_TAR_GZ,
+        'checksums': ['d802299cd97bc1831416e64e23a7711cff4895348f45acba345840c4de461bb8'],
+        'buildcmd': 'build_ext',
+        'modulename': 'pygpu',
+    }),
+]
 
-installopts = " && mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages "
-installopts += ' && export PYTHONPATH="%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH" '
-installopts += " && python setup.py build_ext -L %(installdir)s/lib -I %(installdir)s/include "
-installopts += " && python setup.py install --prefix %(installdir)s"
-
-options = {'modulename': 'pygpu'}
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 sanity_check_paths = {
     'files': ['lib/libgpuarray.%s' % SHLIB_EXT, 'lib/libgpuarray-static.a'],
