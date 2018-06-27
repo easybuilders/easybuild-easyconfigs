@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'FLEUR'
+version = 'MaXR2.1'
+
+homepage = 'http://www.flapw.de/'
+description = """FLEUR is a feature-full, freely available FLAPW (full potential linearized augmented planewave) code,
+ based on density-functional theory."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'usempi': True, 'r8': True}
+
+source_urls = ['http://www.flapw.de/pm/uploads/FLEUR/']
+sources = ['%(namelower)s%(version)s.tgz']
+checksums = ['ea33a14222063cd81cea974bd00a9c315947223d05e5a7111a33a382c2cc6d27']
+
+builddependencies = [('CMake', '3.10.2')]
+
+dependencies = [
+    ('HDF5', '1.10.1'),
+    ('Wannier90', '2.1.0'),
+    ('libxml2', '2.9.8'),
+]
+
+skipsteps = ['install']
+separate_build_dir = True
+
+preconfigopts = 'export FLEUR_LIBRARIES="$EBROOTWANNIER90/lib/libwannier.a;'
+preconfigopts += '-L$EBROOTHDF5/lib;-lhdf5;-lhdf5_fortran;'
+preconfigopts += '-lmkl_scalapack_lp64;-lmkl_blacs_intelmpi_lp64" && '
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/bin",
+    "cp fleur fleur_MPI inpgen %(installdir)s/bin",
+]
+
+sanity_check_paths = {
+    'files': ['bin/fleur', 'bin/fleur_MPI', 'bin/inpgen'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
