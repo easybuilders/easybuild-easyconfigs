@@ -1,0 +1,39 @@
+easyblock = 'PythonPackage'
+
+name = 'mympingpong'
+version = '0.8.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/hpcugent/mympingpong'
+description = """A mpi4py based random pair pingpong network stress test."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = [PYPI_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['ebc056374a071e49cd13c49c4d5274cf4eee6eb68a7c9033ba2929db27b8bfac']
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('vsc-base', '2.8.1', '', True),
+    ('vsc-mympirun', '4.1.5', '', True),
+    ('matplotlib', '2.1.2', versionsuffix),
+    ('h5py', '2.7.1', versionsuffix),
+    ('mpi4py', '3.0.0', versionsuffix + '-timed-pingpong'),
+    ('lxml', '4.2.0', versionsuffix),
+    ('hwloc', '1.11.8'),
+]
+
+preinstallopts = "sed -i 's/mpi4py < 2.0.0/mpi4py/g' setup.py && "
+
+options = {'modulename': 'vsc.mympingpong'}
+
+sanity_check_paths = {
+    'files': ['bin/mympingpong', 'bin/mympingponganalysis'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# turn off the dynamic connection establishment, to make Intel MPI create all connections up front
+modextravars = {'I_MPI_DYNAMIC_CONNECTION': '0'}
+
+moduleclass = 'perf'
