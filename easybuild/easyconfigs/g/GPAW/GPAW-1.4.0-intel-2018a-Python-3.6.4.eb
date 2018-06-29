@@ -1,0 +1,51 @@
+easyblock = "PythonPackage"
+
+name = 'GPAW'
+version = '1.4.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
+description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
+ method and the atomic simulation environment (ASE). It uses real-space uniform grids and multigrid methods or
+ atom-centered basis-functions."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = [PYPI_LOWER_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'GPAW-%(version)s-mkl.patch',
+]
+checksums = [
+    '9d4f4ab13f179c4998e33997cb06e4a66698a19b64c283e4dfaf9aab3be66ccc',  # gpaw-1.4.0.tar.gz
+    'f47edf48d839346a02159e4ad654811ad9c49c6bf0d48a86efe153790ff8b626',  # GPAW-1.4.0-mkl.patch
+]
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('ASE', '3.16.0', versionsuffix),
+    ('libxc', '4.2.2'),
+    ('libvdwxc', '0.3.2'),
+    ('libreadline', '7.0'),
+]
+
+prebuildopts = 'echo "libraries.append(\'xc\')" >> customize.py && '
+prebuildopts += 'echo "libvdwxc = True" >> customize.py && '
+prebuildopts += 'echo "libraries.append(\'vdwxc\')" >> customize.py && '
+
+prebuildopts += 'echo "scalapack = True" >> customize.py && '
+prebuildopts += 'echo "libraries.append(\'mkl_scalapack_lp64\')" >> customize.py && '
+prebuildopts += 'echo "libraries.append(\'mkl_blacs_intelmpi_lp64\')" >> customize.py && '
+prebuildopts += 'echo "define_macros += [(\'GPAW_NO_UNDERSCORE_CSCALAPACK\', \'1\')]" >> customize.py && '
+prebuildopts += 'echo "define_macros += [(\'GPAW_NO_UNDERSCORE_CBLACS\', \'1\')]" >> customize.py && '
+prebuildopts += 'echo "libraries.append(\'readline\')" >> customize.py && '
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/gpaw%s' % x for x in ['', '-analyse-basis', '-basis', '-mpisim', '-plot-parallel-timings',
+                                         '-python', '-runscript', '-setup', '-upfplot']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/' + name.lower()]
+}
+
+moduleclass = 'chem'
