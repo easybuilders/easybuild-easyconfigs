@@ -1,0 +1,55 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'CMakeMake'
+
+name = "EMAN2"
+version = "2.2"
+
+homepage = 'http://blake.bcm.edu/emanwiki/EMAN2'
+description = """EMAN2 is the successor to EMAN1. It is a broadly based greyscale scientific image 
+ processing suite with a primary focus on processing data from transmission electron microscopes"""
+
+toolchain = {'name': 'goolfc', 'version': '2017b'}
+
+source_urls = ['https://github.com/cryoem/eman2/archive']
+sources = ['v%(version)s.tar.gz']
+#checksums = ['b07d4fa7a194913b68ab0d3fce4f9c41885634b275be1dadac8f2d1961d9032a']
+patches = [
+    'EMAN2-2.2_fix_install_prefix.patch',
+    'EMAN2-2.2_use_default_cmake_search_paths.patch',
+    'EMAN2-2.2_fix_gsl_include.patch',
+    'EMAN2-2.2_fix_missing_stdio.patch',
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('zlib', '1.2.11'),
+    ('LibTIFF', '4.0.9'),
+    ('libjpeg-turbo', '1.5.2'),
+    ('libpng', '1.6.32'),
+    ('freetype', '2.8'),
+    ('GSL', '2.4'),
+    ('Boost', '1.63.0', '-Python-%(pyver)s'),
+    ('HDF5', '1.8.19'),
+    ('bsddb3', '6.2.5', '-Python-%(pyver)s'),
+    ('libGLU', '9.0.0'),
+    ('Mesa', '17.2.5'),
+]
+
+configopts = '-DENABLE_EMAN_CUDA=ON -DENABLE_SPARX_CUDA=ON '
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["e2version.py", "e2speedtest.py", "e2display.py", "e2proc2d.py"]],
+    'dirs': []
+}
+
+modextrapaths = {
+    'PYTHONPATH': [
+        'lib/python%(pyshortver)s/site-packages',
+    ],
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,93 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenCV'
+version = '2.4.13'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {'name': 'goolfc', 'version': '2017b'}
+
+source_urls = ['https://github.com/Itseez/opencv/archive/']
+sources = ['%(version)s.zip']
+
+patches = [
+    'OpenCV-2.4.9_with_IPP.patch',
+    'OpenCV-2.4.13_fix_CUDA_npp.patch',
+    'OpenCV-2.4.13_fix_CUDA_gencode.patch',
+    'OpenCV-2.4.13_fix_ocv_create_imported_targets.patch',
+]
+
+builddependencies = [
+    ('CMake', '3.10.2'),
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('zlib', '1.2.11'),
+    ('FFmpeg', '3.4'),
+    ('libjpeg-turbo', '1.5.2'),
+    ('libpng', '1.6.32'),
+    ('LibTIFF', '4.0.9'),
+    ('JasPer', '2.0.12'),
+    ('Java', '1.8.0_152', '', True),
+    ('ant', '1.10.1', '-Java-%(javaver)s', True),
+    ('GLib', '2.53.5'),
+    ('GTK+', '2.24.31'),
+#    ('ipp', '2017.1.132', '', True),
+]
+
+separate_build_dir = True
+
+#preconfigopts = 'export IPPROOT=$EBROOTIPP/ipp && '
+# Use FindCUDA from cmake which is much newer.
+preconfigopts = 'rm -r ../*/cmake/FindCUDA.cmake ../*/cmake/FindCUDA && '
+
+configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts += '-DBUILD_PYTHON_SUPPORT=ON '
+configopts += '-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+configopts += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
+configopts += '-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.%s ' % SHLIB_EXT
+configopts += '-DZLIB_INCLUDE_DIR=$EBROOTZLIB/include '
+configopts += '-DTIFF_LIBRARY=$EBROOTLIBTIFF/lib/libtiff.%s ' % SHLIB_EXT
+configopts += '-DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include '
+configopts += '-DPNG_LIBRARY=$EBROOTLIBPNG/lib/libpng.%s ' % SHLIB_EXT
+configopts += '-DPNG_INCLUDE_DIR=$EBROOTLIBPNG/include '
+configopts += '-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib/libjpeg.%s ' % SHLIB_EXT
+configopts += '-DJPEG_INCLUDE_DIR=$EBROOTLIBJPEGMINTURBO/include '
+configopts += '-DJASPER_LIBRARY=$EBROOTJASPER/lib/libjasper.a '
+configopts += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
+configopts += '-DWITH_IPP=OFF '
+configopts += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
+configopts += '-DWITH_CUDA=ON '
+configopts += '-DCUDA_NVCC_FLAGS="--expt-relaxed-constexpr" '
+
+sanity_check_paths = {
+    'files': ['lib/libopencv_core.%s' % SHLIB_EXT, 'lib/python%(pyshortver)s/site-packages/cv2.so'] +
+             ['bin/opencv_%s' % x for x in ['haartraining', 'createsamples', 'performance', 'traincascade']],
+    'dirs': ['include']
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'CLASSPATH': 'share/OpenCV/java',
+}
+
+moduleclass = 'vis'
+
+sanity_check_paths = {
+    'files': ['lib/libopencv_core.%s' % SHLIB_EXT, 'lib/python%(pyshortver)s/site-packages/cv2.so'] +
+             ['bin/opencv_%s' % x for x in ['haartraining', 'createsamples', 'performance', 'traincascade']],
+    'dirs': ['include']
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'CLASSPATH': 'share/OpenCV/java',
+}
+
+moduleclass = 'vis'
