@@ -1,0 +1,21 @@
+diff -ru opencv-2.4.13.orig/cmake/OpenCVUtils.cmake opencv-2.4.13/cmake/OpenCVUtils.cmake
+--- opencv-2.4.13.orig/cmake/OpenCVUtils.cmake	2016-04-20 16:21:19.000000000 +0200
++++ opencv-2.4.13/cmake/OpenCVUtils.cmake	2018-04-26 08:28:07.899998460 +0200
+@@ -464,10 +464,13 @@
+   set(target_list "")
+ 
+   foreach(library ${ARGN})
+-    ocv_convert_to_lib_name(libname "${library}")
+-    add_library("opencv_dep_${libname}" UNKNOWN IMPORTED)
+-    set_target_properties("opencv_dep_${libname}" PROPERTIES IMPORTED_LOCATION "${library}")
+-    list(APPEND target_list "opencv_dep_${libname}")
++    get_filename_component(tmp_dirname "${library}" DIRECTORY)
++    if (NOT tmp_dirname STREQUAL "")
++	ocv_convert_to_lib_name(libname "${library}")
++	add_library("opencv_dep_${libname}" UNKNOWN IMPORTED)
++	set_target_properties("opencv_dep_${libname}" PROPERTIES IMPORTED_LOCATION "${library}")
++	list(APPEND target_list "opencv_dep_${libname}")
++    endif()
+   endforeach()
+ 
+   set("${var}" "${target_list}" PARENT_SCOPE)
