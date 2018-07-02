@@ -13,8 +13,12 @@ toolchain = {'name': 'foss', 'version': '2018a'}
 
 source_urls = [PYPI_LOWER_SOURCE]
 sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    ('GPAW-customize.patch', 1)
+]
 checksums = [
     '9d4f4ab13f179c4998e33997cb06e4a66698a19b64c283e4dfaf9aab3be66ccc',  # gpaw-1.4.0.tar.gz
+    'd7fc2893675cdff5a8d2376d556e71caa36bd2f9b3661c0c89c69885d1043e6b',  # GPAW-customize.patch
 ]
 
 dependencies = [
@@ -25,18 +29,8 @@ dependencies = [
     ('GPAW-setups', '0.9.20000', '', True),
 ]
 
-prebuildopts = 'echo "compiler = \'$MPICC\'" >> customize.py && '
-prebuildopts += 'echo "define_macros += [(\'PARALLEL\', \'1\')]" >> customize.py && '
-
-prebuildopts += 'echo "libraries = [\'xc\']" >> customize.py && '
-prebuildopts += 'echo "libvdwxc = True" >> customize.py && '
-prebuildopts += 'echo "libraries.append(\'vdwxc\')" >> customize.py && '
-
-prebuildopts += 'echo "scalapack = True" >> customize.py && '
-prebuildopts += 'echo "extra_link_args = \'$LIBSCALAPACK\'.split()" >> customize.py && '
-prebuildopts += 'echo "define_macros += [(\'GPAW_NO_UNDERSCORE_CSCALAPACK\', \'1\')]" >> customize.py && '
-prebuildopts += 'echo "define_macros += [(\'GPAW_NO_UNDERSCORE_CBLACS\', \'1\')]" >> customize.py && '
-prebuildopts += 'echo "libraries.append(\'readline\')" >> customize.py && '
+buildcmd = 'build --customize=eb_customize.py'
+install_target = 'install --customize=eb_customize.py'
 
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
@@ -47,3 +41,4 @@ sanity_check_paths = {
 }
 
 moduleclass = 'chem'
+
