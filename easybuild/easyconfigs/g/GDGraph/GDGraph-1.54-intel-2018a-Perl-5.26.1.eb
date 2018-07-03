@@ -1,0 +1,55 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'Bundle'
+
+name = 'GDGraph'
+version = '1.54'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'https://metacpan.org/release/GDGraph'
+description = "GDGraph is a Perl package to generate charts"
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://github.com/lstein/Perl-GD/archive/']
+
+dependencies = [
+    ('Perl', '5.26.1'),
+    ('libgd', '2.2.5'),
+    ('libpng', '1.6.34'),
+    ('libjpeg-turbo', '1.5.3'),
+]
+
+# this is a bundle of Perl modules
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perl -e 'require %(ext_name)s'", '')
+
+exts_list = [
+    ('GD', '2.68', {
+        'source_tmpl': 'GD-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RURBAN/'],
+        'checksums': ['6aa3de0d49c22011d412789be664c46520b8d4eb4920fe30dbac501b88515e5c'],
+    }),
+    ('GD::Text', '0.86', {
+        'source_tmpl': 'GDTextUtil-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MV/MVERB/'],
+        'checksums': ['886ecbf85cfe94f4135ee5689c4847a9ae783ecb99e6759e12c734f2dd6116bc'],
+    }),
+    ('GD::Graph', version, {
+        'source_tmpl': 'GDGraph-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RUZ/'],
+        'checksums': ['b96f5c10b656c17d16ab65a1777c908297b028d3b6815f6d54b2337f006bfa4f'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/bdf2gdfont.pl'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi', 'man'],
+}
+
+modextrapaths = {'PERL5LIB': [
+    'lib/perl5/site_perl/%(perlver)s',
+    'lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi',
+]}
+
+moduleclass = 'bio'
