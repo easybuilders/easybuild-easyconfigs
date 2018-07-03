@@ -1,0 +1,31 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'ConfigureMake'
+
+name = 'Jellyfish'
+version = '2.2.10'
+
+homepage = 'http://www.genome.umd.edu/jellyfish.html'
+description = "Jellyfish is a tool for fast, memory-efficient counting of k-mers in DNA."
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://github.com/gmarcais/Jellyfish/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['8988550dfb30ca077c7ddf77d382b87d39749a2e95c0eb459d819bbddd6097cc']
+
+parallel = 1
+
+# The tests for the Bloom filter are statistical tests and can randomly fail, they actually don't make a lot of sense
+runtest = "check GTEST_FILTER=-'*Bloom*'"
+
+postinstallcmds = ["cp config.h %(installdir)s/include/%(namelower)s-%(version)s/%(namelower)s/"]
+
+sanity_check_paths = {
+    'files': ['bin/jellyfish'],
+    'dirs': []
+}
+
+modextrapaths = {'CPATH': 'include/%(namelower)s-%(version)s'}
+
+moduleclass = 'bio'

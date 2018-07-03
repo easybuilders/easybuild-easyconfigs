@@ -1,0 +1,97 @@
+easyblock = 'PythonPackage'
+
+name = 'PyTorch'
+version = '0.3.1'
+cuda_ver = '9.1.85'
+versionsuffix = '-Python-%%(pyver)s-CUDA-%s' % cuda_ver
+
+homepage = 'http://pytorch.org/'
+description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+PyTorch is a deep learning framework that puts Python first."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+pytorchdir = 'pytorch-%(version)s'
+extract_cmd_pattern = 'tar -C %s/%s --strip-components=1 -xf %%s'
+
+source_urls = [
+    'https://github.com/pytorch/pytorch/archive',
+    "https://github.com/facebookincubator/gloo/archive",
+    "https://github.com/google/googletest/archive",
+    "https://github.com/nanopb/nanopb/archive",
+    "https://github.com/pybind/pybind11/archive",
+    "https://github.com/wjakob/clang-cindex-python3/archive",
+]
+# PyTorch pulls in a bunch of submodules which don't have releases.
+# We download the submodule revisions from their repos.
+sources = [
+    'v%(version)s.tar.gz',  # PyTorch
+    {
+        'download_filename': 'cb002e4eb8d167c2c60fc3bdaae4e1844e0f9353.tar.gz',
+        'filename': 'gloo-20180105.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/gloo'),
+    },
+    {
+        'download_filename': 'ec44c6c1675c25b9827aacd08c02433cccde7780.tar.gz',
+        'filename': 'googletest-20160714.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/gloo/third-party/googletest'),
+    },
+    {
+        'download_filename': '14efb1a47a496652ab08b1ebcefb0ea24ae4a5e4.tar.gz',
+        'filename': 'nanopb-20170723.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/nanopb'),
+    },
+    {
+        'download_filename': '9f6a636e547fc70a02fa48436449aad67080698f.tar.gz',
+        'filename': 'pybind11-20170821.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/pybind11'),
+    },
+    {
+        'download_filename': '6a00cbc4a9b8e68b71caf7f774b3f9c753ae84d5.tar.gz',
+        'filename': 'clang-cindex-python3-20170330.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'torch/lib/pybind11/tools/clang'),
+    },
+]
+patches = [
+    '%(name)s-%(version)s-cmake.patch',
+    '%(name)s-%(version)s_skip_MPI_tests.patch',
+]
+checksums = [
+    'ee7e5633382bcf9866852e6eaa7bae9000ffb92d6f35605b0031b8d836c4cd94',  # v0.3.1.tar.gz
+    'c470bccdef90b300e8b50d27e7850cc5789ecd1045a85bd8625088c7c7e47a36',  # gloo-20180105.tar.gz
+    '175a22300b3450e27e5f2e6f95cc9abca74617cbc21a1e0ed19bdfbd22ea0305',  # googletest-20160714.tar.gz
+    '7d18b9bdc10de382da1643c2b1b0227131db47eef89998050b5e0a829d3bd0af',  # nanopb-20170723.tar.gz
+    '3a53dac15e87056a9724b9b6403343b47bb71fec26c090979562f71d7ec9ee98',  # pybind11-20170821.tar.gz
+    '828e0d6238e2129a9e08071750dc16ba10e38eacf96f21b8a71e501c2085b282',  # clang-cindex-python3-20170330.tar.gz
+    '710bbd38973a94c5c20695d25b819c4b41565bd4723ee4e07542d9537fa2bf18',  # PyTorch-0.3.1-cmake.patch
+    '72c8d6804bff568c2a49b1b7019171c93309a1853a90d5e3abe778f8aa80ca4f',  # PyTorch-0.3.1_skip_MPI_tests.patch
+]
+
+builddependencies = [('CMake', '3.10.2')]
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('PyYAML', '3.12', '-Python-%(pyver)s'),
+    ('CUDA', cuda_ver, '', True),
+    ('magma', '2.3.0', '-CUDA-%s' % cuda_ver),
+    ('cuDNN', '7.0.5', '-CUDA-%s' % cuda_ver, True),
+]
+
+# This environment is needed to prevent setup.py from invoking git to determine version.
+prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1'
+
+# you can choice here: either give a list of CUDA cc version or tell it All
+# by default it does autodetect of the GPU on the local machine
+prebuildopts += ' TORCH_CUDA_ARCH_LIST="3.0 3.2 3.5 3.7 5.0 5.2 5.3 6.0 6.1 7.0"'
+
+runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/build/lib.linux-x86_64-%(pyshortver)s:$PYTHONPATH '
+runtest += '&& cd test && bash run_test.sh'
+
+options = {'modulename': 'torch'}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'devel'
