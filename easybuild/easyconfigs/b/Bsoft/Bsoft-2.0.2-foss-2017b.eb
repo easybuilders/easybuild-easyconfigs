@@ -1,0 +1,63 @@
+# Authors: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'Bsoft'
+version = '2.0.2'
+
+homepage = 'http://lsbr.niams.nih.gov/bsoft/'
+
+description = """
+ Bsoft is a collection of programs and a platform for development of software
+ for image and molecular processing in structural biology. Problems in
+ structural biology are approached with a highly modular design, allowing fast
+ development of new algorithms without the burden of issues such as file I/O.
+ It provides an easily accessible interface, a resource that can be and has
+ been used in other packages.
+"""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'openmp': True}
+
+# https://lsbr.niams.nih.gov/bsoft/bsoft2_0_2.tgz
+source_urls = ['http://lsbr.niams.nih.gov/bsoft/']
+sources = ['%%(namelower)s%s.tgz' % '_'.join(version.split('.'))]
+
+dependencies = [
+    # ('FFTW', '3.3.6'),  # FFTW is included in foss/2017b toolchain
+    ('libjpeg-turbo', '1.5.3'),
+    ('libpng', '1.6.34'),
+    ('LibTIFF', '4.0.9'),
+    ('libxml2', '2.9.8'),
+    ('Tk', '8.6.8')
+]
+
+skipsteps = ['configure']
+
+prebuildopts = """
+    # fix libxml2 include path
+    sed -e 's,^XMLINC=.*,XMLINC=$EBROOTLIBXML2/include/libxml2,'\
+      -i.eb.xmlinc bsoft/bsoft_conf
+    # fix fftw3 include path
+    sed -e 's,LIBFFTW/api,LIBFFTW/include,'\
+      -i.eb.fftw3inc bsoft/bsoft_conf
+    # configure
+    ./bconf --prefix=%(installdir)s --fftw=$EBROOTFFTW --tiff=$EBROOTLIBTIFF\
+            --jpeg=$EBROOTLIBJPEGMINTURBO --png=$EBROOTLIBPNG
+"""
+
+# try parallel (EB default) build first then fall back to sequential
+buildopts = 'bsoft || make bsoft'
+
+sanity_check_paths = {
+    'files': ['bsoft.bashrc', 'bsetup', 'bin/brun', 'bin/bshow',
+              'lib/libbsoft.so', 'lib/libbshow.so'],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'BSOFT': '',
+    'BPARAM': 'parameters',
+}
+
+moduleclass = 'bio'
