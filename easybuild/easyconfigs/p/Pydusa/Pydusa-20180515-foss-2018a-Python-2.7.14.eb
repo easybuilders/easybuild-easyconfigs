@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'Pydusa'
+version = '20180515'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/cryoem/pydusa'
+description = """ Pydusa is a package for parallel programming using Python.
+ It contains a module for doing MPI programming in Python.  """
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+source_urls = ['https://github.com/cryoem/pydusa/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['Pydusa-%(version)s_numpy_header_path.patch']
+checksums = [
+    '971d6bb88d9e8a34c5a2518d70db8225bd96cfcf55c94ac4746213f8cdf9ccaf',  # v20180515.tar.gz
+    '1a13d3cca9981badc2c210fd1f3cf5a25ffd5a446a52a67c8519b95cbfed8c7f',  # Pydusa-20180515_numpy_header_path.patch
+]
+
+dependencies = [('Python', '2.7.14')]
+
+parallel = 1
+
+preconfigopts = (
+    'export PY_HEADER_NUMPY="$EBROOTPYTHON/lib/python2.7/site-packages/'
+    'numpy-*-py%(pyshortver)s-linux-x86_64.egg/numpy/core/include" && '
+)
+
+sanity_check_paths = {
+    'files': ['mpi.%s' % SHLIB_EXT],
+    'dirs': ['mpi_examples']
+}
+
+sanity_check_commands = ['python -c "import mpi"']
+
+modextrapaths = {'PYTHONPATH': ''}
+
+moduleclass = 'lib'
