@@ -183,7 +183,7 @@ class EasyConfigTest(TestCase):
             res = False
 
             # filter out binutils with empty versionsuffix which is used to build toolchain compiler
-            if dep == 'binutils':
+            if dep == 'binutils' and len(dep_vars) > 1:
                 empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
                 if len(empty_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
