@@ -1,0 +1,87 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Adam Mazur
+# Research IT
+# Biozentrum, University of Basel
+# Modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock='Tarball'
+
+name = 'CCP4'
+version = '7.0'
+
+homepage = 'http://www.ccp4.ac.uk/'
+description = """  CCP4 exists to produce and support a world-leading, integrated suite 
+ of programs that allows researchers to determine macromolecular structures by X-ray 
+ crystallography, and other biophysical techniques. CCP4 aims to develop and support 
+ the development of cutting edge approaches to experimental determination and analysis 
+ of protein structure, and integrate these approaches into the suite. CCP4 is a community 
+ based resource that supports the widest possible researcher community, embracing academic, 
+ not for profit, and for profit research. CCP4 aims to play a key role in the education 
+ and training of scientists in experimental structural biology. This module also includes  
+ ARP/wARP v7.5""" 
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# no public download link. Download .tar.gz from http://www.ccp4.ac.uk/download/index.php#os=linux
+# You should download the file containing CCP4 Program Suite + ARP/wARP  (64 bit)
+sources = ['%(namelower)s-%(version)s-linux-x86_64.tar.bz2']
+
+ccp4dir = '%(namelower)s-%(version)s'
+
+postinstallcmds = [
+    'touch $HOME/.agree2ccp4v6',
+    'cd %(builddir)s/' + ccp4dir + ' && ./BINARY.setup',
+]
+
+sanity_check_paths = {
+    'files': [ccp4dir + '/bin/ccp4.setup-sh'], # this file is created after ./BINARY.setup postinstall cmd
+    'dirs': [ccp4dir],
+}
+
+# module definition is based on installdir/ccp4-6.5/include/ccp4.setup-module
+
+modextrapaths = {
+    'PATH': '%s/bin:$root/%s/etc:$root/%s/share/xia2/Applications' % (ccp4dir, ccp4dir, ccp4dir),
+    'MANPATH': '%s/share/man' % ccp4dir
+}
+ 
+modextravars = {
+    'CCP4_MASTER': '$root',
+    'CCP4': '$root/%s' % ccp4dir,
+    'CCP4I_TCLTK': '$root/%s/bin' % ccp4dir,
+    'BALBES_ROOT': '$root/BALBES',
+
+    'GFORTRAN_UNBUFFERED_PRECONNECTED': '1',
+    'CBIN': '$root/%s/bin' % ccp4dir,
+    'CLIB': '$root/%s/lib' % ccp4dir,
+    'CCP4I_TOP': '$root/%s/share/ccp4i' % ccp4dir,
+    'CCP4_OPEN': 'UNKNOWN',
+    'MMCIFDIC': '$root/%s/lib/ccp4/cif_mmdic.lib' % ccp4dir,
+    'CRANK': '$root/%s/share/ccp4i/crank' % ccp4dir,
+    'CLIBD_MON': '$root/%s/lib/data/monomers/' % ccp4dir,
+    'CCP4_HELPDIR': '$root/%s/help/' % ccp4dir,
+
+    'CETC' : '$root/%s/etc' % ccp4dir,
+    'CEXAM' : '$root/%s/examples' % ccp4dir,
+    'CHTML' : '$root/%s/html' % ccp4dir,
+    'CINCL' : '$root/%s/include' % ccp4dir,
+    'CLIBD' : '$root/%s/lib/data' % ccp4dir,
+}
+
+#modtclfooter = """set ccp4_scr "/tmp/$env(USER)" setenv CCP4_SCR ${ccp4_scr}
+#if { ! [ file exists $ccp4_scr ] } {
+#    file mkdir $ccp4_scr
+#}
+#"""
+
+modluafooter = """ccp4_scr = "/tmp/$env(USER)" 
+setenv CCP4_SCR $ccp4_scr
+if not isFile($ccp4_scr) then
+execute {cmd="mkdir $ccp4_scr", modeA={"load"}}
+end 
+"""
+
+
+moduleclass = 'bio'
