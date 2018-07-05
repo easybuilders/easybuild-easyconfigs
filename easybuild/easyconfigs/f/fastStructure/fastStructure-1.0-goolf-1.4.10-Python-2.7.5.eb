@@ -1,0 +1,53 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'ConfigureMake'
+
+name = 'fastStructure'
+version = '1.0' 
+
+homepage = 'https://rajanil.github.io/fastStructure/'
+description = """ fastStructure is an algorithm for inferring population structure from 
+ large SNP genotype data. It is based on a variational Bayesian framework for posterior 
+ inference and is written in Python2.x. """
+
+toolchain = {'name': 'goolf', 'version': '1.4.10'}
+
+source_urls = ['https://github.com/rajanil/fastStructure/archive/']
+sources = ['v%(version)s.tar.gz']
+
+unpack_options = '--strip-components=1'
+
+python = 'Python'
+pyver = '2.7.5'
+versionsuffix = "-%s-%s" % (python, pyver)
+
+dependencies = [
+    (python, pyver),
+    ("GSL", "1.16"),
+    ]
+
+parallel = 1
+
+buildininstalldir = True
+
+skipsteps = ['configure', 'install']
+
+# here is where I do the real build
+# we finish with echo to avoid running "make". It will just do "echo make"
+prebuildopts = 'cd %(installdir)s/vars && '
+prebuildopts += 'python setup.py build_ext --inplace && '
+prebuildopts += 'cd %(installdir)s && '
+prebuildopts += 'python setup.py build_ext --inplace && echo '
+
+sanity_check_paths = {
+    'files': ["fastStructure.so", "parse_str.so", "parse_bed.so", "vars/marglikehood.so",
+    	      "vars/allelefreq.so", "vars/admixprop.so", "vars/utils.so"],
+    'dirs': [],
+}
+
+modloadmsg = "To execute run: python $EBROOTFASTSTRUCTURE/structure.py"
+
+moduleclass = 'bio'
