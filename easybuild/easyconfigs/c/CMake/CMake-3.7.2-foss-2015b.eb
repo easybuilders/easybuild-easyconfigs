@@ -17,7 +17,7 @@ checksums = [
     '8d5080bd03f019b83db2891c98b04127a550b316c688624fc126abb3aaad0010',  # cmake-%(version)s.SETGID.patch: Adds SETGID for PERMISSIONS for directories.
 ]
 
-configopts = '-- -DCMAKE_USE_OPENSSL=1 -DCMAKE_PREFIX_PATH=$EBROOTNCURSES'
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
 
 dependencies = [
     ('ncurses', '6.0'),
@@ -26,7 +26,13 @@ dependencies = [
     # ('OpenSSL', '1.0.2j'),
 ]
 
-osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+configopts = '-- -DCMAKE_USE_OPENSSL=1 -DCMAKE_PREFIX_PATH=$EBROOTNCURSES'
+
+#
+# Limit the CPU load on the build host.
+#
+import multiprocessing
+maxparallel = multiprocessing.cpu_count() / 2
 
 sanity_check_paths = {
     'files': ["bin/%s" % x for x in ['ccmake', 'cmake', 'cpack', 'ctest']],
