@@ -12,14 +12,13 @@ toolchain = {'name': 'foss', 'version': '2016b'}
 
 source_urls = ['https://github.com/nservant/HiC-Pro/archive/']
 sources = ['v%(version)s.tar.gz']
+patches = ['HiC-Pro-2.9.0_eb.patch']
 checksums = [
     'b82f15747bce937c3337b8120ad331a4bc07bbed6708d1d38b7d6ff1047a7a81',  # v2.9.0.tar.gz
-    '7006902cff8367b6bf1ef8cabd4de26bdbfa842062a0250755ff703227e88f34',  # HiC-Pro.patch
+    '755b6746ea017d3088071303b939c435651969562d8bf0522ab8573f1f6f1a15',  # HiC-Pro-2.9.0_eb.patch
 ]
 
 exts_defaultclass = 'PythonPackage'
-
-patches = ['HiC-Pro.patch']
 
 dependencies = [
     ('Python', '2.7.12'),
@@ -41,11 +40,14 @@ exts_list = [
 skipsteps = ['configure']
 
 files_to_copy = [
-    ('scripts'),
+    'scripts',
     (['bin/utils', 'bin/HiC-Pro'], 'bin'),
-    (['config-system.txt'], '')
+    'config-system.txt',
 ]
 
+postinstallcmds = [
+    'ln -s %(installdir)s/bin/ice  %(installdir)s/scripts/ice'
+]
 modextrapaths = {
     'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
     'SCRIPTS': ['scripts']
@@ -58,9 +60,5 @@ sanity_check_paths = {
     'files': ['bin/ice', 'config-system.txt', 'scripts/build_matrix', 'scripts/cutsite_trimming', 'bin/HiC-Pro'],
     'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts', 'bin/utils'],
 }
-
-postinstallcmds = [
-    'ln -s %(installdir)s/bin/ice  %(installdir)s/scripts/ice'
-]
 
 moduleclass = 'bio'
