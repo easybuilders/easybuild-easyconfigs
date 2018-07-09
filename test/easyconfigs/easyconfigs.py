@@ -378,7 +378,7 @@ def template_easyconfig_test(self, spec):
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
 
         if requires_binutils:
-            if ec['toolchain'] == 'compiler':
+            if ec['moduleclass'] == 'compiler':
                 dep_names = [d['name'] for d in ec['dependencies']]
                 self.assertTrue('binutils' in dep_names, "binutils is a dep in %s: %s" % (spec, dep_names))
             else:
