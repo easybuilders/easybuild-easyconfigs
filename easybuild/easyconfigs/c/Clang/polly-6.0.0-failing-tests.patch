@@ -1,0 +1,36 @@
+From df215287becc736cb08407df6a3fe3cdb90aa370 Mon Sep 17 00:00:00 2001
+From: Philip Pfaffe <philip.pfaffe@gmail.com>
+Date: Wed, 23 May 2018 14:52:35 +0000
+Subject: [PATCH] [Acc] Re-land r326643 to finally fix PR33208.
+
+Other than before, don't clear out LI entirely but only those relevant
+loops.
+
+# Patch modified for EasyBuild source locations on Clang build
+
+git-svn-id: https://llvm.org/svn/llvm-project/polly/trunk@333089 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ lib/CodeGen/PPCGCodeGeneration.cpp | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tools/polly/lib/CodeGen/PPCGCodeGeneration.cpp b/tools/polly/lib/CodeGen/PPCGCodeGeneration.cpp
+index 98e673e5b..acc8ef0e1 100644
+--- a/tools/polly/lib/CodeGen/PPCGCodeGeneration.cpp
++++ b/tools/polly/lib/CodeGen/PPCGCodeGeneration.cpp
+@@ -1563,12 +1563,14 @@ void GPUNodeBuilder::clearScalarEvolution(Function *F) {
+ }
+ 
+ void GPUNodeBuilder::clearLoops(Function *F) {
++  SmallSet<Loop *, 1> WorkList;
+   for (BasicBlock &BB : *F) {
+     Loop *L = LI.getLoopFor(&BB);
+     if (L)
+-      SE.forgetLoop(L);
+-    LI.removeBlock(&BB);
++      WorkList.insert(L);
+   }
++  for (auto *L : WorkList)
++    LI.erase(L);
+ }
+ 
+ std::tuple<Value *, Value *> GPUNodeBuilder::getGridSizes(ppcg_kernel *Kernel) {
