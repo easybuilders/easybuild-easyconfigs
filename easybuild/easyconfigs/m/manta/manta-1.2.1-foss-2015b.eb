@@ -14,8 +14,20 @@ toolchain = {'name': 'foss', 'version': '2015b'}
 #
 source_urls = [('https://github.com/Illumina/manta/releases/download/v%(version)s/')]
 sources = [('%s-%s.release_src.tar.bz2' % (name, version))]
+patches = [('%s-%s.release_src.SETGID.patch' % (name, version))]
+checksums = [
+    '9c9b0ffd64c473cc3986d17720ce516266e7064c075acfdb521e87f556937ee4',  # manta-1.2.1.release_src.tar.bz2
+    'cb7c748abe2150b59eeae2270c07ec55eb50f4e6ab06f86a37335d55145392b7',  # manta-1.2.1.release_src.SETGID.patch
+]
 
-checksums = ['17e87a381098695142857f469e744de6']
+#
+# The cmake bundled with Manta is broken and destroys the SETGID bit on directories during the INSTALL step.
+# This may result in permission denied errors or running out o quote when relying on inheritance 
+# of the SETGID bit to make sure files and folders are created in the correct group.
+#
+builddependencies = [
+    ('CMake', '3.7.2'),
+]
 
 dependencies = [
     ('ncurses', '6.0'),
@@ -38,5 +50,4 @@ sanity_check_paths = {
 }
 
 moduleclass = 'bio'
-
 
