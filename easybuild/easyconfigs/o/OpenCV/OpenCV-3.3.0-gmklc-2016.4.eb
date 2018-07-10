@@ -17,8 +17,6 @@ sources = [ '%(version)s.zip' ]
 
 builddependencies = [
     ('CMake', '3.5.2'),
-    ('Python', '3.5.4'),
-    ('Python35-SciPy-Stack', '2017a', '', ('gmkl', '2016.4')),
 ]
 
 dependencies = [
@@ -42,36 +40,51 @@ separate_build_dir = True
 #ippicv_dir = '3rdparty/ippicv/downloads/linux-808b791a6eac9ed78d32a7666804320e/'
 #preconfigopts += "mkdir -p %s && cp -a ../*.tgz %s && " % (ippicv_dir, ippicv_dir)
 
-configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
-configopts += '-DBUILD_PYTHON_SUPPORT=ON '
-configopts += '-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
-configopts += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
-configopts += '-DZLIB_LIBRARY=$NIXUSER_PROFILE/lib/libz.%s ' % SHLIB_EXT
-configopts += '-DZLIB_INCLUDE_DIR=$NIXUSER_PROFILE/include '
-configopts += '-DTIFF_LIBRARY=$NIXUSER_PROFILE/lib/libtiff.%s ' % SHLIB_EXT
-configopts += '-DTIFF_INCLUDE_DIR=$NIXUSER_PROFILE/include '
-configopts += '-DPNG_LIBRARY=$NIXUSER_PROFILE/lib/libpng.%s ' % SHLIB_EXT
-configopts += '-DPNG_INCLUDE_DIR=$NIXUSER_PROFILE/include '
-configopts += '-DJPEG_LIBRARY=$NIXUSER_PROFILE/lib/libjpeg.%s ' % SHLIB_EXT
-configopts += '-DJPEG_INCLUDE_DIR=$NIXUSER_PROFILE/include '
-configopts += '-DJASPER_LIBRARY=$EBROOTJASPER/lib/libjasper.a '
-configopts += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
-configopts += '-DWITH_IPP=ON '
-configopts += '-DCMAKE_SKIP_RPATH=ON '
-configopts += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
-configopts += '-DWITH_CUDA=ON '
+configopts_single = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts_single += '-DBUILD_PYTHON_SUPPORT=ON '
+configopts_single += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
+configopts_single += '-DZLIB_LIBRARY=$NIXUSER_PROFILE/lib/libz.%s ' % SHLIB_EXT
+configopts_single += '-DZLIB_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts_single += '-DTIFF_LIBRARY=$NIXUSER_PROFILE/lib/libtiff.%s ' % SHLIB_EXT
+configopts_single += '-DTIFF_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts_single += '-DPNG_LIBRARY=$NIXUSER_PROFILE/lib/libpng.%s ' % SHLIB_EXT
+configopts_single += '-DPNG_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts_single += '-DJPEG_LIBRARY=$NIXUSER_PROFILE/lib/libjpeg.%s ' % SHLIB_EXT
+configopts_single += '-DJPEG_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts_single += '-DJASPER_LIBRARY=$EBROOTJASPER/lib/libjasper.a '
+configopts_single += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
+configopts_single += '-DWITH_IPP=ON '
+configopts_single += '-DCMAKE_SKIP_RPATH=ON '
+configopts_single += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
+configopts_single += '-DWITH_CUDA=ON '
 
-postinstallcmds = [ "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python%(pyshortver)s/site-packages --add_path %(installdir)s/lib" ]
+preconfigopts = [
+	'module load python/2.7 scipy-stack && ',
+	'module load python/3.5 scipy-stack && ', 
+	'module load python/3.6 scipy-stack && ',
+]
+configopts = [
+	configopts_single + " -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python2.7/site-packages -DPYTHON2_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON2_INCLUDE_DIR=$EBROOTPYTHON/include/python2.7 -DPYTHON2_LIBRARY=$EBROOTPYTHON/lib/libpython2.7.so",
+	configopts_single + " -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python3.5/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON3_INCLUDE_DIR=$EBROOTPYTHON/include/python3.5m -DPYTHON3_LIBRARY=$EBROOTPYTHON/lib/libpython3.5m.so",
+	configopts_single + " -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python3.6/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON3_INCLUDE_DIR=$EBROOTPYTHON/include/python3.6m -DPYTHON3_LIBRARY=$EBROOTPYTHON/lib/libpython3.6m.so",
+]
+postinstallcmds = [ 
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python2.7/site-packages --add_path %(installdir)s/lib", 
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.5/site-packages --add_path %(installdir)s/lib", 
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.6/site-packages --add_path %(installdir)s/lib", 
+]
 
 sanity_check_paths = {
     'files': ['lib/libopencv_core.%s' % SHLIB_EXT] +
-             ['lib/python%%(pyshortver)s/site-packages/cv2.cpython-35m-x86_64-linux-gnu.%s' % SHLIB_EXT] +
+             ['lib/python2.7/site-packages/cv2.%s' % SHLIB_EXT] +
+             ['lib/python3.5/site-packages/cv2.cpython-35m-x86_64-linux-gnu.%s' % SHLIB_EXT] +
+             ['lib/python3.6/site-packages/cv2.cpython-36m-x86_64-linux-gnu.%s' % SHLIB_EXT] +
              ['bin/opencv_%s' % x for x in ['annotation', 'createsamples', 'traincascade']],
     'dirs': ['include']
 }
 
 modextrapaths = {
-    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'EBPYTHONPREFIXES' : '',
     'CLASSPATH': 'share/OpenCV/java',
 }
 
