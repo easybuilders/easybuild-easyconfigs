@@ -194,14 +194,17 @@ class EasyConfigTest(TestCase):
                 if len(serial_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
 
-            # for Boost, we allow exceptions for software that depends on a particular version of Boost,
+            # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep == 'Boost' and len(dep_vars) > 1:
+            elif dep in ['Boost', 'R'] and len(dep_vars) > 1:
                 for key in dep_vars.keys():
-                    boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
-                    # filter out Boost version if all easyconfig filenames using it include specific Boost version
-                    if all(re.search('-Boost-%s' % boost_ver, v) for v in dep_vars[key]):
+                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    # filter out dep version if all easyconfig filenames using it include specific dep version
+                    if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
                         dep_vars.pop(key)
+                    # always retain at least one dep variant
+                    if len(dep_vars) == 1:
+                        break
 
             # filter out variants that are specific to a particular version of CUDA
             cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
