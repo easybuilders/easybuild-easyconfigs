@@ -1,0 +1,49 @@
+easyblock = 'PackedBinary'
+
+name = 'Kraken'
+version = '1.0'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://ccb.jhu.edu/software/kraken/'
+description = """Kraken is a system for assigning taxonomic labels to short DNA sequences,
+ usually obtained through metagenomic studies. Previous attempts by other
+ bioinformatics software to accomplish this task have often used sequence
+ alignment or machine learning techniques that were quite slow, leading to
+ the development of less sensitive but much faster abundance estimation
+ programs. Kraken aims to achieve high sensitivity and high speed by
+ utilizing exact alignments of k-mers and a novel classification algorithm."""
+
+# part is compiled with $CXX, the rest is in Perl
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['http://ccb.jhu.edu/software/kraken/dl/']
+sources = [SOURCELOWER_TGZ]
+patches = ['Kraken-%(version)s_CXX-CXXFLAGS.patch']
+checksums = [
+    'cec40d3545199d48388269fc1b7fda9f48ae3aa73f99ed4410e1474abe421e6a',  # kraken-1.0.tgz
+    '84c017d6a80ccaac1e23561c83cac90bcc3d62baa8d31657a7dafbc2c3f29726',  # Kraken-1.0_CXX-CXXFLAGS.patch
+]
+
+dependencies = [
+    ('Perl', '5.26.1'),
+    ('Jellyfish', '2.2.10'),
+    ('wget', '1.19.4'),
+]
+
+install_cmd = 'cd %(builddir)s/%(namelower)s-%(version)s && '
+install_cmd += './install_kraken.sh %(installdir)s'
+
+sanity_check_paths = {
+    'files': ['add_to_library.sh', 'build_kraken_db.sh', 'check_for_jellyfish.sh', 'classify', 'clean_db.sh',
+              'cp_into_tempfile.pl', 'db_shrink', 'db_sort', 'download_genomic_library.sh',
+              'download_taxonomy.sh', 'kraken', 'kraken-build', 'kraken-filter', 'krakenlib.pm',
+              'kraken-mpa-report', 'kraken-report', 'kraken-translate', 'make_seqid_to_taxid_map',
+              'read_merger.pl', 'report_gi_numbers.pl', 'set_lcas', 'shrink_db.sh',
+              'standard_installation.sh', 'upgrade_db.sh', 'verify_gi_numbers.pl'],
+    'dirs': [],
+}
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'
