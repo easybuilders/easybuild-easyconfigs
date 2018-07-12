@@ -380,7 +380,8 @@ def template_easyconfig_test(self, spec):
         if requires_binutils:
             if ec['moduleclass'] == 'compiler':
                 dep_names = [d['name'] for d in ec['dependencies']]
-                self.assertTrue('binutils' in dep_names, "binutils is a dep in %s for 'compiler' moduleclass: %s" % (spec, dep_names))
+                self.assertTrue('binutils' in dep_names, "binutils is a dep in %s for 'compiler' moduleclass: %s"
+                                % (spec, dep_names))
             else:
                 dep_names = [d['name'] for d in ec['builddependencies']]
                 self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
