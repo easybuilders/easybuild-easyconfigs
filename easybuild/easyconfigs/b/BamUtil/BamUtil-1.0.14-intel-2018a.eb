@@ -1,0 +1,49 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author: Adam Huffman
+# adam.huffman@crick.ac.uk
+# The Francis Crick Institute
+#
+# This is the version with the bundled libStatGen library
+
+name = 'BamUtil'
+version = '1.0.14'
+
+easyblock = 'MakeCp'
+
+homepage = 'http://genome.sph.umich.edu/wiki/BamUtil'
+description = """BamUtil is a repository that contains several programs
+  that perform operations on SAM/BAM files. All of these programs
+  are built into a single executable, bam."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/statgen/BamUtil/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/statgen/libStatGen/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': 'libStatGen-%(version)s.tar.gz',
+    },
+]
+checksums = [
+    'f5ec8d5e98a3797742106c3413a4ab1622d8787e38b29b3df4cddb59d77efda5',  # BamUtil-1.0.14.tar.gz
+    '70a504c5cc4838c6ac96cdd010644454615cc907df4e3794c999baf958fa734b',  # libStatGen-1.0.14.tar.gz
+]
+
+# make sure right compilers are used by passing them as options to 'make' (default is to use gcc/g++)
+# USER_WARNINGS needs to be emptied to avoid use of -Werror which leads to compiler errors with Intel compilers
+buildopts = 'CC="$CC" CXX="$CXX" USER_WARNINGS="" LIB_PATH_BAM_UTIL=%(builddir)s/libStatGen-*/'
+
+files_to_copy = ['bin']
+
+sanity_check_paths = {
+    'files': ['bin/bam'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

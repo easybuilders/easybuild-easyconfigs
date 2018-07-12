@@ -183,15 +183,35 @@ class EasyConfigTest(TestCase):
             res = False
 
             # filter out binutils with empty versionsuffix which is used to build toolchain compiler
-            if dep == 'binutils':
+            if dep == 'binutils' and len(dep_vars) > 1:
                 empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
                 if len(empty_vsuff_vars) == 1:
-                    dep_vars = [(k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0]]
+                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
+
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             elif dep in ['FFTW', 'imkl']:
                 serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
                 if len(serial_vsuff_vars) == 1:
-                    dep_vars = [(k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0]]
+                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
+
+            # for some dependencies, we allow exceptions for software that depends on a particular version,
+            # as long as that's indicated by the versionsuffix
+            elif dep in ['Boost', 'R'] and len(dep_vars) > 1:
+                for key in dep_vars.keys():
+                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    # filter out dep version if all easyconfig filenames using it include specific dep version
+                    if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
+                        dep_vars.pop(key)
+                    # always retain at least one dep variant
+                    if len(dep_vars) == 1:
+                        break
+
+            # filter out variants that are specific to a particular version of CUDA
+            cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
+            if len(dep_vars) > len(cuda_dep_vars):
+                for key in dep_vars.keys():
+                    if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
+                        dep_vars.pop(key)
 
             # only single variant is always OK
             if len(dep_vars) == 1:
@@ -214,7 +234,8 @@ class EasyConfigTest(TestCase):
             return res
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
-        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]']:
+        # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
+        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', 'GCCcore-[7-9]\.[0-9]']:
             all_deps = {}
             regex = re.compile('^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
