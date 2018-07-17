@@ -1,0 +1,55 @@
+easyblock = 'CMakeMake'
+name = 'dealii'
+version = '8.5.0'
+versionsuffix = '-petsc'
+modaltsoftname = 'dealii-petsc'
+
+homepage = 'http://www.dealii.org/'
+description = """A C++ software library supporting the creation of finite element codes and an open community of users and developers."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://github.com/dealii/dealii/releases/download/v%(version)s/']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+
+
+separate_build_dir = True
+
+configure_cmd_prefix = ' CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 '
+configopts = ' -DDEAL_II_WITH_P4EST=ON '
+configopts += ' -DDEAL_II_WITH_MPI=ON '
+configopts += ' -DDEAL_II_WITH_PETSC=ON '
+configopts += ' -DDEAL_II_PETSC_WITH_COMPLEX=ON '
+configopts += ' -DTrilinos_ENABLE_Sacado=ON '
+configopts += ' -DTrilinos_ENABLE_Stratimikos=ON '
+configopts += ' -DCMAKE_BUILD_TYPE=Release '
+configopts += ' -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+configopts += ' -DBUILD_SHARED_LIBS=ON '
+configopts += ' -DCMAKE_C_COMPILER=mpicc '
+configopts += ' -DCMAKE_CXX_COMPILER=mpiCC '
+configopts += ' -DCMAKE_Fortran_COMPILER=mpif90 '
+configopts += ' -DLAPACK_LIBRARIES:STRING="-mkl -fuse-ld=bfd" '
+configopts += ' -DP4EST_DIR=${EBROOTP4EST} '
+configopts += ' -DTRILINOS_DIR=${EBROOTTRILINOS} '
+configopts += ' -DGSL_LIBRARIES=${EBROOTGSL}/lib/libgsl.a '
+configopts += ' -DGSL_INCLUDE_DIRS=${EBROOTGSL}/include '
+
+
+builddependencies = [('CMake', '3.4.1')]
+
+dependencies = [
+               ('PETSc', '3.8.2'),
+               ('p4est', '1.1'),
+               ('GSL', '2.2.1'),
+]
+
+# too parallel is too slow, and may cause build/tests to fail
+maxparallel = 10
+
+sanity_check_paths = {
+    'files': [('lib/libdeal_II.so')],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'numlib'
