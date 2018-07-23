@@ -1,0 +1,40 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'Binary'
+
+name = 'Aspera-Connect'
+version = '3.8.1'
+
+homepage = 'http://downloads.asperasoft.com/connect2/'
+description = """IBM Aspera Connect is an install-on-demand application that
+facilitates high-speed uploads and downloads with an Aspera transfer server"""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+source_urls = ['https://download.asperasoft.com/download/sw/connect/%(version)s/']
+sources = ['ibm-%(namelower)s-%(version)s.161274-linux-g2.12-64.tar.gz']
+checksums = ['b607c3a595cda2caeb3d03d5e9e1134a49f68aa6b0d18bd32ae5f0d57c80fb38']
+
+# install script has ~/.aspera/connect hardcoded, but this can be overridden by redefining $HOME
+install_cmd = "tar xf %s && " % sources[0]
+install_cmd += "export HOME=%(builddir)s && "
+install_cmd += "./ibm-%(namelower)s-%(version)s.161274-linux-g2.12-64.sh && "
+install_cmd += "cp -a %(builddir)s/.aspera/connect/* %(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ascp', 'asperaconnect', 'asperaconnect.bin', 'asperacrypt', 'asunprotect']],
+    'dirs': ['lib'],
+}
+
+modaliases = {
+    'ascp':  'ascp -i \$EBROOTASPERAMINCONNECT/etc/asperaweb_id_dsa.openssh',
+}
+
+modloadmsg = """
+\rAspera public keys are located in $EBROOTASPERAMINCONNECT
+\rIf you dont' specify a key with -i flag asperaweb_id_dsa.openssh will be used by default (run alias to check)\n\r"""
+
+moduleclass = 'tools'
