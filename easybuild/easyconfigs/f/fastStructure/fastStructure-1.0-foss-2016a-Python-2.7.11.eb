@@ -1,0 +1,48 @@
+# fastStructure is a Python program structure.py, which 
+# integrates with some C code using Cython. This
+# easyconfig calls setup.py to build the Cython code and
+# copies the whole tree over to the installation directory.
+# The '#!/bin/env python' header is added to structure.py,
+# and it is made executable in order for the users to be able
+# to use it without having to refer to its full path.
+easyblock = 'CmdCp'
+
+name = 'fastStructure'
+version = '1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://rajanil.github.io/fastStructure/'
+description = """
+fastStructure is an algorithm for inferring population structure 
+from large SNP genotype data. It is based on a variational Bayesian 
+framework for posterior inference and is written in Python2.x. 
+"""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+source_urls = ['https://github.com/rajanil/fastStructure/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f1bfb24bb5ecd108bc3a90145fad232012165c1e60608003f1c87d200f867b81']
+
+dependencies = [
+    ('Python', '2.7.11'),
+    ('GSL', '2.1'),
+]
+
+cmds_map = [('.*', 'cd vars && python setup.py build_ext --inplace && cd .. && python setup.py build_ext --inplace')]
+
+files_to_copy = ['*']
+
+postinstallcmds = [
+    'echo "#!/bin/env python" | cat - %(installdir)s/structure.py > temp && mv temp %(installdir)s/structure.py',
+    'chmod +x %(installdir)s/structure.py'
+]
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['structure.py'],
+    'dirs': ['vars'],
+}
+
+moduleclass = 'bio'
