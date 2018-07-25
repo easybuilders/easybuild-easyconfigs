@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'FRUIT'
+version = '3.4.3'
+
+rubyver = '2.5.1'
+versionsuffix = '-Ruby-%s' % rubyver
+
+homepage = 'https://fortranxunit.sourceforge.io'
+description = "FORTRAN Unit Test Framework (FRUIT)"
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://sourceforge.net/projects/fortranxunit/files/fruit_%(version)s']
+sources = ['fruit_%(version)s.zip']
+patches = ['fruit_3.4.3-ifort-external.patch']
+checksums = [
+    '01c88d0b8046d809ab317c7b7e4a87ec343fe1c065d408029d83342808929862',  # fruit_3.4.3.zip
+    'a77e1315d41da1f767536252f3afce77dbb58eda7aea138055f03b11c9836bf8',  # fruit_3.4.3-ifort-external.patch
+]
+
+builddependencies = [
+    ('Ruby', rubyver),
+    ('FRUIT_processor', '3.4.3', versionsuffix),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'rake || '
+
+preinstallopts = 'mkdir -p %(installdir)s/include && cp src/*.mod %(installdir)s/include && '
+preinstallopts += 'mkdir -p %(installdir)s/lib && cp src/*.a %(installdir)s/lib || '
+
+sanity_check_paths = {
+    'files': ['include/fruit.mod', 'include/fruit_util.mod', 'lib/libfruit.a'],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'devel'
