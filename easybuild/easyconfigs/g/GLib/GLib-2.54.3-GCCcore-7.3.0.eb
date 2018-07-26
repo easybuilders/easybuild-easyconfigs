@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'GLib'
+version = '2.54.3'
+
+homepage = 'http://www.gtk.org/'
+description = """GLib is one of the base libraries of the GTK+ project"""
+
+toolchain = {'name': 'GCCcore', 'version': '7.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [FTPGNOME_SOURCE]
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['963fdc6685dc3da8e5381dfb9f15ca4b5709b28be84d9d05a9bb8e446abac0a8']
+
+builddependencies = [
+    ('binutils', '2.30'),
+    ('Python', '2.7.15', '-bare'),
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('libffi', '3.2.1'),
+    ('gettext', '0.19.8.1', '-libxml2-2.9.8'),
+    ('libxml2', '2.9.8'),
+    ('PCRE', '8.41'),
+    ('util-linux', '2.32'),
+]
+
+# avoid using hardcoded path to Python binary in build step
+preconfigopts = "export PYTHON=python && "
+
+configopts = "--disable-maintainer-mode --disable-silent-rules --disable-libelf --disable-systemtap "
+configopts += "--enable-static --enable-shared"
+
+postinstallcmds = ["sed -i -e 's|#!.*python|#!/usr/bin/env python|' %(installdir)s/bin/*"]
+
+sanity_check_paths = {
+    'files': ['lib/libglib-%(version_major)s.0.a', 'lib/libglib-%%(version_major)s.0.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include'],
+}
+
+moduleclass = 'vis'
