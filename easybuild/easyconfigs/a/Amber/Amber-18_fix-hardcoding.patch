@@ -1,23 +1,23 @@
-diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/configure2
---- 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2	2016-10-06 14:27:01.000000000 +0100
-+++ 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/configure2	2016-10-06 14:52:11.607328298 +0100
-@@ -513,6 +513,7 @@
+diff -ru 18.orig/AmberTools/src/configure2 18/AmberTools/src/configure2
+--- 18.orig/AmberTools/src/configure2	2018-07-26 20:42:59.846192814 +0000
++++ 18/AmberTools/src/configure2	2018-07-26 20:46:02.153070617 +0000
+@@ -563,6 +563,7 @@
+ mpinab=''
  mpi='no'
- mtkpp='install_mtkpp'
  netcdf_dir=''
 +netcdf_fort_dir=''
  netcdf_flag=''
  netcdfstatic='no'
- pnetcdf_dir=''
-@@ -587,6 +588,7 @@
- 	--skip-python)  skippython='yes' ;;
+ pmemd_gem='no'
+@@ -652,6 +653,7 @@
+         --skip-python)  skippython='yes' ;;
          --with-python)  shift; python="$1";;
          --with-netcdf)  shift; netcdf_dir="$1";;
 +        --with-netcdf-fort)  shift; netcdf_fort_dir="$1";;
          --with-pnetcdf) shift; pnetcdf_dir="$1" ;;
          --python-install) shift; python_install="$1";;
          -netcdfstatic)  netcdfstatic='yes' ;;
-@@ -778,7 +780,7 @@
+@@ -925,7 +927,7 @@
  flibsf="-larpack -llapack -lblas"
  # only used when the user requests a static build or when a static build is
  # automatically set, eg, windows:
@@ -26,7 +26,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
  omp_flag=
  mpi_flag=
  fp_flags=
-@@ -1280,7 +1282,7 @@
+@@ -1493,7 +1495,7 @@
          nvcc="$nvcc -use_fast_math -O3 "
        fi
        if [ "$mpi" = 'yes' ]; then
@@ -35,7 +35,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
          pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
          pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
-@@ -1598,7 +1600,7 @@
+@@ -1878,7 +1880,7 @@
        fi
  
        if [ "$mpi" = 'yes' ]; then
@@ -44,7 +44,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
          pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
          pmemd_coptflags="$pmemd_coptflags -DMPICH_IGNORE_CXX_SEEK"
-@@ -1924,7 +1926,7 @@
+@@ -2217,7 +2219,7 @@
          nvcc="$nvcc -use_fast_math -O3 "
        fi
        if [ "$mpi" = 'yes' ]; then
@@ -53,7 +53,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
          pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
          pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
-@@ -2059,7 +2061,7 @@
+@@ -2354,7 +2356,7 @@
          nvcc="$nvcc -use_fast_math -O3 "
        fi
        if [ "$mpi" = 'yes' ]; then
@@ -62,7 +62,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
          pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
          pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
-@@ -2131,17 +2133,17 @@
+@@ -2427,17 +2429,17 @@
      blas=skip
      flibs="-larpack "
      flibsf="-larpack "
@@ -84,7 +84,25 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
              mkl_processor="intel64"
              mkl_procstring="intel64"
          fi
-@@ -2567,11 +2569,16 @@
+@@ -2508,7 +2510,7 @@
+ #  Support platforms without a C <complex.h> by building c9x-complex.
+ #--------------------------------------------------------------------------
+ 
+-if [ -r /usr/include/complex.h ]; then
++if [ -r $NIXUSER_PROFILE/include/complex.h ]; then
+     c9xcomplex='skip'
+ elif [ "$cygwin" = 'yes' -o "$windows" = 'yes' ]; then
+     c9xcomplex='skip'
+@@ -2523,7 +2525,7 @@
+ #  Support platforms without <sys/dir.h> but with <dirent.h>
+ #  usually a non-Linux Unix with a non-native compiler.
+ #--------------------------------------------------------------------------
+-if [ ! -r /usr/include/sys/dir.h  -a -r /usr/include/dirent.h ]; then
++if [ ! -r $NIXUSER_PROFILE/include/sys/dir.h  -a -r $NIXUSER_PROFILE/include/dirent.h ]; then
+     if [ "$cygwin" != 'yes' ]; then
+        cflags="$cflags -DSYSV"
+        pmemd_coptflags="$pmemd_coptflags -DSYSV"
+@@ -2863,11 +2865,16 @@
    else
      # A NetCDF directory was specified. Check that library exists and compiles
      printf "\tUsing external NetCDF in '$netcdf_dir'\n"
@@ -102,7 +120,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
      if [ "$netcdfstatic" = 'no' ] ; then
        if [ "${netcdf_dir}" != '/usr' -a "${netcdf_dir}" != '/usr/' ]; then
            netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
-@@ -2587,7 +2594,7 @@
+@@ -2883,7 +2890,7 @@
          echo "Error: '$netcdfflagc' not found."
          exit 1
        fi
@@ -111,7 +129,4 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
        if [ ! -e "$netcdfflagf" ]; then
          echo "Error: '$netcdfflagf' not found."
          exit 1
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src: configure2.orig
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src: configure2.rej
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/cpptraj: configure.orig
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/cpptraj: configure.rej
+Only in 18/AmberTools/src: configure2.orig
