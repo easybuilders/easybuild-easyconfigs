@@ -1,0 +1,90 @@
+Ignore checks for X11, use easybuild settings instead.
+
+Åke Sandgren, 20180403
+diff -ru amber16.orig/AmberTools/src/configure2 amber16/AmberTools/src/configure2
+--- amber16.orig/AmberTools/src/configure2	2018-04-03 20:55:27.031610543 +0200
++++ amber16/AmberTools/src/configure2	2018-04-03 21:38:41.383450159 +0200
+@@ -920,83 +920,6 @@
+ if [ "$noX11" = "true" ]; then
+     make_xleap="skip_xleap"
+     xhome=''
+-else
+-    if [ -d /usr/X11R6/lib ]; then
+-        xhome='/usr/X11R6'
+-    elif [ -d /usr/X11/lib ]; then    # location for MacOSX 10.11
+-        xhome='/usr/X11'
+-    elif [ -d /usr/lib/x86_64-linux-gnu ]; then
+-        xhome='/usr'
+-    elif [ -f /usr/lib/i386-linux-gnu/libX11.a ]; then
+-        xhome='/usr'
+-    elif [ -f /usr/lib/libX11.a -o -f /usr/lib/libX11.so \
+-           -o -f /usr/lib/libX11.dll.a \
+-           -o -f /usr/lib64/libX11.a -o -f /usr/lib64/libX11.so ]; then
+-        xhome='/usr'
+-    elif [ -f /opt/local/lib/libX11.a -o -f /opt/local/lib/libX11.dylib ]; then
+-        xhome='/opt/local'
+-    else
+-        echo "Could not find the X11 libraries; you may need to edit config.h"
+-        echo "   to set the XHOME and XLIBS variables."
+-    fi
+-
+-    if [ "$xhome" != "/usr" ]; then
+-        # Do not add -L/usr/lib to linker. This is always in the standard path
+-        # and could cause issues trying to build MPI when /usr has an MPI
+-        # installed that you *don't* want to use.
+-        xlibs="-L$xhome/lib"
+-        if [ "$x86_64" = 'yes' ]; then
+-            xlibs="-L$xhome/lib64 $xlibs"
+-        fi
+-    fi
+-    if [ -d /usr/lib/x86_64-linux-gnu ]; then
+-        xlibs="-L/usr/lib/x86_64-linux-gnu $xlibs"
+-    fi
+-fi
+-#--------------------------------------------------------------------------
+-#  Check if the X11 library files for XLEaP are present:
+-#--------------------------------------------------------------------------
+-if [ "$noX11" = "false" ]; then
+-    if [ -r "$xhome/lib/libXt.a"  -o -r "$xhome/lib/libXt.dll.a" \
+-         -o -r "$xhome/lib/libXt.dylib" \
+-         -o -r /usr/lib/x86_64-linux-gnu/libXt.a \
+-         -o -r /usr/lib/x86_64-linux-gnu/libXt.so \
+-         -o -r /usr/lib/i386-linux-gnu/libXt.a \
+-         -o -r /usr/lib/i386-linux-gnu/libXt.so \
+-         -o -r /usr/lib/libXt.so \
+-         -o -r /usr/lib64/libXt.so \
+-         -o -r /usr/X11/lib/libXt.dylib \
+-         -o "$x86_64" = 'yes' -a -r "$xhome/lib64/libXt.a" ]
+-    then
+-        empty_statement=
+-    else
+-        echo "Error: The X11 libraries are not in the usual location !"
+-        echo "       To search for them try the command: locate libXt"
+-        echo "       On new Fedora OS's install the libXt-devel libXext-devel"
+-        echo "       libX11-devel libICE-devel libSM-devel packages."
+-        echo "       On old Fedora OS's install the xorg-x11-devel package."
+-        echo "       On RedHat OS's install the XFree86-devel package."
+-        echo "       On Ubuntu OS's install the xorg-dev and xserver-xorg packages."
+-        echo
+-        echo "          ...more info for various linuxes at ambermd.org/ubuntu.html"
+-        echo
+-        echo "       To build Amber without XLEaP, re-run configure with '-noX11:"
+-        echo "            `mod_command_args '' '-noX11'`"
+-        exit 1
+-    fi
+-
+-    if [ -d /usr/include/X11/extensions -o $is_mac = "yes" ]
+-    then
+-        empty_statement=
+-    elif [ "$is_mac" = "no" ]; then
+-        echo "Error: The X11 extensions headers are not in the usual location!"
+-        echo "       To search for them try the command: locate X11/extensions"
+-        echo "       On new Fedora OSes install libXext-devel"
+-        echo "       On RedHat OSes install libXext-devel"
+-        echo "       To build Amber without XLEaP, re-run configure with '-noX11:"
+-        echo "            `mod_command_args '' '-noX11'`"
+-        exit 1
+-    fi
+ fi
+ 
+ #------------------------------------------------------------------------------
