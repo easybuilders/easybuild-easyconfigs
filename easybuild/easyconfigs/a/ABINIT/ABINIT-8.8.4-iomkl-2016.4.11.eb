@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'ABINIT'
+version = '8.4.4'
+
+homepage = 'http://www.abinit.org/'
+description = """ABINIT is a package whose main program allows one to find the total energy, charge density and
+ electronic structure of systems made of electrons and nuclei (molecules and periodic solids) within Density Functional
+ Theory (DFT), using pseudopotentials and a planewave or wavelet basis."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+
+source_urls = ['https://www.abinit.org/sites/default/files/packages/']
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [
+    ('netCDF', '4.4.1.1','-mpi'),
+    ('netCDF-Fortran', '4.4.4','-mpi'),
+    ('FFTW', '3.3.6', '-mpi'),
+    ('GSL', '2.3'),
+]
+
+configopts  = 'FC=mpif90  F90=mpif90  F77=mpif77 CC=mpicc  CXX=mpic++  '
+configopts += '--enable-mpi --enable-openmp  '
+#configopts += '--with-trio-flavor="netcdf" '
+configopts += '--with-dft-flavor="atompaw-fallback+libxc-fallback+wannier90-fallback" '
+configopts += '--with-netcdf-incs="-I$EBROOTNETCDF/include -I$EBROOTNETCDFMINFORTRAN/include" '
+configopts += '--with-netcdf-libs="-L$EBROOTNETCDF/lib -lnetcdf -L$EBROOTNETCDFMINFORTRAN/lib -lnetcdff" '
+configopts += '--with-linalg-flavor=mkl --enable-cclock --enable-gw-dpc '
+# configopts += '--enable-mpi-io '
+configopts += '--enable-openmp --enable-wannier90-v1 '
+configopts += '--with-math-flavor=gsl --enable-lotf --enable-macroave '
+configopts += '--enable-debug="no" --enable-64bit-flags --enable-optim="standard" '
+configopts += '--with-fft-incs="-I$EBROOTFFTW/include/fftw" '
+configopts += '--with-fft-libs="-L$EBROOTFFTW/lib -lfftw3" '
+configopts += '--with-fft-flavor=fftw3-mkl '
+configopts += '--with-linalg-libs="-L$EBROOTIMKL/mkl/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lm" '
+# configopts += '--enable-bse-unpacked '
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['abinit', 'aim', 'cut3d', 'conducti', 'mrgddb', 'mrgscr', 'optic']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'chem'
