@@ -1,0 +1,46 @@
+# @author: gppezzi, lucamar (CSCS)
+easyblock = "ConfigureMake"
+
+name = 'QuantumESPRESSO'
+version = '5.4.0'
+
+homepage = 'http://www.quantum-espresso.org/'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes
+ for electronic-structure calculations and materials modeling at the nanoscale.
+ It is based on density-functional theory, plane waves, and pseudopotentials
+  (both norm-conserving and ultrasoft)."""
+
+toolchain = {'name': 'CrayIntel', 'version': '2015.11'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+sources = [
+    'espresso-%(version)s.tar.gz',
+]
+
+source_urls = [
+    'http://www.qe-forge.org/gf/download/frsrelease/211/968/', # espresso-5.4.0.tar.gz
+]
+
+builddependencies = [ 
+    ('fftw/3.3.4.7', EXTERNAL_MODULE),
+]
+
+# workaround to avoid linking problem
+preconfigopts = ' export LDFLAGS="$LDFLAGS -openmp " && '
+
+configopts = 'ARCH=crayxt --enable-openmp --enable-parallel --with-scalapack'
+
+buildopts = 'all'
+
+maxparallel = 1
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin && mv %(installdir)s/*.x %(installdir)s/bin'
+]
+
+sanity_check_paths = {
+      'files': ['bin/pw.x', 'bin/cp.x'],
+      'dirs': ['']
+}
+
+moduleclass = 'chem'
