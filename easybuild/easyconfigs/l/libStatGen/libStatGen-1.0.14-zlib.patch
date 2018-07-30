@@ -1,0 +1,43 @@
+Be sure to use zlib provided by easybuild. This is required for systems which have zlib-dev system package installed.
+
+Author: Pablo Escobar Lopez
+sciCORE - University of Basel
+SIB Swiss Institute of Bioinformatics 
+
+diff -ru libStatGen-1.0.14.orig/general/Makefile libStatGen-1.0.14/general/Makefile
+--- libStatGen-1.0.14.orig/general/Makefile	2015-07-08 22:03:23.000000000 +0200
++++ libStatGen-1.0.14/general/Makefile	2016-05-23 14:10:15.898567000 +0200
+@@ -111,7 +111,7 @@
+ 		then \
+ 		    continue; \
+ 		fi;\
+-		(echo "building in self test $$i"; g++ -DTEST -D__STDC_LIMIT_MACROS -o test_$$i $$i  -L. -lcsg -lm -lz -lssl ; ./test_$$i) ; \
++		(echo "building in self test $$i"; g++ -DTEST -D__STDC_LIMIT_MACROS -o test_$$i $$i  -L. -lcsg -lm -L${EBROOTZLIB}/lib -lz -lssl ; ./test_$$i) ; \
+ 		if [ $$? -ne 0 ] ; \
+ 		then \
+ 		    echo "make stopped because of errors." ; \
+diff -ru libStatGen-1.0.14.orig/general/test/Makefile libStatGen-1.0.14/general/test/Makefile
+--- libStatGen-1.0.14.orig/general/test/Makefile	2015-07-08 22:03:23.000000000 +0200
++++ libStatGen-1.0.14/general/test/Makefile	2016-05-23 14:10:28.086573000 +0200
+@@ -67,7 +67,7 @@
+ 	$(CXX) $(CFLAGS) $(GTEST_COMPILE_FLAG) -o $@ -c $< -DVERSION="\"$(VERSION)\"" -DDATE="\"${DATE}\"" -DNODE="\"${NODE}\"" -DUSER="\"${USER}\"" -I$(GTEST_INC)
+ 
+ gtest_build: $(TOOLTESTOBJ) $(TOOLOBJ) $(GTEST_OBJ)
+-	g++  $(TOOLTESTOBJ) $(TOOLOBJ_NOMAIN) $(GTEST_OBJ) $(LIBRARY) -lm -lz -lssl -lpthread -lcrypto -o ./gtest ../../libStatGen_debug.a
++	g++  $(TOOLTESTOBJ) $(TOOLOBJ_NOMAIN) $(GTEST_OBJ) $(LIBRARY) -lm -L${EBROOTZLIB}/lib -lz -lssl -lpthread -lcrypto -o ./gtest ../../libStatGen_debug.a
+ gtest: gtest_build
+ 	./gtest --gtest_color=yes
+ 
+Only in libStatGen-1.0.14/: libStatGen.patch
+diff -ru libStatGen-1.0.14.orig/Makefiles/Makefile.include libStatGen-1.0.14/Makefiles/Makefile.include
+--- libStatGen-1.0.14.orig/Makefiles/Makefile.include	2015-07-08 22:03:23.000000000 +0200
++++ libStatGen-1.0.14/Makefiles/Makefile.include	2016-05-23 14:10:39.995187000 +0200
+@@ -44,7 +44,7 @@
+ ZLIB_AVAIL ?= 1
+ 
+ USE_ZLIB = -D__ZLIB_AVAILABLE__
+-ZLIB_LIB = -lz
++ZLIB_LIB = -L${EBROOTZLIB}/lib  -lz
+ ifeq ($(ZLIB_AVAIL), 0)
+   USE_ZLIB = 
+   ZLIB_LIB = 
