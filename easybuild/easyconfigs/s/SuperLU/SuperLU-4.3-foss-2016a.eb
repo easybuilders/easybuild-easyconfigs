@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'SuperLU'
+version = '4.3'
+
+homepage = 'http://crd-legacy.lbl.gov/~xiaoye/SuperLU/'
+description = """SuperLU is a general purpose library for the direct solution of large, sparse, nonsymmetric systems
+ of linear equations on high performance machines."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+toolchainopts = {'opt': True, 'pic': True}
+
+source_urls = ['http://crd-legacy.lbl.gov/~xiaoye/SuperLU/']
+sources = ["superlu_%(version)s.tar.gz"]
+
+# Let's store the checksum in order to be sure it doesn't suddenly change
+checksums = ['b72c6309f25e9660133007b82621ba7c']
+
+# No configure
+skipsteps = ['configure']
+
+# Override CC and CFLAGS variables from Makefile
+# Set the install path and library name (the library is created 'in-place' by make)
+# Set the proper BLAS library
+buildopts = 'CC="$CC" CFLAGS="-DPRNTlevel=0 $CFLAGS" NOOPTS="-fPIC" SuperLUroot="%(builddir)s" SUPERLULIB="%(builddir)s/libsuperlu.a" BLASLIB="$LIBBLAS_MT"'
+maxparallel = 1
+
+# 'make install' is doing nothing so we need to copy the headers and library manually
+installopts  = ' && mkdir -p "%(installdir)s/lib" "%(installdir)s/include"'
+installopts += ' && cp -v %(builddir)s/SuperLU_4.3/SRC/*.h "%(installdir)s/include"'
+installopts += ' && cp -v %(builddir)s/libsuperlu.a "%(installdir)s/lib"'
+
+sanity_check_paths = {
+    'files': ['include/supermatrix.h', 'lib/libsuperlu.a'],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
