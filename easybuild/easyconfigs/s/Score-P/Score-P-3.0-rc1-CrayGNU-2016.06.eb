@@ -1,0 +1,58 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/hpcugent/easybuild
+# Copyright:: Copyright 2013-2016 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+
+easyblock = 'EB_Score_minus_P'
+
+name = 'Score-P'
+version = '3.0-rc1'
+versionsuffix = '-debug'
+
+homepage = 'http://www.score-p.org'
+description = """The Score-P measurement infrastructure is a highly scalable and
+ easy-to-use tool suite for profiling, event tracing, and online analysis of HPC
+ applications."""
+
+toolchain = {'name': 'CrayGNU', 'version': '2016.06'}
+
+source_urls = ['http://www.vi-hps.org/upload/packages/scorep/']
+sources = ['scorep-%(version)s.tar.gz']
+checksums = [ '097f26b7d23609e1c2666384c0683485' ]
+
+dependencies = [
+    ('libiberty', '5.3.0-GCC-system', '', True),
+    ('libunwind', '1.1-GCC-system', '', True),
+    ('Cube', '4.3.4-GCC-system', '', True),
+    ('OPARI2', '2.0-GCC-system', '', True),
+#PR3501    ('OTF2', '2.0-GCC-system', '', True),
+    ('SIONlib', '1.6.2-GCC-system', '', True),
+    ('PDT', '3.22-GCC-system', '', True),
+    ('papi/5.4.3.2', EXTERNAL_MODULE),
+    ('vampir/9.1', EXTERNAL_MODULE),
+]
+
+configopts  = ' --enable-shared'
+configopts += ' --with-libpmi-include=/opt/cray/pe/pmi/default/include'
+configopts += ' --with-libpmi-lib=/opt/cray/pe/pmi/default/lib64'
+configopts += ' --with-librca-include=/opt/cray/rca/default/include'
+configopts += ' --with-librca-lib=/opt/cray/rca/default/lib64'
+
+sanity_check_paths = {
+    'files': ["bin/scorep", "include/scorep/SCOREP_User.h",
+             ("lib/backend/libscorep_adapter_mpi_event.a",
+              "lib/libscorep_adapter_mpi_event.%s" % SHLIB_EXT) ],
+    'dirs': [],
+}
+
+# Ensure that local metric documentation is found by Cube GUI
+modextrapaths = { 'CUBE_DOCPATH': 'share/doc/scorep/profile' }
+modextravars = { 'CRAYPE_LINK_TYPE' : 'dynamic' }
+
+moduleclass = 'perf'
