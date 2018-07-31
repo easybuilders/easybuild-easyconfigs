@@ -1,0 +1,152 @@
+#Adapted Boost MPI to follow upstream development patch d4d41d94a
+#which adds a 27, 35, 36 or 37 suffix to libboost_mpi_python*
+# Jul 31st 2018 by Bart Oldeman (Compute Canada - Calcul Quebec - McGill)
+diff -urN boost_1_65_1.orig/libs/mpi/build/Jamfile.v2 boost_1_65_1/libs/mpi/build/Jamfile.v2
+--- boost_1_65_1.orig/libs/mpi/build/Jamfile.v2	2017-09-02 09:56:15.000000000 +0000
++++ boost_1_65_1/libs/mpi/build/Jamfile.v2	2018-07-31 11:18:40.095610204 +0000
+@@ -58,41 +58,22 @@
+ 
+   if [ python.configured ]
+   {
+-    py2-version = [ py-version 2 ] ;
+-    py3-version = [ py-version 3 ] ;
+-
+     # These library names are synchronized with those defined by Boost.Python, see libs/python/build/Jamfile.
+-    lib_boost_python(2) = boost_python ;
+-    lib_boost_python(3) = boost_python3 ;
+-
+-    lib_boost_python($(py2-version)) = $(lib_boost_python(2)) ;
+-    lib_boost_python($(py3-version)) = $(lib_boost_python(3)) ;
+-
+-    lib_boost_mpi_python(2) = boost_mpi_python ;
+-    lib_boost_mpi_python(3) = boost_mpi_python3 ;
+-
+-    lib_boost_mpi_python($(py2-version)) = $(lib_boost_mpi_python(2)) ;
+-    lib_boost_mpi_python($(py3-version)) = $(lib_boost_mpi_python(3)) ;
+ 
+-    for local N in 2 3
+-    {
+-        if $(py$(N)-version)
+-        {
+-            lib $(lib_boost_mpi_python($(py$(N)-version)))
++            lib boost_mpi_python
+               : # Sources
+                 python/serialize.cpp
+               : # Requirements
+                 <library>boost_mpi
+                 <library>/mpi//mpi [ mpi.extra-requirements ]
+-                <library>/boost/python//$(lib_boost_python($(py$(N)-version)))
++                <library>/boost/python//boost_python
+                 <link>shared:<define>BOOST_MPI_DYN_LINK=1
+                 <link>shared:<define>BOOST_MPI_PYTHON_DYN_LINK=1
+                 <link>shared:<define>BOOST_PYTHON_DYN_LINK=1
+                 <define>BOOST_MPI_PYTHON_SOURCE=1
+                 -<tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).tag
+-                <tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).python-tag
++                <tag>@$(__name__).python-tag
+                 <python-debugging>on:<define>BOOST_DEBUG_PYTHON
+-                <python>$(py$(N)-version)
+               : # Default build
+                 <link>shared
+               : # Usage requirements
+@@ -114,8 +95,8 @@
+                 python/status.cpp
+                 python/py_timer.cpp
+               : # Requirements
+-                <library>/boost/python//$(lib_boost_python($(py$(N)-version)))
+-                <library>$(lib_boost_mpi_python($(py$(N)-version)))
++                <library>/boost/python//boost_python
++                <library>boost_mpi_python
+                 <library>boost_mpi
+                 <library>/mpi//mpi [ mpi.extra-requirements ]
+                 <link>shared:<define>BOOST_MPI_DYN_LINK=1
+@@ -123,16 +104,9 @@
+                 <link>shared:<define>BOOST_PYTHON_DYN_LINK=1
+                 <link>shared <runtime-link>shared
+                 <python-debugging>on:<define>BOOST_DEBUG_PYTHON
+-                <python>$(py$(N)-version)
+               ;
+ 
+-            libraries += $(lib_boost_mpi_python($(py$(N)-version))) ;
+-        }
+-        else
+-        {
+-            alias $(lib_boost_mpi_python($(N))) ;
+-        }
+-    }
++            libraries += boost_mpi_python ;
+   }
+ }
+ else if ! ( --without-mpi in  [ modules.peek : ARGV ] )
+diff -urN boost_1_65_1.orig/libs/mpi/Jamfile boost_1_65_1/libs/mpi/Jamfile
+--- boost_1_65_1.orig/libs/mpi/Jamfile	1970-01-01 00:00:00.000000000 +0000
++++ boost_1_65_1/libs/mpi/Jamfile	2018-07-31 12:00:03.039660494 +0000
+@@ -0,0 +1,68 @@
++# Copyright (c) 2018 Stefan Seefeld
++# All rights reserved.
++#
++# Distributed under the Boost Software License, Version 1.0.
++# (See accompanying file LICENSE_1_0.txt or copy at
++# http://www.boost.org/LICENSE_1_0.txt)
++
++import option ;
++import regex ;
++import python ;
++
++#
++# The `version-suffix` rule really belongs into python.jam, and
++# should be moved there. `split-version` is only duplicated here
++# as a prerequisite. (See https://github.com/boostorg/build/pull/290)
++#
++
++
++# Validate the version string and extract the major/minor part we care about.
++#
++local rule split-version ( version )
++{
++    local major-minor = [ MATCH "^([0-9]+)\.([0-9]+)(.*)$" : $(version) : 1 2 3 ] ;
++    if ! $(major-minor[2]) || $(major-minor[3])
++    {
++        ECHO "Warning: \"using python\" expects a two part (major, minor) version number; got" $(version) instead ;
++
++        # Add a zero to account for the missing digit if necessary.
++        major-minor += 0 ;
++    }
++
++    return $(major-minor[1]) $(major-minor[2]) ;
++}
++
++# Define a version suffix for libraries depending on Python.
++# For example, Boost.Python built for Python 2.7 uses the suffix "27"
++rule version-suffix ( version )
++{
++    local major-minor = [ split-version $(version) ] ;
++    local suffix = $(major-minor:J="") ;
++    return $(suffix) ;
++}
++
++
++# Python build id (for Python libraries only).
++python-id = [ option.get "python-buildid" ] ;
++if $(python-id)
++{
++    PYTHON_ID = [ regex.replace $(python-id) [*\\/:.\"\'] _ ] ;
++}
++
++rule python-tag ( name : type ? : property-set )
++{
++    local result = $(name) ;
++    if $(type) in STATIC_LIB SHARED_LIB IMPORT_LIB
++    {
++        local version = [ $(property-set).get <python> ] ;
++        local lib-suffix = [ version-suffix $(version) ] ;
++        result = $(result)$(lib-suffix) ;
++    }
++    if $(type) in STATIC_LIB SHARED_LIB IMPORT_LIB && $(PYTHON_ID)
++    {
++        result = $(result)-$(PYTHON_ID) ;
++    }
++
++    # forward to the boost tagging rule
++    return  [ tag $(result) : $(type) : $(property-set) ] ;
++}
