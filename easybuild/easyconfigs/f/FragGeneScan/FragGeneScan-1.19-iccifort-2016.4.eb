@@ -11,20 +11,21 @@ toolchain = {'name': 'iccifort', 'version': '2016.4'}
 source_urls = [SOURCEFORGE_SOURCE]
 sources = ['%(name)s%(version)s.tar.gz']
 
-buildopts = 'CC="$CC" CFLAG="$CFLAGS" fgs && chmod -R go+rx *.py *.pl train example'
+buildopts = 'CC="$CC" CFLAG="$CFLAGS" fgs'
 
-files_to_copy = ['FragGeneScan', 'FGS_gff.py', 'post_process.pl', 'run_FragGeneScan.pl', 'example', 'train']
+files_to_copy = [(['FragGeneScan', 'FGS_gff.py', 'post_process.pl', 'run_FragGeneScan.pl'], 'bin'), 'example', 'train']
 
-postinstallcmds = ["sed -i 's/#!\/usr\/bin\/perl/#!\/usr\/bin\/env perl/g' %(installdir)s/*.pl"]
+postinstallcmds = ["sed -i 's/#!\/usr\/bin\/perl/#!\/usr\/bin\/env perl/g' %(installdir)s/bin/*.pl && chmod -R go+X %(installdir)s"]
 
-modextrapaths = {
-    'PATH': [''],
-    'PATH': ['train'],
-}
+fraggenescan_binaries = ["FGS_gff.py", "FragGeneScan", "post_process.pl", "run_FragGeneScan.pl"]
 
 sanity_check_paths = {
-    'files': ['FGS_gff.py', 'FragGeneScan', 'post_process.pl', 'run_FragGeneScan.pl'],
+    'files': ['bin/%s' % x for x in fraggenescan_binaries],
     'dirs': ['example', 'train'],
+}
+
+modextrapaths = {
+    'PATH': ['train'],
 }
 
 moduleclass = 'bio'
