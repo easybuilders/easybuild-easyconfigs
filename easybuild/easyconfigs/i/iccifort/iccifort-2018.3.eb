@@ -1,0 +1,43 @@
+# This is an easyconfig file for EasyBuild, see http://easybuilders.github.io/easybuild
+easyblock = 'Toolchain'
+
+name = 'iccifort'
+version = '2018.3'
+modaltsoftname = 'intel'
+
+homepage = 'http://software.intel.com/en-us/intel-cluster-toolkit-compiler/'
+description = "Intel C, C++ & Fortran compilers"
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+compver = '2018.3.222'
+
+dependencies = [
+    ('icc', compver),
+    ('ifort', compver),
+]
+
+moduleclass = 'toolchain'
+
+modluafooter = """
+if isloaded("imkl") then
+    always_load("imkl/2018.3.222")
+end
+if isloaded("openmpi") then
+    always_load("openmpi/3.1.1")
+end
+if isloaded("impi") then
+    always_load("impi/2018.3.222")
+end
+
+prepend_path("INTEL_LICENSE_FILE", pathJoin("/cvmfs/soft.computecanada.ca/config/licenses/intel", os.getenv("CC_CLUSTER") .. ".lic"))
+
+prepend_path("MODULEPATH", pathJoin("/cvmfs/soft.computecanada.ca/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/intel2018.3"))
+if isDir(pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/intel2017.5")) then
+    prepend_path("MODULEPATH", pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/intel2018.3"))
+end
+
+add_property("type_","tools")
+family("compiler")
+"""
+
