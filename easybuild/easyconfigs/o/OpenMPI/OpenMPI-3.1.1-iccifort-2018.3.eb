@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '3.1.1'
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-3 implementation."""
+
+toolchain = {'name': 'iccifort', 'version': '2018.3'}
+
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['846bb7ed2aa0c96fc0594423e7b21904ee4f160dcfd62b8a0d1274256fbf25ce']
+
+configopts = '--enable-shared --enable-mpi-thread-multiple --with-verbs '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$NIXUSER_PROFILE '  # hwloc support
+configopts += '--without-usnic ' # No usnic-via-libfabric
+configopts += '--with-ucx=$NIXUSER_PROFILE '
+configopts += '--disable-wrapper-runpath --disable-wrapper-rpath ' # rpath is already done by Nix ld wrapper
+configopts += '--with-munge ' #enable Munge in PMIx
+#configopts += '--enable-pmix-backward-compatibility --disable-pmix-dstore '
+configopts += '--with-pmi=$NIXUSER_PROFILE '
+configopts += '--enable-mpi-cxx '
+
+# enumerate all mca's that should be compiled as plugins (only those that link to system-specific
+# libraries (lustre, fabric, and scheduler)
+configopts += '--enable-mca-dso=common-libfabric,common-verbs,atomic-mxm,btl-openib,btl-scif,'
+configopts += 'coll-fca,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,'
+configopts += 'oob-ud,plm-tm,pmix-pmix112,pml-ucx,pml-yalla,ras-tm,scoll-mca,sec-munge,spml-ikrit, '
+
+# to enable SLURM integration (site-specific)
+# configopts += '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'
+
+postinstallcmds = ['rm %(installdir)s/lib/*.la %(installdir)s/lib/*/*.la']
+
+libs = ["mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte"]
+sanity_check_paths = {
+    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
+    'dirs': [],
+}
+
+moduleclass = 'mpi'
+
+modluafooter = """
+if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
+        setenv("OMPI_MCA_mtl", "^mxm")
+        setenv("OMPI_MCA_pml", "^yalla")
+end
+
+add_property("type_","mpi")
+family("mpi")
+"""

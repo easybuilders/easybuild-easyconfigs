@@ -1,0 +1,57 @@
+# This is an easyconfig file for EasyBuild, see http://easybuilders.github.io/easybuild
+
+name = 'icc'
+version = '2018.3.222'
+
+homepage = 'http://software.intel.com/en-us/intel-compilers/'
+description = "Intel C and C++ compilers"
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+sources = ['parallel_studio_xe_%(version_major)s_update%(version_minor)s_composer_edition_for_cpp.tgz']
+checksums = ['d8b7e6633faa2e0b7d4eebf3260cb3a200b951cb2cf7b5db957c5ae71508d34b']
+
+gccver = '7.3.0'
+
+dependencies = [
+    ('GCCcore', gccver),
+]
+
+# list of regex for components to install
+# full list of components can be obtained from pset/mediaconfig.xml in unpacked sources
+# cfr. https://software.intel.com/en-us/articles/intel-composer-xe-2015-silent-installation-guide
+components = ['intel-comp', 'intel-ccomp', 'intel-icc', 'intel-openmp', 'intel-ipsc?_', 'intel-gdb(?!.*mic)']
+
+dontcreateinstalldir = 'True'
+
+# We let the non-hidden intel module define the run-time license
+license_file = "/cvmfs/soft.computecanada.ca/config/licenses/intel/computecanada.lic"
+skip_license_file_in_module = True
+
+#compilers_and_libraries_2017.5.239/licensing/compiler/en/credist.txt
+postinstallcmds = [
+  '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
+     /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/compilers_and_libraries_%(version)s/linux/compiler/lib --add_origin
+     installdir=%(installdir)s
+     publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
+     for i in $(grep "compiler.*\.so" $installdir/compilers_and_libraries_%(version)s/licensing/compiler/en/credist.txt | cut -c 13-); do
+       if [ -f $installdir/$i ]; then
+         mkdir -p $(dirname $publicdir/$i)
+         cp -p $installdir/$i $publicdir/$i
+       fi
+     done
+     cd $installdir
+     for i in compilers_and_libraries_%(version)s/linux/compiler/lib/*; do
+       if [ -L $i ]; then
+         cp -a $i $publicdir/$i
+       fi
+     done'''
+]
+
+modluafooter = '''
+prepend_path("LIBRARY_PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "compilers_and_libraries_%(version)s/linux/compiler/lib/intel64"))
+'''
+
+hidden = True
+
+moduleclass = 'compiler'
