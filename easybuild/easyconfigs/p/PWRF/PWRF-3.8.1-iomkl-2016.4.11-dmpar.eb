@@ -1,0 +1,45 @@
+name = 'PWRF'
+version = '3.8.1'
+
+homepage = 'http://polarmet.osu.edu/hines/PWRF/'
+description = """Based on extensive experience with mesoscale modeling in the polar regions 
+  by the Polar Meteorology Group of the Byrd Polar and Climate Research Center at The Ohio 
+  State University, the Weather Research and Forecasting model (WRF) has been modified for 
+  use in the Polar Regions (referred to as the Polar WRF).
+  Compiled with -DNO_LEAP_CALENDAR"""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'opt': False}  # don't use agressive optimization, stick to -O2
+
+sources = [
+  'WRFV%(version)s.TAR.gz',
+  '%(name)s%(version)s.tar.gz',
+]
+
+source_urls = [
+    'http://www2.mmm.ucar.edu/wrf/src/',
+#    'http://www.mmm.ucar.edu/wrf/src/',
+]
+
+# csh is used by WRF install scripts
+#builddependencies = [('tcsh', '6.19.00')]
+
+dependencies = [
+    ('JasPer', '1.900.1','-GCCcore-5.4.0'),
+    ('netCDF-Fortran', '4.4.4'),
+]
+
+patches = [
+    'WRF_parallel_build_fix.patch',
+    'WRF-%(version)s_configure_new.defaults.patch',
+    'WRF-%(version)s_netCDF-Fortran_separate_path.patch',
+    'WRF-%(version)s_known_problems.patch',
+]
+
+# limit parallel build to 20
+maxparallel = 20
+
+buildtype = "dmpar"
+versionsuffix = '-%s' % buildtype
+
+moduleclass = 'geo'
