@@ -1,0 +1,47 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# 
+# Author: Jonas Demeulemeester
+# The Francis Crick Insitute, London, UK
+##
+
+easyblock = 'CmdCp'
+
+name = 'Pindel'
+version = '0.2.5b8'
+
+homepage = 'http://gmt.genome.wustl.edu/packages/pindel/'
+description = """ Pindel can detect breakpoints of large deletions, medium sized 
+ insertions, inversions, tandem duplications and other structural variants at single-based 
+ resolution from next-gen sequence data. It uses a pattern growth approach to identify the 
+ breakpoints of these variants from paired-end short reads. """
+
+toolchain = {'name': 'GCC', 'version': '6.4.0-2.28'}
+toolchainopts = {'openmp': True}
+
+# required download of specific PR to v0.2.5b8 to fix compilation error
+# see https://github.com/genome/pindel/pull/64
+source_urls = ['https://github.com/genome/pindel/archive/']
+sources = ['70c1bb4a75503da39e206e02178fe3d8a0afdf81.zip']
+checksums = ['d14db429fa4fd33b603e227d408650743d959ae9ab7512e3b979deb7618c052c']
+
+dependencies = [
+    ('HTSlib', '1.9'),
+    ('zlib', '1.2.11')
+]
+
+cmds_map = [('.*', "./INSTALL $EBROOTHTSLIB")]
+
+files_to_copy = [
+    (['pindel', 'sam2pindel', 'pindel2vcf', 'bam2pindel.pl', 'Adaptor.pm'], 'bin'),
+    "demo",
+    "test",
+    "README.md",
+]
+
+sanity_check_paths = {
+    'files': ['bin/pindel', 'bin/sam2pindel', 'bin/pindel2vcf', 'bin/bam2pindel.pl'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
