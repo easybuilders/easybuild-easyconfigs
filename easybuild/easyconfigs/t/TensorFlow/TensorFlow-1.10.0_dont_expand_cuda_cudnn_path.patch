@@ -1,0 +1,31 @@
+Don't expand path for cuda_toolkit and cudnn.
+We want the EasyBuild created path to be used.
+
+Åke Sandgren, 20180613
+diff -ru tensorflow-1.10.0.orig/configure.py tensorflow-1.10.0/configure.py
+--- tensorflow-1.10.0.orig/configure.py	2018-08-08 01:52:04.000000000 +0200
++++ tensorflow-1.10.0/configure.py	2018-08-10 20:57:52.534731034 +0200
+@@ -888,8 +888,9 @@
+ 
+     # Result returned from "read" will be used unexpanded. That make "~"
+     # unusable. Going through one more level of expansion to handle that.
+-    cudnn_install_path = os.path.realpath(
+-        os.path.expanduser(cudnn_install_path))
++# Don't expand symlinks
++#    cudnn_install_path = os.path.realpath(
++#        os.path.expanduser(cudnn_install_path))
+     if is_windows() or is_cygwin():
+       cudnn_install_path = cygpath(cudnn_install_path)
+ 
+diff -ru tensorflow-1.10.0.orig/third_party/gpus/cuda_configure.bzl tensorflow-1.10.0/third_party/gpus/cuda_configure.bzl
+--- tensorflow-1.10.0.orig/third_party/gpus/cuda_configure.bzl	2018-08-08 01:52:04.000000000 +0200
++++ tensorflow-1.10.0/third_party/gpus/cuda_configure.bzl	2018-08-10 20:59:58.120767516 +0200
+@@ -389,7 +389,7 @@
+         cuda_toolkit_path = repository_ctx.os.environ[_CUDA_TOOLKIT_PATH].strip()
+     if not repository_ctx.path(cuda_toolkit_path).exists:
+         auto_configure_fail("Cannot find cuda toolkit path.")
+-    return str(repository_ctx.path(cuda_toolkit_path).realpath)
++    return cuda_toolkit_path
+ 
+ def _cudnn_install_basedir(repository_ctx):
+     """Finds the cudnn install directory."""

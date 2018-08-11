@@ -1,0 +1,30 @@
+remove hardcoding of -msse4.2 since it overrules -xHost when using Intel compilers
+author: Kenneth Hoste (HPC-UGent)
+diff -ru tensorflow-1.10.0.orig/tensorflow/core/BUILD tensorflow-1.10.0/tensorflow/core/BUILD
+--- tensorflow-1.10.0.orig/tensorflow/core/BUILD	2018-08-08 01:52:04.000000000 +0200
++++ tensorflow-1.10.0/tensorflow/core/BUILD	2018-08-10 20:56:16.900226123 +0200
+@@ -2098,7 +2098,7 @@
+     name = "lib_hash_crc32c_accelerate_internal",
+     srcs = ["lib/hash/crc32c_accelerate.cc"],
+     # -msse4.2 enables the use of crc32c compiler builtins.
+-    copts = tf_copts() + if_linux_x86_64(["-msse4.2"]),
++    copts = tf_copts() + if_linux_x86_64([""]),
+ )
+ 
+ cc_library(
+diff -ru tensorflow-1.10.0.orig/tensorflow/tensorflow.bzl tensorflow-1.10.0/tensorflow/tensorflow.bzl
+--- tensorflow-1.10.0.orig/tensorflow/tensorflow.bzl	2018-08-08 01:52:04.000000000 +0200
++++ tensorflow-1.10.0/tensorflow/tensorflow.bzl	2018-08-10 20:56:16.900226123 +0200
+@@ -219,9 +219,9 @@
+       + if_mkl(["-DINTEL_MKL=1", "-DEIGEN_USE_VML"])
+       + if_mkl_open_source_only(["-DDO_NOT_USE_ML"])
+       + if_mkl_lnx_x64(["-fopenmp"])
+-      + if_android_arm(["-mfpu=neon"])
+-      + if_linux_x86_64(["-msse3"])
+-      + if_ios_x86_64(["-msse4.1"])
++      + if_android_arm([""])
++      + if_linux_x86_64([""])
++      + if_ios_x86_64([""])
+       + select({
+             clean_dep("//tensorflow:framework_shared_object"): [],
+             "//conditions:default": ["-DTENSORFLOW_MONOLITHIC_BUILD"],
