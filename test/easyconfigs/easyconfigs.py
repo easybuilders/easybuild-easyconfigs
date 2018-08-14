@@ -213,11 +213,17 @@ class EasyConfigTest(TestCase):
                     if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
                         dep_vars.pop(key)
 
-            # some software packages require an old version of libxc
-            if dep == 'libxc' and len(dep_vars) > 1:
+            # some software packages require an old version of a particular dependency
+            old_dep_versions = {
+                # JasPer (g2lib, g2clib, ... require JasPer 1.x)
+                'JasPer': r'1\.',
+                # libxc (CP2K & ABINIT require libxc 3.x)
+                'libxc': r'3\.',
+            }
+            if dep in old_dep_versions and len(dep_vars) > 1:
                 for key in dep_vars.keys():
-                    # CP2K & ABINIT require libxc 3.x, so filter it out
-                    if re.search('^version: 3\.', key):
+                    # filter out known old dependency versions
+                    if re.search('^version: %s' % old_dep_versions[dep], key):
                         dep_vars.pop(key)
 
             # only single variant is always OK
