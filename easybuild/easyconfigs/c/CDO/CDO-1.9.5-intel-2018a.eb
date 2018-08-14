@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'CDO'
+version = '1.9.5'
+
+homepage = 'https://code.zmaw.de/projects/cdo'
+description = """CDO is a collection of command line Operators to manipulate and analyse Climate and NWP model Data."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://code.mpimet.mpg.de/attachments/download/18264/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['48ed65cc5b436753c8e7f9eadd8aa97376698ce230ceafed2a4350a5b1a27148']
+
+dependencies = [
+    ('HDF5', '1.10.1'),
+    ('netCDF', '4.6.0'),
+    ('YAXT', '0.6.0'),
+    ('ecCodes', '2.8.2', '-JasPer-1.900.1'),
+]
+
+configopts = "--with-hdf5=$EBROOTHDF5 --with-netcdf=$EBROOTNETCDF --with-eccodes=$EBROOTECCODES"
+
+# fix for linking issues with HDF5 libraries for libcdi, should link with both -lnetcdf and -lhdf5_hl -lhdf5
+prebuildopts = "find libcdi -name Makefile | xargs sed -i 's/-lnetcdf -lnetcdf/-lnetcdf -lhdf5_hl -lhdf5/g' && "
+
+sanity_check_paths = {
+    'files': ['bin/cdo'],
+    'dirs': [],
+}
+
+moduleclass = 'data'
