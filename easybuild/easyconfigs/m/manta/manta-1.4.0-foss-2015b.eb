@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = "manta"
+version = '1.4.0'
+
+homepage = 'http://www.illumina.com/'
+description = """Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads."""
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+#
+# Example URL:
+# https://github.com/Illumina/manta/releases/download/v0.29.5/manta-0.29.5.release_src.tar.bz2
+#
+source_urls = [('https://github.com/Illumina/manta/releases/download/v%(version)s/')]
+sources = [('%s-%s.release_src.tar.bz2' % (name, version))]
+patches = [('%s-%s.release_src.SETGID.patch' % (name, version))]
+checksums = [
+    '4f8f827485e3ad9a12318bfcbf62fa622263378767514eb938bc02ad5ad74f10',  # %(name)s-%(version)s.release_src.tar.bz2
+    '13a1636f0b4485eae2257adbd244127198251893bdda40ad4dae9f5da18f1285',  # %(name)s-%(version)s.release_src.SETGID.patch
+]
+
+#
+# The cmake bundled with Manta is broken and destroys the SETGID bit on directories during the INSTALL step.
+# This may result in permission denied errors or running out o quote when relying on inheritance 
+# of the SETGID bit to make sure files and folders are created in the correct group.
+# Need to use "external" CMake supplied by EasyBuild in combination with *.SETGID.patch 
+# for several *.cmake files in the Manta sources.
+#
+builddependencies = [
+    ('CMake', '3.7.2'),
+]
+
+dependencies = [
+    ('ncurses', '6.0'),
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.8'),
+    ('Python', '2.7.11'),
+    ('cURL','7.47.1')
+]
+
+#
+# Patch samtools and htslib for known issues with regard to zlib and ncurses in the Makefile.
+# Cannot use EasyBuild's patch option as we need to decompress the included sources, patch and recompress :(.
+#
+configure_cmd_prefix = 'tar -xvjf redist/samtools-1.6.tar.bz2  && perl -i.bak -wpe  \'s!lz$!lz -L\'$EBROOTZLIB\'\/lib -I\'$EBROOTZLIB\'\/include!\' samtools-1.6/Makefile && tar -cvjf redist/samtools-1.6.tar.bz2  samtools-1.6/ && rm -r samtools-1.6/ && perl -i.bak -wpe \'if(m!\$\{SAMTOOLS_DIR\}\/\$\{HTSLIB_PREFIX\}!){print $_ ;warn $_;};s!\$\{SAMTOOLS_DIR\}\/\$\{HTSLIB_PREFIX\}!\$\{SAMTOOLS_DIR\}\/htslib-1.7-6-g6d2bfb7!\' redist/CMakeLists.txt && mkdir build && cd build && ../'
+
+prebuildopts = 'cd build && '
+preinstallopts = 'cd build && '
+
+files_to_copy = ['bin', 'lib', 'libexec', 'share']
+
+sanity_check_paths = {
+    'files': ['bin/configManta.py', 'bin/configManta.py.ini', 'bin/runMantaWorkflowDemo.py'],
+    'dirs': ['bin', 'lib', 'libexec', 'share'],
+}
+
+moduleclass = 'bio'
+
