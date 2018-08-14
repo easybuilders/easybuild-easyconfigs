@@ -183,7 +183,7 @@ class EasyConfigTest(TestCase):
             res = False
 
             # filter out binutils with empty versionsuffix which is used to build toolchain compiler
-            if dep == 'binutils':
+            if dep == 'binutils' and len(dep_vars) > 1:
                 empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
                 if len(empty_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
@@ -194,20 +194,30 @@ class EasyConfigTest(TestCase):
                 if len(serial_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
 
-            # for Boost, we allow exceptions for software that depends on a particular version of Boost,
+            # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep == 'Boost' and len(dep_vars) > 1:
+            elif dep in ['Boost', 'R'] and len(dep_vars) > 1:
                 for key in dep_vars.keys():
-                    boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
-                    # filter out Boost version if all easyconfig filenames using it include specific Boost version
-                    if all(re.search('-Boost-%s' % boost_ver, v) for v in dep_vars[key]):
+                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    # filter out dep version if all easyconfig filenames using it include specific dep version
+                    if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
                         dep_vars.pop(key)
+                    # always retain at least one dep variant
+                    if len(dep_vars) == 1:
+                        break
 
             # filter out variants that are specific to a particular version of CUDA
             cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
             if len(dep_vars) > len(cuda_dep_vars):
                 for key in dep_vars.keys():
                     if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
+                        dep_vars.pop(key)
+
+            # some software packages require an old version of libxc
+            if dep == 'libxc' and len(dep_vars) > 1:
+                for key in dep_vars.keys():
+                    # CP2K & ABINIT require libxc 3.x, so filter it out
+                    if re.search('^version: 3\.', key):
                         dep_vars.pop(key)
 
             # only single variant is always OK

@@ -1,0 +1,57 @@
+easyblock = 'SCons'
+
+name = 'Cantera'
+version = '2.3.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/Cantera/cantera'
+description = """Chemical kinetics, thermodynamics, and transport tool suite"""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'strict': True}
+
+source_urls = ['https://github.com/Cantera/cantera/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'Cantera-%(version)s_fix-bug-416.patch',
+    'Cantera-%(version)s_fix-test-reprod.patch',
+    'Cantera-%(version)s_fix-recent-Cython.patch',
+]
+checksums = [
+    '06624f0f06bdd2acc9c0dba13443d945323ba40f68a9d422d95247c02e539b57',  # v2.3.0.tar.gz
+    'cbf52d6a2e24967da42edd060ae4e4958bb052967790c061680bfc157edec6c2',  # Cantera-2.3.0_fix-bug-416.patch
+    '73b49e8fc73adf221b956980e5ef2a7808e6a81680f6e97ce846a159ae6d6966',  # Cantera-2.3.0_fix-test-reprod.patch
+    'e638ae44a25de9e3c38c21daa5d388f42106f9289a87f1fd01be3e985d7e7d54',  # Cantera-2.3.0_fix-recent-Cython.patch
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('Boost', '1.66.0'),
+    ('SUNDIALS', '2.7.0'),
+]
+builddependencies = [
+    ('SCons', '3.0.1', versionsuffix),
+    ('Eigen', '3.3.4', '', True),
+    ('fmt', '3.0.2'),
+    ('googletest', '1.8.0'),
+]
+
+common_opts = 'env_vars=all CC="$CC" CXX="$CXX" cc_flags="$CFLAGS" cxx_flags="$CXXFLAGS" '
+common_opts += 'blas_lapack_libs=mkl_rt blas_lapack_dir=$BLAS_LAPACK_LIB_DIR '
+common_opts += 'sundials_include=$EBROOTSUNDIALS/include sundials_libdir=$EBROOTSUNDIALS/lib'
+buildopts = 'build ' + common_opts
+# tests hang, so disable them for now
+# runtest = 'test ' + common_opts
+installopts = 'install ' + common_opts
+prefix_arg = 'prefix='
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/mixmaster'],
+    'dirs': ['include/cantera', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [('python', "-c 'import cantera'")]
+
+moduleclass = 'chem'
