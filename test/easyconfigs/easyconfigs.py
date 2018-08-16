@@ -69,6 +69,66 @@ from easybuild.tools.options import set_tmpdir
 single_tests_ok = True
 
 
+def changed_ecs_check_checksums(changed_ecs):
+    """Check whether all changed easyconfigs have required checksums."""
+
+    # list of software names for which checksums can not be required,
+    # e.g. because 'source' files need to be constructed manually
+    whitelist = [
+        'Kent_tools',
+        'MATLAB',
+    ]
+
+    checksum_issues = []
+
+    def check_checksums_for(ec_fn, ent, sub='', source_cnt=None):
+        """
+        Utility function: check whether checksums for all sources/patches are available, for given entity
+        """
+        if source_cnt is None:
+            source_cnt = len(ent['sources'])
+        patch_cnt = len(ent['patches'])
+        checksum_cnt = len(ent['checksums'])
+
+        if source_cnt + patch_cnt != checksum_cnt:
+            msg = "Checksums missing for one or more sources/patches %s in %s: " % (sub, ec_fn)
+            msg += "found %d sources + %d patches " % (source_cnt, patch_cnt)
+            msg += "vs %d checksums" % checksum_cnt
+            checksum_issues.append(msg)
+
+    for ec_fn, ec in changed_ecs:
+
+        # skip whitelisted software
+        if any(ec_fn.startswith('%s-' % w) for w in whitelist):
+            continue
+
+        checksums = zip(ec['sources'] + ec['patches'], ec['checksums'])
+
+        # check whether a checksum if available for every source + patch
+        check_checksums_for(ec_fn, ec)
+
+        # also check checksums for extensions
+        for (ext_name, _, ext_opts) in ec['exts_list']:
+            # only a single source per extension is supported (see source_tmpl)
+            check_checksums_for(ec_fn, ext_opts, sub="of extension %s" % ext_name, source_cnt=1)
+
+        # easyconfigs using Bundle easyblock may have a list of components,
+        # a checksum should be available for each of them
+        components = ec.get('components', [])
+        if ec['easyblock'] == 'Bundle':
+            for (comp_name, _, comp_opts) in components:
+                check_checksums_for(ec_fn, comp_opts, sub="of component %s" % comp_name)
+
+        # make sure all provided checksums are SHA256
+        sha256_re = re.compile('^[0-9a-f]{64}$')
+        for (fn, chksum) in checksums:
+            if not sha256_re.match(chksum):
+                msg = "Checksum '%s' for %s in %s must be a SHA256 checksum" % (chksum, fn, ec_fn)
+                checksum_issues.append(msg)
+
+    return checksum_issues
+
+
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
@@ -277,8 +337,8 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
-    def test_sha256_checksums(self):
-        """Check whether SHA256 checksums are available for easyconfigs touched by PR."""
+    def test_changed_files_pull_request(self):
+        """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
         if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
@@ -293,50 +353,21 @@ class EasyConfigTest(TestCase):
                 top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
                 change_dir(top_dir)
 
-                # get list of touched easyconfigs
+                # get list of changed easyconfigs
                 out, ec = run_cmd("git diff --name-only --diff-filter=AM develop...HEAD", simple=False)
-                touched_easyconfigs = [f for f in out.strip().split('\n') if f.endswith('.eb')]
+                changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
+                print "List of changed easyconfig files in this PR: %s" % changed_ecs_filenames
 
-                checksum_issues = []
-
-                for ecfile in touched_easyconfigs:
+                # compose mapping of easyconfig filename to parsed easyconfig to pass down to check functions
+                changed_ecs = {}
+                for ec_fn in changed_ecs_filenames:
                     for ec in self.parsed_easyconfigs:
-                        if ec['spec'].endswith(ecfile):
-
-                            ecfile = os.path.basename(ecfile)
-
-                            # check whether a checksum if available for every source + patch
-                            source_cnt = len(ec['ec']['sources'])
-                            patch_cnt = len(ec['ec']['patches'])
-                            checksum_cnt = len(ec['ec']['checksums'])
-                            if source_cnt + patch_cnt != checksum_cnt:
-                                msg = "Checksums missing for one or more sources/patches in %s: " % ecfile
-                                msg += "found %d sources + %d patches " % (source_cnt, patch_cnt)
-                                msg += "vs %d checksums" % checksum_cnt
-                                checksum_issues.append(msg)
-
-                            checksums = zip(ec['ec']['sources'] + ec['ec']['patches'], ec['ec']['checksums'])
-
-                            # also check checksums for extensions
-                            for (ext_name, ext_ver, ext_opts) in ec['ec']['exts_list']:
-                                source_cnt = 1  # only a single source per extension is supported (see source_tmpl)
-                                patch_cnt = len(ext_opts.get('patches', []))
-                                checksum_cnt = len(ext_opts.get('checksums', []))
-                                if source_cnt + patch_cnt != checksum_cnt:
-                                    msg = "Checksums missing for extension %s in %s: " % (ext_name, ecfile)
-                                    msg += "found %d sources + %d patches " % (source_cnt, patch_cnt)
-                                    msg += "vs %d checksums" % checksum_cnt
-                                    checksum_issues.append(msg)
-
-                            # make sure all provided checksums are SHA256
-                            sha256_re = re.compile('^[0-9a-f]{64}$')
-                            for (fn, chksum) in checksums:
-                                if not sha256_re.match(chksum):
-                                    msg = "Checksum '%s' for %s in %s must be a SHA256 checksum" % (chksum, fn, ecfile)
-                                    checksum_issues.append(msg)
-
+                        if ec['spec'].endswith(ec_fn):
+                            changed_ecs[ec_fn] = ec['ec']
                             break
 
+                # run checks on changed easyconfigs
+                checksum_issues = changed_ecs_check_checksums(changed_ecs)
                 self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
     def test_zzz_cleanup(self):
