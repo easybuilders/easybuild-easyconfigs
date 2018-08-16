@@ -351,12 +351,14 @@ class EasyConfigTest(TestCase):
 
                 # relocate to top-level directory of repository to run 'git diff' command
                 top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
-                change_dir(top_dir)
+                cwd = change_dir(top_dir)
 
                 # get list of changed easyconfigs
                 out, ec = run_cmd("git diff --name-only --diff-filter=AM develop...HEAD", simple=False)
                 changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
                 print "List of changed easyconfig files in this PR: %s" % changed_ecs_filenames
+
+                change_dir(cwd)
 
                 # compose mapping of easyconfig filename to parsed easyconfig to pass down to check functions
                 changed_ecs = {}
