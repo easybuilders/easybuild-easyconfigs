@@ -107,7 +107,7 @@ def changed_ecs_check_checksums(changed_ecs):
             msg += "vs %d checksums" % checksum_cnt
             checksum_issues.append(msg)
 
-    for ec_fn, ec in changed_ecs:
+    for ec_fn, ec in changed_ecs.items():
 
         # skip whitelisted software
         if any(ec_fn.startswith('%s-' % w) for w in whitelist):
