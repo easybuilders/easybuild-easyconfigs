@@ -81,14 +81,25 @@ def changed_ecs_check_checksums(changed_ecs):
 
     checksum_issues = []
 
+    def grab_name_opts(spec):
+        """Determine extension/components name & options from given specification."""
+        name = spec[0]
+        # take info account that maybe only extension/component name & version is specified (no 3rd tuple element)
+        if len(spec) == 3:
+            opts = spec[2]
+        else:
+            opts = {}
+
+        return (name, opts)
+
     def check_checksums_for(ec_fn, ent, sub='', source_cnt=None):
         """
         Utility function: check whether checksums for all sources/patches are available, for given entity
         """
         if source_cnt is None:
-            source_cnt = len(ent['sources'])
-        patch_cnt = len(ent['patches'])
-        checksum_cnt = len(ent['checksums'])
+            source_cnt = len(ent.get('sources', []))
+        patch_cnt = len(ent.get('patches', []))
+        checksum_cnt = len(ent.get('checksums', []))
 
         if source_cnt + patch_cnt != checksum_cnt:
             msg = "Checksums missing for one or more sources/patches %s in %s: " % (sub, ec_fn)
@@ -108,7 +119,8 @@ def changed_ecs_check_checksums(changed_ecs):
         check_checksums_for(ec_fn, ec)
 
         # also check checksums for extensions
-        for (ext_name, _, ext_opts) in ec['exts_list']:
+        for ext in ec['exts_list']:
+            ext_name, ext_opts = grab_name_opts(ext)
             # only a single source per extension is supported (see source_tmpl)
             check_checksums_for(ec_fn, ext_opts, sub="of extension %s" % ext_name, source_cnt=1)
 
@@ -116,7 +128,8 @@ def changed_ecs_check_checksums(changed_ecs):
         # a checksum should be available for each of them
         components = ec.get('components', [])
         if ec['easyblock'] == 'Bundle':
-            for (comp_name, _, comp_opts) in components:
+            for comp in components:
+                comp_name, comp_opts = grab_name_opts(comp)
                 check_checksums_for(ec_fn, comp_opts, sub="of component %s" % comp_name)
 
         # make sure all provided checksums are SHA256
