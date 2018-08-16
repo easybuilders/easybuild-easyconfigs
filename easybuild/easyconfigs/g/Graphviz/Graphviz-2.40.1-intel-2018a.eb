@@ -1,0 +1,78 @@
+easyblock = 'ConfigureMake'
+
+name = 'Graphviz'
+version = '2.40.1'
+
+homepage = 'http://www.graphviz.org/'
+description = """Graphviz is open source graph visualization software. Graph visualization
+ is a way of representing structural information as diagrams of
+ abstract graphs and networks. It has important applications in networking,
+ bioinformatics,  software engineering, database and web design, machine learning,
+ and in visual interfaces for other technical domains."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+# official download site only provides most recent version as 'graphviz.tar.gz'...
+source_urls = ['https://fossies.org/linux/misc/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'Graphviz-2.38.0_icc_sfio.patch',
+    'Graphviz-2.40.1_icc_vmalloc.patch',
+    'Graphviz-2.40.1_Qt5.patch',
+    'Graphviz-2.40.1_skip-install-data-hook.patch',
+]
+checksums = [
+    'ca5218fade0204d59947126c38439f432853543b0818d9d728c589dfe7f3a421',  # graphviz-2.40.1.tar.gz
+    '393a0a772315a89dcc970b5efd4765d22dba83493d7956303673eb89c45b949f',  # Graphviz-2.38.0_icc_sfio.patch
+    '813e6529e79161a18b0f24a969b7de22f8417b2e942239e658b5402884541bc2',  # Graphviz-2.40.1_icc_vmalloc.patch
+    'f88ef7bcdb7cdfa2cda89c4681db3fecfb0e37955d52c0d4ef5bcffe5b41eb55',  # Graphviz-2.40.1_Qt5.patch
+    '8685c67b3c83f814cdf87f626905695b249eb7c3f64a2b1cdb79733b7297a4a4',  # Graphviz-2.40.1_skip-install-data-hook.patch
+]
+
+dependencies = [
+    ('cairo', '1.14.12'),
+    ('expat', '2.2.5'),
+    ('freetype', '2.9'),
+    ('Ghostscript', '9.22', '-cairo-1.14.12'),
+    ('GTS', '0.7.6'),
+    ('Java', '1.8.0_162', '', True),
+    ('libpng', '1.6.34'),
+    ('Pango', '1.41.1'),
+    ('Perl', '5.26.1'),
+    ('Qt5', '5.10.1'),
+    ('Tcl', '8.6.8'),
+    ('zlib', '1.2.11'),
+]
+
+builddependencies = [
+    ('Autotools', '20170619'),
+    ('SWIG', '3.0.12', '-Python-3.6.4'),
+    ('pkg-config', '0.29.2'),
+]
+
+preconfigopts = './autogen.sh && '
+
+configopts = '--enable-guile=no --enable-lua=no --enable-ocaml=no '
+configopts += '--enable-r=no --enable-ruby=no --enable-php=no '
+
+prebuildopts = 'qmake -o cmd/gvedit/qMakefile cmd/gvedit/gvedit.pro && '
+
+sanity_check_paths = {
+    'files': ['bin/cluster', 'bin/dot', 'bin/gvmap',
+              'lib/libcdt.%s' % SHLIB_EXT, 'lib/libgvc.%s' % SHLIB_EXT, 'lib/libxdot.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/graphviz']
+}
+
+sanity_check_commands = [
+    ("test ! -d $EBROOTTCL/lib/*/graphviz", ''),
+    ("test ! -d $EBROOTTCL/lib64/*/graphviz", ''),
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/graphviz/python',
+    'CLASSPATH': 'lib/graphviz/java/org/graphviz',
+    'LD_LIBRARY_PATH': 'lib/graphviz/java',
+    'TCLLIBPATH': 'lib/graphviz/tcl',
+}
+
+moduleclass = 'vis'
