@@ -1,0 +1,51 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# 
+# Author: Jonas Demeulemeester
+# The Francis Crick Institute, London, UK
+##
+
+easyblock = 'CmdCp'
+
+name = 'alleleCount'
+version = '4.0.0'
+
+homepage = 'http://cancerit.github.io/alleleCount/'
+description = """ The alleleCount package primarily exists to prevent code duplication
+between some other projects, specifically AscatNGS and Battenberg. As of v4 the perl 
+code wraps the C implementation of allele counting code for BAM/CRAM processing. """
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/cancerit/%(name)s/archive/v%(version)s']
+checksums = ['3841dee52b79ec520d5a2faa83dff048badb46dafddb0053b7553eb20aa7fea1']
+
+cmds_map = [('.*', "./setup.sh . ${EBROOTPERL}/lib/perl5")]
+
+# HTSlib 1.7 is built, used and removed again in the provided setup script
+dependencies = [
+    ('Perl', '5.26.1')
+]
+
+builddependencies = [
+    ('binutils', '2.28'),
+    ('cURL', '7.58.0')
+]
+
+files_to_copy = [
+    "bin",
+    "lib",
+    "man",
+    "example",
+    "testData"
+]
+
+sanity_check_paths = {
+    'files': ["bin/alleleCounter", "bin/alleleCounter.pl", "lib/perl5/LWP.pm"],
+    'dirs': ["lib/perl5"],
+}
+
+modextrapaths = {'PERL5LIB': 'lib/perl5'}
+
+moduleclass = 'bio'
