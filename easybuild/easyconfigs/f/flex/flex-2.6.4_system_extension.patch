@@ -1,0 +1,50 @@
+When building with glibc 2.26+, reallocarray() needs to be enabled, otherwise a segfault will occur during building.
+
+Error without this patch:
+
+[...]
+gcc -DHAVE_CONFIG_H -I.  -DLOCALEDIR=\"/software/easybuild/software/flex/2.6.4/share/locale\"   -g -O2 -MT stage1flex-yylex.o -MD -MP -MF .deps/stage1flex-yylex.Tpo -c -o stage1flex-yylex.o `test -f 'yylex.c' || echo './'`yylex.c
+misc.c: In function ‘allocate_array’:
+misc.c:147:8: warning: implicit declaration of function ‘reallocarray’; did you mean ‘reallocate_array’? [-Wimplicit-function-declaration]
+  mem = reallocarray(NULL, (size_t) size, element_size);
+        ^~~~~~~~~~~~
+        reallocate_array
+misc.c:147:6: warning: assignment makes pointer from integer without a cast [-Wint-conversion]
+  mem = reallocarray(NULL, (size_t) size, element_size);
+      ^
+misc.c: In function ‘reallocate_array’:
+misc.c:664:12: warning: assignment makes pointer from integer without a cast [-Wint-conversion]
+  new_array = reallocarray(array, (size_t) size, element_size);
+            ^
+misc.c: In function ‘allocate_array’:
+misc.c:147:8: warning: implicit declaration of function ‘reallocarray’; did you mean ‘reallocate_array’? [-Wimplicit-function-declaration]
+  mem = reallocarray(NULL, (size_t) size, element_size);
+        ^~~~~~~~~~~~
+        reallocate_array
+misc.c:147:6: warning: assignment makes pointer from integer without a cast [-Wint-conversion]
+  mem = reallocarray(NULL, (size_t) size, element_size);
+      ^
+misc.c: In function ‘reallocate_array’:
+misc.c:664:12: warning: assignment makes pointer from integer without a cast [-Wint-conversion]
+  new_array = reallocarray(array, (size_t) size, element_size);
+            ^
+
+Taken from:
+https://github.com/westes/flex/issues/241
+https://github.com/westes/flex/commit/c5a26b1
+
+diff --git a/configure.ac b/configure.ac
+index c6f12d64..3c977a4e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -25,8 +25,10 @@
+ # autoconf requirements and initialization
+ 
+ AC_INIT([the fast lexical analyser generator],[2.6.4],[flex-help@lists.sourceforge.net],[flex])
++AC_PREREQ([2.60])
+ AC_CONFIG_SRCDIR([src/scan.l])
+ AC_CONFIG_AUX_DIR([build-aux])
++AC_USE_SYSTEM_EXTENSIONS
+ LT_INIT
+ AM_INIT_AUTOMAKE([1.15 -Wno-portability foreign std-options dist-lzip parallel-tests subdir-objects])
+ AC_CONFIG_HEADER([src/config.h])
