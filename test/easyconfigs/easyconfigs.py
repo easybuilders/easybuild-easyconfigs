@@ -215,8 +215,6 @@ class EasyConfigTest(TestCase):
 
             # some software packages require an old version of a particular dependency
             old_dep_versions = {
-                # JasPer (g2lib, g2clib, ... require JasPer 1.x)
-                'JasPer': r'1\.',
                 # libxc (CP2K & ABINIT require libxc 3.x)
                 'libxc': r'3\.',
             }
