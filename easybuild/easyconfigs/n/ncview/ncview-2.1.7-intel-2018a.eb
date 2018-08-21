@@ -1,0 +1,45 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2014 The Cyprus Institute
+# Authors:: Thekla Loizou <t.loizou@cyi.ac.cy>
+# License:: MIT/GPL
+#
+##
+easyblock = 'ConfigureMake'
+
+name = 'ncview'
+version = '2.1.7'
+
+homepage = 'http://meteora.ucsd.edu/~pierce/ncview_home_page.html'
+description = """Ncview is a visual browser for netCDF format files. 
+Typically you would use ncview to get a quick and easy, push-button 
+look at your netCDF files. You can view simple movies of the data, 
+view along various dimensions, take a look at the actual data values, 
+change color maps, invert the data, etc."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['ftp://cirrus.ucsd.edu/pub/ncview/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['a14c2dddac0fc78dad9e4e7e35e2119562589738f4ded55ff6e0eca04d682c82']
+
+# specified compiler is hard checked against (full path to) compiler used for netCDF...
+preconfigopts = "CC=$(which $CC) "
+configopts = "--with-udunits2_incdir=$EBROOTUDUNITS/include --with-udunits2_libdir=$EBROOTUDUNITS/lib "
+configopts += "--with-nc-config=$EBROOTNETCDF/bin/nc-config"
+
+dependencies = [
+    ('netCDF', '4.6.0'),
+    ('netCDF-Fortran', '4.4.4'),
+    ('UDUNITS', '2.2.26'),
+    ('X11', '20180131'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ncview'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'
