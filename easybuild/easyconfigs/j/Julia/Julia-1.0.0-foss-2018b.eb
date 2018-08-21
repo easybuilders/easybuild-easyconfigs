@@ -1,0 +1,82 @@
+# Author: Jiri Furst <jiri.furst@gmail.com>, based on older eb by Jack Perdue <j-perdue@tamu.edu>
+
+easyblock = 'ConfigureMake'
+
+name = 'Julia'
+version = '1.0.0'
+
+homepage = 'http://julialang.org/downloads/'
+description = """
+ Julia is a high-level, high-performance dynamic programming language for
+ technical computing, with syntax that is familiar to users of other technical
+ computing environments. It provides a sophisticated compiler, distributed
+ parallel execution, numerical accuracy, and an extensive mathematical function
+ library.
+"""
+
+source_urls = ['https://github.com/JuliaLang/%(namelower)s/archive/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['aef997353def723862d76c2a4576bb330501bff20f87d44ad7eca3dca1890037']
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('M4', '1.4.18'),  
+    ('patchelf', '0.9'),
+    ('zlib', '1.2.11'),
+    ('CMake', '3.11.4'),
+    ('Perl', '5.28.0'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('arpack-ng', '3.5.0'),
+    ('bzip2', '1.0.6'),
+    ('cURL', '7.60.0'),
+    ('GMP', '6.1.2'),
+    ('ncurses', '6.1'),
+    ('MPFR', '4.0.1'),
+    ('PCRE2', '10.31'),
+    ('Python', '2.7.15'),
+    ('SuiteSparse', '5.1.2', '-ParMETIS-4.0.3'),
+    ('SuiteSparse', '5.1.2', '-METIS-5.1.0'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = """
+    cat >> Make.user << EEOOFF
+prefix=%(installdir)s
+USE_SYSTEM_ARPACK=1
+USE_SYSTEM_BLAS=1
+USE_SYSTEM_CURL=1
+USE_SYSTEM_DSMFT=0
+USE_SYSTEM_FFTW=1
+USE_SYSTEM_GMP=1
+USE_SYSTEM_LAPACK=1
+USE_SYSTEM_LIBGIT2=0
+USE_SYSTEM_LIBM=0
+USE_SYSTEM_LIBSSH2=0
+USE_SYSTEM_LIBUV=0
+USE_SYSTEM_MBEDTLS=0
+USE_SYSTEM_MPFR=1
+USE_SYSTEM_OPENLIBM=0
+USE_SYSTEM_OPENSPECFUN=0
+USE_SYSTEM_PATCHELF=1
+USE_SYSTEM_PCRE=1
+USE_SYSTEM_SUITESPARSE=1
+USE_SYSTEM_UTF8PROC=0
+EEOOFF
+
+    echo prefix=%(installdir)s >> Make.user
+    sed -e 's/UNW_VERSION_MINOR/2/' -i.eb src/julia_internal.h
+"""
+
+sanity_check_paths = {
+    'files': ['bin/julia'],
+    'dirs': ['bin', 'include/julia', 'lib/julia'],
+}
+
+moduleclass = 'lang'
+#  EOF
