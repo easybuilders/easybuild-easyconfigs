@@ -1,0 +1,78 @@
+easyblock = 'Tarball'
+
+name = 'CirComPara'
+version = '0.2.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/egaffo/CirComPara'
+description = "A multi-method comparative bioinformatics pipeline to detect and study circRNAs from RNA-seq data"
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://github.com/egaffo/CirComPara/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['9f47ca9f651ddf222407f30b1eee418deb5d732e8ce1239bf2fa9154d17c0428']
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('SCons', '3.0.1', '-Python-%(pyver)s'),
+    ('R', '3.4.4', '-X11-20180131-Python-%(pyver)s'),
+    ('R-bundle-Bioconductor', '3.6', '-R-%(rver)s-Python-%(pyver)s'),
+    ('Biopython', '1.71', '-Python-2.7.14'),
+    ('HISAT2', '2.1.0'),
+    ('Bowtie2', '2.3.4.1'),
+    ('bwakit', '0.7.15', '_x64-linux', True),
+    ('STAR', '2.6.0c'),
+    ('segemehl', '0.2.0'),
+    ('Trimmomatic', '0.38', '-Java-1.8', True),
+    ('FastQC', '0.11.7', '-Java-1.8', True),
+    ('BEDTools', '2.27.1'),
+    ('SAMtools', '1.7'),
+    ('Cufflinks', '2.2.1'),
+    ('find_circ', '1.2-20170228', '-Python-%(pyver)s'),
+]
+
+postinstallcmds = ["cd %(installdir)s/bin && cp -a ../src/*.py . && cp -a ../src/*.R ."]
+
+exts_default_options = {
+    'exts_subdir': 'tools/R_libs',
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz'
+}
+
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_list = [
+    ('gdtools', '0.1.7', {
+        'checksums': ['c631af4657130f0f33cf90cb6c8b6ffe459630bfca773dbdb38eabeaaf4e5388'],
+    }),
+    ('svglite', '1.2.1', {
+        'checksums': ['a174f7959c2dcc3e5d20fee76d98997e10e623a48a9ef643b0145248181d9aaf'],
+    }),
+    ('ggplot2', '3.0.0', {
+        'checksums': ['c768f5039ef684c3874a92210a975af52e74f00927ff31c31a73eb1fe139694d'],
+    }),
+    ('ggthemes', '4.0.0', {
+        'checksums': ['78af2afc3ca85afe033926cc0a46e97c51d1b7ce1879852607a0fa9a074eb4ae'],
+    }),
+    ('RSvgDevice', '0.6.4.4', {
+        'checksums': ['bf322a9c8f69366bad8bfe5734179529eb1a638496c87ad7aecbbc2f0b53f46e'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['circompara', 'make_indexes'],
+    'dirs': ['bin'],
+}
+
+modextrapaths = {
+    'PATH': '',
+    'R_LIBS': 'tools/R_libs',
+}
+
+moduleclass = 'bio'
