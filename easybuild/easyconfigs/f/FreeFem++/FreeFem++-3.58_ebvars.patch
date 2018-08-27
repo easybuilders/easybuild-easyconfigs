@@ -1,0 +1,72 @@
+# Pick up EB provided ScaLAPACK and FFTW in PETSc install 
+# August 23rd 2018 by B. Hajgato (Free University Brussels - VUB)
+--- freefem++-3.58/download/ff-petsc/Makefile.orig	2018-01-03 07:55:10.000000000 +0100
++++ freefem++-3.58/download/ff-petsc/Makefile	2018-08-25 13:21:53.409212134 +0200
+@@ -51,7 +51,7 @@
+ ifeq ($(MPICC),$(W_MPICC))
+   WITH_MPI_DIR=
+ else
+-  WITH_MPI_DIR="--with-mpi-dir='$(MPI_DIR)'"
++  WITH_MPI_DIR=--with-mpi-dir='$(MPI_DIR)'
+ endif	
+ DIR_INSTALL_REAL:=$(prefix)/ff-petsc/real
+ DIR_INSTALL_COMPLEX:=$(prefix)/ff-petsc/complex
+@@ -110,14 +110,20 @@
+ 	--with-ssl=0 ---with-x=0 \
+     '--with-scalar-type=real' \
+     $(WITH_MPI_DIR) \
+-	--with-blas-lapack-lib='$(LAPACKLIBS) $(BLASLIBS)' \
+-	--download-scalapack --download-metis --download-ptscotch \
++	--with-blas-lapack-lib="[${BLAS_LAPACK_LIB_DIR}/${BLAS_LAPACK_STATIC_LIBS}]" \
++	--with-scalapack=1 \
++	--with-scalapack-include=${SCALAPACK_INC_DIR} \
++	--with-scalapack-lib="[${SCALAPACK_LIB_DIR}/${SCALAPACK_STATIC_LIBS}]" \
++	--download-metis --download-ptscotch \
+ 	--download-mumps --download-ml --download-hypre --download-parmetis \
+-	--download-superlu --download-pastix --download-suitesparse --download-fftw \
++	--download-superlu --download-suitesparse \
++	--with-fftw=1 \
++	--with-fftw-include=${FFTW_INC_DIR} \
++	--with-fftw-lib="[${FFTW_LIB_DIR}/${FFTW_STATIC_LIBS}]" \
+ 	PETSC_ARCH=ff-real
+ 	touch $@
+ Make-petsc-download.mk:$(SRCDIR)/tag-install-real $(DIR_INSTALL_REAL)/lib/petsc/conf/petscvariables
+-	egrep 'SCALAPACK_|METIS_|MUMPS_|SUPERLU_|FFTW_|PTSCOTCH_|SUITESPARSE_'   $(DIR_INSTALL_REAL)/lib/petsc/conf/petscvariables | sed 's/-I/ /g'|sort >$@
++	egrep 'METIS_|MUMPS_|SUPERLU_|PTSCOTCH_|SUITESPARSE_'   $(DIR_INSTALL_REAL)/lib/petsc/conf/petscvariables | sed 's/-I/ /g'|sort >$@
+ 
+ ifdef 	MUMPS_LIB	
+ #  version COMPLEX  .....  
+@@ -127,14 +133,18 @@
+     '--with-scalar-type=complex' \
+ 	--with-ssl=0 ---with-x=0 \
+     $(WITH_MPI_DIR)  \
+-	--with-blas-lapack-lib='$(LAPACKLIBS) $(BLASLIBS)' \
+-	--with-scalapack-include='$(SCALAPACK_INCLUDE)'  --with-scalapack-lib='$(SCALAPACK_LIB)' \
++	--with-blas-lapack-lib="[${BLAS_LAPACK_LIB_DIR}/${BLAS_LAPACK_STATIC_LIBS}]" \
++	--with-scalapack=1 \
++	--with-scalapack-include=${SCALAPACK_INC_DIR} \
++	--with-scalapack-lib="[${SCALAPACK_LIB_DIR}/${SCALAPACK_STATIC_LIBS}]" \
+ 	--with-metis-include='$(METIS_INCLUDE)'  --with-metis-lib='$(METIS_LIB)' \
+ 	--with-ptscotch-include='$(PTSCOTCH_INCLUDE)'  --with-ptscotch-lib='$(PTSCOTCH_LIB)' \
+ 	--with-suitesparse-include='$(SUITESPARSE_INCLUDE)'  --with-suitesparse-lib='$(SUITESPARSE_LIB)' \
+-	--with-mumps-include='$(MUMPS_INCLUDE)'  --with-mumps-lib='$(MUMPS_LIB)' \
++	--with-mumps-include='$(MUMPS_INCLUDE)'  --with-mumps-lib='$(MUMPS_LIB) -pthread' \
+ 	--with-parmetis-include='$(PARMETIS_INCLUDE)'  --with-parmetis-lib='$(PARMETIS_LIB)' \
+-	--with-fftw-include='$(FFTW_INCLUDE)'  --with-fftw-lib='$(FFTW_LIB)' \
++	--with-fftw=1 \
++	--with-fftw-include=${FFTW_INC_DIR} \
++	--with-fftw-lib="[${FFTW_LIB_DIR}/${FFTW_STATIC_LIBS}]" \
+ 	PETSC_ARCH=ff-complex
+ 
+ 	touch $@
+@@ -160,8 +170,8 @@
+ 
+ ##  need include include Make-petsc-download.mk	
+ WHERE-all:Makefile WHERE-complex WHERE
+-	echo scalapack LD $(SCALAPACK_LIB) >$@
+-	echo scalapack INCLUDE -I$(CALAPACK_INCLUDE) >>$@
++	echo scalapack LD ${EBROOTSCALAPACK}/lib >$@
++	echo scalapack INCLUDE -I${EBROOTSCALAPACK}/include >>$@
+ 	echo metis LD $(METIS_LIB) >>$@
+ 	echo metis INCLUDE -I$(METIS_INCLUDE) >>$@
+ 	echo mumps LD $(MUMPS_LIB) >>$@

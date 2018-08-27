@@ -1,4 +1,4 @@
-easyblock = 'ConfigureMake'
+easyblock = 'EB_FreeFem'
 
 name = 'FreeFem++'
 version = '3.58'
@@ -13,9 +13,18 @@ toolchainopts = {'usempi': True, 'pic': True}
 
 source_urls = ['http://www.freefem.org/ff++/ftp/']
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['e205c0a89fe8edc876d97b8a6ba43825b83c7f8dbdd49fdf972fa1f089b62743']
+patches = ['%(name)s-%(version)s_ebvars.patch']
+checksums = [
+    'e205c0a89fe8edc876d97b8a6ba43825b83c7f8dbdd49fdf972fa1f089b62743',  # freefem++-3.58.tar.gz
+    'e1fe8b26ab417e059653538bcd76214ca0ff4fc5486af11014413335de1ba58d',  # FreeFem++-3.58_ebvars.patch
+]
 
-builddependencies = [('Autotools', '20170619')]
+builddependencies = [
+    ('Autotools', '20170619'),
+    ('flex', '2.5.39'),
+    ('Bison', '3.0.4'),
+    ('CMake', '3.10.1'),
+]
 
 dependencies = [
     ('HDF5', '1.10.1'),
@@ -23,15 +32,15 @@ dependencies = [
     ('freeglut', '3.0.0'),
 ]
 
-preconfigopts = "autoreconf -i &&"
-
-configopts = '--with-hdf5="$EBROOTHDF5"/bin '
+configopts = '--with-hdf5="$EBROOTHDF5"/bin/h5pcc '
 configopts += '--with-gsl-include="$EBROOTGSL"/include --with-gsl-ldflags="$EBROOTGSL"/lib '
-configopts += '--with-lapack="$LIBLAPACK" '
+configopts += '--enable-download --disable-pastix '
 
 # dependencies are heavily patched by FreeFem++, we therefore let it download and install them itself
 prebuildopts = 'download/getall -a -o ScaLAPACK,ARPACK,freeYams,Gmm++,Hips,Ipopt,METIS,ParMETIS,MMG3D,mshmet,MUMPS,'
 prebuildopts += 'NLopt,pARMS,PaStiX,Scotch,SuiteSparse,SuperLU_DIST,SuperLU,TetGen,PETSc,SLEPc,hpddm &&'
+
+runtest = "check"
 
 parallel = 1
 
