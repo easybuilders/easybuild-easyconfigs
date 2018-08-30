@@ -38,7 +38,7 @@ separate_build_dir = True
 
 configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
 configopts += '-DBUILD_PYTHON_SUPPORT=ON '
-configopts += '-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+configopts += '-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python2.7/site-packages '
 configopts += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
 configopts += '-DZLIB_LIBRARY=$NIXUSER_PROFILE/lib/libz.%s ' % SHLIB_EXT
 configopts += '-DZLIB_INCLUDE_DIR=$NIXUSER_PROFILE/include '
@@ -54,11 +54,15 @@ configopts += '-DCMAKE_SKIP_RPATH=ON '
 configopts += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
 configopts += '-DWITH_CUDA=ON '
 
-postinstallcmds = [ "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python%(pyshortver)s/site-packages --add_path %(installdir)s/lib" ]
+postinstallcmds = [ 
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python2.7/site-packages --add_path %(installdir)s/lib" ,
+	# OpenCV provided CMake module is wrong, it instructs other packages to use libraries that aren't there, like -lopencv_dep_cudart
+	"sed -i -e 's/opencv_dep_[^;]*;//g' %(installdir)s/share/OpenCV/OpenCVModules-release.cmake",
+]
 
 sanity_check_paths = {
     'files': ['lib/libopencv_core.%s' % SHLIB_EXT] +
-             ['lib/python%(pyshortver)s/site-packages/cv2.so'] +
+             ['lib/python2.7/site-packages/cv2.so'] +
              ['bin/opencv_%s' % x for x in ['haartraining', 'createsamples', 'performance', 'traincascade']],
     'dirs': ['include']
 }

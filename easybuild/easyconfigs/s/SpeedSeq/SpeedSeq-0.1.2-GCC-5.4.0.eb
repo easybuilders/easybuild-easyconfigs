@@ -1,5 +1,5 @@
 # This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
-# Author: Pablo Escobar Lopez
+# Author: Maxime Boissonneault
 # Swiss Institute of Bioinformatics
 # Biozentrum - University of Basel
 # Modified by: Adam Huffman
@@ -16,29 +16,34 @@ description = """A flexible framework for rapid genome analysis and interpretati
 toolchain = {'name': 'GCC', 'version': '5.4.0'}
 toolchainopts = {'pic': True}
 
-#master.zip does not work
-sources = ['master.zip']
-source_urls = ['https://github.com/hall-lab/speedseq/archive/']
+# Create an archive manually first with
+# git clone --branch v0.1.2 --recursive https://github.com/hall-lab/speedseq.git
+# tar cfvj speedseq-0.1.2.tar.bz2 --exclude-vcs speedseq
+sources = ['%(namelower)s-%(version)s.tar.bz2']
+#source_urls = ['https://github.com/hall-lab/speedseq/archive/']
 
-unpack_options = '&& git clone --recursive https://github.com/hall-lab/speedseq'
-
-prebuildopts = 'cd speedseq && '
-dependencies = [
-    ('ROOT', '6.08.02'),
-    ('SAMtools', '1.5'),
+builddependencies = [
+    ('Python', '2.7.14'),
 ]
 
+dependencies = [
+    ('ROOT', '5.34.36'),
+    ('SAMtools', '1.5'),
+]
+buildininstalldir = True
+skipsteps = ['install']
+
 files_to_copy = [
-    "speedseq/*",
+    "", #"speedseq/*",
 ]
 
 sanity_check_paths = {
-    'files': ["bin/speedseq",
-              "bin/bamcleanheader.py",
-              "bin/cnvnator_wrapper.py",
-              "bin/tabix",
+    'files': ["speedseq/bin/speedseq",
+              "speedseq/bin/bamcleanheader.py",
+              "speedseq/bin/cnvnator_wrapper.py",
+              "speedseq/bin/tabix",
              ],
     'dirs': [],
 }
-
+modextrapaths = { 'PATH': 'speedseq/bin' }
 moduleclass = 'bio'
