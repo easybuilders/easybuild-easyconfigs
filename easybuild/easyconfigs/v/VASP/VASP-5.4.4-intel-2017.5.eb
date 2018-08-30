@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.4'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version VASPsol (https://github.com/henniggroup/VASPsol) 
+has been implemented to the original version of vasp """
+
+toolchain = {'name': 'intel', 'version': '2017.5'}
+dependencies = [('BEEF', '0.1.1', '', ('iccifort', '2017.5'))]
+
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['vasp.5.4.4.tar.gz']
+
+prebuildopts = 'sed -i.orig "s/-Duse_shmem/-Duse_shmem\ -Dsol_compat\ -Dlibbeef/g"  arch/makefile.include.linux_intel &&'
+prebuildopts += "sed -i.orig '/^LLIBS/s/$/ -lbeef/' arch/makefile.include.linux_intel &&"
+prebuildopts += 'cp arch/makefile.include.linux_intel ./makefile.include &&'
+prebuildopts += 'cp src/solvation.F src/solvation.F.orig &&'
+prebuildopts += 'git clone https://github.com/henniggroup/VASPsol &&'
+prebuildopts += 'cd VASPsol/ &&'
+prebuildopts += 'git checkout  a31bcc3 &&'
+prebuildopts += 'cd .. &&'
+prebuildopts += 'cp VASPsol/src/solvation.F src  &&'
+
+prebuildopts += 'unset LIBS && '
+
+postinstallcmds = ["chmod -R o-rwx %(installdir)s"]
+parallel = 1
+
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': []
+}
+moduleclass = 'phys'
