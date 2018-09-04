@@ -277,7 +277,7 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
-    def check_sha256_checksums(changed_ecs):
+    def pr_changed_files_check_sha256_checksums(changed_ecs):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
 
         # list of software for which checksums can not be required,
@@ -319,7 +319,7 @@ class EasyConfigTest(TestCase):
                             break
 
                 # run checks on changed easyconfigs
-                self.check_sha256_checksums(changed_ecs)
+                self.pr_changed_files_check_sha256_checksums(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
