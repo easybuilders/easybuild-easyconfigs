@@ -321,6 +321,14 @@ class EasyConfigTest(TestCase):
         # e.g. because 'source' files need to be constructed manually
         whitelist = ['Kent_tools-*', 'MATLAB-*']
 
+        # the check_sha256_checksums function (again) creates an EasyBlock instance
+        # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
+        # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
+        # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
+        for ec in changed_ecs:
+            if ec['easyblock'] == 'Bundle':
+                ec['sources'] = []
+
         checksum_issues = check_sha256_checksums(changed_ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
