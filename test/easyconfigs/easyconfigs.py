@@ -49,16 +49,17 @@ from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
-from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
+from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import build_option
-from easybuild.tools.filetools import write_file
+from easybuild.tools.filetools import change_dir, write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
+from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
 
 
@@ -312,6 +313,50 @@ class EasyConfigTest(TestCase):
                     # only exception: TEMPLATE.eb
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+
+    def check_sha256_checksums(self, changed_ecs):
+        """Make sure changed easyconfigs have SHA256 checksums in place."""
+
+        # list of software for which checksums can not be required,
+        # e.g. because 'source' files need to be constructed manually
+        whitelist = ['Kent_tools-*', 'MATLAB-*']
+
+        checksum_issues = check_sha256_checksums(changed_ecs, whitelist=whitelist)
+        self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
+
+    def test_changed_files_pull_request(self):
+        """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
+
+        # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
+        if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
+
+            # target branch should be develop
+            if os.environ.get('TRAVIS_BRANCH') == 'develop':
+
+                if not self.parsed_easyconfigs:
+                    self.process_all_easyconfigs()
+
+                # relocate to top-level directory of repository to run 'git diff' command
+                top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
+                cwd = change_dir(top_dir)
+
+                # get list of changed easyconfigs
+                out, ec = run_cmd("git diff --name-only --diff-filter=AM develop...HEAD", simple=False)
+                changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
+                print("List of changed easyconfig files in this PR: %s" % changed_ecs_filenames)
+
+                change_dir(cwd)
+
+                # grab parsed easyconfigs for changed easyconfig files
+                changed_ecs = []
+                for ec_fn in changed_ecs_filenames:
+                    for ec in self.parsed_easyconfigs:
+                        if ec['spec'].endswith(ec_fn):
+                            changed_ecs.append(ec['ec'])
+                            break
+
+                # run checks on changed easyconfigs
+                self.check_sha256_checksums(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
