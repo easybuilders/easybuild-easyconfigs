@@ -1,0 +1,47 @@
+name = 'LAMMPS'
+version = '14May16'
+
+cudaver = '7.5.18'
+versionsuffix = '-CUDA-%s' % cudaver
+
+homepage = 'http://lammps.sandia.gov/'
+description = """LAMMPS is a classical molecular dynamics code, and an acronym
+for Large-scale Atomic/Molecular Massively Parallel Simulator. LAMMPS has
+potentials for solid-state materials (metals, semiconductors) and soft matter
+(biomolecules, polymers) and coarse-grained or mesoscopic systems. It can be
+used to model atoms or, more generically, as a parallel particle simulator at
+the atomic, meso, or continuum scale. LAMMPS runs on single processors or in
+parallel using message-passing techniques and a spatial-decomposition of the
+simulation domain. The code is designed to be easy to modify or extend with new
+functionality."""
+
+toolchain = {'name': 'foss', 'version': '2015a'}
+toolchainopts = {'openmp': False, 'usempi': True}
+
+# The source will most likely be downloaded as "lammps-stable.tar.gz". You can
+# find out the version number by running "tar tvf lammps-stable.tar.gz" and
+# having a look at the contents. It will probably be necessary to download the
+# source code by hand.
+sources = ['%(namelower)s-%(version)s.tar.gz']
+#source_urls = ['http://lammps.sandia.gov/download.html']
+
+dependencies = [
+    ('CUDA', cudaver, '', True),
+    ('libpng', '1.6.20'),
+]
+
+# Set up the compilation properties
+standard_packages = ['body', 'gpu', 'granular', 'meam', 'python', 'rigid', 'srd']
+user_packages = ['dpd', 'lb']
+
+# Install executables
+files_to_copy = [(["src/lmp_*"], "bin")]
+
+# Don't name the executable specifically, as what if there are
+# multiple lmp_ executables?
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin']
+}
+
+moduleclass = 'chem'
