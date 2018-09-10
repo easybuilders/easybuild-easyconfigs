@@ -19,6 +19,27 @@ source_urls = ["http://llvm.org/releases/%(version)s"]
 sources = ["llvm-%(version)s.src.tar.xz"]
 checksums = ['b6d6c324f9c71494c0ccaf3dac1f16236d970002b42bb24a6c9e1634f7d0f4e2']
 
+# patches to support Julia
+patches = [
+    'llvm-D27629-AArch64-large_model_6.0.1.patch',
+    'llvm-D34078-vectorize-fdiv.patch',
+    'llvm-6.0-NVPTX-addrspaces.patch',
+    'llvm-D42262-jumpthreading-not-i1.patch',
+    'llvm-PPC-addrspaces.patch',
+    'llvm-6.0.0_D27296-libssp.patch',
+    'llvm-6.0-D44650.patch',
+    'llvm-D46460.patch',
+    'llvm-rL327898.patch',
+    'llvm-6.0-DISABLE_ABI_CHECKS.patch',
+    'llvm-OProfile-line-num.patch',
+    'llvm-D44892-Perf-integration.patch',
+    'llvm-D49832-SCEVPred.patch',
+    'llvm-rL323946-LSRTy.patch',
+    'llvm-D50010-VNCoercion-ni.patch',
+    'llvm-D50167-scev-umin.patch',
+    'llvm-rL326967-aligned-load.patch',
+]
+
 builddependencies = [
     ('binutils', '2.28'),
     ('CMake', '3.10.2'),
@@ -30,10 +51,13 @@ dependencies = [
     ('zlib', '1.2.11'),
 ]
 
-configopts = '-DBUILD_SHARED_LIBS=ON '
 # required to install extra tools in bin/
-configopts += '-DLLVM_INSTALL_UTILS=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_ZLIB=ON -DLLVM_ENABLE_RTTI=ON '
-configopts += '-DCMAKE_BUILD_TYPE=Release '
+common_configopts = '-DLLVM_INSTALL_UTILS=ON -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ZLIB=ON -DLLVM_ENABLE_RTTI=ON '
+common_configopts += '-DCMAKE_BUILD_TYPE=Release '
+configopts = [
+    '-DLLVM_BUILD_LLVM_DYLIB=ON ' + common_configopts,
+    '-DBUILD_SHARED_LIBS=ON' + common_configopts,
+]
 
 sanity_check_paths = {
     'files': ['bin/llvm-ar', 'bin/FileCheck'],
