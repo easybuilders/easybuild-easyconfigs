@@ -1,0 +1,54 @@
+# Avoid the hardcoded value of /usr/local/cuda/bin/nvcc. We take the value that CMake finds as 
+# backup when the variable $OPENMM_CUDA_COMPILER is not set
+# wpoely86@gmail.com
+diff -ur openmm-7.2.2.orig/platforms/cuda/CMakeLists.txt openmm-7.2.2/platforms/cuda/CMakeLists.txt
+--- openmm-7.2.2.orig/platforms/cuda/CMakeLists.txt	2018-05-11 01:41:24.000000000 +0200
++++ openmm-7.2.2/platforms/cuda/CMakeLists.txt	2018-09-11 14:27:49.223313165 +0200
+@@ -92,3 +92,7 @@
+ IF(OPENMM_BUILD_STATIC_LIB)
+     SUBDIRS (staticTarget)
+ ENDIF(OPENMM_BUILD_STATIC_LIB)
++
++IF(CUDA_NVCC_EXECUTABLE)
++    add_definitions(-DCUDA_NVCC_EXECUTABLE="${CUDA_NVCC_EXECUTABLE}")
++ENDIF(CUDA_NVCC_EXECUTABLE)
+Only in openmm-7.2.2/platforms/cuda: CMakeLists.txt.orig
+diff -ur openmm-7.2.2.orig/platforms/cuda/src/CudaContext.cpp openmm-7.2.2/platforms/cuda/src/CudaContext.cpp
+--- openmm-7.2.2.orig/platforms/cuda/src/CudaContext.cpp	2018-05-11 01:41:24.000000000 +0200
++++ openmm-7.2.2/platforms/cuda/src/CudaContext.cpp	2018-09-11 14:40:09.281703550 +0200
+@@ -199,7 +199,10 @@
+             else
+                 flags += CU_CTX_SCHED_SPIN;
+ 
+-            if (cuCtxCreate(&context, flags, device) == CUDA_SUCCESS) {
++            CUresult res = cuCtxCreate(&context, flags, device);
++            CHECK_RESULT(res);
++
++            if (res == CUDA_SUCCESS) {
+                 this->deviceIndex = trialDeviceIndex;
+                 break;
+             }
+diff -ur openmm-7.2.2.orig/platforms/cuda/src/CudaPlatform.cpp openmm-7.2.2/platforms/cuda/src/CudaPlatform.cpp
+--- openmm-7.2.2.orig/platforms/cuda/src/CudaPlatform.cpp	2018-05-11 01:41:24.000000000 +0200
++++ openmm-7.2.2/platforms/cuda/src/CudaPlatform.cpp	2018-09-11 14:27:49.223313165 +0200
+@@ -43,6 +43,10 @@
+ using namespace OpenMM;
+ using namespace std;
+ 
++#ifndef CUDA_NVCC_EXECUTABLE
++#define CUDA_NVCC_EXECUTABLE "/usr/local/cuda/bin/nvcc"
++#endif
++
+ #define CHECK_RESULT(result, prefix) \
+     if (result != CUDA_SUCCESS) { \
+         std::stringstream m; \
+@@ -133,7 +137,7 @@
+     setPropertyDefaultValue(CudaTempDirectory(), string(getenv("TEMP")));
+ #else
+     char* compiler = getenv("OPENMM_CUDA_COMPILER");
+-    string nvcc = (compiler == NULL ? "/usr/local/cuda/bin/nvcc" : string(compiler));
++    string nvcc = (compiler == NULL ? CUDA_NVCC_EXECUTABLE : string(compiler));
+     setPropertyDefaultValue(CudaCompiler(), nvcc);
+     char* tmpdir = getenv("TMPDIR");
+     string tmp = (tmpdir == NULL ? string(P_tmpdir) : string(tmpdir));
+Only in openmm-7.2.2/platforms/cuda/src: CudaPlatform.cpp.orig

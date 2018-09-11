@@ -1,0 +1,63 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = "CMakeMake"
+
+name = "OpenMM"
+version = "7.2.2"
+cuda_ver = '9.2.148.1'
+versionsuffix = '-Python-%%(pyver)s-CUDA-%s' % cuda_ver
+
+homepage = 'https://simtk.org/home/openmm'
+description = """OpenMM is a toolkit for molecular simulation."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/pandegroup/openmm/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-fix-nvcc.patch']
+checksums = [
+    '99fd07b194bdd206c21e40d3f6aa943a92f87a91cc5b1c771b20f85496e46c56',  # 7.2.2.tar.gz
+    'dca568feb637892675f5037493ae2c9dc3216392a426e1b535582369122fcd1f',  # OpenMM-7.2.2-fix-nvcc.patch
+]
+
+builddependencies = [
+    ('CMake', '3.10.2'),
+    ('Doxygen', '1.8.14'),
+]
+
+separate_build_dir = True
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('CUDA', cuda_ver, '', True),
+    ('SWIG', '3.0.12', '-Python-%(pyver)s'),
+]
+
+# the tests take 2h
+runtest = """test -e ARGS="-E \'(TestReferenceVirtualSites|TestCudaVirtualSitesSingle|TestCudaVirtualSitesMixed|\
+TestCudaVirtualSitesDouble|TestOpenCLMonteCarloAnisotropicBarostatDouble|TestOpenCLVirtualSitesSingle|\
+TestOpenCLVirtualSitesMixed|TestOpenCLVirtualSitesDouble\
+|TestReferenceAmoebaGeneralizedKirkwoodForce|TestSystem)\'" """
+
+preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
+preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
+
+# required to install the python API
+installopts = ' && cd python && python setup.py build && python setup.py install --prefix=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ["lib/libOpenMM.%s" % SHLIB_EXT, "lib/python%(pyshortver)s/site-packages/simtk/openmm/openmm.py"],
+    'dirs': []
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'OPENMM_INCLUDE_PATH': 'include',
+    'OPENMM_LIB_PATH': 'lib',
+}
+
+moduleclass = 'bio'
