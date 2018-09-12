@@ -1,6 +1,6 @@
 easyblock = 'CMakeMake'
 
-name = 'ParaView'
+name = 'ParaView-offscreen-gpu'
 version = '5.5.2'
 
 homepage = "http://www.paraview.org"
@@ -15,7 +15,6 @@ sources = ["ParaView-v%(version)s.tar.gz"]
 
 dependencies = [
     ('HDF5', '1.8.18'),
-    ('Qt5', '5.9.6'),
 ]
 
 separate_build_dir = True
@@ -23,10 +22,14 @@ separate_build_dir = True
 configopts = ''
 configopts += '-DCMAKE_SKIP_RPATH=ON '
 configopts += '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DVTK_OPENGL_HAS_OSMESA=ON -DPARAVIEW_USE_MPI=ON '
-configopts += '-DPARAVIEW_QT_VERSION=5  -DQT_QMAKE_EXECUTABLE=$EBROOTQT5/bin/qmake -DQt5_DIR=$EBROOTQT5/lib/cmake/Qt5 -DPARAVIEW_BUILD_QT_GUI=ON '
+configopts += '-DPARAVIEW_BUILD_QT_GUI=OFF 
 configopts += '-DPARAVIEW_USE_OSPRAY=ON -DOSPRAY_INSTALL_DIR=$NIXUSER_PROFILE '
 configopts += '-DVTK_USE_SYSTEM_HDF5=ON -DPARAVIEW_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON '
-configopts += "-DVTK_RENDERING_BACKEND=OpenGL2 -DVTK_USE_X=ON "
+configopts += '-DVTK_USE_X=OFF '
+configopts += '-DVTK_USE_OFFSCREEN_EGL=ON -DEGL_INCLUDE_DIR=/usr/include '
+configopts += '-DEGL_LIBRARY=/usr/lib64/nvidia/libEGL.so -DEGL_gldispatch_LIBRARY=/usr/lib64/nvidia/libGLdispatch.so.0 '
+configopts += '-DEGL_opengl_LIBRARY=/usr/lib64/nvidia/libOpenGL.so '
+
 # Without internet connection turn off testing (uncomment the following line)
 configopts += '-DBUILD_TESTING=OFF '
 # Or consult https://gitlab.kitware.com/vtk/vtk/blob/master/Documentation/dev/git/data.md
@@ -38,10 +41,6 @@ configopts += '-DBUILD_TESTING=OFF '
 # first serial attempt would fail.
 #prebuildopts = 'make VTKData ;'
 prebuildopts = "LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/VTK/ThirdParty/vtkm/vtk-m/lib:$LD_LIBRARY_PATH "
-
-postinstallcmds = [ 
-	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python2.7 --add_path %(installdir)s/lib", 
-	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/paraview-5.5 --add_path %(installdir)s/lib", 
-	]
+prebuildopts += 'make VTKData ; sed -i \'s/$/ -lQt5X11Extras/\' VTK/GUISupport/Qt/CMakeFiles/vtkGUISupportQt.dir/link.txt ; CPATH=$CPATH:$NIXUSER_PROFILE/include/QtX11Extras '
 
 moduleclass = 'vis'
