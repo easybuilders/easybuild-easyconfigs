@@ -242,6 +242,13 @@ class EasyConfigTest(TestCase):
                 if len(py2_dep_vars) == 1 and len(py3_dep_vars) == 1:
                     res = True
 
+            # two versions of Java dependencies if OK if one is a wrapper for the other,
+            # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
+            elif dep == 'Java' and len(dep_vars) == 2:
+                keys = sorted(dep_vars.keys())
+                ver1, ver2 = [k.split(';')[0] for k in keys]
+                res = not (ver1.startswith(ver2) or ver2.startswith(ver1))
+
             return res
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
