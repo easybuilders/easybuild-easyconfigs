@@ -1,0 +1,55 @@
+fix issues in numpy distutils pkg w.r.t. detecting BLAS/LAPACK libraries
+by Kenneth Hoste (HPC-UGent)
+diff -ru numpy-1.12.0.orig/numpy/distutils/fcompiler/__init__.py numpy-1.12.0/numpy/distutils/fcompiler/__init__.py
+--- numpy-1.12.0.orig/numpy/distutils/fcompiler/__init__.py	2017-01-15 11:39:18.000000000 +0100
++++ numpy-1.12.0/numpy/distutils/fcompiler/__init__.py	2017-03-06 17:19:07.262810683 +0100
+@@ -628,7 +628,10 @@
+         return options
+ 
+     def library_option(self, lib):
+-        return "-l" + lib
++        if lib[0]=='-':
++            return lib
++        else:
++            return "-l" + lib
+     def library_dir_option(self, dir):
+         return "-L" + dir
+ 
+diff -ru numpy-1.12.0.orig/numpy/distutils/system_info.py numpy-1.12.0/numpy/distutils/system_info.py
+--- numpy-1.12.0.orig/numpy/distutils/system_info.py	2017-01-15 11:39:18.000000000 +0100
++++ numpy-1.12.0/numpy/distutils/system_info.py	2017-03-06 17:25:38.778143748 +0100
+@@ -675,7 +675,7 @@
+             if is_string(default):
+                 return [default]
+             return default
+-        return [b for b in [a.strip() for a in libs.split(',')] if b]
++        return [b for b in [a.strip().replace(':',',') for a in libs.split(',')] if b]
+ 
+     def get_libraries(self, key='libraries'):
+         if hasattr(self, '_lib_names'):
+@@ -756,6 +756,9 @@
+         # make sure we preserve the order of libs, as it can be important
+         found_dirs, found_libs = [], []
+         for lib in libs:
++            if lib[0] == '-':
++                found_libs.append(lib)
++                continue
+             for lib_dir in lib_dirs:
+                 found_lib = self._find_lib(lib_dir, lib, exts)
+                 if found_lib:
+diff -ru numpy-1.12.0.orig/numpy/distutils/unixccompiler.py numpy-1.12.0/numpy/distutils/unixccompiler.py
+--- numpy-1.12.0.orig/numpy/distutils/unixccompiler.py	2016-12-21 16:46:24.000000000 +0100
++++ numpy-1.12.0/numpy/distutils/unixccompiler.py	2017-03-06 17:19:07.262810683 +0100
+@@ -123,3 +123,12 @@
+ 
+ replace_method(UnixCCompiler, 'create_static_lib',
+                UnixCCompiler_create_static_lib)
++
++def UnixCCompiler_library_option(self, lib):
++    if lib[0]=='-':
++        return lib
++    else:
++        return "-l" + lib
++
++replace_method(UnixCCompiler, 'library_option',
++               UnixCCompiler_library_option)
