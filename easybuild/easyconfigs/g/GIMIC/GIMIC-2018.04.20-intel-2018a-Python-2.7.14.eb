@@ -1,0 +1,50 @@
+easyblock = "CMakeMake"
+
+name = 'GIMIC'
+version = '2018.04.20'
+versionsuffix = '-Python-%(pyver)s'
+commit = 'fa939fe4553c77683044bc08890d9bcf1486aecc'
+
+homepage = 'http://gimic.readthedocs.io'
+description = """The GIMIC program calculates magnetically induced currents in molecules.
+ You need to provide this program with a density matrix in atomic-orbital (AO) basis
+ and three (effective) magnetically perturbed AO density matrices in the proper format.
+Currently ACES2, Turbomole, G09, QChem, FERMION++, and LSDalton can produce these matrices."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://github.com/qmcurrents/gimic/archive']
+sources = ['%s.tar.gz' % commit]
+patches = ['%(name)s-%(version)s_git.patch']
+checksums = [
+    # fa939fe4553c77683044bc08890d9bcf1486aecc.tar.gz
+    'b6aca9e1dfa482000e0d73388ca68bb26e34bdd55819edc81db2c16aadd9844e',
+    '3d20b4312169c4fe09bd24185ab980c566c3783523ceb2f579578430382f8e6b',  # GIMIC-2018.04.20_git.patch
+]
+
+builddependencies = [
+    ('CMake', '3.10.2'),
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('PyYAML', '3.12', versionsuffix),
+]
+
+separate_build_dir = True
+
+configopts = '-DENABLE_OPENMP=ON -DENABLE_MKL_FLAG=ON -DGIT_REVISION=%s ' % commit
+configopts += '-DCMAKE_CXX_FLAGS_RELEASE:STRING="-DNDEBUG" '
+configopts += '-DCMAKE_C_FLAGS_RELEASE:STRING="-DNDEBUG" '
+configopts += '-DCMAKE_Fortran_FLAGS_RELEASE:STRING=" " '
+
+sanity_check_paths = {
+    'files': ['bin/gimic', 'lib/libgimic2.a'],
+    'dirs': ['include', 'bin/QCTools', 'lib/python/site-packages'],
+}
+
+parallel = 4
+
+modextrapaths = {'PYTHONPATH': ['lib/python/site-packages', 'bin/QCTools']}
+
+moduleclass = 'chem'

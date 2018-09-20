@@ -1,0 +1,36 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'ConfigureMake'
+
+name = 'fastq-tools'
+version = '0.8'
+
+homepage = 'https://homes.cs.washington.edu/~dcjones/%(name)s/'
+description = """This package provides a number of small and efficient programs to perform
+ common tasks with high throughput sequencing data in the FASTQ format. All of the programs
+ work with typical FASTQ files as well as gzipped FASTQ files."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/dcjones/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+
+checksums = ['948613a7a4850cbb8ea55e93abd30b52f72c5b6c8815305a5c76620e451abd78']
+
+dependencies = [
+    ('PCRE', '8.38'),
+    ('zlib', '1.2.8'),
+]
+
+# unsetting LIBS is needed because configure script can't handle it properly if it is already defined
+preconfigopts = './autogen.sh && unset LIBS && '
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['fastq-grep', 'fastq-kmers', 'fastq-match', 'fastq-qscale',
+                                     'fastq-qual', 'fastq-qualadj', 'fastq-sample', 'fastq-sort',
+                                     'fastq-uniq']],
+    'dirs': ['share/man/man1'],
+}
+
+moduleclass = 'bio'
