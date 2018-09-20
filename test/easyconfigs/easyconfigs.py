@@ -188,6 +188,14 @@ class EasyConfigTest(TestCase):
                 if len(empty_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
+            # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
+            elif dep == 'HTSlib' and len(dep_vars) > 1:
+                for key, ecs in dep_vars.items():
+                    # filter out HTSlib variants that are only used as dependency for BCFtools with same version
+                    htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
+                        dep_vars.pop(key)
+
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             elif dep in ['FFTW', 'imkl']:
                 serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
