@@ -1,0 +1,39 @@
+This patch is used to build GPAW with the foss-2016b toolchain allowing GPAW
+to use Openblas and Scalapack
+Author: Mikkel Strange, Technical University of Denmark, Denmark
+--- gpaw-1.2.0-orig/customize.py	2017-05-24 11:57:38.765096571 +0200
++++ gpaw-1.2.0/customize.py	    2017-05-24 11:58:43.189777767 +0200
+@@ -27,20 +27,28 @@
+ 
+     libraries += ['somelib', 'otherlib']
+ """
+-
++import os
+ # compiler = 'gcc'
+ # mpicompiler = 'mpicc'  # use None if you don't want to build a gpaw-python
+ # mpilinker = 'mpicc'
+ # platform_id = ''
+-# scalapack = False
++scalapack = True
++
++libraries = ['readline',
++             'gfortran',
++             'openblas',
++             'xc']
+ 
++scalapack_libs = [libfile[3:-2] for libfile in
++                  os.getenv('SCALAPACK_STATIC_LIBS').split(',')]
++mpi_libraries += scalapack_libs
+ # Use ScaLAPACK:
+ # Warning! At least scalapack 2.0.1 is required!
+ # See https://trac.fysik.dtu.dk/projects/gpaw/ticket/230
+ if scalapack:
+-    libraries += ['scalapack-openmpi',
+-                  'blacsCinit-openmpi',
+-                  'blacs-openmpi']
++#    libraries += ['scalapack-openmpi',
++#                  'blacsCinit-openmpi',
++#                  'blacs-openmpi']
+     define_macros += [('GPAW_NO_UNDERSCORE_CBLACS', '1')]
+     define_macros += [('GPAW_NO_UNDERSCORE_CSCALAPACK', '1')]
+ 
