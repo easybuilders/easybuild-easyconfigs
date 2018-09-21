@@ -215,6 +215,16 @@ class EasyConfigTest(TestCase):
                     if len(dep_vars) == 1:
                         break
 
+            # filter out Java 'wrapper'
+            # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
+            elif dep == 'Java' and len(dep_vars) == 2:
+                key1, key2 = sorted(dep_vars.keys())
+                ver1, ver2 = [k.split(';')[0] for k in [key1, key2]]
+                if ver1.startswith(ver2):
+                    dep_vars.pop(key2)
+                elif ver2.startswith(ver1):
+                    dep_vars.pop(key1)
+
             # filter out variants that are specific to a particular version of CUDA
             cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
             if len(dep_vars) > len(cuda_dep_vars):
