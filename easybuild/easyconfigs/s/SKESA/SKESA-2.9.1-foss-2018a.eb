@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'SKESA'
+version = '2.9.1'
+
+homepage = 'https://github.com/ncbi/ngs-tools/tree/master/tools/skesa'
+description = "SKESA is a de-novo sequence read assembler for cultured single isolate genomes based on DeBruijn graphs."
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://github.com/ncbi/ngs-tools/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['SKESA-%(version)s_fix-include.patch']
+checksums = [
+    '632ba990bea0246e52da8464139e159a0f46803ee6f6bc318b765e9a5293f651',  # 2.9.1.tar.gz
+    '7817c1de31c0651070974ec4b20eea69f4686954acd3255586f311b39deaa64e',  # SKESA-2.9.1_fix-include.patch
+]
+
+builddependencies = [
+    ('CMake', '3.10.2'),
+    ('ant', '1.10.1', '-Java-%(javaver)s', True),
+]
+dependencies = [
+    ('Java', '1.8.0_162', '', True),
+    ('NGS', '2.9.1', '-Java-%(javaver)s'),
+    ('ncbi-vdb', '2.9.1-1'),
+    ('Boost', '1.66.0'),
+]
+
+start_dir = 'tools/skesa'
+
+# Makefile.config must exist, but OK if it is empty
+prebuildopts = "touch %(builddir)s/ngs-tools-%(version)s/build/Makefile.config && "
+
+buildopts = 'skesa CC="$CXX" CFLAGS="$CXXFLAGS" '
+buildopts += "NCBI_LIBPATH=$EBROOTNCBIMINVDB/lib64 NGS_LIBPATH=$EBROOTNGS/lib64 BOOST_LIBPATH=$EBROOTBOOST/lib"
+
+files_to_copy = [(['skesa'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/skesa'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
