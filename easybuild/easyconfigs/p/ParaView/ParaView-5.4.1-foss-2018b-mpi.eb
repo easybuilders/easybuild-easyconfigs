@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '5.4.1'
+versionsuffix = '-mpi'
+
+homepage = "http://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['http://www.paraview.org/paraview-downloads/%s' % download_suffix]
+sources = ["ParaView-v%(version)s.tar.gz"]
+checksums = ['390d0f5dc66bf432e202a39b1f34193af4bf8aad2355338fa5e2778ea07a80e4']
+
+dependencies = [
+    ('X11', '20180604'),
+    ('Mesa', '18.1.1'),
+    ('libGLU', '9.0.0'),
+    ('Qt5', '5.10.1'),
+    ('zlib', '1.2.11'),
+    ('HDF5', '1.10.2'),
+    ('Python', '2.7.15'),
+]
+
+builddependencies = [('CMake', '3.11.4')]
+
+separate_build_dir = True
+
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DVTK_OPENGL_HAS_OSMESA=ON -DPARAVIEW_USE_MPI=ON '
+configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include -DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s ' % SHLIB_EXT
+configopts += '-DOSMESA_INCLUDE_DIR=$EBROOTMESA/include -DOSMESA_LIBRARY=$EBROOTMESA/lib/libOSMesa.%s ' % SHLIB_EXT
+configopts += '-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s ' % SHLIB_EXT
+configopts += '-DVTK_USE_SYSTEM_HDF5=ON -DPARAVIEW_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON '
+# if you want to build server only Paraview, uncomment the following line:
+# configopts += '-DVTK_USE_X=OFF '
+
+# Without internet connection turn off testing (uncomment the following line)
+configopts += '-DBUILD_TESTING=OFF '
+# Or consult https://gitlab.kitware.com/vtk/vtk/blob/master/Documentation/dev/git/data.md
+# and download ExternalData to $EASYBUILD_SOURCEPATH and adjust -DExternalData_OBJECT_STORES accordingly
+# Without internet connection, comment the following two lines (configopts and prebuildopts)
+configopts += '-DExternalData_OBJECT_STORES=%(builddir)s/ExternalData '
+
+configopts += ' -DPARAVIEW_QT_VERSION=5 -DQT_QMAKE_EXECUTABLE=$EBROOTQT5/bin/qmake '
+# The ParaView server can be cranky, test downloads are quite often failing, especially in the case
+# of parallel downloads. Using ; insted of && gives a second chance to download the test files, if the
+# first serial attempt would fail.
+prebuildopts = 'make VTKData ;'
+
+moduleclass = 'vis'

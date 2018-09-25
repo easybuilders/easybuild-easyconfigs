@@ -49,16 +49,17 @@ from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
-from easybuild.framework.easyconfig.tools import dep_graph, get_paths_for, process_easyconfig
+from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import build_option
-from easybuild.tools.filetools import write_file
+from easybuild.tools.filetools import change_dir, write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
+from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
 
 
@@ -188,6 +189,14 @@ class EasyConfigTest(TestCase):
                 if len(empty_vsuff_vars) == 1:
                     dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
+            # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
+            elif dep == 'HTSlib' and len(dep_vars) > 1:
+                for key, ecs in dep_vars.items():
+                    # filter out HTSlib variants that are only used as dependency for BCFtools with same version
+                    htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
+                        dep_vars.pop(key)
+
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             elif dep in ['FFTW', 'imkl']:
                 serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
@@ -206,11 +215,32 @@ class EasyConfigTest(TestCase):
                     if len(dep_vars) == 1:
                         break
 
+            # filter out Java 'wrapper'
+            # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
+            elif dep == 'Java' and len(dep_vars) == 2:
+                key1, key2 = sorted(dep_vars.keys())
+                ver1, ver2 = [k.split(';')[0] for k in [key1, key2]]
+                if ver1.startswith(ver2):
+                    dep_vars.pop(key2)
+                elif ver2.startswith(ver1):
+                    dep_vars.pop(key1)
+
             # filter out variants that are specific to a particular version of CUDA
             cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
             if len(dep_vars) > len(cuda_dep_vars):
                 for key in dep_vars.keys():
                     if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
+                        dep_vars.pop(key)
+
+            # some software packages require an old version of a particular dependency
+            old_dep_versions = {
+                # libxc (CP2K & ABINIT require libxc 3.x)
+                'libxc': r'3\.',
+            }
+            if dep in old_dep_versions and len(dep_vars) > 1:
+                for key in dep_vars.keys():
+                    # filter out known old dependency versions
+                    if re.search('^version: %s' % old_dep_versions[dep], key):
                         dep_vars.pop(key)
 
             # only single variant is always OK
@@ -301,6 +331,58 @@ class EasyConfigTest(TestCase):
                     # only exception: TEMPLATE.eb
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+
+    def check_sha256_checksums(self, changed_ecs):
+        """Make sure changed easyconfigs have SHA256 checksums in place."""
+
+        # list of software for which checksums can not be required,
+        # e.g. because 'source' files need to be constructed manually
+        whitelist = ['Kent_tools-*', 'MATLAB-*']
+
+        # the check_sha256_checksums function (again) creates an EasyBlock instance
+        # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
+        # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
+        # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
+        for ec in changed_ecs:
+            if ec['easyblock'] == 'Bundle':
+                ec['sources'] = []
+
+        checksum_issues = check_sha256_checksums(changed_ecs, whitelist=whitelist)
+        self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
+
+    def test_changed_files_pull_request(self):
+        """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
+
+        # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
+        if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
+
+            # target branch should be develop
+            if os.environ.get('TRAVIS_BRANCH') == 'develop':
+
+                if not self.parsed_easyconfigs:
+                    self.process_all_easyconfigs()
+
+                # relocate to top-level directory of repository to run 'git diff' command
+                top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
+                cwd = change_dir(top_dir)
+
+                # get list of changed easyconfigs
+                out, ec = run_cmd("git diff --name-only --diff-filter=AM develop...HEAD", simple=False)
+                changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
+                print("List of changed easyconfig files in this PR: %s" % changed_ecs_filenames)
+
+                change_dir(cwd)
+
+                # grab parsed easyconfigs for changed easyconfig files
+                changed_ecs = []
+                for ec_fn in changed_ecs_filenames:
+                    for ec in self.parsed_easyconfigs:
+                        if ec['spec'].endswith(ec_fn):
+                            changed_ecs.append(ec['ec'])
+                            break
+
+                # run checks on changed easyconfigs
+                self.check_sha256_checksums(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
