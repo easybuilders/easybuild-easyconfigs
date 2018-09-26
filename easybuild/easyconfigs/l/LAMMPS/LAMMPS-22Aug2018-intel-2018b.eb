@@ -38,7 +38,8 @@ dependencies = [
     ('gzip', '1.9'),
     ('HDF5', '1.10.2'),
     ('tbb', '2018_U5'),
-    ('CUDA', '10.0.130', '', True)
+    # Uncomment this and set appropriate gpu_opts to configure for NVIDIA GPU
+    # ('CUDA', '10.0.130', '', True)
 ]
 
 srcdir = './cmake'
@@ -46,7 +47,7 @@ srcdir = './cmake'
 # Kokkos was failing at install time (openmp only, GPU requires you use a wrapper for C++ compiler)
 # PKG_KOKKOS
 
-parallelisation_packages = ['BUILD_MPI', 'BUILD_OMP', 'PKG_OPT', 'PKG_USER-OMP', 'PKG_USER-INTEL', 'PKG_GPU']
+parallelisation_packages = ['BUILD_MPI', 'BUILD_OMP', 'PKG_OPT', 'PKG_USER-OMP', 'PKG_USER-INTEL']
 
 configuration_options = ['BUILD_LIB', 'BUILD_EXE', 'BUILD_SHARED_LIBS']
 
@@ -71,7 +72,12 @@ packages_opts = ' '.join("-D%s=on" % item for item in parallelisation_packages +
                          + user_packages + configuration_options)
 
 kspace_opts = ['FFT' + '=MKL', 'FFT_PACK' + '=array']
-gpu_opts = ['GPU_API' + '=cuda', 'GPU_ARCH' + '=sm_30', 'CUDPP_OPT' + '=on']
+
+# Need to configure the GPU for your specific hardware,
+# see https://lammps.sandia.gov/doc/Build_extras.html#gpu-package
+#gpu_opts = ['PKG_GPU' + '=on', 'GPU_API' + '=cuda', 'GPU_ARCH' + '=sm_37', 'CUDPP_OPT' + '=on']
+gpu_opts = []
+
 specific_opts = ' '.join("-D%s" % item for item in kspace_opts + gpu_opts)
 
 optional_deps = ['WITH_JPEG', 'WITH_PNG', 'WITH_GZIP']
@@ -79,6 +85,8 @@ optional_dep_opts = ' '.join("-D%s=yes" % item for item in optional_deps)
 
 configopts = packages_opts + ' ' + optional_dep_opts + ' ' + specific_opts
 
+# Need to configure the Kokkos for your specific hardware,
+# see https://lammps.sandia.gov/doc/Build_extras.html#kokkos-package
 # kokkos options
 # configopts += ' -DKOKKOS_ENABLE_OPENMP=yes -DKOKKOS_ARCH="HSW"'
 # configopts += ' -DKOKKOS_ENABLE_OPENMP=yes -DKOKKOS_ENABLE_CUDA=yes -DKOKKOS_ARCH="HSW;Kepler37"'
