@@ -1,0 +1,101 @@
+##
+# Contributor: 
+# Ali Kerrache, April 2017.
+# Maxime Boissonneault, June 2017
+##
+
+# Lammps: Stable Version - 22Aug2018
+
+name = 'LAMMPS'
+
+# see http://lammps.sandia.gov/bug.html 
+# for overview of stable versions and matching date/SVN rev/Git tag
+
+version = '20180822'
+versionsuffix = '-user-intel'
+modaltsoftname = 'lammps-user-intel'
+
+homepage = 'http://lammps.sandia.gov/'
+description = """ LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator) is 
+ a classical molecular dynamics simulation. LAMMPS has potentials for solid-state materials 
+ (metals, semiconductors) and soft matter (biomolecules, polymers) and coarse-grained or 
+ mesoscopic systems. It can be used to model atoms or, more generically, as a parallel 
+ particle simulator at the atomic, meso, or continuum scale. It can be coupled to various 
+ programs. The following packages are not included within this version:
+ -GPU, -KOKKOS, -MANYBODY, -MSCG, -QEQ, -USER-ATC, -USER-QUIP"""
+
+toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
+ 
+source_urls = [ 'https://github.com/lammps/lammps/archive/' ]
+sources = [ 'stable_22Aug2018.tar.gz' ]
+
+dependencies = [
+        ('Python', '2.7.14'),
+        ('HDF5','1.10.3'),
+        ('Eigen', '3.3.2'),
+        ('Voro++', '0.4.6'),
+        ('VTK', '6.3.0'),
+        ('KIM', '1.9.7'),
+        #('Quip', '1.1.8'),
+        #('FFTW', '3.3.6', '-mpi'),
+        ('FFmpeg', '3.1.7', "-nix"),
+        ('netCDF', '4.6.1'),
+        ('QuantumESPRESSO', '6.3'),
+        ('tbb', '2018_U5'),
+]
+
+patches = [
+    'LAMMPS-20180822-ebrootpath.patch',
+    'vmd-1.9.3-plugins.patch',
+]
+
+# Will go to the lib/PKGLIB folder and use "make -f <makefile>" 
+# where <makefile> is the most appropriate makefile (in order, 
+# mpicc, mpic++, cc, cxx, f90, gcc, g++, gfortran, 
+# lammps) for each PKGLIB in packaged_libraries:
+
+packaged_libraries = [ 
+	('qmmm', 'Makefile.ifort'), 
+	('poems', 'Makefile.mpi'),      # Works also with: Makefile.icc 
+	('reax', 'Makefile.mpi'),       # Works also with: Makefile.ifort
+ 	('atc', 'Makefile.icc'),  
+	('meam', 'Makefile.ifort'), 
+	('awpmd', 'Makefile.mpicc'), 
+	('colvars', 'Makefile.mpi'),
+	('h5md', 'Makefile.h5cc'),
+]
+
+# Will run "make yes-PKG" for each PKG in this list:
+
+packages_yes = [ 
+         'ASPHERE', 'BODY', 'CLASS2', 'COLLOID', 'COMPRESS', 'CORESHELL',
+         'DIPOLE', 'GRANULAR', 'KIM', 'KSPACE', 'MC', 'MEAM', 'MISC', 
+         'MOLECULE', 'MPIIO', 'OPT', 'POEMS', 'PERI', 'PYTHON', 'REAX', 
+         'REPLICA', 'RIGID', 'SHOCK', 'SNAP', 'SRD', 'USER-AWPMD', 
+         'USER-CGDNA', 'USER-CGSDK', 'USER-COLVARS', 'USER-DIFFRACTION', 
+         'USER-DPD', 'USER-DRUDE', 'USER-EFF', 'USER-FEP', 'USER-H5MD', 
+         'USER-INTEL', 'USER-LB', 'USER-MANIFOLD', 'USER-MOLFILE', 
+         'USER-NETCDF', 'USER-MEAMC', 'USER-MGPT', 'USER-MISC', 
+         'USER-OMP','USER-PHONON', 'USER-QMMM', 'USER-QTB', 'USER-REAXC', 
+         'USER-SMD', 'USER-SMTBQ', 'USER-SPH', 'USER-TALLY', 'USER-VTK', 
+         'VORONOI', 
+] 
+
+# Will run "make no-PKG" for each PKG in this list:
+
+packages_no = [ 
+         'GPU', 'KOKKOS', 'MANYBODY', 'MSCG', 'QEQ', 'USER-ATC', 
+         'USER-QUIP',
+]
+
+build_type = "intel_cpu_openmpi"
+
+build_shared_libs = False
+build_static_libs = False
+ 
+moduleclass = 'chem'
+modluafooter = """
+family("lammps")
+"""
+
+# End of EasyBuild file.
