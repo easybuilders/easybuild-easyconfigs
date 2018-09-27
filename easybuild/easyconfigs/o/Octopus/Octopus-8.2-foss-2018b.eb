@@ -40,10 +40,16 @@ configopts += '--with-netcdf-prefix=$EBROOTNETCDFMINFORTRAN '
 configopts += '--with-etsf-io-prefix=$EBROOTETSF_IO '
 configopts += '--with-fftw-prefix=$EBROOTFFTW '
 configopts += '--with-isf-prefix=$EBROOTPSOLVER '
-configopts += 'FCFLAGS="-ffree-line-length-none" '
-configopts += 'FCCPP="/lib/cpp -C -ffreestanding -Dvector=vector" ' # The -Dvector macro is a workaround for a known GCC issue on POWER.
 
-runtest = 'MPIEXEC=`which mpirun` check-short' # Run only the short tests, as the full testsuite can take a lot of time.
+# Add gfortran flag to handle long lines
+configopts += 'FCFLAGS="$FCFLAGS -ffree-line-length-none" '
+
+# Octopus uses cpp to process Fortran files, so we need to set some flags to make sure it works
+# The -Dvector macro is a workaround for a known GCC issue on POWER
+configopts += 'FCCPP="/lib/cpp -C -ffreestanding -Dvector=vector" '
+
+# Run only the short tests, as the full testsuite can take a lot of time.
+runtest = 'MPIEXEC=`which mpirun` check-short'
 
 sanity_check_paths = {
     'files': ['bin/octopus'],
