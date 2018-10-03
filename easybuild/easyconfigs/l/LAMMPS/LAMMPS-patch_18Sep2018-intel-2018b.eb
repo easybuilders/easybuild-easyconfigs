@@ -1,7 +1,7 @@
 easyblock = 'CMakeMake'
 
 name = 'LAMMPS'
-version = '22Aug2018'
+version = 'patch_18Sep2018'
 
 homepage = 'http://lammps.sandia.gov/'
 description = """LAMMPS is a classical molecular dynamics code, and an acronym
@@ -17,11 +17,10 @@ functionality.
 
 
 toolchain = {'name': 'intel', 'version': '2018b'}
-toolchainopts = {'openmp': True, 'usempi': True}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
 
+sources = ['%(version)s.tar.gz']
 source_urls = ['https://github.com/lammps/lammps/archive/']
-sources = ['stable_%(version)s.tar.gz']
-checksums = ['78e7b389523d2fd5243a6f2daab72667907980d31bee22e44b64122c3afc9f04']
 
 builddependencies = [
     ('CMake', '3.12.1'),
@@ -38,15 +37,25 @@ dependencies = [
     ('gzip', '1.9'),
     ('HDF5', '1.10.2'),
     ('tbb', '2018_U5'),
-    # Uncomment this and set appropriate gpu_opts to configure for NVIDIA GPU
-    # ('CUDA', '10.0.130', '', True)
+    ('CUDA', '10.0.130', '', True)
 ]
 
-# Kokkos requires an out-of-source build
 separate_build_dir = True
-srcdir = '../lammps*/cmake'
 
-parallelisation_packages = ['BUILD_MPI', 'BUILD_OMP', 'PKG_OPT', 'PKG_USER-OMP', 'PKG_USER-INTEL', 'PKG_KOKKOS']
+# We need to give a short path to the sources otherwise we trigger an "Argument list too long" error from Kokkos
+# We know things are built in a name/version/software subdir, so lets make a link a few dirs up
+short_dir = '%(builddir)s/../../../'
+short_sources = short_dir + '%(namelower)s-%(version)s'
+# CMakeLists.txt is in the cmake subdir
+srcdir = short_sources + '/cmake'
+
+# Make the symlink to solve our long path problem
+preconfigopts = "ln -sf %(builddir)s/%(namelower)s-%(version)s " + "%s &&" % short_sources 
+
+# Initialise configopts so we can comment out at will below
+configopts = ""
+
+parallelisation_packages = ['BUILD_MPI', 'BUILD_OMP', 'PKG_KOKKOS', 'PKG_OPT', 'PKG_USER-OMP', 'PKG_USER-INTEL', 'PKG_GPU']
 
 configuration_options = ['BUILD_LIB', 'BUILD_EXE', 'BUILD_SHARED_LIBS']
 
@@ -67,28 +76,31 @@ user_packages = ['PKG_USER-ATC', 'PKG_USER-AWPMD', 'PKG_USER-CGDNA', 'PKG_USER-C
                  'PKG_USER-PHONON', 'PKG_USER-QTB', 'PKG_USER-REAXC',
                  'PKG_USER-SMTBQ', 'PKG_USER-SPH', 'PKG_USER-TALLY', 'PKG_USER-UEF']
 
-packages_opts = ' '.join("-D%s=on" % item for item in parallelisation_packages + general_packages + other_packages +
-                         user_packages + configuration_options)
+packages_opts = ' '.join("-D%s=on" % item for item in parallelisation_packages + general_packages + other_packages
+                         + user_packages + configuration_options)
 
 kspace_opts = ['FFT' + '=MKL', 'FFT_PACK' + '=array']
 
-# Need to configure the GPU for your specific hardware,
-# see https://lammps.sandia.gov/doc/Build_extras.html#gpu-package
-# gpu_opts = ['PKG_GPU' + '=on', 'GPU_API' + '=cuda', 'GPU_ARCH' + '=sm_37', 'CUDPP_OPT' + '=on']
-gpu_opts = []
-
-specific_opts = ' '.join("-D%s" % item for item in kspace_opts + gpu_opts)
+gpu_opts = ['GPU_API' + '=cuda', 'GPU_ARCH' + '=sm_37', 'CUDPP_OPT' + '=on']
 
 optional_deps = ['WITH_JPEG', 'WITH_PNG', 'WITH_GZIP']
-optional_dep_opts = ' '.join("-D%s=yes" % item for item in optional_deps)
 
-configopts = packages_opts + ' ' + optional_dep_opts + ' ' + specific_opts
+specific_opts = ' '.join("-D%s" % item for item in kspace_opts + gpu_opts)
+other_opts = ' '.join("-D%s=yes" % item for item in optional_deps)
 
-# Need to configure the Kokkos for your specific hardware,
-# see https://lammps.sandia.gov/doc/Build_extras.html#kokkos-package
-# Haswell used here
-configopts += ' -DKOKKOS_ENABLE_OPENMP=yes -DKOKKOS_ARCH="HSW"'
-# configopts += ' -DKOKKOS_ENABLE_OPENMP=yes -DKOKKOS_ENABLE_CUDA=yes -DKOKKOS_ARCH="HSW;Kepler37"'
+configopts += packages_opts + ' ' + other_opts + ' ' + specific_opts 
+
+# Kokkos options:
+# Need to use the Kokkos wrapper if we are using CUDA
+configopts += ' -DCMAKE_CXX_COMPILER="%(builddir)s/%(namelower)s-%(version)s/lib/kokkos/bin/nvcc_wrapper" '
+# and tell the wrapper which c++ compiler to use
+configopts += ' -DCMAKE_CXX_FLAGS="-ccbin $CXX $CXXFLAGS" '
+# Set the architecture specifics
+configopts += ' -DKOKKOS_ENABLE_OPENMP=yes -DKOKKOS_ENABLE_CUDA=yes -DKOKKOS_ARCH="HSW;Kepler37" '
+# configopts += ' -DKOKKOS_ENABLE_OPENMP=yes -DKOKKOS_ARCH="HSW"'
+
+# remove the symlink to tidy up
+postinstallcmds = ["rm %s" % short_sources]
 
 pythonpath = 'lib/python%(pyshortver)s/site-packages'
 modextrapaths = {'PYTHONPATH': pythonpath}
@@ -98,4 +110,5 @@ sanity_check_paths = {
     'dirs': [pythonpath],
 }
 
-moduleclass = 'lib'
+moduleclass = 'chem'
+
