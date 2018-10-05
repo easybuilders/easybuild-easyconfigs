@@ -1,0 +1,51 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'OpenPhase'
+version = '0.9.1'
+
+homepage = 'http://www.openphase.de/'
+
+description = """
+ OpenPhase is the open source software project targeted at the phase field
+ simulations of complex scientific problems involving microstructure formation
+ in systems undergoing first order phase transformation.
+"""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+
+# http://www.openphase.de/upload/content/OpenPhase.V0.9.1.zip
+source_urls = ['http://www.openphase.de/upload/content/']
+sources = ['%(name)s.V%(version)s.zip']
+checksums = ['9bbfb2ddcb405246325f9171e8fe21375488ba560c40b4a338395e406d88c3f6']
+
+builddependencies = [
+    ('Doxygen', '1.8.14'),
+]
+
+skipsteps = ['configure']
+
+start_dir = '..'
+buildininstalldir = True
+
+prebuildopts = """
+    mv -v %(name)s.V%(version)s/* .
+    rmdir -v %(name)s.V%(version)s
+    echo -e "\ninstall:\n" >> Makefile  # dummy install so we can use postinstallcmds
+"""
+
+buildopts = 'all docs SETTINGS="parallel"'
+
+postinstallcmds = [
+    "make all examples benchmarks",
+]
+
+sanity_check_paths = {
+    'files': ['benchmarks/SingleGrain/SingleGrain',
+              'examples/SinterSolidState/SinterSolidState',
+              'obj/Settings.o', 'objmpi/Settings.o'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
