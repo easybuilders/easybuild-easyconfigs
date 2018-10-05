@@ -1,0 +1,41 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+name = 'Amber'
+version = '16'
+ambertools_ver = '16'
+# Patch levels from http://ambermd.org/ATPatches.php and http://ambermd.org/AmberPatches.php
+patchlevels = (24, 15)  # (AmberTools, Amber)
+versionsuffix = '-AmberTools-%s-patchlevel-%s-%s-CUDA' % (ambertools_ver, patchlevels[0], patchlevels[1])
+
+homepage = 'http://ambermd.org/AmberMD.php'
+description = """Amber (originally Assisted Model Building with Energy
+ Refinement) is software for performing molecular dynamics and structure
+ prediction."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'usempi': True}
+
+sources = [
+    'Amber%(version)s.tar.bz2',
+    'AmberTools%s.tar.bz2' % ambertools_ver,
+]
+
+checksums = [
+    '3b7ef281fd3c46282a51b6a6deed9ed174a1f6d468002649d84bfc8a2577ae5d',  # Amber16.tar.bz2
+    '7b876afe566e9dd7eb6a5aa952a955649044360f15c1f5d4d91ba7f41f3105fa',  # AmberTools16.tar.bz2
+]
+
+patches = [
+    'Amber-%(version)s_fix-hardcoding.patch',
+    'Amber-%(version)s_test_cuda.patch',
+]
+
+dependencies = [
+    ('CUDA', '8.0.61', '', True),  # Amber 16 only supports CUDA up to version 8
+    ('netCDF', '4.4.1'),
+    ('netCDF-Fortran', '4.4.4'),
+    ('Python', '2.7.12'),
+    ('zlib', '1.2.8'),
+]
+
+moduleclass = 'chem'

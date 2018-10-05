@@ -1,6 +1,9 @@
-diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/configure2
---- 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2	2016-10-06 14:27:01.000000000 +0100
-+++ 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/configure2	2016-10-06 14:52:11.607328298 +0100
+* support NetCDF and NetCDF-Fortran being in different directories
+* configurable MPI compiler
+* fix MKL library path
+author: Paul Jähne
+--- a/AmberTools/src/configure2 2018-07-25 13:24:46.000000000 +0200
++++ b/AmberTools/src/configure2 2018-07-27 07:53:14.000000000 +0200
 @@ -513,6 +513,7 @@
  mpi='no'
  mtkpp='install_mtkpp'
@@ -17,16 +20,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          --with-pnetcdf) shift; pnetcdf_dir="$1" ;;
          --python-install) shift; python_install="$1";;
          -netcdfstatic)  netcdfstatic='yes' ;;
-@@ -778,7 +780,7 @@
- flibsf="-larpack -llapack -lblas"
- # only used when the user requests a static build or when a static build is
- # automatically set, eg, windows:
--staticflag='-static'
-+staticflag='-static-intel'
- omp_flag=
- mpi_flag=
- fp_flags=
-@@ -1280,7 +1282,7 @@
+@@ -1281,7 +1283,7 @@
          nvcc="$nvcc -use_fast_math -O3 "
        fi
        if [ "$mpi" = 'yes' ]; then
@@ -35,7 +29,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
          pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
          pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
-@@ -1598,7 +1600,7 @@
+@@ -1599,7 +1601,7 @@
        fi
  
        if [ "$mpi" = 'yes' ]; then
@@ -44,7 +38,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
          pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
          pmemd_coptflags="$pmemd_coptflags -DMPICH_IGNORE_CXX_SEEK"
-@@ -1924,7 +1926,7 @@
+@@ -1925,7 +1927,7 @@
          nvcc="$nvcc -use_fast_math -O3 "
        fi
        if [ "$mpi" = 'yes' ]; then
@@ -53,7 +47,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
          pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
          pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
-@@ -2059,7 +2061,7 @@
+@@ -2060,7 +2062,7 @@
          nvcc="$nvcc -use_fast_math -O3 "
        fi
        if [ "$mpi" = 'yes' ]; then
@@ -62,7 +56,7 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
          pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
          pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
          pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
-@@ -2131,17 +2133,17 @@
+@@ -2132,17 +2134,17 @@
      blas=skip
      flibs="-larpack "
      flibsf="-larpack "
@@ -84,25 +78,43 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
              mkl_processor="intel64"
              mkl_procstring="intel64"
          fi
-@@ -2567,11 +2569,16 @@
+@@ -2568,15 +2570,30 @@
    else
      # A NetCDF directory was specified. Check that library exists and compiles
      printf "\tUsing external NetCDF in '$netcdf_dir'\n"
+-    netcdfinc="-I"$netcdf_dir"/include"
 +    # Support separate NetCDF-Fortran installation with --with-netcdf-fort
 +    if [ ! -e "$netcdf_fort_dir" ]; then
 +      netcdf_fort_dir="$netcdf_dir"
 +    fi
 +    printf "\tUsing external NetCDF-Fortran in '$netcdf_fort_dir'\n"
-     netcdfinc="-I"$netcdf_dir"/include"
++    netcdfinc="-I${netcdf_dir}/include"
++    if [ "${netcdf_fort_dir}" != "${netcdf_dir}" ]; then
++        netcdfinc="-I${netcdf_fort_dir}/include ${netcdfinc}"
++    fi
      if [ "${netcdf_dir}" != '/usr' -a "$netcdf_dir" != '/usr/' ]; then
-         netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
+-        netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
++        netcdf_flag="-L${netcdf_dir}/lib ${netcdf_flag}"
++    fi
++    if [ "${netcdf_fort_dir}" != "${netcdf_dir}" ]; then
++        netcdf_flag="-L${netcdf_fort_dir}/lib ${netcdf_flag}"
      fi
 -    netcdf=$netcdf_dir"/include/netcdf.mod"
-+    netcdf=$netcdf_fort_dir"/include/netcdf.mod"
++    netcdf="${netcdf_fort_dir}/include/netcdf.mod"
      if [ "$netcdfstatic" = 'no' ] ; then
        if [ "${netcdf_dir}" != '/usr' -a "${netcdf_dir}" != '/usr/' ]; then
-           netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
-@@ -2587,7 +2594,7 @@
+-          netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
+-          netcdfflagf="-L${netcdf_dir}/lib -lnetcdff -lnetcdf"
++          netcdf_libdirs="-L${netcdf_dir}/lib"
++          if [ "${netcdf_fort_dir}" != "${netcdf_dir}" ]; then
++              netcdf_libdirs="-L${netcdf_fort_dir}/lib ${netcdf_libdirs}"
++          fi
++          netcdfflagc="${netcdf_libdirs} -lnetcdf"
++          netcdfflagf="${netcdf_libdirs} -lnetcdff -lnetcdf"
+       else
+           netcdfflagc="-lnetcdf"
+           netcdfflagf="-lnetcdff -lnetcdf"
+@@ -2588,7 +2605,7 @@
          echo "Error: '$netcdfflagc' not found."
          exit 1
        fi
@@ -111,7 +123,3 @@ diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-io
        if [ ! -e "$netcdfflagf" ]; then
          echo "Error: '$netcdfflagf' not found."
          exit 1
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src: configure2.orig
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src: configure2.rej
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/cpptraj: configure.orig
-Only in 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/cpptraj: configure.rej
