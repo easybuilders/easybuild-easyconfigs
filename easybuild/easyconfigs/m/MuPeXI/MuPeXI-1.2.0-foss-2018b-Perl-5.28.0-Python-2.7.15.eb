@@ -1,0 +1,43 @@
+easyblock = 'Tarball'
+
+name = 'MuPeXI'
+version = '1.2.0'
+versionsuffix = '-Perl-%(perlver)s-Python-%(pyver)s'
+
+homepage = 'https://github.com/ambj/MuPeXI'
+description = """ MuPeXI: Mutant Peptide eXtractor and Informer. Given a list of somatic mutations (VCF file) as input,
+ MuPeXI returns a table containing all mutated peptides (neo-peptides) of user-defined lengths,
+ along with several pieces of information relevant for identifying
+ which of these neo-peptides are likely to serve as neo-epitopes."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/ambj/MuPeXI/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['d9bb0a4b4435b369ff8630fe4e7ba0ee8cef66f9b0815d3b76509cfbf2e947b5']
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Perl', '5.28.0'),
+    ('netMHCpan', '4.0a', '', True),
+    ('VEP', '94.0', '-Perl-%(perlver)s'),
+    ('Biopython', '1.72', '-Python-%(pyver)s'),
+    ('psutil', '5.4.7', '-Python-%(pyver)s'),
+]
+
+postinstallcmds = [
+    'sed -i -e "s|^MHC =.*|MHC = $EBROOTNETMHCPAN/netMHCpan|" %(installdir)s/config.ini',
+    'sed -i -e "s|^VEP =.*|VEP = $EBROOTVEP/vep|" %(installdir)s/config.ini',
+    'sed -i -e "s|^PM =.*|PM = %(installdir)s/bin/pepmatch_db_x86_64|" %(installdir)s/config.ini',
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ['config.ini', 'MuPeXI.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = [('MuPeXI.py -h')]
+
+moduleclass = 'bio'
