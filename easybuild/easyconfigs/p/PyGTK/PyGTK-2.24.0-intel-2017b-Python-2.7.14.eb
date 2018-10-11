@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'PyGTK'
+version = '2.24.0'
+
+homepage = 'http://www.pygtk.org/'
+description = """PyGTK lets you to easily create programs with a graphical user interface
+ using the Python programming language."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+source_urls = [PYPI_SOURCE]
+sources = [SOURCELOWER_TAR_BZ2]
+
+pyver = '2.7.14'
+pyshortver = '.'.join(pyver.split('.')[:2])
+versionsuffix = '-Python-%s' % pyver
+
+dependencies = [
+    ('Python', pyver),
+    ('GLib', '2.53.5'),
+    ('PyGObject', '2.28.6', versionsuffix),
+    ('GTK+', '2.24.32'),
+    ('ATK', '2.27.1'),
+    ('PyCairo', '1.16.2', versionsuffix),
+    ('libglade', '2.6.4'),
+]
+
+postinstallcmds = [
+    "sed -i s#'codegendir=${datadir}'#codegendir=$EBROOTPYGOBJECT/share# %(installdir)s/lib/pkgconfig/pygtk-2.0.pc",
+    "sed -i s#'exec_prefix=${prefix}'#exec_prefix=$EBROOTPYGOBJECT# %(installdir)s/bin/pygtk-codegen-2.0",
+]
+
+modextrapaths = {
+    'PYTHONPATH': [
+        'lib/python%s/site-packages' % pyshortver,
+        'lib64/python%s/site-packages' % pyshortver,
+        'lib/python%s/site-packages/gtk-%%(version_major)s.0' % pyshortver,
+        'lib64/python%s/site-packages/gtk-%%(version_major)s.0' % pyshortver,
+    ],
+}
+
+sanity_check_paths = {
+    'files': ['lib/pkgconfig/pygtk-%(version_major)s.0.pc'],
+    'dirs': ['lib/pygtk'],
+}
+
+sanity_check_commands = [
+    ('python', "-c 'import gtk'"),
+    ('python', "-c 'import gtk.glade'"),
+]
+
+moduleclass = 'vis'
