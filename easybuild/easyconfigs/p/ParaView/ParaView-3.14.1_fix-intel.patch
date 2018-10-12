@@ -1,0 +1,51 @@
+fix for compilation errors like: 'error: no operator "<<" matches these operands'
+
+author: Kenneth Hoste (HPC-UGent)
+
+--- ParaView-3.14.1-Source/Utilities/Xdmf2/libsrc/XdmfValuesBinary.cxx.orig	2018-10-12 16:34:59.395538197 +0200
++++ ParaView-3.14.1-Source/Utilities/Xdmf2/libsrc/XdmfValuesBinary.cxx	2018-10-12 16:35:12.135606818 +0200
+@@ -24,7 +24,7 @@
+ //#include "XdmfHDF.h"
+ #include "XdmfDOM.h"
+ 
+-
++#include <string>
+ 
+ #include <exception>
+ #include <cassert>
+--- ParaView-3.14.1-Source/VTK/Common/vtkOStreamWrapper.cxx.orig	2018-10-12 16:46:37.919224588 +0200
++++ ParaView-3.14.1-Source/VTK/Common/vtkOStreamWrapper.cxx	2018-10-12 16:46:55.889320513 +0200
+@@ -14,6 +14,8 @@
+ =========================================================================*/
+ #include "vtkSystemIncludes.h" // Cannot include vtkOStreamWrapper.h directly.
+ 
++#include <string>
++
+ #include "vtkIOStream.h"
+ #include "vtkIndent.h"
+ #include "vtkLargeInteger.h"
+@@ -57,7 +59,12 @@
+ VTKOSTREAM_OPERATOR(const vtkLargeInteger&);
+ VTKOSTREAM_OPERATOR(const vtkSmartPointerBase&);
+ VTKOSTREAM_OPERATOR(const vtkStdString&);
+-VTKOSTREAM_OPERATOR(ostream&);
++//VTKOSTREAM_OPERATOR(ostream&);
++// see https://stackoverflow.com/questions/23090220/vtk-visualstudio2013-compile-error
++vtkOStreamWrapper& vtkOStreamWrapper::operator << (ostream& a) {
++    this->ostr << (void *)&a;
++    return *this;
++}
+ VTKOSTREAM_OPERATOR(const char*);
+ VTKOSTREAM_OPERATOR(void*);
+ VTKOSTREAM_OPERATOR(char);
+--- ParaView-3.14.1-Source/VTK/Rendering/vtkFreeTypeUtilities.cxx.orig	2018-10-12 20:34:48.352560571 +0200
++++ ParaView-3.14.1-Source/VTK/Rendering/vtkFreeTypeUtilities.cxx	2018-10-12 20:35:00.742626788 +0200
+@@ -340,7 +340,7 @@
+   // Map the ID to a text property
+ 
+   vtkTextProperty *tprop = vtkTextProperty::New();
+-  self->MapIdToTextProperty(reinterpret_cast<intptr_t>(face_id), tprop);
++  self->MapIdToTextProperty(reinterpret_cast<int*>(face_id), tprop);
+ 
+   // Fonts, organized by [Family][Bold][Italic]
+ 

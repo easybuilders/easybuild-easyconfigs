@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '3.14.1'
+
+homepage = "http://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True, 'usempi': False, 'cstd': 'c++98'}
+
+download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['http://www.paraview.org/paraview-downloads/%s' % download_suffix]
+sources = ['ParaView-%(version)s-Source.tar.gz']
+patches = ['ParaView-%(version)s_fix-intel.patch']
+checksums = ['84499b2775b2159a6f9afed43e7e48ecde998d094a0afe5e2a97db04e359b6f1']
+
+dependencies = [
+    ('libGLU', '9.0.0'),
+    ('X11', '20180131'),
+    ('Qt', '4.8.7'),
+    ('zlib', '1.2.11'),
+    ('HDF5', '1.8.20'),
+]
+
+builddependencies = [('CMake', '3.0.2')]
+
+separate_build_dir = True
+
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DVTK_OPENGL_HAS_OSMESA=ON '
+configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include -DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.so '
+configopts += '-DOSMESA_INCLUDE_DIR=$EBROOTMESA/include -DOSMESA_LIBRARY=$EBROOTMESA/lib/libOSMesa.so '
+configopts += '-DVTK_USE_SYSTEM_HDF5=ON '
+# Without internet connection turn off testing (uncomment the following line)
+configopts += '-DBUILD_TESTING=OFF '
+# Or consult https://gitlab.kitware.com/vtk/vtk/blob/master/Documentation/dev/git/data.md
+# and download ExternalData to $EASYBUILD_SOURCEPATH and adjust -DExternalData_OBJECT_STORES accordingly
+# Without internet connection, comment the following two lines (configopts and prebuildopts)
+configopts += '-DExternalData_OBJECT_STORES=%(builddir)s/ExternalData '
+# The ParaView server can be cranky, test downloads are quite often failing, especially in the case
+# of parallel downloads. Using ; insted of && gives a second chance to download the test files, if the
+# first serial attempt would fail.
+prebuildopts = 'make VTKData ;'
+
+moduleclass = 'vis'
