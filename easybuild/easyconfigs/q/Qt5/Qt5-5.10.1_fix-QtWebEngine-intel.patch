@@ -1,0 +1,30 @@
+don't disable building of QtWebEngine when Intel compilers are used
+
+author: Kenneth Hoste (HPC-UGent)
+
+--- qt-everywhere-src-5.10.1/qtwebengine/mkspecs/features/platform.prf.orig	2018-10-12 13:34:32.026246699 +0200
++++ qt-everywhere-src-5.10.1/qtwebengine/mkspecs/features/platform.prf	2018-10-12 13:34:11.676384153 +0200
+@@ -14,9 +14,9 @@
+   linux {
+     if(!gcc:!clang)|intel_icc {
+-      skipBuild("Qt WebEngine on Linux requires clang or GCC.")
++      #skipBuild("Qt WebEngine on Linux requires clang or GCC.")
+-      return(false)
++      #return(false)
+     }
+-    gcc:!clang:!isGCCVersionSupported(): return(false)
++    #gcc:!clang:!isGCCVersionSupported(): return(false)
+   } else:win32 {
+     winrt {
+       skipBuild("WinRT is not supported.")
+--- qt-everywhere-src-5.10.1/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/platform/heap/HeapAllocator.h.orig	2018-10-12 13:33:05.176796309 +0200
++++ qt-everywhere-src-5.10.1/qtwebengine/src/3rdparty/chromium/third_party/WebKit/Source/platform/heap/HeapAllocator.h	2018-10-12 13:33:44.096551263 +0200
+@@ -130,7 +130,7 @@
+         size, IsEagerlyFinalizedType<Metadata>::value));
+   }
+ 
+-#if defined(OS_WIN) && defined(COMPILER_MSVC)
++#if (defined(OS_WIN) && defined(COMPILER_MSVC)) || defined(__INTEL_COMPILER)
+   // MSVC eagerly instantiates the unused 'operator delete',
+   // provide a version that asserts and fails at run-time if
+   // used.
