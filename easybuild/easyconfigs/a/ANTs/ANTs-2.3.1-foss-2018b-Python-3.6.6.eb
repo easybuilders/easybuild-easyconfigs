@@ -13,28 +13,25 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/stnava/ANTs/archive/']
 sources = ['v%(version)s.tar.gz']
+patches = ['ANTs-%(version)s_fix-VTK.patch']
 checksums = ['c0680feab0ebb85c8cd6685043126666929b35e1cf387a5cc1d3a2d7169bddd3']
 
 builddependencies = [('CMake', '3.12.1')]
 
-itkshortver = '5.0'
-itkver = itkshortver + 'b01'
 dependencies = [
     ('Python', '3.6.6'),
-    ('ITK', itkver, versionsuffix),
     ('VTK', '8.1.1', versionsuffix),
 ]
 
-configopts = '-DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_ITK=ON '
-configopts += '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF'
-configopts += '-DUSE_VTK=ON -DUSE_SYSTEM_VTK=ON -DITK_DIR=$EBROOTITK/lib/cmake/ITK-%s' % itkshortver
+separate_build_dir = True
+
+configopts = '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
+configopts += '-DUSE_VTK=ON -DUSE_SYSTEM_VTK=ON '
+configopts += '-DSuperBuild_ANTS_USE_GIT_PROTOCOL=OFF'
 
 skipsteps = ['install']
-buildopts = ' && mkdir -p %(installdir)s && cp -r * %(installdir)s/'
-
-parallel = 1
-
-separate_build_dir = True
+buildopts = ' && mkdir -p %(installdir)s && cp -a * %(installdir)s/'
 
 sanity_check_paths = {
     'files': ['bin/ANTS'],
