@@ -10,15 +10,20 @@ ab-initio molecular dynamics."""
 toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
 toolchainopts = {'usempi': True, 'openmp': False}
 
-sources = [SOURCELOWER_TAR_GZ]
+sources = [SOURCE_TAR_GZ]
+
 source_urls = ['http://cpmd.org/download']
 patches = ['cpmd-3.17.1.patch']
+patches += ['cpmd2cube.path']
+patches += ['fourier.patch']
 
-prebuildopts = 'cd CPMD &&' 
-prebuildopts = './mkconfig.sh IFORT-AMD64-MPI > Makefile &&'
-files_to_copy = [(['cpmd.x'], 'bin')]
+
+prebuildopts = 'cd cpmd2cube && ./Configure Linux-PC-IFORT > Makefile && make && '
+prebuildopts += 'cd ../fourier && make && '
+prebuildopts += 'cd .. &&./mkconfig.sh IFORT-AMD64-MPI > Makefile && '
+files_to_copy = [(['cpmd.x', 'out2xyz.pl', 'traj2xyz.pl', 'cpmd2cube/cpmd2cube.x', 'cpmd2cube/cutcube.x', 'cpmd2cube/trimcube.x', 'fourier/fourier.x', 'fourier/trajec2atoms.x'], 'bin')]
 sanity_check_paths = {
-    'files': ['bin/cpmd.x'],
+    'files': ['bin/cpmd.x', 'bin/fourier.x', 'bin/cpmd2cube.x', 'bin/out2xyz.pl'],
     'dirs': []
 }
 group = "soft_cpmd"
