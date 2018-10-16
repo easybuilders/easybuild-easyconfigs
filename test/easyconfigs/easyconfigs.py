@@ -234,8 +234,8 @@ class EasyConfigTest(TestCase):
 
             # some software packages require an old version of a particular dependency
             old_dep_versions = {
-                # libxc (CP2K & ABINIT require libxc 3.x)
-                'libxc': r'3\.',
+                # libxc (CP2K & ABINIT require libxc 2.x or 3.x)
+                'libxc': r'[23]\.',
             }
             if dep in old_dep_versions and len(dep_vars) > 1:
                 for key in dep_vars.keys():
