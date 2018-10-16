@@ -356,8 +356,9 @@ class EasyConfigTest(TestCase):
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
         if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
 
-            # target branch should be develop
-            if os.environ.get('TRAVIS_BRANCH') == 'develop':
+            # target branch should be anything other than 'master';
+            # usually is 'develop', but could also be a release branch like '3.7.x'
+            if os.environ.get('TRAVIS_BRANCH') != 'master':
 
                 if not self.parsed_easyconfigs:
                     self.process_all_easyconfigs()
