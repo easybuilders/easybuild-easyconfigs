@@ -37,9 +37,26 @@ installopts +=      " %(installdir)s/lib/libjulia.so"
 # remove symbolic links to system libraries
 installopts += " && for i in %(installdir)s/lib/julia/*; do if [ -L $i ]; then rm $i; fi; done"
 
+# install arpack, overriding downloaded library...
+postinstallcmds = [
+   "echo 'using Pkg; Pkg.activate(\"globalenv\",shared=true); Pkg.add(\"Arpack\")' > temp.jl",
+   "JULIA_DEPOT_PATH=%(installdir)s %(installdir)s/bin/julia temp.jl",
+   "sed -i 's/^    install/    #install/' %(installdir)s/packages/Arpack/UiiMc/deps/build.jl",
+   "module load arpack-ng/3.5.0 && ln -sf $EBROOTARPACKMINNG/lib/libarpack.so.2.0.0 %(installdir)s/packages/Arpack/*/deps/usr/lib",
+   "echo 'using Pkg; Pkg.activate(\"globalenv\",shared=true); Pkg.build(\"Arpack\")' > temp.jl",
+   "JULIA_DEPOT_PATH=%(installdir)s %(installdir)s/bin/julia temp.jl",
+   "rm temp.jl",
+]
+
 sanity_check_paths = {
     'files': ["bin/julia"],
     'dirs': ["lib"]
 }
+
+modextravars = {
+    "JULIA_LOAD_PATH": "@:@v#.#:@stdlib:%(installdir)s/environments/globalenv",
+}
+
+modluafooter = """setenv("JULIA_DEPOT_PATH", pathJoin(os.getenv('HOME'), ".julia") .. ":%(installdir)s")"""
 
 moduleclass = 'lang'
