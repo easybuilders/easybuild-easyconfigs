@@ -1,0 +1,120 @@
+easyblock = 'CMakeMake'
+
+name = 'opencv_contrib'
+version = '3.4.3'
+
+homepage = 'http://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {'name': 'gmkl', 'version': '2016.4'}
+
+source_urls = [
+    'https://github.com/Itseez/opencv/archive/',
+    'https://github.com/opencv/opencv_3rdparty/blob/ippicv/master_20180518/ippicv',
+    'https://github.com/opencv/',
+]
+sources = [
+    '%(version)s.zip',
+    {'filename': 'ippicv_2017u3_lnx_intel64_general_20180518.tgz?raw=true',
+     'extract_cmd': "cp %s %(builddir)s/ippicv_2017u3_lnx_intel64_general_20180518.tgz"},
+    # Make sure eb downloads the opencv_contrib source instead of twice the OpenCV source
+    {'download_filename': 'opencv_contrib/archive/%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ},
+]
+checksums = [
+    '37c7d8c3b9807902ad11b9181bbde61dcb3898a78a563130494752f46fe8cc5f',  # 3.4.3.zip
+    # ippicv_2017u3_lnx_intel64_general_20170822.tgz
+    '7ff6a1ece3c2a41b0d39ff8e543dbf141615e631e8e6f98dbccde7d4b44eb59f',
+    '6dfb51326f3dfeb659128df952edecd45683626a965aa4a8e1e9c970c40fb636',  # opencv_contrib-3.4.3.tar.gz
+]
+
+patches = ['OpenCV-%(version)s-hal-internal.patch']
+
+builddependencies = [
+    ('CMake', '3.10.2'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('FFmpeg', '3.4.2'),
+    ('libjpeg-turbo', '1.5.3'),
+    ('libpng', '1.6.34'),
+    ('LibTIFF', '4.0.9'),
+    ('JasPer', '1.900.1'),
+    ('Java', '1.8.0_121', '', True),
+    ('ant', '1.10.2', '-Java-%(javaver)s', True),
+    ('GLib', '2.54.3'),
+#    ('GTK+', '2.24.32'),
+]
+
+separate_build_dir = True
+
+preconfigopts = 'export IPPROOT=$EBROOTICC/ipp && '
+
+# The destination directory is "linux-<MD5>" see 3rdparty/ippicv/downloader.cmake
+ippicv_dir = '3rdparty/ippicv/downloads/linux-4e0352ce96473837b1d671ce87f17359/'
+preconfigopts_single = "mkdir -p %s && cp -a ../*.tgz %s && " % (ippicv_dir, ippicv_dir)
+preconfigopts_single = "declare -A ARCH_MAP=( [sse3]=SSE3 [avx]=AVX [avx2]=AVX2 [avx512]=AVX_512SKX ) && "
+
+configopts_single = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts_single += '-DBUILD_PYTHON_SUPPORT=ON '
+configopts_single += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
+configopts_single += '-DZLIB_LIBRARY=$NIXUSER_PROFILE/lib/libz.%s ' % SHLIB_EXT
+configopts_single += '-DZLIB_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts_single += '-DTIFF_LIBRARY=$NIXUSER_PROFILE/lib/libtiff.%s ' % SHLIB_EXT
+configopts_single += '-DTIFF_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts_single += '-DPNG_LIBRARY=$NIXUSER_PROFILE/lib/libpng.%s ' % SHLIB_EXT
+configopts_single += '-DPNG_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts_single += '-DJPEG_LIBRARY=$NIXUSER_PROFILE/lib/libjpeg.%s ' % SHLIB_EXT
+configopts_single += '-DJPEG_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts_single += '-DJASPER_LIBRARY=$EBROOTJASPER/lib/libjasper.a '
+configopts_single += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
+configopts_single += '-DWITH_IPP=ON '
+configopts_single += '-DCMAKE_SKIP_RPATH=ON '
+# If you do not want fat binary, set the BASELINE to the target CPU, and uncomment the CPU-DISPATCH line
+# (some) possible CPU targets are SSE3 SSE4_2 AVX AVX2 AVX_512SKX
+configopts_single += '-DCPU_BASELINE=${ARCH_MAP[$RSNT_ARCH]} '
+configopts_single += '-DCPU_DISPATCH=NONE '
+configopts_single += '-DWITH_CUDA=OFF '
+configopts_single += '-DOPENCV_EXTRA_MODULES_PATH="../%(name)s-%(version)s/modules" '
+configopts_single += '-DOPENCV_SKIP_LAPACK_EXTERN_C=ON '
+
+preconfigopts = [
+       'module load python/2.7 scipy-stack && ' + preconfigopts_single,
+       'module load python/3.5 scipy-stack && ' + preconfigopts_single,
+       'module load python/3.6 scipy-stack && ' + preconfigopts_single,
+]
+configopts = [
+       configopts_single + " -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python2.7/site-packages -DPYTHON2_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON2_INCLUDE_DIR=$EBROOTPYTHON/include/python2.7 -DPYTHON2_LIBRARY=$EBROOTPYTHON/lib/libpython2.7.so",
+       configopts_single + " -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python3.5/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON3_INCLUDE_DIR=$EBROOTPYTHON/include/python3.5m -DPYTHON3_LIBRARY=$EBROOTPYTHON/lib/libpython3.5m.so",
+       configopts_single + " -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python3.6/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON3_INCLUDE_DIR=$EBROOTPYTHON/include/python3.6m -DPYTHON3_LIBRARY=$EBROOTPYTHON/lib/libpython3.6m.so",
+]
+postinstallcmds = [
+       "cp 3rdparty/ippicv/ippicv_lnx/lib/intel64/libippicv.* %(installdir)s/lib",
+       "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python2.7/site-packages --add_path %(installdir)s/lib64",
+       "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.5/site-packages --add_path %(installdir)s/lib64",
+       "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.6/site-packages --add_path %(installdir)s/lib64",
+]
+
+sanity_check_paths = {
+    'files': ['lib64/libopencv_core.%s' % SHLIB_EXT, 'lib/libippicv.a'] +
+             ['lib/python2.7/site-packages/cv2.%s' % SHLIB_EXT] +
+             ['lib/python3.5/site-packages/cv2.cpython-35m-x86_64-linux-gnu.%s' % SHLIB_EXT] +
+             ['lib/python3.6/site-packages/cv2.cpython-36m-x86_64-linux-gnu.%s' % SHLIB_EXT] +
+             ['bin/opencv_%s' % x for x in ['annotation', 'createsamples', 'traincascade', 'interactive-calibration',
+                                            'version', 'visualisation', 'waldboost_detector']],
+    'dirs': ['include']
+}
+#sanity_check_commands = [
+#    "python -c 'import cv2'",
+#    "python -c 'import cv2.ximgproc'",
+#]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES' : '',
+    'CLASSPATH': 'share/OpenCV/java',
+}
+
+moduleclass = 'vis'
