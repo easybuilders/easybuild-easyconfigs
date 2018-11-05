@@ -1,6 +1,7 @@
 # This easyconfig was created by the BEAR Software team at the University of Birmingham.
-name = 'Java'
 easyblock = 'ConfigureMake'
+
+name = 'Java'
 version = '1.8_191-b26-OpenJDK'
 
 homepage = "https://openjdk.java.net/"
@@ -18,6 +19,7 @@ source_urls = [
     'https://hg.openjdk.java.net/jdk8u/jdk8u/nashorn/archive/',
     'https://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/archive/',
 ]
+# Each of these sources comes from the tag '' in each repo.
 sources = [
     '3322b7fdc03f.tar.gz',  # top-level repo
     '314a4e05e420.tar.gz',  # corba
@@ -41,11 +43,11 @@ checksums = [
 
 osdependencies = ['java-1.8.0-openjdk-devel', 'cups-devel', 'alsa-lib-devel']
 
-preconfigopts = ''
-for repo in ['corba', 'jaxp', 'jaxws', 'langtools', 'jdk', 'hotspot', 'nashorn']:
-    preconfigopts += 'mv ../%s-* %s && ' % (repo, repo)
-
+preconfigopts = 'mv ../corba-* corba && mv ../jaxp-* jaxp && mv ../jaxws-* jaxws && '
+preconfigopts += 'mv ../langtools-* langtools && mv ../jdk-* jdk && mv ../hotspot-* hotspot && '
+preconfigopts += 'mv ../nashorn-* nashorn && '
 preconfigopts += 'chmod u+x configure && '
+configopts = '--with-cacerts-file=/etc/pki/ca-trust/extracted/java/cacerts '
 buildopts = 'images'
 
 maxparallel = 1
@@ -54,6 +56,8 @@ import subprocess
 arch = subprocess.check_output(['uname', '-m']).strip()
 
 files_to_copy = ['build/linux-%s-normal-server-release/jdk/*' % arch]
+
+modextravars = {'JAVA_HOME': '%(installdir)s/jvm/openjdk-1.8.0-internal'}
 
 sanity_check_paths = {
     'files': ['bin/java'],
