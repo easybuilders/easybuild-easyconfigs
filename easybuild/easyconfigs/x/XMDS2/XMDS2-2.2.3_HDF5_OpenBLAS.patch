@@ -1,0 +1,49 @@
+# Find h5pcc command instead of h5cc, and use OpenBLAS
+# November 05th 2018 by B. Hajgato (Free University Brussels - VUB)
+--- xmds-2.2.3/xpdeint/support/wscript.orig	2015-04-11 06:05:57.000000000 +0200
++++ xmds-2.2.3/xpdeint/support/wscript	2018-11-05 16:07:08.684961483 +0100
+@@ -364,7 +364,7 @@
+         )
+         
+         # Check for hdf5
+-        if conf.find_program('h5cc', var='H5CC', mandatory = False):
++        if conf.find_program('h5pcc', var='H5CC', mandatory = False):
+             h5cc_shared_flags = conf.cmd_and_log([conf.env['H5CC'], '-show', '-shlib'])
+             h5cc_static_flags = conf.cmd_and_log([conf.env['H5CC'], '-show', '-noshlib'])
+             
+@@ -474,6 +474,13 @@
+                 'header_name': 'mkl.h',
+                 'msg': "Checking for Intel's Math Kernel Library",
+             },
++            {# OpenBLAS
++                'defines': 'CBLAS_OpenBLAS',
++                'lib': ['openblas'],
++                'uselib': 'openmp',
++                'header_name': 'cblas.h',
++                'msg': "Checking for OpenBLAS Library",
++            },
+             {# Apple Accelerate
+                 'defines': 'CBLAS_VECLIB',
+                 'framework_name': 'Accelerate',
+--- xmds-2.2.3/xpdeint/Features/Transforms/MMT.py.orig	2017-01-21 06:04:31.000000000 +0100
++++ xmds-2.2.3/xpdeint/Features/Transforms/MMT.py	2018-11-05 19:49:01.202435777 +0100
+@@ -119,6 +119,8 @@
+         # 
+         write(u'''#if   defined(CBLAS_MKL)
+   #include <mkl.h>
++#elif defined(CBLAS_OpenBLAS)
++  #include <cblas.h>
+ #elif defined(CBLAS_VECLIB)
+   #include <Accelerate/Accelerate.h>
+ #elif defined(CBLAS_ATLAS)
+--- xmds-2.2.3/xpdeint/Features/Transforms/MMT.tmpl.orig	2013-11-26 10:49:57.000000000 +0100
++++ xmds-2.2.3/xpdeint/Features/Transforms/MMT.tmpl	2018-11-05 19:49:19.607975377 +0100
+@@ -34,6 +34,8 @@
+   @#
+ #if   defined(CBLAS_MKL)
+   #include <mkl.h>
++#elif defined(CBLAS_OpenBLAS)
++  #include <cblas.h>
+ #elif defined(CBLAS_VECLIB)
+   #include <Accelerate/Accelerate.h>
+ #elif defined(CBLAS_ATLAS)

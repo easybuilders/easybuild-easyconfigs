@@ -11,7 +11,7 @@ toolchain = {'name': 'foss', 'version': '2016b'}
 
 sources = ['v%(version)s.tar.gz']
 source_urls = ['https://github.com/git/git/archive']
-checksums = ['c0e3fe359f715cb7dfc3ac63fa6e733a']
+checksums = ['d3015a679aa2dc5ff2cc8839459cea15fb2644aaa6bb9cc18e835bba2087adab']
 
 builddependencies = [
     ('Autotools', '20150215'),
@@ -23,15 +23,22 @@ dependencies = [
     ('Perl', '5.24.0', '-bare'),
 ]
 
+# asciidoc and xmlto are required for git man/doc build
+osdependencies = ['asciidoc', 'xmlto']
+
 preconfigopts = 'make configure && '
 
 # Work around git build system bug.  If LIBS contains -lpthread, then configure
 # will not append -lpthread to LDFLAGS, but Makefile ignores LIBS.
 configopts = "--with-perl=${EBROOTPERL}/bin/perl --enable-pthreads='-lpthread'"
 
+# required to also install documentation
+buildopts = "doc"
+installopts = "install-doc"
+
 sanity_check_paths = {
     'files': ['bin/git'],
-    'dirs': [],
+    'dirs': ['share/man'],
 }
 
 moduleclass = 'tools'
