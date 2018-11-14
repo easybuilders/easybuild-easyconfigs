@@ -1,0 +1,98 @@
+easyblock = 'ConfigureMake'
+name = 'ngs-bits'
+version = '2018_10'
+
+homepage = 'https://github.com/imgag/ngs-bits'
+description = """ngs-bits contains a lot of tools that are used for NGS-based diagnostics """
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+source_urls = ['http://www.p4vasp.at/files']
+sources = ['%(name)s-%(version)s.tgz']
+
+sources = [{'filename':'ngs-bits.tar.gz',
+           'git_config': {
+           'tag': '%(version)s',
+           'repo_name': 'ngs-bits',
+           'url': 'https://github.com/imgag',
+           'recursive': True,
+            }
+}
+]
+
+patches = ['ngs-bits.patch']
+
+
+builddependencies = [ 
+     ('Qt5', '5.10.1'),
+]
+dependencies = [
+     ('Python', '3.7.0')
+]
+
+parallel = 1
+
+binary_files = [
+"BamCleanHaloplex", "BamClipOverlap", "BamDownsample", "BamFilter", "BamHighCoverage",
+"BamToFastq", "BedAdd", "BedAnnotateFreq", "BedAnnotateFromBed", "BedAnnotateGC",
+"BedAnnotateGenes", "BedChunk", "BedCoverage", "BedExtend", "BedGeneOverlap",
+"BedInfo", "BedIntersect", "BedLowCoverage", "BedMerge", "BedReadCount",
+"BedShrink", "BedSort", "BedSubtract", "BedToFasta", "CnvHunter",
+"FastaInfo", "FastqAddBarcode", "FastqConvert", "FastqExtract",
+"FastqExtractBarcode", "FastqExtractUMI", "FastqFormat", "FastqList",
+"FastqMidParser", "FastqToFasta", "FastqTrim", "GenesToApproved",
+"GenesToBed", "MappingQC", "NGSDExportGenes", "NGSDExportSamples",
+"NGSDImportEnsembl", "NGSDImportGeneInfo", "NGSDImportHGNC", "NGSDImportHPO",
+"NGSDImportQC", "NGSDInit", "NGSDMaintain", "NGSDPrecalculate",
+"PERsim", "ReadQC", "RohHunter", "SampleAncestry",
+"SampleDiff", "SampleGender", "SampleOverview", "SampleSimilarity",
+"SeqPurge", "SomaticQC", "tools-TEST", "TsvFilter",
+"TsvInfo", "TsvMerge", "TsvSlice", "UpdHunter", "VariantAnnotateFrequency",
+"VariantAnnotateNGSD", "VariantFilterAnnotations", "VariantFilterRegions", "VariantQC",
+"VcfAnnotateFromBed", "VcfCheck", "VcfLeftNormalize", "VcfSort", "VcfStreamSort", "VcfToTsv",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in binary_files],
+    'dirs': ['doc', 'lib']
+}
+buildopts = 'build_3rdparty && make build_tools_release'
+installopts = 'PREFIX=%(installdir)s'
+postinstallcmds = ['pip install numpy --prefix=%(installdir)s']
+
+skipsteps = ['configure']
+modluafooter = """
+"""
+modextrapaths = {'PYTHONPATH': 'lib/python3.7/site-packages'}
+
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+      ('kiwisolver', '1.0.1', {
+       'source_tmpl': 'kiwisolver-1.0.1.tar.gz',
+       'source_urls': ['https://files.pythonhosted.org/packages/31/60/494fcce70d60a598c32ee00e71542e52e27c978e5f8219fae0d4ac6e2864/'],
+       'modulename': 'kiwisolver',
+       'buildopts': 'build',
+       'installopts': '',
+       }),
+      ('pyparsing', '2.3.0', {
+       'source_tmpl': 'pyparsing-2.3.0.tar.gz',
+       'source_urls': ['https://files.pythonhosted.org/packages/d0/09/3e6a5eeb6e04467b737d55f8bba15247ac0876f98fae659e58cd744430c6'],
+       'buildopts': 'build',
+       'installopts': '',
+       }),
+      ('subprocess32', '3.5.3', {
+       'source_tmpl': 'subprocess32-3.5.3.tar.gz',
+       'source_urls': ['https://files.pythonhosted.org/packages/be/2b/beeba583e9877e64db10b52a96915afc0feabf7144dcbf2a0d0ea68bf73d'],
+       'buildopts': 'build',
+       'installopts': '',
+       }),
+      ('matplotlib', '3.0.2', {
+       'source_tmpl': 'matplotlib-3.0.2.tar.gz',
+       'source_urls': ['https://files.pythonhosted.org/packages/89/0c/653aec68e9cfb775c4fbae8f71011206e5e7fe4d60fcf01ea1a9d3bc957f'],
+       'buildopts': 'build',
+       'installopts': '',
+       }),
+]
+moduleclass = 'bio'
+
