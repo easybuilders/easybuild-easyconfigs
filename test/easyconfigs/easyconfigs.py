@@ -356,8 +356,10 @@ class EasyConfigTest(TestCase):
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
         if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
 
-            # target branch should be develop
-            if os.environ.get('TRAVIS_BRANCH') == 'develop':
+            # target branch should be anything other than 'master';
+            # usually is 'develop', but could also be a release branch like '3.7.x'
+            travis_branch = os.environ.get('TRAVIS_BRANCH', None)
+            if travis_branch and travis_branch != 'master':
 
                 if not self.parsed_easyconfigs:
                     self.process_all_easyconfigs()
@@ -367,7 +369,8 @@ class EasyConfigTest(TestCase):
                 cwd = change_dir(top_dir)
 
                 # get list of changed easyconfigs
-                out, ec = run_cmd("git diff --name-only --diff-filter=AM develop...HEAD", simple=False)
+                cmd = "git diff --name-only --diff-filter=AM %s...HEAD" % travis_branch
+                out, ec = run_cmd(cmd, simple=False)
                 changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
                 print("List of changed easyconfig files in this PR: %s" % changed_ecs_filenames)
 
