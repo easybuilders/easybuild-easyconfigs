@@ -1,0 +1,30 @@
+Beast isn't able to use the beagle library unless the LD_LIBRARY_PATH is set.
+
+This patch adds the lib-directory of the loaded `beagle-lib` module to the
+LD_LIBRARY_PATH.   The original location `/usr/local/lib` is irrelevant when 
+using easybuild.
+
+Written by Oliver Stueker, ACENET/Compute Canada
+Memorial University of Newfoundland, St. John's, Canada
+
+diff --git a/release/Linux/bin/beast b/release/Linux/bin/beast
+index 896cbaf0..680a9691 100755
+--- a/bin/beast
++++ b/bin/beast
+@@ -40,13 +40,13 @@ if [ -n "$BEAGLE_LIB" ]; then
+ 	fi
+ fi
+ 
+-# Explicitly add /usr/local/lib to library search path to ensure 
++# Explicitly add "${EBROOTBEAGLEMINLIB}/lib" to library search path to ensure 
+ # beast continues to find beagle when installed here.  (This is
+ # necessary due to known problems with certain JREs.)
+ if [ -z "$LD_LIBRARY_PATH" ]; then
+-    export LD_LIBRARY_PATH=/usr/local/lib
++    export LD_LIBRARY_PATH="${EBROOTBEAGLEMINLIB}/lib"
+ else
+-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH":/usr/local/lib
++    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH":"${EBROOTBEAGLEMINLIB}/lib"
+ fi
+ 
+ # use BEAST_EXTRA_LIBS variable to load BEAGLE and other libraries from non-default locations 
