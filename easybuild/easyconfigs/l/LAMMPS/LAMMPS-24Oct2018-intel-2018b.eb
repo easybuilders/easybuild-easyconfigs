@@ -56,7 +56,7 @@ dependencies = [
     ('gzip', '1.9'),
     ('HDF5', '1.10.2'),
     ('tbb', '2018_U5'),
-    #('CUDA', '10.0.130', '', True),
+    # ('CUDA', '10.0.130', '', True),
 ]
 
 separate_build_dir = True
@@ -113,20 +113,21 @@ optional_deps = ['WITH_JPEG', 'WITH_PNG', 'WITH_GZIP']
 specific_opts = ' '.join("-D%s" % item for item in kspace_opts)
 other_opts = ' '.join("-D%s=yes" % item for item in optional_deps)
 
-configopts += packages_opts + ' ' + other_opts + ' ' + specific_opts 
+configopts += packages_opts + ' ' + other_opts + ' ' + specific_opts
 
 # Kokkos options:
 if kokkos:
+    configopts += ' -DPKG_KOKKOS=on -DKOKKOS_ENABLE_OPENMP=yes '
     if cuda:
         # Need to use the Kokkos wrapper if we are using CUDA
-        configopts += ' -DCMAKE_CXX_COMPILER="%s/lib/kokkos/bin/nvcc_wrapper" ' %(short_sources)
+        configopts += ' -DCMAKE_CXX_COMPILER="%s/lib/kokkos/bin/nvcc_wrapper" ' % (short_sources)
         # and tell the wrapper which c++ compiler to use
         configopts += ' -DCMAKE_CXX_FLAGS="-ccbin $CXX $CXXFLAGS" '
         # Set the architecture specifics
-        configopts += ' -DPKG_KOKKOS=on -DKOKKOS_ENABLE_OPENMP=yes -DKOKKOS_ENABLE_CUDA=yes -DKOKKOS_ARCH="HSW;Kepler37" '
+        configopts += ' -DKOKKOS_ENABLE_CUDA=yes -DKOKKOS_ARCH="HSW;Kepler37" '
     else:
         # Without CUDA things are straightforward
-        configopts += ' -DPKG_KOKKOS=on -DKOKKOS_ENABLE_OPENMP=yes -DKOKKOS_ARCH="HSW" '
+        configopts += ' -DKOKKOS_ARCH="HSW" '
 
 if cuda and not kokkos:
     # GPU package and options can be built
