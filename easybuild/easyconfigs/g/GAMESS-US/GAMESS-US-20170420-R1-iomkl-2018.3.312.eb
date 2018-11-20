@@ -1,0 +1,58 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2017 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+#
+# Authors::
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Ward Poelmans <wpoely86@gmail.com>
+# * Oliver Stueker <oliver.stueker@ace-net.ca>
+# License::   MIT/GPL
+##
+name = 'GAMESS-US'
+version = '20170420-R1'
+
+homepage = 'http://www.msg.chem.iastate.edu/gamess/index.html'
+description = """ The General Atomic and Molecular Electronic Structure System (GAMESS)
+ is a general ab initio quantum chemistry package. """
+
+toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
+toolchainopts = {'usempi': True}
+
+# manually download via http://www.msg.chem.iastate.edu/gamess/download.html (requires registration)
+# rename gamess-current.tar.gz by changing 'current' to the proper version
+sources = ['gamess-%(version)s.tar.gz']
+patches = [
+    'GAMESS-US_rungms-slurm-CC_scratch.patch',
+    'GAMESS-US-20170420-R1_rungms_fix_PPN_not_initialized.patch',
+]
+checksums = [
+    '6542ce730f3221d62851dc0eac573abaed19f3773567b3ffd6763b5d3ef93b4a',  # gamess-20170420-R1.tar.gz
+    'c62b3906b59d0b9b4035650841e289aa678881fcd358e03a25d48dfc379b2242',  # GAMESS-US_rungms-slurm-CC_scratch.patch
+    # GAMESS-US-20170420-R1_rungms_fix_PPN_not_initialized.patch
+    'd1d77ab7af519433df477124eed30917bebd5d76481687b70eabde3091abf14a',
+]
+
+# Don't have the easyblock set $SCR and $USRSCR to the same value.
+# Set them via `GAMESS-US_rungms-slurm-CC_scratch.patch` instead,
+# allowing a user to override them by setting the variables explicitly.
+scratch_dir = None
+
+# increase these numbers if your system is bigger in terms of cores-per-node or number of nodes
+# it's OK if these values are larger than what your system provides
+maxcpus = '1000'
+maxnodes = '100000'
+
+# Remove sources and build scripts from installation directory.
+# (License restricts re-distribution of source code)
+postinstallcmds = [
+    'rm -R     source  object  ddi  libcchem  machines  qmnuc/neo  vb2000',
+    'rm        comp compall config lked',
+    'chmod a-x rungms.orig',
+    'ln -s     gamess.%(version)s.x  gamess.01.x',
+    "sed -i 's@#!/bin/csh@#!/usr/bin/env csh@'  rungms  runall  gms-files.csh  install.info",
+    'rm -R graphics misc qmnuc tools'
+]
+
+moduleclass = 'chem'
