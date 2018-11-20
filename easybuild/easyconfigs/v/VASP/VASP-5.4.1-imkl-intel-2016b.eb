@@ -11,7 +11,11 @@ as well as VASPsol (https://github.com/henniggroup/VASPsol) has been implemented
 
 toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
 toolchainopts = {'usempi': True}
-dependencies = [('BEEF', '0.1.1', '', ('iccifort', '2016.4'))]
+dependencies = [ 
+    ('Python', '2.7.14'),
+    ('BEEF', '0.1.1',),
+]
+    
 
 # Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
 sources = ['vasp.5.4.1.05Feb16.tar.gz']
@@ -31,36 +35,37 @@ checksums = [
 ]
 
 
-prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include &&'
+prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
 prebuildopts += 'cp src/chain.F src/chain.F.orig && '
-prebuildopts += 'wget http://theory.cm.utexas.edu/code/vtstcode_old/vtstcode-173.tgz &&'
+prebuildopts += 'wget http://theory.cm.utexas.edu/code/vtstcode_old/vtstcode-173.tgz && '
 prebuildopts += 'tar xzf vtstcode-173.tgz && '
 prebuildopts += 'cp vtstcode-173/* src && '
 prebuildopts += 'cd src && '
 prebuildopts += 'chmod u+x mkbdrpro.pl && '
 prebuildopts += './mkbdrpro.pl bdr_changes && '
-prebuildopts += 'cp solvation.F solvation.F.orig &&'
-prebuildopts += 'cp pot.F pot.F.orig &&'
-prebuildopts += 'git clone https://github.com/henniggroup/VASPsol &&'
-prebuildopts += 'cd VASPsol/ &&'
-prebuildopts += 'git checkout  77c8e74 &&'
-prebuildopts += 'cd .. &&'
-prebuildopts += 'cp VASPsol/src/solvation.F ./  &&'
-prebuildopts += 'patch pot.F < VASPsol/src/patches/pbz_patch_541 &&'
-prebuildopts += 'cd ..  &&'
+prebuildopts += 'cp solvation.F solvation.F.orig && '
+prebuildopts += 'cp pot.F pot.F.orig && '
+prebuildopts += 'git clone https://github.com/henniggroup/VASPsol && '
+prebuildopts += 'cd VASPsol/ && '
+prebuildopts += 'git checkout  77c8e74 && '
+prebuildopts += 'cd .. && '
+prebuildopts += 'cp VASPsol/src/solvation.F ./  && '
+prebuildopts += 'patch pot.F < VASPsol/src/patches/pbz_patch_541 && '
+prebuildopts += 'cd ..  && wget http://theory.cm.utexas.edu/code/vtstscripts_old/vtstscripts-937.tgz && tar xzf vtstscripts-937.tgz && '
 
 # VASP uses LIBS as a list of folders
 prebuildopts += 'unset LIBS && '
 
 #buildopts = 'all BLACS="$LIBBLACS" SCALAPACK="$LIBSCALAPACK"'
-postinstallcmds = ["chmod -R o-rwx %(installdir)s"]
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && pip install numpy --prefix=%(installdir)s && pip install ase --prefix=%(installdir)s"]
 parallel = 1
 
-files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin')]
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'), 'vtstscripts-937']
 
 sanity_check_paths = {
     'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
     'dirs': []
 }
 #group = "soft_vasp5"
+modextrapaths = {'PATH': 'vtstscripts-937', 'PYTHONPATH': 'lib/python2.7/site-packages'}
 moduleclass = 'phys'
