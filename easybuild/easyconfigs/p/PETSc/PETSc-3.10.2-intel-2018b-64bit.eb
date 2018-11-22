@@ -1,0 +1,44 @@
+name = 'PETSc'
+version = '3.10.2'
+versionsuffix = '-64bit'
+
+homepage = 'http://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://ftp.mcs.anl.gov/pub/petsc/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'PETSc_ranlib-fix.patch',
+    'PETSc-3.9.3_fix-AVX512.patch',
+]
+checksums = [
+    '9d3381bcf9c63abe6521b21a88efc70f8e893293503cff497971d0d9c1ec68cc',  # petsc-3.10.2.tar.gz
+    '64cf9d5008d5e92117e65bdec5316d991b6a6b8c8ecf7ea46eb790a498266297',  # PETSc_ranlib-fix.patch
+    'f11e3d7c36ec9939b10550c9913320e0ee4b34585bdf9458977548686f90bfa8',  # PETSc-3.9.3_fix-AVX512.patch
+]
+
+parmetis = 'ParMETIS'
+parmetis_ver = '4.0.3'
+dependencies = [
+    ('Boost', '1.67.0'),
+    ('METIS', '5.1.0', versionsuffix),
+    ('ParMETIS', parmetis_ver, versionsuffix),
+    ('SCOTCH', '6.0.6'),
+    ('SuiteSparse', '5.3.0', '-METIS-5.1.0-64bit'),
+    ('Hypre', '2.15.1', versionsuffix),
+]
+
+builddependencies = [('CMake', '3.12.1')]
+
+configopts = '--LIBS="$LIBS -lrt" '
+configopts = '--with-64-bit-indices=1 '
+
+# only required when building PETSc in a SLURM job environment
+# configopts = '--with-batch=1 --known-mpi-shared-libraries=1 --known-64-bit-blas-indices=0 '
+# prebuildopts = "srun ./conftest-arch-linux2-c-opt && ./reconfigure-arch-linux2-c-opt.py && "
+
+moduleclass = 'numlib'
