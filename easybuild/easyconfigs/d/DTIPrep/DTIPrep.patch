@@ -1,0 +1,83 @@
+--- src/CMakeLists.txt.orig	2018-11-24 05:02:01.529132755 +0000
++++ src/CMakeLists.txt	2018-11-24 05:11:27.618069269 +0000
+@@ -223,10 +223,10 @@
+   # An alternative is the do a configure_file() on a script and use install(SCRIPT  ...).
+   # Note that the image plugins depend on QtSvg and QtXml, and it got those copied
+   # over.
+-  install(CODE "
+-     include(BundleUtilities)
+-      fixup_bundle(\"${APPS}\" \"\${QTPLUGINS}\" \"${DIRS}\")
+-      " COMPONENT Runtime)
++  #  install(CODE "
++  #   include(BundleUtilities)
++  #    fixup_bundle(\"${APPS}\" \"\${QTPLUGINS}\" \"${DIRS}\")
++  #    " COMPONENT Runtime)
+ 
+ 
+   # To Create a package, one can run "cpack -G DragNDrop CPackConfig.cmake" on Mac OS X
+--- src/itkNiralBSplineDeformableTransform.h.orig	2018-11-24 05:02:01.530132746 +0000
++++ src/itkNiralBSplineDeformableTransform.h	2018-09-06 15:00:51.000000000 +0000
+@@ -115,7 +115,7 @@
+ template<typename TParametersValueType=double,
+           unsigned int NDimensions = 3,
+           unsigned int VSplineOrder = 3>
+-class ITK_TEMPLATE_EXPORT BSplineDeformableTransform :
++class BSplineDeformableTransform :
+   public BSplineBaseTransform<TParametersValueType,NDimensions,VSplineOrder>
+ {
+ public:
+--- src/itkNiralBSplineDeformableTransformInitializer.h.orig	2018-11-24 05:02:01.530132746 +0000
++++ src/itkNiralBSplineDeformableTransformInitializer.h	2018-09-06 15:00:51.000000000 +0000
+@@ -50,7 +50,7 @@
+  * \ingroup ITKTransform
+  */
+ template< typename TTransform, typename TImage >
+-class ITK_TEMPLATE_EXPORT BSplineDeformableTransformInitializer:public Object
++class BSplineDeformableTransformInitializer:public Object
+ {
+ public:
+   /** Standard class typedefs. */
+--- SuperBuild/External_ITKv4.cmake.orig	2018-11-24 05:16:59.753096160 +0000
++++ SuperBuild/External_ITKv4.cmake	2018-11-23 23:16:47.936384152 +0000
+@@ -159,6 +159,9 @@
+       -DITK_WRAPPING:BOOL=OFF #${BUILD_SHARED_LIBS} ## HACK:  QUICK CHANGE
+       -DITK_USE_SYSTEM_DCMTK:BOOL=${${PROJECT_NAME}_BUILD_DICOM_SUPPORT}
+       -DITK_USE_FFTWD:BOOL=ON
++      -DITK_USE_SYSTEM_FFTW:BOOL=ON
++      -DFFTWD_LIB=$ENV{EBROOTFFTW}/lib/libfftw3f.so
++      -DFFTW_INCLUDE_PATH=$ENV{EBROOTFFTW}/include
+       #-DModule_ITKIOPhilipsREC:BOOL=ON
+       -DModule_ITKVtkGlue:BOOL=ON
+       -DVTK_DIR:PATH=${VTK_DIR}
+--- SuperBuild/External_VTK.cmake.orig	2018-11-24 05:16:59.753096160 +0000
++++ SuperBuild/External_VTK.cmake	2018-11-23 23:20:00.001649163 +0000
+@@ -77,9 +77,17 @@
+       list(APPEND VTK_QT_ARGS
+         #-DDESIRED_QT_VERSION:STRING=4 # Unused
+         -DVTK_USE_GUISUPPORT:BOOL=ON
+-        -DVTK_USE_QVTK_QTOPENGL:BOOL=ON
+-        -DVTK_USE_QT:BOOL=ON
++	-DVTK_USE_QVTK_QTOPENGL:BOOL=ON
++	-DVTK_USE_QT:BOOL=ON
+         -DQT_QMAKE_EXECUTABLE:FILEPATH=${QT_QMAKE_EXECUTABLE}
++	-DOPENGL_INCLUDE_DIR=$ENV{NIXUSER_PROFILE}/include
++	-DOPENGL_gl_LIBRARY=$ENV{NIXUSER_PROFILE}/lib/libGL.so
++	-DOPENGL_glu_LIBRARY=$ENV{NIXUSER_PROFILE}/lib/libGLU.so
++	-DX11_X11_LIB=$ENV{NIXUSER_PROFILE}/lib/libX11.so
++	-DX11_X11_INCLUDE_PATH=$ENV{NIXUSER_PROFILE}/include
++	-DX11_Xt_INCLUDE_PATH=$ENV{NIXUSER_PROFILE}/include
++	-DX11_Xt_LIB=$ENV{NIXUSER_PROFILE}/lib/libXt.so
++
+         )
+     else()
+       list(APPEND VTK_QT_ARGS
+--- SuperBuild/External_niral_utilities.cmake.orig	2018-11-21 18:32:06.307664531 +0000
++++ SuperBuild/External_niral_utilities.cmake	2018-11-21 19:25:04.481444913 +0000
+@@ -98,6 +98,7 @@
+       ${COMMON_EXTERNAL_PROJECT_ARGS}
+       ${${proj}_CMAKE_OPTIONS}
+       -DCMAKE_INSTALL_PREFIX:PATH=${EXTERNAL_BINARY_DIRECTORY}/${proj}-install
++      -DINSTALL_RUNTIME_DESTINATION=${EXTERNAL_BINARY_DIRECTORY}/${proj}-install
+ ## We really do want to install in order to limit # of include paths INSTALL_COMMAND ""
+     DEPENDS
+       ${${proj}_DEPENDENCIES}
