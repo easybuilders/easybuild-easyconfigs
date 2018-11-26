@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+
+name = 'MET'
+version = '8.0_bugfix'
+versionsuffix='20181019'
+
+homepage = 'ihttps://dtcenter.org/met/users/support/online_tutorial/METv6.1/index.php'
+description = """Model Evaluation Tools (MET) is a highly configurable, state-of-the-art suite of verification tools designed for the verification and evaluation of numerical weather forecasts. Although MET was developed at the Developmental Testbed Center (DTC) to be used with the Weather Research and Forecasting (WRF) modeling system, the data formats and standards used allow MET to be run on the output of other modeling systems as well."""
+
+toolchain = {'name': 'iompi', 'version': '2018.3.312'}
+
+source_urls = ['https://dtcenter.org/met/users/downloads/MET_releases/%(namelower)s-%(version)s/']
+sources = ['%(namelower)s-%(version)s.%(versionsuffix)s.tar.gz']
+
+preconfigopts = ' module load cmake/3.12.3 && '
+
+dependencies = [
+    ('HDF5', '1.10.3'),
+    ('netCDF-C++4', '4.3.0'),
+    ('GSL', '2.5'),
+    ('BUFRLIB', '10.2.3'),
+    ('Python', '2.7.14'),
+]
+
+parallel = 1
+
+configopts  = 'MET_NETCDF=$EBROOTNETCDFMINCPLUSPLUS4 '
+configopts += 'MET_NETCDFLIB=$EBROOTNETCDFMINCPLUSPLUS4/lib '
+configopts += 'MET_NETCDFINC=$EBROOTNETCDFMINCPLUSPLUS4/include '
+configopts += 'MET_BUF=$EBROOTBUFRLIB '
+configopts += 'MET_BUFRLIB=$EBROOTBUFRLIB/lib '
+configopts += 'MET_GSL=$EBROOTGSL '
+configopts += 'MET_GSLINC=$EBROOTGSL/include ' 
+configopts += 'MET_GSLLIB=$EBROOTGSL/lib '
+configopts += 'MET_HDF=$EBROOTHDF5 '
+configopts += 'MET_HDFINC=$EBROOTHDF5/include '
+configopts += 'MET_HDFLIB=$EBROOTHDF5/lib '
+configopts += '--disable-pb2nc '
+
+#configopts += '--enable-python '
+#configopts += '--enable-modis '
+
+met_binaries = [
+    "ascii2nc", "gis_dump_dbf", "grid_stat", "madis2nc", "mtd", "plot_point_obs",
+    "series_analysis", "tc_dland", "wavelet_stat", "ensemble_stat", "gis_dump_shp", 
+    "gsid2mpr", "mode", "pcp_combine", "point_stat", "shift_data_plane", "tc_pairs", 
+    "wwmca_plot", "gen_vx_mask", "gis_dump_shx", "gsidens2orank", "mode_analysis", 
+    "plot_data_plane", "regrid_data_plane", "stat_analysis", "tc_stat", "wwmca_regrid",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in met_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
