@@ -1,0 +1,133 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   David Quigley (University of Warwick)
+# License::   MIT/GPL
+# $Id$
+#
+##
+easyblock = 'ConfigureMake'
+
+name = 'CASTEP'
+version = '18.1'
+
+homepage = 'http://www.castep.org'
+description = """CASTEP is a leading code for calculating the properties of materials from first 
+principles. Using density functional theory, it can simulate a wide range of properties of materials
+proprieties including energetics, structure at the atomic level, vibrational properties, electronic 
+response properties etc. In particular it has a wide range of spectroscopic features that link directly
+ to experiment, such as infra-red and Raman spectroscopies, NMR, and core level spectra."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+# Source tarball must be downloaded from behind a login on ccpforge.ac.uk
+sources = [SOURCE_TAR_GZ]
+
+# Replace mpif90 and mpiicc in obj/platforms/linux_x86_64_intel17.mk
+patches = ['intel17.patch']
+
+checksums = ['5b04c4bc893914a633301f85103190a17fa8a32c508270e69d4a453c93196d26',  # CASTEP-18.1.tar.gz
+             'bc66571aa2346dd51e286cdc8cb9234f6ecd0359b314997372d0011a2e86ffdb']  # intel17.patch
+
+# Most systems will have a sufficently new version of GNU make (3.82 or newer preferred)
+# builddependencies = [
+#     ('make', '3.82'),
+# ]
+
+dependencies = [
+    ('libxc', '2.2.3'),
+    ('spglib', '1.9.9'),
+]
+
+skipsteps = ['configure']
+
+# Accept default answers to the four prompts (all libraries will be found)
+prebuildopts = 'printf "\n\n\n\n" | '
+
+# Build options + build tools suite                                                                                                
+envars = 'COMMS_ARCH=mpi FFT=mkl BUILD=fast MATHLIBS=mkl10 SPGLIB=system LIBXC=system'
+buildopts = envars + ' && make ' + envars + ' tools'
+
+# Run test suite
+runtest = envars + ' check'
+
+# Install castep, tools and scripts into installdir
+preinstallopts = 'mkdir %(installdir)s/bin && '
+installopts = envars + '  INSTALL_DIR=%(installdir)s/bin'
+
+
+sanity_check_paths = {'files': ['bin/awk_elf_to_xsf',
+                                'bin/castep2cell',
+                                'bin/castep2cssr',
+                                'bin/castep2pdb',
+                                'bin/castep2shak',
+                                'bin/castep2shx',
+                                'bin/castep2xsf',
+                                'bin/castep2xtl',
+                                'bin/castep2xyz',
+                                'bin/castepconv.py',
+                                'bin/castep.mpi',
+                                'bin/castep.py',
+                                'bin/castep.pyc',
+                                'bin/cell2cell',
+                                'bin/cell2pdb',
+                                'bin/cell2sgroup',
+                                'bin/cell2shx',
+                                'bin/cell2xsf',
+                                'bin/cell2xtl',
+                                'bin/cell2xyz',
+                                'bin/ceteprouts.pm',
+                                'bin/cif2cell',
+                                'bin/CifFile.py',
+                                'bin/CijUtil.py',
+                                'bin/cssr2cell',
+                                'bin/cssr2gulp',
+                                'bin/den2grd',
+                                'bin/den2xplor',
+                                'bin/den2xsf',
+                                'bin/dispersion.pl',
+                                'bin/dos.pl',
+                                'bin/elastics.py',
+                                'bin/elementdata.py',
+                                'bin/ESPInterfaces.py',
+                                'bin/generate_strain.py',
+                                'bin/geom2dcd',
+                                'bin/geom2pdbseq',
+                                'bin/geom2xsf',
+                                'bin/geom2xyz.pl',
+                                'bin/optados.mpi',
+                                'bin/pdb2cell',
+                                'bin/pdb2pdb',
+                                'bin/pdb2shak',
+                                'bin/pdb2shx',
+                                'bin/pdb2xtl',
+                                'bin/perl_md.pl',
+                                'bin/perl_pimd.pl',
+                                'bin/phonon2xyz',
+                                'bin/pimerge.pl',
+                                'bin/rotate_Albite.py',
+                                'bin/rotCij.py',
+                                'bin/rotCij.pyc',
+                                'bin/shx2cell',
+                                'bin/spacegroupdata.py',
+                                'bin/StarFile.py',
+                                'bin/StarFile.pyc',
+                                'bin/test-CijUtil.py',
+                                'bin/uctools.py',
+                                'bin/uctools.pyc',
+                                'bin/utils.py',
+                                'bin/utils.pyc',
+                                'bin/vasp2cell',
+                                'bin/vasp2pdb',
+                                'bin/xtl2cell',
+                                'bin/xtl2cssr',
+                                'bin/xtl2pdb',
+                                'bin/xtl2sgroup',
+                                'bin/xtl2shx',
+                                'bin/yapps3_compiled_rt.py',
+                                'bin/YappsStarParser_1_0.py',
+                                'bin/YappsStarParser_1_1.py',
+                                'bin/YappsStarParser_DDLm.py'],
+                      'dirs': ['bin/cconv']}
+
+moduleclass = 'chem'
