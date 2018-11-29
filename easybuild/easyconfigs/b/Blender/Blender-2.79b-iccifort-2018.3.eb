@@ -1,0 +1,80 @@
+easyblock = 'CMakeMake'
+
+name = 'Blender'
+version = '2.79b'
+
+homepage = 'https://www.blender.org/'
+description = """Blender is the free and open source 3D creation suite. It supports
+ the entirety of the 3D pipeline-modeling, rigging, animation, simulation, rendering,
+ compositing and motion tracking, even video editing and game creation."""
+
+toolchain = {'name': 'iccifort', 'version': '2018.3'}
+
+source_urls = ['http://download.blender.org/source/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['Blender-2.77a_fix-ARRAY_SIZE-icc.patch',
+           'Blender-2.79b_fix-include-order.patch']
+checksums = [
+    'cef9a203857dc65076e05c41fc7a7d03',  # blender-2.79b.tar.gz
+    'b333219ca380b08bf167bfdea33c0d23a4ed5c2cd05c5f391ca3b529fdc72a73',  # Blender-2.77a_fix-ARRAY_SIZE-icc.patch
+    '5a6ac1182d97c85409f05096cbfd2b8f1db127425ced109babca47cf0b0341a6',  # Blender-2.79b_fix-include-order.patch
+]
+
+# disable SSE detection to give EasyBuild full control over optimization compiler flags being used
+configopts = '-DWITH_CPU_SSE=OFF -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG" '
+
+# these are needed until extra dependencies are added for them to work
+configopts += '-DWITH_INSTALL_PORTABLE=OFF '
+configopts += '-DWITH_GAMEENGINE=OFF '
+configopts += '-DWITH_CYCLES_LOGGING=OFF '
+configopts += '-DWITH_SYSTEM_GLEW=OFF '
+
+configopts += '-DPYTHON_VERSION=%(pyshortver)s -DPYTHON_LIBRARY=${EBROOTPYTHON}/lib/libpython%(pyshortver)sm.so '
+configopts += '-DPYTHON_INCLUDE_DIR=${EBROOTPYTHON}/include/python%(pyshortver)sm '
+configopts += '-DOPENEXR_INCLUDE_DIR=$EBROOTOPENEXR/include '
+
+configopts += '-DX11_X11_INCLUDE_PATH=$NIXUSER_PROFILE/include '
+configopts += '-DX11_X11_LIB=$NIXUSER_PROFILE/lib/libX11.so '
+
+configopts += '-DJPEG_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts += '-DJPEG_LIBRARY=$NIXUSER_PROFILE/lib/libjpeg.so '
+
+configopts += '-DPNG_PNG_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts += '-DPNG_LIBRARY=$NIXUSER_PROFILE/lib/libpng.so '
+
+configopts += '-DZLIB_ROOT=$NIXUSER_PROFILE '
+
+configopts += '-DFREETYPE_INCLUDE_DIRS=$NIXUSER_PROFILE/include '
+configopts += '-DFREETYPE_LIBRARY=$NIXUSER_PROFILE/lib/libfreetype.so '
+
+configopts += '-DOPENGL_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts += '-DOPENGL_gl_LIBRARY=$NIXUSER_PROFILE/lib/libGL.so '
+configopts += '-DOPENGL_glu_LIBRARY=$NIXUSER_PROFILE/lib/libGLU.so '
+
+configopts += '-DOPENIMAGEIO_ROOT_DIR=$EBROOTOPENIMAGEIO '
+#configopts += '-DOPENIMAGEIO_INCLUDE_DIR=$EBROOTOPENIMAGEIO/include '
+#configopts += '-DOPENGL_gl_LIBRARY=$NIXUSER_PROFILE/lib/libGL.so '
+#configopts += '-DOPENGL_glu_LIBRARY=$NIXUSER_PROFILE/lib/libGLU.so '
+
+configopts += '-DOPENEXR_ROOT_DIR=$EBROOTOPENEXR '
+
+dependencies = [
+    ('Python', '3.6.3'),
+    ('Boost', '1.68.0'),
+    ('OpenEXR', '2.2.1'),
+    ('OpenImageIO', '1.8.15'),  # required for cycles render engine
+]
+
+builddependencies = [('CMake', '3.9.1')]
+
+separate_build_dir = 'True'
+
+# use Intel software rasterizer by default (no GPU hardware acceleration)
+modextravars = {'GALLIUM_DRIVER': 'swr'}
+
+sanity_check_paths = {
+    'files': ['bin/blender'],
+    'dirs': []
+}
+
+moduleclass = 'vis'
