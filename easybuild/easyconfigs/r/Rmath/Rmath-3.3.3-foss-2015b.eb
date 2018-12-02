@@ -1,0 +1,81 @@
+easyblock = 'ConfigureMake'
+
+name = 'Rmath'
+version = '3.3.3'
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics.
+Rmath contains routines supporting the distribution, special functions in R and a few others
+compiled in a standalone library. (Note that these functions are not available as a separate 
+library when R is built, and the standalone version differs in several ways.)"""
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+sources = ['R-%(version)s.tar.gz']
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+checksums = ['0ac211ec15e813a24f8f4a5a634029a4']
+
+#
+# Configure options.
+#
+# NOTE: LAPACK support is built into BLAS, which will be detected correctly when LAPACK_LIBS is *not* specified.
+#       The summary at the end of the configure output should contain:
+#           External libraries: ...., BLAS(OpenBLAS), LAPACK(in blas), ....
+#
+#preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+preconfigopts = 'BLAS_LIBS="$LIBBLAS"'
+configopts = '--with-lapack --with-blas --with-pic --enable-threads --with-x=no'
+#configopts = '--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib'
+#configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
+#
+# Some recommended packages may fail in a parallel build (e.g. Matrix)
+# and we're not installing them for the standlone lib anyway.
+#
+configopts += ' --with-recommended-packages=no'
+
+
+
+#
+# You may need to include a more recent Python to download R packages from HTTPS based URLs
+# when the Python that comes with your OS is too old and you encounter:
+#     SSL routines:SSL23_GET_SERVER_HELLO:sslv3 alert handshake failure
+# In that case make sure to include a Python as builddependency. 
+# This Python should not be too new: it's dependencies like for example on ncursus should be compatible with R's dependencies.
+# For example Python 2.7.11 is too new as it requires ncurses 6.0 whereas our R requires ncurses 5.9.
+# The alternative is to replace the https URLs with http URLs in the generated EasyConfig.
+#
+#builddependencies = [
+#    ('Python', '2.7.10')
+#]
+
+dependencies = [
+    ('libreadline', '6.3'),
+    ('ncurses', '6.0'),
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.8'),
+    ('XZ', '5.2.2'),
+    ('PCRE', '8.38'),
+    ('cURL', '7.47.1'),
+#    ('libpng', '1.6.29'),            # For plotting in R
+#    ('libjpeg-turbo', '1.4.2'),      # For plotting in R
+#    ('LibTIFF', '4.0.4'),            # For plotting in R
+#    ('Tcl', '8.6.4'),                # For Tcl/Tk
+#    ('Tk', '8.6.4', '-no-X11'),      # For Tcl/Tk
+#    ('libxml2', '2.9.2'),            # For XML
+#    ('cairo', '1.14.10'),            # For plotting in R
+#    ('Pango', '1.40.6'),             # For plotting in R.
+#    ('Java', '1.8.0_45', '', True),  # Java bindings are built if Java is found, might as well provide it.
+
+]
+
+prebuildopts = 'cd src/nmath/standalone && '
+preinstallopts = 'cd src/nmath/standalone && '
+
+sanity_check_paths = {
+    'files': ['lib64/libRmath.so',
+              'lib64/libRmath.a',
+              'lib64/pkgconfig/libRmath.pc',
+              'include/Rmath.h'],
+    'dirs': ['lib64', 'include'],
+}
+
+moduleclass = 'lib'

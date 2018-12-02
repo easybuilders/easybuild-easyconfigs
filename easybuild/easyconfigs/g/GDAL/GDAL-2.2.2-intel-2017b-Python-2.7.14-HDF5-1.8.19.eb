@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'GDAL'
+version = '2.2.2'
+hdf5_ver = '1.8.19'
+versionsuffix = '-Python-%%(pyver)s-HDF5-%s' % hdf5_ver
+
+homepage = 'http://www.gdal.org/'
+description = """GDAL is a translator library for raster geospatial data formats that is released under an X/MIT style
+ Open Source license by the Open Source Geospatial Foundation. As a library, it presents a single abstract data model
+ to the calling application for all supported formats. It also comes with a variety of useful commandline utilities for
+ data translation and processing."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['http://download.osgeo.org/gdal/%(version)s/']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['eb25d6ee85f4f5ac1d5581958f8c6eed9b1d50746f82866fe92e507541def35b']
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('netCDF', '4.4.1.1', '-HDF5-%s' % hdf5_ver),
+    ('expat', '2.2.4'),
+    ('GEOS', '3.6.2', '-Python-%(pyver)s'),
+    ('SQLite', '3.20.1'),
+    ('libxml2', '2.9.4'),
+    ('libpng', '1.6.32'),
+    ('libjpeg-turbo', '1.5.2'),
+    ('JasPer', '1.900.1'),
+    ('LibTIFF', '4.0.8'),
+    ('zlib', '1.2.11'),
+    ('cURL', '7.56.0'),
+    ('PCRE', '8.41'),
+]
+
+configopts = '--with-expat=$EBROOTEXPAT --with-libz=$EBROOTLIBZ --with-hdf5=$EBROOTHDF5 --with-netcdf=$EBROOTNETCDF'
+configopts += ' --with-xml2=$EBROOTLIBXML2 --with-geos=$EBROOTGEOS/bin/geos-config --with-jpeg=$EBROOTLIBJPEGMINTURBO'
+configopts += ' --with-png=$EBROOTLIBPNG --with-sqlite3=$EBROOTSQLITE --with-jasper=$EBROOTJASPER'
+configopts += ' --with-libtiff=$EBROOTLIBTIFF --with-pcre=$EBROOTPCRE --with-python=$EBROOTPYTHON/bin/python'
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['lib/libgdal.a', 'lib/libgdal.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include', 'lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'data'

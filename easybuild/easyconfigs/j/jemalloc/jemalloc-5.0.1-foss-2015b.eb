@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'jemalloc'
+version = '5.0.1'
+
+homepage = 'http://www.canonware.com/jemalloc'
+description = """jemalloc is a general purpose malloc(3) implementation that emphasizes fragmentation avoidance and
+ scalable concurrency support."""
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+source_urls = ['https://github.com/jemalloc/jemalloc/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['5de6dcb50de04b14bae9340d23515390925fcaa7637341707239d09a3ea07a23']
+
+builddependencies = [
+    ('Autotools', '20150215'),
+]
+
+preconfigopts = "./autogen.sh && "
+#
+# Silly hack to avoid building docs, which will fail when XSLT processor is available.
+# There is no configure option to skip building the docs :(. Therefore:
+#  1. Do NOT "make dist"; just make instead to prevent trying to build the docs.
+#  2. Skip the install step as "make install" will try to copy doc files
+#     and error when they were not build.
+#  3. Use postinstallcmd to "make install_bin install_include install_lib",
+#     which will install everything except for the docs.
+#prebuildopts = "make dist && "
+skipsteps = ['install']
+postinstallcmds = ['make install_bin install_include install_lib']
+
+sanity_check_paths = {
+    'files': ['bin/jeprof', 'lib/libjemalloc.a', 'lib/libjemalloc_pic.a', 
+              'lib/libjemalloc.%s' % SHLIB_EXT, 'include/jemalloc/jemalloc.h'],
+    'dirs': ['share'],
+}
+
+modextrapaths = {'LD_PRELOAD': ['lib/libjemalloc.%s' % SHLIB_EXT]}
+
+moduleclass = 'lib'

@@ -1,0 +1,59 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'freebayes'
+version = '1.1.0'
+
+homepage = 'https://github.com/ekg/freebayes'
+description = """ Bayesian haplotype-based polymorphism discovery and genotyping. """
+
+toolchain = {'name': 'foss', 'version': '2016a'} 
+
+
+
+# no direct download url. As described in documentation the download has been done with
+# $> git clone --recursive git://github.com/ekg/freebayes.git
+# Then compressed and placed in the sources folder with name freebayes-0.9.21.tar.bz2
+
+source_urls = ['https://github.com/ekg/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+
+dependencies = [
+    ('CMake', '3.6.1'),
+    ('SAMtools','1.3.1'),
+    ('Python','2.7.11'),
+    ('git','2.8.0'),
+]
+#    ('HTSlib','1.3.1'),
+#]
+#osdeps=[('bc','1.06.95')]
+
+parallel = 1
+
+# workaround to avoid the error "The C compiler identification is unknown"
+#prebuildopts = "unset CC && unset CXX && "
+
+prebuildopts = "unset CC && unset CXX && cd ../ && rm -vrf free*  &&  git clone --recursive git://github.com/ekg/" + name + ".git "+ name + "-" + version + " && cd  " + name + "-" + version + " &&"
+# + " && cd " + name + "-" + version +"/ && git checkout v" + version + "&& "
+# && ( rm -rf vcflib/ && git clone --recursive https://github.com/vcflib/vcflib.git && ml list &&cd vcflib/&& git checkout v1.0.0-rc1 && ml foss/2016a && export CC='gcc'&& export CXX='g++'make) && cp -v vcflib/tabixpp/*.hpp vcflib/ && cp -v vcflib/"
+#"(cd SeqLib/ && make) && (cd intervaltree/ && make ) && (cd bamtools/ && make ) &&"
+
+files_to_copy = ["bin", "README.md", "examples", "scripts", "python"]
+
+sanity_check_paths = {
+        'files': ["bin/freebayes", "bin/bamleftalign"],
+        'dirs': ["bin/"]
+}
+
+# add scripts dir to PATH
+modextrapaths = { 
+    'PATH': "scripts",
+}
+
+moduleclass = 'bio'
+
+checksums = ['1ba11217aa8f5f86ac30028373345d9a']

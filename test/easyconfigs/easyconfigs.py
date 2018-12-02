@@ -1,5 +1,5 @@
 ##
-# Copyright 2013 Ghent University
+# Copyright 2013-2018 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -8,7 +8,7 @@
 # Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/easybuild
+# https://github.com/easybuilders/easybuild
 #
 # EasyBuild is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -239,6 +239,33 @@ def template_easyconfig_test(self, spec):
     res = re.findall('.*\$root.*', ec.rawtxt, re.M)
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
     self.assertFalse(res, error_msg % res)
+
+    # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
+    old_urls = [
+        'github.com/hpcugent/easybuild',
+        'hpcugent.github.com/easybuild',
+        'hpcugent.github.io/easybuild',
+    ]
+    for old_url in old_urls:
+        self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
+
+    # make sure binutils is included as a build dep if toolchain is GCCcore
+    if ec['toolchain']['name'] == 'GCCcore':
+        # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
+        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
+
+        # let's also exclude the very special case where the system GCC is used as GCCcore, and only apply this
+        # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
+        if ec['toolchain']['version'] == 'system':
+            binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
+            requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
+            
+        # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
+        requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
+
+        if requires_binutils:
+            dep_names = [d['name'] for d in ec['builddependencies']]
+            self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)

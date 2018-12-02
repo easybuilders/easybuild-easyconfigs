@@ -1,0 +1,50 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# 0.2.5b8 modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'Binary'
+
+name = 'nextflow'
+version = '0.25.1'
+
+homepage = 'https://www.nextflow.io/'
+description = """ Nextflow enables scalable and reproducible scientific workflows using
+ software containers. It allows the adaptation of pipelines written in the most common 
+ scripting languages. """
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+source_urls = ['https://github.com/nextflow-io/%(name)s/releases/download/v%(version)s/',]
+nextflowbin="%(name)s-%(version)s-all"
+sources = [nextflowbin]
+
+java = 'Java'
+javaver = '1.8.0_74'
+versionsuffix = '-%s-%s' % (java, javaver)
+dependencies = [(java, javaver, '', True),]
+
+postinstallcmds = ["perl -i.bak -wpe 's/\$HOME\/.nextflow/\$PWD\/.nextflow/g' %(installdir)s/%(name)s-%(version)s-all && cp -v  %(installdir)s/%(name)s-%(version)s-all  %(installdir)s/%(name)s && chmod ug+rx %(installdir)s/%(name)s"]
+
+files_to_copy = [
+    'nextflow',
+]
+#cannot declare current dir: .nextflow
+#modextrapaths = {
+#    'NXF_HOME': ['./.nextflow'],
+#}
+
+sanity_check_paths = {
+    'files': ['nextflow'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(name)s']
+
+checksums = ['5a2786185c996ec77fc48173087b189d']
+
+
+moduleclass = 'bio'

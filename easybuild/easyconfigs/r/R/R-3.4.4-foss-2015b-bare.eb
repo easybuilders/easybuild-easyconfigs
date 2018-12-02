@@ -1,0 +1,93 @@
+name = 'R'
+version = '3.4.4'
+versionsuffix = '-bare'
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+moduleclass = 'lang'
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+checksums = ['9d6f73be072531e95884c7965ff80cd8']
+
+#
+# Configure options.
+#
+# NOTE: LAPACK support is built into BLAS, which will be detected correctly when LAPACK_LIBS is *not* specified.
+#       The summary at the end of the configure output should contain:
+#           External libraries: ...., BLAS(OpenBLAS), LAPACK(in blas), ....
+#
+# specify that at least EasyBuild v3.5.0 is required,
+# since we rely on the updated EasyBlock for R to configure correctly w.r.t. 
+# BLAS/LAPACK, TCL/TK, X11 and graphics capabilities. 
+# Hence the following configure options are no longer required in the EasyConfig as of EasyBuild >= 3.5.0:
+# --with-lapack --with-blas
+# --with-x=yes/no
+# --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh
+# --with-cairo --with-libpng --with-jpeglib --with-libtiff
+#
+easybuild_version = '3.5.0'
+configopts = ' --with-pic --enable-threads --enable-R-shlib'
+#
+# Some recommended packages may fail in a parallel build (e.g. Matrix) and we're installing them anyway below.
+#
+configopts += ' --with-recommended-packages=no'
+
+#
+# You may need to include a more recent Python to download R packages from HTTPS based URLs
+# when the Python that comes with your OS is too old and you encounter:
+#     SSL routines:SSL23_GET_SERVER_HELLO:sslv3 alert handshake failure
+# In that case make sure to include a Python as builddependency. 
+# This Python should not be too new: it's dependencies like for example on ncursus should be compatible with R's dependencies.
+# For example Python 2.7.11 is too new as it requires ncurses 6.0 whereas our R requires ncurses 5.9.
+# The alternative is to replace the https URLs with http URLs in the generated EasyConfig.
+#
+#builddependencies = [
+#    ('Python', '2.7.10')
+#]
+
+dependencies = [
+    ('libreadline', '6.3'),
+    ('ncurses', '5.9'),
+    ('bzip2', '1.0.6'),
+    ('XZ', '5.2.2'),
+    ('libpng', '1.6.29'),            # For plotting in R
+    ('libjpeg-turbo', '1.4.2'),      # For plotting in R
+    ('LibTIFF', '4.0.4'),            # For plotting in R
+    ('Tcl', '8.6.4'),                # For Tcl/Tk
+    ('Tk', '8.6.4', '-no-X11'),      # For Tcl/Tk
+    ('cURL', '7.47.1'),              # For RCurl
+    ('libxml2', '2.9.2'),            # For XML
+    ('cairo', '1.14.10'),            # For plotting in R
+    ('Pango', '1.40.6'),             # For plotting in R.
+    ('Java', '1.8.0_45', '', True),  # Java bindings are built if Java is found, might as well provide it.
+    ('PCRE', '8.38'),                # For rphast package.
+]
+
+#
+# R package list.
+#   * Order of packages is important!
+#   * Packages should be specified with fixed versions!
+#
+exts_list = [
+        # 
+        # Default libraries; only here to sanity check their presence.
+        #
+        'base',
+        'compiler',
+        'datasets',
+        'graphics',
+        'grDevices',
+        'grid',
+        'methods',
+        'parallel',
+        'splines',
+        'stats',
+        'stats4',
+        'tcltk',
+        'tools',
+        'utils',
+        #
+        # Other packages: not here, as this is a plain vanilla "bare" R, but in an RPlus bundle instead.
+        #
+]

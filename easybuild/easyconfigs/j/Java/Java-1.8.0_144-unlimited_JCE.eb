@@ -1,0 +1,33 @@
+name = 'Java'
+version = '1.8.0_144'
+versionsuffix = '-unlimited_JCE'
+
+homepage = 'http://java.com/'
+description = """Java Platform, Standard Edition (Java SE) lets you develop and deploy
+ Java applications on desktops and servers. This version contains the default Java 
+ Development Kit (JDK) supplemented with the Java Cryptography Extension (JCE) 
+ Unlimited Strength Jurisdiction Policy Files"""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+# download the tar.gz directly from http://www.oracle.com/technetwork/java/javase/downloads/index.html
+(vp, vs) = version.split('_')
+altver = '%su%s' % (vp.split('.')[1], vs)
+sources = [
+    'jdk-%s-linux-x64.tar.gz' % altver,
+    ('jce_policy-8.zip', 'unzip %s -d %(builddir)s/jdk%(version)s/'),
+]
+
+checksums = [
+    '2d59a3add1f213cd249a67684d4aeb83', # jdk-8u144-linux-x64.tar.gz
+    'b3c7031bc65c28c2340302065e7d00d3', # jce_policy-8.zip
+]
+
+#
+# Replace JCE standard (weak) policy files with the "Unlimited Strength" ones.
+#
+postinstallcmds = [
+    'mv %(installdir)s/UnlimitedJCEPolicyJDK8/local_policy.jar %(installdir)s/UnlimitedJCEPolicyJDK8/US_export_policy.jar %(installdir)s/jre/lib/security/',
+]
+
+moduleclass = 'lang'

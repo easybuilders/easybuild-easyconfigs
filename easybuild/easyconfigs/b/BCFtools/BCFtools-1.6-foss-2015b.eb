@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'BCFtools'
+version = '1.6'
+
+homepage = 'http://www.htslib.org/'
+description = """Samtools is a suite of programs for interacting with high-throughput sequencing data.
+ BCFtools - Reading/writing BCF2/VCF/gVCF files and calling/filtering/summarising SNP and short indel sequence variants"""
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+sources = [SOURCELOWER_TAR_BZ2]
+source_urls = ['https://github.com/samtools/%(namelower)s/releases/download/%(version)s']
+
+checksums = ['293010736b076cf684d2873928924fcc3d2c231a091084c2ac23a8045c7df982']
+
+#patches = ['%(name)s-%(version)s_extHTSlib_Makefile.patch']
+
+dependencies = [
+#    ('HTSlib', '1.6'),#prepackaged
+    ('zlib', '1.2.8'),
+    ('bzip2','1.0.6'),
+    ('XZ','5.2.2'),
+    ('GSL', '2.1'),#loads openblas
+]
+
+parallel = 1
+
+skipsteps = ['configure']
+
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS" USE_GSL=1 GSL_LIBS=\' -L${EBROOTGSL}/lib -lgsl -lopenblas -L${EBROOTOPENBLAS}/lib -I${EBROOTOPENBLAS}/include -L${EBROOTZLIB}/lib\''
+installopts = ' prefix=%(installdir)s'
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/lib/plugins',
+    'cp -a plugins/*.so %(installdir)s/lib/plugins/.',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bcftools', 'plot-vcfstats', 'vcfutils.pl']],
+    'dirs': ['lib/plugins'],
+}
+
+moduleclass = 'bio'
+

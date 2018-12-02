@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'DFTB+'
+version = '17.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.dftb-plus.info'
+description = """DFTB+ is a fast and efficient versatile quantum mechanical simulation package.  It is based on the 
+ Density Functional Tight Binding (DFTB) method, containing almost all of the useful extensions which have been
+ developed for the DFTB framework so far.  Using DFTB+ you can carry out quantum mechanical simulations like with
+ ab-initio density functional theory based packages, but in an approximate way gaining typically around two order of
+ magnitude in speed."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+# some tests, e.g. spinorbit, fail with more aggressive optimization
+toolchainopts = {'lowopt': True, 'optarch': False}
+
+source_urls = ['https://github.com/dftbplus/dftbplus/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['DFTB+-%(version)s_test_dptools.patch']
+checksums = [
+    '1c3d90418299f3c05e0adadf7c683b41f08600bea0ecde5edbd2206198d92a00',  # 17.1.tar.gz
+    'ffbd4721a8a01326be11ef780cb392265d05631fac144a9ae6e76aceae935e2b',  # DFTB+-17.1_test_dptools.patch
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('arpack-ng', '3.5.0'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = "./utils/get_opt_externals dftd3 && ./utils/get_opt_externals slakos && "
+prebuildopts += "cp sys/make.x86_64-linux-intel make.arch && "
+prebuildopts += 'sed -i "s|-O2|$OPTFLAGS|g" make.arch && '
+prebuildopts += "sed -i 's|$(ROOT)/_install|%(installdir)s|' make.config && "
+
+buildopts = "LNOPT='-static-intel'"
+
+runtest = 'test'
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/' + prog for prog in ['dftb+', 'dp_bands', 'dp_dos', 'gen2cif',
+                                         'gen2xyz', 'modes', 'waveplot', 'xyz2gen']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [('python', '-c "import dptools"')]
+
+moduleclass = 'phys'

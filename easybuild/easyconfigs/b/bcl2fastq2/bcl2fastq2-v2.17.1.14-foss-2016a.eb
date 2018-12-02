@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = "bcl2fastq2"
+version = 'v2.17.1.14'
+
+homepage = 'http://www.illumina.com/'
+description = """bcl2fastq2 Conversion Software.
+Illumina sequencing instruments generate per-cycle BCL base call files as primary
+sequencing output, but many downstream analysis applications use per-read FASTQ
+files as input. bcl2fastq2 Conversion Software v2.17 combines these BCL files from a run
+and converts them into FASTQ files."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+source_urls = ['ftp://webdata2:webdata2@ussd-ftp.illumina.com/downloads/Software/bcl2fastq/']
+sources = [('%s-%s.tar.zip' % (name, version))]
+
+
+#builddependencies = [
+#    ('CMake', '2.8.12'),
+#    ('Boost', '1.54.0','-Python-2.7.9'),
+#]
+sourcetargz='%s-%s.tar.gz' % (name, version)
+unpack_options='&&( pwd && tar -zxf ' + sourcetargz + ' && rm ' + sourcetargz + ')'
+
+preconfigopts = 'export BOOST_ROOT=$EBROOTBOOST &&'
+preconfigopts += 'export BOOST_INCLUDEDIR=$EBROOTBOOST/include &&'
+preconfigopts += 'export BOOST_LIBRARYDIR=$EBROOTBOOST/lib &&'
+
+configure_cmd_prefix = "src/"
+configopts = '  --prefix=%(installdir)s/ &>> $(pwd)/bcl2fastq2.config.log'
+
+
+dependencies = [
+    ('CMake', '2.8.12'),
+    ('Boost', '1.54.0','-Python-2.7.11'),
+    ('gnuplot', '4.6.0'),
+    ('numactl', '2.0.8'),
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.8'),
+    ('libxml2','2.7.8'),
+    ('libxslt','1.1.26')
+]
+
+files_to_copy = ["bin", "src","easybuild","etc","lib","libexec","share"]
+
+sanity_check_paths = {
+    'files': ['bin/bcl2fastq'],
+    'dirs': ['bin'],
+}
+
+
+checksums = ['7426226c6db095862e636b95c38608d3']

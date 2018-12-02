@@ -1,0 +1,46 @@
+diff -ru ea-utils-1.04.807.original/clipper/samtools/Makefile ea-utils-1.04.807.patched/clipper/samtools/Makefile
+--- ea-utils-1.04.807.original/clipper/samtools/Makefile	2016-02-26 17:57:33.000000000 +0100
++++ ea-utils-1.04.807.patched/clipper/samtools/Makefile	2017-11-20 16:46:42.000000000 +0100
+@@ -10,10 +10,13 @@
+ 			bamtk.o kaln.o errmod.o sample.o \
+ 			cut_target.o phase.o bam2depth.o
+ PROG=		samtools
+-INCLUDES=	-I.
++#INCLUDES=	-I.
+ SUBDIRS=	.
+-LIBPATH=
+-LIBCURSES=	-lcurses # -lXCurses
++#LIBPATH=
++#LIBCURSES=	-lcurses # -lXCurses
++INCLUDES=	-I$(EBROOTNCURSES)/include -I$(EBROOTZLIB)/include -I. -I$(EBROOTHTSLIB)/include
++LIBCURSES=	-L$(EBROOTNCURSES)/lib -lcurses # -lXCurses
++ZLIB=		-L$(EBROOTZLIB)/lib -lz
+ 
+ .SUFFIXES:.c .o
+ 
+@@ -41,10 +44,10 @@
+ 		$(AR) -csru $@ $(LOBJS)
+ 
+ razip:razip.o razf.o $(KNETFILE_O)
+-		$(CC) $(CFLAGS) -o $@ razf.o razip.o $(KNETFILE_O) -lz
++		$(CC) $(CFLAGS) -o $@ razf.o razip.o $(KNETFILE_O) $(ZLIB)
+ 
+ bgzip:bgzip.o bgzf.o $(KNETFILE_O)
+-		$(CC) $(CFLAGS) -o $@ bgzf.o bgzip.o $(KNETFILE_O) -lz
++		$(CC) $(CFLAGS) -o $@ bgzf.o bgzip.o $(KNETFILE_O) $(ZLIB)
+ 
+ razip.o:razf.h
+ bam.o:bam.h razf.h bam_endian.h kstring.h sam_header.h
+@@ -66,10 +69,10 @@
+ 
+ 
+ libbam.1.dylib-local:$(LOBJS)
+-		libtool -dynamic $(LOBJS) -o libbam.1.dylib -lc -lz
++		libtool -dynamic $(LOBJS) -o libbam.1.dylib -lc $(ZLIB)
+ 
+ libbam.so.1-local:$(LOBJS)
+-		$(CC) -shared -Wl,-soname,libbam.so -o libbam.so.1 $(LOBJS) -lc -lz
++		$(CC) -shared -Wl,-soname,libbam.so -o libbam.so.1 $(LOBJS) -lc $(ZLIB)
+ 
+ dylib:
+ 		@$(MAKE) cleanlocal; \

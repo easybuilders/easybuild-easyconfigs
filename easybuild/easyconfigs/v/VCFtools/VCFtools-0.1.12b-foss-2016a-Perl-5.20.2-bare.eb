@@ -1,0 +1,65 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+
+easyblock = 'MakeCp'
+
+name = 'VCFtools'
+namelower = name.lower()
+version = '0.1.12b'
+
+homepage = "http://vcftools.sourceforge.net/"
+description = """The aim of VCFtools is to provide 
+ methods for working with VCF files: validating, 
+ merging, comparing and calculate some basic population
+ genetic statistics. """
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+#
+# Example URL:
+# http://downloads.sourceforge.net/project/vcftools/vcftools_0.1.12b.tar.gz?ts=1429189285&use_mirror=autoselect
+#
+import time
+seconds_after_epoch = int(time.time())
+source_urls = [('http://downloads.sourceforge.net/project/%s' % namelower, '?ts=%s&use_mirror=autoselect' % seconds_after_epoch)]
+sources = ['%(namelower)s_%(version)s.tar.gz']
+
+perl = 'Perl'
+perlver = '5.20.2'
+perlversuffix = '-bare'
+versionsuffix = '-%s-%s%s' % (perl, perlver, perlversuffix)
+dependencies = [
+    (perl, perlver, perlversuffix),
+    ('HTSlib','1.3'),
+    ('zlib','1.2.8'),
+]
+
+
+prebuildopts="perl -i.bak -wpe 's!\-lz!'$(echo $EBROOTZLIB)'\/lib\/libz.so.1!;' cpp/Makefile &&"
+
+vcf_executables = ['fill-aa', 'fill-an-ac', 'fill-fs', 'fill-ref-md5', 
+    'vcf-annotate', 'vcf-compare', 'vcf-concat', 'vcf-consensus', 'vcf-contrast', 
+    'vcf-convert', 'vcf-fix-ploidy', 'vcf-indel-stats', 'vcf-isec', 'vcf-merge', 
+    'vcf-phased-join', 'vcf-query', 'vcf-shuffle-cols', 'vcf-sort', 'vcf-stats', 
+    'vcf-subset', 'vcftools', 'vcf-to-tab', 'vcf-tstv', 'vcf-validator'
+]
+
+files_to_copy = ['bin', 'lib', 'examples', (['bin/man1'], 'man')]
+
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl'}
+
+#
+# Remove manual in wrong location.
+#
+postinstallcmds = ['rm -Rf %(installdir)s/bin/man1/']
+
+#
+# Check if all binaries from the suite are present.
+#
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in vcf_executables],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
+
+checksums = ['662758d1139c138cf5a0239ed99f12c2']

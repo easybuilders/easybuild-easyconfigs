@@ -10,7 +10,6 @@ description = """The GNU Readline library provides a set of functions for use by
  to recall and perhaps reedit those lines, and perform csh-like history expansion on previous commands."""
 
 toolchain = {'name': 'dummy', 'version': ''}
-toolchainopts = {'pic': True}
 
 sources = ['readline-%(version)s.tar.gz']
 source_urls = ['http://ftp.gnu.org/gnu/readline']
@@ -19,8 +18,11 @@ patches = ['libreadline-%(version)s-bugfix.patch']
 
 dependencies = [('ncurses', '6.0')]
 
+# need to take care of $CFLAGS ourselves with dummy toolchain
+# we need to add -fPIC, but should also include -O* option to avoid compiling with -O0 (default for GCC)
+buildopts = "CFLAGS='-O2 -fPIC' "
 # for the termcap symbols, use EB ncurses
-preconfigopts = "env LDFLAGS='-lncurses'"
+buildopts += "SHLIB_LIBS='-lncurses'"
 
 sanity_check_paths = {
     'files': ['lib/libreadline.a', 'lib/libhistory.a'] +

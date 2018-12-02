@@ -1,0 +1,69 @@
+name = 'R'
+version = '3.2.2'
+versionsuffix = '-bioconductor'  # bare, as in no extensions included
+
+homepage = 'http://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'foss', 'version': '2016a'}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+
+preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+configopts = "--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib"
+# some recommended packages may fail in a parallel build (e.g. Matrix), and we're installing them anyway below
+#configopts += " --with-recommended-packages=no"
+
+exts_list = []  # just to make it explicit this module doesn't include any extensions
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['R', 'Rscript']] +
+             ['lib64/R/include/%s' % x for x in ['Rconfig.h', 'Rdefines.h', 'Rembedded.h',
+                                                 'R.h', 'Rinterface.h', 'Rinternals.h',
+                                                 'Rmath.h', 'Rversion.h', 'S.h']] +
+             ['lib64/R/modules/%s' % x for x in ['internet.so', 'lapack.so']] +
+             ['lib64/R/lib/libR.so'],
+    'dirs': []
+}
+
+osdependencies = [ 'ncurses-devel', 'libpng-devel', 'java-1.7.0-openjdk-devel', 'cairo-devel', 'libjpeg-turbo-devel', 'libtiff-devel', 'libicu-devel' ] 
+
+exts_list = [
+    # default libraries, only here to sanity check their presence
+    'base',
+    'boot',
+    'class',
+    'cluster',
+    'codetools',
+    'compiler',
+    'datasets',
+    'foreign',
+    'graphics',
+    'grDevices',
+    'grid',
+    'KernSmooth',
+    'lattice',
+    'MASS',
+    'Matrix',
+    'methods',
+    'mgcv',
+    'nlme',
+    'nnet',
+    'parallel',
+    'rpart',
+    'spatial',
+    'splines',
+    'stats',
+    'stats4',
+    'survival',
+    'tcltk',
+    'tools',
+    'translations',
+    'utils',
+]
+
+
+moduleclass = 'lang'
+
+checksums = ['57cef5c2e210a5454da1979562a10e5b']

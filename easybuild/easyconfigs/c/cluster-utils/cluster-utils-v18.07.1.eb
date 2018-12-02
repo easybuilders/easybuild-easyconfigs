@@ -1,0 +1,77 @@
+name = 'cluster-utils'
+version = 'v18.07.1'
+
+homepage = 'https://github.com/molgenis/cluster-utils/'
+description = """Utilities for cluster users."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+easyblock = 'CmdCp'
+
+#
+# Example URL:
+# https://github.com/molgenis/cluster-utils/archive/v15.06.1.tar.gz
+#
+source_urls = [('http://github.com/molgenis/%s/archive/' % (name))]
+sources = [('%s.tar.gz' % (version))]
+checksums = ['b9f126b0a26d50e9609111ebe7d60b5ec0390c647deb3e65efe6ffeeab4b4fad']
+
+#
+# Deps.
+#
+# * Technically htop is not a dependency, but we'd like to have it as part of the cluster-utils module.
+#
+dependencies = [
+    ('htop', '2.0.2', '-pbp', ('dummy', '')),
+]
+
+keepsymlinks = True
+
+#
+# Install 'apps' and README..
+#
+files_to_copy = [
+    'README.md',
+    (['bin/*'], 'bin/')
+]
+
+#
+# We don't really need a command to install, 
+# but as we have to have one in order to recycle the CmdCp easyblock... just ls.
+#
+cmds_map = [('.*', "ls -ahl %(source)s")]
+
+#
+# Make scripts executable.
+# (Mode may by masked by umask.)
+# And remove tools we don't need or won't work on our HPC sites.
+#
+postinstallcmds = [
+    'for executable in $(ls -1 %(installdir)s/bin/*.{bash,pl,py,R,sh} 2> /dev/null); do chmod 775 ${executable}; done', 
+    'chmod -R g+rwX,o+rX,o-w %(installdir)s/*',
+    'rm %(installdir)s/bin/ctop-pbs',
+    'rm %(installdir)s/bin/sjload*'
+]
+
+#
+# Sanity checking.
+#
+executables = [
+    'caccounts',
+    'cfinger.bash', 'cfinger',
+    'cnodes',
+    'cqos',
+    'cqueue',
+    'ctop-slurm', 'ctop',
+    'colleagues.bash', 'colleagues',
+    'hpc-environment-quota.bash', 'quota',
+    'hpc-environment-quota-report-for-PFS.bash',
+    'hpc-environment-slurm-report.bash',
+    'sjeff.bash', 'sjeff',
+]
+sanity_check_paths = {
+    'files': ['README.md'] + ['bin/%s' % x for x in executables],
+    'dirs': ['bin']
+}
+sanity_check_commands = [('hpc-environment-quota.bash', '-h')]
+
+moduleclass = 'tools'

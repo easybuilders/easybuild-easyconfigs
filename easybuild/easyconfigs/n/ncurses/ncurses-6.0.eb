@@ -8,23 +8,34 @@ description = """The Ncurses (new curses) library is a free software emulation o
  and more. It uses Terminfo format, supports pads and color and multiple highlights and forms characters and
  function-key mapping, and has all the other SYSV-curses enhancements over BSD Curses."""
 
-toolchain = {'name': 'dummy', 'version': 'dummy'}
-toolchainopts = {'optarch': True, 'pic': True}
+toolchain = {'name': 'dummy', 'version': ''}
 
 source_urls = [GNU_SOURCE]
 sources = [SOURCE_TAR_GZ]
-
 patches = ['ncurses-%(version)s_gcc-5.patch']
+checksums = [
+    'f551c24b30ce8bfb6e96d9f59b42fbea30fa3a6123384172f9e7284bcf647260',  # ncurses-6.0.tar.gz
+    'f82003be6ce6b87c3dc8a91d97785aab1a76a9e8544c3a3c02283c01dd41aede',  # ncurses-6.0_gcc-5.patch
+]
 
 configopts = [
     # default build
-    '--with-shared --enable-overwrite --with-termlib',
+    '--with-shared --enable-overwrite',
     # the UTF-8 enabled version (ncursesw)
-    '--with-shared --enable-overwrite --with-termlib ' +
-    '--enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/'
+    '--with-shared --enable-overwrite --enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/'
 ]
 
-libs = ["form", "menu", "ncurses", "panel", "tinfo"]
+# need to take care of $CFLAGS ourselves with dummy toolchain
+# we need to add -fPIC, but should also include -O* option to avoid compiling with -O0 (default for GCC)
+buildopts = 'CFLAGS="-O2 -fPIC"'
+
+# Symlink libtinfo to libncurses (since it can handle the API) so it doesn't get picked up from the OS
+postinstallcmds = [
+    "ln -s %(installdir)s/lib/libncurses.so %(installdir)s/lib/libtinfo.so",
+    "ln -s %(installdir)s/lib/libncurses.a %(installdir)s/lib/libtinfo.a"
+]
+
+libs = ["form", "menu", "ncurses", "panel"]
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ["captoinfo", "clear", "infocmp", "infotocap", "ncurses%(version_major)s-config",
                                      "reset", "tabs", "tic", "toe", "tput", "tset"]] +

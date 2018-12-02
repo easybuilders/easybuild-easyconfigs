@@ -1,0 +1,51 @@
+easyblock = "PythonPackage"
+
+name = 'SPARSE'
+version = '20180423-f97098e'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/zheminzhou/%(name)s'
+description = """Strain Prediction and Analysis using Representative SEquences (SPARSE).
+SPARSE indexes >100,000 reference genomes in public databases in to hierarchical clusters 
+and uses it to predict origins of metagenomic reads."""
+
+toolchain = {'name': 'foss', 'version': '2015b'}
+
+#
+# https://github.com/zheminzhou/SPARSE/archive/f97098e68c7e41bed159e9d7a14d25b76f7d96e3.zip
+#
+source_urls = ['https://github.com/zheminzhou/%(name)s/archive/']
+sources = ['f97098e68c7e41bed159e9d7a14d25b76f7d96e3.zip']
+patches = ['%(name)s-f97098e68c7e41bed159e9d7a14d25b76f7d96e3.patch']
+checksums = [
+    '2b2ac1e714ed70e426ace734074053c1340f03d726b9cbd8ddaad9dc6276ff3d', # f97098e68c7e41bed159e9d7a14d25b76f7d96e3.zip
+    '820a60025cd8e8dade45ef60cd2973ac5158999c97447f72cc677bfca2b98c47', # SPARSE-f97098e68c7e41bed159e9d7a14d25b76f7d96e3.patch
+]
+
+dependencies = [
+    ('ncurses', '5.9'),
+    ('SAMtools', '1.3.1'),
+    ('Bowtie2', '2.3.4.1'),
+    ('mash', '2.0'),
+    ('Python', '2.7.11'),
+]
+
+#
+# Compile EM/solve-model using make.
+#
+prebuildopts = 'cd %(builddir)s/SPARSE-*/EM/ && make && cd ../ && '
+
+#
+# Explicitly define module name to prevent automagic conversion to lowercase (default),
+# which will cause the sanity check step to fail when the lowercase 'sparse' module cannot be loaded.
+#
+options = {'modulename': '%(name)s'}
+
+binaries = ['sparse']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in binaries],
+    'dirs':  ['bin', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'bio'
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}

@@ -1,0 +1,52 @@
+name = 'PGx'
+version = '17.08.2'
+
+homepage = 'https://github.com/molgenis/ngs-utils/'
+description = """Pharmacogenetics script to create a GLIMPs output file using 4 inputfiles (Dropsense | Taqman | Iplex | UGT1A1 )."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+easyblock = 'CmdCp'
+
+#
+# Example URL: https://github.com/molgenis/ngs-utils/archive/15.12.2.tar.gz
+#
+source_urls = [('http://github.com/molgenis/ngs-utils/archive/%s/' % (version))]
+sources = [('%s.tar.gz' % (version))]
+checksums = ['4ee5cc6c6225476f25205d8c6bd41f72'] # ngs-utils-17.08.2.tar.gz
+
+dependencies = [
+    ('PerlPlus', '5.22.0', '-v17.08.1', ('foss', '2015b')),
+]
+
+#
+# Install only relevant script from ngs-utils repo.
+#
+files_to_copy = [
+    (['create_glims_file/*'], 'bin/')
+]
+
+#
+# We don't really need a command to install depad-utils, 
+# but as we have to have one in order to reycle the CmdCp easyblock... just ls.
+#
+cmds_map = [('.*', "ls -ahl %(source)s")]
+
+#
+# Make scripts executable.
+# (Mode may by masked by umask.)
+#
+postinstallcmds = [
+    'for executable in $(ls -1 %(installdir)s/bin/*.{bash,pl,py,R,sh} 2> /dev/null); do chmod 775 ${executable}; done',
+    'chmod -R g+rwX,o+rX,o-w %(installdir)s/*'
+]
+
+#
+# Sanity checking.
+#
+sanity_check_paths = {
+    'files': ['bin/PGx.pl'],
+    'dirs': ['bin']
+}
+sanity_check_commands = [('PGx.pl', '-h')]
+
+moduleclass = 'tools'
