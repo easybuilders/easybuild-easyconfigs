@@ -1,0 +1,62 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'freebayes'
+version = '1.2.0'
+
+homepage = 'https://github.com/ekg/freebayes'
+description = """ Bayesian haplotype-based polymorphism discovery and genotyping. """
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+# No direct download url. 
+# The version downloaded do not work: use git --recursive
+# The download has been done with git:
+# $ git clone --recursive https://github.com/ekg/freebayes.git
+# $ mv freebayes freebayes-1.2.0 
+# $ tar -czf freebayes-1.2.0.tar.gz freebayes-1.2.0 && rm -rf freebayes-1.2.0
+
+sources = ['%(name)s-%(version)s.tar.gz']
+
+# Option to also build vcflib, this will add these commands to the end of the 
+# Build command, and run them if the build completes
+
+buildopts = ' && cd vcflib && make && cd ..'
+
+builddependencies = [('CMake', '3.2.1', '', ('GCC', '5.4.0'))]
+
+parallel = 1
+
+# Workaround to avoid the error:
+# "The C compiler identification is unknown".
+
+prebuildopts = "unset CC && unset CXX && "
+
+files_to_copy = ["bin", "README.md", "examples", "scripts", "python","test", (["vcflib/bin","vcflib/scripts","vcflib/examples","vcflib/lib","vcflib/samples"],"vcflib")]
+
+sanity_check_paths = {
+    'files': ["bin/freebayes", "bin/bamleftalign"],
+    'dirs': [""]
+}
+
+# Add scripts dir to PATH
+
+modextrapaths = { 
+    'PATH': "scripts",
+}
+
+moduleclass = 'bio'
+
+# To run tests after installing with the command (note tests must be done 
+# in-place (hard coded paths)) $ eb <this file>:
+# 1a) $ cd /home/$USER/.local/easybuild/software/2017/avx2/Compiler/gcc5.4/freebayes/1.1.0/test
+#   or if running in global install location
+# 1b) $ cd /cvmfs/soft.computecanada.ca/easybuild/software/2017/avx2/Compiler/gcc5.4/freebayes/1.1.0/test
+#    CAN't actually run the tests here as it assumes you have write permission
+# 2) $ module purge
+# 3) $ module load gcc/5.4.0 samtools/1.5 freebayes
+# 4) $ make test
