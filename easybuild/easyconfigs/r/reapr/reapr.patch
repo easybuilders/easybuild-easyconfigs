@@ -1,0 +1,148 @@
+--- ./src/Makefile.orig	2018-11-29 18:40:32.008778170 +0000
++++ ./src/Makefile	2018-11-30 22:33:52.100119323 +0000
+@@ -1,6 +1,5 @@
+ BAMTOOLS_ROOT = $(CURDIR)/bamtools
+-CC = g++
+-CFLAGS = -Wl,-rpath,$(BAMTOOLS_ROOT)/lib  -Wall -O3  -I $(BAMTOOLS_ROOT)/include -L $(BAMTOOLS_ROOT)/lib
++CFLAGS = -Wall -O3 
+ TABIX = tabix/tabix.o  -L./tabix -ltabix -lz
+ STATS_OBJS =  trianglePlot.o coveragePlot.o fasta.o histogram.o utils.o
+ SCORE_OBJS = errorWindow.o utils.o histogram.o
+--- ./src/task_seqrename.pl.orig	2018-11-30 22:29:05.500649245 +0000
++++ ./src/task_seqrename.pl	2018-11-30 22:29:29.498437407 +0000
+@@ -7,7 +7,7 @@
+ use Getopt::Long;
+ 
+ my ($scriptname, $scriptdir) = fileparse($0);
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++my $samtools = 'samtools';
+ my %options;
+ my $usage = qq/<rename file> <in.bam> <out.bam>
+ 
+--- ./src/task_smaltmap.pl.orig	2018-11-30 22:29:40.135343511 +0000
++++ ./src/task_smaltmap.pl	2018-11-30 22:30:09.266086363 +0000
+@@ -77,7 +77,7 @@
+ my $reads_2 = $ARGV[2];
+ my $final_bam = $ARGV[3];
+ my $ERROR_PREFIX = '[REAPR smaltmap]';
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++my $samtools = 'samtools';
+ my $smalt = File::Spec->catfile($scriptdir, 'smalt');
+ my $tmp_prefix = "$final_bam.tmp.$$.smaltmap";
+ my $smalt_index = "$tmp_prefix.smalt_index";
+--- ./third_party/snpomatic/Makefile.orig	2018-11-29 23:00:48.484733607 +0000
++++ ./third_party/snpomatic/Makefile	2018-11-30 23:13:18.641075041 +0000
+@@ -1,12 +1,11 @@
+ # Use g++
+-CXX=g++
+-CXXFLAGS=-g -O3
+-LIBS=-lm
++#CXX=g++
++#CXXFLAGS=-g -O3
++#LIBS=-lm
+ 
+ # Use Intel compiler (faster!)
+-#CXX=icpc
+-#CXXFLAGS=-g -O2 -ip -align -falign-functions -Wno-deprecated -Isrc
+-#LIBS=
++CXXFLAGS=-g -O2 -ip -align -falign-functions -Wno-deprecated -Isrc
++LIBS=
+ 
+ 
+ 
+--- third_party/tabix/Makefile.orig	2018-11-29 22:53:59.667389191 +0000
++++ third_party/tabix/Makefile	2018-11-30 23:31:00.000618318 +0000
+@@ -1,5 +1,4 @@
+-CC=			gcc
+-CPP= 		g++
++CPP = $(CXX)
+ CFLAGS=		-g -Wall -O2 -fPIC #-m64 #-arch ppc
+ DFLAGS=		-D_FILE_OFFSET_BITS=64 -D_USE_KNETFILE
+ LOBJS=		bgzf.o kstring.o knetfile.o index.o bedidx.o
+--- src/task_perfectfrombam.pl.orig	2018-11-29 22:36:31.923802051 +0000
++++ src/task_perfectfrombam.pl	2018-12-03 19:00:48.578133834 +0000
+@@ -57,12 +57,12 @@
+ my $min_perfect_map_qual = $ARGV[5];
+ my $min_align_score = $ARGV[6];
+ my $bam2perfect = File::Spec->catfile($scriptdir, 'bam2perfect');
+-my $bgzip = File::Spec->catfile($scriptdir, 'tabix/bgzip');
+-my $tabix = File::Spec->catfile($scriptdir, 'tabix/tabix');
++my $bgzip = 'bgzip';
++my $tabix = 'tabix';
+ my $ERROR_PREFIX = '[REAPR perfectfrombam]';
+ my $perfect_bam = "$out_prefix.tmp.perfect.bam";
+ my $repetitive_bam = "$out_prefix.tmp.repetitive.bam";
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++my $samtools = 'samtools';
+ my %seq_lengths;
+ my %used_seqs;
+ my $hist_file = "$out_prefix.hist";
+--- src/task_perfectmap.pl.orig	2018-11-30 22:27:09.333674695 +0000
++++ src/task_perfectmap.pl	2018-12-03 19:01:30.865759844 +0000
+@@ -43,9 +43,9 @@
+ my $raw_coverage_file = "$preout.tmp.cov.txt";
+ my $tmp_bin = "$preout.tmp.bin";
+ my $tmp_bin_single_match = "$tmp_bin\_single_match.fastq";
+-my $tabix = File::Spec->catfile($scriptdir, 'tabix/tabix');
+-my $bgzip = File::Spec->catfile($scriptdir, 'tabix/bgzip');
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++my $tabix = 'tabix';
++my $bgzip = 'bgzip';
++my $samtools = 'samtools';
+ my $all_bases_outfile = "$preout.perfect_cov.gz";
+ my $hist_outfile = "$preout.hist";
+ my @coverage = (0) x 101;
+--- src/task_plots.pl.orig	2018-11-30 22:27:49.417320861 +0000
++++ src/task_plots.pl	2018-12-03 19:02:07.593435026 +0000
+@@ -50,9 +50,9 @@
+ }
+ 
+ 
+-my $tabix = File::Spec->catfile($scriptdir, 'tabix/tabix');
+-my $bgzip = File::Spec->catfile($scriptdir, 'tabix/bgzip');
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++my $tabix = 'tabix';
++my $bgzip = 'bgzip';
++my $samtools = 'samtools';
+ my @plot_list = ('frag_cov', 'frag_cov_cor', 'read_cov', 'read_ratio_f', 'read_ratio_r', 'clip', 'FCD_err');
+ my @file_list;
+ my $fa_out = "$outprefix.ref.fa";
+--- src/task_preprocess.pl.orig	2018-11-30 22:28:20.567045891 +0000
++++ src/task_preprocess.pl	2018-12-03 19:07:23.333642630 +0000
+@@ -52,9 +52,9 @@
+ my $ideal_fcd_file = File::Spec->catfile($sample_dir, 'ideal_fcd.txt');
+ my $lowess_prefix = File::Spec->catfile($sample_dir, 'gc_vs_cov.lowess');
+ my $r_script = File::Spec->catfile($sample_dir, 'gc_vs_cov.R');
+-my $tabix = File::Spec->catfile($scriptdir, 'tabix/tabix');
+-my $bgzip = File::Spec->catfile($scriptdir, 'tabix/bgzip');
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++my $tabix = 'tabix';
++my $bgzip = 'bgzip';
++my $samtools = 'samtools';
+ 
+ # make directory and soft links to required files
+ $fasta_in = File::Spec->rel2abs($fasta_in);
+--- src/task_pipeline.pl.orig	2018-12-03 22:00:55.600999431 +0000
++++ src/task_pipeline.pl	2018-12-03 22:01:09.990876028 +0000
+@@ -9,7 +9,7 @@
+ 
+ my ($scriptname, $scriptdir) = fileparse($0);
+ my $reapr_dir = abs_path(File::Spec->catfile($scriptdir, File::Spec->updir()));
+-my $reapr = File::Spec->catfile($reapr_dir, 'reapr');
++my $reapr = 'reapr';
+ 
+ my %options = (fcdcut => 0);
+ 
+--- src/reapr.pl.orig	2018-12-03 22:14:23.414924378 +0000
++++ src/reapr.pl	2018-12-03 22:57:46.762287416 +0000
+@@ -12,8 +12,8 @@
+ $this_script = File::Spec->rel2abs($this_script);
+ my ($scriptname, $scriptdir) = fileparse($this_script);
+ $scriptdir = File::Spec->rel2abs($scriptdir);
+-my $tabix = File::Spec->catfile($scriptdir, 'tabix/tabix');
+-my $bgzip = File::Spec->catfile($scriptdir, 'tabix/bgzip');
++my $tabix = 'tabix';
++my $bgzip = 'bgzip';
+ my $version = '1.0.18';
+ 
+ if ($#ARGV == -1) {
