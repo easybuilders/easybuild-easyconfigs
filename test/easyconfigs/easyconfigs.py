@@ -347,7 +347,13 @@ class EasyConfigTest(TestCase):
             if ec['easyblock'] == 'Bundle':
                 ec['sources'] = []
 
-        checksum_issues = check_sha256_checksums(changed_ecs, whitelist=whitelist)
+        # filter out deprecated easyconfigs
+        retained_changed_ecs = []
+        for ec in changed_ecs:
+            if not ec['deprecated']:
+                retained_changed_ecs.append(ec)
+
+        checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
     def test_changed_files_pull_request(self):
