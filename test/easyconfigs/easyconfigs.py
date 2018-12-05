@@ -386,7 +386,7 @@ class EasyConfigTest(TestCase):
                 changed_ecs = []
                 for ec_fn in changed_ecs_filenames:
                     for ec in self.parsed_easyconfigs:
-                        if ec['spec'].endswith(ec_fn):
+                        if os.path.basename(ec['spec']) == ec_fn:
                             changed_ecs.append(ec['ec'])
                             break
 
