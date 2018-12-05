@@ -12,22 +12,24 @@ source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/d
 sources = [SOURCELOWER_TAR_GZ]
 checksums = ['363c8a1258d12df28657e9b13bfe41e30fc129a4cfb89fcf53ff68bbe1bd65b3']
 
+preconfigopts = 'sed -i "s!/usr/include/slurm!$NIXUSER_PROFILE/include/slurm!g" configure && '
 configopts = '--enable-shared --enable-mpi-thread-multiple --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
-configopts += '--with-hwloc=$NIXUSER_PROFILE '  # hwloc support
+configopts += '--with-hwloc=external '  # hwloc support
 configopts += '--without-usnic ' # No usnic-via-libfabric
-configopts += '--with-ucx=/cvmfs/soft.computecanada.ca/nix/var/nix/profiles/ucx-1.3.1 '
+configopts += '--with-ucx '
 configopts += '--with-cuda=$CUDA_HOME '             # CUDA-aware build; N.B. --disable-dlopen is incompatible
 configopts += '--disable-wrapper-runpath --disable-wrapper-rpath ' # rpath is already done by Nix ld wrapper
 configopts += '--with-munge ' #enable Munge in PMIx
 #configopts += '--enable-pmix-backward-compatibility --disable-pmix-dstore '
-configopts += '--with-pmi=$NIXUSER_PROFILE '
+configopts += '--with-pmi '
 configopts += '--enable-mpi-cxx '
+configopts += '--with-hcoll '
 
 # enumerate all mca's that should be compiled as plugins (only those that link to system-specific
 # libraries (lustre, fabric, and scheduler)
 configopts += '--enable-mca-dso=common-libfabric,common-ofi,common-verbs,atomic-mxm,btl-openib,btl-scif,'
-configopts += 'coll-fca,ess-pmi,ess-tm,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,osc-ucx,'
+configopts += 'coll-fca,coll-hcoll,ess-pmi,ess-tm,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,osc-ucx,'
 configopts += 'oob-ud,plm-tm,pmix-pmix112,pml-ucx,pml-yalla,pnet-opa,psec-munge,'
 configopts += 'ras-tm,rml-ofi,scoll-mca,sec-munge,spml-ikrit, '
 
