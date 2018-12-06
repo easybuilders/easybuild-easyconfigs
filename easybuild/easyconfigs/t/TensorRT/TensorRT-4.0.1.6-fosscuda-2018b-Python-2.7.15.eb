@@ -1,0 +1,51 @@
+easyblock = 'Binary'
+
+name = 'TensorRT'
+version = '4.0.1.6'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://developer.nvidia.com/tensorrt'
+description = """NVIDIA TensorRT is a platform for high-performance deep learning inference"""
+
+sources = ['%(name)s-%(version)s.Ubuntu-16.04.4.x86_64-gnu.cuda-9.2.cudnn7.1.tar.gz']
+
+toolchain = {'name': 'fosscuda', 'version': '2018b'}
+
+builddependencies = [
+    ('protobuf', '3.6.1'),
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('cuDNN', '7.1.4.18'),
+]
+
+extract_sources = True
+keepsymlinks = True
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('protobuf-python', '3.6.1', {
+        'modulename': 'google.protobuf',
+        'source_tmpl': 'protobuf-python-%(version)s.tar.gz',
+        'source_urls': ['https://github.com/google/protobuf/releases/download/v%(version)s/'],
+        'start_dir': 'python',
+        'use_pip': False,
+        'checksums': ['40f009cb0c190816a52fc21d45c26558ee7d63c3bd511b326bd85739b2fd99a6'],
+    }),
+]
+
+postinstallcmds = [
+    'pip install --no-deps --prefix=%%(installdir)s %%(installdir)s/python/%s ' % 'tensorrt-4.0.1.6-cp27-cp27mu-linux_x86_64.whl',
+    'pip install --no-deps --prefix=%%(installdir)s %%(installdir)s/uff/%s ' % 'uff-0.4.0-py2.py3-none-any.whl',
+    'pip install --no-deps --prefix=%%(installdir)s %%(installdir)s/graphsurgeon/%s ' % 'graphsurgeon-0.2.0-py2.py3-none-any.whl',
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'lib'
