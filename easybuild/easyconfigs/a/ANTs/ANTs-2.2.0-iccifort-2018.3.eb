@@ -27,16 +27,26 @@ configopts = '-DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_ITK=ON '
 configopts += '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF'
 configopts += '-DUSE_VTK=ON -DUSE_SYSTEM_VTK=ON -DITK_DIR=$EBROOTITK/lib/cmake/ITK-%s' % itkshortver
 
-skipsteps = ['install']
-buildopts = ' && mkdir -p %(installdir)s && cp -r * %(installdir)s/'
+buildopts = " && mkdir -p %(installdir)s && cp -r bin lib %(installdir)s/"
 
 parallel = 1
 
+skipsteps = ['install']
+
 separate_build_dir = True
+
+postinstallcmds =  ['cd %(builddir)s/%(name)s-%(version)s/ && cp -r Examples TestData Scripts %(installdir)s/ && chmod -R go+X %(installdir)s']
+
+modextrapaths = {'PATH': 'Scripts'}
+
+modextravars = {'ANTSPATH': '%(installdir)s/bin'}
 
 sanity_check_paths = {
     'files': ['bin/ANTS'],
-    'dirs': ['lib'],
+    'dirs': ['Examples', 'lib', 'Scripts', 'TestData'],
 }
 
 moduleclass = 'data'
+modluafooter = """
+depends_on("perl")
+"""
