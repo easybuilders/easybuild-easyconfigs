@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'PCMSolver'
+version = '1.2.1'
+
+homepage = 'https://pcmsolver.readthedocs.org'
+description = """An API for the Polarizable Continuum Model."""
+
+toolchain = {'name': 'iccifort', 'version': '2018.3'}
+toolchainopts = {'cstd': 'c++11'}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/PCMSolver/pcmsolver/archive/']
+
+dependencies = [
+    #('zlib', '1.2.8'),
+    ('Boost', '1.68.0'),
+]
+
+builddependencies = [
+    #('CMake', '3.5.2'),
+    ('Python', '2.7.14'),
+    ('Eigen', '3.3.5'),
+]
+
+configopts  = '-DCMAKE_BUILD_TYPE=Release -DEIGEN3_ROOT=$EBROOTEIGEN '
+configopts += '-DCMAKE_CXX_FLAGS="$CXXFLAGS $LIBLAPACK_MT -DEIGEN_USE_MKL_ALL" '
+
+separate_build_dir = True
+
+#runtest = 'test'
+# fails: https://github.com/PCMSolver/pcmsolver/issues/159 
+
+sanity_check_paths = {
+    'files': ['bin/run_pcm', 'lib64/libpcm.a', 'lib64/libpcm.%s' % SHLIB_EXT],
+    'dirs': ['include']
+}
+
+modluafooter = """
+depends_on("python")
+"""
+
+moduleclass = 'chem'
