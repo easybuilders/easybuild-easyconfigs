@@ -1,0 +1,33 @@
+easyblock = 'MakeCp'
+
+name = 'LevelDB'
+version = '1.20'
+
+homepage = 'https://github.com/google/leveldb'
+description = """LevelDB is a fast key-value storage library written at Google that provides an
+ ordered mapping from string keys to string values."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+source_urls = ['https://github.com/google/leveldb/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f5abe8b5b209c2f36560b75f32ce61412f39a2922f7045ae764a2c23335b6664']
+
+files_to_copy = [
+    (['out-shared/libleveldb.%s.%%(version)s' % SHLIB_EXT, 'out-static/libleveldb.a'], 'lib'),
+    (['include/leveldb/*.h'], 'include/leveldb')
+]
+
+cd_cmd = "cd %(installdir)s/lib && "
+postinstallcmds = [
+    cd_cmd + "ln -s libleveldb.%s.%%(version)s libleveldb.%s.%%(version_major)s" % (SHLIB_EXT, SHLIB_EXT),
+    cd_cmd + "ln -s libleveldb.%s.%%(version)s libleveldb.%s" % (SHLIB_EXT, SHLIB_EXT),
+]
+
+includes = ["cache", "c", "comparator", "db", "dumpfile", "env", "filter_policy", "iterator", "options", "slice", "status", "table_builder", "table", "write_batch"]
+sanity_check_paths = {
+    'files': ['lib/libleveldb.a', 'lib/libleveldb.%s' % SHLIB_EXT] + ["include/leveldb/{}.h".format(i) for i in includes],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
