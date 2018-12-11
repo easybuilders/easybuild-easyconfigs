@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'SimpleITK'
+version = '1.1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.simpleitk.org'
+description = """ITK is an open-source, cross-platform system that provides developers with an extensive suite of
+ software tools for image analysis. Among them, SimpleITK is a simplified layer built on top of ITK, intended to
+ facilitate its use in rapid prototyping, education, interpreted languages."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCE_TAR_XZ]
+checksums = ['43dfd76f3ce40904b5d15c5c6795f8bc071b9439d4c200e800db3c4bfbb0d6d8']
+
+builddependencies = [
+    ('CMake', '3.11.4'),
+    ('SWIG', '3.0.12', versionsuffix),
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('ITK', '4.13.1', versionsuffix),
+    ('Lua', '5.1.5'),
+]
+
+configopts = '-DWRAP_LUA=OFF -DWRAP_RUBY=OFF -DWRAP_TCL=OFF -DWRAP_JAVA=OFF -DWRAP_R=OFF -DWRAP_CSHARP=OFF '
+
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+pyinstpath = "%(installdir)s/lib/python%(pyshortver)s/site-packages"
+postinstallcmds = [
+    "mkdir -p %s" % pyinstpath,
+    "cd %%(builddir)s/easybuild_obj/Wrapping/Python/ && env PYTHONPATH=%s " % pyinstpath +
+    "python Packaging/setup.py install --prefix=%(installdir)s"
+]
+
+separate_build_dir = True
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['lib/libSimpleITKExplicit-%(version_major_minor)s.a'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'include/%(name)s-%(version_major_minor)s'],
+}
+
+sanity_check_commands = [('python', "-c 'import %(name)s'")]
+
+moduleclass = 'tools'
