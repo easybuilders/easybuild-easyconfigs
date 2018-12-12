@@ -8,18 +8,18 @@ description = """Global Arrays (GA) is a Partitioned Global Address Space (PGAS)
 It provides primitives for one-sided communication (Get, Put, Accumulate) and Atomic Operations (read increment). 
 It supports blocking and non-blocking primtives, and supports location consistency. I8 version. """
 
-toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
+toolchain = {'name': 'gomkl', 'version': '2018.3.312'}
 
 source_urls = ['https://github.com/GlobalArrays/ga/releases/download/v5.7/']
 sources = [SOURCELOWER_TAR_GZ]
 checksums = ['3ed1ab47adfda7bceb7beca12fc05a2e1631732f0e55bbaf9036dad4e3da4774']
 
-dependencies = [
- ('imkl', '2018.3.222'),
-]
+#dependencies = [ ]
 
-configopts  = '--enable-ofi --with-mpi-pr CC=icc FC=ifort  ARMCI_NETWORK=MPI-PR '
-# For Intel compilers, GA seems to pick -mkl automatically.
+configopts  = '--enable-ofi --with-mpi-pr  ARMCI_NETWORK=MPI-PR '
+
+configopts += '--with-lapack="-L$EBROOTIMKL/mkl/lib/intel64  -lmkl_gf_ilp64 -lmkl_sequential -lmkl_core -lm" '
+configopts += '--with-blas8="-L$EBROOTIMKL/mkl/lib/intel64  -lmkl_gf_ilp64 -lmkl_sequential -lmkl_core -lm" '
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['adjust.x',  'armci-config',  'collisions.x',  'comex-config',  'ga-config']],
@@ -29,5 +29,4 @@ sanity_check_paths = {
 moduleclass = 'tools'
 
 modextrapaths = { 'GAROOT': '' }
-
 
