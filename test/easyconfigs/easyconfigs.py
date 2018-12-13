@@ -27,8 +27,6 @@ Unit tests for easyconfig files.
 
 @author: Kenneth Hoste (Ghent University)
 """
-
-import copy
 import glob
 import os
 import re
@@ -37,25 +35,22 @@ import sys
 import tempfile
 from distutils.version import LooseVersion
 from vsc.utils import fancylogger
-from vsc.utils.missing import nub
 from unittest import TestCase, TestLoader, main
 
-import easybuild.main as main
+import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import EasyConfig
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import build_option
-from easybuild.tools.filetools import change_dir, write_file
+from easybuild.tools.filetools import change_dir, remove_file, write_file
 from easybuild.tools.module_naming_scheme import GENERAL_CLASS
-from easybuild.tools.module_naming_scheme.easybuild_mns import EasyBuildMNS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
@@ -98,7 +93,7 @@ class EasyConfigTest(TestCase):
     log = fancylogger.getLogger("EasyConfigTest", fname=False)
 
     # make sure a logger is present for main
-    main._log = log
+    eb_main._log = log
     ordered_specs = None
     parsed_easyconfigs = []
 
@@ -134,10 +129,7 @@ class EasyConfigTest(TestCase):
 
             dep_graph(fn, self.ordered_specs)
 
-            try:
-                os.remove(fn)
-            except OSError, err:
-                log.error("Failed to remove %s: %s" % (fn, err))
+            remove_file(fn)
         else:
             print "(skipped dep graph test)"
 
@@ -212,6 +204,15 @@ class EasyConfigTest(TestCase):
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
                         dep_vars.pop(key)
                     # always retain at least one dep variant
+                    if len(dep_vars) == 1:
+                        break
+
+            # filter R dep for a specific version of Python 2.x
+            elif dep == 'R' and len(dep_vars) > 1:
+                for key in dep_vars.keys():
+                    if '; versionsuffix: -Python-2' in key:
+                        dep_vars.pop(key)
+                    # always retain at least one variant
                     if len(dep_vars) == 1:
                         break
 
@@ -397,6 +398,7 @@ class EasyConfigTest(TestCase):
         """Dummy test to clean up global temporary directory."""
         shutil.rmtree(self.TMPDIR)
 
+
 def template_easyconfig_test(self, spec):
     """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
 
@@ -435,7 +437,7 @@ def template_easyconfig_test(self, spec):
     # check that automagic fallback to ConfigureMake isn't done (deprecated behaviour)
     fn = os.path.basename(spec)
     error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
-    self.assertTrue(easyblock or not app_class is ConfigureMake, error_msg)
+    self.assertTrue(easyblock or app_class is not ConfigureMake, error_msg)
 
     app = app_class(ec)
 
@@ -467,7 +469,7 @@ def template_easyconfig_test(self, spec):
         if ec['toolchain']['version'] == 'system':
             binutils_complete_dependencies = ['M4', 'Bison', 'flex', 'help2man', 'zlib', 'binutils']
             requires_binutils &= bool(ec['name'] not in binutils_complete_dependencies)
-            
+
         # if no sources/extensions/components are specified, it's just a bundle (nothing is being compiled)
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
 
@@ -486,7 +488,7 @@ def template_easyconfig_test(self, spec):
             patch_full = os.path.join(specdir, patch)
             msg = "Patch file %s is available for %s" % (patch_full, specfn)
             self.assertTrue(os.path.isfile(patch_full), msg)
-    ext_patches = []
+
     for ext in ec['exts_list']:
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
             self.assertTrue(isinstance(ext[2], dict), "3rd element of extension spec is a dictionary")
@@ -597,6 +599,7 @@ def suite():
 
     print "Found %s easyconfigs..." % cnt
     return TestLoader().loadTestsFromTestCase(EasyConfigTest)
+
 
 if __name__ == '__main__':
     main()
