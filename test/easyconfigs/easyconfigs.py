@@ -207,14 +207,14 @@ class EasyConfigTest(TestCase):
                     if len(dep_vars) == 1:
                         break
 
-            # filter R dep for a specific version of Python 2.x
-            elif dep == 'R' and len(dep_vars) > 1:
-                for key in dep_vars.keys():
-                    if '; versionsuffix: -Python-2' in key:
-                        dep_vars.pop(key)
-                    # always retain at least one variant
-                    if len(dep_vars) == 1:
-                        break
+                # filter R dep for a specific version of Python 2.x
+                if dep == 'R' and len(dep_vars) > 1:
+                    for key in dep_vars.keys():
+                        if '; versionsuffix: -Python-2' in key:
+                            dep_vars.pop(key)
+                        # always retain at least one variant
+                        if len(dep_vars) == 1:
+                            break
 
             # filter out Java 'wrapper'
             # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
