@@ -1,0 +1,45 @@
+easyblock = "PythonPackage"
+
+name = 'GPAW'
+version = '1.4.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
+description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
+ method and the atomic simulation environment (ASE). It uses real-space uniform grids and multigrid methods or
+ atom-centered basis-functions."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+source_urls = [PYPI_LOWER_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    ('GPAW-1.4.0-customize.patch', 1),
+    'GPAW-1.4.0-silence-numpy-warning-8e072ac8.patch',  # Backport of fix preventing numpy 1.15 from complaining.
+]
+checksums = [
+    '9d4f4ab13f179c4998e33997cb06e4a66698a19b64c283e4dfaf9aab3be66ccc',  # gpaw-1.4.0.tar.gz
+    '0fe732e9b6bf793aebd6e248bd14a76fa0603dbdfde9f9e268cc7bf71b37b3a0',  # GPAW-1.4.0-customize.patch
+    # GPAW-1.4.0-silence-numpy-warning-8e072ac8.patch
+    '6a4e543d9e63fbf0a82225bdd6390489d61cd0acb5cb5fbe77d48bf59bc55d23',
+]
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('ASE', '3.16.2', versionsuffix),
+    ('libxc', '3.0.1'),
+    ('GPAW-setups', '0.9.20000', '', True),
+]
+
+buildcmd = 'build --customize=eb_customize.py'
+install_target = 'install --customize=eb_customize.py'
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/gpaw%s' % x for x in ['', '-analyse-basis', '-basis', '-mpisim', '-plot-parallel-timings',
+                                         '-python', '-runscript', '-setup', '-upfplot']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/' + name.lower()]
+}
+
+moduleclass = 'chem'

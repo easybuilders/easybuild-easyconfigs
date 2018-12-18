@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'MySQL'
+version = '5.7.21'
+versionsuffix = '-clientonly'
+
+homepage = 'http://www.mysql.com/'
+description = """MySQL is one of the world's most widely used open-source
+ relational database management system (RDBMS)."""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+source_urls = ['https://downloads.mysql.com/archives/get/file/']
+sources = ['mysql-boost-%(version)s.tar.gz']
+patches = ['MySQL-%(version)s_Fix_ndb_dir_error.patch']
+checksums = [
+    'ad29ecb6fb3c3571394fe231633a2d1d188d49e9eb749daa4e8799b7630daa09',  # mysql-boost-5.7.21.tar.gz
+    '8e0ec125dd9cfa0a7ed845eb62b67add0bdd263d73929dff8eb12329ad7f59fb',  # MySQL-5.7.21_Fix_ndb_dir_error.patch
+]
+
+builddependencies = [
+    ('binutils', '2.28'),
+    ('CMake', '3.9.5'),
+]
+
+dependencies = [
+    ('libevent', '2.1.8'),
+    ('ncurses', '6.0'),
+    ('libedit', '20180525'),
+    ('zlib', '1.2.11'),
+]
+
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+
+configopts = "-DWITHOUT_SERVER=ON -DWITH_EDITLINE=system -DWITH_ZLIB=$EBROOTZLIB "
+# Boost headers are included in the source package and are only needed at build time (no runtime dependencies)
+# see http://mysqlserverteam.com/building-mysql-with-boost
+configopts += "-DWITH_BOOST=%(builddir)s/mysql-%(version)s/boost"
+
+sanity_check_paths = {
+    'files': ['bin/mysql'],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
