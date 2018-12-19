@@ -33,60 +33,63 @@ dependencies = [
 #
 source_urls = [ 
     # Only for annotations which is built on genome build GRCh37/hg19
-    'https://krishna.gs.washington.edu/download/%(name)s/%(version)s/GRCh37/'
+    'https://krishna.gs.washington.edu/download/%(name)s/%(version)s/GRCh37/',
+    'https://github.com/kircherlab/%(name)s-scripts/archive/',
 ]
 
 sources = [
 	#
-	# Use manually downloaded CADD-scripts-master from github.
+	# Use master.zip from github.
 	#
     {
         'filename': 'CADD-scripts-master.zip',  
-        'extract_cmd': 'cp %s %(builddir)s/'
+        'extract_cmd': 'unzip %s -d %(builddir)s/'
     },
-    {
-        'filename': 'annotationsGRCh37.tar.gz',
-        'extract_cmd': 'cp %s %(builddir)s'
-    },
+    # {
+    #     'filename': 'annotationsGRCh37.tar.gz',
+    #     'extract_cmd': 'cp %s %(builddir)s'
+    # },
     #
     # Do not decompress the pre-scored variant files and their indices, but 
     # move them "as is" to the build dir.
     #
-    {
-        'filename': 'InDels_inclAnno.tsv.gz.tbi', 
-        'extract_cmd': 'cp %s %(builddir)s/'
-    },
-    {
-        'filename': 'InDels_inclAnno.tsv.gz',
-        'extract_cmd': 'cp %s %(builddir)s/'
-    },
-    {
-        'filename': 'whole_genome_SNVs_inclAnno.tsv.gz.tbi',
-        'extract_cmd': 'cp %s %(builddir)s'
-    },
-    {
-        'filename': 'whole_genome_SNVs_inclAnno.tsv.gz',
-        'extract_cmd': 'cp %s %(builddir)s'
-    },
-    {
-        'filename': 'gnomad.genomes.r2.0.1.sites.tsv.gz.tbi',
-        'extract_cmd': 'cp %s %(builddir)s'
-    },
-    {
-        'filename': 'gnomad.genomes.r2.0.1.sites.tsv.gz',
-        'extract_cmd': 'cp %s %(builddir)s'
-    },
+    # {
+    #     'filename': 'InDels_inclAnno.tsv.gz.tbi', 
+    #     'extract_cmd': 'cp %s %(builddir)s/'
+    # },
+    # {
+    #     'filename': 'InDels_inclAnno.tsv.gz',
+    #     'extract_cmd': 'cp %s %(builddir)s/'
+    # },
+    # {
+    #     'filename': 'whole_genome_SNVs_inclAnno.tsv.gz.tbi',
+    #     'extract_cmd': 'cp %s %(builddir)s'
+    # },
+    # {
+    #     'filename': 'whole_genome_SNVs_inclAnno.tsv.gz',
+    #     'extract_cmd': 'cp %s %(builddir)s'
+    # },
+    # {
+    #     'filename': 'gnomad.genomes.r2.0.1.sites.tsv.gz.tbi',
+    #     'extract_cmd': 'cp %s %(builddir)s'
+    # },
+    # {
+    #     'filename': 'gnomad.genomes.r2.0.1.sites.tsv.gz',
+    #     'extract_cmd': 'cp %s %(builddir)s'
+    # },
 ]
+
+patches = ['CADD_v1.4.patch']
 
 checksums = [
     '713658b2be255999004826b6d41c3428', #CADD-scripts-master.zip
-    '66afec8cc12b7201daed3ba4172cde5d', #annotationsGRCh37.tar.gz
-    '43d0206d626333a681bdd6b16ee6c3c3', #InDels_inclAnno.tsv.gz.tbi
-    '8ce893ea1b82431011fc7fa4ff12dfbf', #InDels_inclAnno.tsv.gz
-    '73173d2eb38a7c69d4e680adcdc431b8', #whole_genome_SNVs_inclAnno.tsv.gz.tbi
-    'ffa700e365803a9f38e2f119399ed22b', #whole_genome_SNVs_inclAnno.tsv.gz
-    '85eb138b68b8c89cdf89d5517df7b83d', #gnomad.genomes.r2.0.1.sites.tsv.gz.tbi
-    '78d5d0ecc81aed2abedf1bff6fa7d479', #gnomad.genomes.r2.0.1.sites.tsv.gz
+    # '66afec8cc12b7201daed3ba4172cde5d', #annotationsGRCh37.tar.gz
+    # '43d0206d626333a681bdd6b16ee6c3c3', #InDels_inclAnno.tsv.gz.tbi
+    # '8ce893ea1b82431011fc7fa4ff12dfbf', #InDels_inclAnno.tsv.gz
+    # '73173d2eb38a7c69d4e680adcdc431b8', #whole_genome_SNVs_inclAnno.tsv.gz.tbi
+    # 'ffa700e365803a9f38e2f119399ed22b', #whole_genome_SNVs_inclAnno.tsv.gz
+    # '85eb138b68b8c89cdf89d5517df7b83d', #gnomad.genomes.r2.0.1.sites.tsv.gz.tbi
+    # '78d5d0ecc81aed2abedf1bff6fa7d479', #gnomad.genomes.r2.0.1.sites.tsv.gz
 ]
 
 #
@@ -110,24 +113,9 @@ postinstallcmds = [
     # Decompress the scripts, rename the scripts directory to bin, remove zip 
     # file and alter the permission of `install.sh`
     #
-    'unzip %(installdir)s/CADD-scripts-master.zip -d %(installdir)s/',
+    # 'unzip %(installdir)s/master.zip -d %(installdir)s/',
+    # 'rm -f %(installdir)s/CADD-scripts-master.zip',
     'mv -v %(installdir)s/CADD-scripts-master %(installdir)s/bin',
-    'rm -f %(installdir)s/CADD-scripts-master.zip',
-    #
-    # Necessay modification on bin/CADD.sh file
-    #
-    "sed -i -e 's/^\(source activate.*\)$/\\n"
-        + "# <<< START Replace Conda by EasyBuild (zhzhang2015@sina.com)\\n"
-        + "# source activate cadd-env \\n"
-        + "# <<< END   Replace Conda by EasyBuild (zhzhang2015@sina.com)\\n/' "
-        + " -e ' /^# Variant annotation/a  \\\n" 
-        + "# <<< START Add vep to PATH: (zhzhang2015@sina.com)\\n"
-        + "if [[ ! ${PATH} =~ ${EBROOTVEP} ]]; then\\n"
-        + "    export PATH=${EBROOTVEP}:${PATH}\\n"
-        + "fi\\n"
-        + "# <<< END   Add vep to PATH: (zhzhang2015@sina.com)\\n' "
-        + "%(installdir)s/bin/CADD.sh",
-
     'chmod 755 %(installdir)s/bin/*.sh %(installdir)s/bin/src/scripts/*.py',
     'chmod 400 %(installdir)s/bin/install.sh',
 
@@ -136,18 +124,18 @@ postinstallcmds = [
     # Decompress the annotations file, decompress the annotation on genome 
     # build GRCh37/h19 and remove the `tar.gz` file
     #
-    'tar vzxf %(installdir)s/annotationsGRCh37.tar.gz '
-        + ' -C %(installdir)s/bin/data/annotations',
-    'rm -f %(installdir)s/annotationsGRCh37.tar.gz',
+    # 'tar vzxf %(installdir)s/annotationsGRCh37.tar.gz '
+    #     + ' -C %(installdir)s/bin/data/annotations',
+    # 'rm -f %(installdir)s/annotationsGRCh37.tar.gz',
     #
     # Deal with the prescored file
     #
-    'mkdir -p %(installdir)s/bin/data/prescored/GRCh37/no_anno',
-    'mkdir -p %(installdir)s/bin/data/prescored/GRCh37/incl_anno',
-    'mv -v  %(installdir)s/InDels_inclAnno.tsv.gz* '
-        + ' %(installdir)s/gnomad.genomes.r2.0.1.sites.tsv.gz* '
-        + ' %(installdir)s/whole_genome_SNVs_inclAnno.tsv.gz* '
-        + ' %(installdir)s/bin/data/prescored/GRCh37/incl_anno/',
+    # 'mkdir -p %(installdir)s/bin/data/prescored/GRCh37/no_anno',
+    # 'mkdir -p %(installdir)s/bin/data/prescored/GRCh37/incl_anno',
+    # 'mv -v  %(installdir)s/InDels_inclAnno.tsv.gz* '
+    #     + ' %(installdir)s/gnomad.genomes.r2.0.1.sites.tsv.gz* '
+    #     + ' %(installdir)s/whole_genome_SNVs_inclAnno.tsv.gz* '
+    #     + ' %(installdir)s/bin/data/prescored/GRCh37/incl_anno/',
 
     #
     # Annotation files based on genome build GRCh38
