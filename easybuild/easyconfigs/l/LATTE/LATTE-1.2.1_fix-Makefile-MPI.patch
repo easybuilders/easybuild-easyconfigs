@@ -1,0 +1,117 @@
+diff -Naur LATTE-1.2.1_orig/Makefile LATTE-1.2.1/Makefile
+--- LATTE-1.2.1_orig/Makefile	2018-12-12 18:38:16.434575694 +0000
++++ LATTE-1.2.1/Makefile	2018-12-12 18:39:00.832177385 +0000
+@@ -10,7 +10,7 @@
+ ifeq ($(GPUOPT),ON)
+ 	(cd MATRIX; make; cd ..)
+ endif
+-	(rm liblatte.a; cd src; make; cd ..)
++	(rm -f liblatte.a; cd src; make; cd ..)
+ 
+ lammps : 
+ 	(rm liblatte.a; cd src; make; cd ..)
+@@ -41,9 +41,9 @@
+ clean : 
+ 	(cd MATRIX; make clean; cd ..)
+ 	(cd src; make clean; cd ..)
+-	rm *.a
++	rm -f *.a
+ 
+ veryclean : 
+ 	(cd MATRIX; make clean; cd ..)
+ 	(cd src; make clean; cd ..)
+-	rm $(PROGRAMS) *.a
++	rm -f $(PROGRAMS) *.a
+diff -Naur LATTE-1.2.1_orig/makefile.CHOICES LATTE-1.2.1/makefile.CHOICES
+--- LATTE-1.2.1_orig/makefile.CHOICES	2018-12-12 18:38:16.434575694 +0000
++++ LATTE-1.2.1/makefile.CHOICES	2018-12-12 20:38:27.047134472 +0000
+@@ -20,7 +20,7 @@
+ 
+ # Use METIS library for graph partitioning
+ METIS = OFF
+-METIS_PATH= $(HOME)/metis/metis-5.1.0/install
++METIS_PATH=$(EBROOTMETIS)
+ 
+ # GPU available - OFF or ON
+ GPUOPT = OFF
+@@ -29,7 +29,7 @@
+ DBCSR_OPT = OFF
+ 
+ # Parallelizing over k-points?
+-MPIOPT = OFF
++MPIOPT = ON
+ 
+ #
+ # CPU Fortran options
+@@ -37,26 +37,26 @@
+ 
+ #For GNU compiler:
+ #FC = mpif90
+-FC = gfortran
+-FCL = $(FC)
+-FFLAGS = -O3 -fopenmp -cpp
++#FC = gfortran
++#FCL = $(FC)
++#FFLAGS = -O3 -fopenmp -cpp
+ #FFLAGS =  -fast -Mpreprocess -mp
+-LINKFLAG = -fopenmp
++#LINKFLAG = -fopenmp
+ 
+ #For intel compiler:
+-#FC = ifort
+-#FCL = $(FC)
+-#FFLAGS =  -O3 -fpp -qopenmp
+-#LINKFLAG = -qopenmp
++FC = mpif90 
++FCL = $(FC)
++FFLAGS = -O2 -fpp -qopenmp
++LINKFLAG = -qopenmp
+ #LIB = -mkl=parallel
+ 
+ #GNU BLAS/LAPACK libraries:
+-LIB = -llapack -lblas
++#LIB = -llapack -lblas
+ 
+ #Intel MKL BLAS/LAPACK libraries:
+-#LIB = -Wl,--no-as-needed -L${MKLROOT}/lib/intel64 \
+-# -lmkl_lapack95_lp64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core \
+-# -lmkl_gnu_thread -lmkl_core -ldl -lpthread -lm
++LIB = -Wl,--no-as-needed -L${MKLROOT}/lib/intel64 \
++ -lmkl_lapack95_lp64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core \
++ -lmkl_gnu_thread -lmkl_core -ldl -lpthread -lm
+ 
+ #Alternative flags for MKL:
+ #LIB += -mkl=parallel
+@@ -66,7 +66,7 @@
+ #LIB = -L/usr/projects/hpcsoft/toss2/common/acml/5.3.1/gfortran64/lib -lacml
+ 
+ # Uncomment for coverage
+-#CVR = OFF
++CVR = OFF
+ ifeq ($(CVR), ON)
+ 	FFLAGS += -fprofile-arcs -ftest-coverage
+ 	LINKFLAG += -fprofile-arcs -ftest-coverage
+diff -Naur LATTE-1.2.1_orig/MATRIX/Makefile LATTE-1.2.1/MATRIX/Makefile
+--- LATTE-1.2.1_orig/MATRIX/Makefile	2018-12-12 18:38:16.414575873 +0000
++++ LATTE-1.2.1/MATRIX/Makefile	2018-12-12 18:39:38.316841096 +0000
+@@ -34,4 +34,4 @@
+ 	${CUDA_CC} -c $< -o $@
+ 
+ clean:
+-	- rm *~ *.o *.a Kernels/*~ Kernels/*.o
++	- rm -f *~ *.o *.a Kernels/*~ Kernels/*.o
+diff -Naur LATTE-1.2.1_orig/src/Makefile LATTE-1.2.1/src/Makefile
+--- LATTE-1.2.1_orig/src/Makefile	2018-12-12 18:38:16.440575640 +0000
++++ LATTE-1.2.1/src/Makefile	2018-12-12 18:39:58.833657031 +0000
+@@ -126,4 +126,4 @@
+ 			$(FC) $(FFLAGS) $(PPFLAGS) -c $(MYSUBS)
+ 
+ clean:
+-			rm *.o *.mod *.a
++			rm -f *.o *.mod *.a
+diff -Naur LATTE-1.2.1_orig/tools/comp LATTE-1.2.1/tools/comp
+--- LATTE-1.2.1_orig/tools/comp	2018-12-12 18:38:16.413575882 +0000
++++ LATTE-1.2.1/tools/comp	2018-12-12 20:52:58.764336730 +0000
+@@ -1 +1 @@
+-gfortran -o xyz2latte xyz2latte.f90
++ifort -o xyz2latte xyz2latte.f90
