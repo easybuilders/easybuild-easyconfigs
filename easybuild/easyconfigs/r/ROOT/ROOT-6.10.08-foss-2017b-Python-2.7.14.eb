@@ -11,7 +11,15 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://root.cern.ch/download/']
 sources = ['%(namelower)s_v%(version)s.source.tar.gz']
-checksums = ['2cd276d2ac365403c66f08edd1be62fe932a0334f76349b24d8c737c0d6dad8a']
+
+# Only needed when building with EasyBuilds rpath support
+# Solves https://github.com/easybuilders/easybuild-easyconfigs/issues/7339
+patches = ['Root_CheckCompiler_cmake.patch']
+
+checksums = [
+    '2cd276d2ac365403c66f08edd1be62fe932a0334f76349b24d8c737c0d6dad8a',  # ROOT source
+    '9a9606a97f33de476032966f85d9f5890b621150f8a71776f5dd36ed76048ad3'  # Root_CheckCompiler_cmake.patch
+]
 
 builddependencies = [
     ('CMake', '3.9.5'),
@@ -38,6 +46,10 @@ dependencies = [
 configopts = '-Dxrootd=OFF -Dmysql=OFF -Dkrb5=OFF -Dodbc=OFF '
 configopts += '-Doracle=OFF -Dpgsql=OFF -Dqt=OFF '
 configopts += '-Dunuran=ON -Dtable=ON -Dexplicitlink=ON -Dminuit2=ON '
-configopts += '-Droofit=ON'
+configopts += '-Droofit=ON '
+
+# Standard ROOT build doesn't account for the fact that CFITSIO could be linked against cURL.
+# If it is, this results in undefined reference errors during builds unless setting:
+configopts += '-DCMAKE_CXX_FLAGS="-Wl,--as-needed -lcurl" '
 
 moduleclass = 'data'
