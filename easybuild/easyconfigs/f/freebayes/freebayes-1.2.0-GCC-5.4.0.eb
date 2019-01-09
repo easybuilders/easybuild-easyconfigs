@@ -13,17 +13,18 @@ description = """ Bayesian haplotype-based polymorphism discovery and genotyping
 
 toolchain = {'name': 'GCC', 'version': '5.4.0'}
 
-# No direct download url. 
-# The version downloaded do not work: use git --recursive
-# The download has been done with git:
-# $ git clone --recursive https://github.com/ekg/freebayes.git
-# $ mv freebayes freebayes-1.2.0 
-# $ tar -czf freebayes-1.2.0.tar.gz freebayes-1.2.0 && rm -rf freebayes-1.2.0
+sources = [{
+    'filename': '%(name)s-v%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/ekg',
+        'repo_name': 'freebayes',
+        'commit': '29c4002',
+        'recursive': True,
+    },
+}]
 
-sources = ['%(name)s-%(version)s.tar.gz']
-
-# Option to also build vcflib, this will add these commands to the end of the 
-# Build command, and run them if the build completes
+# Option to also build vcflib, this will add these commands to 
+# the end of the build command, and run them if the build completes.
 
 buildopts = ' && cd vcflib && make && cd ..'
 
@@ -43,13 +44,22 @@ sanity_check_paths = {
     'dirs': [""]
 }
 
-# Add scripts dir to PATH
+# Add scripts dir to PATH:
+
+postinstallcmds = ["/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/vcflib/lib"]
 
 modextrapaths = { 
     'PATH': "scripts",
+    'PATH': "python",
+    'PATH': "vcflib/bin",
+    'PATH': "vcflib/scripts",
 }
 
 moduleclass = 'bio'
+#modluafooter = """
+#depends_on("python")
+#depends_on("r")
+#"""
 
 # To run tests after installing with the command (note tests must be done 
 # in-place (hard coded paths)) $ eb <this file>:
