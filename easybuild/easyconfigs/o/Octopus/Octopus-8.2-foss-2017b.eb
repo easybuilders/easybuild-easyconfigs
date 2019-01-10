@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'Octopus'
+version = '8.2'
+
+homepage = 'http://octopus-code.org'
+description = """Octopus is a scientific program aimed at the ab initio virtual experimentation 
+on a hopefully ever-increasing range of system types. Electrons are described quantum-mechanically 
+within density-functional theory (DFT), in its time-dependent form (TDDFT) when doing simulations 
+in time. Nuclei are described classically as point particles. 
+Electron-nucleus interaction is described within the pseudopotential approximation."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'usempi': True, 'opt': True}
+
+source_urls = ['http://www.tddft.org/programs/octopus/down.php?file=%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['173539b05a9bb0ede83b9f5d42bc499e8a802b0c59af5b2a21eaf94f4fc0e47c']
+
+builddependencies = [
+    ('Perl', '5.26.0'),
+]
+
+dependencies = [
+    ('libxc', '4.2.3'),
+    ('PSolver', '1.7.6'),
+    ('ETSF_IO', '1.0.4'),
+    ('GSL', '2.4'),
+    ('ParMETIS', '4.0.3'),
+    ('arpack-ng', '3.5.0'),
+    ('libgd', '2.2.5'),
+]
+
+configopts = '--disable-openmp --enable-mpi '
+configopts += '--with-libxc-prefix=$EBROOTLIBXC '
+configopts += '--with-blas="-L$BLAS_LIB_DIR $LIBBLAS" '
+configopts += '--with-blacs="$EBROOTSCALAPACK/lib/libscalapack.a" '
+configopts += '--with-scalapack="$EBROOTSCALAPACK/lib/libscalapack.a" '
+configopts += '--with-netcdf-prefix=$EBROOTNETCDFMINFORTRAN '
+configopts += '--with-etsf-io-prefix=$EBROOTETSF_IO '
+configopts += '--with-fftw-prefix=$EBROOTFFTW '
+configopts += '--with-isf-prefix=$EBROOTPSOLVER '
+
+# Add gfortran flag to handle long lines
+configopts += 'FCFLAGS="$FCFLAGS -ffree-line-length-none" '
+
+# Octopus uses cpp to process Fortran files, so we need to set some flags to make sure it works
+# The -Dvector macro is a workaround for a known GCC issue on POWER
+configopts += 'FCCPP="/lib/cpp -C -ffreestanding -Dvector=vector" '
+
+# Run only the short tests, as the full testsuite can take a lot of time.
+runtest = 'MPIEXEC=`which mpirun` check-short'
+
+sanity_check_paths = {
+    'files': ['bin/octopus'],
+    'dirs': ['share/octopus']
+}
+
+moduleclass = 'phys'
