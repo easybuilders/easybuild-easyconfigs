@@ -1,0 +1,48 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Oliver Stueker
+# ACENET / Compute Canada
+# Memorial University of Newfoundland
+# St. John's, Nfld, Canada
+
+name = 'g_mmpbsa'
+version = '2016-04-19'
+commit_id = '160f685'
+
+easyblock = 'CMakeMake'
+
+homepage = 'https://rashmikumari.github.io/g_mmpbsa/'
+description = """ G_MMPBSA calculates components of binding energy using MM-PBSA method 
+except the entropic term and energetic contribution of each residue to the binding using 
+energy decomposition scheme. """
+
+toolchain = {'name': 'foss', 'version': '2016.4.11'}
+
+sources = [{
+    'filename': '%(name)s-%(version)s-'+commit_id+'.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/RashmiKumari',
+        'repo_name': name,
+        'commit': commit_id ,
+        'recursive': True,
+    },
+}]
+
+
+dependencies = [
+    ('APBS', '1.3'),
+    ('GROMACS', '5.1.5'),
+]
+
+configopts =  ' -DGMX_PATH=$EBROOTGROMACS'
+configopts += ' -DAPBS_INSTALL=$EBROOTAPBS'
+configopts += ' -DAPBS_SRC=$EBROOTAPBS/src/apbs-1.3-source'
+configopts += ' -DFFTW_LIB=${EBROOTFFTW}/lib/'
+configopts += ' -DCMAKE_EXE_LINKER_FLAGS="-fopenmp" '
+
+sanity_check_paths = {
+    'files': ['bin/g_mmpbsa'],
+    'dirs': []
+}
+
+moduleclass = 'chem'
+
