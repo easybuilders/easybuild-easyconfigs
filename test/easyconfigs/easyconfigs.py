@@ -237,6 +237,8 @@ class EasyConfigTest(TestCase):
             old_dep_versions = {
                 # libxc (CP2K & ABINIT require libxc 2.x or 3.x)
                 'libxc': r'[23]\.',
+                # OPERA requires SAMtools 0.x
+                'SAMtools': r'0\.',
             }
             if dep in old_dep_versions and len(dep_vars) > 1:
                 for key in dep_vars.keys():
