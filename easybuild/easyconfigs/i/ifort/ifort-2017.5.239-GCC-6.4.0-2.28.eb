@@ -1,0 +1,36 @@
+# This is an easyconfig file for EasyBuild, see http://easybuilders.github.io/easybuild
+
+name = 'ifort'
+version = '2017.5.239'
+
+homepage = 'http://software.intel.com/en-us/intel-compilers/'
+description = "Intel Fortran compiler"
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+sources = ['parallel_studio_xe_%(version_major)s_update%(version_minor)s_composer_edition_for_fortran.tgz']
+
+checksums = ['671e08f50443272ab3885510766c38fc1da9aa109d37e435b2e663e5e46acf90']
+
+# remove dependency on intel-mpi-rt-mic
+patches = ['ifort_2017_no_mpi_mic_dependency.patch']
+
+gccver = '6.4.0'
+binutilsver = '2.28'
+versionsuffix = '-GCC-%s-%s' % (gccver, binutilsver)
+
+dependencies = [
+    ('GCCcore', gccver),
+    ('binutils', binutilsver, '', ('GCCcore', gccver)),
+]
+
+# list of regex for components to install
+# full list of components can be obtained from pset/mediaconfig.xml in unpacked sources
+# cfr. https://software.intel.com/en-us/articles/intel-composer-xe-2015-silent-installation-guide
+components = ['intel-comp', 'intel-fcomp', 'intel-ifort', 'intel-openmp', 'intel-ipsf?_', 'intel-gdb(?!.*mic)']
+
+dontcreateinstalldir = 'True'
+
+license_file = HOME + '/licenses/intel/license.lic'
+
+moduleclass = 'compiler'

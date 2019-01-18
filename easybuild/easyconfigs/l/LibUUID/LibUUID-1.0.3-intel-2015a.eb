@@ -8,8 +8,20 @@ description = """Portable uuid C library"""
 
 toolchain = {'name': 'intel', 'version': '2015a'}
 
-source_urls = [SOURCEFORGE_SOURCE]
-sources = [SOURCELOWER_TAR_GZ]
+source_urls = [
+    SOURCEFORGE_SOURCE,
+    'https://raw.githubusercontent.com/karelzak/util-linux/stable/v2.32/libuuid/src',
+]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {'filename': 'libuuid.sym', 'extract_cmd': 'cp %s %(builddir)s'},
+]
+checksums = [
+    '46af3275291091009ad7f1b899de3d0cea0252737550e7919d17237997db5644',  # libuuid-1.0.3.tar.gz
+    '5932866797560bf5822c3340b64dff514afb6cef23a824f96991f8e9e9d29028',  # libuuid.sym
+]
+
+preconfigopts = 'LDFLAGS="$LDFLAGS -Wl,--version-script=%(builddir)s/libuuid.sym"'
 
 sanity_check_paths = {
     'files': ['include/uuid/uuid.h', 'lib/libuuid.a', 'lib/libuuid.%s' % SHLIB_EXT],

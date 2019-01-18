@@ -1,0 +1,35 @@
+easyblock = 'Tarball'
+
+name = 'biomart-perl'
+commit = 'e6db561'
+version = '0.7_%s' % commit
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'https://useast.ensembl.org/info/data/biomart/biomart_perl_api.html'
+description = """The BioMart Perl API allows you to go a step further with BioMart 
+ and integrate BioMart Perl Code into custom Perl scripts."""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+source_urls = ['https://github.com/biomart/biomart-perl/archive']
+sources = ['%s.tar.gz' % commit]
+checksums = ['d7c64eccd89967b936c06db2a08ffd3270c60c11ffbc47a96ed61b77bb4e36c4']
+
+dependencies = [
+    ('Perl', '5.26.0')
+]
+
+modextrapaths = {
+    'PERL5LIB': 'lib'
+}
+
+marturlloc = '%(installdir)s/conf/martURLLocation.xml'
+
+postinstallcmds = [
+    'sed -ni "/<MartRegistry>/q;p" %s' % marturlloc,
+    'curl https://useast.ensembl.org/biomart/martservice?type=registry >> %s' % marturlloc,
+]
+
+modloadmsg = 'Copy the registry file in a writable destination path from:\n%s\n\n' % marturlloc
+
+moduleclass = 'bio'

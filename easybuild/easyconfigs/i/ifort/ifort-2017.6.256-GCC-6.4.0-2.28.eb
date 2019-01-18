@@ -1,0 +1,40 @@
+# This is an easyconfig file for EasyBuild, see http://easybuilders.github.io/easybuild
+
+name = 'ifort'
+version = '2017.6.256'
+
+homepage = 'http://software.intel.com/en-us/intel-compilers/'
+description = "Intel Fortran compiler"
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+sources = ['parallel_studio_xe_%(version_major)s_update%(version_minor)s_composer_edition_for_fortran.tgz']
+
+checksums = [
+    # parallel_studio_xe_2017_update6_composer_edition_for_fortran.tgz
+    'd2f4427d07a70a895ff42e654d94cae8aa338e8813f79d902748cf3a4a7538ee',
+    '7241e492a5f7ba4e62e8106c97f585c2fd931e32886d886f7bf0a9020e421325',  # ifort_2017_no_mpi_mic_dependency.patch
+]
+
+# remove dependency on intel-mpi-rt-mic
+patches = ['ifort_2017_no_mpi_mic_dependency.patch']
+
+gccver = '6.4.0'
+binutilsver = '2.28'
+versionsuffix = '-GCC-%s-%s' % (gccver, binutilsver)
+
+dependencies = [
+    ('GCCcore', gccver),
+    ('binutils', binutilsver, '', ('GCCcore', gccver)),
+]
+
+# list of regex for components to install
+# full list of components can be obtained from pset/mediaconfig.xml in unpacked sources
+# cfr. https://software.intel.com/en-us/articles/intel-composer-xe-2015-silent-installation-guide
+components = ['intel-comp', 'intel-fcomp', 'intel-ifort', 'intel-openmp', 'intel-ipsf?_', 'intel-gdb(?!.*mic)']
+
+dontcreateinstalldir = 'True'
+
+license_file = HOME + '/licenses/intel/license.lic'
+
+moduleclass = 'compiler'

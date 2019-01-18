@@ -1,0 +1,51 @@
+easyblock = 'Tarball'
+
+name = 'OrthoMCL'
+version = '1.4'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://orthomcl.org/'
+description = """OrthoMCL is a genome-scale algorithm for grouping orthologous protein sequences."""
+
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+mcl_majver = '02'
+mcl_minver = '063'
+sources = ['ORTHOMCL_V%%(version)s_mcl-%s-%s.tar' % (mcl_majver, mcl_minver)]
+source_urls = ['http://orthomcl.org/common/downloads/software/unsupported/v%(version)s']
+
+dependencies = [
+    # a Perl installation providing the DBI module is required
+    ('Perl', '5.24.0'),
+    ('MCL', '%s.%s' % (mcl_majver, mcl_minver)),
+    ('BioPerl', '1.7.1', versionsuffix),
+    ('BLAST', '2.2.26', '-Linux_x86_64', True),
+]
+
+start_dir = 'ORTHOMCLV%(version)s'
+
+# fix hardcoded paths
+postinstallcmds = [
+    'sed -i"" "s@/usr/bin/perl@$EBROOTPERL/bin/perl@g" %(installdir)s/orthomcl.pl',
+    'sed -i"" "s@/.*blastall@$EBROOTBLAST/bin/blastall@g" %(installdir)s/orthomcl_module.pm',
+    'sed -i"" "s@/.*formatdb@$EBROOTBLAST/bin/formatdb@g" %(installdir)s/orthomcl_module.pm',
+    'sed -i"" "s@/.*/mcl@$EBROOTMCL/bin/mcl@g" %(installdir)s/orthomcl_module.pm',
+    'sed -i"" "s@/.*ORTHOMCL.*%(version)s/@\\$ENV{\'PWD\'}/@g" %(installdir)s/orthomcl_module.pm',
+]
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': '',
+}
+
+sanity_check_paths = {
+    'files': ['orthomcl_module.pm', 'orthomcl.pl', 'README'],
+    'dirs': ['sample_data'],
+}
+
+sanity_check_commands = [
+    "orthomcl.pl --help 2>&1 | grep Usage",
+    "perl -e 'use orthomcl_module;'",
+]
+
+moduleclass = 'bio'

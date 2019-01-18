@@ -1,0 +1,45 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = '5.26-65.0'
+
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """InterProScan is a sequence analysis application (nucleotide and protein sequences) that combines
+ different protein signature recognition methods into one resource."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+source_urls = [
+    'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/',
+    'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/data',
+]
+sources = [
+    '%(namelower)s-%(version)s-64-bit.tar.gz',
+    # note: unpacked this is ~30GB, mostly 5 *.hmm files
+    # this data can also be provided in another location, which can be specified in interproscan.properties
+    # see https://github.com/ebi-pf-team/interproscan/wiki/HowToDownload#2-installing-panther-models
+    'panther-data-12.0.tar.gz',
+]
+checksums = [
+    '31b08c069d76a6a784ab6f7594935a9e5eae7ce01c5b0bbdf9b9beaa50c92ba4',  # interproscan-5.26-65.0-64-bit.tar.gz
+    'bb8dcaeb68876b5abe7842ae1d65eecf15c43a0baea6be9514339b487167be79',  # panther-data-12.0.tar.gz
+]
+
+dependencies = [
+    ('Java', '1.8.0_152', '', True),
+    ('Perl', '5.26.0'),
+    ('libgd', '2.2.5'),
+    ('Python', '2.7.14'),
+]
+
+postinstallcmds = ["cp -a %(builddir)s/panther %(installdir)s/data"]
+
+sanity_check_paths = {
+    'files': ['interproscan-%(version_major)s.jar', 'interproscan.sh', 'interproscan.properties'],
+    'dirs': ['bin', 'lib', 'data/panther/12.0'],
+}
+
+# also include top install directory in $PATH, to make interproscan.sh available
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

@@ -1,0 +1,76 @@
+backported fix from https://github.com/scipy/scipy/pull/6135,
+requires recompiling scipy/linalg/_decomp_update.pyx using 'cython scipy/linalg/_decomp_update.pyx'
+see also https://github.com/scipy/scipy/issues/6132
+author: Kenneth Hoste (HPC-UGent)
+--- scipy/linalg/_decomp_update.pyx.in.orig	2015-06-26 08:28:59.000000000 +0200
++++ scipy/linalg/_decomp_update.pyx.in	2016-12-07 09:44:34.757075909 +0100
+@@ -47,7 +47,6 @@
+ cimport libc.float
+ from libc.math cimport sqrt, fabs, hypot
+ from libc.string cimport memset
+-cimport libc.stdio
+ 
+ cimport numpy as cnp
+ 
+@@ -715,9 +714,15 @@
+         # First zero the lower part of the new columns using a qr.  
+ 
+         # query the workspace, 
++        # set tau to point at something to keep new MKL working.
++        tau = &c
+         info = geqrf(m-n+p, p, index2(r, rs, n-p, k), m, tau, &c, -1)
++        if info < 0:
++            return libc.stdlib.abs(info)
+         info = ormqr(side, trans, m, m-(n-p), p, index2(r, rs, n-p, k), m,
+                      tau, index2(q, qs, 0, n-p), m, &s, -1)
++        if info < 0:
++            return info
+ 
+         # we're only doing one allocation, so use the larger
+         lwork = to_lwork(c, s)
+@@ -887,6 +892,8 @@
+         # query the workspace
+         # below p_subdiag_qr will need workspace of size m, which is the
+         # minimum, ormqr will also require.
++        # set tau to point at something, to keep new MKL working.
++        tau = &c
+         info = geqrf(m-n, p, index2(u, us, n, 0), m, tau, &c, -1)
+         if info < 0:
+             return libc.stdlib.abs(info)
+--- scipy/linalg/tests/test_decomp_update.py.orig	2016-12-07 09:40:24.369816052 +0100
++++ scipy/linalg/tests/test_decomp_update.py	2016-12-07 09:46:41.725683380 +0100
+@@ -876,7 +876,7 @@
+             check_qr(q1, r1, a1, self.rtol, self.atol, False)
+ 
+     def test_Mx1_economic_p_col(self):
+-        a, q, r, u = self.generate('Mx1', 'full', 'col', 3)
++        a, q, r, u = self.generate('Mx1', 'economic', 'col', 3)
+         for col in range(r.shape[1]):
+             q1, r1 = qr_insert(q, r, u, col, 'col', overwrite_qru=False)
+             a1 = np.insert(a, col*np.ones(3, np.intp), u, 1)
+--- ./scipy/linalg/_decomp_update.pyx.orig	2016-12-07 10:32:54.264284722 +0100
++++ ./scipy/linalg/_decomp_update.pyx	2016-12-07 10:34:47.153042590 +0100
+@@ -759,9 +759,15 @@
+         # First zero the lower part of the new columns using a qr.  
+ 
+         # query the workspace, 
++        # set tau to point at something to keep new MKL working.
++        tau = &c
+         info = geqrf(m-n+p, p, index2(r, rs, n-p, k), m, tau, &c, -1)
++        if info < 0:
++            return libc.stdlib.abs(info)
+         info = ormqr(side, trans, m, m-(n-p), p, index2(r, rs, n-p, k), m,
+                      tau, index2(q, qs, 0, n-p), m, &s, -1)
++        if info < 0:
++            return info
+ 
+         # we're only doing one allocation, so use the larger
+         lwork = to_lwork(c, s)
+@@ -931,6 +937,7 @@
+         # query the workspace
+         # below p_subdiag_qr will need workspace of size m, which is the
+         # minimum, ormqr will also require.
++        tau = &c
+         info = geqrf(m-n, p, index2(u, us, n, 0), m, tau, &c, -1)
+         if info < 0:
+             return libc.stdlib.abs(info)
