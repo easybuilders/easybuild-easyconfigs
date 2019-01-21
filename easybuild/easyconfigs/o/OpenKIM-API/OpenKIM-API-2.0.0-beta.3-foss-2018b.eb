@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenKIM-API'
+version = '2.0.0-beta.3'
+
+homepage = 'https://openkim.org/'
+description = """Open Knowledgebase of Interatomic Models.
+
+OpenKIM is an API and a collection of interatomic models (potentials) for
+atomistic simulations.  It is a library that can be used by simulation programs
+to get access to the models in the OpenKIM database.
+
+This EasyBuild only installs the API, the models have to be installed
+by the user by running
+    kim-api-v2-collections-management install user MODELNAME
+or
+    kim-api-v2-collections-management install user OpenKIM
+to install them all.
+ """
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+dependencies = [
+    ('CMake', '3.12.1'),  # Also needed to install models, thus not just a builddependency.
+]
+
+source_urls = ['https://s3.openkim.org/kim-api/']
+sources = ['kim-api-v2-%(version)s.txz']
+
+# Two bugs have been fixed since the release of Beta 3.  The first one is a showstopper.
+patches = [
+    'OpenKIM-API-2.0.0-beta.3-Fix-major-version-variable-name-in-CM.patch',
+    'OpenKIM-API-2.0.0-beta.3-Fix-fortran-kim_parse_sem_ver.patch',
+]
+checksums = [
+    'e3e2e5bcf4e104f30f2091e3eb0fb1b9d9148f903ae8dd1dfee80e44aa98b56f',  # kim-api-v2-2.0.0-beta.3.txz
+    # OpenKIM-API-2.0.0-beta.3-Fix-major-version-variable-name-in-CM.patch
+    'd013d2f13fa237b82211654eee2044184dd4f5ade3d56b9b7e5b7f252e78f333',
+    # OpenKIM-API-2.0.0-beta.3-Fix-fortran-kim_parse_sem_ver.patch
+    '018adcd83387e58d08cbd8b3fa5572a0a151bc29700feed49f3e0b6272c0226a',
+]
+
+parallel = 1
+separate_build_dir = True
+configopts = '-DCMAKE_BUILD_TYPE=Release '
+
+modextravars = {
+    'KIM_HOME': '%(installdir)s',
+    'KIM_API_V2_CMAKE_PREFIX_DIR': '%(installdir)s/lib64'
+}
+
+moduleclass = 'chem'
