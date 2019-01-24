@@ -1,0 +1,35 @@
+fix name conflict with CHAR_WIDTH from limits.h
+author: Paul Jähne
+--- include/spdlog/details/format.cc.orig   2016-06-15 19:46:33.000000000 +0200
++++ include/spdlog/details/format.cc        2019-01-24 07:51:21.578556154 +0100
+@@ -480,23 +480,23 @@
+         typedef typename BasicWriter<Char>::CharPtr CharPtr;
+         Char fill = internal::CharTraits<Char>::cast(spec_.fill());
+         CharPtr out = CharPtr();
+-        const unsigned CHAR_WIDTH = 1;
+-        if (spec_.width_ > CHAR_WIDTH) {
++        const unsigned CHAR_SIZE = 1;
++        if (spec_.width_ > CHAR_SIZE) {                                
+             out = writer_.grow_buffer(spec_.width_);
+             if (spec_.align_ == ALIGN_RIGHT) {
+-                std::fill_n(out, spec_.width_ - CHAR_WIDTH, fill);
+-                out += spec_.width_ - CHAR_WIDTH;
++                std::fill_n(out, spec_.width_ - CHAR_SIZE, fill);
++                out += spec_.width_ - CHAR_SIZE;
+             }
+             else if (spec_.align_ == ALIGN_CENTER) {
+                 out = writer_.fill_padding(out, spec_.width_,
+-                                           internal::check(CHAR_WIDTH), fill);
++                                           internal::check(CHAR_SIZE), fill);
+             }
+             else {
+-                std::fill_n(out + CHAR_WIDTH, spec_.width_ - CHAR_WIDTH, fill);
++                std::fill_n(out + CHAR_WIDTH, spec_.width_ - CHAR_SIZE, fill);
+             }
+         }
+         else {
+-            out = writer_.grow_buffer(CHAR_WIDTH);
++            out = writer_.grow_buffer(CHAR_SIZE);
+         }
+         *out = internal::CharTraits<Char>::cast(value);
+     }
