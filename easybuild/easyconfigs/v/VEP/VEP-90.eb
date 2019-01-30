@@ -1,0 +1,82 @@
+#
+# EasyConfig for the Ensembl Variant Effect Predictor (VEP)
+#
+
+easyblock = 'Tarball'
+
+name = 'VEP'
+version = '90'
+
+homepage = 'http://www.ensembl.org/info/docs/tools/vep/script/index.html'
+description = """Tool for analysis, annotation, and prioritization of genomic variants
+using (cached) Ensembl databases."""
+
+#
+# Don't use 'dummy' as toolchain version to make sure dependencies are loaded
+# both at build as well as at runtime. With 'dummy' as toolchain version,
+# dependencies will only be loaded at runtime.
+#
+#toolchain = {'name': 'dummy', 'version': 'dummy'}
+toolchain = {'name': 'dummy', 'version': ''}
+
+osdependencies = [
+    ('mariadb-devel')
+]
+
+dependencies = [
+    ('PerlPlus', '5.22.0', '-v17.01.1', ('foss', '2015b')),
+]
+source_urls = ['https://github.com/Ensembl/ensembl-vep/archive/release/']
+sources = ['%(version)s.3.zip']
+patches = ['VEP-%(version)s.patch']
+checksums = [
+    '49bcd3555b4371d96414e6a354888496', # 90.3.zip
+    '75ed00f3bfbba99e78d9ce47b70c7085', # VEP-90.3.patch
+]
+
+#
+# Customizations for the install step.
+#
+start_dir = 'scripts/variant_effect_predictor'
+perl_scripts = ['convert_cache.pl', 'filter_vep.pl', 'gtf2vep.pl', 'INSTALL.pl', 'variant_effect_predictor.pl']
+not_scripts = ['example_GRCh37.vcf', 'example_GRCh38.vcf', 'README.txt']
+#
+# Make scripts executable and run VEP installer.
+# (Mode may by masked by umask.)
+#
+import os
+vep_cache_dir = '%s/data/Ensembl/VEP/%s/' % (os.environ["EASYBUILD_INSTALLPATH"], version)
+postinstallcmds = [
+    'chmod a+x %(installdir)s/*.pl',
+    'chmod -R g+rwX,o+rX,o-w %(installdir)s/*',
+    'mkdir -p "%s"' % (vep_cache_dir),
+    'PERL5LIB="%s:${PERL5LIB}" && %s/INSTALL.pl --AUTO acf --DESTDIR %s --CACHEDIR %s --SPECIES homo_sapiens --ASSEMBLY GRCh37' % ('%(installdir)s', '%(installdir)s', '%(installdir)s', vep_cache_dir),
+    'chmod -R g+rwX,o+rX,o-w %s' % (vep_cache_dir),
+]
+
+#
+# Sanity check.
+#
+sanity_check_paths = {
+    'files': perl_scripts + not_scripts,
+    'dirs': ['Bio', vep_cache_dir],
+}
+
+#
+# Create module.
+#
+moduleclass = 'bio'
+modextravars = {'VEP_CACHE_DIR': vep_cache_dir}
+modextrapaths = {
+    'PERL5LIB': '',
+    'PATH': 'htslib'
+}
+modloadmsg = """
+===================================================================================================================================================================
+WARNING: Do not violate Ensembl's reasonable use policy on the public servers by annotating large data sets (> 100 variants) as this will result in a network ban.
+         Use the local cache instead by starting your command like this when executing the Variant Effect Predictor (VEP):
+
+\\${EBROOTVEP}/variant_effect_predictor.pl --cache --offline --dir \\${VEP_CACHE_DIR} --db_version=%(version)s --buffer 1000 --species homo_sapiens ...
+
+===================================================================================================================================================================
+"""

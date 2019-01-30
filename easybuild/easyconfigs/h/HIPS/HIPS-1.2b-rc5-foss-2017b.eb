@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'HIPS'
+version = '1.2b-rc5'
+
+homepage = 'http://hips.gforge.inria.fr/'
+description = """ HIPS (Hierarchical Iterative Parallel Solver) is a scientific library that provides
+ an efficient parallel iterative solver for very large sparse linear systems. """
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['http://hips.gforge.inria.fr/release/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['db198f65dd4bbca25cffe537e1c659c7ca94cd5a64a32c8b9165caacb5b09603']
+
+dependencies = [
+    ('SCOTCH', '5.1.12b_esmumps'),
+]
+
+prebuildopts = 'cp Makefile_Inc_Examples/makefile.inc.gnu makefile.inc && '
+
+# make all compiles both the library and the test programs
+buildopts = 'all LBLAS="$LIBBLAS" COEFTYPE="-DTYPE_REAL" PARTITIONER="-DSCOTCH_PART" '
+buildopts += 'ISCOTCH="-I$EBROOTSCOTCH/include" LSCOTCH="-L$EBROOTSCOTCH/lib -lscotch -lscotcherr"'
+
+files_to_copy = [
+    (['LIB/*.h', 'LIB/hips.inc'], 'include'),
+    (['LIB/*.a'], 'lib')
+]
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.a' % x for x in ['hips', 'hipssequential', 'io', 'spkit']] +
+             ['include/%s' % x for x in ['hips_fortran.h', 'hips.h', 'io.h', 'type.h', 'hips.inc']],
+    'dirs': []
+}
+
+moduleclass = 'math'
