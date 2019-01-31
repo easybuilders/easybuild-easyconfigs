@@ -1,0 +1,32 @@
+name = 'Libint'
+version = '1.1.6'
+
+homepage = 'https://sourceforge.net/p/libint/'
+description = """Libint library is used to evaluate the traditional (electron repulsion) and certain novel two-body
+ matrix elements (integrals) over Cartesian Gaussian functions used in modern atomic and molecular theory."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/evaleev/libint/archive/']
+sources = ['release-%s.tar.gz' % '-'.join(version.split('.'))]
+checksums = ['f201b0c621df678cfe8bdf3990796b8976ff194aba357ae398f2f29b0e2985a6']
+
+builddependencies = [('Autotools', '20170619')]
+
+preconfigopts = "aclocal -I lib/autoconf && libtoolize && autoconf && "
+
+# these are important for CP2K
+# see https://github.com/cp2k/cp2k/blob/master/cp2k/tools/hfx_tools/libint_tools/README_LIBINT
+configopts = "--with-libint-max-am=5 --with-libderiv-max-am1=4 "
+
+configopts += " --enable-deriv --enable-r12"
+
+sanity_check_paths = {
+    'files': ['include/lib%(x)s/lib%(x)s.h' % {'x': x} for x in ['deriv', 'int', 'r12']] +
+             ['include/libint/hrr_header.h', 'include/libint/vrr_header.h'] +
+             ['lib/lib%s.%s' % (x, y) for x in ['deriv', 'int', 'r12'] for y in ['a', SHLIB_EXT]],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

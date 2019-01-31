@@ -1,0 +1,44 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# Author: Daniel D. Kinnamon
+# Division of Human Genetics
+# The Ohio State University Wexner Medical Center
+# 
+# Modified by Jonas Demeulemeester
+# The Francis Crick Insitute, London, UK
+##
+
+easyblock = 'Tarball'
+
+name = 'Aspera-CLI'
+version = '3.9.0'
+versionsuffix = '.1326.6985b21'
+
+homepage = 'http://asperasoft.com'
+docurls = ['http://downloads.asperasoft.com/en/documentation/62']
+description = """IBM Aspera Command-Line Interface (the Aspera CLI) is
+a collection of Aspera tools for performing high-speed, secure data
+transfers from the command line. The Aspera CLI is for users and
+organizations who want to automate their transfer workflows."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+# Aspera CLI install script includes tarball inline and installs to a
+# fixed location. Need to include custom extract command to pull
+# tarball out of install script and pipe to tar. %s in the extraction
+# command will be replaced by the source filename.
+sources = [{
+    'filename': 'ibm-%(namelower)s-%(version)s%(versionsuffix)s-linux-64-release.sh',
+    'extract_cmd': "sed '1,/^__ARCHIVE_FOLLOWS__$/d' %s | tar -xzpo --strip-components 1 -f -",
+}]
+source_urls = ['http://download.asperasoft.com/download/sw/cli/%(version)s']
+checksums = ['5ab1fe396fe467682fbd763027067b94e02c931f78e388c90f4187c1219240e3']
+
+sanity_check_paths = {
+    'files': ['product-info.mf'],
+    'dirs': ['bin', 'docs', 'etc', 'lib', 'share/man', 'var']
+}
+
+sanity_check_commands = ['ascp -h']
+
+moduleclass = 'tools'

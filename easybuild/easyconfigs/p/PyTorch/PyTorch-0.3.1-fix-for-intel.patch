@@ -1,0 +1,103 @@
+# icpc is unhappy with the code, slightly adjust it to make it work
+# wpoely86@gmail.com
+diff -ur pytorch-0.3.1.orig/torch/lib/THD/base/init_methods/InitMethodFile.cpp pytorch-0.3.1/torch/lib/THD/base/init_methods/InitMethodFile.cpp
+--- pytorch-0.3.1.orig/torch/lib/THD/base/init_methods/InitMethodFile.cpp	2018-02-09 18:07:43.000000000 +0100
++++ pytorch-0.3.1/torch/lib/THD/base/init_methods/InitMethodFile.cpp	2018-04-12 17:15:16.662126133 +0200
+@@ -231,10 +231,8 @@
+ 
+     std::string master_address;
+     std::tie(master_address, config.public_address) = discoverMaster(master_addrs, master_port);
+-    config.worker = {
+-      .master_addr = master_address,
+-      .master_port = master_port,
+-    };
++    config.worker.master_addr = master_address;
++    config.worker.master_port = master_port;
+   }
+ 
+   return config;
+diff -ur pytorch-0.3.1.orig/torch/lib/THD/base/init_methods/InitMethodTCP.cpp pytorch-0.3.1/torch/lib/THD/base/init_methods/InitMethodTCP.cpp
+--- pytorch-0.3.1.orig/torch/lib/THD/base/init_methods/InitMethodTCP.cpp	2018-02-09 18:07:43.000000000 +0100
++++ pytorch-0.3.1/torch/lib/THD/base/init_methods/InitMethodTCP.cpp	2018-04-12 17:16:49.620096206 +0200
+@@ -282,10 +282,8 @@
+         std::string master_address;
+         std::tie(master_address, config.public_address) =
+           discoverMaster(master_msg.addresses, master_msg.port);
+-        config.worker = {
+-          .master_addr = master_address,
+-          .master_port = master_msg.port,
+-        };
++        config.worker.master_addr = master_address;
++        config.worker.master_port = master_msg.port;
+       }
+       break;
+     }
+diff -ur pytorch-0.3.1.orig/torch/lib/THD/base/data_channels/DataChannelTCP.cpp pytorch-0.3.1/torch/lib/THD/base/data_channels/DataChannelTCP.cpp
+--- pytorch-0.3.1.orig/torch/lib/THD/base/data_channels/DataChannelTCP.cpp	2018-04-12 17:49:19.034168933 +0200
++++ pytorch-0.3.1/torch/lib/THD/base/data_channels/DataChannelTCP.cpp	2018-04-12 17:47:03.531246460 +0200
+@@ -76,20 +76,16 @@
+     _socket = config.master.listen_socket;
+     _port = config.master.listen_port;
+ 
+-    _processes[0] = {
+-      .rank = 0,
+-      .address = "",
+-      .port = 0,
+-      .socket = -1,
+-    };
++    _processes[0].rank = 0;
++    _processes[0].address = "";
++    _processes[0].port = 0;
++    _processes[0].socket = -1;
+   } else { // WORKER
+     // add master
+-    _processes[0] = {
+-      .rank = 0,
+-      .address = config.worker.master_addr,
+-      .port = config.worker.master_port,
+-      .socket = -1,
+-    };
++      _processes[0].rank = 0;
++      _processes[0].address = config.worker.master_addr;
++      _processes[0].port = config.worker.master_port;
++      _processes[0].socket = -1;
+   }
+ }
+ 
+diff -ur pytorch-0.3.1.orig/torch/lib/THD/base/data_channels/DataChannelTCP.cpp pytorch-0.3.1/torch/lib/THD/base/data_channels/DataChannelTCP.cpp
+--- pytorch-0.3.1.orig/torch/lib/THD/base/data_channels/DataChannelTCP.cpp	2018-04-12 17:49:52.681149669 +0200
++++ pytorch-0.3.1/torch/lib/THD/base/data_channels/DataChannelTCP.cpp	2018-04-12 17:54:50.069979223 +0200
+@@ -117,12 +117,10 @@
+     port_type p_port = recv_value<port_type>(master.socket);
+     std::string p_address = recv_string(master.socket);
+ 
+-    _processes[p_rank] = {
+-      .rank = p_rank,
+-      .address = p_address,
+-      .port = p_port,
+-      .socket = -1,
+-    };
++    _processes[p_rank].rank = p_rank;
++    _processes[p_rank].address = p_address;
++    _processes[p_rank].port = p_port;
++    _processes[p_rank].socket = -1;
+   }
+ 
+   /*
+@@ -182,12 +180,10 @@
+       );
+     }
+ 
+-    _processes[p_rank] = {
+-      .rank = p_rank,
+-      .address = p_address,
+-      .port = p_port,
+-      .socket = p_socket,
+-    };
++    _processes[p_rank].rank = p_rank;
++    _processes[p_rank].address = p_address;
++    _processes[p_rank].port = p_port;
++    _processes[p_rank].socket = p_socket;
+   }
+ 
+   // send informations about processes to all workers
