@@ -1,0 +1,31 @@
+don't let configparser define 'backports' namespace, since that interferes with other packaging that provide stuff in 'backports'
+
+patch obtained from https://github.com/NIXOS/nixpkgs/blob/master/pkgs/development/python-modules/configparser/0001-namespace-fix.patch
+see also https://bitbucket.org/ambv/configparser/issues/17/importerror-when-used-with-other-backports
+diff --git a/setup.py b/setup.py
+index 3b07823..63ed25d 100644
+--- a/setup.py
++++ b/setup.py
+@@ -42,7 +42,6 @@ setup(
+     py_modules=modules,
+     package_dir={'': 'src'},
+     packages=find_packages('src'),
+-    namespace_packages=['backports'],
+     include_package_data=True,
+     zip_safe=False,
+     install_requires=requirements,
+diff --git a/src/backports/__init__.py b/src/backports/__init__.py
+index f84d25c..febdb2f 100644
+--- a/src/backports/__init__.py
++++ b/src/backports/__init__.py
+@@ -3,9 +3,3 @@
+ 
+ from pkgutil import extend_path
+ __path__ = extend_path(__path__, __name__)
+-
+-try:
+-    import pkg_resources
+-    pkg_resources.declare_namespace(__name__)
+-except ImportError:
+-    pass
+-- 
