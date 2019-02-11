@@ -1,15 +1,30 @@
-diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.c openmpi-3.1.3/ompi/mca/pml/ucx/pml_ucx.c
---- openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.c	2018-10-29 22:31:25.000000000 +0100
-+++ openmpi-3.1.3/ompi/mca/pml/ucx/pml_ucx.c	2018-11-23 10:38:12.000000000 +0100
-@@ -14,6 +14,7 @@
+From 4763822a64c9002f24429aef95d87f6abfc45c06 Mon Sep 17 00:00:00 2001
+From: Yossi Itigin <yosefe@mellanox.com>
+Date: Tue, 9 Oct 2018 16:38:49 +0300
+Subject: [PATCH 1/2] pml_ucx: add ompi datatype attribute to release
+ ucp_datatype
+
+Signed-off-by: Yossi Itigin <yosefe@mellanox.com>
+---
+ ompi/mca/pml/ucx/pml_ucx.c          | 62 ++++++++++++++++++++++++-----
+ ompi/mca/pml/ucx/pml_ucx.h          |  5 +++
+ ompi/mca/pml/ucx/pml_ucx_datatype.c | 37 +++++++++++++++--
+ ompi/mca/pml/ucx/pml_ucx_datatype.h |  7 +++-
+ 4 files changed, 96 insertions(+), 15 deletions(-)
+
+diff --git a/ompi/mca/pml/ucx/pml_ucx.c b/ompi/mca/pml/ucx/pml_ucx.c
+index 1f37212c58f..d92ad5a58cb 100644
+--- a/ompi/mca/pml/ucx/pml_ucx.c
++++ b/ompi/mca/pml/ucx/pml_ucx.c
+@@ -16,6 +16,7 @@
  
  #include "opal/runtime/opal.h"
  #include "opal/mca/pmix/pmix.h"
 +#include "ompi/attribute/attribute.h"
  #include "ompi/message/message.h"
  #include "ompi/mca/pml/base/pml_base_bsend.h"
- #include "pml_ucx_request.h"
-@@ -187,9 +188,9 @@
+ #include "opal/mca/common/ucx/common_ucx.h"
+@@ -190,9 +191,9 @@ int mca_pml_ucx_close(void)
  int mca_pml_ucx_init(void)
  {
      ucp_worker_params_t params;
@@ -21,7 +36,7 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.c openmpi-3.1.3/ompi/mca/p
  
      PML_UCX_VERBOSE(1, "mca_pml_ucx_init");
  
-@@ -206,30 +207,34 @@
+@@ -209,30 +210,34 @@ int mca_pml_ucx_init(void)
                                 &ompi_pml_ucx.ucp_worker);
      if (UCS_OK != status) {
          PML_UCX_ERROR("Failed to create UCP worker");
@@ -65,12 +80,10 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.c openmpi-3.1.3/ompi/mca/p
      }
  
      /* Initialize the free lists */
-@@ -245,15 +250,34 @@
-     PML_UCX_VERBOSE(2, "created ucp context %p, worker %p",
+@@ -249,14 +254,33 @@ int mca_pml_ucx_init(void)
                      (void *)ompi_pml_ucx.ucp_context,
                      (void *)ompi_pml_ucx.ucp_worker);
--    return OMPI_SUCCESS;
-+    return rc;
+     return OMPI_SUCCESS;
 +
 +err_destroy_worker:
 +    ucp_worker_destroy(ompi_pml_ucx.ucp_worker);
@@ -101,7 +114,7 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.c openmpi-3.1.3/ompi/mca/p
      ompi_pml_ucx.completed_send_req.req_state = OMPI_REQUEST_INVALID;
      OMPI_REQUEST_FINI(&ompi_pml_ucx.completed_send_req);
      OBJ_DESTRUCT(&ompi_pml_ucx.completed_send_req);
-@@ -452,6 +476,22 @@
+@@ -398,6 +422,22 @@ int mca_pml_ucx_del_procs(struct ompi_proc_t **procs, size_t nprocs)
  
  int mca_pml_ucx_enable(bool enable)
  {
@@ -124,9 +137,10 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.c openmpi-3.1.3/ompi/mca/p
      PML_UCX_FREELIST_INIT(&ompi_pml_ucx.persistent_reqs,
                            mca_pml_ucx_persistent_request_t,
                            128, -1, 128);
-diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.h openmpi-3.1.3/ompi/mca/pml/ucx/pml_ucx.h
---- openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.h	2018-10-29 22:31:25.000000000 +0100
-+++ openmpi-3.1.3/ompi/mca/pml/ucx/pml_ucx.h	2018-11-23 10:36:28.000000000 +0100
+diff --git a/ompi/mca/pml/ucx/pml_ucx.h b/ompi/mca/pml/ucx/pml_ucx.h
+index da1b3ef0c57..484ad5ebe1c 100644
+--- a/ompi/mca/pml/ucx/pml_ucx.h
++++ b/ompi/mca/pml/ucx/pml_ucx.h
 @@ -15,6 +15,7 @@
  #include "ompi/mca/pml/pml.h"
  #include "ompi/mca/pml/base/base.h"
@@ -134,8 +148,8 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.h openmpi-3.1.3/ompi/mca/p
 +#include "ompi/datatype/ompi_datatype_internal.h"
  #include "ompi/communicator/communicator.h"
  #include "ompi/request/request.h"
- 
-@@ -37,6 +38,10 @@
+ #include "opal/mca/common/ucx/common_ucx.h"
+@@ -42,6 +43,10 @@ struct mca_pml_ucx_module {
      ucp_context_h             ucp_context;
      ucp_worker_h              ucp_worker;
  
@@ -146,9 +160,10 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx.h openmpi-3.1.3/ompi/mca/p
      /* Requests */
      mca_pml_ucx_freelist_t    persistent_reqs;
      ompi_request_t            completed_send_req;
-diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.c openmpi-3.1.3/ompi/mca/pml/ucx/pml_ucx_datatype.c
---- openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.c	2018-10-29 22:31:25.000000000 +0100
-+++ openmpi-3.1.3/ompi/mca/pml/ucx/pml_ucx_datatype.c	2018-11-23 10:36:28.000000000 +0100
+diff --git a/ompi/mca/pml/ucx/pml_ucx_datatype.c b/ompi/mca/pml/ucx/pml_ucx_datatype.c
+index 98b7b190df7..74b5fbe19c3 100644
+--- a/ompi/mca/pml/ucx/pml_ucx_datatype.c
++++ b/ompi/mca/pml/ucx/pml_ucx_datatype.c
 @@ -10,6 +10,7 @@
  #include "pml_ucx_datatype.h"
  
@@ -157,7 +172,7 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.c openmpi-3.1.3/o
  
  #include <inttypes.h>
  
-@@ -127,12 +128,25 @@
+@@ -127,12 +128,25 @@ static ucp_generic_dt_ops_t pml_ucx_generic_datatype_ops = {
      .finish       = pml_ucx_generic_datatype_finish
  };
  
@@ -183,7 +198,7 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.c openmpi-3.1.3/o
  
      ompi_datatype_type_lb(datatype, &lb);
  
-@@ -147,16 +161,33 @@
+@@ -147,16 +161,33 @@ ucp_datatype_t mca_pml_ucx_init_datatype(ompi_datatype_t *datatype)
      }
  
      status = ucp_dt_create_generic(&pml_ucx_generic_datatype_ops,
@@ -220,9 +235,10 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.c openmpi-3.1.3/o
      return ucp_datatype;
  }
  
-diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.h openmpi-3.1.3/ompi/mca/pml/ucx/pml_ucx_datatype.h
---- openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.h	2018-10-29 22:31:25.000000000 +0100
-+++ openmpi-3.1.3/ompi/mca/pml/ucx/pml_ucx_datatype.h	2018-11-23 10:36:28.000000000 +0100
+diff --git a/ompi/mca/pml/ucx/pml_ucx_datatype.h b/ompi/mca/pml/ucx/pml_ucx_datatype.h
+index 26b1835a153..f5207cecc75 100644
+--- a/ompi/mca/pml/ucx/pml_ucx_datatype.h
++++ b/ompi/mca/pml/ucx/pml_ucx_datatype.h
 @@ -13,6 +13,8 @@
  #include "pml_ucx.h"
  
@@ -232,7 +248,7 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.h openmpi-3.1.3/o
  struct pml_ucx_convertor {
      opal_free_list_item_t     super;
      ompi_datatype_t           *datatype;
-@@ -23,6 +25,9 @@
+@@ -23,6 +25,9 @@ struct pml_ucx_convertor {
  
  ucp_datatype_t mca_pml_ucx_init_datatype(ompi_datatype_t *datatype);
  
@@ -242,7 +258,7 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.h openmpi-3.1.3/o
  OBJ_CLASS_DECLARATION(mca_pml_ucx_convertor_t);
  
  
-@@ -30,7 +35,7 @@
+@@ -30,7 +35,7 @@ static inline ucp_datatype_t mca_pml_ucx_get_datatype(ompi_datatype_t *datatype)
  {
      ucp_datatype_t ucp_type = datatype->pml_data;
  
@@ -251,3 +267,27 @@ diff -Nur openmpi-3.1.3.orig/ompi/mca/pml/ucx/pml_ucx_datatype.h openmpi-3.1.3/o
          return ucp_type;
      }
  
+
+From 40ac9e477165616ab98085e2d590dbbbe4874b9f Mon Sep 17 00:00:00 2001
+From: Yossi Itigin <yosefe@mellanox.com>
+Date: Wed, 10 Oct 2018 12:10:28 +0300
+Subject: [PATCH 2/2] pml_ucx: fix return code from mca_pml_ucx_init()
+
+Signed-off-by: Yossi Itigin <yosefe@mellanox.com>
+---
+ ompi/mca/pml/ucx/pml_ucx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ompi/mca/pml/ucx/pml_ucx.c b/ompi/mca/pml/ucx/pml_ucx.c
+index d92ad5a58cb..2e10a3b768c 100644
+--- a/ompi/mca/pml/ucx/pml_ucx.c
++++ b/ompi/mca/pml/ucx/pml_ucx.c
+@@ -253,7 +253,7 @@ int mca_pml_ucx_init(void)
+     PML_UCX_VERBOSE(2, "created ucp context %p, worker %p",
+                     (void *)ompi_pml_ucx.ucp_context,
+                     (void *)ompi_pml_ucx.ucp_worker);
+-    return OMPI_SUCCESS;
++    return rc;
+ 
+ err_destroy_worker:
+     ucp_worker_destroy(ompi_pml_ucx.ucp_worker);
