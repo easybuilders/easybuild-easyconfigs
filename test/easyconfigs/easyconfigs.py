@@ -175,6 +175,8 @@ class EasyConfigTest(TestCase):
             # 'guilty' until proven 'innocent'
             res = False
 
+            version_regex = re.compile('^version: (?P<version>[^;]+);')
+
             # filter out binutils with empty versionsuffix which is used to build toolchain compiler
             if dep == 'binutils' and len(dep_vars) > 1:
                 empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
@@ -185,9 +187,16 @@ class EasyConfigTest(TestCase):
             elif dep == 'HTSlib' and len(dep_vars) > 1:
                 for key, ecs in dep_vars.items():
                     # filter out HTSlib variants that are only used as dependency for BCFtools with same version
-                    htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    htslib_ver = version_regex.search(key).group('version')
                     if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
                         dep_vars.pop(key)
+
+            # multiple variants of NGS is OK, as long as they only differ by versionsuffix (same version)
+            # to allow for different language bindings (Java, Python 2, Python 3, ...)
+            elif dep == 'NGS' and len(dep_vars) > 1:
+                ngs_vers = [version_regex.search(key).group('version') for key in dep_vars]
+                if len(ngs_vers) == 1:
+                    dep_vars.pop(key)
 
             # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
             elif dep in ['FFTW', 'imkl']:
@@ -199,7 +208,7 @@ class EasyConfigTest(TestCase):
             # as long as that's indicated by the versionsuffix
             elif dep in ['Boost', 'R'] and len(dep_vars) > 1:
                 for key in dep_vars.keys():
-                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    dep_ver = version_regex.search(key).group('version')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
                         dep_vars.pop(key)
