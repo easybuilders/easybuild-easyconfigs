@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '3.1.1'
+
+homepage = 'http://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-3 implementation."""
+
+toolchain = {'name': 'iccifort', 'version': '2018.3.222-GCC-7.3.0-2.30'}
+
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['846bb7ed2aa0c96fc0594423e7b21904ee4f160dcfd62b8a0d1274256fbf25ce']
+
+# needed for --with-verbs
+osdependencies = [('libibverbs-dev', 'libibverbs-devel', 'rdma-core-devel')]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('hwloc', '1.11.10')
+]
+
+configopts = '--enable-shared --with-verbs '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
+
+# to enable SLURM integration (site-specific)
+# configopts += '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'
+
+libs = ["mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte"]
+sanity_check_paths = {
+    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
+    'dirs': [],
+}
+
+moduleclass = 'mpi'

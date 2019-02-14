@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'mkl-dnn'
+version = '0.16'
+
+homepage = 'https://01.org/mkl-dnn'
+description = "Intel(R) Math Kernel Library for Deep Neural Networks (Intel(R) MKL-DNN)"
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = [
+    'https://github.com/01org/mkl-dnn/archive/',
+    'https://github.com/intel/mkl-dnn/releases/download/v%(version)s',
+]
+mklml_extract_cmd = "mkdir %(builddir)s/mkl-dnn-%(version)s/external/ && "
+mklml_extract_cmd += "tar xvfz %s -C %(builddir)s/mkl-dnn-%(version)s/external/"
+sources = [
+    'v%(version)s.tar.gz',
+    # mkl-dnn requires Intel MKL, so download minimal Intel MKL version
+    # actually using imkl as a dependency would be messy due to underlying icc/ifort compilers & impi MPI lib
+    {'filename': 'mklml_lnx_2019.0.20180710.tgz', 'extract_cmd': mklml_extract_cmd},
+]
+checksums = [
+    '7557f820d6801dbe7741627199c0165fe9e651245b9c1c744d615f576da1098a',  # v0.16.tar.gz
+    'e2233534a9d15c387e22260997af4312a39e9f86f791768409be273b5453c4e6',  # mklml_lnx_2019.0.20180710.tgz
+]
+
+builddependencies = [('CMake', '3.12.1')]
+
+separate_build_dir = True
+
+configopts = "-DFAIL_WITHOUT_MKL=1"
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['include/mkldnn.h', 'include/mkldnn.hpp', 'include/mkldnn_types.h', 'lib/libmkldnn.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
