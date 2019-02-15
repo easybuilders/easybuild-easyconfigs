@@ -1,0 +1,39 @@
+Patch the Makefile to use CFLAGS from EasyBuild.
+Make it install everything in a useful directory.
+
+Åke Sandgren, 20190215
+diff -ru smartdenovo.orig/Makefile smartdenovo/Makefile
+--- smartdenovo.orig/Makefile	2019-02-15 15:12:43.000000000 +0100
++++ smartdenovo/Makefile	2019-02-15 16:04:50.409061286 +0100
+@@ -1,20 +1,15 @@
+ VERSION=1.0.0
+ MINOR_VER=20140314
+-CC=gcc
+-ifdef DEBUG
+-CFLAGS=-g3 -W -Wall -O0 -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -mpopcnt -mssse3
+-else
+-CFLAGS=-W -Wall -O4 -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -mpopcnt -mssse3
+-endif
+-INSTALLDIR=/usr/local/bin
++
++CFLAGS += -W -Wall -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++
+ GLIBS=-lm -lpthread
+-#GENERIC_SRC=Makefile mem_share.h string.h file_reader.h file_reader.c bitvec.h hashset.h sort.h list.h dna.h thread.h timer.h ksw.h ksw.c kswx.h
++
+ GENERIC_SRC=mem_share.h string.h file_reader.h file_reader.c bitvec.h hashset.h sort.h list.h dna.h thread.h timer.h ksw.h ksw.c kswx.h
+ 
+ ifeq (0, ${MAKELEVEL})
+ UNIQ_ID=$(shell date +"%s")
+ endif
+-#all: pairaln wtcyc wtmer wtzmo wtobt wtclp wtext wtlay wtcns wtdif wtcorr wtjnt
+ all: pairaln wtpre wtcyc wtmer wtzmo wtobt wtclp wtext wtgbo wtlay wtcns wtmsa
+ 
+ pairaln: $(GENERIC_SRC) pairaln.c
+@@ -69,4 +64,5 @@
+ 	rm -f *.o *.gcda *.gcno *.gcov gmon.out
+ 
+ install:
+-	cp pairaln wtpre wtcyc wtmer wtzmo wtobt wtclp wtext wtgbo wtlay wtcns wtmsa $(INSTALLDIR)
++	mkdir -p $(INSTALLDIR)/bin
++	cp *.sh *.pl pairaln wtpre wtcyc wtmer wtzmo wtobt wtclp wtext wtgbo wtlay wtcns wtmsa $(INSTALLDIR)/bin
