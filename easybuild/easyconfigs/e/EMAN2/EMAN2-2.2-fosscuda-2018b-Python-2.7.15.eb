@@ -1,0 +1,70 @@
+easyblock = 'CMakeMake'
+
+name = 'EMAN2'
+version = '2.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://blake.bcm.edu/emanwiki/EMAN2'
+description = """EMAN2 is the successor to EMAN1. It is a broadly based greyscale scientific image processing suite
+ with a primary focus on processing data from transmission electron microscopes. """
+
+toolchain = {'name': 'fosscuda', 'version': '2018b'}
+
+source_urls = ['https://github.com/cryoem/eman2/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'EMAN2-2.2_fix_install_prefix.patch',
+    'EMAN2-2.2_use_default_cmake_search_paths.patch',
+    'EMAN2-2.2_fix_gsl_include.patch',
+    'EMAN2-2.2_fix_missing_stdio.patch',
+    'EMAN2-2.2_install_e2version.patch',
+]
+checksums = [
+    '3fe3e950564555a60fb37f9eb92b46ab5759582a7a1aaffa256a4beb5cc708f7',  # v2.2.tar.gz
+    '75bc3ff198ab4e279f444b0aa27caaab6b5f49c51cebab07ff5eccad38601412',  # EMAN2-2.2_fix_install_prefix.patch
+    # EMAN2-2.2_use_default_cmake_search_paths.patch
+    'ec2c56e18803b3f8d71f146abab828824279c601b230ed153f033ca569eb8e96',
+    '861e0ca97f9e2436a5c87b0cbae18b537c0b6c0f5325c3c251c55b4f3594f639',  # EMAN2-2.2_fix_gsl_include.patch
+    '8cdae9764b289da38334f5313839ae37d133549687e1a4dce5fdc097bedd8fc1',  # EMAN2-2.2_fix_missing_stdio.patch
+    '0ba856c89702229dbfe8ac0670fcfa869b3e7cf459e03fa89352fe2e5213dba0',  # EMAN2-2.2_install_e2version.patch
+]
+
+builddependencies = [('CMake', '3.12.1')]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('freetype', '2.9.1'),
+    ('FTGL', '2.1.3-rc5'),  # this is the latest version of FTGL since 2008 (included in Ubuntu 16.04 and CentOS 7.4)
+    ('GSL', '2.5'),
+    ('HDF5', '1.10.2'),
+    ('IPython', '5.8.0', '-Python-%(pyver)s'),
+    ('libGLU', '9.0.0'),
+    ('libjpeg-turbo', '2.0.0'),
+    ('LibTIFF', '4.0.9'),
+    ('libpng', '1.6.34'),
+    ('Mesa', '18.1.1'),
+    ('PyQt', '4.12.3', '-Python-%(pyver)s'),
+    ('bsddb3', '6.2.6', '-Python-%(pyver)s'),
+]
+
+separate_build_dir = True
+
+preconfigopts = 'export CONDA_BUILD_STATE=BUILD && '
+preconfigopts += 'export PREFIX=%(installdir)s && '
+preconfigopts += 'export SP_DIR=%(installdir)s/lib/python%(pyshortver)s/site-packages && '
+preconfigopts += 'export FFTW3FDIR="$EBROOTFFTW" && '
+preconfigopts += 'export FFTW3DDIR="$EBROOTFFTW" && '
+preconfigopts += 'export HDF5DIR="$EBROOTHDF5" && '
+preconfigopts += 'export FTGLDIR="$EBROOTFTGL" && '
+
+configopts = '-DENABLE_EMAN_CUDA=ON -DENABLE_SPARX_CUDA=ON '
+
+sanity_check_paths = {
+    'files': ['bin/e2proc2d.py', 'bin/e2proc3d.py', 'bin/e2bdb.py', 'bin/e2iminfo.py', 'bin/e2display.py',
+              'bin/e2filtertool.py'],
+    'dirs': ['doc', 'examples', 'fonts', 'images', 'lib', 'recipes', 'test/rt', 'utils']
+}
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'
