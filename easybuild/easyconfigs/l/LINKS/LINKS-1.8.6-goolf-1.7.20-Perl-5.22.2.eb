@@ -1,0 +1,41 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'Tarball'
+
+name = 'LINKS'
+version = '1.8.6'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://www.bcgsc.ca/platform/bioinfo/software/links'
+description = "Long Interval Nucleotide K-mer Scaffolder"
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+source_urls = ['http://www.bcgsc.ca/platform/bioinfo/software/links/releases/%(version)s/']
+sources = ['links_v%s.tar.gz' % version.replace('.', '-')]
+checksums = ['d113efa48d29d825eb47abd4ee5124b9b51d7062714a83fc49104552547d5584']
+
+dependencies = [
+    ('Perl', '5.22.2'),
+]
+
+postinstallcmds = [
+    'rm %(installdir)s/lib/bloomfilter/swig/BloomFilter.so',
+    'cd %(installdir)s/lib/bloomfilter/swig/ && ${CXX} -c BloomFilter_wrap.cxx -I$EBROOTPERL/lib/perl5/%(perlver)s/x86_64-linux-thread-multi/CORE/ -fPIC -Dbool=char -O3',
+    'cd %(installdir)s/lib/bloomfilter/swig/ && ${CXX} -Wall -shared BloomFilter_wrap.o -o BloomFilter.so -O3',
+]
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': 'lib',
+}
+
+sanity_check_paths = {
+    'files': ['LINKS', 'lib/bloomfilter/swig/BloomFilter.so'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
