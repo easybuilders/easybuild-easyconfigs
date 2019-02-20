@@ -1,0 +1,169 @@
+easyblock = 'PythonPackage'
+
+name = 'PyTorch'
+version = '0.4.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://pytorch.org/'
+description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+PyTorch is a deep learning framework that puts Python first."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+pytorchdir = 'pytorch-%(version)s'
+extract_cmd_pattern = 'tar -C %s/%s --strip-components=1 -xf %%s'
+
+source_urls = ['https://github.com/pytorch/pytorch/archive']
+# PyTorch pulls in a bunch of submodules which don't have releases.
+# We download the submodule revisions from their repos.
+# determine commit of additional sources via https://github.com/pytorch/pytorch/tree/v0.4.1/third_party
+sources = [
+    'v%(version)s.tar.gz',  # PyTorch
+    {
+        'source_urls': ['https://github.com/facebookincubator/gloo/archive'],
+        'download_filename': '69eef748cc1dfbe0fefed69b34e6545495f67ac5.tar.gz',
+        'filename': 'gloo-20180529.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/gloo'),
+    },
+    {
+        'source_urls': ['https://github.com/google/googletest/archive'],
+        'download_filename': '69e48e92de43960a316a826293510b7b3deb9eca.tar.gz',
+        'filename': 'googletest-20171018.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/googletest'),
+    },
+    {
+        'source_urls': ['https://github.com/nanopb/nanopb/archive'],
+        'download_filename': '14efb1a47a496652ab08b1ebcefb0ea24ae4a5e4.tar.gz',
+        'filename': 'nanopb-20170723.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/nanopb'),
+    },
+    {
+        'source_urls': ['https://github.com/pybind/pybind11/archive'],
+        'download_filename': 'add56ccdcac23a6c522a2c1174a866e293c61dab.tar.gz',
+        'filename': 'pybind11-20180112.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/pybind11'),
+    },
+    {
+        'source_urls': ['https://github.com/wjakob/clang-cindex-python3/archive'],
+        'download_filename': '6a00cbc4a9b8e68b71caf7f774b3f9c753ae84d5.tar.gz',
+        'filename': 'clang-cindex-python3-20170330.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/pybind11/tools/clang'),
+    },
+    {
+        'source_urls': ['https://github.com/pytorch/cpuinfo/archive'],
+        'download_filename': '1e6c8c99d27f2b5eb9d2e6231055c6a4115b85e5.tar.gz',
+        'filename': 'cpuinfo-20180514.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/cpuinfo'),
+    },
+    {
+        'source_urls': ['https://github.com/catchorg/Catch2/archive'],
+        'download_filename': '0a34cc201ef28bf25c88b0062f331369596cb7b7.tar.gz',
+        'filename': 'catch-20180311.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/catch'),
+    },
+    {
+        'source_urls': ['https://github.com/onnx/onnx/archive'],
+        'download_filename': 'b2817a682f25f960586f06caa539bbbd7a96b859.tar.gz',
+        'filename': 'onnx-20180717.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/onnx'),
+    },
+    {
+        'source_urls': ['https://github.com/google/protobuf/archive'],
+        'download_filename': '2761122b810fe8861004ae785cc3ab39f384d342.tar.gz',
+        'filename': 'protobuf-20171113.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/protobuf'),
+    },
+    {
+        'source_urls': ['https://github.com/Maratyszcza/pthreadpool/archive'],
+        'download_filename': '2b06b31f6a315162348e1f3c24325eedaf6cc559.tar.gz',
+        'filename': 'pthreadpool-20180225.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/pthreadpool'),
+    },
+    {
+        'source_urls': ['https://github.com/Maratyszcza/FXdiv/archive'],
+        'download_filename': '811b482bcd9e8d98ad80c6c78d5302bb830184b0.tar.gz',
+        'filename': 'FXdiv-20180224.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/FXdiv'),
+    },
+    {
+        'source_urls': ['https://github.com/Maratyszcza/psimd/archive'],
+        'download_filename': '4ac61b112252778b174575931c641bef661ab3cd.tar.gz',
+        'filename': 'psimd-20171026.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/psimd'),
+    },
+    {
+        'source_urls': ['https://github.com/Maratyszcza/FP16/archive'],
+        # use commit on top of 43d6d17df48ebf622587e7ed9472ea76573799b9
+        # to also include typo fix required when building with Intel compilers
+        # see https://github.com/Maratyszcza/FP16/pull/2
+        'download_filename': '785a90fce76bda2a8d23a800a1c9fb8fab114584.tar.gz',
+        'filename': 'FP16-20180416.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/FP16'),
+    },
+    {
+        'source_urls': ['https://github.com/Maratyszcza/NNPACK/archive'],
+        'download_filename': '3eb0d453662d05a708f43b108bed9e17b705383e.tar.gz',
+        'filename': 'NNPACK-20180522.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/NNPACK'),
+    },
+    {
+        'source_urls': ['https://github.com/shibatch/sleef/archive'],
+        'download_filename': '6ff7a135a1e31979d1e1844a2e7171dfbd34f54f.tar.gz',
+        'filename': 'sleef-20180509.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/sleef'),
+    },
+    {
+        'source_urls': ['https://github.com/Maratyszcza/PeachPy//archive'],
+        'download_filename': '07d8fde8ac45d7705129475c0f94ed8925b93473.tar.gz',
+        'filename': 'PeachPy-20180219.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (pytorchdir, 'third_party/python-peachpy'),
+    },
+]
+patches = [
+    'PyTorch-0.3.1-fix-for-intel.patch',
+    'PyTorch-%(version)s_fix-findAVX.patch',
+]
+checksums = [
+    '6ab03fa707909e5fb6209a3a98d24c25cd64d9590f3e05d6e8490e4d07b3a765',  # v0.4.1.tar.gz
+    '34ea7061427d8a9cdd86373890567485f6cd4961bcb9d439fe10fe9006b016f5',  # gloo-20180529.tar.gz
+    'd00154bff155c68aadf0408b43b21079ac1b1e4d659a4d4b59cb7fe98ceed2ad',  # googletest-20171018.tar.gz
+    '7d18b9bdc10de382da1643c2b1b0227131db47eef89998050b5e0a829d3bd0af',  # nanopb-20170723.tar.gz
+    'd6cc302d0fcf508d80759934c1b40651df1278882998088c4e78dc175e471f52',  # pybind11-20180112.tar.gz
+    '828e0d6238e2129a9e08071750dc16ba10e38eacf96f21b8a71e501c2085b282',  # clang-cindex-python3-20170330.tar.gz
+    'a3f7992c48ca498082a0b3d9fa158a53ef21c51e1db42e38e6dfe803f620e445',  # cpuinfo-20180514.tar.gz
+    'b762a663772f88eac7f849d3a5bde5188e35771f09096dbf678b7f5bbe93a0ef',  # catch-20180311.tar.gz
+    'f72e6f6a33620b207c10fd7ea87b1005939040c0d241acf136aa29f39c1f4d1b',  # onnx-20180717.tar.gz
+    'd293a86f4c82a31990b89be2b9787df045e3f6b86378e9950e5e1145d4a08e6a',  # protobuf-20171113.tar.gz
+    'a7e791dee51c6bbf895efa067800422544bd88aad0fb430172bc3c4356c315d6',  # pthreadpool-20180225.tar.gz
+    'fac18cefc1290c5a9451d6334ffd49e54ad64734bb6a606d3ae0f576767aabf8',  # FXdiv-20180224.tar.gz
+    '1ed60a6b912f52b49cc9448115a57c73968e7cc723e18d15193e2c62f4d91e47',  # psimd-20171026.tar.gz
+    '7f4c7b6ffa5165972337b9c5c1dea10321286a3e7ef060a4002720e7c536da53',  # FP16-20180416.tar.gz
+    '99861a434758e403f413da9614ae8a7b82ea53770473e8082abfbb3fdd220b45',  # NNPACK-20180522.tar.gz
+    'f822489cbbf3cd09db578ea7ac9af40a9d3184f8ff95cb98e8b33b71ed5d89f8',  # sleef-20180509.tar.gz
+    '13100c3deed300bbf16f87d8af3539f432462bfef9d38f0c7e3e387dc2e88676',  # PeachPy-20180219.tar.gz
+    '2b44b3bcda05acbd58c03a6be5a491ad43f58a31a2d0ba845d241a32df47a136',  # PyTorch-0.3.1-fix-for-intel.patch
+    'd26a125f3f0957ca55d22d5314dafab86169d69e8e90b7c8a250cfebdae15183',  # PyTorch-0.4.1_fix-findAVX.patch
+]
+builddependencies = [('CMake', '3.10.2')]
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('PyYAML', '3.12', versionsuffix),
+    ('mkl-dnn', '0.13'),
+]
+
+# This environment is needed to prevent setup.py from invoking git to determine version.
+prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1'
+
+runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/build/lib.linux-x86_64-%(pyshortver)s:$PYTHONPATH '
+# skip test subsuites that include hanging/failing tests for now
+runtest += '&& python test/run_test.py --exclude autograd jit sparse torch utils --verbose'
+
+options = {'modulename': 'torch'}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'devel'

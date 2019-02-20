@@ -1,0 +1,86 @@
+Fix the size command in nab.
+
+Åke Sandgren, 20180405
+diff -ru amber16.orig.patched/AmberTools/src/nab/nab.c amber16/AmberTools/src/nab/nab.c
+--- amber16.orig.patched/AmberTools/src/nab/nab.c	2017-04-13 15:00:53.000000000 +0200
++++ amber16/AmberTools/src/nab/nab.c	2018-04-05 10:20:55.267295948 +0200
+@@ -233,8 +233,9 @@
+ {
+ 	int	ac;
+ 	char	*dotp, *amberhome;
+-	char	cmd[ 1024 ], word[ 1024 ];
++	char	*cmd, word[ 1024 ];
+ 	char	*fields[256];
++	int     cmd_sz;
+ 	int 	status;
+ 	int 	nfields;
+ 
+@@ -243,10 +244,16 @@
+        fprintf( stderr, "AMBERHOME is not set!\n" );
+        exit(1);
+     }
++	cmd_sz = 1024;
++	cmd = malloc(cmd_sz);
+ 	sprintf( cmd, "%s -I%s/include", CC, amberhome );
+ 	if( aopt ){
+ #ifdef AVSDIR
+ 		sprintf( word, " -I%s/include", AVSDIR );
++		if (strlen(cmd) + strlen(word) + 1 > cmd_sz) {
++			cmd_sz += 1024;
++			cmd = realloc(cmd, cmd_sz);
++		}
+ 		strcat( cmd, word );
+ #else
+ 		fprintf( stderr, "-avs not supported.\n" );
+@@ -257,9 +264,17 @@
+ 			dotp = strrchr( argv[ ac ], '.' );
+ 			strcpy( &dotp[ 1 ], "c" );
+ 			sprintf( word, " %s", argv[ ac ] );
++			if (strlen(cmd) + strlen(word) + 1 > cmd_sz) {
++				cmd_sz += 1024;
++				cmd = realloc(cmd, cmd_sz);
++			}
+ 			strcat( cmd, word );
+ 		}else if( argv[ ac ] ){
+ 			sprintf( word, " %s", argv[ ac ] );
++			if (strlen(cmd) + strlen(word) + 1 > cmd_sz) {
++				cmd_sz += 1024;
++				cmd = realloc(cmd, cmd_sz);
++			}
+ 			strcat( cmd, word );
+ 		}
+ 	}
+@@ -268,12 +283,25 @@
+ 		if( aopt ){
+ 			sprintf( word, " -L%s/lib -lflow_c -lgeom -lutil",
+ 				AVSDIR );
++			if (strlen(cmd) + strlen(word) + 1 > cmd_sz) {
++				cmd_sz += 1024;
++				cmd = realloc(cmd, cmd_sz);
++			}
+ 			strcat( cmd, word );
+ 		}
+ #endif
+ 		sprintf( word, " -L%s/lib -lnab -lcifparse", amberhome );
++		if (strlen(cmd) + strlen(word) + 1 > cmd_sz) {
++			cmd_sz += 1024;
++			cmd = realloc(cmd, cmd_sz);
++		}
+ 		strcat( cmd, word );
+ 		sprintf( word, " %s ", FLIBS );
++		/* Make sure there is space enough for the " -lm" too */
++		if (strlen(cmd) + strlen(word) + 5 > cmd_sz) {
++			cmd_sz += 1024;
++			cmd = realloc(cmd, cmd_sz);
++		}
+ 		strcat( cmd, word );
+ 		strcat( cmd, " -lm" );
+ 	}
+@@ -283,6 +311,7 @@
+ 	if (status != 0) {
+ 		fprintf(stderr,"cc failed!\n"); exit (1);
+ 	}
++	free(cmd);
+ }
+ 
+ static	int	split( char str[], char *fields[], char *fsep )

@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'BerkeleyGW'
+version = '2.0.0'
+
+homepage = 'http://www.berkeleygw.org'
+description = """The BerkeleyGW Package is a set of computer codes that calculates the quasiparticle
+ properties and the optical responses of a large variety of materials from bulk periodic crystals to
+ nanostructures such as slabs, wires and molecules."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['https://berkeley.box.com/shared/static/']
+sources = [{'download_filename': 'wkqu37wu77tll53r8t1soe6ozqja67yy.gz', 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'BerkeleyGW-1.2.0_fix_intent.patch',
+    'BerkeleyGW-2.0.0_fix_path.patch',
+]
+checksums = [
+    '887146cc6598a509a6d2a7b5044d12ebc5a4a2c7b028513f247fe62cf0861563',  # BerkeleyGW-2.0.0.tar.gz
+    '7bd3cc229693a1bd5fe6547f55046bee68c8c50f29f8ca6945f443b04ce2ca38',  # BerkeleyGW-1.2.0_fix_intent.patch
+    '132c02d41a3269e00a69b5e5cfc5d6b7954ad4ce142e34f8e57b7c475033cce4',  # BerkeleyGW-2.0.0_fix_path.patch
+]
+
+dependencies = [('HDF5', '1.10.1')]
+
+skipsteps = ['configure']
+
+prebuildopts = 'cp config/generic.mpi.linux.mk arch.mk && '
+
+buildopts = 'all-flavors COMPFLAG=-DINTEL PARAFLAG="-DMPI -DOMP" DEBUGFLAG="" F90free="$MPIF90 -free" LINK="$MPIF90" '
+buildopts += 'FOPTS="$FFLAGS" MOD_OPT="-module " C_PARAFLAG="$PARAFLAG" CC_COMP="$MPICXX" C_COMP="$MPICC" '
+buildopts += 'FCPP="cpp -C -P -ffreestanding" C_LINK="$MPICXX" C_OPTS="$CFLAGS" MKLPATH="$MKLROOT" '
+buildopts += 'MATHFLAG="-DUSESCALAPACK -DUNPACKED -DUSEFFTW3 -DHDF5" '
+buildopts += 'LAPACKLIB="$LIBLAPACK" BLACSDIR="$BLACS_LIB_DIR" BLACS="$LIBBLACS" SCALAPACKLIB="$LIBSCALAPACK" '
+buildopts += 'FFTWINCLUDE="$FFTW_INC_DIR" FFTWLIB="$MKLROOT/lib/intel64/libfftw3xf_intel.a" '
+buildopts += 'HDF5INCLUDE="$EBROOTHDF5/include" HDF5LIB="-lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lz" '
+
+# "all-flavors" cleans and compiles everything again
+preinstallopts = 'sed -i "s/install: all-flavors/install: all/" Makefile && '
+
+installopts = 'INSTDIR=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/' + prog + '.' + flavor + '.x'
+              for prog in ['epsilon', 'sigma', 'kernel', 'absorption', 'nonlinearoptics', 'parabands']
+              for flavor in ['real', 'cplx']],
+    'dirs': []
+}
+
+moduleclass = 'phys'
