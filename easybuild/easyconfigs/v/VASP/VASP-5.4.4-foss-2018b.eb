@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.4'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'usempi': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['%(namelower)s.%(version)s.tar.gz']
+
+# patch from Vaspwiki, http://cms.mpi.univie.ac.at/patches/patch.5.4.4.16052018.gz
+patches = ['vasp.5.4.4.16052018.patch']
+
+checksums = [
+    '5bd2449462386f01e575f9adf629c08cb03a13142806ffb6a71309ca4431cfb3',  # vasp.5.4.4.tar.gz
+    '3392a0ffccfa17a77775be86b1bed74f8f75a0a642f77ee0fae59950d0a3d3f4',  # vasp.5.4.4.16052018.patch
+]
+
+prebuildopts = 'cp arch/makefile.include.linux_gnu ./makefile.include && '
+
+# Makefile uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+targets = ['std', 'gam', 'ncl']
+
+buildopts = '%s FCL="$MPIF90" OFLAG="$OPTFLAGS" BLAS="$LIBBLAS" LAPACK="$LIBLAPACK" ' % ' '.join(targets)
+buildopts += 'BLACS="$LIBBLACS" SCALAPACK="$LIBSCALAPACK" FFTW="$EBROOTFFTW"'
+
+parallel = 1
+
+files_to_copy = [(['bin/vasp_' + x for x in targets], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_' + x for x in targets],
+    'dirs': []
+}
+
+moduleclass = 'phys'
