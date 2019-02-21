@@ -1,7 +1,4 @@
-# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
-# Author: Bart Verleye
-# Center for eResearch, Auckland
-easyblock = 'ConfigureMakePythonPackage'
+easyblock = 'Bundle'
 
 name = 'PyQt'
 version = '4.12.3'
@@ -12,27 +9,53 @@ description = """PyQt is a set of Python v2 and v3 bindings for Digia's Qt appli
 
 toolchain = {'name': 'fosscuda', 'version': '2018b'}
 
-source_urls = ['http://sourceforge.net/projects/pyqt/files/PyQt4/PyQt-%(version)s']
-sources = ['PyQt4_gpl_x11-%(version)s.tar.gz']
-checksums = ['a00f5abef240a7b5852b7924fa5fdf5174569525dc076cd368a566619e56d472']
-
 dependencies = [
     ('Python', '2.7.15'),
-    ('SIP', '4.19.13', versionsuffix),
     ('Qt', '4.8.7'),
 ]
 
-configopts = "configure-ng.py --confirm-license"
-configopts += " --destdir=%(installdir)s/lib/python%(pyshortver)s/site-packages "
-configopts += " --sipdir=%(installdir)s/share/sip/PyQt%(version_major)s"
+default_easyblock = 'ConfigureMakePythonPackage'
 
-options = {'modulename': '%(name)s%(version_major)s'}
+common_cfgopts = '--bindir=%(installdir)s/bin '
+common_cfgopts += '--destdir=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+common_cfgopts += '--sipdir=%(installdir)s/share/sip '
 
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+sipcfgopts = 'configure.py ' + common_cfgopts + '--incdir=%(installdir)s/include '
+sipcfgopts += '--sip-module=PyQt%(version_major)s.sip '
+
+pyqtcfgopts = 'configure-ng.py --confirm-license --verbose --no-python-dbus '
+pyqtcfgopts += common_cfgopts + ' --sip=%(installdir)s/bin/sip '
+pyqtcfgopts += '--designer-plugindir=%(installdir)s/plugins/designer '
+
+# PyQt needs a private copy of the sip module so we need to do this as a Bundle.
+components = [
+    ('SIP', '4.19.13', {
+        'source_urls': ['http://sourceforge.net/projects/pyqt/files/sip/sip-%(version)s'],
+        'sources': ['sip-%(version)s.tar.gz'],
+        'start_dir': 'sip-%(version)s',
+        'configopts': sipcfgopts,
+    }),
+    (name, version, {
+        'source_urls': ['http://sourceforge.net/projects/pyqt/files/%(name)s%(version_major)s/%(name)s-%(version)s'],
+        'sources': ['%(name)s%(version_major)s_gpl_x11-%(version)s.tar.gz'],
+        'start_dir': '%(name)s%(version_major)s_gpl_x11-%(version)s',
+        'configopts': pyqtcfgopts,
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'QT_PLUGIN_PATH': 'plugins/designer'
+}
+
+sanity_check_commands = ["python -c 'import PyQt%(version_major)s.QtHelp'"]
+
+libpath = 'lib/python%(pyshortver)s/site-packages/%(name)s%(version_major)s'
 
 sanity_check_paths = {
-    'files': [],
-    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s%(version_major)s'],
+    'files': ['bin/%s' % x for x in ['pyuic4', 'pyrcc4', 'pylupdate4']] +
+              [libpath + '/%s.%s' % (x, SHLIB_EXT) for x in ['sip', 'QtCore', 'Qt']],
+    'dirs': ['include', 'plugins/designer', 'share/sip'],
 }
 
 moduleclass = 'vis'
