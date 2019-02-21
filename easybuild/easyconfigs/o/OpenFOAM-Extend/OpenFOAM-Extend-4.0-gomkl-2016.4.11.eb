@@ -1,0 +1,43 @@
+easyblock = 'EB_OpenFOAM'
+
+name = 'OpenFOAM-Extend'
+version = '4.0'
+
+homepage = 'http://www.extend-project.de/'
+description = "OpenFOAM is a free, open source CFD software package. OpenFOAM has an extensive range of features to solve anything from complex fluid flows involving chemical reactions, turbulence and heat transfer, to solid dynamics and electromagnetics."
+
+toolchain = {'name': 'gomkl', 'version': '2016.4.11'}  # Libccmio v2.6.1, zoltan v3.5
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/Unofficial-Extend-Project-Mirror/foam-extend-foam-extend-%(version)s/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-3.2-ParMGridGen.patch',
+    '%(name)s-3.1_build-qa.patch',
+    '%(name)s-3.1_comp-mpi.patch',
+    '%(name)s-3.1_skip-ThirdParty-OpenMPI.patch',
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.4'),
+    ('M4', '1.4.18'),
+    ('CMake', '3.9.1'),
+]
+dependencies = [
+    ('ParMETIS', '4.0.3', '', ('gompi', '2016.4.11')),
+    ('METIS', '5.1.0', '', ('GCC', '5.4.0')),
+    ('SCOTCH', '6.0.4', '', ('gompi', '2016.4.11')),
+    ('Mesquite', '2.3.0', '', ('GCC', '5.4.0')),
+    ('ParMGridGen', '1.0', '', ('gompi', '2016.4.11')),
+]
+
+# Too many builds in parallel actually slows down the build:
+
+maxparallel = 4
+
+moduleclass = 'cae'
+
+modluafooter = """
+depends_on("python/2.7")
+"""
