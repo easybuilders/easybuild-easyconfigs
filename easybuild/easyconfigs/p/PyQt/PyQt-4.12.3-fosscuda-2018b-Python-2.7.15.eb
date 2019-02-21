@@ -16,11 +16,14 @@ dependencies = [
 
 default_easyblock = 'ConfigureMakePythonPackage'
 
+pylibdir = 'lib/python%(pyshortver)s/site-packages'
+
 common_cfgopts = '--bindir=%(installdir)s/bin '
-common_cfgopts += '--destdir=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+common_cfgopts += '--destdir=%%(installdir)s/%s ' % pylibdir
 common_cfgopts += '--sipdir=%(installdir)s/share/sip '
 
-sipcfgopts = 'configure.py ' + common_cfgopts + '--incdir=%(installdir)s/include '
+sipcfgopts = 'configure.py ' + common_cfgopts
+sipcfgopts += '--incdir=%(installdir)s/include '
 sipcfgopts += '--sip-module=PyQt%(version_major)s.sip '
 
 pyqtcfgopts = 'configure-ng.py --confirm-license --verbose --no-python-dbus '
@@ -31,31 +34,29 @@ pyqtcfgopts += '--designer-plugindir=%(installdir)s/plugins/designer '
 components = [
     ('SIP', '4.19.13', {
         'source_urls': ['http://sourceforge.net/projects/pyqt/files/sip/sip-%(version)s'],
-        'sources': ['sip-%(version)s.tar.gz'],
+        'sources': [SOURCELOWER_TAR_GZ],
         'start_dir': 'sip-%(version)s',
         'configopts': sipcfgopts,
+        'options': {'modulename': 'PyQt4.sip'},
     }),
     (name, version, {
         'source_urls': ['http://sourceforge.net/projects/pyqt/files/%(name)s%(version_major)s/%(name)s-%(version)s'],
         'sources': ['%(name)s%(version_major)s_gpl_x11-%(version)s.tar.gz'],
         'start_dir': '%(name)s%(version_major)s_gpl_x11-%(version)s',
         'configopts': pyqtcfgopts,
+        'options': {'modulename': 'PyQt4.QtCore'},
     }),
 ]
 
 modextrapaths = {
-    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
-    'QT_PLUGIN_PATH': 'plugins/designer'
+    'PYTHONPATH': pylibdir,
+    'QT_PLUGIN_PATH': 'plugins'
 }
-
-sanity_check_commands = ["python -c 'import PyQt%(version_major)s.QtHelp'"]
-
-libpath = 'lib/python%(pyshortver)s/site-packages/%(name)s%(version_major)s'
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['pyuic4', 'pyrcc4', 'pylupdate4']] +
-              [libpath + '/%s.%s' % (x, SHLIB_EXT) for x in ['sip', 'QtCore', 'Qt']],
-    'dirs': ['include', 'plugins/designer', 'share/sip'],
+              [pylibdir + '/%%(name)s%%(version_major)s/%s.%s' % (x, SHLIB_EXT) for x in ['sip', 'QtCore', 'Qt']],
+    'dirs': ['include', 'plugins', 'share/sip'],
 }
 
 moduleclass = 'vis'
