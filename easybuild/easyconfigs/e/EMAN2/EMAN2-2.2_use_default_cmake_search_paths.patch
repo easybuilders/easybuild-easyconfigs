@@ -1,10 +1,45 @@
 Fix CMake files to use Cmake default search paths.
+Also make sure it doesn't look in /usr/include, /usr/lib* etc nor in $HOME.
 
-Åke Sandgren, 20180503
+Åke Sandgren, 20190222
 diff -ru eman2-2.2.orig/CMakeLists.txt eman2-2.2/CMakeLists.txt
 --- eman2-2.2.orig/CMakeLists.txt	2017-06-01 00:08:09.000000000 +0200
-+++ eman2-2.2/CMakeLists.txt	2018-05-03 21:16:21.404674211 +0200
-@@ -372,11 +372,11 @@
++++ eman2-2.2/CMakeLists.txt	2019-02-22 08:30:35.136471666 +0100
+@@ -334,33 +334,14 @@
+ 
+ SET(INCLUDE_DIRS
+ 	${EMAN_SOURCE_DIR}/libEM
+-	$ENV{HOME}/EMAN2/anaconda2/include
+-	$ENV{HOME}/anaconda2/include
+-	$ENV{HOME}/include
+ 	$ENV{FFTWDIR}/include
+ 	$ENV{GSLDIR}/include
+-	/usr/local/include
+-	/usr/local/cuda/include
+-	/usr/include
+-	/sw/include
+-	/usr/include/freetype2
+-	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
+ 	)
+ 
+ SET(LIB_DIRS
+-	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
+ 	$ENV{EMANDIR}/lib
+-	$ENV{HOME}/EMAN2/anaconda2/lib
+-	$ENV{HOME}/anaconda2/lib
+-	$ENV{HOME}/lib
+-	${PLATFORMLIB}
+ 	$ENV{FFTWDIR}/lib
+ 	$ENV{GSLDIR}/lib
+-	/usr/local/lib
+-	/usr/local/cuda/lib
+-	/usr/lib64
+-	/usr/lib
+-	/sw/lib
+ 	)
+ 
+ 
+@@ -372,11 +353,11 @@
  	endif()
  		
  	IF(NOT ${upper}_INCLUDE_PATH)
@@ -18,7 +53,7 @@ diff -ru eman2-2.2.orig/CMakeLists.txt eman2-2.2/CMakeLists.txt
      ENDIF(${upper}_INCLUDE_PATH)
  
      IF(${upper}_INCLUDE_PATH)
-@@ -401,7 +401,7 @@
+@@ -401,7 +382,7 @@
  ENDMACRO(CHECK_REQUIRED_LIB)
  
  MACRO(CHECK_OPTIONAL_LIB upper lower header)
@@ -27,7 +62,7 @@ diff -ru eman2-2.2.orig/CMakeLists.txt eman2-2.2/CMakeLists.txt
  
      IF(${upper}_INCLUDE_PATH)
          FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
-@@ -421,7 +421,7 @@
+@@ -421,7 +402,7 @@
  ENDMACRO(CHECK_OPTIONAL_LIB)
  
  MACRO(CHECK_LIB_ONLY upper lower)
@@ -36,7 +71,7 @@ diff -ru eman2-2.2.orig/CMakeLists.txt eman2-2.2/CMakeLists.txt
  ENDMACRO(CHECK_LIB_ONLY)
  
  MACRO(CHECK_PYTHON)
-@@ -444,7 +444,7 @@
+@@ -444,27 +425,17 @@
                  IF(NOT PYTHON_FOUND)
                          IF (WIN32)
                                  FIND_PATH(PYTHON_INCLUDE_PATH Python.h
@@ -45,47 +80,77 @@ diff -ru eman2-2.2.orig/CMakeLists.txt eman2-2.2/CMakeLists.txt
  
                                  FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
                                          $ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
-@@ -455,7 +455,7 @@
- 					$ENV{HOME}/anaconda2/include/python2.7
-                                         $ENV{PYTHON_ROOT}/include/python${PYVER}
-                                         /usr/local/include/python${PYVER}
+ 
+                         ELSE (WIN32)
+                                 FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+-					$ENV{HOME}/EMAN2/anaconda2/include/python2.7
+-					$ENV{HOME}/anaconda2/include/python2.7
+-                                        $ENV{PYTHON_ROOT}/include/python${PYVER}
+-                                        /usr/local/include/python${PYVER}
 -                                        /usr/include/python${PYVER} NO_DEFAULT_PATH)
-+                                        /usr/include/python${PYVER} )
++                                        )
  
                                  FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
- 					$ENV{HOME}/EMAN2/anaconda2/lib
-@@ -464,7 +464,7 @@
-                                         /usr/local/lib/python${PYVER}
-                                         /usr/lib/python${PYVER}
-                                         /usr/lib64/python${PYVER}
+-					$ENV{HOME}/EMAN2/anaconda2/lib
+-					$ENV{HOME}/anaconda2/lib
+-                                        $ENV{PYTHON_ROOT}/lib/python${PYVER}
+-                                        /usr/local/lib/python${PYVER}
+-                                        /usr/lib/python${PYVER}
+-                                        /usr/lib64/python${PYVER}
 -                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib NO_DEFAULT_PATH)
-+                                        $ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib )
++                                        )
  
                          ENDIF (WIN32)
  
-@@ -573,11 +573,11 @@
- IF(ENABLE_OPTPP)
-     FIND_PATH(OPTPP_INCLUDE_PATH Opt.h /usr/include /usr/include/opt++
-               /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
--             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
-+             $ENV{HOME}/include/opt++ )
-     FIND_PATH(NEWMAT_INCLUDE_PATH newmat.h /usr/include /usr/include/opt++
-               /usr/include/newmat /usr/local/include/newmat
-               /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
--             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
-+             $ENV{HOME}/include/opt++ )
-     FIND_LIBRARY(OPTPP_LIBRARY NAMES opt-linux PATHS /usr/lib /usr/local/lib)
-     FIND_LIBRARY(NEWMAT_LIBRARY NAMES newmat-linux PATHS /usr/lib /usr/local/lib)
+@@ -542,10 +513,7 @@
  
-@@ -607,7 +607,6 @@
- 		/usr/include 
- #		$ENV{${upper}DIR}/include
+ 	CHECK_REQUIRED_LIB(ACML acml acml.h)
+ 	FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
+-		/usr/lib64
+-		/usr/lib
+-		/usr/local/lib
+-		$ENV{HOME}/lib )
++		)
+ 	ADD_DEFINITIONS(-DACML)
+ 	SET(ACML_LIBRARIES ${ACML_LIBRARY})
+     SET(ACML_INCLUDE_PATH ${ACML_INCLUDE_PATH})
+@@ -571,15 +539,12 @@
+ ENDIF(ENABLE_DJBFFT)
+ 
+ IF(ENABLE_OPTPP)
+-    FIND_PATH(OPTPP_INCLUDE_PATH Opt.h /usr/include /usr/include/opt++
+-              /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
+-             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
+-    FIND_PATH(NEWMAT_INCLUDE_PATH newmat.h /usr/include /usr/include/opt++
+-              /usr/include/newmat /usr/local/include/newmat
+-              /usr/local/include /usr/local/include/opt++ $ENV{HOME}/include
+-             $ENV{HOME}/include/opt++ NO_DEFAULT_PATH)
+-    FIND_LIBRARY(OPTPP_LIBRARY NAMES opt-linux PATHS /usr/lib /usr/local/lib)
+-    FIND_LIBRARY(NEWMAT_LIBRARY NAMES newmat-linux PATHS /usr/lib /usr/local/lib)
++    FIND_PATH(OPTPP_INCLUDE_PATH Opt.h 
++             )
++    FIND_PATH(NEWMAT_INCLUDE_PATH newmat.h 
++             )
++    FIND_LIBRARY(OPTPP_LIBRARY NAMES opt-linux PATHS )
++    FIND_LIBRARY(NEWMAT_LIBRARY NAMES newmat-linux PATHS )
+ 
+     ADD_DEFINITIONS(-DOPTPP)
+     INCLUDE_DIRECTORIES(${OPTPP_INCLUDE_PATH} ${NEWMAT_INCLUDE_PATH})
+@@ -601,13 +566,7 @@
+ 	ENDIF(EXISTS ${FTGL_INCLUDE_PATH}/FTGL/FTGL.h AND COMMAND IF)
+ 	ADD_SUBDIRECTORY(fonts)
+     	FIND_PATH(FREETYPE_INCLUDE_PATH ft2build.h 
+-		$ENV{HOME}/EMAN2/anaconda2/include/freetype2 
+-		$ENV{HOME}/anaconda2/include/freetype2 
+-		/usr/include/freetype2 
+-		/usr/include 
+-#		$ENV{${upper}DIR}/include
  		${INCLUDE_DIRS}
 -		NO_DEFAULT_PATH
  	)
  	CHECK_REQUIRED_LIB(FREETYPE freetype config/ftheader.h )
  	IF (ENABLE_STATIC_FTGL)
-@@ -650,11 +649,9 @@
+@@ -650,11 +609,9 @@
  
  FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h
  	${CONDA_SP_DIR}/numpy/core/include
@@ -99,9 +164,18 @@ diff -ru eman2-2.2.orig/CMakeLists.txt eman2-2.2/CMakeLists.txt
  
  INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
  
+@@ -694,8 +651,6 @@
+ 	    ${PYTHON_INCLUDE_PATH}
+ 	    ${FREETYPE_INCLUDE_PATH}
+             )
+-#            /usr/include/freetype2
+-#            /usr/local/include/freetype2
+ 
+ #---------------------------------------------------------------------------------------
+ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD")
 diff -ru eman2-2.2.orig/libEM/CMakeLists.txt eman2-2.2/libEM/CMakeLists.txt
 --- eman2-2.2.orig/libEM/CMakeLists.txt	2017-06-01 00:08:09.000000000 +0200
-+++ eman2-2.2/libEM/CMakeLists.txt	2018-05-04 08:31:28.823130361 +0200
++++ eman2-2.2/libEM/CMakeLists.txt	2019-02-22 08:23:27.420282288 +0100
 @@ -186,10 +186,10 @@
  
  IF(ENABLE_OPENGL)
@@ -117,7 +191,7 @@ diff -ru eman2-2.2.orig/libEM/CMakeLists.txt eman2-2.2/libEM/CMakeLists.txt
  # if(ENABLE_HDFIOCACHE)
 diff -ru eman2-2.2.orig/libEM/cuda/CMakeLists.txt eman2-2.2/libEM/cuda/CMakeLists.txt
 --- eman2-2.2.orig/libEM/cuda/CMakeLists.txt	2017-06-01 00:08:09.000000000 +0200
-+++ eman2-2.2/libEM/cuda/CMakeLists.txt	2018-05-04 08:31:34.671012974 +0200
++++ eman2-2.2/libEM/cuda/CMakeLists.txt	2019-02-22 08:23:27.420282288 +0100
 @@ -28,6 +28,6 @@
  # 
  
