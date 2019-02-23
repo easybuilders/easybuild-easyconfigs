@@ -1,0 +1,70 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   Inge Gutheil <i.gutheil@fz-juelich.de>, Alan O'Cais <a.ocais@fz-juelich.de>
+# License::   MIT/GPL
+# $Id$
+#
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'ELPA'
+version = '2016.11.001.pre'
+
+homepage = 'http://elpa.mpcdf.mpg.de'
+description = """Eigenvalue SoLvers for Petaflop-Applications ."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['http://elpa.mpcdf.mpg.de/html/Releases/%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = [
+    '%(name)s-%(version)s_install-libelpatest.patch',
+]
+
+checksums = [
+    '69b67f0f6faaa2b3b5fd848127b632be32771636d2ad04583c5269d550956f92',  # elpa-2016.11.001.pre.tar.gz
+    # ELPA-2016.11.001.pre_install-libelpatest.patch
+    'aaee4cbe02a2f2e0b6fa76c1503d049e2958d949f4be13dfa8be9c60043a328b',
+]
+
+builddependencies = [
+    ('Autotools', '20180311'),
+]
+
+preconfigopts = 'autoreconf && '
+
+common_configopts = 'FCFLAGS="-I$EBROOTIMKL/mkl/include/intel64/lp64 $FCFLAGS" '
+common_configopts += 'LIBS="$LIBSCALAPACK" '
+
+configopts = [
+    common_configopts + '--enable-openmp ',
+    common_configopts,  # Default version last, so we can get the normal config.h/config-f90.h installed afterwards.
+]
+
+# Autotools 20180311 makes configure create some files that causes problem
+# Remove them.
+prebuildopts = 'make clean && '
+
+buildopts = ' V=1 '
+
+postinstallcmds = [
+    'cp config.h config-f90.h %(installdir)s/share/doc/elpa/examples',
+    # The include files and Fortran module files are identical with and
+    # without openmp.
+    'ln -s elpa-%(version)s/elpa %(installdir)s/include',
+    'ln -s elpa-%(version)s/modules %(installdir)s/include',
+]
+
+sanity_check_paths = {
+    'files': ['lib/libelpa.a', 'lib/libelpa.%s' % SHLIB_EXT, 'lib/libelpa_openmp.a',
+              'lib/libelpa_openmp.%s' % SHLIB_EXT, 'lib/libelpatest.a', 'lib/libelpatest.%s' % SHLIB_EXT,
+              'lib/libelpatest_openmp.a', 'lib/libelpatest_openmp.%s' % SHLIB_EXT, 'share/doc/elpa/examples/config.h',
+              'share/doc/elpa/examples/config-f90.h'],
+    'dirs': ['bin', 'include/elpa-%(version)s/elpa', 'include/elpa-%(version)s/modules', 'lib/pkgconfig'],
+}
+
+moduleclass = 'math'

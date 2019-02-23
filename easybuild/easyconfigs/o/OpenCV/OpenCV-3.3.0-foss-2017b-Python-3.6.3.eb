@@ -1,0 +1,85 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenCV'
+version = '3.3.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+
+source_urls = [
+    'https://github.com/Itseez/opencv/archive/',
+    # The Hash is version dependent! see 3rdparty/ippicv/downloader.cmake
+    'https://raw.githubusercontent.com/Itseez/opencv_3rdparty/81a676001ca8075ada498583e4166079e5744668/ippicv',
+]
+sources = [
+    '%(version)s.zip',
+    {'filename': 'ippicv_linux_20151201.tgz', 'extract_cmd': "cp %s %(builddir)s"},
+]
+checksums = [
+    '3546c3837f88177c898e4172942da7a3ca6c4e8e98a33d0cbccb2b499167c5ba',  # 3.3.0.zip
+    '4333833e40afaa22c804169e44f9a63e357e21476b765a5683bcb3760107f0da',  # ippicv_linux_20151201.tgz
+]
+
+builddependencies = [('CMake', '3.10.2')]
+
+dependencies = [
+    ('Python', '3.6.3'),
+    ('zlib', '1.2.11'),
+    ('FFmpeg', '3.4.1'),
+    ('libjpeg-turbo', '1.5.2'),
+    ('libpng', '1.6.32'),
+    ('LibTIFF', '4.0.9'),
+    ('JasPer', '2.0.14'),
+    ('Java', '1.8.0_152', '', True),
+    ('ant', '1.10.1', '-Java-%(javaver)s', True),
+    ('GLib', '2.53.5'),
+    ('GTK+', '2.24.32'),
+]
+
+separate_build_dir = True
+
+preconfigopts = 'export IPPROOT=$EBROOTICC/ipp && '
+
+# The destination directory is "linux-<MD5>" see 3rdparty/ippicv/downloader.cmake
+ippicv_dir = '3rdparty/ippicv/downloads/linux-808b791a6eac9ed78d32a7666804320e/'
+preconfigopts = "mkdir -p %s && cp -a ../*.tgz %s && " % (ippicv_dir, ippicv_dir)
+
+configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts += '-DBUILD_PYTHON_SUPPORT=ON '
+configopts += '-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+configopts += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
+configopts += '-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.%s ' % SHLIB_EXT
+configopts += '-DZLIB_INCLUDE_DIR=$EBROOTZLIB/include '
+configopts += '-DTIFF_LIBRARY=$EBROOTLIBTIFF/lib/libtiff.%s ' % SHLIB_EXT
+configopts += '-DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include '
+configopts += '-DPNG_LIBRARY=$EBROOTLIBPNG/lib/libpng.%s ' % SHLIB_EXT
+configopts += '-DPNG_INCLUDE_DIR=$EBROOTLIBPNG/include '
+configopts += '-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib/libjpeg.%s ' % SHLIB_EXT
+configopts += '-DJPEG_INCLUDE_DIR=$EBROOTLIBJPEGMINTURBO/include '
+configopts += '-DJASPER_LIBRARY=$EBROOTJASPER/lib/libjasper.a '
+configopts += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
+configopts += '-DWITH_IPP=ON '
+configopts += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
+configopts += '-DWITH_CUDA=OFF '
+
+postinstallcmds = ["cp 3rdparty/ippicv/ippicv_lnx/lib/intel64/libippicv.* %(installdir)s/lib"]
+
+sanity_check_paths = {
+    'files': ['lib/libopencv_core.%s' % SHLIB_EXT, 'lib/libippicv.a'] +
+             ['bin/opencv_%s' % x for x in ['annotation', 'createsamples', 'traincascade']],
+    'dirs': ['include', 'lib/python%(pyshortver)s/site-packages']
+}
+sanity_check_commands = ["python -c 'import cv2'"]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'CLASSPATH': 'share/OpenCV/java',
+}
+
+moduleclass = 'vis'
