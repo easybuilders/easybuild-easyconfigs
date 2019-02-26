@@ -14,26 +14,31 @@
 
 name = 'GROMACS'
 version = '2018.4'
-versionsuffix = '-PLUMED'
+plum_ver = '2.5.0'
+versionsuffix = '-PLUMED-%s' % plum_ver
 
 homepage = 'http://www.gromacs.org'
 description = """
 GROMACS is a versatile package to perform molecular dynamics,
  i.e. simulate the Newtonian equations of motion for systems with hundreds to millions of particles.
 
-This is a CPU only build, containing both MPI and threadMPI builds.
+This is a GPU enabled build, containing both MPI and threadMPI binaries.
 """
 
-toolchain = {'name': 'foss', 'version': '2018b'}
+toolchain = {'name': 'fosscuda', 'version': '2018b'}
 toolchainopts = {'openmp': True, 'usempi': True}
 
 source_urls = ['ftp://ftp.gromacs.org/pub/gromacs/']
 sources = [SOURCELOWER_TAR_GZ]
-patches = ['GROMACS-2018_dont_do_gpu_tests_on_cpu_build.patch']
+patches = [
+    'GROMACS-2018_fix_search_for_nvml_include.patch',
+    'GROMACS-2018_amend_search_for_nvml_lib.patch',
+]
 checksums = [
     '6f2ee458c730994a8549d6b4f601ecfc9432731462f8bd4ffa35d330d9aaa891',  # gromacs-2018.4.tar.gz
-    # GROMACS-2018_dont_do_gpu_tests_on_cpu_build.patch
-    '727cc1afd9061002390e474b01aeb40efd984e6b7febd1cfe5e69a0a82b21f06',
+    # GROMACS-2018_fix_search_for_nvml_include.patch
+    '59d59316337ce08134d600b44c6501240f2732826ea5699f4b0ae83bb1ae0bd3',
+    '769cf8aab2e76bb1b36befa4b60df0b975a35877994218725426bb2c597f321b',  # GROMACS-2018_amend_search_for_nvml_lib.patch
 ]
 
 builddependencies = [
@@ -41,7 +46,7 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('PLUMED', '2.5.0', '-Python-2.7.15'),
+    ('PLUMED', plum_ver, '-Python-2.7.15'),
 ]
 
 moduleclass = 'bio'
