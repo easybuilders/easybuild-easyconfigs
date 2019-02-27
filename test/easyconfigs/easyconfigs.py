@@ -400,7 +400,7 @@ class EasyConfigTest(TestCase):
             # if Python is a dependency, that should be reflected in the versionsuffix
             if any(dep['name'] == 'Python' for dep in ec['dependencies']):
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    failing_checks.append("'-Python-%(pyver)s' included in versionsuffix in %s" % ec_fn)
+                    failing_checks.append("'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
