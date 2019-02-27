@@ -359,6 +359,51 @@ class EasyConfigTest(TestCase):
         checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
+    def check_python_packages(self, changed_ecs):
+        """Several checks for easyconfigs that install (bundles of) Python packages."""
+
+        failing_checks = []
+
+        for ec in changed_ecs:
+
+            ec_fn = os.path.basename(ec.path)
+            easyblock = ec.get('easyblock')
+            exts_defaultclass = ec.get('exts_defaultclass')
+
+            download_dep_fail = ec.get('download_dep_fail')
+            exts_download_dep_fail = ec.get('exts_download_dep_fail')
+            use_pip = ec.get('use_pip')
+
+            if easyblock == 'PythonPackage':
+                if not download_dep_fail:
+                    failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
+
+            # download_dep_fail is enabled automatically in PythonBundle easyblock
+            elif easyblock in ['PythonBundle', 'PythonPackage']:
+                if not use_pip:
+                    failing_checks.append("'use_pip' set in %s" % ec_fn)
+
+                if download_dep_fail or exts_download_dep_fail:
+                    fail = "'*download_dep_fail' set in %s (shouldn't, since PythonBundle easyblock is used)" % ec_fn
+                    failing_checks.append(fail)
+
+            elif exts_defaultclass == 'PythonPackage':
+                if easyblock == 'Bundle':
+                    fail = "'PythonBundle' easyblock is used for bundle of Python packages in %s" % ec_fn
+                    failing_checks.append(fail)
+                else:
+                    exts_default_options = ec.get('exts_default_options', {})
+                    for key in ['download_dep_fail', 'use_pip']:
+                        if not exts_default_options.get(key):
+                            failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
+
+            # if Python is a dependency, that should be reflected in the versionsuffix
+            if any(dep['name'] == 'Python' for dep in ec['dependencies']):
+                if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                    failing_checks.append("'-Python-%(pyver)s' included in versionsuffix in %s" % ec_fn)
+
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
@@ -395,6 +440,7 @@ class EasyConfigTest(TestCase):
 
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
+                self.check_python_packages(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
