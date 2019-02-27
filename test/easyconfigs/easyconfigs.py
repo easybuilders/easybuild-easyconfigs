@@ -459,6 +459,9 @@ def template_easyconfig_test(self, spec):
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
         ec = ecs[0]['ec']
+
+        # cache the parsed easyconfig, to avoid that it is parsed again
+        self.parsed_easyconfigs.append(ecs[0])
     else:
         self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
@@ -616,9 +619,6 @@ def template_easyconfig_test(self, spec):
 
         else:
             self.assertEqual(orig_val, dumped_val)
-
-    # cache the parsed easyconfig, to avoid that it is parsed again
-    self.parsed_easyconfigs.append(ecs[0])
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
