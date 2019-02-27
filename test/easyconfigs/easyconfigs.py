@@ -426,17 +426,23 @@ class EasyConfigTest(TestCase):
                 cmd = "git diff --name-only --diff-filter=AM %s...HEAD" % travis_branch
                 out, ec = run_cmd(cmd, simple=False)
                 changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
-                print("List of changed easyconfig files in this PR: %s" % changed_ecs_filenames)
+                print("\nList of changed easyconfig files in this PR: %s" % '\n'.join(changed_ecs_filenames))
 
                 change_dir(cwd)
 
                 # grab parsed easyconfigs for changed easyconfig files
                 changed_ecs = []
                 for ec_fn in changed_ecs_filenames:
+                    match = None
                     for ec in self.parsed_easyconfigs:
                         if os.path.basename(ec['spec']) == ec_fn:
-                            changed_ecs.append(ec['ec'])
+                            match = ec['ec']
                             break
+
+                    if match:
+                        changed_ecs.append(match)
+                    else:
+                        self.assertTrue(False, "Failed to find parsed easyconfig for %s" % ec_fn)
 
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
