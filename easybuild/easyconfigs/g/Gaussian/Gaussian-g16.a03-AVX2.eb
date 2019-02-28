@@ -1,0 +1,46 @@
+# easyconfig file for Gaussian 16 Rev. A.03
+easyblock = 'PackedBinary'
+
+name = 'Gaussian'
+version = 'g16.a03'
+versionsuffix = '-AVX2'
+
+description = """Gaussian is a computer program for computational quantum chemistry
+that includes various methods for electronic structure calculations."""
+homepage = "http://www.gaussian.com/"
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+# license needed, download manually
+sources = ['E6B-113X.tbz']
+checksums = ['50aa2c7fd7912da7f77745407b5fdadc7aa7d6b78bb14733d67a246d0a7cbd0f']
+
+postinstallcmds = ['chgrp -R %(namelower)s %(installdir)s/g16']
+postinstallcmds += ['chmod -R o-rwx %(installdir)s/g16']
+
+sanity_check_paths = {
+    'files': ['g16'],
+    'dirs': ['basis']
+}
+
+modextrapaths = {
+    'PATH': ['g16', 'g16/bsd'],
+    'LD_LIBRARY_PATH': ['g16', 'g16/bsd']
+}
+
+modextravars = {
+    'g16root': '%(installdir)s',
+    'GAUSS_EXEDIR': '%(installdir)s/bsd:%(installdir)s',
+    'GAUSS_BSDDIR': '%(installdir)s/bsd',
+    'G16BASIS': '%(installdir)s/basis',
+    'GAUSS_SCRDIR': '',
+    '_DSM_BARRIER': 'SHM',
+    'PGI_TERM': 'trace,abort'
+}
+
+modluafooter = 'setenv("GAUSS_CHKDIR", pathJoin(os.getenv("HOME"), "CHK"))'
+modtclfooter = 'setenv("GAUSS_CHKDIR", pathJoin(os.getenv("HOME"), "CHK"))'
+
+modaliases = {'sl': '%(installdir)s/tests/searchlog.csh'}
+
+moduleclass = 'chem'
