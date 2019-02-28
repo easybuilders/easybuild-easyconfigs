@@ -1,0 +1,100 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'Tarball'
+
+name = 'PRINSEQ'
+version = '0.20.4'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://prinseq.sourceforge.net'
+description = """A bioinformatics tool to PRe-process and show INformation of SEQuence data."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['http://sourceforge.net/projects/prinseq/files/standalone/']
+sources = ['%(namelower)s-lite-%(version)s.tar.gz']
+checksums = ['9b5e0dce3b7f02f09e1cc7e8a2dd77c0b133e5e35529d570ee901f53ebfeb56f']
+
+dependencies = [
+    ('Perl', '5.28.0'),
+]
+
+# these are the perl libraries dependencies
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('ExtUtils::Depends', '0.405', {
+        'source_tmpl': 'ExtUtils-Depends-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+        'checksums': ['8ad6401ad7559b03ceda1fe4b191c95f417bdec7c542a984761a4656715a8a2c'],
+    }),
+    ('ExtUtils::PkgConfig', '1.16', {
+        'source_tmpl': 'ExtUtils-PkgConfig-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+        'checksums': ['bbeaced995d7d8d10cfc51a3a5a66da41ceb2bc04fedcab50e10e6300e801c6e'],
+    }),
+    ('Pod::Usage', '1.69', {
+        'source_tmpl': 'Pod-Usage-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MAREKR/'],
+        'checksums': ['1a920c067b3c905b72291a76efcdf1935ba5423ab0187b9a5a63cfc930965132'],
+    }),
+    ('Cairo', '1.106', {
+        'source_tmpl': 'Cairo-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+        'checksums': ['e64803018bc7cba49e73e258547f5378cc4249797beafec524852140f49c45c4'],
+    }),
+    ('Statistics::PCA', '0.0.1', {
+        'source_tmpl': 'Statistics-PCA-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DS/DSTH/'],
+        'checksums': ['f8adb10b00232123d103a5b49161ad46370f47fe0f752e5462a4dc15f9d46bc4'],
+    }),
+    ('MIME::Base64', '3.15', {
+        'source_tmpl': 'MIME-Base64-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/G/GA/GAAS/'],
+        'checksums': ['7f863566a6a9cb93eda93beadb77d9aa04b9304d769cea3bb921b9a91b3a1eb9'],
+    }),
+    ('Math::Cephes::Matrix', '0.5305', {
+        'source_tmpl': 'Math-Cephes-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/'],
+        'checksums': ['561a800a4822e748d2befc366baa4b21e879a40cc00c22293c7b8736caeb83a1'],
+    }),
+    ('Math::MatrixReal', '2.13', {
+        'source_tmpl': 'Math-MatrixReal-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LETO/'],
+        'checksums': ['4f9fa1a46dd34d2225de461d9a4ed86932cdd821c121fa501a15a6d4302fb4b2'],
+    }),
+    ('Text::SimpleTable', '2.07', {
+        'source_tmpl': 'Text-SimpleTable-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MR/MRAMBERG/'],
+        'checksums': ['256d3f38764e96333158b14ab18257b92f3155c60d658cafb80389f72f4619ed'],
+    }),
+    ('Contextual::Return', '0.004014', {
+        'source_tmpl': 'Contextual-Return-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DC/DCONWAY/'],
+        'checksums': ['09fe1415e16e49a69e13c0ef6e6a4a3fd8b856f389d3f3e624d7ab3b71719f78'],
+    }),
+]
+
+# this is the script which relies in many extra Perl libraries so we verify it's working fine
+sanity_check_commands = ['%(installdir)s/prinseq-graphs.pl']
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+postinstallcmds = [
+    "sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/*.pl",
+    "chmod +x %(installdir)s/*.pl",
+]
+
+sanity_check_paths = {
+    'files': ['prinseq-lite.pl', 'prinseq-graphs.pl', 'prinseq-graphs-noPCA.pl'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
