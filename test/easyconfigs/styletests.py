@@ -31,8 +31,8 @@ Style tests for easyconfig files. Uses pep8.
 import glob
 import sys
 from unittest import TestCase, TestLoader, main
-from vsc.utils import fancylogger
 
+from easybuild.base import fancylogger
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.framework.easyconfig.style import check_easyconfigs_style
 

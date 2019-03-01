@@ -34,11 +34,11 @@ import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from vsc.utils import fancylogger
 from unittest import TestCase, TestLoader, main
 
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
+from easybuild.base import fancylogger
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG

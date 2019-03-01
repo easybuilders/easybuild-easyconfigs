@@ -36,11 +36,10 @@ import sys
 import tempfile
 import unittest
 
-from vsc.utils import fancylogger
-
 import easybuild.tools.build_log  # initialize EasyBuild logging, so we disable it
 import test.easyconfigs.easyconfigs as e
 import test.easyconfigs.styletests as s
+from easybuild.base import fancylogger
 
 # disable all logging to significantly speed up tests
 fancylogger.disableDefaultHandlers()
