@@ -48,9 +48,8 @@ from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parame
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.config import build_option
+from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, remove_file, write_file
-from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
@@ -131,13 +130,13 @@ class EasyConfigTest(TestCase):
 
             remove_file(fn)
         else:
-            print "(skipped dep graph test)"
+            print("(skipped dep graph test)")
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
 
         if not single_tests_ok:
-            print "(skipped conflicts test)"
+            print("(skipped conflicts test)")
             return
 
         if self.ordered_specs is None:
@@ -645,13 +644,14 @@ def suite():
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
-                exec("def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec))
+                code = "def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec)
+                exec(code, globals())
                 innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
                 # double underscore so parsing tests are run first
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
                 setattr(EasyConfigTest, innertest.__name__, innertest)
 
-    print "Found %s easyconfigs..." % cnt
+    print("Found %s easyconfigs..." % cnt)
     return TestLoader().loadTestsFromTestCase(EasyConfigTest)
 
 

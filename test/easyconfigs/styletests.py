@@ -48,7 +48,7 @@ class StyleTest(TestCase):
     def test_style_conformance(self):
         """Check the easyconfigs for style"""
         if 'pep8' not in sys.modules:
-            print "Skipping style checks (no pep8 available)"
+            print("Skipping style checks (no pep8 available)")
             return
 
         # all available easyconfig files
