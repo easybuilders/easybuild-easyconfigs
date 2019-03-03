@@ -182,7 +182,8 @@ class EasyConfigTest(TestCase):
 
             # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
             elif dep == 'HTSlib' and len(dep_vars) > 1:
-                for key, ecs in dep_vars.items():
+                for key in list(dep_vars):
+                    ecs = dep_vars[key]
                     # filter out HTSlib variants that are only used as dependency for BCFtools with same version
                     htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
@@ -197,7 +198,7 @@ class EasyConfigTest(TestCase):
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
             elif dep in ['Boost', 'R', 'PLUMED'] and len(dep_vars) > 1:
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
@@ -208,7 +209,7 @@ class EasyConfigTest(TestCase):
 
                 # filter R dep for a specific version of Python 2.x
                 if dep == 'R' and len(dep_vars) > 1:
-                    for key in dep_vars.keys():
+                    for key in list(dep_vars):
                         if '; versionsuffix: -Python-2' in key:
                             dep_vars.pop(key)
                         # always retain at least one variant
@@ -228,7 +229,7 @@ class EasyConfigTest(TestCase):
             # filter out variants that are specific to a particular version of CUDA
             cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
             if len(dep_vars) > len(cuda_dep_vars):
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
                         dep_vars.pop(key)
 
@@ -242,7 +243,7 @@ class EasyConfigTest(TestCase):
                 'Jellyfish': r'1\.',
             }
             if dep in old_dep_versions and len(dep_vars) > 1:
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     # filter out known old dependency versions
                     if re.search('^version: %s' % old_dep_versions[dep], key):
                         dep_vars.pop(key)
