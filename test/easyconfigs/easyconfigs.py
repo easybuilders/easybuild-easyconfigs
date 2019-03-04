@@ -34,11 +34,11 @@ import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from vsc.utils import fancylogger
 from unittest import TestCase, TestLoader, main
 
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
+from easybuild.base import fancylogger
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
@@ -48,9 +48,8 @@ from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parame
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.config import build_option
+from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, remove_file, write_file
-from easybuild.tools.module_naming_scheme import GENERAL_CLASS
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
@@ -131,13 +130,13 @@ class EasyConfigTest(TestCase):
 
             remove_file(fn)
         else:
-            print "(skipped dep graph test)"
+            print("(skipped dep graph test)")
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
 
         if not single_tests_ok:
-            print "(skipped conflicts test)"
+            print("(skipped conflicts test)")
             return
 
         if self.ordered_specs is None:
@@ -183,7 +182,8 @@ class EasyConfigTest(TestCase):
 
             # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
             elif dep == 'HTSlib' and len(dep_vars) > 1:
-                for key, ecs in dep_vars.items():
+                for key in list(dep_vars):
+                    ecs = dep_vars[key]
                     # filter out HTSlib variants that are only used as dependency for BCFtools with same version
                     htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
@@ -198,7 +198,7 @@ class EasyConfigTest(TestCase):
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
             elif dep in ['Boost', 'R', 'PLUMED'] and len(dep_vars) > 1:
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
@@ -209,7 +209,7 @@ class EasyConfigTest(TestCase):
 
                 # filter R dep for a specific version of Python 2.x
                 if dep == 'R' and len(dep_vars) > 1:
-                    for key in dep_vars.keys():
+                    for key in list(dep_vars):
                         if '; versionsuffix: -Python-2' in key:
                             dep_vars.pop(key)
                         # always retain at least one variant
@@ -229,7 +229,7 @@ class EasyConfigTest(TestCase):
             # filter out variants that are specific to a particular version of CUDA
             cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
             if len(dep_vars) > len(cuda_dep_vars):
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
                         dep_vars.pop(key)
 
@@ -243,7 +243,7 @@ class EasyConfigTest(TestCase):
                 'Jellyfish': r'1\.',
             }
             if dep in old_dep_versions and len(dep_vars) > 1:
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     # filter out known old dependency versions
                     if re.search('^version: %s' % old_dep_versions[dep], key):
                         dep_vars.pop(key)
@@ -647,13 +647,14 @@ def suite():
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
-                exec("def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec))
+                code = "def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec)
+                exec(code, globals())
                 innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
                 # double underscore so parsing tests are run first
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
                 setattr(EasyConfigTest, innertest.__name__, innertest)
 
-    print "Found %s easyconfigs..." % cnt
+    print("Found %s easyconfigs..." % cnt)
     return TestLoader().loadTestsFromTestCase(EasyConfigTest)
 
 
