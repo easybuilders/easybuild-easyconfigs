@@ -1,0 +1,36 @@
+Fix 'error: identifier "isnan" is undefined' problems.
+
+Åke Sandgren, 2019-01-18
+diff -ru OpenFOAM-3.0.1.orig/src/conversion/ensight/part/ensightPart.C OpenFOAM-3.0.1/src/conversion/ensight/part/ensightPart.C
+--- OpenFOAM-3.0.1.orig/src/conversion/ensight/part/ensightPart.C	2015-12-15 12:20:08.000000000 +0100
++++ OpenFOAM-3.0.1/src/conversion/ensight/part/ensightPart.C	2017-05-03 14:00:56.000000000 +0200
+@@ -51,7 +51,7 @@
+         {
+             const label id = idList[i];
+ 
+-            if (id >= field.size() || isnan(field[id]))
++            if (id >= field.size() || std::isnan(field[id]))
+             {
+                 return false;
+             }
+diff -ru OpenFOAM-3.0.1.orig/src/conversion/ensight/part/ensightPartIO.C OpenFOAM-3.0.1/src/conversion/ensight/part/ensightPartIO.C
+--- OpenFOAM-3.0.1.orig/src/conversion/ensight/part/ensightPartIO.C	2015-12-15 12:20:08.000000000 +0100
++++ OpenFOAM-3.0.1/src/conversion/ensight/part/ensightPartIO.C	2017-05-03 14:01:04.000000000 +0200
+@@ -63,7 +63,7 @@
+     {
+         forAll(idList, i)
+         {
+-            if (idList[i] >= field.size() || isnan(field[idList[i]]))
++            if (idList[i] >= field.size() || std::isnan(field[idList[i]]))
+             {
+                 os.writeUndef();
+             }
+@@ -80,7 +80,7 @@
+         // no idList => perNode
+         forAll(field, i)
+         {
+-            if (isnan(field[i]))
++            if (std::isnan(field[i]))
+             {
+                 os.writeUndef();
+             }

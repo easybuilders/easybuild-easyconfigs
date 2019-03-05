@@ -1,0 +1,83 @@
+fix erroneous detection of a template by GCC 7
+author: Paul Jähne
+--- cufflinks.orig/src/GHash.hh
++++ cufflinks/src/GHash.hh
+@@ -88,7 +88,7 @@
+                                 //nextkey is SET to the corresponding key
+   GHashEntry* NextEntry() { //returns a pointer to a GHashEntry
+   	 register int pos=fCurrentEntry;
+-  	 while (pos<fCapacity && hash[pos].hash<0) pos++;
++  	 while (pos<fCapacity && (hash[pos].hash)<0) pos++;
+   	 if (pos==fCapacity) {
+   	                 fCurrentEntry=fCapacity;
+   	                 return NULL;
+@@ -412,7 +412,7 @@
+ 
+ template <class OBJ> char* GHash<OBJ>::NextKey() {
+  register int pos=fCurrentEntry;
+- while (pos<fCapacity && hash[pos].hash<0) pos++;
++ while (pos<fCapacity && (hash[pos].hash)<0) pos++;
+  if (pos==fCapacity) {
+                  fCurrentEntry=fCapacity;
+                  return NULL;
+@@ -425,7 +425,7 @@
+ 
+ template <class OBJ> OBJ* GHash<OBJ>::NextData() {
+  register int pos=fCurrentEntry;
+- while (pos<fCapacity && hash[pos].hash<0) pos++;
++ while (pos<fCapacity && (hash[pos].hash)<0) pos++;
+  if (pos==fCapacity) {
+                  fCurrentEntry=fCapacity;
+                  return NULL;
+@@ -439,7 +439,7 @@
+ 
+ template <class OBJ> OBJ* GHash<OBJ>::NextData(char* &nextkey) {
+  register int pos=fCurrentEntry;
+- while (pos<fCapacity && hash[pos].hash<0) pos++;
++ while (pos<fCapacity && (hash[pos].hash)<0) pos++;
+  if (pos==fCapacity) {
+                  fCurrentEntry=fCapacity;
+                  nextkey=NULL;
+@@ -457,16 +457,16 @@
+ // Get first non-empty entry
+ template <class OBJ> int GHash<OBJ>::First() const {
+   register int pos=0;
+-  while(pos<fCapacity){ if(0<=hash[pos].hash) break; pos++; }
+-  GASSERT(fCapacity<=pos || 0<=hash[pos].hash);
++  while(pos<fCapacity){ if(0<=(hash[pos].hash)) break; pos++; }
++  GASSERT(fCapacity<=pos || 0<=(hash[pos].hash));
+   return pos;
+   }
+ 
+ // Get last non-empty entry
+ template <class OBJ> int GHash<OBJ>::Last() const {
+   register int pos=fCapacity-1;
+-  while(0<=pos){ if(0<=hash[pos].hash) break; pos--; }
+-  GASSERT(pos<0 || 0<=hash[pos].hash);
++  while(0<=pos){ if(0<=(hash[pos].hash)) break; pos--; }
++  GASSERT(pos<0 || 0<=(hash[pos].hash));
+   return pos;
+   }
+ 
+@@ -474,8 +474,8 @@
+ // Find next valid entry
+ template <class OBJ> int GHash<OBJ>::Next(int pos) const {
+   GASSERT(0<=pos && pos<fCapacity);
+-  while(++pos <= fCapacity-1){ if(0<=hash[pos].hash) break; }
+-  GASSERT(fCapacity<=pos || 0<=hash[pos].hash);
++  while(++pos <= fCapacity-1){ if(0<=(hash[pos].hash)) break; }
++  GASSERT(fCapacity<=pos || 0<=(hash[pos].hash));
+   return pos;
+   }
+ 
+@@ -483,8 +483,8 @@
+ // Find previous valid entry
+ template <class OBJ> int GHash<OBJ>::Prev(int pos) const {
+   GASSERT(0<=pos && pos<fCapacity);
+-  while(--pos >= 0){ if(0<=hash[pos].hash) break; }
+-  GASSERT(pos<0 || 0<=hash[pos].hash);
++  while(--pos >= 0){ if(0<=(hash[pos].hash)) break; }
++  GASSERT(pos<0 || 0<=(hash[pos].hash));
+   return pos;
+   }
+ 

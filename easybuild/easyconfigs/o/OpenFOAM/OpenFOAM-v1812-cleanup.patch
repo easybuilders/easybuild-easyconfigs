@@ -1,0 +1,368 @@
+# - Replace the OpenFOAM third-party libraries with EASYBUILD variables.
+# - Set install dir, compiler, etc using EASYBUILD
+#
+# authors: Ward Poelmans <wpoely86@gmail.com>, Kenneth Hoste (HPC-UGent), Mark Olesen <Mark.Olesen@esi-group.com>
+--- OpenFOAM-v1812/wmake/scripts/have_readline.orig	2018-12-20 17:13:35.568917042 +0100
++++ OpenFOAM-v1812/wmake/scripts/have_readline	2019-01-15 09:06:38.424159000 +0100
+@@ -61,13 +61,13 @@
+     library="libreadline$extLibso"
+ 
+     # System only?
+-    header=$(findFirstFile /usr/local/include/$header /usr/include/$header)
++    header=$(findFirstFile $EBROOTLIBREADLINE/include/$header /usr/include/$header)
+ 
+     case "$header" in
+-    /usr/local/*)
++    $EBROOTLIBREADLINE/*)
+         library=$(findFirstFile \
+-            /usr/local/lib/$library \
+-            /usr/local/lib$WM_COMPILER_LIB_ARCH/$library \
++            $EBROOTLIBREADLINE/lib/$library \
++            $EBROOTLIBREADLINE/lib$WM_COMPILER_LIB_ARCH/$library \
+         )
+         ;;
+ 
+--- OpenFOAM-v1812/etc/bashrc.orig	2018-12-20 17:13:32.920913198 +0100
++++ OpenFOAM-v1812/etc/bashrc	2019-01-15 09:06:38.428344000 +0100
+@@ -93,7 +93,7 @@
+ # [WM_MPLIB] - MPI implementation:
+ # = SYSTEMOPENMPI | OPENMPI | SYSTEMMPI | MPI | MPICH | MPICH-GM |
+ #   HPMPI | CRAY-MPICH | FJMPI | QSMPI | SGIMPI | INTELMPI | USERMPI
+-export WM_MPLIB=SYSTEMOPENMPI
++export WM_MPLIB=EASYBUILDMPI
+ 
+ 
+ #------------------------------------------------------------------------------
+--- OpenFOAM-v1812/etc/config.sh/CGAL.orig	2019-01-15 09:06:38.433907000 +0100
++++ OpenFOAM-v1812/etc/config.sh/CGAL	2019-01-15 09:17:48.330348000 +0100
+@@ -41,33 +41,9 @@
+ #------------------------------------------------------------------------------
+ # USER EDITABLE PART: Changes made here may be lost with the next upgrade
+ 
+-boost_version=boost_1_64_0
+-cgal_version=CGAL-4.9.1
+-
+-export BOOST_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$boost_version
+-export CGAL_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$cgal_version
++##EasyBuild## settings
++export BOOST_ARCH_PATH=$EBROOTBOOST
++export CGAL_ARCH_PATH=$EBROOTCGAL
+ 
+ # END OF (NORMAL) USER EDITABLE PART
+ #------------------------------------------------------------------------------
+-if [ -n "$FOAM_VERBOSE" ] && [ -n "$PS1" ]
+-then
+-    echo "Using boost ($boost_version)  ->  $BOOST_ARCH_PATH" 1>&2
+-    echo "Using CGAL ($cgal_version)  ->  $CGAL_ARCH_PATH" 1>&2
+-fi
+-
+-if command -v _foamAddLibAuto > /dev/null 2>&1  # Normal sourcing (not makeCGAL)
+-then
+-    _foamAddLibAuto $BOOST_ARCH_PATH  lib$WM_COMPILER_LIB_ARCH
+-    _foamAddLibAuto $CGAL_ARCH_PATH   lib$WM_COMPILER_LIB_ARCH
+-
+-    # GMP/MPFR may have already been added with ThirdParty compiler, but cannot
+-    # be certain so add here. Any duplicates will be removed later.
+-
+-    _foamAddLibAuto $GMP_ARCH_PATH   # No fallback libdir
+-    _foamAddLibAuto $MPFR_ARCH_PATH  # No fallback libdir
+-
+-    unset boost_version cgal_version
+-
+-fi
+-
+-#------------------------------------------------------------------------------
+--- OpenFOAM-v1812/etc/config.sh/FFTW.orig	2019-01-15 09:06:38.437194000 +0100
++++ OpenFOAM-v1812/etc/config.sh/FFTW	2019-01-15 09:19:01.709181000 +0100
+@@ -33,23 +33,7 @@
+ #------------------------------------------------------------------------------
+ # USER EDITABLE PART: Changes made here may be lost with the next upgrade
+ 
+-fftw_version=fftw-3.3.7
+-export FFTW_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$fftw_version
+-
+-# END OF (NORMAL) USER EDITABLE PART
+-#------------------------------------------------------------------------------
+-if [ -n "$FOAM_VERBOSE" ] && [ -n "$PS1" ]
+-then
+-    echo "Using fftw ($fftw_version)  ->  $FFTW_ARCH_PATH" 1>&2
+-fi
+-
+-if command -v _foamAddLibAuto > /dev/null 2>&1  # Normal sourcing (not makeFFTW)
+-then
+-
+-    _foamAddLibAuto $FFTW_ARCH_PATH  lib$WM_COMPILER_LIB_ARCH
+-
+-    unset fftw_version
+-
+-fi
++##EasyBuild## settings
++export FFTW_ARCH_PATH=$EBROOTFFTW
+ 
+ #------------------------------------------------------------------------------
+--- OpenFOAM-v1812/etc/config.sh/ensight.orig	2018-12-20 17:13:32.948913239 +0100
++++ OpenFOAM-v1812/etc/config.sh/ensight	2019-01-15 09:06:38.439130000 +0100
+@@ -1,42 +1,2 @@
+-#----------------------------------*-sh-*--------------------------------------
+-# =========                 |
+-# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+-#  \\    /   O peration     |
+-#   \\  /    A nd           | Copyright (C) 2011-2016 OpenFOAM Foundation
+-#    \\/     M anipulation  |
+-#------------------------------------------------------------------------------
+-# License
+-#     This file is part of OpenFOAM, licensed under GNU General Public License
+-#     <http://www.gnu.org/licenses/>.
+-#
+-# File
+-#     etc/config.sh/ensight
+-#     - sourced by OpenFOAM-*/etc/bashrc
+-#
+-# Description
+-#     Setup for ENSIGHT
+-#
+-#------------------------------------------------------------------------------
+-
+-# Fallback value
+-[ -d "$CEI_HOME" ] || export CEI_HOME=/usr/local/ensight/CEI
+-
+-if [ -r $CEI_HOME ]
+-then
+-
+-    # Special treatment for 32bit OpenFOAM and 64bit Ensight
+-    [ "$WM_ARCH-$(uname -m)" = linux-x86_64 ] && export CEI_ARCH=linux_2.6_32
+-
+-    # Add to path if required
+-    if [ "$CEI_HOME/bin/ensight" != "$(command -v ensight)" ]
+-    then
+-        export PATH=$CEI_HOME/bin:$PATH
+-    fi
+-
+-    export ENSIGHT9_INPUT=dummy
+-    export ENSIGHT9_READER=$FOAM_LIBBIN
+-else
+-    unset CEI_HOME
+-fi
+-
+-#------------------------------------------------------------------------------
++##Easybuild## settings
++# ununsed
+--- OpenFOAM-v1812/etc/config.sh/gperftools.orig	2019-01-15 09:06:38.442581000 +0100
++++ OpenFOAM-v1812/etc/config.sh/gperftools	2019-01-15 09:20:29.737684000 +0100
+@@ -35,32 +35,7 @@
+ #------------------------------------------------------------------------------
+ # USER EDITABLE PART: Changes made here may be lost with the next upgrade
+ 
+-gperftools_version=gperftools-2.5
+-GPERFTOOLS_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$gperftools_version
+-
+-# END OF (NORMAL) USER EDITABLE PART
+-#------------------------------------------------------------------------------
+-if [ -n "$FOAM_VERBOSE" ] && [ -n "$PS1" ]
+-then
+-    echo "Using gperftools ($gperftools_version)  ->  $GPERFTOOLS_ARCH_PATH" 1>&2
+-fi
+-
+-if command -v _foamAddLib > /dev/null 2>&1      # Normal sourcing
+-then
+-
+-    # If GPERFTOOLS_ARCH_PATH does not end with '-system' or '-none',
+-    # it is located within ThirdParty, or a central installation
+-    # outside of ThirdParty and must be added to the lib-path.
+-
+-    ending="${GPERFTOOLS_ARCH_PATH##*-}"
+-    if [ "$ending" != none ] && [ "$ending" != system ]
+-    then
+-        _foamAddLib     $GPERFTOOLS_ARCH_PATH/lib$WM_COMPILER_LIB_ARCH
+-        _foamAddPath    $GPERFTOOLS_ARCH_PATH/bin
+-    fi
+-
+-    unset gperftools_version ending
+-
+-fi
++##EasyBuild## settings
++GPERFTOOLS_ARCH_PATH=$EBROOTGPERFTOOLS
+ 
+ #------------------------------------------------------------------------------
+--- OpenFOAM-v1812/etc/config.sh/metis.orig	2018-12-20 17:13:32.948913239 +0100
++++ OpenFOAM-v1812/etc/config.sh/metis	2019-01-15 09:06:38.444655000 +0100
+@@ -1,38 +1,3 @@
+-#----------------------------------*-sh-*--------------------------------------
+-# =========                 |
+-# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+-#  \\    /   O peration     |
+-#   \\  /    A nd           | Copyright (C) 2013-2016 OpenFOAM Foundation
+-#    \\/     M anipulation  | Copyright (C) 2016-2017 OpenCFD Ltd.
+-#------------------------------------------------------------------------------
+-# License
+-#     This file is part of OpenFOAM, licensed under GNU General Public License
+-#     <http://www.gnu.org/licenses/>.
+-#
+-# File
+-#     etc/config.sh/metis
+-#     - sourced during wmake process only.
+-#
+-# Description
+-#     Setup for METIS include/libraries (usually ThirdParty installation).
+-#
+-#     To disable its use:               METIS_VERSION=metis-none
+-#     For system-wide installations:    METIS_VERSION=metis-system
+-#
+-#     For central installations not located under ThirdParty:
+-#       1. use metis-system
+-#       2. and provide full path for METIS_ARCH_PATH
+-#
+-# Note
+-#     No csh version. This file is only used by wmake.
+-#
+-#     Can also disable by renaming/removing this file or by creating an empty
+-#     file with the same name at a user or site location.
+-#------------------------------------------------------------------------------
+-# USER EDITABLE PART: Changes made here may be lost with the next upgrade
+-
+-METIS_VERSION=metis-5.1.0
+-export METIS_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER$WM_PRECISION_OPTION$WM_LABEL_OPTION/$METIS_VERSION
+-
+-# END OF (NORMAL) USER EDITABLE PART
+-#------------------------------------------------------------------------------
++##Easybuild## settings
++METIS_VERSION=metis-$EBVERSIONMETIS
++[ -d "$METIS_ARCH_PATH" ] || METIS_ARCH_PATH=$METIS_ROOT
+--- OpenFOAM-v1812/etc/config.sh/mpi.orig	2018-12-20 17:13:32.948913239 +0100
++++ OpenFOAM-v1812/etc/config.sh/mpi	2019-01-15 09:06:38.447741126 +0100
+@@ -93,6 +93,10 @@
+     _foamEtc -config  mpi-user                  # <- Adjustments (optional)
+     ;;
+ 
++EASYBUILDMPI)
++    export FOAM_MPI=mpi
++    ;;
++
+ SYSTEMMPI)
+     export FOAM_MPI=mpi-system
+     _foamEtc -config  mpi-system                # <- Adjustments (optional)
+--- OpenFOAM-v1812/etc/config.sh/paraview.orig	2019-01-15 09:06:38.451528000 +0100
++++ OpenFOAM-v1812/etc/config.sh/paraview	2019-01-15 09:22:52.954478000 +0100
+@@ -51,7 +51,8 @@
+ #------------------------------------------------------------------------------
+ # USER EDITABLE PART: Changes made here may be lost with the next upgrade
+ 
+-ParaView_VERSION=5.6.0
++##Easybuild## settings
++ParaView_VERSION=$EBVERSIONPARAVIEW
+ ParaView_QT=qt-system
+ cmake_version=cmake-system
+ 
+@@ -71,14 +72,6 @@
+     "$($WM_PROJECT_DIR/bin/foamCleanPath -sh-env=LD_LIBRARY_PATH \
+     $ParaView_DIR $archDir/ParaView- $archDir/qt-)"
+ 
+-# ThirdParty cmake
+-cmake="$archDir/$cmake_version"
+-if [ -r "$cmake/bin/cmake" ]
+-then
+-    # _foamAddPath not available when foamPV function is used
+-    PATH="$cmake/bin:$PATH"
+-fi
+-
+ # Evaluate command-line parameters for ParaView
+ for i
+ do
+@@ -145,7 +138,8 @@
+         ;;
+     esac
+ 
+-    export ParaView_DIR="$archDir/ParaView-$ParaView_VERSION"
++    ##Easybuild## settings
++    export ParaView_DIR=$EBROOTPARAVIEW
+ 
+     # Set paths if binaries are present
+     if [ -r "$ParaView_DIR" ]
+@@ -164,26 +158,6 @@
+         #OBSOLETE?    export PYTHONPATH=$PYTHONPATH:${PYTHONPATH:+:}$pvPython:$pvLibDir
+         #OBSOLETE? fi
+ 
+-        # QT libraries as required, and Qt5_DIR for the root directory.
+-        # Another possibility: "qtpaths --qt-version"
+-        qtDir="$archDir/$ParaView_QT"
+-        if [ -d "$qtDir" ]
+-        then
+-            case "$ParaView_QT" in
+-            (*-5*)
+-                export Qt5_DIR="$qtDir"
+-                ;;
+-            esac
+-            for qtLibDir in "$qtDir/lib$WM_COMPILER_LIB_ARCH" "$qtDir/lib"
+-            do
+-                if [ -d "$qtLibDir" ]
+-                then
+-                    export LD_LIBRARY_PATH="$qtLibDir:$LD_LIBRARY_PATH"
+-                    break
+-                fi
+-            done
+-        fi
+-
+         # ParaView libraries
+         # - 5.4 and earlier: lib/paraview-X.X
+         # - 5.5 and later:   lib/
+--- OpenFOAM-v1812/etc/config.sh/scotch.orig	2019-01-15 09:06:38.454314000 +0100
++++ OpenFOAM-v1812/etc/config.sh/scotch	2019-01-15 09:24:50.897392000 +0100
+@@ -31,8 +31,10 @@
+ #------------------------------------------------------------------------------
+ # USER EDITABLE PART: Changes made here may be lost with the next upgrade
+ 
+-SCOTCH_VERSION=scotch_6.0.6
+-export SCOTCH_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER$WM_PRECISION_OPTION$WM_LABEL_OPTION/$SCOTCH_VERSION
++##Easybuild## settings
++export SCOTCH_VERSION=scotch_$EBVERSIONSCOTCH
++export SCOTCH_ARCH_PATH=$EBROOTSCOTCH
++[ -d "$SCOTCH_ARCH_PATH" ] || SCOTCH_ARCH_PATH=$SCOTCH_ROOT
+ 
+ # END OF (NORMAL) USER EDITABLE PART
+ #------------------------------------------------------------------------------
+--- OpenFOAM-v1812/etc/config.sh/vtk.orig	2019-01-15 09:06:38.459602000 +0100
++++ OpenFOAM-v1812/etc/config.sh/vtk	2019-01-15 09:26:36.525849000 +0100
+@@ -31,40 +31,11 @@
+ #------------------------------------------------------------------------------
+ # USER EDITABLE PART: Changes made here may be lost with the next upgrade
+ 
+-vtk_version=VTK-8.2.0
+-mesa_version=mesa-17.1.1
+-
+-export VTK_DIR=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$vtk_version
+-export MESA_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$mesa_version
++##Easybuild## settings
++export VTK_DIR=$EBROOTVTK
++export MESA_ARCH_PATH=$EBROOTMESA
+ 
+ # END OF (NORMAL) USER EDITABLE PART
+ #------------------------------------------------------------------------------
+-if [ -n "$FOAM_VERBOSE" ] && [ -n "$PS1" ]
+-then
+-    echo "Using vtk  ($vtk_version)  ->  $VTK_DIR" 1>&2
+-    echo "Using mesa ($mesa_version)  ->  $MESA_ARCH_PATH" 1>&2
+-fi
+-
+-if command -v _foamAddLib > /dev/null 2>&1  # normal sourcing
+-then
+-
+-    # Set paths if binaries are present
+-    if [ -r $VTK_DIR ]
+-    then
+-        # Uses lib/ and not lib64/
+-        _foamAddLib $VTK_DIR/lib
+-    else
+-        unset VTK_DIR
+-    fi
+-
+-    if [ -r $MESA_ARCH_PATH ]
+-    then
+-        _foamAddLib $MESA_ARCH_PATH/lib$WM_COMPILER_LIB_ARCH
+-    else
+-        unset MESA_ARCH_PATH
+-    fi
+-
+-    unset vtk_version mesa_version
+-fi
+ 
+ #------------------------------------------------------------------------------
