@@ -362,6 +362,9 @@ class EasyConfigTest(TestCase):
     def check_python_packages(self, changed_ecs):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
+        # MATLAB-Engine does not support installation with 'pip'
+        whitelist_pip = ['MATLAB-Engine-*']
+
         failing_checks = []
 
         for ec in changed_ecs:
@@ -379,8 +382,8 @@ class EasyConfigTest(TestCase):
                     failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
 
             # download_dep_fail is enabled automatically in PythonBundle easyblock
-            elif easyblock in ['PythonBundle', 'PythonPackage']:
-                if not use_pip:
+            if easyblock in ['PythonBundle', 'PythonPackage']:
+                if not use_pip and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' set in %s" % ec_fn)
 
                 if download_dep_fail or exts_download_dep_fail:
