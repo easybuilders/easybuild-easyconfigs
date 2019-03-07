@@ -1,0 +1,32 @@
+Replace designated initializers that are not part of standard C++ and
+upset the Intel 2017 compiler.
+
+author: Davide Vanzo (Vanderbilt University)
+author: Lars Viklund (Umeå University)
+diff -ru pytorch-0.3.1.orig/torch/csrc/onnx/onnx.h pytorch-0.3.1/torch/csrc/onnx/onnx.h
+--- pytorch-0.3.1.orig/torch/csrc/onnx/onnx.h	2019-02-27 17:27:02.895286174 -0600
++++ pytorch-0.3.1/torch/csrc/onnx/onnx.h	2019-03-07 08:22:30.037161440 -0600
+@@ -27,10 +27,22 @@
+ template<typename T>
+ using unique_vector = std::vector<std::unique_ptr<T>>;
+ 
++namespace detail {
++  template <pb_field_t const* P>
++    struct is_null {
++      static const bool value = false;
++    };
++  
++  template <>
++    struct is_null<nullptr> {
++    static const bool value = true;
++  };
++}
++
+ // Helper function for encoding inside callbacks
+ template<typename T, const pb_field_t* Field>
+ bool micropb_encode(pb_ostream_t *stream, T* arg) {
+-  static_assert(Field != nullptr, "no overload in micropb_encode");
++  static_assert(!detail::is_null<Field>::value, "no overload in micropb_encode");
+   return pb_encode_submessage(stream, Field, static_cast<void*>(&arg->proto));
+ }
+ template <> bool micropb_encode<std::string, nullptr>(pb_ostream_t *stream, std::string* arg);

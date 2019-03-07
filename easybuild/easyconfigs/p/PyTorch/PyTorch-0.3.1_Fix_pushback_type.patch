@@ -1,0 +1,35 @@
+Replace designated initializers that are not part of standard C++ and
+upset the Intel 2017 compiler.
+
+author: Davide Vanzo (Vanderbilt University)
+diff -ru pytorch-0.3.1.orig/torch/lib/THD/base/data_channels/Store.cpp pytorch-0.3.1/torch/lib/THD/base/data_channels/Store.cpp
+--- pytorch-0.3.1.orig/torch/lib/THD/base/data_channels/Store.cpp	2019-02-27 17:27:02.923286175 -0600
++++ pytorch-0.3.1/torch/lib/THD/base/data_channels/Store.cpp	2019-03-06 14:19:00.973903517 -0600
+@@ -41,7 +41,12 @@
+ 
+ void Store::StoreDeamon::deamon() {
+   std::vector<struct pollfd> fds;
+-  fds.push_back({ .fd = _listen_socket, .events = POLLIN });
++
++  pollfd pfda;
++  pfda.fd = _listen_socket;
++  pfda.events = POLLIN;
++  
++  fds.push_back(pfda);
+ 
+   // receive the queries
+   bool finished = false;
+@@ -58,7 +63,12 @@
+       int sock_fd = std::get<0>(accept(_listen_socket));
+       _sockets.push_back(sock_fd);
+       _keys_awaited.push_back(0);
+-      fds.push_back({ .fd = sock_fd, .events = POLLIN });
++
++      pollfd pfdb;
++      pfdb.fd = sock_fd;
++      pfdb.events = POLLIN;
++      
++      fds.push_back(pfdb);
+     }
+     for (std::size_t rank = 0; rank < _sockets.size(); rank++) {
+       if (fds[rank + 1].revents == 0)
