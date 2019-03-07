@@ -266,6 +266,10 @@ class EasyConfigTest(TestCase):
 
             return res
 
+        # some software also follows <year>{a,b} versioning scheme,
+        # which throws off the pattern matching done below for toolchain versions
+        false_positives_regex = re.compile('^MATLAB-Engine-20[0-9][0-9][ab]')
+
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
         for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', 'GCCcore-[7-9]\.[0-9]']:
@@ -275,6 +279,10 @@ class EasyConfigTest(TestCase):
             # collect variants for all dependencies of easyconfigs that use a toolchain that matches
             for ec in self.ordered_specs:
                 ec_file = os.path.basename(ec['spec'])
+
+                # take into account software which also follows a <year>{a,b} versioning scheme
+                ec_file = false_positives_regex.sub('', ec_file)
+
                 res = regex.match(ec_file)
                 if res:
                     tc_gen = res.group('tc_gen')
