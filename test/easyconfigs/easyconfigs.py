@@ -385,24 +385,30 @@ class EasyConfigTest(TestCase):
             exts_download_dep_fail = ec.get('exts_download_dep_fail')
             use_pip = ec.get('use_pip')
 
+            # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if not download_dep_fail:
                     failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
 
-            # download_dep_fail is enabled automatically in PythonBundle easyblock
+            # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
             if easyblock in ['PythonBundle', 'PythonPackage']:
                 if not use_pip and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' set in %s" % ec_fn)
 
+            # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
+            if easyblock == 'PythonBundle':
                 if download_dep_fail or exts_download_dep_fail:
                     fail = "'*download_dep_fail' set in %s (shouldn't, since PythonBundle easyblock is used)" % ec_fn
                     failing_checks.append(fail)
 
             elif exts_defaultclass == 'PythonPackage':
+                # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
                     fail = "'PythonBundle' easyblock is used for bundle of Python packages in %s" % ec_fn
                     failing_checks.append(fail)
                 else:
+                    # both download_dep_fail and use_pip should be set via exts_default_options
+                    # when installing Python packages as extensions
                     exts_default_options = ec.get('exts_default_options', {})
                     for key in ['download_dep_fail', 'use_pip']:
                         if not exts_default_options.get(key):
