@@ -197,7 +197,7 @@ class EasyConfigTest(TestCase):
 
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep in ['Boost', 'R'] and len(dep_vars) > 1:
+            elif dep in ['Boost', 'R', 'PLUMED'] and len(dep_vars) > 1:
                 for key in dep_vars.keys():
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
@@ -239,6 +239,8 @@ class EasyConfigTest(TestCase):
                 'libxc': r'[23]\.',
                 # OPERA requires SAMtools 0.x
                 'SAMtools': r'0\.',
+                # Kraken 1.0 requires Jellyfish 1.x
+                'Jellyfish': r'1\.',
             }
             if dep in old_dep_versions and len(dep_vars) > 1:
                 for key in dep_vars.keys():
@@ -359,6 +361,51 @@ class EasyConfigTest(TestCase):
         checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
+    def check_python_packages(self, changed_ecs):
+        """Several checks for easyconfigs that install (bundles of) Python packages."""
+
+        failing_checks = []
+
+        for ec in changed_ecs:
+
+            ec_fn = os.path.basename(ec.path)
+            easyblock = ec.get('easyblock')
+            exts_defaultclass = ec.get('exts_defaultclass')
+
+            download_dep_fail = ec.get('download_dep_fail')
+            exts_download_dep_fail = ec.get('exts_download_dep_fail')
+            use_pip = ec.get('use_pip')
+
+            if easyblock == 'PythonPackage':
+                if not download_dep_fail:
+                    failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
+
+            # download_dep_fail is enabled automatically in PythonBundle easyblock
+            elif easyblock in ['PythonBundle', 'PythonPackage']:
+                if not use_pip:
+                    failing_checks.append("'use_pip' set in %s" % ec_fn)
+
+                if download_dep_fail or exts_download_dep_fail:
+                    fail = "'*download_dep_fail' set in %s (shouldn't, since PythonBundle easyblock is used)" % ec_fn
+                    failing_checks.append(fail)
+
+            elif exts_defaultclass == 'PythonPackage':
+                if easyblock == 'Bundle':
+                    fail = "'PythonBundle' easyblock is used for bundle of Python packages in %s" % ec_fn
+                    failing_checks.append(fail)
+                else:
+                    exts_default_options = ec.get('exts_default_options', {})
+                    for key in ['download_dep_fail', 'use_pip']:
+                        if not exts_default_options.get(key):
+                            failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
+
+            # if Python is a dependency, that should be reflected in the versionsuffix
+            if any(dep['name'] == 'Python' for dep in ec['dependencies']):
+                if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                    failing_checks.append("'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn)
+
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
@@ -381,20 +428,27 @@ class EasyConfigTest(TestCase):
                 cmd = "git diff --name-only --diff-filter=AM %s...HEAD" % travis_branch
                 out, ec = run_cmd(cmd, simple=False)
                 changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
-                print("List of changed easyconfig files in this PR: %s" % changed_ecs_filenames)
+                print("\nList of changed easyconfig files in this PR: %s" % '\n'.join(changed_ecs_filenames))
 
                 change_dir(cwd)
 
                 # grab parsed easyconfigs for changed easyconfig files
                 changed_ecs = []
                 for ec_fn in changed_ecs_filenames:
+                    match = None
                     for ec in self.parsed_easyconfigs:
                         if os.path.basename(ec['spec']) == ec_fn:
-                            changed_ecs.append(ec['ec'])
+                            match = ec['ec']
                             break
+
+                    if match:
+                        changed_ecs.append(match)
+                    else:
+                        self.assertTrue(False, "Failed to find parsed easyconfig for %s" % ec_fn)
 
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
+                self.check_python_packages(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
@@ -413,6 +467,9 @@ def template_easyconfig_test(self, spec):
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
         ec = ecs[0]['ec']
+
+        # cache the parsed easyconfig, to avoid that it is parsed again
+        self.parsed_easyconfigs.append(ecs[0])
     else:
         self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
@@ -570,9 +627,6 @@ def template_easyconfig_test(self, spec):
 
         else:
             self.assertEqual(orig_val, dumped_val)
-
-    # cache the parsed easyconfig, to avoid that it is parsed again
-    self.parsed_easyconfigs.append(ecs[0])
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
