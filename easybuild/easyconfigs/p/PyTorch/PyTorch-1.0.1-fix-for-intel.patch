@@ -1,0 +1,98 @@
+# icpc is unhappy with the code, slightly adjust it to make it work
+# Based off PyTorch-0.3.1-fix-for-intel.patch by wpoely86@gmail.com
+# and updated for 1.0.1
+--- pytorch-1.0.1/torch/lib/THD/base/init_methods/InitMethodFile.cpp.orig	2019-03-08 10:20:12.407866684 +0000
++++ pytorch-1.0.1/torch/lib/THD/base/init_methods/InitMethodFile.cpp	2019-03-08 10:20:34.132876696 +0000
+@@ -236,10 +236,8 @@
+     std::string master_address;
+     std::tie(master_address, config.public_address) =
+         discoverMaster(master_addrs, master_port);
+-    config.worker = {
+-        .master_addr = master_address,
+-        .master_port = master_port,
+-    };
++    config.worker.master_addr = master_address;
++    config.worker.master_port = master_port;
+   }
+ 
+   return config;
+--- pytorch-1.0.1/torch/lib/THD/base/init_methods/InitMethodTCP.cpp.orig	2019-03-08 10:20:42.407880508 +0000
++++ pytorch-1.0.1/torch/lib/THD/base/init_methods/InitMethodTCP.cpp	2019-03-08 10:21:17.989896896 +0000
+@@ -325,10 +325,8 @@
+         std::string master_address;
+         std::tie(master_address, config.public_address) =
+             discoverMaster(master_msg.addresses, master_msg.port);
+-        config.worker = {
+-            .master_addr = master_address,
+-            .master_port = master_msg.port,
+-        };
++        config.worker.master_addr = master_address;
++        config.worker.master_port = master_msg.port;
+       }
+       break;
+     }
+--- pytorch-1.0.1/torch/lib/THD/base/data_channels/DataChannelTCP.cpp.orig	2019-03-08 10:22:05.274918651 +0000
++++ pytorch-1.0.1/torch/lib/THD/base/data_channels/DataChannelTCP.cpp	2019-03-08 10:24:22.088981494 +0000
+@@ -69,20 +69,16 @@
+     _socket = config.master.listen_socket;
+     _port = config.master.listen_port;
+ 
+-    _processes[0] = {
+-        .rank = 0,
+-        .address = "",
+-        .port = 0,
+-        .socket = -1,
+-    };
++    _processes[0].rank = 0;
++    _processes[0].address = "";
++    _processes[0].port = 0;
++    _processes[0].socket = -1;
+   } else { // WORKER
+     // add master
+-    _processes[0] = {
+-        .rank = 0,
+-        .address = config.worker.master_addr,
+-        .port = config.worker.master_port,
+-        .socket = -1,
+-    };
++    _processes[0].rank = 0;
++    _processes[0].address = config.worker.master_addr;
++    _processes[0].port = config.worker.master_port;
++    _processes[0].socket = -1;
+   }
+ }
+ 
+@@ -113,12 +109,10 @@
+     port_type p_port = recv_value<port_type>(master.socket);
+     std::string p_address = recv_string(master.socket);
+ 
+-    _processes[p_rank] = {
+-        .rank = p_rank,
+-        .address = p_address,
+-        .port = p_port,
+-        .socket = -1,
+-    };
++    _processes[p_rank].rank = p_rank;
++    _processes[p_rank].address = p_address;
++    _processes[p_rank].port = p_port;
++    _processes[p_rank].socket = -1;
+   }
+ 
+   /*
+@@ -179,12 +173,10 @@
+           std::to_string(p_rank));
+     }
+ 
+-    _processes[p_rank] = {
+-        .rank = p_rank,
+-        .address = p_address,
+-        .port = p_port,
+-        .socket = p_socket,
+-    };
++    _processes[p_rank].rank = p_rank;
++    _processes[p_rank].address = p_address;
++    _processes[p_rank].port = p_port;
++    _processes[p_rank].socket = p_socket;
+   }
+ 
+   // send informations about processes to all workers
