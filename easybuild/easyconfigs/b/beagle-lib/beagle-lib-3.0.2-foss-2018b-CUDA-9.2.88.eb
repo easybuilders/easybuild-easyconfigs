@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'beagle-lib'
+version = '3.0.2'
+cuda_ver = '9.2.88'
+versionsuffix = '-CUDA-%s' % cuda_ver
+homepage = 'https://github.com/beagle-dev/beagle-lib'
+description = """beagle-lib is a high-performance library that can perform the core calculations at the heart of most
+ Bayesian and Maximum Likelihood phylogenetics packages."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/beagle-dev/beagle-lib/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['59a7081b61ead0a5738e813c6fcfb614d2c5bb49c29b28609de8e2b51bea3ec0']
+
+dependencies = [
+    ('Java', '1.8', '', True),
+    ('CUDA', cuda_ver, '', True),
+]
+
+builddependencies = [('Autotools', '20180311')]
+
+preconfigopts = "./autogen.sh && "
+
+configopts = '--with-cuda=$EBROOTCUDA '
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ["include/libhmsbeagle-1/libhmsbeagle/%s" % includefile
+              for includefile in ["beagle.h", "platform.h"]] +
+             ["lib/libhmsbeagle%s.%s" % (libfile, SHLIB_EXT)
+              for libfile in ["-cpu", "-cpu-sse", "-jni", ""]],
+    'dirs': []
+}
+
+moduleclass = 'numlib'
