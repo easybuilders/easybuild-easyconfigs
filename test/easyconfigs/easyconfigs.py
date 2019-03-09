@@ -372,8 +372,8 @@ class EasyConfigTest(TestCase):
     def check_python_packages(self, changed_ecs):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
-        # MATLAB-Engine does not support installation with 'pip'
-        whitelist_pip = ['MATLAB-Engine-*']
+        # MATLAB-Engine, PyTorch do not support installation with 'pip'
+        whitelist_pip = ['MATLAB-Engine-*', 'PyTorch-*']
 
         failing_checks = []
 
