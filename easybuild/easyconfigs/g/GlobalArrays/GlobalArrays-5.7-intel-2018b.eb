@@ -1,6 +1,6 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild 
 
 easyblock = 'ConfigureMake'
-
 name = 'GlobalArrays'
 version = '5.7'
 
@@ -12,11 +12,22 @@ toolchainopts = {'usempi': True}
 
 source_urls = ['https://github.com/GlobalArrays/ga/releases/download/']
 sources = ['v%(version)s/ga-%(version)s.tar.gz']
-checksums = ['3ed1ab47adfda7bceb7beca12fc05a2e1631732f0e55bbaf9036dad4e3da4774']
+
+# patch for bugs on v5.7 causing errors on NWChem
+patches = [
+    'GlobalArrays-v5.7_ga_diag_std.patch',             # fix bug ga_diag_std https://github.com/GlobalArrays/ga/pull/101
+    'GlobalArrays-v5.7-intel-2018b-MKL_issue.patch',   # fix MKL issue https://github.com/GlobalArrays/ga/pull/122
+]
+
+checksums = [
+    '3ed1ab47adfda7bceb7beca12fc05a2e1631732f0e55bbaf9036dad4e3da4774',
+    'b8b8c5d357bce34a37cdf640e88a3ecb72d7de3255cc3ec086a9c3949c2c2d33',  # GlobalArrays-v5.7_ga_diag_std.patch
+    '0c25322731b5964d00c6fc18673881a755faa190f446a592dc3d49caf806a973',  # GlobalArrays-v5.7-intel-2018b-MKL_issue.patch
+]
 
 configopts = ' --with-mpi --enable-i8'
-configopts += ' --with-blas8="-L$MKLROOT/lib/intel64 -lmkl_sequential -lmkl_intel_ilp64"'
-configopts += ' --with-scalapack8="-L$MKLROOT/lib/intel64 -lmkl_sequential -lmkl_scalapack_ilp64"'
+configopts += ' --with-blas8="-L$EBROOTIMKL/mkl/lib/intel64 -lmkl_sequential -lmkl_intel_ilp64"'
+configopts += ' --with-scalapack8="-L$EBROOTIMKL/mkl/lib/intel64 -lmkl_sequential -lmkl_scalapack_ilp64"'
 
 # select armci network as (Comex) MPI-1 two-sided
 configopts += ' --with-mpi-ts'
