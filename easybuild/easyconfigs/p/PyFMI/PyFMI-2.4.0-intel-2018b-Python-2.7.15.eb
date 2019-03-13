@@ -1,0 +1,90 @@
+easyblock = 'Bundle'
+
+name = 'PyFMI'
+version = '2.4.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://pypi.org/project/PyFMI/'
+description = """PyFMI is a package for loading and interacting with Functional Mock-Up Units (FMUs),
+ which are compiled dynamic models compliant with the Functional Mock-Up Interface (FMI)"""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('libpng', '1.6.34'),
+    ('freetype', '2.9.1'),
+    ('FMILibrary', '2.0.3'),
+    ('Tkinter', '%(pyver)s', versionsuffix),
+    # Assimulo needs specific version of SUNDIALS
+    ('SUNDIALS', '2.6.2'),
+    ('lxml', '4.2.5', versionsuffix),
+]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+# PyFMI needs specific version of numpy and scipy, therefore matplotlib and Assimulo as well.
+exts_list = [
+    ('numpy', '1.6.2', {
+        'patches': ['numpy-1.6.2_distutils_multiple-lib-dirs.patch'],
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/n/numpy/'],
+        'checksums': [
+            'e2236a4d514b8b74cdb4aa73093e55de6585a5289a2b7ce5328b9bbd980b212b',  # numpy-1.6.2.zip
+            # numpy-1.6.2_distutils_multiple-lib-dirs.patch
+            '44fc42560e6be73fed82e1d414a8fb4429285c7c6205d365db6a68f6de64f895',
+        ],
+    }),
+    ('scipy', '0.10.1', {
+        'patches': ['scipy-0.10.1_qhull-icc.patch'],
+        'source_urls': ['https://pypi.python.org/packages/source/s/scipy/'],
+        'checksums': [
+            '77cc5c48e3f0c07b8137135538cdb99d596d3cc5c498bb0031fb5ff22eae4aa7',  # scipy-0.10.1.tar.gz
+            '9344603548a6be64b3b3aa36cf6cb1a2c8084b4ccb57808deb5895b62c265535',  # scipy-0.10.1_qhull-icc.patch
+        ],
+    }),
+    ('Cycler', '0.10.0', {
+        'modulename': 'cycler',
+        'source_tmpl': 'cycler-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/C/Cycler'],
+        'checksums': ['cd7b2d1018258d7247a71425e9f26463dfb444d411c39569972f4ce586b0c9d8'],
+    }),
+    ('matplotlib', '1.5.3', {
+        'source_urls': ['https://pypi.python.org/packages/source/m/matplotlib'],
+        'checksums': ['a0a5dc39f785014f2088fed2c6d2d129f0444f71afbb9c44f7bdf1b14d86ebbc'],
+    }),
+    ('Assimulo', '2.9', {
+        'patches': ['Assimulo-2.9_fix-python-buildopts.patch', 'Assimulo-2.9_fix-intel_i8_r8.patch'],
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/A/Assimulo/'],
+        'checksums': [
+            'e61f5278618f3c2c920c0ef758eae0ae9a0538240d0ceaaae06b5dadff35aa2e',  # Assimulo-2.9.zip
+            # Assimulo-2.9_fix-python-buildopts.patch
+            '960fd08d804552969301eaa938d28267f404ed7c8c8eb30b1821d4c8ff3d4fb0',
+            '1ea65aa2abd72f9d86f75a372ec59e9e850f8d41f02ccf3a6421329f447b258f',  # Assimulo-2.9_fix-intel_i8_r8.patch
+        ],
+    }),
+    (name, version, {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/P/PyFMI/'],
+        'checksums': ['ae1e194667d9148879b70bb40520855c0984c4116140d8362414046b8f1a00b8'],
+    }),
+]
+
+# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
+full_sanity_check = True
+
+exts_download_dep_fail = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+}
+
+moduleclass = 'tools'

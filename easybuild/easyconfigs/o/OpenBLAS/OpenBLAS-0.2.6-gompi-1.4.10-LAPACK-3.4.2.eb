@@ -10,28 +10,29 @@ homepage = 'http://xianyi.github.com/OpenBLAS/'
 description = """OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."""
 
 toolchain = {'name': 'gompi', 'version': '1.4.10'}
+# need to build with -fno-tree-vectorize due to asm constraint bugs in OpenBLAS<0.3.6
+# cfr. https://github.com/easybuilders/easybuild-easyconfigs/issues/7180
+toolchainopts = {'vectorize': False}
 
-lapack_src = 'lapack-%s.tgz' % lapackver
-large_src = 'large.tgz'
-timing_src = 'timing.tgz'
-sources = [
-    'v%(version)s.tar.gz',
-    lapack_src,
-    large_src,
-    timing_src,
-]
 source_urls = [
     # order matters, trying to download the LAPACK tarball from GitHub causes trouble
     "http://www.netlib.org/lapack/",
     "http://www.netlib.org/lapack/timing/",
     "https://github.com/xianyi/OpenBLAS/archive/",
 ]
-
+sources = ['v%(version)s.tar.gz']
 patches = [
     'OpenBLAS-%(version)s_Makefile-LAPACK-sources.patch',
-    (lapack_src, '.'),  # copy LAPACK tarball to unpacked OpenBLAS dir
-    (large_src, '.'),
-    (timing_src, '.'),
+    ('lapack-%s.tgz' % lapackver, '.'),  # copy LAPACK tarball to unpacked OpenBLAS dir
+    ('large.tgz', '.'),
+    ('timing.tgz', '.'),
+]
+checksums = [
+    '002f267b44a2cb2d94e89ac4a785923ef6597f0a17cc3ef4b5af9e4a431da716',  # v0.2.6.tar.gz
+    '6b588ec03e76243b1fb7e1693e6f45d6dceef4e11761740b339ed4df31648e32',  # OpenBLAS-0.2.6_Makefile-LAPACK-sources.patch
+    '60a65daaf16ec315034675942618a2230521ea7adf85eea788ee54841072faf0',  # lapack-3.4.2.tgz
+    'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1',  # large.tgz
+    '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af',  # timing.tgz
 ]
 
 skipsteps = ['configure']
