@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenKIM-Models'
+version = '20190221'
+
+homepage = 'https://openkim.org/'
+description = """Open Knowledgebase of Interatomic Models.
+
+OpenKIM is an API and a collection of interatomic models (potentials) for
+atomistic simulations.  It is a library that can be used by simulation programs
+to get access to the models in the OpenKIM database.
+
+This EasyBuild installs the models.
+ """
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+builddependencies = [
+    ('pkgconfig', '1.3.1', '-Python-3.6.6'),
+]
+
+dependencies = [
+    ('OpenKIM-API', '2.0.1'),
+]
+
+source_urls = ['https://s3.openkim.org/archives/collection/']
+sources = ['OpenKIM-Models-v2-2019-02-21.txz']
+checksums = ['3bd30b0cf2bab314755a66eed621a77c72d3f990818d08366874149be39f208e']
+
+parallel = 1
+separate_build_dir = True
+configopts = '-DKIM_API_INSTALL_COLLECTION=SYSTEM '
+configopts += '-DCMAKE_C_COMPILER=`which icc` '
+configopts += '-DCMAKE_CXX_COMPILER=`which icpc` '
+configopts += '-DCMAKE_Fortran_COMPILER=`which ifort` '
+configopts += '-DKIM_API_MODEL_INSTALL_PREFIX=%(installdir)s/lib/kim-api-v2/models '
+configopts += '-DKIM_API_MODEL_DRIVER_INSTALL_PREFIX=%(installdir)s/lib/kim-api-v2/model-drivers '
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/kim-api-v2/model-drivers', 'lib/kim-api-v2/models']
+}
+
+modextravars = {
+    'KIM_API_V2_MODEL_DRIVERS_DIR': '%(installdir)s/lib/kim-api-v2/model-drivers',
+    'KIM_API_V2_MODELS_DIR': '%(installdir)s/lib/kim-api-v2/models'
+}
+
+
+moduleclass = 'chem'
