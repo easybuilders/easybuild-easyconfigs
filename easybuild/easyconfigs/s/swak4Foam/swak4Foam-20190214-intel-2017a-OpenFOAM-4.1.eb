@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'swak4Foam'
+version = '20190214'
+commit = 'e1d2358'
+ofver = '4.1'
+versionsuffix = '-OpenFOAM-%s' % ofver
+
+homepage = 'https://openfoamwiki.net/index.php/Contrib/swak4Foam'
+
+description = """
+ swak4Foam stands for SWiss Army Knife for Foam. Like that knife it rarely is
+ the best tool for any given task, but sometimes it is more convenient to get
+ it out of your pocket than going to the tool-shed to get the chain-saw. 
+"""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = ['https://github.com/Unofficial-Extend-Project-Mirror/openfoam-extend-swak4Foam-dev/archive/']
+sources = [{'download_filename': '%s.tar.gz' % commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['653a4a6b0ed01bec4aba131216652fba62f009a12e18a8ada01e211eb990cc99']
+
+builddependencies = [
+    ('Bison', '3.0.4'),
+    ('flex', '2.6.3'),
+]
+
+dependencies = [
+    ('OpenFOAM', ofver),
+]
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = """
+    chmod -R ug+w %(installdir)s
+    rm -rf %(installdir)s
+    mkdir -p %(installdir)s
+    source $FOAM_BASH
+    export FOAM_USER_APPBIN="%(installdir)s/bin"
+    export FOAM_USER_LIBBIN="%(installdir)s/lib"
+    export WM_NCOMPPROCS=4  # adapt to the number of cores available
+    ./Allwclean
+    ./Allwmake
+"""
+
+sanity_check_paths = {
+    'files': ['bin/funkyWarpMesh', 'lib/libgroovyBC.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'cae'
