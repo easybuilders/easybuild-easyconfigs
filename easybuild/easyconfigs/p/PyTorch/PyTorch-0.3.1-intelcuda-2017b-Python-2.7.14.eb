@@ -85,15 +85,16 @@ dependencies = [
     ('cuDNN', '7.0.5.15'),
 ]
 
+download_dep_fail = True
+
 # This environment is needed to prevent setup.py from invoking git to determine version.
-prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1'
+preinstallopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1'
 
-# you can choice here: either give a list of CUDA cc version or tell it All
+# You can chouse here: either give a list of CUDA cc version or tell it All
 # by default it does autodetect of the GPU on the local machine
-prebuildopts += ' TORCH_CUDA_ARCH_LIST="3.0 3.2 3.5 3.7 5.0 5.2 5.3 6.0 6.1 7.0"'
+preinstallopts += ' TORCH_CUDA_ARCH_LIST="3.0 3.2 3.5 3.7 5.0 5.2 5.3 6.0 6.1 7.0" '
 
-runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/build/lib.linux-x86_64-%(pyshortver)s:$PYTHONPATH '
-runtest += '&& cd test && bash run_test.sh'
+preinstallopts += 'INTEL_MKL_DIR="$EBROOTIMKL/mkl" '
 
 options = {'modulename': 'torch'}
 
@@ -101,5 +102,10 @@ sanity_check_paths = {
     'files': [],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
+
+full_test = 'export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH '
+full_test += '&& cd %(builddir)s/pytorch-%(version)s/test && bash run_test.sh'
+
+sanity_check_commands = [full_test]
 
 moduleclass = 'devel'
