@@ -1,0 +1,55 @@
+--- make.inc.example.orig	2018-10-15 16:27:22.000000000 +0000
++++ make.inc.example	2019-03-15 22:54:52.682130926 +0000
+@@ -1,25 +1,25 @@
+ SHELL     = /bin/sh
+ FORTRAN   = mpif90
+ OPTS      = -O3
+-FPPFLAGS  = -DCONV -DHAVE_PSPBLAS -DHAVE_MPI -DHAVE_LAPACK -DHAVE_SCALAPACK
++FPPFLAGS  = -DCONV -DHAVE_PSPBLAS -DHAVE_MPI -DHAVE_MKL -DHAVE_LAPACK -DHAVE_SCALAPACK
+ ARCH      = ar
+ ARCHFLAGS = cr
+ RANLIB    = ranlib
+ 
+ PSPLIBNAME = libpspBLAS.a
+-PSPBUILDPATH = $(ROOTDIR)/build_pspBLAS
++PSPBUILDPATH = $(ROOTDIR)
+ 
+ MSWLIBNAME = libMatrixSwitch.a
+-MSWBUILDPATH = $(ROOTDIR)/build_MatrixSwitch
++MSWBUILDPATH = $(ROOTDIR)
+ 
+ TOMLIBNAME = libtomato.a
+-TOMBUILDPATH = $(ROOTDIR)/build_tomato
++TOMBUILDPATH = $(ROOTDIR)
+ 
+ OMMLIBNAME = libOMM.a
+-OMMBUILDPATH = $(ROOTDIR)/build_libOMM
++OMMBUILDPATH = $(ROOTDIR)
+ 
+ LINALG_INCLUDES =
+-LINALG_LIBS = -lscalapack -llapack -lblas
++LINALG_LIBS = -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -liomp5 -lpthread -lm -ldl 
+ 
+ # Uncomment to link and use DBCSR (https://github.com/cp2k/dbcsr)
+ #OPTS     += -fopenmp
+--- ./pspBLAS/src/pspUtility/pspBasicTool.F90.orig	2019-03-12 17:16:48.525028213 +0000
++++ ./pspBLAS/src/pspUtility/pspBasicTool.F90	2019-03-12 17:16:57.859042838 +0000
+@@ -15,9 +15,6 @@
+   use pspVariable
+   ! This module contains routines for indexing, generating, copying, transforming (sparse) data
+ 
+-#ifdef HAVE_MPI
+-  include 'mpif.h'
+-#endif
+ 
+   private
+ 
+--- Makefile.manual.orig	2019-03-15 23:14:00.884974294 +0000
++++ Makefile.manual	2019-03-15 22:52:07.848886065 +0000
+@@ -68,3 +68,6 @@
+ clean_libOMM_examples :
+ 	cd libOMM/examples; \
+ 	make -f Makefile.manual clean
++install :
++	mkdir -p ${prefix}
++	cp -r lib include ${prefix}
