@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'elsi'
+version = '2.2.1'
+
+homepage = 'https://wordpress.elsi-interchange.org/'
+description = """ELSI: ELectronic Structure Infrastructure is a software bundle and unified interface for methods that solve or circumvent eigenvalue problems in the self-consistent field cycle of density-functional theory."""
+
+toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
+
+source_urls = ['http://wordpress.elsi-interchange.org/wp-content/uploads/2019/03/']
+sources = ['%(name)s-%(version)s.tar.gz']
+builddependencies = [
+    ('libomm', '2015-06-05'),
+    ('SuperLU_DIST', '6.1.1'),
+    ('ELPA', '2018.11.001'),
+    ('NTPoly', '2.2'),
+]
+
+configopts_single = '-DCMAKE_CXX_COMPILER=mpicxx ' 
+configopts_single += '-DCMAKE_C_COMPILER=mpicc '
+configopts_single += '-DCMAKE_Fortran_COMPILER=mpif90 '
+configopts_single += '-DUSE_EXTERNAL_ELPA=ON '
+configopts_single += '-DUSE_EXTERNAL_OMM=ON '
+configopts_single += '-DUSE_EXTERNAL_SUPERLU=ON '
+configopts_single += '-DUSE_EXTERNAL_NTPOLY=ON '
+configopts_single += '-DBUILD_SHARED_LIBS=ON '
+configopts_single += '-DENABLE_PEXSI=ON '
+configopts_single += '-DINC_PATHS="$EBROOTLIBOMM/include;$EBROOTELPA/include;$EBROOTELPA/include/elpa-2018.11.001/modules/;$EBROOTNTPOLY/include;$EBROOTSUPERLU_DIST/include;$EBROOTPEXSI/include" '
+
+configopts = [ configopts_single ]
+separate_build_dir = True
+parallel = 1
+sanity_check_paths = {
+    'files': ['lib/libelsi.so', 'lib/libfortjson.so'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
