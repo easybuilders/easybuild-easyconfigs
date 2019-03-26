@@ -39,11 +39,16 @@ dependencies = [
 buildopts = "install-special"
 start_dir = "global-1"
 
-# escaping single quotes within single quotes is tricky, so we use $'...' to use ANSI C-like escaping
-postinstallcmds = ["sed -i $'s|^$bin =.*|$bin = \"$ENV{\'EBROOTMASURCA\'}/bin\";|g' %(installdir)s/bin/runCA"]
+postinstallcmds = [
+    # fix location of 'bin' in install prefix in runCA script
+    # escaping single quotes within single quotes is tricky, so we use $'...' to use ANSI C-like escaping
+    "sed -i $'s|^$bin =.*|$bin = \"$ENV{\'EBROOTMASURCA\'}/bin\";|g' %(installdir)s/bin/runCA",
+    # fix hardcoded path in masurca script, just point back to 'bin' subdirectory instead
+    "sed -i 's@../CA8/Linux-amd64/bin@../bin@g' %(installdir)s/bin/masurca",
+]
 
 sanity_check_paths = {
-    'files': ['bin/masurca'],
+    'files': ['bin/masurca', 'bin/runCA'],
     'dirs': ['include', 'lib'],
 }
 
