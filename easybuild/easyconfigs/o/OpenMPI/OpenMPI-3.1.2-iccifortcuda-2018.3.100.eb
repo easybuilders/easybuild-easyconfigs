@@ -12,8 +12,7 @@ source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/d
 sources = [SOURCELOWER_TAR_GZ]
 checksums = ['363c8a1258d12df28657e9b13bfe41e30fc129a4cfb89fcf53ff68bbe1bd65b3']
 
-preconfigopts = 'sed -i "s!/usr/include/slurm!$NIXUSER_PROFILE/include/slurm!g" configure && '
-preconfigopts += 'LDFLAGS="$LDFLAGS -L$EBROOTGCCCORE/lib -L$NIXUSER_PROFILE/lib" ' # for libtool to find .la files
+preconfigopts = 'LDFLAGS="$LDFLAGS -L$EBROOTGCCCORE/lib -L$NIXUSER_PROFILE/lib" ' # for libtool to find .la files
 configopts = '--enable-shared --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
 configopts += '--with-hwloc=external '  # hwloc support
@@ -22,16 +21,15 @@ configopts += '--with-ucx '
 configopts += '--with-cuda=$CUDA_HOME '             # CUDA-aware build; N.B. --disable-dlopen is incompatible
 configopts += '--disable-wrapper-runpath --disable-wrapper-rpath ' # rpath is already done by Nix ld wrapper
 configopts += '--with-munge ' #enable Munge in PMIx
-#configopts += '--enable-pmix-backward-compatibility --disable-pmix-dstore '
-configopts += '--with-pmi '
+configopts += '--with-slurm --with-pmi=/opt/software/slurm '
 configopts += '--enable-mpi-cxx '
 configopts += '--with-hcoll '
 
 # enumerate all mca's that should be compiled as plugins (only those that link to system-specific
 # libraries (lustre, fabric, and scheduler)
 configopts += '--enable-mca-dso=common-libfabric,common-ofi,common-verbs,atomic-mxm,btl-openib,btl-scif,'
-configopts += 'coll-fca,coll-hcoll,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,osc-ucx,'
-configopts += 'oob-ud,plm-tm,pmix-s1,pml-ucx,pml-yalla,pnet-opa,psec-munge,'
+configopts += 'coll-fca,coll-hcoll,ess-tm,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,osc-ucx,'
+configopts += 'oob-ud,plm-tm,pmix-s1,pmix-s2,pml-ucx,pml-yalla,pnet-opa,psec-munge,'
 configopts += 'ras-tm,rml-ofi,scoll-mca,sec-munge,spml-ikrit, '
 
 # to enable SLURM integration (site-specific)
