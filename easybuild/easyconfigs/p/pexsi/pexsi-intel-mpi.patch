@@ -1,0 +1,137 @@
+--- ./fortran/Makefile.orig	2019-03-20 22:29:39.482956214 +0000
++++ ./fortran/Makefile	2019-03-20 22:26:31.204653836 +0000
+@@ -58,8 +58,9 @@
+ f_driver_pselinv_complex_unsym.o: f_driver_pselinv_complex_unsym.f90
+ 	  ${FC} -c ${FFLAGS} $<
+ 
+-f_interface.o: f_interface.f90
++f_interface.o: ../src/f_interface.f90
+ 	  ${FC} -c ${FFLAGS} $<
++../src/f_interface.f90:
+ 
+ f_ppexsi_old: f_ppexsi_old.o ${PEXSI_LIB} 
+ 	  ($(FC) -o $@_${SUFFIX} f_ppexsi_old.o  $(FLOADOPTS) )
+--- ./include/pexsi/utility.hpp.orig	2019-03-20 17:45:35.626005778 +0000
++++ ./include/pexsi/utility.hpp	2019-03-20 17:47:08.400145144 +0000
+@@ -1339,7 +1339,7 @@
+ {
+   deserialize( val.size,        is, mask );
+   deserialize( val.nnz,         is, mask );
+-  deserialize( val.expanded, is, mask );
++  deserialize( val.bIsExpanded, is, mask );
+   deserialize( val.mpirank,     is, mask );
+   deserialize( val.mpisize,     is, mask );
+   deserialize( val.baseval,     is, mask );
+--- ./Makefile.orig	2019-03-20 21:49:15.831391036 +0000
++++ ./Makefile	2019-03-20 22:36:00.157567583 +0000
+@@ -15,14 +15,14 @@
+ fortran_examples: pexsi_lib
+ 	cd fortran && ${MAKE}
+ 
+-install: pexsi_lib
++install-lib: pexsi_lib
+ 	(if [ ! -d "${PEXSI_BUILD_DIR}" ]; then mkdir ${PEXSI_BUILD_DIR}; fi)
+ 	(if [ ! -d "${PEXSI_BUILD_DIR}/include" ]; then mkdir ${PEXSI_BUILD_DIR}/include; fi)
+ 	(if [ ! -d "${PEXSI_BUILD_DIR}/lib" ]; then mkdir ${PEXSI_BUILD_DIR}/lib; fi)
+-	(cp src/libpexsi_${SUFFIX}.a ${PEXSI_BUILD_DIR}/lib)
++	(cp src/libpexsi.a ${PEXSI_BUILD_DIR}/lib)
+ 	(cp include/c_pexsi_interface.h include/ppexsi.hpp ${PEXSI_BUILD_DIR}/include)
+ 
+-finstall: install fortran_examples
++install: install-lib fortran_examples
+ 	(cp fortran/f_ppexsi_interface.mod ${PEXSI_BUILD_DIR}/include)
+ 
+ clean:
+--- config/make.inc.linux.gnu.orig	2019-03-20 05:18:04.724676311 +0000
++++ config/make.inc.linux.gnu	2019-03-27 22:19:58.570455493 +0000
+@@ -9,14 +9,14 @@
+ USE_OPENMP       = 1
+ 
+ # Different compiling and linking options.
+-SUFFIX       = linux_release_v1.0
++SUFFIX       = 
+ 
+ # Compiler and tools
+ ################################################################
+ CC           = mpicc 
+-CXX          = mpic++
++CXX          = mpicxx
+ FC           = mpif90
+-LOADER       = mpic++
++LOADER       = mpicxx
+ 
+ AR           = ar
+ ARFLAGS      = rvcu
+@@ -37,18 +37,18 @@
+ 
+ 
+ # PEXSI directory
+-PEXSI_DIR       = $(HOME)/Projects/pexsi
++#PEXSI_DIR       = /home/aroudgar/src/pexsi/pexsi_v1.2.0
+ PEXSI_BUILD_DIR = $(PEXSI_DIR)/build
+ 
+ # Required libraries directories
+-DSUPERLU_DIR  = $(HOME)/Software/SuperLU_DIST_5.2.1
+-METIS_DIR     = $(HOME)/Software/metis-5.1.0/build_release
+-PARMETIS_DIR  = $(HOME)/Software/parmetis-4.0.3/build_release
+-PTSCOTCH_DIR  = $(HOME)/Software/scotch_6.0.0
+-SCOTCH_DIR = ${PTSCOTCH_DIR}
+-LAPACK_DIR    = $(HOME)/Software/lapack-3.5.0
+-BLAS_DIR      = $(HOME)/Software/OpenBLAS/build_release
+-COREDUMPER_DIR = /home/lin/Software/coredumper-1.2.1/build
++#DSUPERLU_DIR  = $(HOME)/Software/SuperLU_DIST_5.2.1
++#METIS_DIR     = $(HOME)/Software/metis-5.1.0/build_release
++#PARMETIS_DIR  = $(HOME)/Software/parmetis-4.0.3/build_release
++#PTSCOTCH_DIR  = $(HOME)/Software/scotch_6.0.0
++#SCOTCH_DIR = ${PTSCOTCH_DIR}
++#LAPACK_DIR    = $(HOME)/Software/lapack-3.5.0
++#BLAS_DIR      = $(HOME)/Software/OpenBLAS/build_release
++#COREDUMPER_DIR = /home/lin/Software/coredumper-1.2.1/build
+ 
+ 
+ 
+@@ -59,26 +59,26 @@
+ INCLUDES         = ${PEXSI_INCLUDE} ${DSUPERLU_INCLUDE} ${COREDUMPER_INCLUDE}
+ 
+ # Libraries
+-CPP_LIB          = -lstdc++ -lmpi -lmpi_cxx
+-GFORTRAN_LIB     = /usr/lib/gcc/x86_64-linux-gnu/4.8/libgfortran.a
+-LAPACK_LIB       = ${LAPACK_DIR}/liblapack.a
+-BLAS_LIB         = ${BLAS_DIR}/lib/libopenblas.a
++CPP_LIB          = -lstdc++ -lmpi -lmpicxx
++$GFORTRAN_LIB     = /usr/lib/gcc/x86_64-linux-gnu/4.8/libgfortran.a
++LAPACK_LIB       = -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
++BLAS_LIB         = -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+ #LAPACK_LIB        = -llapack
+ #BLAS_LIB           = -lblas
+-DSUPERLU_LIB     = ${DSUPERLU_DIR}/SRC/libsuperlu_dist_5.2.1.a
+-PEXSI_LIB        = ${PEXSI_DIR}/src/libpexsi_${SUFFIX}.a
++DSUPERLU_LIB     = ${DSUPERLU_DIR}/lib/libsuperlu_dist.a ${EBROOTCOMBBLAS}/lib/libCombBLAS.a
++PEXSI_LIB        = ${PEXSI_DIR}/src/libpexsi.a
+ 
+ # Graph partitioning libraries
+ METIS_LIB        = -L${METIS_DIR}/lib -lmetis
+ PARMETIS_LIB     = -L${PARMETIS_DIR}/lib -lparmetis 
+ SCOTCH_LIB       = -L${PTSCOTCH_DIR}/lib -lscotchmetis -lscotch -lscotcherr
+ PTSCOTCH_LIB     = -L${PTSCOTCH_DIR}/lib -lptscotchparmetis -lptscotch -lptscotcherr -lscotch
+-COREDUMPER_LIB   = ${COREDUMPER_DIR}/lib/libcoredumper.a
++#COREDUMPER_LIB   = ${COREDUMPER_DIR}/lib/libcoredumper.a
+ 
+ 
+ # Different compiling and linking options.
+ ifeq (${COMPILE_MODE}, release)
+-  COMPILE_DEF    = -DRELEASE -DCOREDUMPER
++  COMPILE_DEF    = -DRELEASE 
+   COMPILE_FLAG   = -O3 -w -g  
+ endif
+ ifeq (${COMPILE_MODE}, debug)
+@@ -108,7 +108,8 @@
+ 
+ ifeq (${USE_SYMPACK}, 1)
+   #symPACK related definitions
+-  SYMPACK_DIR = /home/lin/Projects/sympack/release
++#  SYMPACK_DIR = /home/lin/Projects/sympack/release
++  SYMPACK_LIB = ${SYMPACK_DIR}/lib/libsympack.a
+   include ${SYMPACK_DIR}/include/sympack.mak
+   CPPFLAG += ${SYMPACK_INCLUDE} 
+   LIBS+= ${SYMPACK_LIB} ${LAPACK_LIB} ${BLAS_LIB} ${GFORTRAN_LIB}
