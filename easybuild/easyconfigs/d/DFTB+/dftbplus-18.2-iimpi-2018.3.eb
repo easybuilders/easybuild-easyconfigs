@@ -1,0 +1,34 @@
+easyblock = 'ConfigureMake'
+
+name = 'dftbplus'
+version = '18.2'
+
+homepage = 'http://www.dftbplus.org/'
+description = """ DFTB+ is a fast and efficient versatile quantum mechanical simulation software package. Using DFTB+ you can carry out quantum mechanical simulations similar to density functional theory but in an approximate way, typically gaining around two orders of magnitude in speed. """
+
+toolchain = {'name': 'intel', 'version': '2018.3'}
+toolchainopts = {'usempi': True}
+dependencies = [ 
+    ('Python', '2.7.14'),
+    ('arpack-ng', '3.5.0',),
+]
+    
+
+sources = ['%(name)s-%(version)s.tar.xz']
+
+patches = ['%(name)s-%(version)s.patch']
+skipsteps = ['configure']
+prebuildopts = 'cp sys/make.x86_64-linux-intel ./make.arch && wget https://github.com/dftbplus/dftd3-lib/archive/dftbplus-18.2.tar.gz && tar xzf dftbplus-18.2.tar.gz && mv dftd3-lib-dftbplus-18.2 %(builddir)s/%(name)s-%(version)s/external/dftd3/origin/ && rm dftbplus-18.2.tar.gz && wget https://github.com/dftbplus/testparams/archive/dftbplus-18.2.tar.gz  && tar xzf dftbplus-18.2.tar.gz && mv testparams-dftbplus-18.2 %(builddir)s/%(name)s-%(version)s/external/slakos/origin && '
+
+installopts = 'INSTALLDIR=%(installdir)s'
+postinstallcmds = ["pip install numpy --prefix=%(installdir)s && export PYTHONPATH=%(installdir)s/lib/python2.7/site-packages && make test"]
+parallel = 4
+
+
+sanity_check_paths = {
+    'files': ['bin/dftb+', 'bin/modes', 'bin/waveplot'],
+    'dirs': ['lib']
+}
+modextrapaths = {'PYTHONPATH': 'lib/python2.7/site-packages'}
+moduleclass = 'phys'
+
