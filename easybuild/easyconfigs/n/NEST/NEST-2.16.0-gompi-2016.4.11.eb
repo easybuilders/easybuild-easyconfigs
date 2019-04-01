@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+
+name = 'NEST'
+version = '2.16.0'
+#versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.nest-simulator.org/'
+description = """NEST is a simulator for spiking neural network models
+ that focuses on the dynamics, size and structure of neural systems rather
+ than on the exact morphology of individual neurons."""
+
+toolchain = {'name': 'gompi', 'version': '2016.4.11'}
+toolchainopts = {'pic': True, 'openmp': True, 'usempi': True}
+
+source_urls = ['https://github.com/nest/nest-simulator/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    '327c1d1edea9580cde1bc1deaa7f63f3',    # v2.16.0.tar.gz
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    #('libreadline', '6.3'),
+    ('GSL', '2.3'),
+    #('libtool', '2.4.6'),
+    #('ncurses', '5.9'),
+]
+
+builddependencies = [
+    ('CMake', '3.4.1'),
+    ('Doxygen', '1.8.10'),
+    ('pkg-config', '0.27.1'),
+]
+
+preconfigopts = ['virtualenv %(installdir)s && source %(installdir)s/bin/activate && pip install cython && deactivate && ']
+
+configopts  = '-Dwith-warning=ON -Dwith-gsl=ON -Dwith-mpi=ON '
+configopts  = '-Dwith-python=ON -Dcythonize-pynest=ON '
+configopts += '-Denable-bluegene=OFF -Dk-computer=OFF '
+configopts += '-Dstatic-libraries=OFF -Dwith-defines=OFF '
+configopts += '-Dwith-music=OFF -Dexternal-modules=OFF '
+configopts += '-Dwith-includes=OFF -Dwith-libraries=OFF '
+configopts += '-Dwith-libneurosim=ON -Dwith-ltdl=ON '
+configopts += '-Dwith-openmp=ON -Dwith-readline=ON '
+configopts += '-Dwith-optimize=ON -Dwith-ps-arrays=ON '
+configopts += '-DOpenMP_CXX_FLAGS="-fopenmp" '
+configopts += '-DOpenMP_C_FLAGS="-fopenmp" '
+configopts += '-DPYTHON_ENABLE_MODULE_pynestker=ON '
+configopts += '-DPYTHON_MODULE_pynestkernel_BUI=ON '
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+sanity_check_paths = {
+    'files': ['bin/nest', 'lib/libnest.%s' % SHLIB_EXT, 'lib/libmodels.%s' % SHLIB_EXT],
+    'dirs': [],    #['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'bio'
