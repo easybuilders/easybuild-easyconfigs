@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'NEST'
+version = '2.16.0'
+
+#versionsuffix = '-Python-%(pyver)s'
+homepage = 'http://www.nest-simulator.org/'
+description = """NEST is a simulator for spiking neural network models
+ that focuses on the dynamics, size and structure of neural systems rather
+ than on the exact morphology of individual neurons."""
+
+toolchain = {'name': 'iompi', 'version': '2016.4.11'}
+toolchainopts = {'openmp': True, 'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s-simulator/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['327c1d1edea9580cde1bc1deaa7f63f3']
+
+builddependencies = [
+    ('CMake', '3.4.1'),
+    ('Doxygen', '1.8.10'),
+    ('pkg-config', '0.27.1'),
+]
+dependencies = [
+    ('Python', '2.7.14', '', True),
+    ('GSL', '2.3', '', ('iccifort', '2016.4')),
+]
+
+preconfigopts = ['virtualenv %(installdir)s && source %(installdir)s/bin/activate && pip install cython && deactivate && ']
+configopts = ' -DZLIB_ROOT=$NIXUSER_PROFILE  -DOPENGL_INCLUDE_DIR=$NIXUSER_PROFILE/include -DOPENGL_gl_LIBRARY=$NIXUSER_PROFILE/lib/libGL.so  -DOPENGL_glu_LIBRARY=$NIXUSER_PROFILE/lib/libGLU.so  -DJPEG_INCLUDE_DIR=$NIXUSER_PROFILE/include -DJPEG_LIBRARY=$NIXUSER_PROFILE/lib/libjpeg.so  -DPNG_PNG_INCLUDE_DIR=$NIXUSER_PROFILE/include -DPNG_LIBRARY=$NIXUSER_PROFILE/lib/libpng.so  -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python  -DCURL_LIBRARY=$NIXUSER_PROFILE/lib/libcurl.so -DCURL_INCLUDE_DIR=$NIXUSER_PROFILE/include  -DCMAKE_SYSTEM_PREFIX_PATH=$NIXUSER_PROFILE  -DCMAKE_SKIP_INSTALL_RPATH=ON -Dwith-python=ON -Dcythonize-pynest=ON -Denable-bluegene=OFF -Dk-computer=OFF -Dstatic-libraries=OFF -Dwith-defines=OFF -Dwith-music=OFF -Dexternal-modules=OFF -Dwith-includes=OFF -Dwith-libraries=OFF -Dwith-libneurosim=ON -Dwith-ltdl=ON -Dwith-openmp=ON -Dwith-readline=ON -Dwith-optimize=ON -Dwith-ps-arrays=ON -DOpenMP_CXX_FLAGS="-fopenmp" -DOpenMP_C_FLAGS="-fopenmp" -DPYTHON_ENABLE_MODULE_pynestker=ON -DPYTHON_MODULE_pynestkernel_BUI=ON '
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'lib/libnest.so', 'lib/libmodels.so'],
+    'dirs': [],  # ['lib/python%(pyshortver)s/site-packages'],
+}  # ('ncurses', '5.9'),
+
+moduleclass = 'bio'
