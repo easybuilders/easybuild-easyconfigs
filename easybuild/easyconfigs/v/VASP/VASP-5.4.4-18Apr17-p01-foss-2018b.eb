@@ -12,7 +12,7 @@ toolchain = {'name': 'foss', 'version': '2018b'}
 toolchainopts = {'usempi': True}
 
 # Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
-sources = ['%(namelower)s.%(version)s.tar.gz']
+sources = ['%%(namelower)s.%s.tar.gz' % version.split('-')[0]]
 
 # patch from Vaspwiki, http://cms.mpi.univie.ac.at/patches/patch.5.4.4.16052018.gz
 patches = ['vasp.5.4.4.16052018.patch']
@@ -29,8 +29,10 @@ prebuildopts += 'unset LIBS && '
 
 targets = ['std', 'gam', 'ncl']
 
-buildopts = '%s FCL="$MPIF90" OFLAG="$OPTFLAGS" BLAS="$LIBBLAS" LAPACK="$LIBLAPACK" ' % ' '.join(targets)
-buildopts += 'BLACS="$LIBBLACS" SCALAPACK="$LIBSCALAPACK" FFTW="$EBROOTFFTW"'
+buildopts = '%s ' % ' '.join(targets)
+buildopts += 'FCL="$MPIF90" DEBUG="$FFLAGS" OFLAG="$FFLAGS" OFLAG_1="${FFLAGS/O2/O1}" OFLAG_2="$FFLAGS" '
+buildopts += 'OFLAG_3="${FFLAGS/O2/O3}" CFLAGS_LIB="$CFLAGS" FFLAGS_LIB="$FFLAGS" BLAS="$LIBBLAS" '
+buildopts += 'LAPACK="$LIBLAPACK" BLACS="$LIBBLACS" SCALAPACK="$LIBSCALAPACK" FFTW="$EBROOTFFTW"'
 
 parallel = 1
 
