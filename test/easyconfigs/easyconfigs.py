@@ -461,7 +461,17 @@ class EasyConfigTest(TestCase):
                     if match:
                         changed_ecs.append(match)
                     else:
-                        self.assertTrue(False, "Failed to find parsed easyconfig for %s" % ec_fn)
+                        # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
+                        # so as a last resort, try to find the easyconfig file in __archive__
+                        easyconfigs_path = get_paths_for("easyconfigs")[0]
+                        specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
+                        if len(specs) == 1:
+                            ec = process_easyconfig(specs[0])[0]
+                            changed_ecs.append(ec['ec'])
+                        else:
+                            error_msg = "Failed to find parsed easyconfig for %s" % ec_fn
+                            error_msg += " (and could not isolate it in easyconfigs archive either)"
+                            self.assertTrue(False, error_msg)
 
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
