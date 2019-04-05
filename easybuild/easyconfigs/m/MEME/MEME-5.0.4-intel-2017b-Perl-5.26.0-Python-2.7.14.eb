@@ -2,6 +2,7 @@ easyblock = 'ConfigureMake'
 
 name = 'MEME'
 version = '5.0.4'
+versionsuffix = '-Perl-%(perlver)s-Python-%(pyver)s'
 
 homepage = 'http://meme-suite.org'
 description = """The MEME Suite allows you to: * discover motifs using MEME, DREME (DNA only) or
@@ -10,8 +11,7 @@ description = """The MEME Suite allows you to: * discover motifs using MEME, DRE
  motifs with Gene Ontology terms via their putative target genes, and * analyse motif enrichment
  using SpaMo or CentriMo."""
 
-
-toolchain = {'name': 'foss', 'version': '2017b'}
+toolchain = {'name': 'intel', 'version': '2017b'}
 
 source_urls = ['http://meme-suite.org/meme-software/%(version)s/']
 sources = ['%(namelower)s-%(version)s.tar.gz']
@@ -21,10 +21,17 @@ dependencies = [
     ('libxml2', '2.9.7'),
     ('libxslt', '1.1.32'),
     ('zlib', '1.2.11'),
+    ('Perl', '5.26.0'),
+    ('Python', '2.7.14')
 ]
 
+configopts = '--with-perl=${EBROOTPERL}/bin/perl --with-python=${EBROOTPYTHON}/bin/python'
+
+# Remove Python3 script
+postinstallcmds = ['rm -f %(installdir)s/bin/dreme-py3']
+
 sanity_check_paths = {
-    'files': ["bin/meme"],
+    'files': ["bin/meme", "bin/dreme", "bin/meme-chip"],
     'dirs': ["lib"],
 }
 
