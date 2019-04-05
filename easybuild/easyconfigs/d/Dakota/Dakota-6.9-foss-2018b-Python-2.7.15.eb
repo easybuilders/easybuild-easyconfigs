@@ -1,0 +1,68 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'CMakeMake'
+
+name = 'Dakota'
+version = '6.9'
+pysuffix = '-Python-%(pyver)s'
+versionsuffix = pysuffix
+
+homepage = 'https://dakota.sandia.gov/'
+
+description = """
+ Dakota software's advanced parametric analyses enable design exploration,
+ model calibration, risk analysis, and quantification of margins and
+ uncertainty with computational models.
+"""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'openmp': True}
+
+# https://dakota.sandia.gov/sites/default/files/distributions/public/dakota-6.9-release-public.src.tar.gz
+source_urls = ['https://dakota.sandia.gov/sites/default/files/distributions/public/']
+sources = ['%(namelower)s-%(version)s-release-public.src.tar.gz']
+# checksums = ['07c20e14cd7674785a737fa801f486e8'] # from the web site
+checksums = ['989b689278964b96496e3058b8ef5c2724d74bcd232f898fe450c51eba7fe0c2']
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+]
+
+dependencies = [
+    ('Boost', '1.68.0', pysuffix),
+    ('GSL', '2.5'),
+    ('HDF5', '1.10.2'),
+    ('Perl', '5.28.0'),
+    ('Python', '2.7.15'),
+    #  Trilinos(optional),  # 3 hour build
+    ('X11', '20180604'),
+]
+
+separate_build_dir = True
+
+# haven't figured out how to best do OpenBLAS for LAPACK yet
+configopts = """\
+    -DBLAS_LIBRARY_NAMES=openblas\
+    -DBLAS_LIBS=$EBROOTBLAS/lib/\
+    -DDAKOTA_HAVE_MPI=TRUE\
+    -DLAPACK_DIR=$EBROOTOPENBLAS\
+    -DLAPACK_LIBS=$EBROOTOPENBLAS/lib\
+    -DUSE_MPI=TRUE\
+"""
+
+prebuildopts = """
+    for x in `find . -name link.txt` ; do
+        sed -e "s,-L$EBROOTOPENBLAS/lib,-L$EBROOTOPENBLAS/lib -lopenblas," -i.eb $x
+    done
+    sed -e 's/#include <cfloat>/#include <cmath>/'  -i.eb\
+         ../%(namelower)s-%(version)s.0.src/packages/external/JEGA/Utilities/src/DiscreteDesignVariableNature.cpp
+"""
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/dakota', 'include/DakotaLeastSq.hpp', 'lib/libdakota_src_fortran.so'],
+    'dirs': ['share/dakota/Bash'],
+}
+
+moduleclass = 'math'
