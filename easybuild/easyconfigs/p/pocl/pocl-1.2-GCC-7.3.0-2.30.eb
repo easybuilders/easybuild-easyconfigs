@@ -1,0 +1,35 @@
+easyblock = 'CMakeMake'
+
+name = 'pocl'
+version = '1.2'
+
+homepage = 'http://portablecl.org'
+description = "Pocl is a portable open source (MIT-licensed) implementation of the OpenCL standard"
+
+toolchain = {'name': 'GCC', 'version': '7.3.0-2.30'}
+
+source_urls = ['https://github.com/pocl/pocl/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['0c43e68f336892f3a64cba19beb99d9212f529bedb77f7879c0331450b982d46']
+
+builddependencies = [('CMake', '3.12.1')]
+
+dependencies = [
+    # must be Clang 6.x (7.x does not work, see https://github.com/pocl/pocl/issues/694)
+    ('Clang', '6.0.1'),
+    ('hwloc', '1.11.10'),
+    ('libtool', '2.4.6'),
+    ('libxml2', '2.9.8'),
+]
+
+separate_build_dir = True
+
+# disable attempt to find an ICD loader, always build libOpenCL.so
+configopts = "-DENABLE_ICD=0 -DINSTALL_OPENCL_HEADERS=1"
+
+sanity_check_paths = {
+    'files': ['bin/poclcc', 'lib64/libOpenCL.%s' % SHLIB_EXT],
+    'dirs': ['include/CL', 'lib64/pkgconfig'],
+}
+
+moduleclass = 'lib'

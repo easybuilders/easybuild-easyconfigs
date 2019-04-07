@@ -1,0 +1,69 @@
+easyblock = 'Tarball'
+
+name = 'SqueezeMeta'
+version = '0.4.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/jtamames/SqueezeMeta'
+description = """SqueezeMeta is a full automatic pipeline for metagenomics/metatranscriptomics,
+ covering all steps of the analysis."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/jtamames/SqueezeMeta/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['SqueezeMeta-%(version)s_fix-hardcoding.patch']
+checksums = [
+    'd08911dcbfd4c244118e6414f36639781b9bb84ddfba83cba1157825f9a93a87',  # v0.4.3.tar.gz
+    '91e9116ec63a9a655be3706530e6ce710826186ed6b7aa245ee189888cc77463',  # SqueezeMeta-0.4.3_fix-hardcoding.patch
+]
+
+dependencies = [
+    ('Perl', '5.28.0'),
+    ('XML-LibXML', '2.0132', '-Perl-%(perlver)s'),
+    ('Python', '2.7.15'),
+    ('matplotlib', '2.2.3', versionsuffix),
+    ('Pysam', '0.15.1', versionsuffix),
+    ('R', '3.5.1', '-Python-%(pyver)s'),
+    ('BLAST+', '2.7.1'),
+    ('BWA', '0.7.17'),
+    ('barrnap', '0.9'),
+    ('CD-HIT', '4.6.8'),
+    ('CheckM', '1.0.13', '-Python-%(pyver)s'),
+    ('DAS_Tool', '1.1.1', '-R-%(rver)s-Python-%(pyver)s'),  # depends on prodigal & pullseq
+    ('DIAMOND', '0.9.22'),
+    ('MEGAHIT', '1.1.4', versionsuffix),
+    ('minimap2', '2.13'),
+    ('Java', '1.8', '', True),
+    ('RDP-Classifier', '2.12', '-Java-%(javaver)s', True),
+    ('MetaBAT', '2.12.1', versionsuffix),
+    ('MinPath', '1.4', versionsuffix),  # depends on GPLK (which provides glpsol)
+    ('PRINSEQ', '0.20.4', '-Perl-%(perlver)s'),
+    ('Trimmomatic', '0.38', '-Java-%(javaver)s', True),
+    ('AMOS', '3.1.0'),
+    ('MaxBin', '2.2.6', '-Perl-%(perlver)s'),
+    ('SPAdes', '3.13.0'),
+    ('Bowtie2', '2.3.4.2'),
+    ('canu', '1.8', '-Perl-%(perlver)s'),
+    ('HMMER', '3.2.1'),
+    ('MUMmer', '4.0.0beta2'),
+    ('pplacer', '1.1.alpha19', '', True),
+]
+
+keepsymlinks = True
+
+postinstallcmds = [
+    # remove vendored tools that are include as dependencies
+    "rm -r %(installdir)s/bin/*",
+    # fix shebang in Perl scripts
+    "sed -i 's@#!/usr/bin/perl@#!/usr/bin/env perl@g' %(installdir)s/scripts/*.pl",
+]
+
+sanity_check_paths = {
+    'files': ['scripts/SqueezeMeta.pl'],
+    'dirs': ['scripts/preparing_databases'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+
+moduleclass = 'bio'
