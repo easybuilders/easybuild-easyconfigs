@@ -248,6 +248,13 @@ class EasyConfigTest(TestCase):
                     if re.search('^version: %s' % old_dep_versions[dep], key):
                         dep_vars.pop(key)
 
+            # filter out Lua versionsuffixes
+            lua_dep_vars = [v for v in dep_vars.keys() if '-Lua' in v]
+            if len(dep_vars) > len(lua_dep_vars):
+                for key in dep_vars.keys():
+                    if re.search('; versionsuffix: .*-Lua-[0-9.]+', key):
+                        dep_vars.pop(key)
+
             # only single variant is always OK
             if len(dep_vars) == 1:
                 res = True
