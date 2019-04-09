@@ -20,52 +20,6 @@
  	${AccumulatedIncFlags}
  
  HFILES = *.h
---- fsl/config/linux_64-gcc4.8/externallibs.mk.orig	2019-04-01 23:13:59.145140251 +0000
-+++ fsl/config/linux_64-gcc4.8/externallibs.mk	2019-04-01 23:17:43.055489048 +0000
-@@ -15,7 +15,7 @@
- INC_GDC = ${FSLEXTINC}/libgdc
- 
- # LIBXML2 library
--INC_XML2 = ${FSLEXTINC}/libxml2
-+INC_XML2 = ${EBROOTLIBXML2}
- 
- # LIBXML++ library
- INC_XML++ = ${FSLEXTINC}/libxml++-2.6
-@@ -50,12 +50,12 @@
- INC_ZLIB = /usr/include
- 
- # BOOST library
--BOOSTDIR = ${FSLEXTINC}/boost
--LIB_BOOST = ${BOOSTDIR}
--INC_BOOST = ${BOOSTDIR}
-+BOOSTDIR = ${EBROOTBOOST}
-+LIB_BOOST = ${BOOSTDIR}/lib
-+INC_BOOST = ${BOOSTDIR}/include
- 
- # QT library
--QTDIR = /usr/lib/qt3
-+QTDIR = ${EBROOTQT}
- LIB_QT = ${QTDIR}/lib
- INC_QT = ${QTDIR}/include
- 
-@@ -65,10 +65,11 @@
- INC_QWT = ${QWTDIR}/include
- 
- # FFTW3 library
--LIB_FFTW3 = ${FSLEXTLIB}
--INC_FFTW3 = ${FSLEXTINC}/fftw3
-+LIB_FFTW3 = ${EBVARFFTW_LIB_DIR}
-+INC_FFTW3 = ${EBVARFFTW_INC_DIR}
- 
- # VTK library
--VTKDIR_INC = /home/fs0/cowboy/var/caper_linux_64-gcc4.4/VTK7/include/vtk-7.0
--VTKDIR_LIB = /home/fs0/cowboy/var/caper_linux_64-gcc4.4/VTK7/lib
--VTKSUFFIX = -7.0
-\ No newline at end of file
-+VTKDIR_INC = ${EBROOTVTK}/include/vtk-`echo ${EBVERSIONVTK} | cut -f1-2 -d.`
-+VTKDIR_LIB = ${EBROOTVTK}/lib
-+VTKSUFFIX = -`echo ${EBVERSIONVTK} | cut -f1-2 -d.`
-+
 --- fsl/extras/src/libxml++-2.34.0/libxml++/io/istreamparserinputbuffer.cc.orig	2019-04-01 23:17:56.034509574 +0000
 +++ fsl/extras/src/libxml++-2.34.0/libxml++/io/istreamparserinputbuffer.cc	2019-04-01 23:18:36.431573458 +0000
 @@ -39,6 +39,6 @@
@@ -115,36 +69,6 @@
  
  USRINCFLAGS = -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_PROB} -I${INC_BOOST} 
  USRLDFLAGS =  -L${LIB_PROB} -L${LIB_NEWMAT} -L${LIB_ZLIB}
---- fsl/src/mist-clean/Makefile.orig	2019-04-01 23:22:11.771913998 +0000
-+++ fsl/src/mist-clean/Makefile	2019-04-01 23:23:31.115039472 +0000
-@@ -2,15 +2,15 @@
- 
- NLOPT_INC = ${FSLEXTINC}
- NLOPT_LIB = ${FSLEXTLIB}
--SQLITE_INC = ${FSLEXTINC}/libsqlite
--SQLITE_LIB = ${FSLEXTLIB}
-+SQLITE_INC = ${EBROOTNIXPKGS}/include
-+SQLITE_LIB = ${EBROOTNIXPKGS}/lib
- 
- PROJNAME = mist
- 
- XFILES = mist/mist
- SCRIPTS = bin/mist_1_train bin/mist_2_fit bin/mist_FA_reg bin/mist_display bin/mist_mesh_utils
- 
--USRCXXFLAGS = -std=c++11
-+USRCXXFLAGS = -std=c++11 -DBOOST_LOG_DYN_LINK
- USRINCFLAGS = -I${FSLDIR}/include/newimage -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_GDC} -I${INC_GD} -I${SQLITE_INC} -I${NLOPT_INC} -I${VTKDIR_INC} -Icommon
- USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_ZLIB} -L${LIB_BOOST} -L${LIB_GDC} -L${LIB_GD} -L${NLOPT_LIB} -L${VTKDIR_LIB}
- 
-@@ -26,7 +26,7 @@
- 			-lboost_log -lboost_log_setup -lboost_thread -lboost_filesystem -lboost_date_time -lboost_chrono \
- 			-lboost_system -lboost_serialization -lboost_regex -lwarpfns -lbasisfield -lnewimage -lmiscmaths \
- 			-lnewmat -lgdc -lgd -lpng -lNewNifti -lutils -lznz -lm -lz -lnlopt -lpthread -ldl \
--			${SQLITE_LIB}/libsqlite3.a ${LIBRT}
-+			-lsqlite3 ${LIBRT} -lboost_regex	
- 
- HDRS = common/gibbsshapemodel.h common/mrfshapemodel.h common/mvnshapemodel.h common/plotting.h common/profilefilters.h common/profilemixtures.h common/profilemodel.h common/profilepriors.h common/serialisation.h common/shape.h common/shapemodel.h common/stats.h common/transformation.h mist/builddate.h
- 
 --- fsl/config/linux_64-gcc4.8/systemvars.mk.orig	2019-04-01 23:23:38.157050607 +0000
 +++ fsl/config/linux_64-gcc4.8/systemvars.mk	2019-04-01 23:25:39.780242943 +0000
 @@ -8,7 +8,7 @@
@@ -231,3 +155,90 @@
  export FSLTCLSH FSLWISH 
  
  # The following variables are used for running code in parallel across
+--- fsl/src/mist-clean/Makefile.orig	2019-04-03 20:45:53.746865416 +0000
++++ fsl/src/mist-clean/Makefile	2019-04-03 20:44:58.944776585 +0000
+@@ -2,16 +2,16 @@
+ 
+ NLOPT_INC = ${FSLEXTINC}
+ NLOPT_LIB = ${FSLEXTLIB}
+-SQLITE_INC = ${FSLEXTINC}/libsqlite
+-SQLITE_LIB = ${FSLEXTLIB}
++SQLITE_INC = ${EBROOTNIXPKGS}/include
++SQLITE_LIB = ${EBROOTNIXPKGS}/lib
+ 
+ PROJNAME = mist
+ 
+ XFILES = mist/mist
+ SCRIPTS = bin/mist_1_train bin/mist_2_fit bin/mist_FA_reg bin/mist_display bin/mist_mesh_utils
+ 
+-USRCXXFLAGS = -std=c++11
+-USRINCFLAGS = -I${FSLDIR}/include/newimage -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_GDC} -I${INC_GD} -I${SQLITE_INC} -I${NLOPT_INC} -I${VTKDIR_INC} -Icommon
++USRCXXFLAGS = -std=c++11 -DBOOST_LOG_DYN_LINK
++USRINCFLAGS = -I${FSLDIR}/include/newimage -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_GDC} -I${INC_GD} -I${SQLITE_INC} -I${NLOPT_INC} -I${VTKDIR_INC} -Icommon -I${FSLDIR}/src
+ USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_ZLIB} -L${LIB_BOOST} -L${LIB_GDC} -L${LIB_GD} -L${NLOPT_LIB} -L${VTKDIR_LIB}
+ 
+ UNAME := $(shell uname)
+@@ -26,7 +26,7 @@
+ 			-lboost_log -lboost_log_setup -lboost_thread -lboost_filesystem -lboost_date_time -lboost_chrono \
+ 			-lboost_system -lboost_serialization -lboost_regex -lwarpfns -lbasisfield -lnewimage -lmiscmaths \
+ 			-lnewmat -lgdc -lgd -lpng -lNewNifti -lutils -lznz -lm -lz -lnlopt -lpthread -ldl \
+-			${SQLITE_LIB}/libsqlite3.a ${LIBRT}
++			-lsqlite3 ${LIBRT} -lboost_regex	
+ 
+ HDRS = common/gibbsshapemodel.h common/mrfshapemodel.h common/mvnshapemodel.h common/plotting.h common/profilefilters.h common/profilemixtures.h common/profilemodel.h common/profilepriors.h common/serialisation.h common/shape.h common/shapemodel.h common/stats.h common/transformation.h mist/builddate.h
+ 
+--- fsl/config/linux_64-gcc4.8/externallibs.mk.orig	2019-04-01 23:13:59.145140251 +0000
++++ fsl/config/linux_64-gcc4.8/externallibs.mk	2019-04-08 22:32:59.271010271 +0000
+@@ -15,7 +15,7 @@
+ INC_GDC = ${FSLEXTINC}/libgdc
+ 
+ # LIBXML2 library
+-INC_XML2 = ${FSLEXTINC}/libxml2
++INC_XML2 = ${EBROOTLIBXML2}
+ 
+ # LIBXML++ library
+ INC_XML++ = ${FSLEXTINC}/libxml++-2.6
+@@ -38,7 +38,7 @@
+ 
+ # NEWMAT library
+ #LIB_NEWMAT = ${FSLEXTLIB} -llapack -lblas or just -lopenblas
+-LIB_NEWMAT = ${FSLEXTLIB} -lopenblas
++LIB_NEWMAT = ${FSLEXTLIB} -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+ INC_NEWMAT = ${FSLEXTINC}/armawrap/armawrap -DARMA_USE_LAPACK -DARMA_USE_BLAS -DARMA_64BIT_WORD
+ 
+ # NEWRAN library
+@@ -50,12 +50,12 @@
+ INC_ZLIB = /usr/include
+ 
+ # BOOST library
+-BOOSTDIR = ${FSLEXTINC}/boost
+-LIB_BOOST = ${BOOSTDIR}
+-INC_BOOST = ${BOOSTDIR}
++BOOSTDIR = ${EBROOTBOOST}
++LIB_BOOST = ${BOOSTDIR}/lib
++INC_BOOST = ${BOOSTDIR}/include
+ 
+ # QT library
+-QTDIR = /usr/lib/qt3
++QTDIR = ${EBROOTQT}
+ LIB_QT = ${QTDIR}/lib
+ INC_QT = ${QTDIR}/include
+ 
+@@ -65,10 +65,11 @@
+ INC_QWT = ${QWTDIR}/include
+ 
+ # FFTW3 library
+-LIB_FFTW3 = ${FSLEXTLIB}
+-INC_FFTW3 = ${FSLEXTINC}/fftw3
++LIB_FFTW3 = ${EBVARFFTW_LIB_DIR}
++INC_FFTW3 = ${EBVARFFTW_INC_DIR}
+ 
+ # VTK library
+-VTKDIR_INC = /home/fs0/cowboy/var/caper_linux_64-gcc4.4/VTK7/include/vtk-7.0
+-VTKDIR_LIB = /home/fs0/cowboy/var/caper_linux_64-gcc4.4/VTK7/lib
+-VTKSUFFIX = -7.0
+\ No newline at end of file
++VTKDIR_INC = ${EBROOTVTK}/include/vtk-`echo ${EBVERSIONVTK} | cut -f1-2 -d.`
++VTKDIR_LIB = ${EBROOTVTK}/lib
++VTKSUFFIX = -`echo ${EBVERSIONVTK} | cut -f1-2 -d.`
++
