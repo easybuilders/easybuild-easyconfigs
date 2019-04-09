@@ -197,7 +197,7 @@ class EasyConfigTest(TestCase):
 
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep in ['Boost', 'R', 'PLUMED'] and len(dep_vars) > 1:
+            elif dep in ['Boost', 'R', 'PLUMED', 'Lua'] and len(dep_vars) > 1:
                 for key in dep_vars.keys():
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
@@ -246,13 +246,6 @@ class EasyConfigTest(TestCase):
                 for key in dep_vars.keys():
                     # filter out known old dependency versions
                     if re.search('^version: %s' % old_dep_versions[dep], key):
-                        dep_vars.pop(key)
-
-            # filter out Lua versionsuffixes
-            lua_dep_vars = [v for v in dep_vars.keys() if '-Lua' in v]
-            if len(dep_vars) > len(lua_dep_vars):
-                for key in dep_vars.keys():
-                    if re.search('; versionsuffix: .*-Lua-[0-9.]+', key):
                         dep_vars.pop(key)
 
             # only single variant is always OK
