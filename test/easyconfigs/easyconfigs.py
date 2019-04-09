@@ -560,7 +560,7 @@ def template_easyconfig_test(self, spec):
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
 
         if requires_binutils:
-            dep_names = [d['name'] for d in ec['builddependencies']]
+            dep_names = [d['name'] for d in ec.builddependencies()]
             self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
 
     # make sure all patch files are available
