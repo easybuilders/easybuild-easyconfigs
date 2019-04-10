@@ -1,0 +1,50 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+# Date: Oct 23, 2018.
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'PHYX'
+version = '0.999'
+
+homepage = 'https://github.com/FePhyFoFum/phyx'
+description = """phyx performs phylogenetics analyses on trees and sequences."""
+
+toolchain = {'name': 'iimkl', 'version': '2016.4'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/FePhyFoFum/phyx/archive/']
+
+patches = ['phyx-0.999-fix_Makefile.patch']
+ 
+dependencies = [
+    ('NLopt', '2.4.2'),
+    ('Armadillo', '8.500.1'),
+]
+
+start_dir = 'src'
+
+skipsteps = ['install']
+
+preconfigopts  = 'autoreconf -fi && '
+preconfigopts += 'export HNLOPT=Y && export HARM=Y && export HOMP=Y && '
+
+postinstallcmds =  ['cd %(builddir)s/%(namelower)s-%(version)s/ && mkdir -p %(installdir)s/bin && cp src/px* %(installdir)s/bin/ && cp -r doc example_files  LICENSE README.md %(installdir)s/']
+
+phyx_binaries = [
+    "pxaa2cdn", "pxbdfit", "pxbdsim", "pxboot", "pxbp", "pxcat", "pxclsq", "pxcltr", 
+    "pxcolt", "pxconsq", "pxcontrates", "pxfqfilt", "pxlog", "pxlssq", "pxlstr", 
+    "pxmrca", "pxmrcacut", "pxmrcaname", "pxnj", "pxnw", "pxrecode", "pxrevcomp", 
+    "pxrls", "pxrlt", "pxrmk", "pxrms", "pxrmt", "pxrr", "pxs2fa", "pxs2nex", "pxs2phy", 
+    "pxseqgen", "pxssort", "pxsstat", "pxstrec", "pxsw", "pxt2new", "pxtcol", "pxtcomb", 
+    "pxtlate", "pxtrt", "pxtscale", "pxupgma", "pxvcf2fa",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in phyx_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

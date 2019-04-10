@@ -1,0 +1,44 @@
+--- julia-1.1.0/base/Makefile.orig	2019-01-13 00:25:11.000000000 +0000
++++ julia-1.1.0/base/Makefile	2019-02-27 19:41:45.981212378 +0000
+@@ -200,13 +200,13 @@
+ endif # WINNT
+ 
+ symlink_libLLVM: $(build_private_libdir)/libLLVM.dylib
+-ifneq ($(USE_SYSTEM_LLVM),0)
+-LLVM_CONFIG_HOST_LIBS := $(shell $(LLVM_CONFIG_HOST) --libfiles)
++#ifneq ($(USE_SYSTEM_LLVM),0)
++#LLVM_CONFIG_HOST_LIBS := $(shell $(LLVM_CONFIG_HOST) --libfiles)
+ # HACK: llvm-config doesn't correctly point to shared libs on all platforms
+ #       https://github.com/JuliaLang/julia/issues/29981
+-else
++#else
+ LLVM_CONFIG_HOST_LIBS := $(shell $(LLVM_CONFIG_HOST) --libdir)/libLLVM.$(SHLIB_EXT)
+-endif
++#endif
+ $(build_private_libdir)/libLLVM.dylib:
+ 	REALPATH=$(LLVM_CONFIG_HOST_LIBS) && \
+ 	$(call resolve_path,REALPATH) && \
+--- julia-1.1.0/src/Makefile.orig	2019-02-27 19:50:48.367923895 +0000
++++ julia-1.1.0/src/Makefile	2019-01-13 00:25:11.000000000 +0000
+@@ -89,17 +89,17 @@
+ PUBLIC_HEADER_TARGETS := $(addprefix $(build_includedir)/julia/,$(notdir $(PUBLIC_HEADERS)) $(UV_HEADERS))
+ 
+ ifeq ($(JULIACODEGEN),LLVM)
+-ifneq ($(USE_SYSTEM_LLVM),0)
+-LLVMLINK += $(shell $(LLVM_CONFIG_HOST) --ldflags --libs --system-libs)
++#ifneq ($(USE_SYSTEM_LLVM),0)
++#LLVMLINK += $(shell $(LLVM_CONFIG_HOST) --ldflags --libs --system-libs)
+ # HACK: llvm-config doesn't correctly point to shared libs on all platforms
+ #       https://github.com/JuliaLang/julia/issues/29981
+-else
++#else
+ ifneq ($(USE_LLVM_SHLIB),1)
+ LLVMLINK += $(shell $(LLVM_CONFIG_HOST) --ldflags) $(shell $(LLVM_CONFIG_HOST) --libs $(LLVM_LIBS)) $(shell $(LLVM_CONFIG_HOST) --ldflags) $(shell $(LLVM_CONFIG_HOST) --system-libs 2> /dev/null)
+ else
+ LLVMLINK += $(shell $(LLVM_CONFIG_HOST) --ldflags) -lLLVM
+ endif
+-endif
++#endif
+ ifeq ($(USE_LLVM_SHLIB),1)
+ FLAGS += -DLLVM_SHLIB
+ endif # USE_LLVM_SHLIB == 1

@@ -1,0 +1,42 @@
+easyblock = "CmdCp"
+
+name = 'Hail'
+version = '0.1'
+
+homepage = 'https://hail.is/'
+description = """Hail is an open-source, scalable framework for exploring and analyzing genomic data.
+"""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+sources = ['%(version)s.zip']
+source_urls = ['https://github.com/hail-is/hail/archive/']
+
+
+dependencies = [
+    ('Java', '1.8.0_121'),
+    ('Spark', '2.1.1', '-compiled')
+]
+
+cmds_map = [('.*', "MALLOC_ARENA_MAX=4 ./gradlew -Dspark.version=2.1.1 shadowJar archiveZip")]
+
+files_to_copy = [(['build/libs/hail-all-spark.jar'], 'build/libs/'),
+                 (['build/distributions/hail-python.zip'], 'build/distributions'),
+                 (['python'], ''),
+                 (['scripts'], ''),
+                 (['LICENSE'], ''),
+                 (['AUTHORS'], '')
+                ]
+
+sanity_check_paths = {
+    'files': ['build/libs/hail-all-spark.jar', 
+              'build/distributions/hail-python.zip'],
+    'dirs':  ['python'],
+}
+
+modextrapaths = {'PYTHONPATH': ['build/distributions/hail-python.zip'],
+                 'SPARK_CLASSPATH': ['build/libs/hail-all-spark.jar']}
+modextravars =  {'HAIL_HOME': '%(installdir)s'}
+
+moduleclass = 'devel'
+

@@ -1,0 +1,59 @@
+easyblock = 'MakeCp'
+name = 'Reapr'
+version = '1.0.18'
+
+homepage = 'https://www.sanger.ac.uk/science/tools/reapr'
+description = """REAPR is a tool that evaluates the accuracy of a genome assembly using mapped paired end reads, without the use of a reference genome for comparison. """
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+source_urls = ['ftp://ftp.sanger.ac.uk/pub/resources/software/reapr/']
+sources = ['%(name)s_%(version)s.tar.gz']
+patches = ['reapr.patch']
+builddependencies = [ 
+     ('BamTools', '2.4.1'),
+]
+dependencies = [
+     ('Perl', '5.22.4'),
+     ('SAMtools', '0.1.18'),
+]
+parallel = 1
+prebuildopts = 'make -C third_party/tabix  && make -C third_party/snpomatic && cd  src/ && rm samtools && ln -s reapr.pl reapr && '
+binary_files = [
+"reapr.pl", "task_facheck.pl", "task_perfectfrombam.pl", "task_perfectmap.pl", "task_pipeline.pl", "task_plots.pl", "task_preprocess.pl", 
+"task_seqrename.pl", "task_smaltmap.pl", "task_summary.pl", "reapr", 
+"bam2fcdEstimate", "bam2fragCov", "bam2insert", "bam2perfect", "fa2gaps", "fa2gc", "make_plots", "n50", "scaff2contig", 
+"task_break", "task_fcdrate", "task_gapresize", "task_score", "task_stats", "findknownsnps", "smalt" ,
+]
+files_to_copy = [(['src/%s' % x for x in binary_files], '%(installdir)s/bin'), (['src/tabix/tabix'], '%(installdir)s/bin'), (['src/tabix/bgzip'], '%(installdir)s/bin'), (['src/tabix/tabix++'], '%(installdir)s/bin'), (['src/tabix/tabix.py'], '%(installdir)s/bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in binary_files],
+    'dirs' : [],
+}
+modluafooter = """
+"""
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl/5.22.4'}
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('File::Spec::Link', '0.5', {
+        'source_tmpl': 'File-Copy-Link-0.140.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RM/RMBARKER'],
+        'prebuildopts' : '',
+        'runtest' : 'test',
+	    }),
+    ('Getopt::Long', '2.5', {
+	'source_tmpl': 'Getopt-Long-2.50.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/J/JV/JV/'],
+        'prebuildopts' : '',
+        'runtest' : 'test',
+    }),
+    ('List::Util', '1.50', {
+	'source_tmpl': 'Scalar-List-Utils-1.50.tar.gz',
+	'source_urls': ['https://cpan.metacpan.org/authors/id/P/PE/PEVANS'],
+        'prebuildopts' : '',
+	'runtest' : 'test',
+    }),
+]
+moduleclass = 'bio'
+

@@ -1,0 +1,244 @@
+--- fsl/config/common/vars.mk.orig	2019-04-01 23:10:30.109819496 +0000
++++ fsl/config/common/vars.mk	2019-04-01 23:13:39.294109791 +0000
+@@ -24,14 +24,14 @@
+ USRCFLAGS = 
+ USRCXXFLAGS =
+ 
+-LDFLAGS = ${ARCHLDFLAGS} ${USRLDFLAGS} -L. -L${DEVLIBDIR} -L${LIBDIR}
++LDFLAGS = ${EBVARLDFLAGS} ${ARCHLDFLAGS} ${USRLDFLAGS} -L. -L${DEVLIBDIR} -L${LIBDIR}
+ 
+-AccumulatedIncFlags = -I${INC_BOOST} ${USRINCFLAGS} -I. -I${DEVINCDIR} -I${INCDIR}
++AccumulatedIncFlags = ${EBVARCPPFLAGS} -I${INC_BOOST} ${USRINCFLAGS} -I. -I${DEVINCDIR} -I${INCDIR}
+ 
+-CFLAGS = ${ANSI_FLAGS} ${ANSI_CFLAGS} ${DBGFLAGS} ${USEDCSTATICFLAGS} ${USRCFLAGS} ${ARCHFLAGS} ${OPTFLAGS}  \
+-	${AccumulatedIncFlags}
++CFLAGS = ${EBVARCFLAGS} ${ANSI_FLAGS} ${ANSI_CFLAGS} ${DBGFLAGS} ${USEDCSTATICFLAGS} ${USRCFLAGS} ${ARCHFLAGS} ${OPTFLAGS}  \
++		${AccumulatedIncFlags}
+ 
+-CXXFLAGS = ${ANSI_FLAGS} ${ANSI_CXXFLAGS} ${DBGFLAGS} ${USEDCXXSTATICFLAGS} ${USRCXXFLAGS} ${ARCHFLAGS} ${OPTFLAGS}  \
++CXXFLAGS = ${EBVARCXXFLAGS} ${ANSI_FLAGS} ${ANSI_CXXFLAGS} ${DBGFLAGS} ${USEDCXXSTATICFLAGS} ${USRCXXFLAGS} ${ARCHFLAGS} ${OPTFLAGS}  \
+ 	${AccumulatedIncFlags}
+ 
+ HFILES = *.h
+--- fsl/extras/src/libxml++-2.34.0/libxml++/io/istreamparserinputbuffer.cc.orig	2019-04-01 23:17:56.034509574 +0000
++++ fsl/extras/src/libxml++-2.34.0/libxml++/io/istreamparserinputbuffer.cc	2019-04-01 23:18:36.431573458 +0000
+@@ -39,6 +39,6 @@
+ 
+   bool IStreamParserInputBuffer::do_close()
+   {
+-    return input_;
++    return static_cast<bool>(input_);
+   }
+ }
+--- fsl/extras/src/libxml++-2.34.0/libxml++/io/ostreamoutputbuffer.cc.orig	2019-04-01 23:18:55.138603041 +0000
++++ fsl/extras/src/libxml++-2.34.0/libxml++/io/ostreamoutputbuffer.cc	2019-04-01 23:19:49.960689737 +0000
+@@ -29,13 +29,13 @@
+     // here we rely on the ostream implicit conversion to boolean, to know if the stream can be used and/or if the write succeded.
+     if(output_)
+       output_.write(buffer, len);
+-    return output_;
++    return static_cast<bool>(output_);
+   }
+ 
+   bool OStreamOutputBuffer::do_close()
+   {
+     if(output_)
+         output_.flush();
+-    return output_;
++    return static_cast<bool>(output_);
+   }
+ }
+--- fsl/src/film/Makefile.orig	2019-04-01 23:20:02.178709059 +0000
++++ fsl/src/film/Makefile	2019-04-01 23:21:07.761812772 +0000
+@@ -28,7 +28,7 @@
+ 	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} ftoz.o ${LIBS}
+ 
+ film_gls:${OBJS} film_gls.o
+-	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} film_gls.o ${LIBS} -l giftiio
++	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} film_gls.o ${LIBS} -lgiftiio
+ 
+ film_gls_res:${OBJS} film_gls_res.o
+ 	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} film_gls_res.o ${LIBS}
+--- fsl/src/libmeshutils/Makefile.orig	2019-04-01 23:21:19.283830993 +0000
++++ fsl/src/libmeshutils/Makefile	2019-04-01 23:21:49.185878280 +0000
+@@ -3,7 +3,6 @@
+ 
+ PROJNAME = meshUtils
+ 
+-LD_LIBRARY_PATH=${FSLDIR}/lib
+ 
+ USRINCFLAGS = -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_PROB} -I${INC_BOOST} 
+ USRLDFLAGS =  -L${LIB_PROB} -L${LIB_NEWMAT} -L${LIB_ZLIB}
+--- fsl/config/linux_64-gcc4.8/systemvars.mk.orig	2019-04-01 23:23:38.157050607 +0000
++++ fsl/config/linux_64-gcc4.8/systemvars.mk	2019-04-01 23:25:39.780242943 +0000
+@@ -8,7 +8,7 @@
+ CP = /bin/cp
+ MV = /bin/mv
+ INSTALL = install -p
+-TCLSH = ${FSLDIR}/bin/fsltclsh
++TCLSH = tclsh 
+ RANLIB = echo
+ 
+ FSLML = ${FSLDIR}/bin/fslml
+@@ -18,9 +18,9 @@
+ 
+ # Compiler dependent variables
+ 
+-CC = gcc
+-CXX = c++
+-CXX11 = c++
++CC := ${CC} 
++CXX := ${CXX}
++CXX11 = ${CXX} -std=c++11
+ CSTATICFLAGS = -static
+ CXXSTATICFLAGS = -static
+ 
+@@ -31,7 +31,7 @@
+ 
+ DEPENDFLAGS = -MM
+ 
+-OPTFLAGS = -g -O3 -fexpensive-optimizations ${ARCHFLAGS}
++OPTFLAGS := ${OPTFLAGS} ${ARCHFLAGS}
+ MACHDBGFLAGS = -g
+ GNU_ANSI_FLAGS = -Wall -ansi -pedantic -Wno-long-long 
+ SGI_ANSI_FLAGS = -ansi -fullwarn
+@@ -40,9 +40,9 @@
+ # CUDA development environment
+ CUDAVER := $(or $(CUDAVER),9.1)
+ #$(info $$CUDAVER is [${CUDAVER}])
+-CUDA_INSTALLATION = /opt/cuda-${CUDAVER}
++CUDA_INSTALLATION = ${EBROOTCUDA} 
+ GENCODE_FLAGS = $(shell ${FSLDIR}/config/common/supportedGencodes.sh ${CUDA_INSTALLATION})
+ LIB_CUDA = ${CUDA_INSTALLATION}/lib64
+ INC_CUDA = ${CUDA_INSTALLATION}/include
+ NVCC = ${CUDA_INSTALLATION}/bin/nvcc
+-NVCC11= ${CUDA_INSTALLATION}/bin/nvcc
++NVCC11= ${CUDA_INSTALLATION}/bin/nvcc 
+--- fsl/etc/fslconf/fsl.csh.orig	2019-04-01 23:25:55.118267198 +0000
++++ fsl/etc/fslconf/fsl.csh	2019-04-01 23:26:22.645310730 +0000
+@@ -25,8 +25,8 @@
+ # The following variables specify paths for programs and can be changed
+ #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
+ 
+-setenv FSLTCLSH $FSLDIR/bin/fsltclsh
+-setenv FSLWISH $FSLDIR/bin/fslwish
++setenv FSLTCLSH tclsh
++setenv FSLWISH wish
+ 
+ # The following variables are used for running code in parallel across
+ #  several machines ( i.e. for FDT )
+--- fsl/etc/fslconf/fsl-devel.sh.orig	2019-04-01 23:26:28.446319903 +0000
++++ fsl/etc/fslconf/fsl-devel.sh	2019-04-01 23:26:51.165355831 +0000
+@@ -26,9 +26,8 @@
+ # The following variables specify paths for programs and can be changed
+ #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
+ 
+-FSLTCLSH=$FSLDIR/bin/fsltclsh
+-FSLWISH=$FSLDIR/bin/fslwish
+-
++FSLTCLSH=tclsh
++FSLWISH=wish
+ export FSLTCLSH FSLWISH 
+ 
+ # The following variables are used for running code in parallel across
+--- fsl/etc/fslconf/fsl.sh.orig	2019-04-01 23:26:56.671364538 +0000
++++ fsl/etc/fslconf/fsl.sh	2019-04-01 23:27:17.005396695 +0000
+@@ -26,9 +26,8 @@
+ # The following variables specify paths for programs and can be changed
+ #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
+ 
+-FSLTCLSH=$FSLDIR/bin/fsltclsh
+-FSLWISH=$FSLDIR/bin/fslwish
+-
++FSLTCLSH=tclsh
++FSLWISH=wish
+ export FSLTCLSH FSLWISH 
+ 
+ # The following variables are used for running code in parallel across
+--- fsl/src/mist-clean/Makefile.orig	2019-04-03 20:45:53.746865416 +0000
++++ fsl/src/mist-clean/Makefile	2019-04-03 20:44:58.944776585 +0000
+@@ -2,16 +2,16 @@
+ 
+ NLOPT_INC = ${FSLEXTINC}
+ NLOPT_LIB = ${FSLEXTLIB}
+-SQLITE_INC = ${FSLEXTINC}/libsqlite
+-SQLITE_LIB = ${FSLEXTLIB}
++SQLITE_INC = ${EBROOTNIXPKGS}/include
++SQLITE_LIB = ${EBROOTNIXPKGS}/lib
+ 
+ PROJNAME = mist
+ 
+ XFILES = mist/mist
+ SCRIPTS = bin/mist_1_train bin/mist_2_fit bin/mist_FA_reg bin/mist_display bin/mist_mesh_utils
+ 
+-USRCXXFLAGS = -std=c++11
+-USRINCFLAGS = -I${FSLDIR}/include/newimage -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_GDC} -I${INC_GD} -I${SQLITE_INC} -I${NLOPT_INC} -I${VTKDIR_INC} -Icommon
++USRCXXFLAGS = -std=c++11 -DBOOST_LOG_DYN_LINK
++USRINCFLAGS = -I${FSLDIR}/include/newimage -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_GDC} -I${INC_GD} -I${SQLITE_INC} -I${NLOPT_INC} -I${VTKDIR_INC} -Icommon -I${FSLDIR}/src
+ USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_ZLIB} -L${LIB_BOOST} -L${LIB_GDC} -L${LIB_GD} -L${NLOPT_LIB} -L${VTKDIR_LIB}
+ 
+ UNAME := $(shell uname)
+@@ -26,7 +26,7 @@
+ 			-lboost_log -lboost_log_setup -lboost_thread -lboost_filesystem -lboost_date_time -lboost_chrono \
+ 			-lboost_system -lboost_serialization -lboost_regex -lwarpfns -lbasisfield -lnewimage -lmiscmaths \
+ 			-lnewmat -lgdc -lgd -lpng -lNewNifti -lutils -lznz -lm -lz -lnlopt -lpthread -ldl \
+-			${SQLITE_LIB}/libsqlite3.a ${LIBRT}
++			-lsqlite3 ${LIBRT} -lboost_regex	
+ 
+ HDRS = common/gibbsshapemodel.h common/mrfshapemodel.h common/mvnshapemodel.h common/plotting.h common/profilefilters.h common/profilemixtures.h common/profilemodel.h common/profilepriors.h common/serialisation.h common/shape.h common/shapemodel.h common/stats.h common/transformation.h mist/builddate.h
+ 
+--- fsl/config/linux_64-gcc4.8/externallibs.mk.orig	2019-04-01 23:13:59.145140251 +0000
++++ fsl/config/linux_64-gcc4.8/externallibs.mk	2019-04-08 22:32:59.271010271 +0000
+@@ -15,7 +15,7 @@
+ INC_GDC = ${FSLEXTINC}/libgdc
+ 
+ # LIBXML2 library
+-INC_XML2 = ${FSLEXTINC}/libxml2
++INC_XML2 = ${EBROOTLIBXML2}
+ 
+ # LIBXML++ library
+ INC_XML++ = ${FSLEXTINC}/libxml++-2.6
+@@ -38,7 +38,7 @@
+ 
+ # NEWMAT library
+ #LIB_NEWMAT = ${FSLEXTLIB} -llapack -lblas or just -lopenblas
+-LIB_NEWMAT = ${FSLEXTLIB} -lopenblas
++LIB_NEWMAT = ${FSLEXTLIB} -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+ INC_NEWMAT = ${FSLEXTINC}/armawrap/armawrap -DARMA_USE_LAPACK -DARMA_USE_BLAS -DARMA_64BIT_WORD
+ 
+ # NEWRAN library
+@@ -50,12 +50,12 @@
+ INC_ZLIB = /usr/include
+ 
+ # BOOST library
+-BOOSTDIR = ${FSLEXTINC}/boost
+-LIB_BOOST = ${BOOSTDIR}
+-INC_BOOST = ${BOOSTDIR}
++BOOSTDIR = ${EBROOTBOOST}
++LIB_BOOST = ${BOOSTDIR}/lib
++INC_BOOST = ${BOOSTDIR}/include
+ 
+ # QT library
+-QTDIR = /usr/lib/qt3
++QTDIR = ${EBROOTQT}
+ LIB_QT = ${QTDIR}/lib
+ INC_QT = ${QTDIR}/include
+ 
+@@ -65,10 +65,11 @@
+ INC_QWT = ${QWTDIR}/include
+ 
+ # FFTW3 library
+-LIB_FFTW3 = ${FSLEXTLIB}
+-INC_FFTW3 = ${FSLEXTINC}/fftw3
++LIB_FFTW3 = ${EBVARFFTW_LIB_DIR}
++INC_FFTW3 = ${EBVARFFTW_INC_DIR}
+ 
+ # VTK library
+-VTKDIR_INC = /home/fs0/cowboy/var/caper_linux_64-gcc4.4/VTK7/include/vtk-7.0
+-VTKDIR_LIB = /home/fs0/cowboy/var/caper_linux_64-gcc4.4/VTK7/lib
+-VTKSUFFIX = -7.0
+\ No newline at end of file
++VTKDIR_INC = ${EBROOTVTK}/include/vtk-`echo ${EBVERSIONVTK} | cut -f1-2 -d.`
++VTKDIR_LIB = ${EBROOTVTK}/lib
++VTKSUFFIX = -`echo ${EBVERSIONVTK} | cut -f1-2 -d.`
++

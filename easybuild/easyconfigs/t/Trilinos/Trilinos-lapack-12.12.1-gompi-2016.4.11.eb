@@ -1,0 +1,106 @@
+easyblock = 'CMakeMake'
+
+name = 'Trilinos'
+version = '12.12.1'
+versionsuffix = '-lapack'
+modaltsoftname = 'trilinos-lapack'
+
+homepage = 'http://trilinos.sandia.gov/'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'version': '2018.3.312', 'name': 'gompi'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+version_major = version.split('.')[0]
+version_minor_1 = version.split('.')[1]
+version_minor_2 = version.split('.')[2]
+namelower = '%(namelower)s'
+hidden = True
+sources = [{'filename':'%(name)s.tar.gz',
+           'git_config': {
+           'tag': '%s-release-%s-%s-%s' % (namelower, version_major, version_minor_1, version_minor_2),
+           'repo_name': '%(name)s',
+           'url': 'https://github.com/trilinos',
+           'recursive': True,
+            }
+}
+]
+
+builddependencies = [
+    ('LAPACK', '3.8.0'),
+    ('CMake', '3.12.3'),
+    ('Boost', '1.68.0', '-mpi'),
+    ('netCDF', '4.6.1', '-mpi'),
+    ('HDF5', '1.10.3', '-mpi'),
+    ('OpenBLAS', '0.2.20'),
+    ('MATIO', '1.5.2'),
+     
+]
+hiddendependencies = [
+    ('LAPACK', '3.8.0'),
+]
+configopts =  '-DCMAKE_INSTALL_PREFIX:PATH=%(installdir)s '
+configopts += '-DCMAKE_BUILD_TYPE:STRING=RELEASE '
+configopts += '-DTrilinos_WARNINGS_AS_ERRORS_FLAGS:STRING="" '
+configopts += '-DTrilinos_ENABLE_ALL_PACKAGES:BOOL=OFF '
+configopts += '-DTrilinos_ENABLE_Teuchos:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Shards:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Sacado:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Epetra:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_EpetraExt:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Ifpack:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_AztecOO:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Amesos:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Anasazi:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Belos:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_ML:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Phalanx:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Intrepid:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_NOX:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Stratimikos:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Thyra:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Rythmos:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_MOOCHO:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_TriKota:BOOL=OFF '
+configopts += '-DTrilinos_ENABLE_Stokhos:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Zoltan:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Piro:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Teko:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_SEACASIoss:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_SEACAS:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_SEACASBlot:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_Pamgen:BOOL=ON '
+configopts += '-DTrilinos_ENABLE_EXAMPLES:BOOL=OFF '
+configopts += '-DTrilinos_ENABLE_TESTS:BOOL=ON '
+configopts += '-DTPL_ENABLE_HDF5:BOOL=ON '
+configopts += '-DHDF5_INCLUDE_DIRS="$EBROOTHDF5/include" '
+configopts += '-DHDF5_LIBRARY_DIRS="$EBROOTHDF5/lib" '
+configopts += '-DTPL_ENABLE_Netcdf:BOOL=ON '
+configopts += '-DNetcdf_INCLUDE_DIRS:PATH="$EBROOTNETCDF/include" '
+configopts += '-DNetcdf_LIBRARY_DIRS:PATH="$EBROOTNETCDF/lib64" '
+configopts += '-DTPL_ENABLE_MPI:BOOL=ON '
+configopts += '-DTPL_ENABLE_Boost:BOOL=ON '
+configopts += '-DTPL_Boost_INCLUDE_DIRS="$EBROOTBOOST" '
+configopts += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF '
+configopts += '-DTrilinos_VERBOSE_CONFIGURE:BOOL=OFF '
+configopts += '-DTPL_ENABLE_BLAS:BOOL=ON '
+configopts += '-DTPL_BLAS_LIBRARIES="-L$EBROOTOPENBLAS/lib -lopenblas" '
+configopts += '-DTPL_ENABLE_LAPACK:BOOL=ON '
+configopts += '-DTPL_LAPACK_LIBRARIES="-L$EBROOTLAPACK/lib64 -llapack" '
+configopts += '-DBoost_DIRS="$EBROOTBOOST" '
+configopts += 'DMatio_LIBRARY_DIRS="$EBROOTMATIO/lib" '
+configopts += '-DTPL_Matio_INCLUDE_DIRS="$EBROOTMATIO/include" '
+configopts += '-DBUILD_SHARED_LIBS=ON '
+
+maxparallel = 10
+parallel = 8
+#configure_cmd_prefix = " CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 "
+#patches = ['fix-parmetis.patch']
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['lib/libtriutils.so.12'],
+    'dirs': ['include', 'lib'],
+}
+moduleclass = 'numlib'

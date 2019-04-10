@@ -1,0 +1,156 @@
+--- ./CFDEMcoupling-PUBLIC-3.8.0/applications/solvers/cfdemSolverIB/Make/options.orig	2019-02-25 18:50:50.435882922 +0000
++++ ./CFDEMcoupling-PUBLIC-3.8.0/applications/solvers/cfdemSolverIB/Make/options	2019-02-25 19:06:51.545057445 +0000
+@@ -20,6 +20,7 @@
+     -I$(CFDEM_LIGGGHTS_SRC_DIR)
+ 
+ EXE_LIBS = \
++    -Wl,-rpath,'$$ORIGIN/../lib' \
+     -L$(CFDEM_LIB_DIR)\
+     $(CFDEM_ADD_INCOMPTURBMOD_LIBS) \
+     -lincompressibleTransportModels \
+--- ./CFDEMcoupling-PUBLIC-3.8.0/applications/solvers/cfdemSolverPiso/Make/options.orig	2019-02-25 18:51:36.747939814 +0000
++++ ./CFDEMcoupling-PUBLIC-3.8.0/applications/solvers/cfdemSolverPiso/Make/options	2019-02-25 19:07:03.122071471 +0000
+@@ -17,6 +17,7 @@
+     -I$(CFDEM_LIGGGHTS_SRC_DIR)
+ 
+ EXE_LIBS = \
++    -Wl,-rpath,'$$ORIGIN/../lib' \
+     -L$(CFDEM_LIB_DIR)\
+     $(CFDEM_ADD_INCOMPTURBMOD_LIBS) \
+     -lincompressibleTransportModels \
+--- ./CFDEMcoupling-PUBLIC-3.8.0/applications/solvers/cfdemSolverPisoSTM/Make/options.orig	2019-02-25 18:53:02.956045716 +0000
++++ ./CFDEMcoupling-PUBLIC-3.8.0/applications/solvers/cfdemSolverPisoSTM/Make/options	2019-02-25 19:07:15.377086318 +0000
+@@ -17,6 +17,7 @@
+     -I$(CFDEM_LIGGGHTS_SRC_DIR)
+ 
+ EXE_LIBS = \
++    -Wl,-rpath,'$$ORIGIN/../lib' \
+     -L$(CFDEM_LIB_DIR)\
+     $(CFDEM_ADD_INCOMPTURBMOD_LIBS) \
+     -lincompressibleTransportModels \
+--- ./CFDEMcoupling-PUBLIC-3.8.0/applications/solvers/cfdemSolverPisoScalar/Make/options.orig	2019-02-25 18:52:19.972992914 +0000
++++ ./CFDEMcoupling-PUBLIC-3.8.0/applications/solvers/cfdemSolverPisoScalar/Make/options	2019-02-25 19:07:25.610098716 +0000
+@@ -17,6 +17,7 @@
+     -I$(CFDEM_LIGGGHTS_SRC_DIR)
+ 
+ EXE_LIBS = \
++    -Wl,-rpath,'$$ORIGIN/../lib' \
+     -L$(CFDEM_LIB_DIR)\
+     $(CFDEM_ADD_INCOMPTURBMOD_LIBS) \
+     -lincompressibleTransportModels \
+--- ./CFDEMcoupling-PUBLIC-3.8.0/applications/utilities/cfdemPostproc/Make/options.orig	2019-02-22 22:50:26.538691735 +0000
++++ ./CFDEMcoupling-PUBLIC-3.8.0/applications/utilities/cfdemPostproc/Make/options	2019-02-25 19:06:25.561025964 +0000
+@@ -17,6 +17,7 @@
+ 
+ EXE_LIBS = \
+     -L$(CFDEM_LIB_DIR)\
++    -Wl,-rpath,'$$ORIGIN/../lib' \
+     $(CFDEM_ADD_INCOMPTURBMOD_LIBS) \
+     -lincompressibleTransportModels \
+     -lfiniteVolume \
+--- ./CFDEMcoupling-PUBLIC-3.8.0/src/lagrangian/cfdemParticle/Make/options.orig	2019-02-25 05:46:30.551054399 +0000
++++ ./CFDEMcoupling-PUBLIC-3.8.0/src/lagrangian/cfdemParticle/Make/options	2019-02-25 18:34:59.313698493 +0000
+@@ -25,6 +25,7 @@
+     -I$(CFDEM_SRC_DIR)/cfdTools \
+ 
+ LIB_LIBS = \
++     -Wl,-rpath,'$$ORIGIN' \
+      $(PLIBS) \
+     -L$(CFDEM_LIB_DIR) \
+     -lfiniteVolume \
+--- ./CFDEMcoupling-PUBLIC-3.8.0/src/lagrangian/cfdemParticle/etc/functions.sh.orig	2019-02-21 21:54:26.178268750 +0000
++++ ./CFDEMcoupling-PUBLIC-3.8.0/src/lagrangian/cfdemParticle/etc/functions.sh	2019-02-25 23:54:29.243227609 +0000
+@@ -633,11 +633,12 @@
+     echo 2>&1 | tee -a $logpath/$logfileName
+ 
+     #- run applictaion
+-    if [[ $machineFileName == "none" ]]; then
+-        mpirun -np $nrProcs $debugMode $CFDEM_LIGGGHTS_EXEC -in $solverName 2>&1 | tee -a $logpath/$logfileName
+-    else
+-        mpirun -machinefile $machineFileName -np $nrProcs $debugMode $CFDEM_LIGGGHTS_EXEC -in $solverName 2>&1 | tee -a $logpath/$logfileName
+-    fi
++#    if [[ $machineFileName == "none" ]]; then
++#        mpirun -np $nrProcs $debugMode $CFDEM_LIGGGHTS_EXEC -in $solverName 2>&1 | tee -a $logpath/$logfileName
++#    else
++#        mpirun -machinefile $machineFileName -np $nrProcs $debugMode $CFDEM_LIGGGHTS_EXEC -in $solverName 2>&1 | tee -a $logpath/$logfileName
++#    fi
++    srun $CFDEM_LIGGGHTS_EXEC -in $solverName 2>&1 | tee -a $logpath/$logfileName
+ 
+     #- keep terminal open (if started in new terminal)
+     #read
+@@ -743,11 +744,12 @@
+     echo 2>&1 | tee -a $logpath/$logfileName
+ 
+     #- run applictaion
+-    if [[ $machineFileName == "none" ]]; then
+-        mpirun -np $nrProcs $debugMode $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
+-    else
+-        mpirun -machinefile $machineFileName -np $nrProcs $debugMode $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
+-    fi
++#    if [[ $machineFileName == "none" ]]; then
++#        mpirun -np $nrProcs $debugMode $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
++#    else
++#        mpirun -machinefile $machineFileName -np $nrProcs $debugMode $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
++#    fi
++    srun $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
+ 
+     #- keep terminal open (if started in new terminal)
+     #read
+@@ -851,16 +853,16 @@
+ 
+     #- run applictaion
+     if [[ $machineFileName == "none" ]]; then
+-        mpirun -np $nrProcs $debugMode $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
+-
++#        mpirun -np $nrProcs $debugMode $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
++        srun $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
+         #- reconstruct case
+         if [[ $reconstuctCase == "true" ]]; then   
+             #pseudoParallelRun "reconstructPar" $nrProcs
+             reconstructPar -noLagrangian
+         fi
+     else
+-        mpirun -machinefile $machineFileName -np $nrProcs $debugMode $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
+-
++#        mpirun -machinefile $machineFileName -np $nrProcs $debugMode $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
++        srun $solverName -parallel 2>&1 | tee -a $logpath/$logfileName
+         #- reconstruct case
+         if [[ $reconstuctCase == "true" ]]; then   
+             #pseudoParallelRun "reconstructPar" $nrProcs
+--- ./CFDEMcoupling-PUBLIC-3.8.0/src/lagrangian/cfdemParticle/etc/bashrc.orig	2019-02-19 19:27:13.340087026 +0000
++++ ./CFDEMcoupling-PUBLIC-3.8.0/src/lagrangian/cfdemParticle/etc/bashrc	2019-02-26 23:14:45.244418085 +0000
+@@ -267,7 +267,7 @@
+ export -f cfdemLiggghts
+ 
+ #- shortcut to run liggghts in parallel
+-cfdemLiggghtsPar() { mpirun -np $2 $CFDEM_LIGGGHTS_EXEC -in $1; }
++cfdemLiggghtsPar() { srun  $CFDEM_LIGGGHTS_EXEC -in $1; }
+ export -f cfdemLiggghtsPar
+ 
+ #- shortcut to open files including a pattern
+@@ -296,8 +296,8 @@
+     :
+ else
+         echo "make new dirs $CFDEM_PROJECT_USER_DIR ? (y/n)"
+-        read YN
+-        if [ $YN == "y" ]; then
++#        read YN
++#        if [ $YN == "y" ]; then
+             mkdir -p $CFDEM_PROJECT_USER_DIR
+             cd $CFDEM_PROJECT_USER_DIR
+             mkdir run
+@@ -307,10 +307,10 @@
+             mkdir -p $CFDEM_USER_LIB_DIR
+             mkdir -p $CFDEM_APP_DIR
+             mkdir -p $CFDEM_USER_APP_DIR
+-        else
+-            echo "aborted by user."
+-            #exit
+-        fi
++#        else
++#            echo "aborted by user."
++#            #exit
++#        fi
+ fi
+ 
+ # detect OF version

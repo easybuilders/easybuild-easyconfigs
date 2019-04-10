@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'FFTW'
+version = '2.1.5'
+
+homepage = 'http://www.fftw.org'
+description = """FFTW is a C subroutine library for computing the discrete Fourier transform (DFT)
+  in one or more dimensions, of arbitrary input size, and of both real and complex data."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+source_urls = [homepage]
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['FFTW-%(version)s_fix-configure-Fortran-linking.patch']
+checksums = [
+    'f8057fae1c7df8b99116783ef3e94a6a44518d49c72e2e630c24b689c6022630',  # fftw-2.1.5.tar.gz
+    # FFTW-2.1.5_fix-configure-Fortran-linking.patch
+    '414e88a6a705a155756123e8b4609289022c7dca5def22886c8716cdc2d95885',
+]
+
+common_configopts = "--enable-shared --enable-type-prefix --enable-threads --with-pic"
+
+configopts = [
+    common_configopts + " --enable-float --enable-mpi",
+    common_configopts + " --enable-mpi",  # default as last
+]
+
+sanity_check_paths = {
+    'files': ['include/%sfftw%s.h' % (x, y) for x in ['d', 'dr', 's', 'sr'] for y in ['', '_mpi', '_threads']] +
+             ['lib/lib%sfftw%s.a' % (x, y) for x in ['d', 'dr', 's', 'sr'] for y in ['', '_mpi', '_threads']] +
+             ['lib/lib%sfftw%s.%s' % (x, y, SHLIB_EXT) for x in ['d', 'dr', 's', 'sr']
+              for y in ['', '_mpi', '_threads']],
+    'dirs': [],
+}
+# make sure *_f77 symbols are there (patch is required to avoid --disable-fortran being used automatically)
+sanity_check_commands = ["nm %(installdir)s/lib/libdfftw.a | grep _f77"]
+
+moduleclass = 'numlib'

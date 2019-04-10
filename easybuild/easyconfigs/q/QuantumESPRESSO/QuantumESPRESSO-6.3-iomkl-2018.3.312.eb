@@ -1,0 +1,50 @@
+name = 'QuantumESPRESSO'
+version = '6.3'
+
+homepage = 'http://www.pwscf.org/'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes
+ for electronic-structure calculations and materials modeling at the nanoscale.
+ It is based on density-functional theory, plane waves, and pseudopotentials
+  (both norm-conserving and ultrasoft)."""
+
+toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+sources = [
+    'qe-%(version)s.tar.gz',
+    {'filename': 'qe-gipaw-%(version)s.tar.gz', 'download_filename': '%(version)s.tar.gz'},
+    'wannier90-2.1.0.tar.gz',
+]
+
+# The old qe-forge archive doesn't exist any longer.
+# This easyconfig is for those who have the old qe-forge tar file downloaded.
+# The qe tar file from github for 6.2 has a different top level directory name
+# than the old qe-forge tarfile did and the easyblock expects the old name.
+# Old download was
+# wget http://qe-forge.org/gf/download/frsrelease/244/1114/qe-6.2.tar.gz
+
+source_urls = [
+    'https://github.com/QEF/q-e/releases/download/qe-6.3/',  # qe-6.3.tar.gz
+    'https://github.com/dceresoli/qe-gipaw/archive/',
+    'http://www.wannier.org/code/',  # wannier90
+]
+patches = [
+    'QuantumESPRESSO-6.3_fox_libs.patch'
+]
+checksums = [
+    '5d15f7cbb30ccb2e2e6722bc1cdf10a3aae909ae786654b0990068ed1846ad65',  # qe-6.3.tar.gz
+    '090edfcc186047a12c596ec13fdb29c187ab33d91a44c08371f23e779bb15f1e',  # qe-gipaw-6.3.tar.gz
+    'ee90108d4bc4aa6a1cf16d72abebcb3087cf6c1007d22dda269eb7e7076bddca',  # wannier90-2.1.0.tar.gz
+    'a2265680de039042d70c32ca3d17fbab8b8fe2b8ac0af5f685bb89b372e3c077',  # QuantumESPRESSO-6.3_fox_libs.patch
+]
+
+dependencies = [
+    ('libxc', '4.2.3')
+]
+
+buildopts = 'all w90 gipaw xspectra pwall ph epw'
+
+# parallel build tends to fail
+parallel = 1
+
+moduleclass = 'chem'

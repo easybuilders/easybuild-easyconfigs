@@ -1,0 +1,39 @@
+easyblock = "ConfigureMake"
+name = 'pexsi'
+version = '1.2.0'
+
+homepage = 'https://pexsi.readthedocs.io/'
+description = """The Pole EXpansion and Selected Inversion (PEXSI) method is a fast method for electronic structure calculation based on Kohn-Sham density functional theory. It efficiently evaluates certain selected elements of matrix functions, e.g., the Fermi-Dirac function of the KS Hamiltonian, which yields a density matrix."""
+
+
+toolchain = {'name': 'iomkl', 'version' : '2018.3.312'}
+source_urls = ['https://bitbucket.org/berkeleylab/pexsi/downloads']
+sources = ['%(name)s_v%(version)s.tar.gz']
+patches = ['pexsi.patch']
+skipsteps = ['configure']
+prebuildopts = "cp config/make.inc.linux.gnu ./make.inc && "
+
+buildopts = 'DSUPERLU_DIR=$EBROOTSUPERLU_DIST METIS_DIR=$EBROOTMETIS PARMETIS_DIR=$EBROOTPARMETIS PTSCOTCH_DIR=$EBROOTSCOTCH SCOTCH_DIR=$EBROOTSCOTCH SYMPACK_DIR=$EBROOTSYMPACK EBROOTCOMBBLAS=$EBROOTCOMBBLAS PEXSI_DIR=%(builddir)s/%(name)s_v%(version)s'
+
+
+installopts = 'DSUPERLU_DIR=$EBROOTSUPERLU_DIST METIS_DIR=$EBROOTMETIS PARMETIS_DIR=$EBROOTPARMETIS PTSCOTCH_DIR=$EBROOTSCOTCH SCOTCH_DIR=$EBROOTSCOTCH SYMPACK_DIR=$EBROOTSYMPACK EBROOTCOMBBLAS=$EBROOTCOMBBLAS PEXSI_DIR=%(builddir)s/%(name)s_v%(version)s'
+
+builddependencies = [('SCOTCH', '6.0.6'),
+                    ('SuperLU_DIST', '6.1.1'),
+                     ('METIS', '5.1.0'),
+                    ('ParMETIS', '4.0.3'),
+                    ('CMake', '3.12.3'),
+                    ('CombBLAS', '1.6.2'),
+                    ('symPACK', '1.1'),
+                    ('SuperLU', '5.2.1'),
+]
+parallel = 1
+postinstallcmds = ['cp -r build/* %(installdir)s']
+sanity_check_paths = { 
+    'files': ['lib/libpexsi.a'],
+    'dirs' : ['include']
+}
+moduleclass = 'chem'
+
+
+

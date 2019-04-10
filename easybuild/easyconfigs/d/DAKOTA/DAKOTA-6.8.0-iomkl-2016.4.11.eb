@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'DAKOTA'
+version = '6.8'
+
+homepage = 'https://dakota.sandia.gov/'
+description = """The Dakota project delivers both state-of-the-art research and robust, usable software for optimization and UQ. 
+Broadly, the Dakota software's advanced parametric analyses enable design exploration, model calibration, risk analysis, and 
+quantification of margins and uncertainty with computational models. The Dakota toolkit provides a flexible, extensible 
+interface between such simulation codes and its iterative systems analysis methods, which include:
+
+- optimization with gradient and nongradient-based methods;
+- uncertainty quantification with sampling, reliability, stochastic expansion, and epistemic methods;
+- parameter estimation using nonlinear least squares (deterministic) or Bayesian inference (stochastic); and
+- sensitivity/variance analysis with design of experiments and parameter study methods.
+These capabilities may be used on their own or as components within advanced strategies such as hybrid optimization, 
+surrogate-based optimization, mixed integer nonlinear programming, or optimization under uncertainty."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+
+#https://dakota.sandia.gov/sites/default/files/distributions/public/dakota-6.8-release-public.src.tar.gz
+source_urls = ['https://dakota.sandia.gov/sites/default/files/distributions/public']
+sources = ['%(namelower)s-%(version)s-release-public.src.tar.gz']
+checksums = ['2437d94026fe6dc774f01926ada3b960']
+
+separate_build_dir = True
+preconfigopts = 'CXXFLAGS="$CXXFLAGS $LIBS"'
+configopts = '-DBLAS_LIBS="-lmkl_rt -lpthread -lm -ldl" '
+# STRING= is required otherwise cmake interprets "-lmkl_rt -lpthread -lm -ldl" as a filename for some reason. 
+configopts += '-DLAPACK_LIBS:STRING="-lmkl_rt -lpthread -lm -ldl" '
+configopts += "-DPERL_EXECUTABLE=$EBROOTPERL/bin/perl -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python -DDAKOTA_HAVE_MPI=ON -DDAKOTA_HAVE_GSL=ON -DHAVE_QUESO=ON" 
+
+builddependencies = [
+	('Python', '2.7.14'),
+	('Boost', '1.65.1', '-mpi'), 
+	('GSL', '1.16'),
+	('Perl', '5.22.4')
+]
+
+# Dakota unnecessarily copies libraries from the OS to the bin folder. Deleting them. 
+postinstallcmds = [
+	"chmod u+w -R %(installdir)s; rm -rf %(installdir)s/bin/lib*.so*"
+]
+sanity_check_paths = {
+    'files': ['bin/dakota'],
+    'dirs': [],
+}
+
+moduleclass = 'math'

@@ -1,0 +1,65 @@
+easyblock = 'CMakeMake'
+name = 'peridigm'
+version = '2019-01-08'
+
+homepage = 'https://peridigm.sandia.gov/'
+description = """Peridigm is an open-source computational peridynamics code developed at Sandia National Laboratories for massively-parallel multi-physics simulations.  It has been applied primarily to problems in solid mechanics involving pervasive material failure. """
+
+toolchain = {'name': 'gompi', 'version': '2018.3.312'}
+toolchainopts = {'usempi': True, 'opt': False}
+
+#source_urls = ['ftp://ftp.sanger.ac.uk/pub/resources/software/reapr/']
+#sources = ['%(name)s-multiphysics.zip']
+#sources = ['%(name)s_%(version)s.tgz']
+sources = ['%(name)s-master.zip']
+
+
+#sources = [{'filename':'Peridigm_%(version)s.tar.gz',
+#           'git_config': {
+#           'tag': 'master',
+#           'repo_name': 'peridigm',
+#           'url': 'https://github.com/peridigm',
+#            }
+#}
+#]
+
+
+patches = ['peridigm.patch']
+dependencies = [
+     ('gnuplot', '5.2.2'),
+]
+builddependencies = [
+    ('CMake', '3.12.3'),
+    ('Trilinos', '12.12.1', '-lapack'),
+    ('Boost', '1.68.0', '-mpi'),
+    ('OpenBLAS', '0.2.20'),
+    ('LAPACK', '3.8.0'),
+    ('netCDF', '4.6.1', '-mpi'),
+    ('HDF5', '1.10.3', '-mpi'),
+    ('MATIO', '1.5.2'),
+]
+hiddendependencies = [
+     ('Trilinos', '12.12.1', '-lapack'),
+     ('LAPACK', '3.8.0'),
+]
+
+parallel = 4
+configopts_single = '-DCMAKE_BUILD_TYPE:STRING=Release '
+configopts_single += '-DCMAKE_C_COMPILER:STRING=mpicc '
+configopts_single += '-DCMAKE_CXX_COMPILER:STRING=mpicxx '
+configopts_single += '-DCMAKE_INSTALL_PREFIX=%(installdir)s '
+configopts_single += '-DCMAKE_CXX_FLAGS:STRING="-O2 -ftrapv -std=c++11 -Wall -pedantic -Wno-long-long -Wno-deprecated" '
+configopts_single += '-DTrilinos_DIR="$EBROOTTRILINOS" '
+configopts_single += '-DBoost_DIR="$EBROOTBOOST" '
+
+buildopts = ' && make test ' 
+configopts = [ configopts_single ]
+separate_build_dir = True
+
+
+sanity_check_paths = {
+    'files': ['bin/Peridigm'],
+    'dirs' : []
+}
+moduleclass = 'phys'
+

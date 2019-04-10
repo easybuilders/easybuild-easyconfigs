@@ -1,0 +1,342 @@
+diff -Naur lammps-stable_11Aug2017_orig/lib/atc/Makefile.lammps.installed lammps-stable_11Aug2017/lib/atc/Makefile.lammps.installed
+--- lammps-stable_11Aug2017_orig/lib/atc/Makefile.lammps.installed	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/atc/Makefile.lammps.installed	2018-03-13 13:51:53.226801169 +0000
+@@ -1,5 +1,5 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ 
+-user-atc_SYSINC =
+-user-atc_SYSLIB = -lblas -llapack
+-user-atc_SYSPATH =
++user-atc_SYSINC = -I$(MKLROOT)/include
++user-atc_SYSLIB = -L$(MKLROOT)/lib/intel64 -lmkl_rt -ldl -lpthread -lm
++user-atc_SYSPATH = -L$(MKLROOT)/lib/intel64
+diff -Naur lammps-stable_11Aug2017_orig/lib/atc/Makefile.serial lammps-stable_11Aug2017/lib/atc/Makefile.serial
+--- lammps-stable_11Aug2017_orig/lib/atc/Makefile.serial	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/atc/Makefile.serial	2018-03-13 13:53:06.584090755 +0000
+@@ -2,7 +2,7 @@
+ SHELL = /bin/sh
+ 
+ # which file will be copied to Makefile.lammps
+-EXTRAMAKE = Makefile.lammps.linalg
++EXTRAMAKE = Makefile.lammps.installed
+ 
+ # ------ FILES ------
+ 
+diff -Naur lammps-stable_11Aug2017_orig/lib/awpmd/Makefile.lammps.installed lammps-stable_11Aug2017/lib/awpmd/Makefile.lammps.installed
+--- lammps-stable_11Aug2017_orig/lib/awpmd/Makefile.lammps.installed	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/awpmd/Makefile.lammps.installed	2018-03-13 13:55:10.047895095 +0000
+@@ -1,5 +1,5 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ 
+-user-awpmd_SYSINC =
+-user-awpmd_SYSLIB = -lblas -llapack
+-user-awpmd_SYSPATH =
++user-awpmd_SYSINC = -I$(MKLROOT)/include
++user-awpmd_SYSLIB = -L$(MKLROOT)/lib/intel64 -lmkl_rt -ldl -lpthread -lm
++user-awpmd_SYSPATH = -L$(MKLROOT)/lib/intel64
+diff -Naur lammps-stable_11Aug2017_orig/lib/colvars/Makefile.icc lammps-stable_11Aug2017/lib/colvars/Makefile.icc
+--- lammps-stable_11Aug2017_orig/lib/colvars/Makefile.icc	1970-01-01 00:00:00.000000000 +0000
++++ lammps-stable_11Aug2017/lib/colvars/Makefile.icc	2017-10-19 19:46:05.000000000 +0000
+@@ -0,0 +1,25 @@
++# -*- makefile -*- to build Colvars module with GNU compiler
++
++EXTRAMAKE = Makefile.lammps.empty
++
++COLVARS_LIB = libcolvars.a
++COLVARS_OBJ_DIR =
++
++CXX =		icc
++CXXFLAGS =	-O2 -g -Wall -fPIC -funroll-loops
++AR =		ar
++ARFLAGS =	-rscv
++SHELL =		/bin/sh
++
++.PHONY: default clean
++
++default: $(COLVARS_LIB) Makefile.lammps
++
++include Makefile.common
++
++clean:
++	-rm -f $(COLVARS_OBJS) $(COLVARS_LIB)
++
++Makefile.lammps:
++	-cp $(EXTRAMAKE) Makefile.lammps
++
+diff -Naur lammps-stable_11Aug2017_orig/lib/kim/Makefile.lammps lammps-stable_11Aug2017/lib/kim/Makefile.lammps
+--- lammps-stable_11Aug2017_orig/lib/kim/Makefile.lammps	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/kim/Makefile.lammps	2018-03-13 13:58:34.746912729 +0000
+@@ -15,6 +15,7 @@
+ 
+ # Settings that the LAMMPS build will import when this package is installed
+ 
++KIM_INSTALL_DIR=$(EBROOTKIM)
+ 
+-include ../../lib/kim/Makefile.KIM_DIR
++#include ../../lib/kim/Makefile.KIM_DIR
+ 
+diff -Naur lammps-stable_11Aug2017_orig/lib/meam/Makefile.lammps.ifort lammps-stable_11Aug2017/lib/meam/Makefile.lammps.ifort
+--- lammps-stable_11Aug2017_orig/lib/meam/Makefile.lammps.ifort	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/meam/Makefile.lammps.ifort	2018-03-13 14:06:14.898456484 +0000
+@@ -1,5 +1,5 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ 
+ meam_SYSINC =
+-meam_SYSLIB = -lifcore -lsvml -lompstub -limf
+-meam_SYSPATH = -L/opt/intel/fce/10.0.023/lib
++meam_SYSLIB = -lifcore -lsvml -liompstubs5 -limf
++meam_SYSPATH = -L$(EBROOTICC)/compilers_and_libraries_2016/linux/lib/intel64
+diff -Naur lammps-stable_11Aug2017_orig/lib/python/Makefile.lammps.python2.7 lammps-stable_11Aug2017/lib/python/Makefile.lammps.python2.7
+--- lammps-stable_11Aug2017_orig/lib/python/Makefile.lammps.python2.7	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/python/Makefile.lammps.python2.7	2018-03-13 14:49:01.856616361 +0000
+@@ -1,7 +1,7 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ # See the README file for more explanation
+ 
+-python_SYSINC = -I/usr/local/include/python2.7
++python_SYSINC = -I$(EBROOTPYTHON)/include/python2.7
+ python_SYSLIB = -lpython2.7 -lnsl -ldl -lreadline -ltermcap -lpthread -lutil -lm -Xlinker -export-dynamic
+ python_SYSPATH = 
+ PYTHON=python2.7
+diff -Naur lammps-stable_11Aug2017_orig/lib/qmmm/Makefile.ifort lammps-stable_11Aug2017/lib/qmmm/Makefile.ifort
+--- lammps-stable_11Aug2017_orig/lib/qmmm/Makefile.ifort	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/qmmm/Makefile.ifort	2018-03-13 14:52:06.013840683 +0000
+@@ -4,16 +4,17 @@
+ EXTRAMAKE = Makefile.lammps.empty
+ 
+ # top level directory of Quantum ESPRESSO 5.4.1 or later
+-QETOPDIR=$(HOME)/compile/espresso
++
++QETOPDIR=$(EBROOTQUANTUMESPRESSO)/qe-6.1/
+ 
+ # import compiler settings from Quantum ESPRESSO
+-sinclude $(QETOPDIR)/make.sys
++sinclude $(QETOPDIR)/$(EBROOTQUANTUMESPRESSO)/qe-6.1/WANT/make.sys
+ 
+ # FLAGS for c++ with IntelMPI when QE was compiled with Intel Fortran
+ MPICXX=icpc
+ MPICXXFLAGS=-DOMPI_SKIP_MPICXX=1 -O2 -Wall -g -fPIC\
+-        -I../../src -I$(QETOPDIR)/COUPLE/include -I${INTELMPI_HOME}/include64
+-MPILIBS=-openmp  -L${INTELMPI_HOME}/lib64  -lz  -lifcore -L$(I_MPI_ROOT)/lib64 -lmpi -lmpiif
++        -I../../src -I$(QETOPDIR)/COUPLE/include -I$(INTELMPI_HOME)/include64
++MPILIBS=-openmp  -L$(INTELMPI_HOME)/lib64  -lz  -lifcore -L$(I_MPI_ROOT)/lib64 -lmpi -lmpiif
+ 
+ # location of required libraries
+ # part 1: hi-level libraries for building pw.x
+@@ -37,7 +38,6 @@
+ SRC=pwqmmm.c libqmmm.c
+ OBJ=$(SRC:%.c=%.o)
+ 
+-
+ default: libqmmm.a
+ 
+ all : tldeps libqmmm.a pwqmmm.x
+diff -Naur lammps-stable_11Aug2017_orig/lib/smd/Makefile.lammps lammps-stable_11Aug2017/lib/smd/Makefile.lammps
+--- lammps-stable_11Aug2017_orig/lib/smd/Makefile.lammps	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/smd/Makefile.lammps	2018-03-13 14:54:02.395718508 +0000
+@@ -1,5 +1,5 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ 
+-user-smd_SYSINC = -I../../lib/includelink/eigen3
++user-smd_SYSINC = -I$(EBROOTEIGEN)/include/Eigen
+ user-smd_SYSLIB = 
+ user-smd_SYSPATH = 
+diff -Naur lammps-stable_11Aug2017_orig/lib/voronoi/Makefile.lammps lammps-stable_11Aug2017/lib/voronoi/Makefile.lammps
+--- lammps-stable_11Aug2017_orig/lib/voronoi/Makefile.lammps	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/voronoi/Makefile.lammps	2018-03-13 14:56:43.201167992 +0000
+@@ -1,5 +1,5 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ 
+-voronoi_SYSINC = 
+-voronoi_SYSLIB = 
+-voronoi_SYSPATH = 
++voronoi_SYSINC = -I$($EBROOTVOROPLUSPLUS)/include 
++voronoi_SYSLIB = -L$(EBROOTVOROPLUSPLUS)/lib -lvoro++ 
++voronoi_SYSPATH =
+diff -Naur lammps-stable_11Aug2017_orig/lib/vtk/Makefile.lammps lammps-stable_11Aug2017/lib/vtk/Makefile.lammps
+--- lammps-stable_11Aug2017_orig/lib/vtk/Makefile.lammps	2017-09-26 15:03:52.000000000 +0000
++++ lammps-stable_11Aug2017/lib/vtk/Makefile.lammps	2018-03-13 15:00:43.085854980 +0000
+@@ -1,12 +1,13 @@
+ # Settings that the LAMMPS build will import when this package library is used
+ 
+-# settings for VTK-5.8.0 on RHEL/CentOS 6.x
+- vtk_SYSINC = -I/usr/include/vtk
+- vtk_SYSLIB = -lvtkCommon -lvtkIO 
+- vtk_SYSPATH = -L/usr/lib64/vtk
++# VTK: 8.0.0
++ 
++#vtk_SYSINC = -I$(EBROOTVTK)/include/vtk-8.0
++#vtk_SYSLIB = -lvtkCommonCore-8.0 -lvtkIOCore-8.0 -lvtkIOXML-8.0 -lvtkIOLegacy-8.0 -lvtkCommonDataModel-8.0
++#vtk_SYSPATH = -L$(EBROOTVTK)/lib
+ 
+-# settings for VTK 6.2.0 on Fedora 23
+-#vtk_SYSINC = -I/usr/include/vtk
+-#vtk_SYSLIB = -lvtkCommonCore -lvtkIOCore -lvtkCommonDataModel -lvtkIOXML -lvtkIOLegacy -lvtkIOParallelXML
+-#vtk_SYSPATH = -L/usr/lib64/vtk
++# VTK: 6.3.0
+
++vtk_SYSINC = -I$(EBROOTVTK)/include/vtk-6.3
++vtk_SYSLIB = -lvtkCommonCore-6.3 -lvtkIOCore-6.3 -lvtkIOXML-6.3 -lvtkIOParallelXML-6.3 -lvtkIOLegacy-6.3 -lvtkCommonDataModel-6.3
++vtk_SYSPATH = -L$(EBROOTVTK)/lib
+diff -Naur lammps-stable_11Aug2017_orig/src/MAKE/Makefile.mpi lammps-stable_11Aug2017/src/MAKE/Makefile.mpi
+--- lammps-stable_11Aug2017_orig/src/MAKE/Makefile.mpi	2017-09-26 15:03:53.000000000 +0000
++++ lammps-stable_11Aug2017/src/MAKE/Makefile.mpi	2018-03-13 15:06:02.712773079 +0000
+@@ -7,12 +7,12 @@
+ # specify flags and libraries needed for your compiler
+ 
+ CC =		mpicxx
+-CCFLAGS =	-g -O3 
++CCFLAGS =       -g -O2 -fopenmp -restrict 
+ SHFLAGS =	-fPIC
+ DEPFLAGS =	-M
+ 
+ LINK =		mpicxx
+-LINKFLAGS =	-g -O
++LINKFLAGS =	-g -O -fopenmp
+ LIB = 
+ SIZE =		size
+ 
+@@ -28,7 +28,7 @@
+ # LAMMPS ifdef settings
+ # see possible settings in Section 2.2 (step 4) of manual
+ 
+-LMP_INC =	-DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64
++LMP_INC = -DFFTW -DLAMMPS_EXCEPTIONS -DPACK_POINTER -DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64 -DLAMMPS_SMALLBIG	
+ 
+ # MPI library
+ # see discussion in Section 2.2 (step 5) of manual
+@@ -50,9 +50,9 @@
+ # PATH = path for FFT library
+ # LIB = name of FFT library
+ 
+-FFT_INC =    	
+-FFT_PATH = 
+-FFT_LIB =	
++FFT_INC =       -DFFT_MKL
++FFT_PATH =
++FFT_LIB =       $(LIBFFT_MT)
+ 
+ # JPEG and/or PNG library
+ # see discussion in Section 2.2 (step 7) of manual
+@@ -61,9 +61,9 @@
+ # PATH = path(s) for JPEG library and/or PNG library
+ # LIB = name(s) of JPEG library and/or PNG library
+ 
+-JPG_INC =       
+-JPG_PATH = 	
+-JPG_LIB =	
++JPG_INC = -DLAMMPS_JPEG -DLAMMPS_PNG -DLAMMPS_FFMPEG
++JPG_PATH = -L/usr/lib64 -L$(NIXUSER_PROFILE)/lib
++JPG_LIB = -ljpeg -lpng
+ 
+ # ---------------------------------------------------------------------
+ # build rules and dependencies
+diff -Naur lammps-stable_11Aug2017_orig/src/MAKE/OPTIONS/Makefile.icc_openmpi lammps-stable_11Aug2017/src/MAKE/OPTIONS/Makefile.icc_openmpi
+--- lammps-stable_11Aug2017_orig/src/MAKE/OPTIONS/Makefile.icc_openmpi	2017-09-26 15:03:53.000000000 +0000
++++ lammps-stable_11Aug2017/src/MAKE/OPTIONS/Makefile.icc_openmpi	2018-03-13 15:08:45.451203925 +0000
+@@ -8,13 +8,13 @@
+ 
+ export OMPI_CXX = icc
+ CC =		mpicxx
+-CCFLAGS =	-g -O3 -restrict
++CCFLAGS =	-g -O2 -fopenmp -restrict 
+ SHFLAGS =	-fPIC
+ DEPFLAGS =	-M
+ 
+ LINK =		mpicxx
+-LINKFLAGS =	-g -O
+-LIB = 
++LINKFLAGS =	-g -O -fopenmp 
++LIB =            
+ SIZE =		size
+ 
+ ARCHIVE =	ar
+@@ -29,7 +29,7 @@
+ # LAMMPS ifdef settings
+ # see possible settings in Section 2.2 (step 4) of manual
+ 
+-LMP_INC =	-DLAMMPS_GZIP
++LMP_INC = -DFFTW -DLAMMPS_EXCEPTIONS -DPACK_POINTER -DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64 -DLAMMPS_SMALLBIG
+ 
+ # MPI library
+ # see discussion in Section 2.2 (step 5) of manual
+@@ -51,9 +51,9 @@
+ # PATH = path for FFT library
+ # LIB = name of FFT library
+ 
+-FFT_INC =    	
+-FFT_PATH = 
+-FFT_LIB =	
++FFT_INC =       -DFFT_MKL
++FFT_PATH =
++FFT_LIB =       $(LIBFFT_MT)
+ 
+ # JPEG and/or PNG library
+ # see discussion in Section 2.2 (step 7) of manual
+@@ -62,9 +62,9 @@
+ # PATH = path(s) for JPEG library and/or PNG library
+ # LIB = name(s) of JPEG library and/or PNG library
+ 
+-JPG_INC =       
+-JPG_PATH = 	
+-JPG_LIB =	
++JPG_INC = -DLAMMPS_JPEG -DLAMMPS_PNG -DLAMMPS_FFMPEG
++JPG_PATH = -L/usr/lib64 -L$(NIXUSER_PROFILE)/lib
++JPG_LIB = -ljpeg -lpng
+ 
+ # ---------------------------------------------------------------------
+ # build rules and dependencies
+diff -Naur lammps-stable_11Aug2017_orig/src/MAKE/OPTIONS/Makefile.intel_cpu_openmpi lammps-stable_11Aug2017/src/MAKE/OPTIONS/Makefile.intel_cpu_openmpi
+--- lammps-stable_11Aug2017_orig/src/MAKE/OPTIONS/Makefile.intel_cpu_openmpi	2017-09-26 15:03:53.000000000 +0000
++++ lammps-stable_11Aug2017/src/MAKE/OPTIONS/Makefile.intel_cpu_openmpi	2018-03-13 15:11:26.399649756 +0000
+@@ -9,5 +9,5 @@
+ LINK =		mpicxx
+-LINKFLAGS =	-qopenmp $(OPTFLAGS)
++LINKFLAGS =	-qopenmp -restrict $(OPTFLAGS)
+ LIB =           -ltbbmalloc
+ SIZE =		size
+ 
+@@ -31,7 +30,7 @@
+ # LAMMPS ifdef settings
+ # see possible settings in Section 2.2 (step 4) of manual
+ 
+-LMP_INC =	-DLAMMPS_GZIP
++LMP_INC = -DFFTW -DLAMMPS_EXCEPTIONS -DPACK_POINTER -DLAMMPS_PNG -DLAMMPS_JPEG -DLAMMPS_FFMPEG -DLAMMPS_GZIP -DLAMMPS_MEMALIGN=64 -DLAMMPS_SMALLBIG
+ 
+ # MPI library
+ # see discussion in Section 2.2 (step 5) of manual
+@@ -42,7 +41,7 @@
+ # PATH = path for MPI library
+ # LIB = name of MPI library
+ 
+-MPI_INC =       -DMPICH_SKIP_MPICXX -DOMPI_SKIP_MPICXX=1 -I/usr/local/include
++MPI_INC =       -DMPICH_SKIP_MPICXX -DOMPI_SKIP_MPICXX=1 
+ MPI_PATH =      
+ MPI_LIB =	
+ 
+@@ -53,9 +52,9 @@
+ # PATH = path for FFT library
+ # LIB = name of FFT library
+ 
+-FFT_INC =       
+-FFT_PATH = 
+-FFT_LIB =       
++FFT_INC =       -DFFT_MKL
++FFT_PATH =
++FFT_LIB =       $(LIBFFT_MT)
+ 
+ # JPEG and/or PNG library
+ # see discussion in Section 2.2 (step 7) of manual
+@@ -64,9 +63,9 @@
+ # PATH = path(s) for JPEG library and/or PNG library
+ # LIB = name(s) of JPEG library and/or PNG library
+ 
+-JPG_INC =       
+-JPG_PATH = 	
+-JPG_LIB =	
++JPG_INC = -DLAMMPS_JPEG -DLAMMPS_PNG -DLAMMPS_FFMPEG
++JPG_PATH = -L/usr/lib64 -L$(NIXUSER_PROFILE)/lib
++JPG_LIB = -ljpeg -lpng
+ 
+ # ---------------------------------------------------------------------
+ # build rules and dependencies

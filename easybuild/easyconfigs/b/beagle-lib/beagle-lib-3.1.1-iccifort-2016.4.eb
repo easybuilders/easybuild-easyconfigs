@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'beagle-lib'
+version = '3.1.1'
+homepage=  'https://github.com/beagle-dev/beagle-lib'
+description = """
+beagle-lib is a high-performance library that can perform the core
+calculations at the heart of most Bayesian and Maximum Likelihood
+phylogenetics packages.
+"""
+
+toolchain = {'name': 'iccifort', 'version': '2016.4'}
+
+# https://github.com/beagle-dev/beagle-lib/archive/v3.0.1.tar.gz
+source_urls = ['https://github.com/beagle-dev/beagle-lib/archive/']
+sources = ['v%s.tar.gz' % version ]
+
+dependencies = [('Java', '1.8.0_121', '', True)]
+
+builddependencies = [('Autotools', '20150215')]
+
+# parallel build does not work (to test)
+parallel = 1
+
+preconfigopts = "./autogen.sh && "
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ["include/libhmsbeagle-1/libhmsbeagle/%s" % includefile
+              for includefile in ["beagle.h", "platform.h"]] +
+             ["lib/libhmsbeagle%s.so" % libfile
+              for libfile in ["-cpu", "-cpu-sse", "-jni", ""]],
+    'dirs': []
+}
+
+modextravars = {
+    'BEAGLE_LIB' : '%(installdir)s/lib',
+}
+
+moduleclass = 'numlib'

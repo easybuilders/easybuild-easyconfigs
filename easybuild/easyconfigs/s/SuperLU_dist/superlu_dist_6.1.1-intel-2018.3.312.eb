@@ -1,0 +1,43 @@
+easyblock = "CMakeMake"
+name = 'SuperLU_DIST'
+version = '6.1.1'
+
+homepage = ''
+description = """SuperLU_DIST contains a set of subroutines to solve a sparse linear system
+A*X=B. It uses Gaussian elimination with static pivoting (GESP). """
+
+dependencies = [
+('ParMETIS', '4.0.3'),
+('CombBLAS', '1.6.2'),
+]
+patches = ['superlu_dist.patch']
+
+toolchain = {'name': 'iomkl', 'version' : '2018.3.312'}
+source_urls = ['https://crd-legacy.lbl.gov/~xiaoye/SuperLU/']
+sources = ['%(namelower)s_%(version)s.tar.gz']
+
+configopts_single = '-DCMAKE_CXX_COMPILER="mpicxx" '
+configopts_single += '-DCMAKE_C_COMPILER="mpicc" '
+configopts_single += '-DTPL_BLAS_LIBRARIES="-mkl" '
+configopts_single += '-Denable_openmp:BOOL=TRUE '
+configopts_single += '-DTPL_ENABLE_COMBBLASLIB=ON '
+configopts_single += '-DTPL_COMBBLAS_INCLUDE_DIRS="$EBROOTCOMBBLAS/include" '
+configopts_single += '-DTPL_COMBBLAS_LIBRARIES="$EBROOTCOMBBLAS/lib/libCombBLAS.a" '
+configopts_single += '-DTPL_ENABLE_LAPACKLIB=ON '
+configopts_single += '-DTPL_PARMETIS_INCLUDE_DIRS="$EBROOTPARMETIS/include" '
+configopts_single += '-DTPL_PARMETIS_LIBRARIES="$EBROOTPARMETIS/lib/libparmetis.a;$EBROOTPARMETIS/lib/libmetis.a" '
+
+
+configopts = [ configopts_single ]
+
+parallel = 1
+separate_build_dir = True
+sanity_check_paths = { 
+    'files': ['lib/libsuperlu_dist.a'],
+    'dirs' : ['include']
+}
+postinstallcmds = ['ln -s %(installdir)s/lib64 %(installdir)s/lib']
+moduleclass = 'math'
+
+
+

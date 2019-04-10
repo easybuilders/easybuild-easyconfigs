@@ -1,0 +1,42 @@
+easyblock = "PackedBinary"
+
+name = "ORCA"
+version = '4.1.1'
+
+openmpiversion = '2.1.5'
+versionsuffix = '-OpenMPI-%s' % openmpiversion
+
+homepage = 'http://cec.mpg.de/forum/'
+description = """ORCA is a flexible, efficient and easy-to-use general purpose tool for quantum chemistry
+ with specific emphasis on spectroscopic properties of open-shell molecules.
+  It features a wide variety of standard quantum chemical methods ranging from semiempirical methods to DFT to single-
+ and multireference correlated ab initio methods.
+ It can also treat environmental and relativistic effects."""
+
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+hiddendependencies = [('OpenMPI','2.1.5'),]
+dependencies = [('OpenMPI','2.1.5'),]
+
+# Download from https://cec.mpg.de/orcadownload/index.php
+sources = ['%%(namelower)s_%s_linux_x86-64_openmpi%s.tar.xz' % (version.replace('.', '_'), openmpiversion.replace('.', ''))]
+checksums = ['a2a0c8529ac051e91c047611d7163fcc68b263463108dd8e58d0c2864255594f']
+
+postinstallcmds = [ '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path=$EBROOTOPENMPI/lib' ]
+
+sanity_check_paths = {
+    'files': ['orca_%s%s' % (x, y) for x in ['anoint', 'casscf', 'cis',  'cpscf',
+                                             'eprnmr', 'gtoint', 'mdci', 'mp2', 'mrci', 'pc',
+                                             'rocis', 'scf', 'scfgrad', 'soc']
+             for y in ["", "_mpi"]] +
+             ['orca_%s' % x for x in ['2mkl', 'asa', 'chelpg', 'ciprep', 'eca', 'ecplib',
+                             'euler', 'fci', 'fitpes', 'gstep', 'loc', 'mapspc',
+                                      'md', 'mergefrag', 'ndoint', 'numfreq', 'plot',
+                                      'pltvib', 'pop', 'rel', 'vib', 'vpot']] +
+             ['orca'],
+    'dirs': [],
+}
+group = 'soft_orca'
+
+moduleclass = 'chem'

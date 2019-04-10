@@ -1,0 +1,39 @@
+easyblock = 'PackedBinary'
+
+name = 'MESA-Astrophysics'
+version = 'r10108'
+
+homepage = 'http://mesa.sourceforge.net/'
+description = """MESA Modules for Experiments in Stellar Astrophysics, 
+"""
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+dependencies = [
+('HDF5', '1.10.1', '', ('GCC', '5.4.0')),
+('pgplot', '5.2', '', ('GCC', '5.4.0')),
+]
+
+sources = ['%(name)s-%(version)s.zip']
+checksums = ['b53dff8ccdeea3489b8585145a4f1c17']
+parallel = 1
+
+patches =  ['%(name)s-%(version)s.patch']
+
+install_cmd = 'cd mesa-r10108/utils; tar xzf makedepf90-2.8.8.tar.gz; cd makedepf90-2.8.8; ./configure; make; cp makedepf90 ../../ &&'
+install_cmd += 'cd ../; tar xzf ndiff-2.00.tar.gz; cd ndiff-2.00; ./configure; make; cp ndiff ../../ &&' 
+install_cmd += 'cd ../../; here=$(pwd); export MESA_DIR=$here &&'
+install_cmd += 'export PATH=$here:$PATH &&'
+install_cmd += './install &&'
+install_cmd += "for name in `ls -l  | grep ^d | awk '{printf  \"   \"$9 }'`; do cp -r $name %(installdir)s; done "
+#install_cmd += 'cp -r lib include data utils star %(installdir)s'
+
+#files_to_copy = [ 'mesa-r10108/lib', 'mesa-r10108/include' ]
+
+
+sanity_check_paths = {
+    'files': ['lib/libbinary.a', 'lib/libadipls.a', 'lib/libgyre.a', 'lib/libstar.a'],
+    'dirs': []
+}
+moduleclass = 'phys'
+modextravars = {
+      'MESA_DIR': '%(installdir)s',
+}

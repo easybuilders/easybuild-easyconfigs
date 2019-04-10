@@ -1,0 +1,35 @@
+easyblock = 'CMakeMake'
+name = 'LAPACK'
+version = '3.8.0'
+
+homepage = 'http://www.netlib.org/lapack/'
+description = """LAPACK is written in Fortran90 and provides routines for solving systems of simultaneous linear equations, least-squares solutions of linear systems of equations, eigenvalue problems, and singular value problems. """
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.netlib.org/lapack/']
+sources = [SOURCELOWER_TAR_GZ]
+hidden = True
+builddependencies = [ 
+     ('OpenBLAS', '0.3.4'),
+]
+parallel = 4
+configopts_single = '-DBUILD_SHARED_LIBS=ON '
+configopts_single += '-DLAPACKE=ON '
+configopts_single += '-DUSE_OPTIMIZED_BLAS=ON '
+configopts_single += '-DCMAKE_INSTALL_PREFIX=%(installdir)s '
+configopts_single += '-DBUILD_TESTING=ON '
+configopts_single += '-DBLAS_openblas_LIBRARY="$EBROOTOPENBLAS/lib/libopenblas.so" '
+
+buildopts = ' && make test ' 
+configopts = [ configopts_single ]
+separate_build_dir = True
+
+
+sanity_check_paths = {
+    'files': ['lib/liblapack.so'],
+    'dirs' : []
+}
+moduleclass = 'numlib'
+

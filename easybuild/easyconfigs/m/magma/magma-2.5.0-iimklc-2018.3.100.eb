@@ -1,0 +1,28 @@
+easyblock = "ConfigureMake"
+
+name = 'magma'
+version = '2.5.0'
+
+homepage = 'http://icl.cs.utk.edu/magma/'
+description = """The MAGMA project aims to develop a dense linear algebra library similar to 
+ LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
+
+toolchain = {'name': 'iimklc', 'version': '2018.3.100'}
+toolchainopts = {'pic': True}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://icl.cs.utk.edu/projectsfiles/magma/downloads/']
+
+patches=['magma-2.5.0-sm.patch']
+
+skipsteps = ['configure']
+prebuildopts = "cp make.inc-examples/make.inc.mkl-icc ./make.inc; export CUDADIR=$CUDA_HOME; export GPU_TARGET=\"Kepler Pascal Volta\";"
+preinstallopts = "export EBINSTALLPREFIX=%(installdir)s && export CUDADIR=$CUDA_HOME && export GPU_TARGET=\"Kepler Pascal Volta\"  &&"
+installopts = " prefix=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['lib/libmagma.so', 'lib/libmagma.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'

@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+name = 'p4vasp'
+version = '0.3.30'
+
+homepage = 'http://www.p4vasp.at'
+description = """p4vasp is the  VASP Visualization Tool that can be used to display structure, unitcell, supercell, charge/probability/spin density, local potential, forces, velocities, dynamics, measure distances and angles, .... It can be used also to analyze electronic properties, total and local DOS and band structure """
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+#toolchainopts = {'usempi': False, 'openmp': False}
+
+source_urls = ['http://www.p4vasp.at/files']
+sources = ['%(name)s-%(version)s.tgz']
+
+patches = ['%(name)s-%(version)s.patch']
+parallel = 1
+
+skipsteps = ['configure', 'build']
+installopts = 'P4VASP_HOME=%(installdir)s SITE_PACKAGES=%(installdir)s/python-packages INCLUDEDIR=%(installdir)s/include LIBDIR=%(installdir)s/lib BINDIR=%(installdir)s/bin'
+modluafooter = """
+"""
+
+modextrapaths = {'PYTHONPATH': ':%(installdir)s/lib/python2.7/site-packages/:%(installdir)s/lib/python2.7/site-packages/gtk-2.0:%(installdir)s/python-package:/cvmfs/soft.computecanada.ca/nix/store/61fp8f2q9wx8ihs4m92gdqjz9azmcmm8-python2.7-pygobject-2.28.6/lib/python2.7/site-packages'}
+#modextrapaths = {'PYTHONPATH': 'lib/python2.7/site-packages/'}
+#modextrapaths += {'PYTHONPATH': 'lib/python2.7/site-packages/gtk-2.0'}
+#modextrapaths += {'PYTHONPATH': 'python-package'}
+
+postinstallcmds = ['wget ftp://ftp.gnome.org/pub/gnome/sources/libglade/2.6/libglade-2.6.4.tar.bz2 && tar xjf libglade-2.6.4.tar.bz2 && cd libglade-2.6.4 && ./configure --prefix=%(installdir)s && make && make install && cd .. ']
+
+postinstallcmds += ['wget https://github.com/pygobject/pycairo/archive/v1.18.0.tar.gz && tar xzf v1.18.0.tar.gz && cd pycairo-1.18.0 && python ./setup.py build && mkdir -p %(installdir)s/lib/python2.7/site-packages && PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/python2.7/site-packages python ./setup.py install --prefix=%(installdir)s && cd .. ']
+
+
+postinstallcmds += ['wget https://files.pythonhosted.org/packages/7c/18/fa4f2de77500dd62a314fd845ff6e903ac2ce551164cb421c5750969f799/pygtk-2.24.0.tar.bz2 && tar xjf pygtk-2.24.0.tar.bz2 && cd pygtk-2.24.0 && LIBGLADE_LIBS="-L%(installdir)s/lib -lglade-2.0 -Wl-rpath,%(installdir)s/lib" LIBGLADE_CFLAGS="-I%(installdir)s/include -I$NIXUSER_PROFILE/include/gtk-2.0 -I$NIXUSER_PROFILE/include/cairo -I$NIXUSER_PROFILE/include/pango-1.0 -I$NIXUSER_PROFILE/lib/gtk-2.0/include -I$NIXUSER_PROFILE/include/gdk-pixbuf-2.0 -I$NIXUSER_PROFILE/include/atk-1.0 -I%(installdir)s/include/libglade-2.0" ./configure --prefix=%(installdir)s && make && make install'] 
+
+#exts_defaultclass = 'PythonPackage'
+#exts_list = [
+#    ('pycairo', '1.18.0', {
+#              'source_urls': ['https://files.pythonhosted.org/packages/a6/54/23d6cf3e8d8f1eb30e0e58f171b6f62b2ea75c024935492373639a1a08e4/'], 
+#    }),
+#]
+
+sanity_check_paths = {
+    'files': ['%(installdir)s/bin/p4v', '%(installdir)s/bin/p4v.py'],
+    'dirs': []
+}
+
+
+moduleclass = 'chem'
+

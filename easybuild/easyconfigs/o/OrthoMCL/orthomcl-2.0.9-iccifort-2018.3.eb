@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+name = 'orthomcl'
+version = '2.0.9'
+
+homepage = 'http://orthomcl.org/'
+description = "OrthoMCL is a genome-scale algorithm for grouping orthologous protein sequences."
+
+toolchain = {'name': 'iccifort', 'version': '2018.3'}
+
+sources = ['%(name)sSoftware-v%(version)s.tar.gz']
+source_urls = ['http://%(name)s.org/common/downloads/software/v2.0/']
+
+builddependencies = [
+	('MCL', '14.137-iccifort-2018.3'),
+        ('Perl', '5.22.4'),
+]
+
+patches = ['orthomcl-2.0.9.patch']
+skipsteps = ['configure', 'build']
+modluafooter = """
+depends_on("perl")
+"""
+
+
+files_to_copy = [(['bin/orthomclAdjustFasta', 'bin/orthomclBlastParser', 'bin/orthomclDropSchema',
+                   'bin/orthomclDumpPairsFiles', 'bin/orthomclExtractProteinIdsFromGroupsFile', 'bin/orthomclExtractProteinPairsFromGroupsFile',
+                   'bin/orthomclFilterFasta', 'bin/orthomclInstallSchema', 'bin/orthomclInstallSchema.sql', 'bin/orthomclLoadBlast',
+                   'bin/orthomclLoadBlast.sql', 'bin/orthomclMclToGroups', 'bin/orthomclPairs', 'bin/orthomclReduceFasta', 'bin/orthomclReduceGroups',
+                   'bin/orthomclRemoveIdenticalGroups', 'bin/orthomclSingletons', 'bin/orthomclSortGroupMembersByScore', 'bin/orthomclSortGroupsFile'], 'bin'), 
+                   ('lib'), ('config'), ('doc')]
+sanity_check_paths = {
+    'files': ['bin/orthomclAdjustFasta', 'bin/orthomclBlastParser', 'bin/orthomclDropSchema', 'bin/orthomclDumpPairsFiles', 'bin/orthomclExtractProteinIdsFromGroupsFile', 'bin/orthomclExtractProteinPairsFromGroupsFile', 'bin/orthomclFilterFasta', 'bin/orthomclInstallSchema', 'bin/orthomclLoadBlast', 'bin/orthomclMclToGroups', 'bin/orthomclPairs', 'bin/orthomclReduceFasta', 'bin/orthomclReduceGroups', 'bin/orthomclRemoveIdenticalGroups', 'bin/orthomclSingletons', 'bin/orthomclSortGroupMembersByScore', 'bin/orthomclSortGroupsFile'],
+    'dirs': ['lib/perl/OrthoMCLEngine'],
+}
+modextrapaths = {'PERL5LIB': ':%(installdir)s/lib/perl5/site_perl/5.22.4/:%(installdir)s/lib/perl5/site_perl/5.22.4/x86_64-linux-thread-multi:lib/perl'}
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('IO::CaptureOutput', '1.1104', {
+        'source_tmpl': 'IO-CaptureOutput-1.1104.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN'],
+        'runtest' : 'test',
+    }),
+    ('Mock::Config', '0.03', {
+        'source_tmpl': 'Mock-Config-0.03.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RURBAN'],
+        'runtest' : 'test',
+    }),
+    ('Devel::CheckLib', '1.13', {
+        'source_tmpl': 'Devel-CheckLib-1.13.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MATTN'],
+        'runtest' : 'test',
+
+    }),
+    ('DBD::mysql', '4.050', {
+        'source_tmpl': 'DBD-mysql-4.050.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DV/DVEEDEN/'],
+        'runtest' : 'test',
+
+    }),
+]
+
+moduleclass = 'bio'

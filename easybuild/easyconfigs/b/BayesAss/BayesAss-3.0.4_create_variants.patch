@@ -1,0 +1,51 @@
+diff -ru BA3-3.04.orig/Makefile BA3-3.04.new/Makefile
+--- BA3-3.04.orig/Makefile	2018-03-01 23:48:24.000000000 +0000
++++ BA3-3.04.new/Makefile	2019-03-05 13:17:05.211425941 +0000
+@@ -1,8 +1,11 @@
+ P = BA3
+-INCLUDE = -Iinclude -I/Users/bruce/gsl-2.2.1/gsl-2.2.1/
+-LIBS = -L/Users/bruce/gsl-2.2.1/gsl-2.2.1/libsX86_64 
++INCLUDE = -Iinclude
++LIBS = 
+ CFLAGS = -Wall -O3
+-LDLIBS = -lgsl -lcblas
++LDLIBS = -lgsl -lgslcblas
+ CC=g++
+ all:
+-	$(CC) $(CFLAGS) src/main.cpp $(INCLUDE) $(LIBS) $(LDLIBS) -o BA3X86_64
++	$(CC) $(CFLAGS) src/main.cpp $(INCLUDE) $(LIBS) $(LDLIBS) -o BA3
++	$(CC) $(CFLAGS) src/main.cpp $(INCLUDE) $(LIBS) $(LDLIBS) -DV2015 -o BA3V2015
++	$(CC) $(CFLAGS) src/main.cpp $(INCLUDE) $(LIBS) $(LDLIBS) -DMSAT -o BA3MSAT
++	$(CC) $(CFLAGS) src/main.cpp $(INCLUDE) $(LIBS) $(LDLIBS) -DSNP -o BA3SNP
+diff -ru BA3-3.04.orig/include/BA3.h BA3-3.04.new/include/BA3.h
+--- BA3-3.04.orig/include/BA3.h	2018-03-01 23:48:24.000000000 +0000
++++ BA3-3.04.new/include/BA3.h	2019-03-05 13:48:51.394904828 +0000
+@@ -30,10 +30,28 @@
+ 
+ using namespace std;
+ 
++#if defined V2015
++const int MAXLOCI=420;
++const int MAXALLELE=300;
++const int MAXPOPLN=100;
++const int MAXINDIV=5000;
++#elif defined MSAT
++const int MAXLOCI=500;
++const int MAXALLELE=500;
++const int MAXPOPLN=100;
++const int MAXINDIV=5000;
++#elif defined SNP
++const int MAXLOCI=30000;
++const int MAXALLELE=4;
++const int MAXPOPLN=20;
++const int MAXINDIV=2000;
++#else
+ const int MAXLOCI=50000;
+ const int MAXALLELE=4;
+ const int MAXPOPLN=100;
+ const int MAXINDIV=5000;
++#endif /* Ugly fix to generate variants from compiler options */
++
+ const int MAXLINELENGTH=1000000;
+ 
+ struct indiv

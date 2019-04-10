@@ -1,0 +1,62 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2017 University of Geneva
+# Authors::   Yann Sagon <yann.sagon@unige.ch>
+# License::   MIT/GPL
+# $Id$
+# Modified by: Ali Kerrache, University of Manitoba
+# Date: March 6th, 2018.
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'MaSuRCA'
+version = '3.2.6'
+
+homepage = 'http://www.genome.umd.edu/masurca.html'
+description = """MaSuRCA is whole genome assembly software. It combines the efficiency of the de Bruijn graph and Overlap-Layout-Consensus (OLC) approaches. MaSuRCA can assemble data sets containing only short reads from Illumina sequencing or a mixture of short reads and long reads (Sanger, 454, Pacbio and Nanopore)."""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+
+source_urls = ['https://github.com/alekseyzimin/masurca/releases/download/%(version)s/'] 
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['0925aaef51a0eb85ffd2c862ee5cc4b4']
+
+dependencies = [
+    ('libreadline', '6.3'),
+    ('Tcl', '8.6.5'),
+    ('Boost', '1.60.0'),
+    ('zlib', '1.2.8'),
+    ('Perl', '5.22.4'),
+]
+
+skipsteps = ['install']
+
+buildopts = "install-special"
+
+start_dir = "global-1"
+
+postinstallcmds =  ['rm -f %(installdir)s/sr_config_example.txt && %(installdir)s/bin/masurca -g %(installdir)s/sr_config_example.txt']
+
+sanity_check_paths = {
+    'files': ['bin/masurca', 'sr_config_example.txt'],
+    'dirs': ['bin', 'CA', 'CA8', 'include', 'lib', 'libexec', 'share'],
+}
+
+modextrapaths = {
+    'PATH': ['CA/Linux-amd64/bin', 'CA8/Linux-amd64/bin'],
+    'PERL5LIB': ['bin/TIGR', 'CA/Linux-amd64/bin/TIGR', 'CA8/Linux-amd64/bin/TIGR'],
+}
+
+modloadmsg = """
+Run the following steps / Executer les etapes suivantes:
+1. Generate the config file / Creer le fichier de configuration: conf.txt
+   masurca -g conf.txt
+2. Generate the script / Creer le script: assembler.sh
+   masurca conf.txt or masurca --skip-checking conf.txt
+3. Execute the script / Executer le script: assembler.sh
+   assembler.sh
+"""
+
+moduleclass = 'bio'

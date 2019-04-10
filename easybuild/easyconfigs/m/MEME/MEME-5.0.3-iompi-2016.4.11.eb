@@ -1,0 +1,80 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'MEME'
+version = '5.0.3'
+
+homepage = 'http://meme-suite.org'
+description = """The MEME Suite allows you to: 
+ - discover motifs using MEME, DREME (DNA only) or GLAM2 on groups of related DNA or protein sequences, 
+ - search sequence databases with motifs using MAST, FIMO, MCAST or GLAM2SCAN, 
+ - compare a motif to all motifs in a database of motifs, 
+ - associate motifs with Gene Ontology terms via their putative target genes, 
+ - analyse motif enrichment using SpaMo or CentriMo.
+"""
+
+toolchain = {'name': 'iompi', 'version': '2016.4.11'}
+
+sources = [
+    '%(namelower)s-%(version)s.tar.gz',
+    'motif_databases.12.18.tgz',
+    'gomo_databases.3.2.tgz'
+]
+source_urls = [
+    'http://meme-suite.org/meme-software/%(version)s/',
+    'http://meme-suite.org/meme-software/Databases/motifs/',
+    'http://meme-suite.org/meme-software/Databases/gomo/',
+]
+
+checksums = [
+    '7d5525b7d008ecdb19195906fab22660', # meme-5.0.3.tar.gz
+    'f6dd80e54f2184f8275c83dd706a3c89', # motif_databases.12.18.tgz
+    '5b8fcf3c541b30e2a66580f289132e97', # gomo_databases.3.2.tgz
+]
+
+dependencies = [
+    ('Python', '3.5.4'),
+    ('Perl', '5.22.4'),
+    #('libxml2', '2.9.1'),     # Provided from nix.
+    #('libxslt', '1.1.28'),    # Provided from nix.
+    ('zlib', '1.2.8'),
+]
+
+configopts  = '--with-url="http://meme-suite.org/" '
+configopts += '--enable-build-libxml2 --enable-build-libxslt '
+configopts += '--with-db=%(installdir)s/db '
+configopts += '--with-perl=$EBROOTPERL/bin/perl '
+configopts += '--with-python=$EBROOTPYTHON/bin/python '
+configopts += '--with-python3=$EBROOTPYTHON/bin/python '
+configopts += '--with-gs=$NIXUSER_PROFILE/bin/gs '
+
+meme_binary_files = [
+    "ame", "centrimo", "dreme", "dust", "fimo", "glam2", "glam2scan", "gomo",
+    "mast", "mcast", "meme", "meme-chip", "momo", "purge", "spamo", "tomtom",
+]
+
+postinstallcmds =  ['mkdir -p %(installdir)s/db && cd %(builddir)s/%(namelower)s-%(version)s/ && cp -r ../gomo_databases ../motif_databases %(installdir)s/db && cp -r scripts tests %(installdir)s/']
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'PERL5LIB': 'lib/%(namelower)s-%(version)s/perl',
+    'PYTHONPATH': 'lib/%(namelower)s-%(version)s/python',
+}
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in meme_binary_files],
+    'dirs': ['db', 'lib', 'libexec', 'share'],
+}
+
+moduleclass = 'bio'

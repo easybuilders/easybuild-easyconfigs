@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'PSI4'
+version = '1.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/psi4/psi4/archive/']
+sources = ['v%(version)s.tar.gz']
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('SciPy-Stack', '2018b'),
+    ('Boost', '1.60.0'),
+    ('CheMPS2', '1.8'),
+]
+
+#builddependencies = [
+#    ('CMake', '3.5.2'),
+    # ('Perl', '5.22.1', '-bare'),  # for the test suite
+#]
+
+separate_build_dir = True
+
+configopts = '-DENABLE_MPI=ON -DENABLE_OMP=ON -DENABLE_UNIT_TESTS=ON -DENABLE_CHEMPS2=ON  -DENABLE_PLUGINS=ON -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python' 
+
+#Follwing needed to avoid error,
+#OMP: Error #15: Initializing libiomp5.so, but found libiomp5.so already initialized.
+prebuildopts = 'unset LDFLAGS && '
+
+# The tests don't work with MPI (most of them hang or fail)
+# ref: https://github.com/psi4/psi4/pull/436# issuecomment-230519769
+runtest = False
+
+moduleclass = 'chem'

@@ -10,6 +10,7 @@ toolchainopts = {'pic': True}
 
 source_urls = ['http://www.python.org/ftp/%(namelower)s/%(version)s/']
 sources = [SOURCE_TGZ]
+checksums = ['304c9b202ea6fbd0a4a8e0ad3733715fbd4749f2204a9173a58ec53c32ea73e8']
 
 configopts = '--with-tcltk-includes=-I$NIXUSER_PROFILE/include --with-tcltk-libs="-L$NIXUSER_PROFILE/lib -ltcl8.6 -ltk8.6"'
 prebuildopts = 'sed -i -e "s;/usr;$NIXUSER_PROFILE;g" setup.py && '
@@ -20,14 +21,8 @@ modextrapaths = {'PYTHONPATH': ['/cvmfs/soft.computecanada.ca/easybuild/python/s
 moduleclass = 'lang'
 
 modluafooter = """
-local arch = os.getenv("RSNT_ARCH") or ""
-if arch == "avx2" then
-	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip-avx2.conf")
-elseif arch == "avx" then
-	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip-avx.conf")
-else
-	setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip.conf")
-end
+local arch = os.getenv("RSNT_ARCH") or "generic"
+setenv("PIP_CONFIG_FILE", "/cvmfs/soft.computecanada.ca/config/python/pip-" .. arch .. ".conf")
 """
 # python needs bzip2 to build the bz2 package
 dependencies = [
@@ -42,31 +37,31 @@ dependencies = [
 # order is important!
 # package versions updated September 18th 2017
 exts_list = [
-    ('setuptools', '37.0.0', {
+    ('setuptools', '40.6.3', {
         'source_tmpl': '%(name)s-%(version)s.zip',
         'source_urls': ['https://pypi.python.org/packages/source/s/setuptools/'],
+        'checksums': ['3b474dad69c49f0d2d86696b68105f3a6f195f7ab655af12ef9a9c326d2b08f8'],
     }),
-    ('pip', '9.0.1', {
+    ('pip', '18.1', {
         'source_urls': ['https://pypi.python.org/packages/source/p/pip/'],
-        'checksums': [
-            '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d',  # pip-9.0.1.tar.gz
-        ],
+        'checksums': ['c0a292bd977ef590379a3f05d7b7f65135487b67470f6281289a94e015650ea1'],
     }),
-    ('virtualenv', '15.1.0', {
+    ('virtualenv', '16.1.0', {
         'source_urls': ['https://pypi.python.org/packages/source/v/virtualenv'],
-        'checksums': [
-            '02f8102c2436bb03b3ee6dede1919d1dac8a427541652e5ec95171ec8adbc93a',  # virtualenv-15.1.0.tar.gz
-        ],
+        'checksums': ['f899fafcd92e1150f40c8215328be38ff24b519cd95357fa6e78e006c7638208'],
     }),
-    ('wheel', '0.30.0', {
+    ('wheel', '0.32.3', {
         'source_urls': ['https://pypi.python.org/packages/source/w/wheel'],
+        'checksums': ['029703bf514e16c8271c3821806a1c171220cc5bdd325cbf4e7da1e056a01db6'],
     }),
     ('readline', '6.2.4.1', {
         'source_urls': ['https://pypi.python.org/packages/source/r/readline'],
+        'checksums': ['e00f86e03dfe52e7d1502cec5c64070b32621c85509c0081a4cfa6a0294bd107'],
     }),
     ('pysqlite', '2.8.3', {
+        'modulename': 'sqlite3',
         'source_urls': ['https://pypi.python.org/packages/source/p/pysqlite'],
-	'modulename': 'sqlite3'
+        'checksums': ['17d3335863e8cf8392eea71add33dab3f96d060666fe68ab7382469d307f4490'],
     }),
 ]
 

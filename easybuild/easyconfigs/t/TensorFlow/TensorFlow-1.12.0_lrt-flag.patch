@@ -1,0 +1,58 @@
+# Required on CentOS6
+# https://github.com/tensorflow/tensorflow/issues/15129
+--- tensorflow-1.12.0/tensorflow/tensorflow.bzl.orig	2018-11-13 21:21:18.219938816 +0100
++++ tensorflow-1.12.0/tensorflow/tensorflow.bzl	2018-11-13 21:25:16.257050521 +0100
+@@ -367,7 +367,7 @@
+         srcs = [],
+         deps = [],
+         data = [],
+-        linkopts = [],
++        linkopts = ["-lrt"],
+         framework_so = tf_binary_additional_srcs(),
+         kernels = [],
+         **kwargs):
+@@ -403,7 +403,7 @@
+         srcs = [],
+         deps = [],
+         data = [],
+-        linkopts = [],
++        linkopts = ["-lrt"],
+         copts = tf_copts(),
+         kernels = [],
+         **kwargs):
+@@ -460,7 +460,7 @@
+     tf_cc_binary(
+         name = tool,
+         copts = tf_copts(),
+-        linkopts = if_not_windows(["-lm", "-Wl,-ldl"]),
++        linkopts = if_not_windows(["-lm", "-Wl,-ldl", "-lrt"]),
+         linkstatic = 1,  # Faster to link this one-time-use binary dynamically
+         deps = [op_gen] + deps,
+     )
+@@ -625,7 +625,7 @@
+         hidden_file = None,
+         generated_target_name = None,
+         op_whitelist = [],
+-        cc_linkopts = [],
++        cc_linkopts = ["-lrt"],
+         api_def_srcs = []):
+     if (hidden or hidden_file) and op_whitelist:
+         fail("Cannot pass specify both hidden and op_whitelist.")
+@@ -636,7 +636,7 @@
+         deps = [str(Label("//tensorflow/core:" + name + "_op_lib"))]
+     tf_cc_binary(
+         name = tool_name,
+-        linkopts = if_not_windows(["-lm", "-Wl,-ldl"]) + cc_linkopts,
++        linkopts = if_not_windows(["-lm", "-Wl,-ldl", "-lrt"]) + cc_linkopts,
+         copts = tf_copts(),
+         linkstatic = 1,  # Faster to link this one-time-use binary dynamically
+         deps = ([
+@@ -908,7 +908,7 @@
+         tags = [],
+         size = "medium",
+         args = None,
+-        linkopts = [],
++        linkopts = ["-lrt"],
+         kernels = [],
+         nocopts = None):
+     for src in srcs:

@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'ANTs'
+version = '2.2.0'
+
+homepage = 'http://stnava.github.io/ANTs/'
+description = """ANTs extracts information from complex datasets that include imaging. ANTs is useful for managing,
+ interpreting and visualizing multidimensional data."""
+
+toolchain = {'version': '7.3.0', 'name': 'GCC'}
+toolchainopts = {'pic': True}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/stnava/%(name)s/archive/']
+checksums = ['62f8f9ae141cb45025f4bb59277c053acf658d4a3ba868c9e0f609af72e66b4a']
+
+builddependencies = [
+    ('CMake', '3.7.1'),
+]
+
+dependencies = [
+    ('ITK', '4.13.1'),
+    ('VTK', '6.3.0'),
+]
+
+configopts = " -DZLIB_ROOT=$NIXUSER_PROFILE  -DOPENGL_INCLUDE_DIR=$NIXUSER_PROFILE/include -DOPENGL_gl_LIBRARY=$NIXUSER_PROFILE/lib/libGL.so  -DOPENGL_glu_LIBRARY=$NIXUSER_PROFILE/lib/libGLU.so  -DJPEG_INCLUDE_DIR=$NIXUSER_PROFILE/include -DJPEG_LIBRARY=$NIXUSER_PROFILE/lib/libjpeg.so  -DPNG_PNG_INCLUDE_DIR=$NIXUSER_PROFILE/include -DPNG_LIBRARY=$NIXUSER_PROFILE/lib/libpng.so  -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python  -DCURL_LIBRARY=$NIXUSER_PROFILE/lib/libcurl.so -DCURL_INCLUDE_DIR=$NIXUSER_PROFILE/include  -DCMAKE_SYSTEM_PREFIX_PATH=$NIXUSER_PROFILE  -DCMAKE_SKIP_RPATH=ON -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_ITK=ON -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF-DUSE_VTK=ON -DUSE_SYSTEM_VTK=ON -DITK_DIR=$EBROOTITK/lib/cmake/ITK-4.13"
+
+buildopts = " && mkdir -p %(installdir)s && cp -r bin lib %(installdir)s/"
+
+parallel = 1
+
+skipsteps = ['install']
+
+separate_build_dir = True
+
+postinstallcmds =  ['cd %(builddir)s/%(name)s-%(version)s/ && cp -r Examples TestData Scripts %(installdir)s/ && chmod -R go+X %(installdir)s']
+
+modextrapaths = {'PATH': 'Scripts'}
+
+modextravars = {'ANTSPATH': '%(installdir)s/bin'}
+
+sanity_check_paths = {
+    'files': ['bin/ANTS'],
+    'dirs': ['Examples', 'lib', 'Scripts', 'TestData'],
+}
+
+moduleclass = 'data'
+modluafooter = """
+depends_on("perl")
+"""

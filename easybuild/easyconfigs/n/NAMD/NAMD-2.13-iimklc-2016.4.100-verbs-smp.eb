@@ -1,0 +1,42 @@
+name = 'NAMD'
+version = '2.13'
+versionsuffix = '-verbs-smp'
+
+homepage = 'http://www.ks.uiuc.edu/Research/namd/'
+description = """NAMD is a parallel molecular dynamics code designed for high-performance simulation of
+ large biomolecular systems."""
+
+toolchain = {'name': 'iimklc', 'version': '2016.4.100'}
+
+toolchainopts = {'opt': True, 'pic': True,'cstd': 'c++11', 'extra_cflags': 'ip'}
+
+sources = ['NAMD_%(version)s_Source.tar.gz']
+
+dependencies = [
+    ('FFTW', '3.3.6'),
+]
+
+# use NAMD default GPU architectures
+# 30,35,37,50,52,60,61,70,75
+#namd_cfg_opts =
+
+# /bin/csh is required by 'config' script
+osdependencies = ['tcsh']
+buildopts="TCLLIB='-ltcl8.6'"
+charm_arch = "verbs-linux-x86_64 smp"
+runtest=False
+moduleclass = 'chem'
+modaltsoftname = "namd-verbs-smp"
+
+modluafooter = """
+family("namd")
+require("os")
+if (mode() == "load" and os.getenv("RSNT_INTERCONNECT") == "omnipath") then
+        local warn_message = [[
+    This version of NAMD does not work with this cluster's networking. Please use namd-mpi instead. 
+
+    Cette version de NAMD ne fonctionne pas avec la connectique de cette grappe. Utilisez namd-mpi.
+    ]]
+    LmodWarning(warn_message)
+end
+"""

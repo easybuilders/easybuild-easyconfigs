@@ -1,0 +1,44 @@
+# Built with EasyBuild version 3.8.0-r2f58107c2b9aed07020e61c148688ed4f1c9a299 on 2019-02-13_16-31-03
+
+easyblock = 'MakeCp'
+
+name = 'OpenSees'
+
+version = '3.0.0'
+
+homepage = 'http://opensees.berkeley.edu/'
+description = """OpenSees is a software framework for developing applications to simulate the performance of structural and geotechnical systems subjected to earthquakes. This version is built using DISTRIBUTED_MP platform setting."""
+
+toolchain = {'name': 'gompi', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/OpenSees/OpenSees/archive/']
+sources = [ 'v%(version)s.tar.gz' ]
+patches = ['OpenSees-%(version)s-mpi-openblas.patch']
+checksums = [
+    '8c4e7e3a9ef728e91b4de3742011e8e71c3ffecc0c1c4209780a64b49930547d',  # v3.0.0.tar.gz
+    '6b3271f1ba4188b28b055accf3ee4f6428684664187d2e1cef0b43d39bca1fc8',  # OpenSees-3.0.0-mpi-openblas.patch
+]
+
+dependencies = [
+    ('Tcl', '8.5.19'),
+    ('OpenBLAS', '0.2.20'),
+]
+
+prebuildopts  = 'mkdir %(builddir)s/bin && mkdir %(builddir)s/lib && '
+prebuildopts += 'ln -s %(builddir)s/%(name)s-%(version)s %(builddir)s/%(name)s && '
+prebuildopts += 'cp %(builddir)s/%(name)s/MAKES/Makefile.def.EC2-REDHAT-ENTERPRISE %(builddir)s/%(name)s/Makefile.def && '
+
+buildopts = 'HOME=%(builddir)s'
+
+files_to_copy = [
+    (['%(builddir)s/bin/%(name)s'], 'bin'), 
+    (['%(builddir)s/%(name)s/EXAMPLES'], 'EXAMPLES'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin', 'EXAMPLES'],
+}
+
+moduleclass = 'geo'

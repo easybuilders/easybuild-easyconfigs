@@ -1,0 +1,81 @@
+easyblock = 'CMakeMake'
+
+name = 'MicMac'
+
+version = '1.0.beta13'
+
+homepage = 'https://micmac.ensg.eu/'
+description = """MicMac is a  photogrammetry software developped at the IGN (French National Geographic Institute) and ENSG (French national school for geographic sciences). This installation also includes ExifTool perl modules.
+"""
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+toolchainopts = {'pic': True}
+
+#GAS looks like this code triggers an internal bug in GCC 7.3.0 
+
+source_urls = ['https://github.com/micmacIGN/micmac/archive/', 
+		'https://www.sno.phy.queensu.ca/~phil/exiftool/']
+sources = [ 'v%(version)s.tar.gz' ,
+	   'Image-ExifTool-11.26.tar.gz'
+	]
+checksums = [
+    '6a02900396b5b037eaa477b5328c392a9b5a0d73d41a42c0f3381c0926f7e8e4',  # v1.0.beta13.tar.gz
+    '9c5eedc5774c7855b08c9afcea40bb71326b1baf24fe1bffd24923ee0051df96',  # Image-ExifTool-11.26.tar.gz
+]
+
+
+
+# Qt is the build dependency; Proj is listed as a runtime need.
+# exiv2 is present on Nix.
+dependencies = [
+    ('Qt5', '5.11.3'),
+    ('PROJ','4.9.3'),
+]
+
+builddependencies = [
+   ('CMake', '3.12.3'),
+]
+
+configopts = '-DWITH_QT5=1 -DWITH_CPP11=1'
+
+parallel = 4
+
+separate_build_dir = True
+
+skipsteps = ['install']
+
+# GAS: the install prefix is broken; it installs everything in place 
+#	and thus has to be copied manually. I did this hack .
+
+buildopts = ' && mkdir -p %(installdir)s && make install && cp -r %(builddir)s/micmac-%(version)s/bin %(installdir)s/ && cp -r %(builddir)s/micmac-%(version)s/lib %(installdir)s/ && cp -r %(builddir)s/micmac-%(version)s/binaire-aux %(installdir)s/ && cp -r %(builddir)s/micmac-%(version)s/data %(installdir)s/ '
+
+# Content the binaire-aux are precompiled binaries so patchelf is needed
+
+postinstallcmds = [
+    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/binaire-aux/linux --add_origin --add_path=$NIXUSER_PROFILE/lib64 %(installdir)s/binaire-aux ', 'cd %(builddir)s/Image-ExifTool-11.26 && ls -la && cp -r exiftool lib %(installdir)s/bin '  ]
+
+#
+# The ExifTool is unpacked and copied over above.
+#
+
+sanity_check_paths = {
+    'files': ['bin/AperiCloud', 'bin/Apero', 'bin/Apero2PMVS', 'bin/Bascule', 'bin/BatchFDC', 
+     'bin/Campari', 'bin/CenterBascule',  'bin/CmpCalib', 
+     'bin/Dequant', 'bin/Devlop', 'bin/Digeo', 'bin/Drunk', 'bin/ElDcraw', 'bin/EPExeCalibFinale',
+     'bin/EPExeCalibInit', 'bin/EPExeCatImSaisie', 'bin/EPExeCompens', 'bin/EPExeConvertPolygone', 
+     'bin/EPExePointeInitPolyg', 'bin/EPExeRechCibleDRad', 'bin/EPExeRechCibleInit', 'bin/GCPBascule', 
+     'bin/GenXML2Cpp', 'bin/Gri2Bin', 'bin/GrShade',  'bin/MakeGrid', 'bin/Malt', 
+     'bin/MapCmd', 'bin/MICMAC', 'bin/mm3d', 'bin/mmxv', 'bin/MpDcraw', 'bin/Nuage2Ply', 'bin/Pasta',
+     'bin/PastDevlop', 'bin/Pastis', 'bin/Porto', 'bin/Reduc2MM', 'bin/ReducHom', 'bin/RepLocBascule', 
+     'bin/SaisieAppuisInit', 'bin/SaisieAppuisPredic', 'bin/SaisieBasc', 'bin/SaisieMasq', 'bin/SaisiePts', 
+     'bin/SBGlobBascule', 'bin/ScaleIm', 'bin/ScaleNuage', 'bin/ScriptCalib', 'bin/SEL', 'bin/SysCoordPolyn',
+     'bin/Tapas', 'bin/Tapioca', 'bin/Tarama', 'bin/Tawny', 'bin/TestCam', 'bin/TestCmds', 'bin/tiff_info', 
+     'bin/to8Bits', 'bin/vic', 'bin/Vino', 'bin/exiftool'],
+    'dirs': ['bin', 'binaire-aux', 'lib', 'data', 'bin/lib' ],
+}
+
+modextrapaths = {'PATH': 'binaire-aux/linux'}
+
+moduleclass = 'vis'
+
+
