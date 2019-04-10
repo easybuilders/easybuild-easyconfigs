@@ -1,0 +1,37 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'MakeCp'
+
+name = 'BEDOPS'
+version = '2.4.30'
+
+homepage = 'http://%(namelower)s.readthedocs.io/en/latest/index.html'
+description = """BEDOPS is an open-source command-line toolkit that performs highly efficient and
+ scalable Boolean and other set operations, statistical calculations, archiving, conversion and
+ other management of genomic data of arbitrary scale. Tasks can be easily split by chromosome for
+ distributing whole-genome analyses across a computational cluster."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['218e0e367aa79747b2f90341d640776eea17befc0fdc35b0cec3c6184098d462']
+
+# else build of jansson library fails with: "configure: error: C compiler cannot create executables"
+prebuildopts = 'unset LIBS && '
+# builds all variants and copies executables to bin directory
+buildopts = ' all && make install'
+# actually used variant is linked to via symlinks
+keepsymlinks = True
+
+files_to_copy = ['bin']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bam2bed', '%(namelower)s', 'convert2bed', 'unstarch']],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+
+moduleclass = 'bio'

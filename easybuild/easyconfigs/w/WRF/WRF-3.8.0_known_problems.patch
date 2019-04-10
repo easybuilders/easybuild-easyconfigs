@@ -1,0 +1,71 @@
+# ======================================================================
+# Fix known problems in WRF3.8 source code
+# (http://www2.mmm.ucar.edu/wrf/users/wrfv3.8/known-prob-3.8.html)
+# ======================================================================
+# 
+# Problem when using tmn_update (posted September 8, 2016)
+# ========================================================
+# 
+#  An error was introduced beginning with WRF Version 3.7 in a restart run when
+#  the tmn_update option is used. This error is present in WRF Versions 3.7,
+#  3.7.1, 3.8 and 3.8.1. When tmn_update is activated, a moving-averaged skin
+#  temperature (TLAG) is used as a lower boundary condition for the land model.
+#  Since TLAG is left out of the restart file, any restart using the tmn_update
+#  option will start with 0 K as the lower boundary condition for the land model.
+#  This will cause the soil temperature to cool gradually, eventually affecting
+#  the skin and atmospheric temperature. The tmn_update option can be used for
+#  the following land models: SLAB, Noah, NoahMP, RUC and CLM.  
+
+diff -Naur WRFV3.orig/Registry/Registry.EM_COMMON WRFV3/Registry/Registry.EM_COMMON
+--- WRFV3.orig/Registry/Registry.EM_COMMON	2016-04-05 23:09:48.000000000 +0200
++++ WRFV3/Registry/Registry.EM_COMMON	2017-01-04 15:25:03.000000000 +0100
+@@ -1672,7 +1672,7 @@
+ state    real  TYR              ij      misc        1         -     rd=(interp_mask_field:lu_index,iswater)u=(copy_fcnm)     "TYR"        "ANNUAL MEAN SFC TEMPERATURE"           "K"
+ state    real  TYRA             ij      misc        1         -     rd=(interp_mask_field:lu_index,iswater)u=(copy_fcnm)     "TYRA"   "ACCUMULATED YEARLY SFC TEMPERATURE FOR CURRENT YEAR"  "K"
+ state    real  TDLY             ij      misc        1         -     rd=(interp_mask_field:lu_index,iswater)u=(copy_fcnm)     "TDLY"     "ACCUMULATED DAILY SFC TEMPERATURE FOR CURRENT DAY"  "K"
+-state    real  TLAG             i&j     misc        1         -     d=(interp_mask_field:lu_index,iswater)u=(copy_fcnm)     "TLAG"         "DAILY MEAN SFC TEMPERATURE OF PRIOR DAYS"       "K"
++state    real  TLAG             i&j     misc        1         -     rd=(interp_mask_field:lu_index,iswater)u=(copy_fcnm)     "TLAG"         "DAILY MEAN SFC TEMPERATURE OF PRIOR DAYS"       "K"
+ state    integer NYEAR          -       misc        1         -     r        "NYEAR"                  "ACCUM DAYS IN A YEAR"                         ""
+ state    real    NDAY           -       misc        1         -     r        "NDAY"                  "ACCUM TIMESTEPS IN A DAY"                      ""
+ state    real  XLAND            ij      misc        1         -     i02rhd=(interp_fcnm_imask)u=(copy_fcnm)       "XLAND"                 "LAND MASK (1 FOR LAND, 2 FOR WATER)"          ""      
+
+# Problem with Cloud Fraction (posted November 30, 2016)
+# ======================================================
+# 
+#  Beginning in V3.8, a bug was introduced to cloud fraction.  This is seen by
+#  most radiation schemes, when a microphysics scheme is used that does not have
+#  cloud ice (e.g. WSM3, Kessler). When WSM3 or Kessler is used, cloud fraction
+#  is not computed, and hence a radiation scheme will not see any cloud. This
+#  results in unrealistic surface temperature and incorrect upwelling long-wave
+#  radiation at the top of the atmosphere.
+
+diff -Naur WRFV3.orig/phys/module_radiation_driver.F WRFV3/phys/module_radiation_driver.F
+--- WRFV3.orig/phys/module_radiation_driver.F	2016-03-30 22:36:24.000000000 +0200
++++ WRFV3/phys/module_radiation_driver.F	2017-01-04 15:26:17.000000000 +0100
+@@ -1120,7 +1120,7 @@
+ 
+      IF ( ICLOUD == 1 ) THEN
+ 
+-     IF ( F_QC .AND. F_QI ) THEN
++     IF ( F_QC .OR. F_QI ) THEN
+ ! Call to cloud fraction routine based on Randall 1994 (Hong Pan 1998)
+ 
+         CALL wrf_debug (1, 'CALL cldfra1')
+@@ -1192,7 +1192,7 @@
+  
+      ELSE IF ( ICLOUD == 2 ) THEN
+ 
+-     IF ( F_QC .AND. F_QI ) THEN
++     IF ( F_QC .OR. F_QI ) THEN
+        CALL wrf_debug (1, 'CALL cldfra2')
+        CALL cal_cldfra2(CLDFRA,qc,qi,F_QC,F_QI,              &
+                        ids,ide, jds,jde, kds,kde,            &
+@@ -1205,7 +1205,7 @@
+ !+---+-----------------------------------------------------------------+ 
+ 
+      ELSEIF (ICLOUD == 3) THEN
+-        IF ( F_QC .AND. F_QI ) THEN
++        IF ( F_QC .OR. F_QI ) THEN
+            IF ( F_QS ) THEN
+               DO j = jts,jte
+               DO k = kts,kte

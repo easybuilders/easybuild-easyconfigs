@@ -1,0 +1,65 @@
+fix configuring with Python 3
+cfr. https://trac.osgeo.org/geos/ticket/774
+--- configure.orig  2016-12-29 17:33:15.229294313 +0100
++++ configure   2016-12-29 18:33:27.822625611 +0100
+@@ -18329,7 +18329,7 @@
+ if ${am_cv_python_version+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+-  am_cv_python_version=`$PYTHON -c "import sys; print sys.version[:3]"`
++  am_cv_python_version=`$PYTHON -c "import sys; print(sys.version[:3])"`
+ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_version" >&5
+ $as_echo "$am_cv_python_version" >&6; }
+@@ -18348,7 +18348,7 @@
+ if ${am_cv_python_platform+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+-  am_cv_python_platform=`$PYTHON -c "import sys; print sys.platform"`
++  am_cv_python_platform=`$PYTHON -c "import sys; print(sys.platform)"`
+ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_platform" >&5
+ $as_echo "$am_cv_python_platform" >&6; }
+@@ -18362,7 +18362,7 @@
+ if ${am_cv_python_pythondir+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+-  am_cv_python_pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,prefix='$PYTHON_PREFIX')" 2>/dev/null ||
++  am_cv_python_pythondir=`$PYTHON -c "from distutils import sysconfig; print(sysconfig.get_python_lib(0,0,prefix='$PYTHON_PREFIX'))" 2>/dev/null ||
+      echo "$PYTHON_PREFIX/lib/python$PYTHON_VERSION/site-packages"`
+ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_pythondir" >&5
+@@ -18379,7 +18379,7 @@
+ if ${am_cv_python_pyexecdir+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+-  am_cv_python_pyexecdir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1,0,prefix='$PYTHON_EXEC_PREFIX')" 2>/dev/null ||
++  am_cv_python_pyexecdir=`$PYTHON -c "from distutils import sysconfig; print(sysconfig.get_python_lib(1,0,prefix='$PYTHON_EXEC_PREFIX'))" 2>/dev/null ||
+      echo "${PYTHON_EXEC_PREFIX}/lib/python${PYTHON_VERSION}/site-packages"`
+ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_pyexecdir" >&5
+@@ -18448,19 +18448,21 @@
+         # Check for Python library path
+         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python library path" >&5
+ $as_echo_n "checking for Python library path... " >&6; }
+-        for i in "$base_python_path/lib/python$PYTHON_VERSION/config/" "$base_python_path/lib/python$PYTHON_VERSION/" "$base_python_path/lib/python/config/" "$base_python_path/lib/python/" "$base_python_path/" "$base_python_path/libs/" ; do
+-                python_path=`find $i -name libpython$PYTHON_VERSION.* -print 2> /dev/null | sed "1q"`
++        for i in "$base_python_path/lib/python$PYTHON_VERSION/config/" "$base_python_path/lib/python$PYTHON_VERSION/" "$base_python_path/lib/python/config/" "$base_python_path/lib/python/" "$base_python_path/" "$base_python_path/libs/" "$base_python_path/lib/" ; do
++                python_path=`find $i -name libpython$PYTHON_VERSION*.so* -print 2> /dev/null | sed "1q"`
+                 if test -n "$python_path" ; then
+                         break
+                 fi
+         done
++
++        lpython_name=`python -c "import os; print(os.path.split(\"$python_path\")[1].split(\".so\")[0].split(\"lib\")[1])"`
+         python_path=`echo $python_path | sed "s,/libpython.*$,,"`
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $python_path" >&5
+ $as_echo "$python_path" >&6; }
+         if test -z "$python_path" ; then
+                 as_fn_error $? "cannot find Python library path" "$LINENO" 5
+         fi
+-        PYTHON_LDFLAGS="-L$python_path -lpython$PYTHON_VERSION"
++        PYTHON_LDFLAGS="-L$python_path -l$lpython_name"
+ 
+         #
+         python_site=`echo $base_python_path | sed "s/config/site-packages/"`

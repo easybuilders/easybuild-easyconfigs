@@ -1,0 +1,32 @@
+easyblock = 'ConfigureMake'
+
+name = 'worker'
+version = '1.6.4'
+
+homepage = 'https://github.com/gjbex/worker'
+description = """The Worker framework has been developed to help deal with parameter exploration experiments
+ that would otherwise result in many jobs, forcing the user resort to scripting to retain her sanity;
+ see also https://vscentrum.be/neutral/documentation/cluster-doc/running-jobs/worker-framework."""
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/gjbex/worker/archive/']
+sources = ['%(version)s.tar.gz']
+
+dependencies = [
+    ('Perl', '5.22.1')
+]
+
+# adjust worker configuration file
+# note: tweak this to your local setup
+postinstallcmds = [
+    'sed -i "s/ cores_per_node = .*/ cores_per_node = 16/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s@ qsub = .*@ qsub = `which qsub`@g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ email = .*/ email = hpc-support@example.com/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ unload_modules = .*/ unload_modules = intel/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s@ mpi_module = .*@ mpi_module = intel/2016a@g" %(installdir)s/conf/worker.conf',
+    'sed -i "s@ module_path = .*@ module_path = %(installdir)s/../../../modules/all@g" %(installdir)s/conf/worker.conf',
+]
+
+moduleclass = 'tools'

@@ -1,0 +1,56 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'MakeCp'
+
+name = 'fastQValidator'
+version = '0.1.1a-20151214'
+fastqvalidator_git_commit = 'aadc6f9'
+libstatgen_git_commit = '8246906'
+versionsuffix = '-%s' % fastqvalidator_git_commit
+
+homepage = 'http://genome.sph.umich.edu/wiki/FastQValidator'
+description = """Validate FastQ Files"""
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+# we download latest source available in github for fastQValidator and libStatGen (dependency)
+# using latest release tags doesn't work
+# https://github.com/statgen/fastQValidator/issues/9
+source_urls = [
+    'https://github.com/statgen/fastQValidator/archive/',
+    'https://github.com/statgen/libStatGen/archive/'
+]
+
+sources = [
+    '%s.tar.gz' % fastqvalidator_git_commit,
+    '%s.tar.gz' % libstatgen_git_commit
+]
+
+dependencies = [
+    ('zlib', '1.2.8'),
+    # OS dependency should be preferred if the os version is more recent then this version,
+    # it's nice to have an up to date openssl for security reasons
+    # ('OpenSSL', '1.0.1q'),
+]
+
+# openssl required by libStatgen
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+
+prebuildopts = 'CFLAGS="$CFLAGS -L${EBROOTZLIB}/lib" && '
+prebuildopts += 'mv %(builddir)s/libStatGen-* %(builddir)s/libStatGen && '
+
+buildopts = ' LIB_PATH_GENERAL=../libStatGen '
+
+files_to_copy = [(['bin/fastQValidator'], 'bin')]
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/fastQValidator'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

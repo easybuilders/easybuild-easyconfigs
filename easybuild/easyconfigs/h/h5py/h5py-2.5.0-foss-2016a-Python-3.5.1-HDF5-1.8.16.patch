@@ -1,0 +1,39 @@
+# Fix to get h5py built using Python 3.5.1 and mpi4py 2.0.0
+# Issue described at: https://github.com/h5py/h5py/issues/567
+# Patch taken from:
+# https://github.com/rdhyee/h5py/commit/f2e3f132fdc1c2308b74e8428c063ac6a8118439.diff
+# Fokke Dijkstra - June 21 2016
+diff --git a/h5py/h5p.pyx b/h5py/h5p.pyx
+index da175dd..42fe4ed 100644
+--- a/h5py/h5p.pyx
++++ b/h5py/h5p.pyx
+@@ -25,7 +25,8 @@ from h5py import _objects
+ from ._objects import phil, with_phil
+ 
+ if MPI:
+-    from mpi4py.mpi_c cimport MPI_Comm, MPI_Info, MPI_Comm_dup, MPI_Info_dup, \
++    # reverse https://github.com/h5py/h5py/commit/bdd573ff73711ccce339a91ac82a058cdd910498
++    from mpi4py.libmpi cimport MPI_Comm, MPI_Info, MPI_Comm_dup, MPI_Info_dup, \
+                                MPI_Comm_free, MPI_Info_free
+ 
+ # Initialization
+diff --git a/setup_build.py b/setup_build.py
+index bc3a8b0..6a360ec 100644
+--- a/setup_build.py
++++ b/setup_build.py
+@@ -169,7 +169,16 @@ def run(self):
+         
+         # Run Cython
+         print("Executing cythonize()")
++
++        # https://github.com/h5py/h5py/issues/532#issuecomment-73631137
++        try:
++            import mpi4py
++            include_path = [mpi4py.get_include(),]
++        except:
++            include_path = []
++
+         self.extensions = cythonize(self._make_extensions(config),
++                            include_path=include_path, 
+                             force=config.rebuild_required or self.force)
+         self.check_rerun_cythonize()

@@ -1,0 +1,59 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste (UGent)
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'BLAST+'
+version = '2.6.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://blast.ncbi.nlm.nih.gov/'
+description = """Basic Local Alignment Search Tool, or BLAST, is an algorithm
+ for comparing primary biological sequence information, such as the amino-acid
+ sequences of different proteins or the nucleotides of DNA sequences."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'cstd': 'c++14'}
+
+source_urls = ['http://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/%(version)s/']
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+patches = [
+    'BLAST+-2.2.30_ictce-fixes.patch',
+    'BLAST+-2.6.0_fix-make-install.patch',
+]
+checksums = [
+    '0510e1d607d0fb4389eca50d434d5a0be787423b6850b3a4f315abc2ef19c996',  # ncbi-blast-2.6.0+-src.tar.gz
+    '8892e8bc0b1020a2e8616594da364c63009839d0d2dc6faf4bae9c44122a78be',  # BLAST+-2.2.30_ictce-fixes.patch
+    'b3d53e8417406b866e470f1810bdc29649f2d58d7d9d39a466bc33c8c4ff37d1',  # BLAST+-2.6.0_fix-make-install.patch
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.6'),
+    ('PCRE', '8.41'),
+    ('Python', '2.7.14'),
+    ('Boost', '1.63.0', versionsuffix),  # more recent Boost version doesn't work?
+    ('GMP', '6.1.2'),
+    ('libpng', '1.6.32'),
+    ('libjpeg-turbo', '1.5.2'),
+]
+
+configopts = "--with-64 --with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 --with-pcre=$EBROOTPCRE "
+configopts += "--with-python=$EBROOTPYTHON --with-boost=$EBROOTBOOST --with-gmp=$EBROOTGMP --with-png=$EBROOTLIBPNG "
+configopts += "--with-jpeg=$EBROOTLIBJPEGMINTURBO "
+
+sanity_check_paths = {
+    'files': ['bin/blastn', 'bin/blastp', 'bin/blastx'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

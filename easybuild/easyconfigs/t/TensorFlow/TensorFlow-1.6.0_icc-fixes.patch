@@ -1,0 +1,3117 @@
+fix issues to get TensorFlow to compile with Intel compilers
+* fix syntax for template function calls;
+  generated changes via Perl regex commands, see also https://github.com/tensorflow/tensorflow/issues/9496)
+author: Kenneth Hoste (HPC-UGent)
+* fix error 'invalid narrowing conversion from "unsigned long" to "int"' via explicit type casting
+Modified to TensorFlow 1.6.0 by Samuel Moors (Vrije Universiteit Brussel VUB)
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/coder/kernels/range_coder_ops_test.cc tensorflow-1.6.0/tensorflow/contrib/coder/kernels/range_coder_ops_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/coder/kernels/range_coder_ops_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/coder/kernels/range_coder_ops_test.cc	2018-03-16 13:44:59.390721469 +0100
+@@ -220,7 +220,7 @@
+   const Eigen::array<int32, 5> broadcast = {1, 32, 32, 16, 1};
+ 
+   Tensor cdf{DT_INT32, {1, 32, 32, 16, kMaxValue + 2}};
+-  cdf.tensor<int32, 5>() = temp.tensor<int32, 5>().broadcast(broadcast);
++  cdf.template tensor<int32, 5>() = temp.template tensor<int32, 5>().broadcast(broadcast);
+ 
+   TestEncodeAndDecode(kPrecision, data, cdf);
+ }
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/factorization/kernels/wals_solver_ops.cc tensorflow-1.6.0/tensorflow/contrib/factorization/kernels/wals_solver_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/factorization/kernels/wals_solver_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/factorization/kernels/wals_solver_ops.cc	2018-03-16 13:45:03.566725763 +0100
+@@ -116,7 +116,7 @@
+                    context->allocate_output(
+                        0, TensorShape({block_size, factor_dim, factor_dim}),
+                        &output_lhs_tensor));
+-    auto output_lhs_t = output_lhs_tensor->tensor<float, 3>();
++    auto output_lhs_t = output_lhs_tensor->template tensor<float, 3>();
+     output_lhs_t.setZero();
+     Tensor* output_rhs_tensor;
+     OP_REQUIRES_OK(context, context->allocate_output(
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/ffmpeg/decode_audio_op.cc tensorflow-1.6.0/tensorflow/contrib/ffmpeg/decode_audio_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/ffmpeg/decode_audio_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/ffmpeg/decode_audio_op.cc	2018-03-16 13:45:01.438723575 +0100
+@@ -82,7 +82,7 @@
+   OP_REQUIRES_OK(context,
+                  context->allocate_output(
+                      0, TensorShape({frame_count, channel_count}), &output));
+-  auto matrix = output->tensor<float, 2>();
++  auto matrix = output->template tensor<float, 2>();
+   for (int32 frame = 0; frame < frame_count; ++frame) {
+     for (int32 channel = 0; channel < channel_count; ++channel) {
+       matrix(frame, channel) = output_samples[frame * channel_count + channel];
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/fused_conv/kernels/fused_conv2d_bias_activation_op.cc tensorflow-1.6.0/tensorflow/contrib/fused_conv/kernels/fused_conv2d_bias_activation_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/fused_conv/kernels/fused_conv2d_bias_activation_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/fused_conv/kernels/fused_conv2d_bias_activation_op.cc	2018-03-16 13:44:59.326721405 +0100
+@@ -269,8 +269,8 @@
+     TF_RETURN_IF_ERROR(ctx->allocate_temp(DataTypeToEnum<T>::value, nchw_shape,
+                                           transformed_tensor));
+     functor::NHWCToNCHW<GPUDevice, T, NDIMS>()(
+-        ctx->eigen_device<GPUDevice>(), nhwc_tensor.tensor<T, NDIMS>(),
+-        transformed_tensor->tensor<T, NDIMS>());
++        ctx->eigen_device<GPUDevice>(), nhwc_tensor.template tensor<T, NDIMS>(),
++        transformed_tensor->template tensor<T, NDIMS>());
+   } else {
+     // If depth <= 1, then just reshape.
+     CHECK(transformed_tensor->CopyFrom(nhwc_tensor, nchw_shape));
+@@ -492,8 +492,8 @@
+                                 FORMAT_OIHW, filter_param.shape(), FORMAT_HWIO),
+                             &maybe_transformed_filter));
+     functor::TransformFilter<GPUDevice, T, int, 4>()(
+-        ctx->eigen_device<GPUDevice>(), To32Bit(filter_param.tensor<T, 4>()),
+-        To32Bit(maybe_transformed_filter.tensor<T, 4>()));
++        ctx->eigen_device<GPUDevice>(), To32Bit(filter_param.template tensor<T, 4>()),
++        To32Bit(maybe_transformed_filter.template tensor<T, 4>()));
+     filter = &maybe_transformed_filter;
+   }
+ 
+@@ -612,8 +612,8 @@
+   if (!is_int8x4 && (data_format == FORMAT_NHWC) && (output_depth > 1)) {
+     functor::NCHWToNHWC<GPUDevice, T, 4>()(
+         ctx->eigen_device<GPUDevice>(),
+-        const_cast<const Tensor*>(output)->tensor<T, 4>(),
+-        output_param->tensor<T, 4>());
++        const_cast<const Tensor*>(output)->template tensor<T, 4>(),
++        output_param->template tensor<T, 4>());
+   }
+ }
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/image/kernels/bipartite_match_op.cc tensorflow-1.6.0/tensorflow/contrib/image/kernels/bipartite_match_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/image/kernels/bipartite_match_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/image/kernels/bipartite_match_op.cc	2018-03-16 13:45:03.414725608 +0100
+@@ -86,7 +86,7 @@
+                                             &column_to_row_match_indices));
+ 
+     typename TTypes<float, 2>::ConstTensor distance_mat =
+-        input_distance_mat.shaped<float, 2>(
++        input_distance_mat.template shaped<float, 2>(
+             {num_input_rows, num_input_columns});
+ 
+     // Greedy bi-partite matching.
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/image/kernels/image_ops.cc tensorflow-1.6.0/tensorflow/contrib/image/kernels/image_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/image/kernels/image_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/image/kernels/image_ops.cc	2018-03-16 13:45:03.382725575 +0100
+@@ -80,11 +80,11 @@
+                      ProjectiveGenerator<Device, T>::kNumParameters),
+                 errors::InvalidArgument(
+                     "Input transform should be num_images x 8 or 1 x 8"));
+-    auto images = images_t.tensor<T, 4>();
++    auto images = images_t.template tensor<T, 4>();
+     auto transform = transform_t.matrix<float>();
+     Tensor* output_t;
+     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, images_t.shape(), &output_t));
+-    auto output = output_t->tensor<T, 4>();
++    auto output = output_t->template tensor<T, 4>();
+     (FillProjectiveTransform<Device, T>(interpolation_))(
+         ctx->eigen_device<Device>(), &output, images, transform);
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/image/kernels/segmentation_ops.cc tensorflow-1.6.0/tensorflow/contrib/image/kernels/segmentation_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/image/kernels/segmentation_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/image/kernels/segmentation_ops.cc	2018-03-16 13:45:03.402725595 +0100
+@@ -56,11 +56,11 @@
+     // itself.
+     TensorRangeFunctor<Device>()(ctx->eigen_device<Device>(),
+                                  forest_t.flat<OutputType>());
+-    auto rank = rank_t.tensor<OutputType, 3>();
++    auto rank = rank_t.template tensor<OutputType, 3>();
+     rank.device(ctx->eigen_device<Device>()) = rank.constant(OutputType(0));
+ 
+-    const auto images = images_t.tensor<T, 3>();
+-    auto forest = forest_t.tensor<OutputType, 3>();
++    const auto images = images_t.template tensor<T, 3>();
++    auto forest = forest_t.template tensor<OutputType, 3>();
+     ImageConnectedComponentsFunctor<Device, T>()(
+         ctx, output_t->flat<OutputType>(), images, forest, rank);
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/pi_examples/camera/camera.cc tensorflow-1.6.0/tensorflow/contrib/pi_examples/camera/camera.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/pi_examples/camera/camera.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/pi_examples/camera/camera.cc	2018-03-16 13:44:54.374716318 +0100
+@@ -346,7 +346,7 @@
+       tensorflow::DT_FLOAT,
+       tensorflow::TensorShape(
+           {1, wanted_height, wanted_width, wanted_channels}));
+-  auto image_tensor_mapped = image_tensor.tensor<float, 4>();
++  auto image_tensor_mapped = image_tensor.template tensor<float, 4>();
+   tensorflow::uint8* in = image_data;
+   float* out = image_tensor_mapped.data();
+   const size_t image_rowlen = image_width * image_channels;
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/pi_examples/label_image/label_image.cc tensorflow-1.6.0/tensorflow/contrib/pi_examples/label_image/label_image.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/pi_examples/label_image/label_image.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/pi_examples/label_image/label_image.cc	2018-03-16 13:44:54.362716305 +0100
+@@ -157,7 +157,7 @@
+       tensorflow::DT_FLOAT,
+       tensorflow::TensorShape(
+           {1, wanted_height, wanted_width, wanted_channels}));
+-  auto image_tensor_mapped = image_tensor.tensor<float, 4>();
++  auto image_tensor_mapped = image_tensor.template tensor<float, 4>();
+   tensorflow::uint8* in = image_data.data();
+   float* out = image_tensor_mapped.data();
+   const size_t image_rowlen = image_width * image_channels;
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/seq2seq/kernels/beam_search_ops.cc tensorflow-1.6.0/tensorflow/contrib/seq2seq/kernels/beam_search_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/seq2seq/kernels/beam_search_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/seq2seq/kernels/beam_search_ops.cc	2018-03-16 13:45:01.318723452 +0100
+@@ -80,12 +80,12 @@
+                                 max_sequence_lengths.shape().DebugString()));
+     Tensor* beams;
+     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, step_ids_shape, &beams));
+-    typename TTypes<T, 3>::ConstTensor step_ids_t = step_ids.tensor<T, 3>();
+-    typename TTypes<T, 3>::ConstTensor parent_ids_t = parent_ids.tensor<T, 3>();
++    typename TTypes<T, 3>::ConstTensor step_ids_t = step_ids.template tensor<T, 3>();
++    typename TTypes<T, 3>::ConstTensor parent_ids_t = parent_ids.template tensor<T, 3>();
+     typename TTypes<int32>::ConstVec max_seq_lens_t =
+         max_sequence_lengths.vec<int32>();
+     typename TTypes<T>::ConstScalar end_token_t = end_token.scalar<T>();
+-    typename TTypes<T, 3>::Tensor beams_t = beams->tensor<T, 3>();
++    typename TTypes<T, 3>::Tensor beams_t = beams->template tensor<T, 3>();
+     const T end_token_value = end_token_t();
+     functor::GatherTree<Device, T>()(ctx, device, step_ids_t, parent_ids_t,
+                                      max_seq_lens_t, end_token_value, beams_t);
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensorboard/db/summary_converter.cc tensorflow-1.6.0/tensorflow/contrib/tensorboard/db/summary_converter.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensorboard/db/summary_converter.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensorboard/db/summary_converter.cc	2018-03-16 13:44:58.370720422 +0100
+@@ -258,7 +258,7 @@
+   if (tensor.dtype() == DT_UINT8) {
+     // For uint8 input, no normalization is necessary
+     auto ith_image = [&tensor, batch_size, hw, depth](int i) {
+-      auto values = tensor.shaped<uint8, 3>({batch_size, hw, depth});
++      auto values = tensor.template shaped<uint8, 3>({batch_size, hw, depth});
+       return typename TTypes<uint8>::ConstMatrix(
+           &values(i, 0, 0), Eigen::DSizes<Eigen::DenseIndex, 2>(hw, depth));
+     };
+@@ -304,7 +304,7 @@
+     sa->set_content_type("audio/wav");
+ 
+     auto values =
+-        tensor.shaped<float, 3>({batch_size, length_frames, num_channels});
++        tensor.template shaped<float, 3>({batch_size, length_frames, num_channels});
+     auto channels_by_frames = typename TTypes<float>::ConstMatrix(
+         &values(i, 0, 0),
+         Eigen::DSizes<Eigen::DenseIndex, 2>(length_frames, num_channels));
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/hard_routing_function_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/hard_routing_function_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/hard_routing_function_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/hard_routing_function_op.cc	2018-03-16 13:44:53.966715899 +0100
+@@ -127,12 +127,12 @@
+     OP_REQUIRES_OK(
+         context, context->allocate_output(1, output_path_shape, &output_path));
+ 
+-    auto out_probability = output_probability->tensor<float, 2>();
+-    auto out_path = output_path->tensor<int32, 2>();
++    auto out_probability = output_probability->template tensor<float, 2>();
++    auto out_path = output_path->template tensor<int32, 2>();
+ 
+-    const auto data = input_data.tensor<float, 2>();
+-    const auto tree_parameters = tree_parameters_tensor.tensor<float, 2>();
+-    const auto tree_biases = tree_biases_tensor.tensor<float, 1>();
++    const auto data = input_data.template tensor<float, 2>();
++    const auto tree_parameters = tree_parameters_tensor.template tensor<float, 2>();
++    const auto tree_biases = tree_biases_tensor.template tensor<float, 1>();
+ 
+     // Deterministically traverse the tree to a leaf.
+     for (int i = 0; i < num_data; i++) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/k_feature_gradient_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/k_feature_gradient_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/k_feature_gradient_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/k_feature_gradient_op.cc	2018-03-16 13:44:53.994715928 +0100
+@@ -134,14 +134,14 @@
+     tensorforest::Initialize(*out_data, 0.0f);
+ 
+     // Compute output.
+-    const auto input_data = input_data_tensor.tensor<float, 2>();
+-    const auto tree_parameters = tree_parameters_tensor.tensor<float, 2>();
+-    const auto tree_biases = tree_biases_tensor.tensor<float, 1>();
+-    const auto routes = routing_tensor.tensor<float, 2>();
++    const auto input_data = input_data_tensor.template tensor<float, 2>();
++    const auto tree_parameters = tree_parameters_tensor.template tensor<float, 2>();
++    const auto tree_biases = tree_biases_tensor.template tensor<float, 1>();
++    const auto routes = routing_tensor.template tensor<float, 2>();
+ 
+-    auto routes_grad = out_routes->tensor<float, 2>();
+-    auto data_grad = out_data->tensor<float, 2>();
+-    auto weights_grad = out_weights->tensor<float, 3>();
++    auto routes_grad = out_routes->template tensor<float, 2>();
++    auto data_grad = out_data->template tensor<float, 2>();
++    auto weights_grad = out_weights->template tensor<float, 3>();
+ 
+     std::vector<int32> feature_set;
+     for (int i = 0; i < num_data; i++) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/k_feature_routing_function_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/k_feature_routing_function_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/k_feature_routing_function_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/k_feature_routing_function_op.cc	2018-03-16 13:44:53.958715890 +0100
+@@ -125,8 +125,8 @@
+     OP_REQUIRES_OK(context, context->allocate_output(0, output_shape,
+                                                      &output_probabilities));
+ 
+-    auto out_probs = output_probabilities->tensor<float, 2>();
+-    const auto tree_biases = tree_biases_tensor.tensor<float, 1>();
++    auto out_probs = output_probabilities->template tensor<float, 2>();
++    const auto tree_biases = tree_biases_tensor.template tensor<float, 1>();
+ 
+     // Iteratively compute the probability of reaching each leaf.
+     std::vector<int32> feature_set;
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/routing_function_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/routing_function_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/routing_function_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/routing_function_op.cc	2018-03-16 13:44:53.970715903 +0100
+@@ -110,8 +110,8 @@
+     OP_REQUIRES_OK(context, context->allocate_output(0, output_shape,
+                                                      &output_probabilities));
+ 
+-    auto out_probs = output_probabilities->tensor<float, 2>();
+-    const auto tree_biases = tree_biases_tensor.tensor<float, 1>();
++    auto out_probs = output_probabilities->template tensor<float, 2>();
++    const auto tree_biases = tree_biases_tensor.template tensor<float, 1>();
+ 
+     // Iteratively compute the probability of reaching each leaf.
+     for (int i = 0; i < num_data; i++) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/routing_gradient_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/routing_gradient_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/routing_gradient_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/routing_gradient_op.cc	2018-03-16 13:44:54.002715936 +0100
+@@ -108,9 +108,9 @@
+ 
+     OP_REQUIRES_OK(context, context->allocate_output(0, output_shape, &output));
+ 
+-    auto out = output->tensor<float, 2>();
+-    const auto tree_biases = tree_biases_tensor.tensor<float, 1>();
+-    const auto routes = routing_tensor.tensor<float, 2>();
++    auto out = output->template tensor<float, 2>();
++    const auto tree_biases = tree_biases_tensor.template tensor<float, 1>();
++    const auto routes = routing_tensor.template tensor<float, 2>();
+ 
+     // A derivation of the gradient can be found at go/routingderivation.
+     for (int i = 0; i < num_data; i++) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/stochastic_hard_routing_function_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/stochastic_hard_routing_function_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/stochastic_hard_routing_function_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/stochastic_hard_routing_function_op.cc	2018-03-16 13:44:53.978715911 +0100
+@@ -140,9 +140,9 @@
+     OP_REQUIRES_OK(
+         context, context->allocate_output(1, output_path_shape, &output_path));
+ 
+-    auto out_probability = output_probability->tensor<float, 2>();
+-    auto out_path = output_path->tensor<int32, 2>();
+-    const auto tree_biases = tree_biases_tensor.tensor<float, 1>();
++    auto out_probability = output_probability->template tensor<float, 2>();
++    auto out_path = output_path->template tensor<int32, 2>();
++    const auto tree_biases = tree_biases_tensor.template tensor<float, 1>();
+ 
+     // Stochastically traverse the tree to a leaf.
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/stochastic_hard_routing_gradient_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/stochastic_hard_routing_gradient_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/stochastic_hard_routing_gradient_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/stochastic_hard_routing_gradient_op.cc	2018-03-16 13:44:53.998715932 +0100
+@@ -163,16 +163,16 @@
+     tensorforest::Initialize(*output_parameters, 0.0);
+     tensorforest::Initialize(*output_bias, 0.0);
+ 
+-    auto out_routing = output_routing->tensor<float, 2>();
+-    auto out_data = output_data->tensor<float, 2>();
+-    auto out_parameters = output_parameters->tensor<float, 3>();
+-    auto out_bias = output_bias->tensor<float, 1>();
++    auto out_routing = output_routing->template tensor<float, 2>();
++    auto out_data = output_data->template tensor<float, 2>();
++    auto out_parameters = output_parameters->template tensor<float, 3>();
++    auto out_bias = output_bias->template tensor<float, 1>();
+ 
+-    const auto data = input_data.tensor<float, 2>();
+-    const auto tree_parameters = tree_parameters_tensor.tensor<float, 2>();
+-    const auto tree_biases = tree_biases_tensor.tensor<float, 1>();
+-    const auto path_probability = path_probability_tensor.tensor<float, 2>();
+-    const auto path = path_tensor.tensor<int32, 2>();
++    const auto data = input_data.template tensor<float, 2>();
++    const auto tree_parameters = tree_parameters_tensor.template tensor<float, 2>();
++    const auto tree_biases = tree_biases_tensor.template tensor<float, 1>();
++    const auto path_probability = path_probability_tensor.template tensor<float, 2>();
++    const auto path = path_tensor.template tensor<int32, 2>();
+ 
+     for (int i = 0; i < num_data; i++) {
+       const Tensor point = input_data.Slice(i, i + 1);
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/unpack_path_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/unpack_path_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/hybrid/core/ops/unpack_path_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/hybrid/core/ops/unpack_path_op.cc	2018-03-16 13:44:53.982715915 +0100
+@@ -91,10 +91,10 @@
+     tensorforest::Initialize(*output, 0.0f);
+     VLOG(1) << "unpack after init";
+ 
+-    auto out = output->tensor<float, 2>();
++    auto out = output->template tensor<float, 2>();
+ 
+-    const auto path = path_tensor.tensor<int32, 2>();
+-    const auto path_values = path_values_tensor.tensor<float, 2>();
++    const auto path = path_tensor.template tensor<int32, 2>();
++    const auto path_values = path_values_tensor.template tensor<float, 2>();
+ 
+     for (int i = 0; i < num_data; i++) {
+       for (int j = 0; j < tree_depth; j++) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/model_ops.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/model_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/model_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/model_ops.cc	2018-03-16 13:44:54.238716178 +0100
+@@ -197,7 +197,7 @@
+     output_shape.AddDim(num_outputs);
+     OP_REQUIRES_OK(context, context->allocate_output(0, output_shape,
+                                                      &output_predictions));
+-    TTypes<float, 2>::Tensor out = output_predictions->tensor<float, 2>();
++    TTypes<float, 2>::Tensor out = output_predictions->template tensor<float, 2>();
+ 
+     std::vector<TreePath> tree_paths(
+         param_proto_.inference_tree_paths() ? num_data : 0);
+@@ -297,7 +297,7 @@
+     OP_REQUIRES_OK(context, context->allocate_output(0, output_shape,
+                                                      &output_predictions));
+ 
+-    auto leaf_ids = output_predictions->tensor<int32, 1>();
++    auto leaf_ids = output_predictions->template tensor<int32, 1>();
+ 
+     auto set_leaf_ids = [&leaf_ids](int32 i, int32 id) { leaf_ids(i) = id; };
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/scatter_add_ndim_op.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/scatter_add_ndim_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/scatter_add_ndim_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/scatter_add_ndim_op.cc	2018-03-16 13:44:54.214716154 +0100
+@@ -63,7 +63,7 @@
+ 
+     auto input = input_tensor.flat<float>();
+ 
+-    const auto indices = indices_tensor.tensor<int32, 2>();
++    const auto indices = indices_tensor.template tensor<int32, 2>();
+     const auto deltas = deltas_tensor.unaligned_flat<float>();
+ 
+     const int32 num_dims =
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/tree_utils.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/tree_utils.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/tree_utils.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/tree_utils.cc	2018-03-16 13:44:54.062715998 +0100
+@@ -175,8 +175,8 @@
+   // unhelpful compiler errors when trying something that seems sane.  This
+   // helps us do a simple thing like access the first element (the counts)
+   // of these tensors so we can calculate expected value in Variance().
+-  const auto splits_count_accessor = split_sums.tensor<float, 3>();
+-  const auto totals_count_accessor = total_sums.tensor<float, 2>();
++  const auto splits_count_accessor = split_sums.template tensor<float, 3>();
++  const auto totals_count_accessor = total_sums.template tensor<float, 2>();
+ 
+   Eigen::array<int, 1> bcast;
+   bcast[0] = num_splits;
+@@ -238,8 +238,8 @@
+   const int32 num_classes =
+       static_cast<int32>(split_counts.shape().dim_size(2)) - 1;
+ 
+-  auto tc = total_counts.tensor<float, 2>();
+-  auto lc = split_counts.tensor<float, 3>();
++  auto tc = total_counts.template tensor<float, 2>();
++  auto lc = split_counts.template tensor<float, 3>();
+ 
+   int n = tc(accumulator, 0);
+ 
+@@ -349,8 +349,8 @@
+   const int32 num_classes =
+       static_cast<int32>(split_counts.shape().dim_size(2)) - 1;
+ 
+-  auto tc = total_counts.tensor<float, 2>();
+-  auto lc = split_counts.tensor<float, 3>();
++  auto tc = total_counts.template tensor<float, 2>();
++  auto lc = split_counts.template tensor<float, 3>();
+ 
+   double leftc = 0.0;
+   double leftc2 = 0.0;
+@@ -377,8 +377,8 @@
+       static_cast<int32>(split_counts.shape().dim_size(2)) - 1;
+ 
+   mu->resize(num_classes * 2);
+-  auto tc = total_counts.tensor<float, 2>();
+-  auto lc = split_counts.tensor<float, 3>();
++  auto tc = total_counts.template tensor<float, 2>();
++  auto lc = split_counts.template tensor<float, 3>();
+ 
+   double total = tc(accumulator, 0);
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/tree_utils_test.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/tree_utils_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/tree_utils_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/tree_utils_test.cc	2018-03-16 13:44:54.218716157 +0100
+@@ -58,7 +58,7 @@
+ 
+   Initialize<float>(t, 42.0);
+ 
+-  const auto vals = t.tensor<float, 2>();
++  const auto vals = t.template tensor<float, 2>();
+   EXPECT_FLOAT_EQ(vals(0, 0), 42);
+   EXPECT_FLOAT_EQ(vals(1, 1), 42);
+   EXPECT_FLOAT_EQ(vals(3, 0), 42);
+diff -ur tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/v4/input_data.cc tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/v4/input_data.cc
+--- tensorflow-1.6.0.orig/tensorflow/contrib/tensor_forest/kernels/v4/input_data.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/contrib/tensor_forest/kernels/v4/input_data.cc	2018-03-16 13:44:54.146716084 +0100
+@@ -106,14 +106,14 @@
+                                       const Tensor& sparse_values,
+                                       const Tensor& sparse_shape) {
+   if (dense.shape().dims() == 2) {
+-    dense_data_.reset(new DenseStorageType(dense.tensor<float, 2>()));
++    dense_data_.reset(new DenseStorageType(dense.template tensor<float, 2>()));
+   }
+   if (sparse_indices.shape().dims() == 2) {
+     sparse_indices_.reset(
+-        new SparseIndicesStorageType(sparse_indices.tensor<int64, 2>()));
++        new SparseIndicesStorageType(sparse_indices.template tensor<int64, 2>()));
+     sparse_values_.reset(
+-        new SparseValuesStorageType(sparse_values.tensor<float, 1>()));
+-    sparse_batch_size_ = sparse_shape.tensor<int64, 1>()(0);
++        new SparseValuesStorageType(sparse_values.template tensor<float, 1>()));
++    sparse_batch_size_ = sparse_shape.template tensor<int64, 1>()(0);
+   }
+   original_dense_tensor_ = dense;
+ }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/framework/tensor.h tensorflow-1.6.0/tensorflow/core/framework/tensor.h
+--- tensorflow-1.6.0.orig/tensorflow/core/framework/tensor.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/framework/tensor.h	2018-03-16 13:45:06.234728510 +0100
+@@ -232,9 +232,9 @@
+   ///     typedef float T;
+   ///     Tensor my_mat(...built with Shape{rows: 3, cols: 5}...);
+   ///     auto mat = my_mat.matrix<T>();    // 2D Eigen::Tensor, 3 x 5.
+-  ///     auto mat = my_mat.tensor<T, 2>(); // 2D Eigen::Tensor, 3 x 5.
++  ///     auto mat = my_mat.template tensor<T, 2>(); // 2D Eigen::Tensor, 3 x 5.
+   ///     auto vec = my_mat.vec<T>();       // CHECK fails as my_mat is 2D.
+-  ///     auto vec = my_mat.tensor<T, 3>(); // CHECK fails as my_mat is 2D.
++  ///     auto vec = my_mat.template tensor<T, 3>(); // CHECK fails as my_mat is 2D.
+   ///     auto mat = my_mat.matrix<int32>();// CHECK fails as type mismatch.
+   ///
+   /// ```
+@@ -289,11 +289,11 @@
+   ///     // 2D Eigen::Tensor 12 x 5:
+   ///     auto inner = my_ten.flat_inner_dims<T>();
+   ///     // 2D Eigen::Tensor 4 x 15:
+-  ///     auto outer = my_ten.shaped<T, 2>({4, 15});
++  ///     auto outer = my_ten.template shaped<T, 2>({4, 15});
+   ///     // CHECK fails, bad num elements:
+-  ///     auto outer = my_ten.shaped<T, 2>({4, 8});
++  ///     auto outer = my_ten.template shaped<T, 2>({4, 8});
+   ///     // 3D Eigen::Tensor 6 x 5 x 2:
+-  ///     auto weird = my_ten.shaped<T, 3>({6, 5, 2});
++  ///     auto weird = my_ten.template shaped<T, 3>({6, 5, 2});
+   ///     // CHECK fails, type mismatch:
+   ///     auto bad   = my_ten.flat<int32>();
+   ///
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/framework/tensor_test.cc tensorflow-1.6.0/tensorflow/core/framework/tensor_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/framework/tensor_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/framework/tensor_test.cc	2018-03-16 13:45:06.922729217 +0100
+@@ -350,7 +350,7 @@
+     EXPECT_TRUE(t.shape().IsSameSize(TensorShape({2, 3, 4, 5})));
+     EXPECT_TRUE(zero_t.shape().IsSameSize(TensorShape({3, 0, 2, 0, 5})));
+ 
+-    auto tensor = t.tensor<float, 4>();
++    auto tensor = t.template tensor<float, 4>();
+     EXPECT_EQ(2, tensor.dimension(0));
+     EXPECT_EQ(3, tensor.dimension(1));
+     EXPECT_EQ(4, tensor.dimension(2));
+@@ -465,9 +465,9 @@
+ }
+ 
+ TEST_F(TensorReshapeTest, ReshapeError) {
+-  EXPECT_DEATH((t.shaped<float, 0>({})), "1 vs. 120");
+-  EXPECT_DEATH((t.shaped<float, 1>({119})), "119 vs. 120");
+-  EXPECT_DEATH((t.shaped<float, 4>({2, 3, 4, 6})), "144 vs. 120");
++  EXPECT_DEATH((t.template shaped<float, 0>({})), "1 vs. 120");
++  EXPECT_DEATH((t.template shaped<float, 1>({119})), "119 vs. 120");
++  EXPECT_DEATH((t.template shaped<float, 4>({2, 3, 4, 6})), "144 vs. 120");
+ 
+   EXPECT_DEATH((t.unaligned_shaped<float, 0>({})), "1 vs. 120");
+   EXPECT_DEATH((t.unaligned_shaped<float, 1>({119})), "119 vs. 120");
+@@ -720,9 +720,9 @@
+   LOG(INFO) << "reinterpret_last_dimension";
+   {
+     Tensor t_nchw_vect_c(DT_QINT8, TensorShape({2, 3, 5, 7, 4}));
+-    auto nchw_vect_c = t_nchw_vect_c.tensor<qint8, 5>();
++    auto nchw_vect_c = t_nchw_vect_c.template tensor<qint8, 5>();
+     Tensor t_expected_nchw(DT_INT32, TensorShape({2, 3, 5, 7}));
+-    auto expected_nchw = t_expected_nchw.tensor<int32, 4>();
++    auto expected_nchw = t_expected_nchw.template tensor<int32, 4>();
+     int8 val = 0;
+     for (int n = 0; n < t_nchw_vect_c.shape().dim_size(0); ++n) {
+       for (int c = 0; c < t_nchw_vect_c.shape().dim_size(1); ++c) {
+@@ -835,9 +835,9 @@
+   EXPECT_TRUE(t.shape().IsSameSize(TensorShape({10, 4, 3, 2})));
+ 
+   // Get the N dimensional tensor (N==4 here)
+-  auto e_t = t.tensor<float, 4>();
++  auto e_t = t.template tensor<float, 4>();
+   // Reshape to view it as a two-dimensional tensor
+-  auto e_2d = t.shaped<float, 2>({10, 4 * 3 * 2});
++  auto e_2d = t.template shaped<float, 2>({10, 4 * 3 * 2});
+   for (int i = 0; i < 10; i++) {
+     // Assign a 1 x 4*3*2 matrix (really vector) to a slice of size
+     // 1 x 4*3*2 in e_t.
+@@ -1150,8 +1150,8 @@
+     // A simple slice along dim0.
+     Tensor y = x.Slice(4, 8);
+     EXPECT_TRUE(y.shape().IsSameSize(TensorShape({4, 4, 34})));
+-    auto tx = x.tensor<float, 3>();
+-    auto ty = y.tensor<float, 3>();
++    auto tx = x.template tensor<float, 3>();
++    auto ty = y.template tensor<float, 3>();
+     for (int i = 0; i < 4; ++i) {
+       for (int j = 0; j < 4; ++j) {
+         for (int k = 0; k < 34; ++k) {
+@@ -1168,7 +1168,7 @@
+ 
+     // A slice of a slice.
+     auto z = x.Slice(4, 8).Slice(2, 3);
+-    auto tz = z.tensor<float, 3>();
++    auto tz = z.template tensor<float, 3>();
+     EXPECT_EQ(1, z.dim_size(0));
+     for (int j = 0; j < 4; ++j) {
+       for (int k = 0; k < 34; ++k) {
+@@ -1181,7 +1181,7 @@
+   }
+   {
+     EXPECT_EQ(1, saved.dim_size(0));
+-    auto tsaved = saved.tensor<float, 3>();
++    auto tsaved = saved.template tensor<float, 3>();
+     for (int j = 0; j < 4; ++j) {
+       for (int k = 0; k < 34; ++k) {
+         EXPECT_EQ(tsaved(0, j, k), 6.0);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/adjust_contrast_op.cc tensorflow-1.6.0/tensorflow/core/kernels/adjust_contrast_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/adjust_contrast_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/adjust_contrast_op.cc	2018-03-16 13:45:11.342733770 +0100
+@@ -78,9 +78,9 @@
+       const int64 batch = input.NumElements() / (height * width * channels);
+       const int64 shape[4] = {batch, height, width, channels};
+       functor::AdjustContrast<Device, T>()(
+-          context->eigen_device<Device>(), input.shaped<T, 4>(shape),
++          context->eigen_device<Device>(), input.template shaped<T, 4>(shape),
+           factor.scalar<float>(), min_value.scalar<float>(),
+-          max_value.scalar<float>(), mean_values.shaped<float, 4>(shape),
++          max_value.scalar<float>(), mean_values.template shaped<float, 4>(shape),
+           output->shaped<float, 4>(shape));
+     }
+   }
+@@ -214,7 +214,7 @@
+                                 TensorShape({batch, channels}), &mean_values));
+     // TODO(zhengxq): for multiple batches, shard them into different batches.
+     auto input_data = input->shaped<float, 3>({batch, image_size, channels});
+-    auto mean_data = mean_values.tensor<float, 2>();
++    auto mean_data = mean_values.template tensor<float, 2>();
+     auto output_data = output->shaped<float, 3>({batch, image_size, channels});
+ 
+     // Calculate the mean of the inputs.
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/argmax_op.cc tensorflow-1.6.0/tensorflow/core/kernels/argmax_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/argmax_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/argmax_op.cc	2018-03-16 13:45:10.210732604 +0100
+@@ -79,8 +79,8 @@
+ #define HANDLE_DIM(NDIM)                                        \
+   case NDIM:                                                    \
+     ArgFunctor::Reduce##NDIM(context->eigen_device<Device>(),   \
+-                             input.tensor<T, NDIM>(), axis,     \
+-                             output->tensor<Tout, NDIM - 1>()); \
++                             input.template tensor<T, NDIM>(), axis,     \
++                             output->template tensor<Tout, NDIM - 1>()); \
+     break;
+ 
+     switch (input_dims) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/attention_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/attention_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/attention_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/attention_ops.cc	2018-03-16 13:45:08.994731351 +0100
+@@ -59,8 +59,8 @@
+                     "input must be a vector of size 2 (height, width)",
+                     window_size.shape().DebugString()));
+ 
+-    const int64 output_height = window_size.tensor<int, 1>()(0);
+-    const int64 output_width = window_size.tensor<int, 1>()(1);
++    const int64 output_height = window_size.template tensor<int, 1>()(0);
++    const int64 output_width = window_size.template tensor<int, 1>()(1);
+     TensorShape output_shape = input_shape;
+     output_shape.set_dim(1, output_height);
+     output_shape.set_dim(2, output_width);
+@@ -87,16 +87,16 @@
+     std::vector<Eigen::IndexPair<float> > offset_vec;
+     offset_vec.reserve(batch_size);
+     for (int i = 0; i < batch_size; ++i) {
+-      float offset_y = offsets.tensor<float, 2>()(i, 0);
+-      float offset_x = offsets.tensor<float, 2>()(i, 1);
++      float offset_y = offsets.template tensor<float, 2>()(i, 0);
++      float offset_x = offsets.template tensor<float, 2>()(i, 1);
+       // Eigen::ExtractGlimpses expects offsets as (x,y), whereas the
+       // calling TensorFlow operates with (y,x) as indices.
+       offset_vec.push_back(Eigen::IndexPair<float>(offset_x, offset_y));
+     }
+ 
+-    output->tensor<float, 4>().swap_layout().device(
++    output->template tensor<float, 4>().swap_layout().device(
+         context->eigen_cpu_device()) =
+-        Eigen::ExtractGlimpses(input.tensor<float, 4>().swap_layout(),
++        Eigen::ExtractGlimpses(input.template tensor<float, 4>().swap_layout(),
+                                output_width, output_height, offset_vec,
+                                normalized_, centered_, uniform_noise_);
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/avgpooling_op.cc tensorflow-1.6.0/tensorflow/core/kernels/avgpooling_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/avgpooling_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/avgpooling_op.cc	2018-03-16 13:45:12.954735432 +0100
+@@ -163,8 +163,8 @@
+                      context->allocate_output(0, output_shape, &output));
+       Eigen::PaddingType pt = BrainPadding2EigenPadding(padding_);
+       functor::SpatialAvgPooling<Device, T>()(
+-          context->eigen_device<Device>(), output->tensor<T, 4>(),
+-          tensor_in.tensor<T, 4>(), params.window_rows, params.window_cols,
++          context->eigen_device<Device>(), output->template tensor<T, 4>(),
++          tensor_in.template tensor<T, 4>(), params.window_rows, params.window_cols,
+           params.row_stride, params.col_stride, pt);
+     }
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/batch_kernels.cc tensorflow-1.6.0/tensorflow/core/kernels/batch_kernels.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/batch_kernels.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/batch_kernels.cc	2018-03-16 13:45:13.190735675 +0100
+@@ -69,7 +69,7 @@
+     }
+     if (input.NumElements() > 0) {
+       inputs_flat.emplace_back(new typename TTypes<T, 2>::ConstMatrix(
+-          input.shaped<T, 2>({1, input.NumElements()})));
++          input.template shaped<T, 2>({1, input.NumElements()})));
+     }
+     output_dim0 += input.dim_size(0);
+   }
+@@ -146,7 +146,7 @@
+     suffix_dim_size *= input.shape().dim_size(i);
+   }
+   auto input_reshaped =
+-      input.shaped<T, 3>({1, input.shape().dim_size(0), suffix_dim_size});
++      input.template shaped<T, 3>({1, input.shape().dim_size(0), suffix_dim_size});
+ 
+   int64 position = 0;
+   for (const int64 size : sizes) {
+@@ -155,7 +155,7 @@
+     Tensor output;
+     TF_RETURN_IF_ERROR(
+         context->allocate_temp(input.dtype(), output_shape, &output));
+-    auto output_shaped = output.shaped<T, 3>({1, size, suffix_dim_size});
++    auto output_shaped = output.template shaped<T, 3>({1, size, suffix_dim_size});
+ 
+     Eigen::DSizes<Eigen::DenseIndex, 3> slice_indices{0, position, 0};
+     Eigen::DSizes<Eigen::DenseIndex, 3> slice_sizes{1, size, suffix_dim_size};
+@@ -627,7 +627,7 @@
+     std::vector<Tensor> split_inputs;
+     if (nonempty_input) {
+       auto batch_indices =
+-          batch_index_t.shaped<int64, 2>({batch_index_t.dim_size(0), 3});
++          batch_index_t.template shaped<int64, 2>({batch_index_t.dim_size(0), 3});
+       for (int i = 0; i < batch_index_t.dim_size(0); ++i) {
+         sizes.push_back(batch_indices(i, 2) - batch_indices(i, 1));
+         batch_keys.push_back(batch_indices(i, 0));
+@@ -823,7 +823,7 @@
+       EXCLUSIVE_LOCKS_REQUIRED(mu_) {
+     const Tensor& batch_index_t = context->input(1);
+     auto batch_index =
+-        batch_index_t.shaped<int64, 2>({batch_index_t.dim_size(0), 3});
++        batch_index_t.template shaped<int64, 2>({batch_index_t.dim_size(0), 3});
+     std::vector<Tensor> tensors;
+     for (int i = 0; i < batch_index_t.dim_size(0); ++i) {
+       auto available_it = available_tensors_.find(batch_index(i, 0));
+@@ -873,7 +873,7 @@
+       }
+       std::unordered_set<int64> missing_tensors;
+       const auto batch_index =
+-          batch_index_t.shaped<int64, 2>({batch_index_t.dim_size(0), 3});
++          batch_index_t.template shaped<int64, 2>({batch_index_t.dim_size(0), 3});
+       for (int i = 0; i < batch_index_t.dim_size(0); ++i) {
+         const int64 batch_key = batch_index(i, 0);
+         if (available_tensors_.find(batch_key) == available_tensors_.end()) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/batch_matmul_op_impl.h tensorflow-1.6.0/tensorflow/core/kernels/batch_matmul_op_impl.h
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/batch_matmul_op_impl.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/batch_matmul_op_impl.h	2018-03-16 13:45:09.770732150 +0100
+@@ -67,7 +67,7 @@
+ struct ParallelMatMulKernel {
+   static void Conjugate(const OpKernelContext* context, Tensor* out) {
+     const Eigen::ThreadPoolDevice d = context->eigen_cpu_device();
+-    auto z = out->tensor<Scalar, 3>();
++    auto z = out->template tensor<Scalar, 3>();
+     z.device(d) = z.conjugate();
+   }
+ 
+@@ -75,9 +75,9 @@
+                   const Tensor in_y, bool adj_x, bool adj_y, Tensor* out,
+                   int start, int limit) {
+     static_assert(IsComplex, "Complex type expected.");
+-    auto Tx = in_x.tensor<Scalar, 3>();
+-    auto Ty = in_y.tensor<Scalar, 3>();
+-    auto Tz = out->tensor<Scalar, 3>();
++    auto Tx = in_x.template tensor<Scalar, 3>();
++    auto Ty = in_y.template tensor<Scalar, 3>();
++    auto Tz = out->template tensor<Scalar, 3>();
+     // We use the identities
+     //   conj(a) * conj(b) = conj(a * b)
+     //   conj(a) * b = conj(a * conj(b))
+@@ -110,9 +110,9 @@
+   static void Run(const OpKernelContext* context, const Tensor& in_x,
+                   const Tensor& in_y, bool adj_x, bool adj_y, Tensor* out,
+                   int start, int limit) {
+-    auto Tx = in_x.tensor<Scalar, 3>();
+-    auto Ty = in_y.tensor<Scalar, 3>();
+-    auto Tz = out->tensor<Scalar, 3>();
++    auto Tx = in_x.template tensor<Scalar, 3>();
++    auto Ty = in_y.template tensor<Scalar, 3>();
++    auto Tz = out->template tensor<Scalar, 3>();
+     Eigen::array<Eigen::IndexPair<Eigen::DenseIndex>, 1> contract_pairs;
+     contract_pairs[0] = ContractionDims(adj_x, adj_y);
+     const Eigen::ThreadPoolDevice d = context->eigen_cpu_device();
+@@ -410,9 +410,9 @@
+   static void Run(const OpKernelContext* context, const Tensor& in_x,
+                   const Tensor& in_y, bool adj_x, bool adj_y, Tensor* out,
+                   int start, int limit) {
+-    auto Tx = in_x.tensor<Scalar, 3>();
+-    auto Ty = in_y.tensor<Scalar, 3>();
+-    auto Tz = out->tensor<Scalar, 3>();
++    auto Tx = in_x.template tensor<Scalar, 3>();
++    auto Ty = in_y.template tensor<Scalar, 3>();
++    auto Tz = out->template tensor<Scalar, 3>();
+     Eigen::array<Eigen::IndexPair<Eigen::DenseIndex>, 1> contract_pairs;
+     contract_pairs[0] = ContractionDims(adj_x, adj_y);
+     auto d = context->eigen_sycl_device();
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/batch_norm_op.cc tensorflow-1.6.0/tensorflow/core/kernels/batch_norm_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/batch_norm_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/batch_norm_op.cc	2018-03-16 13:45:10.954733370 +0100
+@@ -72,9 +72,9 @@
+                    context->allocate_output(0, input.shape(), &output));
+ 
+     functor::BatchNorm<Device, T>()(
+-        context->eigen_device<Device>(), input.tensor<T, 4>(), mean.vec<T>(),
++        context->eigen_device<Device>(), input.template tensor<T, 4>(), mean.vec<T>(),
+         var.vec<T>(), beta.vec<T>(), gamma.vec<T>(), variance_epsilon_,
+-        scale_after_normalization_, output->tensor<T, 4>());
++        scale_after_normalization_, output->template tensor<T, 4>());
+   }
+ 
+  private:
+@@ -148,9 +148,9 @@
+                                 TensorShape({input.dim_size(3)}), &scratch2));
+ 
+     functor::BatchNormGrad<Device, T>()(
+-        context->eigen_device<Device>(), input.tensor<T, 4>(), mean.vec<T>(),
+-        var.vec<T>(), gamma.vec<T>(), out_backprop.tensor<T, 4>(),
+-        variance_epsilon_, scale_after_normalization_, dx->tensor<T, 4>(),
++        context->eigen_device<Device>(), input.template tensor<T, 4>(), mean.vec<T>(),
++        var.vec<T>(), gamma.vec<T>(), out_backprop.template tensor<T, 4>(),
++        variance_epsilon_, scale_after_normalization_, dx->template tensor<T, 4>(),
+         dm->vec<T>(), dv->vec<T>(), db->vec<T>(), dg->vec<T>(),
+         scratch1.vec<T>(), scratch2.vec<T>());
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/batchtospace_op.cc tensorflow-1.6.0/tensorflow/core/kernels/batchtospace_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/batchtospace_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/batchtospace_op.cc	2018-03-16 13:45:09.450731821 +0100
+@@ -191,7 +191,7 @@
+             output_tensor->shaped<T, NUM_BLOCK_DIMS + 2>(                 \
+                 internal_output_shape.dim_sizes()),                       \
+             internal_block_shape, internal_crops,                         \
+-            orig_input_tensor.shaped<T, NUM_BLOCK_DIMS + 2>(              \
++            orig_input_tensor.template shaped<T, NUM_BLOCK_DIMS + 2>(              \
+                 internal_input_shape.dim_sizes()))));                     \
+   } break;                                                                \
+     /**/
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/batch_util.cc tensorflow-1.6.0/tensorflow/core/kernels/batch_util.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/batch_util.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/batch_util.cc	2018-03-16 13:45:11.490733923 +0100
+@@ -156,8 +156,8 @@
+   if (element.NumElements() == 0) {
+     return Status::OK();
+   }
+-  auto element_t = element.tensor<T, NDIMS>();
+-  auto parent_t = parent->tensor<T, NDIMS + 1>();
++  auto element_t = element.template tensor<T, NDIMS>();
++  auto parent_t = parent->template tensor<T, NDIMS + 1>();
+   Eigen::DSizes<Eigen::DenseIndex, NDIMS + 1> slice_indices;
+   slice_indices[0] = index;
+   Eigen::DSizes<Eigen::DenseIndex, NDIMS + 1> slice_size;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/betainc_op.cc tensorflow-1.6.0/tensorflow/core/kernels/betainc_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/betainc_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/betainc_op.cc	2018-03-16 13:45:10.358732756 +0100
+@@ -91,9 +91,9 @@
+ #define CASE(NDIM)                                                        \
+   case NDIM: {                                                            \
+     functor::Betainc<Device, T, NDIM> functor;                            \
+-    auto a_value = a.shaped<T, NDIM>(a_shaper.x_reshape());               \
+-    auto b_value = b.shaped<T, NDIM>(b_shaper.x_reshape());               \
+-    auto x_value = x.shaped<T, NDIM>(x_shaper.x_reshape());               \
++    auto a_value = a.template shaped<T, NDIM>(a_shaper.x_reshape());               \
++    auto b_value = b.template shaped<T, NDIM>(b_shaper.x_reshape());               \
++    auto x_value = x.template shaped<T, NDIM>(x_shaper.x_reshape());               \
+     functor.BCast(ctx->eigen_device<Device>(), a_value,                   \
+                   BCast::ToIndexArray<NDIM>(a_shaper.x_bcast()), b_value, \
+                   BCast::ToIndexArray<NDIM>(b_shaper.x_bcast()), x_value, \
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/bias_op.cc tensorflow-1.6.0/tensorflow/core/kernels/bias_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/bias_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/bias_op.cc	2018-03-16 13:45:10.206732600 +0100
+@@ -136,9 +136,9 @@
+       Eigen::DSizes<int32, 4> four_dims(1, channel, 1, 1);
+       Eigen::DSizes<int32, 4> broad_cast_dims(batch, 1, height, width);
+       const Device& d = context->eigen_device<Device>();
+-      output->tensor<T, 4>().device(d) =
+-          input.tensor<T, 4>() +
+-          bias.tensor<T, 1>().reshape(four_dims).broadcast(broad_cast_dims);
++      output->template tensor<T, 4>().device(d) =
++          input.template tensor<T, 4>() +
++          bias.template tensor<T, 1>().reshape(four_dims).broadcast(broad_cast_dims);
+       return;
+     }  // End of code by intel_tf.
+ 
+@@ -167,8 +167,8 @@
+   void Compute(OpKernelContext* ctx, const Tensor& input, const Tensor& bias,
+                Tensor* output) {
+     functor::Bias<Device, T, Dims> functor;
+-    functor(ctx->eigen_device<Device>(), input.tensor<T, Dims>(), bias.vec<T>(),
+-            output->tensor<T, Dims>());
++    functor(ctx->eigen_device<Device>(), input.template tensor<T, Dims>(), bias.vec<T>(),
++            output->template tensor<T, Dims>());
+   }
+ 
+  private:
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/colorspace_op.cc tensorflow-1.6.0/tensorflow/core/kernels/colorspace_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/colorspace_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/colorspace_op.cc	2018-03-16 13:45:10.806733218 +0100
+@@ -71,7 +71,7 @@
+                                         TensorShape({input_data.dimension(0)}),
+                                         &trange));
+ 
+-    typename TTypes<T, 1>::Tensor range = trange.tensor<T, 1>();
++    typename TTypes<T, 1>::Tensor range = trange.template tensor<T, 1>();
+ 
+     functor::RGBToHSV<Device, T>()(context->eigen_device<Device>(), input_data,
+                                    range, output_data);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/concat_op.cc tensorflow-1.6.0/tensorflow/core/kernels/concat_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/concat_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/concat_op.cc	2018-03-16 13:45:08.606730952 +0100
+@@ -114,7 +114,7 @@
+       if (in.NumElements() > 0) {
+         int64 inputs_flat_dim1 = in.NumElements() / inputs_flat_dim0;
+         inputs_flat.emplace_back(new typename TTypes<T, 2>::ConstMatrix(
+-            in.shaped<T, 2>({inputs_flat_dim0, inputs_flat_dim1})));
++            in.template shaped<T, 2>({inputs_flat_dim0, inputs_flat_dim1})));
+       }
+       // TODO(irving): Remove check once !allow_legacy_scalars().
+       output_concat_dim += in.dims() > 0 ? in.dim_size(axis) : 1;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_grad_filter_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/conv_grad_filter_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_grad_filter_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/conv_grad_filter_ops.cc	2018-03-16 13:45:09.162731525 +0100
+@@ -100,8 +100,8 @@
+                   Tensor* filter_backprop, TensorFormat data_format) {
+     const CPUDevice& d = ctx->eigen_device<CPUDevice>();
+     functor::SpatialConvolutionBackwardFilter<CPUDevice, T>()(
+-        d, filter_backprop->tensor<T, 4>(), input.tensor<T, 4>(),
+-        out_backprop.tensor<T, 4>(), row_stride, col_stride);
++        d, filter_backprop->template tensor<T, 4>(), input.template tensor<T, 4>(),
++        out_backprop.template tensor<T, 4>(), row_stride, col_stride);
+   }
+ };
+ 
+@@ -260,8 +260,8 @@
+ 
+     if (pad_left == pad_right && pad_top == pad_bottom) {
+       if (LaunchXsmmBackwardFilter<Device, T>()(
+-              context, context->eigen_device<Device>(), input.tensor<T, 4>(),
+-              filter_backprop->tensor<T, 4>(), out_backprop.tensor<T, 4>(),
++              context, context->eigen_device<Device>(), input.template tensor<T, 4>(),
++              filter_backprop->template tensor<T, 4>(), out_backprop.template tensor<T, 4>(),
+               dims.spatial_dims[0].input_size, dims.spatial_dims[1].input_size,
+               static_cast<int>(dims.spatial_dims[0].stride),
+               static_cast<int>(dims.spatial_dims[1].stride),
+@@ -373,8 +373,8 @@
+ #if defined TENSORFLOW_USE_LIBXSMM && defined TENSORFLOW_USE_LIBXSMM_BACKWARD
+     if (pad_left == pad_right && pad_top == pad_bottom) {
+       if (LaunchXsmmBackwardFilter<Device, T>()(
+-              context, context->eigen_device<Device>(), input.tensor<T, 4>(),
+-              filter_backprop->tensor<T, 4>(), out_backprop.tensor<T, 4>(),
++              context, context->eigen_device<Device>(), input.template tensor<T, 4>(),
++              filter_backprop->template tensor<T, 4>(), out_backprop.template tensor<T, 4>(),
+               dims.spatial_dims[0].input_size, dims.spatial_dims[1].input_size,
+               static_cast<int>(dims.spatial_dims[0].stride),
+               static_cast<int>(dims.spatial_dims[1].stride),
+@@ -773,9 +773,9 @@
+                  &compatible_input));
+ 
+     functor::PadInput<GPUDevice, T, int, 4>()(
+-        ctx->template eigen_device<GPUDevice>(), To32Bit(input.tensor<T, 4>()),
++        ctx->template eigen_device<GPUDevice>(), To32Bit(input.template tensor<T, 4>()),
+         {{0, 0}}, {{rows_odd, cols_odd}},
+-        To32Bit(compatible_input.tensor<T, 4>()), data_format);
++        To32Bit(compatible_input.template tensor<T, 4>()), data_format);
+   } else {
+     compatible_input = input;
+   }
+@@ -840,8 +840,8 @@
+                      ctx->allocate_temp(DataTypeToEnum<T>::value, nchw_shape,
+                                         &transformed_out_backprop));
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(
+-          ctx->eigen_device<GPUDevice>(), out_backprop.tensor<T, 4>(),
+-          transformed_out_backprop.tensor<T, 4>());
++          ctx->eigen_device<GPUDevice>(), out_backprop.template tensor<T, 4>(),
++          transformed_out_backprop.template tensor<T, 4>());
+     } else {
+       // If depth <= 1, just reshape.
+       CHECK(transformed_out_backprop.CopyFrom(out_backprop, nchw_shape));
+@@ -862,8 +862,8 @@
+                                              nchw_shape, &transformed_input));
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(
+           ctx->eigen_device<GPUDevice>(),
+-          const_cast<const Tensor&>(compatible_input).tensor<T, 4>(),
+-          transformed_input.tensor<T, 4>());
++          const_cast<const Tensor&>(compatible_input).template tensor<T, 4>(),
++          transformed_input.template tensor<T, 4>());
+     } else {
+       // If depth <= 1, just reshape.
+       CHECK(transformed_input.CopyFrom(compatible_input, nchw_shape));
+@@ -974,7 +974,7 @@
+   functor::ReverseTransformFilter<GPUDevice, T, 4>()(
+       ctx->eigen_device<GPUDevice>(),
+       toConstTensor(pre_transformed_filter_backprop).template tensor<T, 4>(),
+-      filter_backprop->tensor<T, 4>());
++      filter_backprop->template tensor<T, 4>());
+ }
+ 
+ // Forward declarations of the functor specializations for GPU.
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_grad_input_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/conv_grad_input_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_grad_input_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/conv_grad_input_ops.cc	2018-03-16 13:45:10.258732653 +0100
+@@ -105,8 +105,8 @@
+                   Tensor* in_backprop, TensorFormat data_format) {
+     const CPUDevice& d = ctx->eigen_device<CPUDevice>();
+     functor::SpatialConvolutionBackwardInput<CPUDevice, T>()(
+-        d, in_backprop->tensor<T, 4>(), filter.tensor<T, 4>(),
+-        out_backprop.tensor<T, 4>(), row_stride, col_stride);
++        d, in_backprop->template tensor<T, 4>(), filter.template tensor<T, 4>(),
++        out_backprop.template tensor<T, 4>(), row_stride, col_stride);
+   }
+ };
+ 
+@@ -264,8 +264,8 @@
+     if (pad_left == pad_right && pad_top == pad_bottom) {
+       if (LaunchXsmmBackwardInputConvolution<Device, T>()(
+               context, context->eigen_device<Device>(),
+-              in_backprop->tensor<T, 4>(), filter.tensor<T, 4>(),
+-              out_backprop.tensor<T, 4>(), dims.spatial_dims[0].input_size,
++              in_backprop->template tensor<T, 4>(), filter.template tensor<T, 4>(),
++              out_backprop.template tensor<T, 4>(), dims.spatial_dims[0].input_size,
+               dims.spatial_dims[1].input_size,
+               static_cast<int>(dims.spatial_dims[0].stride),
+               static_cast<int>(dims.spatial_dims[1].stride),
+@@ -381,8 +381,8 @@
+     if (pad_left == pad_right && pad_top == pad_bottom) {
+       if (LaunchXsmmBackwardInputConvolution<Device, T>()(
+               context, context->eigen_device<Device>(),
+-              in_backprop->tensor<T, 4>(), filter.tensor<T, 4>(),
+-              out_backprop.tensor<T, 4>(), dims.spatial_dims[0].input_size,
++              in_backprop->template tensor<T, 4>(), filter.template tensor<T, 4>(),
++              out_backprop.template tensor<T, 4>(), dims.spatial_dims[0].input_size,
+               dims.spatial_dims[1].input_size,
+               static_cast<int>(dims.spatial_dims[0].stride),
+               static_cast<int>(dims.spatial_dims[1].stride),
+@@ -884,8 +884,8 @@
+                               &transformed_filter));
+ 
+   functor::TransformFilter<GPUDevice, T, int, 4>()(
+-      ctx->eigen_device<GPUDevice>(), To32Bit(filter.tensor<T, 4>()),
+-      To32Bit(transformed_filter.tensor<T, 4>()));
++      ctx->eigen_device<GPUDevice>(), To32Bit(filter.template tensor<T, 4>()),
++      To32Bit(transformed_filter.template tensor<T, 4>()));
+ 
+   Tensor transformed_out_backprop;
+   if (data_format == FORMAT_NHWC) {
+@@ -897,8 +897,8 @@
+                      ctx->allocate_temp(DataTypeToEnum<T>::value, nchw_shape,
+                                         &transformed_out_backprop));
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(
+-          ctx->eigen_device<GPUDevice>(), out_backprop.tensor<T, 4>(),
+-          transformed_out_backprop.tensor<T, 4>());
++          ctx->eigen_device<GPUDevice>(), out_backprop.template tensor<T, 4>(),
++          transformed_out_backprop.template tensor<T, 4>());
+     } else {
+       // If depth <= 1, then just reshape.
+       CHECK(transformed_out_backprop.CopyFrom(out_backprop, nchw_shape));
+@@ -1032,9 +1032,9 @@
+     functor::PadInput<GPUDevice, T, int, 4>()(
+         ctx->template eigen_device<GPUDevice>(),
+         To32Bit(const_cast<const Tensor&>(pre_transformed_in_backprop)
+-                    .tensor<T, 4>()),
++                    .template tensor<T, 4>()),
+         {{0, 0}}, {{-rows_odd, -cols_odd}},
+-        To32Bit(in_backprop_remove_padding.tensor<T, 4>()), FORMAT_NCHW);
++        To32Bit(in_backprop_remove_padding.template tensor<T, 4>()), FORMAT_NCHW);
+ 
+     pre_transformed_in_backprop = in_backprop_remove_padding;
+   }
+@@ -1044,7 +1044,7 @@
+     functor::NCHWToNHWC<GPUDevice, T, 4>()(
+         ctx->eigen_device<GPUDevice>(),
+         toConstTensor(pre_transformed_in_backprop).template tensor<T, 4>(),
+-        in_backprop->tensor<T, 4>());
++        in_backprop->template tensor<T, 4>());
+   } else {
+     *in_backprop = pre_transformed_in_backprop;
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_grad_ops_3d.cc tensorflow-1.6.0/tensorflow/core/kernels/conv_grad_ops_3d.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_grad_ops_3d.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/conv_grad_ops_3d.cc	2018-03-16 13:45:10.118732509 +0100
+@@ -197,8 +197,8 @@
+     Eigen::DSizes<Eigen::DenseIndex, 5> eigen_strides{1, strides[0], strides[1],
+                                                       strides[2], 1};
+     functor::InflatePadAndShuffle<Device, T, 5, Eigen::DenseIndex>()(
+-        context->eigen_device<Device>(), out_backprop.tensor<T, 5>(),
+-        eigen_strides, pad_dims, no_op_shuffle, padded_output.tensor<T, 5>());
++        context->eigen_device<Device>(), out_backprop.template tensor<T, 5>(),
++        eigen_strides, pad_dims, no_op_shuffle, padded_output.template tensor<T, 5>());
+     const Tensor& padded_output_cref = padded_output;
+ 
+     // Fill a new "reverted" filter. We need to transpose the in_depth and
+@@ -211,14 +211,14 @@
+     Eigen::DSizes<Eigen::DenseIndex, 5> filter_order{0, 1, 2, 4, 3};
+     Eigen::array<bool, 5> filter_rev_dims{true, true, true, false, false};
+     functor::ShuffleAndReverse<Device, T, 5, Eigen::DenseIndex>()(
+-        context->eigen_device<Device>(), filter.tensor<T, 5>(), filter_order,
+-        filter_rev_dims, r_filter.tensor<T, 5>());
++        context->eigen_device<Device>(), filter.template tensor<T, 5>(), filter_order,
++        filter_rev_dims, r_filter.template tensor<T, 5>());
+     const Tensor& r_filter_cref = r_filter;
+ 
+     // Now we can call conv_3d directly.
+     functor::CuboidConvolution<Device, T>()(
+-        context->eigen_device<Device>(), in_backprop->tensor<T, 5>(),
+-        padded_output_cref.tensor<T, 5>(), r_filter_cref.tensor<T, 5>(), 1, 1,
++        context->eigen_device<Device>(), in_backprop->template tensor<T, 5>(),
++        padded_output_cref.template tensor<T, 5>(), r_filter_cref.template tensor<T, 5>(), 1, 1,
+         1, BrainPadding2EigenPadding(VALID));
+   }
+ 
+@@ -319,8 +319,8 @@
+     Eigen::DSizes<Eigen::DenseIndex, 5> eigen_strides{1, strides[0], strides[1],
+                                                       strides[2], 1};
+     functor::InflatePadAndShuffle<Device, T, 5, Eigen::DenseIndex>()(
+-        context->eigen_device<Device>(), out_backprop.tensor<T, 5>(),
+-        eigen_strides, pad_dims, out_order, padded_output.tensor<T, 5>());
++        context->eigen_device<Device>(), out_backprop.template tensor<T, 5>(),
++        eigen_strides, pad_dims, out_order, padded_output.template tensor<T, 5>());
+     const Tensor& padded_output_cref = padded_output;
+ 
+     // For the backprop of the filter, we need to transpose the input.
+@@ -338,8 +338,8 @@
+     // No need for reversing this time.
+     Eigen::array<bool, 5> no_reverse{false, false, false, false, false};
+     functor::ShuffleAndReverse<Device, T, 5, Eigen::DenseIndex>()(
+-        context->eigen_device<Device>(), input.tensor<T, 5>(), in_order,
+-        no_reverse, in_shuffle.tensor<T, 5>());
++        context->eigen_device<Device>(), input.template tensor<T, 5>(), in_order,
++        no_reverse, in_shuffle.template tensor<T, 5>());
+     const Tensor& in_shuffle_cref = in_shuffle;
+ 
+     // The output of the conv_3d would be
+@@ -356,8 +356,8 @@
+         context, context->allocate_temp(DataTypeToEnum<T>::v(),
+                                         filter_shuffle_shape, &filter_shuffle));
+     functor::CuboidConvolution<Device, T>()(
+-        context->eigen_device<Device>(), filter_shuffle.tensor<T, 5>(),
+-        padded_output_cref.tensor<T, 5>(), in_shuffle_cref.tensor<T, 5>(), 1, 1,
++        context->eigen_device<Device>(), filter_shuffle.template tensor<T, 5>(),
++        padded_output_cref.template tensor<T, 5>(), in_shuffle_cref.template tensor<T, 5>(), 1, 1,
+         1, BrainPadding2EigenPadding(VALID));
+ 
+     // Now copy the filter_backprop back to the destination.
+@@ -365,8 +365,8 @@
+     Eigen::array<bool, 5> filter_rev_dims{true, true, true, false, false};
+     const Tensor& filter_shuffle_cref = filter_shuffle;
+     functor::ShuffleAndReverse<Device, T, 5, Eigen::DenseIndex>()(
+-        context->eigen_device<Device>(), filter_shuffle_cref.tensor<T, 5>(),
+-        filter_order, filter_rev_dims, filter_backprop->tensor<T, 5>());
++        context->eigen_device<Device>(), filter_shuffle_cref.template tensor<T, 5>(),
++        filter_order, filter_rev_dims, filter_backprop->template tensor<T, 5>());
+   }
+ 
+  private:
+@@ -596,8 +596,8 @@
+                                             filter_size[1], filter_size[2]}),
+                                &transformed_filter));
+     functor::TransformFilter<GPUDevice, T, int, 5>()(
+-        context->eigen_device<GPUDevice>(), To32Bit(filter.tensor<T, 5>()),
+-        To32Bit(transformed_filter.tensor<T, 5>()));
++        context->eigen_device<GPUDevice>(), To32Bit(filter.template tensor<T, 5>()),
++        To32Bit(transformed_filter.template tensor<T, 5>()));
+ 
+     // Shape: batch, filters, z, y, x.
+     Tensor transformed_out_backprop;
+@@ -609,8 +609,8 @@
+                                     DataTypeToEnum<T>::value, nchw_shape,
+                                     &transformed_out_backprop));
+         functor::NHWCToNCHW<GPUDevice, T, 5>()(
+-            context->eigen_device<GPUDevice>(), out_backprop.tensor<T, 5>(),
+-            transformed_out_backprop.tensor<T, 5>());
++            context->eigen_device<GPUDevice>(), out_backprop.template tensor<T, 5>(),
++            transformed_out_backprop.template tensor<T, 5>());
+       } else {
+         CHECK(transformed_out_backprop.CopyFrom(out_backprop, nchw_shape));
+       }
+@@ -734,9 +734,9 @@
+       functor::PadInput<GPUDevice, T, int, 5>()(
+           context->eigen_device<GPUDevice>(),
+           To32Bit(const_cast<const Tensor&>(pre_transformed_in_backprop)
+-                      .tensor<T, 5>()),
++                      .template tensor<T, 5>()),
+           {{0, 0, 0}}, {{-planes_odd, -rows_odd, -cols_odd}},
+-          To32Bit(in_backprop_remove_padding.tensor<T, 5>()), FORMAT_NCHW);
++          To32Bit(in_backprop_remove_padding.template tensor<T, 5>()), FORMAT_NCHW);
+ 
+       pre_transformed_in_backprop = in_backprop_remove_padding;
+     }
+@@ -746,7 +746,7 @@
+       functor::NCHWToNHWC<GPUDevice, T, 5>()(
+           context->eigen_device<GPUDevice>(),
+           toConstTensor(pre_transformed_in_backprop).template tensor<T, 5>(),
+-          in_backprop->tensor<T, 5>());
++          in_backprop->template tensor<T, 5>());
+     } else {
+       *in_backprop = pre_transformed_in_backprop;
+     }
+@@ -907,9 +907,9 @@
+                                   &compatible_input));
+       functor::PadInput<GPUDevice, T, int, 5>()(
+           context->template eigen_device<GPUDevice>(),
+-          To32Bit(input.tensor<T, 5>()), {{0, 0, 0}},
++          To32Bit(input.template tensor<T, 5>()), {{0, 0, 0}},
+           {{planes_odd, rows_odd, cols_odd}},
+-          To32Bit(compatible_input.tensor<T, 5>()), data_format_);
++          To32Bit(compatible_input.template tensor<T, 5>()), data_format_);
+     } else {
+       compatible_input = input;
+     }
+@@ -965,8 +965,8 @@
+                                           &transformed_out_backprop));
+       if (out_depth > 1) {
+         functor::NHWCToNCHW<GPUDevice, T, 5>()(
+-            context->eigen_device<GPUDevice>(), out_backprop.tensor<T, 5>(),
+-            transformed_out_backprop.tensor<T, 5>());
++            context->eigen_device<GPUDevice>(), out_backprop.template tensor<T, 5>(),
++            transformed_out_backprop.template tensor<T, 5>());
+       } else {
+         CHECK(transformed_out_backprop.CopyFrom(out_backprop, nchw_shape));
+       }
+@@ -984,8 +984,8 @@
+                                               nchw_shape, &transformed_input));
+         functor::NHWCToNCHW<GPUDevice, T, 5>()(
+             context->eigen_device<GPUDevice>(),
+-            const_cast<const Tensor&>(compatible_input).tensor<T, 5>(),
+-            transformed_input.tensor<T, 5>());
++            const_cast<const Tensor&>(compatible_input).template tensor<T, 5>(),
++            transformed_input.template tensor<T, 5>());
+       } else {
+         CHECK(transformed_input.CopyFrom(compatible_input, nchw_shape));
+       }
+@@ -1094,7 +1094,7 @@
+     functor::ReverseTransformFilter<GPUDevice, T, 5>()(
+         context->eigen_device<GPUDevice>(),
+         toConstTensor(pre_transformed_filter_backprop).template tensor<T, 5>(),
+-        filter_backprop->tensor<T, 5>());
++        filter_backprop->template tensor<T, 5>());
+   }
+ 
+  private:
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_ops_3d.cc tensorflow-1.6.0/tensorflow/core/kernels/conv_ops_3d.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_ops_3d.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/conv_ops_3d.cc	2018-03-16 13:45:08.702731050 +0100
+@@ -56,8 +56,8 @@
+                                         "currently only supports the NHWC "
+                                         "tensor format."));
+     functor::CuboidConvolution<CPUDevice, T>()(
+-        context->eigen_device<CPUDevice>(), output->tensor<T, 5>(),
+-        input.tensor<T, 5>(), filter.tensor<T, 5>(), strides[2], strides[1],
++        context->eigen_device<CPUDevice>(), output->template tensor<T, 5>(),
++        input.template tensor<T, 5>(), filter.template tensor<T, 5>(), strides[2], strides[1],
+         strides[0], BrainPadding2EigenPadding(padding));
+   }
+ };
+@@ -276,9 +276,9 @@
+                                     &transformed_input));
+ 
+         functor::PadInput<GPUDevice, T, int, 5>()(
+-            ctx->eigen_device<GPUDevice>(), To32Bit(input_param.tensor<T, 5>()),
++            ctx->eigen_device<GPUDevice>(), To32Bit(input_param.template tensor<T, 5>()),
+             {{0, 0, 0}}, {{planes_odd, rows_odd, cols_odd}},
+-            To32Bit(transformed_input.tensor<T, 5>()), data_format);
++            To32Bit(transformed_input.template tensor<T, 5>()), data_format);
+         input = transformed_input;
+         in_rows = new_in_rows;
+         in_cols = new_in_cols;
+@@ -298,8 +298,8 @@
+         // NCDHW is the only format universally supported by cuDNN.
+         functor::NHWCToNCHW<GPUDevice, T, 5>()(
+             ctx->eigen_device<GPUDevice>(),
+-            const_cast<const Tensor&>(input).tensor<T, 5>(),
+-            transformed_input.tensor<T, 5>());
++            const_cast<const Tensor&>(input).template tensor<T, 5>(),
++            transformed_input.template tensor<T, 5>());
+         input = transformed_input;
+       } else {
+         CHECK(input.CopyFrom(input, nchw_shape));
+@@ -346,8 +346,8 @@
+     // filter: [x, y, z, in, out]
+     // t_filter: [out, in, x, y, z]
+     functor::TransformFilter<GPUDevice, T, int, 5>()(
+-        ctx->eigen_device<GPUDevice>(), To32Bit(filter.tensor<T, 5>()),
+-        To32Bit(transformed_filter.tensor<T, 5>()));
++        ctx->eigen_device<GPUDevice>(), To32Bit(filter.template tensor<T, 5>()),
++        To32Bit(transformed_filter.template tensor<T, 5>()));
+ 
+     Tensor transformed_output;
+     OP_REQUIRES_OK(
+@@ -458,8 +458,8 @@
+       // output: [b, x, y, z, out]
+       functor::NCHWToNHWC<GPUDevice, T, 5>()(
+           ctx->eigen_device<GPUDevice>(),
+-          const_cast<const Tensor&>(transformed_output).tensor<T, 5>(),
+-          output->tensor<T, 5>());
++          const_cast<const Tensor&>(transformed_output).template tensor<T, 5>(),
++          output->template tensor<T, 5>());
+     } else {
+       *output = transformed_output;
+     }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/conv_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/conv_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/conv_ops.cc	2018-03-16 13:45:12.166734619 +0100
+@@ -82,8 +82,8 @@
+       functor::MatMulConvFunctor<Device, T>()(
+           ctx->eigen_device<Device>(),
+           output->shaped<T, 2>({conv_width, filter.dim_size(3)}),
+-          input.shaped<T, 2>({conv_width, filter.dim_size(2)}),
+-          filter.shaped<T, 2>({filter.dim_size(2), filter.dim_size(3)}),
++          input.template shaped<T, 2>({conv_width, filter.dim_size(2)}),
++          filter.template shaped<T, 2>({filter.dim_size(2), filter.dim_size(3)}),
+           dim_pair);
+     } else if (filter.dim_size(0) == input.dim_size(1) &&
+                filter.dim_size(1) == input.dim_size(2) && padding == VALID) {
+@@ -97,12 +97,12 @@
+       functor::MatMulConvFunctor<Device, T>()(
+           ctx->eigen_device<Device>(),
+           output->shaped<T, 2>({input.dim_size(0), filter.dim_size(3)}),
+-          input.shaped<T, 2>({input.dim_size(0), k}),
+-          filter.shaped<T, 2>({k, filter.dim_size(3)}), dim_pair);
++          input.template shaped<T, 2>({input.dim_size(0), k}),
++          filter.template shaped<T, 2>({k, filter.dim_size(3)}), dim_pair);
+     } else {
+       functor::SpatialConvolution<Device, T>()(
+-          ctx->eigen_device<Device>(), output->tensor<T, 4>(),
+-          input.tensor<T, 4>(), filter.tensor<T, 4>(), row_stride, col_stride,
++          ctx->eigen_device<Device>(), output->template tensor<T, 4>(),
++          input.template tensor<T, 4>(), filter.template tensor<T, 4>(), row_stride, col_stride,
+           BrainPadding2EigenPadding(padding));
+     }
+   }
+@@ -601,9 +601,9 @@
+                              &transformed_input));
+ 
+       functor::PadInput<GPUDevice, T, int, 4>()(
+-          ctx->eigen_device<GPUDevice>(), To32Bit(input_param.tensor<T, 4>()),
++          ctx->eigen_device<GPUDevice>(), To32Bit(input_param.template tensor<T, 4>()),
+           {{0, 0}}, {{rows_odd, cols_odd}},
+-          To32Bit(transformed_input.tensor<T, 4>()), data_format);
++          To32Bit(transformed_input.template tensor<T, 4>()), data_format);
+ 
+       input = transformed_input;
+       in_rows = new_in_rows;
+@@ -621,8 +621,8 @@
+                                              nchw_shape, &transformed_input));
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(
+           ctx->eigen_device<GPUDevice>(),
+-          const_cast<const Tensor&>(input).tensor<T, 4>(),
+-          transformed_input.tensor<T, 4>());
++          const_cast<const Tensor&>(input).template tensor<T, 4>(),
++          transformed_input.template tensor<T, 4>());
+       input = transformed_input;
+     } else {
+       // If depth <= 1, then just reshape.
+@@ -666,8 +666,8 @@
+                           &transformed_filter));
+ 
+   functor::TransformFilter<GPUDevice, T, int, 4>()(
+-      ctx->eigen_device<GPUDevice>(), To32Bit(filter.tensor<T, 4>()),
+-      To32Bit(transformed_filter.tensor<T, 4>()));
++      ctx->eigen_device<GPUDevice>(), To32Bit(filter.template tensor<T, 4>()),
++      To32Bit(transformed_filter.template tensor<T, 4>()));
+ 
+   Tensor transformed_output;
+   OP_REQUIRES_OK(
+@@ -777,8 +777,8 @@
+   if (data_format == FORMAT_NHWC) {
+     functor::NCHWToNHWC<GPUDevice, T, 4>()(
+         ctx->eigen_device<GPUDevice>(),
+-        const_cast<const Tensor&>(transformed_output).tensor<T, 4>(),
+-        output->tensor<T, 4>());
++        const_cast<const Tensor&>(transformed_output).template tensor<T, 4>(),
++        output->template tensor<T, 4>());
+   } else {
+     *output = transformed_output;
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/crop_and_resize_op.cc tensorflow-1.6.0/tensorflow/core/kernels/crop_and_resize_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/crop_and_resize_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/crop_and_resize_op.cc	2018-03-16 13:45:08.106730437 +0100
+@@ -178,16 +178,16 @@
+       const Tensor& boxes = context->input(1);
+       const Tensor& box_index = context->input(2);
+       const bool status = functor::CropAndResize<Device, T>()(
+-          context, image.tensor<T, 4>(), boxes.tensor<float, 2>(),
+-          box_index.tensor<int32, 1>(), extrapolation_value_,
+-          output->tensor<float, 4>());
++          context, image.template tensor<T, 4>(), boxes.template tensor<float, 2>(),
++          box_index.template tensor<int32, 1>(), extrapolation_value_,
++          output->template tensor<float, 4>());
+       if (!status) {
+         context->SetStatus(
+             errors::Internal("Failed launch CropAndResizeKernel."));
+       }
+     };
+ 
+-    RunIfBoxIndexIsValid<Device>(context, box_index.tensor<int32, 1>(),
++    RunIfBoxIndexIsValid<Device>(context, box_index.template tensor<int32, 1>(),
+                                  batch_size, std::move(compute_callback),
+                                  std::move(done));
+   }
+@@ -378,16 +378,16 @@
+       const Tensor& boxes = context->input(1);
+       const Tensor& box_index = context->input(2);
+       const bool status = functor::CropAndResizeBackpropImage<Device, T>()(
+-          context->eigen_device<Device>(), grads.tensor<float, 4>(),
+-          boxes.tensor<float, 2>(), box_index.tensor<int32, 1>(),
+-          output->tensor<T, 4>());
++          context->eigen_device<Device>(), grads.template tensor<float, 4>(),
++          boxes.template tensor<float, 2>(), box_index.template tensor<int32, 1>(),
++          output->template tensor<T, 4>());
+       if (!status) {
+         context->SetStatus(errors::Internal(
+             "Failed launch CropAndResizeBackpropImage kernel."));
+       }
+     };
+ 
+-    RunIfBoxIndexIsValid<Device>(context, box_index.tensor<int32, 1>(),
++    RunIfBoxIndexIsValid<Device>(context, box_index.template tensor<int32, 1>(),
+                                  batch_size, std::move(compute_callback),
+                                  std::move(done));
+   }
+@@ -543,16 +543,16 @@
+       const Tensor& boxes = context->input(2);
+       const Tensor& box_index = context->input(3);
+       const bool status = functor::CropAndResizeBackpropBoxes<Device, T>()(
+-          context->eigen_device<Device>(), grads.tensor<float, 4>(),
+-          image.tensor<T, 4>(), boxes.tensor<float, 2>(),
+-          box_index.tensor<int32, 1>(), output->tensor<float, 2>());
++          context->eigen_device<Device>(), grads.template tensor<float, 4>(),
++          image.template tensor<T, 4>(), boxes.template tensor<float, 2>(),
++          box_index.template tensor<int32, 1>(), output->template tensor<float, 2>());
+       if (!status) {
+         context->SetStatus(errors::Internal(
+             "Failed launch CropAndResizeBackpropBoxes kernel."));
+       }
+     };
+ 
+-    RunIfBoxIndexIsValid<Device>(context, box_index.tensor<int32, 1>(),
++    RunIfBoxIndexIsValid<Device>(context, box_index.template tensor<int32, 1>(),
+                                  batch_size, std::move(compute_callback),
+                                  std::move(done));
+   }
+@@ -732,7 +732,7 @@
+                              &isvalid_dev_tensor),
+       done);
+   typename TTypes<bool, 0>::Tensor isvalid_dev =
+-      isvalid_dev_tensor.tensor<bool, 0>();
++      isvalid_dev_tensor.template tensor<bool, 0>();
+ 
+   // Run the actual box check on the device.
+   functor::CheckValidBoxIndexHelper<GPUDevice>()(
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/ctc_decoder_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/ctc_decoder_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/ctc_decoder_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/ctc_decoder_ops.cc	2018-03-16 13:45:08.818731169 +0100
+@@ -197,7 +197,7 @@
+         errors::InvalidArgument("num_classes cannot exceed max int"));
+     const int num_classes = static_cast<const int>(num_classes_raw);
+ 
+-    auto inputs_t = inputs->tensor<float, 3>();
++    auto inputs_t = inputs->template tensor<float, 3>();
+ 
+     for (std::size_t t = 0; t < max_time; ++t) {
+       input_list_t.emplace_back(inputs_t.data() + t * batch_size * num_classes,
+@@ -265,7 +265,7 @@
+                             ctx, &inputs, &seq_len, &log_prob, &decoded_indices,
+                             &decoded_values, &decoded_shape));
+ 
+-    auto inputs_t = inputs->tensor<float, 3>();
++    auto inputs_t = inputs->template tensor<float, 3>();
+     auto seq_len_t = seq_len->vec<int32>();
+     auto log_prob_t = log_prob->matrix<float>();
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/ctc_loss_op.cc tensorflow-1.6.0/tensorflow/core/kernels/ctc_loss_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/ctc_loss_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/ctc_loss_op.cc	2018-03-16 13:45:12.626735094 +0100
+@@ -140,8 +140,8 @@
+     Tensor* gradient;
+     OP_REQUIRES_OK(ctx,
+                    ctx->allocate_output("gradient", inputs_shape, &gradient));
+-    auto gradient_t = gradient->tensor<float, 3>();
+-    auto inputs_t = inputs->tensor<float, 3>();
++    auto gradient_t = gradient->template tensor<float, 3>();
++    auto inputs_t = inputs->template tensor<float, 3>();
+     std::vector<OutputMap> gradient_list_t;
+     std::vector<InputMap> input_list_t;
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/cudnn_pooling_gpu.cc tensorflow-1.6.0/tensorflow/core/kernels/cudnn_pooling_gpu.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/cudnn_pooling_gpu.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/cudnn_pooling_gpu.cc	2018-03-16 13:45:08.110730440 +0100
+@@ -51,8 +51,8 @@
+                                                 data_format),
+                                 &transformed_input));
+     functor::NHWCToNCHW<GPUDevice, T, 5>()(context->eigen_device<GPUDevice>(),
+-                                           tensor_in.tensor<T, 5>(),
+-                                           transformed_input.tensor<T, 5>());
++                                           tensor_in.template tensor<T, 5>(),
++                                           transformed_input.template tensor<T, 5>());
+   } else {
+     transformed_input = tensor_in;
+   }
+@@ -109,7 +109,7 @@
+     functor::NCHWToNHWC<GPUDevice, T, 5>()(
+         context->eigen_device<GPUDevice>(),
+         toConstTensor(transformed_output).template tensor<T, 5>(),
+-        output->tensor<T, 5>());
++        output->template tensor<T, 5>());
+   }
+ }
+ 
+@@ -173,17 +173,17 @@
+   if (data_format == FORMAT_NHWC) {
+     if (tensor_in != nullptr) {
+       functor::NHWCToNCHW<GPUDevice, T, 5>()(context->eigen_device<GPUDevice>(),
+-                                             tensor_in->tensor<T, 5>(),
+-                                             transformed_input.tensor<T, 5>());
++                                             tensor_in->template tensor<T, 5>(),
++                                             transformed_input.template tensor<T, 5>());
+     }
+     if (tensor_out != nullptr) {
+       functor::NHWCToNCHW<GPUDevice, T, 5>()(context->eigen_device<GPUDevice>(),
+-                                             tensor_out->tensor<T, 5>(),
+-                                             transformed_output.tensor<T, 5>());
++                                             tensor_out->template tensor<T, 5>(),
++                                             transformed_output.template tensor<T, 5>());
+     }
+     functor::NHWCToNCHW<GPUDevice, T, 5>()(
+-        context->eigen_device<GPUDevice>(), out_backprop.tensor<T, 5>(),
+-        transformed_output_backprop.tensor<T, 5>());
++        context->eigen_device<GPUDevice>(), out_backprop.template tensor<T, 5>(),
++        transformed_output_backprop.template tensor<T, 5>());
+   }
+ 
+   perftools::gputools::dnn::PoolingDescriptor pooling_desc(3);
+@@ -239,7 +239,7 @@
+     functor::NCHWToNHWC<GPUDevice, T, 5>()(
+         context->eigen_device<GPUDevice>(),
+         toConstTensor(transformed_input_backprop).template tensor<T, 5>(),
+-        input_backprop->tensor<T, 5>());
++        input_backprop->template tensor<T, 5>());
+   }
+ }
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/depthtospace_op.cc tensorflow-1.6.0/tensorflow/core/kernels/depthtospace_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/depthtospace_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/depthtospace_op.cc	2018-03-16 13:45:12.454734916 +0100
+@@ -109,8 +109,8 @@
+                        ShapeFromFormat(data_format_, batch_size, output_height,
+                                        output_width, output_depth),
+                        &outputs_tensor));
+-    auto Tinput = input.tensor<T, kDims>();
+-    auto Toutput = outputs_tensor->tensor<T, kDims>();
++    auto Tinput = input.template tensor<T, kDims>();
++    auto Toutput = outputs_tensor->template tensor<T, kDims>();
+ 
+     if (std::is_same<Device, GPUDevice>::value) {
+       if (is_int8x4) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/dilation_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/dilation_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/dilation_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/dilation_ops.cc	2018-03-16 13:45:12.218734672 +0100
+@@ -147,9 +147,9 @@
+     }
+ 
+     functor::Dilation<Device, T>()(
+-        context->eigen_device<Device>(), input.tensor<T, 4>(),
+-        filter.tensor<T, 3>(), stride_rows, stride_cols, rate_rows, rate_cols,
+-        pad_top, pad_left, output->tensor<T, 4>());
++        context->eigen_device<Device>(), input.template tensor<T, 4>(),
++        filter.template tensor<T, 3>(), stride_rows, stride_cols, rate_rows, rate_cols,
++        pad_top, pad_left, output->template tensor<T, 4>());
+   }
+ 
+   std::vector<int32> strides_;
+@@ -253,10 +253,10 @@
+     }
+ 
+     functor::DilationBackpropInput<Device, T>()(
+-        context->eigen_device<Device>(), input.tensor<T, 4>(),
+-        filter.tensor<T, 3>(), out_backprop.tensor<T, 4>(), stride_rows,
++        context->eigen_device<Device>(), input.template tensor<T, 4>(),
++        filter.template tensor<T, 3>(), out_backprop.template tensor<T, 4>(), stride_rows,
+         stride_cols, rate_rows, rate_cols, pad_top, pad_left,
+-        in_backprop->tensor<T, 4>());
++        in_backprop->template tensor<T, 4>());
+   }
+ 
+   std::vector<int32> strides_;
+@@ -373,10 +373,10 @@
+     }
+ 
+     functor::DilationBackpropFilter<Device, T>()(
+-        context->eigen_device<Device>(), input.tensor<T, 4>(),
+-        filter.tensor<T, 3>(), out_backprop.tensor<T, 4>(), stride_rows,
++        context->eigen_device<Device>(), input.template tensor<T, 4>(),
++        filter.template tensor<T, 3>(), out_backprop.template tensor<T, 4>(), stride_rows,
+         stride_cols, rate_rows, rate_cols, pad_top, pad_left,
+-        filter_backprop->tensor<T, 3>());
++        filter_backprop->template tensor<T, 3>());
+   }
+ 
+   std::vector<int32> strides_;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/draw_bounding_box_op.cc tensorflow-1.6.0/tensorflow/core/kernels/draw_bounding_box_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/draw_bounding_box_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/draw_bounding_box_op.cc	2018-03-16 13:45:11.298733724 +0100
+@@ -83,12 +83,12 @@
+         context->allocate_output(
+             0, TensorShape({batch_size, height, width, depth}), &output));
+ 
+-    output->tensor<T, 4>() = images.tensor<T, 4>();
+-    auto canvas = output->tensor<T, 4>();
++    output->template tensor<T, 4>() = images.template tensor<T, 4>();
++    auto canvas = output->template tensor<T, 4>();
+ 
+     for (int64 b = 0; b < batch_size; ++b) {
+       const int64 num_boxes = boxes.dim_size(1);
+-      const auto tboxes = boxes.tensor<T, 3>();
++      const auto tboxes = boxes.template tensor<T, 3>();
+       for (int64 bb = 0; bb < num_boxes; ++bb) {
+         int64 color_index = bb % color_table_length;
+         const int64 min_box_row =
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/dynamic_stitch_op.cc tensorflow-1.6.0/tensorflow/core/kernels/dynamic_stitch_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/dynamic_stitch_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/dynamic_stitch_op.cc	2018-03-16 13:45:11.770734211 +0100
+@@ -244,7 +244,7 @@
+         auto indices_vec = indices.flat<int32>();
+         const Tensor& data = data_inputs[input_num];
+         auto data_flat =
+-            data.shaped<T, 2>({indices_vec.dimension(0), slice_size});
++            data.template shaped<T, 2>({indices_vec.dimension(0), slice_size});
+ 
+         if (DataTypeCanUseMemcpy(DataTypeToEnum<T>::v())) {
+           T* merged_base = &merged_flat(0, 0);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/extract_image_patches_op.cc tensorflow-1.6.0/tensorflow/core/kernels/extract_image_patches_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/extract_image_patches_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/extract_image_patches_op.cc	2018-03-16 13:45:10.078732468 +0100
+@@ -105,9 +105,9 @@
+     }
+ 
+     functor::ExtractImagePatchesForward<Device, T>()(
+-        context->eigen_device<Device>(), input.tensor<T, 4>(), ksize_rows,
++        context->eigen_device<Device>(), input.template tensor<T, 4>(), ksize_rows,
+         ksize_cols, stride_rows, stride_cols, rate_rows, rate_cols,
+-        BrainPadding2EigenPadding(padding_), output->tensor<T, 4>());
++        BrainPadding2EigenPadding(padding_), output->template tensor<T, 4>());
+   }
+ 
+  private:
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/extract_jpeg_shape_op.cc tensorflow-1.6.0/tensorflow/core/kernels/extract_jpeg_shape_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/extract_jpeg_shape_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/extract_jpeg_shape_op.cc	2018-03-16 13:45:10.046732435 +0100
+@@ -57,7 +57,7 @@
+     Tensor* image_shape = nullptr;
+     OP_REQUIRES_OK(context,
+                    context->allocate_output(0, TensorShape({3}), &image_shape));
+-    auto image_shape_data = image_shape->tensor<T, 1>();
++    auto image_shape_data = image_shape->template tensor<T, 1>();
+     image_shape_data(0) = height;
+     image_shape_data(1) = width;
+     image_shape_data(2) = components;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/fused_batch_norm_op.cc tensorflow-1.6.0/tensorflow/core/kernels/fused_batch_norm_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/fused_batch_norm_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/fused_batch_norm_op.cc	2018-03-16 13:45:12.998735477 +0100
+@@ -58,13 +58,13 @@
+     OP_REQUIRES(context, tensor_format == FORMAT_NHWC,
+                 errors::Internal("The CPU implementation of FusedBatchNorm "
+                                  "only supports NHWC tensor format for now."));
+-    typename TTypes<T, 4>::ConstTensor x(x_input.tensor<T, 4>());
++    typename TTypes<T, 4>::ConstTensor x(x_input.template tensor<T, 4>());
+     typename TTypes<U>::ConstVec scale(scale_input.vec<U>());
+     typename TTypes<U>::ConstVec offset(offset_input.vec<U>());
+     typename TTypes<U>::ConstVec estimated_mean(estimated_mean_input.vec<U>());
+     typename TTypes<U>::ConstVec estimated_variance(
+         estimated_variance_input.vec<U>());
+-    typename TTypes<T, 4>::Tensor y(y_output->tensor<T, 4>());
++    typename TTypes<T, 4>::Tensor y(y_output->template tensor<T, 4>());
+     typename TTypes<U>::Vec batch_mean(batch_mean_output->vec<U>());
+     typename TTypes<U>::Vec batch_var(batch_var_output->vec<U>());
+     typename TTypes<U>::Vec saved_mean(saved_mean_output->vec<U>());
+@@ -141,12 +141,12 @@
+                 errors::Internal("The CPU implementation of FusedBatchNormGrad "
+                                  "only supports NHWC tensor format for now."));
+     typename TTypes<T, 4>::ConstTensor y_backprop(
+-        y_backprop_input.tensor<T, 4>());
+-    typename TTypes<T, 4>::ConstTensor x(x_input.tensor<T, 4>());
++        y_backprop_input.template tensor<T, 4>());
++    typename TTypes<T, 4>::ConstTensor x(x_input.template tensor<T, 4>());
+     typename TTypes<U>::ConstVec scale(scale_input.vec<U>());
+     typename TTypes<U>::ConstVec mean(mean_input.vec<U>());
+     typename TTypes<U>::ConstVec variance(variance_input.vec<U>());
+-    typename TTypes<T, 4>::Tensor x_backprop(x_backprop_output->tensor<T, 4>());
++    typename TTypes<T, 4>::Tensor x_backprop(x_backprop_output->template tensor<T, 4>());
+     typename TTypes<U>::Vec scale_backprop(scale_backprop_output->vec<U>());
+     typename TTypes<U>::Vec offset_backprop(offset_backprop_output->vec<U>());
+ 
+@@ -263,8 +263,8 @@
+                                   &x_transformed));
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(
+           context->eigen_device<GPUDevice>(),
+-          const_cast<const Tensor&>(x_maybe_transformed).tensor<T, 4>(),
+-          x_transformed.tensor<T, 4>());
++          const_cast<const Tensor&>(x_maybe_transformed).template tensor<T, 4>(),
++          x_transformed.template tensor<T, 4>());
+       x_maybe_transformed = x_transformed;
+ 
+       OP_REQUIRES_OK(context, context->allocate_temp(
+@@ -353,8 +353,8 @@
+     if (tensor_format == FORMAT_NHWC) {
+       functor::NCHWToNHWC<GPUDevice, T, 4>()(
+           context->eigen_device<GPUDevice>(),
+-          const_cast<const Tensor&>(y_transformed).tensor<T, 4>(),
+-          y->tensor<T, 4>());
++          const_cast<const Tensor&>(y_transformed).template tensor<T, 4>(),
++          y->template tensor<T, 4>());
+     }
+   }
+ };
+@@ -404,8 +404,8 @@
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(
+           context->eigen_device<GPUDevice>(),
+           const_cast<const Tensor&>(y_backprop_maybe_transformed)
+-              .tensor<T, 4>(),
+-          y_backprop_transformed.tensor<T, 4>());
++              .template tensor<T, 4>(),
++          y_backprop_transformed.template tensor<T, 4>());
+       y_backprop_maybe_transformed = y_backprop_transformed;
+ 
+       OP_REQUIRES_OK(context, context->allocate_temp(
+@@ -415,8 +415,8 @@
+                                   &x_transformed));
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(
+           context->eigen_device<GPUDevice>(),
+-          const_cast<const Tensor&>(x_maybe_transformed).tensor<T, 4>(),
+-          x_transformed.tensor<T, 4>());
++          const_cast<const Tensor&>(x_maybe_transformed).template tensor<T, 4>(),
++          x_transformed.template tensor<T, 4>());
+       x_maybe_transformed = x_transformed;
+ 
+       // Allocate memory for transformed outputs in 'NCHW'
+@@ -476,8 +476,8 @@
+     if (tensor_format == FORMAT_NHWC) {
+       functor::NCHWToNHWC<GPUDevice, T, 4>()(
+           context->eigen_device<GPUDevice>(),
+-          const_cast<const Tensor&>(x_backprop_transformed).tensor<T, 4>(),
+-          x_backprop->tensor<T, 4>());
++          const_cast<const Tensor&>(x_backprop_transformed).template tensor<T, 4>(),
++          x_backprop->template tensor<T, 4>());
+     }
+   }
+ };
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/fused_batch_norm_op.h tensorflow-1.6.0/tensorflow/core/kernels/fused_batch_norm_op.h
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/fused_batch_norm_op.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/fused_batch_norm_op.h	2018-03-16 13:45:08.614730960 +0100
+@@ -70,12 +70,12 @@
+                   typename TTypes<U>::Vec scratch1,
+                   typename TTypes<U>::Vec scratch2) {
+     typename TTypes<T, 4>::ConstTensor y_backprop(
+-        y_backprop_input.tensor<T, 4>());
+-    typename TTypes<T, 4>::ConstTensor input(x_input.tensor<T, 4>());
++        y_backprop_input.template tensor<T, 4>());
++    typename TTypes<T, 4>::ConstTensor input(x_input.template tensor<T, 4>());
+     typename TTypes<U>::ConstVec scale(scale_input.vec<U>());
+     typename TTypes<U>::ConstVec pop_mean(pop_mean_input.vec<U>());
+     typename TTypes<U>::ConstVec pop_var(pop_variance_input.vec<U>());
+-    typename TTypes<T, 4>::Tensor x_backprop(x_backprop_output->tensor<T, 4>());
++    typename TTypes<T, 4>::Tensor x_backprop(x_backprop_output->template tensor<T, 4>());
+     typename TTypes<U>::Vec scale_backprop(scale_backprop_output->vec<U>());
+     typename TTypes<U>::Vec offset_backprop(offset_backprop_output->vec<U>());
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/gather_op.cc tensorflow-1.6.0/tensorflow/core/kernels/gather_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/gather_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/gather_op.cc	2018-03-16 13:45:10.346732743 +0100
+@@ -103,7 +103,7 @@
+     OP_REQUIRES_OK(c, c->allocate_output(0, result_shape, &out));
+     if (N > 0 && outer_size > 0 && inner_size > 0) {
+       auto params_flat =
+-          params.shaped<T, 3>({outer_size, gather_dim_size, inner_size});
++          params.template shaped<T, 3>({outer_size, gather_dim_size, inner_size});
+       auto indices_flat = indices.flat<Index>();
+       auto out_flat = out->shaped<T, 3>({outer_size, N, inner_size});
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/inplace_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/inplace_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/inplace_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/inplace_ops.cc	2018-03-16 13:45:12.342734801 +0100
+@@ -34,7 +34,7 @@
+ template <typename Device, typename T>
+ Status DoParallelConcatUpdate(const Device& d, const Tensor& value, int32 loc,
+                               Tensor* output) {
+-  auto Tvalue = value.shaped<T, 2>({1, value.NumElements()});
++  auto Tvalue = value.template shaped<T, 2>({1, value.NumElements()});
+   auto Toutput = output->flat_outer_dims<T>();
+   auto nrows = Toutput.dimension(0);
+   auto r = (loc % nrows + nrows) % nrows;  // Guard index range.
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/list_kernels.h tensorflow-1.6.0/tensorflow/core/kernels/list_kernels.h
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/list_kernels.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/list_kernels.h	2018-03-16 13:45:08.450730791 +0100
+@@ -112,7 +112,7 @@
+               l->element_shape.DebugString(),
+               " and tensor shape: ", t.shape().DebugString()));
+       inputs_flat.emplace_back(new typename TTypes<T, 2>::ConstMatrix(
+-          t.shaped<T, 2>({1, t.NumElements()})));
++          t.template shaped<T, 2>({1, t.NumElements()})));
+     }
+     auto output_flat = output->shaped<T, 2>({1, output->NumElements()});
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/lookup_table_op.cc tensorflow-1.6.0/tensorflow/core/kernels/lookup_table_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/lookup_table_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/lookup_table_op.cc	2018-03-16 13:45:10.790733200 +0100
+@@ -352,7 +352,7 @@
+                                      expected_shape.DebugString(), " got ",
+                                      key.shape().DebugString());
+     }
+-    const auto key_matrix = key.shaped<K, 2>({num_elements, key_size});
++    const auto key_matrix = key.template shaped<K, 2>({num_elements, key_size});
+     auto value_matrix = value->shaped<V, 2>({num_elements, value_size});
+     const auto default_flat = default_value.flat<V>();
+ 
+@@ -505,8 +505,8 @@
+     const int64 num_elements = key.dim_size(0);
+     const int64 value_size = value_shape_.num_elements();
+     const int64 key_size = key_shape_.num_elements();
+-    const auto key_matrix = key.shaped<K, 2>({num_elements, key_size});
+-    auto value_matrix = value.shaped<V, 2>({num_elements, value_size});
++    const auto key_matrix = key.template shaped<K, 2>({num_elements, key_size});
++    auto value_matrix = value.template shaped<V, 2>({num_elements, value_size});
+ 
+     auto key_buckets_matrix =
+         key_buckets_.AccessTensor(ctx)->template matrix<K>();
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/lrn_op.cc tensorflow-1.6.0/tensorflow/core/kernels/lrn_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/lrn_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/lrn_op.cc	2018-03-16 13:45:08.942731298 +0100
+@@ -90,7 +90,7 @@
+       return;
+     }
+ 
+-    auto in_shaped = in.shaped<T, 2>({nodes * batch, depth});
++    auto in_shaped = in.template shaped<T, 2>({nodes * batch, depth});
+ 
+     // Multiplying the input with the band matrix has the effect of reducing the
+     // correct patch along the depth.
+@@ -318,9 +318,9 @@
+     const int64 cols = in_grads.dim_size(2);
+     const int64 depth = in_grads.dim_size(3);
+     const auto nodes = cols * rows;
+-    auto grads_shaped = in_grads.shaped<T, 2>({nodes * batch, depth});
+-    auto in_shaped = in_image.shaped<T, 2>({nodes * batch, depth});
+-    auto activations = out_image.shaped<T, 2>({nodes * batch, depth});
++    auto grads_shaped = in_grads.template shaped<T, 2>({nodes * batch, depth});
++    auto in_shaped = in_image.template shaped<T, 2>({nodes * batch, depth});
++    auto activations = out_image.template shaped<T, 2>({nodes * batch, depth});
+ 
+     auto out_shaped = output->shaped<T, 2>({nodes * batch, depth});
+     out_shaped.setZero();
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/lrn_op_test.cc tensorflow-1.6.0/tensorflow/core/kernels/lrn_op_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/lrn_op_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/lrn_op_test.cc	2018-03-16 13:45:12.114734565 +0100
+@@ -65,7 +65,7 @@
+     Eigen::Tensor<float, 4, Eigen::RowMajor> expected(batch_size, rows, cols,
+                                                       depth);
+     auto out = expected.reshape(Eigen::DSizes<int64, 2>{rest, depth});
+-    auto in = input.shaped<float, 2>({rest, depth});
++    auto in = input.template shaped<float, 2>({rest, depth});
+ 
+     for (int64 i = 0; i < rest; ++i) {
+       Eigen::Tensor<float, 1, Eigen::RowMajor> out_col(depth);
+@@ -80,7 +80,7 @@
+       }
+       out.chip<0>(i) = out_col;
+     }
+-    auto actual = GetOutput(0)->tensor<float, 4>();
++    auto actual = GetOutput(0)->template tensor<float, 4>();
+     Eigen::Tensor<float, 0, Eigen::RowMajor> sum =
+         ((expected - actual).abs() > actual.constant(tol_))
+             .select(actual.constant(1), actual.constant(0))
+@@ -104,7 +104,7 @@
+   AddInput<float>(TensorShape({1, 1, 1, 96}),
+                   [this](int i) -> float { return i + 1; });
+   TF_ASSERT_OK(RunOpKernel());
+-  auto actual = GetOutput(0)->tensor<float, 4>();
++  auto actual = GetOutput(0)->template tensor<float, 4>();
+ 
+   // Output for Node 0 with Value 1:
+   // 1 / (1 + 0.1*(1^2 + 2^2 + 3^2 + 4^2 + 5^2 + 6^2))^2
+@@ -140,7 +140,7 @@
+   AddInput<float>(TensorShape({1, 1, 1, 16}),
+                   [this](int i) -> float { return i + 1; });
+   TF_ASSERT_OK(RunOpKernel());
+-  auto actual = GetOutput(0)->tensor<float, 4>();
++  auto actual = GetOutput(0)->template tensor<float, 4>();
+ 
+   // Output for Node 0 with Value 1:
+   // 1 / (1 + 0.1*(1^2 + 2^2 + 3^2 + 4^2 + 5^2 + 6^2))^2
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/mirror_pad_op.cc tensorflow-1.6.0/tensorflow/core/kernels/mirror_pad_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/mirror_pad_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/mirror_pad_op.cc	2018-03-16 13:45:10.934733350 +0100
+@@ -122,8 +122,8 @@
+ #define MIRROR_PAD_CASE(i)                                                \
+   case i: {                                                               \
+     functor::MirrorPad<Device, T, Tpaddings, i>()(                        \
+-        context->eigen_device<Device>(), To32Bit(output->tensor<T, i>()), \
+-        To32Bit(in0.tensor<T, i>()), paddings, offset_);                  \
++        context->eigen_device<Device>(), To32Bit(output->template tensor<T, i>()), \
++        To32Bit(in0.template tensor<T, i>()), paddings, offset_);                  \
+     break;                                                                \
+   }
+ 
+@@ -331,9 +331,9 @@
+ #define MIRROR_PAD_GRAD_CASE(k)                                           \
+   case k: {                                                               \
+     functor::MirrorPadGrad<Device, T, Tpaddings, k>()(                    \
+-        context->eigen_device<Device>(), To32Bit(output->tensor<T, k>()), \
+-        To32Bit(in0.tensor<T, k>()), paddings, offset_,                   \
+-        To32Bit(scratch.tensor<T, k>()));                                 \
++        context->eigen_device<Device>(), To32Bit(output->template tensor<T, k>()), \
++        To32Bit(in0.template tensor<T, k>()), paddings, offset_,                   \
++        To32Bit(scratch.template tensor<T, k>()));                                 \
+     break;                                                                \
+   }
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/mkl_concat_op.cc tensorflow-1.6.0/tensorflow/core/kernels/mkl_concat_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/mkl_concat_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/mkl_concat_op.cc	2018-03-16 13:45:11.646734083 +0100
+@@ -127,7 +127,7 @@
+       if (in.NumElements() > 0) {
+         int64 inputs_flat_dim1 = in.NumElements() / inputs_flat_dim0;
+         inputs_flat.emplace_back(new typename TTypes<T, 2>::ConstMatrix(
+-            in.shaped<T, 2>({inputs_flat_dim0, inputs_flat_dim1})));
++            in.template shaped<T, 2>({inputs_flat_dim0, inputs_flat_dim1})));
+       }
+       // TODO(irving): Remove check once !allow_legacy_scalars().
+       output_concat_dim += in.dims() > 0 ? in.dim_size(axis) : 1;
+@@ -206,7 +206,7 @@
+       if (in.NumElements() > 0) {
+         int64 inputs_flat_dim1 = in.NumElements() / inputs_flat_dim0;
+         inputs_flat.emplace_back(new typename TTypes<T, 2>::ConstMatrix(
+-            in.shaped<T, 2>({inputs_flat_dim0, inputs_flat_dim1})));
++            in.template shaped<T, 2>({inputs_flat_dim0, inputs_flat_dim1})));
+       }
+       output_concat_dim +=
+           input_shapes[i].dims() > 0 ? input_shapes[i].dim_size(axis) : 1;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/mkl_lrn_op.cc tensorflow-1.6.0/tensorflow/core/kernels/mkl_lrn_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/mkl_lrn_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/mkl_lrn_op.cc	2018-03-16 13:45:10.894733308 +0100
+@@ -289,7 +289,7 @@
+       const int depth = static_cast<int>(input.dim_size(3));
+       const int nodes = cols * rows;
+ 
+-      auto in_shaped = input.shaped<T, 2>({nodes * batch, depth});
++      auto in_shaped = input.template shaped<T, 2>({nodes * batch, depth});
+       // Multiplying the input with the band matrix has the effect of reducing
+       // the
+       // correct patch along the depth.
+@@ -661,10 +661,10 @@
+       const int64 depth = static_cast<int64>(in_grads.dim_size(3));
+       const auto nodes = cols * rows;
+ 
+-      auto grads_shaped = in_grads.shaped<T, 2>({nodes * batch, depth});
++      auto grads_shaped = in_grads.template shaped<T, 2>({nodes * batch, depth});
+ 
+-      auto in_shaped = in_image.shaped<T, 2>({nodes * batch, depth});
+-      auto activations = out_image.shaped<T, 2>({nodes * batch, depth});
++      auto in_shaped = in_image.template shaped<T, 2>({nodes * batch, depth});
++      auto activations = out_image.template shaped<T, 2>({nodes * batch, depth});
+ 
+       Tensor* output;
+       MklShape mkl_output_mkl_shape;
+@@ -897,7 +897,7 @@
+     const int depth = static_cast<int>(input.dim_size(3));
+     const int nodes = cols * rows;
+ 
+-    auto in_shaped = input.shaped<T, 2>({nodes * batch, depth});
++    auto in_shaped = input.template shaped<T, 2>({nodes * batch, depth});
+     // Multiplying the input with the band matrix has the effect of reducing
+     // the
+     // correct patch along the depth.
+@@ -1230,10 +1230,10 @@
+     const auto nodes = cols * rows;
+ 
+     auto grads_shaped =
+-        input_gradient_tensor.shaped<T, 2>({nodes * batch, depth});
++        input_gradient_tensor.template shaped<T, 2>({nodes * batch, depth});
+ 
+-    auto in_shaped = orig_input_tensor.shaped<T, 2>({nodes * batch, depth});
+-    auto activations = orig_output_tensor.shaped<T, 2>({nodes * batch, depth});
++    auto in_shaped = orig_input_tensor.template shaped<T, 2>({nodes * batch, depth});
++    auto activations = orig_output_tensor.template shaped<T, 2>({nodes * batch, depth});
+ 
+     Tensor* output_dnn_data;
+     MklShape mkl_output_mkl_shape;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/mkl_transpose_op.cc tensorflow-1.6.0/tensorflow/core/kernels/mkl_transpose_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/mkl_transpose_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/mkl_transpose_op.cc	2018-03-16 13:45:09.130731491 +0100
+@@ -34,8 +34,8 @@
+ // Specifically, the returned tensor output meets the following condition:
+ // 1) output.dims() == input.dims();
+ // 2) output.dim_size(i) == input.dim_size(perm[i]);
+-// 3) output.tensor<T, N>(i_0, i_1, ..., i_N-1) ==
+-//      input.tensor<T, N>(j_0, j_1, ..., j_N-1),
++// 3) output.template tensor<T, N>(i_0, i_1, ..., i_N-1) ==
++//      input.template tensor<T, N>(j_0, j_1, ..., j_N-1),
+ //    where i_s == j_{perm[s]}
+ //
+ // REQUIRES: perm is a vector of int32.
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/non_max_suppression_op.cc tensorflow-1.6.0/tensorflow/core/kernels/non_max_suppression_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/non_max_suppression_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/non_max_suppression_op.cc	2018-03-16 13:45:10.334732732 +0100
+@@ -105,7 +105,7 @@
+   }
+ 
+   const int output_size = std::min(max_output_size.scalar<int>()(), num_boxes);
+-  typename TTypes<float, 2>::ConstTensor boxes_data = boxes.tensor<float, 2>();
++  typename TTypes<float, 2>::ConstTensor boxes_data = boxes.template tensor<float, 2>();
+ 
+   std::vector<float> scores_data(num_boxes);
+   std::copy_n(scores.flat<float>().data(), num_boxes, scores_data.begin());
+@@ -139,7 +139,7 @@
+   TensorShape output_shape({static_cast<int>(selected.size())});
+   OP_REQUIRES_OK(context, context->allocate_output(0, output_shape, &output));
+   typename TTypes<int, 1>::Tensor selected_indices_data =
+-      output->tensor<int, 1>();
++      output->template tensor<int, 1>();
+   std::copy_n(selected.begin(), selected.size(), selected_indices_data.data());
+ }
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/one_hot_op.cc tensorflow-1.6.0/tensorflow/core/kernels/one_hot_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/one_hot_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/one_hot_op.cc	2018-03-16 13:45:12.938735415 +0100
+@@ -107,7 +107,7 @@
+ 
+       // Split indices into matrix of size prefix_dim_size x suffix_dim_size
+       auto indices_t =
+-          indices.shaped<TI, 2>({prefix_dim_size, suffix_dim_size});
++          indices.template shaped<TI, 2>({prefix_dim_size, suffix_dim_size});
+       // Split output into 3-Tensor of size:
+       //   prefix_dim_size x depth x suffix_dim_size.
+       auto output_t =
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/pack_op.cc tensorflow-1.6.0/tensorflow/core/kernels/pack_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/pack_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/pack_op.cc	2018-03-16 13:45:10.326732722 +0100
+@@ -110,7 +110,7 @@
+       inputs_flat.reserve(num);
+       for (int i = 0; i < num; ++i) {
+         inputs_flat.emplace_back(new typename TTypes<T, 2>::ConstMatrix(
+-            values[i].shaped<T, 2>({before_dim, after_dim})));
++            values[i].template shaped<T, 2>({before_dim, after_dim})));
+       }
+ #if GOOGLE_CUDA
+       if (std::is_same<Device, GPUDevice>::value) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/padding_fifo_queue.cc tensorflow-1.6.0/tensorflow/core/kernels/padding_fifo_queue.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/padding_fifo_queue.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/padding_fifo_queue.cc	2018-03-16 13:45:10.502732905 +0100
+@@ -318,8 +318,8 @@
+   if (element.NumElements() == 0) {
+     return Status::OK();
+   }
+-  auto element_t = element.tensor<T, NDIMS>();
+-  auto parent_t = parent->tensor<T, NDIMS + 1>();
++  auto element_t = element.template tensor<T, NDIMS>();
++  auto parent_t = parent->template tensor<T, NDIMS + 1>();
+   Eigen::DSizes<Eigen::DenseIndex, NDIMS + 1> slice_indices;
+   slice_indices[0] = index;
+   Eigen::DSizes<Eigen::DenseIndex, NDIMS + 1> slice_size;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/pad_op.cc tensorflow-1.6.0/tensorflow/core/kernels/pad_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/pad_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/pad_op.cc	2018-03-16 13:45:08.926731282 +0100
+@@ -110,7 +110,7 @@
+     // Invoke the dims-specific implementation.
+     switch (fixed_dims) {
+       case 0:
+-        Operate<0>(context, in0.tensor<T, 0>(), paddings, pad_value, output);
++        Operate<0>(context, in0.template tensor<T, 0>(), paddings, pad_value, output);
+         break;
+       case 1:
+         // TODO(irving): Once Pad doesn't need a scalar special case,
+@@ -118,19 +118,19 @@
+         Operate<1>(context, in0.flat<T>(), paddings, pad_value, output);
+         break;
+       case 2:
+-        Operate<2>(context, in0.tensor<T, 2>(), paddings, pad_value, output);
++        Operate<2>(context, in0.template tensor<T, 2>(), paddings, pad_value, output);
+         break;
+       case 3:
+-        Operate<3>(context, in0.tensor<T, 3>(), paddings, pad_value, output);
++        Operate<3>(context, in0.template tensor<T, 3>(), paddings, pad_value, output);
+         break;
+       case 4:
+-        Operate<4>(context, in0.tensor<T, 4>(), paddings, pad_value, output);
++        Operate<4>(context, in0.template tensor<T, 4>(), paddings, pad_value, output);
+         break;
+       case 5:
+-        Operate<5>(context, in0.tensor<T, 5>(), paddings, pad_value, output);
++        Operate<5>(context, in0.template tensor<T, 5>(), paddings, pad_value, output);
+         break;
+       case 6:
+-        Operate<6>(context, in0.tensor<T, 6>(), paddings, pad_value, output);
++        Operate<6>(context, in0.template tensor<T, 6>(), paddings, pad_value, output);
+         break;
+       default:
+         OP_REQUIRES(context, false,
+@@ -152,7 +152,7 @@
+       paddings_array[i] = {paddings(i, 0), paddings(i, 1)};
+     }
+     functor::Pad<Device, T, Tpadding, Dims> functor;
+-    functor(context->eigen_device<Device>(), output->tensor<T, Dims>(), input,
++    functor(context->eigen_device<Device>(), output->template tensor<T, Dims>(), input,
+             paddings_array, pad_value);
+   }
+ };
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/pooling_ops_3d.cc tensorflow-1.6.0/tensorflow/core/kernels/pooling_ops_3d.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/pooling_ops_3d.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/pooling_ops_3d.cc	2018-03-16 13:45:09.442731813 +0100
+@@ -105,8 +105,8 @@
+                      const std::array<int64, 3>& padding,
+                      TensorFormat data_format, Padding padding_type,
+                      Tensor* output) {
+-    output->tensor<T, 5>().device(context->eigen_device<CPUDevice>()) =
+-        Eigen::CuboidAvgPooling(tensor_in.tensor<T, 5>(), window[0], window[1],
++    output->template tensor<T, 5>().device(context->eigen_device<CPUDevice>()) =
++        Eigen::CuboidAvgPooling(tensor_in.template tensor<T, 5>(), window[0], window[1],
+                                 window[2], stride[0], stride[1], stride[2],
+                                 BrainPadding2EigenPadding(padding_type));
+   }
+@@ -120,8 +120,8 @@
+                      const std::array<int64, 3>& padding,
+                      TensorFormat data_format, Padding padding_type,
+                      Tensor* output) {
+-    output->tensor<T, 5>().device(context->eigen_device<CPUDevice>()) =
+-        Eigen::CuboidMaxPooling(tensor_in.tensor<T, 5>(), window[0], window[1],
++    output->template tensor<T, 5>().device(context->eigen_device<CPUDevice>()) =
++        Eigen::CuboidMaxPooling(tensor_in.template tensor<T, 5>(), window[0], window[1],
+                                 window[2], stride[0], stride[1], stride[2],
+                                 BrainPadding2EigenPadding(padding_type));
+   }
+@@ -268,17 +268,17 @@
+           // Slice from tensor_in.
+           Eigen::Tensor<T, 5, Eigen::RowMajor> tensor_in_slice(dst_sizes);
+           tensor_in_slice.device(context->eigen_cpu_device()) =
+-              tensor_in.tensor<T, 5>().slice(dst_indices, dst_sizes);
++              tensor_in.template tensor<T, 5>().slice(dst_indices, dst_sizes);
+ 
+           // Slice from tensor_out.
+           Eigen::Tensor<T, 5, Eigen::RowMajor> tensor_out_slice(src_sizes);
+           tensor_out_slice.device(context->eigen_cpu_device()) =
+-              tensor_out.tensor<T, 5>().slice(src_indices, src_sizes);
++              tensor_out.template tensor<T, 5>().slice(src_indices, src_sizes);
+ 
+           // Backprop slice.
+           Eigen::Tensor<T, 5, Eigen::RowMajor> out_backprop_slice(src_sizes);
+           out_backprop_slice.device(context->eigen_cpu_device()) =
+-              out_backprop.tensor<T, 5>().slice(src_indices, src_sizes);
++              out_backprop.template tensor<T, 5>().slice(src_indices, src_sizes);
+ 
+           // The true backprop slice: if an element is the max, choose
+           // the backprop slice; otherwise set to 0.
+@@ -290,7 +290,7 @@
+                tensor_in_slice.constant(1e-5))
+                   .select(out_backprop_slice.broadcast(bcast), mat0);
+ 
+-          output->tensor<T, 5>()
++          output->template tensor<T, 5>()
+               .slice(dst_indices, dst_sizes)
+               .device(context->eigen_cpu_device()) += select_slice;
+         }
+@@ -439,12 +439,12 @@
+ #endif
+           Eigen::Tensor<T, 5, Eigen::RowMajor> slices(src_sizes);
+           slices.device(context->eigen_cpu_device()) =
+-              out_backprop.tensor<T, 5>().slice(src_indices, src_sizes);
++              out_backprop.template tensor<T, 5>().slice(src_indices, src_sizes);
+           // Divide by the size of the actual patch (psize * rsize * csize).
+           float divide_size = rsize * csize * psize * 1.0f;
+           slices *= slices.constant(1.0f / divide_size);
+ 
+-          output->tensor<T, 5>()
++          output->template tensor<T, 5>()
+               .slice(dst_indices, dst_sizes)
+               .device(context->eigen_cpu_device()) += slices.broadcast(bcast);
+         }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/pooling_ops_common.cc tensorflow-1.6.0/tensorflow/core/kernels/pooling_ops_common.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/pooling_ops_common.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/pooling_ops_common.cc	2018-03-16 13:45:12.074734524 +0100
+@@ -167,8 +167,8 @@
+                                                 data_format),
+                                 &transformed_input));
+     functor::NHWCToNCHW<GPUDevice, T, 4>()(context->eigen_device<Device>(),
+-                                           tensor_in.tensor<T, 4>(),
+-                                           transformed_input.tensor<T, 4>());
++                                           tensor_in.template tensor<T, 4>(),
++                                           transformed_input.template tensor<T, 4>());
+   } else {
+     transformed_input = tensor_in;
+   }
+@@ -230,7 +230,7 @@
+     functor::NCHWToNHWC<GPUDevice, T, 4>()(
+         context->eigen_device<Device>(),
+         toConstTensor(transformed_output).template tensor<T, 4>(),
+-        tensor_out->tensor<T, 4>());
++        tensor_out->template tensor<T, 4>());
+   }
+ }
+ 
+@@ -310,20 +310,20 @@
+       // cudnn still requires them to run, although they do not affect the
+       // results.
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(context->eigen_device<Device>(),
+-                                             tensor_in->tensor<T, 4>(),
+-                                             transformed_input.tensor<T, 4>());
++                                             tensor_in->template tensor<T, 4>(),
++                                             transformed_input.template tensor<T, 4>());
+     }
+     if (tensor_out) {
+       // For AvgPoolGrad, the original output tensor is not necessary. However,
+       // cudnn still requires them to run, although they do not affect the
+       // results.
+       functor::NHWCToNCHW<GPUDevice, T, 4>()(context->eigen_device<Device>(),
+-                                             tensor_out->tensor<T, 4>(),
+-                                             transformed_output.tensor<T, 4>());
++                                             tensor_out->template tensor<T, 4>(),
++                                             transformed_output.template tensor<T, 4>());
+     }
+     functor::NHWCToNCHW<GPUDevice, T, 4>()(
+-        context->eigen_device<Device>(), out_backprop.tensor<T, 4>(),
+-        transformed_output_backprop.tensor<T, 4>());
++        context->eigen_device<Device>(), out_backprop.template tensor<T, 4>(),
++        transformed_output_backprop.template tensor<T, 4>());
+   }
+ 
+   /// Get ready to call cudnn
+@@ -382,7 +382,7 @@
+     functor::NCHWToNHWC<GPUDevice, T, 4>()(
+         context->eigen_device<Device>(),
+         toConstTensor(transformed_input_backprop).template tensor<T, 4>(),
+-        input_backprop->tensor<T, 4>());
++        input_backprop->template tensor<T, 4>());
+   }
+ }
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/pooling_ops_common.h tensorflow-1.6.0/tensorflow/core/kernels/pooling_ops_common.h
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/pooling_ops_common.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/pooling_ops_common.h	2018-03-16 13:45:10.146732538 +0100
+@@ -164,8 +164,8 @@
+     if (std::is_same<Device, GPUDevice>::value) {
+       Eigen::PaddingType pt = BrainPadding2EigenPadding(padding);
+       functor::SpatialMaxPooling<Device, T>()(
+-          context->eigen_device<Device>(), output->tensor<T, 4>(),
+-          tensor_in.tensor<T, 4>(), params.window_rows, params.window_cols,
++          context->eigen_device<Device>(), output->template tensor<T, 4>(),
++          tensor_in.template tensor<T, 4>(), params.window_rows, params.window_cols,
+           params.row_stride, params.col_stride, pt);
+     } else {
+       typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>
+@@ -408,8 +408,8 @@
+             context, params, tensor_in, output);
+       } else {
+         functor::SpatialMaxPooling<Device, T>()(
+-            context->eigen_device<Device>(), output->tensor<T, 4>(),
+-            tensor_in.tensor<T, 4>(), params.window_rows, params.window_cols,
++            context->eigen_device<Device>(), output->template tensor<T, 4>(),
++            tensor_in.template tensor<T, 4>(), params.window_rows, params.window_cols,
+             params.row_stride, params.col_stride, pt);
+       }
+     } else
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/quantized_batch_norm_op_test.cc tensorflow-1.6.0/tensorflow/core/kernels/quantized_batch_norm_op_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/quantized_batch_norm_op_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/quantized_batch_norm_op_test.cc	2018-03-16 13:45:12.854735329 +0100
+@@ -226,10 +226,10 @@
+   const Tensor& const_beta_float = beta_float;
+   const Tensor& const_gamma_float = gamma_float;
+   functor::BatchNorm<Eigen::ThreadPoolDevice, float>()(
+-      eigen_cpu_device, const_input_float.tensor<float, 4>(),
++      eigen_cpu_device, const_input_float.template tensor<float, 4>(),
+       const_mean_float.vec<float>(), const_variance_float.vec<float>(),
+       const_beta_float.vec<float>(), const_gamma_float.vec<float>(), 0.001,
+-      false, expected_float.tensor<float, 4>());
++      false, expected_float.template tensor<float, 4>());
+ 
+   const Tensor& output_quantized = *GetOutput(0);
+   const float output_min = GetOutput(1)->flat<float>()(0);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/quantized_concat_op.cc tensorflow-1.6.0/tensorflow/core/kernels/quantized_concat_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/quantized_concat_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/quantized_concat_op.cc	2018-03-16 13:45:13.138735620 +0100
+@@ -151,7 +151,7 @@
+       if (in.NumElements() > 0) {
+         int64 inputs_flat_dim1 = in.NumElements() / inputs_flat_dim0;
+         inputs_flat->emplace_back(new typename TTypes<T, 2>::ConstMatrix(
+-            in.shaped<T, 2>({inputs_flat_dim0, inputs_flat_dim1})));
++            in.template shaped<T, 2>({inputs_flat_dim0, inputs_flat_dim1})));
+       }
+       *output_concat_dim += in.dims() > 0 ? in.dim_size(concat_dim) : 1;
+     }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/quantized_instance_norm.cc tensorflow-1.6.0/tensorflow/core/kernels/quantized_instance_norm.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/quantized_instance_norm.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/quantized_instance_norm.cc	2018-03-16 13:45:10.094732483 +0100
+@@ -283,7 +283,7 @@
+                     "input_min must be less than input_max : ", input_min,
+                     " >= ", input_max));
+ 
+-    auto input_tensor = input.tensor<quint8, 4>();
++    auto input_tensor = input.template tensor<quint8, 4>();
+     auto N = input_tensor.dimension(0);
+     auto H = input_tensor.dimension(1);
+     auto W = input_tensor.dimension(2);
+@@ -385,7 +385,7 @@
+       auto instance_normed_quantized =
+           QUANTIZE_WITH_EIGEN(instance_normed, output_f2q, quint8);
+ 
+-      output->tensor<quint8, 4>().device(
++      output->template tensor<quint8, 4>().device(
+           context->template eigen_device<CPUDevice>()) =
+           instance_normed_quantized;
+       output_min->flat<float>()(0) = normed_min();
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/quantized_resize_bilinear_op.cc tensorflow-1.6.0/tensorflow/core/kernels/quantized_resize_bilinear_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/quantized_resize_bilinear_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/quantized_resize_bilinear_op.cc	2018-03-16 13:45:08.282730617 +0100
+@@ -697,8 +697,8 @@
+     // Return if the output is empty.
+     if (st.output->NumElements() == 0) return;
+ 
+-    typename TTypes<T, 4>::ConstTensor image_data = input.tensor<T, 4>();
+-    typename TTypes<T, 4>::Tensor output_data = st.output->tensor<T, 4>();
++    typename TTypes<T, 4>::ConstTensor image_data = input.template tensor<T, 4>();
++    typename TTypes<T, 4>::Tensor output_data = st.output->template tensor<T, 4>();
+ 
+     ResizeBilinear<T>(image_data, st.height_scale, st.width_scale, in_min,
+                       in_max, &output_data);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/random_crop_op.cc tensorflow-1.6.0/tensorflow/core/kernels/random_crop_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/random_crop_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/random_crop_op.cc	2018-03-16 13:45:12.634735102 +0100
+@@ -92,8 +92,8 @@
+ 
+     // TODO(shlens): Do this more efficiently with memcpy once padding is
+     // available for smaller images.
+-    typename TTypes<T, 3>::ConstTensor input_data = input.tensor<T, 3>();
+-    typename TTypes<T, 3>::Tensor output_data = output->tensor<T, 3>();
++    typename TTypes<T, 3>::ConstTensor input_data = input.template tensor<T, 3>();
++    typename TTypes<T, 3>::Tensor output_data = output->template tensor<T, 3>();
+ 
+     for (int y = 0; y < target_height; ++y) {
+       for (int x = 0; x < target_width; ++x) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/reduction_ops_common.h tensorflow-1.6.0/tensorflow/core/kernels/reduction_ops_common.h
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/reduction_ops_common.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/reduction_ops_common.h	2018-03-16 13:45:10.074732464 +0100
+@@ -109,7 +109,7 @@
+   // The input is reshaped.
+   template <typename T, int N>
+   typename TTypes<T, N>::ConstTensor in(const Tensor& data) {
+-    return data.shaped<T, N>(data_reshape_);
++    return data.template shaped<T, N>(data_reshape_);
+   }
+ 
+   // Shape of shuffled input
+@@ -228,7 +228,7 @@
+       const int64 reduced = shuffled.NumElements() / unreduced;
+       const Tensor& const_shuffled = shuffled;
+       Functor::Reduce(ctx, tmp_out.flat<T>(),
+-                      const_shuffled.shaped<T, 2>({unreduced, reduced}),
++                      const_shuffled.template shaped<T, 2>({unreduced, reduced}),
+                       constants.kOne, reducer);
+     }
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_area_op.cc tensorflow-1.6.0/tensorflow/core/kernels/resize_area_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_area_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/resize_area_op.cc	2018-03-16 13:45:08.350730688 +0100
+@@ -149,7 +149,7 @@
+ 
+     if (!context->status().ok()) return;
+ 
+-    typename TTypes<T, 4>::ConstTensor input_data = input.tensor<T, 4>();
++    typename TTypes<T, 4>::ConstTensor input_data = input.template tensor<T, 4>();
+ 
+     // Precompute values used when iterating over x coordinates within a row.
+     // Note that it may be useful to cache x_interps for a given
+@@ -191,7 +191,7 @@
+                    const std::vector<CachedInterpolation>& x_interps,
+                    typename TTypes<T, 4>::ConstTensor input_data) {
+     typename TTypes<float, 4>::Tensor output_data =
+-        st.output->tensor<float, 4>();
++        st.output->template tensor<float, 4>();
+ 
+     // When using this algorithm for downsizing, the target pixel value is the
+     // weighted average of all the source pixels. The weight is determined by
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_area_op_test.cc tensorflow-1.6.0/tensorflow/core/kernels/resize_area_op_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_area_op_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/resize_area_op_test.cc	2018-03-16 13:45:10.294732690 +0100
+@@ -153,7 +153,7 @@
+         new Tensor(device_->GetAllocator(AllocatorAttributes()),
+                    DataTypeToEnum<float>::v(),
+                    TensorShape({1, target_height, target_width, channels})));
+-    ResizeAreaBaseline(input->tensor<float, 4>(), expected->tensor<float, 4>());
++    ResizeAreaBaseline(input->template tensor<float, 4>(), expected->template tensor<float, 4>());
+     test::ExpectTensorNear<float>(*expected, *GetOutput(0), 0.00001);
+   }
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_bicubic_op.cc tensorflow-1.6.0/tensorflow/core/kernels/resize_bicubic_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_bicubic_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/resize_bicubic_op.cc	2018-03-16 13:45:09.394731764 +0100
+@@ -480,9 +480,9 @@
+ 
+     if (!context->status().ok()) return;
+ 
+-    typename TTypes<T, 4>::ConstTensor input_data = input.tensor<T, 4>();
++    typename TTypes<T, 4>::ConstTensor input_data = input.template tensor<T, 4>();
+     typename TTypes<float, 4>::Tensor output_data =
+-        st.output->tensor<float, 4>();
++        st.output->template tensor<float, 4>();
+ 
+     interpolate_with_caching<T>(input_data, st, output_data);
+   }
+@@ -511,8 +511,8 @@
+     if (!context->status().ok()) return;
+ 
+     typename TTypes<float, 4>::ConstTensor input_grad =
+-        input.tensor<float, 4>();
+-    typename TTypes<T, 4>::Tensor output_grad = st.output->tensor<T, 4>();
++        input.template tensor<float, 4>();
++    typename TTypes<T, 4>::Tensor output_grad = st.output->template tensor<T, 4>();
+ 
+     ResizeBicubicGrad<T>(input_grad, st, output_grad);
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_bicubic_op_test.cc tensorflow-1.6.0/tensorflow/core/kernels/resize_bicubic_op_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_bicubic_op_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/resize_bicubic_op_test.cc	2018-03-16 13:45:09.106731467 +0100
+@@ -172,8 +172,8 @@
+         DataTypeToEnum<float>::v(),
+         TensorShape({batch_size, target_height, target_width, channels})));
+ 
+-    ResizeBicubicBaseline(input->tensor<float, 4>(),
+-                          expected->tensor<float, 4>());
++    ResizeBicubicBaseline(input->template tensor<float, 4>(),
++                          expected->template tensor<float, 4>());
+     // Note: the baseline implementation reduces first in the x direction, and
+     // then in the y direction. The optimized version reduces first in the y
+     // direction, and then the X direction. As a result, there may be
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_bilinear_op.cc tensorflow-1.6.0/tensorflow/core/kernels/resize_bilinear_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_bilinear_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/resize_bilinear_op.cc	2018-03-16 13:45:08.090730419 +0100
+@@ -51,9 +51,9 @@
+     // Return if the output is empty.
+     if (st.output->NumElements() == 0) return;
+ 
+-    typename TTypes<T, 4>::ConstTensor image_data = input.tensor<T, 4>();
++    typename TTypes<T, 4>::ConstTensor image_data = input.template tensor<T, 4>();
+     typename TTypes<float, 4>::Tensor output_data =
+-        st.output->tensor<float, 4>();
++        st.output->template tensor<float, 4>();
+ 
+     functor::ResizeBilinear<Device, T>()(context->eigen_device<Device>(),
+                                          image_data, st.height_scale,
+@@ -259,8 +259,8 @@
+     if (!context->status().ok()) return;
+ 
+     typename TTypes<float, 4>::ConstTensor input_grad =
+-        input.tensor<float, 4>();
+-    typename TTypes<T, 4>::Tensor output_grad = st.output->tensor<T, 4>();
++        input.template tensor<float, 4>();
++    typename TTypes<T, 4>::Tensor output_grad = st.output->template tensor<T, 4>();
+ 
+     functor::ResizeBilinearGrad<Device, T>()(context->eigen_device<Device>(),
+                                              input_grad, st.height_scale,
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_bilinear_op_test.cc tensorflow-1.6.0/tensorflow/core/kernels/resize_bilinear_op_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_bilinear_op_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/resize_bilinear_op_test.cc	2018-03-16 13:45:11.382733812 +0100
+@@ -119,8 +119,8 @@
+         device_->GetAllocator(AllocatorAttributes()),
+         DataTypeToEnum<float>::v(),
+         TensorShape({batch_size, output_width, output_height, channels})));
+-    ResizeBilinearBaseline(input->tensor<float, 4>(),
+-                           expected->tensor<float, 4>());
++    ResizeBilinearBaseline(input->template tensor<float, 4>(),
++                           expected->template tensor<float, 4>());
+     test::ExpectTensorEqual<float>(*expected, *GetOutput(0));
+   }
+ 
+@@ -190,8 +190,8 @@
+   std::unique_ptr<Tensor> expected(
+       new Tensor(device_->GetAllocator(AllocatorAttributes()),
+                  DataTypeToEnum<float>::v(), TensorShape({1, 1, 1, 1})));
+-  ResizeBilinearBaseline(input->tensor<float, 4>(),
+-                         expected->tensor<float, 4>());
++  ResizeBilinearBaseline(input->template tensor<float, 4>(),
++                         expected->template tensor<float, 4>());
+   EXPECT_EQ(input->flat<float>()(0), output->flat<float>()(0));
+   test::ExpectTensorEqual<float>(*expected, *output);
+ }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_nearest_neighbor_op.cc tensorflow-1.6.0/tensorflow/core/kernels/resize_nearest_neighbor_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/resize_nearest_neighbor_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/resize_nearest_neighbor_op.cc	2018-03-16 13:45:09.154731516 +0100
+@@ -56,8 +56,8 @@
+     // Return if the output is empty.
+     if (st.output->NumElements() == 0) return;
+ 
+-    typename TTypes<T, 4>::ConstTensor input_data = input.tensor<T, 4>();
+-    typename TTypes<T, 4>::Tensor output_data = st.output->tensor<T, 4>();
++    typename TTypes<T, 4>::ConstTensor input_data = input.template tensor<T, 4>();
++    typename TTypes<T, 4>::Tensor output_data = st.output->template tensor<T, 4>();
+ 
+     bool status;
+     if (align_corners_) {
+@@ -162,8 +162,8 @@
+     // Return if the output is empty.
+     if (output->NumElements() == 0) return;
+ 
+-    typename TTypes<T, 4>::ConstTensor input_data = input.tensor<T, 4>();
+-    typename TTypes<T, 4>::Tensor output_data = output->tensor<T, 4>();
++    typename TTypes<T, 4>::ConstTensor input_data = input.template tensor<T, 4>();
++    typename TTypes<T, 4>::Tensor output_data = output->template tensor<T, 4>();
+ 
+     const float height_scale =
+         CalculateResizeScale(out_height, in_height, align_corners_);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/resource_variable_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/resource_variable_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/resource_variable_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/resource_variable_ops.cc	2018-03-16 13:45:09.998732385 +0100
+@@ -514,7 +514,7 @@
+       for (int i = 1; i < params.dims(); i++) {
+         inner_size *= params.dim_size(i);
+       }
+-      auto params_flat = params.shaped<T, 3>({1, gather_dim_size, inner_size});
++      auto params_flat = params.template shaped<T, 3>({1, gather_dim_size, inner_size});
+       auto indices_flat = indices.flat<Index>();
+       auto out_flat = out->shaped<T, 3>({1, N, out->NumElements() / N});
+ 
+@@ -595,7 +595,7 @@
+     if (N > 0) {
+       auto indices_flat = indices.flat<Index>();
+       auto params_flat = params->flat_outer_dims<T>();
+-      auto updates_flat = updates.shaped<T, 2>({N, updates.NumElements() / N});
++      auto updates_flat = updates.template shaped<T, 2>({N, updates.NumElements() / N});
+ 
+       functor::ScatterFunctor<Device, T, Index, op> functor;
+       const Index bad_i = functor(c, c->template eigen_device<Device>(),
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/reverse_op.cc tensorflow-1.6.0/tensorflow/core/kernels/reverse_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/reverse_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/reverse_op.cc	2018-03-16 13:45:10.478732880 +0100
+@@ -147,8 +147,8 @@
+     axes_di[i] = dims(i);
+   }
+   functor::Reverse<Device, T, NDIMS>()(context->eigen_device<Device>(),
+-                                       input.tensor<T, NDIMS>(), axes_di,
+-                                       result->tensor<T, NDIMS>());
++                                       input.template tensor<T, NDIMS>(), axes_di,
++                                       result->template tensor<T, NDIMS>());
+ }
+ 
+ template <typename Device, typename T>
+@@ -224,8 +224,8 @@
+     axes_di[i] = axes[i];
+   }
+   functor::Reverse<Device, T, NDIMS>()(context->eigen_device<Device>(),
+-                                       input.tensor<T, NDIMS>(), axes_di,
+-                                       result->tensor<T, NDIMS>());
++                                       input.template tensor<T, NDIMS>(), axes_di,
++                                       result->template tensor<T, NDIMS>());
+ }
+ 
+ template <typename Device, typename T, typename Tidx>
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/reverse_sequence_op.cc tensorflow-1.6.0/tensorflow/core/kernels/reverse_sequence_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/reverse_sequence_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/reverse_sequence_op.cc	2018-03-16 13:45:11.630734067 +0100
+@@ -137,8 +137,8 @@
+ #define HANDLE_DIM(NDIM)                                                      \
+   case NDIM:                                                                  \
+     functor::ReverseSequence<Device, T, Tlen, NDIM>::Compute(                 \
+-        context->eigen_device<Device>(), input.tensor<T, NDIM>(), batch_dim_, \
+-        seq_dim_, seq_lens_t, output->tensor<T, NDIM>());                     \
++        context->eigen_device<Device>(), input.template tensor<T, NDIM>(), batch_dim_, \
++        seq_dim_, seq_lens_t, output->template tensor<T, NDIM>());                     \
+     break;
+ 
+     switch (input_dims) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/sample_distorted_bounding_box_op.cc tensorflow-1.6.0/tensorflow/core/kernels/sample_distorted_bounding_box_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/sample_distorted_bounding_box_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/sample_distorted_bounding_box_op.cc	2018-03-16 13:45:08.358730696 +0100
+@@ -387,9 +387,9 @@
+     OP_REQUIRES_OK(
+         context, context->allocate_output(2, TensorShape({1, 1, 4}), &bboxes));
+ 
+-    typename TTypes<T, 1>::Tensor begin_data = begin->tensor<T, 1>();
+-    typename TTypes<T, 1>::Tensor size_data = size->tensor<T, 1>();
+-    typename TTypes<float, 3>::Tensor bboxes_data = bboxes->tensor<float, 3>();
++    typename TTypes<T, 1>::Tensor begin_data = begin->template tensor<T, 1>();
++    typename TTypes<T, 1>::Tensor size_data = size->template tensor<T, 1>();
++    typename TTypes<float, 3>::Tensor bboxes_data = bboxes->template tensor<float, 3>();
+ 
+     begin_data(0) = T(offset_height);
+     size_data(0) = T(target_height);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/scan_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/scan_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/scan_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/scan_ops.cc	2018-03-16 13:45:10.338732736 +0100
+@@ -79,7 +79,7 @@
+       reduced_shape[2] *= input.dim_size(i);
+     }
+ 
+-    functor::Scan<Device, Reducer, T>()(d, input.shaped<T, 3>(reduced_shape),
++    functor::Scan<Device, Reducer, T>()(d, input.template shaped<T, 3>(reduced_shape),
+                                         output->shaped<T, 3>(reduced_shape),
+                                         reducer, reverse_, exclusive_);
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/scatter_nd_op.cc tensorflow-1.6.0/tensorflow/core/kernels/scatter_nd_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/scatter_nd_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/scatter_nd_op.cc	2018-03-16 13:45:08.078730408 +0100
+@@ -445,7 +445,7 @@
+ 
+   IndexFlattener<Device, Index> index_flattener;
+   auto indices_flat = index_flattener(c, indices);
+-  auto updates_flat = updates.shaped<T, 2>({num_updates, slice_size});
++  auto updates_flat = updates.template shaped<T, 2>({num_updates, slice_size});
+ 
+   if (allocate) {
+     TF_RETURN_IF_ERROR(c->allocate_temp(DataTypeToEnum<T>::value, shape, out));
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/scatter_op.cc tensorflow-1.6.0/tensorflow/core/kernels/scatter_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/scatter_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/scatter_op.cc	2018-03-16 13:45:08.502730845 +0100
+@@ -122,7 +122,7 @@
+     if (N > 0) {
+       auto indices_flat = indices.flat<Index>();
+       auto params_flat = params.flat_outer_dims<T>();
+-      auto updates_flat = updates.shaped<T, 2>({N, updates.NumElements() / N});
++      auto updates_flat = updates.template shaped<T, 2>({N, updates.NumElements() / N});
+ 
+       functor::ScatterFunctor<Device, T, Index, op> functor;
+       const Index bad_i = functor(c, c->template eigen_device<Device>(),
+@@ -195,7 +195,7 @@
+ 
+       auto indices_flat = indices_host.flat<Index>();
+       auto params_flat = params.flat_outer_dims<T>();
+-      auto updates_flat = updates.shaped<T, 2>({N, updates.NumElements() / N});
++      auto updates_flat = updates.template shaped<T, 2>({N, updates.NumElements() / N});
+ 
+       functor::ScatterFunctorSYCL<T, Index, op> functor;
+       const Index bad_i = functor(c, c->template eigen_device<SYCLDevice>(),
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/sdca_internal.cc tensorflow-1.6.0/tensorflow/core/kernels/sdca_internal.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/sdca_internal.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/sdca_internal.cc	2018-03-16 13:45:08.070730400 +0100
+@@ -114,7 +114,7 @@
+     deltas.setZero();
+     sparse_weights_.emplace_back(FeatureWeightsSparseStorage{
+         sparse_indices_inputs[i].flat<int64>(),
+-        sparse_weights_inputs[i].shaped<float, 2>(
++        sparse_weights_inputs[i].template shaped<float, 2>(
+             {1, sparse_weights_inputs[i].NumElements()}),
+         deltas});
+   }
+@@ -132,7 +132,7 @@
+           auto deltas = delta_t->shaped<float, 2>({1, delta_t->NumElements()});
+           deltas.setZero();
+           feature_weights->emplace_back(FeatureWeightsDenseStorage{
+-              weight_inputs[i].shaped<float, 2>(
++              weight_inputs[i].template shaped<float, 2>(
+                   {1, weight_inputs[i].NumElements()}),
+               deltas});
+         }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/slice_op.cc tensorflow-1.6.0/tensorflow/core/kernels/slice_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/slice_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/slice_op.cc	2018-03-16 13:45:12.050734499 +0100
+@@ -175,8 +175,8 @@
+     if (output_shape.num_elements() > 0) {
+       if (std::is_same<Device, CPUDevice>::value && input_dims == 2 &&
+           DataTypeCanUseMemcpy(DataTypeToEnum<T>::v())) {
+-        auto input = context->input(0).tensor<T, 2>();
+-        auto output = result->tensor<T, 2>();
++        auto input = context->input(0).template tensor<T, 2>();
++        auto output = result->template tensor<T, 2>();
+         // TODO(agarwal): Consider multi-threading this loop for cases where
+         // size[0] is very large.
+         for (int i = 0; i < size[0]; ++i) {
+@@ -223,8 +223,8 @@
+     }
+ 
+     functor::Slice<Device, T, NDIM>()(
+-        context->eigen_device<Device>(), result->tensor<T, NDIM>(),
+-        context->input(0).tensor<T, NDIM>(), indices, sizes);
++        context->eigen_device<Device>(), result->template tensor<T, NDIM>(),
++        context->input(0).template tensor<T, NDIM>(), indices, sizes);
+   }
+ };
+ 
+@@ -250,8 +250,8 @@
+     if (output_shape.num_elements() > 0) {
+       if (std::is_same<Device, CPUDevice>::value && input_dims == 2 &&
+           DataTypeCanUseMemcpy(DataTypeToEnum<T>::v())) {
+-        auto input = context->input(0).tensor<T, 2>();
+-        auto output = result->tensor<T, 2>();
++        auto input = context->input(0).template tensor<T, 2>();
++        auto output = result->template tensor<T, 2>();
+         // TODO(agarwal): Consider multi-threading this loop for cases where
+         // size[0] is very large.
+         for (int i = 0; i < size[0]; ++i) {
+@@ -407,8 +407,8 @@
+     }
+ 
+     functor::Slice<Device, T, NDIM>()(
+-        context->eigen_device<Device>(), result->tensor<T, NDIM>(),
+-        context->input(0).tensor<T, NDIM>(), indices, sizes);
++        context->eigen_device<Device>(), result->template tensor<T, NDIM>(),
++        context->input(0).template tensor<T, NDIM>(), indices, sizes);
+   }
+ };
+ #endif
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/spacetobatch_op.cc tensorflow-1.6.0/tensorflow/core/kernels/spacetobatch_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/spacetobatch_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/spacetobatch_op.cc	2018-03-16 13:45:10.542732946 +0100
+@@ -187,7 +187,7 @@
+         context,                                                           \
+         (functor::SpaceToBatchFunctor<Device, T, NUM_BLOCK_DIMS, false>()( \
+             context->eigen_device<Device>(),                               \
+-            orig_input_tensor.shaped<T, NUM_BLOCK_DIMS + 2>(               \
++            orig_input_tensor.template shaped<T, NUM_BLOCK_DIMS + 2>(               \
+                 internal_input_shape.dim_sizes()),                         \
+             internal_block_shape, internal_paddings,                       \
+             output_tensor->shaped<T, NUM_BLOCK_DIMS + 2>(                  \
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/spacetodepth_op.cc tensorflow-1.6.0/tensorflow/core/kernels/spacetodepth_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/spacetodepth_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/spacetodepth_op.cc	2018-03-16 13:45:10.026732414 +0100
+@@ -111,8 +111,8 @@
+                                        output_width, output_depth),
+                        &outputs_tensor));
+ 
+-    auto Tinput = input.tensor<T, kDims>();
+-    auto Toutput = outputs_tensor->tensor<T, kDims>();
++    auto Tinput = input.template tensor<T, kDims>();
++    auto Toutput = outputs_tensor->template tensor<T, kDims>();
+ 
+     if (std::is_same<Device, GPUDevice>::value) {
+       if (is_int8x4) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/sparse_tensor_dense_add_op.cc tensorflow-1.6.0/tensorflow/core/kernels/sparse_tensor_dense_add_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/sparse_tensor_dense_add_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/sparse_tensor_dense_add_op.cc	2018-03-16 13:45:08.682731030 +0100
+@@ -90,8 +90,8 @@
+     switch (ndims) {
+ #define NDIMS_CASE(N)                                                     \
+   case N: {                                                               \
+-    auto out_tensor = out_t->tensor<T, N>();                              \
+-    out_tensor.device(ctx->eigen_device<Device>()) = b->tensor<T, N>();   \
++    auto out_tensor = out_t->template tensor<T, N>();                              \
++    out_tensor.device(ctx->eigen_device<Device>()) = b->template tensor<T, N>();   \
+     const Index result =                                                  \
+         functor::ScatterNdFunctor<Device, T, Index, N,                    \
+                                   scatter_op::UpdateOp::ADD>()(           \
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/sparse_to_dense_op.cc tensorflow-1.6.0/tensorflow/core/kernels/sparse_to_dense_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/sparse_to_dense_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/sparse_to_dense_op.cc	2018-03-16 13:45:12.838735312 +0100
+@@ -99,7 +99,7 @@
+       CHECK(indices_shaped.CopyFrom(indices, ix_shape));
+     } else {
+       indices_shaped.matrix<int64>() =
+-          indices.shaped<Index, 2>(ix_shape.dim_sizes()).template cast<int64>();
++          indices.template shaped<Index, 2>(ix_shape.dim_sizes()).template cast<int64>();
+     }
+ 
+     // If we received a scalar, we'll need to create a new
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/sparse_to_dense_op_test.cc tensorflow-1.6.0/tensorflow/core/kernels/sparse_to_dense_op_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/sparse_to_dense_op_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/sparse_to_dense_op_test.cc	2018-03-16 13:45:12.106734558 +0100
+@@ -122,9 +122,9 @@
+ 
+   Tensor expected(allocator(), DT_FLOAT, {3, 4});
+   expected.flat<float>().setConstant(-2);
+-  expected.tensor<float, 2>()(0, 1) = 2;
+-  expected.tensor<float, 2>()(0, 2) = 2;
+-  expected.tensor<float, 2>()(2, 3) = 2;
++  expected.template tensor<float, 2>()(0, 1) = 2;
++  expected.template tensor<float, 2>()(0, 2) = 2;
++  expected.template tensor<float, 2>()(2, 3) = 2;
+   test::ExpectTensorEqual<float>(expected, *GetOutput(0));
+ }
+ 
+@@ -144,9 +144,9 @@
+ 
+   Tensor expected(allocator(), DT_FLOAT, {3, 4});
+   expected.flat<float>().setConstant(-2);
+-  expected.tensor<float, 2>()(0, 1) = 3;
+-  expected.tensor<float, 2>()(0, 2) = 4;
+-  expected.tensor<float, 2>()(2, 3) = 5;
++  expected.template tensor<float, 2>()(0, 1) = 3;
++  expected.template tensor<float, 2>()(0, 2) = 4;
++  expected.template tensor<float, 2>()(2, 3) = 5;
+   test::ExpectTensorEqual<float>(expected, *GetOutput(0));
+ }
+ 
+@@ -166,9 +166,9 @@
+ 
+   Tensor expected(allocator(), DT_FLOAT, {3, 4, 2});
+   expected.flat<float>().setConstant(-2);
+-  expected.tensor<float, 3>()(0, 1, 1) = 2;
+-  expected.tensor<float, 3>()(0, 2, 0) = 2;
+-  expected.tensor<float, 3>()(2, 3, 1) = 2;
++  expected.template tensor<float, 3>()(0, 1, 1) = 2;
++  expected.template tensor<float, 3>()(0, 2, 0) = 2;
++  expected.template tensor<float, 3>()(2, 3, 1) = 2;
+   test::ExpectTensorEqual<float>(expected, *GetOutput(0));
+ }
+ 
+@@ -188,9 +188,9 @@
+ 
+   Tensor expected(allocator(), DT_FLOAT, {3, 4, 2});
+   expected.flat<float>().setConstant(-2);
+-  expected.tensor<float, 3>()(0, 1, 1) = 3;
+-  expected.tensor<float, 3>()(0, 2, 0) = 4;
+-  expected.tensor<float, 3>()(2, 3, 1) = 5;
++  expected.template tensor<float, 3>()(0, 1, 1) = 3;
++  expected.template tensor<float, 3>()(0, 2, 0) = 4;
++  expected.template tensor<float, 3>()(2, 3, 1) = 5;
+   test::ExpectTensorEqual<float>(expected, *GetOutput(0));
+ }
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/split_op.cc tensorflow-1.6.0/tensorflow/core/kernels/split_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/split_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/split_op.cc	2018-03-16 13:45:09.610731986 +0100
+@@ -155,7 +155,7 @@
+     std::tie(prefix_dim_size, split_dim_size, suffix_dim_size) =
+         Base::template SetDims<Eigen::DenseIndex>(input_shape, split_dim);
+     auto input_reshaped =
+-        input.shaped<T, 3>({prefix_dim_size, split_dim_size, suffix_dim_size});
++        input.template shaped<T, 3>({prefix_dim_size, split_dim_size, suffix_dim_size});
+ 
+     const int64 split_dim_output_size = split_dim_size / num_split;
+     TensorShape output_shape(input_shape);
+@@ -319,7 +319,7 @@
+     std::tie(prefix_dim_size, split_dim_size, suffix_dim_size) =
+         Base::template SetDims<Eigen::DenseIndex>(input_shape, split_dim);
+     auto input_reshaped =
+-        input.shaped<T, 3>({prefix_dim_size, split_dim_size, suffix_dim_size});
++        input.template shaped<T, 3>({prefix_dim_size, split_dim_size, suffix_dim_size});
+ 
+     const int64 split_dim_output_size = split_dim_size / num_split;
+     TensorShape output_shape(input_shape);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/split_v_op.cc tensorflow-1.6.0/tensorflow/core/kernels/split_v_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/split_v_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/split_v_op.cc	2018-03-16 13:45:08.050730379 +0100
+@@ -210,7 +210,7 @@
+     std::tie(prefix_dim_size, split_dim_size, suffix_dim_size) =
+         Base::template SetDims<Eigen::DenseIndex>(input_shape, split_dim);
+     auto input_reshaped =
+-        input.shaped<T, 3>({prefix_dim_size, split_dim_size, suffix_dim_size});
++        input.template shaped<T, 3>({prefix_dim_size, split_dim_size, suffix_dim_size});
+ 
+     Eigen::DSizes<Eigen::DenseIndex, 3> indices{0, 0, 0};
+     std::vector<int64> split_start_points(num_split);
+@@ -364,7 +364,7 @@
+ 
+       std::tie(prefix_dim_size, split_dim_size, suffix_dim_size) =
+           Base::template SetDims<Eigen::DenseIndex>(input_shape, split_dim);
+-      auto input_reshaped = input.shaped<T, 2>(
++      auto input_reshaped = input.template shaped<T, 2>(
+           {prefix_dim_size, split_dim_size * suffix_dim_size});
+ 
+       Eigen::DSizes<Eigen::DenseIndex, 2> indices{0, 0};
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/strided_slice_op.cc tensorflow-1.6.0/tensorflow/core/kernels/strided_slice_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/strided_slice_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/strided_slice_op.cc	2018-03-16 13:45:10.510732913 +0100
+@@ -47,8 +47,8 @@
+   bool Copy(const Tensor& input, const gtl::InlinedVector<int64, 4>& begin,
+             const gtl::InlinedVector<int64, 4>& end, Tensor* result) {
+     if (DataTypeCanUseMemcpy(DataTypeToEnum<T>::v())) {
+-      auto in = input.tensor<T, 2>();
+-      auto output = result->tensor<T, 2>();
++      auto in = input.template tensor<T, 2>();
++      auto output = result->template tensor<T, 2>();
+       // TODO(agarwal): Consider multi-threading if size[0] is large
+       for (int row_in = begin[0], row_out = 0; row_in < end[0];
+            ++row_in, ++row_out) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/substr_op.cc tensorflow-1.6.0/tensorflow/core/kernels/substr_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/substr_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/substr_op.cc	2018-03-16 13:45:10.666733074 +0100
+@@ -106,17 +106,17 @@
+       switch (ndims) {
+         case 1: {
+           // Reshape tensors according to BCast results
+-          auto input = input_tensor.shaped<string, 1>(bcast.x_reshape());
++          auto input = input_tensor.template shaped<string, 1>(bcast.x_reshape());
+           auto output = output_tensor->shaped<string, 1>(bcast.result_shape());
+-          auto pos_shaped = pos_tensor.shaped<T, 1>(bcast.y_reshape());
+-          auto len_shaped = len_tensor.shaped<T, 1>(bcast.y_reshape());
++          auto pos_shaped = pos_tensor.template shaped<T, 1>(bcast.y_reshape());
++          auto len_shaped = len_tensor.template shaped<T, 1>(bcast.y_reshape());
+ 
+           // Allocate temporary buffer for broadcasted input tensor
+           Tensor input_buffer;
+           OP_REQUIRES_OK(context, context->allocate_temp(
+                                       DT_STRING, output_shape, &input_buffer));
+           typename TTypes<string, 1>::Tensor input_bcast =
+-              input_buffer.shaped<string, 1>(bcast.result_shape());
++              input_buffer.template shaped<string, 1>(bcast.result_shape());
+           input_bcast =
+               input.broadcast(BCast::ToIndexArray<1>(bcast.x_bcast()));
+ 
+@@ -126,7 +126,7 @@
+                          context->allocate_temp(DataTypeToEnum<T>::v(),
+                                                 output_shape, &pos_buffer));
+           typename TTypes<T, 1>::Tensor pos_bcast =
+-              pos_buffer.shaped<T, 1>(bcast.result_shape());
++              pos_buffer.template shaped<T, 1>(bcast.result_shape());
+           pos_bcast =
+               pos_shaped.broadcast(BCast::ToIndexArray<1>(bcast.y_bcast()));
+ 
+@@ -136,7 +136,7 @@
+                          context->allocate_temp(DataTypeToEnum<T>::v(),
+                                                 output_shape, &len_buffer));
+           typename TTypes<T, 1>::Tensor len_bcast =
+-              len_buffer.shaped<T, 1>(bcast.result_shape());
++              len_buffer.template shaped<T, 1>(bcast.result_shape());
+           len_bcast =
+               len_shaped.broadcast(BCast::ToIndexArray<1>(bcast.y_bcast()));
+ 
+@@ -155,17 +155,17 @@
+         }
+         case 2: {
+           // Reshape tensors according to BCast results
+-          auto input = input_tensor.shaped<string, 2>(bcast.x_reshape());
++          auto input = input_tensor.template shaped<string, 2>(bcast.x_reshape());
+           auto output = output_tensor->shaped<string, 2>(bcast.result_shape());
+-          auto pos_shaped = pos_tensor.shaped<T, 2>(bcast.y_reshape());
+-          auto len_shaped = len_tensor.shaped<T, 2>(bcast.y_reshape());
++          auto pos_shaped = pos_tensor.template shaped<T, 2>(bcast.y_reshape());
++          auto len_shaped = len_tensor.template shaped<T, 2>(bcast.y_reshape());
+ 
+           // Allocate temporary buffer for broadcasted input tensor
+           Tensor input_buffer;
+           OP_REQUIRES_OK(context, context->allocate_temp(
+                                       DT_STRING, output_shape, &input_buffer));
+           typename TTypes<string, 2>::Tensor input_bcast =
+-              input_buffer.shaped<string, 2>(bcast.result_shape());
++              input_buffer.template shaped<string, 2>(bcast.result_shape());
+           input_bcast =
+               input.broadcast(BCast::ToIndexArray<2>(bcast.x_bcast()));
+ 
+@@ -175,7 +175,7 @@
+                          context->allocate_temp(DataTypeToEnum<T>::v(),
+                                                 output_shape, &pos_buffer));
+           typename TTypes<T, 2>::Tensor pos_bcast =
+-              pos_buffer.shaped<T, 2>(bcast.result_shape());
++              pos_buffer.template shaped<T, 2>(bcast.result_shape());
+           pos_bcast =
+               pos_shaped.broadcast(BCast::ToIndexArray<2>(bcast.y_bcast()));
+ 
+@@ -185,7 +185,7 @@
+                          context->allocate_temp(DataTypeToEnum<T>::v(),
+                                                 output_shape, &len_buffer));
+           typename TTypes<T, 2>::Tensor len_bcast =
+-              len_buffer.shaped<T, 2>(bcast.result_shape());
++              len_buffer.template shaped<T, 2>(bcast.result_shape());
+           len_bcast =
+               len_shaped.broadcast(BCast::ToIndexArray<2>(bcast.y_bcast()));
+ 
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/summary_audio_op.cc tensorflow-1.6.0/tensorflow/core/kernels/summary_audio_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/summary_audio_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/summary_audio_op.cc	2018-03-16 13:45:09.462731834 +0100
+@@ -76,7 +76,7 @@
+       sa->set_content_type("audio/wav");
+ 
+       auto values =
+-          tensor.shaped<float, 3>({batch_size, length_frames, num_channels});
++          tensor.template shaped<float, 3>({batch_size, length_frames, num_channels});
+       auto channels_by_frames = typename TTypes<float>::ConstMatrix(
+           &values(i, 0, 0),
+           Eigen::DSizes<Eigen::DenseIndex, 2>(length_frames, num_channels));
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/summary_image_op.cc tensorflow-1.6.0/tensorflow/core/kernels/summary_image_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/summary_image_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/summary_image_op.cc	2018-03-16 13:45:11.694734132 +0100
+@@ -82,7 +82,7 @@
+     if (tensor.dtype() == DT_UINT8) {
+       // For uint8 input, no normalization is necessary
+       auto ith_image = [&tensor, batch_size, hw, depth](int i) {
+-        auto values = tensor.shaped<uint8, 3>({batch_size, hw, depth});
++        auto values = tensor.template shaped<uint8, 3>({batch_size, hw, depth});
+         return typename TTypes<uint8>::ConstMatrix(
+             &values(i, 0, 0), Eigen::DSizes<Eigen::DenseIndex, 2>(hw, depth));
+       };
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/tile_functor.h tensorflow-1.6.0/tensorflow/core/kernels/tile_functor.h
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/tile_functor.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/tile_functor.h	2018-03-16 13:45:08.650730997 +0100
+@@ -33,8 +33,8 @@
+ template <typename Device, typename T, typename Tmultiples, int NDIM>
+ void TileUsingEigen(const Device& d, Tensor* out, const Tensor& in,
+                     const gtl::ArraySlice<Tmultiples>& broadcast_array) {
+-  auto x = in.tensor<T, NDIM>();
+-  auto y = out->tensor<T, NDIM>();
++  auto x = in.template tensor<T, NDIM>();
++  auto y = out->template tensor<T, NDIM>();
+ 
+   Eigen::array<Tmultiples, NDIM> b;
+   for (int i = 0; i < NDIM; ++i) b[i] = broadcast_array[i];
+@@ -49,8 +49,8 @@
+ template <typename Device, typename T, typename Tmultiples>
+ void TileUsingEigen(const Device& d, Tensor* out, const Tensor& in,
+                     const gtl::ArraySlice<Tmultiples>&) {
+-  auto x = in.tensor<T, 0>();
+-  auto y = out->tensor<T, 0>();
++  auto x = in.template tensor<T, 0>();
++  auto y = out->template tensor<T, 0>();
+   // In the scalar case we simply copy the input.
+   y.device(d) = x;
+ }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/tile_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/tile_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/tile_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/tile_ops.cc	2018-03-16 13:45:09.374731743 +0100
+@@ -392,8 +392,8 @@
+     bool first = true;
+     while (true) {
+       functor::TileGrad<Device, T, NDIM>()(
+-          context->eigen_device<Device>(), result->tensor<T, NDIM>(),
+-          context->input(0).tensor<T, NDIM>(), indices, sizes, first);
++          context->eigen_device<Device>(), result->template tensor<T, NDIM>(),
++          context->input(0).template tensor<T, NDIM>(), indices, sizes, first);
+       first = false;
+       // Increment the begin indices.
+       int i = 0;
+@@ -427,8 +427,8 @@
+     }
+ 
+     functor::ReduceAndReshape<Device, T, NDIM, REDUCENDIM>()(
+-        context->eigen_device<Device>(), result->tensor<T, NDIM>(),
+-        context->input(0).tensor<T, NDIM>(), reduce_dim, reshape_dim);
++        context->eigen_device<Device>(), result->template tensor<T, NDIM>(),
++        context->input(0).template tensor<T, NDIM>(), reduce_dim, reshape_dim);
+   }
+ 
+   TF_DISALLOW_COPY_AND_ASSIGN(TileGradientOp);
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/transpose_op.cc tensorflow-1.6.0/tensorflow/core/kernels/transpose_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/transpose_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/transpose_op.cc	2018-03-16 13:45:08.978731335 +0100
+@@ -133,8 +133,8 @@
+ // Specifically, the returned tensor output meets the following condition:
+ // 1) output.dims() == input.dims();
+ // 2) output.dim_size(i) == input.dim_size(perm[i]);
+-// 3) output.tensor<T, N>(i_0, i_1, ..., i_N-1) ==
+-//      input.tensor<T, N>(j_0, j_1, ..., j_N-1),
++// 3) output.template tensor<T, N>(i_0, i_1, ..., i_N-1) ==
++//      input.template tensor<T, N>(j_0, j_1, ..., j_N-1),
+ //    where i_s == j_{perm[s]}
+ //
+ // REQUIRES: perm is a vector of int32.
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/unique_op.cc tensorflow-1.6.0/tensorflow/core/kernels/unique_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/unique_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/unique_op.cc	2018-03-16 13:45:12.278734735 +0100
+@@ -129,7 +129,7 @@
+       }
+     } else {
+       // General implementation when unique is run over multiple elements.
+-      auto Tin = input.shaped<T, 3>(new_sizes);
++      auto Tin = input.template shaped<T, 3>(new_sizes);
+ 
+       auto hash_fn = [&Tin](const int64& key) {
+         size_t h = 0;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/unpack_op.cc tensorflow-1.6.0/tensorflow/core/kernels/unpack_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/unpack_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/unpack_op.cc	2018-03-16 13:45:13.034735513 +0100
+@@ -104,7 +104,7 @@
+     // Except for shape, unpack is a special case of split, so we reuse the
+     // same computational kernels.
+     auto input_reshaped =
+-        input.shaped<T, 3>({1, before_dim, axis_dim * after_dim});
++        input.template shaped<T, 3>({1, before_dim, axis_dim * after_dim});
+ 
+     for (int i = 0; i < num; ++i) {
+       Tensor* output;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/variable_ops.cc tensorflow-1.6.0/tensorflow/core/kernels/variable_ops.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/variable_ops.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/variable_ops.cc	2018-03-16 13:45:11.826734269 +0100
+@@ -171,7 +171,7 @@
+     Tensor* output = nullptr;
+     OP_REQUIRES_OK(context,
+                    context->allocate_output(0, TensorShape({}), &output));
+-    auto output_tensor = output->tensor<bool, 0>();
++    auto output_tensor = output->template tensor<bool, 0>();
+     bool result = input_tensor.IsInitialized();
+     output_tensor() = result;
+   }
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/where_op.cc tensorflow-1.6.0/tensorflow/core/kernels/where_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/where_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/where_op.cc	2018-03-16 13:45:09.066731425 +0100
+@@ -158,7 +158,7 @@
+ #define HANDLE_DIM(NDIM)                                                      \
+   case NDIM: {                                                                \
+     Status s = functor::Where<CPUDevice, NDIM, T, int64>::Compute(            \
+-        context, context->eigen_device<CPUDevice>(), input.tensor<T, NDIM>(), \
++        context, context->eigen_device<CPUDevice>(), input.template tensor<T, NDIM>(), \
+         output->matrix<int64>(), &found_true);                                \
+     OP_REQUIRES_OK(context, s);                                               \
+   } break;
+@@ -322,7 +322,7 @@
+ #define HANDLE_DIM(NDIM)                                              \
+   case NDIM: {                                                        \
+     Status s = functor::Where<GPUDevice, NDIM, T, Tindex>::Compute(   \
+-        context, d, input.tensor<T, NDIM>(), output->matrix<int64>(), \
++        context, d, input.template tensor<T, NDIM>(), output->matrix<int64>(), \
+         &found_true);                                                 \
+     OP_REQUIRES_OK_ASYNC(context, s, done);                           \
+   } break;
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/util/sparse/sparse_tensor_test.cc tensorflow-1.6.0/tensorflow/core/util/sparse/sparse_tensor_test.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/util/sparse/sparse_tensor_test.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/util/sparse/sparse_tensor_test.cc	2018-03-16 13:45:13.626736124 +0100
+@@ -356,7 +356,7 @@
+   Tensor dense(DT_STRING, TensorShape({4, 4, 5}));
+   st.ToDense<string>(&dense);
+ 
+-  auto dense_t = dense.tensor<string, 3>();
++  auto dense_t = dense.template tensor<string, 3>();
+   Eigen::array<Eigen::DenseIndex, NDIM> ix_n;
+   for (int n = 0; n < N; ++n) {
+     for (int d = 0; d < NDIM; ++d) ix_n[d] = ix_t(n, d);
+@@ -395,7 +395,7 @@
+   Tensor dense(DT_STRING, TensorShape({10, 10, 10}));
+   st.ToDense<string>(&dense);
+ 
+-  auto dense_t = dense.tensor<string, 3>();
++  auto dense_t = dense.template tensor<string, 3>();
+   Eigen::array<Eigen::DenseIndex, NDIM> ix_n;
+   for (int n = 0; n < N; ++n) {
+     for (int d = 0; d < NDIM; ++d) ix_n[d] = ix_t(n, d);
+diff -ur tensorflow-1.6.0.orig/tensorflow/examples/ios/benchmark/BenchmarkViewController.mm tensorflow-1.6.0/tensorflow/examples/ios/benchmark/BenchmarkViewController.mm
+--- tensorflow-1.6.0.orig/tensorflow/examples/ios/benchmark/BenchmarkViewController.mm	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/examples/ios/benchmark/BenchmarkViewController.mm	2018-03-16 13:45:04.262726480 +0100
+@@ -231,7 +231,7 @@
+       tensorflow::DT_FLOAT,
+       tensorflow::TensorShape(
+           {1, wanted_height, wanted_width, wanted_channels}));
+-  auto image_tensor_mapped = image_tensor.tensor<float, 4>();
++  auto image_tensor_mapped = image_tensor.template tensor<float, 4>();
+   tensorflow::uint8* in = image_data.data();
+   float* out = image_tensor_mapped.data();
+   for (int y = 0; y < wanted_height; ++y) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/examples/ios/camera/CameraExampleViewController.mm tensorflow-1.6.0/tensorflow/examples/ios/camera/CameraExampleViewController.mm
+--- tensorflow-1.6.0.orig/tensorflow/examples/ios/camera/CameraExampleViewController.mm	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/examples/ios/camera/CameraExampleViewController.mm	2018-03-16 13:45:04.238726456 +0100
+@@ -293,7 +293,7 @@
+       tensorflow::DT_FLOAT,
+       tensorflow::TensorShape(
+           {1, wanted_input_height, wanted_input_width, wanted_input_channels}));
+-  auto image_tensor_mapped = image_tensor.tensor<float, 4>();
++  auto image_tensor_mapped = image_tensor.template tensor<float, 4>();
+   tensorflow::uint8 *in = sourceStartAddr;
+   float *out = image_tensor_mapped.data();
+   for (int y = 0; y < wanted_input_height; ++y) {
+diff -ur tensorflow-1.6.0.orig/tensorflow/examples/ios/simple/RunModelViewController.mm tensorflow-1.6.0/tensorflow/examples/ios/simple/RunModelViewController.mm
+--- tensorflow-1.6.0.orig/tensorflow/examples/ios/simple/RunModelViewController.mm	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/examples/ios/simple/RunModelViewController.mm	2018-03-16 13:45:04.142726356 +0100
+@@ -180,7 +180,7 @@
+       tensorflow::DT_FLOAT,
+       tensorflow::TensorShape({
+           1, wanted_height, wanted_width, wanted_channels}));
+-  auto image_tensor_mapped = image_tensor.tensor<float, 4>();
++  auto image_tensor_mapped = image_tensor.template tensor<float, 4>();
+   tensorflow::uint8* in = image_data.data();
+   // tensorflow::uint8* in_end = (in + (image_height * image_width * image_channels));
+   float* out = image_tensor_mapped.data();
+diff -ur tensorflow-1.6.0.orig/tensorflow/tools/graph_transforms/flatten_atrous.cc tensorflow-1.6.0/tensorflow/tools/graph_transforms/flatten_atrous.cc
+--- tensorflow-1.6.0.orig/tensorflow/tools/graph_transforms/flatten_atrous.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/tools/graph_transforms/flatten_atrous.cc	2018-03-16 13:45:26.066748967 +0100
+@@ -81,8 +81,8 @@
+             TensorShape({upsampled_filter_height, upsampled_filter_width,
+                          in_channels, out_channels}));
+ 
+-        auto filter_eigen = filter.tensor<float, 4>();
+-        auto upsampled_filter_eigen = upsampled_filter.tensor<float, 4>();
++        auto filter_eigen = filter.template tensor<float, 4>();
++        auto upsampled_filter_eigen = upsampled_filter.template tensor<float, 4>();
+ 
+         upsampled_filter_eigen.setZero();
+         for (int h = 0; h < filter_height; ++h) {

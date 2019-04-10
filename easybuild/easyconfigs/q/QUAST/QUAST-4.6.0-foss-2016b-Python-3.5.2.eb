@@ -1,0 +1,44 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'PythonPackage'
+
+name = 'QUAST'
+version = '4.6.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ablab/%(namelower)s'
+description = """QUAST evaluates genome assemblies by computing various metrics.
+ It works both with and without reference genomes. The tool accepts multiple
+ assemblies, thus is suitable for comparison."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/ablab/%(namelower)s/archive/']
+sources = ['%(namelower)s_%(version)s.tar.gz']
+
+checksums = ['6bee86654b457a981718a19acacffca6a3e74f30997ad06162a70fd2a181ca2e']
+
+install_target = 'install_full'
+
+dependencies = [
+    ('Python', '3.5.2'),
+    ('Perl', '5.24.0'),
+    ('matplotlib', '1.5.3', versionsuffix),
+    ('Java', '1.8.0_131', '', True),
+    ('Boost', '1.63.0', versionsuffix),
+]
+
+options = {'modulename': '%(namelower)s_libs'}
+
+libraries = ['bedtools', 'bwa', 'ca_utils', 'gage', 'genemark', 'genemark-es', 'glimmer', 'gnuplot', 'html_saver',
+             'kronatools', 'manta0.29.6', 'MUMmer', 'ra_utils', 'sambamba', 'silva']
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s.py', 'bin/meta%(namelower)s.py'],
+    'dirs': [('lib/python%%(pyshortver)s/site-packages/%%(namelower)s-%%(version)s-py%%(pyshortver)s.egg/'
+              '%%(namelower)s_libs/%s') % x for x in libraries]
+}
+
+sanity_check_commands = ['%(namelower)s.py --test']
+
+moduleclass = 'bio'

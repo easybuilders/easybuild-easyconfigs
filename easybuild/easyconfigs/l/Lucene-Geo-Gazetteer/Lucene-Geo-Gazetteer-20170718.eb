@@ -1,0 +1,38 @@
+easyblock = 'PackedBinary'
+
+name = 'Lucene-Geo-Gazetteer'
+version = '20170718'
+
+homepage = 'https://github.com/chrismattmann/lucene-geo-gazetteer'
+description = """A command line gazetteer built around the Geonames.org dataset, that uses the Apache Lucene library
+ to create a searchable gazetteer."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+source_urls = ['https://github.com/chrismattmann/lucene-geo-gazetteer/archive/']
+sources = [{'filename': SOURCE_TAR_GZ, 'download_filename': '6c38272.tar.gz'}]
+checksums = ['c9d1412ecef1f2c04937c2ee7acec325e5cbb1fb7fbe525bdd59c9109a790494']
+
+builddependencies = [('Maven', '3.5.0')]
+dependencies = [('Java', '1.8.0_144')]
+
+unpack_options = '--strip-components=1'
+
+install_cmd = "cp -a * %(installdir)s && cd %(installdir)s && "
+install_cmd += "mvn install -Dmaven.repo.local=%(builddir)s/m2 -B assembly:assembly"
+
+# strip out hardcoded value for -i option, since user can not write to install directory
+postinstallcmds = [
+    "sed -i.bk 's/-i \$DIR_PATH[^ ]*//g' %(installdir)s/src/main/bin/lucene-geo-gazetteer",
+    "rm %(installdir)s/src/main/bin/lucene-geo-gazetteer.bk",
+]
+
+sanity_check_paths = {
+    'files': ['src/main/bin/lucene-geo-gazetteer'],
+    'dirs': [],
+}
+sanity_check_commands = ["lucene-geo-gazetteer --help | grep 'usage: lucene-geo-gazetteer'"]
+
+modextrapaths = {'PATH': 'src/main/bin'}
+
+moduleclass = 'tools'

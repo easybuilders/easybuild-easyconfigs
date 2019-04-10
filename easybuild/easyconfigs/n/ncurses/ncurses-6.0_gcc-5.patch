@@ -1,0 +1,33 @@
+Patch is taken from ncurses upstream repository.
+
+The problem it solves is that gcc 5.1 and later adds spurios #line
+markers into the preprocessor output (see comment in the actual patch).
+
+diff --git a/ncurses/base/MKlib_gen.sh b/ncurses/base/MKlib_gen.sh
+index b91398c..9e41cea 100755
+--- a/ncurses/base/MKlib_gen.sh
++++ b/ncurses/base/MKlib_gen.sh
+@@ -66,6 +66,23 @@ preprocessor="$1 -DNCURSES_INTERNALS -I../include"
+ AWK="$2"
+ USE="$3"
+ 
++# A patch discussed here:
++#	https://gcc.gnu.org/ml/gcc-patches/2014-06/msg02185.html
++# introduces spurious #line markers into the preprocessor output.  The result
++# appears in gcc 5.0 and (with modification) in 5.1, making it necessary to
++# determine if we are using gcc, and if so, what version because the proposed
++# solution uses a nonstandard option.
++PRG=`echo "$1" | sed -e 's/[[:space:]].*$//'`
++FSF=`"$PRG" --version 2>/dev/null | fgrep "Free Software Foundation" | head -n 1`
++ALL=`"$PRG" -dumpversion 2>/dev/null `
++ONE=`echo "$ALL" | sed -e 's/\..*$//'`
++if test -n "$FSF" && test -n "$ALL" && test -n "$ONE" ; then
++	if test $ONE -ge 5 ; then
++		echo ".. adding -P option to work around $PRG $ALL" >&2
++		preprocessor="$preprocessor -P"
++	fi
++fi
++
+ PID=$$
+ ED1=sed1_${PID}.sed
+ ED2=sed2_${PID}.sed

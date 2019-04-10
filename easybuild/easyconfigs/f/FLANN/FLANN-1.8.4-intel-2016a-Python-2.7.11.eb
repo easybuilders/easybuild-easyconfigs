@@ -1,0 +1,34 @@
+easyblock = 'CMakeMake'
+
+name = 'FLANN'
+version = '1.8.4'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.cs.ubc.ca/research/flann/'
+description = "FLANN is a library for performing fast approximate nearest neighbor searches in high dimensional spaces."
+
+toolchain = {'name': 'intel', 'version': '2016a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['http://www.cs.ubc.ca/research/flann/uploads/FLANN/']
+sources = ['flann-%(version)s-src.zip']
+
+builddependencies = [('CMake', '3.5.2')]
+dependencies = [
+    ('Python', '2.7.11'),
+]
+
+separate_build_dir = True
+
+configopts = "-DCMAKE_BUILD_TYPE=Release -DUSE_OPENMP=ON -DUSE_MPI=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_C_BINDINGS=ON"
+
+modextrapaths = {'PYTHONPATH': ['share/flann/python']}
+
+sanity_check_paths = {
+    'files': ['lib/libflann_cpp_s.a', 'lib/libflann_s.a',
+              'lib/libflann_cpp.%s' % SHLIB_EXT, 'lib/libflann.%s' % SHLIB_EXT],
+    'dirs': ['include/flann', 'lib/pkgconfig', 'share/doc/flann', 'share/flann/python'],
+}
+sanity_check_commands = [('python', '-c "import pyflann"')]
+
+moduleclass = 'lib'

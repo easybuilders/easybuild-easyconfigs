@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+
+name = 'Blender'
+version = '2.79'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.blender.org/'
+description = """Blender is the free and open source 3D creation suite. It supports
+ the entirety of the 3D pipeline-modeling, rigging, animation, simulation, rendering,
+ compositing and motion tracking, even video editing and game creation."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = ['http://download.blender.org/source/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['Blender-2.77a_fix-ARRAY_SIZE-icc.patch']
+checksums = [
+    'a9de03e769a2a4a0bf92186556896c4f4d32fd9ac4480915ae92d7f95b25c899',  # blender-2.79.tar.gz
+    'b333219ca380b08bf167bfdea33c0d23a4ed5c2cd05c5f391ca3b529fdc72a73',  # Blender-2.77a_fix-ARRAY_SIZE-icc.patch
+]
+
+# disable SSE detection to give EasyBuild full control over optimization compiler flags being used
+configopts = '-DWITH_CPU_SSE=OFF -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG" '
+
+# these are needed until extra dependencies are added for them to work
+configopts += '-DWITH_INSTALL_PORTABLE=OFF '
+configopts += '-DWITH_BUILDINFO=OFF '
+configopts += '-DWITH_GAMEENGINE=OFF '
+configopts += '-DWITH_SYSTEM_GLEW=OFF '
+
+# Python paths
+configopts += '-DPYTHON_VERSION=%(pyshortver)s -DPYTHON_LIBRARY=${EBROOTPYTHON}/lib/libpython%(pyshortver)sm.so '
+configopts += '-DPYTHON_INCLUDE_DIR=${EBROOTPYTHON}/include/python%(pyshortver)sm '
+configopts += '-DOPENEXR_INCLUDE_DIR=$EBROOTOPENEXR/include '
+
+dependencies = [
+    ('Python', '3.6.1'),
+    ('Boost', '1.65.1'),
+    ('libjpeg-turbo', '1.5.2'),
+    ('zlib', '1.2.11'),
+    ('X11', '20170314'),
+    ('Mesa', '17.0.2'),
+    ('OpenImageIO', '1.7.17'),  # required for cycles render engine
+]
+
+builddependencies = [('CMake', '3.9.1')]
+
+separate_build_dir = 'True'
+
+# use Intel software rasterizer by default (no GPU hardware acceleration)
+modextravars = {'GALLIUM_DRIVER': 'swr'}
+
+sanity_check_paths = {
+    'files': ['bin/blender'],
+    'dirs': []
+}
+
+moduleclass = 'vis'

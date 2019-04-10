@@ -1,0 +1,52 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'MakeCp'
+
+name = 'Minimac2'
+version = '2014.9.15'
+
+homepage = 'http://genome.sph.umich.edu/wiki/Minimac2'
+description = """minimac2 is an improved version of Minimac. It is designed to work on phased 
+ genotypes and can handle very large reference panels with hundreds or thousands of haplotypes. 
+ The name has two parts. The first, mini, refers to the modest amount of computational resources it requires. 
+ The second, mac, is short hand for MaCH, our widely used algorithm for genotype imputation.""" 
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+source_urls = ['http://csg.sph.umich.edu/cfuchsb/']
+sources = ['%(namelower)s.%(version)s.src.tgz']
+
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+
+dependencies = [
+    ('zlib', '1.2.8'),
+    # This app also depends in openblas
+    # OS dependency should be preferred if the os version is more recent then this version, it's
+    # nice to have an up to date openssl for security reasons
+    # ('OpenSSL', '1.0.1q'),
+
+]
+
+# firt move to folder libStatGen to run make clean && make
+# make clean is mandatory because the sources tarball includes
+# files from previous build
+prebuildopts = ["cd libStatGen && make clean && "]
+
+# in libStatGen folder run just "make"
+# in minimac folder run "make clean && make opt && make openmp"
+buildopts = [" && cd ../minimac2 && make clean && make opt && make openmp"]
+
+# parallel build fails
+parallel = 1
+
+files_to_copy = [(["minimac2/bin/minimac2", "minimac2/bin/minimac2-omp"], "bin")]
+
+sanity_check_paths = {
+    'files': ['bin/minimac2', 'bin/minimac2-omp'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

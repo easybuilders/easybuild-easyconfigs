@@ -1,0 +1,130 @@
+# Patches the setup.py to use EB settings for BLAS/LAPACK, FFTW, etc
+# wpoely86@gmail.com
+diff -ur cvxopt-1.1.9.orig/setup.py cvxopt-1.1.9/setup.py
+--- cvxopt-1.1.9.orig/setup.py	2016-11-30 08:35:21.000000000 +0100
++++ cvxopt-1.1.9/setup.py	2017-09-04 15:11:41.855020186 +0200
+@@ -80,10 +80,12 @@
+ LAPACK_LIB = os.environ.get("CVXOPT_LAPACK_LIB",LAPACK_LIB)
+ BLAS_LIB_DIR = os.environ.get("CVXOPT_BLAS_LIB_DIR",BLAS_LIB_DIR)
+ BLAS_EXTRA_LINK_ARGS = os.environ.get("CVXOPT_BLAS_EXTRA_LINK_ARGS",BLAS_EXTRA_LINK_ARGS)
++FFTW_EXTRA_LINK_ARGS = os.environ.get("CVXOPT_FFTW_EXTRA_LINK_ARGS","")
+ DATA_FILES = os.environ.get("CVXOPT_DATA_FILES",[])
+ if type(BLAS_LIB) is str: BLAS_LIB = BLAS_LIB.strip().split(';')
+ if type(LAPACK_LIB) is str: LAPACK_LIB = LAPACK_LIB.strip().split(';')
+-if type(BLAS_EXTRA_LINK_ARGS) is str: BLAS_EXTRA_LINK_ARGS = BLAS_EXTRA_LINK_ARGS.strip().split(';')
++if type(BLAS_EXTRA_LINK_ARGS) is str: BLAS_EXTRA_LINK_ARGS = BLAS_EXTRA_LINK_ARGS.strip().split(' ')
++if type(FFTW_EXTRA_LINK_ARGS) is str: FFTW_EXTRA_LINK_ARGS = FFTW_EXTRA_LINK_ARGS.strip().split(' ')
+ if type(DATA_FILES) is str: DATA_FILES = DATA_FILES.strip().split(';')
+ BUILD_GSL = int(os.environ.get("CVXOPT_BUILD_GSL",BUILD_GSL))
+ GSL_LIB_DIR = os.environ.get("CVXOPT_GSL_LIB_DIR",GSL_LIB_DIR)
+@@ -112,7 +114,7 @@
+ # optional modules
+ 
+ if BUILD_GSL:
+-    gsl = Extension('gsl', libraries = ['m', 'gsl'] + BLAS_LIB,
++    gsl = Extension('gsl', libraries = ['m', 'gsl'],
+         include_dirs = [ GSL_INC_DIR ],
+         library_dirs = [ GSL_LIB_DIR, BLAS_LIB_DIR ],
+         extra_link_args = BLAS_EXTRA_LINK_ARGS,
+@@ -120,10 +122,10 @@
+     extmods += [gsl];
+ 
+ if BUILD_FFTW:
+-    fftw = Extension('fftw', libraries = ['fftw3'] + BLAS_LIB,
++    fftw = Extension('fftw',
+         include_dirs = [ FFTW_INC_DIR ],
+         library_dirs = [ FFTW_LIB_DIR, BLAS_LIB_DIR ],
+-        extra_link_args = BLAS_EXTRA_LINK_ARGS,
++        extra_link_args = BLAS_EXTRA_LINK_ARGS + FFTW_EXTRA_LINK_ARGS,
+         sources = ['src/C/fftw.c'] )
+     extmods += [fftw];
+ 
+@@ -135,7 +137,7 @@
+     extmods += [glpk];
+ 
+ if BUILD_DSDP:
+-    dsdp = Extension('dsdp', libraries = ['dsdp'] + LAPACK_LIB + BLAS_LIB,
++    dsdp = Extension('dsdp', libraries = ['dsdp'],
+         include_dirs = [ DSDP_INC_DIR ],
+         library_dirs = [ DSDP_LIB_DIR, BLAS_LIB_DIR ],
+         extra_link_args = BLAS_EXTRA_LINK_ARGS,
+@@ -144,19 +146,19 @@
+ 
+ # Required modules
+ 
+-base = Extension('base', libraries = ['m'] + LAPACK_LIB + BLAS_LIB,
++base = Extension('base', libraries = ['m'],
+     library_dirs = [ BLAS_LIB_DIR ],
+     define_macros = MACROS,
+     extra_link_args = BLAS_EXTRA_LINK_ARGS,
+     sources = ['src/C/base.c','src/C/dense.c','src/C/sparse.c'])
+ 
+-blas = Extension('blas', libraries = BLAS_LIB,
++blas = Extension('blas',
+     library_dirs = [ BLAS_LIB_DIR ],
+     define_macros = MACROS,
+     extra_link_args = BLAS_EXTRA_LINK_ARGS,
+     sources = ['src/C/blas.c'] )
+ 
+-lapack = Extension('lapack', libraries = LAPACK_LIB + BLAS_LIB,
++lapack = Extension('lapack',
+     library_dirs = [ BLAS_LIB_DIR ],
+     define_macros = MACROS,
+     extra_link_args = BLAS_EXTRA_LINK_ARGS,
+@@ -164,9 +166,10 @@
+ 
+ if not SUITESPARSE_SRC_DIR:
+     umfpack = Extension('umfpack',
+-        libraries = ['umfpack','cholmod','amd','colamd','suitesparseconfig'] + LAPACK_LIB + BLAS_LIB + RT_LIB,
++        libraries = ['umfpack','cholmod','amd','colamd','suitesparseconfig'] + RT_LIB,
+         include_dirs = [SUITESPARSE_INC_DIR],
+         library_dirs = [SUITESPARSE_LIB_DIR, BLAS_LIB_DIR],
++        extra_link_args = BLAS_EXTRA_LINK_ARGS,
+         sources = ['src/C/umfpack.c'])
+ else:
+     umfpack = Extension('umfpack',
+@@ -177,7 +180,6 @@
+             SUITESPARSE_SRC_DIR + '/SuiteSparse_config' ],
+         library_dirs = [ BLAS_LIB_DIR ],
+         define_macros = MACROS + [('NTIMER', '1'), ('NCHOLMOD', '1')],
+-        libraries = LAPACK_LIB + BLAS_LIB,
+         extra_compile_args = ['-Wno-unknown-pragmas'],
+         extra_link_args = BLAS_EXTRA_LINK_ARGS,
+         sources = [ 'src/C/umfpack.c',
+@@ -190,14 +192,14 @@
+ 
+ if not SUITESPARSE_SRC_DIR:
+     cholmod = Extension('cholmod',
+-        libraries = ['cholmod','colamd','amd','suitesparseconfig'] + LAPACK_LIB + BLAS_LIB + RT_LIB,
++        libraries = ['cholmod','colamd','amd','suitesparseconfig'] + RT_LIB,
+         include_dirs = [SUITESPARSE_INC_DIR],
+         library_dirs = [SUITESPARSE_LIB_DIR, BLAS_LIB_DIR],
++        extra_link_args = BLAS_EXTRA_LINK_ARGS,
+         sources = [ 'src/C/cholmod.c' ])
+ else:
+     cholmod = Extension('cholmod',
+         library_dirs = [ BLAS_LIB_DIR ],
+-        libraries = LAPACK_LIB + BLAS_LIB,
+         include_dirs = [ SUITESPARSE_SRC_DIR + '/CHOLMOD/Include',
+             SUITESPARSE_SRC_DIR + '/COLAMD',
+             SUITESPARSE_SRC_DIR + '/AMD/Include',
+@@ -219,17 +221,18 @@
+         libraries = ['amd','suitesparseconfig'] + RT_LIB,
+         include_dirs = [SUITESPARSE_INC_DIR],
+         library_dirs = [SUITESPARSE_LIB_DIR],
++        extra_link_args = BLAS_EXTRA_LINK_ARGS,
+         sources = ['src/C/amd.c'])
+ else:
+     amd = Extension('amd',
+         include_dirs = [SUITESPARSE_SRC_DIR + '/AMD/Include',
+             SUITESPARSE_SRC_DIR + '/SuiteSparse_config' ],
+         define_macros = MACROS + [('NTIMER', '1')],
++        extra_link_args = BLAS_EXTRA_LINK_ARGS,
+         sources = [ 'src/C/amd.c', SUITESPARSE_SRC_DIR + '/SuiteSparse_config/SuiteSparse_config.c'] +
+         glob(SUITESPARSE_SRC_DIR + '/AMD/Source/*.c') )
+ 
+ misc_solvers = Extension('misc_solvers',
+-    libraries = LAPACK_LIB + BLAS_LIB,
+     library_dirs = [ BLAS_LIB_DIR ],
+     define_macros = MACROS,
+     extra_link_args = BLAS_EXTRA_LINK_ARGS,

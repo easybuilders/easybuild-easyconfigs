@@ -1,0 +1,53 @@
+##
+# This is a contribution from Phoenix HPC Service, The University of Adelaide, Australia
+# Homepage: https://www.adelaide.edu.au/phoenix/
+#
+# Copyright::   Copyright 2014-2017 adelaide.edu.au/phoenix
+# Authors::	Robert Qiao <robert.qiao@adelaide.edu.au>, Exequiel Sepulveda <exequiel.sepulveda@gmail.com>
+# License::     BSD
+#
+# Notes::
+##
+
+easyblock = 'PythonPackage'
+
+name = 'PyTables'
+version = '3.3.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.pytables.org'
+description = """PyTables is a package for managing hierarchical datasets and designed to efficiently and easily cope
+ with extremely large amounts of data. PyTables is built on top of the HDF5 library, using the Python language and the
+ NumPy package. It features an object-oriented interface that, combined with C extensions for the performance-critical
+ parts of the code (generated using Cython), makes it a fast, yet extremely easy to use tool for interactively browse,
+ process and search very large amounts of data. One important feature of PyTables is that it optimizes memory and disk
+ resources so that data takes much less space (specially if on-flight compression is used) than other solutions such as
+ relational or object oriented databases."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['https://github.com/PyTables/PyTables/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['pyTables-3.2.2-fix-libs.patch']
+checksums = [
+    'dceb15fef556a2775121bcc695561df4ff0e09248e0ce3a2d58f5244a9f61421',  # v3.3.0.tar.gz
+    '3a5695613215dca13a2e8e771762f1d541390884e438bc73263120d8bf377f43',  # pyTables-3.2.2-fix-libs.patch
+]
+
+dependencies = [
+    ('Python', '2.7.12'),
+    ('numexpr', '2.6.1', versionsuffix),
+    ('HDF5', '1.8.18'),
+    ('LZO', '2.10'),
+    ('Blosc', '1.12.1'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['pt2to3', 'ptdump', 'ptrepack']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+options = {'modulename': 'tables'}
+
+moduleclass = 'data'

@@ -1,0 +1,57 @@
+easyblock = 'EB_PSI'
+
+name = 'PSI4'
+version = '1.2.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/psi4/psi4/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['PSI4-%(version)s_fix_cmake_release.patch']
+checksums = [
+    'fbde7ee67174f7ba7b7f6f4e8117ce8b80f5fd10414577f5b0fcdbaa6c8ba020',  # v1.2.1.tar.gz
+    '38e964973d2f0797f28a9a09165ae67fc1dba454e44e5e40e9d3f06a22092efb',  # PSI4-1.2.1_fix_cmake_release.patch
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    #  PCMSolver recent versions fail with recent intel compilers.
+    #  Tried with intel/201{7,8}b, and versions 1.1.12, and 1.2.1
+    #  See in more details: https://github.com/PCMSolver/pcmsolver/issues/159
+    #  ('PCMSolver', '1.2.1'),
+    ('CheMPS2', '1.8.8'),
+    #  Tests are failing with pytest 3.9.2
+    ('pytest', '3.8.2', versionsuffix),
+    ('networkx', '2.2', versionsuffix),
+    ('deepdiff', '3.3.0', versionsuffix),
+]
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    # Perl needed for the ctest test suite during the installation, not for the pytest test suite after the installation
+    # ('Perl', '5.28.0'),
+]
+
+configopts = '-DENABLE_MPI=ON -DENABLE_PLUGINS=ON -DENABLE_XHOST=OFF '
+#  Install python mudule to the standard location instead of lib
+configopts += '-DPYMOD_INSTALL_LIBDIR=/python%(pyshortver)s/site-packages '
+#  Add bundled (downloaded) packages
+# -DENABLE_simint=ON does not work with intel/2018, so have to make with GCCcore
+configopts += '-DENABLE_dkh=ON -DENABLE_gdma=ON -DENABLE_resp=ON -DENABLE_snsmp2=ON '
+
+# runtest uses ctest, and some of the thests have to be manually compared
+# to the reference output (those tests are marked failed)
+# After installing PSI4, you can test the package using psi4 --test command. (This uses pytest framework)
+# runtest = '-L smoke'
+runtest = False
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'chem'

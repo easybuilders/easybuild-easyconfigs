@@ -1,0 +1,57 @@
+name = 'motif'
+version = '2.2.4'
+easyblock = 'ConfigureMake'
+
+homepage = 'http://motif.ics.com/'
+description = """Motif refers to both a graphical user interface (GUI) specification and the widget toolkit for building
+applications that follow that specification under the X Window System on Unix and other POSIX-compliant systems.
+It was the standard toolkit for the Common Desktop Environment and thus for Unix."""
+
+toolchain = {'name': 'ictce', 'version': '4.1.13'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+# from the source rpm http://motif.ics.com/sites/default/files/openmotif-2.2.4-0.1.src__0.rpm
+sources = ['open%(name)s-%(version)s.tar.bz2']
+
+# most patch files are obtained from source RPM
+patches = [
+    '%(name)s-%(version)s_various-fixes.patch',
+    '%(name)s-%(version)s_libXmu-prototypes.patch',
+]
+
+builddependencies = [
+    ('printproto', '1.0.5'),
+]
+
+dependencies = [
+    ('libtool', '2.4.2'),
+    ('libXt', '1.1.4'),
+    ('xbitmaps', '1.1.1'),
+    ('flex', '2.5.35'),
+    ('Bison', '2.7'),
+    ('Automake', '1.13.4'),
+    ('gettext', '0.18.2'),
+    ('libXp', '1.0.2'),
+    ('libX11', '1.6.1'),
+    ('libXext', '1.3.2'),
+    ('libXmu', '1.1.2'),
+]
+
+# make has problems with utf8
+prebuildopts = "env LANG=C "
+
+# motif ships a broken automake and libtool
+preconfigopts = "rm -f libtool install-sh missing depcomp config.guess config.sub && "
+preconfigopts += "cp $EBROOTAUTOMAKE/share/automake*/* . || cp $EBROOTLIBTOOL/bin/libtool . && "
+
+configopts = "--enable-shared"
+
+# make is not parallel safe
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['lib/libMrm.a', 'lib/libUil.a', 'lib/libXm.a'],
+    'dirs': ['bin', 'include/Mrm', 'include/uil', 'include/X11', 'include/Xm'],
+}
+
+moduleclass = 'vis'
