@@ -1,0 +1,306 @@
+Don't use "which" to find the path to the program, it's either in that PATH or not.
+
+Åke Sandgren, 20190213
+diff -ru relion-3.0.orig/src/pipeline_jobs.cpp relion-3.0/src/pipeline_jobs.cpp
+--- relion-3.0.orig/src/pipeline_jobs.cpp	2019-02-13 18:34:50.000000000 +0100
++++ relion-3.0/src/pipeline_jobs.cpp	2019-03-13 15:14:27.794458353 +0100
+@@ -510,7 +510,7 @@
+ 				{
+ 					// For multiple relion mpi commands: add multiple lines from the XXXcommandXXX template
+ 					if ((commands[icom]).find("relion_") != std::string::npos &&
+-							((commands[icom]).find("_mpi`") != std::string::npos || nmpi==1) ) // if there are no MPI programs, then still use XXXcommandXXX once
++							((commands[icom]).find("_mpi") != std::string::npos || nmpi==1) ) // if there are no MPI programs, then still use XXXcommandXXX once
+ 					{
+ 						std::string from = "XXXcommandXXX";
+ 						std::string to = commands[icom];
+@@ -593,7 +593,7 @@
+ 			// Is this a relion mpi program?
+ 			nr_mpi = (joboptions.find("nr_mpi") != joboptions.end()) ? joboptions["nr_mpi"].getNumber() : 1;
+ 			if (nr_mpi > 1 &&
+-					(commands[icom]).find("_mpi`") != std::string::npos &&
++					(commands[icom]).find("_mpi") != std::string::npos &&
+ 					(commands[icom]).find("relion_") != std::string::npos)
+ 			{
+ 				
+@@ -1195,9 +1195,9 @@
+ 
+ 	std::string command;
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_run_motioncorr_mpi`";
++		command="relion_run_motioncorr_mpi";
+ 	else
+-		command="`which relion_run_motioncorr`";
++		command="relion_run_motioncorr";
+ 
+ 	// I/O
+ 
+@@ -1389,9 +1389,9 @@
+ 	inputNodes.push_back(node2);
+ 
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_run_ctffind_mpi`";
++		command="relion_run_ctffind_mpi";
+ 	else
+-		command="`which relion_run_ctffind`";
++		command="relion_run_ctffind";
+ 
+ 	// Just use 10000 for magnification, so dstep==angpix
+ 	RFLOAT magn = 10000.;
+@@ -1514,7 +1514,7 @@
+ 	initialisePipeline(outputname, PROC_MANUALPICK_NAME, job_counter);
+ 	std::string command;
+ 
+-	command="`which relion_manualpick`";
++	command="relion_manualpick";
+ 
+ 	if (joboptions["fn_in"].getString() == "")
+ 	{
+@@ -1658,9 +1658,9 @@
+ 	initialisePipeline(outputname, PROC_AUTOPICK_NAME, job_counter);
+ 	std::string command;
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_autopick_mpi`";
++		command="relion_autopick_mpi";
+ 	else
+-		command="`which relion_autopick`";
++		command="relion_autopick";
+ 
+ 	// Input
+ 	if (joboptions["fn_input_autopick"].getString() == "")
+@@ -1874,9 +1874,9 @@
+ 	initialisePipeline(outputname, PROC_EXTRACT_NAME, job_counter);
+ 	std::string command;
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_preprocess_mpi`";
++		command="relion_preprocess_mpi";
+ 	else
+-		command="`which relion_preprocess`";
++		command="relion_preprocess";
+ 
+ 	// Input
+ 	if (joboptions["star_mics"].getString() == "")
+@@ -2034,9 +2034,9 @@
+ 	std::string command;
+ 
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_particle_sort_mpi`";
++		command="relion_particle_sort_mpi";
+ 	else
+-		command="`which relion_particle_sort`";
++		command="relion_particle_sort";
+ 
+ 	if (joboptions["input_star"].getString() == "")
+ 	{
+@@ -2172,7 +2172,7 @@
+ 	if (joboptions["do_remove_duplicates"].getBoolean())
+ 	{
+ 		// Remove duplicates
+-		command="`which relion_star_handler`";
++		command="relion_star_handler";
+ 
+ 		if (joboptions["fn_mic"].getString() != "" || joboptions["fn_model"].getString() != "" || joboptions["fn_coords"].getString() != "")
+ 		{
+@@ -2202,7 +2202,7 @@
+ 	else if (joboptions["do_select_values"].getBoolean() || joboptions["do_discard"].getBoolean() || joboptions["do_split"].getBoolean())
+ 	{
+ 		// Value-based selection
+-		command="`which relion_star_handler`";
++		command="relion_star_handler";
+ 
+ 		if (joboptions["fn_model"].getString() != "" || joboptions["fn_coords"].getString() != "")
+ 		{
+@@ -2322,7 +2322,7 @@
+ 	{
+ 		// Interactive selection
+ 
+-		command="`which relion_display`";
++		command="relion_display";
+ 
+ 		// I/O
+ 		if (joboptions["fn_model"].getString() != "")
+@@ -2408,7 +2408,7 @@
+ 			fn_suffix = fn_suffix.withoutExtension();
+ 
+ 			// Launch the manualpicker...
+-			command="`which relion_manualpick` --i " + fn_star;
++			command="relion_manualpick --i " + fn_star;
+ 			Node node4(joboptions["fn_coords"].getString(), joboptions["fn_coords"].node_type);
+ 			inputNodes.push_back(node4);
+ 
+@@ -2584,9 +2584,9 @@
+ 	std::string command;
+ 
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_refine_mpi`";
++		command="relion_refine_mpi";
+ 	else
+-		command="`which relion_refine`";
++		command="relion_refine";
+ 
+ 	FileName fn_run = "run";
+ 	if (is_continue)
+@@ -2828,9 +2828,9 @@
+ 
+ 	std::string command;
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_refine_mpi`";
++		command="relion_refine_mpi";
+ 	else
+-		command="`which relion_refine`";
++		command="relion_refine";
+ 
+ 	FileName fn_run = "run";
+ 	if (is_continue)
+@@ -3159,9 +3159,9 @@
+ 	std::string command;
+ 
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_refine_mpi`";
++		command="relion_refine_mpi";
+ 	else
+-		command="`which relion_refine`";
++		command="relion_refine";
+ 
+ 	FileName fn_run = "run";
+ 	if (is_continue)
+@@ -3550,9 +3550,9 @@
+ 	std::string command;
+ 
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_refine_mpi`";
++		command="relion_refine_mpi";
+ 	else
+-		command="`which relion_refine`";
++		command="relion_refine";
+ 
+ 	FileName fn_run = "run";
+ 	if (is_continue)
+@@ -3856,9 +3856,9 @@
+ 	{
+ 
+ 		if (joboptions["nr_mpi"].getNumber() > 1)
+-			command="`which relion_refine_mpi`";
++			command="relion_refine_mpi";
+ 		else
+-			command="`which relion_refine`";
++			command="relion_refine";
+ 
+ 		MetaDataTable MD;
+ 		MD.read(joboptions["fn_bodies"].getString());
+@@ -3945,7 +3945,7 @@
+ 
+ 	if (joboptions["do_analyse"].getBoolean())
+ 	{
+-		command = "`which relion_flex_analyse`";
++		command = "relion_flex_analyse";
+ 
+ 		// If we had performed relion_refine command, then fn_run would be set now
+ 		// Otherwise, we have to search for _model.star files that do NOT have a _it??? specifier
+@@ -4090,9 +4090,9 @@
+ 
+ 	// A. First get the extract command
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_preprocess_mpi`";
++		command="relion_preprocess_mpi";
+ 	else
+-		command="`which relion_preprocess`";
++		command="relion_preprocess";
+ 
+ 	// Input
+ 	if (joboptions["fn_movie_star"].getString() == "")
+@@ -4171,9 +4171,9 @@
+ 
+ 	// B. Then get the actual movie-refinement command
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_refine_mpi`";
++		command="relion_refine_mpi";
+ 	else
+-		command="`which relion_refine`";
++		command="relion_refine";
+ 
+ 	// Make specific run-names for different variables of ravg, sigma_offset and sigma_angles,
+ 	// This way you don't have to re-extract all movie particles each time you try a different parameter setting
+@@ -4295,9 +4295,9 @@
+ 	std::string command;
+ 
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_particle_polish_mpi`";
++		command="relion_particle_polish_mpi";
+ 	else
+-		command="`which relion_particle_polish`";
++		command="relion_particle_polish";
+ 
+ 	// General
+ 	if (joboptions["fn_in"].getString() == "")
+@@ -4404,7 +4404,7 @@
+ 	initialisePipeline(outputname, PROC_MASKCREATE_NAME, job_counter);
+ 	std::string command;
+ 
+-	command="`which relion_mask_create`";
++	command="relion_mask_create";
+ 
+ 	// I/O
+ 	if (joboptions["fn_in"].getString() == "")
+@@ -4482,7 +4482,7 @@
+ 	commands.clear();
+ 	initialisePipeline(outputname, PROC_JOINSTAR_NAME, job_counter);
+ 	std::string command;
+-	command="`which relion_star_handler`";
++	command="relion_star_handler";
+ 
+ 	int ii = 0;
+ 	if (joboptions["do_part"].getBoolean())
+@@ -4647,7 +4647,7 @@
+ 
+ 	if (joboptions["do_subtract"].getBoolean())
+ 	{
+-		command="`which relion_project`";
++		command="relion_project";
+ 
+ 
+ 		// I/O
+@@ -4749,7 +4749,7 @@
+ 	initialisePipeline(outputname, PROC_POST_NAME, job_counter);
+ 	std::string command;
+ 
+-	command="`which relion_postprocess`";
++	command="relion_postprocess";
+ 
+ 	// Input mask
+ 	if (joboptions["fn_mask"].getString() == "")
+@@ -4940,9 +4940,9 @@
+ 		// Relion postprocessing
+ 
+ 		if (joboptions["nr_mpi"].getNumber() > 1)
+-			command="`which relion_postprocess_mpi`";
++			command="relion_postprocess_mpi";
+ 		else
+-			command="`which relion_postprocess`";
++			command="relion_postprocess";
+ 
+ 		command += " --locres --i " + joboptions["fn_in"].getString();
+ 		command += " --o " + outputname + "relion";
+@@ -5012,9 +5012,9 @@
+ 	std::string command;
+ 
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_motion_refine_mpi`";
++		command="relion_motion_refine_mpi";
+ 	else
+-		command="`which relion_motion_refine`";
++		command="relion_motion_refine";
+ 
+ 	if (joboptions["fn_data"].getString() == "")
+ 	{
+@@ -5178,9 +5178,9 @@
+ 
+ 
+ 	if (joboptions["nr_mpi"].getNumber() > 1)
+-		command="`which relion_ctf_refine_mpi`";
++		command="relion_ctf_refine_mpi";
+ 	else
+-		command="`which relion_ctf_refine`";
++		command="relion_ctf_refine";
+ 
+ 	if (joboptions["fn_data"].getString() == "")
+ 	{
