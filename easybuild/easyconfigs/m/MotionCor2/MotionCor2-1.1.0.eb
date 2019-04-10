@@ -1,0 +1,52 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Ake Sandgren
+# HPC2N
+# Umea University
+
+easyblock = 'Binary'
+
+name = 'MotionCor2'
+version = '1.1.0'
+
+homepage = 'http://msg.ucsf.edu/em/software/motioncor2.html'
+description = """MotionCor2 correct anisotropic image motion at the
+single pixel level across the whole frame, suitable for both single
+particle and tomographic images. Iterative, patch-based motion detection
+is combined with spatial and temporal constraints and dose weighting.
+
+Cite publication: Shawn Q. Zheng, Eugene Palovcak, Jean-Paul Armache,
+Yifan Cheng and David A. Agard (2016) Anisotropic Correction of
+Beam-induced Motion for Improved Single-particle Electron
+Cryo-microscopy, Nature Methods, submitted.
+BioArxiv: http://biorxiv.org/content/early/2016/07/04/061960
+"""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# Change this to the version of the latest cuda used in this version of motioncor2
+cuda_ver = '91'
+
+source_urls = ['http://msg.ucsf.edu/MotionCor2']
+sources = [
+    '%(name)s-%(version)s.zip',
+]
+patches = [('Motioncor2-cuda%s.sh' % cuda_ver, '.')]
+
+motioncor2_bin = '%%(name)s_%%(version)s-Cuda%s' % cuda_ver
+
+install_cmd = 'unzip -x %(name)s-%(version)s.zip && '
+install_cmd += 'mkdir -p %(installdir)s/bin && '
+# Make sure to copy the binary that uses the latest version of CUDA
+# that we have installed.
+# And update the wrapper to load the correct modules
+install_cmd += 'cp %s %%(installdir)s/bin && ' % motioncor2_bin
+install_cmd += 'chmod +x %%(installdir)s/bin/%s && ' % motioncor2_bin
+install_cmd += 'sed "s/#MOTIONCOR2#/%s/" Motioncor2-cuda%s.sh > %%(installdir)s/bin/motioncor2 && ' % (motioncor2_bin, cuda_ver)
+install_cmd += 'chmod +x %(installdir)s/bin/motioncor2'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % motioncor2_bin, 'bin/motioncor2'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
