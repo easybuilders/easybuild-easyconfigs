@@ -17,12 +17,11 @@ allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
 use_pip = False
 
 exts_list = [
+    # Up-to-date setuptools required for cryptography installation
     ('setuptools', '41.0.0', {
         'source_tmpl': '%(name)s-%(version)s.zip',
         'source_urls': ['https://pypi.python.org/packages/source/s/setuptools/'],
-    }),
-    ('pip', '19.0.3', {
-        'source_urls': ['https://pypi.python.org/packages/source/p/pip/'],
+        'use_pip': False,
     }),
     ('ddt', '1.2.1', {
         'source_urls': ['https://pypi.python.org/packages/source/d/ddt/'],
@@ -73,6 +72,7 @@ exts_list = [
 pyver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
 
 # on RHEL-based systems, some extensions get installed to lib, some to lib64
-modextrapaths = {'PYTHONPATH': ['lib/python%s/site-packages' % pyver, 'lib64/python%s/site-packages' % pyver]}
+# lib is picked up first by default but need to also include lib64
+modextrapaths = {'PYTHONPATH': ['lib64/python%s/site-packages' % pyver]}
 
 moduleclass = 'tools'
