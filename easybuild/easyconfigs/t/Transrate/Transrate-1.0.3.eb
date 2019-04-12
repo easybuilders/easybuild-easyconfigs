@@ -1,0 +1,39 @@
+easyblock = "PackedBinary"
+
+name = "Transrate"
+version = '1.0.3'
+sver = '0.8.2'
+
+homepage = 'http://hibberdlab.com/transrate/'
+description = """Transrate is software for de-novo transcriptome assembly quality analysis.
+ It examines your assembly in detail and compares it to experimental evidence
+ such as the sequencing reads, reporting quality scores for contigs and
+ assemblies. This allows you to choose between assemblers and parameters,
+ filter out the bad contigs from an assembly, and help decide when
+ to stop trying to improve the assembly."""
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+sources = ['transrate-%(version)s-linux-x86_64.tar.gz']
+source_urls = ['https://bintray.com/artifact/download/blahah/generic']
+
+patches = ['%%(name)s_%%(version)s-salmon-%s.patch' % sver]
+
+checksums = [
+    '68d034ecd7012f1d3d505a2edd820c1155cd8b64d2acbf2ac833f30d3800141b',  # transrate-1.0.3-linux-x86_64.tar.gz
+    '0fee41538d4f69e352f2cec25f396bb847c40ada4a15b2260140f4072219e8f6',  # Transrate_1.0.3-salmon-0.8.2.patch
+]
+
+dependencies = [
+    ('BLAST+', '2.2.31'),
+    ('Salmon', sver),
+]
+
+postinstallcmds = ['rm %%(installdir)s/bin/%s' % x for x in ['salmon', '*.%s*' % SHLIB_EXT]]
+
+sanity_check_paths = {
+    'files': ['transrate', 'bin/bam-read', 'bin/snap-aligner', 'lib/libruby.%s' % SHLIB_EXT],
+    'dirs': ['lib/app/%s' % x for x in ['bin', 'deps', 'lib', 'ruby']]
+}
+
+moduleclass = 'bio'

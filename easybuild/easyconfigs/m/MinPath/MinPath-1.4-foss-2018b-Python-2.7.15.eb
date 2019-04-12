@@ -1,0 +1,45 @@
+easyblock = 'Tarball'
+
+name = 'MinPath'
+version = '1.4'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://omics.informatics.indiana.edu/MinPath'
+description = """MinPath (Minimal set of Pathways) is a parsimony approach for biological pathway reconstructions
+ using protein family predictions, achieving a more conservative, yet more faithful, estimation of the biological
+ pathways for a query dataset."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['http://omics.informatics.indiana.edu/mg/get.php?justdoit=yes&software=']
+sources = ['minpath%(version)s.tar.gz']
+patches = ['MinPath-%(version)s_fix-glpsol-path.patch']
+checksums = [
+    '665e90b5ee7fa5837d13b1145cdf3eafa691d25c1ce4bb76847dfa771ff24551',  # minpath1.4.tar.gz
+    '35ac9d18ec5e2d6e2345de708236ed12cddcccbd8fc0c5a3652ecd838dc57822',  # MinPath-1.4_fix-glpsol-path.patch
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('GLPK', '4.65'),
+]
+
+# remove included old GLPK copy
+postinstallcmds = ["rm -rf %(installdir)s/glpk-*"]
+
+sanity_check_paths = {
+    'files': ['MinPath%(version)s.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "MinPath%(version)s.py -ko examples/demo.ko -report /dev/null -details /dev/null",
+    "MinPath%(version)s.py -fig examples/demo.fig -report /dev/null -details /dev/null",
+    "MinPath%(version)s.py -any examples/demo.ec -map ec2path -report /dev/null -details /dev/null",
+]
+
+modextrapaths = {'PATH': ''}
+
+modextravars = {'MinPath': '%(installdir)s'}
+
+moduleclass = 'bio'

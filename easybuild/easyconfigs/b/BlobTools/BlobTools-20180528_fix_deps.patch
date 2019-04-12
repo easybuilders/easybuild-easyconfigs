@@ -1,0 +1,57 @@
+Don't install Python dependencies
+Don't download and extract taxdump
+Don't install SAMtools
+Don't use self-installed SAMtools
+Author: Samuel Moors, Vrije Universiteit Brussel (VUB)
+diff -ur blobtools-master.orig/install blobtools-master/install
+--- blobtools-master.orig/install	2018-05-29 15:39:21.000000000 +0200
++++ blobtools-master/install	2019-03-10 13:36:46.469860400 +0100
+@@ -30,16 +30,6 @@
+         exit
+     fi
+ fi
+-# Install python dependencies
+-echo "[+] Installing python dependencies..."
+-$python setup.py install --quiet
+-if [ $? -eq 0 ]; then
+-        echo "[+] Python dependencies installed."
+-    else
+-        echo "FAIL."
+-        echo "[X] - Python dependencies could not be installed. Make sure you are using Python 2.7 and have a functional installation of pip."
+-        exit
+-fi
+ 
+ # Create executable
+ echo -n "[+] Creating BlobTools executable..."
+@@ -124,19 +114,7 @@
+     fi
+ }
+ 
+-# install samtools
+-samtools_tar=$DIR/samtools-1.5.tar.bz2
+-if [ ! -f "$samtools_tar" ]; then
+-    download_samtools
+-fi
+-install_samtools
+ 
+-# get taxdump
+-taxdump=$DIR/data/taxdump.tar.gz
+-if [ ! -f "$taxdump" ]; then
+-    download_taxdump
+-fi
+-unpack_taxdump
+ 
+ # nodesdb
+ ./blobtools nodesdb --nodes $DIR/data/nodes.dmp --names $DIR/data/names.dmp
+diff -ur blobtools-master.orig/lib/blobtools.py blobtools-master/lib/blobtools.py
+--- blobtools-master.orig/lib/blobtools.py	2018-05-29 15:39:21.000000000 +0200
++++ blobtools-master/lib/blobtools.py	2019-01-29 16:34:20.702264497 +0100
+@@ -45,7 +45,7 @@
+ LIBDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ''))
+ MAINDIR = os.path.abspath(os.path.join(LIBDIR, '../'))
+ DATADIR = os.path.abspath(os.path.join(MAINDIR, 'data/'))
+-SAMTOOLS = os.path.abspath(os.path.join(MAINDIR, 'samtools/bin/samtools'))
++SAMTOOLS = 'samtools'
+ 
+ if __name__ == '__main__':
+     args = docopt(__doc__,
