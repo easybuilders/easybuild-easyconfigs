@@ -1,0 +1,51 @@
+easyblock = 'PythonBundle'
+
+name = 'QUAST'
+version = '5.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ablab/%(namelower)s'
+description = """QUAST evaluates genome assemblies by computing various metrics.
+ It works both with and without reference genomes. The tool accepts multiple
+ assemblies, thus is suitable for comparison."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Perl', '5.28.0'),
+    ('matplotlib', '2.2.3', versionsuffix),
+    ('Java', '1.8', '', True),
+    ('Boost', '1.67.0'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('simplejson', '3.16.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/simplejson'],
+        'checksums': ['b1f329139ba647a9548aa05fb95d046b4a677643070dc2afc05fa2e975d09ca5'],
+    }),
+    (name, version, {
+        'source_tmpl': 'quast_%(version)s.tar.gz',
+        'source_urls': ['https://github.com/ablab/quast/archive/'],
+        'checksums': ['9f30c03e0bfd261492fe6b72fb07645bdee5b29d741f75fc75857b6fa095d91d'],
+        'install_target': 'install_full',
+        'modulename': 'quast_libs',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s.py', 'bin/meta%(namelower)s.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "wget quast.sf.net/test_data.tar.gz && "
+    "tar xzf test_data.tar.gz && "
+    "%(namelower)s.py --test && "
+    "rm ./test_data.tar.gz ./test_data -rf"
+]
+
+moduleclass = 'bio'
