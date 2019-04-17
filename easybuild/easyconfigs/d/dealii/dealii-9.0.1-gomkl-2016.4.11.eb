@@ -1,0 +1,83 @@
+easyblock = 'CMakeMake'
+
+name = 'dealii'
+version = '9.0.1'
+
+homepage = 'http://www.dealii.org/'
+description = """A C++ software library supporting the creation of finite element codes and an open community of users and developers."""
+
+toolchain = {'name': 'gomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://dealii.kyomu.43-1.org/downloads/']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+
+separate_build_dir = True
+
+builddependencies = [('CMake', '3.4.1')]
+
+dependencies = [
+   ('Trilinos', '12.10.1', '-Python-2.7.13'),
+   ('p4est', '2.0'),
+   ('GSL', '2.3'),
+   ('SuiteSparse', '4.5.4'),
+   ('tbb', '2017.2.132'),
+   #('SUNDIALS', '4.1.0'),
+   ('gmsh', '4.0.7'),
+   #('ADOL-C', '2.6.3', '', ('gompi', '2016.4.11')),
+   ('arpack-ng', '3.5.0'),
+   ('ASSIMP', '4.1.0'),
+   ('HDF5', '1.8.18'),
+   ('METIS', '5.1.0'),
+   ('muParser', '2.2.5'),
+   ('netCDF', '4.4.1.1'),
+   #('PETSc', '3.9.0'),
+]
+
+configure_cmd_prefix = ' CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 '
+
+preconfigopts = 'export TRILINOS_DIR=$EBROOTTRILINOS && '
+
+configopts  = '-DDEAL_II_WITH_P4EST=ON '
+configopts += '-DDEAL_II_WITH_MPI=ON '
+configopts += '-DDEAL_II_WITH_TRILINOS=ON '
+configopts += '-DTrilinos_ENABLE_Sacado=ON '
+configopts += '-DTrilinos_ENABLE_Stratimikos=ON '
+configopts += '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+configopts += '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DCMAKE_C_COMPILER=mpicc '
+configopts += '-DCMAKE_CXX_COMPILER=mpiCC '
+configopts += '-DCMAKE_Fortran_COMPILER=mpif90 '
+configopts += '-DLAPACK_FOUND=true '
+configopts += '-DLAPACK_LIBRARIES="$LIBLAPACK" '
+configopts += '-DSCALAPACK_DIR=$MKLROOT/lib/intel64 '
+configopts += '-DP4EST_DIR=${EBROOTP4EST} '
+configopts += '-DTRILINOS_DIR=${EBROOTTRILINOS} '
+configopts += '-DGSL_LIBRARIES=${EBROOTGSL}/lib/libgsl.a '
+configopts += '-DGSL_INCLUDE_DIRS=${EBROOTGSL}/include '
+configopts += '-DDEAL_II_HAVE_USABLE_FLAGS_RELEASE=ON '
+configopts += '-DGMSH_DIR=$EBROOTGMSH '
+#configopts += '-DSUNDIALS_DIR=$EBROOTSUNDIALS '
+configopts += '-DUMFPACK_DIR=$EBROOTSUITESPARSE/UMFPACK '
+configopts += '-DZLIB_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+configopts += '-DZLIB_LIBRARY=$NIXUSER_PROFILE/lib/libz.a '
+#configopts += '-DADOLC_DIR=$EBROOTADOLMINC '
+configopts += '-DARPACK_DIR=$EBROOTARPACKMINNG '
+configopts += '-DASSIMP_DIR=$EBROOTASSIMP '
+configopts += '-DHDF5_DIR=$EBROOTHDF5 '
+configopts += '-DMETIS_DIR=$EBROOTMETIS '
+configopts += '-DMUPARSER_DIR=$EBROOTMUPARSER '
+configopts += '-DNETCDF_DIR=$EBROOTNETCDF '
+#configopts += '-DPETSC_DIR=$EBROOTPETSC '
+
+# Too parallel is too slow, and may cause build/tests to fail:
+
+maxparallel = 10
+
+sanity_check_paths = {
+    'files': [('lib/libdeal_II.so')],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'numlib'

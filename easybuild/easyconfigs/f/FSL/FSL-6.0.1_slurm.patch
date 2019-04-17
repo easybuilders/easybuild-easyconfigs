@@ -1,0 +1,170 @@
+--- fsl/src/sgeutils/fsl_sub.orig	2019-03-01 15:40:29.000000000 +0000
++++ fsl/src/sgeutils/fsl_sub	2019-04-02 17:09:07.067083178 +0000
+@@ -81,7 +81,7 @@
+ # "NONE". Note that a user can unset SGE_ROOT if they don't want the
+ # cluster to be used.
+ ###########################################################################
+-METHOD=SGE
++METHOD=SLURM
+ unset module
+ if [ "x$SGE_ROOT" = "x" ] ; then
+ 	METHOD=NONE
+@@ -93,6 +93,10 @@
+ 	fi
+ fi
+ 
++if [ "x$SLURM_JOB_ID" != "x" ] ; then
++       METHOD=SLURM
++fi
++
+ # stop submitted scripts from submitting jobs themselves
+ if [ "X$FSLSUBALREADYRUN" = "Xtrue" ] ; then
+     METHOD=NONE
+@@ -128,6 +132,11 @@
+     fi
+     queueCmd=" -q $queue "
+ 
++    # if slurm environment is detected use the compute partition, change this to suit
++    if [ $METHOD = SLURM ] ; then
++           queue=compute
++    fi
++
+     #echo "Estimated time was $1 mins: queue name is $queue"
+ }
+ 
+@@ -240,10 +249,10 @@
+ # change. It also sets up the basic emailing control.
+ ###########################################################################
+ 
+-queue=long.q
++queue=compute
+ queueCmd=" -q long.q "
+ mailto=`whoami`@`hostname -f | cut -d . -f 2-`
+-MailOpts="a"
++MailOpts="n"
+ 
+ 
+ ###########################################################################
+@@ -496,6 +505,122 @@
+ 	;;
+ 
+ ###########################################################################
++# SLURM method
++# this is a very naive way of doing things, its just to simply fire off all
++# the tasks individually to the resource manager if there's a taskfile;
++# or just run the command if there's a single command specified
++###########################################################################
++
++    SLURM)
++        # single command or a taskfile with multiple commands? if $tasks is empty, then it's a single command
++        if [ "x$tasks" = "x" ] ; then
++            # single command
++
++            if [ $verbose -eq 1 ] ; then
++                echo executing: $@ >&2
++            fi
++
++	    # now run it (don't submit a new job, run it in this job)
++	    /bin/sh <<EOF1 > ${LogDir}${JobName}.o$$ 2> ${LogDir}${JobName}.e$$
++$@
++EOF1
++	    ERR=$?
++	    if [ $ERR -ne 0 ] ; then
++		cat ${LogDir}${JobName}.e$$ >&2
++		exit $ERR
++	    fi
++
++        else
++            # multiple tasks are listed in the $taskfile
++            ntasks=$(wc -l ${taskfile})
++            if [ $verbose -eq 1 ] ; then
++                echo "$0: using Slurm: multiple tasks: ${ntasks} in ${taskfile}"
++            fi
++
++            # do we have the 'staskfarm' module available?
++            if module show staskfarm 2>&1 | grep -q ^prepend-path ; then
++                # we do have staskfarm
++                if [ $verbose -eq 1 ] ; then
++                    echo "$0: using Slurm: multiple tasks: using staskfarm wrapper"
++                fi
++
++                # can we parse the TimeLimit of *this* job? If so, use it in the staskfarm job
++                timelimit=$(/usr/bin/scontrol -o show job ${SLURM_JOB_ID} | tr ' ' '\n' | grep ^TimeLimit |  cut -d= -f2)
++                if [ -z "${timelimit}" ] ; then
++                    # else default to 24 hours
++                    timelimit=24:00:00
++                fi
++
++                # can we parse the number of cores in a node in this partition?
++                cores=$(sinfo -h --partition=${queue} -o %c | grep -o "[[:digit:]]\+")
++                if [ -z "${cores}" ] ; then
++                    # else default to 8 cores
++                    cores=8
++                fi
++
++
++                # create a temporary file to hold the job details
++                jobfile=slurm_job_${SLURM_JOB_ID}_subtasks.sh
++                cat <<EOF > ${jobfile}
++#!/bin/sh
++#SBATCH -n ${cores}
++#SBATCH -t ${timelimit}
++#SBATCH -p ${queue}
++#SBATCH -J ${JobName}-${SLURM_JOB_ID}-tasks
++
++echo FSL sub-task job
++echo
++echo File created at:     $(date)
++echo Parent job name:     $SLURM_JOB_NAME
++echo Parent job id:       $SLURM_JOB_ID
++echo Parent job nodelist: $SLURM_JOB_NODELIST
++echo
++
++source /etc/profile.d/modules.sh
++module load staskfarm
++staskfarm -v $taskfile
++EOF
++
++                # now submit
++                sbatch ${jobfile} >> sbatch.log 2>&1
++
++            else
++                # we do NOT have staskfarm, so use the previous single-submission method
++                if [ $verbose -eq 1 ] ; then
++                    echo "Starting Slurm submissions..." >&2
++                fi
++                _SRMRAND=$RANDOM
++                _SRMNAME=$JobName$SRMRAND
++                echo "========================" >> sbatch.log
++                echo "= Starting submissions =" >> sbatch.log
++                echo "========================" >> sbatch.log
++                date >> sbatch.log
++while read line
++do
++    if [ "x$line" != "x" ] ; then
++sbatch -J $_SRMNAME -o "slurm-log-$_SRMNAME-%j-%N.out" -t 24:00:00 -p $queue -n 1 <<EOF
++#!/bin/sh
++echo 
++echo $SLURM_JOB_NAME
++echo $SLURM_JOB_ID
++echo $SLURM_JOB_NODELIST
++echo
++date
++echo
++$line
++EOF
++    fi
++done < $taskfile >> sbatch.log 2>&1
++            fi
++
++        fi
++
++	# have to return the process id for bedpostx
++	echo $$
++        ;;
++
++
++###########################################################################
+ # Don't change the following - this runs the commands directly if a
+ # cluster is not being used.
+ ###########################################################################

@@ -1,0 +1,65 @@
+--- sys/make.x86_64-linux-intel.orig	2019-03-30 03:30:40.035217456 +0000
++++ sys/make.x86_64-linux-intel	2019-03-30 03:40:07.846098531 +0000
+@@ -9,12 +9,12 @@
+ ############################################################################
+ 
+ # Compilers
+-FXX = mpif90
++FXX = mpiifort
+ CC = icc
+ 
+ # Compiler options
+-FXXOPT = -O2 -qopenmp -ip -standard-semantics -heap-arrays 10
+-CCOPT = -O2 -ip
++FXXOPT = -O2 -qopenmp -heap-arrays 10
++CCOPT = -O2 
+ 
+ # Linker
+ LN = $(FXX)
+@@ -24,11 +24,11 @@
+ 
+ # ScaLAPACK
+ # Make sure you link the correct flavour of mkl_blacs for your MPI-environment
+-MKL_LIBDIR = $(MKLROOT)/lib/intel64
+-LIB_SCALAPACK = -L$(MKL_LIBDIR) -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
++#MKL_LIBDIR = $(MKLROOT)/lib/intel64
++LIB_SCALAPACK = -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+ 
+ # LAPACK/BLAS
+-LIB_LAPACK = -L$(MKL_LIBDIR) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core
++LIB_LAPACK = -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -liomp5 -lm -ldl
+ 
+ # Any other libraries to be linked
+ OTHERLIBS = -liomp5
+--- make.config.orig	2019-03-30 03:31:02.984253592 +0000
++++ make.config	2019-03-30 05:15:18.578115152 +0000
+@@ -6,17 +6,17 @@
+ BUILDDIR := $(ROOT)/_build
+ 
+ # Installation directory
+-INSTALLDIR := $(ROOT)/_install
++#INSTALLDIR := $(ROOT)/_install
+ 
+ ################################################################################
+ # Configuration of optional components
+ ################################################################################
+ 
+ # Whether DFTB+ should support MPI-parallelism
+-WITH_MPI := 0
++WITH_MPI := 1
+ 
+ # Whether the socket library (external control) should be linked.
+-WITH_SOCKETS := 1
++WITH_SOCKETS := 0
+ 
+ # Whether the ARPACK library (needed by TD-DFTB) should be linked with DFTB+
+ # Only affects serial build (MPI-version is built without ARPACK/TD-DFTB).
+@@ -25,7 +25,7 @@
+ # Whether the DFTD3 library (dispersion) should be linked.
+ # NOTE: Due to license incompatibility, distribution of a DFTB+ binary built
+ # with this component is not permitted. Use it only for your personal research.
+-WITH_DFTD3 := 0
++WITH_DFTD3 := 1
+ 
+ ################################################################################
+ # General building/testing options

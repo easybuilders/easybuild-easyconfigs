@@ -1,0 +1,37 @@
+easyblock = 'MakeCp'
+
+name = 'CFDEM'
+version = '3.8.0'
+
+homepage = 'https://www.cfdem.com/'
+description = """CFDEM coupling provides an open source parallel coupled CFD-DEM framework combining the strengths of LIGGGHTS DEM code and the Open Source CFD package OpenFOAM(*) """
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True}
+dependencies = [
+    ('OpenFOAM', '5.0'),
+    ('VTK', '6.3.0', '-mpi'),
+    ('ParaView', '5.5.2'),
+    ('Octave', '4.2.1'),
+]
+
+sources = ['%(name)scoupling-PUBLIC-%(version)s.zip']
+
+patches = ['%(name)s-%(version)s.patch']
+skipsteps = ['build']
+with_configure = True
+configure_cmd_prefix = "unzip  -d %(builddir)s/ /cvmfs/soft.computecanada.ca/easybuild/sources/c/CFDEM/LIGGGHTS-PUBLIC-3.8.0.zip && unzip -d %(builddir)s/ /cvmfs/soft.computecanada.ca/easybuild/sources/c/CFDEM/LPP-master.zip && export CFDEM_VERSION=%(version)s && export CFDEM_PROJECT_DIR=%(builddir)s/CFDEMcoupling-PUBLIC-$CFDEM_VERSION && export CFDEM_PROJECT_USER_DIR=%(builddir)s/aroudgar && export CFDEM_bashrc=$CFDEM_PROJECT_DIR/src/lagrangian/cfdemParticle/etc/bashrc && export CFDEM_LIGGGHTS_SRC_DIR=%(builddir)s/LIGGGHTS-PUBLIC-$CFDEM_VERSION/src && export CFDEM_LIGGGHTS_MAKEFILE_NAME=auto && export CFDEM_LPP_DIR=%(builddir)s/LPP-master/src && cp $CFDEM_PROJECT_DIR/src/lagrangian/cfdemParticle/etc/addLibs_universal/additionalLibs_5.x $CFDEM_PROJECT_DIR/src/lagrangian/cfdemParticle/etc/addLibs_universal/additionalLibs_5.0 && source $CFDEM_bashrc && MPICXX=mpicxx CXX=icpc && bash $CFDEM_SRC_DIR/lagrangian/cfdemParticle/etc/compileCFDEMcoupling_all.sh "
+
+
+
+#preconfigopts = ["chmod -R o-rwx %(installdir)s && pip install numpy --prefix=%(installdir)s && pip install subprocess32 --prefix=%(installdir)s && pip install ase --prefix=%(installdir)s"]
+parallel = 1
+
+files_to_copy = ["platforms/linux64IccDPInt32Opt/bin", "platforms/linux64IccDPInt32Opt/lib", (['src/lagrangian/cfdemParticle/etc/functions.sh'], 'etc'), (['%(builddir)s/LIGGGHTS-PUBLIC-%(version)s/src/lmp_auto'], 'bin'), (['%(builddir)s/LPP-master/src/lpp.py'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/cfdemPostproc', 'bin/cfdemSolverIB', 'bin/cfdemSolverPiso', 'bin/cfdemSolverPisoScalar', 'bin/cfdemSolverPisoSTM'],
+    'dirs': ["lib"]
+}
+modextrapaths = {'CFDEM_LIGGGHTS_EXEC': ['bin/lmp_auto'], 'CFDEM_LPP_DIR': ['bin']}
+moduleclass = 'phys'

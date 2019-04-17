@@ -2,9 +2,12 @@
 
 name = 'impi'
 version = '2018.3.222'
+modaltsoftname = 'intelmpi'
 
 homepage = 'http://software.intel.com/en-us/intel-mpi-library/'
-description = "Intel MPI Library, compatible with MPICH ABI"
+description = """Intel MPI Library, compatible with MPICH ABI.
+Note: like Open MPI, this module's mpicc calls the toolchain compiler.
+mpiicc calls icc, and mpigcc calls gcc, and similar for C++ and Fortran."""
 
 toolchain = {'name': 'iccifort', 'version': '2018.3'}
 
@@ -16,9 +19,12 @@ dontcreateinstalldir = 'True'
 components = ['intel-mpi', 'intel-psxe', 'intel-imb']
 
 # set up all the mpi commands to default to intel compilers
-# set_mpi_wrappers_all = 'True'
+set_mpi_wrappers_all = True
 
 postinstallcmds = [
+    # Fix mpirun from IntelMPI to explicitly unset I_MPI_PMI_LIBRARY
+    # it can only be used with srun.
+    "sed -i 's@\\(#!/bin/sh.*\\)$@\\1\\nunset I_MPI_PMI_LIBRARY@' %(installdir)s/intel64/bin/mpirun",
     "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path='$ORIGIN/../lib'",
     'ln -s %(installdir)s/lib64/libmpi.so  %(installdir)s/lib64/libmpich.so',
     'ln -s %(installdir)s/lib64/libmpigc4.so  %(installdir)s/lib64/libmpichcxx.so',
@@ -30,14 +36,12 @@ postinstallcmds = [
 
 moduleclass = 'mpi'
 
+modextravars = {
+    'I_MPI_TMI_LIBRARY': '%(installdir)s/lib64/libtmi.so'
+}
+
 modluafooter = """
-setenv("TMI_CONFIG", pathJoin(root, "etc64/tmi.conf"))
-setenv("I_MPI_PMI_LIBRARY", "libpmi.so")
-if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
-        setenv("I_MPI_FABRICS_LIST", "ofi,tmi,dapl,tcp,ofa")
-else
-        setenv("I_MPI_FABRICS_LIST", "ofa,dapl,tmi,tcp,ofi")
-end
+assert(loadfile("/cvmfs/soft.computecanada.ca/config/lmod/intelmpi_custom.lua"))("%(version_major_minor)s")
 
 add_property("type_","mpi")
 family("mpi")
