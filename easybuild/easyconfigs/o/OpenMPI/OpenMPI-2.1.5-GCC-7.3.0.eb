@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '2.1.5'
+
+#GAS this is an attempt to make a hidden module just for ORCA 
+
+homepage = 'http://www.open-mpi.org/'
+description = "The Open MPI Project is an open source MPI-2 implementation. This build is strictly for ORCA 4.1.x software."
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+## dont care about ddt patches = ['ddt_fix.patch']
+
+configopts = "--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs --enable-mpirun-prefix-by-default --with-hwloc=$NIXUSER_PROFILE --without-usnic --with-ucx=$NIXUSER_PROFILE --disable-wrapper-rpath --with-munge --with-pmi=$NIXUSER_PROFILE --enable-mpi-cxx --enable-mca-dso=common-libfabric,common-verbs,atomic-mxm,btl-openib,btl-scif,coll-fca,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,oob-ud,plm-tm,pmix-pmix112,pml-ucx,pml-yalla,ras-tm,scoll-mca,sec-munge,spml-ikrit, "
+
+hidden=True
+
+postinstallcmds = ['rm %(installdir)s/lib/*.la %(installdir)s/lib/*/*.la']
+modluafooter = """
+assert(loadfile("/cvmfs/soft.computecanada.ca/config/lmod/openmpi_custom.lua"))("%(version_major_minor)s")
+
+add_property("type_","mpi")
+family("mpi")
+"""
+
+sanity_check_paths = {
+    'files': ['bin/ompi_info', 'bin/opal_wrapper', 'bin/orterun', 'lib/libmpi_mpifh.so', 'lib/libmpi.so', 'lib/libompitrace.so', 'lib/libopen-pal.so', 'lib/libopen-rte.so', 'include/mpi-ext.h', 'include/mpif-config.h', 'include/mpif.h', 'include/mpi.h', 'include/mpi_portable_platform.h'],
+    'dirs': [],
+}
+
+
+moduleclass = 'mpi'
