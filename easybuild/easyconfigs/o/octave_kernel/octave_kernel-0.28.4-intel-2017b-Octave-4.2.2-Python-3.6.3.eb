@@ -1,0 +1,47 @@
+easyblock = 'PythonBundle'
+
+name = 'octave_kernel'
+version = '0.28.4'
+versionsuffix = '-Octave-4.2.2-Python-%(pyver)s'
+
+homepage = 'http://github.com/Calysto/octave_kernel'
+description = """Octave kernel for IPython Notebook"""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+dependencies = [
+    ('Python', '3.6.3'),
+    ('IPython', '5.8.0', '-Python-%(pyver)s'),
+    ('Octave', '4.2.2')
+]
+
+use_pip = True
+
+exts_list = [
+    ('metakernel', '0.20.14', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/m/metakernel/'],
+        'checksums': ['7bff02ba49fdf19fe5ce294cd514d436a0efd26ef45cfb353e4583430ca2ad2c'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/o/octave_kernel/'],
+        'checksums': ['4f719e9bee3ca177e2c947f969dfcc48d4cc1bceed082a97df912db61f1e8ca1'],
+    }),
+]
+
+# IPython notebook looks for the json kernel file in kernels/octave_kernels
+kerneldir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/octave_kernel'
+postinstallcmds = [
+    'mkdir -p %s/kernels/octave_kernel' % kerneldir,
+    'cp  %s/kernel.json %s/kernels/octave_kernel' % (kerneldir, kerneldir)
+]
+
+modextravars = {'JUPYTER_PATH': kerneldir}
+
+sanity_check_paths = {
+    'files': ['%s/kernels/octave_kernel/kernel.json' % kerneldir],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/octave_kernel'],
+}
+
+moduleclass = 'tools'
