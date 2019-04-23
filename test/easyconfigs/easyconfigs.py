@@ -417,7 +417,8 @@ class EasyConfigTest(TestCase):
                             failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix
-            if any(dep['name'] == 'Python' for dep in ec['dependencies']):
+            # Tkinter is an exception, since its version always matches the Python version anyway
+            if any(dep['name'] == 'Python' for dep in ec['dependencies']) and ec.name != 'Tkinter':
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     failing_checks.append("'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn)
 
