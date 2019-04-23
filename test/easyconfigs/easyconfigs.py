@@ -43,7 +43,8 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, is_generic_easyblock, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
@@ -423,6 +424,18 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
+    def check_sanity_check_paths(self, changed_ecs):
+        """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
+
+        failing_checks = []
+
+        for ec in changed_ecs:
+            if is_generic_easyblock(ec.get('easyblock')) and not ec.get('sanity_check_paths'):
+                ec_fn = os.path.basename(ec.path)
+                failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
+
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
@@ -476,6 +489,7 @@ class EasyConfigTest(TestCase):
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
                 self.check_python_packages(changed_ecs)
+                self.check_sanity_check_paths(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
