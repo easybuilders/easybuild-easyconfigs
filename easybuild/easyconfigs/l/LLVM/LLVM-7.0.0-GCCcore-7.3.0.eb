@@ -19,21 +19,28 @@ source_urls = ["http://llvm.org/releases/%(version)s"]
 sources = ["llvm-%(version)s.src.tar.xz"]
 checksums = ['8bc1f844e6cbde1b652c19c1edebc1864456fd9c78b8c1bea038e51b363fe222']
 
+patches = [
+    'llvm-lto-static.patch',
+    'D47188-svml-VF.patch',
+    'partial-testing.patch',
+    'twine_cfg_undefined_behavior.patch',
+    '0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch',
+]
+
 builddependencies = [
     ('binutils', '2.30'),
-    ('CMake', '3.12.1'),
-    ('Python', '2.7.15', '-bare'),
+    ('CMake', '3.12.3'),
+    ('Python', '2.7.14'),
 ]
 
 dependencies = [
-    ('ncurses', '6.1'),
     ('zlib', '1.2.11'),
 ]
 
 configopts = '-DBUILD_SHARED_LIBS=ON '
 # required to install extra tools in bin/
-configopts += '-DLLVM_INSTALL_UTILS=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_ZLIB=ON -DLLVM_ENABLE_RTTI=ON '
-configopts += '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DLLVM_INSTALL_UTILS=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_ZLIB=ON -DLLVM_ENABLE_RTTI=ON -DLLVM_USE_INTEL_JITEVENTS=ON'
+configopts += '-DCMAKE_BUILD_TYPE=Release -DHAVE_TERMINFO_NCURSES=OFF -DHAVE_TERMINFO_NCURSESW=OFF -DHAVE_TERMINFO_TERMINFO=OFF -DHAVE_TERMINFO_TINFO=OFF -DHAVE_TERMIOS_H=OFF '
 
 sanity_check_paths = {
     'files': ['bin/llvm-ar', 'bin/FileCheck'],
