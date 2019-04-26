@@ -6,7 +6,7 @@
 # Save the path to the install tree
 gctf_base=$EBROOTGCTF
 
-ml purge > /dev/null 2>&1
-ml CUDA/#CUDAVER#
+module purge > /dev/null 2>&1
+module CUDA/#CUDAVER#
 
 exec $gctf_base/bin/#GCTF# "$@"
