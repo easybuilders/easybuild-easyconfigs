@@ -1,0 +1,57 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Ake Sandgren
+# HPC2N
+# Umea University
+
+easyblock = 'Binary'
+
+name = 'MotionCor2'
+version = '1.2.3'
+
+homepage = 'https://msg.ucsf.edu/'
+description = """MotionCor2 correct anisotropic image motion at the
+single pixel level across the whole frame, suitable for both single
+particle and tomographic images. Iterative, patch-based motion detection
+is combined with spatial and temporal constraints and dose weighting.
+
+Cite publication: Shawn Q. Zheng, Eugene Palovcak, Jean-Paul Armache,
+Yifan Cheng and David A. Agard (2016) Anisotropic Correction of
+Beam-induced Motion for Improved Single-particle Electron
+Cryo-microscopy, Nature Methods, submitted.
+BioArxiv: http://biorxiv.org/content/early/2016/07/04/061960
+"""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# No longer directly downloadable, available from https://msg.ucsf.edu/software
+sources = [
+    '%(name)s_%(version)s.zip',
+]
+patches = [('Motioncor2-wrapper.sh', '.')]
+
+# Change this to the version of the latest cuda used in this version of motioncor2
+cuda_ver = '10.0.130'
+cuda_v = "".join(cuda_ver.split('.')[:2])
+# This is a build dependency to make sure it gets installed.
+# It's actually a runtime dependency, but that's handled in the wrapper to
+# make sure it doesn't conflict with whatever toolchain is loaded.
+builddependencies = [('CUDA', cuda_ver)]
+
+motioncor2_bin = '%%(name)s_%%(version)s-Cuda%s' % cuda_v
+
+install_cmd = 'unzip -x %(name)s_%(version)s.zip && '
+install_cmd += 'mkdir -p %(installdir)s/bin && '
+# Make sure to copy the binary that uses the latest version of CUDA
+# that we have installed.
+# And update the wrapper to load the correct modules
+install_cmd += 'cp %s %%(installdir)s/bin && ' % motioncor2_bin
+install_cmd += 'chmod +x %%(installdir)s/bin/%s && ' % motioncor2_bin
+install_cmd += 'sed -e "s/#MOTIONCOR2#/%s/" -e "s/#CUDAVER#/%s/" Motioncor2-wrapper.sh > %%(installdir)s/bin/motioncor2 && ' % (motioncor2_bin, cuda_ver)
+install_cmd += 'chmod +x %(installdir)s/bin/motioncor2'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % motioncor2_bin, 'bin/motioncor2'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
