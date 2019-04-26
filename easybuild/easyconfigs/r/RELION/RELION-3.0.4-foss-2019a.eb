@@ -1,0 +1,72 @@
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+version = '3.0.4'
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer
+ program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class
+ averages in electron cryo-microscopy (cryo-EM)."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['https://github.com/3dem/relion/archive']
+sources = [
+    '%(version)s.tar.gz',
+]
+patches = [
+    '%(name)s-%(version)s_no_which_cmd.patch',
+    '%(name)s-%(version)s_drop_usage_of_mpi_include_path.patch',
+    ('relion_sbatch_gpu.sh', '.'),
+    ('relion_sbatch_cpu.sh', '.'),
+]
+checksums = [
+    '2580d66088923a644bc7d3b02efd154b775a3ec3d010426f382bb3be5db9c98b',  # 3.0.4.tar.gz
+    'bfdaf1ce856d20c27a5fcf50252394e81d08259899abc3564f6c7bcc2b4000de',  # RELION-3.0.4_no_which_cmd.patch
+    # RELION-3.0.4_drop_usage_of_mpi_include_path.patch
+    'c135b72ff8d4c3015a3b293fa07a2283396bfb3fd0658d5e938ec33fca4dcebc',
+    'eab8cf9c1fcc731386a14329e86c29350d9685fd944d76b643ab763559d1db18',  # relion_sbatch_gpu.sh
+    '809b166600d371ea350ad4563ec97a9530e21ca63c950d097d914c7765203589',  # relion_sbatch_cpu.sh
+]
+
+builddependencies = [('CMake', '3.13.3')]
+
+dependencies = [
+    ('X11', '20190311'),
+    ('FLTK', '1.3.5'),
+    ('LibTIFF', '4.0.10'),
+    ('tbb', '2019_U4'),
+    ('ctffind', '4.1.13'),
+    ('MotionCor2', '1.2.3', '', True),
+    ('Gctf', '1.06', '', True),
+]
+
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-lpthread' -DALTCPU=true "
+
+postinstallcmds = [
+    'cp relion_sbatch_cpu.sh relion_sbatch_gpu.sh %(installdir)s/bin',
+    'chmod +x %(installdir)s/bin/relion_sbatch_cpu.sh %(installdir)s/bin/relion_sbatch_gpu.sh',
+]
+
+sanity_check_paths = {
+    'files': ['bin/relion', 'bin/relion_refine_mpi'],
+    'dirs': []
+}
+
+modextravars = {
+    'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/relion_sbatch_cpu.sh',
+    'RELION_QUEUE_NAME': 'batch',
+    'RELION_QSUB_COMMAND': 'sbatch',
+    'RELION_QSUB_EXTRA_COUNT': '4',
+    'RELION_QSUB_EXTRA1': 'Account',
+    'RELION_QSUB_EXTRA2': 'Timelimit - format days-hh:mm:ss',
+    'RELION_QSUB_EXTRA3': 'GPU - k80 or v100',
+    'RELION_QSUB_EXTRA4': 'number of GPU cards, 1 or 2',
+    'RELION_ERROR_LOCAL_MPI': '1',
+    'RELION_CTFFIND_EXECUTABLE': 'ctffind',
+    'RELION_GCTF_EXECUTABLE': 'Gctf',
+    'RELION_MOTIONCOR2_EXECUTABLE': 'motioncor2',
+}
+
+moduleclass = 'bio'
