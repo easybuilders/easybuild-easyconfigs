@@ -7,6 +7,6 @@
 mc_base=$EBROOTMOTIONCOR2
 
 module purge > /dev/null 2>&1
-module CUDA/#CUDAVER#
+module add CUDA/#CUDAVER#
 
 exec $mc_base/bin/#MOTIONCOR2# "$@"
