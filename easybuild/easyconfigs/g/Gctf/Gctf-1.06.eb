@@ -14,19 +14,33 @@ sources = [
     '%(name)s_v%(version)s_and_examples.tar.gz',
 ]
 patches = [('Gctf-wrapper.sh', '.')]
+checksums = [
+    'bfb6305f36571f895402bb22a2e8c6c5c4f13e28d3354ff8fe101ec25b351d77',  # Gctf_v1.06_and_examples.tar.gz
+    '1fcd9de9b9338aea7d89fe3d1042bfe5c006869a405c0fd411bb8875bd6528de',  # Gctf-wrapper.sh
+]
+
+cuda_ver = '8.0.61'
+cuda_v = ".".join(cuda_ver.split('.')[:2])
+# This is a build dependency to make sure it gets installed.
+# It's actually a runtime dependency, but that's handled in the wrapper to
+# make sure it doesn't conflict with whatever toolchain is loaded.
+builddependencies = [('CUDA', cuda_ver)]
 
 skipsteps = ['build']
 
+gctf_bin = '%%(name)s-v%%(version)s_sm_30_cu%s_x86_64' % cuda_v
+
 files_to_copy = [
-    (['bin/Gctf-v1.06_sm_30_cu8.0_x86_64', 'Gctf-wrapper.sh'], 'bin'),
+    (['bin/%s' % gctf_bin, 'Gctf-wrapper.sh'], 'bin'),
 ]
 
 postinstallcmds = [
+    'sed -i -e "s/#GCTF#/%s/" -e "s/#CUDAVER#/%s/" %%(installdir)s/bin/Gctf-wrapper.sh' % (gctf_bin, cuda_ver),
     'ln -s Gctf-wrapper.sh %(installdir)s/bin/Gctf',
 ]
 
 sanity_check_paths = {
-    'files': ['bin/Gctf-v1.06_sm_30_cu8.0_x86_64', 'bin/Gctf'],
+    'files': ['bin/%s' % gctf_bin, 'bin/Gctf'],
     'dirs': []
 }
 
