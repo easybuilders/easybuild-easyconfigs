@@ -12,11 +12,11 @@ sources = ['%(namelower)s-%(version)s-sources.tar.gz']
 patches = [
     'FSL-%(version)s_makefile_fixes.patch',
     'FSL-%(version)s_missing_lib.patch',
-    'FSL_icc_nan-inf_fix.patch',
+    'FSL-%(version)s_icc_nan-inf_fix.patch',
     'FSL-%(version)s_build_extras.patch',
     'FSL-%(version)s_slurm.patch',
-    'FSL-6.0.1_modify_possum.patch',
-    'FSL-6.0.1_fslpython.patch',
+    'FSL-%(version)s_modify_possum.patch',
+    'FSL-%(version)s_fslpython.patch',
 ]
 
 dependencies = [
@@ -36,11 +36,22 @@ dependencies = [
     ('newmat', '10'),
 ]
 modextrapaths = {
-    'PATH': 'etc/fslconf'
+    'PATH': 'fsl/etc/fslconf'
 }
 moduleclass = 'bio'
 modluafooter = """
-require("SitePackage")
+local posix = require "posix"
+require "io"
+require "os"
+local home = os.getenv("HOME")
+local fslpython = pathJoin(home,'fslpython')
+if not (posix.stat(fslpython,"type") == 'directory') then
+        local warn_message = [[
+         FSL python as part of the installation needs to be installed by user in user's home directory. System is installing FSL python om your home directory. Please be patient as it might takes a long time. 
+        ]]
+         LmodWarning(warn_message)
+         os.execute(root .. "/fsl/etc/fslconf/fslpython_install.sh")
+end
 setenv("FSLGECUDAQ","cuda.q")
 setenv("FSLLOCKDIR","")
 setenv("FSLMACHINELIST","")
