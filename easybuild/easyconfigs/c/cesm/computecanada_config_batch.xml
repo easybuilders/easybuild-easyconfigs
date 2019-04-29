@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<config_batch version="2.0">
+  <!--
+     File:    config_batch.xml
+     Purpose: abstract out the parts of run scripts that are different, and use this configuration to
+     create cesm run scripts from a single template.
+
+     batch_system:     the batch system type and version
+     batch_query:      the batch query command for each batch system.
+     batch_redirect:   Whether a redirect character is needed to submit jobs.
+     batch_directive:  The string that prepends a batch directive for the batch system.
+     jobid_pattern:    A perl regular expression used to filter out the returned job id from a
+                       queue submission.
+
+ ===============================================================
+ batch_system
+ ===============================================================
+ The batch_system and associated tags are meant for configuring batch systems and
+ queues across machines.  The batch_system tag denotes the name for a particular
+ batch system, these can either be shared between one or more machines, or can be
+ defined for a specific machine if need be.
+
+ Machine specific entries take precidence over generic entries, directives are appended
+
+ queues:
+ one or more queues can be defined per batch_system. if the attribute default="true"
+ is used, then that queue will be used by default. Alternatively, multiple queues can
+ be used.  The following variables can be used to choose a queue :
+ walltimemin: Giving the minimum amount of walltime for the queue.
+ walltimemax: The maximum amount of walltime for a queue.
+ nodemin:      The minimum node count required to use this queue.
+ nodemax:      The maximum node count required to use this queue.
+ jobmin:      The minimum task count required to use this queue. This should only rarely be used to select queues that only use a fraction of a node. This cannot be used in conjuction with nodemin.
+ jobmax:      The maximum task count required to use this queue. This should only rarely be used to select queues that only use a fraction of a node. This cannot be used in conjuction with nodemax.
+    -->
+  <batch_system type="slurm" >
+    <batch_query per_job_arg="-j">squeue</batch_query>
+    <batch_cancel>scancel</batch_cancel>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_string> --dependency=afterok:jobid</depend_string>
+    <depend_allow_string> --dependency=afterany:jobid</depend_allow_string>
+    <depend_separator>,</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
+    <directives>
+      <directive> --job-name={{ job_id }}</directive>
+      <directive> --nodes={{ num_nodes }}</directive>
+      <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
+      <directive> --output={{ job_id }}   </directive>
+      <directive> --exclusive                        </directive>
+    </directives>
+  </batch_system>
+
+  <batch_system type="slurm" MACH="computecanada">
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <!--    <queues>
+	    <queue default="true">default</queue>
+    </queues>-->
+  </batch_system>
+</config_batch>
