@@ -1,0 +1,39 @@
+Fix problem with building against protobuf with CUDA 10.1
+Taken from https://github.com/tensorflow/tensorflow/issues/26155
+
+Slightly adapted to EB
+Åke Sandgren, 20190430
+diff -ru protobuf-3.6.1.2.orig/src/google/protobuf/map.h protobuf-3.6.1.2/src/google/protobuf/map.h
+--- protobuf-3.6.1.2.orig/src/google/protobuf/map.h	2018-12-05 00:52:48.000000000 +0100
++++ protobuf-3.6.1.2/src/google/protobuf/map.h	2019-04-29 15:26:34.507536056 +0200
+@@ -419,10 +419,10 @@
+         node_ = NULL;
+         for (bucket_index_ = start_bucket; bucket_index_ < m_->num_buckets_;
+              bucket_index_++) {
+-          if (m_->TableEntryIsNonEmptyList(bucket_index_)) {
++          if ((*m_).TableEntryIsNonEmptyList(bucket_index_)) {
+             node_ = static_cast<Node*>(m_->table_[bucket_index_]);
+             break;
+-          } else if (m_->TableEntryIsTree(bucket_index_)) {
++          } else if ((*m_).TableEntryIsTree(bucket_index_)) {
+             Tree* tree = static_cast<Tree*>(m_->table_[bucket_index_]);
+             GOOGLE_DCHECK(!tree->empty());
+             node_ = NodePtrFromKeyPtr(*tree->begin());
+@@ -481,7 +481,7 @@
+           return true;
+         // Less common: the bucket is a linked list with node_ somewhere in it,
+         // but not at the head.
+-        if (m_->TableEntryIsNonEmptyList(bucket_index_)) {
++        if ((*m_).TableEntryIsNonEmptyList(bucket_index_)) {
+           Node* l = static_cast<Node*>(m_->table_[bucket_index_]);
+           while ((l = l->next) != NULL) {
+             if (l == node_) {
+@@ -495,7 +495,7 @@
+         // find-like method that compares Node* instead of const Key&.
+         iterator_base i(m_->find(*KeyPtrFromNodePtr(node_), it));
+         bucket_index_ = i.bucket_index_;
+-        return m_->TableEntryIsList(bucket_index_);
++        return (*m_).TableEntryIsList(bucket_index_);
+       }
+ 
+       Node* node_;
