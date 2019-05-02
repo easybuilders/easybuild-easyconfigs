@@ -429,7 +429,8 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
-        whitelist = ['PythonBundle', 'PythonPackage']
+        # Toolchain doesn't install anything so there is nothing to check.
+        whitelist = ['PythonBundle', 'PythonPackage', 'Toolchain']
 
         failing_checks = []
 
