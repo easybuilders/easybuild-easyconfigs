@@ -1,0 +1,60 @@
+easyblock = 'Tarball'
+
+name = 'norgal'
+commit = 'c2502aa1cad4'
+version = '1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://bitbucket.org/kosaidtu/norgal'
+description = """Norgal takes NGS sequencing reads as input and tries to assemble the mitochondrial genome
+ using kmer frequencies."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://bitbucket.org/kosaidtu/norgal/get/']
+sources = ['%s.zip' % commit]
+checksums = ['2a2712568debc15f78ed2e5470101b43ad0fe5e47ce5f501ee1bfc2f0efb2fcf']
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('matplotlib', '3.0.0', versionsuffix),
+    ('Java', '1.8', '', True),
+    ('AdapterRemoval', '2.2.2'),
+    ('ARWEN', '1.2.3'),
+    ('BEDTools', '2.27.1'),
+    ('BLAST+', '2.7.1'),
+    ('BWA', '0.7.17'),
+    ('IDBA-UD', '1.1.3'),
+    ('gzip', '1.9'),
+    ('HMMER', '3.2.1'),
+    ('MEGAHIT', '1.1.4', versionsuffix),
+    ('SAMtools', '1.9'),
+    ('BBMap', '38.26'),
+]
+
+postinstallcmds = [
+    # remove all binaries included (darwin/linux subdirectories)
+    "rm -r %(installdir)s/binaries/{darwin,linux} && mkdir -p %(installdir)s/binaries/linux",
+    # symlink binaries provided by dependencies into binaries/linux
+    "ln -s $EBROOTADAPTERREMOVAL/bin/AdapterRemoval %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTARWEN/bin/arwen %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTBEDTOOLS/bin/bedtools %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTBLASTPLUS/bin/blastn %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTBWA/bin/bwa %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTIDBAMINUD/bin/{fq2fa,idba_ud} %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTGZIP/bin/gzip %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTHMMER/bin/nhmmscan %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTMEGAHIT/bin/megahit* %(installdir)s/binaries/linux/",
+    "ln -s $EBROOTSAMTOOLS/bin/samtools %(installdir)s/binaries/linux/",
+    # add symlink to missing 'calcmem.sh' script from BBMap scripts/ subdirectory
+    "ln -s $EBROOTBBMAP/calcmem.sh %(installdir)s/scripts/",
+]
+
+sanity_check_paths = {
+    'files': ['norgal.py', 'scripts/calcmem.sh'],
+    'dirs': ['binaries/linux'],
+}
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'
