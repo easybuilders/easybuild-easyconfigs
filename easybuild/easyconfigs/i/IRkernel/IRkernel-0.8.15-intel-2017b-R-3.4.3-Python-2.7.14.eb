@@ -46,12 +46,17 @@ exts_list = [
 
 modextrapaths = {'R_LIBS': ''}
 
-# The R kernel spec must be installed in order for Jupyter to see it
-# This ensures that it is installed in the user local directory at module load
-modluafooter = 'execute {cmd="R --slave -e \'library(IRkernel); IRkernel::installspec()\'", modeA={"load"}}'
+# IPython notebook looks for the json kernel file in kernels/IRkernel
+kerneldir = '%(installdir)s/IRkernel'
+postinstallcmds = [
+    'mkdir -p %s/kernels/ir' % kerneldir,
+    'cp %s/kernelspec/* %s/kernels/ir' % (kerneldir, kerneldir)
+]
+
+modextravars = {'JUPYTER_PATH': kerneldir}
 
 sanity_check_paths = {
-    'files': [],
+    'files': ['%s/kernels/ir/kernel.json' % kerneldir],
     'dirs': [name],
 }
 
