@@ -390,12 +390,12 @@ class EasyConfigTest(TestCase):
 
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
-                if not download_dep_fail:
+                if download_dep_fail is None:
                     failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
 
             # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
             if easyblock in ['PythonBundle', 'PythonPackage']:
-                if not use_pip and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
+                if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' set in %s" % ec_fn)
 
             # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
@@ -414,7 +414,7 @@ class EasyConfigTest(TestCase):
                     # when installing Python packages as extensions
                     exts_default_options = ec.get('exts_default_options', {})
                     for key in ['download_dep_fail', 'use_pip']:
-                        if not exts_default_options.get(key):
+                        if exts_default_options.get(key) is None:
                             failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix
