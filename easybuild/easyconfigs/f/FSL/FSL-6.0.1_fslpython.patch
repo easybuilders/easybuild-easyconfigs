@@ -1,18 +1,5 @@
 --- fsl/etc/fslconf/fslpython_install.sh.orig	2019-04-29 22:26:48.355659475 +0000
-+++ fsl/etc/fslconf/fslpython_install.sh	2019-04-29 22:34:54.998471111 +0000
-@@ -30,9 +30,9 @@
- dropprivileges=0
- 
- # Have we been called by sudo?
--if [ ! -z "${SUDO_UID}" ]; then
--    dropprivileges=1
--fi
-+#if [ ! -z "${SUDO_UID}" ]; then
-+#    dropprivileges=1
-+#fi
- 
- function syntax {
-     echo "fslpython_install.sh [-f <FSLDIR>] [-q]"
++++ fsl/etc/fslconf/fslpython_install.sh	2019-05-02 16:29:20.007680473 +0000
 @@ -59,7 +59,7 @@
  shift $((OPTIND-1))
  
@@ -22,43 +9,10 @@
  if [ -z "${fsl_dir}" ]; then
      if [ -z "${FSLDIR}" ]; then
          echo "Error - FSLDIR not given as an argument and \$FSLDIR not set!" >&2
-@@ -70,8 +70,7 @@
- fi
- 
- if [ ! -e "${fsl_dir}/bin" ]; then
--    echo "Error - ${fsl_dir}/bin does not exist!" >&2
--    exit 1
-+    mkdir ${fsl_dir}/bin
- fi
- 
- if [ ! -w "${fsl_dir}" ]; then
-@@ -85,8 +84,7 @@
- fi
- 
- if [  -e "${fsl_dir}/fslpython" ]; then
--    echo "Error - ${fsl_dir}/fslpython already exists!" >&2
--    exit 1
-+    mkdir mkdir ${fsl_dir}/fslpython
- fi
- 
- 
-@@ -197,8 +195,11 @@
- if [ ${quiet} -ne 1 ]; then
-     echo "Stage 2"
- fi
-+#First we need to copy fslpython_environment.yml from CVMFS to tmp directory
-+cp "${script_dir}/fslpython_environment.yml" ${miniconda_tmp} 
-+
- FSLDIR=$fsl_dir "${miniconda_bin_dir}/conda" env create \
--    -f "${script_dir}/fslpython_environment.yml" \
-+    -f "${miniconda_tmp}/fslpython_environment.yml" \
-     2>> "${miniconda_install_log}" | \
-     ${script_dir}/progress.sh 133 ${quiet} 1>> "${miniconda_install_log}"
- if [ $? -ne 0 ]; then
-@@ -219,9 +220,36 @@
+@@ -218,6 +218,30 @@
+ else
    ln -sf "${fslpython_env_dir}/bin/python" "${fsl_dir}/bin/fslpythonw"
  fi
- 
 +if [ -e "${fslpython_env_dir}/bin/atlasq" ]; then
 +    ln -sf "${fslpython_env_dir}/bin/atlasq" "${fsl_dir}/bin/atlasq"
 +fi
@@ -83,12 +37,6 @@
 +if [ -e "${fslpython_env_dir}/bin/immv" ]; then
 +    ln -sf "${fslpython_env_dir}/bin/immv" "${fsl_dir}/bin/immv"
 +fi
-+
-+
+ 
  if [ ${debug} -ne 1 ]; then
      echo "${miniconda_install_log}"
- fi
- 
- rm "${miniconda_install_log}"
-+drop_sudo rm -f "${miniconda_tmp}/fslpython_environment.yml"
- drop_sudo rmdir "${miniconda_tmp}"
