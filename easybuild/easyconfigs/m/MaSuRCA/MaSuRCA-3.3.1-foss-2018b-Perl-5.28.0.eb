@@ -11,7 +11,7 @@
 easyblock = 'ConfigureMake'
 
 name = 'MaSuRCA'
-version = '3.3.0'
+version = '3.3.1'
 versionsuffix = '-Perl-%(perlver)s'
 
 homepage = 'http://www.genome.umd.edu/masurca.html'
@@ -23,10 +23,9 @@ description = '''MaSuRCA is whole genome assembly software. It combines the effi
 
 toolchain = {'name': 'foss', 'version': '2018b'}
 
-# note: the tagged 3.3.0 release is (slightly) older than the 3.3.0 tarball included *in* the repo...
-source_urls = ['https://github.com/alekseyzimin/masurca/raw/9b3771/']
+source_urls = ['https://github.com/alekseyzimin/masurca/releases/download/v%(version)s']
 sources = ['%(name)s-%(version)s.tar.gz']
-checksums = ['f4625de837c54311d2ff4a53cd7e60d28bae49c1e5e9f2c1cbd75b688454d078']
+checksums = ['587d0ee2c6b9fbd3436ca2a9001e19f251b677757fe5e88e7f94a0664231e020']
 
 dependencies = [
     ('libreadline', '7.0'),
@@ -34,15 +33,17 @@ dependencies = [
     ('Boost', '1.67.0'),
     ('zlib', '1.2.11'),
     ('Perl', '5.28.0'),
+    ('bzip2', '1.0.6'),
 ]
 
 buildopts = "install-special"
 start_dir = "global-1"
 
 postinstallcmds = [
-    # fix location of 'bin' in install prefix in runCA script
+    # fix location of 'bin' in install prefix in runCA and runCA-dedupe scripts
     # escaping single quotes within single quotes is tricky, so we use $'...' to use ANSI C-like escaping
     "sed -i $'s|^$bin =.*|$bin = \"$ENV{\'EBROOTMASURCA\'}/bin\";|g' %(installdir)s/bin/runCA",
+    "sed -i $'s|^$bin =.*|$bin = \"$ENV{\'EBROOTMASURCA\'}/bin\";|g' %(installdir)s/bin/runCA-dedupe",
     # fix hardcoded path in masurca script, just point back to 'bin' subdirectory instead
     "sed -i 's@../CA8/Linux-amd64/bin@../bin@g' %(installdir)s/bin/masurca",
 ]
