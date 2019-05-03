@@ -431,6 +431,8 @@ class EasyConfigTest(TestCase):
         # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
         # Toolchain doesn't install anything so there is nothing to check.
         whitelist = ['PythonBundle', 'PythonPackage', 'Toolchain']
+        # GCC is just a bundle of GCCcore+binutils
+        bundles_whitelist = ['GCC']
 
         failing_checks = []
 
@@ -438,9 +440,12 @@ class EasyConfigTest(TestCase):
 
             easyblock = ec.get('easyblock')
 
-            if is_generic_easyblock(easyblock) and easyblock not in whitelist and not ec.get('sanity_check_paths'):
-                ec_fn = os.path.basename(ec.path)
-                failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
+            if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
+                if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
+                    pass
+                else:
+                    ec_fn = os.path.basename(ec.path)
+                    failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
