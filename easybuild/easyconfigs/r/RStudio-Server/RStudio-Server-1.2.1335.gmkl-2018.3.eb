@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '1.2.1335'
+
+homepage = 'https://www.rstudio.com/'
+description = """RStudio Server enables you to provide a browser 
+based interface to a version of R running on a remote Linux 
+server, bringing the power and productivity of the 
+RStudio IDE to server-based deployments of R."""
+
+toolchain = {'name': 'gmkl', 'version': '2018.3'}
+
+source_urls = [
+    'https://github.com/rstudio/rstudio/archive/',
+]
+
+sources = [
+    'v%(version)s.zip',
+]
+
+patches = [('rstudio-1.2.1335.patch', 1)]
+
+builddependencies = [
+    ('CMake', '3.12.3'),
+    ('Boost', '1.68.0'),
+    ('R', '3.5.2', '-bare'),
+]
+
+dependencies = [
+    ('Java', '1.8.0_121')
+]
+
+preconfigopts = """(cd dependencies/common && 
+./install-cef && 
+./install-gwt && 
+./install-dictionaries && 
+./install-mathjax && 
+./install-pandoc && 
+./install-packages) && """
+
+configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts += '-DRSTUDIO_TARGET=Server '
+configopts += '-DCMAKE_SKIP_RPATH=ON '
+configopts += '-DRSTUDIO_GIT_REVISION_HASH=f1ac34523717ba07c0ce02b88c38574bb66879e2 '
+
+sanity_check_paths = {
+    'files': ["bin/rsession", "bin/rserver", "bin/rserver-pam", "bin/rpostback"],
+    'dirs': ["R", "resources", "www", "www-symbolmaps"],
+}
+
+modluafooter = """
+depends_on('r')
+"""
