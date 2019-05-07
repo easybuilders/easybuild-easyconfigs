@@ -43,7 +43,8 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, is_generic_easyblock, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
@@ -197,7 +198,7 @@ class EasyConfigTest(TestCase):
 
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep in ['Boost', 'R', 'PLUMED'] and len(dep_vars) > 1:
+            elif dep in ['Boost', 'R', 'PLUMED', 'Lua'] and len(dep_vars) > 1:
                 for key in dep_vars.keys():
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
@@ -239,6 +240,8 @@ class EasyConfigTest(TestCase):
                 'libxc': r'[23]\.',
                 # OPERA requires SAMtools 0.x
                 'SAMtools': r'0\.',
+                # Kraken 1.0 requires Jellyfish 1.x
+                'Jellyfish': r'1\.',
             }
             if dep in old_dep_versions and len(dep_vars) > 1:
                 for key in dep_vars.keys():
@@ -266,6 +269,10 @@ class EasyConfigTest(TestCase):
 
             return res
 
+        # some software also follows <year>{a,b} versioning scheme,
+        # which throws off the pattern matching done below for toolchain versions
+        false_positives_regex = re.compile('^MATLAB-Engine-20[0-9][0-9][ab]')
+
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
         for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', 'GCCcore-[7-9]\.[0-9]']:
@@ -275,6 +282,10 @@ class EasyConfigTest(TestCase):
             # collect variants for all dependencies of easyconfigs that use a toolchain that matches
             for ec in self.ordered_specs:
                 ec_file = os.path.basename(ec['spec'])
+
+                # take into account software which also follows a <year>{a,b} versioning scheme
+                ec_file = false_positives_regex.sub('', ec_file)
+
                 res = regex.match(ec_file)
                 if res:
                     tc_gen = res.group('tc_gen')
@@ -340,7 +351,7 @@ class EasyConfigTest(TestCase):
 
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
-        whitelist = ['Kent_tools-*', 'MATLAB-*']
+        whitelist = ['Kent_tools-*', 'MATLAB-*', 'OCaml-*']
 
         # the check_sha256_checksums function (again) creates an EasyBlock instance
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
@@ -362,6 +373,9 @@ class EasyConfigTest(TestCase):
     def check_python_packages(self, changed_ecs):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
+        # MATLAB-Engine, PyTorch do not support installation with 'pip'
+        whitelist_pip = ['MATLAB-Engine-*', 'PyTorch-*']
+
         failing_checks = []
 
         for ec in changed_ecs:
@@ -374,33 +388,64 @@ class EasyConfigTest(TestCase):
             exts_download_dep_fail = ec.get('exts_download_dep_fail')
             use_pip = ec.get('use_pip')
 
+            # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
-                if not download_dep_fail:
+                if download_dep_fail is None:
                     failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
 
-            # download_dep_fail is enabled automatically in PythonBundle easyblock
-            elif easyblock in ['PythonBundle', 'PythonPackage']:
-                if not use_pip:
+            # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
+            if easyblock in ['PythonBundle', 'PythonPackage']:
+                if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' set in %s" % ec_fn)
 
+            # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
+            if easyblock == 'PythonBundle':
                 if download_dep_fail or exts_download_dep_fail:
                     fail = "'*download_dep_fail' set in %s (shouldn't, since PythonBundle easyblock is used)" % ec_fn
                     failing_checks.append(fail)
 
             elif exts_defaultclass == 'PythonPackage':
+                # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
                     fail = "'PythonBundle' easyblock is used for bundle of Python packages in %s" % ec_fn
                     failing_checks.append(fail)
                 else:
+                    # both download_dep_fail and use_pip should be set via exts_default_options
+                    # when installing Python packages as extensions
                     exts_default_options = ec.get('exts_default_options', {})
                     for key in ['download_dep_fail', 'use_pip']:
-                        if not exts_default_options.get(key):
+                        if exts_default_options.get(key) is None:
                             failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix
-            if any(dep['name'] == 'Python' for dep in ec['dependencies']):
+            # Tkinter is an exception, since its version always matches the Python version anyway
+            if any(dep['name'] == 'Python' for dep in ec['dependencies']) and ec.name != 'Tkinter':
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     failing_checks.append("'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn)
+
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
+    def check_sanity_check_paths(self, changed_ecs):
+        """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
+
+        # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
+        # Toolchain doesn't install anything so there is nothing to check.
+        whitelist = ['PythonBundle', 'PythonPackage', 'Toolchain']
+        # GCC is just a bundle of GCCcore+binutils
+        bundles_whitelist = ['GCC']
+
+        failing_checks = []
+
+        for ec in changed_ecs:
+
+            easyblock = ec.get('easyblock')
+
+            if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
+                if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
+                    pass
+                else:
+                    ec_fn = os.path.basename(ec.path)
+                    failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
@@ -442,11 +487,22 @@ class EasyConfigTest(TestCase):
                     if match:
                         changed_ecs.append(match)
                     else:
-                        self.assertTrue(False, "Failed to find parsed easyconfig for %s" % ec_fn)
+                        # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
+                        # so as a last resort, try to find the easyconfig file in __archive__
+                        easyconfigs_path = get_paths_for("easyconfigs")[0]
+                        specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
+                        if len(specs) == 1:
+                            ec = process_easyconfig(specs[0])[0]
+                            changed_ecs.append(ec['ec'])
+                        else:
+                            error_msg = "Failed to find parsed easyconfig for %s" % ec_fn
+                            error_msg += " (and could not isolate it in easyconfigs archive either)"
+                            self.assertTrue(False, error_msg)
 
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
                 self.check_python_packages(changed_ecs)
+                self.check_sanity_check_paths(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
@@ -531,7 +587,7 @@ def template_easyconfig_test(self, spec):
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
 
         if requires_binutils:
-            dep_names = [d['name'] for d in ec['builddependencies']]
+            dep_names = [d['name'] for d in ec.builddependencies()]
             self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
 
     # make sure all patch files are available
