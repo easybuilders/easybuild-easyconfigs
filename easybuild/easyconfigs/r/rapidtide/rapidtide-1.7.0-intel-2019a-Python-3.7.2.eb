@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'rapidtide'
+version = '1.7.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://rapidtide.readthedocs.io'
+description = """Rapidtide is a suite of python programs used to perform time delay analysis on functional imaging
+ data to find time lagged correlations between the voxelwise time series and other time series."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('matplotlib', '3.0.3', versionsuffix),
+    ('scikit-learn', '0.20.3'),
+    ('NiBabel', '2.4.0'),
+    ('numba', '0.43.1'),
+    ('pyFFTW', '0.11.1'),
+    ('PyQtGraph', '0.10.0', versionsuffix),
+    ('memory-profiler', '0.55.0'),
+]
+
+use_pip = True
+
+# required because we're building a Python package using Intel compilers on top of Python built with GCC
+check_ldshared = True
+
+fix_python_shebang_for = ['bin/*']
+
+exts_list = [
+    ('patsy', '0.5.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/patsy'],
+        'checksums': ['f115cec4201e1465cd58b9866b0b0e7b941caafec129869057405bfe5b5e3991'],
+    }),
+    ('statsmodels', '0.9.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/statsmodels'],
+        'checksums': ['6461f93a842c649922c2c9a9bc9d9c4834110b89de8c4af196a791ab8f42ba3b'],
+    }),
+    (name, version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/bbfrederick/rapidtide/archive/'],
+        'checksums': ['3c17f65baf13d588564467026f7d6d09c1c537a04ce4bf65f0faf37e708df23d'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/rapidtide2', 'bin/showtc', 'bin/tidepool'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "rapidtide2 --help",
+    "tidepool --help",
+]
+
+moduleclass = 'data'
