@@ -429,7 +429,10 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
-        whitelist = ['PythonBundle', 'PythonPackage']
+        # Toolchain doesn't install anything so there is nothing to check.
+        whitelist = ['PythonBundle', 'PythonPackage', 'Toolchain']
+        # GCC is just a bundle of GCCcore+binutils
+        bundles_whitelist = ['GCC']
 
         failing_checks = []
 
@@ -437,9 +440,12 @@ class EasyConfigTest(TestCase):
 
             easyblock = ec.get('easyblock')
 
-            if is_generic_easyblock(easyblock) and easyblock not in whitelist and not ec.get('sanity_check_paths'):
-                ec_fn = os.path.basename(ec.path)
-                failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
+            if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
+                if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
+                    pass
+                else:
+                    ec_fn = os.path.basename(ec.path)
+                    failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
@@ -566,7 +572,7 @@ def template_easyconfig_test(self, spec):
     for old_url in old_urls:
         self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
 
-    # make sure binutils is included as a build dep if toolchain is GCCcore
+    # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
         requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
@@ -581,7 +587,9 @@ def template_easyconfig_test(self, spec):
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
 
         if requires_binutils:
-            dep_names = [d['name'] for d in ec.builddependencies()]
+            # dependencies() returns both build and runtime dependencies
+            # in some cases, binutils can also be a runtime dep (e.g. for Clang)
+            dep_names = [d['name'] for d in ec.dependencies()]
             self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
 
     # make sure all patch files are available
