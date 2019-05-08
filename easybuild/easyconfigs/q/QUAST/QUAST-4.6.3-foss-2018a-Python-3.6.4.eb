@@ -1,0 +1,47 @@
+easyblock = 'PythonPackage'
+
+name = 'QUAST'
+version = '4.6.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ablab/%(namelower)s'
+description = """QUAST evaluates genome assemblies by computing various metrics.
+ It works both with and without reference genomes. The tool accepts multiple
+ assemblies, thus is suitable for comparison."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/ablab/%(namelower)s/archive/']
+sources = ['%(namelower)s_%(version)s.tar.gz']
+
+checksums = ['d7f5e670563d17d683f6df057086f7b816b6a088266c6270f7114a1406aaab63']
+
+install_target = 'install_full'
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('Perl', '5.26.1'),
+    ('matplotlib', '2.1.2', versionsuffix),
+    ('Java', '1.8.0_162', '', True),
+    ('Boost', '1.66.0'),
+]
+
+options = {'modulename': '%(namelower)s_libs'}
+
+libraries = ['bedtools', 'bwa', 'ca_utils', 'gage', 'genemark', 'genemark-es', 'glimmer', 'gnuplot', 'html_saver',
+             'kronatools', 'manta0.29.6', 'MUMmer', 'ra_utils', 'sambamba', 'silva']
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s.py', 'bin/meta%(namelower)s.py'],
+    'dirs': [('lib/python%%(pyshortver)s/site-packages/%%(namelower)s-%%(version)s-py%%(pyshortver)s.egg/'
+              '%%(namelower)s_libs/%s') % x for x in libraries]
+}
+
+sanity_check_commands = [
+    "wget quast.sf.net/test_data.tar.gz && "
+    "tar xzf test_data.tar.gz && "
+    "%(namelower)s.py --test && "
+    "rm ./test_data.tar.gz ./test_data -rf"
+]
+
+moduleclass = 'bio'

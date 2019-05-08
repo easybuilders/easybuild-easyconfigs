@@ -1,0 +1,46 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'Tarball'
+
+name = 'MetaPhlAn2'
+version = '2.7.8'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://huttenhower.sph.harvard.edu/%(namelower)s/'
+description = """MetaPhlAn is a computational tool for profiling the composition of microbial
+ communities (Bacteria, Archaea, Eukaryotes and Viruses) from metagenomic shotgun sequencing
+ data (i.e. not 16S) with species-level. With the newly added StrainPhlAn module, it is now
+ possible to perform accurate strain-level microbial profiling."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+
+bitbucket_account = 'biobakery'
+source_urls = [BITBUCKET_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['24cd29c8b1d475adbe6b354391ce455fcfe9ef2266b6fb6635dee2bdb6a3edd3']
+
+dependencies = [
+    ('Bowtie2', '2.3.2'),
+    ('Perl', '5.24.0'),
+    ('Python', '2.7.12'),
+]
+
+# needed to create database during installation
+# the database is used if --input_type is fastq, fasta, multifasta, or multifastq
+# otherwise database creation will be tried on first use with one of the above options
+# and likely fail because a normal user can't write in the software directory
+postinstallcmds = [('%(installdir)s/%(namelower)s.py --install')]
+
+modextrapaths = {
+    'PATH': '',
+    'mpa_dir': '',
+}
+
+sanity_check_paths = {
+    'files': ['%(namelower)s.py', 'strainphlan.py'],
+    'dirs': ['utils', 'strainphlan_src', 'strainphlan_tutorial'],
+}
+
+sanity_check_commands = [('%(namelower)s.py -v')]
+
+moduleclass = 'bio'

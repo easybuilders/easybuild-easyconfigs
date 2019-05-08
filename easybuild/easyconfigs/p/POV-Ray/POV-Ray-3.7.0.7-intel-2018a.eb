@@ -1,0 +1,56 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'POV-Ray'
+version = '3.7.0.7'
+
+homepage = 'http://www.povray.org/'
+description = """The Persistence of Vision Raytracer, or POV-Ray, is a ray tracing program
+ which generates images from a text-based scene description, and is available for a variety
+ of computer platforms. POV-Ray is a high-quality, Free Software tool for creating stunning
+ three-dimensional graphics. The source code is available for those wanting to do their own ports."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/POV-Ray/povray/archive/']
+patches = ['POV-Ray-%(version)s_dont-touch-home.patch']
+
+dependencies = [
+    ('Boost', '1.66.0'),
+    ('zlib', '1.2.11'),
+    ('libpng', '1.6.34'),
+    ('libjpeg-turbo', '1.5.3'),
+    ('X11', '20180131'),
+    ('LibTIFF', '4.0.9'),
+    ('SDL2', '2.0.8'),
+]
+builddependencies = [('Autotools', '20170619')]
+
+preconfigopts = "cd unix && sed -i 's/^automake/automake --add-missing; automake/g' prebuild.sh && "
+preconfigopts += " ./prebuild.sh && cd .. && "
+configopts = "COMPILED_BY='EasyBuild' "
+configopts += "--with-boost=$EBROOTBOOST --with-zlib=$EBROOTZLIB --with-libpng=$EBROOTLIBPNG "
+configopts += "--with-libtiff=$EBROOTLIBTIFF --with-libjpeg=$EBROOTLIBJPEGMINTURBO --with-libsdl=$EBROOTSDL2 "
+# configopts += " --with-libmkl=DIR " ## upstream needs to fix this, still in BETA
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/povray'],
+    'dirs': ['etc/povray/%(version_major_minor)s', 'share']
+}
+
+moduleclass = 'vis'

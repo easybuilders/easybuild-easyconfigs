@@ -1,0 +1,44 @@
+name = 'WIEN2k'
+version = '18.1'
+
+homepage = 'http://www.wien2k.at/'
+description = """The program package WIEN2k allows to perform electronic structure calculations of solids
+using density functional theory (DFT). It is based on the full-potential (linearized) augmented plane-wave
+((L)APW) + local orbitals (lo) method, one among the most accurate schemes for band structure calculations.
+WIEN2k is an all-electron scheme including relativistic effects and has many features."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+sources = ['%(name)s_%(version)s.tar']
+checksums = ['31acdbb8849c142eb21a9a4c33fa76c20014fc938fcc0c39c68e995b3c033d90']
+
+dependencies = [
+    ('ELPA', '2015.02.002'),
+    ('FFTW', '3.3.7'),
+    ('libxc', '4.2.3'),
+]
+
+osdependencies = ['glib-devel']  # required for libpthread.a
+
+remote = 'pbsssh'
+wien_mpirun = 'mpirun  -np _NP_ -machinefile _HOSTS_ _EXEC_'
+use_remote = True
+mpi_remote = False
+wien_granularity = True
+taskset = 'no'
+
+tests = [
+    # test case 1: NaCl
+    ('NaCl', '-b', '-i 3', [r'^:DIS.*0.12', r'^:ENE.*-1248.14']),
+    # test case 2: TiO2
+    ('TiO2',
+     '-b -numk 1000 -rkmax 7.5',
+     '-in1ef -cc 0.00001 -fc 0.5 -i 100',
+     [
+         r'^:ENE.*-4018.07',
+         r'^:FGL001.*\s+[0.]+\s+[0.]+\s+[0.]+\s+total forces',
+         r'^:FGL002.*14.*total forces',
+     ]),
+]
+
+moduleclass = 'chem'

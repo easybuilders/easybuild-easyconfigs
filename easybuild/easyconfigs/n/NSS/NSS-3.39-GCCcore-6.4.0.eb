@@ -1,0 +1,43 @@
+easyblock = 'MakeCp'
+
+name = 'NSS'
+version = '3.39'
+
+homepage = 'https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS'
+description = """Network Security Services (NSS) is a set of libraries designed to support cross-platform development
+ of security-enabled client and server applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+source_urls = ['https://ftp.mozilla.org/pub/security/nss/releases/NSS_%(version_major)s_%(version_minor)s_RTM/src/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['NSS-%(version)s_pkgconfig.patch']
+checksums = [
+    '6be64dd76f212415cc8bc34343ac1e7389048db4db9a023a84873c411dc5864b',  # nss-3.39.tar.gz
+    '5c4b55842e5afd1e8e67b90635f6474510b89242963c4ac2622d3e3da9062774',  # NSS-3.39_pkgconfig.patch
+]
+
+builddependencies = [('binutils', '2.28')]
+dependencies = [
+    ('NSPR', '4.20'),
+    ('zlib', '1.2.11'),
+]
+
+# building in parallel fails
+parallel = 1
+
+# fix for not being able to find header files
+buildopts = 'BUILD_OPT=1 USE_64=1 CPATH="$EBROOTNSPR/include/nspr:$CPATH" && '
+# also install pkgconfig file (see patch)
+buildopts += "cd config && make PREFIX=%(installdir)s BUILD_OPT=1 USE_64=1 && cd -"
+
+files_to_copy = ['../dist/Linux*.OBJ/*', (['../dist/public/*'], 'include')]
+
+sanity_check_paths = {
+    'files': ['lib/libnss.a'],
+    'dirs': ['bin', 'include/dbm', 'include/nss'],
+}
+
+modextrapaths = {'CPATH': 'include/nss'}
+
+moduleclass = 'lib'

@@ -1,0 +1,58 @@
+easyblock = 'Tarball'
+
+name = 'WISExome'
+version = '20180517'
+commit = '336a808'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/VUmcCGP/wisexome'
+description = "A within-sample comparison approach to detect copy number variations in whole exome sequencing data"
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://github.com/VUmcCGP/wisexome/archive/']
+sources = [{'download_filename': '%s.tar.gz' % commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['af061ee03c0cc8b5844756632ff4c0503727d243cd493be8549aa929a14696d9']
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('matplotlib', '2.1.2', versionsuffix),
+    ('Pysam', '0.14.1', versionsuffix),
+]
+
+# add missing python shebang
+postinstallcmds = [
+    "sed -i '1i #!/usr/bin/env python' %(installdir)s/*.py",
+    "chmod a+x %(installdir)s/*.py",
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+# let sanity check fail when auto-downloaded dependencies are detected when installing extensions
+exts_download_dep_fail = True
+
+exts_list = [
+    ('pyliftover', '0.3', {
+        'source_tmpl': 'pyliftover-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/p/pyliftover/'],
+        'checksums': ['8feaa3106e55705291feb70bb82be0861d7ba2306911a3ad42ceed1a2df19299'],
+    }),
+    ('xlwt', '1.3.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/x/xlwt/'],
+        'checksums': ['c59912717a9b28f1a3c2a98fd60741014b06b043936dcecbc113eaaada156c88'],
+    }),
+]
+
+modextrapaths = {
+    'PATH': '',
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_paths = {
+    'files': ['consam.py', 'excel.py', 'lennormalize.py', 'prepref.py', 'takeref.py'],
+    'dirs': [],
+}
+sanity_check_commands = ["consam.py -h"]
+
+moduleclass = 'bio'

@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'KAT'
+version = '2.4.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.earlham.ac.uk/kat-tools'
+description = 'The K-mer Analysis Toolkit (KAT) contains a number of tools that analyse and compare K-mer spectra.'
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+source_urls = ['https://github.com/TGAC/KAT/archive']
+sources = ['Release-%(version)s.tar.gz']
+patches = [
+    'KAT-%(version)s-use-EB-Boost.patch',
+    'KAT-%(version)s-fix-python.patch',
+]
+checksums = [
+    'd6116cefdb5ecd9ec40898dd92362afe1a76fa560abfe0f2cd29cbe0d95cb877',  # Release-2.4.2.tar.gz
+    'c8c5738a97362e0c0f88d99fd14103dca9c1928f81d967b6783aba7c2421d672',  # KAT-2.4.2-use-EB-Boost.patch
+    '566f38ced78a0d74a3740ec5913f624a2e6956011041947856164b79cfba44b3',  # KAT-2.4.2-fix-python.patch
+]
+
+builddependencies = [('Autotools', '20170619')]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Python', '3.6.4'),
+    ('Boost', '1.66.0'),
+    ('matplotlib', '2.1.2', versionsuffix),
+]
+
+preconfigopts = "./autogen.sh && "
+
+# The test don't work during this step but work fine after the full install
+# runtest = "-C tests check V=1"
+
+# DESTDIR is needed as it uses --root=$DESTDIR for installing python extension
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && DESTDIR=/ "
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['kat', 'kat_plot_density']] + ['lib/libkat.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'bio'

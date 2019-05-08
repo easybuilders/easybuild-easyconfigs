@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'ANTs'
+version = '2.3.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://stnava.github.io/ANTs/'
+description = """ANTs extracts information from complex datasets that include imaging. ANTs is useful for managing,
+ interpreting and visualizing multidimensional data."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/stnava/ANTs/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['ANTs-%(version)s_fix-VTK.patch']
+checksums = [
+    'c0680feab0ebb85c8cd6685043126666929b35e1cf387a5cc1d3a2d7169bddd3',  # v2.3.1.tar.gz
+    '246efcdd6d1e2f213bf327cee3333ec3824e58fd9fd5dbcecdde02e49aeafb20',  # ANTs-2.3.1_fix-VTK.patch
+]
+
+builddependencies = [('CMake', '3.12.1')]
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('VTK', '8.1.1', versionsuffix),
+]
+
+separate_build_dir = True
+
+configopts = '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
+configopts += '-DUSE_VTK=ON -DUSE_SYSTEM_VTK=ON '
+configopts += '-DSuperBuild_ANTS_USE_GIT_PROTOCOL=OFF'
+
+skipsteps = ['install']
+
+# need to ensure user has write permissions on all files, to avoid permission denied problems when copying
+buildopts = ' && mkdir -p %(installdir)s && chmod -R u+w . && cp -a * %(installdir)s/'
+
+postinstallcmds = ["cp -a %(builddir)s/ANTs-%(version)s/Scripts/* %(installdir)s/bin/"]
+
+sanity_check_paths = {
+    'files': ['bin/ANTS', 'bin/antsBrainExtraction.sh'],
+    'dirs': ['lib'],
+}
+
+modextravars = {'ANTSPATH': '%(installdir)s/bin'}
+
+moduleclass = 'data'

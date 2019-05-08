@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'MariaDB'
+version = '10.3.10'
+
+homepage = 'https://mariadb.org/'
+description = """MariaDB An enhanced, drop-in replacement for MySQL."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+mariadbdir = 'server-mariadb-%(version)s'
+extract_cmd_pattern = 'tar -C %s/%s --strip-components=1 -xf %%s'
+
+source_urls = ['https://github.com/MariaDB/server/archive/']
+# MariaDB pulls in submodules which don't have releases.
+# We download the submodule revisions from their repos.
+# determine commit of additional sources via https://github.com/MariaDB/server/tree/10.3
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {
+        'source_urls': ['https://github.com/MariaDB/mariadb-connector-c/archive/'],
+        'download_filename': '99f383c85c952287f8d3db927665061cd226e0f7.tar.gz',
+        'filename': 'mariadb-connector-c-20181003.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (mariadbdir, 'libmariadb'),
+    },
+    {
+        'source_urls': ['https://github.com/facebook/rocksdb/archive/'],
+        'download_filename': '926f3a78a64b327475ee6c60b6c8ab4f34253204.tar.gz',
+        'filename': 'rocksdb-20180710.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (mariadbdir, 'storage/rocksdb/rocksdb'),
+    },
+]
+patches = ['MariaDB-10.1.13-link-rt-for-jemalloc.patch']
+checksums = [
+    '101ba65a58c972cb63f1727948ec84805347fe38ee60d4fcb4ae2a3d843a3e25',  # mariadb-10.3.10.tar.gz
+    '95c7d80b199320a521c006b9fb4546bed246aa5f16ba16eda17568c21ea66635',  # mariadb-connector-c-20181003.tar.gz
+    'b6998422f6193f47b3760a89eb992488616107f80f1500df5f40987b08381bf2',  # rocksdb-20180710.tar.gz
+    '8295837e623f6c782e1d64b00e0877ea98cce4bf8846755bb86c8a7732797c19',  # MariaDB-10.1.13-link-rt-for-jemalloc.patch
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('ncurses', '6.1'),
+    ('jemalloc', '5.1.0'),
+    ('XZ', '5.2.4'),
+    ('Boost', '1.67.0'),
+    ('libxml2', '2.9.8'),
+]
+
+builddependencies = [('CMake', '3.12.1')]
+
+separate_build_dir = True
+
+# we need to use the bundled PCRE because using an external one is broken,
+# see https://bugs.exim.org/show_bug.cgi?id=2173
+configopts = "-DWITH_PCRE=bundled -DWITH_JEMALLOC=yes -DWITH_ZLIB=system -DMYSQL_MAINTAINER_MODE=ON "
+configopts += "-DWITH_EMBEDDED_SERVER=ON "  # for libmysqld.so & co
+configopts += "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "
+
+sanity_check_paths = {
+    'files': ['bin/mysql', 'bin/mysqld_safe', 'lib/libmysqlclient.%s' % SHLIB_EXT, 'lib/libmysqld.%s' % SHLIB_EXT,
+              'scripts/mysql_install_db'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'data'
