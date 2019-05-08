@@ -3,14 +3,23 @@ easyblock = 'ConfigureMake'
 name = 'OpenMPI'
 version = '3.1.0'
 
-homepage = 'http://www.open-mpi.org/'
+homepage = 'https://www.open-mpi.org/'
 description = """The Open MPI Project is an open source MPI-3 implementation."""
 
 toolchain = {'name': 'GCC', 'version': '7.3.0-2.30'}
 
-source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['a72d5a3f64c7afa33fb6c795e1168de7f92b35fd1f97ef606cfcf7405273aedc']
+patches = [
+    'OpenMPI-3.1_fix-ib-query.patch',
+    '%(name)s-%(version)s-add_ompi_datatype_attribute_to_release_ucp_datatype.patch'
+]
+checksums = [
+    'a72d5a3f64c7afa33fb6c795e1168de7f92b35fd1f97ef606cfcf7405273aedc',  # openmpi-3.1.0.tar.gz
+    '8031ff093788a750f30ec7b4b06573af008009e62ddfd558ecfe97cbe404d9d2',  # OpenMPI-3.1_fix-ib-query.patch
+    # OpenMPI-3.1.0-add_ompi_datatype_attribute_to_release_ucp_datatype.patch
+    'ee20ef812212ad59bd08aa07ceb44d9f1daa8143a212f656c64f1056ecb4a4e9',
+]
 
 # needed for --with-verbs
 osdependencies = [('libibverbs-dev', 'libibverbs-devel', 'rdma-core-devel')]
@@ -20,7 +29,7 @@ dependencies = [
     ('hwloc', '1.11.10')
 ]
 
-configopts = '--enable-shared --enable-mpi-thread-multiple --with-verbs '
+configopts = '--enable-shared --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
 configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
 configopts += '--without-ucx '  # hard disable UCX, to dance around bug (https://github.com/open-mpi/ompi/issues/4345)

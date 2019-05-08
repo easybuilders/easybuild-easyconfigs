@@ -1,0 +1,67 @@
+easyblock = 'Bundle'
+
+name = 'PyQt5'
+version = '5.12.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.riverbankcomputing.co.uk/software/pyqt'
+description = """PyQt5 is a set of Python bindings for v5 of the Qt application framework from The Qt Company."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+builddependencies = [('binutils', '2.31.1')]
+dependencies = [
+    ('Python', '3.7.2'),
+    ('Qt5', '5.12.3'),
+]
+
+default_easyblock = 'ConfigureMakePythonPackage'
+
+pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+sip_configopts = "configure.py --bindir %%(installdir)s/bin --incdir %%(installdir)s/include --destdir %s" % pylibdir
+# required for PyQt5, cfr. http://pyqt.sourceforge.net/Docs/PyQt5/installation.html#downloading-sip
+# and http://pyqt.sourceforge.net/Docs/sip4/using.html#ref-private-sip
+sip_configopts += " --sip-module PyQt5.sip"
+
+pyqt5_configopts = "configure.py --confirm-license --verbose --destdir=%s " % pylibdir
+pyqt5_configopts += " --destdir=%(installdir)s/lib/python%(pyshortver)s/site-packages --bindir=%(installdir)s/bin"
+pyqt5_configopts += " --designer-plugindir=%(installdir)s/plugins/designer"
+pyqt5_configopts += " --qml-plugindir=%(installdir)s/plugins/PyQt5"
+pyqt5_configopts += " --no-sip-files --no-stubs "
+
+sipver = '4.19.16'
+components = [
+    ('SIP', sipver, {
+        'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/sip/%s' % sipver],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['184c790d58e9527fc6bdac2bbf8638f3d1b41dea922cad8eb83172b4ba70c620'],
+        'start_dir': 'sip-%s' % sipver,
+        'configopts': sip_configopts,
+        'options': {'modulename': 'PyQt5.sip'},
+    }),
+    (name, version, {
+        'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/PyQt5/%(version)s/'],
+        'sources': ['%(name)s_gpl-%(version)s.tar.gz'],
+        'checksums': ['3718ce847d824090fd5f95ff3f13847ee75c2507368d4cbaeb48338f506e59bf'],
+        'start_dir': 'PyQt5_gpl-%(version)s',
+        'preconfigopts': "export PATH=%(installdir)s/bin:$PATH && ",
+        'configopts': pyqt5_configopts,
+        'options': {'modulename': 'PyQt5.QtCore'},
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/sip', 'include/sip.h', 'lib/python%(pyshortver)s/site-packages/sipconfig.py',
+              'lib/python%(pyshortver)s/site-packages/sipdistutils.py',
+              'lib/python%%(pyshortver)s/site-packages/PyQt5/sip.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'QT_PLUGIN_PATH': 'plugins',
+}
+
+moduleclass = 'vis'

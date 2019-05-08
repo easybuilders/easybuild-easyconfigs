@@ -1,0 +1,44 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+easyblock = 'ConfigureMake'
+
+name = 'PMIx'
+version = '2.1.3'
+
+homepage = 'https://pmix.org/'
+description = """Process Management for Exascale Environments
+PMI Exascale (PMIx) represents an attempt to resolve these questions by
+providing an extended version of the PMI standard specifically designed
+to support clusters up to and including exascale sizes. The overall
+objective of the project is not to branch the existing pseudo-standard
+definitions - in fact, PMIx fully supports both of the existing PMI-1
+and PMI-2 APIs - but rather to (a) augment and extend those APIs to
+eliminate some current restrictions that impact scalability, and (b)
+provide a reference implementation of the PMI-server that demonstrates
+the desired level of scalability.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '7.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/pmix/pmix/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.bz2']
+checksums = ['281283133498e7e5999ed5c6557542c22408bc9eb51ecbcf7696160616782a41']
+
+builddependencies = [('binutils', '2.30')]
+
+dependencies = [
+    ('libevent', '2.1.8'),
+    ('zlib', '1.2.11'),
+]
+
+configopts = ' --with-libevent=$EBROOTLIBEVENT --with-zlib=$EBROOTZLIB '
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['lib/libpmix.%s' % SHLIB_EXT, 'include/pmix.h'],
+    'dirs': ['etc', 'share/pmix']
+}
+
+moduleclass = 'mpi'

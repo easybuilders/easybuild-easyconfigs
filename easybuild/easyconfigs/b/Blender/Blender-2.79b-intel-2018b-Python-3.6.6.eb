@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'Blender'
+version = '2.79b'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.blender.org/'
+description = """Blender is the free and open source 3D creation suite. It supports
+ the entirety of the 3D pipeline-modeling, rigging, animation, simulation, rendering,
+ compositing and motion tracking, even video editing and game creation."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+source_urls = ['http://download.blender.org/source/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['Blender-2.77a_fix-ARRAY_SIZE-icc.patch']
+checksums = [
+    '4c944c304a49e68ac687ea06f5758204def049b66dc211e1cffa1857716393bc',  # blender-2.79b.tar.gz
+    'b333219ca380b08bf167bfdea33c0d23a4ed5c2cd05c5f391ca3b529fdc72a73',  # Blender-2.77a_fix-ARRAY_SIZE-icc.patch
+]
+
+# disable SSE detection to give EasyBuild full control over optimization compiler flags being used
+configopts = '-DWITH_CPU_SSE=OFF -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG" '
+
+# these are needed until extra dependencies are added for them to work
+configopts += '-DWITH_INSTALL_PORTABLE=OFF '
+configopts += '-DWITH_BUILDINFO=OFF '
+configopts += '-DWITH_GAMEENGINE=OFF '
+configopts += '-DWITH_SYSTEM_GLEW=OFF '
+
+# Python paths
+configopts += '-DPYTHON_VERSION=%(pyshortver)s -DPYTHON_LIBRARY=${EBROOTPYTHON}/lib/libpython%(pyshortver)sm.so '
+configopts += '-DPYTHON_INCLUDE_DIR=${EBROOTPYTHON}/include/python%(pyshortver)sm '
+configopts += '-DOPENEXR_INCLUDE_DIR=$EBROOTOPENEXR/include '
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('Boost', '1.67.0'),
+    ('libjpeg-turbo', '2.0.0'),
+    ('zlib', '1.2.11'),
+    ('X11', '20180604'),
+    ('Mesa', '18.1.1'),
+    ('libGLU', '9.0.0'),
+    ('OpenImageIO', '1.8.16'),  # required for cycles render engine
+]
+
+builddependencies = [('CMake', '3.12.1')]
+
+separate_build_dir = 'True'
+
+# use Intel software rasterizer by default (no GPU hardware acceleration)
+modextravars = {'GALLIUM_DRIVER': 'swr'}
+
+sanity_check_paths = {
+    'files': ['bin/blender'],
+    'dirs': []
+}
+
+moduleclass = 'vis'

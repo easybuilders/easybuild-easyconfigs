@@ -1,0 +1,26 @@
+# During some test jobs, an error 
+# IOError: [Errno 2] No such file or directory: '/tmp/hajgato/link/eb-Tfchx1/tmpx5Z16m/_newton.c' 
+# occured, if the tmpdir was a symlink or any of its subdir was a symlink. Therefore, realpath is used.
+# October 1st 2018 by B. Hajgato (Free Ubiversity Brussels - VUB)
+--- sympy-1.3/sympy/utilities/_compilation/util.py.orig	2018-09-06 21:27:21.000000000 +0200
++++ sympy-1.3/sympy/utilities/_compilation/util.py	2018-10-01 17:20:32.870970988 +0200
+@@ -31,7 +31,7 @@
+ 
+     class TemporaryDirectory(object):
+         def __init__(self):
+-            self.path = tempfile.mkdtemp()
++            self.path = tempfile.mkdtemp(prefix=os.path.realpath(tempfile.gettempprefix()))
+         def __enter__(self):
+             return self.path
+         def __exit__(self, exc, value, tb):
+--- sympy-1.3/sympy/utilities/_compilation/compilation.py.orig	2018-09-06 21:27:21.000000000 +0200
++++ sympy-1.3/sympy/utilities/_compilation/compilation.py	2018-10-01 19:40:14.236799346 +0200
+@@ -535,7 +535,7 @@
+     return mod
+ 
+ def _write_sources_to_build_dir(sources, build_dir):
+-    build_dir = build_dir or tempfile.mkdtemp()
++    build_dir = build_dir or tempfile.mkdtemp(prefix=os.path.realpath(tempfile.gettempprefix()))
+     if not os.path.isdir(build_dir):
+         raise OSError("Non-existent directory: ", build_dir)
+ 

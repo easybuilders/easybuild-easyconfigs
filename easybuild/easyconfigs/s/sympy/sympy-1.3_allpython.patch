@@ -1,0 +1,135 @@
+# this patch contains fixes for two different problems:
+#
+# *** IOError: [Errno 39] aka "Directory not empty" FIX ***
+#
+# - 22.1.2019, J. Dvoracek (Institute of Physics | Czech Academy of Sciences, www.fzu.cz
+#
+# While running test step on NFS share, it fails with:
+# File "(...)sympy/utilities/_compilation/tests/test_compilation.py", line 61
+# in test_compile_link_import_strings
+#    shutil.rmtree(info['build_dir'])
+#  File "(...)lib/python3.6/shutil.py", line 484, in rmtree
+#    onerror(os.rmdir, path, sys.exc_info())
+#  File "(...)lib/python3.6/shutil.py", line 482, in rmtree
+#    os.rmdir(path)
+# OSError: [Errno 39] Directory not empty: '(...)sympy-1.3/tmp695y36rc'
+# 
+# shmem.rmtree() is called when file inside is stil being used, so files are renamed to .nfsXXXXX
+# and rmtee fails with Errno 39 (Directory not empty) error. 
+# As we're running the tests in Easybuild, we can assume that the buil_dir will be deleted by EasyBuild,
+# so we can safely skip the delete operation
+# 
+# *** IOError: [Errno 2] aka "No such file or directory" FIX ***
+#
+# - original (1.10.2018, B. Hajgato (Free Ubiversity Brussels - VUB)
+# 
+# During some test jobs, an error 
+# IOError: [Errno 2] No such file or directory: '/tmp/hajgato/link/eb-Tfchx1/tmpx5Z16m/_newton.c' 
+# occured, if the tmpdir was a symlink or any of its subdir was a symlink. Therefore, realpath is used.
+# 
+# - update (22.1.2019, J. Dvoracek (Institute of Physics | Czech Academy of Sciences, www.fzu.cz )
+#
+# fix above deals just with the occurence in Python2. Now we use the same trick for Python3 too.
+
+--- sympy-1.3/sympy/utilities/_compilation/tests/test_compilation.py_orig   2019-01-21 21:47:46.552355000 +0100
++++ sympy-1.3/sympy/utilities/_compilation/tests/test_compilation.py  2019-01-21 21:48:16.358586000 +0100
+@@ -58,4 +58,4 @@
+         assert numpy.allclose(res_mod, res_npy)
+     finally:
+         if info and info['build_dir']:
+-            shutil.rmtree(info['build_dir'])
++            pass
+
+--- sympy-1.3/sympy/codegen/tests/test_algorithms.py.orig 2019-01-21 19:32:27.745554000 +0100
++++ sympy-1.3/sympy/codegen/tests/test_algorithms.py      2019-01-21 19:32:50.843218000 +0100
+@@ -12,7 +12,8 @@
+ from sympy.external import import_module
+ from sympy.printing.ccode import ccode
+ from sympy.utilities._compilation import compile_link_import_strings, has_c, has_fortran
+-from sympy.utilities._compilation.util import TemporaryDirectory, may_xfail
++from sympy.utilities._compilation.util import may_xfail
++from sympy.utilities._compilation.util import TemporaryDirectory_DND as TemporaryDirectory
+ from sympy.utilities.pytest import skip, USE_PYTEST, raises
+ 
+ cython = import_module('cython')
+
+--- sympy-1.3/sympy/codegen/tests/test_fnodes.py.orig   2018-09-06 21:27:20.000000000 +0200
++++ sympy-1.3/sympy/codegen/tests/test_fnodes.py        2019-01-21 18:44:46.718472000 +0100
+@@ -13,7 +13,8 @@
+ from sympy.external import import_module
+ from sympy.printing.fcode import fcode
+ from sympy.utilities._compilation import has_fortran, compile_run_strings, compile_link_import_strings
+-from sympy.utilities._compilation.util import TemporaryDirectory, may_xfail
++from sympy.utilities._compilation.util import may_xfail
++from sympy.utilities._compilation.util import TemporaryDirectory_DND as TemporaryDirectory
+ from sympy.utilities.pytest import skip
+
+ cython = import_module('cython')
+
+--- sympy-1.3/sympy/codegen/tests/test_applications.py.orig     2019-01-21 18:41:24.256877000 +0100
++++ sympy-1.3/sympy/codegen/tests/test_applications.py  	2019-01-21 18:43:57.439442000 +0100
+@@ -3,7 +3,8 @@
+ from sympy.external import import_module
+ from sympy.printing.ccode import ccode
+ from sympy.utilities._compilation import compile_link_import_strings, has_c
+-from sympy.utilities._compilation.util import TemporaryDirectory, may_xfail
++from sympy.utilities._compilation.util import TemporaryDirectory_DND as TemporaryDirectory
++from sympy.utilities._compilation.util import may_xfail
+ from sympy.utilities.pytest import skip
+ from sympy.sets import Range
+ from sympy.codegen.ast import (
+
+--- sympy-1.3/sympy/utilities/_compilation/compilation.py.orig        2019-01-21 17:28:36.327899000 +0100
++++ sympy-1.3/sympy/utilities/_compilation/compilation.py     2019-01-21 17:31:32.197254000 +0100
+@@ -535,7 +535,8 @@
+     return mod
+ 
+ def _write_sources_to_build_dir(sources, build_dir):
+-    build_dir = build_dir or tempfile.mkdtemp()
++    #build_dir = build_dir or tempfile.mkdtemp()
++    build_dir = build_dir or tempfile.mkdtemp(prefix=os.path.realpath(tempfile.gettempprefix()))
+     if not os.path.isdir(build_dir):
+         raise OSError("Non-existent directory: ", build_dir)
+
+--- sympy-1.3/sympy/utilities/_compilation/util.py.orig       2018-09-06 21:27:21.000000000 +0200
++++ sympy-1.3/sympy/utilities/_compilation/util.py    2019-01-21 20:19:25.030436000 +0100
+@@ -25,21 +25,26 @@
+         return func
+ 
+ 
+-if sys.version_info[0] == 2:
+-    class FileNotFoundError(IOError):
+-        pass
++class FileNotFoundError(IOError):
++    pass
+ 
+-    class TemporaryDirectory(object):
+-        def __init__(self):
+-            self.path = tempfile.mkdtemp()
+-        def __enter__(self):
+-            return self.path
+-        def __exit__(self, exc, value, tb):
+-            shutil.rmtree(self.path)
+-else:
+-    FileNotFoundError = FileNotFoundError
+-    TemporaryDirectory = tempfile.TemporaryDirectory
++class TemporaryDirectory(object):
++    def __init__(self):
++        # self.path = tempfile.mkdtemp()
++        self.path = tempfile.mkdtemp(prefix=os.path.realpath(tempfile.gettempprefix()))
++    def __enter__(self):
++        return self.path
++    def __exit__(self, exc, value, tb):
++        shutil.rmtree(self.path)
+ 
++class TemporaryDirectory_DND(object):
++    def __init__(self):
++        # self.path = tempfile.mkdtemp()
++        self.path = tempfile.mkdtemp(prefix=os.path.realpath(tempfile.gettempprefix()))
++    def __enter__(self):
++        return self.path
++    def __exit__(self, exc, value, tb):
++        pass
+ 
+ class CompilerNotFoundError(FileNotFoundError):
+     pass
