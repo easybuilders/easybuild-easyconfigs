@@ -27,6 +27,7 @@ Unit tests for easyconfig files.
 
 @author: Kenneth Hoste (Ghent University)
 """
+from __future__ import print_function
 import glob
 import os
 import re
@@ -131,13 +132,13 @@ class EasyConfigTest(TestCase):
 
             remove_file(fn)
         else:
-            print "(skipped dep graph test)"
+            print("(skipped dep graph test)")
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
 
         if not single_tests_ok:
-            print "(skipped conflicts test)"
+            print("(skipped conflicts test)")
             return
 
         if self.ordered_specs is None:
@@ -680,7 +681,7 @@ def suite():
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
                 setattr(EasyConfigTest, innertest.__name__, innertest)
 
-    print "Found %s easyconfigs..." % cnt
+    print("Found %s easyconfigs..." % cnt)
     return TestLoader().loadTestsFromTestCase(EasyConfigTest)
 
 

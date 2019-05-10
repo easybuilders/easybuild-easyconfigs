@@ -61,7 +61,7 @@ try:
     xml_dir = 'test-reports'
     res = xmlrunner.XMLTestRunner(output=xml_dir, verbosity=1).run(SUITE)
     xml_msg = ", XML output of tests available in %s directory" % xml_dir
-except ImportError, err:
+except ImportError as err:
     sys.stderr.write("WARNING: xmlrunner module not available, falling back to using unittest...\n\n")
     res = unittest.TextTestRunner().run(SUITE)
 

@@ -27,6 +27,7 @@ Style tests for easyconfig files. Uses pep8.
 
 @author: Ward Poelmans (Ghent University)
 """
+from __future__ import print_function
 
 import glob
 import sys
@@ -48,7 +49,7 @@ class StyleTest(TestCase):
     def test_style_conformance(self):
         """Check the easyconfigs for style"""
         if 'pep8' not in sys.modules:
-            print "Skipping style checks (no pep8 available)"
+            print("Skipping style checks (no pep8 available)")
             return
 
         # all available easyconfig files
