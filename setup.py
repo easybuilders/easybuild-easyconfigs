@@ -75,7 +75,7 @@ try:
     log.info("Installing with setuptools.setup...")
     install_package = 'setuptools'
 
-except ImportError, err:
+except ImportError as err:
     log.info("Failed to import setuptools.setup (%s), so falling back to distutils.setup" % err)
     from distutils.core import setup
     install_package = 'distutils'
