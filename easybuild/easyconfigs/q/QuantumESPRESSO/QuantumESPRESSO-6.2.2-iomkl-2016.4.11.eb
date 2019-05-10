@@ -1,0 +1,43 @@
+name = 'QuantumESPRESSO'
+version = '6.2.2'
+
+homepage = 'http://www.pwscf.org/'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes
+ for electronic-structure calculations and materials modeling at the nanoscale.
+ It is based on density-functional theory, plane waves, and pseudopotentials
+  (both norm-conserving and ultrasoft)."""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'openmp': False}
+
+# It is a constant problem with QE that names of archives keep changing. 
+# it is almost pointless to use version when things are so irregular
+sources = [
+    {'filename': 'qe-gipaw-6.2.2.tar.gz',  'extract_cmd': 'tar xzf %s && mv qe-6.2.2+gipaw-6.2.2 qe-%(version)s '},
+    {'filename': 'v2.1.tar.gz','extract_cmd': 'tar xzf %s && mv wannier90-2.1 wannier90-2.1.0'},
+]
+
+
+source_urls = [
+    'https://github.com/dceresoli/qe-gipaw/releases/download/6.2.2/',  # qe-gipaw-6.2.2.tgz
+    'https://github.com/wannier-developers/wannier90/archive/',
+]
+
+patches = [
+    'QuantumESPRESSO-6.2.2_fox_libs.patch'
+]
+
+#GAS this one might miss libxc! There is no config parameter for it yet in 6.2?
+dependencies = [
+    ('libxc', '4.2.1')
+]
+
+
+buildopts = 'all w90 gipaw xspectra pwall ph epw'
+
+# parallel build tends to fail
+parallel = 1
+
+moduleclass = 'chem'
+
+

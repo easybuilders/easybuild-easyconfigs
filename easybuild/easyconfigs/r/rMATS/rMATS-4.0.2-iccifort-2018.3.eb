@@ -1,0 +1,51 @@
+easyblock = 'Tarball'
+
+name = 'rMATS'
+version = '4.0.2'
+
+homepage = 'http://rnaseq-mats.sourceforge.net/'
+description = """MATS is a computational tool to detect differential alternative splicing events from RNA-Seq data. The statistical model of MATS calculates the P-value and false discovery rate that the difference in the isoform ratio of a gene between two conditions exceeds a given user-defined threshold. From the RNA-Seq data, MATS can automatically detect and analyze alternative splicing events corresponding to all major types of alternative splicing patterns. MATS handles replicate RNA-Seq data from both paired and unpaired study design."""
+
+toolchain = {'name': 'iccifort', 'version': '2018.3'}
+
+source_urls = ['https://sourceforge.net/projects/rnaseq-mats/files/MATS/']
+sources = [SOURCE_TGZ.replace('-', '.')]
+
+skipsteps = ['configure', 'build']
+
+dependencies = [
+    ('SAMtools', '1.9'),
+    ('STAR', '2.7.0a'),
+    ('GSL', '1.16'),
+]
+
+postinstallcmds = [ 
+    "rm -rf %(installdir)s/rMATS-turbo-Linux-UCS2",
+    "ln -sf /cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/imkl/11.3.4.258/mkl/lib/intel64_lin/libmkl_rt.so %(installdir)s/rMATS-turbo-Linux-UCS4/rMATS_C/libblas.so.3",
+    "ln -sf /cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/imkl/11.3.4.258/mkl/lib/intel64_lin/libmkl_rt.so %(installdir)s/rMATS-turbo-Linux-UCS4/rMATS_C/liblapack.so.3",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path=$EBROOTGSL/lib --add_origin %(installdir)s"
+]
+
+sanity_check_paths = {
+    'files': ['rMATS-turbo-Linux-UCS4/rMATS_C/rMATSexe',
+              #'rMATS-turbo-Linux-UCS4/rMATS_C/libgsl.so.0',
+              'rMATS-turbo-Linux-UCS4/rMATS_C/liblapack.so.3',
+              'rMATS-turbo-Linux-UCS4/rMATS_C/libblas.so.3',
+              'rMATS-turbo-Linux-UCS4/README-rMATS-turbo.md',
+              'rMATS-turbo-Linux-UCS4/rMATS_P/FDR.py',
+              'rMATS-turbo-Linux-UCS4/rMATS_P/inclusion_level.py',
+              'rMATS-turbo-Linux-UCS4/rMATS_P/joinFiles.py',
+              'rMATS-turbo-Linux-UCS4/rMATS_P/paste.py',
+              'rMATS-turbo-Linux-UCS4/rmats.py', 
+              'rMATS-turbo-Linux-UCS4/rmatspipeline.so'],
+    'dirs':  ['rMATS-turbo-Linux-UCS4', 'rMATS-turbo-Linux-UCS4/rMATS_C', 'rMATS-turbo-Linux-UCS4/rMATS_P'],
+}
+
+usage = "python $EBROOTRMATS/rMATS-turbo-Linux-UCS4/rmats.py ..."
+
+modluafooter = """
+depends_on("python/2.7")
+depends_on("scipy-stack")
+"""
+
+moduleclass = 'bio'
