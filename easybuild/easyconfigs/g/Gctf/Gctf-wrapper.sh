@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Wrap around Gctf to load the required toolchain so it can use the
-# expected version of CUDA.
+# Wrap around Gctf to load the required version of CUDA.
 
 # Save the path to the install tree
 gctf_base=$EBROOTGCTF
