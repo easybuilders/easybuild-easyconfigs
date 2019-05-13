@@ -1,0 +1,33 @@
+prepend to $PATH rather than append, to avoid picking up system compiler (g++);
+add missing -llzma -lbz2 link options, required when linking to libhts.a
+author: Kenneth Hoste (HPC-UGent)
+see also https://bitbucket.org/berkeleylab/metabat/issues/52
+--- berkeleylab-metabat-37db58fe3fda/SConstruct.orig	2017-09-01 07:28:02.000000000 +0200
++++ berkeleylab-metabat-37db58fe3fda/SConstruct	2019-03-21 12:24:35.516202521 +0100
+@@ -7,7 +7,7 @@
+ def ENV_update(tgt_ENV, src_ENV):
+     for K in src_ENV.keys():
+         if K in tgt_ENV.keys() and K in [ 'PATH', 'LD_LIBRARY_PATH', 'LIB', 'INCLUDE' ]:
+-            tgt_ENV[K]=SCons.Util.AppendPath(tgt_ENV[K], src_ENV[K])
++            tgt_ENV[K]=SCons.Util.PrependPath(tgt_ENV[K], src_ENV[K])
+         else:
+             tgt_ENV[K]=src_ENV[K]
+ 
+@@ -184,7 +184,7 @@
+                 sources,
+                 CCFLAGS=ccflags,
+                 CPPPATH=[hts_inc, boost_inc],
+-                LIBS=['pthread', 'z'],
++                LIBS=['pthread', 'z', 'lzma', 'bz2'],
+                 LINKFLAGS=linkflags
+                 )
+ 
+@@ -204,7 +204,7 @@
+                 CPPPATH=[hts_inc, boost_inc],
+                 LINKPATH=[hts_lib, boost_lib],
+                 LINKFLAGS=linkflags,
+-                LIBS=['z']
++                LIBS=['z', 'lzma', 'bz2']
+                 )
+ 
+ test_sum = env.Alias('test_sum', [jgi_summarize_bam_contig_depths],  ' '.join([jgi_summarize_bam_contig_depths[0].abspath, '--outputDepth', test_depth, test_bam]) )
