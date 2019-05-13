@@ -1,0 +1,41 @@
+easyblock = 'CmdCp'
+
+name = 'STREAM'
+version = '5.10'
+
+homepage = 'https://www.cs.virginia.edu/stream/'
+description = """The STREAM benchmark is a simple synthetic benchmark program that measures sustainable
+ memory bandwidth (in MB/s) and the corresponding computation rate for simple vector kernels."""
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://www.cs.virginia.edu/stream/FTP/Code/']
+sources = [{'download_filename': '%(namelower)s.c', 'filename': 'stream-%(version)s.c'}]
+checksums = ['a52bae5e175bea3f7832112af9c085adab47117f7d2ce219165379849231692b']
+
+skipsteps = ['source']
+
+# 10 million array elements (1000 runs): requires ~224MB of memory
+cmds_str = "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=10000000 -DNTIMES=1000 -o stream_1Kx10M; "
+# 100 million array elements (1000 runs): requires ~2.2GiB of memory
+cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=100000000 -DNTIMES=1000 -o stream_1Kx100M; "
+# 1 billion array elements (1000 runs): requires ~22.4 GiB of memory
+cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=1000000000 -DNTIMES=1000 -o stream_1Kx1B; "
+# 2.5 billion array elements (1000 runs): requires ~56 GiB of memory
+cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=2500000000 -DNTIMES=1000 -o stream_1Kx2.5B; "
+# 5 billion array elements (1000 runs): requires ~111 GiB of memory
+cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=5000000000 -DNTIMES=1000 -o stream_1Kx5B; "
+
+cmds_map = [('stream-%(version)s.c', cmds_str)]
+
+files_to_copy = [(['stream_1Kx10M', 'stream_1Kx100M', 'stream_1Kx1B', 'stream_1Kx2.5B', 'stream_1Kx5B'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/stream_1Kx10M', 'bin/stream_1Kx100M', 'bin/stream_1Kx1B', 'bin/stream_1Kx2.5B', 'bin/stream_1Kx5B'],
+    'dirs': [],
+}
+
+tests = ['%(installdir)s/bin/stream_1Kx10M']
+
+moduleclass = 'perf'
