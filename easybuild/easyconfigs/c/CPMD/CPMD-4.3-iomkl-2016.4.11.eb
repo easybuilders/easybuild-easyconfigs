@@ -10,26 +10,35 @@ ab-initio molecular dynamics."""
 toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
 toolchainopts = {'usempi': True, 'openmp': False}
 
-sources = ['cpmd-v4.3.tar.gz']
+# URL where traj2xyz.pl and out2xyz.pl can be downloaded from.
+# CPMD tarball and patches and other utils should be downloaded manually and placed into the sources dir.
+source_urls = ['http://www.theochem.ruhr-uni-bochum.de/~legacy.akohlmey/cpmd-vmd/files/']
 
-source_urls = ['http://cpmd.org/download']
+sources = [
+    'cpmd-v4.3.tar.gz','cpmd2cube.tar.gz','fourier.tar.gz',
+    {'filename':'traj2xyz.pl', 'extract_cmd': 'cp %s %(builddir)s'},
+    {'filename': 'out2xyz.pl', 'extract_cmd': 'cp %s %(builddir)s'},
+]
 
-# patches = ['cpmd-3.17.1.patch']
-# patches += ['cpmd2cube.path']
-# patches += ['fourier.patch']
-# prebuildopts = 'cd cpmd2cube && ./Configure Linux-PC-IFORT > Makefile && make && '
-# prebuildopts += 'cd ../fourier && make && '
-# prebuildopts += 'cd .. &&./mkconfig.sh IFORT-AMD64-MPI > Makefile && '
-# files_to_copy = [(['cpmd.x', 'out2xyz.pl', 'traj2xyz.pl', 'cpmd2cube/cpmd2cube.x', 'cpmd2cube/cutcube.x', 'cpmd2cube/trimcube.x', 'fourier/fourier.x', 'fourier/trajec2atoms.x'], 'bin')]
+patches = ['patch.to.4612','patch.to.4615','patch.to.4616','patch.to.4621','patch.to.4624','patch.to.4627']
 
-prebuildopts = './configure.sh LINUX-X86_64-INTEL-MPI-FFTW && '
+prebuildopts  = 'cd %(builddir)s/cpmd2cube/ && ./Configure Linux-PC-IFORT > Makefile && make && '
+prebuildopts += 'cd %(builddir)s/fourier/ && make && '
+prebuildopts += 'cd %(builddir)s/CPMD/ && ./configure.sh LINUX-X86_64-INTEL-MPI-FFTW && '
+
 buildopts = "CPP='fpp -P -C'"
-files_to_copy = [(['bin/cpmd.x'], 'bin')]
+
+files_to_copy = [(['bin/cpmd.x', '%(builddir)s/out2xyz.pl', '%(builddir)s/traj2xyz.pl', '%(builddir)s/cpmd2cube/cpmd2cube.x', '%(builddir)s/cpmd2cube/cutcube.x', '%(builddir)s/cpmd2cube/trimcube.x', '%(builddir)s/fourier/fourier.x', '%(builddir)s/fourier/trajec2atoms.x'], 'bin')]
+
+# Set exec permissions on the two Perl scripts. Note that EasyBuild executes this step after files_to_copy.
+postinstallcmds = [
+    'chmod a+rx %(installdir)s/bin/*.pl'
+]
 
 sanity_check_paths = {
-#    'files': ['bin/cpmd.x', 'bin/fourier.x', 'bin/cpmd2cube.x', 'bin/out2xyz.pl'],
-    'files': ['bin/cpmd.x'],
+    'files': ['bin/cpmd.x', 'bin/fourier.x', 'bin/cpmd2cube.x', 'bin/out2xyz.pl'],
     'dirs': []
 }
+
 group = "soft_cpmd"
 moduleclass = 'chem'
