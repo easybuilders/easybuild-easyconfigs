@@ -1,0 +1,44 @@
+name = 'PGI'
+version = '19.4'
+
+homepage = 'http://www.pgroup.com/'
+description = "C, C++ and Fortran compilers from The Portland Group - PGI"
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+sources = ['pgilinux-20%(version_major)s-%(version_major)s%(version_minor)s-x86_64.tar.gz']
+checksums = ['23eee0d4da751dd6f247d624b68b03538ebd172e63a053c41bb67013f07cf68e']
+
+gccver = '7.3.0'
+binutilsver = 'nix'
+
+dependencies = [
+    ('GCCcore', '7.3.0'),
+]
+
+postinstallcmds = [
+    '$(dirname $EASYBUILD_CONFIGFILES)/bin/setrpaths.sh --path %(installdir)s',
+    'sed -i "s@/cvmfs/soft.computecanada.ca/nix/store/[^-]*-glibc[^/]*/@$NIXUSER_PROFILE/@g" %(installdir)s/linux86-64/%(version)s/bin/localrc',
+    'sed -i "s@/cvmfs/soft.computecanada.ca/nix/store/[^-]*-gfortran[^/]*/@$EBROOTGCCCORE/@g" %(installdir)s/linux86-64/%(version)s/bin/localrc',
+    r'sed -i "s@GCCINC=\(.*\);@GCCINC=\1 $NIXUSER_PROFILE/include;@" %(installdir)s/linux86-64/%(version)s/bin/localrc',
+    'sed -i "s@/usr/lib64@$NIXUSER_PROFILE/lib@" %(installdir)s/linux86-64/%(version)s/bin/lin8664rc',
+    'sed -i "s@/usr/lib64@$NIXUSER_PROFILE/lib@g" %(installdir)s/linux86-64/%(version)s/bin/x86rc',
+    'sed -i "s@append LDLIBARGS=-L@#append LDLIBARGS=-L@" %(installdir)s/linux86-64/%(version)s/bin/siterc',
+]
+
+# license file (defined below via CC_CLUSTER)
+requires_runtime_license = False
+
+moduleclass = 'compiler'
+
+modluafooter = """
+prepend_path("PGROUPD_LICENSE_FILE", pathJoin("/cvmfs/soft.computecanada.ca/config/licenses/pgi", os.getenv("CC_CLUSTER") .. ".lic"))
+
+prepend_path("MODULEPATH", pathJoin("/cvmfs/soft.computecanada.ca/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/pgi19.4"))
+if isDir(pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/pgi19.4")) then
+    prepend_path("MODULEPATH", pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/pgi/19.4"))
+end
+
+add_property("type_","tools")
+family("compiler")
+"""
