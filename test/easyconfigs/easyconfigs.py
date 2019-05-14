@@ -681,6 +681,10 @@ def template_easyconfig_test(self, spec):
                         # it should *not* be the same as the parent toolchain
                         self.assertNotEqual(dumped_dep[3], (orig_toolchain['name'], orig_toolchain['version']))
 
+        # take into account that for some string-valued easyconfig parameters (configopts & co),
+        # the easyblock may have injected additional values, which affects the dumped easyconfig file
+        elif isinstance(orig_val, basestring):
+            self.assertTrue(dumped_val.startswith(orig_val))
         else:
             self.assertEqual(orig_val, dumped_val)
 
