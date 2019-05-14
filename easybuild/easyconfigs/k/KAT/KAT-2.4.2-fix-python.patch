@@ -1,0 +1,26 @@
+# Py_Initialize must be called sooner to let the pth files do their magic
+# Else it will not be able to import scipy
+# Calling Py_setPath before Py_Initialize cause an empty sys.prefix and sys.exec_prefix
+# which makes the site module not search for pth files
+# wpoely86@gmail.com
+diff -ur KAT-Release-2.4.2.orig/lib/include/kat/pyhelper.hpp KAT-Release-2.4.2/lib/include/kat/pyhelper.hpp
+--- KAT-Release-2.4.2.orig/lib/include/kat/pyhelper.hpp	2018-05-04 10:55:58.000000000 +0200
++++ KAT-Release-2.4.2/lib/include/kat/pyhelper.hpp	2018-09-02 21:12:15.586740962 +0200
+@@ -75,6 +75,8 @@
+             cout << " - Interpreter path: " << fpp << endl;
+         }
+ 
++        Py_Initialize();
++
+         vector<string> ppaths;
+ 
+         wchar_t* wtppath2 = Py_GetPath();
+@@ -97,7 +99,7 @@
+             cout << " - PYTHONPATH set"  << endl;
+         }
+ 
+-        Py_Initialize();
++
+         if (this->verbose) {
+             cout << "Python interpretter initialised" << endl << endl;
+         }

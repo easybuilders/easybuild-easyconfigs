@@ -1,0 +1,46 @@
+easyblock = 'Tarball'
+
+name = 'netMHCpan'
+version = '4.0a'
+
+homepage = 'http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan'
+description = """ The NetMHCpan software predicts  binding of peptides  to any known MHC
+ molecule using artificial neural networks (ANNs). """
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# netMHCpan is proprietary software, but free for academcs
+# see: http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan
+source_urls = ['http://www.cbs.dtu.dk/services/NetMHCpan-4.0']
+sources = [
+    {
+        'filename': '%(name)s-%(version)s.Linux.tar.gz',
+        'extract_cmd': 'tar --strip-components=1 -xzf %s && chmod -R +rX *',
+    },
+    {
+        'download_filename': 'data.Linux.tar.gz',
+        'filename': '%(name)s-%(version)s-data.Linux.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C Linux_x86_64 && chmod -R +rX Linux_x86_64/data'
+    },
+]
+
+checksums = [
+    'f50b4eca8f8c5b9184c5a5be423e9806c54bd22ddeb4596f5c246597c59f1a34',  # netMHCpan-4.0a.Linux.tar.gz
+    'c2a4c9263af448f1a46e63f7c068194fd5bbfa0413413c741cf92d88e6a76b06',  # netMHCpan-4.0a-data.Linux.tar.gz
+]
+
+postinstallcmds = [
+    'sed -i -e "s|setenv[[:space:]]NMHOME.*|setenv NMHOME \$EBROOTNETMHCPAN|" %(installdir)s/netMHCpan',
+    'sed -i -e "s|setenv[[:space:]]TMPDIR.*|setenv TMPDIR /tmp|" %(installdir)s/netMHCpan',
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ['netMHCpan', 'Linux_x86_64/bin/netMHCpan'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['netMHCpan -h']
+
+moduleclass = 'bio'

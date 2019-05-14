@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'BCALM'
+version = '2.2.0'
+
+homepage = 'https://github.com/GATB/bcalm'
+description = """de Bruijn graph compaction in low memory"""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+source_urls = ['https://github.com/GATB/bcalm/archive']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/GATB/gatb-core/archive'],
+        'download_filename': 'da36e81667f46fd34aa274e792d280.tar.gz',
+        'filename': 'gatb-core-20180418.tar.gz',
+        'extract_cmd': 'tar -C bcalm-%(version)s/gatb-core --strip-components=1 -xf %s'
+    },
+]
+patches = ['BCALM-%(version)s-fix-nogit.patch']
+checksums = [
+    '2903dc89be2725d7f029f6ed53cf9bd74335379471135dc23f1de2db1f7fc5da',  # v2.2.0.tar.gz
+    '269e5c2de76ed62406f4aca1685fd8934c4402e9b8dcb8ddb3426e15d2205387',  # gatb-core-20180418.tar.gz
+    '2b83cee6edb09e5a5b1435e96b6313f0b264395e8fa063b7162c84f33fcd69bc',  # BCALM-2.2.0-fix-nogit.patch
+]
+
+builddependencies = [('CMake', '3.10.1')]
+
+dependencies = [('zlib', '1.2.11')]
+
+separate_build_dir = True
+
+configopts = '-DKSIZE_LIST="32 64 128 256 512 1024" -DGIT_SHA1=none'
+
+sanity_check_paths = {
+    'files': ['bin/bcalm', 'bin/gatb-h5dump'],
+    'dirs': ['lib']
+}
+
+moduleclass = 'bio'

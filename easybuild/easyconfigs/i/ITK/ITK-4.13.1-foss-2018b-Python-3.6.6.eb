@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'ITK'
+version = '4.13.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/InsightSoftwareConsortium/ITK/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['b352060d8b7289916a3cb033dfdbcf423423ba474643b79706966e679268e3d7']
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('Bison', '3.0.5'),
+]
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('HDF5', '1.10.2'),
+    ('PCRE', '8.41'),
+    ('SWIG', '3.0.12', versionsuffix),
+    ('VTK', '8.1.1', versionsuffix),
+    ('X11', '20180604')
+]
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -DITK_WRAP_PYTHON=ON '
+configopts += '-DBUILD_TESTING=OFF -DITK_USE_SYSTEM_SWIG=ON '
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON '
+
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+separate_build_dir = True
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver',
+              'lib/libITKVtkGlue-%(version_major_minor)s.a', 'lib/libitkhdf5.a',
+              'lib/libitkjpeg-%(version_major_minor)s.a', 'lib/libitkpng-%(version_major_minor)s.a'],
+    'dirs': ['include/ITK-%(version_major_minor)s',
+             'lib/python%(pyshortver)s/site-packages',
+             'share'],
+}
+
+sanity_check_commands = [('python', "-c 'import %(namelower)s'")]
+
+moduleclass = 'data'

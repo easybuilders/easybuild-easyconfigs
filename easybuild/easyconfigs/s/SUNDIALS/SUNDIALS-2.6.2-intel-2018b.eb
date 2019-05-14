@@ -1,0 +1,34 @@
+easyblock = 'CMakeMake'
+
+name = 'SUNDIALS'
+version = '2.6.2'
+
+homepage = 'http://computation.llnl.gov/projects/sundials'
+description = "SUNDIALS: SUite of Nonlinear and DIfferential/ALgebraic Equation Solvers"
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['http://computation.llnl.gov/projects/sundials/download/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_link-lapack.patch']
+checksums = [
+    'd8ed0151509dd2b0f317b318a4175f8b95a174340fc3080b8c20617da8aa4d2f',  # sundials-2.6.2.tar.gz
+    '9363484055aba529253156f97f630cce9a45906329b3e7b1298a169a3e7fd46e',  # SUNDIALS-2.6.2_link-lapack.patch
+]
+
+builddependencies = [('CMake', '3.11.4')]
+
+separate_build_dir = True
+
+configopts = "-DMPI_ENABLE=ON -DOPENMP_ENABLE=ON -DLAPACK_ENABLE=ON"
+
+solvers = ['arkode', 'cvode', 'cvodes', 'ida', 'idas', 'kinsol']
+sanity_check_paths = {
+    'files': ['lib/libsundials_%s.a' % s for s in solvers + ['nvecopenmp', 'nvecparallel', 'nvecserial']] +
+             ['lib/libsundials_%s.%s' % (s, SHLIB_EXT) for s in solvers + ['nvecopenmp', 'nvecparallel', 'nvecserial']],
+    'dirs': ['examples/%s' % s for s in solvers] + ['include/%s' % s for s in solvers] +
+            ['examples/nvector', 'include/nvector', 'include/sundials'],
+}
+
+moduleclass = 'math'

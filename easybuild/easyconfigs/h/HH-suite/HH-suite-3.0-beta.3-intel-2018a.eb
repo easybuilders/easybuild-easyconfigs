@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = "HH-suite"
+version = "3.0-beta.3"
+ffindex_commit = '74550c8bde3d5b450755ec4be5e9cd56f28a231b'
+
+homepage = 'https://github.com/soedinglab/hh-suite'
+description = """ The HH-suite is an open-source software package for sensitive protein sequence searching
+ based on the pairwise alignment of hidden Markov models (HMMs). """
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True}
+
+source_urls = [
+    'https://github.com/soedinglab/hh-suite/archive/',
+    'https://github.com/soedinglab/ffindex_soedinglab/archive/',
+]
+sources = [
+    'v%(version)s.tar.gz',
+    {'download_filename': '%s.tar.gz' % ffindex_commit, 'filename': 'ffindex-20171201.tar.gz'},
+]
+checksums = [
+    '483039a642fba375e3ba6ee49e38c16695dfa4f88cad23b09cd042755db01c12',  # v3.0-beta.3.tar.gz
+    '3978901196ee9d34cfb1a847cf27e224d104957f1c6675d900c823a8ee78b1d9',  # ffindex-20171201.tar.gz
+]
+
+builddependencies = [('CMake', '3.10.2')]
+
+preconfigopts = 'cp -a ../ffindex_soedinglab-%s/* ' % ffindex_commit
+preconfigopts += '%(builddir)s/%(namelower)s-%(version)s/lib/ffindex && '
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" '
+
+separate_build_dir = True
+
+modextravars = {'HHLIB': '%(installdir)s'}
+
+sanity_check_paths = {
+    'files': ["bin/hhalign", "bin/hhblits", "bin/hhconsensus", "bin/hhfilter", "bin/hhmake", "bin/hhsearch",
+              "lib/libffindex.a", "lib/libffindex_shared.%s" % SHLIB_EXT,
+              "include/ffindex.h", "include/ffutil.h"],
+    'dirs': []
+}
+
+moduleclass = 'bio'
