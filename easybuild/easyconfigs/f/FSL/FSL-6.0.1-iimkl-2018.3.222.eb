@@ -22,19 +22,11 @@ patches = [
 dependencies = [
     ('Boost', '1.65.1'),
     ('FFTW', '3.3.6'),
-#    ('libgd', '2.2.4'),
-#    ('libxml2', '2.9.4'),
-#    ('SQLite', '3.17.0'),
-#    ('libpng', '1.6.29'),
-#    ('Tk', '8.6.6'),
     ('NLopt', '2.4.2'),
-#    ('freeglut', '3.0.0'),
-#    ('expat', '2.2.0'),
-#    ('zlib', '1.2.11'),
     ('VTK', '6.3.0'),
-#    ('OpenBLAS', '0.3.4'),
     ('newmat', '10'),
 ]
+postinstallcmds = ["for i in %(installdir)s/fsl/bin/*; do sed  's|${FSLDIR}/bin/immv|immv|' < $i  | sed  's|$FSLDIR/bin/immv|immv|' | sed  's|${FSLDIR}/bin/imcp|imcp|' | sed  's|$FSLDIR/bin/imcp|imcp|' | sed  's|${FSLDIR}/bin/imglob|imglob|' | sed  's|$FSLDIR/bin/imglob|imglob|'  | sed  's|${FSLDIR}/bin/atlasquery|atlasquery|'   | sed  's|$FSLDIR/bin/atlasquery|atlasquery|' > tmp; mv tmp $i; done && sed 's|#SBATCH -p ${queue}||' < %(installdir)s/fsl/bin/fsl_sub | sed 's|#SBATCH -J ${JobName}-${SLURM_JOB_ID}-tasks|#SBATCH -J ${JobName}-${SLURM_JOB_ID}-tasks \n#SBATCH -A ${SLURM_JOB_ACCOUNT%_*}|' | sed 's|source /etc/profile.d/modules.sh||' | sed 's|module load staskfarm||' | sed 's|staskfarm -v $taskfile||' > tmp; mv tmp %(installdir)s/fsl/bin/fsl_sub ; chmod 755 %(installdir)s/fsl/bin/*"] 
 modextrapaths = {
     'PATH': 'fsl/etc/fslconf'
 }
