@@ -14,10 +14,18 @@ sources = [SOURCELOWER_TAR_XZ]
 checksums = ['89f884f5d5c6126140ec868cef184c42ce72902c13cd08f36e660371779b5560']
 
 builddependencies = [
+    # Python is required for building against GLib, at least when
+    # gdbus-codegen or one of the other python scripts are used.
+    # Since Meson 0.50 and later are Python >=3.5 only we can't build
+    # Python specific versions of GLib that uses Python 2.x
+    # thus Python should not be a runtime dependency for GLib.
+    # Packages that use GLib should either have an explicit
+    # (build)dependency on Python or it will use the system version
+    # EasyBuild itself uses.
+    ('Python', '3.7.2'),
     ('Meson', '0.50.0', '-Python-3.7.2'),
     ('Ninja', '1.9.0'),
     ('binutils', '2.31.1'),
-    ('Python', '3.7.2'),
     ('pkg-config', '0.29.2'),
 ]
 
@@ -34,7 +42,7 @@ preconfigopts = "export PYTHON=python && "
 
 configopts = "--buildtype=release --default-library=both "
 
-postinstallcmds = ["sed -i -e 's|#!.*python|#!/usr/bin/env python|' %(installdir)s/bin/*"]
+postinstallcmds = ["sed -i -e 's|#!.*python[0-9.]*$|#!/usr/bin/env python|' %(installdir)s/bin/*"]
 
 sanity_check_paths = {
     'files': ['lib/libglib-%(version_major)s.0.a', 'lib/libglib-%%(version_major)s.0.%s' % SHLIB_EXT],
