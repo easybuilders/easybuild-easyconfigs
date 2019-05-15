@@ -1,0 +1,69 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2013-2015 Dmitri Gribenko, Ward Poelmans
+# Authors:: Dmitri Gribenko <gribozavr@gmail.com>
+# Authors:: Ward Poelmans <wpoely86@gmail.com>
+# License:: GPLv2 or later, MIT, three-clause BSD.
+# $Id$
+##
+
+name = 'Flang'
+version = '20190329'
+llvm_version = '7.1.0'
+cudaver = '10.1.105'
+versionsuffix = '-CUDA-%s' % (cudaver)
+
+homepage = 'https://github.com/flang-compiler/'
+description = """Fortran compiler, based on LLVM."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+# Do not set optarch to True: it will cause the build to fail
+toolchainopts = {'optarch': False}
+
+sources = [
+    {
+        'download_filename': 'flang_%(version)s.tar.gz',
+        'filename': 'flang-llvm-%(version)s.src.tar.gz',
+        'source_urls': ['https://github.com/flang-compiler/llvm/archive']
+    },
+    {
+        'filename': 'openmp-%s.src.tar.xz' % llvm_version,
+        'source_urls': ['http://llvm.org/releases/%s' % llvm_version]
+    },
+    {
+        'download_filename': 'flang_%(version)s.tar.gz',
+        'filename': 'flang-flang_%(version)s.src.tar.gz',
+        'source_urls': ['https://github.com/flang-compiler/flang/archive']
+    },
+    {
+        'download_filename': 'flang_%(version)s.tar.gz',
+        'filename': 'flang-driver-flang_%(version)s.src.tar.gz',
+        'source_urls': ['https://github.com/flang-compiler/flang-driver/archive']
+    },
+]
+checksums = [
+    '3aa0b1d1f06c789d6b1d971b1d2b601908d87377f69b14c2b507e0b943864581',  # flang-llvm-20190329.src.tar.gz
+    '1ee73aa1eef4ef7f75c96b24bf02445440602064c0074891ca5344a63f1fe5b5',  # openmp-7.1.0.src.tar.xz
+    'b8c621da53829f8c53bad73125556fb1839c9056d713433b05741f7e445199f2',  # flang-flang_20190329.src.tar.gz
+    '7286ad2d9935916f1a9fad0893a506f704d2fa70d774ebe93c087ee58c5af1b4',  # flang-driver-flang_20190329.src.tar.gz
+]
+
+
+dependencies = [
+    # since Clang is a compiler, binutils is a runtime dependency too
+    ('binutils', '2.31.1'),
+    ('GMP', '6.1.2'),
+    ('CUDA', cudaver, '', True),
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('Python', '2.7.15'),
+    ('libxml2', '2.9.8'),
+]
+
+assertions = True
+skip_all_tests = True
+
+moduleclass = 'tools'
