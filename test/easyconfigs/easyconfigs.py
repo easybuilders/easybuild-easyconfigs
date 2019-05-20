@@ -43,7 +43,8 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for, resolve_template
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, is_generic_easyblock, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
@@ -197,7 +198,7 @@ class EasyConfigTest(TestCase):
 
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep in ['Boost', 'R', 'PLUMED'] and len(dep_vars) > 1:
+            elif dep in ['Boost', 'R', 'PLUMED', 'Lua'] and len(dep_vars) > 1:
                 for key in dep_vars.keys():
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
@@ -389,12 +390,12 @@ class EasyConfigTest(TestCase):
 
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
-                if not download_dep_fail:
+                if download_dep_fail is None:
                     failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
 
             # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
             if easyblock in ['PythonBundle', 'PythonPackage']:
-                if not use_pip and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
+                if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' set in %s" % ec_fn)
 
             # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
@@ -413,13 +414,38 @@ class EasyConfigTest(TestCase):
                     # when installing Python packages as extensions
                     exts_default_options = ec.get('exts_default_options', {})
                     for key in ['download_dep_fail', 'use_pip']:
-                        if not exts_default_options.get(key):
+                        if exts_default_options.get(key) is None:
                             failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix
-            if any(dep['name'] == 'Python' for dep in ec['dependencies']):
+            # Tkinter is an exception, since its version always matches the Python version anyway
+            if any(dep['name'] == 'Python' for dep in ec['dependencies']) and ec.name != 'Tkinter':
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     failing_checks.append("'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn)
+
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
+    def check_sanity_check_paths(self, changed_ecs):
+        """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
+
+        # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
+        # Toolchain doesn't install anything so there is nothing to check.
+        whitelist = ['PythonBundle', 'PythonPackage', 'Toolchain']
+        # GCC is just a bundle of GCCcore+binutils
+        bundles_whitelist = ['GCC']
+
+        failing_checks = []
+
+        for ec in changed_ecs:
+
+            easyblock = ec.get('easyblock')
+
+            if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
+                if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
+                    pass
+                else:
+                    ec_fn = os.path.basename(ec.path)
+                    failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
@@ -476,6 +502,7 @@ class EasyConfigTest(TestCase):
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
                 self.check_python_packages(changed_ecs)
+                self.check_sanity_check_paths(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
@@ -545,7 +572,7 @@ def template_easyconfig_test(self, spec):
     for old_url in old_urls:
         self.assertFalse(old_url in ec.rawtxt, "Old URL '%s' not found in %s" % (old_url, spec))
 
-    # make sure binutils is included as a build dep if toolchain is GCCcore
+    # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
         requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
@@ -560,7 +587,9 @@ def template_easyconfig_test(self, spec):
         requires_binutils &= bool(ec['sources'] or ec['exts_list'] or ec.get('components'))
 
         if requires_binutils:
-            dep_names = [d['name'] for d in ec.builddependencies()]
+            # dependencies() returns both build and runtime dependencies
+            # in some cases, binutils can also be a runtime dep (e.g. for Clang)
+            dep_names = [d['name'] for d in ec.dependencies()]
             self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
 
     # make sure all patch files are available
@@ -652,6 +681,10 @@ def template_easyconfig_test(self, spec):
                         # it should *not* be the same as the parent toolchain
                         self.assertNotEqual(dumped_dep[3], (orig_toolchain['name'], orig_toolchain['version']))
 
+        # take into account that for some string-valued easyconfig parameters (configopts & co),
+        # the easyblock may have injected additional values, which affects the dumped easyconfig file
+        elif isinstance(orig_val, basestring):
+            self.assertTrue(dumped_val.startswith(orig_val))
         else:
             self.assertEqual(orig_val, dumped_val)
 
