@@ -1,0 +1,48 @@
+easyblock = 'EB_Qt'
+
+name = 'Qt5'
+version = '5.12.3'
+
+homepage = 'http://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'http://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'http://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/'
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz']
+patches = ['Qt5-%(version)s_fix-avx2.patch']
+checksums = [
+    '6462ac74c00ff466487d8ef8d0922971aa5b1d5b33c0753308ec9d57711f5a42',  # qt-everywhere-src-5.12.3.tar.xz
+    '6f46005f056bf9e6ff3e5d012a874d18ee03b33e685941f2979c970be91a9dbc',  # Qt5-5.12.3_fix-avx2.patch
+]
+
+builddependencies = [
+    ('binutils', '2.31.1'),
+    ('pkg-config', '0.29.2'),
+    ('Bison', '3.0.5'),
+    ('flex', '2.6.4'),
+    ('Python', '2.7.15'),
+]
+
+dependencies = [
+    ('GLib', '2.60.1'),
+    ('libpng', '1.6.36'),
+    ('X11', '20190311'),
+    ('libGLU', '9.0.0'),
+    ('NSS', '3.42.1'),
+    ('DBus', '1.13.8'),
+    ('gperf', '3.1'),
+]
+
+# qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
+configopts = '-skip qtgamepad'
+
+# make sure QtWebEngine component is being built & installed
+check_qtwebengine = True
+
+moduleclass = 'devel'
