@@ -1,4 +1,7 @@
-# Use EB deps and install prefix
+# Changes:
+# - Use EB deps
+# - Use EB install prefix
+# - Fix bug (unneeded line with unexisting type)
 # wpoely86@gmail.com
 diff -Nur or-tools-7.1.orig/Makefile.local.eb or-tools-7.1/Makefile.local.eb
 --- or-tools-7.1.orig/Makefile.local.eb	1970-01-01 01:00:00.000000000 +0100
@@ -6,7 +9,7 @@ diff -Nur or-tools-7.1.orig/Makefile.local.eb or-tools-7.1/Makefile.local.eb
 @@ -0,0 +1,5 @@
 +UNIX_SWIG_BINARY = $(EBROOTSWIG)/bin/swig
 +JAVA_HOME = $(EBROOTJAVA)
-+UNIX_PYTHON_VER = 3.7
++UNIX_PYTHON_VER=$(shell echo $(EBVERSIONPYTHON) | sed 's:\([0-9]\+\)\.\([0-9]\+\)\..*:\1.\2:')
 +UNIX_GUROBI_DIR=$(EBROOTGUROBI)
 +GUROBI_LIB_VERSION=$(shell echo $(EBVERSIONGUROBI) | sed 's:\([0-9]\+\)\.\([0-9]\+\)\..*:\1\2:')
 diff --git a/Makefile b/Makefile
@@ -30,8 +33,8 @@ index 2b548e0..b7f72ae 100755
  .PHONY: install_python # Install Python OR-Tools on the host system
  install_python: pypi_archive
 -	cd "$(PYPI_ARCHIVE_TEMP_DIR)$Sortools" && "$(PYTHON_EXECUTABLE)" setup.py install --user
-+	mkdir -p $(DESTDIR)/lib/python3.7/site-packages
-+	cd "$(PYPI_ARCHIVE_TEMP_DIR)$Sortools" && PYTHONPATH=$(DESTDIR)/lib/python3.7/site-packages:$(PYTHONPATH) "$(PYTHON_EXECUTABLE)" setup.py install --prefix $(DESTDIR)
++	mkdir -p $(DESTDIR)/lib/python$(UNIX_PYTHON_VER)/site-packages
++	cd "$(PYPI_ARCHIVE_TEMP_DIR)$Sortools" && PYTHONPATH=$(DESTDIR)/lib/python$(UNIX_PYTHON_VER)/site-packages:$(PYTHONPATH) "$(PYTHON_EXECUTABLE)" setup.py install --prefix $(DESTDIR)
  
  .PHONY: uninstall_python # Uninstall Python OR-Tools from the host system
  uninstall_python:
