@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'OR-Tools'
+version = '7.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://developers.google.com/optimization/'
+description = """Google Optimization Tools (a.k.a., OR-Tools) is an open-source, fast
+and portable software suite for solving combinatorial optimization problems."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+github_account = 'google'
+
+patches = ['%(name)s-%(version)s-fix-makefiles.patch']
+
+builddependencies = [
+    ('SWIG', '3.0.12', versionsuffix),
+    ('CMake', '3.13.3'),
+]
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('zlib', '1.2.11'),
+    ('Java', '1.8', '', True),
+    # Gurobi is optional
+    ('Gurobi', '8.1.1', '', True),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'make third_party &&'
+buildopts = 'python cc'
+
+preinstallopts = 'prefix="" DESTDIR=%(installdir)s'
+install_cmd = 'make'
+installopts = 'install_python install_cc'
+
+runtest = 'test_python test_cc'
+
+sanity_check_paths = {
+    'files': ['lib/libortools.%s' % SHLIB_EXT],
+    'dirs': ['include/ortools', 'lib/python%(pyshortver)s/site-packages']
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'math'
