@@ -1,0 +1,45 @@
+From 99ee86ae21887c1bb4e07a1f2b39a66c3b091b4e Mon Sep 17 00:00:00 2001
+From: Jakob Schiotz <schiotz@fysik.dtu.dk>
+Date: Wed, 15 May 2019 15:54:28 +0200
+Subject: [PATCH] Report compiler and flags correctly when built with
+ EasyBuild.
+
+---
+ setup.py | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/setup.py b/setup.py
+index 2b6036a..49ef7e7 100644
+--- a/setup.py
++++ b/setup.py
+@@ -365,15 +365,23 @@ if not is_making_distro:
+     t = os.stat("Python/asap3/version.py")[stat.ST_MTIME]
+     if (not os.path.exists(versioninfo_s) or t > os.stat(versioninfo_s)[stat.ST_MTIME] or
+         not os.path.exists(versioninfo_p) or t > os.stat(versioninfo_p)[stat.ST_MTIME]):
++        try:
++            myCC = os.environ['CXX']
++        except KeyError:
++            myCC = cfgDict['CC']
++        try:
++            myCFLAGS = os.environ['CXXFLAGS']
++        except KeyError:
++            myCFLAGS = cfgDict['CFLAGS']
+         print("Recording version info into VersionInfo_autogen")
+-        print("  CC =", cfgDict['CC'])
+-        print("  CFLAGS =", cfgDict['CFLAGS'])
+-        serialcomp = "distutils with {0} {1}".format(cfgDict['CC'], cfgDict['CFLAGS'])
++        print("  CC =", myCC)
++        print("  CFLAGS =", myCFLAGS)
++        serialcomp = "distutils with {0} {1}".format(myCC, myCFLAGS)
+         with open(versioninfo_s, "wt") as versioncpp:
+             versioncpp.write(recordversion.contents % (version, 'serial', host, serialcomp, version))
+         if mpi_compiler is not None:
+             parallelcomp = "distutils with {0} {1}".format(mpi_compiler[1], 
+-                                                           " ".join([cfgDict['CFLAGS']]
++                                                           " ".join([myCFLAGS]
+                                                                     +extra_compile_args))
+             with open(versioninfo_p, "wt") as versioncpp:
+                 versioncpp.write(recordversion.contents % (version, 'parallel', host, parallelcomp, version))
+-- 
+1.8.3.1
+

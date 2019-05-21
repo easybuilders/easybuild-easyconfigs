@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'kim-api'
+version = '2.0.2'
+
+homepage = 'https://openkim.org/'
+description = """Open Knowledgebase of Interatomic Models.
+
+KIM is an API and OpenKIM is a collection of interatomic models (potentials) for
+atomistic simulations.  This is a library that can be used by simulation programs
+to get access to the models in the OpenKIM database.
+
+This EasyBuild only installs the API, the models can be installed with the
+package openkim-models, or the user can install them manually by running
+    kim-api-collections-management install user MODELNAME
+or
+    kim-api-collections-management install user OpenKIM
+to install them all.
+ """
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+dependencies = [
+    ('CMake', '3.13.3'),  # Also needed to install models, thus not just a builddependency.
+]
+
+source_urls = ['https://s3.openkim.org/kim-api/']
+sources = ['%(name)s-%(version)s.txz']
+patches = ['kim-api-2.0.2-regex-typo.patch']
+checksums = [
+    '26e7cf91066692f316b8ba1548ccb7152bf56aad75902bce2338cff53e74e63d',  # kim-api-2.0.2.txz
+    '992019eff3a315224ea913face0bd81081a5fc2b3dbf4312f4119d261ae160fe',  # kim-api-2.0.2-regex-typo.patch
+]
+
+parallel = 1
+separate_build_dir = True
+configopts = '-DCMAKE_BUILD_TYPE=Release '
+
+modextravars = {
+    'KIM_API_CMAKE_PREFIX_DIR': '%(installdir)s/lib64'
+}
+
+moduleclass = 'chem'
