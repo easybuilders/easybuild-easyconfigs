@@ -559,6 +559,10 @@ def template_easyconfig_test(self, spec):
     self.assertTrue(name, app.name)
     self.assertTrue(ec['version'], app.version)
 
+    # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
+    error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
+    self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
+
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
     res = re.findall('.*\$root.*', ec.rawtxt, re.M)
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
