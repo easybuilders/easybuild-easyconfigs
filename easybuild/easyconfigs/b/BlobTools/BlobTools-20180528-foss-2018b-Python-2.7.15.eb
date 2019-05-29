@@ -1,0 +1,56 @@
+easyblock = 'CmdCp'
+
+name = 'BlobTools'
+version = '20180528'
+commit = 'a14630e'
+versionsuffix = '-Python-%(pyver)s'
+taxdump_ver = '2019-03-01'
+
+homepage = 'https://blobtools.readme.io/docs'
+description = """ A modular command-line solution for visualisation,
+ quality control and taxonomic partitioning of genome datasets. """
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = [
+    'https://github.com/drl/blobtools/archive/',
+    'ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive',
+]
+sources = [
+    {
+        'download_filename': '%s.tar.gz' % commit,
+        'filename': SOURCE_TAR_GZ,
+        'extract_cmd': "tar -xzf %s -C %(builddir)s --strip-components 1",
+    },
+    {
+        'filename': 'taxdmp_%s.zip' % taxdump_ver,
+        'extract_cmd': 'unzip %s && cp -a nodes.dmp names.dmp %(builddir)s/data/',
+    },
+]
+patches = ['BlobTools-20180528_fix_deps.patch']
+checksums = [
+    '316c22cceec6b6ac4e3751d06ec6effb88ea35d746abb957239c75e1f4eed9a9',  # BlobTools-20180528.tar.gz
+    'a53d6026e24b647bd0ea1a83b253a3061f03dc814ec45d1dca58f2a9f36d8780',  # taxdmp_2019-03-01.zip
+    '635b5f1c22cbbedce0ba8144037163d2d8459a7a7e0b790dd9d3e0020369ff76',  # BlobTools-20180528_fix_deps.patch
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('matplotlib', '2.2.3', versionsuffix),
+    ('SAMtools', '1.9'),
+]
+
+cmds_map = [('.*', './install')]
+
+files_to_copy = ['data', 'example', 'lib', 'blobtools']
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_commands = ['blobtools -h']
+
+sanity_check_paths = {
+    'files': ['blobtools', 'data/nodesDB.txt'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
