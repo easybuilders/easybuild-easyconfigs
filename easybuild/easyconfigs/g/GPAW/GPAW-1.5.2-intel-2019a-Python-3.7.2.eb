@@ -1,0 +1,54 @@
+easyblock = "PythonPackage"
+
+name = 'GPAW'
+version = '1.5.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
+description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
+ method and the atomic simulation environment (ASE). It uses real-space uniform grids and multigrid methods or
+ atom-centered basis-functions."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+source_urls = [PYPI_LOWER_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    ('GPAW-1.4.0-customize.patch', 1),
+    'GPAW-1.5.2-slurm-submit-fix.patch',
+    'GPAW-1.5.2-fix-memory-corruption-in-revtpss.patch',
+    'GPAW-1.5.2-fix-memory-corruption-in-regular-tpss.patch',
+]
+checksums = [
+    'd2d6b4c1b9a61532e1e2f6200c4ca48835ec8275d182e6913088b3aa53773a27',  # gpaw-1.5.2.tar.gz
+    '0fe732e9b6bf793aebd6e248bd14a76fa0603dbdfde9f9e268cc7bf71b37b3a0',  # GPAW-1.4.0-customize.patch
+    '940f9db1ffcd840e5344a531f0ecdae9ca70f1876eb4ec675e69721f19997571',  # GPAW-1.5.2-slurm-submit-fix.patch
+    # GPAW-1.5.2-fix-memory-corruption-in-revtpss.patch
+    '521e6f331d07740d6b70b35ccde1cd99c789bab5a739bc6956333c19434df837',
+    # GPAW-1.5.2-fix-memory-corruption-in-regular-tpss.patch
+    '25317f8283978825aaeee04be5e0920ee62f60072564e50e482bfa37d5430906',
+]
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('ASE', '3.17.0', versionsuffix),
+    ('libxc', '4.3.4'),
+    ('GPAW-setups', '0.9.20000', '', True),
+]
+
+buildcmd = 'build --customize=eb_customize.py'
+install_target = 'install --customize=eb_customize.py'
+
+download_dep_fail = True
+use_pip = False
+
+# required because we're building Python packages using Intel compilers on top of Python built with GCC
+check_ldshared = True
+
+sanity_check_paths = {
+    'files': ['bin/gpaw%s' % x for x in ['', '-analyse-basis', '-basis', '-mpisim', '-plot-parallel-timings',
+                                         '-python', '-runscript', '-setup', '-upfplot']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/' + name.lower()]
+}
+
+moduleclass = 'chem'
