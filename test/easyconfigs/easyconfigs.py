@@ -660,7 +660,7 @@ def template_easyconfig_test(self, spec):
             """
             ret = [orig_dep['name'], orig_dep['version']]
             if 'arch' in dep:
-                ret.append(dep['arch'])
+                ret.append(dep['toolchain'])
             if 'versionsuffix' in dep:
                 ret.append(dep['versionsuffix'])
             return tuple(ret)
