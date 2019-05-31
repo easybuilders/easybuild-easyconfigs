@@ -662,7 +662,12 @@ def template_easyconfig_test(self, spec):
             if 'versionsuffix' in dep:
                 ret.append(dep['versionsuffix'])
             if 'toolchain' in dep:
-                ret.append(dep['toolchain'])
+                if 'versionsuffic' not in dep:
+                    ret.append('')
+                tc = dep['toolchain']
+                if isinstance(tc, dict):
+                    tc = (tc['name'], tc['version'])
+                ret.append(tc)
             return tuple(ret)
 
         # take into account that dumped value for *dependencies may include hard-coded subtoolchains
