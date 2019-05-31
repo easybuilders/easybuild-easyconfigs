@@ -659,10 +659,10 @@ def template_easyconfig_test(self, spec):
             Convert dict dependency to a tuple, with just enough info for this test!
             """
             ret = [dep['name'], dep['version']]
-            if 'toolchain' in dep:
-                ret.append(dep['toolchain'])
             if 'versionsuffix' in dep:
                 ret.append(dep['versionsuffix'])
+            if 'toolchain' in dep:
+                ret.append(dep['toolchain'])
             return tuple(ret)
 
         # take into account that dumped value for *dependencies may include hard-coded subtoolchains
