@@ -13,29 +13,34 @@ toolchain = {'name': 'intel', 'version': '2017.5'}
 dependencies = [
     ('Python', '2.7.14'),
     ('BEEF', '0.1.1',),
+    ('wannier90', '1.2'),
 ]
 
+patches = ['patch.5.4.4.16052018', 
+           'vasp-5.4.4.patch']
 
 # Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
 sources = ['vasp.5.4.4.tar.gz']
 
-prebuildopts = 'sed -i.orig "s/-Duse_shmem/-Duse_shmem\ -Dsol_compat\ -Dlibbeef/g"  arch/makefile.include.linux_intel && '
-prebuildopts += "sed -i.orig '/^LLIBS/s/$/ -lbeef/' arch/makefile.include.linux_intel && "
+prebuildopts = 'sed -i.orig "s/-Duse_shmem/-Duse_shmem\ -Dsol_compat\ -Dlibbeef\ -DVASP2WANNIER90/g"  arch/makefile.include.linux_intel && '
+prebuildopts += "sed -i.orig '/^LLIBS/s/$/ -lbeef\ -lwannier/' arch/makefile.include.linux_intel && "
 prebuildopts += 'cp arch/makefile.include.linux_intel ./makefile.include && '
 prebuildopts += 'cp src/solvation.F src/solvation.F.orig && '
-prebuildopts += 'git clone https://github.com/henniggroup/VASPsol && '
-prebuildopts += 'cd VASPsol/ && '
-prebuildopts += 'git checkout  a31bcc3 && '
-prebuildopts += 'cd .. && '
-prebuildopts += 'cp VASPsol/src/solvation.F src  && '
-prebuildopts += 'wget http://theory.cm.utexas.edu/code/vtstscripts_old/vtstscripts-937.tgz && tar xzf vtstscripts-937.tgz && '
-
+prebuildopts += 'wget https://github.com/henniggroup/VASPsol/archive/V1.0.tar.gz && '
+prebuildopts += 'tar xzf V1.0.tar.gz && '
+prebuildopts += 'cp VASPsol-1.0/src/solvation.F src  && '
 prebuildopts += 'unset LIBS && '
+prebuildopts += 'wget http://theory.cm.utexas.edu/code/vtstscripts_old/vtstscripts-939.tgz && tar xzf vtstscripts-939.tgz && '
+prebuildopts += 'wget http://theory.cm.utexas.edu/code/vtstcode_old/vtstcode-178.tgz && tar xzf vtstcode-178.tgz  && '
+prebuildopts += 'cp vtstcode-178/* src && '
+prebuildopts += 'chmod u+x src/mkbdrpro.pl && '
+prebuildopts += 'cd src && ./mkbdrpro.pl bdr_changes && cd .. &&'
+
 
 postinstallcmds = ["chmod -R o-rwx %(installdir)s && pip install numpy --prefix=%(installdir)s && pip install subprocess32 --prefix=%(installdir)s && pip install ase --prefix=%(installdir)s"]
 parallel = 1
 
-files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'), 'vtstscripts-937']
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'), 'vtstscripts-939']
 
 sanity_check_paths = {
     'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
