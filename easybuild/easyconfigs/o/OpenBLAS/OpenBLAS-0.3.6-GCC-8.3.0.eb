@@ -26,7 +26,9 @@ checksums = [
 ]
 
 prebuildopts = "declare -A ARCH_MAP=( [sse3]='DYNAMIC_ARCH=1' [avx]='TARGET=SANDYBRIDGE' [avx2]='TARGET=HASWELL' [avx512]='TARGET=SKYLAKEX' ) && "
-buildopts = '${ARCH_MAP[$RSNT_ARCH]} NUM_THREADS=64'
+# work around https://github.com/xianyi/OpenBLAS/issues/2152 (Fix detection for SKYLAKEX)
+prebuildopts += 'if [ $RSNT_ARCH==avx512 ]; then CC="$CC -mavx2"; fi && '
+buildopts = '${ARCH_MAP[$RSNT_ARCH]} CC="$CC" NUM_THREADS=64'
 
 # extensive testing can be enabled by uncommenting the line below
 # runtest = 'PATH=.:$PATH lapack-timing'
