@@ -1,0 +1,67 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+easyblock = 'Tarball'
+
+name = 'maker'
+version = '2.31.10'
+
+homepage = 'http://www.yandell-lab.org/software/maker.html'
+description = "MAKER is a portable and easily configurable genome annotation pipeline. Its purpose is to allow smaller eukaryotic and prokaryotic genome projects to independently annotate their genomes and to create genome databases. MAKER identifies repeats, aligns ESTs and proteins to a genome, produces ab-initio gene predictions and automatically synthesizes these data into gene annotations having evidence-based quality values."
+
+toolchain = {'name': 'gompi', 'version': '2018.3.312'}
+toolchainopts = {'pic': True}
+
+#Needs registration for downloading
+#source_urls = ['http://yandell.topaz.genetics.utah.edu/cgi-bin/maker_license.cgi']
+sources = [SOURCE_TGZ]
+
+builddependencies = [
+    ('Perl', '5.22.4', '', True),
+]
+dependencies = [
+    ('BioPerl', '1.7.1', '-Perl-5.22.4', ('GCCcore', '5.4.0')),
+    ('Exonerate', '2.4.0', '', ('GCC', '7.3.0')),
+    ('BLAST+', '2.7.1', '', ('GCC', '7.3.0')),
+    ('SNAP', '2013-11-29', '', ('GCC', '7.3.0')),
+    ('RepeatMasker', '4-0-9-p2')
+]
+
+#group = 'soft_maker'
+postinstallcmds = [" cd %(installdir)s/src && printf '%s\n\n' 'y'|perl Build.PL && printf '%s\n' 'n' && ./Build install\t "]
+modextrapaths = {'PERL5LIB': ':%(installdir)s/lib:%(installdir)s/lib/perl5/site_perl/5.22.4/:%(installdir)s/lib/perl5/site_perl/5.22.4/x86_64-linux-thread-multi'}
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin'],
+}
+exts_defaultclass = 'PerlModule'
+exts_list = [
+    ('DBD::Pg', '3.8.0', {
+       'source_tmpl': 'DBD-Pg-3.8.0.tar.gz',
+       'source_urls': ['https://cpan.metacpan.org/authors/id/T/TU/TURNSTEP'],
+    }),
+    ('Devel::Symdump', '2.18', {
+       'source_tmpl': 'Devel-Symdump-2.18.tar.gz',
+       'source_urls': ['https://cpan.metacpan.org/authors/id/A/AN/ANDK'],
+    }),
+    ('forks', '0.36', {
+       'source_tmpl': 'forks-0.36.tar.gz',
+       'source_urls': ['https://cpan.metacpan.org/authors/id/R/RY/RYBSKEJ'],
+    }),
+    ('IO::Prompt' , '0.997004', {
+       'source_tmpl': 'IO-Prompt-0.997004.tar.gz',
+       'source_urls': ['https://cpan.metacpan.org/authors/id/D/DC/DCONWAY'],
+   }),
+]
+#modextrapaths = {
+#    'PATH': '.',
+#}
+moduleclass = 'bio'

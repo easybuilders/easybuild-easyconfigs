@@ -2,6 +2,8 @@ easyblock = 'MakeCp'
 name = 'CPMD'
 version = '4.3'
 
+import os
+
 homepage = 'http://cpmd.org'
 description = """The CPMD code is a parallelized plane wave / pseudopotential
 implementation of Density Functional Theory, particularly designed for
@@ -10,14 +12,9 @@ ab-initio molecular dynamics."""
 toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
 toolchainopts = {'usempi': True, 'openmp': False}
 
-# URL where traj2xyz.pl and out2xyz.pl can be downloaded from.
 # CPMD tarball and patches and other utils should be downloaded manually and placed into the sources dir.
-source_urls = ['http://www.theochem.ruhr-uni-bochum.de/~legacy.akohlmey/cpmd-vmd/files/']
-
 sources = [
-    'cpmd-v4.3.tar.gz','cpmd2cube.tar.gz','fourier.tar.gz',
-    {'filename':'traj2xyz.pl', 'extract_cmd': 'cp %s %(builddir)s'},
-    {'filename': 'out2xyz.pl', 'extract_cmd': 'cp %s %(builddir)s'},
+    'cpmd-v4.3.tar.gz','cpmd2cube.tar.gz','fourier.tar.gz','cpmd2xyz-scripts.tar.gz'
 ]
 
 patches = ['patch.to.4612','patch.to.4615','patch.to.4616','patch.to.4621','patch.to.4624','patch.to.4627']
@@ -30,15 +27,11 @@ buildopts = "CPP='fpp -P -C'"
 
 files_to_copy = [(['bin/cpmd.x', '%(builddir)s/out2xyz.pl', '%(builddir)s/traj2xyz.pl', '%(builddir)s/cpmd2cube/cpmd2cube.x', '%(builddir)s/cpmd2cube/cutcube.x', '%(builddir)s/cpmd2cube/trimcube.x', '%(builddir)s/fourier/fourier.x', '%(builddir)s/fourier/trajec2atoms.x'], 'bin')]
 
-# Set exec permissions on the two Perl scripts. Note that EasyBuild executes this step after files_to_copy.
-postinstallcmds = [
-    'chmod a+rx %(installdir)s/bin/*.pl'
-]
-
 sanity_check_paths = {
     'files': ['bin/cpmd.x', 'bin/fourier.x', 'bin/cpmd2cube.x', 'bin/out2xyz.pl'],
     'dirs': []
 }
 
-group = "soft_cpmd"
+if os.environ.get('USER') == 'ebuser':
+    group = "soft_cpmd"
 moduleclass = 'chem'
