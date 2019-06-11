@@ -1,0 +1,53 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'CMakeMake'
+
+name = 'ArrayFire'
+version = '3.6.4'
+cudaver = '9.2.88'
+versionsuffix = '-CUDA-%s' % cudaver
+gittag = 'v%s' % version
+
+homepage = 'https://arrayfire.com/'
+
+description = """
+ ArrayFire is a general-purpose library that simplifies the process of
+ developing software that targets parallel and massively-parallel architectures
+ including CPUs, GPUs, and other hardware acceleration devices.
+"""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+# use git to recurse dependencies
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/arrayfire',
+        'repo_name': 'arrayfire',
+        'commit': gittag,
+        'recursive': True,
+    },
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['33ce603f4d481ca3384b7b1cbce08e7cb6970cdc8af2738e90d1b3eaf19c8556']
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('Doxygen', '1.8.14'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Boost', '1.67.0'),
+    ('CUDA', cudaver, '', True),
+]
+
+separate_build_dir = True
+
+configopts = '-DAF_BUILD_OPENCL=OFF'
+
+sanity_check_paths = {
+    'files': ['include/af/version.h', 'lib64/libaf.so'],
+    'dirs': ['share/ArrayFire/doc/html/examples']
+}
+
+moduleclass = 'math'
