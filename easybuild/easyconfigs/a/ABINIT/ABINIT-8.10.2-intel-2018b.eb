@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'ABINIT'
+version = '8.10.2'
+
+homepage = 'https://www.abinit.org/'
+description = """ABINIT is a package whose main program allows one to find the total energy,
+ charge density and  electronic structure of systems made of electrons and nuclei (molecules
+ and periodic solids) within Density Functional  Theory (DFT), using pseudopotentials and a
+ planewave or wavelet basis."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://www.abinit.org/sites/default/files/packages/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['4ee2e0329497bf16a9b2719fe0536cc50c5d5a07c65e18edaf15ba02251cbb73']
+
+dependencies = [
+    ('libxc', '3.0.1'),
+    ('netCDF', '4.6.1'),
+    ('netCDF-Fortran', '4.4.4'),
+]
+
+# ensure mpi and intel toolchain
+configopts = '--enable-mpi '
+configopts += '--with-linalg-flavor=mkl --with-fft-flavor=fftw3-mkl --with-fft-libs="$LIBFFT" '
+
+# libxc variant
+configopts += '--with-dft-flavor=libxc '
+configopts += '--with-libxc-incs="-I$EBROOTLIBXC/include" --with-libxc-libs="-L$EBROOTLIBXC/lib -lxc -lxcf90" '
+
+# netcdf support
+configopts += '--with-netcdf-incs="-I$EBROOTNETCDF/include -I$EBROOTNETCDFMINFORTRAN/include" '
+configopts += '--with-netcdf-libs="-L$EBROOTNETCDF/lib -lnetcdf -L$EBROOTNETCDFMINFORTRAN/lib -lnetcdff" '
+configopts += '--with-trio-flavor=netcdf '
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['abinit', 'aim', 'cut3d', 'conducti', 'mrgddb', 'mrgscr', 'optic']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'chem'
