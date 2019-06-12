@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'QGIS'
+version = '3.4.8'
+
+homepage = 'http://www.qgis.org/'
+description = "QGIS is a user friendly Open Source Geographic Information System (GIS)"
+
+toolchain = {'name': 'GCC', 'version': '5.4.0'}
+#toolchainopts = {'pic': True, 'cstd': 'gnu++11'}
+
+source_urls = ['http://qgis.org/downloads/']
+sources = [SOURCELOWER_TAR_BZ2]
+
+patches = ['QGIS-%(version)s_fix-SIP-macro.patch']
+
+dependencies = [
+    ('Python', '3.6.3'),
+    ('PROJ', '4.9.3'),
+    ('GEOS', '3.6.1'),
+    ('libspatialite', '4.3.0a'),
+    ('libspatialindex', '1.8.5'),
+    ('GDAL', '2.1.3'),
+    ('Qwt', '6.1.3'),
+    ('expat', '2.2.6'),
+    ('QCA', '2.1.3'),
+    ('QScintilla', '2.10.7'),
+    ('GSL', '2.3'),
+    ('QJson', '0.9.0'),
+    ('libzip', '1.5.2'),
+    ('QtKeychain', '0.9.1'),
+    ('Qt5', '5.9.6'),
+]
+builddependencies = [
+    ('CMake', '3.12.3'),
+]
+postinstallcmds = ['virtualenv %(installdir)s && source %(installdir)s/bin/activate && pip install psycopg2 && deactivate']
+
+separate_build_dir = True
+
+# specify locations that CMake can't figure out correctly
+configopts = "-DCMAKE_PREFIX_PATH=$EBROOTQT5 -DWITH_QTWEBKIT=FALSE -DQJSON_DIR=$EBROOTQJSON/lib/cmake/qjson "
+configopts += "-DQCA_INCLUDE_DIR=$EBROOTQCA/include/QtCrypto -DQCA_LIBRARY=$EBROOTQCA/lib/libqca.so "
+configopts += "-DQSCINTILLA_LIBRARY=$EBROOTQSCINTILLA/lib/libqscintilla2_qt4.so -DWITH_BINDINGS=FALSE "
+configopts += "-DPROJ_LIBRARY=$EBROOTPROJ/lib/libproj.so -DPROJ_INCLUDE_DIR=$EBROOTPROJ/include "
+configopts += "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python3 -DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython3.6m.so "
+configopts += "-DPYQT_SIP_DIR=$EBROOTQT5/share/sip/PyQt5 -DQSCI_SIP_DIR=$EBROOTQSCINTILLA/share/python3.6/sip/PyQt4"
+
+sanity_check_paths = {
+    'files': [ 'bin/qgis', 'bin/qgis_bench', 'lib/libqgis_analysis.%s' % SHLIB_EXT,
+              'lib/libqgis_app.%s' % SHLIB_EXT, 'lib/libqgis_core.%s' % SHLIB_EXT, 'lib/libqgis_gui.%s' % SHLIB_EXT,
+              'lib/libqgis_analysis.%s' % SHLIB_EXT],
+    'dirs': ['include/qgis', 'man', 'share/qgis'],
+}
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+modluafooter = """
+depends_on("scipy-stack")
+"""
+moduleclass = 'geo'
