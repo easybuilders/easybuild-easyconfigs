@@ -1,0 +1,13 @@
+--- bin/beast.orig	2019-06-14 11:28:29.562766057 -0400
++++ bin/beast	2019-06-14 11:57:17.602494028 -0400
+@@ -23,4 +23,9 @@
+ fi
+ 
+ BEAST_LIB="$BEAST/lib"
+-java -Xms64m -Xmx2048m -Djava.library.path="$BEAST_LIB:/usr/local/lib:$LD_LIBRARY_PATH" -cp "$BEAST_LIB/beast.jar:$BEAST_LIB/beast-beagle.jar" dr.app.beast.BeastMain $*
++BEAGLE_LIB="$EBROOTBEAGLEMINLIB/lib"
++
++# Explicitly add "${EBROOTBEAGLEMINLIB}/lib" to library search path to ensure 
++# beast continues to find beagle when installed here.  (This is
++# necessary due to known problems with certain JREs.)
++LD_LIBRARY_PATH="${EBROOTBEAGLEMINLIB}/lib:$LD_LIBRARY_PATH" java -Xms64m -Xmx2048m -Djava.library.path="$BEAST_LIB:$BEAGLE_LIB:$LD_LIBRARY_PATH" -cp "$BEAST_LIB/beast.jar:$BEAST_LIB/beast-beagle.jar" dr.app.beast.BeastMain $*
