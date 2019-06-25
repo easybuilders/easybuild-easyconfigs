@@ -1,28 +1,24 @@
 easyblock = 'MakeCp'
 
 name = 'CD-HIT'
-version = '4.6.8'
+version = '4.8.1'
 
 homepage = 'http://weizhong-lab.ucsd.edu/cd-hit/'
 description = """ CD-HIT is a very widely used program for clustering and 
  comparing protein or nucleotide sequences."""
 
-toolchain = {'version': '5.4.0', 'name': 'GCC'}
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
 toolchainopts = {'openmp': True}
 
-sources = ['V%(version)s.tar.gz']
 source_urls = ['https://github.com/weizhongli/cdhit/archive/']
-checksums = ['37d685e4aa849314401805fe4d4db707e1d06070368475e313d6f3cb8fb65949']
+sources = ['V%(version)s.tar.gz']
+checksums = ['b997bcc5a07703ca9bd3f84818114c37']
 
 # Make sure compilation flags are passed down (e.g. to enable OpenMP):
+buildopts = ' MAX_SEQ=10000000 CC="$CXX" CCFLAGS="$CPPFLAGS $CXXFLAGS" &&  cd %(namelower)s-auxtools && make CC="$CXX" CCFLAGS="$CPPFLAGS $CXXFLAGS" '
 
-buildopts  = ' MAX_SEQ=10000000 CC="$CXX" CCFLAGS="$CPPFLAGS $CXXFLAGS" && '
-buildopts += ' cd cd-hit-auxtools && make CC="$CXX" CCFLAGS="$CPPFLAGS $CXXFLAGS" '
-
-postinstallcmds = ["sed -i 's@#!/usr/bin/perl@/usr/bin/env perl@' %(installdir)s/bin/*.pl"]
-
+postinstallcmds = ["sed -i 's@#!/usr/bin/perl@/usr/bin/env perl@' %(installdir)s/bin/*.pl"]  # !/usr/bin/perl@/usr/bin/env perl@' %(installdir)s/bin/*.pl"]
 # This is the real EasyBuild line to copy all the executables and perl scripts to "bin"
-
 files_to_copy = [
     (['%(namelower)s', '%(namelower)s-est', '%(namelower)s-2d', '%(namelower)s-est-2d', '%(namelower)s-div', '%(namelower)s-454'], 'bin'),
     (['%(namelower)s-auxtools/%(namelower)s-dup'], 'bin'),
@@ -35,12 +31,9 @@ files_to_copy = [
     'license.txt',
 ]
 
-list_binaries = ["est", "2d", "est-2d", "div", "454", "dup", "lap", "dup-PE-out.pl"]
-
 sanity_check_paths = {
-    #'files': ['bin/%(namelower)s', 'bin/%(namelower)s-est', 'bin/%(namelower)s-2d', 'bin/%(namelower)s-est-2d', 'bin/%(namelower)s-div', 'bin/%(namelower)s-454'],
-    'files': ['bin/%(namelower)s', ['bin/cd-hit-%s' % x for x in list_binaries], 'bin/read-linker'],
+    'files': ['bin/%(namelower)s', ('bin/%(namelower)s-est', 'bin/%(namelower)s-2d', 'bin/%(namelower)s-est-2d', 'bin/%(namelower)s-div', 'bin/%(namelower)s-454', 'bin/%(namelower)s-dup', 'bin/%(namelower)s-lap', 'bin/%(namelower)s-dup-PE-out.pl'), 'bin/read-linker'],
     'dirs': [],
-}
+}  # 'files': ['bin/%(namelower)s', 'bin/%(namelower)s-est', 'bin/%(namelower)s-2d', 'bin/%(namelower)s-est-2d', 'bin/%(namelower)s-div', 'bin/%(namelower)s-454'],
 
 moduleclass = 'bio'
