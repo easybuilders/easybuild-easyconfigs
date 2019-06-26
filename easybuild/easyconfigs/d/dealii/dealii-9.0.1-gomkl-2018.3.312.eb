@@ -21,24 +21,29 @@ dependencies = [
    ('p4est', '2.0'),
    ('GSL', '2.3'),
    ('SuiteSparse', '4.5.4'),
-   ('tbb', '2017.2.132'),
-   ('SUNDIALS', '4.1.0'),
+   ('tbb', '2018_U5'),
+   ('SUNDIALS', '2.7.0'),
    ('gmsh', '4.0.7'),
-   ('ADOL-C', '2.6.3'),
+   ('ADOL-C', '2.7.0'),
    ('arpack-ng', '3.5.0'),
    ('ASSIMP', '4.1.0'),
    ('HDF5', '1.8.18'),
    ('METIS', '5.1.0','',('GCC','7.3.0')),
    ('muParser', '2.2.6'),
    ('netCDF', '4.4.1.1'),
-   #('PETSc', '3.9.0'),
+   ('PETSc', '3.10.2'),
+   ('SLEPc', '3.10.2'),
 ]
 
 configure_cmd_prefix = ' CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 '
 
 preconfigopts = 'export TRILINOS_DIR=$EBROOTTRILINOS && '
+preconfigopts += 'declare -A ARCH_MAP=( [sse3]=SSE2 [avx]=AVX [avx2]=AVX [avx512]=AVX512 ) && '
 
-configopts  = '-DDEAL_II_WITH_P4EST=ON '
+configopts = '-DDEAL_II_ALLOW_PLATFORM_INTROSPECTION=OFF '
+configopts += '-DDEAL_II_HAVE_${ARCH_MAP[$RSNT_ARCH]}=ON '
+configopts += '-DDEAL_II_COMPILER_HAS_FUSE_LD_GOLD=OFF '
+configopts += '-DDEAL_II_WITH_P4EST=ON '
 configopts += '-DDEAL_II_WITH_MPI=ON '
 configopts += '-DDEAL_II_WITH_TRILINOS=ON '
 configopts += '-DTrilinos_ENABLE_Sacado=ON '
@@ -69,7 +74,8 @@ configopts += '-DHDF5_DIR=$EBROOTHDF5 '
 configopts += '-DMETIS_DIR=$EBROOTMETIS '
 configopts += '-DMUPARSER_DIR=$EBROOTMUPARSER '
 configopts += '-DNETCDF_DIR=$EBROOTNETCDF '
-#configopts += '-DPETSC_DIR=$EBROOTPETSC '
+configopts += '-DPETSC_DIR=$EBROOTPETSC '
+configopts += '-DSLEPC_DIR=$EBROOTSLEPC '
 
 # Too parallel is too slow, and may cause build/tests to fail:
 
