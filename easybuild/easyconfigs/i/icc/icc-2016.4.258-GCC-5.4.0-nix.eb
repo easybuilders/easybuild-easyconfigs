@@ -27,7 +27,30 @@ dontcreateinstalldir = 'True'
 license_file = "/cvmfs/soft.computecanada.ca/config/licenses/intel/computecanada.lic"
 skip_license_file_in_module = True
 
-postinstallcmds = ["/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_origin"]
+#compilers_and_libraries_2017.5.239/licensing/compiler/en/credist.txt
+postinstallcmds = [
+  '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
+     /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/compilers_and_libraries_%(version)s/linux/compiler/lib --add_origin
+     installdir=%(installdir)s
+     publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
+     for i in $(grep "compiler.*\.so" $installdir/compilers_and_libraries_%(version)s/licensing/compiler/en/credist.txt | cut -c 13-); do
+       if [ -f $installdir/$i ]; then
+         mkdir -p $(dirname $publicdir/$i)
+         cp -p $installdir/$i $publicdir/$i
+       fi
+     done
+     cd $installdir
+     for i in compilers_and_libraries_%(version)s/linux/compiler/lib/*; do
+       if [ -L $i ]; then
+         cp -a $i $publicdir/$i
+       fi
+     done
+     ln -s compilers_and_libraries_%(version)s/linux/compiler/lib $publicdir/lib'''
+]
+
+modluafooter = '''
+prepend_path("LIBRARY_PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "compilers_and_libraries_%(version)s/linux/compiler/lib/intel64"))
+'''
 
 hidden = True
 
