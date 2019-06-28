@@ -28,6 +28,7 @@ postinstallcmds = [
     'rm %(installdir)s/linux86-64/%(version)s/lib*/libnuma.so*',
     'sed -i "s@/usr/lib64@$NIXUSER_PROFILE/lib@" %(installdir)s/linux86-64/%(version)s/bin/lin8664rc',
     'sed -i "s@append LDLIBARGS=-L@#append LDLIBARGS=-L@" %(installdir)s/linux86-64/%(version)s/bin/siterc',
+    'sed -i "s@set DEFSTDPATHS = @set DEFSTDPATHS =; #@" %(installdir)s/linux86-64/%(version)s/bin/lin86rc',
   '''installdir=%(installdir)s
      publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
      cd $installdir/linux86-64/%(version)s/REDIST
@@ -37,6 +38,13 @@ postinstallcmds = [
            mkdir -p $publicdir/$subdir
            cp -p $i $publicdir/$subdir
 	 fi
+       done
+     done
+     for subdir in linux86-64/%(version)s/lib linux86-64/%(version)s/libso; do
+       for i in $installdir/$subdir/*.so; do
+         if [ ! -f $publicdir/$subdir/$i ]; then
+           ln -s $i $publicdir/$subdir/$i
+         fi
        done
      done'''
 ]
