@@ -28,6 +28,17 @@ postinstallcmds = [
     'rm %(installdir)s/linux86-64/%(version)s/lib*/libnuma.so*',
     'sed -i "s@/usr/lib64@$NIXUSER_PROFILE/lib@" %(installdir)s/linux86-64/%(version)s/bin/lin8664rc',
     'sed -i "s@append LDLIBARGS=-L@#append LDLIBARGS=-L@" %(installdir)s/linux86-64/%(version)s/bin/siterc',
+  '''installdir=%(installdir)s
+     publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
+     cd $installdir/linux86-64/%(version)s/REDIST
+     for i in *; do
+       for subdir in linux86-64/%(version)s/lib linux86-64/%(version)s/libso; do
+         if [ -f $installdir/$subdir/$i ]; then
+           mkdir -p $publicdir/$subdir
+           cp -p $i $publicdir/$subdir
+	 fi
+       done
+     done'''
 ]
 
 # license file (defined below via CC_CLUSTER)
@@ -38,6 +49,9 @@ moduleclass = 'compiler'
 modextrapaths = {'LIBRARY_PATH': 'linux86-64/%(version)s/libso'}
 
 modluafooter = """
+prepend_path("LIBRARY_PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "linux86-64/%(version)s/lib"))
+prepend_path("LIBRARY_PATH", pathJoin(root:gsub("/restricted.computecanada.ca/","/soft.computecanada.ca/"), "linux86-64/%(version)s/libso"))
+
 prepend_path("PGROUPD_LICENSE_FILE", pathJoin("/cvmfs/soft.computecanada.ca/config/licenses/pgi", os.getenv("CC_CLUSTER") .. ".lic"))
 
 prepend_path("MODULEPATH", pathJoin("/cvmfs/soft.computecanada.ca/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/pgi13.10"))
