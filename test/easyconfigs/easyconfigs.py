@@ -654,22 +654,6 @@ def template_easyconfig_test(self, spec):
         orig_val = resolve_template(ec_dict[key], ec.template_values)
         dumped_val = resolve_template(dumped_ec[key], ec.template_values)
 
-        def dictdep_to_tuple(dep):
-            """
-            Convert dict dependency to a tuple, with just enough info for this test!
-            """
-            ret = [dep['name'], dep['version']]
-            if 'versionsuffix' in dep:
-                ret.append(dep['versionsuffix'])
-            if 'toolchain' in dep:
-                if 'versionsuffic' not in dep:
-                    ret.append('')
-                tc = dep['toolchain']
-                if isinstance(tc, dict):
-                    tc = (tc['name'], tc['version'])
-                ret.append(tc)
-            return tuple(ret)
-
         # take into account that dumped value for *dependencies may include hard-coded subtoolchains
         # if no easyconfig was found for the dependency with the 'parent' toolchain,
         # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
@@ -677,11 +661,6 @@ def template_easyconfig_test(self, spec):
             # number of dependencies should remain the same
             self.assertEqual(len(orig_val), len(dumped_val))
             for orig_dep, dumped_dep in zip(orig_val, dumped_val):
-                if isinstance(orig_dep, dict):
-                    orig_dep = dictdep_to_tuple(orig_dep)
-                if isinstance(dumped_dep, dict):
-                    dumped_dep = dictdep_to_tuple(dumped_dep)
-
                 # name/version should always match
                 self.assertEqual(orig_dep[:2], dumped_dep[:2])
 
