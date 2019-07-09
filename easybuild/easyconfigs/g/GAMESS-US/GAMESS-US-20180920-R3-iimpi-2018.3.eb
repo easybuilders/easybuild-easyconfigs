@@ -1,0 +1,48 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Grigory Shamov, University of Manitoba / ComputeCanada
+# A recipe for GAMESS-US without interactive Easyblock
+
+easyblock = 'MakeCp'
+name = 'GAMESS-US'
+version = "20180920-R3"
+
+homepage = 'https://www.msg.chem.iastate.edu/GAMESS/GAMESS.html'
+description = """
+The General Atomic and Molecular Electronic Structure System (GAMESS) is a general ab initio quantum chemistry package.
+This version of GAMESS is built with Intel compilers and IntelMPI. It includes experimental MU CoupledCluster theory code.
+"""
+
+toolchain = {'name': 'iimpi', 'version': '2018.3'}
+toolchainopts = {'openmp': False }
+
+sources = ['gamess-current-%(version)s.tar.gz']
+patches = [
+   'GAMESS-US-impi-slurm-CC-rungms-20180920-R3.patch',
+   'GAMESS-US-make-activate-iimpi-20180920-R3.patch',
+]
+
+dependencies = [('imkl','2018.3.222'),]
+
+start_dir = 'gamess'
+
+prebuildopts = 'sed -e "s/^\*UNX/    /" %(builddir)s/gamess/tools/actvte.code > %(builddir)s/gamess/actvte.f &&'
+prebuildopts += ' ifort %(builddir)s/gamess/actvte.f -o %(builddir)s/gamess/tools/actvte.x  &&'
+prebuildopts += ' echo setenv GMS_PATH %(builddir)s/gamess >> %(builddir)s/gamess/install.info &&'
+prebuildopts += ' echo setenv GMS_BUILD_DIR %(builddir)s/gamess >> %(builddir)s/gamess/install.info && '
+
+buildopts = 'EB_GMS=%(builddir)s/gamess GMS_PATH=%(builddir)s/gamess GMS_BUILD_PATH=%(builddir)s/gamess '
+
+parallel = 12
+
+files_to_copy = [
+    'gamess.00.x', 'rungms', 'gms-files.csh', 'runall', 'TESTS.DOC', 'INTRO.DOC',
+    'INPUT.DOC', 'REFS.DOC', 'tests', 'auxdata', 'tools', '_VERSION_', 'graphics', 'install.info',
+]
+
+sanity_check_paths = { 'files': ["rungms", "gamess.00.x", "gms-files.csh", "install.info", "runall", ], 'dirs': ['tests', 'auxdata', 'tools', 'graphics', ], }
+
+modextrapaths = { 'PATH': '', }
+
+moduleclass = 'chem'
+
+

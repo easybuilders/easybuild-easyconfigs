@@ -1,0 +1,249 @@
+A patch to make rungms for ComputeCanada machines for IntelMPI versions of GAMESS
+Grigory Shamov, UManitoba/ComputeCanada
+
+Uses other work: a patch
+
+Written by Benjamin Roberts, New Zealand eScience Infrastructure
+University of Auckland, Auckland, New Zealand
+
+And a patch for PPN written by Oliver Stueker, MUN.
+
+--- gamess/rungms	2018-10-01 03:45:26.000000000 +0000
++++ gamess/rungms	2019-07-08 20:47:56.000000000 +0000
+@@ -1,4 +1,4 @@
+-#!/bin/csh
++#!/bin/csh -x
+ #
+ #  last update = 17 Aug 2016
+ #
+@@ -60,10 +60,13 @@
+ #       both Sun Grid Engine (SGE), and Portable Batch System (PBS).
+ #       See also a very old LoadLeveler "ll-gms" for some IBM systems.
+ #
+-set TARGET=sockets
+-set SCR=/scr1/$USER
+-set USERSCR=~/gamess-devv
+-set GMSPATH=~/gamess-devv
++set TARGET=mpi
++set SCR=/tmp/$USER/$$
++set USERSCR=$PWD/scr
++mkdir -p $USERSCR
++mkdir -p $SCR
++
++set GMSPATH=$EBROOTGAMESSMINUS
+ #
+ set JOB=$1      # name of the input file xxx.inp, give only the xxx part
+ set VERNO=$2    # revision number of the executable created by 'lked' step
+@@ -72,6 +75,8 @@
+ # provide defaults if last two arguments are not given to this script
+ if (null$VERNO == null) set VERNO=00
+ if (null$NCPUS == null) set NCPUS=1
++
++
+ #
+ #  ---- the top third of the script is input and other file assignments ----
+ #
+@@ -87,6 +92,7 @@
+                       set SCHED=none
+ if ($?PBS_O_LOGNAME)  set SCHED=PBS
+ if ($?SGE_O_LOGNAME)  set SCHED=SGE
++if ($?SLURM_JOB_ID)   set SCHED=SLURM
+ if ($SCHED == SGE) then
+    set SCR=$TMPDIR
+    echo "SGE has assigned the following compute nodes to this run:"
+@@ -102,6 +108,13 @@
+    echo "PBS has assigned the following compute nodes to this run:"
+    uniq $PBS_NODEFILE
+ endif
++if ($SCHED == SLURM) then
++   # SCR is for large binary temporary files. Accordingly, it should only be
++   # set to a network file system if the connection to that file system is fast.
++   set SCR=$SLURM_TMPDIR
++   echo "SLURM has assigned the following compute nodes to this run:"
++   scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq
++endif
+ #
+ echo "Available scratch disk space (Kbyte units) at beginning of the job is"
+ df -k $SCR
+@@ -551,6 +564,8 @@
+    #      all nodes are presumed to have equal numbers of cores.
+    #
+    set PPN=$4
++   # Oliver's fix
++   if (null$PPN == null) set PPN=1 # make sure PPN is initialized
+    #
+    #      Allow for compute process and data servers (one pair per core)
+    #      note that NCPUS = #cores, and NPROCS = #MPI processes
+@@ -574,7 +589,7 @@
+       #-- DDI_MPI_ROOT=/share/apps/intel/impi/4.0.1.007/intel64
+       #-- DDI_MPI_ROOT=/share/apps/intel/impi/4.0.2.003/intel64
+       #-- DDI_MPI_ROOT=/share/apps/mpi/impi/intel64
+-      set DDI_MPI_ROOT=/shared/intel/impi/4.1.0.024/intel64
++      set DDI_MPI_ROOT=$EBROOTIMPI/intel64
+       #-- DDI_MPI_ROOT=/share/apps/mpi/impi/intel64
+    endif
+    #
+@@ -610,7 +625,7 @@
+       case mpich2:
+       case mvapich2:
+       case openmpi:
+-         setenv LD_LIBRARY_PATH $DDI_MPI_ROOT/lib:$LD_LIBRARY_PATH
++         #setenv LD_LIBRARY_PATH $DDI_MPI_ROOT/lib:$LD_LIBRARY_PATH
+          set path=($DDI_MPI_ROOT/bin $path)
+          rehash
+          breaksw
+@@ -659,6 +674,11 @@
+       set NNODES=1
+    else
+              # Parallel run gets node names from scheduler's assigned list:
++      #GAS where is NNODES defined for an interactive run? I think for MPI it is missing.
++      # lets assume we are running on a login node
++      set NNODES=1
++      #set HOSTLIST=(`hostname`:cpus=$NCPUS)
++      #
+       if ($SCHED == SGE) then
+          uniq $TMPDIR/machines $HOSTFILE
+          set NNODES=`wc -l $HOSTFILE`
+@@ -669,6 +689,11 @@
+          set NNODES=`wc -l $HOSTFILE`
+          set NNODES=$NNODES[1]
+       endif
++      if ($SCHED == SLURM) then
++         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
++         set NNODES=`wc -l $HOSTFILE`
++         set NNODES=$NNODES[1]
++      endif
+    endif
+    #           uncomment next lines if you need to debug host configuration.
+    #--echo '-----debug----'
+@@ -775,8 +800,8 @@
+       setenv I_MPI_DEBUG 0
+       setenv I_MPI_STATS 0
+       #              next two select highest speed mode of an Infiniband
+-      setenv I_MPI_FABRICS dapl
+-      setenv I_MPI_DAT_LIBRARY libdat2.so
++      #setenv I_MPI_FABRICS dapl
++      #setenv I_MPI_DAT_LIBRARY libdat2.so
+       # Force use of "shared memory copy" large message transfer mechanism
+       # The "direct" mechanism was introduced and made default for IPS 2017,
+       # and makes GAMESS hang when DD_GSum() is called. See IPS 2017 release notes
+@@ -829,7 +854,7 @@
+    #----- LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.1.107/compiler/lib/intel64:$LD_LIBRARY_PATH
+    #----- LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.4.191/compiler/lib/intel64:$LD_LIBRARY_PATH
+    #----- LD_LIBRARY_PATH /share/apps/intel/composer_xe_2013.3.163/compiler/lib/intel64:$LD_LIBRARY_PATH
+-   setenv LD_LIBRARY_PATH /shared/intel/composer_xe_2013.1.117/compiler/lib/intel64:$LD_LIBRARY_PATH
++   #setenv LD_LIBRARY_PATH /shared/intel/composer_xe_2013.1.117/compiler/lib/intel64:$LD_LIBRARY_PATH
+    #----- LD_LIBRARY_PATH "/share/apps/intel/composer_xe_2011_sp1.8.273/composer_xe_2011_sp1.11.339/compiler/lib/intel64:$LD_LIBRARY_PATH"
+    #----- LD_LIBRARY_PATH /share/apps/intel/composer_xe_2013.5.192/compiler/lib/intel64:$LD_LIBRARY_PATH
+ 
+@@ -943,8 +968,18 @@
+          unset echo
+       endif
+       set echo
++      if ($SCHED == SLURM) then
++         #srun -O -n $NPROCS --mpi=pmix $GMSPATH/gamess.$VERNO.x < /dev/nulla
++         setenv  I_MPI_PMI_LIBRARY 0
++         mpiexec.hydra -f $PROCFILE -n $NPROCS \
++            $GMSPATH/gamess.$VERNO.x < /dev/null
++      else
++     cat $PROCFILE
++     echo $NPROCS NPROCS 
++      setenv  I_MPI_PMI_LIBRARY 0   
+       mpiexec.hydra -f $PROCFILE -n $NPROCS \
+             $GMSPATH/gamess.$VERNO.x < /dev/null
++      endif
+       unset echo
+       breaksw
+ 
+@@ -1041,6 +1076,11 @@
+          set NNODES=`wc -l $HOSTFILE`
+          set NNODES=$NNODES[1]
+       endif
++      if ($SCHED == SLURM) then
++         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq > $HOSTFILE
++         set NNODES=`wc -l $HOSTFILE`
++         set NNODES=$NNODES[1]
++      endif
+    endif
+    #           uncomment next lines if you need to debug host configuration.
+    #--echo '-----debug----'
+@@ -1124,28 +1164,28 @@
+    #
+    #  a) next line finds the CUDA runtime libraries
+    #            the examples are our exalted/bolt clusters
+-   setenv LD_LIBRARY_PATH /share/apps/cuda4.1/lib64:$LD_LIBRARY_PATH
++   #setenv LD_LIBRARY_PATH /share/apps/cuda4.1/lib64:$LD_LIBRARY_PATH
+    #--env LD_LIBRARY_PATH /share/apps/cuda/lib64:$LD_LIBRARY_PATH
+    #
+    #  b) next finds the right MPI libraries
+    #
+-   if ($GA_MPI_CHOICE == impi) then
+-      setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
+-   endif
+-   if ($GA_MPI_CHOICE == mpich) then
+-      setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
+-   endif
+-   if ($GA_MPI_CHOICE == mpich2) then
+-      setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
+-   endif
+-   if ($GA_MPI_CHOICE == mvapich2) then
+-      setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
+-   endif
+-   #
++   #if ($GA_MPI_CHOICE == impi) then
++   #   setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
++   #endif
++   #if ($GA_MPI_CHOICE == mpich) then
++   #   setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
++   #endif
++   #if ($GA_MPI_CHOICE == mpich2) then
++   #   setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
++   #endif
++   #if ($GA_MPI_CHOICE == mvapich2) then
++   #   setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
++   #endif
++   ##
+    #  c) next line finds ifort-related compiler libraries
+    #     ignore this, or comment out if you're using gfortran.
+    #            the examples are our exalted/bolt clusters
+-   setenv LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.4.191/compiler/lib/intel64:$LD_LIBRARY_PATH
++   #setenv LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.4.191/compiler/lib/intel64:$LD_LIBRARY_PATH
+    #--env LD_LIBRARY_PATH /share/apps/intel/composer_xe_2013.3.163/compiler/lib/intel64:$LD_LIBRARY_PATH
+    #
+    #  d) next line finds Intel MKL (math kernel library) libraries
+@@ -1153,7 +1193,7 @@
+    #  at times LIBCCHEM manipulates some of its steps to use threaded MKL.
+    #  Atlas is an acceptable substitute for MKL, if you linked to Atlas.
+    #            the examples are our exalted/bolt clusters
+-   setenv LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.4.191/mkl/lib/intel64:$LD_LIBRARY_PATH
++   #setenv LD_LIBRARY_PATH /share/apps/intel/composerxe-2011.4.191/mkl/lib/intel64:$LD_LIBRARY_PATH
+    #--env LD_LIBRARY_PATH /share/apps/intel/composer_xe_2013.3.163/mkl/lib/intel64:$LD_LIBRARY_PATH
+    #--setenv MKL_SERIAL YES
+    #--setenv MKL_NUM_THREADS 1
+@@ -1186,11 +1226,11 @@
+       setenv I_MPI_STATS 0
+       #      Qlogics Infiniband must run in IPoIB mode due to using GA.
+       #         recently, device ib0 stopped working, but eth1 is OK.
+-      setenv I_MPI_FABRICS tcp
+-      setenv I_MPI_TCP_NETMASK eth1
++      #setenv I_MPI_FABRICS tcp
++      #setenv I_MPI_TCP_NETMASK eth1
+       #      Mellanox Infiniband can launch GA in a native IB mode
+-      #--env I_MPI_FABRICS dapl
+-      #--env I_MPI_DAT_LIBRARY libdat2.so
++      #env I_MPI_FABRICS dapl
++      #env I_MPI_DAT_LIBRARY libdat2.so
+       unset echo
+    endif
+    #
+@@ -1653,8 +1693,8 @@
+          #--   ssh $host -l $USER "cat $SCR/$JOB.F06*"
+          #--endif
+          #---------FMO rescue------
+-         ssh $host -l $USER "ls -l $SCR/$JOB.*"
+-         ssh $host -l $USER "rm -f $SCR/$JOB.*"
++         #ssh $host -l $USER "ls -l $SCR/$JOB.*"
++         #ssh $host -l $USER "rm -f $SCR/$JOB.*"
+       endif
+       @ n++
+    end
