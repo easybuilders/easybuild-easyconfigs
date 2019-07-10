@@ -1,0 +1,68 @@
+A patch to bypass GAMESS interactive ./configure script and create install.info and Makefile directly.
+Written by Grigory Shamov, UManitoba/ComputeCanada
+
+diff -Naru gamess/actvte.f gamess/actvte.f
+diff -Naru gamess/ddi/compddi gamess/ddi/compddi
+--- gamess/ddi/compddi	2018-08-07 07:23:20.000000000 +0000
++++ gamess/ddi/compddi	2019-07-05 21:08:41.496243022 +0000
+@@ -78,8 +78,8 @@
+ #
+ #        It is OK if these values are larger than your system!
+ #
+-set MAXCPUS=32
+-set MAXNODES=1024
++set MAXCPUS=48
++set MAXNODES=2048
+ #
+ #
+ if ($GMS_PHI != none) then
+diff -Naru gamess/install.info gamess/install.info
+--- gamess/install.info	1970-01-01 00:00:00.000000000 +0000
++++ gamess/install.info	2019-07-05 21:08:02.139046737 +0000
+@@ -0,0 +1,36 @@
++#!/bin/csh
++#   compilation configuration for GAMESS
++#   generated on build-node.computecanada.ca
++#   generated at Thu Jul  4 20:44:30 UTC 2019
++#setenv GMS_PATH            /home/gshamov/gamess/clean/gamess
++#setenv GMS_BUILD_DIR       /home/gshamov/gamess/clean/gamess
++#         machine type
++setenv GMS_TARGET          linux64
++#         FORTRAN compiler setup
++setenv GMS_FORTRAN         ifort
++setenv GMS_IFORT_VERNO     16
++#         mathematical library setup
++setenv GMS_MATHLIB         mkl
++setenv GMS_MATHLIB_PATH    $MKLROOT/lib/intel64
++setenv GMS_MKL_VERNO       12
++#         parallel message passing model setup
++setenv GMS_DDI_COMM        mpi
++setenv GMS_MPI_LIB         impi
++setenv GMS_MPI_PATH        $EBROOTIMPI
++#/cvmfs/soft.computecanada.ca/easybuild/software/2017/avx2/Compiler/intel2016.4/impi/2018.0.128
++#         Michigan State University Coupled Cluster Build Option
++setenv GMS_MSUCC           true
++# Please match any manual changes to the GMS_MSUCC
++# flag in /home/gshamov/gamess/gamess/Makefile
++# before running make
++#         LIBCCHEM CPU/GPU code interface
++setenv GMS_LIBCCHEM        false
++#         Intel Xeon Phi build: none/knc/knl
++setenv GMS_PHI             none
++#         Shared memory type: sysv/posix
++setenv GMS_SHMTYPE         sysv
++#         SC17 SCF OpenMP support: true/false
++setenv GMS_OPENMP          false
++# Please match any manual changes to the GMS_OPENMP
++# flag in gamess/Makefile
++# before running make
+diff -Naru gamess/Makefile gamess/Makefile
+--- gamess/Makefile	1970-01-01 00:00:00.000000000 +0000
++++ gamess/Makefile	2019-07-05 21:08:02.139046737 +0000
+@@ -0,0 +1,6 @@
++GMS_BUILD_PATH = $(EB_GMS)
++GMS_PATH = $(EB_GMS)
++GMS_VERSION = 00
++GMS_OPENMP = false
++GMS_MSUCC = true
++include $(GMS_PATH)/Makefile.in

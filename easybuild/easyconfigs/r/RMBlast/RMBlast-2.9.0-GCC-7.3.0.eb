@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'RMBlast'
+version = '2.9.0'
+
+homepage = 'http://www.repeatmasker.org/RMBlast.html'
+description = """RMBlast is a RepeatMasker compatible version of the standard NCBI BLAST suite. The primary difference between
+ this distribution and the NCBI distribution is the addition of a new program 'rmblastn' for use with RepeatMasker and
+ RepeatModeler."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+source_urls = [
+	'http://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/%(version)s',
+	'http://www.repeatmasker.org/'
+]
+sources = [
+	'ncbi-blast-%(version)s+-src.tar.gz',
+	'isb-%(version)s+-rmblast.patch.gz'
+]
+#patches = ['isb-(version)s+-rmblast.patch.gz']
+
+dependencies = [
+    ('Boost', '1.68.0'),
+]
+#The patches keyword from easybuild does not woirk in this case because the patch file havn't prepared with -Nur option"
+configure_cmd_prefix = 'patch -p2 < ../../isb-%(version)s+-rmblast.patch &&'
+
+configopts = '--with-boost=$EBROOTBOOST --with-64 --with-bin-release --without-debug --with-mt --with-projects=scripts/projects/rmblastn/project.lst --without-krb5  --without-openssl'
+#prebuildopts = "sed -i -e 's;(incdir)/\*;(incdir)/*\.*;g' %(builddir)s/ncbi-blast-*/c++/Makefile && "
+sanity_check_paths = {
+    'files': ['bin/blastp', 'bin/blastn', 'bin/deltablast', 'bin/rmblastn'],
+    'dirs': ['lib', 'bin']
+}
+
+moduleclass = 'bio'

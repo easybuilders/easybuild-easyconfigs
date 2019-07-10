@@ -1,0 +1,57 @@
+name = 'ANSYS'
+version = '2019R2'
+
+homepage = 'http://www.ansys.com'
+description = """ANSYS simulation software enables organizations to confidently predict 
+    how their products will operate in the real world. We believe that every product is 
+    a promise of something greater. """
+
+toolchain = {'name': 'dummy', 'version': 'dummy'}
+
+# create a zip file from the 2 install iso files.
+# make sure all files of the iso's are in the same directory.
+sources = ['ANSYS-%(version)s.tar']
+
+postinstallcmds = [
+	# fix missing execute permission for Others for at least one folder
+	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
+	# find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+	# call setrpaths.sh on all subdirectories called bin, lib or lib64, or lnamd64
+	"for d in $(find %(installdir)s -name 'bin' -o -name 'lib' -o -name 'lib64' -o -name 'lnamd64' -o -name 'linx64'); do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
+        # force setrpaths.sh to run on all instances of lmutil using the --any_interpreter switch ie)
+        #  /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/lmutil --any_interpreter
+        "find %(installdir)s -name 'lmutil' -exec /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+        # revert changes made by setrpaths.sh back to using the system interpreter: ansyscl  ansysli_client  ansysli_util  ansysls_client ie)
+        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/ansyscl
+        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/ansysli_client
+        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/ansysli_util
+        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/ansysls_client
+        "find %(installdir)s -name 'ansyscl' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+        "find %(installdir)s -name 'ansysli_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+        "find %(installdir)s -name 'ansysli_util' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+        "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;"
+]
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
+if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
+        setenv("TMI_CONFIG",pathJoin(root,"v194/commonfiles/MPI/Intel/2018.3.222/linx64/etc/tmi.conf"))
+end
+"""
+
+
+moduleclass = 'tools'

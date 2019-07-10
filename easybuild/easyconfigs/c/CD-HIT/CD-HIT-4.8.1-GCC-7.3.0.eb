@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'CD-HIT'
+version = '4.8.1'
+
+homepage = 'http://weizhong-lab.ucsd.edu/cd-hit/'
+description = """ CD-HIT is a very widely used program for clustering and 
+ comparing protein or nucleotide sequences."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/weizhongli/cdhit/archive/']
+sources = ['V%(version)s.tar.gz']
+checksums = ['b997bcc5a07703ca9bd3f84818114c37']
+
+# Make sure compilation flags are passed down (e.g. to enable OpenMP):
+buildopts = ' MAX_SEQ=10000000 CC="$CXX" CCFLAGS="$CPPFLAGS $CXXFLAGS" &&  cd %(namelower)s-auxtools && make CC="$CXX" CCFLAGS="$CPPFLAGS $CXXFLAGS" '
+
+postinstallcmds = ["sed -i 's@#!/usr/bin/perl@/usr/bin/env perl@' %(installdir)s/bin/*.pl"]  # !/usr/bin/perl@/usr/bin/env perl@' %(installdir)s/bin/*.pl"]
+# This is the real EasyBuild line to copy all the executables and perl scripts to "bin"
+files_to_copy = [
+    (['%(namelower)s', '%(namelower)s-est', '%(namelower)s-2d', '%(namelower)s-est-2d', '%(namelower)s-div', '%(namelower)s-454'], 'bin'),
+    (['%(namelower)s-auxtools/%(namelower)s-dup'], 'bin'),
+    (['%(namelower)s-auxtools/%(namelower)s-lap'], 'bin'),
+    (['%(namelower)s-auxtools/%(namelower)s-dup-PE-out.pl'], 'bin'),
+    (['%(namelower)s-auxtools/read-linker'], 'bin'),
+    (['*.pl'], 'bin'),
+    'README',
+    'doc',
+    'license.txt',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', ('bin/%(namelower)s-est', 'bin/%(namelower)s-2d', 'bin/%(namelower)s-est-2d', 'bin/%(namelower)s-div', 'bin/%(namelower)s-454', 'bin/%(namelower)s-dup', 'bin/%(namelower)s-lap', 'bin/%(namelower)s-dup-PE-out.pl'), 'bin/read-linker'],
+    'dirs': [],
+}  # 'files': ['bin/%(namelower)s', 'bin/%(namelower)s-est', 'bin/%(namelower)s-2d', 'bin/%(namelower)s-est-2d', 'bin/%(namelower)s-div', 'bin/%(namelower)s-454'],
+
+moduleclass = 'bio'

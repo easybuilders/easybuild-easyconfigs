@@ -1,0 +1,46 @@
+name = 'PETSc'
+version = '3.11.3'
+
+homepage = 'http://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'gomkl', 'version': '2018.3.312'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://ftp.mcs.anl.gov/pub/%(namelower)s/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['199ad9650a9f58603b49e7fff7cd003ceb03aa231e5d37d0bf0496c6348eca81']
+
+builddependencies = [
+    ('CMake', '3.12.3'),
+]
+dependencies = [
+    ('HDF5', '1.10.3', '-mpi', ('gompi', '2018.3.312')),
+    ('FFTW', '3.3.8', '-mpi', ('gompi', '2018.3.312')),
+]
+
+configopts = "--with-mkl_pardiso=1 --with-mkl_pardiso-dir=$MKLROOT --with-hdf5=1 --with-hdf5-dir=$EBROOTHDF5 --with-mkl-sparse-optimize=1 --with-cxx-dialect=C++11"
+
+download_deps = ['triangle']
+postinstallcmds = ['ln -sf %(installdir)s/lib/%(namelower)s/bin %(installdir)s/bin']
+keepsymlinks = True
+modluafooter = """
+family("%(namelower)s")
+"""
+shared_libs = 1
+download_deps_static = [
+    'mumps',
+    'ptscotch',
+    'superlu',
+    'superlu_dist',
+    'parmetis',
+    'metis',
+    'ml',
+    'suitesparse',
+    'hypre',
+    'prometheus',
+    'spooles',
+]
+
+moduleclass = 'numlib'

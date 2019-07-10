@@ -1,0 +1,227 @@
+This patch is based on aroudgar patch for intel, 
+but contains changes to be used with the GCC toolchain (gfortran, gcc).
+
+The driver MFDRIV (/FILE, PGPLOT graphics metafile) has been disabled
+because gfortran would fail with range-check errors on this one.
+
+2019-06-14 ostueker
+--- makemake.orig	2018-06-07 14:35:27.000000000 -0700
++++ makemake	2018-06-07 14:36:33.000000000 -0700
+@@ -68,12 +68,12 @@
+ # By default the PGPLOT library is initially placed in the current
+ # The demos should be explicitly linked against this library.
+ 
+-PGPLOT_LIB="-L\`pwd\` -lpgplot"
+-CPGPLOT_LIB="-L\`pwd\` -lcpgplot -lpgplot"
++PGPLOT_LIB="-L\`pwd\` -lpgplot -Wl,-rpath \`pwd\`"
++CPGPLOT_LIB="-L\`pwd\` -lcpgplot -lpgplot -Wl,-rpath \`pwd\`"
+ 
+ # List the default make targets.
+ 
+-DEFAULT_TARGETS="lib grfont.dat prog pgplot.doc"
++DEFAULT_TARGETS="lib grfont.dat pgplot.doc cpg pgxwin_server pgplot.doc pgplot-routines.tex"
+ 
+ # Get the configuration variables.
+ 
+@@ -806,7 +806,7 @@
+ # libraries.
+ #-----------------------------------------------------------------------
+ 
+-lib : libpgplot.a $(SHARED_LIB)
++lib : libpgplot.a libcpgplot.a $(SHARED_LIB)
+ 
+ libpgplot.a : $(PG_ROUTINES) $(PG_NON_STANDARD) $(GR_ROUTINES) \
+ 	   $(DISPATCH_ROUTINE) $(DRIVERS) $(SYSTEM_ROUTINES)
+@@ -816,6 +816,13 @@
+ 		$(DRIVERS) $(SYSTEM_ROUTINES) | sort | uniq`
+ 	$(RANLIB) libpgplot.a
+ 
++libpgplot.so : $(PG_ROUTINES) $(PG_NON_STANDARD) $(GR_ROUTINES) \
++	$(DISPATCH_ROUTINE) $(DRIVERS) $(SYSTEM_ROUTINES)
++	f77 -shared -fPIC -o libpgplot.so \
++		`ls $(PG_ROUTINES) \
++		$(PG_NON_STANDARD) $(GR_ROUTINES) $(DISPATCH_ROUTINE) \
++		$(DRIVERS) $(SYSTEM_ROUTINES) | sort | uniq` $(SHARED_LIB_LIBS)
++
+ EOD
+ 
+ # Emit the shared library dependency if requested.
+@@ -913,6 +920,7 @@
+  echo "	$SRC/makehelp \$(PG_SOURCE) > pgplot.hlp"
+  echo "pgplot-routines.tex: \$(PG_SOURCE)"
+  echo "	$SRC/maketex \$(PG_SOURCE) > pgplot-routines.tex"
++ echo "	pdflatex pgplot-routines.tex" 
+ ) >> makefile
+ 
+ cat >> makefile << \EOD
+@@ -1050,9 +1058,16 @@
+ 	$(RANLIB) libcpgplot.a
+ 	rm -f cpg*.o
+ 
++libcpgplot.so cpgplot.h: $(PG_SOURCE) pgbind
++	./pgbind $(PGBIND_FLAGS) -h -w $(PG_SOURCE)
++	$(CCOMPL) -c $(CFLAGC) cpg*.c
++	rm -f cpg*.c
++	f77 -shared -fPIC -o libcpgplot.so cpg*.o $(SHARED_LIB_LIBS)
++	rm -f cpg*.o
++
+ cpgdemo: cpgplot.h $(SRC)/cpg/cpgdemo.c libcpgplot.a
+ 	$(CCOMPL) $(CFLAGD) -c -I. $(SRC)/cpg/cpgdemo.c
+-	$(FCOMPL) -o cpgdemo cpgdemo.o $(CPGPLOT_LIB) $(LIBS)
++	$(FCOMPL) -o cpgdemo cpgdemo.o $(CPGPLOT_LIB) $(LIBS)
+ 	rm -f cpgdemo.o
+ 
+ pgmdemo: pgmdemo.o libXmPgplot.a
+--- maketex.orig	2018-06-07 14:35:30.000000000 -0700
++++ maketex	2018-06-07 14:35:42.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/local/bin/perl
++#!/usr/bin/env perl
+ 
+ $, = ' ';		# set output field separator
+ $\ = "\n";		# set output record separator
+--- sys_linux/f77_gcc.conf.orig	2018-06-07 14:35:33.000000000 -0700
++++ sys_linux/f77_gcc.conf	2018-06-07 14:35:42.000000000 -0700
+@@ -6,7 +6,7 @@
+ #           X2DRIV (/xdisp and /figdisp).
+ # The arguments needed by the C compiler to locate X-window include files.
+  
+-   XINCL="-I/usr/X11R6/include"
++   XINCL=
+ 
+ # Optional: Needed by XMDRIV (/xmotif).
+ # The arguments needed by the C compiler to locate Motif, Xt and
+@@ -24,7 +24,7 @@
+ # The arguments needed by the C compiler to locate Tcl, Tk and
+ # X-window include files.
+  
+-   TK_INCL="-I/usr/include "
++   TK_INCL=
+ 
+ # Optional: Needed by RVDRIV (/xrv).
+ # The arguments needed by the C compiler to locate Rivet, Tcl, Tk and
+@@ -35,13 +35,13 @@
+ # Mandatory.
+ # The FORTRAN compiler to use.
+  
+-   FCOMPL="f77"
++   FCOMPL="gfortran"
+ 
+ # Mandatory.
+ # The FORTRAN compiler flags to use when compiling the pgplot library.
+ # (NB. makemake prepends -c to $FFLAGC where needed)
+  
+-   FFLAGC="-u"
++   FFLAGC="-fPIC"
+ 
+ # Mandatory.
+ # The FORTRAN compiler flags to use when compiling fortran demo programs.
+@@ -53,12 +53,12 @@
+ # Mandatory.
+ # The C compiler to use.
+  
+-   CCOMPL="gcc"
++   CCOMPL="gcc"
+ 
+ # Mandatory.
+ # The C compiler flags to use when compiling the pgplot library.
+  
+-   CFLAGC="-DPG_PPU -O2"
++   CFLAGC="-DPG_PPU -fPIC -O2"
+ 
+ # Mandatory.
+ # The C compiler flags to use when compiling C demo programs.
+@@ -75,7 +75,7 @@
+ # The library-specification flags to use when linking normal pgplot
+ # demo programs.
+  
+-   LIBS="-lf2c -L/usr/X11R6/lib -lX11 \`\$(SRC)/cpg/libgcc_path.sh\` -lgcc -lm -lc"
++   LIBS="-lX11 \`\$(SRC)/cpg/libgcc_path.sh\`  -lm -lc"
+ 
+ # Optional: Needed by XMDRIV (/xmotif).
+ # The library-specification flags to use when linking motif
+@@ -104,7 +104,7 @@
+ # Optional: Needed on systems that support shared libraries.
+ # The name to give the shared pgplot library.
+  
+-   SHARED_LIB=""
++   SHARED_LIB="libpgplot.so libcpgplot.so"
+ 
+ # Optional: Needed if SHARED_LIB is set.
+ # How to create a shared library from a trailing list of object files.
+@@ -118,7 +118,7 @@
+ # library-specification flags used to specify these libraries to
+ # $SHARED_LD
+  
+-   SHARED_LIB_LIBS=""
++   SHARED_LIB_LIBS="-lpng -lz -lX11"
+ 
+ # Optional:
+ # Compiler name used on Next systems to compile objective-C files.
+--- drivers.list.orig	2018-06-07 14:55:48.000000000 -0700
++++ drivers.list	2018-06-07 15:00:16.000000000 -0700
+@@ -16,8 +16,8 @@
+ ! EXDRIV 2 /EXCL      Talaris/EXCL printers, portrait
+ ! GCDRIV 0 /GENICOM   Genicom 4410 dot-matrix printer, landscape
+ !             Caution: use of GIDRIV may require a license from Unisys:
+-! GIDRIV 1 /GIF       GIF-format file, landscape
+-! GIDRIV 2 /VGIF      GIF-format file, portrait
++ GIDRIV 1 /GIF       GIF-format file, landscape
++ GIDRIV 2 /VGIF      GIF-format file, portrait
+ ! GLDRIV 1 /HPGL      Hewlett-Packard HP-GL plotters, landscape		Std F77
+ ! GLDRIV 2 /VHPGL     Hewlett-Packard HP-GL plotters, portrait		Std F77
+ ! GODRIV 0 /GOC       GOC Sigma T5670 terminal				VMS 
+@@ -33,7 +33,7 @@
+ ! LNDRIV 0 /LN03      Dec LN03-PLUS Laser printer (landscape)           VMS
+ ! LVDRIV 0 /LVN03     Dec LN03-PLUS Laser printer (portrait)            VMS
+ ! LXDRIV 0 /LATEX     LaTeX picture environment
+-! MFDRIV 0 /FILE      PGPLOT graphics metafile
++! MFDRIV 0 /FILE      PGPLOT graphics metafile
+ ! NEDRIV 0 /NEXT      Computers running NeXTstep operating system
+   NUDRIV 0 /NULL      Null device (no output)				Std F77
+ ! PGDRIV 0 /PGMF      PGPLOT metafile (new format, experimental)        Std F77
+@@ -41,10 +41,10 @@
+ ! PNDRIV 2 /TPNG      Portable Network Graphics file - transparent background C
+ ! PPDRIV 1 /PPM       Portable Pixel Map file, landscape
+ ! PPDRIV 2 /VPPM      Portable PIxel Map file, portrait
+-! PSDRIV 1 /PS        PostScript printers, monochrome, landscape	Std F77
+-! PSDRIV 2 /VPS       Postscript printers, monochrome, portrait		Std F77
+-! PSDRIV 3 /CPS       PostScript printers, color, landscape		Std F77
+-! PSDRIV 4 /VCPS      PostScript printers, color, portrait		Std F77
++ PSDRIV 1 /PS        PostScript printers, monochrome, landscape	Std F77
++ PSDRIV 2 /VPS       Postscript printers, monochrome, portrait		Std F77
++ PSDRIV 3 /CPS       PostScript printers, color, landscape		Std F77
++ PSDRIV 4 /VCPS      PostScript printers, color, portrait		Std F77
+ ! PXDRIV 0 /PRINTRONI Printronix P300 or P600 dot-matrix printer
+ ! QMDRIV 1 /QMS       QUIC devices (QMS and Talaris), landscape		Std F77
+ ! QMDRIV 2 /VQMS      QUIC devices (QMS and Talaris), portrait		Std F77
+@@ -53,9 +53,9 @@
+ ! TTDRIV 1 /TEK4010   Tektronix 4006/4010 storage-tube terminal		Std F77
+ ! TTDRIV 2 /GF        GraphOn terminal					Std F77
+ ! TTDRIV 3 /RETRO     RetroGraphics terminal				Std F77
+-! TTDRIV 4 /GTERM     GTERM Tektronix terminal emulator			Std F77
+-! TTDRIV 5 /XTERM     XTERM Tektronix terminal emulator			Std F77
+-! TTDRIV 6 /ZSTEM     ZSTEM terminal emulator				Std F77
++ TTDRIV 4 /GTERM     GTERM Tektronix terminal emulator			Std F77
++ TTDRIV 5 /XTERM     XTERM Tektronix terminal emulator			Std F77
++ TTDRIV 6 /ZSTEM     ZSTEM terminal emulator				Std F77
+ ! TTDRIV 7 /V603      Visual 603 terminal				Std F77
+ ! TTDRIV 8 /KRM3      Kermit 3 on IBM-PC				Std F77
+ ! TTDRIV 9 /TK4100    Tektronix 4100-series terminals			Std F77
+@@ -64,12 +64,12 @@
+ ! VADRIV 0 /VCANON    Canon Laser printer, LBP-8/A2, portrait
+ ! VBDRIV 0 /VBCANON   Canon Laser printer (bitmap version), portrait
+ ! VTDRIV 0 /VT125     Dec Regis terminals (VT125 etc.)			Std F77
+-! WDDRIV 1 /WD        X Window dump file, landscape
+-! WDDRIV 2 /VWD       X Window dump file, portrait
++ WDDRIV 1 /WD        X Window dump file, landscape
++ WDDRIV 2 /VWD       X Window dump file, portrait
+ ! WSDRIV 0 /WS        VAX workstations running VWS software		VMS
+ ! X2DRIV 0 /XDISP     PGDISP or FIGDISP server for X workstations	C
+-! XWDRIV 1 /XWINDOW   Workstations running X Window System		C
+-! XWDRIV 2 /XSERVE    Persistent window on X Window System		C
++ XWDRIV 1 /XWINDOW   Workstations running X Window System		C
++ XWDRIV 2 /XSERVE    Persistent window on X Window System		C
+ ! ZEDRIV 0 /ZETA      Zeta 8 Digital Plotter
+ !
+ ! The following drivers can only be used in PGPLOT installations on MS-DOS
