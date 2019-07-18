@@ -17,9 +17,9 @@ description = """Mesa is an open-source implementation of the OpenGL specificati
  a system for rendering interactive 3D graphics."""
 
 toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
-# swr detects and builds parts specific for AVX and AVX2. If we use
-# -xHost, this always gets overwritten and will fail.
-toolchainopts = {'optarch': False}
+# Intel's SWR generates AVX instructions even on CPUs without support for it (ignoring march=native).
+# In that case it is necessary to explicitly set the march of your CPU, for instance for an AMD Opteron 6100
+# toolchainopts = {'optarch': 'march=barcelona'}
 
 source_urls = [
     'https://mesa.freedesktop.org/archive/',
@@ -57,7 +57,7 @@ dependencies = [
 configopts = " -Dplatforms=x11 -Dosmesa=gallium -Ddri3=false -Ddri-drivers='' -Dvulkan-drivers=''"
 configopts += " -Dgbm=false -Dglx-direct=false -Dgallium-drivers='swrast,swr' -Degl=false"
 configopts += " -Dllvm=true -Dshared-llvm=true"
-configopts += " -Dlibunwind=true -Dglx=xlib"
+configopts += " -Dlibunwind=true -Dglx=gallium-xlib"
 
 sanity_check_paths = {
     'files': ['lib/libGL.%s' % SHLIB_EXT, 'lib/libOSMesa.%s' % SHLIB_EXT,
