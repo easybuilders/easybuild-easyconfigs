@@ -1,0 +1,48 @@
+##
+# @Authors:: Ali Kerrache, University of Manitoba.
+# @Date: Dec 8, 2018.
+##
+easyblock = 'CMakeMake'
+
+name = 'AlmaBTE'
+version = '1.3.2'
+
+homepage = " http://www.almabte.eu/"
+description = """ANTs extracts information from complex datasets that include imaging. 
+ ANTs is useful for managing, interpreting and visualizing multidimensional data."""
+
+toolchain = {'name': 'iompi', 'version': '2016.4'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['http://www.%(namelower)s.eu/wp-content/uploads/2018/10/']
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+
+builddependencies = [
+    ('CMake', '3.0.2'),
+]
+dependencies = [
+    ('HDF5', '1.8.18', '', ('iccifort', '2016.4')),
+    ('Eigen', '3.3.2', '', True),
+    ('Boost', '1.60.0', '-mpi'),
+    ('Python', '2.7.14', '', True),
+]
+
+configopts = " -DZLIB_ROOT=$NIXUSER_PROFILE  -DOPENGL_INCLUDE_DIR=$NIXUSER_PROFILE/include -DOPENGL_gl_LIBRARY=$NIXUSER_PROFILE/lib/libGL.so  -DOPENGL_glu_LIBRARY=$NIXUSER_PROFILE/lib/libGLU.so  -DJPEG_INCLUDE_DIR=$NIXUSER_PROFILE/include -DJPEG_LIBRARY=$NIXUSER_PROFILE/lib/libjpeg.so  -DPNG_PNG_INCLUDE_DIR=$NIXUSER_PROFILE/include -DPNG_LIBRARY=$NIXUSER_PROFILE/lib/libpng.so  -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python  -DCURL_LIBRARY=$NIXUSER_PROFILE/lib/libcurl.so -DCURL_INCLUDE_DIR=$NIXUSER_PROFILE/include  -DCMAKE_SYSTEM_PREFIX_PATH=$NIXUSER_PROFILE  -DCMAKE_SKIP_INSTALL_RPATH=ON "
+
+parallel = 1
+
+postinstallcmds = ['cd %(builddir)s/easybuild_obj/src/ && mkdir -p %(installdir)s/bin && mkdir -p %(installdir)s/lib && cp kappa_*  steady_* transient_analytic1d VCAbuilder cumulativecurves phononinfo superlattice_builder %(installdir)s/bin/ && cp libalma_framework.a %(installdir)s/lib/']
+
+skipsteps = ['install']
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['bin/VCAbuilder', 'lib/libalma_framework.a'],
+    'dirs': ['bin', 'l'],
+}
+
+moduleclass = 'tools'
+modluafooter = """
+depends_on("python")
+"""
