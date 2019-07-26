@@ -1,0 +1,161 @@
+# Built with EasyBuild version 3.9.1-r5167691f0570449d8f3cb128053ec3ca449cda4d on 2019-07-16_17-44-47
+name = 'OpenFOAM'
+version = 'v1906'
+
+homepage = 'http://www.openfoam.com/'
+description = """OpenFOAM is a free, open source CFD software package.
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer,
+ to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'iompi', 'version': '2016.4.11'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://sourceforge.net/projects/openfoam/files/%(version)s/']
+sources = [SOURCE_TGZ]
+patches = ['OpenFOAM-%(version)s-cleanup.patch', 'OpenFOAM-%(version)s_cleanup-cc.patch']
+checksums = [
+    '15e38c2dc659b63753a0dd3dff913222cc46d6a40089a1b76973dd741145f61a',  # OpenFOAM-v1906.tgz
+    '870250338b0485ff34315f675a4c9700d3888912338b5d083297e37e287783a5',  # OpenFOAM-v1906-cleanup.patch
+    '142df8a457e4093287543c42f4f6803c968145ce8ba72a31f9dd9d1acecea4de',  # OpenFOAM-v1906_cleanup-cc.patch
+]
+
+dependencies = [
+    ('libreadline', '7.0'),
+    ('ncurses', '6.1'),
+    # OpenFOAM requires 64 bit METIS using 32 bit indexes (array indexes)
+    ('METIS', '5.1.0', None, ('GCC','7.3.0')),
+    ('SCOTCH', '6.0.4'),
+]
+
+builddependencies = [
+    ('Bison', '3.0.5'),
+    ('CMake', '3.11.4'),
+    ('flex', '2.6.4'),
+    ('CGAL', '4.9'),
+]
+
+moduleclass = 'cae'
+modluafooter = """
+local wm_compiler = "Icc"
+local wm_label_size = "32"
+
+-- Nothing below this line should need changing for a different version or compiler
+local version = "%(version)s"
+local wm_project = "%(name)s"
+local wm_project_dir = pathJoin(root, wm_project .. "-" .. version)
+local wm_thirdparty_dir = pathJoin(root, "ThirdParty-" .. version)
+local wm_project_user_dir = pathJoin(os.getenv("HOME"), wm_project, os.getenv("USER") .. "-" .. version)
+local wm_options = "linux64" .. wm_compiler .. "DPInt" .. wm_label_size .. "Opt"
+
+local foam_site_dir = pathJoin(root, "site", version, "platforms", wm_options)
+local platform_dir = pathJoin(wm_project_dir, "platforms", wm_options)
+local foam_usr_dir = pathJoin(wm_project_user_dir, "platforms", wm_options)
+
+setenv("WM_THIRD_PARTY_DIR", wm_thirdparty_dir)
+setenv("FOAM_EXT_LIBBIN", pathJoin(platform_dir,"lib"))
+setenv("BOOST_ARCH_PATH", "")
+setenv("CGAL_ARCH_PATH", "")
+setenv("FOAMY_HEX_MESH", "yes")
+setenv("FOAM_APP", pathJoin(wm_project_dir, "applications"))
+setenv("FOAM_APPBIN", pathJoin(platform_dir, "bin"))
+setenv("FOAM_ETC", pathJoin(wm_project_dir, "etc"))
+setenv("FOAM_JOB_DIR", pathJoin(root, "jobControl"))
+setenv("FOAM_LIBBIN", pathJoin(platform_dir, "lib"))
+setenv("FOAM_MPI", "mpi")
+setenv("FOAM_RUN", pathJoin(wm_project_user_dir, "run"))
+setenv("FOAM_SETTINGS", "")
+setenv("FOAM_SIGFPE", "")
+setenv("FOAM_SITE_APPBIN", pathJoin(foam_site_dir, "bin"))
+setenv("FOAM_SITE_LIBBIN", pathJoin(foam_site_dir, "lib"))
+setenv("FOAM_SOLVERS", pathJoin(wm_project_dir, "applications", "solvers"))
+setenv("FOAM_SRC", pathJoin(wm_project_dir, "src"))
+setenv("FOAM_TUTORIALS", pathJoin(wm_project_dir, "tutorials"))
+setenv("FOAM_USER_APPBIN", pathJoin(foam_usr_dir, "bin"))
+setenv("FOAM_USER_LIBBIN", pathJoin(foam_usr_dir, "lib"))
+setenv("FOAM_UTILITIES", pathJoin(wm_project_dir, "applications" , "utilities"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(wm_project_dir,"platforms",wm_options,"lib","dummy"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(wm_thirdparty_dir,"platforms",wm_options,"lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(platform_dir,"lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(foam_site_dir,"lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(foam_usr_dir,"lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(wm_thirdparty_dir,"platforms",wm_options,"lib","mpi"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(platform_dir,"lib","mpi"))
+prepend_path("PATH", pathJoin(wm_project_dir, "bin"))
+prepend_path("PATH", pathJoin(wm_project_dir, "wmake"))
+prepend_path("PATH", pathJoin(platform_dir, "bin"))
+prepend_path("PATH", pathJoin(foam_site_dir, "bin"))
+prepend_path("PATH", pathJoin(foam_usr_dir, "bin"))
+setenv("MPI_BUFFER_SIZE", "20000000")
+setenv("WM_ARCH", "linux64")
+setenv("WM_ARCH_OPTION", "64")
+setenv("WM_CC", "")
+setenv("WM_CFLAGS", "")
+setenv("WM_COMPILER_LIB_ARCH", "64")
+setenv("WM_COMPILER_TYPE", "system")
+setenv("WM_COMPILE_OPTION", "Opt")
+setenv("WM_CXX", "")
+setenv("WM_CXXFLAGS", "")
+setenv("WM_DIR", pathJoin(wm_project_dir, "wmake"))
+setenv("WM_LABEL_OPTION", "Int" .. wm_label_size)
+setenv("WM_LDFLAGS", "")
+setenv("WM_LINK_LANGUAGE", "c++")
+setenv("WM_OPTIONS", wm_options)
+setenv("WM_OSTYPE", "POSIX")
+setenv("WM_PRECISION_OPTION", "DP")
+setenv("WM_PROJECT", "OpenFOAM")
+setenv("WM_PROJECT_DIR", wm_project_dir)
+setenv("WM_PROJECT_INST_DIR", root)
+setenv("WM_PROJECT_USER_DIR", wm_project_user_dir)
+
+set_alias("app", 'cd $FOAM_APP')
+set_alias("foam", 'cd $WM_PROJECT_DIR')
+set_alias("foam3rdParty", 'cd $WM_THIRD_PARTY_DIR')
+set_alias("foamApps", 'cd $FOAM_APP')
+set_alias("foamSite", 'cd $WM_PROJECT_INST_DIR/site')
+set_alias("foamSol", 'cd $FOAM_SOLVERS')
+set_alias("foamTuts", 'cd $FOAM_TUTORIALS')
+set_alias("foamUtils", 'cd $FOAM_UTILITIES')
+set_alias("foamfv", 'cd $FOAM_SRC/finiteVolume')
+set_alias("foamsrc", 'cd $FOAM_SRC/$WM_PROJECT')
+set_alias("lib", 'cd $FOAM_LIBBIN')
+set_alias("run", 'cd $FOAM_RUN')
+set_alias("sol", 'cd $FOAM_SOLVERS')
+set_alias("src", 'cd $FOAM_SRC')
+set_alias("tut", 'cd $FOAM_TUTORIALS')
+set_alias("util", 'cd $FOAM_UTILITIES')
+set_alias("wm32", 'wmSET WM_ARCH_OPTION=32')
+set_alias("wm64", 'wmSET WM_ARCH_OPTION=64')
+set_alias("wmDP", 'wmSET WM_PRECISION_OPTION=DP')
+set_alias("wmSET", '. $WM_PROJECT_DIR/etc/bashrc')
+set_alias("wmSP", 'wmSET WM_PRECISION_OPTION=SP')
+set_alias("wmSchedOFF", 'unset WM_SCHEDULER')
+set_alias("wmSchedON", 'export WM_SCHEDULER=$WM_PROJECT_DIR/wmake/wmakeScheduler')
+set_alias("wmUNSET", '. $WM_PROJECT_DIR/etc/config/unset.sh')
+"""
+
+# Build statistics
+buildstats = [{
+    "build_time": 9774.01,
+    "command_line": ['--add-dummy-to-minimal-toolchains', "--allow-loaded-modules='nixpkgs'", "--buildpath='/dev/shm/ebuser/avx2'", "--configfiles='/cvmfs/soft.computecanada.ca/easybuild/config.cfg'", "--containerpath='/cvmfs/soft.computecanada.ca/easybuild/containers'", "--filter-deps='Bison,CMake,flex,ncurses,libreadline,bzip2,zlib,binutils,M4,Autoconf,Automake,libtool,Autotools,Szip,libxml2,sparsehash,SQLite,cURL,Doxygen,expat=:2.2.5[,Mesa,libGLU,SWIG,PCRE,libjpeg-turbo,LibTIFF,libpng,XZ,ant,gettext,X11,pkg-config,LLVM,libdrm,gperf,FLTK,fontconfig,freetype,GMP,GL2PS,gnuplot,GraphicsMagick,MPFR,libmatheval,Tcl,Tk,CFITSIO,libX11,libXft,libXpm,libXext,makedepend,cairo,libiconv,FFmpeg,GLib,FLANN'", "--filter-env-vars='LD_LIBRARY_PATH,LD_PRELOAD'", "--hide-deps='icc,ifort,GCCcore'", "--hide-toolchains='GCCcore,iompi,iomkl'", "--hooks='/cvmfs/soft.computecanada.ca/easybuild/cc_hooks.py'", '--ignore-osdeps', "--include-module-naming-schemes='/cvmfs/soft.computecanada.ca/easybuild/easybuild-computecanada-config/SoftCCHierarchicalMNS.py'", "--include-toolchains='/cvmfs/soft.computecanada.ca/easybuild/easybuild-computecanada-config/toolchains/*.py'", "--installpath='/cvmfs/soft.computecanada.ca/easybuild'", '--minimal-toolchains', '--module-depends-on', "--module-naming-scheme='SoftCCHierarchicalMNS'", "--optarch='{\\'GCC\\': \\'march=core-avx2\\', \\'Intel\\': \\'xCore-AVX2\\', \\'GCCcore\\': \\'GENERIC\\'}'", "--packagepath='/cvmfs/soft.computecanada.ca/easybuild/packages'", "--parallel='8'", "--prefix='/cvmfs/soft.computecanada.ca/easybuild'", '--recursive-module-unload', "--repository='GitRepository'", "--repositorypath='/cvmfs/soft.computecanada.ca/easybuild/ebfiles_repo.git'", "--robot-paths='/cvmfs/soft.computecanada.ca/easybuild/easyconfigs:/cvmfs/soft.computecanada.ca/easybuild/ebfiles_repo'", "--sourcepath='/cvmfs/soft.computecanada.ca/easybuild/sources'", "--subdir-modules='modules/2017'", "--subdir-software='software/2017'", "--subdir-user-modules='.local/easybuild/modules/2017'", "--suffix-modules-path=''", "--use-ccache='/cvmfs/local/ccache'", 'OpenFOAM-v1906-iompi-2018.3.312.eb'],
+    "core_count": 16,
+    "cpu_model": "Intel Xeon Processor (Skylake, IBRS)",
+    "cpu_speed": 2095.078,
+    "cpu_vendor": "Intel",
+    "easybuild-easyblocks_version": "3.9.1-r239a0c91f569f62ae135aa99314a684868ac9648",
+    "easybuild-framework_version": "3.9.1-r5167691f0570449d8f3cb128053ec3ca449cda4d",
+    "gcc_version": "Using built-in specs.; COLLECT_GCC=gcc; COLLECT_LTO_WRAPPER=/cvmfs/soft.computecanada.ca/nix/store/rrwlh3bahkdwnbjvzm0nkq3504v451yl-gfortran-7.3.0/libexec/gcc/x86_64-pc-linux-gnu/7.3.0/lto-wrapper; Target: x86_64-pc-linux-gnu; Configured with: ; Thread model: posix; gcc version 7.3.0 (GCC) ; ",
+    "glibc_version": "2.24",
+    "hostname": "build-node.computecanada.ca",
+    "install_size": 3010916354,
+    "modules_tool": ('Lmod', '/cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/lmod/lmod/libexec/lmod', '7.8.15'),
+    "os_name": "centos linux",
+    "os_type": "Linux",
+    "os_version": "7.6.1810",
+    "platform_name": "x86_64-unknown-linux",
+    "python_version": "2.7.13 (default, Dec 17 2016, 20:05:07) ; [GCC 5.4.0]",
+    "system_gcc_path": "/cvmfs/soft.computecanada.ca/nix/var/nix/profiles/gcc-7.3.0/bin/gcc",
+    "system_python_path": "/cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/bin/python",
+    "timestamp": 1563299085,
+    "total_memory": 60232,
+}]

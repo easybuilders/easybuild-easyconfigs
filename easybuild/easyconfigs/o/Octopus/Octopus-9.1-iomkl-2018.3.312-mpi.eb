@@ -1,0 +1,67 @@
+easyblock = 'ConfigureMake'
+
+name = 'Octopus'
+version = '9.1'
+versionsuffix = '-mpi'
+
+homepage = 'http://www.tddft.org/programs/octopus/wiki/index.php/Main_Page'
+description = """Octopus is a scientific program aimed at the ab initio virtual experimentation 
+ on a hopefully ever-increasing range of system types. Electrons are described quantum-mechanically 
+ within density-functional theory (DFT), in its time-dependent form (TDDFT) when doing simulations 
+ in time. Nuclei are described classically as point particles. 
+ Electron-nucleus interaction is described within the pseudopotential approximation."""
+
+toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://www.tddft.org/programs/%(namelower)s/down.php?file=%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+
+builddependencies = [
+    ('Bison', '3.0.4'),
+    ('Perl', '5.22.4', '', True),
+]
+
+dependencies = [
+    ('libxc', '4.3.4', '', ('iccifort', '2018.3')),
+    ('METIS', '4.0.3', '', ('iccifort', '2018.3')),
+    ('netCDF', '4.4.1.1', '-mpi', ('iompi', '2018.3.312')),
+    ('netCDF-Fortran', '4.4.4', '', ('iccifort', '2018.3')),
+    ('FFTW', '3.3.6', '-mpi', ('iompi', '2018.3.312')),
+    ('BerkeleyGW', '1.2.0'),
+    ('arpack-ng', '3.5.0', '', ('iimkl', '2018.3')),
+    ('PFFT', '1.0.8-alpha'),
+    ('ETSF_IO', '1.0.4', '', ('iccifort', '2018.3')),
+    ('GSL', '2.3', '', ('iccifort', '2018.3')),
+    ('ParMETIS', '4.0.3', '', ('iompi', '2018.3.312')),
+]
+
+preconfigopts = 'BLAS_LIBS="$LIBBLAS" LAPACK_LIBS="$LIBLAPACK"'
+
+configopts  = 'CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 '
+configopts += '--disable-python --disable-gdlib --disable-openmp '
+configopts += '--disable-metis --enable-mpi --enable-newuoa '
+configopts += '--with-blas="-L$BLAS_LIB_DIR $LIBBLAS" '
+configopts += '--with-libxc-prefix=$EBROOTLIBXC '
+configopts += '--with-gsl-prefix=$EBROOTGSL '
+configopts += '--with-netcdf-prefix=$EBROOTNETCDFMINFORTRAN '
+configopts += '--with-etsf-io-prefix=$EBROOTETSF_IO '
+configopts += '--with-blacs="$MKLROOT/lib/intel64/libmkl_blacs_intelmpi_lp64.a" '
+configopts += '--with-scalapack="$MKLROOT/lib/intel64/libmkl_scalapack_lp64.a" '
+configopts += '--with-mpifftw-prefix=$EBROOTFFTW '
+configopts += '--with-pfft-prefix=$EBROOTPFFT '
+configopts += '--with-arpack=$EBROOTARPACKMINNG/lib '
+configopts += '--with-berkeleygw-prefix=$EBROOTBERKELEYGW '
+configopts += '--with-parmetis-prefix=$EBROOTPARMETIS '
+
+modextrapaths = {'PATH': 'share/%(namelower)s/pseudopotentials'}
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['include', 'share', 'share/%(namelower)s'],
+}
+
+moduleclass = 'chem'
+modluafooter = """
+depends_on("perl")
+"""
