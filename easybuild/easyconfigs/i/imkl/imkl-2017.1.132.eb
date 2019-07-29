@@ -17,6 +17,7 @@ checksums = ['7911c0f777c4cb04225bf4518088939e']
 # We let the non-hidden intel module define the run-time license
 license_file = "/cvmfs/soft.computecanada.ca/config/licenses/intel/computecanada.lic/cedar.lic"
 skip_license_file_in_module = True
+components = ['intel-mkl']
 
 interfaces = False
 
@@ -30,7 +31,7 @@ postinstallcmds = [
     'tar xvzf %(installdir)s/mkl/examples/examples_core_f.tgz -C %(installdir)s/mkl/examples/',
     'tar xvzf %(installdir)s/mkl/examples/examples_f95.tgz -C %(installdir)s/mkl/examples/',
     'tar xvzf %(installdir)s/mkl/examples/examples_mic_c.tgz -C %(installdir)s/mkl/examples/',
-    'tar xvzf %(installdir)s/mkl/examples/examples_mic_f.tgz -C %(installdir)s/mkl/examples/'
+    'tar xvzf %(installdir)s/mkl/examples/examples_mic_f.tgz -C %(installdir)s/mkl/examples/',
   '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
      installdir=%(installdir)s
      publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
@@ -41,10 +42,21 @@ postinstallcmds = [
          cp -p $installdir/$i $publicdir/$i
        fi
      done
-     cd $publicdir
-     mkdir -p lib mkl/lib
-     ln -s ../compilers_and_libraries_%(version)s/linux/lib/intel64_lin lib/intel64
-     ln -s ../../compilers_and_libraries_%(version)s/linux/mkl/lib/intel64_lin mkl/lib/intel64'''
+     cd $installdir
+     # replicate symlink structure for relative symbolic directory links
+     for i in $(find . -type l -xtype d); do
+       target=$(readlink $i)
+       if [ ${target:0:6} != '/cvmfs' ]; then
+         cd $publicdir
+         mkdir -p $(dirname $i)
+         if [ -d $(dirname $i)/$target ]; then
+           ln -s $target $i
+         else
+           rmdir $(dirname $i)
+         fi
+       fi
+       cd $installdir
+     done'''
 ]
 
 modextravars = {
