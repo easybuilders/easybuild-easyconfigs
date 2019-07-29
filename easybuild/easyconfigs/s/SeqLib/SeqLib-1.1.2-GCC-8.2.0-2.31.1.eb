@@ -1,0 +1,71 @@
+easyblock = 'ConfigureMake'
+
+name = 'SeqLib'
+version = '1.1.2'
+
+homepage = 'https://github.com/walaj/SeqLib'
+description = """ C++ htslib/bwa-mem/fermi interface for interrogating sequence data """
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+toolchainopts = {'cstd': 'c++11', 'pic': True}
+
+extract_cmd_pattern = 'tar -C %s/%s --strip-components=1 -xf %%s'
+seqlibdir = '%(name)s-%(version)s'
+
+source_urls = ['https://github.com/walaj/SeqLib/archive/']
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/walaj/fermi-lite/archive/'],
+        'download_filename': '5bc90f8d70e2b66184eccbd223a3be714c914365.tar.gz',
+        'filename': 'fermi-lite-20160901.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (seqlibdir, 'fermi-lite'),
+    },
+    {
+        'source_urls': ['https://github.com/walaj/bwa/archive/'],
+        'download_filename': 'c02766e3c34ac3f4af9842e20a54b7f9f4b36d0b.tar.gz',
+        'filename': 'bwa-20161013.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (seqlibdir, 'bwa'),
+    },
+    {
+        'source_urls': ['https://github.com/samtools/htslib/archive/'],
+        'download_filename': '49fdfbda20acbd73303df3c7fef84f2d972c5f8d.tar.gz',
+        'filename': 'htslib-20170620.tar.gz',
+        'extract_cmd': extract_cmd_pattern % (seqlibdir, 'htslib'),
+    },
+]
+checksums = [
+    'd4679171b6c537f208a54cf4f4343f8068b35f401fa2170efffc74d7bd297892',  # v1.1.2.tar.gz
+    '58c066239929f48383044fde68ba164bdd15edb2ff0603cdcd6c3fe095171008',  # fermi-lite-20160901.tar.gz
+    '023ccd462a9d2df24c8dd23e42180081a0800134cac2307ac117c21b0ae0ea8c',  # bwa-20161013.tar.gz
+    'e71a83688ca9cb594f5338402681b52f3a95d485eff1901fb23b434332420b0e',  # htslib-20170620.tar.gz
+]
+
+# determine commit of additional sources via https://github.com/walaj/SeqLib
+dependencies = [
+    ('XZ', '5.2.4'),
+    ('bzip2', '1.0.6'),
+    ('cURL', '7.63.0'),  # for remote support
+]
+
+configopts = 'LIBS="$LIBS -lcurl -lcrypto -llzma -lbz2"'
+
+buildopts = ' && cd src/seqtools && make'
+
+skipsteps = ['install']
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/{bin,lib,include}',
+    'cp -a %(builddir)s/%(name)s-%(version)s/{src/libseqlib.a,fermi-lite/libfml.a} %(installdir)s/lib/',
+    'cp -a %(builddir)s/%(name)s-%(version)s/{bwa/libbwa.a,htslib/libhts.a} %(installdir)s/lib/',
+    'cp -a %(builddir)s/%(name)s-%(version)s/src/seqtools/seqtools %(installdir)s/bin/',
+    'cp -a %(builddir)s/%(name)s-%(version)s/{%(name)s,json,bwa,fermi-lite,htslib} %(installdir)s/include/',
+    'cp -a %(builddir)s/%(name)s-%(version)s/htslib/cram %(installdir)s/include/',
+]
+
+sanity_check_paths = {
+    'files': ['bin/seqtools', 'lib/libseqlib.a', 'lib/libbwa.a', 'lib/libhts.a'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
