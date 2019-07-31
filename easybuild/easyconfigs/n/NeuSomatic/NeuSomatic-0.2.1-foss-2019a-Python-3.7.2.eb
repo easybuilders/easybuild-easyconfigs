@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'NeuSomatic'
+version = '0.2.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/bioinform/neusomatic'
+description = """ NeuSomatic: Deep convolutional neural networks for accurate somatic mutation detection """
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = ['https://github.com/bioinform/neusomatic/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_seqlib_seqan.patch']
+checksums = [
+    '362a490076c4f0887aa26b1df4928b38d46f8bdce3ceb19018c735cd78fd277f',  # v0.2.1.tar.gz
+    '0a07e91e33e7d6a2777d668f05d539aead5cbe611221c3d0595922304ec86708',  # NeuSomatic-0.2.1_seqlib_seqan.patch
+]
+
+builddependencies = [('CMake', '3.13.3')]
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('PyTorch', '1.1.0', versionsuffix),
+    ('torchvision', '0.3.0', versionsuffix),
+    ('pybedtools', '0.8.0'),
+    ('imageio', '2.5.0'),
+    ('Biopython', '1.73'),
+    ('HTSlib', '1.9'),
+    ('SAMtools', '1.9'),
+    ('SeqAn', '2.4.0'),
+    ('SeqLib', '1.1.2'),
+]
+
+start_dir = 'neusomatic'
+
+separate_build_dir = True
+
+skipsteps = ['install']
+
+postinstallcmds = [
+    'cp -a %(builddir)s/%(namelower)s-%(version)s/%(namelower)s/{bin,include,models} %(installdir)s/',
+    'cp -a %(builddir)s/%(namelower)s-%(version)s/%(namelower)s/python/* %(installdir)s/bin/',
+]
+
+sanity_check_paths = {
+    'files': ['bin/scan_alignments', 'bin/preprocess.py'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
