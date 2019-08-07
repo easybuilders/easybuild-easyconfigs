@@ -1,8 +1,7 @@
 easyblock = 'ConfigureMake'
 
 name = 'GDAL'
-version = '3.0.0'
-versionsuffix = '-Python-%(pyver)s'
+version = '3.0.1'
 
 homepage = 'http://www.gdal.org/'
 description = """GDAL is a translator library for raster geospatial data formats that is released under an X/MIT style
@@ -14,12 +13,12 @@ toolchain = {'name': 'GCC', 'version': '7.3.0'}
 
 source_urls = ['http://download.osgeo.org/gdal/%(version)s/']
 sources = [SOURCELOWER_TAR_XZ]
-checksums = ['ad316fa052d94d9606e90b20a514b92b2dd64e3142dfdbd8f10981a5fcd5c43e']
+checksums = ['45b4ae25dbd87282d589eca76481c426f72132d7a599556470d5c38263b09266']
 
 dependencies = [
     ('netCDF', '4.6.1'),
     ('expat', '2.2.6'),
-    ('GEOS', '3.6.1'),
+    ('GEOS', '3.7.2'),
     ('SQLite', '3.27.2'),
     ('libxml2', '2.9.8'),
     ('libpng', '1.6.36'),
@@ -33,17 +32,39 @@ dependencies = [
     ('libgeotiff', '1.5.1'),
 ]
 
-configopts = '--with-expat=$EBROOTEXPAT --with-libz=$EBROOTLIBZ --with-hdf5=$EBROOTHDF5 --with-netcdf=$EBROOTNETCDF'
-configopts += ' --with-xml2=$EBROOTLIBXML2 --with-geos=$EBROOTGEOS/bin/geos-config --with-jpeg=$EBROOTLIBJPEGMINTURBO'
-configopts += ' --with-png=$EBROOTLIBPNG --with-sqlite3=$EBROOTSQLITE --with-jasper=$EBROOTJASPER'
-configopts += ' --with-libtiff=$EBROOTLIBTIFF --with-pcre=$EBROOTPCRE --with-python=$EBROOTPYTHON/bin/python'
-configopts += ' --with-libgeotiff=$EBROOTLIBGEOTIFF'
+multi_deps = {
+	'Python': ['2.7.14','3.5.4', '3.6.3', '3.7.4']
+}
+multi_deps_load_default = False
 
-modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+builddependencies = [
+	('SciPy-Stack','2019a')
+]
+configopts = '--with-hdf5=$EBROOTHDF5 --with-netcdf=$EBROOTNETCDF'
+configopts += ' --with-geos=$EBROOTGEOS/bin/geos-config'
+configopts += ' --with-python=$EBROOTPYTHON/bin/python'
+
+postinstallcmds = [
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib" 
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('pygdal', '3.0.1.5', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/p/pygdal/'],
+        'checksums': ['1222f69fe5e6b632d0d2a42d3acb8fac80fb4577c05e01969d8cd5548192ccaa'],
+	'modulename': 'osgeo.gdal',
+    }),
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': '' }
 
 sanity_check_paths = {
     'files': ['lib/libgdal.a', 'lib/libgdal.%s' % SHLIB_EXT],
     'dirs': ['bin', 'include', 'lib/python%(pyshortver)s/site-packages']
 }
-
+sanity_check_commands = [
+	"python -c 'from osgeo import gdal' && gdal_calc.py --help"
+]
 moduleclass = 'data'
