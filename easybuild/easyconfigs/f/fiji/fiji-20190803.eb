@@ -1,0 +1,46 @@
+easyblock = 'PackedBinary'
+
+name = 'fiji'
+version = '20190803'
+
+homepage = 'https://fiji.sc/'
+description = """Fiji is an image processing package—a 'batteries-included' distribution of
+ ImageJ, bundling a lot of plugins which facilitate scientific image analysis.
+This release is based on ImageJ-1.52p and fiji-2.0.0-pre8"""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# There are no sane releases of fiji, only a tarball of the *latest* version is available.
+# Manually download the 'nojre' version and check the versions of ImageJ and fiji in the folder 'jars'
+# source_urls = ['https://downloads.imagej.net/fiji/latest/']
+# sources = ['%(name)s-nojre.tar.gz']
+sources = ['%(name)s-nojre-%(version)s.tar.gz']
+
+dependencies = [('Java', '1.8', '', True)]
+
+postinstallcmds = [
+    # Remove binaries for other platforms
+    'rm %(installdir)s/{ImageJ-win32.exe,ImageJ-win64.exe,ImageJ-linux32}',
+    # Enable any update site (edit existing site with same parameters to enable it)
+    # Full list at https://imagej.github.io/list-of-update-sites/
+    '%(installdir)s/ImageJ-linux64 --headless --update edit-update-site "ImageScience"'
+    ' https://sites.imagej.net/ImageScience/',
+    '%(installdir)s/ImageJ-linux64 --headless --update edit-update-site "3D ImageJ Suite"'
+    ' http://sites.imagej.net/Tboudier/',
+    # Add a new update site
+    # '%(installdir)s/ImageJ-linux64 --headless --update add-update-site "New Name"'
+    # ' http://site.url/NewName/',
+    # Update the installation
+    '%(installdir)s/ImageJ-linux64 --headless --update update',
+]
+
+sanity_check_paths = {
+    'files': ['ImageJ-linux64'],
+    'dirs': [],
+}
+
+modloadmsg = """ ImageJ/fiji can be started with the command: ImageJ-linux64.
+ Plugins can be installed in your $HOME/.plugins folder.
+ If you need any other update sites to be enabled, please contact support."""
+
+moduleclass = 'vis'
