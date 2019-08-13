@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'DIRAC'
+version = '18.0'
+versionsuffix = '-Python-%(pyver)s-int64'
+
+homepage = 'http://www.diracprogram.org'
+description = "DIRAC: Program for Atomic and Molecular Direct Iterative Relativistic All-electron Calculations"
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://zenodo.org/record/2253986/files/']
+sources = ['DIRAC-%(version)s-Source.tar.gz']
+patches = ['DIRAC-%(version)s_fix-fopenmp.patch']
+checksums = [
+    '4cd103aad4cc04914f00578e77eb24810c7f2e4bd9ce9dd610f754439af83d77',  # DIRAC-18.0-Source.tar.gz
+    '599e5ff4e2e11bdb9a00eec4bda448d33f3c4d2d4c17e90608b0c24285caf169',  # DIRAC-18.0_fix-fopenmp.patch
+]
+
+builddependencies = [('CMake', '3.13.3')]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Boost', '1.70.0'),
+    #('PCMSolver', '1.2.3'),
+    #('HDF5', '1.10.5'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = './setup --omp --mpi --int64 --prefix=%(installdir)s '
+prebuildopts += '--cc="$CC" --extra-cc-flags="$CFLAGS -ilp64" '
+prebuildopts += '--cxx="$CXX" --extra-cxx-flags="$CXXFLAGS -ilp64" '
+prebuildopts += '--fc="$FC" --extra-fc-flags="$FCFLAGS -ilp64" && cd build && '
+
+preinstallopts = "cd build && "
+
+sanity_check_paths = {
+    'files': ['bin/pam-dirac', 'share/dirac/dirac.x'],
+    'dirs': ['share/dirac/basis'],
+}
+
+sanity_check_commands = ["pam-dirac --help"]
+
+moduleclass = 'chem'
