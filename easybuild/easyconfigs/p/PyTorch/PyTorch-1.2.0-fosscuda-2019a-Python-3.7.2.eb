@@ -289,22 +289,11 @@ prebuildopts += 'USE_FFMPEG=ON USE_GLOO_IBVERBS=1 USE_GFLAGS=ON USE_GLOG=ON '
 prebuildopts += 'CUDNN_LIB_DIR=$EBROOTCUDNN/lib64 CUDNN_INCLUDE_DIR=$EBROOTCUDNN/include '
 prebuildopts += 'TORCH_CUDA_ARCH_LIST="3.5 6.0 7.0" '
 
-import subprocess  # NOQA
-arch = subprocess.check_output(['uname', '-m']).strip()
-
-runtest = 'export PYTHONPATH=%%(builddir)s/%%(namelower)s-%%(version)s/' \
-          'build/lib.linux-%s-%%(pyshortver)s:$PYTHONPATH ' % arch
-runtest += '&& export LD_LIBRARY_PATH=%(builddir)s/%(namelower)s-%(version)s/torch/lib64:$LD_LIBRARY_PATH '
-
-# if arch == 'ppc64le':
-#     # V100
-#     prebuildopts += 'TORCH_CUDA_ARCH_LIST="7.0" '
-# else:
-#     # K40, P100, and V100
-#     prebuildopts += 'TORCH_CUDA_ARCH_LIST="3.5 6.0 7.0" '
-
 preinstallopts = prebuildopts
 
+runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/' \
+          'build/lib.linux-%(arch)s-%(pyshortver)s:$PYTHONPATH '
+runtest += '&& export LD_LIBRARY_PATH=%(builddir)s/%(namelower)s-%(version)s/torch/lib64:$LD_LIBRARY_PATH '
 runtest += '&& python test/run_test.py --verbose '
 
 options = {'modulename': 'torch'}

@@ -284,15 +284,11 @@ prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1 VERBOSE
 prebuildopts += 'LDFLAGS="$LDFLAGS -ldl" '
 prebuildopts += 'USE_FFMPEG=ON USE_GLOO_IBVERBS=1 USE_GFLAGS=ON USE_GLOG=ON '
 
-import subprocess  # NOQA
-arch = subprocess.check_output(['uname', '-m']).strip()
-
-runtest = 'export PYTHONPATH=%%(builddir)s/%%(namelower)s-%%(version)s/' \
-          'build/lib.linux-%s-%%(pyshortver)s:$PYTHONPATH ' % arch
-runtest += '&& export LD_LIBRARY_PATH=%(builddir)s/%(namelower)s-%(version)s/torch/lib64:$LD_LIBRARY_PATH '
-
 preinstallopts = prebuildopts
 
+runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/' \
+          'build/lib.linux-%(arch)s-%(pyshortver)s:$PYTHONPATH '
+runtest += '&& export LD_LIBRARY_PATH=%(builddir)s/%(namelower)s-%(version)s/torch/lib64:$LD_LIBRARY_PATH '
 runtest += '&& python test/run_test.py --verbose '
 
 options = {'modulename': 'torch'}
