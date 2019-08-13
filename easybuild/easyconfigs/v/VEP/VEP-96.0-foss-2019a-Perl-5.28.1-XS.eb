@@ -1,0 +1,46 @@
+name = 'VEP'
+version = '96.0'
+versionsuffix = '-Perl-%(perlver)s-XS'
+
+homepage = 'https://www.ensembl.org/info/docs/tools/vep'
+description = """Variant Effect Predictor (VEP) determines the effect of your
+ variants (SNPs, insertions, deletions, CNVs or structural variants) on genes,
+ transcripts, and protein sequence, as well as regulatory regions.
+ Includes EnsEMBL-XS, which provides pre-compiled replacements for frequently
+ used routines in VEP."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = ['https://github.com/Ensembl/ensembl-vep/archive/release/']
+sources = ['%(version)s.tar.gz']
+checksums = ['338f4774683da45e53bdf9a2cfffad4803df53fc4d3ee72817a9e79e63e513f7']
+
+dependencies = [
+    ('Perl', '5.28.1'),
+    ('DBD-mysql', '4.050', '-Perl-%(perlver)s'),
+    ('BioPerl', '1.7.2', '-Perl-%(perlver)s'),
+    ('Bio-DB-HTS', '3.01', '-Perl-%(perlver)s'),
+]
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('Bio::EnsEMBL::XS', '2.3.2', {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/Ensembl/ensembl-xs/archive'],
+        'checksums': ['aafc59568cd1042259196575e99cdfeef9c0fb7966e5f915cfaf38c70885ffa5'],
+    }),
+]
+
+sanity_check_commands = ['vep --help']
+sanity_check_paths = {
+    'files': ['vep'],
+    'dirs': ['modules/Bio/EnsEMBL/VEP',
+             'lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/Bio/EnsEMBL/XS'],
+}
+
+# Add path for EnsEMBL-XS, vep easyblock takes care of paths for VEP
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'}
+
+moduleclass = 'bio'
