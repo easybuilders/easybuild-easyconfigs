@@ -1,0 +1,70 @@
+easyblock = 'ConfigureMake'
+
+name = 'ABINIT'
+version = '8.10.3'
+
+homepage = 'https://www.abinit.org/'
+description = """ABINIT is a package whose main program allows one to find the total energy,
+ charge density and  electronic structure of systems made of electrons and nuclei (molecules
+ and periodic solids) within Density Functional  Theory (DFT), using pseudopotentials and a
+ planewave or wavelet basis."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://www.abinit.org/sites/default/files/packages/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['ed626424b4472b93256622fbb9c7645fa3ffb693d4b444b07d488771ea7eaa75']
+
+##
+# AtomPAW-4.1.0.5-intel-2018b.eb is lastest version to be used with ABINIT 8.10.x
+##
+dependencies = [
+    ('libxc', '3.0.1'),
+    ('netCDF', '4.6.1'),
+    ('netCDF-Fortran', '4.4.4'),
+    ('HDF5', '1.10.2'),
+    ('Wannier90', '2.0.1.1', '-abinit'),
+    ('AtomPAW', '4.1.0.5'),
+]
+
+# ensure mpi and intel toolchain
+configopts = '--enable-mpi '
+
+# linalg & fft
+configopts += '--with-linalg-flavor=mkl '
+configopts += '--with-fft-flavor=dfti --with-fft-libs="$LIBFFT" '
+
+configopts += '--with-dft-flavor=libxc+wannier90+atompaw '
+
+# libXC variant
+configopts += '--with-libxc-incs="-I$EBROOTLIBXC/include" '
+configopts += '--with-libxc-libs="-L$EBROOTLIBXC/lib -lxcf90 -lxc" '
+
+# wannier90 variant
+configopts += '--with-wannier90-bins="$EBROOTWANNIER90/bin" '
+configopts += '--with-wannier90-incs="-I$EBROOTWANNIER90/include" '
+configopts += '--with-wannier90-libs="-L$EBROOTWANNIER90/lib -lwannier90" '
+
+# atompaw variant
+configopts += '--with-atompaw-bins="$EBROOTATOMPAW/bin" '
+configopts += '--with-atompaw-incs="-I$EBROOTATOMPAW/include" '
+configopts += '--with-atompaw-libs="-L$EBROOTATOMPAW/lib -latompaw" '
+
+configopts += '--with-trio-flavor=netcdf '
+
+# netCDF support
+configopts += '--with-netcdf-incs="-I$EBROOTNETCDF/include -I$EBROOTNETCDFMINFORTRAN/include" '
+configopts += '--with-netcdf-libs="-L$EBROOTNETCDF/lib64 -lnetcdf -L$EBROOTNETCDFMINFORTRAN/lib -lnetcdff" '
+
+# Enable double precision for GW calculations
+configopts += '--enable-gw-dpc '
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['abinit', 'aim', 'cut3d', 'conducti', 'mrgddb', 'mrgscr', 'optic']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'chem'
