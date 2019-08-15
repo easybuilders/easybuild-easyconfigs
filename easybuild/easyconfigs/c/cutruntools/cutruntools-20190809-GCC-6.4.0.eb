@@ -1,0 +1,82 @@
+easyblock = 'MakeCp'
+name = 'cutruntools'
+version = '20190802'
+
+homepage = 'https://bitbucket.org/qzhudfci/cutruntools/src/default/'
+
+description = "This package contains the pipeline for conducting a CUT&RUN analysis. The pipeline comprises of read trimming, alignment steps, motif finding steps, and finally the motif footprinting step."
+
+#source_urls = ['https://bitbucket.org/qzhudfci/cutruntools/get/', 'https://github.com/ParkerLab/atactk/archive/', 'http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips', ']
+#sources = ['tip.tar.gz', '0.1.6.tar.gz', 'chromFaMasked.tar.gz']
+toolchain = {'name': 'gomkl', 'version': '2017.5.211'}
+
+
+sources = [
+	{'source_urls': ['https://bitbucket.org/qzhudfci/cutruntools/get/'],
+	'filename': 'tip.tar.gz',
+	'download_filename': 'tip.tar.gz',
+	'extract_cmd': "tar xfvz %s",
+},
+	{'source_urls': ['https://github.com/ParkerLab/atactk/archive/'],
+        'filename': '0.1.6.tar.gz',
+        'download_filename': '0.1.6.tar.gz',
+        'extract_cmd': "tar xfvz %s",
+},
+        {'source_urls': ['http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips'],
+        'filename': 'chromFaMasked.tar.gz',
+        'download_filename': 'chromFaMasked.tar.gz',
+        'extract_cmd': "tar xfvz %s",
+},
+        {'source_urls': ['http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64'],
+        'filename': 'fetchChromSizes',
+        'download_filename': 'fetchChromSizes',
+        'extract_cmd': "mv  %s %(builddir)s",
+},
+        {'source_urls': ['https://files.pythonhosted.org/packages/33/ec/ad3ac2dcf4d5c3034e8af612c9fae76a70ae330446f47b7d29ff3deaefc7/'],
+        'filename': 'sexpdata-0.0.3.tar.gz',
+        'download_filename': 'sexpdata-0.0.3.tar.gz',
+        'extract_cmd': "mv  %s %(builddir)s",
+},
+]
+
+
+
+
+skipsteps = ['build']
+patches = ['cutrun-%(version)s.patch', ('atactk-0.1.6.patch','%(builddir)s'), ('fetchChromSizes.patch', '%(builddir)s'),]
+with_configure = True
+configure_cmd = "pip install numpy --prefix=%(installdir)s && "
+configure_cmd += "pip install macs2 --prefix=%(installdir)s && "
+configure_cmd += "mv ../chr* assemblies/chrom.hg19 && cd assemblies/chrom.hg19 && ls -1 chr*.fa.masked |xargs cat > hg19.fa && ${EBROOTBEDTOOLS}/bin/bedtools getfasta -fi hg19.fa -bed ../../sample.bed && sh ../../../fetchChromSizes hg19 > hg19.chrom.sizes && "
+configure_cmd += "if [ ! -d ${HOME}/R-packages ]; then mkdir ${HOME}/R-packages; fi && echo \"install.packages(\\\"CENTIPEDE\\\", repos=\\\"http://R-Forge.R-project.org\\\", lib=\\\"${HOME}/R-packages\\\") \" | R --no-save && cd ../../ && "
+#configure_cmd += "gcc -O2 kseq_test.c -lz -o kseq_test  && "
+configure_cmd += "chmod a+x ../fetchChromSizes && "
+configure_cmd += "cd .. && pip install ./atactk-0.1.6 --no-index --find-links=%(builddir)s -r %(builddir)s/atactk-0.1.6/requirements.txt --prefix=%(builddir)s && echo "
+configure_cmd_prefix = ""
+dependencies = [
+('BEDTools', '2.26.0'),
+('Python', '2.7.14'),
+('Trimmomatic', '0.36'),
+('Bowtie2', '2.2.9'),
+('SAMtools', '1.3.1'),
+('picard', '2.10.7', '-Java-1.8.0_121'),
+('MEME', '5.0.5', '-python2'),
+('BEDOPS', '2.4.35'),
+('kentutils', '20180716', '-linux.x86_64'),
+('R', '3.3.3', '-bare'),
+('Java', '1.8.0_121'),
+]
+
+
+files_to_copy = [
+(['create_scripts.py', '../fetchChromSizes', 'filter_below.awk', 'generate.py', 'config.json', 'create_scripts.py', 'hg19.blacklist.bed', 'hg38.blacklist.bed', 'length', 'mm10.blacklist.bed', 'mm9.blacklist.bed', 'quantify.py', 'quantify_separate.py', 'sample.bed', 'sample.result.gata1.png', 'single.locus.visualized.UCSC.png', 'USAGE.md', 'validate.py'], './'),
+'macs2.narrow.aug18', 'macs2.narrow.aug18.dedup', 'assemblies', '../bin', '../lib'
+]
+
+sanity_check_paths = {
+     'files': ['generate.py', 'create_scripts.py', 'config.json', 'assemblies/chrom.hg19/hg19.chrom.sizes', 'assemblies/chrom.hg19/hg19.fa'],
+     'dirs': ['assemblies', 'assemblies/chrom.hg19', 'macs2.narrow.aug18', 'macs2.narrow.aug18.dedup']
+}
+modextrapaths = {'PYTHONPATH': ['','lib/python2.7/site-packages'], 'PATH': ['',':%(installdir)s']}
+moduleclass = 'bio'
+
