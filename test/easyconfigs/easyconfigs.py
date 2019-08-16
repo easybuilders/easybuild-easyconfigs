@@ -75,6 +75,7 @@ class EasyConfigTest(TestCase):
         'check_osdeps': False,
         'external_modules_metadata': {},
         'force': True,
+        'local_var_naming_check': 'error',
         'optarch': 'test',
         'robot_path': get_paths_for("easyconfigs")[0],
         'silent': True,
