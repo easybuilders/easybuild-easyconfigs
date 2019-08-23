@@ -47,7 +47,7 @@ from distutils import log
 # recent setuptools versions will *TRANSFORM* something like 'X.Y.Zdev' into 'X.Y.Z.dev0', with a warning like
 #   UserWarning: Normalizing '2.4.0dev' to '2.4.0.dev0'
 # This causes problems further up the dependency chain...
-VERSION = '3.9.4'
+VERSION = '4.0.0.dev0'
 
 API_VERSION = VERSION.split('.')[0]
 EB_VERSION = '.'.join(VERSION.split('.')[0:2])
@@ -75,7 +75,7 @@ try:
     log.info("Installing with setuptools.setup...")
     install_package = 'setuptools'
 
-except ImportError, err:
+except ImportError as err:
     log.info("Failed to import setuptools.setup (%s), so falling back to distutils.setup" % err)
     from distutils.core import setup
     install_package = 'distutils'
@@ -120,6 +120,9 @@ versions, etc.).""",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
+       "Programming Language :: Python :: 3.5",
+       "Programming Language :: Python :: 3.6",
+       "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Build Tools",
     ],
     platforms = "Linux",
