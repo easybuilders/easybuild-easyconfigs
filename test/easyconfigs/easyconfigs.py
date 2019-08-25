@@ -201,7 +201,7 @@ class EasyConfigTest(TestCase):
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
             elif dep in ['Boost', 'R', 'PLUMED', 'Lua', 'ASE'] and len(dep_vars) > 1:
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
