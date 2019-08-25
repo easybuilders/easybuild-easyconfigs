@@ -50,7 +50,7 @@ from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_gra
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
-from easybuild.tools.filetools import change_dir, remove_file, write_file
+from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.py2vs3 import string_type
@@ -518,6 +518,15 @@ def template_easyconfig_test(self, spec):
     global single_tests_ok
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
+
+    # give easyconfig for last EasyBuild 3.x release special treatment
+    # replace use deprecated dummy toolchain, required to avoid breaking "eb --install-latest-eb-release",
+    # with SYSTEM toolchain constant
+    if os.path.basename(spec) == 'EasyBuild-3.9.4.eb':
+        ectxt = read_file(spec)
+        regex = re.compile('^toolchain = .*dummy.*', re.M)
+        ectxt = regex.sub('toolchain = SYSTEM', ectxt)
+        write_file(spec, ectxt)
 
     # parse easyconfig
     ecs = process_easyconfig(spec)
