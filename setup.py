@@ -32,12 +32,10 @@ This script can be used to install easybuild-easyconfigs, e.g. using:
 @author: Kenneth Hoste (Ghent University)
 """
 
-import glob
 import os
 import re
-import shutil
-import sys
 from distutils import log
+from distutils.core import setup
 
 # note: release candidates should be versioned as a pre-release, e.g. "1.1rc1"
 # 1.1-rc1 would indicate a post-release, i.e., and update of 1.1, so beware!
@@ -68,17 +66,6 @@ EB_VERSION += suff
 
 # log levels: 0 = WARN (default), 1 = INFO, 2 = DEBUG
 log.set_verbosity(1)
-
-# try setuptools, fall back to distutils if needed
-try:
-    from setuptools import setup
-    log.info("Installing with setuptools.setup...")
-    install_package = 'setuptools'
-
-except ImportError as err:
-    log.info("Failed to import setuptools.setup (%s), so falling back to distutils.setup" % err)
-    from distutils.core import setup
-    install_package = 'distutils'
 
 # utility function to read README file
 def read(fname):
