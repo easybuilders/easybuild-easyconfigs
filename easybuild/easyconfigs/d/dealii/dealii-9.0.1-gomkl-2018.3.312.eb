@@ -7,7 +7,7 @@ homepage = 'http://www.dealii.org/'
 description = """A C++ software library supporting the creation of finite element codes and an open community of users and developers."""
 
 toolchain = {'name': 'gomkl', 'version': '2018.3.312'}
-toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True, 'openmp': True}
 
 source_urls = ['https://dealii.kyomu.43-1.org/downloads/']
 sources = ['%(namelower)s-%(version)s.tar.gz']
@@ -17,6 +17,7 @@ separate_build_dir = True
 builddependencies = [('CMake', '3.4.1')]
 
 dependencies = [
+   ('Boost', '1.68.0', '-mpi'),
    ('Trilinos', '12.12.1'),
    ('p4est', '2.0'),
    ('GSL', '2.3'),
@@ -35,17 +36,17 @@ dependencies = [
    ('SLEPc', '3.10.2'),
 ]
 
-configure_cmd_prefix = ' CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 '
-
 preconfigopts = 'export TRILINOS_DIR=$EBROOTTRILINOS && '
 preconfigopts += 'declare -A ARCH_MAP=( [sse3]=SSE2 [avx]=AVX [avx2]=AVX [avx512]=AVX512 ) && '
 
 configopts = '-DDEAL_II_ALLOW_PLATFORM_INTROSPECTION=OFF '
 configopts += '-DDEAL_II_HAVE_${ARCH_MAP[$RSNT_ARCH]}=ON '
 configopts += '-DDEAL_II_COMPILER_HAS_FUSE_LD_GOLD=OFF '
+configopts += '-DDEAL_II_WITH_BOOST=ON -DBOOST_DIR=$EBROOTBOOST '
 configopts += '-DDEAL_II_WITH_P4EST=ON '
 configopts += '-DDEAL_II_WITH_MPI=ON '
 configopts += '-DDEAL_II_WITH_TRILINOS=ON '
+configopts += '-DTBB_DIR=$EBROOTTBB '
 configopts += '-DTrilinos_ENABLE_Sacado=ON '
 configopts += '-DTrilinos_ENABLE_Stratimikos=ON '
 configopts += '-DCMAKE_BUILD_TYPE=Release '

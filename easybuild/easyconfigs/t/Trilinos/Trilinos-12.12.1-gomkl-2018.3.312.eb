@@ -1,0 +1,60 @@
+name = 'Trilinos'
+version = '12.12.1'
+
+homepage = 'https://trilinos.org'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'gomkl', 'version': '2018.3.312'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = [
+    'http://trilinos.csbsju.edu/download/files/',
+    'https://trilinos.org/oldsite/download/files/',
+]
+sources = ['%(namelower)s-%(version)s-Source.tar.gz']
+patches = [
+    ('Trilinos-%(version)s_fix-CEpetra-LAPACK.patch', 'packages/CTrilinos'),
+    'Trilinos-%(version)s_fix-Py3.patch',
+    'Trilinos-%(version)s_muelu-fix-function-signature.patch',
+    'Trilinos-%(version)s_fix-Sundance.patch',
+]
+checksums = [
+    '7c67d83befbeabc773661bcdfee2850c404d249160b755d3f1be2e96f564f9fd',  # trilinos-12.12.1-Source.tar.gz
+    'de2e989bf9e7cbe7cab9126a464b5b1569983de4060956e7a95dccb9e0bad039',  # Trilinos-12.12.1_fix-CEpetra-LAPACK.patch
+    '5505645b712056403263860de86efccfb343cb5e5bf8d65697526d65ea5df099',  # Trilinos-12.12.1_fix-Py3.patch
+    # Trilinos-12.12.1_muelu-fix-function-signature.patch
+    '253191cc6f6a6ebcc893e2684c64cfefa62c1cd0cc6b03b5f83646856fbdfe8a',
+    'df7924c207c1fab98d5aeec1333c4e2da5c07117daf2c72279f894552087e391',  # Trilinos-12.12.1_fix-Sundance.patch
+]
+
+builddependencies = [
+    ('Boost', '1.68.0', '-mpi'),
+    ('netCDF', '4.6.1', '-mpi'),
+]
+preconfigopts = "pip install numpy --prefix=%(installdir)s && export PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/python2.7/site-packages && export CPATH=$CPATH:%(installdir)s/lib/python2.7/site-packages/numpy/core/include && "
+configopts = '-DTPL_ENABLE_Matio=OFF'
+
+openmp = False
+shared_libs = True
+
+# disable TrilinosCouplings package, doesn't build correctly (examples fail to compile)
+skip_exts = ['TrilinosCouplings']
+
+skipsteps = ['install']
+postinstallcmds = [
+   "pip install numpy --prefix=%(installdir)s", 
+   "export PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/python2.7/site-packages", 
+   "export CPATH=$CPATH:%(installdir)s/lib/python2.7/site-packages/numpy/core/include", 
+   "make install",
+   "sed -i 's/PyTrilinos;//' %(installdir)s/lib/cmake/Trilinos/TrilinosConfig.cmake",
+]
+
+# too parallel is too slow because of memory requirements (results in swapping), and may cause build/tests to fail
+# building with 20 cores seems to require about 100GB of memory (peak usage)
+maxparallel = 6
+ 
+modextrapaths = {'PYTHONPATH': ':%(installdir)s/lib/python2.7/site-packages'}
+
+moduleclass = 'numlib'
