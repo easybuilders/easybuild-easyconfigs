@@ -1,0 +1,19 @@
+Don't use -ipo for pmemd.
+It fails due to netcdf/hdf5 not being compiled with -ipo
+
+Åke Sandgren, 20171004
+diff -ru amber18.orig/AmberTools/src/configure2 amber18/AmberTools/src/configure2
+--- amber18.orig/AmberTools/src/configure2	2018-10-30 10:04:05.201817226 +0100
++++ amber18/AmberTools/src/configure2	2018-10-30 10:25:56.958416373 +0100
+@@ -1853,6 +1853,11 @@
+         pmemd_coptflags="-g $pmemd_coptflags"
+     fi
+ 
++    # -ipo (multi-file Interprocedural Optimizations optimizations) causes issues with
++    #  netCDF+HDF5 linking, just do single-file IPO for the moment. ÅS
++    pmemd_coptflags=`echo $pmemd_coptflags | sed -e 's/ipo/ip/g'`
++    pmemd_foptflags=`echo $pmemd_foptflags | sed -e 's/ipo/ip/g'`
++
+     #CUDA Specifics
+     if [ "$cuda" = 'yes' ]; then
+ 
