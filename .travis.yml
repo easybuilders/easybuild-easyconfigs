@@ -9,6 +9,14 @@ matrix:
     # also test default configuration with Python 2.7
     - python: 2.7
       env: LMOD_VERSION=6.6.3
+    # also test with Python 3.5/3.6/3.7
+    - python: 3.6
+      env: LMOD_VERSION=7.8.5
+    - python: 3.5
+      env: LMOD_VERSION=7.8.5
+    - python: 3.7
+      dist: xenial
+      env: LMOD_VERSION=7.8.5
 addons:
   apt:
     packages:
@@ -22,15 +30,17 @@ install:
     # required for test_dep_graph
     - pip install pep8 python-graph-core python-graph-dot
     # install easybuild-framework/easybuild-easyblocks (and dependencies)
-    # use 'develop' branch of framework/easyblocks, except when testing 'master'
-    - if [ "x$TRAVIS_BRANCH" = 'xmaster' ]; then BRANCH=master; else BRANCH=develop; fi
+    # use 'develop' branch of framework/easyblocks, except when testing 'master' or '4.x' branches
+    - BRANCH=develop
+    - if [ "x$TRAVIS_BRANCH" = 'xmaster' ]; then BRANCH=master; fi
+    - if [ "x$TRAVIS_BRANCH" = 'x4.x' ]; then BRANCH=4.x; fi
     - cd $HOME
     - git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-framework.git
     - cd easybuild-framework; git log -n 1; cd -
-    - easy_install $PWD/easybuild-framework
+    - pip install $PWD/easybuild-framework
     - git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-easyblocks.git
     - cd easybuild-easyblocks; git log -n 1; cd -
-    - easy_install $PWD/easybuild-easyblocks
+    - pip install $PWD/easybuild-easyblocks
     # install environment modules tool using 'install_eb_dep.sh' script provided by easybuild-framework
     - if [ ! -z $ENV_MOD_VERSION ]; then source $(which install_eb_dep.sh) modules-${ENV_MOD_VERSION} $HOME; fi
     - if [ ! -z $LMOD_VERSION ]; then source $(which install_eb_dep.sh) lua-5.1.4.8 $HOME; fi
@@ -48,3 +58,20 @@ script:
     - export PYTHONPATH=$TRAVIS_BUILD_DIR
     - export PATH=$TRAVIS_BUILD_DIR/test/bin:$PATH
     - python -O -m test.easyconfigs.suite
+    # check for packaging issues by installing easybuild-easyconfigs repo,
+    # and checking whether easyconfigs are found, by verifying whether "eb --search" works as expected
+    - unset PYTHONPATH
+    - cd $HOME; pip install $TRAVIS_BUILD_DIR
+    # make sure correct 'python' command is used
+    # 'python2' may also be available, and is picked prior to 'python'
+    - export EB_PYTHON=python
+    # robot-paths value should not be empty, but have an entry that includes easybuild/easyconfigs subdir
+    - eb --show-config | tee eb_show_config.out
+    - grep "^robot-paths .*/easybuild/easyconfigs" eb_show_config.out
+    # check whether some specific easyconfig files are found
+    - eb --search 'TensorFlow-1.14.*.eb' | tee eb_search_TF.out
+    - grep '/TensorFlow-1.14.0-foss-2019a-Python-3.7.2.eb$' eb_search_TF.out
+    - eb --search '^foss-2018b.eb' | tee eb_search_foss.out
+    - grep '/foss-2018b.eb$' eb_search_foss.out
+    # try installing bzip2 with system toolchain (requires EB_bzip2 easyblock + easyconfig)
+    - eb --prefix /tmp/$USER bzip2-1.0.6.eb
