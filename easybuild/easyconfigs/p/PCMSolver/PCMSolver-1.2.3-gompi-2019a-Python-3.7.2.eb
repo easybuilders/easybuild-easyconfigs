@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'PCMSolver'
+version = '1.2.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://pcmsolver.readthedocs.org'
+description = """An API for the Polarizable Continuum Model."""
+
+toolchain = {'name': 'gompi', 'version': '2019a'}
+# we have to disable use of -march=native to ensure a correct build on recent Intel systems
+# see also https://github.com/PCMSolver/pcmsolver/issues/159
+toolchainopts = {'optarch': False}
+
+source_urls = ['https://github.com/PCMSolver/pcmsolver/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['d1ef6bdc268a2e719b36c85125c3543df7a26e1a738daf4483f4ded0c76f5b60']
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('zlib', '1.2.11'),
+    ('Boost', '1.70.0'),
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('Eigen', '3.3.7', '', True),
+]
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -DEIGEN3_ROOT=$EBROOTEIGEN'
+
+separate_build_dir = True
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/run_pcm', 'lib/libpcm.a', 'lib/libpcm.%s' % SHLIB_EXT],
+    'dirs': ['include/PCMSolver']
+}
+
+moduleclass = 'chem'
