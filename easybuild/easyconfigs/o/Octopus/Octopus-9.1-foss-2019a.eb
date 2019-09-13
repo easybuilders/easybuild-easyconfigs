@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'Octopus'
+version = '9.1'
+
+homepage = 'http://octopus-code.org'
+description = """Octopus is a scientific program aimed at the ab initio virtual experimentation 
+on a hopefully ever-increasing range of system types. Electrons are described quantum-mechanically 
+within density-functional theory (DFT), in its time-dependent form (TDDFT) when doing simulations 
+in time. Nuclei are described classically as point particles. 
+Electron-nucleus interaction is described within the pseudopotential approximation."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'usempi': True, 'opt': True}
+
+source_urls = ['http://www.tddft.org/programs/octopus/down.php?file=%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['62f73d92d2fc5ddf3554337da2333eb35a97db57088950f31eda6fa5e03d6a33']
+
+builddependencies = [
+    ('Perl', '5.28.1'),
+]
+
+dependencies = [
+    ('libxc', '4.3.4'),
+    ('libvdwxc', '0.4.0'),
+    ('PSolver', '1.7.7'),
+    ('ETSF_IO', '1.0.4'),
+    ('GSL', '2.5'),
+    ('ParMETIS', '4.0.3'),
+    ('arpack-ng', '3.6.2'),
+    ('libgd', '2.2.5'),
+]
+
+configopts = '--disable-openmp --enable-mpi '
+configopts += '--with-libxc-prefix=$EBROOTLIBXC '
+configopts += '--with-libvdwxc-prefix=$EBROOTLIBVDWXC '
+configopts += '--with-blas="-L$BLAS_LIB_DIR $LIBBLAS" '
+configopts += '--with-blacs="$EBROOTSCALAPACK/lib/libscalapack.a" '
+configopts += '--with-scalapack="$EBROOTSCALAPACK/lib/libscalapack.a" '
+configopts += '--with-netcdf-prefix=$EBROOTNETCDFMINFORTRAN '
+configopts += '--with-etsf-io-prefix=$EBROOTETSF_IO '
+configopts += '--with-fftw-prefix=$EBROOTFFTW '
+configopts += '--with-isf-prefix=$EBROOTPSOLVER '
+
+# Add gfortran flag to handle long lines
+configopts += 'FCFLAGS="$FCFLAGS -ffree-line-length-none" '
+
+# Octopus uses cpp to process Fortran files, so we need to set some flags to make sure it works
+# The -Dvector macro is a workaround for a known GCC issue on POWER
+configopts += 'FCCPP="/lib/cpp -C -ffreestanding -Dvector=vector" '
+
+# Run only the short tests, as the full testsuite can take a lot of time.
+runtest = 'MPIEXEC="`which mpirun` --bind-to none" check-short'
+
+sanity_check_paths = {
+    'files': ['bin/octopus'],
+    'dirs': ['share/octopus']
+}
+
+moduleclass = 'phys'
