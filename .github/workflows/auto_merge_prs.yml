@@ -1,0 +1,67 @@
+# GitHub Actions workflow to auto-merge PRs if specific conditions are met
+# inspired by https://alexwlchan.net/2019/03/creating-a-github-action-to-auto-merge-pull-requests/
+# author: Kenneth Hoste (@boegel)
+#
+# trigger on:
+# - result of tests suite run by Travis is reported (check_run)
+# - new comment is added (issue_comment)
+# - review is submitted (pull_request_review)
+# - status of commit changes (status)
+# (see also https://help.github.com/en/articles/events-that-trigger-workflows)
+on: [issue_comment, pull_request, push]
+  #check_run:
+  #  types: [completed]
+  #check_suite:
+  #  types: [completed]
+  #issue_comment:
+  #  types: [created]
+  #pull_request:
+  #  types: [labeled]
+  #pull_request_review:
+  #  types: [submitted]
+  #push:
+  #status:
+jobs:
+  auto_merge_pr:
+    name: Auto-merge PR if conditions are met
+    runs-on: ubuntu-latest
+    steps:
+    - shell: python
+      run: |
+        import json, os, pprint
+
+        # see https://help.github.com/en/articles/virtual-environments-for-github-actions#environment-variables
+        event_name = os.environ['GITHUB_EVENT_NAME']
+        event_path = os.environ['GITHUB_EVENT_PATH']
+        trigger_sha = os.environ['GITHUB_SHA']
+        print("GITHUB_SHA: %s" % trigger_sha)
+        print("GITHUB_HEAD_REF: %s" % os.getenv('GITHUB_HEAD_REF'))
+        print("GITHUB_BASE_REF: %s" % os.getenv('GITHUB_BASE_REF'))
+
+        event_data = json.load(open(event_path))
+
+        if event_name == 'issue_comment':
+            # triggered by issue comment (perhaps new test report?)
+            print("Triggered by issue comment...")
+
+        elif event_name == 'check_run':
+            check_run = event_data['check_run']
+            print("Triggered by check_run")
+
+        elif event_name == 'check_suite':
+            check_run = event_data['check_run']
+            print("Triggered by check_suite")
+
+        elif event_name == 'pull_request_review':
+            print("Triggered by pull request review")
+
+        elif event_name == 'push':
+            print("Triggered by push")
+
+        elif event_name == 'status':
+            print("Triggered by commit status change")
+
+        else:
+            print("Unknown trigger: %s" % event_name)
+
+        pprint.pprint(event_data)
