@@ -50,7 +50,7 @@ from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_gra
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
-from easybuild.tools.filetools import change_dir, remove_file, write_file
+from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.py2vs3 import string_type
@@ -359,9 +359,11 @@ class EasyConfigTest(TestCase):
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
         # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
+        # likewise for 'checksums'
         for ec in changed_ecs:
             if ec['easyblock'] == 'Bundle':
                 ec['sources'] = []
+                ec['checksums'] = []
 
         # filter out deprecated easyconfigs
         retained_changed_ecs = []
@@ -502,9 +504,9 @@ class EasyConfigTest(TestCase):
                             self.assertTrue(False, error_msg)
 
                 # run checks on changed easyconfigs
-                #self.check_sha256_checksums(changed_ecs)
-                #self.check_python_packages(changed_ecs)
-                #self.check_sanity_check_paths(changed_ecs)
+                self.check_sha256_checksums(changed_ecs)
+                self.check_python_packages(changed_ecs)
+                self.check_sanity_check_paths(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
@@ -518,6 +520,15 @@ def template_easyconfig_test(self, spec):
     global single_tests_ok
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
+
+    # give easyconfig for last EasyBuild 3.x release special treatment
+    # replace use deprecated dummy toolchain, required to avoid breaking "eb --install-latest-eb-release",
+    # with SYSTEM toolchain constant
+    if os.path.basename(spec) == 'EasyBuild-3.9.4.eb':
+        ectxt = read_file(spec)
+        regex = re.compile('^toolchain = .*dummy.*', re.M)
+        ectxt = regex.sub('toolchain = SYSTEM', ectxt)
+        write_file(spec, ectxt)
 
     # parse easyconfig
     ecs = process_easyconfig(spec)
