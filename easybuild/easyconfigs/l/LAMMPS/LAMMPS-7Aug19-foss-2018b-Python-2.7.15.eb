@@ -1,0 +1,55 @@
+easyblock = 'MakeCp'
+
+name = 'LAMMPS'
+version = '7Aug19'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://lammps.sandia.gov/'
+description = "LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator) is a classical molecular dynamics simulation code designed to run efficiently on parallel computers."
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://lammps.sandia.gov/tars/']
+sources = ['lammps-%(version)s.tar.gz']
+
+local_parallel = 16
+
+prebuildopts = 'cd lib && ' 
+prebuildopts += 'pushd message && cp Makefile.lammps.zmq Makefile.lammps && pushd cslib/src && make -j %s lib_parallel && cp libcsmpi.a libmessage.a && popd && popd && ' % local_parallel
+prebuildopts += 'pushd poems && make -j %s -f Makefile.mpi && popd && ' % local_parallel
+prebuildopts += 'pushd atc && make -j %s -f Makefile.mpi && popd && ' % local_parallel
+prebuildopts += 'pushd awpmd && make -j %s -f Makefile.mpi && popd && ' % local_parallel
+prebuildopts += 'pushd colvars && make -j %s -f Makefile.mpi && popd && ' % local_parallel
+prebuildopts += 'pushd h5md && sed -e "s/h5cc/h5pcc/g" Makefile.h5cc > Makefile.h5pcc && make -j %s -f Makefile.h5pcc && popd && ' % local_parallel
+prebuildopts += 'pushd linalg && make -j %s -f Makefile.mpi && popd && ' % local_parallel
+
+prebuildopts += 'cd ../src && ' 
+prebuildopts += 'make lib-plumed args="-p $EBROOTPLUMED" && '
+prebuildopts += 'make yes-all && '
+prebuildopts += 'make no-gpu no-latte no-mscg no-kim no-voronoi && '
+prebuildopts += 'make no-user-quip no-user-intel no-user-adios no-user-vtk && '
+prebuildopts += 'make no-user-scafacos no-user-qmmm && '
+
+prebuildopts += 'make package-update && '
+prebuildopts += 'sed -i -e \'s/FFT_INC =/FFT_INC =       -DFFT_FFTW3/\' ./MAKE/Makefile.mpi && '
+prebuildopts += 'sed -i -e \'s/FFT_LIB =/FFT_LIB =       -lfftw3/\' ./MAKE/Makefile.mpi && '
+prebuildopts += 'sed -e \'s/mpicxx/mpicxx -fopenmp/\' ./MAKE/Makefile.mpi > ./MAKE/Makefile.omp && '
+buildopts = [ ' mpi ', ' omp ' ]
+
+dependencies = [
+    ('ZeroMQ', '4.2.5'),
+    ('HDF5', '1.10.2'),
+    ('Eigen', '3.3.7', '', True),
+    ('PLUMED', '2.5.0', '-Python-%(pyver)s'),
+    ('FFTW', '3.3.8'),
+    ('Python', '2.7.15'),
+]
+
+files_to_copy = [(['src/lmp*'], "bin")]
+
+sanity_check_paths = {
+    'files': ['bin/lmp_mpi', 'bin/lmp_omp'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
