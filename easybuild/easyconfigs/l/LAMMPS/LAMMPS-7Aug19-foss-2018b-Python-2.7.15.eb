@@ -5,7 +5,8 @@ version = '7Aug19'
 versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'http://lammps.sandia.gov/'
-description = "LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator) is a classical molecular dynamics simulation code designed to run efficiently on parallel computers."
+description = """LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator) is a classical molecular dynamics
+simulation code designed to run efficiently on parallel computers."""
 
 toolchain = {'name': 'foss', 'version': '2018b'}
 
@@ -18,16 +19,18 @@ checksums = [
 
 local_parallel = 16
 
-prebuildopts = 'cd lib && ' 
-prebuildopts += 'pushd message && cp Makefile.lammps.zmq Makefile.lammps && pushd cslib/src && make -j %s lib_parallel && cp libcsmpi.a libmessage.a && popd && popd && ' % local_parallel
+prebuildopts = 'cd lib && '
+prebuildopts += 'pushd message && cp Makefile.lammps.zmq Makefile.lammps && pushd cslib/src && '
+prebuildopts += ' make -j %s lib_parallel && cp libcsmpi.a libmessage.a && popd && popd && ' % local_parallel
 prebuildopts += 'pushd poems && make -j %s -f Makefile.mpi && popd && ' % local_parallel
 prebuildopts += 'pushd atc && make -j %s -f Makefile.mpi && popd && ' % local_parallel
 prebuildopts += 'pushd awpmd && make -j %s -f Makefile.mpi && popd && ' % local_parallel
 prebuildopts += 'pushd colvars && make -j %s -f Makefile.mpi && popd && ' % local_parallel
-prebuildopts += 'pushd h5md && sed -e "s/h5cc/h5pcc/g" Makefile.h5cc > Makefile.h5pcc && make -j %s -f Makefile.h5pcc && popd && ' % local_parallel
+prebuildopts += 'pushd h5md && sed -e "s/h5cc/h5pcc/g" Makefile.h5cc > Makefile.h5pcc && '
+prebuildopts += ' make -j %s -f Makefile.h5pcc && popd && ' % local_parallel
 prebuildopts += 'pushd linalg && make -j %s -f Makefile.mpi && popd && ' % local_parallel
 
-prebuildopts += 'cd ../src && ' 
+prebuildopts += 'cd ../src && '
 prebuildopts += 'make lib-plumed args="-p $EBROOTPLUMED" && '
 prebuildopts += 'make yes-all && '
 prebuildopts += 'make no-gpu no-latte no-mscg no-kim no-voronoi && '
@@ -38,7 +41,7 @@ prebuildopts += 'make package-update && '
 prebuildopts += 'sed -i -e \'s/FFT_INC =/FFT_INC =       -DFFT_FFTW3/\' ./MAKE/Makefile.mpi && '
 prebuildopts += 'sed -i -e \'s/FFT_LIB =/FFT_LIB =       -lfftw3/\' ./MAKE/Makefile.mpi && '
 prebuildopts += 'sed -e \'s/mpicxx/mpicxx -fopenmp/\' ./MAKE/Makefile.mpi > ./MAKE/Makefile.omp && '
-buildopts = [ ' mpi ', ' omp ' ]
+buildopts = [' mpi ', ' omp ']
 
 dependencies = [
     ('ZeroMQ', '4.2.5'),
