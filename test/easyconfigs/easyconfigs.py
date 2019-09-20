@@ -521,10 +521,11 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # give easyconfig for last EasyBuild 3.x release special treatment
+    # give recent EasyBuild easyconfigs special treatment
     # replace use deprecated dummy toolchain, required to avoid breaking "eb --install-latest-eb-release",
     # with SYSTEM toolchain constant
-    if os.path.basename(spec) == 'EasyBuild-3.9.4.eb':
+    ec_fn = os.path.basename(spec)
+    if ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.'):
         ectxt = read_file(spec)
         regex = re.compile('^toolchain = .*dummy.*', re.M)
         ectxt = regex.sub('toolchain = SYSTEM', ectxt)
