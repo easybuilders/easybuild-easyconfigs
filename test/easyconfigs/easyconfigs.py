@@ -34,11 +34,11 @@ import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from vsc.utils import fancylogger
 from unittest import TestCase, TestLoader, main
 
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
+from easybuild.base import fancylogger
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
@@ -49,11 +49,11 @@ from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parame
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.config import build_option
-from easybuild.tools.filetools import change_dir, remove_file, write_file
-from easybuild.tools.module_naming_scheme import GENERAL_CLASS
+from easybuild.tools.config import GENERAL_CLASS, build_option
+from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
+from easybuild.tools.py2vs3 import string_type
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
@@ -75,6 +75,7 @@ class EasyConfigTest(TestCase):
         'check_osdeps': False,
         'external_modules_metadata': {},
         'force': True,
+        'local_var_naming_check': 'error',
         'optarch': 'test',
         'robot_path': get_paths_for("easyconfigs")[0],
         'silent': True,
@@ -132,13 +133,13 @@ class EasyConfigTest(TestCase):
 
             remove_file(fn)
         else:
-            print "(skipped dep graph test)"
+            print("(skipped dep graph test)")
 
     def test_conflicts(self):
         """Check whether any conflicts occur in software dependency graphs."""
 
         if not single_tests_ok:
-            print "(skipped conflicts test)"
+            print("(skipped conflicts test)")
             return
 
         if self.ordered_specs is None:
@@ -184,7 +185,8 @@ class EasyConfigTest(TestCase):
 
             # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
             elif dep == 'HTSlib' and len(dep_vars) > 1:
-                for key, ecs in dep_vars.items():
+                for key in list(dep_vars):
+                    ecs = dep_vars[key]
                     # filter out HTSlib variants that are only used as dependency for BCFtools with same version
                     htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
@@ -198,8 +200,8 @@ class EasyConfigTest(TestCase):
 
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep in ['Boost', 'R', 'PLUMED', 'Lua'] and len(dep_vars) > 1:
-                for key in dep_vars.keys():
+            elif dep in ['Boost', 'R', 'PLUMED', 'Lua', 'ASE'] and len(dep_vars) > 1:
+                for key in list(dep_vars):
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                     # filter out dep version if all easyconfig filenames using it include specific dep version
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
@@ -210,7 +212,7 @@ class EasyConfigTest(TestCase):
 
                 # filter R dep for a specific version of Python 2.x
                 if dep == 'R' and len(dep_vars) > 1:
-                    for key in dep_vars.keys():
+                    for key in list(dep_vars):
                         if '; versionsuffix: -Python-2' in key:
                             dep_vars.pop(key)
                         # always retain at least one variant
@@ -230,7 +232,7 @@ class EasyConfigTest(TestCase):
             # filter out variants that are specific to a particular version of CUDA
             cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
             if len(dep_vars) > len(cuda_dep_vars):
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
                         dep_vars.pop(key)
 
@@ -244,7 +246,7 @@ class EasyConfigTest(TestCase):
                 'Jellyfish': r'1\.',
             }
             if dep in old_dep_versions and len(dep_vars) > 1:
-                for key in dep_vars.keys():
+                for key in list(dep_vars):
                     # filter out known old dependency versions
                     if re.search('^version: %s' % old_dep_versions[dep], key):
                         dep_vars.pop(key)
@@ -357,9 +359,11 @@ class EasyConfigTest(TestCase):
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
         # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
+        # likewise for 'checksums'
         for ec in changed_ecs:
             if ec['easyblock'] == 'Bundle':
                 ec['sources'] = []
+                ec['checksums'] = []
 
         # filter out deprecated easyconfigs
         retained_changed_ecs = []
@@ -430,7 +434,7 @@ class EasyConfigTest(TestCase):
 
         # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
         # ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['CrayToolchain', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # GCC is just a bundle of GCCcore+binutils
         bundles_whitelist = ['GCC']
 
@@ -517,6 +521,15 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
+    # give easyconfig for last EasyBuild 3.x release special treatment
+    # replace use deprecated dummy toolchain, required to avoid breaking "eb --install-latest-eb-release",
+    # with SYSTEM toolchain constant
+    if os.path.basename(spec) == 'EasyBuild-3.9.4.eb':
+        ectxt = read_file(spec)
+        regex = re.compile('^toolchain = .*dummy.*', re.M)
+        ectxt = regex.sub('toolchain = SYSTEM', ectxt)
+        write_file(spec, ectxt)
+
     # parse easyconfig
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
@@ -557,6 +570,10 @@ def template_easyconfig_test(self, spec):
     # more sanity checks
     self.assertTrue(name, app.name)
     self.assertTrue(ec['version'], app.version)
+
+    # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
+    error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
+    self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
     res = re.findall('.*\$root.*', ec.rawtxt, re.M)
@@ -683,7 +700,7 @@ def template_easyconfig_test(self, spec):
 
         # take into account that for some string-valued easyconfig parameters (configopts & co),
         # the easyblock may have injected additional values, which affects the dumped easyconfig file
-        elif isinstance(orig_val, basestring):
+        elif isinstance(orig_val, string_type):
             self.assertTrue(dumped_val.startswith(orig_val))
         else:
             self.assertEqual(orig_val, dumped_val)
@@ -707,13 +724,14 @@ def suite():
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
-                exec("def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec))
+                code = "def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec)
+                exec(code, globals())
                 innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
                 # double underscore so parsing tests are run first
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
                 setattr(EasyConfigTest, innertest.__name__, innertest)
 
-    print "Found %s easyconfigs..." % cnt
+    print("Found %s easyconfigs..." % cnt)
     return TestLoader().loadTestsFromTestCase(EasyConfigTest)
 
 

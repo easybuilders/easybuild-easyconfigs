@@ -19,33 +19,34 @@ dependencies = [
 
 default_easyblock = 'ConfigureMakePythonPackage'
 
-pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
 
-sip_configopts = "configure.py --bindir %%(installdir)s/bin --incdir %%(installdir)s/include --destdir %s" % pylibdir
+local_sip_configopts = "configure.py --bindir %(installdir)s/bin --incdir %(installdir)s/include "
+local_sip_configopts += "--destdir %s" % local_pylibdir
 # required for PyQt5, cfr. http://pyqt.sourceforge.net/Docs/PyQt5/installation.html#downloading-sip
 # and http://pyqt.sourceforge.net/Docs/sip4/using.html#ref-private-sip
-sip_configopts += " --sip-module PyQt5.sip"
+local_sip_configopts += " --sip-module PyQt5.sip"
 
-pyqt5_configopts = "configure.py --confirm-license --verbose --destdir=%s" % pylibdir
-pyqt5_configopts += " --bindir=%(installdir)s/bin"
-pyqt5_configopts += " --designer-plugindir=%(installdir)s/plugins/designer"
-pyqt5_configopts += " --qml-plugindir=%(installdir)s/plugins/PyQt5"
-pyqt5_configopts += " --qsci-api-destdir=%(installdir)s/qsci"
-pyqt5_configopts += " --no-sip-files --no-stubs "
+local_pyqt5_configopts = "configure.py --confirm-license --verbose --destdir=%s" % local_pylibdir
+local_pyqt5_configopts += " --bindir=%(installdir)s/bin"
+local_pyqt5_configopts += " --designer-plugindir=%(installdir)s/plugins/designer"
+local_pyqt5_configopts += " --qml-plugindir=%(installdir)s/plugins/PyQt5"
+local_pyqt5_configopts += " --qsci-api-destdir=%(installdir)s/qsci"
+local_pyqt5_configopts += " --no-sip-files --no-stubs "
 
-pyqtweb_configopts = "configure.py --verbose --destdir=%s/PyQt5" % pylibdir
-pyqtweb_configopts += " --apidir=%(installdir)s/qsci"
-pyqtweb_configopts += " --pyqt-sipdir=%(builddir)s/PyQt5_gpl-%(version)s/sip"
-pyqtweb_configopts += " --no-dist-info --no-sip-files --no-stubs "
+local_pyqtweb_configopts = "configure.py --verbose --destdir=%s/PyQt5" % local_pylibdir
+local_pyqtweb_configopts += " --apidir=%(installdir)s/qsci"
+local_pyqtweb_configopts += " --pyqt-sipdir=%(builddir)s/PyQt5_gpl-%(version)s/sip"
+local_pyqtweb_configopts += " --no-dist-info --no-sip-files --no-stubs "
 
-sipver = '4.19.16'
+local_sipver = '4.19.16'
 components = [
-    ('SIP', sipver, {
-        'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/sip/%s' % sipver],
+    ('SIP', local_sipver, {
+        'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/sip/%s' % local_sipver],
         'sources': [SOURCELOWER_TAR_GZ],
         'checksums': ['184c790d58e9527fc6bdac2bbf8638f3d1b41dea922cad8eb83172b4ba70c620'],
-        'start_dir': 'sip-%s' % sipver,
-        'configopts': sip_configopts,
+        'start_dir': 'sip-%s' % local_sipver,
+        'configopts': local_sip_configopts,
         'options': {'modulename': 'PyQt5.sip'},
     }),
     (name, version, {
@@ -54,7 +55,7 @@ components = [
         'checksums': ['3718ce847d824090fd5f95ff3f13847ee75c2507368d4cbaeb48338f506e59bf'],
         'start_dir': '%(name)s_gpl-%(version)s',
         'preconfigopts': "export PATH=%(installdir)s/bin:$PATH && ",
-        'configopts': pyqt5_configopts,
+        'configopts': local_pyqt5_configopts,
         'options': {'modulename': 'PyQt5.QtCore'},
     }),
     ('PyQtWebEngine', version, {
@@ -64,7 +65,7 @@ components = [
         'start_dir': '%(name)s_gpl-%(version)s',
         'preconfigopts': ("export PATH=%(installdir)s/bin:$PATH && "
                           "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "),
-        'configopts': pyqtweb_configopts,
+        'configopts': local_pyqtweb_configopts,
         'options': {'modulename': 'PyQt5.QtWebEngine'},
     }),
 ]
