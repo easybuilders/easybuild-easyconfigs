@@ -1,4 +1,4 @@
-easyblock = 'MakeCp'
+easyblock = 'CMakeMake'
 
 name = 'LAMMPS'
 version = '7Aug19'
@@ -17,53 +17,60 @@ checksums = [
     '4e8342b97441deb76c2fddd8a4fd23beb718cb0910779d98e334026391ed3961',  # lammps-7Aug19.tar.gz
 ]
 
-local_parallel = 16
-
-prebuildopts = 'cd lib && '
-prebuildopts += 'pushd message && cp Makefile.lammps.zmq Makefile.lammps && pushd cslib/src && '
-prebuildopts += ' make -j %s lib_parallel && cp libcsmpi.a libmessage.a && popd && popd && ' % local_parallel
-prebuildopts += 'pushd poems && make -j %s -f Makefile.mpi && popd && ' % local_parallel
-prebuildopts += 'pushd atc && make -j %s -f Makefile.mpi && popd && ' % local_parallel
-prebuildopts += 'pushd awpmd && make -j %s -f Makefile.mpi && popd && ' % local_parallel
-prebuildopts += 'pushd colvars && make -j %s -f Makefile.mpi && popd && ' % local_parallel
-prebuildopts += 'pushd h5md && sed -e "s/h5cc/h5pcc/g" Makefile.h5cc > Makefile.h5pcc && '
-prebuildopts += ' make -j %s -f Makefile.h5pcc && popd && ' % local_parallel
-prebuildopts += 'pushd linalg && make -j %s -f Makefile.mpi && popd && ' % local_parallel
-
-prebuildopts += 'cd ../src && '
-prebuildopts += 'make lib-plumed args="-p $EBROOTPLUMED" && '
-prebuildopts += 'make yes-all && '
-prebuildopts += 'make no-gpu no-latte no-mscg no-kim no-voronoi && '
-prebuildopts += 'make no-user-quip no-user-intel no-user-adios no-user-vtk && '
-prebuildopts += 'make no-user-scafacos no-user-qmmm && '
-prebuildopts += 'make ps > make-ps.txt && '
-
-prebuildopts += 'make package-update && '
-prebuildopts += 'sed -i -e \'s/FFT_INC =/FFT_INC =       -DFFT_FFTW3/\' ./MAKE/Makefile.mpi && '
-prebuildopts += 'sed -i -e \'s/FFT_LIB =/FFT_LIB =       -lfftw3/\' ./MAKE/Makefile.mpi && '
-prebuildopts += 'sed -e \'s/mpicxx/mpicxx -fopenmp/\' ./MAKE/Makefile.mpi > ./MAKE/Makefile.omp && '
-buildopts = [' mpi ', ' omp ']
-
 builddependencies = [
-    ('Eigen', '3.3.7', '', True),
+    ('CMake', '3.13.3'),
+    ('Eigen', '3.3.7', '', True),  # USER-SMD
+    ('PLUMED', '2.5.1')            # USER-PLUMED
 ]
 
 dependencies = [
-    ('ZeroMQ', '4.3.2'),
-    ('HDF5', '1.10.5'),
-    ('PLUMED', '2.5.1'),
-    ('FFTW', '3.3.8'),
-    ('Python', '2.7.15'),
+    ('libjpeg-turbo', '2.0.2'),             # dump image
+    ('libpng', '1.6.36'),                   # dump image
+    ('FFmpeg', '4.1.3'),                    # dump image
+    ('gzip', '1.10'),                       # Read or write compressed files
+    ('cURL', '7.63.0'),                     # KIM
+    ('FFTW', '3.3.8'),                      # KSPACE
+    ('GSL', '2.5'),                         # MSCG
+    ('ZeroMQ', '4.3.2'),                    # MESSAGE
+    ('Python', '2.7.15'),                   # PYTHON
+    ('HDF5', '1.10.5'),                     # USER-H5MD
+    ('netCDF', '4.6.2'),                    # USER-NETCDF
+    ('VTK', '8.2.0', '-Python-%(pyver)s')   # USER-VTK
 ]
 
-files_to_copy = [
-    (['src/lmp_*'], "bin"),
-    (['src/make-ps.txt'], "doc")
-]
+separate_build_dir = True
+srcdir = '../lammps-%(version)s/cmake'
 
-sanity_check_paths = {
-    'files': ['bin/lmp_mpi', 'bin/lmp_omp', 'doc/make-ps.txt'],
-    'dirs': [],
-}
+# Basic build options
+configopts  = '-D BUILD_MPI=yes -D BUILD_OMP=no -D LAMMPS_MACHINE=mpi '
+configopts += '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_Fortran_COMPILER=gfortran '
+
+# Included packages
+configopts += '-D PKG_ASPHERE=yes -D PKG_BODY=yes -D PKG_CLASS2=yes -D PKG_COLLOID=yes -D PKG_COMPRESS=yes '
+configopts += '-D PKG_CORESHELL=yes -D PKG_DIPOLE=yes -D PKG_GRANULAR=yes -D PKG_KSPACE=yes -D PKG_LATTE=yes '
+configopts += '-D PKG_MANYBODY=yes -D PKG_MC=yes -D PKG_MESSAGE=yes -D PKG_MISC=yes -D PKG_MOLECULE=yes '
+configopts += '-D PKG_MPIIO=yes -D PKG_MSCG=yes -D PKG_OPT=yes -D PKG_PERI=yes -D PKG_POEMS=yes -D PKG_PYTHON=yes '
+configopts += '-D PKG_QEQ=yes -D PKG_REPLICA=yes -D PKG_RIGID=yes -D PKG_SHOCK=yes -D PKG_SNAP=yes -D PKG_SPIN=yes '
+configopts += '-D PKG_SRD=yes -D PKG_VORONOI=yes -D PKG_USER-ATC=yes -D PKG_USER-AWPMD=yes -D PKG_USER-BOCS=yes '
+configopts += '-D PKG_USER-CGDNA=yes -D PKG_USER-CGSDK=yes -D PKG_USER-COLVARS=yes -D PKG_USER-DIFFRACTION=yes '
+configopts += '-D PKG_USER-DPD=yes -D PKG_USER-DRUDE=yes -D PKG_USER-EFF=yes -D PKG_USER-FEP=yes -D PKG_USER-H5MD=yes '
+configopts += '-D PKG_USER-LB=yes -D PKG_USER-MANIFOLD=yes -D PKG_USER-MEAMC=yes -D PKG_USER-MESO=yes '
+configopts += '-D PKG_USER-MGPT=yes -D PKG_USER-MISC=yes -D PKG_USER-MOFFF=yes -D PKG_USER-MOLFILE=yes '
+configopts += '-D PKG_USER-NETCDF=yes -D PKG_USER-PHONON=yes -D PKG_USER-PLUMED=yes -D PKG_USER-PTM=yes '
+configopts += '-D PKG_USER-QTB=yes -D PKG_USER-REAXC=yes -D PKG_USER-SMD=yes -D PKG_USER-SMTBQ=yes '
+configopts += '-D PKG_USER-SDPD=yes -D PKG_USER-SPH=yes -D PKG_USER-TALLY=yes -D PKG_USER-UEF=yes -D PKG_USER-VTK=yes '
+configopts += '-D PKG_USER-YAFF=yes '
+
+# Not included packages
+configopts += '-D PKG_KIM=no -D PKG_GPU=no -D PKG_KOKKOS=no -D PKG_USER-ADIOS=no -D PKG_USER-INTEL=no '
+configopts += '-D PKG_USER-OMP=no -D PKG_USER-QMMM=no -D PKG_USER-QUIP=no -D PKG_USER-SCAFACOS=no '
+
+# Downloaded packages
+configopts += '-D DOWNLOAD_LATTE=yes -D DOWNLOAD_MSCG=yes -D DOWNLOAD_VORO=yes '
+
+# Dependency packages
+configopts += '-D FFT=FFTW3 '
+configopts += '-D ZMQ_LIBRARY=$EBROOTZEROMQ/lib -D ZMQ_INCLUDE=$EBROOTZEROMQ/include '
+configopts += '-D PYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '
 
 moduleclass = 'chem'
