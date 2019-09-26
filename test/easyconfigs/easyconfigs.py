@@ -53,7 +53,7 @@ from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
-from easybuild.tools.py2vs3 import string_type
+from easybuild.tools.py2vs3 import HTTPError, URLError, string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
@@ -462,10 +462,16 @@ class EasyConfigTest(TestCase):
 
         failing_checks = []
         for ec in changed_ecs:
-            matches = http_regex.findall(ec.rawtxt)
-            if matches:
-                ec_fn = os.path.basename(ec.path)
-                failing_checks.append("Found http:// URLs in %s: %s" % (ec_fn, ', '.join(matches)))
+            ec_fn = os.path.basename(ec.path)
+            for http_url in http_regex.findall(ec.rawtxt):
+                https_url = http_url.replace('http://', 'https://')
+                try:
+                    https_url_works = bool(urlopen(https_url))
+                except (HTTPError, URLError):
+                    https_url_works = False
+
+                if https_url_works:
+                    failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
