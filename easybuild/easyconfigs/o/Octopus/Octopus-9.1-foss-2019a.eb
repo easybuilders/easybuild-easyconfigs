@@ -13,9 +13,9 @@ Electron-nucleus interaction is described within the pseudopotential approximati
 toolchain = {'name': 'foss', 'version': '2019a'}
 toolchainopts = {'usempi': True, 'opt': True}
 
-source_urls = ['http://www.tddft.org/programs/octopus/down.php?file=%(version)s/']
+source_urls = ['https://gitlab.com/octopus-code/octopus/-/archive/%(version)s/']
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['62f73d92d2fc5ddf3554337da2333eb35a97db57088950f31eda6fa5e03d6a33']
+checksums = ['c61ccc12285efd6e0a108d1200de53d5d8ca8feb34a9763b586e3ca5a60b53de']
 
 builddependencies = [
     ('Perl', '5.28.1'),
@@ -31,6 +31,8 @@ dependencies = [
     ('arpack-ng', '3.6.2'),
     ('libgd', '2.2.5'),
 ]
+
+preconfigopts = 'autoreconf -f -i && '
 
 configopts = '--disable-openmp --enable-mpi '
 configopts += '--with-libxc-prefix=$EBROOTLIBXC '
@@ -51,7 +53,7 @@ configopts += 'FCFLAGS="$FCFLAGS -ffree-line-length-none" '
 configopts += 'FCCPP="/lib/cpp -C -ffreestanding -Dvector=vector" '
 
 # Run only the short tests, as the full testsuite can take a lot of time.
-runtest = 'MPIEXEC="`which mpirun` --bind-to none" check-short'
+runtest = 'MPIEXEC="`which mpirun` --bind-to none" OMP_NUM_THREADS=1 check-short'
 
 sanity_check_paths = {
     'files': ['bin/octopus'],
