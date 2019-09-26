@@ -1,0 +1,70 @@
+# Grigory A Shamov, University of Manitoba / ComputeCanada
+#
+
+easyblock = 'MakeCp'
+
+name = 'OpenMX'
+
+version = '3.8'
+
+homepage = 'http://www.openmx-square.org/'
+
+description = """
+OpenMX (Open source package for Material eXplorer) is a software package 
+for nano-scale material simulations based on density functional theories (DFT), 
+norm-conserving pseudopotentials, and pseudo-atomic localized basis functions. 
+The methods and algorithms used in OpenMX and their implementation are carefully 
+designed for the realization of large-scale ab initio electronic structure calculations 
+on parallel computers based on the MPI or MPI/OpenMP hybrid parallelism.
+"""
+
+toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://t-ozaki.issp.u-tokyo.ac.jp/' ]
+sources = [ 'openmx3.8.tar.gz' ]
+
+#GAS Ozaki-san's "patch" is remade into a proper diffutils patch along with Makefile changes.
+#GAS Liberi to be made into a library first, otherwise make fails under EB for the liberi subdir
+#GAS 
+			
+patches = ['OpenMX-3.8-to-3.8.5.patch',
+	   'OpenMX-3.8.5-makefile-iomkl.patch',
+	   'OpenMX-3.8.5-makeliberi-iomkl.patch',
+	]
+
+#start_dir = 'source'
+
+dependencies = [
+    ('FFTW', '3.3.6'),
+]
+
+builddependencies = [
+    ('make', '3.82'),
+]
+
+parallel=1
+
+prebuildopts =' cd %(builddir)s/openmx3.8/source && cd liberi-091216 && make && cd .. && '
+
+buildopts = 'all CC="mpicc -qopenmp $CFLAGS -I$EBROOTFFTW/include -I./liberi-091216/source -Dscalapack -Dkcomp" FC="mpif90 -qopenmp $FCFLAGS -I$EBROOTFFTW/include"'
+
+files_to_copy = [
+		 (['./source/openmx', './source/DosMain', 
+		    './source/jx', './source/esp', './source/polB',
+		     './source/analysis_example', './source/intensity_map', 
+		     './source/md2axsf', './source/bandgnu13', 
+		     './source/cube2xsf', './source/bin2txt', ], 'bin'),
+                 (['./DFT_DATA13'], ''),
+                 (['openmx3.8.pdf'],'doc'),
+                 (['work'],'work'),
+                 ]
+
+
+sanity_check_paths = {
+    'files': ['bin/openmx', 'bin/DosMain' ],
+    'dirs': ['bin', 'DFT_DATA13', 'doc'],
+}
+
+moduleclass = 'chem'
+
