@@ -453,6 +453,22 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
+    def check_https(self, changed_ecs):
+        """Make sure https:// is used for homepage/source_urls (rather than http://)."""
+
+        whitelist = []
+
+        http_regex = re.compile('http://[^"\'\n]*', re.M)
+
+        failing_checks = []
+        for ec in changed_ecs:
+            matches = http_regex.findall(ec.rawtxt)
+            if matches:
+                ec_fn = os.path.basename(ec.path)
+                failing_checks.append("Found http:// URLs in %s: %s" % (ec_fn, ', '.join(matches)))
+
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
@@ -507,6 +523,7 @@ class EasyConfigTest(TestCase):
                 self.check_sha256_checksums(changed_ecs)
                 self.check_python_packages(changed_ecs)
                 self.check_sanity_check_paths(changed_ecs)
+                self.check_https(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
