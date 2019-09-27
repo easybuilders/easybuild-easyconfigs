@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+
+name = 'BerkeleyGW'
+version = '2.1.0'
+
+homepage = 'http://www.berkeleygw.org'
+description = """The BerkeleyGW Package is a set of computer codes that calculates the quasiparticle
+ properties and the optical responses of a large variety of materials from bulk periodic crystals to
+ nanostructures such as slabs, wires and molecules."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'precise': True}
+
+source_urls = ['https://berkeley.box.com/shared/static/']
+sources = [{'download_filename': 'ze3azi5vlyw7hpwvl9i5f82kaiid6g0x.gz', 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'BerkeleyGW-2.1.0_fix_path.patch',
+    'BerkeleyGW-2.1.0_check.patch',
+]
+checksums = [
+    '31f3b643dd937350c3866338321d675d4a1b1f54c730b43ad74ae67e75a9e6f2',  # BerkeleyGW-2.1.0.tar.gz
+    '7a17fe7e6964e8a62ed2139dd940ce153741ac9f6ea6e6c0548c450f263fa834',  # BerkeleyGW-2.1.0_fix_path.patch
+    '1e07ffc02ee4e4b70162c02b836af637e0bc3de9a7427fd612a899398c861f7e',  # BerkeleyGW-2.1.0_check.patch
+]
+
+dependencies = [
+    ('ELPA', '2018.11.001'),
+    ('h5py', '2.9.0'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'cp config/generic.mpi.linux.mk arch.mk && '
+
+buildopts = 'all-flavors COMPFLAG=-DINTEL PARAFLAG="-DMPI -DOMP" DEBUGFLAG="" '
+buildopts += 'F90free="$MPIF90 -free" LINK="$MPIF90" '
+buildopts += 'FOPTS="$FFLAGS" MOD_OPT="-module " C_PARAFLAG="$PARAFLAG" CC_COMP="$MPICXX" C_COMP="$MPICC" '
+buildopts += 'FCPP="cpp -C -P -ffreestanding" C_LINK="$MPICXX" C_OPTS="$CFLAGS" MKLPATH="$MKLROOT" '
+buildopts += 'MATHFLAG="-DUSESCALAPACK -DUNPACKED -DUSEFFTW3 -DHDF5 -DUSEELPA" '
+buildopts += 'LAPACKLIB="$LIBLAPACK_MT" BLACSDIR="$BLACS_LIB_DIR" BLACS="$LIBBLACS" SCALAPACKLIB="$LIBSCALAPACK_MT" '
+buildopts += 'FFTWINCLUDE="$FFTW_INC_DIR" FFTWLIB="$MKLROOT/lib/intel64/libfftw3xf_intel.a" '
+buildopts += 'HDF5INCLUDE="$EBROOTHDF5/include" HDF5LIB="-lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lsz -lz" '
+buildopts += 'ELPALIB="$EBROOTELPA/lib/libelpa_openmp.a" '
+buildopts += 'ELPAINCLUDE="$EBROOTELPA/include/elpa_openmp-$EBVERSIONELPA/modules" '
+
+# "all-flavors" cleans and compiles everything again
+preinstallopts = 'sed -i "s/install: all-flavors/install: all/" Makefile && '
+
+installopts = 'INSTDIR=%(installdir)s'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/' + _prog + '.' + _flavor + '.x'
+              for _prog in ['epsilon', 'sigma', 'kernel', 'absorption', 'nonlinearoptics', 'parabands']
+              for _flavor in ['real', 'cplx']],
+    'dirs': []
+}
+
+moduleclass = 'phys'
