@@ -454,11 +454,11 @@ class EasyConfigTest(TestCase):
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
     def check_https(self, changed_ecs):
-        """Make sure https:// is used for homepage/source_urls (rather than http://)."""
+        """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = []
 
-        http_regex = re.compile('http://[^"\'\n]*', re.M)
+        http_regex = re.compile('http://[^"\'\n]+', re.M)
 
         failing_checks = []
         for ec in changed_ecs:
