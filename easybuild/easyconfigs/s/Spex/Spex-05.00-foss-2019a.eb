@@ -1,0 +1,37 @@
+easyblock = 'ConfigureMake'
+
+name = 'Spex'
+version = '05.00'
+
+homepage = 'https://spex.readthedocs.io'
+description = """Spex is a computer code based on many-body perturbation theory.
+ It uses the all-electron full-potential linearized augmented plane-wave method (FLAPW),
+ which provides an accurate basis set for all kinds of materials including transition metals,
+ oxides, and even f-electron systems."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = ['http://iffwww.iff.kfa-juelich.de/~cfried/archive/']
+sources = ['%(namelower)s%(version)s.tgz']
+patches = ['%(name)s-%(version)s_missing_type.patch']
+checksums = [
+    '7561e385140d7a3a852bb35133d43205ee88b4a69f3560989dffb0199d5e3656',  # spex05.00.tgz
+    '811268052d03c17b8629a005a8cad0a1716355a82d1eb34e2e2f5b15d6e03047',  # Spex-05.00_missing_type.patch
+]
+
+dependencies = [
+    ('HDF5', '1.10.5'),
+    ('Wannier90', '3.0.0'),
+]
+
+configopts = "--enable-mpi "
+configopts += "--with-dft=fleur "
+configopts += "--with-wan=$EBROOTWANNIER90/lib "
+configopts += "FCFLAGS=-I$EBROOTHDF5/include"
+
+sanity_check_paths = {
+    'files': ['bin/spex' + _var for _var in ['', '.band', '.extr', '.inv', '.noinv', '.selfc']],
+    'dirs': ["."]
+}
+
+moduleclass = 'chem'
