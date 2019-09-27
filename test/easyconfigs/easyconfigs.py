@@ -53,7 +53,7 @@ from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
-from easybuild.tools.py2vs3 import string_type
+from easybuild.tools.py2vs3 import HTTPError, URLError, string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
@@ -453,6 +453,28 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
+    def check_https(self, changed_ecs):
+        """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
+
+        whitelist = []
+
+        http_regex = re.compile('http://[^"\'\n]+', re.M)
+
+        failing_checks = []
+        for ec in changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            for http_url in http_regex.findall(ec.rawtxt):
+                https_url = http_url.replace('http://', 'https://')
+                try:
+                    https_url_works = bool(urlopen(https_url))
+                except (HTTPError, URLError):
+                    https_url_works = False
+
+                if https_url_works:
+                    failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
+
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
@@ -507,6 +529,7 @@ class EasyConfigTest(TestCase):
                 self.check_sha256_checksums(changed_ecs)
                 self.check_python_packages(changed_ecs)
                 self.check_sanity_check_paths(changed_ecs)
+                self.check_https(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
