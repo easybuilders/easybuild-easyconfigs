@@ -1,0 +1,85 @@
+# fix hardcoding
+# November 12th, 2018 by B. Hajgato (Free University Brussels - VUB)
+diff -ru mothur-1.41.0.orig/Makefile mothur-1.41.0/Makefile
+--- mothur-1.41.0.orig/Makefile	2018-11-09 15:35:41.000000000 +0100
++++ mothur-1.41.0/Makefile	2018-11-12 16:10:40.549762632 +0100
+@@ -24,11 +24,11 @@
+ USEBOOST ?= yes
+ USEHDF5 ?= yes
+ LOGFILE_NAME ?= no
+-BOOST_LIBRARY_DIR ?= "\"Enter_your_boost_library_path_here\""
+-BOOST_INCLUDE_DIR ?= "\"Enter_your_boost_include_path_here\""
+-HDF5_LIBRARY_DIR ?= "\"Enter_your_HDF5_library_path_here\""
+-HDF5_INCLUDE_DIR ?= "\"Enter_your_HDF5_include_path_here\""
+-MOTHUR_FILES="\"Enter_your_default_path_here\""
++BOOST_LIBRARY_DIR=${EBROOTBOOST}/lib
++BOOST_INCLUDE_DIR=${EBROOTBOOST}/include
++HDF5_LIBRARY_DIR=${EBROOTHDF5}/lib
++HDF5_INCLUDE_DIR=${EBROOTHDF5}/include
++MOTHUR_FILES=''
+ VERSION = "\"1.41.0\""
+ 
+ 
+@@ -38,13 +38,13 @@
+ endif
+ 
+ ifeq  ($(strip $(OPTIMIZE)),yes)
+-    CXXFLAGS += -O3
++    #CXXFLAGS += -O3
+ endif
+ 
+ CXXFLAGS += -std=c++11 -pthread -DVERSION=${VERSION}
+ LDFLAGS += -std=c++11 -pthread
+ 
+-ifeq  ($(strip $(MOTHUR_FILES)),"\"Enter_your_default_path_here\"")
++ifeq  ($(strip $(MOTHUR_FILES)),'')
+ else
+     CXXFLAGS += -DMOTHUR_FILES=${MOTHUR_FILES}
+ endif
+diff -ru mothur-1.41.0.orig/makefile-internal mothur-1.41.0/makefile-internal
+--- mothur-1.41.0.orig/makefile-internal	2018-11-09 15:35:41.000000000 +0100
++++ mothur-1.41.0/makefile-internal	2018-11-12 16:07:25.306890667 +0100
+@@ -6,8 +6,8 @@
+ VERSION = "\"1.41.0\""
+ 
+ # Optimize to level 3:
+-    CXXFLAGS += -O3 -std=c++11
+-    LDFLAGS += -std=c++11 -pthreads
++    #CXXFLAGS += -O3 -std=c++11
++    #LDFLAGS += -std=c++11 -pthreads
+ 
+ ifeq  ($(strip $(LOGFILE_NAME)),yes)
+     LOGFILE_NAME="\"mothur.logfile\""
+@@ -39,8 +39,8 @@
+ #The boost libraries allow you to read gz files.
+ ifeq  ($(strip $(USEBOOST)),yes)
+     #statically link so the boost install is not required on users machine
+-    BOOST_INCLUDE_DIR="/usr/local/include"
+-    BOOST_LIBRARY_DIR="/usr/local/lib"
++    BOOST_INCLUDE_DIR=${EBROOTBOOST}/include
++    BOOST_LIBRARY_DIR=${EBROOTBOOST}/lib
+ 
+     CXXFLAGS += -DUSE_BOOST -I ${BOOST_INCLUDE_DIR}
+ 
+@@ -48,17 +48,17 @@
+     LIBS += ${BOOST_LIBRARY_DIR}/libboost_filesystem.a
+ 
+     #if mac
+-    LIBS += -lz
++    #LIBS += -lz
+ 
+     #if linux or windows
+-    #LIBS += ${BOOST_LIBRARY_DIR}/libz.a
++    LIBS += ${EBROOTZLIB}/lib/libz.a
+ endif
+ 
+ #User specified HDF5 library
+ ifeq  ($(strip $(USEHDF5)),yes)
+ 
+-    HDF5_INCLUDE_DIR="/usr/local/include"
+-    HDF5_LIBRARY_DIR="/usr/local/lib"
++    HDF5_INCLUDE_DIR=${EBROOTHDF5}/include
++    HDF5_LIBRARY_DIR=${EBROOTHDF5}/lib
+ 
+     LDFLAGS +=  -L ${HDF5_LIBRARY_DIR} 
+     LIBS += ${HDF5_LIBRARY_DIR}/libhdf5_hl_cpp.a

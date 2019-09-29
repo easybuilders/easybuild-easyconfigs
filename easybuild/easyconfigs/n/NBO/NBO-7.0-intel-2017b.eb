@@ -1,0 +1,44 @@
+# this recipe is configured for use with Gaussian G16, revision A03 or later
+
+easyblock = 'MakeCp'
+
+name = 'NBO'
+version = '7.0'
+
+homepage = 'http://nbo.chem.wisc.edu/'
+description = """ The Natural Bond Orbital (NBO) program is a discovery tool
+for chemical insights from complex wavefunctions. """
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'pic': True, 'i8': True}  # remove 'i8' if Gaussian was compiled with 32-bit integers
+
+# NBO7 is proprietary software, order here: https://charge.wisc.edu/chemistry/order_nbo7.aspx
+sources = ['nbo%(version)s-src.tar']
+patches = ['NBO-%(version)s_make.patch']
+checksums = [
+    '45cc4b85c53f66328d0262b18150ec5557f252b244511148a858933469ecf88c',  # nbo7.0-src.tar
+    '832e2f29f728d15e114b81978d3308ab7b1b7c73deccadd2a562a5ecfd7f27f4',  # NBO-7.0_make.patch
+]
+
+local_intlength = 'i8'  # change to i4 if Gaussian was compiled with 32-bit integers
+
+buildopts = 'FC=$FC CC=$CC NBODIR="%(builddir)s/nbo7" STATIC="false" PROFILE="true" '
+buildopts += 'BLASLIB="$LDFLAGS $LIBBLAS" '
+buildopts += 'INT=%s ' % local_intlength
+
+parallel = 1
+
+files_to_copy = ['bin', 'dox', 'man', 'tests']
+
+postinstallcmds = [
+    'sed -i -e "s|setenv GAUNBO.*|setenv GAUNBO g16nbo|" %(installdir)s/bin/gaunbo{6,7}',
+    'sed -i -e "s|setenv BINDIR.*|setenv BINDIR %(installdir)s/bin|" %(installdir)s/bin/gaunbo{6,7}',
+    'sed -i -e "s|setenv INT.*|setenv INT %s|" %%(installdir)s/bin/gaunbo{6,7}' % local_intlength,
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s.%s.exe' % (x, local_intlength) for x in ('gennbo', 'g09nbo', 'g16nbo', 'nbo7')],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

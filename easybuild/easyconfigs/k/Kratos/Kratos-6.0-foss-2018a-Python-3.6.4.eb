@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'Kratos'
+version = '6.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.cimne.com/kratos'
+description = """Kratos Multiphysics (A.K.A Kratos) is a framework for building parallel multi-disciplinary
+ simulation software."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://github.com/KratosMultiphysics/Kratos/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['93effdd248d1624ffb5593e3292d429b4fc07764be2a6f2a64779f2951332b33']
+
+builddependencies = [('CMake', '3.12.1')]
+dependencies = [
+    ('Python', '3.6.4'),
+    ('Boost', '1.66.0'),
+    ('zlib', '1.2.11'),
+    ('METIS', '5.1.0'),
+    ('Trilinos', '12.12.1', versionsuffix),
+]
+
+separate_build_dir = True
+
+# see configure.sh script for default set of configuration options
+configopts = "-DCMAKE_BUILD_TYPE=Release -DKRATOS_INSTALL_PREFIX=%(installdir)s "
+configopts += "-DBOOST_ROOT=$EBROOTBOOST -DBoost_NO_SYSTEM_PATHS=ON -DBoost_NO_BOOST_CMAKE=ON "
+configopts += "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python -DINSTALL_EMBEDDED_PYTHON=ON -DINSTALL_PYTHON_FILES=ON "
+configopts += "-DMESHING_APPLICATION=ON -DEXTERNAL_SOLVERS_APPLICATION=ON -DSTRUCTURAL_MECHANICS_APPLICATION=ON "
+configopts += "-DCONVECTION_DIFFUSION_APPLICATION=ON -DSOLID_MECHANICS_APPLICATION=ON -DFSI_APPLICATION=ON "
+configopts += "-DCONSTITUTIVE_MODELS_APPLICATION=ON -DFLUID_DYNAMICS_APPLICATION=ON -DMESH_MOVING_APPLICATION=ON "
+configopts += "-DMETIS_APPLICATION=ON -DUSE_METIS_5=ON "
+configopts += "-DTRILINOS_APPLICATION=ON -DTRILINOS_ROOT=$EBROOTTRILINOS "
+configopts += "-DDEM_APPLICATION=OFF -DSWIMMING_DEM_APPLICATION=OFF -DMIXED_ELEMENT_APPLICATION=OFF "
+configopts += "-DSHAPE_OPTIMIZATION_APPLICATION=OFF -DTOPOLOGY_OPTIMIZATION_APPLICATION=OFF "
+
+sanity_check_paths = {
+    'files': ['libs/libKratosCore.%s' % SHLIB_EXT, 'runkratos', 'KratosMultiphysics/mpi.py'],
+    'dirs': ['applications', 'kratos'],
+}
+
+sanity_check_commands = [
+    "python -c 'import Kratos'",
+    "python -c 'import KratosMultiphysics'",
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'libs',
+    'PATH': '',
+    'PYTHONPATH': ['', 'libs'],
+}
+
+moduleclass = 'phys'

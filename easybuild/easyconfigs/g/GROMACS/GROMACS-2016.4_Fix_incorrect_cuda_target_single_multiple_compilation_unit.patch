@@ -1,0 +1,23 @@
+# Fix incorrect and overly complicated code to check if
+# Cuda can do multiple compilation units.
+#
+# Issue 2561 in Gromacs redmine, https://redmine.gromacs.org/issues/2561
+#
+# Åke Sandgren, 20180626
+# Davide Vanzo, 20181127
+diff -ru gromacs-2016.4.orig/cmake/gmxManageGPU.cmake gromacs-2016.4/cmake/gmxManageGPU.cmake
+--- gromacs-2016.4.orig/cmake/gmxManageGPU.cmake	2018-11-27 16:14:04.154832163 -0600
++++ gromacs-2016.4/cmake/gmxManageGPU.cmake	2018-11-27 15:50:41.686833667 -0600
+@@ -284,10 +284,9 @@
+     if (GMX_GPU)
+         # We need to use single compilation unit for kernels:
+         # - when compiling for CC 2.x devices where buggy kernel code is generated
+-        gmx_check_if_changed(_gmx_cuda_target_changed GMX_CUDA_TARGET_SM GMX_CUDA_TARGET_COMPUTE CUDA_NVCC_FLAGS)
++        gmx_check_if_changed(_gmx_cuda_target_changed GMX_CUDA_NVCC_FLAGS)
+         if(_gmx_cuda_target_changed OR NOT GMX_GPU_DETECTION_DONE)
+-            if((NOT GMX_CUDA_TARGET_SM AND NOT GMX_CUDA_TARGET_COMPUTE) OR
+-               (GMX_CUDA_TARGET_SM MATCHES "2[01]" OR GMX_CUDA_TARGET_COMPUTE MATCHES "2[01]"))
++            if(GMX_CUDA_NVCC_FLAGS MATCHES "_2[01]")
+                message(STATUS "Enabling single compilation unit for the CUDA non-bonded module. Multiple compilation units are not compatible with CC 2.x devices, to enable the feature specify only CC >=3.0 target architectures in GMX_CUDA_TARGET_SM/GMX_CUDA_TARGET_COMPUTE.")
+                 set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE ON)
+             else()
