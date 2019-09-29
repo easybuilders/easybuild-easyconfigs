@@ -458,6 +458,7 @@ class EasyConfigTest(TestCase):
 
         whitelist = [
             'libxml2',  # https://xmlsoft.org works, but invalid certificate
+            'p4vasp',  # https://www.p4vasp.at doesn't work
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
