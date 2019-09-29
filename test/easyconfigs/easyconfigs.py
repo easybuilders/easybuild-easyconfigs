@@ -456,13 +456,20 @@ class EasyConfigTest(TestCase):
     def check_https(self, changed_ecs):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
-        whitelist = []
+        whitelist = [
+            'libxml2',  # https://xmlsoft.org works, but invalid certificate
+        ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
 
         failing_checks = []
         for ec in changed_ecs:
             ec_fn = os.path.basename(ec.path)
+
+            # skip whitelisted easyconfigs
+            if any(ec_fn.startswith(x) for x in whitelist):
+                continue
+
             for http_url in http_regex.findall(ec.rawtxt):
                 https_url = http_url.replace('http://', 'https://')
                 try:
