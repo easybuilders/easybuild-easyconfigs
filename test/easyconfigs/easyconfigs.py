@@ -200,9 +200,12 @@ class EasyConfigTest(TestCase):
 
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep in ['Boost', 'R', 'PLUMED', 'Lua', 'ASE'] and len(dep_vars) > 1:
+            elif dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    # use version of Java wrapper rather than full Java version
+                    if dep == 'Java':
+                        dep_ver = '.'.join(dep_ver.split('.')[:2])
                     # filter out dep version if all easyconfig filenames using it include specific dep version
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
                         dep_vars.pop(key)
@@ -221,7 +224,7 @@ class EasyConfigTest(TestCase):
 
             # filter out Java 'wrapper'
             # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
-            elif dep == 'Java' and len(dep_vars) == 2:
+            if dep == 'Java' and len(dep_vars) == 2:
                 key1, key2 = sorted(dep_vars.keys())
                 ver1, ver2 = [k.split(';')[0] for k in [key1, key2]]
                 if ver1.startswith(ver2):
