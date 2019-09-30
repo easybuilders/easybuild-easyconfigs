@@ -224,7 +224,7 @@ class EasyConfigTest(TestCase):
 
             # filter out Java 'wrapper'
             # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
-            elif dep == 'Java' and len(dep_vars) == 2:
+            if dep == 'Java' and len(dep_vars) == 2:
                 key1, key2 = sorted(dep_vars.keys())
                 ver1, ver2 = [k.split(';')[0] for k in [key1, key2]]
                 if ver1.startswith(ver2):
