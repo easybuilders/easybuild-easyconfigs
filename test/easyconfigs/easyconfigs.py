@@ -203,6 +203,9 @@ class EasyConfigTest(TestCase):
             elif dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    # use version of Java wrapper rather than full Java version
+                    if dep == 'Java':
+                        dep_ver = '.'.join(dep_ver.split('.')[:2])
                     # filter out dep version if all easyconfig filenames using it include specific dep version
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
                         dep_vars.pop(key)
