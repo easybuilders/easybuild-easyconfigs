@@ -1,0 +1,22 @@
+fix for "undeclared inclusion(s) in rule" errors when building TensorFlow 1.14.0 with CUDA support,
+if the installation directory for GCC is hosted in a path that is a symlink to another path;
+the symlinked path is resolved in several places (both by 'gcc' itself and by the TF build process),
+which makes hard comparisons between paths fail
+author: Kenneth Hoste (HPC-UGent)
+--- tensorflow-1.14.0/third_party/gpus/cuda_configure.bzl.orig	2019-09-19 22:09:21.883055004 +0200
++++ tensorflow-1.14.0/third_party/gpus/cuda_configure.bzl	2019-09-19 22:09:44.524941857 +0200
+@@ -1103,6 +1103,14 @@
+     cc_fullpath = cc if not should_download_clang else "crosstool/" + cc
+ 
+     host_compiler_includes = get_cxx_inc_directories(repository_ctx, cc_fullpath)
++
++    # fix include path by also including paths where resolved symlink is replaced by original path
++    cc_topdir = str(repository_ctx.path(repository_ctx.path(cc_fullpath).dirname).dirname)
++    cc_topdir_resolved = str(repository_ctx.path(str(cc_topdir)).realpath)
++    if cc_topdir_resolved != cc_topdir:
++        original_host_compiler_includes = [p.replace(cc_topdir_resolved, cc_topdir) for p in host_compiler_includes]
++        host_compiler_includes = host_compiler_includes + original_host_compiler_includes
++
+     cuda_defines = {}
+ 
+     host_compiler_prefix = "/usr/bin"
