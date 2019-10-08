@@ -1,0 +1,64 @@
+--- atactk-0.1.6/atactk/metrics.py.orig	2018-09-26 07:12:04.316368000 -0400
++++ atactk-0.1.6/atactk/metrics.py	2017-08-19 14:01:41.574813078 -0400
+@@ -86,7 +86,8 @@
+     if aligned_segment.is_reverse:
+         # the cut point is the reference_end minus (cut_point_offset + 1)
+         # (pysam's reference_end is one past the last aligned residue)
+-        cut_point = aligned_segment.reference_end - (cut_point_offset + 1)
++        #cut_point = aligned_segment.reference_end - (cut_point_offset + 1)
++        cut_point = aligned_segment.reference_end - (cut_point_offset)
+     else:
+         cut_point = aligned_segment.reference_start + cut_point_offset  # start of the read plus offset
+     return cut_point
+@@ -115,11 +116,13 @@
+     cut_points_in_region = []
+     for segment in aligned_segments:
+         cut_point = find_cut_point(segment, cut_point_offset)
+-        if start <= cut_point < end:
++        #if start <= cut_point < end:
++        if start <= cut_point <= end:
+             cut_points_in_region.append(cut_point)
+ 
+     # initialize the region with zero counts
+-    counts = {p: 0 for p in range(start, end)}
++    #counts = {p: 0 for p in range(start, end)}
++    counts = {p: 0 for p in range(start, end+1)}
+ 
+     # add the cut points
+     counts.update(collections.Counter(cut_points_in_region))
+@@ -236,6 +239,7 @@
+             if feature.is_reverse:
+                 # need to orient the cut point positions to the motif in the matrix
+                 forward_cut_points, reverse_cut_points = list(reversed(reverse_cut_points)), list(reversed(forward_cut_points))
++                #forward_cut_points, reverse_cut_points = list(reversed(forward_cut_points)), list(reversed(reverse_cut_points))
+ 
+             # for the discrete matrix: scores for each feature
+             bin_scores.extend(aggregate_scores(forward_cut_points, feature.extension, resolution))
+--- atactk-0.1.6/scripts/make_cut_matrix.orig	2018-09-26 07:15:56.777268000 -0400
++++ atactk-0.1.6/scripts/make_cut_matrix	2018-02-16 05:31:26.354382730 -0500
+@@ -168,7 +168,7 @@
+ 
+     parser.add_argument('-b', '--bins', dest='bins', type=atactk.command.parse_bins, required=True, help='A list of fragment size bin groups and their resolutions. See BINNING, below.')
+     parser.add_argument('-F', '--exclude-flags', type=int, dest='exclude_flags', action='append', help='A SAM flag used to exclude alignments from the BAM file. More than one may be specified. Alignments matching any exclude flag will not be counted. The default is to exclude all unmapped reads/mates by filtering out any alignments with SAM flags 4 or 8 set.')
+-    parser.add_argument('-f', '--include-flags', type=int, dest='include_flags', action='append', help='A SAM flag that determines which alignments from the BAM file will be included in the counts. More than one may be specified. Any alignment matching any include flag will be counted. The default is to include properly paired and mapped reads by filtering for SAM flags 83, 99, 147, or 163.')
++    parser.add_argument('-f', '--include-flags', type=int, dest='include_flags', action='append', help='A SAM flag that determines which alignments from the BAM file will be included in the counts. More than one may be specified. Any alignment matching any include flag will be counted. The recommended setting is to include properly paired and mapped reads by filtering for SAM flags 83, 99, 147, or 163 (for paired end). For single-end, none. Default: none')
+     parser.add_argument('-o', '--cut-point-offset', type=int, default=4, dest='cut_point_offset', help='The position of cut points relative to the beginning of a read and in the direction toward the read end, as a number of bases (default: 4).')
+     parser.add_argument('-p', '--parallel', type=int, default=1, dest='parallel', help='The number of parallel scoring processes to use (default: 1).')
+     parser.add_argument('-q', '--quality', type=int, default=30, dest='quality', help='The minimum mapping quality required for a read to be counted (default: 30).')
+@@ -188,7 +188,7 @@
+     if args.include_flags:
+         args.include_flags = sorted(set(args.include_flags))
+     else:
+-        args.include_flags = [83, 99, 147, 163]
++        args.include_flags = []
+ 
+     if args.exclude_flags:
+         args.exclude_flags = sorted(set(args.exclude_flags))
+--- atactk-0.1.6/requirements.txt.orig	2019-08-15 11:52:27.780904507 -0700
++++ atactk-0.1.6/requirements.txt	2019-08-15 11:52:35.953910885 -0700
+@@ -1,4 +1,4 @@
+ pysam
+ python-levenshtein
+ sexpdata
+-wheel==0.23.0
++wheel

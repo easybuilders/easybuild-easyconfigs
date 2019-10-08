@@ -1,0 +1,41 @@
+# Built with EasyBuild version 3.7.0-rc7b39e420d4f1af2b79028319dfd5ed90b504390 on 2018-10-22_14-55-08
+easyblock = 'CMakeMake'
+
+name = 'ALPSCore'
+version = "2.2.0"
+
+homepage = 'https://github.com/ALPSCore/ALPSCore'
+description = """
+The ALPSCore project, based on the ALPS (Algorithms and Libraries for Physics Simulations) project, provides generic algorithms and utilities for physics problems. It strives to increase software reuse in the physics community.
+For copyright see COPYRIGHT.TXT For licensing see LICENSE.TXT For acknowledgment in scientific publications see ACKNOWLEDGE.TXT
+"""
+
+toolchain = {'name': 'iompi', 'version': '2016.4.11'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/%(name)s/%(name)s/archive/']
+checksums = ['41444b297ac4afea418d23661189f4f4']
+
+dependencies = [
+    ('Boost', '1.60.0'),
+    ('HDF5', '1.8.18'),
+    ('Eigen', '3.3.5'),
+]
+
+configopts  = '-DENABLE_MPI=ON '
+configopts += '-DEIGEN3_INCLUDE_DIR=$EBROOTEIGEN/include '
+configopts += '-DCMAKE_CXX_FLAGS="-DNDEBUG -DBOOST_DISABLE_ASSERTS -DALPS_GF_DEBUG" '
+configopts += '-DCMAKE_BUILD_TYPE="Release" '
+configopts += '-DHDF5_ROOT=$EBROOTHDF5 ' 
+
+separate_build_dir = True
+
+alps_lib = ["accumulators", "alea", "gf", "hdf5", "mc", "params", "utilities"]
+
+sanity_check_paths = {
+    'files': ["lib/libalps-%s.so" % x for x in alps_lib],
+    'dirs': ['include', 'lib', 'lib/pkgconfig', 'share'],
+}
+
+moduleclass = 'phys'

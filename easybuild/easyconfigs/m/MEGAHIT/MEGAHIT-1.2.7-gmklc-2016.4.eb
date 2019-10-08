@@ -1,0 +1,32 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: MAsao Fujinaga (Compute Canada)
+
+easyblock = 'CMakeMake'
+
+name = 'MEGAHIT'
+version = '1.2.7'
+
+homepage = 'https://github.com/voutcn/megahit'
+description = """ MEGAHIT is a single node assembler for large and complex metagenomics NGS reads, such as soil. It makes use of succinct de Bruijn graph (SdBG) to achieve low memory assembly. """
+
+toolchain = {'name': 'gmklc', 'version': '2016.4'}
+
+source_urls = [('https://github.com/voutcn/megahit/archive/')]
+sources = ['v%(version)s.tar.gz']
+
+keepsymlinks = True
+
+configopts = '-DCMAKE_BUILD_TYPE=Release '
+
+buildopts = ['use_gpu=1 LIBRARY_PATH=$CUDA_PATH/lib64/stubs:$LIBRARY_PATH']
+
+megahit_binaries = ["megahit", "megahit_core", "megahit_core_no_hw_accel", "megahit_toolkit"]
+
+postinstallcmds =  ['cp -r test_data LICENSE README.md %(installdir)s']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in megahit_binaries],
+    'dirs': [''],
+}
+
+moduleclass = 'bio'

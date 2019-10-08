@@ -1,0 +1,54 @@
+easyblock = 'EB_Qt'
+
+name = 'Qt5'
+version = '5.12.3'
+modaltsoftname = 'qt'
+
+homepage = 'http://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '7.3.0'}
+
+source_urls = [
+    'http://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'http://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://www.riverbankcomputing.com/static/Downloads/sip/4.19.17/',
+    'https://www.riverbankcomputing.com/static/Downloads/PyQt5/5.12.3/'
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz', 'sip-4.19.17.tar.gz', 'PyQt5_gpl-5.12.3.tar.gz']
+checksums = [
+    '6462ac74c00ff466487d8ef8d0922971aa5b1d5b33c0753308ec9d57711f5a42',  # qt-everywhere-src-5.12.3.tar.xz
+    '12bcd8f4d5feefc105bc075d12c5090ee783f7380728563c91b8b95d0ec45df3',  # sip-4.19.17.tar.gz
+    '0db0fa37debab147450f9e052286f7a530404e2aaddc438e97a7dcdf56292110',  # PyQt5_gpl-5.12.3.tar.gz
+]
+
+builddependencies = [('pkg-config', '0.29.2')]
+
+# qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
+configopts = '-skip qtgamepad'
+
+dependencies = [
+    ('GLib', '2.53.5'),
+    ('libpng', '1.6.32'),
+    ('X11', '20171023'),
+    ('libGLU', '9.0.0'),
+]
+
+# *Note*: When building PyQt5 v5.11 or later you must configure SIP to create a private copy
+#         of the sip module using a command line similar to the following:
+# > python configure.py --sip-module PyQt5.sip
+# https://www.riverbankcomputing.com/static/Docs/PyQt5/installation.html#downloading-sip
+postinstallcmds = [
+	"module load python/3.5 && cd %(builddir)s/ && cp -r sip-4.19.17 sip-4.19.17-3.5 && cd sip-4.19.17-3.5 && python3.5 configure.py --sip-module PyQt5.sip --sysroot=%(installdir)s --sipdir=%(installdir)s/share/python3.5/sip INCDIR=$EBROOTPYTHON/include/python3.5m && make && make install",
+	"module load python/3.5 && cd %(builddir)s/ && cp -r PyQt5_gpl-5.12.3 PyQt5_gpl-5.12.3-3.5 && cd PyQt5_gpl-5.12.3-3.5 && export CPATH=$EBROOTPYTHON/include/python3.5m:$CPATH &&  export EBPYTHONPREFIXES=%(installdir)s && python3.5 configure.py --confirm --qmake=%(installdir)s/bin/qmake --sysroot=%(installdir)s --verbose --sip=%(installdir)s/bin/sip --sip-incdir=%(installdir)s/include/python3.5m && make && make install",
+	"module load python/3.6 && cd %(builddir)s/ && cp -r sip-4.19.17 sip-4.19.17-3.6 && cd sip-4.19.17-3.6 && python3.6 configure.py --sip-module PyQt5.sip --sysroot=%(installdir)s --sipdir=%(installdir)s/share/python3.6/sip INCDIR=$EBROOTPYTHON/include/python3.6m && make && make install",
+	"module load python/3.6 && cd %(builddir)s/ && cp -r PyQt5_gpl-5.12.3 PyQt5_gpl-5.12.3-3.6 && cd PyQt5_gpl-5.12.3-3.6 &&  export CPATH=$EBROOTPYTHON/include/python3.6m:$CPATH && export EBPYTHONPREFIXES=%(installdir)s && python3.6 configure.py --confirm --qmake=%(installdir)s/bin/qmake --sysroot=%(installdir)s --verbose --sip=%(installdir)s/bin/sip  --sip-incdir=%(installdir)s/include/python3.6m && make && make install",
+	"module load python/3.7 && cd %(builddir)s/ && cp -r sip-4.19.17 sip-4.19.17-3.7 && cd sip-4.19.17-3.7 && python3.7 configure.py --sip-module PyQt5.sip --sysroot=%(installdir)s --sipdir=%(installdir)s/share/python3.7/sip INCDIR=$EBROOTPYTHON/include/python3.7m && make && make install",
+	"module load python/3.7 && cd %(builddir)s/ && cp -r PyQt5_gpl-5.12.3 PyQt5_gpl-5.12.3-3.7 && cd PyQt5_gpl-5.12.3-3.7 &&  export CPATH=$EBROOTPYTHON/include/python3.7m:$CPATH && export EBPYTHONPREFIXES=%(installdir)s && python3.7 configure.py --confirm --qmake=%(installdir)s/bin/qmake --sysroot=%(installdir)s --verbose --sip=%(installdir)s/bin/sip  --sip-incdir=%(installdir)s/include/python3.7m && make && make install",
+]
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+
+
+moduleclass = 'devel'

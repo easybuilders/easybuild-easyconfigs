@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'MOOSE'
+version = 'latest'
+
+homepage = 'https://www.mooseframework.org/'
+description = """MOOSE is a finite-element framework that aids in application development by harnessing state-of-the-art fully-coupled, fully-implicit multiphysics solvers while providing automatic parallelization, mesh adaptivity, and a growing set of physics modules."""
+
+toolchain = {'name': 'gomkl', 'version':'2016.4.11'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+sources = [{
+    'filename': 'moose-master.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/idaholab',
+        'repo_name': 'moose',
+        'tag': 'master',
+	'recursive': True
+    },
+}]
+
+dependencies = [
+    ('PETSc', '3.9.0')
+]
+
+#with_configure = True
+#configure_cmd = './scripts/update_and_rebuild_libmesh.sh'
+#configopts = '--disable-shared --enable-static'
+
+prebuildopts = './scripts/update_and_rebuild_libmesh.sh --disable-shared --enable-static &&  cd modules/combined/ &&'
+files_to_copy = ['%(builddir)s']
+keepsymlinks = True
+#skipsteps = ['fetch', 'ready','source', 'patch', 'prepare','configure','build','test']
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['gomkl-2016.4.11/moose'],
+}
+
+moduleclass = 'phys'

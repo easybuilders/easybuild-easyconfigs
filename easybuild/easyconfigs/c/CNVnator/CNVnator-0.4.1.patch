@@ -1,0 +1,56 @@
+--- Makefile.orig	2019-10-02 20:21:49.929814832 +0000
++++ Makefile	2019-10-02 17:04:04.147053150 +0000
+@@ -8,18 +8,18 @@
+ endif
+ 
+ ifneq ($(wildcard $(ROOTSYS)/include/root),)
+-        INC = -I$(ROOTSYS)/include/root -I$(SAMDIR)
++        INC = -I$(ROOTSYS)/include/root -I$(SAMDIR)/include
+ else
+-        INC = -I$(ROOTSYS)/include      -I$(SAMDIR)
++        INC = -I$(ROOTSYS)/include 
+ endif
+ 
+-SAMDIR = samtools
+-SAMLIB = $(SAMDIR)/libbam.a
+-HTSDIR = $(wildcard $(SAMDIR)/htslib-*)
+-HTSDIRI = $(HTSDIR)/htslib
++#SAMDIR = samtool
++SAMLIB = $(SAMDIR)/lib/libbam.a 
++HTSDIR = $(SAMDIR)
++HTSDIRI = $(HTSDIR)/include/htslib
+ ifneq ($(HTSDIR),)
+-        SAMLIB += $(HTSDIR)/libhts.a
+-        INC    += -I$(HTSDIR) -I$(HTSDIRI)
++        SAMLIB += $(HTSDIR)/lib/libhts.a
++        INC    += -I$(HTSDIR)/include/bam -I$(HTSDIRI)
+ endif
+ 
+ ifeq ($(OMP),no)
+@@ -37,8 +37,8 @@
+         INC += -I$(YEPPPINCLUDEDIR) -DUSE_YEPPP
+ endif
+ 
+-CXX    = g++ -O3 -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11 -DCNVNATOR_VERSION=\"$(VERSION)\" $(OMPFLAGS)
+ 
++CXX    = g++ -O3 -std=c++11  -DCNVNATOR_VERSION=\"$(VERSION)\" $(OMPFLAGS)
+ OBJDIR = obj
+ OBJS   = $(OBJDIR)/cnvnator.o \
+ 	 $(OBJDIR)/EXOnator.o \
+@@ -61,7 +61,7 @@
+ all: cnvnator
+ 
+ cnvnator: $(OBJS)
+-	$(CXX) -o $@ $(OBJS) $(SAMLIB) $(LIBS) $(ROOTLIBS)
++	$(CXX) -o $@ $(OBJS) $(SAMLIB) $(LIBS) $(ROOTLIBS) -lssl
+ 
+ $(OBJDIR)/%.o: %.cpp
+ 	@mkdir -p $(OBJDIR)
+--- callbaf.py.orig	2019-10-02 21:34:26.371798301 +0000
++++ callbaf.py	2019-10-02 21:34:34.747842731 +0000
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/env python
+ import matplotlib.pyplot as plt
+ import numpy
+ import ROOT

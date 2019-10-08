@@ -1,0 +1,22 @@
+Upstream patch:
+https://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/nvptx/nvptx.c?view=patch&r1=256891&r2=256890&pathrev=256891
+--- trunk/gcc/config/nvptx/nvptx.c	2018/01/19 14:04:52	256890
++++ trunk/gcc/config/nvptx/nvptx.c	2018/01/19 14:21:08	256891
+@@ -1899,9 +1899,15 @@
+   
+   if (sym)
+     {
+-      fprintf (asm_out_file, "generic(");
++      bool function = (SYMBOL_REF_DECL (sym)
++		       && (TREE_CODE (SYMBOL_REF_DECL (sym)) == FUNCTION_DECL));
++      if (!function)
++	fprintf (asm_out_file, "generic(");
+       output_address (VOIDmode, sym);
+-      fprintf (asm_out_file, val ? ") + " : ")");
++      if (!function)
++	fprintf (asm_out_file, ")");
++      if (val)
++	fprintf (asm_out_file, " + ");
+     }
+ 
+   if (!sym || val)

@@ -1,0 +1,65 @@
+# Built with EasyBuild version 3.7.0-rc7b39e420d4f1af2b79028319dfd5ed90b504390 on 2018-10-23_23-21-03
+easyblock = "ConfigureMake"
+
+name = "Julia"
+version = "1.2.0"
+
+homepage = "http://julialang.org"
+description = """A high-level, high-performance dynamic language for technical computing."""
+
+toolchain = {'name': 'gmkl', 'version': '2018.3'}
+
+source_urls = ['https://github.com/JuliaLang/julia/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = ['julia-1.2.0-makefile-llvm-libs.patch']
+
+skipsteps = ['configure']
+
+builddependencies = [
+     ('LLVM', '6.0.1'),
+     ('SuiteSparse', '4.5.4'),
+]
+
+library_paths = "$EBROOTLLVM/lib:$MKLROOT/lib/intel64:$EBROOTSUITESPARSE/lib"
+prebuildopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && "
+prebuildopts += "module load llvm/6.0.1 && LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s"%library_paths
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+buildopts = " prefix=%(installdir)s"
+buildopts += " USE_SYSTEM_CURL=1 USE_SYSTEM_GMP=1 USE_SYSTEM_LIBGIT2=1 USE_SYSTEM_LIBSSH2=1 USE_SYSTEM_LIBUNWIND=1 USE_SYSTEM_LLVM=1"
+buildopts += " USE_SYSTEM_MPFR=1 USE_SYSTEM_PATCHELF=1 USE_SYSTEM_SUITESPARSE=1 USE_SYSTEM_ZLIB=1"
+buildopts += " USE_INTEL_MKL=1 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]}"
+buildopts += " USE_BLAS64=0 USE_BINARYBUILDER=0"
+
+preinstallopts = prebuildopts
+installopts = buildopts
+# set rpath in Julia library so it can find LLVM, MKL and SuiteSparse
+installopts += " && patchelf --set-rpath '$ORIGIN':'$ORIGIN/julia':%s"%library_paths
+installopts +=      " %(installdir)s/lib/libjulia.so"
+# remove symbolic links to system libraries
+installopts += " && for i in %(installdir)s/lib/julia/*; do if [[ -L $i && $(readlink $i | cut -c 1-28) == '/cvmfs/soft.computecanada.ca' ]]; then rm $i; fi; done"
+
+# install arpack, overriding downloaded library...
+postinstallcmds = [
+   "echo 'using Pkg; Pkg.activate(\"globalenv\",shared=true); Pkg.add(\"Arpack\")' > temp.jl",
+   "JULIA_DEPOT_PATH=%(installdir)s %(installdir)s/bin/julia temp.jl &> /dev/null",
+   "sed -i 's/^    install/    #install/' %(installdir)s/packages/Arpack/*/deps/build.jl",
+   "module load arpack-ng/3.5.0 && ln -sf $EBROOTARPACKMINNG/lib/libarpack.so.2.0.0 %(installdir)s/packages/Arpack/*/deps/usr/lib",
+   "echo 'using Pkg; Pkg.activate(\"globalenv\",shared=true); Pkg.build(\"Arpack\")' > temp.jl",
+   "JULIA_DEPOT_PATH=%(installdir)s %(installdir)s/bin/julia temp.jl &> /dev/null",
+   "rm temp.jl",
+]
+
+sanity_check_paths = {
+    'files': ["bin/julia"],
+    'dirs': ["lib"]
+}
+
+modextravars = {
+    "JULIA_LOAD_PATH": "@:@v#.#:@stdlib:%(installdir)s/environments/globalenv",
+}
+
+modluafooter = """setenv("JULIA_DEPOT_PATH", pathJoin(os.getenv('HOME'), ".julia") .. ":%(installdir)s")"""
+
+moduleclass = 'lang'

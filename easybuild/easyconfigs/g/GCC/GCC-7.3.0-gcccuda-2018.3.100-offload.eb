@@ -1,0 +1,66 @@
+# based on https://github.com/eth-cscs/production/blob/master/easybuild/easyconfigs/g/GCCcore/GCCcore-7.3.0-cuda-9.1-offload.eb
+easyblock = 'ConfigureMake'
+
+name = 'GCC'
+version = '7.3.0'
+versionsuffix = '-offload'
+modaltsoftname = '%(namelower)s%(versionsuffix)s'
+
+homepage = 'http://gcc.gnu.org/'
+description = """The GNU Compiler with OpenMP/OpenACC offload support for Nvidia PTX"""
+toolchain = {'name': 'gcccuda', 'version': '2018.3.100'}
+toolchainopts = {'optarch': False}
+
+target = 'x86_64-pc-linux-gnu'
+
+source_urls = [
+    'https://ftpmirror.gnu.org/gnu/gcc/gcc-%(version)s',  # GCC auto-resolving HTTP mirror
+    'ftp://sourceware.org/pub/newlib/', # for newlib
+]
+sources = [
+    'gcc-%(version)s.tar.gz',
+    'newlib-3.1.0.tar.gz'
+]
+patches = [
+    'nvptx-cuda9.patch'
+]
+checksums = [
+    'fa06e455ca198ddc11ea4ddf2a394cf7cfb66aa7e0ab98cc1184189f1d405870',  # gcc-7.3.0.tar.gz
+    'fb4fa1cc21e9060719208300a61420e4089d6de6ef59cf533b57fe74801d102a',  # newlib-3.1.0.tar.gza
+    'f8bde49fde41b15f7ae2672181923ca7ba80a8ddeb461bba5785c4d688355c1c',  # nvptx-cuda9.patch
+]
+
+builddependencies = [
+    ('nvptx-tools', '0.20180301'),
+]
+
+preconfigopts = (
+    'ln -s ../newlib-3.1.0/newlib newlib &&'
+    'mkdir build-nvptx-gcc ;cd build-nvptx-gcc && '
+    'LIBS= '
+)
+
+configure_cmd_prefix = '../'
+configopts = ( 
+    '--target=nvptx-none '
+    '--with-build-time-tools=$EBROOTNVPTXMINTOOLS/nvptx-none/bin '
+    '--enable-as-accelerator-for=x86_64-pc-linux-gnu '
+    '--disable-sjlj-exceptions '
+    '--enable-newlib-io-long-long '
+    '--enable-languages="c,c++,fortran,lto" '
+)
+prebuildopts = 'cd build-nvptx-gcc && LIBS= '
+preinstallopts = 'cd build-nvptx-gcc && LIBS= '
+
+postinstallcmds = [
+    'cd %(installdir)s/nvptx-none;ln -fs $EBROOTNVPTXMINTOOLS/nvptx-none/bin/ . && '
+    'cd %(installdir)s/bin;ln -s $EBROOTNVPTXMINTOOLS/bin/* . && '
+    'cd %(installdir)s/libexec/gcc/x86_64-pc-linux-gnu/%(version)s; '
+    '  ln -s $EBROOTGCCCORE/libexec/gcc/x86_64-pc-linux-gnu/%(version)s/* . && '
+    'cd %(installdir)s/lib/gcc/x86_64-pc-linux-gnu/%(version)s; '
+    '  ln -s $EBROOTGCCCORE/lib/gcc/x86_64-pc-linux-gnu/%(version)s/* .'
+]
+
+modextravars = {'GCC_EXEC_PREFIX': '%(installdir)s/lib/gcc/'}
+
+moduleclass = 'compiler'

@@ -1,0 +1,682 @@
+diff -Naru openmx3.8/source/DFT.c openmx3.8/source/DFT.c
+--- openmx3.8/source/DFT.c	2016-04-02 22:43:18.000000000 +0000
++++ openmx3.8/source/DFT.c	2018-06-12 08:50:28.000000000 +0000
+@@ -1110,7 +1110,8 @@
+     if ( Mixing_switch==5 
+        || ( Cnt_switch!=1 && SucceedReadingDMfile!=1 
+        && (Mixing_switch==1 || Mixing_switch==6) 
+-       && (LSCF_iter-SCF_iter_shift)<=(Pulay_SCF/2)) ){
++       && (LSCF_iter-SCF_iter_shift)<=(Pulay_SCF/2))
++       && Solver!=4 ){
+ 
+       time6  += Mixing_H(MD_iter, LSCF_iter-SCF_iter_shift, SCF_iter-SCF_iter_shift);
+     }
+diff -Naru openmx3.8/source/Force_test.c openmx3.8/source/Force_test.c
+--- openmx3.8/source/Force_test.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Force_test.c	2018-06-12 08:50:28.000000000 +0000
+@@ -198,13 +198,13 @@
+         strcpy(tmp_argv,argv[3]); 
+ 
+         tp = strtok(tmp_argv," ");
+-        sprintf(str[0],tp);
++	sprintf(str[0],"%s",tp);
+  
+         p = 1; 
+         while (tp != NULL ){
+           tp = strtok(NULL," ");   
+           if (tp!=NULL){ 
+-            sprintf(str[p],tp); 
++	    sprintf(str[p],"%s",tp); 
+             p++;
+           }
+ 	}
+diff -Naru openmx3.8/source/Generate_Wannier.c openmx3.8/source/Generate_Wannier.c
+--- openmx3.8/source/Generate_Wannier.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Generate_Wannier.c	2018-06-12 08:50:28.000000000 +0000
+@@ -1429,7 +1429,7 @@
+ 
+     if(Wannier_Min_Scheme==0){
+       printf("Using Steepest Decent (SD) method for Minimization.\n");
+-      printf("In minimization step lenght is %10.5f\n",Wannier_Min_StepLength); 
++      printf("In minimization step length is %10.5f\n",Wannier_Min_StepLength); 
+     }else if(Wannier_Min_Scheme==1){
+       printf("Using Conjugate Gradient (CG) method for Minimization.\n");
+     }else if(Wannier_Min_Scheme==2){
+@@ -2198,7 +2198,7 @@
+ 
+     if((fptmp=fopen(fname,"rt"))==NULL){
+       printf("***************************Error**********************************\n");
+-      printf("*  Error in openning file for reading eigen-values and states.   *\n");
++      printf("*  Error in opening file for reading eigen-values and states.   *\n");
+       printf("***************************Error**********************************\n");
+       MPI_Finalize();
+       exit(0);
+@@ -2756,7 +2756,7 @@
+       if((fp=fopen(fname,"wt"))==NULL){
+ 
+ 	printf("******************************************************************\n");
+-	printf("* Error in openning file %s for writing Mmn(k,b).\n",fname);
++	printf("* Error in opening file %s for writing Mmn(k,b).\n",fname);
+ 	printf("******************************************************************\n");
+ 	exit(0);     
+ 
+@@ -2826,7 +2826,7 @@
+     if((fp=fopen(fname,"rt"))==NULL){
+       if (myid==Host_ID){
+         printf("*****************************************************************\n");
+-        printf(" Error in openning file %s for reading Mmn(k,b). Please check it!\n",fname);
++        printf(" Error in opening file %s for reading Mmn(k,b). Please check it!\n",fname);
+         printf("*****************************************************************\n");
+       }
+       MPI_Finalize();
+@@ -3049,7 +3049,7 @@
+ 
+         if (myid==Host_ID){
+ 	  printf("******************************************************************\n");
+-	  printf("* Error in openning file for reading projection matrix. Please check it!*\n");
++	  printf("* Error in opening file for reading projection matrix. Please check it!*\n");
+ 	  printf("******************************************************************\n");
+ 	}
+ 
+@@ -3596,7 +3596,7 @@
+ 
+           if (myid==Host_ID){
+ 	    printf("      secant prev sec_step %i, sigma=%10.5f\n",sec_step, sigma_0);
+-	    printf("      secant Intial error mode is %10.5f \n",yita_prev);
++	    printf("      secant Initial error mode is %10.5f \n",yita_prev);
+ 	    fflush(0);
+ 	  }
+ 
+@@ -4666,7 +4666,7 @@
+     sprintf(fname,"%s%s.amn",filepath,filename);
+     if((fp=fopen(fname,"wt"))==NULL){
+       printf("******************************************************************\n");
+-      printf("* Error in openning file for Amn(k).\n");
++      printf("* Error in opening file for Amn(k).\n");
+       printf("******************************************************************\n");
+     }else{
+       printf(" ... ... Writting Amn(k) matrix into file.\n\n");
+@@ -7280,7 +7280,7 @@
+ 
+   int find_w; /* whether w is found or not? To control the while loop */    
+   
+-  double *qvector; /* qvector is a vector of lenght six. Corresponding to the combination 
++  double *qvector; /* qvector is a vector of length six. Corresponding to the combination 
+                       of Cartesian indices of two b vectors.
+ 		      qvector[0] --> xx
+ 		      qvector[1] --> yx
+@@ -7939,7 +7939,7 @@
+ 
+   sprintf(fname,"%s%s.wfinfo",filepath,filename);
+   if((fp=fopen(fname,"w"))==NULL){
+-     printf("Error in openning file for wrinfo: %s\n",fname);
++     printf("Error in opening file for wrinfo: %s\n",fname);
+   }
+ 
+   if (strcasecmp(mode,"std")==0)
+@@ -9051,7 +9051,7 @@
+     sprintf(fname,"%s%s.HWR",filepath,filename);
+     printf("Real-space Hamiltonian Data file %s\n",fname);
+     if((fpBand=fopen(fname,"wt"))==NULL){
+-      printf("Error in openning file for HWR: %s\n",fname);
++      printf("Error in opening file for HWR: %s\n",fname);
+     }else{
+       fprintf(fpBand,"Real-space Hamiltonian in Wannier Gauge on Wigner-Seitz supercell.\n");
+       fprintf(fpBand,"Number of Wannier Function %i\n",wan_num);
+@@ -9170,7 +9170,7 @@
+     sprintf(fname,"%s%s.Wannier_Band",filepath,filename);
+     printf("Band data file %s\n",fname);
+      if((fpBand=fopen(fname,"wt"))==NULL){
+-       printf("Error in openning file for Bands: %s\n",fname);
++       printf("Error in opening file for Bands: %s\n",fname);
+      }else{
+        if(SpinP_switch==3){
+          fprintf(fpBand," %d  %d  %lf\n",wan_num,0,ChemP);  /* set SpinP_switch==0 */
+diff -Naru openmx3.8/source/Generating_MP_Special_Kpt.c openmx3.8/source/Generating_MP_Special_Kpt.c
+--- openmx3.8/source/Generating_MP_Special_Kpt.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Generating_MP_Special_Kpt.c	2018-06-12 08:50:28.000000000 +0000
+@@ -406,9 +406,9 @@
+   /* Number of primitive unit cell contained in the original lattice */
+   int npcell;
+   /*cell_parameters is for unit cell's lattice parameters: 
+-    cell_parameters[0] lenght of a vector
+-    cell_parameters[1] lenght of b vector
+-    cell_parameters[2] lenght of c vector
++    cell_parameters[0] length of a vector
++    cell_parameters[1] length of b vector
++    cell_parameters[2] length of c vector
+     cell_parameters[3] angle between b and c vector in radian (alpha)
+     cell_parameters[4] angle between a and c vector in radian (beta)
+     cell_parameters[5] angle between a and b vector in radian (gamma)
+@@ -1816,7 +1816,7 @@
+ 	rlatt[k][1]=rlatt[k][1]-rlatt[(k+1+k%2)%3][1];
+ 	rlatt[k][2]=rlatt[k][2]-rlatt[(k+1+k%2)%3][2];
+ 	absv=sqrt(rlatt[k][0]*rlatt[k][0]+rlatt[k][1]*rlatt[k][1]+rlatt[k][2]*rlatt[k][2]);
+-	/* printf("%2d-%2d vector: new lenght is %10.5f, old one is %10.5f\n",k,(k+1)%3,absv,abc[k]); */
++	/* printf("%2d-%2d vector: new length is %10.5f, old one is %10.5f\n",k,(k+1)%3,absv,abc[k]); */
+ 	if(absv>(abc[k]+smallvalue)){
+ 	  break; /* no search for vector[k]-vector[(k+1k%2)%3], break to + case */
+ 	}
+@@ -1836,7 +1836,7 @@
+ 	rlatt[k][1]=rlatt[k][1]+rlatt[(k+1+k%2)%3][1];
+ 	rlatt[k][2]=rlatt[k][2]+rlatt[(k+1+k%2)%3][2];
+ 	absv=sqrt(rlatt[k][0]*rlatt[k][0]+rlatt[k][1]*rlatt[k][1]+rlatt[k][2]*rlatt[k][2]);
+-	/* printf("%2d+%2d vector: new lenght is %10.5f, old one is %10.5f\n",k,(k+1)%3,absv,abc[k]);*/
++	/* printf("%2d+%2d vector: new length is %10.5f, old one is %10.5f\n",k,(k+1)%3,absv,abc[k]);*/
+ 	if(absv>(abc[k]+smallvalue)){
+ 	  break;/* no search for vector[k]+vector[(k+1+k%2)%3], break */
+ 	}
+@@ -1857,7 +1857,7 @@
+ 	rlatt[k][1]=rlatt[k][1]-rlatt[(k+2-k%2)%3][1];
+ 	rlatt[k][2]=rlatt[k][2]-rlatt[(k+2-k%2)%3][2];
+ 	absv=sqrt(rlatt[k][0]*rlatt[k][0]+rlatt[k][1]*rlatt[k][1]+rlatt[k][2]*rlatt[k][2]);
+-	/* printf("%2d-%2d vector: new lenght is %10.5f, old one is %10.5f\n",k,(k+2)%3,absv,abc[k]);*/
++	/* printf("%2d-%2d vector: new length is %10.5f, old one is %10.5f\n",k,(k+2)%3,absv,abc[k]);*/
+ 	if(absv>(abc[k]+smallvalue)){
+ 	  break; /* no search for vector[k]-vector[(k+2-k%2)%3], break to + case */
+ 	}
+@@ -1877,7 +1877,7 @@
+ 	rlatt[k][1]=rlatt[k][1]+rlatt[(k+2-k%2)%3][1];
+ 	rlatt[k][2]=rlatt[k][2]+rlatt[(k+2-k%2)%3][2];
+ 	absv=sqrt(rlatt[k][0]*rlatt[k][0]+rlatt[k][1]*rlatt[k][1]+rlatt[k][2]*rlatt[k][2]);
+-	/* printf("%2d+%2d vector: new lenght is %10.5f, old one is %10.5f\n",k,(k+2)%3,absv,abc[k]);*/
++	/* printf("%2d+%2d vector: new length is %10.5f, old one is %10.5f\n",k,(k+2)%3,absv,abc[k]);*/
+ 	if(absv>(abc[k]+smallvalue)){
+ 	  break;/* no search for vector[k]+vector[(k+2-k%2)%3], break */
+ 	}
+@@ -2043,7 +2043,7 @@
+ 	cell_parameters[2]=c/a;
+       }		
+     }else{/*all angles are equal but not right angle, it would be cF, cI, or hR*/
+-      if(fabs(a-b)<smallvalue&&fabs(b-c)<smallvalue){ /*all the vectors' lenght are equal */
++      if(fabs(a-b)<smallvalue&&fabs(b-c)<smallvalue){ /*all the vectors' length are equal */
+ 	if(fabs(cos(alpha)-1.0/2.0)<smallvalue){/* if all angles are 60 degree, it is Face-centred cubic (cF) */
+ 	  bravais_type = 3;
+ 	  cell_parameters[0]=sqrt(2.0)*a;
+@@ -2063,7 +2063,7 @@
+   }else if(fabs(alpha-beta)<smallvalue){
+     if(fabs(alpha-pi/2.0)<smallvalue){/* If two equal angles are right angle, it would be hP, oC or mP */
+       if(fabs(a-b)<smallvalue){
+-        /*If the two vectors perpendicular and their lenghts are equal, it would be hP or oC instead of mP*/
++        /*If the two vectors perpendicular and their lengths are equal, it would be hP or oC instead of mP*/
+ 	if(fabs(cos(gamma)+1.0/2.0)<smallvalue){ /*If gamma is 120 degree, it is hP*/
+ 	  bravais_type = 4;
+ 	  cell_parameters[0]=a;
+@@ -2138,7 +2138,7 @@
+        Attention! Generally the lattice vectors are chosen so that alpha=beta
+     */
+   }else{/* all of the angles are different */
+-    if(fabs(a-b)<smallvalue&&fabs(b-c)<smallvalue){/*all the vectors' lenght are equal, oI*/
++    if(fabs(a-b)<smallvalue&&fabs(b-c)<smallvalue){/*all the vectors' length are equal, oI*/
+       if(fabs(c*c+a*b*cos(gamma)+a*c*cos(beta)+b*c*cos(alpha))<smallvalue
+ 	 && (a*a+c*c+2.0*a*c*cos(beta)-(c*c+b*b+2.0*c*b*cos(alpha)))>smallvalue
+ 	 && (a*a+b*b+2.0*a*b*cos(gamma)-(a*a+c*c+2.0*a*c*cos(beta)))>smallvalue){
+ 
+ 
+diff -Naru openmx3.8/source/MD_pac.c openmx3.8/source/MD_pac.c
+--- openmx3.8/source/MD_pac.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/MD_pac.c	2018-06-12 08:50:28.000000000 +0000
+@@ -7476,7 +7476,7 @@
+   char buf[fp_bsize];          /* setvbuf */
+   char fileabc[YOUSO10]="",dotabc[YOUSO10],iter_s[YOUSO10];
+ 
+-  printf("\nOutputing to abc file.\n");
++  printf("\nOutputting to abc file.\n");
+   snprintf(iter_s,sizeof(iter_s),"%d",iter);
+   strcpy(dotabc,".abc");
+   fnjoint(iter_s,dotabc,fileabc);
+diff -Naru openmx3.8/source/Memory_Leak_test.c openmx3.8/source/Memory_Leak_test.c
+--- openmx3.8/source/Memory_Leak_test.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Memory_Leak_test.c	2018-06-12 08:50:28.000000000 +0000
+@@ -122,13 +122,14 @@
+         strcpy(tmp_argv,argv[2]); 
+ 
+         tp = strtok(tmp_argv," ");
+-        sprintf(str[0],tp);
+- 
++	sprintf(str[0],"%s",tp);  
++
+         p = 1; 
+         while (tp != NULL ){
+           tp = strtok(NULL," ");   
+           if (tp!=NULL){ 
+-            sprintf(str[p],tp); 
++
++	    sprintf(str[p],"%s",tp);      
+             p++;
+           }
+ 	}
+diff -Naru openmx3.8/source/Mixing_DM.c openmx3.8/source/Mixing_DM.c
+--- openmx3.8/source/Mixing_DM.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Mixing_DM.c	2018-06-12 08:50:28.000000000 +0000
+@@ -41,7 +41,7 @@
+ 
+   /* In case of (rmm-diis || rmm-adiis) && SCF_iter<(Pulay_SCF/2)), then return. */
+   if ( Cnt_switch!=1 && SucceedReadingDMfile!=1 
+-   && (Mixing_switch==1 || Mixing_switch==6) && SCF_iter<=(Pulay_SCF/2)) return 0.0; 
++   && (Mixing_switch==1 || Mixing_switch==6) && SCF_iter<=(Pulay_SCF/2) && Solver!=4) return 0.0; 
+ 
+   /*******************************************************
+                      Simple Mixing
+diff -Naru openmx3.8/source/NBO_Cluster.c openmx3.8/source/NBO_Cluster.c
+--- openmx3.8/source/NBO_Cluster.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/NBO_Cluster.c	2018-06-12 08:50:28.000000000 +0000
+@@ -23,12 +23,6 @@
+ #include "lapack_prototypes.h"
+ #include "f77func.h"
+ 
+-#ifdef nompi
+-#include "mimic_mpi.h"
+-#else
+-#include "mpi.h"
+-#endif
+-
+ #define  measure_time 0
+ 
+ void Calc_NAO_Cluster(double *****CDM){
+diff -Naru openmx3.8/source/NBO_Krylov.c openmx3.8/source/NBO_Krylov.c
+--- openmx3.8/source/NBO_Krylov.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/NBO_Krylov.c	2018-06-12 08:50:28.000000000 +0000
+@@ -21,18 +21,6 @@
+ #define  error_check    0
+ #define  cutoff_value  Threshold_OLP_Eigen
+ 
+-#ifdef nompi
+-#include "mimic_mpi.h"
+-#else
+-#include "mpi.h"
+-#endif
+-
+-#ifdef noomp
+-#include "mimic_omp.h"
+-#else
+-#include <omp.h>
+-#endif
+-
+ #include "tran_prototypes.h"
+ 
+ #define  measure_time   0
+diff -Naru openmx3.8/source/openmx.c openmx3.8/source/openmx.c
+--- openmx3.8/source/openmx.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/openmx.c	2018-06-12 08:50:28.000000000 +0000
+@@ -1,6 +1,6 @@
+ /*****************************************************************************
+ 
+-  Ver. 3.7 (15/May/2013)
++  Ver. 3.8 (21/Oct./2016)
+ 
+   OpenMX (Open source package for Material eXplorer) is a program package
+   for linear scaling density functional calculations of large-scale materials.
+@@ -33,12 +33,12 @@
+ 
+      Taisuke Ozaki
+ 
+-     Present (15/May/2013) official address
++     Present (21/Oct./2016) official address
+ 
+-       Japan Advanced Institute of Science and Technology (JAIST)
+-       Asahidai 1-1, Nomi, Ishikawa 923-1292, Japan
++     Institute for Solid State Physics, University of Tokyo,
++     Kashiwanoha 5-1-5, Kashiwa, Chiba 277-8581, Japan
+ 
+-       e-mail: t-ozaki@jaist.ac.jp
++     e-mail: t-ozaki@issp.u-tokyo.ac.jp
+     **************************************************************
+  
+ *****************************************************************************/
+diff -Naru openmx3.8/source/openmx_common.h openmx3.8/source/openmx_common.h
+--- openmx3.8/source/openmx_common.h	2016-03-28 07:35:07.000000000 +0000
++++ openmx3.8/source/openmx_common.h	2018-06-12 08:50:28.000000000 +0000
+@@ -1,4 +1,4 @@
+-static char Version_OpenMX[30] = "3.8"; /* version of OpenMX */ 
++static char Version_OpenMX[30] = "3.8.5"; /* version of OpenMX */ 
+    
+ #define PI              3.1415926535897932384626
+ #define BYTESIZE        8                        /* Don't change!! */
+@@ -70,6 +70,7 @@
+ #define MPI_Type_DS_VNA  MPI_FLOAT      /* type of DS_VNA */
+ 
+ typedef float     Type_Orbs_Grid;       /* type of Orbs_Grid */
++#define ___Type_Orbs_Grid_definition___
+ #define MPI_Type_Orbs_Grid  MPI_FLOAT   /* type of Orbs_Grid */
+ 
+ 
+diff -Naru openmx3.8/source/polB.c openmx3.8/source/polB.c
+--- openmx3.8/source/polB.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/polB.c	2018-06-12 08:50:28.000000000 +0000
+@@ -2040,7 +2040,7 @@
+ }
+ 
+ 
+-
++#pragma optimization_level 1
+ void Eigen_HH(dcomplex **ac, double *ko, int n, int EVmax)
+ {
+   /**********************************************************************
+diff -Naru openmx3.8/source/Runtest.c openmx3.8/source/Runtest.c
+--- openmx3.8/source/Runtest.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Runtest.c	2018-06-12 08:50:28.000000000 +0000
+@@ -146,7 +146,7 @@
+     /* count the number of dat files */
+ 
+     if(( dp = opendir(dir) ) == NULL ){
+-      printf("could not find the directry '%s'\n",input_dir);
++      printf("could not find the directory '%s'\n",input_dir);
+       MPI_Finalize();
+       exit(0);
+     }
+@@ -166,7 +166,7 @@
+     /* store the name of dat files */
+ 
+     if(( dp = opendir(dir) ) == NULL ){
+-      printf("could not find the directry '%s'\n",input_dir);
++      printf("could not find the directory '%s'\n",input_dir);
+       MPI_Finalize();
+       exit(0);
+     }
+diff -Naru openmx3.8/source/Show_DFT_DATA.c openmx3.8/source/Show_DFT_DATA.c
+--- openmx3.8/source/Show_DFT_DATA.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Show_DFT_DATA.c	2018-06-12 08:50:28.000000000 +0000
+@@ -90,7 +90,7 @@
+     /* count the number of dat files */
+ 
+     if(( dp = opendir(dir) ) == NULL ){
+-      printf("could not find the directry '%s'\n",input_dir);
++      printf("could not find the directory '%s'\n",input_dir);
+       MPI_Finalize();
+       exit(0);
+     }
+@@ -110,7 +110,7 @@
+     /* store the name of dat files */
+ 
+     if(( dp = opendir(dir) ) == NULL ){
+-      printf("could not find the directry '%s'\n",input_dir);
++      printf("could not find the directory '%s'\n",input_dir);
+       MPI_Finalize();
+       exit(0);
+     }
+diff -Naru openmx3.8/source/Stress_test.c openmx3.8/source/Stress_test.c
+--- openmx3.8/source/Stress_test.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Stress_test.c	2018-06-12 08:50:28.000000000 +0000
+@@ -199,13 +199,13 @@
+         strcpy(tmp_argv,argv[3]); 
+ 
+         tp = strtok(tmp_argv," ");
+-        sprintf(str[0],tp);
+- 
++	sprintf(str[0],"%s",tp);    
++
+         p = 1; 
+         while (tp != NULL ){
+           tp = strtok(NULL," ");   
+           if (tp!=NULL){ 
+-            sprintf(str[p],tp); 
++	    sprintf(str[p],"%s",tp);        
+             p++;
+           }
+ 	}
+diff -Naru openmx3.8/source/Total_Energy.c openmx3.8/source/Total_Energy.c
+--- openmx3.8/source/Total_Energy.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/Total_Energy.c	2018-06-12 08:50:28.000000000 +0000
+@@ -3647,7 +3647,7 @@
+ 	  for (i=0; i<maxcn_dftD[wanA]; i++){
+ 	    for (j=0; j<maxcn_dftD[wanB]; j++){
+ 	      C6_ref=C6ab_dftD[wanA][wanB][i][j][0];
+-	      if (C6_ref>0.0){
++	      if (C6_ref>1.0e-12){
+ 		dAi = CN[Gc_AN] - C6ab_dftD[wanA][wanB][i][j][1];
+ 		dBj = CN[Gc_BN] - C6ab_dftD[wanA][wanB][i][j][2];
+ 		exparg = -k3_dftD*( dAi*dAi + dBj*dBj );
+@@ -3661,7 +3661,7 @@
+ 	      }
+ 	    } /* CN_j */
+ 	  } /* CN_i */
+-	  if (W>0.0){
++	  if (W>1.0e-12){
+ 	    C6 = Z/W;
+ 	    C8 = 3.0*C6*r2r4ab_dftD[wanA][wanB];
+ 	    dC6ij[Gc_AN][Gc_BN]=((dZi*W)-(dWi*Z))/(W*W);
+diff -Naru openmx3.8/source/TRAN_Channel_Output.c openmx3.8/source/TRAN_Channel_Output.c
+--- openmx3.8/source/TRAN_Channel_Output.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/TRAN_Channel_Output.c	2018-06-12 08:50:28.000000000 +0000
+@@ -581,7 +581,7 @@
+ 
+     if ((fp = fopen(file1, "a")) != NULL) {
+ 
+-      fprintf(fp, "\nSum of transmition eigenvalues\n\n");
++      fprintf(fp, "\nSum of transmission eigenvalues\n\n");
+ 
+       for (kloop = 0; kloop < TRAN_Channel_Nkpoint; kloop++) {
+         for (iw = 0; iw < TRAN_Channel_Nenergy; iw++) {
+diff -Naru openmx3.8/source/TRAN_Main_Analysis.c openmx3.8/source/TRAN_Main_Analysis.c
+--- openmx3.8/source/TRAN_Main_Analysis.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/TRAN_Main_Analysis.c	2018-06-12 08:50:28.000000000 +0000
+@@ -36,7 +36,7 @@
+ #define S00l_ref(i,j) ( ((j)-1)*NUM_e[0]+(i)-1 )
+ #define S00r_ref(i,j) ( ((j)-1)*NUM_e[1]+(i)-1 )
+ 
+-
++int TRAN_SCF_skip,TRAN_analysis;
+ 
+ static int SpinP_switch,SpinP_switch2;
+ static int NUM_c, NUM_e[2];
+@@ -723,7 +723,7 @@
+       i3 = T_IGrids3[kloop];
+       k_op = T_op_flag[kloop];
+ 
+-      printf("  myid0=%2d i2=%2d i3=%2d  k2=%8.4f k3=%8.4f\n",myid0,i2,i3,k2,k3); fflush(stdout);
++      printf("  myid0=%5d i2=%2d i3=%2d  k2=%8.4f k3=%8.4f\n",myid0,i2,i3,k2,k3); fflush(stdout);
+ 
+       if (parallel_mode){
+         comm_tmp = MPI_CommWD1[myworld1];
+@@ -1056,7 +1056,7 @@
+ 
+   /* S MitsuakiKAWAMURA*/
+   /********************************************
+-  Start EigenChannel Analysis
++            Start EigenChannel Analysis
+   *********************************************/
+ 
+   if (TRAN_Channel_Nenergy * TRAN_Channel_Nkpoint <= 0) TRAN_Channel == 0;
+@@ -1342,7 +1342,7 @@
+   **********************************************/
+ 
+   if (tran_transmission_on) {
+-   
++
+     for (i2=0; i2<TRAN_TKspace_grid2; i2++){
+       for (i3=0; i3<TRAN_TKspace_grid3; i3++){
+         free(current[i2][i3]);
+@@ -1378,12 +1378,18 @@
+   }
+ 
+   MTRAN_Free_All();
++
+   /* MPI_Finalize() and exit(0) should not be done here
+      Mistuaki Kawamura
+ 
+   MPI_Finalize();
+   exit(0);
+   */
++
++  if (TRAN_SCF_skip==1 && TRAN_analysis==1){
++    MPI_Finalize();
++    exit(0);
++  }
+ }
+ 
+ 
+@@ -3051,7 +3057,7 @@
+     fprintf(fp,"#\n");
+     fprintf(fp,"#    G0 = e^2/h\n");
+     fprintf(fp,"#       = (1.60217653 * 10^{-19})^2/(6.626076 * 10^{-34})\n");
+-    fprintf(fp,"#       = 3.87404194169 * 10^{-4} [C^2 J^{-1} s^{-1}]\n");
++    fprintf(fp,"#       = 3.87404194169 * 10^{-5} [C^2 J^{-1} s^{-1}]\n");
+     fprintf(fp,"#    note that\n");
+     fprintf(fp,"#    e = 1.60217653 * 10^{-19} C\n");
+     fprintf(fp,"#    h = 6.626076 * 10^{-34} J s\n");    
+@@ -4196,6 +4202,7 @@
+     free(H00_e[iside]);
+     free(H01_e[iside]);
+   }
++
+   for (spin = 0; spin <= SpinP_switch; spin++) {
+     free(HCC[spin]);
+     free(VCC[spin]);
+@@ -4209,6 +4216,7 @@
+   free(VCC);
+   free(HCL);
+   free(HCR);
++
+   /*
+   Malloc in MTRAN_Input
+   */
+@@ -4234,6 +4242,7 @@
+ 
+     free(TRAN_Channel_energy);
+   }
++
+   /*
+   Malloc in MTRAN_Read_Tran_HS
+   */
+@@ -4276,10 +4285,13 @@
+   for (i = 0; i <= (atomnum); i++) {
+     free(natn[i]);
+     free(ncn[i]);
+-    free(atv_ijk[i]);
+   }
+   free(natn);
+   free(ncn);
++
++  for (i=0; i<(TCpyCell+1); i++) {
++    free(atv_ijk[i]);
++  }
+   free(atv_ijk);
+ 
+   free(TRAN_region);
+@@ -4287,6 +4299,7 @@
+   free(WhatSpecies);
+   free(Spe_Total_CNO);
+   free(FNAN);
++
+   /**********************************************
+   informations of leads
+   **********************************************/
+@@ -4307,7 +4320,6 @@
+           tno0 = Spe_Total_CNO_e[iside][Cwan];
+         }
+ 
+-
+         for (h_AN = 0; h_AN <= FNAN_e[iside][Gc_AN]; h_AN++) {
+ 
+            for (i = 0; i<tno0; i++) {
+@@ -4323,22 +4335,33 @@
+       free(OLP_e[iside][k]);
+       if (k <= SpinP_switch) free(H_e[iside][k]);
+     }
++
+     free(OLP_e[iside]);
+     free(H_e[iside]);
++  }
++
++  for (iside = 0; iside <= 1; iside++) {
+ 
+     for (i = 0; i <= atomnum_e[iside]; i++) {
+       free(natn_e[iside][i]);
+       free(ncn_e[iside][i]);
+-      free(atv_ijk_e[iside][i]);
+     }
++
+     free(natn_e[iside]);
+     free(ncn_e[iside]);
+-    free(atv_ijk_e[iside]);
+-
++ 
+     free(WhatSpecies_e[iside]);
+     free(Spe_Total_CNO_e[iside]);
+     free(FNAN_e[iside]);
+   }
++
++  for (iside = 0; iside <= 1; iside++) {
++    for (i=0; i<(TCpyCell_e[iside]+1); i++) {
++      free(atv_ijk_e[iside][i]);
++    }
++    free(atv_ijk_e[iside]);
++  }
++
+ }
+ /*E MitsuakiKawamura*/
+ 
+diff -Naru openmx3.8/source/TRAN_Main_Analysis_NC.c openmx3.8/source/TRAN_Main_Analysis_NC.c
+--- openmx3.8/source/TRAN_Main_Analysis_NC.c	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/TRAN_Main_Analysis_NC.c	2018-06-12 08:50:28.000000000 +0000
+@@ -3129,7 +3129,7 @@
+     fprintf(fp,"#\n");
+     fprintf(fp,"#    G0 = e^2/h\n");
+     fprintf(fp,"#       = (1.60217653 * 10^{-19})^2/(6.626076 * 10^{-34})\n");
+-    fprintf(fp,"#       = 3.87404194169 * 10^{-4} [C^2 J^{-1} s^{-1}]\n");
++    fprintf(fp,"#       = 3.87404194169 * 10^{-5} [C^2 J^{-1} s^{-1}]\n");
+     fprintf(fp,"#    note that\n");
+     fprintf(fp,"#    e = 1.60217653 * 10^{-19} C\n");
+     fprintf(fp,"#    h = 6.626076 * 10^{-34} J s\n");    
+@@ -4548,18 +4548,6 @@
+   **********************************************/
+ 
+   for (iside = 0; iside <= 1; iside++) {
+-
+-    free(WhatSpecies_e[iside]);
+-    free(Spe_Total_CNO_e[iside]);
+-    free(FNAN_e[iside]);
+-    for (i = 0; i <= atomnum_e[iside]; i++) {
+-      free(natn_e[iside][i]);
+-      free(ncn_e[iside][i]);
+-      free(atv_ijk_e[iside][i]);
+-    }
+-    free(natn_e[iside]);
+-    free(ncn_e[iside]);
+-    free(atv_ijk_e[iside]);
+  
+     for (k = 0; k<4; k++) {
+ 
+@@ -4597,8 +4585,26 @@
+     free(OLP_e[iside]);
+     free(H_e[iside]);
+     free(iHNL_e[iside]);
++  }
++  
++  for (iside = 0; iside <= 1; iside++) {
+ 
++    free(WhatSpecies_e[iside]);
++    free(Spe_Total_CNO_e[iside]);
++    free(FNAN_e[iside]);
++    for (i = 0; i <= atomnum_e[iside]; i++) {
++      free(natn_e[iside][i]);
++      free(ncn_e[iside][i]);
++    }
++    free(natn_e[iside]);
++    free(ncn_e[iside]);
++
++    for (i=0; i<(TCpyCell+1); i++) {
++      free(atv_ijk_e[iside][i]);
++    }
++    free(atv_ijk_e[iside]);
+   }
++
+ }
+ /*E MitsuakiKawamura*/
+ 
+diff -Naru openmx3.8/source/tran_prototypes.h openmx3.8/source/tran_prototypes.h
+--- openmx3.8/source/tran_prototypes.h	2016-03-27 06:53:28.000000000 +0000
++++ openmx3.8/source/tran_prototypes.h	2018-06-12 08:50:28.000000000 +0000
+@@ -32,7 +32,10 @@
+ #endif
+ 
+ 
+-typedef float     Type_Orbs_Grid;       /* type of Orbs_Grid */
++#ifndef ___Type_Orbs_Grid_definition___
++typedef float Type_Orbs_Grid; /* type of Orbs_Grid */
++#define ___Type_Orbs_Grid_definition___
++#endif
+ 
+ 
+ int Lapack_LU_Zinverse(int , dcomplex *);

@@ -1,0 +1,87 @@
+easyblock = "CMakeMake"
+
+name = "arrow"
+version = "0.14.1"
+
+homepage = "https://arrow.apache.org"
+description = """Apache Arrow is a cross-language development platform for in-memory data."""
+
+toolchain = {"name": "GCC", "version": "7.3.0"}
+toolchainopts = {"cstd": "c++17"}
+
+sources = ["apache-arrow-%(version)s.tar.gz"]
+source_urls = ["https://github.com/apache/arrow/archive/"]
+
+builddependencies = [
+    ("Boost", "1.68.0"),
+    ("SciPy-Stack", "2019a"),
+    ("CMake", "3.12.3"),
+]
+
+# Py2 bindings are not compat with Py3 bindings on libs. Bye bye Py2!
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.7.4", "3.6.3", "3.5.4"]}
+
+cmake_opts = " ".join([
+    "-DARROW_PYTHON=ON",
+    "-DARROW_PLASMA=ON",
+    "-DARROW_WITH_ZSTD=ON",
+    "-DZSTD_SOURCE=BUNDLED",
+    "-DARROW_WITH_BZ2=ON",  # We must specify `ZSTD_SOURCE=BUNDLED` to ensure ZSTD is built from source.,
+    "-DARROW_WITH_LZ4=ON",
+    "-DARROW_BUILD_TESTS=ON",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DBOOST_ROOT=$EBROOTBOOST",
+    "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python",
+    "-DCMAKE_SKIP_RPATH=ON",
+    "-DCMAKE_INSTALL_LIBDIR=lib", # Python bindings expect libs to be in `lib`.
+])
+
+exports = " && ".join([
+    "export PYARROW_WITH_PLASMA=1",
+    "export PYARROW_WITH_ZSTD=1",
+    'export PYARROW_CMAKE_OPTIONS="{}"'.format(cmake_opts),
+    "export ARROW_HOME=%(installdir)s",
+    "export PYARROW_BUILD_TYPE=Release",
+    "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH",
+])
+
+configopts = cmake_opts
+
+installopts = (
+      " && cd %(builddir)s/arrow-*/python "
+    + " && mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages "
+    + " && {} ".format(exports)
+    + " && python setup.py build_ext --inplace "
+    + " && python setup.py install --prefix=%(installdir)s "
+)
+
+postinstallcmds = [
+    "rm -r %(installdir)s/lib/cmake",
+]
+
+start_dir = "cpp"
+separate_build_dir = True
+
+runtest = "unittest"
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+sanity_check_paths = {
+    "files": [
+        "lib/libarrow_python.so",
+        "lib/libarrow.so",
+        "lib/libplasma.so",
+    ],
+    "dirs": [
+        "include/arrow",
+        "include/plasma",
+        "lib/python%(pyshortver)s/site-packages",
+    ],
+}
+
+sanity_check_commands = [
+    "python -c 'import pyarrow'"
+]
+
+moduleclass = "data"

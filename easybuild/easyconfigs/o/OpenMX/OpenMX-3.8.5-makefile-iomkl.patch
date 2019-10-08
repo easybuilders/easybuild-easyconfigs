@@ -1,0 +1,75 @@
+diff -Naru openmx3.8/source/makefile openmx3.8/source/makefile
+--- openmx3.8/source/makefile   2016-04-02 12:43:42.000000000 +0000
++++ openmx3.8/source/makefile   2019-09-16 16:36:22.743962085 +0000
+@@ -20,13 +20,16 @@
+ # LIB     =                                                                                                                               
+ 
+ #
+-# hster (Intel Xeon E5-2680v2, 2.80GHz)
++# ComputeCanada Intel Compilers and OpenMPI. Flags, names of Scalapack libsto come from EB environment
+ #
+-# MKLROOT = /opt/intel/mkl
+-# FFTW = -I/work/t-ozaki/fftw-3.3.4
+-# LIB= -L/$(MKLROOT)/lib/intel64/ -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -L/work/t-ozaki/fftw-3.3.4/lib -lfftw3 -liomp5 -lifcore -lmpi
+-# CC = icc -openmp -O3 -xAVX -ip -no-prec-div $(FFTW) 
+-# FC = ifort -openmp -O3 -xAVX -ip -no-prec-div $(FFTW) 
++MKLROOT = $(EBROOTMKL)
++FFTW = -I$(EBROOTFFTW)/include
++LIB= -L/$(MKLROOT)/lib/intel64 $(LIBSCALAPACK) -L$(EBROOTFFTW)/lib -lfftw3 -liomp5 -lifcore -lmpi_mpifh -lmpi
++# lets set these parameters in EasyConfig
++#
++#CC = mpicc -fopenmp $(CFLAGS) $(FFTW) -Dscalapack -Dkcomp 
++#FC = mpif90 -fopenmp $(FCFLAGS)  $(FFTW) 
++
+ #
+ 
+ #
+@@ -136,9 +139,9 @@
+ #
+ 
+ 
+-CC = mpicc -O3 -xHOST -ip -no-prec-div -openmp -I/opt/intel/mkl/include/fftw
+-FC = mpif90 -O3 -xHOST -ip -no-prec-div -openmp
+-LIB= -L/opt/intel/mkl/lib -mkl=parallel -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -lifcore -lmpi -lmpi_f90 -lmpi_f77
++#CC = mpicc -O3 -xHOST -ip -no-prec-div -openmp -I/opt/intel/mkl/include/fftw
++#FC = mpif90 -O3 -xHOST -ip -no-prec-div -openmp
++#LIB= -L/opt/intel/mkl/lib -mkl=parallel -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -lifcore -lmpi -lmpi_f90 -lmpi_f77
+ 
+ 
+ 
+@@ -215,20 +218,13 @@
+           TRAN_Calc_CurrentDensity.o TRAN_CDen_Main.o \
+           elpa1.o solve_evp_real.o solve_evp_complex.o \
+           NBO_Cluster.o NBO_Krylov.o \
++	  exx.o exx_index.o exx_vector.o exx_log.o exx_step1.o exx_step2.o\
++          exx_file_overlap.o exx_file_eri.o exx_interface_openmx.o \
++          exx_debug.o exx_xc.o exx_rhox.o
+ 
+-# PROG    = openmx.exe
+-# PROG    = openmx
+-
+-#-----------------------------------------------------------------------
+-# EXX and LIBERI
+-#-----------------------------------------------------------------------
+ LIBERIDIR = ./liberi-091216/source
+ 
+-OBJS    += exx.o exx_index.o exx_vector.o exx_log.o exx_step1.o exx_step2.o\
+-           exx_file_overlap.o exx_file_eri.o exx_interface_openmx.o \
+-           exx_debug.o exx_xc.o exx_rhox.o
+-
+-OBJS    += $(LIBERIDIR)/eri.o $(LIBERIDIR)/eri_ll.o $(LIBERIDIR)/eri_sf.o\
++#OBJSL    = $(LIBERIDIR)/eri.o $(LIBERIDIR)/eri_ll.o $(LIBERIDIR)/eri_sf.o\
+            $(LIBERIDIR)/eri_interpolate.o $(LIBERIDIR)/eri_gtbl.o\
+            $(LIBERIDIR)/sbt/eri_sbt.o $(LIBERIDIR)/sbt/log/eri_fsbt.o\
+            $(LIBERIDIR)/sbt/log/eri_logfsbt.o\
+@@ -249,8 +245,8 @@
+ # OpenMX
+ #
+ 
+-openmx:	$(OBJS)
+-	$(CC) $(OBJS) $(STACK) $(LIB) -lm -o openmx
++openmx:	$(OBJS) $(LIBERIDIR)/liberi.a
++	$(CC) $(OBJS) $(LIBERIDIR)/liberi.a  $(STACK) $(LIB) -lm -o openmx
+ 
+ #
+ #

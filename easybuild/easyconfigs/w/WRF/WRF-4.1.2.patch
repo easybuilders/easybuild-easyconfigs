@@ -1,0 +1,952 @@
+--- ./arch/configure.defaults.orig	2019-06-28 17:40:50.352129439 +0000
++++ ./arch/configure.defaults	2019-07-03 18:11:14.482768584 +0000
+@@ -308,7 +308,7 @@
+ LD              =       $(FC)
+ RWORDSIZE       =       CONFIGURE_RWORDSIZE
+ PROMOTION       =       -real-size `expr 8 \* $(RWORDSIZE)` -i4
+-ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_FUNC  -DWRF_USE_CLM
++ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_FUNC  -DWRF_USE_CLM -DNO_LEAP_CALENDAR
+ CFLAGS_LOCAL    =       -w -O3 -ip #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -no-multibyte-chars
+ LDFLAGS_LOCAL   =       -ip #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common
+ CPLUSPLUSLIB    =       
+@@ -1598,6 +1598,7 @@
+ 
+ LIB_EXTERNAL    = \
+                      ../external/io_netcdf/libwrfio_nf.a CONFIGURE_NETCDF_PATH/lib/libnetcdf.lib \
++                     CONFIGURE_NETCDFF_PATH/lib/libnetcdff.lib \
+                      ../external/wavelet/libWavelet.a ../external/wavelet/lib_wavelet.a
+ ESMF_IO_LIB     =    ../external/esmf_time_f90/libesmf_time.a
+ LIB_BUNDLED     = \
+--- ./arch/conf_tokens.orig	2019-06-28 17:47:32.999135027 +0000
++++ ./arch/conf_tokens	2019-06-28 17:48:50.395520539 +0000
+@@ -5,6 +5,7 @@
+        CONFIGURE_DMPARALLEL
+ CONFIGURE_RWORDSIZE
+ CONFIGURE_NETCDF_FLAG
++CONFIGURE_NETCDFF_FLAG
+ CONFIGURE_GRIB2_FLAG
+ CONFIGURE_NETCDF_LIB_PATH
+ CONFIGURE_GRIB2_LIB
+@@ -13,4 +14,5 @@
+ CONFIGURE_WRFIO_NF 
+ CONFIGURE_WRFIO_GRIB2 
+ CONFIGURE_NETCDF_PATH
++CONFIGURE_NETCDFF_PATH
+ CONFIGURE_GRIB2_INC
+--- ./external/io_netcdf/makefile.orig	2019-06-28 22:57:33.602378683 +0000
++++ ./external/io_netcdf/makefile	2019-06-28 23:00:37.880308372 +0000
+@@ -3,9 +3,9 @@
+ OBJSL   = wrf_io.o field_routines.o module_wrfsi_static.o
+ OBJS    = $(OBJSL)
+ CODE    = ext_ncd_get_dom_ti.code ext_ncd_get_var_td.code ext_ncd_get_var_ti.code ext_ncd_put_dom_ti.code ext_ncd_put_var_td.code ext_ncd_put_var_ti.code transpose.code 
+-FFLAGS  =  $(FCFLAGS) -I$(NETCDFPATH)/include -I../ioapi_share
+-LIBS    = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -lnetcdf
+-LIBFFS  = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -lnetcdff -lnetcdf $(NETCDF4_DEP_LIB)
++FFLAGS  =  $(FCFLAGS) -I$(NETCDFFPATH)/include -I../ioapi_share
++LIBS    = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -L$(NETCDFPATH)/lib64 -lnetcdf
++LIBFFS  = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -L$(NETCDFPATH)/lib64 -L$(NETCDFFPATH)/lib -L$(NETCDFFPATH)/lib64 -lnetcdff -lnetcdf $(NETCDF4_DEP_LIB)
+ CPP1    = $(CPP) -P $(TRADFLAG)
+ M4      = m4 -Uinclude -Uindex -Ulen
+ AR      = ar
+@@ -24,7 +24,7 @@
+ 			$(RANLIB) $@
+ 
+ wrf_io.o:               wrf_io.F90 $(CODE)
+-			grep nf_format_64bit $(NETCDFPATH)/include/netcdf.inc ;\
++			grep nf_format_64bit $(NETCDFFPATH)/include/netcdf.inc ;\
+                         a=$$? ; export a ; \
+ 			if [ $$a -a "$$WRFIO_NCD_LARGE_FILE_SUPPORT" = "1" ] ; then \
+                           $(CPP1) -DWRFIO_NCD_LARGE_FILE_SUPPORT -I../ioapi_share wrf_io.F90 | $(M4) - > wrf_io.f ; \
+@@ -43,14 +43,14 @@
+ 	x=`echo "$(FC)" | awk '{print $$1}'` ; export x ; \
+ 	if [ $$x = "gfortran" ] ; then \
+            echo removing external declaration of iargc for gfortran ; \
+-	   $(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share diffwrf.F90 | sed '/integer *, *external.*iargc/d' > diffwrf.f ;\
++	   $(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share diffwrf.F90 | sed '/integer *, *external.*iargc/d' > diffwrf.f ;\
+         else \
+-	   $(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share diffwrf.F90 > diffwrf.f ; \
++	   $(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share diffwrf.F90 > diffwrf.f ; \
+         fi
+ 	$(FC) -c $(FFLAGS) diffwrf.f
+ 	@if [ \( -f ../../frame/wrf_debug.o \) -a \( -f ../../frame/module_wrf_error.o \) -a \( -f $(ESMF_MOD_DEPENDENCE) \) -a \( -f ../../frame/clog.o \) ] ; then \
+ 	  echo "diffwrf io_netcdf is being built now. " ; \
+-          if [ \( -f $(NETCDFPATH)/lib/libnetcdff.a -o -f $(NETCDFPATH)/lib/libnetcdff.so \) ] ; then \
++          if [ \( -f $(NETCDFFPATH)/lib/libnetcdff.a -o -f $(NETCDFFPATH)/lib/libnetcdff.so -o -f $(NETCDFFPATH)/lib64/libnetcdff.a -o -f $(NETCDFFPATH)/lib64/libnetcdff.so \) ] ; then \
+             $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBFFS) ;\
+           else \
+             $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBS) ;\
+--- ./Makefile.orig	2019-06-28 23:00:45.144345010 +0000
++++ ./Makefile	2019-07-03 18:41:46.766185732 +0000
+@@ -117,7 +117,7 @@
+ 	if [ $(WRF_NMM_CORE) -eq 1 ]   ; then $(MAKE) MODULE_DIRS="$(ALL_MODULES)" nmm_core ; fi
+ 	if [ $(WRF_HYDRO) -eq 1 ]   ; then $(MAKE) MODULE_DIRS="$(ALL_MODULES)" wrf_hydro ; fi
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em em_wrf )
+-	( cd run ; /bin/rm -f wrf.exe ; ln -s ../main/wrf.exe . )
++	( cd run ; /bin/rm -f wrf.exe ; /bin/cp ../main/wrf.exe . )
+ 	if [ $(ESMF_COUPLING) -eq 1 ] ; then \
+ 	  ( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em em_wrf_SST_ESMF ) ; \
+ 	fi
+@@ -139,7 +139,7 @@
+ 	$(MAKE) MODULE_DIRS="$(ALL_MODULES)" em_core
+ 	$(MAKE) MODULE_DIRS="$(ALL_MODULES)" wrftlmadj
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em em_wrfplus )
+-	( cd run ; /bin/rm -f *.exe ; ln -s ../main/*.exe . )
++	( cd run ; /bin/rm -f *.exe ; /bin/cp ../main/*.exe . )
+ 	@echo "build started:   $(START_OF_COMPILE)"
+ 	@echo "build completed:" `date`
+ 
+@@ -183,15 +183,15 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=fire em_ideal )
+-	( cd test/em_fire ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_fire ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_fire ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/em_fire ; /bin/rm -f wrf.exe ; /bin/cp  ../../main/wrf.exe . )
++	( cd test/em_fire ; /bin/rm -f ideal.exe ; /bin/cp  ../../main/ideal.exe . )
++	( cd test/em_fire ; /bin/rm -f README.namelist ; /bin/cp  ../../run/README.namelist . )
+ 	( cd test/em_fire ; /bin/sh create_links.sh )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+-		/bin/rm -f namelist.input ; cp ../test/em_fire/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_fire/input_sounding . )
++		/bin/rm -f namelist.input ; /bin/cp ../test/em_fire/namelist.input . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_fire/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -217,24 +217,24 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_quarter_ss ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_quarter_ss ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_quarter_ss ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd test/em_quarter_ss ; /bin/rm -f bulkdens.asc_s_0_03_0_9 ; ln -s ../../run/bulkdens.asc_s_0_03_0_9 . )
+-	( cd test/em_quarter_ss ; /bin/rm -f bulkradii.asc_s_0_03_0_9 ; ln -s ../../run/bulkradii.asc_s_0_03_0_9 . )
+-	( cd test/em_quarter_ss ; /bin/rm -f capacity.asc ; ln -s ../../run/capacity.asc . )
+-	( cd test/em_quarter_ss ; /bin/rm -f coeff_p.asc ; ln -s ../../run/coeff_p.asc . )
+-	( cd test/em_quarter_ss ; /bin/rm -f coeff_q.asc ; ln -s ../../run/coeff_q.asc . )
+-	( cd test/em_quarter_ss ; /bin/rm -f constants.asc ; ln -s ../../run/constants.asc . )
+-	( cd test/em_quarter_ss ; /bin/rm -f kernels.asc_s_0_03_0_9 ; ln -s ../../run/kernels.asc_s_0_03_0_9 . )
+-	( cd test/em_quarter_ss ; /bin/rm -f kernels_z.asc ; ln -s ../../run/kernels_z.asc . )
+-	( cd test/em_quarter_ss ; /bin/rm -f masses.asc ; ln -s ../../run/masses.asc . )
+-	( cd test/em_quarter_ss ; /bin/rm -f termvels.asc ; ln -s ../../run/termvels.asc . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_quarter_ss ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_quarter_ss ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_quarter_ss ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd test/em_quarter_ss ; /bin/rm -f bulkdens.asc_s_0_03_0_9 ; /bin/cp ../../run/bulkdens.asc_s_0_03_0_9 . )
++	( cd test/em_quarter_ss ; /bin/rm -f bulkradii.asc_s_0_03_0_9 ; /bin/cp ../../run/bulkradii.asc_s_0_03_0_9 . )
++	( cd test/em_quarter_ss ; /bin/rm -f capacity.asc ; /bin/cp ../../run/capacity.asc . )
++	( cd test/em_quarter_ss ; /bin/rm -f coeff_p.asc ; /bin/cp ../../run/coeff_p.asc . )
++	( cd test/em_quarter_ss ; /bin/rm -f coeff_q.asc ; /bin/cp ../../run/coeff_q.asc . )
++	( cd test/em_quarter_ss ; /bin/rm -f constants.asc ; /bin/cp ../../run/constants.asc . )
++	( cd test/em_quarter_ss ; /bin/rm -f kernels.asc_s_0_03_0_9 ; /bin/cp ../../run/kernels.asc_s_0_03_0_9 . )
++	( cd test/em_quarter_ss ; /bin/rm -f kernels_z.asc ; /bin/cp ../../run/kernels_z.asc . )
++	( cd test/em_quarter_ss ; /bin/rm -f masses.asc ; /bin/cp ../../run/masses.asc . )
++	( cd test/em_quarter_ss ; /bin/rm -f termvels.asc ; /bin/cp ../../run/termvels.asc . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+-		/bin/rm -f namelist.input ; cp ../test/em_quarter_ss/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_quarter_ss/input_sounding . )
++		/bin/rm -f namelist.input ; /bin/cp ../test/em_quarter_ss/namelist.input . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_quarter_ss/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -260,14 +260,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_squall2d_x ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_squall2d_x ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_squall2d_x ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_squall2d_x ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_squall2d_x ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_squall2d_x ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_squall2d_x/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_squall2d_x/input_sounding . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_squall2d_x/input_sounding . )
+ 	@echo "build started:   $(START_OF_COMPILE)"
+ 	@echo "build completed:" `date`
+ 	@echo " "
+@@ -295,14 +295,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_squall2d_y ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_squall2d_y ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_squall2d_y ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_squall2d_y ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_squall2d_y ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_squall2d_y ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+-		/bin/rm -f namelist.input ; cp ../test/em_squall2d_y/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_squall2d_y/input_sounding . )
++		/bin/rm -f namelist.input ; /bin/cp ../test/em_squall2d_y/namelist.input . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_squall2d_y/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -328,14 +328,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_b_wave ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_b_wave ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_b_wave ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_b_wave ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_b_wave ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_b_wave ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_b_wave/namelist.input . )
+-	( cd run ; /bin/rm -f input_jet ; ln -s ../test/em_b_wave/input_jet . )
++	( cd run ; /bin/rm -f input_jet ; /bin/cp ../test/em_b_wave/input_jet . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -361,14 +361,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_les ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_les ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_les ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_les ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_les ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_les ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_les/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_les/input_sounding . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_les/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -394,14 +394,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_seabreeze2d_x ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_seabreeze2d_x ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_seabreeze2d_x ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_seabreeze2d_x ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_seabreeze2d_x ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_seabreeze2d_x ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_seabreeze2d_x/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_seabreeze2d_x/input_sounding . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_seabreeze2d_x/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -425,14 +425,14 @@
+ em_convrad : wrf
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_convrad ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_convrad ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_convrad ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_convrad ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_convrad ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_convrad ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_convrad/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_convrad/input_sounding . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_convrad/input_sounding . )
+ 	@echo "build started:   $(START_OF_COMPILE)"
+ 	@echo "build completed:" `date`
+ 
+@@ -441,14 +441,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=tropical_cyclone em_ideal )
+-	( cd test/em_tropical_cyclone ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_tropical_cyclone ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_tropical_cyclone ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_tropical_cyclone ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_tropical_cyclone ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_tropical_cyclone ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_tropical_cyclone/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_tropical_cyclone/input_sounding . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_tropical_cyclone/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -474,14 +474,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=scm_xy em_ideal )
+-	( cd test/em_scm_xy ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_scm_xy ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_scm_xy ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_scm_xy ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_scm_xy ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_scm_xy ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_scm_xy/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_scm_xy/input_sounding . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_scm_xy/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -519,143 +519,143 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real em_real )
+-	( cd test/em_real ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
++	( cd test/em_real ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
+ 	if [ $(ESMF_COUPLING) -eq 1 ] ; then \
+ 	  ( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real em_wrf_SST_ESMF ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f wrf_SST_ESMF.exe ; ln -s ../../main/wrf_SST_ESMF.exe . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f real.exe ; ln -s ../../main/real.exe . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f wrf_SST_ESMF.exe ; /bin/cp ../../main/wrf_SST_ESMF.exe . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f real.exe ; /bin/cp ../../main/real.exe . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . ) ; \
+ 	  ( cd test/em_esmf_exp ; /bin/rm -f ETAMPNEW_DATA.expanded_rain ETAMPNEW_DATA RRTM_DATA RRTMG_LW_DATA RRTMG_SW_DATA ; \
+-               ln -sf ../../run/ETAMPNEW_DATA . ;                      \
+-               ln -sf ../../run/ETAMPNEW_DATA.expanded_rain . ;        \
+-               ln -sf ../../run/RRTM_DATA . ;                          \
+-               ln -sf ../../run/RRTMG_LW_DATA . ;                      \
+-               ln -sf ../../run/RRTMG_SW_DATA . ;                      \
+-               ln -sf ../../run/CAM_ABS_DATA . ;                       \
+-               ln -sf ../../run/CAM_AEROPT_DATA . ;                    \
+-               ln -sf ../../run/CAMtr_volume_mixing_ratio.RCP4.5 . ;   \
+-               ln -sf ../../run/CAMtr_volume_mixing_ratio.RCP6   . ;   \
+-               ln -sf ../../run/CAMtr_volume_mixing_ratio.RCP8.5 CAMtr_volume_mixing_ratio ;   \
+-               ln -sf ../../run/CAMtr_volume_mixing_ratio.A1B    . ;   \
+-               ln -sf ../../run/CAMtr_volume_mixing_ratio.A2     . ;   \
+-               ln -sf ../../run/CLM_ALB_ICE_DFS_DATA . ;               \
+-               ln -sf ../../run/CLM_ALB_ICE_DRC_DATA . ;               \
+-               ln -sf ../../run/CLM_ASM_ICE_DFS_DATA . ;               \
+-               ln -sf ../../run/CLM_ASM_ICE_DRC_DATA . ;               \
+-               ln -sf ../../run/CLM_DRDSDT0_DATA . ;                   \
+-               ln -sf ../../run/CLM_EXT_ICE_DFS_DATA . ;               \
+-               ln -sf ../../run/CLM_EXT_ICE_DRC_DATA . ;               \
+-               ln -sf ../../run/CLM_KAPPA_DATA . ;                     \
+-               ln -sf ../../run/CLM_TAU_DATA . ;                       \
+-               ln -sf ../../run/ozone.formatted . ;                    \
+-               ln -sf ../../run/ozone_lat.formatted . ;                \
+-               ln -sf ../../run/ozone_plev.formatted . ;               \
+-               ln -sf ../../run/aerosol.formatted . ;                  \
+-               ln -sf ../../run/aerosol_lat.formatted . ;              \
+-               ln -sf ../../run/aerosol_lon.formatted . ;              \
+-               ln -sf ../../run/aerosol_plev.formatted . ;             \
+-               ln -sf ../../run/CCN_ACTIVATE.BIN . ;                   \
+-               ln -sf ../../run/p3_lookup_table_1.dat-v4.1 . ;         \
+-               ln -sf ../../run/p3_lookup_table_2.dat-v4.1 . ;         \
+-               ln -sf ../../run/HLC.TBL . ;                            \
+-               ln -sf ../../run/wind-turbine-1.tbl . ;                 \
+-               ln -sf ../../run/ishmael-gamma-tab.bin . ;              \
+-               ln -sf ../../run/ishmael-qi-qc.bin . ;                  \
+-               ln -sf ../../run/ishmael-qi-qr.bin . ;                  \
+-               ln -sf ../../run/BROADBAND_CLOUD_GODDARD.bin . ;        \
++               /bin/cp ../../run/ETAMPNEW_DATA . ;                      \
++               /bin/cp ../../run/ETAMPNEW_DATA.expanded_rain . ;        \
++               /bin/cp ../../run/RRTM_DATA . ;                          \
++               /bin/cp ../../run/RRTMG_LW_DATA . ;                      \
++               /bin/cp ../../run/RRTMG_SW_DATA . ;                      \
++               /bin/cp ../../run/CAM_ABS_DATA . ;                       \
++               /bin/cp ../../run/CAM_AEROPT_DATA . ;                    \
++               /bin/cp ../../run/CAMtr_volume_mixing_ratio.RCP4.5 . ;   \
++               /bin/cp ../../run/CAMtr_volume_mixing_ratio.RCP6   . ;   \
++               /bin/cp ../../run/CAMtr_volume_mixing_ratio.RCP8.5 CAMtr_volume_mixing_ratio ;   \
++               /bin/cp ../../run/CAMtr_volume_mixing_ratio.A1B    . ;   \
++               /bin/cp ../../run/CAMtr_volume_mixing_ratio.A2     . ;   \
++               /bin/cp ../../run/CLM_ALB_ICE_DFS_DATA . ;               \
++               /bin/cp ../../run/CLM_ALB_ICE_DRC_DATA . ;               \
++               /bin/cp ../../run/CLM_ASM_ICE_DFS_DATA . ;               \
++               /bin/cp ../../run/CLM_ASM_ICE_DRC_DATA . ;               \
++               /bin/cp ../../run/CLM_DRDSDT0_DATA . ;                   \
++               /bin/cp ../../run/CLM_EXT_ICE_DFS_DATA . ;               \
++               /bin/cp ../../run/CLM_EXT_ICE_DRC_DATA . ;               \
++               /bin/cp ../../run/CLM_KAPPA_DATA . ;                     \
++               /bin/cp ../../run/CLM_TAU_DATA . ;                       \
++               /bin/cp ../../run/ozone.formatted . ;                    \
++               /bin/cp ../../run/ozone_lat.formatted . ;                \
++               /bin/cp ../../run/ozone_plev.formatted . ;               \
++               /bin/cp ../../run/aerosol.formatted . ;                  \
++               /bin/cp ../../run/aerosol_lat.formatted . ;              \
++               /bin/cp ../../run/aerosol_lon.formatted . ;              \
++               /bin/cp ../../run/aerosol_plev.formatted . ;             \
++               /bin/cp ../../run/CCN_ACTIVATE.BIN . ;                   \
++               /bin/cp ../../run/p3_lookup_table_1.dat-v4.1 . ;         \
++               /bin/cp ../../run/p3_lookup_table_2.dat-v4.1 . ;         \
++               /bin/cp ../../run/HLC.TBL . ;                            \
++               /bin/cp ../../run/wind-turbine-1.tbl . ;                 \
++               /bin/cp ../../run/ishmael-gamma-tab.bin . ;              \
++               /bin/cp ../../run/ishmael-qi-qc.bin . ;                  \
++               /bin/cp ../../run/ishmael-qi-qr.bin . ;                  \
++               /bin/cp ../../run/BROADBAND_CLOUD_GODDARD.bin . ;        \
+                if [ $(RWORDSIZE) -eq 8 ] ; then                        \
+-                  ln -sf ../../run/ETAMPNEW_DATA_DBL ETAMPNEW_DATA ;   \
+-                  ln -sf ../../run/ETAMPNEW_DATA.expanded_rain_DBL ETAMPNEW_DATA.expanded_rain ;   \
+-                  ln -sf ../../run/RRTM_DATA_DBL RRTM_DATA         ;   \
+-                  ln -sf ../../run/RRTMG_LW_DATA_DBL RRTMG_LW_DATA ;   \
+-                  ln -sf ../../run/RRTMG_SW_DATA_DBL RRTMG_SW_DATA ;   \
++                  /bin/cp ../../run/ETAMPNEW_DATA_DBL ETAMPNEW_DATA ;   \
++                  /bin/cp ../../run/ETAMPNEW_DATA.expanded_rain_DBL ETAMPNEW_DATA.expanded_rain ;   \
++                  /bin/cp ../../run/RRTM_DATA_DBL RRTM_DATA         ;   \
++                  /bin/cp ../../run/RRTMG_LW_DATA_DBL RRTMG_LW_DATA ;   \
++                  /bin/cp ../../run/RRTMG_SW_DATA_DBL RRTMG_SW_DATA ;   \
+                fi ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f GENPARM.TBL ; ln -s ../../run/GENPARM.TBL . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f LANDUSE.TBL ; ln -s ../../run/LANDUSE.TBL . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f SOILPARM.TBL ; ln -s ../../run/SOILPARM.TBL . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f URBPARM.TBL ; ln -s ../../run/URBPARM.TBL . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f VEGPARM.TBL ; ln -s ../../run/VEGPARM.TBL . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f MPTABLE.TBL ; ln -s ../../run/MPTABLE.TBL . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f tr49t67 ; ln -s ../../run/tr49t67 . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f tr49t85 ; ln -s ../../run/tr49t85 . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f tr67t85 ; ln -s ../../run/tr67t85 . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . ) ; \
+-	  ( cd test/em_esmf_exp ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . ) ; \
+-	fi
+-	( cd test/em_real ; /bin/rm -f real.exe ; ln -s ../../main/real.exe . )
+-	( cd test/em_real ; /bin/rm -f tc.exe ; ln -s ../../main/tc.exe . )
+-	( cd test/em_real ; /bin/rm -f ndown.exe ; ln -s ../../main/ndown.exe . )
+-	( cd test/em_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	  ( cd test/em_esmf_exp ; /bin/rm -f GENPARM.TBL ; /bin/cp ../../run/GENPARM.TBL . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f LANDUSE.TBL ; /bin/cp ../../run/LANDUSE.TBL . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f SOILPARM.TBL ; /bin/cp ../../run/SOILPARM.TBL . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f URBPARM.TBL ; /bin/cp ../../run/URBPARM.TBL . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f VEGPARM.TBL ; /bin/cp ../../run/VEGPARM.TBL . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f MPTABLE.TBL ; /bin/cp ../../run/MPTABLE.TBL . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f tr49t67 ; /bin/cp ../../run/tr49t67 . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f tr49t85 ; /bin/cp ../../run/tr49t85 . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f tr67t85 ; /bin/cp ../../run/tr67t85 . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f gribmap.txt ; /bin/cp ../../run/gribmap.txt . ) ; \
++	  ( cd test/em_esmf_exp ; /bin/rm -f grib2map.tbl ; /bin/cp ../../run/grib2map.tbl . ) ; \
++	fi
++	( cd test/em_real ; /bin/rm -f real.exe ; /bin/cp ../../main/real.exe . )
++	( cd test/em_real ; /bin/rm -f tc.exe ; /bin/cp ../../main/tc.exe . )
++	( cd test/em_real ; /bin/rm -f ndown.exe ; /bin/cp ../../main/ndown.exe . )
++	( cd test/em_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd test/em_real ; /bin/rm -f ETAMPNEW_DATA.expanded_rain ETAMPNEW_DATA RRTM_DATA RRTMG_LW_DATA RRTMG_SW_DATA ;    \
+-             ln -sf ../../run/ETAMPNEW_DATA . ;                     \
+-             ln -sf ../../run/ETAMPNEW_DATA.expanded_rain . ;       \
+-             ln -sf ../../run/RRTM_DATA . ;                         \
+-             ln -sf ../../run/RRTMG_LW_DATA . ;                     \
+-             ln -sf ../../run/RRTMG_SW_DATA . ;                     \
+-             ln -sf ../../run/CAM_ABS_DATA . ;                      \
+-             ln -sf ../../run/CAM_AEROPT_DATA . ;                   \
+-             ln -sf ../../run/CAMtr_volume_mixing_ratio.RCP4.5 . ;  \
+-             ln -sf ../../run/CAMtr_volume_mixing_ratio.RCP6   . ;  \
+-             ln -sf ../../run/CAMtr_volume_mixing_ratio.RCP8.5 CAMtr_volume_mixing_ratio ;   \
+-             ln -sf ../../run/CAMtr_volume_mixing_ratio.A1B    . ;  \
+-             ln -sf ../../run/CAMtr_volume_mixing_ratio.A2     . ;  \
+-             ln -sf ../../run/CLM_ALB_ICE_DFS_DATA . ;              \
+-             ln -sf ../../run/CLM_ALB_ICE_DRC_DATA . ;              \
+-             ln -sf ../../run/CLM_ASM_ICE_DFS_DATA . ;              \
+-             ln -sf ../../run/CLM_ASM_ICE_DRC_DATA . ;              \
+-             ln -sf ../../run/CLM_DRDSDT0_DATA . ;                  \
+-             ln -sf ../../run/CLM_EXT_ICE_DFS_DATA . ;              \
+-             ln -sf ../../run/CLM_EXT_ICE_DRC_DATA . ;              \
+-             ln -sf ../../run/CLM_KAPPA_DATA . ;                    \
+-             ln -sf ../../run/CLM_TAU_DATA . ;                      \
+-             ln -sf ../../run/ozone.formatted . ;                   \
+-             ln -sf ../../run/ozone_lat.formatted . ;               \
+-             ln -sf ../../run/ozone_plev.formatted . ;              \
+-             ln -sf ../../run/aerosol.formatted . ;                 \
+-             ln -sf ../../run/aerosol_lat.formatted . ;             \
+-             ln -sf ../../run/aerosol_lon.formatted . ;             \
+-             ln -sf ../../run/aerosol_plev.formatted . ;            \
+-             ln -sf ../../run/capacity.asc . ;                      \
+-             ln -sf ../../run/coeff_p.asc . ;                       \
+-             ln -sf ../../run/coeff_q.asc . ;                       \
+-             ln -sf ../../run/constants.asc . ;                     \
+-             ln -sf ../../run/masses.asc . ;                        \
+-             ln -sf ../../run/termvels.asc . ;                      \
+-             ln -sf ../../run/kernels.asc_s_0_03_0_9 . ;            \
+-             ln -sf ../../run/kernels_z.asc . ;                     \
+-             ln -sf ../../run/bulkdens.asc_s_0_03_0_9 . ;           \
+-             ln -sf ../../run/bulkradii.asc_s_0_03_0_9 . ;          \
+-             ln -sf ../../run/CCN_ACTIVATE.BIN . ;                  \
+-             ln -sf ../../run/p3_lookup_table_1.dat-v4.1 . ;        \
+-             ln -sf ../../run/p3_lookup_table_2.dat-v4.1 . ;        \
+-             ln -sf ../../run/HLC.TBL . ;                           \
+-             ln -sf ../../run/wind-turbine-1.tbl . ;                \
+-             ln -sf ../../run/ishmael-gamma-tab.bin . ;             \
+-             ln -sf ../../run/ishmael-qi-qc.bin . ;                 \
+-             ln -sf ../../run/ishmael-qi-qr.bin . ;                 \
+-             ln -sf ../../run/BROADBAND_CLOUD_GODDARD.bin . ;       \
++             /bin/cp ../../run/ETAMPNEW_DATA . ;                     \
++             /bin/cp ../../run/ETAMPNEW_DATA.expanded_rain . ;       \
++             /bin/cp ../../run/RRTM_DATA . ;                         \
++             /bin/cp ../../run/RRTMG_LW_DATA . ;                     \
++             /bin/cp ../../run/RRTMG_SW_DATA . ;                     \
++             /bin/cp ../../run/CAM_ABS_DATA . ;                      \
++             /bin/cp ../../run/CAM_AEROPT_DATA . ;                   \
++             /bin/cp ../../run/CAMtr_volume_mixing_ratio.RCP4.5 . ;  \
++             /bin/cp ../../run/CAMtr_volume_mixing_ratio.RCP6   . ;  \
++             /bin/cp ../../run/CAMtr_volume_mixing_ratio.RCP8.5 CAMtr_volume_mixing_ratio ;   \
++             /bin/cp ../../run/CAMtr_volume_mixing_ratio.A1B    . ;  \
++             /bin/cp ../../run/CAMtr_volume_mixing_ratio.A2     . ;  \
++             /bin/cp ../../run/CLM_ALB_ICE_DFS_DATA . ;              \
++             /bin/cp ../../run/CLM_ALB_ICE_DRC_DATA . ;              \
++             /bin/cp ../../run/CLM_ASM_ICE_DFS_DATA . ;              \
++             /bin/cp ../../run/CLM_ASM_ICE_DRC_DATA . ;              \
++             /bin/cp ../../run/CLM_DRDSDT0_DATA . ;                  \
++             /bin/cp ../../run/CLM_EXT_ICE_DFS_DATA . ;              \
++             /bin/cp ../../run/CLM_EXT_ICE_DRC_DATA . ;              \
++             /bin/cp ../../run/CLM_KAPPA_DATA . ;                    \
++             /bin/cp ../../run/CLM_TAU_DATA . ;                      \
++             /bin/cp ../../run/ozone.formatted . ;                   \
++             /bin/cp ../../run/ozone_lat.formatted . ;               \
++             /bin/cp ../../run/ozone_plev.formatted . ;              \
++             /bin/cp ../../run/aerosol.formatted . ;                 \
++             /bin/cp ../../run/aerosol_lat.formatted . ;             \
++             /bin/cp ../../run/aerosol_lon.formatted . ;             \
++             /bin/cp ../../run/aerosol_plev.formatted . ;            \
++             /bin/cp ../../run/capacity.asc . ;                      \
++             /bin/cp ../../run/coeff_p.asc . ;                       \
++             /bin/cp ../../run/coeff_q.asc . ;                       \
++             /bin/cp ../../run/constants.asc . ;                     \
++             /bin/cp ../../run/masses.asc . ;                        \
++             /bin/cp ../../run/termvels.asc . ;                      \
++             /bin/cp ../../run/kernels.asc_s_0_03_0_9 . ;            \
++             /bin/cp ../../run/kernels_z.asc . ;                     \
++             /bin/cp ../../run/bulkdens.asc_s_0_03_0_9 . ;           \
++             /bin/cp ../../run/bulkradii.asc_s_0_03_0_9 . ;          \
++             /bin/cp ../../run/CCN_ACTIVATE.BIN . ;                  \
++             /bin/cp ../../run/p3_lookup_table_1.dat-v4.1 . ;        \
++             /bin/cp ../../run/p3_lookup_table_2.dat-v4.1 . ;        \
++             /bin/cp ../../run/HLC.TBL . ;                           \
++             /bin/cp ../../run/wind-turbine-1.tbl . ;                \
++             /bin/cp ../../run/ishmael-gamma-tab.bin . ;             \
++             /bin/cp ../../run/ishmael-qi-qc.bin . ;                 \
++             /bin/cp ../../run/ishmael-qi-qr.bin . ;                 \
++             /bin/cp ../../run/BROADBAND_CLOUD_GODDARD.bin . ;       \
+              if [ $(RWORDSIZE) -eq 8 ] ; then                       \
+-                ln -sf ../../run/ETAMPNEW_DATA_DBL ETAMPNEW_DATA ;  \
+-                ln -sf ../../run/ETAMPNEW_DATA.expanded_rain_DBL ETAMPNEW_DATA.expanded_rain ;   \
+-                ln -sf ../../run/RRTM_DATA_DBL RRTM_DATA ;          \
+-                ln -sf ../../run/RRTMG_LW_DATA_DBL RRTMG_LW_DATA ;  \
+-                ln -sf ../../run/RRTMG_SW_DATA_DBL RRTMG_SW_DATA ;  \
++                /bin/cp ../../run/ETAMPNEW_DATA_DBL ETAMPNEW_DATA ;  \
++                /bin/cp ../../run/ETAMPNEW_DATA.expanded_rain_DBL ETAMPNEW_DATA.expanded_rain ;   \
++                /bin/cp ../../run/RRTM_DATA_DBL RRTM_DATA ;          \
++                /bin/cp ../../run/RRTMG_LW_DATA_DBL RRTMG_LW_DATA ;  \
++                /bin/cp ../../run/RRTMG_SW_DATA_DBL RRTMG_SW_DATA ;  \
+              fi )
+-	( cd test/em_real ; /bin/rm -f GENPARM.TBL ; ln -s ../../run/GENPARM.TBL . )
+-	( cd test/em_real ; /bin/rm -f LANDUSE.TBL ; ln -s ../../run/LANDUSE.TBL . )
+-	( cd test/em_real ; /bin/rm -f SOILPARM.TBL ; ln -s ../../run/SOILPARM.TBL . )
+-	( cd test/em_real ; /bin/rm -f URBPARM.TBL ; ln -s ../../run/URBPARM.TBL . )
+-	( cd test/em_real ; /bin/rm -f VEGPARM.TBL ; ln -s ../../run/VEGPARM.TBL . )
+-	( cd test/em_real ; /bin/rm -f MPTABLE.TBL ; ln -s ../../run/MPTABLE.TBL . )
+-	( cd test/em_real ; /bin/rm -f tr49t67 ; ln -s ../../run/tr49t67 . )
+-	( cd test/em_real ; /bin/rm -f tr49t85 ; ln -s ../../run/tr49t85 . )
+-	( cd test/em_real ; /bin/rm -f tr67t85 ; ln -s ../../run/tr67t85 . )
+-	( cd test/em_real ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
+-	( cd test/em_real ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
+-	( cd run ; /bin/rm -f real.exe ; ln -s ../main/real.exe . )
+-	( cd run ; /bin/rm -f tc.exe ; ln -s ../main/tc.exe . )
+-	( cd run ; /bin/rm -f ndown.exe ; ln -s ../main/ndown.exe . )
++	( cd test/em_real ; /bin/rm -f GENPARM.TBL ; /bin/cp ../../run/GENPARM.TBL . )
++	( cd test/em_real ; /bin/rm -f LANDUSE.TBL ; /bin/cp ../../run/LANDUSE.TBL . )
++	( cd test/em_real ; /bin/rm -f SOILPARM.TBL ; /bin/cp ../../run/SOILPARM.TBL . )
++	( cd test/em_real ; /bin/rm -f URBPARM.TBL ; /bin/cp ../../run/URBPARM.TBL . )
++	( cd test/em_real ; /bin/rm -f VEGPARM.TBL ; /bin/cp ../../run/VEGPARM.TBL . )
++	( cd test/em_real ; /bin/rm -f MPTABLE.TBL ; /bin/cp ../../run/MPTABLE.TBL . )
++	( cd test/em_real ; /bin/rm -f tr49t67 ; /bin/cp ../../run/tr49t67 . )
++	( cd test/em_real ; /bin/rm -f tr49t85 ; /bin/cp ../../run/tr49t85 . )
++	( cd test/em_real ; /bin/rm -f tr67t85 ; /bin/cp ../../run/tr67t85 . )
++	( cd test/em_real ; /bin/rm -f gribmap.txt ; /bin/cp ../../run/gribmap.txt . )
++	( cd test/em_real ; /bin/rm -f grib2map.tbl ; /bin/cp ../../run/grib2map.tbl . )
++	( cd run ; /bin/rm -f real.exe ; /bin/cp ../main/real.exe . )
++	( cd run ; /bin/rm -f tc.exe ; /bin/cp ../main/tc.exe . )
++	( cd run ; /bin/rm -f ndown.exe ; /bin/cp ../main/ndown.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_real/namelist.input . )
+@@ -685,14 +685,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_hill2d_x ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_hill2d_x ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_hill2d_x ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_hill2d_x ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_hill2d_x ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_hill2d_x ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_hill2d_x/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_hill2d_x/input_sounding . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_hill2d_x/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -718,14 +718,14 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=ideal em_ideal )
+-	( cd test/em_grav2d_x ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_grav2d_x ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_grav2d_x ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_grav2d_x ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_grav2d_x ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_grav2d_x ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_grav2d_x/namelist.input . )
+-	( cd run ; /bin/rm -f input_sounding ; ln -s ../test/em_grav2d_x/input_sounding . )
++	( cd run ; /bin/rm -f input_sounding ; /bin/cp ../test/em_grav2d_x/input_sounding . )
+ 	@echo " "
+ 	@echo "=========================================================================="
+ 	@echo "build started:   $(START_OF_COMPILE)"
+@@ -751,10 +751,10 @@
+ 	@/bin/rm -f wrf.exe   > /dev/null 2>&1
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=heldsuarez em_ideal )
+-	( cd test/em_heldsuarez ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/em_heldsuarez ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/em_heldsuarez ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/em_heldsuarez ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/em_heldsuarez ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/em_heldsuarez ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_heldsuarez/namelist.input . )
+@@ -783,8 +783,8 @@
+ emi_conv : wrf
+ 	@ echo '--------------------------------------'
+ 	( cd chem ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real convert_emiss )
+-	( cd test/em_real ; /bin/rm -f convert_emiss.exe ; ln -s ../../chem/convert_emiss.exe . )
+-	( cd test/em_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/em_real ; /bin/rm -f convert_emiss.exe ; /bin/cp ../../chem/convert_emiss.exe . )
++	( cd test/em_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_real/namelist.input . )
+@@ -794,8 +794,8 @@
+ opt3_conv : wrf
+ 	@ echo '--------------------------------------'
+ 	( cd chem ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real convert_fireemiss )
+-	( cd test/em_real ; /bin/rm -f convert_fireemiss.exe ; ln -s ../../chem/convert_fireemiss.exe . )
+-	( cd test/em_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/em_real ; /bin/rm -f convert_fireemiss.exe ; /bin/cp ../../chem/convert_fireemiss.exe . )
++	( cd test/em_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_real/namelist.input . )
+@@ -805,8 +805,8 @@
+ bio_conv : wrf
+ 	@ echo '--------------------------------------'
+ 	( cd chem ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real convert_bioemiss )
+-	( cd test/em_real ; /bin/rm -f convert_bioemiss.exe ; ln -s ../../chem/convert_bioemiss.exe . )
+-	( cd test/em_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/em_real ; /bin/rm -f convert_bioemiss.exe ; /bin/cp ../../chem/convert_bioemiss.exe . )
++	( cd test/em_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_real/namelist.input . )
+@@ -814,8 +814,8 @@
+ bioemiss_conv_megan2 : wrf
+ 	@ echo '--------------------------------------'
+ 	( cd chem ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real convert_bioemiss_megan2 )
+-	( cd test/em_real ; /bin/rm -f convert_bioemiss_megan2.exe ; ln -s ../../chem/convert_bioemiss_megan2.exe . )
+-	( cd test/em_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/em_real ; /bin/rm -f convert_bioemiss_megan2.exe ; /bin/cp ../../chem/convert_bioemiss_megan2.exe . )
++	( cd test/em_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 	        /bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 	        /bin/rm -f namelist.input ; cp ../test/em_real/namelist.input . )
+@@ -825,8 +825,8 @@
+ dms_conv : wrf
+ 	@ echo '--------------------------------------'
+ 	( cd chem ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real convert_dms )
+-	( cd test/em_real ; /bin/rm -f convert_dms.exe ; ln -s ../../chem/convert_dms.exe . )
+-	( cd test/em_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/em_real ; /bin/rm -f convert_dms.exe ; /bin/cp ../../chem/convert_dms.exe . )
++	( cd test/em_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_real/namelist.input . )
+@@ -837,8 +837,8 @@
+ dust_conv : wrf
+ 	@ echo '--------------------------------------'
+ 	( cd chem ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real convert_dust )
+-	( cd test/em_real ; /bin/rm -f convert_dust.exe ; ln -s ../../chem/convert_dust.exe . )
+-	( cd test/em_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/em_real ; /bin/rm -f convert_dust.exe ; /bin/cp ../../chem/convert_dust.exe . )
++	( cd test/em_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_real/namelist.input . )
+@@ -848,8 +848,8 @@
+ gocart_conv : wrf
+ 	@ echo '--------------------------------------'
+ 	( cd chem ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=em IDEAL_CASE=real convert_gocart )
+-	( cd test/em_real ; /bin/rm -f convert_gocart.exe ; ln -s ../../chem/convert_gocart.exe . )
+-	( cd test/em_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/em_real ; /bin/rm -f convert_gocart.exe ; /bin/cp ../../chem/convert_gocart.exe . )
++	( cd test/em_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/em_real/namelist.input . )
+@@ -861,10 +861,10 @@
+ nmm_tropical_cyclone : nmm_wrf
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=nmm IDEAL_CASE=tropical_cyclone nmm_ideal )
+-	( cd test/nmm_tropical_cyclone ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/nmm_tropical_cyclone ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
+-	( cd test/nmm_tropical_cyclone ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
+-	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
++	( cd test/nmm_tropical_cyclone ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/nmm_tropical_cyclone ; /bin/rm -f ideal.exe ; /bin/cp ../../main/ideal.exe . )
++	( cd test/nmm_tropical_cyclone ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
++	( cd run ; /bin/rm -f ideal.exe ; /bin/cp ../main/ideal.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/nmm_tropical_cyclone/namelist.input . )
+@@ -874,30 +874,30 @@
+ nmm_real : nmm_wrf
+ 	@ echo '--------------------------------------'
+ 	( cd main ; $(MAKE) MODULE_DIRS="$(ALL_MODULES)" SOLVER=nmm IDEAL_CASE=real real_nmm )
+-	( cd test/nmm_real ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
+-	( cd test/nmm_real ; /bin/rm -f real_nmm.exe ; ln -s ../../main/real_nmm.exe . )
+-	( cd test/nmm_real ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
++	( cd test/nmm_real ; /bin/rm -f wrf.exe ; /bin/cp ../../main/wrf.exe . )
++	( cd test/nmm_real ; /bin/rm -f real_nmm.exe ; /bin/cp ../../main/real_nmm.exe . )
++	( cd test/nmm_real ; /bin/rm -f README.namelist ; /bin/cp ../../run/README.namelist . )
+ 	( cd test/nmm_real ; /bin/rm -f ETAMPNEW_DATA.expanded_rain ETAMPNEW_DATA RRTM_DATA ;    \
+-	     ln -sf ../../run/ETAMPNEW_DATA . ;                     \
+-	     ln -sf ../../run/ETAMPNEW_DATA.expanded_rain . ;                     \
+-	     ln -sf ../../run/RRTM_DATA . ;                         \
++	     /bin/cp ../../run/ETAMPNEW_DATA . ;                     \
++	     /bin/cp ../../run/ETAMPNEW_DATA.expanded_rain . ;                     \
++	     /bin/cp ../../run/RRTM_DATA . ;                         \
+ 	     if [ $(RWORDSIZE) -eq 8 ] ; then                       \
+-	        ln -sf ../../run/ETAMPNEW_DATA_DBL ETAMPNEW_DATA ;  \
+-                ln -sf ../../run/ETAMPNEW_DATA.expanded_rain_DBL ETAMPNEW_DATA.expanded_rain ;   \
+-	        ln -sf ../../run/RRTM_DATA_DBL RRTM_DATA ;          \
++	        /bin/cp ../../run/ETAMPNEW_DATA_DBL ETAMPNEW_DATA ;  \
++                /bin/cp ../../run/ETAMPNEW_DATA.expanded_rain_DBL ETAMPNEW_DATA.expanded_rain ;   \
++	        /bin/cp ../../run/RRTM_DATA_DBL RRTM_DATA ;          \
+ 	     fi )
+-	( cd test/nmm_real ; /bin/rm -f GENPARM.TBL ; ln -s ../../run/GENPARM.TBL . )
+-	( cd test/nmm_real ; /bin/rm -f LANDUSE.TBL ; ln -s ../../run/LANDUSE.TBL . )
+-	( cd test/nmm_real ; /bin/rm -f SOILPARM.TBL ; ln -s ../../run/SOILPARM.TBL . )
+-	( cd test/nmm_real ; /bin/rm -f VEGPARM.TBL ; ln -s ../../run/VEGPARM.TBL . )
+-	( cd test/nmm_real ; /bin/rm -f MPTABLE.TBL ; ln -s ../../run/MPTABLE.TBL . )
+-	( cd test/nmm_real ; /bin/rm -f tr49t67 ; ln -s ../../run/tr49t67 . )
+-	( cd test/nmm_real ; /bin/rm -f tr49t85 ; ln -s ../../run/tr49t85 . )
+-	( cd test/nmm_real ; /bin/rm -f tr67t85 ; ln -s ../../run/tr67t85 . )
+-	( cd test/nmm_real ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
+-	( cd test/nmm_real ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
+-	( cd test/nmm_real ; /bin/rm -f co2_trans ; ln -s ../../run/co2_trans . )
+-	( cd run ; /bin/rm -f real_nmm.exe ; ln -s ../main/real_nmm.exe . )
++	( cd test/nmm_real ; /bin/rm -f GENPARM.TBL ; /bin/cp ../../run/GENPARM.TBL . )
++	( cd test/nmm_real ; /bin/rm -f LANDUSE.TBL ; /bin/cp ../../run/LANDUSE.TBL . )
++	( cd test/nmm_real ; /bin/rm -f SOILPARM.TBL ; /bin/cp ../../run/SOILPARM.TBL . )
++	( cd test/nmm_real ; /bin/rm -f VEGPARM.TBL ; /bin/cp ../../run/VEGPARM.TBL . )
++	( cd test/nmm_real ; /bin/rm -f MPTABLE.TBL ; /bin/cp ../../run/MPTABLE.TBL . )
++	( cd test/nmm_real ; /bin/rm -f tr49t67 ; /bin/cp ../../run/tr49t67 . )
++	( cd test/nmm_real ; /bin/rm -f tr49t85 ; /bin/cp ../../run/tr49t85 . )
++	( cd test/nmm_real ; /bin/rm -f tr67t85 ; /bin/cp ../../run/tr67t85 . )
++	( cd test/nmm_real ; /bin/rm -f gribmap.txt ; /bin/cp ../../run/gribmap.txt . )
++	( cd test/nmm_real ; /bin/rm -f grib2map.tbl ; /bin/cp ../../run/grib2map.tbl . )
++	( cd test/nmm_real ; /bin/rm -f co2_trans ; /bin/cp ../../run/co2_trans . )
++	( cd run ; /bin/rm -f real_nmm.exe ; /bin/cp ../main/real_nmm.exe . )
+ 	( cd run ; if test -f namelist.input ; then \
+ 		/bin/cp -f namelist.input namelist.input.backup.`date +%Y-%m-%d_%H_%M_%S` ; fi ; \
+ 		/bin/rm -f namelist.input ; cp ../test/nmm_real/namelist.input . )
+@@ -928,7 +928,7 @@
+ 	@ echo '--------------------------------------'
+ 	( cd frame ; $(MAKE) $(J) LLIST="$(LINKLIST)" framework ; \
+           cd ../external/io_netcdf ; \
+-          $(MAKE) NETCDFPATH="$(NETCDFPATH)" \
++          $(MAKE) NETCDFPATH="$(NETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" \
+                FC="$(FC) $(FCBASEOPTS) $(PROMOTION) $(FCDEBUG) $(OMP)" RANLIB="$(RANLIB)" \
+                CPP="$(CPP)" LDFLAGS="$(LDFLAGS)" TRADFLAG="$(TRADFLAG)" ESMF_IO_LIB_EXT="$(ESMF_IO_LIB_EXT)" \
+                LIB_LOCAL="$(LIB_LOCAL)" \
+--- main/Makefile.orig	2019-07-03 21:57:36.819354392 +0000
++++ main/Makefile	2019-07-03 22:03:54.359275464 +0000
+@@ -48,7 +48,10 @@
+ 	$(FC) -o real_nmm.exe $(LDFLAGS) real_nmm.o $(LIBWRFLIB) $(LIB)
+ 
+ module_initialize : ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o
+-#	( cd ../dyn_$(SOLVER) ;  $(MAKE) module_initialize_$(IDEAL_CASE).o )
++	( cd ../dyn_$(SOLVER) ;  $(MAKE) module_initialize_$(IDEAL_CASE).o )
++# add dependencies so parallel build works
++real_$(SOLVER).o ndown_$(SOLVER).o nup_$(SOLVER).o tc_$(SOLVER).o ideal_nmm.o ideal_em.o ideal.o: ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o
++
+ 
+ ## prevent real being compiled for OMP -- only for regtesting
+ #$(SOLVER)_real : module_initialize real_$(SOLVER).o
+ 
+--- arch/postamble.orig	2019-06-26 16:32:58.000000000 +0000
++++ arch/postamble	2019-07-09 18:10:37.058932777 +0000
+@@ -51,6 +51,7 @@
+                       -I$(WRF_SRC_ROOT_DIR)/wrftladj \
+                       -I$(WRF_SRC_ROOT_DIR)/chem -I$(WRF_SRC_ROOT_DIR)/inc \
+                       -I$(NETCDFPATH)/include \
++                      -I$(NETCDFFPATH)/include \
+                       CONFIGURE_RTTOV_INC
+ REGISTRY        =    Registry
+ CC_TOOLS_CFLAGS = CONFIGURE_NMM_CORE
+@@ -73,6 +74,7 @@
+ ENVCOMPDEFS     =    CONFIGURE_COMPILEFLAGS
+ CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) CONFIGURE_COMMS_INCLUDE
+ NETCDFPATH      =    CONFIGURE_NETCDF_PATH
++NETCDFFPATH     =    CONFIGURE_NETCDFF_PATH
+ HDF5PATH        =    CONFIGURE_HDF5_PATH
+ WRFPLUSPATH     =    CONFIGURE_WRFPLUS_PATH
+ RTTOVPATH       =    CONFIGURE_RTTOV_PATH
+@@ -104,7 +106,7 @@
+ 
+ wrfio_nf : 
+ 	( cd $(WRF_SRC_ROOT_DIR)/external/io_netcdf ; \
+-          make $(J) NETCDFPATH="$(NETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
++          make $(J) NETCDFPATH="$(NETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
+           CC="$(SCC)" CFLAGS="$(CFLAGS)" \
+           FC="$(SFC) $(PROMOTION) $(OMP) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
+ 
+--- arch/Config.pl.orig	2019-06-26 16:32:58.000000000 +0000
++++ arch/Config.pl	2019-07-09 21:54:37.604421226 +0000
+@@ -8,6 +8,7 @@
+ select((select(STDOUT), $|=1)[0]);
+ $sw_perl_path = perl ;
+ $sw_netcdf_path = "" ;
++$sw_netcdff_path = "" ; # for netCDF 4.2 and greater, Fortran lib may be in a different path
+ $sw_pnetcdf_path = "" ;
+ $sw_hdf5_path=""; 
+ $sw_phdf5_path=""; 
+@@ -90,6 +91,10 @@
+           }
+       }
+   }
++  if ( substr( $ARGV[0], 1, 8 ) eq "netcdff=" )
++  {
++    $sw_netcdff_path = substr( $ARGV[0], 9 ) ;
++  }
+   if ( substr( $ARGV[0], 1, 8 ) eq "pnetcdf=" )
+   {
+     $sw_pnetcdf_path = substr( $ARGV[0], 9 ) ;
+@@ -117,10 +122,12 @@
+   if ( substr( $ARGV[0], 1, 11 ) eq "USENETCDFF=" )
+   {
+     $sw_usenetcdff = substr( $ARGV[0], 12 ) ;
++    $sw_usenetcdff =~ s/!/ /g ;
+   }
+   if ( substr( $ARGV[0], 1, 10 ) eq "USENETCDF=" )
+   {
+     $sw_usenetcdf = substr( $ARGV[0], 11 ) ;
++    $sw_usenetcdf =~ s/!/ /g ;
+   }
+   if ( substr( $ARGV[0], 1, 5 ) eq "time=" )
+   {
+@@ -443,6 +450,7 @@
+   {
+     $_ =~ s/CONFIGURE_PERL_PATH/$sw_perl_path/g ;
+     $_ =~ s/CONFIGURE_NETCDF_PATH/$sw_netcdf_path/g ;
++    $_ =~ s/CONFIGURE_NETCDFF_PATH/$sw_netcdff_path/g ;
+     $_ =~ s/CONFIGURE_PNETCDF_PATH/$sw_pnetcdf_path/g ;
+     $_ =~ s/CONFIGURE_HDF5_PATH/$sw_hdf5_path/g ;
+     $_ =~ s/CONFIGURE_PHDF5_PATH/$sw_phdf5_path/g ;
+--- configure.orig	2019-06-26 16:32:58.000000000 +0000
++++ configure	2019-07-11 23:49:54.861885937 +0000
+@@ -179,19 +179,34 @@
+ USENETCDF=""
+ if [ -n "$NETCDF" ] ; then
+   echo "Will use NETCDF in dir: $NETCDF"
++  # for netCDF 4.2 and greater, the Fortran library is a separate install
++  if [ -z "$NETCDFF" ]; then
++    NETCDFF="$NETCDFF"
++  fi
++
+ # Oh UNIDATA, why make it so hard ...
+   if [ -f "$NETCDF/lib/libnetcdff.a" -o -f "$NETCDF/lib/libnetcdff.so" ] ; then
+     USENETCDFF="-lnetcdff"
+   else
+     USENETCDFF=" "
++    if [ -f "$NETCDFF/lib/libnetcdff.a" -o -f "$NETCDFF/lib/libnetcdff.so" -o -f "$NETCDFF/lib64/libnetcdff.so" -o -f "$NETCDFF/lib64/libnetcdff.so" ] ; then
++      USENETCDFF="-lnetcdff" 
++    else
++      USENETCDFF=" "
++    fi
+   fi
+   if [ -f "$NETCDF/lib/libnetcdf.a" -o -f "$NETCDF/lib/libnetcdf.so" ] ; then
+     USENETCDF="-lnetcdf"
+   else
+-    USENETCDF=" "
++    if [ -f "$NETCDF/lib/libnetcdf.a" -o -f "$NETCDF/lib/libnetcdf.so" -o -f "$NETCDF/lib64/libnetcdf.a" -o -f "$NETCDF/lib64/libnetcdf.so" ] ; then
++      USENETCDF="-lnetcdf" 
++    else
++      USENETCDF=" "
++    fi
+   fi
+   export USENETCDF=$USENETCDF
+   export USENETCDFF=$USENETCDFF
++  echo $USENETCDF
+ else
+   echo ' '
+   echo '*****************************************************************************'
+@@ -549,7 +564,7 @@
+    srch=`grep -i "^#ARCH.*$os" arch/configure.defaults | grep -i "$mach"`
+    if [ -n "$srch" ] ; then
+      $PERL arch/Config.pl -dmparallel=$COMMLIB -ompparallel=$OMP -perl=$PERL \
+-          -netcdf=$NETCDF -pnetcdf=$PNETCDF -hdf5=$HDF5 -phdf5=$PHDF5 -os=$os -mach=$mach -ldflags=$ldflags \
++          -netcdf=$NETCDF -netcdff=$NETCDFF -pnetcdf=$PNETCDF -phdf5=$PHDF5 -os=$os -mach=$mach -ldflags=$ldflags \
+           -compileflags=$compileflags -opt_level=$opt_level -USENETCDFF=$USENETCDFF -USENETCDF=$USENETCDF \
+           -time=$FORTRAN_COMPILER_TIMER -tfl="$TFL" -cfl="$CFL" -config_line="$config_line" \
+           -wrf_core=$wrf_core -gpfs=$GPFS_PATH -curl=$CURL_PATH -dep_lib_path="$DEP_LIB_PATH"
+@@ -629,14 +644,14 @@
+ echo "If you wish to change the default options, edit the file:"
+ echo "     arch/configure.defaults"
+ 
+-if test -n "$NETCDF" ; then
+-  if [ ! -f $NETCDF/include/netcdf.inc ] ; then
++if test -n "$NETCDFF" ; then
++  if [ ! -f $NETCDFF/include/netcdf.inc ] ; then
+     echo
+-    echo "Error : Not found $NETCDF/include/netcdf.inc"
++    echo "Error : Not found $NETCDFF/include/netcdf.inc"
+     echo "        Please check this installation of NetCDF and re-run this configure script"
+     exit -1
+   fi
+-  grep nf_format_64bit $NETCDF/include/netcdf.inc > /dev/null
++  grep nf_format_64bit $NETCDFF/include/netcdf.inc > /dev/null 
+   configure_aaaa=$? ; export configure_aaaa
+   if [ $configure_aaaa -a -z "$WRFIO_NCD_NO_LARGE_FILE_SUPPORT" ] ; then
+     echo "NetCDF users note:"

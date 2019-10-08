@@ -1,0 +1,34 @@
+name = 'WRF'
+version = '4.1.2'
+versionsuffix = '-dmpar'
+
+homepage = 'http://www.wrf-model.org'
+description = """The Weather Research and Forecasting (WRF) Model is a next-generation mesoscale
+ numerical weather prediction system designed to serve both operational forecasting and atmospheric
+ research needs. Compiled with -DNO_LEAP_CALENDAR"""
+
+toolchain = {'version': '2018.3.312', 'name': 'iomkl'}
+toolchainopts = {'opt': False}  # don't use agressive optimization, stick to -O2
+sources = ['%(name)s-release-v%(version)s.zip']
+#sources = ['WRFV3.9.1.1.TAR.gz']
+#source_urls = ['http://www2.mmm.ucar.edu/%(namelower)s/src/', 'http://www.mmm.ucar.edu/%(namelower)s/src/']
+
+patches = [
+    'WRF-%(version)s.patch',
+]
+
+# csh is used by WRF install scripts
+#builddependencies = [('tcsh', '6.19.00')]
+dependencies = [
+    ('JasPer', '1.900.1', '-GCCcore-5.4.0', True),
+    ('netCDF-Fortran', '4.4.4', '-mpi'),
+]
+
+# Some tests failed for some specific number of processeors (mpitun -n "np" ./wrf.exe) . I found np=8 is the only number that works with all tests. Since parallel=(np/2)+1 therefore parallel=14 is one of the only number that works. 
+
+parallel = 14 
+
+#maxparallel = 20
+buildtype = 'dmpar'
+
+moduleclass = 'geo'

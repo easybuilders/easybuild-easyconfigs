@@ -1,0 +1,148 @@
+name = 'OpenFOAM'
+version = 'v1906'
+
+homepage = 'http://www.openfoam.com/'
+description = """OpenFOAM is a free, open source CFD software package.
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer,
+ to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'gompi', 'version': '2018.3.312'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://sourceforge.net/projects/openfoam/files/%(version)s/']
+sources = [SOURCE_TGZ]
+patches = ['OpenFOAM-%(version)s-cleanup.patch', 'OpenFOAM-%(version)s_cleanup-cc.patch']
+checksums = [
+    '15e38c2dc659b63753a0dd3dff913222cc46d6a40089a1b76973dd741145f61a',  # OpenFOAM-v1906.tgz
+    '870250338b0485ff34315f675a4c9700d3888912338b5d083297e37e287783a5',  # OpenFOAM-v1906-cleanup.patch
+    '142df8a457e4093287543c42f4f6803c968145ce8ba72a31f9dd9d1acecea4de',  # OpenFOAM-v1906_cleanup-cc.patch
+]
+
+dependencies = [
+    ('libreadline', '7.0'),
+    ('ncurses', '6.1'),
+    # OpenFOAM requires 64 bit METIS using 32 bit indexes (array indexes)
+    ('METIS', '5.1.0', None, ('GCC','7.3.0')),
+    ('SCOTCH', '6.0.6'),
+]
+
+builddependencies = [
+    ('Bison', '3.0.5'),
+    ('CMake', '3.11.4'),
+    ('flex', '2.6.4'),
+    ('CGAL', '4.9'),
+]
+
+moduleclass = 'cae'
+modluafooter = """
+local wm_compiler = "Gcc"
+local scotch_version = "6.0.6"
+local wm_label_size = "32"
+local api = "1906"
+local wm_cc = "gcc"
+local wm_cxx = "g++"
+local wm_ldflags = "-m64"
+local wm_cxxflags = "-fPIC -std=c++11 -m64"
+local  wm_cflags = "-fPIC -m64"
+
+-- Nothing below this line should need changing for a different version or compiler
+local version = "%(version)s"
+local wm_project = "%(name)s"
+local wm_project_dir = pathJoin(root, wm_project .. "-" .. version)
+local wm_thirdparty_dir = pathJoin(root, "OpenFOAM-" .. version,"ThirdParty")
+local wm_project_user_dir = pathJoin(os.getenv("HOME"), wm_project, os.getenv("USER") .. "-" .. version)
+local wm_options = "linux64" .. wm_compiler .. "DPInt" .. wm_label_size .. "Opt"
+
+local foam_site_dir = pathJoin(root, "OpenFOAM-" .. version,"site", api, "platforms", wm_options)
+local platform_dir = pathJoin(wm_project_dir, "platforms", wm_options)
+local foam_usr_dir = pathJoin(wm_project_user_dir, "platforms", wm_options)
+
+setenv("WM_THIRD_PARTY_DIR", wm_thirdparty_dir)
+setenv("FOAM_EXT_LIBBIN", pathJoin(platform_dir,"lib"))
+setenv("BOOST_ARCH_PATH", "")
+setenv("CGAL_ARCH_PATH", "")
+setenv("FFTW_ARCH_PATH","")
+setenv("MESA_ARCH_PATH","")
+setenv("SCOTCH_ARCH_PATH","")
+setenv("SCOTCH_VERSION","scotch_" .. scotch_version)
+setenv("VTK_DIR","")
+setenv("FOAM_API",api)
+setenv("WM_PROJECT_API",api)
+setenv("FOAMY_HEX_MESH", "yes")
+setenv("FOAM_APP", pathJoin(wm_project_dir, "applications"))
+setenv("FOAM_APPBIN", pathJoin(platform_dir, "bin"))
+setenv("FOAM_ETC", pathJoin(wm_project_dir, "etc"))
+setenv("FOAM_JOB_DIR", pathJoin(root, "jobControl"))
+setenv("FOAM_LIBBIN", pathJoin(platform_dir, "lib"))
+setenv("FOAM_MPI", "mpi")
+setenv("FOAM_RUN", pathJoin(wm_project_user_dir, "run"))
+setenv("FOAM_SETTINGS", "")
+setenv("FOAM_SIGFPE", "")
+setenv("FOAM_SITE_APPBIN", pathJoin(foam_site_dir, "bin"))
+setenv("FOAM_SITE_LIBBIN", pathJoin(foam_site_dir, "lib"))
+setenv("FOAM_SOLVERS", pathJoin(wm_project_dir, "applications", "solvers"))
+setenv("FOAM_SRC", pathJoin(wm_project_dir, "src"))
+setenv("FOAM_TUTORIALS", pathJoin(wm_project_dir, "tutorials"))
+setenv("FOAM_USER_APPBIN", pathJoin(foam_usr_dir, "bin"))
+setenv("FOAM_USER_LIBBIN", pathJoin(foam_usr_dir, "lib"))
+setenv("FOAM_UTILITIES", pathJoin(wm_project_dir, "applications" , "utilities"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(wm_project_dir,"platforms",wm_options,"lib","dummy"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(wm_thirdparty_dir,"platforms",wm_options,"lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(platform_dir,"lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(foam_site_dir,"lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(foam_usr_dir,"lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(wm_thirdparty_dir,"platforms",wm_options,"lib","mpi"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(platform_dir,"lib","mpi"))
+prepend_path("PATH", pathJoin(wm_project_dir, "bin"))
+prepend_path("PATH", pathJoin(wm_project_dir, "wmake"))
+prepend_path("PATH", pathJoin(platform_dir, "bin"))
+prepend_path("PATH", pathJoin(foam_site_dir, "bin"))
+prepend_path("PATH", pathJoin(foam_usr_dir, "bin"))
+setenv("MPI_BUFFER_SIZE", "20000000")
+setenv("WM_ARCH", "linux64")
+setenv("WM_ARCH_OPTION", "64")
+setenv("WM_CC", wm_cc)
+setenv("WM_CFLAGS", wm_cflags)
+setenv("WM_COMPILER_LIB_ARCH", "64")
+setenv("WM_COMPILER_TYPE", "system")
+setenv("WM_COMPILE_OPTION", "Opt")
+setenv("WM_CXX", wm_cxx)
+setenv("WM_CXXFLAGS", wm_cxxflags)
+setenv("WM_DIR", pathJoin(wm_project_dir, "wmake"))
+setenv("WM_LABEL_OPTION", "Int" .. wm_label_size)
+setenv("WM_LDFLAGS", wm_ldflags)
+setenv("WM_LINK_LANGUAGE", "c++")
+setenv("WM_OPTIONS", wm_options)
+setenv("WM_OSTYPE", "POSIX")
+setenv("WM_PRECISION_OPTION", "DP")
+setenv("WM_PROJECT", "OpenFOAM")
+setenv("WM_PROJECT_DIR", wm_project_dir)
+setenv("WM_PROJECT_INST_DIR", root)
+setenv("WM_PROJECT_USER_DIR", wm_project_user_dir)
+
+set_alias("app", 'cd $FOAM_APP')
+set_alias("foam", 'cd $WM_PROJECT_DIR')
+set_alias("foam3rdParty", 'cd $WM_THIRD_PARTY_DIR')
+set_alias("foamApps", 'cd $FOAM_APP')
+set_alias("foamSite", 'cd $WM_PROJECT_INST_DIR/site')
+set_alias("foamSol", 'cd $FOAM_SOLVERS')
+set_alias("foamTuts", 'cd $FOAM_TUTORIALS')
+set_alias("foamUtils", 'cd $FOAM_UTILITIES')
+set_alias("foamfv", 'cd $FOAM_SRC/finiteVolume')
+set_alias("foamsrc", 'cd $FOAM_SRC/$WM_PROJECT')
+set_alias("lib", 'cd $FOAM_LIBBIN')
+set_alias("run", 'cd $FOAM_RUN')
+set_alias("sol", 'cd $FOAM_SOLVERS')
+set_alias("src", 'cd $FOAM_SRC')
+set_alias("tut", 'cd $FOAM_TUTORIALS')
+set_alias("util", 'cd $FOAM_UTILITIES')
+set_alias("wm32", 'wmSET WM_ARCH_OPTION=32')
+set_alias("wm64", 'wmSET WM_ARCH_OPTION=64')
+set_alias("wmDP", 'wmSET WM_PRECISION_OPTION=DP')
+set_alias("wmSET", '. $WM_PROJECT_DIR/etc/bashrc')
+set_alias("wmSP", 'wmSET WM_PRECISION_OPTION=SP')
+set_alias("wmSchedOFF", 'unset WM_SCHEDULER')
+set_alias("wmSchedON", 'export WM_SCHEDULER=$WM_PROJECT_DIR/wmake/wmakeScheduler')
+set_alias("wmUNSET", '. $WM_PROJECT_DIR/etc/config/unset.sh')
+"""
