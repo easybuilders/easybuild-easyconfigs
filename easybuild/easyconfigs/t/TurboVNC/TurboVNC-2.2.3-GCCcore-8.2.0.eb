@@ -11,7 +11,11 @@ toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
 
 source_urls = [SOURCEFORGE_SOURCE]
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['1c3de5abc66b3a2c45fb7ec6c75ddf54241153e5770f7d05ffd2dfef5d086981']
+patches = ['TurboVNC-%(version)s_fix-libX11-libs.patch']
+checksums = [
+    '1c3de5abc66b3a2c45fb7ec6c75ddf54241153e5770f7d05ffd2dfef5d086981',  # turbovnc-2.2.3.tar.gz
+    'c3e29c2a11e0cf8e37080b1eae6f35811f64d3c05dc1b58485cb17918c465dd5',  # TurboVNC-2.2.3_fix-libX11-libs.patch
+]
 
 builddependencies = [
     ('binutils', '2.31.1'),
@@ -20,12 +24,19 @@ builddependencies = [
 
 dependencies = [
     ('X11', '20190311'),
+    ('pixman', '0.38.0'),
     ('libjpeg-turbo', '2.0.2'),
+    ('libglvnd', '1.2.0'),
 ]
 
 osdependencies = [('pam-devel', 'libpam0g-dev')]
 
-configopts = "-DTVNC_BUILDJAVA=0"
+configopts = "-DTVNC_BUILDJAVA=0 -DTVNC_SYSTEMX11=1 "
+configopts += "-DX11_X11_LIB=$EBROOTX11/lib/libX11.so -DX11_Xau_LIB=$EBROOTX11/lib/libXau.so "
+configopts += "-DX11_SM_LIB=$EBROOTX11/lib/libSM.so -DX11_ICE_LIB=$EBROOTX11/lib/libICE.so "
+configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libXext.so -DX11_ICE_LIB=$EBROOTX11/lib/libICE.so "
+configopts += "-DX11_Pixman_LIB=$EBROOTPIXMAN/lib/libpixman-1.so.0 "
+configopts += "-DOPENGL_gl_LIBRARY=$EBROOTLIBGLVND/lib/libGL.so "
 
 sanity_check_paths = {
     'files': ['bin/vncserver', 'bin/vncpasswd', 'bin/Xvnc'],
