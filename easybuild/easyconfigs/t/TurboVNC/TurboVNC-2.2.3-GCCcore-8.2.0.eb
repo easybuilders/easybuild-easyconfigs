@@ -27,16 +27,27 @@ dependencies = [
     ('pixman', '0.38.0'),
     ('libjpeg-turbo', '2.0.2'),
     ('libglvnd', '1.2.0'),
+    # OS dependency should be preferred if the OS version is more recent then this version,
+    # it's nice to have an up to date OpenSSL for security reasons
+    # ('OpenSSL', '1.1.1b'),
 ]
 
-osdependencies = [('pam-devel', 'libpam0g-dev')]
+osdependencies = [
+    ('openssl-devel', 'libssl-dev', 'libopenssl-devel'),
+    ('pam-devel', 'libpam0g-dev'),
+]
 
 configopts = "-DTVNC_BUILDJAVA=0 -DTVNC_SYSTEMX11=1 "
-configopts += "-DX11_X11_LIB=$EBROOTX11/lib/libX11.so -DX11_Xau_LIB=$EBROOTX11/lib/libXau.so "
-configopts += "-DX11_SM_LIB=$EBROOTX11/lib/libSM.so -DX11_ICE_LIB=$EBROOTX11/lib/libICE.so "
-configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libXext.so -DX11_ICE_LIB=$EBROOTX11/lib/libICE.so "
-configopts += "-DX11_Pixman_LIB=$EBROOTPIXMAN/lib/libpixman-1.so.0 "
-configopts += "-DOPENGL_gl_LIBRARY=$EBROOTLIBGLVND/lib/libGL.so "
+configopts += "-DX11_X11_LIB=$EBROOTX11/lib/libX11.%s " % SHLIB_EXT
+configopts += "-DX11_Xau_LIB=$EBROOTX11/lib/libXau.%s " % SHLIB_EXT
+configopts += "-DX11_SM_LIB=$EBROOTX11/lib/libSM.%s " % SHLIB_EXT
+configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libICE.%s " % SHLIB_EXT
+configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libXext.%s " % SHLIB_EXT
+configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libICE.%s " % SHLIB_EXT
+configopts += "-DX11_Pixman_LIB=$EBROOTPIXMAN/lib/libpixman-1.%s.0 " % SHLIB_EXT
+configopts += "-DOPENGL_gl_LIBRARY=$EBROOTLIBGLVND/lib/libGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_opengl_LIBRARY=$EBROOTLIBGLVND/lib/libOpenGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_glx_LIBRARY=$EBROOTLIBGLVND/lib/libGLX.%s " % SHLIB_EXT
 
 sanity_check_paths = {
     'files': ['bin/vncserver', 'bin/vncpasswd', 'bin/Xvnc'],
