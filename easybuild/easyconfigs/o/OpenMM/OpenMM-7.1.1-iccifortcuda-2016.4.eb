@@ -1,0 +1,56 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = "CMakeMake"
+
+name = "OpenMM"
+version = "7.1.1"
+
+homepage = 'https://simtk.org/home/openmm'
+description = """OpenMM is a toolkit for molecular simulation. - CC-Wiki: OpenMM"""
+
+toolchain = {'version': '2016.4', 'name': 'iccifortcuda'}
+
+source_urls = ['https://github.com/pandegroup/openmm/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['ba915d1bc2ea8643c699e48fa4386646dc799a7b4f165350ff1317d8c71a1493']
+
+separate_build_dir = True
+
+multi_deps = {
+        'Python': ['2.7.14','3.5.4', '3.6.3', '3.7.4']
+}
+multi_deps_load_default = False
+
+dependencies = [
+#    ('Python', '2.7.13'), # is in NIX
+#    ('SWIG', '3.0.12',),  # is in NIX
+]
+
+# don't run test on build-node without GPU
+#runtest = ' test'
+
+preconfigopts = 'sed -i "s/-msse2//" ../openmm-%(version)s/CMakeLists.txt && '
+configopts = '-DOPENMM_BUILD_CUDA_LIB=ON -DCUDA_CUDA_LIBRARY=/usr/lib64/nvidia/libcuda.so -DOPENMM_BUILD_OPENCL_LIB=OFF'
+
+preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
+preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
+
+# required to install the python API (tweaked to build both Py2 and Py3)
+installopts  = ' && cd python && python setup.py build && python setup.py install --prefix=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ["lib/libOpenMM.%s" % SHLIB_EXT ] +
+        ["lib/python%s/site-packages/simtk/openmm/openmm.py"% v for v in ["2.7", "3.5", "3.6", "3.7"]],
+    'dirs': []
+}
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''], 
+    'OPENMM_INCLUDE_PATH': 'include',
+    'OPENMM_LIB_PATH': 'lib',
+}
+
+moduleclass = 'bio'

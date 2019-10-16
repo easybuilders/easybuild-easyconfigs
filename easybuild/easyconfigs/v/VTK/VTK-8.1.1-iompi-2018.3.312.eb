@@ -1,0 +1,71 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-97.html
+##
+easyblock = 'CMakeMake'
+
+name = 'VTK'
+version = '8.1.1'
+
+homepage = 'http://www.vtk.org'
+description = """The Visualization Toolkit (VTK) is an open-source, freely available software system for
+ 3D computer graphics, image processing and visualization. VTK consists of a C++ class library and several
+ interpreted interface layers including Tcl/Tk, Java, and Python. VTK supports a wide variety of visualization
+ algorithms including: scalar, vector, tensor, texture, and volumetric methods; and advanced modeling techniques
+ such as: implicit modeling, polygon reduction, mesh smoothing, cutting, contouring, and Delaunay triangulation."""
+
+toolchain = {'version': '2018.3.312', 'name': 'iompi'}
+
+sources = [SOURCE_TAR_GZ, '%(name)sData-%(version)s.tar.gz']
+source_urls = ['https://www.%(namelower)s.org/files/release/%(version_major_minor)s']
+
+builddependencies = [
+    ('CMake', '3.10.2'),
+]
+
+dependencies = [
+    ('HDF5', '1.10.3', '', ('iccifort', '2018.3')),
+    ('libGLU', '9.0.0'),
+    ('X11', '20180131'),
+]
+
+preconfigopts = [
+    "module load python/2.7 && ",
+    "SUF=m && module load python/3.5 && ",
+    "SUF=m && module load python/3.6 && ",
+]
+
+configopts = "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python${EBVERSIONPYTHON:0:3}$SUF -DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython${EBVERSIONPYTHON:0:3}$SUF.so -DVTK_Group_MPI:BOOL=ON -DVTK_WRAP_PYTHON:BOOL=ON "
+
+prebuildopts = [
+    "module load python/2.7 && ",
+    "SUF=m && module load python/3.5 && ",
+    "SUF=m && module load python/3.6 && ",
+]
+
+preinstallopts = "export EBPYTHONPREFIXES=%(installdir)s && "
+
+postinstallcmds = ['for i in %(installdir)s/lib/python*/site-packages; do /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $i --add_path %(installdir)s/lib; done']
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+checksums = [
+    '71a09b4340f0a9c58559fe946dc745ab68a866cf20636a41d97b6046cb736324',  # %(name)s-%(version)s.tar.gz
+    'e16c2d665f052b6aeb981aea17f0309849e661a0038e18c9880bd6e6519c4fcc',  # VTKData-%(version)s.tar.gz
+]
+
+sanity_check_paths = {
+    'files': ['bin/vtkEncodeString-%(version_major_minor)s', 'bin/vtkHashSource-%(version_major_minor)s'],
+    'dirs': ['lib/python2.7/site-packages/', 'include/%(namelower)s-%(version_major_minor)s'],
+}
+
+#sanity_check_commands = [('python', "-c 'import %(namelower)s'")]
+
+moduleclass = 'vis'
