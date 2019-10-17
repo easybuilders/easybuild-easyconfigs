@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'Singularity'
+version = '3.4.2'
+
+homepage = 'https://www.sylabs.io/singularity/'
+description = """Singularity is a portable application stack packaging and runtime utility."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/sylabs/singularity/releases/download/v%s/' % version]
+sources = ['singularity-%(version)s.tar.gz']
+checksums = ['3aac5ecfd46fb4ba95e2ff13b3698362390d296af375d7d6de1ed7ef0491f30b']
+
+osdependencies = [
+    ('openssl-devel', 'libssl-dev', 'libopenssl-devel'),
+#    ('libseccomp-devel', 'libseccomp-dev'),
+    ('squashfs-tools')
+]
+
+builddependencies = [
+    ('Go', '1.13.1'),
+]
+
+#prebuildopts = 'export GOPATH=$(pwd):$GOPATH && '
+prebuildopts = 'mkdir -p src/github.com/sylabs && '
+prebuildopts += 'ln -sf %(builddir)s/singularity src/github.com/sylabs/singularity && '
+prebuildopts += './mconfig -p %(installdir)s -b build && '
+prebuildopts += 'cd build && '
+preinstallopts = 'cd build && '
+skipsteps = ['configure']
+
+sanity_check_paths = {
+    'files': ['bin/run-singularity', 'bin/singularity', 'etc/singularity/singularity.conf'],
+    'dirs': ['etc', 'libexec/singularity']
+}
+
+# next steps after installation
+# INSTALLATION_PATH=your_installation_path
+# chown root:root $INSTALLATION_PATH/Singularity/*/etc/singularity/singularity.conf
+# chown root:root $INSTALLATION_PATH/Singularity/*/etc/singularity/capability.json
+# chown root:root $INSTALLATION_PATH/Singularity/*/etc/singularity/ecl.toml
+# chown root:root $INSTALLATION_PATH/Singularity/*/libexec/singularity/bin/*-suid
+# chmod 4755 $INSTALLATION_PATH/Singularity/*/libexec/singularity/bin/*-suid
+# chmod +s $INSTALLATION_PATH/Singularity/*/libexec/singularity/bin/*-suid
+
+moduleclass = 'tools'
