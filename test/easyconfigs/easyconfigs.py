@@ -53,7 +53,7 @@ from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
-from easybuild.tools.py2vs3 import string_type
+from easybuild.tools.py2vs3 import HTTPError, URLError, string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
@@ -200,9 +200,12 @@ class EasyConfigTest(TestCase):
 
             # for some dependencies, we allow exceptions for software that depends on a particular version,
             # as long as that's indicated by the versionsuffix
-            elif dep in ['Boost', 'R', 'PLUMED', 'Lua', 'ASE'] and len(dep_vars) > 1:
+            elif dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    # use version of Java wrapper rather than full Java version
+                    if dep == 'Java':
+                        dep_ver = '.'.join(dep_ver.split('.')[:2])
                     # filter out dep version if all easyconfig filenames using it include specific dep version
                     if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
                         dep_vars.pop(key)
@@ -221,7 +224,7 @@ class EasyConfigTest(TestCase):
 
             # filter out Java 'wrapper'
             # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
-            elif dep == 'Java' and len(dep_vars) == 2:
+            if dep == 'Java' and len(dep_vars) == 2:
                 key1, key2 = sorted(dep_vars.keys())
                 ver1, ver2 = [k.split(';')[0] for k in [key1, key2]]
                 if ver1.startswith(ver2):
@@ -453,6 +456,34 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
+    def check_https(self, changed_ecs):
+        """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
+
+        whitelist = [
+            'UCX-',  # bad certificate for https://www.openucx.org
+        ]
+
+        http_regex = re.compile('http://[^"\'\n]+', re.M)
+
+        failing_checks = []
+        for ec in changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+
+            if any(ec_fn.startswith(x) for x in whitelist):
+                continue
+
+            for http_url in http_regex.findall(ec.rawtxt):
+                https_url = http_url.replace('http://', 'https://')
+                try:
+                    https_url_works = bool(urlopen(https_url))
+                except (HTTPError, URLError):
+                    https_url_works = False
+
+                if https_url_works:
+                    failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
+
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
@@ -507,6 +538,7 @@ class EasyConfigTest(TestCase):
                 self.check_sha256_checksums(changed_ecs)
                 self.check_python_packages(changed_ecs)
                 self.check_sanity_check_paths(changed_ecs)
+                self.check_https(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
@@ -521,10 +553,11 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # give easyconfig for last EasyBuild 3.x release special treatment
+    # give recent EasyBuild easyconfigs special treatment
     # replace use deprecated dummy toolchain, required to avoid breaking "eb --install-latest-eb-release",
     # with SYSTEM toolchain constant
-    if os.path.basename(spec) == 'EasyBuild-3.9.4.eb':
+    ec_fn = os.path.basename(spec)
+    if ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.'):
         ectxt = read_file(spec)
         regex = re.compile('^toolchain = .*dummy.*', re.M)
         ectxt = regex.sub('toolchain = SYSTEM', ectxt)
