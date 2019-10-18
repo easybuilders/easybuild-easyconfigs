@@ -22,8 +22,11 @@ checksums = ['c030414603d88ad122246fe0e42a314fab428222d98e26768480f1f870b53484']
 # license_file = HOME + '/licenses/%(name)s/%(namelower)s.lic'
 
 postinstallcmds = [
+    # modify interpretor /lib64/ld-linux-x86-64.so.2 to /cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/lib/ld-linux-x86-64.so.2
     "for d in $(find %(installdir)s -name 'bin' -o -name 'lib');\
-    do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done"
+      do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
+    # avoid ./gurobi_cl: error while loading shared libraries: libgurobi81.so: cannot open shared object file: No such file or directory
+    "patchelf --set-rpath '$ORIGIN/../lib':$(patchelf --print-rpath %(installdir)s/bin/gurobi_cl) %(installdir)s/bin/gurobi_cl"    
 ]
 
 moduleclass = 'math'
