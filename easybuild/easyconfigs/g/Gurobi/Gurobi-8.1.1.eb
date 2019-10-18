@@ -13,20 +13,21 @@ latest algorithms."""
 
 toolchain = {'name': 'dummy', 'version': 'dummy'}
 
-# Registration required therefore manually downloaded to
-# /cvmfs/restricted.computecanada.ca/easybuild/sources/g/Gurobi/gurobi8.1.1_linux64.tar.gz
+# Registration required so manually downloaded software into:
+#  /cvmfs/restricted.computecanada.ca/easybuild/sources/g/Gurobi/gurobi8.1.1_linux64.tar.gz
 # source_urls = ['https://packages.gurobi.com/%(version_major_minor)s/']
 sources = ['%(namelower)s%(version)s_linux64.tar.gz']
 checksums = ['c030414603d88ad122246fe0e42a314fab428222d98e26768480f1f870b53484']
 
 # license_file = HOME + '/licenses/%(name)s/%(namelower)s.lic'
 
-# sanity_check_paths = {
-#     'files': ['linux64/include/gurobi_c.h', 'linux64/include/gurobi_c++.h', 'linux64/bin/gurobi_cl'],
-#     'dirs': ['linux64/include', 'linux64/bin'],
-# }
+postinstallcmds = [
+    "for d in $(find %(installdir)s -name 'bin' -o -name 'lib');\
+    do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done"
+]
 
 moduleclass = 'math'
+
 modluafooter = """
 require("SitePackage")
 local found = find_and_define_license_file("GRB_LICENSE_FILE","gurobi")
