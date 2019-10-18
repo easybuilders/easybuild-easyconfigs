@@ -1,3 +1,7 @@
+##
+# EasyBuild reciPY based on 
+# https://github.com/easybuilders/easybuild-easyconfigs/blob/master/easybuild/easyconfigs/g/Gurobi/Gurobi-8.1.1.eb
+##
 name = 'Gurobi'
 version = '8.1.1'
 
@@ -9,10 +13,29 @@ latest algorithms."""
 
 toolchain = {'name': 'dummy', 'version': 'dummy'}
 
-source_urls = ['https://packages.gurobi.com/%(version_major_minor)s/']
+# Registration required therefore manually downloaded to
+# /cvmfs/restricted.computecanada.ca/easybuild/sources/g/Gurobi/gurobi8.1.1_linux64.tar.gz
+# source_urls = ['https://packages.gurobi.com/%(version_major_minor)s/']
 sources = ['%(namelower)s%(version)s_linux64.tar.gz']
 checksums = ['c030414603d88ad122246fe0e42a314fab428222d98e26768480f1f870b53484']
 
-license_file = HOME + '/licenses/%(name)s/%(namelower)s.lic'
+# license_file = HOME + '/licenses/%(name)s/%(namelower)s.lic'
+
+# sanity_check_paths = {
+#     'files': ['linux64/include/gurobi_c.h', 'linux64/include/gurobi_c++.h', 'linux64/bin/gurobi_cl'],
+#     'dirs': ['linux64/include', 'linux64/bin'],
+# }
 
 moduleclass = 'math'
+modluafooter = """
+require("SitePackage")
+local found = find_and_define_license_file("GRB_LICENSE_FILE","gurobi")
+if (mode() == "load" and not found) then
+        local warning_message = [[
+	We did not find a suitable license file for Gurobi. If you have access to one, you can create the file $HOME/.licenses/gurobi.lic with the license information. You may also define the GRB_LICENSE_FILE environment variable yourself. This is only a warning. For more details, see https://docs.computecanada.ca/wiki/Gurobi
+	
+	Nous n'avons pas trouve de fichier de license utilisable pour Gurobi. Si vous avez acces a une license de Gurobi, vous pouvez creer le fichier $HOME/.licenses/gurobi.lic avec l'information de la license. Vous pouvez aussi definir la variable d'environnement GRB_LICENSE_FILE. Ceci n'est pas une erreur. Pour plus de details, voir la page https://docs.computecanada.ca/wiki/Gurobi
+	]]
+	LmodWarning(warning_message)
+end
+"""
