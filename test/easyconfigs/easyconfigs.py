@@ -369,7 +369,7 @@ class EasyConfigTest(TestCase):
             #         ascii_text_issues.append(ec)
             # else:
             #     print('Failed to open %s.' % eb_path)
-            if not all(ord(char) < 128 for char in raw_eb):
+            if not all(ord(char) < 128 for char in ec.rawtxt):
                 ascii_text_issues.append(ec)
         self.assertTrue(len(ascii_text_issues) == 0, "No ascii text issues:\n%s" % '\n'.join(ascii_text_issues))
 
