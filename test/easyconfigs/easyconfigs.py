@@ -286,7 +286,7 @@ class EasyConfigTest(TestCase):
 
         # restrict to checking dependencies of easyconfigs of 2019b
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 8.x
-        for pattern in ['2019b', 'GCCcore-[7-9]\.[0-9]']:
+        for pattern in ['2019b', 'GCCcore-[8-9]\.[0-9]']:
             all_deps = {}
             regex = re.compile('^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
@@ -356,6 +356,20 @@ class EasyConfigTest(TestCase):
                     # only exception: TEMPLATE.eb
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+
+    def check_ascii_text(self, changed_ecs):
+        """Make sure changed easyconfigs have only ASCII text."""
+        ascii_text_issues = []
+        top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
+        for ec in changed_ecs:
+            eb_path = os.path.join(top_dir, ec)
+            raw_eb = read_file(eb_path, log_error=False)
+            if raw_eb:
+                if not all(ord(char) < 128 for char in raw_eb):
+                    ascii_text_issues.append(ec)
+            else:
+                print('Failed to open %s.' % eb_path)
+        self.assertTrue(len(ascii_text_issues) == 0, "No ascii text issues:\n%s" % '\n'.join(ascii_text_issues))
 
     def check_sha256_checksums(self, changed_ecs):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
@@ -545,6 +559,7 @@ class EasyConfigTest(TestCase):
                 self.check_python_packages(changed_ecs)
                 self.check_sanity_check_paths(changed_ecs)
                 self.check_https(changed_ecs)
+                self.check_ascii_text(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
