@@ -40,13 +40,16 @@ configopts = " ".join([
     "-DPYTHON_NUMPY_INCLUDE_PATH=$EBROOTSCIPYMINSTACK/lib/python%(pyshortver)s/site-packages/numpy/core/include",
 ])
 
+# This step does not iterate as sanity_check does.
 postinstallcmds = [
-    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python%(pyshortver)s/site-packages --add_path %(installdir)s/lib",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python{}/site-packages --add_path %(installdir)s/lib".format(py[:-2])
+    for py in multi_deps["Python"]
 ]
 
 modextrapaths = { 'EBPYTHONPREFIXES' : '' }
 moduleclass = 'chem'
 separate_build_dir = True
+
 sanity_check_paths = {
     'files': [
         "lib/libRDKitEigenSolvers.so",
@@ -57,3 +60,9 @@ sanity_check_paths = {
     ],
     'dirs': []
 }
+
+sanity_check_commands = [
+    "python --version",
+    "python -c 'import rdkit'",
+    "module load scipy-stack && python -c 'from rdkit import Chem; m = Chem.MolFromSmiles(\"Cc1ccccc1\");'",
+]
