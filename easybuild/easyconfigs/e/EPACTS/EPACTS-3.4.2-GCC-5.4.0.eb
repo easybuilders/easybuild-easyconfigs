@@ -1,0 +1,48 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'EPACTS'
+version = '3.4.2'
+
+homepage = 'https://github.com/statgen/EPACTS'
+description = """EPACTS - Efficient and Parallelizable Association Container Toolbox"""
+
+toolchain = {'version': '5.4.0', 'name': 'GCC'}
+
+source_urls = ['https://github.com/statgen/EPACTS/archive/']
+sources = ['v%(version)s.tar.gz']
+
+builddependencies = [
+    ('Python', '2.7.14'),
+    ('Perl', '5.22.4'),
+]
+
+configure_cmd = 'module load r/3.5.0 && export PYTHONPATH=%(installdir)s/lib/python2.7/site-packages && pip install cget --prefix=%(installdir)s && cd %(builddir)s/%(name)s-%(version)s/ && %(installdir)s/bin/cget install -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC" -f requirements.txt && cd %(builddir)s/easybuild_obj/ && cmake '
+
+configopts = '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_Fortran_COMPILER=gfortran  -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../%(name)s-%(version)s/cget/cget/cget.cmake -DBUILD_TESTS=1 %(builddir)s/%(name)s-%(version)s/'
+
+prebuildopts = ' module load r/3.5.0 && '
+
+separate_build_dir = True
+
+files_to_copy = [
+    (['anno', 'bgzip', 'chaps', 'parse-sample-ids', 'pEmmax', 'tabix', 'vcfast'], 'bin'), 
+    ('epactsR'), 
+    ('epacts-version'),
+    ('mmSKAT'),
+    ('data'),
+    ('scripts'),
+    ('cget/include'), 
+    ('cget/lib')
+]
+
+sanity_check_paths = {
+    'files': ['bin/anno', 'bin/bgzip', 'bin/chaps', 'bin/pEmmax', 'bin/tabix', 'bin/vcfast'],
+    'dirs': ['bin', 'lib'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("r/3.5.0")
+"""
