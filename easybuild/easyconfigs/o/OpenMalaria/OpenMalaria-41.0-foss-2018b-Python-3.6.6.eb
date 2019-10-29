@@ -1,0 +1,54 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = "CMakeMake"
+
+name = 'OpenMalaria'
+version = '41.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/SwissTPH/openmalaria'
+description = """A simulator of malaria epidemiology and control"""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/SwissTPH/openmalaria/archive/']
+sources = ['schema-%(version)s.tar.gz']
+checksums = ['1269ccf1b0b87ca1c0d80401cec15cb1dd997920d6b386908a374777da8ceb32']
+
+skipsteps = ["install"]
+
+separate_build_dir = True
+
+builddependencies = [('CMake', '3.12.1')]
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('zlib', '1.2.11'),
+    ('GSL', '2.5'),
+    ('Boost', '1.67.0'),
+    ('XSD', '4.0.0'),
+    ('Xerces-C++', '3.2.0'),
+    ('expat', '2.2.5'),
+    ('Java', '11', '', True),
+]
+
+configopts = ' -DCMAKE_BUILD_TYPE=Release -DZ_LIBRARIES=${EBROOTZLIB}/lib/libz.so'
+
+buildopts = ' && ctest -j4'
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/bin",
+    "cp %(builddir)s/easybuild_obj/openMalaria %(installdir)s/bin",
+    "cp %(builddir)s/easybuild_obj/schema/scenario_current.xsd %(installdir)s",
+    "cp %(builddir)s/openmalaria-schema-%(version)s/util/example/{run-example-scenario.sh,example_scenario.xml} %(installdir)s"
+]
+
+sanity_check_paths = {
+    'files': ["bin/openMalaria"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
