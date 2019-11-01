@@ -1,19 +1,20 @@
 easyblock = 'ConfigureMake'
 
 name = 'OpenMPI'
-version = '3.1.2'
+version = '4.0.1'
 
 homepage = 'http://www.open-mpi.org/'
 description = """The Open MPI Project is an open source MPI-3 implementation."""
 
-toolchain = {'name': 'iccifortcuda', 'version': '2018.3.100'}
+toolchain = {'name': 'iccifortcuda', 'version': '2019.3.101'}
 
 source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 sources = [SOURCELOWER_TAR_GZ]
-patches = ['OpenMPI-3.1.2-slurm-cpu-bind.patch']
+patches = ['OpenMPI-4.0.1-scoll-fca.patch', 'OpenMPI-4.0.1-slurm-cpu-bind.patch']
 checksums = [
-    '363c8a1258d12df28657e9b13bfe41e30fc129a4cfb89fcf53ff68bbe1bd65b3',
-    '8bc76bc0c5208eb513c61786d89a3a91e0116a31a21a23f3fad3b0b0572cf648',
+    'e55e213fe09a214ab9f2c722acfd8bf7b39bbc1800e4b7a464d38df15e707f59', # tarball
+    '35dfd143b5cb44baa6329500fc4c8af2a5f6944efd99f15a8e58fecbeab92944', # patch
+    'db05907013f469432b9a9d60698a4bde4cd8c7e4d4fbfebe4097e517b25c03c3', # patch
 ]
 
 dependencies = [('UCX', '1.5.2')]
@@ -31,13 +32,14 @@ configopts += '--with-slurm --with-pmi=/opt/software/slurm '
 configopts += '--enable-mpi-cxx '
 configopts += '--with-hcoll '
 configopts += '--disable-show-load-errors-by-default '
+configopts += '--enable-mpi1-compatibility '
 
 # enumerate all mca's that should be compiled as plugins (only those that link to system-specific
 # libraries (lustre, fabric, and scheduler)
-configopts += '--enable-mca-dso=common-libfabric,common-ofi,common-verbs,atomic-mxm,btl-openib,btl-scif,'
-configopts += 'coll-fca,coll-hcoll,ess-tm,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,osc-ucx,'
-configopts += 'oob-ud,plm-tm,pmix-s1,pmix-s2,pml-ucx,pml-yalla,pnet-opa,psec-munge,'
-configopts += 'ras-tm,rml-ofi,scoll-mca,sec-munge,spml-ikrit, '
+configopts += '--enable-mca-dso=common-ucx,common-verbs,atomic-mxm,atomic-ucx,btl-openib,btl-uct,'
+configopts += 'coll-fca,coll-hcoll,ess-tm,fs-lustre,mtl-ofi,mtl-psm,mtl-psm2,osc-ucx,'
+configopts += 'plm-tm,pmix-s1,pmix-s2,pml-ucx,pml-yalla,pnet-opa,psec-munge,'
+configopts += 'ras-tm,scoll-fca,spml-ikrit,spml-ucx,sshmem-ucx '
 
 # to enable SLURM integration (site-specific)
 # configopts += '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'

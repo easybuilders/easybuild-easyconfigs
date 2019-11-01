@@ -1,0 +1,69 @@
+From bed91765091cb44582e832594dc2fa0e02df8262 Mon Sep 17 00:00:00 2001
+From: Jordan Hayes <jhayes@ucr.edu>
+Date: Mon, 13 May 2019 13:19:29 -0700
+Subject: [PATCH] plm_slurm_module: adjust for new SLURM CLI options
+
+SLURM 19 discontinued the use of --cpu_bind (and changed it to
+--cpu-bind).  There's no easy way to test at run time which one is
+accepted, so set the environment variable SLURM_CPU_BIND to "none",
+which should do the same thing as the srun CLI parameter.
+
+Signed-off-by: Jordan Hayes <jhayes@ucr.edu>
+Signed-off-by: Jeff Squyres <jsquyres@cisco.com>
+(cherry picked from commit 7dad74032e30259506da7fa582dd8c4351e6e0a1)
+---
+ orte/mca/plm/slurm/plm_slurm_module.c | 27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
+
+diff --git a/orte/mca/plm/slurm/plm_slurm_module.c b/orte/mca/plm/slurm/plm_slurm_module.c
+index 5ac4fed36a3..295116f5bea 100644
+--- a/orte/mca/plm/slurm/plm_slurm_module.c
++++ b/orte/mca/plm/slurm/plm_slurm_module.c
+@@ -9,7 +9,7 @@
+  *                         University of Stuttgart.  All rights reserved.
+  * Copyright (c) 2004-2005 The Regents of the University of California.
+  *                         All rights reserved.
+- * Copyright (c) 2006-2014 Cisco Systems, Inc.  All rights reserved.
++ * Copyright (c) 2006-2019 Cisco Systems, Inc.  All rights reserved
+  * Copyright (c) 2007-2015 Los Alamos National Security, LLC.  All rights
+  *                         reserved.
+  * Copyright (c) 2014-2017 Intel, Inc.  All rights reserved.
+@@ -272,14 +272,6 @@ static void launch_daemons(int fd, short args, void *cbdata)
+         opal_argv_append(&argc, &argv, "--kill-on-bad-exit");
+     }
+ 
+-    /* ensure the orteds are not bound to a single processor,
+-     * just in case the TaskAffinity option is set by default.
+-     * This will *not* release the orteds from any cpu-set
+-     * constraint, but will ensure it doesn't get
+-     * bound to only one processor
+-     */
+-    opal_argv_append(&argc, &argv, "--cpu_bind=none");
+-
+ #if SLURM_CRAY_ENV
+     /*
+      * If in a SLURM/Cray env. make sure that Cray PMI is not pulled in,
+@@ -420,6 +412,23 @@ static void launch_daemons(int fd, short args, void *cbdata)
+     /* setup environment */
+     env = opal_argv_copy(orte_launch_environ);
+ 
++    /* ensure the orteds are not bound to a single processor,
++     * just in case the TaskAffinity option is set by default.
++     * This will *not* release the orteds from any cpu-set
++     * constraint, but will ensure it doesn't get
++     * bound to only one processor
++     *
++     * NOTE: We used to pass --cpu_bind=none on the command line.  But
++     * SLURM 19 changed this to --cpu-bind.  There is no easy way to
++     * test at run time which of these two parameters is used (see
++     * https://github.com/open-mpi/ompi/pull/6654).  There was
++     * discussion of using --test-only to see which one works, but
++     * --test-only is only effective if you're not already inside a
++     * SLURM allocation.  Instead, set the env var SLURM_CPU_BIND to
++     * "none", which should do the same thing as --cpu*bind=none.
++     */
++    opal_setenv("SLURM_CPU_BIND", "none", true, &env);
++
+     if (0 < opal_output_get_verbosity(orte_plm_base_framework.framework_output)) {
+         param = opal_argv_join(argv, ' ');
+         OPAL_OUTPUT_VERBOSE((1, orte_plm_base_framework.framework_output,
