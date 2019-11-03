@@ -34,6 +34,7 @@ import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
+from ssl import CertificateError
 from unittest import TestCase, TestLoader, main
 
 import easybuild.main as eb_main
@@ -476,7 +477,7 @@ class EasyConfigTest(TestCase):
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     https_url_works = bool(urlopen(https_url))
-                except (HTTPError, URLError):
+                except (CertificateError, HTTPError, URLError):
                     https_url_works = False
 
                 if https_url_works:
