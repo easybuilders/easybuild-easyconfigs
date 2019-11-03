@@ -53,7 +53,7 @@ from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
-from easybuild.tools.py2vs3 import HTTPError, URLError, string_type, urlopen
+from easybuild.tools.py2vs3 import string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
@@ -476,7 +476,7 @@ class EasyConfigTest(TestCase):
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     https_url_works = bool(urlopen(https_url))
-                except (HTTPError, URLError):
+                except Exception:
                     https_url_works = False
 
                 if https_url_works:
