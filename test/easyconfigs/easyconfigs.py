@@ -472,7 +472,10 @@ class EasyConfigTest(TestCase):
             if any(ec_fn.startswith(x) for x in whitelist):
                 continue
 
-            for http_url in http_regex.findall(ec.rawtxt):
+            # ignore commented out lines in easyconfig files when checking for http:// URLs
+            ec_txt = '\n'.join(l for l in ec.rawtxt.split('\n') if not l.startswith('#'))
+
+            for http_url in http_regex.findall(ec_txt):
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     https_url_works = bool(urlopen(https_url))
