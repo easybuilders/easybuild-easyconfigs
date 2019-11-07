@@ -148,6 +148,204 @@ class EasyConfigTest(TestCase):
         self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
                          "No conflicts detected")
 
+    def check_dep_vars(self, dep, dep_vars):
+        """Check whether available variants of a particular dependency are acceptable or not."""
+
+        # 'guilty' until proven 'innocent'
+        res = False
+
+        # filter out wrapped Java versions
+        # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
+        if dep == 'Java':
+            dep_vars_to_check = sorted(dep_vars.keys())
+
+            retained_dep_vars = []
+
+            while dep_vars_to_check:
+                dep_var = dep_vars_to_check.pop()
+                dep_var_version = dep_var.split(';')[0]
+
+                # remove dep vars wrapped by current dep var
+                dep_vars_to_check = [x for x in dep_vars_to_check if not x.startswith(dep_var_version + '.')]
+
+                retained_dep_vars = [x for x in retained_dep_vars if not x.startswith(dep_var_version + '.')]
+
+                retained_dep_vars.append(dep_var)
+
+            for key in list(dep_vars.keys()):
+                if key not in retained_dep_vars:
+                    del dep_vars[key]
+
+        # filter out binutils with empty versionsuffix which is used to build toolchain compiler
+        if dep == 'binutils' and len(dep_vars) > 1:
+            empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
+            if len(empty_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
+
+        # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
+        elif dep == 'HTSlib' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out HTSlib variants that are only used as dependency for BCFtools with same version
+                htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
+                    dep_vars.pop(key)
+
+        # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
+        elif dep in ['FFTW', 'imkl']:
+            serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
+            if len(serial_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
+
+        # for some dependencies, we allow exceptions for software that depends on a particular version,
+        # as long as that's indicated by the versionsuffix
+        elif dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                # use version of Java wrapper rather than full Java version
+                if dep == 'Java':
+                    dep_ver = '.'.join(dep_ver.split('.')[:2])
+                # filter out dep version if all easyconfig filenames using it include specific dep version
+                if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
+            # filter R dep for a specific version of Python 2.x
+            if dep == 'R' and len(dep_vars) > 1:
+                for key in list(dep_vars):
+                    if '; versionsuffix: -Python-2' in key:
+                        dep_vars.pop(key)
+                    # always retain at least one variant
+                    if len(dep_vars) == 1:
+                        break
+
+        # filter out variants that are specific to a particular version of CUDA
+        cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
+        if len(dep_vars) > len(cuda_dep_vars):
+            for key in list(dep_vars):
+                if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
+                    dep_vars.pop(key)
+
+        # some software packages require an old version of a particular dependency
+        old_dep_versions = {
+            # libxc (CP2K & ABINIT require libxc 2.x or 3.x)
+            'libxc': r'[23]\.',
+            # OPERA requires SAMtools 0.x
+            'SAMtools': r'0\.',
+            # Kraken 1.0 requires Jellyfish 1.x
+            'Jellyfish': r'1\.',
+        }
+        if dep in old_dep_versions and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                # filter out known old dependency versions
+                if re.search('^version: %s' % old_dep_versions[dep], key):
+                    dep_vars.pop(key)
+
+        # only single variant is always OK
+        if len(dep_vars) == 1:
+            res = True
+
+        elif len(dep_vars) == 2 and dep in ['Python', 'Tkinter']:
+            # for Python & Tkinter, it's OK to have on 2.x and one 3.x version
+            v2_dep_vars = [x for x in dep_vars.keys() if x.startswith('version: 2.')]
+            v3_dep_vars = [x for x in dep_vars.keys() if x.startswith('version: 3.')]
+            if len(v2_dep_vars) == 1 and len(v3_dep_vars) == 1:
+                res = True
+
+        # two variants is OK if one is for Python 2.x and the other is for Python 3.x (based on versionsuffix)
+        elif len(dep_vars) == 2:
+            py2_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-2.' in x]
+            py3_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-3.' in x]
+            if len(py2_dep_vars) == 1 and len(py3_dep_vars) == 1:
+                res = True
+
+        return res
+
+    def test_check_dep_vars(self):
+        """Test check_dep_vars utility method."""
+
+        # one single dep version: OK
+        self.assertTrue(self.check_dep_vars('testdep', {
+            'version: 1.2.3; versionsuffix:': ['foo-1.2.3.eb', 'bar-4.5.6.eb'],
+        }))
+        self.assertTrue(self.check_dep_vars('testdep', {
+            'version: 1.2.3; versionsuffix: -test': ['foo-1.2.3.eb', 'bar-4.5.6.eb'],
+        }))
+
+        # two or more dep versions (no special case: not OK)
+        self.assertFalse(self.check_dep_vars('testdep', {
+            'version: 1.2.3; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 4.5.6; versionsuffix:': ['bar-4.5.6.eb'],
+        }))
+        self.assertFalse(self.check_dep_vars('testdep', {
+            'version: 0.0; versionsuffix:': ['foobar-0.0.eb'],
+            'version: 1.2.3; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 4.5.6; versionsuffix:': ['bar-4.5.6.eb'],
+        }))
+
+        # Java is a special case, with wrapped Java versions
+        self.assertTrue(self.check_dep_vars('Java', {
+            'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+        }))
+        # two Java wrappers is not OK
+        self.assertFalse(self.check_dep_vars('Java', {
+            'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 11.0.2; versionsuffix:': ['bar-4.5.6.eb'],
+            'version: 11; versionsuffix:': ['bar-4.5.6.eb'],
+        }))
+        # OK to have two or more wrappers if versionsuffix is used to indicate exception
+        self.assertTrue(self.check_dep_vars('Java', {
+            'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+            'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+        }))
+        # versionsuffix must be there for all easyconfigs to indicate exception
+        self.assertFalse(self.check_dep_vars('Java', {
+            'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb', 'bar-4.5.6.eb'],
+            'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb', 'bar-4.5.6.eb'],
+        }))
+        self.assertTrue(self.check_dep_vars('Java', {
+            'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+            'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+            'version: 12.1.6; versionsuffix:': ['foobar-0.0-Java-12.eb'],
+            'version: 12; versionsuffix:': ['foobar-0.0-Java-12.eb'],
+        }))
+
+        # strange situation: odd number of Java versions
+        # not OK: two Java wrappers (and no versionsuffix to indicate exception)
+        self.assertFalse(self.check_dep_vars('Java', {
+            'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 11; versionsuffix:': ['bar-4.5.6.eb'],
+        }))
+        # OK because of -Java-11 versionsuffix
+        self.assertTrue(self.check_dep_vars('Java', {
+            'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+        }))
+        # not OK: two Java wrappers (and no versionsuffix to indicate exception)
+        self.assertFalse(self.check_dep_vars('Java', {
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 11.0.2; versionsuffix:': ['bar-4.5.6.eb'],
+            'version: 11; versionsuffix:': ['bar-4.5.6.eb'],
+        }))
+        # OK because of -Java-11 versionsuffix
+        self.assertTrue(self.check_dep_vars('Java', {
+            'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+            'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+        }))
+
     def test_dep_versions_per_toolchain_generation(self):
         """
         Check whether there's only one dependency version per toolchain generation actively used.
@@ -170,109 +368,6 @@ class EasyConfigTest(TestCase):
                     raise EasyBuildError("Failed to find %s in ordered list of easyconfigs", dep_mod_name)
 
             return deps
-
-        def check_dep_vars(dep, dep_vars):
-            """Check whether available variants of a particular dependency are acceptable or not."""
-
-            # 'guilty' until proven 'innocent'
-            res = False
-
-            # filter out binutils with empty versionsuffix which is used to build toolchain compiler
-            if dep == 'binutils' and len(dep_vars) > 1:
-                empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
-                if len(empty_vsuff_vars) == 1:
-                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
-
-            # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
-            elif dep == 'HTSlib' and len(dep_vars) > 1:
-                for key in list(dep_vars):
-                    ecs = dep_vars[key]
-                    # filter out HTSlib variants that are only used as dependency for BCFtools with same version
-                    htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
-                    if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
-                        dep_vars.pop(key)
-
-            # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
-            elif dep in ['FFTW', 'imkl']:
-                serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
-                if len(serial_vsuff_vars) == 1:
-                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
-
-            # for some dependencies, we allow exceptions for software that depends on a particular version,
-            # as long as that's indicated by the versionsuffix
-            elif dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
-                for key in list(dep_vars):
-                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
-                    # use version of Java wrapper rather than full Java version
-                    if dep == 'Java':
-                        dep_ver = '.'.join(dep_ver.split('.')[:2])
-                    # filter out dep version if all easyconfig filenames using it include specific dep version
-                    if all(re.search('-%s-%s' % (dep, dep_ver), v) for v in dep_vars[key]):
-                        dep_vars.pop(key)
-                    # always retain at least one dep variant
-                    if len(dep_vars) == 1:
-                        break
-
-                # filter R dep for a specific version of Python 2.x
-                if dep == 'R' and len(dep_vars) > 1:
-                    for key in list(dep_vars):
-                        if '; versionsuffix: -Python-2' in key:
-                            dep_vars.pop(key)
-                        # always retain at least one variant
-                        if len(dep_vars) == 1:
-                            break
-
-            # filter out Java 'wrapper'
-            # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
-            if dep == 'Java' and len(dep_vars) == 2:
-                key1, key2 = sorted(dep_vars.keys())
-                ver1, ver2 = [k.split(';')[0] for k in [key1, key2]]
-                if ver1.startswith(ver2):
-                    dep_vars.pop(key2)
-                elif ver2.startswith(ver1):
-                    dep_vars.pop(key1)
-
-            # filter out variants that are specific to a particular version of CUDA
-            cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
-            if len(dep_vars) > len(cuda_dep_vars):
-                for key in list(dep_vars):
-                    if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
-                        dep_vars.pop(key)
-
-            # some software packages require an old version of a particular dependency
-            old_dep_versions = {
-                # libxc (CP2K & ABINIT require libxc 2.x or 3.x)
-                'libxc': r'[23]\.',
-                # OPERA requires SAMtools 0.x
-                'SAMtools': r'0\.',
-                # Kraken 1.0 requires Jellyfish 1.x
-                'Jellyfish': r'1\.',
-            }
-            if dep in old_dep_versions and len(dep_vars) > 1:
-                for key in list(dep_vars):
-                    # filter out known old dependency versions
-                    if re.search('^version: %s' % old_dep_versions[dep], key):
-                        dep_vars.pop(key)
-
-            # only single variant is always OK
-            if len(dep_vars) == 1:
-                res = True
-
-            elif len(dep_vars) == 2 and dep in ['Python', 'Tkinter']:
-                # for Python & Tkinter, it's OK to have on 2.x and one 3.x version
-                v2_dep_vars = [x for x in dep_vars.keys() if x.startswith('version: 2.')]
-                v3_dep_vars = [x for x in dep_vars.keys() if x.startswith('version: 3.')]
-                if len(v2_dep_vars) == 1 and len(v3_dep_vars) == 1:
-                    res = True
-
-            # two variants is OK if one is for Python 2.x and the other is for Python 3.x (based on versionsuffix)
-            elif len(dep_vars) == 2:
-                py2_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-2.' in x]
-                py3_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-3.' in x]
-                if len(py2_dep_vars) == 1 and len(py3_dep_vars) == 1:
-                    res = True
-
-            return res
 
         # some software also follows <year>{a,b} versioning scheme,
         # which throws off the pattern matching done below for toolchain versions
@@ -307,7 +402,7 @@ class EasyConfigTest(TestCase):
             for tc_gen in sorted(all_deps.keys()):
                 for dep in sorted(all_deps[tc_gen].keys()):
                     dep_vars = all_deps[tc_gen][dep]
-                    if not check_dep_vars(dep, dep_vars):
+                    if not self.check_dep_vars(dep, dep_vars):
                         multi_dep_vars.append(dep)
                         multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
                         multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
