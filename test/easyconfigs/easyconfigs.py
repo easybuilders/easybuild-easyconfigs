@@ -106,17 +106,17 @@ class EasyConfigTest(TestCase):
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
 
         # parse all easyconfigs if they haven't been already
-        if not self.parsed_easyconfigs:
+        if not EasyConfigTest.parsed_easyconfigs:
             for spec in specs:
-                self.parsed_easyconfigs.extend(process_easyconfig(spec))
+                EasyConfigTest.parsed_easyconfigs.extend(process_easyconfig(spec))
 
         # filter out external modules
-        for ec in self.parsed_easyconfigs:
+        for ec in EasyConfigTest.parsed_easyconfigs:
             for dep in ec['dependencies'][:]:
                 if dep.get('external_module', False):
                     ec['dependencies'].remove(dep)
 
-        self.ordered_specs = resolve_dependencies(self.parsed_easyconfigs, modules_tool(), retain_all_deps=True)
+        EasyConfigTest.ordered_specs = resolve_dependencies(EasyConfigTest.parsed_easyconfigs, modules_tool(), retain_all_deps=True)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -126,10 +126,10 @@ class EasyConfigTest(TestCase):
             (hn, fn) = tempfile.mkstemp(suffix='.dot')
             os.close(hn)
 
-            if self.ordered_specs is None:
+            if EasyConfigTest.ordered_specs is None:
                 self.process_all_easyconfigs()
 
-            dep_graph(fn, self.ordered_specs)
+            dep_graph(fn, EasyConfigTest.ordered_specs)
 
             remove_file(fn)
         else:
@@ -142,10 +142,10 @@ class EasyConfigTest(TestCase):
             print("(skipped conflicts test)")
             return
 
-        if self.ordered_specs is None:
+        if EasyConfigTest.ordered_specs is None:
             self.process_all_easyconfigs()
 
-        self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
+        self.assertFalse(check_conflicts(EasyConfigTest.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
                          "No conflicts detected")
 
     def test_dep_versions_per_toolchain_generation(self):
@@ -154,7 +154,7 @@ class EasyConfigTest(TestCase):
         This is enforced to try and limit the chance of running into conflicts when multiple modules built with
         the same toolchain are loaded together.
         """
-        if self.ordered_specs is None:
+        if EasyConfigTest.ordered_specs is None:
             self.process_all_easyconfigs()
 
         def get_deps_for(ec):
@@ -163,7 +163,7 @@ class EasyConfigTest(TestCase):
             for dep in ec['ec']['dependencies']:
                 dep_mod_name = dep['full_mod_name']
                 deps.append((dep['name'], dep['version'], dep['versionsuffix'], dep_mod_name))
-                res = [x for x in self.ordered_specs if x['full_mod_name'] == dep_mod_name]
+                res = [x for x in EasyConfigTest.ordered_specs if x['full_mod_name'] == dep_mod_name]
                 if len(res) == 1:
                     deps.extend(get_deps_for(res[0]))
                 else:
@@ -285,7 +285,7 @@ class EasyConfigTest(TestCase):
             regex = re.compile('^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
             # collect variants for all dependencies of easyconfigs that use a toolchain that matches
-            for ec in self.ordered_specs:
+            for ec in EasyConfigTest.ordered_specs:
                 ec_file = os.path.basename(ec['spec'])
 
                 # take into account software which also follows a <year>{a,b} versioning scheme
@@ -320,10 +320,10 @@ class EasyConfigTest(TestCase):
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
 
-        if self.ordered_specs is None:
+        if EasyConfigTest.ordered_specs is None:
             self.process_all_easyconfigs()
 
-        for ec in self.parsed_easyconfigs:
+        for ec in EasyConfigTest.parsed_easyconfigs:
             ec_scp = ec['ec']['sanity_check_paths']
             if ec_scp != {}:
                 # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
@@ -498,7 +498,7 @@ class EasyConfigTest(TestCase):
             travis_branch = os.environ.get('TRAVIS_BRANCH', None)
             if travis_branch and travis_branch != 'master':
 
-                if not self.parsed_easyconfigs:
+                if not EasyConfigTest.parsed_easyconfigs:
                     self.process_all_easyconfigs()
 
                 # relocate to top-level directory of repository to run 'git diff' command
@@ -517,7 +517,7 @@ class EasyConfigTest(TestCase):
                 changed_ecs = []
                 for ec_fn in changed_ecs_filenames:
                     match = None
-                    for ec in self.parsed_easyconfigs:
+                    for ec in EasyConfigTest.parsed_easyconfigs:
                         if os.path.basename(ec['spec']) == ec_fn:
                             match = ec['ec']
                             break
@@ -572,7 +572,7 @@ def template_easyconfig_test(self, spec):
         ec = ecs[0]['ec']
 
         # cache the parsed easyconfig, to avoid that it is parsed again
-        self.parsed_easyconfigs.append(ecs[0])
+        EasyConfigTest.parsed_easyconfigs.append(ecs[0])
     else:
         self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
