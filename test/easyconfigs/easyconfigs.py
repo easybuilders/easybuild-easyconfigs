@@ -177,15 +177,20 @@ class EasyConfigTest(TestCase):
             # 'guilty' until proven 'innocent'
             res = False
 
-            # filter out Java 'wrapper'
+            # filter out wrapped Java versions
             # i.e. if the version of one is a prefix of the version of the other one (e.g. 1.8 & 1.8.0_181)
-            if dep == 'Java' and len(dep_vars) == 2:
-                key1, key2 = sorted(dep_vars.keys())
-                ver1, ver2 = [k.split(';')[0] for k in [key1, key2]]
-                if ver1.startswith(ver2):
-                    dep_vars.pop(key2)
-                elif ver2.startswith(ver1):
-                    dep_vars.pop(key1)
+            if dep == 'Java' and len(dep_vars) >= 2:
+                sorted_dep_vars = sorted(dep_vars[:])
+                while len(sorted_dep_vars) >= 2:
+                    key1 = sorted_dep_vars.pop()
+                    key2 = sorted_dep_vars.pop()
+
+                    ver1, ver2 = [k.split(';')[0] for k in [key1, key2]]
+
+                    if ver1.startswith(ver2):
+                        dep_vars.pop(key1)
+                    elif ver2.startswith(ver1):
+                        dep_vars.pop(key2)
 
             # filter out binutils with empty versionsuffix which is used to build toolchain compiler
             if dep == 'binutils' and len(dep_vars) > 1:
