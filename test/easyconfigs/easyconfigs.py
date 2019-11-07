@@ -172,7 +172,7 @@ class EasyConfigTest(TestCase):
 
                 retained_dep_vars.append(dep_var)
 
-            for key in dep_vars.keys()[:]:
+            for key in list(dep_vars.keys()):
                 if key not in retained_dep_vars:
                     del dep_vars[key]
 
