@@ -586,12 +586,24 @@ class EasyConfigTest(TestCase):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
-        if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
+        travis_pr_test = re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)'))
+
+        # when testing a PR in GitHub Actions, $GITHUB_EVENT_NAME will be set to 'pull_request'
+        github_pr_test = os.environ.get('GITHUB_EVENT_NAME') == 'pull_request'
+
+        if travis_pr_test or github_pr_test:
 
             # target branch should be anything other than 'master';
             # usually is 'develop', but could also be a release branch like '3.7.x'
-            travis_branch = os.environ.get('TRAVIS_BRANCH', None)
-            if travis_branch and travis_branch != 'master':
+            if travis_pr_test:
+                target_branch = os.environ.get('TRAVIS_BRANCH', None)
+            else:
+                target_branch = os.environ.get('GITHUB_BASE_REF', None)
+
+            if target_branch is None:
+                self.assertTrue(False, "Failed to determine target branch for current pull request.")
+
+            if target_branch != 'master':
 
                 if not EasyConfigTest.parsed_easyconfigs:
                     self.process_all_easyconfigs()
@@ -601,7 +613,7 @@ class EasyConfigTest(TestCase):
                 cwd = change_dir(top_dir)
 
                 # get list of changed easyconfigs
-                cmd = "git diff --name-only --diff-filter=AM %s...HEAD" % travis_branch
+                cmd = "git diff --name-only --diff-filter=AM %s...HEAD" % target_branch
                 out, ec = run_cmd(cmd, simple=False)
                 changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
                 print("\nList of changed easyconfig files in this PR: %s" % '\n'.join(changed_ecs_filenames))
