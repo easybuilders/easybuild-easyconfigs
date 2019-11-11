@@ -716,7 +716,7 @@ def template_easyconfig_test(self, spec):
 
                 # version should always match, or be a possibility from the version dict
                 if isinstance(orig_dep[1], dict):
-                    self.assertIn(dumped_dep[1], orig_dep[1].values())
+                    self.assertTrue(dumped_dep[1] in orig_dep[1].values())
                 else:
                     self.assertEqual(orig_dep[1], dumped_dep[1])
 
