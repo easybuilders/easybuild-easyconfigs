@@ -1,0 +1,107 @@
+easyblock = 'PythonBundle'
+
+name = 'TensorFlow'
+version = '2.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    ('Bazel', '0.26.1'),
+    ('protobuf', '3.7.1'),
+    # git 2.x required, see also https://github.com/tensorflow/tensorflow/issues/29053
+    ('git', '2.23.0'),
+]
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', '-Python-3.7.4'),
+    ('h5py', '2.9.0'),
+    ('cuDNN', '7.6.4.38'),
+    ('NCCL', '2.4.8'),
+]
+
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+use_pip = True
+
+exts_list = [
+    ('protobuf-python', '3.9.2', {
+        'modulename': 'google.protobuf',
+        'source_tmpl': 'protobuf-python-%(version)s.tar.gz',
+        'source_urls': ['https://github.com/google/protobuf/releases/download/v%(version)s/'],
+        'start_dir': 'python',
+        'use_pip': False,
+        'checksums': ['a7564e52d2842033303d2a81b4b8099145b5aabe0a5531a8b057801377bc2a13'],
+    }),
+    ('absl-py', '0.8.0', {
+        'modulename': 'absl',
+        'checksums': ['0ce45920056fbbb66f52fcee7408ba6311da19f55589b2b3aab9f8af92a0e1f2'],
+    }),
+    ('astor', '0.8.0', {
+        'checksums': ['37a6eed8b371f1228db08234ed7f6cfdc7817a3ed3824797e20cbb11dc2a7862'],
+    }),
+    ('gast', '0.3.2', {
+        'checksums': ['5c7617f1f6c8b8b426819642b16b9016727ddaecd16af9a07753e537eba8a3a5'],
+    }),
+    ('grpcio', '1.24.0', {
+        'modulename': 'grpc',
+        'checksums': ['bb345f7e98b38a2c1ef33ff1145687234f78dfeedf308b41b3e41f4b42eba099'],
+    }),
+    ('tensorboard', version, {
+        'source_tmpl': 'tensorboard-%(version)s-py3-none-any.whl',
+        'unpack_sources': False,
+        'checksums': ['d3559616ccad8d72e7a259bff51be61a9bf1e66e2cebdc782c33e4b588b5e943'],
+    }),
+    ('termcolor', '1.1.0', {
+        'checksums': ['1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b'],
+    }),
+    ('Keras-Applications', '1.0.8', {
+        'modulename': 'keras_applications',
+        'source_tmpl': 'Keras_Applications-%(version)s.tar.gz',
+        'checksums': ['5579f9a12bcde9748f4a12233925a59b93b73ae6947409ff34aa2ba258189fe5'],
+    }),
+    ('Keras-Preprocessing', '1.1.0', {
+        'modulename': 'keras_preprocessing',
+        'source_tmpl': 'Keras_Preprocessing-%(version)s.tar.gz',
+        'checksums': ['5a8debe01d840de93d49e05ccf1c9b81ae30e210d34dacbcc47aeb3049b528e5'],
+    }),
+    ('tensorflow-estimator', version, {
+        'source_tmpl': 'tensorflow_estimator-%(version)s-py2.py3-none-any.whl',
+        'unpack_sources': False,
+        'checksums': ['54fdfe8712d54627579bc6d524ced43bbd57042cb2ce411bdf2ae46b29a772da'],
+    }),
+    ('wrapt', '1.11.2', {
+        'checksums': ['565a021fd19419476b9362b05eeaa094178de64f8361e44468f9e9d7843901e1'],
+    }),
+    (name, version, {
+        'patches': [
+            'TensorFlow-1.14.0_swig-env.patch',
+            'TensorFlow-1.13.1_lrt-flag.patch',
+            'TensorFlow-1.14.0_remove_usrbin_from_linker_bin_path_flag.patch',
+            'TensorFlow-1.14.0_fix-mpi-undeclared-inclusion.patch',
+            'TensorFlow-1.14.0_fix-cuda-build.patch',
+            'TensorFlow-2.0.0_fix-build-tf-lite-avx512.patch',
+        ],
+        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'checksums': [
+            '49b5f0495cd681cbcb5296a4476853d4aea19a43bdd9f179c928a977308a0617',  # v2.0.0.tar.gz
+            'b83cce6b91c7d19b8b320158ffc50fb4b2de454f5ac191c58d704234a1bf9005',  # TensorFlow-1.14.0_swig-env.patch
+            'b388be35f2581786bcd533b1bfa375165d7f35e38a3aab74570019312816bf1b',  # TensorFlow-1.13.1_lrt-flag.patch
+            # TensorFlow-1.14.0_remove_usrbin_from_linker_bin_path_flag.patch
+            'bfa2701495dddfbbf4fbec808ea3c982b50043a16d28a8d1283f44df0b8aae7d',
+            # TensorFlow-1.14.0_fix-mpi-undeclared-inclusion.patch
+            '09e5fdce89588074b3c2abb6a4705b1f141b43395c960660320cf1cb79cd1ef4',
+            # TensorFlow-1.14.0_fix-cuda-build.patch
+            'dee727125de1dceade52c842d5d0a05ee638b477297bac39cb44b36fa1ce0b0d',
+            # TensorFlow-2.0.0_fix-build-tf-lite-avx512.patch
+            'ee65c8e34b62644f426054b67386734b8bf51c43ac0da4d51331b4ba191fad17',
+        ],
+        'test_script': 'TensorFlow-2.x_mnist-test.py',
+    }),
+]
+
+moduleclass = 'lib'
