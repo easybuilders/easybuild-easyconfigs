@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+name = 'FreeFem++'
+version = '4.4.2'
+versionsuffix = '-downloaded-deps'
+
+homepage = 'http://www.freefem.org/'
+description = """ FreeFem++ is a partial differential equation solver. It has its own language.
+freefem scripts can solve multiphysics non linear systems in 2D and 3D. """
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/FreeFem/FreeFem-sources/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['27f1ae979605bb3a85c231ca1b9621279a67fc1534318365ebb60638abc3409b']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('CMake', '3.12.2'),
+]
+
+dependencies = [
+    ('HDF5', '1.10.2'),
+    ('GSL', '2.5'),
+    ('freeglut', '3.0.0'),
+    ('SuiteSparse', '5.1.2', '-METIS-5.1.0'),
+    ('Perl', '5.28.0'),
+]
+
+preconfigopts = "autoreconf -i &&"
+
+configopts = '--enable-download --enable-optim '
+configopts += '--with-hdf5="$EBROOTHDF5"/bin/h5pcc '
+configopts += '--with-gsl-prefix="$EBROOTGSL" '
+configopts += '--with-lapack="$LIBLAPACK" '
+
+# dependencies are heavily patched by FreeFem++, we therefore let it download and install them itself
+prebuildopts = "sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' ./3rdparty/getall && "
+prebuildopts += './3rdparty/getall -a && '
+prebuildopts += 'cd 3rdparty/ff-petsc && '
+prebuildopts += 'make petsc-slepc && '
+prebuildopts += 'cd - && '
+prebuildopts += './reconfigure && '
+
+parallel = 2
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bamg', 'cvmsh2', 'ffglut', 'ffmedit']] +
+             ['bin/ff-%s' % x for x in ['c++', 'get-dep', 'mpirun', 'pkg-download']] +
+             ['bin/FreeFem++%s' % x for x in ['', '-mpi', '-nw']],
+    'dirs': []
+    # 'dirs': ['share/freefem++/%(version)s/'] +
+    #        ['lib/ff++/%%(version)s/%s' % x for x in ['bin', 'etc', 'idp', 'include', 'lib']]
+}
+
+moduleclass = 'math'
