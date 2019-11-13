@@ -1,0 +1,45 @@
+easyblock = 'Waf'
+
+name = 'Gaia'
+version = '2.4.5'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/MTG/gaia'
+description = """Gaia is a C++ library with python bindings which implements similarity measures and classiﬁcations
+ on the results of audio analysis, and generates classiﬁcation models that Essentia can use to compute high-level
+ description of music."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://github.com/MTG/gaia/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['d295f2c882a90c88643edbd28caf516890579200d3fb059b105b60598b79279a']
+
+builddependencies = [
+    ('binutils', '2.31.1'),
+    ('pkg-config', '0.29.2'),
+    ('SWIG', '3.0.12', versionsuffix),
+]
+
+dependencies = [
+    # requires Qt 4.x, see https://github.com/MTG/gaia/issues/31
+    ('Qt', '4.8.7'),
+    ('libyaml', '0.2.2'),
+    ('Python', '2.7.15'),
+]
+
+preconfigopts = 'export CXXFLAGS="$CXXFLAGS -fpermissive" && '
+configopts = "--mode=release --with-python --with-tests --qtdir=$EBROOTQT"
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/gaiafreeze', 'bin/gaiafusion', 'bin/gaiainfo', 'bin/gaiamerge',
+              'lib/libgaia%(version_major)s.a', 'lib/pkgconfig/gaia%(version_major)s.pc'],
+    'dirs': ['include/gaia%(version_major)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import gaia%(version_major)s'"]
+
+moduleclass = 'lib'

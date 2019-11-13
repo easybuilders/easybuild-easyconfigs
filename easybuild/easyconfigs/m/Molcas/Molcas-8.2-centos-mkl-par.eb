@@ -1,0 +1,48 @@
+easyblock = 'PackedBinary'
+
+name = 'Molcas'
+version = '8.2'
+versionsuffix = '-centos-mkl-par'
+
+homepage = 'http://www.molcas.org'
+description = """Molcas is an ab initio quantum chemistry software package
+developed by scientists to be used by scientists. The basic philosophy is is to
+be able to treat general electronic structures for molecules consisting of
+atoms from most of the periodic table. As such, the primary focus of the
+package is on multiconfigurational methods with applications typically
+connected to the treatment of highly degenerate states."""
+
+toolchain = SYSTEM
+
+# download requires registration, see http://www.molcas.org/download.html
+sources = ['%(namelower)s%(version_major)s%(version_minor)s%(versionsuffix)s.tar.gz']
+checksums = ['54497a1b3e482802c05d0320c2e4fd57fb0f0c6f47b950517ae46e24d4da3b87']
+
+# The Molcas installation procedure creates a binary in a separate directory,
+# but that binary depends on being able to find the originally extracted files.
+# Because we don't want to rely on root privileges, and we do want to use
+# EasyBuild paths, this means we need to extract Molcas to a subdirectory of
+# the proposed installation directory.
+unpack_options = "--transform='s,^%(namelower)s-%(version)s%(versionsuffix)s,%(namelower)s_files,'"
+
+buildininstalldir = True
+skipsteps = ['install']
+
+local_molcas_subdir = 'molcas%(version_major)s%(version_minor)s%(versionsuffix)s'
+
+# For the same reason as the tarball needs an extraction prefix, we need to
+# finish up the installation by taking the Molcas driver and moving it to an
+# EasyBuild style binary directory.
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+    'cp %%(installdir)s/%s/sbin/molcas.driver %%(installdir)s/bin/molcas' % local_molcas_subdir,
+]
+
+modextravars = {'MOLCAS': '%%(installdir)s/%s' % local_molcas_subdir}
+
+sanity_check_paths = {
+    'files': ['bin/molcas'],
+    'dirs': [local_molcas_subdir],
+}
+
+moduleclass = 'chem'
