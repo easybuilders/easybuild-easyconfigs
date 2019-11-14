@@ -555,6 +555,9 @@ class EasyConfigTest(TestCase):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
+            'libxml2',  # https://xmlsoft.org works, but invalid certificate
+            'p4vasp',  # https://www.p4vasp.at doesn't work
+            'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
         ]
 
@@ -564,6 +567,7 @@ class EasyConfigTest(TestCase):
         for ec in changed_ecs:
             ec_fn = os.path.basename(ec.path)
 
+            # skip whitelisted easyconfigs
             if any(ec_fn.startswith(x) for x in whitelist):
                 continue
 
