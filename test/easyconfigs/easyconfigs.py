@@ -239,12 +239,13 @@ class EasyConfigTest(TestCase):
 
         # some software packages require an old version of a particular dependency
         old_dep_versions = {
-            # libxc (CP2K & ABINIT require libxc 2.x or 3.x)
-            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'PySCF-', 'WIEN2k-']),
+            # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, PySCF, WIEN2k
+            # (Qiskit depends on PySCF)
+            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'PySCF-', 'Qiskit-', 'WIEN2k-']),
             # OPERA requires SAMtools 0.x
             'SAMtools': (r'0\.', ['ChimPipe-0.9.5', 'Cufflinks-2.2.1', 'OPERA-2.0.6']),
-            # Kraken 1.x requires Jellyfish 1.x
-            'Jellyfish': (r'1\.', ['Kraken-1.']),
+            # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
+            'Jellyfish': (r'1\.', ['Kraken-1.', 'Roary-3.12.0', 'metaWRAP-1.2']),
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': ('1.64.0;', ['Boost.Python-1.64.0-', 'EMAN2-2.3-']),
             'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
