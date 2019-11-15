@@ -183,7 +183,7 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
-        elif dep == 'HTSlib' and len(dep_vars) > 1:
+        if dep == 'HTSlib' and len(dep_vars) > 1:
             for key in list(dep_vars):
                 ecs = dep_vars[key]
                 # filter out HTSlib variants that are only used as dependency for BCFtools with same version
@@ -192,7 +192,7 @@ class EasyConfigTest(TestCase):
                     dep_vars.pop(key)
 
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
-        elif dep == 'Boost' and len(dep_vars) > 1:
+        if dep == 'Boost' and len(dep_vars) > 1:
             for key in list(dep_vars):
                 ecs = dep_vars[key]
                 # filter out Boost variants that are only used as dependency for Boost.Python with same version
@@ -201,14 +201,14 @@ class EasyConfigTest(TestCase):
                     dep_vars.pop(key)
 
         # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
-        elif dep in ['FFTW', 'imkl']:
+        if dep in ['FFTW', 'imkl']:
             serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
             if len(serial_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
-        elif dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
+        if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
             for key in list(dep_vars):
                 dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                 # use version of Java wrapper rather than full Java version
@@ -375,6 +375,12 @@ class EasyConfigTest(TestCase):
             'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2019a.eb'],
             'version: 1.66.0; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('Boost', {
+            'version: 1.63.0; versionsuffix: -Python-2.7.14': ['EMAN2-2.21a-foss-2018a-Python-2.7.14-Boost-1.63.0.eb'],
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2018a.eb'],
+            'version: 1.66.0; versionsuffix:': ['BLAST+-2.7.1-foss-2018a.eb'],
         }))
 
     def test_dep_versions_per_toolchain_generation(self):
