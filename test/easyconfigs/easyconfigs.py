@@ -191,6 +191,15 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
+        elif dep == 'Boost' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out Boost variants that are only used as dependency for Boost.Python with same version
+                boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
+                    dep_vars.pop(key)
+
         # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
         elif dep in ['FFTW', 'imkl']:
             serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
@@ -344,6 +353,28 @@ class EasyConfigTest(TestCase):
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+        }))
+
+        # two different versions of Boost is not OK
+        self.assertFalse(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
+        }))
+
+        # a different Boost version that is only used as dependency for a matching Boost.Python is fine
+        self.assertTrue(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2019a.eb'],
+            'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
+        }))
+        self.assertTrue(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2018b.eb'],
+            'version: 1.66.0; versionsuffix:': ['Boost.Python-1.66.0-gompi-2019a.eb'],
+            'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
+        }))
+        self.assertFalse(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2019a.eb'],
+            'version: 1.66.0; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
         }))
 
     def test_dep_versions_per_toolchain_generation(self):
