@@ -1,6 +1,7 @@
 For INC??????
 
 `EBFILENAME`
+* [ ] Assigned to reviewer
 * [ ] EL7-cascadelake
 * [ ] EL7-haswell
 * [ ] EL7-sandybridge
