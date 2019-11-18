@@ -1,6 +1,3 @@
-This patch makes Reapr compatible with EasyBuild.
-
-Henrik R. Nagel, 20191115
 diff -ruN Reapr_1.0.18.orig/Makefile Reapr_1.0.18/Makefile
 --- Reapr_1.0.18.orig/Makefile	1970-01-01 01:00:00.000000000 +0100
 +++ Reapr_1.0.18/Makefile	2019-11-13 12:17:03.000000000 +0100
@@ -15,23 +12,159 @@ diff -ruN Reapr_1.0.18.orig/Makefile Reapr_1.0.18/Makefile
 +	cd bin ; ln -s reapr.pl reapr
 diff -ruN Reapr_1.0.18.orig/src/Makefile Reapr_1.0.18/src/Makefile
 --- Reapr_1.0.18.orig/src/Makefile	2014-03-13 11:15:43.000000000 +0100
-+++ Reapr_1.0.18/src/Makefile	2019-11-13 12:38:07.000000000 +0100
-@@ -1,6 +1,5 @@
++++ Reapr_1.0.18/src/Makefile	2019-11-18 14:34:49.000000000 +0100
+@@ -1,6 +1,4 @@
 -BAMTOOLS_ROOT = $(CURDIR)/bamtools
- CC = g++
+-CC = g++
 -CFLAGS = -Wl,-rpath,$(BAMTOOLS_ROOT)/lib  -Wall -O3  -I $(BAMTOOLS_ROOT)/include -L $(BAMTOOLS_ROOT)/lib
-+CFLAGS = -Wl,-rpath,$(EBROOTBAMTOOLS)/lib  -Wall -O3  -I $(EBROOTBAMTOOLS)/include/bamtools -L $(EBROOTBAMTOOLS)/lib
++INC = -I$(EBROOTBAMTOOLS)/include/bamtools
  TABIX = tabix/tabix.o  -L./tabix -ltabix -lz
  STATS_OBJS =  trianglePlot.o coveragePlot.o fasta.o histogram.o utils.o
  SCORE_OBJS = errorWindow.o utils.o histogram.o
-@@ -18,6 +17,7 @@
+@@ -18,108 +16,109 @@
  EXECUTABLES = task_score task_stats task_break bam2fragCov bam2insert bam2fcdEstimate make_plots fa2gaps fa2gc scaff2contig n50 task_gapresize task_fcdrate bam2perfect
  
  all: $(EXECUTABLES)
 +	cp $(EXECUTABLES) *.pl ../bin
  
  errorWindow.o: errorWindow.cpp
- 	$(CC) $(CFLAGS) -c errorWindow.cpp
+-	$(CC) $(CFLAGS) -c errorWindow.cpp
++	$(CXX) $(CFLAGS) $(INC) -c errorWindow.cpp
+ 
+ trianglePlot.o: trianglePlot.cpp utils.o
+-	$(CC) $(CFLAGS) -c trianglePlot.cpp
++	$(CXX) $(CFLAGS) $(INC) -c trianglePlot.cpp
+ 
+ coveragePlot.o: coveragePlot.cpp
+-	$(CC) $(CFLAGS) -c coveragePlot.cpp
++	$(CXX) $(CFLAGS) $(INC) -c coveragePlot.cpp
+ 
+ fasta.o: fasta.cpp
+-	$(CC) $(CFLAGS) -c fasta.cpp
++	$(CXX) $(CFLAGS) $(INC) -c fasta.cpp
+ 
+ histogram.o: histogram.cpp
+-	$(CC) $(CFLAGS) -c histogram.cpp
++	$(CXX) $(CFLAGS) $(INC) -c histogram.cpp
+ 
+ utils.o: utils.cpp
+-	$(CC) $(CFLAGS) -lbamtools -c utils.cpp
++	$(CXX) $(CFLAGS) $(INC) -lbamtools -c utils.cpp
+ 
+ task_stats: task_stats.o $(STATS_OBJS)
+-	$(CC) $(CFLAGS) task_stats.o $(STATS_OBJS) -lbamtools -o task_stats $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_stats.o $(STATS_OBJS) -lbamtools -o task_stats $(TABIX)
+ 
+ task_stats.o: task_stats.cpp $(STATS_OBJS)
+-	$(CC) $(CFLAGS) -c task_stats.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_stats.cpp
+ 
+ task_score: task_score.o $(SCORE_OBJS)
+-	$(CC) $(CFLAGS) task_score.o $(SCORE_OBJS) -lbamtools -o task_score $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_score.o $(SCORE_OBJS) -lbamtools -o task_score $(TABIX)
+ 
+ task_score.o: task_score.cpp $(SCORE_OBJS)
+-	$(CC) $(CFLAGS) -c task_score.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_score.cpp
+ 
+ task_break: task_break.o $(BREAK_OBJS)
+-	$(CC) $(CFLAGS) task_break.o $(BREAK_OBJS) -lbamtools -o task_break $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_break.o $(BREAK_OBJS) -lbamtools -o task_break $(TABIX)
+ 
+ task_break.o: task_break.cpp $(BREAK_OBJS)
+-	$(CC) $(CFLAGS) -c task_break.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_break.cpp
+ 
+ bam2fragCov: bam2fragCov.o $(BAM2COV_OBJS)
+-	$(CC) $(CFLAGS) bam2fragCov.o $(BAM2COV_OBJS) -lbamtools -o bam2fragCov $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) bam2fragCov.o $(BAM2COV_OBJS) -lbamtools -o bam2fragCov $(TABIX)
+ 
+ bam2fragCov.o: bam2fragCov.cpp $(BAM2COV_OBJS)
+-	$(CC) $(CFLAGS) -c bam2fragCov.cpp
++	$(CXX) $(CFLAGS) $(INC) -c bam2fragCov.cpp
+ 
+ bam2insert: bam2insert.o $(BAM2INSERT_OBJS)
+-	$(CC) $(CFLAGS) bam2insert.o $(BAM2INSERT_OBJS) -lbamtools -o bam2insert $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) bam2insert.o $(BAM2INSERT_OBJS) -lbamtools -o bam2insert $(TABIX)
+ 
+ bam2insert.o: bam2insert.cpp $(BAM2INSERT_OBJS)
+-	$(CC) $(CFLAGS) -c bam2insert.cpp
++	$(CXX) $(CFLAGS) $(INC) -c bam2insert.cpp
+ 
+ bam2perfect: bam2perfect.o $(BAM2PERFECT_OBJS)
+-	$(CC) $(CFLAGS) bam2perfect.o $(BAM2PERFECT_OBJS) -lbamtools -o bam2perfect $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) bam2perfect.o $(BAM2PERFECT_OBJS) -lbamtools -o bam2perfect $(TABIX)
+ 
+ bam2perfect.o: bam2perfect.cpp $(BAM2PERFECT_OBJS)
+-	$(CC) $(CFLAGS) -c bam2perfect.cpp
++	$(CXX) $(CFLAGS) $(INC) -c bam2perfect.cpp
+ 
+ bam2fcdEstimate: bam2fcdEstimate.o $(BAM2FCDESTIMATE_OBJS)
+-	$(CC) $(CFLAGS) bam2fcdEstimate.o $(BAM2FCDESTIMATE_OBJS) -lbamtools -o bam2fcdEstimate $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) bam2fcdEstimate.o $(BAM2FCDESTIMATE_OBJS) -lbamtools -o bam2fcdEstimate $(TABIX)
+ 
+ bam2fcdEstimate.o: bam2fcdEstimate.cpp $(BAM2FCDESTIMATE_OBJS)
+-	$(CC) $(CFLAGS) -c bam2fcdEstimate.cpp
++	$(CXX) $(CFLAGS) $(INC) -c bam2fcdEstimate.cpp
+ 
+ make_plots: make_plots.o
+-	$(CC) $(CFLAGS) make_plots.o -o make_plots
++	$(CXX) $(CFLAGS) $(INC) make_plots.o -o make_plots
+ 
+ make_plots.o: make_plots.cpp
+-	$(CC) $(CFLAGS) -c make_plots.cpp
++	$(CXX) $(CFLAGS) $(INC) -c make_plots.cpp
+ 
+ fa2gc: fa2gc.o $(FA2GC_OBJS)
+-	$(CC) $(CFLAGS) fa2gc.o $(FA2GC_OBJS) -o fa2gc
++	$(CXX) $(CFLAGS) $(INC) fa2gc.o $(FA2GC_OBJS) -o fa2gc
+ 
+ fa2gc.o: fa2gc.cpp $(FA2GC_OBJS)
+-	$(CC) $(CFLAGS) -c fa2gc.cpp
++	$(CXX) $(CFLAGS) $(INC) -c fa2gc.cpp
+ 
+ fa2gaps: fa2gaps.o $(FA2GAPS_OBJS)
+-	$(CC) $(CFLAGS) fa2gaps.o $(FA2GAPS_OBJS) -o fa2gaps
++	$(CXX) $(CFLAGS) $(INC) fa2gaps.o $(FA2GAPS_OBJS) -o fa2gaps
+ 
+ fa2gaps.o: fa2gaps.cpp $(FA2GAPS_OBJS)
+-	$(CC) $(CFLAGS) -c fa2gaps.cpp
++	$(CXX) $(CFLAGS) $(INC) -c fa2gaps.cpp
+ 
+ n50: n50.o $(N50_OBJS)
+-	$(CC) $(CFLAGS) n50.o $(N50_OBJS) -o n50
++	$(CXX) $(CFLAGS) $(INC) n50.o $(N50_OBJS) -o n50
+ 
+ n50.o: n50.cpp $(N50_OBJS)
+-	$(CC) $(CFLAGS) -c n50.cpp
++	$(CXX) $(CFLAGS) $(INC) -c n50.cpp
+ 
+ scaff2contig: scaff2contig.o $(SCAFF2CONTIG_OBJS)
+-	$(CC) $(CFLAGS) scaff2contig.o $(SCAFF2CONTIG_OBJS) -o scaff2contig
++	$(CXX) $(CFLAGS) $(INC) scaff2contig.o $(SCAFF2CONTIG_OBJS) -o scaff2contig
+ 
+ scaff2contig.o: scaff2contig.cpp $(SCAFF2CONTIG_OBJS)
+-	$(CC) $(CFLAGS) -c scaff2contig.cpp
++	$(CXX) $(CFLAGS) $(INC) -c scaff2contig.cpp
+ 
+ task_gapresize: task_gapresize.o $(GAPRESIZE_OBJS)
+-	$(CC) $(CFLAGS) task_gapresize.o $(GAPRESIZE_OBJS) -lbamtools -o task_gapresize $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_gapresize.o $(GAPRESIZE_OBJS) -lbamtools -o task_gapresize $(TABIX)
+ 
+ task_gapresize.o: task_gapresize.cpp $(GAPRESIZE_OBJS)
+-	$(CC) $(CFLAGS) -c task_gapresize.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_gapresize.cpp
+ 
+ task_fcdrate: task_fcdrate.o $(FCDRATE_OBJS)
+-	$(CC) $(CFLAGS) task_fcdrate.o $(FCDRATE_OBJS) -lbamtools -o task_fcdrate $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_fcdrate.o $(FCDRATE_OBJS) -lbamtools -o task_fcdrate $(TABIX)
+ 
+ task_fcdrate.o: task_fcdrate.cpp $(FCDRATE_OBJS)
+-	$(CC) $(CFLAGS) -c task_fcdrate.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_fcdrate.cpp
+ 
+ clean:
+ 	rm -rf *.o $(EXECUTABLES)
 diff -ruN Reapr_1.0.18.orig/src/task_perfectfrombam.pl Reapr_1.0.18/src/task_perfectfrombam.pl
 --- Reapr_1.0.18.orig/src/task_perfectfrombam.pl	2013-04-05 14:22:12.000000000 +0200
 +++ Reapr_1.0.18/src/task_perfectfrombam.pl	2019-11-13 12:02:08.000000000 +0100
@@ -217,3 +350,40 @@ diff -ruN Reapr_1.0.18.orig/src/task_smaltmap.pl Reapr_1.0.18/src/task_smaltmap.
  
  # clean up temp files
  push @commands, "rm $tmp_prefix.*";
+diff -ruN Reapr_1.0.18.orig/third_party/ekg-tabixpp-fbdde77/Makefile Reapr_1.0.18/third_party/ekg-tabixpp-fbdde77/Makefile
+--- Reapr_1.0.18.orig/third_party/ekg-tabixpp-fbdde77/Makefile	2013-02-25 17:47:26.000000000 +0100
++++ Reapr_1.0.18/third_party/ekg-tabixpp-fbdde77/Makefile	2019-11-18 14:23:07.000000000 +0100
+@@ -1,6 +1,3 @@
+-CC=			gcc
+-CPP= 		g++
+-CFLAGS=		-g -Wall -O2 -fPIC #-m64 #-arch ppc
+ DFLAGS=		-D_FILE_OFFSET_BITS=64 -D_USE_KNETFILE
+ LOBJS=		bgzf.o kstring.o knetfile.o index.o bedidx.o
+ AOBJS=		main.o
+@@ -40,13 +37,13 @@
+ 		ranlib $@
+ 
+ tabix:lib $(AOBJS)
+-		$(CC) $(CFLAGS) -o $@ $(AOBJS) -lm $(LIBPATH) -L. -ltabix -lz
++		$(CXX) $(CFLAGS) -o $@ $(AOBJS) -lm $(LIBPATH) -L. -ltabix -lz
+ 
+ tabix.o: tabix.hpp tabix.cpp
+-		$(CPP) $(CFLAGS) -c tabix.cpp
++		$(CXX) $(CFLAGS) -c tabix.cpp
+ 
+ tabix++:lib tabix.o main.cpp
+-		$(CPP) $(CFLAGS) -o $@ main.cpp tabix.o bgzf.o -lm $(LIBPATH) -L. -ltabix -lz
++		$(CXX) $(CFLAGS) -o $@ main.cpp tabix.o bgzf.o -lm $(LIBPATH) -L. -ltabix -lz
+ 
+ bgzip:bgzip.o bgzf.o knetfile.o
+ 		$(CC) $(CFLAGS) -o $@ bgzip.o bgzf.o knetfile.o -lz
+diff -ruN Reapr_1.0.18.orig/third_party/snpomatic/Makefile Reapr_1.0.18/third_party/snpomatic/Makefile
+--- Reapr_1.0.18.orig/third_party/snpomatic/Makefile	2012-03-21 14:00:17.000000000 +0100
++++ Reapr_1.0.18/third_party/snpomatic/Makefile	2019-11-18 13:48:16.000000000 +0100
+@@ -1,6 +1,3 @@
+-# Use g++
+-CXX=g++
+-CXXFLAGS=-g -O3
+ LIBS=-lm
+ 
+ # Use Intel compiler (faster!)
