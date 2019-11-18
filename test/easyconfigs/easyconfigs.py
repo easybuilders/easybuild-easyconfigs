@@ -183,7 +183,7 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
-        elif dep == 'HTSlib' and len(dep_vars) > 1:
+        if dep == 'HTSlib' and len(dep_vars) > 1:
             for key in list(dep_vars):
                 ecs = dep_vars[key]
                 # filter out HTSlib variants that are only used as dependency for BCFtools with same version
@@ -191,15 +191,24 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
+        if dep == 'Boost' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out Boost variants that are only used as dependency for Boost.Python with same version
+                boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
+                    dep_vars.pop(key)
+
         # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
-        elif dep in ['FFTW', 'imkl']:
+        if dep in ['FFTW', 'imkl']:
             serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
             if len(serial_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
-        elif dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
+        if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R'] and len(dep_vars) > 1:
             for key in list(dep_vars):
                 dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                 # use version of Java wrapper rather than full Java version
@@ -344,6 +353,34 @@ class EasyConfigTest(TestCase):
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
+        }))
+
+        # two different versions of Boost is not OK
+        self.assertFalse(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
+        }))
+
+        # a different Boost version that is only used as dependency for a matching Boost.Python is fine
+        self.assertTrue(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2019a.eb'],
+            'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
+        }))
+        self.assertTrue(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2018b.eb'],
+            'version: 1.66.0; versionsuffix:': ['Boost.Python-1.66.0-gompi-2019a.eb'],
+            'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
+        }))
+        self.assertFalse(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2019a.eb'],
+            'version: 1.66.0; versionsuffix:': ['foo-1.2.3.eb'],
+            'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('Boost', {
+            'version: 1.63.0; versionsuffix: -Python-2.7.14': ['EMAN2-2.21a-foss-2018a-Python-2.7.14-Boost-1.63.0.eb'],
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2018a.eb'],
+            'version: 1.66.0; versionsuffix:': ['BLAST+-2.7.1-foss-2018a.eb'],
         }))
 
     def test_dep_versions_per_toolchain_generation(self):
@@ -531,8 +568,8 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
-        # ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['CrayToolchain', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain']
+        # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
+        whitelist = ['CrayToolchain', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain', 'BuildEnv']
         # GCC is just a bundle of GCCcore+binutils
         bundles_whitelist = ['GCC']
 
@@ -555,6 +592,10 @@ class EasyConfigTest(TestCase):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
+            'Kaiju',  # invalid certificate at https://kaiju.binf.ku.dk
+            'libxml2',  # https://xmlsoft.org works, but invalid certificate
+            'p4vasp',  # https://www.p4vasp.at doesn't work
+            'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
         ]
 
@@ -564,6 +605,7 @@ class EasyConfigTest(TestCase):
         for ec in changed_ecs:
             ec_fn = os.path.basename(ec.path)
 
+            # skip whitelisted easyconfigs
             if any(ec_fn.startswith(x) for x in whitelist):
                 continue
 
@@ -586,12 +628,24 @@ class EasyConfigTest(TestCase):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
 
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
-        if re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)')):
+        travis_pr_test = re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)'))
+
+        # when testing a PR in GitHub Actions, $GITHUB_EVENT_NAME will be set to 'pull_request'
+        github_pr_test = os.environ.get('GITHUB_EVENT_NAME') == 'pull_request'
+
+        if travis_pr_test or github_pr_test:
 
             # target branch should be anything other than 'master';
             # usually is 'develop', but could also be a release branch like '3.7.x'
-            travis_branch = os.environ.get('TRAVIS_BRANCH', None)
-            if travis_branch and travis_branch != 'master':
+            if travis_pr_test:
+                target_branch = os.environ.get('TRAVIS_BRANCH', None)
+            else:
+                target_branch = os.environ.get('GITHUB_BASE_REF', None)
+
+            if target_branch is None:
+                self.assertTrue(False, "Failed to determine target branch for current pull request.")
+
+            if target_branch != 'master':
 
                 if not EasyConfigTest.parsed_easyconfigs:
                     self.process_all_easyconfigs()
@@ -601,7 +655,7 @@ class EasyConfigTest(TestCase):
                 cwd = change_dir(top_dir)
 
                 # get list of changed easyconfigs
-                cmd = "git diff --name-only --diff-filter=AM %s...HEAD" % travis_branch
+                cmd = "git diff --name-only --diff-filter=AM %s...HEAD" % target_branch
                 out, ec = run_cmd(cmd, simple=False)
                 changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
                 print("\nList of changed easyconfig files in this PR: %s" % '\n'.join(changed_ecs_filenames))
