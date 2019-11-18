@@ -20,7 +20,37 @@ dependencies = [
     ('hwloc', '1.11.12')
 ]
 
-# to enable SLURM integration (site-specific)
-# configopts = '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'
+configopts = '--enable-shared '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
+
+modextravars = {
+    "OPAL_PREFIX": '%(installdir)s',
+    "PMIX_INSTALL_PREFIX": '%(installdir)s',
+    "OMPI_HOME": '%(installdir)s',
+    "MPI_HOME": '%(installdir)s',
+    "OSHMEM_HOME": '%(installdir)s',
+    "SHMEM_HOME": '%(installdir)s',
+}
+
+import os as local_os  # NOQA
+# Are we on an InfiniBand machine?
+local_ib = int(local_os.environ.get('BB_IB_DETECTED', 0))
+if local_ib:
+    # Configure Slurm options
+    configopts += '--with-pmi '  # srun support for mpi
+    configopts += '--with-slurm '  # we want slurm suppport
+
+    # Configure InfiniBand options
+    configopts += "--with-verbs "
+    osdependencies = [
+        ('libibverbs-dev', 'libibverbs-devel'),
+        ('libpciaccess-devel', 'libpciaccess-dev'),
+        ('libudev-devel', 'systemd-devel', 'libsystemd-dev'),
+        ('rdma-core-devel', 'librdmacm-devel'),
+    ]
+    configopts += '--without-knem --without-mxm --without-hcoll --without-ucx '
+else:
+    print("Please make sure you're building on a VM that doesn't have InfiniBand or gpfs etc.")
 
 moduleclass = 'mpi'
