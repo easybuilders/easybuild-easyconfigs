@@ -64,6 +64,12 @@ from easybuild.tools.options import set_tmpdir
 # other than optimizing for time, this also helps to get around problems like http://bugs.python.org/issue10949
 single_tests_ok = True
 
+# Exclude these tool chains from tests
+EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for x in ['foss', 'intel', 'fosscuda', 'intelcuda', 'iomkl']
+                                           for y in ['2014', '2015', '2016', '2017', '2018']]
+EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore'] for y in ['4.', '5.', '6.', '7.']])
+EXCLUDE_TOOLCHAINS.extend(['ictce', 'gimkl', 'giolf', 'golf', 'goolf'])
+
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
@@ -278,9 +284,9 @@ class EasyConfigTest(TestCase):
         # which throws off the pattern matching done below for toolchain versions
         false_positives_regex = re.compile('^MATLAB-Engine-20[0-9][0-9][ab]')
 
-        # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
-        # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
-        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', 'GCCcore-[7-9]\.[0-9]']:
+        # restrict to checking dependencies of easyconfigs of 2019b
+        # and GCCcore subtoolchain for common toolchains, starting with GCCcore 8.x
+        for pattern in ['2019b', 'GCCcore-[8-9]\.[0-9]']:
             all_deps = {}
             regex = re.compile('^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
@@ -350,6 +356,22 @@ class EasyConfigTest(TestCase):
                     # only exception: TEMPLATE.eb
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
+
+    def check_ascii_text(self, changed_ecs):
+        """Make sure changed easyconfigs have only ASCII text."""
+        ascii_text_issues = []
+        top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
+        for ec in changed_ecs:
+            # eb_path = os.path.join(top_dir, ec)
+            # raw_eb = read_file(eb_path, log_error=False)
+            # if raw_eb:
+            #     if not all(ord(char) < 128 for char in raw_eb):
+            #         ascii_text_issues.append(ec)
+            # else:
+            #     print('Failed to open %s.' % eb_path)
+            if not all(ord(char) < 128 for char in ec.rawtxt):
+                ascii_text_issues.append(ec)
+        self.assertTrue(len(ascii_text_issues) == 0, "No ascii text issues:\n%s" % '\n'.join(ascii_text_issues))
 
     def check_sha256_checksums(self, changed_ecs):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
@@ -539,6 +561,7 @@ class EasyConfigTest(TestCase):
                 self.check_python_packages(changed_ecs)
                 self.check_sanity_check_paths(changed_ecs)
                 self.check_https(changed_ecs)
+                self.check_ascii_text(changed_ecs)
 
     def test_zzz_cleanup(self):
         """Dummy test to clean up global temporary directory."""
@@ -755,7 +778,13 @@ def suite():
             continue
 
         for spec in specs:
-            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+            # bypass easyconfigs from lots of toolchains which we do not use in this repository
+            exlcude_easyconfig_due_to_toolchain = False
+            for toolchain in EXCLUDE_TOOLCHAINS:
+                if toolchain in spec:
+                    exlcude_easyconfig_due_to_toolchain = True
+                    break
+            if spec.endswith('.eb') and spec != 'TEMPLATE.eb' and not exlcude_easyconfig_due_to_toolchain:
                 cnt += 1
                 code = "def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec)
                 exec(code, globals())
