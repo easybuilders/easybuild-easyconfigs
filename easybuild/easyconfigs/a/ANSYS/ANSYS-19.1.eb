@@ -21,10 +21,17 @@ sources = ['ANSYS-%(version)s.tar']
 postinstallcmds = [
 	# fix missing execute permission for Others for at least one folder
 	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
+        # fix missing execute permission to avoid setrpaths.sh from complaining and then aborting with
+        #  message "ldd: warning: you do not have execution permission" for hundreds of shared libraries 
+        "for i in $(find %(installdir)s \( -name \*.so\* -o -name \*.dll \) -type f -not -perm /a=x); do \
+           [ `file -b --mime-type $i` == 'application/x-sharedlib' ] && echo chmod 755 $i && chmod 755 $i; done",
 	# find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
-	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-	# call setrpaths.sh on all subdirectories called bin, lib, lib64, lnamd64, linx64, Linux64 
-	"for d in $(find %(installdir)s -name 'bin' -o -name 'lib' -o -name 'lib64' -o -name 'lnamd64' -o -name 'linx64' -o -name 'Linux64'); do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
+	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+           sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+	# call setrpaths.sh on specified directories
+	"for d in $(find %(installdir)s -name 'bin' -o -name 'lib' -o -name 'lib64' -o -name 'lnamd64' \
+            -o -name 'linx64' -o -name 'Linux64' -o -name 'bin-amd64_linux' -o -name 'bin-amd64_linux_optimized'); \
+            do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
         # force setrpaths.sh to run on all instances of lmutil using the --any_interpreter switch
         "find %(installdir)s -name 'lmutil' -exec /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
         # patch installed /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/19.1/v191/commonfiles/MainWin/linx64/mw/setup-mwuser
