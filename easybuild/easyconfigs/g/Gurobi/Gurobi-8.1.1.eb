@@ -20,26 +20,27 @@ sources = ['%(namelower)s%(version)s_linux64.tar.gz']
 checksums = ['c030414603d88ad122246fe0e42a314fab428222d98e26768480f1f870b53484']
 
 # license_file = HOME + '/licenses/%(name)s/%(namelower)s.lic'
+license_file = '/cvmfs/soft.computecanada.ca/config/licenses/gurobi/computecanada.lic'
 
 postinstallcmds = [
-    # modify interpretor /lib64/ld-linux-x86-64.so.2 to /cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/lib/ld-linux-x86-64.so.2
+    # interpretor /lib64/ld-linux-x86-64.so.2 to /cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/lib/ld-linux-x86-64.so.2
     "for d in $(find %(installdir)s -name 'bin' -o -name 'lib');\
       do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
     # avoid ./gurobi_cl: error while loading shared libraries: libgurobi81.so: cannot open shared object file: No such file or directory
-    "patchelf --set-rpath '$ORIGIN/../lib':$(patchelf --print-rpath %(installdir)s/bin/gurobi_cl) %(installdir)s/bin/gurobi_cl"    
+    "patchelf --set-rpath '$ORIGIN/../lib':$(patchelf --print-rpath %(installdir)s/bin/gurobi_cl) %(installdir)s/bin/gurobi_cl",
 ]
-
-moduleclass = 'math'
 
 modluafooter = """
 require("SitePackage")
-local found = find_and_define_license_file("GRB_LICENSE_FILE","gurobi")
-if (mode() == "load" and not found) then
-        local warning_message = [[
-	We did not find a suitable license file for Gurobi. If you have access to one, you can create the file $HOME/.licenses/gurobi.lic with the license information. You may also define the GRB_LICENSE_FILE environment variable yourself. This is only a warning. For more details, see https://docs.computecanada.ca/wiki/Gurobi
-	
-	Nous n'avons pas trouve de fichier de license utilisable pour Gurobi. Si vous avez acces a une license de Gurobi, vous pouvez creer le fichier $HOME/.licenses/gurobi.lic avec l'information de la license. Vous pouvez aussi definir la variable d'environnement GRB_LICENSE_FILE. Ceci n'est pas une erreur. Pour plus de details, voir la page https://docs.computecanada.ca/wiki/Gurobi
-	]]
-	LmodWarning(warning_message)
+local found, path = find_and_define_license_file("GRB_LICENSE_FILE","gurobi")
+if (not found) then
+        local error_message = [[
+        We did not find a suitable license for Gurobi. If you have access to one, you can create the file $HOME/.licenses/gurobi.lic  with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it.
+
+        Nous n'avons pas trouve de licence utilisable pour Gurobi. Si vous avez acces a une licence de Gurobi, vous pouvez creer le fichier $HOME/.licenses/gurobi.lic avec l'information de la licence. Si vous pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+        ]]
+        LmodError(error_message)
 end
 """
+
+moduleclass = 'math'
