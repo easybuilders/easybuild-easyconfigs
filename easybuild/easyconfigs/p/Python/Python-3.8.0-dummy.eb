@@ -1,0 +1,60 @@
+name = 'Python'
+version = '3.8.0'
+
+homepage = 'http://python.org/'
+description = """Python is a programming language that lets you work more quickly and integrate your systems
+ more effectively."""
+
+toolchain = SYSTEM
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.python.org/ftp/%(namelower)s/%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['f1069ad3cae8e7ec467aa98a6565a62a48ef196cb8f1455a245a08db5e1792df']
+
+configopts = '--with-tcltk-includes=-I$NIXUSER_PROFILE/include --with-tcltk-libs="-L$NIXUSER_PROFILE/lib -ltcl8.6 -ltk8.6"'
+prebuildopts = 'sed -i -e "s;/usr;$NIXUSER_PROFILE;g" setup.py && '
+installopts = ' && /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib --any_interpreter'
+allow_prepend_abs_path = True
+modextrapaths = {'PYTHONPATH': ['/cvmfs/soft.computecanada.ca/easybuild/python/site-packages']}
+
+moduleclass = 'lang'
+
+# python needs bzip2 to build the bz2 package
+dependencies = [
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.11'),
+    ('libreadline', '7.0'),
+    ('ncurses', '6.0'),
+    ('SQLite', '3.20.1'),
+    ('GMP', '6.1.2'),  # required for pycrypto
+]
+
+# order is important!
+# package versions updated November 12 2019
+exts_list = [
+    ('setuptools', '41.6.0', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'source_urls': ['https://pypi.python.org/packages/source/s/setuptools/'],
+        'checksums': ['6afa61b391dcd16cb8890ec9f66cc4015a8a31a6e1c2b4e0c464514be1a3d722'],
+    }),
+    ('pip', '19.3.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pip/'],
+        'checksums': ['21207d76c1031e517668898a6b46a9fb1501c7a4710ef5dfd6a40ad9e6757ea7'],
+    }),
+    ('virtualenv', '16.7.7', {
+        'source_urls': ['https://pypi.python.org/packages/source/v/virtualenv'],
+        'checksums': ['d257bb3773e48cac60e475a19b608996c73f4d333b3ba2e4e57d5ac6134e0136'],
+    }),
+    ('wheel', '0.33.6', {
+        'source_urls': ['https://pypi.python.org/packages/source/w/wheel'],
+        'checksums': ['10c9da68765315ed98850f8e048347c3eb06dd81822dc2ab1d4fde9dc9702646'],
+    }),
+    ('gnureadline', '8.0.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/g/gnureadline'],
+        'checksums': ['61eef72ed02dad415ede49752e972a1d2bd8c35c1e4464565d7effd806c99476'],
+    }),
+]
+
+moduleclass = 'lang'
+

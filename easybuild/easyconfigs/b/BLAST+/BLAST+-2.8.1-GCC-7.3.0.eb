@@ -1,0 +1,46 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste (UGent)
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+easyblock = 'ConfigureMake'
+
+name = 'BLAST+'
+version = '2.8.1'
+
+homepage = 'http://blast.ncbi.nlm.nih.gov/'
+description = """Basic Local Alignment Search Tool, or BLAST, is an algorithm
+ for comparing primary biological sequence information, such as the amino-acid
+ sequences of different proteins or the nucleotides of DNA sequences."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+source_urls = ['http://ftp.ncbi.nlm.nih.gov/blast/executables/%(namelower)s/%(version)s/']
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+checksums = ['9398ccc096ea5f4c18911e5334bf6916']
+
+builddependencies = [
+    ('Boost', '1.68.0'),
+    ('Python', '2.7.14'),
+]
+
+dependencies = [
+    ('GMP', '6.1.2'),
+    ('LMDB', '0.9.24'),
+]
+
+configopts = "--with-boost=$EBROOTBOOST --with-64 --with-bin-release --without-debug --with-mt --with-gmp=$EBROOTGMP --with-lmdb=$EBROOTLMDB --with-png=$NIXUSER_PROFILE --with-z=$NIXUSER_PROFILE --with-bz2=$NIXUSER_PROFILE --with-pcre=$NIXUSER_PROFILE --with-jpeg=$EBROOTLIBJPEGMINTURBO "
+
+
+sanity_check_paths = {
+    'files': ['bin/blastn', 'bin/blastp', 'bin/blastx'],
+    'dirs': ['bin', 'lib', 'include/ncbi-tools++'],
+}  # ('libjpeg-turbo', '1.5.3'),
+
+moduleclass = 'bio'

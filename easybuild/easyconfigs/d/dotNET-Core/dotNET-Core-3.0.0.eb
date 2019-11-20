@@ -1,0 +1,44 @@
+easyblock = "Tarball"
+
+name = "dotNET-Core"
+version = "3.0.0"
+
+homepage = "https://www.microsoft.com/net/"
+description = """.NET is a free, cross-platform, open source developer platform for building many different types of applications.
+
+With .NET, you can use multiple languages, editors, and libraries to build for web, mobile, desktop, gaming, and IoT.
+
+Contains the SDK and the Runtime.
+"""
+
+toolchain = SYSTEM
+
+# The SDK also contains the runtime
+source_urls = [
+    "https://download.visualstudio.microsoft.com/download/pr/886b4a4c-30af-454b-8bec-81c72b7b4e1f/d1a0c8de9abb36d8535363ede4a15de6/"
+]
+sources = ["dotnet-sdk-3.0.100-linux-x64.tar.gz"]
+
+sanity_check_paths = {
+    "files": ["dotnet", "LICENSE.txt"],
+    "dirs": [
+        "shared/Microsoft.NETCore.App/%(version)s",
+        "shared/Microsoft.AspNetCore.App/%(version)s",
+        "sdk",
+    ],
+}
+
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_origin"
+]
+
+modextrapaths = {"PATH": [""]}
+
+"""
+We are not sending usage stats to Microsoft...hopefully.
+
+The .NET Core tools collect usage data in order to help us improve your experience. The data is anonymous. It is collected by Microsoft and shared with the community. You can opt-out of telemetry by setting the DOTNET_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using your favorite shell.
+
+Read more about .NET Core CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry
+"""
+modextravars = {"DOTNET_ROOT": "%(installdir)s", "DOTNET_CLI_TELEMETRY_OPTOUT": 1}

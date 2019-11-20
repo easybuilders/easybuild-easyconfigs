@@ -1,0 +1,43 @@
+##
+# @Author: Ali Kerrache, University of Manitoba, WestGrid/Compute Canada.
+# @Date: Nov 7, 2019.
+##
+
+easyblock = 'CMakeMake'
+
+name = 'flexbar'
+version = '3.5.0'
+
+homepage = 'https://github.com/seqan/flexbar'
+description = """Flexbar – flexible barcode and adapter removal:
+The program Flexbar preprocesses high-throughput sequencing data efficiently. It demultiplexes barcoded runs and removes adapter sequences. Several adapter removal presets for Illumina libraries are included. Flexbar computes exact overlap alignments using SIMD and multicore parallelism. Moreover, trimming and filtering features are provided, e.g. trimming of homopolymers at read ends. Flexbar increases read mapping rates and improves genome as well as transcriptome assemblies. Unique molecular identifiers can be extracted in a flexible way. The software supports data in fasta and fastq format from multiple sequencing platforms.
+"""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+sources = [
+    'v%(version)s.tar.gz',
+    'seqan-library-2.4.0.tar.xz',
+]
+
+source_urls = [
+    'https://github.com/seqan/flexbar/archive/',
+    'https://github.com/seqan/seqan/releases/download/seqan-v2.4.0/',
+]
+
+dependencies = [
+    ('tbb', '2018_U5'),
+]
+
+skipsteps = ['install']
+
+preconfigopts = 'cd %(builddir)s/flexbar-%(version)s && cp -r ../seqan-library-2.4.0/include . && '
+
+postinstallcmds =  ['mkdir -p %(installdir)s/bin && cd %(builddir)s/%(namelower)s-%(version)s/ && cp flexbar %(installdir)s/bin/ && cp -r test LICENSE.md %(installdir)s/']
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['bin', 'test'],
+}
+
+moduleclass = 'bio'

@@ -12,7 +12,10 @@ toolchain = {'name': 'gmkl', 'version': '2018.3'}
 source_urls = ['https://github.com/JuliaLang/julia/releases/download/v%(version)s']
 sources = [SOURCELOWER_TAR_GZ]
 
-patches = ['julia-1.2.0-makefile-llvm-libs.patch']
+patches = [
+    'julia-1.2.0-makefile-llvm-libs.patch',
+    'julia-1.2.0-distro-in-load-path.patch'
+]
 
 skipsteps = ['configure']
 
@@ -42,24 +45,16 @@ installopts += " && for i in %(installdir)s/lib/julia/*; do if [[ -L $i && $(rea
 
 # install arpack, overriding downloaded library...
 postinstallcmds = [
-   "echo 'using Pkg; Pkg.activate(\"globalenv\",shared=true); Pkg.add(\"Arpack\")' > temp.jl",
-   "JULIA_DEPOT_PATH=%(installdir)s %(installdir)s/bin/julia temp.jl &> /dev/null",
-   "sed -i 's/^    install/    #install/' %(installdir)s/packages/Arpack/*/deps/build.jl",
-   "module load arpack-ng/3.5.0 && ln -sf $EBROOTARPACKMINNG/lib/libarpack.so.2.0.0 %(installdir)s/packages/Arpack/*/deps/usr/lib",
-   "echo 'using Pkg; Pkg.activate(\"globalenv\",shared=true); Pkg.build(\"Arpack\")' > temp.jl",
-   "JULIA_DEPOT_PATH=%(installdir)s %(installdir)s/bin/julia temp.jl &> /dev/null",
-   "rm temp.jl",
+   "JULIA_DEPOT_PATH=%(installdir)s/share/julia %(installdir)s/bin/julia -e 'using Pkg; Pkg.activate(\"distro\",shared=true); Pkg.add(\"Arpack\")' &> /dev/null",
+   "sed -i 's/^    install/    #install/' %(installdir)s/share/julia/packages/Arpack/*/deps/build.jl",
+   "module load arpack-ng/3.5.0 && ln -sf $EBROOTARPACKMINNG/lib/libarpack.so.2.0.0 %(installdir)s/share/julia/packages/Arpack/*/deps/usr/lib",
+   "JULIA_DEPOT_PATH=%(installdir)s/share/julia %(installdir)s/bin/julia -e 'using Pkg; Pkg.activate(\"distro\",shared=true); Pkg.build(\"Arpack\"); using Arpack'",
+   "rm -rf %(installdir)s/share/julia/registries",
 ]
 
 sanity_check_paths = {
     'files': ["bin/julia"],
     'dirs': ["lib"]
 }
-
-modextravars = {
-    "JULIA_LOAD_PATH": "@:@v#.#:@stdlib:%(installdir)s/environments/globalenv",
-}
-
-modluafooter = """setenv("JULIA_DEPOT_PATH", pathJoin(os.getenv('HOME'), ".julia") .. ":%(installdir)s")"""
 
 moduleclass = 'lang'
