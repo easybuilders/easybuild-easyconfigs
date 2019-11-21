@@ -239,18 +239,25 @@ class EasyConfigTest(TestCase):
 
         # some software packages require an old version of a particular dependency
         old_dep_versions = {
-            # libxc (CP2K & ABINIT require libxc 2.x or 3.x)
-            'libxc': r'[23]\.',
+            # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, PySCF, WIEN2k
+            # (Qiskit depends on PySCF)
+            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'PySCF-', 'Qiskit-', 'WIEN2k-']),
             # OPERA requires SAMtools 0.x
-            'SAMtools': r'0\.',
-            # Kraken 1.0 requires Jellyfish 1.x
-            'Jellyfish': r'1\.',
+            'SAMtools': (r'0\.', ['ChimPipe-0.9.5', 'Cufflinks-2.2.1', 'OPERA-2.0.6']),
+            # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
+            'Jellyfish': (r'1\.', ['Kraken-1.', 'Roary-3.12.0', 'metaWRAP-1.2']),
+            # EMAN2 2.3 requires Boost(.Python) 1.64.0
+            'Boost': ('1.64.0;', ['Boost.Python-1.64.0-', 'EMAN2-2.3-']),
+            'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
+                version_pattern, parents = old_dep_versions[dep]
                 # filter out known old dependency versions
-                if re.search('^version: %s' % old_dep_versions[dep], key):
-                    dep_vars.pop(key)
+                if re.search('^version: %s' % version_pattern, key):
+                    # only filter if the easyconfig using this dep variants is known
+                    if all(any(x.startswith(p) for p in parents) for x in dep_vars[key]):
+                        dep_vars.pop(key)
 
         # only single variant is always OK
         if len(dep_vars) == 1:
@@ -381,6 +388,17 @@ class EasyConfigTest(TestCase):
             'version: 1.63.0; versionsuffix: -Python-2.7.14': ['EMAN2-2.21a-foss-2018a-Python-2.7.14-Boost-1.63.0.eb'],
             'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2018a.eb'],
             'version: 1.66.0; versionsuffix:': ['BLAST+-2.7.1-foss-2018a.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('Boost', {
+            'version: 1.64.0; versionsuffix:': [
+                'Boost.Python-1.64.0-gompi-2019a.eb',
+                'EMAN2-2.3-foss-2019a-Python-2.7.15.eb',
+            ],
+            'version: 1.70.0; versionsuffix:': [
+                'BLAST+-2.9.0-gompi-2019a.eb',
+                'Boost.Python-1.70.0-gompi-2019a.eb',
+            ],
         }))
 
     def test_dep_versions_per_toolchain_generation(self):
@@ -592,6 +610,7 @@ class EasyConfigTest(TestCase):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
+            'Kaiju',  # invalid certificate at https://kaiju.binf.ku.dk
             'libxml2',  # https://xmlsoft.org works, but invalid certificate
             'p4vasp',  # https://www.p4vasp.at doesn't work
             'ITSTool',  # https://itstool.org/ doesn't work
@@ -862,8 +881,14 @@ def template_easyconfig_test(self, spec):
             # number of dependencies should remain the same
             self.assertEqual(len(orig_val), len(dumped_val))
             for orig_dep, dumped_dep in zip(orig_val, dumped_val):
-                # name/version should always match
-                self.assertEqual(orig_dep[:2], dumped_dep[:2])
+                # name should always match
+                self.assertEqual(orig_dep[0], dumped_dep[0])
+
+                # version should always match, or be a possibility from the version dict
+                if isinstance(orig_dep[1], dict):
+                    self.assertTrue(dumped_dep[1] in orig_dep[1].values())
+                else:
+                    self.assertEqual(orig_dep[1], dumped_dep[1])
 
                 # 3rd value is versionsuffix;
                 if len(dumped_dep) >= 3:
