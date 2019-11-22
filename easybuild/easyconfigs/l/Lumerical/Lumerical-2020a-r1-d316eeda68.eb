@@ -24,4 +24,20 @@ postinstallcmds = [
    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_origin ',
 ]
 
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__LUMERICL_LICENSE_FILE", "lumerical")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for Lumerical. If you have access to one, you can create the file $HOME/.licenses/lumerical.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an Lumerical license, please see https://docs.computecanada.ca/wiki/Lumerical
+
+Nous n'avons pas trouve de licence utilisable pour Lumerical. Si vous avez acces a une licence de Lumerical, vous pouvez creer le fichier $HOME/.licenses/lumerical.lic avec l'information de la licence. Si vous pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour Lumerical, veuillez consulter la page https://docs.computecanada.ca/wiki/Lumerical/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+"""
+
 moduleclass = 'cae'
