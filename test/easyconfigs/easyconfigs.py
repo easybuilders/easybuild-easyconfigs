@@ -734,8 +734,14 @@ def template_easyconfig_test(self, spec):
             # number of dependencies should remain the same
             self.assertEqual(len(orig_val), len(dumped_val))
             for orig_dep, dumped_dep in zip(orig_val, dumped_val):
-                # name/version should always match
-                self.assertEqual(orig_dep[:2], dumped_dep[:2])
+                # name should always match
+                self.assertEqual(orig_dep[0], dumped_dep[0])
+
+                # version should always match, or be a possibility from the version dict
+                if isinstance(orig_dep[1], dict):
+                    self.assertTrue(dumped_dep[1] in orig_dep[1].values())
+                else:
+                    self.assertEqual(orig_dep[1], dumped_dep[1])
 
                 # 3rd value is versionsuffix;
                 if len(dumped_dep) >= 3:
