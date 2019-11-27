@@ -1,0 +1,77 @@
+# This build still relies on the following libraries (or part of them) shipped with FSL:
+#    GDCHART, libprob, libcprob, cprob, newran, newmat
+# Attempts to use externally built libraries failed. Worth trying again in the future...
+#
+# Some tools like icmp are missing since they are built with the fslpython_install.sh script
+# which locally installs Miniconda and creates a virtual environment. This is too messy and
+# an alternative solution is necessary to install them.
+# https://github.com/easybuilders/easybuild-easyconfigs/issues/7899
+# https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation#imcp.2Fimglob.2Fimmv_errors_after_installation
+
+name = 'FSL'
+version = '6.0.2'
+versionsuffix = '-Python-2.7.15'
+
+homepage = 'http://www.fmrib.ox.ac.uk/fsl/'
+description = """FSL is a comprehensive library of analysis tools for FMRI, MRI and DTI brain imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ["http://www.fmrib.ox.ac.uk/fsldownloads/"]
+sources = ['%(namelower)s-%(version)s-sources.tar.gz']
+patches = [
+    'FSL-6.0.2_Makefile_fixes.patch',
+    'FSL-6.0.2_Build_extras.patch',
+    'FSL-6.0.1_Melodic-use-ifstream-good.patch',
+    'FSL-6.0.1_Fix_fsl_exec_script.patch',
+]
+checksums = [
+    'c118b351c6cedb441af7e1b9d194cf344505ff53b417063f697b86305a908afd',  # fsl-6.0.2-sources.tar.gz
+    '3a14d9c3ea75d90fa3e4beb5da3cd11a60c6859441acaece02b32ccab6aa278f',  # FSL-6.0.2_Makefile_fixes.patch
+    '2b7ade2146fadbba6c983370bb030ac4e2b11d8bf5259eacc8f3054d3d11003f',  # FSL-6.0.2_Build_extras.patch
+    'c07644fbd89cf9c70db5a1a8f4f2918ab5daeb60cdf0ce4ee2b91f8ae48173fa',  # FSL-6.0.1_Melodic-use-ifstream-good.patch
+    '4479aa501a7e6e9f1a0063e4ddb680836147ba08673d3fccb9e1db3c4d910672',  # FSL-6.0.1_Fix_fsl_exec_script.patch
+]
+
+builddependencies = [
+    ('Boost', '1.67.0'),
+]
+
+dependencies = [
+    ('libgd', '2.2.5'),
+    ('libxml2', '2.9.8'),
+    ('libxml++', '2.40.1'),
+    ('SQLite', '3.24.0'),
+    ('libpng', '1.6.34'),
+    ('Tk', '8.6.8'),
+    ('NLopt', '2.4.2'),
+    ('freeglut', '3.0.0'),
+    ('expat', '2.2.5'),
+    ('zlib', '1.2.11'),
+    ('VTK', '8.1.1', '-Python-%(pyver)s'),
+    ('GSL', '2.5'),
+    ('Qwt', '6.1.4'),
+]
+
+# FSLDIR needs to be defined when running postinstall to get the correct shebang
+# https://www.jiscmail.ac.uk/cgi-bin/webadmin?A2=ind1910&L=FSL&P=R86209
+postinstallcmds = [(
+    'FSLDIR=%(installdir)s PATH=%(installdir)s/fsl/fslpython/bin:$PATH'
+    '%(installdir)s/fsl/etc/fslconf/post_install.sh -f %(installdir)s/fsl; '
+)]
+
+modextravars = {
+    'FSLOUTPUTTYPE': 'NIFTI_GZ',
+    'FSLMULTIFILEQUIT': 'TRUE',
+    'FSLTCLSH': 'tclsh',
+    'FSLWISH': 'wish8.6'
+}
+
+# Adding the bin from the virtualenv was the only way to get things working...
+modextrapaths = {
+    'PATH': 'fsl/fslpython/bin',
+    'PYTHONPATH': 'fsl/fslpython/envs/fslpython/lib/python3.7/site-packages/',
+}
+
+moduleclass = 'bio'
