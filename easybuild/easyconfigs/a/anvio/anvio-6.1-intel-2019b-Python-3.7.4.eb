@@ -10,22 +10,25 @@ versionsuffix = '-Python-%(pyver)s'
 homepage = 'https://merenlab.org/software/anvio/'
 description = """An analysis and visualization platform for 'omics data."""
 
-toolchain = {'name': 'intel', 'version': '2019a'}
+toolchain = {'name': 'intel', 'version': '2019b'}
 
 github_account = 'merenlab'
 
 exts_default_options = {'source_urls': [PYPI_SOURCE]}
 
 dependencies = [
-    ('Python', '3.7.2'),
-    ('SciPy-bundle', '2019.03'),
-    ('Pysam', '0.15.2'),
-    ('scikit-learn', '0.20.3'),
-    ('matplotlib', '3.0.3', versionsuffix),
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('Pysam', '0.15.3'),
+    ('scikit-learn', '0.21.3', versionsuffix),
+    ('matplotlib', '3.1.1', versionsuffix),
     ('prodigal', '2.6.3'),
-    ('Biopython', '1.73'),
-    ('h5py', '2.9.0'),
+    ('Biopython', '1.75', versionsuffix),
+    ('h5py', '2.9.0', versionsuffix),
 ]
+
+use_pip = True
+sanity_pip_check = True
 
 exts_list = [
     ('bottle', '0.12.17', {
@@ -133,21 +136,16 @@ exts_list = [
     ('more-itertools', '7.2.0', {
         'checksums': ['409cd48d4db7052af495b09dec721011634af3753ae1ef92d2b32f73a745f832'],
     }),
-
     (name, version, {
-        'patches': ['%(name)s-%(version)s_requirements.patch'],
         'source_tmpl': '%(name)s-%(version)s.tar.gz',
         'source_urls': ['https://github.com/%(github_account)s/%(name)s/releases/download/v%(version)s/'],
         'checksums': [
             'a766514d47ba012b45fef51c0ad3a810f930687c6f59531f0d2e0bd96cb05db9',  # anvio-6.1.tar.gz
-            'a34c4cde4d4027567fcb84e33299a17b11ab9c62106998a6f7364480ead3e6ec',  # anvio-6.1_requirements.patch
         ],
+        # replace fixed (==) versions in requirements.txt with minimal versions (>=)
+        'preinstallopts': "sed -i'' 's/==/>=/g' requirements.txt && ",
     }),
 ]
-
-use_pip = True
-
-sanity_pip_check = True
 
 local_binaries_list = [
     'anvi-pan-genome',
@@ -157,11 +155,12 @@ local_binaries_list = [
 ]
 
 sanity_check_paths = {
-    'files': ['bin/{}'.format(x) for x in local_binaries_list],
+    'files': ['bin/%s' % x for x in local_binaries_list],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
 sanity_check_commands = [
+    'anvi-self-test --suite mini',
     'anvi-pan-genome --help',
     'anvi-script-reformat-fasta --help',
     'anvi-profile --version',
