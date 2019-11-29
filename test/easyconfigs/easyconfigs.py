@@ -910,7 +910,7 @@ def template_easyconfig_test(self, spec):
         # take into account that for some string-valued easyconfig parameters (configopts & co),
         # the easyblock may have injected additional values, which affects the dumped easyconfig file
         elif isinstance(orig_val, string_type):
-            self.assertTrue(dumped_val.startswith(orig_val))
+            self.assertTrue(dumped_val.startswith(orig_val), "'%s' starts with '%s'" % (dumped_val, orig_val))
         else:
             self.assertEqual(orig_val, dumped_val)
 
