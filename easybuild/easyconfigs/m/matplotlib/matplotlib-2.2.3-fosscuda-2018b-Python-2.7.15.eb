@@ -1,18 +1,15 @@
-easyblock = 'Bundle'
+easyblock = 'PythonBundle'
 
 name = 'matplotlib'
 version = '2.2.3'
 versionsuffix = '-Python-%(pyver)s'
 
-homepage = 'http://matplotlib.org'
+homepage = 'https://matplotlib.org'
 description = """matplotlib is a python 2D plotting library which produces publication quality figures in a variety of
  hardcopy formats and interactive environments across platforms. matplotlib can be used in python scripts, the python
  and ipython shell, web application servers, and six graphical user interface toolkits."""
 
 toolchain = {'name': 'fosscuda', 'version': '2018b'}
-
-# this is a bundle of Python packages
-exts_defaultclass = 'PythonPackage'
 
 builddependencies = [
     ('pkg-config', '0.29.2'),
@@ -24,6 +21,8 @@ dependencies = [
     ('freetype', '2.9.1'),
     ('Tkinter', '%(pyver)s', versionsuffix),
 ]
+
+use_pip = True
 
 exts_list = [
     ('Cycler', '0.10.0', {
@@ -45,7 +44,14 @@ sanity_check_paths = {
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
-sanity_check_commands = ["""python -c 'import matplotlib; matplotlib.use("TkAgg"); import matplotlib.pyplot' """]
+postinstallcmds = [
+    'touch %(installdir)s/lib/python%(pyshortver)s/site-packages/mpl_toolkits/__init__.py',
+]
+
+sanity_check_commands = [
+    """python -c 'import matplotlib; matplotlib.use("TkAgg"); import matplotlib.pyplot' """,
+    "python -c 'from mpl_toolkits.mplot3d import Axes3D'",
+]
 
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
