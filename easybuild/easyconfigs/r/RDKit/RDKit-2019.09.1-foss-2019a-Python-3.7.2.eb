@@ -1,0 +1,94 @@
+easyblock = 'CMakeMake'
+
+name = 'RDKit'
+version = '2019.09.1'
+versionsuffix = '-Python-%(pyver)s'
+
+local_ringdecomposerlib_ver = '1.1.3_rdkit'
+
+homepage = 'https://www.rdkit.org'
+description = "RDKit is a collection of cheminformatics and machine-learning software written in C++ and Python."
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = [
+    'https://github.com/rdkit/rdkit/archive/',
+    'https://github.com/rareylab/RingDecomposerLib/archive/',
+    # see https://www.inchi-trust.org/downloads/
+    'http://www.inchi-trust.org/download/105/',
+    'http://sourceforge.net/projects/avalontoolkit/files/AvalonToolkit_1.2/',
+]
+sources = [
+    'Release_%s.tar.gz' % version.replace('.', '_'),
+    'v%s.tar.gz' % local_ringdecomposerlib_ver,
+    # add datestamp to unversioned INCHI-1-SRC.zip based on date of most recent modified file in zipball
+    {'download_filename': 'INCHI-1-SRC.zip', 'filename': 'INCHI-1-SRC-20170203.zip'},
+    {'filename': 'AvalonToolkit_1.2.0.source.tar', 'extract_cmd': "cp %s ."},
+]
+patches = ['RDKit-%(version)s_fix-UDFLIB_DIR.patch']
+checksums = [
+    'bfcb3c094cd0e7ec6fbebacde71f29f61df71601eb3d577eb295fd45771513eb',  # Release_2019_09_1.tar.gz
+    '944b5816712a48bbf88aa25d4300ce11871ddf6e971218eac08f90ed2192f715',  # v1.1.3_rdkit.tar.gz
+    '4ac311ca3a16fa75d695ec4fc711e74045c6d6c882dea0dd1055961fba643720',  # INCHI-1-SRC-20170203.zip
+    'fbae636280e4d8a682a454086a7622736dd52818d460a2d4514de8ae8cf7d666',  # AvalonToolkit_1.2.0.source.tar
+    '00a7841c651665423281fa50bdec87ed7d7d5a2170e1f9f1460474ab55542b41',  # RDKit-2019.09.1_fix-UDFLIB_DIR.patch
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('Eigen', '3.3.7', '', True),
+    ('pkg-config', '0.29.2'),
+    ('Catch2', '2.11.0', '', True),
+]
+dependencies = [
+    ('Python', '3.7.2'),
+    ('matplotlib', '3.0.3', versionsuffix),
+    ('Pillow', '6.0.0'),
+    ('Boost.Python', '1.70.0'),
+    ('cairo', '1.16.0'),
+    ('maeparser', '1.2.2'),
+    ('CoordgenLibs', '1.3.2'),
+    ('RapidJSON', '1.1.0'),
+]
+
+separate_build_dir = True
+
+# symlink to rapidjson provided as dependency in External/ subdir of unpacked sources, to prevent it's auto-downloaded
+preconfigopts = "cd %(builddir)s/rdkit-*/External/ && ln -s $EBROOTRAPIDJSON rapidjson-1.1.0 && cd - && "
+
+# move unpacked INCHI-1-SRC to External/INCHI-API/src, where it is expected
+preconfigopts += "cd %(builddir)s/rdkit-*/External/INCHI-API/ && mv %(builddir)s/INCHI-1-SRC src && cd - && "
+
+# copy AvalonToolkit source tarball
+#preconfigopts += "cp %(builddir)s/AvalonToolkit_1.2.0.source.tar %(builddir)s/rdkit-*/External/AvalonTools/ && "
+
+# RDKit requires access to the sources of RingDecomposerLib
+# we download it ourselves and point to the unpacked source tarball to control the used version
+configopts = "-DURFLIB_DIR=%%(builddir)s/RingDecomposerLib-%s/src/RingDecomposerLib " % local_ringdecomposerlib_ver
+
+configopts += "-DPy_ENABLE_SHARED=1 -DRDK_INSTALL_INTREE=ON -DRDK_INSTALL_STATIC_LIBS=OFF -DRDK_INSTALL_INTREE=OFF "
+configopts += "-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib "
+configopts += "-DPYTHON_NUMPY_INCLUDE_PATH=$EBROOTPYTHON/lib/python*/site-packages/numpy-*/numpy/core/include "
+
+# point to location of dependencies (to prevent that they're auto-downloaded)
+configopts += "-DCATCH_DIR=$EBROOTCATCH2/include/catch2 "
+configopts += "-DMAEPARSER_DIR=$EBROOTMAEPARSER -DCOORDGEN_DIR=$EBROOTCOORDGENLIBS "
+
+# using empty value for -DINCHI_URL prevents auto-downloading
+configopts += "-DRDK_BUILD_CAIRO_SUPPORT=ON -DRDK_BUILD_INCHI_SUPPORT=ON -DINCHI_URL='' "
+
+# prevent auto-download of AvalonToolkit source tarball by using empty value for -DAVALONTOOLS_URL
+configopts += "-DRDK_BUILD_AVALON_SUPPORT=ON -DAVALONTOOLS_URL='file://%(builddir)s/AvalonToolkit_1.2.0.source.tar' "
+
+sanity_check_paths = {
+    'files': ['lib/libRDKitAvalonLib.%s' % SHLIB_EXT, 'lib/libRDKitRDBoost.%s' % SHLIB_EXT,
+              'lib/libRDKitFMCS.%s' % SHLIB_EXT, 'lib/libRDKitInchi.%s' % SHLIB_EXT,
+              'lib/libRDKitOptimizer.%s' % SHLIB_EXT, 'lib/libRDKitSubgraphs.%s' % SHLIB_EXT],
+    'dirs': ['include/rdkit', 'lib/python%(pyshortver)s/site-packages/rdkit'],
+}
+
+sanity_check_commands = ["python -c 'import rdkit'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'chem'
