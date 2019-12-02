@@ -1,0 +1,91 @@
+easyblock = 'Tarball'
+name = 'EGSnrc'
+version = '2019a'
+
+homepage = 'http://nrc-cnrc.github.io/EGSnrc/'
+description = """
+EGSnrc is a software toolkit to perform Monte Carlo simulation of ionizing radiation transport through matter. It models the propagation of photons, electrons and positrons with kinetic energies between 1 keV and 10 GeV, in homogeneous materials."""
+
+patches = ['log-dir_finanlize.patch']
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+source_urls = ['https://github.com/nrc-cnrc/EGSnrc/archive/']
+sources = ['v%(version)s.tar.gz']
+
+
+dependencies = [
+     ('GCC', '6.4.0-2.28'),
+
+]
+
+postinstallcmds = ['cd %(installdir)s && printf "\n\n\n\n\n\n\n\n\n\n\n\nno\n" | ./HEN_HOUSE/scripts/configure']
+
+modextrapaths = {
+    'PATH': ['HEN_HOUSE/scripts', 'HEN_HOUSE/bin/linux'],
+    'LD_LIBRARY_PATH': 'HEN_HOUSE/egs++/dso/linux',
+}
+
+modextravars = {
+    'HEN_HOUSE': '%(installdir)s/HEN_HOUSE/', 
+    'EGS_VERSION': '%(version)s',
+    'EGS_CONFIG':  '%(installdir)s/HEN_HOUSE/specs/linux.conf',
+    'OMEGA_HOME': '%(installdir)s/HEN_HOUSE/omega/',
+}
+
+modaliases = {
+    'mf': '%(installdir)s/HEN_HOUSE/scripts/compile_user_code mf',
+    'f': '%(installdir)s/HEN_HOUSE/scripts/compile_user_code mf',
+    'm': '%(installdir)s/HEN_HOUSE/scripts/compile_user_code m',
+    'ex': '%(installdir)s/HEN_HOUSE/scripts/run_user_code',
+    'exb': '%(installdir)s/HEN_HOUSE/scripts/run_user_code_batch',
+    'p4': '%(installdir)s/HEN_HOUSE/bin/linux/pegs4.exe',
+    'egsgui': '%(installdir)s/HEN_HOUSE/bin/linux/egs_gui',
+    'egsinprz': '%(installdir)s/HEN_HOUSE/bin/linux/egs_inprz',
+    'mor': '%(installdir)s/HEN_HOUSE/scripts/mortran_compile',
+    'switch_config': '%(installdir)s/HEN_HOUSE/scripts/switch_config_bashrc',
+    'show_data': '%(installdir)s/HEN_HOUSE/pegs4/data/show_data',
+    'previewRZ': '%(installdir)s/HEN_HOUSE/previewRZ/previewRZ.tcl',
+    'clean_after_parallel': '%(installdir)s/HEN_HOUSE/scripts/clean_after_parallel',
+    'test_BEAMnrc': '%(installdir)s/HEN_HOUSE/scripts/test_BEAMnrc',
+    'beamnrc_gui': '%(installdir)s/HEN_HOUSE/omega/progs/gui/beamnrc/beamnrc_gui.tcl',
+    'beam_gui': '%(installdir)s/HEN_HOUSE/omega/progs/gui/beamnrc/beamnrc_gui.tcl',
+    'dosxyznrc_gui': '%(installdir)s/HEN_HOUSE/omega/progs/gui/dosxyznrc/dosxyznrc_gui.tcl',
+    'dosxyz_gui': '%(installdir)s/HEN_HOUSE/omega/progs/gui/dosxyznrc/dosxyznrc_gui.tcl',
+    'beamdp_gui': '%(installdir)s/HEN_HOUSE/omega/progs/gui/beamdp/beamdp_gui.tcl',
+    'pprocess': '%(installdir)s/HEN_HOUSE/scripts/pprocess',
+}
+
+
+# Program must be configured by user before first start.
+modluafooter = (
+'local version = "%(version)s"\n'
+'local egshome = pathJoin(os.getenv("HOME"), "egsnrc-"..version)\n'
+'local egsbin  = pathJoin(egshome, "bin/linux")\n'
+'setenv("EGS_HOME", egshome .. "/")\n'
+'prepend_path("PATH", egsbin)\n'
+'if mode() == "load" then\n'
+'   if (not isDir(egsbin)) then\n'
+'      LmodMessage("")\n'
+'      LmodMessage("")\n'
+'      LmodMessage("No pre-compiled data found.")\n'
+'      LmodMessage("It seems that EGSnrc must be configured first.")\n'
+'      LmodMessage("Please execute the following command:")\n'
+'      LmodMessage("")\n'
+'      LmodMessage("finalize_egs_foruser")\n'
+'      LmodMessage("")\n'
+'      LmodMessage("For more information, please visit our wiki:")\n'
+'      LmodMessage("https://wiki.hpcuser.uni-oldenburg.de/index.php?title=EGSnrc_2016")\n'
+'      LmodMessage("")\n'
+'      LmodMessage("")\n'
+
+'   end\n'
+'end\n'
+)
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['HEN_HOUSE']
+}
+
+moduleclass = 'phys'
