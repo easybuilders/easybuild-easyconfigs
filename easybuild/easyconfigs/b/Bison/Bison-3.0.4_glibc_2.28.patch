@@ -1,0 +1,31 @@
+patch to avoid problems on systems using glibc 2.28 (or newer)
+author: Esteban Vohringer-Martinezi (Universidad de Concepción)
+diff -ru bison-3.0.4_orig/lib/fseterr.c bison-3.0.4/lib/fseterr.c
+--- bison-3.0.4_orig/lib/fseterr.c	2019-06-19 15:56:23.552533933 -0400
++++ bison-3.0.4/lib/fseterr.c	2019-06-19 15:58:32.757469045 -0400
+@@ -29,7 +29,7 @@
+   /* Most systems provide FILE as a struct and the necessary bitmask in
+      <stdio.h>, because they need it for implementing getc() and putc() as
+      fast macros.  */
+-#if defined _IO_ftrylockfile || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
++#if defined _IO_EOF_SEEN || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
+   fp->_flags |= _IO_ERR_SEEN;
+ #elif defined __sferror || defined __DragonFly__ /* FreeBSD, NetBSD, OpenBSD, DragonFly, Mac OS X, Cygwin */
+   fp_->_flags |= __SERR;
+diff -ru bison-3.0.4_orig/lib/stdio-impl.h bison-3.0.4/lib/stdio-impl.h
+--- bison-3.0.4_orig/lib/stdio-impl.h	2019-06-19 15:56:23.556533962 -0400
++++ bison-3.0.4/lib/stdio-impl.h	2019-06-19 15:57:44.497120445 -0400
+@@ -19,6 +19,13 @@
+    have different naming conventions, or their access requires some casts.  */
+ 
+ 
++/* Glibc 2.28 made _IO_IN_BACKUP private.  For now, work around this
++   problem by defining it ourselves.  FIXME: Do not rely on glibc
++   internals.  */
++#if !defined _IO_IN_BACKUP && defined _IO_EOF_SEEN
++# define _IO_IN_BACKUP 0x100
++#endif
++
+ /* BSD stdio derived implementations.  */
+ 
+ #if defined __NetBSD__                         /* NetBSD */

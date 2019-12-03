@@ -1,0 +1,72 @@
+easyblock = 'Tarball'
+
+name = 'PHLAT'
+version = '1.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://sites.google.com/site/phlatfortype/'
+description = """ PHLAT is a bioinformatics algorithm that offers HLA typing at four-digit resolution (or higher)
+ using genome-wide transcriptome and exome sequencing data over a wide range of read lengths and sequencing depths."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+# PHLAT is proprietary software, but free for academcs
+# see: https://sites.google.com/site/phlatfortype/download
+sources = [
+    {
+        'filename': '%(namelower)s-release-%(version)s_Ubuntu.tar.gz',
+        'extract_cmd': 'tar --strip-components=1 -xzf %s',
+    },
+    {
+        'download_filename': 'b2folder.tar.gz',
+        'filename': '%(namelower)s-%(version)s_b2folder.tar.gz',
+    },
+]
+checksums = [
+    '906fe037a2953bca5461e8f345f163214d38e387c364ac20103bc98765607786',  # phlat-release-1.1_Ubuntu.tar.gz
+    '1673b7bdef5ec9efabfef0b4b0aa62807c01f3ac56e84acf11a62ebbe5f89e52',  # phlat-1.1_b2folder.tar.gz
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('ncurses', '6.1'),
+    ('cURL', '7.60.0'),
+    ('Bowtie2', '2.3.4.2'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    # version 0.8.3 is recommended: the developers report a compatibility issue with 0.9+
+    ('pysam', '0.8.3', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pysam'],
+        'checksums': ['343e91a1882278455ef9a5f3c9fc4921c37964341785bf22432381d18e6d115e'],
+    }),
+]
+
+postinstallcmds = ['chmod +x %(installdir)s/dist/PHLAT.py']
+
+modextrapaths = {
+    'PATH': 'dist',
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextravars = {'PYTHONOPTIMIZE': '1'}
+
+sanity_check_paths = {
+    'files': ['dist/PHLAT.py', 'dist/extensions.pyo', 'dist/prepare.pyo', 'dist/utilities.pyo'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/pysam'],
+}
+
+sanity_check_commands = [
+    'PHLAT.py -1 $EBROOTPHLAT/example/example_1.fastq.gz -2 $EBROOTPHLAT/example/example_2.fastq.gz '
+    '-index $EBROOTPHLAT/b2folder -b2url $EBROOTBOWTIE2/bin/bowtie2 -orientation "--fr" -tag example '
+    '-e $EBROOTPHLAT -o %(builddir)s -tmp 0'
+]
+
+moduleclass = 'bio'

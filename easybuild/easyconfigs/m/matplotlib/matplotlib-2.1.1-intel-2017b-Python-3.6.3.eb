@@ -1,4 +1,4 @@
-easyblock = 'Bundle'
+easyblock = 'PythonBundle'
 
 name = 'matplotlib'
 version = '2.1.1'
@@ -11,15 +11,14 @@ description = """matplotlib is a python 2D plotting library which produces publi
 
 toolchain = {'name': 'intel', 'version': '2017b'}
 
-# this is a bundle of Python packages
-exts_defaultclass = 'PythonPackage'
-
 dependencies = [
     ('Python', '3.6.3'),
     ('Tkinter', '%(pyver)s', versionsuffix),
     ('libpng', '1.6.32'),
     ('freetype', '2.8'),
 ]
+
+use_pip = True
 
 exts_list = [
     ('Cycler', '0.10.0', {
@@ -31,19 +30,11 @@ exts_list = [
     (name, version, {
         'source_urls': ['https://pypi.python.org/packages/source/m/matplotlib'],
         'checksums': ['659f5e1aa0e0f01488c61eff47560c43b8be511c6a29293d7f3896ae17bd8b23'],
+        'prebuildopts': "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && ",
+        'preinstallopts': "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && ",
     }),
 ]
 
-# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
-full_sanity_check = True
-
-sanity_check_paths = {
-    'files': [],
-    'dirs': ['lib/python%(pyshortver)s/site-packages'],
-}
-
 sanity_check_commands = ["""python -c 'import matplotlib; matplotlib.use("TkAgg"); import matplotlib.pyplot' """]
-
-modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
 moduleclass = 'vis'

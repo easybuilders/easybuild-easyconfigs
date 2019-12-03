@@ -1,0 +1,126 @@
+Make nab always use CUSTOMBUILDFLAGS so openmp flags get added when needed.
+
+Åke Sandgren, 20171012
+diff -ru amber16.orig/AmberTools/src/amberlite/Makefile amber16/AmberTools/src/amberlite/Makefile
+--- amber16.orig/AmberTools/src/amberlite/Makefile	2017-04-13 15:00:53.000000000 +0200
++++ amber16/AmberTools/src/amberlite/Makefile	2017-10-12 12:42:23.319122932 +0200
+@@ -16,13 +16,13 @@
+ 	cd ../nab && $(MAKE) $@
+ 
+ $(BINDIR)/ffgbsa$(SFX): ffgbsa.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/ffgbsa$(SFX) ffgbsa.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/ffgbsa$(SFX) ffgbsa.nab $(CUSTOMBUILDFLAGS)
+ 
+ $(BINDIR)/minab$(SFX): minab.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/minab$(SFX) minab.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/minab$(SFX) minab.nab $(CUSTOMBUILDFLAGS)
+ 
+ $(BINDIR)/mdnab$(SFX): mdnab.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mdnab$(SFX) mdnab.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mdnab$(SFX) mdnab.nab $(CUSTOMBUILDFLAGS)
+ 
+ clean:
+ 	/bin/rm -f *.c
+diff -ru amber16.orig/AmberTools/src/etc/Makefile amber16/AmberTools/src/etc/Makefile
+--- amber16.orig/AmberTools/src/etc/Makefile	2017-04-13 15:00:53.000000000 +0200
++++ amber16/AmberTools/src/etc/Makefile	2017-10-11 14:49:01.168646077 +0200
+@@ -68,14 +68,14 @@
+ 	$(CC) $(CFLAGS) $(AMBERCFLAGS) -o elsize$(SFX) elsize.o $(LM)
+ 
+ molsurf$(SFX):  molsurf.nab
+-	$(BINDIR)/nab$(SFX) -o molsurf$(SFX) molsurf.nab
++	$(BINDIR)/nab$(SFX) -o molsurf$(SFX) molsurf.nab $(CUSTOMBUILDFLAGS)
+ 
+ resp$(SFX):	lapack.o resp.o
+ 	$(FC) $(FPPFLAGS) $(FFLAGS) $(AMBERFFLAGS) $(LDFLAGS) $(AMBERLDFLAGS) \
+ 		lapack.o resp.o -o resp$(SFX)
+ 
+ tinker_to_amber$(SFX): tinker_to_amber.o cspline.o
+-	$(FC) -o tinker_to_amber$(SFX) tinker_to_amber.o cspline.o
++	$(FC) -o tinker_to_amber$(SFX) tinker_to_amber.o cspline.o $(CUSTOMBUILDFLAGS)
+ 
+ new_crd_to_dyn$(SFX): new_crd_to_dyn.o nxtsec
+ 	$(FC) $(LDFLAGS) -o new_crd_to_dyn$(SFX) new_crd_to_dyn.o ../lib/nxtsec.o
+diff -ru amber16.orig/AmberTools/src/mm_pbsa/Makefile amber16/AmberTools/src/mm_pbsa/Makefile
+--- amber16.orig/AmberTools/src/mm_pbsa/Makefile	2017-04-13 15:00:53.000000000 +0200
++++ amber16/AmberTools/src/mm_pbsa/Makefile	2017-10-12 10:08:57.265288431 +0200
+@@ -21,7 +21,7 @@
+ 
+ #Note dependency on nab from AMBERTools here.
+ $(BINDIR)/mm_pbsa_nabnmode$(SFX): mm_pbsa_nabnmode.nab
+-	$(BINDIR)/nab$(SFX) $(NABFLAGS) -o $(BINDIR)/mm_pbsa_nabnmode$(SFX) mm_pbsa_nabnmode.nab
++	$(BINDIR)/nab$(SFX) $(NABFLAGS) -o $(BINDIR)/mm_pbsa_nabnmode$(SFX) mm_pbsa_nabnmode.nab $(CUSTOMBUILDFLAGS)
+ 
+ ../lib/amopen.o: ../lib/amopen.F
+ 	cd ../lib; $(MAKE) amopen.o
+diff -ru amber16.orig/AmberTools/src/mmpbsa_py/Makefile amber16/AmberTools/src/mmpbsa_py/Makefile
+--- amber16.orig/AmberTools/src/mmpbsa_py/Makefile	2017-04-13 15:00:53.000000000 +0200
++++ amber16/AmberTools/src/mmpbsa_py/Makefile	2017-10-12 06:44:59.043135426 +0200
+@@ -9,10 +9,10 @@
+ 	$(PYTHON) setup.py install -f $(PYTHON_INSTALL) --install-scripts=$(BINDIR)
+ 
+ $(BINDIR)/mmpbsa_py_nabnmode$(SFX): mmpbsa_entropy.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mmpbsa_py_nabnmode$(SFX) mmpbsa_entropy.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mmpbsa_py_nabnmode$(SFX) mmpbsa_entropy.nab $(CUSTOMBUILDFLAGS)
+ 
+ $(BINDIR)/mmpbsa_py_energy$(SFX): mmpbsa_energy.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mmpbsa_py_energy$(SFX) mmpbsa_energy.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mmpbsa_py_energy$(SFX) mmpbsa_energy.nab $(CUSTOMBUILDFLAGS)
+ 
+ serial: install
+ 
+diff -ru amber16.orig/AmberTools/src/nss/Makefile amber16/AmberTools/src/nss/Makefile
+--- amber16.orig/AmberTools/src/nss/Makefile	2017-04-13 15:00:53.000000000 +0200
++++ amber16/AmberTools/src/nss/Makefile	2017-10-11 08:24:51.121320716 +0200
+@@ -54,28 +54,28 @@
+ 	-ranlib $(LIBDIR)/libnab.a
+ 
+ matextract$(SFX): matextract.o
+-	$(NAB) -o matextract$(SFX) matextract.o
++	$(NAB) -o matextract$(SFX) matextract.o $(CUSTOMBUILDFLAGS)
+ 
+ matgen$(SFX):	matgen.o
+-	$(NAB) -o matgen$(SFX) matgen.o
++	$(NAB) -o matgen$(SFX) matgen.o $(CUSTOMBUILDFLAGS)
+ 
+ matmerge$(SFX):	matmerge.o
+-	$(NAB) -o matmerge$(SFX) matmerge.o
++	$(NAB) -o matmerge$(SFX) matmerge.o $(CUSTOMBUILDFLAGS)
+ 
+ matmul$(SFX):	matmul.o
+-	$(NAB) -o matmul$(SFX) matmul.o
++	$(NAB) -o matmul$(SFX) matmul.o $(CUSTOMBUILDFLAGS)
+ 
+ transform$(SFX):	transform.o
+-	$(NAB) -o transform$(SFX) transform.o
++	$(NAB) -o transform$(SFX) transform.o $(CUSTOMBUILDFLAGS)
+ 
+ tss_init$(SFX):	tss_init.o
+-	$(NAB) -o tss_init$(SFX) tss_init.o
++	$(NAB) -o tss_init$(SFX) tss_init.o $(CUSTOMBUILDFLAGS)
+ 
+ tss_main$(SFX):	tss_main.o
+-	$(NAB) -o tss_main$(SFX) tss_main.o
++	$(NAB) -o tss_main$(SFX) tss_main.o $(CUSTOMBUILDFLAGS)
+ 
+ tss_next$(SFX):	tss_next.o
+-	$(NAB) -o tss_next$(SFX) tss_next.o
++	$(NAB) -o tss_next$(SFX) tss_next.o $(CUSTOMBUILDFLAGS)
+ 
+ clean:
+ 	/bin/rm -f	\
+diff -ru amber16.orig/AmberTools/src/rism/Makefile amber16/AmberTools/src/rism/Makefile
+--- amber16.orig/AmberTools/src/rism/Makefile	2017-04-13 15:00:54.000000000 +0200
++++ amber16/AmberTools/src/rism/Makefile	2017-10-11 20:00:32.189972509 +0200
+@@ -92,9 +92,9 @@
+ # ------ Single-Point information ------------------------------------------
+ SPSRC=rism3d.snglpnt.nab
+ rism3d.snglpnt$(SFX): $(SPSRC)
+-	$(BINDIR)/nab $(SPSRC) -lfftw3 -o $(BINDIR)/rism3d.snglpnt$(SFX)
++	$(BINDIR)/nab $(SPSRC) -lfftw3 -o $(BINDIR)/rism3d.snglpnt$(SFX) $(CUSTOMBUILDFLAGS)
+ rism3d.snglpnt.MPI$(SFX): $(SPSRC)
+-	$(BINDIR)/mpinab -v $(SPSRC) -o $(BINDIR)/rism3d.snglpnt.MPI$(SFX)
++	$(BINDIR)/mpinab -v $(SPSRC) -o $(BINDIR)/rism3d.snglpnt.MPI$(SFX) $(CUSTOMBUILDFLAGS)
+ # --------------------------------------------------------------------------
+ 
+ yes: install
