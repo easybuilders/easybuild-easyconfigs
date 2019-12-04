@@ -515,15 +515,8 @@ class EasyConfigTest(TestCase):
         ascii_text_issues = []
         top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
         for ec in changed_ecs:
-            # eb_path = os.path.join(top_dir, ec)
-            # raw_eb = read_file(eb_path, log_error=False)
-            # if raw_eb:
-            #     if not all(ord(char) < 128 for char in raw_eb):
-            #         ascii_text_issues.append(ec)
-            # else:
-            #     print('Failed to open %s.' % eb_path)
             if not all(ord(char) < 128 for char in ec.rawtxt):
-                ascii_text_issues.append(ec)
+                ascii_text_issues.append(ec.name)
         self.assertTrue(len(ascii_text_issues) == 0, "No ascii text issues:\n%s" % '\n'.join(ascii_text_issues))
 
     def check_sha256_checksums(self, changed_ecs):
