@@ -516,7 +516,7 @@ class EasyConfigTest(TestCase):
         top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
         for ec in changed_ecs:
             if not all(ord(char) < 128 for char in ec.rawtxt):
-                ascii_text_issues.append(ec.name)
+                ascii_text_issues.append(ec.path)
         self.assertTrue(len(ascii_text_issues) == 0, "No ascii text issues:\n%s" % '\n'.join(ascii_text_issues))
 
     def check_sha256_checksums(self, changed_ecs):
