@@ -1,0 +1,60 @@
+--- ./src/dm/f90-mod/ftn-auto-interfaces/petscdmplex.h90.orig	2019-12-03 09:11:30.000000000 -0800
++++ ./src/dm/f90-mod/ftn-auto-interfaces/petscdmplex.h90	2019-12-03 09:11:33.000000000 -0800
+@@ -521,6 +521,22 @@
+        PetscReal c ! PetscReal
+        integer z
+        end subroutine
++      subroutine DMPlexCreateRigidBody(a,b,z)
++      use petscdmdef
++       DM a ! DM
++       MatNullSpace b ! MatNullSpace
++       integer z
++       end subroutine
++      subroutine DMPlexCreateRigidBodies(a,b,c,d,e,f,z)
++      use petscdmdef
++       DM a ! DM
++       PetscInt b ! PetscInt
++       DMLabel c ! DMLabel
++       PetscInt d (*) ! PetscInt
++       PetscInt e (*) ! PetscInt
++       MatNullSpace f ! MatNullSpace
++       integer z
++       end subroutine
+       subroutine DMPlexSetMaxProjectionHeight(a,b,z)
+       use petscdmdef
+        DM a ! DM
+--- ./src/dm/impls/plex/ftn-auto/plexfemf.c.orig	2019-12-02 22:47:05.000000000 -0800
++++ ./src/dm/impls/plex/ftn-auto/plexfemf.c	2019-12-03 10:55:36.000000000 -0800
+@@ -39,6 +39,16 @@
+ #define dmplexsetscale_ dmplexsetscale
+ #endif
+ #ifdef PETSC_HAVE_FORTRAN_CAPS
++#define dmplexcreaterigidbody_ DMPLEXCREATERIGIDBODY
++#elif !defined(PETSC_HAVE_FORTRAN_UNDERSCORE) && !defined(FORTRANDOUBLEUNDERSCORE)
++#define dmplexcreaterigidbody_ dmplexcreaterigidbody
++#endif
++#ifdef PETSC_HAVE_FORTRAN_CAPS
++#define dmplexcreaterigidbodies_ DMPLEXCREATERIGIDBODIES
++#elif !defined(PETSC_HAVE_FORTRAN_UNDERSCORE) && !defined(FORTRANDOUBLEUNDERSCORE)
++#define dmplexcreaterigidbodies_ dmplexcreaterigidbodies
++#endif
++#ifdef PETSC_HAVE_FORTRAN_CAPS
+ #define dmplexsetmaxprojectionheight_ DMPLEXSETMAXPROJECTIONHEIGHT
+ #elif !defined(PETSC_HAVE_FORTRAN_UNDERSCORE) && !defined(FORTRANDOUBLEUNDERSCORE)
+ #define dmplexsetmaxprojectionheight_ dmplexsetmaxprojectionheight
+@@ -102,6 +112,15 @@
+ *__ierr = DMPlexSetScale(
+ 	(DM)PetscToPointer((dm) ),*unit,*scale);
+ }
++PETSC_EXTERN void PETSC_STDCALL  dmplexcreaterigidbody_(DM dm,MatNullSpace *sp, int *__ierr){
++	*__ierr = DMPlexCreateRigidBody(
++			        (DM)PetscToPointer((dm) ),sp);
++}
++PETSC_EXTERN void PETSC_STDCALL  dmplexcreaterigidbodies_(DM dm,PetscInt *nb,DMLabel label, PetscInt nids[], PetscInt ids[],MatNullSpace *sp, int *__ierr){
++	*__ierr = DMPlexCreateRigidBodies(
++			        (DM)PetscToPointer((dm) ),*nb,
++				        (DMLabel)PetscToPointer((label) ),nids,ids,sp);
++}
+ PETSC_EXTERN void PETSC_STDCALL  dmplexsetmaxprojectionheight_(DM dm,PetscInt *height, int *__ierr){
+ *__ierr = DMPlexSetMaxProjectionHeight(
+ 	(DM)PetscToPointer((dm) ),*height);

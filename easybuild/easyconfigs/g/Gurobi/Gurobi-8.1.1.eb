@@ -14,7 +14,7 @@ latest algorithms."""
 toolchain = SYSTEM
 
 # Registration required so manually downloaded software into:
-#  /cvmfs/restricted.computecanada.ca/easybuild/sources/g/Gurobi/gurobi8.1.1_linux64.tar.gz
+# /cvmfs/restricted.computecanada.ca/easybuild/sources/g/Gurobi/gurobi8.1.1_linux64.tar.gz
 # source_urls = ['https://packages.gurobi.com/%(version_major_minor)s/']
 sources = ['%(namelower)s%(version)s_linux64.tar.gz']
 checksums = ['c030414603d88ad122246fe0e42a314fab428222d98e26768480f1f870b53484']
@@ -23,16 +23,14 @@ checksums = ['c030414603d88ad122246fe0e42a314fab428222d98e26768480f1f870b53484']
 license_file = '/cvmfs/soft.computecanada.ca/config/licenses/gurobi/computecanada.lic'
 
 postinstallcmds = [
-    # interpretor /lib64/ld-linux-x86-64.so.2 to /cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/lib/ld-linux-x86-64.so.2
-    "for d in $(find %(installdir)s -name 'bin' -o -name 'lib');\
-      do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
-    # avoid ./gurobi_cl: error while loading shared libraries: libgurobi81.so: cannot open shared object file: No such file or directory
-    "patchelf --set-rpath '$ORIGIN/../lib':$(patchelf --print-rpath %(installdir)s/bin/gurobi_cl) %(installdir)s/bin/gurobi_cl",
+    "for d in $(find %(installdir)s -name 'bin' -o -name 'lib'); \
+	do echo Calling setrpaths.sh --path $d --add_path %(installdir)s/lib --add_path %(installdir)s/lib; \
+	/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d --add_path %(installdir)s/lib; done"
 ]
 
 modluafooter = """
 require("SitePackage")
-local found, path = find_and_define_license_file("GRB_LICENSE_FILE","gurobi")
+local found = find_and_define_license_file("GRB_LICENSE_FILE","gurobi")
 if (not found) then
         local error_message = [[
         We did not find a suitable license for Gurobi. If you have access to one, you can create the file $HOME/.licenses/gurobi.lic  with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it.
