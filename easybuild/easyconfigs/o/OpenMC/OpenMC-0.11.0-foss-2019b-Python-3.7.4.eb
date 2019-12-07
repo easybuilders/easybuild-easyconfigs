@@ -23,19 +23,25 @@ builddependencies = [('CMake', '3.15.3')]
 
 dependencies = [
     ('Python', '3.7.4'),
-    ('HDF5', '1.10.5'),
     ('GSL', '2.6'),
-    ('SciPy-bundle', '2019.10', versionsuffix),
     ('h5py', '2.10.0', versionsuffix),
-    ('matplotlib', '3.1.1', versionsuffix),
+    ('HDF5', '1.10.5'),
     ('IPython', '7.9.0', versionsuffix),
     ('lxml', '4.4.2'),
-    # uncertainties - python package
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('uncertainties', '3.1.2'),
 ]
 
+postinstallcmds = ['pip install --prefix=%(installdir)s --verbose --no-deps --ignore-installed --no-build-isolation .']
+
 sanity_check_paths = {
-    'files': [],
-    'dirs': [],
+    'files': ['bin/%(namelower)s', 'lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
 }
+
+sanity_check_commands = ['%(namelower)s --help', "python -c 'import openmc'"]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
 moduleclass = 'phys'
