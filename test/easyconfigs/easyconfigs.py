@@ -482,8 +482,11 @@ class EasyConfigTest(TestCase):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
+            'Kaiju',  # invalid certificate at https://kaiju.binf.ku.dk
             'libxml2',  # https://xmlsoft.org works, but invalid certificate
             'libxslt',  # https://xmlsoft.org works, but invalid certificate
+            'p4vasp',  # https://www.p4vasp.at doesn't work
+            'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
         ]
 
