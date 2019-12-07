@@ -483,6 +483,7 @@ class EasyConfigTest(TestCase):
 
         whitelist = [
             'libxml2',  # https://xmlsoft.org works, but invalid certificate
+            'libxslt',  # https://xmlsoft.org works, but invalid certificate
             'UCX-',  # bad certificate for https://www.openucx.org
         ]
 
