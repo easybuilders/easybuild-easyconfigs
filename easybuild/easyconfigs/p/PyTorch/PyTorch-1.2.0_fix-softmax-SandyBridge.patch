@@ -1,0 +1,20 @@
+fix for failing softmax test on Intel Sandy Bridge, which manifests as:
+"RuntimeError: basic_string::append" in softmax function from torch/nn/functional.py
+see https://github.com/pytorch/pytorch/issues/26287
+--- pytorch-1.2.0/third_party/ideep/include/ideep/utils.hpp.orig	2019-09-26 09:00:31.704099545 +0200
++++ pytorch-1.2.0/third_party/ideep/include/ideep/utils.hpp	2019-09-26 09:01:32.635628489 +0200
+@@ -112,14 +112,8 @@
+
+ inline void to_bytes(bytestring& bytes, const int arg) {
+   auto as_cstring = reinterpret_cast<const char*>(&arg);
+-#ifndef __AVX__
+   if (arg == 0) return;
+   auto len = sizeof(arg) - (__builtin_clz(arg) / 8);
+-#else
+-  unsigned int lz;
+-  asm volatile ("lzcntl %1, %0": "=r" (lz): "r" (arg));
+-  auto len = sizeof(int) - lz / 8;
+-#endif
+   bytes.append(as_cstring, len);
+ }
+

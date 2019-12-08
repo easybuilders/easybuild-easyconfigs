@@ -1,0 +1,146 @@
+# fixes for ga_diag_std_seq 32-bit integer interface and for pgcc
+# object handling (github.com/GlobalArrays/ga/pull/101)
+diff --git a/global/src/ga_diag_seq.F b/global/src/ga_diag_seq.F
+index ee601729..d5653975 100644
+--- a/global/src/ga_diag_seq.F
++++ b/global/src/ga_diag_seq.F
+@@ -1,6 +1,11 @@
+ #if HAVE_CONFIG_H
+ #   include "config.fh"
+ #endif
++#if (BLAS_SIZE ==4)
++#define INTGR4 integer*4
++#else
++#define INTGR4 integer*8
++#endif
+ c
+ c This file has been converted to use LAPACK circa 2011
+ c instead of EISPACK circa 1983 by Jeff Hammond circa 2014.
+@@ -15,7 +20,7 @@ c
+       integer g_v               ! Global matrix to return evecs
+       double precision evals(*) ! Local array to return evals
+ c
+-      integer n, ierr
++      integer n
+ #if ENABLE_EISPACK
+       integer l_fv1, l_fv2, l_v
+       MA_ACCESS_INDEX_TYPE k_fv1, k_fv2, k_v
+@@ -27,6 +32,7 @@ c
+       integer l_a, l_s
+       MA_ACCESS_INDEX_TYPE k_a, k_s
+       integer dim1, dim2, type, me
++      INTGR4 n4,ierr
+       logical status
+ c
+ c
+@@ -47,6 +53,7 @@ c
+      $  call ga_error('ga_diag_seq: nonsquare matrix ',0)
+  
+       n = dim1
++      n4 = n
+       me = ga_nodeid()
+       if (me .eq. 0) then
+ c
+@@ -87,7 +94,7 @@ c
+          call rsg(n, n, dbl_mb(k_a), dbl_mb(k_s), evals, 1,
+      $        dbl_mb(k_v), dbl_mb(k_fv1), dbl_mb(k_fv2), ierr)
+ #else
+-         call dsygv(1,'V','U',n,dbl_mb(k_a),n,dbl_mb(k_s),n,
++         call dsygv(1,'V','U',n4,dbl_mb(k_a),n,dbl_mb(k_s),n4,
+      $              evals,dbl_mb(k_wrk),n2, ierr)
+          if (ierr.ne.0)
+      $       call ga_error('ga_diag_seq: dsygv failed',ierr)
+@@ -139,7 +146,7 @@ c
+       integer g_v               ! Global matrix to return evecs
+       double precision evals(*) ! Local array to return evals
+ c
+-      integer n, ierr
++      integer n
+ #if ENABLE_EISPACK
+       integer l_fv1, l_fv2, l_v
+       MA_ACCESS_INDEX_TYPE k_fv1, k_fv2, k_v
+@@ -151,6 +158,7 @@ c
+       integer l_a
+       MA_ACCESS_INDEX_TYPE k_a
+       integer dim1, dim2, type, me
++      INTGR4 n4,n2_i4,ierr
+       logical status
+ c
+ c
+@@ -170,6 +178,7 @@ c
+      $  call ga_error('ga_diag_std_seq: nonsquare matrix ',0)
+  
+       n = dim1
++      n4 = n
+       me = ga_nodeid()
+       if (me .eq. 0) then
+ c
+@@ -187,6 +196,7 @@ c
+ #else
+ c LAPACK fails for n=1 without this
+          n2 = max(n*n,3*n-1)
++         n2_i4=n2
+          status=status.and.ma_push_get(MT_DBL, n2,
+      $        'diag_std_seq:wrk', l_wrk, k_wrk)
+ #endif
+@@ -205,8 +215,8 @@ c
+          call rs(n, n, dbl_mb(k_a),  evals, 1,
+      $        dbl_mb(k_v), dbl_mb(k_fv1), dbl_mb(k_fv2), ierr)
+ #else
+-         call dsyev('V',  'L',  n, dbl_mb(k_a), n,   
+-     $              evals, dbl_mb(k_wrk), n2,  ierr)
++         call dsyev('V',  'L',  n4, dbl_mb(k_a), n4,
++     $              evals, dbl_mb(k_wrk), n2_i4,  ierr)
+          if (ierr.ne.0)
+      $       call ga_error('ga_diag_std_seq: dsyev failed',ierr)
+ c We used to copy to preserve code symmetry with EISPACK
+diff --git a/m4/ga_f2c_string.m4 b/m4/ga_f2c_string.m4
+index 51914c37..addde81f 100644
+--- a/m4/ga_f2c_string.m4
++++ b/m4/ga_f2c_string.m4
+@@ -13,9 +13,9 @@ AC_COMPILE_IFELSE(
+       first_name = "John"
+       last_name = "Doe"
+       call csub(first_name, last_name)
+-      end]], [
++      end]], [mv conftest.$ac_objext cfortran_test.$ac_objext
+     ga_save_LIBS=$LIBS
+-    LIBS="conftest.$ac_objext $LIBS $[]_AC_LANG_PREFIX[]LIBS"
++    LIBS="cfortran_test.$ac_objext $LIBS $[]_AC_LANG_PREFIX[]LIBS"
+     AC_LANG_PUSH([C])
+     AC_RUN_IFELSE([AC_LANG_SOURCE(
+ [[#include <stdio.h>
+@@ -62,7 +62,7 @@ int main(int argc, char **argv)
+     LIBS=$ga_save_LIBS],
+     [m4_default([$3], :)])
+ AC_LANG_POP([Fortran 77])
+-rm -rf conftest*
++rm -rf conftest* cfortran_test.$ac_objext
+ ])dnl
+ 
+ 
+diff --git a/m4/ga_f77_check_sizeof.m4 b/m4/ga_f77_check_sizeof.m4
+index 6a773d12..3ee3897f 100644
+--- a/m4/ga_f77_check_sizeof.m4
++++ b/m4/ga_f77_check_sizeof.m4
+@@ -10,9 +10,9 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE(
+       external size
+       $1 x(2)
+       call size(x(1),x(2))
+-      end]])], [
++      end]])], [mv conftest.$ac_objext cfortran_test.$ac_objext
+     ga_save_LIBS=$LIBS
+-    LIBS="conftest.$ac_objext $LIBS $[]_AC_LANG_PREFIX[]LIBS"
++    LIBS="cfortran_test.$ac_objext $LIBS $[]_AC_LANG_PREFIX[]LIBS"
+     AC_LANG_PUSH([C])
+     AC_RUN_IFELSE([AC_LANG_SOURCE(
+ [[#include <stdio.h>
+@@ -44,7 +44,7 @@ int main(int argc, char **argv)
+ }
+ ]])], [AS_TR_SH([$2])=`cat conftestval`])
+     LIBS=$ga_save_LIBS
+-    rm -f conftest*
++    rm -f conftest* cfortran_test*
+     AC_LANG_POP([C])])
+ AC_LANG_POP([Fortran 77])
+ ]) # GA_F77_COMPUTE_SIZEOF
