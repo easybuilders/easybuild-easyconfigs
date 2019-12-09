@@ -1,0 +1,47 @@
+# This easyconfig was created by Simon Branford of the BEAR Software team at the University of Birmingham.
+easyblock = 'CMakeMake'
+
+name = 'OpenMC'
+version = '0.11.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://docs.openmc.org/"
+description = """OpenMC is a community-developed Monte Carlo neutron and photon transport simulation code. It is
+ capable of performing fixed source, k-eigenvalue, and subcritical multiplication calculations on models built using
+ either a constructive solid geometry or CAD representation. OpenMC supports both continuous-energy and multigroup
+ transport. The continuous-energy particle interaction data is based on a native HDF5 format that can be generated
+ from ACE files produced by NJOY. Parallelism is enabled via a hybrid MPI and OpenMP programming model."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/openmc-dev/openmc/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['5127dd50dc02212a310a384a169214e6320812b906f5e135299b9202180d9414']
+
+builddependencies = [('CMake', '3.15.3')]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('GSL', '2.6'),
+    ('h5py', '2.10.0', versionsuffix),
+    ('HDF5', '1.10.5'),
+    ('IPython', '7.9.0', versionsuffix),
+    ('lxml', '4.4.2'),
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('uncertainties', '3.1.2'),
+]
+
+postinstallcmds = ['pip install --prefix=%(installdir)s --verbose --no-deps --ignore-installed --no-build-isolation .']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+sanity_check_commands = ['%(namelower)s --help', "python -c 'import openmc'"]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'phys'
