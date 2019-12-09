@@ -78,7 +78,11 @@ diff -Naurd cmake-3.15.3/Source/cmCommands.cxx cmake-3.15.3-patched/Source/cmCom
 diff -Naurd cmake-3.15.3/Source/Modules/CheckCXXLinkerFlag.cmake cmake-3.15.3-patched/Source/Modules/CheckCXXLinkerFlag.cmake
 --- cmake-3.15.3/Source/Modules/CheckCXXLinkerFlag.cmake	1970-01-01 01:00:00.000000000 +0100
 +++ cmake-3.15.3-patched/Source/Modules/CheckCXXLinkerFlag.cmake	2019-12-09 13:13:29.024221135 +0100
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,29 @@
++# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
++# file Copyright.txt or https://cmake.org/licensing for details.
++
++include_guard(GLOBAL)
 +include(CheckCXXSourceCompiles)
 +include(CMakeCheckCompilerFlagCommonPatterns)
 +
@@ -91,16 +95,16 @@ diff -Naurd cmake-3.15.3/Source/Modules/CheckCXXLinkerFlag.cmake cmake-3.15.3-pa
 +
 +  # Normalize locale during test compilation.
 +  set(_locale_vars LC_ALL LC_MESSAGES LANG)
-+  foreach(v ${_locale_vars})
-+    set(_locale_vars${v} "$ENV{${v}}")
++  foreach(v IN LISTS _locale_vars)
++    set(_locale_vars_saved_${v} "$ENV{${v}}")
 +    set(ENV{${v}} C)
 +  endforeach()
 +  check_compiler_flag_common_patterns(_common_patterns)
 +  check_cxx_source_compiles("int main() { return 0; }" ${_var}
-+    ${_CheckCXXCompilerFlag_COMMON_PATTERNS}
++    ${_common_patterns}
 +    )
-+  foreach(v ${_locale_vars})
-+    set(ENV{${v}} ${_locale_vars${v}})
++  foreach(v IN LISTS _locale_vars)
++    set(ENV{${v}} ${_locale_vars_saved_${v}})
 +  endforeach()
 +  set(${_var} "${${_var}}" PARENT_SCOPE)
 +endfunction()
