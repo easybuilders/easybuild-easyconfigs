@@ -70,9 +70,6 @@ EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for x in ['foss', 'intel', 'fosscuda'
 EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore'] for y in ['4.', '5.', '6.', '7.']])
 EXCLUDE_TOOLCHAINS.extend(['ictce', 'gimkl', 'giolf', 'golf', 'goolf'])
 
-# Temporarily disable excluding toolchains while we merge in 4.1.0
-EXCLUDE_TOOLCHAINS = []
-
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
