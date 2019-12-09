@@ -1,0 +1,33 @@
+- fix hardcoded path /usr/bin/python3, use $EBROOTPYTHON/bin/python3 instead;
+  fixes "No module named '_gdal'" ImportError
+- make sure 'platform' is defined in set_env function when on Linux;
+  fixes "object 'platform' not found" error
+
+author: Kenneth Hoste (HPC-UGent)
+
+diff -ru RQGIS3-addfd5e08c517c59f73d727f56f8d03505027647.orig/R/helper_funs.R RQGIS3-addfd5e08c517c59f73d727f56f8d03505027647/R/helper_funs.R
+--- RQGIS3-addfd5e08c517c59f73d727f56f8d03505027647.orig/R/helper_funs.R	2019-09-03 00:51:22.000000000 +0200
++++ RQGIS3-addfd5e08c517c59f73d727f56f8d03505027647/R/helper_funs.R	2019-10-14 18:05:43.420257086 +0200
+@@ -388,7 +388,8 @@
+   # sys.version  # which python version is used
+   # sys.exectutable  # and where to find the executable
+   # use_python("/usr/bin/python2.7", required = TRUE)
+-  use_python("/usr/bin/python3", required = TRUE)
++  pythonroot = Sys.getenv('EBROOTPYTHON')
++  use_python(paste(pythonroot, 'bin', 'python3', sep='/'), required = TRUE)
+ }
+ 
+ 
+diff -ru RQGIS3-addfd5e08c517c59f73d727f56f8d03505027647.orig/R/processing.R RQGIS3-addfd5e08c517c59f73d727f56f8d03505027647/R/processing.R
+--- RQGIS3-addfd5e08c517c59f73d727f56f8d03505027647.orig/R/processing.R	2019-09-03 00:51:22.000000000 +0200
++++ RQGIS3-addfd5e08c517c59f73d727f56f8d03505027647/R/processing.R	2019-10-14 17:44:11.081451970 +0200
+@@ -197,8 +197,8 @@
+   }
+ 
+   if (Sys.info()["sysname"] == "Linux") {
++    platform = "Linux"
+     if (is.null(root)) {
+-      platform = "Linux"
+       message("Assuming that your root path is '/usr'!")
+       root = "/usr"
+     }
