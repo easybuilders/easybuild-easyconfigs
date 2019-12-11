@@ -3,13 +3,14 @@ easyblock = 'ConfigureMake'
 name = 'OpenMPI'
 version = '1.8.5'
 
-homepage = 'http://www.open-mpi.org/'
+homepage = 'https://www.open-mpi.org/'
 description = """The Open MPI Project is an open source MPI-2 implementation."""
 
 toolchain = {'name': 'GNU', 'version': '4.9.2-2.25'}
 
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 sources = [SOURCELOWER_TAR_GZ]
-source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+checksums = ['91de8828f7257b6c011a9015321c0fd027782ee04a269c74194f2e3c837e28c8']
 
 dependencies = [('hwloc', '1.10.1')]
 
@@ -19,12 +20,13 @@ configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
 configopts += '--disable-dlopen '  # statically link component, don't do dynamic loading
 
 # needed for --with-verbs
-osdependencies = [('libibverbs-dev', 'libibverbs-devel')]
+osdependencies = [('libibverbs-dev', 'libibverbs-devel', 'rdma-core-devel')]
 
-libs = ["mpi_cxx", "mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte", "vt", "vt-hyb", "vt-mpi", "vt-mpi-unify"]
+local_libs = ['mpi_cxx', 'mpi_mpifh', 'mpi', 'ompitrace', 'open-pal', 'open-rte',
+              'vt', 'vt-hyb', 'vt-mpi', 'vt-mpi-unify']
 sanity_check_paths = {
-    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
-             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
+    'files': ["bin/%s" % x for x in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (x, SHLIB_EXT) for x in local_libs] +
              ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
     'dirs': ["include/openmpi/ompi/mpi/cxx"],
 }

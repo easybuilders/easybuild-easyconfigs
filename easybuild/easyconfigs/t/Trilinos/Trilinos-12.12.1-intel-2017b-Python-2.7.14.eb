@@ -1,0 +1,60 @@
+name = 'Trilinos'
+version = '12.12.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://trilinos.org'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = [
+    'http://trilinos.csbsju.edu/download/files/',
+    'https://trilinos.org/oldsite/download/files/',
+]
+sources = ['%(namelower)s-%(version)s-Source.tar.gz']
+patches = [
+    ('Trilinos-%(version)s_fix-CEpetra-LAPACK.patch', 'packages/CTrilinos'),
+    'Trilinos-%(version)s_muelu-fix-function-signature.patch',
+    'Trilinos-%(version)s_fix-Sundance.patch',
+]
+checksums = [
+    '7c67d83befbeabc773661bcdfee2850c404d249160b755d3f1be2e96f564f9fd',  # trilinos-12.12.1-Source.tar.gz
+    'de2e989bf9e7cbe7cab9126a464b5b1569983de4060956e7a95dccb9e0bad039',  # Trilinos-12.12.1_fix-CEpetra-LAPACK.patch
+    # Trilinos-12.12.1_muelu-fix-function-signature.patch
+    '253191cc6f6a6ebcc893e2684c64cfefa62c1cd0cc6b03b5f83646856fbdfe8a',
+    'df7924c207c1fab98d5aeec1333c4e2da5c07117daf2c72279f894552087e391',  # Trilinos-12.12.1_fix-Sundance.patch
+]
+
+builddependencies = [
+    ('CMake', '3.9.5'),
+    ('SWIG', '3.0.12', versionsuffix),
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('Boost', '1.65.1', versionsuffix),
+    ('SCOTCH', '6.0.4'),
+    ('SuiteSparse', '5.1.2', '-METIS-5.1.0'),
+    ('ParMETIS', '4.0.3'),
+    ('netCDF', '4.5.0'),
+    ('MATIO', '1.5.12'),
+    ('GLM', '0.9.9.0'),
+    ('X11', '20171023'),
+]
+
+# disable TrilinosCouplings package, doesn't build correctly (examples fail to compile)
+skip_exts = ['TrilinosCouplings']
+
+# workaround for Teuchos.pyc not being found during "make install"
+# see https://github.com/trilinos/Trilinos/issues/1749
+preinstallopts = "cd %(builddir)s/trilinos-%(version)s-Source/packages/PyTrilinos/src/PyTrilinos && "
+preinstallopts += "python -m compileall -l -f . && cd - && "
+
+# too parallel is too slow because of memory requirements (results in swapping), and may cause build/tests to fail
+# building with 20 cores seems to require about 100GB of memory (peak usage)
+maxparallel = 10
+
+moduleclass = 'numlib'

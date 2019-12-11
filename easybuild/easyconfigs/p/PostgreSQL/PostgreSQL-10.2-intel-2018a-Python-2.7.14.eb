@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'PostgreSQL'
+version = '10.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.postgresql.org/'
+description = """PostgreSQL is a powerful, open source object-relational database system.
+ It is fully ACID compliant, has full support for foreign keys,
+ joins, views, triggers, and stored procedures (in multiple languages).
+ It includes most SQL:2008 data types, including INTEGER,
+ NUMERIC, BOOLEAN, CHAR, VARCHAR, DATE, INTERVAL, and TIMESTAMP.
+ It also supports storage of binary large objects, including pictures,
+ sounds, or video. It has native programming interfaces for C/C++, Java,
+ .Net, Perl, Python, Ruby, Tcl, ODBC, among others, and exceptional documentation."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['http://ftp.postgresql.org/pub/source/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['6bbd81460bcd22379fc2267821e03e213b39d02f2553a0f63d85f94ce0416c6c']
+
+dependencies = [
+    ('libreadline', '7.0'),
+    ('zlib', '1.2.11'),
+    ('Python', '2.7.14'),
+    # OS dependency should be preferred if the os version is more recent then this version,
+    # it's nice to have an up to date openssl for security reasons
+    # ('OpenSSL', '1.0.2h'),
+]
+
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+
+builddependencies = [
+    ('Bison', '3.0.4'),
+    ('flex', '2.6.4'),
+    ('Perl', '5.26.1'),
+]
+
+configopts = '--with-python --with-openssl'
+
+sanity_check_paths = {
+    'files': ['bin/psql', 'bin/pg_config', 'lib/libpq.a', 'lib/libpq.%s' % SHLIB_EXT],
+    'dirs': ['share/postgresql'],
+}
+
+moduleclass = 'data'

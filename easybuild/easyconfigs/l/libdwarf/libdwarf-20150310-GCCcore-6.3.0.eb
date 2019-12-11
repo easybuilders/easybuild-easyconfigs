@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'libdwarf'
+version = '20150310'
+
+homepage = 'http://www.prevanders.net/dwarf.html'
+description = """The DWARF Debugging Information Format is of interest to programmers working on compilers
+and debuggers (and anyone interested in reading or writing DWARF information))"""
+
+toolchain = {'name': 'GCCcore', 'version': '6.3.0'}
+
+sources = [SOURCE_TAR_GZ]
+source_urls = ['http://www.prevanders.net']
+
+builddependencies = [
+    ('binutils', '2.27'),
+]
+dependencies = [
+    ('libelf', '0.8.13'),
+]
+
+with_configure = True
+preconfigopts = 'env CFLAGS="-fPIC $CFLAGS" '
+configopts = "--enable-shared "
+
+# This is dirty but libdwarf cannot find it's own library in the build process...
+prebuildopts = ' LD_LIBRARY_PATH="../libdwarf:$LD_LIBRARY_PATH" '
+
+files_to_copy = [
+    (["dwarfdump/dwarfdump"], "bin"),
+    (["libdwarf/libdwarf.a", "libdwarf/libdwarf.%s" % SHLIB_EXT], "lib"),
+    (["libdwarf/libdwarf.h", "libdwarf/dwarf.h"], "include"),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ["bin", "lib", "include"]
+}
+
+moduleclass = 'devel'

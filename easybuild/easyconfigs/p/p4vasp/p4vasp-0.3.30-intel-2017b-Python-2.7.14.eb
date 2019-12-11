@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'p4vasp'
+version = '0.3.30'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.p4vasp.at/'
+description = """Visualization suite for VASP"""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+source_urls = ['http://www.p4vasp.at/files']
+sources = [SOURCE_TGZ]
+patches = [
+    ('p4vasp-%(version)s_drop_fltk_from_makefile.patch'),
+    ('p4vasp-%(version)s_fix_compiler_spec.patch'),
+    ('p4vasp-%(version)s_fix_fltk-config_usage.patch'),
+    ('p4vasp-%(version)s_dont_preload_libstdc_nor_set_PYTHONPATH_again.patch'),
+]
+checksums = [
+    '7052926f70a799f87c2d3a5d52c86575422113e3f589776b071dfc554969df7d',  # p4vasp-0.3.30.tgz
+    '1a7b4a59d4605bd022af0b90b20922137a0a90b077e512041a0091221daf26a1',  # p4vasp-0.3.30_drop_fltk_from_makefile.patch
+    'b73f6f99261fa3399b673c27f0d3e2164bf7f5da0018e536a0c5a1349a341aa3',  # p4vasp-0.3.30_fix_compiler_spec.patch
+    'ca226baeb49abb681beb057b781c059e41d1988d16dae1aca38d1e6b2d425801',  # p4vasp-0.3.30_fix_fltk-config_usage.patch
+    # p4vasp-0.3.30_dont_preload_libstdc_nor_set_PYTHONPATH_again.patch
+    '94ac59b261789ea197380678703bacdddbcf6722b7fb302408984a2d7e25ce3c',
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('PyGTK', '2.24.0', versionsuffix),
+    ('PyOpenGL', '3.1.1a1', versionsuffix),
+    ('Glade', '3.8.5', versionsuffix),
+    ('X11', '20171023'),
+    ('FLTK', '1.3.4'),
+]
+
+skipsteps = ['configure', 'build']
+
+# redefine $HOME to specify installation prefix O_o
+preinstallopts = "make cleanall && env HOME=%(installdir)s make local && "
+
+sanity_check_paths = {
+    'files': ['p4vasp/bin/p4v', 'p4vasp/lib/libODP.a', 'p4vasp/lib/libp4vasp.a'],
+    'dirs': ['p4vasp/data', 'p4vasp/include/ODP', 'p4vasp/include/p4vasp', 'p4vasp/python-packages', 'p4vasp/utils'],
+}
+
+modextrapaths = {
+    'CPATH': ['p4vasp/include'],
+    'LIBRARY_PATH': ['p4vasp/lib'],
+    'PATH': ['p4vasp/bin'],
+    'PYTHONPATH': ['p4vasp/python-packages'],
+}
+
+moduleclass = 'vis'

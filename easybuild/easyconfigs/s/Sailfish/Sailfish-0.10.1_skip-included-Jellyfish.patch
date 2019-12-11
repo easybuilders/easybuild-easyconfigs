@@ -1,0 +1,64 @@
+* skip downloading and building of Jellyfish, since it's provided via EasyBuild already
+* don't hardcode $CMAKE_CXX_FLAGS
+author: Paul Jähne
+--- CMakeLists.txt
++++ CMakeLists.txt
+@@ -25,7 +25,7 @@
+ 
+ ## Set the standard required compile flags
+ # Nov 18th --- removed -DHAVE_CONFIG_H
+-set (CMAKE_CXX_FLAGS "-pthread -funroll-loops -fPIC -fomit-frame-pointer -Ofast -DHAVE_ANSI_TERM -DHAVE_SSTREAM -DRAPMAP_SALMON_SUPPORT -Wall -std=c++11 -Wreturn-type -Werror=return-type")
++set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L$ENV{EBROOTJELLYFISH}/lib -ljellyfish-2.0 -pthread -DHAVE_ANSI_TERM -DHAVE_SSTREAM -DRAPMAP_SALMON_SUPPORT -Wall -std=c++11 -Wreturn-type -Werror=return-type")
+ 
+ ##
+ # OSX is strange (some might say, stupid in this regard).  Deal with it's quirkines here.
+@@ -287,23 +287,6 @@
+ set(SUFFARRAY_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/external/install/include)
+ 
+ 
+-message("Build system will fetch and build Jellyfish")
+-message("==================================================================")
+-ExternalProject_Add(libjellyfish
+-    DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external
+-    DOWNLOAD_COMMAND curl -k -L https://github.com/gmarcais/Jellyfish/releases/download/v2.2.3/jellyfish-2.2.3.tar.gz -o jellyfish-2.2.3.tgz &&
+-	rm -fr jellyfish-2.2.3 &&
+-    	tar -xzvf jellyfish-2.2.3.tgz
+-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.3
+-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/install
+-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.3/configure --prefix=<INSTALL_DIR> CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+-    BUILD_COMMAND ${MAKE} CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+-    BUILD_IN_SOURCE 1
+-    INSTALL_COMMAND make install &&
+-                    cp config.h <INSTALL_DIR>/include/jellyfish-2.2.3/jellyfish/ &&
+-                    cp config.h <INSTALL_DIR>/include/
+-)
+-
+ find_package(TBB)
+ ##
+ #
+--- src/CMakeLists.txt
++++ src/CMakeLists.txt
+@@ -43,7 +43,6 @@
+ ${GAT_SOURCE_DIR}/external/cereal/include
+ ${GAT_SOURCE_DIR}/external/install/include
+ ${GAT_SOURCE_DIR}/external/install/include/rapmap
+-${GAT_SOURCE_DIR}/external/install/include/jellyfish-2.2.3
+ ${ZLIB_INCLUDE_DIR}
+ ${TBB_INCLUDE_DIRS}
+ ${Boost_INCLUDE_DIRS}
+@@ -97,7 +96,6 @@
+     ${ZLIB_LIBRARY} 
+     ${SUFFARRAY_LIB}
+     ${SUFFARRAY64_LIB}
+-    ${GAT_SOURCE_DIR}/external/install/lib/libjellyfish-2.0.a 
+     m
+     ${TBB_LIBRARIES}
+     ${LIBSAILFISH_LINKER_FLAGS} 
+@@ -115,7 +113,6 @@
+     ${ZLIB_LIBRARY} 
+     ${SUFFARRAY_LIB}
+     ${SUFFARRAY64_LIB}
+-    ${GAT_SOURCE_DIR}/external/install/lib/libjellyfish-2.0.a 
+     m
+     ${TBB_LIBRARIES}
+     ${LIBSAILFISH_LINKER_FLAGS} 

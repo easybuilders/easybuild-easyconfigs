@@ -1,0 +1,29 @@
+# Fix postinstall bug where it assumes install prefix is in PATH
+# Mikael Öhman <micketeer@gmail.com>, 2019-04-16
+--- meson.build.orig	2019-03-16 22:39:43.546535740 +0100
++++ meson.build	2019-03-16 22:41:25.341826529 +0100
+@@ -415,6 +415,7 @@
+   else
+     meson.add_install_script('build-aux/post-install.sh',
+       gdk_pixbuf_libdir,
++      gdk_pixbuf_bindir,
+       gdk_pixbuf_binary_version,
+     )
+   endif
+--- build-aux/post-install.sh.orig	2019-03-16 20:25:21.737362740 +0100
++++ build-aux/post-install.sh	2019-03-16 22:37:52.524946556 +0100
+@@ -1,11 +1,12 @@
+ #!/bin/sh
+ 
+ libdir="$1"
+-binary_version="$2"
++bindir="$2"
++binary_version="$3"
+ 
+ if [ -z "$DESTDIR" ]; then
+         mkdir -p "$libdir/gdk-pixbuf-2.0/$binary_version"
+-        gdk-pixbuf-query-loaders > "$libdir/gdk-pixbuf-2.0/$binary_version/loaders.cache"
++        "$bindir/gdk-pixbuf-query-loaders" > "$libdir/gdk-pixbuf-2.0/$binary_version/loaders.cache"
+ else
+         echo "***"
+         echo "*** Warning: loaders.cache not built"

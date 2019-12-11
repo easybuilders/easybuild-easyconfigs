@@ -1,0 +1,66 @@
+fix issues with recent Cython
+patch taken from https://github.com/Cantera/cantera/pull/467
+diff --git a/interfaces/cython/cantera/utils.pyx b/interfaces/cython/cantera/utils.pyx
+index c435e0903..cb3a6adfb 100644
+--- a/interfaces/cython/cantera/utils.pyx
++++ b/interfaces/cython/cantera/utils.pyx
+@@ -58,12 +58,12 @@ cdef Composition comp_map(X) except *:
+ 
+     # assume X is dict-like
+     cdef Composition m
+-    for species,value in X.items():
++    for species,value in (<object>X).items():
+         m[stringify(species)] = value
+     return m
+ 
+ cdef comp_map_to_dict(Composition m):
+-    return {pystr(species):value for species,value in m.items()}
++    return {pystr(species):value for species,value in (<object>m).items()}
+ 
+ class CanteraError(RuntimeError):
+     pass
+
+From c91456d577e03e3df2c07450a765f687c9bb03ba Mon Sep 17 00:00:00 2001
+From: Ray Speth <speth@mit.edu>
+Date: Sat, 29 Jul 2017 22:54:53 -0400
+Subject: [PATCH 2/2] [Thermo] Remove debug exception from
+ Phase::entropyElement298
+
+Returning the special value ENTROPY298_UNKNOWN is (apparently) the expected
+behavior if no actual value was provided, and should not result in an exception.
+---
+ include/cantera/thermo/Phase.h | 4 +++-
+ src/thermo/Phase.cpp           | 5 +----
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/include/cantera/thermo/Phase.h b/include/cantera/thermo/Phase.h
+index 745e4f434..6ccc7042e 100644
+--- a/include/cantera/thermo/Phase.h
++++ b/include/cantera/thermo/Phase.h
+@@ -180,7 +180,9 @@ class Phase
+     //!     @param m  Element index
+     doublereal atomicWeight(size_t m) const;
+ 
+-    //! Entropy of the element in its standard state at 298 K and 1 bar
++    //! Entropy of the element in its standard state at 298 K and 1 bar.
++    //! If no entropy value was provided when the phase was constructed,
++    //! returns the value `ENTROPY298_UNKNOWN`.
+     //!     @param m  Element index
+     doublereal entropyElement298(size_t m) const;
+ 
+diff --git a/src/thermo/Phase.cpp b/src/thermo/Phase.cpp
+index d9c9a1a38..2736fb964 100644
+--- a/src/thermo/Phase.cpp
++++ b/src/thermo/Phase.cpp
+@@ -132,10 +132,7 @@ doublereal Phase::atomicWeight(size_t m) const
+ 
+ doublereal Phase::entropyElement298(size_t m) const
+ {
+-    AssertThrowMsg(m_entropy298[m] != ENTROPY298_UNKNOWN,
+-                   "Elements::entropy298",
+-                   "Entropy at 298 K of element is unknown");
+-    AssertTrace(m < m_mm);
++    checkElementIndex(m);
+     return m_entropy298[m];
+ }
+ 

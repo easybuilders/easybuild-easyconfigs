@@ -1,0 +1,50 @@
+##
+# -*- mode: python; -*-
+# EasyBuild reciPY for LikWid -- see https://github.com/RRZE-HPC/likwid
+# as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2017 UL HPC -- hpc.uni.lu
+# Authors::   UL HPC Team <hpc-sysadmins@uni.lu>
+# License::   MIT/GPL
+#
+#
+easyblock = 'ConfigureMake'
+
+name = 'likwid'
+version = '4.2.0'
+
+homepage = 'https://github.com/RRZE-HPC/likwid'
+description = """Likwid stands for 'Like I knew what I am doing'. Likwid is a
+simple to install and use toolsuite of command line applications for performance
+oriented programmers. It works for Intel and AMD processors on the Linux
+operating system."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/RRZE-HPC/likwid/archive/']
+sources = ['%(version)s.tar.gz']
+
+patches = ['likwid-%(version)s-config-mk.patch']
+
+skipsteps = ['configure']
+buildopts = 'COMPILER="ICC" CC="$CC" CFLAGS="$CFLAGS -std=c99" PREFIX=%(installdir)s'
+installopts = 'PREFIX=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ["bin/likwid-memsweeper", "bin/likwid-mpirun", "bin/likwid-perfctr",
+              "bin/likwid-perfscope", "bin/likwid-pin", "bin/likwid-powermeter", "bin/likwid-topology",
+              "lib/liblikwidpin.%s" % SHLIB_EXT, "lib/liblikwid.%s" % SHLIB_EXT],
+    'dirs': ["man/man1"]
+}
+
+postinstallcmds = [
+    'echo "================================================================================"',
+    'echo "IMPORTANT: you will have to manually apply the following changes **as root**:"',
+    'echo "   sudo chown root:root \$EBROOTLIKWID/sbin/likwid-accessD"',
+    'echo "   sudo chmod u+s \$EBROOTLIKWID/sbin/likwid-accessD"'
+]
+
+maxparallel = 1
+
+moduleclass = 'devel'

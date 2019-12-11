@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'util-linux'
+version = '2.32'
+
+homepage = 'http://www.kernel.org/pub/linux/utils/util-linux'
+
+description = "Set of Linux utilities"
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['%s/v%%(version_major_minor)s' % homepage]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['ce43afee3182f1bddb0be83f68bd378770efb9b6fdd8f464333ff8e07903db56']
+
+# disable account related utilities (they need OS dependent pam-devel files)
+# disable wall and friends (requires group changing permissions for install user)
+# install systemd service files in install dir
+# install bash completion files in install dir
+configopts = "--disable-chfn-chsh --disable-login --disable-su --disable-rfkill "
+configopts += "--disable-wall --disable-use-tty-group "
+configopts += "--disable-makeinstall-chown --disable-makeinstall-setuid "
+configopts += "--with-systemdsystemunitdir='${prefix}/systemd' "
+configopts += "--with-bashcompletiondir='${prefix}/share/bash-completion/completions' "
+# disable building Python bindings (since we don't include Python as a dep)
+configopts += "--without-python "
+
+builddependencies = [
+    ('binutils', '2.28'),
+]
+
+dependencies = [
+    ('ncurses', '6.0'),
+    ('zlib', '1.2.11'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.a' % x for x in ['blkid', 'mount', 'uuid']],
+    'dirs': ['include', 'bin', 'share', 'sbin'],
+}
+
+moduleclass = 'tools'

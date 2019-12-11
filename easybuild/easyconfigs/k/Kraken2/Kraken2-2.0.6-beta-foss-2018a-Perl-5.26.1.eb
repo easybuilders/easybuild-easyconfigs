@@ -1,0 +1,50 @@
+easyblock = 'PackedBinary'
+
+name = 'Kraken2'
+version = '2.0.6-beta'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://ccb.jhu.edu/software/kraken/'
+description = """Kraken is a system for assigning taxonomic labels to short DNA sequences,
+ usually obtained through metagenomic studies. Previous attempts by other
+ bioinformatics software to accomplish this task have often used sequence
+ alignment or machine learning techniques that were quite slow, leading to
+ the development of less sensitive but much faster abundance estimation
+ programs. Kraken aims to achieve high sensitivity and high speed by
+ utilizing exact alignments of k-mers and a novel classification algorithm."""
+
+# part is compiled with $CXX, the rest is in Perl
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/DerrickWood/kraken2/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_CXXFLAGS.patch']
+checksums = [
+    'd77db6251179c4d7e16bc9b5e5e9043d25acf81f3e32ad6eadfba829a31e1d09',  # v2.0.6-beta.tar.gz
+    '191291e51a846d193a12486ab84496d5dd221a05c84648688b1351bb84d7adb2',  # Kraken2-2.0.6-beta_CXXFLAGS.patch
+]
+
+dependencies = [
+    ('Perl', '5.26.1'),
+    ('BLAST+', '2.7.1'),
+    ('wget', '1.19.4'),
+]
+
+install_cmd = 'cd %(builddir)s/%(namelower)s-%(version)s && '
+install_cmd += './install_kraken2.sh %(installdir)s'
+
+sanity_check_paths = {
+    'files': [
+        '16S_gg_installation.sh', '16S_rdp_installation.sh', '16S_silva_installation.sh', 'add_to_library.sh',
+        'build_db', 'build_gg_taxonomy.pl', 'build_kraken2_db.sh', 'build_rdp_taxonomy.pl', 'build_silva_taxonomy.pl',
+        'classify', 'clean_db.sh', 'cp_into_tempfile.pl', 'download_genomic_library.sh', 'download_taxonomy.sh',
+        'dump_table', 'estimate_capacity', 'kraken2', 'kraken2-build', 'kraken2-inspect', 'kraken2lib.pm',
+        'lookup_accession_numbers.pl', 'make_seqid2taxid_map.pl', 'mask_low_complexity.sh', 'rsync_from_ncbi.pl',
+        'scan_fasta_file.pl'],
+    'dirs': [],
+}
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

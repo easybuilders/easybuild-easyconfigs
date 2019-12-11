@@ -1,0 +1,32 @@
+fix compilation errors with Intel compilers:
+error: no operator "=" matches these operands
+author: Ward Poelmans
+--- bowtie-1.2.2/hit.h.orig	2018-01-24 12:57:47.135575442 +0100
++++ bowtie-1.2.2/hit.h	2018-01-24 12:57:58.615869774 +0100
+@@ -640,10 +640,26 @@
+ 			s.moveTo(btString);
+ 		}
+ 
++		batch(const batch &other)
++                {
++                    batchId = other.batchId;
++                    isWritten = other.isWritten;
++                    btString = other.btString;
++                }
++
+ 		bool operator<(const batch& other) const {
+ 			return batchId < other.batchId;
+ 		}
+ 
++		batch& operator=(batch&& other) {
++			if (&other != this) {
++				batchId = other.batchId;
++				isWritten = other.isWritten;
++				other.btString.moveTo(btString);
++			}
++			return *this;
++		}
++
+ 		batch& operator=(batch& other) {
+ 			if (&other != this) {
+ 				batchId = other.batchId;

@@ -1,0 +1,83 @@
+see https://github.com/numpy/numpy/issues/9278 and https://github.com/numpy/numpy/pull/9285
+diff --git a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
+index 93ef4587c26..bbc3923bd6d 100644
+--- a/numpy/distutils/ccompiler.py
++++ b/numpy/distutils/ccompiler.py
+@@ -80,6 +80,7 @@ def _needs_build(obj, cc_args, extra_postargs, pp_opts):
+ 
+     return False
+ 
++
+ def replace_method(klass, method_name, func):
+     if sys.version_info[0] < 3:
+         m = types.MethodType(func, None, klass)
+@@ -88,6 +89,25 @@ def replace_method(klass, method_name, func):
+         m = lambda self, *args, **kw: func(self, *args, **kw)
+     setattr(klass, method_name, m)
+ 
++
++######################################################################
++## Method that subclasses may redefine. But don't call this method,
++## it i private to CCompiler class and may return unexpected
++## results if used elsewhere. So, you have been warned..
++
++def CCompiler_find_executables(self):
++    """
++    Does nothing here, but is called by the get_version method and can be
++    overridden by subclasses. In particular it is redefined in the `FCompiler`
++    class where more documentation can be found.
++
++    """
++    pass
++
++
++replace_method(CCompiler, 'find_executables', CCompiler_find_executables)
++
++
+ # Using customized CCompiler.spawn.
+ def CCompiler_spawn(self, cmd, display=None):
+     """
+diff --git a/numpy/distutils/fcompiler/intel.py b/numpy/distutils/fcompiler/intel.py
+index eb6150201c2..4dee8492f9b 100644
+--- a/numpy/distutils/fcompiler/intel.py
++++ b/numpy/distutils/fcompiler/intel.py
+@@ -57,7 +57,7 @@ def get_flags(self):
+ 
+     def get_flags_opt(self):  # Scipy test failures with -O2
+         v = self.get_version()
+-        mpopt = 'openmp' if v and int(v.split('.')[0]) < 15 else 'qopenmp'
++        mpopt = 'openmp' if v and v < '15' else 'qopenmp'
+         return ['-xhost -fp-model strict -O1 -{}'.format(mpopt)]
+ 
+     def get_flags_arch(self):
+@@ -123,7 +123,7 @@ def get_flags(self):
+ 
+     def get_flags_opt(self):  # Scipy test failures with -O2
+         v = self.get_version()
+-        mpopt = 'openmp' if v and int(v.split('.')[0]) < 15 else 'qopenmp'
++        mpopt = 'openmp' if v and v < '15' else 'qopenmp'
+         return ['-fp-model strict -O1 -{}'.format(mpopt)]
+ 
+     def get_flags_arch(self):
+diff --git a/numpy/distutils/intelccompiler.py b/numpy/distutils/intelccompiler.py
+index 3b7756b598c..3386775ee56 100644
+--- a/numpy/distutils/intelccompiler.py
++++ b/numpy/distutils/intelccompiler.py
+@@ -19,7 +19,7 @@ def __init__(self, verbose=0, dry_run=0, force=0):
+         UnixCCompiler.__init__(self, verbose, dry_run, force)
+ 
+         v = self.get_version()
+-        mpopt = 'openmp' if v and int(v.split('.')[0]) < 15 else 'qopenmp'
++        mpopt = 'openmp' if v and v < '15' else 'qopenmp'
+         self.cc_exe = ('icc -fPIC -fp-model strict -O3 '
+                        '-fomit-frame-pointer -{}').format(mpopt)
+         compiler = self.cc_exe
+@@ -59,7 +59,7 @@ def __init__(self, verbose=0, dry_run=0, force=0):
+         UnixCCompiler.__init__(self, verbose, dry_run, force)
+ 
+         v = self.get_version()
+-        mpopt = 'openmp' if v and int(v.split('.')[0]) < 15 else 'qopenmp'
++        mpopt = 'openmp' if v and v < '15' else 'qopenmp'
+         self.cc_exe = ('icc -m64 -fPIC -fp-model strict -O3 '
+                        '-fomit-frame-pointer -{}').format(mpopt)
+         compiler = self.cc_exe

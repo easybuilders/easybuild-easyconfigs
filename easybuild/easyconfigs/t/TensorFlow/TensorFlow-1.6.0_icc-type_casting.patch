@@ -1,0 +1,32 @@
+Fix error with Intel compilers: 'invalid narrowing conversion from "unsigned long" to "int"' via explicit type casting
+author: Samuel Moors (Vrije Universiteit Brussel VUB)
+diff -ur tensorflow-1.6.0.orig/tensorflow/core/kernels/mkl_fused_batch_norm_op.cc tensorflow-1.6.0/tensorflow/core/kernels/mkl_fused_batch_norm_op.cc
+--- tensorflow-1.6.0.orig/tensorflow/core/kernels/mkl_fused_batch_norm_op.cc	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/kernels/mkl_fused_batch_norm_op.cc	2018-03-19 14:36:32.501913991 +0100
+@@ -819,7 +819,7 @@
+       // MKL-DNN packs scale & shift as "weights":
+       // <scale>...<scale><shift>...<shift>
+       auto weights_desc =
+-          memory::desc({2, depth_}, MklDnnType<T>(), memory::format::nc);
++          memory::desc({2, static_cast<int>(depth_)}, MklDnnType<T>(), memory::format::nc);
+       auto weights_pd = memory::primitive_desc(weights_desc, cpu_engine);
+       auto weights_m = memory(weights_pd);
+       T* weights_data = reinterpret_cast<T*>(weights_m.get_data_handle());
+@@ -835,7 +835,7 @@
+ 
+       // set mean primitive
+       auto mean_desc =
+-          memory::desc({1, depth_}, MklDnnType<T>(), memory::format::nc);
++          memory::desc({1, static_cast<int>(depth_)}, MklDnnType<T>(), memory::format::nc);
+       auto mean_pd = memory::primitive_desc(mean_desc, cpu_engine);
+       char* saved_mean_data_tf =
+           reinterpret_cast<char*>(saved_mean_tensor->flat<T>().data());
+@@ -846,7 +846,7 @@
+ 
+       // set variance primitive
+       auto variance_desc =
+-          memory::desc({1, depth_}, MklDnnType<T>(), memory::format::nc);
++          memory::desc({1, static_cast<int>(depth_)}, MklDnnType<T>(), memory::format::nc);
+       auto variance_pd = memory::primitive_desc(variance_desc, cpu_engine);
+       char* saved_variance_data_tf =
+           reinterpret_cast<char*>(saved_variance_tensor->flat<T>().data());

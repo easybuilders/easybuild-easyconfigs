@@ -1,0 +1,41 @@
+name = 'OpenBLAS'
+version = '0.3.1'
+
+homepage = 'http://xianyi.github.com/OpenBLAS/'
+description = "OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."
+
+toolchain = {'name': 'GCC', 'version': '7.3.0-2.30'}
+# need to build with -fno-tree-vectorize due to asm constraint bugs in OpenBLAS<0.3.6
+# cfr. https://github.com/easybuilders/easybuild-easyconfigs/issues/7180
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    # order matters, trying to download the large.tgz/timing.tgz LAPACK tarballs from GitHub causes trouble
+    'http://www.netlib.org/lapack/timing/',
+    'https://github.com/xianyi/OpenBLAS/archive/',
+]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    ('large.tgz', '.'),
+    ('timing.tgz', '.'),
+    # this patch together with buildopts = 'USE_SIMPLE_THREADED_LEVEL3=1'
+    # is a workaround for the matrix multiplication issues
+    # https://lists.ugent.be/wws/arc/easybuild/2019-05/msg00006.html
+    # https://github.com/eylenth/Openblas_matrix_issue
+    'OpenBLAS-%(version)s_disable-special-handling-of-OpenMP-thread-memory-allocation.patch',
+]
+checksums = [
+    '1f5e956f35f3acdd3c74516e955d797a320c2e0135e31d838cbdb3ea94d0eb33',  # v0.3.1.tar.gz
+    'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1',  # large.tgz
+    '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af',  # timing.tgz
+    # OpenBLAS-0.3.1_disable-special-handling-of-OpenMP-thread-memory-allocation.patch
+    'c85de436d6fff5d9cec1e24127ea9921551cdee373319dbade922d5cd3facd6a',
+]
+
+# added as workaround for the matrices multiplication issue. see the patches above
+buildopts = 'USE_SIMPLE_THREADED_LEVEL3=1'
+
+# extensive testing can be enabled by uncommenting the line below
+# runtest = 'PATH=.:$PATH lapack-timing'
+
+moduleclass = 'numlib'

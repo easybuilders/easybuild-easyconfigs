@@ -1,0 +1,33 @@
+easyblock = "Toolchain"
+
+name = 'giolfc'
+version = '2017b'
+
+homepage = '(none)'
+description = """GCC based compiler toolchain __with CUDA support__, and including
+ IntelMPI for MPI support, OpenBLAS (BLAS and LAPACK support), FFTW and ScaLAPACK."""
+
+toolchain = SYSTEM
+
+local_comp = ('GCC', '6.4.0-2.28')
+
+# toolchain used to build goolfc dependencies
+local_comp_mpi_tc = ('gimpic', version)
+
+local_blaslib = 'OpenBLAS'
+local_blasver = '0.2.20'
+local_blas = '-%s-%s' % (local_blaslib, local_blasver)
+
+# compiler toolchain dependencies
+# we need GCC and IntelMPI as explicit dependencies instead of gimpic toolchain
+# because of toolchain preperation functions
+dependencies = [
+    local_comp,  # part of gimpic
+    ('CUDA', '9.0.176', '', local_comp),  # part of gimpic
+    ('impi', '2017.3.196', '', ('gcccuda', version)),
+    (local_blaslib, local_blasver, '', local_comp),
+    ('FFTW', '3.3.6', '', local_comp_mpi_tc),
+    ('ScaLAPACK', '2.0.2', local_blas, local_comp_mpi_tc),
+]
+
+moduleclass = 'toolchain'

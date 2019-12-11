@@ -1,0 +1,35 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    Stephane Thiell <sthiell@stanford.edu>
+###
+
+easyblock = 'ConfigureMake'
+
+name = 'LAME'
+version = '3.100'
+
+homepage = 'http://lame.sourceforge.net/'
+description = """LAME is a high quality MPEG Audio Layer III (MP3) encoder licensed under the LGPL."""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['https://sourceforge.net/projects/lame/files/lame/%(version_major_minor)s/']
+
+builddependencies = [
+    # use same binutils version that was used when building GCCcore toolchain
+    ('binutils', '2.28'),
+]
+
+dependencies = [('ncurses', '6.0')]
+
+# configure is broken: add workaround to find libncurses...
+configure_cmd_prefix = "FRONTEND_LDADD='-L${EBROOTNCURSES}/lib' "
+
+sanity_check_paths = {
+    'files': ['bin/lame', 'include/lame/lame.h', 'lib/libmp3lame.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'data'
