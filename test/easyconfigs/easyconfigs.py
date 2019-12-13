@@ -190,7 +190,7 @@ class EasyConfigTest(TestCase):
                     ecs = dep_vars[key]
                     # filter out dep variants that are only used as dependency for parent with same version
                     dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
-                    if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs):
+                    if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
