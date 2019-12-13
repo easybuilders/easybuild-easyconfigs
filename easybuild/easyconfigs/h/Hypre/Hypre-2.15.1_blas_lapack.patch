@@ -1,0 +1,30 @@
+# Force hypre to link to external BLAS/LAPACK.
+# Has to be patched because of limited configure options that doesn't fully work.
+# Author: Mikael Öhman
+--- src/Makefile.orig	2019-12-13 16:15:56.854542100 +0100
++++ src/Makefile	2019-12-13 16:46:38.022988408 +0100
+@@ -17,8 +17,6 @@
+ 
+ # These are the directories for internal blas, lapack and general utilities
+ HYPRE_BASIC_DIRS =\
+- blas\
+- lapack\
+  utilities
+ 
+ #These are the directories for multivector
+--- src/lib/Makefile.orig	2019-12-13 18:03:41.864469348 +0100
++++ src/lib/Makefile	2019-12-13 19:35:46.274344991 +0100
+@@ -53,13 +53,11 @@
+ $(SSTRUCTMVFILES)\
+ $(STRUCTLSFILES)\
+ $(STRUCTMVFILES)\
+-$(UTILITIESFILES)\
+-$(BLASFILES)\
+-$(LAPACKFILES)
++$(UTILITIESFILES)
+ 
+ SONAME = libHYPRE-${HYPRE_RELEASE_VERSION}${HYPRE_LIB_SUFFIX}
+-SOLIBS = ${MPILIBDIRS} ${MPILIBS} ${LAPACKLIBDIRS} ${LAPACKLIBS}\
+- ${BLASLIBDIRS} ${BLASLIBS} ${LIBS} ${FLIBS}
++SOLIBS = ${MPILIBDIRS} ${MPILIBS} -L${LAPACK_LIB_DIR} ${LIBLAPACK}\
++ -L${BLAS_LIB_DIR} ${LIBBLAS} ${LIBS} ${FLIBS}
