@@ -182,14 +182,16 @@ class EasyConfigTest(TestCase):
             if len(empty_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
-        # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools
-        if dep == 'HTSlib' and len(dep_vars) > 1:
-            for key in list(dep_vars):
-                ecs = dep_vars[key]
-                # filter out HTSlib variants that are only used as dependency for BCFtools with same version
-                htslib_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
-                if all(ec.startswith('BCFtools-%s-' % htslib_ver) for ec in ecs):
-                    dep_vars.pop(key)
+        # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
+        # same goes for WRF and WPS
+        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS')]:
+            if dep == dep_name and len(dep_vars) > 1:
+                for key in list(dep_vars):
+                    ecs = dep_vars[key]
+                    # filter out dep variants that are only used as dependency for parent with same version
+                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
+                        dep_vars.pop(key)
 
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
         if dep == 'Boost' and len(dep_vars) > 1:
