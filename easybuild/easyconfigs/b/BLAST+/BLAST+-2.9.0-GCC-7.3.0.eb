@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'BLAST+'
+version = '2.9.0'
+
+homepage = 'http://blast.ncbi.nlm.nih.gov/'
+description = """Basic Local Alignment Search Tool, or BLAST, is an algorithm
+ for comparing primary biological sequence information, such as the amino-acid
+ sequences of different proteins or the nucleotides of DNA sequences."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+source_urls = ['http://ftp.ncbi.nlm.nih.gov/blast/executables/%(namelower)s/%(version)s/']
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+checksums = ['a390cc2d7a09422759fc178db84de9def822cbe485916bbb2ec0d215dacdc257']
+
+builddependencies = [
+    ('Boost', '1.68.0'),
+    ('GMP', '6.1.2'),
+    ('LMDB', '0.9.24'),
+]
+
+configopts = " ".join([
+    "--with-boost=$EBROOTBOOST",
+    "--with-64",
+    "--with-bin-release",
+    "--without-debug",
+    "--with-mt",
+    "--with-lfs",
+    "--with-gmp=$EBROOTGMP",
+    "--with-lmdb=$EBROOTLMDB",
+    "--with-png=$NIXUSER_PROFILE",
+    "--with-z=$NIXUSER_PROFILE",
+    "--with-bz2=$NIXUSER_PROFILE",
+    "--with-pcre=$NIXUSER_PROFILE",
+    "--with-jpeg=$NIXUSER_PROFILE",
+])
+
+postinstallcmds = [ 'rm %(installdir)s/bin/*_unit_test' ]
+
+# Main execs,  but there's more.
+local_execs = (
+    "blastn",
+    "blastp",
+    "blastx",
+    "legacy_blast.pl",
+    "makeblastdb",
+    "tblastn",
+    "tblastx",
+    "update_blastdb.pl",
+)
+
+sanity_check_paths = {
+    'files': ['bin/{}'.format(x) for x in local_execs],
+    'dirs': ['bin', 'lib', 'include/ncbi-tools++'],
+}
+
+fix_perl_shebang_for = ['bin/*.pl']
+fix_python_shebang_for = ['bin/*.py']
+
+moduleclass = 'bio'

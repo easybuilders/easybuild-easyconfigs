@@ -1,0 +1,72 @@
+easyblock = 'EB_Qt'
+
+name = 'Qt5'
+version = '5.13.1'
+modaltsoftname = 'qt'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '7.3.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://www.riverbankcomputing.com/static/Downloads/sip/4.19.19/',
+    'https://www.riverbankcomputing.com/static/Downloads/PyQt5/%(version)s/'
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz', 'sip-4.19.19.tar.gz', 'PyQt5_gpl-%(version)s.tar.gz']
+patches = [
+    'Qt5-%(version)s_fix-avx2.patch',
+    'Qt5-%(version)s_fix-qmake-libdir.patch',
+]
+checksums = [
+    'adf00266dc38352a166a9739f1a24a1e36f1be9c04bf72e16e142a256436974e',  # qt-everywhere-src-5.13.1.tar.xz
+    '5436b61a78f48c7e8078e93a6b59453ad33780f80c644e5f3af39f94be1ede44',  # sip-4.19.19.tar.gz
+    '54b7f456341b89eeb3930e786837762ea67f235e886512496c4152ebe106d4af',  # PyQt5_gpl-5.13.1.tar.gz
+    '6f46005f056bf9e6ff3e5d012a874d18ee03b33e685941f2979c970be91a9dbc',  # Qt5-5.13.1_fix-avx2.patch
+    '511ca9c0599ceb1989f73d8ceea9199c041512d3a26ee8c5fd870ead2c10cb63',  # Qt5-5.13.1_fix-qmake-libdir.patch
+]
+
+builddependencies = [
+	('pkg-config', '0.29.2'),
+	('libevent', '2.1.11'),
+    # deps for QtWebEngine
+#    ('Bison', '3.3.2'),
+#    ('flex', '2.6.4'),
+#    ('gperf', '3.1'),
+#    ('Ninja', '1.9.0'),
+#    ('Python', '3.7.4'),
+#    ('re2c', '1.2.1')
+]
+
+# qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
+configopts = '-skip qtgamepad'
+
+dependencies = [
+    ('GLib', '2.53.5'),
+    ('libpng', '1.6.32'),
+    ('X11', '20171023'),
+    ('NSS', '3.45'),
+]
+
+# *Note*: When building PyQt5 v5.11 or later you must configure SIP to create a private copy
+#         of the sip module using a command line similar to the following:
+# > python configure.py --sip-module PyQt5.sip
+# https://www.riverbankcomputing.com/static/Docs/PyQt5/installation.html#downloading-sip
+postinstallcmds = [
+	"module load python/3.6 && cd %(builddir)s/ && cp -r sip-4.19.19 sip-4.19.19-3.6 && cd sip-4.19.19-3.6 && python3.6 configure.py --sip-module PyQt5.sip --sysroot=%(installdir)s --sipdir=%(installdir)s/share/python3.6/sip INCDIR=$EBROOTPYTHON/include/python3.6m && make && make install",
+	"module load python/3.6 && cd %(builddir)s/ && cp -r PyQt5_gpl-%(version)s PyQt5_gpl-%(version)s-3.6 && cd PyQt5_gpl-%(version)s-3.6 &&  export CPATH=$EBROOTPYTHON/include/python3.6m:$CPATH && export EBPYTHONPREFIXES=%(installdir)s && python3.6 configure.py --confirm --qmake=%(installdir)s/bin/qmake --sysroot=%(installdir)s --verbose --sip=%(installdir)s/bin/sip  --sip-incdir=%(installdir)s/include/python3.6m && make && make install",
+	"module load python/3.7 && cd %(builddir)s/ && cp -r sip-4.19.19 sip-4.19.19-3.7 && cd sip-4.19.19-3.7 && python3.7 configure.py --sip-module PyQt5.sip --sysroot=%(installdir)s --sipdir=%(installdir)s/share/python3.7/sip INCDIR=$EBROOTPYTHON/include/python3.7m && make && make install",
+	"module load python/3.7 && cd %(builddir)s/ && cp -r PyQt5_gpl-%(version)s PyQt5_gpl-%(version)s-3.7 && cd PyQt5_gpl-%(version)s-3.7 &&  export CPATH=$EBROOTPYTHON/include/python3.7m:$CPATH && export EBPYTHONPREFIXES=%(installdir)s && python3.7 configure.py --confirm --qmake=%(installdir)s/bin/qmake --sysroot=%(installdir)s --verbose --sip=%(installdir)s/bin/sip  --sip-incdir=%(installdir)s/include/python3.7m && make && make install",
+]
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+
+# make sure QtWebEngine component is being built & installed
+check_qtwebengine = True
+
+moduleclass = 'devel'

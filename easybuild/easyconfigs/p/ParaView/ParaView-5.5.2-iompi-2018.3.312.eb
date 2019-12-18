@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '5.5.2'
+
+homepage = "http://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'iompi', 'version': '2018.3.312'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['http://www.paraview.org/paraview-downloads/%s' % download_suffix]
+sources = ["ParaView-v%(version)s.tar.gz"]
+
+dependencies = [
+    ('Qt5', '5.9.6'),
+]
+builddependencies = [
+    ('HDF5', '1.8.18'),
+]
+patches = ['ParaView-5.5.2.patch']
+separate_build_dir = True
+configopts = ''
+configopts += '-DCMAKE_SKIP_RPATH=ON '
+#configopts += '-DCMAKE_SKIP_INSTALL_RPATH=ON '
+configopts += '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DVTK_OPENGL_HAS_OSMESA=ON -DPARAVIEW_USE_MPI=ON '
+configopts += '-DPARAVIEW_QT_VERSION=5  -DQT_QMAKE_EXECUTABLE=$EBROOTQT5/bin/qmake -DQt5_DIR=$EBROOTQT5/lib/cmake/Qt5 -DPARAVIEW_BUILD_QT_GUI=ON '
+configopts += '-DPARAVIEW_USE_OSPRAY=ON -DOSPRAY_INSTALL_DIR=$NIXUSER_PROFILE '
+configopts += '-DVTK_USE_SYSTEM_HDF5=ON -DPARAVIEW_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON '
+configopts += "-DVTK_RENDERING_BACKEND=OpenGL2 -DVTK_USE_X=ON "
+# Without internet connection turn off testing (uncomment the following line)
+configopts += '-DBUILD_TESTING=OFF '
+
+# Or consult https://gitlab.kitware.com/vtk/vtk/blob/master/Documentation/dev/git/data.md
+# and download ExternalData to $EASYBUILD_SOURCEPATH and adjust -DExternalData_OBJECT_STORES accordingly
+# Without internet connection, comment the following two lines (configopts and prebuildopts)
+#configopts += '-DExternalData_OBJECT_STORES=%(builddir)s/ExternalData '
+# The ParaView server can be cranky, test downloads are quite often failing, especially in the case
+# of parallel downloads. Using ; insted of && gives a second chance to download the test files, if the
+# first serial attempt would fail.
+#prebuildopts = 'make VTKData ;'
+prebuildopts = "LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/VTK/ThirdParty/vtkm/vtk-m/lib:$LD_LIBRARY_PATH "
+
+postinstallcmds = [ 
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python2.7 --add_path %(installdir)s/lib", 
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/paraview-5.5 --add_path %(installdir)s/lib", 
+	]
+
+moduleclass = 'vis'
