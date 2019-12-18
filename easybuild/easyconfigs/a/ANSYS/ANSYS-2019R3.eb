@@ -1,5 +1,6 @@
 name = 'ANSYS'
 version = '2019R3'
+versionsuffix = 'v195'
 
 homepage = 'http://www.ansys.com'
 description = """ANSYS simulation software enables organizations to confidently predict 
@@ -13,23 +14,30 @@ toolchain = SYSTEM
 sources = ['ANSYS-%(version)s.tar']
 
 postinstallcmds = [
-	# fix missing execute permission for Others for at least one folder
+	# fix missing execute permission for others for at least one folder
 	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
 	# find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
-	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-	# call setrpaths.sh on all subdirectories called bin, lib, lib64, lnamd64, linx64, Linux64 
-	"for d in $(find %(installdir)s -name 'bin' -o -name 'lib' -o -name 'lib64' -o -name 'lnamd64' -o -name 'linx64' -o -name 'Linux64'); do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
-        # force setrpaths.sh to run on all instances of lmutil using the --any_interpreter switch
+	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+           sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+        # rename the built-in libstdc++.so* to libstdc++.so*.bak because they are older than what we have in Nix, and cause problem with other binaries
+        "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+        # call setrpaths.sh on binary containing directories
+        "for d in $(find %(installdir)s -name 'bin' -o -name 'lnamd64' -o -name 'linx64' -o -name 'Linux64' -o -name 'machines'); \
+	  do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
+        # run setrpaths.sh on all instances of lmutil for any_interpreter
         "find %(installdir)s -name 'lmutil' -exec /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-        # revert changes made by setrpaths.sh back to using the system interpreter: ansyscl  ansysli_client  ansysli_util  ansysls_client ie)
-        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/shared_files/licensing/linx64/ansyscl
-        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/shared_files/licensing/linx64/ansysli_client
-        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/shared_files/licensing/linx64/ansysli_util
-        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/shared_files/licensing/linx64/ansysls_client
+        # revert changes made by setrpaths.sh to the system interpreter on filenames: ansyscl ansysli_client ansysli_util ansysls_client ie)
+        # patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/shared_files/licensing/linx64/filename
         "find %(installdir)s -name 'ansyscl' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
         "find %(installdir)s -name 'ansysli_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
         "find %(installdir)s -name 'ansysli_util' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-        "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;"
+        "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+        # implant wbex file to enable additive extension under workbench ACT start page 
+        "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/AdditiveWizard.wbex-%(version)s %(installdir)s/%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
+        # for ansys versions >= 17.2 patch file setup-mwuser for example
+        # /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/v195/commonfiles/MainWin/linx64/mw/setup-mwuser/setup-mwuser
+        # where the original filesize 4470 should become 4472 when patched
+        "patch -d%(installdir)s/%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/setup-mwuser.patch"
 ]
 
 modluafooter = """
