@@ -1,0 +1,43 @@
+##
+# @author :: Ali Kerrache, WestGrid/Compute Canada, University of Manitoba.
+# @date :: Dec 17, 2019
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'TransLiG'
+version = '1.3'
+
+homepage = 'https://sourceforge.net/projects/transcriptomeassembly/'
+description = """TransLiG is an efficient de novo trascriptome assembler for RNA-Seq data. It can assemble all transcripts from short reads (single or paired) without using a reference. The software expects as input RNA-Seq reads in fasta or fastq format, and ouput all assembled candidate transcripts in fasta format. Briefly, it works in two step: first, TransLiG partitions the sequence data into many individual splicing graphs, each capturing the full transcriptional complexity at a given gene or no more than a few genes. Then, TransLiG repetitively phases and contracts paths over the splicing graphs, infering an optimal edge-path-cover for each graph representing the expressed transcripts of this gene locus."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+source_urls = [('https://sourceforge.net/projects/transcriptomeassembly/files/%(name)s/', 'download')]
+sources = ['%(name)s_%(version)s.tar.gz']
+
+dependencies = [
+    ('Boost', '1.68.0'),
+]
+
+skipsteps = ['install']
+
+configopts  = '--with-boost=$EBROOTBOOST '
+
+local_trans_binaries = [
+    "Assemble", "connect_graph", "Get_output", "refine", "TransLiG_iteration",
+]
+
+postinstallcmds =  ['mkdir -p %(installdir)s/bin && cd %(builddir)s/%(name)s_%(version)s/src && cp Assemble connect_graph Get_output refine TransLiG_iteration %(installdir)s/bin && cp -r ../perllib ../sample_test %(installdir)s/']
+
+modextrapaths = {'PATH': 'perllib'}
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_trans_binaries],
+    'dirs': ['bin', 'perllib', 'sample_test'],
+}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("perl")
+"""
