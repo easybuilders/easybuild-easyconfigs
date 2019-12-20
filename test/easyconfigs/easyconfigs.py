@@ -542,6 +542,7 @@ class EasyConfigTest(TestCase):
             ec_fn = os.path.basename(ec.path)
             easyblock = ec.get('easyblock')
             exts_defaultclass = ec.get('exts_defaultclass')
+            exts_default_options = ec.get('exts_default_options', {})
 
             download_dep_fail = ec.get('download_dep_fail')
             exts_download_dep_fail = ec.get('exts_download_dep_fail')
@@ -571,7 +572,6 @@ class EasyConfigTest(TestCase):
                 else:
                     # both download_dep_fail and use_pip should be set via exts_default_options
                     # when installing Python packages as extensions
-                    exts_default_options = ec.get('exts_default_options', {})
                     for key in ['download_dep_fail', 'use_pip']:
                         if exts_default_options.get(key) is None:
                             failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
@@ -581,6 +581,12 @@ class EasyConfigTest(TestCase):
             if any(dep['name'] == 'Python' for dep in ec['dependencies']) and ec.name != 'Tkinter':
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     failing_checks.append("'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn)
+
+            # require that running of "pip check" during sanity check is enabled via sanity_pip_check
+            if easyblock in ['PythonBundle', 'PythonPackage']:
+                sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
+                if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
+                    failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
