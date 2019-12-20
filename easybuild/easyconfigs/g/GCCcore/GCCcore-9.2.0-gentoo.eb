@@ -9,8 +9,15 @@ description = """The GNU Compiler Collection includes front ends for C, C++, Obj
 
 toolchain = SYSTEM
 
+# Put symbolic links: the prefix-ed structure is expected by some easyblocks.
 postinstallcmds = [
-    'ln -s $EBROOTGENTOO/usr/x86_64-pc-linux-gnu/gcc-bin/%(version)s %(installdir)s/bin',
+    'triplet=$(gcc -dumpmachine) && '
+    'cd %(installdir)s && mkdir -p lib/gcc/$triplet include/c++ && '
+    'ln -s $EBROOTGENTOO/usr/$triplet/gcc-bin/%(version)s bin && '
+    'ln -s $EBROOTGENTOO/usr/lib/gcc/$triplet/%(version)s lib/gcc/$triplet/%(version)s && '
+    'ln -s $EBROOTGENTOO/usr/lib/gcc/$triplet/%(version)s lib64 && '
+    'ln -s $EBROOTGENTOO/usr/lib/gcc/$triplet/%(version)s/include/g++-v* include/c++/%(version)s && '
+    'ln -s $EBROOTGENTOO/usr/share/gcc-data/$triplet/%(version)s share'
 ]
 
 hidden = True
