@@ -583,7 +583,7 @@ class EasyConfigTest(TestCase):
                     failing_checks.append("'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
-            if easyblock in ['PythonBundle', 'PythonPackage']:
+            if use_pip and easyblock in ['PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
