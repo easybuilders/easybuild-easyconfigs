@@ -642,7 +642,7 @@ class EasyConfigTest(TestCase):
             for http_url in http_regex.findall(ec_txt):
                 https_url = http_url.replace('http://', 'https://')
                 try:
-                    https_url_works = bool(urlopen(https_url))
+                    https_url_works = bool(urlopen(https_url, timeout=5))
                 except Exception:
                     https_url_works = False
 
