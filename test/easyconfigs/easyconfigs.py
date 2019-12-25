@@ -514,10 +514,11 @@ class EasyConfigTest(TestCase):
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
         # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
-        # likewise for 'checksums'
+        # likewise for 'patches' and 'checksums'
         for ec in changed_ecs:
             if ec['easyblock'] == 'Bundle':
                 ec['sources'] = []
+                ec['patches'] = []
                 ec['checksums'] = []
 
         # filter out deprecated easyconfigs
