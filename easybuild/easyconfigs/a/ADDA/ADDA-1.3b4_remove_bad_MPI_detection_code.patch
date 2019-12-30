@@ -1,0 +1,48 @@
+Remove bad MPI compiler detection code.
+
+Åke Sandgren, 20190502
+diff -ru adda-1.3b4.orig/src/mpi/Makefile adda-1.3b4/src/mpi/Makefile
+--- adda-1.3b4.orig/src/mpi/Makefile	2014-02-20 15:48:03.000000000 +0100
++++ adda-1.3b4/src/mpi/Makefile	2019-05-02 12:27:30.173683945 +0200
+@@ -19,17 +19,6 @@
+ # for compilation. However, the default set of options may work out-of-box on some systems.
+ #=======================================================================================================================
+ 
+-# Heurestics to determine if MPI wrapper is available. If $(MPICC) is defined it is used as is. Otherwise we try to
+-# locate 'mpicc' wrapper through system call, and reverse to $(CC) as the last resort. This should work fine in many
+-# cases, but can be replaced by a simple assignment of MPICC.
+-ifndef MPICC
+-  ifeq ($(shell which mpicc > /dev/null 2>&1 && echo 0),0)
+-    MPICC := mpicc
+-  else
+-    MPICC := $(CC)
+-  endif
+-endif
+-
+ # Compiler dependent options
+ # These are options for a particular Alpha system
+ ifeq ($(COMPILER),compaq)
+@@ -37,23 +26,6 @@
+   LDFLAGS += -lmpi -lelan
+ endif
+ 
+-# If the compiler is used directly, a few additional options are needed
+-ifeq ($(MPICC),$(CC))
+-  # Depending on a particular MPI installation one may need to manually specify paths to MPI headers and libraries.
+-  # Path should be absolute or relative to the location of this Makefile.
+-  #CFLAGS += -I"C:/Program Files/MPICH2/include"
+-  #LDFLAGS += -L"C:/Program Files/MPICH2/lib"
+-
+-  LDFLAGS += -lmpi
+-# If MPI compiler wrapper is used, environmental variables are set to define C compiler and linker
+-else
+-  # for MPICH
+-  export MPICH_CC = $(CC)
+-  export MPICH_CLINKER = $(CC)
+-  # for OpenMPI
+-  export OMPI_CC = $(CC)
+-endif
+-
+ #=======================================================================================================================
+ # !!! End of control section. Everything below is not designed to be modified by user
+ #=======================================================================================================================

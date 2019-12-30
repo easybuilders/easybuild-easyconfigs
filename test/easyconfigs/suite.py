@@ -36,11 +36,10 @@ import sys
 import tempfile
 import unittest
 
-from vsc.utils import fancylogger
-
-import easybuild.tools.build_log  # initialize EasyBuild logging, so we disable it
+import easybuild.tools.build_log  # noqa initialize EasyBuild logging, so we can disable it
 import test.easyconfigs.easyconfigs as e
 import test.easyconfigs.styletests as s
+from easybuild.base import fancylogger
 
 # disable all logging to significantly speed up tests
 fancylogger.disableDefaultHandlers()
@@ -53,17 +52,7 @@ os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_'
 
 # call suite() for each module and then run them all
 SUITE = unittest.TestSuite([x.suite() for x in [e, s]])
-
-# uses XMLTestRunner if possible, so we can output an XML file that can be supplied to Jenkins
-xml_msg = ""
-try:
-    import xmlrunner  # requires unittest-xml-reporting package
-    xml_dir = 'test-reports'
-    res = xmlrunner.XMLTestRunner(output=xml_dir, verbosity=1).run(SUITE)
-    xml_msg = ", XML output of tests available in %s directory" % xml_dir
-except ImportError, err:
-    sys.stderr.write("WARNING: xmlrunner module not available, falling back to using unittest...\n\n")
-    res = unittest.TextTestRunner().run(SUITE)
+res = unittest.TextTestRunner().run(SUITE)
 
 shutil.rmtree(os.environ['EASYBUILD_TMP_LOGDIR'])
 del os.environ['EASYBUILD_TMP_LOGDIR']

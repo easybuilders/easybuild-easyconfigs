@@ -1,0 +1,48 @@
+easyblock = 'Tarball'
+
+name = 'QDD'
+version = '3.1.2'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://net.imbe.fr/~emeglecz/qdd.html'
+description = """A user-friendly program to select microsatellite markers and design primers
+ from large sequencing projects."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+source_urls = ['http://net.imbe.fr/~emeglecz/QDDweb/QDD-%(version)s/']
+sources = ['QDD-%(version)s.tar.gz']
+checksums = ['9ce259000699cc60f0afdbd4a2f3b2b35fda1c48f8cd4c1b72ddfd1c334ae1a4']
+
+dependencies = [
+    ('Perl', '5.28.0'),
+    ('BioPerl', '1.7.2', versionsuffix),
+    ('BLAST+', '2.7.1'),
+    ('Primer3', '2.4.0'),
+    ('ClustalW2', '2.1'),
+    ('RepeatMasker', '4.0.8', versionsuffix + '-HMMER'),
+]
+
+postinstallcmds = [
+    "ls %(installdir)s/*.pl | xargs sed -i '1 s@^.*$@#!/usr/bin/env perl@'",
+    "chmod a+x %(installdir)s/*.pl",
+    'sed -i "s@blast_path.*@blast_path = $EBROOTBLASTPLUS/bin/@" %(installdir)s/set_qdd_default.ini',
+    'sed -i "s@clust_path.*@clust_path = $EBROOTCLUSTALW2/bin/@" %(installdir)s/set_qdd_default.ini',
+    'sed -i "s@primer3_path.*@primer3_path= `ls -d $EBROOTPRIMER3/primer3-*/src`/@" %(installdir)s/set_qdd_default.ini',
+    'sed -i "s@primer3_version.*@primer3_version = 2@" %(installdir)s/set_qdd_default.ini',
+    'sed -i "s@qdd_folder.*@qdd_folder = %(installdir)s/@" %(installdir)s/set_qdd_default.ini',
+    'sed -i "s@out_folder.*@out_folder = .@" %(installdir)s/set_qdd_default.ini',
+    'sed -i "s@rm_path.*@rm_path = @" %(installdir)s/set_qdd_default.ini',
+]
+
+sanity_check_paths = {
+    'files': ['QDD.pl'],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': '',
+}
+
+moduleclass = 'bio'

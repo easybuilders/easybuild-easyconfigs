@@ -1,0 +1,49 @@
+easyblock = 'Tarball'
+
+name = 'shovill'
+version = '1.0.4'
+versionsuffix = '-Python-2.7.15'
+
+homepage = 'https://github.com/tseemann/shovill'
+description = "Faster SPAdes assembly of Illumina reads"
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/tseemann/shovill/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['6eaa6c596190f47b83e1acce0ca1afc9d0d133762b028f83ca8d2ca1533b5389']
+
+# excluded (optional) dependency: skesa
+# cfr. https://github.com/ncbi/ngs-tools/tree/master/tools/skesa
+dependencies = [
+    ('SAMtools', '1.9'),
+    ('BWA', '0.7.17'),
+    ('Mash', '2.1'),
+    ('seqtk', '1.3'),
+    ('SKESA', '2.3.0'),
+    ('MEGAHIT', '1.1.4', versionsuffix),
+    ('KMC', '3.1.0'),
+    ('Pilon', '1.23', '-Java-1.8', True),
+    ('SPAdes', '3.13.0'),
+    ('Lighter', '1.1.2'),
+    ('FLASH', '1.2.11'),
+    ('Trimmomatic', '0.38', '-Java-1.8', True),
+    ('Velvet', '1.2.10', '-mt-kmer_191'),
+    ('pigz', '2.4'),
+    ('samclip', '0.2', '-Perl-5.28.0'),
+]
+
+postinstallcmds = [
+    """echo exec java -jar \$EBROOTTRIMMOMATIC/trimmomatic-*.jar '"$@"' > %(installdir)s/bin/trimmomatic""",
+    """echo exec java -jar $EBROOTPILON/pilon-*.jar '"$@"' > %(installdir)s/bin/pilon""",
+    "chmod a+rx %(installdir)s/bin/trimmomatic %(installdir)s/bin/pilon",
+]
+
+sanity_check_paths = {
+    'files': ['bin/shovill'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["shovill --check"]
+
+moduleclass = 'bio'

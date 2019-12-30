@@ -1,0 +1,56 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - https://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'mpiP'
+version = '3.4.1'
+
+homepage = 'http://mpip.sourceforge.net/'  # https:// doesn't work
+
+description = """
+ mpiP is a lightweight profiling library for MPI applications.  Because it
+ only collects statistical information about MPI functions, mpiP generates
+ considerably less overhead and much less data than tracing tools.  All the
+ information captured by mpiP is task-local. It only uses communication during
+ report generation, typically at the end of the experiment, to merge results
+ from all of the tasks into one output file.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2019a'}
+toolchainopts = {'usempi': True, 'strict': True, 'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['688bf37d73211e6a915f9fc59c358282a266d166c0a10af07a38a01a473296f0']
+
+builddependencies = [
+    ('binutils', '2.31.1'),
+]
+
+dependencies = [
+    ('libunwind', '1.3.1'),
+    ('zlib', '1.2.11'),
+]
+
+preconfigopts = 'CPPFLAGS="$CPPFLAGS -DPACKAGE -DPACKAGE_VERSION"'
+
+buildopts = ' && make shared'
+
+installopts = 'install-all'
+
+postinstallcmds = [
+    "sed -e 's,MPIP_LIB_DIR=.*,MPIP_LIB_DIR=%(installdir)s/lib,' -i bin/mpirun-mpip",
+    "sed -e 's,MPIP_DIR=.*,MPIP_DIR=%(installdir)s,' -i bin/srun-mpip",
+]
+
+sanity_check_paths = {
+    'files': ['bin/mpirun-mpip', 'include/mpiP-API.h', 'lib/libmpiP.%s' % SHLIB_EXT,
+              'share/doc/mpip/README'],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'LD_PRELOAD': ['lib/libmpiP.%s' % SHLIB_EXT]
+}
+
+moduleclass = 'perf'
