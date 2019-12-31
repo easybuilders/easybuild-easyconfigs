@@ -1,0 +1,36 @@
+c++11 std causes the build to fail on ppc64le, so stop it being set in various CMake files
+Patch by Simon Branford, University of Birmingham
+--- cmake/LLVM.cmake.orig	2019-12-30 18:43:07.077199000 +0000
++++ cmake/LLVM.cmake	2019-12-30 18:44:37.953255342 +0000
+@@ -96,6 +96,7 @@
+ string(REPLACE "${LLVM_PREFIX}" "${LLVM_PREFIX_CMAKE}" LLVM_CFLAGS "${LLVM_CFLAGS}")
+ run_llvm_config(LLVM_CXXFLAGS --cxxflags)
+ string(REPLACE "${LLVM_PREFIX}" "${LLVM_PREFIX_CMAKE}" LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
++string(REPLACE "-std=c++11" "" LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
+ run_llvm_config(LLVM_CPPFLAGS --cppflags)
+ string(REPLACE "${LLVM_PREFIX}" "${LLVM_PREFIX_CMAKE}" LLVM_CPPFLAGS "${LLVM_CPPFLAGS}")
+ run_llvm_config(LLVM_LDFLAGS --ldflags)
+--- CMakeLists.txt.orig	2019-12-30 18:53:08.443068000 +0000
++++ CMakeLists.txt	2019-12-30 18:54:27.201578300 +0000
+@@ -634,8 +634,8 @@
+ # down the kernels, so it needs to be determined whether it's worth
+ # the trouble.
+ set(DEFAULT_KERNEL_CL_FLAGS  "-xcl -fno-stack-protector -fPIC ${FLOATCONV_FLAG}")
+-set(DEFAULT_KERNEL_C_FLAGS "-xc -std=c11 -D__CBUILD__ -fno-math-errno -fno-stack-protector -fPIC ${FLOATCONV_FLAG}")
+-set(DEFAULT_KERNEL_CXX_FLAGS "-xc++ -std=c++11 -fno-stack-protector -fPIC ${FLOATCONV_FLAG}")
++set(DEFAULT_KERNEL_C_FLAGS "-xc -D__CBUILD__ -fno-math-errno -fno-stack-protector -fPIC ${FLOATCONV_FLAG}")
++set(DEFAULT_KERNEL_CXX_FLAGS "-xc++ -fno-stack-protector -fPIC ${FLOATCONV_FLAG}")
+ 
+ set(EXTRA_KERNEL_FLAGS "" CACHE STRING "Extra arguments to all kernel compilation commands (defaults to empty)")
+ set(EXTRA_KERNEL_CL_FLAGS "" CACHE STRING "Extra arguments to kernel CL compiler (defaults to empty)")
+--- tests/regression/CMakeLists.txt.orig	2019-12-30 19:15:16.490362000 +0000
++++ tests/regression/CMakeLists.txt	2019-12-30 19:15:30.527613525 +0000
+@@ -53,7 +53,7 @@
+ if (MSVC)
+   add_compile_options(${OPENCL_CFLAGS})
+ else ()
+-  add_compile_options("-std=c++11" "-Wno-deprecated" "-Wno-deprecated-declarations" ${OPENCL_CFLAGS})
++  add_compile_options("-Wno-deprecated" "-Wno-deprecated-declarations" ${OPENCL_CFLAGS})
+ endif ()
+  
+ add_definitions("-DSRCDIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
