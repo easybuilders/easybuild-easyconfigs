@@ -31,8 +31,8 @@ Style tests for easyconfig files. Uses pep8.
 import glob
 import sys
 from unittest import TestCase, TestLoader, main
-from vsc.utils import fancylogger
 
+from easybuild.base import fancylogger
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.framework.easyconfig.style import check_easyconfigs_style
 
@@ -48,7 +48,7 @@ class StyleTest(TestCase):
     def test_style_conformance(self):
         """Check the easyconfigs for style"""
         if 'pep8' not in sys.modules:
-            print "Skipping style checks (no pep8 available)"
+            print("Skipping style checks (no pep8 available)")
             return
 
         # all available easyconfig files

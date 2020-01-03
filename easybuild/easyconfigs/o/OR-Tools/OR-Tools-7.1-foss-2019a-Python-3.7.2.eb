@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'OR-Tools'
+version = '7.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://developers.google.com/optimization/'
+description = """Google Optimization Tools (a.k.a., OR-Tools) is an open-source, fast
+and portable software suite for solving combinatorial optimization problems."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = [GITHUB_SOURCE]
+github_account = 'google'
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-fix-makefiles.patch']
+checksums = [
+    '6118a931ffcf172c7e2371c3392f82380e9d2a29840daba7caff239ad70d4b44',  # v7.1.tar.gz
+    '33872137acd45dba13e6ebd9cd9d2671cfdff73774937e8e82baae3ca3c83b95',  # OR-Tools-7.1-fix-makefiles.patch
+]
+
+builddependencies = [
+    ('SWIG', '3.0.12', versionsuffix),
+    ('CMake', '3.13.3'),
+    ('Autotools', '20180311'),
+]
+
+local_gurobiver = '8.1.1'
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('zlib', '1.2.11'),
+    ('Java', '11', '', True),
+    # Gurobi is optional
+    ('Gurobi', local_gurobiver, '', True),
+]
+
+skipsteps = ['configure']
+
+local_gurobivershort = ''.join(local_gurobiver.split('.')[:2])
+
+# OR-Tools want it's own dependencies (like protobuf)
+prebuildopts = 'make third_party &&'
+buildopts = 'python cc UNIX_SWIG_BINARY=$EBROOTSWIG/bin/swig JAVA_HOME=$EBROOTJAVA UNIX_PYTHON_VER=%(pyshortver)s'
+buildopts += ' UNIX_GUROBI_DIR=$EBROOTGUROBI GUROBI_LIB_VERSION=%s' % local_gurobivershort
+
+# prefix is the subpath in DESTDIR, defaults to /usr/local
+preinstallopts = "prefix='' DESTDIR=%(installdir)s"
+install_cmd = 'make'
+installopts = 'install_python install_cc'
+
+runtest = 'test_python test_cc'
+
+sanity_check_paths = {
+    'files': ['lib/libortools.%s' % SHLIB_EXT],
+    'dirs': ['include/ortools', 'lib/python%(pyshortver)s/site-packages']
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'math'
