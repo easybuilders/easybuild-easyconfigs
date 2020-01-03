@@ -1,5 +1,7 @@
 name = 'ANSYS'
 version = '2019R2'
+versionsuffix = 'v194'
+versionprefix = '2018.3.222'
 
 homepage = 'http://www.ansys.com'
 description = """ANSYS simulation software enables organizations to confidently predict 
@@ -8,30 +10,38 @@ description = """ANSYS simulation software enables organizations to confidently 
 
 toolchain = SYSTEM
 
-# create a zip file from the 2 install iso files.
-# make sure all files of the iso's are in the same directory.
+# create tar ball from the installation iso files
 sources = ['ANSYS-%(version)s.tar']
 
 postinstallcmds = [
-	# fix missing execute permission for Others for at least one folder
+	# fix missing execute permission for others on at least one folder
 	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
 	# find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
-	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-	# call setrpaths.sh on all subdirectories called bin, lib or lib64, or lnamd64
-	"for d in $(find %(installdir)s -name 'bin' -o -name 'lib' -o -name 'lib64' -o -name 'lnamd64' -o -name 'linx64'); do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
-        # force setrpaths.sh to run on all instances of lmutil using the --any_interpreter switch ie)
-        #  /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/lmutil --any_interpreter
+	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+           sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+        # rename built-in libstdc++.so* to libstdc++.so*.bak because they are older than what we have in Nix, and cause problem with other binaries
+        "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+        # call setrpaths.sh on binary containing directories
+        "for d in $(find %(installdir)s -name 'bin' -o -name 'lnamd64' -o -name 'linx64' -o -name 'Linux64' -o -name 'machines'); \
+	  do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
+        # run setrpaths.sh on all instances of lmutil for any_interpreter
         "find %(installdir)s -name 'lmutil' -exec /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-        # revert changes made by setrpaths.sh back to using the system interpreter: ansyscl  ansysli_client  ansysli_util  ansysls_client ie)
-        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/ansyscl
-        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/ansysli_client
-        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/ansysli_util
-        #  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R2/shared_files/licensing/linx64/ansysls_client
+        # revert changes made by setrpaths.sh to system interpreter for: ansyscl ansysli_client ansysli_util ansysls_client ie)
+        # patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/shared_files/licensing/linx64/filename
         "find %(installdir)s -name 'ansyscl' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
         "find %(installdir)s -name 'ansysli_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
         "find %(installdir)s -name 'ansysli_util' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-        "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;"
+        "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+        # enable additive extension on workbench ACT start page
+        "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
+          %(installdir)s/%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
+        # for ansys versions >= 17.2 manually patch setup-mwuser (the original filesize 4470 should become 4472 when patched)
+        # /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/v195/commonfiles/MainWin/linx64/mw/setup-mwuser
+        "patch -d%(installdir)s/%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/setup-mwuser.patch"
 ]
+
+# standard patching cannot be done since setup-mwuser does not exist until after ansys installer has run such as
+#patches = [('/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/%s/setup-mwuser.patch' % version, '../v194/')]
 
 modluafooter = """
 require("SitePackage")
@@ -49,9 +59,8 @@ elseif (path) then
 end
 setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
 if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
-        setenv("TMI_CONFIG",pathJoin(root,"v194/commonfiles/MPI/Intel/2018.3.222/linx64/etc/tmi.conf"))
+        setenv("TMI_CONFIG",pathJoin(root,"%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
 end
 """
-
 
 moduleclass = 'tools'
