@@ -241,9 +241,9 @@ class EasyConfigTest(TestCase):
 
         # some software packages require an old version of a particular dependency
         old_dep_versions = {
-            # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, PySCF, WIEN2k
+            # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
             # (Qiskit depends on PySCF)
-            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'PySCF-', 'Qiskit-', 'WIEN2k-']),
+            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'horton-', 'PySCF-', 'Qiskit-', 'WIEN2k-']),
             # OPERA requires SAMtools 0.x
             'SAMtools': (r'0\.', ['ChimPipe-0.9.5', 'Cufflinks-2.2.1', 'OPERA-2.0.6']),
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
@@ -533,8 +533,8 @@ class EasyConfigTest(TestCase):
     def check_python_packages(self, changed_ecs):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
-        # MATLAB-Engine, PyTorch do not support installation with 'pip'
-        whitelist_pip = ['MATLAB-Engine-*', 'PyTorch-*']
+        # These packages do not support installation with 'pip'
+        whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
 
         failing_checks = []
 
