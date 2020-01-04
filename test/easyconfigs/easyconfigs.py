@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2019 Ghent University
+# Copyright 2013-2020 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -241,9 +241,9 @@ class EasyConfigTest(TestCase):
 
         # some software packages require an old version of a particular dependency
         old_dep_versions = {
-            # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, PySCF, WIEN2k
+            # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
             # (Qiskit depends on PySCF)
-            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'PySCF-', 'Qiskit-', 'WIEN2k-']),
+            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'horton-', 'PySCF-', 'Qiskit-', 'WIEN2k-']),
             # OPERA requires SAMtools 0.x
             'SAMtools': (r'0\.', ['ChimPipe-0.9.5', 'Cufflinks-2.2.1', 'OPERA-2.0.6']),
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
@@ -514,10 +514,11 @@ class EasyConfigTest(TestCase):
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
         # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
-        # likewise for 'checksums'
+        # likewise for 'patches' and 'checksums'
         for ec in changed_ecs:
             if ec['easyblock'] == 'Bundle':
                 ec['sources'] = []
+                ec['patches'] = []
                 ec['checksums'] = []
 
         # filter out deprecated easyconfigs
@@ -532,8 +533,8 @@ class EasyConfigTest(TestCase):
     def check_python_packages(self, changed_ecs):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
-        # MATLAB-Engine, PyTorch do not support installation with 'pip'
-        whitelist_pip = ['MATLAB-Engine-*', 'PyTorch-*']
+        # These packages do not support installation with 'pip'
+        whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
 
         failing_checks = []
 
@@ -641,7 +642,7 @@ class EasyConfigTest(TestCase):
             for http_url in http_regex.findall(ec_txt):
                 https_url = http_url.replace('http://', 'https://')
                 try:
-                    https_url_works = bool(urlopen(https_url))
+                    https_url_works = bool(urlopen(https_url, timeout=5))
                 except Exception:
                     https_url_works = False
 
