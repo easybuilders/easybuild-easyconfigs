@@ -1,0 +1,75 @@
+--- CMakeLists.txt.orig	2019-12-03 22:40:02.013770373 +0000
++++ CMakeLists.txt	2019-12-03 22:39:57.870748219 +0000
+@@ -118,7 +118,7 @@
+ endif ()
+ 
+ # set linker commands (needs to be done after defining the project)
+-set (CMAKE_LINKER           "${PETSC_LINKER}")
++set (CMAKE_LINKER           "${PETSC_LINKER} -lmpi_cxx")
+ 
+ if (CMAKE_BUILD_TYPE STREQUAL "")
+   set (CMAKE_BUILD_TYPE "RELEASE")
+--- Makefile.orig	2019-11-25 16:51:39.765756459 +0000
++++ Makefile	2019-12-13 19:16:16.969405709 +0000
+@@ -3,7 +3,7 @@
+ # Makefile for the installation of DAMASK
+ ########################################################################################
+ .PHONY: all
+-all: spectral FEM processing
++all: spectral FEM 
+ 
+ .PHONY: spectral
+ spectral: build/spectral
+@@ -16,18 +16,15 @@
+ .PHONY: build/spectral
+ build/spectral:
+ 	@mkdir -p build/spectral
+-	@(cd build/spectral; cmake -Wno-dev -DDAMASK_SOLVER=SPECTRAL -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILDCMD_POST=${BUILDCMD_POST} -DBUILDCMD_PRE=${BUILDCMD_PRE} -DOPTIMIZATION=${OPTIMIZATION} -DOPENMP=${OPENMP} ../../;)
++	@(cd build/spectral; cmake  -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_Fortran_COMPILER=${EBROOTOPENMPI}/bin/mpif90 -DCMAKE_C_COMPILER=${EBROOTOPENMPI}/bin/mpicxx -Wno-dev -DDAMASK_SOLVER=SPECTRAL -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILDCMD_POST=${BUILDCMD_POST} -DBUILDCMD_PRE=${BUILDCMD_PRE} -DOPTIMIZATION=${OPTIMIZATION} -DOPENMP=${OPENMP} ../../;)
+ 
+ .PHONY: build/FEM
+ build/FEM:
+ 	@mkdir -p build/FEM
+-	@(cd build/FEM; cmake -Wno-dev -DDAMASK_SOLVER=FEM -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILDCMD_POST=${BUILDCMD_POST} -DBUILDCMD_PRE=${BUILDCMD_PRE} -DOPTIMIZATION=${OPTIMIZATION} -DOPENMP=${OPENMP} ../../;)
++	@(cd build/FEM; cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_Fortran_COMPILER=${EBROOTOPENMPI}/bin/mpif90 -DCMAKE_C_COMPILER=${EBROOTOPENMPI}/bin/mpicxx -Wno-dev -DDAMASK_SOLVER=FEM -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILDCMD_POST=${BUILDCMD_POST} -DBUILDCMD_PRE=${BUILDCMD_PRE} -DOPTIMIZATION=${OPTIMIZATION} -DOPENMP=${OPENMP} ../../;)
+ 
+ .PHONY: clean
+ clean:
+ 	@rm -rf build
+ 
+-.PHONY: processing
+-processing:
+-	@./installation/symlink_Processing.py ${MAKEFLAGS}
+ 
+--- python/damask/environment.py.orig	2020-01-07 07:08:22.351956782 +0000
++++ python/damask/environment.py	2020-01-08 05:57:04.553168093 +0000
+@@ -32,14 +32,21 @@
+     return os.path.normpath(os.path.join(os.path.realpath(__file__),'../../../'))
+ 
+   def get_options(self):
+-    with open(self.relPath(self.rootDir()+'/CONFIG')) as configFile:
+-      for line in configFile:
+-        l = re.sub('^set ', '', line).strip()                                                       # remove "set" (tcsh) when setting variables
+-        if l and not l.startswith('#'):
+-          items = re.split(r'\s*=\s*',l)
+-          if len(items) == 2: 
+-            self.options[items[0].upper()] = \
+-              re.sub('\$\{*DAMASK_ROOT\}*',self.rootDir(),os.path.expandvars(items[1]))             # expand all shell variables and DAMASK_ROOT
++    self.options['DAMASK_BIN']=os.path.join(self.rootDir(), 'bin/')
++    self.options['DAMASK_NUM_THREADS']='4'
++    if not "EBROOTMSC" in os.environ:
++      self.options['MSC_ROOT']='/opt/msc'
++    else:
++      self.options['MSC_ROOT']=os.environ["EBROOTMSC"]
++    if not "EBVERSIONMARC" in os.environ:
++      self.options['MARC_VERSION']="2018.1"
++    else:
++      self.options['MARC_VERSION']=os.environ["EBVERSIONMARC"]
++    if not "EBVERSIONABAQUS" in os.environ:
++      self.options['ABAQUS_VERSION']="2019"
++    else:
++      self.options['ABAQUS_VERSION']=os.environ["EBVERSIONABAQUS"]
++    self.options['DAMASK_HDF5']='OFF'
+       
+   def isAvailable(self,software,Nneeded =-1):
+     licensesNeeded = {'abaqus'  :5,
