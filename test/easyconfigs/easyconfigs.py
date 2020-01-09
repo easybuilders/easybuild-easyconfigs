@@ -597,8 +597,8 @@ class EasyConfigTest(TestCase):
         # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
         whitelist = ['CrayToolchain', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain', 'BuildEnv']
-        # GCC is just a bundle of GCCcore+binutils
-        bundles_whitelist = ['GCC']
+        # Autotools & (recent) GCC are just bundles (Autotools: Autoconf+Automake+libtool, GCC: GCCcore+binutils)
+        bundles_whitelist = ['Autotools', 'GCC']
 
         failing_checks = []
 
