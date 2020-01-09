@@ -530,7 +530,7 @@ class EasyConfigTest(TestCase):
         checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
-    def check_python_packages(self, changed_ecs):
+    def check_python_packages(self, changed_ecs, added_ecs_filenames):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
         # These packages do not support installation with 'pip'
@@ -581,7 +581,13 @@ class EasyConfigTest(TestCase):
             # Tkinter is an exception, since its version always matches the Python version anyway
             if any(dep['name'] == 'Python' for dep in ec['dependencies']) and ec.name != 'Tkinter':
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    failing_checks.append("'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn)
+                    msg = "'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn
+                    # This is only a failure for newly added ECs, not for existing ECS
+                    # As that would probably break many ECs
+                    if ec_fn in added_ecs_filenames:
+                        failing_checks.append(msg)
+                    else:
+                        print('\nNote: Failed non-critical check: ' + msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if use_pip and easyblock in ['PythonBundle', 'PythonPackage']:
@@ -653,6 +659,11 @@ class EasyConfigTest(TestCase):
 
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
+        def get_eb_files_from_diff(diff_filter):
+            cmd = "git diff --name-only --diff-filter=%s %s...HEAD" % (diff_filter, target_branch)
+            out, ec = run_cmd(cmd, simple=False)
+            return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
+
 
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
         travis_pr_test = re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)'))
@@ -682,16 +693,18 @@ class EasyConfigTest(TestCase):
                 cwd = change_dir(top_dir)
 
                 # get list of changed easyconfigs
-                cmd = "git diff --name-only --diff-filter=AM %s...HEAD" % target_branch
-                out, ec = run_cmd(cmd, simple=False)
-                changed_ecs_filenames = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
-                print("\nList of changed easyconfig files in this PR: %s" % '\n'.join(changed_ecs_filenames))
+                changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
+                added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
+                if changed_ecs_filenames:
+                    print("\nList of changed easyconfig files in this PR: %s" % '\n'.join(changed_ecs_filenames))
+                if added_ecs_filenames:
+                    print("\nList of added easyconfig files in this PR: %s" % '\n'.join(added_ecs_filenames))
 
                 change_dir(cwd)
 
                 # grab parsed easyconfigs for changed easyconfig files
                 changed_ecs = []
-                for ec_fn in changed_ecs_filenames:
+                for ec_fn in changed_ecs_filenames + added_ecs_filenames:
                     match = None
                     for ec in EasyConfigTest.parsed_easyconfigs:
                         if os.path.basename(ec['spec']) == ec_fn:
@@ -715,7 +728,7 @@ class EasyConfigTest(TestCase):
 
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
-                self.check_python_packages(changed_ecs)
+                self.check_python_packages(changed_ecs, added_ecs_filenames)
                 self.check_sanity_check_paths(changed_ecs)
                 self.check_https(changed_ecs)
 
