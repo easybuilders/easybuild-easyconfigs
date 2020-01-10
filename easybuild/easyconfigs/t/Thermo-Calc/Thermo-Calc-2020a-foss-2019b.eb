@@ -1,0 +1,67 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'CmdCp'
+
+name = 'Thermo-Calc'
+version = '2020a'
+
+homepage = "https://www.thermocalc.com"
+description = """The Thermo-Calc software is a sophisticated database and programming interface package used to
+ perform thermodynamic calculations. It can calculate complex homogeneous and heterogeneous phase equilibria, and then
+ plot the results as property diagrams and phase diagrams."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+# Install files provided by Met&Mat:
+# 1. Get the file titled e.g. 'Thermo-Calc-linux-2020.1.60405-124.run' from Met & Mat
+#    a. Note that for TC 2020a this file was erroneously named with a .man instead of .run extension
+# 2. Tar this: "tar -cvz -f Thermo-Calc-2020a.tar.gz Thermo-Calc-linux-2020.1.60405-124.run"
+# 3. Copy the resulting file to the sources directory
+sources = ["%(name)s-%(version)s.tar.gz"]
+checksums = ['33dee1cd041554060f90750c7bc383f8393d12633304da6d64e80a315ef68011']
+
+dependencies = [
+    ('libxslt', '1.1.34'),
+]
+
+local_command_list = [
+    "./Thermo-Calc*.run",
+    "--mode unattended",
+    "--enable-components thermo,databases,tcapi,tq",
+    "--license_server met-prism2-lm2.bham.ac.uk",
+    "--installation_mode custom",
+    "--prefix %(builddir)s",
+]
+
+cmds_map = [('.*', " ".join(local_command_list))]
+
+buildininstalldir = True
+
+files_to_copy = []
+
+# Symlink for shared data
+postinstallcmds = [
+    "ln -s ${BB_APPS_DATA}/Thermo-Calc/*/TT* %(installdir)s/data/"
+]
+
+modextravars = {
+    'TC20A_HOME': '%(installdir)s',
+    'TCPATH': '%(installdir)s',
+    'LSHOST': 'met-prism2-lm2.bham.ac.uk'
+}
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': './SDK/TQ',
+    'PATH': '',
+}
+
+modaliases = {"tc": "Console.sh"}
+
+sanity_check_paths = {
+    'files': ["Console.sh", "Thermo-Calc.sh"],
+    'dirs': [],
+}
+
+moduleclass = 'cae'
+
+# Need to ensure that only members of the p-thermocalc group can access the module
+local_bham_group = "p-thermocalc"
