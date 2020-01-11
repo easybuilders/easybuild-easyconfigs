@@ -1,0 +1,430 @@
+This patch establishes Python 3 compatibility of gradunwarp (HCP) as
+proposed in https://github.com/Washington-University/gradunwarp/pull/4.
+
+From 2fad72cde02aba45f392fe3a7076bcd549315cab Mon Sep 17 00:00:00 2001
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Date: Wed, 25 Nov 2015 23:12:21 +0100
+Subject: [PATCH 1/2] py3: make modules compatible
+
+Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+---
+ gradunwarp/core/interp3_ext.c               | 42 ++++++++++++++++++--
+ gradunwarp/core/legendre_ext.c              | 43 +++++++++++++++++++--
+ gradunwarp/core/transform_coordinates_ext.c | 43 +++++++++++++++++++--
+ 3 files changed, 119 insertions(+), 9 deletions(-)
+
+diff --git a/gradunwarp/core/interp3_ext.c b/gradunwarp/core/interp3_ext.c
+index ee1b191..9990e3c 100644
+--- a/gradunwarp/core/interp3_ext.c
++++ b/gradunwarp/core/interp3_ext.c
+@@ -26,9 +26,45 @@ static PyMethodDef tricubicmethods[] = {
+ };
+ 
+ // This function is essential for an extension for Numpy created in C
+-void initinterp3_ext() {
+-	(void) Py_InitModule("interp3_ext", tricubicmethods);
+-	import_array();
++#if PY_MAJOR_VERSION >= 3
++
++static struct PyModuleDef moduledef = {
++        PyModuleDef_HEAD_INIT,
++        "interp3_ext",
++        NULL,
++        -1,
++        tricubicmethods,
++        NULL,
++        NULL,
++        NULL,
++        NULL
++};
++#define INITERROR return NULL
++
++PyObject *
++PyInit_interp3_ext(void)
++
++#else
++#define INITERROR return
++
++void
++initinterp3_ext(void)
++#endif
++{
++#if PY_MAJOR_VERSION >= 3
++    PyObject *module = PyModule_Create(&moduledef);
++#else
++    PyObject *module = Py_InitModule("interp3_ext", tricubicmethods);
++#endif
++
++    if (module == NULL)
++        INITERROR;
++
++    import_array();
++
++#if PY_MAJOR_VERSION >= 3
++    return module;
++#endif
+ }
+ 
+ // the data should be FLOAT32 and should be ensured in the wrapper 
+diff --git a/gradunwarp/core/legendre_ext.c b/gradunwarp/core/legendre_ext.c
+index 6ba6b91..372c629 100644
+--- a/gradunwarp/core/legendre_ext.c
++++ b/gradunwarp/core/legendre_ext.c
+@@ -23,9 +23,46 @@ static PyMethodDef legendremethods[] = {
+ };
+ 
+ // This function is essential for an extension for Numpy created in C
+-void initlegendre_ext() {
+-	(void) Py_InitModule("legendre_ext", legendremethods);
+-	import_array();
++#if PY_MAJOR_VERSION >= 3
++
++static struct PyModuleDef moduledef = {
++        PyModuleDef_HEAD_INIT,
++        "legendre_ext",
++        NULL,
++        -1,
++        legendremethods,
++        NULL,
++        NULL,
++        NULL,
++        NULL
++};
++
++#define INITERROR return NULL
++
++PyObject *
++PyInit_legendre_ext(void)
++
++#else
++#define INITERROR return
++
++void
++initlegendre_ext(void)
++#endif
++{
++#if PY_MAJOR_VERSION >= 3
++    PyObject *module = PyModule_Create(&moduledef);
++#else
++    PyObject *module = Py_InitModule("legendre_ext", legendremethods);
++#endif
++
++    if (module == NULL)
++        INITERROR;
++
++    import_array();
++
++#if PY_MAJOR_VERSION >= 3
++    return module;
++#endif
+ }
+ 
+ // the data should be FLOAT32 and should be ensured in the wrapper 
+diff --git a/gradunwarp/core/transform_coordinates_ext.c b/gradunwarp/core/transform_coordinates_ext.c
+index e5ba7b1..8323f0b 100644
+--- a/gradunwarp/core/transform_coordinates_ext.c
++++ b/gradunwarp/core/transform_coordinates_ext.c
+@@ -24,9 +24,46 @@ static PyMethodDef transform_coordinatesmethods[] = {
+ 
+ 
+ // This function is essential for an extension for Numpy created in C
+-void inittransform_coordinates_ext() {
+-	(void) Py_InitModule("transform_coordinates_ext", transform_coordinatesmethods);
+-	import_array();
++#if PY_MAJOR_VERSION >= 3
++
++static struct PyModuleDef moduledef = {
++        PyModuleDef_HEAD_INIT,
++        "transform_coordinates_ext",
++        NULL,
++        -1,
++        transform_coordinatesmethods,
++        NULL,
++        NULL,
++        NULL,
++        NULL
++};
++
++#define INITERROR return NULL
++
++PyObject *
++PyInit_transform_coordinates_ext(void)
++
++#else
++#define INITERROR return
++
++void
++inittransform_coordinates_ext(void)
++#endif
++{
++#if PY_MAJOR_VERSION >= 3
++    PyObject *module = PyModule_Create(&moduledef);
++#else
++    PyObject *module = Py_InitModule("transform_coordinates_ext", transform_coordinatesmethods);
++#endif
++
++    if (module == NULL)
++        INITERROR;
++
++    import_array();
++
++#if PY_MAJOR_VERSION >= 3
++    return module;
++#endif
+ }
+ 
+ 
+
+From d3a0626f7bd013196ad9da3cfe313b3a9f29317e Mon Sep 17 00:00:00 2001
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Date: Wed, 25 Nov 2015 23:34:51 +0100
+Subject: [PATCH 2/2] py3: make other stuff compatible
+
+Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+---
+ gradunwarp/core/__init__.py        |  3 ++-
+ gradunwarp/core/coeffs.py          | 38 ++++++++++++++++++------------
+ gradunwarp/core/unwarp_resample.py | 27 +++++++++++----------
+ gradunwarp/core/utils.py           | 17 ++++++-------
+ 4 files changed, 48 insertions(+), 37 deletions(-)
+
+diff --git a/gradunwarp/core/__init__.py b/gradunwarp/core/__init__.py
+index c032758..9d73881 100644
+--- a/gradunwarp/core/__init__.py
++++ b/gradunwarp/core/__init__.py
+@@ -4,4 +4,5 @@
+ #   copyright and license terms.
+ #
+ ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+-from unwarp_resample import Unwarper
++from __future__ import absolute_import
++from .unwarp_resample import Unwarper
+diff --git a/gradunwarp/core/coeffs.py b/gradunwarp/core/coeffs.py
+index 010556e..efa9a77 100644
+--- a/gradunwarp/core/coeffs.py
++++ b/gradunwarp/core/coeffs.py
+@@ -4,12 +4,13 @@
+ #   copyright and license terms.
+ #
+ ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
++from __future__ import absolute_import
+ from collections import namedtuple
+ import numpy as np
+ import logging
+ import re
+-import globals
+-from globals import siemens_cas, ge_cas
++from . import globals
++from .globals import siemens_cas, ge_cas
+ 
+ 
+ log = logging.getLogger('gradunwarp')
+@@ -18,6 +19,13 @@
+ Coeffs = namedtuple('Coeffs', 'alpha_x, alpha_y, alpha_z, \
+                         beta_x, beta_y, beta_z, R0_m')
+ 
++try:
++    advance_iterator = next
++except NameError:
++    def advance_iterator(it):
++        return it.next()
++next = advance_iterator
++
+ 
+ def get_coefficients(vendor, cfile):
+     ''' depending on the vendor and the coefficient file,
+@@ -115,25 +123,25 @@ def grad_file_parse(gfile, txt_var_map):
+     modifies txt_var_map in place
+     '''
+     gf = open(gfile, 'r')
+-    line = gf.next()
++    line = next(gf)
+     # skip the comments
+     while not line.startswith('#*] END:'):
+-        line = gf.next()
++        line = next(gf)
+ 
+     # get R0
+-    line = gf.next()
+-    line = gf.next()
+-    line = gf.next()
++    line = next(gf)
++    line = next(gf)
++    line = next(gf)
+     R0_m = float(line.strip().split()[0])
+ 
+     # go to the data
+-    line = gf.next()
+-    line = gf.next()
+-    line = gf.next()
+-    line = gf.next()
+-    line = gf.next()
+-    line = gf.next()
+-    line = gf.next()
++    line = next(gf)
++    line = next(gf)
++    line = next(gf)
++    line = next(gf)
++    line = next(gf)
++    line = next(gf)
++    line = next(gf)
+ 
+     xmax = 0
+     ymax = 0
+@@ -164,7 +172,7 @@ def grad_file_parse(gfile, txt_var_map):
+         if line.find('B') != -1 and line.find('z') != -1:
+             txt_var_map['Beta_z'][x,y] = float(line.split()[-2])
+         try:
+-            line = gf.next()
++            line = next(gf)
+         except StopIteration:
+             break
+ 
+diff --git a/gradunwarp/core/unwarp_resample.py b/gradunwarp/core/unwarp_resample.py
+index 4369f66..d3edd21 100644
+--- a/gradunwarp/core/unwarp_resample.py
++++ b/gradunwarp/core/unwarp_resample.py
+@@ -4,6 +4,7 @@
+ #   copyright and license terms.
+ #
+ ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
++from __future__ import absolute_import, print_function
+ import numpy as np
+ import sys
+ import pdb
+@@ -11,11 +12,11 @@
+ import math
+ import logging
+ from scipy import ndimage
+-import utils
+-from utils import CoordsVector as CV
+-from utils import factorial
+-import globals
+-from globals import siemens_max_det
++from . import utils
++from .utils import CoordsVector as CV
++from .utils import factorial
++from . import globals
++from .globals import siemens_max_det
+ import nibabel as nib
+ import subprocess
+ 
+@@ -199,13 +200,13 @@ def non_linear_unwarp_siemens(self, volshape, dv, dxyz, m_rcs2lai, m_rcs2lai_noh
+ 
+         log.info('Unwarping slice by slice')
+         # for every slice
+-        for s in xrange(ns):
++        for s in range(ns):
+             # pretty print
+             sys.stdout.flush()
+             if (s+1) % 10 == 0:
+-                print s+1,
++                print(s+1, end=' ')
+             else:
+-                print '.',
++                print('.', end=' ')
+                 
+             # hopefully, free memory
+             gc.collect()
+@@ -305,7 +306,7 @@ def non_linear_unwarp_siemens(self, volshape, dv, dxyz, m_rcs2lai, m_rcs2lai_noh
+             fullWarp[...,s,2]=vfsl.z
+             out[..., s] = im2
+ 
+-        print
++        print()
+        
+         img=nib.Nifti1Image(fullWarp,self.m_rcs2ras)
+         nib.save(img,"fullWarp_abs.nii.gz")
+@@ -405,9 +406,9 @@ def siemens_B(alpha, beta, x1, y1, z1, R0):
+     phi = np.arctan2(y1 / r, x1 / r)
+ 
+     b = np.zeros(x1.shape)
+-    for n in xrange(0, nmax + 1):
++    for n in range(0, nmax + 1):
+         f = np.power(r / R0, n)
+-        for m in xrange(0, n + 1):
++        for m in range(0, n + 1):
+             f2 = alpha[n, m] * np.cos(m * phi) + beta[n, m] * np.sin(m * phi)
+             _ptemp = utils.legendre(n, m, np.cos(theta))
+             #_ptemp = scipy.special.lpmv(m, n, np.cos(theta))
+@@ -436,10 +437,10 @@ def ge_D(alpha, beta, x1, y1, z1):
+     r = r * 100.0  # GE wants cm, so meters -> cm
+     d = np.zeros(x1.shape)
+ 
+-    for n in xrange(0, nmax + 1):
++    for n in range(0, nmax + 1):
+         # So GE uses the usual unnormalized legendre polys.
+         f = np.power(r, n)
+-        for m in xrange(0, n + 1):
++        for m in range(0, n + 1):
+             f2 = alpha[n, m] * np.cos(m * theta) + beta[n, m] \
+             * np.sin(m * theta)
+             _p = utils.legendre(n, m, np.cos(phi))
+diff --git a/gradunwarp/core/utils.py b/gradunwarp/core/utils.py
+index bd93749..76006fd 100644
+--- a/gradunwarp/core/utils.py
++++ b/gradunwarp/core/utils.py
+@@ -4,6 +4,7 @@
+ #   copyright and license terms.
+ #
+ ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
++from __future__ import print_function
+ import numpy as np
+ from collections import namedtuple
+ import math
+@@ -45,7 +46,7 @@ def transform_coordinates(A, M):
+     A3 = A3.astype(np.float32)
+     M = M.astype(np.float32)
+     try:
+-        from transform_coordinates_ext import _transform_coordinates
++        from .transform_coordinates_ext import _transform_coordinates
+     except ImportError:
+         raise ImportError('The transform_coordinates C extension module is missing.' \
+                            ' Fallback code not yet implemented.')
+@@ -256,7 +257,7 @@ def legendre_old(nu, mu, x):
+         return p_nu
+ 
+     # Iterate the recursion relation.
+-    for n in xrange(mu + 2, nu + 1):
++    for n in range(mu + 2, nu + 1):
+         result = (x * (2 * n - 1) * p_nu - (n + mu - 1) * p_nu_prev) / (n - mu)
+         p_nu_prev = p_nu
+         p_nu = result
+@@ -266,7 +267,7 @@ def legendre_old(nu, mu, x):
+ 
+ def legendre(nu, mu, x):
+     try:
+-        from legendre_ext import _legendre
++        from .legendre_ext import _legendre
+     except ImportError:
+         raise ImportError('The legendre C extension module is missing.' \
+                            ' Fallback legendre code not yet implemented.')
+@@ -282,7 +283,7 @@ def interp3(vol, R, C, S):
+     TODO
+     '''
+     try:
+-        from interp3_ext import _interp3
++        from .interp3_ext import _interp3
+     except ImportError:
+         raise ImportError('The interp3 C extension module is missing.' \
+                            ' Fallback interp3 code not yet implemented.')
+@@ -312,15 +313,15 @@ def interp3(vol, R, C, S):
+     arr = np.sin(arr)
+     arr = arr.reshape(10, 20, 30).astype('float32')
+     gridn = 1
+-    for c in xrange(8):
++    for c in range(8):
+         R1 = np.linspace(4., 5., gridn).astype('float32')
+         C1 = np.linspace(11., 12., gridn).astype('float32')
+         S1 = np.linspace(15., 16., gridn).astype('float32')
+         tic = time.time()
+         v1 = interp3(arr, R1, C1, S1)
+         if gridn == 10 or gridn == 1:
+-            print v1
++            print(v1)
+         toc = time.time()
+-        print "1 followed by %d zeros" % c, "|", gridn, "|", \
+-               toc - tic, "seconds"
++        print("1 followed by %d zeros" % c, "|", gridn, "|", \
++               toc - tic, "seconds")
+         gridn = gridn * 10
