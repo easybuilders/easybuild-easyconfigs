@@ -1,0 +1,143 @@
+easyblock = 'CMakeMake'
+
+name = 'LAMMPS'
+version = '19Sep2019'
+patch_release = True
+
+# if you turn this on you should tweak your hardware in the kokkos options below
+kokkos = False
+
+# CUDA switch, if used will need to tweak hardware below
+cuda = False
+
+versionsuffix = ''
+if kokkos:
+    versionsuffix += '-kokkos'
+if cuda:
+    versionsuffix += '-CUDA'
+versionsuffix += '-Python-%(pyver)s'
+
+homepage = 'http://lammps.sandia.gov/'
+description = """LAMMPS is a classical molecular dynamics code, and an acronym
+for Large-scale Atomic/Molecular Massively Parallel Simulator. LAMMPS has
+potentials for solid-state materials (metals, semiconductors) and soft matter
+(biomolecules, polymers) and coarse-grained or mesoscopic systems. It can be
+used to model atoms or, more generically, as a parallel particle simulator at
+the atomic, meso, or continuum scale. LAMMPS runs on single processors or in
+parallel using message-passing techniques and a spatial-decomposition of the
+simulation domain. The code is designed to be easy to modify or extend with new
+functionality.
+"""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/lammps/lammps/releases/']
+if patch_release:
+    sources = ['patch_%(version)s.tar.gz']
+    source_dir_name = '%(namelower)s-patch_%(version)s'
+else:
+    sources = ['%(version)s.tar.gz']
+    source_dir_name = '%(namelower)s-%(version)s'
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('pkg-config', '0.29.2')
+]
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('libpng', '1.6.36'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('netCDF', '4.6.2'),
+    ('GSL', '2.5'),
+    ('zlib', '1.2.11'),
+    ('gzip', '1.10'),
+    ('HDF5', '1.10.5'),
+    ('tbb', '2019_U4'),
+    # ('CUDA', '10.0.130', '', True),
+]
+
+separate_build_dir = True
+
+if kokkos:
+    # We need to give a short path to the sources otherwise we trigger an "Argument list too long" error from Kokkos
+    # We know things are built in a name/version/software subdir, so lets make a link a few dirs up
+    short_dir = '%(builddir)s/../../../'
+    short_sources = short_dir + source_dir_name
+    # CMakeLists.txt is in the cmake subdir
+    srcdir = short_sources + '/cmake'
+    # Make the symlink to solve our long path problem
+    preconfigopts = "ln -sf %(builddir)s/" + "%s %s &&" % (source_dir_name, short_sources)
+    # remove the symlink after the build to tidy up
+    postinstallcmds = ["rm %s" % short_sources]
+else:
+    srcdir = '%(builddir)s' + '/%s/cmake' % source_dir_name
+
+
+# Initialise configopts so we can comment out at will below
+configopts = ""
+
+parallelisation_packages = ['BUILD_MPI', 'BUILD_OMP', 'PKG_OPT', 'PKG_USER-OMP', 'PKG_USER-INTEL']
+
+configuration_options = ['BUILD_LIB', 'BUILD_EXE', 'BUILD_SHARED_LIBS']
+
+# Blacklist because of deps
+# USER-SMD PKG_USER-QUIP PKG_LATTE PKG_USER-QMMM PKG_USER-VTK PKG_KIM PKG_MSCG PKG_USER-SCAFACOS
+
+# Blacklist because of info at https://lammps.sandia.gov/doc/Packages_details.html
+# PKG_MEAM PKG_REAX 
+
+general_packages = ['PKG_ASPHERE', 'PKG_BODY', 'PKG_CLASS2', 'PKG_COLLOID', 'PKG_COMPRESS', 'PKG_CORESHELL',
+                    'PKG_DIPOLE', 'PKG_GRANULAR', 'PKG_KSPACE', 'PKG_MANYBODY', 'PKG_MC', 'PKG_MISC',
+                    'PKG_MOLECULE', 'PKG_PERI', 'PKG_QEQ', 'PKG_REPLICA', 'PKG_RIGID', 'PKG_SHOCK',
+                    'PKG_SNAP', 'PKG_SRD']
+
+other_packages = ['PKG_PYTHON', 'PKG_MPIIO', 'PKG_POEMS']
+
+user_packages = ['PKG_USER-ATC', 'PKG_USER-AWPMD', 'PKG_USER-CGDNA', 'PKG_USER-CGSDK', 'PKG_USER-COLVARS',
+                 'PKG_USER-DIFFRACTION', 'PKG_USER-DPD', 'PKG_USER-DRUDE', 'PKG_USER-EFF', 'PKG_USER-FEP',
+                 'PKG_USER-H5MD', 'PKG_USER-LB', 'PKG_USER-MANIFOLD', 'PKG_USER-MEAMC', 'PKG_USER-MESO',
+                 'PKG_USER-MGPT', 'PKG_USER-MISC', 'PKG_USER-MOFFF', 'PKG_USER-MOLFILE', 'PKG_USER-NETCDF',
+                 'PKG_USER-PHONON', 'PKG_USER-QTB', 'PKG_USER-REAXC',
+                 'PKG_USER-SMTBQ', 'PKG_USER-SPH', 'PKG_USER-TALLY', 'PKG_USER-UEF']
+
+packages_opts = ' '.join("-D%s=on" % item for item in parallelisation_packages + general_packages + other_packages +
+                         user_packages + configuration_options)
+
+kspace_opts = ['FFT' + '=MKL', 'FFT_PACK' + '=array']
+
+optional_deps = ['WITH_JPEG', 'WITH_PNG', 'WITH_GZIP']
+
+specific_opts = ' '.join("-D%s" % item for item in kspace_opts)
+other_opts = ' '.join("-D%s=yes" % item for item in optional_deps)
+
+configopts += packages_opts + ' ' + other_opts + ' ' + specific_opts
+
+# Kokkos options:
+if kokkos:
+    configopts += ' -DPKG_KOKKOS=on -DKOKKOS_ENABLE_OPENMP=yes '
+    if cuda:
+        # Need to use the Kokkos wrapper if we are using CUDA
+        configopts += ' -DCMAKE_CXX_COMPILER="%s/lib/kokkos/bin/nvcc_wrapper" ' % (short_sources)
+        # and tell the wrapper which c++ compiler to use
+        configopts += ' -DCMAKE_CXX_FLAGS="-ccbin $CXX $CXXFLAGS" '
+        # Set the architecture specifics
+        configopts += ' -DKOKKOS_ENABLE_CUDA=yes -DKOKKOS_ARCH="HSW;Kepler37" '
+    else:
+        # Without CUDA things are straightforward
+        configopts += ' -DKOKKOS_ARCH="HSW" '
+
+if cuda and not kokkos:
+    # GPU package and options can be built
+    configopts += ' -DGPU_API=cuda -DGPU_ARCH=sm_37 -DPKG_GPU=yes '
+
+pythonpath = 'lib/python%(pyshortver)s/site-packages'
+modextrapaths = {'PYTHONPATH': pythonpath}
+
+sanity_check_paths = {
+    'files': ['include/lammps/library.h', 'bin/lmp', 'lib64/liblammps.%s' % SHLIB_EXT],
+    'dirs': [pythonpath],
+}
+
+moduleclass = 'chem'
