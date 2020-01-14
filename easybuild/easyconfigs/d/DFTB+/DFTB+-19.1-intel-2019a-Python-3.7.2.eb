@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'DFTB+'
+version = '19.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.dftb-plus.info'
+description = """DFTB+ is a fast and efficient versatile quantum mechanical simulation package.  It is based on the 
+ Density Functional Tight Binding (DFTB) method, containing almost all of the useful extensions which have been
+ developed for the DFTB framework so far.  Using DFTB+ you can carry out quantum mechanical simulations like with
+ ab-initio density functional theory based packages, but in an approximate way gaining typically around two order of
+ magnitude in speed."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+# some tests, e.g. spinorbit, fail with more aggressive optimization
+toolchainopts = {'lowopt': True, 'optarch': False}
+
+source_urls = ['https://github.com/dftbplus/dftbplus/archive/']
+sources = ['%(version)s.tar.gz']
+
+checksums = ['09befe9f740e8563550d8bcebf319bef30689c36']
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('arpack-ng', '3.7.0'),
+]
+
+skipsteps = ['configure']
+
+###prebuildopts = "./utils/get_opt_externals dftd3 && ./utils/get_opt_externals slakos && "
+prebuildopts = "cp sys/make.x86_64-linux-intel make.arch && "
+prebuildopts += 'sed -i "s|-O2|$OPTFLAGS|g" make.arch && '
+prebuildopts += "sed -i 's|$(ROOT)/_install|%(installdir)s|' make.config && "
+
+buildopts = "LNOPT='-static-intel'"
+
+#runtest = 'test'
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in ['dftb+', 'dp_bands', 'dp_dos', 'gen2cif',
+                                   'gen2xyz', 'modes', 'waveplot', 'xyz2gen']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+#sanity_check_commands = [('python', '-c "import dptools"')]
+
+moduleclass = 'phys'
