@@ -631,6 +631,11 @@ class EasyConfigTest(TestCase):
             'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
         ]
+        url_whitelist = [
+            # https:// doesn't work, results in index page being downloaded instead
+            # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
+            'http://isl.gforge.inria.fr',
+        ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
 
@@ -646,6 +651,11 @@ class EasyConfigTest(TestCase):
             ec_txt = '\n'.join(l for l in ec.rawtxt.split('\n') if not l.startswith('#'))
 
             for http_url in http_regex.findall(ec_txt):
+
+                # skip whitelisted http:// URLs
+                if any(http_url.startswith(x) for x in url_whitelist):
+                    continue
+
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     https_url_works = bool(urlopen(https_url, timeout=5))
