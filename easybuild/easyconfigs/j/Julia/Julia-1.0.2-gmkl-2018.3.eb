@@ -19,9 +19,9 @@ builddependencies = [
      ('SuiteSparse', '4.5.4'),
 ]
 
-library_paths = "$EBROOTLLVM/lib:$MKLROOT/lib/intel64:$EBROOTSUITESPARSE/lib"
+local_library_paths = "$EBROOTLLVM/lib:$MKLROOT/lib/intel64:$EBROOTSUITESPARSE/lib"
 prebuildopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && "
-prebuildopts += "module load llvm/6.0.1 && LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s"%library_paths
+prebuildopts += "module load llvm/6.0.1 && LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s"%local_library_paths
 
 # Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
 buildopts = " prefix=%(installdir)s"
@@ -33,7 +33,7 @@ buildopts += " USE_BLAS64=0"
 preinstallopts = prebuildopts
 installopts = buildopts
 # set rpath in Julia library so it can find LLVM, MKL and SuiteSparse
-installopts += " && patchelf --set-rpath '$ORIGIN':'$ORIGIN/julia':%s"%library_paths
+installopts += " && patchelf --set-rpath '$ORIGIN':'$ORIGIN/julia':%s"%local_library_paths
 installopts +=      " %(installdir)s/lib/libjulia.so"
 # remove symbolic links to system libraries
 installopts += " && for i in %(installdir)s/lib/julia/*; do if [[ -L $i && $(readlink $i | cut -c 1-28) == '/cvmfs/soft.computecanada.ca' ]]; then rm $i; fi; done"
