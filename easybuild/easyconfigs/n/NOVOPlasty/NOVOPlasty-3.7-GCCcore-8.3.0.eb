@@ -1,0 +1,35 @@
+easyblock = 'Tarball'
+
+name = 'NOVOPlasty'
+version = '3.7'
+
+homepage = 'https://github.com/ndierckx/NOVOPlasty'
+description = "NOVOPlasty is a de novo assembler and heteroplasmy/variance caller for short circular genomes."
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+source_urls = ['https://github.com/ndierckx/NOVOPlasty/archive/']
+sources = ['NOVOPlasty%(version)s.tar.gz']
+checksums = ['b86f8bb17a478fae530777cacce1acf5e4c862b8913bd417099a7faa5e71a312']
+
+builddependencies = [('binutils', '2.32')]
+
+dependencies = [('Perl', '5.30.0')]
+
+postinstallcmds = ["chmod a+rx %(installdir)s/NOVOPlasty%(version)s.pl"]
+
+sanity_check_paths = {
+    'files': ['NOVOPlasty%(version)s.pl'],
+    'dirs': [],
+}
+
+# run one of the examples by means of test (takes 2-3 min.)
+sanity_check_commands = [
+    "mkdir %(builddir)s/test && cp -a %(installdir)s/Test\ datasets/Chloroplast\ assembly/* %(builddir)s/test/",
+    "cd %(builddir)s/test && NOVOPlasty%(version)s.pl -c config_test_chloro.txt 2>&1 | tee test.log",
+    "grep 'Thank you for using NOVOPlasty' %(builddir)s/test/test.log",
+]
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

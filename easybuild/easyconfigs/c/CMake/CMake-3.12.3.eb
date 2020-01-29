@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'CMake'
+version = '3.12.3'
+
+homepage = 'http://www.cmake.org'
+
+description = """
+ CMake, the cross-platform, open-source build system.  CMake is a family of
+ tools designed to build, test and package software.
+"""
+
+toolchain = SYSTEM
+
+source_urls = ['http://www.cmake.org/files/v%(version_major_minor)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['acbf13af31a741794106b76e5d22448b004a66485fc99f6d7df4d22e99da164a']
+
+patches = ['cmake-3.9.1-search-path.patch']
+
+dependencies = [
+    ('ncurses', '6.1'),
+    # OS dependency should be preferred if the os version is more recent then this version,
+    # it's nice to have an up to date openssl for security reasons
+    # ('OpenSSL', '1.1.0h'),
+]
+
+osdependencies = [
+    ('openssl-devel', 'libssl-dev', 'libopenssl-devel'),
+]
+
+# Add gcc libs to the default link paths
+preconfigopts = 'sed -i -e "s|@libc_lib@|$NIXUSER_PROFILE|g"'
+preconfigopts += ' -e "s|@libc_dev@|$NIXUSER_PROFILE|g"'
+preconfigopts += ' Modules/Platform/UnixPaths.cmake && '
+configopts = '-- -DCMAKE_USE_OPENSSL=1'
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ['ccmake', 'cmake', 'cpack', 'ctest']],
+    'dirs': [],
+}
+
+moduleclass = 'devel'

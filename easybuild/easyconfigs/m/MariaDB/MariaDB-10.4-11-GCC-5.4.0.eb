@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'mariadb'
+version = '10.4.11'
+
+homepage = 'https://mariadb.org/'
+description = """MariaDB An enhanced, drop-in replacement for MySQL For more information please take a look at https://docs.computecanada.ca/wiki/Database_servers."""
+
+toolchain = {'name': 'GCCcore', 'version': '5.4.0'}
+dependencies = [('Perl','5.22.4')]
+patches = ['mariadb-10.4.11.patch']
+source_urls = ['http://mirrors.nav.ro/mariadb/mariadb-%(version)s/source/']
+sources = ['mariadb-%(version)s.tar.gz']
+local_pyvers = ['2.7.14', '3.5.4', '3.6.3', '3.7.4', '3.8.0']
+local_pyshortvers = ['.'.join(local_pyver.split('.')[:2]) for local_pyver in local_pyvers]
+local_install_template = 'module load python/{0} && pip install --prefix=%(installdir)s mysql-connector '
+configopts = "-DCMAKE_LIBRARY_PATH=/cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/lib " 
+parallel = 8
+postinstallcmds = [';'.join([local_install_template.format(local_pyver) for local_pyver in local_pyvers]) ]
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl/5.22.4/:%(installdir)s/lib/perl5/site_perl/5.22.4/x86_64-linux-thread-multi', 'EBPYTHONPREFIXES': ''}
+exts_defaultclass = 'PerlModule'
+exts_list = [
+        ('IO::CaptureOutput', '1.1104', {
+                'source_tmpl': 'IO-CaptureOutput-1.1104.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN'],
+                'runtest' : 'test',
+                'configopts' : '',
+        }),
+        ('Devel::CheckLib', '1.13', {
+                'source_tmpl': 'Devel-CheckLib-1.13.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MATTN'],
+                'runtest' : 'test',
+                'configopts' : '',
+        }),
+        ('DBD::mysql', '4.050', {
+                'source_tmpl': 'DBD-mysql-4.050.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/D/DV/DVEEDEN'],
+                'runtest' : 'test',
+                'configopts' : '',
+        }),]
+
+sanity_check_paths = {
+    'files': ['bin/mysql', 'bin/mysqld_safe', 'lib/libmysqlclient.%s' % SHLIB_EXT, 'lib/libmariadb.%s' % SHLIB_EXT,
+              'lib/plugin/ha_connect.%s' % SHLIB_EXT, 'lib/plugin/ha_rocksdb.%s' % SHLIB_EXT,
+              'lib/plugin/ha_tokudb.%s' % SHLIB_EXT,
+              'scripts/mysql_install_db'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'data'

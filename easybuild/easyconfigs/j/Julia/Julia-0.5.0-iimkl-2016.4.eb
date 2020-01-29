@@ -18,9 +18,9 @@ builddependencies = [
      ('arpack-ng', '3.4.0'),
 ]
 
-library_paths = "$MKLROOT/lib/intel64:$EBROOTSUITESPARSE/lib:$EBROOTARPACKMINNG/lib"
+local_library_paths = "$MKLROOT/lib/intel64:$EBROOTSUITESPARSE/lib:$EBROOTARPACKMINNG/lib"
 prebuildopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && "
-prebuildopts += "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s"%library_paths
+prebuildopts += "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s"%local_library_paths
 
 # Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
 buildopts = " prefix=%(installdir)s"
@@ -32,9 +32,9 @@ buildopts += " USE_BLAS64=0"
 preinstallopts = prebuildopts
 installopts = buildopts
 # set rpath in Julia libraries so they can find MKL, SuiteSparse and arpack.
-installopts += " && patchelf --set-rpath '$ORIGIN':'$ORIGIN/julia':$NIXUSER_PROFILE/lib:$EBROOTICC/lib/intel64:%s"%library_paths
+installopts += " && patchelf --set-rpath '$ORIGIN':'$ORIGIN/julia':$NIXUSER_PROFILE/lib:$EBROOTICC/lib/intel64:%s"%local_library_paths
 installopts +=      " %(installdir)s/lib/libjulia-debug.so.%(version)s"
-installopts += " && patchelf --set-rpath '$ORIGIN':'$ORIGIN/julia':$NIXUSER_PROFILE/lib:$EBROOTICC/lib/intel64:%s"%library_paths
+installopts += " && patchelf --set-rpath '$ORIGIN':'$ORIGIN/julia':$NIXUSER_PROFILE/lib:$EBROOTICC/lib/intel64:%s"%local_library_paths
 installopts +=      " %(installdir)s/lib/libjulia.so.%(version)s"
 
 sanity_check_paths = {

@@ -1,0 +1,37 @@
+easyblock = "MakeCp"
+
+name = 'OOOPS'
+version = '20200115'
+
+homepage = 'https://github.com/TACC/ooops'
+description = """OOOPS, short for Optimal Overloaded IO Protection System, is an innovative 
+IO workload managing system that optimally throttles the IO workload from the users' side. """
+
+toolchain = SYSTEM
+
+sources = [{
+	'filename': 'OOOPS-20200115.tar.gz',
+        'git_config': {
+		'url': 'https://github.com/TACC',
+		'repo_name': 'ooops',
+		'commit': '0f24b28',
+		'recursive': False,
+		},
+	}]
+
+# listed make targets exclude 'doc' on purpose
+files_to_copy = [(["set_io_param", "t_open_stat", "cal_threshhold.sh"], "bin"), (["wrapper.so"], "lib"), "License", "config"]
+
+sanity_check_paths = {
+    'files': ["bin/set_io_param", "lib/wrapper.so", "License", "config", "bin/cal_threshhold.sh", "bin/t_open_stat" ],
+    'dirs': []
+}
+modextrapaths = { "LD_PRELOAD": ["lib/wrapper.so"] }
+hidden = True
+
+moduleclass = 'bio'
+
+modluafooter = """
+prepend_path("IO_LIMIT_CONFIG", pathJoin("/cvmfs/soft.computecanada.ca/config/ooops/", os.getenv("CC_CLUSTER")))
+"""
+

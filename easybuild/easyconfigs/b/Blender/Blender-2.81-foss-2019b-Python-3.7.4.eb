@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'Blender'
+version = '2.81'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.blender.org/'
+description = """Blender is the free and open source 3D creation suite. It supports
+ the entirety of the 3D pipeline-modeling, rigging, animation, simulation, rendering,
+ compositing and motion tracking, even video editing and game creation."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://download.blender.org/source/']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['ca429da7bf0f1e9ce39c915288cfa2b76ed7ec36885139c4d7c18912840337df']
+
+# disable SSE detection to give EasyBuild full control over optimization compiler flags being used
+configopts = '-DWITH_CPU_SSE=OFF -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG" '
+
+# these are needed until extra dependencies are added for them to work
+configopts += '-DWITH_INSTALL_PORTABLE=OFF '
+configopts += '-DWITH_BUILDINFO=OFF '
+configopts += '-DWITH_GAMEENGINE=OFF '
+configopts += '-DWITH_SYSTEM_GLEW=OFF '
+
+# Python paths
+configopts += '-DPYTHON_VERSION=%(pyshortver)s -DPYTHON_LIBRARY=${EBROOTPYTHON}/lib/libpython%(pyshortver)sm.so '
+configopts += '-DPYTHON_INCLUDE_DIR=${EBROOTPYTHON}/include/python%(pyshortver)sm '
+configopts += '-DOPENEXR_INCLUDE_DIR=$EBROOTOPENEXR/include '
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('Boost', '1.71.0'),
+    ('libjpeg-turbo', '2.0.3'),
+    ('zlib', '1.2.11'),
+    ('X11', '20190717'),
+    ('Mesa', '19.1.7'),
+    ('libGLU', '9.0.1'),
+    ('OpenImageIO', '2.0.12'),  # required for cycles render engine
+    ('tbb', '2019_U9'),
+]
+
+builddependencies = [('CMake', '3.15.3')]
+
+separate_build_dir = True
+
+# use Intel software rasterizer by default (no GPU hardware acceleration)
+modextravars = {'GALLIUM_DRIVER': 'swr'}
+
+sanity_check_paths = {
+    'files': ['bin/blender'],
+    'dirs': []
+}
+
+moduleclass = 'vis'
