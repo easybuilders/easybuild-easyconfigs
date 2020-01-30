@@ -1,0 +1,57 @@
+# by Ward Poelmans <wpoely86@gmail.com>
+# updated by Lars Viklund <lars@hpc2n.umu.se>
+
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.5.4'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.plumed.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/plumed/plumed2/releases/download/v%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['12eda9c533f765a33425215fa1e6ea05d8763d29bad0dae637a38e5c83d4ce17']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('GSL', '2.6'),
+    ('libmatheval', '1.1.11'),
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+]
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+configopts = ' --exec-prefix=%(installdir)s --enable-gsl --enable-modules=all --enable-python'
+prebuildopts = 'source sourceme.sh && '
+
+# make sure that ld.gold linker is used
+# requires to work around problems like "ld: BFD (GNU Binutils) 2.30 assertion fail elf.c:3564"
+buildopts = 'LD_RO="ld.gold -r -o"'
+
+# install path for PLUMED libraries must be included in $LD_LIBRARY_PATH when Python bindings get built/installed
+preinstallopts = 'LD_LIBRARY_PATH="%(installdir)s/lib:$LD_LIBRARY_PATH" '
+
+sanity_check_paths = {
+    'files': ['bin/plumed', 'lib/libplumedKernel.%s' % SHLIB_EXT, 'lib/libplumed.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = ["python -c 'import plumed'"]
+
+modextrapaths = {
+    'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT,
+    'PLUMED_ROOT': 'lib/plumed',
+    'PYTHONPATH': 'lib/plumed/python',
+}
+
+moduleclass = 'chem'
