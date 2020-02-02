@@ -1,0 +1,35 @@
+easyblock = 'Tarball'
+
+name = 'RepeatMasker'
+version = '4-0-9-p2'
+
+homepage = 'http://www.repeatmasker.org/'
+description = "RepeatMasker is a program that screens DNA sequences for interspersed repeats and low complexity DNA sequences. "
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+source_urls = ['http://www.%(namelower)s.org/']
+sources = ['%(name)s-open-%(version)s.tar.gz']
+
+dependencies = [
+    ('TRF', '4.09', '-linux64', True),
+    ('RMBlast', '2.9.0'),
+    ('Perl', '5.22.4', '', True),
+    ('HMMER', '3.1b2'),
+]
+
+modextrapaths = {'PATH': ''}
+ 
+
+#postinstallcmds = [" cd %(installdir)s && perl configure -perlbin=$EBROOTPERL/bin -rmblastbin=$EBROOTRMBLAST/bin -hmmerbin=$EBROOTHMMER/bin -trfbin=$EBROOTTRF/bin -defaultengine=ncbi && for i in $(find %(installdir)s -type f); do sed -i 's@#!/usr/bin/perl@/usr/bin/env perl@' $i; sed -i 's@#!/usr/local/bin/perl@/usr/bin/env perl@' %i; done "]
+
+postinstallcmds = [' cd %(installdir)s && perl configure -perlbin=$EBROOTPERL/bin -rmblastbin=$EBROOTRMBLAST/bin -hmmerbin=$EBROOTHMMER/bin -trfbin=$EBROOTTRF/bin -defaultengine=ncbi && for i in $(find %(installdir)s -type f); do sed -i "s/\#\!\/usr\/bin\/perl/\#\!\/usr\/bin\/env\ perl/g"  $i ; done && for i in $(find %(installdir)s -type f); do sed  -i "s@#!/usr/local/bin/perl@#!/usr/bin/env perl@"  $i ; done  ']
+
+
+#postinstallcmds = [" cd %(installdir)s && perl configure -perlbin=$EBROOTPERL/bin -rmblastbin=$EBROOTRMBLAST/bin -hmmerbin=$EBROOTHMMER/bin -trfbin=$EBROOTTRF/bin -defaultengine=ncbi "]
+sanity_check_paths = {
+    'files': ['%(name)s', 'configure'],
+    'dirs': ['Libraries'],
+}
+
+moduleclass = 'bio'
