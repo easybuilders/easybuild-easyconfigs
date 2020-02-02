@@ -1,0 +1,117 @@
+[localhost]
+PARALLEL_COMMAND = srun %_(COMMAND)s
+NAME = SLURM_CPU
+MANDATORY = 2
+SUBMIT_COMMAND = sbatch %_(JOB_SCRIPT)s
+CANCEL_COMMAND = scancel %_(JOB_ID)s
+CHECK_COMMAND = squeue -j %_(JOB_ID)s
+SUBMIT_TEMPLATE = #!/bin/bash
+	### Job name
+	#SBATCH -J Scipion-%_(JOB_NAME)s
+	### Outputs (we need to escape the job id as %%j)
+	#SBATCH -o job%%j.out
+	#SBATCH -e job%%j.err
+	### Partition (queue) name
+	### if the system has only 1 queue, it can be omited
+	### if you want to specify the queue, ensure the name in the scipion dialog matches
+	### a slurm partition, then leave only 1 # sign in the next line
+	##### SBATCH -p %_(JOB_QUEUE)s
+	### Set the project to be charged for this
+	### should normally be of the format 2016-1 or 2016-16-1 or similar
+	#SBATCH -A %_(SNIC_PROJECT)s
+	### Specify time, number of nodes (tasks), cores and memory(MB) for your job
+	#SBATCH --time=%_(JOB_TIME)s:00 %_(EXTRA_SBATCH_ARGS)s
+	# Number of MPI tasks.
+	#SBATCH -n %_(JOB_NODES)d
+	#SBATCH -c %_(JOB_THREADS)d
+
+	#################################
+	### Set environment varible to know running mode is non interactive
+	export XMIPP_IN_QUEUE=1
+
+	# Make a copy of node file
+	echo "$SLURM_JOB_NODELIST" > %_(JOB_NODEFILE)s
+	### Display the job context
+	echo Running on hosts $SLURM_JOB_NODELIST
+	echo Time is `date`
+	echo Working directory is `pwd`
+	#################################
+
+	echo "Running cmd: '%_(JOB_COMMAND)s'"
+        echo ""
+        if [ -n "$SLURM_CPUS_PER_TASK" ]; then
+            export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+        fi
+	%_(JOB_COMMAND)s
+QUEUES = {
+	"CPU": [
+            ["JOB_TIME", "08:00", "Time (hours:minutes)", "Select the time expected (in hours) for this job"],
+            ["SNIC_PROJECT", "", "SNIC Project", "Specify the Project SNIC account"],
+            ["EXTRA_SBATCH_ARGS", "", "Extra sbatch args", "Extra arguments to sbatch"]
+	]
+	}
+QUEUES_DEFAULT = {}
+
+[GPU_batch_job]
+PARALLEL_COMMAND = srun %_(COMMAND)s
+NAME = SLURM_GPU
+MANDATORY = 2
+SUBMIT_COMMAND = sbatch %_(JOB_SCRIPT)s
+CANCEL_COMMAND = scancel %_(JOB_ID)s
+CHECK_COMMAND = squeue -j %_(JOB_ID)s
+SUBMIT_TEMPLATE = #!/bin/bash
+	### Job name
+	#SBATCH -J Scipion-%_(JOB_NAME)s
+	### Outputs (we need to escape the job id as %%j)
+	#SBATCH -o job%%j.out
+	#SBATCH -e job%%j.err
+	### Partition (queue) name
+	### if the system has only 1 queue, it can be omited
+	### if you want to specify the queue, ensure the name in the scipion dialog matches
+	### a slurm partition, then leave only 1 # sign in the next line
+	##### SBATCH -p %_(JOB_QUEUE)s
+	### Set the project to be charged for this
+	### should normally be of the format 2016-1 or 2016-16-1 or similar
+	#SBATCH -A %_(SNIC_PROJECT)s
+	### Specify time, number of nodes (tasks), cores and memory(MB) for your job
+	#SBATCH --time=%_(JOB_TIME)s:00 %_(EXTRA_SBATCH_ARGS)s
+	# Number of MPI tasks.
+	#SBATCH -n %_(JOB_NODES)d
+	#SBATCH -c %_(JOB_THREADS)d
+	#SBATCH --gres=gpu:%_(GPU_TYPE)s:%_(JOB_GPUS)s
+
+	#################################
+	### Set environment varible to know running mode is non interactive
+	export XMIPP_IN_QUEUE=1
+
+	# Make a copy of node file
+	echo "$SLURM_JOB_NODELIST" > %_(JOB_NODEFILE)s
+	### Display the job context
+	echo Running on hosts $SLURM_JOB_NODELIST
+	echo Time is `date`
+	echo Working directory is `pwd`
+	#################################
+
+	echo "Running cmd: '%_(JOB_COMMAND)s'"
+        echo ""
+        if [ -n "$SLURM_CPUS_PER_TASK" ]; then
+            export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+        fi
+	%_(JOB_COMMAND)s
+QUEUES = {
+	"GPU - K80": [
+            ["JOB_TIME", "08:00", "Time (hours:minutes)", "Select the time expected (in hours) for this job"],
+            ["GPU_TYPE", "k80", "GPU Type (DON'T CHANGE)", "The type of GPUs of this queue"],
+            ["JOB_GPUS", "2", "Number of GPUs (1, 2 or 4) per node", "Number of GPUs per node to use in this job"],
+            ["SNIC_PROJECT", "", "SNIC Project", "Specify the Project SNIC account"],
+            ["EXTRA_SBATCH_ARGS", "", "Extra sbatch args", "Extra arguments to sbatch"]
+	],
+	"GPU - V100": [
+            ["JOB_TIME", "08:00", "Time (hours:minutes)", "Select the time expected (in hours) for this job"],
+            ["GPU_TYPE", "v100", "GPU Type (DON'T CHANGE)", "The type of GPUs of this queue"],
+            ["JOB_GPUS", "1", "Number of GPUs (1 or 2) per node", "Number of GPUs per node to use in this job"],
+            ["SNIC_PROJECT", "", "SNIC Project", "Specify the Project SNIC account"],
+            ["EXTRA_SBATCH_ARGS", "", "Extra sbatch args", "Extra arguments to sbatch"]
+	]
+	}
+QUEUES_DEFAULT = {}
