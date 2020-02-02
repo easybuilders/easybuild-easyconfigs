@@ -1,0 +1,38 @@
+diff -ru scipion-2.0.0.orig/pyworkflow/apps/pw_config.py scipion-2.0.0/pyworkflow/apps/pw_config.py
+--- scipion-2.0.0.orig/pyworkflow/apps/pw_config.py	2019-05-07 10:40:13.000000000 +0200
++++ scipion-2.0.0/pyworkflow/apps/pw_config.py	2019-10-09 07:52:26.405864649 +0200
+@@ -198,12 +198,6 @@
+         for section in set(cf.sections()) - set(keep):
+             cf.remove_section(section)
+ 
+-    # Update with our guesses.
+-    if 'BUILD' in cf.sections():
+-        for options in [guessJava(), guessMPI()]:
+-            for key in options:
+-                if key in cf.options('BUILD'):
+-                    cf.set('BUILD', key, options[key])
+     # Collecting Protocol Usage Statistics 
+     elif 'VARIABLES' in cf.sections():
+         checkNotify(cf, notify)
+@@ -230,21 +224,6 @@
+             return '/'
+ 
+     allOk = True
+-    for var in ['MPI_LIBDIR', 'MPI_INCLUDE', 'MPI_BINDIR',
+-                'JAVA_HOME', 'JAVA_BINDIR']:
+-        if not os.path.isdir(get(var)):
+-            print("  Path to %s (%s) should exist but it doesn't." %
+-                  (var, red(get(var))))
+-            allOk = False
+-    for fname in [join(get('JAVA_BINDIR'), 'java'),
+-                  get('JAVAC'), get('JAR'),
+-                  join(get('MPI_BINDIR'), get('MPI_CC')),
+-                  join(get('MPI_BINDIR'), get('MPI_CXX')),
+-                  join(get('MPI_BINDIR'), get('MPI_LINKERFORPROGRAMS')),
+-                  join(get('MPI_INCLUDE'), 'mpi.h')]:
+-        if not exists(fname):
+-            print("  Cannot find file: %s" % red(fname))
+-            allOk = False
+     if allOk:
+         print(green("All seems fine with %s" % conf))
+     else:

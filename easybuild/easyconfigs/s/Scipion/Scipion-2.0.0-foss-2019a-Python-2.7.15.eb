@@ -1,0 +1,98 @@
+easyblock = 'PythonBundle'
+
+name = 'Scipion'
+version = '2.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/I2PC/scipion/wiki'
+description = """Scipion is an image processing framework to obtain 3D
+models of macromolecular complexes using Electron Microscopy (3DEM). It
+integrates several software packages and presents an unified interface
+for both biologists and developers. Scipion allows to execute workflows
+combining different software tools, while taking care of formats and
+conversions. Additionally, all steps are tracked and can be reproduced
+later on. 
+"""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Tcl', '8.6.9'),
+    ('Tk', '8.6.9'),
+    ('zlib', '1.2.11'),
+    ('Java', '11', '', True),
+    ('libxml2', '2.9.8'),
+    ('libreadline', '8.0'),
+    ('libxslt', '1.1.33'),
+    ('GSL', '2.5'),
+    ('freetype', '2.9.1'),
+    ('Xmipp', '3.19.04-Apollo', versionsuffix),
+    ('OpenCV', '3.4.7', versionsuffix),
+    ('libpng', '1.6.36'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('LibTIFF', '4.0.10'),
+    ('SQLite', '3.27.2'),
+    ('HDF5', '1.10.5'),
+
+    # Python modules
+    ('matplotlib', '2.2.4', versionsuffix),
+    ('Biopython', '1.73'),
+    ('bibtexparser', '1.1.0'),
+    ('Pillow', '6.0.0'),
+
+    # EM packages
+    ('ctffind', '4.1.13'),
+    ('RELION', '3.0.7'),
+    ('EMAN2', '2.3', versionsuffix),
+]
+
+use_pip = True
+
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+
+# scipion-em-xxx plugins are python modules
+exts_list = [
+    ('poster', '0.8.1', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+    }),
+    ('Django', '1.5.5', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/I2PC/scipion/archive/'],
+        'source_tmpl': 'V%(version)s.tar.gz',
+        'modulename': False,
+        'preconfigopts': 'cp hpc2n_slurm_hosts.template pyworkflow/templates/hosts.template && ',
+        'patches': [
+            '%(name)s-%(version)s_use_mpi_java_from_EB.patch',
+            '%(name)s-%(version)s_ignore_path_check_when_doing_config.patch',
+            '%(name)s-%(version)s_drop_packages_from_user_config.patch',
+            '%(name)s-%(version)s_skip_notify_question.patch',
+            '%(name)s-%(version)s_hpc2n_only_use_localhost.patch',
+            ('hpc2n_slurm_hosts.template', '.'),
+        ],
+    }),
+    # Some of these reads scipion.conf so they must be after Scipion itself
+    ('scipion-em-xmipp', '19.4.3', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'modulename': 'xmipp3',
+    }),
+    ('scipion-em-ctffind', '1.0.0', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'modulename': 'ctffind',
+    }),
+    ('scipion-em-relion', '1.0.7', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'modulename': 'relion',
+    }),
+    ('scipion-em-eman2', '1.0.5', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'modulename': 'eman2',
+    }),
+]
+
+# Scipion uses TkAgg, make sure matplotlib uses that instead of its default Agg
+modextravars = {'MPLBACKEND': 'TkAgg'}
+
+moduleclass = 'bio'

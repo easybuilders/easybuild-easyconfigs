@@ -1,0 +1,107 @@
+diff --git a/pyworkflow/gui/form.py b/pyworkflow/gui/form.py
+index 16aab9fa44..fd3ebe4ae5 100755
+--- a/pyworkflow/gui/form.py
++++ b/pyworkflow/gui/form.py
+@@ -1803,13 +1803,13 @@ class FormWindow(Window):
+                                 sticky='e')
+         # Keep track of hostname selection
+         self.hostVar = tk.StringVar()
+-        protHost = self.protocol.getHostName()
+-        hostName = protHost if protHost in self.hostList else self.hostList[0]
+-        self.hostVar.trace('w', self._setHostName)
++        protLabel = self.protocol.getLabel()
++        Label = protLabel if protLabel in self.hostList else self.hostList[0]
++        self.hostVar.trace('w', self._setLabel)
+         self.hostCombo = ttk.Combobox(runFrame, textvariable=self.hostVar, 
+                                       state='readonly', width=10, font=self.font)
+         self.hostCombo['values'] = self.hostList
+-        self.hostVar.set(hostName)
++        self.hostVar.set(Label)
+         self.hostCombo.grid(row=r, column=c+1, pady=0, sticky='we')
+         r = 2
+         self._createParallel(runFrame, r)
+@@ -1874,7 +1874,7 @@ class FormWindow(Window):
+                 
+     def _getHostConfig(self):
+         """ Retrieve the hostConfig object for the select hostname"""
+-        return self.protocol.getProject().getHostConfig(self.protocol.getHostName())
++        return self.protocol.getProject().getHostConfig(self.protocol.getLabel())
+         
+     def _editQueueParams(self, e=None):
+         """ Open the dialog to edit the queue parameters. """
+@@ -2313,6 +2313,9 @@ class FormWindow(Window):
+         except Exception as ex:
+             pass
+ 
++    def _setLabel(self, *args):
++        self.protocol.setLabel(self.hostVar.get())
++
+     def _setHostName(self, *args):
+         self.protocol.setHostName(self.hostVar.get())        
+         
+diff --git a/pyworkflow/project/project.py b/pyworkflow/project/project.py
+index a50457c5c1..7b62ea3c43 100644
+--- a/pyworkflow/project/project.py
++++ b/pyworkflow/project/project.py
+@@ -1189,8 +1189,8 @@ class Project(object):
+         """ Set the appropriate host config to the protocol
+         give its value of 'hostname'
+         """
+-        hostName = protocol.getHostName()
+-        hostConfig = self.getHostConfig(hostName)
++        Label = protocol.getLabel()
++        hostConfig = self.getHostConfig(Label)
+         protocol.setHostConfig(hostConfig)
+ 
+     def _storeProtocol(self, protocol):
+diff --git a/pyworkflow/protocol/hosts.py b/pyworkflow/protocol/hosts.py
+index c06a858400..e7d4ae0342 100644
+--- a/pyworkflow/protocol/hosts.py
++++ b/pyworkflow/protocol/hosts.py
+@@ -157,7 +157,7 @@ class HostConfig(OrderedObject):
+             assert cp.read(hostsConf) != [], 'Missing file %s' % hostsConf
+ 
+             for hostName in cp.sections():
+-                host = HostConfig(label=hostName, hostName=hostName)
++                host = HostConfig(label=hostName, hostName='localhost')
+                 host.setHostPath(pw.Config.SCIPION_USER_DATA)
+ 
+                 # Helper functions (to write less)
+diff --git a/pyworkflow/protocol/protocol.py b/pyworkflow/protocol/protocol.py
+index 521674aba4..7b1a686e92 100644
+--- a/pyworkflow/protocol/protocol.py
++++ b/pyworkflow/protocol/protocol.py
+@@ -371,6 +371,9 @@ class Protocol(Step):
+         if 'numberOfThreads' in kwargs:
+             self.numberOfThreads.set(kwargs.get('numberOfThreads'))
+ 
++        if not hasattr(self, 'Label'):
++            self.Label = String(kwargs.get('Label', 'localhost'))
++
+         if not hasattr(self, 'hostName'):
+             self.hostName = String(kwargs.get('hostName', 'localhost'))
+ 
+@@ -1511,6 +1514,14 @@ class Protocol(Step):
+                 resultFiles.update(obj.getFiles())  # Add files if any
+         return resultFiles | pwutils.getFiles(self.workingDir.get())
+ 
++    def getLabel(self):
++        """ Get the execution Label name """
++	return self.Label.get()
++
++    def setLabel(self, Label):
++	""" Set the execution Label name """
++	self.Label.set(Label)
++
+     def getHostName(self):
+         """ Get the execution host name.
+          This value is only the key of the host in the configuration file.
+@@ -1535,7 +1546,7 @@ class Protocol(Step):
+     def setHostConfig(self, config):
+         self.hostConfig = config
+         # Never store the host config as part of the protocol, it is kept
+-        # in the configuration information, the hostname is enough
++        # in the configuration information, the Label is enough
+         self.hostConfig.setStore(False)
+ 
+     def getJobId(self):
