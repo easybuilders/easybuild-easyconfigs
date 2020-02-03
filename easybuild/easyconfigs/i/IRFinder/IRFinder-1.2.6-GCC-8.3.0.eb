@@ -1,32 +1,48 @@
 easyblock = 'MakeCp'
 
 name = 'IRFinder'
-version = "1.2.6"
+version = '1.2.6'
 
 homepage = 'https://github.com/williamritchie/IRFinder/'
 description = """Basic STAR (Spliced Transcripts Alignment to a Reference) STAR workflow consists of 2 steps: Generating genoms indexes files and mapping reads to the genomes."""
 
 toolchain = {'name': 'GCC', 'version': '8.3.0'}
 patches = ['patch-1.2.5.patch']
+
 source_urls = ['https://github.com/williamritchie/IRFinder/archive/']
 sources = ['v%(version)s_update_version_number.tar.gz']
 
 dependencies = [
     ('star', '2.7.1a'),
     ('BEDTools', '2.28.0'),
+    ('Perl', '5.22.4'),
 ]
 
 start_dir = 'src/irfinder'
 
-buildopts = " && cp irfinder ../../util && cd ../trim  && make && cp trim ../../util && cd ../.. && chmod -R 755 bin "
+buildopts = " && rm ../../bin/util/irfinder && rm ../../bin/util/trim && make && cp irfinder ../../bin/util && cd ../trim && make && cp trim ../../bin/util && cd ../.. && chmod -R 755 bin "
 
 parallel = 1
 
-files_to_copy = [(['bin/*'], 'bin')] 
+files_to_copy = [(['bin/*'], 'bin')]
 
 sanity_check_paths = {
     'files': ['bin/IRFinder', 'bin/util/trim', 'bin/util/irfinder'],
     'dirs': []
 }
+
+modextrapaths = {'PERL5LIB': ':%(installdir)s/lib/perl5/site_perl/5.22.4/x86_64-linux-thread-multi'}
+
+postinstallcmds = ["sed -i 's/#!\/usr\/bin\/perl/#!\/usr\/bin\/env perl/g' %(installdir)s/bin/*.pl  %(installdir)s/bin/util/*.pl"]
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('Data::Dumper', '2.173',{
+        'source_tmpl': 'Data-Dumper-2.173.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XS/XSAWYERX'],
+        'buildopts': '',
+})
+]
 
 moduleclass = 'bio'
