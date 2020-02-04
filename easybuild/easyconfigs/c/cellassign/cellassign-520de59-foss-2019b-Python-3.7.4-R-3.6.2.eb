@@ -1,0 +1,57 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'Bundle'
+
+name = 'cellassign'
+version = '520de59'
+local_fullhash = '520de59b577fe252cf8e2daa62324980a0f601b3'
+versionsuffix = '-Python-%(pyver)s-R-%(rver)s'
+
+homepage = "https://github.com/Irrationone/cellassign"
+description = """Automated, probabilistic assignment of cell types in scRNA-seq data"""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+dependencies = [
+    ('R', '3.6.2'),
+    ('Python', '3.7.4'),
+    ('R-keras', '2.2.5.0', versionsuffix),
+    ('R-bundle-Bioconductor', '3.10', '-R-%(rver)s'),
+    ('tensorflow_probability', '0.8.0', '-Python-%(pyver)s'),
+]
+
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+exts_default_options = {
+    'source_urls': [
+        'https://bioconductor.org/packages/3.10/bioc/src/contrib/',
+        'https://bioconductor.org/packages/3.10/bioc/src/contrib/Archive/%(name)s',
+        'https://bioconductor.org/packages/3.10/data/annotation/src/contrib/',
+        'https://bioconductor.org/packages/3.10/data/experiment/src/contrib/',
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+        'https://github.com/Irrationone/cellassign/archive/',
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+
+# Order is important!
+exts_list = [
+    ('tfprobability', '0.8.0.0', {
+        'checksums': ['17ffb4d5c99743770dd5a71cc9dd9b327cc3442d53e8072edef5f7ee4bc862c0'],
+    }),
+    (name, version, {
+        'source_tmpl': '%s.tar.gz' % local_fullhash,
+        'checksums': ['4c8bb87c66af315daf1f9f8d5deb1bdb05932ed3628aaea887f92a9442173487'],
+    }),
+]
+
+modextrapaths = {'R_LIBS': ''}
+
+sanity_check_paths = {
+    'files': ['cellassign/R/cellassign'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
