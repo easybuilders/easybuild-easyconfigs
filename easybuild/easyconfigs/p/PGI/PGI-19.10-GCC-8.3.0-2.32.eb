@@ -1,9 +1,6 @@
 # Contribution from the Crick HPC team
 # uploaded by J. Sassmannshausen
 
-# Subprocess is used to check arch
-import subprocess as _subprocess
-
 name = 'PGI'
 version = '19.10'
 
@@ -13,15 +10,16 @@ description = "C, C++ and Fortran compilers from The Portland Group - PGI"
 toolchain = SYSTEM
 
 # N.B. recent file downloads from pgroup may require renaming from "...x86-64" to "...x86_64"
-sources = ['pgilinux-20%(version_major)s-%(version_major)s%(version_minor)s-%(arch)s.tar.gz']
-
-# Assign the correct checksum for the architecture
-_arch = _subprocess.check_output(['uname', '-m']).strip()
-
-if _arch == 'ppc64le':
-    checksums = ['3b5f8d55c350d39b8ed252d94df4c0dff10c2a9c4b5ded522f495624576bc94b']
-else:
-    checksums = ['ac9db73ba80a66fe3bc875f63aaa9e16f54674a4e88b25416432430ba8cf203d']
+_base_filename = 'pgilinux-20%(version_major)s-%(version_major)s%(version_minor)s'
+sources = ['%s-%%(arch)s.tar.gz' % _base_filename]
+checksums = [
+    {
+        '%s-ppc64le.tar.gz' % _base_filename:
+            '3b5f8d55c350d39b8ed252d94df4c0dff10c2a9c4b5ded522f495624576bc94b',
+        '%s-x86_64.tar.gz' % _base_filename:
+            'ac9db73ba80a66fe3bc875f63aaa9e16f54674a4e88b25416432430ba8cf203d',
+    }
+]
 
 local_gccver = '8.3.0'
 local_binutilsver = '2.32'
