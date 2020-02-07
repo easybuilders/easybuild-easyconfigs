@@ -1,0 +1,47 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.1.0'
+versionsuffix = '_openmp'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['%(namelower)s.%(version)s.tgz']
+checksums = ['1343895b61c9a8c9b56ddff7d44152012120dc7b1ff3b16cb2b7001ccf9a6ae2']
+
+prebuildopts = 'cp arch/makefile.include.linux_intel_omp ./makefile.include && '
+
+# Makefile uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+_targets = ['std', 'gam', 'ncl']
+
+buildopts = '%s ' % ' '.join(_targets)
+buildopts += 'FCL="$MPIF90" DEBUG="$FFLAGS" OFLAG="$FFLAGS" OFLAG_1="${FFLAGS/O2/O1}" OFLAG_2="$FFLAGS" '
+buildopts += 'OFLAG_3="${FFLAGS/O2/O3}" CFLAGS_LIB="$CFLAGS" FFLAGS_LIB="$FFLAGS" BLAS="$LIBBLAS_MT" '
+buildopts += 'LAPACK="$LIBLAPACK_MT" BLACS="$LIBBLACS_MT" SCALAPACK="$LIBSCALAPACK_MT"'
+
+# https://www.vasp.at/wiki/index.php/Validation_tests
+pretestopts = 'export MPIRUN="mpirun -np 4 -genv OMP_NUM_THREADS=4 -genv OMP_STACKSIZE=512m" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_STD="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_std" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_NCL="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_ncl" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_GAM="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_gam" && '
+runtest = 'test'
+
+parallel = 1
+
+files_to_copy = [(['bin/vasp_' + x for x in _targets], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_' + x for x in _targets],
+    'dirs': []
+}
+
+moduleclass = 'phys'
