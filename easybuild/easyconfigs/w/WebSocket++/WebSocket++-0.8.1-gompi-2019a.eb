@@ -1,0 +1,56 @@
+easyblock = "CMakeMake"
+
+name = 'WebSocket++'
+version = '0.8.1'
+
+homepage = 'https://www.zaphoyd.com/websocketpp/'
+description = """ WebSocket++ is an open source (BSD license) header only C++ library
+ that implements RFC6455 The WebSocket Protocol. """
+
+toolchain = {'name': 'gompi', 'version': '2019a'}
+
+source_urls = ['https://github.com/zaphoyd/websocketpp/archive']
+sources = ['%(version)s.tar.gz']
+patches = [
+    'WebSocket++-0.7.0-cmake_noarch.patch',
+    'WebSocket++-0.7.0-disable-test_transport-test_transport_asio_timers.patch',
+    'WebSocket++-0.8.1-boost_1.70.patch',
+    'WebSocket++-0.8.1-cmake-configversion-compatibility-anynewerversion.patch',
+    'WebSocket++-0.8.1-fix_CMakeLists.txt_version_number.patch',
+]
+checksums = [
+    '178899de48c02853b55b1ea8681599641cedcdfce59e56beaff3dd0874bf0286',  # 0.8.1.tar.gz
+    '901a0499d3a40b483cea015d226d221035bacfc478abc7b0ce28c3d57b583080',  # WebSocket++-0.7.0-cmake_noarch.patch
+    # WebSocket++-0.7.0-disable-test_transport-test_transport_asio_timers.patch
+    'ebddebd760371907083320219fbef75b910c1153387735b9ced97830459bd051',
+    'f7944e8d660b836be63117214fc01046caca1dfebbeefdbc425b1561bbd9a8e8',  # WebSocket++-0.8.1-boost_1.70.patch
+    # WebSocket++-0.8.1-cmake-configversion-compatibility-anynewerversion.patch
+    'b2c9c2703d85357a85078a21e674d957f3fcef7b4ba8aa3aad5a1900deafc4cb',
+    # WebSocket++-0.8.1-fix_CMakeLists.txt_version_number.patch
+    '995b6842939c6256220789c2bb120cd598b237a0b71b5648806d1b05ea8b518a',
+]
+
+# patches taken from:
+# https://www.rpmfind.net/linux/RPM/fedora/devel/rawhide/aarch64/w/websocketpp-devel-0.8.1-7.fc31.noarch.html
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('pkg-config', '0.29.2'),
+    ('zlib', '1.2.11'),
+]
+
+dependencies = [
+    ('Boost', '1.70.0'),
+]
+
+separate_build_dir = True
+
+configopts = '-DBUILD_TESTS:BOOL=ON'
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['include/websocketpp/%s.hpp' % x for x in ('connection', 'client', 'server')],
+    'dirs': ['share/cmake/websocketpp'],
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,63 @@
+# Allows building with march=native, since march=<arch> does not override that.
+# Works around GCC bug https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69471 (fixed in GCC 9)
+# From Bart Oldeman <bart.oldeman@calculquebec.ca>, Oct 2019
+--- mesa-19.2.1/src/gallium/drivers/swr/meson.build.orig	2019-10-09 12:52:00.000000000 -0400
++++ mesa-19.2.1/src/gallium/drivers/swr/meson.build	2019-10-17 21:16:48.378935877 -0400
+@@ -214,15 +214,15 @@
+ endif
+ 
+ if with_swr_arches.contains('avx2')
+-  swr_avx2_args = cpp.first_supported_argument(
+-    '-march=core-avx2', '-target-cpu=haswell', '-tp=haswell',
+-  )
++  if cpp.has_multi_arguments('-mavx2', '-mfma', '-mbmi2', '-mf16c')
++    swr_avx2_args = ['-mavx2', '-mfma', '-mbmi2', '-mf16c']
++  else
++    swr_avx2_args = cpp.first_supported_argument(
++      '-march=core-avx2', '-target-cpu=haswell', '-tp=haswell',
++    )
++  endif
+   if swr_avx2_args == []
+-    if cpp.has_argument(['-mavx2', '-mfma', '-mbmi2', '-mf16c'])
+-      swr_avx2_args = ['-mavx2', '-mfma', '-mbmi2', '-mf16c']
+-    else
+-      error('Cannot find AVX2 support for swr.')
+-    endif
++    error('Cannot find AVX2 support for swr.')
+   endif
+ 
+   swr_arch_defines += '-DHAVE_SWR_AVX2'
+@@ -239,9 +239,13 @@
+ endif
+ 
+ if with_swr_arches.contains('knl')
+-  swr_knl_args = cpp.first_supported_argument(
+-    '-march=knl', '-target-cpu=mic-knl', '-xMIC-AVX512',
+-  )
++  if cpp.has_multi_arguments('-mavx512f', '-mfma', '-mbmi2', '-mf16c')
++    swr_knl_args = ['-mavx512f', '-mfma', '-mbmi2', '-mf16c']
++  else
++    swr_knl_args = cpp.first_supported_argument(
++      '-march=knl', '-target-cpu=mic-knl', '-xMIC-AVX512',
++    )
++  endif
+   if swr_knl_args == []
+     error('Cannot find KNL support for swr.')
+   endif
+@@ -263,9 +267,13 @@
+ endif
+ 
+ if with_swr_arches.contains('skx')
+-  swr_skx_args = cpp.first_supported_argument(
+-    '-march=skylake-avx512', '-target-cpu=x86-skylake', '-xCORE-AVX512',
+-  )
++  if cpp.has_multi_arguments('-mavx512f', '-mavx512bw', '-mavx512dq', '-mfma', '-mbmi2', '-mf16c')
++    swr_skx_args = ['-mavx512f', '-mavx512bw', '-mavx512dq', '-mfma', '-mbmi2', '-mf16c']
++  else
++    swr_skx_args = cpp.first_supported_argument(
++      '-march=skylake-avx512', '-target-cpu=x86-skylake', '-xCORE-AVX512',
++    )
++  endif
+   if swr_skx_args == []
+     error('Cannot find SKX support for swr.')
+   endif
