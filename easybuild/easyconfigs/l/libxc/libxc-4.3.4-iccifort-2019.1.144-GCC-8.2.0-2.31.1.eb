@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'libxc'
+version = '4.3.4'
+
+homepage = 'https://www.tddft.org/programs/libxc'
+description = """Libxc is a library of exchange-correlation functionals for density-functional theory.
+ The aim is to provide a portable, well tested and reliable set of exchange and correlation functionals."""
+
+toolchain = {'name': 'iccifort', 'version': '2019.1.144-GCC-8.2.0-2.31.1'}
+
+source_urls = ['https://www.tddft.org/programs/libxc/down.php?file=%(version)s/']
+sources = [SOURCE_TAR_GZ]
+patches = ['libxc-%(version)s_rename-F03.patch']
+checksums = [
+    'a8ee37ddc5079339854bd313272856c9d41a27802472ee9ae44b58ee9a298337',  # libxc-4.3.4.tar.gz
+    'e494be3ca2026998f2dd7c6b03a4e662f204fd3d963271e588f9f0d5739e76b5',  # libxc-4.3.4_rename-F03.patch
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('Perl', '5.28.1'),
+]
+
+separate_build_dir = True
+
+# rename *.F03 source file since Intel Fortran compiler doesn't like that extension
+# also requires patch file to rename file in CMakeLists.txt and src/Makefile.in
+preconfigopts = "mv ../libxc-%(version)s/src/libxc_master.F03 ../libxc-%(version)s/src/libxc_master_F03.F90 && "
+
+local_common_configopts = "-DENABLE_FORTRAN=ON -DENABLE_FORTRAN03=ON -DENABLE_XHOST=OFF"
+
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+parallel = 1
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/xc-info', 'bin/xc-threshold'] +
+             ['lib/libxc%s.%s' % (x, y) for x in ['', 'f03', 'f90'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['include', 'lib/pkgconfig', 'share/cmake/Libxc'],
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,23 @@
+fix for "undeclared inclusion(s) in rule '//tensorflow/contrib/mpi_collectives:python/ops/_mpi_ops.so'"
+see https://github.com/tensorflow/tensorflow/issues/17437
+--- tensorflow-1.14.0/tensorflow/contrib/mpi_collectives/BUILD.orig	2019-08-15 11:20:32.933089345 +0200
++++ tensorflow-1.14.0/tensorflow/contrib/mpi_collectives/BUILD	2019-08-15 11:21:04.923134714 +0200
+@@ -53,6 +53,7 @@
+         ":mpi_defines",
+         ":mpi_message_proto_cc",
+         "//third_party/mpi",
++        "//tensorflow/stream_executor",
+     ],
+ )
+ 
+--- tensorflow-1.14.0/tensorflow/tensorflow.bzl.orig	2019-08-15 11:20:32.933089345 +0200
++++ tensorflow-1.14.0/tensorflow/tensorflow.bzl	2019-08-15 11:21:46.833194234 +0200
+@@ -1771,7 +1771,7 @@
+         name = name + "_check_deps",
+         disallowed_deps = [
+             clean_dep("//tensorflow/core:framework"),
+-            clean_dep("//tensorflow/core:lib"),
++            # clean_dep("//tensorflow/core:lib"),
+         ],
+         deps = deps + if_cuda_is_configured_compat(cuda_deps) + if_rocm_is_configured(rocm_deps),
+     )

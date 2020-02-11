@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+
+name = 'wxWidgets'
+version = '3.0.4'
+
+homepage = 'https://www.wxwidgets.org'
+description = """wxWidgets is a C++ library that lets developers create
+applications for Windows, Mac OS X, Linux and other platforms with a
+single code base. It has popular language bindings for Python, Perl,
+Ruby and many other languages, and unlike other cross-platform toolkits,
+wxWidgets gives applications a truly native look and feel because it
+uses the platform's native API rather than emulating the GUI."""
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/wxWidgets/wxWidgets/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['e176e339d4475d7f1e24b1e479959e58fac64516189d4ba2df3f2fb9e4719c84']
+
+builddependencies = [
+    ('gettext', '0.19.8.1'),
+]
+
+dependencies = [
+    ('libpng', '1.6.36'),
+    ('zlib', '1.2.11'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('LibTIFF', '4.0.10'),
+    ('expat', '2.2.6'),
+    ('GTK+', '3.24.8'),
+    ('Mesa', '19.0.1'),
+    ('libGLU', '9.0.0'),
+    ('SDL2', '2.0.9'),
+    ('GST-plugins-base', '1.16.0'),
+    ('GLib', '2.60.1'),
+    ('WebKitGTK+', '2.24.1'),
+]
+
+local_cpath_ext = '$EBROOTGTKPLUS/include/gtk-3.0:$EBROOTGLIB/include/glib-2.0:$EBROOTGLIB/lib/glib-2.0/include'
+
+preconfigopts = 'CPATH=$CPATH:%s ' % local_cpath_ext
+
+configopts = '--enable-intl --enable-ipv6 '
+# Options required by wxPython
+configopts += '--with-gtk=3 --with-gtk-prefix=$EBROOTGTKPLUS '
+configopts += '--with-opengl '
+configopts += '--enable-unicode --enable-sound --enable-graphics_ctx '
+configopts += '--enable-mediactrl --enable-display --enable-geometry '
+configopts += '--enable-debug_flag --enable-optimise --disable-debugreport '
+configopts += '--enable-autoidman --with-sdl '
+
+prebuildopts = 'CPATH=$CPATH:%s ' % local_cpath_ext
+
+sanity_check_paths = {
+    'files': ['bin/wx-config', 'bin/wxrc'],
+    'dirs': ['include/wx-%(version_major)s.0/wx', 'lib', 'share'],
+}
+
+moduleclass = 'vis'

@@ -1,0 +1,282 @@
+Fix the Makefile to use libraries built with EB instead of the ones
+shipped with the code.
+Author: Davide Vanzo (Vanderbilt Univeristy)
+diff -ru fsl.orig/config/common/vars.mk fsl/config/common/vars.mk
+--- fsl.orig/config/common/vars.mk	2019-08-06 09:43:44.355724325 -0500
++++ fsl/config/common/vars.mk	2019-08-06 09:45:40.291727533 -0500
+@@ -24,14 +24,14 @@
+ USRCFLAGS = 
+ USRCXXFLAGS =
+ 
+-LDFLAGS = ${ARCHLDFLAGS} ${USRLDFLAGS} -L. -L${DEVLIBDIR} -L${LIBDIR}
++LDFLAGS = ${EBVARLDFLAGS} ${ARCHLDFLAGS} ${USRLDFLAGS} -L. -L${DEVLIBDIR} -L${LIBDIR}
+ 
+-AccumulatedIncFlags = -I${INC_BOOST} ${USRINCFLAGS} -I. -I${DEVINCDIR} -I${INCDIR}
++AccumulatedIncFlags = ${EBVARCPPFLAGS} -I${INC_BOOST} ${USRINCFLAGS} -I. -I${DEVINCDIR} -I${INCDIR}
+ 
+-CFLAGS = ${ANSI_FLAGS} ${ANSI_CFLAGS} ${DBGFLAGS} ${USEDCSTATICFLAGS} ${USRCFLAGS} ${ARCHFLAGS} ${OPTFLAGS}  \
++CFLAGS = ${EBVARCFLAGS} ${ANSI_FLAGS} ${ANSI_CFLAGS} ${DBGFLAGS} ${USEDCSTATICFLAGS} ${USRCFLAGS} ${ARCHFLAGS} ${OPTFLAGS}  \
+ 	${AccumulatedIncFlags}
+ 
+-CXXFLAGS = ${ANSI_FLAGS} ${ANSI_CXXFLAGS} ${DBGFLAGS} ${USEDCXXSTATICFLAGS} ${USRCXXFLAGS} ${ARCHFLAGS} ${OPTFLAGS}  \
++CXXFLAGS = ${EBVARCXXFLAGS} ${ANSI_FLAGS} ${ANSI_CXXFLAGS} ${DBGFLAGS} ${USEDCXXSTATICFLAGS} ${USRCXXFLAGS} ${ARCHFLAGS} ${OPTFLAGS}  \
+ 	${AccumulatedIncFlags}
+ 
+ HFILES = *.h
+diff -ru fsl.orig/config/generic/systemvars.mk fsl/config/generic/systemvars.mk
+--- fsl.orig/config/generic/systemvars.mk	2019-08-06 09:43:44.355724325 -0500
++++ fsl/config/generic/systemvars.mk	2019-08-06 09:46:57.403729667 -0500
+@@ -16,8 +16,8 @@
+ 
+ # Compiler dependent variables
+ 
+-CC = gcc
+-CXX = c++
++CC := ${CC}
++CXX := ${CXX}
+ CSTATICFLAGS = -static
+ CXXSTATICFLAGS = -static
+ 
+@@ -25,7 +25,7 @@
+ 
+ DEPENDFLAGS = -MM
+ 
+-OPTFLAGS =  -O3 -fexpensive-optimizations ${ARCHFLAGS}
++OPTFLAGS := ${CFLAGS} ${ARCHFLAGS}
+ MACHDBGFLAGS =
+ GNU_ANSI_FLAGS = -Wall -ansi -pedantic
+ SGI_ANSI_FLAGS = -ansi -fullwarn
+diff -ru fsl.orig/config/linux_64-gcc4.8/externallibs.mk fsl/config/linux_64-gcc4.8/externallibs.mk
+--- fsl.orig/config/linux_64-gcc4.8/externallibs.mk	2019-08-06 09:43:44.355724325 -0500
++++ fsl/config/linux_64-gcc4.8/externallibs.mk	2019-09-06 10:50:53.928493599 -0500
+@@ -7,26 +7,27 @@
+ FSLEXTBIN=${FSLDIR}/extras/bin
+ 
+ # GD library
+-LIB_GD = ${FSLEXTLIB}
+-INC_GD = ${FSLEXTINC}
++LIB_GD = ${EBROOTLIBGD}/lib
++INC_GD = ${EBROOTLIBGD}/include
+ 
+ # GDC library
+ LIB_GDC = ${FSLEXTLIB}
+ INC_GDC = ${FSLEXTINC}/libgdc
+ 
+ # LIBXML2 library
+-INC_XML2 = ${FSLEXTINC}/libxml2
++INC_XML2 = ${EBROOTLIBXML2}/include
+ 
+ # LIBXML++ library
+-INC_XML++ = ${FSLEXTINC}/libxml++-2.6
+-INC_XML++CONF = ${FSLEXTLIB}/libxml++-2.6/include
++INC_XML++ = ${EBROOTLIBXMLPLUSPLUS}/include/libxml++-2.6
++INC_XML++CONF = ${EBROOTLIBXMLPLUSPLUS}/lib/libxml++-2.6/include
++
+ # GSL library
+-LIB_GSL = ${FSLEXTLIB}
+-INC_GSL = ${FSLEXTINC}/gsl
++LIB_GSL = ${EBROOTGSL}/lib
++INC_GSL = ${EBROOTGSL}/include
+ 
+ # PNG library
+-LIB_PNG = ${FSLEXTLIB}
+-INC_PNG = ${FSLEXTINC}
++LIB_PNG = ${EBROOTLIBPNG}/lib
++INC_PNG = ${EBROOTLIBPNG}/include
+ 
+ # PROB library
+ LIB_PROB = ${FSLEXTLIB}
+@@ -46,29 +47,29 @@
+ INC_NEWRAN = ${FSLEXTINC}/newran
+ 
+ # ZLIB library
+-LIB_ZLIB = /lib64
+-INC_ZLIB = /usr/include
++LIB_ZLIB = ${EBROOTZLIB}/lib
++INC_ZLIB = ${EBROOTZLIB}/include
+ 
+ # BOOST library
+-BOOSTDIR = ${FSLEXTINC}/boost
+-LIB_BOOST = ${BOOSTDIR}
+-INC_BOOST = ${BOOSTDIR}
++BOOSTDIR = ${EBROOTBOOST}
++LIB_BOOST = ${BOOSTDIR}/lib
++INC_BOOST = ${BOOSTDIR}/include
+ 
+ # QT library
+-QTDIR = /usr/lib/qt3
++QTDIR = ${EBROOTQT}
+ LIB_QT = ${QTDIR}/lib
+ INC_QT = ${QTDIR}/include
+ 
+ # QWT library
+-QWTDIR = /usr/local/qwt
++QWTDIR = ${EBROOTQWT}
+ LIB_QWT = ${QWTDIR}/lib
+ INC_QWT = ${QWTDIR}/include
+ 
+ # FFTW3 library
+-LIB_FFTW3 = ${FSLEXTLIB}
+-INC_FFTW3 = ${FSLEXTINC}/fftw3
++LIB_FFTW3 = ${EBROOTFFTW}/lib
++INC_FFTW3 = ${EBROOTFFTW}/include
+ 
+ # VTK library
+-VTKDIR_INC = /home/fs0/cowboy/var/caper_linux_64-gcc4.4/VTK7/include/vtk-7.0
+-VTKDIR_LIB = /home/fs0/cowboy/var/caper_linux_64-gcc4.4/VTK7/lib
+-VTKSUFFIX = -7.0
+\ No newline at end of file
++VTKDIR_INC = ${EBROOTVTK}/include/vtk-`echo ${EBVERSIONVTK} | cut -f1-2 -d.`
++VTKDIR_LIB = ${EBROOTVTK}/lib
++VTKSUFFIX = -`echo ${EBVERSIONVTK} | cut -f1-2 -d.`
+diff -ru fsl.orig/config/linux_64-gcc4.8/systemvars.mk fsl/config/linux_64-gcc4.8/systemvars.mk
+--- fsl.orig/config/linux_64-gcc4.8/systemvars.mk	2019-08-06 09:43:44.355724325 -0500
++++ fsl/config/linux_64-gcc4.8/systemvars.mk	2019-08-09 16:53:14.061158808 -0500
+@@ -8,7 +8,7 @@
+ CP = /bin/cp
+ MV = /bin/mv
+ INSTALL = install -p
+-TCLSH = ${FSLDIR}/bin/fsltclsh
++TCLSH = tclsh
+ RANLIB = echo
+ 
+ FSLML = ${FSLDIR}/bin/fslml
+@@ -18,9 +18,9 @@
+ 
+ # Compiler dependent variables
+ 
+-CC = gcc
+-CXX = c++
+-CXX11 = c++
++CC := ${CC}
++CXX := ${CXX}
++CXX11 := ${CXX} -std=c++11
+ CSTATICFLAGS = -static
+ CXXSTATICFLAGS = -static
+ 
+@@ -31,18 +31,18 @@
+ 
+ DEPENDFLAGS = -MM
+ 
+-OPTFLAGS = -g -O3 -fexpensive-optimizations ${ARCHFLAGS}
++OPTFLAGS := ${OPTFLAGS} ${ARCHFLAGS}
+ MACHDBGFLAGS = -g
+-GNU_ANSI_FLAGS = -Wall -ansi -pedantic -Wno-long-long 
++GNU_ANSI_FLAGS = -Wall -pedantic -Wno-long-long 
+ SGI_ANSI_FLAGS = -ansi -fullwarn
+ ANSI_FLAGS = ${GNU_ANSI_FLAGS}
+ 
+ # CUDA development environment
+ CUDAVER := $(or $(CUDAVER),9.1)
+ #$(info $$CUDAVER is [${CUDAVER}])
+-CUDA_INSTALLATION = /opt/cuda-${CUDAVER}
++CUDA_INSTALLATION := ${EBROOTCUDA}
+ GENCODE_FLAGS = $(shell ${FSLDIR}/config/common/supportedGencodes.sh ${CUDA_INSTALLATION})
+ LIB_CUDA = ${CUDA_INSTALLATION}/lib64
+ INC_CUDA = ${CUDA_INSTALLATION}/include
+ NVCC = ${CUDA_INSTALLATION}/bin/nvcc
+-NVCC11= ${CUDA_INSTALLATION}/bin/nvcc
++NVCC11 = ${CUDA_INSTALLATION}/bin/nvcc
+diff -ru fsl.orig/etc/fslconf/fsl.csh fsl/etc/fslconf/fsl.csh
+--- fsl.orig/etc/fslconf/fsl.csh	2019-08-06 09:43:44.363724325 -0500
++++ fsl/etc/fslconf/fsl.csh	2019-08-08 11:28:41.240283740 -0500
+@@ -25,8 +25,8 @@
+ # The following variables specify paths for programs and can be changed
+ #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
+ 
+-setenv FSLTCLSH $FSLDIR/bin/fsltclsh
+-setenv FSLWISH $FSLDIR/bin/fslwish
++setenv FSLTCLSH tclsh
++setenv FSLWISH wish
+ 
+ # The following variables are used for running code in parallel across
+ #  several machines ( i.e. for FDT )
+diff -ru fsl.orig/etc/fslconf/fsl-devel.sh fsl/etc/fslconf/fsl-devel.sh
+--- fsl.orig/etc/fslconf/fsl-devel.sh	2019-08-06 09:43:44.363724325 -0500
++++ fsl/etc/fslconf/fsl-devel.sh	2019-08-08 11:29:11.272284571 -0500
+@@ -26,8 +26,8 @@
+ # The following variables specify paths for programs and can be changed
+ #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
+ 
+-FSLTCLSH=$FSLDIR/bin/fsltclsh
+-FSLWISH=$FSLDIR/bin/fslwish
++FSLTCLSH=tclsh
++FSLWISH=wish
+ 
+ export FSLTCLSH FSLWISH 
+ 
+diff -ru fsl.orig/etc/fslconf/fsl.sh fsl/etc/fslconf/fsl.sh
+--- fsl.orig/etc/fslconf/fsl.sh	2019-08-06 09:43:44.363724325 -0500
++++ fsl/etc/fslconf/fsl.sh	2019-08-08 11:29:51.048285672 -0500
+@@ -26,8 +26,8 @@
+ # The following variables specify paths for programs and can be changed
+ #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
+ 
+-FSLTCLSH=$FSLDIR/bin/fsltclsh
+-FSLWISH=$FSLDIR/bin/fslwish
++FSLTCLSH=tclsh
++FSLWISH=wish
+ 
+ export FSLTCLSH FSLWISH 
+ 
+diff -ru fsl.orig/src/film/Makefile fsl/src/film/Makefile
+--- fsl.orig/src/film/Makefile	2019-08-06 09:43:45.703724362 -0500
++++ fsl/src/film/Makefile	2019-08-08 14:42:08.456604919 -0500
+@@ -28,7 +28,7 @@
+ 	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} ftoz.o ${LIBS}
+ 
+ film_gls:${OBJS} film_gls.o
+-	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} film_gls.o ${LIBS} -l giftiio
++	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} film_gls.o ${LIBS} -lgiftiio
+ 
+ film_gls_res:${OBJS} film_gls_res.o
+ 	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} film_gls_res.o ${LIBS}
+diff -ru fsl.orig/src/fslsurface/Makefile fsl/src/fslsurface/Makefile
+--- fsl.orig/src/fslsurface/Makefile	2019-08-06 09:43:45.699724362 -0500
++++ fsl/src/fslsurface/Makefile	2019-08-08 15:04:47.276642519 -0500
+@@ -37,7 +37,7 @@
+ USRLDFLAGS = -L${LIB_NEWMAT}  -L${LIB_PROB} -L${LIB_ZLIB}
+ 
+ 
+-LIBS=-lgiftiio -lexpat -lfirst_lib -lmeshclass
++LIBS=-lgiftiio -lexpat -lfirst_lib -lmeshclass -lglapi
+ 
+ APPLY_ZLIB = -DHAVE_ZLIB
+ 
+diff -ru fsl.orig/src/libmeshutils/Makefile fsl/src/libmeshutils/Makefile
+--- fsl.orig/src/libmeshutils/Makefile	2019-08-06 09:43:45.599724360 -0500
++++ fsl/src/libmeshutils/Makefile	2019-08-08 14:41:34.424603978 -0500
+@@ -3,7 +3,7 @@
+ 
+ PROJNAME = meshUtils
+ 
+-LD_LIBRARY_PATH=${FSLDIR}/lib
++#LD_LIBRARY_PATH=${FSLDIR}/lib
+ 
+ USRINCFLAGS = -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_PROB} -I${INC_BOOST} 
+ USRLDFLAGS =  -L${LIB_PROB} -L${LIB_NEWMAT} -L${LIB_ZLIB}
+diff -ru fsl.orig/src/mist-clean/Makefile fsl/src/mist-clean/Makefile
+--- fsl.orig/src/mist-clean/Makefile	2019-08-06 09:43:45.611724360 -0500
++++ fsl/src/mist-clean/Makefile	2019-08-08 11:43:27.028308250 -0500
+@@ -1,16 +1,16 @@
+ include ${FSLCONFDIR}/default.mk
+ 
+-NLOPT_INC = ${FSLEXTINC}
+-NLOPT_LIB = ${FSLEXTLIB}
+-SQLITE_INC = ${FSLEXTINC}/libsqlite
+-SQLITE_LIB = ${FSLEXTLIB}
++NLOPT_INC = ${EBROOTNLOPT}/include
++NLOPT_LIB = ${EBROOTNLOPT}/lib
++SQLITE_INC = ${EBROOTSQLITE}/include
++SQLITE_LIB = ${EBROOTSQLITE}/lib
+ 
+ PROJNAME = mist
+ 
+ XFILES = mist/mist
+ SCRIPTS = bin/mist_1_train bin/mist_2_fit bin/mist_FA_reg bin/mist_display bin/mist_mesh_utils
+ 
+-USRCXXFLAGS = -std=c++11
++USRCXXFLAGS = -std=c++11 -DBOOST_LOG_DYN_LINK
+ USRINCFLAGS = -I${FSLDIR}/include/newimage -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_GDC} -I${INC_GD} -I${SQLITE_INC} -I${NLOPT_INC} -I${VTKDIR_INC} -Icommon
+ USRLDFLAGS = -L${LIB_NEWMAT} -L${LIB_ZLIB} -L${LIB_BOOST} -L${LIB_GDC} -L${LIB_GD} -L${NLOPT_LIB} -L${VTKDIR_LIB}
+ 
