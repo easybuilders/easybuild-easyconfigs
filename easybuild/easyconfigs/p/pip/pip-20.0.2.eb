@@ -1,0 +1,40 @@
+easyblock = 'PythonBundle'
+
+name = 'pip'
+version = '20.0.2'
+
+homepage = 'https://pip.pypa.io'
+description = "pip is the package installer for Python."
+
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+download_dep_fail = True
+use_pip = False
+
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+
+exts_list = [
+    ('setuptools', '44.0.0', {
+        'source_tmpl': 'setuptools-%(version)s.zip',
+        'checksums': ['e5baf7723e5bb8382fc146e33032b241efc63314211a3a120aaa55d62d2bb008'],
+    }),
+    # stick to latest 0.33.x, 0.34.x does not work (UnicodeEncodeError, see https://github.com/pypa/wheel/issues/331)
+    ('wheel', '0.33.6', {
+        'checksums': ['10c9da68765315ed98850f8e048347c3eb06dd81822dc2ab1d4fde9dc9702646'],
+    }),
+    (name, version, {
+        'checksums': ['7db0c8ea4c7ea51c8049640e8e6e7fde949de672bfa4949920675563a5a6967f'],
+    }),
+]
+
+local_pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
+sanity_check_paths = {
+    'files': ['bin/pip'],
+    'dirs': ['lib/python%s/site-packages' % local_pyshortver],
+}
+
+sanity_check_commands = ["pip --version | grep %(version)s"]
+
+moduleclass = 'tools'
