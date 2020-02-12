@@ -1,0 +1,43 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'CMakeMake'
+
+name = 'Salmon'
+version = "1.1.0"
+
+homepage = 'https://github.com/COMBINE-lab/%(namelower)s'
+description = """Salmon is a wicked-fast program to produce a highly-accurate,
+ transcript-level quantification estimates from RNA-seq data."""
+
+toolchain = {'name': 'gompi', 'version': '2018.3.312'}
+toolchainopts = {'cstd': 'c++14', 'pic': True, 'openmp': True, 'lowopt': True}
+
+sources = ['v%(version)s.tar.gz']
+source_urls = ['https://github.com/COMBINE-lab/%(namelower)s/archive/']
+checksums = ['8f6f6300a32dac09ec5d9ce9fdbc08ff']
+
+preconfigopts = ' module load cmake/3.12.3 && '
+
+configopts  = '-DNO_IPO=TRUE ' #   -DCMAKE_PREFIX_PATH=$NIXUSER_PROFILE '
+#configopts += '-DHAVE_ANSI_TERM=1 -DHAVE_SSTREAM=1 '
+#configopts += '-DRAPMAP_SALMON_SUPPORT=1 -Dspan_FEATURE_MAKE_SPAN_TO_STD=14 ' 
+#configopts += '-DZLIB_INCLUDE_DIR=$NIXUSER_PROFILE/include '
+#configopts += '-DZLIB_LIBRARY=$NIXUSER_PROFILE/lib/libz.a '
+#configopts += '-DCMAKE_CXX_FLAGS+="-L$EBROOTJELLYFISH/lib -ljellyfish-2.0 " '
+
+builddependencies = [('Python', '2.7.14')]
+
+dependencies = [
+    ('Boost', '1.68.0'),
+    ('tbb', '2017.2.132'),
+    ('Jellyfish', '2.2.6'),
+]
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib']
+}
+
+moduleclass = 'bio'
