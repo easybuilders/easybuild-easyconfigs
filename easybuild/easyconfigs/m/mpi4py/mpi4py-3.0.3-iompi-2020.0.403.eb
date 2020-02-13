@@ -1,0 +1,35 @@
+easyblock = 'Binary'
+# Note: 'Binary' looks odd but it does what we need to do, treating the tarball as a pip-processed blob
+
+name = 'mpi4py'
+version = '3.0.3'
+
+homepage = 'https://bitbucket.org/mpi4py/mpi4py'
+description = """MPI for Python (mpi4py) provides bindings of the Message Passing Interface (MPI) standard for
+ the Python programming language, allowing any Python program to exploit multiple processors."""
+
+toolchain = {'name': 'iompi', 'version': '2020.0.403'}
+
+source_urls = [BITBUCKET_DOWNLOADS]
+sources = [SOURCE_TAR_GZ]
+checksums = ['012d716c8b9ed1e513fcc4b18e5af16a8791f51e6d1716baccf988ad355c5a1f']
+
+local_pyvers = ['2.7.17', '3.6.9', '3.7.5', '3.8.1']
+local_pyshortvers = ['.'.join(local_pyver.split('.')[:2]) for local_pyver in local_pyvers]
+
+local_install_template = 'module load python/{0} && pip install --prefix=%(installdir)s ' + SOURCE_TAR_GZ
+install_cmd = ';'.join([local_install_template.format(local_pyver) for local_pyver in local_pyvers])
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+# if some python is already loaded, use it, otherwise use default python module
+modluafooter = """
+depends_on("python")
+"""
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%s/site-packages/mpi4py'%local_pyshortver for local_pyshortver in local_pyshortvers],
+}
+
+moduleclass = 'mpi'
