@@ -57,6 +57,7 @@ from easybuild.tools.py2vs3 import string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
+from easybuild.tools.utilities import nub
 
 
 # indicates whether all the single tests are OK,
@@ -817,6 +818,20 @@ def template_easyconfig_test(self, spec):
     res = re.findall('.*\$root.*', ec.rawtxt, re.M)
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
     self.assertFalse(res, error_msg % res)
+
+    # check for redefined easyconfig parameters, there should be none...
+    param_def_regex = re.compile('^(?P<key>[a-z_]+)\s*=', re.M)
+    keys = param_def_regex.findall(ec.rawtxt)
+    redefined_keys = []
+    for key in sorted(nub(keys)):
+        cnt = keys.count(key)
+        if cnt > 1:
+            redefined_keys.append((key, cnt))
+
+    redefined_keys_error_msg = "There should be no redefined easyconfig parameters, found %d: " % len(redefined_keys)
+    redefined_keys_error_msg += ', '.join('%s (%d)' % x for x in redefined_keys)
+
+    self.assertFalse(redefined_keys, redefined_keys_error_msg)
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
