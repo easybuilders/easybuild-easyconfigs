@@ -1,0 +1,3918 @@
+From b014e429736e3e9915622b589611a5a029519ae5 Mon Sep 17 00:00:00 2001
+From: Nitin Bhat <nbhat4@illinois.edu>
+Date: Tue, 27 Nov 2018 11:08:01 -0600
+Subject: [PATCH] Remove unused files that use Charm's cmidirectmanytomany api
+
+With the new zerocopy api in Charm++, the older unused
+cmidirect api is being removed. This patch removes the source
+code files and their dependencies in NAMD that use the
+cmidirectmanytomany api. These include fftlib.{ci,h,C},
+fftmap.h, OptPme.{ci,h,C} and OptPmeRealSpace.{h,C}.
+
+Change-Id: I154a209a5d5ed4a88e1382fd4d67665fe5eb9677
+---
+ Make.depends          |  107 ----
+ Makefile              |   22 -
+ src/ComputeMap.h      |    1 -
+ src/ComputeMgr.C      |    6 -
+ src/Node.C            |  106 ++--
+ src/OptPme.C          | 1092 -------------------------------------
+ src/OptPme.ci         |   30 --
+ src/OptPme.h          |   99 ----
+ src/OptPmeRealSpace.C |  211 --------
+ src/OptPmeRealSpace.h |   29 -
+ src/SimParameters.C   |    4 -
+ src/SimParameters.h   |    4 -
+ src/WorkDistrib.C     |   42 +-
+ src/fftlib.C          | 1194 -----------------------------------------
+ src/fftlib.ci         |  183 -------
+ src/fftlib.h          |  203 -------
+ src/fftmap.h          |  253 ---------
+ src/main.ci           |    1 -
+ 18 files changed, 52 insertions(+), 3535 deletions(-)
+ delete mode 100644 src/OptPme.C
+ delete mode 100644 src/OptPme.ci
+ delete mode 100644 src/OptPme.h
+ delete mode 100644 src/OptPmeRealSpace.C
+ delete mode 100644 src/OptPmeRealSpace.h
+ delete mode 100644 src/fftlib.C
+ delete mode 100644 src/fftlib.ci
+ delete mode 100644 src/fftlib.h
+ delete mode 100644 src/fftmap.h
+
+diff --git a/Make.depends b/Make.depends
+index fb9655b0..b00d1240 100644
+--- a/Make.depends
++++ b/Make.depends
+@@ -397,8 +397,6 @@ obj/main.o: \
+ 	inc/CudaPmeSolver.decl.h \
+ 	inc/PmeSolver.decl.h \
+ 	inc/ComputeCUDAMgr.decl.h \
+-	inc/OptPmeMgr.decl.h \
+-	inc/PmeFFTLib.decl.h \
+ 	inc/ComputeExtMgr.decl.h \
+ 	inc/ComputeQMMgr.decl.h \
+ 	inc/ComputeGBISserMgr.decl.h \
+@@ -614,8 +612,6 @@ obj/BackEnd.o: \
+ 	inc/CudaPmeSolver.decl.h \
+ 	inc/PmeSolver.decl.h \
+ 	inc/ComputeCUDAMgr.decl.h \
+-	inc/OptPmeMgr.decl.h \
+-	inc/PmeFFTLib.decl.h \
+ 	inc/ComputeExtMgr.decl.h \
+ 	inc/ComputeQMMgr.decl.h \
+ 	inc/ComputeGBISserMgr.decl.h \
+@@ -2579,10 +2575,6 @@ obj/ComputeMgr.o: \
+ 	src/PmeSolver.h \
+ 	src/PmeSolverUtil.h \
+ 	inc/PmeSolver.decl.h \
+-	src/OptPme.h \
+-	inc/OptPmeMgr.decl.h \
+-	inc/PmeFFTLib.decl.h \
+-	src/OptPmeRealSpace.h \
+ 	src/ComputeEwald.h \
+ 	src/ComputeEField.h \
+ 	src/ComputeHomePatch.h \
+@@ -3611,96 +3603,6 @@ obj/ComputePmeCUDAMgr.o: \
+ 	src/DeviceCUDA.h \
+ 	inc/ComputePmeCUDAMgr.def.h
+ 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePmeCUDAMgr.o $(COPTC) src/ComputePmeCUDAMgr.C
+-obj/OptPme.o: \
+-	obj/.exists \
+-	src/OptPme.C \
+-	src/InfoStream.h \
+-	src/Node.h \
+-	src/main.h \
+-	src/ProcessorPrivate.h \
+-	src/BOCgroup.h \
+-	inc/Node.decl.h \
+-	src/PatchMap.h \
+-	src/NamdTypes.h \
+-	src/common.h \
+-	src/Vector.h \
+-	src/ResizeArray.h \
+-	src/ResizeArrayRaw.h \
+-	src/HomePatchList.h \
+-	src/SortedArray.h \
+-	src/SortableResizeArray.h \
+-	src/ResizeArrayIter.h \
+-	src/Lattice.h \
+-	src/Tensor.h \
+-	src/PatchMap.inl \
+-	src/AtomMap.h \
+-	src/OptPme.h \
+-	src/ComputeHomePatches.h \
+-	src/Compute.h \
+-	src/HomePatch.h \
+-	src/Patch.h \
+-	src/OwnerBox.h \
+-	src/Box.h \
+-	src/UniqueSortedArray.h \
+-	src/PatchTypes.h \
+-	src/MigrateAtomsMsg.h \
+-	src/Migration.h \
+-	inc/PatchMgr.decl.h \
+-	src/Settle.h \
+-	src/PmeBase.h \
+-	src/MathArray.h \
+-	src/Array.h \
+-	src/SimParameters.h \
+-	src/MGridforceParams.h \
+-	src/strlib.h \
+-	src/MStream.h \
+-	inc/OptPmeMgr.decl.h \
+-	inc/PmeFFTLib.decl.h \
+-	src/OptPmeRealSpace.h \
+-	src/PmeKSpace.h \
+-	src/ComputeMoa.h \
+-	inc/ComputeMoaMgr.decl.h \
+-	src/ComputeNonbondedUtil.h \
+-	src/ReductionMgr.h \
+-	src/Molecule.h \
+-	src/parm.h \
+-	src/structures.h \
+-	src/ConfigList.h \
+-	src/UniqueSet.h \
+-	src/UniqueSetRaw.h \
+-	src/Hydrogen.h \
+-	src/GromacsTopFile.h \
+-	src/GridForceGrid.h \
+-	plugins/include/molfile_plugin.h \
+-	plugins/include/vmdplugin.h \
+-	src/PatchMgr.h \
+-	inc/ComputeMgr.decl.h \
+-	src/Debug.h \
+-	src/WorkDistrib.h \
+-	src/ComputeMap.h \
+-	inc/WorkDistrib.decl.h \
+-	src/varsizemsg.h \
+-	src/Random.h \
+-	src/Priorities.h \
+-	src/PmeBase.inl \
+-	src/fftlib.h \
+-	src/fftmap.h \
+-	src/PatchMap.h \
+-	src/fftlib.h \
+-	src/fftlib.C \
+-	inc/PmeFFTLib.def.h \
+-	inc/OptPmeMgr.def.h
+-	$(CXX) $(CXXFLAGS) $(COPTO)obj/OptPme.o $(COPTC) src/OptPme.C
+-obj/OptPmeRealSpace.o: \
+-	obj/.exists \
+-	src/OptPmeRealSpace.C \
+-	src/OptPmeRealSpace.h \
+-	src/PmeBase.h \
+-	src/MathArray.h \
+-	src/Array.h \
+-	src/Vector.h \
+-	src/common.h
+-	$(CXX) $(CXXFLAGS) $(COPTO)obj/OptPmeRealSpace.o $(COPTC) src/OptPmeRealSpace.C
+ obj/ComputeRestraints.o: \
+ 	obj/.exists \
+ 	src/ComputeRestraints.C \
+@@ -5966,8 +5868,6 @@ obj/Node.o: \
+ 	inc/CudaPmeSolver.decl.h \
+ 	inc/PmeSolver.decl.h \
+ 	inc/ComputeCUDAMgr.decl.h \
+-	inc/OptPmeMgr.decl.h \
+-	inc/PmeFFTLib.decl.h \
+ 	inc/ComputeExtMgr.decl.h \
+ 	inc/ComputeQMMgr.decl.h \
+ 	inc/ComputeGBISserMgr.decl.h \
+@@ -6049,7 +5949,6 @@ obj/Node.o: \
+ 	src/PmeSolverUtil.h \
+ 	inc/PmeSolver.decl.h \
+ 	inc/ComputeGridForceMgr.decl.h \
+-	inc/OptPmeMgr.decl.h \
+ 	src/Sync.h \
+ 	inc/Sync.decl.h \
+ 	src/BackEnd.h \
+@@ -6265,8 +6164,6 @@ obj/PatchMgr.o: \
+ 	inc/CudaPmeSolver.decl.h \
+ 	inc/PmeSolver.decl.h \
+ 	inc/ComputeCUDAMgr.decl.h \
+-	inc/OptPmeMgr.decl.h \
+-	inc/PmeFFTLib.decl.h \
+ 	inc/ComputeExtMgr.decl.h \
+ 	inc/ComputeQMMgr.decl.h \
+ 	inc/ComputeGBISserMgr.decl.h \
+@@ -6543,8 +6440,6 @@ obj/ProxyPatch.o: \
+ 	inc/CudaPmeSolver.decl.h \
+ 	inc/PmeSolver.decl.h \
+ 	inc/ComputeCUDAMgr.decl.h \
+-	inc/OptPmeMgr.decl.h \
+-	inc/PmeFFTLib.decl.h \
+ 	inc/ComputeExtMgr.decl.h \
+ 	inc/ComputeQMMgr.decl.h \
+ 	inc/ComputeGBISserMgr.decl.h \
+@@ -7137,8 +7032,6 @@ obj/WorkDistrib.o: \
+ 	inc/CudaPmeSolver.decl.h \
+ 	inc/PmeSolver.decl.h \
+ 	inc/ComputeCUDAMgr.decl.h \
+-	inc/OptPmeMgr.decl.h \
+-	inc/PmeFFTLib.decl.h \
+ 	inc/ComputeExtMgr.decl.h \
+ 	inc/ComputeQMMgr.decl.h \
+ 	inc/ComputeGBISserMgr.decl.h \
+diff --git a/Makefile b/Makefile
+index bfbcdb6e..271a6b12 100644
+--- a/Makefile
++++ b/Makefile
+@@ -190,8 +190,6 @@ OBJS = \
+ 	$(DSTDIR)/ComputePme.o \
+ 	$(DSTDIR)/ComputePmeCUDA.o \
+ 	$(DSTDIR)/ComputePmeCUDAMgr.o \
+-	$(DSTDIR)/OptPme.o \
+-	$(DSTDIR)/OptPmeRealSpace.o \
+ 	$(DSTDIR)/ComputeRestraints.o \
+ 	$(DSTDIR)/ComputeSphericalBC.o \
+ 	$(DSTDIR)/ComputeStir.o \
+@@ -323,10 +321,6 @@ CIFILES = 	\
+ 		$(INCDIR)/ComputePmeCUDAMgr.def.h \
+ 		$(INCDIR)/CudaPmeSolver.decl.h \
+ 		$(INCDIR)/CudaPmeSolver.def.h \
+-		$(INCDIR)/OptPmeMgr.decl.h \
+-		$(INCDIR)/OptPmeMgr.def.h \
+-		$(INCDIR)/PmeFFTLib.decl.h \
+-		$(INCDIR)/PmeFFTLib.def.h \
+ 		$(INCDIR)/PmeSolver.decl.h \
+ 		$(INCDIR)/PmeSolver.def.h \
+ 		$(INCDIR)/ComputeExtMgr.decl.h \
+@@ -578,7 +572,6 @@ updatefiles:
+ 	rm -f obj/ComputeNonbondedPair.o
+ 	rm -f obj/ComputeNonbondedSelf.o
+ 	rm -f obj/ComputePme.o
+-	rm -f obj/OptPme.o
+ 
+ #To compile tracecomputes, type the command "make tracecomputes TRACEOBJDEF=-DTRACE_COMPUTE_OBJECTS"
+ tracecomputes: updatefiles $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
+@@ -680,21 +673,6 @@ $(INCDIR)/%.decl.h $(INCDIR)/%.def.h: $(MKINCDIR) $(SRCDIR)/%.ci
+ 
+ # Explicit rules for modules that don't match their file names.
+ # Multiple targets must be a pattern to execute recipe only once.
+-
+-$(INCDIR)/PmeFF%Lib.decl.h $(INCDIR)/PmeFF%Lib.def.h: $(MKINCDIR) $(SRCDIR)/fftlib.ci
+-	$(COPY) $(SRCDIR)/fftlib.ci $(INCDIR)
+-	$(CHARMXI) $(INCDIR)/fftlib.ci
+-	$(RM) $(INCDIR)/fftlib.ci
+-	$(MOVE) PmeFFTLib.def.h $(INCDIR)
+-	$(MOVE) PmeFFTLib.decl.h $(INCDIR)
+-
+-$(INCDIR)/OptPm%Mgr.decl.h $(INCDIR)/OptPm%Mgr.def.h: $(MKINCDIR) $(SRCDIR)/OptPme.ci
+-	$(COPY) $(SRCDIR)/OptPme.ci $(INCDIR)
+-	$(CHARMXI) $(INCDIR)/OptPme.ci
+-	$(RM) $(INCDIR)/OptPme.ci
+-	$(MOVE) OptPmeMgr.def.h $(INCDIR)
+-	$(MOVE) OptPmeMgr.decl.h $(INCDIR)
+-
+ DEPENDFILE = .rootdir/Make.depends
+ 
+ # This is a CPU killer...  Don't make depends if you don't need to.
+diff --git a/src/ComputeMap.h b/src/ComputeMap.h
+index e02f89b3..db21dab7 100644
+--- a/src/ComputeMap.h
++++ b/src/ComputeMap.h
+@@ -57,7 +57,6 @@ enum ComputeType
+   computeBondedCUDAType,
+ #endif
+ #endif
+-  optPmeType,
+   computeEwaldType,
+   computeFullDirectType,
+   computeGlobalType,
+diff --git a/src/ComputeMgr.C b/src/ComputeMgr.C
+index e37b04bf..654973da 100644
+--- a/src/ComputeMgr.C
++++ b/src/ComputeMgr.C
+@@ -59,7 +59,6 @@
+ #include "CudaComputeNonbonded.h"
+ #include "ComputePmeCUDAMgr.h"
+ // #endif
+-#include "OptPme.h"
+ #include "ComputeEwald.h"
+ #include "ComputeEField.h"
+ /* BEGIN gf */
+@@ -707,11 +706,6 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
+         c->initialize();
+         break;
+ #endif
+-    case optPmeType:
+-        c = new OptPmeCompute(i); // unknown delete
+-        map->registerCompute(i,c);
+-        c->initialize();
+-        break;
+     case computePmeType:
+         c = new ComputePme(i,map->computeData[i].pids[0].pid); // unknown delete
+         map->registerCompute(i,c);
+diff --git a/src/Node.C b/src/Node.C
+index 9c795271..0fb5fec0 100644
+--- a/src/Node.C
++++ b/src/Node.C
+@@ -64,7 +64,6 @@
+ #include "ComputePmeCUDAMgr.h"
+ // #endif
+ #include "ComputeGridForceMgr.decl.h"
+-#include "OptPmeMgr.decl.h"
+ #include "Sync.h"
+ #include "BackEnd.h"
+ #include "PDB.h"
+@@ -541,9 +540,6 @@ void Node::startup() {
+     AtomMap::Object()->allocateMap(molecule->numAtoms);
+ 
+     if (!CkMyPe()) {
+-      if (simParameters->useOptPME)
+-	CkpvAccess(BOCclass_group).computePmeMgr = CProxy_OptPmeMgr::ckNew();
+-      else 
+ #ifdef NAMD_CUDA
+       if (simParameters->usePMECUDA) {
+         // computePmeCUDAMgr was created in BackEnd.C
+@@ -702,29 +698,23 @@ void Node::startup() {
+ #endif
+ 
+     if ( simParameters->PMEOn ) {
+-      if ( simParameters->useOptPME ) {
+-	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+-	pme[CkMyPe()].initialize(new CkQdMsg);
++      #ifdef OPENATOM_VERSION
++      if ( simParameters->openatomOn ) { 
++        CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
++        moa[CkMyPe()].initialize(new CkQdMsg);
+       }
+-      else {
+-        #ifdef OPENATOM_VERSION
+-        if ( simParameters->openatomOn ) { 
+-          CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
+-          moa[CkMyPe()].initialize(new CkQdMsg);
+-        }
+-        #endif // OPENATOM_VERSION
++      #endif // OPENATOM_VERSION
+ #ifdef NAMD_CUDA
+-        if ( simParameters->usePMECUDA ) {
+-          if(CkMyRank()==0) {
+-            CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
+-            pme.ckLocalBranch()->initialize(new CkQdMsg);  // must run on pe 0 to call ckNew
+-          }
+-        } else 
+-#endif
+-        {
+-          CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+-          pme[CkMyPe()].initialize(new CkQdMsg);          
++      if ( simParameters->usePMECUDA ) {
++        if(CkMyRank()==0) {
++          CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
++          pme.ckLocalBranch()->initialize(new CkQdMsg);  // must run on pe 0 to call ckNew
+         }
++      } else 
++#endif
++      {
++        CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
++        pme[CkMyPe()].initialize(new CkQdMsg);          
+       }
+     }
+     break;
+@@ -757,29 +747,23 @@ void Node::startup() {
+     }
+ 
+     if ( simParameters->PMEOn ) {
+-      if ( simParameters->useOptPME ) {
+-	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+-	pme[CkMyPe()].initialize_pencils(new CkQdMsg);
++      #ifdef OPENATOM_VERSION
++      if ( simParameters->openatomOn ) { 
++        CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
++        moa[CkMyPe()].initWorkers(new CkQdMsg);
+       }
+-      else {
+-        #ifdef OPENATOM_VERSION
+-        if ( simParameters->openatomOn ) { 
+-          CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
+-          moa[CkMyPe()].initWorkers(new CkQdMsg);
+-        }
+-        #endif // OPENATOM_VERSION
++      #endif // OPENATOM_VERSION
+ #ifdef NAMD_CUDA
+-        if ( simParameters->usePMECUDA ) {
+-          if(CkMyRank()==0) {
+-            CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
+-            pme[CkMyNode()].initialize_pencils(new CkQdMsg);
+-          }
+-        } else
+-#endif
+-        {
+-          CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+-          pme[CkMyPe()].initialize_pencils(new CkQdMsg);          
++      if ( simParameters->usePMECUDA ) {
++        if(CkMyRank()==0) {
++          CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
++          pme[CkMyNode()].initialize_pencils(new CkQdMsg);
+         }
++      } else
++#endif
++      {
++        CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
++        pme[CkMyPe()].initialize_pencils(new CkQdMsg);          
+       }
+     }
+ #ifdef CHARM_HAS_MSA
+@@ -807,29 +791,23 @@ void Node::startup() {
+ 
+   case 12:
+     if ( simParameters->PMEOn ) {
+-      if ( simParameters->useOptPME ) {
+-	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+-	pme[CkMyPe()].activate_pencils(new CkQdMsg);
++      #ifdef OPENATOM_VERSION
++      if ( simParameters->openatomOn ) { 
++        CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
++        moa[CkMyPe()].startWorkers(new CkQdMsg);
+       }
+-      else {
+-        #ifdef OPENATOM_VERSION
+-        if ( simParameters->openatomOn ) { 
+-          CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
+-          moa[CkMyPe()].startWorkers(new CkQdMsg);
+-        }
+-        #endif // OPENATOM_VERSION
++      #endif // OPENATOM_VERSION
+ #ifdef NAMD_CUDA
+-        if ( simParameters->usePMECUDA ) {
+-          if(CkMyRank()==0) {
+-            CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
+-            pme[CkMyNode()].activate_pencils(new CkQdMsg);
+-          }
+-        } else
+-#endif
+-        {
+-          CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+-          pme[CkMyPe()].activate_pencils(new CkQdMsg);          
++      if ( simParameters->usePMECUDA ) {
++        if(CkMyRank()==0) {
++          CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
++          pme[CkMyNode()].activate_pencils(new CkQdMsg);
+         }
++      } else
++#endif
++      {
++        CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
++        pme[CkMyPe()].activate_pencils(new CkQdMsg);          
+       }
+     }
+ #ifdef CHARM_HAS_MSA
+diff --git a/src/OptPme.C b/src/OptPme.C
+deleted file mode 100644
+index 01cf042c..00000000
+--- a/src/OptPme.C
++++ /dev/null
+@@ -1,1092 +0,0 @@
+-/**
+-***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+-***  The Board of Trustees of the University of Illinois.
+-***  All rights reserved.
+-**/
+-
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-#include <fftw3.h>
+-#else
+-#ifdef NAMD_FFTW_NO_TYPE_PREFIX
+-#include <fftw.h>
+-#include <rfftw.h>
+-#else
+-#include <sfftw.h>
+-#include <srfftw.h>
+-#endif
+-#endif
+-#endif
+-
+-#include <assert.h>
+-
+-#include "InfoStream.h"
+-#include "Node.h"
+-#include "PatchMap.h"
+-#include "PatchMap.inl"
+-#include "AtomMap.h"
+-#include "OptPme.h"
+-#include "OptPmeMgr.decl.h"
+-#include "OptPmeRealSpace.h"
+-#include "PmeKSpace.h"
+-#include "ComputeNonbondedUtil.h"
+-#include "PatchMgr.h"
+-#include "Molecule.h"
+-#include "ReductionMgr.h"
+-//#include "ComputeMgr.h"
+-#include "ComputeMgr.decl.h"
+-// #define DEBUGM
+-#define MIN_DEBUG_LEVEL 3
+-#include "Debug.h"
+-#include "SimParameters.h"
+-#include "WorkDistrib.h"
+-#include "varsizemsg.h"
+-#include "Random.h"
+-#include "Priorities.h"
+-#include "PmeBase.inl"
+-
+-extern char *pencilPMEProcessors;
+-
+-#include "fftlib.h"
+-#include "fftmap.h"
+-
+-//Very large integer
+-int many_to_many_start = 0x7fffffff;
+-
+-class OptPmeMgr : public CBase_OptPmeMgr {
+-public:
+-  friend class OptPmeCompute;
+-  OptPmeMgr();
+-  ~OptPmeMgr();
+-
+-  void initialize(CkQdMsg*);
+-  void initialize_pencils(CkQdMsg*);
+-  void activate_pencils(CkQdMsg*);
+-  void recvArrays(CProxy_OptPmeXPencil, CProxy_OptPmeYPencil, CProxy_OptPmeZPencil);
+-
+-  void recvUngrid(OptPmeGridMsg *);
+-  void ungridCalc(OptPmeDummyMsg *);
+-  void ungridCalc_subcompute(OptPmeSubComputeMsg *);
+-  void ungridCalc_subcompute_done(OptPmeSubComputeMsg *);
+-  void doWorkOnPeer(OptPmeSubComputeMsg *);
+-  void recvEvir (CkReductionMsg *msg);
+-
+-  void setCompute(OptPmeCompute *c) { pmeCompute = c; c->setMgr(this); }
+-
+-private:
+-  CProxy_OptPmeMgr pmeProxy;
+-  CProxy_OptPmeMgr pmeProxyDir;
+-  OptPmeCompute *pmeCompute;
+-  PmeGrid myGrid;
+-  PmeKSpace *myKSpace;
+-
+-  CProxy_OptPmeXPencil xPencil;
+-  CProxy_OptPmeYPencil yPencil;
+-  CProxy_OptPmeZPencil zPencil;
+-  int    numPencilsActive;
+-  int    ungrid_count;
+-  SubmitReduction *reduction;
+-  int    _iter;
+-  void   *handle;
+-  bool   constant_pressure;    //Does the simulation need constant pressure
+-  int    subcompute_count;
+-
+-  int peersAllocated;
+-  int peers [SUBCOMPUTE_NPAR];
+-  OptPmeSubComputeMsg *subcompute_msgs[SUBCOMPUTE_NPAR];
+-};
+-
+-
+-void pme_f2d (double *dst, float *src, int N);
+-void pme_d2f (float *dst, double *src, int N);
+-
+-static inline void initializePmeGrid (SimParameters *simParams, PmeGrid &grid) {
+-    int xBlocks = 0, yBlocks = 0, zBlocks= 0;
+-
+-    if ( simParams->PMEPencils > 1 ) {
+-      xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
+-    } else {
+-      int nb2 = ( simParams->PMEGridSizeX * simParams->PMEGridSizeY
+-		  * simParams->PMEGridSizeZ ) / simParams->PMEMinPoints;
+-      if ( nb2 > CkNumPes() ) nb2 = CkNumPes();
+-      if ( nb2 < 1 ) nb2 = 1;
+-      int nb = (int) sqrt((float)nb2);
+-      if ( nb < 1 ) nb = 1;
+-      xBlocks = zBlocks = nb;
+-      yBlocks = nb2 / nb;
+-    }
+-    
+-    int dimx = simParams->PMEGridSizeX;
+-    int bx = 1 + ( dimx - 1 ) / xBlocks;
+-    xBlocks = 1 + ( dimx - 1 ) / bx;
+-    
+-    int dimy = simParams->PMEGridSizeY;
+-    int by = 1 + ( dimy - 1 ) / yBlocks;
+-    yBlocks = 1 + ( dimy - 1 ) / by;
+-    
+-    int dimz = simParams->PMEGridSizeZ / 2 + 1;  // complex
+-    int bz = 1 + ( dimz - 1 ) / zBlocks;
+-    zBlocks = 1 + ( dimz - 1 ) / bz;
+-
+-    grid.xBlocks = xBlocks;
+-    grid.yBlocks = yBlocks;
+-    grid.zBlocks = zBlocks;
+-
+-    grid.K1 = simParams->PMEGridSizeX;
+-    grid.K2 = simParams->PMEGridSizeY;
+-    grid.K3 = simParams->PMEGridSizeZ;
+-    grid.order = simParams->PMEInterpOrder;
+-    grid.dim2 = grid.K2;
+-    grid.dim3 = 2 * (grid.K3/2 + 1);
+-
+-    grid.block1 = ( grid.K1 + xBlocks - 1 ) / xBlocks;
+-    grid.block2 = ( grid.K2 + yBlocks - 1 ) / yBlocks;
+-    grid.block3 = ( grid.K3/2 + 1 + zBlocks - 1 ) / zBlocks;  // complex
+-}
+-
+-#ifdef NAMD_FFTW
+-static CmiNodeLock fftw_plan_lock;
+-#endif
+-
+-
+-static inline void scale_n_copy_coordinates(CompAtom *x, PmeParticle p[], 
+-					    int &N, 
+-					    Lattice &lattice, PmeGrid grid,
+-					    //double **qline,
+-					    double xmin, double xlen,
+-					    double ymin, double ylen,
+-					    double zmin, double zlen,
+-					    int &scg) {
+-  Vector origin = lattice.origin();
+-  Vector recip1 = lattice.a_r();
+-  Vector recip2 = lattice.b_r();
+-  Vector recip3 = lattice.c_r();
+-  double ox = origin.x;
+-  double oy = origin.y;
+-  double oz = origin.z;
+-  double r1x = recip1.x;
+-  double r1y = recip1.y;
+-  double r1z = recip1.z;
+-  double r2x = recip2.x;
+-  double r2y = recip2.y;
+-  double r2z = recip2.z;
+-  double r3x = recip3.x;
+-  double r3y = recip3.y;
+-  double r3z = recip3.z;
+-  int K1 = grid.K1;
+-  int K2 = grid.K2;
+-  int K3 = grid.K3;
+-
+-  const BigReal coulomb_sqrt = sqrt( COULOMB * ComputeNonbondedUtil::scaling
+-				     * ComputeNonbondedUtil::dielectric_1 );
+-
+-
+-  int natoms = 0;
+-  for (int i=0; i<N; i++) {
+-    double px = x[i].position.x - ox;
+-    double py = x[i].position.y - oy;
+-    double pz = x[i].position.z - oz;
+-    double sx = px*r1x + py*r1y + pz*r1z;
+-    double sy = px*r2x + py*r2y + pz*r2z;
+-    double sz = px*r3x + py*r3y + pz*r3z;
+-    p[natoms].x = K1 * ( sx - floor(sx) );
+-    p[natoms].y = K2 * ( sy - floor(sy) );
+-    p[natoms].z = K3 * ( sz - floor(sz) );
+-#ifndef ARCH_POWERPC
+-    //  Check for rare rounding condition where K * ( 1 - epsilon ) == K      
+-    //  which was observed with g++ on Intel x86 architecture. 
+-    if ( p[natoms].x == K1 ) p[natoms].x = 0;
+-    if ( p[natoms].y == K2 ) p[natoms].y = 0;
+-    if ( p[natoms].z == K3 ) p[natoms].z = 0;
+-#endif
+-
+-#if 1 //stray charge detection
+-    BigReal u1,u2,u3;
+-    u1 = (int) (p[natoms].x - xmin);
+-    if (u1 >= grid.K1) u1 -= grid.K1;    
+-    u2 = (int) (p[natoms].y - ymin);
+-    if (u2 >= grid.K2) u2 -= grid.K2;    
+-    u3 = (int) (p[natoms].z - zmin);
+-    if (u3 >= grid.K3) u3 -= grid.K3;
+-    
+-    if ( (u1 < 0.0) || (u1 >= xlen) || 
+-	 (u2 < 0.0) || (u2 >= ylen) || 
+-	 (u3 < 0.0) || (u3 >= zlen) ) {
+-      scg ++;
+-      continue;
+-    }
+-#endif
+-    
+-    p[natoms].cg = coulomb_sqrt * x[i].charge;
+-    natoms ++;
+-  }
+-  N = natoms;
+-}
+-
+-
+-OptPmeMgr::OptPmeMgr() : pmeProxy(thisgroup), 
+-				 pmeProxyDir(thisgroup), pmeCompute(0) {
+-
+-  CkpvAccess(BOCclass_group).computePmeMgr = thisgroup;
+-
+-  myKSpace = 0;
+-  ungrid_count = 0;
+-  peersAllocated = 0;
+-
+-#ifdef NAMD_FFTW
+-  if ( CmiMyRank() == 0 ) {
+-    fftw_plan_lock = CmiCreateLock();
+-  }
+-#endif    
+-}
+-
+-
+-void OptPmeMgr::recvArrays(CProxy_OptPmeXPencil x, CProxy_OptPmeYPencil y, CProxy_OptPmeZPencil z) {
+-  xPencil = x;  yPencil = y;  zPencil = z;
+-}
+-
+-void OptPmeMgr::initialize(CkQdMsg *msg) {
+-    delete msg;
+-
+-    _iter = 0;
+-
+-    handle = CmiDirect_manytomany_allocate_handle ();
+-
+-    SimParameters *simParams = Node::Object()->simParameters;
+-    PatchMap *patchMap = PatchMap::Object();
+-    
+-    initializePmeGrid (simParams, myGrid);    
+-
+-    if (simParams->langevinPistonOn || simParams->berendsenPressureOn)	
+-      constant_pressure = true;
+-    else
+-      constant_pressure = false;      
+-
+-    bool useManyToMany = simParams->useManyToMany;
+-    //Many-to-many requires that patches and pmepencils are all on different processors
+-    //int npes = patchMap->numPatches() + 
+-    //         myGrid.xBlocks *  myGrid.yBlocks + 
+-    //         myGrid.zBlocks *  myGrid.xBlocks +
+-    //         myGrid.yBlocks *  myGrid.zBlocks;
+-    
+-    int npes = patchMap->numPatches();
+-    if (npes < myGrid.xBlocks *  myGrid.yBlocks)
+-      npes = myGrid.xBlocks *  myGrid.yBlocks;
+-    if (npes <  myGrid.zBlocks *  myGrid.xBlocks)
+-      npes = myGrid.zBlocks *  myGrid.xBlocks;
+-    if (npes < myGrid.yBlocks *  myGrid.zBlocks)
+-      npes = myGrid.yBlocks *  myGrid.zBlocks;
+-    
+-   if (npes >= CkNumPes()) {
+-      if (CkMyPe() == 0)
+-	printf ("Warning : Not enough processors for the many-to-many optimization \n");      
+-      useManyToMany = false;
+-    }
+-    
+-    if (useManyToMany)  {
+-      if (CkMyPe() == 0)
+-	printf ("Enabling the Many-to-many optimization\n");
+-      //defaults to max integer
+-      many_to_many_start = MANY_TO_MANY_START;
+-    }
+-
+-    if (CkMyRank() == 0) { //create the pencil pme processor map
+-      pencilPMEProcessors = new char [CkNumPes()];
+-      memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
+-    }
+-
+-    if ( CkMyPe() == 0) {
+-      iout << iINFO << "PME using " << myGrid.xBlocks << " x " <<
+-        myGrid.yBlocks << " x " << myGrid.zBlocks <<
+-        " pencil grid for FFT and reciprocal sum.\n" << endi;
+-      
+-      CProxy_OptPmePencilMapZ   mapz;      
+-      CProxy_OptPmePencilMapY   mapy;
+-      CProxy_OptPmePencilMapX   mapx;
+-      
+-      mapz = CProxy_OptPmePencilMapZ::ckNew(myGrid.xBlocks, myGrid.yBlocks, myGrid.zBlocks);      
+-      mapy = CProxy_OptPmePencilMapY::ckNew(myGrid.xBlocks, myGrid.yBlocks, myGrid.zBlocks);
+-      mapx = CProxy_OptPmePencilMapX::ckNew(myGrid.xBlocks, myGrid.yBlocks, myGrid.zBlocks);
+-      
+-      CkArrayOptions optsz;
+-      optsz.setMap (mapz);
+-      CkArrayOptions optsy;
+-      optsy.setMap (mapy);
+-      CkArrayOptions optsx;
+-      optsx.setMap (mapx);
+-      
+-      zPencil = CProxy_OptPmeZPencil::ckNew(optsz);  
+-      yPencil = CProxy_OptPmeYPencil::ckNew(optsy);  
+-      xPencil = CProxy_OptPmeXPencil::ckNew(optsx);  
+-      
+-      int x,y,z;
+-      for (x = 0; x < myGrid.xBlocks; ++x)
+-	for (y = 0; y < myGrid.yBlocks; ++y ) {
+-	  zPencil(x,y,0).insert();
+-	}
+-      zPencil.doneInserting();
+-      
+-      for (z = 0; z < myGrid.zBlocks; ++z )
+-	for (x = 0; x < myGrid.xBlocks; ++x ) {
+-	  yPencil(x,0,z).insert();
+-	}
+-      yPencil.doneInserting();
+-      
+-      for (y = 0; y < myGrid.yBlocks; ++y )	
+-	for (z = 0; z < myGrid.zBlocks; ++z ) {
+-	  xPencil(0,y,z).insert();
+-	}
+-      xPencil.doneInserting();      
+-      
+-      pmeProxy.recvArrays(xPencil,yPencil,zPencil);
+-      OptPmePencilInitMsgData msgdata;
+-      msgdata.grid = myGrid;
+-      msgdata.xBlocks = myGrid.xBlocks;
+-      msgdata.yBlocks = myGrid.yBlocks;
+-      msgdata.zBlocks = myGrid.zBlocks;
+-      msgdata.xPencil = xPencil;
+-      msgdata.yPencil = yPencil;
+-      msgdata.zPencil = zPencil;
+-      msgdata.constant_pressure = constant_pressure;
+-
+-      CkCallback cb (CkIndex_OptPmeMgr::recvEvir(NULL), thisProxy[0]);
+-      msgdata.cb_energy = cb;
+-
+-      msgdata.pmeProxy = pmeProxyDir;
+-      xPencil.init(new OptPmePencilInitMsg(msgdata));
+-      yPencil.init(new OptPmePencilInitMsg(msgdata));
+-      zPencil.init(new OptPmePencilInitMsg(msgdata));
+-     
+-#if 0 
+-      reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+-#endif
+-
+-#ifndef NAMD_FFTW
+-      NAMD_die("Sorry, FFTW must be compiled in to use PME.");
+-#endif
+-    }
+-
+-}
+-
+-void OptPmeMgr::initialize_pencils(CkQdMsg *msg) {
+-  delete msg;
+-
+-  SimParameters *simParams = Node::Object()->simParameters;
+-
+-  PatchMap *patchMap = PatchMap::Object();
+-  Lattice lattice = simParams->lattice;
+-  BigReal sysdima = lattice.a_r().unit() * lattice.a();
+-  BigReal sysdimb = lattice.b_r().unit() * lattice.b();
+-  BigReal cutoff = simParams->cutoff;
+-  BigReal patchdim = simParams->patchDimension;
+-  int numPatches = patchMap->numPatches();
+-
+-  //fprintf(stderr, "Node %d PE %d trying to allocate %d bytes\n", CmiMyNode(), CmiMyPe(), myGrid.xBlocks*myGrid.yBlocks);
+-
+-  char *pencilActive = new char[myGrid.xBlocks*myGrid.yBlocks];
+-  for ( int i=0; i<myGrid.xBlocks; ++i ) {
+-    for ( int j=0; j<myGrid.yBlocks; ++j ) {
+-      pencilActive[i*myGrid.yBlocks+j] = 0;
+-    }
+-  }
+-
+-  //Right now we only support one patch per processor
+-  assert (patchMap->numPatchesOnNode(CkMyPe()) <= 1);
+-  for ( int pid=0; pid < numPatches; ++pid ) {
+-    int pnode = patchMap->node(pid);
+-    if ( pnode != CkMyPe() ) continue;
+-
+-    BigReal minx = patchMap->min_a(pid);
+-    BigReal maxx = patchMap->max_a(pid);
+-    BigReal margina = 0.5 * ( patchdim - cutoff ) / sysdima;
+-    // min1 (max1) is smallest (largest) grid line for this patch
+-    int min1 = ((int) floor(myGrid.K1 * (minx - margina))) - myGrid.order + 1;
+-    int max1 = ((int) floor(myGrid.K1 * (maxx + margina)));
+-
+-    BigReal miny = patchMap->min_b(pid);
+-    BigReal maxy = patchMap->max_b(pid);
+-    BigReal marginb = 0.5 * ( patchdim - cutoff ) / sysdimb;
+-    // min2 (max2) is smallest (largest) grid line for this patch
+-    int min2 = ((int) floor(myGrid.K2 * (miny - marginb))) - myGrid.order + 1;
+-    int max2 = ((int) floor(myGrid.K2 * (maxy + marginb)));
+-
+-    for ( int i=min1; i<=max1; ++i ) {
+-      int ix = i;
+-      while ( ix >= myGrid.K1 ) ix -= myGrid.K1;
+-      while ( ix < 0 ) ix += myGrid.K1;
+-      for ( int j=min2; j<=max2; ++j ) {
+-        int jy = j;
+-        while ( jy >= myGrid.K2 ) jy -= myGrid.K2;
+-        while ( jy < 0 ) jy += myGrid.K2;
+-        pencilActive[(ix / myGrid.block1)*myGrid.yBlocks + (jy / myGrid.block2)] = 1;
+-      }
+-    }
+-  }
+-
+-  numPencilsActive = 0;
+-  for ( int i=0; i<myGrid.xBlocks; ++i ) {
+-    for ( int j=0; j<myGrid.yBlocks; ++j ) {
+-      if ( pencilActive[i*myGrid.yBlocks+j] ) {
+-        ++numPencilsActive;
+-
+-        zPencil(i,j,0).dummyRecvGrid(CkMyPe(),0);
+-      }
+-    }
+-  }
+-
+-  ungrid_count = numPencilsActive;
+-  delete [] pencilActive;  
+-}
+-
+-
+-void OptPmeMgr::activate_pencils(CkQdMsg *msg) {
+-  if ( CkMyPe() == 0 ) zPencil.dummyRecvGrid(CkMyPe(),1);
+-}
+-
+-
+-OptPmeMgr::~OptPmeMgr() {
+-  delete myKSpace;
+-}
+-
+-void OptPmeMgr::recvUngrid(OptPmeGridMsg *msg) {
+-  if ( ungrid_count == 0 ) {
+-    NAMD_bug("Message order failure in OptPmeMgr::recvUngrid\n");
+-  }
+-    
+-  pmeCompute->copyPencils(msg);
+-  delete msg;
+-  --ungrid_count;
+-
+-  if ( ungrid_count == 0 ) {
+-    //CkPrintf("recvUngrid on Pe(%d)\n",CkMyPe());
+-    ungridCalc(NULL);
+-  }
+-}
+-
+-void OptPmeMgr::ungridCalc(OptPmeDummyMsg *dmsg) {    
+-  pmeCompute->ungridForces_init();
+-  if ( CmiMyNodeSize() >= SUBCOMPUTE_NPAR ) {
+-    int npar = SUBCOMPUTE_NPAR;
+-    OptPmeSubComputeMsg *smsg = NULL;
+-
+-    if (!peersAllocated) {
+-      peersAllocated = 1;
+-      int next_rank = CmiMyRank();   
+-      PatchMap *patchMap = PatchMap::Object();          
+-
+-      for (int i = 1; i < npar; ++i) {      
+-	smsg = new (PRIORITY_SIZE) OptPmeSubComputeMsg;
+-	subcompute_msgs[i] = smsg;
+-	smsg->src_pe  = CkMyPe();
+-	smsg->compute = pmeCompute;
+-
+-	next_rank ++;
+-	if (next_rank >= CmiMyNodeSize())
+-	  next_rank = 0;
+-	int n = 0;
+-	int nr = next_rank;
+-	while(n < CmiMyNodeSize() &&
+-	      patchMap->numPatchesOnNode(CmiNodeFirst(CmiMyNode())+nr) > 0)
+-	{
+-	  nr ++;
+-	  if (nr >= CmiMyNodeSize())
+-	    nr = 0;
+-	  n++;
+-	}
+-	if (n < CmiMyNodeSize()) 
+-	  next_rank = nr;  //we are successful, so save this rank
+-	
+-	smsg->dest = next_rank;
+-      }
+-
+-      //Local subcompute msg
+-      smsg = new (PRIORITY_SIZE) OptPmeSubComputeMsg;
+-      subcompute_msgs[0] = smsg;
+-      smsg->src_pe  = CkMyPe();
+-      smsg->compute = pmeCompute;
+-      smsg->dest    = CmiMyRank();
+-    }
+-
+-    int start  = 0;
+-    int nlocal = pmeCompute->getNumLocalAtoms();
+-    //CmiAssert (npar <= nlocal);
+-    if (nlocal < npar)
+-      npar = nlocal;
+-    if (npar == 0)
+-      npar = 1;
+-    int n_per_iter = nlocal / npar;
+-    //We dont handle the case where there are very few atoms
+-    subcompute_count = npar;
+-
+-    for (int i = 0; i < npar; ++i) {      
+-      smsg = subcompute_msgs[i];
+-      smsg->start   = start;
+-      smsg->end     = start + n_per_iter;
+-      start += n_per_iter;
+-      if (i == npar - 1)
+-	smsg->end = nlocal;
+-      pmeProxy[CmiNodeFirst(CmiMyNode())+smsg->dest].ungridCalc_subcompute(smsg);
+-    }    
+-  }
+-  else {
+-    pmeCompute->ungridForces_compute(0, 0);
+-    pmeCompute->ungridForces_finalize();
+-    ungrid_count = numPencilsActive; 
+-  }
+-}
+-
+-void OptPmeMgr::ungridCalc_subcompute(OptPmeSubComputeMsg *msg){ 
+-  OptPmeCompute *compute = (OptPmeCompute *) msg->compute;
+-  compute->ungridForces_compute(msg->start, msg->end);
+-  pmeProxy[msg->src_pe].ungridCalc_subcompute_done(msg);
+-}
+-
+-void OptPmeMgr::ungridCalc_subcompute_done(OptPmeSubComputeMsg *msg){  
+-  subcompute_count --;
+-  //delete msg; //message pointers saved
+-  if (subcompute_count == 0) {
+-    pmeCompute->ungridForces_finalize();
+-    ungrid_count = numPencilsActive; 
+-  }
+-}
+-
+-void OptPmeMgr::doWorkOnPeer(OptPmeSubComputeMsg *msg) {
+-  OptPmeCompute *compute = (OptPmeCompute *) msg->compute;
+-  compute->doWorkOnPeer();
+-  //  delete msg; //saved in compute
+-}
+-
+-void OptPmeMgr::recvEvir (CkReductionMsg *msg) {
+-
+-  assert (CkMyPe() == 0);
+-
+-  double *data = (double *) msg->getData();
+-  assert (msg->getSize() == 7 * sizeof(double));
+-
+-  //printf ("[%d]: Received Evir\n", CkMyPe());
+-
+-  double scale = 1.;
+-  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[0] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_XX) += data[1] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_XY) += data[2] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += data[3] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_YX) += data[2] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_YY) += data[4] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += data[5] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += data[3] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += data[5] * scale;
+-  reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += data[6] * scale;   
+-
+-  delete msg;
+-
+-  SimParameters *simParams = Node::Object()->simParameters;
+-  int fef = simParams->fullElectFrequency;
+-  for (int i = 0; i < fef; i++) {
+-    reduction->submit();
+-  }
+-}
+-
+-OptPmeCompute::OptPmeCompute(ComputeID c) :
+-  ComputeHomePatches(c)
+-{
+-  DebugM(4,"OptPmeCompute created.\n");
+-
+-  CProxy_OptPmeMgr::ckLocalBranch(
+-	CkpvAccess(BOCclass_group).computePmeMgr)->setCompute(this);
+-
+-  _initialized = false;
+-
+-  useAvgPositions = 1;
+-  localResults = NULL;
+-
+-  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+-  SimParameters *simParams = Node::Object()->simParameters;
+-}
+-
+-void recv_ungrid_done (void *m) {
+-  OptPmeDummyMsg *msg =  (OptPmeDummyMsg *) m;  
+-  CProxy_OptPmeMgr pmeProxy (CkpvAccess(BOCclass_group).computePmeMgr);
+-  pmeProxy[msg->to_pe].ungridCalc (msg);
+-}  
+-
+-
+-void OptPmeCompute::resetPatchCoordinates (const Lattice &lattice) {
+-  PatchMap *patchMap = PatchMap::Object();    
+-  SimParameters *simParams = Node::Object()->simParameters;
+-
+-  BigReal sysdima = lattice.a_r().unit() * lattice.a();
+-  BigReal sysdimb = lattice.b_r().unit() * lattice.b();
+-  BigReal sysdimc = lattice.c_r().unit() * lattice.c();
+-  BigReal cutoff = simParams->cutoff;
+-  BigReal patchdim = simParams->patchDimension;
+-
+-  int pid = patchList[0].patchID; 
+-  assert (patchList.size() == 1);
+-
+-  //printf ("Patch[%d]: zstart = %d, zlen = %d, maxz %f, minz %f, marginec %f\n", pid, zstart, zlen, maxz, minz, marginc);
+-
+-  BigReal minx = patchMap->min_a(pid);
+-  BigReal maxx = patchMap->max_a(pid);
+-  BigReal margina = 0.5 * ( patchdim - cutoff ) / sysdima;
+-  // min1 (max1) is smallest (largest) grid line for this patch
+-  int min1 = ((int) floor(myGrid.K1 * (minx - margina))) - myGrid.order + 1;
+-  int max1 = ((int) floor(myGrid.K1 * (maxx + margina)));
+-
+-  BigReal miny = patchMap->min_b(pid);
+-  BigReal maxy = patchMap->max_b(pid);
+-  BigReal marginb = 0.5 * ( patchdim - cutoff ) / sysdimb;
+-  // min2 (max2) is smallest (largest) grid line for this patch
+-  int min2 = ((int) floor(myGrid.K2 * (miny - marginb))) - myGrid.order + 1;
+-  int max2 = ((int) floor(myGrid.K2 * (maxy + marginb)));
+-
+-  BigReal minz = patchMap->min_c(pid);
+-  BigReal maxz = patchMap->max_c(pid);
+-  BigReal marginc = 0.5 * ( patchdim - cutoff ) / sysdimc;
+-  // min3 (max3) is smallest (largest) grid line for this patch
+-  int min3 = ((int) floor(myGrid.K3 * (minz - marginc))) - myGrid.order + 1;
+-  int max3 = ((int) floor(myGrid.K3 * (maxz + marginc)));
+-
+-  xlen = max1 - min1 + 1;
+-  xstart = min1;  
+-  
+-  ylen = max2 - min2 + 1;
+-  ystart = min2;  
+-  
+-  zlen = max3 - min3 + 1;
+-  zstart = min3;  
+-}
+-
+-void OptPmeCompute::initializeOptPmeCompute () {
+-  
+-  _initialized = true;
+-  
+-  strayChargeErrors = 0;
+-
+-  SimParameters *simParams = Node::Object()->simParameters;
+-  PatchMap *patchMap = PatchMap::Object();
+-
+-  initializePmeGrid (simParams, myGrid);
+-
+-  alchFepOn    = simParams->alchFepOn;
+-  alchThermIntOn = simParams->alchThermIntOn;
+-  lesOn    = simParams->lesOn;
+-  pairOn   = simParams->pairInteractionOn;
+-
+-  assert (!alchFepOn);
+-  assert (!alchThermIntOn);
+-  assert (!lesOn);
+-  assert (!pairOn);
+-  
+-  qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
+-  fsize = myGrid.K1 * myGrid.dim2;
+-  q_arr = new double*[fsize];
+-  memset( (void*) q_arr, 0, fsize * sizeof(double*) );
+-
+-  assert (myMgr != NULL);
+-
+-  const Lattice lattice = simParams->lattice;
+-  resetPatchCoordinates (lattice);
+-  
+-  PencilElement *pencilActive = new PencilElement [myGrid.xBlocks * myGrid.yBlocks];
+-  memset (pencilActive, 0, myGrid.xBlocks * myGrid.yBlocks * sizeof(PencilElement));
+-
+-  for ( int i=xstart; i<=xstart+xlen-1; ++i ) {
+-    int ix = i;
+-    while ( ix >= myGrid.K1 ) ix -= myGrid.K1;
+-    while ( ix < 0 ) ix += myGrid.K1;
+-    for ( int j=ystart; j<=ystart+ylen-1; ++j ) {
+-      int jy = j;
+-      while ( jy >= myGrid.K2 ) jy -= myGrid.K2;
+-      while ( jy < 0 ) jy += myGrid.K2;
+-      
+-      int pencil_idx = (ix / myGrid.block1)*myGrid.yBlocks + (jy / myGrid.block2);
+-      //If not initialized yet, initialize this pencil
+-      if (! pencilActive[pencil_idx].isActive) {
+-	pencilActive[pencil_idx].isActive = 1;
+-	pencilActive[pencil_idx].xmin = ix;
+-	pencilActive[pencil_idx].xmax = ix;
+-	pencilActive[pencil_idx].ymin = jy;
+-	pencilActive[pencil_idx].ymax = jy;
+-	pencilActive[pencil_idx].ib = ix / myGrid.block1;
+-	pencilActive[pencil_idx].jb = jy / myGrid.block2;
+-      }
+-      else { //pencil has been initialized, update the min and max
+-	if (pencilActive[pencil_idx].xmin > ix)
+-	  pencilActive[pencil_idx].xmin = ix;
+-	if (pencilActive[pencil_idx].xmax < ix)
+-	  pencilActive[pencil_idx].xmax = ix;	
+-	if (pencilActive[pencil_idx].ymin > jy)
+-	  pencilActive[pencil_idx].ymin = jy;
+-	if (pencilActive[pencil_idx].ymax < jy)
+-	  pencilActive[pencil_idx].ymax = jy;
+-      }
+-    }
+-  }
+-  
+-  int nactive = 0; 
+-  for (int ib=0; ib<myGrid.xBlocks; ++ib) 
+-    for (int jb=0; jb<myGrid.yBlocks; ++jb) 
+-      if (pencilActive[ib * myGrid.yBlocks + jb].isActive) 
+-	nactive ++;
+-
+-  assert (nactive == myMgr->numPencilsActive);  
+-  
+-  nzlines = xlen * ylen;
+-  zline_storage = new double [nzlines * zlen];
+-  sp_zstorage = new float [nzlines * zlen];  
+-
+-  //printf ("%d: Allocate %d bytes of storage for %d PME Pencils\n", CkMyPe(), 
+-  //	  nzlines * zlen * (int)sizeof(double), nactive);
+-  
+-  assert (zline_storage != NULL);
+-  double * zblock = zline_storage;
+-  
+-  for (int ib=0; ib<myGrid.xBlocks; ++ib) {
+-    for (int jb=0; jb<myGrid.yBlocks; ++jb) {
+-      int index = ib * myGrid.yBlocks + jb;
+-      if (pencilActive[index].isActive) {
+-	pencilActive[index].data = zblock;
+-	for (int i = pencilActive[index].xmin; i <= pencilActive[index].xmax; i++)
+-	  for (int j = pencilActive[index].ymin; j <= pencilActive[index].ymax; j++) {	    
+-	    q_arr[i*myGrid.dim2 + j] = zblock;
+-	    zblock += zlen;
+-	    assert ((char *) zblock <= (char *)(zline_storage + nzlines*zlen));
+-	  }
+-      }
+-    }
+-  }
+-  
+-  pencilVec.resize (nactive);
+-  nactive = 0;
+-  for (int ib=0; ib<myGrid.xBlocks; ++ib) 
+-    for (int jb=0; jb<myGrid.yBlocks; ++jb) 
+-      if (pencilActive[ib*myGrid.yBlocks + jb].isActive) 
+-	pencilVec[nactive ++] = pencilActive [ib * myGrid.yBlocks + jb];
+-
+-  //We dont need the sparse array anymore
+-  delete [] pencilActive;
+-  
+-  /******************************* Initialize Many to Many ***********************************/
+-  OptPmeDummyMsg *m = new (PRIORITY_SIZE) OptPmeDummyMsg;
+-  m->to_pe = CkMyPe();
+-  CmiDirect_manytomany_initialize_recvbase (myMgr->handle, PHASE_UG, 
+-					    recv_ungrid_done, m, (char *)sp_zstorage, 
+-					    myGrid.xBlocks*myGrid.yBlocks, -1); 
+-  
+-  CkCallback cbi (CkCallback::ignore);
+-  CmiDirect_manytomany_initialize_sendbase (myMgr->handle, PHASE_GR, NULL, NULL, 
+-					    (char *)sp_zstorage, 
+-					    pencilVec.size(), patchList[0].patchID);
+-
+-  for (int idx = 0; idx < pencilVec.size(); idx++) {
+-    int ib =  pencilVec[idx].ib;
+-    int jb =  pencilVec[idx].jb;
+-    double * data = pencilVec[idx].data;
+-    int offset = (data - zline_storage)*sizeof(float);
+-    int xlen   = pencilVec[idx].xmax - pencilVec[idx].xmin + 1;
+-    int ylen   = pencilVec[idx].ymax - pencilVec[idx].ymin + 1;
+-    int fcount = xlen * ylen * zlen;
+-
+-    CkArrayIndex3D index (ib, jb, 0);
+-    CProxy_OptPmePencilMapZ zproxy (global_map_z);
+-    int pe = zproxy.ckLocalBranch()->procNum(0, index);
+-    CmiDirect_manytomany_initialize_send (myMgr->handle, PHASE_GR, idx, 
+-					   offset, fcount*sizeof(float), pe);
+-    
+-    int srcnode = ib * myGrid.yBlocks + jb;
+-    CmiDirect_manytomany_initialize_recv (myMgr->handle, PHASE_UG, 
+-					  srcnode, offset, fcount*sizeof(float), pe);
+-  }
+-  /********************************** End initialize many to many ****************************/
+-
+-}
+-
+-OptPmeCompute::~OptPmeCompute()
+-{
+-  delete [] zline_storage;
+-  delete [] sp_zstorage;
+-  delete [] q_arr;
+-}
+-
+-
+-void OptPmeCompute::doWork()
+-{
+-  DebugM(4,"Entering OptPmeCompute::doWork().\n");
+-
+-#ifdef TRACE_COMPUTE_OBJECTS
+-  double traceObjStartTime = CmiWallTimer();
+-#endif
+-
+-  if (!_initialized) initializeOptPmeCompute();
+-
+-  ResizeArrayIter<PatchElem> ap(patchList);
+-
+-  // Skip computations if nothing to do.
+-  if ( ! patchList[0].p->flags.doFullElectrostatics )
+-  {
+-    for (ap = ap.begin(); ap != ap.end(); ap++) {
+-      CompAtom *x = (*ap).positionBox->open();
+-      Results *r = (*ap).forceBox->open();
+-      (*ap).positionBox->close(&x);
+-      (*ap).forceBox->close(&r);
+-    }
+-    reduction->submit();
+-    return;
+-  }
+-
+-  myMgr->_iter ++;  //this is a pme step
+-
+-  // allocate storage
+-  numLocalAtoms = 0;
+-  for (ap = ap.begin(); ap != ap.end(); ap++) {
+-    numLocalAtoms += (*ap).p->getNumAtoms();
+-  }
+-
+-  Lattice &lattice = patchList[0].p->flags.lattice;
+-
+-  localData = new PmeParticle[numLocalAtoms];
+-  // get positions and charges
+-  PmeParticle * data_ptr = localData;
+-
+-  int natoms = 0;
+-  //  if (myMgr->constant_pressure)
+-  //resetPatchCoordinates(lattice);  //Update patch coordinates with new lattice
+-
+-  for (ap = ap.begin(); ap != ap.end(); ap++) {
+-#ifdef NETWORK_PROGRESS
+-    CmiNetworkProgress();
+-#endif
+-    
+-    CompAtom *x = (*ap).positionBox->open();
+-    if ( patchList[0].p->flags.doMolly ) {
+-      (*ap).positionBox->close(&x);
+-      x = (*ap).avgPositionBox->open();
+-    }
+-    int numAtoms = (*ap).p->getNumAtoms();        
+-    int order_1  = myGrid.order - 1;
+-    scale_n_copy_coordinates(x, localData, numAtoms, 
+-			     lattice, myGrid,
+-			     xstart + order_1, xlen - order_1,
+-			     ystart + order_1, ylen - order_1,
+-			     zstart + order_1, zlen - order_1,
+-			     strayChargeErrors);
+-    natoms += numAtoms;
+-    
+-    if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
+-    else { (*ap).positionBox->close(&x); }
+-  }
+-
+-  numLocalAtoms = natoms;  //Exclude all atoms out of range
+-
+-  // calculate self energy
+-  BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
+-  evir = 0;
+-  BigReal selfEnergy = 0;
+-  data_ptr = localData;
+-  int i;
+-  for(i=0; i<numLocalAtoms; ++i)
+-  {
+-    selfEnergy += data_ptr->cg * data_ptr->cg;
+-    ++data_ptr;
+-  }
+-  selfEnergy *= -1. * ewaldcof / SQRT_PI;
+-  evir[0] += selfEnergy;
+-
+-#if 0
+-  if (myMgr->_iter > many_to_many_start) {
+-    OptPmeSubComputeMsg *smsg = myMgr->subcompute_msgs[1]; //not self
+-    CProxy_OptPmeMgr pmeProxy (CkpvAccess(BOCclass_group).computePmeMgr);
+-    pmeProxy[CmiNodeFirst(CmiMyNode())+smsg->dest].doWorkOnPeer(smsg);
+-  }
+-  else
+-#endif
+-    doWorkOnPeer();
+-
+-#ifdef TRACE_COMPUTE_OBJECTS
+-  traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+this->cid, traceObjStartTime, CmiWallTimer());
+-#endif
+-
+-}
+-
+-void OptPmeCompute::doWorkOnPeer()
+-{
+-  Lattice &lattice = patchList[0].p->flags.lattice;
+-  double **q = q_arr;
+-  memset( (void*) zline_storage, 0, zlen * nzlines * sizeof(double) );
+-
+-  myRealSpace = new OptPmeRealSpace(myGrid,numLocalAtoms);
+-  if (!strayChargeErrors)
+-    myRealSpace->fill_charges(q, localData, zstart, zlen);
+-
+-  if (myMgr->constant_pressure && patchList[0].patchID == 0)
+-    myMgr->xPencil.recvLattice (lattice);
+-  
+-  if (myMgr->_iter <= many_to_many_start)
+-    sendPencils();
+-  else {
+-    pme_d2f (sp_zstorage, zline_storage, nzlines * zlen);
+-    CmiDirect_manytomany_start (myMgr->handle, PHASE_GR);
+-  }
+-}
+-
+-
+-
+-void OptPmeCompute::sendPencils() {  
+-
+-  //iout << iPE << " Sending charge grid for " << numLocalAtoms << " atoms to FFT with " << myMgr->numPencilsActive << " messages" <<".\n" << endi;
+-
+-  int xBlocks = myGrid.xBlocks;
+-  int yBlocks = myGrid.yBlocks;
+-  int zBlocks = myGrid.zBlocks;
+-
+-  int K1 = myGrid.K1;
+-  int K2 = myGrid.K2;
+-  int dim2 = myGrid.dim2;
+-  int dim3 = myGrid.dim3;
+-  int block1 = myGrid.block1;
+-  int block2 = myGrid.block2;
+-
+-  //Lattice lattice = patchList[0].p->flags.lattice;
+-
+-  int nactive = 0;  
+-  for (int idx = 0; idx < pencilVec.size(); idx++) {
+-    int xstart = pencilVec[idx].xmin;
+-    int ystart = pencilVec[idx].ymin;
+-    int xlen   = pencilVec[idx].xmax - pencilVec[idx].xmin + 1;
+-    int ylen   = pencilVec[idx].ymax - pencilVec[idx].ymin + 1;
+-    int ib     = pencilVec[idx].ib;
+-    int jb     = pencilVec[idx].jb;
+-    double *data = pencilVec[idx].data;
+-    
+-    int fcount = xlen * ylen * zlen;
+-    OptPmeGridMsg *msg = new (fcount, PRIORITY_SIZE) OptPmeGridMsg;
+-    msg->zstart = zstart;
+-    msg->zlen   = zlen;
+-    msg->xstart = xstart;
+-    msg->xlen   = xlen;
+-    msg->ystart = ystart;
+-    msg->ylen   = ylen;
+-    msg->sourceNode = CkMyPe();
+-    msg->patchID    = patchList[0].patchID;
+-    
+-    float *qmsg = msg->qgrid;	
+-#pragma disjoint (*data, *qmsg)
+-#pragma unroll(8)
+-    for ( int k=0; k< fcount; ++k ) 
+-      *(qmsg++) = data[k];    
+-    
+-    myMgr->zPencil(ib,jb,0).recvGrid(msg);
+-  }
+-}
+-
+-
+-void OptPmeCompute::copyPencils(OptPmeGridMsg *msg) {
+-
+-  if (!_initialized) initializeOptPmeCompute();
+-
+-  int ibegin = msg->xstart;
+-  int iend   = msg->xstart + msg->xlen;
+-  int jbegin = msg->ystart;
+-  int jend   = msg->ylen;
+-  int fcount = zlen * msg->xlen * msg->ylen;
+-
+-  float *qmsg = msg->qgrid;
+-  double *data = q_arr[ibegin * myGrid.dim2 + jbegin];  
+-
+-#pragma disjoint (*qmsg, *data)
+-#pragma unroll(8)
+-  for ( int k=0; k<fcount; ++k ) 
+-    data[k] = *(qmsg++);
+-}
+-
+-void OptPmeCompute::ungridForces_init() {
+-
+-    //printf ("%d: In OptPMECompute::ungridforces_init\n", CkMyPe());
+-
+-    if (myMgr->_iter > many_to_many_start)
+-      pme_f2d (zline_storage, sp_zstorage, nzlines * zlen);
+-
+-    localResults = new Vector[numLocalAtoms];
+-    //memset (localResults, 0, sizeof (Vector) * numLocalAtoms);
+-}
+-
+-void OptPmeCompute::ungridForces_compute(int    istart,
+-					 int    iend) 
+-{
+-    Vector *gridResults;
+-    gridResults = localResults;
+-
+-    if (iend == 0)
+-      iend = numLocalAtoms;
+-    
+-    SimParameters *simParams = Node::Object()->simParameters;
+-    Vector pairForce = 0.;
+-    Lattice &lattice = patchList[0].p->flags.lattice;
+-    if(!simParams->commOnly) {
+-#ifdef NETWORK_PROGRESS
+-      CmiNetworkProgress();
+-#endif      
+-      if (!strayChargeErrors) {
+-	myRealSpace->compute_forces(q_arr, localData, gridResults, 
+-				    zstart, zlen, istart, iend);
+-	scale_forces(gridResults + istart, iend - istart, lattice);
+-      }
+-    }
+-}
+-
+-void OptPmeCompute::ungridForces_finalize() {
+-    SimParameters *simParams = Node::Object()->simParameters;
+-    delete myRealSpace;
+-    
+-    delete [] localData;
+-    //    delete [] localPartition;
+-    
+-    Vector *results_ptr = localResults;
+-    ResizeArrayIter<PatchElem> ap(patchList);
+-    
+-    // add in forces
+-    for (ap = ap.begin(); ap != ap.end(); ap++) {
+-      Results *r = (*ap).forceBox->open();
+-      Force *f = r->f[Results::slow];
+-      int numAtoms = (*ap).p->getNumAtoms();
+-      
+-      if ( ! strayChargeErrors && ! simParams->commOnly ) {
+-        for(int i=0; i<numAtoms; ++i) {
+-          f[i].x += results_ptr->x;
+-          f[i].y += results_ptr->y;
+-          f[i].z += results_ptr->z;
+-          ++results_ptr;
+-        }
+-      }
+-  
+-      (*ap).forceBox->close(&r);
+-    }
+-
+-    delete [] localResults;
+-   
+-    double scale = 1.;
+-
+-    reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0] * scale;
+-    reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
+-    strayChargeErrors = 0;
+-    reduction->submit();
+-}
+-
+-
+-
+-#include "fftlib.C"
+-#include "OptPmeMgr.def.h"
+-
+-void pme_f2d (double *dst, float *src, int N) {
+-#pragma disjoint (*src, *dst)  
+-#pragma unroll (8)
+-  for (int i = 0; i < N; i++) 
+-    dst[i] = src[i];
+-}
+-
+-void pme_d2f (float *dst, double *src, int N) {
+-#pragma disjoint (*src, *dst)  
+-#pragma unroll (8)
+-  for (int i = 0; i < N; i++) 
+-    dst[i] = src[i];
+-}
+diff --git a/src/OptPme.ci b/src/OptPme.ci
+deleted file mode 100644
+index e9b0a371..00000000
+--- a/src/OptPme.ci
++++ /dev/null
+@@ -1,30 +0,0 @@
+-/**
+-***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+-***  The Board of Trustees of the University of Illinois.
+-***  All rights reserved.
+-**/
+-
+-module OptPmeMgr {
+-
+-  extern module PmeFFTLib;
+-  message OptPmeSubComputeMsg;
+-
+-  group OptPmeMgr {
+-
+-    entry OptPmeMgr(void);
+-
+-    entry void initialize(CkQdMsg *);
+-    entry void initialize_pencils(CkQdMsg *);
+-    entry void activate_pencils(CkQdMsg *);
+-    entry void recvUngrid(OptPmeGridMsg *);
+-    entry void ungridCalc(OptPmeDummyMsg *msg);
+-    entry void ungridCalc_subcompute(OptPmeSubComputeMsg *msg);
+-    entry void ungridCalc_subcompute_done(OptPmeSubComputeMsg *msg);
+-    entry void recvEvir (CkReductionMsg *msg);
+-    entry void doWorkOnPeer(OptPmeSubComputeMsg *msg);
+- 
+-    entry void recvArrays(
+-		CProxy_OptPmeXPencil, CProxy_OptPmeYPencil, CProxy_OptPmeZPencil);
+-  };
+-
+-}
+diff --git a/src/OptPme.h b/src/OptPme.h
+deleted file mode 100644
+index 3a477060..00000000
+--- a/src/OptPme.h
++++ /dev/null
+@@ -1,99 +0,0 @@
+-/**
+-***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+-***  The Board of Trustees of the University of Illinois.
+-***  All rights reserved.
+-**/
+-
+-#ifndef OPT_PME_H
+-#define OPT_PME_H
+-
+-#include "ComputeHomePatches.h"
+-#include "PmeBase.h"
+-#include "NamdTypes.h"
+-#include "SimParameters.h"
+-
+-class OptPmeRealSpace;
+-//class ComputeMgr;
+-class SubmitReduction;
+-class OptPmeGridMsg;
+-class OptPmeMgr;
+-
+-#include "OptPmeMgr.decl.h"
+-#include "OptPmeRealSpace.h"
+-
+-struct PencilElement{
+-  bool     isActive;
+-  int      xmin, xmax;  
+-  int      ymin, ymax;  
+-  int      zmin, zmax;
+-  int      ib, jb;
+-  double   * data;
+-};
+-
+-struct PatchGridElem {
+-  int              xstart, xlen;
+-  int              ystart, ylen;
+-  int              zstart, zlen;  
+-  int              patchID;
+-  float          * data;
+-};
+-
+-#define SUBCOMPUTE_NPAR  4
+-
+-//Message to split the PME computation
+-class OptPmeSubComputeMsg : public CMessage_OptPmeSubComputeMsg {
+- public:
+-  int     start;
+-  int     end;
+-  int     src_pe; //src node rank
+-  int     dest;   //dst node rank
+-  void  * compute;
+-};
+-
+-class OptPmeCompute : public ComputeHomePatches {
+-public:
+-  OptPmeCompute(ComputeID c);
+-  virtual ~OptPmeCompute();
+-  void doWork();
+-  void doWorkOnPeer();
+-  void sendPencils();
+-  void copyPencils(OptPmeGridMsg *);
+-  void ungridForces_init();
+-  void ungridForces_compute(int istart, int iend);
+-  void ungridForces_finalize();
+-  void setMgr(OptPmeMgr *mgr) { myMgr = mgr; }
+-
+-  int getNumLocalAtoms () { return numLocalAtoms; }
+-
+-  double  *zline_storage;   //Make it private later
+-  float   *sp_zstorage;
+- private:
+-  PmeGrid myGrid;
+-  int qsize, fsize;
+-  //normalized patch corrdinates
+-  int xstart, xlen, ystart, ylen, zstart, zlen;
+-  int alchFepOn, alchThermIntOn, lesOn, pairOn;
+-  
+-  double **q_arr;
+-  int nzlines;
+-  PmeReduction evir;
+-  SubmitReduction *reduction;
+-  int strayChargeErrors;
+-  int numLocalAtoms;
+-  PmeParticle  * localData;
+-  unsigned char * localPartition;
+-  OptPmeRealSpace * myRealSpace;
+-  OptPmeMgr * myMgr;
+-
+-  ResizeArray <PencilElement>   pencilVec;
+-
+-  Vector    * localResults;
+-  
+-  bool _initialized;
+-  void initializeOptPmeCompute();
+-  void resetPatchCoordinates (const Lattice &lattice);
+-};
+-
+-
+-#endif
+-
+diff --git a/src/OptPmeRealSpace.C b/src/OptPmeRealSpace.C
+deleted file mode 100644
+index d0a32cd4..00000000
+--- a/src/OptPmeRealSpace.C
++++ /dev/null
+@@ -1,211 +0,0 @@
+-/**
+-***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+-***  The Board of Trustees of the University of Illinois.
+-***  All rights reserved.
+-**/
+-
+-#include <string.h>
+-#include "OptPmeRealSpace.h"
+-#include <assert.h>
+-
+-OptPmeRealSpace::OptPmeRealSpace(PmeGrid grid,int natoms)
+-  : myGrid(grid), N(natoms) {
+-  int order = myGrid.order;
+-  M = new double[3*N*order];
+-  dM = new double[3*N*order];
+-}
+-
+-OptPmeRealSpace::~OptPmeRealSpace() {
+-  delete [] M;
+-  delete [] dM;
+-}
+-
+-
+-// this should definitely help the compiler
+-#define order 4
+-
+-void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, int zlen) {
+-  
+-  int i, j, k, l;
+-  int stride;
+-  int K1, K2, K3, dim2, dim3;
+-  int32  K3_1;
+-  double *Mi, *dMi;
+-  Mi = M; dMi = dM;
+-  K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2; dim3=myGrid.dim3;
+-  K3_1 = K3 - 1;
+-  // order = myGrid.order;
+-  stride = 3*order;
+-
+-  for (i=0; i<N; i++) {
+-    double q;
+-    int32 u1, u2, u2i, u3i;
+-    double fr1 = p[i].x;
+-    double fr2 = p[i].y;
+-    double fr3 = p[i].z;
+-    q = p[i].cg;
+-    u1  = (int)fr1;
+-    u2i = (int)fr2;
+-    u3i = (int)fr3;
+-    fr1 -= u1;
+-    fr2 -= u2i;
+-    fr3 -= u3i;
+-
+-    // calculate b_spline for order = 4
+-    Mi[0] = ( ( (-1./6.) * fr1 + 0.5 ) * fr1 - 0.5 ) * fr1 + (1./6.);
+-    Mi[1] = ( ( 0.5 * fr1 - 1.0 ) * fr1 ) * fr1 + (2./3.);
+-    Mi[2] = ( ( -0.5 * fr1 + 0.5 ) * fr1 + 0.5 ) * fr1 + (1./6.);
+-    Mi[3] = (1./6.) * fr1 * fr1 * fr1;
+-    dMi[0] = ( -0.5 * fr1 + 1.0 )* fr1 - 0.5;
+-    dMi[1] = ( 1.5 * fr1 - 2.0 ) * fr1;
+-    dMi[2] = ( -1.5 * fr1 + 1.0 ) * fr1 + 0.5;
+-    dMi[3] = 0.5 * fr1 * fr1;
+-    Mi[4] = ( ( (-1./6.) * fr2 + 0.5 ) * fr2 - 0.5 ) * fr2 + (1./6.);
+-    Mi[5] = ( ( 0.5 * fr2 - 1.0 ) * fr2 ) * fr2 + (2./3.);
+-    Mi[6] = ( ( -0.5 * fr2 + 0.5 ) * fr2 + 0.5 ) * fr2 + (1./6.);
+-    Mi[7] = (1./6.) * fr2 * fr2 * fr2;
+-    dMi[4] = ( -0.5 * fr2 + 1.0 )* fr2 - 0.5;
+-    dMi[5] = ( 1.5 * fr2 - 2.0 ) * fr2;
+-    dMi[6] = ( -1.5 * fr2 + 1.0 ) * fr2 + 0.5;
+-    dMi[7] = 0.5 * fr2 * fr2;
+-    Mi[8] = ( ( (-1./6.) * fr3 + 0.5 ) * fr3 - 0.5 ) * fr3 + (1./6.);
+-    Mi[9] = ( ( 0.5 * fr3 - 1.0 ) * fr3 ) * fr3 + (2./3.);
+-    Mi[10] = ( ( -0.5 * fr3 + 0.5 ) * fr3 + 0.5 ) * fr3 + (1./6.);
+-    Mi[11] = (1./6.) * fr3 * fr3 * fr3;
+-    dMi[8] = ( -0.5 * fr3 + 1.0 )* fr3 - 0.5;
+-    dMi[9] = ( 1.5 * fr3 - 2.0 ) * fr3;
+-    dMi[10] = ( -1.5 * fr3 + 1.0 ) * fr3 + 0.5;
+-    dMi[11] = 0.5 * fr3 * fr3;
+-
+-    u1  -= order;
+-    u2i -= order;
+-    u3i -= order;
+-    u3i += 1;
+-    for (j=0; j<order; j++) {
+-      double m1;
+-      int32 ind1;
+-      m1 = Mi[j]*q;
+-      u1++;
+-      //ind1 = (u1 + (u1 < 0 ? K1 : 0))*dim2;
+-      ind1 = (u1 + ((unsigned)u1 >>31)*K1)*dim2;
+-      u2 = u2i;
+-      for (k=0; k<order; k++) {
+-        double m1m2;
+-	int32 ind2;
+-        m1m2 = m1*Mi[order+k];
+-	u2++;
+-
+-	//ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));	
+-	ind2 = ind1 + (u2 + ((unsigned)u2 >>31)*K2);	
+-	//assert (ind2 < K1 * K2);	
+-	double *qline = q_arr[ind2];
+-	
+-	//if (qline == NULL)
+-	//printf ("qline [%d, %d] = NULL\n", (u1 + (u1 < 0 ? K1 : 0)), (u2 + (u2 < 0 ? K2 : 0)));
+-	
+-	//assert (qline != NULL);
+-        for (l=0; l<order; l++) {
+-	  double m3;
+-	  int32 ind;
+-	  m3 = Mi[2*order + l];
+-	  int32 u3 = u3i + l;
+-          ind = u3 - zstart;
+-	  //if (ind >= K3) ind -= K3;
+-	  ind = ind - ((unsigned)(K3_1 - ind) >>31)*K3;
+-
+-	  //if (ind < 0 || ind >= zlen) printf ("ind >= zlen  (%d,%d,%d)\n", ind, zlen, zstart); 
+-	  
+-	  //assert (ind < zlen && ind >= 0);
+-          qline[ind] += m1m2*m3; 
+-        }
+-      }
+-    }
+-    Mi += stride;
+-    dMi += stride;
+-  }
+-}
+-
+-void OptPmeRealSpace::compute_forces(const double * const  * q_arr,
+-				     const PmeParticle       p[], 
+-				     Vector                  f[],
+-				     int                     zstart, 
+-				     int                     zlen,
+-				     int                     istart,
+-				     int                     iend) {
+-  
+-  int i, j, k, l, stride;
+-  double f1, f2, f3;
+-  double *Mi, *dMi;
+-  int K1, K2, K3, dim2;
+-  int32 K3_1;
+-
+-  if (iend == 0)
+-    iend = N;
+-
+-  K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2;
+-  K3_1 = K3 - 1;
+-  // order = myGrid.order;
+-  stride=3*order;
+-  Mi = M + stride*istart;
+-  dMi = dM + stride*istart;
+- 
+-  for (i=istart; i<iend; i++) {
+-    double q;
+-    int32 u1, u2, u2i, u3i;
+-    q = p[i].cg;
+-    f1=f2=f3=0.0;
+-    u1 = (int)(p[i].x);
+-    u2i = (int)(p[i].y);
+-    u3i = (int)(p[i].z);
+-    u1 -= order;
+-    u2i -= order;
+-    u3i -= order;
+-    u3i += 1;
+-    for (j=0; j<order; j++) {
+-      double m1, d1;
+-      int32 ind1;
+-      m1=Mi[j]*q;
+-      d1=K1*dMi[j]*q;
+-      u1++;
+-      //ind1 = (u1 + (u1 < 0 ? K1 : 0))*dim2; 
+-      ind1 = (u1 + ((unsigned)u1 >>31)*K1)*dim2;
+-      u2 = u2i;
+-      for (k=0; k<order; k++) {
+-        double m2, d2, m1m2, m1d2, d1m2;
+-	int32 ind2;
+-        m2=Mi[order+k];
+-	d2=K2*dMi[order+k];
+-	m1m2=m1*m2;
+-	m1d2=m1*d2;
+-	d1m2=d1*m2;
+-	u2++;
+-	//ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
+-	ind2 = ind1 + (u2 + ((unsigned)u2 >>31)*K2);	
+-	const double *qline = q_arr[ind2];
+-        for (l=0; l<order; l++) {
+-	  double term, m3, d3;
+-	  int32 ind;
+-	  m3=Mi[2*order+l];
+-	  d3=K3*dMi[2*order+l];
+-	  int32 u3 = u3i + l;
+-	  ind = u3 - zstart;	  
+-	  //if (ind >= K3) ind -= K3;
+-	  ind = ind - ((unsigned)(K3_1 -ind) >>31)*K3;
+-	  
+-	  //if (ind < 0 || ind >= zlen) printf ("ind >= zlen  (%d,%d,%d)\n", ind, zlen, zstart); 	  
+-	  //assert (ind < zlen && ind >= 0);
+-
+-	  term = qline[ind];
+-	  f1 -= d1m2 * m3 * term;
+-	  f2 -= m1d2 * m3 * term;
+-	  f3 -= m1m2 * d3 * term;
+-        }
+-      }
+-    }
+-    Mi += stride;
+-    dMi += stride;
+-    f[i].x = f1;
+-    f[i].y = f2;
+-    f[i].z = f3;
+-  }
+-}
+diff --git a/src/OptPmeRealSpace.h b/src/OptPmeRealSpace.h
+deleted file mode 100644
+index 64455835..00000000
+--- a/src/OptPmeRealSpace.h
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/**
+-***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+-***  The Board of Trustees of the University of Illinois.
+-***  All rights reserved.
+-**/
+-
+-#ifndef OPT_PME_REAL_SPACE_H__
+-#define OPT_PME_REAL_SPACE_H__
+-
+-#include "PmeBase.h"
+-#include "Vector.h"
+-
+-class OptPmeRealSpace {
+-  
+-public:
+-  OptPmeRealSpace(PmeGrid grid, int natoms);
+-  ~OptPmeRealSpace();
+-  
+-  void fill_charges(double **q_arr, PmeParticle p[], int zstart, int zlen); 
+-  void compute_forces(const double * const *q_arr, const PmeParticle p[], Vector f[], int zstart, int zlen, int start=0, int end=0);
+-
+-  const int N;
+-  const PmeGrid myGrid;
+-  double *M, *dM;
+-};
+-
+-
+-#endif
+-
+diff --git a/src/SimParameters.C b/src/SimParameters.C
+index 06b15f2d..d1457871 100644
+--- a/src/SimParameters.C
++++ b/src/SimParameters.C
+@@ -995,10 +995,6 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
+ 	&PMEOffload);
+ 
+    opts.optionalB("PME", "usePMECUDA", "Use the PME CUDA version", &usePMECUDA, CmiNumPhysicalNodes() < 5);
+-   opts.optionalB("PME", "useOptPME", "Use the new scalable PME optimization", &useOptPME, FALSE);
+-   opts.optionalB("PME", "useManyToMany", "Use the many-to-many PME optimization", &useManyToMany, FALSE);
+-   if (PMEOn && !useOptPME)
+-     useManyToMany = false;
+ 
+ #ifdef DPME
+    opts.optionalB("PME", "useDPME", "Use old DPME code?", &useDPME, FALSE);
+diff --git a/src/SimParameters.h b/src/SimParameters.h
+index dcaaca8d..35f11f70 100644
+--- a/src/SimParameters.h
++++ b/src/SimParameters.h
+@@ -803,10 +803,6 @@ public:
+          * accelMDdihe and accelMDdual simulation.
+          * Set FALSE to manually control kernel use for development. */
+ 
+-	Bool useOptPME;                 //  Flag TRUE -> use the scalable version of PME
+-	Bool useManyToMany;             //  Flag TRUE -> use the manytomany optimization of PME. 
+-	                                //  This flag requres useOptPME to be set.
+-
+ 	Bool FFTWEstimate;
+ 	Bool FFTWPatient;
+ 	Bool FFTWUseWisdom;
+diff --git a/src/WorkDistrib.C b/src/WorkDistrib.C
+index 2614bf75..78baadfc 100644
+--- a/src/WorkDistrib.C
++++ b/src/WorkDistrib.C
+@@ -2262,35 +2262,21 @@ void WorkDistrib::mapComputes(void)
+     if ( node->simParameters->useDPME )
+       mapComputeHomePatches(computeDPMEType);
+     else {
+-      if (node->simParameters->useOptPME) {
+-	mapComputeHomePatches(optPmeType);
+-	if ( node->simParameters->pressureProfileEwaldOn )
+-	  mapComputeHomePatches(computeEwaldType);
+-      }
+-      else {
+-	mapComputeHomePatches(computePmeType);
+-	if ( node->simParameters->pressureProfileEwaldOn )
+-	  mapComputeHomePatches(computeEwaldType);
+-      }
+-    }
+-#else
+-    if (node->simParameters->useOptPME) {
+-      mapComputeHomePatches(optPmeType);
++      mapComputeHomePatches(computePmeType);
+       if ( node->simParameters->pressureProfileEwaldOn )
+-	mapComputeHomePatches(computeEwaldType);
++        mapComputeHomePatches(computeEwaldType);
+     }
+-    else {      
++#else
+ #ifdef NAMD_CUDA
+-      if (node->simParameters->usePMECUDA) {
+-        mapComputePatch(computePmeCUDAType);
+-      } else 
++    if (node->simParameters->usePMECUDA) {
++      mapComputePatch(computePmeCUDAType);
++    } else
+ #endif
+-      {
+-        mapComputePatch(computePmeType);
+-      }
+-      if ( node->simParameters->pressureProfileEwaldOn )
+-	mapComputeHomePatches(computeEwaldType);
++    {
++      mapComputePatch(computePmeType);
+     }
++    if ( node->simParameters->pressureProfileEwaldOn )
++      mapComputeHomePatches(computeEwaldType);
+ #endif
+   }
+ 
+@@ -2872,14 +2858,6 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
+     wdProxy[CkMyPe()].enqueuePme(msg);
+     break;
+ #endif
+-  case optPmeType:
+-    // CkPrintf("PME %d %d %x\n", CkMyPe(), seq, compute->priority());
+-#ifdef NAMD_CUDA
+-    wdProxy[CkMyPe()].enqueuePme(msg);
+-#else
+-    msg->compute->doWork();  MACHINE_PROGRESS
+-#endif
+-    break;
+   default:
+     wdProxy[CkMyPe()].enqueueWork(msg);
+   }
+diff --git a/src/fftlib.C b/src/fftlib.C
+deleted file mode 100644
+index df4a585d..00000000
+--- a/src/fftlib.C
++++ /dev/null
+@@ -1,1194 +0,0 @@
+-
+-#include "fftlib.h"
+-
+-#include <assert.h>
+-
+-void call_ck_cb (void *arg) {
+-  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+-  cw->cb.send (cw->msg);
+-}
+-
+-void call_ck_cb_recv_grid (void *arg) {
+-  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+-  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+-  OptPmeZPencil *zp = (OptPmeZPencil *)cw->array;
+-  zp->many_to_manyRecvGrid(msg);
+-}
+-
+-void call_ck_cb_recv_trans_y (void *arg) {
+-  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+-  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+-  OptPmeYPencil *yp = (OptPmeYPencil *)cw->array;
+-  yp->many_to_manyRecvTrans(msg);
+-}
+-
+-void call_ck_cb_recv_trans_x (void *arg) {
+-  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+-  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+-  OptPmeXPencil *xp = (OptPmeXPencil *)cw->array;
+-  xp->many_to_manyRecvTrans(msg);
+-}
+-
+-void call_ck_cb_recv_untrans_y (void *arg) {
+-  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+-  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+-  OptPmeYPencil *yp = (OptPmeYPencil *)cw->array;
+-  yp->many_to_manyRecvUntrans(msg);
+-}
+-
+-void call_ck_cb_recv_untrans_z (void *arg) {
+-  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+-  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+-  OptPmeZPencil *zp = (OptPmeZPencil *)cw->array;
+-  zp->many_to_manyRecvUntrans(msg);
+-}
+-
+-void OptPmeZPencil::fft_init() {
+-  
+-  //printf ("Initialize zpencil [%d,%d], on pd %d\n", thisIndex.x, thisIndex.y, CkMyPe());
+-
+-  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+-  Node *node = nd.ckLocalBranch();
+-  SimParameters *simParams = node->simParameters;
+-
+-  int K1 = initdata.grid.K1;
+-  int K2 = initdata.grid.K2;
+-  int K3 = initdata.grid.K3;
+-  int dim3 = initdata.grid.dim3;
+-  int block1 = initdata.grid.block1;
+-  int block2 = initdata.grid.block2;
+-
+-  nx = block1;
+-  if ( (thisIndex.x + 1) * block1 > K1 ) nx = K1 - thisIndex.x * block1;
+-  ny = block2;
+-  if ( (thisIndex.y + 1) * block2 > K2 ) ny = K2 - thisIndex.y * block2;
+-
+-  data = new float[nx*ny*dim3];
+-  many_to_many_data = new float[nx*ny*dim3];
+-  many_to_many_nb = new int [initdata.zBlocks];
+-  work = new float[dim3];
+-
+-  memset(data, 0, sizeof(float) * nx*ny*dim3);
+-  memset(many_to_many_data, 0, sizeof(float) * nx*ny*dim3);
+-
+-  order_init(initdata.zBlocks);
+-
+-#ifdef NAMD_FFTW
+-  CmiLock(fftw_plan_lock);
+-#ifdef NAMD_FFTW_3
+-  /* need array of sizes for the how many */
+-  int numLines=nx*ny;
+-  int planLineSizes[1];
+-  planLineSizes[0]=K3;
+-  CkAbort("what are we doing in here?");
+-  forward_plan = fftwf_plan_many_dft_r2c(1, planLineSizes, numLines,
+-				     (float *) data, NULL, 1, 
+-					 initdata.grid.dim3,
+-					 (fftwf_complex *) data, NULL, 1, 0,
+-				   ( simParams->FFTWEstimate ? FFTW_ESTIMATE 
+-				     : FFTW_MEASURE ));
+-  backward_plan = fftwf_plan_many_dft_c2r(1, planLineSizes, numLines,
+-				     (fftwf_complex *) data, NULL, 1, 
+-					 initdata.grid.dim3/2,
+-				     (float *) data, NULL, 1, 0,
+-				   ( simParams->FFTWEstimate ? FFTW_ESTIMATE 
+-				     : FFTW_MEASURE ));
+-#else
+-
+-  forward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_REAL_TO_COMPLEX,
+-	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+-	| FFTW_IN_PLACE | FFTW_USE_WISDOM, data, 1, work, 1);
+-  backward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_COMPLEX_TO_REAL,
+-	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+-	| FFTW_IN_PLACE | FFTW_USE_WISDOM, data, 1, work, 1);
+-#endif
+-  CmiUnlock(fftw_plan_lock);
+-#else
+-  NAMD_die("Sorry, FFTW must be compiled in to use PME.");
+-#endif
+-
+-  handle = CmiDirect_manytomany_allocate_handle();
+-}
+-
+-void OptPmeYPencil::fft_init() {
+-  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+-  Node *node = nd.ckLocalBranch();
+-  SimParameters *simParams = node->simParameters;
+-
+-  //  printf ("Initialize ypencil [%d,%d], on pd %d\n", thisIndex.x, thisIndex.y, CkMyPe());
+-
+-  int K1 = initdata.grid.K1;
+-  int K2 = initdata.grid.K2;
+-  int dim2 = initdata.grid.dim2;
+-  int dim3 = initdata.grid.dim3;
+-  int block1 = initdata.grid.block1;
+-  int block3 = initdata.grid.block3;
+-
+-  nx = block1;
+-  if ( (thisIndex.x + 1) * block1 > K1 ) nx = K1 - thisIndex.x * block1;
+-  nz = block3;
+-  if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
+-
+-  data = new float[nx*dim2*nz*2];
+-  many_to_many_data = new float[nx*dim2*nz*2];
+-  many_to_many_nb = new int [initdata.yBlocks];
+-  work = new float[2*K2];
+-
+-  memset(many_to_many_data, 0, sizeof(float) * nx*dim2*nz*2);
+-
+-  order_init(initdata.yBlocks);
+-
+-#ifdef NAMD_FFTW
+-  CmiLock(fftw_plan_lock);
+-#ifdef NAMD_FFTW_3
+-  /* need array of sizes for the dimensions */
+-  int numLines=nz;
+-  int planLineSizes[2];
+-  planLineSizes[0]=initdata.grid.K2;
+-  planLineSizes[1]=nz;
+-  forward_plan = fftwf_plan_many_dft(2, planLineSizes, numLines, 
+-				     (fftwf_complex *) data, NULL, nz, 1,
+-				     (fftwf_complex *) data, NULL, 1, 0,
+-				     FFTW_FORWARD, 
+-				     ( simParams->FFTWEstimate 
+-				       ? FFTW_ESTIMATE : FFTW_MEASURE ));
+-  backward_plan = fftwf_plan_many_dft(2, planLineSizes, numLines, 
+-				     (fftwf_complex *) data, NULL, nz, 1,
+-				     (fftwf_complex *) data, NULL, 1, 0,
+-				     FFTW_FORWARD, 
+-				     ( simParams->FFTWEstimate 
+-				       ? FFTW_ESTIMATE : FFTW_MEASURE ));
+-#else
+-
+-  forward_plan = fftw_create_plan_specific(K2, FFTW_FORWARD,
+-	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+-	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
+-	nz, (fftw_complex *) work, 1);
+-  backward_plan = fftw_create_plan_specific(K2, FFTW_BACKWARD,
+-	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+-	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
+-	nz, (fftw_complex *) work, 1);
+-#endif
+-  CmiUnlock(fftw_plan_lock);
+-#else
+-  NAMD_die("Sorry, FFTW must be compiled in to use PME.");
+-#endif
+-
+-  handle = CmiDirect_manytomany_allocate_handle();
+-  initialize_manytomany();
+-}
+-
+-
+-void OptPmeXPencil::fft_init() {
+-  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+-  Node *node = nd.ckLocalBranch();
+-  SimParameters *simParams = node->simParameters;
+-
+-  //  printf ("Initialize xpencil [%d,%d], on pd %d\n", thisIndex.x, thisIndex.y, CkMyPe());
+-
+-  lattice = simParams->lattice;
+-
+-  int K1 = initdata.grid.K1;
+-  int K2 = initdata.grid.K2;
+-  int dim3 = initdata.grid.dim3;
+-  int block2 = initdata.grid.block2;
+-  int block3 = initdata.grid.block3;
+-
+-  ny = block2;
+-  if ( (thisIndex.y + 1) * block2 > K2 ) ny = K2 - thisIndex.y * block2;
+-  nz = block3;
+-  if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
+-
+-  data = new float[K1*block2*block3*2];
+-  many_to_many_data = new float[K1*block2*block3*2];
+-  many_to_many_nb = new int [initdata.xBlocks];
+-  work = new float[2*K1];
+-
+-  memset(many_to_many_data, 0, sizeof(float) * K1*block2*block3*2);
+-
+-  order_init(initdata.xBlocks);
+-
+-#ifdef NAMD_FFTW
+-  CmiLock(fftw_plan_lock);
+-#ifdef NAMD_FFTW_3
+-  /* need array of sizes for the how many */
+-  int numLines=ny*nz;
+-  int planLineSizes[1];
+-  planLineSizes[0]=K1;
+-  forward_plan = fftwf_plan_many_dft(1, planLineSizes, numLines,
+-				     (fftwf_complex *) data, NULL, K1, 1,
+-				     (fftwf_complex *) data, NULL, 1, 0,
+-				   FFTW_FORWARD,
+-				   ( simParams->FFTWEstimate ? FFTW_ESTIMATE 
+-				     : FFTW_MEASURE ));
+-  backward_plan = fftwf_plan_many_dft(1, planLineSizes, numLines,
+-				     (fftwf_complex *) data, NULL, K1, 1,
+-				     (fftwf_complex *) data, NULL, 1, 0,
+-				   FFTW_BACKWARD,
+-				   ( simParams->FFTWEstimate ? FFTW_ESTIMATE 
+-				     : FFTW_MEASURE ));
+-#else
+-
+-  forward_plan = fftw_create_plan_specific(K1, FFTW_FORWARD,
+-	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+-	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
+-	ny*nz, (fftw_complex *) work, 1);
+-  backward_plan = fftw_create_plan_specific(K1, FFTW_BACKWARD,
+-	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+-	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
+-	ny*nz, (fftw_complex *) work, 1);
+-
+-  CmiUnlock(fftw_plan_lock);
+-#endif
+-#else
+-  NAMD_die("Sorry, FFTW must be compiled in to use PME.");
+-#endif
+-
+-  myKSpace = new PmeKSpace(initdata.grid,
+-		thisIndex.y*block2, thisIndex.y*block2 + ny,
+-		thisIndex.z*block3, thisIndex.z*block3 + nz);
+-
+-  handle = CmiDirect_manytomany_allocate_handle();
+-  initialize_manytomany();
+-
+-  constant_pressure = initdata.constant_pressure;
+-
+-  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+-}
+-
+-//#define FFTCHECK   // run a grid of integers through the fft
+-// #define ZEROCHECK  // check for suspicious zeros in fft
+-
+-void OptPmeZPencil::recv_grid(const OptPmeGridMsg *msg) {
+-
+-  int dim3 = initdata.grid.dim3;
+-  if ( imsg == 0 ) {
+-    memset(data, 0, sizeof(float) * nx*ny*dim3);
+-  }
+-
+-  int xstart = msg->xstart - thisIndex.x * initdata.grid.block1;
+-  int ystart = msg->ystart - thisIndex.y * initdata.grid.block2;
+-  assert (xstart >= 0);
+-  assert (ystart >= 0);
+-  int xlen   = msg->xlen;
+-  int ylen   = msg->ylen;    
+-  assert (xstart + xlen <= nx);
+-  assert (ystart + ylen <= ny);
+-  
+-  float *qmsg = msg->qgrid;
+-  float *d = data;
+-  int zlen = msg->zlen;
+-  int zstart = msg->zstart;
+-  int zmax = zstart + zlen - 1;
+-  int k = 0;
+-
+-  int K3 = initdata.grid.K3; 
+-  int K3_1 = initdata.grid.K3 - 1; 
+-  while (zstart < 0) {
+-    zstart += K3;
+-    zmax += K3;
+-  }
+-
+-  for ( int i=xstart; i<xstart+xlen; ++i ) {
+-    for ( int j=ystart; j<ystart+ylen; ++j) {
+-      float *d = data + (i * ny + j) * dim3; 
+-      for ( k=zstart; k<=zmax; ++k ) {
+-	int kz = k;
+-	//if (kz >= K3) kz -= K3;
+-	kz = kz - ((unsigned)(K3_1 - kz)>>31)*K3;
+-	//assert (kz >= 0);
+-	//assert (kz <  K3);
+-	d[kz] += *(qmsg++);
+-      }
+-    }
+-  }
+-
+-  if (_iter == MANY_TO_MANY_SETUP) {
+-    if (imsg == 0)
+-      m2m_recv_grid = new PatchGridElem [grid_msgs.size()];    
+-    
+-    m2m_recv_grid[imsg].xstart = xstart;
+-    m2m_recv_grid[imsg].xlen   = xlen;
+-    m2m_recv_grid[imsg].ystart = ystart;
+-    m2m_recv_grid[imsg].ylen   = ylen;
+-    m2m_recv_grid[imsg].zstart = zstart;
+-    m2m_recv_grid[imsg].zlen   = zlen;
+-    m2m_recv_grid[imsg].patchID = msg->patchID;
+-    
+-    if ( imsg == grid_msgs.size() - 1) 
+-        initialize_manytomany ();
+-  }
+-}
+-
+-
+-void OptPmeZPencil::forward_fft() {
+-#ifdef FFTCHECK
+-  int dim3 = initdata.grid.dim3;
+-  int K3 = initdata.grid.K3;
+-  float std_base = 100. * (thisIndex.x+1.) + 10. * (thisIndex.y+1.);
+-  float *d = data;
+-  for ( int i=0; i<nx; ++i ) {
+-   for ( int j=0; j<ny; ++j, d += dim3 ) {
+-    for ( int k=0; k<dim3; ++k ) {
+-      d[k] = 10. * (10. * (10. * std_base + i) + j) + k;
+-    }
+-   }
+-  }
+-#endif
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-  fftwf_execute(forward_plan);
+-#else
+-  rfftwnd_real_to_complex(forward_plan, nx*ny,
+-			  data, 1, initdata.grid.dim3, (fftw_complex *) work, 1, 0);
+-#endif
+-#endif
+-}
+-
+-void OptPmeZPencil::send_trans() {
+-  int zBlocks = initdata.zBlocks;
+-  int block3 = initdata.grid.block3;
+-  int dim3 = initdata.grid.dim3;
+-
+-  //int offset = 0;
+-  for ( int isend=0; isend<zBlocks; ++isend ) {
+-    int kb = send_order[isend];
+-    int nz = block3;
+-    if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
+-    //assert (nz > 0);
+-    OptPmeFFTMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) OptPmeFFTMsg;
+-    msg->sourceNode = thisIndex.y;
+-    msg->nx = ny;
+-    float *md = msg->qgrid;
+-    const float *d = data;
+-    for ( int i=0; i<nx; ++i ) {
+-      for ( int j=0; j<ny; ++j, d += dim3 ) {
+-	for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+-	  *(md++) = d[2*k];
+-	  *(md++) = d[2*k+1];
+-	}
+-      }
+-    }          
+-    //    printf ("%d, %d: Zpencil Sending trans to %d, %d\n", thisIndex.x, thisIndex.y, thisIndex.x, kb);
+-    initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
+-  }
+-}
+-
+-
+-void OptPmeYPencil::recv_trans(const OptPmeFFTMsg *msg) {
+-
+-  int block2 = initdata.grid.block2;
+-  int K2 = initdata.grid.K2;
+-  int jb = msg->sourceNode;
+-  int ny = msg->nx;
+-  const float *md = msg->qgrid;
+-  float *d = data;
+-  for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+-    for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+-      for ( int k=0; k<nz; ++k ) {
+-	d[2*(j*nz+k)] = *(md++);
+-	d[2*(j*nz+k)+1] = *(md++);
+-      }
+-    }
+-  }
+-} 
+-
+-void OptPmeYPencil::forward_fft() {
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-  fftwf_execute(forward_plan);
+-#else
+-  for ( int i=0; i<nx; ++i ) {
+-    fftw(forward_plan, nz,
+-	 ((fftw_complex *) data) + i * nz * initdata.grid.K2,
+-	 nz, 1, (fftw_complex *) work, 1, 0);
+-  }
+-#endif
+-#endif
+-}
+-
+-void OptPmeYPencil::send_trans() {
+-  int yBlocks = initdata.yBlocks;
+-  int block2 = initdata.grid.block2;
+-  int K2 = initdata.grid.K2;
+-  
+-  for ( int isend=0; isend<yBlocks; ++isend ) {
+-    int jb = send_order[isend];
+-    int ny = block2;
+-    if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+-    OptPmeFFTMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) OptPmeFFTMsg;
+-    msg->sourceNode = thisIndex.x;
+-    msg->nx = nx;
+-    float *md = msg->qgrid;
+-    const float *d = data;
+-    for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+-      for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+-	for ( int k=0; k<nz; ++k ) {
+-	  *(md++) = d[2*(j*nz+k)];
+-	  *(md++) = d[2*(j*nz+k)+1];
+-	}
+-      }
+-    }
+-    if ( md != msg->qgrid + nx*ny*nz*2 ) CkPrintf("error in YX at %d %d %d\n",
+-						  thisIndex.x, jb, thisIndex.z);
+-    
+-    //printf ("%d, %d: Ypencil Sending trans to %d, %d\n", thisIndex.z, thisIndex.x, jb, thisIndex.z);
+-    initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
+-  }
+-}
+-
+-
+-
+-void OptPmeXPencil::recv_trans(const OptPmeFFTMsg *msg) {
+-
+-  int block1 = initdata.grid.block1;
+-  int K1 = initdata.grid.K1;
+-  int ib = msg->sourceNode;
+-  int nx = msg->nx;
+-  const float *md = msg->qgrid;
+-  for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+-    float *d = data + i*ny*nz*2;
+-    for ( int j=0; j<ny; ++j, d += nz*2 ) {
+-      for ( int k=0; k<nz; ++k ) {
+-	d[2*k] = *(md++);
+-	d[2*k+1] = *(md++);
+-      }
+-    }
+-  }
+-}
+-
+-
+-
+-void OptPmeXPencil::forward_fft() {
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-  fftwf_execute(forward_plan);
+-#else
+-
+-  fftw(forward_plan, ny*nz,
+-       ((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+-#endif
+-#endif
+-}
+-
+-void OptPmeXPencil::pme_kspace() {
+-  evir = 0.;  //set evir to 0
+-
+-#ifdef FFTCHECK
+-  return;
+-#endif
+-
+-  BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
+-  evir[0] = myKSpace->compute_energy(data,
+-				     lattice, ewaldcof, &(evir[1]), 0);
+-
+-  //contribute (7*sizeof(double), evir.begin(), CkReduction::sum_double, initdata.cb_energy);
+-}
+-
+-void OptPmeXPencil::submit_evir() {
+-  double * cdata = (double *) evir.begin();
+-  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += cdata[0];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_XX) += cdata[1];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_XY) += cdata[2];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += cdata[3];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_YX) += cdata[2];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_YY) += cdata[4];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += cdata[5];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += cdata[3];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += cdata[5];
+-  reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += cdata[6];   
+-
+-  SimParameters *simParams = Node::Object()->simParameters;
+-  int fef = simParams->fullElectFrequency;
+-  for (int i = 0; i < fef; i++) {
+-    reduction->submit();
+-  }
+-}
+-
+-void OptPmeXPencil::backward_fft() {
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-  fftwf_execute(backward_plan);
+-#else
+-
+-  fftw(backward_plan, ny*nz,
+-       ((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+-#endif
+-#endif
+-}
+-
+-void OptPmeXPencil::send_untrans() {
+-  int xBlocks = initdata.xBlocks;
+-  int block1 = initdata.grid.block1;
+-  int K1 = initdata.grid.K1;
+-
+-  for ( int isend=0; isend<xBlocks; ++isend ) {
+-    int ib = send_order[isend];
+-    int nx = block1;
+-    if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
+-    OptPmeFFTMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) OptPmeFFTMsg;    
+-    msg->sourceNode = thisIndex.y;
+-    msg->nx = ny;
+-    float *md = msg->qgrid;
+-    for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+-      float *d = data + i*ny*nz*2;
+-      for ( int j=0; j<ny; ++j, d += nz*2 ) {
+-	for ( int k=0; k<nz; ++k ) {
+-	  *(md++) = d[2*k];
+-	  *(md++) = d[2*k+1];
+-	}
+-      }
+-    }
+-    
+-    //printf ("%d, %d: Xpencil Sending untrans to %d, %d\n", thisIndex.y, thisIndex.z, ib, thisIndex.z);
+-    initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
+-  }
+-}
+-
+-
+-void OptPmeYPencil::recv_untrans(const OptPmeFFTMsg *msg) {
+-
+-  int block2 = initdata.grid.block2;
+-  int K2 = initdata.grid.K2;
+-  int jb = msg->sourceNode;
+-  int ny = msg->nx;
+-  const float *md = msg->qgrid;
+-  float *d = data;
+-  for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+-    for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+-      for ( int k=0; k<nz; ++k ) {
+-	d[2*(j*nz+k)] = *(md++);
+-	d[2*(j*nz+k)+1] = *(md++);
+-      }
+-    }
+-  }
+-} 
+-
+-
+-
+-void OptPmeYPencil::backward_fft() {
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-  fftwf_execute(backward_plan);
+-#else
+-  for ( int i=0; i<nx; ++i ) {
+-#if CMK_BLUEGENEL
+-    CmiNetworkProgress();
+-#endif
+-
+-    fftw(backward_plan, nz,
+-	 ((fftw_complex *) data) + i * nz * initdata.grid.K2,
+-	 nz, 1, (fftw_complex *) work, 1, 0);
+-  }
+-#endif
+-#endif
+-}
+-
+-void OptPmeYPencil::send_untrans() {
+-  //printf ("%d, %d: In ypencil send_untrans called once \n", thisIndex.x, thisIndex.z);
+-
+-  int yBlocks = initdata.yBlocks;
+-  int block2 = initdata.grid.block2;
+-  int K2 = initdata.grid.K2;
+-
+-  for ( int isend=0; isend<yBlocks; ++isend ) {
+-    int jb = send_order[isend];
+-    //if ( ! needs_reply[jb] ) continue;
+-    int ny = block2;
+-    if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+-    OptPmeFFTMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) OptPmeFFTMsg;
+-    msg->sourceNode = thisIndex.z;
+-    msg->nx = nz;
+-    float *md = msg->qgrid;
+-    const float *d = data;
+-    for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+-     for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+-      for ( int k=0; k<nz; ++k ) {
+-        *(md++) = d[2*(j*nz+k)];
+-        *(md++) = d[2*(j*nz+k)+1];
+-      }
+-     }
+-    }
+-
+-    //printf ("%d, %d: Sending untrans to %d, %d\n", thisIndex.z, thisIndex.x, thisIndex.x, jb);
+-    initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
+-  }
+-}
+-
+-void OptPmeZPencil::recv_untrans(const OptPmeFFTMsg *msg) {
+-
+-  //printf ("%d, %d In recv untrans\n", thisIndex.x, thisIndex.y);
+-
+-  int block3 = initdata.grid.block3;
+-  int dim3 = initdata.grid.dim3;
+-  int kb = msg->sourceNode;
+-  int nz = msg->nx;
+-  const float *md = msg->qgrid;
+-  float *d = data;
+-  for ( int i=0; i<nx; ++i ) {
+-    for ( int j=0; j<ny; ++j, d += dim3 ) {
+-      for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+-	d[2*k] = *(md++);
+-	d[2*k+1] = *(md++);
+-      }
+-    }
+-  }
+-}
+-
+-
+-void OptPmeZPencil::backward_fft() {
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-  fftwf_execute(backward_plan);
+-#else
+-  rfftwnd_complex_to_real(backward_plan, nx*ny,
+-			  (fftw_complex *) data, 1, initdata.grid.dim3/2, work, 1, 0);
+-#endif
+-#endif
+-  
+-#if CMK_BLUEGENEL
+-  CmiNetworkProgress();
+-#endif
+-
+-#ifdef FFTCHECK
+-  int dim3 = initdata.grid.dim3;
+-  int K1 = initdata.grid.K1;
+-  int K2 = initdata.grid.K2;
+-  int K3 = initdata.grid.K3;
+-  float scale = 1. / (1. * K1 * K2 * K3);
+-  float maxerr = 0.;
+-  float maxstd = 0.;
+-  int mi, mj, mk;  mi = mj = mk = -1;
+-  float std_base = 100. * (thisIndex.x+1.) + 10. * (thisIndex.y+1.);
+-  const float *d = data;
+-  for ( int i=0; i<nx; ++i ) {
+-   for ( int j=0; j<ny; ++j, d += dim3 ) {
+-    for ( int k=0; k<K3; ++k ) {
+-      float std = 10. * (10. * (10. * std_base + i) + j) + k;
+-      float err = scale * d[k] - std;
+-      if ( fabsf(err) > fabsf(maxerr) ) {
+-        maxerr = err;
+-        maxstd = std;
+-        mi = i;  mj = j;  mk = k;
+-      }
+-    }
+-   }
+-  }
+-  CkPrintf("pencil %d %d max error %f at %d %d %d (should be %f)\n",
+-	   thisIndex.x, thisIndex.y, maxerr, mi, mj, mk, maxstd);
+-#endif
+-}
+-
+-void OptPmeZPencil::send_ungrid(OptPmeGridMsg *msg) {
+-  int pe = msg->sourceNode;
+-  msg->sourceNode = thisIndex.x * initdata.yBlocks + thisIndex.y;
+-
+-  int dim3 = initdata.grid.dim3;
+-  int xstart = msg->xstart - thisIndex.x * initdata.grid.block1;
+-  int ystart = msg->ystart - thisIndex.y * initdata.grid.block2;
+-  assert (xstart >= 0);
+-  assert (ystart >= 0);
+-  int xlen   = msg->xlen;
+-  int ylen   = msg->ylen;
+-  assert (xstart + xlen <= nx);
+-  assert (ystart + ylen <= ny);
+-
+-  float *qmsg = msg->qgrid;
+-  float *d = data;
+-  int zstart = msg->zstart;
+-  int zlen = msg->zlen;
+-  int zmax = zstart + zlen - 1;
+-  
+-  int K3_1 = initdata.grid.K3 - 1; 
+-  int K3 = initdata.grid.K3;
+-  if (zstart < 0) {
+-    zstart += K3;
+-    zmax += K3;
+-  }
+-  
+-  int k = 0;
+-  for ( int i=xstart; i<xstart+xlen; ++i ) {
+-    for ( int j=ystart; j<ystart+ylen; ++j) {
+-      float *d = data + (i * ny + j) * dim3;
+-      for ( k=zstart; k<=zmax; ++k ) {
+-	int kz = k;
+-	//if (kz >= K3) kz -= K3;
+-	kz = kz - ((unsigned)(K3_1 - kz)>>31)*K3;
+-	*(qmsg++) = d[kz];
+-      }
+-    }
+-  }
+-  
+-  initdata.pmeProxy[pe].recvUngrid(msg);
+-}
+-
+-
+-//////////////////////////////////////////////////////////////////////
+-//////////////////////  Many to Many Implementation //////////////////
+-//////////////////////////////////////////////////////////////////////
+-
+-void OptPmeZPencil::many_to_many_recv_grid () {
+-  int dim3 = initdata.grid.dim3;  
+-  memset(data, 0, sizeof(float) * nx*ny*dim3);
+-  int K3 = initdata.grid.K3;
+-  int K3_1 = initdata.grid.K3 - 1;
+-  int k = 0;
+-  for (int idx = 0; idx < grid_msgs.size(); idx++) {
+-    int xstart = m2m_recv_grid[idx].xstart; 
+-    int xlen   = m2m_recv_grid[idx].xlen; 
+-    int ystart = m2m_recv_grid[idx].ystart; 
+-    int ylen   = m2m_recv_grid[idx].ylen; 
+-    int zstart = m2m_recv_grid[idx].zstart; 
+-    int zlen   = m2m_recv_grid[idx].zlen;   
+-    
+-    float *qmsg = m2m_recv_grid[idx].data;
+-    for ( int i=xstart; i<xstart+xlen; ++i ) {
+-      for ( int j=ystart; j<ystart+ylen; ++j) {
+-	float *d = data + (i * ny + j) * dim3; 	
+-
+-#pragma disjoint (*qmsg, *d)
+-#pragma unroll (4)
+-	for ( k=zstart; k<zstart+zlen; ++k ) {
+-	  int kz = k;
+-	  //if (kz >= K3) kz -= K3;
+-	  kz = kz - ((unsigned)(K3_1 - kz)>>31)*K3;
+-	  //assert (kz >= 0);
+-	  //assert (kz <  K3);
+-	  d[kz] += *(qmsg++);
+-	}
+-      }
+-    } 
+-  }
+-}
+-
+-void OptPmeZPencil::many_to_many_send_trans() {
+-  int zBlocks = initdata.zBlocks;
+-  int block3 = initdata.grid.block3;
+-  int dim3 = initdata.grid.dim3;
+-
+-  float *md = many_to_many_data;
+-  if (single_pencil) {
+-    const float *d = data;
+-    for ( int kb=0; kb<zBlocks; ++kb ) {
+-      *(md++) = d[2*kb];
+-      *(md++) = d[2*kb+1];
+-    }
+-  }
+-  else {
+-    int nz = block3;
+-    for ( int kb=0; kb<zBlocks; ++kb ) {
+-      nz = block3;
+-      if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
+-      
+-      const float *d = data;
+-      for ( int i=0; i<nx; ++i ) {
+-	for ( int j=0; j<ny; ++j, d += dim3 ) {
+-	  for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+-	    *(md++) = d[2*k];
+-	    *(md++) = d[2*k+1];
+-	  }
+-	}
+-      }
+-    }
+-  }
+-
+-  CmiDirect_manytomany_start (handle, PHASE_YF);
+-}
+-
+-void OptPmeYPencil::many_to_many_recv_trans () {  
+-  int block2 = initdata.grid.block2;
+-  int K2 = initdata.grid.K2;
+-  
+-  const float *md = many_to_many_data;
+-  if (single_pencil) {
+-    float *d = data;
+-    for (int jb = 0; jb < initdata.yBlocks; jb++ ) {
+-      d[2*jb]    = *(md++);
+-      d[2*jb +1] = *(md++);
+-    }
+-  }
+-  else {
+-    for (int jb = 0; jb < initdata.yBlocks; jb++ ) {
+-      int ny = many_to_many_nb[jb];  
+-      float *d = data;
+-      for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+-	for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+-	  for ( int k=0; k<nz; ++k ) {
+-	    d[2*(j*nz+k)] = *(md++);
+-	    d[2*(j*nz+k)+1] = *(md++);
+-	  }
+-	}
+-      }
+-    }
+-  }
+-}
+-
+-void OptPmeYPencil::many_to_many_send(int phase) {
+-  int yBlocks = initdata.yBlocks;
+-  int block2 = initdata.grid.block2;
+-  int K2 = initdata.grid.K2;
+-  
+-  float *md = many_to_many_data;
+-  int ny = block2;
+-  if (single_pencil) {
+-    const float *d = data;
+-    for ( int jb=0; jb<yBlocks; ++jb ) {
+-      *(md++) = d[2*jb];
+-      *(md++) = d[2*jb+1];
+-    }
+-  }
+-  else {
+-    for ( int jb=0; jb<yBlocks; ++jb ) {
+-      ny = block2;
+-      if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+-      
+-      const float *d = data;
+-      for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+-	for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+-	  for ( int k=0; k<nz; ++k ) {
+-	    *(md++) = d[2*(j*nz+k)];
+-	    *(md++) = d[2*(j*nz+k)+1];
+-	  }
+-	}
+-      }
+-    }
+-  }
+-
+-  CmiDirect_manytomany_start (handle, phase);  
+-}
+-
+-void OptPmeXPencil::many_to_many_recv_trans () {
+-  
+-  int block1 = initdata.grid.block1;
+-  int K1 = initdata.grid.K1;
+-  
+-  const float *md = many_to_many_data;
+-  if (single_pencil) {
+-    for (int ib =0; ib < initdata.xBlocks; ib++ ) {
+-      data[2*ib]   = *(md++);
+-      data[2*ib+1] = *(md++);
+-    }
+-  }
+-  else {
+-    for (int ib =0; ib < initdata.xBlocks; ib++ ) {
+-      int nx = many_to_many_nb[ib];    
+-      for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+-	float *d = data + i*ny*nz*2;
+-	for ( int j=0; j<ny; ++j, d += nz*2 ) {
+-	  for ( int k=0; k<nz; ++k ) {
+-	    d[2*k] = *(md++);
+-	    d[2*k+1] = *(md++);
+-	  }
+-	}
+-      }
+-    }
+-  }
+-}
+-
+-void OptPmeXPencil::many_to_many_send_untrans() {
+-  int xBlocks = initdata.xBlocks;
+-  int block1 = initdata.grid.block1;
+-  int K1 = initdata.grid.K1;
+-  
+-  int     nx = block1;
+-  float * md = many_to_many_data;
+-  if (single_pencil) {
+-    float *d = data;
+-    for ( int ib=0; ib<xBlocks; ++ib ) {
+-      *(md++) = d[2*ib];
+-      *(md++) = d[2*ib+1];
+-    }
+-  }
+-  else {
+-    for ( int ib=0; ib<xBlocks; ++ib ) {
+-      nx = block1;
+-      if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
+-      
+-      for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+-	float *d = data + i*ny*nz*2;
+-	for ( int j=0; j<ny; ++j, d += nz*2 ) {
+-	  for ( int k=0; k<nz; ++k ) {
+-	    *(md++) = d[2*k];
+-	    *(md++) = d[2*k+1];
+-	  }
+-	}
+-      }
+-    }
+-  }
+-  CmiDirect_manytomany_start (handle, PHASE_YB);
+-}
+-
+-void OptPmeYPencil::many_to_many_recv_untrans () {  
+-  int block2 = initdata.grid.block2;
+-  int K2 = initdata.grid.K2;
+-  
+-  const float *md = many_to_many_data;
+-  if (single_pencil) {
+-    float *d = data;
+-    for (int jb = 0; jb < initdata.yBlocks; jb++ ) {        
+-      d[2*jb]   = *(md++);
+-      d[2*jb+1] = *(md++);
+-    }
+-  }
+-  else {
+-    for (int jb = 0; jb < initdata.yBlocks; jb++ ) {
+-      int ny = many_to_many_nb[jb];  
+-      float *d = data;
+-      for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+-	for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+-	  for ( int k=0; k<nz; ++k ) {
+-	    d[2*(j*nz+k)] = *(md++);
+-	    d[2*(j*nz+k)+1] = *(md++);
+-	  }
+-	}
+-      }
+-    }
+-  }
+-}
+-
+-void OptPmeZPencil::many_to_many_recv_untrans() {  
+-  //printf ("%d, %d In recv untrans\n", thisIndex.x, thisIndex.y);                                                                             
+-  int block3 = initdata.grid.block3;
+-  int dim3 = initdata.grid.dim3;
+-  
+-  const float *md = many_to_many_data;
+-  if (single_pencil) {
+-    float *d = data;
+-    for (int kb = 0; kb < initdata.zBlocks; kb++ ) {
+-      d[2*kb]   = *(md++);
+-      d[2*kb+1] = *(md++);
+-    }
+-  }
+-  else {
+-    for (int kb = 0; kb < initdata.zBlocks; kb++ ) {
+-      int nz = many_to_many_nb[kb];
+-      float *d = data;
+-      for ( int i=0; i<nx; ++i ) {
+-	for ( int j=0; j<ny; ++j, d += dim3 ) {
+-	  for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+-	    d[2*k] = *(md++);
+-	    d[2*k+1] = *(md++);
+-	  }
+-	}
+-      }
+-    }
+-  }
+-}
+-
+-void OptPmeZPencil::many_to_many_send_ungrid () {
+-  int dim3 = initdata.grid.dim3;
+-  int K3 = initdata.grid.K3;
+-  int K3_1 = initdata.grid.K3 - 1;
+-  int k = 0;
+-  for (int idx = 0; idx < grid_msgs.size(); idx++) {
+-    int xstart = m2m_recv_grid[idx].xstart; 
+-    int xlen   = m2m_recv_grid[idx].xlen; 
+-    int ystart = m2m_recv_grid[idx].ystart; 
+-    int ylen   = m2m_recv_grid[idx].ylen; 
+-    int zstart = m2m_recv_grid[idx].zstart; 
+-    int zlen   = m2m_recv_grid[idx].zlen;   
+-    
+-    float *qmsg = m2m_recv_grid[idx].data;
+-    for ( int i=xstart; i<xstart+xlen; ++i ) {
+-      for ( int j=ystart; j<ystart+ylen; ++j) {
+-	float *d = data + (i * ny + j) * dim3; 	
+-
+-#pragma disjoint (*d, *qmsg)
+-#pragma unroll (4)
+-	for ( k=zstart; k<zstart+zlen; ++k ) {
+-	  int kz = k;
+-	  //if (kz >= K3) kz -= K3;
+-	  kz = kz - ((unsigned)(K3_1 - kz)>>31)*K3;
+-	  //assert (kz >= 0);
+-	  //assert (kz <  K3);
+-	  *(qmsg++) = d[kz];
+-	}
+-      }
+-    } 
+-  }
+-  
+-  CmiDirect_manytomany_start (handle, PHASE_UG);
+-}
+-
+-
+-
+-void  OptPmeZPencil::initialize_manytomany () {  
+-  int idx = 0;
+-  int totalcount = 0;
+-  for (idx = 0; idx < grid_msgs.size(); idx ++) 
+-    totalcount += m2m_recv_grid[idx].xlen * m2m_recv_grid[idx].ylen * m2m_recv_grid[idx].zlen;
+-  many_to_many_gr_data = new float [totalcount];
+-  
+-  CkArrayIndex3D aidx (thisIndex.x, thisIndex.y, thisIndex.z);
+-  cbw_recvgrid.cb = CkCallback (CkIndex_OptPmeZPencil::many_to_manyRecvGrid(NULL), aidx, thisProxy.ckGetArrayID());
+-  cbw_recvgrid.msg = new (PRIORITY_SIZE) OptPmeDummyMsg;
+-  cbw_recvgrid.array = this;
+-  PatchMap *patchMap = PatchMap::Object();
+-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_GR, 
+-					    call_ck_cb_recv_grid, 
+-					    &cbw_recvgrid, 
+-					    (char *)many_to_many_gr_data, 
+-					    patchMap->numPatches(), -1);
+-  
+-  CmiDirect_manytomany_initialize_sendbase (handle, PHASE_UG, NULL, NULL, (char *)many_to_many_gr_data, 
+-					    grid_msgs.size(), thisIndex.x *initdata.yBlocks + thisIndex.y);
+-  
+-  int offset = 0;
+-  for (idx = 0; idx < grid_msgs.size(); idx ++) {
+-    m2m_recv_grid[idx].data = (float *) ((char *)many_to_many_gr_data + offset);
+-    int fcount = m2m_recv_grid[idx].xlen * m2m_recv_grid[idx].ylen * m2m_recv_grid[idx].zlen;
+-    CmiDirect_manytomany_initialize_recv (handle, PHASE_GR, m2m_recv_grid[idx].patchID, 
+-					  offset, fcount *sizeof(float), patchMap->node(m2m_recv_grid[idx].patchID));
+-    CmiDirect_manytomany_initialize_send (handle, PHASE_UG, idx, offset, fcount *sizeof(float), 
+-					  patchMap->node(m2m_recv_grid[idx].patchID));
+-    offset += fcount * sizeof(float);
+-  }        
+-
+-  int zBlocks = initdata.zBlocks;
+-  int block3 = initdata.grid.block3;
+-  int dim3 = initdata.grid.dim3;
+-
+-  //Initialize send trans
+-  CmiDirect_manytomany_initialize_sendbase (handle, PHASE_YF, NULL, NULL, (char *)many_to_many_data, zBlocks, thisIndex.y);
+-
+-  //Initialize recv untrans
+-  cbw_recvuntrans.cb = CkCallback(CkIndex_OptPmeZPencil::many_to_manyRecvUntrans(NULL), aidx, thisProxy.ckGetArrayID());
+-  cbw_recvuntrans.msg    = new (PRIORITY_SIZE) OptPmeDummyMsg;
+-  cbw_recvuntrans.array  = this;
+-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_ZB, 
+-					    call_ck_cb_recv_untrans_z, 
+-					    &cbw_recvuntrans, 
+-					    (char *)many_to_many_data, 
+-					    initdata.zBlocks, -1);
+-  single_pencil = false;
+-  if (nx == 1 && ny == 1 && zBlocks <= dim3/2 && block3==1)
+-    single_pencil = true;
+-  
+-  for ( int kb=0; kb<zBlocks; ++kb ) {
+-    int nz = block3;
+-    if ( (kb+1)*block3 > dim3/2 ) {
+-      single_pencil = false;
+-      nz = dim3/2 - kb*block3;
+-    }
+-    
+-    //Initialize send trans
+-    CkArrayIndex3D index (thisIndex.x,0,kb);
+-    CProxy_OptPmePencilMapY yproxy (global_map_y);
+-    int pe = yproxy.ckLocalBranch()->procNum(0, index);
+-    CmiDirect_manytomany_initialize_send (handle, PHASE_YF, kb, kb*2*nx*ny*block3*sizeof(float), 2*nx*ny*nz*sizeof(float), pe);
+-    
+-    //Initialize recv untrans
+-    CmiDirect_manytomany_initialize_recv (handle, PHASE_ZB, kb, kb*nx*ny*block3*2*sizeof(float), nx*ny*nz*2*sizeof(float), pe);
+-    many_to_many_nb [kb] = nz;
+-  }
+-
+-}
+-
+-void  OptPmeYPencil::initialize_manytomany () {
+-  int yBlocks = initdata.yBlocks;
+-  int block2 = initdata.grid.block2;
+-  int K2 = initdata.grid.K2;
+-
+-  //send trans
+-  CmiDirect_manytomany_initialize_sendbase (handle, PHASE_XF, NULL, NULL, (char *)many_to_many_data, yBlocks, thisIndex.x);
+-  //send untrans
+-  CmiDirect_manytomany_initialize_sendbase (handle, PHASE_ZB, NULL, NULL, (char *)many_to_many_data, yBlocks, thisIndex.z);
+-
+-  //recv trans
+-  CkArrayIndex3D idx (thisIndex.x, thisIndex.y, thisIndex.z);
+-  cbw_recvtrans.cb = CkCallback (CkIndex_OptPmeYPencil::many_to_manyRecvTrans(NULL), idx, thisProxy.ckGetArrayID());
+-  cbw_recvtrans.msg    = new (PRIORITY_SIZE) OptPmeDummyMsg;
+-  cbw_recvtrans.array  = this;
+-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_YF, 
+-					    call_ck_cb_recv_trans_y, 
+-					    &cbw_recvtrans, 
+-					    (char *)many_to_many_data, 
+-					    initdata.yBlocks, -1);
+-
+-  //recv untrans
+-  cbw_recvuntrans.cb = CkCallback(CkIndex_OptPmeYPencil::many_to_manyRecvUntrans(NULL), idx, thisProxy.ckGetArrayID());
+-  cbw_recvuntrans.msg    = new (PRIORITY_SIZE) OptPmeDummyMsg;
+-  cbw_recvuntrans.array  = this;
+-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_YB, 
+-					    call_ck_cb_recv_untrans_y, 
+-					    &cbw_recvuntrans, 
+-					    (char *)many_to_many_data, 
+-					    initdata.yBlocks, -1);
+-
+-  single_pencil = false;
+-  if (nz == 1 && nx == 1 && yBlocks <= K2 && block2==1)
+-    single_pencil = true;
+-  
+-  for ( int jb=0; jb<yBlocks; ++jb ) {
+-    int ny = block2;
+-    if ( (jb+1)*block2 > K2 ) {
+-      single_pencil = false;
+-      ny = K2 - jb*block2;
+-    }
+-
+-    //send untrans
+-    CkArrayIndex3D index (thisIndex.x,jb,0);
+-    CProxy_OptPmePencilMapZ zproxy (global_map_z);
+-    int pe = zproxy.ckLocalBranch()->procNum(0, index);
+-    CmiDirect_manytomany_initialize_send (handle, PHASE_ZB, jb, 2*nx*block2*nz*jb*sizeof(float), 2*nx*ny*nz*sizeof(float), pe);
+-
+-    //recv trans
+-    CmiDirect_manytomany_initialize_recv (handle, PHASE_YF, jb, jb*nx*block2*nz*2*sizeof(float), nx*ny*nz*2*sizeof(float), pe);
+-    
+-    //send trans
+-    index = CkArrayIndex3D (0,jb,thisIndex.z);
+-    CProxy_OptPmePencilMapX xproxy (global_map_x);
+-    pe = xproxy.ckLocalBranch()->procNum(0, index);
+-    CmiDirect_manytomany_initialize_send (handle, PHASE_XF, jb, 2*nx*block2*nz*jb*sizeof(float), 2*nx*ny*nz*sizeof(float), pe);
+-    
+-    //Recv untrans
+-    CmiDirect_manytomany_initialize_recv (handle, PHASE_YB, jb, jb*nx*block2*nz*2*sizeof(float), nx*ny*nz*2*sizeof(float), pe);
+-
+-    many_to_many_nb [jb] = ny;
+-  }
+-}
+-
+-void  OptPmeXPencil::initialize_manytomany () {  
+-  int xBlocks = initdata.xBlocks;
+-  int block1 = initdata.grid.block1;
+-  int K1 = initdata.grid.K1;
+-  
+-  CmiDirect_manytomany_initialize_sendbase (handle, PHASE_YB, NULL, NULL, (char *)many_to_many_data, xBlocks, thisIndex.y);
+-  CkArrayIndex3D idx (thisIndex.x, thisIndex.y, thisIndex.z);
+-  cbw_recvtrans.cb = CkCallback(CkIndex_OptPmeXPencil::many_to_manyRecvTrans(NULL), idx, thisProxy.ckGetArrayID());
+-  cbw_recvtrans.msg    = new (PRIORITY_SIZE) OptPmeDummyMsg;
+-  cbw_recvtrans.array  = this;
+-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_XF, 
+-					    call_ck_cb_recv_trans_x, 
+-					    &cbw_recvtrans,  
+-					    (char *)many_to_many_data, 
+-					    initdata.xBlocks, -1);
+-
+-  single_pencil = false;
+-  if (ny == 1 && nz == 1 && xBlocks <= K1 && block1==1)
+-    single_pencil = true;
+-
+-  for ( int ib=0; ib<xBlocks; ++ib ) {
+-    int nx = block1;
+-    if ( (ib+1)*block1 > K1 ) {
+-      single_pencil = false;
+-      nx = K1 - ib*block1;
+-    }
+-    
+-    CkArrayIndex3D index (ib,0,thisIndex.z);
+-    CProxy_OptPmePencilMapY yproxy (global_map_y);
+-    int pe = yproxy.ckLocalBranch()->procNum(0, index);
+-    CmiDirect_manytomany_initialize_send (handle, PHASE_YB, ib, 2*block1*ny*nz*ib*sizeof(float), 2*nx*ny*nz*sizeof(float), pe);
+-    
+-    CmiDirect_manytomany_initialize_recv (handle, PHASE_XF, ib, ib*block1*ny*nz*2*sizeof(float), nx*ny*nz*2*sizeof(float), pe);
+-    many_to_many_nb [ib] = nx;
+-  }
+-}
+-
+-
+-////////////////////////////////////////////////////////////////////////////
+-///////////////////////// End Many To Many Implementation //////////////////
+-////////////////////////////////////////////////////////////////////////////
+-
+-
+-#include "PmeFFTLib.def.h"
+diff --git a/src/fftlib.ci b/src/fftlib.ci
+deleted file mode 100644
+index ca6f26cb..00000000
+--- a/src/fftlib.ci
++++ /dev/null
+@@ -1,183 +0,0 @@
+-/**
+-***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+-***  The Board of Trustees of the University of Illinois.
+-***  All rights reserved.
+-**/
+-
+-module PmeFFTLib {
+-
+-  message OptPmeFFTMsg {
+-    float qgrid[];
+-  };
+-  message OptPmeGridMsg {
+-    float qgrid[];
+-  };
+-  message OptPmeDummyMsg;
+-  message OptPmePencilInitMsg;
+-
+-  array [3D] OptPmeZPencil {
+-    entry OptPmeZPencil();
+-    entry [expedited] void recvGrid(OptPmeGridMsg *);
+-    entry [expedited] void recvUntrans(OptPmeFFTMsg *);
+-    entry [expedited] void many_to_manyRecvUntrans (OptPmeDummyMsg *);
+-    entry [expedited] void many_to_manyRecvGrid (OptPmeDummyMsg *);
+-    entry void dummyRecvGrid(int pe, int done = 0);
+-    entry void init(OptPmePencilInitMsg *initmsg) {
+-      atomic {
+-	base_init(initmsg); delete initmsg;
+-	fft_init();
+-	// now count how many nodes send us data
+-	imsg = 0; grid_msgs.resize(0);
+-      }
+-      while ( ! imsg ) {
+-        when dummyRecvGrid(int pe, int done) atomic {
+-          if ( done ) imsg = 1;
+-          else {
+-            grid_msgs.add(0);  // increment size
+-          }
+-        }
+-      }
+-      //atomic {CkPrintf ("%d,%d:Start iteration %d grid msgs\n", thisIndex.x, thisIndex.y, grid_msgs.size());}		
+-      atomic { _iter = 0; }
+-      // ready to go
+-      while ( 1 ) {
+-        atomic { _iter ++; }  //Update the iteration
+-	if ( _iter <= many_to_many_start ) {	
+-     	  for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
+-            when recvGrid(OptPmeGridMsg *msg) atomic {
+-              recv_grid(msg); grid_msgs[imsg] = msg;
+-	    }
+-	  }	
+-	  atomic { forward_fft(); }
+-	  atomic { send_trans(); }
+-	  for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) {
+-	      when recvUntrans(OptPmeFFTMsg *msg) atomic {
+-	        recv_untrans(msg); delete msg;
+-	      }
+-	  }
+-          atomic { backward_fft(); }	
+-	  //atomic {CkPrintf ("%d,%d:Calling %d SendUngrids\n", thisIndex.x, thisIndex.y, grid_msgs.size());}
+-	  atomic {
+-	    for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
+-	      OptPmeGridMsg *msg = grid_msgs[imsg];
+-	      send_ungrid(msg);
+-	    }	  
+-          }
+-        }
+-	else {
+-	  when many_to_manyRecvGrid(OptPmeDummyMsg *msg) atomic { many_to_many_recv_grid (); }
+-	  atomic { forward_fft(); }
+-	  atomic { many_to_many_send_trans(); }
+-	  when many_to_manyRecvUntrans(OptPmeDummyMsg *msg) atomic { many_to_many_recv_untrans(); }
+-	  atomic { backward_fft(); }	
+-	  atomic { many_to_many_send_ungrid (); }
+-        }
+-      }
+-    };
+-  };
+-
+-  array [3D] OptPmeYPencil {
+-    entry OptPmeYPencil();
+-    entry [expedited] void recvTrans(OptPmeFFTMsg *);
+-    entry [expedited] void recvUntrans(OptPmeFFTMsg *);
+-    entry [expedited] void many_to_manyRecvUntrans (OptPmeDummyMsg *msg);
+-    entry [expedited] void many_to_manyRecvTrans (OptPmeDummyMsg *msg);
+-    entry void init(OptPmePencilInitMsg *initmsg) {
+-      atomic {
+-      //CkPrintf("y pencil init %d %d %d on %d\n",
+-	//	thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+-      base_init(initmsg); delete initmsg;
+-      fft_init();
+-      }
+-
+-      atomic { _iter = 0; }
+-      while ( 1 ) {
+-        atomic { _iter ++; }  //Update the iteration
+-	if ( _iter <= many_to_many_start ) {	
+-          for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
+-            when recvTrans(OptPmeFFTMsg *msg) atomic {
+-              recv_trans(msg); delete msg;
+-            }
+-          }
+-	  atomic { forward_fft(); }
+-	  atomic { send_trans(); }
+-          for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
+-            when recvUntrans(OptPmeFFTMsg *msg) atomic {
+-              recv_untrans(msg); delete msg;
+-            }
+-	  } 
+-	  atomic { backward_fft(); }
+-          atomic { send_untrans(); }
+-        }
+-	else {
+-	  when many_to_manyRecvTrans(OptPmeDummyMsg *msg) atomic { many_to_many_recv_trans();}
+-	  atomic { forward_fft(); }
+-          atomic { many_to_many_send(PHASE_XF); } 
+-          when many_to_manyRecvUntrans(OptPmeDummyMsg *msg) atomic {many_to_many_recv_untrans();} 
+-	  atomic { backward_fft(); }
+-          atomic { many_to_many_send(PHASE_ZB); } 
+-        }
+-      }
+-    };
+-  };
+-
+-  array [3D] OptPmeXPencil {
+-    entry OptPmeXPencil();
+-    entry [expedited] void recvTrans(OptPmeFFTMsg *);
+-    entry [expedited] void many_to_manyRecvTrans (OptPmeDummyMsg *);
+-    entry [expedited] void recvLattice(Lattice l);
+-    entry void init(OptPmePencilInitMsg *initmsg) {
+-      atomic {
+-      //CkPrintf("x pencil init %d %d %d on %d\n",
+-	//	thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+-      base_init(initmsg); delete initmsg;
+-      fft_init();
+-      }
+-      
+-      atomic { _iter = 0; }
+-      while ( 1 ) {
+-        atomic { _iter ++; }  //Update the iteration
+-
+-	if (constant_pressure) {
+-	   when recvLattice (Lattice l) atomic {
+-	   	lattice = l;
+-	   }
+-	}
+-        if (_iter <= many_to_many_start) {
+-          for ( imsg=0; imsg < initdata.xBlocks; ++imsg ) {
+-            when recvTrans(OptPmeFFTMsg *msg) atomic {
+-              recv_trans(msg); delete msg;
+-            }
+-          }
+-    	  atomic { forward_fft(); }
+-          atomic { pme_kspace(); }
+-          atomic { backward_fft(); }
+-          atomic { send_untrans(); }
+-	  atomic { submit_evir(); }
+-        }
+-	else {
+-	  when many_to_manyRecvTrans(OptPmeDummyMsg *msg) atomic { many_to_many_recv_trans(); }
+-	  atomic { forward_fft(); }
+-          atomic { pme_kspace(); }
+-          atomic { backward_fft(); }
+-	  atomic { many_to_many_send_untrans(); }
+-	  atomic { submit_evir(); }
+-	}
+-      }
+-    };
+-  };
+-
+-  //PME Maps
+-  group OptPmePencilMapX : CkArrayMap {
+-        entry  OptPmePencilMapX(int xblock, int yblock, int zblock);
+-  };
+-
+-  group OptPmePencilMapY : CkArrayMap {
+-        entry  OptPmePencilMapY(int xblock, int yblock, int zblock);
+-  };
+-
+-  group OptPmePencilMapZ : CkArrayMap {
+-        entry  OptPmePencilMapZ(int xblock, int yblock, int zblock);
+-  };
+-}
+-
+diff --git a/src/fftlib.h b/src/fftlib.h
+deleted file mode 100644
+index 844cefdd..00000000
+--- a/src/fftlib.h
++++ /dev/null
+@@ -1,203 +0,0 @@
+-
+-#ifndef   __FFT_LIB_H__
+-#define   __FFT_LIB_H__
+-
+-#include <cmidirectmanytomany.h>
+-
+-#define  MANY_TO_MANY_START  10
+-#define  MANY_TO_MANY_SETUP  2
+-
+-#define  PHASE_YF  0   // Recv Y-Forward
+-#define  PHASE_XF  1   // Recv X-Forward
+-#define  PHASE_YB  2   // Recv Y-Backward
+-#define  PHASE_ZB  3   // Recv Z-Backward
+-#define  PHASE_GR  4   // Send Grid
+-#define  PHASE_UG  5   // Recv Ungrid
+-
+-extern int many_to_many_start;
+-
+-class OptPmeGridMsg : public CMessage_OptPmeGridMsg {
+-public:
+-  int sourceNode;
+-  int xstart;
+-  int xlen;
+-  int ystart;
+-  int ylen;
+-  int zstart;
+-  int zlen;
+-  int patchID;
+-  float *qgrid;
+-};  //32 byte header on 32 bit architectures
+-
+-
+-class OptPmeFFTMsg : public CMessage_OptPmeFFTMsg {
+-public:
+-  int sourceNode;
+-  int nx;
+-  float *qgrid;
+-};  //12 byte header on 32 bit architectures
+-
+-
+-class OptPmeDummyMsg : public CMessage_OptPmeDummyMsg {
+- public:
+-  int   to_pe;
+-};
+-
+-// use this idiom since messages don't have copy constructors
+-struct OptPmePencilInitMsgData {
+-  PmeGrid grid;
+-  int xBlocks, yBlocks, zBlocks;
+-  CProxy_OptPmeXPencil xPencil;
+-  CProxy_OptPmeYPencil yPencil;
+-  CProxy_OptPmeZPencil zPencil;
+-  CProxy_OptPmeMgr     pmeProxy;
+-  CkCallback           cb_energy;
+-  bool                 constant_pressure;
+-};
+-
+-
+-class OptPmePencilInitMsg : public CMessage_OptPmePencilInitMsg {
+-public:
+-  OptPmePencilInitMsg(OptPmePencilInitMsgData &d) { data = d; }
+-  OptPmePencilInitMsgData data;
+-};
+-
+-struct CkCallbackWrapper {
+-  CkCallback    cb;
+-  void        * msg;
+-  void        * array;
+-};
+-
+-
+-template <class T> class OptPmePencil : public T {
+-public:
+-  OptPmePencil() {
+-    data = 0;
+-    work = 0;
+-    send_order = 0;
+-  }
+-  ~OptPmePencil() {
+-    delete [] data;
+-    delete [] work;
+-    delete [] send_order;
+-  }
+-  void base_init(OptPmePencilInitMsg *msg) {
+-    initdata = msg->data;
+-  }
+-  void order_init(int nBlocks) {
+-    send_order = new int[nBlocks];
+-    for ( int i=0; i<nBlocks; ++i ) send_order[i] = i;
+-    Random rand(CkMyPe());
+-    rand.reorder(send_order,nBlocks);
+-  }
+-  OptPmePencilInitMsgData initdata;
+-  Lattice lattice;
+-  PmeReduction evir;
+-  int imsg;  // used in sdag code
+-  int _iter; // used in sdag code
+-  float *data;
+-  float *many_to_many_data; //data in a differnt format
+-  int   *many_to_many_nb;
+-  float *work;
+-  int *send_order;
+-  void *handle;
+-  bool single_pencil;
+-};
+-
+-
+-class OptPmeZPencil : public OptPmePencil<CBase_OptPmeZPencil> {
+-public:
+-    OptPmeZPencil_SDAG_CODE
+-    OptPmeZPencil() { __sdag_init(); setMigratable(false); }
+-    OptPmeZPencil(CkMigrateMessage *) { __sdag_init();  setMigratable (false); }
+-    void fft_init();
+-    void recv_grid(const OptPmeGridMsg *);
+-    void many_to_many_recv_grid();
+-    void forward_fft();
+-    void send_trans();
+-    void many_to_many_send_trans();
+-    void recv_untrans(const OptPmeFFTMsg *);
+-    void many_to_many_recv_untrans();
+-    void backward_fft();
+-    void send_ungrid(OptPmeGridMsg *);
+-    void many_to_many_send_ungrid ();
+-private:
+-    ResizeArray<OptPmeGridMsg *> grid_msgs;
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-    fftwf_plan  forward_plan, backward_plan;
+-#else
+-    rfftwnd_plan forward_plan, backward_plan;
+-#endif
+-#endif
+-    int nx, ny;
+-    PatchGridElem  * m2m_recv_grid;
+-    float          * many_to_many_gr_data;
+-    CkCallbackWrapper  cbw_recvgrid;
+-    CkCallbackWrapper  cbw_recvuntrans;
+-
+-    void initialize_manytomany ();
+-};
+-
+-class OptPmeYPencil : public OptPmePencil<CBase_OptPmeYPencil> {
+-public:
+-    OptPmeYPencil_SDAG_CODE
+-    OptPmeYPencil() { __sdag_init(); setMigratable(false); }
+-    OptPmeYPencil(CkMigrateMessage *) { __sdag_init(); }
+-    void fft_init();
+-    void recv_trans(const OptPmeFFTMsg *);
+-    void forward_fft();
+-    void send_trans();
+-    void many_to_many_send(int phase);
+-    void recv_untrans(const OptPmeFFTMsg *);
+-    void many_to_many_recv_trans();
+-    void backward_fft();
+-    void send_untrans();
+-    void many_to_many_recv_untrans();	
+-private:
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-    fftwf_plan  forward_plan, backward_plan;
+-#else
+-    fftw_plan forward_plan, backward_plan;
+-#endif
+-#endif
+-    int nx, nz;
+-    CkCallbackWrapper  cbw_recvtrans;
+-    CkCallbackWrapper  cbw_recvuntrans;
+-
+-    void initialize_manytomany ();
+-};
+-
+-class OptPmeXPencil : public OptPmePencil<CBase_OptPmeXPencil> {
+-public:
+-    OptPmeXPencil_SDAG_CODE
+-    OptPmeXPencil() { __sdag_init();  myKSpace = 0; setMigratable(false); }
+-    OptPmeXPencil(CkMigrateMessage *) { __sdag_init(); }
+-    void fft_init();
+-    void recv_trans(const OptPmeFFTMsg *);
+-    void many_to_many_recv_trans();	
+-    void forward_fft();
+-    void pme_kspace();
+-    void backward_fft();
+-    void send_untrans();
+-    void many_to_many_send_untrans();
+-    void submit_evir();
+-#ifdef NAMD_FFTW
+-#ifdef NAMD_FFTW_3
+-    fftwf_plan  forward_plan, backward_plan;
+-#else
+-    fftw_plan forward_plan, backward_plan;
+-#endif
+-#endif
+-    int ny, nz;
+-    PmeKSpace *myKSpace;
+-    CkCallbackWrapper  cbw_recvtrans;
+-    bool               constant_pressure;
+-
+-    SubmitReduction *reduction;
+-
+-    void initialize_manytomany ();
+-};
+-
+-#endif
+diff --git a/src/fftmap.h b/src/fftmap.h
+deleted file mode 100644
+index 0e7fc27e..00000000
+--- a/src/fftmap.h
++++ /dev/null
+@@ -1,253 +0,0 @@
+-
+-#ifndef   __PME_FFT_MAP_H__
+-#define   __PME_FFT_MAP_H__
+-
+-#include <charm++.h>
+-#include <PatchMap.h>
+-#include <fftlib.h>
+-
+-CProxy_OptPmePencilMapZ  global_map_z;
+-CProxy_OptPmePencilMapY  global_map_y;
+-CProxy_OptPmePencilMapX  global_map_x;
+-
+-struct PmeFFTInfo {
+-  int  xBlocks;   //FFT grid dimensions
+-  int  yBlocks;
+-  int  zBlocks;    
+-};
+-
+-static  inline void initializePmeMap(PmeFFTInfo                    _info,
+-				     SortableResizeArray<int>    & xprocs,
+-				     SortableResizeArray<int>    & yprocs,
+-				     SortableResizeArray<int>    & zprocs) {
+-    
+-  // decide which pes to use by bit reversal and patch use
+-  int i;
+-  int ncpus = CkNumPes();
+-
+-  int *basenodes = new int [ncpus];
+-  memset (basenodes, 0, sizeof(int) * ncpus);
+-  PatchMap *pmap = PatchMap::Object();
+-  for (int p = 0; p < pmap->numPatches(); p++)
+-    basenodes[pmap->basenode(p)] = 1;
+-  
+-  // find next highest power of two
+-  int npow2 = 1;  int nbits = 0;
+-  while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
+-  
+-  // build bit reversal sequence
+-  SortableResizeArray<int> patches, nopatches, pmeprocs, baseprocs;
+-  i = 0;
+-  for ( int icpu=0; icpu<ncpus; ++icpu ) {
+-    int ri;
+-    for ( ri = ncpus; ri >= ncpus; ++i ) {
+-      ri = 0;
+-      int pow2 = 1;
+-      int rpow2 = npow2 / 2;
+-      for ( int j=0; j<nbits; ++j ) {
+-	ri += rpow2 * ( ( i / pow2 ) % 2 );
+-	pow2 *= 2;  rpow2 /= 2;
+-      }
+-    }
+-    // seq[icpu] = ri;
+-    if ( ri ) { // keep 0 for special case
+-      if ( pmap->numPatchesOnNode(ri) ) 
+-	patches.add(ri);
+-      else if (basenodes[ri]) 
+-	baseprocs.add(ri);
+-      else nopatches.add(ri);
+-    }
+-  }   
+-
+-  delete [] basenodes;
+-  
+-  // only use zero if it eliminates overloading or has patches
+-  int useZero = 0;
+-  int npens = _info.xBlocks*_info.yBlocks;
+-  if ( npens % ncpus == 0 ) useZero = 1;
+-  if ( npens == nopatches.size() + 1 ) useZero = 1;
+-  npens += _info.xBlocks*_info.zBlocks;
+-  if ( npens % ncpus == 0 ) useZero = 1;
+-  if ( npens == nopatches.size() + 1 ) useZero = 1;
+-  npens += _info.yBlocks*_info.zBlocks;
+-  if ( npens % ncpus == 0 ) useZero = 1;
+-  if ( npens == nopatches.size() + 1 ) useZero = 1;
+-  
+-  // add nopatches then patches in reversed order
+-  for ( i=nopatches.size()-1; i>=0; --i ) pmeprocs.add(nopatches[i]);
+-  for ( i=baseprocs.size()-1; i>=0; --i ) pmeprocs.add(baseprocs[i]);
+-
+-  if ( useZero && ! pmap->numPatchesOnNode(0) ) pmeprocs.add(0);
+-  for ( i=patches.size()-1; i>=0; --i ) pmeprocs.add(patches[i]);
+-  if ( pmap->numPatchesOnNode(0) ) pmeprocs.add(0);
+-
+-  int pe = 0;
+-  int npes = pmeprocs.size();
+-  int nxzpes = _info.xBlocks * _info.yBlocks;
+-  if (nxzpes < _info.yBlocks*_info.zBlocks)
+-    nxzpes = _info.yBlocks*_info.zBlocks;
+-  
+-  zprocs.resize (_info.xBlocks * _info.yBlocks);
+-  for ( i=0; i<_info.xBlocks * _info.yBlocks; ++i, ++pe ) zprocs[i] = pmeprocs[pe%npes];
+-  zprocs.sort();
+-
+-  pe = nxzpes; 
+-  yprocs.resize(_info.xBlocks*_info.zBlocks);
+-  for ( i=0; i<_info.xBlocks*_info.zBlocks; ++i, ++pe ) yprocs[i] = pmeprocs[pe%npes];
+-  yprocs.sort();
+-  
+-  xprocs.resize(_info.yBlocks*_info.zBlocks);
+-  //for ( i=0; i<_info.yBlocks*_info.zBlocks; ++i, ++pe ) xprocs[i] = pmeprocs[pe%npes];
+-  for ( i=0, pe=0; i<_info.yBlocks*_info.zBlocks; ++i, ++pe ) xprocs[i] = pmeprocs[pe%npes];
+-  xprocs.sort();
+-}
+-
+-
+-class OptPmePencilMapX : public CBase_OptPmePencilMapX
+-{
+-  PmeFFTInfo   _info;
+-  int        * _mapcache;
+-  bool         _initialized;
+-
+- public:
+-  OptPmePencilMapX(int xblock, int yblock, int zblock) {
+-    _initialized = false;
+-    _info.xBlocks = xblock;
+-    _info.yBlocks = yblock;
+-    _info.zBlocks = zblock;    
+-    global_map_x = thisProxy;   
+-  }
+-    
+-  inline void initialize () {
+-    _initialized = true;
+-    _mapcache = (int *) malloc(_info.yBlocks * _info.zBlocks * sizeof(int));
+-    
+-    SortableResizeArray<int>    xprocs;
+-    SortableResizeArray<int>    yprocs;
+-    SortableResizeArray<int>    zprocs;
+-    
+-    initializePmeMap (_info, xprocs, yprocs, zprocs);
+-    
+-    for (int y = 0; y < _info.yBlocks; y++) {
+-      for (int z = 0; z < _info.zBlocks; z ++) {
+-	int index = z + y * _info.zBlocks;
+-	int pe = xprocs[index];
+-	_mapcache[index] = pe;
+-        
+-	if(CkMyRank() == 0) 
+-	  pencilPMEProcessors[pe] = 1;
+-      }
+-    }
+-  }
+-
+-  OptPmePencilMapX(CkMigrateMessage *m){}
+-
+-  int procNum(int foo, const CkArrayIndex &idx) {
+-    if (!_initialized) initialize();
+-
+-    CkArrayIndex3D idx3d = *(CkArrayIndex3D *) &idx;
+-    int index = idx3d.index[2] + idx3d.index[1] * _info.zBlocks;
+-    
+-    return _mapcache[index];
+-  }
+-};
+-
+-
+-class OptPmePencilMapY : public CBase_OptPmePencilMapY
+-{
+-  PmeFFTInfo   _info;
+-  int        * _mapcache;
+-  bool         _initialized;
+-
+- public:
+-  OptPmePencilMapY(int xblock, int yblock, int zblock) {
+-    _initialized = false;
+-    _info.xBlocks = xblock;
+-    _info.yBlocks = yblock;
+-    _info.zBlocks = zblock;    
+-    global_map_y = thisProxy;
+-  }
+-
+-  inline void initialize() {
+-    _initialized = true;
+-    _mapcache = (int *) malloc(_info.xBlocks * _info.zBlocks * sizeof(int)); 
+-    
+-    SortableResizeArray<int>    xprocs;
+-    SortableResizeArray<int>    yprocs;
+-    SortableResizeArray<int>    zprocs;
+-    
+-    initializePmeMap (_info, xprocs, yprocs, zprocs);
+-    
+-    for (int x = 0; x < _info.xBlocks; x ++) {
+-      for (int z = 0; z < _info.zBlocks; z++) {
+-	int index = z + x * _info.zBlocks;
+-	int pe = yprocs[index];
+-	_mapcache [index] = pe;
+-
+-	if (CkMyPe() == 0) 
+-	  pencilPMEProcessors[pe] = 1;
+-      }
+-    }
+-  }
+-  
+-  OptPmePencilMapY(CkMigrateMessage *m){}
+-
+-  int procNum(int foo, const CkArrayIndex &idx) {
+-    if (!_initialized) initialize();
+-
+-    CkArrayIndex3D idx3d = *(CkArrayIndex3D *) &idx;
+-    int index = idx3d.index[2] + idx3d.index[0] * _info.zBlocks;
+-    return _mapcache [index];
+-  }
+-};
+-
+-class OptPmePencilMapZ : public CBase_OptPmePencilMapZ
+-{
+-  PmeFFTInfo   _info;
+-  int        * _mapcache;
+-  bool         _initialized;
+-
+- public:
+-  OptPmePencilMapZ(int xblock, int yblock, int zblock) {
+-    _initialized = false;
+-    _info.xBlocks = xblock;
+-    _info.yBlocks = yblock;
+-    _info.zBlocks = zblock;    
+-    global_map_z = thisProxy;
+-  }
+-  
+-  inline void initialize() {
+-    _initialized = true;
+-    _mapcache = (int *) malloc(_info.xBlocks * _info.yBlocks * sizeof(int)); 
+-
+-    SortableResizeArray<int>    xprocs;
+-    SortableResizeArray<int>    yprocs;
+-    SortableResizeArray<int>    zprocs;
+-    
+-    initializePmeMap (_info, xprocs, yprocs, zprocs);
+-
+-    for (int x = 0; x < _info.xBlocks; x++) {
+-      for (int y = 0; y < _info.yBlocks; y ++) {	
+-	int index = y + x * _info.yBlocks;
+-	int pe = zprocs[index];
+-	_mapcache[index] = pe;
+-
+-	if (CkMyPe() == 0)
+-	  pencilPMEProcessors[pe] = 1;
+-      }
+-    }
+-  }
+-  
+-  OptPmePencilMapZ(CkMigrateMessage *m){}
+-  
+-  int procNum(int foo, const CkArrayIndex &idx) {
+-    if (!_initialized) initialize();
+-    
+-    CkArrayIndex3D idx3d = *(CkArrayIndex3D *) &idx;
+-    int index = idx3d.index[1] + idx3d.index[0] * _info.yBlocks;
+-    return _mapcache[index];
+-  }
+-};
+-
+-
+-#endif
+diff --git a/src/main.ci b/src/main.ci
+index a11729e9..e337165c 100644
+--- a/src/main.ci
++++ b/src/main.ci
+@@ -25,7 +25,6 @@ mainmodule main {
+   #ifdef OPENATOM_VERSION
+   extern module ComputeMoaMgr;
+   #endif // OPENATOM_VERSION
+-  extern module OptPmeMgr;
+   extern module ComputeExtMgr;
+   extern module ComputeQMMgr;
+   extern module ComputeGBISserMgr;
+-- 
+2.23.0
+
