@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'dropEst'
+version = '0.8.6'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/hms-dbmi/dropEst'
+description = "Pipeline for initial analysis of droplet-based single-cell RNA-seq data"
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://github.com/hms-dbmi/dropEst/archive']
+sources = [SOURCE_TAR_GZ]
+checksums = ['06156485c62d09349d5d7bc2e49fa739578e85b409a6a674b20e054d15a6c8a9']
+
+builddependencies = [('CMake', '3.15.3')]
+dependencies = [
+    ('R', '3.6.2'),
+    ('Boost', '1.71.0'),
+    ('BamTools', '2.5.1'),
+    ('zlib', '1.2.11'),
+]
+
+unpack_options = '--strip-components=1'
+buildininstalldir = True
+skipsteps = ['install']
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/lib64/R/library",
+    "R CMD INSTALL --library=%(installdir)s/lib64/R/library dropestr",
+]
+
+sanity_check_paths = {
+    'files': ['dropest', 'droptag', 'dropReport.Rsc'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "echo 'library(dropestr)' | R -q --no-save",
+    "dropReport.Rsc -h | grep 'Usage:.*dropReport.Rsc'",
+]
+
+modextrapaths = {
+    'PATH': '',
+    'R_LIBS': 'lib64/R/library',
+}
+
+moduleclass = 'bio'
