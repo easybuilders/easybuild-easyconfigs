@@ -1,0 +1,30 @@
+easyblock = 'CmdCp'
+
+name = 'BUFRLIB'
+version = '11.3.0'
+
+homepage = 'https://www.emc.ncep.noaa.gov/index.php?branch=BUFRLIB'
+description = """NCEP BUFRLIB software to encode or decode BUFR messages. It is not intended to be a primer on the BUFR code form itself."""
+
+toolchain = {'name': 'iccifort', 'version': '2020.0.166'}
+
+source_urls = ['https://www.emc.ncep.noaa.gov/BUFRLIB/docs']
+sources = ['%s_v%s.tar'%(name, version.replace('.','-'))]
+
+cmds_map = [('.*', """
+ export CC=icc; export FC=ifort; $CC -DUNDERSCORE -c `./preproc.sh` *.c;
+ $(FC) -c modv*.f moda*.f `ls -1 *.f | grep -v "mod[av]_"`;
+ ar crv libbufr.a 
+ """),
+]
+
+postinstallcmds =  ['mkdir -p %(installdir)s/lib && cp %(builddir)s/*.a %(installdir)s/lib/']
+
+files_to_copy = ["README_BUFRLIB"]
+
+sanity_check_paths = {
+    'files': ['lib/libbufr.a'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
