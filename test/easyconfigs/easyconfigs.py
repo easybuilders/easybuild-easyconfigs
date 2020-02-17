@@ -519,7 +519,7 @@ class EasyConfigTest(TestCase):
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in changed_ecs:
-            if ec['easyblock'] == 'Bundle':
+            if ec['easyblock'] in ['Bundle', 'PythonBundle']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
