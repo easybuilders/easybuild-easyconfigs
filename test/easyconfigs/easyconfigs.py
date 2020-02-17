@@ -633,6 +633,7 @@ class EasyConfigTest(TestCase):
             'p4vasp',  # https://www.p4vasp.at doesn't work
             'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
+            'MUMPS',  # https://mumps.enseeiht.fr doesn't work
         ]
         url_whitelist = [
             # https:// doesn't work, results in index page being downloaded instead
