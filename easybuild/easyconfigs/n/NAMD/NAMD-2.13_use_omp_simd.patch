@@ -1,0 +1,213 @@
+From fbce7b283ea383a23a91fc68713aea48a742df49 Mon Sep 17 00:00:00 2001
+From: David <dhardy@ks.uiuc.edu>
+Date: Fri, 19 Jul 2019 11:19:51 -0500
+Subject: [PATCH] Change "pragma simd" to "pragma omp simd"
+
+Intel compilers since 2016 now support the OpenMP "#pragma omp simd"
+syntax and are dropping support for the previous "#pragma simd" syntax
+from 2019 forward. Also update compilation options for the relevant
+arch/*icc* files.
+
+Change-Id: Ic57081ce2fb1ba9d7c9cd90bc431cd77c6dcb9eb
+---
+ arch/CRAY-XC-KNL-intel.arch                 |  2 +-
+ arch/CRAY-XC-intel.arch                     |  2 +-
+ arch/Linux-KNL-icc.arch                     |  2 +-
+ arch/Linux-SKX-icc.arch                     | 22 +++++++++++++++++++++
+ arch/Linux-x86_64-icc.arch                  |  2 +-
+ src/ComputeNonbondedBase2.h                 |  2 +-
+ src/ComputeNonbondedBase2KNL.h              |  4 ++--
+ src/ComputeNonbondedMICKernel.C             |  4 ++--
+ src/ComputeNonbondedMICKernelBase.h         |  2 +-
+ src/ComputeNonbondedMICKernelBase2_scalar.h |  2 +-
+ src/Patch.C                                 |  2 +-
+ src/Settle.C                                |  2 +-
+ 12 files changed, 35 insertions(+), 13 deletions(-)
+ create mode 100644 arch/Linux-SKX-icc.arch
+
+diff --git a/arch/CRAY-XC-KNL-intel.arch b/arch/CRAY-XC-KNL-intel.arch
+index fc6765fa..9f9c5807 100644
+--- a/arch/CRAY-XC-KNL-intel.arch
++++ b/arch/CRAY-XC-KNL-intel.arch
+@@ -1,7 +1,7 @@
+ NAMD_ARCH = CRAY-XC-KNL
+ CHARMARCH = gni-crayxc-persistent-smp
+ 
+-FLOATOPTS = -ip -xMIC-AVX512
++FLOATOPTS = -ip -xMIC-AVX512 -qopenmp-simd
+ 
+ CXX = CC -std=c++11 -DNOHOSTNAME -DNO_GETPWUID -DNAMD_KNL
+ CXXOPTS = -O2 $(FLOATOPTS)
+diff --git a/arch/CRAY-XC-intel.arch b/arch/CRAY-XC-intel.arch
+index 6f210343..c06170ad 100644
+--- a/arch/CRAY-XC-intel.arch
++++ b/arch/CRAY-XC-intel.arch
+@@ -1,7 +1,7 @@
+ NAMD_ARCH = CRAY-XC
+ CHARMARCH = gni-crayxc-persistent-smp
+ 
+-FLOATOPTS = -ip -xAVX
++FLOATOPTS = -ip -xAVX -qopenmp-simd
+ 
+ CXX = CC -std=c++11 -DNOHOSTNAME -DNO_GETPWUID
+ CXXOPTS = -O2 $(FLOATOPTS)
+diff --git a/arch/Linux-KNL-icc.arch b/arch/Linux-KNL-icc.arch
+index 78785ed9..35a62d2b 100644
+--- a/arch/Linux-KNL-icc.arch
++++ b/arch/Linux-KNL-icc.arch
+@@ -1,7 +1,7 @@
+ NAMD_ARCH = Linux-KNL
+ CHARMARCH = multicore-linux-x86_64-iccstatic
+ 
+-FLOATOPTS = -ip -xMIC-AVX512
++FLOATOPTS = -ip -xMIC-AVX512 -qopenmp-simd
+ 
+ CXX = icpc -std=c++11 -DNAMD_KNL
+ CXXOPTS = -static-intel -O2 $(FLOATOPTS)
+diff --git a/arch/Linux-SKX-icc.arch b/arch/Linux-SKX-icc.arch
+new file mode 100644
+index 00000000..9f477f93
+--- /dev/null
++++ b/arch/Linux-SKX-icc.arch
+@@ -0,0 +1,22 @@
++NAMD_ARCH = Linux-KNL
++CHARMARCH = multicore-linux-x86_64-iccstatic
++
++FLOATOPTS = -ip -O3 -xCORE-AVX512 -qopt-zmm-usage=high -fp-model fast=2 -no-prec-div -qoverride-limits -DNAMD_DISABLE_SSE -qopenmp-simd
++
++CXX = icpc -std=c++11 -DNAMD_KNL
++CXXOPTS = -static-intel -O2 $(FLOATOPTS)
++CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS) -qopt-report-phase=loop,vec -qopt-report=4
++CXXCOLVAROPTS = -O2 -ip
++
++CC = icc
++COPTS = -static-intel -O2 $(FLOATOPTS)
++
++
++loaded_modules := $(subst :, ,$(LOADEDMODULES))
++
++module := $(filter intel/17.0%,$(loaded_modules))
++ifeq (,$(module))
++else
++  $(error found module $(module) for buggy Intel 17.0 compiler)
++endif
++
+diff --git a/arch/Linux-x86_64-icc.arch b/arch/Linux-x86_64-icc.arch
+index 8e5c6e94..6100b16f 100644
+--- a/arch/Linux-x86_64-icc.arch
++++ b/arch/Linux-x86_64-icc.arch
+@@ -1,7 +1,7 @@
+ NAMD_ARCH = Linux-x86_64
+ CHARMARCH = multicore-linux-x86_64-iccstatic
+ 
+-FLOATOPTS = -ip -axAVX
++FLOATOPTS = -ip -axAVX -qopenmp-simd
+ 
+ CXX = icpc -std=c++11
+ CXXOPTS = -static-intel -O2 $(FLOATOPTS)
+diff --git a/src/ComputeNonbondedBase2.h b/src/ComputeNonbondedBase2.h
+index 4fe4095a..33e1bc4d 100644
+--- a/src/ComputeNonbondedBase2.h
++++ b/src/ComputeNonbondedBase2.h
+@@ -71,7 +71,7 @@ MODIFIED(
+ #ifdef PRAGMA_SIMD
+ #ifndef TABENERGYFLAG
+ #ifndef GOFORCES
+-#pragma simd assert SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z)) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
++#pragma omp simd SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z)) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
+              FULL(reduction(+:fullf_i_x,fullf_i_y,fullf_i_z) ENERGY(reduction(+:fullElectEnergy)))
+ #endif
+ #endif
+diff --git a/src/ComputeNonbondedBase2KNL.h b/src/ComputeNonbondedBase2KNL.h
+index 83935ec2..56cb5ea2 100644
+--- a/src/ComputeNonbondedBase2KNL.h
++++ b/src/ComputeNonbondedBase2KNL.h
+@@ -37,9 +37,9 @@ NOFAST( foo bar )
+ #ifdef PRAGMA_SIMD
+ #ifndef TABENERGYFLAG
+ #if __INTEL_COMPILER_BUILD_DATE == 20160721
+-#warning disabled pragma simd on innner loop due to compiler segfault
++#warning disabled simd pragma on innner loop due to compiler segfault
+ #else
+-#pragma simd assert SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z)) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
++#pragma omp simd SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z)) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
+              FULL(reduction(+:fullf_i_x,fullf_i_y,fullf_i_z) ENERGY(reduction(+:fullElectEnergy)))
+ #endif
+ #endif
+diff --git a/src/ComputeNonbondedMICKernel.C b/src/ComputeNonbondedMICKernel.C
+index 8b18738c..b9b3d5bc 100644
+--- a/src/ComputeNonbondedMICKernel.C
++++ b/src/ComputeNonbondedMICKernel.C
+@@ -2267,7 +2267,7 @@ void mic_nonbonded_forces(const int deviceNum,
+         // Accumulate the forces from the various computes contributing to this patch
+         memset(fDst + flIPartJLo, 0, sizeof(double) * (flIPartJHi - flIPartJLo));
+         for (int i = 0; i < fl.force_list_size; i++) {
+-          #pragma simd
++          #pragma omp simd
+           for (int j = flIPartJLo; j < flIPartJHi; j++) {
+             fDst[j] += fSrcBase[i * f_len + j];
+           }
+@@ -2293,7 +2293,7 @@ void mic_nonbonded_forces(const int deviceNum,
+         // Accumulate the forces from the various computes contributing to this patch
+         memset(fDst + flIPartJLo, 0, sizeof(double) * (flIPartJHi - flIPartJLo));
+         for (int i = 0; i < fl.force_list_size; i++) {
+-          #pragma simd
++          #pragma omp simd
+           for (int j = flIPartJLo; j < flIPartJHi; j++) {
+             fDst[j] += fSrcBase[i * f_len + j];
+           }
+diff --git a/src/ComputeNonbondedMICKernelBase.h b/src/ComputeNonbondedMICKernelBase.h
+index dc0b7922..9f4638c9 100644
+--- a/src/ComputeNonbondedMICKernelBase.h
++++ b/src/ComputeNonbondedMICKernelBase.h
+@@ -1442,7 +1442,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
+         const int pairlist_excl_len = pairlist_excl[1] - 2;
+         int exclSum = 0;
+         __ASSUME_ALIGNED(pairlist_excl_base);
+-        #pragma simd reduction(+ : exclSum)
++        #pragma omp simd reduction(+ : exclSum)
+         for (int plI = 0; plI < pairlist_excl_len; plI++) {
+           if ((pairlist_excl_base[plI] & 0xFFFF) != 0xFFFF) {
+             exclSum += 1;
+diff --git a/src/ComputeNonbondedMICKernelBase2_scalar.h b/src/ComputeNonbondedMICKernelBase2_scalar.h
+index c7ded2c3..43f3d157 100644
+--- a/src/ComputeNonbondedMICKernelBase2_scalar.h
++++ b/src/ComputeNonbondedMICKernelBase2_scalar.h
+@@ -52,7 +52,7 @@
+       #endif
+ 
+       // Create an "inner" loop with one iteration per vector unit lane
+-      #pragma simd vectorlength(16) \
++      #pragma omp simd vectorlength(16) \
+                    reduction(+ : tmp_x_i_sum, tmp_y_i_sum, tmp_z_i_sum, tmp_w_i_sum, \
+                                  fulltmp_x_i_sum, fulltmp_y_i_sum, fulltmp_z_i_sum ) \
+                    EXCL_CHECKSUM_CLAUSE
+diff --git a/src/Patch.C b/src/Patch.C
+index 24c25d29..05176d0f 100644
+--- a/src/Patch.C
++++ b/src/Patch.C
+@@ -273,7 +273,7 @@ void Patch::forceBoxClosed(void)
+       BigReal virial_yy = 0.;
+       BigReal virial_yz = 0.;
+       BigReal virial_zz = 0.;
+-#pragma simd reduction(+:virial_xx,virial_xy,virial_xz,virial_yy,virial_yz,virial_zz)
++#pragma omp simd reduction(+:virial_xx,virial_xy,virial_xz,virial_yy,virial_yz,virial_zz)
+ #pragma ivdep
+       for ( int i=0; i<n; ++i ) {
+         BigReal p_x = pd[i].position.x - center.x;
+diff --git a/src/Settle.C b/src/Settle.C
+index a31aeab2..fa50ce8f 100644
+--- a/src/Settle.C
++++ b/src/Settle.C
+@@ -328,7 +328,7 @@ void settle1_SIMD(const Vector *ref, Vector *pos,
+     pos2zt[i] = pos[i*3+2].z;
+   }
+ 
+-#pragma simd assert
++#pragma omp simd
+   for (int i=0;i < veclen;i++) {
+ 
+     BigReal ref0x = ref0xt[i];
+-- 
+2.23.0
+
