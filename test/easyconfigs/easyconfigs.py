@@ -251,6 +251,9 @@ class EasyConfigTest(TestCase):
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': ('1.64.0;', ['Boost.Python-1.64.0-', 'EMAN2-2.3-']),
             'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
+            # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
+            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
+
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -516,7 +519,7 @@ class EasyConfigTest(TestCase):
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in changed_ecs:
-            if ec['easyblock'] == 'Bundle':
+            if ec['easyblock'] in ['Bundle', 'PythonBundle']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
