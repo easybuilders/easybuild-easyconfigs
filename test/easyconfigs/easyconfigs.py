@@ -251,9 +251,10 @@ class EasyConfigTest(TestCase):
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': ('1.64.0;', ['Boost.Python-1.64.0-', 'EMAN2-2.3-']),
             'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
+            # scVelo's dependency numba requires LLVM 7x or 8x (see https://github.com/numba/llvmlite#compatibility)
+            'LLVM': (r'[78]\.', ['numba-0.47.0-', 'scVelo-0.1.24-']),
             # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
             'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
-
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
