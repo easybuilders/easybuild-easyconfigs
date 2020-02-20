@@ -822,7 +822,7 @@ def template_easyconfig_test(self, spec):
     self.assertFalse(res, error_msg % res)
 
     # check for redefined easyconfig parameters, there should be none...
-    param_def_regex = re.compile('^(?P<key>[a-z_]+)\s*=', re.M)
+    param_def_regex = re.compile('^(?P<key>\w+)\s*=', re.M)
     keys = param_def_regex.findall(ec.rawtxt)
     redefined_keys = []
     for key in sorted(nub(keys)):
