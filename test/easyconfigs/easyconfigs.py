@@ -57,6 +57,7 @@ from easybuild.tools.py2vs3 import string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
+from easybuild.tools.utilities import nub
 
 
 # indicates whether all the single tests are OK,
@@ -251,9 +252,10 @@ class EasyConfigTest(TestCase):
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': ('1.64.0;', ['Boost.Python-1.64.0-', 'EMAN2-2.3-']),
             'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
+            # scVelo's dependency numba requires LLVM 7x or 8x (see https://github.com/numba/llvmlite#compatibility)
+            'LLVM': (r'[78]\.', ['numba-0.47.0-', 'scVelo-0.1.24-']),
             # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
             'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
-
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -633,6 +635,7 @@ class EasyConfigTest(TestCase):
             'p4vasp',  # https://www.p4vasp.at doesn't work
             'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
+            'MUMPS',  # https://mumps.enseeiht.fr doesn't work
         ]
         url_whitelist = [
             # https:// doesn't work, results in index page being downloaded instead
@@ -817,6 +820,20 @@ def template_easyconfig_test(self, spec):
     res = re.findall('.*\$root.*', ec.rawtxt, re.M)
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
     self.assertFalse(res, error_msg % res)
+
+    # check for redefined easyconfig parameters, there should be none...
+    param_def_regex = re.compile('^(?P<key>\w+)\s*=', re.M)
+    keys = param_def_regex.findall(ec.rawtxt)
+    redefined_keys = []
+    for key in sorted(nub(keys)):
+        cnt = keys.count(key)
+        if cnt > 1:
+            redefined_keys.append((key, cnt))
+
+    redefined_keys_error_msg = "There should be no redefined easyconfig parameters, found %d: " % len(redefined_keys)
+    redefined_keys_error_msg += ', '.join('%s (%d)' % x for x in redefined_keys)
+
+    self.assertFalse(redefined_keys, redefined_keys_error_msg)
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
