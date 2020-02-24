@@ -1,0 +1,62 @@
+easyblock = 'CmdCp'
+
+name = 'AmrPlusPlus'
+version = '2.0'
+
+github_account = 'meglab-metagenomics'
+
+homepage = 'https://megares.meglab.org/amrplusplus/latest/html/v2'
+description = """AmrPlusPlus v2.0 can process the raw data from the sequencer,
+identify the fragments of DNA, and count them. It also provides a count of the
+polymorphisms that occur in each DNA fragment with respect to the reference database.
+"""
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+source_urls = ['https://github.com/%(github_account)s/%(name)s_v%(version_major)s/archive']
+sources = ['8afc0af5234f8e322cc0f5e40cc553ecd5c932b8.zip']
+
+dependencies = [
+    ('Java', '11', '', True),
+    ('BWA', '0.7.17'),
+    ('Trimmomatic', '0.39', '', ('Java', '11')),
+    ('SAMtools', '1.10'),
+    ('Nextflow', '19.12.0', '', True),
+]
+
+skipsteps = ['configure']
+
+local_exe_files = ['main_AmrPlusPlus_v2.nf', 
+    'main_AmrPlusPlus_v2_withKraken.nf', 
+    'main_AmrPlusPlus_v2_withRGI_Kraken.nf',
+    'main_AmrPlusPlus_v2_withRGI.nf',
+    'launch_mpi_slurm.sh',
+    'download_minikraken.sh',
+    'nextflow.config'
+]
+
+local_dir = ['bin', 'data', 'docs', 'config']
+
+files_to_copy = [
+    (local_exe_files, '%(installdir)s'),
+    (local_dir, '%(installdir)s'),
+]
+
+install_cmd = "chmod +x %(installdir)s/*.nf &&"
+install_cmd += "chmod +x %(installdir)s/*.sh"
+
+modextravars = {
+    'JAVA': '${EBROOTJAVA}/bin/java',
+    'BWA': '${EBROOTBWA}/bin/bwa'
+}
+
+modloadmsg = """To execute, run \n
+nextflow run '$EBROOTAMRPLUSPLUS/main_AmrPlusPlus_v2.nf [options]' to a local directory \n
+"""
+
+sanity_check_paths = {
+    'files': ['main_AmrPlusPlus_v2.nf'],
+    'dirs': ['bin']
+}
+
+moduleclass = 'bio'
