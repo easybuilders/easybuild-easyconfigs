@@ -266,6 +266,12 @@ class EasyConfigTest(TestCase):
                     if all(any(x.startswith(p) for p in parents) for x in dep_vars[key]):
                         dep_vars.pop(key)
 
+        # filter out ELSI variants with -PEXSI suffix
+        if dep == 'ELSI' and len(dep_vars) > 1:
+            pexsi_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -PEXSI')]
+            if len(pexsi_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != pexsi_vsuff_vars[0])
+
         # only single variant is always OK
         if len(dep_vars) == 1:
             res = True
