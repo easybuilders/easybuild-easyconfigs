@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+local_commit = 'a0af57dfad778474f234f82428ccd15d85431090'
+local_date = '2020.02.26'
+version = '3.1-beta.%s'% local_date
+
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class averages in electron cryo-microscopy (cryo-EM)."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'openmp': True}
+
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/3dem',
+        'repo_name': 'relion',
+        'commit': local_commit
+    }
+}]
+
+builddependencies = [('CMake', '3.13.3')]
+
+dependencies = [
+    ('X11', '20190311'),
+    ('FLTK', '1.3.5'),
+    ('LibTIFF', '4.0.10'),
+    ('tbb', '2019_U4'),
+]
+
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-lpthread'  -DMPI_INCLUDE_PATH=$EBROOTOPENMPI/include "
+configopts += "-DMPI_C_COMPILER=$EBROOTOPENMPI/bin/mpicc -DMPI_CXX_COMPILER=$EBROOTOPENMPI/bin/mpicxx "
+configopts += "-DCUDA=OFF -DCudaTexture=OFF "
+configopts += "-DALTCPU=ON -DFORCE_OWN_TBB=OFF "
+
+sanity_check_paths = {
+    'files': ['bin/relion'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
