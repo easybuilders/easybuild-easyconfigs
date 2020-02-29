@@ -1,5 +1,5 @@
 name = 'ROOT'
-version = '6.18.04'
+version = '6.20.00'
 versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'http://root.cern.ch/drupal/'
@@ -7,15 +7,15 @@ description = """The ROOT system provides a set of OO frameworks with all the fu
     needed to handle and analyze large amounts of data in a very efficient way."""
 
 toolchain = {'name': 'foss', 'version': '2019b'}
-toolchainopts = {'pic': True, 'cstd': 'c++17'}
+toolchainopts = {'pic': True}
 
 source_urls = ['https://root.cern.ch/download/']
 sources = ['%(namelower)s_v%(version)s.source.tar.gz']
+checksums = ['68421eb0434b38b66346fa8ea6053a0fdc9a6d254e4a72019f4e3633ae118bf0']
 
 builddependencies = [
     ('CMake', '3.15.3'),
     ('pkg-config', '0.29.2'),
-    ('Clang', '9.0.1'),
 ]
 dependencies = [
     ('GSL', '2.6'),
@@ -34,15 +34,21 @@ dependencies = [
     ('XZ', '5.2.4'),
     ('libpng', '1.6.37'),
     ('SciPy-bundle', '2019.10', versionsuffix),
-    # ('tbb', '2019_U9'),
-    # ('libjpeg-turbo', '2.0.3'),
-    # ('LibTIFF', '4.0.10'),
+    ('libjpeg-turbo', '2.0.3'),
+    ('zstd', '1.4.4'),
+    ('tbb', '2019_U9'),
 ]
 
 # disable some components
 configopts = "-Dxrootd=OFF -Dmysql=OFF -Dkrb5=OFF -Dodbc=OFF -Doracle=OFF -Dpgsql=OFF -Dqt=OFF "
+configopts += "-Dpythia6=OFF -Dpythia8=OFF -Dgfal=OFF -Ddavix=OFF -Dvdt=OFF "
 
-# make sure some components are enabled
-configopts += "-Dunuran=ON -Dexplicitlink=ON -Dminuit2=ON -Droofit=ON "
+# make sure some components are enabled and fail if an expected item is missing
+configopts += "-Dbuiltin_unuran=ON -Dexplicitlink=ON -Dminuit2=ON -Droofit=ON -Dbuiltin_xxhash=ON "
+configopts += "-Dbuiltin_afterimage=ON -Dbuiltin_ftgl=ON -Dfail-on-missing=ON "
+
+# ROOT uses an internal version of LLVM 5 - mangle the EasyBuild LLVM in various PATHs to stop a conflict
+_pathvars = ['LD_LIBRARY_PATH', 'LIBRARY_PATH', 'CPATH', 'CMAKE_INCLUDE_PATH', 'CMAKE_LIBRARY_PATH']
+prebuildopts = " ".join(["""export %s=$(echo "$%s" | sed -e 's/LLVM/LLVM-dead/') && """ % (x, x) for x in _pathvars])
 
 moduleclass = 'data'
