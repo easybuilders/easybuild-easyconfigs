@@ -1,0 +1,44 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = '5.40-77.0'
+
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """InterProScan is a sequence analysis application (nucleotide and protein sequences) that combines
+ different protein signature recognition methods into one resource."""
+
+
+toolchain = SYSTEM
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+source_urls = [
+    'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/',
+]
+
+checksums = ['62eef3b024e8e6a538333721992b7c92']
+patches = ['InterProScan-5.40-77.0.patch']
+dependencies = [
+    ('Java', '13.0.1',),
+    ('Python', '3.7.4',),
+    ('Perl', '5.22.4'),
+    ('panther', '14.1'),
+]
+builddependencies = [
+    ('InterProScan', '5.40-77.0', '-data' )
+]
+
+hiddendependencies = [
+    ('InterProScan', '5.40-77.0', '-data' )
+]
+
+
+modextrapaths = {'PATH': '.'}
+postinstallcmds = ['cd %(installdir)s && sed -i \'s@\'"^number.of.embedded.workers.*"\'@\'number.of.embedded.workers=1\'@\' interproscan.properties && sed -i \'s@\'"^maxnumber.of.embedded.workers.*"\'@\'maxnumber.of.embedded.workers=1\'@\' interproscan.properties && sed -i \'s@\'"data\/panther\/14.1"\'@\'"${EBROOTPANTHER}"\'@\' interproscan.properties && for directory in `ls data/`; do sed -i \'s@\'"data\/${directory}"\'@\'"${EBROOTINTERPROSCAN}\/data\/${directory}"\'@\' interproscan.properties; if [ $directory != "freemarker" ]; then rm -rf data/$directory ; fi; done  ']
+
+
+
+sanity_check_paths = {
+    'files': ['%(namelower)s-%(version_major)s.jar', '%(namelower)s.sh', '%(namelower)s.properties'],
+    'dirs': ['bin', 'lib'],
+}
+
+moduleclass = 'bio'

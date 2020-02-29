@@ -1,0 +1,83 @@
+# Built with EasyBuild version 3.5.2.dev0-rb302d581048bd85d87bb0ab6cfa8bac7b1ffb899 on 2018-02-23_17-07-58
+# easybuild easyconfig
+#
+#  John Dey jfdey@fredhutch.org
+#
+#  Fred Hutchinson Cancer Research Center
+
+easyblock = 'Binary'
+
+name = 'RGAugury'
+version = '2.1.3'
+
+homepage = 'https://bitbucket.org/yaanlpc/rgaugury/src/master/'
+description = """This project aims to develop a sophisticated informatics tools for large scale of resistance gene analogs identification, including major groups of RGAs, such as NBS encoding genes, receptor like proteins and receptor like protein kinases. It is thus named as RGA augury or RGAugury standalone pipeline."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0' }
+
+source_urls = ['https://bitbucket.org/yaanlpc/rgaugury/get/']
+sources = ['v%(version)s.tar.gz']
+dependencies = [
+    ('Perl', '5.22.4'),
+    ('BLAST+', '2.10.0'),
+    ('HMMER', '3.2.1'),
+    ('PfamScan', '1.6'),
+    ('InterProScan', '5.40-77.0'),
+    ('CViT', '1.2.1'),
+    ('Java', '13.0.1'),
+    
+]
+extract_sources = True
+modextrapaths = {'PERL5LIB': ['lib/perl5/site_perl/5.22.4/', 'lib/perl5/site_perl/5.22.4/x86_64-linux-thread-multi/'], 'COILSDIR': 'coils'}
+sanity_check_paths = {
+    'files': ['iprscan.pl', 'RGAugury.pl', '%(installdir)s/coils/ncoils-osf', '%(installdir)s/coils/scoils-ht'],
+    'dirs': ['RGADB','motif']
+}
+postinstallcmds = ['cd %(installdir)s/coils && cc -O2 -I. -o ncoils-osf ncoils.c read_matrix.c -lm && cd .. && for file in $(find . -type f); do dos2unix $file; sed -i "s/\#\!\/usr\/bin\/perl/\#\!\/usr\/bin\/env\ perl/g" $file; sed -i "s/perl\ \-w/perl/g" $file; done']
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+       ('Log::Log4perl', '1.49', {
+                'source_tmpl': 'Log-Log4perl-1.49.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/M/MS/MSCHILLI'],
+                'runtest' : 'test',
+        }),
+       ('GD', '2.71', {
+                'source_tmpl': 'GD-2.71.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RURBAN'],
+                'runtest' : 'test',
+        }),
+       ('GD::Arrow', '0.01', {
+                'source_tmpl': 'GD-Arrow-0.01.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/T/TC/TCAINE'],
+                'runtest' : 'test',
+        }),
+       ('GD::Text', '0.86', {
+                'source_tmpl': 'GDTextUtil-0.86.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/M/MV/MVERB/'],
+                'runtest' : 'test',
+        }),
+       ('GD::SVG', '0.33', {
+                'source_tmpl': 'GD-SVG-0.33.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/T/TW/TWH/'],
+                'runtest' : 'test',
+        }),
+       ('SVG', '2.84', {
+                'source_tmpl': 'SVG-2.84.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MANWAR'],
+                'runtest' : 'test',
+        }),
+       ('Config::IniFiles', '3.000002', {
+                'source_tmpl': 'Config-IniFiles-3.000002.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/'],
+                'runtest' : 'test',
+        }),
+        ('Data::Dumper', '2.173', {
+                'source_tmpl': 'Data-Dumper-2.173.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/X/XS/XSAWYERX'],
+                'runtest' : 'test',
+        }),
+]
+
+moduleclass = 'bio'
+

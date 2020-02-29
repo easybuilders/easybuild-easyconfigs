@@ -1,0 +1,49 @@
+name = 'NAMD'
+version = '2.13'
+versionsuffix = '-ucx'
+
+homepage = 'http://www.ks.uiuc.edu/Research/namd/'
+description = """NAMD is a parallel molecular dynamics code designed for high-performance simulation of
+ large biomolecular systems."""
+
+toolchain = {'name': 'iimkl', 'version': '2018.3'}
+
+toolchainopts = {'opt': True, 'pic': True,'cstd': 'c++11', 'extra_cflags': 'ip'}
+
+source_urls = ['https://charm.cs.illinois.edu/distrib/']
+
+sources = [
+    'NAMD_%(version)s_Source.tar.gz',
+    'charm-6.10.0.tar.gz',
+]
+
+patches = [
+    'NAMD-2.13_remove_cmidirect.patch',
+    ('charm-6.10.0_malloc.patch', '..')
+]
+
+dependencies = [
+    ('FFTW', '3.3.8'),
+]
+
+# /bin/csh is required by 'config' script
+osdependencies = ['tcsh']
+buildopts="TCLLIB='-ltcl8.6'"
+charm_arch = "ucx-linux-x86_64 ifort slurmpmi2"
+charm_opts = "--incdir=$NIXUSER_PROFILE/include/slurm --with-production"
+runtest=False
+moduleclass = 'chem'
+modaltsoftname = "namd-ucx"
+
+modluafooter = """
+family("namd")
+require("os")
+if (mode() == "load" and os.getenv("RSNT_INTERCONNECT") == "omnipath") then
+        local warn_message = [[
+    This version of NAMD does not work with this cluster's networking. Please use namd-mpi instead. 
+
+    Cette version de NAMD ne fonctionne pas avec la connectique de cette grappe. Utilisez namd-mpi.
+    ]]
+    LmodWarning(warn_message)
+end
+"""

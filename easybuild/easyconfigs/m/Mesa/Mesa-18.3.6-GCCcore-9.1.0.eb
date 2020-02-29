@@ -1,0 +1,77 @@
+# Automatically converted from Mesa-17.2.4-intel-2017b.eb
+# Original message:
+# the purpose of the easyconfig is to build a Mesa for software rendering,
+# not hardware rendering. This means you want at least SSE4.2. We build:
+# - llvmpipe: the high-performance Gallium LLVM driver
+# - swr: Intel's OpenSWR
+# it will try to use the llvmpipe by default. It you want swr, do:
+# GALLIUM_DRIVER=swr
+
+easyblock = 'ConfigureMake'
+
+name = 'Mesa'
+version = '18.3.6'
+
+homepage = 'https://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.1.0'}
+toolchainopts = {'optarch': 'False'}
+
+source_urls = [
+    'https://mesa.freedesktop.org/archive/',
+    'https://mesa.freedesktop.org/archive/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x',
+]
+sources = [SOURCELOWER_TAR_XZ]
+patches = [
+    'Mesa-19.2.1-match-swrast-loosely.patch',
+]
+
+checksums = [
+    'aaf17638dcf5a90b93b6389e152fdc9ef147768b09598f24d2c5cf482fcfc705',  # Mesa-18.3.6.tar.xz
+    'e7bf37e6840314b661966aac7ec960208bbc7b5588952bdf7863b1441ed91f66',  # Mesa-19.2.1-match-swrast-loosely.patch
+]
+
+builddependencies = [
+    ('LLVM', '6.0.1')
+]
+
+configopts = "--localstatedir=/var"
+configopts += " --with-platforms=x11,wayland,surfaceless,drm"
+configopts += " --with-gallium-drivers='virgl,svga,i915,r300,r600,radeonsi,nouveau,swrast,swr'"
+configopts += " --with-swr-archs='avx,avx2,skx,knl'"
+configopts += " --with-dri-drivers='i915,i965,nouveau,radeon,r200,swrast'"
+configopts += " --with-vulkan-drivers='intel,radeon'"
+configopts += " --enable-dri3 --enable-nine" # Direct3D in Wine
+configopts += " --enable-libglvnd --enable-dri --enable-driglx-direct --enable-gles1 --enable-gles2"
+configopts += " --enable-glx --enable-glx-tls --disable-osmesa --enable-gallium-osmesa" # used by wine
+configopts += " --enable-llvm --enable-egl --enable-xa" # used in vmware driver
+configopts += " --enable-gbm --enable-xvmc --enable-vdpau --enable-shared-glapi --enable-llvm-shared-libs"
+configopts += " --enable-omx-bellagio --enable-va --disable-opencl"
+
+installopts = "vendorjsondir=%(installdir)s/share/glvnd/egl_vendor.d"
+
+# symlink indirect to mesa GLX, similar to Debian, see
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=881789
+# This helps in certain X forwarding situations (e.g. XQuartz)
+postinstallcmds = ["ln -s libGLX_mesa.so.0 %(installdir)s/lib/libGLX_indirect.so.0"]
+
+# Tells libglvnd where to find EGL libraries
+modextrapaths = {"__EGL_VENDOR_LIBRARY_DIRS": "share/glvnd/egl_vendor.d"}
+
+sanity_check_paths = {
+    'files': ['lib/libGLX_mesa.%s' % SHLIB_EXT, 'lib/libOSMesa.%s' % SHLIB_EXT,
+              'lib/libEGL_mesa.%s' % SHLIB_EXT,
+              'include/GL/glext.h', 'include/GL/gl_mangle.h',
+              'include/GL/glx.h', 'include/GL/osmesa.h',
+              'include/GL/gl.h', 'include/GL/glxext.h',
+              'include/GL/glx_mangle.h', 'include/GLES/gl.h',
+              'include/GLES2/gl2.h', 'include/GLES3/gl3.h'],
+    'dirs': ['include/GL/internal'],
+}
+
+moduleclass = 'vis'
