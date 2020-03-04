@@ -19,8 +19,12 @@ patches = [
     '%(name)s-3.0_beta_cuda_capabilities.patch',
     '%(name)s-3.0.4_no_which_cmd.patch',
     '%(name)s-3.0.4_drop_usage_of_mpi_include_path.patch',
-    '%(name)s-3.0.5_add_hpc2n_submit_file_args.patch',  # This patch is a site specific patch. Either adapt or drop.
-    ('relion_sbatch.sh', '.'),  # This submit file template is used by the hpc2n_submit_file patch.
+    '%(name)s-3.0.7_add_generic_slurm_args.patch',
+    # This patch is a site specific patch. Either adapt or ignore.
+    # '%(name)s-3.0.7_hpc2n_add_slurm_account+gpu_args.patch',
+    # This submit file template is used by the both the
+    # add_generic_slurm_args and hpc2n_add_slurm_account+gpu_args patches.
+    ('relion_sbatch.sh', '.'),
 ]
 checksums = [
     '385ae3ae992cef60aa4ce97075dd4580bf00172154af426adf5ec509e248daac',  # 3.0.7.tar.gz
@@ -28,7 +32,9 @@ checksums = [
     'bfdaf1ce856d20c27a5fcf50252394e81d08259899abc3564f6c7bcc2b4000de',  # RELION-3.0.4_no_which_cmd.patch
     # RELION-3.0.4_drop_usage_of_mpi_include_path.patch
     'c135b72ff8d4c3015a3b293fa07a2283396bfb3fd0658d5e938ec33fca4dcebc',
-    '054e382e19f7bfd5f016017189e4132337f7de4dc6bf2996f5933bfade61b2f4',  # RELION-3.0.5_add_hpc2n_submit_file_args.patch
+    '004888dbbfdc37cb93cc8bf78bf6502dbde9c0ab4507eaf45cbe34e0b8631285',  # RELION-3.0.7_add_generic_slurm_args.patch
+    # RELION-3.0.7_hpc2n_add_slurm_account+gpu_args.patch
+    # '976797954dff001b2fdcaf1a8ff0e3edee2f59f55013046198157599f8a805d7',
     '9305f869a07a1beaaa7e3a4670625a045c0cc4762b6b542039123e5a2731023d',  # relion_sbatch.sh
 ]
 
@@ -66,8 +72,13 @@ sanity_check_paths = {
 
 modextravars = {
     'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/relion_sbatch.sh',
-    'RELION_QUEUE_NAME': 'batch',
+    # This should be set to the queue name used for RELION jobs.
+    # It can be left unset if there is a default Slurm queue to use.
+    # 'RELION_QUEUE_NAME': 'batch',
     'RELION_QSUB_COMMAND': 'sbatch',
+    # Set this to the maximum number of MPI tasks allowed in an
+    # interactive session before RELION requires the use of the batch
+    # system.
     'RELION_ERROR_LOCAL_MPI': '1',
     'RELION_CTFFIND_EXECUTABLE': 'ctffind',
     'RELION_GCTF_EXECUTABLE': 'Gctf',
