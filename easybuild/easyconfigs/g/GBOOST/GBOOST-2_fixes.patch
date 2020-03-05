@@ -1,0 +1,64 @@
+--- GBOOST2/GBOOST2/source code/makefile.orig	2020-03-05 18:45:30.846165000 +0000
++++ GBOOST2/GBOOST2/source code/makefile	2020-03-05 18:45:46.192480000 +0000
+@@ -1,5 +1,5 @@
+ # Path variables
+-CUDA_INSTALL_PATH ?= /usr/local/cuda
++CUDA_INSTALL_PATH ?= $(EBROOTCUDA)
+ 
+ # Compiler and Linker
+ CXX := g++
+@@ -12,17 +12,17 @@
+ 
+ # Common flags
+ COMMONFLAGS += $(INCLUDES) -DLINUX
+-NVCCFLAGS += -m64 $(COMMONFLAGS) 
++NVCCFLAGS += -m64 -std=c++11 $(COMMONFLAGS) 
+ CXXFLAGS += -m64 $(COMMONFLAGS)
+ CFLAGS += -O3 $(COMMONFLAGS)
+ 
+ LIB_CUDA := -L$(CUDA_INSTALL_PATH)/lib64 -lcudart -lcuda
+ 
+-OBJS = utility.o boost_CUDA_Kernel.o main.o
++OBJS = utility.o boost_CUDA_kernel.o main.o
+ TARGET = GBOOST2
+ LINKLINE = $(LINK) -o $(TARGET) $(LIB_CUDA) $(OBJS)
+ 
+-ALL =	utility.o boost_CUDA_Kernel.o main.o $(TARGET)
++ALL =	utility.o boost_CUDA_kernel.o main.o $(TARGET)
+ 
+ all: $(ALL)
+ 
+@@ -42,7 +42,7 @@
+ 	$(CXX) $(CXXFLAGS) -c $< -o $@
+ 
+ utility.o: utility.cpp
+-boost_CUDA_Kernel.o: boost_CUDA_Kernel.cu
++boost_CUDA_kernel.o: boost_CUDA_kernel.cu
+ main.o: main.cpp
+ 
+ $(TARGET): $(OBJS)
+--- GBOOST2/GBOOST2/source code/utility.h.orig	2020-03-05 18:47:17.301621000 +0000
++++ GBOOST2/GBOOST2/source code/utility.h	2017-03-16 20:02:04.000000000 +0000
+@@ -12,10 +12,9 @@
+ #include<string>
+ #include<fstream>
+ #include<list>
+-#include<Windows.h>
+-#include<process.h>
+ using namespace std;
+ 
++#define __int64 long long int
+ typedef long long int64;
+ typedef unsigned long long uint64;
+ const int LengthLongType = 64;
+--- GBOOST2/GBOOST2/source code/utility.cpp.orig	2020-03-05 18:47:35.776533000 +0000
++++ GBOOST2/GBOOST2/source code/utility.cpp	2020-03-05 18:48:12.367504000 +0000
+@@ -133,7 +133,7 @@
+ 		return -1;
+ 	}
+ 
+-	for (i = 1; i < count; i++)
++	for (i = 0; i < count; i++)
+ 	{
+ 		if (cudaGetDeviceProperties(&prop, i) == cudaSuccess)
+ 		{
