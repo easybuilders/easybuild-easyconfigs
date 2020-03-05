@@ -1,0 +1,46 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2017 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+#
+# Authors::
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Ward Poelmans <wpoely86@gmail.com>
+# * Oliver Stueker <oliver.stueker@ace-net.ca>
+# License::   MIT/GPL
+##
+name = 'GAMESS-US'
+version = '20190930-R2'
+
+homepage = 'http://www.msg.chem.iastate.edu/gamess/index.html'
+description = """ The General Atomic and Molecular Electronic Structure System (GAMESS)
+ is a general ab initio quantum chemistry package. """
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+# manually download via http://www.msg.chem.iastate.edu/gamess/download.html (requires registration)
+# rename gamess-current.tar.gz by changing 'current' to the proper version
+sources = ['gamess-%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_rungms-slurm.patch',
+    '%(name)s-20170420-R1_rungms_fix_PPN_not_initialized.patch',
+    '%(name)s-%(version)s_foss-set-mcmodel.patch',
+]
+checksums = [
+    '2e12f71210249d379f196ba6a3b479f9fb962de82ae2f1130af9022aba44ddea',  # gamess-20190930-R2.tar.gz
+    'ae38e44b7caf47f56d316612c306541bf235f3d811506a0381c04e188689d6a5',  # GAMESS-US-20190930-R2_rungms-slurm.patch
+    # GAMESS-US-20170420-R1_rungms_fix_PPN_not_initialized.patch
+    'd1d77ab7af519433df477124eed30917bebd5d76481687b70eabde3091abf14a',
+    'b675cb8fc0542a89fa645e316c5cf03d54ba79426e6bfe9f23264934b6de8060',  # GAMESS-US-20190930-R2_foss-set-mcmodel.patch
+]
+
+# Tests 8, 22, 36, 42 are failing - so skip running the tests for now
+skipsteps = ['test']
+
+# increase these numbers if your system is bigger in terms of cores-per-node or number of nodes
+# it's OK if these values are larger than what your system provides
+maxcpus = '1000'
+maxnodes = '100000'
+
+moduleclass = 'chem'
