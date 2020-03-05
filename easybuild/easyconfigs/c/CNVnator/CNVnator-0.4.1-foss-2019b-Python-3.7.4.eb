@@ -1,0 +1,45 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'MakeCp'
+
+name = 'CNVnator'
+version = '0.4.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://github.com/abyzovlab/CNVnator"
+description = """a tool for CNV discovery and genotyping from depth-of-coverage by mapped reads"""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+github_account = 'abyzovlab'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix-Makefile.patch']
+checksums = [
+    '2e1cc2897feca859873c68214166a6f766e2d535d0521950dd352faacb7ab37c',  # v0.4.1.tar.gz
+    '853fc549a2b695d073d61a118ba2be494766336d3a247ffca7bb1749456862e3',  # CNVnator-0.4.1_fix-Makefile.patch
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SAMtools', '1.10'),
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('ROOT', '6.20.00', versionsuffix),
+]
+
+_python_files = ['callbaf.py', 'cnvnator2VCF.pl', 'plotbaf.py', 'plotcircular.py', 'plotrdbaf.py']
+
+files_to_copy = [
+    (['cnvnator', 'cnvnator2VCF.pl', 'pytools'] + _python_files, 'bin')
+]
+
+fix_python_shebang_for = ['bin/%s' % x for x in _python_files]
+fix_perl_shebang_for = ['bin/cnvnator2VCF.pl']
+
+sanity_check_paths = {
+    'files': ['bin/cnvnator'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['cnvnator --help', 'cnvnator2VCF.pl --help'] + ['%s --help' % x for x in _python_files]
+
+moduleclass = 'bio'
