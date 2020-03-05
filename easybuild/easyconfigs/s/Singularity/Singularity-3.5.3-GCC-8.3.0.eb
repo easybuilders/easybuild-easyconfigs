@@ -1,0 +1,63 @@
+##
+# This is a contribution from DeepThought HPC Service, Flinders University, Adelaide, Australia
+# Homepage: 		https://staff.flinders.edu.au/research/deep-thought
+#
+# Authors::		Robert Qiao <rob.qiao@flinders.edu.au>
+# Software License::	Apache v2.0 and Custom
+#
+# Notes::
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'Singularity'
+version = '3.5.3'
+
+github_account = 'sylabs'
+
+homepage = 'http://singularity.lbl.gov'
+description = """Singularity is a portable application stack packaging and runtime utility."""
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+sources = [{
+           'filename': 'v%(version)s.tar.gz',
+           'git_config': {
+               'url': 'https://github.com/%(github_account)s',
+               'repo_name': '%(namelower)s',
+               'tag': 'v%(version)s',
+               'recursive': True, },
+           }]
+checksums = ['f057a15d28dae27b2e04cd1dd6a26e18daab41f89f16f07594302c2bcbb263f4']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('libarchive', '3.4.0'),
+    ('Go', '1.14', '', True),
+]
+
+configure_cmd = "cd '%(builddir)s/%(namelower)s-%(version)s' && "
+configure_cmd += "echo '%(version)s' > VERSION && "
+configure_cmd += "./mconfig -p '%(installdir)s' -b ./buildtree"
+
+build_cmd = "cd ./buildtree && "
+build_cmd += "make"
+
+install_cmd = "cd '%(builddir)s/%(namelower)s-%(version)s/buildtree' && "
+install_cmd += "make install"
+
+sanity_check_paths = {
+    'files': ['bin/run-singularity', 'bin/singularity', 'etc/singularity/singularity.conf',
+              'libexec/singularity/bin/starter-suid'],
+    'dirs': ['etc', 'libexec/singularity'],
+}
+
+# next steps after installation
+# INSTALLATION_PATH=your_installation_path
+# chown root:root $INSTALLATION_PATH/Singularity/*/etc/singularity/singularity.conf
+# chown root:root $INSTALLATION_PATH/Singularity/*/libexec/singularity/bin/*-suid
+# chown root:root $INSTALLATION_PATH/Singularity/*/var/singularity/mnt/session
+# chmod 4755 $INSTALLATION_PATH/Singularity/*/libexec/singularity/bin/*-suid
+# chmod +s $INSTALLATION_PATH/Singularity/*/libexec/singularity/bin/*-suid
+
+moduleclass = 'tools'
