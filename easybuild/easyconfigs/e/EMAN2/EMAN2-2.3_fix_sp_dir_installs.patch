@@ -1,0 +1,28 @@
+Don't write directly to installation dir, use "INSTALL" directive.
+
+Åke Sandgren, 20191029
+diff -ru eman2-2.3.orig/CMakeLists.txt eman2-2.3/CMakeLists.txt
+--- eman2-2.3.orig/CMakeLists.txt	2019-10-29 07:36:45.563638246 +0100
++++ eman2-2.3/CMakeLists.txt	2019-10-29 07:43:26.451721525 +0100
+@@ -78,7 +78,8 @@
+ endif()
+ 
+ if(SP_DIR)
+-	file(WRITE ${SP_DIR}/eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
++        file(WRITE eman2dir_relative_path_to_sp_dir ${eman2dir_relative_path})
++        INSTALL(FILES eman2dir_relative_path_to_sp_dir DESTINATION ${SP_DIR})
+ endif()
+ 
+ set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
+diff -ru eman2-2.3.orig/programs/CMakeLists.txt eman2-2.3/programs/CMakeLists.txt
+--- eman2-2.3.orig/programs/CMakeLists.txt	2019-04-25 21:03:56.000000000 +0200
++++ eman2-2.3/programs/CMakeLists.txt	2019-10-29 07:44:25.971140023 +0100
+@@ -33,5 +33,7 @@
+ 
+ string(TIMESTAMP EMAN_TIMESTAMP "%Y-%m-%d %H:%M")
+ configure_file(${CMAKE_SOURCE_DIR}/libpyEM/EMAN2_meta.py.in
+-				${SP_DIR}/EMAN2_meta.py
++				EMAN2_meta.py
+ 				)
++
++INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/EMAN2_meta.py" DESTINATION ${SP_DIR})
