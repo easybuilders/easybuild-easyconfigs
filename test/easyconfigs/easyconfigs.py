@@ -254,7 +254,7 @@ class EasyConfigTest(TestCase):
             'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
             # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
             # both scVelo and Python-Geometric depend on numba
-            'LLVM': (r'8\.', ['numba-0.47.0-', 'scVelo-0.1.24-', 'PyTorch-Geometric-1.3.2']),
+            'LLVM': (r'8\.', ['numba-0.47.0-', 'scVelo-0.1.24-', 'PyTorch-Geometric-1.[34].2']),
             # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
             'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
         }
