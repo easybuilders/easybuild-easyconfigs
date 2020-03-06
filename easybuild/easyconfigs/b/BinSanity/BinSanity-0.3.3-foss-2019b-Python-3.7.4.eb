@@ -1,0 +1,58 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonPackage'
+
+name = 'BinSanity'
+version = '0.3.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/edgraham/BinSanity/wiki'
+description = """BinSanity contains a suite a scripts designed to cluster contigs generated from
+metagenomic assembly into putative genomes."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+sources = [{
+    'filename': 'Binsanity-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/edgraham',
+        'repo_name': 'BinSanity',
+        'commit': '0d529465b5b1fa004e8fb465511041ca5098a764',
+        'recursive': True,
+    },
+}]
+
+checksums = ['9747a6147b7096f55e386b3afd363d85342c3147f781840e3a863b0b8d318e47']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('Biopython', '1.75', versionsuffix),
+    ('subread', '1.6.5'),
+    ('scikit-learn', '0.21.3', versionsuffix),
+    ('CheckM', '1.1.2', versionsuffix),
+    ('HMMER', '3.2.1'),
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+options = {'modulename': False}
+
+local_binaries_list = [
+    'bin_evaluation', 'Binsanity', 'Binsanity-lc', 'Binsanity-profile', 'Binsanity-refine', 'Binsanity-wf',
+    'checkm_analysis', 'concat', 'get-ids', 'simplify-fasta', 'transform-coverage-profile',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries_list],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "cd %(builddir)s/BinSanity/example && Binsanity -f . -l igm.fa -p -10 -c Infant_gut_assembly.cov.x100.lognorm"
+]
+
+moduleclass = 'bio'
