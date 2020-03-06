@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'Racon'
+version = '1.4.10'
+
+homepage = 'https://github.com/lbcb-sci/racon'
+description = """Ultrafast consensus module for raw de novo genome assembly of long uncorrected reads."""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+
+source_urls = ['https://github.com/lbcb-sci/racon/releases/download/%(version)s/']
+
+sources = [
+    '%(namelower)s-v%(version)s.tar.gz',  # Racon
+    {
+        'source_urls': ['https://github.com/gabime/spdlog/archive'],
+        'download_filename': '366935142780e3754b358542f0fd5ed83793b263.tar.gz',
+        'filename': 'spdlog-20190417.tar.gz',
+        'extract_cmd': 'tar -C %(namelower)s-v%(version)s/vendor/ClaraGenomicsAnalysis/3rdparty/spdlog '
+                       '--strip-components=1 -xf %s',
+    },
+]
+checksums = [
+    '016fb3affb977303a5f5ad27339a7044fa3d9b89a6ea3c7734479f864155a0c2',  # racon-v1.4.10.tar.gz
+    'ce8325b11632be3dd4aaf1e1925cca9a761ceb98b61c70231fd408d4ebe467e9',  # spdlog-20190417.tar.gz
+]
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('binutils', '2.32'),
+]
+
+import subprocess as _subprocess  # NOQA
+_arch = _subprocess.check_output(['uname', '-m']).strip()
+if _arch == 'ppc64le':
+    dependencies = [('veclib', '77ad285')]
+    patches = [
+        '%(name)s-%(version)s_disable_march_native.patch',
+        '%(name)s-%(version)s_veclib_ppc64le_support.patch',
+    ]
+    checksums += [
+        'af5fbe1990f35e69b8bc45c72415182dc1a514c26dc5d50ecbc7d34c95daf5e0',  # Racon-1.4.10_disable_march_native.patch
+        # Racon-1.4.10_veclib_ppc64le_support.patch
+        'bfcf9b70140ed3d9727af381fb5d138af3c822d40830a0803ba52bcd2b1de6e7',
+    ]
+
+configopts = "-Dracon_enable_cuda=ON"
+
+sanity_check_paths = {
+    'files': ['bin/racon'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['racon --help']
+
+moduleclass = 'bio'
