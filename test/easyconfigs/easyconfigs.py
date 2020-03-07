@@ -252,8 +252,9 @@ class EasyConfigTest(TestCase):
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': ('1.64.0;', ['Boost.Python-1.64.0-', 'EMAN2-2.3-']),
             'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
-            # scVelo's dependency numba requires LLVM 7x or 8x (see https://github.com/numba/llvmlite#compatibility)
-            'LLVM': (r'[78]\.', ['numba-0.47.0-', 'scVelo-0.1.24-']),
+            # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
+            # both scVelo and Python-Geometric depend on numba
+            'LLVM': (r'8\.', ['numba-0.47.0-', 'scVelo-0.1.24-', 'PyTorch-Geometric-1.3.2']),
             # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
             'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
         }
@@ -265,6 +266,12 @@ class EasyConfigTest(TestCase):
                     # only filter if the easyconfig using this dep variants is known
                     if all(any(x.startswith(p) for p in parents) for x in dep_vars[key]):
                         dep_vars.pop(key)
+
+        # filter out ELSI variants with -PEXSI suffix
+        if dep == 'ELSI' and len(dep_vars) > 1:
+            pexsi_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -PEXSI')]
+            if len(pexsi_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != pexsi_vsuff_vars[0])
 
         # only single variant is always OK
         if len(dep_vars) == 1:
