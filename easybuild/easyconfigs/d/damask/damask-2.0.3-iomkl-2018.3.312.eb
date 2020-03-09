@@ -1,4 +1,4 @@
-easyblock = 'MakeCp'
+easyblock = 'CMakeMakeCp'
 
 name = 'damask'
 version = '2.0.3'
@@ -7,28 +7,51 @@ homepage = 'https://damask.mpie.de/Home/WebHome'
 description = """DAMASK is a flexible and hierarchically structured model of material point behavior for the solution of elastoplastic boundary value problems along with damage and thermal physics. """
 
 toolchain = {'version': '2018.3.312', 'name': 'iomkl'}
+toolchainopts = {'pic': True, 'openmp': True}
 
 source_urls = ['https://damask.mpie.de/pub/Download/Current/']
 sources = ['%(name)s-%(version)s.tar.xz']
 patches = ['damask-2.0.3.patch']
+
 dependencies = [
     ('Python', '3.6.3'),
     ('VTK', '8.1.1'),
     ('ParaView', '5.5.2'),
 ]
+
 builddependencies = [
     ('PETSc', '3.10.5'),
 ]
-postinstallcmds = ["export PYTHONPATH=python:%(installdir)s/lib/python%(pyshortver)s/site-packages/:$PYTHONPATH && pip install numpy --prefix=%(installdir)s  && pip install scipy --prefix=%(installdir)s && pip install h5py --prefix=%(installdir)s && ./installation/symlink_Processing.py && cp bin/* %(installdir)s/bin/ "]
+
+skipsteps = ['configure', 'install']
+
+parallel = 1
+ 
+prebuildopts = [
+    "export PYTHONPATH=python:%(installdir)s/lib/python%(pyshortver)s/site-packages/:$PYTHONPATH && " +
+    "pip install numpy --prefix=%(installdir)s && " +
+    "pip install scipy --prefix=%(installdir)s && " +
+    "pip install h5py  --prefix=%(installdir)s && " +
+    "pip install vtk   --prefix=%(installdir)s && " +
+    " ./installation/symlink_Processing.py     && " +
+    " cp -r env %(installdir)s/ && " + 
+    " source %(installdir)s/env/DAMASK.sh && "
+]
 
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
-files_to_copy = [(['python/damask'], 'lib/python%(pyshortver)s/site-packages'), (['VERSION'], 'lib/python%(pyshortver)s'), 'bin', 'examples']
+
+files_to_copy = [
+    (['python/damask'], 'lib/python%(pyshortver)s/site-packages'), 
+    (['VERSION'], 'lib/python%(pyshortver)s'), 
+    'bin', 
+    'examples',
+]
+
+postinstallcmds = ["cp bin/* %(installdir)s/bin/"]
 
 sanity_check_paths = {
     'files': ['bin/DAMASK_FEM', 'bin/DAMASK_spectral'],
     'dirs': []
 }
 
-
-
-
+moduleclass = 'math'
