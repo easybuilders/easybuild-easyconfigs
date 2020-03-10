@@ -1,0 +1,34 @@
+# Built with EasyBuild version 3.8.0-r365b7b9cd763bac0f2218d6682a152113e999bd5 on 2019-01-25_22-25-54
+easyblock = 'ConfigureMake'
+
+name = 'wannier90'
+version = '1.2'
+
+homepage = 'http://www.wannier.org/'
+description = "The Maximally-Localised Generalised Wannier Functions  calculates the counterpart of localized molecular orbitals for crystalline systems from the wavefuction."
+
+toolchain = {'name': 'iimkl', 'version': '2018.3'}
+toolchainopts = {'openmp': False}
+
+source_urls = ['http://www.wannier.org/code/']
+sources = [SOURCE_TAR_GZ]
+patches = ['%(name)s-%(version)s.patch']
+
+prebuildopts = "cp config/make.sys.ifort ./make.sys && make libs && "
+
+parallel = 1
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/bin %(installdir)s/lib && cp %(name)s.x %(installdir)s/bin && cp libwannier.a %(installdir)s/lib",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s.x', 'lib/libwannier.a'],
+    'dirs': [],
+}
+skipsteps = [
+    'configure',
+    'install',
+]
+
+moduleclass = 'chem'
