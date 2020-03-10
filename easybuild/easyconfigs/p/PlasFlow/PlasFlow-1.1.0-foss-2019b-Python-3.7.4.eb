@@ -1,7 +1,7 @@
 # Author: Pavel Grochal (INUITS)
 # License: GPLv2
 
-easyblock = 'PythonPackage'
+easyblock = 'Tarball'
 
 name = 'PlasFlow'
 version = '1.1.0'
@@ -12,9 +12,15 @@ description = """PlasFlow - predicting plasmid sequences in metagenomic data"""
 
 toolchain = {'name': 'foss', 'version': '2019b'}
 
-source_urls = [PYPI_SOURCE]
-sources = ['%(namelower)s-%(version)s.tar.gz']
-checksums = ['352d5d7cd73672130e32f3f61c3f2ad95aa684d7aebf7668ab3f2594996c338b']
+# https://github.com/smaegol/PlasFlow
+github_account = 'smaegol'
+source_urls = [GITHUB_SOURCE]
+sources = ['v1.1.tar.gz']
+patches = [
+    '%(name)s-%(version)s_fixrpy2.patch',
+]
+
+skipsteps = ['build']
 
 dependencies = [
     ('Python', '3.7.4'),
@@ -26,24 +32,31 @@ dependencies = [
     ('rpy2', '3.2.6', versionsuffix),
     ('scikit-learn', '0.21.3', versionsuffix),
     ('SciPy-bundle', '2019.10', versionsuffix),
-    ('TensorFlow', '2.1.0', versionsuffix),
+    ('TensorFlow', '1.15.0', versionsuffix),
 ]
 
-options = {'modulename': 'plasflow'}
+modextrapaths = {'PATH': ['.', 'scripts']}
 
-use_pip = True
-download_dep_fail = True
-sanity_pip_check = True
 
-fix_python_shebang_for = ['bin/PlasFlow.py']
+local_bin_files = [
+    'calculate_cbar_predictions.sh', 'create_annotation_of_data.R', 'filter_sequences_by_length.pl',
+    'get_refseq_catalog_filter.sh', 'get_refseq_genomes_complete.sh', 'PlasFlow_preprocessing.sh',
+    'process_downloaded_genomes_get_accessions.R', 'calculate_recycler_predictions.sh', 'filter_large_file.pl',
+    'generate_fragments_for_training.R', 'get_refseq_genomes_complete_get_download_links.R',
+    'get_seqs_by_ids_list_cBar.pl', 'PlasFlow_train.py'
+]
+
+fix_python_shebang_for = ['PlasFlow.py', 'scripts/*.py']
+fix_perl_shebang_for = ['scripts/*.pl']
 
 sanity_check_paths = {
-    'files': ['bin/PlasFlow.py'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+    'files': ['PlasFlow.py']+['scripts/%s' % f for f in local_bin_files],
+    'dirs': [],
 }
 
 sanity_check_commands = [
-    "PlasFlow.py --help"
+    "PlasFlow.py --help",
+    # "PlasFlow.py --input %(builddir)s/%(name)s-%(version)s/test/Citrobacter_freundii_strain_CAV1321_scaffolds.fasta --output test.plasflow_predictions.tsv --threshold 0.7"
 ]
 
 moduleclass = 'bio'
