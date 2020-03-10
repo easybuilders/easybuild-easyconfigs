@@ -14,14 +14,22 @@ metagenomic assembly into putative genomes."""
 toolchain = {'name': 'foss', 'version': '2019b'}
 
 source_urls = ['https://github.com/edgraham/BinSanity/archive/']
-sources = ['0d529465b5b1fa004e8fb465511041ca5098a764.tar.gz']
+
+# PYPI version 0.3.4 is the same as 0.3.3 (see https://github.com/edgraham/BinSanity/issues/44)
+# PYPI version is stripped and doesn't include examples to run sanity checks / tests
+# There are no releases for version 0.3.3 on GitHub - thus specifying commit.
+sources = [{
+    'download_filename': '0d529465b5b1fa004e8fb465511041ca5098a764.tar.gz',
+    'filename': SOURCE_TAR_GZ,
+}]
+
 checksums = ['cb72551ff309201b8806b01a50fd1869cc8b9511d889e3e2c290b62f52799be1']
 
 dependencies = [
     ('Python', '3.7.4'),
     ('SciPy-bundle', '2019.10', versionsuffix),
     ('Biopython', '1.75', versionsuffix),
-    ('subread', '1.6.5'),
+    ('Subread', '2.0.0'),
     ('scikit-learn', '0.21.3', versionsuffix),
     ('CheckM', '1.1.2', versionsuffix),
     ('HMMER', '3.2.1'),
@@ -31,6 +39,8 @@ use_pip = True
 download_dep_fail = True
 sanity_pip_check = True
 
+# The 'site-packages' subdir only contains Binsanity-0.3.3.dist-info
+# => skipping import sanity_check as there is nothing to import
 options = {'modulename': False}
 
 local_binaries_list = [
@@ -44,8 +54,7 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    "cd %(builddir)s/BinSanity-0d529465b5b1fa004e8fb465511041ca5098a764/example && "
-    "Binsanity -f . -l igm.fa -p -10 -c Infant_gut_assembly.cov.x100.lognorm"
+    "cd %(builddir)s/%(name)s-0d529465b5b1fa004e8fb465511041ca5098a764/example && Binsanity -f . -l igm.fa -p -10 -c Infant_gut_assembly.cov.x100.lognorm"
 ]
 
 moduleclass = 'bio'
