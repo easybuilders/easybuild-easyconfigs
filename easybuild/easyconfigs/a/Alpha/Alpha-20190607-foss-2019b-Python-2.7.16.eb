@@ -1,8 +1,9 @@
 easyblock = 'Bundle'
 
 name = 'Alpha'
-local_commit = 'e027eb0fea1e'
 version = '20190607'
+local_alpha_commit = 'e027eb0fea1e'
+local_pyinc_commit = '0f8a00b8c10c'
 versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'https://www.lirmm.fr/~swenson/alpha/alpha.htm'
@@ -27,31 +28,6 @@ dependencies = [
 ]
 
 components = [
-    ('pyinclude', '0f8a00b8c10c', {
-        'easyblock': 'Tarball',
-        'source_urls': ['https://bitbucket.org/thekswenson/%(name)s/get/'],
-        'sources': [{
-            'download_filename': '%(version)s.zip',
-            'filename': '%(name)s-%(version)s.zip',
-            'extract_cmd': "unzip %s && mv thekswenson-%(name)s-%(version)s %(name)s"
-        }],
-        'checksums': ['9dc9b2bafbfe7a694ff4025164dc6e356989ee89b914691457fb0a474fe66c9e'],
-    }),
-    (name, local_commit, {
-        'easyblock': 'Tarball',
-        'source_urls': ['https://bitbucket.org/thekswenson/%(namelower)s/get/'],
-        'sources': [{
-            'download_filename': '%(version)s.zip',
-            'filename': '%(namelower)s-%(version)s.zip',
-            'extract_cmd': "unzip %s && mv thekswenson-%(namelower)s-%(version)s %(namelower)s"
-        }],
-        'patches': ['%s-%s_fix-email.patch' % (name, version)],
-        'checksums': [
-            'a9a0857ee080864c0d187f1f537aebdb3a61e58dd555b97dffbf2c2d73465f2a',  # alpha-e027eb0fea1e.zip
-            '342d5d37bcfc19a2487c3b08860adc4246736919948b1968f899b0c595d7125d',  # Alpha-20190607_fix-email.patch
-        ],
-    }),
-    # PythonPackage is last to not have its source copied by Tarball blocks
     ('progressbar', '2.5', {
         'easyblock': 'PythonPackage',
         'source_urls': [PYPI_SOURCE],
@@ -59,11 +35,33 @@ components = [
         'checksums': ['5d81cb529da2e223b53962afd6c8ca0f05c6670e40309a7219eacc36af9b6c63'],
         'start_dir': '%(name)s-%(version)s',
     }),
+    ('pyinclude', '20190223', {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://bitbucket.org/thekswenson/%(name)s/get/'],
+        'sources': [{'download_filename': '%s.zip' % local_pyinc_commit, 'filename': '%(name)s-%(version)s.zip'}],
+        'checksums': ['9dc9b2bafbfe7a694ff4025164dc6e356989ee89b914691457fb0a474fe66c9e'],
+        'start_dir': 'thekswenson-%%(name)s-%s' % local_pyinc_commit,
+        'final_dir': '%(name)s',
+    }),
+    (name, version, {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://bitbucket.org/thekswenson/%(namelower)s/get/'],
+        'sources': [{'download_filename': '%s.zip' % local_alpha_commit, 'filename': '%(namelower)s-%(version)s.zip'}],
+        'patches': ['%s-%s_fix-email.patch' % (name, version)],
+        'checksums': [
+            'a9a0857ee080864c0d187f1f537aebdb3a61e58dd555b97dffbf2c2d73465f2a',  # alpha-e027eb0fea1e.zip
+            '342d5d37bcfc19a2487c3b08860adc4246736919948b1968f899b0c595d7125d',  # Alpha-20190607_fix-email.patch
+        ],
+        'start_dir': 'thekswenson-%%(namelower)s-%s' % local_alpha_commit,
+        'final_dir': '%(namelower)s',
+        'keepsymlinks': True,
+    }),
 ]
 
+local_arch = 'OSX' if SHLIB_EXT == 'dylib' else 'x86_64'
 postinstallcmds = [
     'ln -s ${EBROOTGENOMETOOLS} %(installdir)s/%(namelower)s/lib/gtdir',
-    'cd %(installdir)s/%(namelower)s/lib/ccode && ln -s bin_x86_64/eqclasses.so eqclasses.so',
+    'cd %%(installdir)s/%%(namelower)s/lib/ccode && ln -s bin_%s/eqclasses.so eqclasses.so' % local_arch,
 ]
 
 sanity_check_paths = {
