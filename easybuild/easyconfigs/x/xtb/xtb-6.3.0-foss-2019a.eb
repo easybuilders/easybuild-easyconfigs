@@ -1,26 +1,24 @@
 easyblock = 'MesonNinja'
 
 name = 'xtb'
-version = '6.3.0'
+version = '6.2.3'
 
 homepage = 'https://xtb-docs.readthedocs.io'
-description = """Semiempirical Extended Tight-Binding Program Package"""
+description = """ xtb - An extended tight-binding semi-empirical program package. """
 
 toolchain = {'name': 'foss', 'version': '2019a'}
 
 # Waiting for new release with GCC suport
-# sources = ['v%(version_major_minor)s-pre.1.tar.gz']
-sources = ['master.zip']
-github_account = 'grimme-lab'
 source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['master.zip']
 checksums = ['4a1079763c0cd7b747120f6561f43d2a1fa53bf89ae450ee07288d7466b5c8d8']
 
+github_account='grimme-lab'
 builddependencies = [
     ('Meson', '0.51.2', '-Python-3.7.4', ('GCCcore', '8.3.0')),
     ('Ninja', '1.9.0', '', ('GCCcore', '8.3.0')),
 ]
 
-preconfigopts = 'FC=gfortran CC=gcc '
 configopts = "-Dla_backend='custom' "
 configopts += "-Dcustom_libraries='openblas' "
 configopts += "--optimization=2 "
@@ -28,11 +26,21 @@ configopts += "--buildtype release "
 configopts += "--warnlevel 0 "
 configopts += "-Dpython=false"
 
-buildopts = '-C %(builddir)s/easybuild_obj test'
+dependencies = [
+    ('Python', '3.7.4', '', ('GCCcore', '8.3.0')),
+]
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj -t 10'  # Ensure test don't timeout
 
 sanity_check_paths = {
     'files': ['bin/xtb'],
     'dirs': ['bin', 'include', 'lib', 'share'],
+}
+
+modextravars = {
+    'XTBHOME': '%(installdir)s',
+    'XTBPATH': '%(installdir)s',
 }
 
 moduleclass = 'chem'
