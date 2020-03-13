@@ -20,14 +20,8 @@ description = """Singularity is a portable application stack packaging and runti
 
 toolchain = {'name': 'GCC', 'version': '8.3.0'}
 
-sources = [{
-           'filename': 'v%(version)s.tar.gz',
-           'git_config': {
-               'url': 'https://github.com/%(github_account)s',
-               'repo_name': '%(namelower)s',
-               'tag': 'v%(version)s',
-               'recursive': True, },
-           }]
+source_urls = ['https://github.com/%(github_account)s/%(namelower)s/archive']
+sources = ['v%(version)s.tar.gz']
 checksums = ['f057a15d28dae27b2e04cd1dd6a26e18daab41f89f16f07594302c2bcbb263f4']
 
 builddependencies = [
@@ -36,15 +30,14 @@ builddependencies = [
     ('Go', '1.14', '', True),
 ]
 
-configure_cmd = "cd '%(builddir)s/%(namelower)s-%(version)s' && "
-configure_cmd += "echo '%(version)s' > VERSION && "
+start_dir = '%(namelower)s-%(version)s'
+
+configure_cmd = "echo '%(version)s' > VERSION && "
 configure_cmd += "./mconfig -p '%(installdir)s' -b ./buildtree"
 
-build_cmd = "cd ./buildtree && "
-build_cmd += "make"
+prebuildopts = "cd ./buildtree && "
 
-install_cmd = "cd '%(builddir)s/%(namelower)s-%(version)s/buildtree' && "
-install_cmd += "make install"
+preinstallopts = "cd '%(start_dir)s/buildtree' && "
 
 sanity_check_paths = {
     'files': ['bin/run-singularity', 'bin/singularity', 'etc/singularity/singularity.conf',
