@@ -1,0 +1,41 @@
+name = 'OpenBabel'
+version = '3.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://openbabel.org'
+description = """Open Babel is a chemical toolbox designed to speak the many
+ languages of chemical data. It's an open, collaborative project allowing anyone
+ to search, convert, analyze, or store data from molecular modeling, chemistry,
+ solid-state materials, biochemistry, or related areas."""
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+# avoid failing tests on skylake and broadwell CPUs.
+# remove option 'optarch' when building on CPUs that don't support AVX2
+# see also: https://github.com/openbabel/openbabel/issues/2138
+toolchainopts = {'pic': True, 'cstd': 'c++11', 'optarch': 'mavx2'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%%(namelower)s-%s.tar.gz' % version.replace('.', '-')]
+checksums = ['5c630c4145abae9bb4ab6c56a940985acb6dadf3a8c3a8073d750512c0220f30']
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('SWIG', '4.0.1'),
+]
+dependencies = [
+    ('Python', '3.7.4'),
+    ('zlib', '1.2.11'),
+    ('libxml2', '2.9.9'),
+    ('Eigen', '3.3.7', '', True),
+    ('RapidJSON', '1.1.0'),
+    ('cairo', '1.16.0'),  # optional: for .png output
+]
+
+# Enable support for OpenMP compilation of forcefield code
+configopts = '-DENABLE_OPENMP=ON '
+
+pretestopts = 'export CTEST_OUTPUT_ON_FAILURE=1 && '
+pretestopts = 'cp lib/_openbabel.%s %%(builddir)s/openbabel-*/scripts/python/openbabel/ && ' % SHLIB_EXT
+runtest = 'test'
+
+moduleclass = 'chem'
