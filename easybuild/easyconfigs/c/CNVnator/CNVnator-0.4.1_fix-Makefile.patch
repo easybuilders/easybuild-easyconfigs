@@ -1,0 +1,40 @@
+Make sure CNVnator is built with same compile options as ROOT and set SAMtools include and lib directories
+--- Makefile.orig	2020-02-29 18:07:33.257767000 +0000
++++ Makefile	2020-02-29 18:10:15.370578000 +0000
+@@ -4,7 +4,7 @@
+ ifneq ($(wildcard $(ROOTSYS)/lib/root),)
+         ROOTLIBS = -L$(ROOTSYS)/lib/root -lCore -lRIO -lHist -lGraf -lGpad -lTree -lMathCore
+ else
+-        ROOTLIBS = -L$(ROOTSYS)/lib      -lCore -lRIO -lHist -lGraf -lGpad -lTree -lMathCore
++        ROOTLIBS = $(shell root-config --libs)
+ endif
+ 
+ ifneq ($(wildcard $(ROOTSYS)/include/root),)
+@@ -13,14 +13,10 @@
+         INC = -I$(ROOTSYS)/include      -I$(SAMDIR)
+ endif
+ 
+-SAMDIR = samtools
+-SAMLIB = $(SAMDIR)/libbam.a
+-HTSDIR = $(wildcard $(SAMDIR)/htslib-*)
+-HTSDIRI = $(HTSDIR)/htslib
+-ifneq ($(HTSDIR),)
+-        SAMLIB += $(HTSDIR)/libhts.a
+-        INC    += -I$(HTSDIR) -I$(HTSDIRI)
+-endif
++SAMDIR = ${EBROOTSAMTOOLS}
++SAMLIB = $(SAMDIR)/lib/libbam.a
++SAMLIB += $(SAMDIR)/lib/libhts.a
++INC    += -I$(SAMDIR)/include/bam -I$(SAMDIR)/include/htslib
+ 
+ ifeq ($(OMP),no)
+         $(info Compiling with NO parallel support)
+@@ -38,6 +34,8 @@
+ endif
+ 
+ CXX    = g++ -O3 -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11 -DCNVNATOR_VERSION=\"$(VERSION)\" $(OMPFLAGS)
++CXX    = $(shell root-config --cxx --cflags) -DCNVNATOR_VERSION=\"$(VERSION)\" $(OMPFLAGS)
++
+ 
+ OBJDIR = obj
+ OBJS   = $(OBJDIR)/cnvnator.o \
