@@ -8,11 +8,11 @@ description = """Open Babel is a chemical toolbox designed to speak the many
  to search, convert, analyze, or store data from molecular modeling, chemistry,
  solid-state materials, biochemistry, or related areas."""
 
-toolchain = {'name': 'GCC', 'version': '8.3.0'}
+toolchain = {'name': 'gompi', 'version': '2019b'}
 # avoid failing tests on skylake and broadwell CPUs.
 # remove option 'optarch' when building on CPUs that don't support AVX2
 # see also: https://github.com/openbabel/openbabel/issues/2138
-toolchainopts = {'pic': True, 'cstd': 'c++11', 'optarch': 'mavx2'}
+toolchainopts = {'pic': True, 'optarch': 'mavx2'}
 
 source_urls = [GITHUB_LOWER_SOURCE]
 sources = ['%%(namelower)s-%s.tar.gz' % version.replace('.', '-')]
@@ -29,12 +29,15 @@ dependencies = [
     ('Eigen', '3.3.7', '', True),
     ('RapidJSON', '1.1.0'),
     ('cairo', '1.16.0'),  # optional: for .png output
+    ('Boost', '1.71.0'),  # optional: for Maestro formats
 ]
 
-# Enable support for OpenMP compilation of forcefield code
-configopts = '-DENABLE_OPENMP=ON '
+configopts = '-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib '
+# Enable support for OpenMP compilation of forcefield code (optional)
+configopts += '-DENABLE_OPENMP=ON '
 
 pretestopts = 'cp lib/_openbabel.%s %%(builddir)s/openbabel-*/scripts/python/openbabel/ && ' % SHLIB_EXT
+pretestopts += 'test -f test/unittest || cp bin/unittest test/ && '
 runtest = 'test'
 
 moduleclass = 'chem'
