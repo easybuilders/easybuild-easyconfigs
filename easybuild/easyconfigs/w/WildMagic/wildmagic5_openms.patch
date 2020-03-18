@@ -1,0 +1,1139 @@
+This patch was created by applying the instructions here
+https://github.com/OpenMS/OpenMS/issues/4581
+
+diff -ruN WildMagic5.orig/CMakeLists.txt WildMagic5/CMakeLists.txt
+--- WildMagic5.orig/CMakeLists.txt	1970-01-01 00:00:00.000000000 +0000
++++ WildMagic5/CMakeLists.txt	2020-03-17 18:29:17.023312549 +0000
+@@ -0,0 +1,27 @@
++## Copyright Stephan Aiche 2013.
++## Distributed under the Boost Software License, Version 1.0.
++## See: http://www.boost.org/LICENSE_1_0.txt)
++
++project("WildMagic5")
++cmake_minimum_required(VERSION 2.8)
++
++include(CheckCXXCompilerFlag)
++if (NOT WIN32) # we only want fPIC on non-windows systems (fPIC is implicitly true there)
++  CHECK_CXX_COMPILER_FLAG("-fPIC" WITH_FPIC)
++  if (WITH_FPIC)
++    add_definitions(-fPIC)
++  endif()
++endif()
++
++if(MSVC)
++  set(CMAKE_DEBUG_POSTFIX "d")
++endif()
++
++## define custom include path
++set(WM_INCLUDE_INSTALL "include/WildMagic")
++
++## core
++add_subdirectory(LibCore)
++
++## mathematics
++add_subdirectory(LibMathematics)
+diff -ruN WildMagic5.orig/LibCore/Assert/Wm5Assert.cpp WildMagic5/LibCore/Assert/Wm5Assert.cpp
+--- WildMagic5.orig/LibCore/Assert/Wm5Assert.cpp	2020-03-17 18:28:17.331000819 +0000
++++ WildMagic5/LibCore/Assert/Wm5Assert.cpp	2020-03-17 18:32:35.182347391 +0000
+@@ -9,7 +9,7 @@
+ #include "Wm5CorePCH.h"
+ #include "Wm5Assert.h"
+ 
+-#ifdef WM5_USE_ASSERT
++#if 0
+ 
+ #ifdef WM5_USE_ASSERT_WRITE_TO_OUTPUT_WINDOW
+ #include <windows.h>
+diff -ruN WildMagic5.orig/LibCore/Assert/Wm5Assert.h WildMagic5/LibCore/Assert/Wm5Assert.h
+--- WildMagic5.orig/LibCore/Assert/Wm5Assert.h	2020-03-17 18:28:17.331000819 +0000
++++ WildMagic5/LibCore/Assert/Wm5Assert.h	2020-03-17 18:32:45.114399258 +0000
+@@ -11,7 +11,7 @@
+ 
+ #include "Wm5CoreLIB.h"
+ 
+-#ifdef WM5_USE_ASSERT
++#if 0
+ //----------------------------------------------------------------------------
+ // Use WM5 asserts with file/line tracking.
+ //----------------------------------------------------------------------------
+@@ -47,7 +47,7 @@
+ //----------------------------------------------------------------------------
+ // Use standard asserts.
+ //----------------------------------------------------------------------------
+-#define assertion(condition, format, ...) assert(condition)
++#define assertion(condition, ...) assert(condition)
+ //----------------------------------------------------------------------------
+ #endif
+ 
+diff -ruN WildMagic5.orig/LibCore/CMakeLists.txt WildMagic5/LibCore/CMakeLists.txt
+--- WildMagic5.orig/LibCore/CMakeLists.txt	1970-01-01 00:00:00.000000000 +0000
++++ WildMagic5/LibCore/CMakeLists.txt	2020-03-17 18:29:31.063385870 +0000
+@@ -0,0 +1,181 @@
++## Copyright Stephan Aiche 2013.
++## Distributed under the Boost Software License, Version 1.0.
++## See: http://www.boost.org/LICENSE_1_0.txt)
++
++project("WmLibCore")
++cmake_minimum_required(VERSION 2.8)
++
++################################################################################
++## Core
++set(files_h
++  Wm5Core.h
++  Wm5CoreLIB.h
++  Wm5CorePCH.h
++)
++
++set(files_cpp
++  Wm5CorePCH.cpp
++)
++
++################################################################################
++## Assert
++set(assert_files_cpp
++  Assert/Wm5Assert.cpp
++)
++
++set(assert_files_h
++  Assert/Wm5Assert.h
++)
++
++################################################################################
++## DataTypes
++set(datatypes_h
++  DataTypes/Wm5MinHeap.h
++  DataTypes/Wm5MinHeap.inl
++  DataTypes/Wm5Table.h
++  DataTypes/Wm5Table.inl
++  DataTypes/Wm5Tuple.h
++  DataTypes/Wm5Tuple.inl
++)
++
++set(datatypes_cpp
++)
++
++################################################################################
++## InputOutput
++set(input_output_h
++  InputOutput/Wm5BufferIO.h
++  InputOutput/Wm5BufferIO.inl
++  InputOutput/Wm5Endian.h
++  InputOutput/Wm5Environment.h
++  InputOutput/Wm5FileIO.h
++  InputOutput/Wm5FileIO.inl
++)
++
++set(input_output_cpp
++  InputOutput/Wm5BufferIO.cpp
++  InputOutput/Wm5Endian.cpp
++  InputOutput/Wm5Environment.cpp
++  InputOutput/Wm5FileIO.cpp
++)
++
++################################################################################
++## Memory
++set(memory_h
++  Memory/Wm5Memory.h
++  Memory/Wm5Memory.inl
++  Memory/Wm5SmartPointer.h
++  Memory/Wm5SmartPointer.inl
++)
++
++set(memory_cpp
++  Memory/Wm5Memory.cpp
++  Memory/Wm5SmartPointer.cpp
++)
++
++################################################################################
++## ObjectSystems
++set(object_system_h
++  ObjectSystems/Wm5InitTerm.h
++  ObjectSystems/Wm5InStream.h
++  ObjectSystems/Wm5InStream.inl
++  ObjectSystems/Wm5Names.h
++  ObjectSystems/Wm5Object.h
++  ObjectSystems/Wm5Object.inl
++  ObjectSystems/Wm5OutStream.h
++  ObjectSystems/Wm5OutStream.inl
++  ObjectSystems/Wm5Rtti.h
++  ObjectSystems/Wm5Rtti.inl
++  ObjectSystems/Wm5Stream.h
++)
++
++set(object_system_cpp
++  ObjectSystems/Wm5InitTerm.cpp
++  ObjectSystems/Wm5InStream.cpp
++  ObjectSystems/Wm5Object.cpp
++  ObjectSystems/Wm5OutStream.cpp
++  ObjectSystems/Wm5Rtti.cpp
++  ObjectSystems/Wm5Stream.cpp
++)
++
++################################################################################
++## Threading
++set(threading_h
++  Threading/Wm5Mutex.h
++  Threading/Wm5MutexType.h
++  Threading/Wm5ScopedCS.h
++  Threading/Wm5Thread.h
++  Threading/Wm5ThreadType.h
++)
++
++set(threading_cpp
++  Threading/Wm5Mutex.cpp
++  Threading/Wm5ScopedCS.cpp
++  Threading/Wm5Thread.cpp
++)
++
++################################################################################
++## Time
++set(time_h
++  Time/Wm5Time.h
++)
++
++set(time_cpp
++  Time/Wm5Time.cpp
++)
++
++################################################################################
++## Handle Include Directories
++set(WM5_CORE_INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}
++                                 ${PROJECT_SOURCE_DIR}/Assert
++                                 ${PROJECT_SOURCE_DIR}/DataTypes
++                                 ${PROJECT_SOURCE_DIR}/InputOutput
++                                 ${PROJECT_SOURCE_DIR}/Memory
++                                 ${PROJECT_SOURCE_DIR}/ObjectSystems
++                                 ${PROJECT_SOURCE_DIR}/Threading
++                                 ${PROJECT_SOURCE_DIR}/Time
++    CACHE INTERNAL "Wm5Core include directories" FORCE)
++
++# export compile definitions
++if(WIN32 AND BUILD_SHARED_LIBS)
++  set(WM5_CORE_DEFINITIONS "WM5_CORE_DLL_IMPORT"
++      CACHE INTERNAL "Wm5Core definitions" FORCE)
++else()
++  set(WM5_CORE_DEFINITIONS ""
++      CACHE INTERNAL "Wm5Core definitions" FORCE)
++endif()
++
++include_directories(${WM5_CORE_INCLUDE_DIRECTORIES})
++
++################################################################################
++## add Wm5Core library
++add_library(Wm5Core ${files_cpp}
++                    ${assert_files_cpp}
++                    ${datatypes_cpp}
++                    ${input_output_cpp}
++                    ${memory_cpp}
++                    ${object_system_cpp}
++                    ${threading_cpp}
++                    ${time_cpp})
++
++# request dll export if we compile on windows
++if(WIN32 AND BUILD_SHARED_LIBS)
++  set_target_properties(Wm5Core PROPERTIES DEFINE_SYMBOL "WM5_CORE_DLL_EXPORT" )
++endif()
++
++# install the lib
++install(TARGETS Wm5Core
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
++    LIBRARY DESTINATION lib )
++
++# install the headers
++install(FILES ${files_h}
++              ${assert_files_h}
++              ${datatypes_h}
++              ${input_output_h}
++              ${memory_h}
++              ${object_system_h}
++              ${threading_h}
++              ${time_h}
++        DESTINATION ${WM_INCLUDE_INSTALL})
+diff -ruN WildMagic5.orig/LibCore/Wm5CoreLIB.h WildMagic5/LibCore/Wm5CoreLIB.h
+--- WildMagic5.orig/LibCore/Wm5CoreLIB.h	2020-03-17 18:28:17.338000856 +0000
++++ WildMagic5/LibCore/Wm5CoreLIB.h	2020-03-17 18:32:49.441421854 +0000
+@@ -98,7 +98,7 @@
+ // Macintosh OS X platform
+ //----------------------------------------------------------------------------
+ #if defined(__APPLE__)
+-
++#include <stdint.h>
+ #if defined(__BIG_ENDIAN__)
+ #define WM5_BIG_ENDIAN
+ #else
+diff -ruN WildMagic5.orig/LibMathematics/Algebra/Wm5Vector2.inl WildMagic5/LibMathematics/Algebra/Wm5Vector2.inl
+--- WildMagic5.orig/LibMathematics/Algebra/Wm5Vector2.inl	2020-03-17 18:28:17.382001086 +0000
++++ WildMagic5/LibMathematics/Algebra/Wm5Vector2.inl	2020-03-17 18:32:53.340442218 +0000
+@@ -15,6 +15,7 @@
+ //----------------------------------------------------------------------------
+ template <typename Real>
+ Vector2<Real>::Vector2 (const Vector2& vec)
++  : Tuple<2,Real>(vec)
+ {
+     mTuple[0] = vec.mTuple[0];
+     mTuple[1] = vec.mTuple[1];
+diff -ruN WildMagic5.orig/LibMathematics/CMakeLists.txt WildMagic5/LibMathematics/CMakeLists.txt
+--- WildMagic5.orig/LibMathematics/CMakeLists.txt	1970-01-01 00:00:00.000000000 +0000
++++ WildMagic5/LibMathematics/CMakeLists.txt	2020-03-17 18:29:47.081469521 +0000
+@@ -0,0 +1,859 @@
++## Copyright Stephan Aiche 2013.
++## Distributed under the Boost Software License, Version 1.0.
++## See: http://www.boost.org/LICENSE_1_0.txt)
++
++project("WmLibMathematics")
++cmake_minimum_required(VERSION 2.8)
++
++################################################################################
++## Core
++set(files_h
++  Wm5Mathematics.h
++  Wm5MathematicsLIB.h
++  Wm5MathematicsPCH.h
++)
++
++set(files_cpp
++  Wm5MathematicsPCH.cpp
++)
++
++################################################################################
++## Algebra
++set(algebra_files_cpp
++  Algebra/Wm5APoint.cpp
++  Algebra/Wm5AVector.cpp
++  Algebra/Wm5HMatrix.cpp
++  Algebra/Wm5HPlane.cpp
++  Algebra/Wm5HPoint.cpp
++  Algebra/Wm5HQuaternion.cpp
++  Algebra/Wm5Matrix2.cpp
++  Algebra/Wm5Matrix3.cpp
++  Algebra/Wm5Matrix4.cpp
++  Algebra/Wm5Quaternion.cpp
++  Algebra/Wm5Vector2.cpp
++  Algebra/Wm5Vector3.cpp
++  Algebra/Wm5Vector4.cpp
++)
++
++set(algebra_files_h
++  Algebra/Wm5APoint.h
++  Algebra/Wm5APoint.inl
++  Algebra/Wm5AVector.h
++  Algebra/Wm5AVector.inl
++  Algebra/Wm5BandedMatrix.h
++  Algebra/Wm5BandedMatrix.inl
++  Algebra/Wm5GMatrix.h
++  Algebra/Wm5GMatrix.inl
++  Algebra/Wm5GVector.h
++  Algebra/Wm5GVector.inl
++  Algebra/Wm5HMatrix.h
++  Algebra/Wm5HMatrix.inl
++  Algebra/Wm5HPlane.h
++  Algebra/Wm5HPlane.inl
++  Algebra/Wm5HPoint.h
++  Algebra/Wm5HPoint.inl
++  Algebra/Wm5HQuaternion.h
++  Algebra/Wm5HQuaternion.inl
++  Algebra/Wm5Matrix2.h
++  Algebra/Wm5Matrix2.inl
++  Algebra/Wm5Matrix3.h
++  Algebra/Wm5Matrix3.inl
++  Algebra/Wm5Matrix4.h
++  Algebra/Wm5Matrix4.inl
++  Algebra/Wm5Polynomial1.h
++  Algebra/Wm5Polynomial1.inl
++  Algebra/Wm5Quaternion.h
++  Algebra/Wm5Quaternion.inl
++  Algebra/Wm5Vector2.h
++  Algebra/Wm5Vector2.inl
++  Algebra/Wm5Vector3.h
++  Algebra/Wm5Vector3.inl
++  Algebra/Wm5Vector4.h
++  Algebra/Wm5Vector4.inl
++)
++
++################################################################################
++## Approximation
++set(approximation_files_h
++  Approximation/Wm5ApprCircleFit2.h
++  Approximation/Wm5ApprCylinderFit3.h
++  Approximation/Wm5ApprEllipseByArcs2.h
++  Approximation/Wm5ApprEllipseFit2.h
++  Approximation/Wm5ApprEllipsoidFit3.h
++  Approximation/Wm5ApprGaussPointsFit2.h
++  Approximation/Wm5ApprGaussPointsFit3.h
++  Approximation/Wm5ApprGreatCircleFit3.h
++  Approximation/Wm5ApprLineFit2.h
++  Approximation/Wm5ApprLineFit3.h
++  Approximation/Wm5ApprParaboloidFit3.h
++  Approximation/Wm5ApprPlaneFit3.h
++  Approximation/Wm5ApprPolyFit2.h
++  Approximation/Wm5ApprPolyFit3.h
++  Approximation/Wm5ApprPolyFit4.h
++  Approximation/Wm5ApprPolynomialFit2.h
++  Approximation/Wm5ApprPolynomialFit3.h
++  Approximation/Wm5ApprPolynomialFit4.h
++  Approximation/Wm5ApprQuadraticFit2.h
++  Approximation/Wm5ApprQuadraticFit3.h
++  Approximation/Wm5ApprSphereFit3.h
++)
++
++set(approximation_files_cpp
++  Approximation/Wm5ApprCircleFit2.cpp
++  Approximation/Wm5ApprCylinderFit3.cpp
++  Approximation/Wm5ApprEllipseByArcs2.cpp
++  Approximation/Wm5ApprEllipseFit2.cpp
++  Approximation/Wm5ApprEllipsoidFit3.cpp
++  Approximation/Wm5ApprGaussPointsFit2.cpp
++  Approximation/Wm5ApprGaussPointsFit3.cpp
++  Approximation/Wm5ApprGreatCircleFit3.cpp
++  Approximation/Wm5ApprLineFit2.cpp
++  Approximation/Wm5ApprLineFit3.cpp
++  Approximation/Wm5ApprParaboloidFit3.cpp
++  Approximation/Wm5ApprPlaneFit3.cpp
++  Approximation/Wm5ApprPolyFit2.cpp
++  Approximation/Wm5ApprPolyFit3.cpp
++  Approximation/Wm5ApprPolyFit4.cpp
++  Approximation/Wm5ApprPolynomialFit2.cpp
++  Approximation/Wm5ApprPolynomialFit3.cpp
++  Approximation/Wm5ApprPolynomialFit4.cpp
++  Approximation/Wm5ApprQuadraticFit2.cpp
++  Approximation/Wm5ApprQuadraticFit3.cpp
++  Approximation/Wm5ApprSphereFit3.cpp
++)
++
++################################################################################
++## Base
++set(base_files_cpp
++  Base/Wm5BitHacks.cpp
++  Base/Wm5Math.cpp
++)
++
++set(base_files_h
++  Base/Wm5BitHacks.h
++  Base/Wm5BitHacks.inl
++  Base/Wm5Float1.h
++  Base/Wm5Float1.inl
++  Base/Wm5Float2.h
++  Base/Wm5Float2.inl
++  Base/Wm5Float3.h
++  Base/Wm5Float3.inl
++  Base/Wm5Float4.h
++  Base/Wm5Float4.inl
++  Base/Wm5Math.h
++  Base/Wm5Math.inl
++)
++
++################################################################################
++## ComputationalGeometry
++set(computationalgeometry_files_cpp
++  ComputationalGeometry/Wm5ConvexHull.cpp
++  ComputationalGeometry/Wm5ConvexHull1.cpp
++  ComputationalGeometry/Wm5ConvexHull2.cpp
++  ComputationalGeometry/Wm5ConvexHull3.cpp
++  ComputationalGeometry/Wm5Delaunay.cpp
++  ComputationalGeometry/Wm5Delaunay1.cpp
++  ComputationalGeometry/Wm5Delaunay2.cpp
++  ComputationalGeometry/Wm5Delaunay3.cpp
++  ComputationalGeometry/Wm5IncrementalDelaunay2.cpp
++  ComputationalGeometry/Wm5TriangulateEC.cpp
++)
++
++set(computationalgeometry_files_h
++  ComputationalGeometry/Wm5ConvexHull.h
++  ComputationalGeometry/Wm5ConvexHull1.h
++  ComputationalGeometry/Wm5ConvexHull2.h
++  ComputationalGeometry/Wm5ConvexHull3.h
++  ComputationalGeometry/Wm5Delaunay.h
++  ComputationalGeometry/Wm5Delaunay1.h
++  ComputationalGeometry/Wm5Delaunay2.h
++  ComputationalGeometry/Wm5Delaunay3.h
++  ComputationalGeometry/Wm5IncrementalDelaunay2.h
++  ComputationalGeometry/Wm5TriangulateEC.h
++)
++
++################################################################################
++## Containment
++set(containment_files_cpp
++  Containment/Wm5ContBox2.cpp
++  Containment/Wm5ContBox3.cpp
++  Containment/Wm5ContCapsule3.cpp
++  Containment/Wm5ContCylinder3.cpp
++  Containment/Wm5ContEllipse2.cpp
++  Containment/Wm5ContEllipse2MinCR.cpp
++  Containment/Wm5ContEllipsoid3.cpp
++  Containment/Wm5ContEllipsoid3MinCR.cpp
++  Containment/Wm5ContLozenge3.cpp
++  Containment/Wm5ContMinBox2.cpp
++  Containment/Wm5ContMinBox3.cpp
++  Containment/Wm5ContMinCircle2.cpp
++  Containment/Wm5ContMinSphere3.cpp
++  Containment/Wm5ContPointInPolygon2.cpp
++  Containment/Wm5ContPointInPolyhedron3.cpp
++  Containment/Wm5ContScribeCircle2.cpp
++  Containment/Wm5ContScribeCircle3Sphere3.cpp
++  Containment/Wm5ContSeparatePoints2.cpp
++  Containment/Wm5ContSeparatePoints3.cpp
++  Containment/Wm5ContSphere3.cpp
++)
++
++set(containment_files_h
++  Containment/Wm5ContBox2.h
++  Containment/Wm5ContBox3.h
++  Containment/Wm5ContCapsule3.h
++  Containment/Wm5ContCylinder3.h
++  Containment/Wm5ContEllipse2.h
++  Containment/Wm5ContEllipse2MinCR.h
++  Containment/Wm5ContEllipsoid3.h
++  Containment/Wm5ContEllipsoid3MinCR.h
++  Containment/Wm5ContLozenge3.h
++  Containment/Wm5ContMinBox2.h
++  Containment/Wm5ContMinBox3.h
++  Containment/Wm5ContMinCircle2.h
++  Containment/Wm5ContMinSphere3.h
++  Containment/Wm5ContPointInPolygon2.h
++  Containment/Wm5ContPointInPolyhedron3.h
++  Containment/Wm5ContScribeCircle2.h
++  Containment/Wm5ContScribeCircle3Sphere3.h
++  Containment/Wm5ContSeparatePoints2.h
++  Containment/Wm5ContSeparatePoints3.h
++  Containment/Wm5ContSphere3.h
++)
++
++################################################################################
++## Distance
++set(distance_files_cpp
++  Distance/Wm5Distance.cpp
++  Distance/Wm5DistCircle3Circle3.cpp
++  Distance/Wm5DistLine2Line2.cpp
++  Distance/Wm5DistLine2Ray2.cpp
++  Distance/Wm5DistLine2Segment2.cpp
++  Distance/Wm5DistLine3Box3.cpp
++  Distance/Wm5DistLine3Circle3.cpp
++  Distance/Wm5DistLine3Line3.cpp
++  Distance/Wm5DistLine3Ray3.cpp
++  Distance/Wm5DistLine3Rectangle3.cpp
++  Distance/Wm5DistLine3Segment3.cpp
++  Distance/Wm5DistLine3Triangle3.cpp
++  Distance/Wm5DistPoint2Box2.cpp
++  Distance/Wm5DistPoint2Ellipse2.cpp
++  Distance/Wm5DistPoint2Hyperbola2.cpp
++  Distance/Wm5DistPoint2Line2.cpp
++  Distance/Wm5DistPoint2Ray2.cpp
++  Distance/Wm5DistPoint2Segment2.cpp
++  Distance/Wm5DistPoint3Box3.cpp
++  Distance/Wm5DistPoint3Circle3.cpp
++  Distance/Wm5DistPoint3Ellipsoid3.cpp
++  Distance/Wm5DistPoint3Frustum3.cpp
++  Distance/Wm5DistPoint3Line3.cpp
++  Distance/Wm5DistPoint3Plane3.cpp
++  Distance/Wm5DistPoint3Ray3.cpp
++  Distance/Wm5DistPoint3Rectangle3.cpp
++  Distance/Wm5DistPoint3Segment3.cpp
++  Distance/Wm5DistPoint3Tetrahedron3.cpp
++  Distance/Wm5DistPoint3Triangle3.cpp
++  Distance/Wm5DistRay2Ray2.cpp
++  Distance/Wm5DistRay2Segment2.cpp
++  Distance/Wm5DistRay3Box3.cpp
++  Distance/Wm5DistRay3Ray3.cpp
++  Distance/Wm5DistRay3Rectangle3.cpp
++  Distance/Wm5DistRay3Segment3.cpp
++  Distance/Wm5DistRay3Triangle3.cpp
++  Distance/Wm5DistRectangle3Rectangle3.cpp
++  Distance/Wm5DistSegment2Segment2.cpp
++  Distance/Wm5DistSegment3Box3.cpp
++  Distance/Wm5DistSegment3Rectangle3.cpp
++  Distance/Wm5DistSegment3Segment3.cpp
++  Distance/Wm5DistSegment3Triangle3.cpp
++  Distance/Wm5DistTriangle3Rectangle3.cpp
++  Distance/Wm5DistTriangle3Triangle3.cpp
++)
++
++set(distance_files_h
++  Distance/Wm5Distance.h
++  Distance/Wm5DistCircle3Circle3.h
++  Distance/Wm5DistLine2Line2.h
++  Distance/Wm5DistLine2Ray2.h
++  Distance/Wm5DistLine2Segment2.h
++  Distance/Wm5DistLine3Box3.h
++  Distance/Wm5DistLine3Circle3.h
++  Distance/Wm5DistLine3Line3.h
++  Distance/Wm5DistLine3Ray3.h
++  Distance/Wm5DistLine3Rectangle3.h
++  Distance/Wm5DistLine3Segment3.h
++  Distance/Wm5DistLine3Triangle3.h
++  Distance/Wm5DistPoint2Box2.h
++  Distance/Wm5DistPoint2Ellipse2.h
++  Distance/Wm5DistPoint2Hyperbola2.h
++  Distance/Wm5DistPoint2Line2.h
++  Distance/Wm5DistPoint2Ray2.h
++  Distance/Wm5DistPoint2Segment2.h
++  Distance/Wm5DistPoint3Box3.h
++  Distance/Wm5DistPoint3Circle3.h
++  Distance/Wm5DistPoint3Ellipsoid3.h
++  Distance/Wm5DistPoint3Frustum3.h
++  Distance/Wm5DistPoint3Line3.h
++  Distance/Wm5DistPoint3Plane3.h
++  Distance/Wm5DistPoint3Ray3.h
++  Distance/Wm5DistPoint3Rectangle3.h
++  Distance/Wm5DistPoint3Segment3.h
++  Distance/Wm5DistPoint3Tetrahedron3.h
++  Distance/Wm5DistPoint3Triangle3.h
++  Distance/Wm5DistRay2Ray2.h
++  Distance/Wm5DistRay2Segment2.h
++  Distance/Wm5DistRay3Box3.h
++  Distance/Wm5DistRay3Ray3.h
++  Distance/Wm5DistRay3Rectangle3.h
++  Distance/Wm5DistRay3Segment3.h
++  Distance/Wm5DistRay3Triangle3.h
++  Distance/Wm5DistRectangle3Rectangle3.h
++  Distance/Wm5DistSegment2Segment2.h
++  Distance/Wm5DistSegment3Box3.h
++  Distance/Wm5DistSegment3Rectangle3.h
++  Distance/Wm5DistSegment3Segment3.h
++  Distance/Wm5DistSegment3Triangle3.h
++  Distance/Wm5DistTriangle3Rectangle3.h
++  Distance/Wm5DistTriangle3Triangle3.h
++)
++
++################################################################################
++## Interpolation
++set(interpolation_files_cpp
++  Interpolation/Wm5IntpAkima1.cpp
++  Interpolation/Wm5IntpAkimaNonuniform1.cpp
++  Interpolation/Wm5IntpAkimaUniform1.cpp
++  Interpolation/Wm5IntpAkimaUniform2.cpp
++  Interpolation/Wm5IntpAkimaUniform3.cpp
++  Interpolation/Wm5IntpBicubic2.cpp
++  Interpolation/Wm5IntpBilinear2.cpp
++  Interpolation/Wm5IntpBSplineUniform.cpp
++  Interpolation/Wm5IntpBSplineUniform1.cpp
++  Interpolation/Wm5IntpBSplineUniform2.cpp
++  Interpolation/Wm5IntpBSplineUniform3.cpp
++  Interpolation/Wm5IntpBSplineUniform4.cpp
++  Interpolation/Wm5IntpBSplineUniformN.cpp
++  Interpolation/Wm5IntpLinearNonuniform2.cpp
++  Interpolation/Wm5IntpLinearNonuniform3.cpp
++  Interpolation/Wm5IntpQdrNonuniform2.cpp
++  Interpolation/Wm5IntpSphere2.cpp
++  Interpolation/Wm5IntpThinPlateSpline2.cpp
++  Interpolation/Wm5IntpThinPlateSpline3.cpp
++  Interpolation/Wm5IntpTricubic3.cpp
++  Interpolation/Wm5IntpTrilinear3.cpp
++  Interpolation/Wm5IntpVectorField2.cpp
++)
++
++set(interpolation_files_h
++  Interpolation/Wm5IntpAkima1.h
++  Interpolation/Wm5IntpAkimaNonuniform1.h
++  Interpolation/Wm5IntpAkimaUniform1.h
++  Interpolation/Wm5IntpAkimaUniform2.h
++  Interpolation/Wm5IntpAkimaUniform3.h
++  Interpolation/Wm5IntpBicubic2.h
++  Interpolation/Wm5IntpBilinear2.h
++  Interpolation/Wm5IntpBSplineUniform.h
++  Interpolation/Wm5IntpBSplineUniform1.h
++  Interpolation/Wm5IntpBSplineUniform2.h
++  Interpolation/Wm5IntpBSplineUniform3.h
++  Interpolation/Wm5IntpBSplineUniform4.h
++  Interpolation/Wm5IntpBSplineUniformN.h
++  Interpolation/Wm5IntpLinearNonuniform2.h
++  Interpolation/Wm5IntpLinearNonuniform3.h
++  Interpolation/Wm5IntpQdrNonuniform2.h
++  Interpolation/Wm5IntpSphere2.h
++  Interpolation/Wm5IntpThinPlateSpline2.h
++  Interpolation/Wm5IntpThinPlateSpline3.h
++  Interpolation/Wm5IntpTricubic3.h
++  Interpolation/Wm5IntpTrilinear3.h
++  Interpolation/Wm5IntpVectorField2.h
++)
++
++################################################################################
++## Intersection
++set(intersection_files_cpp
++  Intersection/Wm5Intersector.cpp
++  Intersection/Wm5Intersector1.cpp
++  Intersection/Wm5IntrArc2Arc2.cpp
++  Intersection/Wm5IntrArc2Circle2.cpp
++  Intersection/Wm5IntrBox2Box2.cpp
++  Intersection/Wm5IntrBox2Circle2.cpp
++  Intersection/Wm5IntrBox3Box3.cpp
++  Intersection/Wm5IntrBox3Frustum3.cpp
++  Intersection/Wm5IntrBox3Sphere3.cpp
++  Intersection/Wm5IntrCapsule3Capsule3.cpp
++  Intersection/Wm5IntrCircle2Circle2.cpp
++  Intersection/Wm5IntrCircle3Plane3.cpp
++  Intersection/Wm5IntrEllipse2Ellipse2.cpp
++  Intersection/Wm5IntrEllipsoid3Ellipsoid3.cpp
++  Intersection/Wm5IntrHalfspace3Box3.cpp
++  Intersection/Wm5IntrHalfspace3Segment3.cpp
++  Intersection/Wm5IntrHalfspace3Sphere3.cpp
++  Intersection/Wm5IntrHalfspace3Triangle3.cpp
++  Intersection/Wm5IntrLine2Arc2.cpp
++  Intersection/Wm5IntrLine2Box2.cpp
++  Intersection/Wm5IntrLine2Circle2.cpp
++  Intersection/Wm5IntrLine2Line2.cpp
++  Intersection/Wm5IntrLine2Ray2.cpp
++  Intersection/Wm5IntrLine2Segment2.cpp
++  Intersection/Wm5IntrLine2Triangle2.cpp
++  Intersection/Wm5IntrLine3Box3.cpp
++  Intersection/Wm5IntrLine3Capsule3.cpp
++  Intersection/Wm5IntrLine3Cone3.cpp
++  Intersection/Wm5IntrLine3Cylinder3.cpp
++  Intersection/Wm5IntrLine3Ellipsoid3.cpp
++  Intersection/Wm5IntrLine3Lozenge3.cpp
++  Intersection/Wm5IntrLine3Plane3.cpp
++  Intersection/Wm5IntrLine3Sphere3.cpp
++  Intersection/Wm5IntrLine3Torus3.cpp
++  Intersection/Wm5IntrLine3Triangle3.cpp
++  Intersection/Wm5IntrLozenge3Lozenge3.cpp
++  Intersection/Wm5IntrPlane3Box3.cpp
++  Intersection/Wm5IntrPlane3Capsule3.cpp
++  Intersection/Wm5IntrPlane3Cylinder3.cpp
++  Intersection/Wm5IntrPlane3Ellipsoid3.cpp
++  Intersection/Wm5IntrPlane3Lozenge3.cpp
++  Intersection/Wm5IntrPlane3Plane3.cpp
++  Intersection/Wm5IntrPlane3Sphere3.cpp
++  Intersection/Wm5IntrPlane3Triangle3.cpp
++  Intersection/Wm5IntrRay2Arc2.cpp
++  Intersection/Wm5IntrRay2Box2.cpp
++  Intersection/Wm5IntrRay2Circle2.cpp
++  Intersection/Wm5IntrRay2Ray2.cpp
++  Intersection/Wm5IntrRay2Segment2.cpp
++  Intersection/Wm5IntrRay2Triangle2.cpp
++  Intersection/Wm5IntrRay3Box3.cpp
++  Intersection/Wm5IntrRay3Capsule3.cpp
++  Intersection/Wm5IntrRay3Cylinder3.cpp
++  Intersection/Wm5IntrRay3Ellipsoid3.cpp
++  Intersection/Wm5IntrRay3Lozenge3.cpp
++  Intersection/Wm5IntrRay3Plane3.cpp
++  Intersection/Wm5IntrRay3Sphere3.cpp
++  Intersection/Wm5IntrRay3Triangle3.cpp
++  Intersection/Wm5IntrSegment2Arc2.cpp
++  Intersection/Wm5IntrSegment2Box2.cpp
++  Intersection/Wm5IntrSegment2Circle2.cpp
++  Intersection/Wm5IntrSegment2Segment2.cpp
++  Intersection/Wm5IntrSegment2Triangle2.cpp
++  Intersection/Wm5IntrSegment3Box3.cpp
++  Intersection/Wm5IntrSegment3Capsule3.cpp
++  Intersection/Wm5IntrSegment3Cylinder3.cpp
++  Intersection/Wm5IntrSegment3Ellipsoid3.cpp
++  Intersection/Wm5IntrSegment3Lozenge3.cpp
++  Intersection/Wm5IntrSegment3Plane3.cpp
++  Intersection/Wm5IntrSegment3Sphere3.cpp
++  Intersection/Wm5IntrSegment3Triangle3.cpp
++  Intersection/Wm5IntrSphere3Cone3.cpp
++  Intersection/Wm5IntrSphere3Frustum3.cpp
++  Intersection/Wm5IntrSphere3Sphere3.cpp
++  Intersection/Wm5IntrTetrahedron3Tetrahedron3.cpp
++  Intersection/Wm5IntrTriangle2Triangle2.cpp
++  Intersection/Wm5IntrTriangle3Box3.cpp
++  Intersection/Wm5IntrTriangle3Cone3.cpp
++  Intersection/Wm5IntrTriangle3Cylinder3.cpp
++  Intersection/Wm5IntrTriangle3Sphere3.cpp
++  Intersection/Wm5IntrTriangle3Triangle3.cpp
++  Intersection/Wm5IntrUtility3.cpp
++)
++
++set(intersection_files_h
++  Intersection/Wm5Intersector.h
++  Intersection/Wm5Intersector1.h
++  Intersection/Wm5IntrArc2Arc2.h
++  Intersection/Wm5IntrArc2Circle2.h
++  Intersection/Wm5IntrBox2Box2.h
++  Intersection/Wm5IntrBox2Circle2.h
++  Intersection/Wm5IntrBox3Box3.h
++  Intersection/Wm5IntrBox3Frustum3.h
++  Intersection/Wm5IntrBox3Sphere3.h
++  Intersection/Wm5IntrCapsule3Capsule3.h
++  Intersection/Wm5IntrCircle2Circle2.h
++  Intersection/Wm5IntrCircle3Plane3.h
++  Intersection/Wm5IntrEllipse2Ellipse2.h
++  Intersection/Wm5IntrEllipsoid3Ellipsoid3.h
++  Intersection/Wm5IntrHalfspace3Box3.h
++  Intersection/Wm5IntrHalfspace3Segment3.h
++  Intersection/Wm5IntrHalfspace3Sphere3.h
++  Intersection/Wm5IntrHalfspace3Triangle3.h
++  Intersection/Wm5IntrLine2Arc2.h
++  Intersection/Wm5IntrLine2Box2.h
++  Intersection/Wm5IntrLine2Circle2.h
++  Intersection/Wm5IntrLine2Line2.h
++  Intersection/Wm5IntrLine2Ray2.h
++  Intersection/Wm5IntrLine2Segment2.h
++  Intersection/Wm5IntrLine2Triangle2.h
++  Intersection/Wm5IntrLine3Box3.h
++  Intersection/Wm5IntrLine3Capsule3.h
++  Intersection/Wm5IntrLine3Cone3.h
++  Intersection/Wm5IntrLine3Cylinder3.h
++  Intersection/Wm5IntrLine3Ellipsoid3.h
++  Intersection/Wm5IntrLine3Lozenge3.h
++  Intersection/Wm5IntrLine3Plane3.h
++  Intersection/Wm5IntrLine3Sphere3.h
++  Intersection/Wm5IntrLine3Torus3.h
++  Intersection/Wm5IntrLine3Triangle3.h
++  Intersection/Wm5IntrLozenge3Lozenge3.h
++  Intersection/Wm5IntrPlane3Box3.h
++  Intersection/Wm5IntrPlane3Capsule3.h
++  Intersection/Wm5IntrPlane3Cylinder3.h
++  Intersection/Wm5IntrPlane3Ellipsoid3.h
++  Intersection/Wm5IntrPlane3Lozenge3.h
++  Intersection/Wm5IntrPlane3Plane3.h
++  Intersection/Wm5IntrPlane3Sphere3.h
++  Intersection/Wm5IntrPlane3Triangle3.h
++  Intersection/Wm5IntrRay2Arc2.h
++  Intersection/Wm5IntrRay2Box2.h
++  Intersection/Wm5IntrRay2Circle2.h
++  Intersection/Wm5IntrRay2Ray2.h
++  Intersection/Wm5IntrRay2Segment2.h
++  Intersection/Wm5IntrRay2Triangle2.h
++  Intersection/Wm5IntrRay3Box3.h
++  Intersection/Wm5IntrRay3Capsule3.h
++  Intersection/Wm5IntrRay3Cylinder3.h
++  Intersection/Wm5IntrRay3Ellipsoid3.h
++  Intersection/Wm5IntrRay3Lozenge3.h
++  Intersection/Wm5IntrRay3Plane3.h
++  Intersection/Wm5IntrRay3Sphere3.h
++  Intersection/Wm5IntrRay3Triangle3.h
++  Intersection/Wm5IntrSegment2Arc2.h
++  Intersection/Wm5IntrSegment2Box2.h
++  Intersection/Wm5IntrSegment2Circle2.h
++  Intersection/Wm5IntrSegment2Segment2.h
++  Intersection/Wm5IntrSegment2Triangle2.h
++  Intersection/Wm5IntrSegment3Box3.h
++  Intersection/Wm5IntrSegment3Capsule3.h
++  Intersection/Wm5IntrSegment3Cylinder3.h
++  Intersection/Wm5IntrSegment3Ellipsoid3.h
++  Intersection/Wm5IntrSegment3Lozenge3.h
++  Intersection/Wm5IntrSegment3Plane3.h
++  Intersection/Wm5IntrSegment3Sphere3.h
++  Intersection/Wm5IntrSegment3Triangle3.h
++  Intersection/Wm5IntrSphere3Cone3.h
++  Intersection/Wm5IntrSphere3Frustum3.h
++  Intersection/Wm5IntrSphere3Sphere3.h
++  Intersection/Wm5IntrTetrahedron3Tetrahedron3.h
++  Intersection/Wm5IntrTriangle2Triangle2.h
++  Intersection/Wm5IntrTriangle3Box3.h
++  Intersection/Wm5IntrTriangle3Cone3.h
++  Intersection/Wm5IntrTriangle3Cylinder3.h
++  Intersection/Wm5IntrTriangle3Sphere3.h
++  Intersection/Wm5IntrTriangle3Triangle3.h
++  Intersection/Wm5IntrUtility3.h
++)
++
++################################################################################
++## Meshes
++set(meshes_files_cpp
++  Meshes/Wm5BasicMesh.cpp
++  Meshes/Wm5ConformalMap.cpp
++  Meshes/Wm5ETManifoldMesh.cpp
++  Meshes/Wm5ETNonmanifoldMesh.cpp
++  Meshes/Wm5MeshCurvature.cpp
++  Meshes/Wm5MeshSmoother.cpp
++  Meshes/Wm5VEManifoldMesh.cpp
++)
++
++set(meshes_files_h
++  Meshes/Wm5BasicMesh.h
++  Meshes/Wm5BasicMesh.inl
++  Meshes/Wm5ConformalMap.h
++  Meshes/Wm5EdgeKey.h
++  Meshes/Wm5EdgeKey.inl
++  Meshes/Wm5ETManifoldMesh.h
++  Meshes/Wm5ETManifoldMesh.inl
++  Meshes/Wm5ETNonmanifoldMesh.h
++  Meshes/Wm5ETNonmanifoldMesh.inl
++  Meshes/Wm5MeshCurvature.h
++  Meshes/Wm5MeshSmoother.h
++  Meshes/Wm5PlanarGraph.h
++  Meshes/Wm5PlanarGraph.inl
++  Meshes/Wm5TriangleKey.h
++  Meshes/Wm5TriangleKey.inl
++  Meshes/Wm5UniqueVerticesTriangles.h
++  Meshes/Wm5UniqueVerticesTriangles.inl
++  Meshes/Wm5VEManifoldMesh.h
++  Meshes/Wm5VEManifoldMesh.inl
++)
++
++################################################################################
++## Miscellaneous
++set(miscellaneous_files_cpp
++  Miscellaneous/Wm5GridGraph2.cpp
++  Miscellaneous/Wm5NormalCompression.cpp
++  Miscellaneous/Wm5PerspProjEllipsoid.cpp
++  Miscellaneous/Wm5QuadToQuadTransforms.cpp
++  Miscellaneous/Wm5RandomHypersphere.cpp
++  Miscellaneous/Wm5TangentsToCircles.cpp
++)
++
++set(miscellaneous_files_h
++  Miscellaneous/Wm5GridGraph2.h
++  Miscellaneous/Wm5NormalCompression.h
++  Miscellaneous/Wm5PerspProjEllipsoid.h
++  Miscellaneous/Wm5QuadToQuadTransforms.h
++  Miscellaneous/Wm5RandomHypersphere.h
++  Miscellaneous/Wm5TangentsToCircles.h
++)
++
++################################################################################
++## NumericalAnalysis
++set(numericalanalysis_files_cpp
++  NumericalAnalysis/Wm5Bisect1.cpp
++  NumericalAnalysis/Wm5Bisect2.cpp
++  NumericalAnalysis/Wm5Bisect3.cpp
++  NumericalAnalysis/Wm5BrentsMethod.cpp
++  NumericalAnalysis/Wm5EigenDecomposition.cpp
++  NumericalAnalysis/Wm5Integrate1.cpp
++  NumericalAnalysis/Wm5LinearSystem.cpp
++  NumericalAnalysis/Wm5Minimize1.cpp
++  NumericalAnalysis/Wm5MinimizeN.cpp
++  NumericalAnalysis/Wm5NoniterativeEigen3x3.cpp
++  NumericalAnalysis/Wm5OdeEuler.cpp
++  NumericalAnalysis/Wm5OdeImplicitEuler.cpp
++  NumericalAnalysis/Wm5OdeMidpoint.cpp
++  NumericalAnalysis/Wm5OdeRungeKutta4.cpp
++  NumericalAnalysis/Wm5OdeSolver.cpp
++  NumericalAnalysis/Wm5PolynomialRoots.cpp
++  NumericalAnalysis/Wm5PolynomialRootsR.cpp
++  NumericalAnalysis/Wm5SingularValueDecomposition.cpp
++)
++
++set(numericalanalysis_files_h
++  NumericalAnalysis/Wm5Bisect1.h
++  NumericalAnalysis/Wm5Bisect2.h
++  NumericalAnalysis/Wm5Bisect3.h
++  NumericalAnalysis/Wm5BrentsMethod.h
++  NumericalAnalysis/Wm5EigenDecomposition.h
++  NumericalAnalysis/Wm5Integrate1.h
++  NumericalAnalysis/Wm5LinearSystem.h
++  NumericalAnalysis/Wm5Minimize1.h
++  NumericalAnalysis/Wm5MinimizeN.h
++  NumericalAnalysis/Wm5NoniterativeEigen3x3.h
++  NumericalAnalysis/Wm5OdeEuler.h
++  NumericalAnalysis/Wm5OdeImplicitEuler.h
++  NumericalAnalysis/Wm5OdeMidpoint.h
++  NumericalAnalysis/Wm5OdeRungeKutta4.h
++  NumericalAnalysis/Wm5OdeSolver.h
++  NumericalAnalysis/Wm5PolynomialRoots.h
++  NumericalAnalysis/Wm5PolynomialRootsR.h
++  NumericalAnalysis/Wm5SingularValueDecomposition.h
++)
++
++################################################################################
++## Objects2D
++set(objects2d_files_cpp
++)
++
++set(objects2d_files_h
++  Objects2D/Wm5Arc2.h
++  Objects2D/Wm5Arc2.inl
++  Objects2D/Wm5AxisAlignedBox2.h
++  Objects2D/Wm5AxisAlignedBox2.inl
++  Objects2D/Wm5Box2.h
++  Objects2D/Wm5Box2.inl
++  Objects2D/Wm5Circle2.h
++  Objects2D/Wm5Circle2.inl
++  Objects2D/Wm5ConvexPolygon2.h
++  Objects2D/Wm5ConvexPolygon2.inl
++  Objects2D/Wm5Ellipse2.h
++  Objects2D/Wm5Ellipse2.inl
++  Objects2D/Wm5Line2.h
++  Objects2D/Wm5Line2.inl
++  Objects2D/Wm5Polygon2.h
++  Objects2D/Wm5Polygon2.inl
++  Objects2D/Wm5Ray2.h
++  Objects2D/Wm5Ray2.inl
++  Objects2D/Wm5Segment2.h
++  Objects2D/Wm5Segment2.inl
++  Objects2D/Wm5Triangle2.h
++  Objects2D/Wm5Triangle2.inl
++)
++
++################################################################################
++## Objects3D
++set(objects3d_files_cpp
++)
++
++set(objects3d_files_h
++  Objects3D/Wm5AxisAlignedBox3.h
++  Objects3D/Wm5AxisAlignedBox3.inl
++  Objects3D/Wm5Box3.h
++  Objects3D/Wm5Box3.inl
++  Objects3D/Wm5Capsule3.h
++  Objects3D/Wm5Capsule3.inl
++  Objects3D/Wm5Circle3.h
++  Objects3D/Wm5Circle3.inl
++  Objects3D/Wm5Cone3.h
++  Objects3D/Wm5Cone3.inl
++  Objects3D/Wm5ConvexPolyhedron3.h
++  Objects3D/Wm5ConvexPolyhedron3.inl
++  Objects3D/Wm5Cylinder3.h
++  Objects3D/Wm5Cylinder3.inl
++  Objects3D/Wm5Ellipse3.h
++  Objects3D/Wm5Ellipse3.inl
++  Objects3D/Wm5Ellipsoid3.h
++  Objects3D/Wm5Ellipsoid3.inl
++  Objects3D/Wm5Frustum3.h
++  Objects3D/Wm5Frustum3.inl
++  Objects3D/Wm5Line3.h
++  Objects3D/Wm5Line3.inl
++  Objects3D/Wm5Lozenge3.h
++  Objects3D/Wm5Lozenge3.inl
++  Objects3D/Wm5Plane3.h
++  Objects3D/Wm5Plane3.inl
++  Objects3D/Wm5Polyhedron3.h
++  Objects3D/Wm5Polyhedron3.inl
++  Objects3D/Wm5Ray3.h
++  Objects3D/Wm5Ray3.inl
++  Objects3D/Wm5Rectangle3.h
++  Objects3D/Wm5Rectangle3.inl
++  Objects3D/Wm5Segment3.h
++  Objects3D/Wm5Segment3.inl
++  Objects3D/Wm5Sphere3.h
++  Objects3D/Wm5Sphere3.inl
++  Objects3D/Wm5Tetrahedron3.h
++  Objects3D/Wm5Tetrahedron3.inl
++  Objects3D/Wm5Torus3.h
++  Objects3D/Wm5Torus3.inl
++  Objects3D/Wm5Triangle3.h
++  Objects3D/Wm5Triangle3.inl
++)
++
++################################################################################
++## Query
++set(query_files_cpp
++  Query/Wm5Query.cpp
++)
++
++set(query_files_h
++  Query/Wm5Query.h
++  Query/Wm5Query2.h
++  Query/Wm5Query2.inl
++  Query/Wm5Query2Filtered.h
++  Query/Wm5Query2Filtered.inl
++  Query/Wm5Query2Int64.h
++  Query/Wm5Query2Int64.inl
++  Query/Wm5Query2Integer.h
++  Query/Wm5Query2Integer.inl
++  Query/Wm5Query2Rational.h
++  Query/Wm5Query2Rational.inl
++  Query/Wm5Query3.h
++  Query/Wm5Query3.inl
++  Query/Wm5Query3Filtered.h
++  Query/Wm5Query3Filtered.inl
++  Query/Wm5Query3Int64.h
++  Query/Wm5Query3Int64.inl
++  Query/Wm5Query3Integer.h
++  Query/Wm5Query3Integer.inl
++  Query/Wm5Query3Rational.h
++  Query/Wm5Query3Rational.inl
++)
++
++################################################################################
++## Rational
++set(rational_files_cpp
++  Rational/Wm5IVector2.cpp
++  Rational/Wm5IVector3.cpp
++)
++
++set(rational_files_h
++  Rational/Wm5Integer.h
++  Rational/Wm5Integer.inl
++  Rational/Wm5IVector.h
++  Rational/Wm5IVector.inl
++  Rational/Wm5IVector2.h
++  Rational/Wm5IVector2.inl
++  Rational/Wm5IVector3.h
++  Rational/Wm5IVector3.inl
++  Rational/Wm5Rational.h
++  Rational/Wm5Rational.inl
++  Rational/Wm5RVector.h
++  Rational/Wm5RVector.inl
++  Rational/Wm5RVector2.h
++  Rational/Wm5RVector2.inl
++  Rational/Wm5RVector3.h
++  Rational/Wm5RVector3.inl
++)
++
++################################################################################
++## Handle include and definitions
++set(WM5_MATHEMATICS_INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}
++                                        ${PROJECT_SOURCE_DIR}/Algebra
++                                        ${PROJECT_SOURCE_DIR}/Approximation
++                                        ${PROJECT_SOURCE_DIR}/Base
++                                        ${PROJECT_SOURCE_DIR}/ComputationalGeometry
++                                        ${PROJECT_SOURCE_DIR}/Containment
++                                        ${PROJECT_SOURCE_DIR}/Distance
++                                        ${PROJECT_SOURCE_DIR}/Interpolation
++                                        ${PROJECT_SOURCE_DIR}/Intersection
++                                        ${PROJECT_SOURCE_DIR}/Meshes
++                                        ${PROJECT_SOURCE_DIR}/Miscellaneous
++                                        ${PROJECT_SOURCE_DIR}/NumericalAnalysis
++                                        ${PROJECT_SOURCE_DIR}/Objects2D
++                                        ${PROJECT_SOURCE_DIR}/Objects3D
++                                        ${PROJECT_SOURCE_DIR}/Query
++                                        ${PROJECT_SOURCE_DIR}/Rational
++                                        # we also need the core includes
++                                        ${WM5_CORE_INCLUDE_DIRECTORIES}
++    CACHE INTERNAL "Wm5Mathematics include directories" FORCE)
++
++# export compile definitions incl. the wm5core dependency
++if(WIN32 AND BUILD_SHARED_LIBS)
++  set(WM5_MATHEMATICS_DEFINITIONS "WM5_MATHEMATICS_DLL_IMPORT"
++                                  ${WM5_CORE_DEFINITIONS}
++      CACHE INTERNAL "Wm5Core definitions" FORCE)
++else()
++  set(WM5_MATHEMATICS_DEFINITIONS ${WM5_CORE_DEFINITIONS}
++      CACHE INTERNAL "Wm5Core definitions" FORCE)
++endif()
++
++include_directories(${WM5_MATHEMATICS_INCLUDE_DIRECTORIES})
++
++################################################################################
++## add Wm5Mathematics library
++add_library(Wm5Mathematics  ${files_cpp}
++                            ${algebra_files_cpp}
++                            ${approximation_files_cpp}
++                            ${base_files_cpp}
++                            ${computationalgeometry_files_cpp}
++                            ${containment_files_cpp}
++                            ${distance_files_cpp}
++                            ${interpolation_files_cpp}
++                            ${intersection_files_cpp}
++                            ${meshes_files_cpp}
++                            ${miscellaneous_files_cpp}
++                            ${numericalanalysis_files_cpp}
++                            ${objects2d_files_cpp}
++                            ${objects3d_files_cpp}
++                            ${query_files_cpp}
++                            ${rational_files_cpp}
++)
++target_link_libraries(Wm5Mathematics Wm5Core)
++
++if(WIN32 AND BUILD_SHARED_LIBS)
++  set_target_properties(Wm5Mathematics PROPERTIES DEFINE_SYMBOL "WM5_MATHEMATICS_DLL_EXPORT;${WM5_CORE_DEFINITIONS}" )
++endif()
++
++# install the lib
++install(TARGETS Wm5Mathematics
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
++    LIBRARY DESTINATION lib )
++
++# install the headers
++install(FILES ${files_h}
++              ${algebra_files_h}
++              ${approximation_files_h}
++              ${base_files_h}
++              ${computationalgeometry_files_h}
++              ${containment_files_h}
++              ${distance_files_h}
++              ${interpolation_files_h}
++              ${intersection_files_h}
++              ${meshes_files_h}
++              ${miscellaneous_files_h}
++              ${numericalanalysis_files_h}
++              ${objects2d_files_h}
++              ${objects3d_files_h}
++              ${query_files_h}
++              ${rational_files_h}
++        DESTINATION ${WM_INCLUDE_INSTALL})
+\ Pas de fin de ligne à la fin du fichier
