@@ -5,8 +5,9 @@ version = '3.12.0'
 homepage = 'https://sanger-pathogens.github.io/Roary/'
 description = """Roary is a high speed stand alone pan genome pipeline, which takes annotated assemblies in GFF3 format (produced by Prokka (Seemann, 2014)) and calculates the pan genome."""
 
-toolchain = {'name': 'gompi', 'version' : '2016.4.11'}
 
+#toolchain = {'name': 'gompi', 'version' : '2016.4.11'}
+toolchain = {'name': 'gomkl', 'version' : '2016.4.11'}
 sources = [{'filename':'%(name)s-%(version)s.tar.gz',
            'git_config': {
            'tag': 'v%(version)s',
@@ -15,16 +16,16 @@ sources = [{'filename':'%(name)s-%(version)s.tar.gz',
            'recursive': True,
             }
 }
-]
+, 'perl.tar.gz']
 extract_sources = True
-install_cmd = "cp -r %(builddir)s/%(name)s/bin %(builddir)s/%(name)s/lib %(installdir)s"
-local_roary_binary_files = [ "create_pan_genome"]
+postinstallcmds = ["cp -r %(builddir)s/perl5/* %(builddir)s/%(name)s/ && cp -r %(builddir)s/%(name)s/bin %(builddir)s/%(name)s/lib %(installdir)s"]
+roary_binary_files = [ "create_pan_genome"]
 sanity_check_commands = [
     "perldoc -lm Bio::Roary",
-    "roary -a",
+    #"roary -a",
     # make sure all (optional) dependencies are found
     # grep exits with '1' if no matches are found, hence we need to test the exit code ($?)
-    "roary -a 2>&1 | grep 'not found'; test $? -eq 1",
+    #"roary -a 2>&1 | grep 'not found'; test $? -eq 1",
 ]
 
 dependencies = [('BEDTools', "2.27.1"),
@@ -36,190 +37,12 @@ dependencies = [('BEDTools', "2.27.1"),
                 ('MAFFT', '7.310', '-with-extensions'),
                 ('Perl', '5.22.4'),
                 ('BioPerl', '1.7.1', '-Perl-5.22.4'),
+                ('Kraken', '1.1'),
+                ('R', '3.5.0', '-bare'),
 ]
 parallel = 1
-modextrapaths = {'PERL5LIB': ':%(installdir)s/lib/perl5/site_perl/5.22.4/:%(installdir)s/lib/perl5/site_perl/5.22.4/x86_64-linux-thread-multi'}
-exts_defaultclass = 'PerlModule'
-
-
-exts_list = [
-    ('Array::Utils', '0.5', {
-        'source_tmpl': 'Array-Utils-0.5.tar.gz',
-        'source_urls': ['https://cpan.metacpan.org/authors/id/Z/ZM/ZMIJ/Array'],
-        'runtest' : 'test',
-
-    }),
-    ('Exception::Class','1.44', {
-        'source_tmpl': 'Exception-Class-1.44.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/D/DR/DROLSKY/'],
-        'runtest' : 'test',
-    }),
-    ('File::Grep', '0.02', {
-        'source_tmpl': 'File-Grep-0.02.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/M/MN/MNEYLON/'],
-        'runtest' : 'test',
-    }),
-    ('File::Path', '2.16', {
-        'source_tmpl': 'File-Path-2.16.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/J/JK/JKEENAN/'],
-        'runtest' : 'test',
-    }),
-    ('PerlIO::utf8_strict', '0.007', {
-        'source_tmpl': 'PerlIO-utf8_strict-0.007.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/L/LE/LEONT/'],
-        'runtest' : 'test',
-    }),
-    ('File::Slurper', '0.012', {
-        'source_tmpl': 'File-Slurper-0.012.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/L/LE/LEONT/'],
-        'runtest' : 'test',
-    }),
-    ('File::Spec', '3.75', {
-        'source_tmpl': 'PathTools-3.75.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/X/XS/XSAWYERX/'],
-        'runtest' : 'test',
-    }),
-    ('File::Temp', '0.2308', {
-        'source_tmpl': 'File-Temp-0.2308.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/E/ET/ETHER/'],
-        'runtest' : 'test',
-    }),
-    ('File::Which', '1.22', {
-        'source_tmpl': 'File-Which-1.22.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/P/PL/PLICEASE/'],
-        'runtest' : 'test',
-    }),
-    ('Getopt::Long', '2.50', {
-        'source_tmpl': 'Getopt-Long-2.50.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/J/JV/JV/'],
-        'runtest' : 'test',
-        'runtest' : 'test',
-    }),
-    ('Parse::Yapp::Driver', '1.21', {
-        'source_tmpl': 'Parse-Yapp-1.21.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/W/WB/WBRASWELL/'],
-        'runtest' : 'test',
-    }),
-
-    ('XML::Parser', '2.44', {
-        'source_tmpl': 'XML-Parser-2.44.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/T/TO/TODDR/'],
-        'runtest' : 'test',
-    }),
-    ('Graph::Writer::Dot', '2.09', {
-        'source_tmpl': 'Graph-ReadWrite-2.09.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/N/NE/NEILB/'],
-        'runtest' : 'test',
-    }),
-    ('List::Util', '1.50', {
-        'source_tmpl': 'Scalar-List-Utils-1.50.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/P/PE/PEVANS/'],
-        'runtest' : 'test',
-    }),
-
-    ('Log::Log4perl', '1.49', {
-        'source_tmpl': 'Log-Log4perl-1.49.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/M/MS/MSCHILLI/'],
-        'runtest' : 'test',
-    }),
-
-    ('CPAN::Meta::Check', '0.014', {
-        'source_tmpl': 'CPAN-Meta-Check-0.014.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/L/LE/LEONT/'],
-        'runtest' : 'test',
-    }),
-    ('Sub::Identify', '0.14', {
-        'source_tmpl': 'Sub-Identify-0.14.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/R/RG/RGARCIA/'],
-        'runtest' : 'test',
-    }),
-
-    ('Devel::OverloadInfo', '0.005', {
-        'source_tmpl': 'Devel-OverloadInfo-0.005.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/I/IL/ILMARI/'],
-        'runtest' : 'test',
-    }),
-
-    ('Devel::StackTrace', '2.03', {
-        'source_tmpl': 'Devel-StackTrace-2.03.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/D/DR/DROLSKY/'],
-        'runtest' : 'test',
-    }),
-    ('Module::Runtime::Conflicts', '0.003', {
-        'source_tmpl': 'Module-Runtime-Conflicts-0.003.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/E/ET/ETHER/'],
-        'runtest' : 'test',
-    }),
-
-    ('Sub::Name', '0.21', {
-        'source_tmpl': 'Sub-Name-0.21.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/E/ET/ETHER/'],
-        'runtest' : 'test',
-    }),
-    ('Test::Needs', '0.002005', {
-        'source_tmpl': 'Test-Needs-0.002005.tar.gz',
-        'source_urls': ['https://cpan.metacpan.org/authors/id/H/HA/HAARG/'],
-        'runtest' : 'test',
-    }),
-    ('B::Hooks::EndOfScope', '0.24', {
-        'source_tmpl': 'B-Hooks-EndOfScope-0.24.tar.gz',
-        'source_urls': ['https://cpan.metacpan.org/authors/id/E/ET/ETHER'],
-        'runtest' : 'test',
-    }),
-
-    ('namespace::clean', '0.27', {
-        'source_tmpl': 'namespace-clean-0.27.tar.gz',
-        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RI/RIBASUSHI/'],
-        'runtest' : 'test',
-    }),
-    ('namespace::autoclean', '0.28', {
-        'source_tmpl': 'namespace-autoclean-0.28.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/E/ET/ETHER/'],
-        'runtest' : 'test',
-    }),
-    ('Role::Tiny', '2.000006', {
-        'source_tmpl': 'Role-Tiny-2.000006.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/H/HA/HAARG/'],
-        'runtest' : 'test',
-    }),
-    ('File::pushd', '1.016', {
-        'source_tmpl': 'File-pushd-1.016.tar.gz',
-        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN'],
-        'runtest' : 'test',
-    }),
-
-    ('Test::CleanNamespaces', '0.23', {
-        'source_tmpl': 'Test-CleanNamespaces-0.23.tar.gz',
-        'source_urls': ['https://cpan.metacpan.org/authors/id/E/ET/ETHER/'],
-        'runtest' : 'test',
-    }),
-    ('Moose', '2.2011', {
-        'source_tmpl': 'Moose-2.2011.tar.gz',
-        'source_urls': ['https://cpan.metacpan.org/authors/id/E/ET/ETHER/'],
-        'runtest' : 'test',
-    }),
-    ('Encode', '2.98', {
-        'source_tmpl': 'Encode-2.98.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/D/DA/DANKOGAI'],
-        'runtest' : 'test',
-    }),
-    ('Text::CSV_XS', '1.37', {
-        'source_tmpl': 'Text-CSV_XS-1.37.tgz',
-        'source_urls': ['http://www.cpan.org/authors/id/H/HM/HMBRAND/'],
-        'runtest' : 'test',
-    }),
-    ('Text::CSV', '1.97', {
-        'source_tmpl': 'Text-CSV-1.97.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/I/IS/ISHIGAKI/'],
-        'runtest' : 'test',
-    }),
-    ('Digest::MD5::File', '0.08', {
-        'source_tmpl': 'Digest-MD5-File-0.08.tar.gz',
-        'source_urls': ['http://www.cpan.org/authors/id/D/DM/DMUEY/'],
-        'runtest' : 'test',
-    }),
-]
-
+modextrapaths = {'PERL5LIB': ':%(installdir)s/lib:%(installdir)s/lib/perl5:%(installdir)s/lib/perl5/x86_64-linux-thread-multi'}
+modextravars = {'PERL5OPT': '-I%(installdir)s/lib -I%(installdir)s/lib/perl5 -I%(installdir)s/lib/perl5/x86_64-linux-thread-multi'}
 moduleclass = 'bio'
 
 

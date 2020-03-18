@@ -1,0 +1,53 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.1.0'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version VASPsol (https://github.com/henniggroup/VASPsol) 
+has been implemented to the original version of vasp """
+
+toolchain = {'name': 'intel', 'version': '2018.3'}
+dependencies = [
+    ('Python', '2.7.14'),
+    ('BEEF', '0.1.1', '', ('iccifort', '2018.3')),
+    ('wannier90', '1.2', '', ('iimkl', '2018.3')),
+]
+builddependencies = [
+    ('CUDA', '10.1')
+]
+#
+#hiddendependencies = [
+#    ('iccifortcuda', '2018.3.100' )
+#]
+
+patches = ['vasp-6.1.0.patch']
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = [SOURCELOWER_TGZ]
+
+prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
+prebuildopts += 'cp src/solvation.F src/solvation.F.orig && '
+prebuildopts += 'wget https://github.com/henniggroup/VASPsol/archive/V1.0.tar.gz && '
+prebuildopts += 'tar xzf V1.0.tar.gz && '
+prebuildopts += 'cp VASPsol-1.0/src/solvation.F src  && '
+prebuildopts += 'unset LIBS && '
+prebuildopts += 'wget https://theory.cm.utexas.edu/code/vtstscripts_old/vtstscripts-957.tgz && tar xzf vtstscripts-957.tgz && '
+prebuildopts += 'wget https://theory.cm.utexas.edu/code/vtstcode-179.tgz && tar xzf vtstcode-179.tgz  && ' 
+prebuildopts += 'cp vtstcode-179/* src && '
+prebuildopts += 'chmod u+x src/mkbdrpro.pl && '
+prebuildopts += 'cd src && ./mkbdrpro.pl bdr_changes && cd .. &&'
+
+
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && pip install numpy --prefix=%(installdir)s && pip install subprocess32 --prefix=%(installdir)s && pip install ase --prefix=%(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
+parallel = 1
+
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl', 'bin/vasp_gpu', 'bin/vasp_gpu_ncl'], 'bin'), 'vtstscripts-957']
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': []
+}
+modextrapaths = {'PATH': 'vtstscripts-957', 'PYTHONPATH': 'lib/python2.7/site-packages'}
+moduleclass = 'phys'
