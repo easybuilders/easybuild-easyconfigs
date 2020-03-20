@@ -1,0 +1,28 @@
+binutils 2.34 changed API for 3 function calls.
+First argument wasn't used previously either so fix is simple.
+
+Åke Sandgren, 20200320
+diff -ru ucx-1.7.0.orig/src/ucs/debug/debug.c ucx-1.7.0/src/ucs/debug/debug.c
+--- ucx-1.7.0.orig/src/ucs/debug/debug.c	2020-01-19 17:04:30.000000000 +0100
++++ ucx-1.7.0/src/ucs/debug/debug.c	2020-03-20 11:20:10.716236104 +0100
+@@ -248,17 +248,17 @@
+     int found;
+ 
+     if ((search->count > 0) || (search->max_lines == 0) ||
+-        ((bfd_get_section_flags(abfd, section) & SEC_ALLOC) == 0)) {
++        ((bfd_section_flags(section) & SEC_ALLOC) == 0)) {
+         return;
+     }
+ 
+     address = search->file->dl.address - search->file->dl.base;
+-    vma = bfd_get_section_vma(abfd, section);
++    vma = bfd_section_vma(section);
+     if (address < vma) {
+         return;
+     }
+ 
+-    size = bfd_section_size(abfd, section);
++    size = bfd_section_size(section);
+     if (address >= vma + size) {
+         return;
+     }
