@@ -1,0 +1,48 @@
+From 1ecffb613d0f60f4a2ced2c9568979277fa7cdac Mon Sep 17 00:00:00 2001
+From: Thomas Holder <thomas.holder@schrodinger.com>
+Date: Fri, 20 Oct 2017 15:05:29 +0200
+Subject: [PATCH] Consistently use --force-rpath (fixes #94)
+
+---
+ src/patchelf.cc | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/src/patchelf.cc b/src/patchelf.cc
+index 55b38e3..46288aa 100644
+--- a/src/patchelf.cc
++++ b/src/patchelf.cc
+@@ -1234,7 +1234,17 @@ void ElfFile<ElfFileParamNames>::modifyRPath(RPathOp op,
+     }
+ 
+ 
+-    if (std::string(rpath ? rpath : "") == newRPath) return;
++    if (!forceRPath && dynRPath && !dynRunPath) { /* convert DT_RPATH to DT_RUNPATH */
++        dynRPath->d_tag = DT_RUNPATH;
++        dynRunPath = dynRPath;
++        dynRPath = 0;
++    } else if (forceRPath && dynRunPath) { /* convert DT_RUNPATH to DT_RPATH */
++        dynRunPath->d_tag = DT_RPATH;
++        dynRPath = dynRunPath;
++        dynRunPath = 0;
++    } else if (std::string(rpath ? rpath : "") == newRPath) {
++        return;
++    }
+ 
+     changed = true;
+ 
+@@ -1248,15 +1258,6 @@ void ElfFile<ElfFileParamNames>::modifyRPath(RPathOp op,
+ 
+     debug("new rpath is '%s'\n", newRPath.c_str());
+ 
+-    if (!forceRPath && dynRPath && !dynRunPath) { /* convert DT_RPATH to DT_RUNPATH */
+-        dynRPath->d_tag = DT_RUNPATH;
+-        dynRunPath = dynRPath;
+-        dynRPath = 0;
+-    }
+-
+-    if (forceRPath && dynRPath && dynRunPath) { /* convert DT_RUNPATH to DT_RPATH */
+-        dynRunPath->d_tag = DT_IGNORE;
+-    }
+ 
+     if (newRPath.size() <= rpathSize) {
+         strcpy(rpath, newRPath.c_str());
