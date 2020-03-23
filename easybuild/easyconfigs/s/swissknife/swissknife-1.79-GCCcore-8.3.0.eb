@@ -1,0 +1,47 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'Bundle'
+
+name = 'swissknife'
+version = '1.79'
+
+homepage = 'https://sourceforge.net/projects/swissknife/'
+description = "Perl module for reading and writing UniProtKB data in plain text format."
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+builddependencies = [('binutils', '2.32')]
+dependencies = [
+    ('Perl', '5.30.0'),
+]
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('Data::Dumper', '2.173', {
+        'source_tmpl': 'Data-Dumper-2.173.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XS/XSAWYERX'],
+        'checksums': ['697608b39330988e519131be667ff47168aaaaf99f06bd2095d5b46ad05d76fa'],
+    }),
+    ('SWISS::Entry', version, {
+        'source_tmpl': 'swissknife_%(version)s.tar.gz',
+        'source_urls': [('https://sourceforge.net/projects/swissknife/files/swissknife/1.79', 'download')],
+        'checksums': ['a7affa6ed892a8d9f4f9f1297d521076ac5bb1adfd85de5dc041679b53b949d6'],
+    }),
+]
+
+# Need to run tests after install to get perl modules on perl path.
+sanity_check_commands = ["cd %(builddir)s/SWISSEntry/swissknife_1.79 && make test"]
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/'],
+}
+
+moduleclass = 'data'
