@@ -57,6 +57,7 @@ from easybuild.tools.py2vs3 import string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
+from easybuild.tools.utilities import nub
 
 
 # indicates whether all the single tests are OK,
@@ -210,7 +211,7 @@ class EasyConfigTest(TestCase):
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
-        if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R', 'TensorFlow'] and len(dep_vars) > 1:
+        if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'PyTorch', 'R', 'TensorFlow'] and len(dep_vars) > 1:
             for key in list(dep_vars):
                 dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                 # use version of Java wrapper rather than full Java version
@@ -243,14 +244,20 @@ class EasyConfigTest(TestCase):
         old_dep_versions = {
             # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
             # (Qiskit depends on PySCF)
-            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'horton-', 'PySCF-', 'Qiskit-', 'WIEN2k-']),
+            'libxc': (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-', r'PySCF-',
+                                  r'Qiskit-', r'WIEN2k-']),
             # OPERA requires SAMtools 0.x
-            'SAMtools': (r'0\.', ['ChimPipe-0.9.5', 'Cufflinks-2.2.1', 'OPERA-2.0.6']),
+            'SAMtools': (r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6']),
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
-            'Jellyfish': (r'1\.', ['Kraken-1.', 'Roary-3.12.0', 'metaWRAP-1.2']),
+            'Jellyfish': (r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2']),
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
-            'Boost': ('1.64.0;', ['Boost.Python-1.64.0-', 'EMAN2-2.3-']),
-            'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
+            'Boost': ('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-']),
+            'Boost.Python': ('1.64.0;', [r'EMAN2-2\.3-']),
+            # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
+            # both scVelo and Python-Geometric depend on numba
+            'LLVM': (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
+            # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
+            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -258,8 +265,14 @@ class EasyConfigTest(TestCase):
                 # filter out known old dependency versions
                 if re.search('^version: %s' % version_pattern, key):
                     # only filter if the easyconfig using this dep variants is known
-                    if all(any(x.startswith(p) for p in parents) for x in dep_vars[key]):
+                    if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
                         dep_vars.pop(key)
+
+        # filter out ELSI variants with -PEXSI suffix
+        if dep == 'ELSI' and len(dep_vars) > 1:
+            pexsi_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -PEXSI')]
+            if len(pexsi_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != pexsi_vsuff_vars[0])
 
         # only single variant is always OK
         if len(dep_vars) == 1:
@@ -508,7 +521,7 @@ class EasyConfigTest(TestCase):
 
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
-        whitelist = ['Kent_tools-*', 'MATLAB-*', 'OCaml-*']
+        whitelist = ['Kent_tools-*', 'MATLAB-*', 'OCaml-*', 'OpenFOAM-Extend-4.1-*']
 
         # the check_sha256_checksums function (again) creates an EasyBlock instance
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
@@ -516,7 +529,7 @@ class EasyConfigTest(TestCase):
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in changed_ecs:
-            if ec['easyblock'] == 'Bundle':
+            if ec['easyblock'] in ['Bundle', 'PythonBundle']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
@@ -630,6 +643,12 @@ class EasyConfigTest(TestCase):
             'p4vasp',  # https://www.p4vasp.at doesn't work
             'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
+            'MUMPS',  # https://mumps.enseeiht.fr doesn't work
+        ]
+        url_whitelist = [
+            # https:// doesn't work, results in index page being downloaded instead
+            # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
+            'http://isl.gforge.inria.fr',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
@@ -646,6 +665,11 @@ class EasyConfigTest(TestCase):
             ec_txt = '\n'.join(l for l in ec.rawtxt.split('\n') if not l.startswith('#'))
 
             for http_url in http_regex.findall(ec_txt):
+
+                # skip whitelisted http:// URLs
+                if any(http_url.startswith(x) for x in url_whitelist):
+                    continue
+
                 https_url = http_url.replace('http://', 'https://')
                 try:
                     https_url_works = bool(urlopen(https_url, timeout=5))
@@ -804,6 +828,20 @@ def template_easyconfig_test(self, spec):
     res = re.findall('.*\$root.*', ec.rawtxt, re.M)
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
     self.assertFalse(res, error_msg % res)
+
+    # check for redefined easyconfig parameters, there should be none...
+    param_def_regex = re.compile('^(?P<key>\w+)\s*=', re.M)
+    keys = param_def_regex.findall(ec.rawtxt)
+    redefined_keys = []
+    for key in sorted(nub(keys)):
+        cnt = keys.count(key)
+        if cnt > 1:
+            redefined_keys.append((key, cnt))
+
+    redefined_keys_error_msg = "There should be no redefined easyconfig parameters, found %d: " % len(redefined_keys)
+    redefined_keys_error_msg += ', '.join('%s (%d)' % x for x in redefined_keys)
+
+    self.assertFalse(redefined_keys, redefined_keys_error_msg)
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
