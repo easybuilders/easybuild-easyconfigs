@@ -1,0 +1,38 @@
+easyblock = 'PythonPackage'
+
+name = 'Flye'
+version = '2.6'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/fenderglass/Flye'
+description = """Flye is a de novo assembler for long and noisy reads, such as those produced by PacBio
+ and Oxford Nanopore Technologies."""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+
+source_urls = ['https://github.com/fenderglass/Flye/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['5bdc44b84712794fa4264eed690d8c65c0d72f495c7bbf2cd15b634254809131']
+
+dependencies = [('Python', '3.7.4')]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+import subprocess as _subprocess  # NOQA
+_arch = _subprocess.check_output(['uname', '-m']).strip()
+if _arch == 'ppc64le':
+    patches = [
+        'mappy-2.17_ppc64le.patch',
+        '%(name)s-%(version)s_ppc64le.patch',
+    ]
+    dependencies.append(('veclib', '77ad285'))
+    checksums.append('a0b1c17a2f9a00f4143a51b889f6980a37a2cc240db389b49f342bb43cae769a')  # mappy-2.17_ppc64le.patch
+    checksums.append('fe5b150608ad38066c5840934d3ac1a3f3eb8bca7ac391d5d1f86519a002e778')  # Flye-2.6_ppc64le.patch
+
+sanity_check_commands = [
+    '%%(namelower)s%s -h' % x for x in ['', '-assemble', '-contigger', '-minimap2', '-polish', '-repeat']
+]
+
+moduleclass = 'bio'
