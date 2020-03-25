@@ -1,0 +1,67 @@
+# EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Jordi Blasco <jordi.blasco@hpcnow.com>
+# HPCNow! - www.hpcnow.com
+
+easyblock = 'ConfigureMake'
+
+name = 'CRIU'
+version = '3.13'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/checkpoint-restore/criu'
+description = """Checkpoint/Restore In Userspace (CRIU) is a Linux software which can freeze a running container
+(or an individual application) and checkpoint its state to disk. The data saved can be used to restore the 
+application and run it exactly as it was during the time of the freeze. Using this functionality, application 
+or container live migration, snapshots, remote debugging, and many other things are now possible."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'pic': True, 'usempi': False}
+
+builddependencies = [
+    ('Autoconf', '2.69', '', ('GCCcore', '8.3.0')),
+    ('Automake', '1.16.1', '', ('GCCcore', '8.3.0')),
+    ('Autotools', '20180311', '', ('GCCcore', '8.3.0')),
+    ('M4', '1.4.18', '', ('GCCcore', '8.3.0')),
+    ('protobuf', '3.10.0', '', ('GCCcore', '8.3.0')),
+    ('protobuf-c', '1.3.3', '', ('GCCcore', '8.3.0')),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('future', '0.16.0', versionsuffix),
+    #('GnuTLS', '3.4.7', '', ('GNU', '4.9.3-2.25')),
+]
+
+github_account = 'checkpoint-restore'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-install-man-fix.patch']
+checksums = [
+    '1663bed128283384a0b97a83f5c7fd72db66e0700096a7b8f195f47d7eec4157',  # v3.13.tar.gz
+    'b607141dfc95a92c265343cf5ac1002a680d426d921e2483bbc0ba5520db0a73',  # CRIU-v3.13-install-man-fix.patch
+]
+
+osdependencies = [
+    ('libbsd-dev', 'libbsd-devel'),
+    ('libcap-devel', 'libcap-dev'),
+    ('libnet-devel', 'libnet1-dev'),
+    ('libnl3-devel', 'libnl-3-dev'),
+    ('libaio-devel', 'libaio-dev'),
+]
+
+# No configure
+skipsteps = ['configure']
+
+prebuildopts = 'ln -sf $EBROOTPROTOBUF/include/google/protobuf/descriptor.proto images/google/protobuf/descriptor.proto && '
+prebuildopts += 'PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH && '
+
+# Override PREFIX variable from Makefile
+installopts = "PREFIX=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['sbin/criu', 'bin/crit', 'bin/compel'],
+    'dirs': [],
+}
+
+moduleclass = 'system'
