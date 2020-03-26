@@ -4,6 +4,9 @@ name = 'SimpleElastix'
 version = '1.1.0'
 versionsuffix = '-Python-%(pyver)s'
 
+local_itk_ver = '5.0.1'
+local_elastix_ver = '5.0.0'
+
 homepage = 'https://simpleelastix.github.io'
 description = "Multi-lingual medical image registration library."
 
@@ -45,12 +48,12 @@ local_itk_configopts += "-DITK_USE_SYSTEM_ZLIB=ON -DZLIB_INCLUDE_DIR=$EBROOTZLIB
 local_itk_configopts += "-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.%s " % SHLIB_EXT
 
 local_elastix_configopts = "-DCMAKE_BUILD_TYPE=Release -DELASTIX_BUILD_EXECUTABLE=OFF "
-local_elastix_configopts += "-DITK_DIR=%(builddir)s/ITK-5.0.1/easybuild_obj/"
+local_elastix_configopts += "-DITK_DIR=%%(builddir)s/ITK-%s/easybuild_obj/" % local_itk_ver
 
 local_simpleelastix_configopts = "-DCMAKE_BUILD_TYPE=ON -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF "
 local_simpleelastix_configopts += '-DCMAKE_C_FLAGS="$CFLAGS -fpermissive" -DCMAKE_CXX_FLAGS="$CXXFLAGS -fpermissive" '
-local_simpleelastix_configopts += "-DITK_DIR=%(builddir)s/ITK-5.0.1/easybuild_obj/ "
-local_simpleelastix_configopts += "-DElastix_DIR=%(builddir)s/elastix-5.0.0/easybuild_obj/ "
+local_simpleelastix_configopts += "-DITK_DIR=%%(builddir)s/ITK-%s/easybuild_obj/ " % local_itk_ver
+local_simpleelastix_configopts += "-DElastix_DIR=%%(builddir)s/elastix-%s/easybuild_obj/ " % local_elastix_ver
 local_simpleelastix_configopts += "-DWRAP_TCL=OFF -DWRAP_LUA=OFF -DWRAP_RUBY=OFF "
 local_simpleelastix_configopts += "-DWRAP_JAVA=OFF -DWRAP_CSHARP=OFF -DWRAP_R=OFF "
 
@@ -67,23 +70,23 @@ default_component_specs = {
     'start_dir': '%(name)s-%(version)s',
 }
 components = [
-    ('ITK', '5.0.1', {
+    ('ITK', local_itk_ver, {
         'source_urls': ['https://github.com/InsightSoftwareConsortium/ITK/archive/'],
         'checksums': ['c6b3c33ecc73104c906e0e1a1bfaa41a09af24bf53a4ec5e5c265d7e82bdf69f'],
-        'srcdir': '%(builddir)s/ITK-5.0.1',
+        'srcdir': '%%(builddir)s/ITK-%s' % local_itk_ver,
         'preconfigopts': "mkdir easybuild_obj && cd easybuild_obj && Eigen3_DIR=$EBROOTEIGEN ",
         'configopts': local_itk_configopts,
         'prebuildopts': "cd easybuild_obj && ",
         'preinstallopts': "cd easybuild_obj && ",
     }),
-    ('elastix', '5.0.0', {
+    ('elastix', local_elastix_ver, {
         'source_urls': ['https://github.com/SuperElastix/elastix/archive'],
         'sources': [{
             'download_filename': '%(version)s.tar.gz',
             'filename': SOURCE_TAR_GZ,
         }],
         'checksums': ['a377ae0307231bf70c474e87ebbf07d649faca211febf1c1d981a2039fcfcd0e'],
-        'srcdir': '%(builddir)s/elastix-5.0.0',
+        'srcdir': '%%(builddir)s/elastix-%s' % local_elastix_ver,
         'preconfigopts': "mkdir easybuild_obj && cd easybuild_obj && ",
         'configopts': local_elastix_configopts,
         'prebuildopts': "cd easybuild_obj && ",
@@ -105,8 +108,9 @@ components = [
 ]
 
 sanity_check_paths = {
-    'files': ['bin/itkTestDriver', 'lib/libelastix-5.0.a'],
-    'dirs': ['include/Core', 'include/ITK-5.0', 'lib/python%(pyshortver)s/site-packages'],
+    'files': ['bin/itkTestDriver', 'lib/libelastix-%s.a' % '.'.join(local_elastix_ver.split('.')[:2])],
+    'dirs': ['include/Core', 'include/ITK-%s' % '.'.join(local_itk_ver.split('.')[:2]),
+             'lib/python%(pyshortver)s/site-packages'],
 }
 
 sanity_check_commands = ["python -c 'import SimpleITK'"]
