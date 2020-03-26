@@ -1,0 +1,41 @@
+# This is an easyconfig file for EasyBuild, see http://easybuilders.github.io/easybuild
+
+name = 'impi'
+version = '2019.6.166'
+modaltsoftname = 'intelmpi'
+
+homepage = 'https://software.intel.com/en-us/intel-mpi-library/'
+description = "Intel MPI Library, compatible with MPICH ABI"
+
+toolchain = {'name': 'iccifort', 'version': '2020.0.166'}
+
+source_urls = ['https://registrationcenter-download.intel.com/akdlm/irc_nas/tec/16120/']
+sources = ['l_mpi_%(version)s.tgz']
+checksums = ['119be69f1117c93a9e5e9b8b4643918e55d2a55a78ad9567f77d16cdaf18cd6e']
+
+dontcreateinstalldir = True
+
+components = ['intel-mpi', 'intel-psxe', 'intel-imb']
+
+# set up all the mpi commands to default to intel compilers
+set_mpi_wrappers_all = True
+
+# we provide libfabric via Gentoo
+ofi_internal = False
+libfabric_rebuild = False
+
+postinstallcmds = [
+    # Fix mpirun from IntelMPI to explicitly unset I_MPI_PMI_LIBRARY
+    # it can only be used with srun.
+    "sed -i 's@\\(#!/bin/sh.*\\)$@\\1\\nunset I_MPI_PMI_LIBRARY@' %(installdir)s/intel64/bin/mpirun",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path='$ORIGIN/../lib'",
+]
+
+moduleclass = 'mpi'
+
+modluafooter = """
+assert(loadfile("/cvmfs/soft.computecanada.ca/config/lmod/intelmpi_custom.lua"))("%(version_major_minor)s")
+
+add_property("type_","mpi")
+family("mpi")
+"""
