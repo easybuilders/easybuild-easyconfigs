@@ -1,0 +1,163 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'CMakeMake'
+
+name = 'Racon'
+version = '1.4.7'
+
+homepage = 'https://github.com/clara-genomics/racon-gpu'
+description = "Ultrafast consensus module for raw de novo genome assembly of long uncorrected reads"
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/clara-genomics/racon-gpu/archive'],
+        'filename': '%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/clara-genomics/ClaraGenomicsAnalysis/archive'],
+        'filename': 'ClaraGenomicsAnalysis.zip',
+        'download_filename': '416af9f1817a4a70745b3f7cdb7418125159f75c.zip',
+    },
+    {
+        'source_urls': ['https://github.com/rvaser/bioparser/archive'],
+        'filename': 'bioparser.zip',
+        'download_filename': '0d66534d75b319f43ce5c59fe6548eee48f8f651.zip',
+    },
+    {
+        'source_urls': ['https://github.com/martinsos/edlib/archive'],
+        'filename': 'edlib.zip',
+        'download_filename': 'ee36875e944b63abf6f9b9e14c010b445529427d.zip',
+    },
+    {
+        'source_urls': ['https://github.com/google/googletest/archive'],
+        'filename': 'googletest.zip',
+        'download_filename': 'ea31cb15f0c2ab9f5f5b18e82311eb522989d747.zip',
+    },
+    {
+        'source_urls': ['https://github.com/rvaser/logger/archive'],
+        'filename': 'logger.zip',
+        'download_filename': 'b88c8ee8ba59fd07b40c022957b7bdce1a5f8502.zip',
+    },
+    {
+        'source_urls': ['https://github.com/rvaser/rampler/archive'],
+        'filename': 'rampler.zip',
+        'download_filename': 'a6dec0140878ba81da90387c77740756fefa4920.zip',
+    },
+    {
+        'source_urls': ['https://github.com/rvaser/spoa/archive'],
+        'filename': 'spoa.zip',
+        'download_filename': '11219575bdcb356c57fb32f54cf23b8da2abc4f0.zip',
+    },
+    {
+        'source_urls': ['https://github.com/rvaser/thread_pool/archive'],
+        'filename': 'thread_pool.zip',
+        'download_filename': '048da9485390ee8b8a7ecedccc598a06ca4429e2.zip',
+    },
+    {
+        'source_urls': ['https://github.com/madler/zlib/archive'],
+        'filename': 'zlib.zip',
+        'download_filename': 'cacf7f1d4e3d44d871b605da3b647f07d718623f.zip',
+    },
+    {
+        'source_urls': ['https://github.com/google/benchmark/archive'],
+        'filename': 'benchmark.zip',
+        'download_filename': '090faecb454fbd6e6e17a75ef8146acb037118d4.zip',
+    },
+    {
+        'source_urls': ['https://github.com/gabime/spdlog/archive'],
+        'filename': 'spdlog.zip',
+        'download_filename': '366935142780e3754b358542f0fd5ed83793b263.zip',
+    },
+
+]
+checksums = [
+    '7d59c310eb8e7472f6b7bb523206cb0642fe7db32335011cd6b9e7b31cd549ee',  # 1.4.7.tar.gz
+    '228391b8b43effb286cad814ae281c57fad5fcca1724c926cf4cd9ad46b88352',  # ClaraGenomicsAnalysis.zip
+    '1bd393939fd7db6930270cc159545081a2350c89e990affb3ed016f7ae29703c',  # bioparser.zip
+    '6ab3779306b16ece3b42cfcbb3b9236b160651bb8130ac9903c9c5601eee1323',  # edlib.zip
+    '3be3694b5483970accd9b9ea79cd6f05ba347342afea42ef8e180ae112ff9600',  # googletest.zip
+    '9a695a12410b24da6c27f18fcdd95946405fecb26e66cee076f503dd5a34ad82',  # logger.zip
+    '21b99b519438593be6fe3f8e6300c5f9c299e7ee3e5de136299edf3b1591b2ae',  # rampler.zip
+    '3f086337f40b201627cf2fce170365496575b85dda5606a2d78f34aa5e8cc3dc',  # spoa.zip
+    '0af714c760b20c648ee049e6ff6ed4b70d1d0f093469550f42568bc9123c86a8',  # thread_pool.zip
+    '1cce3828ec2ba80ff8a4cac0ab5aa03756026517154c4b450e617ede751d41bd',  # zlib.zip
+    'e777f978593ea6db38356ce09ec3902e839b3037a9a19ff543e6f901e50cc773',  # benchmark.zip
+    'f8833ab5af932a7b0315a5c3d527a748d47839d1a8ac72ab7af9fd7277498554',  # spdlog.zip
+]
+
+builddependencies = [('CMake', '3.15.3')]
+
+# Populate first level of git submodules
+# 1. remove submodule dir
+# 2. move downloaded source to removed submodule dir
+#
+# ClaraGenomicsAnalysis
+preconfigopts = "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/ClaraGenomicsAnalysis && " \
+                "mv %(builddir)s/ClaraGenomicsAnalysis-416af9f1817a4a70745b3f7cdb7418125159f75c " \
+                "%(builddir)s/racon-gpu-%(version)s/vendor/ClaraGenomicsAnalysis && "
+
+# bioparser
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/bioparser && " \
+                 "mv %(builddir)s/bioparser-0d66534d75b319f43ce5c59fe6548eee48f8f651 " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/bioparser && "
+
+# edlib
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/edlib && " \
+                 "mv %(builddir)s/edlib-ee36875e944b63abf6f9b9e14c010b445529427d " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/edlib && "
+
+# googletest
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/googletest && " \
+                 "mv %(builddir)s/googletest-ea31cb15f0c2ab9f5f5b18e82311eb522989d747 " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/googletest && "
+
+# logger
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/logger && " \
+                 "mv %(builddir)s/logger-b88c8ee8ba59fd07b40c022957b7bdce1a5f8502 " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/logger && "
+
+# rampler
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/rampler && " \
+                 "mv %(builddir)s/rampler-a6dec0140878ba81da90387c77740756fefa4920 " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/rampler && "
+
+# spoa
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/spoa && " \
+                 "mv %(builddir)s/spoa-11219575bdcb356c57fb32f54cf23b8da2abc4f0 " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/spoa && "
+
+# thread_pool
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/thread_pool && " \
+                 "mv %(builddir)s/thread_pool-048da9485390ee8b8a7ecedccc598a06ca4429e2 " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/thread_pool && "
+
+# We must go deeper! Populate missing submodules of submodules
+# zlib
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/bioparser/vendor/zlib && " \
+                 "mv %(builddir)s/zlib-cacf7f1d4e3d44d871b605da3b647f07d718623f " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/bioparser/vendor/zlib && "
+
+# benchmark
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/ClaraGenomicsAnalysis/3rdparty/benchmark && " \
+                 "mv %(builddir)s/benchmark-090faecb454fbd6e6e17a75ef8146acb037118d4 " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/ClaraGenomicsAnalysis/3rdparty/benchmark && "
+
+# spdlog
+preconfigopts += "rmdir %(builddir)s/racon-gpu-%(version)s/vendor/ClaraGenomicsAnalysis/3rdparty/spdlog && " \
+                 "mv %(builddir)s/spdlog-366935142780e3754b358542f0fd5ed83793b263 " \
+                 "%(builddir)s/racon-gpu-%(version)s/vendor/ClaraGenomicsAnalysis/3rdparty/spdlog && "
+
+configopts = '-Dracon_enable_cuda=ON'
+separate_build_dir = True
+build_type = 'Release'
+
+sanity_check_paths = {
+    'files': ['bin/racon'],
+    'dirs': [],
+}
+sanity_check_commands = ['racon --help']
+
+moduleclass = 'lib'
