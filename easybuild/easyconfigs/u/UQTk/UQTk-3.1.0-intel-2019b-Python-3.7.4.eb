@@ -1,0 +1,49 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'CMakeMake'
+
+name = 'UQTk'
+version = '3.1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.sandia.gov/UQToolkit/'
+description = """The UQ Toolkit (UQTk) is a collection of libraries and tools 
+for the quantification of uncertainty in numerical model predictions."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+# https://github.com/sandialabs/UQTk
+github_account = 'sandialabs'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix-blas-lapack.patch']
+
+builddependencies = [('CMake', '3.15.3')]
+
+dependencies = [
+    ('expat', '2.2.7'),
+    ('imkl', '2019.5.281'),
+    ('SUNDIALS', '5.1.0'),
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('SWIG', '4.0.1'),
+]
+
+configopts = "-DCMAKE_SUNDIALS_DIR=$EBROOTSUNDIALS -DPyUQTk=ON "
+
+separate_build_dir = True
+runtest = 'fail; ctest'
+
+local_bin_list = [
+    'generate_quad', 'gen_mi', 'gkpSparse', 'gp_regr', 'model_inf', 'pce_eval',
+    'pce_quad', 'pce_resp', 'pce_rv', 'pce_sens', 'pdf_cl', 'regression', 'sens', 'trdSpls'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_bin_list],
+    'dirs': ['bin', 'lib'],
+}
+
+moduleclass = 'lib'
