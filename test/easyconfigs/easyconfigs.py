@@ -258,7 +258,6 @@ class EasyConfigTest(TestCase):
             'LLVM': (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
             # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
             'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
-            # CGmapTools 0.1.2 requires SAMtools 0.1.x
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
