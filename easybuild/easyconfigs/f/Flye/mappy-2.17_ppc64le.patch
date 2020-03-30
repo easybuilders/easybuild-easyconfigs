@@ -1,0 +1,97 @@
+Patch minimap2 (2.17) to build on ppc64le
+--- lib/minimap2/ksw2_extd2_sse.c.orig	2019-01-23 11:29:03.136146000 +0000
++++ lib/minimap2/ksw2_extd2_sse.c	2019-01-23 11:29:23.789259319 +0000
+@@ -4,7 +4,7 @@
+ #include "ksw2.h"
+ 
+ #ifdef __SSE2__
+-#include <emmintrin.h>
++#include "vec128intlib.h"
+ 
+ #ifdef KSW_SSE2_ONLY
+ #undef __SSE4_1__
+--- lib/minimap2/ksw2_exts2_sse.c.orig	2019-01-23 11:29:44.980304000 +0000
++++ lib/minimap2/ksw2_exts2_sse.c	2019-01-23 11:29:57.824097755 +0000
+@@ -4,7 +4,7 @@
+ #include "ksw2.h"
+ 
+ #ifdef __SSE2__
+-#include <emmintrin.h>
++#include "vec128intlib.h"
+ 
+ #ifdef KSW_SSE2_ONLY
+ #undef __SSE4_1__
+--- lib/minimap2/ksw2_extz2_sse.c.orig	2019-01-23 11:28:13.838373000 +0000
++++ lib/minimap2/ksw2_extz2_sse.c	2019-01-23 11:28:38.465410636 +0000
+@@ -3,7 +3,7 @@
+ #include "ksw2.h"
+ 
+ #ifdef __SSE2__
+-#include <emmintrin.h>
++#include "vec128intlib.h"
+ 
+ #ifdef KSW_SSE2_ONLY
+ #undef __SSE4_1__
+--- lib/minimap2/ksw2_ll_sse.c.orig	2019-01-23 10:59:41.426202000 +0000
++++ lib/minimap2/ksw2_ll_sse.c	2019-01-23 11:00:11.181902000 +0000
+@@ -1,7 +1,7 @@
+ #include <stdlib.h>
+ #include <stdint.h>
+ #include <string.h>
+-#include <emmintrin.h>
++#include "vec128intlib.h"
+ #include "ksw2.h"
+ 
+ #ifdef __GNUC__
+--- lib/minimap2/Makefile.orig	2019-01-10 17:34:45.000000000 +0000
++++ lib/minimap2/Makefile	2019-01-23 10:59:04.832957000 +0000
+@@ -5,6 +5,11 @@
+ PROG=		minimap2
+ PROG_EXTRA=	sdust minimap2-lite
+-LIBS=		-lm -lz -lpthread
++LIBS=		-lm -lz -lpthread -lvec128int
++CC=gcc
++
++sse2only=1
++INCLUDES=-I. -Iinclude
++CFLAGS+=-ftree-vectorize -DKSW_SSE2_ONLY -D__SSE2__ -maltivec
+ 
+ ifeq ($(arm_neon),) # if arm_neon is not defined
+ ifeq ($(sse2only),) # if sse2only is not defined
+@@ -48,29 +61,29 @@
+ 
+ ifeq ($(arm_neon),)   # if arm_neon is defined, compile this target with the default setting (i.e. no -msse2)
+ ksw2_ll_sse.o:ksw2_ll_sse.c ksw2.h kalloc.h
+-		$(CC) -c $(CFLAGS) -msse2 $(CPPFLAGS) $(INCLUDES) $< -o $@
++		$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
+ endif
+ 
+ ksw2_extz2_sse41.o:ksw2_extz2_sse.c ksw2.h kalloc.h
+-		$(CC) -c $(CFLAGS) -msse4.1 $(CPPFLAGS) -DKSW_CPU_DISPATCH $(INCLUDES) $< -o $@
++		$(CC) -c $(CFLAGS) $(CPPFLAGS) -DKSW_CPU_DISPATCH $(INCLUDES) $< -o $@
+ 
+ ksw2_extz2_sse2.o:ksw2_extz2_sse.c ksw2.h kalloc.h
+-		$(CC) -c $(CFLAGS) -msse2 -mno-sse4.1 $(CPPFLAGS) -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY $(INCLUDES) $< -o $@
++		$(CC) -c $(CFLAGS) $(CPPFLAGS) -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY $(INCLUDES) $< -o $@
+ 
+ ksw2_extd2_sse41.o:ksw2_extd2_sse.c ksw2.h kalloc.h
+-		$(CC) -c $(CFLAGS) -msse4.1 $(CPPFLAGS) -DKSW_CPU_DISPATCH $(INCLUDES) $< -o $@
++		$(CC) -c $(CFLAGS) $(CPPFLAGS) -DKSW_CPU_DISPATCH $(INCLUDES) $< -o $@
+ 
+ ksw2_extd2_sse2.o:ksw2_extd2_sse.c ksw2.h kalloc.h
+-		$(CC) -c $(CFLAGS) -msse2 -mno-sse4.1 $(CPPFLAGS) -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY $(INCLUDES) $< -o $@
++		$(CC) -c $(CFLAGS) $(CPPFLAGS) -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY $(INCLUDES) $< -o $@
+ 
+ ksw2_exts2_sse41.o:ksw2_exts2_sse.c ksw2.h kalloc.h
+-		$(CC) -c $(CFLAGS) -msse4.1 $(CPPFLAGS) -DKSW_CPU_DISPATCH $(INCLUDES) $< -o $@
++		$(CC) -c $(CFLAGS) $(CPPFLAGS) -DKSW_CPU_DISPATCH $(INCLUDES) $< -o $@
+ 
+ ksw2_exts2_sse2.o:ksw2_exts2_sse.c ksw2.h kalloc.h
+-		$(CC) -c $(CFLAGS) -msse2 -mno-sse4.1 $(CPPFLAGS) -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY $(INCLUDES) $< -o $@
++		$(CC) -c $(CFLAGS) $(CPPFLAGS) -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY $(INCLUDES) $< -o $@
+ 
+ ksw2_dispatch.o:ksw2_dispatch.c ksw2.h
+-		$(CC) -c $(CFLAGS) -msse4.1 $(CPPFLAGS) -DKSW_CPU_DISPATCH $(INCLUDES) $< -o $@
++		$(CC) -c $(CFLAGS) $(CPPFLAGS) -DKSW_CPU_DISPATCH $(INCLUDES) $< -o $@
+ 
+ # NEON-specific targets on ARM
