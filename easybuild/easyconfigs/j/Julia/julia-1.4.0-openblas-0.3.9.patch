@@ -1,0 +1,60 @@
+--- julia-1.4.0/deps/openblas.version.old	2020-03-30 13:03:39.826966753 +0000
++++ julia-1.4.0/deps/openblas.version	2020-03-30 13:07:56.398402770 +0000
+@@ -1,2 +1,2 @@
+-OPENBLAS_BRANCH=v0.3.5
+-OPENBLAS_SHA1=eebc18928715775c9ed254684edee16e4efe0342
++OPENBLAS_BRANCH=v0.3.9
++OPENBLAS_SHA1=33f76a6c378681ac2af76b20e55ff682191a1937
+--- julia-1.4.0/deps/Versions.make.old	2020-03-30 13:03:09.765798052 +0000
++++ julia-1.4.0/deps/Versions.make	2020-03-30 13:03:25.912888671 +0000
+@@ -4,7 +4,7 @@
+ PCRE_BB_REL = 0
+ DSFMT_VER = 2.2.3
+ DSFMT_BB_REL = 0
+-OPENBLAS_VER = 0.3.5
++OPENBLAS_VER = 0.3.9
+ OPENBLAS_BB_REL = 1
+ LAPACK_VER = 3.5.0
+ SUITESPARSE_VER = 5.4.0
+--- julia-1.4.0/deps/blas.mk.orig	2020-03-30 13:56:43.567772910 +0000
++++ julia-1.4.0/deps/blas.mk	2020-03-31 01:38:42.612073604 +0000
+@@ -23,7 +23,7 @@
+ OPENBLAS_BUILD_OPTS += NUM_THREADS=16
+ else
+ # On linux, try to provision for the largest possible machine currently
+-OPENBLAS_BUILD_OPTS += NUM_THREADS=16
++OPENBLAS_BUILD_OPTS += NUM_THREADS=64
+ endif
+ else
+ OPENBLAS_BUILD_OPTS += USE_THREAD=0
+@@ -40,6 +40,7 @@
+ # 64-bit BLAS interface
+ ifeq ($(USE_BLAS64), 1)
+ OPENBLAS_BUILD_OPTS += INTERFACE64=1 SYMBOLSUFFIX="$(OPENBLAS_SYMBOLSUFFIX)" LIBPREFIX="libopenblas$(OPENBLAS_LIBNAMESUFFIX)"
++OPENBLAS64_FFLAGS = -fdefault-integer-8
+ ifeq ($(OS), Darwin)
+ OPENBLAS_BUILD_OPTS += OBJCONV=$(abspath $(BUILDDIR)/objconv/objconv)
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/build-compiled: | $(BUILDDIR)/objconv/build-compiled
+@@ -72,7 +73,7 @@
+ endif
+ 
+ OPENBLAS_BUILD_OPTS += CFLAGS="$(CFLAGS) $(OPENBLAS_CFLAGS)"
+-OPENBLAS_BUILD_OPTS += FFLAGS="$(FFLAGS) $(OPENBLAS_FFLAGS)"
++OPENBLAS_BUILD_OPTS += FFLAGS="$(FFLAGS) $(OPENBLAS_FFLAGS) $(OPENBLAS64_FFLAGS)"
+ OPENBLAS_BUILD_OPTS += LDFLAGS="$(LDFLAGS) $(RPATH_ESCAPED_ORIGIN)"
+ 
+ # Debug OpenBLAS
+@@ -95,13 +96,9 @@
+ ifneq ($(USE_BINARYBUILDER_OPENBLAS), 1)
+ 
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-skylakexdgemm.patch-applied: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/source-extracted
+-	cd $(BUILDDIR)/$(OPENBLAS_SRC_DIR) && \
+-		patch -p1 -f < $(SRCDIR)/patches/openblas-skylakexdgemm.patch
+ 	echo 1 > $@
+ 
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-winexit.patch-applied: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/source-extracted
+-	cd $(BUILDDIR)/$(OPENBLAS_SRC_DIR) && \
+-		patch -p1 -f < $(SRCDIR)/patches/openblas-winexit.patch
+ 	echo 1 > $@
+ 
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/build-configured: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-skylakexdgemm.patch-applied $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-winexit.patch-applied
