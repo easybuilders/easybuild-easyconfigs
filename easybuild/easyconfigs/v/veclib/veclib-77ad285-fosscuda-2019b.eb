@@ -1,0 +1,35 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'CmdCp'
+
+name = 'veclib'
+# Does not have releases, so this is the git hash from the day I built it...
+version = '77ad285'
+
+homepage = "https://github.com/IvantheDugtrio/veclib"
+description = """Vector library for porting SSE2 instructions to other architectures"""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+
+source_urls = ['https://github.com/IvantheDugtrio/%(name)s/archive']
+sources = ['%(version)s.zip']
+checksums = ['4a867670de539d1dd9f10a9057d371d7b822c6da76530b9e52c92fd3de657b59']
+
+dependencies = [('powerveclib', '1.0.6', '', True)]
+
+cmds_map = [
+    ('.*', 'gcc -c -g -Wall -O2 -Wc++-compat -maltivec vec128intlib.c -o vec128intlib.o'
+           ' && gcc -shared vec128intlib.o -o libvec128int.%s' % SHLIB_EXT)
+]
+
+files_to_copy = [
+    (['vec128intlib.h'], 'include'),
+    (['libvec128int.%s' % SHLIB_EXT], 'lib'),
+    (['LICENSE'], ''),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libvec128int.%s' % SHLIB_EXT, 'include/vec128intlib.h'],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
