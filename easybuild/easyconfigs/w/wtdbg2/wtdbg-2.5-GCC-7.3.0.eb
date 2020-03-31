@@ -1,0 +1,32 @@
+easyblock = 'MakeCp'
+
+name = 'wtdbg2'
+version = '2.5'
+
+homepage = 'https://github.com/ruanjue/wtdbg2'
+description = """Wtdbg2 is a de novo sequence assembler for long noisy reads produced by PacBio or Oxford Nanopore Technologies (ONT). It assembles raw reads without error correction and then builds the consensus from intermediate assembly output """
+
+source_urls = ['https://github.com/ruanjue/wtdbg2/archive/']
+sources = ['v%(version)s.tar.gz']
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+dependencies = [
+    ('Perl', '5.22.4'),
+    ('SAMtools', '1.10'),
+    ('BWA', '0.7.17'),
+    ('minimap2', '2.13'),
+]
+
+patches = ['%(name)s-%(version)s.patch']
+
+postinstallcmds = ["for file in %(installdir)s/scripts/*.pl; do sed -i 's@#!/usr/bin/perl.*@#!/usr/bin/env perl@'  $file; done && wget https://cpan.metacpan.org/authors/id/P/PM/PMQS/DB_File-1.853.tar.gz && tar xzf DB_File-1.853.tar.gz && cd DB_File-1.853 && perl Makefile.PL PREFIX=%(installdir)s && make && make install "]
+parallel = 1
+
+files_to_copy = [(['pgzf', 'wtpoa-cns', 'wtdbg-cns', 'wtdbg2', 'kbm2'], 'bin'), 'scripts']
+
+sanity_check_paths = {
+    'files': ['bin/wtdbg2', 'bin/pgzf', 'bin/wtpoa-cns', 'bin/wtdbg-cns', 'bin/kbm2'],
+    'dirs': ['scripts']
+}
+modextrapaths = {'PATH': 'scripts', 'PERL5LIB': 'lib/perl5/site_perl/5.22.4/x86_64-linux-thread-multi/'}
+moduleclass = 'bio'
