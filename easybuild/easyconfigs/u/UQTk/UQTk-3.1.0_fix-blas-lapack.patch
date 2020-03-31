@@ -906,10 +906,56 @@ diff -ru UQTk-3.1.0.orig/examples/tmcmc_bimodal/CMakeLists.txt UQTk-3.1.0/exampl
  target_link_libraries (tmcmc_bimodal.x deplbfgs  )
 
 
+diff -ru UQTk-3.1.0.orig/PyUQTk/bcs/bcs_ext.py UQTk-3.1.0/PyUQTk/bcs/bcs_ext.py
+--- UQTk-3.1.0.orig/PyUQTk/bcs/bcs_ext.py	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/bcs/bcs_ext.py	2020-03-31 14:53:05.277127716 +0200
+@@ -30,10 +30,23 @@
+
+ import numpy as np
+ import matplotlib.pyplot as mpl
+-import uqtkarray as uqtkarray
+-import pce as uqtkpce
+-import tools as uqtktools
+-from uqtkarray import uqtk2numpy, numpy2uqtk
++try:
++	import PyUQTk.uqtkarray as uqtkarray
++except ImportError:
++	import uqtkarray as uqtkarray
++try:
++	import PyUQTk.pce as uqtkpce
++except ImportError:
++	import pce as uqtkpce
++try:
++	import PyUQTk.tools as uqtktools
++except ImportError:
++	import tools as uqtktools
++try:
++	from PyUQTk.uqtkarray import uqtk2numpy, numpy2uqtk
++except ImportError:
++	from uqtkarray import uqtk2numpy, numpy2uqtk
++
+ # BCS already added to path in compilation and install
+
+ # cross validation splitting
 diff -ru UQTk-3.1.0.orig/PyUQTk/bcs/CMakeLists.txt UQTk-3.1.0/PyUQTk/bcs/CMakeLists.txt
 --- UQTk-3.1.0.orig/PyUQTk/bcs/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
-+++ UQTk-3.1.0/PyUQTk/bcs/CMakeLists.txt	2020-03-29 11:43:06.600378422 +0200
-@@ -24,7 +24,7 @@
++++ UQTk-3.1.0/PyUQTk/bcs/CMakeLists.txt	2020-03-31 15:09:06.837288054 +0200
+@@ -1,9 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -24,7 +26,7 @@
  	include_directories ("${PROJECT_BINARY_DIR}/../dep/sundials/include")
  	include_directories (${CMAKE_SUNDIALS_DIR}/include)
  endif()
@@ -918,21 +964,24 @@ diff -ru UQTk-3.1.0.orig/PyUQTk/bcs/CMakeLists.txt UQTk-3.1.0/PyUQTk/bcs/CMakeLi
  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../numpy/) # numpy headers
 
  SET(CMAKE_SWIG_FLAGS "")
-@@ -57,11 +57,11 @@
+@@ -56,12 +58,12 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    # using GCC
- 	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(bcs blas lapack)
++	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(bcs $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
  	# using Intel
- 	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(bcs blas lapack)
++	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(bcs $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  endif()
 
  if(BUILD_SUNDIALS)
-@@ -70,7 +70,7 @@
+@@ -70,7 +72,7 @@
  	SWIG_LINK_LIBRARIES(bcs ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunlinsol/dense/libsundials_sunlinsoldense.a)
  	SWIG_LINK_LIBRARIES(bcs ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunmatrix/dense/libsundials_sunmatrixdense.a)
  else()
@@ -941,22 +990,54 @@ diff -ru UQTk-3.1.0.orig/PyUQTk/bcs/CMakeLists.txt UQTk-3.1.0/PyUQTk/bcs/CMakeLi
  endif()
 
  INSTALL(TARGETS _bcs DESTINATION PyUQTk/)
+diff -ru UQTk-3.1.0.orig/PyUQTk/CMakeLists.txt UQTk-3.1.0/PyUQTk/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/CMakeLists.txt	2020-03-31 15:12:33.594377484 +0200
+@@ -18,7 +18,9 @@
+ )
+
+ if ("${PyUQTk}" STREQUAL "ON")
+-  include(numpy.cmake)
++  # include(numpy.cmake)
++  FIND_PACKAGE(Python REQUIRED COMPONENTS NumPy)
++  INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+   add_subdirectory (uqtkarray)
+   add_subdirectory (quad)
 diff -ru UQTk-3.1.0.orig/PyUQTk/kle/CMakeLists.txt UQTk-3.1.0/PyUQTk/kle/CMakeLists.txt
 --- UQTk-3.1.0.orig/PyUQTk/kle/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
-+++ UQTk-3.1.0/PyUQTk/kle/CMakeLists.txt	2020-03-28 17:54:17.165963092 +0100
-@@ -45,13 +45,13 @@
++++ UQTk-3.1.0/PyUQTk/kle/CMakeLists.txt	2020-03-31 15:08:39.057144196 +0200
+@@ -1,9 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -44,14 +46,14 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    # using GCC
-   SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  gfortran ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  gfortran ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES (kle m blas ${BLAS_LIBRARIES})
 -	SWIG_LINK_LIBRARIES (kle m lapack ${LAPACK_LIBRARIES})
++  SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  gfortran ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES (kle m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
 +	SWIG_LINK_LIBRARIES (kle m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
    # using Intel
-   SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  ifcore ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  ifcore ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES (kle m blas ${BLAS_LIBRARIES})
 -	SWIG_LINK_LIBRARIES (kle m lapack ${LAPACK_LIBRARIES})
++  SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  ifcore ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES (kle m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
 +	SWIG_LINK_LIBRARIES (kle m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
  endif()
@@ -964,22 +1045,40 @@ diff -ru UQTk-3.1.0.orig/PyUQTk/kle/CMakeLists.txt UQTk-3.1.0/PyUQTk/kle/CMakeLi
  INSTALL(TARGETS _kle DESTINATION PyUQTk/)
 diff -ru UQTk-3.1.0.orig/PyUQTk/mcmc/CMakeLists.txt UQTk-3.1.0/PyUQTk/mcmc/CMakeLists.txt
 --- UQTk-3.1.0.orig/PyUQTk/mcmc/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
-+++ UQTk-3.1.0/PyUQTk/mcmc/CMakeLists.txt	2020-03-28 18:18:38.043591047 +0100
-@@ -60,11 +60,11 @@
++++ UQTk-3.1.0/PyUQTk/mcmc/CMakeLists.txt	2020-03-31 15:08:42.969164412 +0200
+@@ -1,9 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -59,12 +61,12 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    # using GCC
- 	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${PYTHON_LIBRARIES})
 -  SWIG_LINK_LIBRARIES(mcmc blas lapack)
++	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${Python_LIBRARIES})
 +  SWIG_LINK_LIBRARIES(mcmc $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
  	# using Intel
- 	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ifport ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ifport ${PYTHON_LIBRARIES})
 -  SWIG_LINK_LIBRARIES(mcmc blas lapack)
++	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ifport ${Python_LIBRARIES})
 +  SWIG_LINK_LIBRARIES(mcmc $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  endif()
 
  if(BUILD_SUNDIALS)
-@@ -73,7 +73,7 @@
+@@ -73,7 +75,7 @@
  	SWIG_LINK_LIBRARIES(mcmc ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunlinsol/dense/libsundials_sunlinsoldense.a)
  	SWIG_LINK_LIBRARIES(mcmc ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunmatrix/dense/libsundials_sunmatrixdense.a)
  else()
@@ -990,8 +1089,24 @@ diff -ru UQTk-3.1.0.orig/PyUQTk/mcmc/CMakeLists.txt UQTk-3.1.0/PyUQTk/mcmc/CMake
  INSTALL(TARGETS _mcmc DESTINATION PyUQTk/)
 diff -ru UQTk-3.1.0.orig/PyUQTk/pce/CMakeLists.txt UQTk-3.1.0/PyUQTk/pce/CMakeLists.txt
 --- UQTk-3.1.0.orig/PyUQTk/pce/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
-+++ UQTk-3.1.0/PyUQTk/pce/CMakeLists.txt	2020-03-29 13:33:13.799864378 +0200
-@@ -54,22 +54,22 @@
++++ UQTk-3.1.0/PyUQTk/pce/CMakeLists.txt	2020-03-31 15:08:48.757194349 +0200
+@@ -1,10 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -54,22 +55,22 @@
  	# ${CMAKE_CURRENT_SOURCE_DIR}/../../cpp/lib/tools/rosenblatt.cpp
  )
 
@@ -1005,9 +1120,10 @@ diff -ru UQTk-3.1.0.orig/PyUQTk/pce/CMakeLists.txt UQTk-3.1.0/PyUQTk/pce/CMakeLi
 +link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    # using GCC
- 	SWIG_LINK_LIBRARIES(pce uqtkquad uqtkarray uqtktools depslatec depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(pce uqtkquad uqtkarray uqtktools depslatec depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(pce m blas ${BLAS_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(pce m lapack ${LAPACK_LIBRARIES})
++	SWIG_LINK_LIBRARIES(pce uqtkquad uqtkarray uqtktools depslatec depdsfmt depfigtree depann gfortran ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(pce m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(pce m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
@@ -1015,13 +1131,13 @@ diff -ru UQTk-3.1.0.orig/PyUQTk/pce/CMakeLists.txt UQTk-3.1.0/PyUQTk/pce/CMakeLi
 -  SWIG_LINK_LIBRARIES(pce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree depcvode ifcore ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(pce m blas ${BLAS_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(pce m lapack ${LAPACK_LIBRARIES})
-+  SWIG_LINK_LIBRARIES(pce uqtkquad uqtkarray uqtktools depslatec depdsfmt depfigtree depann ifcore ${PYTHON_LIBRARIES})
++  SWIG_LINK_LIBRARIES(pce uqtkquad uqtkarray uqtktools depslatec depdsfmt depfigtree depann ifcore ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(pce m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(pce m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
  endif()
 
  if(BUILD_SUNDIALS)
-@@ -78,7 +78,7 @@
+@@ -78,7 +79,7 @@
  	SWIG_LINK_LIBRARIES(pce ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunlinsol/dense/libsundials_sunlinsoldense.a)
  	SWIG_LINK_LIBRARIES(pce ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunmatrix/dense/libsundials_sunmatrixdense.a)
  else()
@@ -1032,68 +1148,145 @@ diff -ru UQTk-3.1.0.orig/PyUQTk/pce/CMakeLists.txt UQTk-3.1.0/PyUQTk/pce/CMakeLi
  INSTALL(TARGETS _pce DESTINATION PyUQTk/)
 diff -ru UQTk-3.1.0.orig/PyUQTk/quad/CMakeLists.txt UQTk-3.1.0/PyUQTk/quad/CMakeLists.txt
 --- UQTk-3.1.0.orig/PyUQTk/quad/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
-+++ UQTk-3.1.0/PyUQTk/quad/CMakeLists.txt	2020-03-29 11:44:43.425007730 +0200
-@@ -46,11 +46,11 @@
++++ UQTk-3.1.0/PyUQTk/quad/CMakeLists.txt	2020-03-31 15:09:05.433280767 +0200
+@@ -1,10 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -45,12 +46,12 @@
+ # link python and 3rd party libraries, e.g., fortran and blas
  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    # using GCC
-   SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(quad blas lapack)
++  SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann gfortran ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(quad $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
    # using Intel
-   SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann ifcore ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann ifcore ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(quad blas lapack)
++  SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann ifcore ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(quad $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  endif()
 
 
 diff -ru UQTk-3.1.0.orig/PyUQTk/tmcmc/CMakeLists.txt UQTk-3.1.0/PyUQTk/tmcmc/CMakeLists.txt
 --- UQTk-3.1.0.orig/PyUQTk/tmcmc/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
-+++ UQTk-3.1.0/PyUQTk/tmcmc/CMakeLists.txt	2020-03-28 17:55:42.662549532 +0100
-@@ -25,11 +25,11 @@
++++ UQTk-3.1.0/PyUQTk/tmcmc/CMakeLists.txt	2020-03-31 15:09:13.201321105 +0200
+@@ -1,9 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -24,12 +26,12 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    # using GCC
-   SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt gfortran ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt gfortran ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(tmcmc m lapack blas)
++  SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt gfortran ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(tmcmc m $ENV{LIBLAPACK_MT} $ENV{LIBBLAS})
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
    # using Intel
-   SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt ifcore ifport ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt ifcore ifport ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(tmcmc m lapack blas)
++  SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt ifcore ifport ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(tmcmc m $ENV{LIBLAPACK_MT} $ENV{LIBBLAS})
  endif()
 
  INSTALL(TARGETS _tmcmc DESTINATION PyUQTk/)
 diff -ru UQTk-3.1.0.orig/PyUQTk/tools/CMakeLists.txt UQTk-3.1.0/PyUQTk/tools/CMakeLists.txt
 --- UQTk-3.1.0.orig/PyUQTk/tools/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
-+++ UQTk-3.1.0/PyUQTk/tools/CMakeLists.txt	2020-03-29 11:46:12.729588670 +0200
-@@ -45,11 +45,11 @@
++++ UQTk-3.1.0/PyUQTk/tools/CMakeLists.txt	2020-03-31 15:09:23.793376190 +0200
+@@ -1,12 +1,13 @@
++project (UQTk)
++
+ enable_language(Fortran)
+
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -44,12 +45,12 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    # using GCC
-   SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(tools blas lapack)
++  SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann gfortran ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(tools $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
    # using Intel
-   SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann ifcore ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann ifcore ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(tools blas lapack)
++  SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann ifcore ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(tools $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  endif()
 
 
 diff -ru UQTk-3.1.0.orig/PyUQTk/uqtkarray/CMakeLists.txt UQTk-3.1.0/PyUQTk/uqtkarray/CMakeLists.txt
 --- UQTk-3.1.0.orig/PyUQTk/uqtkarray/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
-+++ UQTk-3.1.0/PyUQTk/uqtkarray/CMakeLists.txt	2020-03-28 18:02:14.509178523 +0100
-@@ -36,11 +36,11 @@
++++ UQTk-3.1.0/PyUQTk/uqtkarray/CMakeLists.txt	2020-03-31 15:09:28.169398976 +0200
+@@ -1,10 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIR}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../cpp/lib/array/) # array classes, array input output, and array tools
+@@ -35,12 +36,12 @@
+ # Link fortran libraries
  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    # using GCC
-   SWIG_LINK_LIBRARIES(uqtkarray gfortran ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(uqtkarray gfortran ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(uqtkarray blas lapack)
++  SWIG_LINK_LIBRARIES(uqtkarray gfortran ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(uqtkarray $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
    # using Intel
-   SWIG_LINK_LIBRARIES(uqtkarray ifcore ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(uqtkarray ifcore ${PYTHON_LIBRARIES})
 -	SWIG_LINK_LIBRARIES(uqtkarray blas lapack)
++  SWIG_LINK_LIBRARIES(uqtkarray ifcore ${Python_LIBRARIES})
 +	SWIG_LINK_LIBRARIES(uqtkarray $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
  endif()
 
