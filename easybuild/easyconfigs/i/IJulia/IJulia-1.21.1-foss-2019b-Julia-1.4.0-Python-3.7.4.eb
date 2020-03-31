@@ -1,0 +1,38 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'CmdCp'
+
+name = 'IJulia'
+version = '1.21.1'
+versionsuffix = '-Julia-1.4.0-Python-%(pyver)s'
+
+homepage = "https://github.com/JuliaLang/IJulia.jl"
+description = """Julia kernel for Jupyter"""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://github.com/JuliaLang/IJulia.jl/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['d9fc50b9e341d45ba2f4b852896753159f9a772c80710c602cfefcd66cf802b2']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('Julia', '1.4.0', '-linux-x86_64', True),
+    ('IPython', '7.9.0', '-Python-%(pyver)s'),
+]
+
+cmds_map = [('.*', "export JULIA_DEPOT_PATH=%(installdir)s:$JULIA_DEPOT_PATH && "
+                   """julia -e "using Pkg; Pkg.add(\\\"%(name)s\\\"); using %(name)s" """)]
+
+skipsteps = ['install']
+files_to_copy = []
+
+modextrapaths = {'JULIA_DEPOT_PATH': ''}
+
+sanity_check_commands = ["""julia -e "using %(name)s; notebook(detached=true)" """]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['packages/%(name)s'],
+}
+
+moduleclass = 'tools'
