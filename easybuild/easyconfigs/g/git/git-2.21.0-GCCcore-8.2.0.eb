@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'git'
+version = '2.21.0'
+
+homepage = 'http://git-scm.com/'
+description = """Git is a free and open source distributed version control system designed
+to handle everything from small to very large projects with speed and efficiency."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+
+source_urls = ['https://github.com/git/git/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['7a601275abcc6ff51cc79a6d402e83c90ae37d743b0b8d073aa009dd4b22d432']
+
+builddependencies = [
+    ('binutils', '2.31.1'),
+    ('Autotools', '20180311'),
+]
+dependencies = [
+    ('cURL', '7.63.0'),
+    ('expat', '2.2.6'),
+    ('gettext', '0.19.8.1'),
+    ('Perl', '5.28.1'),
+]
+
+# asciidoc and xmlto are required for git man/doc build
+osdependencies = ['asciidoc', 'xmlto']
+
+preconfigopts = 'make configure && '
+
+# Work around git build system bug.  If LIBS contains -lpthread, then configure
+# will not append -lpthread to LDFLAGS, but Makefile ignores LIBS.
+configopts = "--with-perl=${EBROOTPERL}/bin/perl --enable-pthreads='-lpthread'"
+
+# required to also install documentation
+buildopts = "doc"
+installopts = "install-doc"
+
+sanity_check_paths = {
+    'files': ['bin/git'],
+    'dirs': ['share/man'],
+}
+
+moduleclass = 'tools'

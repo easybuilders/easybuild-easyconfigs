@@ -1,0 +1,33 @@
+easyblock = 'Toolchain'
+
+name = 'fosscuda'
+version = '2019a'
+
+homepage = '(none)'
+description = """GCC based compiler toolchain __with CUDA support__, and including
+ OpenMPI for MPI support, OpenBLAS (BLAS and LAPACK support), FFTW and ScaLAPACK."""
+
+toolchain = SYSTEM
+
+local_gccver = '8.2.0-2.31.1'
+
+local_blaslib = 'OpenBLAS'
+local_blasver = '0.3.5'
+local_blas = '-%s-%s' % (local_blaslib, local_blasver)
+
+# toolchain used to build fosscuda dependencies
+local_comp_mpi_tc = ('gompic', version)
+
+# compiler toolchain dependencies
+# We need GCC, CUDA and OpenMPI as explicit dependencies instead of
+# gompic toolchain because of toolchain preperation functions.
+dependencies = [
+    ('GCC', local_gccver),  # part of gompic
+    ('CUDA', '10.1.105', '', ('GCC', local_gccver)),  # part of gompic
+    ('OpenMPI', '3.1.3', '', ('gcccuda', version)),  # part of gompic
+    (local_blaslib, local_blasver, '', ('GCC', local_gccver)),
+    ('FFTW', '3.3.8', '', local_comp_mpi_tc),
+    ('ScaLAPACK', '2.0.2', local_blas, local_comp_mpi_tc),
+]
+
+moduleclass = 'toolchain'

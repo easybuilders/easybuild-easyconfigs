@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+
+name = 'AUGUSTUS'
+version = '3.3.2'
+
+homepage = 'http://bioinf.uni-greifswald.de/augustus/'
+description = "AUGUSTUS is a program that predicts genes in eukaryotic genomic sequences"
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+source_urls = [
+    'http://bioinf.uni-greifswald.de/augustus/binaries/',
+    'http://bioinf.uni-greifswald.de/augustus/binaries/old/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    '%(name)s-%(version)s_fix-hardcoding.patch',
+    '%(name)s-%(version)s_additional_fix_hardcoding.patch',
+]
+checksums = [
+    '989a95fe3a83d62af4d323a9727d11b2c566adcf4d789d5d86d7b842d83e7671',  # augustus-3.3.2.tar.gz
+    '96e8d72b67e820dca0d6fdbda5b9735dc8259e27fe06167462f2bdbfef5ed7d7',  # AUGUSTUS-3.3.2_fix-hardcoding.patch
+    # AUGUSTUS-3.3.2_additional_fix_hardcoding.patch
+    '2100c3c85a47228f1f2110b636f462305ba37a5f0c4b6f660d67f1696b25f79f',
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Boost', '1.70.0'),
+    ('GSL', '2.5'),
+    ('SAMtools', '1.9'),
+    ('HTSlib', '1.9'),  # also provides tabix
+    ('BCFtools', '1.9'),
+    ('lpsolve', '5.5.2.5'),
+    ('SuiteSparse', '5.4.0', '-METIS-5.1.0'),
+    ('BamTools', '2.5.1'),
+    ('SQLite', '3.27.2'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = "unset LDFLAGS && unset LIBS && "
+buildopts = 'COMPGENEPRED=true SQLITE=true ZIPINPUT=true CXX="$CXX" LINK.cc="$CXX" '
+installopts = 'INSTALLDIR=%(installdir)s '
+
+sanity_check_paths = {
+    'files': ['bin/augustus', 'bin/bam2hints', 'bin/espoca', 'bin/etraining',
+              'bin/fastBlockSearch', 'bin/filterBam', 'bin/getSeq', 'bin/homGeneMapping', 'bin/joingenes',
+              'bin/load2sqlitedb', 'bin/prepareAlign'],
+    'dirs': ['config', 'scripts'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+modextravars = {
+    'AUGUSTUS_BIN_PATH': '%(installdir)s/bin',
+    'AUGUSTUS_CONFIG_PATH': '%(installdir)s/config',
+    'AUGUSTUS_SCRIPTS_PATH': '%(installdir)s/scripts',
+}
+
+moduleclass = 'bio'

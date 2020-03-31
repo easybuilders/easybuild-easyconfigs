@@ -1,0 +1,26 @@
+Make sure SP_DIR points to EMAN2's site-packages and not Pythons.
+
+Åke Sandgren, 20191029
+diff -ru eman2-2.3.orig/cmake/FindPython.cmake eman2-2.3/cmake/FindPython.cmake
+--- eman2-2.3.orig/cmake/FindPython.cmake	2019-04-25 21:03:56.000000000 +0200
++++ eman2-2.3/cmake/FindPython.cmake	2019-10-29 07:40:43.513313415 +0100
+@@ -14,15 +14,12 @@
+ if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+ 	set(SP_DIR $ENV{SP_DIR})
+ else()
+-	if(NOT WIN32)
+-		set(py_sp_dir_command "import site; print(site.getsitepackages()[0])")
+-	else()
+-		set(py_sp_dir_command "import site; print(site.getsitepackages()[1])")
+-	endif()
+-	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
+-			OUTPUT_VARIABLE SP_DIR
++        set(py_ver_command "import sys; print('%s.%s' % sys.version_info[:2])")
++	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_ver_command}"
++			OUTPUT_VARIABLE PY_VER
+ 			OUTPUT_STRIP_TRAILING_WHITESPACE
+ 			)
++        set(SP_DIR "${EMAN_PREFIX}/lib/python${PY_VER}/site-packages")
+ 	message("Python site-packages: ${SP_DIR}")
+ endif()
+ 

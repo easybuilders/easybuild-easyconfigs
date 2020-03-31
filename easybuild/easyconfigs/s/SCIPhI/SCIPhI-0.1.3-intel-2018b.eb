@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'SCIPhI'
+version = '0.1.3'
+
+homepage = 'https://github.com/cbg-ethz/SCIPhI'
+description = """Single-cell mutation identification via phylogenetic inference (SCIPhI) is a new approach
+ to mutation detection in individual tumor cells by leveraging the evolutionary relationship among cells."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/cbg-ethz/SCIPhI/archive'],
+        'filename': 'v%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/davisking/dlib/archive/'],
+        'download_filename': '1e8c2cc.tar.gz',
+        'filename': 'dlib-20180612-1e8c2cc.tar.gz',
+        'extract_cmd': "tar xfvz %s && mv dlib-* dlib",
+    },
+]
+patches = ['SCIPhI-%(version)s_fix-sciphi-test.patch']
+checksums = [
+    '48854fccbbdf33b5c30aa6cbdf019cc58ec87e8218117533ee1fa030f773d683',  # v0.1.3.tar.gz
+    'b3a28fbef062d67e3d7bed0d13e715bb6d480a63107db64feb29aeb8ca26fcb5',  # dlib-20180612-1e8c2cc.tar.gz
+    'd0507cfbae8424bad1539553475e1fa3ef8f56968dc55643db40b968452aff20',  # SCIPhI-0.1.3_fix-sciphi-test.patch
+]
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+]
+dependencies = [
+    ('Boost', '1.67.0'),
+    ('SeqAn', '2.4.0'),
+    ('zlib', '1.2.11'),
+    ('libpng', '1.6.34'),
+    ('X11', '20180604'),
+]
+
+skipsteps = ['install']
+
+configopts = "-DSeqAn_DIR=$EBROOTSEQAN/util/cmake -DSEQAN_INCLUDE_PATH=$EBROOTSEQAN/include "
+configopts += "-DDLIB_INCLUDEDIR=%(builddir)s/dlib/"
+
+buildopts = "&& mkdir -p %(installdir)s/bin && cp -a sciphi %(installdir)s/bin/"
+
+sanity_check_paths = {
+    'files': ['bin/sciphi'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["sciphi -h"]
+
+moduleclass = 'bio'

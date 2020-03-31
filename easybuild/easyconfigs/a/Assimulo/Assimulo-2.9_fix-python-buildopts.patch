@@ -1,0 +1,51 @@
+# Pick up blas and lapack form eb provided location
+# August 20th 2018 by B. Hajgato (Free University Brussels - VUB)
+--- Assimulo-2.9/setup.py.orig	2016-04-20 14:45:58.000000000 +0200
++++ Assimulo-2.9/setup.py	2018-08-13 15:07:11.536447996 +0200
+@@ -30,12 +30,15 @@
+ 
+ parser = argparse.ArgumentParser(description='Assimulo setup script.')
+ parser.register('type','bool',str2bool)
+-package_arguments=['plugins','sundials','blas','superlu','lapack']
++package_arguments=['plugins','superlu']
+ package_arguments.sort()
+ for pg in package_arguments:
+     parser.add_argument("--{}-home".format(pg), 
+            help="Location of the {} directory".format(pg.upper()),type=str,default='')
+-parser.add_argument("--blas-name", help="name of the blas package",default='blas')   
++parser.add_argument("--blas-home", help="",default=os.environ['BLAS_LAPACK_LIB_DIR'])
++parser.add_argument("--lapack-home", help="",default=os.environ['BLAS_LAPACK_LIB_DIR'])
++parser.add_argument("--sundials-home", help="",default=os.environ['EBROOTSUNDIALS'])
++parser.add_argument("--blas-name", help="name of the blas package",default=os.environ['LIBBLAS']+' ')   
+ parser.add_argument("--extra-c-flags", help='Extra C-flags (a list enclosed in " ")',default='')                  
+ parser.add_argument("--is_static", type='bool', help="set to true if present",default=False)
+ parser.add_argument("--sundials-with-superlu", type='bool', help="set to true if Sundials has been compiled with SuperLU",default=False)
+@@ -257,14 +260,8 @@
+             L.debug("Note: the path required is to where the static library lib is found")
+             self.with_BLAS = False
+         else:
+-            if not os.path.exists(os.path.join(self.BLASdir,self.BLASname_t+'.a')):
+-                L.warning("Could not find BLAS"+msg)
+-                L.debug("Could not find BLAS at the given path {}.".format(self.BLASdir))
+-                L.debug("usage: --blas-home=path")
+-                self.with_BLAS = False
+-            else:
+-                L.debug("BLAS found at "+self.BLASdir)
+-                self.with_BLAS = True
++            L.debug("BLAS found at "+self.BLASdir)
++            self.with_BLAS = True
+         
+     def check_SuperLU(self):
+         """
+@@ -482,9 +479,9 @@
+             #if self.LAPACKname != "": 
+             #    lapack_blas += "-L{} ".format(self.LAPACKname) 
+             #else: 
+-            lapack_blas += "-llapack "
++            lapack_blas += os.environ['LIBLAPACK'] + ' '
+             if self.BLASdir != "": lapack_blas += "-L{} ".format(self.BLASdir)
+-            lapack_blas += "-lblas"
++            lapack_blas += os.environ['LIBBLAS'] + ' '
+             extra_link_flags += [lapack_blas]
+             glimda_list = ['glimda_complete.f','glimda_complete.pyf']
+             src=['assimulo'+os.sep+'thirdparty'+os.sep+'glimda'+os.sep+code for code in glimda_list]
