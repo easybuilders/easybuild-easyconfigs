@@ -22,18 +22,17 @@ prebuildopts += "declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET
 # Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
 buildopts = " prefix=%(installdir)s"
 buildopts += " USE_SYSTEM_CURL=1 USE_SYSTEM_GMP=1 USE_SYSTEM_LIBGIT2=1 USE_SYSTEM_LIBSSH2=1 USE_SYSTEM_LIBUNWIND=1"
-buildopts += " USE_SYSTEM_MPFR=1 USE_SYSTEM_PATCHELF=1 USE_SYSTEM_ZLIB=1"
+buildopts += " USE_SYSTEM_MPFR=1 USE_SYSTEM_PATCHELF=1 USE_SYSTEM_ZLIB=1 USE_SYSTEM_P7ZIP=1"
 buildopts += " USE_BINARYBUILDER=0"
 buildopts += " JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]}"
 buildopts += " ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
 
 preinstallopts = prebuildopts
 installopts = buildopts
-
-postinstallcmds = [
-    # for some reason the regular install forgets to copy this crucial library!
-    "install -m 0755 usr/lib/libLLVM-8jl.so %(installdir)s/lib/julia"
-]
+# for some reason the regular install forgets to copy this crucial library!
+installopts += " && install -m 0755 usr/lib/libLLVM-8jl.so %(installdir)s/lib/julia"
+# remove symbolic links to system libraries
+installopts += " && for i in %(installdir)s/lib/julia/*; do if [[ -L $i && $(readlink $i | cut -c 1-28) == '/cvmfs/soft.computecanada.ca' ]]; then rm $i; fi; done"
 
 sanity_check_paths = {
     'files': ["bin/julia"],
