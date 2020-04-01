@@ -1,16 +1,17 @@
 easyblock = 'MakeCp'
 
-name = 'graphmap2'
+name = 'GraphMap2'
 version = '0.6.4'
 
 homepage = 'https://github.com/lbcb-sci/graphmap2'
 description = "A highly sensitive and accurate mapper for long, error-prone reads"
 
 toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'cstd': 'c++11', 'openmp': True}
 
 # https://github.com/lbcb-sci/graphmap2
 github_account = 'lbcb-sci'
-source_urls = [GITHUB_SOURCE]
+source_urls = [GITHUB_LOWER_SOURCE]
 sources = [
     'v%(version)s.tar.gz',  # graphmap2
     {
@@ -39,16 +40,21 @@ checksums = [
 files_to_copy = [(['bin/Linux-x64/graphmap2'], 'bin')]
 
 # Move sources dependencies to expected folders
-prebuildopts = "mv %(builddir)s/seqlib-*/*  %(builddir)s/%(name)s-%(version)s/codebase/seqlib/ && " \
-               "mv %(builddir)s/argparser-*/*  %(builddir)s/%(name)s-%(version)s/codebase/argumentparser/ && " \
-               "mv %(builddir)s/gindex-*/*  %(builddir)s/%(name)s-%(version)s/codebase/gindex/ && "
+prebuildopts = "mv %(builddir)s/seqlib-*/* %(builddir)s/%(namelower)s-%(version)s/codebase/seqlib/ && "
+prebuildopts += "mv %(builddir)s/argparser-*/* %(builddir)s/%(namelower)s-%(version)s/codebase/argumentparser/ && "
+prebuildopts += "mv %(builddir)s/gindex-*/* %(builddir)s/%(namelower)s-%(version)s/codebase/gindex/ && "
 
-prebuildopts += 'export GCC="$CXX" && '
+buildopts = 'GCC="$CXX" '
+buildopts += 'CC_FLAGS_RELEASE="$CXX_FLAGS -DRELEASE_VERSION -c -g -m64 '
+buildopts += '-fdata-sections -ffunction-sections -fmessage-length=0 -ffreestanding -Werror=return-type -pthread"'
 
 sanity_check_paths = {
     'files': ['bin/graphmap2'],
     'dirs': [],
 }
-# 'graphmap2 align -h' returns exit(1)
 
-moduleclass = 'data'
+# GraphMap2 v0.6.4 has defined version of 0.6.5
+# https://github.com/lbcb-sci/graphmap2/blob/v0.6.4/src/program_parameters.h#L19
+sanity_check_commands = ['graphmap2 align -h 2>&1  | grep "GraphMap Version: v0.6.5"']
+
+moduleclass = 'bio'
