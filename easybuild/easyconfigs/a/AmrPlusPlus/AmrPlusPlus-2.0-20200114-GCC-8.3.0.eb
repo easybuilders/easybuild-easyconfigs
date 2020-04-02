@@ -34,9 +34,9 @@ checksums = ['04af67517b752e15b5add27f4584f8c11293a0ed1353d3c1dd60c3c6e2dcb329']
 dependencies = [
     ('Java', '11', '', True),
     ('BWA', '0.7.17'),
-    ('Trimmomatic', '0.39', '-Java-%(javaver)s', True),
+    ('Trimmomatic', '0.39', '%(javashortver)s', True),
     ('SAMtools', '1.10'),
-    ('Nextflow', '19.12.0', '', True)
+    ('Nextflow', '19.12.0', '', True),
 ]
 
 local_exe_files = [
@@ -51,34 +51,35 @@ local_exe_files = [
 
 local_dir = ['bin', 'data', 'docs', 'config']
 
-local_bin_files = ['RGI_aro_hits.py', 'RGI_long_combine.py',
-                   'samtools_idxstats.py', 'kraken_long_to_wide.py',
-                   'trimmomatic_stats.py']
+local_files = [
+    'main_AmrPlusPlus_v2.nf',
+    'bin/RGI_aro_hits.py',
+    'bin/RGI_long_combine.py',
+    'bin/samtools_idxstats.py',
+    'bin/kraken_long_to_wide.py',
+    'bin/trimmomatic_stats.py'
+]
 
 skipsteps = ['configure', 'build']
 
 files_to_copy = [
     (local_exe_files, '%(installdir)s'),
-    (local_dir, '%(installdir)s'),
+    (local_dir, '%(installdir)s')
 ]
 
-install_cmd = "chmod +x %(installdir)s/*.nf &&"
+install_cmd = "chmod +x %(installdir)s/*.nf && "
 install_cmd += "chmod +x %(installdir)s/*.sh"
 
 modextravars = {
     'JAVA': '${EBROOTJAVA}/bin/java',
-    'BWA': '${EBROOTBWA}/bin/bwa',
+    'BWA': '${EBROOTBWA}/bin/bwa'
 }
 
-modloadmsg = """To execute AmrPlusPlus, run:\n
-nextflow run $EBROOTAMRPLUSPLUS/main_AmrPlusPlus_v2.nf [options]\n
-"""
+modloadmsg = """To execute AmrPlusPlus, run:\n nextflow run $EBROOTAMRPLUSPLUS/main_AmrPlusPlus_v2.nf [options]\n"""
 
 sanity_check_paths = {
-    'files': ['main_AmrPlusPlus_v2.nf',
-              'bin/%s' % x for x in local_bin_files,
-             ],
-    'dirs': ['bin']
+    'files': ['%s' % x for x in local_files],
+    'dirs': ['config']
 }
 
 moduleclass = 'bio'
