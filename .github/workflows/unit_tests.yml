@@ -134,3 +134,29 @@ jobs:
 
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
           eb --prefix /tmp/$USER/$GITHUB_SHA M4-1.4.18.eb
+
+  test-sdist:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+        architecture: x64
+    - name: Create source distribution
+      run: python setup.py sdist
+    - name: Inspect created files
+      working-directory: dist
+      run: |
+          tar xvf easybuild-easyconfigs*tar.gz
+          # .git folders should not be there
+          forbidden_files=$(find . -name .git -or -name '*.py[co]')
+          if [ -n "$forbidden_files" ]; then
+            echo "Found disallowed files: $forbidden_files" && false
+          fi
+          # CVS ECs must exist, see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
+          required_files=$(find . -name 'CVS-*.eb')
+          if [ -z "$required_files" ]; then
+            echo "Did not find required files" && false
+          fi
