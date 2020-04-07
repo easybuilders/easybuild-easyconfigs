@@ -1,0 +1,38 @@
+# Built with EasyBuild version 3.7.0-rc7b39e420d4f1af2b79028319dfd5ed90b504390 on 2018-10-23_23-21-03
+easyblock = "ConfigureMake"
+
+name = "Julia"
+version = "1.4.0"
+
+homepage = "http://julialang.org"
+description = """A high-level, high-performance dynamic language for technical computing."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0'}
+
+source_urls = ['https://github.com/JuliaLang/julia/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+
+patches = ['julia-1.4.0-openblas-0.3.9.patch']
+
+skipsteps = ['configure']
+
+prebuildopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && "
+prebuildopts += "declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && " 
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+buildopts = " prefix=%(installdir)s"
+buildopts += " USE_BINARYBUILDER=0"
+buildopts += " JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]}"
+buildopts += " ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+preinstallopts = prebuildopts
+installopts = buildopts
+# for some reason the regular install forgets to copy this crucial library!
+installopts += " && install -m 0755 usr/lib/libLLVM-8jl.so %(installdir)s/lib/julia"
+
+sanity_check_paths = {
+    'files': ["bin/julia"],
+    'dirs': ["lib"]
+}
+
+moduleclass = 'lang'
