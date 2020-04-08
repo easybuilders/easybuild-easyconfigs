@@ -1,0 +1,65 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+easyblock = 'ConfigureMake'
+
+name = 'MEME'
+version = '4.11.2'
+local_patched_version='4.11.2_2'
+
+homepage = 'http://meme-suite.org'
+description = """The MEME Suite allows you to:
+ - discover motifs using MEME, DREME (DNA only) or GLAM2 on groups of related DNA or protein sequences,
+ - search sequence databases with motifs using MAST, FIMO, MCAST or GLAM2SCAN,
+ - compare a motif to all motifs in a database of motifs,
+ - associate motifs with Gene Ontology terms via their putative target genes,
+ - analyse motif enrichment using SpaMo or CentriMo.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2018.3.312'}
+
+source_urls = [
+    'http://%(namelower)s-suite.org/%(namelower)s-software/%(version)s/',
+    'http://%(namelower)s-suite.org/%(namelower)s-software/Databases/motifs/',
+    'http://%(namelower)s-suite.org/%(namelower)s-software/Databases/gomo/',
+]
+
+sources = ['%(namelower)s_%(version)s_2.tar.gz', 'motif_databases.12.18.tgz', 'gomo_databases.3.2.tgz']
+checksums = [
+    '377238c2a9dda64e01ffae8ecdbc1492c100df9b0f84132d50c1cf2f68921b22',  # %(namelower)s-%(version)s_2.tar.gz
+    'f6dd80e54f2184f8275c83dd706a3c89',  # motif_databases.12.18.tgz
+    '5b8fcf3c541b30e2a66580f289132e97',  # gomo_databases.3.2.tgz
+]
+
+dependencies = [
+    ('Python', '3.7.4', '', True),
+    ('Perl', '5.22.4', '', True),
+    # ('zlib', '1.2.8'),
+]
+
+configopts = '--with-url="http://%(namelower)s-suite.org/" --enable-build-libxml2 --enable-build-libxslt --with-db=%(installdir)s/db --with-perl=$EBROOTPERL/bin/perl --with-python=$EBROOTPYTHON/bin/python --with-python3=$EBROOTPYTHON/bin/python --with-gs=$NIXUSER_PROFILE/bin/gs '
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'PERL5LIB': 'lib/%(namelower)s-%(version)s/perl',
+    'PYTHONPATH': 'lib/%(namelower)s-%(version)s/python',
+}
+postinstallcmds = [
+    'mkdir -p %(installdir)s/db && cd %(builddir)s/%(namelower)s_%(version)s/ && cp -r ../gomo_databases ../motif_databases %(installdir)s/db && cp -r scripts tests %(installdir)s/',
+    'rm -r %(installdir)s/LOGS'
+    ]
+
+sanity_check_paths = {
+    'files': ['bin/ame', 'bin/centrimo', 'bin/dreme', 'bin/dust', 'bin/fimo', 'bin/glam2', 'bin/glam2scan', 'bin/gomo', 'bin/mast', 'bin/mcast', 'bin/%(namelower)s', 'bin/%(namelower)s-chip', 'bin/purge', 'bin/spamo', 'bin/tomtom'],
+    'dirs': ['bin','db', 'doc', 'etc','lib', 'scripts'],
+}
+
+moduleclass = 'bio'
