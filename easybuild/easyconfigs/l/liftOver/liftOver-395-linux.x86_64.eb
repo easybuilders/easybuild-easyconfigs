@@ -1,0 +1,42 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'Binary'
+
+name = 'liftOver'
+version = '395'
+local_versions_suffix = 'linux.x86_64'
+versionsuffix = '-' + local_versions_suffix
+
+homepage = 'https://genome.ucsc.edu/cgi-bin/hgLiftOver'
+description = "Move annotations from one assembly to another"
+
+toolchain = SYSTEM
+
+# http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64 contains the newest version :(
+# http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64.v<version> is not present for newest version
+# The version of the newest version is only listed in file FOOTER.txt
+# After releasing new version it seems they rename the original folder to append version suffix
+source_urls = [
+    'http://hgdownload.cse.ucsc.edu/admin/exe/%s.v%%(version)s' % local_versions_suffix,
+    'http://hgdownload.cse.ucsc.edu/admin/exe/%s' % local_versions_suffix,
+]
+sources = [
+    {
+        'filename': '%(name)s-%(version)s',
+        'download_filename': '%(name)s',
+    },
+]
+checksums = ['8ecc0d3a754a4bab1fe36d2afa6829c50bff285c9e604727a6b12a74eb9005e4']
+
+# The filename is always 'liftOver' regardless of version.
+# So download it with version appended and make link in installdir
+postinstallcmds = ["cd %(installdir)s; ln -s %(name)s-%(version)s %(name)s"]
+
+sanity_check_paths = {
+    'files': ['%(name)s', '%(name)s-%(version)s'],
+    'dirs': []
+}
+sanity_check_commands = ['%(name)s 2>&1 | grep "liftOver - Move annotations from one assembly to another"']
+
+moduleclass = 'bio'

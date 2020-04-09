@@ -1,0 +1,81 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+# Bundle is used because FusionCather needs very specific seqtk version
+easyblock = 'Bundle'
+
+name = 'FusionCatcher'
+version = '1.20'
+local_python_versionsuffix = '-Python-%(pyver)s'
+local_java_versionsuffix = '-Java-%(javaver)s'
+versionsuffix = local_python_versionsuffix + local_java_versionsuffix
+
+homepage = 'https://github.com/ndaniel/fusioncatcher'
+description = """FusionCatcher searches for novel somatic fusion genes in RNA-seq paired/single-end
+reads data produced by the Illumina Solexa platforms (for example: 
+Solexa/HiSeq/NextSeq/MiSeq/MiniSeq)."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+dependencies = [
+    ('Python', '2.7.16'),
+    ('SciPy-bundle', '2019.10', local_python_versionsuffix),
+    ('Biopython', '1.75', local_python_versionsuffix),
+    ('Java', '11', '', True),
+    ('Bowtie', '1.2.3'),
+    ('Bowtie2', '2.3.5.1'),
+    ('SRA-Toolkit', '2.9.6-1', '-centos_linux64', True),
+    ('pigz', '2.4'),
+    ('liftOver', '395', '-linux.x86_64', True),
+    ('BLAT', '395', '-linux.x86_64', True),
+    ('faToTwoBit', '395', '-linux.x86_64', True),
+    ('STAR', '2.7.3a'),
+    ('BBMap', '38.79'),
+    ('picard', '2.21.6', local_java_versionsuffix, True),
+    ('OpenPyXL', '2.6.4'),
+    ('zlib', '1.2.11'),  # seqtk in bundle requires zlib
+]
+
+default_component_specs = {
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(namelower)s-%(version)s.tar.gz',
+    }],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+default_easyblock = "MakeCp"
+
+components = [
+    # Order of components is important
+    (name, version, {
+        'easyblock': 'EB_FusionCatcher',
+        'source_urls': ['https://github.com/ndaniel/fusioncatcher/archive'],
+        'checksums': ['4c66dbd7be64aaf52ab1f02278f06d9a8082b7f3f30a8045a50b4899e22a0385'],
+        'seqtk_bundled': True,
+    }),
+
+    # EB_FusionCatcher needs exactly this version of seqtk
+    ('seqtk', '1.2-r101c', {
+        'easyblock': 'MakeCp',
+        'source_urls': ['https://github.com/ndaniel/seqtk/archive/'],
+        'checksums': ['4a57fbe828eccaa4f0122c84bf9c4c5409a024ad9deace31ec7bee6d25cf5e49'],
+        'buildopts': 'CC="$CC" CFLAGS="$CLFAGS"',
+        'files_to_copy': [(["seqtk"], 'tools/seqtk/')],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s.py', 'etc/configuration.cfg', 'tools/seqtk/seqtk'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    '%(namelower)s.py -h',
+]
+
+modloadmsg = "FusionCatcher needs database to work properly.\n"
+modloadmsg += "Database download script is located in: ${EBROOTFUSIONCATCHER}/data/download-human-db.sh\n"
+modloadmsg += "Path to downloaded data folder can be set with '--data' option in fusioncatcher"
+
+moduleclass = 'bio'

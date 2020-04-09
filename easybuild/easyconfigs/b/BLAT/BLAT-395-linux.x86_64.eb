@@ -1,0 +1,42 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'Binary'
+
+name = 'BLAT'
+version = '395'
+local_versions_suffix = 'linux.x86_64'
+versionsuffix = '-' + local_versions_suffix
+
+homepage = 'https://genome.ucsc.edu/cgi-bin/hgBlat?command=start'
+description = "Standalone BLAT v. 36x5 fast sequence search command line tool"
+
+toolchain = SYSTEM
+
+# http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64 contains the newest version :(
+# http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64.v<version> is not present for newest version
+# The version of the newest version is only listed in file FOOTER.txt
+# After releasing new version it seems they rename the original folder to append version suffix
+source_urls = [
+    'http://hgdownload.cse.ucsc.edu/admin/exe/%s.v%%(version)s/%%(namelower)s' % local_versions_suffix,
+    'http://hgdownload.cse.ucsc.edu/admin/exe/%s/%%(namelower)s' % local_versions_suffix,
+]
+sources = [
+    {
+        'filename': '%(namelower)s-%(version)s',
+        'download_filename': '%(namelower)s',
+    },
+]
+checksums = ['af928367a2b341621aba1a0b6747e0e71ca7ef5a7898f8a689d17e7b93f4f42a']
+
+# The filename is always 'blat' regardless of version.
+# So download it with version appended and make link in installdir
+postinstallcmds = ["cd %(installdir)s; ln -s %(namelower)s-%(version)s %(namelower)s"]
+
+sanity_check_paths = {
+    'files': ['%(namelower)s', '%(namelower)s-%(version)s'],
+    'dirs': []
+}
+sanity_check_commands = ['%(namelower)s 2>&1 | grep "Standalone BLAT v. 36x5 fast sequence search command line tool"']
+
+moduleclass = 'bio'

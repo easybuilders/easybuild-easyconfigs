@@ -1,0 +1,42 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'Binary'
+
+name = 'faToTwoBit'
+version = '395'
+local_versions_suffix = 'linux.x86_64'
+versionsuffix = '-' + local_versions_suffix
+
+homepage = 'https://genome.ucsc.edu/goldenpath/help/twoBit.html'
+description = "Convert DNA from fasta to 2bit format"
+
+toolchain = SYSTEM
+
+# http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64 contains the newest version :(
+# http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64.v<version> is not present for newest version
+# The version of the newest version is only listed in file FOOTER.txt
+# After releasing new version it seems they rename the original folder to append version suffix
+source_urls = [
+    'http://hgdownload.cse.ucsc.edu/admin/exe/%s.v%%(version)s' % local_versions_suffix,
+    'http://hgdownload.cse.ucsc.edu/admin/exe/%s' % local_versions_suffix,
+]
+sources = [
+    {
+        'filename': '%(name)s-%(version)s',
+        'download_filename': '%(name)s',
+    },
+]
+checksums = ['06434a20573ab271748bb31b30f9bf67d5efa9314c11687d0836bde202aff5e0']
+
+# The filename is always 'faToTwoBit' regardless of version.
+# So download it with version appended and make link in installdir
+postinstallcmds = ["cd %(installdir)s; ln -s %(name)s-%(version)s %(name)s"]
+
+sanity_check_paths = {
+    'files': ['%(name)s', '%(name)s-%(version)s'],
+    'dirs': []
+}
+sanity_check_commands = ['%(name)s 2>&1 | grep "faToTwoBit - Convert DNA from fasta to 2bit format"']
+
+moduleclass = 'bio'
