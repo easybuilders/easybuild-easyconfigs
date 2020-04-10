@@ -65,15 +65,17 @@ skipsteps = ['configure']
 
 # Use appropriate makefile and flags for this toolchain
 prebuildopts = "cp sys/make.x86_64-linux-gnu make.arch && "
-prebuildopts += 'sed -i "s|-O2|$OPTFLAGS|g" make.arch && '
+prebuildopts += 'sed -i "s/-O2/$OPTFLAGS/g" make.arch && '
 
 # Enable MPI and link to OpenBLAS from EB
-buildopts = 'WITH_MPI=1 LIB_LAPACK="$LIBLAPACK" '
+local_makeopts = ' WITH_MPI=1 LIB_LAPACK="$LIBLAPACK"'
 # Use DFTD3 from EB
-buildopts += 'WITH_DFTD3=1 COMPILE_DFTD3=0 DFTD3_INCS="-I$EBROOTDFTD3MINLIB/include" '
-buildopts += 'DFTD3_LIBS="-L$EBROOTDFTD3MINLIB/lib -ldftd3" '
+local_makeopts += ' WITH_DFTD3=1 COMPILE_DFTD3=0 DFTD3_INCS="-I$EBROOTDFTD3MINLIB/include"'
+local_makeopts += ' DFTD3_LIBS="-L$EBROOTDFTD3MINLIB/lib -ldftd3"'
 
-runtest = 'test WITH_MPI=1'
+buildopts = local_makeopts
+
+runtest = 'test' + local_makeopts
 
 installopts = 'INSTALLDIR="%(installdir)s"'
 
