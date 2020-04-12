@@ -247,7 +247,8 @@ class EasyConfigTest(TestCase):
             'libxc': (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-', r'PySCF-',
                                   r'Qiskit-', r'WIEN2k-']),
             # OPERA requires SAMtools 0.x
-            'SAMtools': (r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6', r'CGmapTools-0\.1\.2']),
+            'SAMtools': (r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6', r'CGmapTools-0\.1\.2',
+                                  r'BatMeth2-2\.1']),
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
             'Jellyfish': (r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2']),
             # EMAN2 2.3 requires Boost(.Python) 1.64.0

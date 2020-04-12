@@ -30,10 +30,14 @@ jobs:
 
     - name: install OS & Python packages
       run: |
-        # apt-get update is disabled for now, because it was failing in GitHub since Fri Dec 13th 2019,
-        # due to 'Conflicting distribution' issue
-        # sudo apt-get update
-        #
+        # use apt-spy2 to select closest apt mirror,
+        # which helps avoid connectivity issues in Azure;
+        # see https://github.com/actions/virtual-environments/issues/675
+        sudo gem install apt-spy2
+        sudo apt-spy2 check
+        sudo apt-spy2 fix --commit
+        # after selecting a specific mirror, we need to run 'apt-get update'
+        sudo apt-get update
         # for modules tool
         sudo apt-get install lua5.2 liblua5.2-dev lua-filesystem lua-posix tcl tcl-dev
         # fix for lua-posix packaging issue, see https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
@@ -130,3 +134,29 @@ jobs:
 
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
           eb --prefix /tmp/$USER/$GITHUB_SHA M4-1.4.18.eb
+
+  test-sdist:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+        architecture: x64
+    - name: Create source distribution
+      run: python setup.py sdist
+    - name: Inspect created files
+      working-directory: dist
+      run: |
+          tar xvf easybuild-easyconfigs*tar.gz
+          # .git folders should not be there
+          forbidden_files=$(find . -name .git -or -name '*.py[co]')
+          if [ -n "$forbidden_files" ]; then
+            echo "Found disallowed files: $forbidden_files" && false
+          fi
+          # CVS ECs must exist, see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
+          required_files=$(find . -name 'CVS-*.eb')
+          if [ -z "$required_files" ]; then
+            echo "Did not find required files" && false
+          fi
