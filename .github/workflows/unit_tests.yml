@@ -1,7 +1,7 @@
 name: easyconfigs unit tests
 on: [push, pull_request]
 jobs:
-  build:
+  test-suite:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
@@ -119,44 +119,64 @@ jobs:
           unset PYTHONPATH
 
           # install easyconfigs via distribution package
-          python setup.py sdist
+          python setup.py sdist > /dev/null
           ls dist
-          pip install dist/easybuild-easyconfigs*tar.gz
+          pip install dist/easybuild-easyconfigs*tar.gz > /dev/null
 
           # robot-paths value should not be empty, but have an entry that includes easybuild/easyconfigs subdir
+          echo "eb --show-config"
           eb --show-config | tee eb_show_config.out
           grep "^robot-paths .*/easybuild/easyconfigs" eb_show_config.out
+
           # check whether some specific easyconfig files are found
+          echo "eb --search 'TensorFlow-1.14.*.eb'"
           eb --search 'TensorFlow-1.14.*.eb' | tee eb_search_TF.out
           grep '/TensorFlow-1.14.0-foss-2019a-Python-3.7.2.eb$' eb_search_TF.out
-          eb --search '^foss-2018b.eb' | tee eb_search_foss.out
-          grep '/foss-2018b.eb$' eb_search_foss.out
+
+          echo "eb --search '^foss-2019b.eb'"
+          eb --search '^foss-2019b.eb' | tee eb_search_foss.out
+          grep '/foss-2019b.eb$' eb_search_foss.out
+
+          # make sure CVS easyconfigs are included in installation (cfr. issue #10325)
+          echo "Searching for CVS easyconfigs..."
+          eb --search '^CVS-' | grep '/CVS-'
 
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
           eb --prefix /tmp/$USER/$GITHUB_SHA M4-1.4.18.eb
 
   test-sdist:
     runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python: [2.7, 3.6, 3.7]
     steps:
     - uses: actions/checkout@v2
+
     - name: set up Python
       uses: actions/setup-python@v1
-      with:
-        python-version: 3.7
-        architecture: x64
+
     - name: Create source distribution
       run: python setup.py sdist
-    - name: Inspect created files
+
+    - name: Inspect files included in source distribution
       working-directory: dist
       run: |
-          tar xvf easybuild-easyconfigs*tar.gz
-          # .git folders should not be there
-          forbidden_files=$(find . -name .git -or -name '*.py[co]')
-          if [ -n "$forbidden_files" ]; then
-            echo "Found disallowed files: $forbidden_files" && false
+          tar xfz easybuild-easyconfigs*tar.gz
+          cd easybuild-easyconfigs-*/
+
+          # .git folder should not be there in source tarball
+          dot_git_files=$(find . -name .git)
+          if [ -n "$dot_git_files" ]; then
+            echo "Found .git folders in source tarball: $dot_git_files" && false
+          else
+            echo "No .git folders found in source tarball: OK"
           fi
-          # CVS ECs must exist, see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
-          required_files=$(find . -name 'CVS-*.eb')
-          if [ -z "$required_files" ]; then
-            echo "Did not find required files" && false
+
+          # CVS easyconfigs must be included in source tarball,
+          # see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
+          cvs_easyconfigs=$(find . -name 'CVS-*.eb')
+          if [ -z "$cvs_easyconfigs" ]; then
+            echo "CVS easyconfigs not found" && false
+          else
+            echo "Found CVS easyconfigs: $cvs_easyconfigs"
           fi
