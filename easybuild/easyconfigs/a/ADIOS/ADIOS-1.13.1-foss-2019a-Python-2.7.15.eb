@@ -1,0 +1,71 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'ADIOS'
+version = '1.13.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.olcf.ornl.gov/center-projects/adios/'
+description = """The Adaptable IO System (ADIOS) provides a simple,
+flexible way for scientists to describe the data in their code that may
+need to be written, read, or processed outside of the running
+simulation."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'usempi': True}
+
+github_account = 'ornladios'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_force_use_of_mpi.patch',
+    '%(name)s-%(version)s_fix_missing_thread_lib.patch',
+    '%(name)s-%(version)s_fix_search_for_szip.patch',
+]
+checksums = [
+    'b1c6949918f5e69f701cabfe5987c0b286793f1057d4690f04747852544e157b',  # v1.13.1.tar.gz
+    '81b9b0a77b23d6137f08900a3ecda4471b806c384cf4ad19c4370fc7ca8d9a82',  # ADIOS-1.13.1_force_use_of_mpi.patch
+    'a66fab38e5daf40978f9e961d810f9cbf189de8db924a403ae42a01d405f6fdc',  # ADIOS-1.13.1_fix_missing_thread_lib.patch
+    '2e21a5041822c8b57554eb977a3135637c2714d377eee3b0194d377f1458cdab',  # ADIOS-1.13.1_fix_search_for_szip.patch
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('SciPy-bundle', '2019.03'),
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.6'),
+    ('Szip', '2.1.1'),
+    ('lz4', '1.9.1'),
+    ('HDF5', '1.10.5'),
+    ('netCDF', '4.6.2'),
+    ('Mini-XML', '2.9'),
+]
+
+separate_build_dir = True
+
+preconfigopts = 'export BZIP2=$EBROOTBZIP2 SZIP=$EBROOTSZIP LZ4=$EBROOTLZ4 '
+preconfigopts += 'MXML_DIR=$EBROOTMINIMINXML PAR_HDF5_LIBS="-lhdf5_hl -lhdf5" '
+preconfigopts += 'PAR_HDF5_DIR=$EBROOTHDF5 PAR_HDF5_LIBS="-lhdf5_hl -lhdf5" '
+preconfigopts += 'PAR_NC_DIR=$EBROOTNETCDF PAR_NC_LIBS="-lnetcdf" && '
+
+fix_python_shebang_for = ['bin/gpp.py']
+
+runtest = False
+
+options = {'modulename': False}
+
+sanity_check_paths = {
+    'files': ['bin/adios_list_methods', 'bin/bpappend'],
+    'dirs': ['etc/skel/templates', 'lib/python'],
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python',
+}
+
+parallel = 1
+
+moduleclass = 'data'
