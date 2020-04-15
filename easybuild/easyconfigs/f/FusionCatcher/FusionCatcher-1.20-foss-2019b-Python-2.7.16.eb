@@ -34,21 +34,22 @@ dependencies = [
 
 local_bbmap_makefile = 'makefile.%s' % {'Darwin': 'osx', 'Linux': 'linux'}[OS_TYPE]
 
+default_component_specs = {
+    'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
 components = [
     (name, version, {
         'easyblock': 'Tarball',
         'source_urls': [GITHUB_SOURCE],
-        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['4c66dbd7be64aaf52ab1f02278f06d9a8082b7f3f30a8045a50b4899e22a0385'],
-        'start_dir': '%(namelower)s-%(version)s',
     }),
     # FusionCatcher requires a fork of seqtk with features not available upstream
     ('seqtk', '1.2-r101c', {
         'easyblock': 'MakeCp',
         'source_urls': ['http://github.com/ndaniel/seqtk/archive'],
-        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
         'checksums': ['4a57fbe828eccaa4f0122c84bf9c4c5409a024ad9deace31ec7bee6d25cf5e49'],
-        'start_dir': '%(name)s-%(version)s',
         'files_to_copy': [(['seqtk'], 'tools/%(name)s')],
     }),
     # FusionCatcher requires this very specific version of BBMap
@@ -64,14 +65,15 @@ components = [
     }),
 ]
 
-# Set paths in the configuration file
+# Set paths and options in the configuration file
 postinstallcmds = [
     'sed -i "s|python = /usr/bin/|python = $EBROOTPYTHON/bin/|g" %(installdir)s/etc/configuration.cfg',
     'sed -i "s|java = /usr/bin/|python = $EBROOTJAVA/bin/|g" %(installdir)s/etc/configuration.cfg',
     'sed -i "s|paralell/src|parallel/bin|g" %(installdir)s/etc/configuration.cfg',
+    'sed -i "s|aligners = blat,star|aligners = blat,star,bowtie2|g" %(installdir)s/etc/configuration.cfg',
 ]
 
-# Create symlinks in installation dir to dependencies from EB
+# Create symlinks in tools directory to dependencies from EB
 postinstallcmds += [
     'ln -s $EBROOT%s %%(installdir)s/tools/%s' % (d, d.lower()) for d in [
         'BLAT', 'BOWTIE', 'BOWTIE2', 'BWA', 'PARALLEL', 'PICARD', 'PIGZ', 'STAR', 'VELVET'
@@ -88,13 +90,11 @@ postinstallcmds += [
     ]
 ]
 
-# Link the required Ensembl database
-# Database can be created after install with `fusioncatcher-build -g homo_sapiens -o /path/to/human_v98`
-# More information at https://github.com/ndaniel/fusioncatcher/blob/master/doc/manual.md
-# postinstallcmds += [
-#     'ln -s /path/to/database/human_v98 %(installdir)s/data/human_v98',
-#     'cd %(installdir)s/data && ln -s human_v98 current',
-# ]
+# Link the required Ensembl database: it can be either downloaded (>16GB) or built on-site
+# - Download: database download script available at %(installdir)s/data/download-human-db.sh
+#             path to downloaded data folder can be set with '--data' option in fusioncatcher
+# - Build: database can be created after install with `fusioncatcher-build -g homo_sapiens -o /path/to/human_v98`
+#          more information at https://github.com/ndaniel/fusioncatcher/blob/master/doc/manual.md
 
 # Tests need 16 cores and 64 GB of RAM as well as the Ensembl database
 # postinstallcmds += ['%(installdir)s/test/test.sh']
