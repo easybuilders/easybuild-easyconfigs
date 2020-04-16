@@ -1,0 +1,85 @@
+# This is an easyconfig file for EasyBuild, see http://easybuilders.github.io/easybuild
+
+name = 'iccifort'
+version = '2020.1.217'
+modaltsoftname = 'intel'
+
+homepage = 'https://software.intel.com/en-us/intel-compilers/'
+description = "Intel C, C++ & Fortran compilers"
+
+toolchain = SYSTEM
+
+source_urls = ['https://registrationcenter-download.intel.com/akdlm/irc_nas/tec/16530/']
+sources = ['parallel_studio_xe_%(version_major)s_update%(version_minor)s_composer_edition.tgz']
+patches = ['iccifort-%(version)s_no_mpi_rt_dependency.patch']
+checksums = [
+    # parallel_studio_xe_2020_update1_composer_edition.tgz
+    '26c7e7da87b8a83adfd408b2a354d872be97736abed837364c1bf10f4469b01e',
+    # iccifort-2020.1.217_no_mpi_rt_dependency.patch
+    '61b558089d3d9253fad2139a16dc0899b9f839f34303e094efd70b281fc41a96',
+]
+
+local_gccver = '9.3.0'
+
+dependencies = [
+    ('GCCcore', local_gccver),
+    ('binutils', '2.34', '', ('GCCcore', local_gccver)),
+]
+
+# list of regex for components to install
+# full list of components can be obtained from pset/mediaconfig.xml in unpacked sources
+# cfr. https://software.intel.com/en-us/articles/intel-composer-xe-2015-silent-installation-guide
+components = [
+    'intel-comp', 'intel-ccomp', 'intel-fcomp', 'intel-icc', 'intel-ifort',
+    'intel-openmp', 'intel-ipsc?_', 'intel-gdb(?!.*mic)'
+]
+
+dontcreateinstalldir = True
+
+license_file = "/cvmfs/soft.computecanada.ca/config/licenses/intel/computecanada.lic"
+# set via modluafooter below
+skip_license_file_in_module = True
+
+#compilers_and_libraries_2020.0.166/licensing/compiler/en/credist.txt
+postinstallcmds = [
+  '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
+     /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/compilers_and_libraries_%(version)s/linux/compiler/lib --add_origin
+     patchelf --set-rpath '$ORIGIN/../lib:$ORIGIN/../compiler/lib/intel64' %(installdir)s/compilers_and_libraries_%(version)s/linux/lib/LLVMgold.so
+     installdir=%(installdir)s
+     publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
+     for i in $(grep "compiler.*\.so" $installdir/compilers_and_libraries_%(version)s/licensing/compiler/en/credist.txt | cut -c 13-); do
+       if [ -f $installdir/$i ]; then
+         mkdir -p $(dirname $publicdir/$i)
+         cp -p $installdir/$i $publicdir/$i
+       fi
+     done
+     cd $installdir
+     for i in compilers_and_libraries_%(version)s/linux/compiler/lib/*; do
+       if [ -L $i ]; then
+         cp -a $i $publicdir/$i
+       fi
+     done
+     ln -s compilers_and_libraries_%(version)s/linux/compiler/lib $publicdir/lib'''
+]
+
+moduleclass = 'compiler'
+
+modluafooter = """
+prepend_path("INTEL_LICENSE_FILE", pathJoin("/cvmfs/soft.computecanada.ca/config/licenses/intel", os.getenv("CC_CLUSTER") .. ".lic"))
+
+prepend_path("MODULEPATH", pathJoin("/cvmfs/soft.computecanada.ca/easybuild/modules/2019/Compiler/intel2020"))
+prepend_path("MODULEPATH", pathJoin("/cvmfs/soft.computecanada.ca/easybuild/modules/2019", os.getenv("RSNT_ARCH"), "Compiler/intel2020"))
+if isDir(pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2019/Compiler/intel2020")) then
+    prepend_path("MODULEPATH", pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2019/Compiler/intel2020"))
+end
+if isDir(pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2019", os.getenv("RSNT_ARCH"), "Compiler/intel2020")) then
+    prepend_path("MODULEPATH", pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2019", os.getenv("RSNT_ARCH"), "Compiler/intel2020"))
+end
+
+if isloaded("imkl") then
+    always_load("imkl/2020.1.217")
+end
+
+add_property("type_","tools")
+family("compiler")
+"""
