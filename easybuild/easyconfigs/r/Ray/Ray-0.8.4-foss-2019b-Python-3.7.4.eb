@@ -5,19 +5,19 @@ easyblock = 'PythonBundle'
 
 name = 'Ray'
 version = '0.8.4'
+
 versionsuffix = '-Python-%(pyver)s'
 
 homepage = "https://docs.ray.io/en/latest/"
 description = "Ray is a fast and simple framework for building and running distributed applications."
 
 toolchain = {'name': 'foss', 'version': '2019b'}
-
-builddependencies = [('pkg-config', '0.29.2')]
+toolchainopts = {'usempi': True}
 
 dependencies = [
     ('Python', '3.7.4'),
-    ('Bazel', '0.29.1'),
     ('SciPy-bundle', '2019.10', versionsuffix),
+    ('protobuf-python', '3.10.0', versionsuffix),
 ]
 
 use_pip = True
@@ -86,10 +86,6 @@ exts_list = [
     ('msgpack', '1.0.0', {
         'checksums': ['9534d5cc480d4aff720233411a1f765be90885750b07df772380b34c10ecb5c0'],
     }),
-    ('protobuf', '3.11.3', {
-        'modulename': 'google.protobuf',
-        'checksums': ['c77c974d1dadf246d789f6dad1c24426137c9091e930dbf50e0a29c1fcf00b1f'],
-    }),
     ('py-spy', '0.3.3', {
         'modulename': False,
         'source_tmpl': 'py_spy-%(version)s-py2.py3-none-manylinux1_x86_64.whl',
@@ -103,17 +99,17 @@ exts_list = [
     ('redis', '3.4.1', {
         'checksums': ['0dcfb335921b88a850d461dc255ff4708294943322bd55de6cfd68972490ca1f'],
     }),
+    # Ray is run from wheel, because build doesn't pass LD_LIBRARY_PATH properly to Bazel/Protobuf
+    # https://github.com/ray-project/ray/issues/5274
     (name, version, {
         'source_tmpl': '%(namelower)s-%(version)s-cp37-cp37m-manylinux1_x86_64.whl',
         'unpack_sources': False,
         'checksums': ['f2cca186a9f8a18f9d58eadcd8ea126addc3192e922f36a7ced46b8b8904ac65'],
     }),
-
 ]
 
-local_bin_files = ['google', 'jsonschema', 'py-spy', 'ray', 'rllib', 'tune']
 sanity_check_paths = {
-    'files': ['bin/%s' % f for f in local_bin_files],
+    'files': ['bin/ray'],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 sanity_check_commands = [
