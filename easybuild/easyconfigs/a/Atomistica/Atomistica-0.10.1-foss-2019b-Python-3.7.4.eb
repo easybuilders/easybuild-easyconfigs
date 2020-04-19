@@ -1,0 +1,52 @@
+easyblock = 'PythonPackage'
+
+name = 'Atomistica'
+version = '0.10.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.atomistica.org/'
+description = """Atomistica is a library of interatomic potentials, including empirical
+potentials and non-orthogonal tight-binding.
+This module of Atomistica integrates with the Atomic Simulation Environment (ASE)."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'pic': True}
+
+github_account = 'Atomistica'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = ['Atomistica-%(version)s_fix-dispdftd3.patch']
+checksums = [
+    '8eb32e7e920ab4db062e7a9d924cad598f7aca26b503dfe38b370e83baf8fdab',  # 0.10.1.tar.gz
+    'a31f11e8f00e52c279f86cec8660cd7974329263acee367419b18287aac4dec4',  # Atomistica-0.10.1_fix-dispdftd3.patch
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('ASE', '3.19.0', versionsuffix),
+]
+
+use_pip = False
+download_dep_fail = True
+
+prebuildopts = "cp setup.cfg.gnu_omp setup.cfg && "
+# Enable FFTW from EB
+prebuildopts += 'sed -i "s|-cpp-input|-cpp-input -DHAVE_FFTW3 -I$EBROOTFFTW/include|g" setup.cfg && '
+prebuildopts += 'sed -i "s|libraries=|libraries=fftw3,fftw3_threads,|" setup.cfg && '
+
+# Copy documentation, tests and tools to installation directory
+postinstallcmds = ["mkdir -p %(installdir)s/share/examples && cp -r examples/ASE/* %(installdir)s/share/examples/"]
+postinstallcmds += ["cp -r %s %%(installdir)s/share/" % x for x in
+                    ['AUTHORS.md', 'ChangeLog.md', 'README.md', 'LICENSE', 'doc']]
+postinstallcmds += ["cp -r %s %%(installdir)s/" % d for d in ['tools', 'tests']]
+
+sanity_check_paths = {
+    'files': ['bin/%s.py' % x for x in ['a_angle_distribution', 'a_convert', 'a_fire', 'a_g2', 'a_run', 'a_voro']],
+    'dirs': ['share', 'share/doc', 'share/examples', 'tools', 'tests',
+             'lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+modextrapaths = {'PATH': 'tools'}
+
+moduleclass = 'chem'

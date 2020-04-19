@@ -1,0 +1,151 @@
+Fix issue Atomistica/atomistica#27: system_of_units does not exists in PYTHON or LAMMPS
+Author: Lars Pastewka <lars.pastewka@imtek.uni-freiburg.de>
+diff --git a/src/potentials/dispersion/dispdftd3.f90 b/src/potentials/dispersion/dispdftd3.f90
+index 4713488..1937e6c 100644
+--- a/src/potentials/dispersion/dispdftd3.f90
++++ b/src/potentials/dispersion/dispdftd3.f90
+@@ -44,8 +44,8 @@
+   use logging
+   use timer
+ 
+-  use neighbors
+   use particles
++  use neighbors
+   use filter
+ 
+ #ifdef HAVE_DFTD3
+@@ -70,7 +70,6 @@
+      real(DP)  :: cutoff   = 80.0_DP
+      real(DP)  :: cutoffCN = 40.0_DP
+ 
+-     logical :: dftd3        = .false.
+      logical :: BeckeJohnson = .true.
+      logical :: threebody    = .false.
+                            
+@@ -125,13 +124,9 @@
+ 
+     ! ---
+    
+-    if (.not.this%dftd3) return
+-
+ #ifdef HAVE_DFTD3
+     allocate(this%calculator)
+-#endif
+ 
+-#ifdef HAVE_DFTD3
+     input%threebody = this%threebody 
+     input%numgrad = .false.
+ 
+@@ -164,8 +159,6 @@
+ 
+     ! ---
+ 
+-    if (.not.this%dftd3) return
+-
+ #ifdef HAVE_DFTD3
+     deallocate(this%calculator)
+ #endif
+@@ -188,11 +181,12 @@
+ 
+     ! ---
+ 
+-    if (.not.this%dftd3) return
++#ifndef HAVE_DFTD3
++    RAISE_ERROR("This version of Atomistica was not compiled with DFT-D3 support.", ierror)
++#endif
+ 
+-    write (ilog, '(A)')  "- dftd3_init -"
++    write (ilog, '(A)')  "- dftd3_bind_to -"
+ 
+-    write (ilog, '(5X,A,L)')      "dftd3        = ", this%dftd3
+     write (ilog, '(5X,A,L)')      "BeckeJohnson = ", this%BeckeJohnson
+     write (ilog, '(5X,A,L)')      "threebody    = ", this%threebody
+ 
+@@ -223,7 +217,7 @@
+        epot_per_at, wpot_per_at, ierror)
+     implicit none
+ 
+-    type(dispdftd3_t),     intent(inout) :: this
++    type(dispdftd3_t),  intent(inout) :: this
+     type(particles_t),  intent(in)    :: p
+     type(neighbors_t),  intent(inout) :: nl
+     real(DP),           intent(inout) :: epot
+@@ -250,20 +244,22 @@
+ 
+     ! ---
+ 
+-    if (.not.this%dftd3) return
+-
+     call timer_start("dftd3_energy_and_forces")
+ 
+     allocate(coords(3, p%nat))
+     allocate(grads(3, p%nat))
+ 
++#ifdef HAVE_DFTD3
+     elem(1:p%nat) = p%Z(1:p%nat)
+     coords(1:3, 1:p%nat) = POS3(p, 1:p%nat) * length_to_Bohr
+     latvecs(1:3, 1:3) = p%Abox(1:3, 1:3) * length_to_Bohr
+ 
+     vbox = volume(p)
+ 
++#if !defined(PYTHON) && !defined(LAMMPS)
++    ! system_of_units only exists for the standalone code, LAMMPS and Python are eV/A by default
+     if (system_of_units == eV_A .or. system_of_units == eV_A_fs) then
++#endif
+ 
+        ! Energy: a.u. -> eV
+        unit_energy = Hartree
+@@ -274,6 +270,7 @@
+        ! Pressure: a.u. -> eV/A^3*
+        unit_virial = Hartree / Bohr**3 * vbox
+ 
++#if !defined(PYTHON) && !defined(LAMMPS)
+     else 
+ 
+        unit_energy = 1.0_DP
+@@ -281,14 +278,13 @@
+        unit_virial = vbox
+ 
+     endif  
++#endif
+ 
+     !> 
+     !> For periodic system
+     !> 
+ 
+-#ifdef HAVE_DFTD3
+     call dftd3_pbc_dispersion(this%calculator, coords, elem, latvecs, edisp, grads, stress)
+-#endif
+ 
+     epot = epot + edisp * unit_energy
+ 
+@@ -296,6 +292,7 @@
+ 
+     wpot = wpot - stress * unit_virial
+ 
++#endif
+ 
+     deallocate(coords)
+     deallocate(grads)
+@@ -310,18 +307,15 @@
+ 
+     implicit none
+ 
+-    type(dispdftd3_t), target, intent(inout)     :: this
+-    type(c_ptr), intent(in)                  :: cfg
+-    type(c_ptr), intent(out)                 :: m
++    type(dispdftd3_t), target, intent(inout) :: this
++    type(c_ptr),               intent(in)    :: cfg
++    type(c_ptr),               intent(out)   :: m
+ 
+     ! ---
+ 
+     m = ptrdict_register_section(cfg, CSTR("DFTD3"), &
+          CSTR("The DFT-D3 dispersion potential"))
+ 
+-    call ptrdict_register_boolean_property(m, c_loc(this%dftd3), &
+-         CSTR("dftd3"), &
+-         CSTR("Enable DFT-D3 van der Waals potential."))
+     call ptrdict_register_boolean_property(m, c_loc(this%BeckeJohnson), &
+          CSTR("BeckeJohnson"), &
+          CSTR("Enable Becke-Johnson damping in DFT-D3."))

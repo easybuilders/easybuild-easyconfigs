@@ -1,0 +1,206 @@
+Fix makefiles for gnu to respect flags in the environment and use Easybuild libraries
+Author: Alex Domingo (Vrije Universiteit Brussel)
+--- a/build_lammps/Makefile.gnu	2020-04-14 15:28:26.543767000 +0200
++++ b/build_lammps/Makefile.gnu	2020-04-14 15:30:26.578403000 +0200
+@@ -11,10 +11,10 @@
+ #
+ # Serial / OpenMP execution (GNU)
+ #
+-FC        = gfortran
+-F90C      = gfortran
+-CC        = gcc
+-CXX       = g++
++FC        ?= gfortran
++F90C      := $(FC)
++CC        ?= gcc
++CXX       ?= g++
+ LD        = gfortran
+ #
+ # OpenMP parallelization or hybrid MPI/OpenMP
+@@ -33,14 +33,16 @@
+ # *** Extra includes and libraries
+ #
+ #
+-EXTRA_INCLUDE += -I$(MPIROOT)/include -I$(MPIROOT)/include/mpi
++EXTRA_INCLUDE += -I$(MPIROOT)/include -I$(MPIROOT)/include/openmpi
+ EXTRA_LIB += -cxxlib
+ #
+ # *** LAPACK and BLAS link options here.
+ #
+ # cygwin lapack/blas
+ #
+-#EXTRA_LIB += -llapack -lblas
++DEFINES += -DHAVE_LAPACK
++EXTRA_LIB += -lopenblas
++EXTRA_INCLUDE += -I$(EBROOTOPENBLAS)/include
+ 
+ #
+ # *** Other settings that rarely need to be touched
+@@ -51,7 +53,7 @@
+ #
+ # Normal (GNU)
+ #
+-OPTFLAGS = -O3 -funroll-loops
++OPTFLAGS ?= -O3 -funroll-loops
+ #
+ # Debug (GNU)
+ #
+@@ -92,7 +94,14 @@
+ #
+ # - Would be nice to have all explained eventually.
+ #
+-DEFINES  = \
++HAVE_FFTW3 = 0
++ifneq ($(HAVE_FFTW3),0)
++DEFINES += -DHAVE_FFTW3
++EXTRA_INCLUDE += -I$(EBROOTFFTW)/include
++EXTRA_LIB += -L$(EBROOTFFTW)/lib -lfftw3
++endif
++
++DEFINES  += \
+ 	-D_MPI \
+ 	-DLAMMPS \
+ 	-DNO_BIND_C_OPTIONAL
+@@ -111,16 +120,16 @@
+ # GNU
+ #
+ GFFLAGS += -fPIC
+-FFLAGS   = $(GFFLAGS) -x f77-cpp-input
+-F90FLAGS = $(GFFLAGS) $(EXTRA_INCLUDE) \
++FFLAGS   += $(GFFLAGS) -x f77-cpp-input
++F90FLAGS += $(GFFLAGS) $(EXTRA_INCLUDE) \
+ 	-ffree-form -ffree-line-length-none -x f95-cpp-input
+-CFLAGS   = -O0 -fPIC
++CFLAGS   ?= -O0 -fPIC
+ 
+ #
+ # Use LDFLAGS = -static if you want a static binary
+ #
+-LDFLAGS  = 
+-LIBS     = $(EXTRA_LIB)
++LDFLAGS  ?= 
++LIBS     += $(EXTRA_LIB)
+ 
+ include $(SRCDIR)/makefile.inc
+ 
+--- a/build_standalone/Makefile.gnu	2019-11-18 21:20:26.000000000 +0100
++++ b/build_standalone/Makefile.gnu	2020-04-14 15:39:01.120834000 +0200
+@@ -17,10 +17,10 @@
+ #
+ # Serial / OpenMP execution (GNU)
+ #
+-FC        = gfortran
+-F90C      = gfortran
+-CC        = gcc
+-CXX       = g++
++FC        ?= gfortran
++F90C      := $(FC)
++CC        ?= gcc
++CXX       ?= g++
+ LD        = gfortran
+ MPI_FLAGS =
+ 
+@@ -31,6 +31,7 @@
+ # -cxxlib links to the C++ runtime
+ #
+ HAVE_NETCDF = 0
++DEFINES ?=
+ EXTRA_FLAGS =
+ EXTRA_INCLUDE =
+ EXTRA_LIB = -lstdc++
+@@ -49,13 +50,13 @@
+ #
+ ifneq ("$(shell which nf-config)","") 
+ HAVE_NETCDF = 1
+-EXTRA_FLAGS += -DHAVE_NETCDF
++DEFINES += -DHAVE_NETCDF
+ EXTRA_INCLUDE += $(shell nf-config --fflags)
+ EXTRA_LIB += $(shell nf-config --flibs)
+ else
+ ifneq ("$(shell which nc-config)","")
+ HAVE_NETCDF = 1
+-EXTRA_FLAGS += -DHAVE_NETCDF
++DEFINES += -DHAVE_NETCDF
+ EXTRA_INCLUDE += $(shell nc-config --fflags)
+ EXTRA_LIB += $(shell nc-config --flibs)
+ endif
+@@ -65,17 +66,19 @@
+ # FIXME!!! Implement FFTW check
+ #
+ HAVE_FFTW3 = 0
+-#EXTRA_FLAGS += -DHAVE_FFTW3
+-#EXTRA_INCLUDE += -I/j1a/pas/applications/fftw-3.3/include
+-#EXTRA_LIB += -L/j1a/pas/applications/fftw-3.3/lib -lfftw3
+-
++ifneq ($(HAVE_FFTW3),0)
++DEFINES += -DHAVE_FFTW3
++EXTRA_INCLUDE += -I$(EBROOTFFTW)/include
++EXTRA_LIB += -L$(EBROOTFFTW)/lib -lfftw3
++endif
+ 
+ #
+ # *** LAPACK and BLAS link options here.
+ #
+ # lapack/blas
+ #
+-EXTRA_LIB += -llapack -lblas
++DEFINES += -DHAVE_LAPACK
++EXTRA_LIB += -lopenblas
+ 
+ #
+ ## DFT-D3 library
+@@ -85,10 +88,10 @@
+ HAVE_DFTD3 = 0
+ 
+ ifneq ($(HAVE_DFTD3),0)
+-EXTRA_FLAGS += -DHAVE_DFTD3
+-DFTD3_PATH = # Please specify the path to dftd3-lib
+-EXTRA_LIB += -L$(DFTD3_PATH) -ldftd3
+-EXTRA_INCLUDE += -I$(DFTD3_PATH)
++DEFINES += -DHAVE_DFTD3
++DFTD3_PATH = $(EBROOTDFTD3MINLIB)
++EXTRA_LIB += -L$(EBROOTDFTD3MINLIB)/lib -ldftd3
++EXTRA_INCLUDE += -I$(EBROOTDFTD3MINLIB)/include
+ endif
+ 
+ 
+@@ -101,7 +104,7 @@
+ #
+ # Normal (GNU)
+ #
+-OPTFLAGS = -g -O3 -funroll-loops -fbacktrace
++OPTFLAGS += -funroll-loops -fbacktrace
+ #
+ # Debug (GNU)
+ #
+@@ -124,7 +127,7 @@
+ #   -DHAVE_DFTD3               DFT-D3 library
+ #
+ # 
+-DEFINES  = \
++DEFINES  += \
+ 	-DNO_BIND_C_OPTIONAL
+ 
+ #
+@@ -140,16 +143,16 @@
+ #
+ # GNU
+ #
+-FFLAGS   = $(GFFLAGS) -x f77-cpp-input
+-F90FLAGS = $(GFFLAGS) $(EXTRA_INCLUDE) \
++FFLAGS   += $(GFFLAGS) -x f77-cpp-input
++F90FLAGS += $(GFFLAGS) $(EXTRA_INCLUDE) \
+ 	-ffree-form -ffree-line-length-none -x f95-cpp-input
+-CFLAGS   = -O0
++CFLAGS   ?= -O0
+ 
+ #
+ # Use LDFLAGS = -static if you want a static binary
+ #
+-LDFLAGS  = 
+-LIBS     = $(EXTRA_LIB)
++LDFLAGS  ?= 
++LIBS     += $(EXTRA_LIB)
+ 
+ include $(SRCDIR)/makefile.inc
+ 
