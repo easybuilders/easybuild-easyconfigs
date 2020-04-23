@@ -1,0 +1,34 @@
+# Author: Stefan Harfst, HPC-UniOldenburg
+# Date: 23.04.2020
+# fix for correcting number of arguments in a function call and adding namespace 
+
+
+--- fsl/src/MSMRegLib/groupmeshreg.cc.orig	2020-04-03 12:25:19.906127000 +0200
++++ fsl/src/MSMRegLib/groupmeshreg.cc	2020-04-03 13:25:11.152072000 +0200
+@@ -84,7 +84,7 @@
+     FEAT->set_cutthreshold(_threshold); // will also generate exclusion masks at the same mesh resolution as datagrid
+     FEAT->logtransform(_logtransform);// if true logtransforms AND normalises
+     FEAT->varnorm(_varnorm);// variance normalises
+-    FEAT->intensitynormalize(_IN, _scale); // matches the intensities of the source to to the target (will rescale all to the top feature of the target if scale is true)
++    FEAT->intensitynormalize(_IN, _scale, _cut); // matches the intensities of the source to to the target (will rescale all to the top feature of the target if scale is true)
+     FEAT->resamplingmethod(_dataInterpolator);
+     FEAT->is_sparse(_issparse);
+     SPH_orig=FEAT->Initialize(_genesis[level],MESHES,_exclude);  /// downsamples and smooths data, creates and exclusion mask if exclude is true
+--- fsl/src/MSMRegLib/meshmodify.h.orig	2020-04-03 13:22:41.661679000 +0200
++++ fsl/src/MSMRegLib/meshmodify.h	2020-04-03 13:26:23.089695000 +0200
+@@ -72,6 +72,7 @@
+ #include <time.h>
+ #include "ContinuosOpt.h"
+ #include <FastPD/FastPD.h>
++#include <DiscreteOpt/DiscreteGroupModel.h>
+ 
+ using namespace FPD;
+ using namespace std;
+@@ -79,6 +80,7 @@
+ using namespace NEWMESH;
+ using namespace MISCMATHS;
+ using namespace DISCRETEOPT;
++using namespace DISCRETEOPTHOCR;
+ 
+ namespace MESHREG {
+ 
