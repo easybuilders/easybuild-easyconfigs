@@ -257,8 +257,8 @@ class EasyConfigTest(TestCase):
             # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
             # both scVelo and Python-Geometric depend on numba
             'LLVM': (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
-            # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
-            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
+            # medaka 0.11.4/0.12.0requires recent TensorFlow <= 1.14 (and Python 3.6)
+            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-']),
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
