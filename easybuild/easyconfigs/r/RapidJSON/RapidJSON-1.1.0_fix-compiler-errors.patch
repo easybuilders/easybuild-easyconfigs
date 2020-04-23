@@ -1,0 +1,38 @@
+fix compiler warnings/errors with recent GCC
+
+fixes taken from:
+* https://github.com/Tencent/rapidjson/pull/1323/files
+* https://github.com/Tencent/rapidjson/pull/941/files
+
+--- rapidjson-1.1.0/include/rapidjson/document.h.orig	2019-11-25 15:21:45.737968536 +0100
++++ rapidjson-1.1.0/include/rapidjson/document.h	2019-11-25 15:22:20.094121053 +0100
+@@ -1936,7 +1936,7 @@
+         if (count) {
+             GenericValue* e = static_cast<GenericValue*>(allocator.Malloc(count * sizeof(GenericValue)));
+             SetElementsPointer(e);
+-            std::memcpy(e, values, count * sizeof(GenericValue));
++            std::memcpy(static_cast<void*>(e), values, count * sizeof(GenericValue));
+         }
+         else
+             SetElementsPointer(0);
+@@ -1949,7 +1949,7 @@
+         if (count) {
+             Member* m = static_cast<Member*>(allocator.Malloc(count * sizeof(Member)));
+             SetMembersPointer(m);
+-            std::memcpy(m, members, count * sizeof(Member));
++            std::memcpy(static_cast<void*>(m), members, count * sizeof(Member));
+         }
+         else
+             SetMembersPointer(0);
+--- rapidjson-1.1.0/include/rapidjson/internal/regex.h.orig	2019-11-25 15:30:58.077420550 +0100
++++ rapidjson-1.1.0/include/rapidjson/internal/regex.h	2019-11-25 15:31:13.726490024 +0100
+@@ -29,6 +29,9 @@
+ #ifdef __GNUC__
+ RAPIDJSON_DIAG_PUSH
+ RAPIDJSON_DIAG_OFF(effc++)
++#if __GNUC__ >= 7
++RAPIDJSON_DIAG_OFF(implicit-fallthrough)
++#endif
+ #endif
+
+ #ifdef _MSC_VER
