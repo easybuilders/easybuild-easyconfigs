@@ -1,8 +1,8 @@
 Fix makefiles for gnu to respect flags in the environment and use Easybuild libraries
 Author: Alex Domingo (Vrije Universiteit Brussel)
---- a/build_lammps/Makefile.gnu	2020-04-14 15:28:26.543767000 +0200
-+++ b/build_lammps/Makefile.gnu	2020-04-14 15:30:26.578403000 +0200
-@@ -11,10 +11,10 @@
+--- a/build_lammps/Makefile.gnu	2019-11-18 21:20:26.000000000 +0100
++++ b/build_lammps/Makefile.gnu	2020-04-24 00:55:12.863356000 +0200
+@@ -11,16 +11,15 @@
  #
  # Serial / OpenMP execution (GNU)
  #
@@ -17,7 +17,14 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  LD        = gfortran
  #
  # OpenMP parallelization or hybrid MPI/OpenMP
-@@ -33,14 +33,16 @@
+ #
+-OMP_FLAGS = 
+-#OMP_FLAGS = -fopenmp
++EXTRA_LIB = -fopenmp
+ 
+ 
+ #
+@@ -33,14 +32,16 @@
  # *** Extra includes and libraries
  #
  #
@@ -36,7 +43,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  
  #
  # *** Other settings that rarely need to be touched
-@@ -51,7 +53,7 @@
+@@ -51,7 +52,7 @@
  #
  # Normal (GNU)
  #
@@ -45,7 +52,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  #
  # Debug (GNU)
  #
-@@ -92,7 +94,14 @@
+@@ -92,7 +93,14 @@
  #
  # - Would be nice to have all explained eventually.
  #
@@ -54,14 +61,14 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
 +ifneq ($(HAVE_FFTW3),0)
 +DEFINES += -DHAVE_FFTW3
 +EXTRA_INCLUDE += -I$(EBROOTFFTW)/include
-+EXTRA_LIB += -L$(EBROOTFFTW)/lib -lfftw3
++EXTRA_LIB += -L$(EBROOTFFTW)/lib $(LIBFFT)
 +endif
 +
 +DEFINES  += \
  	-D_MPI \
  	-DLAMMPS \
  	-DNO_BIND_C_OPTIONAL
-@@ -111,16 +120,16 @@
+@@ -111,16 +119,16 @@
  # GNU
  #
  GFFLAGS += -fPIC
@@ -84,7 +91,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  include $(SRCDIR)/makefile.inc
  
 --- a/build_standalone/Makefile.gnu	2019-11-18 21:20:26.000000000 +0100
-+++ b/build_standalone/Makefile.gnu	2020-04-14 15:39:01.120834000 +0200
++++ b/build_standalone/Makefile.gnu	2020-04-24 00:55:25.226145000 +0200
 @@ -17,10 +17,10 @@
  #
  # Serial / OpenMP execution (GNU)
@@ -108,7 +115,17 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  EXTRA_FLAGS =
  EXTRA_INCLUDE =
  EXTRA_LIB = -lstdc++
-@@ -49,13 +50,13 @@
+@@ -38,8 +39,7 @@
+ #
+ # OpenMP parallelization
+ #
+-OMP_FLAGS =
+-#OMP_FLAGS = -fopenmp
++EXTRA_LIB += -fopenmp
+ 
+ 
+ #
+@@ -49,13 +49,13 @@
  #
  ifneq ("$(shell which nf-config)","") 
  HAVE_NETCDF = 1
@@ -124,7 +141,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  EXTRA_INCLUDE += $(shell nc-config --fflags)
  EXTRA_LIB += $(shell nc-config --flibs)
  endif
-@@ -65,17 +66,19 @@
+@@ -65,17 +65,19 @@
  # FIXME!!! Implement FFTW check
  #
  HAVE_FFTW3 = 0
@@ -135,7 +152,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
 +ifneq ($(HAVE_FFTW3),0)
 +DEFINES += -DHAVE_FFTW3
 +EXTRA_INCLUDE += -I$(EBROOTFFTW)/include
-+EXTRA_LIB += -L$(EBROOTFFTW)/lib -lfftw3
++EXTRA_LIB += -L$(EBROOTFFTW)/lib $(LIBFFT_MT)
 +endif
  
  #
@@ -149,7 +166,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  
  #
  ## DFT-D3 library
-@@ -85,10 +88,10 @@
+@@ -85,10 +87,10 @@
  HAVE_DFTD3 = 0
  
  ifneq ($(HAVE_DFTD3),0)
@@ -164,7 +181,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  endif
  
  
-@@ -101,7 +104,7 @@
+@@ -101,7 +103,7 @@
  #
  # Normal (GNU)
  #
@@ -173,7 +190,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  #
  # Debug (GNU)
  #
-@@ -124,7 +127,7 @@
+@@ -124,7 +126,7 @@
  #   -DHAVE_DFTD3               DFT-D3 library
  #
  # 
@@ -182,7 +199,7 @@ Author: Alex Domingo (Vrije Universiteit Brussel)
  	-DNO_BIND_C_OPTIONAL
  
  #
-@@ -140,16 +143,16 @@
+@@ -140,16 +142,16 @@
  #
  # GNU
  #

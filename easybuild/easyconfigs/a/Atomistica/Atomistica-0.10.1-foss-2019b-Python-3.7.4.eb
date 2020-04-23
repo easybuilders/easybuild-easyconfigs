@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'Bundle'
 
 name = 'Atomistica'
 version = '0.10.1'
@@ -6,47 +6,102 @@ versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'http://www.atomistica.org/'
 description = """Atomistica is a library of interatomic potentials, including empirical
-potentials and non-orthogonal tight-binding.
-This module of Atomistica integrates with the Atomic Simulation Environment (ASE)."""
+potentials and non-orthogonal tight-binding."""
+github_account = 'Atomistica'
 
 toolchain = {'name': 'foss', 'version': '2019b'}
-toolchainopts = {'pic': True}
+toolchainopts = {'pic': True, 'usempi': True, 'openmp': True}
 
-github_account = 'Atomistica'
-source_urls = [GITHUB_SOURCE]
-sources = ['%(version)s.tar.gz']
-patches = ['Atomistica-%(version)s_fix-dispdftd3.patch']
-checksums = [
-    '8eb32e7e920ab4db062e7a9d924cad598f7aca26b503dfe38b370e83baf8fdab',  # 0.10.1.tar.gz
-    'a31f11e8f00e52c279f86cec8660cd7974329263acee367419b18287aac4dec4',  # Atomistica-0.10.1_fix-dispdftd3.patch
+builddependencies = [
+    ('libtool', '2.4.6'),
 ]
 
 dependencies = [
     ('Python', '3.7.4'),
     ('SciPy-bundle', '2019.10', versionsuffix),
     ('ASE', '3.19.0', versionsuffix),
+    ('dftd3-lib', '0.9'),  # only used by the Python module of Atomistica
 ]
 
-use_pip = False
-download_dep_fail = True
+# All components share the same sources. Patches only have to be applied once.
+default_component_specs = {
+    'source_urls': [GITHUB_SOURCE],
+    'sources': ['%(version)s.tar.gz'],
+    'checksums': ['8eb32e7e920ab4db062e7a9d924cad598f7aca26b503dfe38b370e83baf8fdab'],  # 0.10.1.tar.gz
+}
 
-prebuildopts = "cp setup.cfg.gnu_omp setup.cfg && "
-# Enable FFTW from EB
-prebuildopts += 'sed -i "s|-cpp-input|-cpp-input -DHAVE_FFTW3 -I$EBROOTFFTW/include|g" setup.cfg && '
-prebuildopts += 'sed -i "s|libraries=|libraries=fftw3,fftw3_threads,|" setup.cfg && '
+# Settings for Python package
+local_python_prebuildopts = "cp setup.cfg.gnu_omp setup.cfg && "
+local_python_prebuildopts += 'sed -i "s|-cpp-input|-cpp-input -DHAVE_FFTW3 -I$EBROOTFFTW/include|g" setup.cfg && '
+local_python_prebuildopts += 'sed -i "s|libraries=|libraries=fftw3_omp,fftw3,|" setup.cfg && '
 
-# Copy documentation, tests and tools to installation directory
-postinstallcmds = ["mkdir -p %(installdir)s/share/examples && cp -r examples/ASE/* %(installdir)s/share/examples/"]
-postinstallcmds += ["cp -r %s %%(installdir)s/share/" % x for x in
-                    ['AUTHORS.md', 'ChangeLog.md', 'README.md', 'LICENSE', 'doc']]
-postinstallcmds += ["cp -r %s %%(installdir)s/" % d for d in ['tools', 'tests']]
+# Extra settings for MakeCp components
+local_standalone_defines = "HAVE_FFTW3=1 HAVE_DFTD3=1"
+local_lammps_defines = "MPIROOT=$EBROOTOPENMPI HAVE_FFTW3=1"
+
+components = [
+    # Build of Atomistica that integrates with ASE
+    (name + '-ASE', version, {
+        'easyblock': 'PythonPackage',
+        'patches': [
+            'Atomistica-%(version)s_ebenv-makefiles-gnu.patch',
+            'Atomistica-%(version)s_fix-dispdftd3.patch',
+        ],
+        'checksums': [
+            '8eb32e7e920ab4db062e7a9d924cad598f7aca26b503dfe38b370e83baf8fdab',  # 0.10.1.tar.gz
+            # Atomistica-0.10.1_ebenv-makefiles-gnu.patch
+            '4758fc5ae06abbcbd00df24cb63ddcb21c8e4b1eb00d0fc82cc4a5caee35ca7f',
+            # Atomistica-0.10.1_fix-dispdftd3.patch
+            'a31f11e8f00e52c279f86cec8660cd7974329263acee367419b18287aac4dec4',
+        ],
+        'use_pip': False,
+        'download_dep_fail': True,
+        'start_dir': 'atomistica-%(version)s',
+        'prebuildopts': local_python_prebuildopts,
+    }),
+    # Build of Atomistica that integrates with LAMMPS
+    (name + '-LAMMPS', version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'atomistica-%(version)s/build_lammps',
+        'prebuildopts': "cp Makefile.gnu Makefile &&",
+        'buildopts': "lammps_factories %s && make atomistica %s" % (local_lammps_defines, local_lammps_defines),
+        'files_to_copy': [
+            (['libatomistica.a'], 'lib'),
+            (['../src/support/ptrdict.h', 'potentials_factory_c.h'], 'include'),
+            (['../src/lammps/pair_style/pair_atomistica.*'], 'share/lammps'),
+        ],
+    }),
+    # Standalone build of Atomistica
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'atomistica-%(version)s/build_standalone',
+        'prebuildopts': "cp Makefile.gnu Makefile &&",
+        'buildopts': "factories %s && make mdcore %s" % (local_standalone_defines, local_standalone_defines),
+        'files_to_copy': [
+            (['mdcore*'], 'bin'),
+            (['../AUTHORS.md', '../ChangeLog.md', '../README.md', '../LICENSE', '../doc', '../examples'], 'share'),
+            (['../tests', '../tools'], ''),
+        ],
+    }),
+]
+
+# Fix name of mdcore binary
+postinstallcmds = ["mv %(installdir)s/bin/mdcore* %(installdir)s/bin/mdcore"]
 
 sanity_check_paths = {
-    'files': ['bin/%s.py' % x for x in ['a_angle_distribution', 'a_convert', 'a_fire', 'a_g2', 'a_run', 'a_voro']],
+    'files': ['bin/mdcore', 'lib/libatomistica.a'] +
+             ['bin/%s.py' % x for x in ['a_angle_distribution', 'a_convert', 'a_fire', 'a_g2', 'a_run', 'a_voro']] +
+             ['include/%s.h' % h for h in ['ptrdict', 'potentials_factory_c']] +
+             ['share/lammps/pair_atomistica.%s' % e for e in ['cpp', 'h']],
     'dirs': ['share', 'share/doc', 'share/examples', 'tools', 'tests',
              'lib/python%(pyshortver)s/site-packages/%(namelower)s'],
 }
 
-modextrapaths = {'PATH': 'tools'}
+sanity_check_commands = ["python -c 'import %(namelower)s'"]
+
+modextrapaths = {
+    'PATH': 'tools',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+}
 
 moduleclass = 'chem'
