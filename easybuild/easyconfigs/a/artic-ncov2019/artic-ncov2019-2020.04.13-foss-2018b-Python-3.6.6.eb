@@ -7,8 +7,7 @@ name = 'artic-ncov2019'
 # commit 4a7461c3cc9865860d69223ba8360df13a248f13
 version = '2020.04.13'
 
-local_python_versionsuffix = '-Python-%(pyver)s'
-versionsuffix = local_python_versionsuffix + '-medaka'
+versionsuffix = '-Python-%(pyver)s'
 
 homepage = "https://github.com/artic-network/artic-ncov2019"
 description = """Initial implementation of an ARTIC bioinformatics platform 
@@ -18,25 +17,29 @@ toolchain = {'name': 'foss', 'version': '2018b'}
 
 dependencies = [
     ('Python', '3.6.6'),  # pandas,
-    ('Biopython', '1.72', local_python_versionsuffix),
-    ('Pysam', '0.15.1', local_python_versionsuffix),
+    ('Biopython', '1.72', versionsuffix),
+    ('Pysam', '0.15.1', versionsuffix),
     ('BWA', '0.7.17'),
     ('Eigen', '3.3.7', '', True),
     ('minimap2', '2.13'),
     ('SAMtools', '1.9'),
     ('MUSCLE', '3.8.1551'),
-    ('ETE', '3.1.1', local_python_versionsuffix),
+    ('ETE', '3.1.1', versionsuffix),
     ('MAFFT', '7.427', '-with-extensions'),
     ('IQ-TREE', '1.6.12'),
-    ('snakemake', '5.2.4', local_python_versionsuffix),
+    ('snakemake', '5.2.4', versionsuffix),
     ('Longshot', '0.4.1'),
-    ('medaka', '0.11.4', local_python_versionsuffix),
-    ('python-parasail', '1.1.16', local_python_versionsuffix),
+    ('medaka', '0.11.4', versionsuffix),
+    ('python-parasail', '1.1.16', versionsuffix),
     ('PhyML', '3.3.20190321'),
     ('nodejs', '12.16.1'),
-    ('goalign', '0.3.2', '-binary', True),
-    ('gotree', '0.4.0', '-binary', True),
-    ('rampart', '1.2.0rc3', local_python_versionsuffix),
+    ('goalign', '0.3.2', '', True),
+    ('gotree', '0.4.0', '', True),
+    ('rampart', '1.2.0rc3', versionsuffix),
+    ('libdeflate', '1.5'),
+    ('nanopolish', '0.13.1', versionsuffix),
+    ('seqtk', '1.3'),
+    ('BCFtools', '1.9'),
 ]
 
 use_pip = True
@@ -88,15 +91,16 @@ exts_list = [
         'source_urls': ['https://github.com/artic-network/fieldbioinformatics/archive'],
         'checksums': ['7083f67b1188e8f9b55f8bd4f7a46853e9c74ae7dde324b1fc8e792a85e58073'],
     }),
+    # This is not upstream version, but artic tweaked one, which is exactly required.
     ('Porechop', '0.3.2pre', {
         'source_tmpl': 'v%(version)s.tar.gz',
         'source_urls': ['https://github.com/artic-network/Porechop/archive'],
         'checksums': ['85980d6f37d38a44c66182e7b39bad487211ccfd8cb820c866ceed7ef7a15523'],
     }),
     ('binlorry', '1.3.1', {
-        'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
-        'unpack_sources': False,
-        'checksums': ['0aabdc2546a0dc7f298cc5c8b8c27e648a92c93f03d21ac424a7a845fc13ef5c'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/rambaut/binlorry/archive'],
+        'checksums': ['001b74cad497b7253b821ceaac8c0b829b2787396a896fc2d3940a704a149b48'],
     }),
     ('clint', '0.5.1', {
         'checksums': ['05224c32b1075563d0b16d0015faaf9da43aa214e4a2140e51f08789e7a4c5aa'],
@@ -107,6 +111,10 @@ exts_list = [
     ('PyVCF', '0.6.8', {
         'modulename': 'vcf',
         'checksums': ['e9d872513d179d229ab61da47a33f42726e9613784d1cb2bac3f8e2642f6f9d9'],
+    }),
+    ('ont-fast5-api', '3.1.1', {
+        'modulename': 'ont_fast5_api',
+        'checksums': ['ce5a955c5e90a393f040fb36fc461382339fc0b9cd63e3969b9763127dc2b0d3'],
     }),
 ]
 
@@ -121,9 +129,11 @@ components = [
         'checksums': ['26bc96742e291795d4a7c1154336715d98168d8ce3524ad7adfea0b5562eb34d'],
     }),
 ]
-
+local_artic_bins = [
+    'artic', 'artic_fasta_header', 'artic_make_depth_mask', 'artic_mask', 'artic_vcf_filter', 'artic_vcf_merge'
+]
 sanity_check_paths = {
-    'files': [],
+    'files': ['bin/%s' % f for f in local_artic_bins],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 sanity_check_commands = [
