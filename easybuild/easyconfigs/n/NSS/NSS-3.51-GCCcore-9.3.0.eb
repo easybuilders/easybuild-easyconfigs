@@ -1,0 +1,49 @@
+easyblock = 'MakeCp'
+
+name = 'NSS'
+version = '3.51'
+
+homepage = 'https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS'
+description = """Network Security Services (NSS) is a set of libraries designed to support cross-platform development
+ of security-enabled client and server applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://ftp.mozilla.org/pub/security/nss/releases/NSS_%(version_major)s_%(version_minor)s_RTM/src/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'NSS-3.39_pkgconfig.patch',
+    '%(name)s-%(version)s_fix_kremlin_ppc64le.patch',
+]
+checksums = [
+    '75348b3b3229362486c57a880db917da1f96ef4eb639dc9cc2ff17d72268459c',  # nss-3.51.tar.gz
+    '5c4b55842e5afd1e8e67b90635f6474510b89242963c4ac2622d3e3da9062774',  # NSS-3.39_pkgconfig.patch
+    '2fc7bd556737d34a62c06f86899863b7071b71943ffb4facfb413a087b8bee2e',  # NSS-3.51_fix_kremlin_ppc64le.patch
+]
+
+builddependencies = [('binutils', '2.34')]
+dependencies = [
+    ('NSPR', '4.25'),
+    ('zlib', '1.2.11'),
+]
+
+# building in parallel fails
+parallel = 1
+
+# fix for not being able to find header files
+buildopts = 'BUILD_OPT=1 USE_64=1 CPATH="$EBROOTNSPR/include/nspr:$CPATH" '
+# fix c standard causing missing functions
+buildopts += 'OS_REL_CFLAGS="-D_XOPEN_SOURCE " && '
+# also install pkgconfig file (see patch)
+buildopts += "cd config && make PREFIX=%(installdir)s BUILD_OPT=1 USE_64=1 && cd -"
+
+files_to_copy = ['../dist/Linux*.OBJ/*', (['../dist/public/*'], 'include')]
+
+sanity_check_paths = {
+    'files': ['lib/libnss.a'],
+    'dirs': ['bin', 'include/dbm', 'include/nss'],
+}
+
+modextrapaths = {'CPATH': 'include/nss'}
+
+moduleclass = 'lib'
