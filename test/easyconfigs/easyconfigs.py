@@ -614,9 +614,10 @@ class EasyConfigTest(TestCase):
     def check_sanity_check_paths(self, changed_ecs):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
-        # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
+        # GoPackage, PythonBundle & PythonPackage already have a decent customised sanity_check_paths
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['CrayToolchain', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain', 'BuildEnv']
+        whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
+                     'Toolchain']
         # Autotools & (recent) GCC are just bundles (Autotools: Autoconf+Automake+libtool, GCC: GCCcore+binutils)
         bundles_whitelist = ['Autotools', 'GCC']
 
@@ -650,6 +651,8 @@ class EasyConfigTest(TestCase):
             # https:// doesn't work, results in index page being downloaded instead
             # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
             'http://isl.gforge.inria.fr',
+            # https:// leads to File Not Found
+            'http://tau.uoregon.edu/',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
