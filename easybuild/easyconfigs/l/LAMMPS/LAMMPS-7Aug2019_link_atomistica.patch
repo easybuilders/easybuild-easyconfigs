@@ -1,0 +1,49 @@
+Adds missing logic in CMake files to build LAMMPS with Atomistica
+author: Alex Domingo (Vrije Universiteit Brussel)
+author: Alexander Grund (TU Dresden)
+diff -W 139 -Nru cmake.orig/CMakeLists.txt cmake/CMakeLists.txt
+--- a/cmake/CMakeLists.txt	2020-04-28 20:27:21.829135000 +0200
++++ b/cmake/CMakeLists.txt	2020-04-28 22:11:37.035359498 +0200
+@@ -302,6 +302,12 @@
+   add_definitions(-DLAMMPS_FFMPEG)
+ endif()
+ 
++if(PKG_USER-ATOMISTICA)
++  enable_language(Fortran)
++  find_package(Atomistica REQUIRED)
++  list(APPEND LAMMPS_LINK_LIBS Atomistica::Atomistica)
++endif()
++
+ if(BUILD_SHARED_LIBS)
+   set(CONFIGURE_REQUEST_PIC "--with-pic")
+   set(CMAKE_REQUEST_PIC "-DCMAKE_POSITION_INDEPENDENT_CODE=${CMAKE_POSITION_INDEPENDENT_CODE}")
+@@ -514,7 +520,11 @@
+ list(REMOVE_DUPLICATES LAMMPS_LINK_LIBS)
+ if(BUILD_LIB)
+   add_library(lammps ${LIB_SOURCES})
+-  target_link_libraries(lammps ${LAMMPS_LINK_LIBS})
++  if(PKG_USER-ATOMISTICA)
++    target_link_libraries(lammps ${LAMMPS_LINK_LIBS} Atomistica::Atomistica)
++  else()
++    target_link_libraries(lammps ${LAMMPS_LINK_LIBS})
++  endif()
+   if(LAMMPS_DEPS)
+     add_dependencies(lammps ${LAMMPS_DEPS})
+   endif()
+diff -W 139 -Nru cmake.orig/Modules/FindAtomistica.cmake cmake/Modules/FindAtomistica.cmake
+--- a/cmake/Modules/FindAtomistica.cmake	1970-01-01 01:00:00.000000000 +0100
++++ b/cmake/Modules/FindAtomistica.cmake	2020-04-28 20:35:39.850266000 +0200
+@@ -0,0 +1,13 @@
++find_package(MPI REQUIRED)
++include_directories(${MPI_Fortran_INCLUDE_PATH})
++list(APPEND LAMMPS_LINK_LIBS ${MPI_Fortran_LIBRARIES})
++find_library(ATOMISITICA_LIB atomistica)
++add_library(Atomistica::Atomistica STATIC IMPORTED)
++set_target_properties(Atomistica::Atomistica PROPERTIES
++    IMPORTED_LOCATION ${ATOMISITICA_LIB}
++    INTERFACE_LINK_LIBRARIES MPI::MPI_Fortran
++    IMPORTED_LINK_INTERFACE_LANGUAGES Fortran
++)
++include(FindPackageHandleStandardArgs)
++find_package_handle_standard_args(Atomistica REQUIRED_VARS ATOMISITICA_LIB MPI_Fortran_FOUND)
++
