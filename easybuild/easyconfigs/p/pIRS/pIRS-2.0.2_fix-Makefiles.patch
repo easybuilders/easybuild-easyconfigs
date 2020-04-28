@@ -22,7 +22,7 @@ diff -ru --new-file pirs-2.0.2.orig/Makefile pirs-2.0.2/Makefile
 -
 diff -ru --new-file pirs-2.0.2.orig/src/pirs/gccMakefile pirs-2.0.2/src/pirs/gccMakefile
 --- pirs-2.0.2.orig/src/pirs/gccMakefile	2016-08-14 07:10:03.000000000 +0200
-+++ pirs-2.0.2/src/pirs/gccMakefile	2020-04-28 11:43:36.611256253 +0200
++++ pirs-2.0.2/src/pirs/gccMakefile	2020-04-28 13:31:25.328907461 +0200
 @@ -1,52 +1,23 @@
 -CFLAGS = -pipe -mtune=generic -msse2 -fopenmp -DSFMT_MEXP=19937 -DHAVE_CONFIG_H -DPKGDATADIR='"/usr/local/share/pirs"' -I. -I.. -ISFMT-src-1.4
 -
@@ -62,28 +62,28 @@ diff -ru --new-file pirs-2.0.2.orig/src/pirs/gccMakefile pirs-2.0.2/src/pirs/gcc
  SOURCES = $(foreach d,$(SRCDIRS),$(wildcard $(addprefix $(d)/*,$(SRCEXTS))))
  
 -# g++ -DHAVE_CONFIG_H -I. -DSFMT_MEXP=19937 -DPKGDATADIR='"/usr/local/share/pirs"' -Wall -Wextra -msse2  -fopenmp -g -O2 *.cpp SFMT-src-1.4/SFMT.c -lz
-+EXTRAFLAGS = -lz -lpthread -pipe -mtune=generic -msse2 -fopenmp -DSFMT_MEXP=19937 -DHAVE_CONFIG_H  -I. -I.. -ISFMT-src-1.4
++EXTRAFLAGS = -lz -lpthread -pipe -DSFMT_MEXP=19937 -DHAVE_CONFIG_H  -I. -I.. -ISFMT-src-1.4 -DPKGDATADIR='"$(PKGDATADIR)"'
  
  all: pirs
  	@echo Souce Files:[$(SOURCES)]
  
  pirs: $(SOURCES)
 -	g++ $(WARNFLAGS) $(CPPFLAGS) $(OLevel) -o $@ $^ $(LDFLAGS)
-+	$(CXX) $(WARNFLAGS) $(CPPFLAGS) -o $@ $^ $(LDFLAGS) $(EXTRAFLAGS) -DPKGDATADIR='"$(PKGDATADIR)"'
++	$(CXX) $(WARNFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(EXTRAFLAGS) 
  
  dpirs: $(SOURCES)
 -	g++ $(WARNFLAGS) $(CPPFLAGS) $(OLevel) -g -DWITH_DEBUG -o $@ $^ $(LDFLAGS)
-+	$(CXX) $(WARNFLAGS) $(CPPFLAGS) -g -DWITH_DEBUG -o $@ $^ $(LDFLAGS) $(EXTRAFLAGS) -DPKGDATADIR='"$(PKGDATADIR)"'
++	$(CXX) $(WARNFLAGS) $(CXXFLAGS) -g -DWITH_DEBUG -o $@ $^ $(LDFLAGS) $(EXTRAFLAGS)
  
  hmap:
 -	g++ -M -MM *.cpp
-+	$(CXX) $(CPPFLAGS) -M -MM *.cpp
++	$(CXX) $(CXXFLAGS) -M -MM *.cpp
  
  test: pirs
  	cd test && sh pirs.sh
 diff -ru --new-file pirs-2.0.2.orig/src/stator/gcContCvgBias/Makefile pirs-2.0.2/src/stator/gcContCvgBias/Makefile
 --- pirs-2.0.2.orig/src/stator/gcContCvgBias/Makefile	2016-08-14 07:10:03.000000000 +0200
-+++ pirs-2.0.2/src/stator/gcContCvgBias/Makefile	2020-04-28 11:39:44.227050586 +0200
++++ pirs-2.0.2/src/stator/gcContCvgBias/Makefile	2020-04-28 13:35:00.329179368 +0200
 @@ -1,38 +1,16 @@
 -ifeq ($(shell uname -s),Darwin)
 -CPPFLAGS += -march=core2 -Bstatic -L/opt/local/lib -I/opt/local/include
@@ -112,19 +112,19 @@ diff -ru --new-file pirs-2.0.2.orig/src/stator/gcContCvgBias/Makefile pirs-2.0.2
  
  gc_coverage_bias:${OBJ}
 -	${CC} -o gc_coverage_bias ${LIBRARY} ${OBJ} -lz
-+	${CXX} $(CPPFLAGS) -o gc_coverage_bias $(LDFLAGS) ${OBJ} -lz
++	${CXX} $(CXXFLAGS) -o gc_coverage_bias $(LDFLAGS) ${OBJ} -lz
  gzstream.o:gzstream.h gzstream.cpp
 -	${CC} -c ${LIBRARY} gzstream.h gzstream.cpp
-+	${CXX} $(CPPFLAGS) -c $(LDFLAGS) gzstream.h gzstream.cpp
++	${CXX} $(CXXFLAGS) -c $(LDFLAGS) gzstream.h gzstream.cpp
  self_util.o:self_util.cpp self_util.h
 -	${CC} -c ${LIBRARY} self_util.cpp self_util.h
-+	${CXX} $(CPPFLAGS) -c $(LDFLAGS) self_util.cpp self_util.h
++	${CXX} $(CXXFLAGS) -c $(LDFLAGS) self_util.cpp self_util.h
  main.o:main.cpp
 -	${CC} -c ${LIBRARY} main.cpp
-+	${CXX} $(CPPFLAGS) -c $(LDFLAGS) main.cpp
++	${CXX} $(CXXFLAGS) -c $(LDFLAGS) main.cpp
  stat_soap_coverage.o:stat_soap_coverage.h stat_soap_coverage.cpp
 -	${CC} -c ${LIBRARY} stat_soap_coverage.h stat_soap_coverage.cpp
-+	${CXX} $(CPPFLAGS) -c $(LDFLAGS) stat_soap_coverage.h stat_soap_coverage.cpp
++	${CXX} $(CXXFLAGS) -c $(LDFLAGS) stat_soap_coverage.h stat_soap_coverage.cpp
  
  test: gc_coverage_bias
  	./gc_coverage_bias -r gcdeptestref.fa.gz -o test -w 100,200 --gcdump --depwindump gcdeptest.depth.gz

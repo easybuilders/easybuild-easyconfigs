@@ -1,7 +1,7 @@
 # Author: Pavel Grochal (INUITS)
 # License: GPLv2
 
-easyblock = 'ConfigureMake'
+easyblock = 'MakeCp'
 
 name = 'pIRS'
 version = '2.0.2'
@@ -11,7 +11,7 @@ description = """pIRS (profile based Illumina pair-end Reads Simulator) is a pro
 from a reference genome. It is optimized for simulating reads similar to those generated from the Illumina platform."""
 
 toolchain = {'name': 'gompi', 'version': '2019b'}
-toolchainopts = {'cstd': 'c++11'}
+toolchainopts = {'cstd': 'c++11', 'openmp': True}
 
 # https://github.com/galaxy001/pirs
 github_account = 'galaxy001'
@@ -20,7 +20,7 @@ sources = ['v%(version)s.tar.gz']
 patches = ['%(name)s-%(version)s_fix-Makefiles.patch']
 checksums = [
     'f80051819ee2c4307ad7ff74d35785c6ba864e8219673e6b0f12ff326eedb2e4',  # v2.0.2.tar.gz
-    '5168b02abc5162b8c4175d76ee50f1bf876911b31449d21008c3c3464935d47f',  # pIRS-2.0.2_fix-Makefiles.patch
+    '61cd267caeffd28eb7e53fb676d9c204ba1608cd4101f49fd17201bd3338d016',  # pIRS-2.0.2_fix-Makefiles.patch
 ]
 
 dependencies = [
@@ -33,25 +33,36 @@ dependencies = [
     ('Coreutils', '8.32'),
 ]
 
-skipsteps = ['configure', 'install']
-
-unpack_options = '--strip-components=1'
-buildininstalldir = True
-
 buildopts = 'CC="$CC" CXX="$CXX" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" PKGDATADIR="%(installdir)s"'
-
-modextrapaths = {'PATH': ''}
 
 local_bins = ['gc_coverage_bias', 'pirs']
 local_perl_files = [
     'alignment_stator', 'baseCalling_Matrix_analyzer', 'baseCalling_Matrix_calculator',
     'baseCalling_Matrix_merger', 'gc_coverage_bias_plot', 'indelstat_sam_bam'
 ]
+
+files_to_copy = [
+    (['src/stator/alignment_stator.pl',
+      'src/stator/baseCallingMatrix/baseCalling_Matrix_analyzer.pl',
+      'src/stator/baseCallingMatrix/baseCalling_Matrix_calculator.pl',
+      'src/stator/baseCallingMatrix/baseCalling_Matrix_merger.pl',
+      'src/stator/gcContCvgBias/gc_coverage_bias',
+      'src/stator/gcContCvgBias/gc_coverage_bias_plot.pl',
+      'src/stator/indelstat_sam_bam.pl',
+      'src/pirs/pirs',
+      'src/pirs/Profiles',
+      ], 'bin'),
+]
+
+# cd to bin dir and make link for all perl files
+postinstallcmds = [" && ". join(['cd %(installdir)s/bin'] + ["ln -s %s.pl %s" % (f, f) for f in local_perl_files])]
+
 sanity_check_paths = {
-    'files': ['%s' % f for f in local_bins + local_perl_files],
+    'files': ['bin/%s' % f for f in local_bins + local_perl_files],
     'dirs': []
 }
 
+# grep is used here because most of the 'help' commands below returns non-zero exit codes
 sanity_check_commands = [
     # Binaries
     ("gc_coverage_bias -h 2>&1 | grep 'it is a program to stat about the gc_depth'", ''),
