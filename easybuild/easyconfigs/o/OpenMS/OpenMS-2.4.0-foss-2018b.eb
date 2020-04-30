@@ -1,4 +1,4 @@
-easyblock = 'CMakeMake'
+easyblock = 'Bundle'
 
 name = 'OpenMS'
 version = '2.4.0'
@@ -10,9 +10,23 @@ description = """As part of the deNBI Center for integrative Bioinformatics, Ope
 
 toolchain = {'name': 'foss', 'version': '2018b'}
 
-source_urls = ['https://github.com/OpenMS/OpenMS/releases/download/Release%(version)s/']
-sources = ['%(name)s-%(version)s-src.tar.gz']
-checksums = ['86e8176b0f89cc86a10f5c3e60c34140d591e9e6c85f129ccbfa13ecb16a9af2']
+components = [
+    ('SeqAn', '1.4.2-library', {
+         'easyblock': 'Tarball', 
+         'source_urls': ['https://github.com/seqan/seqan/releases/download/seqan-v1.4.2/'],
+         'sources': ['seqan-library-1.4.2.tar.bz2'],
+         'checksums': ['77fb437c6f17d41ec41ce0a3bcc3533f91a3482ca63a3a55400e14cb73e64317'],
+    }), 
+    (name, version, {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/OpenMS/OpenMS/releases/download/Release%(version)s/'],
+        'sources': ['%(name)s-%(version)s-src.tar.gz'],
+        'checksums': ['86e8176b0f89cc86a10f5c3e60c34140d591e9e6c85f129ccbfa13ecb16a9af2'],
+        'srcdir': '%(builddir)s/OpenMS-%(version)s',
+        # find bundled sequan; without -ldl there are linking issues
+        'configopts': "-DCMAKE_PREFIX_PATH=%(builddir)s/seqan-library-1.4.2 -DCMAKE_CXX_STANDARD_LIBRARIES='-ldl'"
+    }),
+]
 
 builddependencies = [
     ('CMake', '3.12.1'),
@@ -21,10 +35,9 @@ builddependencies = [
 dependencies = [
     ('Boost', '1.67.0'),
     ('Xerces-C++', '3.2.0'),
-    ('SeqAn', '1.4.2', '-library', SYSTEM),
     ('LIBSVM', '3.23'),
     ('GLPK', '4.65'),
-    ('Eigen', '3.3.7', '', SYSTEM),
+    ('Eigen', '3.3.4', '', SYSTEM),
     ('SQLite', '3.24.0'),
     ('bzip2', '1.0.6'),
     ('zlib', '1.2.11'),
@@ -41,7 +54,7 @@ dependencies = [
 
 sanity_check_paths = {
     'files': ['lib/libOpenMS.%s' % SHLIB_EXT, 'lib/libOpenMS_GUI.%s' % SHLIB_EXT],
-    'dirs': ['bin', 'include/OpenMS', 'lib'],
+    'dirs': ['bin', 'include/OpenMS', 'lib', 'share/OpenMS'],
 }
 
 moduleclass = "bio"
