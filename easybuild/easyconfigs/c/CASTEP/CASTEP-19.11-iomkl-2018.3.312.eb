@@ -1,0 +1,37 @@
+easyblock = 'ConfigureMake'
+
+name = 'CASTEP'
+version = '19.11'
+
+homepage = 'http://www.castep.org/'
+description = """CASTEP is a leading code for calculating the properties of materials from first principles. 
+Using density functional theory, it can simulate a wide range of properties of materials proprieties including 
+energetics, structure at the atomic level, vibrational properties, electronic response properties etc. In 
+particular it has a wide range of spectroscopic features that link directly to experiment, such as infra-red and 
+Raman spectroscopies, NMR, and core level spectra."""
+
+toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
+
+sources = ['CASTEP-%(version)s.tar.gz']
+patches = ['CASTEP-19.11-fix-makefiles.patch']
+skipsteps = ['configure']
+
+dependencies = [('FFTW','3.3.8')]
+
+buildopts = " COMMS_ARCH=mpi SUBARCH=mpi FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+buildopts += " MATHLIBS=mkl10 MATHLIBDIR=$EBROOTIMKL/mkl/lib/intel64 "
+buildopts += " && make -j FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+buildopts += " MATHLIBS=mkl10 MATHLIBDIR=$EBROOTIMKL/mkl/lib/intel64"
+
+preinstallopts = "mkdir %(installdir)s/bin && "
+installopts = " COMMS_ARCH=mpi SUBARCH=mpi FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+installopts += " MATHLIBS=mkl10 MATHLIBDIR=$EBROOTIMKL/mkl/lib/intel64 INSTALL_DIR=%(installdir)s/bin "
+installopts += " && make -j FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+installopts += " MATHLIBS=mkl10 MATHLIBDIR=$EBROOTIMKL/mkl/lib/intel64 INSTALL_DIR=%(installdir)s/bin install"
+
+sanity_check_paths = {
+	'files': ['bin/c2x', 'bin/mdtep', 'bin/castep.mpi', 'bin/castep.serial'],
+	'dirs': [],
+}
+
+moduleclass = 'math'
