@@ -40,6 +40,18 @@ local_standalone_defines = "HAVE_FFTW3=1 HAVE_DFTD3=1"
 local_lammps_defines = "MPIROOT=$EBROOTOPENMPI HAVE_FFTW3=1"
 
 components = [
+    # Standalone build of Atomistica (must happen first in order to download source from correct location)
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'atomistica-%(version)s/build_standalone',
+        'prebuildopts': "cp Makefile.gnu Makefile &&",
+        'buildopts': "factories %s && make mdcore %s" % (local_standalone_defines, local_standalone_defines),
+        'files_to_copy': [
+            (['mdcore*'], 'bin'),
+            (['../AUTHORS.md', '../ChangeLog.md', '../README.md', '../LICENSE', '../doc', '../examples'], 'share'),
+            (['../tests', '../tools'], ''),
+        ],
+    }),
     # Build of Atomistica that integrates with ASE
     (name + '-ASE', version, {
         'easyblock': 'PythonPackage',
@@ -69,18 +81,6 @@ components = [
             (['libatomistica.a'], 'lib'),
             (['../src/support/ptrdict.h', 'potentials_factory_c.h'], 'include'),
             (['../src/lammps/pair_style/pair_atomistica.*'], 'share/lammps'),
-        ],
-    }),
-    # Standalone build of Atomistica
-    (name, version, {
-        'easyblock': 'MakeCp',
-        'start_dir': 'atomistica-%(version)s/build_standalone',
-        'prebuildopts': "cp Makefile.gnu Makefile &&",
-        'buildopts': "factories %s && make mdcore %s" % (local_standalone_defines, local_standalone_defines),
-        'files_to_copy': [
-            (['mdcore*'], 'bin'),
-            (['../AUTHORS.md', '../ChangeLog.md', '../README.md', '../LICENSE', '../doc', '../examples'], 'share'),
-            (['../tests', '../tools'], ''),
         ],
     }),
 ]
