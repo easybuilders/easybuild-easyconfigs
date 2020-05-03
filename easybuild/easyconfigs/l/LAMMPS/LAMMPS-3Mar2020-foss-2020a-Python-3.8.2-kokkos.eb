@@ -21,12 +21,20 @@ toolchainopts = {'openmp': True, 'usempi': True, 'cstd': 'c++11'}
 
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
-sources = ['stable_%(version)s.tar.gz']
-# See https://github.com/lammps/lammps/pull/1483 for why this is needed
-patches = ['lammps-stable_3Mar2020_hack_openmp_gcc9.patch']
+sources = [
+    'stable_%(version)s.tar.gz',
+    {'filename': 'lammps_vs_yaff_test_single_point_energy.py', 'extract_cmd': "cp %s %(builddir)s"},
+]
+patches = [
+    # see https://github.com/lammps/lammps/pull/1483 for why this is needed
+    'lammps-stable_3Mar2020_hack_openmp_gcc9.patch',
+    'LAMMPS-3Mar2020_fix-docs-build.patch',
+]
 checksums = [
     'a1a2e3e763ef5baecea258732518d75775639db26e60af1634ab385ed89224d1',  # stable_3Mar2020.tar.gz
+    '5e5211f64113e8a38c102f8542fd59169b689fdb92afbff29c3b88f802f1a96c',  # lammps_vs_yaff_test_single_point_energy.py
     '41a0bcb828be22d38bb489bbd4b1fd7803d7771a2308371f01e961c52b8c869f',  # lammps-stable_3Mar2020_hack_openmp_gcc9.patch
+    '7f010853d81022f286cf32e3babe252d5cc7c0bfb274bee5a2c64e810e170239',  # LAMMPS-3Mar2020_fix-docs-build.patch
 ]
 
 local_source_dir_name = '%(namelower)s-%(version)s'
@@ -89,5 +97,11 @@ user_packages = [
     'MOFFF', 'MOLFILE', 'NETCDF', 'PHONON', 'PLUMED', 'PTM', 'QTB', 'REAXC',
     'SCAFACOS', 'SMD', 'SMTBQ', 'SPH', 'TALLY', 'UEF', 'YAFF', 'VTK'
 ]
+
+enhance_sanity_check = True
+
+# run short test case to make sure installation doesn't produce blatently incorrect results;
+# this catches a problem where having the USER-INTEL package enabled causes trouble when installing with intel/2019b
+sanity_check_commands = ["cd %(builddir)s && python lammps_vs_yaff_test_single_point_energy.py"]
 
 moduleclass = 'chem'
