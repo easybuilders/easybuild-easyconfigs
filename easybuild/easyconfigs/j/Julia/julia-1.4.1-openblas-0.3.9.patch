@@ -1,0 +1,63 @@
+diff -ur julia-1.4.1-orig/deps/blas.mk julia-1.4.1/deps/blas.mk
+--- julia-1.4.1-orig/deps/blas.mk	2020-03-21 18:20:18.000000000 +0000
++++ julia-1.4.1/deps/blas.mk	2020-05-04 21:29:32.194935008 +0000
+@@ -23,7 +23,7 @@
+ OPENBLAS_BUILD_OPTS += NUM_THREADS=16
+ else
+ # On linux, try to provision for the largest possible machine currently
+-OPENBLAS_BUILD_OPTS += NUM_THREADS=16
++OPENBLAS_BUILD_OPTS += NUM_THREADS=64
+ endif
+ else
+ OPENBLAS_BUILD_OPTS += USE_THREAD=0
+@@ -40,6 +40,7 @@
+ # 64-bit BLAS interface
+ ifeq ($(USE_BLAS64), 1)
+ OPENBLAS_BUILD_OPTS += INTERFACE64=1 SYMBOLSUFFIX="$(OPENBLAS_SYMBOLSUFFIX)" LIBPREFIX="libopenblas$(OPENBLAS_LIBNAMESUFFIX)"
++OPENBLAS64_FFLAGS = -fdefault-integer-8
+ ifeq ($(OS), Darwin)
+ OPENBLAS_BUILD_OPTS += OBJCONV=$(abspath $(BUILDDIR)/objconv/objconv)
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/build-compiled: | $(BUILDDIR)/objconv/build-compiled
+@@ -72,7 +73,7 @@
+ endif
+ 
+ OPENBLAS_BUILD_OPTS += CFLAGS="$(CFLAGS) $(OPENBLAS_CFLAGS)"
+-OPENBLAS_BUILD_OPTS += FFLAGS="$(FFLAGS) $(OPENBLAS_FFLAGS)"
++OPENBLAS_BUILD_OPTS += FFLAGS="$(FFLAGS) $(OPENBLAS_FFLAGS) $(OPENBLAS64_FFLAGS)"
+ OPENBLAS_BUILD_OPTS += LDFLAGS="$(LDFLAGS) $(RPATH_ESCAPED_ORIGIN)"
+ 
+ # Debug OpenBLAS
+@@ -95,13 +96,9 @@
+ ifneq ($(USE_BINARYBUILDER_OPENBLAS), 1)
+ 
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-skylakexdgemm.patch-applied: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/source-extracted
+-	cd $(BUILDDIR)/$(OPENBLAS_SRC_DIR) && \
+-		patch -p1 -f < $(SRCDIR)/patches/openblas-skylakexdgemm.patch
+ 	echo 1 > $@
+ 
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-winexit.patch-applied: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/source-extracted
+-	cd $(BUILDDIR)/$(OPENBLAS_SRC_DIR) && \
+-		patch -p1 -f < $(SRCDIR)/patches/openblas-winexit.patch
+ 	echo 1 > $@
+ 
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/build-configured: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-skylakexdgemm.patch-applied $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-winexit.patch-applied
+diff -ur julia-1.4.1-orig/deps/openblas.version julia-1.4.1/deps/openblas.version
+--- julia-1.4.1-orig/deps/openblas.version	2020-03-21 18:20:18.000000000 +0000
++++ julia-1.4.1/deps/openblas.version	2020-05-04 21:24:49.938472569 +0000
+@@ -1,2 +1,2 @@
+-OPENBLAS_BRANCH=v0.3.5
+-OPENBLAS_SHA1=eebc18928715775c9ed254684edee16e4efe0342
++OPENBLAS_BRANCH=v0.3.9
++OPENBLAS_SHA1=33f76a6c378681ac2af76b20e55ff682191a1937
+diff -ur julia-1.4.1-orig/deps/Versions.make julia-1.4.1/deps/Versions.make
+--- julia-1.4.1-orig/deps/Versions.make	2020-04-14 17:23:55.000000000 +0000
++++ julia-1.4.1/deps/Versions.make	2020-05-04 21:25:16.034607778 +0000
+@@ -4,7 +4,7 @@
+ PCRE_BB_REL = 0
+ DSFMT_VER = 2.2.3
+ DSFMT_BB_REL = 0
+-OPENBLAS_VER = 0.3.5
++OPENBLAS_VER = 0.3.9
+ OPENBLAS_BB_REL = 2
+ LAPACK_VER = 3.5.0
+ SUITESPARSE_VER = 5.4.0
