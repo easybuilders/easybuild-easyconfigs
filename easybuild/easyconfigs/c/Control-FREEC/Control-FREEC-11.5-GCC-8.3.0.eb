@@ -1,0 +1,59 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jordi Blasco <jordi.blasco@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'MakeCp'
+easyblock = 'ConfigureMake'
+
+name = 'Control-FREEC'
+version = '11.5'
+
+homepage = 'https://github.com/BoevaLab/FREEC'
+description = """Control-FREEC is a tool for detection of copy-number changes and allelic imbalances (including LOH)
+using deep-sequencing data originally developed by the Bioinformatics Laboratory of Institut Curie (Paris). Since 2016,
+the project has moved to Insitut Cochin, INSERM U1016 (Paris). Control-FREEC automatically computes, normalizes,
+segments copy number and beta allele frequency (BAF) profiles, then calls copy number alterations and LOH."""
+
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+builddependencies = [
+    ('Autoconf', '2.69', '', ('GCCcore', '8.3.0')),
+    ('Automake', '1.16.1', '', ('GCCcore', '8.3.0')),
+    ('Autotools', '20180311', '', ('GCCcore', '8.3.0')),
+]
+
+dependencies = [
+    ('R', '3.6.2', '', ('foss', '2019b')),
+    ('SAMtools', '1.10', '', ('GCC', '8.3.0')),
+    ('Perl', '5.30.0', '', ('GCCcore', '8.3.0')),
+]
+
+github_account = 'BoevaLab'
+source_urls = ['https://github.com/%(github_account)s/FREEC/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    '30f24c6db628eb5ce5a5f8ed8e83763915554edb02d940fee2607e0ad7e705a7',
+]
+
+prebuildopts = "cd src && "
+buildopts = 'all'
+
+parallel = 1
+
+files_to_copy = [(['src/freec'], 'bin'), (['scripts/*'], 'scripts'), (['data/*'], 'data')]
+
+sanity_check_paths = {
+    'files': ['bin/freec'] +
+             ['scripts/%s' % x for x in ['assess_significance.R', 'freec2bed.pl', 'freec2circos.pl',
+                                         'get_fasta_lengths.pl', 'makeGraph.R', 'makeGraph_Chromosome.R',
+                                         'vcf2snpFreec.pl']],
+    'dirs': ['scripts', 'data'],
+}
+
+sanity_check_commands = ["freec --help"]
+
+moduleclass = 'bio'
