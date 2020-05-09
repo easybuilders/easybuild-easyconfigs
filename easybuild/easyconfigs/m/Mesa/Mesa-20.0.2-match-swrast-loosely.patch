@@ -1,0 +1,84 @@
+# Fixes: swrast fails to load with certain remote X servers
+# https://gitlab.freedesktop.org/mesa/mesa/issues/99
+# From Tom Hughes <tom@compton.nu>, June 2015
+# Adapted for later Mesa by Bart Oldeman <bart.oldeman@calculquebec.ca>, September 2019
+# Breaks "radeonsi" driver but this driver is not built by the easyconfig.
+--- src/glx/dri_common.c.orig	2020-03-19 22:11:21.522610000 +0100
++++ src/glx/dri_common.c	2020-03-19 22:14:39.290225004 +0100
+@@ -200,6 +200,36 @@
+ }
+ 
+ static int
++scalarGreaterEqual(struct glx_config *mode, unsigned int attrib, unsigned int value)
++{
++   unsigned int glxValue;
++   int i;
++
++   for (i = 0; i < ARRAY_SIZE(attribMap); i++)
++      if (attribMap[i].attrib == attrib) {
++         glxValue = *(unsigned int *) ((char *) mode + attribMap[i].offset);
++         return glxValue == GLX_DONT_CARE || glxValue >= value;
++      }
++
++   return GL_TRUE;              /* Is a non-existing attribute greater than or equal to value? */
++}
++
++static int
++booleanSupported(struct glx_config *mode, unsigned int attrib, unsigned int value)
++{
++   unsigned int glxValue;
++   int i;
++
++   for (i = 0; i < ARRAY_SIZE(attribMap); i++)
++      if (attribMap[i].attrib == attrib) {
++         glxValue = *(unsigned int *) ((char *) mode + attribMap[i].offset);
++         return glxValue == GLX_DONT_CARE || glxValue;
++      }
++
++   return GL_TRUE;              /* Is a non-existing attribute supported? */
++}
++
++static int
+ driConfigEqual(const __DRIcoreExtension *core,
+                struct glx_config *config, const __DRIconfig *driConfig)
+ {
+@@ -247,7 +277,38 @@
+          if (value & __DRI_ATTRIB_TEXTURE_RECTANGLE_BIT)
+             glxValue |= GLX_TEXTURE_RECTANGLE_BIT_EXT;
+          if (config->bindToTextureTargets != GLX_DONT_CARE &&
+-             glxValue != config->bindToTextureTargets)
++             config->bindToTextureTargets &&
++             glxValue != (config->bindToTextureTargets & glxValue))
++            return GL_FALSE;
++         break;
++
++      case __DRI_ATTRIB_STENCIL_SIZE:
++      case __DRI_ATTRIB_ACCUM_RED_SIZE:
++      case __DRI_ATTRIB_ACCUM_GREEN_SIZE:
++      case __DRI_ATTRIB_ACCUM_BLUE_SIZE:
++      case __DRI_ATTRIB_ACCUM_ALPHA_SIZE:
++         if (value != 0 && !scalarEqual(config, attrib, value))
++            return GL_FALSE;
++         break;
++
++      case __DRI_ATTRIB_DOUBLE_BUFFER:
++      case __DRI_ATTRIB_FRAMEBUFFER_SRGB_CAPABLE:
++          if (value && !booleanSupported(config, attrib, value))
++            return GL_FALSE;
++          break;
++
++      case __DRI_ATTRIB_BIND_TO_TEXTURE_RGB:
++      case __DRI_ATTRIB_BIND_TO_TEXTURE_RGBA:
++      case __DRI_ATTRIB_BIND_TO_MIPMAP_TEXTURE:
++          break;
++
++      case __DRI_ATTRIB_SAMPLE_BUFFERS:
++      case __DRI_ATTRIB_SAMPLES:
++      case __DRI_ATTRIB_AUX_BUFFERS:
++      case __DRI_ATTRIB_MAX_PBUFFER_WIDTH:
++      case __DRI_ATTRIB_MAX_PBUFFER_HEIGHT:
++      case __DRI_ATTRIB_MAX_PBUFFER_PIXELS:
++         if (!scalarGreaterEqual(config, attrib, value))
+             return GL_FALSE;
+          break;
+ 
