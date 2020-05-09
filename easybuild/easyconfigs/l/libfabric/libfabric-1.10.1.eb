@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'libfabric'
+version = '1.10.1'
+
+homepage = 'https://ofiwg.github.io/libfabric/'
+description = """
+Libfabric is a core component of OFI. It is the library that defines and exports
+the user-space API of OFI, and is typically the only software that applications
+deal with directly. It works in conjunction with provider libraries, which are
+often integrated directly into libfabric.
+"""
+
+toolchain = SYSTEM
+toolchainopts = {'pic': True}
+
+github_account = 'ofiwg'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['159dc44084afa89278ca2c471120635adb8fbdd4aa3bb61e4249c8e6ba6a83e6']
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+osdependencies = [('libibverbs-dev', 'libibverbs-devel', 'rdma-core-devel')]
+
+# Disable deprecated "sockets" provider
+configopts = "--disable-sockets"
+
+sanity_check_paths = {
+    'files': ['bin/fi_info', 'bin/fi_pingpong', 'bin/fi_strerror'] +
+             ['lib/libfabric.%s' % x for x in ['a', SHLIB_EXT]],
+    'dirs': ['include/rdma', 'lib/pkgconfig', 'share']
+}
+
+sanity_check_commands = ['fi_info']
+
+moduleclass = 'lib'
