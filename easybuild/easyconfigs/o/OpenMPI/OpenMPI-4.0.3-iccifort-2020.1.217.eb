@@ -7,43 +7,19 @@ description = """The Open MPI Project is an open source MPI-3 implementation."""
 toolchain = {'name': 'iccifort', 'version': '2020.1.217'}
 
 source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
-sources = ['openmpi-4.0.3.tar.gz']
-checksums = [
-    '6346bf976001ad274c7e018d6cc35c92bbb9426d8f7754fac00a17ea5ac8eebc', # tarball
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['6346bf976001ad274c7e018d6cc35c92bbb9426d8f7754fac00a17ea5ac8eebc']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('hwloc', '2.2.0'),
+    ('UCX', '1.8.0'),
 ]
 
-configopts = '--enable-shared --with-verbs '
-configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
-configopts += '--with-hwloc=external '  # hwloc support
-configopts += '--without-usnic ' # No usnic-via-libfabric
-configopts += '--with-ucx '
-configopts += '--disable-wrapper-runpath --disable-wrapper-rpath ' # rpath is already done by ld wrapper
-configopts += '--with-munge ' #enable Munge in PMIx
-configopts += '--with-slurm --with-pmi=/cvmfs/soft.computecanada.ca/gentoo/2019/usr '
-configopts += '--enable-mpi-cxx '
-configopts += '--with-hcoll '
-configopts += '--disable-show-load-errors-by-default '
-configopts += '--enable-mpi1-compatibility '
-
-# enumerate all mca's that should be compiled as plugins (only those that link to system-specific
-# libraries (lustre, fabric, and scheduler)
-configopts += '--enable-mca-dso=common-ucx,common-verbs,event-external,atomic-ucx,btl-openib,btl-uct,'
-configopts += 'coll-hcoll,ess-tm,fs-lustre,mtl-ofi,mtl-psm,mtl-psm2,osc-ucx,'
-configopts += 'plm-tm,pmix-s1,pmix-s2,pml-ucx,pnet-opa,psec-munge,'
-configopts += 'ras-tm,spml-ucx,sshmem-ucx,hwloc-external '
+# disable MPI1 compatibility for now, see what breaks...
+# configopts = '--enable-mpi1-compatibility '
 
 # to enable SLURM integration (site-specific)
 # configopts += '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'
 
-postinstallcmds = [
-  'rm %(installdir)s/lib/*.la %(installdir)s/lib/*/*.la',
-]
-
 moduleclass = 'mpi'
-
-modluafooter = """
-assert(loadfile("/cvmfs/soft.computecanada.ca/config/lmod/openmpi_custom.lua"))("%(version_major_minor)s")
-
-add_property("type_","mpi")
-family("mpi")
-"""
