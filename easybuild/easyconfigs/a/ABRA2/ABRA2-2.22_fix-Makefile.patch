@@ -1,0 +1,32 @@
+* don't hardcode g++ or "-g -O2"
+* fix source filename for standalone build
+author: Kenneth Hoste (HPC-UGent)
+--- abra2-2.22/Makefile.orig	2020-03-28 11:40:49.094222081 +0100
++++ abra2-2.22/Makefile	2020-03-28 11:41:38.732466934 +0100
+@@ -1,6 +1,9 @@
+ # Make file for ABRA
+ # libAbra is invoked from the ABRA java code
+
++CXX:=g++
++CXXFLAGS:=-g -O2
++
+ SRCDIR=src/main/c
+
+ all: clean native java
+@@ -12,13 +15,13 @@
+ 	mkdir target
+
+ native: mktargetdir
+-	g++ -g -O2 -I$(SRCDIR) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -shared -fPIC $(SRCDIR)/assembler.cpp $(SRCDIR)/sg_aligner.cpp -o target/libAbra.so
++	$(CXX) $(CXXFLAGS) -I$(SRCDIR) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -shared -fPIC $(SRCDIR)/assembler.cpp $(SRCDIR)/sg_aligner.cpp -o target/libAbra.so
+
+ standalone:
+-	g++ -g -I$(SRCDIR) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux $(SRCDIR)/assembler.c -o abra
++	$(CXX) $(CXXFLAGS) -I$(SRCDIR) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux $(SRCDIR)/assembler.cpp -o abra
+
+ sga:
+-	g++ -g -O2 -I$(SRCDIR) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux $(SRCDIR)/sg_aligner.cpp -o sga
++	$(CXX) $(CXXFLAGS) -I$(SRCDIR) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux $(SRCDIR)/sg_aligner.cpp -o sga
+
+ clean:
+ 	rm -rf target

@@ -1,0 +1,102 @@
+commit 93bdcb84b707078431c8ddffbfd7a188173cc3f3
+Author: Sergey Oblomov <sergeyo@mellanox.com>
+Date:   Mon Mar 23 21:53:10 2020 +0200
+
+    BUILD/DEBUG: added new API of binutils
+    
+    - enables support of new API provided by binutils 2.34+
+
+diff --git a/config/m4/ucs.m4 b/config/m4/ucs.m4
+index f329e50..6722a70 100644
+--- a/config/m4/ucs.m4
++++ b/config/m4/ucs.m4
+@@ -43,6 +43,29 @@ AS_IF([test "x$enable_backtrace_detail" = xyes],
+ 	AC_CHECK_TYPES([struct dl_phdr_info], [], [AC_MSG_WARN([struct dl_phdr_info not defined])];BT=0,
+ 					[#define _GNU_SOURCE 1
+ 					 #include <link.h>]) 
++	AC_CHECK_DECLS([bfd_get_section_flags, bfd_section_flags, bfd_get_section_vma, bfd_section_vma],
++		       [], [], [#include <bfd.h>])
++
++	AC_MSG_CHECKING([bfd_section_size API version])
++	AC_LANG_PUSH([C])
++	SAVE_CFLAGS="$CFLAGS"
++	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
++		#include <bfd.h>
++		int main(int argc, char** argv) {
++			asection *sec = malloc(sizeof(*sec));
++			bfd_section_size(sec);
++			free(sec);
++			return 0;
++		} ]])],
++		[AC_MSG_RESULT([1-arg API])
++		 AC_DEFINE([HAVE_1_ARG_BFD_SECTION_SIZE], [1],
++			   [bfd_section_size 1-arg version])],
++		[AC_MSG_RESULT([2-args API])
++		 AC_DEFINE([HAVE_1_ARG_BFD_SECTION_SIZE], [0],
++			   [bfd_section_size 2-args version])])
++	CFLAGS="$SAVE_CFLAGS"
++	AC_LANG_POP([C])
++
+ 	if test "x$BT" = "x1"; then
+ 		AC_CHECK_FUNCS([cplus_demangle])
+ 		AC_DEFINE([HAVE_DETAILED_BACKTRACE], 1, [Enable detailed backtrace])
+diff --git a/src/ucs/debug/debug.c b/src/ucs/debug/debug.c
+index b5bd4a9..d7d6d46 100644
+--- a/src/ucs/debug/debug.c
++++ b/src/ucs/debug/debug.c
+@@ -55,6 +55,34 @@ struct dl_address_search {
+ 
+ #ifdef HAVE_DETAILED_BACKTRACE
+ 
++#if HAVE_DECL_BFD_GET_SECTION_FLAGS
++#  define ucs_debug_bfd_section_flags(_abfd, _section) \
++    bfd_get_section_flags(_abfd, _section)
++#elif HAVE_DECL_BFD_SECTION_FLAGS
++#  define ucs_debug_bfd_section_flags(_abfd, _section) \
++    bfd_section_flags(_section)
++#else
++#  error "Unsupported BFD API"
++#endif
++
++#if HAVE_DECL_BFD_GET_SECTION_VMA
++#  define ucs_debug_bfd_section_vma(_abfd, _section) \
++    bfd_get_section_vma(_abfd, _section)
++#elif HAVE_DECL_BFD_SECTION_VMA
++#  define ucs_debug_bfd_section_vma(_abfd, _section) \
++    bfd_section_vma(_section)
++#else
++#  error "Unsupported BFD API"
++#endif
++
++#if HAVE_1_ARG_BFD_SECTION_SIZE
++#  define ucs_debug_bfd_section_size(_abfd, _section) \
++    bfd_section_size(_section)
++#else
++#  define ucs_debug_bfd_section_size(_abfd, _section) \
++    bfd_section_size(_abfd, _section);
++#endif
++
+ struct backtrace_line {
+     unsigned long            address;
+     char                     *file;
+@@ -287,17 +315,17 @@ static void find_address_in_section(bfd *abfd, asection *section, void *data)
+     int found;
+ 
+     if ((search->count > 0) || (search->max_lines == 0) ||
+-        ((bfd_get_section_flags(abfd, section) & SEC_ALLOC) == 0)) {
++        ((ucs_debug_bfd_section_flags(abfd, section) & SEC_ALLOC) == 0)) {
+         return;
+     }
+ 
+     address = search->file->dl.address - search->file->dl.base;
+-    vma = bfd_get_section_vma(abfd, section);
++    vma = ucs_debug_bfd_section_vma(abfd, section);
+     if (address < vma) {
+         return;
+     }
+ 
+-    size = bfd_section_size(abfd, section);
++    size = ucs_debug_bfd_section_size(abfd, section);
+     if (address >= vma + size) {
+         return;
+     }
