@@ -552,6 +552,8 @@ class EasyConfigTest(TestCase):
         # These packages do not support installation with 'pip'
         whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
 
+        whitelist_pip_check = [r'Mako-1.0.4.*Python-2.7.12.*']
+
         failing_checks = []
 
         for ec in changed_ecs:
@@ -609,7 +611,8 @@ class EasyConfigTest(TestCase):
             if use_pip and easyblock in ['PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
+                    if not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
+                        failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
