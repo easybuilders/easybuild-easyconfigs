@@ -247,7 +247,8 @@ class EasyConfigTest(TestCase):
             'libxc': (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-', r'PySCF-',
                                   r'Qiskit-', r'WIEN2k-']),
             # OPERA requires SAMtools 0.x
-            'SAMtools': (r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6']),
+            'SAMtools': (r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6', r'CGmapTools-0\.1\.2',
+                                  r'BatMeth2-2\.1']),
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
             'Jellyfish': (r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2']),
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
@@ -256,8 +257,10 @@ class EasyConfigTest(TestCase):
             # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
             # both scVelo and Python-Geometric depend on numba
             'LLVM': (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
-            # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
-            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
+            # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6), artic-ncov2019 requires medaka
+            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-', 'artic-ncov2019-2020.04.13']),
+            # rampart requires nodejs > 10, artic-ncov2019 requires rampart
+            'nodejs': ('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13']),
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -613,9 +616,10 @@ class EasyConfigTest(TestCase):
     def check_sanity_check_paths(self, changed_ecs):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
-        # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
+        # GoPackage, PythonBundle & PythonPackage already have a decent customised sanity_check_paths
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['CrayToolchain', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain', 'BuildEnv']
+        whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
+                     'Toolchain']
         # Autotools & (recent) GCC are just bundles (Autotools: Autoconf+Automake+libtool, GCC: GCCcore+binutils)
         bundles_whitelist = ['Autotools', 'GCC']
 
@@ -649,6 +653,8 @@ class EasyConfigTest(TestCase):
             # https:// doesn't work, results in index page being downloaded instead
             # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
             'http://isl.gforge.inria.fr',
+            # https:// leads to File Not Found
+            'http://tau.uoregon.edu/',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
