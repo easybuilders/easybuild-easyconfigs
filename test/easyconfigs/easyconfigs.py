@@ -599,7 +599,7 @@ class EasyConfigTest(TestCase):
             # Tkinter is an exception, since its version always matches the Python version anyway
             # Also whitelist some updated versions of Amber
             whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb', 'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
-            whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix):
+            whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
             has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'])
             if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
