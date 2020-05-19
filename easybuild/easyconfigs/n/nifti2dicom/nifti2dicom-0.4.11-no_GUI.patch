@@ -1,0 +1,89 @@
+This patch removes the build targets for the Qt based GUI and docs (VTK is therefore not needed anymore, either),
+which had reproducable trouble builing and would require quite a number of nowadays obsolete dependencies.
+
+Author: https://github.com/crubb
+
+diff -ur nifti2dicom-0.4.11/CMakeLists.txt nifti2dicom-0.4.11-noGUI/CMakeLists.txt
+--- nifti2dicom-0.4.11/CMakeLists.txt	2016-03-01 13:28:06.000000000 +0000
++++ nifti2dicom-0.4.11-noGUI/CMakeLists.txt	2018-08-24 07:04:27.124996116 +0000
+@@ -45,22 +45,6 @@
+ find_package(VTK REQUIRED)
+ include(${VTK_USE_FILE})
+ 
+-#TODO Check QVTK
+-
+-if(VTK_QT_VERSION EQUAL 5)
+-    set(Nifti2Dicom_QT_VERSION 5)
+-
+-    #Check Qt5 Library [Qt5]
+-    find_package(Qt5 COMPONENTS Core Gui Widgets)
+-else()
+-    set(Nifti2Dicom_QT_VERSION 4)
+-
+-    #Check Qt4 Library [Qt4] (4.4.0)
+-    set(QT_USE_IMPORTED_TARGETS TRUE)
+-    find_package(Qt4 4.4.0 REQUIRED)
+-
+-endif()
+-
+ 
+ configure_file(${CMAKE_SOURCE_DIR}/Nifti2DicomConfig.h.cmake ${CMAKE_BINARY_DIR}/Nifti2DicomConfig.h)
+ 
+@@ -94,6 +78,5 @@
+ 
+ 
+ add_subdirectory(src)
+-add_subdirectory(doc)
+ add_subdirectory(data)
+ add_subdirectory(packaging)
+diff -ur nifti2dicom-0.4.11/doc/CMakeLists.txt nifti2dicom-0.4.11-noGUI/doc/CMakeLists.txt
+--- nifti2dicom-0.4.11/doc/CMakeLists.txt	2016-03-01 13:28:06.000000000 +0000
++++ nifti2dicom-0.4.11-noGUI/doc/CMakeLists.txt	2018-08-24 06:58:20.798065098 +0000
+@@ -56,18 +56,7 @@
+                                --output=${CMAKE_CURRENT_SOURCE_DIR}/man/man1/nifti2dicom.1
+                        COMMAND ${SED_EXECUTABLE} -i "s#${CMAKE_BINARY_DIR}/src/core/##g" ${CMAKE_CURRENT_SOURCE_DIR}/man/man1/nifti2dicom.1
+     )
+-    add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/man/man1/qnifti2dicom.1
+-                       DEPENDS qnifti2dicom ${CMAKE_CURRENT_SOURCE_DIR}/man/qnifti2dicom.help2man.include
+-                       COMMAND ${HELP2MAN_EXECUTABLE}
+-                               ${CMAKE_BINARY_DIR}/src/gui/qnifti2dicom
+-                               --version-string=${Nifti2Dicom_VERSION}
+-                               --no-info
+-                               --include=${CMAKE_CURRENT_SOURCE_DIR}/man/qnifti2dicom.help2man.include
+-                               --output=${CMAKE_CURRENT_SOURCE_DIR}/man/man1/qnifti2dicom.1
+-                       COMMAND ${SED_EXECUTABLE} -i "s#${CMAKE_BINARY_DIR}/src/gui/##g" ${CMAKE_CURRENT_SOURCE_DIR}/man/man1/qnifti2dicom.1
+-    )
+     add_custom_target(regenerate_man SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/man/man1/nifti2dicom.1
+-                                             ${CMAKE_CURRENT_SOURCE_DIR}/man/man1/qnifti2dicom.1
+     )
+ endif(ENABLE_REGENERATE_MAN)
+ 
+@@ -80,19 +69,10 @@
+                        COMMAND ${GZIP_EXECUTABLE} -9 -f -n ${CMAKE_CURRENT_BINARY_DIR}/man/man1/nifti2dicom.1
+                        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/man/man1/nifti2dicom.1
+     )
+-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/man/man1/qnifti2dicom.1.gz
+-                       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/man/man1/qnifti2dicom.1 ${CMAKE_CURRENT_BINARY_DIR}/man/man1/qnifti2dicom.1
+-                       COMMAND ${GZIP_EXECUTABLE} -9 -f -n ${CMAKE_CURRENT_BINARY_DIR}/man/man1/qnifti2dicom.1
+-                       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/man/man1/qnifti2dicom.1
+-    )
+ 
+-    add_custom_target(manpages ALL SOURCES ${CMAKE_CURRENT_BINARY_DIR}/man/man1/nifti2dicom.1.gz
+-                                           ${CMAKE_CURRENT_BINARY_DIR}/man/man1/qnifti2dicom.1.gz)
++    add_custom_target(manpages ALL SOURCES ${CMAKE_CURRENT_BINARY_DIR}/man/man1/nifti2dicom.1.gz)
+ 
+     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/man/man1/nifti2dicom.1.gz
+             DESTINATION share/man/man1
+             COMPONENT Documentation)
+-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/man/man1/qnifti2dicom.1.gz
+-            DESTINATION share/man/man1
+-            COMPONENT Documentation)
+ endif()
+diff -ur nifti2dicom-0.4.11/src/CMakeLists.txt nifti2dicom-0.4.11-noGUI/src/CMakeLists.txt
+--- nifti2dicom-0.4.11/src/CMakeLists.txt	2016-03-01 13:28:06.000000000 +0000
++++ nifti2dicom-0.4.11-noGUI/src/CMakeLists.txt	2018-08-24 06:32:21.374915832 +0000
+@@ -18,4 +18,3 @@
+ 
+ 
+ add_subdirectory(core)
+-add_subdirectory(gui)

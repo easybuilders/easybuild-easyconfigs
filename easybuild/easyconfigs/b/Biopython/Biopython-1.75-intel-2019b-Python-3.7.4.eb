@@ -1,0 +1,57 @@
+##
+# EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2013 The Cyprus Institute
+# Authors::   Andreas Panteli <a.panteli@cyi.ac.cy>,
+#             Thekla Loizou <t.loizou@cyi.ac.cy>,
+#             George Tsouloupas <g.tsouloupas@cyi.ac.cy>
+# License::   MIT/GPL
+#
+# Updated: Pavel Grochal (INUITS)
+##
+easyblock = 'PythonPackage'
+
+name = 'Biopython'
+version = '1.75'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.biopython.org'
+description = """Biopython is a set of freely available tools for biological
+ computation written in Python by an international team of developers. It is
+ a distributed collaborative effort to develop Python libraries and
+ applications which address the needs of current and future work in
+ bioinformatics. """
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+source_urls = ['https://biopython.org/DIST']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['5060e4ef29c2bc214749733634051be5b8d11686c6590fa155c3443dcaa89906']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),  # for numpy
+]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+# required because we're building Python packages using Intel compilers on top of Python built with GCC
+check_ldshared = True
+
+# Run only tests that don't require internet connection
+runtest = 'python setup.py test --offline'
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/Bio',
+             'lib/python%(pyshortver)s/site-packages/BioSQL']
+}
+
+# extra check to ensure numpy dependency is available
+sanity_check_commands = ["python -c 'import Bio.MarkovModel'"]
+
+options = {'modulename': 'Bio'}
+
+moduleclass = 'bio'

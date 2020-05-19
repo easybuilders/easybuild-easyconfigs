@@ -3,20 +3,12 @@ matrix:
   # mark build as finished as soon as job has failed
   fast_finish: true
   include:
-    - dist: trusty
-      python: 2.6
-      env: LMOD_VERSION=6.6.3 EASYBUILD_MODULE_SYNTAX=Tcl
-    # also test default configuration with Python 2.7
+    # only test with Python 2.7 & 3.6 + Lmod 7.x
+    # other test configurations in GitHub Actions (see .github/workflows/unit_tests.yml)
     - python: 2.7
-      env: LMOD_VERSION=6.6.3
-    # also test with Python 3.5/3.6/3.7
+      env: LMOD_VERSION=7.8.22
     - python: 3.6
-      env: LMOD_VERSION=7.8.5
-    - python: 3.5
-      env: LMOD_VERSION=7.8.5
-    - python: 3.7
-      dist: xenial
-      env: LMOD_VERSION=7.8.5
+      env: LMOD_VERSION=7.8.22
 addons:
   apt:
     packages:
@@ -35,10 +27,10 @@ install:
     - if [ "x$TRAVIS_BRANCH" = 'xmaster' ]; then BRANCH=master; fi
     - if [ "x$TRAVIS_BRANCH" = 'x4.x' ]; then BRANCH=4.x; fi
     - cd $HOME
-    - git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-framework.git
+    - git clone -b $BRANCH --depth 10 --single-branch https://github.com/easybuilders/easybuild-framework.git
     - cd easybuild-framework; git log -n 1; cd -
     - pip install $PWD/easybuild-framework
-    - git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-easyblocks.git
+    - git clone -b $BRANCH --depth 10 --single-branch https://github.com/easybuilders/easybuild-easyblocks.git
     - cd easybuild-easyblocks; git log -n 1; cd -
     - pip install $PWD/easybuild-easyblocks
     # install environment modules tool using 'install_eb_dep.sh' script provided by easybuild-framework
@@ -73,5 +65,5 @@ script:
     - grep '/TensorFlow-1.14.0-foss-2019a-Python-3.7.2.eb$' eb_search_TF.out
     - eb --search '^foss-2018b.eb' | tee eb_search_foss.out
     - grep '/foss-2018b.eb$' eb_search_foss.out
-    # try installing bzip2 with system toolchain (requires EB_bzip2 easyblock + easyconfig)
-    - eb --prefix /tmp/$USER bzip2-1.0.6.eb
+    # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
+    - eb --prefix /tmp/$USER M4-1.4.18.eb

@@ -1,0 +1,38 @@
+easyblock = 'CmdCp'
+
+name = 'FastViromeExplorer'
+local_commit = 'aeb2a868'
+version = '20180422'
+
+homepage = 'https://code.vt.edu/saima5/FastViromeExplorer'
+description = "Identify the viruses/phages and their abundance in the viral metagenomics data."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://code.vt.edu/saima5/FastViromeExplorer/-/archive/%s' % local_commit]
+sources = [{'download_filename': 'FastViromeExplorer-%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['3a8e7842e83539cd36f619f1e01761e2c5b87a44a5f51328287b6dd20ef47384']
+
+dependencies = [
+    ('Java', '11', '', True),
+    ('kallisto', '0.46.1'),
+    ('SAMtools', '1.10'),
+]
+
+cmds_map = [('.*', "javac -d bin src/*.java")]
+files_to_copy = ['bin', '*.txt', 'test', 'utility-scripts', 'README.md']
+
+sanity_check_paths = {
+    'files': ['bin/FastViromeExplorer.class', 'ncbi-viruses-list.txt'],
+    'dirs': ['test', 'utility-scripts'],
+}
+
+# see https://code.vt.edu/saima5/FastViromeExplorer/tree/master#run-fastviromeexplorer-using-test-data
+local_test_cmd = "cd %(builddir)s && cp -a FastViromeExplorer-*/{test,ncbi-viruses-list.txt} . && "
+local_test_cmd += "java FastViromeExplorer -1 test/reads_1.fq -2 test/reads_2.fq "
+local_test_cmd += "-i test/testset-kallisto-index.idx -o test-output"
+sanity_check_commands = [local_test_cmd]
+
+modextrapaths = {'CLASSPATH': ['bin']}
+
+moduleclass = 'bio'

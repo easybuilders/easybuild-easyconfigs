@@ -1,0 +1,68 @@
+easyblock = 'CMakeMake'
+
+name = 'TRIQS-dft_tools'
+version = '2.2.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://triqs.github.io/dft_tools'
+description = """
+ TRIQS (Toolbox for Research on Interacting Quantum Systems) is a
+ scientific project providing a set of C++ and Python libraries to
+ develop new tools for the study of interacting quantum systems.
+
+ This TRIQS-based-based application is aimed at ab-initio calculations 
+ for correlated materials, combining realistic DFT band-structure calculations 
+ with the dynamical mean-field theory. Together with the necessary tools to 
+ perform the DMFT self-consistency loop for realistic multi-band problems, 
+ the package provides a full-fledged charge self-consistent interface to the 
+ Wien2K package. In addition, if Wien2k is not available, it provides a generic
+ interface for one-shot DFT+DMFT calculations, where only the single-particle 
+ Hamiltonian in orbital space has to be provided.
+"""
+
+docurls = ['https://triqs.github.io/dft_tools/%(version_major_minor)s.x/']
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/TRIQS/dft_tools/releases/download/%(version)s/']
+sources = ['dft_tools-%(version)s.tar.gz']
+checksums = ['9836b2e4ef1ba6fef2d9276e0a43cf13a68b1626f0e4fae312fba5f7c888a49a']
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('SciPy-bundle', '2019.03'),
+    ('Boost', '1.70.0'),
+    ('Clang', '8.0.0'),
+    ('GMP', '6.1.2'),
+    ('Mako', '1.0.8'),
+    ('h5py', '2.9.0'),
+    ('TRIQS', '2.2.1', versionsuffix)
+]
+
+builddependencies = [
+    ('CMake', '3.13.3')
+]
+
+separate_build_dir = True
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/dmftproj', 'lib/libatm_c.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'lib', 'share',
+             'lib/python%(pyshortver)s/site-packages/triqs_dft_tools'],
+}
+
+sanity_check_commands = ["python -c 'import triqs_dft_tools'"]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+}
+modextravars = {
+    'TRIQS_DFT_TOOLS_ROOT': '%(installdir)s',
+    'TRIQS_DFT_TOOLS_VERSION': '%(version)s',
+}
+
+moduleclass = 'phys'
