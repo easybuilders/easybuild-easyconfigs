@@ -45,7 +45,13 @@ preconfigopts = "cp -a %(builddir)s/FuSeq-%(version)s/{include,src} %(builddir)s
 # build fails otherwise
 parallel = 1
 
-postinstallcmds = ["cp -a %(builddir)s/FuSeq-%(version)s/{createAnno,R} %(installdir)s/"]
+postinstallcmds = [
+    # copy createAnno and R subdirectories as well
+    "cp -a %(builddir)s/FuSeq-%(version)s/{createAnno,R} %(installdir)s/",
+    # replace /path/to with installation prefix in scripts
+    "sed -i 's@/path/to/@%(installdir)s/R/@' %(installdir)s/R/FuSeq.R",
+    "ls %(installdir)s/createAnno/*.sh | xargs sed -i 's@/path/to/FuSeq_home/@%(installdir)s/@'",
+]
 
 sanity_check_paths = {
     'files': ['bin/FuSeq', 'bin/GenTC', 'bin/TxIndexer', 'lib/libsailfish_core.a', 'R/FuSeq.R'],
