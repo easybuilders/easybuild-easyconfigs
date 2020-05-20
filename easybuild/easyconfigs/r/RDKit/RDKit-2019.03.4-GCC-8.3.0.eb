@@ -13,8 +13,8 @@ source_urls = ['https://github.com/rdkit/rdkit/archive']
 sources = ['Release_%s.tar.gz' % version.replace('.','_')]
 checksums = ['e2efc239650ce7bcfd93753e2925df95']
 # Py2 is not supported anymore. Bye bye Py2!
-multi_deps_load_default = False 
-multi_deps = {'Python': ['3.5.4', '3.6.3', '3.7.4']}
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.5.4","3.6.3","3.7.4"]}
 
 builddependencies = [
     ('CMake', '3.12.3'),
@@ -26,12 +26,19 @@ dependencies = [
     ('Boost', '1.68.0'),
 ]
 
-configopts = [
-    "-DBOOST_ROOT=$EBROOTBOOST -DCMAKE_SKIP_RPATH=ON -DRDK_INSTALL_INTREE=OFF -DRDK_OPTIMIZE_NATIVE=OFF  -DRDK_BUILD_CPP_TESTS=OFF -DPYTHON_VERSION_MAJOR=3 -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python{}m -DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython{}m.so -DPYTHON_NUMPY_INCLUDE_PATH=$EBROOTSCIPYMINSTACK/lib/python{}/site-packages/numpy/core/include".format(py[:-2], py[:-2], py[:-2]) 
-for py in multi_deps["Python"]]
-#    "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython{}m.so".format(py[:-2]) for py in multi_deps["Python"],
-#    "-DPYTHON_NUMPY_INCLUDE_PATH=$EBROOTSCIPYMINSTACK/lib/python{}/site-packages/numpy/core/include".format(py[:-2]) for py in multi_deps["Python"]
-#]
+configopts = " ".join([
+    "-DBOOST_ROOT=$EBROOTBOOST",
+    "-DCMAKE_SKIP_RPATH=ON",
+    "-DRDK_INSTALL_INTREE=OFF",
+    "-DRDK_OPTIMIZE_NATIVE=OFF",
+    "-DRDK_BUILD_CPP_TESTS=OFF",
+
+    "-DPYTHON_VERSION_MAJOR=3",
+    "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python",
+    "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)sm",
+    "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%(pyshortver)sm.so",
+    "-DPYTHON_NUMPY_INCLUDE_PATH=$EBROOTSCIPYMINSTACK/lib/python%(pyshortver)s/site-packages/numpy/core/include",
+])
 
 # This step does not iterate as sanity_check does.
 postinstallcmds = [
@@ -47,8 +54,9 @@ sanity_check_paths = {
     'files': [
         "lib/libRDKitEigenSolvers.so",
         "lib/libRDKitRDBoost.so",
-        "lib/python(local_pyshort)/site-packages/rdkit/RDConfig.py"  
         "lib/libRDKitRDGeneral.so",
+        "lib/python%(pyshortver)s/site-packages/rdkit/rdBase.so",
+        "lib/python%(pyshortver)s/site-packages/rdkit/RDConfig.py",
     ],
     'dirs': []
 }
