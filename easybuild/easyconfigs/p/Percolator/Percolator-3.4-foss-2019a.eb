@@ -1,0 +1,78 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'Bundle'
+
+name = 'Percolator'
+version = '3.4'
+
+# homepage doesn't have correctly working https
+# stating GitHub because landing page links the homepage
+# http://percolator.ms/
+homepage = 'https://github.com/percolator/percolator'
+description = "Semi-supervised learning for peptide identification from shotgun proteomics datasets"
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('cURL', '7.63.0'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Boost', '1.70.0'),
+    ('KyotoCabinet', '1.2.77'),
+    ('SQLite', '3.27.2'),
+    ('bzip2', '1.0.6'),
+    ('Xerces-C++', '3.2.2'),
+    ('XSD', '4.0.0'),
+]
+
+default_easyblock = 'CMakeMake'
+
+local_sw_preconfigopts = 'export XSDDIR="${EBROOTXSD}" && export XERCESCROOT="${EBROOTXERCESMINCPLUSPLUS}" && '
+local_unpacked_dir_name = 'percolator-rel-%(version_major)s-0%(version_minor)s'
+local_srcdir_root = '%%(builddir)s/%s/' % local_unpacked_dir_name
+
+github_account = 'percolator'
+default_component_specs = {
+    'source_urls': [GITHUB_LOWER_SOURCE],
+    'sources': ['rel-%(version_major)s-0%(version_minor)s.tar.gz'],
+    # can't use %(namelower)s here, because names are used to distinguish build dirs
+    'start_dir': local_unpacked_dir_name,
+    'checksums': ['ee094039b60aa2e2e15ec8228da087328ca523fa73b89cd69721621eb219cf4d'],
+    # by default, CMakeMake will (re)use %(builddir)s/easybuild_obj, which causes trouble
+    # manually create build folders in each component (by name)
+    'separate_build_dir': False,
+    'preconfigopts':
+        'mkdir easybuild_obj/%%(namelower)s -p && cd easybuild_obj/%%(namelower)s && %s' % local_sw_preconfigopts,
+    'prebuildopts': "cd easybuild_obj/%(namelower)s && ",
+    'preinstallopts': "cd easybuild_obj/%(namelower)s && ",
+}
+
+components = [
+    (name, version, {
+        # Create and use custom builddir
+        'configopts': '-DTARGET_ARCH=x86_64 -DXML_SUPPORT=ON ',
+        'srcdir': local_srcdir_root,
+    }),
+    ('%s_converters' % name, version, {
+        # Installation docs states using "TokyoCabinet" but from all information obtained
+        # TokyoCabinet and KyotoCabinet should be different implementations of the same protocol.
+        'configopts': '-DTARGET_ARCH=x86_64 -DSERIALIZE="KyotoCabinet" ',
+        'srcdir': '%s/src/converters' % local_srcdir_root,
+    }),
+    ('%s_elude_tool' % name, version, {
+        'configopts': '-DTARGET_ARCH=x86_64 ',
+        'srcdir': '%s/src/elude_tool' % local_srcdir_root,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/percolator'],
+    'dirs': ['share/xml/percolator/'],
+}
+sanity_check_commands = ['percolator --help']
+
+moduleclass = 'bio'
