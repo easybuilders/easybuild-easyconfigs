@@ -1,0 +1,24 @@
+# Hacked together by Jack Perdue (j-perdue@tamu.edu) at TAMU HPRC (https://hprc.tamu.edu) 
+# to deal with the lack of KCMP_FILE on RHEL6. Seems to work here. YMMV.
+diff -ru mesa-20.0.2.patched/src/util/os_file.c mesa-20.0.2.nokmp.cleaned/src/util/os_file.c
+--- mesa-20.0.2.patched/src/util/os_file.c	2020-03-18 16:24:19.000000000 -0500
++++ mesa-20.0.2.nokmp.cleaned/src/util/os_file.c	2020-05-22 05:46:37.331732194 -0500
+@@ -133,12 +133,16 @@
+    return buf;
+ }
+ 
++#include "u_debug.h"
+ bool
+ os_same_file_description(int fd1, int fd2)
+ {
+-   pid_t pid = getpid();
++   if (fd1 == fd2)
++      return true;
+ 
+-   return syscall(SYS_kcmp, pid, pid, KCMP_FILE, fd1, fd2) == 0;
++   debug_warn_once("Can't tell if different file descriptors reference the same"
++                   " file description, false negatives might cause trouble!\n");
++   return false;
+ }
+ 
+ #else
