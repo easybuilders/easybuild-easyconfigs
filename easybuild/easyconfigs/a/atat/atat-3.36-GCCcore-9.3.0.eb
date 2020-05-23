@@ -1,0 +1,42 @@
+# Ruoshi Sun <rs7wz@virginia.edu>
+# Research Computing, University of Virginia
+# 2020-05-23
+
+easyblock = 'MakeCp'
+
+name = 'atat'
+version = '3.36'
+
+homepage = 'https://www.brown.edu/Departments/Engineering/Labs/avdw/atat/'
+description = """The Alloy-Theoretic Automated Toolkit (ATAT) is a generic name that refers to a collection of alloy theory tools"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['http://alum.mit.edu/www/avdw/%(name)s']
+sources = ['%%(name)s%s.tar.gz' % version.replace('.','_')]
+checksums = ['e829da5b714a012b5fc456d1060cfdb784642a8c0cbb702d409497b65466ee39']
+
+builddependencies = [
+    ('binutils', '2.34'),
+]
+
+files_to_copy = ['./*']
+
+# scripts to copy from glue/vasp to bin
+local_vasp_scripts = 'ezvasp runstruct_vasp cleanvasp extract_vasp checkerr_vasp robustrelax_vasp' 
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin',
+    'cd %(installdir)s/src && find -type f -executable -exec mv {} ../bin \; && cd .. && make clean',
+    "cd %(installdir)s/glue/jobctrl && cp $(sed -n 's/ALLSCRIPT=//p' makefile) %(installdir)s/bin",
+    'cd %%(installdir)s/glue/vasp && cp %s %%(installdir)s/bin' % local_vasp_scripts,
+]
+
+sanity_check_paths = {
+    'files': ['bin/maps'],
+    'dirs': ['bin', 'data'],
+}
+
+modloadmsg = "First-time users please run:\necho set atatdir=$EBROOTATAT > $HOME/.atat.rc\n"
+
+moduleclass = 'chem'
