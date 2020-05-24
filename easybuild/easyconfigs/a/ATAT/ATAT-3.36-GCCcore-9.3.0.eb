@@ -2,7 +2,7 @@
 # Research Computing, University of Virginia
 # 2020-05-24
 
-easyblock = 'MakeCp'
+easyblock = 'ConfigureMake'
 
 name = 'ATAT'
 version = '3.36'
@@ -22,16 +22,24 @@ builddependencies = [
     ('binutils', '2.34')
 ]
 
-prebuildopts = 'export BINDIR=%(installdir)s/bin && mkdir -p $BINDIR && '
+skipsteps = ['configure']
 
-files_to_copy = ['./*']
+local_bindir = '%(builddir)s/%(namelower)s/bin'
+
+prebuildopts = 'mkdir -p %s && ' % local_bindir
+buildopts = 'BINDIR=%s' % local_bindir
+
+install_cmd = 'make -C src BINDIR=%s install && '\
+              'make -C glue/jobctrl BINDIR=%s install && '\
+              'make -C glue/vasp BINDIR=%s install' % (local_bindir, local_bindir, local_bindir)
 
 postinstallcmds = [
-    'export BINDIR=%(installdir)s/bin && ' +
-    'cd %(installdir)s && ' +
-    'make -C src BINDIR=$BINDIR install && ' +
-    'make -C glue/jobctrl BINDIR=$BINDIR install && ' +
-    'make -C glue/vasp BINDIR=$BINDIR install && make clean',
+    'cp -r %(builddir)s/%(namelower)s/bin %(installdir)s',
+    'cp -r %(builddir)s/%(namelower)s/data %(installdir)s',
+    'cp -r %(builddir)s/%(namelower)s/doc %(installdir)s',
+    'cp -r %(builddir)s/%(namelower)s/examples %(installdir)s',
+    'cp -r %(builddir)s/%(namelower)s/glue %(installdir)s',
+    'cp %(builddir)s/%(namelower)s/license.txt %(installdir)s',
 ]
 
 sanity_check_paths = {
