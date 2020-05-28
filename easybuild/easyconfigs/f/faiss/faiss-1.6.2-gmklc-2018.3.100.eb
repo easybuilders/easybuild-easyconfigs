@@ -5,10 +5,10 @@ version = '1.6.2'
 
 homepage = 'https://github.com/facebookresearch/faiss'
 description = """
-Faiss is a library for efficient similarity search and clustering of dense vectors. It 
-contains algorithms that search in sets of vectors of any size, up to ones that possibly do 
-not fit in RAM. It also contains supporting code for evaluation and parameter tuning. 
-Faiss is written in C++ with complete wrappers for Python/numpy. Some of the most 
+Faiss is a library for efficient similarity search and clustering of dense vectors. It
+contains algorithms that search in sets of vectors of any size, up to ones that possibly do
+not fit in RAM. It also contains supporting code for evaluation and parameter tuning.
+Faiss is written in C++ with complete wrappers for Python/numpy. Some of the most
 useful algorithms are implemented on the GPU.
 """
 
@@ -17,19 +17,31 @@ toolchain = {'name': 'gmklc', 'version': '2018.3.100'}
 source_urls = ['https://github.com/facebookresearch/faiss/archive/']
 sources = ["v%(version)s.tar.gz"]
 patches = ["python_install_prefix.patch"]
+checksums = [
+    '8be8fcb943e94a93fb0796cad02a991432c0d912d8ae946f4beb5a8a9c5d4932',  # v1.6.2.tar.gz
+    '57df15fc22c4e3a61308fc709e3b6a49993ab0938631971d6d223afb93fc6f79',  # python_install_prefix.patch
+]
 
+preconfigopts = " export PYTHON=$EBROOTPYTHON/bin/python && "
+configopts = "--with-python=$EBROOTPYTHON/bin/python "
 buildopts = " && make -C python "
 preinstallopts = "export INSTALL_PREFIX=%(installdir)s && "
 installopts = " && export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
 installopts += " && mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages && make -C python install"
 
 multi_deps = {'Python': ['3.6.3', '3.7.4', '3.8.0']}
-builddependencies = [('SciPy-Stack', '2019b'), ('SWIG', '3.0.12')] 
+builddependencies = [('SciPy-Stack', '2019b'), ('SWIG', '3.0.12')]
 multi_deps_load_default = False
 
 sanity_check_paths = {
     'files': ['lib/libfaiss.a', 'lib/libfaiss.so'],
     'dirs': ['lib/python%(pyshortver)s/site-packages', 'include/faiss'],
 }
+
+sanity_check_commands = [
+    "python -c 'import faiss; index = faiss.IndexFlatL2(64)'",
+]
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
 
 moduleclass = 'lib'

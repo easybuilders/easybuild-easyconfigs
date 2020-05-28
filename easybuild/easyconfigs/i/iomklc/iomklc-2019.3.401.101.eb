@@ -1,0 +1,40 @@
+easyblock = "Toolchain"
+
+name = 'iomklc'
+version = '2019.3.401.101'
+
+homepage = 'http://software.intel.com/en-us/intel-cluster-toolkit-compiler/'
+description = """Intel Cluster Toolchain Compiler Edition provides Intel C/C++ and Fortran compilers, Intel MKL, CUDA & OpenMPI."""
+
+toolchain = SYSTEM
+
+local_compver = '2019.3.199'
+local_iccifortver = '2019.3'
+local_comp = ('iccifort', local_iccifortver)
+local_iccifortcudaver = '2019.3.101'
+
+# specify subtoolchains as builddependencies
+# this way they will be considered as subtoolchains but
+# are not loaded in the modulefile or software compiled
+# with this toolchain
+builddependencies = [
+    ('iccifortcuda', local_iccifortcudaver),
+    ('iimkl', local_iccifortver),
+    ('iimklc', local_iccifortcudaver),
+    ('iompic', version),
+]
+
+# iccifort needs to be a dependency since it needs to
+# be loaded explicitly when iomkl is loaded
+dependencies = [
+    ('icc', local_compver),
+    ('ifort', local_compver),
+    ('iccifort', local_iccifortver),
+    ('CUDA', '10.1', '', local_comp),
+    ('OpenMPI', '4.0.1', '', ('iccifortcuda', local_iccifortcudaver)),
+    ('imkl', local_compver),
+]
+
+hidden = True
+
+moduleclass = 'toolchain'

@@ -1,0 +1,81 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'CMakeMake'
+
+name = 'OpenMM'
+version = '7.4.1'
+
+homepage = 'http://openmm.org'
+description = "OpenMM is a toolkit for molecular simulation."
+
+toolchain = {'name': 'iomklc', 'version': '2018.3.312.100'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/openmm/openmm/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['OpenMM-%(version)s_fix-Doxygen.patch']
+checksums = [
+    'e8102b68133e6dcf7fcf29bc76a11ea54f30af71d8a7705aec0aee957ebe3a6d',  # 7.4.1.tar.gz
+    '99d59e3106d9c9f9fbce3c3161117a37b2699e1dc09bc2a75619e0d880f29708',  # OpenMM-7.4.1_fix-Doxygen.patch
+]
+
+local_pyvers = ['3.5.4', '3.6.3', '3.7.4' ]  # seggfaults w/ Python 3.8
+local_scipystackver = '2019b'
+local_pyshortvers = ['.'.join(local_pyver.split('.')[:2]) for local_pyver in local_pyvers]
+
+builddependencies = [
+    ('CMake', '3.16.3'),
+#    ('Doxygen', '1.8.16'), # is in NIX
+]
+
+separate_build_dir = True
+
+dependencies = [
+    ('FFTW', '3.3.8'),
+    ('SciPy-Stack', local_scipystackver),
+    ('SWIG', '3.0.12'),
+]
+
+configopts = '-DOPENMM_BUILD_CUDA_LIB=ON -DCUDA_CUDA_LIBRARY=/usr/lib64/nvidia/libcuda.so -DOPENMM_BUILD_OPENCL_LIB=OFF'
+
+# Exclude some tests (regexps).  Can't test TestCuda* b/c there's no GPU in build-node.
+runtest = """test -e ARGS="-E \'(Integrator)|(Thermostat)|(Barostat)|(Rpmd)|(Amoeba)|(HippoNonbondedForce)|(TestCuda)\'" """
+
+preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
+preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
+
+# required to install the python API
+local_installopts_template = ' module load python/{0} scipy-stack/' + local_scipystackver + ' && python setup.py build && python setup.py install --prefix=%(installdir)s'
+
+installopts = ' && cd python && ' + ';'.join([local_installopts_template.format(local_pyver) for local_pyver in local_pyvers])
+
+sanity_check_paths = {
+    'files': [ 'lib/python{0}/site-packages/simtk/openmm/openmm.py'.format(local_shortver) for local_shortver in local_pyshortvers ],
+    'dirs': []
+}
+
+sanity_check_paths['files'].append('lib/libOpenMM.%s' % SHLIB_EXT )
+
+sanity_check_commands = ["module load python scipy-stack/%s && python -m simtk.testInstallation" % local_scipystackver]
+
+modextrapaths = {
+#    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'EBPYTHONPREFIXES': [''],
+    'OPENMM_INCLUDE_PATH': 'include',
+    'OPENMM_LIB_PATH': 'lib',
+}
+
+# if some python is already loaded, use it, otherwise use default python module
+modluafooter = """
+-- needed for CUDA:
+setenv("OPENMM_CUDA_COMPILER", pathJoin(os.getenv("EBROOTCUDA"),"bin/nvcc"))
+
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+        depends_on(between("python",'3.5.0','3.8.15'))
+end
+"""
+
+moduleclass = 'bio'
