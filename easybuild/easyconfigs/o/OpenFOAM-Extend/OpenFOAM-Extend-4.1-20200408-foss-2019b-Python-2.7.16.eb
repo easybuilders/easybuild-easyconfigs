@@ -1,0 +1,63 @@
+easyblock = 'EB_OpenFOAM'
+
+name = 'OpenFOAM-Extend'
+local_commit = 'f2c557'
+version = '4.1-20200408'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.extend-project.de/'
+description = """OpenFOAM is a free, open source CFD software package.
+OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+involving chemical reactions, turbulence and heat transfer,
+to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+    'filename': '%%(name)s-%%(version)s-%s.tar.gz' % local_commit,
+    'git_config': {
+        'url': 'https://git.code.sf.net/p/foam-extend/',
+        'repo_name': 'foam-extend-4.1',
+        'commit': local_commit,
+    },
+}]
+patches = [
+    'OpenFOAM-Extend-3.2-ParMGridGen.patch',
+    'OpenFOAM-Extend-3.1_build-qa.patch',
+    'OpenFOAM-Extend-4.1_comp-mpi.patch',
+    'OpenFOAM-Extend-3.1_skip-ThirdParty-OpenMPI.patch',
+]
+checksums = [
+    # no checksum for OpenFOAM-Extend-4.1-20200408-f2c557.tar.gz since it's created from git repo,
+    # and hence resuluting tarball won't be exactly the same on all systems
+    None,
+    'f7676a7a12ced7c74caea64c62826a28449fdb2beb8b5be2c4ae7528ffece16e',  # OpenFOAM-Extend-3.2-ParMGridGen.patch
+    '14dcc12ea7191ba42a9c297fcb2f4fbc2c55bf57226029489aa116e2d060b4bf',  # OpenFOAM-Extend-3.1_build-qa.patch
+    'e71a77b6f39653f9a0d4b0ce6691433c742df74f23402782c69a8b736c98eb7a',  # OpenFOAM-Extend-4.1_comp-mpi.patch
+    # OpenFOAM-Extend-3.1_skip-ThirdParty-OpenMPI.patch
+    'c88b23cd2f5dcf3bd86e02d7ea5dc6719c2049cf4b20e39f1b3262381dee3c50',
+]
+
+dependencies = [
+    ('hwloc', '1.11.12'),
+    ('ParMETIS', '4.0.3'),
+    ('METIS', '5.1.0'),  # order matters, METIS need to be listed after ParMETIS to get $CPATH right
+    ('SCOTCH', '6.0.9'),
+    ('Mesquite', '2.3.0'),
+    ('ParMGridGen', '1.0'),
+    ('Python', '2.7.16'),
+    # Libccmio v2.6.1, zoltan v3.5
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.3.2'),
+    ('M4', '1.4.18'),
+    ('CMake', '3.15.3'),
+]
+
+# too many builds in parallel actually slows down the build
+maxparallel = 4
+
+moduleclass = 'cae'
