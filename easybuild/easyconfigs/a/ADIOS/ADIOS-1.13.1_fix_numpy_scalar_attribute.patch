@@ -1,0 +1,48 @@
+commit 8142896efde6161ef9aa1a7e21e211ea0010daeb
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Fri Sep 6 14:53:28 2019 -0600
+
+    Numpy: Scalar Attributes Warning
+    
+    Upgrade the conversion of returned scalar attributes
+    to the recommended usage in numpy.
+    
+    In Numpy 1.16 and newer, the old usage throws a warning of
+    the form
+    ```
+    DeprecationWarning: np.asscalar(a) is deprecated since NumPy v1.16, use a.item() instead
+      This is separate from the ipykernel package so we can avoid doing imports until
+    ```
+    
+    It is likely this will be removed in Numpy 1.18 and newer, so
+    let us fix this right away.
+    
+    `ndarray.item()` is available since a long time, so that is a save
+    change.
+
+diff --git a/wrappers/numpy/adios.pyx b/wrappers/numpy/adios.pyx
+index 2f6e867..f36fa8d 100644
+--- a/wrappers/numpy/adios.pyx
++++ b/wrappers/numpy/adios.pyx
+@@ -1613,7 +1613,7 @@ cdef class var(dict):
+         adios_selection_delete(sel)
+ 
+         if (var.ndim == 0):
+-            return np.asscalar(var)
++            return var.item()
+         else:
+             return var
+ 
+diff --git a/wrappers/numpy/adios_mpi.pyx b/wrappers/numpy/adios_mpi.pyx
+index 94b26c3..ff173c1 100644
+--- a/wrappers/numpy/adios_mpi.pyx
++++ b/wrappers/numpy/adios_mpi.pyx
+@@ -1611,7 +1611,7 @@ cdef class var(dict):
+         adios_selection_delete(sel)
+ 
+         if (var.ndim == 0):
+-            return np.asscalar(var)
++            return var.item()
+         else:
+             return var
+ 

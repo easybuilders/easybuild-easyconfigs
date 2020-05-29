@@ -1,0 +1,51 @@
+commit 386d9076e2c3d01aabfd5281da1464a450bc9671
+Author: Choi, Jong Youl <choij@ornl.gov>
+Date:   Tue Aug 7 14:10:43 2018 -0400
+
+    Minor change on python build script
+
+diff --git a/wrappers/numpy/setup.py b/wrappers/numpy/setup.py
+index c3d50d9..6326808 100644
+--- a/wrappers/numpy/setup.py
++++ b/wrappers/numpy/setup.py
+@@ -41,8 +41,16 @@ out = check_output(["adios_config", "-l", "-s"]).decode("utf-8")
+ for path in out.strip().split(" "):
+     if path.startswith('-L'):
+         m1.library_dirs.append(path.replace('-L', '', 1))
+-    if path.startswith('-l'):
++    elif path.startswith('-l'):
+         m1.libraries.append(path.replace('-l', '', 1))
++    elif path.endswith('.so'):
++        m1.extra_objects.append(path)
++    elif path.endswith('.a'):
++        m1.extra_objects.append(path)
++    elif path.endswith('.dylib'):
++        m1.extra_objects.append(path)
++    else:
++        print ("[INFO] Ignored option:", path)
+ 
+ class adios_test(Command):
+     user_options = []
+diff --git a/wrappers/numpy/setup_mpi.py b/wrappers/numpy/setup_mpi.py
+index 8fda6f7..0788653 100644
+--- a/wrappers/numpy/setup_mpi.py
++++ b/wrappers/numpy/setup_mpi.py
+@@ -107,8 +107,17 @@ out = check_output(["adios_config", "-l"]).decode("utf-8")
+ for path in out.strip().split(" "):
+     if path.startswith('-L'):
+         m1.library_dirs.append(path.replace('-L', '', 1))
+-    if path.startswith('-l'):
++    elif path.startswith('-l'):
+         m1.libraries.append(path.replace('-l', '', 1))
++    elif path.endswith('.so'):
++        m1.extra_objects.append(path)
++    elif path.endswith('.a'):
++        m1.extra_objects.append(path)
++    elif path.endswith('.dylib'):
++        m1.extra_objects.append(path)
++    else:
++        print ("[INFO] Ignored option:", path)
++
+ 
+ class adios_test(Command):
+     user_options = []

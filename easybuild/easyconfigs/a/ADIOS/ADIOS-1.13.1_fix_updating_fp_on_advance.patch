@@ -1,0 +1,58 @@
+commit e1b66956f94dfa7faa3b8b6e853612ee57346ce5
+Author: Choi, Jong Youl <choij@ornl.gov>
+Date:   Sat May 12 00:13:07 2018 -0400
+
+    Fix for updating fp on advance
+
+diff --git a/wrappers/numpy/adios.pyx b/wrappers/numpy/adios.pyx
+index 7fe54fc..7dceb59 100644
+--- a/wrappers/numpy/adios.pyx
++++ b/wrappers/numpy/adios.pyx
+@@ -1106,9 +1106,21 @@ cdef class file(dict):
+         """
+         val = adios_advance_step(self.fp, last, timeout_sec)
+         if (val >= 0):
++            self.nvars = self.fp.nvars
++            self.nattrs = self.fp.nattrs
+             self.current_step = self.fp.current_step
+             self.last_step = self.fp.last_step
+ 
++            ## Clear and re-populate
++            self.vars.clear()
++            self.attrs.clear()
++
++            for name in [self.fp.attr_namelist[i] for i in range(self.nattrs)]:
++                self.attrs[b2s(name)] = attr(self, b2s(name))
++
++            for name in [self.fp.var_namelist[i] for i in range(self.nvars)]:
++                self.vars[b2s(name)] = var(self, b2s(name))
++
+             for v in self.vars.values():
+                 v.advance()
+ 
+diff --git a/wrappers/numpy/adios_mpi.pyx b/wrappers/numpy/adios_mpi.pyx
+index 45ac30f..678d3d9 100644
+--- a/wrappers/numpy/adios_mpi.pyx
++++ b/wrappers/numpy/adios_mpi.pyx
+@@ -1104,9 +1104,21 @@ cdef class file(dict):
+         """
+         val = adios_advance_step(self.fp, last, timeout_sec)
+         if (val >= 0):
++            self.nvars = self.fp.nvars
++            self.nattrs = self.fp.nattrs
+             self.current_step = self.fp.current_step
+             self.last_step = self.fp.last_step
+ 
++            ## Clear and re-populate
++            self.vars.clear()
++            self.attrs.clear()
++
++            for name in [self.fp.attr_namelist[i] for i in range(self.nattrs)]:
++                self.attrs[b2s(name)] = attr(self, b2s(name))
++
++            for name in [self.fp.var_namelist[i] for i in range(self.nvars)]:
++                self.vars[b2s(name)] = var(self, b2s(name))
++
+             for v in self.vars.values():
+                 v.advance()
+ 

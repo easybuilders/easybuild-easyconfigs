@@ -1,0 +1,54 @@
+commit e07c314fd5addf7070f3d2ca62811e741340d554
+Author: Choi, Jong Youl <choij@ornl.gov>
+Date:   Tue Oct 30 17:18:53 2018 -0400
+
+    Fix for double close
+
+diff --git a/wrappers/numpy/adios.pyx b/wrappers/numpy/adios.pyx
+index 7dceb59..2f6e867 100644
+--- a/wrappers/numpy/adios.pyx
++++ b/wrappers/numpy/adios.pyx
+@@ -1066,7 +1066,8 @@ cdef class file(dict):
+ 
+     def __del__(self):
+         """ Close file on destruction. """
+-        self.close()
++        if self.fp != NULL:
++            self.close()
+ 
+     def __enter__(self):
+         """ Enter for with statement """
+@@ -1389,7 +1390,8 @@ cdef class var(dict):
+                 self.attrs[name.replace('/' + self.name + '/', '')] = self.file.attrs[name]
+ 
+     def __del__(self):
+-        self.close()
++        if self.vp != NULL:
++            self.close()
+ 
+     cpdef close(self):
+         """ Close and free variable information """
+diff --git a/wrappers/numpy/adios_mpi.pyx b/wrappers/numpy/adios_mpi.pyx
+index 678d3d9..94b26c3 100644
+--- a/wrappers/numpy/adios_mpi.pyx
++++ b/wrappers/numpy/adios_mpi.pyx
+@@ -1064,7 +1064,8 @@ cdef class file(dict):
+ 
+     def __del__(self):
+         """ Close file on destruction. """
+-        self.close()
++        if self.fp != NULL:
++            self.close()
+ 
+     def __enter__(self):
+         """ Enter for with statement """
+@@ -1387,7 +1388,8 @@ cdef class var(dict):
+                 self.attrs[name.replace('/' + self.name + '/', '')] = self.file.attrs[name]
+ 
+     def __del__(self):
+-        self.close()
++        if self.vp != NULL:
++            self.close()
+ 
+     cpdef close(self):
+         """ Close and free variable information """

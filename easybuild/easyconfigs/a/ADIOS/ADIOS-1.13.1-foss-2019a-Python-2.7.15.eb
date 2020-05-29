@@ -1,5 +1,3 @@
-easyblock = 'CMakePythonPackage'
-
 name = 'ADIOS'
 version = '1.13.1'
 versionsuffix = '-Python-%(pyver)s'
@@ -11,7 +9,7 @@ need to be written, read, or processed outside of the running
 simulation."""
 
 toolchain = {'name': 'foss', 'version': '2019a'}
-toolchainopts = {'usempi': True}
+toolchainopts = {'pic': True, 'usempi': True}
 
 github_account = 'ornladios'
 source_urls = [GITHUB_SOURCE]
@@ -20,12 +18,22 @@ patches = [
     '%(name)s-%(version)s_force_use_of_mpi.patch',
     '%(name)s-%(version)s_fix_missing_thread_lib.patch',
     '%(name)s-%(version)s_fix_search_for_szip.patch',
+    '%(name)s-%(version)s_fix_adios_inq_var_py3.patch',
+    '%(name)s-%(version)s_fix_updating_fp_on_advance.patch',
+    '%(name)s-%(version)s_fix_linking_adios.so.patch',
+    '%(name)s-%(version)s_fix_double_close.patch',
+    '%(name)s-%(version)s_fix_numpy_scalar_attribute.patch',
 ]
 checksums = [
     'b1c6949918f5e69f701cabfe5987c0b286793f1057d4690f04747852544e157b',  # v1.13.1.tar.gz
     '81b9b0a77b23d6137f08900a3ecda4471b806c384cf4ad19c4370fc7ca8d9a82',  # ADIOS-1.13.1_force_use_of_mpi.patch
     'a66fab38e5daf40978f9e961d810f9cbf189de8db924a403ae42a01d405f6fdc',  # ADIOS-1.13.1_fix_missing_thread_lib.patch
     '2e21a5041822c8b57554eb977a3135637c2714d377eee3b0194d377f1458cdab',  # ADIOS-1.13.1_fix_search_for_szip.patch
+    '5b1c2aca6fdec29663af5f6fca04f9507f021443e65eb72fce252c8ee86b9098',  # ADIOS-1.13.1_fix_adios_inq_var_py3.patch
+    '764152b4e455e0171f94158bb183047bc041e75ee0e3296828e80f9cd901d92b',  # ADIOS-1.13.1_fix_updating_fp_on_advance.patch
+    '968bb0bff43331741dc3c1b412c7fa018edef61dc666161ed4e41fa90e354eac',  # ADIOS-1.13.1_fix_linking_adios.so.patch
+    '7e9d8ccf624c5e8ad7d8cc2db2d0c3b91a4c47c750b8a8715a31ebd34ec30427',  # ADIOS-1.13.1_fix_double_close.patch
+    '01e531eb212f82beac274e543cd2ee09702b6f71e310d9336be1746f61fdd29b',  # ADIOS-1.13.1_fix_numpy_scalar_attribute.patch
 ]
 
 builddependencies = [
@@ -53,18 +61,9 @@ preconfigopts += 'PAR_NC_DIR=$EBROOTNETCDF PAR_NC_LIBS="-lnetcdf" && '
 
 fix_python_shebang_for = ['bin/gpp.py']
 
+check_ldshared = False
+
 runtest = False
-
-options = {'modulename': False}
-
-sanity_check_paths = {
-    'files': ['bin/adios_list_methods', 'bin/bpappend'],
-    'dirs': ['etc/skel/templates', 'lib/python'],
-}
-
-modextrapaths = {
-    'PYTHONPATH': 'lib/python',
-}
 
 parallel = 1
 

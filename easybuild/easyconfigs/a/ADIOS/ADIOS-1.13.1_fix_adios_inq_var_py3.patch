@@ -1,0 +1,50 @@
+commit 2f6339db52c06932baad8800c10b390c69354a8d
+Author: Choi, Jong Youl <choij@ornl.gov>
+Date:   Fri May 11 14:24:41 2018 -0400
+
+    Fix for adios_inq_var for python3
+
+diff --git a/wrappers/numpy/adios.pyx b/wrappers/numpy/adios.pyx
+index 23825e5..7fe54fc 100644
+--- a/wrappers/numpy/adios.pyx
++++ b/wrappers/numpy/adios.pyx
+@@ -918,7 +918,7 @@ cpdef int read_init(str method_name = "BP",
+ """ Call adios_read_finalize_method """
+ cpdef int read_finalize(str method_name = "BP"):
+     cdef method = str2adiosreadmethod(method_name)
+-    return adios_read_finalize_method (s2b(method))
++    return adios_read_finalize_method (method)
+ 
+ ## dict for handling '/' prefix
+ cdef class softdict(dict):
+@@ -1387,7 +1387,7 @@ cdef class var(dict):
+ 
+     cpdef advance(self):
+         """ Update variable information after the stream advanced """
+-        self.vp = adios_inq_var(self.file.fp, self.name)
++        self.vp = adios_inq_var(self.file.fp, s2b(self.name))
+         assert self.vp != NULL, 'Not a valid var'
+         self.nsteps = self.vp.nsteps
+ 
+diff --git a/wrappers/numpy/adios_mpi.pyx b/wrappers/numpy/adios_mpi.pyx
+index 64f5e51..45ac30f 100644
+--- a/wrappers/numpy/adios_mpi.pyx
++++ b/wrappers/numpy/adios_mpi.pyx
+@@ -916,7 +916,7 @@ cpdef int read_init(str method_name = "BP",
+ """ Call adios_read_finalize_method """
+ cpdef int read_finalize(str method_name = "BP"):
+     cdef method = str2adiosreadmethod(method_name)
+-    return adios_read_finalize_method (s2b(method))
++    return adios_read_finalize_method (method)
+ 
+ ## dict for handling '/' prefix
+ cdef class softdict(dict):
+@@ -1385,7 +1385,7 @@ cdef class var(dict):
+ 
+     cpdef advance(self):
+         """ Update variable information after the stream advanced """
+-        self.vp = adios_inq_var(self.file.fp, self.name)
++        self.vp = adios_inq_var(self.file.fp, s2b(self.name))
+         assert self.vp != NULL, 'Not a valid var'
+         self.nsteps = self.vp.nsteps
+ 
