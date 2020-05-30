@@ -1,0 +1,50 @@
+easyblock = 'Binary'
+name = 'ENSO'
+version = '1.271'
+
+homepage = 'https://github.com/grimme-lab/enso'
+description = """Energetic sorting of conformer rotamer ensembles"""
+
+toolchain = {'name': 'GCCcore', 'version': '5.4.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/grimme-lab/enso/archive/'],
+        'filename': 'v%(version)s.tar.gz'
+    },
+    {
+        'source_urls':
+            ['https://github.com/grimme-lab/enso/releases/download/v%(version)s'],
+        'filename': 'anmr',
+        'extract_cmd': 'cp %s %(builddir)s'
+    }
+]
+
+checksums = [
+    '2587be6886d6d3c8ee519322dadd363d1c833d94c99c98f5e9b2599b7687c7b9',  # v1.271.tar.gz
+    'aef1e2b8a3e5a227420e325bbbf8326b0b28975cd041c4473e237b54322f8f63',  # anmr
+]
+
+extract_sources = True
+
+install_cmd = """
+    mkdir %(installdir)s/bin &&
+    cp %(builddir)s/anmr %(installdir)s/bin/ &&
+    cp %(builddir)s/enso-%(version)s/*.py %(installdir)s/bin/ &&
+    cp %(builddir)s/enso-%(version)s/{COPYING*,README.md} %(installdir)s/ &&
+    chmod +x %(installdir)s/bin/*
+"""
+
+sanity_check_paths = {
+    'files': ['bin/anmr', 'bin/enso.py', 'bin/nmrplot.py'],
+    'dirs': ['bin']
+}
+
+prepend_to_path = None
+
+modluafooter = """
+depends_on("python/3")
+depends_on("scipy-stack")
+"""
+
+moduleclass = 'chem'
