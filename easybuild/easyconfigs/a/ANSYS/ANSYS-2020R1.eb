@@ -13,6 +13,9 @@ toolchain = SYSTEM
 # create tar ball from the installation iso files
 sources = ['ANSYS-%(version)s.tar']
 
+# sha256sum ANSYS-2020R1.tar
+checksums = ['a60f9d5966ff4e045b9b020f05ec564085aa3d9d6470684c602c42953f9961c8']
+
 postinstallcmds = [
 	# fix missing execute permission for others on at least one folder
 	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
@@ -42,7 +45,9 @@ postinstallcmds = [
 	# for ansys versions >= 19.1 manually patch runwb2 (the original filesize 8917 should become 9173 when patched)
 	# /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2020R1/v201/Framework/bin/Linux64/runwb2
         "cp -a %(installdir)s/%(versionsuffix)s/Framework/bin/Linux64/runwb2 %(installdir)s/%(versionsuffix)s/Framework/bin/Linux64/orig_runwb2",
-        "patch -d%(installdir)s/%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/runwb2.patch"
+        "patch -d%(installdir)s/%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/runwb2.patch",
+        # libs for /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2020R1/v201/ansys/bin/linx64/lsprepost.e
+        "cp -a /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/libs/lib* %(installdir)s/%(versionsuffix)s/ansys/syslib/dyna/linx64"
 ]
 
 modluafooter = """
