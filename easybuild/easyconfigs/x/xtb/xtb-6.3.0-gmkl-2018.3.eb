@@ -1,0 +1,39 @@
+easyblock = 'MesonNinja'
+
+name = 'xtb'
+version = '6.3.0'
+
+homepage = 'https://www.chemie.uni-bonn.de/pctc/mulliken-center/grimme/software/xtb'
+description = """xtb - Extended tight-binding semi-empirical quantum mechanics"""
+
+toolchain = {'name': 'gmkl', 'version': '2018.3'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['5ef138ad777c5c7dc011b342427b8696a3e7ed13a4708d10ec82f4ad5e1ba621']
+
+github_account = 'grimme-lab'
+
+builddependencies = [
+    ('Ninja', '1.10.0'),	
+    ('Meson', '0.53.2', '-Python-3.8.2')
+]
+
+configopts = "-Dla_backend='mkl' --optimization=2"
+
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --path %(installdir)s/bin --add_path $MKLROOT/lib/intel64"
+]
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj -t 60'  # Ensure test don't timeout
+
+sanity_check_paths = {
+    'files': ['bin/xtb', 'include/xtb/xtb.h'] +
+            ['lib/libxtb.%s' % e for e in ('a', SHLIB_EXT)],
+    'dirs': ['share'],
+}
+
+modextravars = {'XTBPATH': '%(installdir)s'}
+
+moduleclass = 'chem'
