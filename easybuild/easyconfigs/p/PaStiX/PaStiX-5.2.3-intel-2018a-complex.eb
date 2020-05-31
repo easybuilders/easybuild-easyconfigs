@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'PaStiX'
+version = '5.2.3'
+versionsuffix = '-complex'
+
+homepage = 'http://pastix.gforge.inria.fr/'
+description = """PaStiX (Parallel Sparse matriX package) is a scientific library that provides a high performance
+ parallel solver for very large sparse linear systems based on direct methods."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://gforge.inria.fr/frs/download.php/file/36212/']
+sources = ['%(namelower)s_%(version)s.tar.bz2']
+patches = ['%(name)s-%(version)s-complex.patch']
+checksums = [
+    '641978e6b0607e201a409549adc78d5618ec159f44cafc7bddeaca4f4bee1e47',  # pastix_5.2.3.tar.bz2
+    '03766cf211b8c33938d1c48391bf185852d84dfbf73984a6ce96ec16fe81e647',  # PaStiX-5.2.3-complex.patch
+]
+
+dependencies = [
+    ('hwloc', '1.11.8'),
+    ('SCOTCH', '6.0.4'),
+]
+
+skipsteps = ['configure']
+
+start_dir = 'src'
+
+prebuildopts = "cp -a config/LINUX-INTEL.in config.in && "
+buildopts = 'BLASLIB="-L$BLAS_LIB_DIR $LIBBLAS" HWLOC_HOME=$EBROOTHWLOC SCOTCH_HOME=$EBROOTSCOTCH '
+# take control over compiler flags
+buildopts += 'CCFOPT="$CFLAGS -DMEMORY_USAGE -DWITH_SCOTCH" '
+# fix value for $MPCXXPROG, default uses 'mpic++' which is incorrect
+buildopts += 'MPCXXPROG="$MPICXX -cxx=$CXX -Wall" '
+
+runtest = "examples && ./example/bin/simple -lap 100"
+
+installopts = "PREFIX=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/pastix-conf', 'lib/libmatrix_driver.a', 'lib/libpastix.a', 'lib/libpastix_murge.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
