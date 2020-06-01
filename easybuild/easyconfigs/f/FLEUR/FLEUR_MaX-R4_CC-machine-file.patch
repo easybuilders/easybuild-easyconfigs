@@ -1,17 +1,31 @@
-Create a cmake machine file for Compute Canada so that
-the ./configure.sh script finds all libraries such as
-libxc, wannier90 and elpa.
+Create a cmake machine file for Compute Canada so that the ./configure.sh 
+script finds all libraries such as libxc, wannier90 and elpa.
+Also remove compiler flag "-xHost" which would override the architecture
+selection based on RSNT_ARCH.
 
 author: Oliver Stueker
 
+diff --git a/cmake/compilerflags.cmake b/cmake/compilerflags.cmake
+index ef25c590..e1d3ab72 100644
+--- a/cmake/compilerflags.cmake
++++ b/cmake/compilerflags.cmake
+@@ -16,7 +16,7 @@ if (${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel")
+    else()
+       set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mkl -qopenmp -assume byterecl")
+    endif()     
+-   set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -xHost -O2 -g")
++   set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -O2 -g")
+    #set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -xMIC-AVX512 -O2")
+    if (${CMAKE_Fortran_COMPILER_VERSION} VERSION_LESS "19.0.0.0")
+        set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} -C -traceback -O0 -g -ftrapuv -check uninit -check pointers -DCPP_DEBUG -warn all")
 diff --git a/cmake/machines/CC.sh b/cmake/machines/CC.sh
 new file mode 100644
-index 00000000..bd964286
+index 00000000..3ed702e0
 --- /dev/null
 +++ b/cmake/machines/CC.sh
 @@ -0,0 +1,24 @@
 +# Machine file for Compute Canada
-+echo "Using special config for Compute Canada-cluster (w/ iomkl toolchain)" 
++echo "Using special config for Compute Canada-cluster (w/ iomkl toolchain)"
 +
 +#Set the compilers to mpiifort, mpiicc, mpiicpc
 +export FC="mpifort -r8"
@@ -21,7 +35,7 @@ index 00000000..bd964286
 +FLEUR_LIBRARIES="-lxml2;-lelpa_openmp;-lelpa;-lmkl_blacs_intelmpi_lp64;-mt_mpi;-lhdf5_fortran;-lhdf5;-lxcf90;-lwannier "
 +
 +echo "ELPA is switched on-manually"
-+CLI_ELPA_OPENMP=1 
++CLI_ELPA_OPENMP=1
 +FLEUR_INCLUDEDIR="$FLEUR_INCLUDEDIR $EBROOTELPA/include/elpa_openmp-$EBVERSIONELPA/modules "
 +
 +echo "Broken linker can be used"
@@ -29,7 +43,7 @@ index 00000000..bd964286
 +
 +#Set environment variables usefull for external dependencies, e.g. ELPA
 +export CFLAGS=-mkl
-+export CMAKE_Fortran_FLAGS="$CMAKE_Fortran_FLAGS -mkl " 
++export CMAKE_Fortran_FLAGS="$CMAKE_Fortran_FLAGS -mkl "
 +export FCFLAGS="-mkl"
 +export LIBS="-lmkl -lmkl_blacs_intelmpi_lp64 -lwannier"
 +export SCALAPACK_LDFLAGS="-lmkl_blacs_intelmpi_lp64"
