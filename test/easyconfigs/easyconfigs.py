@@ -628,7 +628,8 @@ class EasyConfigTest(TestCase):
         whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
                      'Toolchain']
         # Autotools & (recent) GCC are just bundles (Autotools: Autoconf+Automake+libtool, GCC: GCCcore+binutils)
-        bundles_whitelist = ['Autotools', 'GCC']
+        # So is FEniCS
+        bundles_whitelist = ['Autotools', 'GCC', 'FEniCS']
 
         failing_checks = []
 
