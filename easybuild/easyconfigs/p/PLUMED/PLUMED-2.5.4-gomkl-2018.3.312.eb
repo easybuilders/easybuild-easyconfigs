@@ -1,0 +1,59 @@
+# by Ward Poelmans <wpoely86@gmail.com>
+
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.5.4'
+
+homepage = 'http://www.plumed-code.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+
+ This module has been compiled with additional modules, and support for XDR-files (GROMACS XTC/TRR),
+ Python, GSL, Boost-serialization, Boost-Graph and other optional features.
+ To find out more, run 'plumed config show' after loading this module.
+"""
+
+toolchain = {'name': 'gomkl', 'version': '2018.3.312'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/plumed/plumed2/releases/download/v%(version)s/']
+sources = ['plumed-%(version)s.tgz']
+
+checksums = ['12eda9c533f765a33425215fa1e6ea05d8763d29bad0dae637a38e5c83d4ce17']
+
+builddependencies = [
+#    ('zlib', '1.2.8'),
+    ('GSL', '2.5'),
+    ('libmatheval', '1.1.11'),
+    ('Python', '3.7.4'),
+    ('SciPy-Stack', '2019b'),
+    ('XDRfile', '1.1.4'),
+]
+
+dependencies = [
+    ('Boost', '1.68.0'),
+]
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+configopts = ' --exec-prefix=%(installdir)s --enable-gsl --enable-boost_serialization --enable-boost_graph'
+configopts += ' --enable-modules=all'
+prebuildopts = 'source sourceme.sh && '
+
+preinstallopts =  'mv patches/gromacs-2019.4.config patches/gromacs-2019.6.config && '
+preinstallopts += 'mv patches/gromacs-2019.4.diff   patches/gromacs-2019.6.diff && '
+
+sanity_check_paths = {
+    'files': ['bin/plumed', 'lib/libplumedKernel.%s' % SHLIB_EXT, 'lib/libplumed.%s' % SHLIB_EXT],
+    'dirs': ['lib/plumed']
+}
+
+modextrapaths = {
+    'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT,
+    'PLUMED_ROOT': 'lib/plumed',
+}
+
+moduleclass = 'chem'
