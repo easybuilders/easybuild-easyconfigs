@@ -1,0 +1,61 @@
+easyblock = 'PythonPackage'
+
+name = 'ReFrame'
+version = '3.0'
+
+homepage = 'https://github.com/eth-cscs/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+sources = [{
+    'filename': 'v%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/eth-cscs',
+        'repo_name': 'reframe',
+        'tag': 'v%(version)s'
+    }
+}]
+
+# ReFrame requires Python 3.6, may only be available via 'python3'
+req_py_majver = 3
+req_py_minver = 6
+
+use_pip = False
+
+dependencies = [('setuptools', '41.0.1', '-py3')]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE]
+}
+
+exts_list = [
+    ('jsonschema', '3.2.0'),
+    ('pygelf', '0.3.6')
+]
+
+postinstallcmds = [
+    'cd %(builddir)s/reframe && cp -r tutorial %(installdir)s && '
+    'python3 -m venv docs_env && source docs_env/bin/activate && '
+    'pip install --no-cache-dir -r docs/requirements.txt && make -C docs && deactivate && '
+    'mkdir -p %(installdir)s/docs/html %(installdir)s/docs/man/man1 %(installdir)s/docs/man/man8 && '
+    'cp docs/man/reframe.1 %(installdir)s/docs/man/man1 && '
+    'cp docs/man/reframe.settings.8 %(installdir)s/docs/man/man8 && '
+    'cp -r docs/html %(installdir)s/docs/html'
+]
+
+modextrapaths = {
+    'MANPATH': ['docs/man']
+}
+
+sanity_check_paths = {
+    'files': ['bin/reframe'],
+    'dirs': ['bin', 'tutorial', 'docs/html', 'docs/man']
+
+}
+
+sanity_check_commands = ['reframe -V']
+
+moduleclass = 'devel'
