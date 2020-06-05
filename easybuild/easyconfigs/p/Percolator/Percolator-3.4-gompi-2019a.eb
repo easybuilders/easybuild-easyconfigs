@@ -32,9 +32,10 @@ dependencies = [
 default_easyblock = 'CMakeMake'
 
 local_sw_preconfigopts = 'export XSDDIR="${EBROOTXSD}" && export XERCESCROOT="${EBROOTXERCESMINCPLUSPLUS}" && '
-# can't use %(namelower)s below, because names are used to distinguish build dirs
+# can't use %(namelower)s below, because names are derived from components
 local_unpacked_dir_name = 'percolator-rel-%(version_major)s-0%(version_minor)s'
 local_srcdir_root = '%%(builddir)s/%s/' % local_unpacked_dir_name
+local_common_configopts = '-DTARGET_ARCH=%(arch)s '
 
 github_account = 'percolator'
 default_component_specs = {
@@ -42,29 +43,22 @@ default_component_specs = {
     'sources': ['rel-%(version_major)s-0%(version_minor)s.tar.gz'],
     'start_dir': local_unpacked_dir_name,
     'checksums': ['ee094039b60aa2e2e15ec8228da087328ca523fa73b89cd69721621eb219cf4d'],
-    # by default, CMakeMake will (re)use %(builddir)s/easybuild_obj, which causes trouble
-    # manually create build folders in each component (by name)
-    'separate_build_dir': False,
-    'preconfigopts':
-        'mkdir easybuild_obj/%%(namelower)s -p && cd easybuild_obj/%%(namelower)s && %s' % local_sw_preconfigopts,
-    'prebuildopts': "cd easybuild_obj/%(namelower)s && ",
-    'preinstallopts': "cd easybuild_obj/%(namelower)s && ",
+    'preconfigopts': local_sw_preconfigopts
 }
 
 components = [
     (name, version, {
-        # Create and use custom builddir
-        'configopts': '-DTARGET_ARCH=%(arch)s -DXML_SUPPORT=ON ',
+        'configopts': local_common_configopts + '-DXML_SUPPORT=ON ',
         'srcdir': local_srcdir_root,
     }),
     ('%s_converters' % name, version, {
         # Installation docs states using "TokyoCabinet" but from all information obtained
         # TokyoCabinet and KyotoCabinet should be different implementations of the same protocol.
-        'configopts': '-DTARGET_ARCH=%(arch)s -DSERIALIZE="KyotoCabinet" ',
+        'configopts': local_common_configopts + '-DSERIALIZE="KyotoCabinet" ',
         'srcdir': '%s/src/converters' % local_srcdir_root,
     }),
     ('%s_elude_tool' % name, version, {
-        'configopts': '-DTARGET_ARCH=%(arch)s ',
+        'configopts': local_common_configopts,
         'srcdir': '%s/src/elude_tool' % local_srcdir_root,
     }),
 ]
