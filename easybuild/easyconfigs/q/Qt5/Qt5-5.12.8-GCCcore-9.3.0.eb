@@ -14,8 +14,14 @@ source_urls = [
     'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/'
 ]
 sources = ['qt-everywhere-src-%(version)s.tar.xz']
+patches = [
+    'Qt5-5.12.3_fix-avx2.patch',
+    'Qt5-5.12.3_fix-qmake-libdir.patch',
+]
 checksums = [
     '9142300dfbd641ebdea853546511a352e4bd547c4c7f25d61a40cd997af1f0cf',  # qt-everywhere-src-5.12.8.tar.xz
+    '6f46005f056bf9e6ff3e5d012a874d18ee03b33e685941f2979c970be91a9dbc',  # Qt5-5.12.3_fix-avx2.patch
+    '50974f2ed761a8a70fbdf2e80b9107af68cc29ee951885e26fa0c19bdb6a9c7b',  # Qt5-5.12.3_fix-qmake-libdir.patch
 ]
 
 builddependencies = [
@@ -47,11 +53,17 @@ dependencies = [
     ('libjpeg-turbo', '2.0.4'),
 ]
 
+preconfigopts = 'EBROOTX11=$EBROOTGENTOO EBROOTLIBGLU=$EBROOTGENTOO '
+
 # qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
 configopts = '-skip qtgamepad'
 configopts += ' -no-feature-statx'      # bug 672856
 configopts += ' -no-feature-getentropy' # needs kernel 3.17
 configopts += ' -no-feature-renameat2'  # needs kernel 3.16
+
+# see https://patchwork.ozlabs.org/project/buildroot/patch/20180629143521.9018-1-gael.portay@savoirfairelinux.com/
+parallel = 16
+prebuildopts = "NINJAFLAGS='-j%s' "%parallel
 
 # make sure QtWebEngine component is being built & installed
 check_qtwebengine = True
