@@ -1,0 +1,33 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Bart Verleye
+# Center for eResearch, Auckland
+easyblock = 'ConfigureMakePythonPackage'
+
+name = 'SIP'
+version = '4.19.22'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.riverbankcomputing.com/software/sip/'
+description = """SIP is a tool that makes it very easy to create Python bindings for C and C++ libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+source_urls = ['https://www.riverbankcomputing.com/static/Downloads/sip/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['e1b768824ec1a2ee38dd536b6b6b3d06de27b00a2f5f55470d1b512306e3be45']
+
+builddependencies = [('binutils', '2.32')]
+
+dependencies = [('Python', '3.7.4')]
+
+configopts = "configure.py --bindir %(installdir)s/bin --incdir %(installdir)s/include "
+configopts += "--destdir %(installdir)s/lib/python%(pyshortver)s/site-packages"
+
+sanity_check_paths = {
+    'files': ['bin/sip', 'include/sip.h'] +
+             ['lib/python%%(pyshortver)s/site-packages/%s' % x
+              for x in ['sip.%s' % SHLIB_EXT, 'sipconfig.py', 'sipdistutils.py']],
+    'dirs': [],
+}
+
+moduleclass = 'lang'
