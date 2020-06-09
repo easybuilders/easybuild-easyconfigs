@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'PythonBundle'
 
 name = 'ReFrame'
 version = '3.0'
@@ -8,54 +8,27 @@ description = '''ReFrame is a framework for writing regression tests for HPC sys
 
 toolchain = SYSTEM
 
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
 
-sources = [{
-    'filename': 'v%(version)s.tar.gz',
-    'git_config': {
-        'url': 'https://github.com/eth-cscs',
-        'repo_name': 'reframe',
-        'tag': 'v%(version)s'
-    }
-}]
-
-checksums = ['8ecf8eeed11ad1d77d351c06d3c21775d62c16e4540bf66da8da0ed25b2004b2']
-
-# ReFrame requires Python 3.6, may only be available via 'python3'
 req_py_majver = 3
 req_py_minver = 6
 
-download_dep_fail = True
-use_pip = False
-
-exts_defaultclass = 'PythonPackage'
-
-exts_default_options = {
-    'source_urls': [PYPI_SOURCE],
-    'download_dep_fail': True,
-    'use_pip': False
-}
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
 
 exts_list = [
-    ('pip', '20.1.1', {
-        'use_pip': False,
-        'checksums': ['27f8dc29387dd83249e06e681ce087e6061826582198a425085e0bf4c1cf3a55'],
-    }),
     ('setuptools', '47.1.1', {
         'source_tmpl': 'setuptools-47.1.1.zip',
         'checksums': ['145fa62b9d7bb544fce16e9b5a9bf4ab2032d2f758b7cd674af09a92736aff74'],
     }),
     ('zipp', '3.1.0', {
-        'use_pip': True,
-        'source_tmpl': 'zipp-3.1.0-py3-none-any.whl',
-        'unpack_sources': False,
-        'checksums': ['aa36550ff0c0b7ef7fa639055d797116ee891440eac1a56f378e2d3179e0320b'],
+        'checksums': ['c599e4d75c98f6798c509911d08a22e6c021d074469042177c8c86fb92eefd96'],
     }),
     ('attrs', '19.3.0', {
         'modulename': 'attr',
         'checksums': ['f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72'],
     }),
-    ('importlib_metadata', '1.6.0', {
-        'checksums': ['34513a8a0c4962bc66d35b359558fd8a5e10cd472d37aec5f66858addef32c1e'],
+    ('importlib_metadata', '1.6.1', {
+        'checksums': ['0505dd08068cfec00f53a74a0ad927676d7757da81b7436a6eefe4c7cf75c545'],
     }),
     ('pygelf', '0.3.6', {
         'checksums': ['3e5bc59e3b5a754556a76ff2c69fcf2003218ad7b5ff8417482fa1f6a7eba5f9'],
@@ -66,26 +39,20 @@ exts_list = [
     ('jsonschema', '3.2.0', {
         'checksums': ['c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a'],
     }),
+    ('reframe', version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/eth-cscs/reframe/archive'],
+        'checksums': ['fb76b4513c03b84f5b3bbbc988f7747e5b58f04c983b3935bab1f2e81adccb82'],
+    }),
 ]
 
 postinstallcmds = [
-    'cd %(builddir)s/reframe && cp -r tutorial %(installdir)s && '
-    'python3 -m venv docs_env && source docs_env/bin/activate && '
-    'pip install --no-cache-dir -r docs/requirements.txt && make -C docs && deactivate && '
-    'mkdir -p %(installdir)s/docs/html %(installdir)s/docs/man/man1 %(installdir)s/docs/man/man8 && '
-    'cp docs/man/reframe.1 %(installdir)s/docs/man/man1 && '
-    'cp docs/man/reframe.settings.8 %(installdir)s/docs/man/man8 && '
-    'cp -r docs/html %(installdir)s/docs/html'
+    'cd %(builddir)s/reframe/reframe-%(version)s && cp -r tutorial %(installdir)s'
 ]
-
-modextrapaths = {
-    'MANPATH': ['docs/man']
-}
 
 sanity_check_paths = {
     'files': ['bin/reframe'],
-    'dirs': ['bin', 'tutorial', 'docs/html', 'docs/man']
-
+    'dirs': ['bin', 'tutorial']
 }
 
 sanity_check_commands = ['reframe -V']
