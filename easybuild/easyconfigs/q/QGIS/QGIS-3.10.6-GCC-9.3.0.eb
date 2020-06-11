@@ -1,0 +1,67 @@
+easyblock = 'CMakeMake'
+
+name = 'QGIS'
+version = '3.10.6'
+
+homepage = 'http://www.qgis.org/'
+description = "QGIS is a user friendly Open Source Geographic Information System (GIS)"
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'gnu++11'}
+
+source_urls = ['http://qgis.org/downloads/']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['a96791bf6615e4f8ecdbbb9a90a8ef14a12459d8c5c374ab22eb5f776f864bb5']
+
+dependencies = [
+    ('Qt5', '5.12.8'),
+#    ('Qt5Webkit', '5.212.0-alpha3'),
+    ('PROJ', '7.0.0'),
+    ('GEOS', '3.8.1'),
+    ('SQLite', '3.27.2'),
+    ('libspatialite', '4.3.0a'),
+    ('libspatialindex', '1.8.5'),
+    ('GDAL', '3.0.4'),
+    ('Qwt', '6.1.4'),
+    ('QwtPolar', '1.1.1'),
+    ('expat', '2.2.9'),
+    ('QCA', '2.3.0'),
+#    ('PyQt5', '5.12.1', versionsuffix),
+    # QScintilla must be listed after PyQt5 due to Python bindings 'overriding' those of PyQt5
+    ('QScintilla', '2.11.2'),
+    ('GSL', '2.6'),
+    ('QJson', '0.9.0'),
+#    ('psycopg2', '2.8.3', versionsuffix),
+    ('libzip', '1.5.2'),
+    ('QtKeychain', '0.9.1'),
+    ('ICU', '64.2'),
+]
+builddependencies = [
+#    ('CMake', '3.16.3'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.5'),
+]
+postinstallcmds = ['virtualenv %(installdir)s && source %(installdir)s/bin/activate && pip install psycopg2 && deactivate']
+multi_deps = {'Python': ['3.6', '3.7', '3.8'] }
+separate_build_dir = True
+
+# specify locations that CMake can't figure out correctly
+configopts = "-DCMAKE_PREFIX_PATH=$EBROOTQT -DQJSON_DIR=$EBROOTQJSON/lib/cmake/qjson "
+configopts += "-DQSCINTILLA_LIBRARY=$EBROOTQSCINTILLA/lib/libqscintilla2_qt5.%s " % SHLIB_EXT
+configopts += "-DWITH_QTWEBKIT=OFF "
+#configopts += "-DQt5WebKit_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKit "
+#configopts += "-DQt5WebKitWidgets_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKitWidgets "
+configopts += "-DPYQT5_SIP_DIR=$EBROOTQT5/share/python%(pyshortver)s/sip/PyQt5 -DQSCI_SIP_DIR=$EBROOTQSCINTILLA/share/sip/PyQt5"
+
+sanity_check_paths = {
+    'files': ['bin/qgis', 'bin/qgis_bench', 'lib/libqgis_analysis.%s' % SHLIB_EXT,
+              'lib/libqgis_app.%s' % SHLIB_EXT, 'lib/libqgis_core.%s' % SHLIB_EXT, 'lib/libqgis_gui.%s' % SHLIB_EXT,
+              'lib/libqgis_native.%s' % SHLIB_EXT, 'lib/libqgispython.%s' % SHLIB_EXT],
+    'dirs': ['include/qgis', 'man', 'share/qgis'],
+}
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+modluafooter = """
+depends_on("scipy-stack/2019b")
+"""
+
+moduleclass = 'geo'
