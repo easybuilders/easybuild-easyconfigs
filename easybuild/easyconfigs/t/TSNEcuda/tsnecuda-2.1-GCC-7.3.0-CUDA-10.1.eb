@@ -1,0 +1,65 @@
+easyblock = "CMakeMakeCp"
+
+name = "tsnecuda"
+version = "2.1"
+
+homepage = 'https://github.com/CannyLab/tsne-cuda'
+description = """tsne-cuda is an optimized CUDA version of t-Stochastic Neighborhood Embedding (t-SNE) - a highly successful method for dimensionality reduction and visualization of high dimensional datasets."""
+
+toolchain = {'name': 'gcccuda', 'version': '2018.3.100'}
+
+#source_urls = ['https://github.com/pandegroup/openmm/archive/']
+#sources = ['%(name)s-%(version)s.tar.gz']
+#sources = [{'filename':'%(version)s.tar.gz',
+#           'git_config': {
+#           'tag': '%(version)s',
+#           'repo_name': 'tsne-cuda',
+#           'url': 'https://github.com/CannyLab',
+#           'recursive': True,
+#            }
+#}
+#]
+
+checksums = ['a3fa92b941c25ddf9b7360f86ed2e4bc']
+separate_build_dir = False 
+
+#multi_deps = {
+#        'Python': ['3.5.4', '3.6.3', '3.7.4', '3.8.2']
+#}
+#multi_deps_load_default = True
+
+dependencies = [
+     ('imkl', '2019.2.187'),
+     ('cuDNN', '7.6'),
+     ('CMake', '3.16.3'),
+]
+parallel=4
+
+# don't run test on build-node without GPU
+#runtest = ' test'
+
+preconfigopts = 'git clone https://github.com/CannyLab/tsne-cuda . ;  git checkout 2.1; git submodule init ; git submodule update ; cd build ;'
+
+
+configure_cmd = ' cmake -DBUILD_PYTHON=ON -DMKL_DIR=$MKLROOT -DCMAKE_CXX_COMPILER="g++" -DCMAKE_C_COMPILER="gcc" -DWITH_MKL=ON -DMKL_INCLUDE_DIR="$MKLROOT/include" -DMKL_LIBRARIES="-lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" -DBUILD_DOC=ON -DWITH_ZMQ=FALSE -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,$EBROOTCUDA/lib64" -DWITH_FAISS_GPU_STANDALONE=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,$EBROOTCUDA/lib64"  -DBUILD_SHARED_LIBS=ON -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_INSTALL_PREFIX=%(installdir)s/ ../ '
+
+#preinstallopts = 'cd build ; '
+#installopts  = ' python setup.py  install --prefix=%(installdir)s && cd build ; cp libtsnecuda.so %(installdir)s/lib64 ; cp tsne %(installdir)s/bin '
+
+prebuildopts = 'cd build ; '
+
+postinstallcmds = ['cd build/python ; module load python/3.5.4 ; mkdir -p %(installdir)s/lib/python3.5/site-packages ; export PYTHONPATH=%(installdir)s/lib/python3.5/site-packages ; pip  install . --prefix=%(installdir)s ; module load python/3.6.3 ; mkdir -p %(installdir)s/lib/python3.6/site-packages ; export PYTHONPATH=%(installdir)s/lib/python3.6/site-packages ; pip  install .  --prefix=%(installdir)s ; module load python/3.7.4 ; mkdir -p %(installdir)s/lib/python3.7/site-packages ; export PYTHONPATH=%(installdir)s/lib/python3.7/site-packages ; pip  install . --prefix=%(installdir)s ; module load python/3.8.2 ; mkdir -p %(installdir)s/lib/python3.8/site-packages ; export PYTHONPATH=%(installdir)s/lib/python3.8/site-packages ; pip  install . --prefix=%(installdir)s ']
+
+#files_to_copy = [(['build/libtsnecuda.so'], 'lib'), (['build/tsne'], 'bin'), (['build/lib/*'], 'lib'), (['build/third_party/glog/lib*'], 'lib'), 'third_party/gtest/googlemock/include', (['build/third_party/glog/glog/*'], 'include/glog'), (['third_party/gtest/googletest/include/gtest/*'], 'include/gtest') ],
+
+files_to_copy = ['third_party/gtest/googlemock/include',  (['build/third_party/glog/glog/*'], 'include/glog') , (['third_party/gtest/googletest/include/gtest/*'], 'include/gtest'), (['build/libtsnecuda.so'], 'lib'), (['build/tsne'], 'bin'), (['build/lib/*'], 'lib'), (['build/third_party/glog/lib*'], 'lib')]
+#skipsteps = ['build']
+sanity_check_paths = {
+    'files': ["lib/libglog.so" ] + ["bin/tsne"] + ["lib/libtsnecuda.so"], 
+    'dirs': ["lib/python%s/site-packages/tsnecuda" % v for v in ["3.5", "3.6", "3.7", "3.8"] ]
+}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'math'
+
