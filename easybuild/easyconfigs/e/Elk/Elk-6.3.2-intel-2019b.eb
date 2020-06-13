@@ -1,0 +1,61 @@
+easyblock = 'MakeCp'
+
+name = 'Elk'
+version = '6.3.2'
+
+homepage = 'http://elk.sourceforge.net/'
+description = """An all-electron full-potential linearised
+augmented-plane wave (FP-LAPW) code with many advanced features. Written
+originally at Karl-Franzens-Universität Graz as a milestone of the
+EXCITING EU Research and Training Network, the code is designed to be as
+simple as possible so that new developments in the field of density
+functional theory (DFT) can be added quickly and reliably.
+"""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+toolchainopts = {'usempi': True, 'openmp': True, 'opt': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCELOWER_TGZ]
+patches = ['%(name)s-%(version)s_dont_build_blas_lapack_fft.patch']
+checksums = [
+    '75508387ef502998b1c1f68bef132da557681fffc706642d6ad54632cc8f9a8a',  # elk-6.3.2.tgz
+    'dce1b794e04dd62b6bb4e7227f3cfeaa8276e1dd950bfea300918535adeb7f3d',  # Elk-6.3.2_dont_build_blas_lapack_fft.patch
+]
+
+dependencies = [
+    ('libxc', '4.3.4'),
+]
+
+
+# make.inc file is generated interactively by "setup" command, creating it here
+prebuildopts = 'echo "F90_OPTS = $FFLAGS" > make.inc && '
+prebuildopts += 'echo "F77_OPTS = $FFLAGS" >> make.inc && '
+prebuildopts += 'echo "LIB_LPK = $LIBLAPACK" >> make.inc && '
+prebuildopts += 'echo "LIB_libxc = -lxcf90 -lxc" >> make.inc && '
+prebuildopts += 'echo "SRC_libxc = libxc_funcs.f90 libxc.f90 libxcifc.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_FFT = zfftifc_fftw.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_OBLAS = oblas_stub.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_BLIS = blis_stub.f90" >> make.inc && '
+prebuildopts += 'echo "SRC_W90S = w90_stub.f90" >> make.inc && '
+
+buildopts = 'all'
+
+runtest = 'test'
+
+parallel = 1
+
+files_to_copy = [(
+    [
+        'src/elk', 'src/spacegroup/spacegroup', 'src/eos/eos',
+        'utilities/elk-bands/elk-bands', 'utilities/elk-optics/elk-optics.py',
+        'utilities/wien2k-elk/se.pl'
+    ], 'bin'
+)]
+
+sanity_check_paths = {
+    'files': ['bin/elk', 'bin/spacegroup', 'bin/eos'],
+    'dirs': []
+}
+
+moduleclass = 'phys'
