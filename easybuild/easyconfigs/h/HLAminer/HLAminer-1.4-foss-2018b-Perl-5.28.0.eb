@@ -1,0 +1,44 @@
+easyblock = 'Tarball'
+
+name = 'HLAminer'
+version = '1.4'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://www.bcgsc.ca/platform/bioinfo/software/hlaminer'
+description = """\
+ HLAminer is a software for HLA predictions from next-generation shotgun (NGS) sequence read data and supports direct
+ read alignment and targeted de novo assembly of sequence reads. """
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+# HLAminer is proprietary software, but free for academcs
+# see: http://www.bcgsc.ca/platform/bioinfo/software/hlaminer/releases/1.4
+source_urls = ['http://www.bcgsc.ca/platform/bioinfo/software/hlaminer/releases/1.4']
+sources = ['%(name)s_%(version_major)s-%(version_minor)s.tar.gz']
+checksums = ['786271bc1d69fd5ee3bceffde19b36262027b72bc7bafba5d4beaf0a2fdcccd8']
+
+dependencies = [
+    ('Perl', '5.28.0'),
+    ('BioPerl', '1.7.2', versionsuffix),
+    ('BWA', '0.7.17'),
+]
+
+postinstallcmds = [
+    'mv %(installdir)s/HLAminer_v1.4/* %(installdir)s/',
+    (
+        "cd %(installdir)s/bin && "
+        "sed -i '1 i#!/usr/bin/env perl' *.pl && "
+        "sed -i 's,\.\.\/bin/,,g' *.sh ncbiBlastConfig.txt && "
+        "sed -i 's,\.\./database,$EBROOTHLAMINER/database,g' *.sh && "
+        "sed -i 's,/home/pubseq/BioSw/bwa/bwa-0.5.9/bwa,bwa,g' *.sh"
+    ),
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ['bin/HLAminer.pl'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

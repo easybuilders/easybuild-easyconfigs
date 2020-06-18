@@ -1,0 +1,32 @@
+easyblock = 'ConfigureMake'
+
+name = 'libFLAME'
+version = '1.0'
+versionsuffix = '-amd'
+
+homepage = 'https://developer.amd.com/amd-cpu-libraries/blas-library/#libflame'
+description = """AMD fork of libFLAME. libFLAME is a portable library for dense matrix computations,
+ providing much of the functionality present in LAPACK."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0-2.30'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/amd/libflame/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['11e7b21b59849416ac372ef2c2b38beb73e62bead85d0ae3ffd0f4f1f6f760cf']
+
+# '--enable-max-arg-list-hack --enable-dynamic-build' requires 'file' function from GNU Make 4.x
+builddependencies = [('make', '4.2.1')]
+
+dependencies = [('BLIS', '1.2', versionsuffix)]
+
+configopts = '--enable-max-arg-list-hack --enable-lapack2flame --enable-cblas-interfaces --enable-dynamic-build'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/FLAME.h', 'lib/libflame.a', 'lib/libflame.%s' % SHLIB_EXT],
+    'dirs': ['lib'],
+}
+
+moduleclass = 'numlib'

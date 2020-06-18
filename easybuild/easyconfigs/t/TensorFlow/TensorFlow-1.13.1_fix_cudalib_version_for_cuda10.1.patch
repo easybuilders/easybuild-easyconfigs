@@ -1,0 +1,73 @@
+Fix search and use of libcublas etc for CUDA 10.1
+CUDA 10.1 change soname to be only major version for cublas,fft,solver,rand etc.
+Taken from https://github.com/tensorflow/tensorflow/issues/28093
+
+Åke Sandgren, 20190430
+diff -ru tensorflow-1.13.1.orig/tensorflow/stream_executor/dso_loader.cc tensorflow-1.13.1/tensorflow/stream_executor/dso_loader.cc
+--- tensorflow-1.13.1.orig/tensorflow/stream_executor/dso_loader.cc	2019-02-25 21:37:04.000000000 +0100
++++ tensorflow-1.13.1/tensorflow/stream_executor/dso_loader.cc	2019-04-29 21:47:37.282470005 +0200
+@@ -46,7 +46,7 @@
+ 
+ /* static */ port::Status DsoLoader::GetCublasDsoHandle(void** dso_handle) {
+   return GetDsoHandle(FindDsoPath(port::Env::Default()->FormatLibraryFileName(
+-                                      "cublas", GetCudaVersion()),
++                                      "cublas", "10"),
+                                   GetCudaLibraryDirPath()),
+                       dso_handle);
+ }
+@@ -63,14 +63,14 @@
+ 
+ /* static */ port::Status DsoLoader::GetCufftDsoHandle(void** dso_handle) {
+   return GetDsoHandle(FindDsoPath(port::Env::Default()->FormatLibraryFileName(
+-                                      "cufft", GetCudaVersion()),
++                                      "cufft", "10"),
+                                   GetCudaLibraryDirPath()),
+                       dso_handle);
+ }
+ 
+ /* static */ port::Status DsoLoader::GetCurandDsoHandle(void** dso_handle) {
+   return GetDsoHandle(FindDsoPath(port::Env::Default()->FormatLibraryFileName(
+-                                      "curand", GetCudaVersion()),
++                                      "curand", "10"),
+                                   GetCudaLibraryDirPath()),
+                       dso_handle);
+ }
+diff -ru tensorflow-1.13.1.orig/third_party/gpus/cuda_configure.bzl tensorflow-1.13.1/third_party/gpus/cuda_configure.bzl
+--- tensorflow-1.13.1.orig/third_party/gpus/cuda_configure.bzl	2019-02-25 21:37:04.000000000 +0100
++++ tensorflow-1.13.1/third_party/gpus/cuda_configure.bzl	2019-04-29 21:48:17.258083455 +0200
+@@ -842,7 +842,7 @@
+               repository_ctx,
+               cpu_value,
+               cuda_config.cuda_toolkit_path,
+-              cuda_config.cuda_version,
++              '10',
+           ),
+       "cusolver":
+           _find_cuda_lib(
+@@ -850,7 +850,7 @@
+               repository_ctx,
+               cpu_value,
+               cuda_config.cuda_toolkit_path,
+-              cuda_config.cuda_version,
++              '10',
+           ),
+       "curand":
+           _find_cuda_lib(
+@@ -858,7 +858,7 @@
+               repository_ctx,
+               cpu_value,
+               cuda_config.cuda_toolkit_path,
+-              cuda_config.cuda_version,
++              '10',
+           ),
+       "cufft":
+           _find_cuda_lib(
+@@ -866,7 +866,7 @@
+               repository_ctx,
+               cpu_value,
+               cuda_config.cuda_toolkit_path,
+-              cuda_config.cuda_version,
++              '10',
+           ),
+       "cudnn":
+           _find_cuda_lib(

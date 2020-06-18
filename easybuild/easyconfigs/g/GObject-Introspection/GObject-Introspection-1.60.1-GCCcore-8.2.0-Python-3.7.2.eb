@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'GObject-Introspection'
+version = '1.60.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://wiki.gnome.org/GObjectIntrospection/'
+description = """GObject introspection is a middleware layer between C libraries
+ (using GObject) and language bindings. The C library can be scanned at
+ compile time and generate a metadata file, in addition to the actual
+ native C library. Then at runtime, language bindings can read this
+ metadata and automatically provide bindings to call into the C library."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+
+source_urls = [FTPGNOME_SOURCE]
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['d844d1499ecd36f3ec8a3573616186d36626ec0c9a7981939e99aa02e9c824b3']
+
+builddependencies = [
+    ('binutils', '2.31.1'),
+    ('Autotools', '20180311'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.5'),
+    ('cairo', '1.16.0'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('GLib', '2.60.1'),
+    ('libffi', '3.2.1'),
+    ('util-linux', '2.33'),
+]
+
+preconfigopts = "env GI_SCANNER_DISABLE_CACHE=true "
+
+# avoid using hard-coded path to 'python3' in shebang of scripts
+preconfigopts += "PYTHON=python3 "
+buildopts = "PYTHON=python3 "
+
+sanity_check_paths = {
+    'files': ['bin/g-ir-%s' % x for x in ['annotation-tool', 'compiler', 'generate', 'scanner']] +
+             ['lib/libgirepository-1.0.%s' % x for x in [SHLIB_EXT, 'a']],
+    'dirs': ['include', 'share']
+}
+
+moduleclass = 'devel'

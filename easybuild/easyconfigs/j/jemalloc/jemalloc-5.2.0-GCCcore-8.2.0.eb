@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'jemalloc'
+version = '5.2.0'
+
+homepage = 'http://jemalloc.net'
+description = """jemalloc is a general purpose malloc(3) implementation that emphasizes fragmentation avoidance and
+ scalable concurrency support."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+
+source_urls = ['https://github.com/jemalloc/jemalloc/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['acd70f5879700567e1dd022dd11af49100c16adb84555567b85a1e4166749c8d']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('binutils', '2.31.1'),
+]
+
+# should not run 'make install', since that includes installing documentation which requires XLS (docbook)
+skipsteps = ['install']
+
+preconfigopts = "./autogen.sh && "
+configopts = "--with-version=%(version)s-0-g0000 "  # build with version info
+buildopts = "&& make install_bin install_include install_lib"
+
+sanity_check_paths = {
+    'files': ['bin/jeprof', 'lib/libjemalloc.a', 'lib/libjemalloc_pic.a', 'lib/libjemalloc.%s' % SHLIB_EXT,
+              'include/jemalloc/jemalloc.h'],
+    'dirs': [],
+}
+
+modextrapaths = {'LD_PRELOAD': ['lib/libjemalloc.%s' % SHLIB_EXT]}
+
+moduleclass = 'lib'

@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'tesseract'
+version = '4.1.0'
+
+homepage = 'https://github.com/tesseract-ocr/tesseract'
+description = """Tesseract is an optical character recognition engine"""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+
+github_account = 'tesseract-ocr'
+source_urls = [GITHUB_SOURCE]
+sources = [
+    '%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/tesseract-ocr/tessdata/archive/'],
+        'download_filename': '4.0.0.tar.gz',
+        'filename': 'tessdata-4.0.0.tar.gz',
+    },
+]
+patches = ['tesseract-4.1.0-add-glib-dependency.patch']
+checksums = [
+    '5c5ed5f1a76888dc57a83704f24ae02f8319849f5c4cf19d254296978a1a1961',  # 4.1.0.tar.gz
+    '38c637d3a1763f6c3d32e8f1d979f045668676ec5feb8ee1869ee77cedd31b08',  # tessdata-4.0.0.tar.gz
+    'f21ac5ed7d28a07978a6f7230fce2125d98a7264e33ddd3bd648af6da41b6fd1',  # tesseract-4.1.0-add-glib-dependency.patch
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('binutils', '2.31.1'),
+    ('pkg-config', '0.29.2')
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('libpng', '1.6.36'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('LibTIFF', '4.0.10'),
+    ('Leptonica', '1.78.0'),
+    ('libarchive', '3.4.0'),
+    ('ICU', '64.2'),
+    ('fontconfig', '2.13.1'),
+    ('GLib', '2.60.1'),
+    ('cairo', '1.16.0'),
+    ('Pango', '1.43.0'),
+]
+
+separate_build_dir = True
+
+postinstallcmds = [
+    'mkdir %(installdir)s/tessdata',
+    'mv %(builddir)s/tessdata-4.0.0/* %(installdir)s/tessdata'
+]
+
+modextrapaths = {
+    'TESSDATA_PREFIX': 'tessdata',
+}
+
+sanity_check_paths = {
+    'files': ['bin/tesseract', 'lib/libtesseract.%s' % SHLIB_EXT],
+    'dirs': ['tessdata', 'include/tesseract']
+}
+
+moduleclass = 'vis'
