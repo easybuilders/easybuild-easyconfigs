@@ -1,7 +1,7 @@
 ##
-# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
 #
-# Copyright:: Copyright 2012-2016 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+# Copyright:: Copyright 2012-2016 University of Luxembourg / LCSB,
+#                                 Cyprus Institute / CaSToRC,
 #                                 Ghent University / The Francis Crick Institute
 # Authors::
 # * Toon Verstraelen <Toon.Verstraelen@UGent.be>
@@ -9,6 +9,7 @@
 # * Ward Poelmans <wpoely86@gmail.com>
 # * RvDijk <rub0925@gmail.com>
 # * Oliver Stueker <oliver.stueker@ace-net.ca>
+# * Chris Want <cjwant@ualberta.ca>
 # License::   MIT/GPL
 ##
 
@@ -26,26 +27,41 @@ toolchainopts = {'optarch': True}
 
 source_urls = [SOURCEFORGE_SOURCE]
 sources = [SOURCELOWER_TAR_GZ]
-patches = ['%(name)s-%(version)s-use-xHost.patch', '%(name)s-%(version)s-ignore-failed-test.patch']
+patches = ['%(name)s-%(version)s-use-xHost.patch',
+           '%(name)s-%(version)s-ignore-failed-test.patch']
 
-#builddependencies = [('CMake', '2.8.12')]
-
-# python = "Python"
-# pythonversion = '2.7.13'
-# pythonshortversion = ".".join(pythonversion.split(".")[:-1])
-# versionsuffix = "-%s-%s" % (python, pythonversion)
-
-dependencies = [
-    ('Eigen', '3.3.2', '', True),
-    ('Boost', '1.60.0', '', ('GCC', '7.3.0')),
+checksums = [
+    '204136582cdfe51d792000b20202de8950218d617fd9c6e18cee36706a376dfc',
+    '0db85c64f53862dce05ada9091a35d7b4c5c29a44aef76e0cb41cd679441a446',
+    '6d235ed070e477507fc92b63339d2c53130a24257835324003969403af8a1644'
 ]
 
-configopts = ' -DCMAKE_SKIP_RPATH=ON '
+builddependencies = [
+    ('CMake', '3.16.3'),
+    ('SWIG', '3.0.12'),
+]
 
-# runtest = 'test' # gzip test fails
+# Note: the 'pybel' python module only works with Python 2.7.x
+multi_deps = {'Python': ['2.7.14']}
+
+dependencies = [
+    ('Eigen', '3.3.5'),
+    ('Boost', '1.68.0'),
+]
+
+configopts  = ' -DCMAKE_SKIP_RPATH=ON '
+configopts += ' -DBoost_INCLUDE_DIR=$EBROOTBOOST/include '
+configopts += ' -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib '
+configopts += ' -DEIGEN3_INCLUDE_DIR=$EBROOTEIGEN/include '
+configopts += ' -DPYTHON_BINDINGS=ON '
+configopts += ' -DENABLE_OPENMP=ON '
 
 runtest = False
 
-postinstallcmds = [ "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib" ]
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh "\
+    "--path %(installdir)s "\
+    "--add_path %(installdir)s/lib"
+]
 
 moduleclass = 'chem'
