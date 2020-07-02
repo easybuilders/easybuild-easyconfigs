@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'VinaLC'
+version = '1.3.0'
+
+homepage = "https://plsuser.llnl.gov/bbs/vinalc/index.html"
+description = """A very popular PC-based molecular docking program, AutoDock Vina, was modified and parallelized, using an MPI and multithreading hybrid scheme, and potentially can be used in the future on exascale machines, without sacrificing accuracy. The resulting program scales up to more than 15K CPUs with a very low overhead cost."""
+
+toolchain = {'name': 'gompi', 'version': '2018.3.312'}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/XiaohuaZhangLLNL/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['099e857ed065570f67a40a06d29951baf20c4594864df678fef56e8fe2d2707a']
+
+dependencies = [
+    ('Boost', '1.68.0', '-mpi'),
+]
+
+preconfigopts = 'sh ./autogen.sh && '
+
+configopts = '--with-boost=$EBROOTBOOST --with-mpi --with-aix-soname=both '
+
+buildopts = 'CC="$CC" CXX="$CXX"'  
+
+postinstallcmds =  ['cd %(builddir)s/%(name)s-%(version)s/ && cp -r examples %(installdir)s/']
+
+sanity_check_paths = {
+    'files': ['bin/vinaBMPI', 'bin/vinalc', 'include/atom.h', 'lib/libVinaLC.a'],
+    'dirs':  ['bin', 'include', 'lib'],
+}
+
+moduleclass = 'phys'

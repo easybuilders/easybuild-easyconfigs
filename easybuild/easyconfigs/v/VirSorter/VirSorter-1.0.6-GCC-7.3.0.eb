@@ -10,7 +10,9 @@ toolchain = {'name': 'GCC', 'version': '7.3.0'}
 
 source_urls = ['https://github.com/simroux/%(name)s/archive/']
 sources = ['v%(version)s.tar.gz']
-checksums = ['a47202eb4abbfc7643519f891d52c55725ccceb2e4c45b8564b9d66b8f6615e0']
+checksums = [
+    'a47202eb4abbfc7643519f891d52c55725ccceb2e4c45b8564b9d66b8f6615e0',  # v1.0.6.tar.gz
+]
 
 dependencies = [
     ('Perl', '5.22.4'),
@@ -21,7 +23,8 @@ dependencies = [
     ('MUSCLE', '3.8.31'),
     #('BLAST', '2.2.26', '-Linux_x86_64', True),
     ('BLAST+', '2.10.0'),
-    ('DIAMOND', '0.9.22'),
+    #('DIAMOND', '0.9.14'),
+    #('VirSorter-Data', '2'),
 ]
 
 sanity_check_paths = {
@@ -29,8 +32,41 @@ sanity_check_paths = {
     'dirs': ['Scripts'],
 }
 
-modextrapaths = {'PATH': ['', 'Scripts']}
+modextrapaths = {
+    'PATH': ['', 'Scripts'],
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'
+}
 
 modaliases = {'%(namelower)s': 'wrapper_phage_contigs_sorter_iPlant.pl'}
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('Parallel::ForkManager', '1.06', {
+        'runtest': 'test',
+        'source_tmpl': 'Parallel-ForkManager-1.06.tar.gz',
+        'source_urls': ['http://search.cpan.org/CPAN/authors/id/S/SZ/SZABGAB/'],
+        'checksums': ['ce32781ca790e7cd9b8f7b896b47e817ff21b68e430291713cf1962ddc150274'],
+    }),
+    ('List::MoreUtils', '0.428', {
+        'source_tmpl': 'List-MoreUtils-0.428.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RE/REHSACK/'],
+        'checksums': ['713e0945d5f16e62d81d5f3da2b6a7b14a4ce439f6d3a7de74df1fd166476cc2'],
+    }),
+]
+
+modloadmsg = """
+
+* If you plan to use VirSorter with DIAMOND, you need to download the database:
+   wget https://zenodo.org/record/1168727/files/virsorter-data-v2.tar.gz
+* Unpack the archive: tar -xvf virsorter-data-v2.tar.gz (about 13 GB)
+* Note that you database should be re-formatted with the corresponding version of DIAMOND:
+  https://github.com/simroux/VirSorter/issues/28#issuecomment-386142144
+* In addition to VirSorter, load diamond module.
+* Note thar diamond/0.9.14 does not seem to work except on beluga.
+* When running "virsorter", add the option "--data-dir":
+   virsorter --data-dir <path to virsorter-data>
+ 
+"""
 
 moduleclass = 'bio'
