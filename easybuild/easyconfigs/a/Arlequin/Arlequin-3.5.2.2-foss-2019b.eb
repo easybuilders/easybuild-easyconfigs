@@ -48,9 +48,10 @@ components = [
     }),
 ]
 
-local_arlecore_bin = 'arlecore_linux/arlecore3522_64bit'
+local_ver = ''.join(version.split('.'))
+local_arlecore_bin = 'arlecore_linux/arlecore%s_64bit' % local_ver
 local_arlecore_sh = 'arlecore_linux/LaunchArlecore.sh'
-local_arlsumstat_bin = 'arlsumstat_linux/arlsumstat3522_64bit'
+local_arlsumstat_bin = 'arlsumstat_linux/arlsumstat%s_64bit' % local_ver,
 local_arlsumstat_sh = 'arlsumstat_linux/LaunchArlSumStat.sh'
 
 postinstallcmds = [
@@ -59,11 +60,13 @@ postinstallcmds = [
     % (local_arlecore_bin, local_arlecore_sh),
     'chmod +x %%(installdir)s/%s' % local_arlecore_bin,
     'chmod +x %%(installdir)s/%s' % local_arlecore_sh,
+    'cd %(installdir)s/arlecore_linux && ln -s arlecore3522_64bit arlecore',
     # fix arlsumstat
     'sed -i "s@^arlsumstat=.*@arlsumstat=%%(installdir)s/%s@g" %%(installdir)s/%s'
     % (local_arlsumstat_bin, local_arlsumstat_sh),
     'chmod +x %%(installdir)s/%s' % local_arlsumstat_bin,
     'chmod +x %%(installdir)s/%s' % local_arlsumstat_sh,
+    'cd %(installdir)s/arlsumstat_linux && ln -s arlsumstat3522_64bit arlsumstat',
 ]
 dependencies = [
     ('R', '3.6.2'),
@@ -72,12 +75,12 @@ dependencies = [
 modextrapaths = {'PATH': ['arlecore_linux', 'arlsumstat_linux']}
 
 sanity_check_paths = {
-    'files': [local_arlecore_bin, local_arlecore_sh, local_arlsumstat_bin, local_arlsumstat_sh],
+    'files': ['arlecore_linux/arlecore', 'arlsumstat_linux/arlsumstat'],
     'dirs': [],
 }
 
 sanity_check_commands = [
-    'LaunchArlecore.sh',
-    'LaunchArlSumStat.sh',
+    "arlecore --help",
+    "arlsumstat --help",
     r'cd %(installdir)s/Example\ files_linux/ELB/ && LaunchArlecore.sh -s "Xdata.ars"',
 ]

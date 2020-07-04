@@ -29,28 +29,14 @@ dependencies = [
     ('molmod', '1.4.5', versionsuffix),
 ]
 
-download_dep_fail = True
 use_pip = True
+download_dep_fail = True
 sanity_pip_check = True
 
 # required because we're building a Python package using Intel compilers on top of Python built with GCC
 check_ldshared = True
 
-# disable tests when installing with intel/2020a, due to bug in Intel MPI 2019 update 7;
-# commands that trigger an MPI_Init crash with "Fatal error in PMPI_Init_thread" if they're not run via mpirun,
-# see https://github.com/easybuilders/easybuild-easyconfigs/issues/10213
-# runtest = "export MATPLOTLIBRC=$PWD; echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc; "
-# runtest += "python setup.py build_ext -i; %(mpi_cmd_prefix)s nosetests -v"
-
-sanity_check_paths = {
-    'files': [],
-    'dirs': ['lib/python%(pyshortver)s/site-packages'],
-}
-
-# skip regular 'import yaff', and run it via mpirun (since 'import yaff' results in an MPI_Init call via h5py)
-# this is only needed because of a bug in Intel MPI 2019 update 7 ("Fatal error in PMPI_Init_thread")
-# see https://github.com/easybuilders/easybuild-easyconfigs/issues/10213
-options = {'modulename': False}
-sanity_check_commands = ["%(mpi_cmd_prefix)s python -c 'import %(name)s'"]
+runtest = "export MATPLOTLIBRC=$PWD; echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc; "
+runtest += "python setup.py build_ext -i; nosetests -v"
 
 moduleclass = 'chem'
