@@ -257,8 +257,10 @@ class EasyConfigTest(TestCase):
             # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
             # both scVelo and Python-Geometric depend on numba
             'LLVM': (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
-            # medaka 0.11.4/0.12.0requires recent TensorFlow <= 1.14 (and Python 3.6)
-            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-']),
+            # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6), artic-ncov2019 requires medaka
+            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-', 'artic-ncov2019-2020.04.13']),
+            # rampart requires nodejs > 10, artic-ncov2019 requires rampart
+            'nodejs': ('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13']),
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -550,6 +552,12 @@ class EasyConfigTest(TestCase):
         # These packages do not support installation with 'pip'
         whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
 
+        whitelist_pip_check = [
+            r'Mako-1.0.4.*Python-2.7.12.*',
+            # no pip 9.x or newer for configparser easyconfigs using a 2016a or 2016b toolchain
+            r'configparser-3.5.0.*-2016[ab].*',
+        ]
+
         failing_checks = []
 
         for ec in changed_ecs:
@@ -593,7 +601,11 @@ class EasyConfigTest(TestCase):
 
             # if Python is a dependency, that should be reflected in the versionsuffix
             # Tkinter is an exception, since its version always matches the Python version anyway
-            if any(dep['name'] == 'Python' for dep in ec['dependencies']) and ec.name != 'Tkinter':
+            # Also whitelist some updated versions of Amber
+            whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb', 'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
+            whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
+            has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'])
+            if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     msg = "'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn
                     # This is only a failure for newly added ECs, not for existing ECS
@@ -607,7 +619,8 @@ class EasyConfigTest(TestCase):
             if use_pip and easyblock in ['PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
+                    if not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
+                        failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
