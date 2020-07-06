@@ -1,0 +1,71 @@
+# easybuild easyconfig
+#
+# Graphviz has moved to gitlab and it is no longer possible to get tagged
+# versions.  There is an open ticket this issue.
+
+easyblock = 'ConfigureMake'
+
+name = 'Graphviz'
+version = '2.40.1'
+
+homepage = 'http://www.graphviz.org/'
+description = """Graphviz is open source graph visualization software. Graph
+ visualization is a way of representing structural information as diagrams of
+ abstract graphs and networks. It has important applications in networking,
+ bioinformatics,  software engineering, database and web design, machine
+ learning, and in visual interfaces for other technical domains."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://graphviz.gitlab.io/pub/graphviz/stable/SOURCES']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['ca5218fade0204d59947126c38439f432853543b0818d9d728c589dfe7f3a421']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('SWIG', '3.0.12'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('cairo', '1.16.0'),
+    ('expat', '2.2.7'),
+    ('freetype', '2.10.1'),
+    ('fontconfig', '2.13.1'),
+    ('Ghostscript', '9.50'),
+    ('GObject-Introspection', '1.64.1', '-Python-3.7.4'),
+    ('GTS', '0.7.6', '', ('GCCcore', '8.3.0')),
+    ('Java', '1.8', '', True),
+    ('libpng', '1.6.37'),
+    ('Pango', '1.44.7'),
+    ('Perl', '5.30.0'),
+    ('Qt5', '5.13.1'),
+    ('Tcl', '8.6.9'),
+    ('zlib', '1.2.11'),
+]
+
+preconfigopts = './autogen.sh && '
+
+configopts = '--enable-guile=no --enable-lua=no --enable-ocaml=no '
+configopts += '--enable-r=no --enable-ruby=no '
+configopts += '--enable-ruby=no --enable-php=no '
+configopts += '--with-freetype2=yes '
+
+prebuildopts = 'qmake -o cmd/gvedit/qMakefile cmd/gvedit/gvedit.pro && '
+
+sanity_check_paths = {
+    'files': ['bin/cluster', 'bin/dot', 'bin/gvmap',
+              'lib/libcdt.%s' % SHLIB_EXT,
+              'lib/libgvc.%s' % SHLIB_EXT,
+              'lib/libxdot.%s' % SHLIB_EXT],
+    'dirs': ['include']
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/graphviz/python',
+    'CLASSPATH': 'lib/graphviz/java/org/graphviz',
+    'LD_LIBRARY_PATH': 'lib/graphviz/java',
+    'TCLLIBPATH': 'lib/graphviz/tcl',
+}
+
+moduleclass = 'vis'
