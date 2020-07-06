@@ -1,0 +1,45 @@
+easyblock = 'Binary'
+
+name = 'MaterialsStudio'
+version = '2020'
+
+homepage = 'https://www.3dsbiovia.com/products/collaborative-science/biovia-materials-studio/'
+description = """Materials Studio is a complete modeling and simulation environment designed to allow researchers in
+materials science and chemistry to predict and understand the relationships of a material’s atomic and molecular
+structure with its properties and behavior. Using Materials Studio, researchers in many industries are engineering
+better performing materials of all types, including pharmaceuticals, catalysts, polymers and composites, metals and
+alloys, batteries and fuel cells, and more."""
+
+toolchain = SYSTEM
+
+sources = ['BIOVIA_2020.MaterialsStudio2020.tar']
+checksums = ['a49b5c07f1c3dfdbbac207f909dbf400b4628204e7fb7eab87b7b26cdc7d1a03']
+
+extract_sources = True
+
+local_rpm_version = '20.1.0'
+local_rpm_suffix = '2728.x86_64'
+
+install_cmd = 'rpm2cpio rpms/MaterialsStudio1-%s-%s.rpm | cpio -dium && ' % (local_rpm_version, local_rpm_suffix)
+install_cmd += 'rpm2cpio rpms/MaterialsStudio2-%s-%s.rpm | cpio -dium && ' % (local_rpm_version, local_rpm_suffix)
+install_cmd += 'cp -r opt/BIOVIA/MaterialsStudio20.1/* %(installdir)s && '
+install_cmd += 'LicensePack/lp_setup_linux.sh --nox11 --target %(builddir)s/tmp '
+install_cmd += '-- -silent -P "licensepack.installLocation=%(installdir)s" ' # flags to licensepack script
+
+# Optional, specify license server directly
+#import os
+#install_cmd += os.getenv('EB_MATERIALSSTUDIO_LICENSE_SERVER_PORT') + '@' + \
+#               os.getenv('EB_MATERIALSSTUDIO_LICENSE_SERVER')
+#install_cmd += '1234@your.license.com'
+
+modextrapaths = {
+    'PATH': 'BIOVIA_LicensePack/linux/bin/',
+    'LD_LIBRARY_PATH': 'BIOVIA_LicensePack/linux/lib/'
+}
+
+sanity_check_paths = {
+    'files': ['bin/dmol3.exe', 'bin/castepexe.exe'],
+    'dirs': ['bin', 'etc', 'lib', 'share', 'BIOVIA_LicensePack/linux']
+}
+
+moduleclass = 'chem'
