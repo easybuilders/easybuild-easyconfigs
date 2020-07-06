@@ -1,0 +1,56 @@
+# easyconfig file for Code_Saturne
+# author: Metin Cakircali (Juelich Supercomputing Centre)
+name = 'Code_Saturne'
+version = '6.1.1'
+
+# extra option for the SLURM batch system
+slurm = True
+
+homepage = 'https://www.code-saturne.org'
+description = """Code_Saturne solves the Navier-Stokes equations
+for 2D, 2D-axisymmetric and 3D flows, steady or unsteady,
+laminar or turbulent, incompressible or weakly dilatable,
+isothermal or not, with scalars transport if required.
+
+Code_Saturne %(version)s%(versionsuffix)s is installed in
+$EBROOTCODE_SATURNE
+"""
+site_contacts = 'a.strube@fz-juelich.de'
+
+toolchain = {'name': 'gpsmkl', 'version': '2019a.1'}
+toolchainopts = {'optarch': True, 'pic': True, 'usempi': True}
+
+sources = [{
+    'source_urls': ['https://github.com/code-saturne/code_saturne/archive/'],
+    'filename': 'v%(version)s.tar.gz'
+}]
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('gettext', '0.19.8.1'),
+    ('Bison', '3.3.2'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('Python', '3.6.8'),
+    ('PyQt5', '5.11.3', '-Python-%(pyver)s'),
+    ('HDF5', '1.10.5'),
+    ('MED', '4.0.0'),
+    ('CGNS', '4.1.1'),
+    ('ParMETIS', '4.0.3'),
+    ('SCOTCH', '6.0.6'),
+    ('ParaView', '5.6.0', '-Python-%(pyver)s', ('gpsmkl', '2019a.1')),
+]
+
+# better to configure these dependents explicitly
+configopts = ['--with-med=$EBROOTMED --with-cgns=$EBROOTCGNS \
+               --with-metis=$EBROOTPARMETIS --with-scotch=$EBROOTSCOTCH']
+
+parallel = 48
+
+modloadmsg = "To benefit from shell completion for %(name)s commands and\n"
+modloadmsg += "options, you may also source a bash completion file by;\n"
+modloadmsg += ". $CS_BASH\n"
+
+moduleclass = 'cae'
