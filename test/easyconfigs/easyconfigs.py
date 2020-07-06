@@ -933,6 +933,7 @@ def template_easyconfig_test(self, spec):
     dummy_template_values = {
         'builddir': '/dummy/builddir',
         'installdir': '/dummy/installdir',
+        'parallel': '2',
     }
     ec.template_values.update(dummy_template_values)
 
