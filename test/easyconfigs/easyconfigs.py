@@ -632,7 +632,7 @@ class EasyConfigTest(TestCase):
         whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
                      'Toolchain']
         # Autotools & (recent) GCC are just bundles (Autotools: Autoconf+Automake+libtool, GCC: GCCcore+binutils)
-        bundles_whitelist = ['Autotools', 'GCC']
+        bundles_whitelist = ['Autotools', 'GCC', 'CUDA']
 
         failing_checks = []
 
