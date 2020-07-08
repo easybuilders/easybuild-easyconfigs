@@ -552,7 +552,11 @@ class EasyConfigTest(TestCase):
         # These packages do not support installation with 'pip'
         whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
 
-        whitelist_pip_check = [r'Mako-1.0.4.*Python-2.7.12.*']
+        whitelist_pip_check = [
+            r'Mako-1.0.4.*Python-2.7.12.*',
+            # no pip 9.x or newer for configparser easyconfigs using a 2016a or 2016b toolchain
+            r'configparser-3.5.0.*-2016[ab].*',
+        ]
 
         failing_checks = []
 
@@ -929,6 +933,7 @@ def template_easyconfig_test(self, spec):
     dummy_template_values = {
         'builddir': '/dummy/builddir',
         'installdir': '/dummy/installdir',
+        'parallel': '2',
     }
     ec.template_values.update(dummy_template_values)
 
@@ -983,7 +988,8 @@ def template_easyconfig_test(self, spec):
         # take into account that for some string-valued easyconfig parameters (configopts & co),
         # the easyblock may have injected additional values, which affects the dumped easyconfig file
         elif isinstance(orig_val, string_type):
-            self.assertTrue(dumped_val.startswith(orig_val))
+            error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
+            self.assertTrue(dumped_val.startswith(orig_val), error_msg)
         else:
             self.assertEqual(orig_val, dumped_val)
 
