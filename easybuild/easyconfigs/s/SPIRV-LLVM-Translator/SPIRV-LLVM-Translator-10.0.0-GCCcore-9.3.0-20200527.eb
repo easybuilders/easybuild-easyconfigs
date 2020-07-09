@@ -1,0 +1,37 @@
+easyblock = 'CMakeMake'
+
+name = 'SPIRV-LLVM-Translator'
+version = '10.0.0'
+local_commit = '4d43f68'
+versionsuffix = '-20200527'
+
+homepage = 'https://github.com/KhronosGroup/SPIRV-LLVM-Translator'
+description = "A tool and a library for bi-directional translation between SPIR-V and LLVM IR"
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/KhronosGroup/SPIRV-LLVM-Translator/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': '%(name)s-%(version)s%(versionsuffix)s.tar.gz',
+}]
+checksums = ['4b1bce4aad392d870e1abcb69e393b07fd62dcb5adb5e48bb0e1838a15c4107e']
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('CMake', '3.16.4'),
+    ('Clang', '10.0.0'),
+]
+
+configopts = "-DLLVM_DIR=$EBROOTCLANG/lib/cmake/llvm -DLLVM_SPIRV_BUILD_EXTERNAL=YES"
+buildopts = 'llvm-spirv'
+
+postinstallcmds = ["mkdir %(installdir)s/bin && cp -a tools/llvm-spirv/llvm-spirv %(installdir)s/bin/"]
+
+sanity_check_paths = {
+    'files': ['bin/llvm-spirv', 'lib/libLLVMSPIRVLib.a'],
+    'dirs': ['include/LLVMSPIRVLib', 'lib/pkgconfig'],
+}
+
+moduleclass = 'lib'

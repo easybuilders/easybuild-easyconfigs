@@ -1,0 +1,36 @@
+easyblock = 'CMakeMake'
+
+name = 'opencl-clang'
+version = '10.0.0-2'
+
+homepage = 'https://github.com/intel/opencl-clang'
+description = """opencl-clang is a thin wrapper library around clang. The library has OpenCL-oriented API
+ and is capable to compile OpenCL C kernels to SPIR-V modules."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/intel/opencl-clang/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['1580fa4ab601c063bbb2530770b273c6b933f66d3b3554381b76286848aea129']
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('CMake', '3.16.4'),
+    ('SPIRV-LLVM-Translator', '%(version_major_minor)s.0', '-20200527'),
+    ('Clang', '%(version_major_minor)s.0'),
+    ('libxml2', '2.9.10'),
+]
+
+# FIXME FIXME FIXME https://github.com/intel/opencl-clang/issues/156
+configopts = '-DPREFERRED_LLVM_VERSION="$EBVERSIONCLANG" -DLLVM_DIR=$EBROOTCLANG/lib/cmake/llvm '
+configopts += '-DLLVMSPIRV_INCLUDED_IN_LLVM=OFF -DSPIRV_TRANSLATOR_DIR=$EBROOTSPIRVMINLLVMMINTRANSLATOR '
+configopts += '-DLLVM_NO_DEAD_STRIP=ON'
+
+buildopts = 'all'
+
+sanity_check_paths = {
+    'files': ['include/cclang/common_clang.h', 'lib/libopencl-clang.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
