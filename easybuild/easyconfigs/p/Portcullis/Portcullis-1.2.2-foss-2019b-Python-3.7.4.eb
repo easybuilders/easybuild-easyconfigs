@@ -35,14 +35,10 @@ dependencies = [
     ('zlib', '1.2.11'),
 ]
 
-default_component_specs = {
-    'source_urls': [GITHUB_SOURCE],
-    'sources': ['%(version)s.tar.gz'],
-    'checksums': [
-        'b5788bd257dfabd454716e3425136f9350c0eb3654d4768db0ea21b45a1479ef',  # 1.2.2.tar.gz
-        'ad318978e2cba236b1e19fee8318c81499a874a4d714a314f5072742ca12cfaa',  # Portcullis-1.2.2_fix-datadir-path.patch
-    ]
-}
+# 1.2.2.tar.gz
+local_source_chksum = 'b5788bd257dfabd454716e3425136f9350c0eb3654d4768db0ea21b45a1479ef'
+# Portcullis-1.2.2_fix-datadir-path.patch
+local_patch_chksum = 'ad318978e2cba236b1e19fee8318c81499a874a4d714a314f5072742ca12cfaa'
 
 # Explicitly set the names of Boost libraries from EB
 local_config_boostlibs = "--with-boost-system=boost_system --with-boost-filesystem=boost_filesystem "
@@ -51,10 +47,17 @@ local_config_boostlibs += "--with-boost-chrono=boost_chrono --with-boost-program
 # Disable installation of Python packages from makefiles, as those are installed by EB
 local_config_pyinstall = "--disable-py-install "
 
+default_component_specs = {
+    'source_urls': [GITHUB_SOURCE],
+    'sources': ['%(version)s.tar.gz'],
+    'checksums': [local_source_chksum],
+}
+
 components = [
     (name, version, {
         'easyblock': 'ConfigureMake',
         'patches': ['Portcullis-1.2.2_fix-datadir-path.patch'],
+        'checksums': [local_source_chksum, local_patch_chksum],
         'start_dir': '%(namelower)s-%(version)s',
         'preconfigopts': './autogen.sh &&',
         'configopts': local_config_boostlibs + local_config_pyinstall,
