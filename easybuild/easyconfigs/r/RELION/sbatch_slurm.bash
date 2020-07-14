@@ -4,6 +4,7 @@
 #SBATCH -t XXXextra1XXX:00:00
 #SBATCH -n XXXmpinodesXXX
 #SBATCH -c XXXthreadsXXX
+#SBATCH --gres=gpu:XXXextra4XXX
 #SBATCH -e XXXerrfileXXX
 #SBATCH -o XXXoutfileXXX
 #SBATCH -A XXXextra2XXX

@@ -16,17 +16,17 @@ source_urls = [GITHUB_SOURCE]
 sources = ['%(version)s.tar.gz']
 patches = ['RELION-3.0.4_drop_usage_of_mpi_include_path.patch']
 
-# Add additional job script templates
+# Additional job script templates
 # Provided templates are generic examples that should be adapted to each site
-local_jobtmpl = ['qsub_torque_gpu.bash', 'sbatch_slurm_gpu.bash']
+local_jobtmpl = ['qsub_torque.bash', 'sbatch_slurm.bash']
 patches += [(s, '.') for s in local_jobtmpl]
 
 checksums = [
     'fa5ebef27a15f1df856a64dc8960e7c381ff646818f778fe746249d0b7682ba2',  # 3.1.0.tar.gz
     # RELION-3.0.4_drop_usage_of_mpi_include_path.patch
     'c135b72ff8d4c3015a3b293fa07a2283396bfb3fd0658d5e938ec33fca4dcebc',
-    '21109648441e477cb08d22108d4d4e0cb76bc02c1e49104b8939156aaae77b3c',  # qsub_torque_gpu.bash
-    'ed3621a0e00dc1ed5111db96ee919dbc5fd6de934333e819f0e0159066a156cf',  # sbatch_slurm_gpu.bash
+    '21109648441e477cb08d22108d4d4e0cb76bc02c1e49104b8939156aaae77b3c',  # qsub_torque.bash
+    '4e8962199f70e4f7759ce14422b8f5e7fd0e32a170f05f4e893df773e62e2c0e',  # sbatch_slurm.bash
 ]
 
 builddependencies = [('CMake', '3.15.3')]
@@ -59,6 +59,7 @@ configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-lpthread' "
 configopts += "-DCUDA=ON -DCudaTexture=ON "
 configopts += "-DCUDA_ARCH='" + local_cuda_arch + "'"
 
+# Install additional job script templates
 local_jobtmpl_path = ['%%(builddir)s/%%(namelower)s-%%(version)s/%s' % s for s in local_jobtmpl]
 postinstallcmds = ['cp %s %%(installdir)s/bin/' % s for s in local_jobtmpl_path]
 
@@ -95,22 +96,22 @@ modextravars = {
     # Integration with TORQUE
     # 'RELION_QUEUE_NAME': 'batch',       # Default for 'Queue Name"
     # 'RELION_QSUB_COMMAND': 'qsub',      # Default for 'Queue submit command'
-    # 'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/qsub_torque_gpu.bash',  # Job script template
+    # 'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/qsub_torque.bash',  # Job script template
     # 'RELION_QSUB_EXTRA_COUNT': '2',     # Number of extra variables for the job script template
     # 'RELION_QSUB_EXTRA1': "Hours of walltime",
-    # 'RELION_QSUB_EXTRA1_DEFAULT': '72',
+    # 'RELION_QSUB_EXTRA1_DEFAULT': '24',
     # 'RELION_QSUB_EXTRA2': "Number of GPUs",
     # 'RELION_QSUB_EXTRA2_DEFAULT': '1',
 
     # Integration with SLURM
     # 'RELION_QUEUE_NAME': 'batch',       # Default for 'Queue Name"
     # 'RELION_QSUB_COMMAND': 'sbatch',    # Default for 'Queue submit command'
-    # 'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/sbatch_slurm_gpu.bash',  # Job script template
+    # 'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/sbatch_slurm.bash',  # Job script template
     # 'RELION_QSUB_EXTRA_COUNT': '4',     # Number of extra variables for the job script template
     # 'RELION_QSUB_EXTRA1': "Hours of walltime",
-    # 'RELION_QSUB_EXTRA1_DEFAULT': '72',
-    # 'RELION_QSUB_EXTRA2': "Account",
-    # 'RELION_QSUB_EXTRA2_DEFAULT': '',
+    # 'RELION_QSUB_EXTRA1_DEFAULT': '24',
+    # 'RELION_QSUB_EXTRA2': "Job Account",
+    # 'RELION_QSUB_EXTRA2_DEFAULT': 'your_account',
     # 'RELION_QSUB_EXTRA3': "Extra batch parameters",
     # 'RELION_QSUB_EXTRA3_DEFAULT': '',
     # 'RELION_QSUB_EXTRA4': "Number of GPUs",
