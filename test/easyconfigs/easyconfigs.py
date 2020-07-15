@@ -211,7 +211,7 @@ class EasyConfigTest(TestCase):
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
-        if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'R', 'TensorFlow'] and len(dep_vars) > 1:
+        if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'PyTorch', 'R', 'TensorFlow'] and len(dep_vars) > 1:
             for key in list(dep_vars):
                 dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                 # use version of Java wrapper rather than full Java version
@@ -244,19 +244,23 @@ class EasyConfigTest(TestCase):
         old_dep_versions = {
             # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
             # (Qiskit depends on PySCF)
-            'libxc': (r'[23]\.', ['ABINIT-', 'AtomPAW-', 'CP2K-', 'GPAW-', 'horton-', 'PySCF-', 'Qiskit-', 'WIEN2k-']),
+            'libxc': (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-', r'PySCF-',
+                                  r'Qiskit-', r'WIEN2k-']),
             # OPERA requires SAMtools 0.x
-            'SAMtools': (r'0\.', ['ChimPipe-0.9.5', 'Cufflinks-2.2.1', 'OPERA-2.0.6']),
+            'SAMtools': (r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6', r'CGmapTools-0\.1\.2',
+                                  r'BatMeth2-2\.1']),
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
-            'Jellyfish': (r'1\.', ['Kraken-1.', 'Roary-3.12.0', 'metaWRAP-1.2']),
+            'Jellyfish': (r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2']),
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
-            'Boost': ('1.64.0;', ['Boost.Python-1.64.0-', 'EMAN2-2.3-']),
-            'Boost.Python': ('1.64.0;', ['EMAN2-2.3-']),
+            'Boost': ('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-']),
+            'Boost.Python': ('1.64.0;', [r'EMAN2-2\.3-']),
             # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
             # both scVelo and Python-Geometric depend on numba
-            'LLVM': (r'8\.', ['numba-0.47.0-', 'scVelo-0.1.24-', 'PyTorch-Geometric-1.3.2']),
-            # medaka 0.11.4 requires recent TensorFlow <= 1.14 (and Python 3.6)
-            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-']),
+            'LLVM': (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
+            # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6), artic-ncov2019 requires medaka
+            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-', 'artic-ncov2019-2020.04.13']),
+            # rampart requires nodejs > 10, artic-ncov2019 requires rampart
+            'nodejs': ('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13']),
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -264,7 +268,7 @@ class EasyConfigTest(TestCase):
                 # filter out known old dependency versions
                 if re.search('^version: %s' % version_pattern, key):
                     # only filter if the easyconfig using this dep variants is known
-                    if all(any(x.startswith(p) for p in parents) for x in dep_vars[key]):
+                    if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
                         dep_vars.pop(key)
 
         # filter out ELSI variants with -PEXSI suffix
@@ -520,7 +524,7 @@ class EasyConfigTest(TestCase):
 
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
-        whitelist = ['Kent_tools-*', 'MATLAB-*', 'OCaml-*']
+        whitelist = ['Kent_tools-*', 'MATLAB-*', 'OCaml-*', 'OpenFOAM-Extend-4.1-*']
 
         # the check_sha256_checksums function (again) creates an EasyBlock instance
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
@@ -547,6 +551,12 @@ class EasyConfigTest(TestCase):
 
         # These packages do not support installation with 'pip'
         whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
+
+        whitelist_pip_check = [
+            r'Mako-1.0.4.*Python-2.7.12.*',
+            # no pip 9.x or newer for configparser easyconfigs using a 2016a or 2016b toolchain
+            r'configparser-3.5.0.*-2016[ab].*',
+        ]
 
         failing_checks = []
 
@@ -591,7 +601,11 @@ class EasyConfigTest(TestCase):
 
             # if Python is a dependency, that should be reflected in the versionsuffix
             # Tkinter is an exception, since its version always matches the Python version anyway
-            if any(dep['name'] == 'Python' for dep in ec['dependencies']) and ec.name != 'Tkinter':
+            # Also whitelist some updated versions of Amber
+            whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb', 'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
+            whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
+            has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'])
+            if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     msg = "'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn
                     # This is only a failure for newly added ECs, not for existing ECS
@@ -605,18 +619,20 @@ class EasyConfigTest(TestCase):
             if use_pip and easyblock in ['PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
+                    if not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
+                        failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
     def check_sanity_check_paths(self, changed_ecs):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
-        # PythonBundle & PythonPackage already have a decent customised sanity_check_paths
+        # GoPackage, PythonBundle & PythonPackage already have a decent customised sanity_check_paths
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['CrayToolchain', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain', 'BuildEnv']
+        whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
+                     'Toolchain']
         # Autotools & (recent) GCC are just bundles (Autotools: Autoconf+Automake+libtool, GCC: GCCcore+binutils)
-        bundles_whitelist = ['Autotools', 'GCC']
+        bundles_whitelist = ['Autotools', 'GCC', 'CUDA']
 
         failing_checks = []
 
@@ -649,6 +665,8 @@ class EasyConfigTest(TestCase):
             # https:// doesn't work, results in index page being downloaded instead
             # (see https://github.com/easybuilders/easybuild-easyconfigs/issues/9692)
             'http://isl.gforge.inria.fr',
+            # https:// leads to File Not Found
+            'http://tau.uoregon.edu/',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
@@ -916,6 +934,7 @@ def template_easyconfig_test(self, spec):
     dummy_template_values = {
         'builddir': '/dummy/builddir',
         'installdir': '/dummy/installdir',
+        'parallel': '2',
     }
     ec.template_values.update(dummy_template_values)
 
@@ -970,7 +989,8 @@ def template_easyconfig_test(self, spec):
         # take into account that for some string-valued easyconfig parameters (configopts & co),
         # the easyblock may have injected additional values, which affects the dumped easyconfig file
         elif isinstance(orig_val, string_type):
-            self.assertTrue(dumped_val.startswith(orig_val))
+            error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
+            self.assertTrue(dumped_val.startswith(orig_val), error_msg)
         else:
             self.assertEqual(orig_val, dumped_val)
 
