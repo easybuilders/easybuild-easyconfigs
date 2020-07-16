@@ -1,0 +1,63 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'CMakeMake'
+
+name = 'UQTk'
+version = '3.1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.sandia.gov/UQToolkit/'
+description = """The UQ Toolkit (UQTk) is a collection of libraries and tools 
+for the quantification of uncertainty in numerical model predictions."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+# https://github.com/sandialabs/UQTk
+github_account = 'sandialabs'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix-blas-lapack.patch']
+checksums = [
+    '56ecd3d13bdd908d568e9560dc52cc0f66d7bdcdbe64ab2dd0147a7cf1734f97',  # v3.1.0.tar.gz
+    '3ef0e6a8efcedb60afd029b23302b33df51d027dbda93818004e057b27fa33f8',  # UQTk-3.1.0_fix-blas-lapack.patch
+]
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('SWIG', '4.0.1'),
+]
+
+dependencies = [
+    ('expat', '2.2.7'),
+    ('imkl', '2019.5.281'),
+    ('SUNDIALS', '5.1.0'),
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('PyMC3', '3.8', versionsuffix),
+]
+
+configopts = "-DCMAKE_SUNDIALS_DIR=$EBROOTSUNDIALS -DPyUQTk=ON "
+buildopts = " && ctest"
+separate_build_dir = True
+
+modextrapaths = {'PYTHONPATH': ''}
+modextravars = {
+    'UQTK_SRC': '%(installdir)s',
+    'UQTK_INS': '%(installdir)s',
+}
+
+local_bin_list = ['generate_quad', 'gen_mi', 'gkpSparse', 'gp_regr', 'model_inf', 'pce_eval',
+                  'pce_quad', 'pce_resp', 'pce_rv', 'pce_sens', 'pdf_cl', 'regression', 'sens', 'trdSpls']
+
+local_pyutqk_modules = ['bcs', 'inference', 'kle', 'mcmc', 'pce', 'plotting', 'quad',
+                        'sens', 'tools', 'uqtkarray', 'utils']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_bin_list] + ['lib/lib%s.a' % l for l in ['depann', 'uqtk', 'uqtkmcmc']],
+    'dirs': ['include/uqtk', 'PyUQTk'],
+}
+sanity_check_commands = ["python -c 'import PyUQTk.%s'" % m for m in local_pyutqk_modules]
+
+moduleclass = 'lib'
