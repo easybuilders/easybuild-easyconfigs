@@ -1,0 +1,85 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'RAxML-NG'
+version = '0.9.0'
+
+local_terrap_commit = '6dcb061ceb6ed41a7ebe1a8af1f3354e0126125c'
+local_pllmod_commit = '840a19525ed133ad243afb23124911b849d4685d'
+local_libpll_commit = '6874327c9ca9544e27b426c0e7205c8b6f4ed297'
+
+homepage = "https://github.com/amkozlov/raxml-ng"
+description = """RAxML-NG is a phylogenetic tree inference tool which
+uses maximum-likelihood (ML) optimality criterion. Its search heuristic
+ is based on iteratively performing a series of Subtree Pruning and Regrafting
+ (SPR) moves, which allows to quickly navigate to the best-known ML tree."""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/amkozlov/raxml-ng/archive/'],
+        'filename': '%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/amkozlov/terraphast-one/archive/'],
+        'download_filename': '%s.zip' % local_terrap_commit,
+        'filename': 'terraphist-one.zip',
+    },
+    {
+        'source_urls': ['https://github.com/ddarriba/pll-modules/archive/'],
+        'download_filename': '%s.zip' % local_pllmod_commit,
+        'filename': 'pll-modules.zip',
+    },
+    {
+        'source_urls': ['https://github.com/xflouris/libpll-2/archive/'],
+        'download_filename': '%s.zip' % local_libpll_commit,
+        'filename': 'libpll-2.zip',
+    },
+]
+
+checksums = [
+    '43b95ee1bddae0daee84644e9ee760a77f28bb16e2071e95cca79a30f39373e5',  # 0.9.0.tar.gz
+    'eef5e2f365619da3bb1679f07920b29dfcd5202191fdf37b9f8fec4a52c1286b',  # terraphist-one.zip
+    '486f55cc2b4a63ddba8d00db79afcbf03f2499e35687eef56e4730f23d96b90a',  # pll-modules.zip
+    '6c90af957d4b06b88ef6568f6ba53ac3507285d042dc9ebc95f9837a7077d044',  # libpll-2.zip
+]
+
+dependencies = [
+    ('GMP', '6.1.2'),
+]
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('CMake', '3.15.3'),
+    ('gtest', '1.10.0'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.3.2'),
+]
+
+# copy dependencies into place
+preconfigopts = "cp -a %%(builddir)s/terraphast-one-%s/* " % local_terrap_commit
+preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/terraphast/ && "
+
+preconfigopts += "cp -a %%(builddir)s/pll-modules-%s/* " % local_pllmod_commit
+preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/pll-modules/ && "
+
+preconfigopts += "cp -a %%(builddir)s/libpll-2-%s/* " % local_libpll_commit
+preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/pll-modules/libs/libpll/ && "
+
+configopts = '-DUSE_MPI=ON '
+configopts += '-DUSE_GMP=ON '
+
+build_type = 'Release'
+
+separate_build_dir = True
+
+files_to_copy = [
+    (["bin/raxml-ng-mpi"], "bin"),
+]
+
+sanity_check_paths = {
+    'files': ['bin/raxml-ng-mpi'],
+    'dirs':  [],
+}
+
+moduleclass = 'bio'
