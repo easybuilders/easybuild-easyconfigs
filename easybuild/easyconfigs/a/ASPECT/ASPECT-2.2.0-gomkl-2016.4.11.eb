@@ -1,0 +1,50 @@
+##
+# @Author: Ali Kerrache, University of Manitoba <ali.kerrache@umanitoba.ca>
+# @Date: Sep 9, 2019.
+##
+
+easyblock = 'CMakeMake'
+
+name = 'ASPECT'
+version = '2.2.0'
+
+homepage = 'https://aspect.geodynamics.org/'
+description = """ASPECT: Advanced Solver for Problems in Earth's ConvecTion. An extensible code written in C++ to support research in simulating convection in the Earth's mantle and elsewhere to provide the geosciences with a well-documented and extensible code base for their research needs and to create an open, inclusive, participatory community providing users and developers with a state-of-the-art, comprehensive software that performs well while being simple to extend."""
+
+toolchain = {'name': 'gomkl', 'version': '2016.4.11'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://github.com/geodynamics/%(namelower)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['6dc31c4b991c8a96495ba0e9a3c92e57f9305ba94b8dbed3c8c5cfbab91ec5c1']
+
+dependencies = [
+   ('dealii', '9.0.1'),
+]
+
+preconfigopts = 'export DEAL_II_DIR=$EBROOTDEALII && '
+
+configopts  = '-DASPECT_COMPARE_TEST_RESULTS=ON '
+configopts += '-DASPECT_HAVE_LINK_H=ON '
+configopts += '-DASPECT_PRECOMPILE_HEADERS=ON '
+configopts += '-DASPECT_RUN_ALL_TESTS=OFF '
+configopts += '-DASPECT_TEST_GENERATOR="Unix Makefiles" '
+configopts += '-DASPECT_USE_FP_EXCEPTIONS=ON '
+configopts += '-DASPECT_USE_PETSC=OFF '
+configopts += '-DASPECT_USE_SHARED_LIBS=ON '
+configopts += '-DASPECT_WITH_WORLD_BUILDER=ON '
+configopts += '-DPerpleX_DIR=$EBROOTPERPLE_X '
+
+local_aspect_incs = [
+    "citation_info", "compat", "coordinate_systems", "fe_variable_collection", 
+    "free_surface", "global", "introspection", "lateral_averaging", "melt", 
+    "newton", "parameters", "plugins", "revision", "simulator_access", 
+    "simulator", "simulator_signals", "utilities", 
+]  
+
+sanity_check_paths = {
+    'files': ['bin/aspect', ['include/aspect/%s.h' % x for x in local_aspect_incs]],
+    'dirs': [ 'bin', 'include', 'lib'],
+}
+
+moduleclass = 'geo'
