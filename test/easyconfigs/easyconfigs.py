@@ -659,6 +659,7 @@ class EasyConfigTest(TestCase):
             'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
             'MUMPS',  # https://mumps.enseeiht.fr doesn't work
+            'PyFR',  # https://www.pyfr.org doesn't work
         ]
         url_whitelist = [
             # https:// doesn't work, results in index page being downloaded instead
