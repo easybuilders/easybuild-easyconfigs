@@ -7,7 +7,7 @@ versionsuffix = '-no_mpi'
 homepage = 'https://bitbucket.org/compass-tokamak/hdc/wiki/Home'
 description = """Hierarchical Dynamic Containers"""
 
-toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
 toolchainopts = {'pic': True}
 
 source_urls = ['https://bitbucket.org/compass-tokamak/hdc/get/']
@@ -15,30 +15,26 @@ sources = ['v%(version)s.tar.gz']
 checksums = ['deb01b09ce819e9d9a2e97712dff9b44ef04ad2232e941d3ba0154a5cacea873']
 
 builddependencies = [
-    ('CMake', '3.16.4'),
+    ('binutils', '2.28'),
+    ('CMake', '3.12.1'),
 ]
 
 dependencies = [
-    ('Boost', '1.72.0', versionsuffix),
+    ('Boost', '1.66.0', versionsuffix),
     ('MDBM', '4.13.0'),
     ('libMemcached', '1.0.18'),
-    ('HDF5', '1.10.6'),
 ]
 
 separate_build_dir = True
 
-configopts = '-DBOOST_ROOT=${EBROOTBOOST} '
+configopts  = '-DBOOST_ROOT=${EBROOTBOOST} -DENABLE_HDF5=OFF '
+# Examples and tests assume build with HDF5
+configopts += '-DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF'
+
+modextrapaths = {'CPATH': 'include/hdc'}
 
 sanity_check_paths = {
-    'files': ['bin/hdc_example_c',
-              'bin/hdc_example_cpo',
-              'bin/hdc_example_cpp',
-              'bin/hdc_example_fortran',
-              'bin/hdc_example_interprocess',
-              'bin/hdc_test',
-              'bin/hdc_test_c',
-              'bin/hdc_test_serialization',
-              'include/hdc/hdc_c.h',
+    'files': ['include/hdc/hdc_c.h',
               'include/hdc/hdc_errors.hpp',
               'include/hdc/hdc_fortran.mod',
               'include/hdc/hdc_global.hpp',
@@ -55,8 +51,7 @@ sanity_check_paths = {
               'lib/pkgconfig/chdc.pc',
               'lib/pkgconfig/fhdc.pc',
               'lib/pkgconfig/hdc.pc'],
-    'dirs':  ['bin',
-              'include/hdc/andres',
+    'dirs':  ['include/hdc/andres',
               'include/hdc/json',
               'include/hdc/Pluma',
               'lib/pkgconfig',
