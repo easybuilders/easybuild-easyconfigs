@@ -1,0 +1,32 @@
+diff -Nru spark-3.0.0.orig/conf/spark-env.sh spark-3.0.0/conf/spark-env.sh
+--- spark-3.0.0.orig/conf/spark-env.sh	1969-12-31 19:00:00.000000000 -0500
++++ spark-3.0.0/conf/spark-env.sh	2020-07-27 14:10:02.252756604 -0400
+@@ -0,0 +1,13 @@
++#!/usr/bin/env bash
++
++export SPARK_LOG_DIR="$HOME/.spark/3.0.0/log"
++export SPARK_WORKER_DIR="$SCRATCH/spark/3.0.0/$(hostname)"
++if [[ -z "$SPARK_CONF_DIR" ]]; then
++    export SPARK_CONF_DIR="$HOME/.spark/3.0.0/conf"
++    if [[ -f $SPARK_CONF_DIR/spark-env.sh ]]; then
++        . $SPARK_CONF_DIR/spark-env.sh
++    fi
++fi
++
++# MLlib uses netlib-java which is linked on MKL
++export MKL_NUM_THREADS=1
+diff -Nru spark-3.0.0.orig/dev/make-distribution.sh spark-3.0.0/dev/make-distribution.sh
+--- spark-3.0.0.orig/dev/make-distribution.sh	2020-07-27 13:39:16.620978400 -0400
++++ spark-3.0.0/dev/make-distribution.sh	2020-07-27 14:01:19.093832595 -0400
+@@ -263,10 +263,9 @@
+ fi
+ 
+ # Copy other things
+-mkdir "$DISTDIR/conf"
+-cp "$SPARK_HOME"/conf/*.template "$DISTDIR/conf"
+ cp "$SPARK_HOME/README.md" "$DISTDIR"
+ cp -r "$SPARK_HOME/bin" "$DISTDIR"
++cp -r "$SPARK_HOME"/conf "$DISTDIR"/conf
+ cp -r "$SPARK_HOME/python" "$DISTDIR"
+ 
+ # Remove the python distribution from dist/ if we built it
