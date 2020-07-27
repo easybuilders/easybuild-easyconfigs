@@ -1,0 +1,72 @@
+easyblock = 'CMakeMake'
+
+name = 'mariadb'
+version = '10.4.13'
+
+homepage = 'https://mariadb.org/'
+description = """MariaDB An enhanced, drop-in replacement for MySQL For more information please take a look at https://docs.computecanada.ca/wiki/Database_servers."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+dependencies = [('Perl','5.30.2')]
+source_urls = ['https://downloads.mariadb.org/f/mariadb-%(version)s/source']
+sources = ['mariadb-%(version)s.tar.gz']
+patches = ['mariadb-10.4.11.patch']
+checksums = [
+    '45bbbb12d1de8febd9edf630e940c23cf14efd60570c743b268069516a5d91df',  # mariadb-10.4.13.tar.gz
+    '95b05e6de707612e85ce0048f896c63d1b19014df748423ce4bf476d532b8f27',  # mariadb-10.4.11.patch
+]
+
+multi_deps = {'Python': ['2.7', '3.6', '3.7', '3.8']}
+multi_deps_extensions_only = True
+
+parallel = 8
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl/5.30.2/:%(installdir)s/lib/perl5/site_perl/5.30.2/x86_64-linux-thread-multi', 'EBPYTHONPREFIXES': ''}
+exts_defaultclass = 'PerlModule'
+exts_classmap = {
+	'mysql-connector-python': 'PythonPackage',
+}
+exts_filter = ("perldoc -lm %(ext_name)s || python -c 'import %(ext_name)s'", "")
+exts_list = [
+	('mysql-connector-python', '8.0.21', {
+		'modulename': 'mysql.connector',
+	        'source_urls': [PYPI_SOURCE],
+		'checksums': ['0eecec5ab1a4ba03741bee5ec3cb02a8647470ba4a5c50a14c49425db2ec3590'],
+		'easyblock': 'PythonPackage',
+		}
+	),
+	('PyMySQL', '0.10.0', {
+	        'source_urls': [PYPI_SOURCE],
+		'easyblock': 'PythonPackage',
+		'checksums': ['e14070bc84e050e0f80bf6063e31d276f03a0bb4d46b9eca2854566c4ae19837'],
+	}),
+        ('IO::CaptureOutput', '1.1104', {
+                'source_tmpl': 'IO-CaptureOutput-1.1104.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN'],
+                'runtest' : 'test',
+                'configopts' : '',
+		'checksums' : ['fcc732fcb438f97a72b30e8c7796484bef2562e374553b207028e2fbf73f8330'],
+        }),
+        ('Devel::CheckLib', '1.13', {
+                'source_tmpl': 'Devel-CheckLib-1.13.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MATTN'],
+                'runtest' : 'test',
+                'configopts' : '',
+		'checksums' : ['24adfd908705dfac4bb320711763f37126b75cf54b3566c2c27c7cdef9c429a8'],
+        }),
+        ('DBD::mysql', '4.050', {
+                'source_tmpl': 'DBD-mysql-4.050.tar.gz',
+                'source_urls': ['https://cpan.metacpan.org/authors/id/D/DV/DVEEDEN'],
+                'runtest' : 'test',
+                'configopts' : '',
+		'checksums' : ['4f48541ff15a0a7405f76adc10f81627c33996fbf56c95c26c094444c0928d78'],
+        }),]
+
+sanity_check_paths = {
+    'files': ['bin/mysql', 'bin/mysqld_safe', 'lib/libmysqlclient.%s' % SHLIB_EXT, 'lib/libmariadb.%s' % SHLIB_EXT,
+              'lib/plugin/ha_connect.%s' % SHLIB_EXT, 'lib/plugin/ha_rocksdb.%s' % SHLIB_EXT,
+              'lib/plugin/ha_tokudb.%s' % SHLIB_EXT,
+              'scripts/mysql_install_db'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'data'
