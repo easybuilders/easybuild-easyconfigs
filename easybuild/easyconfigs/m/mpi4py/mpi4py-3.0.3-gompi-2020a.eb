@@ -1,0 +1,37 @@
+easyblock = 'PythonPackage'
+
+name = 'mpi4py'
+version = '3.0.3'
+
+homepage = 'https://bitbucket.org/mpi4py/mpi4py'
+description = """MPI for Python (mpi4py) provides bindings of the Message Passing Interface (MPI) standard for
+ the Python programming language, allowing any Python program to exploit multiple processors."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+source_urls = [PYPI_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['012d716c8b9ed1e513fcc4b18e5af16a8791f51e6d1716baccf988ad355c5a1f']
+
+builddependencies = [
+	('SciPy-Stack', '2020a'),
+]
+multi_deps = {'Python': ['2.7', '3.6', '3.7', '3.8'] }
+
+# force rebuilding everything, including patched files
+preinstallopts = "python setup.py build --force && "
+
+download_dep_fail = True
+use_pip = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+}
+
+# check that timed pingpong routines that are added via the patch are available
+sanity_check_commands = [
+	'python -c "from mpi4py.MPI import Comm;"'
+]
+
+moduleclass = 'lib'
