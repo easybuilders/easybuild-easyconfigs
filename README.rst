@@ -36,10 +36,9 @@ Related Python packages:
 
 * **master** branch:
 
-  .. image:: https://travis-ci.org/easybuilders/easybuild-easyconfigs.svg?branch=master
-      :target: https://travis-ci.org/easybuilders/easybuild-easyconfigs/branches
+
+  .. image:: https://github.com/easybuilders/easybuild-easyconfigs/workflows/easyconfigs%20unit%20tests/badge.svg?branch=master
 
 * **develop** branch:
 
-  .. image:: https://travis-ci.org/easybuilders/easybuild-easyconfigs.svg?branch=develop
-      :target: https://travis-ci.org/easybuilders/easybuild-easyconfigs/branches
+  .. image:: https://github.com/easybuilders/easybuild-easyconfigs/workflows/easyconfigs%20unit%20tests/badge.svg
