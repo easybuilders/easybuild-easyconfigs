@@ -708,9 +708,15 @@ class EasyConfigTest(TestCase):
             # first determine the 'merge base' between target branch and PR branch
             # cfr. https://git-scm.com/docs/git-merge-base
             cmd = "git merge-base %s HEAD" % target_branch
-            out, _ = run_cmd(cmd, simple=False)
-            merge_base = out.strip()
-            print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
+            out, ec = run_cmd(cmd, simple=False, log_ok=False)
+            if ec == 0:
+                merge_base = out.strip()
+                print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
+            else:
+                msg = "Failed to determine merge base (ec: %s, output: '%s'), "
+                msg += "falling back to specifying target branch %s"
+                print(msg % (ec, out, target_branch))
+                merge_base = target_branch
 
             # determine list of changed files using 'git diff' and merge base determined above
             cmd = "git diff --name-only --diff-filter=%s %s..HEAD" % (diff_filter, merge_base)
