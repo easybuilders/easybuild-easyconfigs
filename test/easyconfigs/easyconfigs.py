@@ -704,7 +704,7 @@ class EasyConfigTest(TestCase):
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
         def get_eb_files_from_diff(diff_filter):
-            cmd = "git diff --name-only --diff-filter=%s %s...HEAD" % (diff_filter, target_branch)
+            cmd = "git diff --name-only --diff-filter=%s %s..HEAD" % (diff_filter, target_branch)
             out, ec = run_cmd(cmd, simple=False)
             return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
 
