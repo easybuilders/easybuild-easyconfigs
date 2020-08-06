@@ -704,8 +704,23 @@ class EasyConfigTest(TestCase):
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
         def get_eb_files_from_diff(diff_filter):
-            cmd = "git diff --name-only --diff-filter=%s %s...HEAD" % (diff_filter, target_branch)
-            out, ec = run_cmd(cmd, simple=False)
+
+            # first determine the 'merge base' between target branch and PR branch
+            # cfr. https://git-scm.com/docs/git-merge-base
+            cmd = "git merge-base %s HEAD" % target_branch
+            out, ec = run_cmd(cmd, simple=False, log_ok=False)
+            if ec == 0:
+                merge_base = out.strip()
+                print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
+            else:
+                msg = "Failed to determine merge base (ec: %s, output: '%s'), "
+                msg += "falling back to specifying target branch %s"
+                print(msg % (ec, out, target_branch))
+                merge_base = target_branch
+
+            # determine list of changed files using 'git diff' and merge base determined above
+            cmd = "git diff --name-only --diff-filter=%s %s..HEAD" % (diff_filter, merge_base)
+            out, _ = run_cmd(cmd, simple=False)
             return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
 
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
