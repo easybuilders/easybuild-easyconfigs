@@ -1,0 +1,48 @@
+##
+# @Author: Ali Kerrache, University of Manitoba
+# @Date: Apr 22, 2019 
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'BioBloomTools'
+version = '2.3.2-20200731'
+
+homepage = 'https://github.com/bcgsc/biobloom'
+description = """BioBloom Tools (BBT) provides the means to create filters for a given reference and then to categorize sequences. This methodology is faster than alignment but does not provide mapping locations. BBT was initially intended to be used for pre-processing and QC applications like contamination detection, but is flexible to accommodate other purposes. This tool is intended to be a pipeline component to replace costly alignment steps."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+sources = [{
+    'filename': '%(namelower)s-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/bcgsc',
+        'repo_name': 'biobloom',
+        'commit': 'bbc297c',
+        'recursive': True,
+    },
+}]
+
+dependencies = [
+    ('Boost', '1.72.0'),
+    ('SDSL-Lite', '2.1.1-20191112'),
+    ('sparsehash', '2.0.3-20190718'),
+]
+
+preconfigopts = 'sh ./autogen.sh && ' 
+
+configopts  = '--with-boost=$EBROOTBOOST '
+configopts += '--with-sparsehash=$EBROOTSPARSEHASH/lib/pkgconfig/libsparsehash.pc '
+configopts += '--with-sdsl=$EBROOTSDSLMINLITE '
+
+local_binary_files = [
+     "biobloomcategorizer", "biobloommaker", "biobloommicategorizer", "biobloommimaker",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binary_files],
+    'dirs': ['share'],
+}
+
+moduleclass = 'bio'
