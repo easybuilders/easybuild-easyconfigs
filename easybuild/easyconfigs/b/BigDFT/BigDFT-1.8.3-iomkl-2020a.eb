@@ -1,0 +1,74 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+# Date: May 17, 2018.
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'BigDFT'
+version = '1.8.3'
+
+homepage = 'http://bigdft.org/Wiki/index.php?title=BigDFT_website'
+description = """BigDFT is a DFT massively parallel electronic structure code using a wavelet basis set with the capability to use a linear scaling method. Wavelets form a real space basis set distributed on an adaptive mesh (two levels of resolution in our implementation).
+ GTH or HGH pseudopotentials are used to remove the core electrons. The code BigDFT is available in ABINIT v5.5 and higher but can also be downloaded in a standalone version from the website. Thanks to our Poisson solver based on a Green function formalism, periodic systems, surfaces and isolated systems can be simulated with explicit boundary conditions. The Poisson solver can also be downloaded and used independently and is integrated in ABINIT, Octopus and CP2K. The code is free software, available under GNU-GPL license and the BigDFT developer community encourages anyone willing to contribute to join the team."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://launchpad.net/bigdft/%(version_major_minor)s/%(version)s/+download/']
+sources = ['%(namelower)s-suite-%(version)s.tar.gz']
+checksums = ['39aeae8bd62ad5d82ed20a47006aa478d93b3751ae7929027088c2e6b8439388']
+
+dependencies = [
+    ('ETSF_IO', '1.0.4', '-mpi'),
+    ('netCDF', '4.6.1', '-mpi'),
+    ('netCDF-Fortran', '4.5.1', '-mpi'),
+]
+
+local_configure_make = './configure --prefix=%(installdir)s --with-ext-linalg="$LIBSCALAPACK" && '
+local_configure_make += 'make -j8 && make install && cd .. && '
+
+# Step 0: include installation directory in CPATH/LIBRARY_PATH/PKG_CONFIG_PATH
+local_exports = 'export CPATH=%(installdir)s/include:$CPATH && '
+local_exports += 'export LIBRARY_PATH=%(installdir)s/lib:$LIBRARY_PATH && '
+local_exports += 'export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && '
+preconfigopts = local_exports
+
+# Step 1: install futile
+preconfigopts += 'tar xf futile-1.8.tar.gz && cd futile-1.8 && ' + local_configure_make
+
+# Step 2: install chess
+preconfigopts += 'tar xf CheSS-0.2.4.tar.gz && cd CheSS-0.2.4 && ' + local_configure_make
+
+# Step 3: install psolver
+preconfigopts += 'tar xf psolver-1.8.tar.gz && cd psolver-1.8 && ' + local_configure_make
+
+# Step 4: install libxc 2.2.2
+preconfigopts += 'tar xf libxc-2.2.2.tar.gz && cd libxc-2.2.2 && ' + local_configure_make
+
+# Step 5: install GaIn
+preconfigopts += 'tar xf GaIn-1.0.tar.gz && cd GaIn-1.0 && ' + local_configure_make
+
+# Step 6: install libAbInit
+preconfigopts += 'tar xf libABINIT-6.8+12.tar.gz && cd libABINIT-6.8+12 && ' + local_configure_make
+
+# Step 7: BigDft itself
+preconfigopts += 'tar xf %(namelower)s-%(version)s.tar.gz && cd bigdft-1.8.3 && '
+configopts = '--with-ext-linalg="$LIBSCALAPACK"'
+
+prebuildopts = local_exports + 'cd bigdft-1.8.3 && '
+keeppreviousinstall = True
+preinstallopts = prebuildopts
+
+local_binary_files = [ 
+     "abscalc", "bader", "bigdft-tool", "frequencies", "matchrotation", 
+     "rotate_posinp", "unitconversion_posinp", "analyze_georelax", 
+     "bigdft", "fermi", "memguess", "p_axis_posinp", "wocc",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binary_files],
+    'dirs': ['lib/pkgconfig', 'include'],
+}
+
+moduleclass = 'chem'
