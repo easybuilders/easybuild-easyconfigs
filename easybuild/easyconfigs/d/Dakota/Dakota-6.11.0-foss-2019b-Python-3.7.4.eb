@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'Dakota'
+version = '6.11.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://dakota.sandia.gov/"
+description = """
+ The Dakota project delivers both state-of-the-art research and robust, usable software for optimization and UQ.
+ Broadly, the Dakota software's advanced parametric analyses enable design exploration, model calibration,
+ risk analysis, and quantification of margins and uncertainty with computational models."
+"""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+# Disable architecture optimization, otherwise the basic tests fail
+toolchainopts = {'pic': True, 'usempi': True, 'optarch': False}
+
+source_urls = ['https://dakota.sandia.gov/sites/default/files/distributions/public/']
+sources = ["dakota-%(version_major_minor)s-release-public.src.tar.gz"]
+checksums = ['d38bbfccba4ff5f2187bdbb45633e269ef4d9f68631a17a52b4d05b5f9b75f65']
+
+dependencies = [
+    ('Boost', '1.71.0'),
+    ('OpenBLAS', '0.3.7'),
+    ('Perl', '5.30.0'),
+    ('Python', '3.7.4'),
+    ('HDF5', '1.10.5'),
+    ('GSL', '2.6'),
+]
+
+builddependencies = [('CMake', '3.15.3')]
+
+separate_build_dir = True
+
+# build shared libraries
+configopts = "-DBUILD_SHARED_LIBS=ON "
+# disable GUI
+configopts += "-DHAVE_X_GRAPHICS=OFF "
+# set other dependencies
+configopts += "-DBLAS_LIBS=${EBROOTOPENBLAS}/lib/libopenblas.%s " % SHLIB_EXT
+configopts += "-DLAPACK_LIBS=${EBROOTOPENBLAS}/lib/libopenblas.%s " % SHLIB_EXT
+configopts += "-DDAKOTA_HAVE_MPI=ON "
+configopts += "-DBoost_NO_SYSTEM_PATHS=ON "
+configopts += "-DDAKOTA_HAVE_HDF5=ON "
+configopts += "-DDAKOTA_HAVE_GSL=ON "
+
+runtest = ' test ARGS="-L AcceptanceTest" '
+
+# Run install step in parallel
+installopts = ' -j %(parallel)s '
+
+sanity_check_paths = {
+    'files': ["bin/dakota"],
+    'dirs': []
+}
+
+moduleclass = 'math'
