@@ -1,0 +1,30 @@
+name = 'OpenBLAS'
+version = '0.3.9'
+modaltsoftname = 'openblas-64bits'
+versionsuffix = '-64bits'
+
+
+homepage = 'http://xianyi.github.com/OpenBLAS/'
+description = "OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version. This build is for ILP64 (64bit integer ingexes)."
+
+toolchain = {'name': 'GCC', 'version': '9.1.0'}  
+
+source_urls = ['http://www.netlib.org/lapack/timing/', 'https://github.com/xianyi/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [('large.tgz', '.'), ('timing.tgz', '.') ]
+checksums = [
+    '17d4677264dfbc4433e97076220adc79b050e4f8a083ea3f853a53af253bc380',  # v0.3.9.tar.gz
+    'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1',  # large.tgz
+    '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af'  # timing.tgz
+]
+
+prebuildopts = """declare -A ARCH_MAP=( [sse3]='DYNAMIC_ARCH=1' [avx]='TARGET=SANDYBRIDGE' [avx2]='TARGET=HASWELL' [avx512]='TARGET=SKYLAKEX' ) && if [ $RSNT_ARCH==avx512 ]; then CC="$CC -mavx2"; fi && """
+buildopts = '${ARCH_MAP[$RSNT_ARCH]} CC="$CC" NUM_THREADS=64 INTERFACE64=1'
+testopts = '${ARCH_MAP[$RSNT_ARCH]} CC="$CC" NUM_THREADS=64 INTERFACE64=1'
+
+
+# create symlinks for numpy.
+
+postinstallcmds =  ['ln -sf %(installdir)s/lib/libopenblas.a %(installdir)s/lib/libopenblas_ilp64.a && ln -sf %(installdir)s/lib/libopenblas.so %(installdir)s/lib/libopenblas_ilp64.so']
+moduleclass = 'numlib'
+
