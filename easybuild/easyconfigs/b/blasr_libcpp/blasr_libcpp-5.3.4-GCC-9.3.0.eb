@@ -1,0 +1,39 @@
+easyblock = 'MesonNinja'
+
+name = 'blasr_libcpp'
+version = '5.3.4'
+
+homepage = 'https://github.com/PacificBiosciences/blasr_libcpp'
+description = """Blasr_libcpp is a library used by blasr and other executables such as samtoh5, loadPulses for
+ analyzing PacBio sequences"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/PacificBiosciences/blasr_libcpp/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['181f6d1cd54fd253e7d8cc723f121973f658c5551574b3ed878c5c3eb50ba594']
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('Meson', '0.50.0', '-Python-3.7.2'),
+    ('Ninja', '1.9.0'),
+    ('googletest', '1.10.0'),
+]
+dependencies = [
+    ('HDF5', '1.10.6'),
+    ('pbbam', '1.0.7'),
+]
+
+# This must be added because Meson configuration options is not done correctly
+preconfigopts = 'export LDFLAGS="-lhdf5 -lhdf5_cpp $LDFLAGS" && '
+
+sanity_check_paths = {
+    'files': ["lib/libblasr.%s" % SHLIB_EXT],
+    'dirs': ["include/libblasr"],
+}
+
+modextrapaths = {
+    'CPATH': ['include/libblasr/alignment', 'include/libblasr/hdf', 'include/libblasr/pbdata']
+}
+
+moduleclass = 'bio'
