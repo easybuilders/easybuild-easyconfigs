@@ -43,14 +43,14 @@ from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, is_generic_easyblock, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
-from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file
+from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file, is_generic_easyblock
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.py2vs3 import string_type, urlopen
@@ -117,7 +117,8 @@ class EasyConfigTest(TestCase):
                 if dep.get('external_module', False):
                     ec['dependencies'].remove(dep)
 
-        EasyConfigTest.ordered_specs = resolve_dependencies(EasyConfigTest.parsed_easyconfigs, modules_tool(), retain_all_deps=True)
+        EasyConfigTest.ordered_specs = resolve_dependencies(
+            EasyConfigTest.parsed_easyconfigs, modules_tool(), retain_all_deps=True)
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -552,7 +553,11 @@ class EasyConfigTest(TestCase):
         # These packages do not support installation with 'pip'
         whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
 
-        whitelist_pip_check = [r'Mako-1.0.4.*Python-2.7.12.*']
+        whitelist_pip_check = [
+            r'Mako-1.0.4.*Python-2.7.12.*',
+            # no pip 9.x or newer for configparser easyconfigs using a 2016a or 2016b toolchain
+            r'configparser-3.5.0.*-2016[ab].*',
+        ]
 
         failing_checks = []
 
@@ -598,7 +603,8 @@ class EasyConfigTest(TestCase):
             # if Python is a dependency, that should be reflected in the versionsuffix
             # Tkinter is an exception, since its version always matches the Python version anyway
             # Also whitelist some updated versions of Amber
-            whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb', 'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
+            whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
+                                       'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
             has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'])
             if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
@@ -628,7 +634,7 @@ class EasyConfigTest(TestCase):
         whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
                      'Toolchain']
         # Autotools & (recent) GCC are just bundles (Autotools: Autoconf+Automake+libtool, GCC: GCCcore+binutils)
-        bundles_whitelist = ['Autotools', 'GCC']
+        bundles_whitelist = ['Autotools', 'GCC', 'CUDA']
 
         failing_checks = []
 
@@ -655,6 +661,7 @@ class EasyConfigTest(TestCase):
             'ITSTool',  # https://itstool.org/ doesn't work
             'UCX-',  # bad certificate for https://www.openucx.org
             'MUMPS',  # https://mumps.enseeiht.fr doesn't work
+            'PyFR',  # https://www.pyfr.org doesn't work
         ]
         url_whitelist = [
             # https:// doesn't work, results in index page being downloaded instead
@@ -697,10 +704,24 @@ class EasyConfigTest(TestCase):
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
         def get_eb_files_from_diff(diff_filter):
-            cmd = "git diff --name-only --diff-filter=%s %s...HEAD" % (diff_filter, target_branch)
-            out, ec = run_cmd(cmd, simple=False)
-            return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
 
+            # first determine the 'merge base' between target branch and PR branch
+            # cfr. https://git-scm.com/docs/git-merge-base
+            cmd = "git merge-base %s HEAD" % target_branch
+            out, ec = run_cmd(cmd, simple=False, log_ok=False)
+            if ec == 0:
+                merge_base = out.strip()
+                print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
+            else:
+                msg = "Failed to determine merge base (ec: %s, output: '%s'), "
+                msg += "falling back to specifying target branch %s"
+                print(msg % (ec, out, target_branch))
+                merge_base = target_branch
+
+            # determine list of changed files using 'git diff' and merge base determined above
+            cmd = "git diff --name-only --diff-filter=%s %s..HEAD" % (diff_filter, merge_base)
+            out, _ = run_cmd(cmd, simple=False)
+            return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
 
         # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
         travis_pr_test = re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)'))
@@ -929,6 +950,7 @@ def template_easyconfig_test(self, spec):
     dummy_template_values = {
         'builddir': '/dummy/builddir',
         'installdir': '/dummy/installdir',
+        'parallel': '2',
     }
     ec.template_values.update(dummy_template_values)
 
@@ -983,7 +1005,8 @@ def template_easyconfig_test(self, spec):
         # take into account that for some string-valued easyconfig parameters (configopts & co),
         # the easyblock may have injected additional values, which affects the dumped easyconfig file
         elif isinstance(orig_val, string_type):
-            self.assertTrue(dumped_val.startswith(orig_val))
+            error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
+            self.assertTrue(dumped_val.startswith(orig_val), error_msg)
         else:
             self.assertEqual(orig_val, dumped_val)
 
