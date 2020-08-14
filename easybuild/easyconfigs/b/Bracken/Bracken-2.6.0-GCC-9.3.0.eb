@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'Bracken'
+version = "2.6.0"
+
+homepage = 'http://ccb.jhu.edu/software/bracken/index.shtml'
+description = """Bracken is a companion program to Kraken 1.0 or Kraken 2.0. While Kraken classifies reads to multiple levels in the taxonomic tree, Bracken allows estimation of abundance at a single level using those classifications (e.g. Bracken can estimate abundance of species within a sample)."""
+
+toolchain = {'version': '9.3.0', 'name': 'GCC'}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/jenniferlu717/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['fb1837d6f32b8f8c87353b9dc8a23d3418c348b00824a7064eb58f9bab11ea68']
+
+dependencies = [
+    ('Kraken2', '2.0.9-beta'),
+]
+
+start_dir = 'src'
+
+files_to_copy = [
+    "../analysis_scripts",
+    "../LICENSE",
+    "../README.md",
+    "../sample_data",
+    (["kmer2read_distr", "../bracken-build", "../bracken"], "bin"),
+    (["est_abundance.py", "generate_kmer_distribution.py", "kreport2mpa.py"], "bin/src")
+]
+
+local_bracken_binaries = [
+    "kmer2read_distr", "bracken", "est_abundance.py", "generate_kmer_distribution.py", "kreport2mpa.py",
+]
+
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in local_bracken_binaries], 'LICENSE', 'README.md'],
+    'dirs': ['analysis_scripts', 'bin', 'sample_data'],
+}
+
+modextrapaths = {'PATH': ['analysis_scripts', 'bin/src']}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("python")
+"""
