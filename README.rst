@@ -1,3 +1,5 @@
+.. image:: https://github.com/easybuilders/easybuild-easyconfigs/workflows/easyconfigs%20unit%20tests/badge.svg
+
 .. image:: https://easybuilders.github.io/easybuild/images/easybuild_logo_small.png
    :align: center
 
@@ -31,14 +33,3 @@ Related Python packages:
   * a collection of easyblocks that implement support for building and installing (groups of) software packages
   * GitHub repository: https://github.com/easybuilders/easybuild-easyblocks
   * package on PyPi: https://pypi.python.org/pypi/easybuild-easyblocks
-
-*Build status overview:*
-
-* **master** branch:
-
-
-  .. image:: https://github.com/easybuilders/easybuild-easyconfigs/workflows/easyconfigs%20unit%20tests/badge.svg?branch=master
-
-* **develop** branch:
-
-  .. image:: https://github.com/easybuilders/easybuild-easyconfigs/workflows/easyconfigs%20unit%20tests/badge.svg
