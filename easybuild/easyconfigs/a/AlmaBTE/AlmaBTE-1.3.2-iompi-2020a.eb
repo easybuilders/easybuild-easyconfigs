@@ -1,0 +1,42 @@
+##
+# @Authors:: Ali Kerrache, University of Manitoba.
+# @Date: Dec 8, 2018.
+##
+
+easyblock = 'CMakeMake'
+
+name = 'AlmaBTE'
+version = '1.3.2'
+
+homepage = " http://www.almabte.eu/"
+description = """almaBTE consists of a library and a collection of executables allowing the user to calculate thermal transport properties of heterogeneous structures, using only ab-initio data, and solving the phonon Boltzmann Transport Equation (BTE)."""
+
+toolchain = {'name': 'iompi', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['http://www.%(namelower)s.eu/wp-content/uploads/2018/10/']
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+checksums = ['06b072a35725d63c87b8705dad3101328c8eb4ab026b0da83797bc251ae2034d']
+
+builddependencies = [('CMake', '3.0.2')]
+
+dependencies = [
+    ('HDF5', '1.10.6'),
+    ('Eigen', '3.3.7'),
+    ('Boost', '1.72.0', '-mpi'),
+]
+
+parallel = 1
+
+postinstallcmds = ['cd %(builddir)s/easybuild_obj/src/ && mkdir -p %(installdir)s/bin && mkdir -p %(installdir)s/lib && cp kappa_*  steady_* transient_analytic1d VCAbuilder cumulativecurves phononinfo superlattice_builder %(installdir)s/bin/ && cp libalma_framework.a %(installdir)s/lib/ && cp -r %(builddir)s/%(namelower)s-v%(version)s/test_resources %(installdir)s/']
+
+skipsteps = ['install']
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['bin/VCAbuilder', 'lib/libalma_framework.a'],
+    'dirs': ['bin', 'lib'],
+}
+
+moduleclass = 'tools'

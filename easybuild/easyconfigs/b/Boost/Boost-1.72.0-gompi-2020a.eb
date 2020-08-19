@@ -10,6 +10,14 @@ toolchainopts = {'pic': True, 'usempi': True}
 source_urls = ['https://dl.bintray.com/boostorg/release/%(version)s/source/']
 sources = ['%%(namelower)s_%s.tar.gz' % '_'.join(version.split('.'))]
 checksums = ['c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f']
+patches = ['Boost-1.65.1_python3.patch' ]
+checksums = [
+    'c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f',  # boost_1_72_0.tar.gz
+    'd86d34cf48fdbc4b9a36ae7706b3f3353f9ad521ff1d5a716cce750ae9f5dd33',  # Boost-1.65.1_python3.patch
+]
+
+# In order to build `libboost_numpy*`
+builddependencies = [('SciPy-Stack','2020a'),]
 
 dependencies = [
     ('bzip2', '1.0.8'),
@@ -17,9 +25,15 @@ dependencies = [
     ('XZ', '5.2.5'),
 ]
 
-configopts = '--without-libraries=python'
+# we need to move files back to the temp install directory, because easyblock copies
+# from there in the installation step
+prebuildopts = '[ "$(ls -A %(installdir)s)" ] && mv %(installdir)s/* %(builddir)s/obj ; '
+
+multi_deps = {'Python': ['2.7', '3.6', '3.7', '3.8']}
 
 # also build boost_mpi
 boost_mpi = True
+# also build boost multi-thread
+boost_multi_thread = True
 
 moduleclass = 'devel'

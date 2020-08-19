@@ -1,0 +1,63 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+modaltsoftname = 'paraview-offscreen'
+versionsuffix = '-offscreen'
+version = '5.8.0'
+
+homepage = "https://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["ParaView-v%(version)s.tar.xz"]
+checksums = ['219e4107abf40317ce054408e9c3b22fb935d464238c1c00c0161f1c8697a3f9']
+
+dependencies = [
+    ('SciPy-Stack', '2020a'),
+    ('HDF5', '1.10.6'),
+    ('netCDF', '4.7.4'),
+    ('OSPray', '1.8.5'),
+]
+multi_deps = {'Python': ['3.6', '3.7', '3.8'] }
+
+separate_build_dir = True
+
+# Paraview
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON '
+configopts += '-DPARAVIEW_BUILD_SHARED_LIBS=ON '
+configopts += '-DPARAVIEW_USE_MPI=ON '
+configopts += '-DPARAVIEW_ENABLE_FFMPEG=ON '
+configopts += "-DPARAVIEW_USE_PYTHON=ON -DPython3_FIND_STRATEGY=LOCATION -DPython3_ROOT_DIR=$EBROOTPYTHON "
+configopts += '-DPARAVIEW_BUILD_MESA_LAUNCHER=ON '
+
+# Qt5
+configopts += '-DPARAVIEW_USE_QT=OFF '
+
+# OSPray
+configopts += '-DPARAVIEW_ENABLE_RAYTRACING=ON '
+configopts += "-DVTK_USE_X=OFF "
+
+# OpenGL & Mesa
+#configopts += '-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s ' % SHLIB_EXT
+#configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include '
+configopts += '-DVTK_OPENGL_HAS_OSMESA=ON '
+
+# Without internet connection turn off testing (uncomment the following line)
+configopts += '-DBUILD_TESTING=OFF '
+
+postinstallcmds = [ 
+	"ln -s %(installdir)s/{lib64,lib}",
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib64",
+	]
+
+sanity_check_paths = {
+    'files': ['bin/pvserver'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib64/python%(pyshortver)s'],
+}
+
+moduleclass = 'vis'
+
