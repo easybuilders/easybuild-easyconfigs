@@ -1,0 +1,62 @@
+easyblock = 'CMakeMake'
+
+name = 'MariaDB'
+version = '10.4.13'
+
+homepage = 'https://mariadb.org/'
+description = """MariaDB is an enhanced, drop-in replacement for MySQL.
+Included engines: myISAM, Aria, InnoDB, RocksDB, TokuDB, OQGraph, Mroonga."""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+
+source_urls = ['http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['MariaDB-10.1.13-link-rt-for-jemalloc.patch']
+checksums = [
+    '45bbbb12d1de8febd9edf630e940c23cf14efd60570c743b268069516a5d91df',  # mariadb-10.4.13.tar.gz
+    '8295837e623f6c782e1d64b00e0877ea98cce4bf8846755bb86c8a7732797c19',  # MariaDB-10.1.13-link-rt-for-jemalloc.patch
+]
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('libaio', '0.3.111'),
+]
+
+dependencies = [
+    ('ncurses', '6.1'),
+    ('zlib', '1.2.11'),
+    ('LZO', '2.10'),        # optional
+    ('lz4', '1.9.2'),       # optional
+    ('XZ', '5.2.4'),        # optional
+    ('jemalloc', '5.2.1'),  # needed by TokuDB; optional for the others
+    ('snappy', '1.1.7'),    # needed by RocksDB and TokuDB; optional for InnoDB
+    ('libxml2', '2.9.9'),   # needed by Connect XML
+    ('Boost', '1.71.0'),    # needed by OQGraph
+    ('Judy', '1.0.5'),      # needed by OQGraph
+]
+
+separate_build_dir = True
+
+configopts = "-DCMAKE_BUILD_TYPE=Release "
+configopts += "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
+configopts += "-DMYSQL_MAINTAINER_MODE=OFF "  # disabled to not treat warnings as errors (-Werror)
+configopts += "-DWITH_PCRE=bundled "  # using an external PCRE is broken, see https://bugs.exim.org/show_bug.cgi?id=2173
+configopts += "-DWITH_ZLIB=system "
+configopts += "-DWITH_EMBEDDED_SERVER=ON "  # for libmysqld.so & co
+configopts += "-DWITH_SAFEMALLOC=OFF "  # Disable memory debugger with jemalloc
+
+sanity_check_paths = {
+    'files': ['bin/mysql', 'bin/mysqld_safe', 'lib/libmysqlclient.%s' % SHLIB_EXT, 'lib/libmysqld.%s' % SHLIB_EXT,
+              'lib/plugin/ha_connect.%s' % SHLIB_EXT, 'lib/plugin/ha_rocksdb.%s' % SHLIB_EXT,
+              'lib/plugin/ha_tokudb.%s' % SHLIB_EXT, 'lib/plugin/ha_oqgraph.%s' % SHLIB_EXT,
+              'scripts/mysql_install_db'],
+    'dirs': ['include', 'share'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+
+# Ensure that jemalloc does not use transparent hugepages.
+# Database workloads with THP can cause memory bloat, potentially hiting OOM errors.
+modextravars = {'MALLOC_CONF': 'thp:never'}
+
+moduleclass = 'data'
