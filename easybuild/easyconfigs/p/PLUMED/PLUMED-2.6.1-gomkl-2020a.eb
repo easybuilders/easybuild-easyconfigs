@@ -21,6 +21,7 @@ checksums = ['284bdccc525737c110a81ba80d68d09035b3d539789fd4c130b681e147a8f2c2']
 dependencies = [
     ('GSL', '2.6'),
     ('libmatheval', '1.1.11'),
+    ('SciPy-Stack', '2020a'),
     ('Boost', '1.72.0'),
 ]
 
@@ -35,6 +36,19 @@ configopts = " ".join([
     '--enable-asmjit',
 ])
 
+multi_deps = {'Python': ['3.6', '3.7', '3.8'] }
+multi_deps_extensions_only = True
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('plumed', version, {
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['62e940345567042718e33e4e4d8ac679e0a35614ed8dfa65162d67b8d6adde3c'],
+	'prebuildopts': '',
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
 prebuildopts = 'source sourceme.sh && '
 
 sanity_check_paths = {
@@ -46,12 +60,12 @@ sanity_check_paths = {
     'dirs': [],
 }
 
-# sanity_check_commands = ["python -c 'import plumed'"]
+sanity_check_commands = ["python -c 'import plumed'"]
 
 modextrapaths = {
     'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT,
     'PLUMED_ROOT': 'lib/plumed',
-    # 'PYTHONPATH': 'lib/plumed/python',
+    'EBPYTHONPREFIXES': [''],
 }
 
 moduleclass = 'chem'
