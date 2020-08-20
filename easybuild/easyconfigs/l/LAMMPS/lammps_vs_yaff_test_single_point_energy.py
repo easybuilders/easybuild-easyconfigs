@@ -12,12 +12,9 @@
 
 import numpy as np
 import os
-import h5py
 from mpi4py import MPI
-from glob import glob
-from yaff import *
+from yaff import log, System, angstrom, ForceField, swap_noncovalent_lammps
 from molmod import kjmol
-from io import StringIO
 import tempfile
 
 
