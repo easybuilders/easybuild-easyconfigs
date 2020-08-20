@@ -449,9 +449,9 @@ class EasyConfigTest(TestCase):
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
-        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', 'GCCcore-[7-9]\.[0-9]']:
+        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', r'GCCcore-[7-9]\.[0-9]']:
             all_deps = {}
-            regex = re.compile('^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
+            regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
             # collect variants for all dependencies of easyconfigs that use a toolchain that matches
             for ec in EasyConfigTest.ordered_specs:
@@ -682,7 +682,7 @@ class EasyConfigTest(TestCase):
                 continue
 
             # ignore commented out lines in easyconfig files when checking for http:// URLs
-            ec_txt = '\n'.join(l for l in ec.rawtxt.split('\n') if not l.startswith('#'))
+            ec_txt = '\n'.join(line for line in ec.rawtxt.split('\n') if not line.startswith('#'))
 
             for http_url in http_regex.findall(ec_txt):
 
@@ -859,12 +859,12 @@ def template_easyconfig_test(self, spec):
     self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
-    res = re.findall('.*\$root.*', ec.rawtxt, re.M)
+    res = re.findall(r'.*\$root.*', ec.rawtxt, re.M)
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
     self.assertFalse(res, error_msg % res)
 
     # check for redefined easyconfig parameters, there should be none...
-    param_def_regex = re.compile('^(?P<key>\w+)\s*=', re.M)
+    param_def_regex = re.compile(r'^(?P<key>\w+)\s*=', re.M)
     keys = param_def_regex.findall(ec.rawtxt)
     redefined_keys = []
     for key in sorted(nub(keys)):
@@ -1016,6 +1016,11 @@ def template_easyconfig_test(self, spec):
 
 def suite():
     """Return all easyblock initialisation tests."""
+    def make_inner_test(spec_path):
+        def innertest(self):
+            template_easyconfig_test(self, spec_path)
+        return innertest
+
     # dynamically generate a separate test for each of the available easyconfigs
     # define new inner functions that can be added as class methods to InitTest
     easyconfigs_path = get_paths_for('easyconfigs')[0]
@@ -1029,8 +1034,7 @@ def suite():
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
-                code = "def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec)
-                exec(code, globals())
+                innertest = make_inner_test(os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
                 # double underscore so parsing tests are run first
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
