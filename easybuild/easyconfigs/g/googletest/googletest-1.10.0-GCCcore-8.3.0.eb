@@ -1,6 +1,6 @@
 easyblock = "CMakeMake"
 
-name = 'gtest'
+name = 'googletest'
 version = '1.10.0'
 
 homepage = 'https://github.com/google/googletest'
@@ -16,10 +16,14 @@ builddependencies = [
     ('CMake', '3.15.3'),
     ('binutils', '2.32'),
 ]
+# build twice, once for static, once for shared libraries
+configopts = ['', ' -DBUILD_SHARED_LIBS=ON ']
+separate_build_dir = True
 
 sanity_check_paths = {
-    'files': ['lib/libgtest.a', 'lib/libgmock.a'],
-    'dirs': ['include'],
+    'files': ['lib/lib%s.%s' % (local_lib, local_ext) for local_lib in ['gmock', 'gmock_main', 'gtest', 'gtest_main']
+              for local_ext in ['a', SHLIB_EXT]],
+    'dirs': ['include/gmock', 'include/gtest'],
 }
 
 moduleclass = 'devel'
