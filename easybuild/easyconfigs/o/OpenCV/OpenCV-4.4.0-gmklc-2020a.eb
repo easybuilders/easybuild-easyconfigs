@@ -9,7 +9,7 @@ description = """OpenCV (Open Source Computer Vision Library) is an open source 
  a common infrastructure for computer vision applications and to accelerate
  the use of machine perception in the commercial products."""
 
-toolchain = {'name': 'gmkl', 'version': '2020a'}
+toolchain = {'name': 'gmklc', 'version': '2020a'}
 
 source_urls = ['https://github.com/Itseez/%(namelower)s/archive/']
 sources = ['%(version)s.zip']
@@ -43,7 +43,14 @@ multi_deps = {
 
 multi_deps_load_default = False
 
-local_configopts_single = "-DWITH_IPP=ON -DCMAKE_SKIP_RPATH=ON -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON -DWITH_CUDA=OFF -DOPENCV_SKIP_LAPACK_EXTERN_C=ON"
+local_configopts_single = "-DWITH_IPP=ON -DCMAKE_SKIP_RPATH=ON -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON -DWITH_CUDA=ON -DOPENCV_SKIP_LAPACK_EXTERN_C=ON"
+local_configopts_single += "-DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/opencv_modules/ -DBUILD_opencv_cudev=ON "
+
+# cudev module is required to build OpenCV with CUDA support,
+# so copy it to a separate directory (to avoid building *all* modules in opencv_contrib...)
+preconfigopts = "mkdir %(builddir)s/opencv_modules && "
+preconfigopts += "cp -a %(builddir)s/opencv_contrib-4.0.0/modules/cudev/ %(builddir)s/opencv_modules/ && "
+preconfigopts = [preconfigopts for v in multi_deps['Python']]
 
 configopts = [
     local_configopts_single + " -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python3.6/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON3_INCLUDE_DIR=$EBROOTPYTHON/include/python3.6m -DPYTHON3_LIBRARY=$EBROOTPYTHON/lib/libpython3.6m.so",
