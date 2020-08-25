@@ -12,10 +12,18 @@ description = """OpenCV (Open Source Computer Vision Library) is an open source 
 toolchain = {'name': 'gmklc', 'version': '2020a'}
 
 source_urls = ['https://github.com/Itseez/%(namelower)s/archive/']
-sources = ['%(version)s.zip']
+sources = [
+    '%(version)s.zip',
+    {
+        'source_urls': ['https://github.com/opencv/opencv_contrib/archive/'],
+        'download_filename': '%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+]
 patches = ['%(name)s-4.2.0-hal-internal.patch']
 checksums = [
     '7faa0991c74cda52313ee37ef73f3e451332a47e7aa36c2bb2240b69f5002d27',  # 4.4.0.zip
+    'a69772f553b32427e09ffbfd0c8d5e5e47f7dab8b3ffc02851ffd7f912b76840',  # OpenCV-4.4.0.tar.gz
     'aad798f0017694ba82abf4fc29ecc23db891075d0f50467cfd4cc7cd4443d4c4',  # OpenCV-4.2.0-hal-internal.patch
 ]
 
@@ -43,13 +51,13 @@ multi_deps = {
 
 multi_deps_load_default = False
 
-local_configopts_single = "-DWITH_IPP=ON -DCMAKE_SKIP_RPATH=ON -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON -DWITH_CUDA=ON -DOPENCV_SKIP_LAPACK_EXTERN_C=ON"
+local_configopts_single = "-DWITH_IPP=ON -DCMAKE_SKIP_RPATH=ON -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON -DWITH_CUDA=ON -DOPENCV_SKIP_LAPACK_EXTERN_C=ON "
 local_configopts_single += "-DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/opencv_modules/ -DBUILD_opencv_cudev=ON "
 
 # cudev module is required to build OpenCV with CUDA support,
 # so copy it to a separate directory (to avoid building *all* modules in opencv_contrib...)
 preconfigopts = "mkdir %(builddir)s/opencv_modules && "
-preconfigopts += "cp -a %(builddir)s/opencv_contrib-4.0.0/modules/cudev/ %(builddir)s/opencv_modules/ && "
+preconfigopts += "cp -a %(builddir)s/opencv_contrib-4.4.0/modules/cudev/ %(builddir)s/opencv_modules/ && "
 preconfigopts = [preconfigopts for v in multi_deps['Python']]
 
 configopts = [
