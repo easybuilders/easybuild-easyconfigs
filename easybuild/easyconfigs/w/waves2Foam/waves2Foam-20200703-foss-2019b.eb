@@ -1,0 +1,94 @@
+easyblock = 'Bundle'
+
+name = 'waves2Foam'
+# datestamp of this SVN revision (2140)
+version = '20200703'
+
+homepage = 'https://openfoamwiki.net/index.php/Contrib/waves2Foam'
+description = "The library waves2Foam is a toolbox used to generate and absorb free surface water waves."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('OpenFOAM', 'v1912'),
+    ('GSL', '2.6'),
+]
+
+local_oceanwave3d_optflags = "-ffpe-trap=invalid,zero,overflow -ffree-line-length-none -fstack-protector-all"
+local_oceanwave3d_common_opts = 'USER=easybuild LINLIB="-lopenblas -L%(installdir)s/lib -lskit" FC="$FC" '
+local_oceanwave3d_common_opts += 'OPTFLAGS="$FCFLAGS %s" ' % local_oceanwave3d_optflags
+local_oceanwave3d_common_opts += 'SHLIBFLAGS="-shared $FCFLAGS %s"' % local_oceanwave3d_optflags
+local_oceanwave3d_buildopts = "Release INSTALLDIR=$PWD/bin %s && " % local_oceanwave3d_common_opts
+local_oceanwave3d_buildopts += "make sharedLib FOAM_USER_LIBBIN=$PWD/lib %s" % local_oceanwave3d_common_opts
+
+local_waves2foam_install_cmd = "cd *waves2Foam*/ && "
+# patch Allwmake script to avoid building ThirdParty stuff
+local_waves2foam_install_cmd += "sed -i 's/.*cd ThirdParty.*//g' Allwmake && "
+# only compile ThirdParty/fenton4Foam
+local_waves2foam_install_cmd += "cd ThirdParty/fenton4Foam && "
+local_waves2foam_install_cmd += "$FC $FCFLAGS -o %(installdir)s/bin/fenton4Foam fenton4Foam.f fft.f && cd - && "
+# fix elusive linking issue by explicitly linking with -lOceanWave3D
+# "ld.bfd: warning: libOceanWave3D.so, needed by .../lib/libwaves2Foam.so, not found"
+local_waves2foam_install_cmd += r"grep -R '\-lwaves2Foam ' | cut -f1 -d: | "
+local_waves2foam_install_cmd += "xargs sed -i 's/-lwaves2Foam /-lwaves2Foam -lOceanWave3D /g' && "
+# copy extract contents of source file to install directory
+local_waves2foam_install_cmd += "cp -a * %(installdir)s && cd %(installdir)s && "
+# prepare environment by sourcing OpenFOAM init script
+local_waves2foam_install_cmd += "source $FOAM_BASH && "
+# correct value for $FOAM_APPBIN (which is where waveFoam binary is installed)
+local_waves2foam_install_cmd += "export FOAM_APPBIN=%(installdir)s/bin && "
+# create bin/bashrc and inject correct values
+local_waves2foam_install_cmd += "cp bin/bashrc.org bin/bashrc && "
+local_waves2foam_install_cmd += r"sed -i 's@^\(export WAVES_DIR\)=.*@\1=%(installdir)s@'g bin/bashrc && "
+local_waves2foam_install_cmd += r"sed -i 's@^\(export WAVES_APPBIN\)=.*@\1=%(installdir)s/bin@'g bin/bashrc && "
+local_waves2foam_install_cmd += r"sed -i 's@^\(export WAVES_LIBBIN\)=.*@\1=%(installdir)s/lib@'g bin/bashrc && "
+local_waves2foam_install_cmd += r"sed -i 's@^\(export WAVES_GSL_INCLUDE\)=.*@\1=$EBROOTGSL/include@g' bin/bashrc && "
+local_waves2foam_install_cmd += r"sed -i 's@^\(export WAVES_GSL_LIB\)=.*@\1=$EBROOTGSL/lib@g' bin/bashrc && "
+# run Allwmake script to build/install
+local_waves2foam_install_cmd += "./Allwmake"
+
+components = [
+    ('SPARSKIT2', '20190610', {
+        'easyblock': 'MakeCp',
+        'source_urls': ['https://www-users.cs.umn.edu/~saad/software/SPARSKIT/'],
+        'sources': [{'download_filename': 'SPARSKIT2.tar.gz', 'filename': 'SPARSKIT2-%(version)s.tar.gz'}],
+        'checksums': ['ecdd0a9968d6b45153a328710a42fe87600f0bba0e3c53896090b8ae1c113b7a'],
+        'start_dir': 'SPARSKIT2',
+        'buildopts': 'F77="$FC" OPT="-c $FCFLAGS"',
+        'files_to_copy': [(['libskit.a'], 'lib')],
+    }),
+    ('OceanWave3D', '20171102', {
+        'easyblock': 'MakeCp',
+        'source_urls': ['https://github.com/boTerpPaulsen/OceanWave3D-Fortran90/archive/'],
+        'sources': [{'download_filename': 'bb7d99e.tar.gz', 'filename': 'OceanWave3D-%(version)s.tar.gz'}],
+        'checksums': ['be8985cb0934bc200e9c0896b7fa74dbbdf9237e69ad8444922cb65fbbae8b13'],
+        'parallel': 1,
+        'prebuildopts': "cd OceanWave3D*/ && mkdir {build,bin,lib} && ",
+        'buildopts': local_oceanwave3d_buildopts,
+        'files_to_copy': [
+            (['OceanWave3D*/bin/OceanWave3D'], 'bin'),
+            (['OceanWave3D*/lib/libOceanWave3D.%s' % SHLIB_EXT], 'lib'),
+        ],
+    }),
+    (name, version, {
+        'easyblock': 'Binary',
+        # manual download required
+        # * visit https://sourceforge.net/p/openfoam-extend/svn/2140/tree/trunk/Breeder_1.6/other/waves2Foam/
+        # * click "Download Snapshot"
+        'sources': ['openfoam-extend-svn-r2140-trunk-Breeder_1.6-other-waves2Foam.zip'],
+        'checksums': ['ca2e018814c0635b69868e3586f61cebf7eebb1514488a45a525f90e49ab41f4'],
+        'extract_sources': True,
+        'install_cmd': local_waves2foam_install_cmd,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bashrc', 'fenton4Foam', 'postProcessWaves2Foam', 'setWaveField',
+                                     'setWaveParameters', 'waveGaugesNProbes', 'waveFoam']],
+    'dirs': [],
+}
+
+sanity_check_commands = ["source $FOAM_BASH && waveFoam -help"]
+
+moduleclass = 'cae'
