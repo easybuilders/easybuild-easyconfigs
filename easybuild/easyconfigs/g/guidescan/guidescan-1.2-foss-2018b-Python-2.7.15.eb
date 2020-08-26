@@ -1,0 +1,73 @@
+easyblock = 'PythonBundle'
+
+name = 'guidescan'
+version = '1.2'
+local_commit = '649b8282f299'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "http://www.guidescan.com"
+description = """A generalized CRISPR guideRNA design tool."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Biopython', '1.72', versionsuffix),
+    ('LZO', '2.10'),
+    ('ncurses', '6.1'),
+    ('Coreutils', '8.30'),
+    ('util-linux', '2.32'),
+    ('cURL', '7.60.0'),
+]
+
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+prebuildopts = "export CPATH=$EBROOTLZO/include/lzo:$CPATH && "
+
+exts_list = [
+    ('psutil', '5.4.5', {
+        'checksums': ['ebe293be36bb24b95cdefc5131635496e88b17fabbcf1e4bc9b5c01f5e489cfe'],
+    }),
+    ('pysam', '0.8.4', {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/pysam-developers/pysam/archive/'],
+        'checksums': ['4acbfe4b15b1db2417094ea64836d416a66e368e6c0e3031b597509f21e8c021'],
+    }),
+    ('pyfaidx', '0.4.7.1', {
+        'checksums': ['5c750be97d0bc5b81698513d91a8bb2c07042fb9eb5d3583f8a6ecf21ac8916c'],
+    }),
+    ('python-lzo', '1.12', {
+        'modulename': 'lzo',
+        'source_urls': ['https://pypi.python.org/packages/source/p/python-lzo/'],
+        'checksums': ['97a8e46825e8f1abd84c2a3372bc09adae9745a5be5d3af2692cd850dac35345'],
+    }),
+    ('bx-python', '0.7.3', {
+        'modulename': 'bx',
+        'checksums': ['518895e2dca313d7634c5cf48190b4020a463d6aa6adb42a261630bbd7e0e297'],
+    }),
+    (name, version, {
+        'patches': ['guidescan_pysam.patch'],
+        'source_tmpl': '649b8282f299.zip',
+        'source_urls': ['https://bitbucket.org/arp2012/guidescan_public/get'],
+        'start_dir': 'guidescan-source_code',
+        'checksums': [
+            '7b78b790851c3aa72d604b0ef98767958265de0d3ce09a669df3a8503d130b39',  # 649b8282f299.zip
+            '35318110dc0b3c20c9176e2c0662aa0bb8a51baa8ca9986d46c76d5bafe4ba3e',  # guidescan_pysam.patch
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/faidx',
+              'bin/guidescan_processer'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["guidescan_processer -h"]
+
+moduleclass = 'bio'
