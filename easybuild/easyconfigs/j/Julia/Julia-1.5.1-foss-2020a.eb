@@ -1,0 +1,79 @@
+easyblock = 'ConfigureMake'
+
+name = 'Julia'
+version = '1.5.1'
+
+homepage = 'https://julialang.org'
+description = "Julia is a high-level, high-performance dynamic language for technical computing."
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'rpath': True}
+
+source_urls = ['https://github.com/JuliaLang/julia/releases/download/v%(version)s/']
+sources = ['julia-%(version)s-full.tar.gz']
+checksums = ['1d0debfccfc7cd07047aa862dd2b1a96f7438932da1f5feff6c1033a63f9b1d4']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('CMake', '3.16.4'),
+    ('Python', '3.8.2'),
+    ('Perl', '5.30.2'),
+    ('pkg-config', '0.29.2'),
+    ('PCRE2', '10.34'),
+    ('patchelf', '0.12'),
+]
+
+# some dependencies are provided through EasyBuild,
+# but for others we let Julia build the ones included in the sources;
+# adding SuiteSparse as a proper dep leads to problems with the tests,
+# because some fail because they unset $LD_LIBRARY_PATH which leads to
+# libraries like libamd.so not being found
+dependencies = [
+    ('GMP', '6.2.0'),
+    ('MPFR', '4.0.2'),
+    ('cURL', '7.69.1'),
+    ('zlib', '1.2.11'),
+    ('SuiteSparse', '5.7.1', '-METIS-5.1.0'),
+]
+
+skipsteps = ['configure']
+
+local_common_opts = "USE_BINARYBUILDER=0 "
+
+# instruct Julia to use dependencies provided throuh EasyBuild
+local_common_opts += 'USE_SYSTEM_BLAS=1 LIBBLAS="-L$EBROOTOPENBLAS/lib -lopenblas" LIBBLASNAME=libopenblas '
+local_common_opts += 'USE_SYSTEM_LAPACK=1 LIBLAPACK="-L$EBROOTOPENBLAS/lib -lopenblas" LIBLAPACKNAME=libopenblas '
+local_common_opts += "USE_SYSTEM_CURL=1 USE_SYSTEM_GMP=1 USE_SYSTEM_MPFR=1 USE_SYSTEM_PATCHELF=1 "
+local_common_opts += "USE_SYSTEM_PCRE=1 USE_SYSTEM_ZLIB=1 "
+
+buildopts = "release " + local_common_opts
+
+# unset $TMPDIR to avoid failing test at test/file.jl:70
+# instruct OpenBLAS to only use a single thread, some tests are sensitive to that;
+pretestopts = "unset TMPDIR && export OPENBLAS_NUM_THREADS=1 && "
+
+# running tests is disabled, because they are sensitive to a variety of things, including:
+# * - having $TMPDIR defined makes some tests fail (see https://github.com/JuliaLang/julia/issues/35343);
+# * - various tests use 'setenv' which resets the environment (incl. $LD_LIBRARY_PATH), which causes problems
+# *   with wrong libstdc++.so being picked up if commands are being run in the setenv. Similar problems
+#     arise with libraries provided by OpenBLAS, SuiteSparse, etc.
+#     (see https://github.com/JuliaLang/julia/issues/30192);
+# * - some tests fail depending on number of available cores,
+#     or network config (see https://github.com/JuliaLang/julia/issues/36986);
+runtest = False
+
+# make sure dependencies provided by EasyBuild are used when testing,
+# to avoid that patchelf is built from source, for example
+testopts = local_common_opts
+
+# specify installation prefix, and make sure dependencies provided by EasyBuild are used
+installopts = "prefix=%(installdir)s " + local_common_opts
+
+sanity_check_paths = {
+    'files': ['bin/julia', 'lib/libjulia.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = ["julia --help"]
+
+moduleclass = 'lang'
