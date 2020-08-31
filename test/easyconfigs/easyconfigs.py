@@ -662,6 +662,7 @@ class EasyConfigTest(TestCase):
             'UCX-',  # bad certificate for https://www.openucx.org
             'MUMPS',  # https://mumps.enseeiht.fr doesn't work
             'PyFR',  # https://www.pyfr.org doesn't work
+            'PycURL',  # bad certificate for https://pycurl.io/
         ]
         url_whitelist = [
             # https:// doesn't work, results in index page being downloaded instead
