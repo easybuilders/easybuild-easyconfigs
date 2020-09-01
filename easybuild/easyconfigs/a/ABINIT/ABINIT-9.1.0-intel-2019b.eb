@@ -1,0 +1,48 @@
+#
+easyblock = 'ConfigureMake'
+
+name = 'ABINIT'
+version = '9.0.4'
+
+homepage = 'https://www.abinit.org/'
+description = """ABINIT is a package whose main program allows one to find the total energy,
+ charge density and  electronic structure of systems made of electrons and nuclei (molecules
+ and periodic solids) within Density Functional  Theory (DFT), using pseudopotentials and a
+ planewave or wavelet basis."""
+
+toolchain = {'name': 'iimpi', 'version': '2019b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://www.abinit.org/sites/default/files/packages/']
+sources = [SOURCELOWER_TAR_GZ]
+#checksums = ['82e8d071088ab8dc1b3a24380e30b68c544685678314df1213180b449c84ca65']
+
+dependencies = [
+    ("imkl", "2019.5.281"),
+    ('libxc', '4.3.4'),
+    ('HDF5', '1.10.5'),
+    ('netCDF', '4.7.1'),
+    ('netCDF-Fortran', '4.5.2'),
+]
+
+# ensure mpi and intel toolchain
+configopts = '--with-mpi="yes" --enable-openmp="no" '
+configopts += '--with-linalg-flavor=mkl '
+configopts += '--with-fft-flavor=dfti '
+
+# libxc support
+configopts += '--with-libxc=${EBROOTLIBXC} '
+
+# hdf5/netcdf4. Use nc-config and nf-config to get installation directory
+configopts += 'with_netcdf="`nc-config --prefix`" '
+configopts += 'with_netcdf_fortran="`nf-config --prefix`" '
+configopts += 'with_hdf5="${EBROOTHDF5}" '
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['abinit', 'aim', 'cut3d', 'conducti', 'mrgddb', 'mrgscr', 'optic']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'chem'
