@@ -12,7 +12,6 @@ toolchain = {'name': 'foss', 'version': '2019b'}
 
 local_pytorchthirdpartydir = 'pytorch-%(version)s/third_party'
 local_extract_cmd_pattern = 'tar -C %s/%s --strip-components=1 -xf %%s'
-local_mkdir_and_extract_cmd_pattern = "DIR=%s/%s; mkdir -p $DIR; tar -C $DIR --strip-components=1 -xzf %%s"
 
 source_urls = ['https://github.com/pytorch/pytorch/archive']
 
@@ -138,20 +137,19 @@ sources = [
         'source_urls': ['https://github.com/asmjit/asmjit/archive'],
         'download_filename': '4da474ac9aa2689e88d5e40a2f37628f302d7e3c.tar.gz',
         'filename': 'asmjit-20190814.tar.gz',
-        'extract_cmd': local_mkdir_and_extract_cmd_pattern % (local_pytorchthirdpartydir, 'fbgemm/third_party/asmjit'),
+        'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'fbgemm/third_party/asmjit'),
     },
     {
         'source_urls': ['https://github.com/pytorch/cpuinfo/archive'],
         'download_filename': 'd5e37adf1406cf899d7d9ec1d317c47506ccb970.tar.gz',
         'filename': 'cpuinfo-20190201.tar.gz',
-        'extract_cmd': local_mkdir_and_extract_cmd_pattern % (local_pytorchthirdpartydir, 'fbgemm/third_party/cpuinfo'),
+        'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'fbgemm/third_party/cpuinfo'),
     },
     {
         'source_urls': ['https://github.com/google/googletest/archive'],
         'download_filename': '0fc5466dbb9e623029b1ada539717d10bd45e99e.tar.gz',
         'filename': 'googletest-20180920.tar.gz',
-        'extract_cmd': local_mkdir_and_extract_cmd_pattern % (local_pytorchthirdpartydir,
-                                                              'fbgemm/third_party/googletest'),
+        'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'fbgemm/third_party/googletest'),
     },
     {
         'source_urls': ['https://github.com/google/benchmark/archive'],
@@ -207,14 +205,6 @@ sources = [
         'filename': 'mkl-dnn-20190905.tar.gz',
         'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'ideep/mkl-dnn'),
     },
-    # mkl-dnn requires Intel MKL, so download minimal Intel MKL version
-    # actually using imkl as a dependency would be messy due to underlying icc/ifort compilers & impi MPI lib
-    {
-        'source_urls': ['https://github.com/intel/mkl-dnn/releases/download/v0.21'],
-        'filename': 'mklml_lnx_2019.0.5.20190502.tgz',
-        'extract_cmd': local_mkdir_and_extract_cmd_pattern %
-        (local_pytorchthirdpartydir, 'ideep/mkl-dnn/external/mklml_lnx_2019.0.5.20190502'),
-    },
 ]
 patches = [
     '%(name)s-1.2.0_fix-findAVX.patch',
@@ -256,7 +246,6 @@ checksums = [
      'be111cf161b587812fa3b106fe550efb6f129b8b0b702fef32fac23af9580e5e'),  # tbb-20181009.tar.gz
     ('d16c64ab2ce654f0a21e51f933ae9ee480a8873717d0bd10e0f2a2f658a7095b',
      'bf096e6b3f17925ebe7802e0fa7dcc246319210b6ea3645b3ed52899a474fafc'),  # mkl-dnn-20190905.tar.gz
-    'a936d6b277a33d2a027a024ea8e65df62bd2e162c7ca52c48486ed9d5dc27160',  # mklml_lnx_2019.0.5.20190502.tgz
     '001c9bf604aebe4b39ccad15332a71130b07b780c539ceca84d6c64cd6fc8a68',  # PyTorch-1.2.0_fix-findAVX.patch
     'c4183bcb29a8bcbadea0341e93a3a32afdf860aa31331b768e787d899183da92',  # PyTorch-1.2.0_disable-tests-ppc64le.patch
     '1337647ff64a1208d1e401fc84052d0bc6174b133cec2f3521319cb593f524fa',  # PyTorch-1.3.1_fix-missing-sleef_h.patch
@@ -284,6 +273,7 @@ dependencies = [
 download_dep_fail = True
 
 prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1 VERBOSE=1 '
+prebuildopts += 'MAX_JOBS=%(parallel)s '
 prebuildopts += 'LDFLAGS="$LDFLAGS -ldl" '
 prebuildopts += 'USE_FFMPEG=ON USE_IBVERBS=1 USE_GFLAGS=ON USE_GLOG=ON '
 
