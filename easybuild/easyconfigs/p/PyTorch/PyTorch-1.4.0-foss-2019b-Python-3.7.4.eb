@@ -1,5 +1,3 @@
-easyblock = 'PythonPackage'
-
 name = 'PyTorch'
 version = '1.4.0'
 versionsuffix = '-Python-%(pyver)s'
@@ -204,8 +202,8 @@ sources = [
 ]
 patches = [
     '%(name)s-1.2.0_fix-findAVX.patch',
-    '%(name)s-1.2.0_disable-tests-ppc64le.patch',
     '%(name)s-%(version)s_fix-missing-sleef_h.patch',
+    '%(name)s-%(version)s-fix-test-prec.patch',
 ]
 checksums = [
     '8efc9c3d1804ffb97cbcf4ef988febc8d0b8701763614a586c7fc457a97cf847',  # v1.4.0.tar.gz
@@ -242,17 +240,18 @@ checksums = [
     ('5cb33c5d51047c96c8efa57e2d3dde7723e3b358eb1bbc97d793f4e26fd17481',
      'de7e4df12f4c474000ecc83dadc386f16337b5f9ecf13c1c5eae6314bf444c6f'),  # mkl-dnn-20190928.tar.gz
     '001c9bf604aebe4b39ccad15332a71130b07b780c539ceca84d6c64cd6fc8a68',  # PyTorch-1.2.0_fix-findAVX.patch
-    'c4183bcb29a8bcbadea0341e93a3a32afdf860aa31331b768e787d899183da92',  # PyTorch-1.2.0_disable-tests-ppc64le.patch
     '57cc8d2159a35de89139729c5390eb944332b9907d97b2b85a0b6ded30bd198e',  # PyTorch-1.4.0_fix-missing-sleef_h.patch
+    '91977512b45aa2957b715a3e8d2b04016448b60407423de69d604fdc743d5f69',  # PyTorch-1.4.0-fix-test-prec.patch
 ]
 
 builddependencies = [
     ('CMake', '3.15.3'),
     ('hypothesis', '4.44.2', versionsuffix),
-    ('Ninja', '1.9.0'),
 ]
 
 dependencies = [
+    ('Ninja', '1.9.0'),  # Required for JIT compilation of C++ extensions
+    ('protobuf', '3.10.0'),
     ('Python', '3.7.4'),
     ('SciPy-bundle', '2019.10', versionsuffix),
     ('PyYAML', '5.1.2'),
@@ -265,29 +264,22 @@ dependencies = [
     ('Pillow', '6.2.1'),
 ]
 
-download_dep_fail = True
-
-prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1 VERBOSE=1 '
-prebuildopts += 'MAX_JOBS=%(parallel)s '
-prebuildopts += 'LDFLAGS="$LDFLAGS -ldl" '
-prebuildopts += 'USE_FFMPEG=ON USE_IBVERBS=1 USE_GFLAGS=ON USE_GLOG=ON '
-
-preinstallopts = prebuildopts
-
-runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/' \
-          'build/lib.linux-%(arch)s-%(pyshortver)s:$PYTHONPATH '
-runtest += '&& export LD_LIBRARY_PATH=%(builddir)s/%(namelower)s-%(version)s/torch/lib64:$LD_LIBRARY_PATH '
-runtest += '&& python test/run_test.py --verbose '
-
-options = {'modulename': 'torch'}
-
-postinstallcmds = ['cp -a %(builddir)s/%(namelower)s-%(version)s/torch/lib*/* %(installdir)s/lib/']
-
-sanity_check_paths = {
-    'files': [],
-    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+excluded_tests = {
+    'POWER': [
+        # https://github.com/pytorch/pytorch/issues/41186
+        'autograd',
+        # Somehow only triggers on POWER, but is likely https://github.com/pytorch/pytorch/issues/33552
+        'distributed',
+        # https://github.com/pytorch/pytorch/issues/41400
+        'jit',
+        # https://github.com/pytorch/pytorch/issues/41469
+        'nn',
+        # Sporadically fails for unknown reason. Fixed in newer versions
+        'torch', 'distributions',
+    ],
 }
 
-sanity_pip_check = True
-
+# OpenMP threads must be limited as torch.matmul returns inprecise results for many threads (e.g. 176)
+runtest = 'cd test && OMP_NUM_THREADS=4 %(python)s run_test.py --verbose %(excluded_tests)s'
+tests = ['PyTorch-check-cpp-extension.py']
 moduleclass = 'devel'
