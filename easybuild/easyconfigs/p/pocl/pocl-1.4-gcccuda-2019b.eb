@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'pocl'
+version = '1.4'
+
+homepage = 'http://portablecl.org'
+description = "Pocl is a portable open source (MIT-licensed) implementation of the OpenCL standard"
+
+toolchain = {'name': 'gcccuda', 'version': '2019b'}
+
+source_urls = ['https://github.com/pocl/pocl/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_undef-bool-and-vector-from-altivec.patch']
+checksums = [
+    'ec237faa83bb1c803fbdf7c6e83d8a2ad68b6f0ed1879c3aa16c0e1dcc478742',  # v1.4.tar.gz
+    # pocl-1.4_undef-bool-and-vector-from-altivec.patch
+    'e795b7db34ebae71ee206ad88dcf93b6691bbc3c179d346d6385ded0767d49ce',
+]
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Clang', '9.0.1', '-CUDA-10.1.243'),
+    ('hwloc', '1.11.12'),
+    ('libtool', '2.4.6'),
+    ('libxml2', '2.9.9'),
+]
+
+separate_build_dir = True
+
+# disable attempt to find an ICD loader, always build libOpenCL.so, enable CUDA
+configopts = "-DENABLE_ICD=0 -DINSTALL_OPENCL_HEADERS=1 -DENABLE_CUDA=1 "
+# make sure we use the easybuild Clang
+configopts += "-DWITH_LLVM_CONFIG=$EBROOTCLANG/bin/llvm-config"
+
+sanity_check_paths = {
+    'files': ['bin/poclcc', 'lib64/libOpenCL.%s' % SHLIB_EXT],
+    'dirs': ['include/CL', 'lib64/pkgconfig'],
+}
+
+moduleclass = 'lib'

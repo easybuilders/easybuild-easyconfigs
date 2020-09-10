@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+
+name = 'OPERA'
+version = '2.0.6'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'https://sourceforge.net/projects/operasf'
+description = "An optimal genome scaffolding program"
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'cstd': 'c++98'}
+
+source_urls = [
+    'https://downloads.sourceforge.net/project/operasf/OPERA-LG version %(version)s/',
+    'https://github.com/BioInf-Wuerzburg/proovread/raw/master/util/blasr-1.3.1/',  # for blasr 1.3.1 binary
+]
+sources = [
+    'OPERA-LG_v%(version)s.tar.gz',
+    # OPERA requires blasr 1.3.1, for which sources are not available anymore?
+    {'download_filename': 'blasr', 'filename': 'blasr-1.3.1', 'extract_cmd': 'cp %s %(builddir)s'},
+]
+patches = ['OPERA-%(version)s_fix-Makefile.patch']
+checksums = [
+    '493dc2eb3aee7966314a03131d7c99d7b268e7514d92207ba18b9296e333c625',  # OPERA-LG_v2.0.6.tar.gz
+    '8e388b78b28d489a3c86f15286438cd62773e7719d3a68dcae511e132b347e5b',  # blasr-1.3.1
+    'c20345d100c31e2d61643561644c7beb023aa5e49141ebd02e4d8390bf1a8e0f',  # OPERA-2.0.6_fix-Makefile.patch
+]
+
+dependencies = [
+    ('Perl', '5.28.0'),
+    ('SAMtools', '0.1.20'),  # SAMtools 0.1.x is required
+    ('BWA', '0.7.17'),
+]
+
+buildopts = 'install CXX="$CXX" CXXFLAGS="$CXXFLAGS"'
+
+files_to_copy = ['bin']
+
+postinstallcmds = [
+    "sed -i -e 's|/usr/bin/perl|/usr/bin/env\ perl|' %(installdir)s/bin/*.pl",
+    "cp %(builddir)s/blasr-1.3.1 %(installdir)s/bin/blasr",
+    # make sure all binaries/scripts and bin subdir have executable permissions
+    "chmod -R a+rx %(installdir)s/bin",
+]
+
+sanity_check_paths = {
+    'files': ['bin/filter_conflicting_edge.pl', 'bin/filter_repeat.pl', 'bin/OPERA-LG',
+              'bin/OPERA-long-read.pl', 'bin/preprocess_reads.pl'],
+    'dirs': [],
+}
+
+moduleclass = 'tools'
