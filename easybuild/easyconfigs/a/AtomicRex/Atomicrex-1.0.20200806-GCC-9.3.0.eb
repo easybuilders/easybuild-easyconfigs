@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'Atomicrex'
+version = '1.0.20181114'
+
+homepage = 'http://atomicrex.gitlab.io/atomicrex/'
+description = """
+atomicrex is a versatile tool for the construction of advanced atomistic models. It is written in C++ and Python. It was primarily developed to fit interatomic potential models. Thanks to its flexible generic structure its application range, however, is much larger. In a general sense, it allows one to develop models that describe a given property as a function of an atomic (or atom-like) configuration. The property in question can be scalar or vectorial in nature, and could represent e.g., total energies and forces, or eventually electronic eigen energies. It thus provides already the basic framework for constructing in the future for example tight binding models.
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+sources = [{
+	'filename':'%(namelower)s-%(version)s.tar.gz',
+	'git_config': {
+		'commit': '63826f89',
+		'repo_name': 'atomicrex',
+		'url': 'https://gitlab.com/atomicrex',
+		'recursive': False,
+		}
+	}
+]
+
+builddependencies = [('CMake', '3.6.2'),('Python','3.8')]
+
+dependencies = [
+    ('Boost', '1.72.0'),
+    ('NLopt', '2.6.1'),
+    ('muParser', '2.2.5'),
+]
+
+separate_build_dir = True
+
+skipsteps = ['install']
+
+configopts  = ' -DENABLE_PYTHON_INTERFACE=ON -DUSE_OPENMP=ON '
+configopts += ' -DENABLE_NLOPT=ON '
+
+postinstallcmds = ['mkdir -p %(installdir)s/bin && cp %(builddir)s/easybuild_obj/atomicrex %(installdir)s/bin && cp -r %(builddir)s/atomicrex*/{CONTRIBUTING.md,doc,examples,LICENSE.txt,README.md,tests,utility_scripts} %(installdir)s/']
+
+modextrapaths = {'PATH': 'utility_scripts'}
+
+sanity_check_paths = {
+    'files': ['bin/atomicrex', 'LICENSE.txt', 'README.md'],
+    'dirs': ['doc', 'examples', 'tests', 'utility_scripts'],
+}
+
+moduleclass = 'phys'
+modluafooter = """
+depends_on("python")
+"""

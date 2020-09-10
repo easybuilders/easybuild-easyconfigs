@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+
+name = 'BoltzTraP'
+version = '1.2.5'
+
+homepage = 'http://www.icams.de/content/departments/cmat/boltztrap/'
+description = """Boltzmann Transport Properties (BoltzTraP) is a program for calculating the semi-classic transport
+ coefficients."""
+
+toolchain = {'name': 'iimkl', 'version': '2020a'}
+
+# Download from 
+# https://owncloud.tuwien.ac.at/index.php/s/s2d55LYlZnioa3s
+# and rename to include version
+
+sources = [SOURCE_TAR_GZ]
+checksums = [
+    'e1ef2a32e0622f9bec1f14331a53d3fb', # BoltzTraP-1.2.5.tar.gz
+]
+
+skipsteps = ['configure']
+
+start_dir = 'src'
+
+parallel = 1
+
+buildopts = 'FC="${FC}" FOPT="-FR -mp1 -w -prec_div -pc80 -pad -ip -DINTEL_VML" LIBS="-mkl"'
+
+files_to_copy = [(['BoltzTraP', 'x_trans'], 'bin'), 'doc', 'LICENSE', 'README', 'tests', 'util']
+
+modextrapaths = {'PATH': 'util'}
+
+modextravars = {'X_TRANS': '%(installdir)s/bin/x_trans'}
+
+postinstallcmds = ["chmod u+x %(installdir)s/bin/x_trans"]
+
+sanity_check_paths = {
+    'files': ['bin/BoltzTraP', 'bin/x_trans', 'LICENSE', 'README'],
+    'dirs': ['doc', 'tests', 'util'],
+}
+
+modloadmsg = """ To use the script x_trans; run:
+
+  BoltzTraP ${X_TRANS} BoltzTraP
+
+"""
+
+moduleclass = 'chem'
+modluafooter = """
+depends_on("python")
+depends_on("perl")
+"""
