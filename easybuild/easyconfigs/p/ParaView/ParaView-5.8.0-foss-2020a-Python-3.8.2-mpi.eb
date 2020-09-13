@@ -35,9 +35,11 @@ builddependencies = [('CMake', '3.16.4')]
 separate_build_dir = True
 
 # Paraview
-configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DBUILD_SHARED_LIBS=ON '
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DPARAVIEW_BUILD_SHARED_LIBS=ON '
 configopts += '-DPARAVIEW_USE_MPI=ON '
 configopts += '-DPARAVIEW_ENABLE_FFMPEG=ON '
+configopts += '-DPARAVIEW_USE_PYTHON=ON '
+configopts += '-DPython3_ROOT_DIR=$EBROOTPYTHON '
 
 # OpenGL & Mesa
 configopts += '-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s ' % SHLIB_EXT
@@ -45,8 +47,12 @@ configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include'
 configopts += '-DVTK_OPENGL_HAS_OSMESA=ON '
 
 sanity_check_paths = {
-    'files': ['bin/paraview'],
-    'dirs': ['include/paraview-%(version_major_minor)s', 'lib'],
+    'files': ['bin/paraview', 'bin/pvpython'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
 }
+
+sanity_check_commands = ['python -c "import paraview"']
+
+modextrapaths = {'PYTHONPATH': ['lib64/python%(pyshortver)s/site-packages', 'lib/python%(pyshortver)s/site-packages']}
 
 moduleclass = 'vis'
