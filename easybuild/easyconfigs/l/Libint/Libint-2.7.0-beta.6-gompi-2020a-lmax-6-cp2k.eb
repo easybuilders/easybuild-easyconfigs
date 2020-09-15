@@ -1,0 +1,49 @@
+easyblock = 'EB_Libint_CMake'
+name = 'Libint'
+version = '2.7.0-beta.6'
+local_lmax = 6
+# custom configuration, to be used as dependency for CP2K
+versionsuffix = '-lmax-%s-cp2k' % local_lmax
+
+homepage = 'https://github.com/evaleev/libint'
+description = """Libint library is used to evaluate the traditional (electron repulsion) and certain novel two-body
+ matrix elements (integrals) over Cartesian Gaussian functions used in modern atomic and molecular theory."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/evaleev/libint/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    'e3fa24d535c77a88ba86b6633449cd5332be53f91612a396b198fac4c2bcb321',  # v2.7.0-beta.6.tar.gz
+]
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('CMake', '3.16.4'),
+    ('GMP', '6.2.0'),
+    ('Boost', '1.72.0'),
+    ('Eigen', '3.3.7'),
+    ('Python', '2.7.18'),
+]
+
+# configure options as required by CP2K,
+# see Jenkinsfile in https://github.com/cp2k/libint-cp2k
+local_eri_max_am = '%s,%s' % (local_lmax, local_lmax - 1)
+local_eri23_max_am = '%s,%s' % (local_lmax + 2, local_lmax + 1)
+
+libint_compiler_configopts = '--enable-eri=1 --enable-eri2=1 --enable-eri3=1 --with-max-am=%s ' % local_lmax
+libint_compiler_configopts += '--with-eri-max-am=%s ' % local_eri_max_am
+libint_compiler_configopts += '--with-eri2-max-am=%s ' % local_eri23_max_am
+libint_compiler_configopts += '--with-eri3-max-am=%s ' % local_eri23_max_am
+libint_compiler_configopts += '--enable-generic-code --disable-unrolling'
+
+# starting from Libint 2.7.0 both static and shared libraries can be built simultaneously
+configopts = '-DENABLE_FORTRAN=on -DLIBINT2_BUILD_SHARED_AND_STATIC_LIBS=on -DLIBINT2_SHGAUSS_ORDERING=standard'
+sanity_check_paths = {
+    'files': ['include/libint2.h', 'include/libint2.hpp', 'include/libint_f.mod', 'lib/libint2.a', \
+              'lib/libint2.%s' % SHLIB_EXT],
+    'dirs' : ['include/libint2', 'lib/cmake/libint2', 'lib/pkgconfig', 'share/libint']
+}
+
+moduleclass = 'chem'
