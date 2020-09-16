@@ -1,0 +1,54 @@
+fix for "error: return-statement with no value" on "return ANTS_VERSION_PATCH" with recent GCC
+
+see https://github.com/ANTsX/ANTs/commit/1c421a5853f343a020aaae861a751545112e0807#diff-3f264ba87b5171d15a0246a2ed123248
+
+From 1c421a5853f343a020aaae861a751545112e0807 Mon Sep 17 00:00:00 2001
+From: stnava <stnava@gmail.com>
+Date: Mon, 21 Oct 2019 15:31:39 -0400
+Subject: [PATCH] BUG: setting a default 0 0 0 version when version undefined.
+
+---
+ ANTsVersionConfig.h.in   | 11 +++++++++++
+ Examples/ANTsVersion.cxx | 10 ----------
+ 2 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/ANTsVersionConfig.h.in b/ANTsVersionConfig.h.in
+index ec614eb0..9f006f62 100644
+--- a/ANTsVersionConfig.h.in
++++ b/ANTsVersionConfig.h.in
+@@ -21,3 +21,14 @@
+ #define ANTS_VERSION_PATCH @ANTS_VERSION_PATCH@
+ #define ANTS_VERSION_TWEAK @ANTS_VERSION_TWEAK@
+ #define ANTS_VERSION "@ANTS_VERSION@"
++
++//* via https://stackoverflow.com/questions/3781520/how-to-test-if-preprocessor-symbol-is-defined-but-has-no-value **/
++#define DO_EXPAND(VAL)  VAL ## 1
++#define EXPAND(VAL)     DO_EXPAND(VAL)
++
++#if !defined(ANTS_VERSION_MAJOR) || (EXPAND(ANTS_VERSION_MAJOR) == 1)
++#define ANTS_VERSION_MAJOR 0
++#define ANTS_VERSION_MINOR 0
++#define ANTS_VERSION_PATCH 0
++#define ANTS_VERSION_TWEAK 0
++#endif
+diff --git a/Examples/ANTsVersion.cxx b/Examples/ANTsVersion.cxx
+index 1411794a..eff7870f 100644
+--- a/Examples/ANTsVersion.cxx
++++ b/Examples/ANTsVersion.cxx
+@@ -18,16 +18,6 @@
+ #include "ANTsVersion.h"
+ #include "ANTsVersionConfig.h"
+ 
+-/** define these if they do not exist to avoid compiler errors due to
+-* lack of git-defined versions.  this hopefully fixes some issues with
+-* installation from source repositories that do not contain git history.
+-*/
+-#ifndef ANTS_VERSION_MAJOR
+-#define ANTS_VERSION_MAJOR 0
+-#define ANTS_VERSION_MINOR 0
+-#define ANTS_VERSION_PATCH 0
+-#endif
+-
+ #include <iostream>     // std::cout, std::ios
+ #include <sstream>      // std::ostringstream
+ 

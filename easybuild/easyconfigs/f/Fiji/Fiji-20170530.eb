@@ -1,0 +1,46 @@
+easyblock = 'PackedBinary'
+
+name = 'Fiji'
+version = '20170530'
+
+homepage = 'https://fiji.sc/'
+description = """Fiji is an image processing package—a 'batteries-included' distribution of
+ ImageJ, bundling a lot of plugins which facilitate scientific image analysis.
+ This release is based on ImageJ 2.0.0-rc-69/1.52p."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://downloads.imagej.net/fiji/Life-Line/']
+sources = ['%(namelower)s-nojre-%(version)s.zip']
+checksums = ['cf9fb45c48b22a7888b479968477f1f7a300a9c833e47244cbe0d1e93890bd20']
+
+dependencies = [('Java', '1.8', '', True)]
+
+postinstallcmds = [
+    # Remove binaries for other platforms
+    'rm %(installdir)s/{ImageJ-win32.exe,ImageJ-win64.exe,ImageJ-linux32}',
+    # Enable an update site (edit an existing site with same parameters to enable it)
+    # Full list available at https://imagej.github.io/list-of-update-sites/
+    '%(installdir)s/ImageJ-linux64 --headless --update edit-update-site "ImageScience"'
+    ' https://sites.imagej.net/ImageScience/',
+    '%(installdir)s/ImageJ-linux64 --headless --update edit-update-site "3D ImageJ Suite"'
+    ' https://sites.imagej.net/Tboudier/',
+    # Add a new update site
+    # '%(installdir)s/ImageJ-linux64 --headless --update add-update-site "New Name"'
+    # ' https://site.url/NewName/',
+    # Update the installation
+    '%(installdir)s/ImageJ-linux64 --headless --update update',
+]
+
+sanity_check_paths = {
+    'files': ['ImageJ-linux64'],
+    'dirs': [],
+}
+
+modextrapaths = {'MATLABPATH': 'scripts'}
+
+modloadmsg = """ ImageJ/Fiji can be started with the command: ImageJ-linux64
+ Plugins can be installed in your $HOME/.plugins folder.
+ If you need any other update sites to be enabled, please contact support."""
+
+moduleclass = 'vis'

@@ -12,7 +12,7 @@ easyblock = 'ConfigureMake'
 name = 'ELPA'
 version = '2016.11.001.pre'
 
-homepage = 'http://elpa.mpcdf.mpg.de'
+homepage = 'https://elpa.mpcdf.mpg.de'
 description = """Eigenvalue SoLvers for Petaflop-Applications ."""
 
 toolchain = {'name': 'foss', 'version': '2018b'}
@@ -33,16 +33,20 @@ checksums = [
 
 builddependencies = [
     ('Autotools', '20180311'),
+    # remove_xcompiler script requires 'python' command,
+    # manual_cpp script requires 'python' command and is not compatible yet with Python 3
+    ('Python', '2.7.15'),
 ]
 
 preconfigopts = 'autoreconf && '
 
-common_configopts = 'FCFLAGS="-I$EBROOTIMKL/mkl/include/intel64/lp64 $FCFLAGS" '
-common_configopts += 'LIBS="$LIBSCALAPACK" '
+local_common_configopts = 'FCFLAGS="-I$EBROOTIMKL/mkl/include/intel64/lp64 $FCFLAGS" '
+local_common_configopts += 'LIBS="$LIBSCALAPACK" '
 
 configopts = [
-    common_configopts + '--enable-openmp ',
-    common_configopts,  # Default version last, so we can get the normal config.h/config-f90.h installed afterwards.
+    local_common_configopts + '--enable-openmp ',
+    # Default version last, so we can get the normal config.h/config-f90.h installed afterwards.
+    local_common_configopts,
 ]
 
 # Autotools 20180311 makes configure create some files that causes problem
