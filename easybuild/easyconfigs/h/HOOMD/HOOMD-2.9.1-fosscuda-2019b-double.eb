@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'HOOMD'
+version = "2.9.1"
+versionsuffix = '-double'
+
+homepage = "https://bitbucket.org/glotzer/hoomd-blue"
+description = """HOOMD-blue is a general-purpose particle simulation toolkit. 
+                  It scales from a single CPU core to thousands of GPUs."""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/glotzerlab/hoomd-blue/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['19dcae5841d05e274909ff3505f6f2bd3eebf850e91c20563e7a1418921001f8']
+
+dependencies = [
+    ('CUDA', '10.1.243-GCC-8.3.0'),
+    ('Python', '3.7.4'),
+]
+
+builddependencies = [('CMake', '3.13.4')]
+
+separate_build_dir = True
+
+configure_cmd_prefix = 'git submodule update --init && '
+configopts = '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DENABLE_CUDA=ON -DENABLE_MPI=ON -DENABLE_MPI_CUDA=ON '
+configopts += '-DBUILD_CGCMM=ON -DBUILD_DEPRECATED=ON -DBUILD_HPMC=ON '
+configopts += '-DBUILD_MD=ON -DBUILD_METAL=ON '
+configopts += '-DSINGLE_PRECISION=OFF '
+configopts += '-DENABLE_TBB=OFF -DUPDATE_SUBMODULES=OFF '
+
+sanity_check_paths = {
+    'files': ['hoomd/init.py'],
+    'dirs': [],
+}
+
+modextravars = {'PYTHONPATH': '%(installdir)s'}
+
+moduleclass = 'phys'
