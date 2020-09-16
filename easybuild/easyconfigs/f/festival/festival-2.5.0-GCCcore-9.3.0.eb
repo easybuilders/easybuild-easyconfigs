@@ -19,9 +19,11 @@ source_urls = [
     'http://festvox.org/packed/festival/%(version_major_minor)s',
     'http://festvox.org/packed/festival/%(version_major_minor)s/voices',
 ]
-sources = []
+sources = [{
+    'filename': '%(name)s-%(version)s-release.tar.gz',
+    'extract_cmd': 'tar xzf %s -C %(installdir)s --strip-components=1',
+}]
 local_sources = [
-    '%(name)s-%(version)s-release.tar.gz',
     'festlex_CMU.tar.gz',
     'festlex_OALD.tar.gz',
     'festlex_POSLEX.tar.gz',
@@ -60,7 +62,13 @@ local_sources = [
     'festvox_rablpc16k.tar.gz',
 ]
 for local_x in local_sources:
-    sources.append({'filename': local_x, 'extract_cmd': 'tar xzf %s -C %(installdir)s --strip-components=1'})
+    local_newfilename = local_x.split('.')
+    local_newfilename[0] = local_newfilename[0] + '-%(version)s'
+    sources.append({
+        'download_filename': local_x,
+        'filename': '.'.join(local_newfilename),
+        'extract_cmd': 'tar xzf %s -C %(installdir)s --strip-components=1',
+    })
 
 patches = ['%(name)s-%(version)s_speech_tools.patch']
 checksums = [
@@ -125,5 +133,7 @@ sanity_check_paths = {
              ['lib/%s.scm' % x for x in ['siod', 'web', 'cstr', 'fringe']],
     'dirs': ['lib/voices', 'lib/dicts/cmu', 'lib/dicts/oald']
 }
+
+sanity_check_commands = ['festival%s --version' % x for x in ['', '_client']]
 
 moduleclass = 'tools'
