@@ -1,0 +1,45 @@
+# #
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the
+# policy:  https://hpcbios.readthedocs.org/en/latest/
+# #
+
+easyblock = 'ConfigureMake'
+
+name = 'SQLite'
+version = '3.32.3'
+
+homepage = 'https://www.sqlite.org/'
+description = "SQLite: SQL Database Engine in a C Library"
+
+toolchain = {'name': 'system', 'version': 'system'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.%(namelower)s.org/2019/']
+sources = ['%(namelower)s-autoconf-%(version_major)s290000.tar.gz']
+
+builddependencies = [
+    ('binutils', '2.34'),
+]
+dependencies = [
+    ('libreadline', '8.0'),
+    ('Tcl', '8.6.10'),
+]
+
+# enable additional APIs that provide access to meta-data about tables and queries
+# needed for GDAL when it used as a dep for QGIS
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS -DSQLITE_ENABLE_COLUMN_METADATA"'
+
+
+sanity_check_paths = {
+    'files': ['bin/sqlite3', 'include/sqlite3ext.h', 'include/sqlite3.h', 'lib/libsqlite3.a', 'lib/libsqlite3.so'],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'devel'
