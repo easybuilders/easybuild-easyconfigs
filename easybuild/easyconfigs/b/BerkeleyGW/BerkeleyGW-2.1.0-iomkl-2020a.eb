@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+name = 'BerkeleyGW'
+version = "2.1.0"
+
+homepage = 'http://www.berkeleygw.org'
+description = """The BerkeleyGW Package is a set of computer codes that calculates the quasiparticle
+ properties and the optical responses of a large variety of materials from bulk periodic crystals to
+ nanostructures such as slabs, wires and molecules.
+ We ask that you please cite the following papers when using results obtained from the BerkeleyGW package:
+ - Mark S. Hybertsen and Steven G. Louie, Electron correlation in semiconductors and insulators: Band gaps and quasiparticle energies, Phys. Rev. B 34, 5390 (1986).
+ - Michael Rohlfing and Steven G. Louie, Electron-hole excitations and optical spectra from first principles, Phys. Rev. B 62, 4927 (2000).
+ - Jack Deslippe, Georgy Samsonidze, David A. Strubbe, Manish Jain, Marvin L. Cohen, and Steven G. Louie, BerkeleyGW: A Massively Parallel Computer Package for the Calculation of the Quasiparticle and Optical Properties of Materials and Nanostructures, Comput. Phys. Commun. 183, 1269 (2012) (https://arxiv.org/abs/1111.4429)."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['http://www.berkeleygw.org/releases/']  # requires registration
+sources = ['BerkeleyGW-%(version_major_minor)s.tar.gz']
+patches = ['bgw-%(version)s-fix_install.patch']
+checksums = [
+    '31f3b643dd937350c3866338321d675d4a1b1f54c730b43ad74ae67e75a9e6f2',  # BerkeleyGW-2.1.tar.gz
+    'd3793b3ae06a8e43349c4685d7183b63c462266c8799fac33dee4663d23bcc74',  # bgw-2.1.0-fix_install.patch
+]
+
+dependencies = [
+     ('FFTW', '3.3.8', '-mpi'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'cp config/generic.mpi.linux.mk arch.mk && '
+
+buildopts  = 'all-flavors '
+buildopts += 'MATHFLAG="-DUSEFFTW3 -DUSESCALAPACK" COMPFLAG=-DINTEL PARAFLAG="-DMPI -DOMP" '
+buildopts += 'DEBUGFLAG="" F90free="$MPIF90 -free" LINK="$MPIF90" '
+buildopts += 'FOPTS="$FFLAGS" MOD_OPT="-module " C_PARAFLAG="$PARAFLAG" CC_COMP="$MPICXX" C_COMP="$MPICC" '
+buildopts += 'FCPP="cpp -C -P -ffreestanding" C_LINK="$MPICXX" C_OPTS="$CFLAGS" MKLPATH="$MKLROOT" '
+buildopts += 'LAPACKLIB="$LIBLAPACK" BLACSDIR="$BLACS_LIB_DIR" BLACS="$LIBBLACS" SCALAPACKLIB="$LIBSCALAPACK" '
+buildopts += 'FFTWINCLUDE="$FFTW_INC_DIR" FFTWLIB="$EBROOTFFTW/lib/libfftw3_mpi.a" '
+
+# "all-flavors" cleans and compiles everything again:
+
+preinstallopts = 'sed -i "s/install: all-flavors/install: all/" Makefile && '
+
+installopts = 'INSTDIR=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/' + prog + '.' + flavor + '.x'
+              for prog in ['epsilon', 'sigma', 'kernel', 'absorption', 'nonlinearoptics']
+              for flavor in ['real', 'cplx']],
+    'dirs': ['bin', 'include', 'lib', 'share']
+}
+
+postinstallcmds = ["chmod -R go+X %(installdir)s"]
+
+moduleclass = 'phys'
