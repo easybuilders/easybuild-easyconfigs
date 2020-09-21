@@ -575,30 +575,30 @@ class EasyConfigTest(TestCase):
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
-                    failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
+                    failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
 
             # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
             if easyblock in ['PythonBundle', 'PythonPackage']:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    failing_checks.append("'use_pip' set in %s" % ec_fn)
+                    failing_checks.append("'use_pip' should be set in %s" % ec_fn)
 
             # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
             if easyblock == 'PythonBundle':
                 if download_dep_fail or exts_download_dep_fail:
-                    fail = "'*download_dep_fail' set in %s (shouldn't, since PythonBundle easyblock is used)" % ec_fn
+                    fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
                     failing_checks.append(fail)
 
             elif exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
-                    fail = "'PythonBundle' easyblock is used for bundle of Python packages in %s" % ec_fn
+                    fail = "'PythonBundle' easyblock should be is used for bundle of Python packages in %s" % ec_fn
                     failing_checks.append(fail)
                 else:
                     # both download_dep_fail and use_pip should be set via exts_default_options
                     # when installing Python packages as extensions
                     for key in ['download_dep_fail', 'use_pip']:
                         if exts_default_options.get(key) is None:
-                            failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
+                            failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix
             # Tkinter is an exception, since its version always matches the Python version anyway
@@ -609,7 +609,7 @@ class EasyConfigTest(TestCase):
             has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'])
             if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn
+                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
                     # This is only a failure for newly added ECs, not for existing ECS
                     # As that would probably break many ECs
                     if ec_fn in added_ecs_filenames:
@@ -622,7 +622,7 @@ class EasyConfigTest(TestCase):
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     if not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
-                        failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
+                        failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
