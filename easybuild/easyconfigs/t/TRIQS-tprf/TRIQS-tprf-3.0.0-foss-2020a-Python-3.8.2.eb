@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'TRIQS-tprf'
+version = '3.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://triqs.github.io/tprf'
+description = """
+ TRIQS (Toolbox for Research on Interacting Quantum Systems) is a
+ scientific project providing a set of C++ and Python libraries to
+ develop new tools for the study of interacting quantum systems.
+
+ TPRF is a TRIQS-based two-particle response function tool box that
+ implements basic operations for higher order response functions such
+ as inversion, products, the random phase approximation, the bethe
+ salpeter equation (in the local vertex approximation), etc..
+
+ The aim is to provide efficient (C++/OpenMP/MPI) implementations of
+ the basic operations needed to compute the two-particle response in
+ the different two-particle channels (particle-hole, particle-particle).
+"""
+
+docurls = ['https://triqs.github.io/tprf/%(version_major_minor)s.x/']
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/TRIQS/tprf/releases/download/%(version)s/']
+sources = ['tprf-%(version)s.tar.gz']
+checksums = ['8e20620145bb8cbcc187f4637884457c0cacaed79ba6e1709a951046ee5ffc4b']
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('TRIQS', '3.0.0', versionsuffix)
+]
+
+builddependencies = [
+    ('CMake', '3.16.4')
+]
+
+separate_build_dir = True
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libtriqs_tprf_c.a'],
+    'dirs': ['include/triqs_tprf', 'lib', 'share',
+             'lib/python%(pyshortver)s/site-packages/triqs_tprf'],
+}
+
+sanity_check_commands = ["python -c 'import triqs_tprf'"]
+
+modextrapaths = {
+    'CPLUS_INCLUDE_PATH': 'include',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'CMAKE_PREFIX_PATH': 'lib/cmake/triqs_tprf',
+}
+modextravars = {
+    'TRIQS_TPRF_ROOT': '%(installdir)s',
+    'TRIQS_TPRF_VERSION': '%(version)s'
+}
+
+moduleclass = 'phys'
