@@ -1,5 +1,3 @@
-easyblock = 'PythonPackage'
-
 name = 'PyTorch'
 version = '1.3.1'
 versionsuffix = '-Python-%(pyver)s'
@@ -72,12 +70,6 @@ sources = [
         'download_filename': 'cb3d8066f20e6bca306454934d09d6abd826264a.tar.gz',
         'filename': 'onnx-tensorrt-20190425.tar.gz',
         'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'onnx-tensorrt'),
-    },
-    {
-        'source_urls': ['https://github.com/google/protobuf/archive'],
-        'download_filename': '48cb18e5c419ddd23d9badcfe4e9df7bde1979b2.tar.gz',
-        'filename': 'protobuf-20180727.tar.gz',
-        'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'protobuf'),
     },
     {
         'source_urls': ['https://github.com/Maratyszcza/pthreadpool/archive'],
@@ -216,7 +208,6 @@ checksums = [
     'c7682e9007ddfd94072647abab3e89ffd9084089460ae47d67060974467b58bf',  # benchmark-20180525.tar.gz
     '02407529fd8431cf627d45638b4d9a6c02b8aa5bf50d73b8fa12217918c57ff4',  # pybind11-20170919.tar.gz
     '1a98c6fece7878c88b59ffe651b427c15b4929c801a09655cd14ca44553787c3',  # onnx-tensorrt-20190425.tar.gz
-    'f5a35e17fb07f3b13517264cd17a089636fcbb2912f9df7bef7414058969a8d2',  # protobuf-20180727.tar.gz
     '90ab4f60ae0e99c0172dd5201dccc6de6c8f384a21b3d959588f4c1e00beec0f',  # pthreadpool-20181008.tar.gz
     '07625551202a1f35fe5e826669ad495962b26f6a139290e90b321c5996f002ef',  # FXdiv-20181016.tar.gz
     'afd27417c6df1c85f79a68361055dd3adc292174913c39c1f58b698b9cfd7926',  # psimd-20180906.tar.gz
@@ -247,10 +238,11 @@ checksums = [
 builddependencies = [
     ('CMake', '3.15.3'),
     ('hypothesis', '4.44.2', versionsuffix),
-    ('Ninja', '1.9.0'),
 ]
 
 dependencies = [
+    ('Ninja', '1.9.0'),
+    ('protobuf', '3.10.0'),
     ('Python', '3.7.4'),
     ('SciPy-bundle', '2019.10', versionsuffix),
     ('PyYAML', '5.1.2'),
@@ -258,38 +250,20 @@ dependencies = [
     ('GMP', '6.1.2'),
     ('numactl', '2.0.12'),
     ('FFmpeg', '4.2.1'),
-    ('gflags', '2.2.2'),
-    ('glog', '0.4.0'),
     ('Pillow', '6.2.1'),
     ('cuDNN', '7.6.4.38'),
     ('magma', '2.5.1'),
     ('NCCL', '2.4.8'),
 ]
 
-download_dep_fail = True
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['3.5', '3.7', '5.2', '6.0', '6.1', '7.0', '7.2', '7.5']
 
-prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1 VERBOSE=1 '
-prebuildopts += 'MAX_JOBS=%(parallel)s '
-prebuildopts += 'LDFLAGS="$LDFLAGS -ldl" '
-prebuildopts += 'USE_FFMPEG=ON USE_IBVERBS=1 USE_GFLAGS=ON USE_GLOG=ON '
-prebuildopts += 'CUDNN_LIB_DIR=$EBROOTCUDNN/lib64 CUDNN_INCLUDE_DIR=$EBROOTCUDNN/include '
-prebuildopts += 'USE_SYSTEM_NCCL=1 NCCL_INCLUDE_DIR=$EBROOTNCCL/include '
-prebuildopts += 'TORCH_CUDA_ARCH_LIST="3.5 3.7 5.2 6.0 6.1 7.0 7.2 7.5" '
-
-preinstallopts = prebuildopts
-
-runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/' \
-          'build/lib.linux-%(arch)s-%(pyshortver)s:$PYTHONPATH '
-runtest += '&& export LD_LIBRARY_PATH=%(builddir)s/%(namelower)s-%(version)s/torch/lib64:$LD_LIBRARY_PATH '
-runtest += '&& python test/run_test.py --verbose '
-
-options = {'modulename': 'torch'}
-
-postinstallcmds = ['cp -a %(builddir)s/%(namelower)s-%(version)s/torch/lib*/* %(installdir)s/lib/']
-
-sanity_check_paths = {
-    'files': [],
-    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+excluded_tests = {
 }
+
+# OpenMP threads must be limited as torch.matmul returns inprecise results for many threads (e.g. 176)
+runtest = 'cd test && OMP_NUM_THREADS=4 %(python)s run_test.py --verbose %(excluded_tests)s'
+tests = ['PyTorch-check-cpp-extension.py']
 
 moduleclass = 'devel'
