@@ -21,6 +21,7 @@ builddependencies = [
     ('binutils', '2.30'),
     ('Bison', '3.0.4'),
     ('flex', '2.6.4'),
+    ('libtirpc', '1.1.4'),
 ]
 
 dependencies = [
@@ -29,15 +30,21 @@ dependencies = [
     ('zlib', '1.2.11'),
 ]
 
-configopts = ''
-configopts += '--with-szlib=$EBROOTSZIP '
+preconfigopts = "LIBS='-ltirpc' "
+configopts = '--with-szlib=$EBROOTSZIP '
+configopts += 'CFLAGS="$CFLAGS -I$EBROOTLIBTIRPC/include/tirpc" '
 configopts += '--includedir=%(installdir)s/include/%(namelower)s '
 
 modextrapaths = {'CPATH': 'include/hdf'}
 
 sanity_check_paths = {
-    'files': ['lib/libdf.a', 'lib/libhdf4.settings', 'lib/libmfhdf.a'],
+    'files': ['bin/h4cc', 'bin/ncdump', 'lib/libdf.a', 'lib/libhdf4.settings', 'lib/libmfhdf.a'],
     'dirs': ['bin', 'include/hdf'],
 }
+
+sanity_check_commands = [
+    "h4cc --help",
+    "ncdump -V",
+]
 
 moduleclass = 'data'
