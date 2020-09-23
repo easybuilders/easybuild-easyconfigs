@@ -591,7 +591,7 @@ class EasyConfigTest(TestCase):
             elif exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
-                    fail = "'PythonBundle' easyblock should be is used for bundle of Python packages in %s" % ec_fn
+                    fail = "'PythonBundle' easyblock should be used for bundle of Python packages in %s" % ec_fn
                     failing_checks.append(fail)
                 else:
                     # both download_dep_fail and use_pip should be set via exts_default_options
