@@ -1,0 +1,25 @@
+Patch to fix missing __wrap_memcpy as suggested by:
+https://stackoverflow.com/a/36552947
+
+diff --git a/src/common/memcpyLink.h b/src/common/memcpyLink.h
+index 508d3c6..8d9f397 100644
+--- a/src/common/memcpyLink.h
++++ b/src/common/memcpyLink.h
+@@ -3,5 +3,15 @@
+  * @author  Chirag Jain <cjain7@gatech.edu>
+  */
+ 
++#include <string.h>
++
++__asm__(".symver memcpy, memcpy@GLIBC_2.2.5");
++
++extern "C"
++{
++ void *__wrap_memcpy(void *dest, const void *src, size_t n)
++ {
++    return memcpy(dest, src, n);
++ }
++}
+ 
+-__asm__(".symver memcpy,memcpy@GLIBC_2.2.5");
+
