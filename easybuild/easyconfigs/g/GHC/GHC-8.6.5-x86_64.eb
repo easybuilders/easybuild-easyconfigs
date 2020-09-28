@@ -1,0 +1,53 @@
+# This is a binary install that requires a './configure'+'make install' step.
+# We use the centos7 binary tarball as being the one built against oldest system libs
+# is upwards compatible with newer distros.
+# To keep the binary install on the SYSTEM toolchain we need to assure the correct
+# 'gmp' and 'ncurses' osdeps presence.
+# See discussion:
+# https://github.com/easybuilders/easybuild-easyconfigs/pull/11310
+
+easyblock = 'ConfigureMake'
+
+name = 'GHC'
+version = '8.6.5'
+versionsuffix = '-x86_64'
+
+homepage = 'https://haskell.org/ghc/'
+description = """The Glorious/Glasgow Haskell Compiler"""
+
+toolchain = SYSTEM
+
+local_distro_tarball = 'centos7'
+
+source_urls = ['https://downloads.haskell.org/~ghc/%(version)s/']
+sources = ['%%(namelower)s-%%(version)s-x86_64-%s-linux.tar.xz' % local_distro_tarball]
+
+checksums = [
+    '80ab566f4411299f9e5922d60749ca80f989d697db19e03ed875619d699f0edf',  # ghc-8.6.5-x86_64-centos7-linux.tar.xz
+]
+
+
+osdependencies = [
+  ('gmp',        # provides libgmp.so.10 on RHEL family
+   'libgmp10',   # provides libgmp.so.10 on OpenSUSE and Debian/Ubuntu family
+  ),
+  ('ncurses-libs',        # provides libtinfo.so.5 on RHEL 7
+   'ncurses-compat-libs', # provides libtinfo.so.5 on RHEL 8
+   'libncurses5',         # provides libtinfo.so.5 on OpenSUSE
+   'libtinfo5',           # provides libtinfo.so.5 on Debian/Ubuntu family
+  ),
+]
+
+builddependencies = [
+    ('binutils', '2.32'),
+]
+
+skipsteps = ['build']
+
+sanity_check_paths = {
+    'files': ['bin/ghc', 'bin/ghci', 'bin/ghc-pkg', 'bin/runghc', 'bin/runhaskell'],
+    'dirs': ['bin', 'lib', 'share'],
+}
+sanity_check_commands = ['ghc --version']
+
+moduleclass = 'compiler'
