@@ -1,0 +1,43 @@
+name = 'NVHPC'
+version = '20.7'
+local_gccver = '9.3.0'
+versionsuffix = '-GCC-%s-OWNCUDA' % local_gccver
+
+homepage = 'https://developer.nvidia.com/hpc-sdk/'
+description = """C, C++ and Fortran compilers included with the NVIDIA HPC SDK (previously: PGI)"""
+
+toolchain = SYSTEM
+
+sources = ['nvhpc_2020_%(version_major)s%(version_minor)s_Linux_x86_64_cuda_multi.tar.gz']
+
+dependencies = [
+    ('GCCcore', local_gccver),
+    ('binutils', '2.34', '', ('GCCcore', local_gccver)),
+    ('CUDA', '11.0', '', SYSTEM),
+    # This is necessary to avoid cases where just libnuma.so.1 is present in the system and -lnuma fails
+    ('numactl', '2.0.13', '', SYSTEM)
+]
+
+default_cuda_version = "11.0"
+compute_capability = "70"
+
+# Options to add/remove things to/from environment module
+module_byo_compilers = False  # Remove compilers from PATH (Bring-your-own compilers)
+module_nvhpc_own_mpi = False  # Add NVHPC's own pre-compiled OpenMPI
+module_add_math_libs = False  # Add NVHPC's math libraries (which should be there from CUDA anyway)
+module_add_profilers = False  # Add NVHPC's NVIDIA Profilers
+module_add_nccl = False       # Add NVHPC's NCCL library
+module_add_nvshmem = False    # Add NVHPC's NVSHMEM library
+module_add_cuda = False       # Add NVHPC's bundled CUDA
+
+# We use a HMNS, so let's enforce a unique compiler
+modluafooter = '''
+family("compiler")
+add_property("arch","gpu")
+'''
+
+# Always do a recursive unload on compilers
+recursive_module_unload = True
+
+# this bundle serves as a compiler-only toolchain, so it should be marked as compiler (important for HMNS)
+moduleclass = 'compiler'
