@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'GDRCopy'
+version = '2.1'
+local_cudaversion = '11.0.2'
+versionsuffix = '-CUDA-%s' % local_cudaversion
+
+homepage = 'https://github.com/NVIDIA/gdrcopy'
+description = "A low-latency GPU memory copy library based on NVIDIA GPUDirect RDMA technology."
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['cecc7dcc071107f77396f5553c9109790b6d2298ae29eb2dbbdd52b2a213e4ea']
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('Autotools', '20180311'),
+    ('pkg-config', '0.29.2'),
+]
+
+osdependencies = [
+    ('gdrcopy-kmod', 'gdrdrv-dkms'),  # kernel module for GDR Copy
+    'nvidia_peer_memory',  # kernel module for GPUDirect RDMA
+]
+
+dependencies = [
+    ('CUDAcore', local_cudaversion, '', True),
+    ('Check', '0.15.2'),
+]
+
+skipsteps = ['configure']
+
+local_envopts = "PREFIX=%(installdir)s CUDA=$EBROOTCUDACORE"
+buildopts = "all %s" % local_envopts
+installopts = local_envopts
+
+sanity_check_paths = {
+    'files': ['bin/copybw', 'bin/copylat', 'bin/sanity', 'lib/libgdrapi.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'
