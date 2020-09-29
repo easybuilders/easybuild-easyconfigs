@@ -37,7 +37,7 @@ checksums = [
 ]
 
 builddependencies = [('CMake', '3.16.4')]
-multi_deps = { 'Python': ['3.8'] }
+multi_deps = { 'Python': ['3.8', '3.7', '3.6'] }
 
 dependencies = [
     ('SciPy-Stack', '2020a'),
@@ -67,13 +67,11 @@ configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)s$(pyth
 configopts += "-DCMAKE_INSTALL_LIBDIR=lib"
 
 preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s$(python%(pyshortver)s-config --abiflags)/site-packages:$PYTHONPATH && "
-postinstallcmds = ['/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib --any_interpreter' ]
-
-# Install a egg-info file so VTK is more python friendly, required for mayavi
-local_egg_info_src = '%(builddir)s/VTK-%(version)s/vtk-version.egg-info'
-local_egg_info_dest = '%(installdir)s/lib/python%(pyshortver)s$(python%(pyshortver)s-config --abiflags)/site-packages/vtk-%(version)s.egg-info'
+installopts = " && mv %(installdir)s/bin/vtkpython %(installdir)s/bin/vtkpython%(pyshortver)s " 
+installopts += ' && sed "s/#VTK_VERSION#/%(version)s/" %(builddir)s/VTK-%(version)s/vtk-version.egg-info > %(installdir)s/lib/python%(pyshortver)s/site-packages/vtk-%(version)s.egg-info '
 postinstallcmds = [
-    'sed "s/#VTK_VERSION#/%%(version)s/" %s > %s' % (local_egg_info_src, local_egg_info_dest),
+	'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib --any_interpreter',
+	'ln -s %(installdir)s/bin/vtkpython3.8 %(installdir)s/bin/vtkpython'
 ]
 
 modextrapaths = {'EBPYTHONPREFIXES': ['']}
