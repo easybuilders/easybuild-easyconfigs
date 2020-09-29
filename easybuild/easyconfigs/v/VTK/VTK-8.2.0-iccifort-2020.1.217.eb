@@ -61,16 +61,17 @@ configopts += "-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include "
 # Python
 configopts += "-DVTK_WRAP_PYTHON=ON "
 configopts += "-DVTK_PYTHON_VERSION=%(pyver)s "
-configopts += "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s "
-configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)s.%s " % SHLIB_EXT
+configopts += "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s$(python-config --abiflags) "
+configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)s$(python-config --abiflags).%s " % SHLIB_EXT
 # Other
 configopts += "-DCMAKE_INSTALL_LIBDIR=lib"
 
-preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s$(python-config --abiflags)/site-packages:$PYTHONPATH && "
+postinstallcmds = ['/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib --any_interpreter' ]
 
 # Install a egg-info file so VTK is more python friendly, required for mayavi
 local_egg_info_src = '%(builddir)s/VTK-%(version)s/vtk-version.egg-info'
-local_egg_info_dest = '%(installdir)s/lib/python%(pyshortver)s/site-packages/vtk-%(version)s.egg-info'
+local_egg_info_dest = '%(installdir)s/lib/python%(pyshortver)s$(python-config --abiflags)/site-packages/vtk-%(version)s.egg-info'
 postinstallcmds = [
     'sed "s/#VTK_VERSION#/%%(version)s/" %s > %s' % (local_egg_info_src, local_egg_info_dest),
 ]
