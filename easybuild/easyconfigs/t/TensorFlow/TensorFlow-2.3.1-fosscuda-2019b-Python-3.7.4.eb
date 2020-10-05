@@ -1,13 +1,13 @@
 easyblock = 'PythonBundle'
 
 name = 'TensorFlow'
-version = '2.3.0'
+version = '2.3.1'
 versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'https://www.tensorflow.org/'
 description = "An open-source software library for Machine Intelligence"
 
-toolchain = {'name': 'foss', 'version': '2019b'}
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
 toolchainopts = {'usempi': True, 'pic': True}
 
 builddependencies = [
@@ -18,6 +18,8 @@ builddependencies = [
     ('pybind11', '2.4.3', versionsuffix),
 ]
 dependencies = [
+    ('cuDNN', '7.6.4.38'),
+    ('NCCL', '2.4.8'),
     ('Python', '3.7.4'),
     ('h5py', '2.10.0', versionsuffix),
     ('cURL', '7.66.0'),
@@ -38,10 +40,6 @@ dependencies = [
     ('snappy', '1.1.7'),
     ('SWIG', '4.0.1'),
     ('zlib', '1.2.11'),
-    # TF 2.3 requires SciPy 1.4.1 due to potential crashes with other versions
-    # See https://github.com/tensorflow/tensorflow/commit/54daf3c5700897a6062313983933ca28e92c410d
-    # Add at bottom so it will be loaded after any dependency loading the SciPy-Bundle
-    ('scipy', '1.4.1', versionsuffix),
 ]
 
 exts_default_options = {
@@ -65,9 +63,9 @@ exts_list = [
     ('cachetools', '4.1.1', {
         'checksums': ['bbaa39c3dede00175df2dc2b03d0cf18dd2d32a7de7beb68072d13043c9edb20'],
     }),
-    ('google-auth', '1.20.0', {
+    ('google-auth', '1.21.3', {
         'modulename': 'google.auth',
-        'checksums': ['c6e9735a2ee829a75b546702e460489db5cc35567a27fabd70b7c459f11efd58'],
+        'checksums': ['31941bf019fb242c04d0de32845da10180788bfddb0de87d78c4bdf55555dda1'],
     }),
     ('oauthlib', '3.1.0', {
         'checksums': ['bee41cc35fcca6e988463cacc3bcb8a96224f470ca547e697b604cc697b2f889'],
@@ -81,23 +79,23 @@ exts_list = [
     ('Werkzeug', '1.0.1', {
         'checksums': ['6c80b1e5ad3665290ea39320b91e1be1e0d5f60652b964a3070216de83d2e47c'],
     }),
-    ('absl-py', '0.9.0', {
+    ('absl-py', '0.10.0', {
         'modulename': 'absl',
-        'checksums': ['75e737d6ce7723d9ff9b7aa1ba3233c34be62ef18d5859e706b8fdc828989830'],
+        'checksums': ['b20f504a7871a580be5268a18fbad48af4203df5d33dbc9272426cb806245a45'],
     }),
     ('astunparse', '1.6.3', {
         'checksums': ['5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872'],
     }),
-    ('grpcio', '1.30.0', {
+    ('grpcio', '1.32.0', {
         'modulename': 'grpc',
-        'checksums': ['e8f2f5d16e0164c415f1b31a8d9a81f2e4645a43d1b261375d6bab7b0adf511f'],
+        'checksums': ['01d3046fe980be25796d368f8fc5ff34b7cf5e1444f3789a017a7fe794465639'],
     }),
     ('tensorboard-plugin-wit', '1.7.0', {
         'source_tmpl': 'tensorboard_plugin_wit-%(version)s-py3-none-any.whl',
         'unpack_sources': False,
         'checksums': ['ee775f04821185c90d9a0e9c56970ee43d7c41403beb6629385b39517129685b'],
     }),
-    ('tensorboard', version, {
+    ('tensorboard', '2.3.0', {
         'source_tmpl': 'tensorboard-%(version)s-py3-none-any.whl',
         'unpack_sources': False,
         'checksums': ['d34609ed83ff01dd5b49ef81031cfc9c166bba0dabd60197024f14df5e8eae5e'],
@@ -109,17 +107,13 @@ exts_list = [
     ('termcolor', '1.1.0', {
         'checksums': ['1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b'],
     }),
-    ('tensorflow-estimator', version, {
+    ('tensorflow-estimator', '2.3.0', {
         'source_tmpl': 'tensorflow_estimator-%(version)s-py2.py3-none-any.whl',
         'unpack_sources': False,
         'checksums': ['b75e034300ccb169403cf2695adf3368da68863aeb0c14c3760064c713d5c486'],
     }),
     ('astor', '0.8.0', {
         'checksums': ['37a6eed8b371f1228db08234ed7f6cfdc7817a3ed3824797e20cbb11dc2a7862'],
-    }),
-    ('Keras-Applications', '1.0.8', {
-        'source_tmpl': 'Keras_Applications-%(version)s.tar.gz',
-        'checksums': ['5579f9a12bcde9748f4a12233925a59b93b73ae6947409ff34aa2ba258189fe5'],
     }),
     ('gast', '0.3.3', {
         'checksums': ['b881ef288a49aa81440d2c5eb8aeefd4c2bb8993d5f50edae7413a85bfdb3b57'],
@@ -150,7 +144,7 @@ exts_list = [
         'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
         'test_script': 'TensorFlow-2.x_mnist-test.py',
         'checksums': [
-            '2595a5c401521f20a2734c4e5d54120996f8391f00bb62a57267d930bce95350',  # v2.3.0.tar.gz
+            'ee534dd31a811f7a759453567257d1e643f216d8d55a25c32d2fbfff8153a1ac',  # v2.3.1.tar.gz
             '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',  # TensorFlow-2.1.0_fix-cuda-build.patch
             # TensorFlow-2.1.0_fix-system-nasm.patch
             '6671e40d60edaf1e57b1861aa3b2178d48f9b7dfb5b5c0d44db541116f848f2a',

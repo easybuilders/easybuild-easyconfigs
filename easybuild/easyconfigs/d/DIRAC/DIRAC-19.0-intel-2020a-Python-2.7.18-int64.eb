@@ -1,0 +1,68 @@
+easyblock = 'ConfigureMake'
+
+name = 'DIRAC'
+version = '19.0'
+versionsuffix = '-Python-%(pyver)s-int64'
+
+homepage = 'http://www.diracprogram.org'
+description = "DIRAC: Program for Atomic and Molecular Direct Iterative Relativistic All-electron Calculations"
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+
+source_urls = ['https://zenodo.org/record/3572669/files/']
+sources = ['DIRAC-%(version)s-Source.tar.gz']
+patches = ['%(name)s-%(version)s_remove-broken-tests-intel.patch']
+checksums = [
+    'f0e3610bdd1fbcff90cdfb4cf3fd7582a4762f533af7d635c4bc4d114f402c32',  # DIRAC-19.0-Source.tar.gz
+    '33e884d197724fdb98cd5e395ca46d065a620eb70f19c5a120fcb0ce07ac4290',  # DIRAC-19.0_remove-broken-tests-intel.patch
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+]
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('Boost', '1.72.0'),
+    ('HDF5', '1.10.6'),
+    ('imkl', '2020.1.217'),
+]
+
+skipsteps = ['configure']
+
+parallel = 1
+
+local_pre_flags = 'export CFLAGS="$CFLAGS -m64" && '
+local_pre_flags += 'export CXXFLAGS="$CXXFLAGS -m64" && '
+local_pre_flags += 'export FCFLAGS="$FCFLAGS -i8" && '
+local_pre_flags += 'export FFLAGS="$FFLAGS -i8 " && '
+local_pre_flags += 'export DEBUG=True && '
+
+# BUILD
+prebuildopts = local_pre_flags
+prebuildopts += 'export MATH_ROOT="$MKLROOT" && '
+prebuildopts += './setup --int64 --prefix=%(installdir)s '
+prebuildopts += '--pcmsolver=OFF --cc="$CC" --cxx="$CXX" --fc="$FC" '
+prebuildopts += '--mkl=parallel '
+prebuildopts += '&& cd build && '
+
+# TEST
+pretestopts = local_pre_flags
+pretestopts += 'export DIRAC_TMPDIR=%(builddir)s/scratch && '
+pretestopts += "cd build && "
+
+runtest = 'test'
+
+# INSTALL
+preinstallopts = local_pre_flags
+preinstallopts += "cd build && "
+
+# SANITY CHECKS
+sanity_check_paths = {
+    'files': ['bin/pam-dirac', 'share/dirac/dirac.x'],
+    'dirs': ['share/dirac/basis'],
+}
+
+sanity_check_commands = ["pam-dirac --help"]
+
+moduleclass = 'chem'
