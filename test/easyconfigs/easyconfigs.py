@@ -449,9 +449,9 @@ class EasyConfigTest(TestCase):
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
-        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', 'GCCcore-[7-9]\.[0-9]']:
+        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', r'GCCcore-[7-9]\.[0-9]']:
             all_deps = {}
-            regex = re.compile('^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
+            regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
             # collect variants for all dependencies of easyconfigs that use a toolchain that matches
             for ec in EasyConfigTest.ordered_specs:
@@ -575,30 +575,30 @@ class EasyConfigTest(TestCase):
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
-                    failing_checks.append("'download_dep_fail' set in %s" % ec_fn)
+                    failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
 
             # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
             if easyblock in ['PythonBundle', 'PythonPackage']:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    failing_checks.append("'use_pip' set in %s" % ec_fn)
+                    failing_checks.append("'use_pip' should be set in %s" % ec_fn)
 
             # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
             if easyblock == 'PythonBundle':
                 if download_dep_fail or exts_download_dep_fail:
-                    fail = "'*download_dep_fail' set in %s (shouldn't, since PythonBundle easyblock is used)" % ec_fn
+                    fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
                     failing_checks.append(fail)
 
             elif exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
-                    fail = "'PythonBundle' easyblock is used for bundle of Python packages in %s" % ec_fn
+                    fail = "'PythonBundle' easyblock should be used for bundle of Python packages in %s" % ec_fn
                     failing_checks.append(fail)
                 else:
                     # both download_dep_fail and use_pip should be set via exts_default_options
                     # when installing Python packages as extensions
                     for key in ['download_dep_fail', 'use_pip']:
                         if exts_default_options.get(key) is None:
-                            failing_checks.append("'%s' set in exts_default_options in %s" % (key, ec_fn))
+                            failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix
             # Tkinter is an exception, since its version always matches the Python version anyway
@@ -609,7 +609,7 @@ class EasyConfigTest(TestCase):
             has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'])
             if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' included in versionsuffix in %s" % ec_fn
+                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
                     # This is only a failure for newly added ECs, not for existing ECS
                     # As that would probably break many ECs
                     if ec_fn in added_ecs_filenames:
@@ -622,7 +622,7 @@ class EasyConfigTest(TestCase):
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     if not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
-                        failing_checks.append("sanity_pip_check is enabled in %s" % ec_fn)
+                        failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
@@ -662,6 +662,7 @@ class EasyConfigTest(TestCase):
             'UCX-',  # bad certificate for https://www.openucx.org
             'MUMPS',  # https://mumps.enseeiht.fr doesn't work
             'PyFR',  # https://www.pyfr.org doesn't work
+            'PycURL',  # bad certificate for https://pycurl.io/
         ]
         url_whitelist = [
             # https:// doesn't work, results in index page being downloaded instead
@@ -682,7 +683,7 @@ class EasyConfigTest(TestCase):
                 continue
 
             # ignore commented out lines in easyconfig files when checking for http:// URLs
-            ec_txt = '\n'.join(l for l in ec.rawtxt.split('\n') if not l.startswith('#'))
+            ec_txt = '\n'.join(line for line in ec.rawtxt.split('\n') if not line.startswith('#'))
 
             for http_url in http_regex.findall(ec_txt):
 
@@ -859,12 +860,12 @@ def template_easyconfig_test(self, spec):
     self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
-    res = re.findall('.*\$root.*', ec.rawtxt, re.M)
+    res = re.findall(r'.*\$root.*', ec.rawtxt, re.M)
     error_msg = "Found use of '$root', not compatible with modules in Lua syntax, use '%%(installdir)s' instead: %s"
     self.assertFalse(res, error_msg % res)
 
     # check for redefined easyconfig parameters, there should be none...
-    param_def_regex = re.compile('^(?P<key>\w+)\s*=', re.M)
+    param_def_regex = re.compile(r'^(?P<key>\w+)\s*=', re.M)
     keys = param_def_regex.findall(ec.rawtxt)
     redefined_keys = []
     for key in sorted(nub(keys)):
@@ -1016,6 +1017,11 @@ def template_easyconfig_test(self, spec):
 
 def suite():
     """Return all easyblock initialisation tests."""
+    def make_inner_test(spec_path):
+        def innertest(self):
+            template_easyconfig_test(self, spec_path)
+        return innertest
+
     # dynamically generate a separate test for each of the available easyconfigs
     # define new inner functions that can be added as class methods to InitTest
     easyconfigs_path = get_paths_for('easyconfigs')[0]
@@ -1029,8 +1035,7 @@ def suite():
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
-                code = "def innertest(self): template_easyconfig_test(self, '%s')" % os.path.join(subpath, spec)
-                exec(code, globals())
+                innertest = make_inner_test(os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
                 # double underscore so parsing tests are run first
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
