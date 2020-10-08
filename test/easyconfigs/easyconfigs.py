@@ -241,36 +241,44 @@ class EasyConfigTest(TestCase):
                 if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
                     dep_vars.pop(key)
 
-        # some software packages require an old version of a particular dependency
+        # some software packages require a specific (older/newer) version of a particular dependency
         old_dep_versions = {
+            # EMAN2 2.3 requires Boost(.Python) 1.64.0
+            'Boost': [('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-'])],
+            'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
+            # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
+            'Jellyfish': [(r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2'])],
             # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
             # (Qiskit depends on PySCF)
-            'libxc': (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-', r'PySCF-',
-                                  r'Qiskit-', r'WIEN2k-']),
-            # OPERA requires SAMtools 0.x
-            'SAMtools': (r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6', r'CGmapTools-0\.1\.2',
-                                  r'BatMeth2-2\.1']),
-            # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
-            'Jellyfish': (r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2']),
-            # EMAN2 2.3 requires Boost(.Python) 1.64.0
-            'Boost': ('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-']),
-            'Boost.Python': ('1.64.0;', [r'EMAN2-2\.3-']),
+            'libxc': [(r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
+                                   r'PySCF-', r'Qiskit-', r'WIEN2k-'])],
             # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
             # both scVelo and Python-Geometric depend on numba
-            'LLVM': (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
-            # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6), artic-ncov2019 requires medaka
-            'TensorFlow': ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-', 'artic-ncov2019-2020.04.13']),
+            'LLVM': [(r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2'])],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
-            'nodejs': ('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13']),
+            'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
+            # OPERA requires SAMtools 0.x
+            'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
+                                   r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
+            'TensorFlow': [
+                # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
+                # artic-ncov2019 requires medaka
+                ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-', 'artic-ncov2019-2020.04.13']),
+                # medaka 1.1.1 requires TensorFlow 2.2.0 (while other 2019b easyconfigs use TensorFlow 2.1.0 as dep)
+                ('2.2.0;', ['medaka-1.1.1-']),
+            ],
+            # medaka 1.1.1 requires Pysam 0.16.0.1,
+            # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation
+            'Pysam': [('0.16.0.1;', ['medaka-1.1.1-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
-                version_pattern, parents = old_dep_versions[dep]
-                # filter out known old dependency versions
-                if re.search('^version: %s' % version_pattern, key):
-                    # only filter if the easyconfig using this dep variants is known
-                    if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
-                        dep_vars.pop(key)
+                for version_pattern, parents in old_dep_versions[dep]:
+                    # filter out known old dependency versions
+                    if re.search('^version: %s' % version_pattern, key):
+                        # only filter if the easyconfig using this dep variants is known
+                        if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
+                            dep_vars.pop(key)
 
         # filter out ELSI variants with -PEXSI suffix
         if dep == 'ELSI' and len(dep_vars) > 1:
