@@ -1,0 +1,36 @@
+name = 'STARCCM'
+version = '15.04.010'
+versionsuffix = "-mixed"
+modaltsoftname = "starccm-mixed"
+
+homepage = 'http://mdx.plm.automation.siemens.com/star-ccm-plus'
+description = """Predicting the real-world performance of a product requires simulation tools 
+that span a variety of engineering disciplines. STAR-CCM+ is an all-in-one solution that delivers 
+accurate and efficient multidisciplinary technologies in a single integrated user interface.
+
+This version uses mixed precision."""
+
+toolchain = SYSTEM
+
+# sha256sum /cvmfs/restricted.computecanada.ca/easybuild/sources/s/STARCCM/STAR-CCM+15.04.010_01_linux-x86_64.tar.gz
+sources = ['STAR-CCM+%(version)s_01_linux-x86_64.tar.gz']
+checksums = ['7b50f31f49c8f9fe8b255b069f57f0c20b03c43f6d91226d0b42e5a9c502db9e']
+
+postinstallcmds = [
+    "for d in $(find %(installdir)s -name 'bin' -o -name 'lib' -o -name 'lib64' -o -name 'lnamd64' -o -name 'linx64' -o -name 'linux64_x86' -o -name 'libav' -o -name 'LX64' -o -name 'Python27' -o -name 'ifort_19.5' -o -name 'ifort_19.0a');\
+    do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done"
+]
+
+moduleclass = 'tools'
+modluafooter = """
+require("SitePackage")
+local found = find_and_define_license_file("CDLMD_LICENSE_FILE","starccm")
+if (mode() == "load" and not found) then
+        local warning_message = [[
+	We did not find a suitable license file for StarCCM+. If you have access to one, you can create the file $HOME/.licenses/starccm.lic with the license information. You may also define the CDLMD_LICENSE_FILE environment variable yourself. This is only a warning. For more details, see https://docs.computecanada.ca/wiki/Star-CCM%2B
+	
+	Nous n'avons pas trouve de fichier de license utilisable pour StarCCM+. Si vous avez acces a une license de StarCCM+, vous pouvez creer le fichier $HOME/.licenses/starccm.lic avec l'information de la license. Vous pouvez aussi definir la variable d'environnement CDLMD_LICENSE_FILE. Ceci n'est pas une erreur. Pour plus de details, voir la page https://docs.computecanada.ca/wiki/Star-CCM%2B 
+	]]
+	LmodWarning(warning_message)
+end
+"""

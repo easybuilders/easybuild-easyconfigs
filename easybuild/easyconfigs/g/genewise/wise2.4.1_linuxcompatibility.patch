@@ -1,0 +1,558 @@
+diff -ru wise2.4.1.orig/src/corba/makefile wise2.4.1/src/corba/makefile
+--- wise2.4.1.orig/src/corba/makefile	2020-10-06 13:08:49.351581219 +0000
++++ wise2.4.1/src/corba/makefile	2020-10-06 13:08:49.420581497 +0000
+@@ -3,7 +3,7 @@
+ CC = cc
+ INCFLAGS = -I../base/ -I../dynlibsrc
+ #gCFLAGS = -Wall -g -pedantic -c  -DUNIX -I../base/
+-#CFLAGS =  -O2 -c  -DUNIX  -I../base/ `glib-config --cflags` -I/usr/local/include/orbit-1.0/
++#CFLAGS =  -O2 -c  -DUNIX  -I../base/ `pkg-config --libs glib-2.0 --cflags` -I/usr/local/include/orbit-1.0/
+ CFLAGS =  -pthread -c  -DUNIX  -I../base/ -I../dynlibsrc `orbit-config --cflags client`
+ LFLAGS =   -L../base/ -lm -lpthread
+ AR_OPTIONS = ru
+@@ -14,18 +14,18 @@
+ 	orbit-idl hspscan_corba.idl
+ 
+ test_server : test_server.o hspscan_server_impl.o hspscan_corba-common.o hspscan_corba-skels.o hspscan_corba-stubs.o corba_singleton.o 
+-	cc -g -o test_server  test_server.o hspscan_server_impl.o  hspscan_corba-common.o hspscan_corba-skels.o hspscan_corba-stubs.o  corba_singleton.o ../dynlibsrc/libdyna.a ../base/libwisebase.a ../dynlibsrc/hsp.o ../dynlibsrc/subseqhash.o ../dynlibsrc/linkedlist_lookpos.o   ../dynlibsrc/libdyna_glib.a `glib-config --libs` -lm -lORBit -lIIOP -lORBitutil -lpthread
++	cc -g -o test_server  test_server.o hspscan_server_impl.o  hspscan_corba-common.o hspscan_corba-skels.o hspscan_corba-stubs.o  corba_singleton.o ../dynlibsrc/libdyna.a ../base/libwisebase.a ../dynlibsrc/hsp.o ../dynlibsrc/subseqhash.o ../dynlibsrc/linkedlist_lookpos.o   ../dynlibsrc/libdyna_glib.a `pkg-config --libs glib-2.0 --libs` -lm -lORBit -lIIOP -lORBitutil -lpthread
+ 
+ scanwise_protein_index : scanwise_protein_index.o hspscan_server_impl.o hspscan_corba-common.o hspscan_corba-skels.o hspscan_corba-stubs.o corba_singleton.o 
+-	cc -o scanwise_protein_index  scanwise_protein_index.o hspscan_server_impl.o  hspscan_corba-common.o hspscan_corba-skels.o hspscan_corba-stubs.o  corba_singleton.o  ../dynlibsrc/libdyna_glib.a ../dynlibsrc/libdyna.a ../base/libwisebase.a `glib-config --libs` -lm -lORBit -lIIOP -lORBitutil -lpthread
++	cc -o scanwise_protein_index  scanwise_protein_index.o hspscan_server_impl.o  hspscan_corba-common.o hspscan_corba-skels.o hspscan_corba-stubs.o  corba_singleton.o  ../dynlibsrc/libdyna_glib.a ../dynlibsrc/libdyna.a ../base/libwisebase.a `pkg-config --libs glib-2.0 --libs` -lm -lORBit -lIIOP -lORBitutil -lpthread
+ 
+ 
+ test_client : test_client.o hspscan_corba-common.o hspscan_corba-stubs.o 
+-	cc -g -o test_client  test_client.o  hspscan_corba-common.o hspscan_corba-stubs.o ../dynlibsrc/libdyna.a ../base/libwisebase.a `glib-config --libs` -lm -lORBit -lIIOP -lORBitutil -lpthread
++	cc -g -o test_client  test_client.o  hspscan_corba-common.o hspscan_corba-stubs.o ../dynlibsrc/libdyna.a ../base/libwisebase.a `pkg-config --libs glib-2.0 --libs` -lm -lORBit -lIIOP -lORBitutil -lpthread
+ 
+ 
+ test_wrapper : test_wrapper.o hspscan_corba-common.o hspscan_corba-stubs.o hspscan_corba_wrapper.o corba_singleton.o 
+-	cc -g -o test_wrapper test_wrapper.o  hspscan_corba-common.o hspscan_corba-stubs.o   corba_singleton.o hspscan_corba_wrapper.o ../dynlibsrc/hsp.o ../dynlibsrc/libdyna.a ../base/libwisebase.a  `glib-config --libs` -lm -lORBit -lIIOP -lORBitutil -lpthread
++	cc -g -o test_wrapper test_wrapper.o  hspscan_corba-common.o hspscan_corba-stubs.o   corba_singleton.o hspscan_corba_wrapper.o ../dynlibsrc/hsp.o ../dynlibsrc/libdyna.a ../base/libwisebase.a  `pkg-config --libs glib-2.0 --libs` -lm -lORBit -lIIOP -lORBitutil -lpthread
+ 
+ .c.o :
+ 	$(CC) $(CFLAGS) $(INCFLAGS) $?
+diff -ru wise2.4.1.orig/src/dnaindex/assembly/makefile wise2.4.1/src/dnaindex/assembly/makefile
+--- wise2.4.1.orig/src/dnaindex/assembly/makefile	2020-10-06 13:08:49.356581239 +0000
++++ wise2.4.1/src/dnaindex/assembly/makefile	2020-10-06 13:08:49.421581502 +0000
+@@ -26,10 +26,10 @@
+ 
+ 
+ CC = cc
+-CFLAGS = -Wall -pthread -c  -DHAS_PTHREAD_SETSCOPE -g -DUNIX -I../../base/ -I../../dynlibsrc/ -I../ -I../../models/ `glib-config --cflags`
++CFLAGS = -Wall -pthread -c  -DHAS_PTHREAD_SETSCOPE -g -DUNIX -I../../base/ -I../../dynlibsrc/ -I../ -I../../models/ `pkg-config --libs glib-2.0 --cflags`
+ 
+ 
+-LFLAGS =  -g -L../../base/ -L../../dynlibsrc/ -lpthread `glib-config --libs` -lm
++LFLAGS =  -g -L../../base/ -L../../dynlibsrc/ -lpthread `pkg-config --libs glib-2.0 --libs` -lm
+ 
+ 
+ .c.o :
+diff -ru wise2.4.1.orig/src/dnaindex/makefile wise2.4.1/src/dnaindex/makefile
+--- wise2.4.1.orig/src/dnaindex/makefile	2020-10-06 13:08:49.355581235 +0000
++++ wise2.4.1/src/dnaindex/makefile	2020-10-06 13:08:49.421581502 +0000
+@@ -27,14 +27,14 @@
+ 
+ 
+ kwise : kwise.o $(ASSEMBLY_OBJ)
+-	$(CC) -o kwise kwise.o $(ASSEMBLY_OBJ)  -ldyna -lwisebase $(LFLAGS) `glib-config --libs`
++	$(CC) -o kwise kwise.o $(ASSEMBLY_OBJ)  -ldyna -lwisebase $(LFLAGS) `pkg-config --libs glib-2.0 --libs`
+ 
+ arraymatcher : arraymatcher.o $(ASSEMBLY_OBJ) 
+-	$(CC) -o arraymatcher arraymatcher.o $(ASSEMBLY_OBJ)  -ldyna -lwisebase $(LFLAGS) `glib-config --libs`
++	$(CC) -o arraymatcher arraymatcher.o $(ASSEMBLY_OBJ)  -ldyna -lwisebase $(LFLAGS) `pkg-config --libs glib-2.0 --libs`
+ 
+ 
+ findbad_kmer : findbad_kmer.o $(ASSEMBLY_OBJ)
+-	$(CC) -o findbad_kmer findbad_kmer.o $(ASSEMBLY_OBJ)  -ldyna -lwisebase $(LFLAGS) `glib-config --libs`
++	$(CC) -o findbad_kmer findbad_kmer.o $(ASSEMBLY_OBJ)  -ldyna -lwisebase $(LFLAGS) `pkg-config --libs glib-2.0 --libs`
+ 
+ make_shotgun : make_shotgun.o shotgun.o
+ 	$(CC) -o make_shotgun make_shotgun.o shotgun.o -ldyna -lwisebase $(LFLAGS)
+@@ -70,10 +70,10 @@
+ 	$(CC) -o show_euler show_euler.o eulerindex.o singleseqspace.o -ldyna -lwisebase $(LFLAGS)
+ 
+ CC = cc
+-CFLAGS = -pthread -c  -DHAS_PTHREAD_SETSCOPE -g -DUNIX -I../base/ -I../dynlibsrc/ `glib-config --cflags`
++CFLAGS = -pthread -c  -DHAS_PTHREAD_SETSCOPE -g -DUNIX -I../base/ -I../dynlibsrc/ `pkg-config --libs glib-2.0 --cflags`
+ 
+ 
+-LFLAGS =  -g -L../base/ -L../dynlibsrc/ -lpthread `glib-config --libs` -lm
++LFLAGS =  -g -L../base/ -L../dynlibsrc/ -lpthread `pkg-config --libs glib-2.0 --libs` -lm
+ 
+ 
+ .c.o :
+diff -ru wise2.4.1.orig/src/dynlibsrc/makefile wise2.4.1/src/dynlibsrc/makefile
+--- wise2.4.1.orig/src/dynlibsrc/makefile	2020-10-06 13:08:49.396581400 +0000
++++ wise2.4.1/src/dynlibsrc/makefile	2020-10-06 13:08:49.422581506 +0000
+@@ -84,9 +84,9 @@
+ CC = cc
+ INCFLAGS = -I../base/
+ #CFLAGS = -Wall -g -pedantic -c  -DUNIX -I../base/
+-CFLAGS =  -Wall -pthread -g3 -DCOMPILE_VERBOSITY -DPTHREAD -O2 -c  -DUNIX -I../base/ `glib-config --cflags`
+-#CFLAGS =  -Wall -g3 -pg -DPTHREAD -O2  -c  -DUNIX -I../base/ `glib-config --cflags`
+-#CFLAGS =   -O2 -c -pthread  -DUNIX  -I../base/ `glib-config --cflags`
++CFLAGS =  -Wall -pthread -g3 -DCOMPILE_VERBOSITY -DPTHREAD -O2 -c  -DUNIX -I../base/ `pkg-config --libs glib-2.0 --cflags`
++#CFLAGS =  -Wall -g3 -pg -DPTHREAD -O2  -c  -DUNIX -I../base/ `pkg-config --libs glib-2.0 --cflags`
++#CFLAGS =   -O2 -c -pthread  -DUNIX  -I../base/ `pkg-config --libs glib-2.0 --cflags`
+ #CFLAGS =   -O -c -DUNIX -DNOERROR -I../base/
+ LFLAGS =  -g -L../base/ -lm 
+ AR_OPTIONS = ru
+@@ -148,13 +148,13 @@
+ 	$(CC) -g -o test_shadowindex test_shadowindex.o shadowseqindex.o shadowseq.o ./libdyna.a ../base/libwisebase.a -lm
+ 
+ test_seqhash : test_seqhash.o subseqhash.o hsp.o hitlist.o hspscaninterface.o hsplookupscan.o libdyna.a
+-	$(CC) -g -o test_seqhash `glib-config --libs` test_seqhash.o subseqhash.o hsp.o  hitlist.o hspscaninterface.o hsplookupscan.o libdyna.a ../base/libwisebase.a -lm  
++	$(CC) -g -o test_seqhash `pkg-config --libs glib-2.0 --libs` test_seqhash.o subseqhash.o hsp.o  hitlist.o hspscaninterface.o hsplookupscan.o libdyna.a ../base/libwisebase.a -lm  
+ 
+ test_hsp : test_hsp.o codon.o sequence.o hsp.o compmat.o probability.o 
+-	$(CC) -g -o test_hsp test_hsp.o codon.o sequence.o hsp.o compmat.o probability.o  ../base/libwisebase.a -lm `glib-config --libs`
++	$(CC) -g -o test_hsp test_hsp.o codon.o sequence.o hsp.o compmat.o probability.o  ../base/libwisebase.a -lm `pkg-config --libs glib-2.0 --libs`
+ 
+ test_topscore : test_topscore.o codon.o sequence.o hsp.o compmat.o probability.o 
+-	$(CC) -g -o test_topscore test_topscore.o codon.o sequence.o hsp.o compmat.o probability.o  ../base/libwisebase.a -lm `glib-config --libs`
++	$(CC) -g -o test_topscore test_topscore.o codon.o sequence.o hsp.o compmat.o probability.o  ../base/libwisebase.a -lm `pkg-config --libs glib-2.0 --libs`
+ 
+ 
+ testgendb : probability.o genomicdb.o genomic.o testgendb.o sequence.o codon.o sequencedb.o complexsequence.o complexevalset.o
+diff -ru wise2.4.1.orig/src/HMMer2/sqio.c wise2.4.1/src/HMMer2/sqio.c
+--- wise2.4.1.orig/src/HMMer2/sqio.c	2020-10-06 13:08:49.286580956 +0000
++++ wise2.4.1/src/HMMer2/sqio.c	2020-10-06 13:08:49.438581570 +0000
+@@ -213,7 +213,7 @@
+     }
+ }
+ 
+-/* Function: getline()
++/* Function: getline_new()
+  * Date:     SRE, Tue Mar  3 08:30:01 1998 [St. Louis]
+  *
+  * Purpose:  read a line from a sequence file into V->sbuffer.
+@@ -229,7 +229,7 @@
+  * Returns:  (void)
+  */
+ static void 
+-getline(struct ReadSeqVars *V)
++getline_new(struct ReadSeqVars *V)
+ {
+   char *cp;
+   
+@@ -299,7 +299,7 @@
+   V->seqlen = 0;
+   if (addfirst) addseq(V->sbuffer, V);
+   do {
+-    getline(V);
++    getline_new(V);
+ 	/* feof() alone is a bug; files not necessarily \n terminated */
+     if (*(V->sbuffer) == '\0' && feof(V->f))
+       done = TRUE;
+@@ -327,7 +327,7 @@
+   char *sptr;
+ 				/* load first line of entry  */
+   while (!feof(V->f) && strncmp(V->sbuffer, "ENTRY", 5) != 0)
+-    getline(V);
++    getline_new(V);
+   if (feof(V->f)) return;
+ 
+   if ((sptr = strtok(V->sbuffer + 15, "\n\t ")) != NULL)
+@@ -336,7 +336,7 @@
+       SetSeqinfoString(V->sqinfo, sptr, SQINFO_ID);
+     }
+   do {
+-    getline(V);
++    getline_new(V);
+     if (!feof(V->f) && strncmp(V->sbuffer, "TITLE", 5) == 0)
+       SetSeqinfoString(V->sqinfo, V->sbuffer+15, SQINFO_DESC);
+     else if (!feof(V->f) && strncmp(V->sbuffer, "ACCESSION", 9) == 0)
+@@ -345,7 +345,7 @@
+ 	  SetSeqinfoString(V->sqinfo, sptr, SQINFO_ACC);
+       }
+   } while (! feof(V->f) && (strncmp(V->sbuffer,"SEQUENCE", 8) != 0));
+-  getline(V);			/* skip next line, coords */
++  getline_new(V);			/* skip next line, coords */
+ 
+   readLoop(0, endPIR, V);
+ 
+@@ -359,7 +359,7 @@
+   /* get next line
+    */
+   while (!feof(V->f) && strncmp(V->sbuffer, "ENTRY", 5) != 0)
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ 
+@@ -377,7 +377,7 @@
+   char *nm;
+ 				/* position past ';' comments */
+   do {
+-    getline(V);
++    getline_new(V);
+   } while (! (feof(V->f) || ((*V->sbuffer != 0) && (*V->sbuffer != ';')) ));
+ 
+   if (!feof(V->f))
+@@ -389,7 +389,7 @@
+     }
+   
+   while (!(feof(V->f) || ((*V->sbuffer != '\0') && (*V->sbuffer == ';'))))
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ static int 
+@@ -411,7 +411,7 @@
+ 	  if ((nm = strtok(V->sbuffer+16, ",\n\t ")) != NULL)
+ 	    SetSeqinfoString(V->sqinfo, nm, SQINFO_NAME);
+ 	}
+-      getline(V);
++      getline_new(V);
+     }
+ 
+   if (! feof(V->f))
+@@ -420,7 +420,7 @@
+   /* load next line
+    */
+   while ((!feof(V->f)) && (*V->sbuffer != ';')) 
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ 
+@@ -438,7 +438,7 @@
+   int   in_definition;
+ 
+   while (strncmp(V->sbuffer, "LOCUS", 5) != 0)
+-    getline(V);
++    getline_new(V);
+ 
+   if ((sptr = strtok(V->sbuffer+12, "\n\t ")) != NULL)
+     {
+@@ -449,7 +449,7 @@
+   in_definition = FALSE;
+   while (! feof(V->f))
+     {
+-      getline(V);
++      getline_new(V);
+       if (! feof(V->f) && strstr(V->sbuffer, "DEFINITION") == V->sbuffer)
+ 	{
+ 	  if ((sptr = strtok(V->sbuffer+12, "\n")) != NULL)
+@@ -482,11 +482,11 @@
+ 
+ 
+   while (!(feof(V->f) || ((*V->sbuffer!=0) && (strstr(V->sbuffer,"LOCUS") == V->sbuffer))))
+-    getline(V);
++    getline_new(V);
+ 				/* SRE: V->s now holds "//", so sequential
+ 				   reads are wedged: fixed Tue Jul 13 1993 */
+   while (!feof(V->f) && strstr(V->sbuffer, "LOCUS  ") != V->sbuffer)
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ static int
+@@ -515,7 +515,7 @@
+     Die("bogus GCGdata format? %s", V->sbuffer);
+ 
+ 				/* second line contains free text description */
+-  getline(V);
++  getline_new(V);
+   SetSeqinfoString(V->sqinfo, V->sbuffer, SQINFO_DESC);
+ 
+   if (binary) {
+@@ -535,7 +535,7 @@
+   else readLoop(0, endGCGdata, V);
+   
+   while (!(feof(V->f) || ((*V->sbuffer != 0) && (*V->sbuffer == '>'))))
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ static int
+@@ -555,12 +555,12 @@
+   if ((sptr = strtok(NULL, "\n")) != NULL)
+     SetSeqinfoString(V->sqinfo, sptr, SQINFO_DESC);
+ 				/* workaround for long NCBI NR lines */
+-  while (V->longline && ! feof(V->f)) getline(V);
++  while (V->longline && ! feof(V->f)) getline_new(V);
+ 
+   readLoop(0, endPearson, V);
+ 
+   while (!(feof(V->f) || ((*V->sbuffer != 0) && (*V->sbuffer == '>'))))
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ 
+@@ -587,7 +587,7 @@
+ 
+ 				/* make sure we have first line */
+   while (!feof(V->f) && strncmp(V->sbuffer, "ID  ", 4) != 0)
+-    getline(V);
++    getline_new(V);
+ 
+   if ((sptr = strtok(V->sbuffer+5, "\n\t ")) != NULL)
+     {
+@@ -596,7 +596,7 @@
+     }
+ 
+   do {
+-    getline(V);
++    getline_new(V);
+     if (!feof(V->f) && strstr(V->sbuffer, "AC  ") == V->sbuffer)
+       {
+ 	if ((sptr = strtok(V->sbuffer+5, ";  \t\n")) != NULL)
+@@ -620,7 +620,7 @@
+ 
+ 				/* load next record's ID line */
+   while (!feof(V->f) && strncmp(V->sbuffer, "ID  ", 4) != 0)
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ 
+@@ -636,7 +636,7 @@
+ {
+   char *sptr;
+ 
+-  getline(V);  /*s == "seqLen seqid string..."*/
++  getline_new(V);  /*s == "seqLen seqid string..."*/
+ 
+   if ((sptr = strtok(V->sbuffer+6, " \t\n")) != NULL)
+     SetSeqinfoString(V->sqinfo, sptr, SQINFO_NAME);
+@@ -647,7 +647,7 @@
+   readLoop(0, endZuker, V);
+ 
+   while (!(feof(V->f) | ((*V->sbuffer != '\0') & (*V->sbuffer == '('))))
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ static void 
+@@ -669,7 +669,7 @@
+ 
+   do {
+     done = feof(V->f);
+-    getline(V);
++    getline_new(V);
+     if (! done) addseq(V->sbuffer, V);
+   } while (!done);
+ }
+@@ -681,7 +681,7 @@
+   char *sptr;
+   int   dostruc = FALSE;
+ 
+-  while (strncmp(V->sbuffer, "NAM ", 4) != 0) getline(V);
++  while (strncmp(V->sbuffer, "NAM ", 4) != 0) getline_new(V);
+ 
+   if ((sptr = strtok(V->sbuffer+4, "\n\t ")) != NULL)
+     SetSeqinfoString(V->sqinfo, sptr, SQINFO_NAME);
+@@ -689,7 +689,7 @@
+   /*CONSTCOND*/
+   while (1)
+     {
+-      getline(V);
++      getline_new(V);
+       if (feof(V->f)) {squid_errno = SQERR_FORMAT; return; }
+ 
+       if (strncmp(V->sbuffer, "SRC ", 4) == 0)
+@@ -721,14 +721,14 @@
+   while (1)
+     {
+ 				/* sequence line */
+-      getline(V);
++      getline_new(V);
+       if (feof(V->f) || strncmp(V->sbuffer, "++", 2) == 0) 
+ 	break;
+       addseq(V->sbuffer, V);
+ 				/* structure line */
+       if (dostruc)
+ 	{
+-	  getline(V);
++	  getline_new(V);
+ 	  if (feof(V->f)) { squid_errno = SQERR_FORMAT; return; }
+ 	  addstruc(V->sbuffer, V);
+ 	}
+@@ -736,7 +736,7 @@
+ 
+ 
+   while (!feof(V->f) && strncmp(V->sbuffer, "NAM ", 4) != 0)
+-    getline(V);
++    getline_new(V);
+ }
+ 
+ 
+@@ -816,7 +816,7 @@
+ 
+   /* Load the first line.
+    */
+-  getline(dbfp);
++  getline_new(dbfp);
+ 
+   return dbfp;
+ }
+@@ -833,7 +833,7 @@
+     Die("SeqfilePosition() failed: in a nonrewindable data file or stream");
+ 
+   fseek(sqfp->f, offset, SEEK_SET);
+-  getline(sqfp);
++  getline_new(sqfp);
+ }
+ 
+ 
+@@ -853,7 +853,7 @@
+   if (sqfp->ali_aseqs != NULL) sqfp->ali_curridx = 0;
+   else {
+     rewind(sqfp->f);
+-    getline(sqfp);
++    getline_new(sqfp);
+   }
+ }
+ 
+@@ -949,7 +949,7 @@
+       do {			/* skip leading comments on GCG file */
+ 	gotuw = (strstr(V->sbuffer,"..") != NULL);
+ 	if (gotuw) readUWGCG(V);
+-	getline(V);
++	getline_new(V);
+       } while (! feof(V->f));
+       break;
+ 
+diff -ru wise2.4.1.orig/src/makefile wise2.4.1/src/makefile
+--- wise2.4.1.orig/src/makefile	2020-10-06 13:08:49.287580960 +0000
++++ wise2.4.1/src/makefile	2020-10-06 13:08:49.423581510 +0000
+@@ -31,13 +31,13 @@
+ 
+ 
+ # Intel icc flags
+-# CFLAGS = -c  -O3 -axWK -ipo `glib-config --cflags`
++# CFLAGS = -c  -O3 -axWK -ipo `pkg-config --libs glib-2.0 --cflags`
+ 
+ # alpha flags (-pthread)
+-# CFLAGS = -c -O3 -pthread `glib-config --cflags`
++# CFLAGS = -c -O3 -pthread `pkg-config --libs glib-2.0 --cflags`
+ 
+ # normal linux/bsd/mac flags
+-CFLAGS = -c -O3  `glib-config --cflags`
++CFLAGS = -c -O3  `pkg-config --libs glib-2.0 --cflags`
+ 
+ 
+ EXTRALIBS = -lm
+diff -ru wise2.4.1.orig/src/models/makefile wise2.4.1/src/models/makefile
+--- wise2.4.1.orig/src/models/makefile	2020-10-06 13:08:49.327581122 +0000
++++ wise2.4.1/src/models/makefile	2020-10-06 13:08:49.425581518 +0000
+@@ -192,10 +192,10 @@
+ 	$(CC) -o psw psw.o sw_wrap.o seqaligndisplay.o proteinsw.o abc.o pba.o   $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS)
+ 
+ scanwisep.o : scanwisep.c
+-	$(CC) $(CFLAGS) $(INCFLAGS) -I../external/mott `glib-config --cflags` $?
++	$(CC) $(CFLAGS) $(INCFLAGS) -I../external/mott `pkg-config --libs glib-2.0 --cflags` $?
+ 
+ hsp2aln_sw.o : hsp2aln_sw.c
+-	$(CC) $(CFLAGS) $(INCFLAGS) `glib-config --cflags` $?
++	$(CC) $(CFLAGS) $(INCFLAGS) `pkg-config --libs glib-2.0 --cflags` $?
+ 
+ scanwisep_mysql.o : scanwisep.c
+ 	$(CC)  $(CFLAGS) -DSCAN_MYSQL -I../corba -I../external/mott -I../mysql/protein_index/ -I/usr/local/mysql/include scanwisep.c 
+@@ -226,25 +226,25 @@
+ 
+ 
+ scanwisep : scanwisep.o seqaligndisplay.o proteinsw.o sw_wrap.o abc.o pba.o hsp2aln_sw.o
+-	$(CC) -o scanwisep scanwisep.o sw_wrap.o seqaligndisplay.o proteinsw.o abc.o pba.o hsp2aln_sw.o   $(LFLAGS)  -L../external/mott -lmott -ldyna_glib -ldyna  -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
++	$(CC) -o scanwisep scanwisep.o sw_wrap.o seqaligndisplay.o proteinsw.o abc.o pba.o hsp2aln_sw.o   $(LFLAGS)  -L../external/mott -lmott -ldyna_glib -ldyna  -lwisebase  $(EXTRALIBS) `pkg-config --libs glib-2.0 --libs` -lpthread
+ 
+ test_gwhsp : test_gwhsp.o genewisehsp.o
+-	$(CC) -o test_gwhsp test_gwhsp.o genewisehsp.o $(LFLAGS) -ldyna_glib -ldyna_glib -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
++	$(CC) -o test_gwhsp test_gwhsp.o genewisehsp.o $(LFLAGS) -ldyna_glib -ldyna_glib -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `pkg-config --libs glib-2.0 --libs` -lpthread
+ 
+ localcishit.o : localcishit.c
+-	$(CC) $(CFLAGS) $(INCFLAGS) `glib-config --cflags` $?
++	$(CC) $(CFLAGS) $(INCFLAGS) `pkg-config --libs glib-2.0 --cflags` $?
+ 
+ promoterwise.o : promoterwise.c  
+-	$(CC) $(CFLAGS) $(INCFLAGS) `glib-config --cflags` $?
++	$(CC) $(CFLAGS) $(INCFLAGS) `pkg-config --libs glib-2.0 --cflags` $?
+ 
+ promoterwise : promoterwise.o localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o
+-	$(CC) -g -o promoterwise promoterwise.o localdba.o  localcishit.o localcispara.o dbadisplay.o  motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o  pairwiseshortdna.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
++	$(CC) -g -o promoterwise promoterwise.o localdba.o  localcishit.o localcispara.o dbadisplay.o  motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o  pairwiseshortdna.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `pkg-config --libs glib-2.0 --libs` -lpthread
+ 
+ test_deng : test_deng.o localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o
+-	$(CC) -o test_deng test_deng.o  localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
++	$(CC) -o test_deng test_deng.o  localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `pkg-config --libs glib-2.0 --libs` -lpthread
+ 
+ promotercluster : promotercluster.o localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o
+-	$(CC) -o promotercluster promotercluster.o  localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `glib-config --libs` -lpthread
++	$(CC) -o promotercluster promotercluster.o  localdba.o localcishit.o localcispara.o dbadisplay.o motifmatrix.o motifmatrixdp.o transfactor.o pwmdna.o pairwiseshortdna.o dnaprofile.o dnaprofiledp.o dnaprofileengine.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  $(EXTRALIBS) `pkg-config --libs glib-2.0 --libs` -lpthread
+ 
+ dnawise : dnawise.o dnahmm.o dnahmmdp.o seqaligndisplay.o 
+ 	$(CC) -o dnawise dnawise.o dnahmm.o dnahmmdp.o  seqaligndisplay.o $(LFLAGS) -ldyna_glib -ldyna -lwisebase  -lpthread
+@@ -345,11 +345,11 @@
+ CC = cc
+ #CFLAGS = -c -O2  -pg -I../base/ -I../dynlibsrc/
+ #CFLAGS = -c -O2 -DPTHREAD -DHAS_PTHREAD_SETSCOPE  -DUNIX  -I../base/ -I../dynlibsrc/ -I.
+-CFLAGS = -c -g3 -O2  -DUNIX  -I../base/ -I../dynlibsrc/ -I. -pthread `glib-config --cflags`
+-#CFLAGS = -c  -g -DHAS_PTHREAD_SETSCOPE -DUNIX -I../base/ -I../dynlibsrc/ `glib-config --cflags`
++CFLAGS = -c -g3 -O2  -DUNIX  -I../base/ -I../dynlibsrc/ -I. -pthread `pkg-config --libs glib-2.0 --cflags`
++#CFLAGS = -c  -g -DHAS_PTHREAD_SETSCOPE -DUNIX -I../base/ -I../dynlibsrc/ `pkg-config --libs glib-2.0 --cflags`
+ #LFLAGS =  -L../base/ -L../dynlibsrc/ -L../HMMer2/  
+ 
+-LFLAGS =  -L../base/ -L../dynlibsrc/ -L$(HMMER_LIBS) -lpthread `glib-config --libs`
++LFLAGS =  -L../base/ -L../dynlibsrc/ -L$(HMMER_LIBS) -lpthread `pkg-config --libs glib-2.0 --libs`
+ AR_OPTIONS = ru
+ 
+ RANLIB_NEEDED = 0
+diff -ru wise2.4.1.orig/src/models/phasemodel.c wise2.4.1/src/models/phasemodel.c
+--- wise2.4.1.orig/src/models/phasemodel.c	2020-10-06 13:08:49.334581150 +0000
++++ wise2.4.1/src/models/phasemodel.c	2020-10-06 13:08:49.452581627 +0000
+@@ -20,7 +20,7 @@
+     if( line[0] == '#' ) {
+       continue;
+     }
+-    if( !isnumber(line[0]) ) {
++    if( !isdigit(line[0]) ) {
+       warn("Bad looking line in intron file, %s",line);
+       continue;
+     }
+diff -ru wise2.4.1.orig/src/network/makefile wise2.4.1/src/network/makefile
+--- wise2.4.1.orig/src/network/makefile	2020-10-06 13:08:49.347581202 +0000
++++ wise2.4.1/src/network/makefile	2020-10-06 13:08:49.425581518 +0000
+@@ -3,8 +3,8 @@
+ 
+ CC = cc
+ INCFLAGS = -I../base/  -I../socket -I../dynlibsrc -I../dnaindex
+-CFLAGS =    -O2  -c -pthread  -DUNIX  -I../base/ -I../socket -I../dynlibsrc -I../dnaindex `glib-config --cflags`
+-LFLAGS =  -g -L../base/ -L../socket -L../dynlibsrc -L../dnaindex -lm `glib-config --libs`
++CFLAGS =    -O2  -c -pthread  -DUNIX  -I../base/ -I../socket -I../dynlibsrc -I../dnaindex `pkg-config --libs glib-2.0 --cflags`
++LFLAGS =  -g -L../base/ -L../socket -L../dynlibsrc -L../dnaindex -lm `pkg-config --libs glib-2.0 --libs`
+ AR_OPTIONS = ru
+ 
+ RANLIB_NEEDED = 0
+diff -ru wise2.4.1.orig/src/other_programs/makefile wise2.4.1/src/other_programs/makefile
+--- wise2.4.1.orig/src/other_programs/makefile	2020-10-06 13:08:49.348581207 +0000
++++ wise2.4.1/src/other_programs/makefile	2020-10-06 13:08:49.425581518 +0000
+@@ -3,8 +3,8 @@
+ .SUFFIXES :  .dy
+ 
+ CC = cc
+-CFLAGS =   -O2 -g3 -c -pthread  -DUNIX  -I../base/ -I../dynlibsrc `glib-config --cflags`
+-LFLAGS =  -g -L../base/ -L../dynlibsrc  -lm `glib-config --libs`
++CFLAGS =   -O2 -g3 -c -pthread  -DUNIX  -I../base/ -I../dynlibsrc `pkg-config --libs glib-2.0 --cflags`
++LFLAGS =  -g -L../base/ -L../dynlibsrc  -lm `pkg-config --libs glib-2.0 --libs`
+ AR_OPTIONS = ru
+ 
+ RANLIB_NEEDED = 0
+diff -ru wise2.4.1.orig/src/snp/makefile wise2.4.1/src/snp/makefile
+--- wise2.4.1.orig/src/snp/makefile	2020-10-06 13:08:49.352581223 +0000
++++ wise2.4.1/src/snp/makefile	2020-10-06 13:08:49.425581518 +0000
+@@ -5,9 +5,9 @@
+ CC = cc
+ #CFLAGS = -c -O2  -pg -I../base/ -I../dynlibsrc/
+ #CFLAGS = -c -O2 -DPTHREAD -DHAS_PTHREAD_SETSCOPE  -DUNIX  -I../base/ -I../dynlibsrc/ -I.
+-CFLAGS = -c -g3 -O2  -DUNIX  -I../base/ -I../dynlibsrc/ -I. -pthread `glib-config --cflags`
++CFLAGS = -c -g3 -O2  -DUNIX  -I../base/ -I../dynlibsrc/ -I. -pthread `pkg-config --libs glib-2.0 --cflags`
+ 
+-LFLAGS =  -g -L../base/ -L../dynlibsrc/ -lpthread `glib-config --libs` -lpthread -lm
++LFLAGS =  -g -L../base/ -L../dynlibsrc/ -lpthread `pkg-config --libs glib-2.0 --libs` -lpthread -lm
+ AR_OPTIONS = ru
+ 
+ RANLIB_NEEDED = 0
