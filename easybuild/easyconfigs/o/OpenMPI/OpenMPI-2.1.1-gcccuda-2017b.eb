@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '2.1.1'
+
+homepage = 'https://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'gcccuda', 'version': '2017b'}
+
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['OpenMPI-2.1_fix-ib-query.patch']
+checksums = [
+    'afe4bef3c4378bc76eea96c623d5aa4c1c98b9e057d281c646e68869292a77dc',  # openmpi-2.1.1.tar.gz
+    '662d7ef1d0cd0890d2dc4ecb5243012be29bf6b4003da0f006e7cd2125d40e4c',  # OpenMPI-2.1_fix-ib-query.patch
+]
+
+dependencies = [('hwloc', '1.11.7')]
+
+configopts = '--enable-shared --enable-mpi-thread-multiple --with-verbs '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
+configopts += '--with-cuda=$CUDA_HOME '     # CUDA-aware build; N.B. --disable-dlopen is incompatible
+configopts += '--without-ucx '  # hard disable UCX, to dance around bug (https://github.com/open-mpi/ompi/issues/4345)
+
+# to enable SLURM integration (site-specific)
+# configopts += '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'
+
+# needed for --with-verbs
+osdependencies = [('libibverbs-dev', 'libibverbs-devel', 'rdma-core-devel')]
+
+local_libs = ["mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte"]
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (x, SHLIB_EXT) for x in local_libs] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
+    'dirs': [],
+}
+
+moduleclass = 'mpi'

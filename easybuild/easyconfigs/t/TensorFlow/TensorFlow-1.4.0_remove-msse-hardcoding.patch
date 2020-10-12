@@ -1,0 +1,24 @@
+remove hardcoding of -msse4.2 since it overrules -xHost when using Intel compilers
+author: Kenneth Hoste (HPC-UGent)
+--- tensorflow/core/BUILD.orig	2017-11-27 15:47:43.339817371 +0100
++++ tensorflow/core/BUILD	2017-11-27 15:47:59.019958336 +0100
+@@ -1479,7 +1479,7 @@
+     name = "lib_hash_crc32c_accelerate_internal",
+     srcs = ["lib/hash/crc32c_accelerate.cc"],
+     # -msse4.2 enables the use of crc32c compiler builtins.
+-    copts = tf_copts() + if_linux_x86_64(["-msse4.2"]),
++    copts = tf_copts() + if_linux_x86_64([""]),
+ )
+ 
+ cc_library(
+--- tensorflow/tensorflow.bzl.orig	2017-11-27 15:48:15.700111251 +0100
++++ tensorflow/tensorflow.bzl	2017-11-27 15:48:23.800185363 +0100
+@@ -168,7 +168,7 @@
+       "-ftemplate-depth=900",
+       "-fno-exceptions",
+   ]) + if_cuda(["-DGOOGLE_CUDA=1"]) + if_mkl(["-DINTEL_MKL=1", "-fopenmp",]) + if_android_arm(
+-      ["-mfpu=neon"]) + if_linux_x86_64(["-msse3"]) + select({
++      ["-mfpu=neon"]) + if_linux_x86_64([""]) + select({
+           clean_dep("//tensorflow:android"): [
+               "-std=c++11",
+               "-DTF_LEAN_BINARY",
