@@ -1,0 +1,69 @@
+easyblock = 'Bundle'
+
+name = 'GTK+'
+version = '3.24.13'
+
+homepage = 'https://developer.gnome.org/gtk3/stable/'
+description = """GTK+ is the primary library used to construct user interfaces in GNOME. It
+ provides all the user interface controls, or widgets, used in a common
+ graphical application. Its object-oriented API allows you to construct
+ user interfaces without dealing with the low-level details of drawing and
+ device interaction.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('GObject-Introspection', '1.63.1', '-Python-3.7.4'),
+    ('gettext', '0.20.1'),
+    ('pkg-config', '0.29.2'),
+    ('cairo', '1.16.0'),
+    ('Perl', '5.30.0'),
+]
+
+dependencies = [
+    ('ATK', '2.34.1'),
+    ('at-spi2-atk', '2.34.1'),
+    ('Gdk-Pixbuf', '2.38.2'),
+    ('Pango', '1.44.7'),
+    ('libepoxy', '1.5.4'),
+    ('X11', '20190717'),
+    ('FriBidi', '1.0.5'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'sources': [SOURCELOWER_TAR_XZ],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('hicolor-icon-theme', '0.17', {
+        'source_urls': ['https://icon-theme.freedesktop.org/releases/'],
+        'checksums': ['317484352271d18cbbcfac3868eab798d67fff1b8402e740baa6ff41d588a9d8'],
+    }),
+    ('adwaita-icon-theme', '3.34.3', {
+        'source_urls': [FTPGNOME_SOURCE],
+        'checksums': ['e7c2d8c259125d5f35ec09522b88c8fe7ecf625224ab0811213ef0a95d90b908'],
+    }),
+    (name, version, {
+        'source_urls': [FTPGNOME_SOURCE],
+        'checksums': ['4c775c38cf1e3c534ef0ca52ca6c7a890fe169981af66141c713e054e68930a9'],
+        'configopts': "--disable-silent-rules --disable-glibtest --enable-introspection=yes --disable-visibility ",
+    }),
+]
+
+postinstallcmds = ['gtk-update-icon-cache']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['gtk3-demo', 'gtk3-demo-application', 'gtk3-icon-browser', 'gtk3-widget-factory',
+                                     'gtk-builder-tool', 'gtk-launch', 'gtk-query-immodules-3.0', 'gtk-query-settings',
+                                     'gtk-update-icon-cache']] +
+             ['lib/%s-%%(version_major)s.%s' % (x, SHLIB_EXT) for x in ['libgailutil', 'libgdk', 'libgtk']],
+    'dirs': ['include/%s-%%(version_major)s.0' % x for x in ['gail', 'gtk']] +
+            ['share/icons/hicolor', 'share/icons/Adwaita'],
+}
+
+moduleclass = 'vis'
