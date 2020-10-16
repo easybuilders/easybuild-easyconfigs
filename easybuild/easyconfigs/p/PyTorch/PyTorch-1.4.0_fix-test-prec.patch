@@ -1,0 +1,17 @@
+On x86 the test might fail due to an error in the range 5e-5
+In PyTorch 1.6+ this check uses a precision of 1e-4 so mirror this here
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/test/test_nn.py b/test/test_nn.py
+index d92304e943..cd8d20000f 100644
+--- a/test/test_nn.py
++++ b/test/test_nn.py
+@@ -7196,7 +7196,7 @@ class TestNN(NNTestCase):
+                   [5.92212, 6.16094, 6.62870, 7.04680]]]])
+         out_t = F.interpolate(in_t, scale_factor=2.3, mode='bicubic', align_corners=False, recompute_scale_factor=False)
+         torch.set_printoptions(precision=5)
+-        self.assertEqual(out_t, expected_out_t)
++        self.assertEqual(out_t, expected_out_t, prec=1e-4)
+ 
+         device_list = ['cpu']
+         if TEST_CUDA:
