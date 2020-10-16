@@ -1,0 +1,349 @@
+fix compatibility with VTK 7.1 by renaming InsertNextTupleValue to InsertNextTypedTuple
+see also https://vtk.org/doc/nightly/html/VTK-7-1-Changes.html
+author: Kenneth Hoste (HPC-UGent)
+diff -ru trunk-2018.02b.orig/pkg/common/Gl1_PotentialBlock.cpp trunk-2018.02b/pkg/common/Gl1_PotentialBlock.cpp
+--- trunk-2018.02b.orig/pkg/common/Gl1_PotentialBlock.cpp	2018-02-20 18:56:18.000000000 +0100
++++ trunk-2018.02b/pkg/common/Gl1_PotentialBlock.cpp	2018-07-03 10:37:05.168799732 +0200
+@@ -567,7 +567,7 @@
+ 		c[2]=color[2];
+ 		int nbCells=polydata->GetNumberOfPoints(); 
+ 		for (int i=0;i<nbCells;i++){
+-			pbColors->InsertNextTupleValue(c);	
++			pbColors->InsertNextTypedTuple(c);	
+ 		}
+ 		polydata->GetPointData()->SetScalars(pbColors);
+ 		//polydata->Update();
+@@ -600,14 +600,14 @@
+ 			v[0]=vel[0];
+ 			v[1]=vel[1];
+ 			v[2]=vel[2];
+-			pbLinVelVec->InsertNextTupleValue(v);
++			pbLinVelVec->InsertNextTypedTuple(v);
+ 			pbLinVelLen->InsertNextValue(vel.norm());
+ 			const Vector3r& angVel = b->state->angVel;
+ 			float av[3]; //av = { angVel[0],angVel[1],angVel[2] };
+ 			av[0]=angVel[0];
+ 			av[1]=angVel[1];
+ 			av[2]=angVel[2];	
+-			pbAngVelVec->InsertNextTupleValue(av);
++			pbAngVelVec->InsertNextTypedTuple(av);
+ 			pbAngVelLen->InsertNextValue(angVel.norm());
+ 			//if(b->state->refPos.squaredNorm()>0.001){ //if initialized
+ 				Vector3r displacement = pos- b->state->refPos;
+@@ -615,7 +615,7 @@
+ 				disp[0]=displacement[0];
+ 				disp[1]=displacement[1];
+ 				disp[2]=displacement[2];				
+-				pbDisplacementVec->InsertNextTupleValue(disp);
++				pbDisplacementVec->InsertNextTypedTuple(disp);
+ 
+ 			//}
+ 		}
+@@ -719,11 +719,11 @@
+ 				float totalForce[3] = {fn[0]+fs[0], fn[1]+fs[1], fn[2]+fs[2]};
+ 				float totalStress[3] = {0.0,0.0,0.0}; //{totalForce[0]/phys->contactArea, totalForce[1]/phys->contactArea, totalForce[2]/phys->contactArea}; 
+ 				float mobilizedShear = phys->mobilizedShear;
+-				pbTotalForce->InsertNextTupleValue(totalForce);
++				pbTotalForce->InsertNextTypedTuple(totalForce);
+ 				pbMobilizedShear->InsertNextValue(mobilizedShear);
+-				pbNormalForce->InsertNextTupleValue(fn);
+-				pbShearForce->InsertNextTupleValue(fs);
+-				pbTotalStress->InsertNextTupleValue(totalStress);
++				pbNormalForce->InsertNextTypedTuple(fn);
++				pbShearForce->InsertNextTypedTuple(fs);
++				pbTotalStress->InsertNextTypedTuple(totalStress);
+ 				count++;
+ 			}
+ 			if(count>0){
+@@ -915,7 +915,7 @@
+ 		c[2]=color[2];
+ 		int nbCells=polydata->GetNumberOfPoints(); 
+ 		for (int i=0;i<nbCells;i++){
+-			pbColors->InsertNextTupleValue(c);	
++			pbColors->InsertNextTypedTuple(c);	
+ 		}	
+ 		polydata->GetPointData()->SetScalars(pbColors);
+ 		//polydata->Update();
+@@ -950,14 +950,14 @@
+ 			v[0]=vel[0];
+ 			v[1]=vel[1];
+ 			v[2]=vel[2];
+-			pbLinVelVec->InsertNextTupleValue(v);
++			pbLinVelVec->InsertNextTypedTuple(v);
+ 			pbLinVelLen->InsertNextValue(vel.norm());
+ 			const Vector3r& angVel = b->state->angVel;
+ 			float av[3]; //av = { angVel[0],angVel[1],angVel[2] };
+ 			av[0]=angVel[0];
+ 			av[1]=angVel[1];
+ 			av[2]=angVel[2];	
+-			pbAngVelVec->InsertNextTupleValue(av);
++			pbAngVelVec->InsertNextTypedTuple(av);
+ 			pbAngVelLen->InsertNextValue(angVel.norm());
+ 		}
+ 		// ################ velocity ###########################
+@@ -1034,8 +1034,8 @@
+ 				// gives _signed_ scalar of normal force, following the convention used in the respective constitutive law
+ 				float fn[3]={phys->normalForce[0],phys->normalForce[1], phys->normalForce[2]};
+ 				float fs[3]={phys->shearForce[0], phys->shearForce[1],  phys->shearForce[2]};
+-				pbNormalForce->InsertNextTupleValue(fn);
+-				pbShearForce->InsertNextTupleValue(fs);
++				pbNormalForce->InsertNextTypedTuple(fn);
++				pbShearForce->InsertNextTypedTuple(fs);
+ 				count++;
+ 			}
+ 			if(count>0){
+diff -ru trunk-2018.02b.orig/pkg/common/Gl1_PotentialParticle.cpp trunk-2018.02b/pkg/common/Gl1_PotentialParticle.cpp
+--- trunk-2018.02b.orig/pkg/common/Gl1_PotentialParticle.cpp	2018-02-20 18:56:18.000000000 +0100
++++ trunk-2018.02b/pkg/common/Gl1_PotentialParticle.cpp	2018-07-03 10:37:05.278801902 +0200
+@@ -424,7 +424,7 @@
+ 		c[2]=color[2];
+ 		int nbCells=polydata->GetNumberOfPoints();
+ 		for (int i=0; i<nbCells; i++) {
+-			pbColors->InsertNextTupleValue(c);
++			pbColors->InsertNextTypedTuple(c);
+ 		}
+ 		polydata->GetPointData()->SetScalars(pbColors);
+ 		//polydata->Update();
+@@ -465,14 +465,14 @@
+ 			v[0]=vel[0];
+ 			v[1]=vel[1];
+ 			v[2]=vel[2];
+-			pbLinVelVec->InsertNextTupleValue(v);
++			pbLinVelVec->InsertNextTypedTuple(v);
+ 			pbLinVelLen->InsertNextValue(vel.norm());
+ 			const Vector3r& angVel = b->state->angVel;
+ 			float av[3]; //av = { angVel[0],angVel[1],angVel[2] };
+ 			av[0]=angVel[0];
+ 			av[1]=angVel[1];
+ 			av[2]=angVel[2];
+-			pbAngVelVec->InsertNextTupleValue(av);
++			pbAngVelVec->InsertNextTypedTuple(av);
+ 			pbAngVelLen->InsertNextValue(angVel.norm());
+ 		}
+ 		// ################ velocity ###########################
+@@ -544,8 +544,8 @@
+ 			// gives _signed_ scalar of normal force, following the convention used in the respective constitutive law
+ 			float fn[3]= {(float)phys->normalForce[0], (float)phys->normalForce[1], (float)phys->normalForce[2]};
+ 			float fs[3]= {(float)phys->shearForce[0],  (float)phys->shearForce[1],  (float)phys->shearForce[2]};
+-			pbNormalForce->InsertNextTupleValue(fn);
+-			pbShearForce->InsertNextTupleValue(fs);
++			pbNormalForce->InsertNextTypedTuple(fn);
++			pbShearForce->InsertNextTypedTuple(fs);
+ 			count++;
+ 		}
+ 		if(count>0) {
+diff -ru trunk-2018.02b.orig/pkg/dem/RockBolt.cpp trunk-2018.02b/pkg/dem/RockBolt.cpp
+--- trunk-2018.02b.orig/pkg/dem/RockBolt.cpp	2018-02-20 18:56:18.000000000 +0100
++++ trunk-2018.02b/pkg/dem/RockBolt.cpp	2018-07-03 10:37:05.388804069 +0200
+@@ -293,15 +293,15 @@
+ 				plotDirection.normalize();
+ 				Vector3r nodalForce = forces[i]*plotDirection;
+ 				float f[3]={nodalForce[0],nodalForce[1],nodalForce[2]};
+-				boltNodalForce->InsertNextTupleValue(f);
++				boltNodalForce->InsertNextTypedTuple(f);
+ 
+ 				Vector3r axialForce = axialForces[i]*plotDirection;
+ 				float fa[3]={axialForce[0],axialForce[1],axialForce[2]};
+-				boltAxialForce->InsertNextTupleValue(fa);
++				boltAxialForce->InsertNextTypedTuple(fa);
+ 
+ 				Vector3r shearForce = shearForces[i]*plotDirection;
+ 				float fs[3]={shearForce[0],shearForce[1],shearForce[2]};
+-				boltShearForce->InsertNextTupleValue(fs);
++				boltShearForce->InsertNextTypedTuple(fs);
+ 
+ 			}
+ 			
+diff -ru trunk-2018.02b.orig/pkg/dem/RockLiningGlobal.cpp trunk-2018.02b/pkg/dem/RockLiningGlobal.cpp
+--- trunk-2018.02b.orig/pkg/dem/RockLiningGlobal.cpp	2018-02-20 18:56:18.000000000 +0100
++++ trunk-2018.02b/pkg/dem/RockLiningGlobal.cpp	2018-07-03 10:37:05.498806239 +0200
+@@ -312,9 +312,9 @@
+ 				} 
+ 
+ 			}
+-			liningNodalMoment->InsertNextTupleValue(m);	
+-			liningAxialForce->InsertNextTupleValue(fa);
+-			liningShearForce->InsertNextTupleValue(fs);
++			liningNodalMoment->InsertNextTypedTuple(m);	
++			liningAxialForce->InsertNextTypedTuple(fa);
++			liningShearForce->InsertNextTypedTuple(fs);
+ 			//lineSource->Update();		
+   		}
+ 		//#endif
+@@ -397,25 +397,25 @@
+ 			plotDirection.normalize();
+ 			Vector3r nodalMoment = moment[i]*plotDirection;
+ 			float m[3]={nodalMoment[0],nodalMoment[1],nodalMoment[2]};
+-			liningNodalMoment->InsertNextTupleValue(m);
++			liningNodalMoment->InsertNextTypedTuple(m);
+ 
+ 			Vector3r axialForce = -axialForces[i]*plotDirection;
+ 			float fa[3]={axialForce[0],axialForce[1],axialForce[2]};
+-			liningAxialForce->InsertNextTupleValue(fa);
++			liningAxialForce->InsertNextTypedTuple(fa);
+ 
+ 			Vector3r shearForce = shearForces[i]*plotDirection;
+ 			float fs[3]={shearForce[0],shearForce[1],shearForce[2]};
+-			liningShearForce->InsertNextTupleValue(fs);
++			liningShearForce->InsertNextTypedTuple(fs);
+ 
+ 			Vector3r normalP = pb->liningNormalPressure;
+ 			Vector3r totalP = pb->liningTotalPressure;
+ 			float pN[3] = {normalP[0], normalP[1],normalP[2]};
+ 			float pT[3] = {totalP[0], totalP[1], totalP[2]};
+-			liningNormalPressure->InsertNextTupleValue(pN);
+-			liningTotalPressure->InsertNextTupleValue(pT);
++			liningNormalPressure->InsertNextTypedTuple(pN);
++			liningTotalPressure->InsertNextTypedTuple(pT);
+ 			Vector3r normalPideal=-1.0*(normalP.norm())*plotDirection;
+ 			float pNi[3] = {normalPideal[0], normalPideal[1],normalPideal[2]};
+-			liningNormalPressureIdeal->InsertNextTupleValue(pNi);
++			liningNormalPressureIdeal->InsertNextTypedTuple(pNi);
+ //#endif
+ 			
+ 			
+diff -ru trunk-2018.02b.orig/pkg/dem/VTKRecorder.cpp trunk-2018.02b/pkg/dem/VTKRecorder.cpp
+--- trunk-2018.02b.orig/pkg/dem/VTKRecorder.cpp	2018-02-20 18:56:18.000000000 +0100
++++ trunk-2018.02b/pkg/dem/VTKRecorder.cpp	2018-07-03 10:37:05.598808210 +0200
+@@ -482,7 +482,7 @@
+ 			Real fs[3]={ (Real) std::abs(phys->shearForce[0]), (Real) std::abs(phys->shearForce[1]), (Real) std::abs(phys->shearForce[2])};
+ 			// add the value once for each interaction object that we created (might be 2 for the periodic boundary)
+ 			for(int i=0; i<numAddValues; i++){
+-				intrAbsForceT->InsertNextTupleValue(fs);
++				intrAbsForceT->InsertNextTypedTuple(fs);
+ 				if(recActive[REC_WPM]) {
+ 					const WirePhys* wirephys = dynamic_cast<WirePhys*>(I->phys.get());
+ 					if (wirephys!=NULL && wirephys->isLinked) {
+@@ -575,13 +575,13 @@
+ 				  spheresSigII->InsertNextValue(eigenVal[whereSigII]);
+ 				  spheresSigIII->InsertNextValue(eigenVal[whereSigIII]);
+ 				  Real dirI[3] { (Real) dirAll(0,whereSigI), (Real) dirAll(1,whereSigI), (Real) dirAll(2,whereSigI) };
+-				  spheresDirI->InsertNextTupleValue(dirI);
++				  spheresDirI->InsertNextTypedTuple(dirI);
+ 				  
+ 				  Real dirII[3] { (Real) dirAll(0,whereSigII), (Real) dirAll(1,whereSigII), (Real) dirAll(2,whereSigII) };
+-				  spheresDirII->InsertNextTupleValue(dirII);
++				  spheresDirII->InsertNextTypedTuple(dirII);
+ 				  
+ 				  Real dirIII[3] { (Real) dirAll(0,whereSigIII), (Real) dirAll(1,whereSigIII), (Real) dirAll(2,whereSigIII) };
+-				  spheresDirIII->InsertNextTupleValue(dirIII); }
++				  spheresDirIII->InsertNextTypedTuple(dirIII); }
+ 				
+ 				if (recActive[REC_ID]) spheresId->InsertNextValue(b->getId()); 
+ 				if (recActive[REC_MASK]) spheresMask->InsertNextValue(GET_MASK(b));
+@@ -590,17 +590,17 @@
+ 				if (recActive[REC_COLORS]){
+ 					const Vector3r& color = sphere->color;
+ 					Real c[3] = { (Real) color[0], (Real) color[1], (Real) color[2]};
+-					spheresColors->InsertNextTupleValue(c);
++					spheresColors->InsertNextTypedTuple(c);
+ 				}
+ 				if(recActive[REC_VELOCITY]){
+ 					const Vector3r& vel = b->state->vel;
+ 					Real v[3] = { (Real) vel[0], (Real) vel[1], (Real) vel[2] };
+-					spheresLinVelVec->InsertNextTupleValue(v);
++					spheresLinVelVec->InsertNextTypedTuple(v);
+ 					spheresLinVelLen->InsertNextValue(vel.norm());
+ 					
+ 					const Vector3r& angVel = b->state->angVel;
+ 					Real av[3] = { (Real) angVel[0], (Real) angVel[1], (Real) angVel[2] };
+-					spheresAngVelVec->InsertNextTupleValue(av);
++					spheresAngVelVec->InsertNextTypedTuple(av);
+ 					spheresAngVelLen->InsertNextValue(angVel.norm());
+ 				}
+ 				if(recActive[REC_STRESS]){
+@@ -608,8 +608,8 @@
+ 					const Vector3r& shear = bodyStates[b->getId()].shearStress;
+ 					Real n[3] = { (Real)  stress[0], (Real) stress[1], (Real) stress[2] };
+ 					Real s[3] = { (Real)  shear [0], (Real) shear [1], (Real) shear [2] };
+-					spheresNormalStressVec->InsertNextTupleValue(n);
+-					spheresShearStressVec->InsertNextTupleValue(s);
++					spheresNormalStressVec->InsertNextTypedTuple(n);
++					spheresShearStressVec->InsertNextTypedTuple(s);
+ 					spheresNormalStressNorm->InsertNextValue(stress.norm());
+ 				}
+ 				if(recActive[REC_FORCE]){
+@@ -620,9 +620,9 @@
+ 					Real tt[3] = { (Real)  t[0], (Real) t[1], (Real) t[2] };
+ 					Real fn = f.norm();
+ 					Real tn = t.norm();
+-					spheresForceVec->InsertNextTupleValue(ff);
++					spheresForceVec->InsertNextTypedTuple(ff);
+ 					spheresForceLen->InsertNextValue(fn);
+-					spheresTorqueVec->InsertNextTupleValue(tt);
++					spheresTorqueVec->InsertNextTypedTuple(tt);
+ 					spheresTorqueLen->InsertNextValue(tn);
+ 				}
+ 				
+@@ -631,7 +631,7 @@
+ 					const Matrix3r& ss=YADE_PTR_CAST<CpmState>(b->state)->stress;
+ 					//Real s[3]={ss[0],ss[1],ss[2]};
+ 					Real s[9]={ (Real) ss(0,0), (Real) ss(0,1), (Real) ss(0,2), (Real) ss(1,0), (Real) ss(1,1), (Real) ss(1,2), (Real) ss(2,0), (Real) ss(2,1), (Real) ss(2,2)};
+-					cpmStress->InsertNextTupleValue(s);
++					cpmStress->InsertNextTypedTuple(s);
+ 				}
+ 				
+ 				if (recActive[REC_JCFPM]){
+@@ -681,12 +681,12 @@
+ 				if (recActive[REC_COLORS]){
+ 					const Vector3r& color = facet->color;
+ 					Real c[3] = { (Real) color[0], (Real) color[1], (Real) color[2]};
+-					facetsColors->InsertNextTupleValue(c);
++					facetsColors->InsertNextTypedTuple(c);
+ 				}
+ 				if(recActive[REC_STRESS]){
+ 					const Vector3r& stress = bodyStates[b->getId()].normStress+bodyStates[b->getId()].shearStress;
+ 					Real s[3] = { (Real) stress[0], (Real) stress[1], (Real) stress[2] };
+-					facetsStressVec->InsertNextTupleValue(s);
++					facetsStressVec->InsertNextTypedTuple(s);
+ 					facetsStressLen->InsertNextValue(stress.norm());
+ 				}
+ 				if(recActive[REC_FORCE]){
+@@ -697,9 +697,9 @@
+ 					Real tt[3] = { (Real)  t[0], (Real) t[1], (Real) t[2] };
+ 					Real fn = f.norm();
+ 					Real tn = t.norm();
+-					facetsForceVec->InsertNextTupleValue(ff);
++					facetsForceVec->InsertNextTypedTuple(ff);
+ 					facetsForceLen->InsertNextValue(fn);
+-					facetsTorqueVec->InsertNextTupleValue(tt);
++					facetsTorqueVec->InsertNextTypedTuple(tt);
+ 					facetsTorqueLen->InsertNextValue(tn);
+ 				}
+ 				if (recActive[REC_MATERIALID]) facetsMaterialId->InsertNextValue(b->material->id);
+@@ -760,12 +760,12 @@
+ 					if (recActive[REC_COLORS]){
+ 						const Vector3r& color = box->color;
+ 						Real c[3] = { (Real) color[0], (Real) color[1], (Real) color[2]};
+-						boxesColors->InsertNextTupleValue(c);
++						boxesColors->InsertNextTypedTuple(c);
+ 					}
+ 					if(recActive[REC_STRESS]){
+ 						const Vector3r& stress = bodyStates[b->getId()].normStress+bodyStates[b->getId()].shearStress;
+ 						Real s[3] = { (Real) stress[0], (Real) stress[1], (Real) stress[2] };
+-						boxesStressVec->InsertNextTupleValue(s);
++						boxesStressVec->InsertNextTypedTuple(s);
+ 						boxesStressLen->InsertNextValue(stress.norm());
+ 					}
+ 					if(recActive[REC_FORCE]){
+@@ -776,9 +776,9 @@
+ 						Real tt[3] = { (Real) t[0], (Real) t[1], (Real) t[2] };
+ 						Real fn = f.norm();
+ 						Real tn = t.norm();
+-						boxesForceVec->InsertNextTupleValue(ff);
++						boxesForceVec->InsertNextTypedTuple(ff);
+ 						boxesForceLen->InsertNextValue(fn);
+-						boxesTorqueVec->InsertNextTupleValue(tt);
++						boxesTorqueVec->InsertNextTypedTuple(tt);
+ 						boxesTorqueLen->InsertNextValue(tn);
+ 					}
+ 					if (recActive[REC_MATERIALID]) boxesMaterialId->InsertNextValue(b->material->id);
+@@ -1048,7 +1048,7 @@
+ 					crackType->InsertNextValue(type);
+ 					crackSize->InsertNextValue(size);					
+ 					Real n[3] = { n0, n1, n2 };
+-					crackNorm->InsertNextTupleValue(n);
++					crackNorm->InsertNextTypedTuple(n);
+                                         crackNrg->InsertNextValue(nrg);
+ 				}
+ 			}

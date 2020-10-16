@@ -1,0 +1,35 @@
+From: Luca Wehrstedt <lcw@fb.com>
+Date: Thu, 16 Jul 2020 14:00:21 -0700
+https://github.com/pytorch/pytorch/pull/41558
+diff --git a/torch/testing/_internal/distributed/rpc/rpc_test.py b/torch/testing/_internal/distributed/rpc/rpc_test.py
+index eaab5e9b4d576..d9ba1ea2c3b5a 100644
+--- a/torch/testing/_internal/distributed/rpc/rpc_test.py
++++ b/torch/testing/_internal/distributed/rpc/rpc_test.py
+@@ -89,6 +89,9 @@ class StubRpcAgent:
+     def __init__(self, world_size):
+         self.world_size = world_size
+ 
++    def shutdown(self):
++        pass
++
+     def get_worker_infos(self):
+         return {
+             rpc.WorkerInfo(name=worker_name(rank), id=rank)
+@@ -3345,6 +3348,8 @@ def test_init_pg_then_rpc(self):
+         # Test PG
+         dist.barrier()
+ 
++        rpc.shutdown()
++
+     @dist_init(setup_rpc=False)
+     def test_init_rpc_then_pg(self):
+         rpc.init_rpc(
+@@ -3370,6 +3375,8 @@ def test_init_rpc_then_pg(self):
+         # Test PG
+         dist.barrier()
+ 
++        rpc.shutdown()
++
+     @dist_init
+     def test_wait_all_with_exception(self):
+         futs = []

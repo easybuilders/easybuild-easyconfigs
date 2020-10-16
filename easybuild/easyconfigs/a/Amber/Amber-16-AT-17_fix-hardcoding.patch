@@ -1,0 +1,149 @@
+Fix hardcoding of netcdf, mkl and compiler
+
+Åke Sandgren, 20170517
+diff -ru amber16.orig/AmberTools/src/configure2 amber16/AmberTools/src/configure2
+--- amber16.orig/AmberTools/src/configure2	2017-04-13 15:00:53.000000000 +0200
++++ amber16/AmberTools/src/configure2	2017-05-17 09:05:08.644115630 +0200
+@@ -439,12 +439,12 @@
+   write(6,*) 'testing a Fortran program'
+ end program testf
+ EOF
+-      $fc $fflags $netcdfinc -o testp$suffix testp.f90 $netcdfflagf > /dev/null 2> compile.err
++      $fc $fflags $netcdffinc -o testp$suffix testp.f90 $netcdfflagf > /dev/null 2> compile.err
+       if [ ! -e "testp$suffix" ] ; then
+         status=1
+         if [ "$1" = "verbose" ] ; then
+           echo "Error: Could not compile with NetCDF Fortran interface."
+-          echo "       $fc $fflags $netcdfinc -o testp$suffix testp.f90 $netcdfflagf"
++          echo "       $fc $fflags $netcdffinc -o testp$suffix testp.f90 $netcdfflagf"
+           echo "       Compile error follows:"
+           cat compile.err
+           echo ""
+@@ -545,6 +545,7 @@
+ mpi='no'
+ mtkpp=''
+ netcdf_dir=''
++netcdf_fort_dir=''
+ netcdf_flag=''
+ netcdfstatic='no'
+ pnetcdf_dir=''
+@@ -630,6 +631,7 @@
+         --skip-python)  skippython='yes' ;;
+         --with-python)  shift; python="$1";;
+         --with-netcdf)  shift; netcdf_dir="$1";;
++        --with-netcdf-fort)  shift; netcdf_fort_dir="$1";;
+         --with-pnetcdf) shift; pnetcdf_dir="$1" ;;
+         --python-install) shift; python_install="$1";;
+         -netcdfstatic)  netcdfstatic='yes' ;;
+@@ -900,7 +902,7 @@
+ flibsf="-larpack -llapack -lblas"
+ # only used when the user requests a static build or when a static build is
+ # automatically set, eg, windows:
+-staticflag='-static'
++staticflag=''
+ omp_flag=
+ mpi_flag=
+ fp_flags=
+@@ -1418,7 +1420,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -1737,7 +1739,7 @@
+       fi
+ 
+       if [ "$mpi" = 'yes' ]; then
+-          mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++          mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$pmemd_coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2069,7 +2071,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2206,7 +2208,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2279,17 +2281,17 @@
+     blas=skip
+     flibs="-larpack "
+     flibsf="-larpack "
+-    mkll="$MKL_HOME/lib/32"
++    mkll="$MKL_HOME/mkl/lib/32"
+     mkl_processor="32"
+     mkl_procstring="ia32"
+     mklinterfacelayer='libmkl_intel.a'
+     if [ "$x86_64" = 'yes' ]; then
+-        if [ -d "$MKL_HOME/lib/em64t" ]; then
+-            mkll="$MKL_HOME/lib/em64t"
++        if [ -d "$MKL_HOME/mkl/lib/em64t" ]; then
++            mkll="$MKL_HOME/mkl/lib/em64t"
+             mkl_processor="em64t"
+             mkl_procstring="em64t"
+         else
+-            mkll="$MKL_HOME/lib/intel64"
++            mkll="$MKL_HOME/mkl/lib/intel64"
+             mkl_processor="intel64"
+             mkl_procstring="intel64"
+         fi
+@@ -2715,11 +2717,17 @@
+   else
+     # A NetCDF directory was specified. Check that library exists and compiles
+     printf "\tUsing external NetCDF in '$netcdf_dir'\n"
++    # Support separate NetCDF-Fortran installation with --with-netcdf-fort
++    if [ ! -e "$netcdf_fort_dir" ]; then
++      netcdf_fort_dir="$netcdf_dir"
++    fi
++    printf "\tUsing external NetCDF-Fortran in '$netcdf_fort_dir'\n"
+     netcdfinc="-I"$netcdf_dir"/include"
++    netcdffinc="-I"$netcdf_fort_dir"/include"
+     if [ "${netcdf_dir}" != '/usr' -a "$netcdf_dir" != '/usr/' ]; then
+         netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
+     fi
+-    netcdf=$netcdf_dir"/include/netcdf.mod"
++    netcdf=$netcdf_fort_dir"/include/netcdf.mod"
+     if [ "$netcdfstatic" = 'no' ] ; then
+       if [ "${netcdf_dir}" != '/usr' -a "${netcdf_dir}" != '/usr/' ]; then
+           netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
+@@ -2735,7 +2743,7 @@
+         echo "Error: '$netcdfflagc' not found."
+         exit 1
+       fi
+-      netcdfflagf=$netcdf_dir"/lib/libnetcdff.a"
++      netcdfflagf=$netcdf_fort_dir"/lib/libnetcdff.a"
+       if [ ! -e "$netcdfflagf" ]; then
+         echo "Error: '$netcdfflagf' not found."
+         exit 1
+@@ -2755,6 +2763,7 @@
+     netcdfflagf=''
+     netcdfflagc=''
+     netcdfinc=''
++    netcdffinc=''
+ fi
+ 
+ #------------------------------------------------------------------------------
+@@ -3726,7 +3735,7 @@
+ NETCDF=$netcdf
+ NETCDFLIB=$netcdfflagc
+ NETCDFLIBF=$netcdfflagf
+-NETCDFINC=$netcdfinc
++NETCDFINC=$netcdfinc $netcdffinc
+ PNETCDFLIB=$pnetcdflib
+ PNETCDFINC=$pnetcdfinc
+ PNETCDFDEF=$pnetcdfdef
