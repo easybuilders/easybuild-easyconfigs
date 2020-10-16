@@ -7,7 +7,7 @@ homepage = 'https://gc3pie.readthedocs.org'
 description = """GC3Pie is a Python package for running large job campaigns on diverse batch-oriented execution
  environments."""
 
-toolchain = {'name': 'dummy', 'version': ''}
+toolchain = SYSTEM
 
 osdependencies = [('python-devel', 'python-dev')]
 
@@ -29,9 +29,9 @@ exts_list = [
         'checksums': ['bdf0b7660f6673868d60d929e267e583bddc0e9623c71197b1ad79610c2ebe93'],
     }),
     ('pyCLI', '2.0.3', {
+        'modulename': 'cli',
         'source_urls': ['https://pypi.python.org/packages/source/p/pyCLI/'],
         'checksums': ['bc53e6c5db031ae1c05d131641f153d22a201c5e82cc8c9324a945752efbb622'],
-        'modulename': 'cli',
     }),
     ('prettytable', '0.7.2', {
         'source_urls': ['https://pypi.python.org/packages/source/p/prettytable/'],
@@ -71,9 +71,9 @@ exts_list = [
         'checksums': ['51e64ef2ebfb29cae1faa133b3710143496eca21c530f3f71424d77687764274'],
     }),
     ('python-daemon', '2.2.0', {
+        'modulename': 'daemon',
         'source_urls': ['https://pypi.python.org/packages/source/p/python-daemon/'],
         'checksums': ['aca149ebf7e73f10cd554b2df5c95295d49add8666348eff6195053ec307728c'],
-        'modulename': 'daemon',
     }),
     ('future', '0.16.0', {
         'source_urls': ['https://pypi.python.org/packages/source/f/future/'],
@@ -87,10 +87,14 @@ exts_list = [
         'source_urls': ['https://pypi.python.org/packages/source/p/pycparser/'],
         'checksums': ['99a8ca03e29851d96616ad0404b4aad7d9ee16f25c9f9708a11faf2810f7b226'],
     }),
+    ('six', '1.11.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/six/'],
+        'checksums': ['70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9'],
+    }),
     ('PyNaCl', '1.2.1', {
+        'modulename': 'nacl',
         'source_urls': ['https://pypi.python.org/packages/source/p/PyNaCl/'],
         'checksums': ['e0d38fa0a75f65f556fb912f2c6790d1fa29b7dd27a1d9cc5591b281321eaaa9'],
-        'modulename': 'nacl',
     }),
     ('bcrypt', '3.1.4', {
         'source_urls': ['https://pypi.python.org/packages/source/b/bcrypt/'],
@@ -107,6 +111,11 @@ exts_list = [
     ('idna', '2.7', {
         'source_urls': ['https://pypi.python.org/packages/source/i/idna/'],
         'checksums': ['684a38a6f903c1d71d6d5fac066b58d7768af4de2b832e426ec79c30daa94a16'],
+    }),
+    ('enum34', '1.1.6', {
+        'modulename': 'enum',
+        'source_urls': ['https://pypi.python.org/packages/source/e/enum34/'],
+        'checksums': ['8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1'],
     }),
     ('cryptography', '2.3.1', {
         'source_urls': ['https://pypi.python.org/packages/source/c/cryptography/'],
@@ -125,24 +134,32 @@ exts_list = [
             '151df528ab499229e0925332f95889aa697ed5eb9fd56bd51d5945fcfe55a374',
         ],
     }),
+    ('pycrypto', '2.6.1', {
+        'modulename': 'Crypto',
+        'source_urls': ['https://pypi.python.org/packages/source/p/pycrypto/'],
+        'checksums': ['f2ce1e989b272cfcb677616763e0a2e7ec659effa67a88aa92b3a65528f60a3c'],
+    }),
+    ('cffi', '1.11.5', {
+        'source_urls': ['https://pypi.python.org/packages/source/c/cffi/'],
+        'checksums': ['e90f17980e6ab0f3c2f3730e56d1fe9bcba1891eeea58966e89d352492cc74f4'],
+    }),
     ('gc3pie', version, {
+        'modulename': 'gc3libs',
         'source_urls': ['https://pypi.python.org/packages/source/g/gc3pie/'],
         'checksums': ['fc0114a35a5c1cea22f91e8eef180bbb0971294b8391b4ccdbf772a2969c8b59'],
-        'modulename': 'gc3libs',
     }),
 ]
 
-pyver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
+local_pyver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
 
 # on RHEL-based systems, some extensions get installed to lib, some to lib64
-modextrapaths = {'PYTHONPATH': ['lib/python%s/site-packages' % pyver, 'lib64/python%s/site-packages' % pyver]}
-
-# specify that Bundle easyblock should run a full sanity check, rather than just trying to load the module
-full_sanity_check = True
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%s/site-packages' % local_pyver, 'lib64/python%s/site-packages' % local_pyver],
+}
 
 sanity_check_paths = {
     'files': ['bin/gc3utils'],
-    'dirs': [('lib/python%s/site-packages' % pyver, 'lib64/python%s/site-packages' % pyver)],
+    'dirs': [('lib/python%s/site-packages' % local_pyver, 'lib64/python%s/site-packages' % local_pyver)],
 }
 
 sanity_check_commands = [('gc3utils', 'info --version')]
