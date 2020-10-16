@@ -1,0 +1,88 @@
+fix hardcoded compiler names in Makefile + don't try to link binaries in /usr/local/bin
+author: Kenneth Hoste (HPC-UGent), ported by Maxime Boissonneault (ComputeCanada)
+diff -ru augustus-3.3.2.orig/auxprogs/bam2wig/Makefile augustus-3.3.2/auxprogs/bam2wig/Makefile
+--- augustus-3.3.2.orig/auxprogs/bam2wig/Makefile	2019-02-26 14:52:06.899673626 +0000
++++ augustus-3.3.2/auxprogs/bam2wig/Makefile	2019-02-26 15:20:39.258854823 +0000
+@@ -15,15 +15,15 @@
+ PROGRAM = bam2wig
+ SOURCES = $(PROGRAM)
+ OBJECTS = $(SOURCES:.c=.o)
+-SAMTOOLS=$(TOOLDIR)/samtools/
+-HTSLIB=$(TOOLDIR)/htslib/
+-BCFTOOLS=$(TOOLDIR)/bcftools/
+-TABIX=$(TOOLDIR)/tabix/
+-INCLUDES=-I$(SAMTOOLS) -I. -I$(HTSLIB) -I$(BCFTOOLS) -I$(TABIX)
++SAMTOOLS=$(EBROOTSAMTOOLS)
++HTSLIB=$(EBROOTHTSLIB)
++#BCFTOOLS=$(TOOLDIR)/bcftools/
++#TABIX=$(TOOLDIR)/tabix/
++INCLUDES=-I$(SAMTOOLS)/include/bam -I. -I$(HTSLIB)/include 
+ VPATH=$(SAMTOOLS)
+-LIBS=$(SAMTOOLS)/libbam.a $(HTSLIB)/libhts.a -lcurses -lm -lz -lpthread -lcurl -lssl -lcrypto
+-CFLAGS=-Wall -O2 $(INCLUDES)
+-CC=gcc
++LIBS=$(SAMTOOLS)/lib/libbam.a $(HTSLIB)/lib/libhts.a -lcurses -lm -lz -lpthread -lcurl -lssl -lcrypto
++CFLAGS:=-Wall -O2 $(CFLAGS) $(INCLUDES)
++CC:=$(CC)
+ 
+ $(PROGRAM) : bam2wig.o
+ 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS) -lbz2 -llzma
+diff -ru augustus-3.3.2.orig/auxprogs/compileSpliceCands/Makefile augustus-3.3.2/auxprogs/compileSpliceCands/Makefile
+--- augustus-3.3.2.orig/auxprogs/compileSpliceCands/Makefile	2019-02-26 14:52:07.122673914 +0000
++++ augustus-3.3.2/auxprogs/compileSpliceCands/Makefile	2019-02-26 14:55:08.623907877 +0000
+@@ -1,8 +1,8 @@
+ compileSpliceCands : compileSpliceCands.o list.h list.o
+-	gcc $(LDFLAGS) -o compileSpliceCands compileSpliceCands.o list.o;
++	$(CC) $(LDFLAGS) -o compileSpliceCands compileSpliceCands.o list.o;
+ #	cp compileSpliceCands ../../bin
+ compileSpliceCands.o : compileSpliceCands.c 
+-	gcc -Wall -pedantic -ansi $(CPPFLAGS) -c compileSpliceCands.c 
++	$(CC) -Wall -pedantic -ansi $(CPPFLAGS) -c compileSpliceCands.c 
+ 
+ all : compileSpliceCands
+ 
+diff -ru augustus-3.3.2.orig/auxprogs/homGeneMapping/src/Makefile augustus-3.3.2/auxprogs/homGeneMapping/src/Makefile
+--- augustus-3.3.2.orig/auxprogs/homGeneMapping/src/Makefile	2019-02-26 14:52:07.074673852 +0000
++++ augustus-3.3.2/auxprogs/homGeneMapping/src/Makefile	2019-02-26 14:55:08.623907877 +0000
+@@ -7,7 +7,7 @@
+ # database access for retrieval of hints
+ # SQLITE = true
+ 
+-CC      = g++
++CC      = $(CXX)
+ 
+ # Notes: - "-Wno-sign-compare" eliminates a high number of warnings (see footnote below). Please adopt
+ #          a strict signed-only usage strategy to avoid mistakes since we are not warned about this.
+diff -ru augustus-3.3.2.orig/auxprogs/joingenes/Makefile augustus-3.3.2/auxprogs/joingenes/Makefile
+--- augustus-3.3.2.orig/auxprogs/joingenes/Makefile	2019-02-26 14:52:06.893673619 +0000
++++ augustus-3.3.2/auxprogs/joingenes/Makefile	2019-02-26 14:55:08.624907879 +0000
+@@ -1,4 +1,4 @@
+-CC=g++
++CC=$(CXX)
+ CFLAGS=-Wall -std=gnu++0x
+ 
+ all: joingenes
+diff -ru augustus-3.3.2.orig/Makefile augustus-3.3.2/Makefile
+--- augustus-3.3.2.orig/Makefile	2019-02-26 14:52:07.123673915 +0000
++++ augustus-3.3.2/Makefile	2019-02-26 14:55:08.624907879 +0000
+@@ -17,13 +17,13 @@
+ install:
+ 	install -d $(INSTALLDIR)
+ 	cp -a config bin scripts $(INSTALLDIR)
+-	ln -sf $(INSTALLDIR)/bin/augustus /usr/local/bin/augustus
+-	ln -sf $(INSTALLDIR)/bin/etraining /usr/local/bin/etraining
+-	ln -sf $(INSTALLDIR)/bin/prepareAlign /usr/local/bin/prepareAlign
+-	ln -sf $(INSTALLDIR)/bin/fastBlockSearch /usr/local/bin/fastBlockSearch
+-	ln -sf $(INSTALLDIR)/bin/load2db /usr/local/bin/load2db
+-	ln -sf $(INSTALLDIR)/bin/getSeq /usr/local/bin/getSeq
+-	ln -sf $(INSTALLDIR)/bin/espoca /usr/local/bin/espoca
++	#ln -sf $(INSTALLDIR)/bin/augustus /usr/local/bin/augustus
++	#ln -sf $(INSTALLDIR)/bin/etraining /usr/local/bin/etraining
++	#ln -sf $(INSTALLDIR)/bin/prepareAlign /usr/local/bin/prepareAlign
++	#ln -sf $(INSTALLDIR)/bin/fastBlockSearch /usr/local/bin/fastBlockSearch
++	#ln -sf $(INSTALLDIR)/bin/load2db /usr/local/bin/load2db
++	#ln -sf $(INSTALLDIR)/bin/getSeq /usr/local/bin/getSeq
++	#ln -sf $(INSTALLDIR)/bin/espoca /usr/local/bin/espoca
+ 
+ # for internal purposes:
+ release:

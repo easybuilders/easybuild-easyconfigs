@@ -1,0 +1,60 @@
+see:
+* https://trilinos.org/pipermail/trilinos-users/2018-March/006145.html and https://github.com/trilinos/Sundance/issues/2
+* https://github.com/trilinos/Sundance/issues/3 and https://github.com/trilinos/Sundance/pull/1
+--- trilinos-12.12.1-Source/packages/Sundance/cmake/AddTestBatch.cmake.orig	2018-08-22 13:40:40.878418578 +0200
++++ trilinos-12.12.1-Source/packages/Sundance/cmake/AddTestBatch.cmake	2018-08-22 13:40:49.338408640 +0200
+@@ -5,7 +5,7 @@
+ 
+ FUNCTION(ADD_TEST_BATCH TestList)
+ 
+-   PARSE_ARGUMENTS(
++   CMAKE_PARSE_ARGUMENTS(
+      #prefix
+      PARSE
+      #lists
+
+From c965ab49ec90c52b87911546b3163c98e1341a5d Mon Sep 17 00:00:00 2001
+From: Eric Bavier <bavier@cray.com>
+Date: Thu, 1 Jun 2017 13:27:58 -0500
+Subject: [PATCH] Provide virtual overrides for
+ NOX::Abstract::Vector::random().
+
+Follow-up to Trilinos commit a92b8ad8d045b8f65a6c15e60fbe356c1b9b02c7
+---
+ Playa/src/NOX_Playa_Vector.cpp | 8 ++++++++
+ Playa/src/NOX_Playa_Vector.hpp | 3 +++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/Playa/src/NOX_Playa_Vector.cpp b/Playa/src/NOX_Playa_Vector.cpp
+index 637936e0..3dbf1a9d 100644
+--- trilinos-12.12.1-Source/packages/Sundance/Playa/src/NOX_Playa_Vector.cpp
++++ trilinos-12.12.1-Source/packages/Sundance/Playa/src/NOX_Playa_Vector.cpp
+@@ -191,6 +191,14 @@ NOX::Abstract::Vector& NOX::NOXPlaya::Vector::init(double value)
+   return *this;
+ }
+ 
++NOX::Abstract::Vector& NOX::NOXPlaya::Vector::random(bool useSeed, int seed)
++{
++  if (useSeed)
++    Playa::Rand::setLocalSeed(x.comm(), seed);
++  x.randomize();
++  return *this;
++}
++
+ 
+ NOX::Abstract::Vector& NOX::NOXPlaya::Vector::abs(
+ 					     const NOX::Abstract::Vector& base)
+diff --git a/Playa/src/NOX_Playa_Vector.hpp b/Playa/src/NOX_Playa_Vector.hpp
+index bdf70e22..31430590 100644
+--- trilinos-12.12.1-Source/packages/Sundance/Playa/src/NOX_Playa_Vector.hpp
++++ trilinos-12.12.1-Source/packages/Sundance/Playa/src/NOX_Playa_Vector.hpp
+@@ -116,6 +116,9 @@ class Vector : public NOX::Abstract::Vector
+   /** Initialize all elements to a constant */
+   NOX::Abstract::Vector& init(double value);
+ 
++  /** Initialize all elements of this vector with a random value */
++  NOX::Abstract::Vector& random(bool useSeed = false, int seed = 1);
++
+   /** Assignment operator */
+   NOX::Abstract::Vector& operator=(const NOX::NOXPlaya::Vector& y);
+   /** Assignment operator */
