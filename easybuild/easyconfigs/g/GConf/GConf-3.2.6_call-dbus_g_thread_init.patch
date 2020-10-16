@@ -1,0 +1,21 @@
+Author: Chow Loong Jin <hyperair@debian.org>
+Description: Call dbus_g_thread_init before calling any dbus functions
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/1048341
+Index: gconf-3.2.6/gconf/gconf-dbus.c
+===================================================================
+--- gconf-3.2.6.orig/gconf/gconf-dbus.c	2013-01-23 11:17:02.023020067 +0100
++++ gconf-3.2.6/gconf/gconf-dbus.c	2013-01-23 11:17:02.019020067 +0100
+@@ -396,6 +396,13 @@
+       return FALSE;
+     }
+ 
++  /* Initialize DBus Glib for multithreading -- this fixes race conditions when
++     multi-threaded applications use gconf. Additionally, although the API
++     documentation says that dbus_g_thread_init() may only be called once, it is
++     actually really a wrapper for dbus_threads_init_default() which casn be
++     called as many times as necessary. */
++  dbus_g_thread_init ();
++
+   dbus_error_init (&error);
+ 
+   global_conn = dbus_bus_get_private (DBUS_BUS_SESSION, &error);

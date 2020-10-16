@@ -1,0 +1,50 @@
+easyblock = 'Tarball'
+
+name = 'PCAngsd'
+version = '0.97'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.popgen.dk/software/index.php/PCAngsd'
+description = """PCAngsd, which estimates the covariance matrix for low depth 
+NGS data in an iterative procedure based on genotype likelihoods and is able 
+to perform multiple population genetic analyses in heterogeneous populations."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+source_urls = ['https://github.com/Rosemeis/pcangsd/archive/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+patches = ['PCAngsd-%(version)s_python-hashbang.patch']
+
+checksums = [
+    '05507ccf70b6464656ad9a63bb4d43d771d72d633055a08e056b9feb91f5c60a',
+    'f90018eec41ae47a41bfbd09c54a773f61d4c4d67279ee4c69c2a7ed6afa2e23',  # PCAngsd-%(version)s-python-hashbang.patch
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('numba', '0.37.0', versionsuffix),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('pysnptools', '0.3.13', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pysnptools'],
+        'checksums': ['158f05cb72687772c61bd306c166a7bfc40f158beb1d473e04711daa7bd1d152'],
+        'use_pip': True,
+    }),
+]
+
+postinstallcmds = ["chmod +x %(installdir)s/pcangsd.py"]
+
+sanity_check_paths = {
+    'files': ['pcangsd.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {
+    'PATH': [''],
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'bio'

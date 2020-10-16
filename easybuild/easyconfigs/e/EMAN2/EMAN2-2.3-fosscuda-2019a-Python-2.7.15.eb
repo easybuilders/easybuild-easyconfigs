@@ -1,0 +1,82 @@
+easyblock = 'CMakeMake'
+
+name = 'EMAN2'
+version = '2.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://blake.bcm.edu/emanwiki/EMAN2'
+description = """EMAN2 is the successor to EMAN1. It is a broadly based greyscale scientific image processing suite
+ with a primary focus on processing data from transmission electron microscopes. """
+
+toolchain = {'name': 'fosscuda', 'version': '2019a'}
+
+source_urls = ['https://github.com/cryoem/eman2/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'EMAN2-%(version)s_fix_install_prefix.patch',
+    'EMAN2-%(version)s_fix_sp_dir.patch',
+    'EMAN2-%(version)s_fix_sp_dir_installs.patch',
+    'EMAN2-%(version)s_fix_broken_githash_regex_replace.patch',
+    'EMAN2-%(version)s_use_default_cmake_search_paths.patch',
+    'EMAN2-%(version)s_fix_bad_use_cx11_abi_setting.patch',
+    'EMAN2-%(version)s_fix_gsl_include.patch',
+    'EMAN2-%(version)s_fix_missing_stdio.patch',
+    'EMAN2-%(version)s_fix_multiref_polar_ali_2d_delta_definition.patch',
+]
+checksums = [
+    'e64b8c5d87dba8a77ac0ff7cb4441d39dd0786f6cc91498fd49b96585ce99001',  # v2.3.tar.gz
+    'b5f5dcc0ee4171fad4b8dbfc9cb39040d3950ae8375804e4ef1f3547ac203007',  # EMAN2-2.3_fix_install_prefix.patch
+    '21ab132d712138c423c50adccc2301de41f5611da35c3d8ebcce5acb4df40512',  # EMAN2-2.3_fix_sp_dir.patch
+    '89fe118aa5ddbc8f906c899d097cea2bad1ef0b58b00216304e1457788f976fb',  # EMAN2-2.3_fix_sp_dir_installs.patch
+    # EMAN2-2.3_fix_broken_githash_regex_replace.patch
+    '21de53b2e58a1a2157a14e018a7dd5338a91d053a2bc49d9de02f05bfa5dbcc2',
+    # EMAN2-2.3_use_default_cmake_search_paths.patch
+    '21b1b546e5b3eba795780acd2c32b662e741e8a366eb354288ca6a3b22760d65',
+    'daa54b3f7ec05d3d88e29e81adb676ce14d3cd5dbae6215122e2eb79c1fa41c4',  # EMAN2-2.3_fix_bad_use_cx11_abi_setting.patch
+    '5b0e45292c1446ebb9a31c46b7bd4ff317cdb246fdc218ff61e4892aeff87a20',  # EMAN2-2.3_fix_gsl_include.patch
+    '4b09bb41dd81f6d7caa468f0e8849cebe28fd0a1229c883101fa32cdfcb14e7d',  # EMAN2-2.3_fix_missing_stdio.patch
+    # EMAN2-2.3_fix_multiref_polar_ali_2d_delta_definition.patch
+    'c3e4f25f14c6ca84daec44c8ecafab2a936c0778958cffee981673179230d07c',
+]
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('CMake', '3.13.3'),
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    # Requires boost 1.64 or older, EMAN2 requires numeric which doesn't exist in later Boost
+    ('Boost.Python', '1.64.0'),
+    ('freetype', '2.9.1'),
+    ('FTGL', '2.1.3-rc5'),  # this is the latest version of FTGL since 2008 (included in Ubuntu 16.04 and CentOS 7.4)
+    ('GSL', '2.5'),
+    ('zlib', '1.2.11'),
+    ('HDF5', '1.10.5'),
+    ('IPython', '5.8.0', versionsuffix),
+    ('libGLU', '9.0.0'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('LibTIFF', '4.0.10'),
+    ('libpng', '1.6.36'),
+    ('Mesa', '19.0.1'),
+    ('PyQt5', '5.12.1', versionsuffix),
+    ('bsddb3', '6.2.6'),
+    ('PyOpenGL', '3.1.1a1'),
+]
+
+separate_build_dir = True
+
+configopts = '-DENABLE_EMAN_CUDA=ON -DENABLE_SPARX_CUDA=ON '
+configopts += '-DPYTHON_INCLUDE_PATH="$EBROOTPYTHON/include/python%(pyshortver)s" '
+
+sanity_check_paths = {
+    'files': ['bin/e2proc2d.py', 'bin/e2proc3d.py', 'bin/e2bdb.py', 'bin/e2iminfo.py', 'bin/e2display.py',
+              'bin/e2filtertool.py'],
+    'dirs': ['doc', 'examples', 'fonts', 'images', 'lib', 'recipes', 'test/rt', 'utils']
+}
+
+sanity_check_commands = ["python -c 'import EMAN2'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'

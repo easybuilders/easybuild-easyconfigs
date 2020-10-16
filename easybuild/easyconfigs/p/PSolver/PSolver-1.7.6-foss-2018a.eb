@@ -1,0 +1,32 @@
+easyblock = 'ConfigureMake'
+
+name = 'PSolver'
+version = '1.7.6'
+
+homepage = 'http://bigdft.org/Wiki/index.php?title=BigDFT_website'
+description = """Poisson Solver from the BigDFT code compiled as a standalone library."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'usempi': True, 'opt': True}
+
+source_urls = ['https://launchpad.net/bigdft/1.7/%(version)s/+download/']
+sources = ['bigdft-%(version)s.tar.xz']
+checksums = ['cdb443380540eb3238c5393413f031dfa3a649c18edf5212433a06e19b03929c']
+
+dependencies = [
+    ('libyaml', '0.1.7'),
+]
+
+configopts = 'CC=$MPICC FC=$MPIFC '
+configopts += '--enable-mpi --disable-libbigdft --disable-binaries --disable-dynamic-libraries '
+configopts += '--with-blas="-L$BLAS_LIB_DIR $LIBBLAS" --with-lapack="-L$LAPACK_LIB_DIR $LIBLAPACK" '
+
+installopts = ' && cp wrappers/libwrappers.a %(installdir)s/lib'
+installopts += ' && cp flib/src/libflib-1.a  %(installdir)s/lib/libflib.a'
+
+sanity_check_paths = {
+    'files': ["include/poisson_solver.mod", "lib/libPSolver-1.a", "lib/libflib.a"],
+    'dirs': []
+}
+
+moduleclass = 'phys'
