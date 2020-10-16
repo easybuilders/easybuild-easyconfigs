@@ -1,0 +1,59 @@
+# -*- mode: python; -*-
+# EasyBuild reciPY for Caffe as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2017 UL HPC
+# Authors::   UL HPC Team <hpc-sysadmins@uni.lu>
+# License::   MIT/GPL
+#
+easyblock = 'CMakeMake'
+
+name = 'Caffe'
+version = '1.0'
+
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/BVLC/caffe'
+description = """
+Caffe is a deep learning framework made with expression, speed,
+and modularity in mind. It is developed by the Berkeley Vision
+and Learning Center (BVLC) and community contributors.
+"""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/BVLC/caffe/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['71d3c9eb8a183150f965a465824d01fe82826c22505f7aa314f700ace03fa77f']
+
+builddependencies = [
+    ('CMake', '3.9.1'),
+]
+
+# See http://caffe.berkeleyvision.org/installation.html
+dependencies = [
+    ('Python', '2.7.14'),
+    ('Boost', '1.66.0', '-Python-%(pyver)s'),
+    ('protobuf', '3.4.0'),
+    ('protobuf-python', '3.4.0', '-Python-%(pyver)s'),
+    ('glog', '0.3.5'),
+    ('gflags', '2.2.1'),
+    ('HDF5', '1.8.20'),
+    ('LMDB', '0.9.21'),
+    ('LevelDB', '1.18'),
+    ('snappy', '1.1.7'),
+    ('scikit-image', '0.13.1', '-Python-%(pyver)s'),
+]
+
+configopts = '-DBLAS=mkl -DUSE_OPENCV=0 -DUSE_MKL2017_AS_DEFAULT_ENGINE=1 -DCPU_ONLY=1 '
+
+modextrapaths = {'PYTHONPATH': ['python']}
+
+sanity_check_paths = {
+    'files': ['bin/caffe', 'include/caffe/proto/caffe.pb.h', 'lib64/libproto.a', 'lib64/libcaffe.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = [('python', "-c 'import caffe'")]
+
+moduleclass = 'devel'
