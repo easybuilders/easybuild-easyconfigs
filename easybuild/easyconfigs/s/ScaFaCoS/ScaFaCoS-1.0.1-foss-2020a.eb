@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'ScaFaCoS'
+version = '1.0.1'
+
+homepage = 'http://www.scafacos.de/'
+description = """ScaFaCoS is a library of scalable fast coulomb solvers."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = [
+    '2b125f313795c81b0e87eb920082e91addf94c17444f9486d979e691aaded99b',  # scafacos-1.0.1.tar.gz
+]
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('GMP', '6.2.0'),
+    ('GSL', '2.6'),
+]
+
+preconfigopts = 'unset F77 && '
+
+configopts = '--enable-shared --enable-static --disable-doc '
+# tell it where to find provided FFTW
+configopts += '--without-internal-fftw --with-fftw3-includedir=$EBROOTFFTW/include --with-fftw3-libdir=$EBROOTFFTW/lib '
+# only include the solvers supported for LAMMPS
+# (for p2nfft we need an additonal dependency)
+configopts += '--enable-fcs-solvers=direct,ewald,fmm,p3m '
+
+sanity_check_paths = {
+    'files': ['lib/libfcs.a', 'include/fcs.h', 'include/fcs_module.mod'],
+    'dirs': [],
+}
+
+moduleclass = 'math'

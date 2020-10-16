@@ -1,0 +1,44 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'ConfigureMake'
+
+name = 'libRmath'
+version = '3.6.0'
+
+homepage = 'https://cran.r-project.org/doc/manuals/r-release/R-admin.html#The-standalone-Rmath-library'
+description = """The routines supporting the distribution and special functions in R and a few others are declared
+ in C header file Rmath.h. These can be compiled into a standalone library for linking to other applications."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://cloud.r-project.org/src/base/R-%(version_major)s']
+sources = ['R-%(version)s.tar.gz']
+checksums = ['36fcac3e452666158e62459c6fc810adc247c7109ed71c5b6c3ad5fc2bf57509']
+
+builddependencies = [
+    ('cURL', '7.60.0'),
+    ('bzip2', '1.0.6'),
+]
+
+parallel = 1
+
+configopts = '--with-readline=no --with-recommended-packages=no --with-x=no'
+
+prebuildopts = 'cd %(builddir)s/R-%(version)s/src/nmath/standalone &&'
+
+preinstallopts = 'cd %(builddir)s/R-%(version)s/src/nmath/standalone &&'
+
+pretestopts = 'cd %(builddir)s/R-%(version)s/src/nmath/standalone &&'
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ["lib64/libRmath.%s" % SHLIB_EXT, "lib64/libRmath.a",
+              "lib64/pkgconfig/libRmath.pc",
+              "include/Rmath.h"],
+    'dirs': []
+}
+
+moduleclass = 'lib'
