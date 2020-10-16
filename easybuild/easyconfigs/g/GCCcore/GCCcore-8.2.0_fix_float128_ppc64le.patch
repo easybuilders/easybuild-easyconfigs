@@ -1,0 +1,304 @@
+Fix for '__float128 is not supported on this target on ppc64le'
+From https://gcc.gnu.org/viewcvs/gcc?view=revision&revision=263084
+Prepared for EasyBuild by Simon Branford, University of Birmingham
+--- branches/gcc-8-branch/libstdc++-v3/ChangeLog	2018/07/31 09:24:41	263083
++++ branches/gcc-8-branch/libstdc++-v3/ChangeLog	2018/07/31 09:38:28	263084
+@@ -1,3 +1,29 @@
++2018-07-31  Jonathan Wakely  <jwakely@redhat.com>
++
++	Backport from mainline
++	2018-05-08  Jonathan Wakely  <jwakely@redhat.com>
++
++	PR libstdc++/85672
++	* include/Makefile.am [!ENABLE_FLOAT128]: Change c++config.h entry
++	to #undef _GLIBCXX_USE_FLOAT128 instead of defining it to zero.
++	* include/Makefile.in: Regenerate.
++	* include/bits/c++config (_GLIBCXX_USE_FLOAT128): Move definition
++	within conditional block.
++
++	Backport from mainline
++	2018-05-01  Tulio Magno Quites Machado Filho  <tuliom@linux.vnet.ibm.com>
++
++	PR libstdc++/84654
++	* acinclude.m4: Set ENABLE_FLOAT128 instead of _GLIBCXX_USE_FLOAT128.
++	* config.h.in: Remove references to _GLIBCXX_USE_FLOAT128.
++	* configure: Regenerate.
++	* include/Makefile.am: Replace the value of _GLIBCXX_USE_FLOAT128
++	based on ENABLE_FLOAT128.
++	* include/Makefile.in: Regenerate.
++	* include/bits/c++config: Define _GLIBCXX_USE_FLOAT128.
++	[!defined(__FLOAT128__) && !defined(__SIZEOF_FLOAT128__)]: Undefine
++	_GLIBCXX_USE_FLOAT128.
++
+ 2018-07-26  Release Manager
+ 
+ 	* GCC 8.2.0 released.
+--- branches/gcc-8-branch/libstdc++-v3/acinclude.m4	2018/07/31 09:24:41	263083
++++ branches/gcc-8-branch/libstdc++-v3/acinclude.m4	2018/07/31 09:38:28	263084
+@@ -3062,7 +3062,7 @@
+ dnl
+ dnl Defines:
+ dnl  _GLIBCXX_USE_INT128
+-dnl  _GLIBCXX_USE_FLOAT128
++dnl  ENABLE_FLOAT128
+ dnl
+ AC_DEFUN([GLIBCXX_ENABLE_INT128_FLOAT128], [
+ 
+@@ -3117,13 +3117,12 @@
+ 
+     AC_MSG_CHECKING([for __float128])
+     if AC_TRY_EVAL(ac_compile); then
+-      AC_DEFINE(_GLIBCXX_USE_FLOAT128, 1,
+-      [Define if __float128 is supported on this host.])
+       enable_float128=yes
+     else
+       enable_float128=no
+     fi
+     AC_MSG_RESULT($enable_float128)
++    GLIBCXX_CONDITIONAL(ENABLE_FLOAT128, test $enable_float128 = yes)
+     rm -f conftest*
+ 
+   AC_LANG_RESTORE
+--- branches/gcc-8-branch/libstdc++-v3/config.h.in	2018/07/31 09:24:41	263083
++++ branches/gcc-8-branch/libstdc++-v3/config.h.in	2018/07/31 09:38:28	263084
+@@ -918,9 +918,6 @@
+ /* Define if fchmodat is available in <sys/stat.h>. */
+ #undef _GLIBCXX_USE_FCHMODAT
+ 
+-/* Define if __float128 is supported on this host. */
+-#undef _GLIBCXX_USE_FLOAT128
+-
+ /* Defined if gettimeofday is available. */
+ #undef _GLIBCXX_USE_GETTIMEOFDAY
+ 
+--- branches/gcc-8-branch/libstdc++-v3/configure	2018/07/31 09:24:41	263083
++++ branches/gcc-8-branch/libstdc++-v3/configure	2018/07/31 09:38:28	263084
+@@ -729,6 +729,8 @@
+ CSTDIO_H
+ SECTION_FLAGS
+ WERROR
++ENABLE_FLOAT128_FALSE
++ENABLE_FLOAT128_TRUE
+ thread_header
+ glibcxx_PCHFLAGS
+ GLIBCXX_BUILD_PCH_FALSE
+@@ -11606,7 +11608,7 @@
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 11609 "configure"
++#line 11611 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+@@ -11712,7 +11714,7 @@
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 11715 "configure"
++#line 11717 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+@@ -15398,7 +15400,7 @@
+   # Fake what AC_TRY_COMPILE does.
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15401 "configure"
++#line 15403 "configure"
+ int main()
+ {
+   typedef bool atomic_type;
+@@ -15433,7 +15435,7 @@
+     rm -f conftest*
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15436 "configure"
++#line 15438 "configure"
+ int main()
+ {
+   typedef short atomic_type;
+@@ -15468,7 +15470,7 @@
+     rm -f conftest*
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15471 "configure"
++#line 15473 "configure"
+ int main()
+ {
+   // NB: _Atomic_word not necessarily int.
+@@ -15504,7 +15506,7 @@
+     rm -f conftest*
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15507 "configure"
++#line 15509 "configure"
+ int main()
+ {
+   typedef long long atomic_type;
+@@ -15585,7 +15587,7 @@
+   # unnecessary for this test.
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15588 "configure"
++#line 15590 "configure"
+ int main()
+ {
+   _Decimal32 d1;
+@@ -15627,7 +15629,7 @@
+   # unnecessary for this test.
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15630 "configure"
++#line 15632 "configure"
+ template<typename T1, typename T2>
+   struct same
+   { typedef T2 type; };
+@@ -15661,7 +15663,7 @@
+     rm -f conftest*
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15664 "configure"
++#line 15666 "configure"
+ template<typename T1, typename T2>
+   struct same
+   { typedef T2 type; };
+@@ -15683,15 +15685,13 @@
+   ac_status=$?
+   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+   test $ac_status = 0; }; then
+-
+-$as_echo "#define _GLIBCXX_USE_FLOAT128 1" >>confdefs.h
+-
+       enable_float128=yes
+     else
+       enable_float128=no
+     fi
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_float128" >&5
+ $as_echo "$enable_float128" >&6; }
++
+     rm -f conftest*
+ 
+   ac_ext=c
+@@ -81261,6 +81261,15 @@
+ fi
+ 
+ 
++    if test $enable_float128 = yes; then
++  ENABLE_FLOAT128_TRUE=
++  ENABLE_FLOAT128_FALSE='#'
++else
++  ENABLE_FLOAT128_TRUE='#'
++  ENABLE_FLOAT128_FALSE=
++fi
++
++
+     if test $enable_libstdcxx_allocator_flag = new; then
+   ENABLE_ALLOCATOR_NEW_TRUE=
+   ENABLE_ALLOCATOR_NEW_FALSE='#'
+@@ -81804,6 +81813,10 @@
+   as_fn_error "conditional \"GLIBCXX_BUILD_PCH\" was never defined.
+ Usually this means the macro was only invoked conditionally." "$LINENO" 5
+ fi
++if test -z "${ENABLE_FLOAT128_TRUE}" && test -z "${ENABLE_FLOAT128_FALSE}"; then
++  as_fn_error "conditional \"ENABLE_FLOAT128\" was never defined.
++Usually this means the macro was only invoked conditionally." "$LINENO" 5
++fi
+ if test -z "${ENABLE_ALLOCATOR_NEW_TRUE}" && test -z "${ENABLE_ALLOCATOR_NEW_FALSE}"; then
+   as_fn_error "conditional \"ENABLE_ALLOCATOR_NEW\" was never defined.
+ Usually this means the macro was only invoked conditionally." "$LINENO" 5
+--- branches/gcc-8-branch/libstdc++-v3/include/Makefile.am	2018/07/31 09:24:41	263083
++++ branches/gcc-8-branch/libstdc++-v3/include/Makefile.am	2018/07/31 09:38:28	263084
+@@ -1230,6 +1230,14 @@
+ 	echo 0 > stamp-allocator-new
+ endif
+ 
++if ENABLE_FLOAT128
++stamp-float128:
++	echo 'define _GLIBCXX_USE_FLOAT128 1' > stamp-float128
++else
++stamp-float128:
++	echo 'undef _GLIBCXX_USE_FLOAT128' > stamp-float128
++endif
++
+ # NB: The non-empty default ldbl_compat works around an AIX sed
+ # oddity, see libstdc++/31957 for details.
+ ${host_builddir}/c++config.h: ${CONFIG_HEADER} \
+@@ -1241,7 +1249,8 @@
+ 			      stamp-extern-template \
+ 			      stamp-dual-abi \
+ 			      stamp-cxx11-abi \
+-			      stamp-allocator-new
++			      stamp-allocator-new \
++			      stamp-float128
+ 	@date=`cat ${toplevel_srcdir}/gcc/DATESTAMP` ;\
+ 	release=`sed 's/^\([0-9]*\).*$$/\1/' ${toplevel_srcdir}/gcc/BASE-VER` ;\
+ 	ns_version=`cat stamp-namespace-version` ;\
+@@ -1250,6 +1259,7 @@
+ 	dualabi=`cat stamp-dual-abi` ;\
+ 	cxx11abi=`cat stamp-cxx11-abi` ;\
+ 	allocatornew=`cat stamp-allocator-new` ;\
++	float128=`cat stamp-float128` ;\
+ 	ldbl_compat='s,g,g,' ;\
+ 	grep "^[	 ]*#[	 ]*define[	 ][	 ]*_GLIBCXX_LONG_DOUBLE_COMPAT[	 ][	 ]*1[	 ]*$$" \
+ 	${CONFIG_HEADER} > /dev/null 2>&1 \
+@@ -1262,6 +1272,7 @@
+ 	-e "s,define _GLIBCXX_USE_DUAL_ABI, define _GLIBCXX_USE_DUAL_ABI $$dualabi," \
+ 	-e "s,define _GLIBCXX_USE_CXX11_ABI, define _GLIBCXX_USE_CXX11_ABI $$cxx11abi," \
+ 	-e "s,define _GLIBCXX_USE_ALLOCATOR_NEW, define _GLIBCXX_USE_ALLOCATOR_NEW $$allocatornew," \
++	-e "s,define _GLIBCXX_USE_FLOAT128,$$float128," \
+ 	-e "$$ldbl_compat" \
+ 	    < ${glibcxx_srcdir}/include/bits/c++config > $@ ;\
+ 	sed -e 's/HAVE_/_GLIBCXX_HAVE_/g' \
+--- branches/gcc-8-branch/libstdc++-v3/include/Makefile.in	2018/07/31 09:24:41	263083
++++ branches/gcc-8-branch/libstdc++-v3/include/Makefile.in	2018/07/31 09:38:28	263084
+@@ -1662,6 +1662,11 @@
+ @ENABLE_ALLOCATOR_NEW_FALSE@stamp-allocator-new:
+ @ENABLE_ALLOCATOR_NEW_FALSE@	echo 0 > stamp-allocator-new
+ 
++@ENABLE_FLOAT128_TRUE@stamp-float128:
++@ENABLE_FLOAT128_TRUE@	echo 'define _GLIBCXX_USE_FLOAT128 1' > stamp-float128
++@ENABLE_FLOAT128_FALSE@stamp-float128:
++@ENABLE_FLOAT128_FALSE@	echo 'undef _GLIBCXX_USE_FLOAT128' > stamp-float128
++
+ # NB: The non-empty default ldbl_compat works around an AIX sed
+ # oddity, see libstdc++/31957 for details.
+ ${host_builddir}/c++config.h: ${CONFIG_HEADER} \
+@@ -1673,7 +1678,8 @@
+ 			      stamp-extern-template \
+ 			      stamp-dual-abi \
+ 			      stamp-cxx11-abi \
+-			      stamp-allocator-new
++			      stamp-allocator-new \
++			      stamp-float128
+ 	@date=`cat ${toplevel_srcdir}/gcc/DATESTAMP` ;\
+ 	release=`sed 's/^\([0-9]*\).*$$/\1/' ${toplevel_srcdir}/gcc/BASE-VER` ;\
+ 	ns_version=`cat stamp-namespace-version` ;\
+@@ -1682,6 +1688,7 @@
+ 	dualabi=`cat stamp-dual-abi` ;\
+ 	cxx11abi=`cat stamp-cxx11-abi` ;\
+ 	allocatornew=`cat stamp-allocator-new` ;\
++	float128=`cat stamp-float128` ;\
+ 	ldbl_compat='s,g,g,' ;\
+ 	grep "^[	 ]*#[	 ]*define[	 ][	 ]*_GLIBCXX_LONG_DOUBLE_COMPAT[	 ][	 ]*1[	 ]*$$" \
+ 	${CONFIG_HEADER} > /dev/null 2>&1 \
+@@ -1694,6 +1701,7 @@
+ 	-e "s,define _GLIBCXX_USE_DUAL_ABI, define _GLIBCXX_USE_DUAL_ABI $$dualabi," \
+ 	-e "s,define _GLIBCXX_USE_CXX11_ABI, define _GLIBCXX_USE_CXX11_ABI $$cxx11abi," \
+ 	-e "s,define _GLIBCXX_USE_ALLOCATOR_NEW, define _GLIBCXX_USE_ALLOCATOR_NEW $$allocatornew," \
++	-e "s,define _GLIBCXX_USE_FLOAT128,$$float128," \
+ 	-e "$$ldbl_compat" \
+ 	    < ${glibcxx_srcdir}/include/bits/c++config > $@ ;\
+ 	sed -e 's/HAVE_/_GLIBCXX_HAVE_/g' \
+--- branches/gcc-8-branch/libstdc++-v3/include/bits/c++config	2018/07/31 09:24:41	263083
++++ branches/gcc-8-branch/libstdc++-v3/include/bits/c++config	2018/07/31 09:38:28	263084
+@@ -609,4 +609,9 @@
+ # endif
+ #endif
+ 
++/* Define if __float128 is supported on this host. */
++#if defined(__FLOAT128__) || defined(__SIZEOF_FLOAT128__)
++#define _GLIBCXX_USE_FLOAT128
++#endif
++
+ // End of prewritten config; the settings discovered at configure time follow.
