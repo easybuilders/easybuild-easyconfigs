@@ -1,0 +1,135 @@
+# Fix incorrect compare to NULL pointer. It will automically cast to bool
+# wpoely86@gmail.com
+diff -ur lrslib-062.orig/plrs.cpp lrslib-062/plrs.cpp
+--- lrslib-062.orig/plrs.cpp	2016-05-27 11:04:14.000000000 +0200
++++ lrslib-062/plrs.cpp	2018-10-17 11:56:44.344749250 +0200
+@@ -189,12 +189,12 @@
+ 	while(consume_list){
+ 
+ 		if(consume_list->type == "vertex"){
+-			if (OUTSTREAM == NULL)
++			if (!OUTSTREAM)
+ 			  printf("%s\n",consume_list->data.c_str()); 
+ 			else  OUTSTREAM <<consume_list->data<<endl;
+ 
+ 		}else if(consume_list->type == "ray"){
+-			if (OUTSTREAM == NULL)
++			if (!OUTSTREAM)
+ 			  printf("%s\n",consume_list->data.c_str());
+ 			else  OUTSTREAM <<consume_list->data<<endl;
+ 
+@@ -204,13 +204,13 @@
+ 				//Note that we will not be piping initial cobasis to output
+ 				processCobasis(consume_list->data);
+ 			}else{
+-				if (OUTSTREAM == NULL)
++				if (!OUTSTREAM)
+ 				  printf("%s\n",consume_list->data.c_str()); 
+ 				else  OUTSTREAM <<consume_list->data<<endl;
+ 			}
+ 		}else if(consume_list->type =="V cobasis"){
+ 			if(!initializing){
+-				if (OUTSTREAM == NULL)
++				if (!OUTSTREAM)
+ 				  printf("%s\n",consume_list->data.c_str());
+ 				else  OUTSTREAM <<consume_list->data<<endl;
+ 			}
+@@ -243,20 +243,20 @@
+ 		}else if(consume_list->type == "options warning"){
+ 			//Only pipe warnings if initializing otherwise they are displayed multiple times
+ 			if(initializing){
+-				if (OUTSTREAM == NULL)
++				if (!OUTSTREAM)
+ 				  printf("%s\n", consume_list->data.c_str());
+ 				else OUTSTREAM <<consume_list->data<<endl;
+ 			}
+ 		}else if(consume_list->type == "header"){
+ 			//Only pipe headers if initializing otherwise they are displayed multiple times
+ 			if(initializing){
+-				if (OUTSTREAM == NULL)
++				if (!OUTSTREAM)
+ 				  printf("%s\n", consume_list->data.c_str());
+ 				else  OUTSTREAM <<consume_list->data<<endl;
+ 			}
+ 		}else if(consume_list->type == "debug"){
+ 			//Print debug output if it's produced
+-			if (OUTSTREAM == NULL)
++			if (!OUTSTREAM)
+ 			 printf("%s\n", consume_list->data.c_str());
+ 			else  OUTSTREAM << consume_list->data<<endl;
+ 			}
+@@ -292,7 +292,7 @@
+ 
+ 	printf("*Max depth of %d to initialize starting cobasis list\n",
+ 		INITDEPTH);
+-        if(OUTSTREAM != NULL)
++        if(OUTSTREAM)
+ 	    OUTSTREAM <<"*Max depth of "<<INITDEPTH<<" to initialize starting cobasis list"<<endl;
+ 	
+ 	//Copy contents of ine file to temporary file	
+@@ -303,13 +303,13 @@
+         {
+                 init_temp_file<<"estimates "<<ESTIMATES<<endl;
+ 		printf("*Estimates %d\n",ESTIMATES);
+-                if(OUTSTREAM != NULL)
++                if(OUTSTREAM)
+ 	              OUTSTREAM <<"*Estimates "<<ESTIMATES<<endl;
+                 if (SUBTREESIZE<1)
+                        SUBTREESIZE=1000;
+ 	        printf("*Subtreesize %d\n",SUBTREESIZE);
+                 init_temp_file<<"subtreesize "<<SUBTREESIZE<<endl;
+-                if(OUTSTREAM != NULL)
++                if(OUTSTREAM)
+ 	               OUTSTREAM <<"*Subtreesize "<<SUBTREESIZE<<endl;
+         }
+ 	if (!ESTIMATES || PLRS_DEBUG)
+@@ -416,7 +416,7 @@
+ 		printf("*Output written to: %s\n",outputfile.c_str());
+ 	}
+ 	
+-        if(OUTSTREAM != NULL)
++        if(OUTSTREAM)
+             {
+ 	     OUTSTREAM <<"*plrs:"<<TITLE<<VERSION<<"("<<ARITH<<")"<<MAXTHREADS<<" processes"<<endl<<AUTHOR<<endl;
+ 	     OUTSTREAM <<"*Input taken from "<<INPUTFILE<<endl;
+@@ -472,11 +472,11 @@
+ 	    consumer_thread.join();
+        }   
+ 
+-	if (OUTSTREAM == NULL)
++	if (!OUTSTREAM)
+ 		printf("end\n");
+ 	else
+ 		OUTSTREAM <<"end"<<endl;;
+-        if(OUTSTREAM != NULL)
++        if(OUTSTREAM)
+            {
+ 	    OUTSTREAM<<"*Finished initializing cobasis list with "<<cobasislistsize<<" starting cobases"<<endl;
+ 	    OUTSTREAM <<"*Starting "<<MAXTHREADS<<" producer thread(s) and 1 consumer thread"<<endl;
+@@ -484,22 +484,22 @@
+ 	if(FACETS > 0){
+                 printf("%s\n", prat("*Volume=",Vnum,Vden).c_str());
+ 		printf("*Totals: facets=%ld bases=%ld\n",FACETS,BASIS);
+-                if (OUTSTREAM != NULL) {
++                if (OUTSTREAM) {
+                     OUTSTREAM <<prat("*Volume=",Vnum,Vden) << endl ;
+                     OUTSTREAM <<"*Totals: facets="<<FACETS<<" bases="<<BASIS<<endl;
+                 }
+ 	}else{
+ 		printf("*Totals: vertices=%ld rays=%ld bases=%ld integer-vertices=%ld\n",VERTICES,RAYS,BASIS,INTVERTICES);
+-                if (OUTSTREAM != NULL)
++                if (OUTSTREAM)
+                     OUTSTREAM<<"*Totals: vertices="<<VERTICES<<" rays="<<RAYS<<" bases="<<BASIS<< " integer-vertices="<<INTVERTICES<<endl;
+ 	}
+ 
+-       if(OUTSTREAM != NULL)
++       if(OUTSTREAM)
+             OUTSTREAM<< "*Phase 1 time: "<< phase1time <<
+                         " seconds"<<endl;
+   	gettimeofday(&end, NULL); 
+ 	printf("*Elapsed time: %ld seconds\n", end.tv_sec  - start.tv_sec);
+-        if (OUTSTREAM != NULL)
++        if (OUTSTREAM)
+            {
+ 	         OUTSTREAM <<"*Elapsed time: "<<end.tv_sec  - start.tv_sec<<" seconds."<<endl;
+            }
