@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'FreeFem++'
+version = '3.58'
+versionsuffix = '-downloaded-deps'
+
+homepage = 'http://www.freefem.org/'
+description = """ FreeFem++ is a partial differential equation solver. It has its own language.
+freefem scripts can solve multiphysics non linear systems in 2D and 3D. """
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://www.freefem.org/ff++/ftp/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['e205c0a89fe8edc876d97b8a6ba43825b83c7f8dbdd49fdf972fa1f089b62743']
+
+builddependencies = [('Autotools', '20170619')]
+
+dependencies = [
+    ('HDF5', '1.10.1'),
+    ('GSL', '2.4'),
+    ('freeglut', '3.0.0'),
+]
+
+preconfigopts = "autoreconf -i &&"
+
+configopts = '--with-hdf5="$EBROOTHDF5"/bin '
+configopts += '--with-gsl-include="$EBROOTGSL"/include --with-gsl-ldflags="$EBROOTGSL"/lib '
+configopts += '--with-lapack="$LIBLAPACK" '
+
+# dependencies are heavily patched by FreeFem++, we therefore let it download and install them itself
+prebuildopts = 'download/getall -a -o ScaLAPACK,ARPACK,freeYams,Gmm++,Hips,Ipopt,METIS,ParMETIS,MMG3D,mshmet,MUMPS,'
+prebuildopts += 'NLopt,pARMS,PaStiX,Scotch,SuiteSparse,SuperLU_DIST,SuperLU,TetGen,PETSc,SLEPc,hpddm &&'
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bamg', 'cvmsh2', 'ffglut', 'ffmedit']] +
+             ['bin/ff-%s' % x for x in ['c++', 'get-dep', 'mpirun', 'pkg-download']] +
+             ['bin/FreeFem++%s' % x for x in ['', '-mpi', '-nw']],
+    'dirs': ['share/freefem++/%(version)s/'] +
+            ['lib/ff++/%%(version)s/%s' % x for x in ['bin', 'etc', 'idp', 'include', 'lib']]
+}
+
+moduleclass = 'math'
