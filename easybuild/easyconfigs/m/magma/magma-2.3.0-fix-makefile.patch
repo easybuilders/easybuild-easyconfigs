@@ -1,0 +1,39 @@
+# Fix the makefile to use EB values for everything
+# wpoely86@gmail.com
+diff -ur magma.orig/Makefile magma/Makefile
+--- magma.orig/Makefile	2018-04-16 08:59:06.931425718 +0200
++++ magma/Makefile	2018-04-16 11:59:13.436660985 +0200
+@@ -10,7 +10,7 @@
+ CC         ?= cc
+ CXX        ?= c++
+ NVCC       ?= nvcc
+-FORT       ?=
++FORT       ?= $(FC)
+ ifeq ($(FORT),)
+     $(warning No Fortran compiler was given in FORT in make.inc. Some testers will not be able to check their results.)
+ endif
+@@ -23,17 +23,17 @@
+ #FPIC       = -fPIC
+ 
+ # may want -std=c99 for CFLAGS, -std=c++11 for CXXFLAGS
+-CFLAGS     ?= -O3 $(FPIC) -DADD_ -Wall -MMD
+-CXXFLAGS   ?= $(CFLAGS)
+-NVCCFLAGS  ?= -O3         -DADD_ -Xcompiler "$(FPIC) -Wall -Wno-unused-function"
+-FFLAGS     ?= -O3 $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument
+-F90FLAGS   ?= -O3 $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument
+-LDFLAGS    ?= -O3 $(FPIC)
++CFLAGS     := $(FPIC) -DADD_ -Wall -MMD $(CFLAGS)
++CXXFLAGS   := $(CFLAGS)
++NVCCFLAGS  :=         -DADD_ -Xcompiler "$(FPIC) -Wall -Wno-unused-function $(CFLAGS)"
++FFLAGS     := $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument $(FCFLAGS)
++F90FLAGS   := $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument $(F90FLAGS)
++LDFLAGS    := $(FPIC) -fopenmp $(LDFLAGS)
+ 
+ INC        ?= -I$(CUDADIR)/include
+ 
+ LIBDIR     ?= -L$(CUDADIR)/lib
+-LIB        ?= -lcudart -lcublas -lcusparse -llapack -lblas
++LIB        := $(LIBLAPACK) -lcudart -lcublas -lcusparse $(LIBS)
+ 
+ GPU_TARGET ?= Kepler Maxwell Pascal
+ 
