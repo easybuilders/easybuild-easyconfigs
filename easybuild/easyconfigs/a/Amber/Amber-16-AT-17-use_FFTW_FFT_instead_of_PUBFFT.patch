@@ -1,0 +1,28 @@
+Use FFTW_FFT/MKL_FFTW_FFT instead of PUBFFT for pmemd.
+
+Åke Sandgren, 20171014
+diff -ru amber16.orig/AmberTools/src/configure2 amber16/AmberTools/src/configure2
+--- amber16.orig/AmberTools/src/configure2	2017-04-13 15:00:53.000000000 +0200
++++ amber16/AmberTools/src/configure2	2017-10-14 19:07:22.137281514 +0200
+@@ -1384,9 +1384,9 @@
+     # PMEMD Specifics
+     pmemd_fpp_flags='-DPUBFFT'
+     # following lines commented out, since pmemd is not GPL:
+-#   if [ "$has_fftw3" = 'yes' ]; then
+-#       pmemd_fpp_flags='-DFFTW_FFT'
+-#   fi
++    if [ "$has_fftw3" = 'yes' ]; then
++        pmemd_fpp_flags='-DFFTW_FFT'
++    fi
+     pmemd_foptflags="$foptflags"
+     if [ "$pmemd_openmp" = 'yes' ]; then
+         pmemd_foptflags= "$pmemd_foptflags -fopenmp -D_OPENMP_"
+@@ -2958,8 +2958,6 @@
+             echo "     MKL_HOME set to" "$MKL_HOME"
+             echo $(mkdir $amberprefix/include)
+             echo $(cp $MKL_HOME/mkl/include/fftw/fftw3.f $amberprefix/include)
+-        fi
+-        if [ "$intelmpi" = "yes" ]; then
+             pmemd_fpp_flags="$pmemd_fppflags -DFFTW_FFT -DMKL_FFTW_FFT "
+             pmemd_coptflags="$pmemd_coptflags -DFFTW_FFT " # it would be best if we had a cflags var
+         fi
