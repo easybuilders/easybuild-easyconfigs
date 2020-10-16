@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'KMC'
+version = '3.1.2rc1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://sun.aei.polsl.pl/kmc'
+description = "KMC is a disk-based programm for counting k-mers from (possibly gzipped) FASTQ/FASTA files."
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+source_urls = ['https://github.com/refresh-bio/KMC/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['a1958c4f3c6fd7c7ebb8b478c00fce1fd0f328c634042f723c5917a9d030a3fe']
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.11'),
+    ('Python', '3.7.4'),
+]
+
+# Makefile does static linking with libc.a, libpthread.a, libm.a
+osdependencies = [('glibc-static', 'libc6-dev')]
+
+prebuildopts = "sed -i 's@[^ ]*/libz.a@${EBROOTZLIB}/lib/libz.a@g' makefile && "
+prebuildopts += "sed -i 's@[^ ]*/libbz2.a@${EBROOTBZIP2}/lib/libbz2.a@g' makefile && "
+
+files_to_copy = ['bin']
+
+sanity_check_paths = {
+    'files': ['bin/kmc', 'bin/kmc_dump'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "kmc",
+    "kmc_dump",
+    "python -c 'import py_kmc_api'",
+]
+
+# Python bindings are also located in bin/
+modextrapaths = {'PYTHONPATH': ['bin']}
+
+moduleclass = 'bio'
