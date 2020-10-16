@@ -1,0 +1,34 @@
+# This pull request addresses the issue reported at
+# https://github.com/easybuilders/easybuild-easyconfigs/issues/8771
+# Python 3.7.4 segfault during `make test`
+# 
+# That is, the faulthander test would fail during testing if the
+# `--enable-shared` flag was used with `configure` on certain Skylake chips.
+#
+# The original issue was reported in https://bugs.python.org/issue21131 in
+# 2014; another variation was report in May 2019, discussion of which led
+# to the current patch.
+#
+# Upstream commit at Python source that addresses this patch can be found at
+# https://github.com/python/cpython/pull/15276
+# https://github.com/python/cpython/commit/1581d9c405f140491791a07dca3f6166bc499ec1
+# The patch can be applied to all 3.7.x Python versions.
+#
+# Bennet Fauber, Sat Aug 17 07:47:54 EDT 2019
+
+diff -Nru Python-3.7.2.original/Modules/faulthandler.c Python-3.7.2/Modules/faulthandler.c
+--- Python-3.7.2.original/Modules/faulthandler.c	2018-12-23 16:37:36.000000000 -0500
++++ Python-3.7.2/Modules/faulthandler.c	2019-08-15 09:56:35.847464392 -0400
+@@ -1309,7 +1309,11 @@
+      * be able to allocate memory on the stack, even on a stack overflow. If it
+      * fails, ignore the error. */
+     stack.ss_flags = 0;
+-    stack.ss_size = SIGSTKSZ;
++    /* bpo-21131: allocate dedicated stack of SIGSTKSZ*2 bytes, instead of just
++       SIGSTKSZ bytes. Calling the previous signal handler in faulthandler
++       signal handler uses more than SIGSTKSZ bytes of stack memory on some
++       platforms. */
++    stack.ss_size = SIGSTKSZ * 2;
+     stack.ss_sp = PyMem_Malloc(stack.ss_size);
+     if (stack.ss_sp != NULL) {
+         err = sigaltstack(&stack, &old_stack);
