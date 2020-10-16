@@ -28,17 +28,19 @@ dependencies = [('Python', '2.7.13')]
 
 osdependencies = ['torque-devel']
 
-# this is needed for setup.py script
-configopts = "--datarootdir=%(installdir)s --docdir=%(installdir)s"
+# use CFLAGS from EB and torque headers from host system
 prebuildopts = 'export CFLAGS="$CFLAGS -I/usr/include/torque/" && '
 preinstallopts = prebuildopts
 
 local_pythonpath = 'lib/python%(pyshortver)s/site-packages'
-modextrapaths = {'PYTHONPATH': local_pythonpath}
 
 sanity_check_paths = {
     'files': [],
-    'dirs': ["%s/pbs" % local_pythonpath]
+    'dirs': ['%s/pbs' % local_pythonpath, 'share/doc']
 }
+
+sanity_check_commands = ["python -c 'import PBSQuery'"]
+
+modextrapaths = {'PYTHONPATH': [local_pythonpath, '%s/pbs' % local_pythonpath]}
 
 moduleclass = 'tools'
