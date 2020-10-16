@@ -1,0 +1,46 @@
+easyblock = 'PythonPackage'
+
+name = 'split-seq'
+version = '20190717'
+local_commit = 'a4ebe27'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/yjzhang/split-seq-pipeline'
+description = """Analysis tools for split-seq."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/yjzhang/split-seq-pipeline/archive']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['e7da1a5038419c56372c52ca2faa557734e6052577ba7a228c60093bb103be12']
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('Pysam', '0.15.1', versionsuffix),
+    ('matplotlib', '3.0.0', versionsuffix),
+    ('STAR', '2.6.1c'),
+    ('SAMtools', '1.9'),
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+local_pymod = name.replace('-', '_')
+local_pymodpath = 'lib/python%%(pyshortver)s/site-packages/%s' % local_pymod
+
+# Copy missing barcodes to installation directory
+postinstallcmds = ['cp %s/barcodes/*.pkl %%(installdir)s/%s/barcodes/' % (local_pymod, local_pymodpath)]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [local_pymodpath],
+}
+
+sanity_check_commands = ["split-seq --help"]
+
+# Reference genome can be generated following the instructions in
+# https://github.com/yjzhang/split-seq-pipeline#generating-a-reference-genome
+# modloadmsg = "Reference database located in /path/to/database/%(name)s-%(version)s\n"
+
+moduleclass = 'bio'

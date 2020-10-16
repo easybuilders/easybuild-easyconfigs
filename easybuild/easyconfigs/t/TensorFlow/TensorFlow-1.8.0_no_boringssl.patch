@@ -1,0 +1,104 @@
+# Disable boringssl which fails to build due to incorrect C code with
+# Intel compiler
+#
+# Åke Sandgren, HPC2N
+diff -ru tensorflow-1.8.0-rc1.orig/tensorflow/core/platform/cloud/BUILD tensorflow-1.8.0-rc1/tensorflow/core/platform/cloud/BUILD
+--- tensorflow-1.8.0-rc1.orig/tensorflow/core/platform/cloud/BUILD	2018-04-19 17:53:13.000000000 +0200
++++ tensorflow-1.8.0-rc1/tensorflow/core/platform/cloud/BUILD	2018-04-24 20:22:00.361149553 +0200
+@@ -179,7 +179,6 @@
+         ":http_request",
+         "//tensorflow/core:lib",
+         "//tensorflow/core:lib_internal",
+-        "@boringssl//:crypto",
+         "@jsoncpp_git//:jsoncpp",
+     ],
+ )
+@@ -323,7 +322,6 @@
+         "//tensorflow/core:lib_internal",
+         "//tensorflow/core:test",
+         "//tensorflow/core:test_main",
+-        "@boringssl//:crypto",
+     ],
+ )
+ 
+diff -ru tensorflow-1.8.0-rc1.orig/tensorflow/core/platform/s3/BUILD tensorflow-1.8.0-rc1/tensorflow/core/platform/s3/BUILD
+--- tensorflow-1.8.0-rc1.orig/tensorflow/core/platform/s3/BUILD	2018-04-19 17:53:13.000000000 +0200
++++ tensorflow-1.8.0-rc1/tensorflow/core/platform/s3/BUILD	2018-04-24 20:22:07.981104387 +0200
+@@ -51,7 +51,6 @@
+         "//tensorflow/core:lib",
+         "//tensorflow/core:lib_internal",
+         "@aws",
+-        "@boringssl//:crypto",
+     ],
+     alwayslink = 1,
+ )
+diff -ru tensorflow-1.8.0-rc1.orig/tensorflow/tools/lib_package/BUILD tensorflow-1.8.0-rc1/tensorflow/tools/lib_package/BUILD
+--- tensorflow-1.8.0-rc1.orig/tensorflow/tools/lib_package/BUILD	2018-04-19 17:53:13.000000000 +0200
++++ tensorflow-1.8.0-rc1/tensorflow/tools/lib_package/BUILD	2018-04-24 20:22:13.257073119 +0200
+@@ -114,7 +114,6 @@
+         "//third_party/eigen3:LICENSE",
+         "//third_party/fft2d:LICENSE",
+         "@aws//:LICENSE",
+-        "@boringssl//:LICENSE",
+         "@com_googlesource_code_re2//:LICENSE",
+         "@cub_archive//:LICENSE.TXT",
+         "@curl//:COPYING",
+@@ -151,7 +150,6 @@
+         "//third_party/eigen3:LICENSE",
+         "//third_party/fft2d:LICENSE",
+         "@aws//:LICENSE",
+-        "@boringssl//:LICENSE",
+         "@com_googlesource_code_re2//:LICENSE",
+         "@cub_archive//:LICENSE.TXT",
+         "@curl//:COPYING",
+diff -ru tensorflow-1.8.0-rc1.orig/tensorflow/tools/pip_package/BUILD tensorflow-1.8.0-rc1/tensorflow/tools/pip_package/BUILD
+--- tensorflow-1.8.0-rc1.orig/tensorflow/tools/pip_package/BUILD	2018-04-19 17:53:13.000000000 +0200
++++ tensorflow-1.8.0-rc1/tensorflow/tools/pip_package/BUILD	2018-04-24 20:22:17.333048966 +0200
+@@ -124,7 +124,6 @@
+         "@arm_neon_2_x86_sse//:LICENSE",
+         "@astor_archive//:LICENSE",
+         "@aws//:LICENSE",
+-        "@boringssl//:LICENSE",
+         "@com_google_absl//:LICENSE",
+         "@com_googlesource_code_re2//:LICENSE",
+         "@cub_archive//:LICENSE.TXT",
+diff -ru tensorflow-1.8.0-rc1.orig/tensorflow/workspace.bzl tensorflow-1.8.0-rc1/tensorflow/workspace.bzl
+--- tensorflow-1.8.0-rc1.orig/tensorflow/workspace.bzl	2018-04-19 17:53:13.000000000 +0200
++++ tensorflow-1.8.0-rc1/tensorflow/workspace.bzl	2018-04-24 20:22:36.208937145 +0200
+@@ -766,12 +766,6 @@
+ 
+   # Needed by gRPC
+   native.bind(
+-      name = "libssl",
+-      actual = "@boringssl//:ssl",
+-  )
+-
+-  # Needed by gRPC
+-  native.bind(
+       name = "nanopb",
+       actual = "@grpc//third_party/nanopb:nanopb",
+   )
+diff -ru tensorflow-1.8.0-rc1.orig/third_party/curl.BUILD tensorflow-1.8.0-rc1/third_party/curl.BUILD
+--- tensorflow-1.8.0-rc1.orig/third_party/curl.BUILD	2018-04-19 17:53:13.000000000 +0200
++++ tensorflow-1.8.0-rc1/third_party/curl.BUILD	2018-04-24 20:23:05.812761875 +0200
+@@ -315,9 +315,6 @@
+         "@org_tensorflow//tensorflow:ios": [],
+         "@org_tensorflow//tensorflow:windows": [],
+         "@org_tensorflow//tensorflow:windows_msvc": [],
+-        "//conditions:default": [
+-            "@boringssl//:ssl",
+-        ],
+     }),
+ )
+ 
+diff -ru tensorflow-1.8.0-rc1.orig/third_party/kafka/BUILD tensorflow-1.8.0-rc1/third_party/kafka/BUILD
+--- tensorflow-1.8.0-rc1.orig/third_party/kafka/BUILD	2018-04-19 17:53:13.000000000 +0200
++++ tensorflow-1.8.0-rc1/third_party/kafka/BUILD	2018-04-24 20:23:13.224718012 +0200
+@@ -146,7 +146,6 @@
+     ],
+     visibility = ["//visibility:public"],
+     deps = [
+-        "@boringssl//:ssl",
+         "@zlib_archive//:zlib",
+     ],
+ )
