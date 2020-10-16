@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'SYMPHONY'
+version = '5.6.16'
+
+homepage = 'https://projects.coin-or.org/SYMPHONY'
+description = "SYMPHONY is an open-source solver for mixed-integer linear programs (MILPs) written in C."
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.coin-or.org/download/source/SYMPHONY/']
+sources = [SOURCE_TGZ]
+checksums = ['54df3fd953d9a2e4178f10373c6cb8b46a0808569b42adf07aa6d0044b2ab04b']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('Doxygen', '1.8.14'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('CoinUtils', '2.11.3'),
+    ('Osi', '0.108.5'),
+    ('Clp', '1.17.3'),
+    ('Cgl', '0.60.2'),
+]
+
+# Use BLAS/LAPACK from OpenBLAS
+configopts = '--with-blas="$LIBBLAS" --with-lapack="$LIBLAPACK" '
+# Disable GLPK, dependencies have to be built with it as well
+configopts += '--without-glpk '
+# Use CoinUtils from EB
+configopts += '--with-coinutils-lib="-lCoinUtils" '
+configopts += '--with-coinutils-datadir=$EBROOTCOINUTILS/share/coin/Data'
+# Use Clp from EB
+configopts += '--with-clp-lib="-lOsiClp -lClpSolver -lClp" '
+configopts += '--with-clp-datadir=$EBROOTCLP/share/coin/Data '
+# Use Osi from EB (also needs links to Clp due to OsiClpSolver)
+configopts += '--with-osi-lib="-lOsiClp -lClpSolver -lClp -lOsi" '
+configopts += '--with-osi-datadir=$EBROOTOSI/share/coin/Data '
+# Use Cgl from EB
+configopts += '--with-cgl-lib="-lCgl" '
+configopts += '--with-cgl-datadir=$EBROOTCGL/share/coin/Data '
+
+sanity_check_paths = {
+    'files': ['bin/symphony', 'lib/libSym.%s' % SHLIB_EXT, 'lib/libOsiSym.%s' % SHLIB_EXT],
+    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin']
+}
+
+# other coin-or projects expect <header.hpp> instead of <coin/header.hpp>
+modextrapaths = {'CPATH': 'include/coin'}
+
+moduleclass = 'math'

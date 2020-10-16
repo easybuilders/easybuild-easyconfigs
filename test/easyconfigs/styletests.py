@@ -1,5 +1,5 @@
 ##
-# Copyright 2016-2018 Ghent University
+# Copyright 2016-2020 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,28 +29,24 @@ Style tests for easyconfig files. Uses pep8.
 """
 
 import glob
-import sys
-from unittest import TestCase, TestLoader, main
-from vsc.utils import fancylogger
+from unittest import TestCase, TestLoader, main, skipIf
 
+from easybuild.base import fancylogger
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.framework.easyconfig.style import check_easyconfigs_style
 
 try:
     import pep8
 except ImportError:
-    pass
+    pep8 = None
 
 
 class StyleTest(TestCase):
     log = fancylogger.getLogger("StyleTest", fname=False)
 
+    @skipIf(not pep8, 'no pep8 available')
     def test_style_conformance(self):
         """Check the easyconfigs for style"""
-        if 'pep8' not in sys.modules:
-            print "Skipping style checks (no pep8 available)"
-            return
-
         # all available easyconfig files
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
