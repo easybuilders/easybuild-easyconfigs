@@ -1,0 +1,44 @@
+* fix missing import for boost/type_traits
+* fix library name for Boost Python bindings
+* don't hardcode location of Eigen headers
+author: Kenneth Hoste (HPC-UGent)
+--- minieigen-0.5.4/src/common.hpp.orig	2018-06-29 09:19:34.840533330 +0200
++++ minieigen-0.5.4/src/common.hpp	2018-06-29 09:20:02.950958908 +0200
+@@ -65,6 +65,7 @@
+ #include<iomanip>
+ #include<vector>
+ 
++#include<boost/type_traits.hpp>
+ #include<boost/python.hpp>
+ namespace py=boost::python;
+ #include<boost/lexical_cast.hpp>
+--- minieigen-0.5.4/setup.py.orig	2015-10-14 12:13:43.000000000 +0200
++++ minieigen-0.5.4/setup.py	2018-07-02 14:43:12.739425421 +0200
+@@ -1,6 +1,6 @@
+ # encoding: utf-8
+ from distutils.core import setup,Extension
+-import sys, glob
++import sys, glob, os
+ 
+ # vectorization is currently broken and experimental ONLY
+ vectorize=False
+@@ -19,9 +19,9 @@
+     # * https://bugs.launchpad.net/panda3d/+bug/919237
+         define_macros+=[('EIGEN_DONT_VECTORIZE',None)]
+ else:
+-    libraries=['boost_python-py%d%d'%(sys.version_info[0],sys.version_info[1])]
++    libraries=[]
+     library_dirs=[]
+-    include_dirs=['/usr/include/eigen3','/usr/local/include/eigen3','minieigen']
++    include_dirs=['minieigen']
+ 
+ setup(name='minieigen',
+     version='0.5.4',
+@@ -61,6 +61,7 @@
+             'src/double-conversion/strtod.cc',
+         ],
+         libraries=libraries,
++        extra_objects=[os.path.join(os.getenv('EBROOTBOOSTPYTHON', ''), 'lib', 'libboost_python.a')],
+         library_dirs=library_dirs,
+         include_dirs=['src']+include_dirs,
+         define_macros=define_macros
