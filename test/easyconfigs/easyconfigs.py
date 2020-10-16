@@ -611,11 +611,13 @@ class EasyConfigTest(TestCase):
 
             # if Python is a dependency, that should be reflected in the versionsuffix
             # Tkinter is an exception, since its version always matches the Python version anyway
+            # Python 3.8.6 and later are also excluded, as we consider python 3 the default python
             # Also whitelist some updated versions of Amber
             whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
                                        'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
-            has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'])
+            has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'] 
+                    if LooseVersion(dep['version']) < LooseVersion('3.8.6'))
             if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
@@ -625,6 +627,12 @@ class EasyConfigTest(TestCase):
                         failing_checks.append(msg)
                     else:
                         print('\nNote: Failed non-critical check: ' + msg)
+            else:
+                 has_recent_python3_dep = any(dep['name'] == 'Python' for dep in ec['dependencies'] 
+                         if LooseVersion(dep['version']) >= LooseVersion('3.8.6'))
+                 if re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                    msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
+                    failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if use_pip and easyblock in ['PythonBundle', 'PythonPackage']:
