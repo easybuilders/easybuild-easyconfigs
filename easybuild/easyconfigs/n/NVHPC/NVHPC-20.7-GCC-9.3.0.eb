@@ -9,17 +9,18 @@ description = """C, C++ and Fortran compilers included with the NVIDIA HPC SDK (
 toolchain = SYSTEM
 
 sources = ['nvhpc_2020_%(version_major)s%(version_minor)s_Linux_x86_64_cuda_multi.tar.gz']
+checksums = ['dbc2ed6135009edf28d4e1c2c4f63984']
 
 dependencies = [
     ('GCCcore', local_gccver),
     ('binutils', '2.34', '', ('GCCcore', local_gccver)),
     ('CUDA', '11.0', '', SYSTEM),
     # This is necessary to avoid cases where just libnuma.so.1 is present in the system and -lnuma fails
-    ('numactl', '2.0.13', '', SYSTEM)
+    ('numactl', '2.0.13', '', ('GCCcore', local_gccver))
 ]
 
-default_cuda_version = "11.0"
-compute_capability = "70"
+default_cuda_version = None  # Use strings like "11.0" or use the command line: --try-amend=default_cuda_version="10.2"
+cuda_compute_capabilities = None  # Only single values supported (like "7.0" or "8.0"); use also via CLI
 
 # Options to add/remove things to/from environment module
 module_byo_compilers = False  # Remove compilers from PATH (Bring-your-own compilers)
@@ -29,15 +30,6 @@ module_add_profilers = False  # Add NVHPC's NVIDIA Profilers
 module_add_nccl = False       # Add NVHPC's NCCL library
 module_add_nvshmem = False    # Add NVHPC's NVSHMEM library
 module_add_cuda = False       # Add NVHPC's bundled CUDA
-
-# We use a HMNS, so let's enforce a unique compiler
-modluafooter = '''
-family("compiler")
-add_property("arch","gpu")
-'''
-
-# Always do a recursive unload on compilers
-recursive_module_unload = True
 
 # this bundle serves as a compiler-only toolchain, so it should be marked as compiler (important for HMNS)
 moduleclass = 'compiler'
