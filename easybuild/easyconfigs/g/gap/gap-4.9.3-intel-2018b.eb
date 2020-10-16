@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'gap'
+version = '4.9.3'
+
+homepage = 'https://www.gap-system.org'
+description = """GAP is a system for computational discrete algebra,
+with particular emphasis on Computational Group Theory."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+source_urls = ['https://www.gap-system.org/pub/gap/gap-%(version_major_minor)s/tar.gz/']
+sources = [SOURCE_TAR_GZ]
+patches = ['%(name)s-%(version)s-use-EB-deps.patch']
+checksums = [
+    'e502941e52352285e87faaf11e7f0e810eab8e38849d869fc6b9714d6cf7fe7c',  # gap-4.9.3.tar.gz
+    '997e49f35e5c6df43fdc52ac5d856e906790289108de7fbc22413eb8544aa30c',  # gap-4.9.3-use-EB-deps.patch
+]
+
+unpack_options = '--strip-components=1'
+
+dependencies = [
+    ('GMP', '6.1.2'),
+    ('libreadline', '7.0'),
+    ('4ti2', '1.6.9'),
+    ('Normaliz', '3.6.3'),
+    ('lrslib', '6.2'),
+]
+
+# It doesn't have a working make install and hardcodes
+# the build path
+buildininstalldir = True
+skipsteps = ['install']
+
+# This tries to install all of the GAP packages. If one fails because
+# of missing dependencies, it's skipped automatically
+buildopts = ' && cd pkg && ../bin/BuildPackages.sh'
+
+postinstallcmds = ["cd bin && ln -s gap.sh gap"]
+
+sanity_check_paths = {
+    'files': ['bin/gap.sh', 'bin/gap', 'gap', 'gac'],
+    'dirs': ['pkg']
+}
+
+moduleclass = 'math'
