@@ -1,0 +1,32 @@
+easyblock = 'MakeCp'
+
+name = 'fastq-join'
+version = '1.3.1'
+
+homepage = 'https://www.lct.jussieu.fr/pagesperso/contrera/index-nci.html'
+description = """ NCIPLOT is a program for revealing non covalent interactions
+ based on the reduced density gradient. """
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+
+source_urls = ['https://github.com/brwnj/fastq-join/archive/']
+sources = ['v%(version)s.tar.gz']
+
+# Remove hardcoded values
+prebuildopts = "sed -i 's/CC=g++//g' Makefile && "
+prebuildopts += "sed -i 's/CFLAGS=-O3 -I.//g' Makefile && "
+
+# Fix failing test (sqrt(-1) is expected to be NaN but is actually -NaN)
+prebuildopts += "sed -i 's/n\", dev)/n\", abs(dev))/g' fastq-join.cpp && "
+
+runtest = 'check'
+
+files_to_copy = [(['fastq-join'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/fastq-join'],
+    'dirs': [],
+}
+sanity_check_commands = ['fastq-join -h']
+
+moduleclass = 'bio'
