@@ -1,0 +1,46 @@
+Fix remote launch of broker and workers over ssh by starting login shell
+Added environment variable SCOOP_MODULE_LOAD to load the SCOOP module
+Author: Samuel Moors, Vrije Universiteit Brussel (VUB)
+
+diff -ur scoop-0.7.1.1.orig/scoop/launch/brokerLaunch.py scoop-0.7.1.1/scoop/launch/brokerLaunch.py
+--- scoop-0.7.1.1.orig/scoop/launch/brokerLaunch.py	2015-08-21 15:53:21.000000000 +0200
++++ scoop-0.7.1.1/scoop/launch/brokerLaunch.py	2019-11-25 09:35:37.951797999 +0100
+@@ -110,10 +110,12 @@
+         for i in range(5000, 10000, 2):
+             cmd = self.BASE_SSH + [
+                 hostname,
++                '""bash --login -c \'' + os.getenv('SCOOP_LOAD_MODULE', ':') + ' && ' +
+                 brokerString.format(brokerPort=i,
+                                     infoPort=i + 1,
+                                     pythonExec=pythonExecutable,
+-                                    )
++                                    ) +
++                '\'""'
+             ]
+             scoop.logger.debug("Launching remote broker: {cmd}"
+                                "".format(cmd=" ".join(cmd)))
+diff -ur scoop-0.7.1.1.orig/scoop/launch/workerLaunch.py scoop-0.7.1.1/scoop/launch/workerLaunch.py
+--- scoop-0.7.1.1.orig/scoop/launch/workerLaunch.py	2015-08-21 15:53:21.000000000 +0200
++++ scoop-0.7.1.1/scoop/launch/workerLaunch.py	2019-11-25 09:36:59.658799261 +0100
+@@ -17,6 +17,7 @@
+ # Global imports
+ from collections import namedtuple
+ import logging
++import os
+ import sys
+ import subprocess
+ 
+@@ -205,7 +206,12 @@
+                     '-R {0}:127.0.0.1:{0}'.format(tunnelPorts[1]),
+                 ]
+             self.subprocesses.append(
+-                subprocess.Popen(sshCmd + [self.hostname, self.getCommand()],
++                subprocess.Popen(sshCmd + [
++                    self.hostname,
++                    '""bash --login -c \'' + os.getenv('SCOOP_LOAD_MODULE', ':') + ' && ' +
++                    self.getCommand() +
++                    '\'""'
++                ],
+                                  stdout=subprocess.PIPE if stdPipe else None,
+                                  stderr=subprocess.PIPE if stdPipe else None,
+                 )
