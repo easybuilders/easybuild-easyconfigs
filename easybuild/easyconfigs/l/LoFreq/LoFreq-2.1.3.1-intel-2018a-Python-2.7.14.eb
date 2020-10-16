@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'LoFreq'
+version = '2.1.3.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://csb5.github.io/lofreq'
+description = "Fast and sensitive variant calling from next-gen sequencing data"
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://github.com/CSB5/lofreq/raw/master/dist/']
+sources = ['lofreq_star-%(version)s.tar.gz']
+patches = ['LoFreq-2.1.2_SAMtools-HTSlib.patch']
+checksums = [
+    '0caddc6163641993a71c8b94a145debcbf3b63ac969eeaf4fab297ff50817623',  # lofreq_star-2.1.3.1.tar.gz
+    'aaf195c236eee30ed06efeeea47e8abc3e5dd6eeae8cb69c56c5e128360038e4',  # LoFreq-2.1.2_SAMtools-HTSlib.patch
+]
+
+builddependencies = [('HTSlib', '1.8')]
+dependencies = [
+    ('Python', '2.7.14'),
+    ('SAMtools', '1.7'),
+    ('cURL', '7.58.0'),
+    ('XZ', '5.2.3'),
+    ('bzip2', '1.0.6'),
+]
+
+# required to fix linking issues with libhts.a
+buildopts = 'LIBS="$LIBS -lz -lm -lcurl -llzma -lbz2"'
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/lofreq'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = [('python', "-c 'import lofreq_star'")]
+
+moduleclass = 'bio'
