@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'NGS'
+version = '1.3.0'
+
+homepage = 'https://github.com/ncbi/ngs'
+description = """NGS is a new, domain-specific API for accessing reads, alignments and pileups produced from
+ Next Generation Sequencing."""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+
+source_urls = ['https://github.com/ncbi/ngs/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['803c650a6de5bb38231d9ced7587f3ab788b415cac04b0ef4152546b18713ef2']
+
+dependencies = [('Java', '1.8.0_192', '', True)]
+
+builddependencies = [
+    ('binutils', '2.28'),
+]
+
+# override default of using $HOME/ncbi-outdir
+configopts = "--build-prefix=%(builddir)s/ncbi-outdir"
+
+buildopts = 'CC="$CC -c" CPP="$CXX" CP="$CXX -c" -C ngs-sdk && '
+buildopts += 'make CC="$CC -c" CPP="$CXX" CP="$CXX -c" -C ngs-java'
+
+installopts = "-C ngs-sdk && make install -C ngs-java"
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['jar/ngs-java.jar', ('lib/libngs-sdk.%s' % SHLIB_EXT, 'lib64/libngs-sdk.%s' % SHLIB_EXT),
+              ('lib/libngs-adapt-c++.a', 'lib64/libngs-adapt-c++.a'), ('lib/libngs-c++.a', 'lib64/libngs-c++.a')],
+    'dirs': ['include/ngs', 'share'],
+}
+
+modextrapaths = {'CLASSPATH': 'jar/ngs-java.jar'}
+
+moduleclass = 'bio'
