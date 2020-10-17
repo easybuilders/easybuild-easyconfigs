@@ -1,0 +1,46 @@
+# Updated from previous config
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+#
+# Building this in interactive session will result in freeze during either
+# runtest phase or sanity_check_commands phase (python -c 'import yaff')
+#
+# If you submit this at non-interactive job, it will build just fine.
+# Possibly root cause: https://github.com/h5py/h5py/issues/917
+#
+easyblock = 'PythonPackage'
+
+name = 'yaff'
+version = '1.6.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://molmod.github.io/yaff/'
+description = """Yaff stands for 'Yet another force field'. It is a pythonic force-field code."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+source_urls = ['https://github.com/molmod/yaff/releases/download/%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['a266ab032778e37bb2e93152aefb67f396827aa728151651403984429c74ceaa']
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('h5py', '2.9.0'),
+    ('molmod', '1.4.4', versionsuffix),
+]
+
+download_dep_fail = True
+use_pip = True
+
+# required because we're building a Python package using Intel compilers on top of Python built with GCC
+check_ldshared = True
+
+runtest = "export MATPLOTLIBRC=$PWD; echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc; "
+runtest += "python setup.py build_ext -i; nosetests -v"
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'chem'

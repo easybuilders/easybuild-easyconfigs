@@ -1,0 +1,137 @@
+From ee9ce72f46f8cfc71762520df884661fa93b94b8 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Thu, 23 Jul 2020 15:40:39 +0200
+Subject: [PATCH] Replace "if(NOT ${var}" by "if(NOT var"
+
+---
+ cmake/Dependencies.cmake                       | 10 +++++-----
+ cmake/Modules_CUDA_fix/upstream/FindCUDA.cmake |  2 +-
+ cmake/ProtoBuf.cmake                           |  2 +-
+ cmake/Utils.cmake                              |  4 ++--
+ cmake/public/cuda.cmake                        |  2 +-
+ torch/CMakeLists.txt                           |  2 +-
+ 6 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
+index dba04b35f8989..b3a892cf88a05 100644
+--- a/cmake/Dependencies.cmake
++++ b/cmake/Dependencies.cmake
+@@ -584,7 +584,7 @@ if(BUILD_TEST OR BUILD_MOBILE_BENCHMARK OR BUILD_MOBILE_TEST)
+               "-P"
+               "${CMAKE_CURRENT_LIST_DIR}/GoogleTestPatch.cmake"
+       RESULT_VARIABLE _exitcode)
+-    if(NOT ${_exitcode} EQUAL 0)
++    if(NOT _exitcode EQUAL 0)
+       message(WARNING "Patching failed for Google Test. The build may fail.")
+     endif()
+   endif()
+@@ -634,7 +634,7 @@ if(BUILD_TEST OR BUILD_MOBILE_BENCHMARK OR BUILD_MOBILE_TEST)
+               "-P"
+               "${CMAKE_CURRENT_LIST_DIR}/GoogleTestPatch.cmake"
+       RESULT_VARIABLE _exitcode)
+-    if(NOT ${_exitcode} EQUAL 0)
++    if(NOT _exitcode EQUAL 0)
+       message(WARNING "Reverting changes failed for Google Test. The build may fail.")
+     endif()
+   endif()
+@@ -877,7 +877,7 @@ if(BUILD_PYTHON)
+     execute_process(
+         COMMAND "${PYTHON_EXECUTABLE}" "--version"
+         RESULT_VARIABLE _exitcode OUTPUT_VARIABLE PYTHON_VERSION)
+-    if(NOT ${_exitcode} EQUAL 0)
++    if(NOT _exitcode EQUAL 0)
+       message(FATAL_ERROR "The Python executable ${PYTHON_EXECUTABLE} cannot be run. Make sure that it is an absolute path.")
+     endif()
+     if(PYTHON_VERSION)
+@@ -955,7 +955,7 @@ if(BUILD_PYTHON)
+ endif()
+ 
+ # ---[ pybind11
+-if(NOT ${pybind11_PREFER_third_party})
++if(NOT pybind11_PREFER_third_party)
+   find_package(pybind11 CONFIG)
+   if(NOT pybind11_FOUND)
+     find_package(pybind11)
+@@ -1226,7 +1226,7 @@ if(USE_NCCL)
+         "Not using CUDA/ROCM, so disabling USE_NCCL. Suppress this warning with "
+         "-DUSE_NCCL=OFF.")
+     caffe2_update_option(USE_NCCL OFF)
+-  elseif(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
++  elseif(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+     message(WARNING "NCCL is currently only supported under Linux.")
+     caffe2_update_option(USE_NCCL OFF)
+   elseif(USE_CUDA)
+diff --git a/cmake/Modules_CUDA_fix/upstream/FindCUDA.cmake b/cmake/Modules_CUDA_fix/upstream/FindCUDA.cmake
+index ffcc49e29c3ac..a25edda0cb1e8 100644
+--- a/cmake/Modules_CUDA_fix/upstream/FindCUDA.cmake
++++ b/cmake/Modules_CUDA_fix/upstream/FindCUDA.cmake
+@@ -1505,7 +1505,7 @@ macro(CUDA_WRAP_SRCS cuda_target format generated_files)
+         set(_cuda_source_format ${format})
+       endif()
+       # If file isn't a .cu file, we need to tell nvcc to treat it as such.
+-      if(NOT ${file} MATCHES "\\.cu$")
++      if(NOT file MATCHES "\\.cu$")
+         set(cuda_language_flag -x=cu)
+       else()
+         set(cuda_language_flag)
+diff --git a/cmake/ProtoBuf.cmake b/cmake/ProtoBuf.cmake
+index bd82ebc11217c..32cab7557f3b7 100644
+--- a/cmake/ProtoBuf.cmake
++++ b/cmake/ProtoBuf.cmake
+@@ -85,7 +85,7 @@ endmacro()
+ # coded BUILD_CUSTOM_PROTOBUF, we will hard code the use of custom protobuf
+ # in the submodule.
+ if(ANDROID OR IOS)
+-  if(NOT ${BUILD_CUSTOM_PROTOBUF})
++  if(NOT BUILD_CUSTOM_PROTOBUF)
+     message(WARNING
+         "For Android and iOS cross compilation, I am automatically using "
+         "custom protobuf under third party. Note that this behavior may "
+diff --git a/cmake/Utils.cmake b/cmake/Utils.cmake
+index 1b0d8c109e481..3838b1fe95496 100644
+--- a/cmake/Utils.cmake
++++ b/cmake/Utils.cmake
+@@ -154,7 +154,7 @@ function(dedent outvar text)
+     INPUT_FILE "${CMAKE_BINARY_DIR}/indented.txt"
+     RESULT_VARIABLE _dedent_exitcode
+     OUTPUT_VARIABLE _dedent_text)
+-  if(NOT ${_dedent_exitcode} EQUAL 0)
++  if(NOT _dedent_exitcode EQUAL 0)
+     message(ERROR " Failed to remove indentation from: \n\"\"\"\n${text}\n\"\"\"
+     Python dedent failed with error code: ${_dedent_exitcode}")
+     message(FATAL_ERROR " Python dedent failed with error code: ${_dedent_exitcode}")
+@@ -202,7 +202,7 @@ function(pycmd outvar cmd)
+   dedent(_dedent_cmd "${cmd}")
+   pycmd_no_exit(_output _exitcode "${_dedent_cmd}")
+ 
+-  if(NOT ${_exitcode} EQUAL 0)
++  if(NOT _exitcode EQUAL 0)
+     message(ERROR " Failed when running python code: \"\"\"\n${_dedent_cmd}\n\"\"\"")
+     message(FATAL_ERROR " Python command failed with error code: ${_exitcode}")
+   endif()
+diff --git a/cmake/public/cuda.cmake b/cmake/public/cuda.cmake
+index f1656c6c76627..d4ec3a9dff021 100644
+--- a/cmake/public/cuda.cmake
++++ b/cmake/public/cuda.cmake
+@@ -74,7 +74,7 @@ if(CUDA_FOUND)
+     message(FATAL_ERROR "Caffe2: Couldn't determine version from header: " ${output_var})
+   endif()
+   message(STATUS "Caffe2: Header version is: " ${cuda_version_from_header})
+-  if(NOT ${cuda_version_from_header} STREQUAL ${CUDA_VERSION_STRING})
++  if(NOT cuda_version_from_header STREQUAL ${CUDA_VERSION_STRING})
+     # Force CUDA to be processed for again next time
+     # TODO: I'm not sure if this counts as an implementation detail of
+     # FindCUDA
+diff --git a/torch/CMakeLists.txt b/torch/CMakeLists.txt
+index fb01b020bdef0..8a13c7f1ee868 100644
+--- a/torch/CMakeLists.txt
++++ b/torch/CMakeLists.txt
+@@ -98,7 +98,7 @@ if(MSVC)
+     if(BUILD_TEST)
+       list(APPEND TORCH_PYTHON_LINK_LIBRARIES onnx_library)
+     endif(BUILD_TEST)
+-    if(NOT ${CMAKE_BUILD_TYPE} MATCHES "Release")
++    if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+       string(APPEND TORCH_PYTHON_LINK_FLAGS " /DEBUG:FULL")
+     endif()
+ elseif(APPLE)
