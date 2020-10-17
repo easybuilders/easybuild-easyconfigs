@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'GConf'
+version = '3.2.6'
+
+homepage = 'https://developer.gnome.org/gconf/'
+description = """GConf is a system for storing application preferences.
+ It is intended for user preferences; not configuration
+ of something like Apache, or arbitrary data storage."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+source_urls = ['https://ftp.gnome.org/pub/GNOME/sources/GConf/%(version_major_minor)s/']
+sources = [SOURCE_TAR_XZ]
+patches = [
+    '%(name)s-%(version)s_call-dbus_g_thread_init.patch',
+    '%(name)s-%(version)s_fix_wrong_return_value.patch',
+    '%(name)s-%(version)s_gconf-path-max-hurd.patch',
+    '%(name)s-%(version)s_readd_gconf_engine_key_is_writable.patch',
+]
+checksums = [
+    '1912b91803ab09a5eed34d364bf09fe3a2a9c96751fde03a4e0cfa51a04d784c',  # GConf-3.2.6.tar.xz
+    'ed55bff5bc239115ae27b8520a923ae0d5cab6cb15ca9921a8c23b939306489f',  # GConf-3.2.6_call-dbus_g_thread_init.patch
+    'f8f7745c3648953098eb56af0f64adc69d8c0b0e78c8db351746a2b4c58e8bb4',  # GConf-3.2.6_fix_wrong_return_value.patch
+    'ee5524c3cb985088bbe4884531ddc48ba22d2fced2a34865304c77e194a55bde',  # GConf-3.2.6_gconf-path-max-hurd.patch
+    # GConf-3.2.6_readd_gconf_engine_key_is_writable.patch
+    'b95dfc2f0474d9162fc686f26cd4d3da5c9b01a9c609dc0a4f2b2bd901d497f3',
+]
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('GObject-Introspection', '1.63.1', '-Python-3.7.4'),
+]
+
+dependencies = [
+    ('GLib', '2.62.0'),
+    ('dbus-glib', '0.110'),
+    ('libxml2', '2.9.9'),
+    ('GTK+', '3.24.13'),
+    ('intltool', '0.51.0'),
+]
+
+configopts = '--disable-orbit '
+
+sanity_check_paths = {
+    'files': ['bin/gconf%s' % x for x in['-merge-tree', 'tool-2']] +
+             ['bin/gsettings-%s-convert' % x for x in ['data', 'schema']] +
+             ['lib/libgconf-2.%s' % x for x in['a', 'so']],
+    'dirs': ['include', 'share']
+}
+
+moduleclass = 'devel'
