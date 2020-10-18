@@ -1,0 +1,64 @@
+name = 'PETSc'
+version = "3.13.6"
+
+homepage = 'http://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://ftp.mcs.anl.gov/pub/%(namelower)s/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['02ca534a14c800a96f139f54530ac048b1727eb6703975920953bcb502771b1c']
+
+builddependencies = [
+    ('CMake', '3.16.3'),
+]
+
+dependencies = [
+    ('HDF5', '1.10.6', '-mpi'),
+    ('FFTW', '3.3.8', '-mpi'),
+]
+
+configopts = " ".join([
+    '--with-mkl_pardiso=1',
+    '--with-mkl_pardiso-dir=$MKLROOT',
+    '--with-mkl_cpardiso=1',
+    '--with-mkl_cpardiso-dir=$MKLROOT',
+    '--with-hdf5=1',
+    '--with-hdf5-dir=$EBROOTHDF5',
+    '--with-cxx-dialect=C++11',
+    '--with-mkl_sparse-optimize=1',
+    '--with-memalign=64',
+])
+
+download_deps = ['triangle']
+
+postinstallcmds = [
+    'ln -sf %(installdir)s/lib/%(namelower)s/bin %(installdir)s/bin'
+]
+
+keepsymlinks = True
+
+shared_libs = 1
+
+download_deps_static = [
+    'mumps',
+    'ptscotch',
+    'superlu',
+    'superlu_dist',
+    'parmetis',
+    'metis',
+    'ml',
+    'SuiteSparse',
+    'hypre',
+    'prometheus',
+    'spooles',
+    'chaco',
+]
+
+moduleclass = 'numlib'
+modluafooter = """
+family("%(namelower)s")
+"""
