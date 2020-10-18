@@ -1,0 +1,54 @@
+easyblock = 'MakeCp'
+
+name = 'CPMD'
+version = '4.3'
+
+import os
+
+homepage = 'http://cpmd.org'
+description = """The CPMD code is a parallelized plane wave / pseudopotential
+implementation of Density Functional Theory, particularly designed for
+ab-initio molecular dynamics."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': False}
+
+# CPMD tarball and patches and other utils should be downloaded manually and placed into the sources dir.
+
+sources = [
+    'cpmd-v4.3.tar.gz',
+    'cpmd2cube.tar.gz', 
+    'fourier.tar.gz', 
+    'cpmd2xyz-scripts.tar.gz'
+]
+patches = ['patch.to.4612','patch.to.4615','patch.to.4616','patch.to.4621','patch.to.4624','patch.to.4627']
+checksums = [
+    '4f31ddf045f1ae5d6f25559d85ddbdab4d7a6200362849df833632976d095df4',  # cpmd-v4.3.tar.gz
+    'c59b50385d18ddf33ba285d0e4c1b2e2cd6ac3b6ff17ecfb7eb3099c71d337b9',  # cpmd2cube.tar.gz
+    'e0959f173ce39587ee68b8f7e5b9fca5be919dad6c7d9fb9ad010b3b91fc958c',  # fourier.tar.gz
+    'd047c8ac798d88ef4865088e41ee9b3d64c0160c90688a6904c3178789a5d358',  # cpmd2xyz-scripts.tar.gz
+    '3b7d91e04c40418ad958069234ec7253fbf6c4be361a1d5cfd804774eeb44915',  # patch.to.4612
+    '5ec5790fb6ca64632bcc1b0f5b8f3423c54455766a0979ff4136624bbe8d49eb',  # patch.to.4615
+    'ac0bc215c4259f55da4dc59803fe636f797e241f8a01974e05730c9778ad44c4',  # patch.to.4616
+    '2d2bc7e37246032fc354f51da7dbdb5a219dd228867399931b0e94da1265d5ca',  # patch.to.4621
+    '0a19687528264bf91c9f50ffdc0b920a8511eecf5259b667c8c29350f9dabc53',  # patch.to.4624
+    '63677cd887b2c627f9498173d6d7793809577aad2655c96fe6f4e01d763bdda0',  # patch.to.4627
+]
+
+prebuildopts  = 'cd %(builddir)s/cpmd2cube/ && ./Configure Linux-PC-IFORT > Makefile && make && '
+prebuildopts += 'cd %(builddir)s/fourier/ && make && '
+prebuildopts += 'cd %(builddir)s/CPMD/ && ./configure.sh LINUX-X86_64-INTEL-MPI-FFTW && '
+
+buildopts = "CPP='fpp -P -C'"
+
+files_to_copy = [(['bin/cpmd.x', '%(builddir)s/out2xyz.pl', '%(builddir)s/traj2xyz.pl', '%(builddir)s/cpmd2cube/cpmd2cube.x', '%(builddir)s/cpmd2cube/cutcube.x', '%(builddir)s/cpmd2cube/trimcube.x', '%(builddir)s/fourier/fourier.x', '%(builddir)s/fourier/trajec2atoms.x'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/cpmd.x', 'bin/fourier.x', 'bin/cpmd2cube.x', 'bin/out2xyz.pl'],
+    'dirs': []
+}
+
+if os.environ.get('USER') == 'ebuser':
+    group = "soft_cpmd"
+
+moduleclass = 'chem'
