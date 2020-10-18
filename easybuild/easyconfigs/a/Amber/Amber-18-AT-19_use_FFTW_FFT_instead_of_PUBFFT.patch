@@ -1,0 +1,41 @@
+commit fd5f339f48b6b81e2d201138ef4049baef7c7798
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Mon Jul 13 14:24:19 2020 +0200
+
+    Use FFTW_FFT with FFTW3 instead of PUBFFT for pmemd.
+    This fixes linking with FFTW3 as opposed to using MKL.
+    
+    Åke Sandgren, 20181006
+
+diff --git a/AmberTools/src/configure2 b/AmberTools/src/configure2
+index a03e109..8681e6a 100755
+--- a/AmberTools/src/configure2
++++ b/AmberTools/src/configure2
+@@ -1362,6 +1362,9 @@ gnu)
+ 
+     # PMEMD Specifics
+     pmemd_fpp_flags='-DPUBFFT -DGNU_HACKS'
++    if [ "$has_fftw3" = 'yes' ]; then
++        pmemd_fpp_flags='-DFFTW_FFT'
++    fi
+     pmemd_foptflags="$foptflags"
+     if [ "$pmemd_openmp" = 'yes' ]; then
+         pmemd_foptflags="$pmemd_foptflags -fopenmp -D_OPENMP_"
+@@ -3043,8 +3046,6 @@ if [ "$compiler" = "intel" ]; then
+             echo "     MKL_HOME set to" "$MKL_HOME"
+             echo `mkdir -p $amberprefix/include`
+             echo `cp $MKL_HOME/mkl/include/fftw/fftw3.f $amberprefix/include`
+-        fi
+-        if [ "$intelmpi" = "yes" ]; then
+             pmemd_fpp_flags="$pmemd_fppflags -DFFTW_FFT -DMKL_FFTW_FFT "
+             pmemd_coptflags="$pmemd_coptflags -DFFTW_FFT " # it would be best if we had a cflags var
+         fi
+@@ -3875,7 +3876,7 @@ PMEMD_F90=$fc $mpi_flag $fppflags $pmemd_fpp_flags
+ PMEMD_FOPTFLAGS=$pmemd_foptflags \$(AMBERBUILDFLAGS)
+ PMEMD_CC=$cc
+ PMEMD_COPTFLAGS=$pmemd_coptflags $mpi_flag \$(AMBERBUILDFLAGS)
+-PMEMD_FLIBSF=$flibsf $flibs_mkl $flibsf_arch $win_mpilibs $emillib
++PMEMD_FLIBSF=$flibsf $flibs_mkl $flibsf_arch $win_mpilibs $emillib $flibs_fftw3
+ PMEMD_LD=$ld \$(AMBERBUILDFLAGS)
+ LDOUT=$ldout
+ PMEMD_GNU_BUG303=$pmemd_gnu_bug303
