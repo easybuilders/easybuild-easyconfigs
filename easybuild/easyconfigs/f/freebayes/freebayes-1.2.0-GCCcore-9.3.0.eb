@@ -1,0 +1,74 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+
+easyblock = 'MakeCp'
+
+name = 'freebayes'
+version = '1.2.0'
+
+homepage = 'https://github.com/ekg/freebayes'
+description = """ Bayesian haplotype-based polymorphism discovery and genotyping. """
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+sources = [{
+    'filename': '%(name)s-v%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/ekg',
+        'repo_name': 'freebayes',
+        'commit': '29c4002',
+        'recursive': True,
+    },
+}]
+patches = ['freebayes-parallel_path_removal.patch']
+checksums = [
+    '30c03d10e4983431bbdc79842f03dffbf408a99f6c4876cdb9140cb0ea6ca31c',  # freebayes-v1.2.0.tar.gz
+    'bd6b4ed775adaca836a8e3b58b9350c15e2d53cb09de222ed9d88c5ae86c6815',  # freebayes-parallel_path_removal.patch
+]
+
+# Option to also build vcflib, this will add these commands to 
+# the end of the build command, and run them if the build completes.
+
+buildopts = ' && cd vcflib && make && cd ..'
+
+#builddependencies = [('CMake', '3.2.1', '', ('GCC', '5.4.0'))]
+
+parallel = 1
+
+# Workaround to avoid the error: "The C compiler identification is unknown".
+
+prebuildopts = "unset CC && unset CXX && "
+
+files_to_copy = ["bin", "README.md", "examples", "scripts", "python","test", (["vcflib/bin","vcflib/scripts","vcflib/examples","vcflib/lib","vcflib/samples"],"vcflib")]
+
+sanity_check_paths = {
+    'files': ["bin/freebayes", "bin/bamleftalign"],
+    'dirs': [""]
+}
+
+# Add scripts dir to PATH:
+
+postinstallcmds = ["/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/vcflib/lib"]
+
+modextrapaths = { 
+    'PATH': ['scripts', 'python', 'vcflib/bin', 'vcflib/scripts'],
+}
+
+moduleclass = 'bio'
+
+#modluafooter = """
+#depends_on("python")
+#depends_on("r")
+#"""
+
+# To run tests after installing with the command (note tests must be done 
+# in-place (hard coded paths)) $ eb <this file>:
+# 1a) $ cd /home/$USER/.local/easybuild/software/2017/avx2/Compiler/gcc5.4/freebayes/1.1.0/test
+#   or if running in global install location
+# 1b) $ cd /cvmfs/soft.computecanada.ca/easybuild/software/2017/avx2/Compiler/gcc5.4/freebayes/1.1.0/test
+#    CAN't actually run the tests here as it assumes you have write permission
+# 2) $ module purge
+# 3) $ module load gcc/5.4.0 samtools/1.5 freebayes
+# 4) $ make test
