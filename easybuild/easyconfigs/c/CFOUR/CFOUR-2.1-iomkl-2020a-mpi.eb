@@ -1,0 +1,61 @@
+##
+# @Author: Ali Kerrache, University of Manitoba, Compute Canada.
+# @Date: Feb 06, 2018.
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'CFOUR'
+version = '2.1'
+versionsuffix = '-mpi'
+modaltsoftname = 'cfour-mpi'
+
+commit = "4567f08b"
+
+import os
+
+homepage = 'http://www.cfour.de/'
+description = """CFOUR (Coupled-Cluster techniques for Computational Chemistry) is a program package for performing high-level quantum chemical calculations on atoms and molecules. The major strength of the program suite is its rather sophisticated arsenal of high-level ab initio methods for the calculation of atomic and molecular properties. Virtually all approaches based on Muller-Plesset (MP) perturbation theory and the coupled-cluster approximation (CC) are available; most of these have complementary analytic derivative approaches within the package as well.
+ CFOUR is not a commercial code. It is rather a program that is undergoing development; new techniques and improvements are constantly being made (mainly in the groups of John F. Stanton (until the end of 2016 at the University of Texas at Austin, USA, now at the Quantum Theory Project of the University of Florida at Gainesville, USA) and Juergen Gauss (Universitat Mainz, Germany)).
+ For non-commercial purposes there is no charge to obtain CFOUR; one must simply sign a license agreement. 
+ http://slater.chemie.uni-mainz.de/cfour/index.php?n=Main.Download"""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+# It requires registration and agreement to the license termes to download the source files.
+# For more details:
+# http://slater.chemie.uni-mainz.de/cfour/index.php?n=Main.Download
+
+sources = ['%%(namelower)s-%s-%s.tar.gz' % (version, commit)]
+checksums = ['050837becde810eaa5b18a75e4bf584bf5fd18a3f7e56c4822118b5295b0e7a8']
+
+preconfigopts = ' export MKLPATH=$MKLROOT && '
+
+configopts  = ' --enable-mpi=openmpi --enable-gimic '
+configopts += ' --with-blas-dir=$MKLROOT/lib/intel64 '
+configopts += ' --with-lapack-dir=$MKLROOT/lib/intel64 ' 
+configopts += ' FC=ifort CC=icc MPIFC=mpif90  FCLAGS=-O2  CFLAGS=-O2 '
+
+cfour_binary_files = [ 
+      "mvapich_wrapper_optional_sort", "xanti", "xclean", "xcubic", "xextrap", "xja2fja",
+      "xlcc", "xrun", "xvcc", "xvee", "xvmol2ja", "xvtran", "qcfour", "xbcktrn", "xcmd", 
+      "xdens", "xint", "xjoda", "xprops", "xsdcc", "xvdint", "xvip", "xvprop", "xwipeout",
+      "xanhdriv", "xcfour", "xcphf", "xecc", "xintprc", "xlambda", "xrefit", "xsymcor",
+      "xvea", "xvmol", "xvscf",
+]
+
+cfour_lib_files = [
+      "libblashc.a", "libecctrip.a", "libecp.a", "libeom.a", "liblibr.a", "liblibrcc.a",
+      "liblibrsp.a", "liblibrsrcc.a", "liblibtdcc.a", "libsdcctrip.a",
+]
+
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in cfour_binary_files], ['lib/%s' % x for x in cfour_lib_files]],
+    'dirs': ['basis', 'bin', 'lib', 'share'], 
+}
+
+if os.environ.get('USER') == 'ebuser':
+    group = "soft_cfour"
+
+moduleclass = 'chem'
