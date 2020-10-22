@@ -18,7 +18,6 @@ checksums = ['a5c5c8726d2210f2310a852c6d6e03c9ef8c75e3643e9c94e24909f5e9c2ea7a']
 dependencies = [
     ('GCCcore', local_gccver),
     ('binutils', '2.34', '', ('GCCcore', local_gccver)),
-    ('CUDA', '11.0.2', '', ('GCC', local_gccver)),
     # This is necessary to avoid cases where just libnuma.so.1 is present in the system and -lnuma fails
     ('numactl', '2.0.13', '', ('GCCcore', local_gccver))
 ]
@@ -28,10 +27,19 @@ default_cuda_version = None  # Use strings like "11.0" or use the command line: 
 # NVHPC EasyBlock supports some features, which can be set via CLI or this easyconfig.
 # The following list gives examples for the easyconfig
 #
-# Install NVHPC for an associated CUDA version:
-#   default_cuda_version = "11.0"
-# Can also be specified via --try-amend=default_cuda_version="10.2"
-# If not given, is tried to be taken from the CUDA module, if the CUDA module is a dependency
+# NVHPC needs CUDA to work. Two options are available: 1) Use NVHPC-bundled CUDA, 2) use system CUDA
+# 1) Bundled CUDA
+#    If no easybuild dependency to CUDA is present, the bundled CUDA is taken. A version needs to be specified with
+#      default_cuda_version = "11.0"
+#    in this easyconfig file; alternatively, it can be specified through the command line during installation with
+#      --try-amend=default_cuda_version="10.2"
+# 2) System CUDA
+#    Use CUDA or CUDAcore as a dependency, for example
+#      dependencies = [('CUDA', '11.0.2', '', ('GCC', local_gccver))]
+#    or
+#      dependencies = [('CUDAcore', '11.0.2')]
+#    The parameter default_cuda_version still can be set as above. If not set, it will be deduced from the
+#    CUDA module
 #
 # Define a NVHPC-default Compute Capability
 #   cuda_compute_capabilities = "8.0"
