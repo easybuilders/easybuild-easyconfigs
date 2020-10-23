@@ -1,0 +1,77 @@
+#@author: jshleap
+
+easyblock = "CmdCp"
+name = 'Anserini'
+version = '0.9.4'
+
+homepage = 'https://github.com/castorini/anserini'
+description = """
+An open-source information retreival toolkit built on Lucene
+that aims to bridge the gap between academic information
+retrieval and the practice of building real-world search 
+applications.
+
+Usage:
+Binaries located in Anserini's target/appassembler/bin are
+on path. Anserini's folders bin, collections, docs, indexes,
+logs, runs, src, target, tools, as well as the files pom.xml
+and  README.md are available at $EBROOTANSERINI.
+
+Eg. Indexing command for help:
+
+IndexCollection -h
+"""
+
+toolchain = SYSTEM
+
+sources = [{
+    'filename': 'anserini-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/castorini',
+        'repo_name': 'anserini',
+        'tag': 'master',
+        'recursive': True,
+        'keep_git_dir': True,
+    }
+}]
+
+dependencies = [
+    ('Maven', '3.6.3'),
+    ('Java', '11.0.2'),
+]
+
+with_configure = False
+
+local_build_string =  "mvn clean package appassembler:assemble && "
+local_build_string += "cd tools/eval && tar xvfz trec_eval.9.0.4.tar.gz && "
+local_build_string += "cd trec_eval.9.0.4 && make && cd ../../../ && "
+local_build_string += "cd tools/eval/ndeval && make && cd ../../../ && "
+local_build_string += "sh bin/build.sh "
+
+
+cmds_map = [
+    ('anserini-%(version)s.tar.gz', local_build_string),
+]
+
+files_to_copy = [
+     (['%(builddir)s/anserini/collections'], '%(installdir)s'),
+     (['%(builddir)s/anserini/bin'], '%(installdir)s'),
+     #(['%(builddir)s/anserini/lib'], '%(installdir)s'),
+     (['%(builddir)s/anserini/docs'], '%(installdir)s'),
+     (['%(builddir)s/anserini/indexes'], '%(installdir)s'),
+     (['%(builddir)s/anserini/logs'], '%(installdir)s'),
+     (['%(builddir)s/anserini/runs'], '%(installdir)s'),
+     (['%(builddir)s/anserini/tools'], '%(installdir)s'),
+     #(['%(builddir)s/anserini/target'], '%(installdir)s'),
+     (['%(builddir)s/anserini/src'], '%(installdir)s'),
+     (['%(builddir)s/anserini/pom.xml'], '%(installdir)s'),
+     (['%(builddir)s/anserini/target'], '%(installdir)s'),
+]
+
+sanity_check_paths={
+      'files': ['pom.xml', 'target/anserini-0.9.5-SNAPSHOT.jar'],
+      'dirs': ['target', 'bin', 'tools', 'tools/eval'],
+}
+
+modextrapaths = {'PATH': 'target/appassembler/bin'}
+moduleclass =  'devel'
