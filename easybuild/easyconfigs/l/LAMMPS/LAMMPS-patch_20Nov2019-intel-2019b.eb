@@ -1,0 +1,47 @@
+easyblock = "MakeCp"
+
+name = 'LAMMPS'
+version = 'patch_20Nov2019'
+
+homepage = 'http://lammps.sandia.gov/'
+description = """LAMMPS is a classical molecular dynamics code,
+and an acronym for Large-scale Atomic/Molecular Massively Parallel Simulator."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/lammps/lammps/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['lammps-patch_20Nov2019_intel.patch']
+checksums = [
+    'fd146bf517a6c2fb8a69ecb3749dc352eef94414739cd7855c668c690af85d27',
+    '41b0aaff4a3eeb7fd038fcb757e58fccbd9ee0b530de47cd3a5a06ffb0fd876a',
+]
+
+prebuildopts = 'cd src && make yes-kspace && make yes-molecule && make yes-user-misc && make yes-user-yaff && '
+prebuildopts += 'make yes-manybody && make yes-user-meamc && make intel_cpu_intelmpi && '
+buildopts = 'mode=shlib intel_cpu_intelmpi'
+
+
+pythonpath = 'lib/python/site-packages'
+modextrapaths = {'PYTHONPATH': pythonpath}
+
+
+files_to_copy = [(['src/lmp_intel_cpu_intelmpi'], 'bin'),
+                 (['src/liblammps_intel_cpu_intelmpi.so'], 'lib'),
+                 (['src/*.h'], 'include'),
+                 (['python/lammps.py'], pythonpath)]
+
+sanity_check_paths = {
+    'files': ['bin/lmp_intel_cpu_intelmpi', 'lib/liblammps_intel_cpu_intelmpi.so', 'include/lammps.h'],
+    'dirs': [],
+}
+
+
+postinstallcmds = [
+    'ln -s %(installdir)s/lib/liblammps_intel_cpu_intelmpi.so  %(installdir)s/lib/liblammps.so',
+    'ln -s %(installdir)s/bin/lmp_intel_cpu_intelmpi  %(installdir)s/bin/lmp',
+    ]
+
+
+moduleclass = 'chem'
