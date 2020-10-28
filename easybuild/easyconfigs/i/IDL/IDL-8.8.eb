@@ -1,0 +1,61 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - https://hprc.tamu.edu
+
+# IMPORTANT: Needs to be run without EASYBUILD_READ_ONLY_INSTALLDIR aka --read_only_installdir
+
+easyblock = 'CmdCp'
+
+name = 'IDL'
+version = '8.8'
+local_sver = version.replace('.', '')
+
+homepage = 'http://www.exelisvis.com/ProductsServices/IDL.aspx'
+
+description = """
+ EXELIS IDL is a programming language used for data analysis. It is popular
+ in particular areas of science, such as astronomy, atmospheric physics and
+ medical imaging.
+"""
+
+toolchain = SYSTEM
+
+# manual download from web site
+local_source = 'idl%s-linux.tar.gz' % local_sver
+sources = [local_source]
+checksums = ['c37471dd71feac84b469bded5e2e38515e3f7ce8403dc13d81780c9b6931c6f2']
+
+skipsteps = ['install']  # erases %(installdir)s
+
+local_cmds = ''
+local_cmds += 'chmod -R a+w %(installdir)s && '
+local_cmds += 'rm -rf %(installdir)s && '
+local_cmds += 'ls -al `dirname %(installdir)s` && '
+# Answers for silent mode install
+# y - accept license
+# %(installdir)s - install directory
+# y - install help files
+# y - install with this config
+# n - install license server
+local_cmds += 'echo -e "y\n %(installdir)s\n y\n y\n n\n" | ./install.sh -s |& tee install.log'
+
+cmds_map = [(local_source, local_cmds)]
+
+# license file o_licenseserverurl.txt needs to be copied to %(installdir)s/license manually
+files_to_copy = []
+
+sanity_check_paths = {
+    'files': ['idl%s/bin/idl' % local_sver, 'idl%s/lib/idl_base64.pro' % local_sver,
+              'idl%s/help/idl_catalog.xml' % local_sver],
+    'dirs': []
+}
+
+modloadmsg = """
+
+  To setup IDL environment, run:
+
+    source %(installdir)s/idl/bin/idl_setup.bash
+
+"""
+
+read_only_installdir = 0
+
+moduleclass = 'geo'
