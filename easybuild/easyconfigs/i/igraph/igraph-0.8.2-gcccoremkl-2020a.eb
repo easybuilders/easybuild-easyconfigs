@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'igraph'
+version = '0.8.2'
+
+homepage = 'http://igraph.org'
+description = """igraph is a collection of network analysis tools with the emphasis on 
+efficiency, portability and ease of use. igraph is open source and free. igraph can be 
+programmed in R, Python and C/C++."""
+
+toolchain = {'name': 'gcccoremkl', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
+sources = ['igraph-%(version)s.tar.gz']
+checksums = ['718a471e7b8cbf02e3e8006153b7be6a22f85bb804283763a0016280e8a60e95']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('GLPK', '4.65'),
+    ('libxml2', '2.9.9'),
+    ('zlib', '1.2.11'),
+]
+
+multi_deps = {'Python': ['3.6', '3.7', '3.8'] }
+multi_deps_extensions_only = True
+
+preconfigopts = "autoreconf -i && "
+# Remove hardcoded links to BLAS/LAPACK
+preconfigopts += "sed -i 's/-lblas/$LIBBLAS/' configure && "
+preconfigopts += "sed -i 's/-llapack/$LIBLAPACK/' configure && "
+configopts = "--with-external-blas --with-external-lapack --with-external-glpk"
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('python-igraph', version, {
+        'modulename': 'igraph',
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/p/python-igraph/'],
+        'checksums': ['4601638d7d22eae7608cdf793efac75e6c039770ec4bd2cecf76378c84ce7d72'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libigraph.%s' % x for x in [SHLIB_EXT, 'la', 'a']] + ['lib/pkgconfig/igraph.pc'] +
+             ['include/igraph/igraph%s.h' % x for x in ['', '_blas', '_constants', '_lapack', '_types', '_version']],
+    'dirs': [],
+}
+
+modextrapaths = {
+# EBPYTHONPREFIXES directories for current python version X.Y to PYTHONPATH.
+    'EBPYTHONPREFIXES': [''], 
+}
+
+moduleclass = 'lib'

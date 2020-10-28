@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'ITK'
+version = '4.13.3'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/InsightSoftwareConsortium/ITK/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['961ccbe3f854a9bda88afc6769c6a3fcc905117a261e6e8cc02b23ab894764b6']
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('Bison', '3.0.5'),
+]
+
+dependencies = [
+    ('HDF5', '1.10.6'),
+    ('PCRE', '8.41'),
+    ('SWIG', '3.0.12'),
+    ('VTK', '8.2.0'),
+    ('X11', '20180604')
+]
+# python 3.8 is not supported because the python code uses time.clock() which has been removed in python 3.8
+multi_deps = { 'Python': ['3.6', '3.7'] }
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -DITK_WRAP_PYTHON=ON '
+configopts += '-DBUILD_TESTING=OFF -DITK_USE_SYSTEM_SWIG=ON '
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON '
+
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+separate_build_dir = True
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver',
+              'lib/libITKVtkGlue-%(version_major_minor)s.a', 'lib/libitkhdf5.a',
+              'lib/libitkjpeg-%(version_major_minor)s.a', 'lib/libitkpng-%(version_major_minor)s.a'],
+    'dirs': ['include/ITK-%(version_major_minor)s',
+             'lib/python%(pyshortver)s/site-packages',
+             'share'],
+}
+
+sanity_check_commands = [('python', "-c 'import %(namelower)s'")]
+
+moduleclass = 'data'

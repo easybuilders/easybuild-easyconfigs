@@ -1,0 +1,42 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Olivier Fisette <olivier.fisette@westgrid.ca>
+##
+
+easyblock = 'CMakeMake'
+
+name = 'HOOMD-blue'
+version = '2.9.3'
+
+homepage = 'http://glotzerlab.engin.umich.edu/hoomd-blue/'
+description = """HOOMD-blue is a general-purpose particle simulation toolkit for both
+GPUs and CPUs, with a Python interface."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchainopts = {'openmp': False, 'usempi': True}
+
+source_urls = ['https://glotzerlab.engin.umich.edu/Downloads/hoomd/']
+sources = ['hoomd-v%(version)s.tar.gz']
+checksums = ['ace2f9b4e4d05e3282e173632b7d895b5e3762bc7919f609fa31ec7b77c6ce28']
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-Stack', '2020a'),
+    ('tbb', '2020.2'),
+]
+
+configopts  = '-DENABLE_MPI=ON -DENABLE_CUDA=OFF -DENABLE_TBB=ON '
+configopts += '-DCMAKE_INSTALL_PREFIX=%(installdir)s/lib/python3.8/site-packages '
+
+parallel = 8
+
+runtest = ' && ctest'
+
+sanity_check_paths = {
+    'files': ['lib/python3.8/site-packages/hoomd/__init__.py'],
+    'dirs': []
+}
+
+modextrapaths = {'PYTHONPATH': 'lib/python3.8/site-packages'}
+moduleclass = 'phys'

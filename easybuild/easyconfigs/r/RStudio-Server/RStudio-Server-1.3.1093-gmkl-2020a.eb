@@ -1,0 +1,61 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '1.3.1093'
+
+homepage = 'https://www.rstudio.com/'
+description = """RStudio Server enables you to provide a browser
+based interface to a version of R running on a remote Linux
+server, bringing the power and productivity of the
+RStudio IDE to server-based deployments of R."""
+
+toolchain = {'name': 'gmkl', 'version': '2020a'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive/']
+sources = ['v%(version)s.zip']
+checksums = [
+    '58c17ae8af3848825c44d3c0afec74c0839681ea46319b2b48e346027ba711e7',
+    'ce2cf5d344a5d254aacfff628ce1eeae6968730a81d01319a823ad828a1a3be6' # rstudio-1.2.1335.patch
+]
+
+patches = ['rstudio-1.2.1335.patch']
+
+builddependencies = [
+    ('Boost', '1.72.0'),
+    ('ant', '1.10.8'),
+    ('R', '4.0.2', '', ('gcccoremkl', '2020a')),
+]
+
+dependencies = [
+    ('Java', '13.0.2'),
+]
+
+start_dir = "%(builddir)s/rstudio-%(version)s"
+separate_build_dir = False
+
+preconfigopts = " && ".join([
+    "cd %(builddir)s/rstudio-%(version)s/dependencies/common",
+    "./install-cef",
+    "./install-dictionaries",
+    "./install-mathjax",
+    "./install-pandoc",
+    "./install-packages",
+    "cd ../..",
+    "", # To append &&
+])
+
+configopts = " ".join([
+    '-DCMAKE_BUILD_TYPE=RELEASE',
+    '-DRSTUDIO_TARGET=Server',
+    '-DRSTUDIO_BOOST_SIGNALS_VERSION=2',
+    '-DRSTUDIO_GIT_REVISION_HASH=718e6d75b094658d999495534badf55fb2ce0047',
+])
+
+sanity_check_paths = {
+    'files': ["bin/rstudio-server", "bin/rsession", "bin/rserver", "bin/rserver-pam", "bin/rpostback"],
+    'dirs': ["R", "resources", "www", "www-symbolmaps"],
+}
+
+modluafooter = """
+depends_on('r')
+"""

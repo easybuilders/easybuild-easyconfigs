@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'GA'
+version = '5.7'
+versionsuffix = '-verbs'
+
+homepage = 'http://hpc.pnl.gov/globalarrays/'
+description = """Global Arrays (GA) is a Partitioned Global Address Space (PGAS) programming model. 
+It provides primitives for one-sided communication (Get, Put, Accumulate) and Atomic Operations (read increment). 
+It supports blocking and non-blocking primtives, and supports location consistency. I8 version for OpenIB verbs. """
+
+toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
+
+source_urls = ['https://github.com/GlobalArrays/ga/releases/download/v5.7/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['3ed1ab47adfda7bceb7beca12fc05a2e1631732f0e55bbaf9036dad4e3da4774']
+
+
+configopts  = '--disable-ofi --with-openib CC=icc F77=ifort MPICC=mpicc MPIFORT=mpif90 ARMCI_NETWORK=OPENIB '
+configopts += '--with-scalapack8="-L$EBROOTIMKL/lib/intel64 -lmkl_scalapack_ilp64  -lmkl_blacs_openmpi_ilp64" '
+configopts += '     --with-blas8="-L$EBROOTIMKL/lib/intel64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -liomp5" MPIF77=mpif90 CXX=icpc MPICXX=mpicxx '
+
+# For Intel compilers, GA seems to pick -mkl automatically.
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['adjust.x',  'armci-config',  'collisions.x',   'ga-config']],
+    'dirs': ['lib','include'],
+}
+
+moduleclass = 'tools'
+
+modextrapaths = { 'GAROOT': '' }
+
+# GAS stuff below courtesy of NAMD eb developers.
+# this module should not be used on Cedar
+
+modaltsoftname = '%(namelower)s-verbs'
+modluafooter = """
+family("%(namelower)s")
+require("os")
+if (mode() == "load" and os.getenv("RSNT_INTERCONNECT") == "omnipath") then
+        local warn_message = [[
+            This version of %(name)s does not work with this cluster's networking. 
+            Cette version de %(name)s ne fonctionne pas avec la connectique de cette grappe. 
+    ]]
+    LmodWarning(warn_message)
+end
+"""
