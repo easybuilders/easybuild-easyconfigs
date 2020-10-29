@@ -1,0 +1,108 @@
+--- src/main.F.orig	2019-06-03 22:39:52.527709533 +0000
++++ src/main.F	2019-06-03 22:40:42.174860559 +0000
+@@ -3144,7 +3144,7 @@
+       ENDIF
+ 
+       CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
+-           LATT_CUR%A,LATT_CUR%B,IO%IU6)
++           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6)
+ 
+       CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
+            LATT_CUR%A,LATT_CUR%B,IO%IU6)
+--- src/.objects.orig	2020-03-05 18:00:32.094923256 +0000
++++ src/.objects	2020-03-05 18:02:16.894467108 +0000
+@@ -69,6 +69,19 @@
+ 	tet.o \
+ 	tetweight.o \
+ 	hamil_rot.o \
++        bfgs.o \
++        dynmat.o \
++        instanton.o \
++        lbfgs.o \
++        sd.o \
++        cg.o \
++        dimer.o \
++        bbm.o \
++        fire.o \
++        lanczos.o \
++        neb.o \
++        qm.o \
++        opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	k-proj.o \
+@@ -268,6 +281,19 @@
+ 	tet.o \
+ 	tetweight.o \
+ 	hamil_rot.o \
++        bfgs.o \
++        dynmat.o \
++        instanton.o \
++        lbfgs.o \
++        sd.o \
++        cg.o \
++        dimer.o \
++        bbm.o \
++        fire.o \
++        lanczos.o \
++        neb.o \
++        qm.o \
++        opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	k-proj.o \
+--- makefile.orig	2020-03-05 21:38:51.863472992 +0000
++++ makefile	2020-03-05 21:39:45.584773065 +0000
+@@ -2,7 +2,7 @@
+ 
+ .PHONY: all veryclean versions $(VERSIONS)
+ 
+-all: std gam ncl
++all: $(VERSIONS)
+ 
+ versions: $(VERSIONS)
+ 
+--- arch/makefile.include.linux_intel.orig	2020-03-05 18:06:24.642751759 +0000
++++ arch/makefile.include.linux_intel	2020-03-05 23:47:17.922521296 +0000
+@@ -7,7 +7,10 @@
+              -Davoidalloc \
+              -Duse_bse_te \
+              -Dtbdyn \
+-             -Duse_shmem
++             -Duse_shmem \
++	     -Dsol_compat \
++	     -Dlibbeef \
++	     -DVASP2WANNIER90
+ 
+ CPP        = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
+ 
+@@ -31,7 +34,7 @@
+ 
+ INCS       =-I$(MKLROOT)/include/fftw
+ 
+-LLIBS      = $(SCALAPACK) $(LAPACK) $(BLAS)
++LLIBS      = $(SCALAPACK) $(LAPACK) $(BLAS) -lbeef -lwannier
+ 
+ 
+ OBJECTS_O1 += fftw3d.o fftmpi.o fftmpiw.o
+@@ -66,10 +69,10 @@
+ 
+ CC         = icc
+ CXX        = icpc
+-CFLAGS     = -fPIC -DADD_ -Wall -openmp -DMAGMA_WITH_MKL -DMAGMA_SETAFFINITY -DGPUSHMEM=300 -DHAVE_CUBLAS
++CFLAGS     = -fPIC -DADD_ -Wall -qopenmp -DMAGMA_WITH_MKL -DMAGMA_SETAFFINITY -DGPUSHMEM=300 -DHAVE_CUBLAS
+ 
+ CUDA_ROOT  ?= /usr/local/cuda/
+-NVCC       := $(CUDA_ROOT)/bin/nvcc -ccbin=icc
++NVCC       := nvcc -ccbin=icc
+ CUDA_LIB   := -L$(CUDA_ROOT)/lib64 -lnvToolsExt -lcudart -lcuda -lcufft -lcublas
+ 
+ GENCODE_ARCH    := -gencode=arch=compute_30,code=\"sm_30,compute_30\" \
+--- makefile.orig	2020-10-29 04:38:52.099795191 +0000
++++ makefile	2020-10-29 04:39:11.450869077 +0000
+@@ -1,4 +1,4 @@
+-VERSIONS = std gam ncl gpu gpu_ncl
++VERSIONS = gpu gpu_ncl
+ 
+ .PHONY: all veryclean versions $(VERSIONS)
+ 
