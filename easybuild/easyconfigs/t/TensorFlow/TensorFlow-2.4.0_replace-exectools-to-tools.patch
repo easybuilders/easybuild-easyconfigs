@@ -1,0 +1,218 @@
+Using exec_tools ignores the environment causing all sorts of errors as system and EB tools and libraries are mixed.
+See https://github.com/tensorflow/tensorflow/pull/44901
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/compiler/aot/tests/BUILD b/tensorflow/compiler/aot/tests/BUILD
+index 06745de647b..51298a4b433 100644
+--- a/tensorflow/compiler/aot/tests/BUILD
++++ b/tensorflow/compiler/aot/tests/BUILD
+@@ -115,7 +115,7 @@ genrule(
+     # have control of the full GPU.
+     cmd = "CUDA_VISIBLE_DEVICES='' " +
+           "$(location :make_test_graphs) --out_dir $(@D)",
+-    exec_tools = [":make_test_graphs"],
++    tools = [":make_test_graphs"],
+     tags = ["manual"],
+ )
+ 
+diff --git a/tensorflow/compiler/aot/tfcompile.bzl b/tensorflow/compiler/aot/tfcompile.bzl
+index 742cb308b3c..29f37bf7498 100644
+--- a/tensorflow/compiler/aot/tfcompile.bzl
++++ b/tensorflow/compiler/aot/tfcompile.bzl
+@@ -127,7 +127,7 @@ def tf_library(
+                    "$(location " + tfcompile_tool + ")" +
+                    " --config=$(location " + config + ")" +
+                    " --dump_fetch_nodes > $@"),
+-            exec_tools = [tfcompile_tool],
++            tools = [tfcompile_tool],
+             # Run tfcompile on the build host, rather than forge, since it's
+             # typically way faster on the local machine.
+             local = 1,
+@@ -162,7 +162,7 @@ def tf_library(
+                 "//tensorflow/python/tools:freeze_graph)" +
+                 freeze_args
+             ),
+-            exec_tools = ["//tensorflow/python/tools:freeze_graph"],
++            tools = ["//tensorflow/python/tools:freeze_graph"],
+             tags = tags,
+         )
+         tfcompile_graph = freeze_file
+@@ -242,7 +242,7 @@ def tf_library(
+             " --out_function_object=$(@D)/" + function_object_file +
+             " " + flags + " " + profiling_flag + " " + mlir_flag + " " + traceme_flag
+         ),
+-        exec_tools = [tfcompile_tool],
++        tools = [tfcompile_tool],
+         visibility = visibility,
+         testonly = testonly,
+         # Run tfcompile on the build host since it's typically faster on the
+@@ -281,7 +281,7 @@ def tf_library(
+             " --out_session_module=$(@D)/" + session_module_pb +
+             " " + flags
+         ),
+-        exec_tools = [tfcompile_tool],
++        tools = [tfcompile_tool],
+         visibility = visibility,
+         testonly = testonly,
+         local = 1,
+diff --git a/tensorflow/compiler/mlir/tfr/build_defs.bzl b/tensorflow/compiler/mlir/tfr/build_defs.bzl
+index 2b92d8a652a..d9d926a6c3b 100644
+--- a/tensorflow/compiler/mlir/tfr/build_defs.bzl
++++ b/tensorflow/compiler/mlir/tfr/build_defs.bzl
+@@ -40,7 +40,7 @@ def gen_op_libraries(
+         srcs = [],
+         outs = [name + ".inc.cc"],
+         cmd = "$(location %s) --output=$@ --gen_register_op=true" % gen_op_lib_exec,
+-        exec_tools = [":" + gen_op_lib_exec],
++        tools = [":" + gen_op_lib_exec],
+         tags = tags,
+     )
+ 
+@@ -100,7 +100,7 @@ def gen_op_libraries(
+         srcs = [],
+         outs = [name + ".mlir"],
+         cmd = "$(location %s) --output=$@ --gen_register_op=false" % gen_tfr_lib_exec,
+-        exec_tools = [":" + gen_tfr_lib_exec],
++        tools = [":" + gen_tfr_lib_exec],
+         tags = tags,
+     )
+ 
+diff --git a/tensorflow/lite/build_def.bzl b/tensorflow/lite/build_def.bzl
+index 0f731c43577..1b257c41e42 100644
+--- a/tensorflow/lite/build_def.bzl
++++ b/tensorflow/lite/build_def.bzl
+@@ -674,8 +674,8 @@ def gen_zipped_test_file(name, file, toco, flags):
+         cmd = (("$(locations :generate_examples) --toco $(locations {0}) " +
+                 " --zip_to_output {1} {2} $(@D)").format(toco, file, flags)),
+         outs = [file],
+-        # `exec_tools` is required for PY3 compatibility in place of `tools`.
+-        exec_tools = [
++        # `exec_tools` is required for PY3 compatibility in place of `tools`.
++        exec_tools = [
+             ":generate_examples",
+             toco,
+         ],
+diff --git a/tensorflow/lite/delegates/flex/build_def.bzl b/tensorflow/lite/delegates/flex/build_def.bzl
+index 53854463627..8a138acbc87 100644
+--- a/tensorflow/lite/delegates/flex/build_def.bzl
++++ b/tensorflow/lite/delegates/flex/build_def.bzl
+@@ -73,7 +73,7 @@ def generate_flex_kernel_header(
+         name = "%s_kernel_registration" % name,
+         srcs = [list_ops_output],
+         outs = [header],
+-        exec_tools = [tool],
++        tools = [tool],
+         message = "Processing %s..." % list_ops_output,
+         cmd = ("$(location " + tool + ")" +
+                " --default_ops=\"\"" +
+diff --git a/tensorflow/lite/experimental/acceleration/compatibility/BUILD b/tensorflow/lite/experimental/acceleration/compatibility/BUILD
+index 6c5a32b0795..e748c5a757f 100644
+--- a/tensorflow/lite/experimental/acceleration/compatibility/BUILD
++++ b/tensorflow/lite/experimental/acceleration/compatibility/BUILD
+@@ -99,7 +99,7 @@ genrule(
+         --output_source_file $(location :devicedb-sample.cc) \
+         --array_variable_name g_tflite_acceleration_devicedb_sample_binary
+     """,
+-    exec_tools = [":convert_binary_to_cc_source"],
++    tools = [":convert_binary_to_cc_source"],
+ )
+ 
+ cc_library(
+@@ -142,7 +142,7 @@ genrule(
+         --output_source_file $(location :gpu_compatibility_binary.cc) \
+         --array_variable_name g_tflite_acceleration_gpu_compatibility_binary
+     """,
+-    exec_tools = [":convert_binary_to_cc_source"],
++    tools = [":convert_binary_to_cc_source"],
+ )
+ 
+ cc_library(
+diff --git a/tensorflow/python/tools/BUILD b/tensorflow/python/tools/BUILD
+index 7b1f85dc0e9..359efbfdf1d 100644
+--- a/tensorflow/python/tools/BUILD
++++ b/tensorflow/python/tools/BUILD
+@@ -399,7 +399,7 @@ genrule(
+     cmd = (
+         "$(location :make_aot_compile_models) --out_dir $(@D)"
+     ),
+-    exec_tools = [":make_aot_compile_models"],
++    tools = [":make_aot_compile_models"],
+     tags = ["no_rocm"],
+ )
+ 
+diff --git a/tensorflow/python/tools/api/generator/api_gen.bzl b/tensorflow/python/tools/api/generator/api_gen.bzl
+index fb9fd65c7bb..45355c90aaa 100644
+--- a/tensorflow/python/tools/api/generator/api_gen.bzl
++++ b/tensorflow/python/tools/api/generator/api_gen.bzl
+@@ -139,7 +139,7 @@ def gen_api_init_files(
+             " --use_relative_imports=True $(OUTS)"
+         ),
+         srcs = srcs,
+-        exec_tools = [":" + api_gen_binary_target],
++        tools = [":" + api_gen_binary_target],
+         visibility = [
+             "//tensorflow:__pkg__",
+             "//tensorflow/tools/api/tests:__pkg__",
+diff --git a/tensorflow/tensorflow.bzl b/tensorflow/tensorflow.bzl
+index 3bdcdfebbcd..dc18bc072b5 100644
+--- a/tensorflow/tensorflow.bzl
++++ b/tensorflow/tensorflow.bzl
+@@ -779,7 +779,7 @@ def tf_gen_op_wrapper_cc(
+             out_ops_file + "_internal.cc",
+         ],
+         srcs = srcs,
+-        exec_tools = [":" + tool] + tf_binary_additional_srcs(),
++        tools = [":" + tool] + tf_binary_additional_srcs(),
+         cmd = ("$(location :" + tool + ") $(location :" + out_ops_file + ".h) " +
+                "$(location :" + out_ops_file + ".cc) " +
+                str(include_internal_ops) + " " + api_def_args_str),
+@@ -987,7 +987,7 @@ def tf_gen_op_wrapper_py(
+             name = name + "_pygenrule",
+             outs = [out],
+             srcs = api_def_srcs + [hidden_file],
+-            exec_tools = [tool_name] + tf_binary_additional_srcs(),
++            tools = [tool_name] + tf_binary_additional_srcs(),
+             cmd = ("$(location " + tool_name + ") " + api_def_args_str +
+                    " @$(location " + hidden_file + ") > $@"),
+             compatible_with = compatible_with,
+@@ -997,7 +997,7 @@ def tf_gen_op_wrapper_py(
+             name = name + "_pygenrule",
+             outs = [out],
+             srcs = api_def_srcs,
+-            exec_tools = [tool_name] + tf_binary_additional_srcs(),
++            tools = [tool_name] + tf_binary_additional_srcs(),
+             cmd = ("$(location " + tool_name + ") " + api_def_args_str + " " +
+                    op_list_arg + " " +
+                    ("1" if op_list_is_whitelist else "0") + " > $@"),
+@@ -2380,7 +2380,7 @@ def tf_generate_proto_text_sources(name, srcs_relative_dir, srcs, protodeps = []
+         cmd =
+             "$(location //tensorflow/tools/proto_text:gen_proto_text_functions) " +
+             "$(@D) " + srcs_relative_dir + " $(SRCS)",
+-        exec_tools = [
++        tools = [
+             clean_dep("//tensorflow/tools/proto_text:gen_proto_text_functions"),
+         ],
+         compatible_with = compatible_with,
+diff --git a/tensorflow/tools/compatibility/BUILD b/tensorflow/tools/compatibility/BUILD
+index a15014f447b..1aa76fb5a9b 100644
+--- a/tensorflow/tools/compatibility/BUILD
++++ b/tensorflow/tools/compatibility/BUILD
+@@ -219,7 +219,7 @@ genrule(
+            " --infile $(location testdata/test_file_v0_11.py)" +
+            " --outfile $(location test_file_v1_0.py)" +
+            " --reportfile $(location report.txt)"),
+-    exec_tools = [":tf_upgrade"],
++    tools = [":tf_upgrade"],
+ )
+ 
+ py_test(
+@@ -246,7 +246,7 @@ genrule(
+            " --outfile $(location test_file_v2_0.py)" +
+            " --reportfile $(location report_v2.txt) && " +
+            "sed -i'.original' 's/_TEST_VERSION = 1/_TEST_VERSION = 2/g' $(location test_file_v2_0.py)"),
+-    exec_tools = [":tf_upgrade_v2"],
++    tools = [":tf_upgrade_v2"],
+ )
+ 
+ py_test(
