@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'ceres-solver'
+version = '1.14.0'
+
+homepage = 'https://ceres-solver.googlesource.com/ceres-solver/'
+description = """Ceres Solver is an open source C++ library for modeling and solving large, complicated optimization problems. It is a feature rich, mature and performant library which has been used in production at Google since 2010. Ceres Solver can solve two kinds of problems:
+ - Non-linear Least Squares problems with bounds constraints.
+ - General unconstrained optimization problems.
+"""
+
+toolchain = {'name': 'gmkl', 'version': '2020a'}
+toolchainopts = {'cstd': 'c++11', 'pic': True, 'openmp': True}
+
+source_urls = [homepage + '/+archive']
+sources = [ version + '.tar.gz']
+checksums = ['4d6915815a313a379b129c00887d90a7752a534522e1e1dd2f937a3a64b62f79']
+
+dependencies = [
+    ('Eigen', '3.3.7'),
+    ('METIS', '5.1.0'),
+    ('SuiteSparse', '5.7.1'),
+]
+
+configopts  = '-DEIGEN_INCLUDE_DIR_HINTS=$EBROOTEIGEN/include '
+configopts += '-DBUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=OFF -DLIB_SUFFIX=64 '
+configopts += '-DBUILD_TESTING=ON -DSUITESPARSE=ON -DCXX11=ON -DOPENMP=ON '
+configopts += '-DCCOLAMD_INCLUDE_DIR=$EBROOTSUITESPARSE/CCOLAMD/include '
+configopts += '-DCCOLAMD_LIBRARY=$EBROOTSUITESPARSE/CCOLAMD/lib/libccolamd.a '
+configopts += '-DCHOLMOD_INCLUDE_DIR=$EBROOTSUITESPARSE/CHOLMOD/include '
+configopts += '-DCHOLMOD_LIBRARY=$EBROOTSUITESPARSE/CHOLMOD/lib/libcholmod.a '
+configopts += '-DCOLAMD_INCLUDE_DIR=$EBROOTSUITESPARSE/COLAMD/include '
+configopts += '-DCOLAMD_LIBRARY=$EBROOTSUITESPARSE/COLAMD/lib/libcolamd.a '
+configopts += '-DGLOG_INCLUDE_DIR=$EBROOTGENTOO/include '
+configopts += '-DGLOG_LIBRARY=$EBROOTGENTOO/lib/libglog.so '
+configopts += '-DSUITESPARSEQR_INCLUDE_DIR=$EBROOTSUITESPARSE/SPQR/include '
+configopts += '-DSUITESPARSEQR_LIBRARY=$EBROOTSUITESPARSE/SPQR/lib/libspqr.a '
+configopts += '-DSUITESPARSE_CONFIG_INCLUDE_DIR=$EBROOTSUITESPARSE/SuiteSparse_config '
+configopts += '-DSUITESPARSE_CONFIG_LIBRARY=$EBROOTSUITESPARSE/SuiteSparse_config/libsuitesparseconfig.a '
+
+separate_build_dir = True
+
+postinstallcmds = ['cd %(installdir)s/ && ln -s lib64 lib']
+
+sanity_check_paths = {
+    # 'files': ['include/ceres/ceres.h', 'lib64/libceres.%s' % SHLIB_EXT],
+    'files': ['include/ceres/ceres.h', 'lib64/libceres.a'],
+    'dirs': ['include', 'lib64'],
+}
+
+moduleclass = 'math'
