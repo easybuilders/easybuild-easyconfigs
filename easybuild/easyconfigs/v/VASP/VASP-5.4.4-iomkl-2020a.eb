@@ -11,42 +11,40 @@ has been implemented to the original version of vasp """
 
 toolchain = {'name': 'iomkl', 'version': '2020a'}
 dependencies = [
-    ('Python', '2.7.18'),
     ('libbeef', '0.1.2'),
     ('wannier90', '3.1.0'),
 ]
-patches = ['patch.5.4.4.16052018',
-           'vasp-openmpi.patch',
-           'vasp-5.4.4.patch']
+
+local_vstat = 'vtstcode-180'
+local_vtstscripts = 'vtstscripts-957'
+local_makeparam = 'std gam ncl'
+local_binfiles = ['vasp_std', 'vasp_gam', 'vasp_ncl']
+
+patches = ['patch.5.4.4.16052018', '%(namelower)s-%(version)s.patch']
 # Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
-source_urls = ['https://github.com/henniggroup/VASPsol/archive/', 'http://theory.cm.utexas.edu/code/vtstscripts_old', 'http://theory.cm.utexas.edu/code/vtstcode_old']
-sources = ['vasp.5.4.4.tar.gz', 'V1.0.tar.gz', 'vtstscripts-939.tgz', 'vtstcode-178.tgz']
+source_urls = ['https://github.com/henniggroup/VASPsol/archive/', 'http://theory.cm.utexas.edu/code/vtstscripts_old', 'http://theory.cm.utexas.edu/code/']
+sources = ['%(namelower)s.%(version)s.tar.gz', 'V1.0.tar.gz', '%s.tgz' %local_vtstscripts, '%s.tgz' %local_vstat]
 checksums = ['8ac646b108f974371eef398973373bf6',  #vasp.5.4.4.tar.gz,
              'd312a26de9676cc657d86fe91480ccf7',  #V1.0.tar.gz,
-             '0ff39875f25eb9940cd573b3d33b6b62',  #vtstscripts-939.tgz,
-             '2d2468ad27c02ff73949b4250cd4939e',  #vtstcode-178.tgz,
+             '5d52c32bce6c582c7a1491a19b756420',  #vtstscripts-957.tgz,
+             'aae7854308c5e567b776c13b39e9f3e4',  #vtstcode-180.tgz,
              'b3c3a330ab7389bf89558393efca1808',  #patch.5.4.4.16052018,
-	     '38292e1cb0cca478c676c88a0cde2cc0',  #vasp-openmpi.patch,
-             'eb374c278262fd44b48346f4aa58e006',  #vasp-5.4.4.patch
+             '8aa8ae56506f0490514189af4344b1a3',  #vasp-5.4.4.patch
 ]
-
 prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
 prebuildopts += 'cp src/solvation.F src/solvation.F.orig && '
 prebuildopts += 'cp ../VASPsol-1.0/src/solvation.F src  && '
 prebuildopts += 'unset LIBS && '
-prebuildopts += 'cp ../vtstcode-178/* src && '
-prebuildopts += 'chmod u+x src/mkbdrpro.pl && '
-prebuildopts += 'cd src && ./mkbdrpro.pl bdr_changes && cd .. &&'
+prebuildopts += 'cp -r ../%s/* src && ' %local_vstat
+build_cmd = 'make FC=mpifort FCL="mpifort -mkl=sequential" %s' %local_makeparam
 
-
-postinstallcmds = ["chmod -R o-rwx %(installdir)s && pip install numpy --prefix=%(installdir)s && pip install subprocess32 --prefix=%(installdir)s && pip install ase --prefix=%(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
 parallel = 1
 
-files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'), '../vtstscripts-939']
-
+files_to_copy = [(['bin/%s' % x for x in local_binfiles], 'bin'), '../%s' %local_vtstscripts]
 sanity_check_paths = {
-    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'files': ['bin/%s' % x for x in local_binfiles],
     'dirs': []
 }
-modextrapaths = {'PATH': 'vtstscripts-939', 'PYTHONPATH': 'lib/python2.7/site-packages'}
+modextrapaths = {'PATH': local_vtstscripts}
 moduleclass = 'phys'
