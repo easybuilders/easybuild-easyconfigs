@@ -1,0 +1,233 @@
+--- ./src/main.F.orig	2020-02-27 10:01:47.209246997 -0800
++++ ./src/main.F	2020-02-27 10:02:51.439460029 -0800
+@@ -3447,7 +3447,7 @@
+       ENDIF
+ 
+       CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
+-           LATT_CUR%A,LATT_CUR%B,IO%IU6)
++           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6)
+ 
+       CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
+            LATT_CUR%A,LATT_CUR%B,IO%IU6)
+--- ./src/mpi.F.orig	2020-02-28 09:03:26.141965246 -0800
++++ ./src/mpi.F	2020-02-28 09:27:53.831376989 -0800
+@@ -1892,35 +1892,35 @@
+ !!!
+ !!!----------------------------------------------------------------------
+ !!
+-!!      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
+-!!      USE string, ONLY: str
+-!!      USE tutor, ONLY: vtutor
+-!!      USE mpimy
+-!!      IMPLICIT NONE
+-!!
+-!!      TYPE(communic) COMM
+-!!      INTEGER n
+-!!      REAL(q) vec(n),v1,v2,v3,v4
+-!!
+-!!      vec=0
+-!!
+-!!      IF (n>0) vec(1)=v1
+-!!      IF (n>1) vec(2)=v2
+-!!      IF (n>2) vec(3)=v3
+-!!      IF (n>3) vec(4)=v4
+-!!      IF (n>4) THEN
+-!!          WRITE(*,*) 'internal ERROR: invalid n in M_sum_s ', n
+-!!          STOP
+-!!      END IF
+-!!
+-!!      CALL M_sumb_d(COMM, vec, n)
+-!!
+-!!      IF (n>0) v1=vec(1)
+-!!      IF (n>1) v2=vec(2)
+-!!      IF (n>2) v3=vec(3)
+-!!      IF (n>3) v4=vec(4)
+-!!      RETURN
+-!!      END SUBROUTINE
++      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
++      USE string, ONLY: str
++      USE tutor, ONLY: vtutor
++      USE mpimy
++      IMPLICIT NONE
++
++      TYPE(communic) COMM
++      INTEGER n
++      REAL(q) vec(n),v1,v2,v3,v4
++
++      vec=0
++
++      IF (n>0) vec(1)=v1
++      IF (n>1) vec(2)=v2
++      IF (n>2) vec(3)=v3
++      IF (n>3) vec(4)=v4
++      IF (n>4) THEN
++          WRITE(*,*) 'internal ERROR: invalid n in M_sum_s ', n
++          STOP
++      END IF
++
++      CALL M_sumb_d(COMM, vec, n)
++
++      IF (n>0) v1=vec(1)
++      IF (n>1) v2=vec(2)
++      IF (n>2) v3=vec(3)
++      IF (n>3) v4=vec(4)
++      RETURN
++      END SUBROUTINE
+ 
+ !----------------------------------------------------------------------
+ !
+--- ./src/mpi_gpu.F.orig	2020-02-28 22:51:33.974045295 -0800
++++ ./src/mpi_gpu.F	2020-02-28 22:52:47.794228591 -0800
+@@ -1786,35 +1786,35 @@
+ !!!
+ !!!----------------------------------------------------------------------
+ !!
+-!!      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
+-!!      USE string, ONLY: str
+-!!      USE tutor, ONLY: vtutor
+-!!      USE mpimy
+-!!      IMPLICIT NONE
+-!!
+-!!      TYPE(communic) COMM
+-!!      INTEGER n
+-!!      REAL(q) vec(n),v1,v2,v3,v4
+-!!
+-!!      vec=0
+-!!
+-!!      IF (n>0) vec(1)=v1
+-!!      IF (n>1) vec(2)=v2
+-!!      IF (n>2) vec(3)=v3
+-!!      IF (n>3) vec(4)=v4
+-!!      IF (n>4) THEN
+-!!          WRITE(*,*) 'internal ERROR: invalid n in M_sum_s ', n
+-!!          STOP
+-!!      END IF
+-!!
+-!!      CALL M_sumb_d(COMM, vec, n)
+-!!
+-!!      IF (n>0) v1=vec(1)
+-!!      IF (n>1) v2=vec(2)
+-!!      IF (n>2) v3=vec(3)
+-!!      IF (n>3) v4=vec(4)
+-!!      RETURN
+-!!      END SUBROUTINE
++      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
++      USE string, ONLY: str
++      USE tutor, ONLY: vtutor
++      USE mpimy
++      IMPLICIT NONE
++
++      TYPE(communic) COMM
++      INTEGER n
++      REAL(q) vec(n),v1,v2,v3,v4
++
++      vec=0
++
++      IF (n>0) vec(1)=v1
++      IF (n>1) vec(2)=v2
++      IF (n>2) vec(3)=v3
++      IF (n>3) vec(4)=v4
++      IF (n>4) THEN
++          WRITE(*,*) 'internal ERROR: invalid n in M_sum_s ', n
++         STOP
++      END IF
++
++      CALL M_sumb_d(COMM, vec, n)
++
++      IF (n>0) v1=vec(1)
++      IF (n>1) v2=vec(2)
++      IF (n>2) v3=vec(3)
++      IF (n>3) v4=vec(4)
++      RETURN
++      END SUBROUTINE
+ 
+ !----------------------------------------------------------------------
+ !
+--- ./src/.objects.orig	2020-02-28 22:58:27.105071942 -0800
++++ ./src/.objects	2020-02-28 22:57:13.340888502 -0800
+@@ -90,6 +90,19 @@
+ 	dos.o \
+ 	elf.o \
+ 	hamil_rot.o \
++        bfgs.o \
++        dynmat.o \
++        instanton.o \
++        lbfgs.o \
++        sd.o \
++        cg.o \
++        dimer.o \
++        bbm.o \
++        fire.o \
++        lanczos.o \
++        neb.o \
++        qm.o \
++        opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	fileio.o \
+@@ -336,6 +349,19 @@
+ 	dos.o \
+ 	elf.o \
+ 	hamil_rot.o \
++        bfgs.o \
++        dynmat.o \
++        instanton.o \
++        lbfgs.o \
++        sd.o \
++        cg.o \
++        dimer.o \
++        bbm.o \
++        fire.o \
++        lanczos.o \
++        neb.o \
++        qm.o \
++        opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	us.o \
+--- ./arch/makefile.include.linux_intel.orig	2020-11-06 21:07:36.000000000 -0800
++++ ./arch/makefile.include.linux_intel	2020-11-06 21:10:49.000000000 -0800
+@@ -7,7 +7,10 @@
+              -Dvasp6 \
+              -Duse_bse_te \
+              -Dtbdyn \
+-             -Dfock_dblbuf
++             -Dfock_dblbuf \
++	     -Dsol_compat \
++	     -Dlibbeef \
++	     -DVASP2WANNIER90
+ 
+ CPP        = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
+ 
+@@ -16,7 +19,7 @@
+ 
+ FREE       = -free -names lowercase
+ 
+-FFLAGS     = -assume byterecl -w -xHOST
++FFLAGS     = -assume byterecl -w 
+ OFLAG      = -O2
+ OFLAG_IN   = $(OFLAG)
+ DEBUG      = -O0
+@@ -31,7 +34,7 @@
+ 
+ INCS       =-I$(MKLROOT)/include/fftw
+ 
+-LLIBS      = $(SCALAPACK) $(LAPACK) $(BLAS)
++LLIBS      = $(SCALAPACK) $(LAPACK) $(BLAS) -lbeef -lwannier
+ 
+ 
+ OBJECTS_O1 += fftw3d.o fftmpi.o fftmpiw.o
+@@ -67,11 +70,10 @@
+ CFLAGS     = -fPIC -DADD_ -Wall -qopenmp -DMAGMA_WITH_MKL -DMAGMA_SETAFFINITY -DGPUSHMEM=300 -DHAVE_CUBLAS
+ 
+ CUDA_ROOT  ?= /usr/local/cuda/
+-NVCC       := $(CUDA_ROOT)/bin/nvcc -ccbin=icc
++NVCC       := nvcc -ccbin=icc
+ CUDA_LIB   := -L$(CUDA_ROOT)/lib64 -lnvToolsExt -lcudart -lcuda -lcufft -lcublas
+ 
+-GENCODE_ARCH    := -gencode=arch=compute_30,code=\"sm_30,compute_30\" \
+-                   -gencode=arch=compute_35,code=\"sm_35,compute_35\" \
++GENCODE_ARCH    := -gencode=arch=compute_35,code=\"sm_35,compute_35\" \
+                    -gencode=arch=compute_60,code=\"sm_60,compute_60\" \
+                    -gencode=arch=compute_70,code=\"sm_70,compute_70\" \
+                    -gencode=arch=compute_72,code=\"sm_72,compute_72\"

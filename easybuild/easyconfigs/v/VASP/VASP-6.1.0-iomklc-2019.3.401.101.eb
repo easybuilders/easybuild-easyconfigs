@@ -11,43 +11,39 @@ has been implemented to the original version of vasp """
 
 toolchain = {'name': 'iomklc', 'version': '2019.3.401.101'}
 dependencies = [
-    ('Python', '2.7.14'),
-    ('BEEF', '0.1.1', '', ('iccifort', '2018.3')),
-    ('wannier90', '1.2', '', ('iimkl', '2018.3')),
+    ('BEEF', '0.1.1',),
+    ('wannier90', '1.2'),
 ]
 
-patches = ['vasp-6.1.0.patch',
-           'vasp-6.1.0-openmpi.patch',
-]
+local_vstat = 'vtstcode-180'
+local_vtstscripts = 'vtstscripts-957'
+local_makeparam = 'gpu gpu_ncl'
+local_binfiles = ['vasp_gpu', 'vasp_gpu_ncl']
+
+patches = ['%(namelower)s-%(version)s.patch']
 # Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
-sources = [SOURCELOWER_TGZ]
-checksums = ['0845233aec2651087f33e12ee1e68460',  #vasp-6.1.0.tgz,
-             '5464d00f5ce451c76e10efea8412710c',  #vasp-6.1.0.patch,
-             'a890705dabd804aacccb2c987b8f0d63',  #vasp-6.1.0-openmpi.patch,
-
+source_urls = ['https://github.com/henniggroup/VASPsol/archive/', 'http://theory.cm.utexas.edu/code/vtstscripts_old', 'http://theory.cm.utexas.edu/code/']
+sources = ['%(namelower)s-%(version)s.tgz', 'V1.0.tar.gz', '%s.tgz' %local_vtstscripts, '%s.tgz' %local_vstat]
+checksums = ['0845233aec2651087f33e12ee1e68460',  #vasp.6.1.0.tgz,
+             'd312a26de9676cc657d86fe91480ccf7',  #V1.0.tar.gz,
+             '5d52c32bce6c582c7a1491a19b756420',  #vtstscripts-957.tgz,
+             'aae7854308c5e567b776c13b39e9f3e4',  #vtstcode-180.tgz,
+             'a7e403f08c97cc61d01e9272395210db',  #vasp-6.1.1.patch,
 ]
-
 prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
 prebuildopts += 'cp src/solvation.F src/solvation.F.orig && '
-prebuildopts += 'wget https://github.com/henniggroup/VASPsol/archive/V1.0.tar.gz && '
-prebuildopts += 'tar xzf V1.0.tar.gz && '
-prebuildopts += 'cp VASPsol-1.0/src/solvation.F src  && '
+prebuildopts += 'cp ../VASPsol-1.0/src/solvation.F src  && '
 prebuildopts += 'unset LIBS && '
-prebuildopts += 'wget https://theory.cm.utexas.edu/code/vtstscripts_old/vtstscripts-957.tgz && tar xzf vtstscripts-957.tgz && '
-prebuildopts += 'wget https://theory.cm.utexas.edu/code/vtstcode-179.tgz && tar xzf vtstcode-179.tgz  && ' 
-prebuildopts += 'cp vtstcode-179/* src && '
-prebuildopts += 'chmod u+x src/mkbdrpro.pl && '
-prebuildopts += 'cd src && ./mkbdrpro.pl bdr_changes && cd .. &&'
-build_cmd = 'make gpu gpu_ncl'
+prebuildopts += 'cp -r ../%s/* src && ' %local_vstat
+build_cmd = 'make FC=mpifort FCL="mpifort -mkl=sequential" %s' %local_makeparam
 
-postinstallcmds = ["chmod -R o-rwx %(installdir)s && pip install numpy --prefix=%(installdir)s && pip install subprocess32 --prefix=%(installdir)s && pip install ase --prefix=%(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
 parallel = 1
 
-files_to_copy = [(['bin/vasp_gpu', 'bin/vasp_gpu_ncl'], 'bin'), 'vtstscripts-957']
-
+files_to_copy = [(['bin/%s' % x for x in local_binfiles], 'bin'), '../%s' %local_vtstscripts]
 sanity_check_paths = {
-    'files': ['bin/vasp_gpu', 'bin/vasp_gpu_ncl' ],
+    'files': ['bin/%s' % x for x in local_binfiles],
     'dirs': []
 }
-modextrapaths = {'PATH': 'vtstscripts-957', 'PYTHONPATH': 'lib/python2.7/site-packages'}
+modextrapaths = {'PATH': local_vtstscripts}
 moduleclass = 'phys'
