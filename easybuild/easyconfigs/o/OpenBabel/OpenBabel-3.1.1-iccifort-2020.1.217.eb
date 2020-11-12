@@ -30,7 +30,6 @@ builddependencies = [
     ('SWIG', '4.0.1'),
 ]
 dependencies = [
-    ('Python', '3.8.2'),
     ('zlib', '1.2.11'),
     ('libxml2', '2.9.10'),
     ('Eigen', '3.3.7', '', True),
@@ -38,6 +37,24 @@ dependencies = [
     ('cairo', '1.16.0'),  # optional: for .png output
     ('Boost.Serial', '1.72.0'),  # optional: for Maestro formats
 ]
+with_python_bindings = False
+
+multi_deps = {'Python': ['3.6', '3.7', '3.8']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+exts_list = [
+    ('openbabel', '3.1.1.1', {
+#    	'prebuildopts': 'PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH ',
+	'buildcmd':  'build_ext',
+	'buildopts': ' -I%(installdir)s/include/openbabel3 -L%(installdir)s/lib ',
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/o/openbabel/'],
+        'checksums': ['bb7f8cad15f3a208f4869d7943cbb14eb7125372eba397588f207f8d19e78373'],
+    }),
+]
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
 
 configopts = '-DBoost_INCLUDE_DIR=$EBROOTBOOSTSERIAL/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOSTSERIAL/lib '
 # Enable support for OpenMP compilation of forcefield code (optional)
@@ -50,7 +67,7 @@ postinstallcmds = [
     'ln -s %(installdir)s/share/openbabel/3.1.0 %(installdir)s/share/openbabel/%(version)s',
 ]
 
-pretestopts = 'cp lib/_openbabel.%s %%(builddir)s/openbabel-*/scripts/python/openbabel/ && ' % SHLIB_EXT
-runtest = 'test'
+#pretestopts = 'cp lib/_openbabel.%s %%(builddir)s/openbabel-*/scripts/python/openbabel/ && ' % SHLIB_EXT
+#runtest = 'test'
 
 moduleclass = 'chem'
