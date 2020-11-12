@@ -1,0 +1,55 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jordi Blasco <jordi.blasco@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'ConfigureMake'
+
+name = 'GetFEM'
+version = '5.4.1'
+
+homepage = 'http://getfem.org'
+description = """GetFEM is an open source library based on collaborative development. It aims to
+offer the most flexible framework for solving potentially coupled systems of linear and nonlinear
+partial differential equations with the finite element method"""
+
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+builddependencies = [
+    ('Autoconf', '2.69', '', ('GCCcore', '8.3.0')),
+    ('Automake', '1.16.1', '', ('GCCcore', '8.3.0')),
+    ('Autotools', '20180311', '', ('GCCcore', '8.3.0')),
+]
+
+dependencies = [
+    ('Qhull', '2019.1', '', ('GCCcore', '8.3.0')),
+    ('MUMPS', '5.2.1', '', ('foss', '2019b-metis')),
+    ('SciPy-bundle', '2019.10', '', ('foss', '2019b-Python-3.7.4')),
+    ('Octave', '5.1.0', '', ('foss', '2019b')),
+]
+# It can be compiled with MATLAB and Scilab support
+# Consider including the --enable-matlab or --enable-scilab in the configopts
+# and also the dependencies
+# GCC must be compatible with MATLAB, which usually is quite old.
+# ('MATLAB', '2017b', '', True),
+
+source_urls = ['http://download-mirror.savannah.gnu.org/releases/getfem/stable/']
+sources = ['getfem-%(version)s.tar.gz']
+checksums = ['6b58cc960634d0ecf17679ba12f8e8cfe4e36b25a5fa821925d55c42ff38a64e']
+
+configopts = '--enable-python --enable-octave --with-pic '
+configopts += '--enable-openmp --enable-qhull --enable-par-mumps --enable-metis '
+configopts += 'BLAS_LIBS="$LDFLAGS $LIBBLAS_MT" --enable-multithread-blas '
+configopts += 'LDFLAGS="$LDFLAGS" '
+
+sanity_check_paths = {
+    'files': ['bin/getfem-config'] +
+             ['lib/%s' % x for x in ['libgetfem.a', 'libgetfem.la']],
+    'dirs': ['getfem_toolbox', 'include'],
+}
+
+
+moduleclass = 'phys'
