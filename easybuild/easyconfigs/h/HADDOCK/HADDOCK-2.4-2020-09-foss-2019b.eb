@@ -1,0 +1,53 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Jordi Blasco <jordi.blasco@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'Tarball'
+
+name = 'HADDOCK'
+version = '2.4-2020-09'
+
+homepage = 'https://wenmr.science.uu.nl/haddock2.4/'
+description = """HADDOCK (High Ambiguity Driven protein-protein DOCKing) is an
+information-driven flexible docking approach for the modeling of biomolecular complexes.
+"""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+# HADDOCK must be downloaded manually after requesting access.
+# To obtain HADDOCK, you must fill the HADDOCK license form.
+# https://www.bonvinlab.org/software/haddock2.4/installation/#downloading-haddock
+#
+# haddock2.4-2020-09.tgz
+sources = ['haddock%(version)s.tgz']
+checksums = ['334c45a3eb45473a9ac91f1b1d5687ef60aa4c6ad7b4064859c13c7941cd77ad']
+
+dependencies = [
+    ('libzeep', '3.0.5'),
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.11'),
+    ('XZ', '5.2.4'),
+    ('Boost', '1.71.0'),
+    ('CNS', '1.31-linux-x86_64', '', True)
+]
+
+#extract_sources = True
+install_type = 'merge'
+# HADDOCK interacts with the RMS and needs to be configured before installing it.
+# Modify the following parameters to set up this software for your cluster.
+# More information here: https://www.bonvinlab.org/software/haddock2.4/installation/#configuring-haddock
+preinstall_cmd = "echo 'set CNSTMP=$EBROOTCNS/cns_solve-1.31-UU-Linux64.exe' > haddock.conf && "
+preinstall_cmd += "echo 'set QUEUETMP=/bin/csh' >> haddock.conf && "
+preinstall_cmd += "echo 'set NUMJOB=4' >> haddock.conf && "
+preinstall_cmd += "echo 'set QUEUESUB=QueueSubmit_concat.py' >> haddock.conf && "
+preinstall_cmd += "./install.csh haddock.conf"
+
+sanity_check_paths = {
+    'files': ['haddock_configure.csh', 'haddock_configure.sh'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
