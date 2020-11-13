@@ -273,6 +273,8 @@ class EasyConfigTest(TestCase):
             # medaka 1.1.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation
             'Pysam': [('0.16.0.1;', ['medaka-1.1.[13]-'])],
+            # OpenSees requires SuperLU_DIST <= 5.3.0 (with some patching)
+            'SuperLU_DIST': [('5.3.0;', ['OpenSees-3.2.0-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
