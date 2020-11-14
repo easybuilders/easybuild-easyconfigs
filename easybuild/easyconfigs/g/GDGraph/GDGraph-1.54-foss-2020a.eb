@@ -1,0 +1,59 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'Bundle'
+
+name = 'GDGraph'
+version = '1.54'
+
+homepage = 'https://metacpan.org/release/%(name)s'
+description = "GDGraph is a Perl package to generate charts"
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+source_urls = ['https://github.com/lstein/Perl-GD/archive/']
+
+dependencies = [
+    ('Perl', '5.30.2'),
+    ('libgd', '2.3.0'),
+    ('libpng', '1.6.37'),
+    ('libjpeg-turbo', '2.0.4'),
+]
+
+# this is a bundle of Perl modules
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perl -e 'require %(ext_name)s'", '')
+
+exts_list = [
+    ('ExtUtils::PkgConfig', '1.16', {
+        'source_tmpl': 'ExtUtils-PkgConfig-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+        'checksums': ['bbeaced995d7d8d10cfc51a3a5a66da41ceb2bc04fedcab50e10e6300e801c6e'],
+    }),
+    ('GD', '2.73', {
+        'source_tmpl': 'GD-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RURBAN/'],
+        'checksums': ['491c9e73238522e2987e66725a20935f4268a3864202ecbaf4659a1691ba322b'],
+    }),
+    ('GD::Text', '0.86', {
+        'source_tmpl': 'GDTextUtil-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MV/MVERB/'],
+        'checksums': ['886ecbf85cfe94f4135ee5689c4847a9ae783ecb99e6759e12c734f2dd6116bc'],
+    }),
+    ('GD::Graph', version, {
+        'source_tmpl': 'GDGraph-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RUZ/'],
+        'checksums': ['b96f5c10b656c17d16ab65a1777c908297b028d3b6815f6d54b2337f006bfa4f'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/bdf2gdfont.pl'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi', 'man'],
+}
+
+modextrapaths = {'PERL5LIB': [
+    'lib/perl5/site_perl/%(perlver)s',
+    'lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi',
+]}
+
+moduleclass = 'bio'
