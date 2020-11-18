@@ -1,0 +1,43 @@
+easyblock = 'MakeCp'
+
+name = 'PGPLOT'
+version = '5.2'
+
+homepage = 'http://www.astro.caltech.edu/~tjp/pgplot/'
+description = """The PGPLOT Graphics Subroutine Library is a Fortran- or C-callable, device-independent graphics package for making simple scientific graphs. It is intended for making graphical images of publication quality with minimum effort on the part of the user. For most applications, the program can be device-independent, and the output can be directed to the appropriate device at run time."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = [ 'ftp://ftp.astro.caltech.edu/pub/pgplot/' ]
+sources = ['pgplot%(version)s.tar.gz']
+patches =  ['pgplot-%(version)s-gcc.patch']
+checksums = [
+    'a5799ff719a510d84d26df4ae7409ae61fe66477e3f1e8820422a9a4727a5be4',  # pgplot5.2.tar.gz
+    '639b41110d6e2666923bc8a51b400a068cf89ad758bd949f810447523fa22781',  # pgplot-5.2-gcc.patch
+]
+
+parallel = 1
+
+prebuildopts  = 'mkdir build && '
+prebuildopts += 'here=$(pwd) && '
+prebuildopts += 'cp drivers.list build && '
+prebuildopts += 'cd build && '
+prebuildopts += '../makemake  $here linux f77_gcc && '
+
+files_to_copy = [
+    (['build/libcpgplot.a', 'build/libcpgplot.so', 'build/libpgplot.a', 'build/libpgplot.so'], 'lib'),
+    (['build/pgplot.doc', 'build/pgplot-routines.pdf', 'build/pgplot-routines.tex'], 'doc'),
+    (['build/cpgplot.h'], 'include'),
+    (['build/cpgdemo', 'build/pgxwin_server'], 'bin'),
+     'build/rgb.txt','build/grfont.dat']
+
+sanity_check_paths = {
+    'files': ['lib/libcpgplot.so', 'lib/libpgplot.so', 'lib/libcpgplot.a', 'lib/libpgplot.a'],
+    'dirs': []
+}
+
+modextravars = {
+      'PGPLOT_FONT': '%(installdir)s/grfont.dat',
+}
+
+moduleclass = 'math'
