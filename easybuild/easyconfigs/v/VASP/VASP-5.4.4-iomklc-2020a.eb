@@ -1,0 +1,50 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.4'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version VASPsol (https://github.com/henniggroup/VASPsol) 
+has been implemented to the original version of vasp """
+
+toolchain = {'name': 'iomklc', 'version': '2020a'}
+dependencies = [
+    ('libbeef', '0.1.2'),
+    ('wannier90', '3.1.0'),
+]
+
+local_vstat = 'vtstcode-180'
+local_vtstscripts = 'vtstscripts-957'
+local_makeparam = 'gpu gpu_ncl'
+local_binfiles = ['vasp_gpu', 'vasp_gpu_ncl']
+
+patches = ['patch.5.4.4.16052018', '%(namelower)s-%(version)s.patch']
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+source_urls = ['https://github.com/henniggroup/VASPsol/archive/', 'http://theory.cm.utexas.edu/code/vtstscripts_old', 'http://theory.cm.utexas.edu/code/']
+sources = ['%(namelower)s.%(version)s.tar.gz', 'V1.0.tar.gz', '%s.tgz' %local_vtstscripts, '%s.tgz' %local_vstat]
+checksums = ['8ac646b108f974371eef398973373bf6',  #vasp.5.4.4.tar.gz,
+             'd312a26de9676cc657d86fe91480ccf7',  #V1.0.tar.gz,
+             '5d52c32bce6c582c7a1491a19b756420',  #vtstscripts-957.tgz,
+             'aae7854308c5e567b776c13b39e9f3e4',  #vtstcode-180.tgz,
+             'b3c3a330ab7389bf89558393efca1808',  #patch.5.4.4.16052018,
+             '8aa8ae56506f0490514189af4344b1a3',  #vasp-5.4.4.patch
+]
+prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
+prebuildopts += 'cp src/solvation.F src/solvation.F.orig && '
+prebuildopts += 'cp ../VASPsol-1.0/src/solvation.F src  && '
+prebuildopts += 'unset LIBS && '
+prebuildopts += 'cp -r ../%s/* src && ' %local_vstat
+build_cmd = 'make FC=mpifort FCL="mpifort -mkl=sequential" %s' %local_makeparam
+
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
+parallel = 1
+
+files_to_copy = [(['bin/%s' % x for x in local_binfiles], 'bin'), '../%s' %local_vtstscripts]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binfiles],
+    'dirs': []
+}
+modextrapaths = {'PATH': local_vtstscripts}
+moduleclass = 'phys'

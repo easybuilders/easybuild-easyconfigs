@@ -1,0 +1,72 @@
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.6.2'
+
+homepage = 'https://www.plumed.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'gomkl', 'version': '2020a'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/plumed/plumed2/releases/download/v%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['1ab3153db2010406852b30201ed94112e25eca4c4c8c4b41a29c22a7a3303f96']
+
+dependencies = [
+    ('GSL', '2.6'),
+    ('libmatheval', '1.1.11'),
+    ('SciPy-Stack', '2020a'),
+    ('Boost', '1.72.0'),
+    ('XDRfile', '1.1.4'),
+]
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+
+configopts = " ".join([
+    '--exec-prefix=%(installdir)s',
+    '--enable-gsl',
+    '--enable-modules=all',
+    '--enable-boost_graph',
+    '--enable-boost_serialization',
+    '--enable-asmjit',
+])
+
+multi_deps = {'Python': ['3.6', '3.7', '3.8'] }
+multi_deps_extensions_only = True
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('plumed', version, {
+        'prebuildopts': '',
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['c4e8a4fc5b21076f22cb4970cc00bb1c82485743731a0110204cbb977ef8c4e0'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+prebuildopts = 'source sourceme.sh && '
+
+sanity_check_paths = {
+    'files': [
+        'bin/plumed',
+        'lib/libplumedKernel.%s' % SHLIB_EXT,
+        'lib/libplumed.%s' % SHLIB_EXT
+    ],
+    'dirs': [],
+}
+
+sanity_check_commands = ["python -c 'import plumed'"]
+
+modextrapaths = {
+    'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT,
+    'PLUMED_ROOT': 'lib/plumed',
+    'EBPYTHONPREFIXES': [''],
+}
+
+moduleclass = 'chem'
