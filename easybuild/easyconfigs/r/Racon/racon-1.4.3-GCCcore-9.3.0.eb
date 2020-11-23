@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'racon'
+version = '1.4.3'
+
+homepage = 'https://github.com/isovic/racon/'
+description = """Ultrafast consensus module for raw de novo genome assembly of long uncorrected reads."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/isovic',
+        'repo_name': 'racon',
+        'commit': '871c8de',
+        'recursive': True,
+    },
+}]
+patches = ['%(name)s-%(version)s_fix_native-arch.patch']
+checksums = [
+    '364f96d02dcf1efe3da88c3699ed3740f10cbd292947c634c6dd51982aa3af2d',  # racon-1.4.3.tar.gz
+    '30bb538417fcdc155c0bfa54d5f1d9e0592a4e2e280052eb7ff351cdf5dccd8e',  # racon-1.4.3_fix_native-arch.patch
+]
+
+postinstallcmds =  ['cd %(builddir)s/%(name)s/ && cp -r scripts test %(installdir)s/']
+
+configopts = '-DCMAKE_BUILD_TYPE=Release '
+
+modextrapaths = {'PATH': 'scripts'}
+
+sanity_check_paths = {
+    'files': ["bin/%(name)s"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("python")
+"""

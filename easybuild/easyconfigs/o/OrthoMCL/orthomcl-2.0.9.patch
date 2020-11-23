@@ -1,0 +1,271 @@
+--- ./doc/OrthoMCLEngine/Main/orthomcl.config.template.orig	2016-06-27 11:22:20.056149863 -0700
++++ ./doc/OrthoMCLEngine/Main/orthomcl.config.template	2016-06-27 11:25:31.298909128 -0700
+@@ -1,9 +1,7 @@
+ # this config assumes a mysql database named 'orthomcl'.  adjust according
+ # to your situation.
+ dbVendor=mysql 
+-dbConnectString=dbi:mysql:orthomcl:3307
+-dbLogin=
+-dbPassword=
++dbname=my_database
+ similarSequencesTable=SimilarSequences
+ orthologTable=Ortholog
+ inParalogTable=InParalog
+@@ -11,4 +9,4 @@
+ interTaxonMatchView=InterTaxonMatch
+ percentMatchCutoff=50
+ evalueExponentCutoff=-5
+-oracleIndexTblSpc=NONE
+\ No newline at end of file
++oracleIndexTblSpc=NONE
+--- ./bin/orthomclDropSchema.orig	2016-06-27 11:22:20.068150098 -0700
++++ ./bin/orthomclDropSchema	2016-06-27 11:26:07.674624090 -0700
+@@ -60,10 +60,8 @@
+ 
+ Sample Config File:
+ 
+-dbVendor=oracle  (or mysql)
+-dbConnectString=dbi:Oracle:orthomcl
+-dbLogin=my_db_login
+-dbPassword=my_db_password
++dbVendor=mysql  (always)
++dbname=my_database
+ oracleIndexTablespace=
+ similarSequencesTable=SimilarSequences
+ orthologTable=Ortholog
+--- ./bin/orthomclPairs.orig	2016-06-27 11:22:20.074150216 -0700
++++ ./bin/orthomclPairs	2016-06-27 11:26:15.852784828 -0700
+@@ -854,10 +854,8 @@
+ 
+ Sample Config File:
+ 
+-dbVendor=oracle  (or mysql)
+-dbConnectString=dbi:Oracle:orthomcl
+-dbLogin=my_db_login
+-dbPassword=my_db_password
++dbVendor=mysql  (always)
++dbname=my_database
+ similarSequencesTable=SimilarSequences
+ orthologTable=Ortholog
+ inParalogTable=InParalog
+--- ./bin/orthomclLoadBlast.orig	2016-06-27 11:22:20.080150334 -0700
++++ ./bin/orthomclLoadBlast	2016-06-27 11:26:29.900060917 -0700
+@@ -43,14 +43,10 @@
+ sub loadBlastOracle {
+   my ($base, $blastFile) = @_;
+ 
+-  my $dbLogin = $base->getConfig("dbLogin");
+-  my $dbPassword = $base->getConfig("dbPassword");
+-  my $dbString = $base->getConfig("dbConnectString");
+-  my @database = split(/:/, $dbString);
+-  my $dbInstance = $database[2];
++  my $dbInstance = $base->getConfig("dbname");;
+ 
+   open (PARFILE, ">orthomclPar.tmp");
+-  print PARFILE "userid=$dbLogin/$dbPassword\@$dbInstance\n";
++  print PARFILE "\@$dbInstance\n";
+   close PARFILE;
+ 
+   my $sst = $base->getConfig("similarSequencesTable");
+@@ -96,10 +92,8 @@
+ 
+ Sample Config File:
+ 
+-dbVendor=oracle  (or mysql)
+-dbConnectString=dbi:Oracle:orthomcl
+-dbLogin=my_db_login
+-dbPassword=my_db_password
++dbVendor=mysql  (always)
++dbname=my_database
+ similarSequencesTable=SimilarSequences
+ ";
+ }
+--- ./bin/orthomclDumpPairsFiles.orig	2016-06-27 11:22:20.098150688 -0700
++++ ./bin/orthomclDumpPairsFiles	2016-06-27 11:26:50.779471281 -0700
+@@ -136,10 +136,8 @@
+ 
+ Sample Config File:
+ 
+-dbVendor=oracle  (or mysql)
+-dbConnectString=dbi:Oracle:orthomcl
+-dbLogin=my_db_login
+-dbPassword=my_db_password
++dbVendor=mysql  (always)
++dbname=my_database
+ orthologTable=Ortholog
+ inParalogTable=InParalog
+ coOrthologTable=CoOrtholog
+--- ./bin/orthomclInstallSchema.orig	2016-06-27 11:22:20.112150963 -0700
++++ ./bin/orthomclInstallSchema	2016-06-27 11:27:05.579762162 -0700
+@@ -207,10 +207,8 @@
+ 
+ Sample Config File:
+ 
+-dbVendor=oracle  (or mysql)
+-dbConnectString=dbi:Oracle:orthomcl
+-dbLogin=my_db_login
+-dbPassword=my_db_password
++dbVendor=mysql (always)
++dbname=my_database
+ oracleIndexTablespace=
+ similarSequencesTable=SimilarSequences
+ orthologTable=Ortholog
+--- ./lib/perl/OrthoMCLEngine/Main/Base.pm.orig	2016-06-27 11:22:20.131151337 -0700
++++ ./lib/perl/OrthoMCLEngine/Main/Base.pm	2016-06-27 11:27:18.532016718 -0700
+@@ -52,12 +52,16 @@
+     } else {
+       die "config file '$self->{configFile}' has invalid value '$dbVendor' for dbVendor property\n";
+     }
++ 
++    my $dbname = $self->getConfig("dbname");
++    my $home=$ENV{'HOME'};
++    my $dbConnectString="dbi:mysql:$dbname;mysql_read_default_file=$home/.my.cnf";
+ 
+-    $self->{dbh} = DBI->connect($self->getConfig("dbConnectString"),
+-				$self->getConfig("dbLogin"),
+-				$self->getConfig("dbPassword"),
+-	                        {PrintError => 0, RaiseError => 1}) or die DBI::errstr;
++    $self->{dbh} = DBI->connect($dbConnectString,undef,undef,
++                                {PrintError => 0, RaiseError => 1}) or die DBI::errstr;
+   }
++
++
+   return $self->{dbh};
+ }
+ 1;
+--- bin/orthomclAdjustFasta.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclAdjustFasta	2018-07-10 11:00:11.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
+--- bin/orthomclBlastParser.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclBlastParser	2018-07-10 11:00:11.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
+--- bin/orthomclDropSchema.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclDropSchema	2018-07-10 11:00:11.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use DBI;
+ use FindBin;
+--- bin/orthomclDumpPairsFiles.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclDumpPairsFiles	2018-07-10 11:00:11.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use DBI;
+ use FindBin;
+--- bin/orthomclExtractProteinIdsFromGroupsFile.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclExtractProteinIdsFromGroupsFile	2018-07-10 11:00:11.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ use strict;
+ 
+ usage() unless scalar(@ARGV) == 1;
+--- bin/orthomclExtractProteinPairsFromGroupsFile.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclExtractProteinPairsFromGroupsFile	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ use strict;
+ 
+ usage() unless scalar(@ARGV) == 1;
+--- bin/orthomclFilterFasta.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclFilterFasta	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
+--- bin/orthomclInstallSchema.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclInstallSchema	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use DBI;
+ use FindBin;
+--- bin/orthomclLoadBlast.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclLoadBlast	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use DBI;
+ use FindBin;
+--- bin/orthomclMclToGroups.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclMclToGroups	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ my ($prefix, $startId) = @ARGV;
+ 
+--- bin/orthomclPairs.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclPairs	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use DBI;
+ use FindBin;
+--- bin/orthomclReduceFasta.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclReduceFasta	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
+--- bin/orthomclReduceGroups.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclReduceGroups	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
+--- bin/orthomclRemoveIdenticalGroups.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclRemoveIdenticalGroups	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
+--- bin/orthomclSingletons.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclSingletons	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
+--- bin/orthomclSortGroupMembersByScore.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclSortGroupMembersByScore	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
+--- bin/orthomclSortGroupsFile.orig	2013-07-18 10:53:22.000000000 -0700
++++ bin/orthomclSortGroupsFile	2018-07-10 11:00:12.000000000 -0700
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl
++#!/usr/bin/env perl
+ 
+ use strict;
+ 
