@@ -18,7 +18,8 @@ dependencies = [
 
 install_cmd = """
 export JULIA_DEPOT_PATH=%(installdir)s: &&
-julia --eval 'using Pkg; Pkg.add(PackageSpec(name="%(name)s", version="%(version)s")); using IJulia;'
+julia --eval 'using Pkg; Pkg.activate("%(name)s",shared=true); Pkg.add(PackageSpec(name="%(name)s", version="%(version)s")); using %(name)s;'
+rm -rf %(installdir)s/registries
 """
 
 sanity_check_paths = {
@@ -28,6 +29,7 @@ sanity_check_paths = {
 
 modluafooter = '''
 append_path("JULIA_DEPOT_PATH", "%(installdir)s")
+append_path("JULIA_LOAD_PATH", "%(installdir)s/environments/%(name)s")
 '''
 
 moduleclass = 'tools'
