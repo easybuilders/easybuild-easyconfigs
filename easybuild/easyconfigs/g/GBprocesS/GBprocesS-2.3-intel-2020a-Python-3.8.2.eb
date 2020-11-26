@@ -39,18 +39,20 @@ pretestopts = (
 
 runtest = 'python -m unittest discover -v -s ./test -p test_*.py'
 
-sanity_check_commands = [
-    'export TEMP=$(mktemp -d)'
-    ''' && echo > $TEMP/config.ini <<EOS
-
+# Trivial configuration file to use when running gbprocess sanity check
+# See https://gitlab.com/dschaumont/GBprocesS/-/blob/master/docs/user_guide.rst
+local_gbprocess_cfg = """
 # Main block General
 cores = 1
 input_directory = /data/run/
 sequencing_type = pe
 input_file_name_template = {run:24}_R{orientation:1}_001{extension:10}
-temp_dir = /tmp/
-EOS'''
-    ' && gbprocess --debug -c $TEMP/config.ini'
+temp_dir = %(builddir)s/
+"""
+
+sanity_check_commands = [
+    "echo > %(builddir)s/config.ini <<EOF\n" + local_gbprocess_cfg + "\nEOF",
+    "gbprocess --debug -c %(builddir)s/config.ini",
 ]
 
 options = {'modulename': 'gbprocess'}
