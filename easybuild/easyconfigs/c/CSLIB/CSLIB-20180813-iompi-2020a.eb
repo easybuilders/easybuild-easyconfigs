@@ -1,0 +1,39 @@
+##
+# @Authors :: Ali Kerrache <ali.kerrache@umanitoba.ca>
+# @Date :: 5 Aug 2019
+##
+
+easyblock = 'MakeCp'
+
+name = 'CSLIB'
+version = '20180813'
+
+homepage = 'https://cslib.sandia.gov/index.html'
+description = """The client/server model is a messaging paradigm, used ubiquitously by web-based applications, where one or more clients (e.g. your phone) communicate with a server (e.g. a website). In the context of the CSlib, it can used to couple two scientific applications (apps) together where one app acts as the client and the other as the server. The client sends messages to the server requesting it perform specific computations and return the results."""
+
+toolchain = {'name': 'iompi', 'version': '2020a'}
+
+# Download from: https://cslib.sandia.gov/index.html
+# Create the archive: cslib-20180813.tar.gz
+
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['41d77679dd39dd3e5f9c64060820f59aee9e4c92dbe959db0f54b40b9658fc55']
+
+start_dir = "src"
+
+buildopts = " all"
+
+parallel = 1
+
+postinstallcmds = ['cd %(installdir)s/lib && cp libcsmpi.a libmessage.a && cp libcsmpi.so libmessage.so']
+
+files_to_copy = [
+    (['libcs%s.%s' % (x, y) for y in ('a', SHLIB_EXT) for x in ['mpi', 'nompi']], "lib"),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libcs%s.%s' % (x, y) for y in ('a', SHLIB_EXT) for x in ['mpi', 'nompi']],
+    'dirs': []
+}
+
+moduleclass = 'lib'

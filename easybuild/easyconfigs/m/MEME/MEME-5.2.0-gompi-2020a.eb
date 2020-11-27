@@ -1,0 +1,74 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+easyblock = 'ConfigureMake'
+
+name = 'MEME'
+version = '5.2.0'
+
+homepage = 'http://meme-suite.org'
+description = """The MEME Suite allows you to: 
+ - discover motifs using MEME, DREME (DNA only) or GLAM2 on groups of related DNA or protein sequences, 
+ - search sequence databases with motifs using MAST, FIMO, MCAST or GLAM2SCAN, 
+ - compare a motif to all motifs in a database of motifs, 
+ - associate motifs with Gene Ontology terms via their putative target genes, 
+ - analyse motif enrichment using SpaMo or CentriMo.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+source_urls = [
+    'http://%(namelower)s-suite.org/%(namelower)s-software/%(version)s/',
+    'http://%(namelower)s-suite.org/%(namelower)s-software/Databases/motifs/',
+    'http://%(namelower)s-suite.org/%(namelower)s-software/Databases/gomo/',
+]
+sources = [SOURCELOWER_TAR_GZ, 'motif_databases.12.19.tgz', 'gomo_databases.3.2.tgz']
+checksums = [
+    '0cbf8c2172e9b6c07855b8aeec457f4825f0b132f8cbb11192880e2f6033f54f',  # meme-5.2.0.tar.gz
+    '70706bfbd9b05ee52d76268cd68242fcaf54fc4811abb2b2b31eb8cec15c360f',  # motif_databases.12.19.tgz
+    '41fff46f710a1a8853df8b5ee5f9ceefb62a32b1f63b5fce5c1be2c956352255',  # gomo_databases.3.2.tgz
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('Perl', '5.30.2'),
+    ('zlib', '1.2.8'),
+]
+
+configopts  = '--with-url="http://%(namelower)s-suite.org/" '
+configopts += '--enable-build-libxml2 --enable-build-libxslt '
+configopts += '--with-db=%(installdir)s/db '
+configopts += '--with-perl=$EBROOTPERL/bin/perl '
+configopts += '--with-python=$EBROOTPYTHON/bin/python '
+configopts += '--with-python3=$EBROOTPYTHON/bin/python '
+configopts += '--with-gs=${EBROOTGENTOO-$NIXUSER_PROFILE}/bin/gs '
+
+configure_cmd_prefix = "mkdir -p %(installdir)s/db && "
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'PERL5LIB': 'lib/%(namelower)s-%(version)s/perl',
+    'PYTHONPATH': 'lib/%(namelower)s-%(version)s/python',
+}
+
+postinstallcmds = ['mkdir -p %(installdir)s/db && cd %(builddir)s/%(namelower)s-%(version)s/ && cp -r ../gomo_databases ../motif_databases %(installdir)s/db && cp -r scripts tests %(installdir)s/']
+
+local_meme_binaries = [
+    'ame', 'centrimo', 'dreme', 'dust', 'fimo', 'glam2', 'glam2scan', 'gomo', 
+    'mast', 'mcast', 'meme', 'meme-chip', 'momo', 'purge', 'spamo', 'tomtom',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_meme_binaries],
+    'dirs': ['db', 'lib', 'libexec', 'share'],
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,41 @@
+# #
+# Author: Ali Kerrache, University of Manitoba.
+# Date: July 11, 2018.
+# #
+
+easyblock = 'ConfigureMake'
+
+name = 'LibGridXC'
+version = '0.8.0'
+
+homepage = 'https://launchpad.net/libgridxc'
+description = "A library to compute the exchange and correlation energy and potential in spherical (i.e. an atom) or periodic systems. It is based on SiestaXC."
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['https://launchpad.net/%(namelower)s/trunk/%(version_major_minor)s/+download']
+sources = [SOURCELOWER_TGZ]
+checksums = ['823002baa3e5e18eddef05b2ea55ff08cf9c311dd655dd7147df26a3f7096390']
+
+dependencies = [
+    ('libxc', '3.0.1'),
+]
+
+prebuildopts  = 'cd %(builddir)s/%(namelower)s-%(version)s/ && mkdir -p build && '
+prebuildopts += 'cd build && sh ../src/config.sh && cp ../extra/fortran.mk . && '
+
+buildopts = 'FC_SERIAL="$F90" LIBXC_ROOT=$EBROOTLIBXC PREFIX=%(installdir)s/'
+
+parallel = 1
+
+skipsteps = [
+    'configure',
+    'install',
+]
+
+sanity_check_paths = {
+    'files': ['lib/libGridXC.a', 'gridxc.mk', 'libxc.mk'],
+    'dirs': ['lib', 'include'],
+}
+
+moduleclass = 'lib'

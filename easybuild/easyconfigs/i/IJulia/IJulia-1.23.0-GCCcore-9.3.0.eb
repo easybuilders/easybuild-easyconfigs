@@ -1,0 +1,37 @@
+easyblock = 'Binary'
+
+name = 'IJulia'
+version = '1.23.0'
+
+homepage = 'https://julialang.org'
+description = "Julia kernel for Jupyter"
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/julialang/IJulia.jl/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['47acd00c1d21eb65ef7f5aaee7da2c8d1bda33004f57b7612784205b383b3256']
+
+dependencies = [
+    ('Julia', '1.5.2'),
+]
+
+install_cmd = """
+export JULIA_DEPOT_PATH=%(installdir)s: &&
+julia --eval 'using Pkg; Pkg.activate("%(name)s",shared=true); Pkg.add(PackageSpec(name="%(name)s", version="%(version)s")); using %(name)s;'
+rm -rf %(installdir)s/registries
+"""
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['compiled', 'environments', 'packages/IJulia'],
+}
+
+modluafooter = '''
+append_path("JULIA_DEPOT_PATH", "%(installdir)s")
+append_path("JULIA_LOAD_PATH", "%(installdir)s/environments/%(name)s")
+'''
+
+moduleclass = 'tools'
+
+hidden = True

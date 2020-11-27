@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+
+name = 'FLEUR'
+version = 'MaX-R4'
+
+homepage = 'http://www.flapw.de/'
+description = """FLEUR is a feature-full, freely available FLAPW (full potential linearized augmented planewave) code,
+ based on density-functional theory."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+        'source_urls': ['http://www.flapw.de/pm/uploads/FLEUR/'],
+        'filename': 'fleurMaX4.tgz',
+        'download_filename': 'fleurMaX4.tgz',
+    },
+    {
+        'source_urls': [' https://github.com/wannier-developers/wannier90/archive/'],
+        'filename': 'wannier90-3.1.0.tar.gz',
+        'download_filename': 'v3.1.0.tar.gz',
+        'extract_cmd': "tar -C fleur/external/wannier90 --strip 1 -xzf %s",
+    }
+
+]
+patches = [
+    'FLEUR_MaX-R4_LibXC-5.patch',
+   ('FLEUR_MaX-R4_CC-machine-file.patch', 1),
+]
+checksums = [
+        '96c6907786ea2d321ab90ab6cb4edd8d96368552f5c7f7852f08ffc75b019cb4', # fleurMaX4.tgz
+	'40651a9832eb93dec20a8360dd535262c261c34e13c41b6755fa6915c936b254', # v3.1.0.tar.gz
+	'80b7dc39a876e0bc086b60f238568d9407f015a2655a7401fb00d6c66f96b30a', # FLEUR_MaX-R4_LibXC-5.patch
+        'fc944fef0535b6376ebbb10a96422e81563b067db83b0291546543f93823b51e', # FLEUR_MaX-R4_CC-machine-file.patch
+]
+
+dependencies = [
+#    ('zlib', '1.2.8'), # in NIX
+    ('HDF5', '1.10.3'),
+    ('libxc', '5.0.0'),
+    ('ELPA', '2020.05.001'),
+    ('wannier90', '3.1.0'), 
+]
+
+prebuildopts = "./configure.sh CC && cd build && "
+
+pretestopts = 'cd build && '
+# Wannier90 support is still experimental in version MaX-R4 and tests are failing.
+runtest = ' && ctest -E Cwann ' 
+
+files_to_copy = [
+    (['build/fleur_MPI', 'build/inpgen'], 'bin'),
+    (['build/Testing', 'build/CTestTestfile.cmake'], ''),
+]
+
+sanity_check_paths = {
+    'files': ['bin/fleur_MPI', 'bin/inpgen'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
+
+# vim:ft=python

@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'RMBlast'
+version = '2.10.0'
+
+homepage = 'http://www.repeatmasker.org/RMBlast.html'
+description = """RMBlast is a RepeatMasker compatible version of the standard NCBI BLAST suite. The primary difference between
+ this distribution and the NCBI distribution is the addition of a new program 'rmblastn' for use with RepeatMasker and
+ RepeatModeler."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = [
+    'http://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/%(version)s',
+]
+sources = [
+    'ncbi-blast-%(version)s+-src.tar.gz',
+]
+patches = [('isb-%(version)s+-rmblast.patch',2)]
+checksums = [
+    '3acdd9cec01c4f43e56aeaf89049cb8f8013d60b9c1705eced10166967f1d926',  # ncbi-blast-2.10.0+-src.tar.gz
+    '0cbf5a5c567ed27e7fd0243fe4d2dcfa682bdc98e4717561402f3d1070430e62',  # isb-2.10.0+-rmblast.patch
+]
+
+dependencies = [
+    ('Boost', '1.72.0'),
+]
+
+configopts  = '--with-boost=$EBROOTBOOST '
+configopts += '--with-64 --with-bin-release '
+configopts += '--without-debug --with-mt '
+configopts += '--with-projects=scripts/projects/rmblastn/project.lst '
+configopts += '--without-krb5  --without-openssl '
+
+#prebuildopts = "sed -i -e 's;(incdir)/\*;(incdir)/*\.*;g' %(builddir)s/ncbi-blast-*/c++/Makefile && "
+
+sanity_check_paths = {
+    'files': ['bin/blastp', 'bin/blastn', 'bin/deltablast'],
+    'dirs': ['lib', 'bin']
+}
+
+moduleclass = 'bio'
