@@ -1,0 +1,62 @@
+name = 'ANSYS'
+version = '2020R2'
+versionsuffix = 'v202'
+versionprefix = '2018.3.222'
+
+homepage = 'http://www.ansys.com'
+description = """ANSYS simulation software enables organizations to confidently predict 
+    how their products will operate in the real world. We believe that every product is 
+    a promise of something greater. """
+
+toolchain = SYSTEM
+
+# create tar ball from the installation iso files
+sources = ['ANSYS-%(version)s.tar']
+
+# sha256sum ANSYS-2020R2.tar
+checksums = ['ba81b7b7697c893485105061c0c9e8bc']
+
+postinstallcmds = [
+	# fix missing execute permission for others on at least one folder
+	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
+	# rename built-in libstdc++.so* to libstdc++.so*.bak because they are older, and cause problem with other binaries
+        "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+	# call setrpaths.sh on binary containing directories
+        "for d in $(find %(installdir)s -name 'bin' -o -name 'lnamd64' -o -name 'linx64' -o -name 'Linux64' -o -name 'machines'); \
+	  do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
+        # run setrpaths.sh on all instances of lmutil for any_interpreter
+        "find %(installdir)s -name 'lmutil' -exec /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+        # revert changes made by setrpaths.sh to system interpreter:  patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 \
+        # /cvmfs/restricted.computecanada.ca/easybuild/software/2020/Core/ansys/2020R2/shared_files/licensing/linx64/filenames
+        "find %(installdir)s -name 'ansyscl' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+        "find %(installdir)s -name 'ansysli_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+        "find %(installdir)s -name 'ansysli_util' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+        "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+	# enable additive extension on workbench ACT start page
+        "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
+          %(installdir)s/%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex"
+]
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
+if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
+        -- /cvmfs/restricted.computecanada.ca/easybuild/software/2020/Core/ansys \
+        --   /2020R2/v202/commonfiles/MPI/Intel/2018.3.222/linx64/etc/tmi.conf
+        setenv("TMI_CONFIG",pathJoin(root,"%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
+end
+"""
+
+moduleclass = 'tools'
