@@ -1,0 +1,68 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+# Date: May 28, 2018.
+##
+
+easyblock = 'CMakeMake'
+
+name = 'DALTON'
+version = "2020"
+
+homepage = 'http://daltonprogram.org/'
+description = """The Dalton suite consists of two separate executables, Dalton and LSDalton. The Dalton code is a powerful tool for a wide range of molecular properties at different levels of theory, whereas LSDalton is a linear-scaling HF and DFT code suitable for large molecular systems, now also with some CCSD capabilites. Any published work arising from use of one of the Dalton programs must acknowledge that by a proper reference. The following list of capabilities of the Dalton programs should give you some indication of whether or not the Dalton suite is able to meet your requirements.."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
+
+sources = [{
+    'filename': '%(namelower)s-release-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://gitlab.com/dalton/',
+        'repo_name': 'dalton',
+        'commit': '66052b3a',
+        'recursive': True,
+    },
+}]
+checksums = ['2d419f69cf2cd554a99bee1b4f308daa6d4be554e783bd50b07e0bd795aebc97']
+
+builddependencies = [('CMake', '3.7.2')]
+
+separate_build_dir = True
+
+configopts  = '-DCMAKE_BUILD_TYPE=release -DENABLE_CODE_COVERAGE=ON -DENABLE_OMP=OFF -DENABLE_MPI=ON '
+configopts += '-DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++ -DCMAKE_Fortran_COMPILER=mpif90 '
+configopts += '-DCMAKE_CXX_FLAGS="-g -Wall -fno-rtti -fno-exceptions -w -m64 -march=native" '
+configopts += '-DCMAKE_CXX_FLAGS_RELEASE="-O2 -ffast-math -funroll-loops -ftree-vectorize -Wno-unused" '
+configopts += '-DCMAKE_C_FLAGS="-std=c99 -DRESTRICT=restrict -DFUNDERSCORE=1 -DHAVE_NO_LSEEK64 -ffloat-store -w -m64" '
+configopts += '-DCMAKE_C_FLAGS_RELEASE="-O2 -ffast-math -funroll-loops -ftree-vectorize -Wno-unused" '
+configopts += '-DCMAKE_Fortran_FLAGS="-DVAR_GFORTRAN -ffloat-store -fcray-pointer -m64 -w" '
+configopts += '-DLAPACK_TYPE=MKL -DBLAS_TYPE=MKL -D2EL_MEM_WORDS=1 '
+configopts += '-DLAPACK_LIBRARIES="-lmkl_lapack95_ilp64 -lmkl_gf_ilp64 -lmkl_sequential -lmkl_core -lpthread -lm" '
+configopts += '-DBLAS_LIBRARIES="-lmkl_gf_ilp64" '
+configopts += '-DENABLE_PELIB=ON  -DENABLE_GEN1INT=ON  -DENABLE_QFITLIB=ON -DBUILD_TESTING=ON '
+configopts += '-DALWAYS_RESET_EXTERNAL=ON  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_QCMATRIX=ON '
+configopts += '-DENABLE_DEVELOPER=ON -DENABLE_EFS=ON -DENABLE_DEC=ON -DENABLE_LARGE_TEST=ON '
+configopts += '-DENABLE_TDRSP=ON -DENABLE_XCINT=OFF -DENABLE_VPOTDAMP=ON -DDART_TESTING_TIMEOUT=3600 '
+configopts += '-DENABLE_CHEMSHELL=OFF  -DENABLE_BOUNDS_CHECK=OFF -DENABLE_CUBLAS=OFF '
+configopts += '-DENABLE_BUILTIN_BLAS=OFF -DENABLE_BUILTIN_LAPACK=OFF -DENABLE_CRAY_WRAPPERS=OFF '
+configopts += '-DENABLE_PCMSOLVER=OFF -DENABLE_XCFUN=ON -DENABLE_64BIT_INTEGERS=OFF '
+configopts += '-DENABLE_CUDA=OFF -DENABLE_DEBUGPBC=OFF -DENABLE_QMMM_CUDA=OFF '
+configopts += '-DENABLE_GPU=OFF -DENABLE_LSEEK=ON -DENABLE_OPENRSP=OFF '
+
+postinstallcmds =  ['cd %(installdir)s/dalton && mkdir -p ../bin && mv dalton dalton.x ../bin/ && mv GIT_HASH VERSION basis tools ../ && cd ../ && rm -rf dalton && chmod u+x tools/* && cp -r %(builddir)s/easybuild_obj/test %(installdir)s/']
+
+sanity_check_paths = {
+    'files': ['bin/dalton', 'bin/dalton.x', 'GIT_HASH', 'VERSION'],
+    'dirs': ['test', 'basis', 'tools'],
+}
+
+modextrapaths = {
+    'PATH': 'basis',
+    'PATH': 'tools',
+}
+
+modextravars = {
+    'BASLIB': '%(installdir)s/basis',
+}
+
+moduleclass = 'chem'
