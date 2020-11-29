@@ -248,6 +248,8 @@ class EasyConfigTest(TestCase):
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
             'Jellyfish': [(r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2'])],
+            # Libint 1.1.6 is required by older CP2K versions
+            'Libint': [(r'1\.1\.6', [r'CP2K-[3-6]'])],
             # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
             # (Qiskit depends on PySCF)
             'libxc': [(r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
