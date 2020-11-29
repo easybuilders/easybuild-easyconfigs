@@ -15,6 +15,8 @@ uses maximum-likelihood (ML) optimality criterion. Its search heuristic
 
 toolchain = {'name': 'GCC', 'version': '8.3.0'}
 
+local_extract_lib = 'tar --strip-components=1 -C %%(builddir)s/raxml-ng-%%(version)s/libs/%s -xzf %%s'
+
 sources = [
     {
         'source_urls': ['https://github.com/amkozlov/raxml-ng/archive/'],
@@ -22,18 +24,21 @@ sources = [
     },
     {
         'source_urls': ['https://github.com/amkozlov/terraphast-one/archive/'],
-        'download_filename': '%s.zip' % local_terrap_commit,
-        'filename': 'terraphist-one.zip',
+        'download_filename': '%s.tar.gz' % local_terrap_commit,
+        'filename': 'terraphast-one-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'terraphast',
     },
     {
         'source_urls': ['https://github.com/ddarriba/pll-modules/archive/'],
-        'download_filename': '%s.zip' % local_pllmod_commit,
-        'filename': 'pll-modules.zip',
+        'download_filename': '%s.tar.gz' % local_pllmod_commit,
+        'filename': 'pll-modules-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'pll-modules',
     },
     {
         'source_urls': ['https://github.com/xflouris/libpll-2/archive/'],
-        'download_filename': '%s.zip' % local_libpll_commit,
-        'filename': 'libpll-2.zip',
+        'download_filename': '%s.tar.gz' % local_libpll_commit,
+        'filename': 'libpll-2-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'pll-modules/libs/libpll',
     },
 ]
 
@@ -55,16 +60,6 @@ builddependencies = [
     ('flex', '2.6.4'),
     ('Bison', '3.3.2'),
 ]
-
-# copy dependencies into place
-preconfigopts = "cp -a %%(builddir)s/terraphast-one-%s/* " % local_terrap_commit
-preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/terraphast/ && "
-
-preconfigopts += "cp -a %%(builddir)s/pll-modules-%s/* " % local_pllmod_commit
-preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/pll-modules/ && "
-
-preconfigopts += "cp -a %%(builddir)s/libpll-2-%s/* " % local_libpll_commit
-preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/pll-modules/libs/libpll/ && "
 
 configopts = '-DUSE_MPI=OFF '
 configopts += '-DUSE_GMP=ON '
