@@ -1,7 +1,7 @@
 name: easyconfigs unit tests
 on: [push, pull_request]
 jobs:
-  build:
+  test-suite:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
@@ -22,6 +22,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Cache source files in /tmp/sources
+      id: cache-sources
+      uses: actions/cache@v2
+      with:
+        path: /tmp/sources
+        key: eb-sourcepath
+
     - name: set up Python
       uses: actions/setup-python@v1
       with:
@@ -30,14 +37,9 @@ jobs:
 
     - name: install OS & Python packages
       run: |
-        # use apt-spy2 to select closest apt mirror,
-        # which helps avoid connectivity issues in Azure;
-        # see https://github.com/actions/virtual-environments/issues/675
-        sudo gem install apt-spy2
-        sudo apt-spy2 check
-        sudo apt-spy2 fix --commit
-        # after selecting a specific mirror, we need to run 'apt-get update'
-        sudo apt-get update
+        # disable apt-get update, we don't really need it,
+        # and it does more harm than good (it's fairly expensive, and it results in flaky test runs)
+        # sudo apt-get update
         # for modules tool
         sudo apt-get install lua5.2 liblua5.2-dev lua-filesystem lua-posix tcl tcl-dev
         # fix for lua-posix packaging issue, see https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
@@ -60,7 +62,7 @@ jobs:
           cd easybuild-framework; git log -n 1; cd -
           pip install $PWD/easybuild-framework
 
-          git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-easyblocks.git
+          git clone -b $BRANCH --depth 10 --single-branch https://github.com/easybuilders/easybuild-easyblocks.git
           cd easybuild-easyblocks; git log -n 1; cd -
           pip install $PWD/easybuild-easyblocks
 
@@ -119,18 +121,67 @@ jobs:
           unset PYTHONPATH
 
           # install easyconfigs via distribution package
-          python setup.py sdist
+          python setup.py sdist > /dev/null
           ls dist
-          pip install dist/easybuild-easyconfigs*tar.gz
+          pip install dist/easybuild-easyconfigs*tar.gz > /dev/null
 
           # robot-paths value should not be empty, but have an entry that includes easybuild/easyconfigs subdir
+          echo "eb --show-config"
           eb --show-config | tee eb_show_config.out
           grep "^robot-paths .*/easybuild/easyconfigs" eb_show_config.out
+
           # check whether some specific easyconfig files are found
+          echo "eb --search 'TensorFlow-1.14.*.eb'"
           eb --search 'TensorFlow-1.14.*.eb' | tee eb_search_TF.out
           grep '/TensorFlow-1.14.0-foss-2019a-Python-3.7.2.eb$' eb_search_TF.out
-          eb --search '^foss-2018b.eb' | tee eb_search_foss.out
-          grep '/foss-2018b.eb$' eb_search_foss.out
+
+          echo "eb --search '^foss-2019b.eb'"
+          eb --search '^foss-2019b.eb' | tee eb_search_foss.out
+          grep '/foss-2019b.eb$' eb_search_foss.out
+
+          # make sure CVS easyconfigs are included in installation (cfr. issue #10325)
+          echo "Searching for CVS easyconfigs..."
+          eb --search '^CVS-' | grep '/CVS-'
 
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
-          eb --prefix /tmp/$USER/$GITHUB_SHA M4-1.4.18.eb
+          # use /tmp/sources because that has cached downloads (see cache step above)
+          eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
+
+  test-sdist:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python: [2.7, 3.6, 3.7]
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{matrix.python}}
+
+    - name: Create source distribution
+      run: python setup.py sdist
+
+    - name: Inspect files included in source distribution
+      working-directory: dist
+      run: |
+          tar xfz easybuild-easyconfigs*tar.gz
+          cd easybuild-easyconfigs-*/
+
+          # .git folder should not be there in source tarball
+          dot_git_files=$(find . -name .git)
+          if [ -n "$dot_git_files" ]; then
+            echo "Found .git folders in source tarball: $dot_git_files" && false
+          else
+            echo "No .git folders found in source tarball: OK"
+          fi
+
+          # CVS easyconfigs must be included in source tarball,
+          # see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
+          cvs_easyconfigs=$(find . -name 'CVS-*.eb')
+          if [ -z "$cvs_easyconfigs" ]; then
+            echo "CVS easyconfigs not found" && false
+          else
+            echo "Found CVS easyconfigs: $cvs_easyconfigs"
+          fi
