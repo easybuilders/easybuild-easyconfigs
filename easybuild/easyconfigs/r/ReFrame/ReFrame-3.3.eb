@@ -1,0 +1,49 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '3.3'
+
+homepage = 'https://github.com/eth-cscs/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+req_py_majver = 3
+req_py_minver = 6
+
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+
+use_pip = True
+
+exts_list = [
+    ('pip', '20.2.4', {
+        'use_pip': False,
+        'checksums': ['85c99a857ea0fb0aedf23833d9be5c40cf253fe24443f0829c7b472e23c364a1'],
+    }),
+    ('reframe', version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/eth-cscs/reframe/archive/'],
+        'checksums': ['9da150a051e9fa4ffea1361f30e8593261e7f6ebc71ec91ed32143539f871ad7'],
+    }),
+]
+
+postinstallcmds = [
+    "cd %(builddir)s/reframe/reframe-%(version)s && ./bootstrap.sh +pygelf && "
+    "cp -r external %(installdir)s && cp -r tutorials %(installdir)s",
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe'],
+    'dirs': ['lib', 'tutorials', 'external']
+}
+
+sanity_check_commands = ['reframe -V']
+
+sanity_pip_check = True
+
+# need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing extensions
+modextrapaths = {'PATH': 'bin'}
+
+moduleclass = 'devel'
