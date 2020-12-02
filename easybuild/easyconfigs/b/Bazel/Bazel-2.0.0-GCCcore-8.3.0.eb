@@ -15,6 +15,12 @@ checksums = [
     '99928d0902beeaf962a8ad14db8432f8e5114645e3caf64c7ee2fa136c31609f',  # Bazel-0.29.1_fix-gold-flag.patch
 ]
 
+# Bazel doesn't pass LD_LIBRARY_PATH etc. through, even to its own "process-wrapper".
+# So we'll statically link bazel, to avoid errors like:
+#     "process-wrapper: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found"
+# See https://github.com/bazelbuild/bazel/issues/4137
+prebuildopts = "export BAZEL_LINKOPTS=-static-libstdc++:-static-libgcc BAZEL_LINKLIBS=-l%:libstdc++.a:-lm && "
+
 builddependencies = [
     ('binutils', '2.32'),
     ('Python', '3.7.4'),
