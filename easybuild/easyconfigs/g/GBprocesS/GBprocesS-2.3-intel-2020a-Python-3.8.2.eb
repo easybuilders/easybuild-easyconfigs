@@ -39,20 +39,17 @@ pretestopts = (
 
 runtest = 'python -m unittest discover -v -s ./test -p test_*.py'
 
-# Trivial configuration file to use when running gbprocess sanity check
-# See https://gitlab.com/dschaumont/GBprocesS/-/blob/master/docs/user_guide.rst
-local_gbprocess_cfg = """[General]
-cores = 1
-input_directory = %(builddir)s/
-sequencing_type = pe
-input_file_name_template = {run:25}_R{orientation:1}_001{extension}
-temp_dir = %(builddir)s/
-"""
-
 sanity_check_commands = [
     "touch %(builddir)s/17146FL-13-01-01_S97_L002_R1_001.fastq",
     "touch %(builddir)s/17146FL-13-01-01_S97_L002_R2_001.fastq",
-    "cat > %(builddir)s/config.ini <<EOS\n" + local_gbprocess_cfg + "\nEOS",
+    # Trivial configuration file to use when running gbprocess sanity check
+    # See https://gitlab.com/dschaumont/GBprocesS/-/blob/master/docs/user_guide.rst
+    "echo '[General]' > %(builddir)s/config.ini",
+    "echo 'cores = 1' >>  %(builddir)s/config.ini",
+    "echo 'input_directory = %(builddir)s/' >>  %(builddir)s/config.ini",
+    "echo 'sequencing_type = pe' >>  %(builddir)s/config.ini",
+    "echo 'input_file_name_template = {run:25}_R{orientation:1}_001{extension}' >>  %(builddir)s/config.ini",
+    "echo 'temp_dir = %(builddir)s/' >>  %(builddir)s/config.ini",
     "gbprocess --debug -c %(builddir)s/config.ini",
 ]
 
