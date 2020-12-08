@@ -22,26 +22,28 @@ dependencies = [
 # For the extensions
 builddependencies = [
     ('SciPy-Stack', '2020b'),
+    ('pytest', '6.1.2'),
 ]
 
 multi_deps = {'Python': ['3.6', '3.7', '3.8']}
 multi_deps_extensions_only = True
 
 exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
 exts_list = [
+    ('cached-property', '1.5.2', {
+        'checksums': ['9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130'],
+	'use_pip': True,
+    }),
     ('h5py', '3.1.0', {
-        'modulename': '%(name)s',
         'checksums': ['1e2516f190652beedcb8c7acfa1c6fa92d99b42331cbef5e5c7ec2d65b0fc3c2'],
-        'source_urls': [PYPI_SOURCE],
         'preconfigopts': '#',
         'prebuildopts': ' sed -i -e "/cmdclass = CMDCLASS,/a zip_safe = False," setup.py && HDF5_MPI="ON" ',
         'buildopts': '#', # Avoid appending env vars to `python setup.py build`
-        'runtest': 'pip3 install --prefix=%(installdir)s cached_property pytest-mpi pytest && python setup.py test',
+        'runtest': 'python setup.py test',
     }),
     ('tables', '3.6.1', {
-        'modulename': '%(name)s',
         'checksums': ['49a972b8a7c27a8a173aeb05f67acb45fe608b64cd8e9fa667c0962a60b71b49'],
-        'source_urls': [PYPI_SOURCE],
         'prebuildopts': ' unset LIBS && ',
         'buildopts': '#', # Avoid appending env vars to `python setup.py build`
         'runtest': 'python setup.py test',
