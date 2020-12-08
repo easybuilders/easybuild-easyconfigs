@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+
+easyblock = 'MakeCp'
+
+name = 'freebayes'
+version = '1.3.2'
+
+homepage = 'https://github.com/ekg/%(name)s'
+description = "Bayesian haplotype-based polymorphism discovery and genotyping."
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+# To download freebayes, use git with the --recursive option.
+# This is required in order to download all nested git submodules for external repositories.
+# Afterwards pack everything into a tarball:
+#   git clone --recursive -b v1.3.2 git://github.com/ekg/freebayes.git
+#   tar czf freebayes-1.3.2.tar.gz freebayes
+# no checksum for freebayes-1.3.2.tar.gz since it's created from git repo
+sources = ['%(name)s-%(version)s.tar.gz']
+
+builddependencies = [('CMake', '3.11.4')]
+
+dependencies = [('zlib', '1.2.11')]
+
+parallel = 1
+
+runtest = 'test'
+
+files_to_copy = ["*"]
+
+sanity_check_paths = {
+        'files': ['bin/%(name)s', 'bin/bamleftalign'],
+        'dirs': ['scripts', 'vcflib/bin', 'vcflib/tabixpp/htslib']
+}
+
+# add scripts dir and vcflib binaries to PATH
+modextrapaths = { 
+    'PATH': ['scripts', 'vcflib/bin'],
+    'LD_LIBRARY_PATH': 'vcflib/tabixpp/htslib',
+}
+
+moduleclass = 'bio'
