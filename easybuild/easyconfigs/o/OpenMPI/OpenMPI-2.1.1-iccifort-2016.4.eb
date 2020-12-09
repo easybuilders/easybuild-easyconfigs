@@ -11,11 +11,18 @@ toolchain = {'name': 'iccifort', 'version': '2016.4'}
 source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 sources = [SOURCELOWER_TAR_GZ]
 
-patches = ['ddt_fix.patch']
+patches = ['OpenMPI-2.1_fix-ib-query.patch', 'ddt_fix.patch']
+
+checksums = [
+    'afe4bef3c4378bc76eea96c623d5aa4c1c98b9e057d281c646e68869292a77dc',  # openmpi-2.1.1.tar.gz
+    '662d7ef1d0cd0890d2dc4ecb5243012be29bf6b4003da0f006e7cd2125d40e4c',  # OpenMPI-2.1_fix-ib-query.patch
+    '35541cb0ccd7c8471c8a1845fddf2e1b4335071c8e4117411fc0218d6ded12c6',  # ddt_fix.patch
+]
 
 preconfigopts = 'sed -i "s!check_pmi_install_dir=/usr!check_pmi_install_dir=$NIXUSER_PROFILE!g" configure && '
 preconfigopts += 'sed -i \'s!-L$ompi_check_ucx_libdir!!g\' configure && '
 preconfigopts += 'LDFLAGS="$LDFLAGS -L$EBROOTGCCCORE/lib -L$NIXUSER_PROFILE/lib" ' # for libtool to find .la files
+preconfigopts += 'CFLAGS="$CFLAGS $(pkg-config --cflags libevent)" ' # find event.h from libevent, not libev
 configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
 configopts += '--with-hwloc=external '  # hwloc support
@@ -26,12 +33,15 @@ configopts += '--with-munge ' #enable Munge in PMIx
 #configopts += '--enable-pmix-backward-compatibility --disable-pmix-dstore '
 configopts += '--with-pmi '
 configopts += '--enable-mpi-cxx '
+configopts += '--with-pmix=/cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/pmix/1.2.5 '
+configopts += '--with-libevent=external '
 
 # enumerate all mca's that should be compiled as plugins (only those that link to system-specific
 # libraries (lustre, fabric, and scheduler)
 configopts += '--enable-mca-dso=common-libfabric,common-verbs,atomic-mxm,btl-openib,btl-scif,'
 configopts += 'coll-fca,coll-hcoll,ess-pmi,ess-tm,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,'
-configopts += 'oob-ud,plm-tm,pmix-pmix112,pml-ucx,pml-yalla,ras-tm,scoll-mca,sec-munge,spml-ikrit, '
+configopts += 'oob-ud,plm-tm,pmix-pmix112,pml-ucx,pml-yalla,ras-tm,scoll-mca,sec-munge,spml-ikrit,'
+configopts += 'pmix-s1,pmix-s2,pmix-external '
 
 prebuildopts = 'for i in $(find . -name Makefile); do sed -i "s!-L$NIXUSER_PROFILE/lib!!" $i; done && '
 prebuildopts += 'for i in ompi/tools/wrappers/mpi*-wrapper-data.txt; do sed -i "s!-L$NIXUSER_PROFILE/lib!!" $i; done && '
