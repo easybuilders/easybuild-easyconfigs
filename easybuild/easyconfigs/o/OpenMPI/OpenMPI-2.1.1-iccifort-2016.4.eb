@@ -22,7 +22,6 @@ checksums = [
 preconfigopts = 'sed -i "s!check_pmi_install_dir=/usr!check_pmi_install_dir=$NIXUSER_PROFILE!g" configure && '
 preconfigopts += 'sed -i \'s!-L$ompi_check_ucx_libdir!!g\' configure && '
 preconfigopts += 'LDFLAGS="$LDFLAGS -L$EBROOTGCCCORE/lib -L$NIXUSER_PROFILE/lib" ' # for libtool to find .la files
-preconfigopts += 'CFLAGS="$CFLAGS $(pkg-config --cflags libevent)" ' # find event.h from libevent, not libev
 configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
 configopts += '--with-hwloc=external '  # hwloc support
@@ -33,15 +32,13 @@ configopts += '--with-munge ' #enable Munge in PMIx
 #configopts += '--enable-pmix-backward-compatibility --disable-pmix-dstore '
 configopts += '--with-pmi '
 configopts += '--enable-mpi-cxx '
-configopts += '--with-pmix=/cvmfs/soft.computecanada.ca/easybuild/software/2017/Core/pmix/1.2.5 '
-configopts += '--with-libevent=external '
 
 # enumerate all mca's that should be compiled as plugins (only those that link to system-specific
 # libraries (lustre, fabric, and scheduler)
 configopts += '--enable-mca-dso=common-libfabric,common-verbs,atomic-mxm,btl-openib,btl-scif,'
 configopts += 'coll-fca,coll-hcoll,ess-pmi,ess-tm,fs-lustre,mtl-mxm,mtl-ofi,mtl-psm,mtl-psm2,'
 configopts += 'oob-ud,plm-tm,pmix-pmix112,pml-ucx,pml-yalla,ras-tm,scoll-mca,sec-munge,spml-ikrit,'
-configopts += 'pmix-s1,pmix-s2,pmix-external '
+configopts += 'pmix-s1,pmix-s2 '
 
 prebuildopts = 'for i in $(find . -name Makefile); do sed -i "s!-L$NIXUSER_PROFILE/lib!!" $i; done && '
 prebuildopts += 'for i in ompi/tools/wrappers/mpi*-wrapper-data.txt; do sed -i "s!-L$NIXUSER_PROFILE/lib!!" $i; done && '
