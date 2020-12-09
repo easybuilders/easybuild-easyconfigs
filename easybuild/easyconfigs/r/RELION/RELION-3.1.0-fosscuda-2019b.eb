@@ -1,12 +1,12 @@
-easyblock = 'CMakeMake'
-
 name = 'RELION'
 version = '3.1.0'
 
 homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
-description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer
- program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class
- averages in electron cryo-microscopy (cryo-EM)."""
+description = """
+RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a
+stand-alone computer program that employs an empirical Bayesian approach to
+refinement of (multiple) 3D reconstructions or 2D class averages in electron
+cryo-microscopy (cryo-EM)."""
 
 toolchain = {'name': 'fosscuda', 'version': '2019b'}
 toolchainopts = {'openmp': True, 'usempi': True, 'opt': True}
@@ -16,17 +16,10 @@ source_urls = [GITHUB_SOURCE]
 sources = ['%(version)s.tar.gz']
 patches = ['RELION-3.0.4_drop_usage_of_mpi_include_path.patch']
 
-# Additional job script templates
-# Provided templates are generic examples that should be adapted to each site
-local_jobtmpl = ['qsub_torque.bash', 'sbatch_slurm.bash']
-patches += [(s, '.') for s in local_jobtmpl]
-
 checksums = [
     'fa5ebef27a15f1df856a64dc8960e7c381ff646818f778fe746249d0b7682ba2',  # 3.1.0.tar.gz
     # RELION-3.0.4_drop_usage_of_mpi_include_path.patch
     'c135b72ff8d4c3015a3b293fa07a2283396bfb3fd0658d5e938ec33fca4dcebc',
-    '21109648441e477cb08d22108d4d4e0cb76bc02c1e49104b8939156aaae77b3c',  # qsub_torque.bash
-    '4e8962199f70e4f7759ce14422b8f5e7fd0e32a170f05f4e893df773e62e2c0e',  # sbatch_slurm.bash
 ]
 
 builddependencies = [('CMake', '3.15.3')]
@@ -50,72 +43,33 @@ local_pipejob_src = '%(builddir)s/%(namelower)s-%(version)s/src/pipeline_jobs.cp
 preconfigopts = "sed -i 's/`which \([a-z_]*\)`/\\1/g;s/`//g' %s &&" % local_pipejob_src
 
 # Lowest supported CUDA capability is 3.5
-local_cuda_compute_capabilities = ['3.5', '3.7', '5.0', '5.2', '5.3', '6.0', '6.1', '6.2', '7.0']
-local_caps = [''.join(x.split('.')) for x in local_cuda_compute_capabilities]
-local_cuda_gencodes = ';'.join(['-gencode arch=compute_%s,code=sm_%s' % (x, x) for x in local_caps])
-local_cuda_arch = "%s %s" % (local_caps[0], local_cuda_gencodes)
+cuda_compute_capabilities = ['3.5', '3.7', '5.0', '5.2', '5.3', '6.0', '6.1', '6.2', '7.0']
 
-configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-lpthread' "
-configopts += "-DCUDA=ON -DCudaTexture=ON "
-configopts += "-DCUDA_ARCH='" + local_cuda_arch + "'"
+#
+# Site-specific configuration of RELION
+#
+# RELION includes a job manager that integrates with the job scheduler of the cluster
+queue_cmd = 'qsub'    # options: qsub, sbatch
+queue_name = 'batch'  # name of the default queue used by RELION (user can change it at runtime)
 
-# Install additional job script templates
-local_jobtmpl_path = ['%%(builddir)s/%%(namelower)s-%%(version)s/%s' % s for s in local_jobtmpl]
-postinstallcmds = ['cp %s %%(installdir)s/bin/' % s for s in local_jobtmpl_path]
+# Default and maximum parameters related to job resources
+# These parameters can be edited by the user in RELION's GUI
+# qsub_mpi = 4            # default MPI processes
+# qsub_mpi_max = 20       # maximum MPI processes
+# qsub_mpi_interact = 20  # maximum MPI processes allowed in RELION's interactive session
+# qsub_threads = 4        # default number of threads
+# qsub_threads_max = 20   # maximum number of threads
+# qsub_ppn = 1            # default number of cores per node
+# qsub_ppn_edit = False   # allow user to change the minimum dedicated cores per node
+# tmp = '/tmp'            # path to temporary directory
 
-sanity_check_paths = {
-    'files': ['bin/relion'] + ['bin/%s' % s for s in local_jobtmpl],
-    'dirs': []
-}
-
-sanity_check_commands = ["relion --version"]
-
-modextravars = {
-    # Common settings
-    'RELION_CTFFIND_EXECUTABLE': 'ctffind',
-    'RELION_GCTF_EXECUTABLE': 'Gctf',
-    'RELION_MOTIONCOR2_EXECUTABLE': 'motioncor2',
-    'RELION_SHELL': 'csh',              # Shell used to launch CTFFIND/GCTF in CtfFind jobs
-
-    # Site specific settings
-    # 'RELION_QSUB_NRMPI': '4',           # Default for 'Number of MPI procs'
-    # 'RELION_MPI_MAX': '20',             # Maximum number of MPI processes available from the GUI
-    # 'RELION_ERROR_LOCAL_MPI': '1',      # Maximum number of MPI tasks allowed in an interactive session
-    # 'RELION_QSUB_NRTHREADS': '4',       # Default for 'Number of threads'
-    # 'RELION_THREAD_MAX': '20',          # Maximum number of threads per MPI process available from the GUI
-    # 'RELION_MINIMUM_DEDICATED': '1',    # Default for 'Minimum dedicated cores per node'
-    # 'RELION_ALLOW_CHANGE_MINIMUM_DEDICATED': '0',  # Allow user to change the 'Minimum dedicated cores per node'
-    # 'RELION_SCRATCH_DIR': '/tmp',       # Default scratch directory in the GUI
-
-    # CHOOSE ONE OF THE FOLLOWING SECTIONS AND ADAPT IT TO YOUR SITE
-    # Default scheduler integration
-    'RELION_QUEUE_NAME': 'batch',       # Default for 'Queue Name"
-    'RELION_QSUB_COMMAND': 'qsub',      # Default for 'Queue submit command'
-    'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/qsub.csh',  # Job script template
-
-    # Integration with TORQUE
-    # 'RELION_QUEUE_NAME': 'batch',       # Default for 'Queue Name"
-    # 'RELION_QSUB_COMMAND': 'qsub',      # Default for 'Queue submit command'
-    # 'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/qsub_torque.bash',  # Job script template
-    # 'RELION_QSUB_EXTRA_COUNT': '2',     # Number of extra variables for the job script template
-    # 'RELION_QSUB_EXTRA1': "Hours of walltime",
-    # 'RELION_QSUB_EXTRA1_DEFAULT': '24',
-    # 'RELION_QSUB_EXTRA2': "Number of GPUs",
-    # 'RELION_QSUB_EXTRA2_DEFAULT': '1',
-
-    # Integration with SLURM
-    # 'RELION_QUEUE_NAME': 'batch',       # Default for 'Queue Name"
-    # 'RELION_QSUB_COMMAND': 'sbatch',    # Default for 'Queue submit command'
-    # 'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/sbatch_slurm.bash',  # Job script template
-    # 'RELION_QSUB_EXTRA_COUNT': '4',     # Number of extra variables for the job script template
-    # 'RELION_QSUB_EXTRA1': "Hours of walltime",
-    # 'RELION_QSUB_EXTRA1_DEFAULT': '24',
-    # 'RELION_QSUB_EXTRA2': "Job Account",
-    # 'RELION_QSUB_EXTRA2_DEFAULT': 'your_account',
-    # 'RELION_QSUB_EXTRA3': "Extra batch parameters",
-    # 'RELION_QSUB_EXTRA3_DEFAULT': '',
-    # 'RELION_QSUB_EXTRA4': "Number of GPUs",
-    # 'RELION_QSUB_EXTRA4_DEFAULT': '1',
-}
+# Extra parameters: additional parameters for the scheduler can be added at will
+# These parameters can be edited by the user in RELION's GUI
+# Note: the easyblock of RELION will automatically the following parameters: walltime, number of GPUs
+# List of tuples including: 1) Descriptive name of the parameter, 2) value of the parameter
+qsub_extra_params = [
+    ('Account', 'default_user_account'),
+    ('Extra Parameters', ''),
+]
 
 moduleclass = 'bio'
