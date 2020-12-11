@@ -1,0 +1,91 @@
+fix various hardcoded things + other problems
+
+author: Daniel Placencia Alvarez, with cleanup by Kenneth Hoste (HPC-UGent)
+
+--- Configure/arch/make.inc_afteramble.orig	2011-11-21 23:54:01.000000000 -0500
++++ Configure/arch/make.inc_afteramble	2018-06-04 14:14:39.575980219 -0400
+@@ -9,7 +9,7 @@
+ #--------------------------------------------------------------------------
+ #  CAT Preprocessing Flags
+ #--------------------------------------------------------------------------
+-           CPPARGS =  $(CPPFLAGS) $(DEF_FLAGS) $(FLAG_1) $(FLAG_2) \
++           CPPARGS =  $(CPPFLAGS) $(FLAG_1) $(FLAG_2) \
+    $(FLAG_3) $(FLAG_4) $(FLAG_5) $(FLAG_6)  \
+    $(FLAG_7) $(FLAG_8) $(FLAG_9) $(FLAG_10) \
+    $(FLAG_11) $(FLAG_12) $(FLAG_13) $(FLAG_14) \
+--- Configure/arch/Linux_x86_64_cc_gfortran.orig	2011-10-26 05:31:10.000000000 -0400
++++ Configure/arch/Linux_x86_64_cc_gfortran	2018-06-01 16:02:38.453867000 -0400
+@@ -2,8 +2,9 @@
+ #  gfortran defs
+ #--------------------------------------------------------------------------
+          CPP      = /usr/bin/cpp
+-         COMPILER = -DGFORTRAN
+-         FC       = gfortran  -O3
++         COMPILER = -DGFORTRAN -Df2cFortran
++         FC       = gfortran
++         CC       = gcc
+          DEBFLGS  =
+          OPT      =
+          CLIB     =
+
+--- FVCOM_source/makefile.orig	2014-11-05 14:58:32.000000000 -0500
++++ FVCOM_source/makefile	2018-06-15 13:49:15.757757968 -0400
+@@ -40,7 +40,7 @@
+ 
+ .F.o:
+ 	$(CPP) $(CPPARGS) $(PETSC_FC_INCLUDES) $*.F > $*.f90
+-	$(FC)  -c $(FFLAGS) $(INCS) $*.f90
++	$(FC)  -c $(FFLAGS) $(INCS) $(MPIINCS) $*.f90
+ 	\rm $*.f90
+ 
+ .F90.o:
+--- FVCOM_source/libs/makefile.orig	2010-01-03 14:36:07.000000000 -0500
++++ FVCOM_source/libs/makefile	2018-06-02 22:57:58.589940000 -0400
+@@ -11,14 +11,15 @@
+ 
+ all:
+ 	for item in $(PACKAGES); do (./untar.sh $$item ) || exit 1; done
+-	cd proj && ./configure CC=$(CC) CFLAGS=-O3 CXX=$(CC) CXXFLAGS=-O3 F77=$(FC) FFLAGS=-O3 --prefix=$(MYINSTALLDIR)
++	cd proj && ./configure CC=$(CC) CFLAGS=-O3 CXX=$(CC) CXXFLAGS=-O3 F77=$(FC) FFLAGS=-O3 --prefix=$(MYINSTALLDIR) CPPFLAGS="" LIBS= ""
+ 	cd proj && make install
+-	cd fproj && ./configure CPPFLAGS='$(COMPILER)' CC=$(CC) CFLAGS=-O3 CXX=$(CXX) CXXFLAGS=-O3 FC=$(FC) FFLAGS=-O3 --with-proj4=$(MYINSTALLDIR) --prefix=$(MYINSTALLDIR)
+-	cd fproj && make install
+-	cd netcdf && ./configure CC=$(CC) CFLAGS=-O3 CXX=$(CC) CXXFLAGS=-O3 F77=$(FC) F90=$(FC) FFLAGS=-O3 --prefix=$(MYINSTALLDIR) --build=$(MACHTYPE)
+-	cd netcdf && make install
+-	cd metis && make install
+ 	cd julian && make install
++	cd fproj && ./configure CPPFLAGS='$(COMPILER)' CC=$(CC) CFLAGS=-O3 CXX=$(CXX) CXXFLAGS=-O3 FC=$(FC) FFLAGS=-O3 --with-proj4=$(MYINSTALLDIR) --prefix=$(MYINSTALLDIR)
++	cd fproj && make install CPPFLAGS='$(CPPFLAGS) -Df2cFortran' INCLUDES=-I$(MYINSTALLDIR)/include
++	#cd netcdf && ./configure CC=$(CC) CFLAGS=-O3 CXX=$(CC) CXXFLAGS=-O3 F77=$(FC) F90=$(FC) FFLAGS=-O3 --prefix=$(MYINSTALLDIR) --build=$(MACHTYPE)
++	#cd netcdf && make install
++	#cd metis && make install
++
+ --- Configure/arch/make.inc_preamble.orig	2011-11-21 23:53:45.000000000 -0500
++++ Configure/arch/make.inc_preamble	2018-06-04 14:11:22.327983752 -0400
+@@ -58,7 +58,7 @@
+             INSTALLDIR    = $(TOPDIR)/libs/install
+ #===========================================================================
+ # PREPROCESSOR OPTIONS FOR CPP
+-            DEF_FLAGS     = -P -C -traditional 
++            DEF_FLAGS     = -P -traditional 
+ #===========================================================================
+ #
+ ####################### MEDM ENVIRONMENT #####################################
+@@ -93,7 +93,7 @@
+ #                           SET PATH TO LIBRARIES WITH IOLIBS      
+ #                           SET PATH TO INCLUDE FILES (netcdf.mod) WITH IOINCS
+ #--------------------------------------------------------------------------
+-             IOLIBS       =  -lnetcdf  #-L/hosts/mao/usr/medm/install/netcdf/3.6.3/em64t/lib -lnetcdf
++             IOLIBS       =  -L$(EBROOTNETCDF)/lib64 -lnetcdff  #-L/hosts/mao/usr/medm/install/netcdf/3.6.3/em64t/lib -lnetcdf
+              IOINCS       =  #-I/hosts/mao/usr/medm/install/netcdf/3.6.3/em64t/include
+ #             IOLIBS       =  -L/usr/local/install/netcdf/gcc_ifort/3.6.2/lib  -lnetcdf
+ #             IOINCS       =  -I/usr/local/install/netcdf/gcc_ifort/3.6.2/include
+@@ -147,7 +147,7 @@
+ #                           UNCOMMENT TO INCLUDE MPI PARALLEL CAPABILITY
+ #--------------------------------------------------------------------------
+ 
+-             FLAG_4 = -DMULTIPROCESSOR
++#             FLAG_4 = -DMULTIPROCESSOR
+              PARLIB = -lmetis  #-L/usr/local/lib -lmetis
+ 
+ #--------------------------------------------------------------------------
