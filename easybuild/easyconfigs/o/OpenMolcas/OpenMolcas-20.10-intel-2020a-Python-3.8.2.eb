@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMolcas'
+version = '20.10'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://gitlab.com/Molcas/OpenMolcas"
+description = "OpenMolcas is a quantum chemistry software package"
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://gitlab.com/Molcas/OpenMolcas/-/archive/v%(version)s/']
+sources = ["OpenMolcas-v%(version)s.tar.gz"]
+# This patch avoids a forced extra copy of 'pymolcas' script
+# in a local folder of the user doing the build
+# The 'make install' process will already install it in
+# %(installdir)s/sbin/
+patches = ["OpenMolcas-pymolcas_only_in_ebprefix.patch"]
+checksums = [
+    # OpenMolcas-20.10.tar.gz
+    '73f73beaebbcff5d02b5bb0748d07c5b8e81784fae6122729c7e7aeed730fe42',
+    # OpenMolcas-pymolcas_only_in_ebprefix.patch
+    '56165ab4a752ef7cdbe3340c8c922fca04510e8ee2e4024ea654e6bcd83198f8'
+]
+
+dependencies = [
+    ('GlobalArrays', '5.8'),
+    ('HDF5', '1.10.6'),
+    ('Python', '3.8.2'),
+]
+
+builddependencies = [('CMake', '3.16.4')]
+
+separate_build_dir = True
+
+preconfigopts = 'GAROOT=$EBROOTGLOBALARRAYS'
+configopts = '-DLINALG=MKL -DMKLROOT=$EBROOTIMKL/mkl '
+configopts += '-DMPI=ON -DOPENMP=ON -DGA=ON '
+configopts += '-DBUILD_SHARED_LIBS=ON -DTOOLS=ON -DFDE=ON'
+
+modextravars = {
+    'MOLCAS': '%(installdir)s',
+    'MOLCAS_DRIVER': '%(installdir)s/sbin/pymolcas',
+    'MOLCAS_SOURCE': '%(installdir)s',
+}
+
+sanity_check_paths = {
+    'files': ['bin/dynamix.exe', 'bin/mpprop.exe', 'lib/libmolcas.%s' % SHLIB_EXT,
+              'sbin/help_basis', 'sbin/pymolcas'],
+    'dirs': ['data/', 'basis_library/'],
+}
+
+moduleclass = 'chem'

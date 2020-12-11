@@ -1,0 +1,112 @@
+easyblock = 'Bundle'
+
+name = 'mauveAligner'
+version = '4736'
+
+homepage = 'https://darlinglab.org/mauve/mauve.html'
+description = """
+Mauve is a system for constructing multiple genome alignments in the presence
+of large-scale evolutionary events such as rearrangement and inversion.
+Multiple genome alignments provide a basis for research into comparative
+genomics and the study of genome-wide evolutionary dynamics.
+This version was built without Graphical User Interface.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+# you can download the sources in the following way:
+# --- START SCRIPT ---
+# ver=4736
+# for i in libGenome libMems mauveAligner muscle sgEvolver
+# do
+#   svn co -r $ver https://svn.code.sf.net/p/mauve/code/$i/trunk $i
+#   tar jcf ${i}-${ver}.tar.bz2 $i
+# done
+# --- END SCRIPT ---
+# We cannot provide checksums, because there is no way to use the original svn directory timestamp
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('Autotools', '20180311'),
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.11'),
+    ('Perl', '5.30.2'),
+    ('Boost', '1.72.0'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'sources': [SOURCE_TAR_BZ2],
+    'start_dir': '%(name)s',
+}
+
+components = [
+    ('libGenome', version, {
+        'patches': ['libGenome-4736_gcc-6.1.patch'],
+        'checksums': [
+            None,  # libGenome-4736.tar.bz2
+            'e628dcd7264b15805194f1df5d0c47f571477c0ea09183750e07984f4ce35cf8',  # libGenome-4736_gcc-6.1.patch
+        ],
+    }),
+    ('muscle', version, {
+        'patches': ['muscle-4736_makefile_deps.patch'],
+        'checksums': [
+            None,  # muscle-4736.tar.bz2
+            '5937e43d5f1d7ce5ed4f4904673a62f072db8211897ca2d58cdef6f9261c6146',  # muscle-4736_makefile_deps.patch
+        ],
+    }),
+    ('libMems', version, {
+        'patches': ['libMems-4736_debian.patch'],
+        'checksums': [
+            None,  # libMems-4736.tar.bz2
+            '92865fb29560985226a51cc4f61a30083580ca456d35b74d2e67d595c6242ad1',  # libMems-4736_debian.patch
+        ],
+    }),
+    ('mauveAligner', version, {
+        'patches': ['mauveAligner-4736_debian.patch'],
+        'checksums': [
+            None,  # mauveAligner-4736.tar.bz2
+            '2786bd29bedb224f232e7909972b549fe95f520ddac2cbb076e2082647dc68ae',  # mauveAligner-4736_debian.patch
+        ],
+    }),
+    ('sgEvolver', version, {
+        'patches': ['sgEvolver-4736_dropversion.patch'],
+        'checksums': [
+            None,  # sgEvolver-4736.tar.bz2
+            'efc3397039dd525669f6c525b20d75ad64c51cd25912192e695067de4cfbeadc',  # sgEvolver-4736_dropversion.patch
+        ],
+    }),
+]
+
+preconfigopts = './autogen.sh && env PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig '
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/lib/perl5/site_perl',
+    'cp %(builddir)s/sgEvolver/src/simujobparams.pm %(installdir)s/lib/perl5/site_perl/.',
+]
+
+local_bin = ['addUnalignedIntervals', 'alignmentProjector', 'backbone_global_to_local', 'bbAnalyze', 'bbFilter',
+             'coordinateTranslate', 'createBackboneMFA', 'extractBCITrees', 'getAlignmentWindows', 'getOrthologList',
+             'maf2xmfa', 'makeBadgerMatrix', 'mauveAligner', 'mauveStatic', 'mauveToXMFA', 'mfa2xmfa',
+             'mfaToMultiFiles', 'muscle', 'progressiveMauve', 'progressiveMauveStatic', 'projectAndStrip',
+             'randomGeneSample', 'repeatoire', 'scoreAlignment', 'scoreAlignment2', 'scoregen.pl', 'sgEvolver',
+             'simujobgen.pl', 'simujobrun.pl', 'stripGapColumns', 'stripSubsetLCBs', 'toGrimmFormat', 'toMultiFastA',
+             'toRawSequence', 'uniqueMerCount', 'uniquifyTrees', 'xmfa2maf']
+
+local_lib = ['Genome-1.3', 'Mems', 'MUSCLE-3.7']
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (x, y) for x in local_lib for y in ['a', 'la', SHLIB_EXT]] +
+             ['bin/%s' % x for x in local_bin] +
+             ['lib/perl5/site_perl/simujobparams.pm'],
+    'dirs': ['include/lib%s' % x for x in local_lib] +
+            ['share', 'lib/pkgconfig'],
+}
+
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl'}
+
+moduleclass = 'bio'
