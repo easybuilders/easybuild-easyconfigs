@@ -1,0 +1,37 @@
+# This easyconfig files builds charmm, the free version of CHARMM
+# charmm provides all the functionality of CHARMM except its performance enhancements
+# See https://www.charmm.org for naming convention
+
+easyblock = 'EB_CHARMM'
+
+name = 'charmm'
+version = '43b2'
+
+homepage = "http://www.charmm.org"
+description = """CHARMM (Chemistry at HARvard Macromolecular Mechanics) is a versatile
+and widely used molecular simulation program with broad application to many-particle systems.
+charmm provides all the functionality of CHARMM except its performance enhancements."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'usempi': True, 'opt': True}
+
+# Request the download link from http://charmm.chemistry.harvard.edu/request_license.php?version=charmm
+# and rename the file with the latest version reported in the ChangeLogs directory
+sources = ["charmm-c%(version)s.tar.gz"]
+patches = ["charmm-43b2_Use_xhost.patch"]
+checksums = [
+    'de0d5e2fa8508c73292355918b2bc43eef44c5b6bcae050848862400b64e51f8',  # charmm-c43b2.tar.gz
+    '3b1f1ac371578d9bd814bf4ac223b839ac293ae3aa6156611beba26b2dc25163',  # charmm-43b2_Use_xhost.patch
+]
+
+# Ensure that mpiifort is used instead of mpif90
+prebuildopts = 'MPIIFORT=YES'
+
+# MKL activated automatically when the intel toolchain is used
+# DOMDEC is not supported by (free) charmm
+build_options = "FULL COLFFT PIPF -CMPI"
+
+# Choose from: huge, xxlarge, xlarge, large, medium (the default), small, xsmall, reduce
+system_size = "medium"
+
+moduleclass = 'chem'

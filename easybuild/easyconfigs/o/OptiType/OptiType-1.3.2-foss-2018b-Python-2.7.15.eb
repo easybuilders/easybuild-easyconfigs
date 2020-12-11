@@ -1,0 +1,49 @@
+easyblock = 'Tarball'
+
+name = 'OptiType'
+version = '1.3.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/FRED-2/OptiType'
+description = """ OptiType is a novel HLA genotyping algorithm based on integer linear programming,
+ capable of producing accurate 4-digit HLA genotyping predictions from NGS data
+ by simultaneously selecting all major and minor HLA Class I alleles. """
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/FRED-2/OptiType/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['7cc74b3a163afcd9f734c56b6753781d7ffe56b8f92874b788088147cf62cd6a']
+
+dependencies = [
+    ('future', '0.16.0', versionsuffix),
+    ('GLPK', '4.65'),
+    ('HDF5', '1.10.2'),
+    ('matplotlib', '2.2.3', versionsuffix),
+    ('Python', '2.7.15'),
+    ('Pyomo', '5.5.0', versionsuffix),
+    ('Pysam', '0.15.1', versionsuffix),
+    ('PyTables', '3.4.4', versionsuffix),
+    ('SAMtools', '1.9'),
+    ('SeqAn', '2.4.0'),
+]
+
+postinstallcmds = [
+    'cp %(installdir)s/config.ini{.example,}',
+    'sed -i -e "s|/path/to/razers3|$EBROOTSEQAN/bin/razers3|" %(installdir)s/config.ini',
+    'sed -i -e "1i #!/usr/bin/env python" %(installdir)s/OptiTypePipeline.py',
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ['config.ini', 'hlatyper.py', 'model.py', 'OptiTypePipeline.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = [(
+    'OptiTypePipeline.py -i %(installdir)s/test/exome/NA11995_SRR766010_1_fished.fastq '
+    '%(installdir)s/test/exome/NA11995_SRR766010_2_fished.fastq --dna -v -o %(builddir)s/'
+)]
+
+moduleclass = 'bio'

@@ -1,0 +1,71 @@
+easyblock = 'CMakeMake'
+
+name = 'Yade'
+version = '2018.02b'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://yade-dem.org/doc/'
+description = """ Yade is an extensible open-source framework for discrete numerical models, 
+ focused on Discrete Element Method. The computation parts are written in c++ using flexible object model, 
+ allowing independent implementation of new alogrithms and interfaces. 
+ Python is used for rapid and concise scene construction, simulation control, postprocessing and debugging. """
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://launchpad.net/yade/trunk/yade-1.00.0/+download/']
+sources = ['%(namelower)s_%(version)s.tar.gz']
+patches = ['Yade-%(version)s_fix-VTK7.patch']
+checksums = [
+    'd1b2ed3751cd4661af1ad4058196adb16eb227845d874e1c221074a699876634',  # yade_2018.02b.tar.gz
+    'ada1b422001a46905c23fc37d9a550a38ad12597b34cb432c04f3b3636b63677',  # Yade-2018.02b_fix-VTK7.patch
+]
+
+dependencies = [
+    ('CGAL', '4.11.1', versionsuffix),
+    ('Boost.Python', '1.66.0', versionsuffix),
+    ('GDB', '8.1.1', versionsuffix),
+    ('GL2PS', '1.4.0'),
+    ('GTS', '0.7.6'),
+    ('IPython', '5.7.0', versionsuffix),
+    ('libQGLViewer', '2.7.1'),
+    ('Loki', '0.1.7'),
+    ('matplotlib', '2.1.2', versionsuffix),
+    ('minieigen', '0.5.4', versionsuffix),
+    ('PyGTS', '0.3.1', versionsuffix),
+    ('Python', '2.7.14'),
+    ('Qt5', '5.10.1'),
+    ('SQLite', '3.21.0'),
+    ('VTK', '8.1.0', versionsuffix),
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.6'),
+    ('SuiteSparse', '5.1.2', '-METIS-5.1.0'),
+]
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('Eigen', '3.3.4', '', True),
+]
+
+separate_build_dir = True
+
+configopts = '-DENABLE_GUI=OFF '
+configopts += '-DCGAL_INCLUDE_DIR=$EBROOTCGAL/include '
+configopts += '-DBoost_LIBRARY_DIR="$EBROOTBOOST/lib;$EBROOTBOOSTPYTHON/lib" '
+configopts += '-DGMP_INCLUDE_DIR=$EBROOTGMP/include -DGMP_LIBRARIES=$EBROOTGMP/lib -DGMPXX_LIBRARIES=$EBROOTGMP/lib '
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': ['lib64/lib64/yade-%(version)s', 'lib/x86_64-linux-gnu/yade-%(version)s'],
+    'LIBRARY_PATH': ['lib64/lib64/yade-%(version)s', 'lib/x86_64-linux-gnu/yade-%(version)s'],
+    'PYTHONPATH': ['lib/x86_64-linux-gnu/yade-%(version)s/py', 'lib64/yade-%(version)s/py'],
+}
+
+sanity_check_paths = {
+    'files': ['bin/yade-%(version)s', 'bin/yade-%(version)s-batch',
+              ('lib/x86_64-linux-gnu/yade-%%(version)s/libyade.%s' % SHLIB_EXT,
+               'lib64/yade-%%(version)s/libyade.%s' % SHLIB_EXT)],
+    'dirs': [('lib/x86_64-linux-gnu/yade-%(version)s/py/yade', 'lib64/yade-%(version)s/py/yade')],
+}
+
+sanity_check_commands = ["python -c 'import yade'"]
+
+moduleclass = 'devel'
