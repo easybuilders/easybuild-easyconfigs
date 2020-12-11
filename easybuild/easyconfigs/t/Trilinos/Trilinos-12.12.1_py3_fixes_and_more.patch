@@ -1,0 +1,332 @@
+Commits between tag trilinos-release-12-12-1 and commit c2ce113e511bed0238816dfdcc8db938a35e0bdd in trilinos-release-12-12-branch
+
+(except commit 8e5f7f524d9bc4fca7c8cc397a3a96939c964984 which is already in Trilinos-12.12.1_fix-Py3.patch)
+
+Fixes more Python 3 problems and some minor code problems.
+
+Åke Sandgren, 20200528
+diff --git a/cmake/tribits/doc/developers_guide/TribitsBuildReference.html b/cmake/tribits/doc/developers_guide/TribitsBuildReference.html
+deleted file mode 120000
+index 6ade28b..0000000
+--- a/cmake/tribits/doc/developers_guide/TribitsBuildReference.html
++++ /dev/null
+@@ -1 +0,0 @@
+-../build_ref/TribitsBuildReference.html
+\ No newline at end of file
+diff --git a/packages/PyTrilinos/doc/Doxygen/doxy2swig.py.in b/packages/PyTrilinos/doc/Doxygen/doxy2swig.py.in
+index 780f5d8..7a1a779 100755
+--- a/packages/PyTrilinos/doc/Doxygen/doxy2swig.py.in
++++ b/packages/PyTrilinos/doc/Doxygen/doxy2swig.py.in
+@@ -50,34 +50,20 @@ def my_open_write(dest):
+     else:
+         return open(dest, 'w')
+ 
+-###### def my_str() for PYTHON 2
+-if sys.version_info[0] == 2:
+-    def my_str(source):
+-        if isinstance(source, unicode):
+-            try:
+-                result = str(source)
+-            except UnicodeEncodeError:
+-                result = unicodedata.normalize('NFKD',source).encode('ascii','ignore')
+-        else:
+-            result = source
+-        return result
+-
+-###### def my_str() for PYTHON 3
+-elif sys.version_info[0] == 3:
+-    def my_str(source):
+-        return source
+-        # try:
+-        #     return source.encode('ascii', 'ignore')
+-        # except AttributeError:
+-        #     return source
+-
+-class Doxy2SWIG:    
++def my_str(source):
++    try:
++        result = str(source)
++    except UnicodeEncodeError:
++        result = unicodedata.normalize('NFKD',source).encode('ascii','ignore')
++    return result
++
++class Doxy2SWIG:
+     """
+     Converts Doxygen generated XML files into a file containing
+     docstrings that can be used by SWIG-1.3.x that have support for
+     feature("docstring").  Once the data is parsed it is stored in
+     self.pieces.
+-    """    
++    """
+ 
+     def __init__(self, src, include_function_definition=True):
+         """
+@@ -96,7 +82,6 @@ class Doxy2SWIG:
+         # a CGI script.  This doesn't work in general, just for the specific
+         # string that I know causes a problem.
+         try:
+-            f = my_str(f)
+             self.xmldoc = minidom.parse(f).documentElement
+         except:
+             f.close()
+@@ -225,7 +210,7 @@ class Doxy2SWIG:
+         if pad:
+             npiece = len(self.pieces)
+             if pad == 2:
+-                self.add_text('\n')                
++                self.add_text('\n')
+         for n in node.childNodes:
+             self.parse(n)
+         if pad:
+@@ -427,25 +412,25 @@ class Doxy2SWIG:
+             else:
+                 if i == '";':
+                     if count:
+-                        ret.append(my_str('\n'))
++                        ret.append('\n')
+                 elif count > 2:
+-                    ret.append(my_str('\n\n'))
++                    ret.append('\n\n')
+                 elif count:
+-                    ret.append(my_str('\n')*count)
++                    ret.append('\n'*count)
+                 count = 0
+                 ret.append(i)
+ 
+-        _data = my_str("").join(ret)
++        _data = "".join(ret)
+         ret = []
+         for i in _data.split(my_str('\n\n')):
+             if i == 'Parameters:':
+-                ret.extend([my_str('Parameters:\n-----------'), my_str('\n\n')])
+-            elif i.find(my_str('// File:')) > -1: # leave comments alone.
+-                ret.extend([i, my_str('\n')])
++                ret.extend(['Parameters:\n-----------', '\n\n'])
++            elif i.find('// File:') > -1: # leave comments alone.
++                ret.extend([i, '\n'])
+             else:
+                 _tmp = textwrap.fill(i.strip(), break_long_words=False)
+                 _tmp = self.lead_spc.sub(r'\1"\2', _tmp)
+-                ret.extend([my_str(_tmp), my_str('\n\n')])
++                ret.extend([_tmp, '\n\n'])
+         return ret
+ 
+ 
+diff --git a/packages/PyTrilinos/src/CMakeLists.txt b/packages/PyTrilinos/src/CMakeLists.txt
+index 2fcccf2..2a390ae 100644
+--- a/packages/PyTrilinos/src/CMakeLists.txt
++++ b/packages/PyTrilinos/src/CMakeLists.txt
+@@ -336,7 +336,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   IF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/NOX/Epetra")
+     SET(TRILINOS_LIBS ${NOXEPETRA_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/NOX/Epetra/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/NOX/Epetra/${MODULE_NAME}.py', 'PyTrilinos/NOX/Epetra/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling NOX/Epetra/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -351,7 +351,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSEIF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/NOX/PETSc")
+     SET(TRILINOS_LIBS ${NOXPETSC_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/NOX/PETSc/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/NOX/PETSc/${MODULE_NAME}.py', 'PyTrilinos/NOX/PETSc/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling NOX/PETSc/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -366,7 +366,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSEIF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/NOX")
+     SET(TRILINOS_LIBS ${NOX_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/NOX/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/NOX/${MODULE_NAME}.py', 'PyTrilinos/NOX/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling NOX/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -381,7 +381,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSEIF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/LOCA/Hopf")
+     SET(TRILINOS_LIBS ${LOCAEPETRA_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/Hopf/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/Hopf/${MODULE_NAME}.py', 'PyTrilinos/LOCA/Hopf/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling LOCA/Hopf/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -396,7 +396,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSEIF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/LOCA/Pitchfork")
+     SET(TRILINOS_LIBS ${LOCAEPETRA_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/Pitchfork/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/Pitchfork/${MODULE_NAME}.py', 'PyTrilinos/LOCA/Pitchfork/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling LOCA/Pitchfork/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -411,7 +411,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSEIF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/LOCA/TurningPoint")
+     SET(TRILINOS_LIBS ${LOCAEPETRA_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/TurningPoint/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/TurningPoint/${MODULE_NAME}.py', 'PyTrilinos/LOCA/TurningPoint/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling LOCA/TurningPoint/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -426,7 +426,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSEIF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/LOCA/Epetra")
+     SET(TRILINOS_LIBS ${LOCAEPETRA_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/Epetra/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/Epetra/${MODULE_NAME}.py', 'PyTrilinos/LOCA/Epetra/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling LOCA/Epetra/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -441,7 +441,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSEIF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/LOCA")
+     SET(TRILINOS_LIBS ${LOCA_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/LOCA/${MODULE_NAME}.py', 'PyTrilinos/LOCA/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling LOCA/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -456,7 +456,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSEIF("${MODULE_OUTDIR}" MATCHES "PyTrilinos/Isorropia")
+     SET(TRILINOS_LIBS ${ISORROPIA_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/Isorropia/${MODULE_NAME}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/Isorropia/${MODULE_NAME}.py', 'PyTrilinos/Isorropia/${MODULE_NAME}.pyc')"
+       COMMENT "Byte compiling Isorropia/${MODULE_NAME}.py"
+       VERBATIM)
+     INSTALL(FILES
+@@ -471,7 +471,7 @@ FOREACH(MODULE ${PyTrilinos_MODULES})
+   ELSE("${MODULE_OUTDIR}")
+     SET(TRILINOS_LIBS ${${MODULE_UPPER}_LIBRARIES})
+     ADD_CUSTOM_COMMAND(TARGET ${PyTrilinos_TARGET_NAME} POST_BUILD
+-      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/${MODULE}.py')"
++      COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('PyTrilinos/${MODULE}.py', 'PyTrilinos/${MODULE}.pyc')"
+       COMMENT "Byte compiling ${MODULE}.py"
+       VERBATIM)
+     INSTALL(FILES
+diff --git a/packages/PyTrilinos/src/NOX.Epetra.Interface.i b/packages/PyTrilinos/src/NOX.Epetra.Interface.i
+index 8f94746..a6842f8 100644
+--- a/packages/PyTrilinos/src/NOX.Epetra.Interface.i
++++ b/packages/PyTrilinos/src/NOX.Epetra.Interface.i
+@@ -123,7 +123,7 @@ if not parentDir in sys.path: sys.path.append(parentDir)
+ del sys, op
+ try:
+     from .. import Abstract
+-except (ValueError, SystemError):
++except (ValueError, SystemError, ImportError):
+     import Abstract
+ %}
+ 
+diff --git a/packages/PyTrilinos/src/PyTrilinos/CMakeLists.txt b/packages/PyTrilinos/src/PyTrilinos/CMakeLists.txt
+index 9e91feb..848824c 100644
+--- a/packages/PyTrilinos/src/PyTrilinos/CMakeLists.txt
++++ b/packages/PyTrilinos/src/PyTrilinos/CMakeLists.txt
+@@ -71,7 +71,7 @@ FOREACH(MODULE ${LOCAL_MODULES})
+   CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}.py.in
+     ${CMAKE_CURRENT_BINARY_DIR}/${MODULE}.py)
+   ADD_CUSTOM_COMMAND(TARGET PyTrilinos_Pure_Python_Modules
+-    COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('${MODULE}.py')"
++    COMMAND ${PYTHON_EXECUTABLE} -c "import py_compile; py_compile.compile('${MODULE}.py', '${MODULE}.pyc')"
+     COMMENT "Byte compiling ${MODULE}.py"
+     VERBATIM)
+   INSTALL(FILES
+diff --git a/packages/anasazi/src/AnasaziTraceMin.hpp b/packages/anasazi/src/AnasaziTraceMin.hpp
+index d555e70..3c41c06 100644
+--- a/packages/anasazi/src/AnasaziTraceMin.hpp
++++ b/packages/anasazi/src/AnasaziTraceMin.hpp
+@@ -53,7 +53,9 @@
+ #include "AnasaziBasicSort.hpp"
+ #include "AnasaziTraceMinBase.hpp"
+ 
+-#include "Epetra_Operator.h"
++#ifdef HAVE_ANASAZI_EPETRA
++  #include "Epetra_Operator.h"
++#endif
+ 
+ #include "AnasaziEigensolver.hpp"
+ #include "AnasaziMultiVecTraits.hpp"
+diff --git a/packages/komplex/src/Komplex_LinearProblem.h b/packages/komplex/src/Komplex_LinearProblem.h
+index a3126ed..858ca9d 100644
+--- a/packages/komplex/src/Komplex_LinearProblem.h
++++ b/packages/komplex/src/Komplex_LinearProblem.h
+@@ -99,8 +99,8 @@ Although formally the system is a 2-by-2 block system, we actually apply the int
+ such that the real part of the first complex equation is followed by the imaginary part of the first complex equation,
+ and so on.  This approach is documented in:
+  
+- David Day and Michael A. Heroux. Solving complex-valued linear systems via equivalent real formulations. 
+- SIAM J. Sci. Comput., 23(2):480–498, 2001.
++ David Day and Michael A. Heroux. Solving complex-valued linear systems via equivalent real formulations.
++ SIAM J. Sci. Comput., 23(2):480--498, 2001.
+ 
+ 
+ */    
+diff --git a/packages/tpetra/core/inout/MatrixMarket_Tpetra.hpp b/packages/tpetra/core/inout/MatrixMarket_Tpetra.hpp
+index 9bcef0f..1a6cc3e 100644
+--- a/packages/tpetra/core/inout/MatrixMarket_Tpetra.hpp
++++ b/packages/tpetra/core/inout/MatrixMarket_Tpetra.hpp
+@@ -1649,7 +1649,7 @@ namespace Tpetra {
+                            const bool tolerant=false,
+                            const bool debug=false)
+       {
+-        return readSparseGraph (filename, pComm, Teuchos::null, callFillComplete, tolerant, debug);
++        return readSparseGraphFile (filename, pComm, Teuchos::null, callFillComplete, tolerant, debug);
+       }
+ 
+       //! Variant of readSparseGraph that takes a Node object.
+@@ -1716,9 +1716,9 @@ namespace Tpetra {
+                        const bool tolerant=false,
+                        const bool debug=false)
+       {
+-        return readSparseGraph (filename, pComm, Teuchos::null,
+-                                constructorParams, fillCompleteParams,
+-                                tolerant, debug);
++        return readSparseGraphFile (filename, pComm, Teuchos::null,
++                                    constructorParams, fillCompleteParams,
++                                    tolerant, debug);
+       }
+ 
+       //! Variant of readSparseFile above that takes a Node object.
+@@ -1866,9 +1866,11 @@ namespace Tpetra {
+                   const bool tolerant=false,
+                   const bool debug=false)
+       {
+-        Teuchos::RCP<sparse_graph_type> graph = readSparseGraphHelper(in, pComm, pNode, Teuchos::null, Teuchos::null, Teuchos::null,tolerant,debug);
++        Teuchos::RCP<const map_type> rowMap;
++        Teuchos::RCP<const map_type> colMap;
++        Teuchos::RCP<sparse_graph_type> graph = readSparseGraphHelper(in, pComm, pNode, rowMap, colMap, Teuchos::null,tolerant,debug);
+         if(callFillComplete)
+-          graph->FillComplete();
++          graph->fillComplete();
+         return graph;
+       }
+ 
+@@ -1922,9 +1924,11 @@ namespace Tpetra {
+                   const bool tolerant=false,
+                   const bool debug=false)
+       {
++        Teuchos::RCP<const map_type> rowMap;
++        Teuchos::RCP<const map_type> colMap;
+         Teuchos::RCP<sparse_graph_type> graph = readSparseGraphHelper(in, pComm, pNode,
+-            Teuchos::null, Teuchos::null, constructorParams, tolerant, debug);
+-        graph->FillComplete(fillCompleteParams);
++            rowMap, colMap, constructorParams, tolerant, debug);
++        graph->fillComplete(fillCompleteParams);
+         return graph;
+       }
+ 
+diff --git a/packages/tpetra/core/src/Tpetra_Map_decl.hpp b/packages/tpetra/core/src/Tpetra_Map_decl.hpp
+index 246c30d..cfa0564 100644
+--- a/packages/tpetra/core/src/Tpetra_Map_decl.hpp
++++ b/packages/tpetra/core/src/Tpetra_Map_decl.hpp
+@@ -1248,7 +1248,9 @@ namespace Tpetra {
+     /// getGlobalElement() (which is a host method, and therefore
+     /// requires a host View) if necessary (only noncontiguous Maps
+     /// need this).
++#ifndef SWIG
+     mutable typename decltype (lgMap_)::HostMirror lgMapHost_;
++#endif
+ 
+     //! Type of a mapping from global IDs to local IDs.
+     typedef Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, device_type>

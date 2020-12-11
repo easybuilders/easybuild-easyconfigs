@@ -1,0 +1,126 @@
+From 32af009dde2d69e840e09994dfc955480d9a251f Mon Sep 17 00:00:00 2001
+From: Jakob Schiotz <schiotz@fysik.dtu.dk>
+Date: Wed, 5 Feb 2020 15:08:15 +0100
+Subject: [PATCH] Add Easybuild configuration files.
+
+These files are made for the foss/2019b and intel/2019b toolchains,
+but are expected to work for future toolchains, too.  The
+config-foss.py files will probably also work for other toolchains than
+foss and intel, as long as it does not use Intel Math Kernel Library.
+
+The special config file is necessary for the Intel toolchain as the
+EasyBuild system reports FFT libraries that are build without -fPIC,
+but we need to link to versions compiled *with* -fPIC when building
+shared objects.
+---
+ doc/platforms/Linux/EasyBuild/config_foss.py  | 49 +++++++++++++++++++++++++++
+ doc/platforms/Linux/EasyBuild/config_intel.py | 37 ++++++++++++++++++++
+ 2 files changed, 86 insertions(+)
+ create mode 100644 doc/platforms/Linux/EasyBuild/config_foss.py
+ create mode 100644 doc/platforms/Linux/EasyBuild/config_intel.py
+
+diff --git a/doc/platforms/Linux/EasyBuild/config_foss.py b/doc/platforms/Linux/EasyBuild/config_foss.py
+new file mode 100644
+index 0000000..5be60fa
+--- /dev/null
++++ b/doc/platforms/Linux/EasyBuild/config_foss.py
+@@ -0,0 +1,49 @@
++# Convert static library specs from EasyBuild to GPAW
++def static_eblibs_to_gpawlibs(lib_specs):
++    return [libfile[3:-2] for libfile in os.getenv(lib_specs).split(',')]
++
++# Clean out any autodetected things, we only want the EasyBuild
++# definitions to be used.
++libraries = []
++include_dirs = []
++
++# Use EasyBuild fftw from the active toolchain
++fftw = os.getenv('FFT_STATIC_LIBS')
++if fftw:
++    libraries += static_eblibs_to_gpawlibs('FFT_STATIC_LIBS')
++
++# Use ScaLAPACK from the active toolchain
++scalapack = os.getenv('SCALAPACK_STATIC_LIBS')
++if scalapack:
++    libraries += static_eblibs_to_gpawlibs('SCALAPACK_STATIC_LIBS')
++
++# Add EasyBuild LAPACK/BLAS libs
++lapack = os.getenv('LAPACK_STATIC_LIBS')
++if lapack:
++    libraries += static_eblibs_to_gpawlibs('LAPACK_STATIC_LIBS')
++blas = os.getenv('BLAS_STATIC_LIBS')
++if blas:
++    libraries += static_eblibs_to_gpawlibs('BLAS_STATIC_LIBS')
++
++# LibXC:
++# Use EasyBuild libxc
++libxc = os.getenv('EBROOTLIBXC')
++if libxc:
++    include_dirs.append(os.path.join(libxc, 'include'))
++    libraries.append('xc')
++
++# libvdwxc:
++# Use EasyBuild libvdwxc
++libvdwxc = os.getenv('EBROOTLIBVDWXC')
++if libvdwxc:
++    include_dirs.append(os.path.join(libvdwxc, 'include'))
++    libraries.append('vdwxc')
++
++# ELPA:
++# Use EasyBuild ELPA if loaded
++elpa = os.getenv('EBROOTELPA')
++if elpa:
++    libraries += ['elpa']
++    elpaversion = os.path.basename(elpa).split('-')[0]
++    library_dirs.append(os.path.join(elpa, 'lib'))
++    extra_link_args += ['-Wl,-rpath={}/lib'.format(elpa)]
++    include_dirs.append(os.path.join(elpa, 'include', 'elpa-'+elpaversion))
++
++# Now add a EasyBuild "cover-all-bases" library_dirs
++library_dirs = os.getenv('LD_LIBRARY_PATH').split(':')
+diff --git a/doc/platforms/Linux/EasyBuild/config_intel.py b/doc/platforms/Linux/EasyBuild/config_intel.py
+new file mode 100644
+index 0000000..4038363
+--- /dev/null
++++ b/doc/platforms/Linux/EasyBuild/config_intel.py
+@@ -0,0 +1,37 @@
++mpicompiler = 'mpiicc'
++
++# FFTW should be configured from environment variables, but they do
++# not report the correct names for a dynamically loaded library.
++fftw = True
++# Use Intel MKL
++libraries += ['mkl_sequential','mkl_core', 'fftw3xc_intel_pic', 'mkl_rt', ]
++
++# Use EasyBuild scalapack from the active toolchain
++scalapack = True
++libraries += ['mkl_scalapack_lp64', 'mkl_blacs_intelmpi_lp64']
++
++# Use EasyBuild libxc
++libxc = os.getenv('EBROOTLIBXC')
++include_dirs.append(os.path.join(libxc, 'include'))
++
++# libvdwxc:
++# Use EasyBuild libvdwxc
++# NOTE: This currenlty does not work together with the Intel MKL, so
++# the easyconfig files does not load libvdwxc
++libvdwxc = os.getenv('EBROOTLIBVDWXC')
++if libvdwxc:
++    include_dirs.append(os.path.join(libvdwxc, 'include'))
++    libraries.append('vdwxc')
++
++# ELPA:
++# Use EasyBuild ELPA if loaded
++elpa = os.getenv('EBROOTELPA')
++if elpa:
++    libraries += ['elpa']
++    elpaversion = os.path.basename(elpa).split('-')[0]
++    library_dirs.append(os.path.join(elpa, 'lib'))
++    extra_link_args += ['-Wl,-rpath={}/lib'.format(elpa)]
++    include_dirs.append(os.path.join(elpa, 'include', 'elpa-'+elpaversion))
++
++# Now add a EasyBuild "cover-all-bases" library_dirs
++library_dirs = os.getenv('LD_LIBRARY_PATH').split(':')
+-- 
+1.8.3.1
+
