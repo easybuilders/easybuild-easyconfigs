@@ -1,0 +1,33 @@
+easyblock = 'CMakeMake'
+
+name = 'magma'
+version = '2.5.4'
+
+homepage = 'https://icl.cs.utk.edu/magma/'
+description = """The MAGMA project aims to develop a dense linear algebra library similar to
+ LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
+
+toolchain = {'name': 'gcccuda', 'version': '2020a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['https://icl.cs.utk.edu/projectsfiles/magma/downloads/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['7734fb417ae0c367b418dea15096aef2e278a423e527c615aab47f0683683b67']
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+]
+
+# Override with --cuda-compute-capabilities
+local_ccc = '%(cuda_sm_space_sep)s' or 'sm_35 sm_50 sm_60 sm_70 sm_75 sm_80'
+# make sure both static and shared libs are built
+configopts = [
+    '-DBUILD_SHARED_LIBS=%s -DGPU_TARGET="%s" ' % (local_shared, local_ccc) for local_shared in ('ON', 'OFF')
+]
+
+sanity_check_paths = {
+    'files': ['lib/libmagma.%s' % SHLIB_EXT, 'lib/libmagma.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
