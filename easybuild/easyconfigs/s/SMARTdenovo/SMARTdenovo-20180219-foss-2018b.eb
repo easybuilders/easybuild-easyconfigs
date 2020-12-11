@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'SMARTdenovo'
+local_commit = '5cc1356'
+version = '20180219'
+
+homepage = 'https://github.com/ruanjue/smartdenovo'
+description = """SMARTdenovo is a de novo assembler for PacBio and
+Oxford Nanopore (ONT) data. It produces an assembly from all-vs-all raw
+read alignments without an error correction stage. It also provides
+tools to generate accurate consensus sequences, though a platform
+dependent consensus polish tools (e.g. Quiver for PacBio or Nanopolish
+for ONT) are still required for higher accuracy."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/ruanjue/smartdenovo/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = [
+    '%(name)s-%(version)s_fix_build_flags_and_install.patch',
+    '%(name)s-%(version)s_use_env_perl_for_startup.patch',
+]
+checksums = [
+    '315a1a9ef96e993dd101b34b626c1eab9c58e59c24848598eb0a6fa38e0b49cd',  # SMARTdenovo-20180219.tar.gz
+    # SMARTdenovo-20180219_fix_build_flags_and_install.patch
+    '6138fb6db730372ee50a5cc87cadf2d99f11b48165e45832eb985804910d2420',
+    # SMARTdenovo-20180219_use_env_perl_for_startup.patch
+    'e9ee4d00f977b0c8694fffb15b9fbf7d3aa575b71f3adb979f9203c48c1ee22c',
+]
+
+dependencies = [('Perl', '5.28.0')]
+
+skipsteps = ['configure']
+
+installopts = 'INSTALLDIR=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['dbm_index_fa.pl', 'dbm_read_fa.pl',
+                                     'fq2fa.pl', 'large_seqs.pl',
+                                     'longest_pacbio_subreads_f5q.pl',
+                                     'longest_pacbio_subreads.pl', 'pairaln',
+                                     'pbcluster_haplo.pl', 'pbcluster_upgma.pl',
+                                     'rename_fa.pl', 'rename_fq.pl',
+                                     'run_dmo.sh', 'run_zmo.sh', 'seq_n50.pl',
+                                     'smartdenovo.pl', 'wtclp', 'wtcns',
+                                     'wtcyc', 'wtext', 'wtgbo', 'wtlay',
+                                     'wtmer', 'wtmsa', 'wtobt', 'wtpre', 'wtzmo']],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
