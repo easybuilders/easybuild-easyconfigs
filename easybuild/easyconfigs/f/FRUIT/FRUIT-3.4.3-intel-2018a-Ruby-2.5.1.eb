@@ -1,0 +1,41 @@
+easyblock = 'Binary'
+
+name = 'FRUIT'
+version = '3.4.3'
+
+local_rubyver = '2.5.1'
+versionsuffix = '-Ruby-%s' % local_rubyver
+
+homepage = 'https://fortranxunit.sourceforge.io'
+description = "FORTRAN Unit Test Framework (FRUIT)"
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+source_urls = ['https://sourceforge.net/projects/fortranxunit/files/fruit_%(version)s']
+sources = ['fruit_%(version)s.zip']
+patches = [
+    'fruit_%(version)s-ifort-external.patch',
+    'fruit_%(version)s-mpi-tests.patch',
+]
+checksums = [
+    '01c88d0b8046d809ab317c7b7e4a87ec343fe1c065d408029d83342808929862',  # fruit_3.4.3.zip
+    '6f608988078d079ef73f30f47208d2b7d5645b6fc55526790b826f82f8d85b85',  # fruit_3.4.3-ifort-external.patch
+    '6660820c26f647fecd397135d12c61b6ea7b3b2f1d2d7684455036ebc5ead0a4',  # fruit_3.4.3-mpi-tests.patch
+]
+
+builddependencies = [
+    ('Ruby', local_rubyver),
+    ('FRUIT_processor', version, versionsuffix),
+]
+
+extract_sources = True
+
+install_cmd = "rake && mkdir -p %(installdir)s/{include,lib} && "
+install_cmd += "cp src/*.mod %(installdir)s/include/ && cp src/*.a %(installdir)s/lib/"
+
+sanity_check_paths = {
+    'files': ['include/fruit.mod', 'include/fruit_util.mod', 'lib/libfruit.a'],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
