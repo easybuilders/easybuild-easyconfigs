@@ -1,0 +1,15 @@
+fix linking of VTK libraries, avoid that having 'Python' in the installation path messes things up...
+author: Kenneth Hoste (HPC-UGent)
+--- meshalyzer-v2.0/src/Makefile.orig	2020-07-16 08:39:11.000000000 +0200
++++ meshalyzer-v2.0/src/Makefile	2020-09-16 20:38:33.772598607 +0200
+@@ -52,8 +52,8 @@
+ # VTK
+ ifdef VTK_LIBDIR
+ CXXFLAGS      += -DUSE_VTK -I$(VTK_INCDIR)
+-VTK_LSLIBS     = $(shell ls $(VTK_LIBDIR)/libvtk*$(LIB_EXT) | grep -Ev '(Python)|(Java)|(TCL)|(Parallel)|(MPI)|(Filters)|(Imaging)|(Interaction)|(Rendering)|(Chemistry)' )
+-a              = $(subst $(VTK_LIBDIR)/lib,-l,$(VTK_LSLIBS) )
++VTK_LSLIBS     = $(shell ls $(VTK_LIBDIR) | grep libvtk.*$(LIB_EXT)$$ | grep -Ev '(Python)|(Java)|(TCL)|(Parallel)|(MPI)|(Filters)|(Imaging)|(Interaction)|(Rendering)|(Chemistry)' )
++a              = $(subst libvtk,-lvtk,$(VTK_LSLIBS) )
+ VTK_LIBS       = $(subst $(LIB_EXT),,$(a) )
+ LIBS          += $(VTK_LIBS)
+ endif

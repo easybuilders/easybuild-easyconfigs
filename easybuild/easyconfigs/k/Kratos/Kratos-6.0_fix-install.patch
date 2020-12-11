@@ -1,0 +1,48 @@
+* don't determine absolute path for '-lm' in ${LAPACK_LIBRARIES}
+* don't copy BLAS/LAPACK & Python libraries in Kratos installation directory
+author: Kenneth Hoste (HPC-UGent)
+--- Kratos-6.0/CMakeLists.txt.orig	2018-06-03 01:01:18.000000000 +0200
++++ Kratos-6.0/CMakeLists.txt	2018-11-05 13:24:15.910188812 +0100
+@@ -289,7 +289,12 @@
+   find_package(LAPACK REQUIRED)
+   message("LAPACK = " ${LAPACK_LIBRARIES})
+   foreach( l ${LAPACK_LIBRARIES})
+-    GET_FILENAME_COMPONENT(aux ${l} REALPATH)
++    string(SUBSTRING "${l}" 0 1 lstart)
++    if(${lstart} STREQUAL "-")
++      set(aux "${l}")
++    else()
++      GET_FILENAME_COMPONENT(aux ${l} REALPATH)
++    endif()
+     set(LAPACK_LIBRARIES_REALPATH ${LAPACK_LIBRARIES_REALPATH} ${aux})
+   endforeach(l)
+ 
+@@ -413,12 +421,12 @@
+ install(FILES ${EXTRA_INSTALL_LIBS} DESTINATION libs)
+ 
+ # Install blas and lapack
+-if(${BLAS_INCLUDE_NEEDED} MATCHES ON )
+-	message("installed blas = " ${BLAS_LIBRARIES})
+-	install(FILES ${BLAS_LIBRARIES} DESTINATION libs)
+-	message("installed lapack = " ${LAPACK_LIBRARIES})
+-	install(FILES ${LAPACK_LIBRARIES} DESTINATION libs)
+-endif(${BLAS_INCLUDE_NEEDED} MATCHES ON )
++#if(${BLAS_INCLUDE_NEEDED} MATCHES ON )
++#	message("installed blas = " ${BLAS_LIBRARIES})
++#	install(FILES ${BLAS_LIBRARIES} DESTINATION libs)
++#	message("installed lapack = " ${LAPACK_LIBRARIES})
++#	install(FILES ${LAPACK_LIBRARIES} DESTINATION libs)
++#endif(${BLAS_INCLUDE_NEEDED} MATCHES ON )
+ 
+ # Kratos Testing. Install everything except sources
+ if(${INSTALL_TESTING_FILES} MATCHES ON )
+--- Kratos-6.0/embedded_python/CMakeLists.txt.orig	2018-11-06 11:06:53.182171930 +0100
++++ Kratos-6.0/embedded_python/CMakeLists.txt	2018-11-06 11:06:59.232153624 +0100
+@@ -21,5 +21,5 @@
+ endif(USE_COTIRE MATCHES ON)
+ install(TARGETS runkratos DESTINATION . )
+ 
+-message("python libraries to be installed are: " ${PYTHON_LIBRARIES} )
+-install(FILES ${PYTHON_LIBRARIES} DESTINATION .)
++#message("python libraries to be installed are: " ${PYTHON_LIBRARIES} )
++#install(FILES ${PYTHON_LIBRARIES} DESTINATION .)
