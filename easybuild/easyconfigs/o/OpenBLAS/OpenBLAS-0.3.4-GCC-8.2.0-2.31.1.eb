@@ -1,0 +1,45 @@
+name = 'OpenBLAS'
+version = '0.3.4'
+
+homepage = 'https://xianyi.github.com/OpenBLAS/'
+description = "OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+# need to build with -fno-tree-vectorize due to asm constraint bugs in OpenBLAS<0.3.6
+# cfr. https://github.com/easybuilders/easybuild-easyconfigs/issues/7180
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    # order matters, trying to download the large.tgz/timing.tgz LAPACK tarballs from GitHub causes trouble
+    'https://www.netlib.org/lapack/timing/',
+    'https://github.com/xianyi/OpenBLAS/archive/',
+]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    ('large.tgz', '.'),
+    ('timing.tgz', '.'),
+    '%(name)s-%(version)s_disable_AVX512_dgemm_kernel.patch',
+    'OpenBLAS-0.3.7_fix-missing-sync-on-power.patch',
+    'OpenBLAS-0.3.7_reinit-threads-after-fork.patch',
+    'OpenBLAS-0.3.7_fix-possible-memory-leak-after-fork.patch',
+    'OpenBLAS-0.3.3_fix-dscal-inline-asm.patch',
+]
+checksums = [
+    '4b4b4453251e9edb5f57465bf2b3cf67b19d811d50c8588cdf2ea1f201bb834f',  # v0.3.4.tar.gz
+    'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1',  # large.tgz
+    '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af',  # timing.tgz
+    # OpenBLAS-0.3.4_disable_AVX512_dgemm_kernel.patch
+    '56d5034869ebd7b63c7af23eadd0935280d4d57ac3b0d35956c64015a3103da9',
+    # OpenBLAS-0.3.7_fix-missing-sync-on-power.patch
+    'aefe4254caa14612eaf9a203b3f870f3b43724d28da7d7ab484810b4278f198f',
+    # OpenBLAS-0.3.7_reinit-threads-after-fork.patch
+    'a9d7a7bb07b92db13d3fbebe5410b328e7cd28e48aace53e49530287626c8ec8',
+    # OpenBLAS-0.3.7_fix-possible-memory-leak-after-fork.patch
+    '4b3ab7260975ea2cfd7460731c0201b2c1e374cd83ae90d55b8da3e670633ba0',
+    'c88b8445f58f36654e2b26186ca7c9307d4cebd6cbfa837cf81e0165e8513fbc',  # OpenBLAS-0.3.3_fix-dscal-inline-asm.patch
+]
+
+# extensive testing can be enabled by uncommenting the line below
+# runtest = 'PATH=.:$PATH lapack-timing'
+
+moduleclass = 'numlib'

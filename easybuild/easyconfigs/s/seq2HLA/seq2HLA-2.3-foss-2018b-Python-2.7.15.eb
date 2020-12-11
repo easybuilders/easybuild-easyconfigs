@@ -1,8 +1,9 @@
-easyblock = 'Tarball'
+easyblock = 'Bundle'
 
 name = 'seq2HLA'
 version = '2.3'
 versionsuffix = '-Python-%(pyver)s'
+local_commit = 'a4d26bd10476bc3610e667339d4076f1f74c3997'
 
 homepage = 'https://github.com/TRON-Bioinformatics/seq2HLA'
 description = """ In-silico method written in Python and R to determine HLA genotypes of a sample.
@@ -13,28 +14,45 @@ description = """ In-silico method written in Python and R to determine HLA geno
 
 toolchain = {'name': 'foss', 'version': '2018b'}
 
-source_urls = ['https://github.com/TRON-Bioinformatics/seq2HLA/archive']
-sources = [{'filename': SOURCE_TAR_GZ, 'download_filename': 'a4d26bd.tar.gz'}]
-checksums = ['50bc6242b90be19b8b3c1013b200de408cb9f0b142c7cd5783eb33eae91f94ba']
-
 dependencies = [
-    ('Biopython', '1.72', versionsuffix),
-    ('Bowtie', '1.2.2'),
     ('Python', '2.7.15'),
+    ('Biopython', '1.72', versionsuffix),
     ('R', '3.5.1', versionsuffix),
 ]
 
-postinstallcmds = [
-    'sed -i -e "1i #!/usr/bin/env python" %(installdir)s/seq2HLA.py',
+components = [
+    ('Bowtie', '0.12.7', {
+        'easyblock': 'MakeCp',
+        'source_urls': ['https://download.sourceforge.net/bowtie-bio'],
+        'sources': ['%(namelower)s-%(version)s-src.zip'],
+        'checksums': ['609a6a0ad0b1a5d97908ca17da7bbf5d6dc407c7b9c49713cdc9c40f056a586a'],
+        'start_dir': '%(namelower)s-%(version)s',
+        'buildopts': ' CFLAGS="$CFLAGS -fpermissive"',
+        'files_to_copy': [(['bowtie', 'bowtie-build', 'bowtie-inspect'], 'bin')],
+    }),
+    (name, version, {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://github.com/TRON-Bioinformatics/seq2HLA/archive'],
+        'sources': [{'filename': SOURCE_TAR_GZ, 'download_filename': '%s.tar.gz' % local_commit}],
+        'checksums': ['50bc6242b90be19b8b3c1013b200de408cb9f0b142c7cd5783eb33eae91f94ba'],
+        'start_dir': '%%(name)s-%s' % local_commit,
+        'install_type': 'subdir',
+    }),
 ]
 
-modextrapaths = {'PATH': ''}
+fix_python_shebang_for = ['seq2hla/seq2HLA.py']
 
 sanity_check_paths = {
-    'files': ['command_fourdigit.R', 'command.R', 'fourdigits.py', 'seq2HLA.py'],
-    'dirs': [],
+    'files': ['seq2hla/%s' % x for x in ['command_fourdigit.R', 'command.R', 'fourdigits.py', 'seq2HLA.py']] +
+             ['bin/%s' % x for x in ['bowtie', 'bowtie-build', 'bowtie-inspect']],
+    'dirs': ['seq2hla/references'],
 }
 
-sanity_check_commands = ["seq2HLA.py --help"]
+sanity_check_commands = [
+    "bowtie --help",
+    "seq2HLA.py --help",
+]
+
+modextrapaths = {'PATH': 'seq2hla'}
 
 moduleclass = 'bio'
