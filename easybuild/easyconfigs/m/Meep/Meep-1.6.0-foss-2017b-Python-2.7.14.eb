@@ -4,60 +4,51 @@ name = 'Meep'
 version = '1.6.0'
 versionsuffix = '-Python-%(pyver)s'
 
-homepage = 'http://ab-initio.mit.edu/wiki/index.php/Meep'
+homepage = 'https://meep.readthedocs.io/en/latest/'
 description = """Meep (or MEEP) is a free finite-difference time-domain (FDTD) simulation software package
  developed at MIT to model electromagnetic systems."""
 
 toolchain = {'name': 'foss', 'version': '2017b'}
 toolchainopts = {'usempi': True, 'opt': True, 'unroll': True, 'pic': True}
 
-source_urls = ['https://github.com/stevengj/meep/archive/']
-sources = ['v%(version)s.tar.gz']
-patches = ['Meep-%(version)s_Remove_autogen_configure_call.patch']
-checksums = [
-    'c1808d5affe75b40fe7c61f9807377ce690ede20929acbcca09614345e55fb26',  # v1.6.0.tar.gz
-    # Meep-1.6.0_Remove_autogen_configure_call.patch
-    '4a238d9dbb287f28bf6552bc5ed22365c62f82e463caebd7d6b6848d6263326b',
-]
+source_urls = ['https://github.com/NanoComp/meep/releases/download/v%(version)s/']
+sources = ['meep-%(version_major_minor)s.tar.gz']
+checksums = ['b6d8f15ba1af458f134d67fee11205bb32172b83074bc7769be9b2c17a3748d9']
 
 builddependencies = [
     ('Autotools', '20170619'),
     ('Perl', '5.26.0'),
-    ('SWIG', '3.0.12', versionsuffix),
+    ('pkg-config', '0.29.2'),
+    ('SWIG', '3.0.12', versionsuffix)
 ]
 
 dependencies = [
+    ('Python', '2.7.14'),
+    ('MPB', '1.6.2', versionsuffix),
     ('Harminv', '1.4.1'),
     ('HDF5', '1.10.1'),
     ('libctl', '4.1.3'),
+    ('libGDSII', '0.21'),
     ('GSL', '2.4'),
-    ('Guile', '2.2.2'),
-    ('libGDSII', '0.1'),
-    ('MPB', '1.6.2'),
-    ('Python', '2.7.14'),
-    ('h5py', '2.7.1', versionsuffix),
+    ('Guile', '1.8.8'),
 ]
 
-preconfigopts = './autogen.sh && '
-
-configopts = '--with-pic --with-mpi --without-gcc-arch '
-configopts += '--with-blas=openblas --with-lapack=openblas '
-configopts += '--with-libctl="$EBROOTLIBCTL/share/libctl" --enable-shared '
-
-# This flag is required for make to run correctly
-configopts += '--enable-maintainer-mode '
-
-modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+configopts = "--with-pic --with-mpi --with-blas=openblas --with-lapack=openblas --without-gcc-arch "
+configopts += "--with-libctl=$EBROOTLIBCTL/share/libctl --enable-shared "
 
 runtest = 'check'
 
-sanity_check_commands = ["python -c 'import meep' "]
-
 sanity_check_paths = {
-    'files': ['bin/meep', 'lib/libmeep.a', 'lib/libmeepgeom.a', 'lib/libpympb.a',
-              'lib/libmeep.%s' % SHLIB_EXT, 'lib/libmeepgeom.%s' % SHLIB_EXT],
-    'dirs': ['lib/python%(pyshortver)s/site-packages/meep', 'lib/pkgconfig',
-             'include', 'include/meep'],
+    'files': ['bin/meep', 'include/meep.hpp', 'lib/libmeep.a', 'lib/libpympb.a', 'lib/libmeepgeom.a',
+              'lib/libmeep.%s' % SHLIB_EXT, 'lib/libpympb.%s' % SHLIB_EXT, 'lib/libmeepgeom.%s' % SHLIB_EXT],
+    'dirs': ['include/meep', 'lib/python%(pyshortver)s/site-packages/meep', 'share/meep'],
 }
+
+sanity_check_commands = [
+    "meep --help",
+    "python -c 'import meep'",
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
 moduleclass = 'phys'
