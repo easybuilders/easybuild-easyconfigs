@@ -1,0 +1,61 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2013 University of Luxembourg/Luxembourg Centre for Systems Biomedicine
+# Authors::   Fotis Georgatos <fotis.georgatos@uni.lu>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-97.html
+##
+easyblock = 'ConfigureMake'
+
+name = 'gnuplot'
+version = '5.2.6'
+
+homepage = 'http://gnuplot.sourceforge.net/'
+description = """Portable interactive, function plotting utility"""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+
+source_urls = [('https://sourceforge.net/projects/gnuplot/files/gnuplot/%(version)s', 'download')]
+sources = [SOURCE_TAR_GZ]
+patches = ['gnuplot-5.2.6_fix_missing_dep_for_gobject_to_cairopdf.patch']
+checksums = [
+    '35dd8f013139e31b3028fac280ee12d4b1346d9bb5c501586d1b5a04ae7a94ee',  # gnuplot-5.2.6.tar.gz
+    # gnuplot-5.2.6_fix_missing_dep_for_gobject_to_cairopdf.patch
+    '9ed75b3eac403d94d19fd9124bee9de08b35f499490b867e82c89e660df5333b',
+]
+
+builddependencies = [
+    ('binutils', '2.31.1'),
+    ('pkg-config', '0.29.2'),
+    ('Autotools', '20180311'),
+]
+
+dependencies = [
+    ('ncurses', '6.1'),
+    ('cairo', '1.16.0'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('libpng', '1.6.36'),
+    ('libgd', '2.2.5'),
+    ('Pango', '1.43.0'),
+    ('libcerf', '1.11'),
+    ('X11', '20190311'),
+    ('Qt5', '5.12.3'),
+    ('Lua', '5.3.5'),
+]
+
+preconfigopts = 'autoreconf && '
+
+configopts = '--with-qt=qt5 --without-latex '
+
+sanity_check_paths = {
+    'files': ['bin/gnuplot'],
+    'dirs': []
+}
+# make sure that pdf terminal type is available
+sanity_check_commands = ["gnuplot -e 'set terminal pdf'"]
+
+moduleclass = 'vis'

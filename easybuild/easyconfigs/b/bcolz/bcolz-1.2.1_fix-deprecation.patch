@@ -1,0 +1,113 @@
+From 07cec4a9128b55ba0a1b5be02243fb3dfec77415 Mon Sep 17 00:00:00 2001
+From: LBHB <lbhb@ornitorinco.ohsu.edu>
+Date: Wed, 19 Feb 2020 10:10:43 -0800
+Subject: [PATCH] Fix deprecation of DataFrame.from_items
+
+Pandas has deprecated DataFrame.from_items. Replace with recommended approach
+of DataFrame.from_dict(OrderedDict(...)).
+---
+ bcolz/ctable.py                       | 6 +++---
+ bench/pandas-fromdataframe-strings.py | 3 ++-
+ bench/pandas-fromdataframe.py         | 3 ++-
+ bench/pandas-todataframe.py           | 9 +++++----
+ 4 files changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/bcolz/ctable.py b/bcolz/ctable.py
+index 9de573b8..6b72588b 100644
+--- a/bcolz/ctable.py
++++ b/bcolz/ctable.py
+@@ -8,7 +8,7 @@
+ 
+ from __future__ import absolute_import
+ 
+-from collections import namedtuple
++from collections import namedtuple, OrderedDict
+ from itertools import islice
+ import json
+ from keyword import iskeyword
+@@ -803,8 +803,8 @@ def todataframe(self, columns=None, orient='columns'):
+             columns = None
+         # Use a generator here to minimize the number of column copies
+         # existing simultaneously in-memory
+-        df = pd.DataFrame.from_items(
+-            ((key, self[key][:]) for key in keys),
++        df = pd.DataFrame.from_dict(
++            OrderedDict((key, self[key][:]) for key in keys),
+             columns=columns, orient=orient)
+         return df
+ 
+diff --git a/bench/pandas-fromdataframe-strings.py b/bench/pandas-fromdataframe-strings.py
+index d8862da2..50e3744c 100644
+--- a/bench/pandas-fromdataframe-strings.py
++++ b/bench/pandas-fromdataframe-strings.py
+@@ -1,6 +1,7 @@
+ # Benchmark for evaluate best ways to convert from a pandas dataframe
+ # (version with a mix of columns of ints and strings)
+ 
++from collections import OrderedDict
+ import sys
+ import bcolz
+ import pandas as pd
+@@ -22,7 +23,7 @@ def range(*args):
+ print("Creating inputs...")
+ a = bcolz.arange(NR, dtype='i4')
+ s = bcolz.fromiter(("%d"%i for i in xrange(NR)), dtype='S7', count=NR)
+-df = pd.DataFrame.from_items((
++df = pd.DataFrame.from_dict(OrderedDict(
+     ('f%d'%i, a[:] if i < (NC//2) else s[:]) for i in range(NC)))
+ 
+ dsize = (NR * (NC//2) * (a.dtype.itemsize + s.dtype.itemsize)) / 2. ** 20
+diff --git a/bench/pandas-fromdataframe.py b/bench/pandas-fromdataframe.py
+index 79472100..78f687ad 100644
+--- a/bench/pandas-fromdataframe.py
++++ b/bench/pandas-fromdataframe.py
+@@ -1,5 +1,6 @@
+ # Benchmark for evaluate best ways to convert from a pandas dataframe
+ 
++from collections import OrderedDict
+ import bcolz
+ import pandas as pd
+ import numpy as np
+@@ -12,7 +13,7 @@
+ 
+ print("Creating inputs...")
+ a = bcolz.arange(NR, dtype='i4')
+-df = pd.DataFrame.from_items((('f%d'%i, a[:]) for i in range(NC)))
++df = pd.DataFrame.from_dict(OrderedDict(('f%d'%i, a[:]) for i in range(NC)))
+ 
+ dsize = (NR * NC * 4) / 2. ** 30
+ 
+diff --git a/bench/pandas-todataframe.py b/bench/pandas-todataframe.py
+index 57b37fd7..68408eda 100644
+--- a/bench/pandas-todataframe.py
++++ b/bench/pandas-todataframe.py
+@@ -1,5 +1,6 @@
+ # Benchmark for evaluate best ways to convert into a pandas dataframe
+ 
++from collections import OrderedDict
+ import bcolz
+ import pandas as pd
+ from time import time
+@@ -17,18 +18,18 @@
+ t0 = time()
+ tnames = list(t.names)
+ firstk = tnames.pop(0)
+-df = pd.DataFrame.from_items([(firstk, t[firstk][:])])
++df = pd.DataFrame.from_dict(OrderedDict([(firstk, t[firstk][:])]))
+ for key in tnames:
+     df[key] = t[key][:]
+ tt = time() - t0
+-print("time with from_items (adding cols): %.2f (%.2f GB/s)" % (tt, dsize / tt))
++print("time with from_dict (adding cols): %.2f (%.2f GB/s)" % (tt, dsize / tt))
+ del df
+ 
+ # Using a generator
+ t0 = time()
+-df = pd.DataFrame.from_items(((key, t[key][:]) for key in t.names))
++df = pd.DataFrame.from_dict(OrderedDict((key, t[key][:]) for key in t.names))
+ tt = time() - t0
+-print("time with from_items: %.2f (%.2f GB/s)" % (tt, dsize / tt))
++print("time with from_dict: %.2f (%.2f GB/s)" % (tt, dsize / tt))
+ 
+ # Using generic implementation
+ t0 = time()
