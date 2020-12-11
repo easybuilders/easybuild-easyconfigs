@@ -11,9 +11,9 @@ description = """Meep (or MEEP) is a free finite-difference time-domain (FDTD) s
 toolchain = {'name': 'foss', 'version': '2018a'}
 toolchainopts = {'usempi': True, 'opt': True, 'unroll': True, 'pic': True}
 
-source_urls = ['https://github.com/stevengj/meep/archive']
-sources = ['v%(version)s.tar.gz']
-checksums = ['c1808d5affe75b40fe7c61f9807377ce690ede20929acbcca09614345e55fb26']
+source_urls = ['https://github.com/NanoComp/meep/releases/download/v%(version)s/']
+sources = ['meep-%(version_major_minor)s.tar.gz']
+checksums = ['b6d8f15ba1af458f134d67fee11205bb32172b83074bc7769be9b2c17a3748d9']
 
 builddependencies = [
     ('Autotools', '20170619'),
@@ -32,13 +32,19 @@ dependencies = [
     ('Guile', '1.8.8'),
 ]
 
-#  taken from autogen.sh in root source directory
-preconfigopts = 'autoreconf --verbose --install --symlink --force &&'
-preconfigopts += 'autoreconf --verbose --install --symlink --force &&'
-preconfigopts += 'autoreconf --verbose --install --symlink --force &&'
-
 configopts = "--with-pic --with-mpi --with-blas=openblas --with-lapack=openblas --without-gcc-arch "
-configopts += "--with-libctl=$EBROOTLIBCTL/share/libctl --enable-shared --enable-maintainer-mode "
+configopts += "--with-libctl=$EBROOTLIBCTL/share/libctl --enable-shared "
+
+sanity_check_paths = {
+    'files': ['bin/meep', 'include/meep.hpp', 'lib/libmeep.a', 'lib/libpympb.a', 'lib/libmeepgeom.a',
+              'lib/libmeep.%s' % SHLIB_EXT, 'lib/libpympb.%s' % SHLIB_EXT, 'lib/libmeepgeom.%s' % SHLIB_EXT],
+    'dirs': ['include/meep', 'lib/python%(pyshortver)s/site-packages/meep', 'share/meep'],
+}
+
+sanity_check_commands = [
+    "meep --help",
+    "python -c 'import meep'",
+]
 
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
