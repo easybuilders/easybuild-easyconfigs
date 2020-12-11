@@ -18,14 +18,15 @@ builddependencies = [
     ('CMake', '3.15.3'),
 ]
 
-local_gpu_target = '-DGPU_TARGET="Kepler Maxwell Pascal Volta"'
+# Override with --cuda-compute-capabilities
+local_ccc = '%(cuda_sm_space_sep)s' or 'sm_35 sm_50 sm_60 sm_70 sm_75'
 # make sure both static and shared libs are built
 configopts = [
-    '-DBUILD_SHARED_LIBS=%s %s ' % (local_shared, local_gpu_target) for local_shared in ('ON', 'OFF')
+    '-DBUILD_SHARED_LIBS=%s -DGPU_TARGET="%s" ' % (local_shared, local_ccc) for local_shared in ('ON', 'OFF')
 ]
 
 sanity_check_paths = {
-    'files': ['lib/libmagma.so', 'lib/libmagma.a'],
+    'files': ['lib/libmagma.%s' % SHLIB_EXT, 'lib/libmagma.a'],
     'dirs': ['include'],
 }
 
