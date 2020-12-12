@@ -1,0 +1,42 @@
+easyblock = 'Binary'
+
+name = 'AOCC'
+version = '2.3.0'
+
+homepage = 'https://developer.amd.com/amd-aocc/'
+description = "AMD Optimized C/C++ & Fortran compilers (AOCC) based on LLVM 11.0"
+
+# Clang also depends on libstdc++ during runtime, but this dependency is
+# already specified as the toolchain.
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+sources = ['aocc-compiler-%(version)s.tar']
+checksums = [
+    '9f8a1544a5268a7fb8cd21ac4bdb3f8d1571949d1de5ca48e2d3309928fc3d15',  # aocc-compiler-2.3.0.tar
+]
+
+local_gccver = '9.3.0'
+
+dependencies = [
+    ('binutils', '2.34', '', ('GCCcore', local_gccver)),
+    ('ncurses', '6.2'),
+    ('zlib', '1.2.11'),
+    ('libxml2', '2.9.10', '', ('GCCcore', local_gccver)),
+]
+
+extract_sources = True
+
+install_cmd = 'bash install.sh && mkdir -p %(installdir)s && cp -r * %(installdir)s/'
+
+modextravars = {
+    'AOCChome': '%(installdir)s',
+    'C_INCLUDE_PATH': '%(installdir)s/include',
+    'CPLUS_INCLUDE_PATH': '%(installdir)s/include',
+}
+
+sanity_check_paths = {
+    'files': ['bin/clang', 'bin/clang++', 'bin/flang'],
+    'dirs': ['bin', 'lib', 'lib32'],
+}
+
+moduleclass = 'compiler'
