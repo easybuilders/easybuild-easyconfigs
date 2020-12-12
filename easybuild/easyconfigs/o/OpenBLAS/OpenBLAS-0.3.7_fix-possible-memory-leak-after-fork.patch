@@ -1,0 +1,96 @@
+From 60005eb47b5d30dcf35edff8c824a9f9fd9f6e6c Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Thu, 19 Nov 2020 14:39:00 +0100
+Subject: [PATCH] Don't overwrite blas_thread_buffer if already set
+
+After a fork it is possible that blas_thread_buffer has already
+allocated memory buffers: goto_set_num_threads does allocate those
+already and it may be called by num_cpu_avail in case the OpenBLAS
+NUM_THREADS differ from the OMP num threads.
+This leads to a memory leak which can cause subsequent execution of BLAS
+kernels to fail.
+
+Fixes #2993
+---
+ driver/others/blas_server_omp.c | 48 +++++++++++++++------------------
+ 1 file changed, 22 insertions(+), 26 deletions(-)
+
+diff --git a/driver/others/blas_server_omp.c b/driver/others/blas_server_omp.c
+index a8b3e9a4b..a576127aa 100644
+--- a/driver/others/blas_server_omp.c
++++ b/driver/others/blas_server_omp.c
+@@ -76,10 +76,28 @@ static atomic_bool blas_buffer_inuse[MAX_PARALLEL_NUMBER];
+ static _Bool blas_buffer_inuse[MAX_PARALLEL_NUMBER];
+ #endif
+ 
+-void goto_set_num_threads(int num_threads) {
++static void adjust_thread_buffers() {
+ 
+   int i=0, j=0;
+ 
++  //adjust buffer for each thread
++  for(i=0; i < MAX_PARALLEL_NUMBER; i++) {
++    for(j=0; j < blas_cpu_number; j++){
++      if(blas_thread_buffer[i][j] == NULL){
++        blas_thread_buffer[i][j] = blas_memory_alloc(2);
++      }
++    }
++    for(; j < MAX_CPU_NUMBER; j++){
++      if(blas_thread_buffer[i][j] != NULL){
++        blas_memory_free(blas_thread_buffer[i][j]);
++        blas_thread_buffer[i][j] = NULL;
++      }
++    }
++  }
++}
++
++void goto_set_num_threads(int num_threads) {
++
+   if (num_threads < 1) num_threads = blas_num_threads;
+ 
+   if (num_threads > MAX_CPU_NUMBER) num_threads = MAX_CPU_NUMBER;
+@@ -92,20 +110,7 @@ void goto_set_num_threads(int num_threads) {
+ 
+   omp_set_num_threads(blas_cpu_number);
+ 
+-  //adjust buffer for each thread
+-  for(i=0; i<MAX_PARALLEL_NUMBER; i++) {
+-    for(j=0; j<blas_cpu_number; j++){
+-      if(blas_thread_buffer[i][j]==NULL){
+-        blas_thread_buffer[i][j]=blas_memory_alloc(2);
+-      }
+-    }
+-    for(; j<MAX_CPU_NUMBER; j++){
+-      if(blas_thread_buffer[i][j]!=NULL){
+-        blas_memory_free(blas_thread_buffer[i][j]);
+-        blas_thread_buffer[i][j]=NULL;
+-      }
+-    }
+-  }
++  adjust_thread_buffers();
+ #if defined(ARCH_MIPS64)
+   //set parameters for different number of threads.
+   blas_set_parameter();
+@@ -119,20 +124,11 @@ void openblas_set_num_threads(int num_threads) {
+ 
+ int blas_thread_init(void){
+ 
+-  int i=0, j=0;
+-
+   blas_get_cpu_number();
+ 
+-  blas_server_avail = 1;
++  adjust_thread_buffers();
+ 
+-  for(i=0; i<MAX_PARALLEL_NUMBER; i++) {
+-    for(j=0; j<blas_num_threads; j++){
+-      blas_thread_buffer[i][j]=blas_memory_alloc(2);
+-    }
+-    for(; j<MAX_CPU_NUMBER; j++){
+-      blas_thread_buffer[i][j]=NULL;
+-    }
+-  }
++  blas_server_avail = 1;
+ 
+   return 0;
+ }

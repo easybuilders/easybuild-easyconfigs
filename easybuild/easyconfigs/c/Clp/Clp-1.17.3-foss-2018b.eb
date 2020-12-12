@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'Clp'
+version = '1.17.3'
+
+homepage = "https://github.com/coin-or/Clp"
+description = """Clp (Coin-or linear programming) is an open-source linear programming solver.
+It is primarily meant to be used as a callable library, but a basic,
+stand-alone executable version is also available."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://www.coin-or.org/download/source/%(name)s/']
+sources = [SOURCE_TGZ]
+checksums = ['a13bf54291ad503cf76f5f93f2643d2add4faa5d0e60ff2db902ef715c094573']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('Doxygen', '1.8.14'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('METIS', '5.1.0'),
+    ('MUMPS', '5.2.1', '-metis'),
+    ('CoinUtils', '2.11.3'),
+    ('Osi', '0.108.5'),
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.11'),
+]
+
+# Use BLAS/LAPACK from OpenBLAS
+configopts = '--with-blas="$LIBBLAS" --with-lapack="$LIBLAPACK" '
+# Use METIS AND MUMPS from EB
+configopts += '--with-metis-lib="-lmetis" '
+configopts += '--with-mumps-lib="-lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord" '
+# Disable GLPK because Clp requires headers from its sources
+configopts += '--without-glpk '
+# Use CoinUtils from EB
+configopts += '--with-coinutils-lib="-lCoinUtils" '
+configopts += '--with-coinutils-datadir=$EBROOTCOINUTILS/share/coin/Data'
+# Use Osi from EB
+configopts += '--with-osi-lib="-lOsi" '
+configopts += '--with-osi-datadir=$EBROOTOSI/share/coin/Data '
+
+sanity_check_paths = {
+    'files': ['bin/clp'] + ['lib/lib%s.%s' % (l, SHLIB_EXT) for l in ['Clp', 'ClpSolver', 'OsiClp']],
+    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin']
+}
+
+# other coin-or projects expect <header.hpp> instead of <coin/header.hpp>
+modextrapaths = {'CPATH': 'include/coin'}
+
+moduleclass = "math"

@@ -1,0 +1,42 @@
+remove conda-related hardcoded arguments for snakemake
+
+author: Pavel Grochal (INUITS)
+
+diff -rub --new-file atlas-2.4.3.orig/atlas/atlas.py atlas-2.4.3/atlas/atlas.py
+--- atlas-2.4.3.orig/atlas/atlas.py	2020-09-15 09:05:26.000000000 +0200
++++ atlas-2.4.3/atlas/atlas.py	2020-10-21 13:58:19.738035955 +0200
+@@ -129,7 +129,7 @@
+         "snakemake --snakefile {snakefile} --directory {working_dir} "
+         "{jobs} --rerun-incomplete "
+         "--configfile '{config_file}' --nolock "
+-        " {profile} --use-conda {conda_prefix} {dryrun} "
++        " {profile} {dryrun} "
+         " {target_rule} "
+         " {args} "
+     ).format(
+@@ -140,8 +140,7 @@
+         profile="" if (profile is None) else "--profile {}".format(profile),
+         dryrun="--dryrun" if dryrun else "",
+         args=" ".join(snakemake_args),
+-        target_rule=workflow if workflow!="None" else "",
+-        conda_prefix= "--conda-prefix "+os.path.join(db_dir,'conda_envs')
++        target_rule=workflow if workflow!="None" else ""
+     )
+     logging.info("Executing: %s" % cmd)
+     try:
+@@ -183,14 +182,13 @@
+     cmd = (
+         "snakemake --snakefile {snakefile} "
+         "--jobs {jobs} --rerun-incomplete "
+-        "--nolock  --use-conda  --conda-prefix {conda_prefix} "
++        "--nolock "
+         "--config database_dir='{db_dir}' {add_args} "
+         "{args}"
+     ).format(
+         snakefile=get_snakefile("rules/download.snakefile"),
+         jobs=jobs,
+         db_dir=db_dir,
+-        conda_prefix=os.path.join(db_dir,'conda_envs'),
+         add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
+         args=" ".join(snakemake_args),
+     )
