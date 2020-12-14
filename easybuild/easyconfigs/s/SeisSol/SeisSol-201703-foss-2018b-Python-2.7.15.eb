@@ -47,7 +47,10 @@ buildopts += "netcdf=yes netcdfDir=$EBROOTNETCDF hdf5=yes hdf5Dir=$EBROOTHDF5 "
 # only supported for recent commits
 # parallelization=hybrid metis=yes metisDir=$EBROOTPARMETIS "
 
-buildopts += " && mkdir -p %(installdir)s/bin && cp -a build/SeisSol* %(installdir)s/bin/SeisSol"
+# actual installation step: copy SeisSol binary to install directory
+# take into account that the installation directory may already exist (and could be read-only)
+buildopts += " && if [ -d %(installdir)s ]; then chmod -R u+w %(installdir)s && rm -rf %(installdir)s; fi && "
+buildopts += "mkdir -p %(installdir)s/bin && cp -a build/SeisSol* %(installdir)s/bin/SeisSol"
 
 sanity_check_paths = {
     'files': ['bin/SeisSol'],
