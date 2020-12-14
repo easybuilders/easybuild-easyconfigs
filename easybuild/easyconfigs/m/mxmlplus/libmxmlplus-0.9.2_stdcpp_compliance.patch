@@ -1,0 +1,285 @@
+Update code to build with newer compliant compilers
+
+More recent C++ standards removed features like exception specifiers.
+
+This patch removes the exception specifiers, removes some extra qualifiers on
+member functions and ensures that access to members of dependent bases is
+qualified via this->.
+
+Author: Lars Viklund <zao@zao.se>
+diff --git a/libmxmlplus-0.9.2.orig/include/mxml_document.h b/libmxmlplus-0.9.2/include/mxml_document.h
+index 26add9d..6ae8d86 100644
+--- a/libmxmlplus-0.9.2.orig/include/mxml_document.h
++++ b/libmxmlplus-0.9.2/include/mxml_document.h
+@@ -71,7 +71,7 @@ public:
+       \param style the mode in which the document is read/written
+       \see stylemacros
+    */
+-   Document( std::istream &in, const int style = 0 ) throw( MalformedError );
++   Document( std::istream &in, const int style = 0 );
+    
+    /** Destroys the document.
+       If you provided a stream at document creation, the stream is NOT colsed.
+@@ -141,7 +141,7 @@ public:
+       \param stream the input stream used for reading the data.
+       \see Node::read()
+    */
+-   virtual void read( std::istream &stream ) throw(MalformedError);
++   virtual void read( std::istream &stream );
+ 
+ };
+ 
+diff --git a/libmxmlplus-0.9.2.orig/include/mxml_iterator.h b/libmxmlplus-0.9.2/include/mxml_iterator.h
+index eda07fe..636b86f 100644
+--- a/libmxmlplus-0.9.2.orig/include/mxml_iterator.h
++++ b/libmxmlplus-0.9.2/include/mxml_iterator.h
+@@ -75,21 +75,21 @@ __iterator<__Node> __iterator<__Node>::operator-( int count )
+ template< class __Node >
+ __iterator<__Node> &__deep_iterator<__Node>::__next()
+ {
+-   assert( m_node != 0 );
++   assert( this->m_node != 0 );
+ 
+-   if ( m_node->child() != 0 ) {
+-      m_node = m_node->child();
++   if ( this->m_node->child() != 0 ) {
++      this->m_node = this->m_node->child();
+    }
+-   else if ( m_node->next() != 0 ) {
+-      m_node = m_node->next();
++   else if ( this->m_node->next() != 0 ) {
++      this->m_node = this->m_node->next();
+    }
+    else {
+-      while ( m_node->parent() != 0 ) {
+-         m_node = m_node->parent();
+-         if ( m_node->next() != 0 )
++      while ( this->m_node->parent() != 0 ) {
++         this->m_node = this->m_node->parent();
++         if ( this->m_node->next() != 0 )
+             break;
+       }
+-      m_node = m_node->next(); // can be NULL
++      this->m_node = this->m_node->next(); // can be NULL
+    }
+ 
+    return *this;
+@@ -142,16 +142,16 @@ __iterator<__Node> &__find_iterator<__Node>::__find()
+    int matches;
+    while ( this->m_node != 0 ) {
+       matches = 0;
+-      if ( m_name != "" && m_name == m_node->name() )
++      if ( m_name != "" && m_name == this->m_node->name() )
+          matches++;
+ 
+-      if ( m_attr != "" && m_node->hasAttribute( m_attr ) ) {
++      if ( m_attr != "" && this->m_node->hasAttribute( m_attr ) ) {
+          matches++;
+-         if ( m_valattr != "" && m_node->getAttribute( m_attr ) == m_valattr )
++         if ( m_valattr != "" && this->m_node->getAttribute( m_attr ) == m_valattr )
+             matches++;
+       }
+ 
+-      if ( m_data != "" && m_node->data().find( m_data ) != std::string::npos )
++      if ( m_data != "" && this->m_node->data().find( m_data ) != std::string::npos )
+          matches++;
+ 
+       if ( matches < m_maxmatch )
+@@ -184,7 +184,7 @@ __path_iterator<__Node>::__path_iterator( __Node *nd, std::string path ):
+ template< class __Node >
+ __iterator<__Node> &__path_iterator<__Node>::__next()
+ {
+-   __Node *ptr = m_node;
++   __Node *ptr = this->m_node;
+    std::string name;
+    std::string::size_type pos = m_path.rfind('/');
+    
+@@ -197,11 +197,11 @@ __iterator<__Node> &__path_iterator<__Node>::__next()
+       name = m_path.substr( pos );
+    }
+    
+-   m_node = m_node->next();   
++   this->m_node = this->m_node->next();   
+    // todo: this sucks, must re-do it better
+-   while ( m_node ) {
+-      if ( name == "*" || m_node->name() == name ) break;
+-      m_node = m_node->next();   
++   while ( this->m_node ) {
++      if ( name == "*" || this->m_node->name() == name ) break;
++      this->m_node = this->m_node->next();   
+    }
+    
+    return *this;
+@@ -210,14 +210,14 @@ __iterator<__Node> &__path_iterator<__Node>::__next()
+ template< class __Node >
+ __iterator<__Node> &__path_iterator<__Node>::__prev()
+ {
+-   assert( m_node != 0 );
++   assert( this->m_node != 0 );
+ 
+-   __Node *ptr = m_node;
+-   m_node = m_node->prev();
++   __Node *ptr = this->m_node;
++   this->m_node = this->m_node->prev();
+    // todo: this sucks, must re-do it better
+-   while ( m_node != 0 ) {
+-      if ( m_node->name() == ptr->name() ) break;
+-      m_node = m_node->prev();
++   while ( this->m_node != 0 ) {
++      if ( this->m_node->name() == ptr->name() ) break;
++      this->m_node = this->m_node->prev();
+    }
+ 
+    return *this;
+@@ -250,9 +250,9 @@ __Node *__path_iterator<__Node>::subfind( __Node *parent,
+ template< class __Node >
+ __iterator<__Node> &__path_iterator<__Node>::__find()
+ {
+-   if ( m_node == 0 ) return *this;
++   if ( this->m_node == 0 ) return *this;
+    
+-   __Node *rootNode = m_node;
++   __Node *rootNode = this->m_node;
+    std::string firstName;
+    std::string::size_type pos;
+    if ( rootNode->nodeType() == Node::typeDocument ) 
+@@ -262,7 +262,7 @@ __iterator<__Node> &__path_iterator<__Node>::__find()
+          rootNode = rootNode->next();
+       if ( ! rootNode )
+       {
+-         m_node = 0;
++         this->m_node = 0;
+          return *this;
+       }
+    }
+@@ -295,10 +295,10 @@ __iterator<__Node> &__path_iterator<__Node>::__find()
+       {
+          if ( pos == std::string::npos ) 
+          {
+-            m_node = rootNode;
++            this->m_node = rootNode;
+          }
+          else {
+-            m_node = subfind( rootNode, pos+1 );
++            this->m_node = subfind( rootNode, pos+1 );
+          }
+          break;
+       }
+diff --git a/libmxmlplus-0.9.2.orig/include/mxml_node.h b/libmxmlplus-0.9.2/include/mxml_node.h
+index ca6035d..f6e229e 100644
+--- a/libmxmlplus-0.9.2.orig/include/mxml_node.h
++++ b/libmxmlplus-0.9.2/include/mxml_node.h
+@@ -214,8 +214,7 @@ public:
+       @throws MXML::MalformedError if the node is invalid
+       @throws MXML::IOError in case of hard errors on the stream
+    */
+-   Node( std::istream &in, const int style = 0, const int line=1, const int pos=0  )
+-      throw( MalformedError );
++   Node( std::istream &in, const int style = 0, const int line=1, const int pos=0  );
+ 
+    /* Creates a new node
+       Depending on the types the node could have a name, a data or both.
+@@ -309,8 +308,7 @@ public:
+       @return the attribute value, if it exists
+       @throws MXML::NotFoundError if the attribute name can't be found.
+    */
+-   const std::string getAttribute( const std::string name ) const
+-      throw( NotFoundError );
++   const std::string getAttribute( const std::string name ) const;
+ 
+    /** Sets the value of a given attribute.
+       This is a shortcut instead of searching for an attribute in
+@@ -319,8 +317,7 @@ public:
+       @return the attribute value, if it exists
+       @throws MXML::NotFoundError if the attribute name can't be found.
+    */
+-   void setAttribute( const std::string name, const std::string value )
+-      throw( NotFoundError );
++   void setAttribute( const std::string name, const std::string value );
+ 
+    /** Returns true if the node has a given attribute.
+       The found attribute is cached, so if you make this method follow
+@@ -372,7 +369,7 @@ public:
+       @param child the node to be removed
+       @throw NotFoundError if the node is not in the child list
+    */
+-   void Node::removeChild( Node *child ) throw( NotFoundError );
++   void removeChild( Node *child );
+ 
+ 
+    Node *parent() const { return m_parent; }
+@@ -391,7 +388,7 @@ public:
+       ...Or how many levels are above this node.
+       Can be called also for nodes that have not a valid symbolic path.
+    */
+-   int Node::depth() const;
++   int depth() const;
+ 
+    /** Returns a symbolic path leading to the node.
+       A Node path is the the list of all the ancestor node names, plus the
+@@ -412,7 +409,7 @@ public:
+       @return the path leading to the node, or an empty string if the node
+          has not a valid path.
+    */
+-   std::string Node::path() const;
++   std::string path() const;
+ 
+ 
+    /* Clones the node and all its children.
+diff --git a/libmxmlplus-0.9.2.orig/src/mxml_document.cpp b/libmxmlplus-0.9.2/src/mxml_document.cpp
+index c09f6f9..60961bf 100644
+--- a/libmxmlplus-0.9.2.orig/src/mxml_document.cpp
++++ b/libmxmlplus-0.9.2/src/mxml_document.cpp
+@@ -27,7 +27,6 @@ Document::Document( Document &doc )
+ }
+ 
+ Document::Document( std::istream &in, const int style )
+-   throw( MalformedError )
+ {
+    m_style = style;
+    m_root = new Node( Node::typeDocument );
+@@ -55,7 +54,6 @@ void Document::write( std::ostream &stream, const int style ) const
+ 
+ 
+ void Document::read( std::istream &stream )
+-   throw( MalformedError )
+ {
+    if ( m_root->child() != 0 ) {
+       delete m_root;
+diff --git a/libmxmlplus-0.9.2.orig/src/mxml_node.cpp b/libmxmlplus-0.9.2/src/mxml_node.cpp
+index f5e1631..e69b512 100644
+--- a/libmxmlplus-0.9.2.orig/src/mxml_node.cpp
++++ b/libmxmlplus-0.9.2/src/mxml_node.cpp
+@@ -38,7 +38,7 @@ namespace MXML
+ 
+ 
+ Node::Node( std::istream &in,  const int style, const int l, const int pos  )
+-   throw( MalformedError ): Element( l, pos )
++   : Element( l, pos )
+ {
+    // variables to optimize data node promotion in tag nodes
+    bool promote_data = true;
+@@ -382,7 +382,6 @@ Node::~Node()
+ /* Search routines */
+ 
+ const std::string Node::getAttribute( const std::string name ) const
+-   throw( NotFoundError )
+ {
+    AttribList::const_iterator iter = m_attrib.begin();
+ 
+@@ -395,7 +394,6 @@ const std::string Node::getAttribute( const std::string name ) const
+ }
+ 
+ void Node::setAttribute( const std::string name, const std::string value )
+-   throw( NotFoundError )
+ {
+    AttribList::iterator iter = m_attrib.begin();
+ 
+@@ -423,7 +421,6 @@ bool Node::hasAttribute( const std::string name ) const
+ 
+ /* unlink routines */
+ void Node::removeChild( Node *child )
+-   throw( NotFoundError )
+ {
+    if (child->parent() != this )
+       throw NotFoundError( Error::errHyerarcy, this );
