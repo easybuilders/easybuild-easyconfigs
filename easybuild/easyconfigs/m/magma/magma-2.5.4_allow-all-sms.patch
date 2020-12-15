@@ -1,10 +1,11 @@
 This allows to process any sm_xx passed to GPU_TARGET. Previously some were silently ignored
 See https://bitbucket.org/icl/magma/issues/32/list-of-whitelisted-sm_-values-for-cuda-is
+and https://bitbucket.org/icl/magma/pull-requests/5
 
 Author: Alexander Grund (TU Dresden)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index f83d9862..e59da45e 100644
+index f83d9862..0c100898 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -111,14 +111,6 @@ if (CUDA_FOUND)
@@ -22,7 +23,7 @@ index f83d9862..e59da45e 100644
      set(CUDA_SEPARABLE_COMPILATION ON)
  
      # nvcc >= 6.5 supports -std=c++11, so propagate CXXFLAGS to NVCCFLAGS.
-@@ -155,126 +147,40 @@ if (CUDA_FOUND)
+@@ -155,129 +147,43 @@ if (CUDA_FOUND)
          set( GPU_TARGET "${GPU_TARGET} sm_80" )
      endif()
  
@@ -117,7 +118,7 @@ index f83d9862..e59da45e 100644
 -    endif()
 +    # NVCC options for the different cards
 +    # sm_xx is binary, compute_xx is PTX for forward compatability
-+    # MIN_ARCH is lowest requested version
++    # MIN_SM/MAX_SM is lowest/highest requested version
 +    # NV_SM    accumulates sm_xx for all requested versions
 +    # NV_COMP  is compute_xx for highest requested version
 +    set( MIN_SM 99 )
@@ -131,7 +132,7 @@ index f83d9862..e59da45e 100644
 +    string( REGEX MATCHALL "sm_[0-9][0-9]" sms "${GPU_TARGET}" )
 +    list( SORT sms ) # To make output easier to reason about
 +    foreach (sm IN LISTS sms)
-+        string( REPLACE sm_ "" sm "${sm}") # Remove sm_ prefix
++        string( REPLACE "sm_" "" sm "${sm}") # Remove sm_ prefix
 +        if (sm LESS MIN_SM)
 +            set( MIN_SM "${sm}" )
          endif()
@@ -150,8 +151,8 @@ index f83d9862..e59da45e 100644
 -        set( NV_COMP        -gencode arch=compute_75,code=compute_75 )
 -        message( STATUS "    compile for CUDA arch 7.5 (Turing)" )
 -    endif()
-+        set( NV_SM ${NV_SM} -gencode arch=compute_${sm},code=sm_${sm} )
-+        string( REGEX REPLACE "sm_([0-9])([0-9])" "\\1.\\2" cuda_arch "${sm}" )
++        list( APPEND NV_SM "-gencode arch=compute_${sm},code=sm_${sm}" )
++        string( REGEX REPLACE "([0-9])([0-9])" "\\1.\\2" cuda_arch "${sm}" )
 +        message( STATUS "    compile for CUDA arch ${cuda_arch}" )
 +    endforeach()
  
@@ -172,8 +173,13 @@ index f83d9862..e59da45e 100644
 -    if (NOT MIN_ARCH)
 -        message( FATAL_ERROR "GPU_TARGET must contain one or more of Fermi, Kepler, Maxwell, Pascal, Volta, Turing, Ampere, or valid sm_[0-9][0-9]" )
 -    endif()
-+    set( MIN_ARCH ${sm}0 )
-+    set( NV_COMP -gencode arch=compute_${MAX_SM},code=compute_${MAX_SM} )
++    set( MIN_ARCH ${MIN_SM}0 )
++    set( NV_COMP "-gencode arch=compute_${MAX_SM},code=compute_${MAX_SM}" )
  
-     set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcompiler -fPIC -DHAVE_CUBLAS ${NV_SM} ${NV_COMP} ${FORTRAN_CONVENTION} )
-     add_definitions( "-DHAVE_CUBLAS -DMIN_CUDA_ARCH=${MIN_ARCH}" )
+-    set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcompiler -fPIC -DHAVE_CUBLAS ${NV_SM} ${NV_COMP} ${FORTRAN_CONVENTION} )
+-    add_definitions( "-DHAVE_CUBLAS -DMIN_CUDA_ARCH=${MIN_ARCH}" )
++    list( APPEND CUDA_NVCC_FLAGS "-Xcompiler -fPIC" ${NV_SM} ${NV_COMP} ${FORTRAN_CONVENTION} )
++    add_definitions( -DHAVE_CUBLAS -DMIN_CUDA_ARCH=${MIN_ARCH} )
+     message( STATUS "Define -DHAVE_CUBLAS -DMIN_CUDA_ARCH=${MIN_ARCH}" )
+ endif()
+ 
