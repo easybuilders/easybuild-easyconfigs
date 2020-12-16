@@ -210,6 +210,19 @@ class EasyConfigTest(TestCase):
             if len(serial_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
 
+        # filter out BLIS and libFLAME with -amd versionsuffix
+        # (AMD forks, used in gobff/*-amd toolchains)
+        if dep in ['BLIS', 'libFLAME']:
+            amd_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -amd')]
+            if len(amd_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != amd_vsuff_vars[0])
+
+        # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
+        if dep == 'ScaLAPACK':
+            blis_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -BLIS-' in v]
+            if len(blis_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != blis_vsuff_vars[0])
+
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
         if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'PyTorch', 'R', 'TensorFlow'] and len(dep_vars) > 1:
