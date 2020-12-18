@@ -1,0 +1,46 @@
+name = 'WRF'
+version = '4.2.1'
+buildtype = "dmpar"
+versionsuffix = '-%s' % buildtype
+
+homepage = 'http://www.wrf-model.org'
+description = """The Weather Research and Forecasting (WRF) Model is a next-generation mesoscale
+ numerical weather prediction system designed to serve both operational forecasting and atmospheric
+ research needs."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'opt': False}  # don't use agressive optimization, stick to -O2
+
+source_urls = ['https://github.com/wrf-model/WRF/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'WRF_parallel_build_fix.patch',
+    'WRFv%(version)s_netCDF-Fortran_separate_path.patch',
+    'WRFv%(version)s-rpc-in-gentoo.patch',
+]
+checksums = [
+    '28c8d69d3a72a689bef65348a33c8b5c506bdd4d71f405140f2963926ebd165d',  # v4.2.1.tar.gz
+    'f93bb6dbb8b52d72f816e2f9a6815bffd536afeca8511552ec5abc4253a59346',  # WRF_parallel_build_fix.patch
+    '8e5be7237b2882ce34788d92a0d47bf44e419fba30fadecacc69bc3fdbef6324',  # WRFv4.2.1_netCDF-Fortran_separate_path.patch
+    '600f21dfe7090bba581d00a0b9333b489449b0cd15f993e3db4118f921ad1548',  # WRFv4.2.1-rpc-in-gentoo.patch
+]
+
+#preconfigopts = 'CPATH=$EBROOTGENTOO/include/tirpc:$CPATH LDFLAGS="$LDFLAGS -ltirpc" '
+#prebuildopts = 'CPATH=$EBROOTGENTOO/include/tirpc:$CPATH LDFLAGS="$LDFLAGS -ltirpc" '
+
+# csh is used by WRF install scripts
+builddependencies = [
+    ('tcsh', '6.22.02'),
+    ('time', '1.9'),
+]
+
+dependencies = [
+    ('JasPer', '2.0.14'),
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+]
+
+# limit parallel build to 20
+maxparallel = 20
+
+moduleclass = 'geo'
