@@ -665,8 +665,10 @@ class EasyConfigTest(TestCase):
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
         whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
                      'Toolchain']
-        # Autotools & (recent) GCC are just bundles (Autotools: Autoconf+Automake+libtool, GCC: GCCcore+binutils)
-        bundles_whitelist = ['Autotools', 'GCC', 'CUDA']
+        # Bundles of dependencies without files of their own
+        # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
+        # CESM-deps: Python + Perl + netCDF + ESMF + git
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC']
 
         failing_checks = []
 
