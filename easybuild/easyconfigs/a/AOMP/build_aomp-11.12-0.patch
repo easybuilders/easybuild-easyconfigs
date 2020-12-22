@@ -1,0 +1,68 @@
+Patch to support EB number of threads, remove hard coded path for GCC and
+support EB version of GCC
+--- a/aomp/bin/aomp_common_vars
++++ b/aomp/bin/aomp_common_vars
+@@ -128,16 +128,16 @@ GFXLIST=${GFXLIST:-"gfx700 gfx701 gfx801 gfx803 gfx900 gfx902 gfx906 gfx908"}
+ export GFXLIST
+ 
+ # Calculate the number of threads to use for make
+-NUM_THREADS=
+ if [ ! -z `which "getconf"` ]; then
+-   NUM_THREADS=$(`which "getconf"` _NPROCESSORS_ONLN)
++   _THREADS=$(`which "getconf"` _NPROCESSORS_ONLN)
+    if [ "$AOMP_PROC" == "ppc64le" ] ; then
+-      NUM_THREADS=8
++      _THREADS=8
+    fi
+    if [ "$AOMP_PROC" == "aarch64" ] ; then
+-      NUM_THREADS=$(( NUM_THREADS / 4))
++      _THREADS=$(( NUM_THREADS / 4))
+    fi
+ fi
++NUM_THREADS=${NUM_THREADS:-$_THREADS}
+ 
+ # These are the web sites where the AOMP git repos are pulled from
+ GITROC="https://github.com/radeonopencompute"
+
+--- a/aomp/bin/build_aomp.sh
++++ b/aomp/bin/build_aomp.sh
+@@ -28,19 +28,6 @@ thisdir=$(getdname $0)
+ # --- end standard header ----
+ 
+ function build_aomp_component() {
+-   osversion=$(cat /etc/os-release | grep -e ^VERSION_ID)
+-
+-   if [[ $osversion =~ '"7.' ]]; then
+-     echo "OS version 7 found `cat /etc/os-release`"
+-     [ -f /opt/rh/devtoolset-7/enable ] &&  . /opt/rh/devtoolset-7/enable
+-   elif [[ $osversion =~ '"8' ]]; then
+-     echo "OS version 8 found `cat /etc/os-release`"
+-     echo
+-     echo "Get updated gcc 8: export PATH=/usr/bin:\$PATH"
+-     export PATH=/usr/bin:$PATH
+-     gcc --version
+-   fi
+-
+    $AOMP_REPOS/$AOMP_REPO_NAME/bin/build_$COMPONENT.sh "$@"
+    rc=$?
+    if [ $rc != 0 ] ; then 
+
+--- a/aomp/bin/build_openmp.sh
++++ b/aomp/bin/build_openmp.sh
+@@ -88,14 +88,14 @@ function getgcc9orless(){
+    _loc=`which gcc`
+    [ "$_loc" == "" ] && return
+    gccver=`$_loc --version | grep gcc | cut -d")" -f2 | cut -d"." -f1`
+-   [ $gccver -gt $GCCMIN ] && _loc=`which gcc-$GCCMIN`
++   [ $gccver -gt $GCCMIN ]
+    echo $_loc
+ }
+ function getgxx9orless(){
+    _loc=`which g++`
+    [ "$_loc" == "" ] && return
+    gxxver=`$_loc --version | grep g++ | cut -d")" -f2 | cut -d"." -f1`
+-   [ $gxxver -gt $GCCMIN ] && _loc=`which g++-$GCCMIN`
++   [ $gxxver -gt $GCCMIN ]
+    echo $_loc
+ }
+ 
