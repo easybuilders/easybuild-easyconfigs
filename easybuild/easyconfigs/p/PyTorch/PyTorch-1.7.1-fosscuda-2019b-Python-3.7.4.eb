@@ -245,6 +245,7 @@ patches = [
     'PyTorch-1.7.0_fix-fbgemm-not-implemented-issue.patch',
     'PyTorch-1.7.0_avoid-nan-in-test-torch.patch',
     'PyTorch-1.7.0_increase-distributed-test-timeout.patch',
+    'PyTorch-1.7.0_disable-dev-shm-test.patch',
 ]
 checksums = [
     'fc8d6aaf0bdedd4221617be8d47ac39af57605bdcc814fabc28739427b55e9c7',  # v1.7.1.tar.gz
@@ -293,12 +294,17 @@ checksums = [
     'b899aa94d9e60f11ee75a706563312ccefa9cf432756c470caa8e623991c8f18',  # PyTorch-1.7.0_avoid-nan-in-test-torch.patch
     # PyTorch-1.7.0_increase-distributed-test-timeout.patch
     'c94eda2289692d00873e2ae8cecaaf7a1e5e657dfa4cfcd94b56093f6f4766ad',
+    '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a',  # PyTorch-1.7.0_disable-dev-shm-test.patch
 ]
 
 excluded_tests = {
+    '': [
+        # Test from this suite timeout often. The process group backend is deprecated anyway
+        'distributed/rpc/test_process_group_agent',
+    ]
 }
 
-runtest = 'cd test && %(python)s run_test.py --verbose %(excluded_tests)s'
+runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --verbose %(excluded_tests)s'
 
 sanity_check_commands = ["python -c 'import caffe2.python'"]
 tests = ['PyTorch-check-cpp-extension.py']
