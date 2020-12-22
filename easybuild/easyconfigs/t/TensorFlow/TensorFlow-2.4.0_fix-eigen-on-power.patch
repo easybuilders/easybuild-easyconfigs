@@ -5,7 +5,7 @@ Workaround: Conditionally remove the offending code from TF when it is added in 
 Author: Alexander Grund (TU Dresden)
 
 diff --git a/tensorflow/core/kernels/eigen_cuboid_convolution.h b/tensorflow/core/kernels/eigen_cuboid_convolution.h
-index 76bdc509c24..44541168eed 100644
+index 76bdc509c24..19ce77bc0ed 100644
 --- a/tensorflow/core/kernels/eigen_cuboid_convolution.h
 +++ b/tensorflow/core/kernels/eigen_cuboid_convolution.h
 @@ -25,10 +25,17 @@ limitations under the License.
@@ -26,16 +26,16 @@ index 76bdc509c24..44541168eed 100644
  // WARNING: Most of the code here implicitly assumes that the matrix is in
  // ColMajor layout. This is guaranteed by the tensor contraction (see
  // TensorContraction.h).
-@@ -1367,6 +1374,7 @@ struct gemm_pack_rhs<
+@@ -1625,6 +1632,7 @@ struct gemm_pack_rhs<
      }
    }
  };
 +#endif
  
- // Template specialization for packet_size = 2. We must special-case packet
- // blocks with nr > packet_size, e.g. PacketBlock<Packet2d, 4>.
+ #if defined(TENSORFLOW_USE_CUSTOM_CONTRACTION_KERNEL)
+ // Pack a block of the right input matrix (in our case it's always a "virtual
 diff --git a/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h b/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h
-index c8e7c6147aa..fac510c6e55 100644
+index c8e7c6147aa..1fb30f6dec3 100644
 --- a/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h
 +++ b/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h
 @@ -18,11 +18,18 @@ limitations under the License.
@@ -57,11 +57,11 @@ index c8e7c6147aa..fac510c6e55 100644
  // WARNING: Most of the code here implicitly assumes that the matrix is in
  // ColMajor layout. This is guaranteed by the tensor contraction (see
  // TensorContraction.h).
-@@ -1241,6 +1248,7 @@ struct gemm_pack_rhs<
+@@ -1532,6 +1539,7 @@ struct gemm_pack_rhs<
      }
    }
  };
 +#endif
+ }  // end namespace internal
  
- // Template specialization for packet_size = 2. We must special-case packet
- // blocks with nr > packet_size, e.g. PacketBlock<Packet2d, 4>.
+ /** SpatialConvolution

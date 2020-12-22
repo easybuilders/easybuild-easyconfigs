@@ -11,7 +11,7 @@ toolchain = {'name': 'fosscuda', 'version': '2019b'}
 toolchainopts = {'usempi': True, 'pic': True}
 
 builddependencies = [
-    ('Bazel', '3.4.1'),
+    ('Bazel', '3.7.1'),
     ('protobuf', '3.10.0'),
     # git 2.x required, see also https://github.com/tensorflow/tensorflow/issues/29053
     ('git', '2.23.0', '-nodocs'),
@@ -61,12 +61,12 @@ exts_list = [
     ('rsa', '4.6', {
         'checksums': ['109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa'],
     }),
-    ('cachetools', '4.1.1', {
-        'checksums': ['bbaa39c3dede00175df2dc2b03d0cf18dd2d32a7de7beb68072d13043c9edb20'],
+    ('cachetools', '4.2.0', {
+        'checksums': ['3796e1de094f0eaca982441c92ce96c68c89cced4cd97721ab297ea4b16db90e'],
     }),
-    ('google-auth', '1.23.0', {
+    ('google-auth', '1.24.0', {
         'modulename': 'google.auth',
-        'checksums': ['5176db85f1e7e837a646cd9cede72c3c404ccf2e3373d9ee14b2db88febad440'],
+        'checksums': ['0b0e026b412a0ad096e753907559e4bdb180d9ba9f68dd9036164db4fdc4ad2e'],
     }),
     ('oauthlib', '3.1.0', {
         'checksums': ['bee41cc35fcca6e988463cacc3bcb8a96224f470ca547e697b604cc697b2f889'],
@@ -108,10 +108,10 @@ exts_list = [
     ('termcolor', '1.1.0', {
         'checksums': ['1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b'],
     }),
-    ('tensorflow-estimator', '2.4.0rc0', {
+    ('tensorflow-estimator', version, {
         'source_tmpl': 'tensorflow_estimator-%(version)s-py2.py3-none-any.whl',
         'unpack_sources': False,
-        'checksums': ['189109445c53dd5452318c0b4be2acf9fcb96c24e581860be6b3323ecfe884a0'],
+        'checksums': ['5b7b7bf2debe19a8794adacc43e8ba6459daa4efaf54d3302623994a359b17f0'],
     }),
     ('gast', '0.3.3', {
         'checksums': ['b881ef288a49aa81440d2c5eb8aeefd4c2bb8993d5f50edae7413a85bfdb3b57'],
@@ -131,7 +131,6 @@ exts_list = [
         'source_tmpl': '%(name)s-%(version)s.zip',
         'checksums': ['efb7f6cb65dba7087c1e111bb5390291ba3616741f96840bfc75792a1a9b5ded'],
     }),
-    # For tests only
     ('tblib', '1.7.0', {
         'checksums': ['059bd77306ea7b419d4f76016aef6d7027cc8a0785579b5aad198803435f882c'],
     }),
@@ -141,7 +140,7 @@ exts_list = [
     (name, version, {
         'patches': [
             'TensorFlow-2.1.0_fix-cuda-build.patch',
-            'TensorFlow-2.4.0_replace-exectools-to-tools.patch',
+            'TensorFlow-2.3.1_disable-float128-on-power.patch',
             'TensorFlow-2.4.0_add-default-shell-env.patch',
             'TensorFlow-2.4.0_fix-eigen-on-power.patch',
             'TensorFlow-2.4.0_downgrade-required-versions.patch',
@@ -149,17 +148,64 @@ exts_list = [
             'TensorFlow-2.4.0_add-ldl.patch',
             'TensorFlow-2.4.0_add-missing-llvm-deps.patch',
             'TensorFlow-2.4.0_fix-absl-on-power.patch',
+            'TensorFlow-2.4.0_dont-use-var-lock.patch',
         ],
-        'source_tmpl': 'r2.4.zip',
+        'source_tmpl': 'v%(version)s.tar.gz',
         'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
         'test_script': 'TensorFlow-2.x_mnist-test.py',
         'test_tag_filters': '-no_gpu,-no_oss,-oss_serial,-benchmark-test,-no_oss_py37,-v1only',
         'test_targets': [
+            '//tensorflow/core/...',
+            '-//tensorflow/core:example_java_proto',
+            '-//tensorflow/core/example:example_protos_closure',
+            '//tensorflow/cc/...',
+            '//tensorflow/c/...',
             '//tensorflow/python/...',
-            '-//tensorflow/python/integration_testing/...',
+            # OOM: https://github.com/tensorflow/tensorflow/issues/45664
+            '-//tensorflow/python/keras/applications:applications_test',
+            '-//tensorflow/python/keras/layers:convolutional_recurrent_test',
+            # No registered 'ResourceScatterNdUpdate': https://github.com/tensorflow/tensorflow/issues/45663
+            '-//tensorflow/python/kernel_tests:batch_scatter_ops_test',
+            # Wrong device returned: https://github.com/tensorflow/tensorflow/issues/45662
+            '-//tensorflow/python/kernel_tests:fifo_queue_test',
+            # OpError not raised: https://github.com/tensorflow/tensorflow/issues/45661
+            '-//tensorflow/python/feature_column:feature_column_test',
+            '-//tensorflow/python/feature_column:feature_column_v2_test',
+            # Segfault: https://github.com/tensorflow/tensorflow/issues/45660
+            '-//tensorflow/python:convert_to_constants_test',
+            '-//tensorflow/python/distribute:parameter_server_strategy_v2_test',
+            '-//tensorflow/python/keras/tests:convert_to_constants_test',
+            '-//tensorflow/python/kernel_tests:map_ops_test',
+            # non-DMA-copy...: https://github.com/tensorflow/tensorflow/issues/45659
+            '-//tensorflow/python/ops/ragged:ragged_dispatch_test',
+            '-//tensorflow/python/ops/ragged:ragged_map_fn_op_test',
+            '-//tensorflow/python/ops/ragged:ragged_print_op_test',
+            '-//tensorflow/python/ops/ragged:ragged_tensor_test',
+            # Wrong values on GPU: https://github.com/tensorflow/tensorflow/issues/45849
+            '-//tensorflow/python/keras/integration_test:gradients_test',
         ],
+        'testopts': "--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute --test_size_filters=small",
         'with_xla': True,
         'checksums': [
+            '26c833b7e1873936379e810a39d14700281125257ddda8cd822c89111db6f6ae',  # v2.4.0.tar.gz
+            '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',  # TensorFlow-2.1.0_fix-cuda-build.patch
+            # TensorFlow-2.3.1_disable-float128-on-power.patch
+            'a8369e92559cce4566ff831e615420fd98b83106c73ee3af7fbd5335c5fcd569',
+            # TensorFlow-2.4.0_add-default-shell-env.patch
+            '033a870b458406f4cabab878c4183cdf54cd7627648f24c8cc9f1964ff24d292',
+            # TensorFlow-2.4.0_fix-eigen-on-power.patch
+            '761303a9d5a0e78b833610891194e497a45f1218cfcb0ac4854a0d31d3156c2b',
+            # TensorFlow-2.4.0_downgrade-required-versions.patch
+            '0eb78648a0e60a1401499e0a798c528f37f464977d2136ecea7543a5352f2ceb',
+            # TensorFlow-2.4.0_add-protobuf-deps.patch
+            '0ae2f4f1f1dc5b85f61edbe8a4a91dcffd5cf7588fa46c6a143455e4bc41a64e',
+            '917ee7282e782e48673596d8917c3207e60e0851bb9acf230a2a439b067af2e3',  # TensorFlow-2.4.0_add-ldl.patch
+            # TensorFlow-2.4.0_add-missing-llvm-deps.patch
+            'ce8c41e75f9854e547d03de99ae72cf41afa967b20439e864bc4af3dd4f565c7',
+            # TensorFlow-2.4.0_fix-absl-on-power.patch
+            'cd0e1181cfc56c259cb57b7f9590816db5f5cde3fab39b3386c001359ca6e9fa',
+            # TensorFlow-2.4.0_dont-use-var-lock.patch
+            '4f913984d5768b54a12c3079a6f2c77063f7d1a304d92390eb14b4ca166b2b10',
         ],
     }),
 ]
