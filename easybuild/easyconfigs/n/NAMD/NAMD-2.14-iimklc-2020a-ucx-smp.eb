@@ -1,0 +1,46 @@
+# Built with EasyBuild version 3.2.0-r37a492084ffe2dfe5236176e1d096d4e204f909b on 2017-05-12_17-38-53
+name = 'NAMD'
+version = '2.14'
+versionsuffix = '-ucx-smp'
+
+homepage = 'http://www.ks.uiuc.edu/Research/namd/'
+description = """NAMD is a parallel molecular dynamics code designed for high-performance simulation of
+ large biomolecular systems."""
+
+toolchain = {'name': 'iimklc', 'version': '2020a'}
+
+toolchainopts = {'opt': True,'loose': True,'pic': True, 'extra_cflags': 'ip -qno-openmp-simd'}
+
+sources = ['NAMD_%(version)s_Source.tar.gz']
+
+checksums = [ '34044d85d9b4ae61650ccdba5cda4794088c3a9075932392dd0752ef8c049235']
+
+dependencies = [
+    ('UCX', '1.8.0'),
+]
+
+# /bin/csh is required by 'config' script
+osdependencies = ['tcsh']
+charm_arch = "ucx-linux-x86_64 ifort slurmpmi2 smp"
+
+charm_extra_cxxflags = '-ip -qopt-zmm-usage=high -fpermissive'
+charm_opts = "--incdir=/opt/software/slurm/include/slurm --with-production"
+
+namd_cfg_opts = '--with-mkl'
+
+runtest=False
+moduleclass = 'chem'
+modaltsoftname = "namd-ucx-smp"
+
+modluafooter = """
+family("namd")
+require("os")
+if (mode() == "load" and os.getenv("RSNT_INTERCONNECT") == "omnipath") then
+        local warn_message = [[
+    This version of NAMD does not work with this cluster's networking. Please use namd-mpi instead.
+
+    Cette version de NAMD ne fonctionne pas avec la connectique de cette grappe. Utilisez namd-mpi.
+    ]]
+    LmodWarning(warn_message)
+end
+"""
