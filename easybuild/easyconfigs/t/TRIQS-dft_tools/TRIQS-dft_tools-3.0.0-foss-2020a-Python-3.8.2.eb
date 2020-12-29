@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'TRIQS-dft_tools'
+version = '3.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://triqs.github.io/dft_tools/'
+description = """
+ TRIQS (Toolbox for Research on Interacting Quantum Systems) is a
+ scientific project providing a set of C++ and Python libraries to
+ develop new tools for the study of interacting quantum systems.
+
+ This TRIQS-based-based application is aimed at ab-initio calculations
+ for correlated materials, combining realistic DFT band-structure calculation 
+ with the dynamical mean-field theory. Together with the necessary tools to
+ perform the DMFT self-consistency loop for realistic multi-band problems,
+ the package provides a full-fledged charge self-consistent interface to the
+ Wien2K package. In addition, if Wien2k is not available, it provides a generic
+ interface for one-shot DFT+DMFT calculations, where only the single-particle
+ Hamiltonian in orbital space has to be provided.
+"""
+
+docurls = ['https://triqs.github.io/dft_tools/%(version_major_minor)s.x/']
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/TRIQS/dft_tools/releases/download/%(version)s/']
+sources = ['dft_tools-%(version)s.tar.gz']
+checksums = ['646d1d2dca5cf6ad90e18d0706124f701aa94ec39c5236d8fcf36dc5c628a3f6']
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('TRIQS', '3.0.0', versionsuffix),
+]
+
+builddependencies = [
+    ('CMake', '3.16.4')
+]
+
+separate_build_dir = True
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/dmftproj', 'lib/libtriqs_dft_tools_c.a'],
+    'dirs': ['include/triqs_dft_tools', 'bin', 'lib', 'share',
+             'lib/python%(pyshortver)s/site-packages/triqs_dft_tools'],
+}
+
+sanity_check_commands = ["python -c 'import triqs_dft_tools'"]
+
+modextrapaths = {
+    'CPLUS_INCLUDE_PATH': 'include',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'CMAKE_PREFIX_PATH': 'lib/cmake/triqs_dft_tools',
+}
+modextravars = {
+    'TRIQS_DFT_TOOLS_ROOT': '%(installdir)s',
+    'TRIQS_DFT_TOOLS_VERSION': '%(version)s',
+}
+
+moduleclass = 'phys'
