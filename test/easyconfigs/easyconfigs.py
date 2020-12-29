@@ -281,13 +281,13 @@ class EasyConfigTest(TestCase):
                 ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-', 'artic-ncov2019-2020.04.13']),
                 # medaka 1.1.* requires TensorFlow 2.2.0 (while other 2019b easyconfigs use TensorFlow 2.1.0 as dep);
                 # TensorFlow 2.2.0 is also used as a dep for Horovod 0.19.5;
-                # decona 0.1.2 depends on medaka 1.1.3
-                ('2.2.0;', ['medaka-1.1.[13]-', 'Horovod-0.19.5-', 'decona-0.1.2']),
+                # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
+                ('2.2.0;', ['medaka-1.1.[13]-', 'Horovod-0.19.5-', 'decona-0.1.2-', 'NGSpeciesID-0.1.1.1-']),
             ],
             # medaka 1.1.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
-            # decona 0.1.2 depends on medaka 1.1.3
-            'Pysam': [('0.16.0.1;', ['medaka-1.1.[13]-', 'decona-0.1.2'])],
+            # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
+            'Pysam': [('0.16.0.1;', ['medaka-1.1.[13]-', 'decona-0.1.2-', 'NGSpeciesID-0.1.1.1-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
