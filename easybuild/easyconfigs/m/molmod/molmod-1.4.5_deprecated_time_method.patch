@@ -1,0 +1,42 @@
+Molmod is not compatible with Python 3.8 due to its deprecated
+use of time.clock() (which is no longer supported as of 3.8)
+
+Alan O'Cais, 20200324
+diff -Nru molmod-1.4.5.orig/molmod/log.py molmod-1.4.5/molmod/log.py
+--- molmod-1.4.5.orig/molmod/log.py	2019-09-11 20:34:14.000000000 +0200
++++ molmod-1.4.5/molmod/log.py	2020-03-20 10:05:41.874916780 +0100
+@@ -388,11 +388,11 @@
+
+     def start(self):
+         assert self._start is None
+-        self._start = time.clock()
++        self._start = time.process_time()
+
+     def stop(self):
+         assert self._start is not None
+-        self.cpu += time.clock() - self._start
++        self.cpu += time.process_time() - self._start
+         self._start = None
+
+
+diff -Nru molmod-1.4.5.orig/molmod/minimizer.py molmod-1.4.5/molmod/minimizer.py
+--- molmod-1.4.5.orig/molmod/minimizer.py	2019-09-11 20:34:14.000000000 +0200
++++ molmod-1.4.5/molmod/minimizer.py	2020-03-20 10:06:39.712207523 +0100
+@@ -1414,7 +1414,7 @@
+             except ConstraintError:
+                 self._screen("CONSTRAINT PROJECT FAILED", newline=True)
+                 return False
+-        self.last_end = time.clock()
++        self.last_end = time.process_time()
+
+     def propagate(self):
+         # compute the new direction
+@@ -1474,7 +1474,7 @@
+         else:
+             converged = False
+         # timing
+-        end = time.clock()
++        end = time.process_time()
+         self._screen("%5.2f" % (end - self.last_end), newline=True)
+         self.last_end = end
+         # check convergence, part 2

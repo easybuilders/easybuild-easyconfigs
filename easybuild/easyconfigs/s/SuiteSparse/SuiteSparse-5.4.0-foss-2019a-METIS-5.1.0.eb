@@ -1,0 +1,29 @@
+name = 'SuiteSparse'
+version = '5.4.0'
+local_metis_ver = '5.1.0'
+versionsuffix = '-METIS-%s' % local_metis_ver
+
+homepage = 'http://faculty.cse.tamu.edu/davis/suitesparse.html'
+description = """SuiteSparse is a collection of libraries manipulate sparse matrices."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'unroll': True, 'pic': True}
+
+source_urls = ['http://faculty.cse.tamu.edu/davis/SuiteSparse/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['374dd136696c653e34ef3212dc8ab5b61d9a67a6791d5ec4841efb838e94dbd1']
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('M4', '1.4.18'),
+]
+
+dependencies = [('METIS', local_metis_ver)]
+
+parallel = 1
+
+prebuildopts = "sed -i 's/-openmp/-fopenmp/g' SuiteSparse_config/SuiteSparse_config.mk && "
+# make sure that bin/demo can find libsuitesparseconfig.so.5 during build
+prebuildopts += "export LD_LIBRARY_PATH=%(builddir)s/SuiteSparse/lib:$LD_LIBRARY_PATH && "
+
+moduleclass = 'numlib'
