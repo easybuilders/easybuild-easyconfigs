@@ -1,0 +1,41 @@
+# Make hypre to use optimized BLAS/LAPACK and use EB provided compiler flags. Delete LIB as interferes with build in EB
+# 01 June 2018 by B. Hajgato (Free University Brussel - VUB)
+diff -ru Nek5000-17.0.org/tools/amg_hypre/hypre/install Nek5000-17.0/tools/amg_hypre/hypre/install
+--- Nek5000-17.0.org/tools/amg_hypre/hypre/install	2017-12-17 10:08:30.000000000 +0100
++++ Nek5000-17.0/tools/amg_hypre/hypre/install	2018-05-30 15:51:20.546161373 +0200
+@@ -4,10 +4,10 @@
+   exit 0
+ fi
+ if [ ! -f v2.11.2.tar.gz ]; then
+-  wget -O v2.11.2.tar.gz https://github.com/LLNL/hypre/archive/v2.11.2.tar.gz 
++  wget -O v2.11.2.tar.gz https://github.com/hypre-space/hypre/archive/v2.11.2.tar.gz 
+ fi
+ 
+ tar -zxf *.tar.gz
+ cd hypre*/src
+-./configure --prefix=`pwd`/../.. --without-MPI
++./configure --prefix=`pwd`/../.. --without-MPI --with-blas-libs="$LIBBLAS" --with-blas-lib-dirs=$BLAS_LAPACK_LIB_DIR --with-lapack-libs="$LIBLAPACK" --with-lapack-lib-dirs=$BLAS_LAPACK_LIB_DIR
+ make -j4 install
+diff -ru Nek5000-17.0.org/tools/amg_hypre/makefile Nek5000-17.0/tools/amg_hypre/makefile
+--- Nek5000-17.0.org/tools/amg_hypre/makefile	2017-12-17 10:08:30.000000000 +0100
++++ Nek5000-17.0/tools/amg_hypre/makefile	2018-05-30 15:54:35.428174247 +0200
+@@ -1,16 +1,16 @@
+ PREFIX = $(bin_nek_tools)
+-LIBS = ./hypre/lib/libHYPRE.a
++#LIBS = ./hypre/lib/libHYPRE.a
+ 
+ all: lib amg_hypre
+ 
+ amg_hypre: amg_hypre.o
+-	$(CC) -o $(PREFIX)/$@ $^ $(LIBS) $(LDFLAGS) -lm
++	$(CC) -o $(PREFIX)/$@ $^ ./hypre/lib/libHYPRE.a $(LDFLAGS) $(LIBBLAS) -lm
+ 
+ %.o: %.c
+ 	$(CC) -DHAVE_CONFIG_H -DHYPRE_TIMING $(CFLAGS) -I./hypre/include -c $<
+ 
+ lib:
+-	@cd hypre; env CC="$(CC)" CFLAGS="$(BIGMEM)" FC="$(FC)" FFLAGS="$(BIGMEM)" ./install
++	@cd hypre; env CC="$(CC)" CFLAGS="$(CFLAGS)" FC="$(FC)" FFLAGS="$(FFLAGS)" ./install
+ 
+ clean:
+ 	@rm -rf amg_hypre *.o hypre/lib hypre/include hypre/hypre*
