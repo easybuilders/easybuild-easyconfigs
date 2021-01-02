@@ -596,7 +596,7 @@ class EasyConfigTest(TestCase):
 
             download_dep_fail = ec.get('download_dep_fail')
             exts_download_dep_fail = ec.get('exts_download_dep_fail')
-            use_pip = ec.get('use_pip')
+            use_pip = ec.get('use_pip') or exts_default_options.get('use_pip')
 
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
