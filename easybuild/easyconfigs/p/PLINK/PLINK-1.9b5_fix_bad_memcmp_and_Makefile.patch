@@ -1,0 +1,88 @@
+Fix some memcmp that where stepping outside of the string.
+Fix Makefile.std so the -lm -lpthread -ldl is in LIBS and added at the end of the link line.
+Fix a bad #include zlib.h
+
+Åke Sandgren, 20201021
+diff -ru plink-ng-b15c19f.orig/1.9/dose2plink.c plink-ng-b15c19f/1.9/dose2plink.c
+--- plink-ng-b15c19f.orig/1.9/dose2plink.c	2017-11-14 21:16:37.000000000 +0100
++++ plink-ng-b15c19f/1.9/dose2plink.c	2020-10-21 16:10:16.978526654 +0200
+@@ -96,7 +96,11 @@
+   #endif
+ #endif
+ 
+-#include "../zlib-1.2.11/zlib.h"
++#ifdef DYNAMIC_ZLIB
++  #include <zlib.h>
++#else
++  #include "../zlib-1.2.11/zlib.h"
++#endif
+ 
+ #ifdef __APPLE__
+   #include <sys/sysctl.h>
+diff -ru plink-ng-b15c19f.orig/1.9/Makefile.std plink-ng-b15c19f/1.9/Makefile.std
+--- plink-ng-b15c19f.orig/1.9/Makefile.std	2017-11-14 21:16:37.000000000 +0100
++++ plink-ng-b15c19f/1.9/Makefile.std	2020-10-21 16:24:14.399023402 +0200
+@@ -32,7 +32,7 @@
+ CFLAGS ?=	-Wall -O2
+ CXXFLAGS ?=	-Wall -O2
+ BLASFLAGS ?=	-L/usr/lib64/atlas -llapack -lcblas -latlas
+-LDFLAGS ?=	-lm -lpthread -ldl
++LIBS ?=	-lm -lpthread -ldl
+ ZLIB ?=		../zlib-1.2.11/libz.so.1.2.11
+ 
+ PREFIX ?=	/usr/local
+@@ -73,10 +73,10 @@
+ all:	$(BIN)
+ 
+ plink: $(OBJS)
+-	$(CXX) $(OBJS) $(LDFLAGS_EXTRA) $(BLASFLAGS) $(LDFLAGS) -L. $(ZLIB) -o $@
++	$(CXX) $(OBJS) $(LDFLAGS_EXTRA) $(BLASFLAGS) $(LDFLAGS) -L. $(ZLIB) -o $@ $(LIBS)
+ 
+ plinkw: $(OBJS)
+-	gfortran -O2 $(OBJS) $(LDFLAGS_EXTRA) -Wl,-Bstatic $(BLASFLAGS) $(LDFLAGS) -L. $(ZLIB) -o $@
++	gfortran -O2 $(OBJS) $(LDFLAGS_EXTRA) -Wl,-Bstatic $(BLASFLAGS) $(LDFLAGS) -L. $(ZLIB) -o $@ $(LIBS)
+ 
+ install:
+ 	$(INSTALL) -d $(DESTDIR)$(PREFIX)/bin
+diff -ru plink-ng-b15c19f.orig/1.9/plink.c plink-ng-b15c19f/1.9/plink.c
+--- plink-ng-b15c19f.orig/1.9/plink.c	2017-11-14 21:16:37.000000000 +0100
++++ plink-ng-b15c19f/1.9/plink.c	2020-10-21 16:22:48.512204129 +0200
+@@ -6854,7 +6854,7 @@
+ 	  sprintf(g_logbuf, "Error: Invalid --flip-scan-window size '%s'.\n", argv[cur_arg + 1]);
+ 	  goto main_ret_INVALID_CMDLINE_WWA;
+ 	}
+-      } else if (!memcmp(argptr2, "lip-scan-window-kb", 22)) {
++      } else if (!memcmp(argptr2, "lip-scan-window-kb", 19)) {
+         if (!(calculation_type & CALC_FLIPSCAN)) {
+ 	  logerrprint("Error: --flip-scan-window-kb must be used with --flip-scan.\n");
+ 	  goto main_ret_INVALID_CMDLINE;
+@@ -10816,7 +10816,7 @@
+ 	if (retval) {
+ 	  goto main_ret_1;
+ 	}
+-      } else if (!memcmp(argptr2, "ead-genome-list", 19)) {
++      } else if (!memcmp(argptr2, "ead-genome-list", 16)) {
+ 	logerrprint("Error: --read-genome-list flag retired.  Use --parallel + Unix cat instead.\n");
+ 	goto main_ret_INVALID_CMDLINE;
+       } else if (!memcmp(argptr2, "ead-genome-minimal", 19)) {
+diff -ru plink-ng-b15c19f.orig/1.9/plink_glm.c plink-ng-b15c19f/1.9/plink_glm.c
+--- plink-ng-b15c19f.orig/1.9/plink_glm.c	2017-11-14 21:16:37.000000000 +0100
++++ plink-ng-b15c19f/1.9/plink_glm.c	2020-10-21 16:33:56.287029270 +0200
+@@ -7821,7 +7821,7 @@
+       }
+       for (param_idx = 1; param_idx < param_ct; param_idx++) {
+ 	wptr = strcpya(&(outname_end[1]), &(param_names[param_idx * max_param_name_len]));
+-	memcpy(wptr, ".mperm.dump.all", 17);
++	memcpy(wptr, ".mperm.dump.all", 16);
+ 	if (fopen_checked(outname, "w", &outfile)) {
+ 	  goto glm_linear_nosnp_ret_OPEN_FAIL;
+ 	}
+@@ -8605,7 +8605,7 @@
+       }
+       for (param_idx = 1; param_idx < param_ct; param_idx++) {
+ 	wptr = strcpya(&(outname_end[1]), &(param_names[param_idx * max_param_name_len]));
+-	memcpy(wptr, ".mperm.dump.all", 17);
++	memcpy(wptr, ".mperm.dump.all", 16);
+ 	if (fopen_checked(outname, "w", &outfile)) {
+ 	  goto glm_logistic_nosnp_ret_OPEN_FAIL;
+ 	}
