@@ -1,7 +1,5 @@
-easyblock = 'ConfigureMake'
-
 name = 'CMake'
-version = "3.15.1"
+version = '3.15.1'
 
 homepage = 'http://www.cmake.org'
 
@@ -10,31 +8,20 @@ description = """
  tools designed to build, test and package software.
 """
 
-toolchain = {'name': 'dummy', 'version': ''}
+toolchain = SYSTEM
 
-source_urls = ['http://www.cmake.org/files/v%(version_major_minor)s']
+source_urls = ['https://www.cmake.org/files/v%(version_major_minor)s']
 sources = [SOURCELOWER_TAR_GZ]
 checksums = ['18dec548d8f8b04d53c60f9cedcebaa6762f8425339d1e2c889c383d3ccdd7f7']
-builddependencies = [
-    ('binutils', '2.30'),
-    ('ncurses', '6.1'),
-]
 
-dependencies = [
-    # OS dependency should be preferred if the os version is more recent then this version,
-    # it's nice to have an up to date openssl for security reasons
-    # ('OpenSSL', '1.1.0h'),
-]
+builddependencies = [('ncurses', '6.1')]
 
-osdependencies = [
-    ('openssl-devel', 'libssl-dev', 'libopenssl-devel'),
-]
+# Use OS dependencies in order to ensure that CMake can build software that depends on them
+osdependencies = [OS_PKG_OPENSSL_DEV]
 
-configopts = '-- -DCMAKE_USE_OPENSSL=1 -DCMAKE_PREFIX_PATH=$EBROOTNCURSES'
-
-sanity_check_paths = {
-    'files': ["bin/%s" % x for x in ['ccmake', 'cmake', 'cpack', 'ctest']],
-    'dirs': [],
-}
+configopts = "-- "
+configopts += "-DCURSES_CURSES_LIBRARY=$EBROOTNCURSES/lib/libcurses.a "
+configopts += "-DCURSES_FORM_LIBRARY=$EBROOTNCURSES/lib/libform.a "
+configopts += "-DCURSES_NCURSES_LIBRARY=$EBROOTNCURSES/lib/libncurses.a "
 
 moduleclass = 'devel'
