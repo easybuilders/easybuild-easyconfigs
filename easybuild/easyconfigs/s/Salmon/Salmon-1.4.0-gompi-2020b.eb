@@ -1,0 +1,61 @@
+##
+# This is a contribution from DeepThought HPC Service, Flinders University, Adelaide, Australia
+# Homepage:     https://staff.flinders.edu.au/research/deep-thought
+#
+# Authors::     Robert Qiao <rob.qiao@flinders.edu.au>
+# License::     GLPv2
+#
+# Notes::
+##
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# uploaded by J. Sassmannshausen
+# Thanks to people like Simon Brandord, Mikael Oehmann and Kenneth Hoste
+# for their help with the ICE
+
+easyblock = 'CMakeMake'
+
+name = 'Salmon'
+version = '1.4.0'
+
+homepage = 'https://github.com/COMBINE-lab/salmon'
+description = """Salmon is a wicked-fast program to produce a highly-accurate,
+ transcript-level quantification estimates from RNA-seq data."""
+
+toolchain = {'name': 'gompi', 'version': '2020b'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+github_account = 'COMBINE-lab'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['6d3e25387450710f0aa779a1e9aaa9b4dec842324ff8551d66962d7c7606e71d']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('pkg-config', '0.29.2'),
+    ('jemalloc', '5.2.1'),
+]
+
+dependencies = [
+    ('Boost', '1.74.0'),
+    ('tbb', '2020.3'),
+]
+
+# Disable link-time optimizations (-flto) because it triggers a segfault/internal compiler error (ICE) with GCC 9.3.0
+# This problem might be solved with a newer version of either GCC or Salmon.
+configopts = '-DJEMALLOC_ROOT=$EBROOTJEMALLOC -DNO_IPO=1'
+
+# need to unset the $LD_PRELOAD set be jemalloc to avoid hanging 'make test'
+# since jemalloc is statically linked in Salmon (and hence only a build dep),
+# this only affects the tests
+pretestopts = "unset LD_PRELOAD && "
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'] + ['lib/lib%s.a' % x for x in ['graphdump', 'ntcard', 'salmon_core', 'twopaco']],
+    'dirs': [],
+}
+
+sanity_check_commands = ["salmon --help"]
+
+moduleclass = 'bio'
