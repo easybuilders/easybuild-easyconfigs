@@ -1,0 +1,56 @@
+This reverts the following commit. That change caused action_env variables to not be
+passed through breaking build using system dependencies.
+Author: Alexander Grund (TU Dresden)
+
+From f827c023906e7d30f0e5f2992b111ab34153310a Mon Sep 17 00:00:00 2001
+From: "A. Unique TensorFlower" <gardener@tensorflow.org>
+Date: Wed, 4 Mar 2020 22:27:03 -0800
+Subject: [PATCH] Use `exec_tools` rather than `tools` in tensorflow.bzl to
+ allow transitive dependencies to use python3 tools and deps in genrules
+
+PiperOrigin-RevId: 299023196
+Change-Id: I99981272330b060e9581c5c2a2f3992d524ae287
+---
+ tensorflow/tensorflow.bzl | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/tensorflow/tensorflow.bzl b/tensorflow/tensorflow.bzl
+index b77b923cd4d4e..e4b3fa9ae90e5 100644
+--- a/tensorflow/tensorflow.bzl
++++ b/tensorflow/tensorflow.bzl
+@@ -767,7 +767,7 @@ def tf_gen_op_wrapper_cc(
+             out_ops_file + "_internal.cc",
+         ],
+         srcs = srcs,
+-        exec_tools = [":" + tool] + tf_binary_additional_srcs(),
++        tools = [":" + tool] + tf_binary_additional_srcs(),
+         cmd = ("$(location :" + tool + ") $(location :" + out_ops_file + ".h) " +
+                "$(location :" + out_ops_file + ".cc) " +
+                str(include_internal_ops) + " " + api_def_args_str),
+@@ -969,7 +969,7 @@ def tf_gen_op_wrapper_py(
+             name = name + "_pygenrule",
+             outs = [out],
+             srcs = api_def_srcs + [hidden_file],
+-            exec_tools = [tool_name] + tf_binary_additional_srcs(),
++            tools = [tool_name] + tf_binary_additional_srcs(),
+             cmd = ("$(location " + tool_name + ") " + api_def_args_str +
+                    " @$(location " + hidden_file + ") > $@"),
+         )
+@@ -978,7 +978,7 @@ def tf_gen_op_wrapper_py(
+             name = name + "_pygenrule",
+             outs = [out],
+             srcs = api_def_srcs,
+-            exec_tools = [tool_name] + tf_binary_additional_srcs(),
++            tools = [tool_name] + tf_binary_additional_srcs(),
+             cmd = ("$(location " + tool_name + ") " + api_def_args_str + " " +
+                    op_list_arg + " " +
+                    ("1" if op_list_is_whitelist else "0") + " > $@"),
+@@ -2430,7 +2430,7 @@ def tf_generate_proto_text_sources(name, srcs_relative_dir, srcs, protodeps = []
+         cmd =
+             "$(location //tensorflow/tools/proto_text:gen_proto_text_functions) " +
+             "$(@D) " + srcs_relative_dir + " $(SRCS)",
+-        exec_tools = [
++        tools = [
+             clean_dep("//tensorflow/tools/proto_text:gen_proto_text_functions"),
+         ],
+     )

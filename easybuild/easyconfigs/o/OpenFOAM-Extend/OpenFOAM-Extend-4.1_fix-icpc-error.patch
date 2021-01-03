@@ -1,0 +1,32 @@
+fix compilation error with Intel C++ compiler:
+error: no suitable user-defined conversion from "Foam::HashTable<Foam::meshObjectBase *, Foam::word, Foam::string::hash>" to "Foam::HashTable<const Foam::meshObjectBase *, Foam::word, Foam::string::hash>" exists
+author: Lars Viklund** (Umeå University)
+--- a/src/foam/meshes/MeshObject/meshObjectBase.H
++++ b/src/foam/meshes/MeshObject/meshObjectBase.H
+@@ -67,7 +67,7 @@
+         static void allUpdateTopology(const Mesh& mesh, const mapPolyMesh& mpm)
+         {
+             HashTable<const meshObjectBase*> tbl =
+-                mesh.objectRegistry::template lookupClass<meshObjectBase>();
++                static_cast<const objectRegistry&>(mesh).lookupClass<meshObjectBase>();
+ 
+             if (Mesh::debug)
+             {
+@@ -111,7 +111,7 @@
+             if (mesh.moving())
+             {
+                 HashTable<const meshObjectBase*> tbl =
+-                    mesh.objectRegistry::template lookupClass<meshObjectBase>();
++                    static_cast<const objectRegistry&>(mesh).lookupClass<meshObjectBase>();
+ 
+                 if (Mesh::debug)
+                 {
+@@ -153,7 +153,7 @@
+         static void allDelete(const Mesh& mesh)
+         {
+             HashTable<const meshObjectBase*> tbl =
+-                mesh.objectRegistry::template lookupClass<meshObjectBase>();
++                static_cast<const objectRegistry&>(mesh).lookupClass<meshObjectBase>();
+ 
+             for
+             (
