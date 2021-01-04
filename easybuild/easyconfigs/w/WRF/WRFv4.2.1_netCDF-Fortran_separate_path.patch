@@ -1,6 +1,6 @@
 diff -ru WRF-4.2.1.orig/arch/Config.pl WRF-4.2.1/arch/Config.pl
 --- WRF-4.2.1.orig/arch/Config.pl	2020-12-18 18:38:47.229143353 +0000
-+++ WRF-4.2.1/arch/Config.pl	2020-12-18 19:12:29.390617651 +0000
++++ WRF-4.2.1/arch/Config.pl	2021-01-04 19:41:22.018470549 +0000
 @@ -8,6 +8,7 @@
  select((select(STDOUT), $|=1)[0]);
  $sw_perl_path = perl ;
@@ -48,7 +48,7 @@ diff -ru WRF-4.2.1.orig/arch/Config.pl WRF-4.2.1/arch/Config.pl
 Seulement dans WRF-4.2.1/arch: Config.pl.orig
 diff -ru WRF-4.2.1.orig/arch/configure.defaults WRF-4.2.1/arch/configure.defaults
 --- WRF-4.2.1.orig/arch/configure.defaults	2020-12-18 18:38:47.234143376 +0000
-+++ WRF-4.2.1/arch/configure.defaults	2020-12-18 19:12:29.459617974 +0000
++++ WRF-4.2.1/arch/configure.defaults	2021-01-04 19:41:22.202471246 +0000
 @@ -1598,6 +1598,7 @@
  
  LIB_EXTERNAL    = \
@@ -60,7 +60,7 @@ diff -ru WRF-4.2.1.orig/arch/configure.defaults WRF-4.2.1/arch/configure.default
 Seulement dans WRF-4.2.1/arch: configure.defaults.orig
 diff -ru WRF-4.2.1.orig/arch/conf_tokens WRF-4.2.1/arch/conf_tokens
 --- WRF-4.2.1.orig/arch/conf_tokens	2020-12-18 18:38:47.232143367 +0000
-+++ WRF-4.2.1/arch/conf_tokens	2020-12-18 19:12:29.463617992 +0000
++++ WRF-4.2.1/arch/conf_tokens	2021-01-04 19:41:22.205471257 +0000
 @@ -5,6 +5,7 @@
         CONFIGURE_DMPARALLEL
  CONFIGURE_RWORDSIZE
@@ -78,7 +78,7 @@ diff -ru WRF-4.2.1.orig/arch/conf_tokens WRF-4.2.1/arch/conf_tokens
 Seulement dans WRF-4.2.1/arch: conf_tokens.orig
 diff -ru WRF-4.2.1.orig/arch/postamble WRF-4.2.1/arch/postamble
 --- WRF-4.2.1.orig/arch/postamble	2020-12-18 18:38:47.244143423 +0000
-+++ WRF-4.2.1/arch/postamble	2020-12-18 19:12:29.466618006 +0000
++++ WRF-4.2.1/arch/postamble	2021-01-04 19:41:22.208471268 +0000
 @@ -52,7 +52,7 @@
                        -I$(WRF_SRC_ROOT_DIR)/phys \
                        -I$(WRF_SRC_ROOT_DIR)/wrftladj \
@@ -115,8 +115,8 @@ diff -ru WRF-4.2.1.orig/arch/postamble WRF-4.2.1/arch/postamble
 Seulement dans WRF-4.2.1/arch: postamble.orig
 diff -ru WRF-4.2.1.orig/configure WRF-4.2.1/configure
 --- WRF-4.2.1.orig/configure	2020-12-18 18:38:44.403130118 +0000
-+++ WRF-4.2.1/configure	2020-12-18 19:16:36.885772883 +0000
-@@ -180,12 +180,12 @@
++++ WRF-4.2.1/configure	2021-01-04 19:46:56.945753542 +0000
+@@ -180,12 +180,17 @@
  if [ -n "$NETCDF" ] ; then
    echo "Will use NETCDF in dir: $NETCDF"
  # Oh UNIDATA, why make it so hard ...
@@ -125,13 +125,18 @@ diff -ru WRF-4.2.1.orig/configure WRF-4.2.1/configure
      USENETCDFF="-lnetcdff"
    else
      USENETCDFF=" "
++    if [ -f "$NETCDFF/lib/libnetcdff.a" -o -f "$NETCDFF/lib/libnetcdff.so" -o -f "$NETCDFF/lib64/libnetcdff.so" -o -f "$NETCDFF/lib64/libnetcdff.so" ] ; then
++      USENETCDFF="-L$NETCDFF/lib!-L$NETCDFF/lib64!-lnetcdff" # ! will be replaced with space
++    else
++      USENETCDFF=" "
++    fi
    fi
 -  if [ -f "$NETCDF/lib/libnetcdf.a" -o -f "$NETCDF/lib/libnetcdf.so" -o -f "$NETCDF/lib/libnetcdf.dll.a" ] ; then
 +  if [ -f "$NETCDF/lib/libnetcdf.a" -o -f "$NETCDF/lib/libnetcdf.so" -o -f "$NETCDF/lib/libnetcdf.dll.a" -o -f "$NETCDF/lib64/libnetcdf.a" -o -f "$NETCDF/lib64/libnetcdf.so" -o -f "$NETCDF/lib64/libnetcdf.dll.a" ] ; then
      USENETCDF="-lnetcdf"
    else
      USENETCDF=" "
-@@ -552,7 +552,7 @@
+@@ -552,7 +557,7 @@
     srch=`grep -i "^#ARCH.*$os" arch/configure.defaults | grep -i "$mach"`
     if [ -n "$srch" ] ; then
       $PERL arch/Config.pl -dmparallel=$COMMLIB -ompparallel=$OMP -perl=$PERL \
@@ -140,7 +145,7 @@ diff -ru WRF-4.2.1.orig/configure WRF-4.2.1/configure
            -compileflags=$compileflags -opt_level=$opt_level -USENETCDFF=$USENETCDFF -USENETCDF=$USENETCDF \
            -time=$FORTRAN_COMPILER_TIMER -tfl="$TFL" -cfl="$CFL" -config_line="$config_line" \
            -wrf_core=$wrf_core -gpfs=$GPFS_PATH -curl=$CURL_PATH -dep_lib_path="$DEP_LIB_PATH"
-@@ -634,14 +634,14 @@
+@@ -634,14 +639,14 @@
  echo "If you wish to change the default options, edit the file:"
  echo "     arch/configure.defaults"
  
@@ -162,7 +167,7 @@ diff -ru WRF-4.2.1.orig/configure WRF-4.2.1/configure
 Seulement dans WRF-4.2.1: configure.orig
 diff -ru WRF-4.2.1.orig/external/io_netcdf/makefile WRF-4.2.1/external/io_netcdf/makefile
 --- WRF-4.2.1.orig/external/io_netcdf/makefile	2020-12-18 18:38:50.658159412 +0000
-+++ WRF-4.2.1/external/io_netcdf/makefile	2020-12-18 19:12:29.473618039 +0000
++++ WRF-4.2.1/external/io_netcdf/makefile	2021-01-04 19:41:22.214471291 +0000
 @@ -3,9 +3,9 @@
  OBJSL   = wrf_io.o field_routines.o module_wrfsi_static.o
  OBJS    = $(OBJSL)
@@ -206,7 +211,7 @@ diff -ru WRF-4.2.1.orig/external/io_netcdf/makefile WRF-4.2.1/external/io_netcdf
 Seulement dans WRF-4.2.1/external/io_netcdf: makefile.orig
 diff -ru WRF-4.2.1.orig/external/io_pnetcdf/Makefile WRF-4.2.1/external/io_pnetcdf/Makefile
 --- WRF-4.2.1.orig/external/io_pnetcdf/Makefile	2020-12-18 18:38:51.029161150 +0000
-+++ WRF-4.2.1/external/io_pnetcdf/Makefile	2020-12-18 19:12:29.476618053 +0000
++++ WRF-4.2.1/external/io_pnetcdf/Makefile	2021-01-04 19:41:22.217471302 +0000
 @@ -9,8 +9,8 @@
  	  ext_pnc_put_var_td.code \
  	  ext_pnc_put_var_ti.code \
@@ -238,10 +243,9 @@ diff -ru WRF-4.2.1.orig/external/io_pnetcdf/Makefile WRF-4.2.1/external/io_pnetc
  
  superclean:
 Seulement dans WRF-4.2.1/external/io_pnetcdf: Makefile.orig
-Seulement dans WRF-4.2.1/main: Makefile.orig
 diff -ru WRF-4.2.1.orig/Makefile WRF-4.2.1/Makefile
 --- WRF-4.2.1.orig/Makefile	2020-12-18 18:38:44.398130094 +0000
-+++ WRF-4.2.1/Makefile	2020-12-18 19:12:29.480618072 +0000
++++ WRF-4.2.1/Makefile	2021-01-04 19:41:22.220471313 +0000
 @@ -976,7 +976,7 @@
  	@ echo '--------------------------------------'
  	( cd frame ; $(MAKE) $(J) LLIST="$(LINKLIST)" framework ; \
