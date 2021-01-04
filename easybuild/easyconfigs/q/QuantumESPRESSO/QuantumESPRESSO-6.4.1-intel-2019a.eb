@@ -1,0 +1,42 @@
+name = 'QuantumESPRESSO'
+version = '6.4.1'
+
+homepage = 'https://www.quantum-espresso.org'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes
+ for electronic-structure calculations and materials modeling at the nanoscale.
+ It is based on density-functional theory, plane waves, and pseudopotentials
+  (both norm-conserving and ultrasoft).
+"""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = [
+    'https://github.com/QEF/q-e/releases/download/qe-%(version)s/',
+    'https://github.com/wannier-developers/wannier90/archive/'
+]
+sources = [
+    'qe-%(version)s_release_pack.tgz',
+    {'filename': 'wannier90-3.0.0.tar.gz', 'download_filename': 'v3.0.0.tar.gz'},
+]
+patches = [('backports-%(version)s.diff', 'qe-%(version)s')]
+checksums = [
+    'a9b19cf620656d89a83c1abdf87fbfd66a7d011e6153fa6db2dc207bf25f138a',  # qe-6.4.1_release_pack.tgz
+    'f196e441dcd7b67159a1d09d2d7de2893b011a9f03aab6b30c4703ecbf20fe5b',  # wannier90-3.0.0.tar.gz
+    'f49c9c9300f25364275e6f38f39125769c2ff7d384bd1cf12e75c6d1ea88c554',  # backports-6.4.1.diff
+]
+
+dependencies = [
+    ('HDF5', '1.10.5'),
+    ('ELPA', '2018.11.001'),
+    ('libxc', '4.3.4'),
+]
+
+# The third party packages should be installed separately and added as
+# dependencies.  The exception is w90, which is force built
+buildopts = 'all gwl xspectra couple epw w90'
+
+# parallel build tends to fail
+parallel = 1
+
+moduleclass = 'chem'
