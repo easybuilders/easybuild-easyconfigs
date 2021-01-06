@@ -22,6 +22,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Cache source files in /tmp/sources
+      id: cache-sources
+      uses: actions/cache@v2
+      with:
+        path: /tmp/sources
+        key: eb-sourcepath
+
     - name: set up Python
       uses: actions/setup-python@v1
       with:
@@ -55,7 +62,7 @@ jobs:
           cd easybuild-framework; git log -n 1; cd -
           pip install $PWD/easybuild-framework
 
-          git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-easyblocks.git
+          git clone -b $BRANCH --depth 10 --single-branch https://github.com/easybuilders/easybuild-easyblocks.git
           cd easybuild-easyblocks; git log -n 1; cd -
           pip install $PWD/easybuild-easyblocks
 
@@ -137,7 +144,8 @@ jobs:
           eb --search '^CVS-' | grep '/CVS-'
 
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
-          eb --prefix /tmp/$USER/$GITHUB_SHA M4-1.4.18.eb
+          # use /tmp/sources because that has cached downloads (see cache step above)
+          eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
 
   test-sdist:
     runs-on: ubuntu-18.04

@@ -1,0 +1,83 @@
+# Authors: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'Bundle'
+
+name = 'Bsoft'
+version = '2.0.2'
+local_libtiff_version = '4.0.9'
+
+homepage = 'https://lsbr.niams.nih.gov/bsoft/'
+
+description = """
+ Bsoft is a collection of programs and a platform for development of software
+ for image and molecular processing in structural biology. Problems in
+ structural biology are approached with a highly modular design, allowing fast
+ development of new algorithms without the burden of issues such as file I/O.
+ It provides an easily accessible interface, a resource that can be and has
+ been used in other packages.
+"""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+dependencies = [
+    ('libjpeg-turbo', '1.5.2'),
+    ('libpng', '1.6.34'),
+    ('LibTIFF', local_libtiff_version),
+    ('libxml2', '2.9.8'),
+    ('Tk', '8.6.8'),
+]
+
+parallel = 1
+
+# Use packages from EB
+local_bsoft_configopts = "--fftw=$EBROOTFFTW --jpeg=$EBROOTLIBJPEGMINTURBO --png=$EBROOTLIBPNG"
+# Use libraries from LibTIFF already installed in EB
+local_bsoft_configopts += " --tiff=$EBROOTLIBTIFF"
+
+components = [
+    # Bsoft needs headers from LibTIFF only available in its source code
+    ('LibTIFF', local_libtiff_version, {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://download.osgeo.org/libtiff/'],
+        'sources': ['tiff-%s.tar.gz' % local_libtiff_version],
+        'checksums': ['6e7bdeec2c310734e734d19aae3a71ebe37a4d842e0e23dbb1b8921c0026cfcd'],
+        'start_dir': 'tiff-%s' % local_libtiff_version,
+        'configopts': '--enable-ld-version-script',
+        # skip installation: Bsoft only needs LibTIFF headers at build time and
+        # those headers are never installed in any case
+        'install_cmd': 'true',
+    }),
+    (name, version, {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://lsbr.niams.nih.gov/bsoft/'],
+        'sources': ['%%(namelower)s%s.tgz' % '_'.join(version.split('.'))],
+        'patches': ['Bsoft-2.0.2_use-eb-packages.patch'],
+        'checksums': [
+            '1be2e0fcbc61345b488fc6471b73699db57e5b5e6959683582ea6f1b030f1906',  # bsoft2_0_2.tgz
+            'dfe4e0a68d1b6984edefb32e443f7bc42ae5e520a80a58c3a5b3aa1d9c4b80cb',  # Bsoft-2.0.2_use-eb-packages.patch
+        ],
+        'preconfigopts': 'EBBUILDLIBTIFF=%%(builddir)s/tiff-%s' % local_libtiff_version,  # use headers in local LibTIFF
+        'configure_cmd': './bconf',
+        'configopts': local_bsoft_configopts,
+        'buildopts': '%(namelower)s',
+    }),
+]
+
+# Emulate Scripts/postinstall
+postinstallcmds = ["cd %%(installdir)s/bin && ln -sf ../tcltk/%s" % x for x in ['bshow', 'bshowX', 'brun', 'brunX']]
+
+sanity_check_paths = {
+    'files': ['bsoft.bashrc', 'bsetup', 'bin/bshell', 'bin/brun', 'bin/brunX', 'bin/bshow', 'bin/bshowX',
+              'lib/libbsoft.%s' % SHLIB_EXT, 'lib/libbshow.%s' % SHLIB_EXT],
+    'dirs': ['doc', 'parameters', 'tcltk'],
+}
+
+sanity_check_commands = ["bshell -verb 1 -ico 480,4 -comp 30"]
+
+modextrapaths = {
+    'BSOFT': '',
+    'BPARAM': 'parameters',
+}
+
+moduleclass = 'bio'

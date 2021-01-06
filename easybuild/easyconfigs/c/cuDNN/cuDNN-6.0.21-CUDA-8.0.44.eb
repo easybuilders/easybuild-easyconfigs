@@ -1,0 +1,46 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    Stephane Thiell <sthiell@stanford.edu>
+##
+easyblock = 'Tarball'
+
+name = 'cuDNN'
+version = '6.0.21'  # the version of the libcudnn.so provided
+local_cuda_version = '8.0.44'  # the latest matching CUDA
+local_cuda_version_major_minor = '.'.join(local_cuda_version.split('.')[:2])
+versionsuffix = '-CUDA-%s' % local_cuda_version
+
+homepage = 'https://developer.nvidia.com/cudnn'
+
+description = """
+ The NVIDIA CUDA Deep Neural Network library (cuDNN) is a GPU-accelerated
+ library of primitives for deep neural networks.
+"""
+
+toolchain = SYSTEM
+
+# Nvidia developer registration required.
+# Download link: https://developer.nvidia.com/rdp/cudnn-download
+# Download as cudnn-8.0-linux-x64-v6.tgz, rename to cudnn-8.0-linux-x64-v%(version)s.tgz
+# Note, NVIDIA may release another cudnn-8.0-linux-x64-v6.tgz with different %(version)s libraries
+# so use the checksum to verify and modify as needed.
+sources = ['%%(namelower)s-%s-linux-x64-v%%(version)s.tgz' % local_cuda_version_major_minor]
+checksums = ['9b09110af48c9a4d7b6344eb4b3e344daa84987ed6177d5c44319732f3bb7f9c']
+
+dependencies = [('CUDA', local_cuda_version)]
+
+postinstallcmds = [
+    # toss duplicates and create symlinks instead
+    'cd %%(installdir)s/lib64 && rm -vf libcudnn.%s.%s libcudnn.%s' % (SHLIB_EXT, version[0:1], SHLIB_EXT),
+    'cd %%(installdir)s/lib64 && ln -vs libcudnn.%s.%s libcudnn.%s' % (SHLIB_EXT, version, SHLIB_EXT),
+    'cd %%(installdir)s/lib64 && ln -vs libcudnn.%s.%s libcudnn.%s.%s' % (SHLIB_EXT, version, SHLIB_EXT, version[0:1]),
+    'cd %%(installdir)s/lib64 && ln -vs libcudnn.%s.%s libcudnn.%s.%s' % (SHLIB_EXT, version, SHLIB_EXT, version[0:3]),
+]
+
+sanity_check_paths = {
+    'files': ['include/cudnn.h', 'lib64/libcudnn_static.a', 'lib64/libcudnn.%s.%%(version)s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
