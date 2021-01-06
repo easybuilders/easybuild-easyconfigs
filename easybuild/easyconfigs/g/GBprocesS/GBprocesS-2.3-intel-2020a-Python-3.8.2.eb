@@ -1,0 +1,58 @@
+easyblock = 'PythonPackage'
+
+name = 'GBprocesS'
+version = '2.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://gbprocess.readthedocs.io/'
+description = """GBprocesS allows for the extraction of genomic inserts from NGS
+data for GBS experiments. Preprocessing is performed in different stages that
+are part of a linear pipeline where the steps are performed in order. GBprocesS
+provides a flexible way to adjust the functionality to your needs, as the
+operations required and the execution order vary depending on the GBS protocol
+used."""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+
+source_urls = ['https://gitlab.com/dschaumont/GBprocesS/-/archive/%(version)s/']
+sources = ['GBprocesS-%(version)s.tar.gz']
+checksums = ['374fa7bc096e0cbc83746f505bea134117debed99b7510cb4123878aeaea9456']
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('cutadapt', '2.10', '-Python-%(pyver)s'),
+    ('Biopython', '1.78', versionsuffix),
+    ('PEAR', '0.9.11'),
+]
+
+use_pip = True
+sanity_pip_check = True
+download_dep_fail = True
+
+# The package uses setuptools-scm, so we avoid using the "version" part of it.
+pretestopts = (
+    "sed -i 's/"
+    "__version__ = get_distribution(__name__).version/"
+    "__version__ = \"%(version)s\"/g' gbprocess/__init__.py && "
+    "sed -i \"s|use_scm_version={'write_to': 'gbprocess/version.py'}|version='%(version)s'|g\" setup.py && "
+)
+
+runtest = 'python -m unittest discover -v -s ./test -p test_*.py'
+
+sanity_check_commands = [
+    "touch %(builddir)s/17146FL-13-01-01_S97_L002_R1_001.fastq",
+    "touch %(builddir)s/17146FL-13-01-01_S97_L002_R2_001.fastq",
+    # Trivial configuration file to use when running gbprocess sanity check
+    # See https://gitlab.com/dschaumont/GBprocesS/-/blob/master/docs/user_guide.rst
+    "echo '[General]' > %(builddir)s/config.ini",
+    "echo 'cores = 1' >>  %(builddir)s/config.ini",
+    "echo 'input_directory = %(builddir)s/' >>  %(builddir)s/config.ini",
+    "echo 'sequencing_type = pe' >>  %(builddir)s/config.ini",
+    "echo 'input_file_name_template = {run:25}_R{orientation:1}_001{extension}' >>  %(builddir)s/config.ini",
+    "echo 'temp_dir = %(builddir)s/' >>  %(builddir)s/config.ini",
+    "gbprocess --debug -c %(builddir)s/config.ini",
+]
+
+options = {'modulename': 'gbprocess'}
+
+moduleclass = 'bio'
