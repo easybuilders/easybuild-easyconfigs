@@ -1,0 +1,37 @@
+# easybuild easyconfig
+# John Dey jfdey@fredhutch.org  fizwit@github
+easyblock = 'CmdCp'
+
+name = 'FIt-SNE'
+version = '1.1.0'
+
+homepage = 'https://github.com/KlugerLab/FIt-SNE'
+description = """t-distributed stochastic neighbor embedding (t-SNE) is widely used for
+ visualizing single-cell RNA-sequencing (scRNA-seq) data, but it scales poorly to large
+ datasets. We dramatically accelerate t-SNE, obviating the need for data downsampling, and
+ hence allowing visualization of rare cell populations. Furthermore, we implement a
+ heatmap-style visualization for scRNA-seq based on one-dimensional t-SNE for simultaneously
+ visualizing the expression patterns of thousands of genes."""
+
+toolchain = {'name': 'gompi', 'version': '2018b'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://github.com/KlugerLab/FIt-SNE/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['9a985fe1bb1e9c17fff0e81968e794eb834ccf002695d02294f2ff9ac564b873']
+
+dependencies = [
+    ('FFTW', '3.3.8'),
+]
+
+local_comp_cmd = '$CXX $CXXFLAGS src/sptree.cpp src/tsne.cpp src/nbodyfft.cpp -o bin/fast_tsne -pthread -lfftw3 -lm'
+cmds_map = [('', local_comp_cmd)]
+
+files_to_copy = [(['bin/fast_tsne'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/fast_tsne'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
