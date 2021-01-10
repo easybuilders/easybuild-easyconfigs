@@ -629,9 +629,12 @@ class EasyConfigTest(TestCase):
             # if Python is a dependency, that should be reflected in the versionsuffix
             # Tkinter is an exception, since its version always matches the Python version anyway
             # Python 3.8.6 and later are also excluded, as we consider python 3 the default python
-            # Also whitelist some updated versions of Amber
-            whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
-                                       'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
+            # Also whitelist some old versions of Amber and ParaView
+            whitelist_python_suffix = [
+                'Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
+                'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb',
+                'ParaView-5.4.1-.*-2018b.*.eb',
+            ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
             has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies']
                                  if LooseVersion(dep['version']) < LooseVersion('3.8.6'))
