@@ -1,0 +1,61 @@
+easyblock = 'CMakeMake'
+
+name = 'ArrayFire'
+version = '3.7.3'
+
+homepage = 'https://arrayfire.com/'
+
+description = """
+ ArrayFire is a general-purpose library that simplifies the process of
+ developing software that targets parallel and massively-parallel architectures
+ including CPUs, GPUs, and other hardware acceleration devices.
+"""
+
+toolchain = {'name': 'gomklc', 'version': '2020a'}
+
+source_urls = ['https://github.com/arrayfire/arrayfire/releases/download/v%(version)s/']
+sources = ['%(namelower)s-full-%(version)s.tar.bz2']
+checksums = ['523194f36ddba346d81c935b5f441f28af97e7454fd4196f3a6dfbf8d170e88b']
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+]
+multi_deps = {'Python': ['3.6', '3.7', '3.8'] }
+multi_deps_extensions_only = True
+dependencies = [
+    ('Boost', '1.72.0'),
+    ('FFTW', '3.8.8'),
+]
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_list = [
+    ('arrayfire', '3.6.20181017', {
+        'patches': ['arrayfire-python-3.6.20180117-lib64.patch'],
+        'checksums': [
+            '58e33500cea53ba01b461010e479fe1ff79d2158eb34301e05ed2b5f839afc5f',  # arrayfire-3.6.20181017.tar.gz
+            # arrayfire-python-3.6.20180117-lib64.patch
+            'add020291ebb8559499894ae1e096e0115892de61d99d0b3b6f666d73da74290',
+        ],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+separate_build_dir = True
+
+configopts = '-DUSE_CPU_MKL=ON -DUSE_OPENCL_MKL=ON -DCUDA_architecture_build_targets="3.5;5.0;5.2;6.0;6.1;7.0;7.0+PTX;8.0" '
+
+sanity_check_paths = {
+    'files': ['include/af/version.h', 'lib64/libaf.%s' % SHLIB_EXT],
+    'dirs': [
+        'share/ArrayFire/',
+#        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+modextrapaths = {
+	'EBPYTHONPREFIXES': '',
+	'AF_PATH': '',
+}
+
+
+moduleclass = 'math'
