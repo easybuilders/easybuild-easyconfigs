@@ -1,0 +1,93 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenCV'
+version = '4.5.1'
+
+homepage = 'http://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {'name': 'gmklc', 'version': '2020a'}
+
+source_urls = ['https://github.com/Itseez/%(namelower)s/archive/']
+sources = [
+    '%(version)s.zip',
+    {'source_urls': ['https://github.com/%(namelower)s/opencv_contrib/archive/'], 'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ},
+]
+patches = ['%(name)s-4.2.0-hal-internal.patch']
+checksums = [
+    '5fbc26ee09e148a4d494b225d04217f7c913ca1a4d46115b70cca3565d7bbe05',  # 4.5.1.zip
+    '12c3b1ddd0b8c1a7da5b743590a288df0934e5cef243e036ca290c2e45e425f5',  # OpenCV-4.5.1.tar.gz
+    'aad798f0017694ba82abf4fc29ecc23db891075d0f50467cfd4cc7cd4443d4c4',  # OpenCV-4.2.0-hal-internal.patch
+]
+
+dependencies = [
+    ('SciPy-Stack', '2020a', '', True),
+    ('Eigen', '3.3.7', '', True),
+    ('zlib', '1.2.8'),
+    ('FFmpeg', '3.1.3'),
+    ('libjpeg-turbo', '1.5.0'),
+    ('libpng', '1.6.24'),
+    ('LibTIFF', '4.0.6'),
+    ('JasPer', '2.0.16', None, True),
+    ('Java', '13', '', True),
+    ('ant', '1.10.8'),  #  2.2.0', '-Java-%(javaver)s', ('dummy', 'dummy')),
+    ('GLib', '2.49.5'),
+]
+
+multi_deps = {'Python': ['2.7', '3.6', '3.7', '3.8']}
+
+# cudev module is required to build OpenCV with CUDA support,
+# so copy it to a separate directory (to avoid building *all* modules in opencv_contrib...)
+
+preconfigopts = [
+    "mkdir %(builddir)s/opencv_modules && cp -a %(builddir)s/opencv_contrib-%(version)s/modules/cudev/ %(builddir)s/opencv_modules/ && ",
+    "mkdir %(builddir)s/opencv_modules && cp -a %(builddir)s/opencv_contrib-%(version)s/modules/cudev/ %(builddir)s/opencv_modules/ && ",
+    "mkdir %(builddir)s/opencv_modules && cp -a %(builddir)s/opencv_contrib-%(version)s/modules/cudev/ %(builddir)s/opencv_modules/ && ",
+    "mkdir %(builddir)s/opencv_modules && cp -a %(builddir)s/opencv_contrib-%(version)s/modules/cudev/ %(builddir)s/opencv_modules/ && ",
+]
+
+local_configopts_single = ' -DWITH_IPP=ON -DCMAKE_SKIP_RPATH=ON -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON -DWITH_CUDA=OFF -DOPENCV_SKIP_LAPACK_EXTERN_C=ON '
+
+configopts = [
+    local_configopts_single + " -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python2.7/site-packages -DPYTHON2_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON2_INCLUDE_DIR=$EBROOTPYTHON/include/python2.7 -DPYTHON2_LIBRARY=$EBROOTPYTHON/lib/libpython2.7.so",
+    local_configopts_single + " -DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/opencv_modules/ -DBUILD_opencv_cudev=ON  -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python3.6/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON3_INCLUDE_DIR=$EBROOTPYTHON/include/python3.6m -DPYTHON3_LIBRARY=$EBROOTPYTHON/lib/libpython3.6m.so",
+    local_configopts_single + " -DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/opencv_modules/ -DBUILD_opencv_cudev=ON  -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python3.7/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON3_INCLUDE_DIR=$EBROOTPYTHON/include/python3.7m -DPYTHON3_LIBRARY=$EBROOTPYTHON/lib/libpython3.7m.so",
+    local_configopts_single + " -DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/opencv_modules/ -DBUILD_opencv_cudev=ON  -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python3.8/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python -DPYTHON3_INCLUDE_DIR=$EBROOTPYTHON/include/python3.8 -DPYTHON3_LIBRARY=$EBROOTPYTHON/lib/libpython3.8.so",
+]
+
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python2.7/site-packages --add_path %(installdir)s/lib64",
+    "touch %(installdir)s/lib/python3.6/site-packages/opencv_python-%(version)s-py2.7.egg-info",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.6/site-packages --add_path %(installdir)s/lib64",
+    "touch %(installdir)s/lib/python3.6/site-packages/opencv_python-%(version)s-py3.6.egg-info",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.7/site-packages --add_path %(installdir)s/lib64",
+    "touch %(installdir)s/lib/python3.7/site-packages/opencv_python-%(version)s-py3.7.egg-info",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.8/site-packages --add_path %(installdir)s/lib64",
+    "touch %(installdir)s/lib/python3.8/site-packages/opencv_python-%(version)s-py3.8.egg-info",
+]
+
+multi_deps_load_default = False
+
+sanity_check_paths = {
+    'files': [
+    	'lib/libopencv_core.so',
+        'lib/python2.7/site-packages/cv2/python-2.7/cv2.so',
+	'lib/python3.6/site-packages/cv2/python-3.6/cv2.cpython-36m-%(arch)s-linux-gnu.so', 
+	'lib/python3.7/site-packages/cv2/python-3.7/cv2.cpython-37m-%(arch)s-linux-gnu.so', 
+	'lib/python3.8/site-packages/cv2/python-3.8/cv2.cpython-38-%(arch)s-linux-gnu.so', 
+	'bin/opencv_annotation', 
+	'bin/opencv_interactive-calibration', 
+	'bin/opencv_version', 
+	'bin/opencv_visualisation'],
+    'dirs': ['bin', 'include', 'lib', 'lib64', 'share'],
+}
+
+modextrapaths = {
+    'CLASSPATH': 'share/java/opencv4',
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'vis'
