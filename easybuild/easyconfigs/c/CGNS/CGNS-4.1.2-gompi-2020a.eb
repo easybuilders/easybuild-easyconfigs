@@ -1,0 +1,38 @@
+easyblock = 'CMakeMake'
+
+name = 'CGNS'
+version = "4.1.2"
+
+homepage = 'https://cgns.github.io/'
+description = """The CGNS system is designed to facilitate the exchange of data between sites and applications,
+ and to help stabilize the archiving of aerodynamic data."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/%(name)s/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['951653956f509b8a64040f1440c77f5ee0e6e2bf0a9eef1248d370f60a400050']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+dependencies = [
+    ('HDF5', '1.10.6', '-mpi'),
+]
+
+configopts  = " -DCMAKE_SKIP_RPATH=ON -DCGNS_BUILD_CGNSTOOLS=OFF "
+configopts += " -DCGNS_ENABLE_TESTS=OFF -DCGNS_ENABLE_FORTRAN=ON "
+configopts += " -DCGNS_ENABLE_HDF5=ON  -DCGNS_ENABLE_PARALLEL=ON "
+configopts += " -DCGNS_ENABLE_SCOPING=ON -DHDF5_DIR=$EBROOTHDF5 "
+configopts += " -DHDF5_NEED_MPI=ON -DHDF5_NEED_SZIP=ON "
+configopts += " -DHDF5_NEED_ZLIB=ON "
+configopts += " -DSZIP_LIBRARY=$EBROOTGENTOO/lib/libsz.so "
+configopts += " -DZLIB_LIBRARY=$EBROOTGENTOO/lib/libz.so "
+
+sanity_check_paths = {
+    'files': ['bin/cgnscheck', 'bin/cgnscompress', 'bin/cgnsconvert', 'bin/cgnsdiff', 'bin/cgnslist', 'bin/cgnsnames', 'bin/cgnsupdate'],
+    'dirs': [],
+}
+
+moduleclass = 'cae'
