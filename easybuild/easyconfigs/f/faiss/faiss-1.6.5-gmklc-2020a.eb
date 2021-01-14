@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'faiss'
+version = '1.6.5'
+
+homepage = 'https://github.com/facebookresearch/faiss'
+description = """
+Faiss is a library for efficient similarity search and clustering of dense vectors. It
+contains algorithms that search in sets of vectors of any size, up to ones that possibly do
+not fit in RAM. It also contains supporting code for evaluation and parameter tuning.
+Faiss is written in C++ with complete wrappers for Python/numpy. Some of the most
+useful algorithms are implemented on the GPU.
+"""
+
+toolchain = {'name': 'gmklc', 'version': '2020a'}
+
+source_urls = ['https://github.com/facebookresearch/faiss/archive/']
+sources = ["v%(version)s.tar.gz"]
+#patches = ["python_install_prefix.patch"]
+checksums = [
+    '277add2226fad40544cea5776817a0202ef67e2e80d2c289ebdb0135216d60a5',  # v1.6.5.tar.gz
+#    '57df15fc22c4e3a61308fc709e3b6a49993ab0938631971d6d223afb93fc6f79',  # python_install_prefix.patch
+]
+
+configopts = "-DPython_EXECUTABLE=$EBROOTPYTHON/bin/python -DBUILD_SHARED_LIBS=ON "
+buildopts = " && cd %(builddir)s/easybuild_obj/faiss/python && python setup.py bdist_wheel "
+installopts = " && pip install %(builddir)s/easybuild_obj/faiss/python/dist/faiss-%(version)s-py3-none-any.whl --prefix=%(installdir)s "
+
+multi_deps = {'Python': ['3.6', '3.7', '3.8']}
+builddependencies = [
+	('SciPy-Stack', '2020a'), 
+	('SWIG', '3.0.12'),
+	('CMake', '3.18.4'),
+]
+multi_deps_load_default = False
+
+sanity_check_paths = {
+    'files': ['lib/libfaiss.so'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'include/faiss'],
+}
+
+sanity_check_commands = [
+    "python -c 'import faiss; index = faiss.IndexFlatL2(64)'",
+]
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+moduleclass = 'lib'
