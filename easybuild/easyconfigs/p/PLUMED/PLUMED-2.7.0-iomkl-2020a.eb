@@ -1,0 +1,69 @@
+# Built with EasyBuild version 4.3.0-rc09d6ca14937467ccd390604052ab2d1c3a0ba6e on 2020-10-21_18-13-04
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.7.0'
+
+homepage = 'https://www.plumed.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/%(namelower)s/plumed2/releases/download/v%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['b23399a3300ce3ae080e81263274ab8551e00217c3f37cb33cb7e37954fe8572']
+
+builddependencies = [
+]
+dependencies = [
+    ('GSL', '2.6', '', ('iccifort', '2020.1.217')),
+    ('libmatheval', '1.1.11'),
+    ('SciPy-Stack', '2020a', '', True),
+    ('Boost', '1.72.0', '', ('iccifort', '2020.1.217')),
+]
+multi_deps = {'Python': ['3.6', '3.7', '3.8']}
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+configopts = "--exec-prefix=%(installdir)s --enable-gsl --enable-modules=all --enable-boost_graph --enable-boost_serialization --enable-asmjit"
+
+prebuildopts = "source sourceme.sh && "
+buildopts = 'LD_RO="ld.gold -r -o"'
+
+multi_deps_load_default = False
+multi_deps_extensions_only = True
+exts_defaultclass = 'PythonPackage'
+exts_filter = (
+    "python -c 'import %(ext_name)s'",
+    '',
+)
+
+exts_list = [
+    ('plumed', version, {
+        'buildopts': '',
+        'prebuildopts': '',
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['08148f150eecdc96cbc33e89e02776642b56cb90daf0e7aab7ac805f6fe85836'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'lib/libplumedKernel.so', 'lib/libplumed.so'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["python -c 'import %(namelower)s'"]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+    'PLUMED_KERNEL': 'lib/libplumedKernel.so',
+    'PLUMED_ROOT': 'lib/%(namelower)s',
+}
+
+moduleclass = 'chem'
+
