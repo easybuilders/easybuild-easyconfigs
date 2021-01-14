@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+version = '3.1.1'
+
+homepage = 'https://bitbucket.org/scheres/relion-3.0_beta.git'
+description = """
+RELION (for REgularised LIkelihood OptimisatioN) is a stand-alone computer program for Maximum 
+A Posteriori refinement of (multiple) 3D reconstructions or 2D class averages in cryo-electron microscopy. 
+It is developed in the research group of Sjors Scheres at the MRC Laboratory of Molecular Biology.
+"""
+
+toolchain = {'name': 'gomklc', 'version': '2020a'}
+#toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/3dem/relion/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['RELION-3.1.1-mpicxx.patch']
+checksums = [
+    '481c773418fc6a0c71c33d733a65da0783fe8056cebd964dcfb7fbe630f5b601',  # 3.1.1.tar.gz
+    'd6d26eedf57aa9489c023320653d36106646c99735bac50941b707f38750b6bd',  # RELION-3.1.1-mpicxx.patch
+]
+
+dependencies = [
+    ('tbb', '2020.2'),
+    ('FFTW','3.3.8'),
+]
+
+builddependencies = [('CMake', '3.12.2')]
+
+configopts = '-DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_BUILD_TYPE=Release '
+configopts += '-DCUDA=ON -DALTCPU=OFF -DCudaTexture=ON -DMKLFFT=ON -DGUI=ON -DFORCE_OWN_FFT=OFF '
+
+parallel = 4
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': [ "bin/relion_qsub.csh", "bin/relion_star_datablock_singlefiles", "bin/relion_star_loopheader", "bin/relion_star_printtable", "bin/relion_star_datablock_ctfdat", "bin/relion_star_datablock_stack", "bin/relion_star_plottable",], 
+    'dirs': [ ],
+}
+
+moduleclass = 'bio'
