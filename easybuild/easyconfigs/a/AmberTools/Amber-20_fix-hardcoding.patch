@@ -1,0 +1,93 @@
+fixes for recent Intel compilers & MKL + add support for --with-netcdf-fort
+author: Andrew Edmondson (University of Birmingham)
+diff -ur 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/configure2
+--- 16-iomkl-2016.09-patchlevel-14-5-serial/AmberTools/src/configure2	2016-10-06 14:27:01.000000000 +0100
++++ 16-iomkl-2016.09-patchlevel-14-5-serial.patched/AmberTools/src/configure2	2016-10-06 14:52:11.607328298 +0100
+@@ -509,6 +509,7 @@
+ mpinab=''
+ mpi='no'
+ netcdf_dir=''
++netcdf_fort_dir=''
+ netcdf_flag=''
+ netcdfstatic='no'
+ pmemd_gem='no'
+@@ -607,6 +608,7 @@
+         --skip-python)    skippython='yes' ;;
+         --with-python)    shift; python="$1";;
+         --with-netcdf)    shift; netcdf_dir="$1";;
++        --with-netcdf-fort)  shift; netcdf_fort_dir="$1";;
+         --with-pnetcdf)   shift; pnetcdf_dir="$1" ;;
+         --python-install) shift; python_install="$1";;
+         --miniconda)      answer='y';;
+@@ -890,7 +892,7 @@
+ fi
+ # only used when the user requests a static build or when a static build is
+ # automatically set, eg, windows:
+-staticflag='-static'
++staticflag='-static-intel'
+ omp_flag=
+ mpi_flag=
+ fp_flags=
+@@ -1517,7 +1519,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         # 2-18-2020 srb  this looks an oversight:
+@@ -1868,7 +1870,7 @@
+       fi
+ 
+       if [ "$mpi" = 'yes' ]; then
+-          mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++          mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$pmemd_coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2194,7 +2196,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2311,7 +2313,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2888,11 +2890,16 @@
+   else
+     # A NetCDF directory was specified. Check that library exists and compiles
+     printf "\tUsing external NetCDF in '$netcdf_dir'\n"
++    # Support separate NetCDF-Fortran installation with --with-netcdf-fort
++    if [ ! -e "$netcdf_fort_dir" ]; then
++      netcdf_fort_dir="$netcdf_dir"
++    fi
++    printf "\tUsing external NetCDF-Fortran in '$netcdf_fort_dir'\n"
+     netcdfinc="-I"$netcdf_dir"/include"
+     if [ "${netcdf_dir}" != '/usr' -a "$netcdf_dir" != '/usr/' ]; then
+         netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
+     fi
+-    netcdf=$netcdf_dir"/include/netcdf.mod"
++    netcdf=$netcdf_fort_dir"/include/netcdf.mod"
+     if [ "$netcdfstatic" = 'no' ] ; then
+       if [ "${netcdf_dir}" != '/usr' -a "${netcdf_dir}" != '/usr/' ]; then
+           netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
+@@ -2908,7 +2915,7 @@
+         echo "Error: '$netcdfflagc' not found."
+         exit 1
+       fi
+-      netcdfflagf=$netcdf_dir"/lib/libnetcdff.a"
++      netcdfflagf=$netcdf_fort_dir"/lib/libnetcdff.a"
+       if [ ! -e "$netcdfflagf" ]; then
+         echo "Error: '$netcdfflagf' not found."
+         exit 1
