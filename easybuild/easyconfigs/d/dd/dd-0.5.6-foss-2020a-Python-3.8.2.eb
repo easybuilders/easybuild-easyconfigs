@@ -1,0 +1,101 @@
+easyblock = 'Bundle'
+
+name = 'dd'
+version = '0.5.6'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/tulip-control/dd'
+description = """
+dd is a package for working with binary decision diagrams that includes both a
+pure Python implementation and Cython bindings to C libraries (CUDD, Sylvan,
+BuDDy). The Python and Cython modules implement the same API, so the same user
+code runs with both. All the standard operations on BDDs are available,
+including dynamic variable reordering using sifting, garbage collection,
+dump/load from files, plotting, and a parser of quantified Boolean
+expressions.
+This module includes bindings for: CUDD v3.0.0, Sylvan v1.0.0"""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    # needed by CUDD
+    ('Autotools', '20180311'),
+    ('Doxygen', '1.8.17'),
+    # needed by Sylvan
+    ('CMake', '3.16.4'),
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('networkx', '2.4', versionsuffix),
+    ('pydot', '1.4.1'),
+    # needed by Sylvan
+    ('GMP', '6.2.0'),
+    ('hwloc', '2.2.0'),
+]
+
+# include bindings for bundled CUDD and Sylvan
+local_dd_bindingopts = ['cudd=%(builddir)s/cudd-3.0.0', 'cudd_zdd=%(builddir)s/cudd-3.0.0', 'sylvan']
+
+default_easyblock = 'PythonPackage'
+default_component_specs = {
+    'source_urls': [PYPI_SOURCE],
+    'sources': [SOURCELOWER_TAR_GZ],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('CUDD', '3.0.0', {
+        # building the dd bindings to CUDD requires the build directory of CUDD
+        'easyblock': 'ConfigureMake',
+        'source_urls': [('https://sourceforge.net/projects/cudd-mirror/files/', 'download')],
+        'patches': ['%(namelower)s-%(version)s_disable-pdf-docs.patch'],
+        'checksums': [
+            'b8e966b4562c96a03e7fbea239729587d7b395d53cadcc39a7203b49cf7eeb69',  # cudd-3.0.0.tar.gz
+            'd18ab7a8c09b8d5635a7aabddc409d6de7447685d1db58a11fb8f7fa4576e689',  # cudd-3.0.0_disable-pdf-docs.patch
+        ],
+        'preconfigopts': "autoreconf -f -i &&",
+    }),
+    ('Sylvan', '1.0.0', {
+        # dd requires this old version of Sylvan
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/utwente-fmt/sylvan/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}],
+        'checksums': ['94e7e5d5aa9fe0a5cec3a734509e1dcf7e6311438bea661bbb7596fd67e0b824'],
+    }),
+    ('ply', '3.10', {
+        'checksums': ['96e94af7dd7031d8d6dd6e2a8e0de593b511c211a86e28a9c9621c275ac8bacb'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+    }),
+    ('astutils', '0.0.4', {
+        'checksums': ['da28d76b9e0893fb0f2678b91a30840f3db99b703aadc69226f500096f60747f'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+    }),
+    (name, version, {
+        'patches': ['%(namelower)s-%(version)s_fix-sylvan-linking.patch'],
+        'checksums': [
+            '0ac1a58b6c567c45d74c8619f484ec43ece5b1aace49000e9b2b75cf38de6b94',  # dd-0.5.6.tar.gz
+            '9a148f6203c416c002844af2fba1ac05b1dc0e7bb70527c244f9b9865a8f2bcf',  # dd-0.5.6_fix-sylvan-linking.patch
+        ],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'installopts': " ".join(['--install-option="--%s"' % o for o in local_dd_bindingopts]),
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/%s.a' % l for l in ['libcudd', 'libsylvan']] +
+             ['include/%s.h' % h for h in ['cudd', 'lace', 'sylvan', 'sylvan_gmp']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import %s'" % p for p in ['ply', 'astutils', 'dd', 'dd.cudd', 'dd.cudd_zdd', 'dd.sylvan']
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'cae'

@@ -1,0 +1,44 @@
+easyblock = 'EB_Amber'
+
+name = 'AmberTools'
+version = '20'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://ambermd.org/'
+description = """AmberTools consists of several independently developed packages that work well by themselves,
+ and with Amber itself. The suite can also be used to carry out complete molecular dynamics simulations,
+ with either explicit water or generalized Born solvent models."""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+# download requires registration, see http://ambermd.org/AmberTools17-get.html
+local_download_credentials = '?Name=Easybuild&Institution=Easybuild&City=Internet&State=Other&Country=Belgium'
+source_urls = ['https://ambermd.org/cgi-bin/AmberTools20-get.pl']
+sources = [{
+    'download_filename': local_download_credentials,
+    'filename': SOURCE_TAR_BZ2,
+}]
+patches = ['Amber-20_fix-hardcoding.patch']
+checksums = [
+    'b1e1f8f277c54e88abc9f590e788bbb2f7a49bcff5e8d8a6eacfaf332a4890f9',  # AmberTools-20.tar.bz2
+    'a71f1bd70bac8d5e25386d6db90e95874ad300b956ed5b5afbc8848b7c1e00dc',  # Amber-20_fix-hardcoding.patch
+]
+
+builddependencies = [
+    ('Bison', '3.5.3'),
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('Python', '3.8.2'),
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+]
+
+# fix linking to netCDF library: also requires linking to HDF5 & cURL libs, which in turns require others,
+# all of which are indirect dependencies via netCDF
+local_netcdf_libs = "-lnetcdf -lhdf5 -lsz -ldl -liomp5 -lcurl -lssl -lcrypto -lz -lm -lpthread"
+preconfigopts = "sed -i'' 's/-lnetcdf/%s/g' AmberTools/src/cpptraj/configure && " % local_netcdf_libs
+configopts = "-nosanderapi"
+
+moduleclass = 'chem'
