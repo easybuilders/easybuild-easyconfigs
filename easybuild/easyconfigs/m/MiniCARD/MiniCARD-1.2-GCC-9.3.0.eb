@@ -1,0 +1,45 @@
+easyblock = 'Bundle'
+
+name = 'MiniCARD'
+version = '1.2'
+
+homepage = 'https://github.com/liffiton/minicard'
+description = """
+MiniCARD is a *cardinality solver* based on MiniSAT [www.minisat.se].  MiniCARD
+handles cardinality constraints natively, using the same efficient data
+structures and techniques MiniSAT uses for clauses, giving it much better
+performance on cardinality constraints than CNF encodings of those constraints
+passed to a typical SAT solver.  It can read the standard DIMACS CNF format,
+the OPB pseudo-boolean format (with linear cardinality constraints only), and
+CNF+, a format that extends CNF to include cardinality constraints."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++03'}
+
+github_account = 'liffiton'
+source_urls = [GITHUB_LOWER_SOURCE]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+default_easyblock = 'MakeCp'
+default_component_specs = {
+    'sources': [{'filename': 'v%(version)s.tar.gz', 'extract_cmd': "tar --strip-components 1 -xzf %s"}],
+    'checksums': ['d5bb2f154efa08f85db4fbe2ea6dc2ed0514f6b9b1b93e2d79b2d2bae76c20cf'],
+    'start_dir': '%(namelower)s',
+    'prebuildopts': 'MROOT=%(builddir)s CFLAGS="$CXXFLAGS -Wno-parentheses -fpermissive"',
+    'files_to_copy': [(['%(namelower)s'], 'bin')],
+}
+components = [
+    (name, version),
+    ('MiniCARD_Encodings', version),
+    ('MiniCARD_Simp_Encodings', version),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['minicard', 'minicard_encodings', 'minicard_simp_encodings']],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
