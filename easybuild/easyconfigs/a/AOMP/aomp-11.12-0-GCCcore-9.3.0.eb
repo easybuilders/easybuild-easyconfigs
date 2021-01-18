@@ -1,0 +1,57 @@
+easyblock = 'Binary'
+
+name = 'AOMP'
+version = '11.12-0'
+
+homepage = 'https://github.com/ROCm-Developer-Tools/aomp'
+description = "AMD fork of LLVM, setup for OpenMP offloading to Accelerators"
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/ROCm-Developer-Tools/aomp/releases/download/rel_%(version)s/']
+sources = ['aomp-%(version)s.tar.gz']
+patches = ['build_aomp-%(version)s.patch']
+checksums = [
+    'b01bbed55c4851cfebc69d5be42bafdfb8b43b82e0b6715fe5e1e86db47272e2',  # aomp-11.12-0.tar.gz
+    '1cbb9885d54847d5118cb67063b34627b4ceac26e03ae5e9260521bc4587a6d4',  # build_aomp-11.12-0.patch
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('Python', '3.8.2'),
+]
+
+dependencies = [
+    ('binutils', '2.34'),
+    ('libffi', '3.3'),
+    ('numactl', '2.0.13'),
+]
+
+extract_sources = True
+dontcreateinstalldir = True
+
+preinstallopts = 'AOMP=%(installdir)s '
+preinstallopts += 'AOMP_REPOS="%(builddir)s/aomp%(version_major)s" '
+preinstallopts += 'AOMP_CHECK_GIT_BRANCH=0 '
+preinstallopts += 'AOMP_APPLY_ROCM_PATCHES=0 '
+preinstallopts += 'AOMP_STANDALONE_BUILD=1 '
+preinstallopts += 'NUM_THREADS=%(parallel)s '
+preinstallopts += 'AOMP_BUILD_CUDA=0'
+
+# Core components that must be built for the compiler to work
+local_comps = ['roct', 'rocr', 'project', 'libdevice', 'extras', 'openmp',
+               'pgmath', 'flang', 'flang_runtime', 'comgr', 'rocminfo']
+# Debug components, (optional)
+# The debugging compoentes require additonal build dependences:
+#  texinfo, bison, flex, ncurses, expat, xz, libbabeltrace
+# local_comps += ['rocdbgapi', 'rocgdb']
+# Profiling components, (optional)
+# local_comps += ['roctracer', 'rocprofiler']
+install_cmd = "./aomp/bin/build_aomp.sh select %s" % ' '.join(local_comps)
+
+sanity_check_paths = {
+    'files': ['bin/clang', 'bin/ld.lld', 'include/omp.h'],
+    'dirs': ['amdgcn', 'bin', 'include', 'lib'],
+}
+
+moduleclass = 'compiler'
