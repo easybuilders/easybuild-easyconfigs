@@ -19,6 +19,7 @@ source_urls = [GITHUB_LOWER_SOURCE]
 sources = ['v%(version)s.tar.gz']
 checksums = ['76ce7c4a95a3b92cb16381f9a3b091afa234948ae6f028982abbd49e21206421']
 
+# patches = ['manta-1.6_python3_compatibility.patch']
 builddependencies = [
     ('CMake', '3.18.4'),
     ('Doxygen', '1.8.20'),
@@ -30,8 +31,10 @@ dependencies = [
     ('zlib', '1.2.11'),
 ]
 
-# replacing 0755 for 0o755 in whole file, since no other instances are present
-preinstallopts = """sed -i -e "s/0755/0o755/g" ./redist/pyflow-1.1.20/src/pyflow.py && """
+# preinstallopts = patch -i 
+# making included pyflow compatible with python3 as advised in https://github.com/Illumina/pyflow/issues/20
+preinstallopts = """sed -i "s/0755/0o755/g" ./redist/pyflow-1.1.20/src/pyflow.py && """
+preinstallopts += """sed -i "s/DataDirException, e/DataDirException(e)/g" ./redist/pyflow-1.1.20/src/pyflow.py && """
 
 local_binaries = ['CheckSVLoci', 'DumpSVLoci', 'EstimateSVLoci', 'GenerateSVCandidates', 'GetAlignmentStats',
                   'GetChromDepth', 'MergeAlignmentStats', 'MergeSVLoci', 'SummarizeAlignmentStats', 'SummarizeSVLoci',
