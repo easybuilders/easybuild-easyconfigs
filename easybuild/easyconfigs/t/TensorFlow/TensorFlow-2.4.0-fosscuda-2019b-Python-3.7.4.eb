@@ -153,7 +153,8 @@ exts_list = [
         'source_tmpl': 'v%(version)s.tar.gz',
         'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
         'test_script': 'TensorFlow-2.x_mnist-test.py',
-        'test_tag_filters': 'gpu,-no_gpu,-nogpu,-no_oss,-oss_serial,-benchmark-test,-v1only',
+        'test_tag_filters_gpu': 'gpu,-no_gpu,-nogpu,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
+        'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
         'test_targets': [
             '//tensorflow/core/...',
             '-//tensorflow/core:example_java_proto',
@@ -161,30 +162,19 @@ exts_list = [
             '//tensorflow/cc/...',
             '//tensorflow/c/...',
             '//tensorflow/python/...',
-            # OOM: https://github.com/tensorflow/tensorflow/issues/45664
-            '-//tensorflow/python/keras/applications:applications_test',
-            '-//tensorflow/python/keras/layers:convolutional_recurrent_test',
-            # No registered 'ResourceScatterNdUpdate': https://github.com/tensorflow/tensorflow/issues/45663
-            '-//tensorflow/python/kernel_tests:batch_scatter_ops_test',
-            # Wrong device returned: https://github.com/tensorflow/tensorflow/issues/45662
-            '-//tensorflow/python/kernel_tests:fifo_queue_test',
-            # OpError not raised: https://github.com/tensorflow/tensorflow/issues/45661
-            '-//tensorflow/python/feature_column:feature_column_test',
-            '-//tensorflow/python/feature_column:feature_column_v2_test',
-            # Segfault: https://github.com/tensorflow/tensorflow/issues/45660
-            '-//tensorflow/python:convert_to_constants_test',
-            '-//tensorflow/python/distribute:parameter_server_strategy_v2_test',
-            '-//tensorflow/python/keras/tests:convert_to_constants_test',
-            '-//tensorflow/python/kernel_tests:map_ops_test',
-            # non-DMA-copy...: https://github.com/tensorflow/tensorflow/issues/45659
-            '-//tensorflow/python/ops/ragged:ragged_dispatch_test',
-            '-//tensorflow/python/ops/ragged:ragged_map_fn_op_test',
-            '-//tensorflow/python/ops/ragged:ragged_print_op_test',
-            '-//tensorflow/python/ops/ragged:ragged_tensor_test',
-            # Wrong values on GPU: https://github.com/tensorflow/tensorflow/issues/45849
-            '-//tensorflow/python/keras/integration_test:gradients_test',
+            # Fails on some nodes but C API isn't installed anyway
+            '-//tensorflow/c/eager:c_api_test_gpu',
+            # Invalid alignment: https://github.com/tensorflow/tensorflow/issues/46460
+            '-//tensorflow/core/kernels:sparse_matmul_op_test',
+            # Fails to open its own test.xml(?)
+            '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
+            # Fails on non-AVX-512 systems: https://github.com/tensorflow/tensorflow/issues/46532
+            '-//tensorflow/core/common_runtime:mkl_layout_pass_test',
+            '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
         ],
-        'testopts': "--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute --test_size_filters=small",
+        'testopts': "--test_timeout='300,450,1200,3600' --test_size_filters=small",
+        'testopts_gpu': "--test_timeout='300,450,1200,3600' --test_size_filters=small " +
+                        "--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute",
         'with_xla': True,
         'checksums': [
             '26c833b7e1873936379e810a39d14700281125257ddda8cd822c89111db6f6ae',  # v2.4.0.tar.gz
