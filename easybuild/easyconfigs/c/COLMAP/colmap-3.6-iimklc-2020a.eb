@@ -1,0 +1,52 @@
+##
+# @Author: Ali Kerrache, University of Manitoba
+# @Date: Feb 07, 2019.
+##
+
+easyblock = 'CMakeMake'
+
+name = 'colmap'
+version = '3.6'
+
+homepage = 'https://github.com/colmap/colmap'
+description = """COLMAP is a general-purpose Structure-from-Motion (SfM) and Multi-View Stereo (MVS) pipeline with a graphical and command-line interface. It offers a wide range of features for reconstruction of ordered and unordered image collections. The software is licensed under the new BSD license."""
+
+toolchain = {'name': 'iimklc', 'version': '2020a'}
+toolchainopts = {'cstd': 'c++11', 'pic': True, 'openmp': True}
+
+source_urls = [homepage + '/archive']
+sources = [ version + '.tar.gz']
+checksums = ['ea22d026a3b13d339551319f4562fe1471b7232433695970704669755031a192']
+
+dependencies = [
+    ('ceres-solver', '1.14.0'),
+    ('Boost', '1.72.0'),
+    ('Eigen', '3.3.7'),
+    ('METIS', '5.1.0'),
+    ('SuiteSparse', '5.7.1'),
+    ('CGAL', '4.14.3'),
+    ('Qt5', '5.12.8'),
+]
+
+preconfigopts  = 'export Ceres_DIR=$EBROOTCERESMINSOLVER && '
+preconfigopts += 'export DESTDIR=%(installdir)s/ && '
+
+configopts  = '-DCMAKE_INSTALL_PREFIX=%(installdir)s/ '
+configopts += '-DEIGEN_INCLUDE_DIR=$EBROOTEIGEN/include '
+configopts += '-DEIGEN3_INCLUDE_DIRS=$EBROOTEIGEN/include '
+configopts += '-DCMAKE_SYSTEM_PREFIX_PATH=${EBROOTGENTOO-$NIXUSER_PROFILE} '
+configopts += '-DCMAKE_SKIP_RPATH=ON -DTESTS_ENABLED=ON '
+configopts += '-DGLOG_INCLUDE_DIR=${EBROOTGENTOO-$NIXUSER_PROFILE}/include '
+configopts += '-DGLOG_LIBRARY=${EBROOTGENTOO-$NIXUSER_PROFILE}/lib/libglog.so '
+configopts += '-DIPO_ENABLED=ON -DSIMD_ENABLED=ON '
+configopts += '-DCGAL_ENABLED=ON '
+configopts += '-DCUDA_ARCHS=Auto -DCUDA_ENABLED=ON -DOPENGL_ENABLED=ON '
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['bin/colmap', 'lib/colmap/libcolmap.a'],
+    'dirs': ['bin', 'include', 'include/colmap', 'lib', 'share'],
+}
+
+moduleclass = 'vis'
