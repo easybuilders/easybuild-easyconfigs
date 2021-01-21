@@ -4,9 +4,19 @@ diff --git a/test/test_unary_ufuncs.py b/test/test_unary_ufuncs.py
 index 3c6a4f0e7b0a1..e6818929f567b 100644
 --- a/test/test_unary_ufuncs.py
 +++ b/test/test_unary_ufuncs.py
-@@ -295,7 +295,7 @@ def test_reference_numerics(self, device, dtype, op):
+@@ -295,7 +295,17 @@ def test_reference_numerics(self, device, dtype, op):
              else:
                  msg = None
++
++            exact_dtype = True
++            if op.promotes_integers_to_float and dtype in integral_types() + (torch.bool,):
++                exact_dtype = False
++                if dtype in [torch.uint8, torch.int8, torch.bool]:
++                    # NOTE: For these dtypes, PyTorch computes in the default scalar type (float)
++                    # while NumPy computes in float16
++                    self.assertEqualHelper(actual, expected, msg, dtype=dtype,
++                                           exact_dtype=exact_dtype, rtol=1e-3, atol=1e-2)
++                    continue
  
 -            self.assertEqualHelper(actual, expected, msg, dtype=dtype)
 +            self.assertEqualHelper(actual, expected, msg, dtype=dtype, equal_nan="relaxed", exact_dtype=exact_dtype)
