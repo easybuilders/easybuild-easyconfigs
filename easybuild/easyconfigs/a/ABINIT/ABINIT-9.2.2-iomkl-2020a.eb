@@ -1,7 +1,7 @@
 easyblock = 'ConfigureMake'
 
 name = 'ABINIT'
-version = '9.2.1'
+version = '9.2.2'
 
 homepage = 'http://www.abinit.org/'
 description = """ABINIT is a package whose main program allows one to find the total energy, charge density and
@@ -11,21 +11,25 @@ description = """ABINIT is a package whose main program allows one to find the t
 
 toolchain = {'name': 'iomkl', 'version': '2020a'}
 source_urls = ['https://www.abinit.org/sites/default/files/packages/']
-sources = ['%(namelower)s-%(version)s.tar.gz']
+sources = [{
+        'filename': '%(namelower)s-%(version)s.tar.gz',
+        'extract_cmd' : "tar xf %s && cd %(namelower)s-%(version)s/fallbacks && tar xf abinit-fallbacks-9.2.tar.gz",
+        }]
 
 dependencies = [
-    ('libxc', '5.0.0'),
+    ('libxc', '4.3.4'),
     ('netCDF', '4.7.4','-mpi'),
     ('netCDF-Fortran', '4.5.2','-mpi'),
     ('HDF5', '1.10.6', '-mpi'),
 ]
-patches=['abinit-9.2.1.patch']
-checksums = ['0140634302c35e8367f7514189b55dbf', #abinit-9.2.1.tar.gz 
-             'b231c214a7677fbfee656ea193d386ea', #abinit-9.2.1.patch
+patches=['abinit-9.2.2.patch', ('ifort_no_ice.patch', 1)]
+checksums = ['4999d48ed20655af7ee4015dc79fe5363db494eb330e71aeacb11870135fa95d', #abinit-9.2.2.tar.gz 
+             '56a8e3b23ac5198b50419ee85c9742ccc60fcf460e97a012441da71db32703a5', #abinit-9.2.2.patch
+             '2e7e69cbf9983c2f4ca732bc96a022a7cf67ab7cdaa4e94577c75b6ecdebaf7e', #ifort_no_ice.patch
 ]
 parallel = 8
 
-preconfigopts = 'mkdir build ; cd fallbacks ; tar xzf abinit-fallbacks-9.2.tar.gz; sed -i "s|tmpflags_options=\'--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\"\'|tmpflags_options=\'--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\" --with-blacs=\\"-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\" LIBS=\\"-mkl=sequential -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\" --with-scalapack=\\"-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\"\'|g" abinit-fallbacks-9.2/configure; export FC=mpif90 CC=mpicc CXX=mpiCC; sh ./build-abinit-fallbacks.sh.in ; cd ../build ; '
+preconfigopts = 'mkdir build ; cd fallbacks ; sed -i "s|tmpflags_options=\'--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\"\'|tmpflags_options=\'--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\" --with-blacs=\\"-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\" LIBS=\\"-mkl=sequential -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\" --with-scalapack=\\"-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\"\'|g" abinit-fallbacks-9.2/configure; export FC=mpif90 CC=mpicc CXX=mpiCC; sh ./build-abinit-fallbacks.sh.in ; cd ../build ; '
 preconfigopts += 'export BIGDFT_FCFLAGS="-I%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/bigdft/default/include" ; '
 preconfigopts += 'export BIGDFT_LDFLAGS="-L%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/bigdft/default/lib"; '
 preconfigopts += 'export WANNIER90_FCFLAGS="-I%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/wannier90/default/include"; '

@@ -16,11 +16,16 @@ toolchain = {'name': 'iomkl', 'version': '2020a'}
 toolchainopts = {'usempi': True, 'pic': True}
 
 source_urls = ['https://launchpad.net/bigdft/%(version_major_minor)s/%(version)s/+download/']
-sources = ['%(namelower)s-suite-%(version)s.tar.gz']
-checksums = ['39aeae8bd62ad5d82ed20a47006aa478d93b3751ae7929027088c2e6b8439388']
+sources = [{
+        'filename': '%(namelower)s-suite-%(version)s.tar.gz',
+        'extract_cmd' : "tar xf %s && cd spred-suite && for i in *.tar.gz; do tar xf $i; done"
+        }]
+patches = ['ifort_no_ice.patch']
+checksums = ['39aeae8bd62ad5d82ed20a47006aa478d93b3751ae7929027088c2e6b8439388',
+             '68e01f2fe9b7d8ddb0b17bf73a43a66e01f7ed78361042ad9a7dcfd2da0691e1']
 
 dependencies = [
-    ('ETSF_IO', '1.0.4', '-mpi'),
+    #('ETSF_IO', '1.0.4', '-mpi'), #does not compile with ETSF support
     ('netCDF', '4.6.1', '-mpi'),
     ('netCDF-Fortran', '4.5.1', '-mpi'),
 ]
@@ -35,25 +40,25 @@ local_exports += 'export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFI
 preconfigopts = local_exports
 
 # Step 1: install futile
-preconfigopts += 'tar xf futile-1.8.tar.gz && cd futile-1.8 && ' + local_configure_make
+preconfigopts += 'cd futile-1.8 && ' + local_configure_make
 
 # Step 2: install chess
-preconfigopts += 'tar xf CheSS-0.2.4.tar.gz && cd CheSS-0.2.4 && ' + local_configure_make
+preconfigopts += 'cd CheSS-0.2.4 && ' + local_configure_make
 
 # Step 3: install psolver
-preconfigopts += 'tar xf psolver-1.8.tar.gz && cd psolver-1.8 && ' + local_configure_make
+preconfigopts += 'cd psolver-1.8 && ' + local_configure_make
 
 # Step 4: install libxc 2.2.2
-preconfigopts += 'tar xf libxc-2.2.2.tar.gz && cd libxc-2.2.2 && ' + local_configure_make
+preconfigopts += 'cd libxc-2.2.2 && ' + local_configure_make
 
 # Step 5: install GaIn
-preconfigopts += 'tar xf GaIn-1.0.tar.gz && cd GaIn-1.0 && ' + local_configure_make
+preconfigopts += 'cd GaIn-1.0 && ' + local_configure_make
 
 # Step 6: install libAbInit
-preconfigopts += 'tar xf libABINIT-6.8+12.tar.gz && cd libABINIT-6.8+12 && ' + local_configure_make
+preconfigopts += 'cd libABINIT-6.8+12 && ' + local_configure_make
 
 # Step 7: BigDft itself
-preconfigopts += 'tar xf %(namelower)s-%(version)s.tar.gz && cd bigdft-1.8.3 && '
+preconfigopts += 'cd bigdft-1.8.3 && '
 configopts = '--with-ext-linalg="$LIBSCALAPACK"'
 
 prebuildopts = local_exports + 'cd bigdft-1.8.3 && '

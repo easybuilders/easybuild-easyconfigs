@@ -1,0 +1,53 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Grigory Shamov, University of Manitoba / ComputeCanada
+# A recipe for GAMESS-US without interactive Easyblock
+
+easyblock = 'MakeCp'
+name = 'GAMESS-US'
+version = "2020.2"
+
+homepage = 'https://www.msg.chem.iastate.edu/GAMESS/GAMESS.html'
+description = """
+The General Atomic and Molecular Electronic Structure System (GAMESS) is a general ab initio quantum chemistry package.
+This version of GAMESS is built with Intel compilers and IntelMPI. No LibXC or MSUCC modules.
+"""
+
+toolchain = {'name': 'iimpi', 'version': '2020a'}
+toolchainopts = {'openmp': False }
+
+sources = ['gamess-%(version)s.tar.gz']
+patches = [
+   'GAMESS-US-2020.2-gms-files.patch',
+   'GAMESS-US-2020.2-rungms-dev.patch',
+   'GAMESS-US-2020.2-impi-install-makefile.patch',
+]
+checksums = [
+    '5eb9242751159b6de244055e1bbb5987e052f913d47ce5eb8a4c6d262361cdc3',  # gamess-2020.2.tar.gz
+    'a486e3a761c94d5cff805d240acbcdc037e02d71a8d6481411e7997c803ea4a6',  # GAMESS-US-2020.2-gms-files.patch
+    '04b0713fed536c3074f70f62b70240225d2c3753d88c4cd218843c858aa3cfd9',  # GAMESS-US-2020.2-rungms-dev.patch
+    '20e075a778271cb2eaf8c4cde5609a195eaefa0b10b95e350c8195e74849be2f',  # GAMESS-US-2020.2-impi-install-makefile.patch
+]
+
+dependencies = [('imkl','2020.1.217'),]
+
+start_dir = 'gamess'
+
+prebuildopts = ' export GMS_HOME=%(builddir)s/gamess  && cp -f %(builddir)s/gamess/rungms-dev %(builddir)s/gamess/rungms && '
+prebuildopts += ' cd %(builddir)s/gamess &&  make ddi GMS_HOME=%(builddir)s/gamess && make modules GMS_HOME=%(builddir)s/gamess && '
+
+#GAS: note that in this version Fortran modules do require a separate make modules before the main make!
+
+buildopts = 'GMS_HOME=%(builddir)s/gamess '
+
+parallel = 24
+
+files_to_copy = [
+    'gamess.00.x', 'rungms', 'rungms-dev', 'gms-files.csh', 'runall',  'tests', 'auxdata', 'tools', 'install.info', 'docs-hardware.txt',  'docs-input.txt',  'docs-intro.txt',  'docs-prog.txt'  ,'docs-references.txt','docs-tests.txt','CITATION.md',  'DEVELOPERS.md',  'LIBCCHEM.md',  'README.md',  'RELEASE.md'  ,'VERSION.md',
+]
+
+sanity_check_paths = { 'files': ["rungms", "gamess.00.x", "gms-files.csh", "install.info", "runall", ], 'dirs': ['tests', 'auxdata', 'tools',  ], }
+
+modextrapaths = { 'PATH': '', 'GMS_HOME': '', }
+
+moduleclass = 'chem'
+
