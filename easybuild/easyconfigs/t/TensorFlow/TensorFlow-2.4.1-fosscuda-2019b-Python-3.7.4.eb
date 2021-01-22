@@ -1,14 +1,14 @@
 easyblock = 'PythonBundle'
 
 name = 'TensorFlow'
-version = '2.4.0'
+version = '2.4.1'
 versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'https://www.tensorflow.org/'
 description = "An open-source software library for Machine Intelligence"
 
 toolchain = {'name': 'fosscuda', 'version': '2019b'}
-toolchainopts = {'usempi': True, 'pic': True}
+toolchainopts = {'pic': True}
 
 builddependencies = [
     ('Bazel', '3.7.1'),
@@ -96,7 +96,7 @@ exts_list = [
         'unpack_sources': False,
         'checksums': ['ee775f04821185c90d9a0e9c56970ee43d7c41403beb6629385b39517129685b'],
     }),
-    ('tensorboard', version, {
+    ('tensorboard', '2.4.0', {
         'source_tmpl': 'tensorboard-%(version)s-py3-none-any.whl',
         'unpack_sources': False,
         'checksums': ['cde0c663a85609441cb4d624e7255fd8e2b6b1d679645095aac8a234a2812738'],
@@ -108,7 +108,7 @@ exts_list = [
     ('termcolor', '1.1.0', {
         'checksums': ['1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b'],
     }),
-    ('tensorflow-estimator', version, {
+    ('tensorflow-estimator', '2.4.0', {
         'source_tmpl': 'tensorflow_estimator-%(version)s-py2.py3-none-any.whl',
         'unpack_sources': False,
         'checksums': ['5b7b7bf2debe19a8794adacc43e8ba6459daa4efaf54d3302623994a359b17f0'],
@@ -153,8 +153,8 @@ exts_list = [
         'source_tmpl': 'v%(version)s.tar.gz',
         'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
         'test_script': 'TensorFlow-2.x_mnist-test.py',
-        'test_tag_filters_gpu': 'gpu,-no_gpu,-nogpu,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
         'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
+        'test_tag_filters_gpu': 'gpu,-no_gpu,-nogpu,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
         'test_targets': [
             '//tensorflow/core/...',
             '-//tensorflow/core:example_java_proto',
@@ -164,8 +164,13 @@ exts_list = [
             '//tensorflow/python/...',
             # Fails on some nodes but C API isn't installed anyway
             '-//tensorflow/c/eager:c_api_test_gpu',
+            # Race condition with port picker: https://github.com/tensorflow/tensorflow/issues/46602
+            '-//tensorflow/c/eager:c_api_cluster_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_test_gpu',
             # Invalid alignment: https://github.com/tensorflow/tensorflow/issues/46460
             '-//tensorflow/core/kernels:sparse_matmul_op_test',
+            '-//tensorflow/core/kernels:sparse_matmul_op_test_gpu',
             # Fails to open its own test.xml(?)
             '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
             # Fails on non-AVX-512 systems: https://github.com/tensorflow/tensorflow/issues/46532
@@ -173,11 +178,10 @@ exts_list = [
             '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
         ],
         'testopts': "--test_timeout='300,450,1200,3600' --test_size_filters=small",
-        'testopts_gpu': "--test_timeout='300,450,1200,3600' --test_size_filters=small " +
-                        "--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute",
+        'testopts_gpu': "--test_timeout='300,450,1200,3600' --test_size_filters=small --run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute",
         'with_xla': True,
         'checksums': [
-            '26c833b7e1873936379e810a39d14700281125257ddda8cd822c89111db6f6ae',  # v2.4.0.tar.gz
+            'f681331f8fc0800883761c7709d13cda11942d4ad5ff9f44ad855e9dc78387e0',  # v2.4.1.tar.gz
             '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',  # TensorFlow-2.1.0_fix-cuda-build.patch
             # TensorFlow-2.3.1_disable-float128-on-power.patch
             'a8369e92559cce4566ff831e615420fd98b83106c73ee3af7fbd5335c5fcd569',
