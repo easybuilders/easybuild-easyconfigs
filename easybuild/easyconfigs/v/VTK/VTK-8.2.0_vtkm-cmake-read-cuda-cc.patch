@@ -1,0 +1,78 @@
+Allow VTKm_CUDA_Architecture to be defined with a comma separated list of
+either architecture names or CUDA compute capabilities version numbers
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- ThirdParty/vtkm/vtk-m/CMake/VTKmDeviceAdapters.cmake.orig	2021-01-14 16:23:26.117392000 +0100
++++ ThirdParty/vtkm/vtk-m/CMake/VTKmDeviceAdapters.cmake	2021-01-14 21:23:12.635520314 +0100
+@@ -245,31 +245,49 @@
+ 
+   #since when we are native we can fail, and fall back to "kepler" these have
+   #to happen after, and separately of the native check
+-  if(VTKm_CUDA_Architecture STREQUAL "fermi")
+-    set(arch_flags --generate-code=arch=compute_20,code=sm_20)
+-  elseif(VTKm_CUDA_Architecture STREQUAL "kepler")
+-    set(arch_flags --generate-code=arch=compute_30,code=sm_30
+-                   --generate-code=arch=compute_35,code=sm_35)
+-  elseif(VTKm_CUDA_Architecture STREQUAL "maxwell")
+-    set(arch_flags --generate-code=arch=compute_50,code=sm_50)
+-  elseif(VTKm_CUDA_Architecture STREQUAL "pascal")
+-    set(arch_flags --generate-code=arch=compute_60,code=sm_60)
+-  elseif(VTKm_CUDA_Architecture STREQUAL "volta")
+-    set(arch_flags --generate-code=arch=compute_70,code=sm_70)
+-  elseif(VTKm_CUDA_Architecture STREQUAL "turing")
+-    set(arch_flags --generate-code=arch=compute_75,code=sm_75)
+-  elseif(VTKm_CUDA_Architecture STREQUAL "all")
+-    set(arch_flags --generate-code=arch=compute_30,code=sm_30
+-                   --generate-code=arch=compute_35,code=sm_35
+-                   --generate-code=arch=compute_50,code=sm_50
+-                   --generate-code=arch=compute_60,code=sm_60
+-                   --generate-code=arch=compute_70,code=sm_70
+-                   --generate-code=arch=compute_75,code=sm_75)
++  set(CUDA_ARCH_FLAGS "")
++  if(VTKm_CUDA_Architecture MATCHES "fermi")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_20,code=sm_20")
+   endif()
++  if(VTKm_CUDA_Architecture MATCHES "kepler")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_30,code=sm_30")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_35,code=sm_35")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_37,code=sm_37")
++  endif()
++  if(VTKm_CUDA_Architecture MATCHES "maxwell")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_50,code=sm_50")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_52,code=sm_52")
++  endif()
++  if(VTKm_CUDA_Architecture MATCHES "pascal")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_60,code=sm_60")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_61,code=sm_61")
++  endif()
++  if(VTKm_CUDA_Architecture MATCHES "volta")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_70,code=sm_70")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_72,code=sm_72")
++  endif()
++  if(VTKm_CUDA_Architecture MATCHES "turing")
++    set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_75,code=sm_75")
++  endif()
++  if(VTKm_CUDA_Architecture STREQUAL "all")
++    set(CUDA_ARCH_FLAGS "--generate-code=arch=compute_30,code=sm_30
++                         --generate-code=arch=compute_35,code=sm_35
++                         --generate-code=arch=compute_50,code=sm_50
++                         --generate-code=arch=compute_60,code=sm_60
++                         --generate-code=arch=compute_70,code=sm_70
++                         --generate-code=arch=compute_75,code=sm_75")
++  endif()
++
++  #check for CUDA compute capabilities specific versions
++  string( REGEX MATCHALL "[0-9].[0-9]" cuda_cc "${VTKm_CUDA_Architecture}" )
++  list( SORT cuda_cc ) # To make output easier to reason about
++  foreach (cc IN LISTS cuda_cc)
++      string( REPLACE "." "" cc "${cc}")
++      set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} --generate-code=arch=compute_${cc},code=sm_${cc}")
++  endforeach()
+ 
+-  string(REPLACE ";" " " arch_flags "${arch_flags}")
+-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${arch_flags}")
++  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
+ 
+-  set_target_properties(vtkm::cuda PROPERTIES VTKm_CUDA_Architecture_Flags "${arch_flags}")
++  set_target_properties(vtkm::cuda PROPERTIES VTKm_CUDA_Architecture_Flags "${CUDA_ARCH_FLAGS}")
+ 
+ endif()
