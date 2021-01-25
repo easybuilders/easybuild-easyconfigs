@@ -1,0 +1,66 @@
+easyblock = 'CmdCp'
+
+name = 'RepeatModeler'
+version = '2.0.1'
+
+homepage = 'http://repeatmasker.org/RepeatModeler/'
+description = """RepeatModeler is a de-novo repeat family identification and 
+modeling package. At the heart of RepeatModeler are two de-novo repeat 
+finding programs ( RECON and RepeatScout ) which employ complementary 
+computational methods for identifying repeat element boundaries and family 
+relationships from sequence data. RepeatModeler assists in automating the 
+runs of RECON and RepeatScout given a genomic database and uses the output to
+ build, refine and classify consensus models of putative interspersed repeats.
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['http://repeatmasker.org/RepeatModeler/']
+sources = [
+    '%(name)s-%(version)s.tar.gz',
+]
+checksums = ['628e7e1556865a86ed9d6a644c0c5487454c99fbcac21b68eae302fae7abb7ac']
+
+dependencies = [
+               ('RepeatMasker', '4.1.1'),
+               ('RMBlast', '2.10.0'),
+               ('RECON', '1.08'),
+               ('RepeatScout', '1.0.5'),
+               ('Perl', '5.30.2'),
+               ('TRF', '4.09.1'),
+               ('MAFFT', '7.471', '-with-extensions'),
+               ('CD-HIT','4.8.1'),
+               ('Ninja-Phylogenetics', '0.97', '-cluster_only'),
+               ('GenomeTools', '1.6.1'),
+               ('LTR_retriever', '2.9.0')
+]
+
+skipsteps = ['build']
+
+local_cmd = "printf '\n\n\n\n\n\n1\n\n3\ny\n\n\n\n\n\n' | perl ./configure "
+local_cmd += "-rmblast_dir $EBROOTRMBLAST/bin -ltr_retriever_dir $EBROOTLTR_RETRIEVER "
+local_cmd += "-trf_prgm $EBROOTTRF/bin/trf -genometools_dir $EBROOTGENOMETOOLS/bin "
+local_cmd += "-mafft_dir $EBROOTMAFFT/bin -rscout_dir $EBROOTREPEATSCOUT/bin "
+local_cmd += "-ninja_dir $EBROOTNINJAMINPHYLOGENETICS/bin -cdhit_dir $EBROOTCDMINHIT/bin "
+local_cmd += "-repeatmasker_dir $EBROOTREPEATMASKER -recon_dir $EBROOTRECON/bin"
+
+files_to_copy=[
+   (['*'], ''),
+]
+
+
+sanity_check_paths = {
+    'files': ['configure'],
+    'dirs': ['Libraries'],
+}
+
+postinstallcmds = [
+   local_cmd,
+#   "printf '\n \n \n \n \n \n \n \n' | perl ./configure "
+]
+
+modextrapaths = {
+    'PATH': '',
+}
+
+moduleclass = 'bio'
