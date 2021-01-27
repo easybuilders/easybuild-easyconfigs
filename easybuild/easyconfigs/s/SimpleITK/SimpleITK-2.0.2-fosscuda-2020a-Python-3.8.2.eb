@@ -1,0 +1,65 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'SimpleITK'
+version = '2.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/SimpleITK/SimpleITK'
+description = """
+SimpleITK is an image analysis toolkit with a large number of components
+supporting general filtering operations, image segmentation and registration.
+It is built on top of the Insight Segmentation and Registration Toolkit ITK
+with the intent of providing a simplified interface to ITK."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020a'}
+
+source_urls = ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['56117842e0be53a4a7f482d9da2b62f56a85a6ea89b33389a7d6655fb8d3a200']
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('SWIG', '4.0.1'),
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('ITK', '5.1.2'),
+    ('Lua', '5.3.5'),
+    ('Tcl', '8.6.10'),
+    ('Tk', '8.6.10'),
+]
+
+# fix linking with Tcl from EB
+local_tcl_cmakelists = '../%(name)s-%(version)s/Wrapping/Tcl/CMakeLists.txt'
+preconfigopts = "sed -i 's/TCL_LIBRARY\}/TCL_LIBRARY} -ltcl8.6/' %s &&" % local_tcl_cmakelists
+
+# dependencies on Lua and Tcl are mandatory, so enable their wrappings as well
+configopts = '-DWRAP_LUA=ON -DWRAP_TCL=ON '
+configopts += '-DWRAP_RUBY=OFF -DWRAP_JAVA=OFF -DWRAP_R=OFF -DWRAP_CSHARP=OFF '
+
+configopts += '-DBUILD_SHARED_LIBS=ON '
+
+# install Python wrapping
+start_dir_python = 'Wrapping/Python'
+use_pip = True
+
+# install Lua and Tcl wrappings
+local_lua_wrap = 'SimpleITK.%s' % SHLIB_EXT
+local_lua_libdir = 'lib/lua/5.3'
+postinstallcmds = [
+    'mkdir %(installdir)s/bin && cp Wrapping/Tcl/bin/SimpleITKTclsh %(installdir)s/bin/',
+    'mkdir -p %%(installdir)s/%s && cp Wrapping/Lua/lib/%s %%(installdir)s/%s/'
+    % (local_lua_libdir, local_lua_wrap, local_lua_libdir),
+]
+
+local_sitk_libs = ['SimpleITKCommon', 'SimpleITK_ITKCommon', 'SimpleITK_ITKReview', 'SimpleITK_SimpleITKFilters']
+sanity_check_paths = {
+    'files': ['bin/SimpleITKTclsh', '%s/%s' % (local_lua_libdir, local_lua_wrap)] +
+             ['lib/lib%s-%%(version_major)s.%%(version_minor)s.%s' % (l, SHLIB_EXT) for l in local_sitk_libs],
+    'dirs': ['include/%(name)s-%(version_major)s.%(version_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+options = {'modulename': '%(name)s'}
+
+moduleclass = 'tools'
