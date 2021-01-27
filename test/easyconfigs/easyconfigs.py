@@ -279,7 +279,7 @@ class EasyConfigTest(TestCase):
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
                 ('1.13.1;', ['medaka-0.11.4-', 'medaka-0.12.0-', 'artic-ncov2019-2020.04.13']),
-                # medaka 1.1.* and 1.2.* requires TensorFlow 2.2.0 
+                # medaka 1.1.* and 1.2.* requires TensorFlow 2.2.0
                 # (while other 2019b easyconfigs use TensorFlow 2.1.0 as dep);
                 # TensorFlow 2.2.0 is also used as a dep for Horovod 0.19.5;
                 # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
