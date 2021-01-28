@@ -1,0 +1,58 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# Modified by: Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'MakeCp'
+
+name = 'DETONATE'
+version = '1.11'
+
+homepage = 'http://deweylab.biostat.wisc.edu/detonate/'
+description = """DETONATE (DE novo TranscriptOme rNa-seq Assembly with or without the Truth Evaluation) consists of two component packages, RSEM-EVAL and REF-EVAL. Both packages are mainly intended to be used to evaluate de novo transcriptome assemblies, although REF-EVAL can be used to compare sets of any kinds of genomic sequences."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+sources = [SOURCELOWER_TAR_GZ]
+source_urls = ['http://deweylab.biostat.wisc.edu/detonate/']
+patches = [
+    'detonate-1.11_gcc7.3.patch',
+    'detonate-1.11_tinfo.patch',
+]
+checksums = [
+        'e1d04af1b1d2504942a6941b346d430157da6117fac043b7ee83274717d99714', # detonate-1.11.tar.gz
+        'cb0b48a7e803696a8600403b4ce35031073c6d768d339da0d05f02e68be3981e', # detonate-1.11_gcc7.3.patch
+        'f356667988a57d2b3b56b1c997a95744e07966fec0ed3cd144af8e30704562f7', # detonate-1.11_tinfo.patch
+]
+
+builddependencies = [
+        ('Python', '2.7.18'),
+]
+
+files_to_copy = [
+    "examples",
+    "ref-eval",
+    "rsem-eval",
+    "html",
+]
+
+fix_python_shebang_for = [
+    'ref-eval/sam/misc/varfilter.py',
+    'rsem-eval/sam/misc/varfilter.py'
+]
+
+sanity_check_paths = {
+    'files': ["rsem-eval/rsem-eval-calculate-score",
+              "ref-eval/ref-eval-estimate-true-assembly",
+              ],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'PATH': ['ref-eval', 'rsem-eval'],
+}
+
+moduleclass = 'bio'
