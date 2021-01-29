@@ -48,7 +48,6 @@ from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
-from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file, is_generic_easyblock
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
@@ -458,17 +457,26 @@ class EasyConfigTest(TestCase):
         if EasyConfigTest.ordered_specs is None:
             self.process_all_easyconfigs()
 
+        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in EasyConfigTest.parsed_easyconfigs)
+        if len(ecs_by_full_mod_name) != len(EasyConfigTest.parsed_easyconfigs):
+            self.fail('Easyconfigs with duplicate full_mod_name found')
+
+        # Cache already determined dependencies
+        ec_to_deps = dict()
+
         def get_deps_for(ec):
             """Get list of (direct) dependencies for specified easyconfig."""
-            deps = []
-            for dep in ec['ec']['dependencies']:
-                dep_mod_name = dep['full_mod_name']
-                deps.append((dep['name'], dep['version'], dep['versionsuffix'], dep_mod_name))
-                res = [x for x in EasyConfigTest.ordered_specs if x['full_mod_name'] == dep_mod_name]
-                if len(res) == 1:
-                    deps.extend(get_deps_for(res[0]))
-                else:
-                    raise EasyBuildError("Failed to find %s in ordered list of easyconfigs", dep_mod_name)
+            ec_mod_name = ec['full_mod_name']
+            deps = ec_to_deps.get(ec_mod_name)
+            if deps is None:
+                deps = []
+                for dep in ec['ec']['dependencies']:
+                    dep_mod_name = dep['full_mod_name']
+                    deps.append((dep['name'], dep['version'], dep['versionsuffix'], dep_mod_name))
+                    # Note: Raises KeyError if dep not found
+                    res = ecs_by_full_mod_name[dep_mod_name]
+                    deps.extend(get_deps_for(res))
+                ec_to_deps[ec_mod_name] = deps
 
             return deps
 
