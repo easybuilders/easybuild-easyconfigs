@@ -13,11 +13,7 @@ toolchain = {'name': 'foss', 'version': '2018b'}
 
 source_urls = ['https://github.com/genome/%(name)s/archive']
 sources = ['v%(version)s.tar.gz']
-patches = ['%(name)s-%(version)s_version.patch']
-checksums = [
-    '4f4dd558e3c6bfb24d6a57ec441568f7524be6639b24f13ea6f2bb350c7ea65f',  # v0.8.0.tar.gz
-    '828b2bb4fa397ef783433cdb9ba604119ea311754985b05e3787d570dabba5c7',  # bam-readcount-0.8.0_version.patch
-]
+checksums = ['4f4dd558e3c6bfb24d6a57ec441568f7524be6639b24f13ea6f2bb350c7ea65f']
 
 builddependencies = [
     ('CMake', '3.12.1'),
@@ -28,6 +24,14 @@ dependencies = [
     ('zlib', '1.2.11'),
     ('ncurses', '6.1'),
 ]
+
+# bam-readcount uses git to insert the version during configuration with CMake
+# but in the release archives there is no git information
+# local_commit is the git commit hash of the release
+local_commit = 'dea4199'
+local_versionfile = '%(builddir)s/%(name)s*/version/version.h.in'
+preconfigopts = "sed -i -e 's/@FULL_VERSION@/%%(version)s/' %s && " % local_versionfile
+preconfigopts += "sed -i -e 's/@COMMIT_HASH@/%s/' %s && " % (local_commit, local_versionfile)
 
 prebuildopts = "export SAMTOOLS_ROOT=${EBROOTSAMTOOLS}/include/bam && "
 
