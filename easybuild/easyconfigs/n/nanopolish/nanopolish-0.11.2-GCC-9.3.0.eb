@@ -1,0 +1,62 @@
+# Built with EasyBuild version 3.7.0-rc7b39e420d4f1af2b79028319dfd5ed90b504390 on 2018-11-10_18-01-23
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# Modified by: Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'MakeCp'
+
+name = 'nanopolish'
+version = '0.11.2'
+
+homepage = 'https://github.com/jts/nanopolish'
+description = """Software package for signal-level analysis of Oxford Nanopore sequencing data. Nanopolish can calculate an improved consensus sequence for a draft genome assembly, detect base modifications, call SNPs and indels with respect to a reference genome and more."""
+
+toolchain = {'version': '9.3.0', 'name': 'GCC'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+sources = [{
+    'filename': 'v%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/jts',
+        'repo_name': 'nanopolish',
+        'commit': '7b83271',
+        'recursive': True,
+    },
+}]
+checksums = ['3b4d1e56d6aba7f5c4d6b5ee1fc676e3b255bb530c345ae62df547cca775cd1e']
+
+dependencies = [
+    ('Python', '3.8'),
+    ('SciPy-Stack', '2020a'),
+    ('HDF5', '1.10.6'),
+    ('Eigen', '3.3.7'),
+    ('GSL', '2.16'),
+]
+
+buildopts = 'HDF5=no EIGEN=no '
+
+parallel = 1
+
+postinstallcmds = ["pip install biopython==1.78 pysam==0.15.4 sklearn --no-index --prefix=%(installdir)s"]
+
+files_to_copy = [(['%(name)s'], 'bin'), "docs", "etc", "LICENSE", "README.md", "scripts", "test"]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(installdir)s/scripts/nanopolish_makerange.py -h']
+
+modextrapaths = {
+    'PATH': ['etc', 'scripts'],
+    'EBPYTHONPREFIXES': [''],
+}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("bioperl")
+"""
