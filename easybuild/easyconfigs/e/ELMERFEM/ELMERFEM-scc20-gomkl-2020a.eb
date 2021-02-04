@@ -1,0 +1,56 @@
+##
+# @Author: Ali Kerrache, University of Manitoba, WestGrid/Compute Canada.
+# @Date: Dec 10, 2020.
+##
+
+easyblock = 'CMakeMake'
+
+name = 'ELMERFEM'
+version = 'scc20'
+
+homepage = 'https://www.csc.fi/web/elmer'
+description = """
+Elmer is an open source multiphysical simulation software mainly developed by CSC - IT Center for Science (CSC). Elmer development was started 1995 in collaboration with Finnish Universities, research institutes and industry. After it's open source publication in 2005, the use and development of Elmer has become international.
+
+Elmer includes physical models of fluid dynamics, structural mechanics, electromagnetics, heat transfer and acoustics, for example. These are described by partial differential equations which Elmer solves by the Finite Element Method (FEM).
+"""
+
+toolchain = {'name': 'gomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/ElmerCSC/%(namelower)s/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['15dfdce25d409ed22b1c76c79061dc3857c2cdbb88448dd900e656c5035dea0a']
+
+separate_build_dir = True
+
+dependencies = [
+    ('MUMPS', '5.2.1', '-metis'),
+    ('Trilinos', '12.12.1'),
+]
+
+configopts  = '-DMPI_TEST_MAXPROC=8 '
+configopts += '-DWITH_MPI=ON -DWITH_OpenMP=ON -DWITH_MKL=ON '
+configopts += '-DWITH_CONTRIB=ON '
+configopts += '-DWITH_ELMERGUI=OFF '    # It requires Qt4
+configopts += '-DWITH_ELMERGUILOGGER=OFF -DWITH_ELMERGUITESTER=OFF '
+configopts += '-DWITH_ELMERPOST=OFF '
+configopts += '-DWITH_ElmerIce=ON '
+configopts += '-DWITH_FETI4I=OFF '
+configopts += '-DWITH_Hypre=OFF '
+configopts += '-DWITH_LUA=ON '
+configopts += '-DWITH_Mumps=ON '
+configopts += '-DWITH_Trilinos=ON '
+configopts += '-DWITH_Zoltan=OFF '
+
+local_elmer_binaries = [
+    "elmerf90", "ElmerGrid", "elmerld", "ElmerSolver", "ElmerSolver_mpi",
+    "GebhardtFactors", "matc", "Mesh2D", "ViewFactors",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_elmer_binaries],
+    'dirs': ['lib/elmersolver', 'share/elmersolver'],
+}
+
+moduleclass = 'math'
