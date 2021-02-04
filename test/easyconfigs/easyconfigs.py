@@ -671,6 +671,26 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
+    def check_R_packages(self, changed_ecs):
+        """Several checks for easyconfigs that install (bundles of) R packages."""
+        failing_checks = []
+
+        for ec in changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            exts_defaultclass = ec.get('exts_defaultclass')
+            if exts_defaultclass == 'RPackage' or ec.name == 'R':
+                seen_exts = set()
+                for ext in ec['exts_list']:
+                    if isinstance(ext, (tuple, list)):
+                        ext_name = ext[0]
+                    else:
+                        ext_name = ext
+                    if ext_name in seen_exts:
+                        failing_checks.append('%s was added multiple times to exts_list in %s' % (ext_name, ec_fn))
+                    else:
+                        seen_exts.add(ext_name)
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
     def check_sanity_check_paths(self, changed_ecs):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
@@ -746,8 +766,8 @@ class EasyConfigTest(TestCase):
 
                 if https_url_works:
                     failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
-
-        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
 
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
@@ -802,9 +822,9 @@ class EasyConfigTest(TestCase):
                 changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
                 added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
                 if changed_ecs_filenames:
-                    print("\nList of changed easyconfig files in this PR: %s" % '\n'.join(changed_ecs_filenames))
+                    print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
                 if added_ecs_filenames:
-                    print("\nList of added easyconfig files in this PR: %s" % '\n'.join(added_ecs_filenames))
+                    print("\nList of added easyconfig files in this PR:\n\t%s" % '\n\t'.join(added_ecs_filenames))
 
                 change_dir(cwd)
 
@@ -835,6 +855,7 @@ class EasyConfigTest(TestCase):
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
                 self.check_python_packages(changed_ecs, added_ecs_filenames)
+                self.check_R_packages(changed_ecs)
                 self.check_sanity_check_paths(changed_ecs)
                 self.check_https(changed_ecs)
 
