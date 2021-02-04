@@ -1,27 +1,26 @@
 Since 2020-02-28, healpix configure script works properly with "-L" and "--auto" set together.
 This patch modifies configure script to accept -L=/any/path to let us use -L as prefix_opt.
-
 (finally) avoiding interactive Q&A mode of configure script breaking every then and now.
 
 Josef Dvoracek | Institute of Physics | Czech Academy of Sciences | 2021-02-04
 
 
 diff -Nru Healpix_3.70_old/configure Healpix_3.70/configure
---- Healpix_3.70_old/configure  2020-07-23 12:00:45.000000000 +0200
-+++ Healpix_3.70/configure      2021-02-04 19:22:57.089946000 +0100
+--- Healpix_3.70_old/configure	2020-07-23 12:00:45.000000000 +0200
++++ Healpix_3.70/configure	2021-02-04 19:22:57.089946000 +0100
 @@ -81,13 +81,13 @@
  FEED='--feed'
  for i in $args ; do
    case $i in
 -      -L)
 +      -L=*)
-        HPX_CONF_DIR=${HPX_CONF_DIR_INPLACE}
-        echo
-        echo "Note: the configuration directory will be ${HPX_CONF_DIR}"
-        echo
-        FEED='--feedL'
--       args=`echo "${args}" | ${SED} 's|-L||g'` # remove -L from options
-+       args=`echo "${args}" | ${SED} 's|-L=.*[[:space:]]||g'` # remove -L=/path/will/be/ignored from options
-        ;;
+ 	HPX_CONF_DIR=${HPX_CONF_DIR_INPLACE}
+ 	echo
+ 	echo "Note: the configuration directory will be ${HPX_CONF_DIR}"
+ 	echo
+ 	FEED='--feedL'
+-	args=`echo "${args}" | ${SED} 's|-L||g'` # remove -L from options
++	args=`echo "${args}" | ${SED} 's|-L=.*[[:space:]]||g'` # remove -L=/path/will/be/ignored from options
+ 	;;
        *);;
    esac
