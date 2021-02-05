@@ -1,0 +1,60 @@
+easyblock = "ConfigureMake"
+
+name = 'Ferret'
+version = '7.3'
+
+homepage = 'http://ferret.pmel.noaa.gov/'
+description = """Ferret is an interactive computer visualization and analysis environment
+designed to meet the needs of oceanographers and meteorologists analyzing large and complex gridded data sets."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/NOAA-PMEL/Ferret/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s-platform_specific.mk.x86_64-linux.patch',
+    '%(name)s-%(version)s-site_specific.mk.in.patch',
+]
+checksums = [
+    'ae80a732c34156b5287a23696cf4ae4faf4de1dd705ff43cbb4168b05c6faaf4',  # v7.3.tar.gz
+    # Ferret-7.3-platform_specific.mk.x86_64-linux.patch
+    '00dff125d38e55b81ee0fe657cf4d79c5fea0947ac01b5cba044aeeae5548b45',
+    'f373e2d3dee2e520bf746060fcec686eaba513c5025df9eec29a32dffe89c9a1',  # Ferret-7.3-site_specific.mk.in.patch
+]
+
+dependencies = [
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+    ('NCO', '4.9.5'),
+    #('zlib', '1.2.7'),
+    #('Szip', '2.1'),
+    #('cURL', '7.27.0'),
+    #('ncurses', '5.9'),
+    #('libreadline', '6.2'),
+    ('Java', '13', ''),
+]
+
+parallel = 1
+
+skipsteps = ['configure']
+
+prebuildopts = "cp site_specific.mk.in site_specific.mk && cp site_specific.mk external_functions/ef_utility && sed -i 's^BUILDDIR^%(builddir)s\/Ferret-7.3^' site_specific.mk && sed -i 's^INSTALLDIR^%(installdir)s^' site_specific.mk &&"
+
+buildopts = 'CPP_X11="${EBROOTGENTOO-$NIXUSER_PROFILE}/include" LD="$CC"'
+
+sanity_check_paths = {
+    'files': ['bin/ferret'],
+    'dirs': ['bin'],
+}
+
+postinstallcmds =  [" cd %(builddir)s && wget https://github.com/NOAA-PMEL/FerretDatasets/archive/v7.4.tar.gz && cd %(installdir)s && tar -xf %(builddir)s/v7.4.tar.gz && printf '%s\n%s\n%s\n%s\n%s\n%s\n' '2' '%(installdir)s' '%(installdir)s/FerretDatasets-7.4' '%(installdir)s/bin' 'n' '3'|%(installdir)s/bin/Finstall "]
+
+modloadmsg = """To initialize Ferret,
+  do (sh, ash, ksh, and bash)
+              . $EBROOTFERRET/bin/ferret_paths.sh 
+  or (csh, tcsh)
+              source $EBROOTFERRET/bin/ferret_paths.csh
+"""
+
+moduleclass = 'geo'
