@@ -1,0 +1,67 @@
+easyblock = 'ConfigureMake'
+
+name = 'HEALPix'
+version = '3.70'
+
+homepage = 'http://healpix.sourceforge.net/'
+description = """Hierarchical Equal Area isoLatitude Pixelation of a sphere."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['Healpix_3.70_2020Jul23.tar.gz']
+patches = [
+    'HEALPix_noXtest.patch',
+    'HEALPIX-3.70-accept_L_path.patch',
+    'HEALPix-3.70-gcc10.patch',
+]
+checksums = [
+    '8841f171f1e22e75ea130e12e5cdc5bcf85dbec79f9f67dd1bf27e99fd20b6d1',  # Healpix_3.70_2020Jul23.tar.gz
+    'ec82c8b2beb80937c83d2e545e26ade08b3647ab5a3401c8703e6523b0782c08',  # HEALPix_noXtest.patch
+    'ddaaecf3e989ec053e9f8011ee7b994f4a687b413b4f5c19ef390488a11287e2',  # HEALPIX-3.70-accept_L_path.patch
+    'f46f008b78f5ad23cd46d2e760c82e231dd1af612737227e2a7382f2e2b433e5',  # HEALPix-3.70-gcc10.patch
+]
+
+unpack_options = '--strip-components=1'
+
+buildininstalldir = True
+
+builddependencies = [('binutils', '2.35')]
+
+dependencies = [('CFITSIO', '3.49')]
+
+configure_cmd_prefix = 'FITSDIR=$EBROOTCFITSIO/lib FITSINC=$EBROOTCFITSIO/include '
+prefix_opt = '-L='
+configopts = '--auto=\"c,cxx,f90,sharp\"'
+
+install_cmd = 'true'
+
+# extra paths originally exported in confdir/*_Linux/
+modextravars = {
+    'HEALPIX': '%(installdir)s',
+    'HEXE': '%(installdir)s/bin'
+}
+
+sanity_check_commands = [
+    "cd %(installdir)s && make test &> build/testresults.txt",
+    'test $(grep -c "test completed" %(installdir)s/build/testresults.txt) -eq 4',
+    'test $(grep -c "normal completion" %(installdir)s/build/testresults.txt) -eq 10',
+]
+
+sanity_check_paths = {
+    'files': [
+        'lib/%s' % local_lib for local_lib in [
+            'libchealpix.a',
+            'libhealpix.a',
+            'libhealpix_cxx.a',
+            'libsharp.a'
+        ]
+    ],
+    'dirs': [
+        'bin',
+        'data',
+        'lib'
+    ]
+}
+
+moduleclass = 'astro'
