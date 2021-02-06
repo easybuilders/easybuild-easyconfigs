@@ -48,7 +48,6 @@ from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
-from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file, is_generic_easyblock
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
@@ -458,17 +457,26 @@ class EasyConfigTest(TestCase):
         if EasyConfigTest.ordered_specs is None:
             self.process_all_easyconfigs()
 
+        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in EasyConfigTest.parsed_easyconfigs)
+        if len(ecs_by_full_mod_name) != len(EasyConfigTest.parsed_easyconfigs):
+            self.fail('Easyconfigs with duplicate full_mod_name found')
+
+        # Cache already determined dependencies
+        ec_to_deps = dict()
+
         def get_deps_for(ec):
             """Get list of (direct) dependencies for specified easyconfig."""
-            deps = []
-            for dep in ec['ec']['dependencies']:
-                dep_mod_name = dep['full_mod_name']
-                deps.append((dep['name'], dep['version'], dep['versionsuffix'], dep_mod_name))
-                res = [x for x in EasyConfigTest.ordered_specs if x['full_mod_name'] == dep_mod_name]
-                if len(res) == 1:
-                    deps.extend(get_deps_for(res[0]))
-                else:
-                    raise EasyBuildError("Failed to find %s in ordered list of easyconfigs", dep_mod_name)
+            ec_mod_name = ec['full_mod_name']
+            deps = ec_to_deps.get(ec_mod_name)
+            if deps is None:
+                deps = []
+                for dep in ec['ec']['dependencies']:
+                    dep_mod_name = dep['full_mod_name']
+                    deps.append((dep['name'], dep['version'], dep['versionsuffix'], dep_mod_name))
+                    # Note: Raises KeyError if dep not found
+                    res = ecs_by_full_mod_name[dep_mod_name]
+                    deps.extend(get_deps_for(res))
+                ec_to_deps[ec_mod_name] = deps
 
             return deps
 
@@ -663,6 +671,26 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
+    def check_R_packages(self, changed_ecs):
+        """Several checks for easyconfigs that install (bundles of) R packages."""
+        failing_checks = []
+
+        for ec in changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            exts_defaultclass = ec.get('exts_defaultclass')
+            if exts_defaultclass == 'RPackage' or ec.name == 'R':
+                seen_exts = set()
+                for ext in ec['exts_list']:
+                    if isinstance(ext, (tuple, list)):
+                        ext_name = ext[0]
+                    else:
+                        ext_name = ext
+                    if ext_name in seen_exts:
+                        failing_checks.append('%s was added multiple times to exts_list in %s' % (ext_name, ec_fn))
+                    else:
+                        seen_exts.add(ext_name)
+        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+
     def check_sanity_check_paths(self, changed_ecs):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
@@ -738,8 +766,8 @@ class EasyConfigTest(TestCase):
 
                 if https_url_works:
                     failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
-
-        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
 
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
@@ -794,9 +822,9 @@ class EasyConfigTest(TestCase):
                 changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
                 added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
                 if changed_ecs_filenames:
-                    print("\nList of changed easyconfig files in this PR: %s" % '\n'.join(changed_ecs_filenames))
+                    print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
                 if added_ecs_filenames:
-                    print("\nList of added easyconfig files in this PR: %s" % '\n'.join(added_ecs_filenames))
+                    print("\nList of added easyconfig files in this PR:\n\t%s" % '\n\t'.join(added_ecs_filenames))
 
                 change_dir(cwd)
 
@@ -827,6 +855,7 @@ class EasyConfigTest(TestCase):
                 # run checks on changed easyconfigs
                 self.check_sha256_checksums(changed_ecs)
                 self.check_python_packages(changed_ecs, added_ecs_filenames)
+                self.check_R_packages(changed_ecs)
                 self.check_sanity_check_paths(changed_ecs)
                 self.check_https(changed_ecs)
 
