@@ -1,23 +1,13 @@
 name: easyconfigs unit tests
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   test-suite:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        python: [2.7, 3.5, 3.6, 3.7]
-        modules_tool: [Lmod-6.6.3, Lmod-7.8.22, Lmod-8.1.14]
-        module_syntax: [Lua, Tcl]
-        # exclude some configurations: only test Tcl module syntax with Lmod 7.x and Python 2.7 & 3.5
-        exclude:
-          - modules_tool: Lmod-6.6.3
-            module_syntax: Tcl
-          - modules_tool: Lmod-8.1.14
-            module_syntax: Tcl
-          - python: 3.6
-            module_syntax: Tcl
-          - python: 3.7
-            module_syntax: Tcl
+        python: [3.6]
+        modules_tool: [Lmod-8.1.14]
+        module_syntax: [Lua]
       fail-fast: false
     steps:
     - uses: actions/checkout@v2
@@ -149,42 +139,3 @@ jobs:
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
           # use /tmp/sources because that has cached downloads (see cache step above)
           eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
-
-  test-sdist:
-    runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        python: [2.7, 3.6, 3.7]
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: set up Python
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{matrix.python}}
-
-    - name: Create source distribution
-      run: python setup.py sdist
-
-    - name: Inspect files included in source distribution
-      working-directory: dist
-      run: |
-          tar xfz easybuild-easyconfigs*tar.gz
-          cd easybuild-easyconfigs-*/
-
-          # .git folder should not be there in source tarball
-          dot_git_files=$(find . -name .git)
-          if [ -n "$dot_git_files" ]; then
-            echo "Found .git folders in source tarball: $dot_git_files" && false
-          else
-            echo "No .git folders found in source tarball: OK"
-          fi
-
-          # CVS easyconfigs must be included in source tarball,
-          # see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
-          cvs_easyconfigs=$(find . -name 'CVS-*.eb')
-          if [ -z "$cvs_easyconfigs" ]; then
-            echo "CVS easyconfigs not found" && false
-          else
-            echo "Found CVS easyconfigs: $cvs_easyconfigs"
-          fi
