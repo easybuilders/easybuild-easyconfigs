@@ -1,0 +1,45 @@
+easyblock = 'Tarball'
+
+name = 'arcasHLA'
+version = '0.2.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/RabadanLab/arcasHLA'
+description = """arcasHLA performs high resolution genotyping for HLA class I and class II
+genes from RNA sequencing, supporting both paired and single-end samples."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+github_account = 'RabadanLab'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['0ac0f67f7206660e80b3163e6adc1e02c5ef87879e6366c49c16ee1ccbf83c40']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('Biopython', '1.75', versionsuffix),
+    ('BEDTools', '2.29.2'),
+    ('kallisto', '0.46.1'),
+    ('SAMtools', '1.10'),
+    ('pigz', '2.4'),
+    ('git', '2.23.0', '-nodocs'),
+    ('git-lfs', '2.11.0', '', True),
+]
+
+# Download and install the reference database (1.8 GB)
+postinstallcmds = ["cd %(installdir)s && git lfs install && ./arcasHLA reference --update --verbose"]
+
+sanity_check_paths = {
+    'files': ['arcasHLA'],
+    'dirs': ['dat', 'dat/IMGTHLA', 'scripts', 'test'],
+}
+
+sanity_check_commands = ['arcasHLA --help']
+
+modextrapaths = {
+    'PATH': [''],
+    'PYTHONPATH': ['scripts'],
+}
+
+moduleclass = 'bio'

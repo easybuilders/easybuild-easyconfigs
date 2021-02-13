@@ -1,0 +1,130 @@
+Fix hardcoded stuff in Makefiles
+
+author: Pavel Grochal (INUITS)
+diff -ru --new-file pirs-2.0.2.orig/Makefile pirs-2.0.2/Makefile
+--- pirs-2.0.2.orig/Makefile	2016-08-14 07:10:03.000000000 +0200
++++ pirs-2.0.2/Makefile	2020-04-28 10:34:20.369344282 +0200
+@@ -1,3 +1,10 @@
++CC ?= gcc
++CXX ?= g++
++CFLAGS ?= -g -O2
++CXXFLAGS ?= -g -O2
++PKGDATADIR ?= "/usr/local/share/pirs"
++export
++
+ all: simulator stator symlinks
+ 
+ PERL_LIST = stator/baseCallingMatrix/baseCalling_Matrix_analyzer \
+@@ -49,4 +56,3 @@
+ 	git push github master
+ 	git push
+ 	git push google master
+-
+diff -ru --new-file pirs-2.0.2.orig/src/pirs/gccMakefile pirs-2.0.2/src/pirs/gccMakefile
+--- pirs-2.0.2.orig/src/pirs/gccMakefile	2016-08-14 07:10:03.000000000 +0200
++++ pirs-2.0.2/src/pirs/gccMakefile	2020-04-28 13:31:25.328907461 +0200
+@@ -1,52 +1,23 @@
+-CFLAGS = -pipe -mtune=generic -msse2 -fopenmp -DSFMT_MEXP=19937 -DHAVE_CONFIG_H -DPKGDATADIR='"/usr/local/share/pirs"' -I. -I.. -ISFMT-src-1.4
+-
+-ifeq ($(shell uname -s),Darwin)
+-CFLAGS += -march=core2 -Bstatic -L/opt/local/lib -I/opt/local/include
+-else
+-CFLAGS += -static
+-endif
+-
+-#GCC_VERSION := `gcc -dumpversion`
+-GCC_VERSION := $(shell gcc -dumpversion)
+-GCC_MAJOR := $(shell echo $(GCC_VERSION) | cut -d'.' -f1)
+-#GCC_MINOR := $(shell echo $(GCC_VERSION) | cut -d'.' -f2)
+-#GCC_SUB := $(shell echo $(GCC_VERSION) | cut -d'.' -f3)
+-GCC4_VER := $(shell echo $(GCC_VERSION) | cut -d'.' -f2,3)
+-
+-CPPFLAGS += $(CFLAGS)
+-
+-ifeq ($(GCC_MAJOR),4)
+-ifeq ($(shell expr 2.4 \<= $(GCC4_VER)),1)
+-CFLAGS += -march=native
+-CPPFLAGS += -march=native
+-endif
+-ifeq ($(shell expr 3.6 \<= $(GCC4_VER)),1)
+-#CPPFLAGS += -std=c++0x
+-endif
+-endif
+-
+-LDLIB     = -lz -lpthread
+-LDFLAGS   = -Wl,-O1 -Wl,--sort-common -Wl,--enable-new-dtags -Wl,--hash-style=both $(LDLIB)
+ 
+ SRCDIRS = . SFMT-src-1.4
+ SRCEXTS = .C .cc .cpp .CPP .c++ .cxx .c
+-OLevel= -O2
++
+ WARNFLAGS = -Wfloat-equal -Wall
+ SOURCES = $(foreach d,$(SRCDIRS),$(wildcard $(addprefix $(d)/*,$(SRCEXTS))))
+ 
+-# g++ -DHAVE_CONFIG_H -I. -DSFMT_MEXP=19937 -DPKGDATADIR='"/usr/local/share/pirs"' -Wall -Wextra -msse2  -fopenmp -g -O2 *.cpp SFMT-src-1.4/SFMT.c -lz
++EXTRAFLAGS = -lz -lpthread -pipe -DSFMT_MEXP=19937 -DHAVE_CONFIG_H  -I. -I.. -ISFMT-src-1.4 -DPKGDATADIR='"$(PKGDATADIR)"'
+ 
+ all: pirs
+ 	@echo Souce Files:[$(SOURCES)]
+ 
+ pirs: $(SOURCES)
+-	g++ $(WARNFLAGS) $(CPPFLAGS) $(OLevel) -o $@ $^ $(LDFLAGS)
++	$(CXX) $(WARNFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(EXTRAFLAGS) 
+ 
+ dpirs: $(SOURCES)
+-	g++ $(WARNFLAGS) $(CPPFLAGS) $(OLevel) -g -DWITH_DEBUG -o $@ $^ $(LDFLAGS)
++	$(CXX) $(WARNFLAGS) $(CXXFLAGS) -g -DWITH_DEBUG -o $@ $^ $(LDFLAGS) $(EXTRAFLAGS)
+ 
+ hmap:
+-	g++ -M -MM *.cpp
++	$(CXX) $(CXXFLAGS) -M -MM *.cpp
+ 
+ test: pirs
+ 	cd test && sh pirs.sh
+diff -ru --new-file pirs-2.0.2.orig/src/stator/gcContCvgBias/Makefile pirs-2.0.2/src/stator/gcContCvgBias/Makefile
+--- pirs-2.0.2.orig/src/stator/gcContCvgBias/Makefile	2016-08-14 07:10:03.000000000 +0200
++++ pirs-2.0.2/src/stator/gcContCvgBias/Makefile	2020-04-28 13:35:00.329179368 +0200
+@@ -1,38 +1,16 @@
+-ifeq ($(shell uname -s),Darwin)
+-CPPFLAGS += -march=core2 -Bstatic -L/opt/local/lib -I/opt/local/include
+-else
+-CPPFLAGS += -static
+-endif
+-
+-GCC_VERSION := $(shell gcc -dumpversion)
+-GCC_MAJOR := $(shell echo $(GCC_VERSION) | cut -d'.' -f1)
+-GCC4_VER := $(shell echo $(GCC_VERSION) | cut -d'.' -f2,3)
+-
+-ifeq ($(GCC_MAJOR),4)
+-ifeq ($(shell expr 2.4 \<= $(GCC4_VER)),1)
+-CPPFLAGS += -march=native
+-endif
+-ifeq ($(shell expr 3.6 \<= $(GCC4_VER)),1)
+-CPPFLAGS += -std=c++0x
+-endif
+-endif
+-
+ 
+ OBJ = gzstream.o self_util.o main.o stat_soap_coverage.o
+-CC = g++
+-LIBRARY = -O3 -pipe $(CPPFLAGS) -mtune=generic -pedantic -Wfloat-equal \
+-#-Wall
+ 
+ gc_coverage_bias:${OBJ}
+-	${CC} -o gc_coverage_bias ${LIBRARY} ${OBJ} -lz
++	${CXX} $(CXXFLAGS) -o gc_coverage_bias $(LDFLAGS) ${OBJ} -lz
+ gzstream.o:gzstream.h gzstream.cpp
+-	${CC} -c ${LIBRARY} gzstream.h gzstream.cpp
++	${CXX} $(CXXFLAGS) -c $(LDFLAGS) gzstream.h gzstream.cpp
+ self_util.o:self_util.cpp self_util.h
+-	${CC} -c ${LIBRARY} self_util.cpp self_util.h
++	${CXX} $(CXXFLAGS) -c $(LDFLAGS) self_util.cpp self_util.h
+ main.o:main.cpp
+-	${CC} -c ${LIBRARY} main.cpp
++	${CXX} $(CXXFLAGS) -c $(LDFLAGS) main.cpp
+ stat_soap_coverage.o:stat_soap_coverage.h stat_soap_coverage.cpp
+-	${CC} -c ${LIBRARY} stat_soap_coverage.h stat_soap_coverage.cpp
++	${CXX} $(CXXFLAGS) -c $(LDFLAGS) stat_soap_coverage.h stat_soap_coverage.cpp
+ 
+ test: gc_coverage_bias
+ 	./gc_coverage_bias -r gcdeptestref.fa.gz -o test -w 100,200 --gcdump --depwindump gcdeptest.depth.gz

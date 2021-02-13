@@ -4,10 +4,13 @@ name = 'R-bundle-Bioconductor'
 version = '3.9'
 versionsuffix = '-R-%(rver)s'
 
-homepage = 'http://www.r-project.org/'
-description = """R is a free software environment for statistical computing and graphics."""
+homepage = 'https://bioconductor.org'
+description = """Bioconductor provides tools for the analysis and coprehension
+ of high-throughput genomic data."""
 
 toolchain = {'name': 'foss', 'version': '2019a'}
+
+builddependencies = [('pkg-config', '0.29.2')]
 
 dependencies = [
     ('R', '3.6.0'),
@@ -30,7 +33,12 @@ exts_default_options = {
 }
 
 exts_defaultclass = 'RPackage'
-exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+# check whether correct version is installed in extension filter
+# (some versions in this bundle may be newer than the ones provided by R)
+local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
+local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
+exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
 
 # CRAN packages on which these Bioconductor packages depend are available in R module on which this depends
 # !! order of packages is important !!
@@ -100,10 +108,10 @@ exts_list = [
         'checksums': ['d72cd4a1ba3fb14629aad3685202388384673ef06d2d22451c4c3d174a85e8e8'],
     }),
     ('preprocessCore', '1.46.0', {
-        'checksums': ['a062860681595930b98c98403d44242284a0692da197b7d42eac6e0a05b13e46'],
         # disable internal threading to avoid crash in pthread_create
         # see also https://github.com/bmbolstad/preprocessCore/issues/1
         'installopts': "--configure-args='--disable-threading'",
+        'checksums': ['a062860681595930b98c98403d44242284a0692da197b7d42eac6e0a05b13e46'],
     }),
     ('BiocManager', '1.30.4', {
         'checksums': ['50093f5c8ed8fba6e68bc715784b713887bdad3538fbb92f152dcc1eaf39ba4f'],
@@ -405,7 +413,11 @@ exts_list = [
         'checksums': ['91a49924f128ece4dbb0bba30dd4aef4c35d1a57e87845b22805f3779f6e44cb'],
     }),
     ('lpsymphony', '1.12.0', {
-        'checksums': ['5b2ff3c30490adab67fabb34076c5019de3d1cfbce68666fed7e5a7423c19b8f'],
+        'patches': ['lpsymphony-1.12.0_zlib.patch'],
+        'checksums': [
+            '5b2ff3c30490adab67fabb34076c5019de3d1cfbce68666fed7e5a7423c19b8f',  # lpsymphony_1.12.0.tar.gz
+            '8d7443ac2e9f30bc3723d1bfe246e3c0ece085800e8b6e9632ae4f799ea5ef40',  # lpsymphony-1.12.0_zlib.patch
+        ],
     }),
     ('IHW', '1.12.0', {
         'checksums': ['7f7ede99410cfacc355b0eeea3c27081e85f16640bb4383ff66b2eaa02371a16'],
@@ -574,6 +586,87 @@ exts_list = [
     }),
     ('pRolocGUI', '1.18.0', {
         'checksums': ['38e8930bc442b3ca25c4800b3eacc37be8ef1541212bfb334eb517415287a26f'],
+    }),
+    ('EBImage', '4.26.0', {
+        'checksums': ['58bf7a2e0ea696ef4b91f42be1b8a3e3ab20f0fc31de1fd75d39950448741931'],
+    }),
+    ('GenomicScores', '1.8.1', {
+        'checksums': ['be157477610f3ac4ca8231c84c6a8eee9de477847fa35fc01597640e0d2cfb75'],
+    }),
+    ('BSgenome.Mmusculus.UCSC.mm10', '1.4.0', {
+        'checksums': ['6e2eb3bce208cc7766f0e0ef1e14465289d5463b34d94c9a9279256545b5408b'],
+    }),
+    ('TxDb.Mmusculus.UCSC.mm10.knownGene', '3.4.7', {
+        'checksums': ['cbb4150009199a5e99a9d07b0386c0596afbb14cc1ad9b39bf2fc08fe8bc3512'],
+    }),
+    ('regioneR', '1.16.5', {
+        'checksums': ['104d0344897c01fbc85e6d039a783a5488a986144b62f2314ca478d40ad4a78b'],
+    }),
+    ('ChIPpeakAnno', '3.18.2', {
+        'checksums': ['e91c64c0270e2fefc3ca15742c1ad92fb080aee6c02a2bcbb7939fbc776ffc73'],
+    }),
+    ('seqLogo', '1.50.0', {
+        'checksums': ['4b94b5a5b49d594ae91e4bd0eeb16b4ab3e9a7a25df57d65c4960815728dc3fc'],
+    }),
+    ('rGADEM', '2.32.0', {
+        'checksums': ['28e044b78797743c9f85011aae117a6f8518a1b0d4ef34184f270647a957c8fd'],
+    }),
+    ('MotIV', '1.40.0', {
+        'checksums': ['ce2f33cd0e47eb29a871a5ec05bd121d40d258005e714d28254cc0d2fd1e1f21'],
+    }),
+    ('MotifDb', '1.26.0', {
+        'checksums': ['c03c40bbdb797c2149753a3144ef3321429c6c048e7a8acbc3e0dd365b673d17'],
+    }),
+    ('motifStack', '1.28.0', {
+        'checksums': ['2e39491a40cb632bac9fc0cece836af376b7d3ad12ef2084753dbd60f72d7b61'],
+    }),
+    ('ATACseqQC', '1.8.5', {
+        'checksums': ['b7d7ba6d112e9c3329ed26ed2f900aab32288f57b105b9bd604b920ff4060ec5'],
+    }),
+    ('batchelor', '1.0.1', {
+        'checksums': ['a41a9955d5b25cd7ed46df4f99bf2e85be9442450badcee452d53de607f1a6dd'],
+    }),
+    ('gsmoothr', '0.1.7', {
+        'checksums': ['b75ffd2a4a0f357762e02e46e355b45cc90ea637830f0a1b01f216bb4541e903'],
+    }),
+    ('Ringo', '1.48.0', {
+        'checksums': ['8b3c1aee3c5d4ea2457f58e0a830e486385afbdc62c1b3c21adceb2c97cddfbf'],
+    }),
+    ('R.devices', '2.16.1', {
+        'checksums': ['adedb928e6e6d1951d512f13688aa8ad4558a8fbc5b3e58cc0901ff106b6f497'],
+    }),
+    ('R.filesets', '2.13.0', {
+        'checksums': ['cf1597227bc2cc4b3f4a2bdf087e1ed33330a8450655d6a72236d105f0f39988'],
+    }),
+    ('aroma.light', '3.14.0', {
+        'checksums': ['861665bb5c13759eea76a05c8be8bf37c6a46750d16f110b52172f2809cd3728'],
+    }),
+    ('PSCBS', '0.65.0', {
+        'checksums': ['3365065d5375c599eb024bfff12c5f6b10a6b1a4fe4ba6f200f7e83618dd399a'],
+    }),
+    ('aroma.core', '3.2.0', {
+        'checksums': ['efae753e93f4cfea6df30a1b44b7c06616e3b1a6f1e798c8a70c20a685bf9ab0'],
+    }),
+    ('R.huge', '0.9.0', {
+        'checksums': ['f12d113a965603cfdbbb46e1a57331d267916235555b22f2bbc06caa302ae58e'],
+    }),
+    ('aroma.apd', '0.6.0', {
+        'checksums': ['87513774baeed8e1d43f819e615c85278aef748ebc842f1ee50686c3392e37d1'],
+    }),
+    ('R.utils', '2.9.0', {
+        'checksums': ['b2aacc5a55d3ea86c41ac576d2583e446af145f4cb1103ad7b6f95b09ab09ff0'],
+    }),
+    ('aroma.affymetrix', '3.2.0', {
+        'checksums': ['d279cf13cf6ed8369cfdf6682ace12924379bad578003453449aa1ccec31b0a7'],
+    }),
+    ('truncnorm', '1.0-8', {
+        'checksums': ['49564e8d87063cf9610201fbc833859ed01935cc0581b9e21c42a0d21a47c87e'],
+    }),
+    ('Rsolnp', '1.16', {
+        'checksums': ['3142776062beb8e2b45cdbc4fe6e5446b6d33505253d79f2890fe4178d9cf670'],
+    }),
+    ('Repitools', '1.30.0', {
+        'checksums': ['c73a3ba45cd3e334bf5a6d7b695a23e685a3b54848561076f8140bc141023508'],
     }),
 ]
 

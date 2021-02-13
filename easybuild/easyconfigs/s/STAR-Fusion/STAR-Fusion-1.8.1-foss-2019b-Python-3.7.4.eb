@@ -1,0 +1,95 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# updated for v1.5.0 by Jonas Demulemeester
+# updated for v1.8.1 by Alex Domingo
+
+easyblock = 'Tarball'
+
+name = 'STAR-Fusion'
+version = '1.8.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/STAR-Fusion/STAR-Fusion'
+description = """ STAR-Fusion uses the STAR aligner to identify candidate fusion transcripts
+ supported by Illumina reads. STAR-Fusion further processes the output generated
+ by the STAR aligner to map junction reads and spanning reads to a reference
+ annotation set."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://github.com/STAR-Fusion/STAR-Fusion/releases/download/STAR-Fusion-v1.8.1']
+sources = ['%(name)s-v%(version)s.FULL.tar.gz']
+checksums = ['daef3238904c9aafe197559b09fd5fc37034b2e38ae993c403c5c557b9c5623e']
+
+dependencies = [
+    ('Python', '3.7.4'),  # needed for the inspector
+    ('igv-reports', '0.9.8', versionsuffix),  # needed for the inspector
+    ('Perl', '5.30.0'),
+    ('DB', '18.1.32'),
+    ('GMAP-GSNAP', '2019-09-12'),
+    ('SAMtools', '1.10'),  # a single test fails with v1.10 due to issue #191 in STAR-Fusion
+    ('STAR', '2.7.2b'),
+    ('Trinity', '2.9.1', versionsuffix),
+    ('BLAST+', '2.9.0'),  # needed to build CTAT Genome library
+    ('HMMER', '3.2.1'),  # needed to build CTAT Genome library
+]
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('Types::Serialiser', '1.0', {
+        'source_tmpl': 'Types-Serialiser-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN'],
+        'checksums': ['7ad3347849d8a3da6470135018d6af5fd8e58b4057cd568c3813695f2a04730d'],
+    }),
+    ('common::sense', '3.74', {
+        'source_tmpl': 'common-sense-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN'],
+        'checksums': ['771f7d02abd1ded94d9e37d3f66e795c8d2026d04defbeb5b679ca058116bbf3'],
+    }),
+    ('DB_File', '1.853', {
+        'preconfigopts': "DB_FILE_INCLUDE=$EBROOTDB/include DB_FILE_LIB=$EBROOTDB/lib ",
+        'runtest': 'test',
+        'source_tmpl': 'DB_File-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/P/PM/PMQS'],
+        'checksums': ['d0c859cdb006c86d97b6dc316cb64b42b5b4178bd0c270e3d440ee42a23e26f9'],
+    }),
+    ('PerlIO::gzip', '0.20', {
+        'source_tmpl': 'PerlIO-gzip-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/N/NW/NWCLARK'],
+        'checksums': ['4848679a3f201e3f3b0c5f6f9526e602af52923ffa471a2a3657db786bd3bdc5'],
+    }),
+    ('JSON::XS', '4.02', {
+        'source_tmpl': 'JSON-XS-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN'],
+        'checksums': ['a5ad172138071a14729da8a01921ca233da4fe2bed290ffdfb8e560dd8adcf16'],
+    }),
+    ('Carp::Assert', '0.21', {
+        'source_tmpl': 'Carp-Assert-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/N/NE/NEILB'],
+        'checksums': ['924f8e2b4e3cb3d8b26246b5f9c07cdaa4b8800cef345fa0811d72930d73a54e'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['STAR-Fusion'],
+    'dirs': ['ctat-genome-lib-builder', 'FusionAnnotator', 'FusionFilter', 'FusionInspector', 'util']
+}
+
+sanity_check_commands = ["STAR-Fusion --version"]
+
+modextrapaths = {
+    'PATH': "",
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'
+}
+
+modextravars = {'STAR_FUSION_HOME': '%(installdir)s'}
+
+# Required databases for this version of STAR-Fusion and STAR are available at
+# https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/__genome_libs_StarFv1.8/
+# modloadmsg = "Reference database located in /path/to/database/%(name)s-%(version)s\n"
+
+moduleclass = 'bio'

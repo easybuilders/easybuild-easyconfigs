@@ -1,0 +1,55 @@
+also missing -lz in link flags
+see https://github.com/taglib/taglib/issues/872 + https://github.com/taglib/taglib/issues/875
+fix taken from https://github.com/taglib/taglib/commit/ef1312d62239f399c40233d76ef3328b8dadf984
+
+From ef1312d62239f399c40233d76ef3328b8dadf984 Mon Sep 17 00:00:00 2001
+From: Scott Wheeler <scott@directededge.com>
+Date: Tue, 10 Sep 2019 12:41:11 +0200
+Subject: [PATCH] Add -lz to taglib.pc and taglib-config when built with zlib
+
+Closes #872
+---
+ CMakeLists.txt      | 4 ++++
+ taglib-config.cmake | 2 +-
+ taglib.pc.cmake     | 2 +-
+ 3 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1a0302c4e..3d2470c68 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -104,6 +104,10 @@ math(EXPR TAGLIB_SOVERSION_PATCH "${TAGLIB_SOVERSION_REVISION}")
+
+ include(ConfigureChecks.cmake)
+
++if(${ZLIB_FOUND})
++  set(ZLIB_LIBRARIES_FLAGS -lz)
++endif()
++
+ if(NOT WIN32)
+   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/taglib-config.cmake" "${CMAKE_CURRENT_BINARY_DIR}/taglib-config" @ONLY)
+   install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/taglib-config" DESTINATION "${BIN_INSTALL_DIR}")
+diff --git a/taglib-config.cmake b/taglib-config.cmake
+index c91e28db3..2a5c19f90 100644
+--- a/taglib-config.cmake
++++ b/taglib-config.cmake
+@@ -29,7 +29,7 @@ while test $# -gt 0
+ do
+   case $1 in
+     --libs)
+-	  flags="$flags -L$libdir -ltag"
++	  flags="$flags -L$libdir -ltag @ZLIB_LIBRARIES_FLAGS@"
+ 	  ;;
+     --cflags)
+ 	  flags="$flags -I$includedir/taglib"
+diff --git a/taglib.pc.cmake b/taglib.pc.cmake
+index ba9d655b1..9f56a3e66 100644
+--- a/taglib.pc.cmake
++++ b/taglib.pc.cmake
+@@ -7,5 +7,5 @@ Name: TagLib
+ Description: Audio meta-data library
+ Requires:
+ Version: @TAGLIB_LIB_VERSION_STRING@
+-Libs: -L${libdir} -ltag
++Libs: -L${libdir} -ltag @ZLIB_LIBRARIES_FLAGS@
+ Cflags: -I${includedir}/taglib
