@@ -1,0 +1,66 @@
+# Fixes for POWER and aarch64.
+# Architecture detection and a way to avoid an extremely
+# long-standing GCC bug that doesn't do constant folding
+# for 128-bit IBM long double.
+#
+# Author: @zao (Lars Viklund)
+diff --git a/src/bituint/bituint.h b/src/bituint/bituint.h
+index bdce07a..c34381c 100644
+--- a/src/bituint/bituint.h
++++ b/src/bituint/bituint.h
+@@ -66,8 +66,8 @@ static const bituint mask[SIZEUINT] = {
+         0x40000000,
+         0x80000000
+ };
+-#elif defined(__x86_64__)
+-// AMD64
++#elif defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__)
++// AMD64, ARM64, POWERPC64
+ typedef uint_fast64_t bituint;
+ #define SIZEUINT 64
+ 
+diff --git a/src/stats/ln_gamma_function.c b/src/stats/ln_gamma_function.c
+index 0065874..50f7725 100644
+--- a/src/stats/ln_gamma_function.c
++++ b/src/stats/ln_gamma_function.c
+@@ -136,17 +136,20 @@ static const long double log_sqrt_2pi = 9.18938533204672741780329736e-1L;
+ // Bernoulli numbers B(2),B(4),B(6),...,B(20).  Only B(2),...,B(6) currently //
+ // used.                                                                     //
+ 
+-static const long double B[] = {   1.0L / (long double)(6 * 2 * 1),
+-                                  -1.0L / (long double)(30 * 4 * 3),
+-                                   1.0L / (long double)(42 * 6 * 5),
+-                                  -1.0L / (long double)(30 * 8 * 7),
+-                                   5.0L / (long double)(66 * 10 * 9),
+-                                -691.0L / (long double)(2730 * 12 * 11),
+-                                   7.0L / (long double)(6 * 14 * 13),
+-                               -3617.0L / (long double)(510 * 16 * 15),
+-                               43867.0L / (long double)(796 * 18 * 17),
+-                             -174611.0L / (long double)(330 * 20 * 19) 
+-                           };
++static long double B(int i) {
++  switch (i) {
++    case 0: return       1.0L / (long double)(6 * 2 * 1);
++    case 1: return      -1.0L / (long double)(30 * 4 * 3);
++    case 2: return       1.0L / (long double)(42 * 6 * 5);
++    case 3: return      -1.0L / (long double)(30 * 8 * 7);
++    case 4: return       5.0L / (long double)(66 * 10 * 9);
++    case 5: return    -691.0L / (long double)(2730 * 12 * 11);
++    case 6: return       7.0L / (long double)(6 * 14 * 13);
++    case 7: return   -3617.0L / (long double)(510 * 16 * 15);
++    case 8: return   43867.0L / (long double)(796 * 18 * 17);
++    case 9: return -174611.0L / (long double)(330 * 20 * 19);
++  }
++}
+ 
+ static long double xLnGamma_Asymptotic_Expansion( long double x ) {
+    const int  m = 3;
+@@ -157,7 +160,7 @@ static long double xLnGamma_Asymptotic_Expansion( long double x ) {
+    long double lngamma = log_sqrt_2pi - xj + (xj - 0.5L) * logl(xj);
+    int i;
+ 
+-   for (i = 0; i < m; i++) { term[i] = B[i] / xj; xj *= xx; }
++   for (i = 0; i < m; i++) { term[i] = B(i) / xj; xj *= xx; }
+    for (i = m - 1; i >= 0; i--) sum += term[i]; 
+    return lngamma + sum;
+ }

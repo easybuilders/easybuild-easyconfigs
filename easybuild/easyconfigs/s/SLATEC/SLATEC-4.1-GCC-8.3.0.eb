@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'SLATEC'
+version = '4.1'
+
+homepage = 'https://www.netlib.org/slatec/'
+description = """SLATEC Common Mathematical Library, a comprehensive software library containing
+    over 1400 general purpose mathematical and statistical routines written in Fortran 77."""
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+sources = [{
+    'source_urls': ['https://www.netlib.org/%(namelower)s'],
+    'filename': '%(namelower)s_src.tgz',
+    'extract_cmd': 'tar xfvz %s',
+}, {
+    'source_urls': ['http://www.netlib.org/%(namelower)s'],
+    'filename': '%(namelower)s4linux.tgz',
+    'extract_cmd': 'tar xfvz %s -C src',
+}]
+checksums = [
+    'df009d9ef9c18aae06ce68711b1ae108d3533b4f174582c3cbea0915c4fdfe01',  # slatec_src.tgz
+    'eef9234f8fcb49e7f4905a11eda8f453ec2ca314029a9ce303fdbc99cff42bf3',  # slatec4linux.tgz
+]
+
+skipsteps = ['configure']
+
+preinstallopts = "sed -i 's+/usr/local+%(installdir)s+; s+ldconfig;++' makefile &&"
+preinstallopts += "mkdir -p %(installdir)s/lib %(installdir)s/man/man1 &&"
+
+sanity_check_paths = {
+    'files': ['lib/libslatec.a', 'lib/libslatec.%s' % SHLIB_EXT],
+    'dirs': ['lib', 'man/man1']
+}
+
+moduleclass = 'math'

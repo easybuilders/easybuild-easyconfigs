@@ -1,0 +1,155 @@
+commit 7792cf9a768372d1ef61d9f7861af607ae141e7a
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Mon Jul 13 14:07:08 2020 +0200
+
+    Fix hardcoding of netcdf, mkl and compiler
+    
+    Åke Sandgren, 20170517
+
+diff --git a/AmberTools/src/configure2 b/AmberTools/src/configure2
+index 797380b..e6d0e50 100755
+--- a/AmberTools/src/configure2
++++ b/AmberTools/src/configure2
+@@ -378,12 +378,12 @@ program testf
+   write(6,*) 'testing a Fortran program'
+ end program testf
+ EOF
+-      $fc $fflags $netcdfinc -o testp$suffix testp.f90 $netcdfflagf > /dev/null 2> compile.err
++      $fc $fflags $netcdffinc -o testp$suffix testp.f90 $netcdfflagf > /dev/null 2> compile.err
+       if [ ! -e "testp$suffix" ] ; then
+         status=1
+         if [ "$1" = "verbose" ] ; then
+           echo "Error: Could not compile with NetCDF Fortran interface."
+-          echo "       $fc $fflags $netcdfinc -o testp$suffix testp.f90 $netcdfflagf"
++          echo "       $fc $fflags $netcdffinc -o testp$suffix testp.f90 $netcdfflagf"
+           echo "       Compile error follows:"
+           cat compile.err
+           echo ""
+@@ -485,6 +485,7 @@ mic_offload='no'
+ mpinab=''
+ mpi='no'
+ netcdf_dir=''
++netcdf_fort_dir=''
+ netcdf_flag=''
+ netcdfstatic='no'
+ pmemd_gem='no'
+@@ -577,6 +578,7 @@ while [ $# -gt 0 ]; do
+         --skip-python)  skippython='yes' ;;
+         --with-python)  shift; python="$1";;
+         --with-netcdf)  shift; netcdf_dir="$1";;
++        --with-netcdf-fort)  shift; netcdf_fort_dir="$1";;
+         --with-pnetcdf) shift; pnetcdf_dir="$1" ;;
+         --python-install) shift; python_install="$1";;
+         -netcdfstatic)  netcdfstatic='yes' ;;
+@@ -829,7 +831,7 @@ flibs="-larpack -llapack -lblas "
+ flibsf="-larpack -llapack -lblas"
+ # only used when the user requests a static build or when a static build is
+ # automatically set, eg, windows:
+-staticflag='-static'
++staticflag=''
+ omp_flag=
+ mpi_flag=
+ fp_flags=
+@@ -1411,7 +1413,7 @@ gnu)
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -1784,7 +1786,7 @@ intel)
+       fi
+ 
+       if [ "$mpi" = 'yes' ]; then
+-          mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++          mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$pmemd_coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2123,7 +2125,7 @@ EOF
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2247,7 +2249,7 @@ clang)
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++        mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2320,17 +2322,17 @@ if [ -n "$MKL_HOME" ]; then
+     blas=skip
+     flibs="-larpack "
+     flibsf="-larpack "
+-    mkll="$MKL_HOME/lib/32"
++    mkll="$MKL_HOME/mkl/lib/32"
+     mkl_processor="32"
+     mkl_procstring="ia32"
+     mklinterfacelayer='libmkl_intel.a'
+     if [ "$x86_64" = 'yes' ]; then
+-        if [ -d "$MKL_HOME/lib/em64t" ]; then
+-            mkll="$MKL_HOME/lib/em64t"
++        if [ -d "$MKL_HOME/mkl/lib/em64t" ]; then
++            mkll="$MKL_HOME/mkl/lib/em64t"
+             mkl_processor="em64t"
+             mkl_procstring="em64t"
+         else
+-            mkll="$MKL_HOME/lib/intel64"
++            mkll="$MKL_HOME/mkl/lib/intel64"
+             mkl_processor="intel64"
+             mkl_procstring="intel64"
+         fi
+@@ -2789,11 +2791,17 @@ if [ "$bintraj" = 'yes' ]; then
+   else
+     # A NetCDF directory was specified. Check that library exists and compiles
+     printf "\tUsing external NetCDF in '$netcdf_dir'\n"
++    # Support separate NetCDF-Fortran installation with --with-netcdf-fort
++    if [ ! -e "$netcdf_fort_dir" ]; then
++      netcdf_fort_dir="$netcdf_dir"
++    fi
++    printf "\tUsing external NetCDF-Fortran in '$netcdf_fort_dir'\n"
+     netcdfinc="-I"$netcdf_dir"/include"
++    netcdffinc="-I"$netcdf_fort_dir"/include"
+     if [ "${netcdf_dir}" != '/usr' -a "$netcdf_dir" != '/usr/' ]; then
+         netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
+     fi
+-    netcdf=$netcdf_dir"/include/netcdf.mod"
++    netcdf=$netcdf_fort_dir"/include/netcdf.mod"
+     if [ "$netcdfstatic" = 'no' ] ; then
+       if [ "${netcdf_dir}" != '/usr' -a "${netcdf_dir}" != '/usr/' ]; then
+           netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
+@@ -2809,7 +2817,7 @@ if [ "$bintraj" = 'yes' ]; then
+         echo "Error: '$netcdfflagc' not found."
+         exit 1
+       fi
+-      netcdfflagf=$netcdf_dir"/lib/libnetcdff.a"
++      netcdfflagf=$netcdf_fort_dir"/lib/libnetcdff.a"
+       if [ ! -e "$netcdfflagf" ]; then
+         echo "Error: '$netcdfflagf' not found."
+         exit 1
+@@ -2829,6 +2837,7 @@ else
+     netcdfflagf=''
+     netcdfflagc=''
+     netcdfinc=''
++    netcdffinc=''
+ fi
+ 
+ #------------------------------------------------------------------------------
+@@ -3803,7 +3812,7 @@ MAKE_XLEAP=$make_xleap
+ NETCDF=$netcdf
+ NETCDFLIB=$netcdfflagc
+ NETCDFLIBF=$netcdfflagf
+-NETCDFINC=$netcdfinc
++NETCDFINC=$netcdfinc $netcdffinc
+ PNETCDFLIB=$pnetcdflib
+ PNETCDFINC=$pnetcdfinc
+ PNETCDFDEF=$pnetcdfdef

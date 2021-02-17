@@ -1,0 +1,34 @@
+easyblock = 'CMakeMake'
+
+name = 'MariaDB-connector-c'
+version = '3.1.11'
+
+homepage = 'https://downloads.mariadb.org/connector-c/'
+description = "MariaDB Connector/C is used to connect applications developed in C/C++ to MariaDB and MySQL databases."
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+source_urls = ['https://github.com/MariaDB/mariadb-connector-c/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2cd769afea447231588580234523121268eae7576f75a7bee25a7e6ec04282f8']
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('CMake', '3.18.4'),
+]
+
+# don't use gold linker, leads to error: "invalid use of VERSION in input file"
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd'"
+
+sanity_check_paths = {
+    'files': ['lib/mariadb/libmariadbclient.a', 'lib/mariadb/libmariadb.%s' % SHLIB_EXT],
+    'dirs': ['include/mariadb'],
+}
+
+modextrapaths = {
+    'CPATH': ['include/mariadb'],
+    'LD_LIBRARY_PATH': ['lib/mariadb'],
+    'LIBRARY_PATH': ['lib/mariadb'],
+}
+
+moduleclass = 'lib'
