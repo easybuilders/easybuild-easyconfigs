@@ -1,0 +1,71 @@
+easyblock = 'CMakeMake'
+
+name = 'PSI4'
+version = '1.3.2'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+# PSI4 is mainly threaded with OpenMP but the driver can use mpi4py.
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+
+source_urls = ['https://github.com/psi4/psi4/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ["ed76c67803b6420f35f57a6dd31c47108b9145b8c9fced5c94cdc179f6b5fbf3"]
+
+# Py3.6 requires other modules.
+multi_deps = {'Python': ['3.7', '3.8']}
+
+dependencies = [
+    ('libxc', '4.3.4'),
+    ('SciPy-Stack', '2020b'),
+]
+
+configopts = " ".join([
+    '-DPYMOD_INSTALL_LIBDIR=/python%(pyshortver)s/site-packages', # Location within CMAKE_INSTALL_LIBDIR (lib)
+])
+
+separate_build_dir = True
+
+"""
+With pytest-xdiff manually run:
+pytest $EBROOTPSI4/lib/python3.8/site-packages/psi4/tests/ -n 8
+"""
+runtest = False
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_list = [
+    ('pydantic', '1.7.3', {
+        'checksums': ['213125b7e9e64713d16d988d10997dabc6a1f73f3991e1ff8e35ebb1409c7dc9'],
+        'use_pip': True,
+    }),
+    ('Pint', '0.16.1', {
+        'checksums': ['d43a2e9ae003164978b60fdf8cd920d8581e1a5991df8dded29b00f4850ec83a'],
+        'use_pip': True,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': [
+        'bin/psi4',
+    ],
+    'dirs': [
+        'bin',
+        'include/psi4',
+        'lib/python%(pyshortver)s/site-packages',
+    ]
+}
+
+sanity_check_commands = [
+    "python -c 'import psi4'"
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'chem'
