@@ -1,0 +1,87 @@
+--- release_5-2-0/common.mk.orig	2021-02-18 06:04:37.618679084 +0000
++++ release_5-2-0/common.mk	2021-02-18 06:06:02.253066333 +0000
+@@ -172,7 +172,7 @@
+ ifeq ($(TARGET),mingw32)
+    $(error Error: Should not build using MinGW gcc tool chain instead use MingGW-w64)
+ endif
+-ifneq ($(words $(subst -, ,$(TARGET))),3)
++ifneq ($(words $(subst -, ,$(TARGET))),4)
+    $(error Value of build TARGET doesn't appear to be a machine-vendor-system triplet)
+ endif
+ ARCH   := $(or $(word 1,$(subst -, ,$(TARGET))),$(shell uname -m))
+@@ -336,10 +336,10 @@
+ GD_LDFLAGS := -lgd -lpng
+ 
+ LZO2_LDFLAGS :=
+-ifeq ($(SYSTEM),mingw32)
++#ifeq ($(SYSTEM),mingw32)
+    # Compile for static Linux library instead of Windows DLL
+    LZO2_LDFLAGS += -llzo2
+-endif
++#endif
+ 
+ 
+ GSL_CXXFLAGS := 
+ 
+--- release_5-2-0/extern/Makefile.orig	2021-02-19 20:11:27.975037035 +0000
++++ release_5-2-0/extern/Makefile	2021-02-19 20:39:01.958355251 +0000
+@@ -357,6 +357,7 @@
+ 
+ $(COMET_SRC)/ : $(COMET_ZIP) | $(BUILD_DIR)/
+ 	unzip -d $(COMET_SRC) $(COMET_ZIP)
++	cp -r $(TPP_EXT)/MSToolkit/include/MSReader.h $(COMET_SRC)/MSToolkit/include/
+ 
+ comet-source : $(COMET_SRC)/ 
+ 
+@@ -539,7 +540,7 @@
+ 
+ $(FANN_SRC)/ : | $(BUILD_DIR)/
+ 	tar xzf $(FANN_TGZ) -C $(dir $(FANN_SRC))
+-	cd $(FANN_SRC); ./configure \
++	cd $(FANN_SRC); CC=gcc ./configure \
+ 	   --enable-shared=no --enable-static=yes --build=x86_64 \
+ 	   --includedir $(BUILD_DIR)/include --libdir $(BUILD_LIB) 
+ 
+@@ -585,7 +586,7 @@
+ 
+ $(GSL_SRC)/ : | $(BUILD_DIR)/
+ 	tar xzf $(GSL_TGZ) -C $(dir $(GSL_SRC))
+-	cd $(GSL_SRC); ./configure \
++	cd $(GSL_SRC); CC=gcc ./configure \
+ 	   --enable-shared=no --enable-static=yes --build=x86_64 \
+ 	   --prefix $(BUILD_DIR) \
+ 	   --includedir $(BUILD_DIR)/include --libdir $(BUILD_LIB) 
+@@ -838,7 +839,7 @@
+ 	   --disable-bsdtar --disable-bsdcpio \
+            --without-lzma --without-lzmadec --without-iconv \
+ 	   --without-xml2 --without-expat --without-openssl --without-nettle \
+-	   --enable-largefile \
++	   --enable-largefile CC=gcc\
+ 	   --prefix=$(BUILD_DIR) \
+ 	   --includedir=$(BUILD_DIR)/include \
+ 	   --libdir=$(BUILD_LIB) 
+@@ -934,13 +935,11 @@
+ $(LIBGD_SRC)/ : | $(BUILD_DIR)/
+ 	mkdir -p $(dir $(LIBGD_SRC))
+ 	tar xzf $(LIBGD_TGZ) -C $(dir $(LIBGD_SRC))
+-	cd $(LIBGD_SRC); ./configure --build=x86_64 \
+-	   --enable-shared=no --disable-shared \
+-	   --enable-static=yes --enable-static=yes \
++	cd $(LIBGD_SRC); CC=gcc ./configure --build=x86_64 \
+ 	   --prefix=$(BUILD_DIR) \
+ 	   --includedir=$(BUILD_DIR)/include \
+ 	   --libdir=$(BUILD_LIB) \
+-	   --with-png=$(BUILD_DIR) \
++	   --with-png=$(EBROOTGENTOO) \
+ 	   --without-x
+ 	$(foreach P, $(LIBGD_PATCHES), 					\
+ 	   @echo "### ...applying GD patch $(notdir $(P))" $(nl) 	\
+@@ -948,7 +947,7 @@
+ 	)
+ 
+ # libpng has to come before libgd because of LIBPNG_LIB requirement
+-$(LIBGD_LIB) : $(LIBPNG_LIB) | $(LIBGD_SRC)/
++$(LIBGD_LIB) :  $(LIBGD_SRC)/
+ 	make -C $(LIBGD_SRC) 
+ 	make -C $(LIBGD_SRC) install
+ 
