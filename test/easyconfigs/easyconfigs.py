@@ -65,6 +65,13 @@ from easybuild.tools.utilities import nub
 single_tests_ok = True
 
 
+# Exclude these tool chains from tests
+EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for x in ['foss', 'intel', 'fosscuda', 'intelcuda', 'iomkl']
+                                                   for y in ['2014', '2015', '2016', '2017', '2018', '2019']]
+EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore'] for y in ['4.', '5.', '6.', '7.', '8.', '9.']])
+EXCLUDE_TOOLCHAINS.extend(['ictce', 'giolf', 'golf', 'goolf'])
+
+
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
@@ -1107,7 +1114,13 @@ def suite():
             continue
 
         for spec in specs:
-            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+            # bypass easyconfigs from lots of toolchains which we do not use in this repository
+            exlcude_easyconfig_due_to_toolchain = False
+            for toolchain in EXCLUDE_TOOLCHAINS:
+                if toolchain in spec:
+                    exlcude_easyconfig_due_to_toolchain = True
+                    break
+            if spec.endswith('.eb') and spec != 'TEMPLATE.eb' and not exlcude_easyconfig_due_to_toolchain:
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
