@@ -1000,10 +1000,11 @@ def template_easyconfig_test(self, spec):
             self.assertTrue(os.path.isfile(patch_full), msg)
 
         # verify checksum for each patch file
-        if idx < patch_checksums_cnt:
+        if idx < patch_checksums_cnt and (os.path.exists(patch_full) or patch.endswith('.patch')):
             checksum = patch_checksums[idx]
             error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch, ec_fn, checksum)
-            self.assertTrue(verify_checksum(patch_full, checksum), error_msg)
+            res = verify_checksum(patch_full, checksum)
+            self.assertTrue(res, error_msg)
 
     for ext in ec['exts_list']:
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
@@ -1029,7 +1030,7 @@ def template_easyconfig_test(self, spec):
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
                 # verify checksum for each patch file
-                if idx < patch_checksums_cnt:
+                if idx < patch_checksums_cnt and (os.path.exists(ext_patch_full) or ext_patch.endswith('.patch')):
                     checksum = patch_checksums[idx]
                     error_msg = "Invalid checksum for patch file %s for %s extension in %s: %s"
                     res = verify_checksum(ext_patch_full, checksum)
