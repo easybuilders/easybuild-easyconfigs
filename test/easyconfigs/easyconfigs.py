@@ -222,6 +222,12 @@ class EasyConfigTest(TestCase):
             if len(blis_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != blis_vsuff_vars[0])
 
+        # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
+        if dep == 'ScaLAPACK':
+            bf_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -bf' in v]
+            if len(bf_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != bf_vsuff_vars[0])
+
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
         if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'PyTorch', 'R', 'TensorFlow'] and len(dep_vars) > 1:
