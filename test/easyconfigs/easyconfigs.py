@@ -66,11 +66,13 @@ single_tests_ok = True
 
 
 # Exclude these tool chains from tests
-EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for x in ['foss', 'intel', 'fosscuda', 'intelcuda', 'iomkl']
-                      for y in ['2014', '2015', '2016', '2017', '2018', '2019']]
+EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for y in ['2014', '2015', '2016', '2017', '2018', '2019', '2020a']
+                      for x in ['foss', 'intel', 'fosscuda', 'intelcuda', 'iomkl', 'iimpi', 'gompi', 'gcccuda',
+                                'gompic', 'iimpic']]
 EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore']
                            for y in ['4.', '5.', '6.', '7.', '8.', '9.']])
-EXCLUDE_TOOLCHAINS.extend(['ictce', 'giolf', 'golf', 'goolf'])
+EXCLUDE_TOOLCHAINS.extend(['ictce', 'giolf', 'golf', 'goolf', 'gimkl'])
+
 
 
 class EasyConfigTest(TestCase):
