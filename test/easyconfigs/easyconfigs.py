@@ -74,7 +74,6 @@ EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore']
 EXCLUDE_TOOLCHAINS.extend(['ictce', 'giolf', 'golf', 'goolf', 'gimkl'])
 
 
-
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
