@@ -1,0 +1,71 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2013-2015 Dmitri Gribenko, Ward Poelmans
+# Authors:: Dmitri Gribenko <gribozavr@gmail.com>
+# Authors:: Ward Poelmans <wpoely86@gmail.com>
+# License:: GPLv2 or later, MIT, three-clause BSD.
+# $Id$
+##
+
+name = 'Clang'
+version = '11.0.0'
+
+homepage = 'https://clang.llvm.org/'
+description = """C, C++, Objective-C compiler, based on LLVM.  Does not
+ include C++ standard library -- use libstdc++ from GCC."""
+
+# Clang also depends on libstdc++ during runtime, but this dependency is
+# already specified as the toolchain.
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s"]
+sources = [
+    'llvm-%(version)s.src.tar.xz',
+    'clang-%(version)s.src.tar.xz',
+    'compiler-rt-%(version)s.src.tar.xz',
+    'polly-%(version)s.src.tar.xz',
+    'openmp-%(version)s.src.tar.xz',
+    # Also include the LLVM linker
+    'lld-%(version)s.src.tar.xz',
+    'libcxx-%(version)s.src.tar.xz',
+    'libcxxabi-%(version)s.src.tar.xz',
+    'clang-tools-extra-%(version)s.src.tar.xz',
+]
+checksums = [
+    '913f68c898dfb4a03b397c5e11c6a2f39d0f22ed7665c9cefa87a34423a72469',  # llvm-11.0.0.src.tar.xz
+    '0f96acace1e8326b39f220ba19e055ba99b0ab21c2475042dbc6a482649c5209',  # clang-11.0.0.src.tar.xz
+    '374aff82ff573a449f9aabbd330a5d0a441181c535a3599996127378112db234',  # compiler-rt-11.0.0.src.tar.xz
+    'dcfadb8d11f2ea0743a3f19bab3b43ee1cb855e136bc81c76e2353cd76148440',  # polly-11.0.0.src.tar.xz
+    '2d704df8ca67b77d6d94ebf79621b0f773d5648963dd19e0f78efef4404b684c',  # openmp-11.0.0.src.tar.xz
+    'efe7be4a7b7cdc6f3bcf222827c6f837439e6e656d12d6c885d5c8a80ff4fd1c',  # lld-11.0.0.src.tar.xz
+    '6c1ee6690122f2711a77bc19241834a9219dda5036e1597bfa397f341a9b8b7a',  # libcxx-11.0.0.src.tar.xz
+    '58697d4427b7a854ec7529337477eb4fba16407222390ad81a40d125673e4c15',  # libcxxabi-11.0.0.src.tar.xz
+    'fed318f75d560d0e0ae728e2fb8abce71e9d0c60dd120c9baac118522ce76c09',  # clang-tools-extra-11.0.0.src.tar.xz
+]
+
+dependencies = [
+    # since Clang is a compiler, binutils is a runtime dependency too
+    ('binutils', '2.34'),
+    ('hwloc', '2.2.0'),
+    ('libxml2', '2.9.10'),
+    ('ncurses', '6.2'),
+    ('GMP', '6.2.0'),
+    ('Z3', '4.8.9'),
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('Python', '3.8.2'),
+]
+
+assertions = True
+usepolly = True
+build_lld = True
+libcxx = True
+enable_rtti = True
+build_extra_clang_tools = True
+
+skip_all_tests = True
+
+moduleclass = 'compiler'

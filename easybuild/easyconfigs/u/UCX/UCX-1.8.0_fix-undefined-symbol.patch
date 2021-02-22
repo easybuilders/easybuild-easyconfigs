@@ -1,0 +1,30 @@
+fix for "libuct_ib.so.0: undefined symbol: uct_ib_exp_qp_fill_attr"
+
+see https://github.com/openucx/ucx/issues/4883 + https://github.com/openucx/ucx/pull/4900
+
+From 40d6991eca6b36c6bc2c557dccfbad7a48ce5f62 Mon Sep 17 00:00:00 2001
+From: Artemy Kovalyov <artemyko@mellanox.com>
+Date: Tue, 17 Mar 2020 13:34:19 +0200
+Subject: [PATCH] UCT/IB/MLX5: Fix EXP accel compilation
+
+---
+ src/uct/ib/mlx5/exp/ib_exp.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/uct/ib/mlx5/exp/ib_exp.h b/src/uct/ib/mlx5/exp/ib_exp.h
+index ab1d9237e1..e97f574b17 100644
+--- a/src/uct/ib/mlx5/exp/ib_exp.h
++++ b/src/uct/ib/mlx5/exp/ib_exp.h
+@@ -7,7 +7,11 @@
+ #ifndef UCT_IB_MLX5_EXP_H_
+ #define UCT_IB_MLX5_EXP_H_
+ 
+-#if HAVE_VERBS_EXP_H
++#ifdef HAVE_CONFIG_H
++#  include "config.h"
++#endif
++
++#if HAVE_MLX5_HW && HAVE_VERBS_EXP_H
+ void uct_ib_exp_qp_fill_attr(uct_ib_iface_t *iface, uct_ib_qp_attr_t *attr);
+ #else
+ static inline void uct_ib_exp_qp_fill_attr(uct_ib_iface_t *iface, uct_ib_qp_attr_t *attr) { }

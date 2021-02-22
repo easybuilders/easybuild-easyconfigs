@@ -1,0 +1,88 @@
+easyblock = 'Bundle'
+
+name = 'Arlequin'
+version = '3.5.2.2'
+
+# HTTPS not working
+homepage = 'http://cmpg.unibe.ch/software/arlequin35/Arlequin35.html'
+description = "Arlequin: An Integrated Software for Population Genetics Data Analysis"
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+default_component_specs = {
+    'source_urls': ['http://cmpg.unibe.ch/software/arlequin%(version_major)s%(version_minor)s/linux/'],
+}
+
+components = [
+    ('arlecore', version, {
+        'easyblock': 'Tarball',
+        'sources': [{
+            'download_filename': '%(name)s_linux.zip',
+            'filename': '%(name)s-%(version)s.zip',
+        }],
+        'patches': ['%(name)s-%(version)s_fix-bash.patch'],
+        'checksums': [
+            '79d7ce0c126c32f88a66290aabd29e0b2e5b2d8c46cbcf02ef95ac7cbb91ead8',  # arlecore-3.5.2.2.zip
+            '5943db21213509ee06e0a32f7f80790313bf72f0243246c9a579b35be519974c',  # arlecore-3.5.2.2_fix-bash.patch
+        ],
+    }),
+    ('arlsumstat', version, {
+        'easyblock': 'PackedBinary',
+        'sources': [{
+            'download_filename': '%(name)s_linux.zip',
+            'filename': '%(name)s-%(version)s.zip',
+        }],
+        'patches': ['%(name)s-%(version)s_fix-bash.patch'],
+        'checksums': [
+            '709590b42d1ad5060cce4d90debe4ef2b9c0d1986f3d8dffd80c7b694d0ff454',  # arlsumstat-3.5.2.2.zip
+            '3584208bb1756312340ecdf2dfe04f67696b20ab17d6872d6c11a53cb4089d8b',  # arlsumstat-3.5.2.2_fix-bash.patch
+        ],
+    }),
+    ('arlequin_examples', version, {
+        'easyblock': 'Tarball',
+        'sources': [{
+            'download_filename': 'Example%20files_linux.zip',
+            'filename': '%(name)s-%(version)s.zip',
+        }],
+        'checksums': ['58e76d888ff2f4631df2ac482dd1e3c44cda389f9c31f7512993a852610cd985'],
+    }),
+]
+
+local_ver = ''.join(version.split('.'))
+local_arlecore_bin = 'arlecore_linux/arlecore%s_64bit' % local_ver
+local_arlecore_sh = 'arlecore_linux/LaunchArlecore.sh'
+local_arlsumstat_bin = 'arlsumstat_linux/arlsumstat%s_64bit' % local_ver,
+local_arlsumstat_sh = 'arlsumstat_linux/LaunchArlSumStat.sh'
+
+postinstallcmds = [
+    # fix arlecore
+    'sed -i "s@^arlecore=.*@arlecore=%%(installdir)s/%s@g" %%(installdir)s/%s'
+    % (local_arlecore_bin, local_arlecore_sh),
+    'chmod +x %%(installdir)s/%s' % local_arlecore_bin,
+    'chmod +x %%(installdir)s/%s' % local_arlecore_sh,
+    'cd %(installdir)s/arlecore_linux && ln -s arlecore3522_64bit arlecore',
+    # fix arlsumstat
+    'sed -i "s@^arlsumstat=.*@arlsumstat=%%(installdir)s/%s@g" %%(installdir)s/%s'
+    % (local_arlsumstat_bin, local_arlsumstat_sh),
+    'chmod +x %%(installdir)s/%s' % local_arlsumstat_bin,
+    'chmod +x %%(installdir)s/%s' % local_arlsumstat_sh,
+    'cd %(installdir)s/arlsumstat_linux && ln -s arlsumstat3522_64bit arlsumstat',
+]
+dependencies = [
+    ('R', '3.6.2'),
+]
+
+modextrapaths = {'PATH': ['arlecore_linux', 'arlsumstat_linux']}
+
+sanity_check_paths = {
+    'files': ['arlecore_linux/arlecore', 'arlsumstat_linux/arlsumstat'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "arlecore --help",
+    "arlsumstat --help",
+    r'cd %(installdir)s/Example\ files_linux/ELB/ && LaunchArlecore.sh -s "Xdata.ars"',
+]
+
+moduleclass = 'bio'
