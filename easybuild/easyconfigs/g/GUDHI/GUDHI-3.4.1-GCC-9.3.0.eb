@@ -1,0 +1,90 @@
+easyblock = 'CMakeMake'
+
+name = 'GUDHI'
+version = '3.4.1'
+
+homepage = 'https://gudhi.inria.fr/'
+description = """
+The GUDHI library is a generic open source C++ library, with a Python interface, for Topological Data Analysis (TDA) and Higher Dimensional Geometry Understanding.
+The library offers state-of-the-art data structures and algorithms to construct simplicial complexes and compute persistent homology.
+The library comes with data sets, demos, examples and test suites.
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'opt': True, 'cstd': 'c++14'}
+
+source_urls = ['https://github.com/GUDHI/gudhi-devel/releases/download/tags%2F%(namelower)s-release-%(version)s']
+sources = ['%(namelower)s.%(version)s.tar.gz']
+patches = ["GUDHI-3.4.1-cmake_test.patch"]
+checksums = [
+    "9e070a7b27568029721b799931dddb912b9cffd001b00332779134eac5e575ca",  # gudhi.3.4.1.tar.gz
+    "cd0a7670c4ce61a8f3e1b81e8e83ff7ff404b12bcc069a50a374dc131b5be606",  # GUDHI-3.4.1-cmake_test.patch
+]
+
+multi_deps = {'Python': ['3.6', '3.7', '3.8']}
+
+dependencies = [
+    ('SciPy-Stack', '2020b'),
+]
+
+builddependencies = [
+    ('Boost', '1.72.0'),
+    ('CGAL', '4.14.3'),
+    ('Eigen', '3.3.7'),
+    ('tbb','2020.2'),
+    ('pytest', '6.1.2'),
+]
+
+separate_build_dir = False
+
+# Configuration and build needs the path to pybind11 and the local build of python bindings for tests.
+local_export = "export PYTHONPATH=" + ":".join([
+    "$PYTHONPATH",
+    "%(installdir)s/lib/python%(pyshortver)s/site-packages",
+    "%(builddir)s/lib/python%(pyshortver)s/site-packages",
+    "%(builddir)s/%(namelower)s.%(version)s/src/python",
+])
+
+preconfigopts = ' && '.join([
+    "pip install --prefix %(builddir)s pybind11",
+    local_export,
+    "", # To append &&
+])
+
+configopts = " ".join([
+    '-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python3',
+])
+
+prebuildopts = f"{local_export} && "
+preinstallopts = f"{local_export} && "
+pretestopts = f"{local_export} && "
+
+runtest = "test"
+
+# GUDHI do not listen to CMAKE_INSTALL_PREFIX. So force install from the setup.
+# The build already built the python bindings
+installopts = " && ".join([
+    "", # To append &&
+    "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages",
+    "cd python",
+    "python setup.py install --prefix=%(installdir)s",
+])
+
+sanity_check_paths = {
+    'files': [ ],
+    'dirs': [
+        'bin',
+        'include/gudhi',
+        'lib/python%(pyshortver)s/site-packages',
+    ]
+}
+
+sanity_check_commands = [
+    "python -c 'import gudhi'"
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'bio'
