@@ -65,6 +65,16 @@ from easybuild.tools.utilities import nub
 single_tests_ok = True
 
 
+# Exclude these tool chains from tests
+EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for y in ['2014', '2015', '2016', '2017', '2018', '2019', '2020a']
+                      for x in ['foss', 'intel', 'fosscuda', 'intelcuda', 'iomkl', 'iimpi', 'gompi', 'gcccuda',
+                                'gompic', 'iimpic']]
+EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore']
+                           for y in ['4.', '5.', '6.', '7.', '8.', '9.']])
+EXCLUDE_TOOLCHAINS.extend(['ictce', 'giolf', 'golf', 'goolf', 'gimkl'])
+EXCLUDE_TOOLCHAINS = []
+
+
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
@@ -221,6 +231,12 @@ class EasyConfigTest(TestCase):
             blis_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -BLIS-' in v]
             if len(blis_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != blis_vsuff_vars[0])
+
+        # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
+        if dep == 'ScaLAPACK':
+            bf_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -bf' in v]
+            if len(bf_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != bf_vsuff_vars[0])
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
@@ -1101,7 +1117,13 @@ def suite():
             continue
 
         for spec in specs:
-            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+            # bypass easyconfigs from lots of toolchains which we do not use in this repository
+            exlcude_easyconfig_due_to_toolchain = False
+            for toolchain in EXCLUDE_TOOLCHAINS:
+                if toolchain in spec:
+                    exlcude_easyconfig_due_to_toolchain = True
+                    break
+            if spec.endswith('.eb') and spec != 'TEMPLATE.eb' and not exlcude_easyconfig_due_to_toolchain:
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
