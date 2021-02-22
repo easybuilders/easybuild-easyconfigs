@@ -5,8 +5,6 @@ For INC?????? - `EBFILENAME`
 Default:
 * [ ] EL7-cascadelake
 * [ ] EL7-haswell
-* [ ] EL7.9-cascadelake
-* [ ] EL7.9-haswell
 * [ ] EL8-cascadelake
 * [ ] EL8-haswell
 
