@@ -72,6 +72,7 @@ EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for y in ['2014', '2015', '2016', '20
 EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore']
                            for y in ['4.', '5.', '6.', '7.', '8.', '9.']])
 EXCLUDE_TOOLCHAINS.extend(['ictce', 'giolf', 'golf', 'goolf', 'gimkl'])
+EXCLUDE_TOOLCHAINS = []
 
 
 class EasyConfigTest(TestCase):
