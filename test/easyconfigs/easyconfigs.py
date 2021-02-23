@@ -794,7 +794,7 @@ class EasyConfigTest(TestCase):
                 merge_base = target_branch
 
             # determine list of changed files using 'git diff' and merge base determined above
-            cmd = "git diff --name-only --diff-filter=%s %s..HEAD" % (diff_filter, merge_base)
+            cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
             out, _ = run_cmd(cmd, simple=False)
             return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
 
@@ -816,7 +816,7 @@ class EasyConfigTest(TestCase):
             if target_branch is None:
                 self.assertTrue(False, "Failed to determine target branch for current pull request.")
 
-            if target_branch != 'master':
+            if target_branch != 'main':
 
                 if not EasyConfigTest.parsed_easyconfigs:
                     self.process_all_easyconfigs()
