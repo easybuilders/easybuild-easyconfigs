@@ -273,9 +273,12 @@ class EasyConfigTest(TestCase):
             # (Qiskit depends on PySCF)
             'libxc': [(r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
                                    r'PySCF-', r'Qiskit-', r'WIEN2k-'])],
-            # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
-            # both scVelo and Python-Geometric depend on numba
-            'LLVM': [(r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2'])],
+            # both scVelo and Python-Geometric depend on numba, which typically requires an older LLVM
+            'LLVM': [
+                # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
+                (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
+                (r'10\.0\.1', [r'numba-0\.52\.0-', r'PyTorch-Geometric-1\.6\.3']),
+            ],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
             # OPERA requires SAMtools 0.x
