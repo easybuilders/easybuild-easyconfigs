@@ -1,0 +1,59 @@
+Fix include path for jbig libraries
+Use CC, CFLAGS from EB.
+Drop bad make depend lines.
+
+John Dey, 2019-05-29  jfdey@fredhutch.org  fizwit@github.com
+diff -ruN jbigkit-2.1.orig/libjbig/Makefile jbigkit-2.1/libjbig/Makefile
+--- jbigkit-2.1.orig/libjbig/Makefile	2014-03-27 11:47:15.000000000 -0700
++++ jbigkit-2.1/libjbig/Makefile	2019-06-14 14:19:21.901910000 -0700
+@@ -1,10 +1,7 @@
+ # Unix makefile for the JBIG-KIT library
+ 
+-# Select an ANSI/ISO C compiler here, GNU gcc is recommended
+-CC = gcc
+-
+ # Options for the compiler: A high optimization level is suggested
+-CFLAGS = -g -O -W -Wall -ansi -pedantic # --coverage
++CFLAGS += -g -W -Wall -ansi -pedantic # --coverage
+ 
+ all: libjbig.a libjbig85.a tstcodec tstcodec85
+ 
+diff -ruN jbigkit-2.1.orig/Makefile jbigkit-2.1/Makefile
+--- jbigkit-2.1.orig/Makefile	2014-03-27 11:47:15.000000000 -0700
++++ jbigkit-2.1/Makefile	2019-06-14 14:14:58.290833000 -0700
+@@ -1,13 +1,10 @@
+ # Unix makefile for JBIG-KIT
+ 
+-# Select an ANSI/ISO C compiler here, GNU gcc is recommended
+-CC = gcc
+-
+ # Options for the compiler: A high optimization level is suggested
+-CFLAGS = -O2 -W -Wno-unused-result
+-# CFLAGS = -O -g -W -Wall -Wno-unused-result -ansi -pedantic # -DDEBUG
++OPT = -W -Wno-unused-result
++INCLUDE = -I../libjbig
++CFLAGS += $(OPT) $(INCLUDE)
+ 
+-export CC CFLAGS
+ 
+ VERSION=2.1
+ 
+diff -ruN jbigkit-2.1.orig/pbmtools/Makefile jbigkit-2.1/pbmtools/Makefile
+--- jbigkit-2.1.orig/pbmtools/Makefile	2014-03-27 11:47:15.000000000 -0700
++++ jbigkit-2.1/pbmtools/Makefile	2019-06-14 14:18:08.851800000 -0700
+@@ -1,11 +1,10 @@
+ # Unix makefile for the JBIG-KIT PBM tools
+ 
+-# Select an ANSI/ISO C compiler here, e.g. GNU gcc is recommended
+-CC = gcc
+-
+ # Options for the compiler
+-CFLAGS = -g -O -W -Wall -Wno-unused-result -ansi -pedantic # --coverage
+-CPPFLAGS = -I../libjbig 
++OPT = -g -W -Wall -Wno-unused-result -ansi -pedantic
++INCLUDE = -I../libjbig
++CFLAGS += $(OPT) $(INCLUDE)
++CPPFLAGS += $(INCLUDE)
+ 
+ .SUFFIXES: .1 .5 .txt $(SUFFIXES)
+ .PHONY: txt test test82 test85 clean

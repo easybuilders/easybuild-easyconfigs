@@ -1,0 +1,50 @@
+easyblock = 'Tarball'
+
+name = 'netMHCIIpan'
+version = '3.2'
+
+homepage = 'http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCIIpan'
+description = """ The NetMHCIIpan software predicts binding of peptides to MHC class II molecules.
+ The predictions are available for the three human MHC class II isotypes HLA-DR, HLA-DP and HLA-DQ,
+ as well as mouse molecules (H-2). """
+
+toolchain = {'name': 'GCCcore', 'version': '7.3.0'}
+
+# netMHCIIpan is proprietary software, but free for academcs
+# see: http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCIIpan
+source_urls = ['http://www.cbs.dtu.dk/services/NetMHCIIpan-%(version)s']
+sources = [
+    {
+        'filename': '%(name)s-%(version)s.Linux.tar.gz',
+        'extract_cmd': 'tar --strip-components=1 -xzf %s && chmod -R +rX *',
+    },
+    {
+        'download_filename': 'data.Linux.tar.gz',
+        'filename': '%(name)s-%(version)s-data.Linux.tar.gz',
+        'extract_cmd': 'tar -xzf %s -C Linux_x86_64 && chmod -R +rX Linux_x86_64/data'
+    },
+]
+checksums = [
+    'd03df3463d38dc8b22bd57ebf0eb2d9ed31b47eb88ca507735988dffcc8ec036',  # netMHCIIpan-3.2.Linux.tar.gz
+    '35bc1ece91ca328a013bc7a419f83c7e9e5c943e279126835c9dfbf63186bddc',  # netMHCIIpan-3.2-data.Linux.tar.gz
+]
+
+dependencies = [('Perl', '5.28.0')]
+
+postinstallcmds = [
+    'sed -i -e "s|setenv[[:space:]]*NMHOME.*|setenv NMHOME \$EBROOTNETMHCIIPAN|" %(installdir)s/netMHCIIpan',
+    'sed -i -e "s|setenv[[:space:]]*TMPDIR.*|setenv TMPDIR /tmp|" %(installdir)s/netMHCIIpan',
+    'sed -i -e "1i #!/usr/bin/env perl" %(installdir)s/NetMHCIIpan-%(version)s.pl',
+    'mkdir -p %(installdir)s/man/man1 && mv  %(installdir)s/netMHCIIpan.1 %(installdir)s/man/man1/'
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ['netMHCIIpan'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['netMHCIIpan -h']
+
+moduleclass = 'bio'

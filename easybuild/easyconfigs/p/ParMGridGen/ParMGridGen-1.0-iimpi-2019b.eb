@@ -1,0 +1,36 @@
+easyblock = 'MakeCp'
+
+name = 'ParMGridGen'
+version = '1.0'
+
+homepage = 'http://www-users.cs.umn.edu/~moulitsa/software.html'
+description = """ParMGridGen is an MPI-based parallel library that is based on the serial package MGridGen,
+ that implements (serial) algorithms for obtaining a sequence of successive coarse grids that are well-suited
+ for geometric multigrid methods."""
+
+toolchain = {'name': 'iimpi', 'version': '2019b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://download.sourceforge.net/foam-extend/']
+sources = [SOURCE_TAR_GZ]
+patches = ['ParMGridGen-%(version)s_malloc_include.patch']
+checksums = [
+    '62cdb6e48cfc59124e5d5d360c2841e0fc2feecafe65bda110b74e942740b395',  # ParMGridGen-1.0.tar.gz
+    '3e0d72f82b3b56cbfcb1e3c9afc6594eb25316a0faeb49237faa8d969b4daeaa',  # ParMGridGen-1.0_malloc_include.patch
+]
+
+buildopts = 'parallel make=make CC="$CC" PARCC="$CC" PARLD="$CC" COPTIONS="$CFLAGS" LDOPTIONS="$CFLAGS" BINDIR="."'
+
+files_to_copy = [
+    (['MGridGen/Programs/mgridgen', 'ParMGridGen/Programs/parmgridgen'], 'bin'),
+    (['mgridgen.h', 'parmgridgen.h'], 'include'),
+    (['libmgrid.a', 'libparmgrid.a'], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mgridgen', 'bin/parmgridgen', 'include/mgridgen.h', 'include/parmgridgen.h',
+              'lib/libmgrid.a', 'lib/libparmgrid.a'],
+    'dirs': [],
+}
+
+moduleclass = 'math'

@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'meshalyzer'
+version = '2.0'
+versionsuffix = '-Python-3.8.2'
+
+homepage = 'https://git.opencarp.org/openCARP/meshalyzer'
+description = "Graphical program for display time dependent data on 3D finite elment meshes"
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+source_urls = ['https://git.opencarp.org/openCARP/%(name)s/-/archive/v%(version)s']
+sources = ['%(name)s-v%(version)s.tar.gz']
+patches = ['meshalyzer-2.0_fix-VTK-linking.patch']
+checksums = [
+    '9c79ecb1f051da29ff2e2f35ff14ff36a92ca931ca64147d1cd6286edde2309f',  # meshalyzer-v2.0.tar.gz
+    '23f55c2290ea9b62440bdf8e0c1006116438beb7c4b7065b8cf136387a537e0f',  # meshalyzer-2.0_fix-VTK-linking.patch
+]
+
+local_vtk_majmin_ver = '8.2'
+dependencies = [
+    ('libpng', '1.6.37'),
+    ('FLTK', '1.3.5'),
+    ('glew', '2.1.0'),
+    ('freeglut', '3.2.1'),
+    ('HDF5', '1.10.6'),
+    ('VTK', '%s.0' % local_vtk_majmin_ver, versionsuffix),
+]
+
+buildopts = 'HDF5_ROOT=$EBROOTHDF5 LIB_EXT=".so" '
+buildopts += 'VTK_INCDIR=$EBROOTVTK/include/vtk-%s/ VTK_LIBDIR=$EBROOTVTK/lib' % local_vtk_majmin_ver
+
+files_to_copy = [(['meshalyzer'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/meshalyzer'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["meshalyzer --help"]
+
+moduleclass = 'vis'

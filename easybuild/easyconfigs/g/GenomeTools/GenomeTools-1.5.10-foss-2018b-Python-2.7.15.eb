@@ -1,0 +1,55 @@
+easyblock = 'Bundle'
+
+name = 'GenomeTools'
+version = '1.5.10'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://genometools.org'
+description = "A comprehensive software library for efficient processing of structured genome annotations."
+github_account = 'genometools'
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+# GenomeTools-1.5.10 has the following libraries bundled with it:
+# bzip2-1.0.6, cgilua-5.1.3, expat-2.0.1, lpeg-0.10.2, lua-5.1.5, luafilesystem-1.5.0, md5-1.2,
+# samtools-0.1.18, sqlite-3.8.7.1, tre-0.8.0, zlib-1.2.8
+#
+# Bundled libraries can be globally disabled with the option useshared=yes
+# However, it is preferable to use the bundled libraries due to the very old versions of some of them
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Pango', '1.42.4'),
+]
+
+default_component_specs = {
+    'source_urls': [GITHUB_LOWER_SOURCE],
+    'sources': ['v%(version)s.tar.gz'],
+    'checksums': ['a6aa7f158a3cef90fea8d0fe24bfad0c3ee96b17b3ba0c1f6462582593af679e'],
+}
+
+components = [
+    (name, version, {
+        'easyblock': 'ConfigureMake',
+        'start_dir': '%(namelower)s-%(version)s',
+        'skipsteps': ['configure'],
+        'buildopts': 'useshared=no errorcheck=no cairo=yes',
+        'installopts': 'prefix=%(installdir)s',
+    }),
+    ('gt', version, {
+        'easyblock': 'PythonPackage',
+        'start_dir': 'genometools-%(version)s/%(name)spython',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/gt', 'bin/genometools-config', 'lib/libgenometools.a', 'lib/libgenometools.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/python%(pyshortver)s/site-packages', 'share'],
+}
+
+sanity_check_commands = ["python -c 'import gt'"]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+moduleclass = 'bio'

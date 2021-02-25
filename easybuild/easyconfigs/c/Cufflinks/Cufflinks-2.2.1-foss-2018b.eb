@@ -1,0 +1,43 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+name = 'Cufflinks'
+version = '2.2.1'
+
+homepage = 'http://cole-trapnell-lab.github.io/%(namelower)s/'
+description = "Transcript assembly, differential expression, and differential regulation for RNA-Seq"
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://cole-trapnell-lab.github.io/%(namelower)s/assets/downloads/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    '%(name)s-%(version)s_fix-boost-inc.patch',
+    '%(name)s-%(version)s_fix-gcc7.patch',
+    '%(name)s-%(version)s_fix-liblemon.patch',
+]
+checksums = [
+    'e8316b66177914f14b3a0c317e436d386a46c4c212ca1b2326f89f8a2e08d5ae',  # cufflinks-2.2.1.tar.gz
+    '9199390a11376ffba0583741752faca277c82ce3ab665a66ba8dc5991c45088f',  # Cufflinks-2.2.1_fix-boost-inc.patch
+    '61f55cf4985bbea410d65f1b75e5afda85ba4e468f6ba8f852b0284d16cd29ab',  # Cufflinks-2.2.1_fix-gcc7.patch
+    '39c5c973d3b762e7102e811187b3954362e728c6bdb9d4b38d8c8e9b043457aa',  # Cufflinks-2.2.1_fix-liblemon.patch
+]
+
+builddependencies = [
+    ('Eigen', '3.3.7', '', True),
+    ('SAMtools', '0.1.20'),
+]
+dependencies = [
+    ('Boost', '1.67.0'),
+    ('zlib', '1.2.11'),
+]
+
+preconfigopts = 'env CPPFLAGS=-I$EBROOTEIGEN/include'
+configopts = '--with-boost=$EBROOTBOOST --with-bam-libdir=${EBROOTSAMTOOLS}/lib'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

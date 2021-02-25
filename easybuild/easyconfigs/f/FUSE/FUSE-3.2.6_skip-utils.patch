@@ -1,0 +1,53 @@
+add support for skip building of utils (which require root permissions to install)
+cfr. https://github.com/libfuse/libfuse/pull/296
+From fec26c591d46ede494f3b2260a554348923a4bb8 Mon Sep 17 00:00:00 2001
+From: Martin Blanchard <tchaik@gmx.com>
+Date: Fri, 7 Sep 2018 00:07:19 +0100
+Subject: [PATCH] Add build options for utils and examples
+
+Allow skipping utils build & installation (-Dutils=false) and examples
+build (-Dexamples=false). By default behaviour is unchanged (both are
+true: utils and examples get build).
+---
+ meson.build       | 11 ++++++++---
+ meson_options.txt |  6 ++++++
+ 2 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 6d4aef79..7df434b7 100644
+--- a/meson.build
++++ b/meson.build
+@@ -92,10 +92,15 @@ thread_dep = dependency('threads')
+ #
+ # Read build files from sub-directories
+ #
+-subdirs = [ 'lib', 'include', 'example', 'doc', 'test' ]
+-if not platform.endswith('bsd') and platform != 'dragonfly'
+-  subdirs += 'util'
++subdirs = [ 'lib', 'include', 'test' ]
++if get_option('utils') and not platform.endswith('bsd') and platform != 'dragonfly'
++  subdirs += [ 'util', 'doc' ]
+ endif
++
++if get_option('examples')
++  subdirs += 'example'
++endif
++
+ foreach n : subdirs
+     subdir(n)
+ endforeach
+diff --git a/meson_options.txt b/meson_options.txt
+index 983fcacc..c08e38e4 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -3,3 +3,9 @@ option('disable-mtab', type : 'boolean', value : false,
+ 
+ option('udevrulesdir', type : 'string', value : '',
+        description: 'Where to install udev rules (if empty, query pkg-config(1))')
++
++option('utils', type : 'boolean', value : true,
++       description: 'Wheter or not to build and install helper programs')
++
++option('examples', type : 'boolean', value : true,
++       description: 'Wheter or not to build example programs')
+\ No newline at end of file

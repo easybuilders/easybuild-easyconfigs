@@ -1,0 +1,37 @@
+rename libxc_master.F03 to libxc_master_F03.F90, since Intel Fortran compiler doesn't like *.F03 files
+cfr. https://gitlab.com/libxc/libxc/issues/85
+requires that libxc_master.F03 is renamed to libxc_master_F03.F90 via 'preconfigopts' in easyconfig file
+author: Kenneth Hoste (HPC-UGent)
+--- libxc-4.3.4/src/Makefile.in.orig	2019-03-05 00:43:32.000000000 +0100
++++ libxc-4.3.4/src/Makefile.in	2019-05-21 17:56:25.140868203 +0200
+@@ -611,7 +611,7 @@
+ 	string_f.h references.h util.h work_lda.c \
+ 	work_gga_x.c work_gga_c.c \
+ 	work_mgga_x.c work_mgga_c.c \
+-	libxc_master.F90 libxc_master.F03
++	libxc_master.F90 libxc_master_F03.F90
+ 
+ include_HEADERS = xc.h xc_funcs_removed.h
+ nodist_include_HEADERS = xc_funcs.h
+@@ -1453,8 +1453,8 @@
+ $(LTPREF)libxc.lo   $(LTPREF)libxc.o   : $(LIBFUNCMOD)
+ 
+ $(XCLIBMODS)   : $(LTPREF)libxc.lo
+-libxcf03.f90 : libxc_master.F03 libxc_inc.f03
+-	@FCCPP@ @CPPFLAGS@ $(AM_CPPFLAGS) -I$(top_builddir)/src $(srcdir)/libxc_master.F03 > $(top_builddir)/src/libxcf03.f90
++libxcf03.f90 : libxc_master_F03.F90 libxc_inc.f03
++	@FCCPP@ @CPPFLAGS@ $(AM_CPPFLAGS) -I$(top_builddir)/src $(srcdir)/libxc_master_F03.F90 > $(top_builddir)/src/libxcf03.f90
+ 	@if [ "@F90_ACCEPTS_LINE_NUMBERS@" = "no" ]; then \
+ 		grep -v "^#" $(top_builddir)/src/libxcf03.f90 > $(top_builddir)/src/libxcf03.f91; \
+ 		mv -f $(top_builddir)/src/libxcf03.f91 $(top_builddir)/src/libxcf03.f90; \
+--- libxc-4.3.4/CMakeLists.txt.orig	2019-05-21 18:04:02.978334306 +0200
++++ libxc-4.3.4/CMakeLists.txt	2019-05-21 18:04:34.308604175 +0200
+@@ -296,7 +296,7 @@
+     gen_funcidx/libxc_funcs.f90
+ )
+ set(raw_sources_list_f03
+-    src/libxc_master.F03
++    src/libxc_master_F03.F90
+ )
+ 
+ # when headers namespaced, xc_version include in xc.h needs to be local, not

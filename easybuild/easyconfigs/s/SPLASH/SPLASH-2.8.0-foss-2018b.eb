@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'SPLASH'
+version = '2.8.0'
+
+homepage = "http://users.monash.edu.au/~dprice/splash/index.html"
+description = """SPLASH is a free and open source visualisation tool 
+for Smoothed Particle Hydrodynamics (SPH) simulations."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['http://users.monash.edu.au/~dprice/splash/releases/']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['de06b159846bd20717a55ec7cc9420e0fd86ab38dc66dc74b1f61b77b4d24fce']  # splash-2.8.0.tar.gz
+
+dependencies = [
+    ('Giza', '1.1.0'),
+    ('X11', '20180604'),
+    ('cairo', '1.14.12'),
+]
+
+skipsteps = ['configure']
+buildopts = 'SYSTEM=$F90 X11_DIR=$EBROOTX11 '
+buildopts += 'GIZA_DIR=$EBROOTGIZA '
+buildopts += 'CAIRO_CFLAGS=-I$EBROOTCAIRO/include '
+buildopts += 'CAIRO_LIBS=-L$EBROOTCAIRO/lib -lcairo'
+
+preinstallopts = 'mkdir -p %(installdir)s/bin && '
+installopts = 'PREFIX=%(installdir)s'
+
+# parallel builds fail
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/%ssplash' % x for x in ['a', 'd', 'g', 'm', 'n', 'r', '', 'sr', 's', 't', 'v']],
+    'dirs': []
+}
+
+moduleclass = 'vis'

@@ -1,0 +1,35 @@
+http://deb.debian.org/debian/pool/main/p/progressivemauve/progressivemauve_1.2.0+4713+dfsg-4.debian.tar.xz
+Author: Giovanni Mascellani <gio@debian.org>
+Bug-Debian: https://bugs.debian.org/914049
+Subject: Fix FTBFS with boost1.67
+
+Make an explicit call to the constructor for NeighborhoodGroup (which is
+an alias for a specialization of boost::tuple), which is not marked
+as "explicit".
+
+--- a/src/repeatoire.cpp
++++ b/src/repeatoire.cpp
+@@ -1591,7 +1591,7 @@ void processNovelSubsetMatches( GappedMa
+ 		getSubsets(M_j,-direction*ni_parity*nj_parity).push_back(nj_link);
+         //getExtraSubsets(M_j,-direction*ni_parity*nj_parity).push_back(nj_link);
+ 		// push M_n onto the heap
+-		novel_subset_list.push_back(M_n);
++		novel_subset_list.push_back(NeighborhoodGroup{M_n});
+ 		//procrastination_queue.push(M_n);
+ 		novel_subset_count++;
+ 	}
+Description: Enable building against unversioned libs
+Author: Andreas Tille <tille@debian.org>
+Last-Updates: Fri, 27 Jul 2018 06:32:17 +0200
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -43,7 +43,7 @@ AC_DEFINE(GETOPT_UNDEFINED,[],"Define th
+ ()")
+ )
+ 
+-PKG_CHECK_MODULES(DEPS, libMems-1.6 >= 1.0.0)
++PKG_CHECK_MODULES(DEPS, libMems >= 1.0.0)
+ AC_SUBST(DEPS_CFLAGS)
+ AC_SUBST(DEPS_LIBS)
+ 

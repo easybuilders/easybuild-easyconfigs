@@ -1,0 +1,32 @@
+commit 93a3b9c8c5d1ef1c9ccafb348bc285653accd811
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Mon Jul 13 14:10:06 2020 +0200
+
+    Fix incorrect intel mpi compiler version detection.
+    
+    Åke Sandgren, 20170517
+
+diff --git a/AmberTools/src/configure2 b/AmberTools/src/configure2
+index e6d0e50..2d1473e 100755
+--- a/AmberTools/src/configure2
++++ b/AmberTools/src/configure2
+@@ -237,7 +237,8 @@ extract_and_emit_compiler_versions() {
+                   | sed -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
+     else
+       cc_version=`$cc $1 2>&1 | grep -E "$basecc |[vV]ersion " \
+-                  | sed -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
++                  | sed -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//' \
++                  | grep -v '^Intel(R)'`
+     fi
+     if [ -z "$cc_version" ] ; then
+        echo "Error: $cc is not well formed or produces unusual version details!"
+@@ -288,7 +289,8 @@ extract_and_emit_compiler_versions() {
+                   -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
+     else
+       fc_version=`$fc $1 2>&1 | grep -E "$basefc |$basecc |[vV]ersion " | sed -e "s@$basefc @@" \
+-                  -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
++                  -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//' \
++                  | grep -v '^Intel(R)'`
+     fi
+     if [ -z "$fc_version" ] ; then
+       # DRR - Last ditch; compiler name may not be in version string so just

@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'MIRA'
+version = '4.0.2'
+
+homepage = 'https://sourceforge.net/p/mira-assembler/wiki/Home/'
+description = """MIRA is a whole genome shotgun and EST sequence assembler for Sanger, 454, Solexa (Illumina),
+ IonTorrent data and PacBio (the latter at the moment only CCS and error-corrected CLR reads)."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'cstd': 'c++03'}
+
+sources = ['%(namelower)s-%(version)s.tar.bz2']
+source_urls = [('https://sourceforge.net/projects/mira-assembler/files/MIRA/stable/', 'download')]
+patches = [
+    'MIRA-4.0.2-quirks.patch',
+    'MIRA-4.0.2_fix-ads-include.patch',
+]
+checksums = [
+    'a32cb2b21e0968a5536446287c895fe9e03d11d78957554e355c1080b7b92a80',  # src
+    'fd8d3bebdbdb198ecbe472a998d63978ac54ab8f68cf1fdc69b5842a6411979f',  # MIRA-4.0.2-quirks.patch
+    '3d8f14e261e421407ccc1aedd39b51c618529f351ced638b8c7e887a790412a8',  # MIRA-4.0.2_fix-ads-include.patch
+]
+
+builddependencies = [('flex', '2.5.39')]
+
+dependencies = [
+    ('Boost', '1.67.0'),
+    ('expat', '2.2.5'),
+    ('zlib', '1.2.11'),
+    ('gperftools', '2.6.3'),
+]
+
+preconfigopts = 'export CFLAGS="$CFLAGS -fpermissive" && '
+preconfigopts += 'export CXXFLAGS="$CXXFLAGS -fpermissive" && '
+
+configopts = '--with-boost=$EBROOTBOOST --with-expat=$EBROOTEXPAT --with-zlib=$EBROOTZLIB '
+configopts += '--with-tcmalloc-dir=$EBROOTGPERFTOOLS/lib '
+
+sanity_check_paths = {
+    'files': ['bin/mira', 'bin/mirabait', 'bin/miraconvert', 'bin/miramem'],
+    'dirs': ['share/mira'],
+}
+
+moduleclass = 'bio'

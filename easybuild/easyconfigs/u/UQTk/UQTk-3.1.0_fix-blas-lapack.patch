@@ -1,0 +1,1293 @@
+Fix hardcoded lapack and blas.
+Fix path to SUNDIALS lib
+Fix order of linked libs for intel compilers in PyUQTk/pce binding.
+(should be fixed in future release: https://github.com/sandialabs/UQTk/pull/1)
+
+author: Pavel Grochal (INUITS)
+diff -ru UQTk-3.1.0.orig/cpp/app/generate_quad/CMakeLists.txt UQTk-3.1.0/cpp/app/generate_quad/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/generate_quad/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/generate_quad/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -6,8 +6,8 @@
+ target_link_libraries (generate_quad uqtkarray)
+
+ target_link_libraries (generate_quad depdsfmt )
+-target_link_libraries (generate_quad m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (generate_quad m blas ${BLAS_LIBRARIES})
++target_link_libraries (generate_quad m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (generate_quad m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (generate_quad depfigtree )
+ target_link_libraries (generate_quad depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/gen_mi/CMakeLists.txt UQTk-3.1.0/cpp/app/gen_mi/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/gen_mi/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/gen_mi/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -6,8 +6,8 @@
+ target_link_libraries (gen_mi uqtktools)
+
+ target_link_libraries (gen_mi depdsfmt )
+-target_link_libraries(gen_mi m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries(gen_mi m blas ${BLAS_LIBRARIES})
++target_link_libraries (gen_mi m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (gen_mi m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (gen_mi depfigtree )
+ target_link_libraries (gen_mi depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/gkpSparse/CMakeLists.txt UQTk-3.1.0/cpp/app/gkpSparse/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/gkpSparse/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/gkpSparse/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -7,8 +7,8 @@
+ target_link_libraries (gkpSparse uqtkarray)
+
+ target_link_libraries (gkpSparse depdsfmt )
+-target_link_libraries (gkpSparse m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (gkpSparse m blas ${BLAS_LIBRARIES})
++target_link_libraries (gkpSparse m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (gkpSparse m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (gkpSparse depfigtree )
+ target_link_libraries (gkpSparse depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/gp_regr/CMakeLists.txt UQTk-3.1.0/cpp/app/gp_regr/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/gp_regr/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/gp_regr/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -16,8 +16,8 @@
+ target_link_libraries (gp_regr sundials_sunlinsoldense)
+ target_link_libraries (gp_regr sundials_sunmatrixdense)
+ target_link_libraries (gp_regr depslatec)
+-target_link_libraries (gp_regr lapack)
+-target_link_libraries (gp_regr blas)
++target_link_libraries (gp_regr $ENV{LIBLAPACK_MT})
++target_link_libraries (gp_regr $ENV{LIBBLAS})
+ target_link_libraries (gp_regr depfigtree )
+ target_link_libraries (gp_regr depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/lr_eval/CMakeLists.txt UQTk-3.1.0/cpp/app/lr_eval/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/lr_eval/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/lr_eval/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -17,8 +17,8 @@
+ target_link_libraries (lr_eval sundials_sunlinsoldense)
+ target_link_libraries (lr_eval sundials_sunmatrixdense)
+ target_link_libraries (lr_eval depslatec)
+-target_link_libraries(lr_eval m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries(lr_eval m blas ${BLAS_LIBRARIES})
++target_link_libraries (lr_eval m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (lr_eval m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (lr_eval depfigtree )
+ target_link_libraries (lr_eval depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/lr_regr/CMakeLists.txt UQTk-3.1.0/cpp/app/lr_regr/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/lr_regr/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/lr_regr/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -17,8 +17,8 @@
+ target_link_libraries (lr_regr sundials_sunlinsoldense)
+ target_link_libraries (lr_regr sundials_sunmatrixdense)
+ target_link_libraries (lr_regr depslatec)
+-target_link_libraries (lr_regr m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (lr_regr m blas ${BLAS_LIBRARIES})
++target_link_libraries (lr_regr m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (lr_regr m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (lr_regr depfigtree )
+ target_link_libraries (lr_regr depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/model_inf/CMakeLists.txt UQTk-3.1.0/cpp/app/model_inf/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/model_inf/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/model_inf/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -16,8 +16,8 @@
+ target_link_libraries (model_inf sundials_sunlinsoldense)
+ target_link_libraries (model_inf sundials_sunmatrixdense)
+ target_link_libraries (model_inf depslatec)
+-target_link_libraries (model_inf m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (model_inf m blas ${BLAS_LIBRARIES})
++target_link_libraries (model_inf m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (model_inf m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (model_inf depfigtree )
+ target_link_libraries (model_inf depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/pce_eval/CMakeLists.txt UQTk-3.1.0/cpp/app/pce_eval/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/pce_eval/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/pce_eval/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -13,8 +13,8 @@
+ target_link_libraries (pce_eval sundials_sunlinsoldense)
+ target_link_libraries (pce_eval sundials_sunmatrixdense)
+ target_link_libraries (pce_eval depslatec)
+-target_link_libraries (pce_eval m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (pce_eval m blas ${BLAS_LIBRARIES})
++target_link_libraries (pce_eval m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (pce_eval m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (pce_eval depfigtree )
+ target_link_libraries (pce_eval depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/pce_quad/CMakeLists.txt UQTk-3.1.0/cpp/app/pce_quad/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/pce_quad/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/pce_quad/CMakeLists.txt	2020-03-28 18:18:38.287592625 +0100
+@@ -1,6 +1,6 @@
+ project (UQTk)
+
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+
+ add_executable (pce_quad pce_quad.cpp)
+
+@@ -15,8 +15,8 @@
+ target_link_libraries (pce_quad sundials_sunlinsoldense)
+ target_link_libraries (pce_quad sundials_sunmatrixdense)
+ target_link_libraries (pce_quad depslatec)
+-target_link_libraries (pce_quad m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (pce_quad m blas ${BLAS_LIBRARIES})
++target_link_libraries (pce_quad m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (pce_quad m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (pce_quad depfigtree )
+ target_link_libraries (pce_quad depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/pce_resp/CMakeLists.txt UQTk-3.1.0/cpp/app/pce_resp/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/pce_resp/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/pce_resp/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -13,8 +13,8 @@
+ target_link_libraries (pce_resp sundials_sunlinsoldense)
+ target_link_libraries (pce_resp sundials_sunmatrixdense)
+ target_link_libraries (pce_resp depslatec)
+-target_link_libraries (pce_resp m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (pce_resp m blas ${BLAS_LIBRARIES})
++target_link_libraries (pce_resp m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (pce_resp m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (pce_resp depfigtree )
+ target_link_libraries (pce_resp depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/pce_rv/CMakeLists.txt UQTk-3.1.0/cpp/app/pce_rv/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/pce_rv/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/pce_rv/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -13,8 +13,8 @@
+ target_link_libraries (pce_rv sundials_sunlinsoldense)
+ target_link_libraries (pce_rv sundials_sunmatrixdense)
+ target_link_libraries (pce_rv depslatec)
+-target_link_libraries (pce_rv m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (pce_rv m blas ${BLAS_LIBRARIES})
++target_link_libraries (pce_rv m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (pce_rv m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (pce_rv depfigtree )
+ target_link_libraries (pce_rv depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/pce_sens/CMakeLists.txt UQTk-3.1.0/cpp/app/pce_sens/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/pce_sens/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/pce_sens/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -13,8 +13,8 @@
+ target_link_libraries (pce_sens sundials_sunlinsoldense)
+ target_link_libraries (pce_sens sundials_sunmatrixdense)
+ target_link_libraries (pce_sens depslatec)
+-target_link_libraries (pce_sens m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (pce_sens m blas ${BLAS_LIBRARIES})
++target_link_libraries (pce_sens m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (pce_sens m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (pce_sens depfigtree )
+ target_link_libraries (pce_sens depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/pdf_cl/CMakeLists.txt UQTk-3.1.0/cpp/app/pdf_cl/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/pdf_cl/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/pdf_cl/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -11,8 +11,8 @@
+ target_link_libraries (pdf_cl sundials_sunlinsoldense)
+ target_link_libraries (pdf_cl sundials_sunmatrixdense)
+ target_link_libraries (pdf_cl depslatec)
+-target_link_libraries (pdf_cl m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (pdf_cl m blas ${BLAS_LIBRARIES})
++target_link_libraries (pdf_cl m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (pdf_cl m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (pdf_cl depfigtree )
+ target_link_libraries (pdf_cl depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/regression/CMakeLists.txt UQTk-3.1.0/cpp/app/regression/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/regression/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/regression/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -16,8 +16,8 @@
+ target_link_libraries (regression sundials_sunlinsoldense)
+ target_link_libraries (regression sundials_sunmatrixdense)
+ target_link_libraries (regression depslatec)
+-target_link_libraries (regression m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (regression m blas ${BLAS_LIBRARIES})
++target_link_libraries (regression m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (regression m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (regression depfigtree )
+ target_link_libraries (regression depann   )
+
+diff -ru UQTk-3.1.0.orig/cpp/app/sens/CMakeLists.txt UQTk-3.1.0/cpp/app/sens/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/app/sens/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/app/sens/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -16,8 +16,8 @@
+ target_link_libraries (trdSpls sundials_sunlinsoldense)
+ target_link_libraries (trdSpls sundials_sunmatrixdense)
+ target_link_libraries (trdSpls depslatec)
+-target_link_libraries (trdSpls m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (trdSpls m blas ${BLAS_LIBRARIES})
++target_link_libraries (trdSpls m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (trdSpls m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (trdSpls depfigtree )
+ target_link_libraries (trdSpls depann   )
+
+@@ -27,8 +27,8 @@
+ target_link_libraries (sens depdsfmt )
+ #find_package(BLAS)
+ #find_package(LAPACK)
+-target_link_libraries (sens m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (sens m blas ${BLAS_LIBRARIES})
++target_link_libraries (sens m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (sens m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+
+ # Link fortran libraries
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+diff -ru UQTk-3.1.0.orig/cpp/CMakeLists.txt UQTk-3.1.0/cpp/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/CMakeLists.txt	2020-03-28 18:18:38.287592625 +0100
+@@ -1,6 +1,6 @@
+ project (UQTk)
+
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+ if( BUILD_SUNDIALS)
+   link_directories("${PROJECT_BINARY_DIR}/../dep/sundials/src/cvode")
+   link_directories("${PROJECT_BINARY_DIR}/../dep/sundials/src/nvector/serial")
+diff -ru UQTk-3.1.0.orig/cpp/lib/array/CMakeLists.txt UQTk-3.1.0/cpp/lib/array/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/array/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/array/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -13,7 +13,7 @@
+ include_directories (../include)
+
+ #find and include blas and lapack
+-target_link_libraries(uqtkarray blas lapack)
++target_link_libraries (uqtkarray $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+
+ # Install the library
+ INSTALL(TARGETS uqtkarray DESTINATION lib)
+diff -ru UQTk-3.1.0.orig/cpp/lib/bcs/CMakeLists.txt UQTk-3.1.0/cpp/lib/bcs/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/bcs/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/bcs/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -13,7 +13,7 @@
+
+ include_directories (../../../dep/slatec)
+
+-target_link_libraries(uqtkbcs m lapack ${LAPACK_LIBRARIES})
++target_link_libraries (uqtkbcs m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+
+ include_directories (../../../dep/dsfmt)
+ include_directories (../../../dep/figtree)
+diff -ru UQTk-3.1.0.orig/cpp/lib/gproc/CMakeLists.txt UQTk-3.1.0/cpp/lib/gproc/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/gproc/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/gproc/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -13,7 +13,7 @@
+ include_directories (../pce    )
+ include_directories (../bcs    )
+
+-target_link_libraries(uqtkgproc blas lapack)
++target_link_libraries (uqtkgproc $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ include_directories (../../../dep/lbfgs)
+ include_directories (../../../dep/dsfmt)
+ include_directories (../../../dep/figtree)
+diff -ru UQTk-3.1.0.orig/cpp/lib/infer/CMakeLists.txt UQTk-3.1.0/cpp/lib/infer/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/infer/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/infer/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -16,7 +16,7 @@
+ include_directories (../mcmc   )
+
+ include_directories (../../../dep/slatec)
+-target_link_libraries(uqtkinfer  lapack)
++target_link_libraries (uqtkinfer  $ENV{LIBLAPACK_MT})
+ include_directories (../../../dep/dsfmt )
+ include_directories (../../../dep/figtree )
+ include_directories (../../../dep/lbfgs )
+diff -ru UQTk-3.1.0.orig/cpp/lib/kle/CMakeLists.txt UQTk-3.1.0/cpp/lib/kle/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/kle/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/kle/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,7 +10,7 @@
+ include_directories (../tools  )
+
+ #find and include lapack
+-target_link_libraries(uqtkkle m lapack ${LAPACK_LIBRARIES})
++target_link_libraries (uqtkkle m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+
+ # Install the library
+ INSTALL(TARGETS uqtkkle DESTINATION lib)
+diff -ru UQTk-3.1.0.orig/cpp/lib/lowrank/CMakeLists.txt UQTk-3.1.0/cpp/lib/lowrank/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/lowrank/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/lowrank/CMakeLists.txt	2020-03-28 15:09:13.534767884 +0100
+@@ -14,8 +14,8 @@
+ include_directories (../bcs    )
+
+
+-target_link_libraries(uqtklowrank m blas ${BLAS_LIBRARIES})
+-target_link_libraries(uqtklowrank m lapack ${LAPACK_LIBRARIES})
++target_link_libraries (uqtklowrank m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
++target_link_libraries (uqtklowrank m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ include_directories (../../../dep/lbfgs)
+ include_directories (../../../dep/dsfmt)
+ include_directories (../../../dep/figtree)
+diff -ru UQTk-3.1.0.orig/cpp/lib/lreg/CMakeLists.txt UQTk-3.1.0/cpp/lib/lreg/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/lreg/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/lreg/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -13,8 +13,8 @@
+ include_directories (../pce    )
+ include_directories (../bcs    )
+
+-target_link_libraries(uqtklreg m blas ${BLAS_LIBRARIES})
+-target_link_libraries(uqtklreg m lapack ${LAPACK_LIBRARIES})
++target_link_libraries (uqtklreg m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
++target_link_libraries (uqtklreg m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ include_directories (../../../dep/lbfgs)
+ include_directories (../../../dep/dsfmt)
+ include_directories (../../../dep/figtree)
+diff -ru UQTk-3.1.0.orig/cpp/lib/mcmc/CMakeLists.txt UQTk-3.1.0/cpp/lib/mcmc/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/mcmc/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/mcmc/CMakeLists.txt	2020-03-28 15:09:13.534767884 +0100
+@@ -13,7 +13,7 @@
+ include_directories (../tmcmc  )
+
+ include_directories (../../../dep/slatec)
+-target_link_libraries(uqtkmcmc m lapack ${LAPACK_LIBRARIES})
++target_link_libraries (uqtkmcmc m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ include_directories (../../../dep/dsfmt )
+ include_directories (../../../dep/figtree)
+ include_directories (../../../dep/lbfgs )
+diff -ru UQTk-3.1.0.orig/cpp/lib/pce/CMakeLists.txt UQTk-3.1.0/cpp/lib/pce/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/pce/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/pce/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -13,7 +13,7 @@
+ include_directories (../quad   )
+
+ # TPL
+-target_link_libraries(uqtkpce m lapack ${LAPACK_LIBRARIES})
++target_link_libraries (uqtkpce m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ include_directories (../../../dep/slatec)
+ include_directories (../../../dep/dsfmt )
+ include_directories (${CMAKE_SUNDIALS_DIR}/include)
+diff -ru UQTk-3.1.0.orig/cpp/lib/tools/CMakeLists.txt UQTk-3.1.0/cpp/lib/tools/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/lib/tools/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/lib/tools/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -25,7 +25,7 @@
+ include_directories (../quad)
+
+ include_directories (../../../dep/dsfmt )
+-target_link_libraries(uqtktools m lapack ${LAPACK_LIBRARIES})
++target_link_libraries (uqtktools m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ include_directories (../../../dep/slatec )
+ include_directories (../../../dep/figtree)
+ include_directories (${CMAKE_SUNDIALS_DIR}/include)
+diff -ru UQTk-3.1.0.orig/cpp/tests/Array1DMiscTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/Array1DMiscTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/Array1DMiscTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/Array1DMiscTest/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (Array1DMiscTest sundials_sunlinsoldense)
+ target_link_libraries (Array1DMiscTest sundials_sunmatrixdense)
+ target_link_libraries (Array1DMiscTest depslatec)
+-target_link_libraries (Array1DMiscTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (Array1DMiscTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (Array1DMiscTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (Array1DMiscTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (Array1DMiscTest deplbfgs  )
+
+ # Link fortran libraries
+diff -ru UQTk-3.1.0.orig/cpp/tests/Array2DMiscTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/Array2DMiscTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/Array2DMiscTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/Array2DMiscTest/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (Array2DMiscTest sundials_sunlinsoldense)
+ target_link_libraries (Array2DMiscTest sundials_sunmatrixdense)
+ target_link_libraries (Array2DMiscTest depslatec)
+-target_link_libraries(Array2DMiscTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries(Array2DMiscTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (Array2DMiscTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (Array2DMiscTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (Array2DMiscTest deplbfgs  )
+
+ # Link fortran libraries
+diff -ru UQTk-3.1.0.orig/cpp/tests/ArrayDelColumn/CMakeLists.txt UQTk-3.1.0/cpp/tests/ArrayDelColumn/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/ArrayDelColumn/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/ArrayDelColumn/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (ArrayDelColumn sundials_sunlinsoldense)
+ target_link_libraries (ArrayDelColumn sundials_sunmatrixdense)
+ target_link_libraries (ArrayDelColumn depslatec)
+-target_link_libraries(ArrayDelColumn m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries(ArrayDelColumn m blas ${BLAS_LIBRARIES})
++target_link_libraries (ArrayDelColumn m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (ArrayDelColumn m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (ArrayDelColumn deplbfgs  )
+
+ # Link fortran libraries
+diff -ru UQTk-3.1.0.orig/cpp/tests/ArrayReadAndWrite/CMakeLists.txt UQTk-3.1.0/cpp/tests/ArrayReadAndWrite/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/ArrayReadAndWrite/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/ArrayReadAndWrite/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (ArrayReadAndWrite sundials_sunlinsoldense)
+ target_link_libraries (ArrayReadAndWrite sundials_sunmatrixdense)
+ target_link_libraries (ArrayReadAndWrite depslatec)
+-target_link_libraries(ArrayReadAndWrite m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries(ArrayReadAndWrite m blas ${BLAS_LIBRARIES})
++target_link_libraries (ArrayReadAndWrite m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (ArrayReadAndWrite m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (ArrayReadAndWrite deplbfgs  )
+
+ # Link fortran libraries
+diff -ru UQTk-3.1.0.orig/cpp/tests/ArraySortTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/ArraySortTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/ArraySortTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/ArraySortTest/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (ArraySortTest sundials_sunlinsoldense)
+ target_link_libraries (ArraySortTest sundials_sunmatrixdense)
+ target_link_libraries (ArraySortTest depslatec)
+-target_link_libraries(ArraySortTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries(ArraySortTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (ArraySortTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (ArraySortTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (ArraySortTest deplbfgs  )
+ target_link_libraries (ArraySortTest depfigtree )
+ target_link_libraries (ArraySortTest  depann   )
+diff -ru UQTk-3.1.0.orig/cpp/tests/BCS1dTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/BCS1dTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/BCS1dTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/BCS1dTest/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (BCS1dTest sundials_sunlinsoldense)
+ target_link_libraries (BCS1dTest sundials_sunmatrixdense)
+ target_link_libraries (BCS1dTest depslatec)
+-target_link_libraries(BCS1dTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries(BCS1dTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (BCS1dTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (BCS1dTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (BCS1dTest deplbfgs  )
+ target_link_libraries (BCS1dTest depfigtree  )
+ target_link_libraries (BCS1dTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/BCS2dTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/BCS2dTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/BCS2dTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/BCS2dTest/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -16,8 +16,8 @@
+ target_link_libraries (BCS2dTest sundials_sunlinsoldense)
+ target_link_libraries (BCS2dTest sundials_sunmatrixdense)
+ target_link_libraries (BCS2dTest depslatec)
+-target_link_libraries (BCS2dTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (BCS2dTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (BCS2dTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (BCS2dTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (BCS2dTest deplbfgs  )
+ target_link_libraries (BCS2dTest depfigtree  )
+ target_link_libraries (BCS2dTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/CorrTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/CorrTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/CorrTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/CorrTest/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -26,8 +26,8 @@
+ target_link_libraries (CorrTest sundials_sunlinsoldense)
+ target_link_libraries (CorrTest sundials_sunmatrixdense)
+ target_link_libraries (CorrTest depslatec)
+-target_link_libraries (CorrTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (CorrTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (CorrTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (CorrTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (CorrTest deplbfgs  )
+ target_link_libraries (CorrTest depfigtree  )
+ target_link_libraries (CorrTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/Deriv1dTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/Deriv1dTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/Deriv1dTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/Deriv1dTest/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (Deriv1dTest sundials_sunlinsoldense)
+ target_link_libraries (Deriv1dTest sundials_sunmatrixdense)
+ target_link_libraries (Deriv1dTest depslatec)
+-target_link_libraries (Deriv1dTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (Deriv1dTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (Deriv1dTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (Deriv1dTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (Deriv1dTest deplbfgs  )
+ target_link_libraries (Deriv1dTest depfigtree  )
+ target_link_libraries (Deriv1dTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/GradHessianTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/GradHessianTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/GradHessianTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/GradHessianTest/CMakeLists.txt	2020-03-28 15:09:13.790769652 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (GradHessianTest sundials_sunlinsoldense)
+ target_link_libraries (GradHessianTest sundials_sunmatrixdense)
+ target_link_libraries (GradHessianTest depslatec)
+-target_link_libraries (GradHessianTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (GradHessianTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (GradHessianTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (GradHessianTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (GradHessianTest deplbfgs  )
+ target_link_libraries (GradHessianTest depfigtree  )
+ target_link_libraries (GradHessianTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/GradientPCETest/CMakeLists.txt UQTk-3.1.0/cpp/tests/GradientPCETest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/GradientPCETest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/GradientPCETest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (GradientPCETest sundials_sunlinsoldense)
+ target_link_libraries (GradientPCETest sundials_sunmatrixdense)
+ target_link_libraries (GradientPCETest depslatec)
+-target_link_libraries (GradientPCETest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (GradientPCETest m blas ${BLAS_LIBRARIES})
++target_link_libraries (GradientPCETest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (GradientPCETest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (GradientPCETest deplbfgs  )
+ target_link_libraries (GradientPCETest depfigtree  )
+ target_link_libraries (GradientPCETest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/Hessian2dTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/Hessian2dTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/Hessian2dTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/Hessian2dTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (Hessian2dTest sundials_sunlinsoldense)
+ target_link_libraries (Hessian2dTest sundials_sunmatrixdense)
+ target_link_libraries (Hessian2dTest depslatec)
+-target_link_libraries (Hessian2dTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (Hessian2dTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (Hessian2dTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (Hessian2dTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (Hessian2dTest deplbfgs  )
+ target_link_libraries (Hessian2dTest depfigtree  )
+ target_link_libraries (Hessian2dTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/LowRankRegrTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/LowRankRegrTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/LowRankRegrTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/LowRankRegrTest/CMakeLists.txt	2020-03-28 15:09:13.534767884 +0100
+@@ -5,8 +5,8 @@
+ target_link_libraries (LowRankRegrTest uqtk )
+
+ target_link_libraries (LowRankRegrTest depdsfmt )
+-target_link_libraries (LowRankRegrTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (LowRankRegrTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (LowRankRegrTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (LowRankRegrTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (LowRankRegrTest depfigtree  )
+ target_link_libraries (LowRankRegrTest depann  )
+
+diff -ru UQTk-3.1.0.orig/cpp/tests/MCMC2dTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/MCMC2dTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/MCMC2dTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/MCMC2dTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -12,8 +12,8 @@
+ target_link_libraries (MCMC2dTest sundials_sunlinsoldense)
+ target_link_libraries (MCMC2dTest sundials_sunmatrixdense)
+ target_link_libraries (MCMC2dTest depslatec)
+-target_link_libraries (MCMC2dTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (MCMC2dTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (MCMC2dTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (MCMC2dTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (MCMC2dTest deplbfgs  )
+
+ # Link fortran libraries
+diff -ru UQTk-3.1.0.orig/cpp/tests/MCMCNestedTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/MCMCNestedTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/MCMCNestedTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/MCMCNestedTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -12,8 +12,8 @@
+ target_link_libraries (MCMCNestedTest sundials_sunlinsoldense)
+ target_link_libraries (MCMCNestedTest sundials_sunmatrixdense)
+ target_link_libraries (MCMCNestedTest depslatec)
+-target_link_libraries (MCMCNestedTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (MCMCNestedTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (MCMCNestedTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (MCMCNestedTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (MCMCNestedTest deplbfgs  )
+
+ # Link fortran libraries
+diff -ru UQTk-3.1.0.orig/cpp/tests/MCMCRandomTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/MCMCRandomTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/MCMCRandomTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/MCMCRandomTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -12,8 +12,8 @@
+ target_link_libraries (MCMCRandomTest sundials_sunlinsoldense)
+ target_link_libraries (MCMCRandomTest sundials_sunmatrixdense)
+ target_link_libraries (MCMCRandomTest depslatec)
+-target_link_libraries (MCMCRandomTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (MCMCRandomTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (MCMCRandomTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (MCMCRandomTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (MCMCRandomTest deplbfgs  )
+
+ # Link fortran libraries
+diff -ru UQTk-3.1.0.orig/cpp/tests/MultiIndexTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/MultiIndexTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/MultiIndexTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/MultiIndexTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (MultiIndexTest sundials_sunlinsoldense)
+ target_link_libraries (MultiIndexTest sundials_sunmatrixdense)
+ target_link_libraries (MultiIndexTest depslatec  )
+-target_link_libraries (MultiIndexTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (MultiIndexTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (MultiIndexTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (MultiIndexTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (MultiIndexTest deplbfgs   )
+ target_link_libraries (MultiIndexTest depfigtree )
+ target_link_libraries (MultiIndexTest depann     )
+diff -ru UQTk-3.1.0.orig/cpp/tests/PCE1dTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/PCE1dTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/PCE1dTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/PCE1dTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (PCE1dTest sundials_sunlinsoldense)
+ target_link_libraries (PCE1dTest sundials_sunmatrixdense)
+ target_link_libraries (PCE1dTest depslatec)
+-target_link_libraries (PCE1dTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (PCE1dTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (PCE1dTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (PCE1dTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (PCE1dTest deplbfgs  )
+ target_link_libraries (PCE1dTest depfigtree  )
+ target_link_libraries (PCE1dTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/PCEImplTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/PCEImplTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/PCEImplTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/PCEImplTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (PCEImplTest sundials_sunlinsoldense)
+ target_link_libraries (PCEImplTest sundials_sunmatrixdense)
+ target_link_libraries (PCEImplTest depslatec)
+-target_link_libraries (PCEImplTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (PCEImplTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (PCEImplTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (PCEImplTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (PCEImplTest deplbfgs  )
+ target_link_libraries (PCEImplTest depfigtree  )
+ target_link_libraries (PCEImplTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/PCELogTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/PCELogTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/PCELogTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/PCELogTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (PCELogTest sundials_sunlinsoldense)
+ target_link_libraries (PCELogTest sundials_sunmatrixdense)
+ target_link_libraries (PCELogTest depslatec)
+-target_link_libraries (PCELogTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (PCELogTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (PCELogTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (PCELogTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (PCELogTest deplbfgs  )
+ target_link_libraries (PCELogTest depfigtree  )
+ target_link_libraries (PCELogTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/QuadLUTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/QuadLUTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/QuadLUTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/QuadLUTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -16,8 +16,8 @@
+ target_link_libraries (QuadLUTest sundials_sunlinsoldense)
+ target_link_libraries (QuadLUTest sundials_sunmatrixdense)
+ target_link_libraries (QuadLUTest depslatec)
+-target_link_libraries (QuadLUTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (QuadLUTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (QuadLUTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (QuadLUTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (QuadLUTest deplbfgs )
+ target_link_libraries (QuadLUTest depfigtree )
+ target_link_libraries (QuadLUTest depann   )
+diff -ru UQTk-3.1.0.orig/cpp/tests/SecondDeriv1dTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/SecondDeriv1dTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/SecondDeriv1dTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/SecondDeriv1dTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -10,8 +10,8 @@
+ target_link_libraries (SecondDeriv1dTest sundials_sunlinsoldense)
+ target_link_libraries (SecondDeriv1dTest sundials_sunmatrixdense)
+ target_link_libraries (SecondDeriv1dTest depslatec)
+-target_link_libraries (SecondDeriv1dTest m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (SecondDeriv1dTest m blas ${BLAS_LIBRARIES})
++target_link_libraries (SecondDeriv1dTest m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (SecondDeriv1dTest m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (SecondDeriv1dTest deplbfgs  )
+ target_link_libraries (SecondDeriv1dTest depfigtree  )
+ target_link_libraries (SecondDeriv1dTest depann  )
+diff -ru UQTk-3.1.0.orig/cpp/tests/TMCMC2dTest/CMakeLists.txt UQTk-3.1.0/cpp/tests/TMCMC2dTest/CMakeLists.txt
+--- UQTk-3.1.0.orig/cpp/tests/TMCMC2dTest/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/cpp/tests/TMCMC2dTest/CMakeLists.txt	2020-03-28 15:09:13.802769735 +0100
+@@ -28,8 +28,8 @@
+ target_link_libraries (TMCMC2dTest sundials_sunlinsoldense)
+ target_link_libraries (TMCMC2dTest sundials_sunmatrixdense)
+ target_link_libraries (TMCMC2dTest depslatec)
+-target_link_libraries (TMCMC2dTest m lapack)
+-target_link_libraries (TMCMC2dTest m  blas)
++target_link_libraries (TMCMC2dTest m $ENV{LIBLAPACK_MT})
++target_link_libraries (TMCMC2dTest m  $ENV{LIBBLAS})
+ target_link_libraries (TMCMC2dTest deplbfgs  )
+
+ # Link fortran libraries
+diff -ru UQTk-3.1.0.orig/examples/CMakeLists.txt UQTk-3.1.0/examples/CMakeLists.txt
+--- UQTk-3.1.0.orig/examples/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/examples/CMakeLists.txt	2020-03-28 18:18:38.283592599 +0100
+@@ -1,6 +1,6 @@
+ project (UQTk)
+
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+ if( BUILD_SUNDIALS)
+
+   link_directories("${PROJECT_BINARY_DIR}/../dep/sundials/src/cvode")
+diff -ru UQTk-3.1.0.orig/examples/kle_ex1/CMakeLists.txt UQTk-3.1.0/examples/kle_ex1/CMakeLists.txt
+--- UQTk-3.1.0.orig/examples/kle_ex1/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/examples/kle_ex1/CMakeLists.txt	2020-03-28 15:09:13.770769514 +0100
+@@ -30,22 +30,22 @@
+ add_executable (kl_1D.x kl_1D.cpp kl_utils.cpp)
+ target_link_libraries (kl_1D.x uqtktools uqtkarray uqtkkle)
+ target_link_libraries (kl_1D.x depdsfmt depslatec depann depfigtree)
+-target_link_libraries (kl_1D.x lapack)
+-target_link_libraries (kl_1D.x blas)
++target_link_libraries (kl_1D.x $ENV{LIBLAPACK_MT})
++target_link_libraries (kl_1D.x $ENV{LIBBLAS})
+
+ # kl_2D.x
+ add_executable (kl_2D.x kl_2D.cpp kl_utils.cpp)
+ target_link_libraries (kl_2D.x uqtktools uqtkarray uqtkkle)
+ target_link_libraries (kl_2D.x depdsfmt depslatec depann depfigtree)
+-target_link_libraries (kl_2D.x lapack)
+-target_link_libraries (kl_2D.x blas)
++target_link_libraries (kl_2D.x $ENV{LIBLAPACK_MT})
++target_link_libraries (kl_2D.x $ENV{LIBBLAS})
+
+ # kl_2Du.x
+ add_executable (kl_2Du.x kl_2Du.cpp kl_utils.cpp)
+ target_link_libraries (kl_2Du.x uqtktools uqtkarray uqtkkle)
+ target_link_libraries (kl_2Du.x depdsfmt depslatec depann depfigtree)
+-target_link_libraries (kl_2Du.x lapack)
+-target_link_libraries (kl_2Du.x blas)
++target_link_libraries (kl_2Du.x $ENV{LIBLAPACK_MT})
++target_link_libraries (kl_2Du.x $ENV{LIBBLAS})
+
+ # Link fortran libraries
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+diff -ru UQTk-3.1.0.orig/examples/line_infer/CMakeLists.txt UQTk-3.1.0/examples/line_infer/CMakeLists.txt
+--- UQTk-3.1.0.orig/examples/line_infer/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/examples/line_infer/CMakeLists.txt	2020-03-28 18:18:38.287592625 +0100
+@@ -11,7 +11,7 @@
+   )
+
+ # line_infer.x
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+
+ add_executable (line_infer.x line_infer.cpp)
+
+@@ -29,8 +29,8 @@
+ target_link_libraries (line_infer.x sundials_sunlinsoldense)
+ target_link_libraries (line_infer.x sundials_sunmatrixdense)
+ target_link_libraries (line_infer.x depslatec)
+-target_link_libraries (line_infer.x m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (line_infer.x m blas ${BLAS_LIBRARIES})
++target_link_libraries (line_infer.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (line_infer.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (line_infer.x depfigtree  )
+ target_link_libraries (line_infer.x depann   )
+
+diff -ru UQTk-3.1.0.orig/examples/muq/CMakeLists.txt UQTk-3.1.0/examples/muq/CMakeLists.txt
+--- UQTk-3.1.0.orig/examples/muq/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/examples/muq/CMakeLists.txt	2020-03-28 18:18:38.287592625 +0100
+@@ -7,7 +7,7 @@
+ )
+
+ # muqPCE2uqtk.x
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+ link_directories(/Users/kjohnst/UQTk-build/dep/sundials/src/cvode)
+ link_directories(/Users/kjohnst/UQTk-build/dep/sundials/src/nvector/serial)
+ link_directories(/Users/kjohnst/UQTk-build/dep/sundials/src/sunlinsol/dense)
+@@ -30,8 +30,8 @@
+ target_link_libraries (muqPCE2uqtk.x sundials_sunlinsoldense)
+ target_link_libraries (muqPCE2uqtk.x sundials_sunmatrixdense)
+ target_link_libraries (muqPCE2uqtk.x depslatec )
+-target_link_libraries (muqPCE2uqtk.x m blas ${BLAS_LIBRARIES})
+-target_link_libraries (muqPCE2uqtk.x m lapack ${LAPACK_LIBRARIES})
++target_link_libraries (muqPCE2uqtk.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
++target_link_libraries (muqPCE2uqtk.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ target_link_libraries (muqPCE2uqtk.x depfigtree )
+ target_link_libraries (muqPCE2uqtk.x depann   )
+ target_link_libraries (muqPCE2uqtk.x expat )
+diff -ru UQTk-3.1.0.orig/examples/ops/CMakeLists.txt UQTk-3.1.0/examples/ops/CMakeLists.txt
+--- UQTk-3.1.0.orig/examples/ops/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/examples/ops/CMakeLists.txt	2020-03-28 18:18:38.287592625 +0100
+@@ -13,7 +13,7 @@
+
+
+ # Ops.x
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+ if( BUILD_SUNDIALS)
+   link_directories("${PROJECT_BINARY_DIR}/../../dep/sundials/src/cvode")
+   link_directories("${PROJECT_BINARY_DIR}/../../dep/sundials/src/nvector/serial")
+@@ -35,8 +35,8 @@
+ target_link_libraries (Ops.x sundials_sunlinsoldense)
+ target_link_libraries (Ops.x sundials_sunmatrixdense)
+ target_link_libraries (Ops.x depslatec)
+-target_link_libraries (Ops.x m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (Ops.x m blas ${BLAS_LIBRARIES})
++target_link_libraries (Ops.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (Ops.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (Ops.x depfigtree )
+ target_link_libraries (Ops.x depann   )
+
+@@ -76,8 +76,8 @@
+ target_link_libraries (LogComp.x sundials_sunlinsoldense)
+ target_link_libraries (LogComp.x sundials_sunmatrixdense)
+ target_link_libraries (LogComp.x depslatec)
+-target_link_libraries (LogComp.x m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (LogComp.x m blas ${BLAS_LIBRARIES})
++target_link_libraries (LogComp.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (LogComp.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (LogComp.x depfigtree )
+ target_link_libraries (LogComp.x depann   )
+
+diff -ru UQTk-3.1.0.orig/examples/pce_bcs/CMakeLists.txt UQTk-3.1.0/examples/pce_bcs/CMakeLists.txt
+--- UQTk-3.1.0.orig/examples/pce_bcs/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/examples/pce_bcs/CMakeLists.txt	2020-03-28 18:18:38.287592625 +0100
+@@ -7,7 +7,7 @@
+   )
+
+ # pce_bcs.x
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+ if( BUILD_SUNDIALS)
+   link_directories("${PROJECT_BINARY_DIR}/../../dep/sundials/src/cvode")
+   link_directories("${PROJECT_BINARY_DIR}/../../dep/sundials/src/nvector/serial")
+@@ -32,8 +32,8 @@
+ target_link_libraries (pce_bcs.x sundials_sunlinsoldense)
+ target_link_libraries (pce_bcs.x sundials_sunmatrixdense)
+ target_link_libraries (pce_bcs.x depslatec)
+-target_link_libraries (pce_bcs.x m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (pce_bcs.x m blas ${BLAS_LIBRARIES})
++target_link_libraries (pce_bcs.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (pce_bcs.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+ target_link_libraries (pce_bcs.x depfigtree )
+ target_link_libraries (pce_bcs.x depann   )
+
+diff -ru UQTk-3.1.0.orig/examples/surf_rxn/CMakeLists.txt UQTk-3.1.0/examples/surf_rxn/CMakeLists.txt
+--- UQTk-3.1.0.orig/examples/surf_rxn/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/examples/surf_rxn/CMakeLists.txt	2020-03-28 18:18:38.287592625 +0100
+@@ -31,7 +31,7 @@
+
+ # SurfRxnNISP.x
+
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+ if( BUILD_SUNDIALS)
+
+   link_directories("${PROJECT_BINARY_DIR}/../../dep/sundials/src/cvode")
+@@ -48,26 +48,26 @@
+ target_link_libraries (SurfRxnNISP.x  uqtkpce uqtkmcmc uqtkquad uqtktools uqtkarray uqtkxmlutils)
+ target_link_libraries (SurfRxnNISP.x sundials_cvode sundials_nvecserial sundials_sunlinsoldense sundials_sunmatrixdense)
+ target_link_libraries (SurfRxnNISP.x  depdsfmt deplbfgs depslatec depfigtree depann)
+-target_link_libraries (SurfRxnNISP.x m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (SurfRxnNISP.x m blas ${BLAS_LIBRARIES})
++target_link_libraries (SurfRxnNISP.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (SurfRxnNISP.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+
+ target_link_libraries (SurfRxnNISP_MC.x uqtkpce uqtkmcmc uqtkquad uqtktools uqtkarray uqtkxmlutils)
+ target_link_libraries (SurfRxnNISP_MC.x sundials_cvode sundials_nvecserial sundials_sunlinsoldense sundials_sunmatrixdense)
+ target_link_libraries (SurfRxnNISP_MC.x depdsfmt deplbfgs depslatec depfigtree depann)
+-target_link_libraries (SurfRxnNISP_MC.x m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (SurfRxnNISP_MC.x m blas ${BLAS_LIBRARIES})
++target_link_libraries (SurfRxnNISP_MC.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (SurfRxnNISP_MC.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+
+ target_link_libraries (SurfRxnISP.x  uqtkpce uqtkmcmc uqtkquad uqtktools uqtkarray uqtkxmlutils)
+ target_link_libraries (SurfRxnISP.x sundials_cvode sundials_nvecserial sundials_sunlinsoldense sundials_sunmatrixdense)
+ target_link_libraries (SurfRxnISP.x  depdsfmt deplbfgs depslatec depfigtree depann)
+-target_link_libraries (SurfRxnISP.x m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (SurfRxnISP.x m blas ${BLAS_LIBRARIES})
++target_link_libraries (SurfRxnISP.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (SurfRxnISP.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+
+ target_link_libraries (SurfRxnDet.x  uqtkpce uqtkmcmc uqtkquad uqtktools uqtkarray uqtkxmlutils)
+ target_link_libraries (SurfRxnDet.x sundials_cvode sundials_nvecserial sundials_sunlinsoldense sundials_sunmatrixdense)
+ target_link_libraries (SurfRxnDet.x  depdsfmt deplbfgs depslatec depfigtree depann)
+-target_link_libraries (SurfRxnDet.x m lapack ${LAPACK_LIBRARIES})
+-target_link_libraries (SurfRxnDet.x m blas ${BLAS_LIBRARIES})
++target_link_libraries (SurfRxnDet.x m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
++target_link_libraries (SurfRxnDet.x m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
+
+ # Link fortran libraries
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+diff -ru UQTk-3.1.0.orig/examples/tmcmc_bimodal/CMakeLists.txt UQTk-3.1.0/examples/tmcmc_bimodal/CMakeLists.txt
+--- UQTk-3.1.0.orig/examples/tmcmc_bimodal/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/examples/tmcmc_bimodal/CMakeLists.txt	2020-03-28 18:18:38.287592625 +0100
+@@ -9,7 +9,7 @@
+   README
+   )
+
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+
+ add_executable (bimodal.x bimodal.cpp)
+ add_executable (tmcmc_bimodal.x tmcmc_bimodal.cpp)
+@@ -21,8 +21,8 @@
+ target_link_libraries (tmcmc_bimodal.x sundials_sunlinsoldense)
+ target_link_libraries (tmcmc_bimodal.x sundials_sunmatrixdense)
+ target_link_libraries (tmcmc_bimodal.x depslatec)
+-target_link_libraries (tmcmc_bimodal.x m lapack)
+-target_link_libraries (tmcmc_bimodal.x m blas)
++target_link_libraries (tmcmc_bimodal.x m $ENV{LIBLAPACK_MT})
++target_link_libraries (tmcmc_bimodal.x m $ENV{LIBBLAS})
+ target_link_libraries (tmcmc_bimodal.x deplbfgs  )
+
+
+diff -ru UQTk-3.1.0.orig/PyUQTk/bcs/bcs_ext.py UQTk-3.1.0/PyUQTk/bcs/bcs_ext.py
+--- UQTk-3.1.0.orig/PyUQTk/bcs/bcs_ext.py	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/bcs/bcs_ext.py	2020-03-31 14:53:05.277127716 +0200
+@@ -30,10 +30,23 @@
+
+ import numpy as np
+ import matplotlib.pyplot as mpl
+-import uqtkarray as uqtkarray
+-import pce as uqtkpce
+-import tools as uqtktools
+-from uqtkarray import uqtk2numpy, numpy2uqtk
++try:
++	import PyUQTk.uqtkarray as uqtkarray
++except ImportError:
++	import uqtkarray as uqtkarray
++try:
++	import PyUQTk.pce as uqtkpce
++except ImportError:
++	import pce as uqtkpce
++try:
++	import PyUQTk.tools as uqtktools
++except ImportError:
++	import tools as uqtktools
++try:
++	from PyUQTk.uqtkarray import uqtk2numpy, numpy2uqtk
++except ImportError:
++	from uqtkarray import uqtk2numpy, numpy2uqtk
++
+ # BCS already added to path in compilation and install
+
+ # cross validation splitting
+diff -ru UQTk-3.1.0.orig/PyUQTk/bcs/CMakeLists.txt UQTk-3.1.0/PyUQTk/bcs/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/bcs/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/bcs/CMakeLists.txt	2020-03-31 15:09:06.837288054 +0200
+@@ -1,9 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -24,7 +26,7 @@
+ 	include_directories ("${PROJECT_BINARY_DIR}/../dep/sundials/include")
+ 	include_directories (${CMAKE_SUNDIALS_DIR}/include)
+ endif()
+-INCLUDE_DIRECTORIES(${CMAKE_SUNDIALS_DIR}/lib)
++INCLUDE_DIRECTORIES(${CMAKE_SUNDIALS_DIR}/lib64)
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../numpy/) # numpy headers
+
+ SET(CMAKE_SWIG_FLAGS "")
+@@ -56,12 +58,12 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(bcs blas lapack)
++	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(bcs $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+ 	# using Intel
+-	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(bcs blas lapack)
++	SWIG_LINK_LIBRARIES(bcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(bcs $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ endif()
+
+ if(BUILD_SUNDIALS)
+@@ -70,7 +72,7 @@
+ 	SWIG_LINK_LIBRARIES(bcs ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunlinsol/dense/libsundials_sunlinsoldense.a)
+ 	SWIG_LINK_LIBRARIES(bcs ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunmatrix/dense/libsundials_sunmatrixdense.a)
+ else()
+-	SWIG_LINK_LIBRARIES(bcs ${CMAKE_SUNDIALS_DIR}/lib/libsundials_cvode.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_nvecserial.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_sunlinsoldense.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_sunmatrixdense.a)
++	SWIG_LINK_LIBRARIES(bcs ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_cvode.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_nvecserial.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_sunlinsoldense.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_sunmatrixdense.a)
+ endif()
+
+ INSTALL(TARGETS _bcs DESTINATION PyUQTk/)
+diff -ru UQTk-3.1.0.orig/PyUQTk/CMakeLists.txt UQTk-3.1.0/PyUQTk/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/CMakeLists.txt	2020-03-31 15:12:33.594377484 +0200
+@@ -18,7 +18,9 @@
+ )
+
+ if ("${PyUQTk}" STREQUAL "ON")
+-  include(numpy.cmake)
++  # include(numpy.cmake)
++  FIND_PACKAGE(Python REQUIRED COMPONENTS NumPy)
++  INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+   add_subdirectory (uqtkarray)
+   add_subdirectory (quad)
+diff -ru UQTk-3.1.0.orig/PyUQTk/kle/CMakeLists.txt UQTk-3.1.0/PyUQTk/kle/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/kle/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/kle/CMakeLists.txt	2020-03-31 15:08:39.057144196 +0200
+@@ -1,9 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -44,14 +46,14 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-  SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES (kle m blas ${BLAS_LIBRARIES})
+-	SWIG_LINK_LIBRARIES (kle m lapack ${LAPACK_LIBRARIES})
++  SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  gfortran ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES (kle m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
++	SWIG_LINK_LIBRARIES (kle m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+   # using Intel
+-  SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  ifcore ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES (kle m blas ${BLAS_LIBRARIES})
+-	SWIG_LINK_LIBRARIES (kle m lapack ${LAPACK_LIBRARIES})
++  SWIG_LINK_LIBRARIES(kle uqtktools uqtkquad uqtkarray  depdsfmt  ifcore ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES (kle m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
++	SWIG_LINK_LIBRARIES (kle m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ endif()
+
+ INSTALL(TARGETS _kle DESTINATION PyUQTk/)
+diff -ru UQTk-3.1.0.orig/PyUQTk/mcmc/CMakeLists.txt UQTk-3.1.0/PyUQTk/mcmc/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/mcmc/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/mcmc/CMakeLists.txt	2020-03-31 15:08:42.969164412 +0200
+@@ -1,9 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -59,12 +61,12 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(mcmc blas lapack)
++	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree gfortran ${Python_LIBRARIES})
++  SWIG_LINK_LIBRARIES(mcmc $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+ 	# using Intel
+-	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ifport ${PYTHON_LIBRARIES})
+-  SWIG_LINK_LIBRARIES(mcmc blas lapack)
++	SWIG_LINK_LIBRARIES(mcmc deplbfgs uqtkbcs uqtkpce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree ifcore ifport ${Python_LIBRARIES})
++  SWIG_LINK_LIBRARIES(mcmc $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ endif()
+
+ if(BUILD_SUNDIALS)
+@@ -73,7 +75,7 @@
+ 	SWIG_LINK_LIBRARIES(mcmc ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunlinsol/dense/libsundials_sunlinsoldense.a)
+ 	SWIG_LINK_LIBRARIES(mcmc ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunmatrix/dense/libsundials_sunmatrixdense.a)
+ else()
+-	SWIG_LINK_LIBRARIES(mcmc ${CMAKE_SUNDIALS_DIR}/lib/libsundials_cvode.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_nvecserial.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_sunlinsoldense.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_sunmatrixdense.a)
++	SWIG_LINK_LIBRARIES(mcmc ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_cvode.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_nvecserial.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_sunlinsoldense.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_sunmatrixdense.a)
+ endif()
+
+ INSTALL(TARGETS _mcmc DESTINATION PyUQTk/)
+diff -ru UQTk-3.1.0.orig/PyUQTk/pce/CMakeLists.txt UQTk-3.1.0/PyUQTk/pce/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/pce/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/pce/CMakeLists.txt	2020-03-31 15:08:48.757194349 +0200
+@@ -1,10 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -54,22 +55,22 @@
+ 	# ${CMAKE_CURRENT_SOURCE_DIR}/../../cpp/lib/tools/rosenblatt.cpp
+ )
+
+-# ${CMAKE_SUNDIALS_DIR}/lib/libsundials_cvode.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_nvecserial.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_sunlinsoldense.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_sunmatrixdense.a
++# ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_cvode.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_nvecserial.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_sunlinsoldense.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_sunmatrixdense.a
+ # sundials_cvode sundials_nvecserial sundials_sunlinsoldense sundials_sunmatrixdense
+
+
+ # link python and 3rd party libraries, e.g., gfortran and blas
+-link_directories(${CMAKE_SUNDIALS_DIR}/lib)
++link_directories(${CMAKE_SUNDIALS_DIR}/lib64)
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-	SWIG_LINK_LIBRARIES(pce uqtkquad uqtkarray uqtktools depslatec depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(pce m blas ${BLAS_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(pce m lapack ${LAPACK_LIBRARIES})
++	SWIG_LINK_LIBRARIES(pce uqtkquad uqtkarray uqtktools depslatec depdsfmt depfigtree depann gfortran ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(pce m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
++	SWIG_LINK_LIBRARIES(pce m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+ 	# using Intel
+-  SWIG_LINK_LIBRARIES(pce uqtktools uqtkquad uqtkarray depslatec depdsfmt depann depfigtree depcvode ifcore ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(pce m blas ${BLAS_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(pce m lapack ${LAPACK_LIBRARIES})
++  SWIG_LINK_LIBRARIES(pce uqtkquad uqtkarray uqtktools depslatec depdsfmt depfigtree depann ifcore ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(pce m $ENV{LIBBLAS} ${BLAS_LIBRARIES})
++	SWIG_LINK_LIBRARIES(pce m $ENV{LIBLAPACK_MT} ${LAPACK_LIBRARIES})
+ endif()
+
+ if(BUILD_SUNDIALS)
+@@ -78,7 +79,7 @@
+ 	SWIG_LINK_LIBRARIES(pce ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunlinsol/dense/libsundials_sunlinsoldense.a)
+ 	SWIG_LINK_LIBRARIES(pce ${PROJECT_BINARY_DIR}/../dep/sundials/src/sunmatrix/dense/libsundials_sunmatrixdense.a)
+ else()
+-	SWIG_LINK_LIBRARIES(pce ${CMAKE_SUNDIALS_DIR}/lib/libsundials_cvode.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_nvecserial.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_sunlinsoldense.a ${CMAKE_SUNDIALS_DIR}/lib/libsundials_sunmatrixdense.a)
++	SWIG_LINK_LIBRARIES(pce ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_cvode.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_nvecserial.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_sunlinsoldense.a ${CMAKE_SUNDIALS_DIR}/lib64/libsundials_sunmatrixdense.a)
+ endif()
+
+ INSTALL(TARGETS _pce DESTINATION PyUQTk/)
+diff -ru UQTk-3.1.0.orig/PyUQTk/quad/CMakeLists.txt UQTk-3.1.0/PyUQTk/quad/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/quad/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/quad/CMakeLists.txt	2020-03-31 15:09:05.433280767 +0200
+@@ -1,10 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -45,12 +46,12 @@
+ # link python and 3rd party libraries, e.g., fortran and blas
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-  SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(quad blas lapack)
++  SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann gfortran ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(quad $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+   # using Intel
+-  SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann ifcore ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(quad blas lapack)
++  SWIG_LINK_LIBRARIES(quad uqtkarray uqtktools depdsfmt depfigtree depann ifcore ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(quad $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ endif()
+
+
+diff -ru UQTk-3.1.0.orig/PyUQTk/tmcmc/CMakeLists.txt UQTk-3.1.0/PyUQTk/tmcmc/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/tmcmc/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/tmcmc/CMakeLists.txt	2020-03-31 15:09:13.201321105 +0200
+@@ -1,9 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -24,12 +26,12 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-  SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(tmcmc m lapack blas)
++  SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt gfortran ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(tmcmc m $ENV{LIBLAPACK_MT} $ENV{LIBBLAS})
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+   # using Intel
+-  SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt ifcore ifport ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(tmcmc m lapack blas)
++  SWIG_LINK_LIBRARIES(tmcmc depslatec depdsfmt ifcore ifport ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(tmcmc m $ENV{LIBLAPACK_MT} $ENV{LIBBLAS})
+ endif()
+
+ INSTALL(TARGETS _tmcmc DESTINATION PyUQTk/)
+diff -ru UQTk-3.1.0.orig/PyUQTk/tools/CMakeLists.txt UQTk-3.1.0/PyUQTk/tools/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/tools/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/tools/CMakeLists.txt	2020-03-31 15:09:23.793376190 +0200
+@@ -1,12 +1,13 @@
++project (UQTk)
++
+ enable_language(Fortran)
+
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ #include source files
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+@@ -44,12 +45,12 @@
+ # link python and 3rd party libraries, e.g., gfortran and blas
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-  SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(tools blas lapack)
++  SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann gfortran ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(tools $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+   # using Intel
+-  SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann ifcore ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(tools blas lapack)
++  SWIG_LINK_LIBRARIES(tools uqtkarray depdsfmt depfigtree depann ifcore ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(tools $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ endif()
+
+
+diff -ru UQTk-3.1.0.orig/PyUQTk/uqtkarray/CMakeLists.txt UQTk-3.1.0/PyUQTk/uqtkarray/CMakeLists.txt
+--- UQTk-3.1.0.orig/PyUQTk/uqtkarray/CMakeLists.txt	2020-03-10 22:59:24.000000000 +0100
++++ UQTk-3.1.0/PyUQTk/uqtkarray/CMakeLists.txt	2020-03-31 15:09:28.169398976 +0200
+@@ -1,10 +1,11 @@
++project (UQTk)
++
+ FIND_PACKAGE(SWIG REQUIRED)
+ INCLUDE(${SWIG_USE_FILE})
+
+-FIND_PACKAGE(PythonLibs)
+-INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIR})
+-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIR}/../../Extras/lib/python/numpy/core/include)
++FIND_PACKAGE(Python REQUIRED COMPONENTS Interpreter Development NumPy)
++INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(${Python_NumPy_INCLUDE_DIRS})
+
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../cpp/lib/array/) # array classes, array input output, and array tools
+@@ -35,12 +36,12 @@
+ # Link fortran libraries
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-  SWIG_LINK_LIBRARIES(uqtkarray gfortran ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(uqtkarray blas lapack)
++  SWIG_LINK_LIBRARIES(uqtkarray gfortran ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(uqtkarray $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+   # using Intel
+-  SWIG_LINK_LIBRARIES(uqtkarray ifcore ${PYTHON_LIBRARIES})
+-	SWIG_LINK_LIBRARIES(uqtkarray blas lapack)
++  SWIG_LINK_LIBRARIES(uqtkarray ifcore ${Python_LIBRARIES})
++	SWIG_LINK_LIBRARIES(uqtkarray $ENV{LIBBLAS} $ENV{LIBLAPACK_MT})
+ endif()
+
+

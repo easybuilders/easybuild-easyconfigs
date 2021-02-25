@@ -1,0 +1,33 @@
+fix flawed logic determining location to /share/kat/scripts in installation directory,
+just honor path specified to KAT_SCRIPTS preprocessor directive during compilation, since it's the correct one
+
+fixes this problem:
+    Could not find suitable directory containing KAT scripts at the expected location: <wrong_path>/share/kat/scripts
+
+author: Kenneth Hoste (HPC-UGent)
+--- KAT-Release-2.4.2/lib/include/kat/kat_fs.hpp.orig	2019-11-22 12:11:06.763753026 +0100
++++ KAT-Release-2.4.2/lib/include/kat/kat_fs.hpp	2019-11-22 12:10:37.833387508 +0100
+@@ -124,14 +124,15 @@
+             // Ok, so we are in a installed location.  Figuring out the scripts directory isn't as straight
+             // forward as it may seem because we might have installed to a alternate root.  So wind back the
+             // exec_prefix to get to root (or alternate root) directory.
+-            path kep(KAT_EXECPREFIX);
+-            path root = kep;
+-            path altroot = exe_dir.parent_path();
+-            while (root.has_parent_path()) {
+-                root = root.parent_path();
+-                altroot = altroot.parent_path();
+-            }
+-            this->scriptsDir = altroot / kat_scripts;
++            //path kep(KAT_EXECPREFIX);
++            //path root = kep;
++            //path altroot = exe_dir.parent_path();
++            //while (root.has_parent_path()) {
++            //    root = root.parent_path();
++            //    altroot = altroot.parent_path();
++            //}
++            //this->scriptsDir = altroot / kat_scripts;
++            this->scriptsDir = kat_scripts;
+         } else if (exe_dir.leaf().string() == ".libs" && exists(exe_dir.parent_path() / "kat.cc")) {
+             // If we are here then we are running the kat executable from the source directory but linked dynamically
+             this->scriptsDir = exe_dir.parent_path().parent_path() / "scripts";

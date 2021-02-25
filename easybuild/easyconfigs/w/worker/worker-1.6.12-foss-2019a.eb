@@ -1,0 +1,89 @@
+easyblock = 'ConfigureMake'
+
+name = 'worker'
+version = '1.6.12'
+
+homepage = 'https://github.com/gjbex/worker'
+description = """The Worker framework has been developed to help deal with parameter exploration experiments
+ that would otherwise result in many jobs, forcing the user resort to scripting to retain her sanity;
+ see also https://vscentrum.be/neutral/documentation/cluster-doc/running-jobs/worker-framework."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/gjbex/worker/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['503ad9db78d949999bd5f3ba15b18f746cad2eaf2ff49240398b2b6792f9ffbd']
+
+osdependencies = ['perl']
+
+local_tcname = 'foss'
+local_tcver = '2019a'
+builddependencies = [(local_tcname, local_tcver)]
+versionsuffix = '-%s-%s' % (local_tcname, local_tcver)
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('Config::General', '2.63', {
+        'source_tmpl': 'Config-General-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/T/TL/TLINDEN'],
+        'checksums': ['0a9bf977b8aabe76343e88095d2296c8a422410fd2a05a1901f2b20e2e1f6fad'],
+    }),
+    ('IO::Stringy', '2.113', {
+        'source_tmpl': 'IO-Stringy-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CA/CAPOEIRAB/'],
+        'checksums': ['51220fcaf9f66a639b69d251d7b0757bf4202f4f9debd45bdd341a6aca62fe4e'],
+    }),
+    ('Text::CSV', '2.00', {
+        'source_tmpl': 'Text-CSV-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/I/IS/ISHIGAKI'],
+        'checksums': ['8ccbd9195805222d995844114d0e595bb24ce188f85284dbf256080311cbb2c2'],
+    }),
+    ('DBI', '1.643', {
+        'source_tmpl': 'DBI-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/T/TI/TIMB'],
+        'checksums': ['8a2b993db560a2c373c174ee976a51027dd780ec766ae17620c20393d2e836fa'],
+    }),
+    ('DBD::SQLite', '1.64', {
+        'source_tmpl': 'DBD-SQLite-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/I/IS/ISHIGAKI'],
+        'checksums': ['f4ae8f7b50842305566aadd90f7bfd12a9e32b6c603a9b1c1529e73eb82aff01'],
+    }),
+    ('Date::Language', '2.32', {
+        'source_tmpl': 'TimeDate-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC/'],
+        'checksums': ['34eca099e375e2d142ea6cc935922c4980dc21c65ce7c24823ca08457c4bb3d6'],
+    }),
+    ('Template', '3.008', {
+        'source_tmpl': 'Template-Toolkit-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC'],
+        'checksums': ['52400f68bef6731b0fca00e3438ed835b29ab9fec72a404866dee8fc139da692'],
+    }),
+]
+
+preconfigopts = "export CC=mpicc && "
+
+modextrapaths = {
+    'PERL5LIB': ['share/perl5', 'lib64/perl5'],
+}
+
+# adjust worker configuration file
+# note: tweak this to your local setup
+postinstallcmds = [
+    'sed -i "s/ cores_per_node = .*/ cores_per_node = 16/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s@ qsub = .*@ qsub = `which qsub`@g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ email = .*/ email = hpc-support@example.com/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ unload_modules = .*/ unload_modules = intel/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s@ mpi_module = .*@ mpi_module = %s/%s@g" %%(installdir)s/conf/worker.conf' % (local_tcname, local_tcver),
+    'sed -i "s@ module_path = .*@ module_path = %(installdir)s/../../../modules/all@g" %(installdir)s/conf/worker.conf',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['dbilogstrip', 'dbiprof', 'dbiproxy', 'tpage', 'ttree', 'wcat', 'wconvert',
+                                     'wload', 'worker', 'wreduce', 'wresume', 'wsub', 'wsummarize']],
+    'dirs': ['lib/perl', 'lib/tt', 'lib64/perl5'],
+}
+
+sanity_check_commands = ["wsub -help"]
+
+moduleclass = 'tools'

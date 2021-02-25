@@ -1,0 +1,27 @@
+Fix search for Python library path when configuring with Python 3
+source: GEOS-3.7.2_fix-Python3.patch from easybuild-easyconfigs repository
+diff -ruN geos-3.7.2.orig/configure geos-3.7.2/configure
+--- geos-3.7.2.orig/configure	2019-05-02 15:29:59.000000000 -0700
++++ geos-3.7.2/configure	2019-05-07 17:22:57.755195000 -0700
+@@ -19210,18 +19210,19 @@
+         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python library path" >&5
+ $as_echo_n "checking for Python library path... " >&6; }
+         for i in "$base_python_path/lib/python$PYTHON_VERSION/config/" "$base_python_path/lib/python$PYTHON_VERSION/" "$base_python_path/lib/python/config/" "$base_python_path/lib/python/" "$base_python_path/" "$base_python_path/libs/" ; do
+-                python_path=`find $i -name libpython$PYTHON_VERSION.* -print 2> /dev/null | sed "1q"`
++                python_path=`find $i -name libpython$PYTHON_VERSION*.so* -print 2> /dev/null | sed "1q"`
+                 if test -n "$python_path" ; then
+                         break
+                 fi
+         done
++	lpython_name=`python -c "import os; print(os.path.split(\"$python_path\")[1].split(\".so\")[0].split(\"lib\")[1])"`
+         python_path=`echo $python_path | sed "s,/libpython.*$,,"`
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $python_path" >&5
+ $as_echo "$python_path" >&6; }
+         if test -z "$python_path" ; then
+                 as_fn_error $? "cannot find Python library path" "$LINENO" 5
+         fi
+-        PYTHON_LDFLAGS="-L$python_path -lpython$PYTHON_VERSION"
++	PYTHON_LDFLAGS="-L$python_path -l$lpython_name"
+ 
+         #
+         python_site=`echo $base_python_path | sed "s/config/site-packages/"`

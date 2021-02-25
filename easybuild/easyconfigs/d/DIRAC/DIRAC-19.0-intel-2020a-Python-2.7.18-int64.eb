@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'DIRAC'
+version = '19.0'
+versionsuffix = '-Python-%(pyver)s-int64'
+
+homepage = 'http://www.diracprogram.org'
+description = "DIRAC: Program for Atomic and Molecular Direct Iterative Relativistic All-electron Calculations"
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'i8': True}
+
+source_urls = ['https://zenodo.org/record/3572669/files/']
+sources = ['DIRAC-%(version)s-Source.tar.gz']
+patches = [
+    '%(name)s-%(version)s_remove-broken-tests-intel.patch',
+    '%(name)s-%(version)s_fix-bss_energy_test.patch',
+    '%(name)s-%(version)s_use_easybuild_opts_intel.patch',
+    '%(name)s-%(version)s_fix_test_path.patch',
+]
+checksums = [
+    'f0e3610bdd1fbcff90cdfb4cf3fd7582a4762f533af7d635c4bc4d114f402c32',  # DIRAC-19.0-Source.tar.gz
+    'cb0e07097499fe59180d79a5db9ee883b9c83e16dcc6210fd945072c3a54c8a4',  # DIRAC-19.0_remove-broken-tests-intel.patch
+    'e66be847d87ccfda23687de31a3a7c8d71c97b0accd290cf7ade4b4184f1fb93',  # DIRAC-19.0_fix-bss_energy_test.patch
+    '666a9053d6c1287ee7aa471d18436133931959b3eacb7619d5197dbfb4e0c1fe',  # DIRAC-19.0_use_easybuild_opts_intel.patch
+    '527680cab911a8c7a52347d7ace516a497b725043537a6274670a1aaa97bfb0f',  # DIRAC-19.0_fix_test_path.patch
+]
+
+builddependencies = [('CMake', '3.16.4')]
+
+dependencies = [('Python', '2.7.18')]
+
+separate_build_dir = True
+
+configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
+configopts += '-DENABLE_BLAS=off '
+configopts += '-DENABLE_LAPACK=off '
+configopts += '-DMKL_FLAG=off '
+configopts += '-DBLAS_LANG=Fortran '
+configopts += '-DLAPACK_LANG=Fortran '
+configopts += '-DENABLE_MPI=False '
+configopts += '-DENABLE_OPENMP=False '
+configopts += '-DENABLE_CODE_COVERAGE=False '
+configopts += '-DENABLE_STATIC_LINKING=False '
+configopts += '-DENABLE_PROFILING=False '
+configopts += '-DENABLE_RUNTIMECHECK=False '
+configopts += '-DENABLE_64BIT_INTEGERS=True '
+configopts += '-DEXPLICIT_LIBS="${LIBLAPACK_MT}" '
+configopts += '-DENABLE_PCMSOLVER=OFF '
+configopts += '-G"Unix Makefiles" '
+
+parallel = 1
+
+pretestopts = 'export DIRAC_TMPDIR=%(builddir)s/scratch && '
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/pam-dirac', 'share/dirac/dirac.x'],
+    'dirs': ['share/dirac/basis'],
+}
+
+sanity_check_commands = ["pam-dirac --help"]
+
+moduleclass = 'chem'

@@ -1,0 +1,47 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+easyblock = 'ConfigureMake'
+
+name = 'PMIx'
+version = '3.0.2'
+
+homepage = 'https://pmix.org/'
+description = """Process Management for Exascale Environments
+PMI Exascale (PMIx) represents an attempt to
+provide an extended version of the PMI standard specifically designed
+to support clusters up to and including exascale sizes. The overall
+objective of the project is not to branch the existing pseudo-standard
+definitions - in fact, PMIx fully supports both of the existing PMI-1
+and PMI-2 APIs - but rather to (a) augment and extend those APIs to
+eliminate some current restrictions that impact scalability, and (b)
+provide a reference implementation of the PMI-server that demonstrates
+the desired level of scalability.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/pmix/pmix/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.bz2']
+checksums = ['df68f35a3ed9517eeade80b13855cebad8fde2772b36a3f6be87559b6d430670']
+
+builddependencies = [('binutils', '2.32')]
+
+dependencies = [
+    ('libevent', '2.1.11'),
+    ('zlib', '1.2.11'),
+    ('hwloc', '1.11.12'),
+]
+
+configopts = ' --with-libevent=$EBROOTLIBEVENT --with-zlib=$EBROOTZLIB '
+configopts += ' --with-hwloc=$EBROOTHWLOC '
+configopts += ' --enable-pmix-binaries'
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/pevent', 'bin/plookup', 'bin/pmix_info', 'bin/pps'],
+    'dirs': ['etc', 'include', 'lib', 'share']
+}
+
+moduleclass = 'lib'

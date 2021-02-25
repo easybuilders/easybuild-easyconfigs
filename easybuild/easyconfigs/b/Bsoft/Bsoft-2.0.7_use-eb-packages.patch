@@ -1,0 +1,132 @@
+Adapt configuration scripts of Bsoft to EasyBuild environment
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- dev.rsc.orig	2019-05-09 21:04:05.000000000 +0200
++++ dev.rsc	2020-10-17 12:35:46.233721000 +0200
+@@ -38,24 +38,24 @@
+ 	HAVE_FFTW=0
+ 	HAVE_XML=0
+ 
+-	if [ -e $LIBFFTW/api/fftw3.h ]; then
++	if [ -e $LIBFFTW/include/fftw3.h ]; then
+ 		echo "# FFTW3       found"
+ 		HAVE_FFTW=1
+ 	else
+ 		echo "# No FFTW3 libraries found!"
+-		echo "# Looking for: $LIBFFTW/api/fftw3.h"
++		echo "# Looking for: $LIBFFTW/include/fftw3.h"
+ 	fi
+ 
+-	if [ -e $SDK/usr/include/libxml2 ]; then
++	if [ -e $EBROOTLIBXML2/include/libxml2 ]; then
+ 		echo "# libxml2     found"
+ 		HAVE_XML=1
+-		x=`grep -A 3 xmlStrPrintf $SDK/usr/include/libxml2/libxml/xmlstring.h | grep msg | grep xmlChar`
++		x=`grep -A 3 xmlStrPrintf $EBROOTLIBXML2/include/libxml2/libxml/xmlstring.h | grep msg | grep xmlChar`
+ 		if [[ $x =~ xmlChar ]]; then
+ 			HAVE_XML=2
+ 		fi
+ 	else
+ 		echo "# No XML library found!"
+-		echo "# Looking for: $SDK/usr/include/libxml2"
++		echo "# Looking for: $EBROOTLIBXML2/include/libxml2"
+ 	fi
+ 
+ 	# Optional
+@@ -71,13 +71,13 @@
+ 		TCLINC=$TCL/Headers
+ 		TKINC=$TK/Headers
+ 	elif [[ $SYS =~ Linux ]]; then
+-		TCL=/usr
+-		TK=/usr
++		TCL=$EBROOTTCL
++		TK=$EBROOTTK
+ 		TCLINC=$TCL/include
+ 		TKINC=$TK/include
+-		if [ -e /usr/include/tk ]; then
+-			TCLINC=/usr/include/tcl
+-			TKINC=/usr/include/tk
++		if [ -e $EBROOTTK/include/tk ]; then
++			TCLINC=$EBROOTTCL/include/tcl
++			TKINC=$EBROOTTK/include/tk
+ 		fi
+ 	fi
+ 
+@@ -90,28 +90,28 @@
+ 		TKO=""
+ 	fi
+ 
+-	if [ -e $LIBTIFF/libtiff/tiff.h ]; then
++	if [ -e $EBBUILDLIBTIFF/libtiff/tiff.h ]; then
+ 		echo "# libtiff     found"
+ 		HAVE_TIFF=1
+ 	else
+ 		echo "# No TIFF library found! TIFF files will not be supported!"
+-		echo "# Looking for: $LIBTIFF/libtiff/tiff.h"
++		echo "# Looking for: $EBBUILDLIBTIFF/libtiff/tiff.h"
+ 	fi
+ 
+-	if [ -e $LIBPNG/png.h ]; then
++	if [ -e $LIBPNG/include/png.h ]; then
+ 		echo "# libpng      found"
+ 		HAVE_PNG=1
+ 	else
+ 		echo "# No PNG library found! PNG files will not be supported!"
+-		echo "# Looking for: $LIBPNG/png.h"
++		echo "# Looking for: $LIBPNG/include/png.h"
+ 	fi
+ 
+-	if [ -e $LIBJPEG/jpeglib.h ]; then
++	if [ -e $LIBJPEG/include/jpeglib.h ]; then
+ 		echo "# libjpeg     found"
+ 		HAVE_JPEG=1
+ 	else
+ 		echo "# No JPEG library found! JPEG files will not be supported!"
+-		echo "# Looking for: $LIBJPEG/jpeglib.h"
++		echo "# Looking for: $LIBJPEG/include/jpeglib.h"
+ 	fi
+ 
+ }
+--- bsoft/bsoft_conf.orig	2019-11-05 20:05:09.000000000 +0100
++++ bsoft/bsoft_conf	2020-10-17 17:11:31.028913000 +0200
+@@ -129,7 +129,7 @@
+ LIBLIST=""
+ 
+ 
+-XMLINC=$SDK/usr/include/libxml2
++XMLINC=$EBROOTLIBXML2/include/libxml2
+ if [ -e $XMLINC ]; then
+ 	CFLAGS=$CFLAGS' -DHAVE_XML'
+ 	if [ $HAVE_XML == 2 ]; then
+@@ -163,7 +163,7 @@
+ 
+ if [ $HAVE_TIFF = 1 ]; then
+ 	CFLAGS="$CFLAGS -DHAVE_TIFF"
+-	INCLUDES="$INCLUDES -I$LIBTIFF/libtiff"
++	INCLUDES="$INCLUDES -I$EBBUILDLIBTIFF/libtiff"
+ #	LIBDIR="$LIBDIR -L$LIBTIFF/lib"
+ #	LINKLIBS="$LINKLIBS -ltiff";
+ 	LIBLIST="$LIBLIST $LIBTIFF/lib/libtiff.a"
+@@ -171,8 +171,8 @@
+ 
+ if [ $HAVE_PNG = 1 ]; then
+ 	CFLAGS="$CFLAGS -DHAVE_PNG"
+-	INCLUDES="$INCLUDES -I$LIBPNG"
+-#	LIBDIR="$LIBDIR -L$LIBPNG/lib"
++	INCLUDES="$INCLUDES -I$LIBPNG/include"
++ 	LIBDIR="$LIBDIR -L$EBROOTZLIB/lib"
+ #	LINKLIBS="$LINKLIBS -lz -lpng";
+ 	LINKLIBS="$LINKLIBS -lz";
+ 	LIBLIST="$LIBLIST $LIBPNG/lib/libpng.a"
+@@ -180,10 +180,10 @@
+ 
+ if [ $HAVE_JPEG = 1 ]; then
+ 	CFLAGS="$CFLAGS -DHAVE_JPEG"
+-	INCLUDES="$INCLUDES -I$LIBJPEG"
++	INCLUDES="$INCLUDES -I$LIBJPEG/include"
+ #	LIBDIR="$LIBDIR -L$LIBJPEG/lib"
+ #	LINKLIBS="$LINKLIBS -ljpeg";
+-	LIBLIST="$LIBLIST $LIBJPEG/lib/libjpeg.a"
++	LIBLIST="$LIBLIST $LIBJPEG/lib64/libjpeg.a"
+ fi
+ 
+ # Tcl/Tk

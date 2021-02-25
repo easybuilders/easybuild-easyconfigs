@@ -1,0 +1,50 @@
+easyblock = 'Bundle'
+
+name = 'SpliceMap'
+version = '3.3.5.2'
+local_no_dots_ver = version.replace('.', '')
+
+homepage = 'https://web.stanford.edu/group/wonglab/SpliceMap/'
+description = """SpliceMap is a de novo splice junction discovery and alignment tool.
+ It offers high sensitivity and support for arbitrary RNA-seq read lengths."""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0-2.30'}
+
+default_component_specs = {
+    'source_urls': ['https://web.stanford.edu/group/wonglab/SpliceMap/'],
+    'sources': [{'filename': 'SpliceMap%s_linux-64.zip' % local_no_dots_ver, 'extract_cmd': 'unzip -u %s'}],
+    'checksums': ['090a7e0ae99c45b98bfe50e5113415fd9d94c3c5431ecccac65e9ebc45216dcd'],
+}
+
+components = [
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'SpliceMap%s_linux-64/src/%%(name)s-src' % local_no_dots_ver,
+        'buildopts': ' CFLAGS-64="$CFLAGS -fpermissive"',
+        'files_to_copy': [(['amalgamateSAM', 'colorJunction', 'countsam', 'findNovelJunctions', 'neighborFilter',
+                            'nnrFilter', 'precipitateSAM', 'randomJunctionFilter', 'runSpliceMap', 'statSpliceMap',
+                            'sortsam', 'SpliceMap', 'subseq', 'uniqueJunctionFilter', 'wig2barwig'], 'bin')],
+    }),
+    ('barloader', version, {
+        'easyblock': 'CmdCp',
+        'start_dir': 'SpliceMap%s_linux-64/src/%%(name)s-src' % local_no_dots_ver,
+        'cmds_map': [('.*', '$CXX $CXXFLAGS -o %(name)s %(name)s.cpp')],
+        'files_to_copy': [(['%(name)s'], 'bin')],
+    }),
+    ('bowtie', '0.12.7', {
+        'easyblock': 'MakeCp',
+        'start_dir': 'SpliceMap%s_linux-64/src/%%(name)s-%%(version)s' % local_no_dots_ver,
+        'buildopts': ' CFLAGS="$CFLAGS -fpermissive"',
+        'files_to_copy': [(['bowtie', 'bowtie-build', 'bowtie-inspect'], 'bin')],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['amalgamateSAM', 'barloader', 'bowtie', 'bowtie-build', 'bowtie-inspect',
+                                     'colorJunction', 'countsam', 'findNovelJunctions', 'neighborFilter', 'nnrFilter',
+                                     'precipitateSAM', 'randomJunctionFilter', 'runSpliceMap', 'statSpliceMap',
+                                     'sortsam', 'SpliceMap', 'subseq', 'uniqueJunctionFilter', 'wig2barwig']],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

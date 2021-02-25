@@ -1,0 +1,84 @@
+From ba5ed62005beb3844ea5f0a994d78393c7b3e147 Mon Sep 17 00:00:00 2001
+From: vishwakftw <vishwaks@cs.cmu.edu>
+Date: Fri, 6 Sep 2019 10:55:17 -0400
+Subject: [PATCH 1/3] Fix test_det_logdet_slogdet_batched on PowerPC
+
+Changelog:
+- Simplify generation of singular matrices to just constructing a constant matrix instead of a random singular matrix using random_square_matrix_of_rank, which is susceptible to numerical issues
+
+Test Plan:
+- test_det_logdet_slogdet_batched should pass
+---
+ test/test_torch.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/test_torch.py b/test/test_torch.py
+index a8eb67bfa523..ee2a82211511 100644
+--- a/test/test_torch.py
++++ b/test/test_torch.py
+@@ -6883,7 +6883,7 @@ def run_test(matsize, batchdims, mat_chars):
+                 elif mat_chars[mat_type] == 'sym_pd':
+                     list_of_matrices.append(random_symmetric_pd_matrix(matsize).to(device=device))
+                 elif mat_chars[mat_type] == 'sing':
+-                    list_of_matrices.append(random_square_matrix_of_rank(matsize, matsize // 2).to(device=device))
++                    list_of_matrices.append(torch.ones(matsize, matsize, device=device))
+                 elif mat_chars[mat_type] == 'non_sing':
+                     list_of_matrices.append(random_square_matrix_of_rank(matsize, matsize).to(device=device))
+             full_tensor = torch.stack(list_of_matrices, dim=0).reshape(batchdims + (matsize, matsize))
+
+From 01ac5faf05dba199f7a2897a77e3767fc89d7128 Mon Sep 17 00:00:00 2001
+From: vishwakftw <vishwaks@cs.cmu.edu>
+Date: Fri, 6 Sep 2019 17:04:57 -0400
+Subject: [PATCH 2/3] Fix batched det, logdet, slogdet on GPU
+
+---
+ aten/src/ATen/native/LinearAlgebra.cpp | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/aten/src/ATen/native/LinearAlgebra.cpp b/aten/src/ATen/native/LinearAlgebra.cpp
+index 397e17abbbbb..6417a088f5c4 100644
+--- a/aten/src/ATen/native/LinearAlgebra.cpp
++++ b/aten/src/ATen/native/LinearAlgebra.cpp
+@@ -26,8 +26,13 @@ static inline std::tuple<Tensor, Tensor> _lu_det_P_diag_U(const Tensor& self) {
+   TORCH_CHECK(infos.ge(0).all().item<uint8_t>(), "Invalid argument passed to lu");
+   auto n = self.size(-1);
+   auto num_exchanges = (at::arange(1, n + 1, pivs.options()) != pivs).sum(-1, /*keepdim=*/false, /*dtype=*/self.scalar_type()).fmod_(2);
+-  return std::tuple<Tensor, Tensor>(num_exchanges.mul_(-2).add_(1),
+-                                    lu.diagonal(/*offset=*/0, /*dim1=*/-2, /*dim2=*/-1));
++  auto u_diagonal = lu.diagonal();
++
++  // We have to manually set the diagonal to 0 due to an issue with MAGMA's getrf_batched routine
++  if (self.dim() > 2) {
++    u_diagonal.index_put_(infos.nonzero_numpy(), at::zeros({}, self.options()));
++  }
++  return std::tuple<Tensor, Tensor>(num_exchanges.mul_(-2).add_(1), u_diagonal);
+ }
+ 
+ Tensor det(const Tensor& self) {
+
+From f919353f20ad02ed898b0fd7b31600b5f84ac908 Mon Sep 17 00:00:00 2001
+From: vishwakftw <vishwaks@cs.cmu.edu>
+Date: Mon, 9 Sep 2019 09:29:45 -0400
+Subject: [PATCH 3/3] Fix diagonal call
+
+---
+ aten/src/ATen/native/LinearAlgebra.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/aten/src/ATen/native/LinearAlgebra.cpp b/aten/src/ATen/native/LinearAlgebra.cpp
+index 6417a088f5c4..60921113e392 100644
+--- a/aten/src/ATen/native/LinearAlgebra.cpp
++++ b/aten/src/ATen/native/LinearAlgebra.cpp
+@@ -26,10 +26,10 @@ static inline std::tuple<Tensor, Tensor> _lu_det_P_diag_U(const Tensor& self) {
+   TORCH_CHECK(infos.ge(0).all().item<uint8_t>(), "Invalid argument passed to lu");
+   auto n = self.size(-1);
+   auto num_exchanges = (at::arange(1, n + 1, pivs.options()) != pivs).sum(-1, /*keepdim=*/false, /*dtype=*/self.scalar_type()).fmod_(2);
+-  auto u_diagonal = lu.diagonal();
++  auto u_diagonal = lu.diagonal(/*offset=*/0, /*dim1=*/-2, /*dim2=*/-1);
+ 
+   // We have to manually set the diagonal to 0 due to an issue with MAGMA's getrf_batched routine
+-  if (self.dim() > 2) {
++  if (self.dim() > 2 && self.is_cuda()) {
+     u_diagonal.index_put_(infos.nonzero_numpy(), at::zeros({}, self.options()));
+   }
+   return std::tuple<Tensor, Tensor>(num_exchanges.mul_(-2).add_(1), u_diagonal);

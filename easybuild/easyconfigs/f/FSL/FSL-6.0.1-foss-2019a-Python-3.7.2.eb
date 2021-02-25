@@ -1,0 +1,62 @@
+# This build still relies on the following libraries (or part of them) shipped with FSL:
+#    GDCHART, libprob, libcprob, cprob, newran, newmat
+# Attempts to use externally built libraries failed. Worth trying again in the future...
+#
+# Some tools like icmp are missing since they are built with the fslpython_install.sh script
+# which locally installs Miniconda and creates a virtual environment. This is too messy and
+# an alternative solution is necessary to install them.
+# https://github.com/easybuilders/easybuild-easyconfigs/issues/7899
+# https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation#imcp.2Fimglob.2Fimmv_errors_after_installation
+
+name = 'FSL'
+version = '6.0.1'
+versionsuffix = '-Python-3.7.2'
+
+homepage = 'http://www.fmrib.ox.ac.uk/fsl/'
+description = """FSL is a comprehensive library of analysis tools for FMRI, MRI and DTI brain imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ["http://www.fmrib.ox.ac.uk/fsldownloads/"]
+sources = ['%(namelower)s-%(version)s-sources.tar.gz']
+patches = [
+    'FSL-%(version)s_Makefile_fixes.patch',
+    'FSL-%(version)s_Build_extras.patch',
+    'FSL-%(version)s_Melodic-use-ifstream-good.patch'
+]
+checksums = [
+    'ccab9709239340299b0ca034cb00d6ce0170b9e0d075b3adb55c556feacfb2da',  # fsl-6.0.1-sources.tar.gz
+    'fd4c0a58b6fab085d1ef1cde5f48d3a487994fbffe3c5c47d940ab99d8085ad2',  # FSL-6.0.1_Makefile_fixes.patch
+    '2e508987173069877600cea465a224e45ad9898e9ceff0bf42f5ec30907b2ad7',  # FSL-6.0.1_Build_extras.patch
+    'c07644fbd89cf9c70db5a1a8f4f2918ab5daeb60cdf0ce4ee2b91f8ae48173fa',  # FSL-6.0.1_Melodic-use-ifstream-good.patch
+]
+
+builddependencies = [
+    ('Boost', '1.70.0'),
+]
+
+dependencies = [
+    ('libgd', '2.2.5'),
+    ('libxml2', '2.9.8'),
+    ('libxml++', '2.40.1'),
+    ('SQLite', '3.27.2'),
+    ('libpng', '1.6.36'),
+    ('Tk', '8.6.9'),
+    ('NLopt', '2.6.1'),
+    ('freeglut', '3.0.0'),
+    ('expat', '2.2.6'),
+    ('zlib', '1.2.11'),
+    ('VTK', '8.2.0', versionsuffix),
+    ('GSL', '2.5'),
+    ('Qwt', '6.1.4'),
+]
+
+modextravars = {
+    'FSLOUTPUTTYPE': 'NIFTI_GZ',
+    'FSLMULTIFILEQUIT': 'TRUE',
+    'FSLTCLSH': 'tclsh',
+    'FSLWISH': 'wish8.6'
+}
+
+moduleclass = 'bio'

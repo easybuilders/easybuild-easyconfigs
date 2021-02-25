@@ -1,0 +1,70 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2013-2015 Dmitri Gribenko, Ward Poelmans
+# Authors:: Dmitri Gribenko <gribozavr@gmail.com>
+# Authors:: Ward Poelmans <wpoely86@gmail.com>
+# License:: GPLv2 or later, MIT, three-clause BSD.
+# $Id$
+##
+
+name = 'Clang'
+version = '8.0.0'
+
+homepage = 'https://clang.llvm.org/'
+description = """C, C++, Objective-C compiler, based on LLVM.  Does not
+ include C++ standard library -- use libstdc++ from GCC."""
+
+# Clang also depends on libstdc++ during runtime, but this dependency is
+# already specified as the toolchain.
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+# Do not set optarch to True: it will cause the build to fail
+toolchainopts = {'optarch': False}
+
+source_urls = ["https://llvm.org/releases/%(version)s"]
+sources = [
+    'llvm-%(version)s.src.tar.xz',
+    'cfe-%(version)s.src.tar.xz',
+    'compiler-rt-%(version)s.src.tar.xz',
+    'polly-%(version)s.src.tar.xz',
+    'openmp-%(version)s.src.tar.xz',
+    # Also include the LLVM linker
+    'lld-%(version)s.src.tar.xz',
+    'libcxx-%(version)s.src.tar.xz',
+    'libcxxabi-%(version)s.src.tar.xz',
+]
+patches = ['libcxx-%(version)s-ppc64le.patch']
+checksums = [
+    '8872be1b12c61450cacc82b3d153eab02be2546ef34fa3580ed14137bb26224c',  # llvm-8.0.0.src.tar.xz
+    '084c115aab0084e63b23eee8c233abb6739c399e29966eaeccfc6e088e0b736b',  # cfe-8.0.0.src.tar.xz
+    'b435c7474f459e71b2831f1a4e3f1d21203cb9c0172e94e9d9b69f50354f21b1',  # compiler-rt-8.0.0.src.tar.xz
+    'e3f5a3d6794ef8233af302c45ceb464b74cdc369c1ac735b6b381b21e4d89df4',  # polly-8.0.0.src.tar.xz
+    'f7b1705d2f16c4fc23d6531f67d2dd6fb78a077dd346b02fed64f4b8df65c9d5',  # openmp-8.0.0.src.tar.xz
+    '9caec8ec922e32ffa130f0fb08e4c5a242d7e68ce757631e425e9eba2e1a6e37',  # lld-8.0.0.src.tar.xz
+    'c2902675e7c84324fb2c1e45489220f250ede016cc3117186785d9dc291f9de2',  # libcxx-8.0.0.src.tar.xz
+    'c2d6de9629f7c072ac20ada776374e9e3168142f20a46cdb9d6df973922b07cd',  # libcxxabi-8.0.0.src.tar.xz
+    '173da6b7831a66d2f7d064f0ec3f6c56645a7f1352b709ceb9a55416fe6c93ce',  # libcxx-8.0.0-ppc64le.patch
+]
+
+dependencies = [
+    # since Clang is a compiler, binutils is a runtime dependency too
+    ('binutils', '2.31.1'),
+    ('ncurses', '6.1'),
+    ('GMP', '6.1.2'),
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('Python', '2.7.15'),
+    ('libxml2', '2.9.8'),
+]
+
+assertions = True
+usepolly = True
+build_lld = True
+libcxx = True
+enable_rtti = True
+
+skip_all_tests = True
+
+moduleclass = 'compiler'

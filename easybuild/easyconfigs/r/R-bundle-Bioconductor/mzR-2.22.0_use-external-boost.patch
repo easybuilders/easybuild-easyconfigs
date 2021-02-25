@@ -1,0 +1,133 @@
+# Use external boost provided by EasyBuild instead of
+# a bundled old version that doesn't work on aarch64..
+#
+# Author: @zao (Lars Viklund)
+diff -ru mzR.orig/src/Makevars mzR/src/Makevars
+--- mzR.orig/src/Makevars    2020-04-27 22:27:42.000000000 +0200
++++ mzR/src/Makevars    2020-10-01 14:26:45.334914542 +0200
+@@ -1,30 +1,4 @@
+ PWIZOBJECTS=\
+-./boost/libs/system/src/error_code.o \
+-./boost/libs/regex/src/posix_api.o \
+-./boost/libs/regex/src/fileiter.o \
+-./boost/libs/regex/src/regex_raw_buffer.o \
+-./boost/libs/regex/src/cregex.o \
+-./boost/libs/regex/src/regex_debug.o \
+-./boost/libs/regex/src/instances.o \
+-./boost/libs/regex/src/icu.o \
+-./boost/libs/regex/src/usinstances.o \
+-./boost/libs/regex/src/regex.o \
+-./boost/libs/regex/src/wide_posix_api.o \
+-./boost/libs/regex/src/regex_traits_defaults.o \
+-./boost/libs/regex/src/winstances.o \
+-./boost/libs/regex/src/wc_regex_traits.o \
+-./boost/libs/regex/src/c_regex_traits.o \
+-./boost/libs/regex/src/cpp_regex_traits.o \
+-./boost/libs/regex/src/static_mutex.o \
+-./boost/libs/regex/src/w32_regex_traits.o \
+-./boost/libs/iostreams/src/zlib.o \
+-./boost/libs/iostreams/src/file_descriptor.o \
+-./boost/libs/filesystem/src/operations.o \
+-./boost/libs/filesystem/src/path.o \
+-./boost/libs/filesystem/src/utf8_codecvt_facet.o \
+-./boost/libs/chrono/src/chrono.o \
+-./boost/libs/chrono/src/process_cpu_clocks.o \
+-./boost/libs/chrono/src/thread_clock.o \
+ ./pwiz/data/msdata/Version.o \
+ ./pwiz/data/identdata/Version.o \
+ ./pwiz/data/common/MemoryIndex.o \
+@@ -104,20 +78,15 @@
+ 
+ 
+ ifeq ($(OS),Windows_NT)
+-ARCH_OBJS=./boost/libs/filesystem/src/path_traits.o \
+-./boost/libs/filesystem/src/windows_file_codecvt.o \
+-./boost/libs/filesystem/src/codecvt_error_category.o \
+-./boost/libs/thread/src/win32/tss_pe.o \
+-./boost/libs/thread/src/win32/tss_dll.o \
+-./boost/libs/thread/src/win32/thread.o \
++ARCH_OBJS=\
+ ./pwiz/data/msdata/ramp/wglob.o \
+ ./boost_aux/boost/nowide/iostream.o
+ ARCH_CPPFLAGS=-fpermissive -DWINDOWS_NATIVE -DWIN32 -DBOOST_HAS_WINTHREADS -DBOOST_THREAD_BUILD_LIB
+ ARCH_LIBS=-lws2_32 -lz
+ RHDF5_LIBS=$(shell echo 'Rhdf5lib::pkgconfig("PKG_CXX_LIBS")'| "${R_HOME}/bin/R" --vanilla --slave)  
+ else
+-ARCH_OBJS=./boost/libs/thread/src/pthread/once.o \
+-./boost/libs/thread/src/pthread/thread.o
++ARCH_OBJS=
++ARCH_LIBS=-lboost_chrono -lboost_filesystem -lboost_iostreams -lboost_thread
+ RHDF5_LIBS=$(shell echo 'Rhdf5lib::pkgconfig("PKG_CXX_LIBS")'| "${R_HOME}/bin/R" --vanilla --slave)
+ endif
+ 
+@@ -133,7 +102,7 @@
+ ##  http://www.gamedev.net/topic/555511-is-there-a-way-to-only-disable-boost-debug-checks/
+ ##
+ 
+-PWIZ_CPPFLAGS=-I./boost_aux/ -I./boost/ -I. -D_LARGEFILE_SOURCE -DHAVE_PWIZ_MZML_LIB -D_NODEBUG
++PWIZ_CPPFLAGS=-I./boost_aux/ -I$(EBROOTBOOST)/include -I. -D_LARGEFILE_SOURCE -DHAVE_PWIZ_MZML_LIB -D_NODEBUG
+ PWIZ_LDFLAGS=-lpthread
+ 
+ ## Use the R_HOME indirection to support installations of multiple R version
+diff -ru mzR.orig/src/pwiz/data/identdata/IdentData.cpp mzR/src/pwiz/data/identdata/IdentData.cpp
+--- mzR.orig/src/pwiz/data/identdata/IdentData.cpp    2020-04-27 22:27:42.000000000 +0200
++++ mzR/src/pwiz/data/identdata/IdentData.cpp    2020-10-01 14:11:08.554729901 +0200
+@@ -1042,7 +1042,7 @@
+     BOOST_FOREACH(CVID cleavageAgent, cleavageAgents)
+     {
+         if (!findPeptideEvidenceWithRegex(pe, peptide, peptideSequenceInContext, cleavageAgent, "",
+-                                          sip.enzymes.independent, nTerminusIsSpecific, cTerminusIsSpecific,
++                                          static_cast<bool>(sip.enzymes.independent), nTerminusIsSpecific, cTerminusIsSpecific,
+                                           bestSpecificity, bestResult))
+             break;
+     }
+@@ -1050,7 +1050,7 @@
+     BOOST_FOREACH(const string& regex, cleavageAgentRegexes)
+     {
+         if (!findPeptideEvidenceWithRegex(pe, peptide, peptideSequenceInContext, CVID_Unknown, regex,
+-                                          sip.enzymes.independent, nTerminusIsSpecific, cTerminusIsSpecific,
++                                          static_cast<bool>(sip.enzymes.independent), nTerminusIsSpecific, cTerminusIsSpecific,
+                                           bestSpecificity, bestResult))
+             break;
+     }
+@@ -1104,7 +1104,7 @@
+         BOOST_FOREACH(CVID cleavageAgent, cleavageAgents)
+         {
+             if (!findPeptideEvidenceWithRegex(pe, peptide, peptideSequenceInContext, cleavageAgent, "",
+-                                              sip.enzymes.independent, nTerminusIsSpecific, cTerminusIsSpecific,
++                                              static_cast<bool>(sip.enzymes.independent), nTerminusIsSpecific, cTerminusIsSpecific,
+                                               bestSpecificity, bestResult))
+                 break;
+         }
+@@ -1112,7 +1112,7 @@
+         BOOST_FOREACH(const string& regex, cleavageAgentRegexes)
+         {
+             if (!findPeptideEvidenceWithRegex(pe, peptide, peptideSequenceInContext, CVID_Unknown, regex,
+-                                              sip.enzymes.independent, nTerminusIsSpecific, cTerminusIsSpecific,
++                                              static_cast<bool>(sip.enzymes.independent), nTerminusIsSpecific, cTerminusIsSpecific,
+                                               bestSpecificity, bestResult))
+                 break;
+         }
+diff -ru mzR.orig/src/pwiz/data/identdata/IdentData.hpp mzR/src/pwiz/data/identdata/IdentData.hpp
+--- mzR.orig/src/pwiz/data/identdata/IdentData.hpp    2020-04-27 22:27:42.000000000 +0200
++++ mzR/src/pwiz/data/identdata/IdentData.hpp    2020-10-01 14:01:40.068125601 +0200
+@@ -30,6 +30,7 @@
+ #include "pwiz/data/proteome/Digestion.hpp"
+ #include "pwiz/data/common/ParamTypes.hpp"
+ #include "boost/logic/tribool.hpp"
++#include "boost/logic/tribool_io.hpp"
+ #include <vector>
+ #include <string>
+ #include <map>
+diff -ru mzR.orig/src/pwiz/data/identdata/Serializer_pepXML.cpp mzR/src/pwiz/data/identdata/Serializer_pepXML.cpp
+--- mzR.orig/src/pwiz/data/identdata/Serializer_pepXML.cpp    2020-04-27 22:27:42.000000000 +0200
++++ mzR/src/pwiz/data/identdata/Serializer_pepXML.cpp    2020-10-01 14:13:48.875467067 +0200
+@@ -409,7 +409,7 @@
+ void write_sample_enzyme(XMLWriter& xmlWriter, const IdentData& mzid)
+ {
+     const SpectrumIdentificationProtocol& sip = *mzid.analysisProtocolCollection.spectrumIdentificationProtocol[0];
+-    bool independent = sip.enzymes.independent;
++    bool independent = static_cast<bool>(sip.enzymes.independent);
+ 
+     // create a cumulative enzyme name for multiple enzymes like "Trypsin + AspN + Chymotrypsin"
+     string enzymeName = bal::join(sip.enzymes.enzymes | boost::adaptors::transformed(EnzymePtr_name()), " + ");

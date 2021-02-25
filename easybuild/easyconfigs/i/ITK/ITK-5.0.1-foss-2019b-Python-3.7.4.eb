@@ -1,0 +1,82 @@
+#
+# Alex Domingo and Fenglai Liu
+# 
+# alex.domingo.toro@vub.be
+# fenglai@accre.vanderbilt.edu
+#
+# Vrije Universiteit Brussel (VUB)
+# Vanderbilt University
+#
+easyblock = 'CMakeMake'
+
+name = 'ITK'
+version = '5.0.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+# Set optarch to false to not override ITK_CXX_OPTIMIZATION_FLAGS. Otherwise,
+# compilation errors may happen on systems with unsupported features, such as AVX512.
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'pic': True, 'cstd': 'c++11', 'optarch': False}
+
+source_urls = ['https://github.com/InsightSoftwareConsortium/ITK/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['c6b3c33ecc73104c906e0e1a1bfaa41a09af24bf53a4ec5e5c265d7e82bdf69f']
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('Bison', '3.3.2'),
+    ('Eigen', '3.3.7', '', True),
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('HDF5', '1.10.5'),
+    ('PCRE', '8.43'),
+    ('SWIG', '4.0.1'),
+    ('VTK', '8.2.0', versionsuffix),
+    ('X11', '20190717'),
+    ('libjpeg-turbo', '2.0.3'),
+    ('LibTIFF', '4.0.10'),
+]
+
+separate_build_dir = True
+
+preconfigopts = 'Eigen3_DIR=$EBROOTEIGEN '
+configopts = '-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
+configopts += '-DITK_WRAP_PYTHON=ON -DITK_LEGACY_SILENT=ON '
+configopts += '-DITK_USE_SYSTEM_SWIG=ON -DITK_USE_SYSTEM_EIGEN=ON -DITK_USE_SYSTEM_HDF5=ON '
+configopts += '-DITK_USE_SYSTEM_JPEG=ON -DJPEG_INCLUDE_DIR=$EBROOTLIBJPEGMINTURBO/include '
+configopts += '-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib*/libjpeg.%s ' % SHLIB_EXT
+configopts += '-DITK_USE_SYSTEM_PNG=ON -DPNG_PNG_INCLUDE_DIR=$EBROOTLIBPNG/include '
+configopts += '-DPNG_LIBRARY=$EBROOTLIBPNG/lib/libpng.%s ' % SHLIB_EXT
+configopts += '-DITK_USE_SYSTEM_TIFF=ON -DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include '
+configopts += '-DTIFF_LIBRARY=$EBROOTLIBTIFF/lib/libtiff.%s ' % SHLIB_EXT
+configopts += '-DITK_USE_SYSTEM_ZLIB=ON -DZLIB_INCLUDE_DIR=$EBROOTZLIB/include '
+configopts += '-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.%s ' % SHLIB_EXT
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON '
+
+prebuildopts = "LC_ALL=C "
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver',
+              'lib/libITKCommon-%%(version_major)s.0.%s' % SHLIB_EXT,
+              'lib/libITKIOHDF5-%%(version_major)s.0.%s' % SHLIB_EXT,
+              'lib/libITKVTK-%%(version_major)s.0.%s' % SHLIB_EXT,
+              'lib/libITKVtkGlue-%%(version_major)s.0.%s' % SHLIB_EXT,
+              'lib/libITKReview-%%(version_major)s.0.%s' % SHLIB_EXT],
+    'dirs': ['include/ITK-%(version_major)s.0',
+             'lib/python%(pyshortver)s/site-packages',
+             'share'],
+}
+
+sanity_check_commands = [('python', "-c 'import %(namelower)s'")]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'data'
