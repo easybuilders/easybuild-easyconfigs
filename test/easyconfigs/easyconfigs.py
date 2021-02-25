@@ -49,7 +49,8 @@ from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parame
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.config import GENERAL_CLASS, build_option
-from easybuild.tools.filetools import change_dir, read_file, remove_file, write_file, is_generic_easyblock
+from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
+from easybuild.tools.filetools import verify_checksum, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.py2vs3 import string_type, urlopen
@@ -221,6 +222,12 @@ class EasyConfigTest(TestCase):
             blis_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -BLIS-' in v]
             if len(blis_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != blis_vsuff_vars[0])
+
+        # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
+        if dep == 'ScaLAPACK':
+            bf_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -bf' in v]
+            if len(bf_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != bf_vsuff_vars[0])
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
@@ -787,7 +794,7 @@ class EasyConfigTest(TestCase):
                 merge_base = target_branch
 
             # determine list of changed files using 'git diff' and merge base determined above
-            cmd = "git diff --name-only --diff-filter=%s %s..HEAD" % (diff_filter, merge_base)
+            cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
             out, _ = run_cmd(cmd, simple=False)
             return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
 
@@ -809,7 +816,7 @@ class EasyConfigTest(TestCase):
             if target_branch is None:
                 self.assertTrue(False, "Failed to determine target branch for current pull request.")
 
-            if target_branch != 'master':
+            if target_branch != 'main':
 
                 if not EasyConfigTest.parsed_easyconfigs:
                     self.process_all_easyconfigs()
@@ -975,29 +982,59 @@ def template_easyconfig_test(self, spec):
             dep_names = [d['name'] for d in ec.dependencies()]
             self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
 
+    src_cnt = len(ec['sources'])
+    patch_checksums = ec['checksums'][src_cnt:]
+    patch_checksums_cnt = len(patch_checksums)
+
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
     specfn = os.path.basename(spec)
-    for patch in ec['patches']:
+    for idx, patch in enumerate(ec['patches']):
         if isinstance(patch, (tuple, list)):
             patch = patch[0]
+
         # only check actual patch files, not other files being copied via the patch functionality
+        patch_full = os.path.join(specdir, patch)
         if patch.endswith('.patch'):
-            patch_full = os.path.join(specdir, patch)
             msg = "Patch file %s is available for %s" % (patch_full, specfn)
             self.assertTrue(os.path.isfile(patch_full), msg)
 
+        # verify checksum for each patch file
+        if idx < patch_checksums_cnt and (os.path.exists(patch_full) or patch.endswith('.patch')):
+            checksum = patch_checksums[idx]
+            error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch, ec_fn, checksum)
+            res = verify_checksum(patch_full, checksum)
+            self.assertTrue(res, error_msg)
+
     for ext in ec['exts_list']:
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
+
+            ext_name = ext[0]
+
             self.assertTrue(isinstance(ext[2], dict), "3rd element of extension spec is a dictionary")
-            for ext_patch in ext[2].get('patches', []):
+
+            # fall back to assuming a single source file for an extension
+            src_cnt = len(ext[2].get('sources', [])) or 1
+
+            checksums = ext[2].get('checksums', [])
+            patch_checksums = checksums[src_cnt:]
+
+            for idx, ext_patch in enumerate(ext[2].get('patches', [])):
                 if isinstance(ext_patch, (tuple, list)):
                     ext_patch = ext_patch[0]
+
                 # only check actual patch files, not other files being copied via the patch functionality
+                ext_patch_full = os.path.join(specdir, ext_patch)
                 if ext_patch.endswith('.patch'):
-                    ext_patch_full = os.path.join(specdir, ext_patch)
                     msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
                     self.assertTrue(os.path.isfile(ext_patch_full), msg)
+
+                # verify checksum for each patch file
+                if idx < patch_checksums_cnt and (os.path.exists(ext_patch_full) or ext_patch.endswith('.patch')):
+                    checksum = patch_checksums[idx]
+                    error_msg = "Invalid checksum for patch file %s for %s extension in %s: %s"
+                    res = verify_checksum(ext_patch_full, checksum)
+                    self.assertTrue(res, error_msg % (ext_patch, ext_name, ec_fn, checksum))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
