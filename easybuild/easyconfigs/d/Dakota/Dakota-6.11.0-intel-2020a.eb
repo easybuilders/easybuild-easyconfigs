@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'Dakota'
+version = '6.11.0'
+
+homepage = "https://dakota.sandia.gov/"
+description = """
+ The Dakota project delivers both state-of-the-art research and robust, usable software for optimization and UQ.
+ Broadly, the Dakota software's advanced parametric analyses enable design exploration, model calibration,
+ risk analysis, and quantification of margins and uncertainty with computational models."
+"""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+# Disable architecture optimization, otherwise the basic tests fail
+toolchainopts = {'pic': True, 'usempi': True, 'optarch': False}
+
+source_urls = ['https://dakota.sandia.gov/sites/default/files/distributions/public/']
+sources = ["dakota-6.11-release-public.src.tar.gz"]
+checksums = ['d38bbfccba4ff5f2187bdbb45633e269ef4d9f68631a17a52b4d05b5f9b75f65']
+
+patches = ['Dakota-6.11.0-fix_lapack_detection.patch']
+
+dependencies = [
+    ('Boost'          , '1.72.0'),
+    ('Perl'           , '5.30.2'),
+    ('Python'         , '3.8.2'),
+    ('HDF5'           , '1.12.0'),
+    ('GSL'            , '2.6'),
+]
+
+builddependencies = [('CMake', '3.16.4')]
+
+separate_build_dir = True
+
+# build shared libraries
+configopts = "-DBUILD_SHARED_LIBS=ON "
+# disable GUI
+configopts += "-DHAVE_X_GRAPHICS=OFF "
+# set other dependencies
+configopts += "-DBLA_VENDOR=Intel10_64lp "
+configopts += "-DDAKOTA_HAVE_MPI=ON "
+configopts += "-DBoost_NO_SYSTEM_PATHS=ON "
+configopts += "-DDAKOTA_HAVE_HDF5=ON "
+configopts += "-DDAKOTA_HAVE_GSL=ON "
+
+runtest = ' test ARGS="-L AcceptanceTest -j %(parallel)s"'
+
+# Run install step in parallel
+installopts = ' -j %(parallel)s'
+
+sanity_check_paths = {
+    'files': ["bin/dakota"],
+    'dirs': []
+}
+
+moduleclass = 'math'
