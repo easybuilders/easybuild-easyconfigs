@@ -1,0 +1,117 @@
+easyblock = 'Bundle'
+
+name = 'ROCm'
+version = '4.0.1'
+versionsuffix = '-nvidia'
+
+homepage = 'https://github.com/RadeonOpenCompute'
+description = "Platform for GPU Enabled HPC and UltraScale Computing"
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'gcccuda', 'version': '2020b'}
+
+builddependencies = [('CMake', '3.18.4')]
+
+dependencies = [
+    ('Mesa', '20.2.1'),  # required by ROCclr (for GL/glx.h)
+]
+
+local_llvm_configopts = "-DCLANG_OPENMP_NVPTX_DEFAULT_ARCH=sm_70 -DLIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES=70 "
+local_llvm_configopts += "-DLLVM_ENABLE_PROJECTS='compiler-rt;lld;clang;clang-tools-extra;libcxx;libcxxabi;lld;openmp' "
+local_llvm_configopts += "-DGCC_INSTALL_PREFIX=$EBROOTGCC "
+
+local_openmp_configopts = local_llvm_configopts
+local_openmp_configopts += "-DCMAKE_C_COMPILER=%(installdir)s/bin/clang -DCMAKE_CXX_COMPILER=%(installdir)s/bin/clang++"
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/RadeonOpenCompute/%(name)s/archive/'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    }],
+    'srcdir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('rocm-cmake', 'rocm-4.0.0', {
+        'checksums': ['4577487acaa6e041a1316145867584f31caaf0d4aa2dd8fd7f82f81c269cada6'],
+    }),
+    ('ROCT-Thunk-Interface', 'rocm-4.0.0', {
+        'checksums': ['a6960fffc8388731ee18953faae12d1449c582e3b3594418845a544455895f42'],
+        'installopts': " && cp -a %(builddir)s/%(name)s-%(version)s/include %(installdir)s/",
+    }),
+    ('llvm-project', 'rocm-4.0.1', {
+        'checksums': ['8003ede5a1462f46f0bb1b8b16c14ac6e884d322561235f7111ef7c3e74c6b07'],
+        'srcdir': '%(name)s-%(version)s/llvm',
+        'configopts': local_llvm_configopts,
+        # need to unset $CPATH to avoid that libunwind that is pulled in via Mesa causes trouble when building LLVM
+        'prebuildopts': "unset CPATH && ",
+    }),
+    ('Clang-OpenMP', 'rocm-4.0.1', {
+        'sources': ['llvm-project-%(version)s.tar.gz'],
+        'checksums': ['8003ede5a1462f46f0bb1b8b16c14ac6e884d322561235f7111ef7c3e74c6b07'],
+        'srcdir': 'llvm-project-%(version)s/openmp',
+        'configopts': local_openmp_configopts,
+    }),
+    # only for AMD hardware
+    #('rocminfo', 'rocm-4.0.0', {
+    #    'checksums': ['0b3d692959dd4bc2d1665ab3a838592fcd08d2b5e373593b9192ca369e2c4aa7'],
+    #    'configopts': "-DROCM_DIR=%(installdir)s",
+    #}),
+    ('ROCm-Device-Libs', 'rocm-4.0.0', {
+        'checksums': ['d0aa495f9b63f6d8cf8ac668f4dc61831d996e9ae3f15280052a37b9d7670d2a'],
+    }),
+    ('ROCR-Runtime', 'rocm-4.0.0', {
+        'checksums': ['e84c48e80ea38698a5bd5da3940048ad3cab3696d10a53132acad07ca357f17c'],
+        'srcdir': '%(name)s-%(version)s/src',
+    }),
+    ('ROCm-CompilerSupport', 'rocm-4.0.0', {
+        'checksums': ['f389601fb70b2d9a60d0e2798919af9ddf7b8376a2e460141507fe50073dfb31'],
+        'srcdir': '%(name)s-%(version)s/lib/comgr',
+    }),
+    ('ROCclr', 'rocm-4.0.0', {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/ROCm-Developer-Tools/%(name)s/archive/'],
+                'download_filename': '%(version)s.tar.gz',
+                'filename': '%(name)s-%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/ROCm-Developer-Tools/ROCm-OpenCL-Runtime/archive/'],
+                'download_filename': '%(version)s.tar.gz',
+                'filename': 'ROCm-OpenCL-Runtime-%(version)s.tar.gz',
+            },
+        ],
+        'checksums': [
+            '8db502d0f607834e3b882f939d33e8abe2f9b55ddafaf1b0c2cd29a0425ed76a',
+            'd43ea5898c6b9e730b5efabe8367cc136a9260afeac5d0fe85b481d625dd7df1',
+        ],
+        'configopts': "-DOPENCL_DIR=%(builddir)s/ROCm-OpenCL-Runtime-%(version)s",
+    }),
+    ('HIP', 'rocm-4.0.0', {
+        'source_urls': ['https://github.com/ROCm-Developer-Tools/%(name)s/archive/'],
+        'checksums': ['d7b78d96cec67c55b74ea3811ce861b16d300410bc687d0629e82392e8d7c857'],
+        'configopts': "-DHIP_COMPILER=clang -DHIP_PLATFORM=nvcc",
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/hipcc', 'bin/hipconfig', 'bin/hipify-perl',
+              'hsa/lib/libhsa-runtime64.%s' % SHLIB_EXT, 'lib/libhsakmt.%s' % SHLIB_EXT],
+    'dirs': ['hsa/include/hsa', 'include/hip', 'include/hsa', 'share/rocm/cmake'],
+}
+
+sanity_check_commands = [
+    "hipcc --help",
+    "hipconfig",
+]
+
+modextravars = {
+    'HIP_PLATFORM': 'nvcc',
+    'HIP_PATH': '%(installdir)s',
+    'ROCM_PATH': '%(installdir)s',
+}
+
+moduleclass = 'tools'
