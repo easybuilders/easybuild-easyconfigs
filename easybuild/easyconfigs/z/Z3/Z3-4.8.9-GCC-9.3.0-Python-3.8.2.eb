@@ -6,7 +6,8 @@ versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'https://github.com/Z3Prover/z3'
 description = """
-Z3 is a theorem prover from Microsoft Research."""
+Z3 is a theorem prover from Microsoft Research.
+"""
 
 toolchain = {'name': 'GCC', 'version': '9.3.0'}
 toolchainopts = {'pic': True}
@@ -22,15 +23,18 @@ builddependencies = [
 
 dependencies = [
     ('Python', '3.8.2'),
+    ('GMP', '6.2.0'),
 ]
 
-configopts = '-DCMAKE_INSTALL_LIBDIR:PATH=lib '
+configopts = '-DZ3_USE_LIB_GMP=ON -DZ3_LINK_TIME_OPTIMIZATION=ON '
+# Enable Python bindings
+configopts += '-DCMAKE_INSTALL_LIBDIR:PATH=lib '
 configopts += '-DZ3_BUILD_PYTHON_BINDINGS:BOOL=ON -DZ3_INSTALL_PYTHON_BINDINGS:BOOL=ON '
 configopts += '-DCMAKE_INSTALL_PYTHON_PKG_DIR:PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
 
 sanity_check_paths = {
-    'files': ['bin/z3', 'lib/libz3.%s' % SHLIB_EXT],
-    'dirs': ['include', 'lib/python%(pyshortver)s/site-packages'],
+    'files': ['bin/z3', 'include/z3_api.h', 'lib/libz3.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
 moduleclass = 'numlib'
