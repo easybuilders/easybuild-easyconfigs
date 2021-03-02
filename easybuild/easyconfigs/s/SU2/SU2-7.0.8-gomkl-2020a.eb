@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'SU2'
+version = "7.0.8"
+
+homepage = 'http://su2.stanford.edu'
+description = """An open-source collection of software tools written in C++ for performing Partial Differential Equation (PDE) analysis and solving PDE-constrained optimization problems. The toolset is designed with computational fluid dynamics and aerodynamic shape optimization in mind."""
+
+toolchain = {'name': 'gomkl', 'version': '2020a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['https://github.com/su2code/SU2/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-mpi4py.patch']
+checksums = [
+    '53b6d417e17ff4290a871257b2739a3d9bcd701d37c69e85397efedac93ba17f',  # v7.0.8.tar.gz
+    'ff06fc34e1e983fdd75a9679d01441197fc35822a8a803a688215d57f3b25bf3',  # SU2-7.0.8-mpi4py.patch
+]
+
+preconfigopts = './bootstrap && '
+
+configopts  = '--enable-mpi '
+configopts += '--enable-PY_WRAPPER '
+
+buildopts = 'CXXLD=mpicxx'
+
+dependencies = [
+    ('mpi4py', '3.0.3'),
+]
+builddependencies = [('Python', '3.8')]  # no need for multi_deps, it does not link against python
+
+sanity_check_paths = {
+    'files': ['bin/SU2_CFD', 'bin/pysu2.py'],
+    'dirs': [],
+}
+sanity_check_commands = ['module load python; python -c "import pysu2"']
+
+modextravars = {
+    'SU2_RUN': '%(installdir)s/bin'
+}
+modextrapaths = {'PYTHONPATH': ['bin']}
+
+moduleclass = 'cae'

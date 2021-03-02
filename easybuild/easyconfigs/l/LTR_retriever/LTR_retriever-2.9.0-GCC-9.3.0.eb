@@ -1,0 +1,89 @@
+easyblock = 'CmdCp'
+
+name = 'LTR_retriever'
+version = '2.9.0'
+
+homepage = 'https://github.com/oushujun/LTR_retriever'
+description = """
+LTR_retriever is a command line program (in Perl) for accurate 
+identification of LTR retrotransposons (LTR-RTs) from outputs of 
+LTRharvest, LTR_FINDER, MGEScan 3.0.0, LTR_STRUC, and LtrDetector, 
+and generates non-redundant LTR-RT library for genome annotations.
+
+By default, the program will generate whole-genome LTR-RT annotation
+ and the LTR Assembly Index (LAI) for evaluations of the assembly 
+continuity of the input genome. 
+"""
+
+toolchain = {'name':'GCC', 'version':'9.3.0'}
+
+source_urls = [
+   'https://github.com/oushujun/LTR_retriever/archive',
+]
+sources = [
+   'v%(version)s.tar.gz',
+]
+checksums = [
+    'e2d94f6179c33990a77fa9fdcefb842c8481b4c30833c9c12cbbe54cb3fdda73',  # v2.9.0.tar.gz
+]
+
+dependencies = [
+     ('Perl', '5.30.2'),
+     ('BLAST+', '2.11.0', '', ('GCC', '9.3.0')),
+     ('CD-HIT','4.8.1'),
+     ('HMMER', '3.2.1'),
+     ('RepeatMasker', '4.1.1', '', ('GCC', '9.3.0')),
+     ('GenomeTools', '1.6.1'),
+]
+skipsteps = ['build']
+local_cmd = 'sed -i -e "s|BLAST+=|BLAST+=$EBROOTBLASTPLUS/bin|g"'
+local_cmd += ' -e "s|RepeatMasker=|RepeatMasker=$EBROOTREPEATMASKER|g"'
+local_cmd += ' -e "s|HMMER=|HMMER=$EBROOTHMMER/bin|g"'
+local_cmd += ' -e "s|CDHIT=|CDHIT=$EBROOTCDMINHIT/bin|g" %(installdir)s/paths'
+local_url = 'git clone https://github.com/oushujun/LTR_FINDER_parallel.git'
+#cmds_map = [
+#   ('paths', local_cmd)
+#]
+postinstallcmds = [
+   local_cmd,
+   local_url,
+   'find LTR_FINDER_parallel/ -name "*.tar.gz" -exec rm {} +',
+   'chmod +x %(installdir)s/bin/*.pl',
+   'chmod +x %(installdir)s/LTR_retriever',
+   'chmod +x %(installdir)s/LAI',
+   'cp LTR_FINDER_parallel/LTR_FINDER_parallel %(installdir)s',
+   'cp -r LTR_FINDER_parallel/bin/* %(installdir)s/bin',
+   'chmod +x %(installdir)s/LTR_FINDER_parallel'
+]
+#build_cmd = local_cmd
+#configure_cmd = 'mkdir -p %(installdir)s/database && mkdir -p %(installdir)s/bin && '
+#configure_cmd += local_cmd 
+
+   #local_cmd,
+#   'sed -i "s|BLAST+=|BLAST+=$EBROOTBLASTPLUS/bin|g" paths'
+#]
+files_to_copy=[
+   (['bin/*.pl'], 'bin'), (['database/*'], 'database'),
+   ([
+     'paths', 'LAI', 'LICENSE',  'LTR_retriever', 'Manual.pdf', 
+     ], '')
+]
+sanity_check_paths = {
+   'files': ['paths', 'LAI', 'LICENSE',  'LTR_retriever', 'Manual.pdf',
+             # These are not all of them... just a few to make sure
+             'bin/align_flanking.pl', 'bin/bed2gff.pl', 'bin/combine_overlap.pl',
+             'bin/fam_coverage.pl', 'bin/gff2bed.pl', 'bin/intact_finder_coarse.pl',
+             'bin/keep_nest.pl', 'bin/LTR.identifier.pl', 'bin/PacBio_processor.pl'
+             ],
+    'dirs': ['bin', 'database']
+}
+
+
+# this is the real EasyBuild line to copy all the executables and perl scripts to "bin"
+fix_perl_shebang_for = ['bin/*.pl']
+
+modextrapaths = {
+    'PATH': '',
+}
+
+moduleclass = 'bio'

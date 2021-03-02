@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'AFNI'
+version = '20.3.05'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'gmkl', 'version': '2020a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/afni/afni/archive/']
+sources = ['AFNI_%(version)s.tar.gz']
+checksums = ['5bbded937b6958ca59ee8f04c1cd71dd8f14dde188cb8532167d1c069848833d']
+
+builddependencies = [('M4', '1.4.18')]
+
+dependencies = [
+    ('R', '4.0.2', '', ('gcccoremkl', '2020a')),
+    ('Qt5', '5.12.8'),
+    ('GSL', '2.6'),
+    ('R-bundle-Bioconductor', '3.12', '-R-4.0.2', ('gmkl', '2020a')),
+    ('expat', '2.2.9'),
+    ('Python', '3.7'),  # can not be installed multi_deps
+]
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = "cd src && cp Makefile.linux_centos_7_64  Makefile && "
+buildopts = 'totality LGIFTI="$EBROOTEXPAT/lib/libexpat.so" LDPYTHON="-lpython%(pyshortver)sm" '
+buildopts += 'CC="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCVOL="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCFAST="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCOLD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCMIN="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCSVD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'LD="${CC} \$(CPROF)" LZLIB="${EBROOTZLIB}/lib/libz.so" XLIBS="-lXm -lXt" '
+buildopts += 'IFLAGS="-I. -I$EBROOTPYTHON/include/python%(pyshortver)sm '
+buildopts += '-I$EBROOTGLIB/lib/glib-2.0/include -I$EBROOTGLIB/include/glib-2.0"'
+buildopts += ' INSTALLDIR=%(installdir)s'
+
+parallel = 1
+
+postinstallcmds = ["chmod -R go+X %(installdir)s"]
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['afni'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

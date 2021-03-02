@@ -1,0 +1,99 @@
+diff -Naru gamess/ddi/compddi gamess/ddi/compddi
+--- gamess/ddi/compddi	2020-10-06 04:26:01.000000000 +0000
++++ gamess/ddi/compddi	2021-01-18 16:17:47.503507476 +0000
+@@ -87,8 +87,8 @@
+ #
+ #        It is OK if these values are larger than your system!
+ #
+-set MAXCPUS=32
+-set MAXNODES=1024
++set MAXCPUS=64
++set MAXNODES=4096
+ #
+ #
+ if ($GMS_PHI != none) then
+diff -Naru gamess/install.info gamess/install.info
+--- gamess/install.info	1970-01-01 00:00:00.000000000 +0000
++++ gamess/install.info	2021-01-18 16:25:18.543554077 +0000
+@@ -0,0 +1,68 @@
++#!/bin/csh
++#
++# Version 6 of install.info template :  : Sarom Leang : sarom.leang@epanalytics.com
++#
++# This file is used by:
++# - Continous-Integration methods (Travis-CI and Jenkins)
++# - Container deployment (Dockers, NVIDIA-Dockers, and Singularity)
++#
++#         GAMESS Paths
++setenv GMS_PATH                    $GMS_HOME
++setenv GMS_BUILD_DIR               $GMS_HOME
++
++#         Machine Type
++setenv GMS_TARGET                  linux64
++setenv GMS_HPC_SYSTEM_TARGET       generic
++#         FORTRAN Compiler Setup
++setenv GMS_FORTRAN                 ifort
++#         Intel Compiler Setup
++setenv GMS_IFORT_VERNO             2020
++  
++#         Mathematical Library Setup
++setenv GMS_MATHLIB                 mkl
++setenv GMS_MATHLIB_PATH            $MKLROOT/lib/intel64
++setenv GMS_MATHLIB_INCLUDE_PATH    
++setenv GMS_MKL_VERNO               12
++
++#         Parallel Message Passing Model Setup
++setenv GMS_DDI_COMM                mixed
++setenv GMS_MPI_LIB                 impi
++setenv GMS_MPI_PATH                $I_MPI_ROOT
++
++#         LIBCCHEM CPU/GPU Code Interface
++setenv GMS_LIBCCHEM                false
++setenv GMS_LIBCCHEM_GPU_SUPPORT    
++setenv GMS_LIBCCHEM_LIBS           "-ldl -lrt"
++setenv GMS_HDF5_PATH               
++setenv GMS_CUDA_BOARD              
++setenv GMS_CUDA_PATH               
++setenv GMS_LIBCCHEM_LIBINT         
++setenv GMS_LIBINT_PATH             
++setenv GMS_EIGEN_PATH              
++setenv GMS_BOOST_PATH              
++setenv GMS_GA_PATH                 
++
++#         Intel Xeon Phi Build: none/knc/knl
++setenv GMS_PHI                     none
++
++#         Shared Memory Type: sysv/posix
++setenv GMS_SHMTYPE                 sysv
++
++#         SCF OpenMP Support: true/false
++setenv GMS_OPENMP                  false
++
++#      GAMESS LibXC library: true/false
++setenv GMS_LIBXC                   false
++
++#         Build Michigan State University Coupled Cluster: true/false
++setenv GMS_MSUCC                   false
++
++################################################
++# Add any additional environmental variables   #
++# or module loads below if needed.             #
++################################################
++
++# Capture floating-point exceptions
++setenv GMS_FPE_FLAGS              ""
++
++
+diff -Naru gamess/Makefile gamess/Makefile
+--- gamess/Makefile	1970-01-01 00:00:00.000000000 +0000
++++ gamess/Makefile	2021-01-18 16:25:18.545554086 +0000
+@@ -0,0 +1,9 @@
++GMS_PATH = $(GMS_HOME)
++GMS_VERSION = 00
++GMS_BUILD_PATH = $(GMS_HOME)
++GMS_OPENMP = false
++GMS_MSUCC = false
++GMS_LIBXC = false
++GMS_CC = icc
++GMS_FC = ifort
++include $(GMS_PATH)/Makefile.in

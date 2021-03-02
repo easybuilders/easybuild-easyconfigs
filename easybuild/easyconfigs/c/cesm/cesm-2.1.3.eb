@@ -1,0 +1,48 @@
+easyblock = 'Tarball'
+
+name = 'cesm'
+version = '2.1.3'
+
+homepage = 'http://www.cesm.ucar.edu/models/cesm2/'
+description = """The Community Earth System Model (CESM) is a fully-coupled, global climate model that provides state-of-the-art computer simulations of the Earth's past, present, and future climate states."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/ESCOMP/cesm/archive/']
+sources = [
+    'release-%(namelower)s%(version)s.tar.gz',
+    {'filename':'computecanada_config_batch.xml','extract_cmd':'cp %s .'},
+    {'filename':'computecanada_config_compilers.xml','extract_cmd':'cp %s .'},
+    {'filename':'computecanada_config_machines.xml','extract_cmd':'cp %s .'},
+]
+checksums = [
+    '6adae8b9cc74afdf002582fcb66a53942dcfcac94601fe5d1356d355851eb479',  # release-cesm2.1.3.tar.gz
+    'a6f6dffa898300cb792aaf1cf1386c62e4490917b0a99e5c37c3bb68f22bd159',  # computecanada_config_batch.xml
+    '6178b797c2056b3f87c70371f8b96c8a8500bf7aedb11552c61695d5da7f5d88',  # computecanada_config_compilers.xml
+    'cbe2c7b4cabce641a6c643cd08e9e01669ac3ed227556bc1349f326caea77a8a',  # computecanada_config_machines.xml
+]
+
+# the first command is to accept new SSL certificates for this website for https://bb.cgd.ucar.edu/update-ncar-subversion-ssl-certificates
+postinstallcmds = [
+	'svn --non-interactive --trust-server-cert list https://svn-ccsm-models.cgd.ucar.edu/cam1/release_tags/cam_cesm2_0_rel_08/components/cam; cd %(installdir)s; ./manage_externals/checkout_externals',
+	'cp %(builddir)s/computecanada_config_machines.xml %(installdir)s/cime/config/cesm/machines/config_machines.xml',
+	'cp %(builddir)s/computecanada_config_batch.xml %(installdir)s/cime/config/cesm/machines/config_batch.xml',
+	'cp %(builddir)s/computecanada_config_compilers.xml %(installdir)s/cime/config/cesm/machines/config_compilers.xml',
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['cime/scripts', 'components/cam', 'components/cice', 'components/cism', 'components/clm', 
+    		'components/mosart', 'components/pop', 'components/rtm', 'components/ww3']
+}
+
+builddependencies = [
+	('git-lfs', '2.11.0'),
+]
+dependencies = [
+	('Perl', '5.30.2'),
+]
+
+modextrapaths = {'PATH': 'cime/scripts'}
+
+moduleclass = 'geo'

@@ -1,0 +1,70 @@
+--- gamess/rungms-dev	2020-10-06 04:26:01.000000000 +0000
++++ gamess/rungms-dev	2021-01-19 16:15:22.598665123 +0000
+@@ -32,7 +32,7 @@
+ #
+ # Make life simple and set GMSPATH as the current directory
+ #
+-set GMSPATH=`pwd`
++set GMSPATH=$EBROOTGAMESSMINUS
+ #OVERRIDE GMSPATH
+ #
+ if ( -e $GMSPATH/install.info ) then
+@@ -122,20 +122,14 @@
+    endif
+ else if ($SCHED == SLURM) then
+   if ($?TMPDIR) then
+-     set SCR=$TMPDIR/$SLURM_JOBID
++     set SCR=$TMPDIR/gamess-$SLURM_JOBID
+   else
+-    set SCR=/scratch/$USER/$SLURM_JOBID
++    set SCR=/scratch/$USER/gamess-$SLURM_JOBID
+   endif
+ else
+   # Running locally
+-  if ( -d /scratch ) then
+-     set SCR=/scratch
+-  else if ( -d /local ) then
+-     if ( -d /local/$USER ) then
+-       set SCR=/local/$USER
+-     else
+-       set SCR=/local
+-     endif
++  if ( -d /localscratch ) then
++     set SCR=/localscratch/$USER
+   else
+      set SCR=`pwd`/scratch
+   endif
+@@ -168,15 +162,18 @@
+ #
+ #OVERRIDE USERSCR
+ if (! $?USERSCR ) then
+-  if ( -d $HOME/restart ) then
+-    set USERSCR=$HOME/restart
++  #if ( -d $HOME/restart ) then
++    #set USERSCR=$HOME/restart
++    ##GAS assume current directory to keep in line with earlier GAMESS installations
++    set USERSCR=`pwd`/restart
++  #else
++    #mkdir -p $HOME/restart
++    #set USERSCR=$HOME/restart
+     #set USERSCR=$SCR/restart
+-  else
+-    mkdir -p $HOME/restart
+-    set USERSCR=$HOME/restart
+-    #set USERSCR=$SCR/restart
+-  endif
++  #endif
+ endif
++
++
+ #
+ # Computing facility specific setup for $USERSCR
+ #
+@@ -202,6 +199,7 @@
+ 
+ set VERNO=$2    # revision number of the executable created by 'lked' step
+ #OVERRIDE VERNO
++
+ set NCPUS=$3    # number of compute processes to be run
+ #OVERRIDE NCPUS
+ if (null$4 == null) then

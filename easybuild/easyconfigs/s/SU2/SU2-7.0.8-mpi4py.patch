@@ -1,0 +1,30 @@
+diff -ru SU2-7.0.8.orig/SU2_PY/pySU2/Makefile.am SU2-7.0.8/SU2_PY/pySU2/Makefile.am
+--- SU2-7.0.8.orig/SU2_PY/pySU2/Makefile.am	2021-01-13 20:09:07.031232623 +0000
++++ SU2-7.0.8/SU2_PY/pySU2/Makefile.am	2021-01-13 21:03:03.026295463 +0000
+@@ -45,10 +45,12 @@
+ endif
+ 
+ PYTHON_SITE_PACKAGES=$(shell python -c "import site; print(site.getsitepackages()[0])")
++MPI4PY_INCLUDE = $(shell python -c 'import mpi4py; print(mpi4py.get_include())')
++CXX = mpicxx
+ #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
+-MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
+-                 -I${PYTHON_SITE_PACKAGES}/mpi4py/include \
+-                 -I/Library/Python/2.7/site-packages/mpi4py/include
++#MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
++#                 -I${PYTHON_SITE_PACKAGES}/mpi4py/include \
++#                 -I/Library/Python/2.7/site-packages/mpi4py/include
+ 
+ SWIG = swig
+ 
+@@ -98,8 +100,9 @@
+   SOLIB = _pysu2ad.so
+ endif
+ 
++MKL_LD_FLAGS =  -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+ # Set the linking flags to use
+-pySU2_LD_FLAGS = ${SU2SOLVER_LIB} @su2_externals_LIBS@ ${PY_LIB}
++pySU2_LD_FLAGS = ${SU2SOLVER_LIB} @su2_externals_LIBS@ ${PY_LIB} -fopenmp ${MKL_LD_FLAGS}
+ 
+ # Set the command line flags to use for compilation
+ pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} @su2_externals_INCLUDES@ ${pySU2_INCLUDE}

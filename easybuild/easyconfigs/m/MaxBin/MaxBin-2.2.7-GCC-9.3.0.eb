@@ -1,0 +1,78 @@
+easyblock = 'MakeCp'
+
+name = 'MaxBin'
+version = "2.2.7"
+
+homepage = 'https://downloads.jbei.org/data/microbial_communities/MaxBin/MaxBin.html'
+description = """MaxBin is software for binning assembled metagenomic sequences based on
+ an Expectation-Maximization algorithm."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['cb6429e857280c2b75823c8cd55058ed169c93bc707a46bde0c4383f2bffe09e']
+
+dependencies = [
+    ('Perl', '5.30.2'),
+    ('Bowtie2', '2.4.1'),
+    ('FragGeneScan', '1.31'),
+    ('HMMER', '3.2.1'),
+    ('IDBA-UD', '1.1.3'),
+]
+
+prebuildopts = "cd src && "
+
+files_to_copy = [(['*'], 'bin')]
+
+postinstallcmds = [
+    'cd %(installdir)s/bin && for i in _getabund.pl _getmarker.pl run_MaxBin.pl; do sed -i "s/\#\!\/usr\/bin\/perl -w/\#\!\/usr\/bin\/env\ perl/g" $i; done && cd src && rm -f *.o *.cpp *.h',
+
+]
+
+sanity_check_paths = {
+    'files': ['bin/run_MaxBin.pl', 'bin/src/MaxBin'],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'PATH': ['bin/src'],
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+# These are the perl libraries dependencies:
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('Test::Needs', '0.002006', {
+        'prebuildopts': '',
+        'runtest': 'test',
+        'source_tmpl': 'Test-Needs-0.002006.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/H/HA/HAARG'],
+        'checksums': ['77f9fff0c96c5e09f34d0416b3533c3319f7cd0bb1f7fe8f8072ad59f433f0e5'],
+    }),
+    ('Test::RequiresInternet', '0.05', {
+        'prebuildopts': '',
+        'runtest': 'test',
+        'source_tmpl': 'Test-RequiresInternet-0.05.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MALLEN'],
+        'checksums': ['bba7b32a1cc0d58ce2ec20b200a7347c69631641e8cae8ff4567ad24ef1e833e'],
+    }),
+    ('LWP::Simple', '6.45', {
+        'prebuildopts': '',
+        'runtest': 'test',
+        'source_tmpl': 'libwww-perl-6.45.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/O/OA/OALDERS'],
+        'checksums': ['4391cec148d83c32482350c8ee1bc88f1b42d33921584b83017eba1591a42954'],
+    }),
+    ('HTTP::Message', '6.24', {
+        'prebuildopts': '',
+        'runtest': 'test',
+        'source_tmpl': 'HTTP-Message-6.24.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/O/OA/OALDERS'],
+        'checksums': ['554a1acf2daa401091f7012f5cb82d04d281db43fbd8f39a1fcbb7ed56dde16d'],
+    }),
+]
+
+moduleclass = 'bio'

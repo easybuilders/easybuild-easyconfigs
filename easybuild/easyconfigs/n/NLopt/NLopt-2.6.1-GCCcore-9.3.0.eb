@@ -23,16 +23,24 @@ checksums = ['66d63a505187fb6f98642703bd0ef006fedcae2f9a6d1efa4f362ea919a02650']
 builddependencies = [
     ('CMake', '3.16.4'),
     ('binutils', '2.34'),
+    ('SciPy-Stack', '2020b'),
 ]
+multi_deps = {'Python': ['3.6', '3.7', '3.8', '3.6', '3.7', '3.8'] }
+modextrapaths = {
+	'EBPYTHONPREFIXES': '',
+}
 
-configopts = [
-    '-DBUILD_SHARED_LIBS=ON',
-    '-DBUILD_SHARED_LIBS=OFF'
-]
+configopts = ['-DBUILD_SHARED_LIBS=ON -DNLOPT_PYTHON=ON -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '] * 3
+configopts += ['-DBUILD_SHARED_LIBS=OFF -DNLOPT_PYTHON=ON -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '] * 3
+
+postinstallcmds = ['/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/ --add_path %(installdir)s/lib64']
 
 sanity_check_paths = {
     'files': ['lib/libnlopt.a', 'lib/libnlopt.%s' % SHLIB_EXT, 'include/nlopt.h'],
-    'dirs': ['lib/pkgconfig'],
+    'dirs': [
+        'lib/pkgconfig',
+        'lib/python%(pyshortver)s/site-packages'
+    ]
 }
-
+sanity_check_commands = ["module load scipy-stack; python -c 'import nlopt'"]
 moduleclass = 'numlib'

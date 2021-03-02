@@ -1,0 +1,112 @@
+name = 'PETSc'
+version = "3.14.1"
+
+homepage = 'http://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'gomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://ftp.mcs.anl.gov/pub/%(namelower)s/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['dde246d97ca77e7e4165ff3c74e5517a2f08316cd8cb6d2c4e172743c1836ef8']
+
+dependencies = [
+    ('HDF5', '1.10.6', '-mpi'),
+    ('FFTW', '3.3.8', '-mpi'),
+]
+
+# For the extension
+builddependencies = [
+    ('SciPy-Stack', '2020a'),
+    ('mpi4py', '3.0.3'),
+]
+
+multi_deps = {'Python': ['3.6', '3.7', '3.8']}
+multi_deps_extensions_only = True
+
+configopts = " ".join([
+    '--with-mkl_pardiso=1',
+    '--with-mkl_pardiso-dir=$MKLROOT',
+    '--with-mkl_cpardiso=1',
+    '--with-mkl_cpardiso-dir=$MKLROOT',
+    '--with-hdf5=1',
+    '--with-hdf5-dir=$EBROOTHDF5',
+    '--with-cxx-dialect=C++11',
+    '--with-mkl_sparse-optimize=1',
+    '--with-memalign=64',
+    '--with-python=no',
+    '--with-mpi4py=no',
+])
+
+
+download_deps = [
+    'triangle',
+    'hpddm',
+]
+
+postinstallcmds = [
+    'ln -sf %(installdir)s/lib/%(namelower)s/bin %(installdir)s/bin',
+    'ln -sf %(installdir)s/lib/%(namelower)s/conf %(installdir)s/conf',
+]
+
+keepsymlinks = True
+
+shared_libs = 1
+
+download_deps_static = [
+    'mumps',
+    'ptscotch',
+    'superlu',
+    'superlu_dist',
+    'parmetis',
+    'metis',
+    'ml',
+    'SuiteSparse',
+    'hypre',
+    'prometheus',
+    'spooles',
+    'chaco',
+    'slepc',
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('petsc4py', '3.14.0', {
+        'modulename': 'petsc4py',
+        'checksums': ['33ac9fb55a541e4c1deabd6e2144da96d5ae70e70c830a55de558000cf3f0ec5'],
+        'source_urls': [PYPI_SOURCE],
+        'preconfigopts': '#',
+        'check_ldshared': False, # avoid issue of `mpicc -fPIC ... mpicc -shared -L...`
+        'buildopts': '#', # Avoid appending PETSC env vars to `python setup.py build`
+        'runtest': False,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_commands = [
+    "module load scipy-stack && python -c 'import petsc4py;'",
+    "module load scipy-stack && python -m PetscBinaryIO --help",
+]
+
+sanity_check_paths = {
+    'files': [
+        'lib/libpetsc.so',
+    ],
+    'dirs': [
+        'bin',
+        'conf',
+        'include',
+        'lib',
+        'share',
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': [''],}
+
+moduleclass = 'numlib'
+modluafooter = """
+family("%(namelower)s")
+"""

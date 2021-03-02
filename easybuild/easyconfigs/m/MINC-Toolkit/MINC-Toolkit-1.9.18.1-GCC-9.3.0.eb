@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'MINC-Toolkit'
+version = '1.9.18.1'
+
+homepage = 'http://bic-mni.github.io/'
+description = "Medical Imaging NetCDF Toolkit"
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/BIC-MNI/minc-toolkit-v2/releases/download/release-%(version)s/']
+sources = ["%(namelower)s-v2-%(version)s.tar.gz"]
+patches = ["MINC-Toolkit-1.9.18.1-ITK-build.patch"]
+checksums = [
+    '82dfc0211958f5aa7b9915414f055d0d79eac462a2ee8c6c6298707f28748a95',  # minc-toolkit-v2-1.9.18.1.tar.gz
+    'e2d60311b4288a6d9ff666ba2abfdaee738317de9cd8c04d71a604d0efb0940c',  # MINC-Toolkit-1.9.18.1-ITK-build.patch
+]
+
+dependencies = [
+    ('FFTW', '3.3.8'),
+    ('GSL', '2.6'),
+    ('HDF5', '1.10.6'),
+    ('netCDF', '4.7.4'),
+#    ('ITK', '4.13.3'),
+    ('OpenBLAS', '0.3.9'),
+#    ('ANTs', '2.3.2'),
+]
+builddependencies = [('CMake', '2.8.0')]
+
+configopts = '-DUSE_SYSTEM_FFTW3D=ON -DFFTW3D_DIR=$EBROOTFFTW '
+configopts += '-DUSE_SYSTEM_FFTW3F=ON '
+configopts += '-DUSE_SYSTEM_OPENJPEG=ON -DOPENJPEG_INCLUDE_DIR=$EBROOTGENTOO/include/openjpeg-2.3 '
+configopts += '-DUSE_SYSTEM_GSL=ON '
+configopts += '-DUSE_SYSTEM_HDF5=ON '
+configopts += '-DUSE_SYSTEM_NETCDF=ON '
+configopts += '-DUSE_SYSTEM_PCRE=ON '
+configopts += '-DUSE_SYSTEM_ZLIB=ON '
+#configopts += '-DUSE_SYSTEM_ITK=ON '
+configopts += '-DUSE_SYSTEM_JPEG=ON '
+configopts += '-DMT_BUILD_SHARED_LIBS=ON '
+preconfigopts = "LDFLAGS='-lhdf5' "
+prebuildopts = preconfigopts
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['minc-toolkit-config.sh', 'lib/libminc2.so' ],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'man', 'perl', 'pipeline', 'share' ],
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'Nektar++'
+version = '5.0.1'
+
+homepage = 'https://www.nektar.info/'
+description = """Nektar++ is a tensor product based finite element package designed to allow one to construct efficient classical low polynomial order h-type solvers (where h is the size of the finite element) as well as higher p-order piecewise polynomial order solvers."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+# Will need to be download manually:
+
+source_urls = ['http://www.nektar.info/downloads/file/nektar-source-tar-gz-3/']
+sources = ['nektar-%(version)s.tar.gz']
+checksums = ['6340030d05534aacec1bcca6d1686b964eb1c12c54ac08e8043de59fd32708db']
+
+dependencies = [
+    ('Boost', '1.72.0','-mpi'),
+    ('FFTW', '3.3.8'),
+    ('arpack-ng', '3.7.0'),
+]
+
+separate_build_dir = True
+
+configure_cmd_prefix = ' CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 '
+
+configopts  = ' -DNEKTAR_USE_FFTW=ON '
+configopts += ' -DNEKTAR_USE_MKL=ON '
+configopts += ' -DNEKTAR_USE_MPI=ON '
+configopts += ' -DNEKTAR_USE_SYSTEM_BLAS_LAPACK=OFF '
+configopts += ' -DBoost_INCLUDE_DIR=${EBROOTBOOST}/include '
+configopts += ' -DFFTW_LIB=$EBROOTFFTW/lib/libfftw3.a '
+configopts += ' -DNEKTAR_USE_ARPACK=ON '
+
+postinstallcmds = ['cd %(installdir)s/ && ln -s lib64/%(namelower)s-%(version)s lib']
+
+sanity_check_paths = {
+    'files': [('bin/NekMesh')],
+    'dirs': ['bin', 'include', 'lib64'],
+}
+
+moduleclass = 'numlib'

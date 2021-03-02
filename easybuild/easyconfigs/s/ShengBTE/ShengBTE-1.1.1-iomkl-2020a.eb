@@ -1,0 +1,85 @@
+easyblock = 'MakeCp'
+
+name = 'ShengBTE'
+version = '1.1.1'
+
+extension = '8a63749'
+thirdorderversion = '1.1.1'
+thirdorderextension = '8526f47'
+
+pythonversion = '3.8'
+pythonshortversion = ".".join(pythonversion.split('.')[:-1])
+pythonshorterversion = "".join(pythonshortversion.split('.'))
+
+scipystackversion = '2020a'
+scipy = 'scipy-stack/%s' % scipystackversion
+
+homepage = 'http://www.shengbte.org/'
+description = """ShengBTE is a software package for solving the Boltzmann Transport Equation for phonons. Also installed is the 'thirdorder' package of Python scripts."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+
+source_urls = [
+    'http://www.shengbte.org/downloads/',
+]
+sources = [
+    'ShengBTE-v' + version + '-' + extension + '.tar.bz2',
+]
+checksums = ['43920740d19ae854c8ecae0b648acfdf1d7726ca4c2b44f1a1684457f2f88522']
+
+dependencies = [
+    ('spglib', '1.16.0'),
+]
+
+prebuildopts = "cd Src && cp ../arch.make.example arch.make && sed -i 's/em64t/intel64/g' arch.make &&"
+
+files_to_copy = [(['ShengBTE'], 'bin')]
+
+# I decided to install 'thirdorder' as an extension, rather than
+# package it as its own module.  This was painful, but the following
+# works.  EJS.
+
+exts_defaultclass = 'PythonPackage'
+
+# This needed to get thirdorder to pass the sanity check.
+
+exts_filter = ("module load " + scipy + " && PYTHONPATH=lib/python3.8/site-packages:$PYTHONPATH python -c 'import %(ext_name)s_core'", '')
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(psv)s/site-packages' % {'psv': pythonshortversion}, 'bin']}
+
+# I tried to have the scipy stack module loaded as a 'dependency', but
+# it didn't work, with complaints about toolchain compatibilities
+# which I couldn't figure out.
+
+exts_list = [('thirdorder', thirdorderversion, {
+    'homepage': 'http://www.shengbte.org',
+    'source_tmpl': '%(name)s-v%(version)s-' + thirdorderextension + '.tar.bz2',
+    'source_urls': [homepage + '/downloads/'],
+    'checksums': ['5e1cc8d6ffa7efdb7325c397ca236863ea8a9c5bed1c558acca68b140f89167e'],  # thirdorder-v1.1.1-8526f47.tar.bz2
+    'toolchain' : {'name': 'iomkl', 'version': '2020a'},
+    'prebuildopts': 'module load %(scipy)s && LDSHARED=icc LDFLAGS="-shared $LDFLAGS" ' % {'scipy': scipy},
+    'preinstallopts': "module load %(scipy)s && " % {'scipy': scipy},
+    'sanity_check_paths': {
+        'files': ['%%(installdir)s/lib/python' + pythonshortversion + '/site-packages/thirdorder_core.so'],
+        'dirs': []
+    }
+})]	  	       
+
+postinstallcmds = ["cp thirdorder*.py %(installdir)s/bin"]
+
+# make sure the binary are available after installation
+
+sanity_check_paths = {
+    'files': ['bin/ShengBTE'],
+    'dirs': [],
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+parallel = 1
+
+moduleclass = 'phys'
+modluafooter = """
+depends_on("python/3.8")
+depends_on("scipy-stack")
+"""

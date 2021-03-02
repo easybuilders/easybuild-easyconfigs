@@ -1,0 +1,85 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMM'
+version = '7.5.0'
+
+homepage = 'http://openmm.org'
+description = "OpenMM is a toolkit for molecular simulation."
+
+toolchain = {'name': 'gomklc', 'version': '2020a'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/openmm/openmm/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = [
+    '516748b4f1ae936c4d70cc6401174fc9384244c65cd3aef27bc2c53eac6d6de5',  # 7.5.0.tar.gz
+]
+
+multi_deps = {'Python': ['3.6', '3.7', '3.8' ]}
+
+dependencies = [
+    ('FFTW', '3.3.8', '-mpi'),
+    ('SciPy-Stack', '2020b'),
+    ('SWIG', '3.0.12'),
+]
+
+separate_build_dir = True
+
+configopts = " ".join([
+    '-DOPENMM_GENERATE_API_DOCS=OFF',
+    '-DOPENMM_BUILD_CUDA_LIB=ON',
+    '-DOPENMM_BUILD_OPENCL_LIB=OFF',
+    '-DCUDA_CUDA_LIBRARY=/usr/lib64/nvidia/libcuda.so',
+    '-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python3',
+])
+
+preinstallopts = ' && '.join([
+    'export OPENMM_INCLUDE_PATH=%(installdir)s/include',
+    'export OPENMM_LIB_PATH=%(installdir)s/lib',
+    '',
+])
+
+installopts = ' && '.join([
+    "&& cd python",
+    "python setup.py build",
+    "python setup.py install --prefix=%(installdir)s",
+])
+
+# Exclude some tests (regexps).  Can't test TestCuda* b/c there's no GPU in build-node.
+runtest = """test -e ARGS="-E \'(Integrator)|(Thermostat)|(Barostat)|(Rpmd)|(Amoeba)|(HippoNonbondedForce)|(TestCuda)\'" """
+
+sanity_check_paths = {
+    'files': [
+        'include/OpenMM.h',
+        'lib/python%(pyshortver)s/site-packages/simtk/openmm/openmm.py',
+        'lib/libOpenMM.so',
+    ],
+    'dirs': [
+        'bin',
+        'include',
+        'include/openmm',
+        'lib',
+    ]
+}
+
+sanity_check_commands = [
+    "python -m simtk.testInstallation"
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+    'OPENMM_INCLUDE_PATH': 'include',
+    'OPENMM_LIB_PATH': 'lib',
+}
+
+# if some python is already loaded, use it, otherwise use default python module
+modluafooter = """
+-- needed for CUDA:
+setenv("OPENMM_CUDA_COMPILER", pathJoin(os.getenv("EBROOTCUDA"),"bin/nvcc"))
+
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+        depends_on(between("python",'3.6','3.8'))
+end
+"""
+
+moduleclass = 'bio'

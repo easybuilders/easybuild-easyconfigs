@@ -1,0 +1,60 @@
+easyblock = 'CMakeMake'
+
+name = 'Trilinos'
+version = '12.12.1'
+
+homepage = 'http://trilinos.sandia.gov/'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'version': '2020a', 'name': 'iomkl'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+local_version_major = version.split('.')[0]
+local_version_minor_1 = version.split('.')[1]
+local_version_minor_2 = version.split('.')[2]
+local_namelower = '%(namelower)s'
+
+sources = [{'filename':'%(name)s.tar.gz',
+           'git_config': {
+           'tag': '%s-release-%s-%s-%s' % (local_namelower, local_version_major, local_version_minor_1, local_version_minor_2),
+           'repo_name': '%(name)s',
+           'url': 'https://github.com/trilinos',
+           'recursive': True,
+            }
+}
+]
+
+builddependencies = [
+    ('CMake', '3.7.1'),
+    ('Boost', '1.72.0', '-mpi'),
+    ('netCDF', '4.7.4', '-mpi'),
+    ('Python', '2.7'),
+]
+preconfigopts = "pip install numpy --prefix=%(installdir)s && export PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/python2.7/site-packages && export CPATH=$CPATH:%(installdir)s/lib/python2.7/site-packages/numpy/core/include && "
+configopts = '-DTrilinos_ENABLE_ALL_PACKAGES=ON -DTrilinos_ENABLE_TESTS=ON  -DTPL_ENABLE_Matio=OFF  -DTrilinos_VERBOSE_CONFIGURE=OFF  -DTPL_ENABLE_MPI=ON  -DBUILD_SHARED_LIBS=ON  -DCMAKE_VERBOSE_MAKEFILE=OFF  -DCMAKE_BUILD_TYPE=RELEASE  -DTPL_ENABLE_MKL=ON  -DTPL_BLAS_LIBRARIES=-mkl  -DTPL_LAPACK_LIBRARIES=-mkl'
+
+skipsteps = ['install']
+postinstallcmds = [
+   "pip install numpy --prefix=%(installdir)s", 
+   "export PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/python2.7/site-packages", 
+   "export CPATH=$CPATH:%(installdir)s/lib/python2.7/site-packages/numpy/core/include", 
+   "make install",
+   "sed -i 's/PyTrilinos;//' %(installdir)s/lib/cmake/Trilinos/TrilinosConfig.cmake",
+]
+
+# see https://trilinos.org/oldsite/release_notes-11.10.html and https://github.com/trilinos/Trilinos/issues/19
+#skip_exts = ['STKClassic', 'STKDoc_tests']
+# too parallel is too slow, and may cause build/tests to fail
+maxparallel = 10
+parallel = 8
+configure_cmd_prefix = " CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 "
+#patches = ['fix-parmetis.patch']
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['lib/libtriutils.so.12'],
+    'dirs': ['include', 'lib'],
+}
+modextrapaths = {'PYTHONPATH': ':%(installdir)s/lib/python2.7/site-packages'}
+moduleclass = 'numlib'

@@ -20,6 +20,16 @@ checksums = ['a64aa96e01c097d5bc16c191a647154315e12c5421e38ae985c197c6a20a69f9']
 #allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
 builddependencies = [('Python', '3.8.2')]
 
+configopts = ['', '--shared'] # Build libnode.so in a second run
+
+# Link libv8 libs to libnode
+postinstallcmds = [
+    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libnode.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8_libbase.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8_libplatform.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+]
+
 sanity_check_paths = {
     'files': ["bin/node", "bin/npm"],
     'dirs': ["lib/node_modules", "include/node"]
@@ -27,5 +37,7 @@ sanity_check_paths = {
 sanity_check_commands = [
     "node -v",
 ]
+
+modextrapaths = {'CPATH': 'include/node'}
 
 moduleclass = 'lang'
