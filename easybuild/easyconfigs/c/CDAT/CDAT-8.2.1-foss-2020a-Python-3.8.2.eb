@@ -1,5 +1,6 @@
 easyblock = 'PythonBundle'
-name = 'cdat'
+
+name = 'CDAT'
 version = '8.2.1'
 versionsuffix = "-Python-%(pyver)s"
 
@@ -26,15 +27,14 @@ dependencies = [
     ('libffi', '3.3'),
     ('Mesa', '20.0.2'),
     ('DB', '18.1.32'),
+    ('netCDF-C++4', '4.3.1'),
+    ('UDUNITS', '2.2.26'),
     ('gdbm', '1.18.1'),
     ('SciPy-bundle', '2020.03', versionsuffix),
-    ('netCDF-C++4', '4.3.1'),
-    ('libcdms', '3.1.2'),
+    ('libcdms', '3.1.2', versionsuffix),
     ('unidata', '2.8', versionsuffix),
     ('VTK', '8.2.0', versionsuffix),
 ]
-
-# todo installscript na esg
 
 exts_default_options = {
     'github_account': 'CDAT',
@@ -46,12 +46,12 @@ exts_default_options = {
 }
 exts_list = [
     ('pycf', '1.6.9', {
-        'patches': ['pycf-1.6.9-openblas.patch'],
+        'patches': ['pycf-1.6.9-openblas-extern.patch'],
         'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
         'sources': ['%(name)s-%(version)s.tar.gz'],
         'checksums': [
             '622fc99f7d258d2931edc080dbdb81d2bf1be1ebac922f2fca0b71173ada7520',  # pycf-1.6.9.tar.gz
-            'b7c2130743b115a5475fa1b8ed190a1b2796ab0a44e239a9d7e372f392168375',  # pycf-1.6.9-openblas.patch
+            'df04e4f48dfa69ecbae31b743047478bf2a3649642bfd6cf36b9d0ebc5d01896',  # pycf-1.6.9-openblas-extern.patch
         ],
     }),
     ('lazy-object-proxy', '1.5.2', {
@@ -65,6 +65,16 @@ exts_list = [
         'sources': ['%(name)s-%(version)s.tar.gz'],
         'checksums': ['5ae9afc159b8cfb2be476d257fc469b2cdd473c76f5411c508010007a5ae6bd2'],
     }),
+    ('cdat_info', version, {
+        'checksums': ['173a91d1dc68d1b3c96230d1c9fc0fa9304a463a5da5015830eb35e2823e3c9b'],
+    }),
+    ('unidata', '2.8', {
+        'patches': ['unidata-2.8-package-data.patch'],
+        'checksums': [
+            '5a4958af4e45a5efd9012c76cb0ef5c02d479a612e7d161e77b513780bc7b2d7',  # unidata-2.8.tar.gz
+            '04a336f579a69b2f825e4896dd2a25d4bab1f302f0a039e73464de3381c8e09b',  # unidata-2.8-package-data.patch
+        ],
+    }),
     ('cdtime', '3.1.4', {
         'checksums': ['c22ec725e207994cec3d4ba5b5b35ede5ea698d552dc75e87cd86fa7dbc65b35'],
     }),
@@ -76,7 +86,7 @@ exts_list = [
         'patches': ['dv3d-pkg_resource-paths.patch'],
         'checksums': [
             'd542641e259327777642616def558ea97ffdac5788f7258348812534a89f01a3',  # dv3d-8.2.1.tar.gz
-            '3d2dde578998dcae9a45195b495cc9b335d706d9b1cea9e766067af6a00cdd98',  # dv3d-pkg_resource-paths.patch
+            '8c7368001ef70573ee597537ab3067ef77f01ca4fc16f11609ec5617e3faf290',  # dv3d-pkg_resource-paths.patch
         ],
     }),
     ('vcs', version, {
@@ -103,30 +113,19 @@ exts_list = [
         'checksums': ['ca6ee7610b8e8309cec47121b2454d8d318bfe37b6db3b950c65b1316035ba6c'],
     }),
     ('cdms2', '3.1.5', {
-        'patches': ['cdms2-3.1.5-intel-2020a.patch'],
+        'patches': ['cdms2-3.1.5-netcdf_par.patch'],
         'source_urls': ['https://github.com/CDAT/cdms/archive/'],
         'checksums': [
             '2b4f2ad348581c9831d3dcb785502515da41f0d21be728c8211618871a0caed9',  # cdms2-3.1.5.tar.gz
-            '378aa4da96a2f15d1d156a9c0ca80ab93d533379a6d30b5c3188b321730008d0',  # cdms2-3.1.5-intel-2020a.patch
+            '93368235cbf98d9b25617ffebea90e0ac104860f2311671fb64c790f57fbc092',  # cdms2-3.1.5-netcdf_par.patch
         ],
     }),
 ]
 
-postinstallcmds = [
-    # Generated in pycf's setup.py
-    'sed -i "s/ extern//g" %(installdir)s/lib/python%(pyshortver)s/site-packages/pycf/libCFConfig.py',
-]
-
-use_pip = True
-download_dep_fail = True
-
 sanity_pip_check = True
-
 sanity_check_paths = {
-    'files': [],
+    'files': ['lib/python%(pyshortver)s/site-packages/unidata/udunits.dat'],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
-sanity_check_commands = ['python -c "import genutil;from eofs.cdms import Eof;import vcs;import MV2"']
-
-moduleclass = 'bio'
+moduleclass = 'geo'
