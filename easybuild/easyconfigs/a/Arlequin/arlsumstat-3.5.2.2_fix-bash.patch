@@ -1,0 +1,65 @@
+Fix default binary for arlsumstat
+Add option to specify variables via command line args
+
+Author: Pavel Grochal (INUITS)
+diff -ru --new-file arlsumstat_linux.orig/LaunchArlSumStat.sh arlsumstat_linux/LaunchArlSumStat.sh
+--- arlsumstat_linux.orig/LaunchArlSumStat.sh	2015-04-11 17:30:24.000000000 +0200
++++ arlsumstat_linux/LaunchArlSumStat.sh	2020-04-30 10:02:09.806949125 +0200
+@@ -10,7 +10,7 @@
+ #           graphical interface).
+ 
+ #Modify the following line to state which version of arlsumstat you are using
+-arlsumstat=arlsumstat64.exe #Windows version
++arlsumstat=arlsumstat3522_64bit #Linux version
+ #Modify the follwing name to specify the name of the output file for the summary statistics 
+ outss=outSumStats.txt
+ 
+@@ -19,6 +19,28 @@
+ 
+ #Change the following line if you want to use another settings file  for the computations
+ settingsFile=arl_run.ars
++
++#Easybuild fix
++while getopts ":b:f:o:s:" opt; do
++	case $opt in
++		b) arlsumstat="$OPTARG"
++		;;
++		f) fileList="$OPTARG"
++		;;
++		o) outss="$OPTARG"
++		;;
++		s) settingsFile="$OPTARG"
++		;;
++		\?) echo "Invalid option -$OPTARG
++Use -b to specify path to arlsumstat binary.
++Use -f to specify project files list.
++Use -o to specify output file for the summary statistics.
++Use -s to specify settings file." >&2
++		exit 1
++		;;
++	esac
++done
++
+ if [ "$settingsFile" != "arl_run.ars" ]; then 
+ 	if [ -f $settingsFile ]; then
+ 		echo "copying file $settingsFile to arl_run.ars"
+@@ -32,12 +54,12 @@
+ counter=1;
+ for file in *.arp
+ do
+-  	if [ $counter -eq 1 ]; 	then 
++	if [ $counter -eq 1 ]; 	then 
+ 		#Reset file list
+ 		(echo "$counter $file") > $fileList
+ 		echo "Processing file $file" 
+ 		#Compute stats, reset output file and include header
+-		./$arlsumstat  ./$file $outss 0 1 run_silent		
++		$arlsumstat  ./$file $outss 0 1 run_silent		
+ 	else
+ 		#Append file list
+ 		(echo "$counter $file") >> $fileList
+@@ -50,4 +72,3 @@
+ 	rm ${file%.*}.res -r
+ 	let counter=counter+1
+ done
+-

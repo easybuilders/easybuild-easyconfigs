@@ -1,0 +1,63 @@
+Don't overwrite PYTHONPATH when executing tests, add to it instead.
+Unset OMP_NUM_THREADS when GMX_THREAD_MPI enabled.
+
+Åke Sandgren, 20200309
+Dugan Witherick, 20210112
+diff -Nru gromacs-2020.5.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt gromacs-2020.5/python_packaging/sample_restraint/tests/CMakeGROMACS.txt
+--- gromacs-2020.5.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2021-01-12 13:24:10.303084000 +0000
++++ gromacs-2020.5/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2021-01-12 13:44:34.819955000 +0000
+@@ -21,11 +21,21 @@
+ get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
+ get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
+ get_target_property(PLUGINPATH gmxapi_extension LIBRARY_OUTPUT_DIRECTORY)
+-add_custom_target(gmxapi_extension_pytest
+-                  COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN} PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}
+-                  ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+-                  DEPENDS gmxapi_extension _gmxapi
+-                  WORKING_DIRECTORY ${PLUGINPATH})
++
++if (NOT GMX_THREAD_MPI)
++        add_custom_target(gmxapi_extension_pytest
++                          COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN} PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}
++                          ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                          DEPENDS gmxapi_extension _gmxapi
++                          WORKING_DIRECTORY ${PLUGINPATH})
++else()
++        add_custom_target(gmxapi_extension_pytest
++                          COMMAND ${CMAKE_COMMAND} -E env --unset=OMP_NUM_THREADS GMXBIN=${GMXBIN} PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}
++                          ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                          DEPENDS gmxapi_extension _gmxapi
++                          WORKING_DIRECTORY ${PLUGINPATH})
++endif()
++
+ # The current test fixtures require the `gmx` tool-wrapper executable.
+ add_dependencies(gmxapi_extension_pytest gmx)
+ 
+diff -Nru gromacs-2020.5.orig/python_packaging/src/test/CMakeLists.txt gromacs-2020.5/python_packaging/src/test/CMakeLists.txt
+--- gromacs-2020.5.orig/python_packaging/src/test/CMakeLists.txt	2021-01-12 13:24:10.177716000 +0000
++++ gromacs-2020.5/python_packaging/src/test/CMakeLists.txt	2021-01-12 13:59:12.406105000 +0000
+@@ -63,11 +63,19 @@
+ 
+ # TODO: (#2961) Let the Python package discover required resources instead of passing GMXBIN
+ get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
+-add_custom_target(gmxapi_pytest
+-                  COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN}
+-                    ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+-                  DEPENDS _gmxapi
+-                  WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++if (NOT GMX_THREAD_MPI)
++	add_custom_target(gmxapi_pytest
++        	          COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN}
++                  	  ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                	  DEPENDS _gmxapi
++                	  WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++else()
++	add_custom_target(gmxapi_pytest
++        	          COMMAND ${CMAKE_COMMAND} -E env --unset=OMP_NUM_THREADS GMXBIN=${GMXBIN}
++                  	  ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                	  DEPENDS _gmxapi
++                	  WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++endif()
+ # The current test fixtures require the `gmx` tool-wrapper executable.
+ add_dependencies(gmxapi_pytest gmx)
+ 

@@ -1,0 +1,76 @@
+# Take EasyBuild compiler flags for C, C++, and Fortran
+# February 6th, 2018 by B. Hajgato (Free University Brussels - VUB)
+diff -ru dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917.orig/cmake/compilers/CFlags.cmake dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917/cmake/compilers/CFlags.cmake
+--- dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917.orig/cmake/compilers/CFlags.cmake	2017-08-14 15:00:21.000000000 +0200
++++ dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917/cmake/compilers/CFlags.cmake	2018-02-06 15:12:30.449237790 +0100
+@@ -37,13 +37,13 @@
+ endif()
+ 
+ if(CMAKE_C_COMPILER_ID MATCHES Intel)
+-    set(CMAKE_C_FLAGS         "-g -wd981 -wd279 -wd383 -vec-report0 -wd1572 -wd1777 -restrict -DRESTRICT=restrict")
++	set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -wd981 -wd279 -wd383 -wd1572 -wd1777 -restrict -DRESTRICT=restrict")
+     if(NOT DEVELOPMENT_CODE)
+         # suppress warnings in exported code
+         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
+     endif()
+     set(CMAKE_C_FLAGS_DEBUG   "-O0")
+-    set(CMAKE_C_FLAGS_RELEASE "-O3 -ip")
++    set(CMAKE_C_FLAGS_RELEASE " ")
+     set(CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_RELEASE} -g -pg")
+     set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -shared-intel")
+ 
+diff -ru dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917.orig/cmake/compilers/CXXFlags.cmake dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917/cmake/compilers/CXXFlags.cmake
+--- dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917.orig/cmake/compilers/CXXFlags.cmake	2017-08-14 15:00:21.000000000 +0200
++++ dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917/cmake/compilers/CXXFlags.cmake	2018-02-06 15:12:44.153908053 +0100
+@@ -39,7 +39,7 @@
+ endif()
+ 
+ if (CMAKE_CXX_COMPILER_ID MATCHES Intel)
+-    set(CMAKE_CXX_FLAGS         "-g -wd981 -wd279 -wd383 -vec-report0 -wd1572 -wd177 -fno-rtti -fno-exceptions")
++	set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -wd981 -wd279 -wd383 -vec-report0 -wd1572 -wd177 -fno-rtti -fno-exceptions")
+     if(DEVELOPMENT_CODE)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+     else()
+@@ -47,7 +47,7 @@
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+     endif()
+     set(CMAKE_CXX_FLAGS_DEBUG   "-O0")
+-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ip")
++    set(CMAKE_CXX_FLAGS_RELEASE " ")
+     set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE} -g -pg")
+     set (CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -shared-intel")
+ 
+diff -ru dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917.orig/cmake/compilers/FortranFlags.cmake dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917/cmake/compilers/FortranFlags.cmake
+--- dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917.orig/cmake/compilers/FortranFlags.cmake	2017-08-14 15:00:21.000000000 +0200
++++ dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917/cmake/compilers/FortranFlags.cmake	2018-02-06 14:50:21.404219685 +0100
+@@ -48,13 +48,13 @@
+ 
+ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+     add_definitions(-DVAR_IFORT)
+-    set(CMAKE_Fortran_FLAGS         "-fpp -assume byterecl -DVAR_IFORT")
++    set(CMAKE_Fortran_FLAGS         "${CMAKE_Fortran_FLAGS} -fpp -DVAR_IFORT")
+     if(NOT DEVELOPMENT_CODE)
+         # suppress warnings in exported code
+         set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -w")
+     endif()
+     set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -traceback")
+-    set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ip -diag-disable 8290 -diag-disable 8291")
++    set(CMAKE_Fortran_FLAGS_RELEASE "-diag-disable 8290 -diag-disable 8291")
+     set(CMAKE_Fortran_FLAGS_PROFILE "${CMAKE_Fortran_FLAGS_RELEASE} -g -pg")
+ 
+     if(DEFINED MKL_FLAG)
+diff -ru dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917.orig/cmake/SourcesDALTON.cmake dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917/cmake/SourcesDALTON.cmake
+--- dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917.orig/cmake/SourcesDALTON.cmake	2017-08-14 15:00:21.000000000 +0200
++++ dalton-release-2016-130ffaa0613bb3af6cac766fc8183d6df7d68917/cmake/SourcesDALTON.cmake	2018-02-06 15:17:06.776589480 +0100
+@@ -790,7 +790,10 @@
+     DALTON/pcm/pcm_write.F90
+     DALTON/pcm/pcm_utils.F90
+    )
+-   set(DALTON_FREE_FORTRAN_SOURCES "${DALTON_FREE_FORTRAN_SOURCES} ${DAL_PCM_SOURCES}")
++   set(DALTON_FREE_FORTRAN_SOURCES 
++       ${DALTON_FREE_FORTRAN_SOURCES}
++       ${DAL_PCM_SOURCES}
++       )
+ endif()
+ set(DALTON_OWN_BLAS_SOURCES
+     DALTON/pdpack/gp_blas.F

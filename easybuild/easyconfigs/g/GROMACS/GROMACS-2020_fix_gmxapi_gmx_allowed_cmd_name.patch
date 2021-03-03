@@ -1,0 +1,39 @@
+Fix search for "gmx" binary to allow for double precision builds.
+
+Åke Sandgren, 20200318
+diff -ru gromacs-2020.1.orig/python_packaging/sample_restraint/tests/conftest.py gromacs-2020.1/python_packaging/sample_restraint/tests/conftest.py
+--- gromacs-2020.1.orig/python_packaging/sample_restraint/tests/conftest.py	2020-03-03 17:24:49.000000000 +0100
++++ gromacs-2020.1/python_packaging/sample_restraint/tests/conftest.py	2020-03-18 07:19:09.611507575 +0100
+@@ -156,7 +156,7 @@
+     # TODO: (#2896) Find a more canonical way to identify the GROMACS commandline wrapper binary.
+     #  We should be able to get the GMXRC contents and related hints from a gmxapi
+     #  package resource or from module attributes of a ``gromacs`` stub package.
+-    allowed_command_names = ['gmx', 'gmx_mpi']
++    allowed_command_names = ['gmx%s%s' % (m, p) for m in ['', '_mpi'] for p in ['', '_d']]
+     command = None
+     for command_name in allowed_command_names:
+         if command is not None:
+diff -ru gromacs-2020.1.orig/python_packaging/src/test/conftest.py gromacs-2020.1/python_packaging/src/test/conftest.py
+--- gromacs-2020.1.orig/python_packaging/src/test/conftest.py	2020-03-03 17:24:49.000000000 +0100
++++ gromacs-2020.1/python_packaging/src/test/conftest.py	2020-03-18 07:19:27.535301581 +0100
+@@ -156,7 +156,7 @@
+     # TODO: (#2896) Find a more canonical way to identify the GROMACS commandline wrapper binary.
+     #  We should be able to get the GMXRC contents and related hints from a gmxapi
+     #  package resource or from module attributes of a ``gromacs`` stub package.
+-    allowed_command_names = ['gmx', 'gmx_mpi']
++    allowed_command_names = ['gmx%s%s' % (m, p) for m in ['', '_mpi'] for p in ['', '_d']]
+     command = None
+     for command_name in allowed_command_names:
+         if command is not None:
+diff -ru gromacs-2020.1.orig/python_packaging/test/conftest.py gromacs-2020.1/python_packaging/test/conftest.py
+--- gromacs-2020.1.orig/python_packaging/test/conftest.py	2020-03-03 17:24:49.000000000 +0100
++++ gromacs-2020.1/python_packaging/test/conftest.py	2020-03-18 07:19:03.967572439 +0100
+@@ -156,7 +156,7 @@
+     # TODO: (#2896) Find a more canonical way to identify the GROMACS commandline wrapper binary.
+     #  We should be able to get the GMXRC contents and related hints from a gmxapi
+     #  package resource or from module attributes of a ``gromacs`` stub package.
+-    allowed_command_names = ['gmx', 'gmx_mpi']
++    allowed_command_names = ['gmx%s%s' % (m, p) for m in ['', '_mpi'] for p in ['', '_d']]
+     command = None
+     for command_name in allowed_command_names:
+         if command is not None:

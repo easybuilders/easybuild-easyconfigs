@@ -1,0 +1,50 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'ConfigureMake'
+
+name = 'ioapi'
+version = '3.2-2020111'
+_cplmode = 'nocpl'
+versionsuffix = '-%s' % _cplmode
+
+homepage = "https://www.cmascenter.org/ioapi/"
+description = """The Models-3/EDSS Input/Output Applications Programming Interface (I/O API) provides the
+ environmental model developer with an easy-to-learn, easy-to-use programming library for data storage and
+ access, available from both Fortran and C. The same routines can be used for both file storage (using netCDF
+ files) and model coupling (using PVM mailboxes). It is the standard data access library for both the
+ NCSC/CMAS's EDSS project and EPA's Models-3, CMAQ, and SMOKE, as well as various other atmospheric and
+ hydrological modeling systems."""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+
+source_urls = ['https://github.com/cjcoats/ioapi-3.2/archive/']
+sources = ['2020111.tar.gz']
+checksums = ['5820fb71d46fdd8ace5950d980cbec9294a8406037a8b7767c3a0bc5d945c533']
+
+dependencies = [
+    ('netCDF', '4.7.1'),
+    ('netCDF-Fortran', '4.5.2'),
+]
+
+skipsteps = ['configure']
+
+_makevars = "BIN=Linux2_x86_64gfort_medium CPLMODE=%s " % _cplmode
+_makevars += "INSTALL=%(installdir)s LIBINST=%(installdir)s/lib BININST=%(installdir)s/bin"
+
+prebuildopts = "cp Makefile.template Makefile && touch m3tools/Makefile ioapi/Makefile && "
+prebuildopts += "make configure %s && " % _makevars
+buildopts = " %s " % _makevars
+
+installopts = " %s " % _makevars
+
+postinstallcmds = [
+    "mkdir %(installdir)s/include && "
+    "cp %(builddir)s/%(name)s-%(version)s/ioapi/fixed_src/*.EXT %(installdir)s/include/. && "
+    "cp %(builddir)s/%(name)s-%(version)s/ioapi/*.h %(installdir)s/include/."
+]
+
+sanity_check_paths = {
+    'files': ['lib/libioapi.a'] + ['bin/%s' % x for x in ['airs2m3', 'gregdate', 'latlon', 'm3merge', 'projtool']],
+    'dirs': [],
+}
+
+moduleclass = 'tools'

@@ -21,8 +21,14 @@ toolchainopts = {'openmp': True, 'usempi': True, 'cstd': 'c++11'}
 
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
-sources = ['stable_%(version)s.tar.gz']
-checksums = ['a1a2e3e763ef5baecea258732518d75775639db26e60af1634ab385ed89224d1']
+sources = [
+    'stable_%(version)s.tar.gz',
+    {'filename': 'lammps_vs_yaff_test_single_point_energy.py', 'extract_cmd': "cp %s %(builddir)s"},
+]
+checksums = [
+    'a1a2e3e763ef5baecea258732518d75775639db26e60af1634ab385ed89224d1',  # stable_3Mar2020.tar.gz
+    'c28fa5a1ea9608e4fd8686937be501c3bed8cc03ce1956f1cf0a1efce2c75349',  # lammps_vs_yaff_test_single_point_energy.py
+]
 
 local_source_dir_name = '%(namelower)s-%(version)s'
 
@@ -40,13 +46,13 @@ dependencies = [
     ('GSL', '2.6'),
     ('zlib', '1.2.11'),
     ('gzip', '1.10'),
+    ('cURL', '7.66.0'),
     ('HDF5', '1.10.5'),
     ('tbb', '2019_U9'),
     ('PCRE', '8.43'),
     ('libxml2', '2.9.9'),
     ('FFmpeg', '4.2.1'),
     ('Voro++', '0.4.6'),
-    ('FFTW', '3.3.8'),
     ('kim-api', '2.1.3'),
     ('Eigen', '3.3.7', '', True),
     ('yaff', '1.6.0', local_python_versionsuffix),
@@ -84,5 +90,11 @@ user_packages = [
     'MOFFF', 'MOLFILE', 'NETCDF', 'PHONON', 'PLUMED', 'PTM', 'QTB', 'REAXC',
     'SMD', 'SMTBQ', 'SPH', 'TALLY', 'UEF', 'YAFF',
 ]
+
+enhance_sanity_check = True
+
+# run short test case to make sure installation doesn't produce blatently incorrect results;
+# this catches a problem where having the USER-INTEL package enabled causes trouble when installing with intel/2019b
+sanity_check_commands = ["cd %(builddir)s && python lammps_vs_yaff_test_single_point_energy.py"]
 
 moduleclass = 'chem'
