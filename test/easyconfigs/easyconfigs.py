@@ -598,7 +598,12 @@ class EasyConfigTest(TestCase):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
         # These packages do not support installation with 'pip'
-        whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
+        whitelist_pip = [
+            r'ESMPy-.*',
+            r'MATLAB-Engine-.*',
+            r'Meld-.*',
+            r'PyTorch-.*',
+        ]
 
         whitelist_pip_check = [
             r'Mako-1.0.4.*Python-2.7.12.*',
