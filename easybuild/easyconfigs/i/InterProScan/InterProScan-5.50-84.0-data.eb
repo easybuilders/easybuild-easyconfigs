@@ -1,0 +1,35 @@
+# Built with EasyBuild version 4.1.1-rf312b754b3a377fbd5057b6207f73845cab491ab on 2020-02-19_23-09-18
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = '5.50-84.0'
+versionsuffix = '-data'
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """This module containes only InterProScan data part. 
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+
+toolchain = SYSTEM
+source_urls = [
+    'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/',
+]
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+checksums = ['3b792b33a14091a144a13ba35d70fbaa45abb8102f240a6da4e24bb07babaac4']
+
+postinstallcmds = [
+'export DATA_DIR=%(installdir)s; '
+'export DATA_DIR=${DATA_DIR//\/cvmfs\/soft.computecanada.ca\/easybuild\/software\//\/cvmfs\/data.rsnt.computecanada.ca\/content\/easybuild\/data/}; '
+'mkdir -p ${DATA_DIR} && rm -rf ${DATA_DIR}/* && cd %(installdir)s && mv data/* ${DATA_DIR} && '
+'cd ${DATA_DIR} && rm -rf test* inter* bin src work readme.txt lib initial_setup.py && chmod -R a+r ${DATA_DIR}/*; '
+'ln -s ${DATA_DIR}/* %(installdir)s/data/'
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['data']
+}
+
+moduleclass = 'bio'
+
