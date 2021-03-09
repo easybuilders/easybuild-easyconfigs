@@ -1,0 +1,50 @@
+easyblock = 'PythonBundle'
+
+name = 'suave'
+version = '20160529'
+
+homepage = 'https://github.com/dellytools/suave'
+description = """suave is an interactive web application to visualize read depth
+ratios between two samples and the structural variants of one of the samples
+(typically the "case" sample in a case/control setup such as tumor/normal
+comparison)."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Flask', '1.1.2'),
+    ('h5py', '3.1.0'),
+    ('Pysam', '0.16.0.1'),
+]
+
+use_pip = True
+
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_list = [
+    ('Click', '7.0', {
+        'checksums': ['5b94b49521f6456670fdb30cd82a4eca9412788a93fa6dd6df72c94d5a8ff2d7'],
+    }),
+    (name, version, {
+        'modulename': 'suave_server',
+        'patches': [('suave-setup-py-python3.patch', 1)],
+        'source_tmpl': '45e4963d1a2c84cc0acdfaa603f29df10ff2ce49.tar.gz',
+        'source_urls': ['https://github.com/dellytools/suave/archive'],
+        'checksums': [
+            # 45e4963d1a2c84cc0acdfaa603f29df10ff2ce49.tar.gz
+            'f585f27adcf1f3a8aeaead2e5f190f6f0d23522cf6bbe1c3388f4c3270d0fb9c',
+            '47b404c0150a117936b3e18aa479012b5f055eea7d85e663c9b44e0f8bfe8247',  # suave-setup-py-python3.patch
+        ],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/suave_server', 'bin/suave_bam_to_h5'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/templates'],
+}
+
+sanity_check_commands = ['suave_server --help']
+
+moduleclass = 'bio'
