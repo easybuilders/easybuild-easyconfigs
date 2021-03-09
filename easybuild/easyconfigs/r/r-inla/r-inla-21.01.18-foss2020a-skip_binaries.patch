@@ -1,0 +1,158 @@
+diff --recursive --no-dereference -ub build64/GNUmakefile build64_edit/GNUmakefile
+--- build64/GNUmakefile	2021-02-15 18:48:16.939468868 +0100
++++ build64_edit/GNUmakefile	2021-02-16 17:14:11.989883598 +0100
+@@ -60,9 +60,9 @@
+ 
+ 	$(MAKE) -j4 -C inlaprog PREFIX=$(PREFIX) INLA_WITH_RMATH= \
+ 	FLAGS="$(FLAGS) -DINLA_LINK_WITH_JEMALLOC -DINLA_LINK_WITH_OPENBLAS \
+-		-fopenmp -I$(HOME)/p/inla/work/local/include -I/usr/include/R -DINLA_LIBR" $(ARGS) \
+-	         EXTLIBS2="-ljemalloc -L/usr/lib64 -L/usr/lib64/R/lib -L$(HOME)/p/inla/work/local/lib -lgsl -ltaucs -lpardiso  \
+-                           -lopenblaso -lz -lgfortran -lmuparser -lamd -lquadmath \
++        -fopenmp -I$(HOME)/p/inla/work/local/include -DINLA_LIBR" $(ARGS) \
++	         EXTLIBS2="-ljemalloc -lmetis -L$(HOME)/p/inla/work/local/lib -lgsl -ltaucs  \
++               -lopenblaso -lz -lgfortran -lmuparser -lquadmath -lpardiso -lamd \
+ 	      		-lssl -lcrypto -lR -lRmath -lm -lstdc++ -pthread -ldl" EXTLIBS3='-lm' \
+ 		LD=gcc -j4  inla
+ 	cp -v -f inlaprog/inla $(PREFIX)/bin
+@@ -77,13 +77,13 @@
+ 	$(MAKE) -C inlaprog clean
+ 	$(MAKE) -j4 -C inlaprog PREFIX=$(PREFIX) INLA_WITH_RMATH= \
+ 	FLAGS="$(FLAGS) -DINLA_LINK_WITH_JEMALLOC -DINLA_LINK_WITH_MKL -fopenmp \
+-		-I$(HOME)/p/inla/work/local/include -I/usr/include/R -DINLA_LIBR" $(ARGS) \
+-	         EXTLIBS2="-ljemalloc -L/usr/lib64 -L/usr/lib64/R/lib -L$(HOME)/p/inla/work/local/lib -lgsl -ltaucs -lpardiso  \
++		-I$(HOME)/p/inla/work/local/include -DINLA_LIBR" $(ARGS) \
++	         EXTLIBS2="-ljemalloc -L$(HOME)/p/inla/work/local/lib -lgsl -ltaucs -lmetis -lpardiso -lamd -lopenblaso \
+ 	 -L${MKLROOT}  -L${MKLROOT2} \
+ 	-Wl,--start-group \
+-		${MKLROOT}/libmkl_intel_lp64.a \
+-		${MKLROOT}/libmkl_gnu_thread.a \
+-		${MKLROOT}/libmkl_core.a \
++		${MKLROOT}/lib/intel64/libmkl_intel_lp64.a \
++		${MKLROOT}/lib/intel64/libmkl_gnu_thread.a \
++		${MKLROOT}/lib/intel64/libmkl_core.a \
+ 	-Wl,--end-group \
+ 	-lssl -lcrypto -lz -lgfortran -lgomp -lmuparser -lamd -lquadmath -lR -lRmath -lm -lstdc++ -pthread -ldl" \
+ 	EXTLIBS3='' LD=gcc -j4  inla
+Only in build64_edit: GNUmakefile.orig
+diff --recursive --no-dereference -ub build64/r-inla/build-configs/linux/Makefile build64_edit/r-inla/build-configs/linux/Makefile
+--- build64/r-inla/build-configs/linux/Makefile	2020-12-20 09:16:44.000000000 +0100
++++ build64_edit/r-inla/build-configs/linux/Makefile	2021-02-15 18:50:02.926922311 +0100
+@@ -38,15 +38,15 @@
+ 	echo "";\
+ 	echo "	$(MAKE) update";\
+ 	echo "";)
+-
+-
+-download :; test -d r-inla && rm -rf r-inla;\
+-	hg clone https://bitbucket.org/hrue/r-inla;\
+-	ln -sf r-inla/* .;\
+-	mkdir -p local/lib;\
+-	mkdir -p local/bin;\
+-	mkdir -p local/include;
+-
++#
++#
++# download :; test -d r-inla && rm -rf r-inla;\
++# 	hg clone https://bitbucket.org/hrue/r-inla;\
++# 	ln -sf r-inla/* .;\
++# 	mkdir -p local/lib;\
++# 	mkdir -p local/bin;\
++# 	mkdir -p local/include;
++#
+ zlib :
+ 	cd zlib-1.2.3; \
+ 	$(MAKE) $(ARGS) -k clean; \
+diff --recursive --no-dereference -ub build64/r-inla/gmrflib/Makefile build64_edit/r-inla/gmrflib/Makefile
+--- build64/r-inla/gmrflib/Makefile	2020-12-20 09:16:44.000000000 +0100
++++ build64_edit/r-inla/gmrflib/Makefile	2021-02-15 18:50:02.926922311 +0100
+@@ -30,7 +30,7 @@
+ 
+ GITCOMMIT:= $(shell git log --pretty=format:"%H - %cd" | head -n1)
+ 
+-INCL    = -I.. -I$(PREFIX)/include -DGMRFLib_PATH=\"$(PREFIX)/doc/GMRFLib/data\"
++INCL    = -I.. -I$(PREFIX)/include -DGMRFLib_PATH=\"$(PREFIX)/doc/GMRFLib/data\" -I$(MUPARSER_DIR)/include
+ LDFLAGS = $(FLAGS) 
+ FFLAGS  = $(INCL) $(FLAGS) -Wno-compare-reals -Wno-function-elimination $(FCEXTRAFLAGS)
+ CFLAGS  = $(INCL) $(FLAGS) $(IEXTLIBS) -DGITCOMMIT="\"${GITCOMMIT}\""
+@@ -81,11 +81,13 @@
+ 
+ all : $(ALL)
+ 
+-$(LIBNAME): $(LIBNAME)($(LIBOBJ))
+-	ranlib $@
++$(LIBNAME): $(LIBOBJ)
++	$(AR) qc $(LIBNAME) $(LIBOBJ)
++	$(RANLIB) $@
+ 
+ $(LIBNAMEG): $(LIBNAMEG)($(LIBOBJG))
+-	ranlib $@
++	$(AR) qc $(LIBNAMEG) $(LIBOBJG)
++	$(RANLIB) $@
+ 
+ # !!! Do not change! /FL
+ DEPDIR = .deps/.dummy
+diff --recursive --no-dereference -ub build64/r-inla/inlaprog/GNUmakefile build64_edit/r-inla/inlaprog/GNUmakefile
+--- build64/r-inla/inlaprog/GNUmakefile	2021-01-08 19:41:39.000000000 +0100
++++ build64_edit/r-inla/inlaprog/GNUmakefile	2021-02-15 18:50:02.926922311 +0100
+@@ -9,13 +9,11 @@
+ 
+ ## *** chose either one of these; rgeneric requires the second version ***
+ ifeq ($(INLA_WITHOUT_LIBR),1)
+-  RLIB_INC = -DINLA_WITH_RMATH \
+-		-I/usr/include -I/usr/include/R -I/usr/share/R/include
+-  RLIB_LIB = -L/usr/lib -lRmath
++  RLIB_INC = -DINLA_WITH_RMATH
++  RLIB_LIB = -lRmath
+ else
+-  RLIB_INC = -DINLA_WITH_RMATH -DINLA_LIBR \
+-		-I/usr/include -I/usr/include/R -I/usr/share/R/include
+-  RLIB_LIB = -L/usr/lib -lRmath -L/usr/lib/R/lib -lR
++  RLIB_INC = -DINLA_WITH_RMATH -DINLA_LIBR
++  RLIB_LIB = -lRmath -lR
+ endif
+ 
+ # select compilers and optimized compiler-options, add -fopenmp or similar to use OpenMP
+diff --recursive --no-dereference -ub build64/r-inla/inlaprog/Makefile build64_edit/r-inla/inlaprog/Makefile
+--- build64/r-inla/inlaprog/Makefile	2021-01-08 20:19:33.000000000 +0100
++++ build64_edit/r-inla/inlaprog/Makefile	2021-02-15 18:50:02.926922311 +0100
+@@ -9,13 +9,11 @@
+ 
+ ## *** chose either one of these; rgeneric requires the second version ***
+ ifeq ($(INLA_WITHOUT_LIBR),1)
+-  RLIB_INC = -DINLA_WITH_RMATH \
+-		-I/usr/include -I/usr/include/R -I/usr/share/R/include
+-  RLIB_LIB = -L/usr/lib -lRmath
++  RLIB_INC = -DINLA_WITH_RMATH
++  RLIB_LIB = -lRmath
+ else
+-  RLIB_INC = -DINLA_WITH_RMATH -DINLA_LIBR \
+-		-I/usr/include -I/usr/include/R -I/usr/share/R/include
+-  RLIB_LIB = -L/usr/lib -lRmath -L/usr/lib/R/lib -lR
++  RLIB_INC = -DINLA_WITH_RMATH -DINLA_LIBR
++  RLIB_LIB = -lRmath -lR
+ endif
+ 
+ # select compilers and optimized compiler-options, add -fopenmp or similar to use OpenMP
+@@ -45,8 +43,8 @@
+ 
+ GITCOMMIT:= $(shell git log --pretty=format:"%H - %cd" | head -n1)
+ 
+-EXTLIBS = $(RLIB_LIB) $(EXTLIBS1) $(EXTLIBS2) $(EXTLIBS3)
+-INCL    = $(RLIB_INC) -Isrc -I$(PREFIX)/include -DGMRFLib_PATH=\"$(PREFIX)/doc/GMRFLib/data\"
++EXTLIBS = $(RLIB_LIB) $(EXTLIBS1) $(EXTLIBS2) $(EXTLIBS3) -L$(MUPARSER_DIR)/lib
++INCL    = $(RLIB_INC) -Isrc -I$(PREFIX)/include -DGMRFLib_PATH=\"$(PREFIX)/doc/GMRFLib/data\" -I$(MUPARSER_DIR)/include
+ LDFLAGS = $(FLAGS) 
+ FFLAGS  = $(FLAGS) $(FCEXTRAFLAGS) $(INCL)
+ CFLAGS  = $(FLAGS) $(INCL) -I$(LEXTPREFIX)/include -DGITCOMMIT="\"${GITCOMMIT}\""
+diff --recursive --no-dereference -ub build64/r-inla/inlaprog/src/eval.c build64_edit/r-inla/inlaprog/src/eval.c
+--- build64/r-inla/inlaprog/src/eval.c	2020-12-20 09:16:44.000000000 +0100
++++ build64_edit/r-inla/inlaprog/src/eval.c	2021-02-15 18:50:02.926922311 +0100
+@@ -41,7 +41,7 @@
+ #include <string.h>
+ #include <stdio.h>
+ 
+-#include <muParser/muParserDLL.h>
++#include <muParserDLL.h>
+ 
+ #include "GMRFLib/GMRFLib.h"
+ #include "inla.h"
