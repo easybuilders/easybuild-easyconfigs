@@ -12,8 +12,8 @@ toolchainopts = {'openmp': True}
 
 source_urls = ['https://hrue.r-inla-download.org/']
 sources = [{
-        'download_filename': 'build64.tgz',
-        'filename': SOURCE_TGZ,
+    'download_filename': 'build64.tgz',
+    'filename': SOURCE_TGZ,
 }]
 patches = ['r-inla-21.01.18-foss2020a-skip_binaries.patch']
 checksums = [
@@ -32,7 +32,6 @@ dependencies = [
     ('METIS', '5.1.0'),
     ('imkl', '2020.4.304'),
     ('OpenSSL', '1.1.1h'),
-    
 ]
 
 skipsteps = ['configure']
@@ -43,11 +42,13 @@ prebuildopts = 'export INLA_TAG=Version_21.01.18 && '
 prebuildopts += "export CPATH=$EBROOTR/lib64/R/include/:$CPATH && "
 prebuildopts += "export C_INCLUDE_PATH=$PWD/local/include/:$C_INCLUDE_PATH && "
 prebuildopts += "export LD_LIBRARY_PATH=$EBROOTR/lib64/R/lib:$LD_LIBRARY_PATH && "
-prebuildopts += "rm local/lib/libamd.a local/lib/libGMRFLib.a local/bin/inla* local/lib/libmuparser.so* local/lib/libtaucs.a $PWD/local/lib/pardiso-main/pardiso-main-700/libpardiso/Linux/libamd.a && "
+prebuildopts += "rm local/lib/libamd.a local/lib/libGMRFLib.a local/bin/inla* local/lib/libmuparser.so* "
+prebuildopts += "local/lib/libtaucs.a $PWD/local/lib/pardiso-main/pardiso-main-700/libpardiso/Linux/libamd.a && "
 prebuildopts += 'mkdir -p %(installdir)s/include && '
 prebuildopts += 'mkdir -p %(installdir)s/lib && '
 prebuildopts += 'mkdir -p %(installdir)s/bin && '
-prebuildopts += 'mkdir %(builddir)s/eb_openblaso && ln -s $EBROOTOPENBLAS/lib/libopenblas.so.0 %(builddir)s/eb_openblaso/libopenblaso.so.0 && '
+prebuildopts += 'mkdir %(builddir)s/eb_openblaso && '
+prebuildopts += 'ln -s $EBROOTOPENBLAS/lib/libopenblas.so.0 %(builddir)s/eb_openblaso/libopenblaso.so.0 && '
 prebuildopts += 'ln -s $EBROOTOPENBLAS/lib/libopenblas.so %(builddir)s/eb_openblaso/libopenblaso.so && '
 prebuildopts += "export LD_LIBRARY_PATH=%(builddir)s/eb_openblaso:$LD_LIBRARY_PATH && "
 prebuildopts += "export LD_LIBRARY_PATH=%(installdir)s/lib:$LD_LIBRARY_PATH && "
@@ -56,7 +57,8 @@ prebuildopts += "cp ./local/lib/libpardiso.so %(installdir)s/lib && "
 buildopts = 'LEXTPREFIX="%(installdir)s" '
 buildopts += 'PREFIX="%(installdir)s" LEXTLIBS="%(installdir)s/lib" IEXTLIBS="%(installdir)s/include" '
 buildopts += 'MKLROOT="$MKLROOT" CMAKE_AR=gcc-ar '
-buildopts += 'FLAGS=" $CXXFLAGS -L%(builddir)s/eb_openblaso -g -flto -L%(installdir)s/lib -L%(builddir)s/build64/local/lib/ -L$PWD/local/lib/ -lamd -L$PWD/amd/AMD/Lib " '
+buildopts += 'FLAGS=" $CXXFLAGS -L%(builddir)s/eb_openblaso -g -flto -L%(installdir)s/lib '
+buildopts += '-L%(builddir)s/build64/local/lib/ -L$PWD/local/lib/ -lamd -L$PWD/amd/AMD/Lib " '
 buildopts += 'CC="$CC" CXX="$CXX" FC="$FC" RANLIB=gcc-ranlib AR=gcc-ar NM=gcc-nm'
 
 build_cmd = 'make taucs %s AR="gcc-ar qc" && make amd %s && make update' % (buildopts, buildopts)
