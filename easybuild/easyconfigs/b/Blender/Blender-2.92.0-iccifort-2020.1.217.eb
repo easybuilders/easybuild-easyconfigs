@@ -1,0 +1,69 @@
+easyblock = 'CMakeMake'
+
+name = 'Blender'
+version = '2.92.0'
+
+homepage = 'https://www.blender.org/'
+description = """Blender is the free and open source 3D creation suite. It supports
+ the entirety of the 3D pipeline-modeling, rigging, animation, simulation, rendering,
+ compositing and motion tracking, even video editing and game creation."""
+
+toolchain = {'name': 'iccifort', 'version': '2020.1.217'}
+
+source_urls = ['https://download.blender.org/source/']
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['e791cfc403292383577c3c8ce2cd34e5aa2cd8da0a7483041049a1609ddb4595']
+
+# one file does not compile with g++ 9.3.0 headers, so use g++ 8.4.0
+# see also https://bitbucket.org/berkeleylab/upcxx/issues/302/build-failure-for-intel-c-with-std-c-17
+preconfigopts = 'echo "set_source_files_properties(src/draco/compression/attributes/kd_tree_attributes_decoder.cc '
+preconfigopts += 'PROPERTIES COMPILE_FLAGS -gxx-name=$EBROOTGCCCORE/../8.4.0/bin/g++)" '
+preconfigopts += '>> ../%(namelower)s-%(version)s/extern/draco/draco/CMakeLists.txt && '
+
+preconfigopts += 'echo "set_source_files_properties(intern/string_search.cc '
+preconfigopts += 'PROPERTIES COMPILE_FLAGS -gxx-name=$EBROOTGCCCORE/../8.4.0/bin/g++)" '
+preconfigopts += '>> ../%(namelower)s-%(version)s/source/blender/blenlib/CMakeLists.txt && '
+
+# disable SSE detection to give EasyBuild full control over optimization compiler flags being used
+configopts = '-DWITH_CPU_SSE=OFF -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG" '
+
+# these are needed until extra dependencies are added for them to work
+configopts += '-DWITH_INSTALL_PORTABLE=OFF '
+
+# Python paths
+configopts += '-DPYTHON_VERSION=%(pyshortver)s -DPYTHON_LIBRARY=${EBROOTPYTHON}/lib/libpython%(pyshortver)s$(python3-config --abiflags).so '
+configopts += '-DPYTHON_INCLUDE_DIR=${EBROOTPYTHON}/include/python%(pyshortver)s$(python3-config --abiflags) '
+configopts += '-DOPENEXR_INCLUDE_DIR=$EBROOTOPENEXR/include '
+configopts += '-DPYTHON_NUMPY_PATH=$EBROOTSCIPYMINSTACK/lib/python%(pyshortver)s/site-packages '
+configopts += '-DPYTHON_NUMPY_INCLUDE_DIRS=$EBROOTSCIPYMINSTACK/lib/python%(pyshortver)s/site-packages/numpy/core/include '
+
+multi_deps = {'Python': ['3.7', '3.8']}
+
+builddependencies = [
+    ('SciPy-Stack', '2020b'),
+    ('Boost', '1.72.0'),
+    ('libjpeg-turbo', '2.0.4'),
+    ('zlib', '1.2.11'),
+    ('X11', '20200222'),
+    ('Mesa', '20.0.2'),
+    ('libGLU', '9.0.1'),
+    ('OpenImageIO', '2.1.17.0'),  # required for cycles render engine
+    ('OpenColorIO', '1.1.1'),
+    ('Embree', '3.11.0'),
+    ('FFTW', '3.3.8'),
+    ('tbb', '2020.2'),
+    ('LLVM', '9.0.1'),
+    ('CMake', '3.15.3')
+]
+
+separate_build_dir = True
+
+# use Intel software rasterizer by default (no GPU hardware acceleration)
+modextravars = {'GALLIUM_DRIVER': 'swr'}
+
+sanity_check_paths = {
+    'files': ['bin/blender'],
+    'dirs': []
+}
+
+moduleclass = 'vis'
