@@ -1,0 +1,57 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+easyblock = 'ConfigureMake'
+
+name = 'ViennaRNA'
+version = '2.4.17'
+
+homepage = 'http://www.tbi.univie.ac.at/RNA/'
+description = """The Vienna RNA Package consists of a C code library and several
+stand-alone programs for the prediction and comparison of RNA secondary structures."""
+
+toolchain = {'version': '9.3.0', 'name': 'GCCcore'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['http://www.tbi.univie.ac.at/RNA/download/sourcecode/%(version_major)s_%(version_minor)s_x/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['b1e608f6f37cdf4adbcdd1f86fd9ebfcc1e663d58488e0f8173a58879480c121']
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.6", "3.7", "3.8"]}
+
+# Prevents the "make install" step from trying to copy to _global_ perl dir and thus make easybuild fail.
+# Python 2 is enabled by default, but not Python 3
+
+configopts = '--without-perl --without-python2 --with-python3'
+
+local_binary_files = [
+    "fold", "eval", "heat", "pdist", "distance", "inverse", "plot", "subopt", "Lfold", "cofold",
+    "paln", "duplex", "alifold", "plfold", "up", "aliduplex", "Lalifold", "2Dfold", "parconv",
+    "PKplex", "plex", "snoop", "forester",
+]
+
+sanity_check_paths = {
+    'files': [['bin/RNA%s' % x for x in local_binary_files], 'bin/Kinfold'],
+    'dirs': ["lib/python%(pyshortver)s/site-packages"],
+}
+
+sanity_check_commands = [
+    "python -c 'import RNA'"
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+modluafooter = """
+depends_on("python")
+"""
+
+moduleclass = 'bio'
