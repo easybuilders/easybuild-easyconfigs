@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'EPACTS'
+version = '3.3.2'
+
+homepage = 'http://github.com/statgen/EPACTS'
+description = """EPACTS is a versatile software pipeline to perform various statistical tests for identifying
+ genome-wide association from sequence data through a user-friendly interface, both to scientific analysts and
+ to method developer.s"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://github.com/statgen/EPACTS/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'EPACTS-3.3.2_isnam.patch',
+    ('EPACTS-3.3.2_R_isnam.patch', 1),
+]
+checksums = [
+    'e389a33cbb82aaab39fef07c2fb14477f90600e46180148df7ebaa4495e8cbe7',  # v3.3.2.tar.gz
+    'eea1f6cb8249bfe8e80ec4276fac554321fbb8b9e1ca08e0532f1a3530183254',  # EPACTS-3.3.2_isnam.patch
+    '5dec3d659cf0b17be1dd2152e452bcc779a44794a5f195724e243bedd91c187d',  # EPACTS-3.3.2_R_isnam.patch
+]
+
+# patch data/epactsR_3.3.2.tar.gz
+preconfigopts = 'cd %(builddir)s/%(name)s-%(version)s/data && '
+preconfigopts += 'tar xfz epactsR_3.3.2.tar.gz && '
+# apply patch
+preconfigopts += 'patch -p0 -i epactsR_3.3.2_isnam.patch && '
+# remove old tarball create new tarball
+preconfigopts += 'rm epactsR_3.3.2.tar.gz && tar cfz epactsR_3.3.2.tar.gz epactsR && '
+preconfigopts += "cd .. && "
+
+builddependencies = [
+    ('Automake', '1.16.2'),
+]
+
+dependencies = [
+    ('R', '4.0.4'),
+    ('Ghostscript', '9.53.3'),
+    ('gnuplot', '5.4.1'),
+    ('zlib', '1.2.11'),
+]
+
+osdependencies = [
+    ('groff'),
+]
+
+moduleclass = 'bio'

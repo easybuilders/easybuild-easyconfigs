@@ -1,0 +1,220 @@
+float const is an oxymoron, change to constexpr
+isnan was moved to std library
+remove declaration for single.b.sna0.R 
+diff -ruN EPACTS-3.3.2.orig/data/Makefile EPACTS-3.3.2/data/Makefile
+--- EPACTS-3.3.2.orig/data/Makefile	2017-02-22 00:30:03.000000000 -0800
++++ EPACTS-3.3.2/data/Makefile	2021-03-05 14:00:21.655282000 -0800
+@@ -284,7 +284,7 @@
+ 	group.b.collapse.R group.b.madsen.R group.q.reverse.R group.skat.R group.b.burden.R \
+ 	group.mmskat.R group.b.wcnt.R group.q.wilcox.R \
+ 	single.b.firth.R single.b.firthCov.R single.b.wald.R single.q.reverse.R \
+-	single.b.spa.R single.b.spa2.R single.b.sna0.R single.b.sna2.R \
++	single.b.spa2.R single.b.sna0.R single.b.sna2.R \
+ 	single.b.lrt.R single.q.linear.R single.q.wilcox.R single.q.lm.R single.b.score.R \
+ 	single.q.emmaxR.R \
+ 	multi.q.linear.R \
+diff -ruN EPACTS-3.3.2.orig/data/Makefile.in EPACTS-3.3.2/data/Makefile.in
+--- EPACTS-3.3.2.orig/data/Makefile.in	2017-02-22 00:30:03.000000000 -0800
++++ EPACTS-3.3.2/data/Makefile.in	2021-03-05 13:59:59.837275000 -0800
+@@ -284,7 +284,7 @@
+ 	group.b.collapse.R group.b.madsen.R group.q.reverse.R group.skat.R group.b.burden.R \
+ 	group.mmskat.R group.b.wcnt.R group.q.wilcox.R \
+ 	single.b.firth.R single.b.firthCov.R single.b.wald.R single.q.reverse.R \
+-	single.b.spa.R single.b.spa2.R single.b.sna0.R single.b.sna2.R \
++	single.b.spa2.R single.b.sna0.R single.b.sna2.R \
+ 	single.b.lrt.R single.q.linear.R single.q.wilcox.R single.q.lm.R single.b.score.R \
+ 	single.q.emmaxR.R \
+ 	multi.q.linear.R \
+diff -ruN EPACTS-3.3.2.orig/src/chaps.cpp EPACTS-3.3.2/src/chaps.cpp
+--- EPACTS-3.3.2.orig/src/chaps.cpp	2017-02-22 00:30:03.000000000 -0800
++++ EPACTS-3.3.2/src/chaps.cpp	2021-03-05 12:46:35.205579000 -0800
+@@ -40,8 +40,8 @@
+   bool sepchr;
+ 
+   static int const DEFAULT_NSNPS = 10000L;
+-  static double const DEFAULT_MIN_MAF = 1e-6;
+-  static double const DEFAULT_MAX_MAF = 1;
++  static double constexpr DEFAULT_MIN_MAF = 1e-6;
++  static double constexpr DEFAULT_MAX_MAF = 1;
+ 
+   pCHAPSArgs() :
+     unit(DEFAULT_NSNPS), verbose(false), ignoreFilter(false), ignoreMissing(false), minAC(0), minMAC(0), maxAC(INT_MAX), minMAF(DEFAULT_MIN_MAF), maxMAF(DEFAULT_MAX_MAF), minCallRate(DEFAULT_MIN_MAF), sepchr(false)
+diff -ruN EPACTS-3.3.2.orig/src/FreqTable.h EPACTS-3.3.2/src/FreqTable.h
+--- EPACTS-3.3.2.orig/src/FreqTable.h	2017-02-22 00:30:03.000000000 -0800
++++ EPACTS-3.3.2/src/FreqTable.h	2021-03-05 13:08:41.142555000 -0800
+@@ -9,21 +9,21 @@
+         if (this->data.find(t) == this->data.end()) {
+             this->data[t] = 1;
+         } else {
+-            this->data[t] ++; 
++            this->data[t] ++;
+         }
+         this->isSorted = false;
+     };
+     void remove(const T& t) {
+         if (this->data.find(t) == this->data.end()) {
+-            return false;
++            return;
+         }
+         this->data[t] -- ;
+         this->isSorted = false;
+     };
+-    size_t size() const{ return this->data.size();}; 
++    size_t size() const{ return this->data.size();};
+     // return the frequency in ascending order
+     void at(const unsigned int idx, T* t, int* v) {
+-        if (!this->isSorted) 
++        if (!this->isSorted)
+             this->sortByFrequency();
+         *v = this->orderedData[idx].first;
+         *t = *(this->orderedData[idx].second);
+diff -ruN EPACTS-3.3.2.orig/src/fVcf.h EPACTS-3.3.2/src/fVcf.h
+--- EPACTS-3.3.2.orig/src/fVcf.h	2017-02-22 00:30:03.000000000 -0800
++++ EPACTS-3.3.2/src/fVcf.h	2021-03-05 12:17:19.738621000 -0800
+@@ -309,7 +309,7 @@
+       int cnts[3] = {0,0,0};
+       for(int j=0; j < nInds; ++j) {
+ 	g = genos[(size_t)m*(size_t)nInds + j];
+-	if ( !isnan(g) ) { // do not count missing at any place
++	if ( !std::isnan(g) ) { // do not count missing at any place
+ 	  if ( g < 0.5 ) ++cnts[0];
+ 	  else if ( g >= 1.5 ) ++cnts[2];
+ 	  else ++cnts[1];
+@@ -319,7 +319,7 @@
+     }
+   }
+ 
+-  // works only 
++  // works only
+   // numAlleles[m] = 2*(r + h + a)
+   // sumAlleles[m] = h + 2a
+   // sumsqAlleles[m] = h + 4a
+@@ -338,7 +338,7 @@
+       cnts[0] = cnts[1] = cnts[2] = 0;
+       for(int j=0; j < nInds; ++j) {
+ 	g = genos[(size_t)m*(size_t)nInds + j];
+-	if ( !isnan(g) ) { // do not count missing at any place
++	if ( !std::isnan(g) ) { // do not count missing at any place
+ 	  if ( g < 0.5 ) ++cnts[0];
+ 	  else if ( g >= 1.5 ) ++cnts[2];
+ 	  else ++cnts[1];
+@@ -352,7 +352,7 @@
+     cnts[0] = cnts[1] = cnts[2] = cnts[3] = cnts[4] = cnts[5] = 0;
+     for(int j=0; j < nInds; ++j) {
+       g = genos[(size_t)m*(size_t)nInds + j];
+-      if ( !isnan(g) ) { // do not count missing at any place
++      if ( !std::isnan(g) ) { // do not count missing at any place
+ 	if ( g < 0.5 ) ++cnts[0+isCases[j]*3];
+ 	else if ( g >= 1.5 ) ++cnts[2+isCases[j]*3];
+ 	else ++cnts[1+isCases[j]*3];
+@@ -397,7 +397,7 @@
+       fprintf(fp, "%s", markers[i].c_str());
+       for(int j=0; j < nInds; ++j) {
+ 	v = genos[(size_t)i*(size_t)nInds + j];
+-	if ( isnan(v) ) {
++	if ( std::isnan(v) ) {
+ 	  fprintf(fp,"\tNA");
+ 	}
+ 	else {
+@@ -828,7 +828,7 @@
+ 	  PLs.push_back(pls[1]); 
+ 	  PLs.push_back(pls[2]);
+ 	  depths.push_back(dp);
+-	  if ( !isnan(gt) ) {
++	  if ( !std::isnan(gt) ) {
+ 	    AN += 2;
+ 	    AC += gt;
+ 	    sqAC += (gt*gt);
+@@ -1028,7 +1028,7 @@
+ 	  PLs.push_back(pls[1]); 
+ 	  PLs.push_back(pls[2]);
+ 	  depths.push_back(dp);
+-	  if ( !isnan(gt) ) {
++	  if ( !std::isnan(gt) ) {
+ 	    AN += 2;
+ 	    AC += gt;
+ 	    sqAC += (gt*gt);
+diff -ruN EPACTS-3.3.2.orig/src/pEmmax.h EPACTS-3.3.2/src/pEmmax.h
+--- EPACTS-3.3.2.orig/src/pEmmax.h	2017-02-22 00:30:03.000000000 -0800
++++ EPACTS-3.3.2/src/pEmmax.h	2021-03-05 13:12:14.012445000 -0800
+@@ -83,8 +83,8 @@
+   double maxP;
+ 
+   static int const DEFAULT_UNIT = 10000L;
+-  static double const DEFAULT_MIN = 1e-6;
+-  static double const DEFAULT_MAX = 1;
++  static double constexpr DEFAULT_MIN = 1e-6;
++  static double constexpr DEFAULT_MAX = 1;
+   static int const DEFAULT_MIN_MAC = 1;
+   static int const DEFAULT_MAX_MAC = 1000000000;
+   static int const DEFAULT_MAX_PERM = 10000000;
+@@ -114,8 +114,8 @@
+   static const int N_MAGIC = 8;
+   static const char *magicKin;
+   static const char *magicEig;
+-  static const double ZEPS = 1e-10;
+-  static const double TOL = 1e-6;
++  static constexpr double ZEPS = 1e-10;
++  static constexpr double TOL = 1e-6;
+ 
+   static bool writeIDs(wFile& wf, std::vector<std::string>& ids) {
+     char* p = (char*) malloc(65536); // maximum ID length is 64k
+@@ -651,7 +651,7 @@
+   }
+   
+   static double tcdf(double t, double nu) {
+-    if ( isnan(t) ) return 1.;
++    if ( std::isnan(t) ) return 1.;
+     else return betai(nu/2.,0.5,nu/(nu+t*t));
+   }
+ };
+@@ -991,7 +991,7 @@
+ 	
+ 	for(int i=0; i < r; ++i) {
+ 	  for(int j=0; j < c; ++j) {
+-	    if ( !isnan(X(i,j)) ) {
++	    if ( !std::isnan(X(i,j)) ) {
+ 	      ++colCnts[j];
+ 	      colSums[j] += X(i,j);
+ 	    }
+@@ -1000,7 +1000,7 @@
+ 	
+ 	for(int i=0; i < r; ++i) {
+ 	  for(int j=0; j < c; ++j) {
+-	    if ( isnan(X(i,j)) ) {
++	    if ( std::isnan(X(i,j)) ) {
+ 	      X(i,j) = (colCnts[j] > 0) ? (colSums[j]/colCnts[j]) : 0;
+ 	    }
+ 	  }
+@@ -1350,7 +1350,7 @@
+ 	
+ 	for(int i=0; i < r; ++i) {
+ 	  for(int j=0; j < c; ++j) {
+-	    if ( !isnan(X(i,j)) ) {
++	    if ( !std::isnan(X(i,j)) ) {
+ 	      ++colCnts[j];
+ 	      colSums[j] += X(i,j);
+ 	    }
+@@ -1359,7 +1359,7 @@
+ 	
+ 	for(int i=0; i < r; ++i) {
+ 	  for(int j=0; j < c; ++j) {
+-	    if ( isnan(X(i,j)) ) {
++	    if ( std::isnan(X(i,j)) ) {
+ 	      X(i,j) = (colCnts[j] > 0) ? (colSums[j]/colCnts[j]) : 0;
+ 	    }
+ 	  }
+diff -ruN EPACTS-3.3.2.orig/src/vcfast.cpp EPACTS-3.3.2/src/vcfast.cpp
+--- EPACTS-3.3.2.orig/src/vcfast.cpp	2017-02-22 00:30:03.000000000 -0800
++++ EPACTS-3.3.2/src/vcfast.cpp	2021-03-05 12:40:54.656576000 -0800
+@@ -64,8 +64,8 @@
+   bool sepchr;
+ 
+   static int const DEFAULT_UNIT = 10000L;
+-  static double const DEFAULT_MIN = 1e-6;
+-  static double const DEFAULT_MAX_MAF = 1;
++  static double constexpr DEFAULT_MIN = 1e-6;
++  static double constexpr DEFAULT_MAX_MAF = 1;
+ 
+   pVPHArgs() :
+     unit(DEFAULT_UNIT), verbose(false), ignoreFilter(false), ignoreMissing(false), includeMultiAllelic(false), minAC(0), minMAC(0), maxAC(INT_MAX), minMAF(DEFAULT_MIN), maxMAF(DEFAULT_MAX_MAF), minCallRate(DEFAULT_MIN), genoFlag(false), acFlag(false), anFlag(false), aldFlag(false), tstvFlag(false),sepchr(false)

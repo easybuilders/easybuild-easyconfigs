@@ -1,0 +1,75 @@
+patch for epactsR.tar.gz - patch inside a patch
+fix isnan usage. isnan has moved to std library std::isnan   
+diff -ruN EPACTS-3.3.2.orig/data/epactsR_3.3.2_isnam.patch EPACTS-3.3.2/data/epactsR_3.3.2_isnam.patch
+--- EPACTS-3.3.2.orig/data/epactsR_3.3.2_isnam.patch	1969-12-31 16:00:00.000000000 -0800
++++ EPACTS-3.3.2/data/epactsR_3.3.2_isnam.patch	2021-03-13 09:38:08.490722000 -0800
+@@ -0,0 +1,69 @@
++diff -ruN epactsR.orig/src/epacts.cpp epactsR/src/epacts.cpp
++--- epactsR.orig/src/epacts.cpp	2017-02-06 10:06:19.000000000 -0800
+++++ epactsR/src/epacts.cpp	2021-03-05 15:01:29.173985000 -0800
++@@ -59,7 +59,7 @@
++ 	error("Error in parsing marker ID %s",prname);
++       for(j=0; j < nc; ++j) {
++ 	e = p_m[i+j*nr];
++-	if ( isnan(e) ) {
+++	if ( std::isnan(e) ) {
++ 	  fprintf(fp,"\tNA");
++ 	}
++ 	else {
++@@ -124,7 +124,7 @@
++       }
++       for(j=0; j < nvc; ++j) {
++ 	e = p_v[i+j*nvr];
++-	if ( isnan(e) ) {
+++	if ( std::isnan(e) ) {
++ 	  fprintf(fp,"\tNA");
++ 	}
++ 	else {
++diff -ruN epactsR.orig/src/fVcf.h epactsR/src/fVcf.h
++--- epactsR.orig/src/fVcf.h	2017-02-06 10:06:19.000000000 -0800
+++++ epactsR/src/fVcf.h	2021-03-05 14:08:54.425222000 -0800
++@@ -307,7 +307,7 @@
++       int cnts[3] = {0,0,0};
++       for(int j=0; j < nInds; ++j) {
++ 	g = genos[m*nInds + j];
++-	if ( !isnan(g) ) { // do not count missing at any place
+++	if ( !std::isnan(g) ) { // do not count missing at any place
++ 	  if ( g < 0.5 ) ++cnts[0];
++ 	  else if ( g >= 1.5 ) ++cnts[2];
++ 	  else ++cnts[1];
++@@ -336,7 +336,7 @@
++       cnts[0] = cnts[1] = cnts[2] = 0;
++       for(int j=0; j < nInds; ++j) {
++ 	g = genos[m*nInds + j];
++-	if ( !isnan(g) ) { // do not count missing at any place
+++	if ( !std::isnan(g) ) { // do not count missing at any place
++ 	  if ( g < 0.5 ) ++cnts[0];
++ 	  else if ( g >= 1.5 ) ++cnts[2];
++ 	  else ++cnts[1];
++@@ -350,7 +350,7 @@
++     cnts[0] = cnts[1] = cnts[2] = cnts[3] = cnts[4] = cnts[5] = 0;
++     for(int j=0; j < nInds; ++j) {
++       g = genos[m*nInds + j];
++-      if ( !isnan(g) ) { // do not count missing at any place
+++      if ( !std::isnan(g) ) { // do not count missing at any place
++ 	if ( g < 0.5 ) ++cnts[0+isCases[j]*3];
++ 	else if ( g >= 1.5 ) ++cnts[2+isCases[j]*3];
++ 	else ++cnts[1+isCases[j]*3];
++@@ -395,7 +395,7 @@
++       fprintf(fp, "%s", markers[i].c_str());
++       for(int j=0; j < nInds; ++j) {
++ 	v = genos[i*nInds + j];
++-	if ( isnan(v) ) {
+++	if ( std::isnan(v) ) {
++ 	  fprintf(fp,"\tNA");
++ 	}
++ 	else {
++@@ -825,7 +825,7 @@
++ 	  PLs.push_back(pls[1]); 
++ 	  PLs.push_back(pls[2]);
++ 	  depths.push_back(dp);
++-	  if ( !isnan(gt) ) {
+++	  if ( !std::isnan(gt) ) {
++ 	    AN += 2;
++ 	    AC += gt;
++ 	    sqAC += (gt*gt);
