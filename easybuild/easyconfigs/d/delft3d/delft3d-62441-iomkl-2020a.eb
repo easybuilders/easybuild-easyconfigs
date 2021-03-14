@@ -1,0 +1,60 @@
+# Note that the proper stable releases are located under "delft3d/tags/delft3d4" rather than
+# in "delft3d/branches/releases" in the SVN repository at https://svn.oss.deltares.nl/repos/.
+# This is documented here https://oss.deltares.nl/web/delft3d/source-code#Download%20source%20code.
+# Compute Canada, Sergiy Khan
+
+easyblock = 'ConfigureMake'
+name = 'delft3d'
+version = '62441'
+
+homepage = 'https://svn.oss.deltares.nl'
+description = """Delft3D is a powerful modelling suite focusing primarily on coastal, estuarine, river, rural and urban environments Delft3D FM Suite can simulate storm surges, hurricanes, tsunamis, detailed flows and water levels, waves, sediment transport and morphology, water quality and ecology, and is capable of handling the interactions between these processes. """
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+sources = [
+    '%(name)s-%(version)s.tar.gz',
+    '%(name)s-%(version)s-examples-scheduler.tar.gz'
+]
+checksums = [
+    '3806a0e3b5f67589e2b07eeef6696ec3b66b771fc02fdaafadd94feade9441f9',  # delft3d-62441.tar.gz
+    'e24b420403e12a08daa9cf2100b4731aff15719b3ea41be90e66717bd180226b',  # delft3d-62441-examples-scheduler.tar.gz
+]
+
+builddependencies = [
+    ('netCDF-Fortran','4.5.2'),
+]
+
+configure_cmd_prefix = 'cd src && ./autogen.sh && '
+
+configopts = '--with-netcdf --with-mpi CC=mpicc CXX=mpiCC FC=mpif90 F77=mpif90'
+
+prebuildopts = 'cd src && '
+
+# The code uses lazy binding and needs the RELRO hardening in Nix turned off:
+
+preinstallopts = 'export hardeningDisable=bindnow && '
+
+preinstallopts += 'cd src && '
+
+# Patch binaries in bin/ to find libraries in lib/.
+# Copy examples that comes with the software, and then copy examples of the submission scripts provided by us.
+
+postinstallcmds = [
+    'setrpaths.sh --any_interpreter --path %(installdir)s/bin --add_path %(installdir)s/lib && setrpaths.sh --any_interpreter --path %(installdir)s/bin/swan_4072ABCDE_del_l64_i11_omp.exe --add_path $EBROOTICC/lib/intel64',
+    'cp -a examples %(installdir)s/ && cp -a %(builddir)s/examples %(installdir)s/ && chmod -R a+rX %(installdir)s/examples'
+]
+
+# parallel build fails:
+
+parallel = 1
+
+local_delft3d_bins = ["vs", "nesthd2", "nesthd1", "mormerge", "d_hydro"]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_delft3d_bins],
+    'dirs': ['bin', 'lib']
+}
+
+moduleclass = 'geo'

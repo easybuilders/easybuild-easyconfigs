@@ -1,0 +1,53 @@
+##
+# Author: Ali Kerrache, University of Manitoba.
+# Date: Oct 23, 2018.
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'phyx'
+version = '1.1'
+
+homepage = 'https://github.com/FePhyFoFum/phyx'
+description = """phyx performs phylogenetics analyses on trees and sequences."""
+
+toolchain = {'name': 'iimkl', 'version': '2020a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['https://github.com/FePhyFoFum/phyx/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['phyx-0.999-fix_Makefile.patch']
+checksums = [
+    '2a676cc4c86a1edcf85fddd1961edb9f7e41cf41c2e6eac0371192777947cbc2',  # 1.1.tar.gz
+    'bc4abfd3c6a06272f943d75d2b9fc525a9af088209b74391a17c6adfb03fa757',  # phyx-0.999-fix_Makefile.patch
+]
+
+dependencies = [
+    ('NLopt', '2.7.0'),
+    ('Armadillo', '9.900.2'),
+]
+
+start_dir = 'src'
+
+skipsteps = ['install']
+
+preconfigopts  = 'autoreconf -fi && '
+preconfigopts += 'export HNLOPT=Y && export HARM=Y && export HOMP=Y && '
+
+postinstallcmds =  ['cd %(builddir)s/%(namelower)s-%(version)s/ && mkdir -p %(installdir)s/bin && cp src/px* %(installdir)s/bin/ && cp -r doc example_files  LICENSE README.md %(installdir)s/']
+
+local_phyx_binaries = [
+    "pxaa2cdn", "pxbdfit", "pxbdsim", "pxboot", "pxbp", "pxcat", "pxclsq", "pxcltr", 
+    "pxcolt", "pxconsq", "pxcontrates", "pxfqfilt", "pxlog", "pxlssq", "pxlstr", 
+    "pxmrca", "pxmrcacut", "pxmrcaname", "pxnj", "pxnw", "pxrecode", "pxrevcomp", 
+    "pxrls", "pxrlt", "pxrmk", "pxrms", "pxrmt", "pxrr", "pxs2fa", "pxs2nex", "pxs2phy", 
+    "pxseqgen", "pxssort", "pxsstat", "pxstrec", "pxsw", "pxt2new", "pxtcol", "pxtcomb", 
+    "pxtlate", "pxtrt", "pxtscale", "pxupgma", "pxvcf2fa",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_phyx_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
