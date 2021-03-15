@@ -270,9 +270,12 @@ class EasyConfigTest(TestCase):
             # Libint 1.1.6 is required by older CP2K versions
             'Libint': [(r'1\.1\.6', [r'CP2K-[3-6]'])],
             # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
-            # (Qiskit depends on PySCF)
-            'libxc': [(r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
-                                   r'PySCF-', r'Qiskit-', r'WIEN2k-'])],
+            # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
+            'libxc': [
+                (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
+                             r'PySCF-', r'Qiskit-', r'WIEN2k-']),
+                (r'5\.', [r'Elk-']),
+            ],
             # both scVelo and Python-Geometric depend on numba, which typically requires an older LLVM
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
