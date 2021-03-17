@@ -1,0 +1,43 @@
+##
+# Author: HuiZhong Lu, University of Sherbrooke, Canada
+# Date: Mar 12, 2021.
+##
+
+easyblock = 'MakeCp'
+
+name = 'FragGeneScan'
+version = '1.30'
+
+homepage = 'http://omics.informatics.indiana.edu/FragGeneScan/'
+description = "FragGeneScan is an application for finding (fragmented) genes in short reads."
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(name)s%(version)s.tar.gz']
+checksums = ['f2d7f0dfa4a5f4bbea295ed865dcbfedf16c954ea1534c2a879ebdcfb8650d95']
+
+buildopts = 'CC="$CC" CFLAG="$CFLAGS" fgs'
+
+postinstallcmds = [
+    "sed -i 's%#!/usr/bin/perl -w%#!/usr/bin/env perl%g' %(installdir)s/bin/*.pl && chmod -R go+X %(installdir)s",
+    "cp -r  %(installdir)s/train %(installdir)s/bin",
+]  # !\/usr\/bin\/perl/#!\/usr\/bin\/env perl/g' %(installdir)s/bin/*.pl && chmod -R go+X %(installdir)s"]
+files_to_copy = [
+    (['%(name)s', 'run_FragGeneScan.pl'], 'bin'),
+    'README',
+    'example',
+    'train',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/run_FragGeneScan.pl'],
+    'dirs': ['example', 'train'],
+}
+
+modextrapaths = {'PATH': ['train']}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("perl")
+"""
