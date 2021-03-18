@@ -1,0 +1,65 @@
+easyblock = 'CMakeMake'
+
+name = 'WebKitGTK+'
+version = '2.30.6'
+
+homepage = 'https://webkitgtk.org/'
+description = """WebKitGTK+ is a full-featured port of the WebKit
+rendering engine, suitable for projects requiring any kind of web
+integration, from hybrid HTML/CSS applications to full-fledged web
+browsers. It offers WebKit’s full functionality and is useful in a wide
+range of systems from desktop computers to embedded systems like phones,
+tablets, and televisions."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+source_urls = ['https://webkitgtk.org/releases']
+sources = ['webkitgtk-%(version)s.tar.xz']
+patches = ['%(name)s-%(version)s_turn_off_various_problematic_features.patch']
+checksums = [
+    '50736ec7a91770b5939d715196e5fe7209b93efcdeef425b24dc51fb8e9d7c1e',  # webkitgtk-2.30.6.tar.xz
+    # WebKitGTK+-2.30.6_turn_off_various_problematic_features.patch
+    '539d043e99070ffa8349c67969d9d0b7eb431641d76f4a70a2c20374ca4e1e74',
+]
+
+osdependencies = [
+    OS_PKG_OPENSSL_DEV,
+    ('systemd-devel', 'libsystemd-dev', 'libsystemd-devel')
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('Python', '3.8.6'),
+    ('Perl', '5.32.0'),
+    ('GObject-Introspection', '1.66.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('GLib', '2.66.1'),
+    ('gperf', '3.1'),
+    ('cairo', '1.16.0'),
+    ('GTK+', '3.24.23'),
+    ('LibSoup', '2.72.0'),
+    ('ATK', '2.36.0'),
+    ('libgcrypt', '1.9.2'),
+    ('libwebp', '1.1.0'),
+    ('libxslt', '1.1.34'),
+    ('libtasn1', '4.16.0'),
+    ('GStreamer', '1.18.3'),
+    ('OpenJPEG', '2.4.0'),
+    ('Ruby', '2.7.2'),
+]
+
+# must be built in parallel with more than 1 process (parallel > 1) to avoid build error:
+# No rule to make target 'JavaScriptCore-4.0.gir', needed by 'WebKit2-4.0.gir'
+# see https://bugs.webkit.org/show_bug.cgi?id=195251
+
+configopts = "-DPORT=GTK -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python -DRUBY_EXECUTABLE=$EBROOTRUBY/bin/ruby "
+
+sanity_check_paths = {
+    'files': ['bin/WebKitWebDriver', 'lib/libwebkit2gtk-4.0.%s' % SHLIB_EXT],
+    'dirs': ['include/webkitgtk-4.0/webkit2', 'libexec/webkit2gtk-4.0'],
+}
+
+moduleclass = 'lib'
