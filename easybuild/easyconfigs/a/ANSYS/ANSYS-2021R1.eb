@@ -1,0 +1,67 @@
+name = 'ANSYS'
+version = '2021R1'
+versionsuffix = 'v211'
+versionprefix = '2018.3.222'
+
+homepage = 'http://www.ansys.com'
+description = """ANSYS simulation software enables organizations to confidently predict 
+    how their products will operate in the real world. We believe that every product is 
+    a promise of something greater."""
+
+toolchain = SYSTEM
+
+# create tar ball from the installation iso files
+sources = ['ANSYS-%(version)s.tar']
+
+# sha256sum ANSYS-2021R1.tar
+checksums = ['63079a898e24d62ab7ea8853d92e0811f398e12be807d6c66b7d76c4a93315f3']
+
+postinstallcmds = [
+	# Fix missing execute permission for others on at least one folder
+	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
+	# Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+          sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+	# Rename built-in libstdc++.so* to libstdc++.so*.bak as they are older than whats in gentoo, and cause problem with other binaries
+        "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+	# Run setrpaths.sh in all directories
+        "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+        # Run setrpaths.sh for any_interpreter
+        "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
+          /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+	# Enable additive extension on the workbench ACT start page
+        "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
+          %(installdir)s/%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
+	# Manually patch setup-mwuser (original filesize 4470 -> 4472 when patched) for ansys versions >= 17.2
+        # /cvmfs/restricted.computecanada.ca/easybuild/software/2020/Core/ansys/2021R1/v211/commonfiles/MainWin/linx64/mw/setup-mwuser
+        "cp -a %(installdir)s/%(versionsuffix)s/commonfiles/MainWin/linx64/mw/setup-mwuser %(installdir)s/%(versionsuffix)s/commonfiles/MainWin/linx64/mw/orig_setup-mwuser",
+        "patch -d%(installdir)s/%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/setup-mwuser.patch-%(version)s",
+        # Avoid following symbol lookup error when running the fluent gui ie)
+        # /cvmfs/soft.computecanada.ca/gentoo/2020/usr/lib64/libfontconfig.so.1: undefined symbol: FT_Done_MM_Var
+        "mv %(installdir)s/%(versionsuffix)s/Framework/bin/Linux64/libfreetype.so.6 \
+          %(installdir)s/%(versionsuffix)s/Framework/bin/Linux64/libfreetype.so.6.bak",
+]
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
+if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
+        -- /cvmfs/restricted.computecanada.ca/easybuild/software/2020/Core/ansys \
+        --   /2021R1/v211/commonfiles/MPI/Intel/2018.3.222/linx64/etc/tmi.conf
+        setenv("TMI_CONFIG",pathJoin(root,"%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
+end
+"""
+
+moduleclass = 'tools'
