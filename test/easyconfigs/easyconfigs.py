@@ -50,7 +50,7 @@ from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_gra
 from easybuild.tools import config
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
-from easybuild.tools.filetools import verify_checksum, write_file
+from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.py2vs3 import string_type, urlopen
@@ -68,6 +68,12 @@ single_tests_ok = True
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
+
+    # make sure that the EasyBuild installation is still known even if we purge an EB module
+    if os.getenv('EB_SCRIPT_PATH') is None:
+        eb_path = which('eb')
+        if eb_path is not None:
+            os.environ['EB_SCRIPT_PATH'] = eb_path
 
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
