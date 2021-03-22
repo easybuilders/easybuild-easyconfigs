@@ -1,0 +1,47 @@
+easyblock = 'PythonBundle'
+
+name = 'python-igraph'
+version = '0.9.0'
+
+homepage = 'https://igraph.org/python'
+description = """Python interface to the igraph high performance graph library, primarily aimed at complex network
+ research and analysis."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+osdependencies = [('zlib-devel', 'zlib1g-dev')]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('igraph', '0.9.0'),
+    ('PyCairo', '1.18.2'),
+    ('Clang', '11.0.1'),
+    ('libxml2', '2.9.10'),
+    ('pkg-config', '0.29.2'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+
+exts_list = [
+    ('texttable', '1.6.2', {
+        'checksums': ['eff3703781fbc7750125f50e10f001195174f13825a92a45e9403037d539b4f4'],
+    }),
+    (name, version, {
+        'buildopts': '--use-pkg-config',
+        'modulename': 'igraph',
+        'checksums': ['7aa1d77fa02e27475eb4f14503f3cb342c3ed8990d9224640fd29c70797f2dd6'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/igraph'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# cairo must be available for proper plotting support
+sanity_check_commands = ["python -c 'from igraph.drawing.utils import find_cairo; cairo = find_cairo(); cairo.Context'"]
+
+moduleclass = 'lib'
