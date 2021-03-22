@@ -1,0 +1,118 @@
+diff -ru IQ-TREE-2.0.7.orig/CMakeLists.txt IQ-TREE-2.0.7/CMakeLists.txt
+--- IQ-TREE-2.0.7.orig/CMakeLists.txt	2021-03-22 15:35:32.651899900 +0000
++++ IQ-TREE-2.0.7/CMakeLists.txt	2021-03-22 15:51:25.685798985 +0000
+@@ -373,14 +373,14 @@
+ if (VCC)
+     set(AVX_FLAGS "${AVX_FLAGS} /arch:AVX")
+ elseif (CLANG)
+-    set(AVX_FLAGS "${AVX_FLAGS} -mavx")
++    set(AVX_FLAGS "${AVX_FLAGS} ")
+ elseif (GCC)
+-    set(AVX_FLAGS "${AVX_FLAGS} -mavx -fabi-version=0")
++    set(AVX_FLAGS "${AVX_FLAGS}  -fabi-version=0")
+ elseif (ICC)
+     if (WIN32)
+          set(AVX_FLAGS "${AVX_FLAGS} /arch:avx")
+     else()
+-         set(AVX_FLAGS "${AVX_FLAGS} -mavx")
++         set(AVX_FLAGS "${AVX_FLAGS} ")
+     endif()
+ endif()
+ 
+@@ -388,12 +388,12 @@
+ if (VCC)
+     set(SSE_FLAGS "${SSE_FLAGS} /arch:SSE2 -D__SSE3__")
+ elseif (GCC OR CLANG)
+-    set(SSE_FLAGS "${SSE_FLAGS} -msse3")
++    set(SSE_FLAGS "${SSE_FLAGS} ")
+ elseif (ICC)
+     if (WIN32)
+         set(SSE_FLAGS "${SSE_FLAGS} /arch:sse3")
+     else()
+-        set(SSE_FLAGS "${SSE_FLAGS} -msse3")
++        set(SSE_FLAGS "${SSE_FLAGS} ")
+     endif()
+ endif()
+ 
+@@ -401,14 +401,14 @@
+ if (VCC)
+     set(FMA_FLAGS "${FMA_FLAGS} /arch:AVX2")
+ elseif (CLANG)
+-    set(FMA_FLAGS "${FMA_FLAGS} -mavx -mfma")
++    set(FMA_FLAGS "${FMA_FLAGS}  ")
+ elseif (GCC)
+-    set(FMA_FLAGS "${FMA_FLAGS} -mavx -fabi-version=0 -mfma")
++    set(FMA_FLAGS "${FMA_FLAGS}  -fabi-version=0 ")
+ elseif (ICC)
+     if (WIN32)
+          set(FMA_FLAGS "${FMA_FLAGS} /arch:core-avx2")
+     else()
+-         set(FMA_FLAGS "${FMA_FLAGS} -march=core-avx2")
++         set(FMA_FLAGS "${FMA_FLAGS} ")
+     endif()
+ endif()
+ 
+@@ -417,41 +417,18 @@
+     message("AVX512 not available in Visual C++")
+     #set(AVX512_FLAGS "${AVX512_FLAGS} /arch:AVX512")
+ elseif (CLANG)
+-    set(AVX512_FLAGS "${AVX512_FLAGS} -mavx512f -mfma")
++    set(AVX512_FLAGS "${AVX512_FLAGS}  ")
+ elseif (GCC)
+-    set(AVX512_FLAGS "${AVX512_FLAGS} -mavx512f -mfma")
++    set(AVX512_FLAGS "${AVX512_FLAGS}  ")
+ elseif (ICC)
+     if (WIN32)
+          set(AVX512_FLAGS "${AVX512_FLAGS} /QxMIC-AVX512")
+     else()
+-         set(AVX512_FLAGS "${AVX512_FLAGS} -xMIC-AVX512")
++         set(AVX512_FLAGS "${AVX512_FLAGS} ")
+     endif()
+ endif()
+ 
+ 
+-# further flag to improve performance
+-
+-if (IQTREE_FLAGS MATCHES "fma") # AVX+FMA instruction set
+-    message("Vectorization : AVX+FMA")
+-    add_definitions(-D__SSE3 -D__AVX) # define both SSE3 and AVX directive
+-    set(COMBINED_FLAGS "${COMBINED_FLAGS} ${FMA_FLAGS}")
+-    #SET(EXE_SUFFIX "${EXE_SUFFIX}-fma")
+-elseif (IQTREE_FLAGS MATCHES "avx") # AVX instruction set
+-    message("Vectorization : AVX")
+-    add_definitions(-D__SSE3 -D__AVX) # define both SSE3 and AVX directive
+-    set(COMBINED_FLAGS "${COMBINED_FLAGS} ${AVX_FLAGS}")
+-    #SET(EXE_SUFFIX "${EXE_SUFFIX}-avx")
+-elseif (NOT IQTREE_FLAGS MATCHES "nosse") #SSE intruction set
+-    if (IQTREE_FLAGS MATCHES "KNL")
+-        message("Vectorization : SSE3/AVX/AVX2/AVX-512")
+-        add_definitions(-D__AVX512KNL)
+-    else()
+-        message("Vectorization : SSE3/AVX/AVX2")
+-    endif()
+-    #add_definitions(-D__SSE3)
+-    #set(COMBINED_FLAGS "${COMBINED_FLAGS} ${SSE_FLAGS}")
+-endif()
+-
+ 
+ ##################################################################
+ # Setup compiler flags
+diff -ru IQ-TREE-2.0.7.orig/terraphast/CMakeLists.txt IQ-TREE-2.0.7/terraphast/CMakeLists.txt
+--- IQ-TREE-2.0.7.orig/terraphast/CMakeLists.txt	2021-03-22 15:35:32.981901943 +0000
++++ IQ-TREE-2.0.7/terraphast/CMakeLists.txt	2021-03-22 15:36:52.577394681 +0000
+@@ -205,13 +205,13 @@
+     set(TERRAPHAST_PLATFORM_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/lib/intel")
+     set(TERRAPHAST_COMPILE_FLAGS -Wall -Wextra -Wconversion -Wsign-conversion -Werror)
+     if(TERRAPHAST_ARCH_NATIVE)
+-        set(TERRAPHAST_COMPILE_FLAGS -march=native ${TERRAPHAST_COMPILE_FLAGS})
++        set(TERRAPHAST_COMPILE_FLAGS ${TERRAPHAST_COMPILE_FLAGS})
+     endif()
+ else()
+     set(TERRAPHAST_PLATFORM_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/lib/gcc_clang")
+     set(TERRAPHAST_COMPILE_FLAGS -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
+     if(TERRAPHAST_ARCH_NATIVE)
+-        set(TERRAPHAST_COMPILE_FLAGS -march=native ${TERRAPHAST_COMPILE_FLAGS})
++        set(TERRAPHAST_COMPILE_FLAGS ${TERRAPHAST_COMPILE_FLAGS})
+     endif()
+ endif()
+ 
