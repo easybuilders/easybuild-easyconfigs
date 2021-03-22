@@ -25,7 +25,8 @@ checksums = ['0140634302c35e8367f7514189b55dbf', #abinit-9.2.1.tar.gz
 ]
 parallel = 8
 
-preconfigopts = 'mkdir build ; cd fallbacks ; tar xzf abinit-fallbacks-9.2.tar.gz; sed -i "s|tmpflags_options=\'--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\"\'|tmpflags_options=\'--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\" --with-blacs=\\"-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\" LIBS=\\"-mkl=sequential -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\" --with-scalapack=\\"-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\"\'|g" abinit-fallbacks-9.2/configure; export FC=mpif90 CC=mpicc CXX=mpiCC; sh ./build-abinit-fallbacks.sh.in ; cd ../build ; '
+preconfigopts = 'sed -i "s!-mkl=cluster!$LIBSCALAPACK!g" configure; '
+preconfigopts += 'mkdir build ; cd fallbacks ; tar xzf abinit-fallbacks-9.2.tar.gz; sed -i "s|tmpflags_options=\'--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\"\'|tmpflags_options=\'--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\" --with-blacs=\\"-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\" LIBS=\\"-mkl=sequential -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\" --with-scalapack=\\"-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lpthread -lm -ldl\\"\'|g" abinit-fallbacks-9.2/configure; export FC=mpif90 CC=mpicc CXX=mpiCC; sh ./build-abinit-fallbacks.sh.in ; cd ../build ; '
 preconfigopts += 'export BIGDFT_FCFLAGS="-I%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/bigdft/default/include" ; '
 preconfigopts += 'export BIGDFT_LDFLAGS="-L%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/bigdft/default/lib"; '
 preconfigopts += 'export WANNIER90_FCFLAGS="-I%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/wannier90/default/include"; '
@@ -38,7 +39,7 @@ preconfigopts += 'export NETCDF_FCFLAGS="-I$EBROOTNETCDF/include"; '
 preconfigopts += 'export NETCDF_LDFLAGS="-L$EBROOTNETCDF/lib"; '
 preconfigopts += 'export NETCDF_FORTRAN_FCFLAGS="-I$EBROOTNETCDFMINFORTRAN/include"; '
 preconfigopts += 'export NETCDF_FORTRAN_LDFLAGS="-L$EBROOTNETCDFMINFORTRAN/lib"; '
-configure_cmd = '../configure '
+configure_cmd = '../configure LDFLAGS="$LIBSCALAPACK"'
 configopts  = 'FC=mpif90 CC=mpicc CXX=mpiCC '
 configopts += '--enable-openmp '
 configopts += '--enable-mpi-io '

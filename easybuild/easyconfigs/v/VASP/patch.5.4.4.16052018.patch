@@ -1,0 +1,1293 @@
+diff -ru src.base/bse.F src/bse.F
+--- src.base/bse.F	2018-05-23 17:45:47.856420457 +0200
++++ src/bse.F	2018-05-23 17:46:02.300550673 +0200
+@@ -617,14 +617,14 @@
+                 K4=KPOINT_IN_FULL_GRID(WHF%WDES%VKPT(:,K2_COLLECT)+WHF%WDES%VKPT(:,NQPOINT),KPOINTS_FULL)
+ 
+                 IF (LKPOINT_PARALLEL) THEN
+-                   IF ( B2%VBMAX-B2%VBMIN >0) &
++                   IF ( B2%VBMAX-B2%VBMIN >=0) &
+                         CALL W1_GATHER_KSEL( WHF, B2%VBMIN, B2%VBMAX, ISP2, W2, K2_DONE)
+                    NFFTW=NFFTW+(B2%CBMAX-B2%CBMIN+1)/WDES%NB_PAR
+                 ELSE
+                    IF (W1EQUALW2) THEN
+                       W2=W1
+                    ELSE
+-                      IF ( B2%VBMAX-B2%VBMIN >0) &
++                      IF ( B2%VBMAX-B2%VBMIN >=0) &
+                            CALL W1_GATHER_GLB( WHF, B2%VBMIN, B2%VBMAX, ISP2, W2)
+                       NFFTW=NFFTW+B2%VBMAX-B2%VBMIN+1
+                    ENDIF
+@@ -633,14 +633,14 @@
+                 CALL SETWDES(WHF%WDES,WDESK4,K4)
+ 
+                 IF (LKPOINT_PARALLEL) THEN
+-                   IF ( B2%VBMAX-B2%VBMIN >0) &
++                   IF ( B2%CBMAX-B2%CBMIN >=0) &
+                         CALL W1_GATHER_KSEL( WHF, B2%CBMIN, B2%CBMAX, ISP2, W4, K2_DONE)
+                    NFFTW=NFFTW+(B2%CBMAX-B2%CBMIN+1)/WDES%NB_PAR
+                 ELSE
+                    IF (W1EQUALW2) THEN
+                       W4=W3
+                    ELSE
+-                      IF ( B2%VBMAX-B2%VBMIN >0) &
++                      IF ( B2%CBMAX-B2%CBMIN >=0) &
+                            CALL W1_GATHER_GLB( WHF, B2%CBMIN, B2%CBMAX, ISP2, W4)
+                       NFFTW=NFFTW+B2%CBMAX-B2%CBMIN+1
+                    ENDIF
+@@ -1791,10 +1791,13 @@
+        EPS=EPS/((DKX**2+DKY**2+DKZ**2)*TPI**2)
+        ! eps_mac = ( 1 + v X^red(w))^-1
+        DO NOMEGA=1,NOMEGA_DIM
+-          EPS(1,1,NOMEGA)=(1+EPS(1,1,NOMEGA))
+-          EPS(2,2,NOMEGA)=(1+EPS(2,2,NOMEGA))
+-          EPS(3,3,NOMEGA)=(1+EPS(3,3,NOMEGA))
+-          CALL INVERSE_Z(EPS(1,1,NOMEGA),3)
++          EPS(1,1,NOMEGA)=1/(1+EPS(1,1,NOMEGA))
++          EPS(2,2,NOMEGA)=1/(1+EPS(2,2,NOMEGA))
++          EPS(3,3,NOMEGA)=1/(1+EPS(3,3,NOMEGA))
++!          EPS(1,1,NOMEGA)=(1+EPS(1,1,NOMEGA))
++!          EPS(2,2,NOMEGA)=(1+EPS(2,2,NOMEGA))
++!          EPS(3,3,NOMEGA)=(1+EPS(3,3,NOMEGA))
++!          CALL INVERSE_Z(EPS(1,1,NOMEGA),3)
+        ENDDO
+     ELSE
+        IF (LHEAD_DIRECT) THEN
+@@ -2037,10 +2040,13 @@
+        EPS=EPS/((DKX**2+DKY**2+DKZ**2)*TPI**2)
+        ! eps_mac = ( 1 + v X^red(w))^-1
+        DO NOMEGA=1,NOMEGA_DIM
+-          EPS(1,1,NOMEGA)=(1+EPS(1,1,NOMEGA))
+-          EPS(2,2,NOMEGA)=(1+EPS(2,2,NOMEGA))
+-          EPS(3,3,NOMEGA)=(1+EPS(3,3,NOMEGA))
+-          CALL INVERSE_Z(EPS(1,1,NOMEGA),3)
++          EPS(1,1,NOMEGA)=1/(1+EPS(1,1,NOMEGA))
++          EPS(2,2,NOMEGA)=1/(1+EPS(2,2,NOMEGA))
++          EPS(3,3,NOMEGA)=1/(1+EPS(3,3,NOMEGA))
++!          EPS(1,1,NOMEGA)=(1+EPS(1,1,NOMEGA))
++!          EPS(2,2,NOMEGA)=(1+EPS(2,2,NOMEGA))
++!          EPS(3,3,NOMEGA)=(1+EPS(3,3,NOMEGA))
++!          CALL INVERSE_Z(EPS(1,1,NOMEGA),3)
+        ENDDO
+     ELSE
+        IF (LHEAD_DIRECT) THEN
+diff -ru src.base/CUDA/fock.cu src/CUDA/fock.cu
+--- src.base/CUDA/fock.cu	2018-05-23 17:45:47.544417645 +0200
++++ src/CUDA/fock.cu	2018-05-23 17:46:03.104557918 +0200
+@@ -620,7 +620,7 @@
+ /** Element-wise multiply to convolve in k-space (DP).
+  * NOTE(sm): This kernel is bandwidth bound, so it pays off not to read potfak nband times
+  * but only once. This is only needed as a fall back, if the combined gfac and gfac_der kernel
+- * cannot be use (*loverl == false)
++ * cannot be used (*loverl == false)
+  */
+ template <class T>
+ static __global__ void apply_gfac_k_localpotfak(T *c, double* potfak, int n, int nband){
+@@ -1492,7 +1492,10 @@
+       checkError(__LINE__,__FILE__);
+     }
+     else {
+-      apply_gfac_k_localpotfak<cuDoubleComplex><<<ablocks, athreads>>>(charge_d->ptr, potfak_d->ptr, (*waves2)->nrwav, kstripe);
++      tBlock.x = athreads.x; tBlock.y = 1; tBlock.z = 1;
++
++      tGrid.x = (*waves2)->nrwav/tBlock.x+1; tGrid.y = 1; tGrid.z = 1;
++      apply_gfac_k_localpotfak<cuDoubleComplex><<<tGrid, tBlock>>>(charge_d->ptr, potfak_d->ptr, (*waves2)->nrwav, kstripe);
+       checkError(__LINE__,__FILE__);
+     }
+ 
+diff -ru src.base/finite_diff.F src/finite_diff.F
+--- src.base/finite_diff.F	2018-05-23 17:45:48.284424316 +0200
++++ src/finite_diff.F	2018-05-23 17:46:02.192549694 +0200
+@@ -362,6 +362,10 @@
+     USE msymmetry
+     USE constant
+     USE pead
++!#define isotope
++#ifdef isotope
++    USE random_seeded
++#endif
+     IMPLICIT NONE
+ 
+     LOGICAL :: LSTOP              ! on return: true to stop main code
+@@ -398,6 +402,10 @@
+     REAL(q),ALLOCATABLE      :: SUM_FORCES(:,:,:)
+     REAL(q),ALLOCATABLE      :: SUM_SIF(:,:,:)
+     REAL(q)                  :: SECOND_DERIV(3*T_INFO%NIONS,3*T_INFO%NIONS)
++#ifdef isotope
++    REAL(q)                  :: SECOND_DERIV_STORE(3*T_INFO%NIONS,3*T_INFO%NIONS)
++    REAL(q)                  :: POMASS(T_INFO%NIONS), num
++#endif
+     INTEGER,SAVE             :: DOF
+     LOGICAL,SAVE             :: INIT=.FALSE.
+     INTEGER,SAVE             :: PROCESSED_DOF
+@@ -793,15 +801,35 @@
+        END DO
+ 
+        ALLOCATE(WORK(DOF,32),EIGENVECTORS(DOF,DOF),EIGENVALUES(DOF))
+-
++#ifdef isotope
++       SECOND_DERIV_STORE=SECOND_DERIV
++       DO I1=1,100
++       SECOND_DERIV=SECOND_DERIV_STORE
++       N=0
++       DO I=1,T_INFO%NTYP
++          DO J=1,T_INFO%NITYP(I)
++             POMASS(N+1)=T_INFO%POMASS(I)
++             N=N+1
++          ENDDO
++       ENDDO
++       DO I=1,8
++          CALL RANE_ION(num)
++          POMASS(INT(16+num*24))=18.0_q
++       ENDDO
++#endif
+        ! divide by mass  M^-1/2 Hessian M^-1/2
+        EIGENVECTORS=SECOND_DERIV
+        N=0
+        DO I=1,T_INFO%NTYP
+           DO J=1,T_INFO%NITYP(I)
+              DO K=1,3
++#ifdef isotope
++                EIGENVECTORS(:,3*N+K)=EIGENVECTORS(:,3*N+K)/SQRT(POMASS(N+1))
++                EIGENVECTORS(3*N+K,:)=EIGENVECTORS(3*N+K,:)/SQRT(POMASS(N+1))
++#else
+                 EIGENVECTORS(:,3*N+K)=EIGENVECTORS(:,3*N+K)/SQRT(T_INFO%POMASS(I))
+                 EIGENVECTORS(3*N+K,:)=EIGENVECTORS(3*N+K,:)/SQRT(T_INFO%POMASS(I))
++#endif
+              END DO
+              N=N+1
+           END DO
+@@ -852,7 +880,11 @@
+           DO J=1,T_INFO%NITYP(I)
+              DO K=1,3
+                 CALL FIND_DOF_INDEX(NIONS,T_INFO%LSFOR,T_INFO%LSDYN,K,N,M)
++#ifdef isotope
++                IF (M>0) EIGENVECTORS(M,:)=EIGENVECTORS(M,:)/SQRT(POMASS(N))
++#else
+                 IF (M>0) EIGENVECTORS(M,:)=EIGENVECTORS(M,:)/SQRT(T_INFO%POMASS(I))
++#endif
+              END DO
+              N=N+1
+           END DO
+@@ -861,7 +893,11 @@
+        ! invert the matrix of the second derivatives (not mass weighted!)
+        SECOND_DERIV=-SECOND_DERIV
+        CALL INV_SECOND_DERIV(SECOND_DERIV, DOF, IU6 )
+-
++!=======================================================================
++!
++! ionic contribution to dielectric, elastic and piezoelectric tensor
++!
++!=======================================================================
+        IF ((LSIF .OR. LBORN) .AND. IU6>=0) THEN
+           WRITE(IU6,130)
+ 
+@@ -875,9 +911,9 @@
+ 
+ 1100   FORMAT(// &
+             " MACROSCOPIC STATIC DIELECTRIC TENSOR ",A/, &
+-            " -------------------------------------"/, &
+-            &       3(6X,3F10.3/), &
+-            " -------------------------------------"/)
++            " ------------------------------------------------------"/, &
++            &       3(6X,3F13.6/), &
++            " ------------------------------------------------------"/)
+ 
+              CALL XML_TENSOR("epsilon_ion",EPSILON)
+ 
+@@ -953,7 +989,10 @@
+                (ELASTICP(J,I,I)*FACT,I=1,3), &
+                ELASTICP(J,1,2)*FACT,ELASTICP(J,2,3)*FACT,ELASTICP(J,3,1)*FACT,J=1,6)
+           
+-       END IF 
++       END IF
++#ifdef isotope
++       ENDDO
++#endif
+ 
+        DEALLOCATE(WORK,INITIAL_POSITIONS,INITIAL_FORCE,DISPL_FORCES,SUM_FORCES)
+        LSTOP=.TRUE.
+@@ -1609,6 +1648,10 @@
+     REAL(q) :: EPS(NOMEGA,3,3), EPS_IMAG(NOMEGA,3,3), E, FACTOR
+ 
+     DOMEGA=SQRT(MAXVAL(-EIGENVALUES))*1.2/(NOMEGA-1)
++#ifdef isotope
++    FACTOR=SQRT(EVTOJ/((1E-10)**2)/AMTOKG)
++    DOMEGA=0.1/FACTOR*1E12
++#endif
+     SHIFT =DOMEGA*2
+     ! loop over eigenvectors
+     EPS=0
+diff -ru src.base/force.F src/force.F
+--- src.base/force.F	2018-05-23 17:45:48.308424532 +0200
++++ src/force.F	2018-05-23 17:46:02.188549658 +0200
+@@ -362,6 +362,20 @@
+ 
+ !******************** SUBROUTINE STRETAU *******************************
+ !
++! Calculates the contribution to the stress tensor that stems from
++! the kinetic energy density (in meta-GGAs only), by means of finite
++! differences:
++!                                   d \tau(r)
++! TAUSIF(i,j) =  -\int dr \mu_xc(r) ----------
++!                                   d  h_ij
++!
++!                   d f_xc
++! where \mu_xc(r) = ------(r)
++!                   d \tau
++!
++! The derivative of the kinetic energy density w.r.t. the cell
++! parameter matrix h_ij is computed by means of finite differences.
++!
+ !***********************************************************************
+       SUBROUTINE STRETAU( &
+      &   HAMILTONIAN,KINEDEN,W,WDES,CSTRF, &
+@@ -1367,9 +1381,12 @@
+ #ifdef debug
+          WRITE(*,'("AUGSIF",3F14.7)') AUGSIF
+ #endif
+-         IF (LDO_METAGGA().AND.LCALCMU()) &
++         IF (LDO_METAGGA().AND.LCALCMU()) THEN
+               CALL STRETAU(HAMILTONIAN,KINEDEN,W,WDES,CSTRF, &
+              &   GRID,GRID_SOFT,GRIDC,SOFT_TO_C,P,T_INFO,LATT_CUR,SYMM,TAUSIF)
++             ! add to XC stress contribution
++             XCSIF=XCSIF+TAUSIF
++         ENDIF
+ #ifdef debug
+          WRITE(*,'("TAUSIF",3F14.7)') TAUSIF
+ #endif
+@@ -1403,7 +1420,6 @@
+          IF (DYN%ISIF/=0) THEN
+             CALL STREHAR(GRIDC,P,T_INFO,LATT_CUR,.TRUE.,CVTOT,CSTRF, PARSIF)
+             XCSIF=XCSIF+PARSIF
+-            IF (LDO_METAGGA().AND.LCALCMU()) XCSIF=XCSIF+TAUSIF
+          ENDIF
+ 
+          INFO%LPOTOK=.FALSE.
+diff -ru src.base/linear_optics.F src/linear_optics.F
+--- src.base/linear_optics.F	2018-05-23 17:45:48.540426624 +0200
++++ src/linear_optics.F	2018-05-23 17:46:02.104548904 +0200
+@@ -1808,9 +1808,6 @@
+       CDER_BETWEEN_STATE(:)=CDER_BETWEEN_STATES_Q(N1, N2, NK, ISP)
+       IF (LINV) THEN
+          CDER_BETWEEN_STATE(:)=GCONJG(CDER_BETWEEN_STATE(:))
+-      ELSE
+-         WRITE(*,*) 'not inverted'
+-         STOP
+       ENDIF
+     END SUBROUTINE CDER_BETWEEN_STATES_ROTATED_Q
+ 
+diff -ru src.base/linear_response.F src/linear_response.F
+--- src.base/linear_response.F	2018-05-23 17:45:48.552426732 +0200
++++ src/linear_response.F	2018-05-23 17:46:02.080548687 +0200
+@@ -904,7 +904,7 @@
+ 
+           FACT=EVTOJ*1E20_q/LATT_CUR%OMEGA
+           
+-170       FORMAT(/ ' PIEZOELECTRIC TENSOR  for field in x, y, z        (e  Angst)',/ &
++170       FORMAT(/ ' ',A,'  for field in x, y, z        (e  Angst)',/ &
+                10X,'XX', 10X,'YY', 10X,'ZZ',10X,'XY', 10X,'YZ', 10X,'ZX'/ &
+                '  ----------------------------------------------------', &
+                '----------------------------')
+@@ -914,7 +914,7 @@
+                &        '  ----------------------------------------------------', &
+                &        '----------------------------')
+           IF (.NOT.LRPA) THEN
+-             WRITE (IU6,170)
++             WRITE (IU6,170) 'PIEZOELECTRIC TENSOR (including local field effects)'
+              DO I =1,3
+                 WRITE (IU6,140) IDIR_TEXT(I),(PIEZO(I,J,J),J=1,3), & 
+                      PIEZO(I,1,2),PIEZO(I,2,3),PIEZO(I,3,1)
+@@ -922,27 +922,27 @@
+              
+              CALL TSYM3(PIEZO,ISYMOP,NROTK,LATT_CUR%A)
+           
+-             WRITE (IU6,180) 'PIEZOELECTRIC TENSOR'
++             WRITE (IU6,180) 'PIEZOELECTRIC TENSOR (including local field effects)'
+              DO I =1,3
+                 WRITE (IU6,140) IDIR_TEXT(I),(PIEZO(I,J,J)*FACT,J=1,3), & 
+                      PIEZO(I,1,2)*FACT,PIEZO(I,2,3)*FACT,PIEZO(I,3,1)*FACT
+              ENDDO
+ 140          FORMAT(2X,A1,6F12.5)
+ 
+-! remove any drift from BORN charges
+-       IF (IO%IU0>0) WRITE(IO%IU0,*) 'Born effective charges drift removed'
+-       TMP=0
+-       DO N=1,T_INFO%NIONS
+-          TMP(:,:)=TMP(:,:)+BORN_CHARGES(:,:,N)/T_INFO%NIONS
+-       ENDDO
+-       DO N=1,T_INFO%NIONS
+-          BORN_CHARGES(:,:,N)=BORN_CHARGES(:,:,N)-TMP(:,:)
+-       ENDDO
++             ! remove any drift from BORN charges
++             IF (IO%IU0>0) WRITE(IO%IU0,*) 'Born effective charges drift removed'
++             TMP=0
++             DO N=1,T_INFO%NIONS
++                TMP(:,:)=TMP(:,:)+BORN_CHARGES(:,:,N)/T_INFO%NIONS
++             ENDDO
++             DO N=1,T_INFO%NIONS
++                BORN_CHARGES(:,:,N)=BORN_CHARGES(:,:,N)-TMP(:,:)
++             ENDDO
+              
+           
+              WRITE (IU6,*)
+-             WRITE (IU6,*) 'BORN EFFECTIVE CHARGES (in e, cummulative output)'
+-             WRITE (IU6,*) '-------------------------------------------------'
++             WRITE (IU6,'(X,A)') 'BORN EFFECTIVE CHARGES (including local field effects) (in e, cummulative output)'
++             WRITE (IU6,'(X,A)') '---------------------------------------------------------------------------------'
+              
+              DO N=1,T_INFO%NIONS
+                 WRITE (IU6,'(" ion ",I4)') N
+@@ -952,7 +952,7 @@
+              ENDDO
+ 
+              CALL XML_BORN_CHARGES(BORN_CHARGES,T_INFO%NIONS)
+-             ! now set the Born charges in the global array defined in pead
++            ! now set the Born charges in the global array defined in pead
+              IF (.NOT. LBORN) THEN
+                 LBORN=.TRUE.
+                 IF (ALLOCATED(BORN_CHARGES_PEAD)) DEALLOCATE(BORN_CHARGES_PEAD)
+@@ -1004,7 +1004,7 @@
+ !=======================================================================
+ !
+ ! final processing and output
+-! vibrational frequencies
++! vibrational frequencies etc.
+ !
+ !=======================================================================
+     IF (DOF>0 .AND. IU6>=0 ) THEN
+@@ -1094,7 +1094,11 @@
+        DEALLOCATE(WORK)
+ 
+        CALL STORE_RPA_SECOND_DERIV(SECOND_DERIV)
+-
++!=======================================================================
++!
++! ionic contribution to dielectric, elastic and piezoelectric tensor
++!
++!=======================================================================
+        IF (DYN%ISIF>0 .OR. LEPSILON) THEN
+           WRITE(IO%IU6,130)
+           ! invert the matrix of the second derivatives
+@@ -1102,16 +1106,16 @@
+           CALL INV_SECOND_DERIV(SECOND_DERIV, DOF, IU6 )
+ 
+           ! ionic contribution to macroscopic dielectric tensor
+-          IF (LEPSILON .AND. IO%IU6>=0 .AND. .NOT. LRPA) THEN
+-             CALL EPSILON_ION( T_INFO, DOF, SECOND_DERIV, BORN_CHARGES, EPSILON )
++          IF (LBORN .AND. .NOT. LRPA .AND. IO%IU6>=0 ) THEN
++             CALL EPSILON_ION( T_INFO, DOF, SECOND_DERIV, BORN_CHARGES_PEAD, EPSILON )
+ 
+              ! induced polariation -> field
+-             EPSILON=EPSILON*2*TPI/(LATT_CUR%OMEGA)*FELECT
++             EPSILON=EPSILON*EDEPS/(LATT_CUR%OMEGA)
+              WRITE(IO%IU6,1100) 'IONIC CONTRIBUTION',EPSILON
+ 
+              CALL XML_TENSOR("epsilon_ion",EPSILON)
+ 
+-             CALL EPSILON_ION_OMEGA( T_INFO, DOF, EIGENVECTORS, EIGENVALUES, BORN_CHARGES, LATT_CUR%OMEGA )
++             CALL EPSILON_ION_OMEGA( T_INFO, DOF, EIGENVECTORS, EIGENVALUES, BORN_CHARGES_PEAD, LATT_CUR%OMEGA )
+           ENDIF
+ 
+           IF (DYN%ISIF>0.AND.IO%IU6>=0) THEN
+@@ -1138,15 +1142,15 @@
+ 
+              FACT=EVTOJ*1E22_q/LATT_CUR%OMEGA
+ 
+-             WRITE(IU6,100) ' ELASTIC MODULI IONIC CONTR (kBar)', ( &
++             WRITE(IU6,100) ' ELASTIC MODULI CONTR FROM IONIC RELAXATION (kBar)', ( &
+                   (ELASTICP(J,I,I)*FACT,I=1,3), &
+                    ELASTICP(J,1,2)*FACT,ELASTICP(J,2,3)*FACT,ELASTICP(J,3,1)*FACT,J=1,6)
+           END IF
+ 
+           ! ionic contribution to piezoelectric tensor
+-          IF (LEPSILON .AND. DYN%ISIF>0.AND.IO%IU6>=0 .AND. .NOT. LRPA) THEN
++          IF ( DYN%ISIF>0 .AND. LBORN .AND. .NOT. LRPA .AND.IO%IU6>=0 ) THEN
+ 
+-             CALL PIEZO_ION( T_INFO, DOF, SECOND_DERIV, ST, BORN_CHARGES, PIEZO )
++             CALL PIEZO_ION( T_INFO, DOF, SECOND_DERIV, ST, BORN_CHARGES_PEAD, PIEZO )
+              
+              WRITE (IU6,180) 'PIEZOELECTRIC TENSOR IONIC CONTR'
+              FACT=EVTOJ*1E20_q/LATT_CUR%OMEGA
+@@ -1169,7 +1173,6 @@
+       DEALLOCATE(D, ND, IDIRD)
+     ENDIF
+ 
+-
+     IF (IU0>=0 .AND. DOF>0) THEN
+        WRITE (IU0,*) 'Linear response finished'
+        WRITE (17,*) 'Linear response finished'
+diff -ru src.base/local_field.F src/local_field.F
+--- src.base/local_field.F	2018-05-23 17:45:48.564426840 +0200
++++ src/local_field.F	2018-05-23 17:46:02.396551536 +0200
+@@ -4499,8 +4499,7 @@
+     ! in that case the result is shifted by G 
+     ! we apply a shift e^iGr in real space to cure the problem
+     CALL SETPHASE(WHF%WDES%VKPT(:,K1)-WHF%WDES%VKPT(:,K3)-WHF%WDES%VKPT(:,NQ)+KPOINT_BSE, GRIDHF,CPHASE,LPHASE)
+-
+-    WRITE(*,*) 'evaluating response at ',WHF%WDES%VKPT(:,K1)-WHF%WDES%VKPT(:,K3)-WHF%WDES%VKPT(:,NQ)+KPOINT_BSE
++!   WRITE(*,*) 'evaluating response at ',WHF%WDES%VKPT(:,K1)-WHF%WDES%VKPT(:,K3)-WHF%WDES%VKPT(:,NQ)+KPOINT_BSE
+ 
+ !==========================================================================
+ !   c*_k3,n3(r)  v_k1,n1(r)
+diff -ru src.base/mkpoints_full.F src/mkpoints_full.F
+--- src.base/mkpoints_full.F	2018-05-23 17:45:48.624427381 +0200
++++ src/mkpoints_full.F	2018-05-23 17:46:02.644553769 +0200
+@@ -1695,6 +1695,145 @@
+ 
+ END MODULE full_kpoints
+ 
++
++!********************** SUBROUTINE COUNT_INDPW_FULL ********************
++!
++! This subroutine determines NRPLWV: the maximum number of plane waves
++! per orbital each MPI-rank must be able to store for orbitals at
++! k-points with NK = WDES%NKPTS+1, .. , KPOINTS_FULL%NKPTS, i.e., for
++! orbitals at k-points of the full k-grid that are not part of the
++! irreducible wedge of the 1BZ.
++!
++! N.B.: Currently COUNT_INDPW_FULL is only called from GEN_LAYOUT,
++! and on entry NRPLWV is set to the maximum number of plane waves per
++! orbital each MPI-rank must be able to store for orbitals at
++! k-points that are part of the irreducible wedge of the 1BZ.
++!
++!***********************************************************************
++
++    SUBROUTINE COUNT_INDPW_FULL(GRID, WDES, BI, NRPLWV)
++      USE prec
++      USE mgrid
++      USE wave
++      USE constant
++      USE full_kpoints
++
++      IMPLICIT NONE
++
++      TYPE (grid_3d) :: GRID
++      TYPE (wavedes) :: WDES
++
++      REAL(q) :: BI(3,3)
++      INTEGER :: NRPLWV
++
++      INTEGER, ALLOCATABLE :: IGRIDIND(:,:,:)
++      INTEGER, ALLOCATABLE :: IGRIDIND_MERGED(:,:,:)
++
++      INTEGER, POINTER     :: IGX_MERGED(:)
++      INTEGER, POINTER     :: IGY_MERGED(:)
++      INTEGER, POINTER     :: IGZ_MERGED(:)
++
++      INTEGER, ALLOCATABLE :: NGVECTOR_MERGED(:)
++
++      INTEGER :: NI,NC,N1,N2,N3,NG1,NG2,NG3,NG1I,NG2I,NG3I
++      INTEGER :: NGX,NGY,NGZ,NK,NKI,NGVEC,NGVECI
++      REAL(q) :: G1,G2,G3,GIX,GIY,GIZ,ENERGI
++
++#ifndef MPI
++      ! in the serial version of the code this routine
++      ! does not need to be called
++      RETURN
++#else
++      ! exit if KPOINTS_FULL has not been set up
++      IF (.NOT.LFULL_KPOINTS) RETURN
++      ! exit if the number of k-points in the full grid equals
++      ! the number of k-points in the irreducible grid
++      IF (WDES%NKPTS == KPOINTS_FULL%NKPTS) RETURN
++      ! exit if the plane wave coefficients of an orbital are
++      ! all owned by a single MPI rank
++      IF (WDES%COMM_INB%NCPU == 1) RETURN
++
++      NGX=GRID%NGX
++      NGY=GRID%NGY
++      NGZ=GRID%NGZ
++
++      ALLOCATE(IGRIDIND(NGX,NGY,NGZ),IGRIDIND_MERGED(NGX,NGY,NGZ))
++
++! first we set up an array that allows to determine the local storage index for a 3d index (x, y, z)
++      NI=0
++      IGRIDIND=0
++      col1: DO NC=1,GRID%RC%NCOL
++         N2=GRID%RC%I2(NC) ; NG2=GRID%LPCTY(N2)
++         N3=GRID%RC%I3(NC) ; NG3=GRID%LPCTZ(N3)
++         row1: DO N1=1,GRID%RC%NROW
++            NI=NI+1
++            NG1=GRID%LPCTX(N1)
++            IGRIDIND(MP(NG1,NGX),MP(NG2,NGY),MP(NG3,NGZ))=NI
++         ENDDO row1
++      ENDDO col1
++
++! IGRIDIND_MERGED is only used to check that the rotated data goes somewher on some node
++      IGRIDIND_MERGED=IGRIDIND
++      CALLMPI( M_sum_i(WDES%COMM_INB, IGRIDIND_MERGED , SIZE(IGRIDIND_MERGED)))
++
++! now index the wavefunctions at the new k-point NK
++! take index from old k-point NKI, rotate G-vector, enter new index
++      DO NK=WDES%NKPTS+1,KPOINTS_FULL%NKPTS
++
++         NKI=KPOINTS_FULL%NEQUIV(NK)
++
++         NGVEC=0
++         NGVECI=0
++
++         DO N3=1,GRID%NGZ_rd
++            G3=(GRID%LPCTZ(N3)+WDES%VKPT(3,NK))
++            NG3I=GRID%LPCTZ(N3)
++
++            DO N2=1,GRID%NGY
++               G2=(GRID%LPCTY(N2)+WDES%VKPT(2,NK))
++               NG2I=GRID%LPCTY(N2)
++
++               DO N1=1,GRID%NGX_rd
++                  G1=(GRID%LPCTX(N1)+WDES%VKPT(1,NK))
++                  NG1I=GRID%LPCTX(N1)
++
++                  GIX= (G1*BI(1,1)+G2*BI(1,2)+G3*BI(1,3)) *TPI
++                  GIY= (G1*BI(2,1)+G2*BI(2,2)+G3*BI(2,3)) *TPI
++                  GIZ= (G1*BI(3,1)+G2*BI(3,2)+G3*BI(3,3)) *TPI
++                  ENERGI=HSQDTM*((GIX**2)+(GIY**2)+(GIZ**2))
++
++                  ! exclude some components for gamma-only version (C(G)=C*(-G))
++                  IF (GRID%NGZ/=GRID%NGZ_rd) THEN
++                     IF (GRID%LPCTZ(N3)==0 .AND.GRID%LPCTY(N2)<0) CYCLE
++                     IF (GRID%LPCTZ(N3)==0 .AND.GRID%LPCTY(N2)==0 .AND.GRID%LPCTX(N1)<0) CYCLE
++                  ENDIF
++
++                  ! is this part of the basis?
++                  IF (ENERGI<WDES%ENMAX) THEN
++                     ! apply symmetry operation taking point in IRZ into full BZ
++                     NG1=NG1I*KPOINTS_FULL%IROTOP(1,1,NK)+NG2I*KPOINTS_FULL%IROTOP(2,1,NK)+NG3I*KPOINTS_FULL%IROTOP(3,1,NK)   
++                     NG2=NG1I*KPOINTS_FULL%IROTOP(1,2,NK)+NG2I*KPOINTS_FULL%IROTOP(2,2,NK)+NG3I*KPOINTS_FULL%IROTOP(3,2,NK)   
++                     NG3=NG1I*KPOINTS_FULL%IROTOP(1,3,NK)+NG2I*KPOINTS_FULL%IROTOP(2,3,NK)+NG3I*KPOINTS_FULL%IROTOP(3,3,NK)
++
++                     NGVECI=NGVECI+1
++
++                     ! does this data go on the local node?
++                     IF (IGRIDIND(MP(NG1,NGX),MP(NG2,NGY),MP(NG3,NGZ))/=0) THEN
++                        NGVEC=NGVEC+1
++                     ENDIF
++                  ENDIF
++               ENDDO
++            ENDDO
++         ENDDO
++         ! possibly increase the maximum number of plane wave coefficients stored locally
++         NRPLWV=MAX(NRPLWV,NGVEC)
++      ENDDO
++ 
++      DEALLOCATE(IGRIDIND,IGRIDIND_MERGED)
++#endif
++    END SUBROUTINE COUNT_INDPW_FULL
++
++
+ !********************** SUBROUTINE ROTATE_WAVE_FFT *********************
+ !
+ !  this routine rotates a wavefunction (plane wave coefficients) 
+diff -ru src.base/pead.F src/pead.F
+--- src.base/pead.F	2018-05-23 17:45:48.784428824 +0200
++++ src/pead.F	2018-05-23 17:46:02.784555034 +0200
+@@ -1961,7 +1961,7 @@
+             BORN_NSCF(IDIR,:,:)=-(BORN_NSCF(IDIR,:,:)+EWFOR(:,:))
+ 
+             PIEZO_NSCF(IDIR,:,:)=(TSIF(:,:)-SIF_INIT(:,:))/EFIELD_PEAD(IDIR)
+-            PIEZO_NSCF(IDIR,:,:)=PIEZO_NSCF(IDIR,:,:)+EWSIF(:,:)
++            PIEZO_NSCF(IDIR,:,:)=-(PIEZO_NSCF(IDIR,:,:)+EWSIF(:,:))
+ 
+             ENDIF
+ 
+@@ -2022,7 +2022,7 @@
+             BORN_SCF(IDIR,:,:)=-(BORN_SCF(IDIR,:,:)+EWFOR(:,:))
+ 
+             PIEZO_SCF(IDIR,:,:)=(TSIF(:,:)-SIF_INIT(:,:))/EFIELD_PEAD(IDIR)
+-            PIEZO_SCF(IDIR,:,:)=PIEZO_SCF(IDIR,:,:)+EWSIF(:,:)
++            PIEZO_SCF(IDIR,:,:)=-(PIEZO_SCF(IDIR,:,:)+EWSIF(:,:))
+ 
+             ENDIF
+ 
+@@ -2105,56 +2105,20 @@
+ 
+   100       FORMAT(// &
+            &  " MICROSCOPIC STATIC DIELECTRIC TENSOR ",A/, &
+-           &  " -------------------------------------"/, &
+-           &       3(6X,3F10.3/), &
+-           &  " -------------------------------------"/)
++           &  " ------------------------------------------------------"/, &
++           &       3(6X,3F13.6/), &
++           &  " ------------------------------------------------------"/)
+ 
+   110       FORMAT(// &
+            &  " MACROSCOPIC STATIC DIELECTRIC TENSOR ",A/, &
+-           &  " -------------------------------------"/, &
+-           &       3(6X,3F10.3/), &
+-           &  " -------------------------------------"/)
++           &  " ------------------------------------------------------"/, &
++           &       3(6X,3F13.6/), &
++           &  " ------------------------------------------------------"/)
+             
+             IF (LNSCF_RESPONSE()) CALL XML_TENSOR("epsilon_nscf",EPSILON_NSCF)
+             IF (LSCF_RESPONSE())  CALL XML_TENSOR("epsilon_scf" ,EPSILON_SCF )
+          ENDIF
+-         
+-         ! write Born effective charge tensors to
+-         ! OUTCAR and vasprun.xml
+-         IF (LDOIO) THEN
+-            IF (LNSCF_RESPONSE()) THEN
+-               WRITE (IO%IU6,*)
+-               WRITE (IO%IU6,*) 'BORN EFFECTIVE CHARGES (excluding local field effects)'
+-               WRITE (IO%IU6,*) '------------------------------------------------------'
+-
+-               DO N=1,T_INFO%NIONS
+-                  WRITE (IO%IU6,'(" ion ",I4)') N
+-                  DO IDIR=1,3
+-                     WRITE (IO%IU6,'(I5,3F12.5)') IDIR,BORN_NSCF(IDIR,:,N)
+-                  ENDDO
+-               ENDDO
+-            ENDIF
+-            IF (LSCF_RESPONSE()) THEN
+-               WRITE (IO%IU6,*)
+-               WRITE (IO%IU6,*) 'BORN EFFECTIVE CHARGES (including local field effects)'
+-               WRITE (IO%IU6,*) '------------------------------------------------------'
+-
+-               DO N=1,T_INFO%NIONS
+-                  WRITE (IO%IU6,'(" ion ",I4)') N
+-                  DO IDIR=1,3
+-                     WRITE (IO%IU6,'(I5,3F12.5)') IDIR,BORN_SCF(IDIR,:,N)
+-                  ENDDO
+-               ENDDO
+-               CALL XML_BORN_CHARGES(BORN_SCF,T_INFO%NIONS)
+-               ! set Born effective charges in global array
+-               IF (.NOT. LBORN) THEN
+-                  LBORN=.TRUE.
+-                  ALLOCATE(BORN_CHARGES_PEAD(3,3,T_INFO%NIOND))
+-               ENDIF
+-               BORN_CHARGES_PEAD=BORN_SCF
+-            ENDIF
+-         ENDIF
+-         
++                  
+          ! write PIEZO electric tensor to OUTCAR and vasprun.xml
+          IF (LDOIO) THEN
+             FACT=EVTOJ*1E20_q/LATT_CUR%OMEGA
+@@ -2189,6 +2153,44 @@
+            &   10X,'XX', 10X,'YY', 10X,'ZZ',10X,'XY', 10X,'YZ', 10X,'ZX'/ &
+            &   '  --------------------------------------------------------------------------------')
+   210       FORMAT(2X,A1,6F12.5)
++            WRITE(IO%IU6,*)
++         ENDIF
++
++         ! write Born effective charge tensors to
++         ! OUTCAR and vasprun.xml
++         IF (LDOIO) THEN
++            IF (LNSCF_RESPONSE()) THEN
++               WRITE (IO%IU6,*)
++               WRITE (IO%IU6,'(X,A)') 'BORN EFFECTIVE CHARGES (excluding local field effects) (in e, cummulative output)'
++               WRITE (IO%IU6,'(X,A)') '---------------------------------------------------------------------------------'
++
++               DO N=1,T_INFO%NIONS
++                  WRITE (IO%IU6,'(" ion ",I4)') N
++                  DO IDIR=1,3
++                     WRITE (IO%IU6,'(I5,3F12.5)') IDIR,BORN_NSCF(IDIR,:,N)
++                  ENDDO
++               ENDDO
++            ENDIF
++            IF (LSCF_RESPONSE()) THEN
++               WRITE (IO%IU6,*)
++               WRITE (IO%IU6,'(X,A)') 'BORN EFFECTIVE CHARGES (including local field effects) (in e, cummulative output)'
++               WRITE (IO%IU6,'(X,A)') '---------------------------------------------------------------------------------'
++
++               DO N=1,T_INFO%NIONS
++                  WRITE (IO%IU6,'(" ion ",I4)') N
++                  DO IDIR=1,3
++                     WRITE (IO%IU6,'(I5,3F12.5)') IDIR,BORN_SCF(IDIR,:,N)
++                  ENDDO
++               ENDDO
++               CALL XML_BORN_CHARGES(BORN_SCF,T_INFO%NIONS)
++               ! set Born effective charges in global array
++               IF (.NOT. LBORN) THEN
++                  LBORN=.TRUE.
++                  ALLOCATE(BORN_CHARGES_PEAD(3,3,T_INFO%NIOND))
++               ENDIF
++               BORN_CHARGES_PEAD=BORN_SCF
++            ENDIF
++            WRITE(IO%IU6,*)
+          ENDIF
+ 
+          INFO%IALGO=IALGO_SAVE ; INFO%LDIAG=LDIAG_SAVE ; INFO%LSUBROT=LSUBROT_SAVE
+diff -ru src.base/subrot.F src/subrot.F
+--- src.base/subrot.F	2018-05-23 17:45:49.044431167 +0200
++++ src/subrot.F	2018-05-23 17:46:02.908556151 +0200
+@@ -693,7 +693,7 @@
+ !***********************************************************************
+ !
+ ! The following subroutines are used to constrain the
+-! diagonalization to the occupied many-fold 
++! diagonalization to the occupied manifold
+ ! here orbitals with an occupancy close to 1
+ !
+ !***********************************************************************
+@@ -722,7 +722,7 @@
+          ! this shift needs to be removed by  SHIFT_UNOCCUPIED_BACK
+          CHAM(I,I)=CHAM(I,I)+10.0_q
+       ENDDO
+-      
++
+     END SUBROUTINE RESTRICT_TO_OCCUPIED_ONLY
+ 
+     SUBROUTINE SHIFT_UNOCCUPIED_BACK(NB_TOT, R, FERTOT)
+@@ -741,7 +741,7 @@
+       DO I=NB_OCC, NB_TOT
+          R(I)=R(I)-10.0_q
+       ENDDO
+-    End SUBROUTINE SHIFT_UNOCCUPIED_BACK
++    END SUBROUTINE SHIFT_UNOCCUPIED_BACK
+ 
+   END SUBROUTINE EDDIAG
+ 
+diff -ru src.base/subrot_gpu.F src/subrot_gpu.F
+--- src.base/subrot_gpu.F	2018-05-23 17:45:49.056431275 +0200
++++ src/subrot_gpu.F	2018-05-23 17:46:02.912556188 +0200
+@@ -225,7 +225,7 @@
+     IF (IU0<0) IU6=-1
+     CALL START_TIMING("S")
+ #endif
+-    IF (PRESENT(CHAMHF) .OR. IFLAG==1) LSCAAWARE_LOCAL=.FALSE.
++    IF (PRESENT(CHAMHF) .OR. IFLAG==1 .OR. IFLAG==23) LSCAAWARE_LOCAL=.FALSE.
+ #ifdef timing
+     LSCAAWARE_LOCAL=.FALSE.
+ #endif
+@@ -816,6 +816,7 @@
+                 CHAM(NP,N)=GCONJG(CHAM(N,NP))
+              ENDDO
+           ENDDO
++          IF (IFLAG==23) CALL RESTRICT_TO_OCCUPIED_ONLY(WDES%NB_TOTK(NK,ISP), CHAM, W%FERTOT(:,NK, ISP))
+        ENDIF
+ 
+        IF (PRESENT(CHAMHF).AND.PRESENT(LFIRST)) THEN
+@@ -1064,6 +1065,9 @@
+              STOP
+           ENDIF
+ 
++          ! shift eigenvalues back
++          IF (IFLAG==23) CALL SHIFT_UNOCCUPIED_BACK(WDES%NB_TOTK(NK,ISP), R, W%FERTOT(:,NK, ISP))
++
+           DO N=1,WDES%NB_TOTK(NK,ISP)
+              W%CELTOT(N,NK,ISP)=R(N)
+           ENDDO
+@@ -1258,6 +1262,61 @@
+ #endif
+     RETURN
+ 
++    CONTAINS
++
++!***********************************************************************
++!
++! The following subroutines are used to constrain the
++! diagonalization to the occupied manifold
++! here orbitals with an occupancy close to 1
++!
++!***********************************************************************
++
++    SUBROUTINE RESTRICT_TO_OCCUPIED_ONLY(NB_TOT, CHAM, FERTOT)
++      INTEGER :: NB_TOT
++      GDEF    :: CHAM(:,:)
++      REAL(q) :: FERTOT(:)
++      INTEGER :: NB_OCC, I, J
++
++      ! seek first occupancy that differs from 1.00
++      DO NB_OCC=1, NB_TOT
++         IF (ABS((FERTOT(NB_OCC))-1.0_q)>1E-5_q) EXIT
++      ENDDO
++
++      ! now set the lower (upper) triangle starting with row NB_OCC to zero
++      ! loop over row index
++      DO I=NB_OCC, NB_TOT
++         ! loop over column index
++         DO J=1,I-1
++            CHAM(I,J)=0
++            CHAM(J,I)=0
++         ENDDO
++         ! shift diagonal elements by 10 eV
++         ! so that the diagonalization does not mix occupied and unoccupied manyfold
++         ! this shift needs to be removed by  SHIFT_UNOCCUPIED_BACK
++         CHAM(I,I)=CHAM(I,I)+10.0_q
++      ENDDO
++
++    END SUBROUTINE RESTRICT_TO_OCCUPIED_ONLY
++
++    SUBROUTINE SHIFT_UNOCCUPIED_BACK(NB_TOT, R, FERTOT)
++      INTEGER :: NB_TOT
++      REAL(q) :: R(:)
++      REAL(q) :: FERTOT(:)
++      INTEGER :: NB_OCC, I
++
++      ! seek first occupancy that differs from 1.00
++      DO NB_OCC=1, NB_TOT
++         IF (ABS((FERTOT(NB_OCC)-1.0_q))>1E-5_q) EXIT
++      ENDDO
++
++      ! now set the lower (upper) triangle starting with row NB_OCC to zero
++      ! loop over row index
++      DO I=NB_OCC, NB_TOT
++         R(I)=R(I)-10.0_q
++      ENDDO
++    END SUBROUTINE SHIFT_UNOCCUPIED_BACK
++
+   END SUBROUTINE EDDIAG
+ 
+ !***********************************************************************
+diff -ru src.base/wave.F src/wave.F
+--- src.base/wave.F	2018-05-23 17:45:49.172432321 +0200
++++ src/wave.F	2018-05-23 17:46:02.996556945 +0200
+@@ -1851,8 +1851,8 @@
+        ENDDO
+        NRPLWV=MAX(NRPLWV,IND)
+     ENDDO
+-    ! make WDES%NRPLWV dividable by NB_PAR
+ 
++    CALL COUNT_INDPW_FULL(GRID,WDES,BI,NRPLWV)
+ #ifdef MPI
+     ! ok this is tricky
+     ! if symmetry operations are applied, we might have too  few plane wave coefficients
+@@ -1865,6 +1865,7 @@
+        NRPLWV=NRPLWV+8
+     ENDIF
+ #endif
++    ! make WDES%NRPLWV dividable by NB_PAR
+     WDES%NRPLWV=((NRPLWV+WDES%NB_PAR-1)/WDES%NB_PAR)*WDES%NB_PAR
+     WDES%NGDIM=WDES%NRPLWV
+     WDES%NRPLWV = WDES%NRPLWV*WDES%NRSPINORS
+diff -ru src.base/wave_high.F src/wave_high.F
+--- src.base/wave_high.F	2018-05-23 17:45:49.180432393 +0200
++++ src/wave_high.F	2018-05-23 17:46:03.052557450 +0200
+@@ -2972,10 +2972,11 @@
+           DO NB=1,W%WDES%NBANDS
+              CALL W1_COPY(ELEMENT(W, WDES1, NB, ISP), W1)
+              CALL FFTWAV_W1(W1)
++             ! chose random phase in 1st and 4th quadrant, avoid proximity to +-i
++             AVERAGE_PHASE=EXP(CITPI*(RANE()-0.5)/2.1)
++             CALLMPI (M_bcast_z( WDES1%COMM_INB, AVERAGE_PHASE, 1))
++
+              DO ISPINOR =0,WDES1%NRSPINORS-1
+-                ! chose a random complex direction and project onto this
+-                AVERAGE_PHASE=EXP(CITPI*RANE())
+-                CALLMPI (M_bcast_z( WDES1%COMM_INB, AVERAGE_PHASE, 1))
+                 DO N=1,WDES1%GRID%RL%NP
+                    IF (LPHASE) THEN
+                       W1%CR(N+ISPINOR*WDES1%GRID%MPLWV)=CONJG(CPHASE(N))*REAL(W1%CR(N+ISPINOR*WDES1%GRID%MPLWV)*CPHASE(N)*AVERAGE_PHASE,q) & 
+@@ -2985,6 +2986,7 @@
+                       *(1.0_q/WDES1%GRID%NPLWV)
+                    ENDIF
+                 ENDDO
++
+                 CALL FFTEXT(WDES1%NGVECTOR, WDES1%NINDPW(1), W1%CR(1+ISPINOR*WDES1%GRID%MPLWV),W%CW(1+ISPINOR*WDES1%NGVECTOR,NB,NK,ISP),WDES1%GRID,.FALSE.)
+              ENDDO
+           ENDDO
+diff -ru src.base/xclib.F src/xclib.F
+--- src.base/xclib.F	2018-05-23 17:45:49.224432790 +0200
++++ src/xclib.F	2018-05-23 17:46:02.156549372 +0200
+@@ -13,6 +13,20 @@
+ 
+   CONTAINS
+ 
++!*******************************************************************
++!
++! In the following a couple of "standard" exchange
++! and correlation functionals are implemented
++! these usually use a.u. and Hartree-units 
++! they calculate the energy density per electrons and the
++! corresponding potential
++!
++! E_xc = \int eps_xc(rho(r)) rho(r) d^3 r
++! v_xc = d (eps_xc(rho) rho)   / d rho 
++!
++!*******************************************************************
++
++
+     FUNCTION ECCA(RS,IFLG)
+       USE prec
+       IMPLICIT REAL(q) (A-H,O-Z)
+@@ -353,6 +367,7 @@
+       DIMENSION CX(2)
+       SAVE CX,CBETA
+       DATA CX/1.2217741154217_q,1.5393389262365_q/,CBETA/0.0140_q/
++
+       VX=-CX(IFLG)/RS
+       IF (TREL) THEN
+ ! Warning error in the paper of Bachelet et al. !!
+@@ -1361,9 +1376,11 @@
+       DATA CX/0.9163305865663_q,1.1545041946774_q/
+       EX_=-CX(IFLG)/RS
+ 
+-!     RMU is the Thomas Fermi vector supplied in A, RS in a.u.
+-      RHO = 3/(4._q*PI)/(RS*AUTOA)**3
+-!      QF_GLOBAL=RMU**2*AUTOA*PI/4
++!     RMU is the Thomas Fermi wave vector supplied in a.u., RS in a.u. as well
++      RHO = 3/(4._q*PI)/(RS)**3
++
++! here is the "global" implementation Walter Wolf adopted in FLAPW
++!      QF_GLOBAL=RMU**2*PI/4
+ !      A=RMU/QF_GLOBAL
+ 
+       QF_LOCAL=(3._q*PI*PI*RHO)**(1._q/3._q)
+@@ -1385,10 +1402,13 @@
+       DIMENSION CX(2)
+       SAVE CX
+       DATA CX/0.9163305865663_q,1.1545041946774_q/
++
++!     RMU is the Thomas Fermi wave vector supplied in a.u., RS in a.u. as well
++      RHO = 3/(4._q*PI)/(RS)**3
+       VX_=-CX(IFLG)/RS
+ 
+-      RHO = 3/(4._q*PI)/(RS*AUTOA)**3
+-!      QF_GLOBAL=RMU**2*AUTOA*PI/4
++! here is the "global" implementation Walter Wolf adopted in FLAPW
++!      QF_GLOBAL=RMU**2*PI/4
+ !      A=RMU/QF_GLOBAL
+ !      FRAC = 1 - (4._q/3._q) * A * ATAN(2._q/A) &
+ !           & - (A*A/6._q) * ( 1._q - ( A*A/4._q  + 3._q) * LOG(1 + (4._q/(A*A) )))
+@@ -1399,8 +1419,7 @@
+ 
+       FRAC = 1 + (1._q/2._q) * A*A - (1._q/8._q) * LOG( 1 + (4._q/(A*A) )) * A*A*A*A &
+            &  - (1._q/2._q) * LOG( 1 + (4._q/(A*A))) *A*A
+-      VX_SX=EX_SX(RS,RMU,IFLG)+(1._q/4._q)*VX_*FRAC
+-
++      VX_SX=EX_SX(RS,RMU,IFLG)+(1._q/3._q)*VX_*FRAC
+ 
+       RETURN
+     END FUNCTION VX_SX
+@@ -2225,6 +2244,10 @@
+         ELSE IF (CEXCH=='ML') THEN
+           LEXCH=44
+ !vdw jk
++!vdw TbB
++        ELSE IF (CEXCH=='CX') THEN
++          LEXCH=45
++!vdw TbB
+         ENDIF
+       RETURN
+     END SUBROUTINE EXTYP
+@@ -2232,10 +2255,17 @@
+ 
+ !***********************************************************************
+ !
+-! EX_MOD calculate the exchange energy, possibly reduced by
+-! short range exchange hole or reduce by the amount that is accounted
+-! for by the exact exchange
+-! VX_MOD corresponding potential
++! EX_MOD calculate the exchange energy density per particle eps_x
++! possibly reduced by short range exchange hole or reduce by the amount 
++! that is accounted for by the exact exchange
++! that is 
++! E_x = \int eps_x(rho(r)) rho(r) d^3 r
++!
++! VX_MOD calculates the exchange potential, which is the derivative
++! of eps_x(rho(r)) rho(r) with respect to rho(r)
++! v_x = d (eps_x(rho) rho) /d rho
++! 
++! in leading order these quantities are proportional to the density^(1/3)
+ !
+ !***********************************************************************
+ 
+@@ -2254,7 +2284,7 @@
+          IF (LDASCREEN==0) THEN
+             EX_MOD=EX_MOD*LDAX
+          ELSE IF (LUSE_THOMAS_FERMI) THEN
+-            EX_MOD=EX_MOD-EX_SX(RS,LDASCREEN,IFLG)*(1-LDAX)
++            EX_MOD=EX_MOD-EX_SX(RS,LDASCREEN*AUTOA,IFLG)*(1-LDAX)
+          ELSE IF (LUSE_LONGRANGE_HF) THEN
+          ! Iann Gerber: use EX_SR (for LDAX=0, i.e. AEXX=1)
+ !            EX_MOD=(1-LDAX)*EX(RS,IFLG,.FALSE.)-(EX_MOD-EX_SR(RS,LDASCREEN*AUTOA,IFLG))*(1-LDAX)
+@@ -2297,10 +2327,23 @@
+       ENDIF
+     END FUNCTION VX_MOD
+ 
++!***********************************************************************
++!
++! EC_MOD calculate the correlation energy density per particle eps_c
++! that is 
++! E_x = \int eps_c(rho(r)) rho(r) d^3 r
++!
++! VC_MOD calculates the exchange potential, which is the derivative
++! of eps_c(rho(r)) rho(r) with respect to rho(r)
++! v_c = d (eps_c(rho) rho) /d rho
++! 
++!
++!***********************************************************************
+ !----------------------------------------------------------------------
+ !######################################################################
+ !----------------------------------------------------------------------
+ ! Iann Gerber 18/11/04
++! Comments Joachim Paier jP
+ 
+ ! Splitting the correlation part: meaning only take into account of the 
+ ! short-range part if necessary
+@@ -2733,13 +2776,25 @@
+ 
+ !**************** SUBROUTINE EXCHG *************************************
+ !
+-! EXCHG calculate the LDA part of xc-energy
+-! for the fully spin polarized case 
+-! and for the non magnetic case
+-! uses subroutines defined in xclib
+-! this function should be called with care, since the flag LEXCH_LDA
++! EXCHG calculate the LDA part of xc energy density per particle eps_xc(rho)
++! 
++! E_xc = \int eps_xc(rho(r)) rho(r) d^3 r
++
++! The subroutines calls various subroutines defined in xclib
++! The function should be called with care, since the flag LEXCH_LDA
+ ! is not compatible to LEXCH
+ !
++! Before returning, the subroutine divides the results by the density^(1/3)
++! which is the behaviour of the exchange density per particle e_x 
++!
++! this routine expects input in Angst, and the output is in eV/Angst
++!
++! Most of the called routines expect atomic units, hence
++! EXCHG calculates the Wigner Seitz radius in a.u. and then calls
++! the various exchange correlation routines (which are expected
++! to return the exchange correlation energy as well as potential 
++! in Rydberg)
++!
+ !***********************************************************************
+ 
+    SUBROUTINE EXCHG(LEXCH_LDA,RHO,EXCP,DEXF,DECF,ALPH,SLATER,TREL)
+@@ -2750,6 +2805,7 @@
+ 
+       LOGICAL TREL
+       REAL(q) :: RHO,EXCP,DEXF,DECF,ALPH,SLATER
++      REAL(q) :: RHOP, RHOM, EXP, EXM, DELTA
+    ! local
+       REAL(q) :: RS, RH, ZETA, FZA, FZB, &
+            RHOTHD, SE, ECLDA, ECD1LDA, ECD2LDA, ECLDA_MAG, A0
+@@ -2761,6 +2817,32 @@
+          ALPH=0._q
+          RETURN
+       ENDIF
++#ifdef test_exchange_potentials
++! this small DO loop allows to test the consistency between 
++! the exchange energy density per particle EX_MOD
++! and the corresponding potential VX_MOD
++      RHO=1.0
++      DO
++         DELTA=0.0001_q
++         RHOP=RHO+DELTA
++         RHOM=RHO-DELTA
++
++         RHOTHD = RHOP**(1/3._q)
++         RS = (3._q/(4._q*PI)/RHOP)**(1/3._q) /AUTOA
++         EXP=EX_MOD(RS, 1, .FALSE.)
++
++         RHOTHD = RHOM**(1/3._q)
++         RS = (3._q/(4._q*PI)/RHOM)**(1/3._q) /AUTOA
++         EXM=EX_MOD(RS, 1, .FALSE.)
++
++         RHOTHD = RHO**(1/3._q)
++         RS = (3._q/(4._q*PI)/RHO)**(1/3._q) /AUTOA
++
++         WRITE(*,'(3F14.7)') RHO, (EXP*RHOP/AUTOA**3-EXM*RHOM/AUTOA**3)/2.0_q/(DELTA/AUTOA**3), VX_MOD(RS,1,.FALSE.)
++
++         RHO=RHO+0.001
++      ENDDO
++#endif
+ 
+       RHOTHD = RHO**(1/3._q)
+       RS = (3._q/(4._q*PI)/RHO)**(1/3._q) /AUTOA
+diff -ru src.base/xclib_grad.F src/xclib_grad.F
+--- src.base/xclib_grad.F	2018-05-23 17:45:49.232432862 +0200
++++ src/xclib_grad.F	2018-05-23 17:46:02.168549480 +0200
+@@ -637,15 +637,15 @@
+        !  x=s*2._q**(4._q/3._q)*(3._q*3.1415926535)**(1._q/3._q)
+        !  arsinh(x) = LOG(  x + SQRT( x * x + 1.0_q))
+        !  expbe = -BETA * RHOS**(4.0_q/3.0_q) * X*X/(1.0_q + 6.0_q * BETA * X * LOG(  X + SQRT( X * X + 1.0_q)) )
+-          s=abs(s)
+-          x_s=7.7955541793_q*s
++          sabs=abs(s)
++          x_s=7.7955541793_q*sabs
+ !          P0=0.196447965_q*LOG(x_s+sqrt(x_s*x_s+1.0_q))
+           P0=PARAM1*LOG(x_s+sqrt(x_s*x_s+1.0_q))
+-          P1=1._q+s*P0
+-!          FxPBE=(1._q+0.27429447_q*s*s/P1)
+-          FxPBE=(1._q+PARAM2*s*s/P1)
++          P1=1._q+sabs*P0
++!          FxPBE=(1._q+0.27429447_q*sabs*sabs/P1)
++          FxPBE=(1._q+PARAM2*sabs*sabs/P1)
+           expbe=exlda*FxPBE
+-          Fs=PARAM2*2._q/P1 - s*PARAM2/(P1**2)*(P0+s*PARAM1*7.7955541793_q/sqrt(1._q+x_s*x_s))
++          Fs=PARAM2*2._q/P1 - sabs*PARAM2/(P1**2)*(P0+sabs*PARAM1*7.7955541793_q/sqrt(1._q+x_s*x_s))
+         ELSE IF (LEXCH .eq. 43) then
+ !Becke86MGC
+ !this is B86MGC with parameters
+@@ -665,8 +665,14 @@
+          FxPBE = P0**fftnt
+          expbe = exlda*FxPBE
+          Fs=fftnt*FxPBE/P0*(3.7020_q+69.32_q*S2+0.978_q*S4)
+-      endif
+ !vdw jk
++      ELSE IF (LEXCH .eq. 45) THEN
++!vdw TbB
++!CX13 by Berland and Hyldgaard
++         CALL CX13(rho,rhothrd,s,exlda,expbe,exdlda,exd,exdd)
++         RETURN
++!vdw TbB
++      ENDIF
+ !----------------------------------------------------------------------
+ !----------------------------------------------------------------------
+ ! calculate the partial derivatives of ex wrt n and |grad(n)|
+@@ -680,6 +686,59 @@
+ 
+ !######################################################################
+ !----------------------------------------------------------------------
++![TbB 2014-02-24] Added cx13 by Berland and Hyldgaard
++!                 (Phys. Rev. B 89, 035412 (2014))
++!----------------------------------------------------------------------
++      SUBROUTINE CX13(rho,rhothrd,s,exlda,expbe,exdlda,exd,exdd)
++      use prec
++      implicit none
++      real(q) rho,rhothrd,exlda,expbe,exdlda,exd,exdd
++      real(q) thrd,thrd4,pi,ax,mu,kappa,alpha,beta,mulv,a,b,c,m
++      real(q) s,S2,S3,S4,S5,S6,G1,G2,G3,Fx,Fs,exunif,as6,base
++      real(q) fs_rpw86,df_ds,df_rPW86_ds
++      parameter(thrd=1._q/3._q,thrd4=4._q/3._q)
++      parameter(pi=3.14159265358979323846264338327950_q)
++      parameter(ax=-0.738558766382022405884230032680836_q)
++      parameter(m=1.0_q/15.0_q,a=0.1234_q,b=17.33_q,c=0.163_q)
++      parameter(mulv=.09434_q,alpha=0.021789_q,beta=1.15_q)
++!----------------------------------------------------------------------
++! construct LDA exchange energy density
++      exunif=AX*rhothrd
++      exlda=exunif*rho
++      exdlda=exunif*thrd4
++!----------------------------------------------------------------------
++! construct enhancement factor
++      s2 = s*s
++      s3 = s2 * s
++      s4 = s2 * s2
++      s5 = s2 * s3
++      s6 = s2 * s2 *s2
++      as6 = alpha*s6
++! Calculation of energy
++      G1 = 1/(1+as6)
++      G2 = as6/(beta+as6)
++      G3 = alpha*s5/(beta+as6)
++      base = (1.0_q+a/m*S2+b*S4+c*S6)
++      fs_rpw86=base**m
++      Fx = (1+mulv*s2)*G1 + G2*fs_rpw86
++      expbe = exlda*Fx
++!----------------------------------------------------------------------
++!  ENERGY DONE. NOW THE POTENTIAL:
++!  find first derivatives of Fx w.r.t s.
++      df_rpw86_ds=s*m*fs_rpw86/base*(2.0_q*a/m+4.0_q*b*S2+6.0_q*c*S4)
++      Fs = 2*mulv*s*G1 - 6*alpha*s5*(1+mulv*s2)*G1**2 + &
++      G2*df_rpw86_ds + 6*G3*(1-G2)*fs_rpw86
++!----------------------------------------------------------------------
++! calculate the partial derivatives of ex wrt n and |grad(n)|
++!  0.3232409194=(3*pi^2)^(-1/3)
++      exd =exunif*THRD4*(Fx-S*Fs)
++      exdd=0.5_q*ax*0.3232409194_q*Fs
++      RETURN
++      END SUBROUTINE CX13
++
++
++!######################################################################
++!----------------------------------------------------------------------
+       SUBROUTINE CORunspPBE(RS,EC,VC,sk, &
+      &                  T,H,DVC,ecdd,lgga)
+ !----------------------------------------------------------------------
+diff -ru src.base/xclib_grad_gpu.F src/xclib_grad_gpu.F
+--- src.base/xclib_grad_gpu.F	2018-05-23 17:45:49.236432898 +0200
++++ src/xclib_grad_gpu.F	2018-05-23 17:46:02.300550673 +0200
+@@ -638,15 +638,15 @@
+        !  x=s*2._q**(4._q/3._q)*(3._q*3.1415926535)**(1._q/3._q)
+        !  arsinh(x) = LOG(  x + SQRT( x * x + 1.0_q))
+        !  expbe = -BETA * RHOS**(4.0_q/3.0_q) * X*X/(1.0_q + 6.0_q * BETA * X * LOG(  X + SQRT( X * X + 1.0_q)) )
+-          s=abs(s)
+-          x_s=7.7955541793_q*s
++          sabs=abs(s)
++          x_s=7.7955541793_q*sabs
+ !          P0=0.196447965_q*LOG(x_s+sqrt(x_s*x_s+1.0_q))
+           P0=PARAM1*LOG(x_s+sqrt(x_s*x_s+1.0_q))
+-          P1=1._q+s*P0
+-!          FxPBE=(1._q+0.27429447_q*s*s/P1)
+-          FxPBE=(1._q+PARAM2*s*s/P1)
++          P1=1._q+sabs*P0
++!          FxPBE=(1._q+0.27429447_q*sabs*sabs/P1)
++          FxPBE=(1._q+PARAM2*sabs*sabs/P1)
+           expbe=exlda*FxPBE
+-          Fs=PARAM2*2._q/P1 - s*PARAM2/(P1**2)*(P0+s*PARAM1*7.7955541793_q/sqrt(1._q+x_s*x_s))
++          Fs=PARAM2*2._q/P1 - sabs*PARAM2/(P1**2)*(P0+sabs*PARAM1*7.7955541793_q/sqrt(1._q+x_s*x_s))
+         ELSE IF (LEXCH .eq. 43) then
+ !Becke86MGC
+ !this is B86MGC with parameters
+@@ -666,8 +666,14 @@
+          FxPBE = P0**fftnt
+          expbe = exlda*FxPBE
+          Fs=fftnt*FxPBE/P0*(3.7020_q+69.32_q*S2+0.978_q*S4)
+-      endif
+ !vdw jk
++      ELSE IF (LEXCH .eq. 45) THEN
++!vdw TbB
++!CX13 by Berland and Hyldgaard
++         CALL CX13(rho,rhothrd,s,exlda,expbe,exdlda,exd,exdd)
++         RETURN
++!vdw TbB
++      ENDIF
+ !----------------------------------------------------------------------
+ !----------------------------------------------------------------------
+ ! calculate the partial derivatives of ex wrt n and |grad(n)|
+@@ -681,6 +687,59 @@
+ 
+ !######################################################################
+ !----------------------------------------------------------------------
++![TbB 2014-02-24] Added cx13 by Berland and Hyldgaard
++!                 (Phys. Rev. B 89, 035412 (2014))
++!----------------------------------------------------------------------
++      SUBROUTINE CX13(rho,rhothrd,s,exlda,expbe,exdlda,exd,exdd)
++      use prec
++      implicit none
++      real(q) rho,rhothrd,exlda,expbe,exdlda,exd,exdd
++      real(q) thrd,thrd4,pi,ax,mu,kappa,alpha,beta,mulv,a,b,c,m
++      real(q) s,S2,S3,S4,S5,S6,G1,G2,G3,Fx,Fs,exunif,as6,base
++      real(q) fs_rpw86,df_ds,df_rPW86_ds
++      parameter(thrd=1._q/3._q,thrd4=4._q/3._q)
++      parameter(pi=3.14159265358979323846264338327950_q)
++      parameter(ax=-0.738558766382022405884230032680836_q)
++      parameter(m=1.0_q/15.0_q,a=0.1234_q,b=17.33_q,c=0.163_q)
++      parameter(mulv=.09434_q,alpha=0.021789_q,beta=1.15_q)
++!----------------------------------------------------------------------
++! construct LDA exchange energy density
++      exunif=AX*rhothrd
++      exlda=exunif*rho
++      exdlda=exunif*thrd4
++!----------------------------------------------------------------------
++! construct enhancement factor
++      s2 = s*s
++      s3 = s2 * s
++      s4 = s2 * s2
++      s5 = s2 * s3
++      s6 = s2 * s2 *s2
++      as6 = alpha*s6
++! Calculation of energy
++      G1 = 1/(1+as6)
++      G2 = as6/(beta+as6)
++      G3 = alpha*s5/(beta+as6)
++      base = (1.0_q+a/m*S2+b*S4+c*S6)
++      fs_rpw86=base**m
++      Fx = (1+mulv*s2)*G1 + G2*fs_rpw86
++      expbe = exlda*Fx
++!----------------------------------------------------------------------
++!  ENERGY DONE. NOW THE POTENTIAL:
++!  find first derivatives of Fx w.r.t s.
++      df_rpw86_ds=s*m*fs_rpw86/base*(2.0_q*a/m+4.0_q*b*S2+6.0_q*c*S4)
++      Fs = 2*mulv*s*G1 - 6*alpha*s5*(1+mulv*s2)*G1**2 + &
++      G2*df_rpw86_ds + 6*G3*(1-G2)*fs_rpw86
++!----------------------------------------------------------------------
++! calculate the partial derivatives of ex wrt n and |grad(n)|
++!  0.3232409194=(3*pi^2)^(-1/3)
++      exd =exunif*THRD4*(Fx-S*Fs)
++      exdd=0.5_q*ax*0.3232409194_q*Fs
++      RETURN
++      END SUBROUTINE CX13
++
++
++!######################################################################
++!----------------------------------------------------------------------
+       SUBROUTINE CORunspPBE(RS,EC,VC,sk, &
+      &                  T,H,DVC,ecdd,lgga)
+ !----------------------------------------------------------------------

@@ -1,0 +1,43 @@
+##
+# Author: Ali Kerrache; University of Manitoba.
+# Date: July 6, 2018.
+##
+easyblock = 'ConfigureMake'
+
+name = 'tRNAscan-SE'
+version = '2.0.7'
+
+homepage = 'http://lowelab.ucsc.edu/'
+description = "tRNAscan-SE: An improved tool for transfer RNA detection, Patricia Chan and Todd Lowe, School of Engineering, University of California, Santa Cruz, CA. tRNAscan-SE was written in the PERL (version 5.0) script language. Input consists of DNA or RNA sequences in FASTA format. tRNA predictions are output in standard tabular or ACeDB format. tRNAscan-SE does no tRNA detection itself, but instead combines the strengths of three independent tRNA prediction programs by negotiating the flow of information between them, performing a limited amount of post-processing, and outputting the results in one of several formats."
+
+toolchain = {'version': '9.3.0', 'name': 'GCC'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['http://trna.ucsc.edu/software/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['878d636813bc3e1ea1d52d86820642adfed3d740d5f4b3845460f140fc499843']
+
+dependencies = [
+    ('Infernal', '1.1.3'),
+]
+
+preconfigopts = "autoreconf -i && "
+
+postinstallcmds = ['chmod -R go+X %(installdir)s']
+
+local_binaries = [
+    'covels-SE', 'coves-SE', 'eufindtRNA', 'EukHighConfidenceFilter', 
+    'fasta2gsi', 'sstofa', 'trnascan-1.4', '%(name)s', '%(name)s.conf',
+]
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': ['bin', 'include', 'lib'],
+}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("perl")
+"""
