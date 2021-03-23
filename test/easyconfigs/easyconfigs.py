@@ -890,15 +890,7 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # give recent EasyBuild easyconfigs special treatment
-    # replace use deprecated dummy toolchain, required to avoid breaking "eb --install-latest-eb-release",
-    # with SYSTEM toolchain constant
     ec_fn = os.path.basename(spec)
-    if ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.'):
-        ectxt = read_file(spec)
-        regex = re.compile('^toolchain = .*dummy.*', re.M)
-        ectxt = regex.sub('toolchain = SYSTEM', ectxt)
-        write_file(spec, ectxt)
 
     # parse easyconfig
     ecs = process_easyconfig(spec)
@@ -942,8 +934,10 @@ def template_easyconfig_test(self, spec):
     self.assertTrue(ec['version'], app.version)
 
     # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
-    error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
-    self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
+    # but give recent EasyBuild easyconfigs special treatment to avoid breaking "eb --install-latest-eb-release"
+    if not (ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.')):
+        error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
+        self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
     res = re.findall(r'.*\$root.*', ec.rawtxt, re.M)
