@@ -3,24 +3,26 @@
 # Date: May 28, 2018.
 ##
 
-easyblock = 'MakeCp'
+easyblock = 'ConfigureMake'
 
-name = 'DALTON'
-version = "2017-alpha"
+name = 'Dalton'
+version = "2018"
 
 homepage = 'http://daltonprogram.org/'
 description = """The Dalton suite consists of two separate executables, Dalton and LSDalton. The Dalton code is a powerful tool for a wide range of molecular properties at different levels of theory, whereas LSDalton is a linear-scaling HF and DFT code suitable for large molecular systems, now also with some CCSD capabilites. Any published work arising from use of one of the Dalton programs must acknowledge that by a proper reference. The following list of capabilities of the Dalton programs should give you some indication of whether or not the Dalton suite is able to meet your requirements.."""
 
-toolchain = {'name': 'iomkl', 'version': '2016.4.11'}
+toolchain = {'name': 'iomkl', 'version': '2018.3.312'}
 toolchainopts = {'usempi': True, 'openmp': True, 'pic': True}
 
-# No direct download: download from GitLab using git clone:
-# git clone --recursive https://gitlab.com/dalton/dalton.git
-# mv dalton dalton-2017-alpha && tar -cvf dalton-2017-alpha.tar dalton-2017-alpha/
-# gzip dalton-2017-alpha.tar
-
-sources = ['%(namelower)s-%(version)s.tar.gz']
-checksums = ['104e1b2e6d706864f691ddb9f4dac993']   # dalton-2017-alpha.tar.gz
+sources = [{
+    'filename': '%(namelower)s-release-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://gitlab.com/dalton/',
+        'repo_name': 'dalton',
+        'commit': '07a00c83',
+        'recursive': True,
+    },
+}]
 
 builddependencies = [('CMake', '3.7.2')]
 
@@ -32,16 +34,11 @@ prebuildopts += '--timings --coverage --csr --mkl=sequential --static '
 prebuildopts += '--blas=auto --lapack=auto '
 prebuildopts += '--blacs=openmpi  --scalapack . && '
 
-postinstallcmds =  ['cd %(builddir)s/%(namelower)s-%(version)s/build && mkdir -p %(installdir)s/bin && cp dalton dalton.x %(installdir)s/bin/ && cp -r GIT_HASH ../VERSION  lib  ../DALTON/test tools basis %(installdir)s/']
-
-files_to_copy = [
-    (['build/dalton', 'build/dalton.x'], 'bin'), 
-    'build/GIT_HASH', 'DALTON/test', 'build/lib', 'VERSION', 'basis', 'tools',
-]
+postinstallcmds =  ['cd %(installdir)s/ && mkdir -p bin tools && cd %(builddir)s/%(namelower)s/build/tools/ && cp aces2dalton distances FChk2HES labread xyz2dalton %(installdir)s/tools/ && cd ../ && cp dalton dalton.x %(installdir)s/bin && cp -r ../VERSION GIT_HASH test lib basis %(installdir)s/ ']
 
 sanity_check_paths = {
-    'files': ['bin/dalton', 'bin/dalton.x', 'VERSION'],
-    'dirs': ['basis', 'lib', 'tools', 'test'],
+    'files': ['bin/dalton', 'bin/dalton.x', 'VERSION', 'GIT_HASH'],
+    'dirs': ['basis', 'lib', 'test', 'tools'],
 }
 
 modextrapaths = {
