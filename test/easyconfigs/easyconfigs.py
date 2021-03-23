@@ -890,8 +890,6 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    ec_fn = os.path.basename(spec)
-
     # parse easyconfig
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
@@ -935,6 +933,7 @@ def template_easyconfig_test(self, spec):
 
     # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
     # but give recent EasyBuild easyconfigs special treatment to avoid breaking "eb --install-latest-eb-release"
+    ec_fn = os.path.basename(spec)
     if not (ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.')):
         error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
         self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
