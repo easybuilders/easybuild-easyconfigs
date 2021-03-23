@@ -49,7 +49,7 @@ from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parame
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.config import GENERAL_CLASS, build_option
-from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
+from easybuild.tools.filetools import change_dir, is_generic_easyblock, remove_file
 from easybuild.tools.filetools import verify_checksum, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
