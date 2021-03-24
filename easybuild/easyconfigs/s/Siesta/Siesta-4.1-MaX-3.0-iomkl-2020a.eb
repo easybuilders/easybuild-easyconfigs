@@ -1,0 +1,52 @@
+name = 'Siesta'
+
+_release = 'MaX-3.0'
+_release_ext = 'MaX-R3'
+version = '4.1-%s' % _release
+
+homepage = 'https://departments.icmab.es/leem/siesta'
+description = """SIESTA is both a method and its computer program implementation, to perform efficient electronic
+ structure calculations and ab initio molecular dynamics simulations of molecules and solids."""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'precise': True}
+
+source_urls = ['https://launchpad.net/siesta/max-releases/max-r3/+download/']
+sources = ['%%(namelower)s-%s.tgz' % _release_ext]
+patches = ['%(namelower)s-%(version)s-fix-hardcoding.patch']
+checksums = [
+    '2e8bad5f18beed2ce052619e062598e0013945bd6003377c252c033331bcd8cb',  # siesta-MaX-R3.tgz
+    'c08b5f6df822d5b6a3f464e88ca7092e1964aa9ca1b37709dd0cfb3103eae902',  # siesta-4.1-MaX-3.0-fix-hardcoding.patch
+]
+
+dependencies = [
+    ('LibGridXC', '0.8.0'),
+    ('libpsml', '1.1.8'),
+    ('netCDF-Fortran', '4.5.2', '-mpi'),
+    ('XMLF90', '1.5.4'),
+]
+
+configopts  = 'CC=mpicc FC=mpif90 '
+configopts += '--with-blacs="-lmkl_blacs_openmpi_lp64 -mkl=sequential" '
+configopts += '--with-scalapack=-lmkl_scalapack_lp64 '
+configopts += '--with-blas=-mkl=sequential '
+configopts += '--with-lapack=-mkl=sequential '
+configopts += '-DMPI_TIMIMG  FFLAGS+=-qopenmp '
+configopts += 'LIBS+="-qopenmp -lhdf5_fortran -lhdf5 -lz" '
+configopts += 'COMP_LIBS+="libfdict.a libncdf.a libfdict.a" '
+configopts += '--with-netcdf="-lnetcdff -lnetcdf" '
+configopts += 'FPPFLAGS+="-DNCDF_PARALLEL -DNCDF -DNCDF_4" '
+
+start_dir = 'siesta'
+
+with_utils = True
+
+parallel = 1
+
+# transiesta is now siesta --electrode
+
+with_transiesta = False
+
+runtest = 'check'
+
+moduleclass = 'chem'
