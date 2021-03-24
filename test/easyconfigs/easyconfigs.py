@@ -629,14 +629,17 @@ class EasyConfigTest(TestCase):
 
                 download_dep_fail = ec.get('download_dep_fail')
                 exts_download_dep_fail = ec.get('exts_download_dep_fail')
-                use_pip = ec.get('use_pip', default=exts_default_options.get('use_pip'))
+                use_pip = ec.get('use_pip')
+                if use_pip is None:
+                    use_pip = exts_default_options.get('use_pip')
 
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
                     failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
                 if ec.get('source_urls', resolve=False) == python_default_urls:
-                    failing_checks.append("'source_urls' can be omitted when using the default value in %s" % ec_fn)
+                    failing_checks.append("'source_urls' should not be defined when using the default value "
+                                          "in %s" % ec_fn)
 
             # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
             if easyblock in ['PythonBundle', 'PythonPackage']:
@@ -649,8 +652,8 @@ class EasyConfigTest(TestCase):
                     fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
                     failing_checks.append(fail)
                 if exts_default_options.get('source_urls') == python_default_urls:
-                    failing_checks.append("'source_urls' can be omitted in exts_default_options when using the default"
-                                          " value in %s" % ec_fn)
+                    failing_checks.append("'source_urls' should not be defined in exts_default_options when using "
+                                          "the default value in %s" % ec_fn)
 
             elif exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
