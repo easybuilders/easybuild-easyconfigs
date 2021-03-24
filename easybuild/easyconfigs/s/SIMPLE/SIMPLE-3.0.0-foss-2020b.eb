@@ -29,9 +29,9 @@ preconfigopts = 'sed -i "s/unset (OpenMP_Fortran_FLAGS CACHE)/#&/g" ../*/cmake/M
 
 local_configopts = " -DFFTW_DIR=$EBROOTFFTW "
 local_configopts += "-DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include "
-local_configopts += "-DJBIG_LIBRARY=$EBROOTJBIGKIT/lib/libjbig.so "
-local_configopts += "-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib64/libjpeg.so "
-local_configopts += "-DLZMA_LIBRARY=$EBROOTXZ/lib/liblzma.so "
+local_configopts += "-DJBIG_LIBRARY=$EBROOTJBIGKIT/lib/libjbig.%s " % SHLIB_EXT
+local_configopts += "-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib64/libjpeg.%s " % SHLIB_EXT
+local_configopts += "-DLZMA_LIBRARY=$EBROOTXZ/lib/liblzma.%s " % SHLIB_EXT
 local_configopts += "-DUSE_OPENMP=ON "
 local_configopts += "-DUSE_MPI=OFF "
 local_configopts += "-DSIMPLE_BUILD_TESTS=ON "
@@ -55,9 +55,9 @@ postinstallcmds = [
     "cp %(builddir)s/easybuild_obj/bin/{simple*,single_exec,quant_exec} %(installdir)s/bin/ -pP "
     "&& cp -rpP %(builddir)s/easybuild_obj/{gui_data,tutorials}/ %(installdir)s "
     '&& cp %(builddir)s/SIMPLE*/{doc,LICENSE,src/inc} %(installdir)s -rpP'
-    '&& cd %(installdir)s/lib && ln -s libSIMPLE%(version)s.so libSIMPLE.so'
+    + '&& cd %(installdir)s/lib ' + '&& ln -s libSIMPLE%s.%s libSIMPLE.%s' % (version, SHLIB_EXT, SHLIB_EXT)
     # "test binaries are only required for "make test".
-    '&& rm -rf %(installdir)s/bin/simple_test_*']
+    + '&& rm -rf %(installdir)s/bin/simple_test_*']
 
 
 runtest = 'test'
