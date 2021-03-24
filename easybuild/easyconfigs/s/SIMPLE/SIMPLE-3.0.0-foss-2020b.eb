@@ -1,4 +1,4 @@
-#Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/03
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/03
 easyblock = 'CMakeMake'
 
 name = 'SIMPLE'
@@ -10,64 +10,71 @@ package for analysis of cryogenic transmission electron microscopy (cryo-EM)
 movies of single-particles (Single-Particle Analysis, SPA)."""
 
 toolchain = {'name': 'foss', 'version': '2020b'}
-toolchainopts={'openmp': True, 'opt': False} #simple_test_units fails with opt=True
+toolchainopts = {'openmp': True, 'opt': False}  # simple_test_units fails with opt=True
 
-source_urls=[GITHUB_SOURCE]
-github_account='hael'
+source_urls = [GITHUB_SOURCE]
+github_account = 'hael'
 sources = ["v%(version)s.tar.gz"]
 checksums = ['9cf98d042b918170e3a9b92148c7081d35e0ef1c9fa8b6ea16cf2bd476945dd7']
 
 builddependencies = [('CMake', '3.18.4')]
-dependencies=[
-('XZ','5.2.5'),
-('LibTIFF','4.1.0'),
-('jbigkit','2.1'),
-]
-preconfigopts=""
-preconfigopts+='sed -i "s/unset (OpenMP_Fortran_FLAGS CACHE)/#&/g" ../*/cmake/Modules/ZSetParallelLibrary.cmake &&' #Avoid calling FindOpenMP_Fortran.cmake.
+dependencies = [
+    ('XZ', '5.2.5'),
+    ('LibTIFF', '4.1.0'),
+    ('jbigkit', '2.1'), ]
 
-configopts=" -DFFTW_DIR=$EBROOTFFTW " 
-configopts+="-DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include "
-configopts+="-DJBIG_LIBRARY=$EBROOTJBIGKIT/lib/libjbig.so "
-configopts+="-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib64/libjpeg.so "
-configopts+="-DLZMA_LIBRARY=$EBROOTXZ/lib/liblzma.so "
-configopts+="-DUSE_OPENMP=ON "
-configopts+="-DUSE_MPI=OFF "
-configopts+="-DSIMPLE_BUILD_TESTS=ON "
-configopts+="-DOpenMP_Fortran_FLAGS=$CFLAGS "
-configopts+="-DCMAKE_SHARED_LINKER_FLAGS=-fopenmp "
-configopts=[configopts+'-DBUILD_SHARED_LIBS=OFF',configopts+'-DBUILD_SHARED_LIBS=ON']
+# Avoid using problematic FindOpenMP_Fortran.cmake; 
+# Instead OpenMP_Fortran_FLAGS will be set in configopts.
+preconfigopts = 'sed -i "s/unset (OpenMP_Fortran_FLAGS CACHE)/#&/g" ../*/cmake/Modules/ZSetParallelLibrary.cmake &&'
 
-buildopts='all single_exec'
+configopts = " -DFFTW_DIR=$EBROOTFFTW "
+configopts += "-DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include "
+configopts += "-DJBIG_LIBRARY=$EBROOTJBIGKIT/lib/libjbig.so "
+configopts += "-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib64/libjpeg.so "
+configopts += "-DLZMA_LIBRARY=$EBROOTXZ/lib/liblzma.so "
+configopts += "-DUSE_OPENMP=ON "
+configopts += "-DUSE_MPI=OFF "
+configopts += "-DSIMPLE_BUILD_TESTS=ON "
+configopts += "-DOpenMP_Fortran_FLAGS=$CFLAGS "
+configopts += "-DCMAKE_SHARED_LINKER_FLAGS=-fopenmp "
+configopts = [configopts + '-DBUILD_SHARED_LIBS=OFF', configopts + '-DBUILD_SHARED_LIBS=ON']
+
+buildopts = 'all single_exec'
 separate_build_dir = True
 
 modextravars = {
     'SIMPLE_QSYS': 'local',
     'SIMPLE_PATH': '%(installdir)s',
-	'SIMPLE_EMAIL': "my.name@uni.edu"
+    'SIMPLE_EMAIL': "my.name@uni.edu"
 }
 
 modextrapaths = {'PATH': 'scripts'}
 
-postinstallcmds=[ #move some stuff and clean up
-"cp %(builddir)s/easybuild*/bin/{simple*,single_exec,quant_exec} %(installdir)s/bin/ -pP "
-"&& cp -rpP %(builddir)s/easybuild*/gui_data/ %(installdir)s "
-'&& rm -rf %(installdir)s/bin/simple_test_*'
-'&& cp %(builddir)s/SIMPLE*/{doc,LICENSE,src/inc} %(installdir)s -rpP'
-'&& cd %(installdir)s/lib && ln -s libSIMPLE%(version)s.so libSIMPLE.so'
-]
-docpaths=["doc"]
-runtest='test'
-#runtest=False
-pretestopts='. add2.bashrc && export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:$LD_LIBRARY_PATH && '
+postinstallcmds = [
+    # "make install" misses some required directories.
+    "cp %(builddir)s/easybuild_obj/bin/{simple*,single_exec,quant_exec} %(installdir)s/bin/ -pP "
+    "&& cp -rpP %(builddir)s/easybuild_obj/{gui_data,tutorials}/ %(installdir)s "
+    '&& cp %(builddir)s/SIMPLE*/{doc,LICENSE,src/inc} %(installdir)s -rpP'
+    '&& cd %(installdir)s/lib && ln -s libSIMPLE%(version)s.so libSIMPLE.so'
+    # "test binaries are only required for "make test".
+    '&& rm -rf %(installdir)s/bin/simple_test_*']
+
+
+runtest = 'test'
+# required for shared build tests:
+pretestopts = '. add2.bashrc && export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj/lib:$LD_LIBRARY_PATH && '
+
 sanity_check_paths = {
     'files': ['LICENSE',
-	          'bin/simple_exec','bin/simple',
-              'lib/libSIMPLE%(version)s.a', 
-              'lib/libSIMPLE%s.%s' % (version,SHLIB_EXT), 
-			  'lib/simple/simple_varlist.txt'],
-    'dirs': ['scripts','doc','inc','gui_data','tutorials']
+              'bin/simple_exec',
+              'bin/simple',
+              'lib/libSIMPLE%(version)s.a',
+              'lib/libSIMPLE%s.%s' % (version, SHLIB_EXT),
+              'lib/simple/simple_varlist.txt'],
+    'dirs': ['scripts', 'gui_data', 'tutorials',  # req. at runtime
+             'doc', 'inc', ]
 }
 
+docpaths = ["doc"]
 
 moduleclass = 'bio'
