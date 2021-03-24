@@ -633,11 +633,16 @@ class EasyConfigTest(TestCase):
                 if use_pip is None:
                     use_pip = exts_default_options.get('use_pip')
 
+            # only easyconfig parameters as they are defined in the easyconfig file,
+            # does *not* include other easyconfig parameters with their default value!
+            pure_ec = ec.parser.get_config_dict()
+
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
                     failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
-                if ec.get('source_urls', resolve=False) == python_default_urls:
+
+                if pure_ec.get('source_urls') == python_default_urls:
                     failing_checks.append("'source_urls' should not be defined when using the default value "
                                           "in %s" % ec_fn)
 
@@ -651,7 +656,7 @@ class EasyConfigTest(TestCase):
                 if download_dep_fail or exts_download_dep_fail:
                     fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
                     failing_checks.append(fail)
-                if exts_default_options.get('source_urls') == python_default_urls:
+                if pure_ec.get('exts_default_options', {}).get('source_urls') == python_default_urls:
                     failing_checks.append("'source_urls' should not be defined in exts_default_options when using "
                                           "the default value in %s" % ec_fn)
 
