@@ -9,30 +9,34 @@ description = """Python interface to the igraph high performance graph library, 
 
 toolchain = {'name': 'fosscuda', 'version': '2020b'}
 
-osdependencies = [('zlib-devel', 'zlib1g-dev')]
-
-dependencies = [
-    ('Python', '3.8.6'),
-    ('igraph', '0.9.0'),
-    ('PyCairo', '1.18.2'),
-    ('Clang', '11.0.1'),
-    ('libxml2', '2.9.10'),
+builddependencies = [
     ('pkg-config', '0.29.2'),
 ]
 
-use_pip = True
-sanity_pip_check = True
+dependencies = [
+    ('Python', '3.8.6'),
+    ('igraph', '0.9.1'),
+    ('PyCairo', '1.20.0'),
+    ('Clang', '11.0.1'),
+    ('libxml2', '2.9.10'),
+    ('zlib', '1.2.11'),
+]
 
-exts_default_options = {'source_urls': [PYPI_SOURCE]}
+use_pip = True
 
 exts_list = [
-    ('texttable', '1.6.2', {
-        'checksums': ['eff3703781fbc7750125f50e10f001195174f13825a92a45e9403037d539b4f4'],
+    ('texttable', '1.6.3', {
+        'checksums': ['ce0faf21aa77d806bbff22b107cc22cce68dc9438f97a2df32c93e9afa4ce436'],
     }),
     (name, version, {
-        'buildopts': '--use-pkg-config',
+        'installopts': '--install-option="--use-pkg-config" --install-option="--static"',
         'modulename': 'igraph',
-        'checksums': ['7aa1d77fa02e27475eb4f14503f3cb342c3ed8990d9224640fd29c70797f2dd6'],
+        'patches': ['python-igraph-%(version)s_fix-igraph-libs.patch'],
+        'checksums': [
+            '7aa1d77fa02e27475eb4f14503f3cb342c3ed8990d9224640fd29c70797f2dd6',  # python-igraph-0.9.0.tar.gz
+            # python-igraph-0.9.0_fix-igraph-libs.patch
+            '7af7a6e6a8b982ced7cdd939d82a98829512088744bebad34c714a3c4803f126',
+        ],
     }),
 ]
 
@@ -43,5 +47,7 @@ sanity_check_paths = {
 
 # cairo must be available for proper plotting support
 sanity_check_commands = ["python -c 'from igraph.drawing.utils import find_cairo; cairo = find_cairo(); cairo.Context'"]
+
+sanity_pip_check = True
 
 moduleclass = 'lib'
