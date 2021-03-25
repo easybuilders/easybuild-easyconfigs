@@ -2,7 +2,9 @@
 
 name = 'cuDNN'
 version = '8.1.1.33'
-versionsuffix = '-CUDA-11.1.1'
+local_cuda_version = '11.1.1'
+local_cuda_version_majmin = '.'.join(local_cuda_version.split('.')[:2])
+versionsuffix = '-CUDA-%s' % local_cuda_version
 
 homepage = 'https://developer.nvidia.com/cudnn'
 description = """The NVIDIA CUDA Deep Neural Network library (cuDNN) is
@@ -10,12 +12,20 @@ a GPU-accelerated library of primitives for deep neural networks."""
 
 toolchain = SYSTEM
 
-sources = ['cudnn-11.2-linux-x64-v8.1.1.33.tgz']
-checksums = ['98a8784e92862f20018d20c281b30d4a0cd951f93694f6433ccf4ae9c502ba6a']
-
-dependencies = [
-    ('CUDAcore', '11.1.1')
+# Nvidia developer registration required.
+# Download link: https://developer.nvidia.com/rdp/cudnn-download
+local_tarball_tmpl = '-'.join(['%%(namelower)s', local_cuda_version_majmin, 'linux', '%s', 'v%%(version)s.tgz'])
+sources = [local_tarball_tmpl % '%(cudnnarch)s']
+checksums = [
+    {
+        local_tarball_tmpl % 'x64':
+            '98a8784e92862f20018d20c281b30d4a0cd951f93694f6433ccf4ae9c502ba6a',
+        local_tarball_tmpl % 'aarch64sbsa':
+            '4f7e4f5698539659d51f28dff0da11e5445a5ae58439af1d8a8e9f2d93535245',
+    }
 ]
+
+dependencies = [('CUDAcore', local_cuda_version)]
 
 sanity_check_paths = {
     'files': ['include/cudnn.h', 'lib64/libcudnn_static.a'],
