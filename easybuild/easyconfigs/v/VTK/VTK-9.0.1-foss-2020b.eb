@@ -42,32 +42,20 @@ dependencies = [
     ('Python', '3.8.6'),
     ('SciPy-bundle', '2020.11'),
     ('XZ', '5.2.5'),
-    ('HDF5', '1.10.7'),
-    ('netCDF', '4.7.4'),
     ('libGLU', '9.0.1'),
     ('X11', '20201008'),
 ]
 
 separate_build_dir = True
 
-# Third party modules
-configopts = "-DVTK_USE_SYSTEM_MPI4PY=ON "
-configopts += "-DVTK_USE_SYSTEM_LZMA=ON "
-configopts += "-DVTK_USE_SYSTEM_HDF5=ON "
-configopts += "-DVTK_USE_SYSTEM_NETCDF=ON "
-configopts += "-DVTK_USE_SYSTEM_PNG=ON "
 # OpenGL
-configopts += "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
+configopts = "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
 configopts += "-DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s " % SHLIB_EXT
 configopts += "-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include "
 # Python
-configopts += "-DVTK_WRAP_PYTHON=ON "
-# note: specifying full Python version leads to problems (see https://gitlab.kitware.com/vtk/vtk/-/issues/17934)
-configopts += "-DVTK_PYTHON_VERSION=3 "
-configopts += "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s "
-configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)s.%s " % SHLIB_EXT
+configopts += "-DVTK_WRAP_PYTHON=ON -DVTK_PYTHON_VERSION=3 "
 # Other
-configopts += "-DVTK_Group_MPI:BOOL=ON "
+configopts += "-DVTK_MPI=ON "
 configopts += "-DCMAKE_INSTALL_LIBDIR=lib"
 
 preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
@@ -87,7 +75,7 @@ local_vtk_exec += ['vtkpython']
 local_vtk_libs = ['CommonCore', 'IONetCDF', 'ParallelCore', 'RenderingOpenGL2']
 
 sanity_check_paths = {
-    'files': ['bin/%s' % x for x in local_vtk_exec] +
+    'files': ['bin/%s' % x for x in local_vtk_exec] + ['include/vtk-%(version_major_minor)s/vtkMPI.h'] +
              ['lib/libvtk%s-%%(version_major_minor)s.%s' % (l, SHLIB_EXT) for l in local_vtk_libs],
     'dirs': ['lib/python%(pyshortver)s/site-packages/', 'include/vtk-%(version_major_minor)s'],
 }
