@@ -1,0 +1,99 @@
+# Built with EasyBuild version 3.5.2.dev0-rb302d581048bd85d87bb0ab6cfa8bac7b1ffb899 on 2018-02-23_17-07-58
+# easybuild easyconfig
+#
+#  John Dey jfdey@fredhutch.org
+#
+#  Fred Hutchinson Cancer Research Center
+
+easyblock = 'Binary'
+
+name = 'RGAugury'
+version = '2.1.3'
+
+homepage = 'https://bitbucket.org/yaanlpc/rgaugury/src/master/'
+description = """This project aims to develop a sophisticated informatics tools for large scale of resistance gene analogs identification, including major groups of RGAs, such as NBS encoding genes, receptor like proteins and receptor like protein kinases. It is thus named as RGA augury or RGAugury standalone pipeline."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0' }
+
+source_urls = ['https://bitbucket.org/yaanlpc/rgaugury/get/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['320f08335711e06e0ff24d9749c05b7d5827274738e5d7b77e353b78dd5a4e25']
+
+dependencies = [
+    ('Perl', '5.30.2'),
+    ('BLAST+', '2.11.0'),
+    ('HMMER', '3.2.1'),
+    ('PfamScan', '1.6'),
+    ('InterProScan', '5.50-84.0'),
+    ('CViT', '1.2.1'),
+    ('Java', '13', ''),
+]
+
+extract_sources = True
+
+modextrapaths = {
+    'PERL5LIB': ['lib/perl5/site_perl/%(perlver)s/', 'lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/'], 
+    'COILSDIR': 'coils',
+}
+
+sanity_check_paths = {
+    'files': ['iprscan.pl', 'RGAugury.pl', '%(installdir)s/coils/ncoils-osf', '%(installdir)s/coils/scoils-ht'],
+    'dirs': ['RGADB','motif']
+}
+
+postinstallcmds = ['cd %(installdir)s/coils && cc -O2 -I. -o ncoils-osf ncoils.c read_matrix.c -lm && cd .. && for file in $(find . -type f); do dos2unix $file; sed -i "s/\#\!\/usr\/bin\/perl/\#\!\/usr\/bin\/env\ perl/g" $file; sed -i "s/perl\ \-w/perl/g" $file; done']
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('Log::Log4perl', '1.49', {
+        'runtest': 'test',
+        'source_tmpl': 'Log-Log4perl-1.49.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MS/MSCHILLI'],
+        'checksums': ['b739187f519146cb6bebcfc427c64b1f4138b35c5f4c96f46a21ed4a43872e16'],
+    }),
+    ('GD', '2.71', {
+        'runtest': 'test',
+        'source_tmpl': 'GD-2.71.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RU/RURBAN'],
+        'checksums': ['451be4873b2ad7261cc5679698cd9d2e84dbdde4309971869fc7734b569b7ac7'],
+    }),
+    ('GD::Arrow', '0.01', {
+        'runtest': 'test',
+        'source_tmpl': 'GD-Arrow-0.01.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/T/TC/TCAINE'],
+        'checksums': ['7d5a078024fc368159622fb9dffa820fc81053761a4acd1e69a2391001486192'],
+    }),
+    ('GD::Text', '0.86', {
+        'runtest': 'test',
+        'source_tmpl': 'GDTextUtil-0.86.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MV/MVERB/'],
+        'checksums': ['886ecbf85cfe94f4135ee5689c4847a9ae783ecb99e6759e12c734f2dd6116bc'],
+    }),
+    ('GD::SVG', '0.33', {
+        'runtest': 'test',
+        'source_tmpl': 'GD-SVG-0.33.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/T/TW/TWH/'],
+        'checksums': ['aee397906a94cf6a478defff9f4939dbf8293a62ee382360c77e3e209170012b'],
+    }),
+    ('SVG', '2.84', {
+        'runtest': 'test',
+        'source_tmpl': 'SVG-2.84.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MANWAR'],
+        'checksums': ['ec3d6ddde7a46fa507eaa616b94d217296fdc0d8fbf88741367a9821206f28af'],
+    }),
+    ('Config::IniFiles', '3.000002', {
+        'runtest': 'test',
+        'source_tmpl': 'Config-IniFiles-3.000002.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/'],
+        'checksums': ['d92ed6ed2db98d5addf732c96d2a9c15d9f878c7e8b355bb7a5c1668e3f8ba09'],
+    }),
+    ('Data::Dumper', '2.173', {
+        'runtest': 'test',
+        'source_tmpl': 'Data-Dumper-2.173.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XS/XSAWYERX'],
+        'checksums': ['697608b39330988e519131be667ff47168aaaaf99f06bd2095d5b46ad05d76fa'],
+    }),
+]
+
+moduleclass = 'bio'
