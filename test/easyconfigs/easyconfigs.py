@@ -40,16 +40,17 @@ import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
 from easybuild.base import fancylogger
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
+from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import disable_templating, get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
 from easybuild.tools.config import GENERAL_CLASS, build_option
-from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
+from easybuild.tools.filetools import change_dir, is_generic_easyblock, remove_file
 from easybuild.tools.filetools import verify_checksum, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
@@ -616,21 +617,34 @@ class EasyConfigTest(TestCase):
 
         failing_checks = []
 
+        python_default_urls = PythonPackage.extra_options()['source_urls'][0]
+
         for ec in changed_ecs:
 
-            ec_fn = os.path.basename(ec.path)
-            easyblock = ec.get('easyblock')
-            exts_defaultclass = ec.get('exts_defaultclass')
-            exts_default_options = ec.get('exts_default_options', {})
+            with disable_templating(ec):
+                ec_fn = os.path.basename(ec.path)
+                easyblock = ec.get('easyblock')
+                exts_defaultclass = ec.get('exts_defaultclass')
+                exts_default_options = ec.get('exts_default_options', {})
 
-            download_dep_fail = ec.get('download_dep_fail')
-            exts_download_dep_fail = ec.get('exts_download_dep_fail')
-            use_pip = ec.get('use_pip') or exts_default_options.get('use_pip')
+                download_dep_fail = ec.get('download_dep_fail')
+                exts_download_dep_fail = ec.get('exts_download_dep_fail')
+                use_pip = ec.get('use_pip')
+                if use_pip is None:
+                    use_pip = exts_default_options.get('use_pip')
+
+            # only easyconfig parameters as they are defined in the easyconfig file,
+            # does *not* include other easyconfig parameters with their default value!
+            pure_ec = ec.parser.get_config_dict()
 
             # download_dep_fail should be set when using PythonPackage
             if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
                     failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
+
+                if pure_ec.get('source_urls') == python_default_urls:
+                    failing_checks.append("'source_urls' should not be defined when using the default value "
+                                          "in %s" % ec_fn)
 
             # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
             if easyblock in ['PythonBundle', 'PythonPackage']:
@@ -642,6 +656,9 @@ class EasyConfigTest(TestCase):
                 if download_dep_fail or exts_download_dep_fail:
                     fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
                     failing_checks.append(fail)
+                if pure_ec.get('exts_default_options', {}).get('source_urls') == python_default_urls:
+                    failing_checks.append("'source_urls' should not be defined in exts_default_options when using "
+                                          "the default value in %s" % ec_fn)
 
             elif exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
@@ -687,7 +704,8 @@ class EasyConfigTest(TestCase):
                     if not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                         failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
 
-        self.assertFalse(failing_checks, '\n'.join(failing_checks))
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
 
     def check_R_packages(self, changed_ecs):
         """Several checks for easyconfigs that install (bundles of) R packages."""
@@ -890,16 +908,6 @@ def template_easyconfig_test(self, spec):
     prev_single_tests_ok = single_tests_ok
     single_tests_ok = False
 
-    # give recent EasyBuild easyconfigs special treatment
-    # replace use deprecated dummy toolchain, required to avoid breaking "eb --install-latest-eb-release",
-    # with SYSTEM toolchain constant
-    ec_fn = os.path.basename(spec)
-    if ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.'):
-        ectxt = read_file(spec)
-        regex = re.compile('^toolchain = .*dummy.*', re.M)
-        ectxt = regex.sub('toolchain = SYSTEM', ectxt)
-        write_file(spec, ectxt)
-
     # parse easyconfig
     ecs = process_easyconfig(spec)
     if len(ecs) == 1:
@@ -942,8 +950,11 @@ def template_easyconfig_test(self, spec):
     self.assertTrue(ec['version'], app.version)
 
     # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
-    error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
-    self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
+    # but give recent EasyBuild easyconfigs special treatment to avoid breaking "eb --install-latest-eb-release"
+    ec_fn = os.path.basename(spec)
+    if not (ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.')):
+        error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
+        self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
     res = re.findall(r'.*\$root.*', ec.rawtxt, re.M)
