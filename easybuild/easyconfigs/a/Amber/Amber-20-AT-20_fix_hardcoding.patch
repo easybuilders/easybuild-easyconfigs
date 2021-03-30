@@ -1,0 +1,123 @@
+--- AmberTools/src/configure2.orig	2020-04-28 01:19:43.000000000 +0000
++++ AmberTools/src/configure2	2021-03-23 21:02:51.751273195 +0000
+@@ -397,12 +397,12 @@
+   write(6,*) 'testing a Fortran program'
+ end program testf
+ EOF
+-      $fc $fflags $netcdfinc -o testp$suffix testp.f90 $netcdfflagf > /dev/null 2> compile.err
++      $fc $fflags $netcdffinc -o testp$suffix testp.f90 $netcdfflagf > /dev/null 2> compile.err
+       if [ ! -e "testp$suffix" ] ; then
+         status=1
+         if [ "$1" = "verbose" ] ; then
+           echo "Error: Could not compile with NetCDF Fortran interface."
+-          echo "       $fc $fflags $netcdfinc -o testp$suffix testp.f90 $netcdfflagf"
++	  echo "       $fc $fflags $netcdffinc -o testp$suffix testp.f90 $netcdfflagf"
+           echo "       Compile error follows:"
+           cat compile.err
+           echo ""
+@@ -509,6 +509,7 @@
+ mpinab=''
+ mpi='no'
+ netcdf_dir=''
++netcdf_fort_dir=''
+ netcdf_flag=''
+ netcdfstatic='no'
+ pmemd_gem='no'
+@@ -607,6 +608,7 @@
+         --skip-python)    skippython='yes' ;;
+         --with-python)    shift; python="$1";;
+         --with-netcdf)    shift; netcdf_dir="$1";;
++	--with-netcdf-fort)  shift; netcdf_fort_dir="$1";;
+         --with-pnetcdf)   shift; pnetcdf_dir="$1" ;;
+         --python-install) shift; python_install="$1";;
+         --miniconda)      answer='y';;
+@@ -890,7 +892,7 @@
+ fi
+ # only used when the user requests a static build or when a static build is
+ # automatically set, eg, windows:
+-staticflag='-static'
++staticflag=''
+ omp_flag=
+ mpi_flag=
+ fp_flags=
+@@ -1507,7 +1509,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++	mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         # 2-18-2020 srb  this looks an oversight:
+@@ -1858,7 +1860,7 @@
+       fi
+ 
+       if [ "$mpi" = 'yes' ]; then
+-          mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++	  mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$pmemd_coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2184,7 +2186,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++	mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2301,7 +2303,7 @@
+         nvcc="$nvcc -use_fast_math -O3 "
+       fi
+       if [ "$mpi" = 'yes' ]; then
+-        mpi_inc=`(mpicc -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
++	mpi_inc=`(${CC} -show 2>&1) | awk 'BEGIN{i=0} {while (i < NF) {if ( substr($i, 1, 2) == "-I" ) {printf("%s ", $i);}; i++;}}'`
+         pmemd_cu_includes="$pmemd_cu_includes $mpi_inc"
+         pmemd_cu_defines="$pmemd_cu_defines -DMPI -DMPICH_IGNORE_CXX_SEEK"
+         pmemd_coptflags="$coptflags -DMPICH_IGNORE_CXX_SEEK"
+@@ -2878,11 +2880,17 @@
+   else
+     # A NetCDF directory was specified. Check that library exists and compiles
+     printf "\tUsing external NetCDF in '$netcdf_dir'\n"
++    # Support separate NetCDF-Fortran installation with --with-netcdf-fort
++    if [ ! -e "$netcdf_fort_dir" ]; then
++      netcdf_fort_dir="$netcdf_dir"
++    fi
++    printf "\tUsing external NetCDF-Fortran in '$netcdf_fort_dir'\n"
+     netcdfinc="-I"$netcdf_dir"/include"
++    netcdffinc="-I"$netcdf_fort_dir"/include"
+     if [ "${netcdf_dir}" != '/usr' -a "$netcdf_dir" != '/usr/' ]; then
+         netcdf_flag="-L${netcdf_dir}/lib $netcdf_flag"
+     fi
+-    netcdf=$netcdf_dir"/include/netcdf.mod"
++    netcdf=$netcdf_fort_dir"/include/netcdf.mod"
+     if [ "$netcdfstatic" = 'no' ] ; then
+       if [ "${netcdf_dir}" != '/usr' -a "${netcdf_dir}" != '/usr/' ]; then
+           netcdfflagc="-L${netcdf_dir}/lib -lnetcdf"
+@@ -2903,7 +2911,7 @@
+         echo "Error: '$netcdfflagf' not found."
+         exit 1
+       fi
+-      netcdfflagf="$netcdfflagf $netcdfflagc"
++      netcdfflagf=$netcdf_fort_dir"/lib/libnetcdff.a" 
+     fi
+     # Test netcdf compilation
+     test_netcdf_compile verbose
+@@ -2918,6 +2926,7 @@
+     netcdfflagf=''
+     netcdfflagc=''
+     netcdfinc=''
++    netcdffinc=''
+ fi
+ 
+ #------------------------------------------------------------------------------
+@@ -3954,7 +3963,7 @@
+ NETCDF=$netcdf
+ NETCDFLIB=$netcdfflagc
+ NETCDFLIBF=$netcdfflagf
+-NETCDFINC=$netcdfinc
++NETCDFINC=$netcdfinc $netcdffinc
+ PNETCDFLIB=$pnetcdflib
+ PNETCDFINC=$pnetcdfinc
+ PNETCDFDEF=$pnetcdfdef
