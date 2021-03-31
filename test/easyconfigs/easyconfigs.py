@@ -698,11 +698,10 @@ class EasyConfigTest(TestCase):
                     failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
-            if use_pip and easyblock in ['PythonBundle', 'PythonPackage']:
+            if easyblock in ['PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
-                if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    if not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
-                        failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+                if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
+                    failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
