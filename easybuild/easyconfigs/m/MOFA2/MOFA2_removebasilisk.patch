@@ -1,13 +1,36 @@
 diff -ru MOFA2/configure MOFA2diff/configure
 --- MOFA2/configure	2020-11-04 01:57:25.000000000 +0000
-+++ MOFA2diff/configure	2021-03-31 10:50:37.285205000 +0100
-@@ -1,3 +1,2 @@
++++ MOFA2diff/configure	2021-03-31 11:52:56.141219000 +0100
+@@ -1,3 +1,3 @@
  #!/bin/sh
  
 -${R_HOME}/bin/Rscript -e "if (basilisk.utils::useSystemDir()) basilisk.utils::installMiniconda(installed=FALSE)"
++echo "Installing MOFA2"
+diff -ru MOFA2/configure.win MOFA2diff/configure.win
+--- MOFA2/configure.win	2020-10-27 18:24:26.000000000 +0000
++++ MOFA2diff/configure.win	2021-03-31 12:01:24.618181000 +0100
+@@ -1,3 +1,3 @@
+ #!/bin/sh
+ 
+-${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe -e "if (basilisk.utils::useSystemDir()) basilisk.utils::installAnaconda(installed=FALSE)"
++echo "Installing MOFA2"
+diff -ru MOFA2/DESCRIPTION MOFA2diff/DESCRIPTION
+--- MOFA2/DESCRIPTION	2020-11-04 01:57:25.000000000 +0000
++++ MOFA2diff/DESCRIPTION	2021-03-31 11:43:09.130701000 +0100
+@@ -24,7 +24,7 @@
+ Imports: rhdf5, dplyr, tidyr, reshape2, pheatmap, ggplot2, methods,
+         GGally, RColorBrewer, cowplot, ggrepel, reticulate, HDF5Array,
+         grDevices, stats, magrittr, forcats, utils, corrplot,
+-        DelayedArray, Rtsne, uwot, basilisk
++        DelayedArray, Rtsne, uwot
+ Suggests: knitr, testthat, Seurat, ggpubr, foreach, psych,
+         MultiAssayExperiment, SummarizedExperiment,
+         SingleCellExperiment, ggrastr
+Only in MOFA2/inst/doc: downstream_analysis.html
+Only in MOFA2/inst/doc: getting_started_R.html
 diff -ru MOFA2/NAMESPACE MOFA2diff/NAMESPACE
 --- MOFA2/NAMESPACE	2020-10-27 18:24:26.000000000 +0000
-+++ MOFA2diff/NAMESPACE	2021-03-31 10:51:09.201746000 +0100
++++ MOFA2diff/NAMESPACE	2021-03-31 11:59:53.705344000 +0100
 @@ -86,7 +86,6 @@
  exportMethods(samples_metadata)
  exportMethods(samples_names)
@@ -24,19 +47,59 @@ diff -ru MOFA2/NAMESPACE MOFA2diff/NAMESPACE
  importFrom(corrplot,corrplot)
  importFrom(cowplot,plot_grid)
  importFrom(dplyr,bind_rows)
-Common subdirectories: MOFA2/build and MOFA2diff/build
-diff MOFA2/configure MOFA2diff/configure
-3c3
-< ${R_HOME}/bin/Rscript -e "if (basilisk.utils::useSystemDir()) basilisk.utils::installMiniconda(installed=FALSE)"
----
-> ${R_HOME}/bin/Rscript -e ""
-Common subdirectories: MOFA2/inst and MOFA2diff/inst
-Common subdirectories: MOFA2/man and MOFA2diff/man
-diff MOFA2/NAMESPACE MOFA2diff/NAMESPACE
-89d88
-< import(basilisk)
-100d98
-< importFrom(basilisk,BasiliskEnvironment)
-Common subdirectories: MOFA2/R and MOFA2diff/R
-Common subdirectories: MOFA2/tests and MOFA2diff/tests
-Common subdirectories: MOFA2/vignettes and MOFA2diff/vignettes
+Only in MOFA2/R: basilisk.R
+diff -ru MOFA2/R/run_mofa.R MOFA2diff/R/run_mofa.R
+--- MOFA2/R/run_mofa.R	2020-10-27 18:24:26.000000000 +0000
++++ MOFA2diff/R/run_mofa.R	2021-03-31 11:35:26.121821000 +0100
+@@ -20,7 +20,6 @@
+ #' or the right conda environment with \code{reticulate::use_condaenv(..., force=TRUE)}.
+ #' @return a trained \code{\link{MOFA}} object
+ #' @import reticulate
+-#' @import basilisk
+ #' @export
+ #' @examples
+ #' # Load data (in data.frame format)
+@@ -55,34 +54,19 @@
+     message(paste0("Warning: Output file ", outfile, " already exists, it will be replaced"))
+   
+   # Connect to mofapy2 using reticulate (default)
+-  if (!use_basilisk) {
+ 
+-    message("Connecting to the mofapy2 python package using reticulate (use_basilisk = FALSE)... 
+-    Please make sure to manually specify the right python binary when loading R with reticulate::use_python(..., force=TRUE) or the right conda environment with reticulate::use_condaenv(..., force=TRUE)
+-    If you prefer to let us automatically install a conda environment with 'mofapy2' installed using the 'basilisk' package, please use the argument 'use_basilisk = TRUE'\n")
++  message("Connecting to the mofapy2 python package using reticulate (use_basilisk = FALSE)... 
++  Please make sure to manually specify the right python binary when loading R with reticulate::use_python(..., force=TRUE) or the right conda environment with reticulate::use_condaenv(..., force=TRUE)
++  If you prefer to let us automatically install a conda environment with 'mofapy2' installed using the 'basilisk' package, please use the argument 'use_basilisk = TRUE'\n")
+     
+-    # Sanity checks
+-    have_mofa2 <- py_module_available("mofapy2")
+-    if (have_mofa2) {
+-      .run_mofa_reticulate(object, outfile, save_data)
+-    } else {
+-      warning("mofapy2 is not detected in the specified python binary, see reticulate::py_config(). Setting use_basilisk = TRUE...")
+-      use_basilisk <- TRUE
+-    }
++  # Sanity checks
++  have_mofa2 <- py_module_available("mofapy2")
++  if (have_mofa2) {
++    .run_mofa_reticulate(object, outfile, save_data)
++  } else {
++    warning("mofapy2 is not detected in the specified python binary")
+   }
+     
+-  # Connect to mofapy2 using basilisk (optional)
+-  if (use_basilisk) {
+-    
+-    message("Connecting to the mofapy2 package using basilisk. 
+-    Set 'use_basilik' to FALSE if you prefer to manually set the python binary using 'reticulate'.")
+-    
+-    proc <- basiliskStart(mofa_env)
+-    on.exit(basiliskStop(proc))
+-    tmp <- basiliskRun(proc, function(object, outfile, save_data) {
+-      .run_mofa_reticulate(object, outfile, save_data)
+-    }, object=object, outfile=outfile, save_data=save_data)
+-  }
+   
+   # Load the trained model
+   object <- load_model(outfile)
