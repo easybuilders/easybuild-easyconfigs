@@ -1,0 +1,17 @@
+diff -ru --new-file wrapper/MotionCor2 ori/MotionCor2
+--- ori/MotionCor2_1.4.0/MotionCor2	1970-01-01 01:00:00.000000000 +0100
++++ wrapper/MotionCor2	2021-03-31 12:32:31.270318346 +0200
+@@ -0,0 +1,12 @@
++#!/bin/bash
++CUDAVERMAJMIN=`echo $EBVERSIONCUDA|awk -F '.' '{print $1$2}'`
++#determine binary suitable for for CUDA version.
++BINVER=$(echo $CUDAVERMAJMIN `ls $EBROOTMOTIONCOR2/MotionCor2*Cuda*`|tr ' ' '\n'|sed -e 's/.*Cuda//g;'| sort -n|grep $CUDAVERMAJMIN -B1|tail -n2|head -1)
++BINARY=`ls $EBROOTMOTIONCOR2|grep Cuda$BINVER`
++BINARY=$EBROOTMOTIONCOR2/`ls $EBROOTMOTIONCOR2|grep Cuda$BINVER`
++if [ -f $BINARY ]; then
++   $BINARY $@ 
++else
++   echo  ERROR: No MotionCor2 binary available for CUDA version $EBVERSIONCUDA
++   exit 1
++fi
+

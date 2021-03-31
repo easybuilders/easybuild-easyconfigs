@@ -1,0 +1,60 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/03
+easyblock = 'Binary'
+# Use generic easyblock in order to adapt to variable naming scheme
+# of MotionCor2, to allow CUDA multi_deps, and to use a different
+# wrapper.
+
+
+name = 'MotionCor2'
+version = '1.4.0'
+homepage = 'https://emcore.ucsf.edu/ucsf-software'
+description = """Correction of electron beam-induced sample motion is one of the major factors   
+contributing to the recent resolution breakthroughs in cryo-electron microscopy.
+Based on observations that the electron beam induces doming of the thin vitreous
+ice layer, we developed an algorithm to correct anisotropic image motion at the 
+single pixel level across the whole frame, suitable for both single particle and
+tomographic images. Iterative, patch-based motion detection is combined with    
+spatial and temporal constraints and dose weighting. The multi-GPU accelerated  
+program, MotionCor2, is sufficiently fast to keep up with automated data        
+collection. The result is an exceptionally robust strategy that can work on a   
+wide range of data sets, including those very close to focus or with very short 
+integration times, obviating the need for particle polishing. Application       
+significantly improves Thon ring quality and 3D reconstruction resolution.     """
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+# No longer directly downloadable, available from https://msg.ucsf.edu/software
+sources = ['%(name)s_%(version)s.zip']
+checksums = ['3404a27b1c0c9c045796b5ec274d98f2a2e4d61771dc40764fd3e1081d47d3fa']
+
+patches = [('MotionCor2_1.4.0_wrapper.patch', 1)]
+
+dependencies = [
+    ('LibTIFF', '4.1.0'),
+    ('zlib', '1.2.11'),
+    # ('jbigkit', '2.1'),
+]
+multi_deps = {
+    'CUDA': ['11.1.1']
+}
+
+extract_sources = True
+# only copy required stuff
+install_cmd = 'cp  %(name)s_%(version)s/* %(installdir)s/'
+install_cmd += '&& [ -d %(installdir)s/bin ] || mkdir %(installdir)s/bin/'
+# install the wrapper
+install_cmd += '&& cp  %(name)s %(installdir)s/bin/'
+install_cmd += '&& chmod +x %(installdir)s/bin/MotionCor2 %(installdir)s/%(name)s_%(version)s*Cuda* '
+install_cmd += '&& ln -s MotionCor2 %(installdir)s/bin/motioncor2'
+
+docpaths = ['MotionCor2-UserManual-10-08-2020.pdf', 'MotionCor2_1.4.0_ReleaseIntro-10-14-2020.docx']
+sanity_check_paths = {
+    'files': [
+        'bin/%(name)s',  # wrapper
+        'MotionCor2-UserManual-10-08-2020.pdf',  # adapt
+        'MotionCor2_1.4.0_ReleaseIntro-10-14-2020.docx'  # adapt
+    ],
+    'dirs': ['bin'],
+}
+
+moduleclass = 'bio'
