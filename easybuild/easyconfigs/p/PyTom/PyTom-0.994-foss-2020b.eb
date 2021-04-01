@@ -1,0 +1,163 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/03
+
+easyblock = 'ConfigureMakePythonPackage'
+name = 'PyTom'
+version = '0.994'
+
+homepage = 'https://pytom.sites.uu.nl'
+description = """
+PyTom is a software package for the analysis of volumetric data obtained by     
+cryo electron tomography (cryo-ET). It covers a complete pipeline of processing 
+steps for tomogram reconstruction, localization of macromolecular complexes in 
+tomograms, fine alignment of subtomograms extracted at these locations, and    
+their classification.
+
+PyTom is mostly written in Python making it fairly easy to add new functionality
+as well as to customize existing methods for specific purposes. The package is  
+developed in the Förster lab in the Structural Biochemistry group at Utrecht    
+University. PyTom is an open source project and we highly encourage developers'
+contributions.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True, 'cstd': 'gnu++98', 'opt': False}
+# opt False: -O3 causes segfault at Python module import. Default CFLAG building src manually are even -O1. 
+# However, -O2 seems to be fine.
+
+sources = [
+    {
+        'source_urls': ['https://github.com/FridoF/PyTom/archive/'],
+        'download_filename': '%s.tar.gz' % version,
+        'filename': '%(name)s-%(version)s.tar.gz',
+        'extract_cmd': 'mkdir %(installdir)s/lib/python%(pyshortver)s/site-packages/pytom -p '
+                    '&& cd %(installdir)s/lib/python%(pyshortver)s/site-packages/pytom && tar xvzf %s '
+    },
+    {  # missing in tag 0.994:
+        'source_urls': ['https://raw.githubusercontent.com/FridoF/PyTom/0.993/simulation/'],
+        'filename': 'whiteNoise-0.993.py',
+        'download_filename': 'whiteNoise.py',
+        'extract_cmd': 'cp -n %s lib/python%(pyshortver)s/site-packages/pytom/simulation/whiteNoise.py #'
+    },
+    {  # missing in tag 0.994
+        'source_urls': ['https://raw.githubusercontent.com/FridoF/PyTom/0.993/simulation/'],
+        'filename': 'EMSimulation-0.993.py',
+        'download_filename': 'EMSimulation.py',
+        'extract_cmd': 'cp -n %s lib/python%(pyshortver)s/site-packages/pytom/simulation/EMSimulation.py #'
+    }
+]
+patches = [
+    'PyTom-0.993_disable_external_build.patch',
+    'PyTom-0.993_disable_paths_csh.patch',
+    'PyTom-0.993_fix_pytomGUI_motioncor2IMOD.patch',
+    'PyTom-0.993_fix_pytomGUI_wrapper.patch',
+    'PyTom-0.993_fix_shebang.patch',
+    'PyTom-0.994_fix_version_and_URL.patch',
+]
+checksums = [
+    '035e5adc080bb9e454c6bfdf6a931e65d0480eef92527cdd5f7bf807db92d81f',  # PyTom-0.994.tar.gz
+    '8212a92311bb898fea5c4fe0a13140ff57103450a13024de726ec9609f2bba74',  # whiteNoise-0.993.py
+    '980cbeb31bb59c70ec7cd0f9612a631b71d4c680cbcadd2974a96120360aae0a',  # EMSimulation-0.993.py
+    '5fa0069445fe230b1ac2d7148011de8f4a7f279865d726743d186e86300ff512',  # PyTom-0.993_disable_external_build.patch
+    'd771f9a85bfa6e02e57eda0c5044093eec620d89bfe478e03a6c9a966488b02a',  # PyTom-0.993_disable_paths_csh.patch
+    'b9775e82afd51d3369fc34bbf416fc38a5455440ba040485bf5dd267af627bf8',  # PyTom-0.993_fix_pytomGUI_motioncor2IMOD.patch
+    'ad06bdfdd62708e64b6fa3b4f5a4c8188f209402532f3ab3901a39e08c1132a4',  # PyTom-0.993_fix_pytomGUI_wrapper.patch
+    'bf81b5c4ac4d945ccb60f922985e139ac7444282fae18b1db535b22adc5b7391',  # PyTom-0.993_fix_shebang.patch
+    'de2e0e8a5a8bd318cda140ed1bfaa7cabca7a668978ab52fc886b719505a2f17',  # PyTom-0.994_fix_version_and_URL.patch
+]
+
+unpack_options = '--strip-components=1'
+buildininstalldir = True
+start_dir = "%(installdir)s/lib/python%(pyshortver)s/site-packages/pytom/"
+
+docpaths = ['doc/documentation.html']
+examples = '%(installdir)s/examples'
+
+builddependencies = [
+    ('SWIG', '4.0.2'),
+    ('Boost', '1.74.0'),
+    # ('epydoc', '3.0.1'),
+]
+dependencies = [
+    # ('tcsh', '6.22.03'),
+    ('Python',  '3.8.6'),
+    ('IPython', '7.18.1'),
+    ('NFFT', '3.1.3'),  # explicitly requires <=3.1.3. later version do not offer nfft3util.h
+    ('lxml', '4.6.2'),
+    ('voltools', '0.4.2'),
+    ('sh_alignment', '0.993'),
+    # req. for pytomGUI:
+    ('matplotlib', '3.3.3'),
+    ('PyQt5', '5.15.1'),
+    ('mrcfile', '1.3.0'),
+    ('MotionCor2', '1.4.2'),
+    ('IMOD', '4.11.5', '',  True),
+    ('scikit-image', '0.18.1'),
+    ('PyQtGraph', '0.11.1')
+]
+
+skipsteps = ['configure',  'install']
+
+prebuildopts = 'export CFLAGS="$CFLAGS -pedantic -fpermissive" &&'
+prebuildopts += 'export GCCSWIGFLAGS="$CFLAGS -c -w -ansi " &&'
+prebuildopts += 'export CFLAGS="$CFLAGS -fthread-jumps -falign-functions" &&'
+
+prebuildopts += 'cd pytomc && python compile.py '
+prebuildopts += '          --target all '
+prebuildopts += '          --libdir $EBROOTOPENMPI/lib $EBROOTNFFT/lib '
+prebuildopts += '          --includeDir $EBROOTPYTHON/include/python%(pyshortver)s '
+prebuildopts += '                       $EBROOTBOOST/include/boost $EBROOTNFFT/include/ '
+prebuildopts += '                       `python -c "import numpy; print (numpy.get_include())"`/numpy/ '
+prebuildopts += '          --pythonVersion %(pyshortver)s '
+prebuildopts += '          --execdir $EBROOTOPENMPI/bin '
+prebuildopts += ' #'    # do not run make -j
+
+
+postinstallcmds = [
+    'SPDIR=%(installdir)s/lib/python%(pyshortver)s/site-packages && cd %(installdir)s&&'
+    'echo mv libs to %(installdir)s/lib &&' +
+    '  mv $SPDIR/pytom/pytomc/swigModules/{*.%s,*.py} $SPDIR/ &&' % SHLIB_EXT +
+    '  mv $SPDIR/pytom/pytomc/libs/libtomc/libs/libtomc.%s lib/ &&' % SHLIB_EXT +
+    'echo mv tomc include to to module root &&'
+    '  mv %(installdir)s/lib/python%(pyshortver)s/site-packages/pytom/pytomc/libs/libtomc/include . &&'
+    'echo Clean up some directories &&'
+    '  rm -rf  $SPDIR/pytom/pytomc $SPDIR/pytom/bin/paths.csh  $SPDIR/pytom/external&&'
+    'echo removing voltools because we use it from a dependency&&'
+    '  rm -rf $SPDIR/ptyom/voltools &&'
+    'echo Fix for unit_tests &&'
+    '  cd $SPDIR/pytom/unit_tests && ln -s ../bin/pytom && cd - &&'  # req. for mpi unit tests.
+    'echo Link some scripts into %(installdir)s/bin  - skipping tutorials: &&'
+    '  cd %(installdir)s && mkdir bin && cd bin &&'
+    '  ln -s ../lib/python%(pyshortver)s/site-packages/pytom/bin/* . &&'
+    '  for i in '
+    "      `find ../lib/python%(pyshortver)s/site-packages/pytom -type f -name \\*.py"
+    "          |grep -v tutorials|grep -v pytom/bin| xargs grep ScriptOption|awk -F':' '{print $1}'|uniq`; do"
+    '          echo Found script $i. Link it to bin and make executable&&'
+    '          ln -s $i . |echo `basename $i` already exists in bin\\; skipped;'
+    '          chmod +x $i ;'
+    '      done&&'
+    'rm -rf __pycache__'
+]
+
+sanity_check_commands = [
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_2DImageTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_AngleTest.py'),
+    # fails due to missing ./testData/focussed_classification_mask_ribo.mrc:
+    # ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_AutofocusClassTest.py'),  
+    # failing in 0.994, to be fixed in 0.995 src
+    # ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_CCCTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_FilterTest.py'),
+    # Failing in 0.993 and 0.994: #AssertionError: False is not true : file 1-All.em does not exist
+    # ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_GLocalTest.py'),  
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_IOTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_LocalizationTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_MathTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_MPITest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_NormTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_NumpyTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_PhaseRandomizationTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_RotationTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_ScoreTest.py'),
+    ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom pytom_TransformationTest.py'),
+    # Failing in 0.993 and 0.994; to be fixed in 0.995 src.
+    # ('cd lib/python%(pyshortver)s/site-packages/pytom/unit_tests && pytom tt.py'),
+]

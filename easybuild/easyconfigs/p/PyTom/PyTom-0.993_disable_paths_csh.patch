@@ -1,0 +1,44 @@
+#Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/03
+diff -ru ori/gui/pytomGUI.py disable_paths_csh.patch/gui/pytomGUI.py
+--- ori/gui/pytomGUI.py	2021-01-18 22:40:34.000000000 +0100
++++ disable_paths_csh.patch/gui/pytomGUI.py	2021-03-11 17:25:52.387178306 +0100
+@@ -1,4 +1,4 @@
+-#!/cm/shared/apps/python3/3.7/bin/python3.7
++#!/bin/env ptyhon
+ import sys
+ import os
+ import pickle, json
+@@ -20,9 +20,9 @@
+ 
+ def update_env_vars(pytompath):
+     '''Make sure all pytom functionality can be imported from within the script. '''
+-    if 0:
+-        from pytom_volume import read
+-    else:
++    if 1:
++        __no_op__=1 #from pytom_volume import read
++    else: #never execute. paths.csh disabled in module
+         update_vars = False
+         for search in ('LD_LIBRARY_PATH','PATH','PYTHONPATH'):
+             # Check if env vars include all paths set in paths.csh
+diff -ru ori/pytomc/installFunctions.py disable_paths_csh.patch/pytomc/installFunctions.py
+--- ori/pytomc/installFunctions.py	2021-01-18 22:40:34.000000000 +0100
++++ disable_paths_csh.patch/pytomc/installFunctions.py	2021-03-11 17:28:17.687144517 +0100
+@@ -187,7 +187,7 @@
+     
+     pytomCommand = f"""#!/usr/bin/env csh
+ cat {pytomDirectory}/LICENSE.txt
+-source {pytomDirectory}/bin/paths.csh
++#disabled in module: source {pytomDirectory}/bin/paths.csh
+ 
+ set FID=0
+ setenv PYTOM_GPU -1
+@@ -229,7 +229,7 @@
+ 
+     ipytomCommand = '#!/usr/bin/env csh\n'
+     ipytomCommand += 'cat ' + pytomDirectory + os.sep + 'LICENSE.txt\n'
+-    ipytomCommand += 'source ' + pytomDirectory + os.sep + 'bin' + os.sep + 'paths.csh\n'
++    ipytomCommand += '#disabled in module: source ' + pytomDirectory + os.sep + 'bin' + os.sep + 'paths.csh\n'
+     ipytomCommand += 'ipython $* -i\n'
+     
+     f = open(pytomDirectory + os.sep + 'bin' + os.sep + 'ipytom','w')
