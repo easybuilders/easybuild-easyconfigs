@@ -1,0 +1,82 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/03
+
+easyblock = "ConfigureMakePythonPackage"
+name = 'sh_alignment'
+versionsuffix = '-Python-%(pyver)s'
+
+# use sh_alignment contributed with pytom as this version was ported to Python 3
+version = '0.993'  # PyTom version!
+homepage = 'https://bitbucket.org/kkhust/sh_alignment/src/master/'
+description = """This is a software library for alignment of two 3D volumes which is super fast  
+and accurate. It is written in Python and C. For detail, please check paper 
+"Fast and Accurate Reference-free Alignment of Subtomograms", Y. Chen, S. Pfef- 
+fer, T. Hrabe, J. Schuller. F. Foerster, Journal of Structural Biology, 2013."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchainopts = {'pic': True, 'opt': True}
+
+sources = [{
+    # use sh_alignment contributed with pytom as this version was ported to Python 3
+    'source_urls': ['https://github.com/FridoF/PyTom/archive/'],
+    'download_filename': '%s.tar.gz' % version,
+    'filename': 'pytom-%s.tar.gz' % version,
+    'extract_cmd': 'tar xvzf %s '
+}]
+checksums = ['34d86815a017e52767e6ac2bce7738062ee8d3b2517ce98a1c8e3915fcaf67d9']
+
+unpack_options = '--strip-components=2 */pytomc/sh_alignment'
+# only extract sh_alignment subdirectory to site-packages.
+
+buildininstalldir = False
+
+builddependencies = [
+    ('SWIG', '4.0.2'),
+]
+dependencies = [
+    ('Python', '3.8.6'),
+    # ('NFFT', '3.1.3'), #not used at all (?). 
+    ('SciPy-bundle', '2020.11'),
+]
+
+# compile.py explicitly contains pyver 3.7. Inject pyshortver:
+preconfigopts = 'pwd && echo PWD &&sed -i "s/python.\\../python%(pyshortver)s/g" compile.py '
+# Fix make files in order to use CFLAGS passed by eb.
+preconfigopts += '&& sed -i "s/^CFLAGS =.*/CFLAGS = $CFLAGS/g" SpharmonicKit27/Makefile'
+preconfigopts += '&& sed -i "s/^CFLAGS =.*/CFLAGS = $CFLAGS/g" frm/src/Makefile'
+preconfigopts += ' #'  # do not run configure
+
+prebuildopts = ' cd .. && python sh_alignment/compile.py '
+prebuildopts += '          -i $EBROOTPYTHON,$EBROOTFFTW '
+prebuildopts += '          -l $EBROOTPYTHON,$EBROOTFFTW '
+prebuildopts += '#'    # do not run make -j
+
+preinstallopts = 'export SPDIR=%(installdir)s/lib/python%(pyshortver)s/site-packages/'
+preinstallopts += '&& mkdir -p %(installdir)s/{bin,include/SpharmonicKit27} $SPDIR/sh_alignment'
+preinstallopts += "&& mv `ls *.py|grep -v compile` $SPDIR/sh_alignment"
+preinstallopts += "&& mv frm/swig/*swig_frm* $SPDIR"
+preinstallopts += "&& mv SpharmonicKit27/*.h %(installdir)s/include/SpharmonicKit27/"
+preinstallopts += "&& mv SpharmonicKit27/lib*.so %(installdir)s/lib"
+preinstallopts += "&& rm -f  SpharmonicKit27/{*.o,*.h,*.c,Makefile}"
+preinstallopts += "&& mv SpharmonicKit27/{CONV*,test*,FST*} %(installdir)s/bin"
+preinstallopts += "&& mkdir -p %(installdir)s/doc/{sh_alignment,frm,SpharmonicKit27} "
+preinstallopts += "&& mv SpharmonicKit27/* %(installdir)s/doc/SpharmonicKit27/"
+preinstallopts += "&& mv frm/{guide,*.txt} %(installdir)s/doc/frm/"
+preinstallopts += " #"
+
+modextrapaths = {
+    'PATH': 'bin',
+    'LD_LIBRARY_PATH': ['lib'],
+}
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in [
+        'CONV_HYBRID_DISK', 'CONV_HYBRID_MEMO', 'CONV_SEMI_DISK', 'CONV_SEMI_FLY', 'CONV_SEMI_MEMO',
+        'FST_precomp2disk', 'test_flt_classic', 'test_flt_dhmid', 'test_flt_hybrid', 'test_FST_hybrid_disk',
+        'test_FST_hybrid_memo', 'test_FST_hybrid_memoX', 'test_FST_semi_disk', 'test_FST_semi_fly',
+        'test_FST_semi_memo', 'test_naive', 'test_semi', 'test_stability_naive']],
+    'dirs': ['lib', 'bin', 'doc', 'lib/python%(pyshortver)s/site-packages/sh_alignment']
+}
+sanity_check_commands = [
+    ('python -c "import sh_alignment.frm"'),
+    ('python -c "import sh_alignment.vol2sf"'),
+    ('python -c "import sh_alignment.misc"'),
+]
