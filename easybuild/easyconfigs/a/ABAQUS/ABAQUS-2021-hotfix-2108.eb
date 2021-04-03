@@ -1,0 +1,92 @@
+easyblock = 'Binary'
+
+name = 'ABAQUS'
+version = '2021'
+local_hotfix = '2108'
+versionsuffix = '-hotfix-%s' % local_hotfix
+
+homepage = 'http://www.simulia.com/products/abaqus_fea.html'
+description = """Finite Element Analysis software for modeling, visualization and best-in-class implicit and explicit dynamics FEA."""
+
+toolchain = SYSTEM
+
+sources = [
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.1-5.tar',
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.2-5.tar',
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.3-5.tar',
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.4-5.tar',
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.5-5.tar',
+    '%%(version)s/%%(version)s.FP.CFA.%s.Part_SIMULIA_EstPrd.Linux64.tar' % local_hotfix,
+    '%%(version)s/%%(version)s.FP.CFA.%s.Part_SIMULIA_Isight.Linux64.tar' % local_hotfix,
+    {'filename': '%(version)s/Custom/Golden/UserIntentions_AM_SIM_Abaqus_Extend.media-20210311T223527-0500.xml', 'extract_cmd': "cp %s %(builddir)s/AM_SIM_Abaqus_Extend.AllOS/1"},
+    {'filename': '%(version)s/Custom/EstProducts/UserIntentions_CODE_423.5.xml', 'extract_cmd': "cp %s %(builddir)s/Part_SIMULIA_EstPrd.Linux64/1/Software/SIMULIA_EstPrd.HF5.Linux64/1"},
+    {'filename': '%(version)s/Custom/EstProducts/UserIntentions_CAA_423.5.xml', 'extract_cmd': "cp %s %(builddir)s/Part_SIMULIA_EstPrd.Linux64/1/Software/CAASIMULIA_EstPrd.HF5.Linux64/1"},
+    {'filename': '%(version)s/Custom/Isight/UserIntentions_CODE_423.5.xml', 'extract_cmd': "cp %s %(builddir)s/Part_SIMULIA_Isight.Linux64/1/Software_Full/SIMULIA_Isight.HF5.Linux64/1"},
+]
+checksums = [
+    'fbc93662c2c0ea9294df79ed9c9678246582d1f63598ad999bbb17fee0dbf54a',  # 2018.AM_SIM_Abaqus_Extend.AllOS.1-5.tar
+    '4433dee911274f559a9372291c007f359108e8e1ab2db6abe570727e1b13741a',  # 2018.AM_SIM_Abaqus_Extend.AllOS.2-5.tar
+    'ddd79bfa40c238b12cc36c2d37ee3a351c21684fd5d6aba402a87051ee27096d',  # 2018.AM_SIM_Abaqus_Extend.AllOS.3-5.tar
+    'c7b5b04388c1a29f4c5ad46da35e2f5e6d2d493832611fc90860644ff837ded0',  # 2018.AM_SIM_Abaqus_Extend.AllOS.4-5.tar
+    'fafb50a0ee12128cd604563eb9b5b845cbeb4383c24df837220cbce847bd5c58',  # 2018.AM_SIM_Abaqus_Extend.AllOS.5-5.tar
+    '4ba6299f67994a41e62de95d73ddf17b09c6476892df2578fcf06face0ff10df',  # 2021.FP.CFA.2108.Part_SIMULIA_EstPrd.Linux64.tar
+    '0ddbcf14d75f6ef80cef6b87f308d9f4e5a5321ab5fc0e52a9bed0681c9b7ffe',  # 2021.FP.CFA.2108.Part_SIMULIA_Isight.Linux64.tar
+    'a4d474b60366ba2cc153291a4dda6ff17aee6d4eec3fa6251bf3ddbc4ee8f6b7',  # Golden/UserIntentions_AM_SIM_Abaqus_Extend.media-local.xml
+    '0c923f6dde108a8e862a26b723c41b098a0ba03cc5ce79e7897e6b887c47c18c',  # EstProducts/UserIntentions_CODE_423.5.xml
+    '69b7eaa8b5e7724264359971bda763ee58e5dd4105ebcb12437f2994d483ce6f',  # EstProducts/UserIntentions_CAA_423.5.xml
+    'ea3d2152513c40a92d37fb905b774ce6cc9efff195820da6a4653d55da53c7a1',  # Isight/UserIntentions_CODE_423.5.xml
+    '8dd5db2dd1fe65b08f2c712afb1d2e5864bb799d89da65cc03586e45120b3715',  # Site/custom_v6.env
+]
+
+extract_sources = True
+
+install_cmd = "cd %(builddir)s; export DSYAuthOS_`lsb_release -si`=1 DSY_Force_OS=linux_a64;\
+sed -i 's+/opt/sharcnet/abaqus/2021+%(installdir)s+g' AM_SIM_Abaqus_Extend.AllOS/1/UserIntentions_AM_SIM_Abaqus_Extend.media-20210311T223527-0500.xml;\
+sed -i 's+/opt/sharcnet/abaqus/2021+%(installdir)s+g' Part_SIMULIA_EstPrd.Linux64/1/Software/SIMULIA_EstPrd.HF5.Linux64/1/UserIntentions_CODE_423.5.xml;\
+sed -i 's+/opt/sharcnet/abaqus/2021+%(installdir)s+g' Part_SIMULIA_EstPrd.Linux64/1/Software/CAASIMULIA_EstPrd.HF5.Linux64/1/UserIntentions_CAA_423.5.xml;\
+sed -i 's+/opt/sharcnet/abaqus/2021+%(installdir)s+g' Part_SIMULIA_Isight.Linux64/1/Software_Full/SIMULIA_Isight.HF5.Linux64/1/UserIntentions_CODE_423.5.xml;\
+AM_SIM_Abaqus_Extend.AllOS/1/StartTUI.sh --silent AM_SIM_Abaqus_Extend.AllOS/1/UserIntentions_AM_SIM_Abaqus_Extend.media-20210311T223527-0500.xml;\
+Part_SIMULIA_EstPrd.Linux64/1/Software/SIMULIA_EstPrd.HF5.Linux64/1/StartTUI.sh --silent Part_SIMULIA_EstPrd.Linux64/1/Software/SIMULIA_EstPrd.HF5.Linux64/1/UserIntentions_CODE_423.5.xml;\
+Part_SIMULIA_EstPrd.Linux64/1/Software/CAASIMULIA_EstPrd.HF5.Linux64/1/StartTUI.sh --silent Part_SIMULIA_EstPrd.Linux64/1/Software/CAASIMULIA_EstPrd.HF5.Linux64/1/UserIntentions_CAA_423.5.xml;\
+Part_SIMULIA_Isight.Linux64/1/Software_Full/SIMULIA_Isight.HF5.Linux64/1/StartTUI.sh --silent Part_SIMULIA_Isight.Linux64/1/Software_Full/SIMULIA_Isight.HF5.Linux64/1/UserIntentions_CODE_423.5.xml"
+
+sanity_check_paths = {
+    'files': ['Commands/abaqus'],
+    'dirs' : ['CAE','Commands','EstProducts','Isight'],
+}
+
+postinstallcmds = [
+    "find %(installdir)s -type d -exec chmod -v 755 {} \;",
+    "find %(installdir)s -type f -a \( ! -perm /g=r -o ! -perm /o=r \) -exec chmod -v go+r {} \;",
+    "find %(installdir)s -type f -print0 | while read -d '' -r f; \
+        do if [ $(file -b --mime-type $f) = application/x-executable ]; then chmod -v 755 $f; fi; done",
+    "for d in $(find %(installdir)s -name 'bin' -o -name 'Linux64' -o -name 'Linux_x64' \
+        -o -name 'lnamd64' -o -name 'lib' -o -name 'amd64' -o -name 'machines'); \
+        do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
+    "echo Calling setrpaths.sh --path %(installdir)s/EstProducts/linux_a64/code/bin --any_interpreter; \
+        /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/EstProducts/linux_a64/code/bin --any_interpreter;",
+    "cp -fv /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ABAQUS/%(version)s/Custom/Site/custom_v6.env \
+        %(installdir)s/EstProducts/linux_a64/SMA/site/custom_v6.env",
+    "sed -i 's+/opt/sharcnet/abaqus/2021+%(installdir)s+g' %(installdir)s/EstProducts/linux_a64/SMA/site/custom_v6.env",
+]
+
+moduleclass = 'cae'
+
+modextrapaths = {
+    'PATH': ['Isight/linux_a64/code/command','Commands'],
+}
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ABAQUS_LICENSE_FILE","abaqus")
+if (not found) then
+        local error_message = [[
+        We did not find a suitable license for Abaqus. If you have access to one, you can create the file $HOME/.licenses/abaqus.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it.
+        Nous n'avons pas trouve de licence utilisable pour Abaqus. Si vous avez acces a une licence de Abaqus, vous pouvez creer le fichier $HOME/.licenses/abaqus.lic avec l'information de la licence. Si vous pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+        ]]
+        LmodError(error_message)
+elseif (path) then
+    -- load the license file which should contain Lua commands to set the license path
+    assert(loadfile(path))()
+end
+"""
