@@ -545,7 +545,7 @@ class EasyConfigTest(TestCase):
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
 
-        if EasyConfigTest.ordered_specs is None:
+        if not EasyConfigTest.parsed_easyconfigs:
             self.process_all_easyconfigs()
 
         for ec in EasyConfigTest.parsed_easyconfigs:
@@ -558,6 +558,22 @@ class EasyConfigTest(TestCase):
                 self.assertTrue(isinstance(ec_scp['dirs'], list), error_msg)
                 self.assertTrue(isinstance(ec_scp['files'], list), error_msg)
                 self.assertTrue(ec_scp['dirs'] or ec_scp['files'], error_msg)
+
+    def test_r_libs_site_env_var(self):
+        """Make sure $R_LIBS_SITE is being updated, rather than $R_LIBS."""
+        # cfr. https://github.com/easybuilders/easybuild-easyblocks/pull/2326
+
+        if not EasyConfigTest.parsed_easyconfigs:
+            self.process_all_easyconfigs()
+
+        r_libs_ecs = []
+        for ec in EasyConfigTest.parsed_easyconfigs:
+            for key in ('modextrapaths', 'modextravars'):
+                if 'R_LIBS' in ec['ec'][key]:
+                    r_libs_ecs.append(ec['spec'])
+
+        error_msg = "%d easyconfigs found which set $R_LIBS, should be $R_LIBS_SITE: %s"
+        self.assertEqual(r_libs_ecs, [], error_msg % (len(r_libs_ecs), ', '.join(r_libs_ecs)))
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
