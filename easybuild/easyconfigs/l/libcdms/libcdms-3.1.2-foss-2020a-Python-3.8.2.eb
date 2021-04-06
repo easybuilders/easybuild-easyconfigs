@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'libcdms'
+version = '3.1.2'
+versionsuffix = "-Python-%(pyver)s"
+
+homepage = 'https://github.com/CDAT/libcdms/'
+description = """Climate Data Management System Library."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/CDAT/libcdms/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2010ef24f8f8c14a6f997206ec342e6fed9703b81f8641d70bebc992a3855e8c']
+
+dependencies = [
+    ('netCDF', '4.7.4'),
+    ('JasPer', '2.0.14'),
+    ('g2clib', '1.6.0'),
+    ('libjpeg-turbo', '2.0.4'),
+    ('Python', '3.8.2'),
+    ('libdrs', '3.1.2'),
+]
+
+configopts = "--prefix=%(installdir)s --enable-drs=yes"
+configopts += '--enable-hdf=no --enable-pp=yes --enable-ql=no --enable-grib2 '
+configopts += '--cache-file=/dev/null '
+configopts += '--with-nclib=$EBROOTNETCDF/include --with-ncinc=$EBROOTNETCDF/include '
+configopts += '--with-ncincf=$EBROOTNETCDF/include '
+configopts += '--with-drslib=$EBROOTLIBDRS/include --with-drsinc=$EBROOTLIBDRS/include '
+configopts += '--with-drsincf=$EBROOTLIBDRS/include '
+configopts += '--with-jasperlib=$EBROOTJASPER/lib64 '
+configopts += '--with-grib2lib=$EBROOTG2CLIB/lib --with-grib2inc=$EBROOTG2CLIB/include '
+
+# `make install` doesn't create the directories?
+preinstallopts = 'mkdir -p %(installdir)s/{bin,lib,include,man/man3} && '
+
+# Must be sequential, the three build steps each add to the libcdms.a archive
+parallel = False
+
+sanity_check_paths = {
+    'files': [
+        'bin/cddump', 'bin/cdfile', 'bin/cdimport', 'bin/cudump', 'bin/cuget',
+        'include/cdunif.h', 'lib/libcdms.a', 'lib/libcdms.%s' % SHLIB_EXT,
+    ],
+    'dirs': [],
+}
+
+sanity_check_commands = ['cuget -h 2>&1 | grep "Usage: cuget"']
+
+moduleclass = 'geo'
