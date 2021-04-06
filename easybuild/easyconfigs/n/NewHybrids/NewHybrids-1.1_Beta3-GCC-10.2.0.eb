@@ -1,0 +1,45 @@
+# Author: Denis Krišťák (INUITS)
+# License: GPLv2
+
+easyblock = 'MakeCp'
+
+name = 'NewHybrids'
+version = '1.1_Beta3'
+
+homepage = 'http://ib.berkeley.edu/labs/slatkin/eriq/software/software.htm#NewHybs'
+description = """This implements a Gibbs sampler to estimate the posterior probability that genetically sampled
+individuals fall into each of a set of user-defined hybrid categories."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/eriqande',
+        'repo_name': 'newhybrids',
+        'commit': '6fc8fd9ca6e64ee0be08af12ec8bfe73a7de00cc',
+        'recursive': True,
+    }
+}]
+
+skipsteps = ['configure']
+
+build_cmd = './Compile-with-no-gui-Linux.sh'
+
+files_to_copy = ['*']
+
+postinstallcmds = ['mkdir %(installdir)s/bin/linux',
+                   'cp %(installdir)s/newhybrids-no-gui-linux.exe %(installdir)s/bin/linux/newhybs']
+
+sanity_check_paths = {
+    'files': ['newhybrids-no-gui-linux.exe'],
+    'dirs': [],
+}
+
+modextrapaths = {'PATH': ['bin/linux']}
+
+sanity_check_commands = [
+    'newhybs -d %(installdir)s/test_data/TestDat.txt --no-gui | grep Output\ is\ in\ the\ following\ files',
+]
+
+moduleclass = 'bio'
