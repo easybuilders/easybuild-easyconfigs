@@ -1,7 +1,7 @@
 # Author: Denis Krišťák (INUITS)
 # License: GPLv2
 
-easyblock = 'MakeCp'
+easyblock = 'Binary'
 
 name = 'NewHybrids'
 version = '1.1_Beta3'
@@ -12,6 +12,8 @@ individuals fall into each of a set of user-defined hybrid categories."""
 
 toolchain = {'name': 'GCC', 'version': '10.2.0'}
 
+extract_sources = True
+
 sources = [{
     'filename': SOURCE_TAR_GZ,
     'git_config': {
@@ -21,22 +23,17 @@ sources = [{
         'recursive': True,
     }
 }]
+checksums = ['2cc1d3e95ce167312f3be971a3acd1951bf1cdd49313696a86ee22b7685fc56c']
 
-skipsteps = ['configure']
-
-build_cmd = './Compile-with-no-gui-Linux.sh'
-
-files_to_copy = ['*']
-
-postinstallcmds = ['mkdir %(installdir)s/bin/linux',
-                   'cp %(installdir)s/newhybrids-no-gui-linux.exe %(installdir)s/bin/linux/newhybs']
+install_cmd = '%(builddir)s/newhybrids/Compile-with-no-gui-Linux.sh && '
+install_cmd += 'mkdir %(installdir)s/bin && '
+install_cmd += 'cp -a %(builddir)s/newhybrids/newhybrids-no-gui-linux.exe %(installdir)s/bin/newhybs && '
+install_cmd += 'cp -ar %(builddir)s/newhybrids/test_data %(installdir)s/'
 
 sanity_check_paths = {
-    'files': ['newhybrids-no-gui-linux.exe'],
+    'files': ['bin/newhybs'],
     'dirs': [],
 }
-
-modextrapaths = {'PATH': ['bin/linux']}
 
 sanity_check_commands = [
     'newhybs -d %(installdir)s/test_data/TestDat.txt --no-gui | grep Output\ is\ in\ the\ following\ files',
