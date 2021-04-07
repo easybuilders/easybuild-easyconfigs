@@ -293,7 +293,7 @@ class EasyConfigTest(TestCase):
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
                 (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
                 (r'10\.0\.1', [r'numba-0\.52\.0-', r'PyTorch-Geometric-1\.6\.3',
-                              r'PyOD-0\.8\.7-', 'umap-learn-0\.4\.6-']),
+                               r'PyOD-0\.8\.7-', r'umap-learn-0\.4\.6-']),
             ],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
