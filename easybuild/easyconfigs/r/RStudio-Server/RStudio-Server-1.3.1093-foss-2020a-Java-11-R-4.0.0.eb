@@ -16,7 +16,15 @@ toolchain = {'name': 'foss', 'version': '2020a'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
 sources = ['v%(version)s.tar.gz']
-checksums = ['af8dc5e71ee934043856938af2e2065d1f1efef08aba37962ed03f6ccb8201bb']
+patches = [
+        'rstudio-1.2.1335.patch',
+        'rstudio-1.3.1093.patch',
+]
+checksums = [
+    'af8dc5e71ee934043856938af2e2065d1f1efef08aba37962ed03f6ccb8201bb',  # v1.3.1093.tar.gz
+    'ce2cf5d344a5d254aacfff628ce1eeae6968730a81d01319a823ad828a1a3be6',  # rstudio-1.2.1335.patch
+    '184656d7af5223697f1c091d3f1fb4b18abc7482857a284e65b860ec7faf0575',  # rstudio-1.3.1093.patch
+]
 
 builddependencies = [
     ('pkg-config', '0.29.2'),
@@ -35,9 +43,18 @@ osdependencies = [
 ]
 
 build_type = "Release"
-local_dep_dir = "%(builddir)s/rstudio-%(version)s/dependencies/common"
-preconfigopts = ("(cd %s && ./install-dictionaries && "
-                 "./install-pandoc && ./install-mathjax) && ") % local_dep_dir
+
+preconfigopts = " && ".join([
+    "cd %(builddir)s/rstudio-%(version)s/dependencies/common",
+    "./install-cef",
+    "./install-dictionaries",
+    "./install-mathjax",
+    "./install-pandoc",
+    "./install-packages",
+    "cd ../..",
+    "", # To append &&
+])
+
 configopts = "-DRSTUDIO_TARGET=Server -DRSTUDIO_BOOST_SIGNALS_VERSION=2"
 
 sanity_check_paths = {
