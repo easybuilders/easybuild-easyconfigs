@@ -25,10 +25,18 @@ checksums = [None]
 
 extract_sources = True
 
-install_cmd = '%(builddir)s/newhybrids/Compile-with-no-gui-Linux.sh && '
-install_cmd += 'mkdir %(installdir)s/bin && '
-install_cmd += 'cp -a %(builddir)s/newhybrids/newhybrids-no-gui-linux.exe %(installdir)s/bin/newhybs && '
-install_cmd += 'cp -ar %(builddir)s/newhybrids/test_data %(installdir)s/'
+# options to be used in compilation
+local_compiler_options = "$CC $CFLAGS $CPPFLAGS "
+
+local_compile_script = "%(builddir)s/newhybrids/Compile-with-no-gui-Linux.sh"
+# replacing hardcoded compilation cmd with general options
+install_cmd = "sed -i -e 's/gcc -O3/%s/g' %s && " % (local_compiler_options, local_compile_script)
+# running compilation script
+install_cmd += "%s && " % local_compile_script
+# create and copy created binaries & test data
+install_cmd += "mkdir %(installdir)s/bin && "
+install_cmd += "cp -a %(builddir)s/newhybrids/newhybrids-no-gui-linux.exe %(installdir)s/bin/newhybs && "
+install_cmd += "cp -ar %(builddir)s/newhybrids/test_data %(installdir)s/"
 
 sanity_check_paths = {
     'files': ['bin/newhybs'],
@@ -36,7 +44,8 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    'newhybs -d %(installdir)s/test_data/TestDat.txt --no-gui | grep Output\ is\ in\ the\ following\ files',
+    # don't run longer than 4 minutes, otherwise it's probably stuck (no test_data found)
+    'timeout 240 newhybs -d %(installdir)s/test_data/TestDat.txt --no-gui | grep "Output is in the following files"',
 ]
 
 moduleclass = 'bio'
