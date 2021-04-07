@@ -51,7 +51,7 @@ from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_gra
 from easybuild.tools import config
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, is_generic_easyblock, remove_file
-from easybuild.tools.filetools import verify_checksum, write_file
+from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.py2vs3 import string_type, urlopen
@@ -69,6 +69,12 @@ single_tests_ok = True
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
+
+    # make sure that the EasyBuild installation is still known even if we purge an EB module
+    if os.getenv('EB_SCRIPT_PATH') is None:
+        eb_path = which('eb')
+        if eb_path is not None:
+            os.environ['EB_SCRIPT_PATH'] = eb_path
 
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
@@ -545,7 +551,7 @@ class EasyConfigTest(TestCase):
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
 
-        if EasyConfigTest.ordered_specs is None:
+        if not EasyConfigTest.parsed_easyconfigs:
             self.process_all_easyconfigs()
 
         for ec in EasyConfigTest.parsed_easyconfigs:
@@ -558,6 +564,22 @@ class EasyConfigTest(TestCase):
                 self.assertTrue(isinstance(ec_scp['dirs'], list), error_msg)
                 self.assertTrue(isinstance(ec_scp['files'], list), error_msg)
                 self.assertTrue(ec_scp['dirs'] or ec_scp['files'], error_msg)
+
+    def test_r_libs_site_env_var(self):
+        """Make sure $R_LIBS_SITE is being updated, rather than $R_LIBS."""
+        # cfr. https://github.com/easybuilders/easybuild-easyblocks/pull/2326
+
+        if not EasyConfigTest.parsed_easyconfigs:
+            self.process_all_easyconfigs()
+
+        r_libs_ecs = []
+        for ec in EasyConfigTest.parsed_easyconfigs:
+            for key in ('modextrapaths', 'modextravars'):
+                if 'R_LIBS' in ec['ec'][key]:
+                    r_libs_ecs.append(ec['spec'])
+
+        error_msg = "%d easyconfigs found which set $R_LIBS, should be $R_LIBS_SITE: %s"
+        self.assertEqual(r_libs_ecs, [], error_msg % (len(r_libs_ecs), ', '.join(r_libs_ecs)))
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
@@ -581,7 +603,15 @@ class EasyConfigTest(TestCase):
 
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
-        whitelist = ['Kent_tools-*', 'MATLAB-*', 'OCaml-*', 'OpenFOAM-Extend-4.1-*']
+        whitelist = [
+            'Kent_tools-*',
+            'MATLAB-*',
+            'OCaml-*',
+            'OpenFOAM-Extend-4.1-*',
+            # sources for old versions of Bioconductor packages are no longer available,
+            # so not worth adding checksums for at this point
+            'R-bundle-Bioconductor-3.[2-5]',
+        ]
 
         # the check_sha256_checksums function (again) creates an EasyBlock instance
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
@@ -681,8 +711,11 @@ class EasyConfigTest(TestCase):
             # Tkinter is an exception, since its version always matches the Python version anyway
             # Python 3.8.6 and later are also excluded, as we consider python 3 the default python
             # Also whitelist some updated versions of Amber
-            whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
-                                       'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
+            whitelist_python_suffix = [
+                'Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
+                'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb',
+                'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
+            ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
             has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies']
                                  if LooseVersion(dep['version']) < LooseVersion('3.8.6'))
