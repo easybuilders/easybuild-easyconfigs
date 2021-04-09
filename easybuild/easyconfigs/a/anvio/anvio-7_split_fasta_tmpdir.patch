@@ -1,0 +1,131 @@
+diff --git a/anvio/drivers/hmmer.py b/anvio/drivers/hmmer.py
+index e8580f3..dd54ca3 100644
+--- a/anvio/drivers/hmmer.py
++++ b/anvio/drivers/hmmer.py
+@@ -56,12 +56,10 @@ class HMMer:
+             tmp_dir = filesnpaths.get_temp_directory_path()
+             self.tmp_dirs.append(tmp_dir)
+ 
+-            part_file_name = os.path.join(tmp_dir, os.path.basename(target_files_dict[source]))
+-
+             # create splitted fasta files inside tmp directory
+             self.target_files_dict[source] = utils.split_fasta(target_files_dict[source],
+                                                                parts=self.num_threads_to_use,
+-                                                               prefix=part_file_name)
++                                                               output_dir=tmp_dir)
+ 
+     def verify_hmmpress_output(self, hmm_path):
+         """This function verifies that the HMM profiles located at hmm_path have been successfully hmmpressed.
+diff --git a/anvio/tests/unit/utils/test_split_fasta.py b/anvio/tests/unit/utils/test_split_fasta.py
+index a19394c..95ac04c 100644
+--- a/anvio/tests/unit/utils/test_split_fasta.py
++++ b/anvio/tests/unit/utils/test_split_fasta.py
+@@ -92,9 +92,9 @@ class SplitFastaTestCase(ut.TestCase):
+ 
+     def test_custom_prefix(self):
+         parts = 1
+-        prefix = os.path.join(self.this_dir, 'silly')
++        file_name_prefix = 'silly'
+ 
+-        out_files = split_fasta(self.five_seq_fasta, parts=parts, prefix=prefix)
++        out_files = split_fasta(self.five_seq_fasta, parts=parts, file_name_prefix=file_name_prefix, output_dir=self.this_dir)
+         expected_out_files = [os.path.join(self.this_dir, 'silly.0')]
+ 
+         self.assertEqual(out_files, expected_out_files)
+diff --git a/anvio/utils.py b/anvio/utils.py
+index e73a9e3..42e7000 100644
+--- a/anvio/utils.py
++++ b/anvio/utils.py
+@@ -796,13 +796,50 @@ def transpose_tab_delimited_file(input_file_path, output_file_path, remove_after
+     return output_file_path
+ 
+ 
+-def split_fasta(input_file_path, parts=1, prefix=None, shuffle=False):
+-    if not prefix:
+-        prefix = os.path.abspath(input_file_path)
++def split_fasta(input_file_path, parts=1, file_name_prefix=None, shuffle=False, output_dir=None):
++    """Splits a given FASTA file into multiple parts.
+ 
+-    filesnpaths.is_file_exists(input_file_path)
++    Please note that this function will not clean after itself. You need to take care of the
++    output files in context.
++
++    Parameters
++    ==========
++    input_file_path : str
++        FASTA-formatted flat text file to be split
++    parts : int
++        Number of parts the input file to be split into
++    file_name_prefix : str
++        Preferably a single-word prefix for the output files
++    shuffle : bool
++        Whether input sequences should be randomly shuffled (so the input sequences
++        randomly distribute across output files)
++    output_dir : str, path
++        Output directory. By default, anvi'o will store things in a new directory under
++        the system location for temporary files
++
++    Returns
++    =======
++    output_file_paths : list
++        Array with `parts` number of elements where each item is an output file path
++
++    """
++    if not file_name_prefix:
++        file_name_prefix = os.path.basename(input_file_path)
++    else:
++        if '/' in file_name_prefix:
++            raise ConfigError("File name prefix for split fasta can't contain slash characters. It is not "
++                              "supposed to be a path after all :/")
++
++    # check input
+     filesnpaths.is_file_fasta_formatted(input_file_path)
+ 
++    # check output
++    if not output_dir:
++        output_dir = filesnpaths.get_temp_directory_path()
++    else:
++        filesnpaths.gen_output_directory(output_dir)
++        filesnpaths.is_output_dir_writable(output_dir)
++
+     source = u.ReadFasta(input_file_path, quiet=True)
+     length = len(source.ids)
+ 
+@@ -811,11 +848,13 @@ def split_fasta(input_file_path, parts=1, prefix=None, shuffle=False):
+ 
+     chunk_size = length // parts
+ 
+-    output_files = []
++    output_file_paths = []
++
++    GET_OUTPUT_FILE_PATH = lambda p: os.path.join(output_dir, ".".join([file_name_prefix, str(p)]))
+ 
+     if shuffle:
+-        output_files = [f'{prefix}.{part_no}' for part_no in range(parts)]
+-        output_fastas = [u.FastaOutput(file_name) for file_name in output_files]
++        output_file_paths = [f'{GET_OUTPUT_FILE_PATH(part_no)}' for part_no in range(parts)]
++        output_fastas = [u.FastaOutput(file_name) for file_name in output_file_paths]
+ 
+         # The first sequence goes to the first outfile, the second seq to the second outfile, and so on.
+         for seq_idx, (seq_id, seq) in enumerate(zip(source.ids, source.sequences)):
+@@ -827,7 +866,7 @@ def split_fasta(input_file_path, parts=1, prefix=None, shuffle=False):
+             output_fasta.close()
+     else:
+         for part_no in range(parts):
+-            output_file = prefix + '.' + str(part_no)
++            output_file = GET_OUTPUT_FILE_PATH(part_no)
+ 
+             output_fasta = u.FastaOutput(output_file)
+ 
+@@ -843,11 +882,11 @@ def split_fasta(input_file_path, parts=1, prefix=None, shuffle=False):
+                 output_fasta.write_seq(source.sequences[i])
+ 
+             output_fasta.close()
+-            output_files.append(output_file)
++            output_file_paths.append(output_file)
+ 
+     source.close()
+ 
+-    return output_files
++    return output_file_paths
+ 
