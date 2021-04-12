@@ -1,0 +1,21 @@
+MAINT: special: add an explicit NaN check for `iv` arguments
+
+Taken from https://github.com/scipy/scipy/pull/10675
+
+This fixes a problem with test_nan_inputs[iv] when running on SkylakeX
+
+Åke Sandgren, 2021-04-08
+diff -ru scipy-1.2.3.orig/scipy/special/cephes/scipy_iv.c scipy-1.2.3/scipy/special/cephes/scipy_iv.c
+--- scipy-1.2.3.orig/scipy/special/cephes/scipy_iv.c	2020-01-20 21:44:32.000000000 +0100
++++ scipy-1.2.3/scipy/special/cephes/scipy_iv.c	2021-04-08 17:12:12.615806427 +0200
+@@ -82,6 +82,10 @@
+     int sign;
+     double t, ax, res;
+ 
++    if (npy_isnan(v) || npy_isnan(x)) {
++        return NPY_NAN;
++    }
++
+     /* If v is a negative integer, invoke symmetry */
+     t = floor(v);
+     if (v < 0.0) {
