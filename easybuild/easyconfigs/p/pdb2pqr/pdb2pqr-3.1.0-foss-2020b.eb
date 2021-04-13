@@ -1,0 +1,51 @@
+# Thomas Hoffmann, EMBL Heidelberl, structures-it@embl.de, 2021/04
+easyblock = 'PythonBundle'
+
+name = 'pdb2pqr'
+version = '3.1.0'
+
+homepage = 'https://www.poissonboltzmann.org/'
+description = """Automates many of the common tasks of preparing structures for continuum        
+solvation calculations as well as many other types of biomolecular structure    
+modeling, analysis, and simulation."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {}
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+]
+
+use_pip = True
+exts_list = [
+    ('propka', '3.4.0', {
+        'checksums': ['f19c2e145faa7eab000ce056a9058b8a30adba6970705047bb4fb7ba7570b020'],
+    }),
+    ('mmcif-pdbx', '2.0.0', {
+        'modulename': 'pdbx',
+        'patches': ['pdb2pqr-3.1.0_mmcif_pdbx_2.0.0_remove_versioneer.patch'],
+        'sources': 'mmcif_pdbx-%(version)s.tar.gz',
+        'checksums': [
+            'ffd76b08f0215d052fcf3015b8bac927cdf369ca60e4e26974f8aec99ca66986',  # mmcif_pdbx-2.0.0.tar.gz
+            # pdb2pqr-3.1.0_mmcif_pdbx_2.0.0_remove_versioneer.patch
+            'fbf8c34361aa0c4060eff071be781fee73db494aa7d1a63424d92986370ac1da',
+        ],
+    }),
+    (name, version, {
+        'checksums': ['a6f5e2eefbd8bd2a072a89ee4026977de02dadd56e921095afac88d596b63820'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/%s' % x for x in ['pdb2pqr', 'psize', 'inputgen', 'dx2cube']]
+postinstallcmds = [
+    'cd %(installdir)s/bin && ln -s pdb2pqr30 pdb2pqr;'
+    'for i in pdb2pqr inputgen psize dx2cube; do ln -s $i ${i}.py;done'  # compat. pymol apbs_tools plugin
+]
+sanity_pip_check = True
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['pdb2pqr', 'pdb2pqr30', 'psize', 'inputgen', 'dx2cube']],
+    'dirs': ["lib"]
+}
+
+moduleclass = 'chem'
