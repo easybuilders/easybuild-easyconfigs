@@ -1,0 +1,58 @@
+diff -ru --new-file openvr-1.0.17/src/CMakeLists.txt OpenVR-1.0.17_installheaders/src/CMakeLists.txt
+--- openvr-1.0.17/src/CMakeLists.txt	2018-10-16 03:14:19.000000000 +0200
++++ OpenVR-1.0.17_installheaders/src/CMakeLists.txt	2021-04-09 16:17:10.128778960 +0200
+@@ -2,6 +2,7 @@
+ project(openvr_api)
+ 
+ set( LIBNAME "openvr_api" )
++set(OPENVR_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../headers)
+ 
+ # Set some properies for specific files.
+ if(APPLE)
+@@ -50,6 +51,12 @@
+ 	${VRCOMMON_FILES}
+ )
+ 
++set(PUBLIC_HEADER_FILES
++	${OPENVR_HEADER_DIR}/openvr_driver.h
++	${OPENVR_HEADER_DIR}/openvr_capi.h
++	${OPENVR_HEADER_DIR}/openvr.h
++)
++
+ source_group("Src" FILES
+ 	${CORE_FILES}
+ )
+@@ -92,5 +99,18 @@
+ endif()
+ 
+ target_link_libraries(${LIBNAME} ${EXTRA_LIBS})
++target_include_directories(${LIBNAME} PUBLIC ${OPENVR_HEADER_DIR})
+ 
+ install(TARGETS ${LIBNAME} DESTINATION lib)
++install(FILES ${PUBLIC_HEADER_FILES} DESTINATION include/openvr)
++
++# Generate a .pc file for linux environments
++if(PLATFORM_NAME MATCHES "linux")
++    set(INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
++    CONFIGURE_FILE("openvr.pc.in" "openvr.pc" @ONLY)
++
++    set(OPENVR_PC ${CMAKE_CURRENT_BINARY_DIR}/openvr.pc)
++    if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL )
++        install(FILES ${OPENVR_PC} DESTINATION "${INSTALL_PKGCONFIG_DIR}")
++    endif()
++endif()
+diff -ru --new-file openvr-1.0.17/src/openvr.pc.in OpenVR-1.0.17_installheaders/src/openvr.pc.in
+--- openvr-1.0.17/src/openvr.pc.in	1970-01-01 01:00:00.000000000 +0100
++++ OpenVR-1.0.17_installheaders/src/openvr.pc.in	2021-04-09 16:22:59.456833040 +0200
+@@ -0,0 +1,11 @@
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++libdir=${prefix}/lib
++includedir=${prefix}/include/openvr
++
++Name: openvr
++Description: OpenVR is an API and runtime that allos access to VR hardware.
++Version: @OPENVR_VERSION@
++
++Libs: -L${libdir} -lopenvr_api -ldl
++Cflags: -I${includedir}

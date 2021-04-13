@@ -1,0 +1,44 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/04
+easyblock = 'CMakeMake'
+
+name = 'OpenVR'
+version = '1.0.17'
+
+homepage = 'https://github.com/ValveSoftware/openvr'
+description = """OpenVR is an API and runtime that allows access to VR hardware from multiple    
+vendors without requiring that applications have specific knowledge of the      
+hardware they are targeting. This repository is an SDK that contains the API and
+samples. The runtime is under SteamVR in Tools on Steam."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+toolchainopts = {'opt': True}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['OpenVR-1.0.17_HeadersAndPkgconfig.patch']
+checksums = [
+    '90ab1777677d6e41a79db6b8f313928b4b49e62cf31b81664aab59a7d425933d',  # v1.0.17.tar.gz
+    '53e9a7c6e18d4aa16df478adf536cd65e22853aeb23a694f19fd8a3011753157',  # OpenVR-1.0.17_HeadersAndPkgconfig.patch
+]
+
+github_account = 'ValveSoftware'
+
+local_configopts = ' -DBUILD_UNIVERSAL=OFF'
+local_configopts += ' -DUSE_LIBCXX=OFF'
+configopts = [
+    ' -DBUILD_SHARED=OFF' + local_configopts,
+    ' -DBUILD_SHARED=ON' + local_configopts,
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('binutils', '2.35'),
+    ('pkg-config', '0.29.2'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libopenvr_api.%s' % x for x in ['a', '%s' % SHLIB_EXT]],
+    'dirs': ["include", 'share/pkgconfig']
+}
+
+moduleclass = 'lib'
