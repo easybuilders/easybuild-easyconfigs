@@ -57,6 +57,7 @@ configopts = "-DVTK_USE_SYSTEM_MPI4PY=ON "
 configopts += "-DVTK_USE_SYSTEM_LZMA=ON "
 configopts += "-DVTK_USE_SYSTEM_HDF5=ON "
 configopts += "-DVTK_USE_SYSTEM_NETCDF=ON "
+configopts += "-DVTK_USE_SYSTEM_PNG=ON "
 # OpenGL
 configopts += "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
 configopts += "-DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s " % SHLIB_EXT
@@ -81,10 +82,14 @@ postinstallcmds = [
 
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
+local_vtk_exec = ['vtk%s-%%(version_major_minor)s' % x
+                  for x in ['WrapJava', 'ParseJava', 'WrapPythonInit', 'WrapPython', 'WrapHierarchy']]
+local_vtk_exec += ['vtkpython', 'pvtkpython']
+local_vtk_libs = ['CommonCore', 'IONetCDF', 'ParallelMPI', 'RenderingOpenGL2']
+
 sanity_check_paths = {
-    'files': ['bin/vtk%s-%%(version_major_minor)s' % x for x in
-              ['WrapJava', 'ParseJava', 'WrapPythonInit', 'WrapPython', 'WrapHierarchy']] +
-             ['bin/pvtkpython', 'bin/vtkpython'],
+    'files': ['bin/%s' % x for x in local_vtk_exec] +
+             ['lib/libvtk%s-%%(version_major_minor)s.%s' % (l, SHLIB_EXT) for l in local_vtk_libs],
     'dirs': ['lib/python%(pyshortver)s/site-packages/', 'include/vtk-%(version_major_minor)s'],
 }
 

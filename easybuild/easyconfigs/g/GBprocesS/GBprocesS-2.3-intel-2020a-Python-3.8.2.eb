@@ -22,6 +22,7 @@ dependencies = [
     ('Python', '3.8.2'),
     ('cutadapt', '2.10', '-Python-%(pyver)s'),
     ('Biopython', '1.78', versionsuffix),
+    ('PEAR', '0.9.11'),
 ]
 
 use_pip = True
@@ -37,6 +38,20 @@ pretestopts = (
 )
 
 runtest = 'python -m unittest discover -v -s ./test -p test_*.py'
+
+sanity_check_commands = [
+    "touch %(builddir)s/17146FL-13-01-01_S97_L002_R1_001.fastq",
+    "touch %(builddir)s/17146FL-13-01-01_S97_L002_R2_001.fastq",
+    # Trivial configuration file to use when running gbprocess sanity check
+    # See https://gitlab.com/dschaumont/GBprocesS/-/blob/master/docs/user_guide.rst
+    "echo '[General]' > %(builddir)s/config.ini",
+    "echo 'cores = 1' >>  %(builddir)s/config.ini",
+    "echo 'input_directory = %(builddir)s/' >>  %(builddir)s/config.ini",
+    "echo 'sequencing_type = pe' >>  %(builddir)s/config.ini",
+    "echo 'input_file_name_template = {run:25}_R{orientation:1}_001{extension}' >>  %(builddir)s/config.ini",
+    "echo 'temp_dir = %(builddir)s/' >>  %(builddir)s/config.ini",
+    "gbprocess --debug -c %(builddir)s/config.ini",
+]
 
 options = {'modulename': 'gbprocess'}
 
