@@ -354,11 +354,12 @@ class EasyConfigTest(TestCase):
             # but we still allow variants depending on Python 2.x + 3.x
             is_recent_gen = False
             full_toolchain_regex = re.compile(r'^20[1-9][0-9][ab]$')
-            gcc_toolchain_regex = re.compile(r'^[0-9]?[0-9]\.[0-9]\.[0-9]$')
+            gcc_toolchain_regex = re.compile(r'^GCC(core)?-[0-9]?[0-9]\.[0-9]$')
             if full_toolchain_regex.match(gen):
                 is_recent_gen = LooseVersion(gen) >= LooseVersion('2020b')
             elif gcc_toolchain_regex.match(gen):
-                is_recent_gen = LooseVersion(gen) >= LooseVersion('10.2.0')
+                genver = gen.split('-', 1)[1]
+                is_recent_gen = LooseVersion(genver) >= LooseVersion('10.2')
             else:
                 raise EasyBuildError("Unkown type of toolchain generation: %s" % gen)
 
@@ -507,6 +508,11 @@ class EasyConfigTest(TestCase):
         self.assertTrue(self.check_dep_vars('2020b', 'Python', {
             'version: 2.7.18; versionsuffix:': ['SciPy-bundle-2020.11-foss-2020b-Python-2.7.18.eb'],
             'version: 3.8.6; versionsuffix:': ['SciPy-bundle-2020.11-foss-2020b.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('GCCcore-10.2', 'PyYAML', {
+            'version: 5.3.1; versionsuffix:': ['IPython-7.18.1-GCCcore-10.2.0.eb'],
+            'version: 5.3.1; versionsuffix: -Python-2.7.18': ['IPython-7.18.1-GCCcore-10.2.0-Python-2.7.18.eb'],
         }))
 
         self.assertTrue(self.check_dep_vars('2020b', 'SciPy-bundle', {
