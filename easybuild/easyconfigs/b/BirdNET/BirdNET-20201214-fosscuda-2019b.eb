@@ -1,0 +1,102 @@
+easyblock = 'Tarball'
+
+name = 'BirdNET'
+version = '20201214'
+local_commit = '022a6d5'
+
+homepage = 'https://birdnet.cornell.edu/'
+description = """BirdNET is a research platform that aims at recognizing birds by sound at scale.
+We support various hardware and operating systems such as Arduino microcontrollers, the Raspberry Pi, 
+smartphones, web browsers, workstation PCs, and even cloud services. BirdNET is a citizen science 
+platform as well as an analysis software for extremely large collections of audio.
+BirdNET aims to provide innovative tools for conservationists, biologists, and birders alike."""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+
+github_account = 'kahst'
+source_urls = [GITHUB_SOURCE]
+sources = [
+    {
+        'download_filename': '%s.tar.gz' % local_commit,
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://tuc.cloud/index.php/s/m9smX4FkqmJaxLW/'],
+        'download_filename': 'download',
+        'filename': 'BirdNET_Soundscape_Model.pkl',
+        'extract_cmd': 'echo %s',
+    },
+]
+patches = [
+    ('BirdNET-20201214_add-model-path-envvar.patch'),
+    ('BirdNET_Soundscape_Model.pkl', 'model'),
+]
+checksums = [
+    '3a7a5f562bfdd55138603847d206125328f02a25df5e86278d2fb35242bb1c1d',  # BirdNET-20201214.tar.gz
+    '7db0b2fe57da002aff62fe1aecf56b16065c2b699dcbee1d8d7e07a42719b3fe',  # BirdNET_Soundscape_Model.pkl
+    '33cbddca35223eb078ed62e7eb1748930225dfe43a40b9d093ae0d6d18a1344b',  # BirdNET-20201214_add-model-path-envvar.patch
+]
+
+dependencies = [
+    ('FFmpeg', '4.2.1'),
+    ('libsndfile', '1.0.28'),
+    ('Python', '3.7.4'),
+    ('libgpuarray', '0.7.6', '-Python-%(pyver)s'),
+    ('numba', '0.47.0', '-Python-%(pyver)s'),
+    ('scikit-learn', '0.22.2.post1', '-Python-%(pyver)s'),
+    ('SciPy-bundle', '2019.10', '-Python-%(pyver)s'),
+    ('Theano', '1.0.4', '-Python-%(pyver)s'),
+]
+
+postinstallcmds = [
+    'chmod +x %(installdir)s/analyze.py',
+]
+
+fix_python_shebang_for = ['analyze.py']
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+}
+
+exts_list = [
+    ('librosa', '0.8.0', {
+        'checksums': ['af0b9f2ed4bbf6aecbc448a4cd27c16453c397cb6bef0f0cfba0e63afea2b839'],
+    }),
+    ('audioread', '2.1.9', {
+        'checksums': ['a3480e42056c8e80a8192a54f6729a280ef66d27782ee11cbd63e9d4d1523089'],
+    }),
+    ('appdirs', '1.4.4', {
+        'checksums': ['7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41'],
+    }),
+    ('Lasagne', '5d3c63c', {
+        'module': 'lasagne',
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/%(name)s/%(name)s/archive/'],
+        'checksums': ['6dbcc97b5378e4f17e7ba4043d1a65cb4adb33c616a0a8683244e8e1423e83f3'],
+    }),
+    ('pooch', '1.3.0', {
+        'checksums': ['30d448e825904e2d763bbbe418831a788813c32f636b21c8d60ee5f474532898'],
+    }),
+    ('resampy', '0.2.2', {
+        'checksums': ['62af020d8a6674d8117f62320ce9470437bb1d738a5d06cd55591b69b463929e'],
+    }),
+    ('SoundFile', '0.10.3.post1', {
+        'module': 'soundfile',
+        'checksums': ['490cff42650733d1832728b937fe99fa1802896f5ef4d61bcf78cf7ebecb107b'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['analyze.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {
+    'PATH': '.',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'THEANORC': '.theanorc',
+}
+
+moduleclass = 'bio'
