@@ -161,6 +161,10 @@ class EasyConfigTest(TestCase):
     def check_dep_vars(self, gen, dep, dep_vars):
         """Check whether available variants of a particular dependency are acceptable or not."""
 
+        # short-circuit in case there's only one dependency variant, or none at all
+        if len(dep_vars) <= 1:
+            return True
+
         # 'guilty' until proven 'innocent'
         res = False
 
