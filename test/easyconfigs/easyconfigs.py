@@ -49,7 +49,7 @@ from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
-from easybuild.tools.build_log import EasyBuildError
+from easybuild.tools.build_log import EasyBuildError, print_warning
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, is_generic_easyblock, remove_file
 from easybuild.tools.filetools import verify_checksum, which, write_file
@@ -566,6 +566,20 @@ class EasyConfigTest(TestCase):
         # which throws off the pattern matching done below for toolchain versions
         false_positives_regex = re.compile('^MATLAB-Engine-20[0-9][0-9][ab]')
 
+        # map GCC(core) version to toolchain generations;
+        # only for recent generations, where we want to limit dependency variants as much as possible
+        # across all easyconfigs of that generation (regardless of whether a full toolchain or subtoolchain is used);
+        # see https://docs.easybuild.io/en/latest/Common-toolchains.html#overview-of-common-toolchains
+        gcc_tc_gen_map = {
+            '6.4': '2018a',
+            '7.3': '2018b',
+            '8.2': '2019a',
+            '8.3': '2019b',
+            '9.3': '2020a',
+            '10.2': '2020b',
+            '10.3': '2021a',
+        }
+
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
         patterns = [
@@ -593,6 +607,15 @@ class EasyConfigTest(TestCase):
                 res = regex.match(ec_file)
                 if res:
                     tc_gen = res.group('tc_gen')
+
+                    if tc_gen.startswith('GCC'):
+                        gcc_ver = tc_gen.split('-', 1)[1]
+                        if gcc_ver in gcc_tc_gen_map:
+                            tc_gen = gcc_tc_gen_map[gcc_ver]
+                        elif LooseVersion(gcc_ver) >= LooseVersion('10.4'):
+                            # for recent GCC versions, we really want to have a mapping in place...
+                            print_warning("No mapping for GCC(core) %s to toolchain generation!", gcc_ver)
+
                     all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
                     for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
                         dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
@@ -613,7 +636,7 @@ class EasyConfigTest(TestCase):
                         multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
                         multi_dep_vars_msg += '\n'
 
-            error_msg = "No multi-variant deps found for '%s' easyconfigs:\n%s" % (regex.pattern, multi_dep_vars_msg)
+            error_msg = "No multi-variant dependencies found in easyconfigs:\n%s" % multi_dep_vars_msg
             self.assertFalse(multi_dep_vars, error_msg)
 
     def test_sanity_check_paths(self):
