@@ -1,0 +1,64 @@
+also link with libtirpc to fix installation on RHEL8, fixing errors like:
+
+  libwrflib.a(landread.o):landread.c:function tsInitTileSet: error: undefined reference to 'xdr_double'
+
+see also https://wrfforum.com/viewtopic.php?f=5&t=11000&sid=0c551eb74687e2b26e916f603d491836
+
+author: Kenneth Hoste (HPC-UGent)
+
+--- ./WRFV3/main/Makefile.orig	2020-11-08 12:26:40.170925281 +0100
++++ ./WRFV3/main/Makefile	2020-11-08 12:27:04.356162654 +0100
+@@ -13,36 +13,36 @@
+ include ../configure.wrf
+ 
+ $(SOLVER)_wrf : wrf.o ../main/module_wrf_top.o
+-	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB)
+-	$(LD) -o wrf.exe $(LDFLAGS) wrf.o ../main/module_wrf_top.o $(LIBWRFLIB) $(LIB) 
++	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB) -ltirpc
++	$(LD) -o wrf.exe $(LDFLAGS) wrf.o ../main/module_wrf_top.o $(LIBWRFLIB) -ltirpc $(LIB) 
+ 
+ $(SOLVER)_wrf_SST_ESMF : wrf_ESMFMod.o wrf_SST_ESMF.o ../main/module_wrf_top.o
+-	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB)
+-	$(LD) -o wrf_SST_ESMF.exe $(LDFLAGS) wrf_SST_ESMF.o wrf_ESMFMod.o ../main/module_wrf_top.o $(LIBWRFLIB) $(LIB)
++	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB) -ltirpc
++	$(LD) -o wrf_SST_ESMF.exe $(LDFLAGS) wrf_SST_ESMF.o wrf_ESMFMod.o ../main/module_wrf_top.o $(LIBWRFLIB) -ltirpc $(LIB)
+ 
+ $(SOLVER)_ideal : module_initialize ideal_$(SOLVER).o
+-	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB)
+-	$(LD) -o ideal.exe $(LDFLAGS) ideal_$(SOLVER).o ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) $(LIB)
++	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB) -ltirpc
++	$(LD) -o ideal.exe $(LDFLAGS) ideal_$(SOLVER).o ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) -ltirpc $(LIB)
+ 
+ $(SOLVER)_real : module_initialize ndown_$(SOLVER).o nup_$(SOLVER).o tc_$(SOLVER).o real_$(SOLVER).o
+-	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB)
+-	$(LD) -o ndown.exe $(LDFLAGS) ndown_$(SOLVER).o  ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) $(LIB)
+-	#TEMPORARILY REMOVED $(LD) -o nup.exe $(LDFLAGS) nup_$(SOLVER).o  ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) $(LIB)
+-	$(LD) -o tc.exe $(LDFLAGS) tc_$(SOLVER).o  ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) $(LIB)
+-	$(LD) -o real.exe $(LDFLAGS) real_$(SOLVER).o ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) $(LIB)
++	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB) -ltirpc
++	$(LD) -o ndown.exe $(LDFLAGS) ndown_$(SOLVER).o  ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) -ltirpc $(LIB)
++	#TEMPORARILY REMOVED $(LD) -o nup.exe $(LDFLAGS) nup_$(SOLVER).o  ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) -ltirpc $(LIB)
++	$(LD) -o tc.exe $(LDFLAGS) tc_$(SOLVER).o  ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) -ltirpc $(LIB)
++	$(LD) -o real.exe $(LDFLAGS) real_$(SOLVER).o ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o $(LIBWRFLIB) -ltirpc $(LIB)
+ 
+ convert_em : convert_em.o
+-	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB)
+-	$(LD) -o convert_em.exe $(LDFLAGS) convert_em.o $(LIBWRFLIB) $(LIB)
++	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB) -ltirpc
++	$(LD) -o convert_em.exe $(LDFLAGS) convert_em.o $(LIBWRFLIB) -ltirpc $(LIB)
+ 
+ convert_nmm : convert_nmm.o
+-	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB)
+-	$(FC) -o convert_nmm.exe $(LDFLAGS) convert_nmm.o $(LIBWRFLIB) $(LIB)
++	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB) -ltirpc
++	$(FC) -o convert_nmm.exe $(LDFLAGS) convert_nmm.o $(LIBWRFLIB) -ltirpc $(LIB)
+ 
+ real_nmm : real_nmm.o
+ 	( cd ../dyn_nmm ;  $(MAKE) module_initialize_real.o )
+-	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB)
+-	$(FC) -o real_nmm.exe $(LDFLAGS) real_nmm.o $(LIBWRFLIB) $(LIB)
++	$(RANLIB) $(RLFLAGS) $(LIBWRFLIB) -ltirpc
++	$(FC) -o real_nmm.exe $(LDFLAGS) real_nmm.o $(LIBWRFLIB) -ltirpc $(LIB)
+ 
+ module_initialize : ../dyn_$(SOLVER)/module_initialize_$(IDEAL_CASE).o
+ #	( cd ../dyn_$(SOLVER) ;  $(MAKE) module_initialize_$(IDEAL_CASE).o )
