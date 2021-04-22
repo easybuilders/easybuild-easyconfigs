@@ -295,7 +295,7 @@ class EasyConfigTest(TestCase):
                 (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
                           r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
                 (r'10\.0\.1', [r'numba-0\.52\.0-', r'PyTorch-Geometric-1\.6\.3', r'PyOD-0\.8\.7-',
-                          r'cryoDRGN-0\.3\.2-']),
+                               r'cryoDRGN-0\.3\.2-']),
             ],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
