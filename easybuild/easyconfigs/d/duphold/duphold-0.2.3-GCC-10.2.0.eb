@@ -1,0 +1,54 @@
+easyblock = 'Binary'
+
+name = 'duphold'
+version = '0.2.3'
+local_hts_nim_ver = '0.2.8'
+local_docopt_ver = '0.6.8'
+local_regex_ver = '0.19.0'
+
+homepage = 'https://github.com/brentp/duphold'
+description = "duphold: scalable, depth-based annotation and curation of high-confidence structural variant calls"
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+source_urls = [
+    'https://github.com/brentp/hts-nim/archive/',
+    'https://github.com/brentp/duphold/archive/',
+    'https://github.com/docopt/docopt.nim/archive/',
+]
+sources = [
+    {'download_filename': 'v%s.tar.gz' % local_hts_nim_ver, 'filename': 'hts-nim-%s.tar.gz' % local_hts_nim_ver},
+    {'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ},
+    {'download_filename': 'v%s.tar.gz' % local_docopt_ver, 'filename': 'docopt.nim-%s.tar.gz' % local_docopt_ver},
+]
+checksums = [
+    'b56c92477e102adcffc52daadf0abeeeb8090d33a8fbd02d2f1f264f49e0e31e',  # hts-nim-0.2.8.tar.gz
+    '0fbfcaa16646381e360a6b3ffef2e1c2ace0c1ad6c94de68d01e6727119cf97b',  # duphold-0.2.3.tar.gz
+    '5ee208fb9bc71a52303cdade8b428bdfeb29ab7c2b22c59942a151e5dd558fa2',  # docopt.nim-0.6.8.tar.gz
+]
+
+dependencies = [
+    ('Nim', '1.4.6'),
+    ('HTSlib', '1.11'),
+]
+
+extract_sources = True
+
+local_paths = "--path:%%(installdir)s/pkgs/hts-%s " % local_hts_nim_ver
+local_paths += "--path:%%(installdir)s/pkgs/docopt-%s " % local_docopt_ver
+local_paths += "--path:%%(installdir)s/pkgs/regex-%s " % local_regex_ver
+local_paths += "--path:%%(installdir)s/pkgs/unicodedb-%s " % local_regex_ver
+
+install_cmd = "cd %(builddir)s/hts-nim-*/ && nimble install --nimbleDir:%(installdir)s --verbose -y && "
+install_cmd += "cd %(builddir)s/docopt.nim-*/ && nimble install --nimbleDir:%(installdir)s --verbose -y && "
+install_cmd += "cd ../duphold-*/ && "
+install_cmd += "nim c %s --define:release --cc:env src/duphold" % local_paths
+
+sanity_check_paths = {
+    'files': ['bin/duphold'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["duphold --help"]
+
+moduleclass = 'bio'
