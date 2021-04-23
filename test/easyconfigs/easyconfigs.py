@@ -289,10 +289,10 @@ class EasyConfigTest(TestCase):
                 (r'5\.', [r'Elk-']),
             ],
             # some software depends on numba, which typically requires an older LLVM;
-            # this includes librosa, PyOD, Python-Geometric, scVelo
+            # this includes BirdNET, librosa, PyOD, Python-Geometric, scVelo
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
-                (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-',
+                (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
                           r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
                 (r'10\.0\.1', [r'numba-0\.52\.0-', r'PyTorch-Geometric-1\.6\.3', r'PyOD-0\.8\.7-']),
             ],
@@ -821,10 +821,11 @@ class EasyConfigTest(TestCase):
     def check_sanity_check_paths(self, changed_ecs):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
-        # GoPackage, PythonBundle & PythonPackage already have a decent customised sanity_check_paths
+        # some generic easyblocks already have a decent customised sanity_check_paths,
+        # including CMakePythonPackage, GoPackage, PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
-                     'Toolchain']
+        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'ModuleRC',
+                     'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git
