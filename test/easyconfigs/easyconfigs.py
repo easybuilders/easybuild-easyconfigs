@@ -288,8 +288,8 @@ class EasyConfigTest(TestCase):
                 # rampart requires nodejs > 10, artic-ncov2019 requires rampart
                 ('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13']),
                 # holoviews + geoviews require nodejs > 14
-                ('14.16.1', ['geoviews-1.9.1-', 'holoviews-1.14.3-', 'bokeh-2.3.1-'
-                             'Cartopy-0.18.0-']),
+                ('14.16.1', ['geoviews-1.9.1-', 'holoviews-1.14.3-',
+                             'bokeh-2.3.1-', 'Cartopy-0.18.0-']),
             ]
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
