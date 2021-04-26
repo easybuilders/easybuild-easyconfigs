@@ -290,7 +290,7 @@ class EasyConfigTest(TestCase):
                 # holoviews + geoviews require nodejs > 14
                 ('14.16.1', ['geoviews-1.9.1-', 'holoviews-1.14.3-',
                              'bokeh-2.3.1-', 'Cartopy-0.18.0-']),
-            ]
+            ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
