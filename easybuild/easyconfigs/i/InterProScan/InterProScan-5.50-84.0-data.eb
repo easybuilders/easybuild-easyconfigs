@@ -19,23 +19,25 @@ source_urls = [
 sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
 checksums = ['3b792b33a14091a144a13ba35d70fbaa45abb8102f240a6da4e24bb07babaac4']
 
-builddependencies = [
+dependencies = [
     ('Python', '3.7'),
-    ('HMMER', '3.2.1'),
 ]
 
 
 postinstallcmds = [
-   'export DATA_DIR=${DATA_DIR//\/cvmfs\/soft.computecanada.ca\/easybuild\/software\//\/cvmfs\/data.rsnt.computecanada.ca\/content\/easybuild\/data/}; '
-   'cd %(installdir)s && rm -rf ./data/gene3d/*/gene3d_main.hmm.h* && '
-   'python %(installdir)s/initial_setup.py && mv data/* ${DATA_DIR} && cd ${DATA_DIR} && '
-   'rm -rf test* inter* bin src work readme.txt lib initial_setup.py && '
-   'chmod -R a+r ${DATA_DIR}/*; ln -s ${DATA_DIR}/* %(installdir)s/data/'
+'cd %(installdir)s && ls | sed -e "/data/d" -e "/initial_setup.py/d" -e "/interproscan.properties/d" '
+'-e "/bin/d" | xargs rm -rf &&  for i in h3f h3i h3m h3p; do find . -name "*.${i}" -exec rm {} + ; done &&' \
+'python %(installdir)s/initial_setup.py && mv data/* %(installdir)s && '
+'rm -rf %(installdir)s/data initial_setup.py bin interproscan.properties && chmod -R a+r %(installdir)s/*'
 ]
 
 sanity_check_paths = {
-    'files': [],
-    'dirs': ['data']
+    'files': ['hamap/2020_05/hamap.hmm.lib.h3p'],
+    'dirs': ['cdd', 'gene3d', 'hamap', 'panther', 'pfam', 'phobius', 'pirsf', 
+             'prints', 'prosite', 'sfld', 'smart', 'superfamily', 'tigrfam', 
+             'tmhmm']
 }
 
 moduleclass = 'bio'
+
+
