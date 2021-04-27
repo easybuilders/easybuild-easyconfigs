@@ -1,0 +1,82 @@
+easyblock = 'CMakeMake'
+
+name = 'Arrow'
+version = '0.16.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://arrow.apache.org'
+description = """Apache Arrow (incl. PyArrow Python bindings), a cross-language development platform
+ for in-memory data."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+source_urls = ['https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s']
+sources = ['apache-arrow-%(version)s.tar.gz']
+patches = ['Arrow-%(version)s_fix-intel.patch']
+checksums = [
+    '261992de4029a1593195ff4000501503bd403146471b3168bd2cc414ad0fb7f5',  # apache-arrow-0.16.0.tar.gz
+    '7c1569087f93959a0dfc163d80e5f542edb4d7ed0b9d71a2a05b4081211ad2b9',  # Arrow-0.16.0_fix-intel.patch
+]
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('Autotools', '20180311'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.5'),
+    ('pkg-config', '0.29.2'),
+]
+
+# Arrow strongly prefers included jemalloc, so not including it as a dependency
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Boost', '1.67.0'),
+]
+
+separate_build_dir = True
+start_dir = 'cpp'
+
+# see https://arrow.apache.org/docs/python/development.html
+configopts = "-DCMAKE_BUILD_TYPE=Release -DARROW_PYTHON=on -DCMAKE_INSTALL_LIBDIR=lib"
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+# Python bindings require futures for Python < 3.2
+exts_list = [
+    ('pip', '20.3.4', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pip'],
+        'use_pip': False,
+        'checksums': ['6773934e5f5fc3eaa8c5a44949b5b924fc122daa0a8aa9f80c835b4ca2a543fc'],
+    }),
+    ('futures', '3.3.0', {
+        'modulename': 'concurrent.futures',
+        'source_urls': ['https://pypi.python.org/packages/source/f/futures'],
+        'checksums': ['7e033af76a5e35f58e56da7a91e687706faf4e7bdfb2cbc3f2cca6b9bcda9794'],
+    }),
+]
+
+# also install Python bindings
+local_install_pyarrow_cmds = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
+local_install_pyarrow_cmds += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+local_install_pyarrow_cmds += " cd %(builddir)s/*arrow-%(version)s/python && "
+# required to ensure the correct pip command is used
+local_install_pyarrow_cmds += " export PATH=%(installdir)s/bin:$PATH && "
+local_install_pyarrow_cmds += " export XDG_CACHE_HOME=$TMPDIR && pip --version && pip install --prefix %(installdir)s ."
+postinstallcmds = [local_install_pyarrow_cmds]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+}
+
+sanity_check_paths = {
+    'files': ['lib/libarrow.a', 'lib/libarrow.%s' % SHLIB_EXT,
+              'lib/libarrow_python.a', 'lib/libarrow_python.%s' % SHLIB_EXT],
+    'dirs': ['include/arrow', 'lib/cmake/arrow', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import pyarrow'"]
+
+moduleclass = 'data'
