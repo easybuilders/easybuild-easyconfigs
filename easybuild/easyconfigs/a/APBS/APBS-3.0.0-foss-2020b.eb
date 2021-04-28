@@ -1,0 +1,156 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/04
+easyblock = 'CMakeMake'
+
+name = 'APBS'
+version = '3.0.0'
+
+# Commits of submodules according to
+# "Build 3.0.0 release without shared libraries and python",
+# 5eafd6af9c16fb280ddf6e3092d029c0bf71d21e Sep 29, 2020:
+local_fetk_commit = '0c6fdeabe8929acea7481cb1480b5706b343b7e0'
+local_pbsam_commit = '168a83ed579b80425ef2f148246e082105c38b9c'
+local_bem_commit = '322a8d66180285250cd2f01e6b60584efcba9b65'
+local_geoflow_commit = '99446ec841647419411d23bad632d50405913a06'
+
+homepage = 'https://www.poissonboltzmann.org/'
+description = """APBS (Adaptive Poisson-Boltzmann Solver) solves the equations of continuum      
+electrostatics for large biomolecular assemblages. This software was designed   
+"from the ground up" using modern design principles to ensure its ability to    
+interface with other computational packages and evolve as methods and           
+applications change over time. The APBS code is accompanied by extensive        
+documentation for both users and programmers and is supported by a variety of   
+utilities for preparing calculations and analyzing results. Finally, the free,  
+open-source APBS license ensures its accessibility to the entire biomedical     
+community."""
+examples = '%(installdir)s/examples'
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+parallel = 1  # required for 3.0.0; check for later versions.
+
+source_urls = [GITHUB_SOURCE]
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'source_urls': ['https://github.com/Electrostatics/FETK/archive/'],
+        'download_filename': '%s.tar.gz' % local_fetk_commit,
+        'filename': 'fetk-%s.tar.gz' % local_fetk_commit,
+        'extract_cmd': 'cd %(namelower)s-%(version)s/externals/fetk && tar xvzf %s --strip-components=1'
+    },
+    {
+        'source_urls': ['https://github.com/Electrostatics/pb_solvers/archive/'],
+        'download_filename': '%s.tar.gz' % local_pbsam_commit,
+        'filename': 'pb_s_am-%s.tar.gz' % local_pbsam_commit,
+        'extract_cmd': 'cd %(namelower)s-%(version)s/externals/pb_s_am && tar xvzf %s --strip-components=1',
+    },
+    {
+        'source_urls': ['https://github.com/Electrostatics/TABIPB/archive/'],
+        'download_filename': '%s.tar.gz' % local_bem_commit,
+        'filename': 'bem-%s.tar.gz' % local_bem_commit,
+        'extract_cmd': 'cd %(namelower)s-%(version)s/externals/bem && tar xvzf %s --strip-components=1'
+    },
+    {
+        'source_urls': ['https://github.com/Electrostatics/geoflow_c/archive/'],
+        'download_filename': '%s.tar.gz' % local_geoflow_commit,
+        'filename': 'geoflow_c-%s.tar.gz' % local_geoflow_commit,
+        'extract_cmd': 'cd %(namelower)s-%(version)s/externals/geoflow_c && tar xvzf %s --strip-components=1'
+    },
+    {
+        # configopt -DGET_NanoShaper=OFF.
+        'source_urls': ['https://github.com/lwwilson1/mesh_routines/releases/download/v1.6/'],
+        'download_filename': 'NanoShaper_Linux64',
+        'filename': 'NanoShaper_Linux64-1.6',
+        'extract_cmd': 'mkdir -p  %(namelower)s-%(version)s/externals/mesh_routines/NanoShaper/Linux64'
+        '&& cd %(namelower)s-%(version)s/externals/mesh_routines/NanoShaper/Linux64 && cp %s NanoShaper'
+    },
+]
+patches = [
+    # Update to commit 5eafd6af9c16fb280ddf6e3092d029c0bf71d21e, Sep 29, 2020,
+    # "Build 3.0.0 release without shared libraries and python", on which the official binary release is based on:
+    'APBS-3.0.0_5eafd6a.patch',
+	# add missing bem include dirs to pb_s_am and geoflow_c; do not define __MKL:
+    'APBS-3.0.0_submodules_cmake_add_includedirs_and_remove_mkl.patch',  
+    # Introduce namespace geoflow for class Mat in order to avoid conflict with bam/mc/mat.h:
+    'APBS-3.0.0_geoflow_3dee4ec_mat_namespace.patch',
+]
+checksums = [
+    '752f1682ed97b9e5e473dad29f533690779abbe30f8822af24977e9e98939c9b',  # v3.0.0.tar.gz
+    # fetk-0c6fdeabe8929acea7481cb1480b5706b343b7e0.tar.gz
+    'a82e8235616d9ca427c4eb20653fceed47a59b44c56ee6fb3044657be17f5a4c',
+    # pb_s_am-168a83ed579b80425ef2f148246e082105c38b9c.tar.gz
+    '4563e559af94e79ea58d1ec35fa82fe0318ccd8afa4e4599ba568290333f69ab',
+    # bem-322a8d66180285250cd2f01e6b60584efcba9b65.tar.gz
+    '208fd68c948fb4a68114f0422b8481815cd0a1101482aaaca18d07a4b67b9fd8',
+    # geoflow_c-99446ec841647419411d23bad632d50405913a06.tar.gz
+    'dd1fe3fb4356ef9c6aa9efe75f0c25aaaea6fca306e08cf6d7f1cb2a34046c60',
+    '6d41b6f0ddd400aa5713d08b3a178884bfff4c7ae826530ab73549aa93584baf',  # NanoShaper_Linux64-1.6
+    '0d8a0942c1eba34a324c8319fe099355b89e2406d86df796e186ca1b69efc32a',  # APBS-3.0.0_5eafd6a.patch
+    # APBS-3.0.0_submodules_cmake_add_includedirs_and_remove_mkl.patch
+    '0515d228bb51fc1b529c195d5abf060f299c47b0e0425d9c12dc328d83ebb64c',
+    # APBS-3.0.0_geoflow_3dee4ec_mat_namespace.patch
+    'c3449dfa4e90e333328d1a4b78adc79d21d3d0756d58f1f20e870f06474a2939',
+]
+
+github_account = 'Electrostatics'
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('SWIG', '4.0.2'),
+    ('Eigen', '3.3.8')]
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('Boost', '1.74.0'),
+    ('pdb2pqr', '3.1.0')]
+
+
+# We build in build/, because ctests expects the apbs binary in build/bin
+separate_build_dir = False
+srcdir = '..'
+preconfigopts = 'mkdir build && cd build &&'
+prebuildopts = 'cd build &&'
+preinstallopts = prebuildopts
+pretestopts = prebuildopts
+
+configopts = '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DGET_NanoShaper=OFF '  # see sources
+configopts += '-DENABLE_QUIET=OFF '
+configopts += '-DENABLE_OPENMP=ON '
+configopts += '-DENABLE_MPI=OFF '
+configopts += '-DENABLE_TESTS=ON '
+configopts += '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DBUILD_DOC=OFF '
+configopts += '-DENABLE_BEM=ON '
+configopts += '-DENABLE_GEOFLOW=ON '
+configopts += '-DENABLE_FETK=ON '
+configopts += '-DENABLE_PBAM=ON '
+configopts += '-DENABLE_PBSAM=ON '
+configopts += '-DENABLE_PYTHON=ON '
+configopts += '-DPYBIND11_PYTHON_VERSION=%(pyshortver)s '
+configopts += '-DBUILD_TOOLS=ON '
+
+modextrapaths = {
+    'PATH': 'share/apbs/tools/bin',
+    'PYTHONPATH': 'lib'
+}
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': [
+        ['bin/%s' % x for x in ['apbs', 'NanoShaper']],
+        ['share/apbs/tools/bin/%s' % x for x in [
+            'analysis', 'benchmark', 'born', 'coulomb', 'del2dx', 'dx2mol', 'dx2uhbd', 'dxmath', 'mergedx', 'mergedx2',
+            'mgmesh', 'multivalue', 'similarity', 'smooth', 'tensor2dx', 'uhbd_asc2bin', 'value']],
+        ['lib/%s.%s' % (x, y) for x in [
+            'apbs.cpython-38-x86_64-linux-gnu', 'libamd', 'libapbs_fem', 'libapbs_generic', 'libapbs_mg',
+            'libapbs_pmgc', 'libapbs_routines', 'libblas', 'libgamer', 'libGeometricFlowLib', 'libmaloc', 'libmc',
+            'libPBAMLib', 'libPBSAMLib', 'libpunc', 'libsuperlu', 'libTABIPBlib', 'libtetgen', 'libtriangle',
+            'libumfpack', 'libvf2c.so'] for y in ['la', SHLIB_EXT]]
+    ],
+    'dirs': ["include/apbs/", 'share/apbs/examples']
+}
+
+sanity_check_commands = ['python -c "import apbs;print(apbs)"|grep %(installdir)s/lib/apbs.cpython']
+
+moduleclass = 'bio'

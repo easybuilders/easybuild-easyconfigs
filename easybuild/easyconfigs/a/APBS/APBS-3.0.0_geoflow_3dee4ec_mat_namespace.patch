@@ -1,0 +1,312 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/04
+# Introduce namespace geoflow for class Mat in order to avoid conflict with bam/mc/mat.h:
+diff -ru apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/Atom.cpp apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/Atom.cpp
+--- apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/Atom.cpp	2020-11-14 01:01:31.000000000 +0100
++++ apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/Atom.cpp	2021-04-23 10:24:59.054355711 +0200
+@@ -220,7 +220,7 @@
+  *   calculated.
+  */
+ void AtomList::changeChargeDistribution
+-      ( Mat<>& charget, Mat<>& corlocqt, Mat< size_t>& loc_qt,
++      ( geoflow::Mat<>& charget, geoflow::Mat<>& corlocqt, geoflow::Mat< size_t>& loc_qt,
+         const ComData& comdata ) const
+ {
+ 	//for (size_t iatm = 1; iatm <= natm; iatm++) {
+@@ -242,8 +242,8 @@
+       // 	<< "," << k_q << std::endl;
+ 
+ 
+-      Mat<size_t> loc_q(8,3);
+-      Mat<> corlocq(8,3);
++      geoflow::Mat<size_t> loc_q(8,3);
++      geoflow::Mat<> corlocq(8,3);
+       for (size_t i = 0; i <= 1; ++i) {
+          for (size_t j = 0; j <= 1; ++j) {
+             for (size_t k = 0; k <= 1; ++k) {
+diff -ru apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/Atom.h apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/Atom.h
+--- apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/Atom.h	2020-11-14 01:01:31.000000000 +0100
++++ apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/Atom.h	2021-04-23 10:24:59.054355711 +0200
+@@ -147,7 +147,7 @@
+       void add( Atom A ) { p_atomList.push_back(A); };
+ 
+       void changeChargeDistribution
+-         ( Mat<>& charget, Mat<>& corlocqt, Mat< size_t>& loc_qt,
++         ( geoflow::Mat<>& charget, geoflow::Mat<>& corlocqt, geoflow::Mat< size_t>& loc_qt,
+            const ComData& comData ) const;
+ 
+       void print() const;
+diff -ru apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/GeometricFlow.cpp apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/GeometricFlow.cpp
+--- apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/GeometricFlow.cpp	2020-11-14 01:01:31.000000000 +0100
++++ apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/GeometricFlow.cpp	2021-04-23 10:24:59.055355726 +0200
+@@ -150,9 +150,9 @@
+ {
+ }
+ 
+-//template class Mat<double>;
++//template class geoflow::Mat<double>;
+ //template
+-//std::ostream& operator<< <double> ( std::ostream& os, const Mat<double>& M);
++//std::ostream& operator<< <double> ( std::ostream& os, const geoflow::Mat<double>& M);
+ 
+ struct GeometricFlowOutput GeometricFlow::run( const AtomList& atomList )
+ {
+@@ -170,9 +170,9 @@
+    //  assign charge distributions
+    //
+    unsigned int natm = atomList.size();
+-   Mat<> charget(natm, 8);
+-	Mat<> corlocqt(natm, 8, 3);
+-	Mat<size_t> loc_qt(natm,8,3);
++   geoflow::Mat<> charget(natm, 8);
++	geoflow::Mat<> corlocqt(natm, 8, 3);
++	geoflow::Mat<size_t> loc_qt(natm,8,3);
+    atomList.changeChargeDistribution( charget, corlocqt, loc_qt, p_comdata );
+    //atomList.print();
+    //cout<< "test: " ; p_comdata.print(); cout << endl ;
+@@ -180,7 +180,7 @@
+    //
+    //  setup phi
+    //
+-	Mat<> phi( p_comdata.nx(), p_comdata.ny(), p_comdata.nz(),
++	geoflow::Mat<> phi( p_comdata.nx(), p_comdata.ny(), p_comdata.nz(),
+               p_comdata.deltax(), p_comdata.deltay(), p_comdata.deltaz() ), 
+          phix( phi ), 
+          phivoc( phi ), 
+@@ -361,7 +361,7 @@
+ //		yhsurface
+ //
+ void GeometricFlow::yhsurface( const AtomList& atomList,
+-		double tott, double dt, Mat<>& phitotx, Mat<>& surfu, int iloop,
++		double tott, double dt, geoflow::Mat<>& phitotx, geoflow::Mat<>& surfu, int iloop,
+ 		double& area, double& volume, double& attint, double alpha, int iadi,
+ 		int igfin, double roro, double conms )
+ {
+@@ -376,7 +376,7 @@
+ 		atom_r[i] = atomList.get(i).r();
+ 	}
+ 
+-	Mat<> su(surfu), g(surfu);
++	geoflow::Mat<> su(surfu), g(surfu);
+ 	initial(xl, yl, zl, natm, atom_x,atom_y, atom_z, atom_r, g, su);
+ 	if (iloop > 1 && igfin == 1)
+ 		su = surfu;
+@@ -408,7 +408,7 @@
+ 		}
+ 	}
+ 
+-	Mat<> potr(nx,ny,nz), pota(nx,ny,nz);
++	geoflow::Mat<> potr(nx,ny,nz), pota(nx,ny,nz);
+ 	potIntegral(rcfactor, natm, atom_x, atom_y, atom_z, seta12, seta6,
+ 			epsilon, sigma, g, potr, pota);
+ 
+@@ -445,7 +445,7 @@
+ 	volume = volumeIntegration(su);
+ 	std::cout << "volume = " << volume << std::endl;
+ 
+-	Mat<> fintegr(nx,ny,nz);
++	geoflow::Mat<> fintegr(nx,ny,nz);
+ 	double dx = p_comdata.deltax(), dy = p_comdata.deltay(), dz = p_comdata.deltaz();
+ 	for (size_t x = 2; x < nx; ++x) {
+ 		for (size_t y = 2; y < ny; ++y) {
+@@ -486,7 +486,7 @@
+       valarray<double>& atom_x, valarray<double>& atom_y,
+       valarray<double>& atom_z, valarray<double>& seta12,
+       valarray<double>& seta6, valarray<double>& epsilon,
+-      valarray<double>& sigma, Mat<>& g, Mat<>& potr, Mat<>& pota)
++      valarray<double>& sigma, geoflow::Mat<>& g, geoflow::Mat<>& potr, geoflow::Mat<>& pota)
+ {
+    double dx = p_comdata.deltax(), dy = p_comdata.deltay(), dz = p_comdata.deltaz();
+    for (size_t x = 2; x < potr.nx(); ++x) {
+@@ -528,7 +528,7 @@
+ //
+ //  volumeIntegration
+ //
+-double GeometricFlow::volumeIntegration(const Mat<>& f)
++double GeometricFlow::volumeIntegration(const geoflow::Mat<>& f)
+ {
+ 	double sumf = f.baseInterface().sum();
+ 	return sumf/1000 * p_comdata.deltax() * p_comdata.deltay() * p_comdata.deltaz();
+@@ -538,9 +538,9 @@
+ //  upwinding
+ //
+ void GeometricFlow::upwinding(double dt, int nt, 
+-                              Mat<>& g, Mat<>& su, Mat<>& phitotx)
++                              geoflow::Mat<>& g, geoflow::Mat<>& su, geoflow::Mat<>& phitotx)
+ {
+-	Mat<> surfnew(su);
++	geoflow::Mat<> surfnew(su);
+ 	for (int t = 0; t < nt; ++t) {
+ 		for (Stencil<double> phi = su.stencilBegin();
+ 				phi != su.stencilEnd(); ++phi) {
+@@ -559,7 +559,7 @@
+ void GeometricFlow::initial(double xl, double yl, double zl, int n_atom,
+ 		const std::valarray<double>& atom_x, const std::valarray<double>& atom_y,
+ 		const std::valarray<double>& atom_z, const std::valarray<double>& atom_r,
+-		Mat<>& g, Mat<>& phi)
++		geoflow::Mat<>& g, geoflow::Mat<>& phi)
+ {
+ 	double dx = p_comdata.deltax(), 
+           dy = p_comdata.deltay(), 
+@@ -602,7 +602,7 @@
+ //
+ //  normalizeSurfAndEps
+ //
+-void GeometricFlow::normalizeSurfuAndEps (Mat<>& surfu, Mat<>& eps) 
++void GeometricFlow::normalizeSurfuAndEps (geoflow::Mat<>& surfu, geoflow::Mat<>& eps) 
+ {
+ 
+    for (size_t i = 0; i < surfu.size(); i++) {
+@@ -635,7 +635,7 @@
+  * 		charget:	charget array.  This is an [8][natm] int array.
+  */
+ void GeometricFlow::computeSoleng(double& soleng, 
+-                   Mat<>& phi, Mat<>& charget, Mat<size_t>& loc_qt)
++                   geoflow::Mat<>& phi, geoflow::Mat<>& charget, geoflow::Mat<size_t>& loc_qt)
+ {
+    soleng = 0.0;
+    for (size_t iind = 1; iind <= charget.nx(); iind++) {
+@@ -667,8 +667,8 @@
+ //  weighted by the distance from all the atoms.
+ //  (Is this the mdh option in APBS?)
+ //
+-void GeometricFlow::seteqb(Mat<>& bg, const AtomList& AL, 
+-      const Mat<>& charget, const Mat<>& corlocqt)
++void GeometricFlow::seteqb(geoflow::Mat<>& bg, const AtomList& AL, 
++      const geoflow::Mat<>& charget, const geoflow::Mat<>& corlocqt)
+ {
+    double sum = 0.0;
+    for (size_t i = 1; i <= p_comdata.nx(); ++i) 
+@@ -694,7 +694,7 @@
+ //  qb
+ //
+ double GeometricFlow::qb( size_t i,size_t j,size_t k, const AtomList& AL,
+-      const Mat<>& charget, const Mat<>& corlocqt )
++      const geoflow::Mat<>& charget, const geoflow::Mat<>& corlocqt )
+ {
+    double x = p_comdata.xvalue(i);
+    double y = p_comdata.yvalue(j);
+@@ -749,7 +749,7 @@
+ //  qbinterior - laplacian???
+ //
+ double GeometricFlow::qbinterior(double x, double y, double z,
+-      const Mat<>& charget, const Mat<>& corlocqt)
++      const geoflow::Mat<>& charget, const geoflow::Mat<>& corlocqt)
+ {
+    double fp = 0;
+    for (size_t a = 1; a <= charget.nx(); ++a) {
+@@ -771,7 +771,7 @@
+ //
+ //  pbsolver
+ //
+-void GeometricFlow::pbsolver(const Mat<>& eps, Mat<>& phi, const Mat<>& bgf, double tol, int iter)
++void GeometricFlow::pbsolver(const geoflow::Mat<>& eps, geoflow::Mat<>& phi, const geoflow::Mat<>& bgf, double tol, int iter)
+ {
+    //cout << "eps: " ; eps.print(); std::cout << std::endl ;
+    //cout << "bgf: " ; bgf.print(); std::cout << std::endl ;
+@@ -780,7 +780,7 @@
+           dy = p_comdata.deltay(), 
+           dz = p_comdata.deltaz();
+ 
+-	Mat<> eps1(nx,ny,nz), eps2(nx,ny,nz), eps3(nx,ny,nz);
++	geoflow::Mat<> eps1(nx,ny,nz), eps2(nx,ny,nz), eps3(nx,ny,nz);
+ 	for(size_t i = 1; i < nx; ++i) {
+ 		for(size_t j = 1; j < ny; ++j) {
+ 			for(size_t k = 1; k < nz; ++k) {
+diff -ru apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/GeometricFlow.h apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/GeometricFlow.h
+--- apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/GeometricFlow.h	2020-11-14 01:01:31.000000000 +0100
++++ apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/GeometricFlow.h	2021-04-23 10:24:59.056355741 +0200
+@@ -137,7 +137,7 @@
+       void domainInitialization( const AtomList& atomlist );
+ 
+       void yhsurface( const AtomList& atomList, 
+-         double tott, double dt, Mat<>& phitotx, Mat<>& surfu, int iloop,
++         double tott, double dt, geoflow::Mat<>& phitotx, geoflow::Mat<>& surfu, int iloop,
+          double& area, double& volume, double& attint, double alpha, int iadi,
+          int igfin, double roro, double conms );
+ 
+@@ -145,35 +145,35 @@
+             valarray<double>& atom_x, valarray<double>& atom_y,
+             valarray<double>& atom_z, valarray<double>& seta12,
+             valarray<double>& seta6, valarray<double>& epsilon,
+-            valarray<double>& sigma, Mat<>& g, Mat<>& potr, Mat<>& pota);
++            valarray<double>& sigma, geoflow::Mat<>& g, geoflow::Mat<>& potr, geoflow::Mat<>& pota);
+       
+-      double volumeIntegration(const Mat<>& f);
++      double volumeIntegration(const geoflow::Mat<>& f);
+ 
+       void upwinding(double dt, int nt, 
+-                              Mat<>& g, Mat<>& su, Mat<>& phitotx);
++                              geoflow::Mat<>& g, geoflow::Mat<>& su, geoflow::Mat<>& phitotx);
+ 
+       void initial(double xl, double yl, double zl, int n_atom,
+             const std::valarray<double>& atom_x, const std::valarray<double>& atom_y,
+             const std::valarray<double>& atom_z, const std::valarray<double>& atom_r,
+-            Mat<>& g, Mat<>& phi);
++            geoflow::Mat<>& g, geoflow::Mat<>& phi);
+ 
+-      void normalizeSurfuAndEps (Mat<>& surfu, Mat<>& eps);
++      void normalizeSurfuAndEps (geoflow::Mat<>& surfu, geoflow::Mat<>& eps);
+ 
+       void computeSoleng(double& soleng, 
+-                   Mat<>& phi, Mat<>& charget, Mat<size_t>& loc_qt);
++                   geoflow::Mat<>& phi, geoflow::Mat<>& charget, geoflow::Mat<size_t>& loc_qt);
+ 
+-      void seteqb( Mat<>& bg, const AtomList& al, const Mat<>& charget,
+-            const Mat<>& corlocqt);
++      void seteqb( geoflow::Mat<>& bg, const AtomList& al, const geoflow::Mat<>& charget,
++            const geoflow::Mat<>& corlocqt);
+ 
+       double qb(size_t i,size_t j,size_t k, const AtomList& al,
+-            const Mat<>& charget, const Mat<>& corlocqt );
++            const geoflow::Mat<>& charget, const geoflow::Mat<>& corlocqt );
+       
+       double qbboundary( double x, double y, double z, const AtomList& al );
+       
+       double qbinterior(double x, double y, double z, 
+-            const Mat<>& charget, const Mat<>& corlocqt);
++            const geoflow::Mat<>& charget, const geoflow::Mat<>& corlocqt);
+ 
+-      void pbsolver(const Mat<>& eps, Mat<>& phi, const Mat<>& bgf, double tol, int iter);
++      void pbsolver(const geoflow::Mat<>& eps, geoflow::Mat<>& phi, const geoflow::Mat<>& bgf, double tol, int iter);
+ 
+    public:
+ 
+diff -ru apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/Mat.h apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/Mat.h
+--- apbs-3.0.0_geoflow3dee4ec/externals/geoflow_c/src/Mat.h	2020-11-14 01:01:31.000000000 +0100
++++ apbs-3.0.0_geoflow3dee4ec_mat_namespace/externals/geoflow_c/src/Mat.h	2021-04-23 10:34:54.652611365 +0200
+@@ -72,6 +72,8 @@
+ 
+ template <typename T> struct Stencil;
+ 
++
++namespace geoflow {
+ template <typename T = double> class Mat;
+ 
+ template <typename T>
+@@ -228,7 +230,7 @@
+ 
+       //friend std::ostream& operator<<(std::ostream& os, const Mat<T>& M);
+ };
+-
++} //namespace geoflow end
+ /*
+ template<typename T>
+ std::ostream& operator<<( std::ostream& os, const Mat<T>& M)
+@@ -243,7 +245,7 @@
+ struct Stencil : public std::iterator<std::forward_iterator_tag, T>
+ {
+    //this should be a const iterator :)
+-   Mat<T>& _mat;
++   geoflow::Mat<T>& _mat;
+    const T halfhx,h2x,qrth2x;
+    const T halfhy,h2y,qrth2y;
+    const T halfhz,h2z,qrth2z;
+@@ -252,7 +254,7 @@
+ 
+    T *c;
+ 
+-   Stencil(Mat<T>& mat, size_t x, size_t y, size_t z) : _mat(mat),
++   Stencil(geoflow::Mat<T>& mat, size_t x, size_t y, size_t z) : _mat(mat),
+    halfhx(0.5/mat.hx()),				// W1(1)
+    h2x(1.0/(mat.hx()*mat.hx())),		// W2(1)
+    qrth2x(0.25/(mat.hx()*mat.hx())),	// WXY(1,1)
