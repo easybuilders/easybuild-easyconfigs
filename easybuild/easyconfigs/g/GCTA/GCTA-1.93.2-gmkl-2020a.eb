@@ -1,0 +1,51 @@
+# #
+# Author: Ali Kerrache, University of Manitoba.
+# Date: May 9, 2018.
+# #
+
+easyblock = 'CMakeMake'
+
+name = 'GCTA'
+version = '1.93.2'
+
+homepage = 'http://cnsgenomics.com/software/gcta/'
+description = "GCTA (Genome-wide Complex Trait Analysis) was originally designed to estimate the proportion of phenotypic variance explained by all genome-wide SNPs for complex traits (the GREML method), and has subsequently extended for many other analyses to better understand the genetic architecture of complex traits. GCTA currently supports the following analyses."
+
+toolchain = {'name': 'gmkl', 'version': '2020a'}
+toolchainopts = {'openmp': True, 'pic': True}
+source_urls = [
+	'http://cnsgenomics.com/software/%(namelower)s/pre_gcta',
+	'https://github.com/zhilizheng/plink-ng/archive/',
+]
+local_plink_ng_commit = "ec1b2d151cb77050b5ba09dc28157a03fc3cc968"
+sources = [
+	'%(namelower)s_%(version)s_src.zip',
+	"%s.tar.gz" % local_plink_ng_commit,
+]
+patches = ['%(name)s-%(version)s-remove-static-linking.patch']
+checksums = [
+    'fc2845c0b782443c6b5999d1c8cfe332adb9ddbd379dfff11d3b4e80cd8e9f29',  # gcta_1.93.2_src.zip
+    # ec1b2d151cb77050b5ba09dc28157a03fc3cc968.tar.gz
+    '5734cd20f69195d897fcf5702355d32f53b0095c6a798f3dda1c40768c34b53d',
+    '2400626658a10c914e1c5c82deb0649f1987463464e7668f6e5273d5fa325b7a',  # GCTA-1.93.2-remove-static-linking.patch
+]
+
+dependencies = [
+    ('Eigen', '3.3.7', '', True),
+    ('Boost', '1.72.0'),
+    ('Spectra', '0.9.0'),
+]
+
+skipsteps = ['install']
+
+preconfigopts = "rmdir %(builddir)s/gcta-master/submods/plink-ng && "
+preconfigopts += " ln -s %%(builddir)s/plink-ng-%s %%(builddir)s/gcta-master/submods/plink-ng && " % local_plink_ng_commit
+preconfigopts += " EIGEN3_INCLUDE_DIR=$EBROOTEIGEN SPECTRA_LIB=$EBROOTSPECTRA BOOST_LIB=$EBROOTBOOST "
+
+buildopts = " && mkdir -p %(installdir)s/bin && cp gcta64 %(installdir)s/bin "
+sanity_check_paths = {
+    'files': ['bin/gcta64'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
