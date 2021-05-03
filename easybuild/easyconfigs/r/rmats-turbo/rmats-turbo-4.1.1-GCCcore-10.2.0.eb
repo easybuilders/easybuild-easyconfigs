@@ -1,0 +1,64 @@
+# by Christian Meesters, Johannes Gutenberg-University Mainz
+
+easyblock = 'CmdCp'
+
+name = 'rmats-turbo'
+version = '4.1.1'
+
+homepage = "https://github.com/Xinglab/rmats-turbo"
+description = "rMATS turbo is the C/Cython version of rMATS (refer to http://rnaseq-mats.sourceforge.net). The major difference between rMATS turbo and rMATS is speed and space usage. rMATS turbo is 100 times faster and the output file is 1000 times smaller than rMATS. These advantages make analysis and storage of a large scale dataset easy and convenient."
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+source_urls = ['https://gitlab.com/Xinglab/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+
+builddependencies = [
+    ('CMake', '3.18.4')
+    ]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11', '', ('foss', '2020b')),
+    ('OpenBLAS', '0.3.12', '', ('GCC', '10.2.0')),
+    ('ScaLAPACK', '2.1.0', '', ('gompi', '2020b')),
+    ('GSL', '2.6', '', ('GCC', '10.2.0')),
+    ('SAMtools', '1.12', '', ('GCC', '10.2.0')),
+    ('STAR', '2.7.8a', '', ('GCC', '10.2.0')),
+    ]
+
+patches = ['rmats-turbo-4.1.1.patch']
+
+#build_cmd = "cd rmats-turbo-%(version)s && ./build_rmats --no-paired-model"
+cmds_map = [('.*', " ./build_rmats --no-paired-model")]
+
+files_to_copy = [
+    (['rMATS_C/rMATSexe'], 'rMATS_C'),
+    (['rMATS_P', 'rMATS_R','rmats.py', 'rMATS_pipeline/build/lib.linux-x86_64-3.*/rmats/*.so',], ''),
+    (['tests'], ''),
+]
+
+sanity_check_commands = [
+    "python %(installdir)s/rmats.py -h",
+]
+sanity_check_paths = {
+    'files': ['rMATS_C/rMATSexe',
+              'rMATS_P/FDR.py',
+              'rMATS_P/inclusion_level.py',
+              'rMATS_P/joinFiles.py',
+              'rMATS_P/paste.py',
+              'rMATS_R/paired_model.R',
+              'rmats.py',
+              'rmatspipeline.cpython-38-x86_64-linux-gnu.so',
+    ],
+    'dirs':  [
+        'rMATS_C',
+        'rMATS_R',
+        'rMATS_P',
+        'tests',
+    ],
+}
+
+usage = "python $EBROOTRMATS/rmats.py ..."
+
+moduleclass = 'bio'
