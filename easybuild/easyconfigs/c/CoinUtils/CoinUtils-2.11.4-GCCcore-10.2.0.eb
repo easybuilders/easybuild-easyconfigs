@@ -1,32 +1,38 @@
-# easybuild easyconfig
-# John Dey jfdey@fredhtuch.org fizwit@github
-easyblock = 'ConfigureMake'
+easyblock = "ConfigureMake"
 
 name = 'CoinUtils'
 version = '2.11.4'
 
-homepage = 'https://www.coin-or.org/Doxygen/CoinUtils/'
-description = """CoinUtils (Coin-OR Utilities) is an open-source collection of classes
- and functions that are generally useful to more than one COIN-OR project. A collection
- of routines for manipulating sparse matrices and other matrix operations"""
+homepage = "https://github.com/coin-or/CoinUtils"
+description = """CoinUtils (Coin-OR Utilities) is an open-source collection of classes and
+functions that are generally useful to more than one COIN-OR project."""
 
+
+source_urls = ['https://www.coin-or.org/download/source/%(name)s/']
+sources = [SOURCE_TGZ]
+checksums = ['1b24f8f6057661b3225d24f4e671527f53bf13aff66e06cbbbd4f20cc7d31dce']
+
+# NOTE: this esyconfig for CoinUtils provides a minimal build not using BLAS/LAPACK or MPI
 toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
 
-source_urls = ['https://github.com/coin-or/CoinUtils/archive/releases']
-sources = ['%(version)s.tar.gz']
-checksums = ['d4effff4452e73356eed9f889efd9c44fe9cd68bd37b608a5ebb2c58bd45ef81']
-
 builddependencies = [
+    ('Autotools', '20200321'),
     ('binutils', '2.35'),
+    ('Doxygen', '1.8.20'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.11'),
 ]
 
 sanity_check_paths = {
-    'dirs':  ['include',
-              'lib/pkgconfig',
-              'share'],
-    'files': ['include/coin/CoinUtility.hpp',
-              'share/coin/doc/CoinUtils/README',
-              'lib/libCoinUtils.%s' % SHLIB_EXT]
+    'files': ['lib/libCoinUtils.%s' % SHLIB_EXT],
+    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin']
 }
 
-moduleclass = 'math'
+# other coin-or projects expect <header.hpp> instead of <coin/header.hpp>
+modextrapaths = {'CPATH': 'include/coin'}
+
+moduleclass = "math"
