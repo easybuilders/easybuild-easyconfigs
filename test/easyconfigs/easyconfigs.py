@@ -1121,6 +1121,11 @@ def template_easyconfig_test(self, spec):
             res = verify_checksum(patch_full, checksum)
             self.assertTrue(res, error_msg)
 
+    # make sure 'source' step is not being skipped,
+    # since that implies not verifying the checksum
+    error_msg = "'source' step should not be skipped in %s, since that implies not verifying checksums" % ec_fn
+    self.assertFalse(ec['checksums'] and ('source' in ec['skipsteps']), error_msg)
+
     for ext in ec['exts_list']:
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
 
