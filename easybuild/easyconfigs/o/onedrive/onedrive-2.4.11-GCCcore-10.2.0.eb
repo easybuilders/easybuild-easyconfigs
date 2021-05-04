@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'onedrive'
+version = '2.4.11'
+
+homepage = 'https://abraunegg.github.io/'
+description = """
+A free Microsoft OneDrive Client which supports OneDrive Personal, OneDrive for Business,
+OneDrive for Office365 and SharePoint."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+source_urls = ['https://github.com/abraunegg/onedrive/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['839ec89c0b2a2c71db19668f7d333f9ef5d6910451b49fba1c2dc8e53885aa2f']
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('LDC', '1.25.1'),
+]
+
+dependencies = [
+    ('cURL', '7.72.0'),
+    ('SQLite', '3.33.0'),
+]
+
+_compldir = '%(installdir)s/share/tab_completion'
+configopts = 'DC="$EBROOTLDC"/bin/ldc2 --with-systemdsystemunitdir=no '
+configopts += '--enable-completions --with-bash-completion-dir=%s ' % _compldir
+configopts += '--with-zsh-completion-dir=%s --with-fish-completion-dir=%s ' % (_compldir, _compldir)
+
+sanity_check_paths = {
+    'files': ['bin/onedrive'],
+    'dirs': ['etc', 'share'],
+}
+
+sanity_check_commands = ['onedrive -h']
+
+# optionally enable tab completion for bash (zsh: '_onedrive', fish: 'onedrive.fish')
+modluafooter = 'execute {cmd="source $EBROOTONEDRIVE/share/tab_completion/onedrive",modeA={"load"}}'
+
+moduleclass = 'tools'
