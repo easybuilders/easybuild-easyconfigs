@@ -19,10 +19,14 @@ sources = [{
 patches = [
     'PyTorch-1.6.0_fix-test-dataloader-fixed-affinity.patch',
     'PyTorch-1.7.0_avoid-nan-in-test-torch.patch',
-    'PyTorch-1.7.0_increase-distributed-test-timeout.patch',
     'PyTorch-1.7.0_disable-dev-shm-test.patch',
-    'PyTorch-1.8.0_fix-noMKL-linear-algebra.patch',
+    'PyTorch-1.7.0_increase-distributed-test-timeout.patch',
+    'PyTorch-1.7.1_correctly-pass-jit_opt_level.patch',
+    'PyTorch-1.7.1_disable-tf32-in-distributed-tests.patch',
     'PyTorch-1.8.0_correct-skip-tests-decorators.patch',
+    'PyTorch-1.8.0_fix-noMKL-linear-algebra.patch',
+    'PyTorch-1.8.1_dont-use-gpu-ccc-in-test.patch',
+    'PyTorch-1.8.1_honor_shared_cupti-setting.patch',
     'PyTorch-1.8.1_skip-NaN-tests-on-PPC.patch',
 ]
 checksums = [
@@ -30,12 +34,19 @@ checksums = [
     # PyTorch-1.6.0_fix-test-dataloader-fixed-affinity.patch
     'a4208a46cd2098744daaba96cebb96cd91166f8fc616924315e05974bad80c67',
     'b899aa94d9e60f11ee75a706563312ccefa9cf432756c470caa8e623991c8f18',  # PyTorch-1.7.0_avoid-nan-in-test-torch.patch
+    '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a',  # PyTorch-1.7.0_disable-dev-shm-test.patch
     # PyTorch-1.7.0_increase-distributed-test-timeout.patch
     '95abb468a35451fbd0f864ca843f6ad15ff8bfb909c3fd580f65859b26c9691c',
-    '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a',  # PyTorch-1.7.0_disable-dev-shm-test.patch
-    'a1ca9382b0eb333090536633092bab6fa281d26b491bf7b1849117f68ab0730c',  # PyTorch-1.8.0_fix-noMKL-linear-algebra.patch
+    # PyTorch-1.7.1_correctly-pass-jit_opt_level.patch
+    'd4d967d47f8a6172fcbf57f0a61835482968850967c4fdb01108b720696a988d',
+    # PyTorch-1.7.1_disable-tf32-in-distributed-tests.patch
+    '18ecad081a8c940add64040ad9698d3273366acf738a8a44eab1c793d3f49950',
     # PyTorch-1.8.0_correct-skip-tests-decorators.patch
     '4b2fe7616217dd6fd12d667cb1439dde58f84bf234fbf3e6026c4665fc697a2e',
+    'a1ca9382b0eb333090536633092bab6fa281d26b491bf7b1849117f68ab0730c',  # PyTorch-1.8.0_fix-noMKL-linear-algebra.patch
+    '89ac7a8e9e7df2e64cf8404fe3a279f5e9b759fee41c9de3aaff9c22f385c2c6',  # PyTorch-1.8.1_dont-use-gpu-ccc-in-test.patch
+    # PyTorch-1.8.1_honor_shared_cupti-setting.patch
+    '86f2b27dc221fef327e4db5037868dc3da41e039fdf78fc77ccd22bf1d62f218',
     '018d0abbba60c23d01d96273d8ba4f79f2710ff59018729bdb3081b8965b99ec',  # PyTorch-1.8.1_skip-NaN-tests-on-PPC.patch
 ]
 
@@ -68,8 +79,13 @@ dependencies = [
 # default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
 cuda_compute_capabilities = ['3.5', '3.7', '5.2', '6.0', '6.1', '7.0', '7.2', '7.5', '8.0']
 
+custom_opts = ["USE_CUPTI_SO=1"]
 
 excluded_tests = {
+    'POWER': [
+        # https://github.com/pytorch/pytorch/issues/57617
+        'test_autograd',
+    ],
     '': [
         # Test from this suite timeout often. The process group backend is deprecated anyway
         'distributed/rpc/test_process_group_agent',
