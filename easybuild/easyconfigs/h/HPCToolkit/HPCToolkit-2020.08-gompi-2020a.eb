@@ -1,0 +1,80 @@
+easyblock = 'Bundle'
+
+name = 'HPCToolkit'
+version = '2020.08'
+
+homepage = 'http://hpctoolkit.org/'
+description = """HPCToolkit is an integrated suite of tools for measurement and analysis of program performance
+ on computers ranging from multicore desktop systems to supercomputers."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+source_urls = ["https://github.com/HPCToolkit/hpctoolkit/archive/refs/tags",
+               "https://github.com/HPCToolkit/libmonitor/archive",
+	       "https://github.com/dyninst/dyninst/archive",
+               "https://github.com/LLNL/GOTCHA/archive/refs/tags",
+	       "https://github.com/HPCToolkit/hpcviewer.e4/archive/refs/tags",
+	       ]
+
+dependencies = [
+    ('Boost', '1.72.0'),
+    ('tbb', '2020.2'),
+    ('IntelXED', '12.0.1'),
+    ('PAPI', '6.0.0'),
+    ('Maven', '3.6.3'),
+    ('Java', '11.0.2'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('hpcviewer.e4', '2021.03', {
+        'sources': ['2021.03.tar.gz'],
+	'checksums': ['accacc9747d58faa92d037a83b2772a98fb54ebe84475516e6c25ce607e22910'],
+        'skipsteps': 'configure',
+	'build_cmd': './build.sh',
+        'install_cmd': ('tar xf hpcviewer-*-linux.gtk.x86_64.tgz && '
+                        'cd hpcviewer && '
+                        './install.sh %(installdir)s '),
+    }),
+    ('libmonitor', 'a2d1b6be23410ef1ad2c9d0006672453803243c2', {
+        'sources': ['a2d1b6be23410ef1ad2c9d0006672453803243c2.tar.gz'],
+        'checksums': ['835b0acedeffca41c57ebc52ad8ea3b5a3ff68aaade4b64561be6a160fa01ab0'],
+    }),
+    ('dyninst', '10.1.0', {
+        'easyblock': 'CMakeMake',
+        'sources': ['v10.1.0.tar.gz'],
+        'checksums': ['4a121d70c1bb020408a7a697d74602e18250c3c85800f230566fcccd593c0129'],
+    }),
+    ('GOTCHA', '1.0.3', {
+        'easyblock': 'CMakeMake',
+        'sources': ['v1.0.3.tar.gz'],
+        'checksums': ['71c6400c6c7ef7de20c5f42fbb3d6713679992d7ebca7dcf2024bc8aa3a03181'],
+    }),
+    ('hpctoolkit', 'release-2020.08', {
+        'sources': ['release-2020.08.tar.gz'],
+        'checksums': ['c251d382f211aa394fa32d5c3fe2b023f4e7406b9cd776ad35f881f0b25a2699'],
+	'preconfigopts': ("sed -i 's@${LIBDWARF}/include@${LIBDWARF}/include/libdwarf@' configure && "
+			  "sed -i 's@${XED2}/include@${XED2}/include/xed@' configure && "),
+	'configopts' : ("--with-binutils=$EBROOTGENTOO --with-boost=$EBROOTBOOST --with-elfutils=$EBROOTGENTOO "
+	                "--with-tbb=$EBROOTTBB --with-lzma=$EBROOTGENTOO --with-libunwind=$EBROOTGENTOO "
+                        "--with-xerces=$EBROOTGENTOO --with-valgrind=$EBROOTGENTOO --with-xed=$EBROOTINTELXED "
+                        "--with-papi=$EBROOTPAPI --with-libunwind=$EBROOTGENTOO --with-libdwarf=$EBROOTGENTOO "
+                        "--with-libmonitor=%(installdir)s --with-dyninst=%(installdir)s "
+                        "--with-bzip=$EBROOTGENTOO --with-mbedtls=$EBROOTGENTOO "
+                        "--with-gotcha=%(installdir)s MPICXX=mpicxx"),
+        # hpctoolkit needs a private symbol from Boost, only visible in the static library
+        'buildopts' : "LIBS=$EBROOTBOOST/lib/libboost_graph.a",
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/hpc%s' % x for x in ['link', 'prof', 'prof-mpi', 'run', 'struct', 'viewer']] + ['include/hpctoolkit.h'],
+    'dirs': ['lib/hpctoolkit'],
+}
+
+moduleclass = 'tools'
