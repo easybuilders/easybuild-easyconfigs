@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+
+name = 'vcflib'
+version = '1.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/vcflib/vcflib'
+description = """vcflib provides methods to manipulate and interpret sequence variation as it can be
+ described by VCF. The Variant Call Format (VCF) is a flat-file, tab-delimited textual format intended
+ to concisely describe reference-indexed genetic variations between individuals."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = [GITHUB_SOURCE]
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'vcflib-1.0.2_use-external-deps.patch',
+]
+checksums = [
+    '88880a57fa141627ad0575020fa8f50f4f21ce381d1edd4113a6df136ae0b85d',  # vcflib-1.0.2.tar.gz
+    '8f46f06b42d2a88377ae5e666a023353d0171cbe70b6b3b4289c0bd7f387ac6c',  # vcflib-1.0.2_use-external-deps.patch
+]
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('CMake', '3.16.4'),
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('Perl', '5.30.2'),
+    ('XZ', '5.2.5'),
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('HTSlib', '1.10.2'),
+    ('tabixpp', '1.1.0'),
+    ('intervaltree', '0.1'),
+    ('fastahack', '1.0.0'),
+    ('filevercmp', '20141119'),
+    ('fsom', '20141119'),
+    ('libVCFH', '20181001'),
+    ('multichoose', '1.0.3'),
+    ('smithwaterman', '20160702'),
+]
+
+preconfigopts = "find %(builddir)s/vcflib/src -type f -regextype egrep -regex '.*\.(h|cpp)' -exec sed -i"
+preconfigopts += " -e 's|SmithWatermanGotoh.h|smithwaterman/SmithWatermanGotoh.h|g'"
+preconfigopts += " -e 's|IntervalTree.h|intervaltree/IntervalTree.h|g'"
+preconfigopts += " -e 's|multichoose.h|multichoose/multichoose.h|g' -e 's|filevercmp.h|filevercmp/filevercmp.h|g'"
+preconfigopts += " -e 's|tabix.hpp|tabixpp/tabix.hpp|g' -e 's|Fasta.h|fastahack/Fasta.h|g'"
+preconfigopts += " -e 's|disorder.h|smithwaterman/disorder.h|g' {} \; && "
+
+sanity_check_paths = {
+    'files': ['bin/vcfannotate', 'bin/vcfcombine', 'lib/libvcflib.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
