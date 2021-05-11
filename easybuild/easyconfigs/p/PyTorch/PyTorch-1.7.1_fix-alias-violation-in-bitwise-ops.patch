@@ -1,0 +1,47 @@
+A reinterpret_cast to an unrelated type is undefined behavior.
+This causes real issues due to misoptimizations on at least GCC 10.2 on POWER
+See https://github.com/pytorch/pytorch/issues/58031
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cpu/vec256/vec256_base.h b/aten/src/ATen/cpu/vec256/vec256_base.h
+index b6cc1db240..881da8a822 100644
+--- a/aten/src/ATen/cpu/vec256/vec256_base.h
++++ b/aten/src/ATen/cpu/vec256/vec256_base.h
+@@ -709,16 +709,18 @@ inline Vec256<T> operator^(const Vec256<T>& a, const Vec256<T>& b) {
+ 
+ #else
+ 
++template<typename dst_t, typename src_t>
++Vec256<dst_t> cast(const Vec256<src_t>& src);
++
+ template<class T, typename Op>
+ static inline Vec256<T> bitwise_binary_op(const Vec256<T> &a, const Vec256<T> &b, Op op) {
+-  static constexpr uint32_t element_no = 32 / sizeof(intmax_t);
+-  __at_align32__ intmax_t buffer[element_no];
+-  const intmax_t *a_ptr = reinterpret_cast<const intmax_t*>((const T*) a);
+-  const intmax_t *b_ptr = reinterpret_cast<const intmax_t*>((const T*) b);
+-  for (uint32_t i = 0U; i < element_no; ++ i) {
+-    buffer[i] = op(a_ptr[i], b_ptr[i]);
++  Vec256<intmax_t> buffer;
++  const auto a_tmp = cast<intmax_t>(a);
++  const auto b_tmp = cast<intmax_t>(b);
++  for (uint32_t i = 0U; i < buffer.size(); ++i) {
++    buffer[i] = op(a_tmp[i], b_tmp[i]);
+   }
+-  return Vec256<T>::loadu(buffer);
++  return cast<T>(buffer);
+ }
+ 
+ template<class T, typename std::enable_if_t<!std::is_base_of<Vec256i, Vec256<T>>::value, int> = 0>
+@@ -820,9 +822,7 @@ namespace {
+   template<typename dst_t, typename src_t>
+   struct CastImpl {
+     static inline Vec256<dst_t> apply(const Vec256<src_t>& src) {
+-      src_t src_arr[Vec256<src_t>::size()];
+-      src.store(static_cast<void*>(src_arr));
+-      return Vec256<dst_t>::loadu(static_cast<const void*>(src_arr));
++      return Vec256<dst_t>::loadu(static_cast<const src_t*>(src));
+     }
+   };
+ 
