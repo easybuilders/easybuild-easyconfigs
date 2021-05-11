@@ -66,11 +66,11 @@ single_tests_ok = True
 
 
 # Exclude these tool chains from tests
-EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for y in ['2014', '2015', '2016', '2017', '2018', '2019', '2020a']
+EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for y in ['2014', '2015', '2016', '2017', '2018', '2019', '2020a', '2020b']
                       for x in ['foss', 'intel', 'fosscuda', 'intelcuda', 'iomkl', 'iimpi', 'gompi', 'gcccuda',
-                                'gompic', 'iimpic']]
+                                'gompic', 'iimpic', 'iomklc']]
 EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore']
-                           for y in ['4.', '5.', '6.', '7.', '8.', '9.']])
+                           for y in ['4.', '5.', '6.', '7.', '8.', '9.', '10.']])
 EXCLUDE_TOOLCHAINS.extend(['ictce', 'giolf', 'golf', 'goolf', 'gimkl'])
 
 
