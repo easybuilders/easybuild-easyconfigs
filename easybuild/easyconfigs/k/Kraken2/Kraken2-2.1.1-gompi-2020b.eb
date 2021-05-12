@@ -1,0 +1,49 @@
+easyblock = 'PackedBinary'
+
+name = 'Kraken2'
+version = '2.1.1'
+
+homepage = 'https://github.com/DerrickWood/kraken2/wiki'
+description = """Kraken is a system for assigning taxonomic labels to short DNA sequences,
+ usually obtained through metagenomic studies. Previous attempts by other
+ bioinformatics software to accomplish this task have often used sequence
+ alignment or machine learning techniques that were quite slow, leading to
+ the development of less sensitive but much faster abundance estimation
+ programs. Kraken aims to achieve high sensitivity and high speed by
+ utilizing exact alignments of k-mers and a novel classification algorithm."""
+
+# part is compiled with $CXX, the rest is in Perl
+toolchain = {'name': 'gompi', 'version': '2020b'}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
+
+github_account = 'DerrickWood'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['Kraken2-2.1.1_fix_installation_for_easybuild.patch']
+checksums = [
+    '8f3e928cdb32b9e8e6f55b44703d1557b2a5fc3f30f63e8d16e465e19a81dee4',  # v2.1.1.tar.gz
+    # Kraken2-2.1.1_fix_installation_for_easybuild.patch
+    '5ea9093becbdf7705a29fd2e56050118700c850ac5374aae5ee9b5e5924d3a11',
+]
+
+dependencies = [
+    ('Perl', '5.32.0'),
+    ('BLAST+', '2.11.0'),
+    ('wget', '1.20.3'),
+]
+
+install_cmd = 'cd %(builddir)s/%(namelower)s-%(version)s && '
+install_cmd += './install_kraken2.sh %(installdir)s/bin'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in [
+        '16S_gg_installation.sh', '16S_rdp_installation.sh', '16S_silva_installation.sh', 'add_to_library.sh',
+        'build_db', 'build_gg_taxonomy.pl', 'build_kraken2_db.sh', 'build_rdp_taxonomy.pl', 'build_silva_taxonomy.pl',
+        'classify', 'clean_db.sh', 'cp_into_tempfile.pl', 'download_genomic_library.sh', 'download_taxonomy.sh',
+        'dump_table', 'estimate_capacity', 'kraken2', 'kraken2-build', 'kraken2-inspect', 'kraken2lib.pm',
+        'lookup_accession_numbers.pl', 'make_seqid2taxid_map.pl', 'mask_low_complexity.sh', 'rsync_from_ncbi.pl',
+        'scan_fasta_file.pl']],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
