@@ -26,15 +26,24 @@ dependencies = [
     ('libmatheval', '1.1.11'),
     ('SciPy-Stack', '2020a'),
     ('Boost', '1.72.0'),
-    ('XDRfile', '1.1.4'),
+    ('XDRfile', '1.1.4', '', ('GCCcore', '9.3.0')),
+    ('ArrayFire', '3.7.3'), # only available in CUDA
 ]
 multi_deps = {'Python': ['3.6', '3.7', '3.8']}
 
 preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
-configopts = "--exec-prefix=%(installdir)s --enable-gsl --enable-modules=all --enable-boost_graph --enable-boost_serialization --enable-asmjit"
+configopts = " ".join([
+    "--exec-prefix=%(installdir)s",
+    "--enable-gsl",
+    "--enable-modules=all",
+    "--enable-boost_graph",
+    "--enable-boost_serialization",
+    "--enable-asmjit",
+])
 
 prebuildopts = "source sourceme.sh && "
 
+# copy GROMACS patches to applying them to latest GROMACS releases.
 preinstallopts =  'cp    patches/gromacs-2020.5.config patches/gromacs-2020.6.config && '
 preinstallopts += 'cp -r patches/gromacs-2020.5.diff   patches/gromacs-2020.6.diff   && '
 preinstallopts += 'cp    patches/gromacs-2021.config   patches/gromacs-2021.2.config && '
