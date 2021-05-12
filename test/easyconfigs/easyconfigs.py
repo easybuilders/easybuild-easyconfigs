@@ -44,7 +44,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import disable_templating, get_easyblock_class, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
@@ -302,6 +302,8 @@ class EasyConfigTest(TestCase):
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
+            # NanoPlot, NanoComp use an older version of Seaborn
+            'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
@@ -711,7 +713,7 @@ class EasyConfigTest(TestCase):
 
         for ec in changed_ecs:
 
-            with disable_templating(ec):
+            with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
                 easyblock = ec.get('easyblock')
                 exts_defaultclass = ec.get('exts_defaultclass')
