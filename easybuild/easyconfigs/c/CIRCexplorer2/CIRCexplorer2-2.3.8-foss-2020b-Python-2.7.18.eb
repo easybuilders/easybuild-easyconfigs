@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'Bundle'
 
 name = 'CIRCexplorer2'
 version = '2.3.8'
@@ -8,15 +8,15 @@ homepage = 'http://circexplorer2.readthedocs.io/'
 description = "CIRCexplorer2 is a comprehensive and integrative circular RNA analysis toolset."
 
 toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'cstd': 'gnu++98', 'pic': True}
 
-sources = [SOURCE_TAR_GZ]
-checksums = ['8261ee884f6d895131ce681d5eda6554376e973851a9de4dc50e2b3e242ccc80']
+builddependencies = [('Autotools', '20200321')]
 
 dependencies = [
     ('Python', '2.7.18'),
     ('SciPy-bundle', '2020.11', versionsuffix),
-    # sticking to v2.1.0, since using v2.1.1 has problems, cfr. https://www.biostars.org/p/186979/
-    ('TopHat', '2.1.2', versionsuffix),
+    ('Boost', '1.74.0'),
+    ('zlib', '1.2.11'),
     ('Cufflinks', '20190706'),
     ('BEDTools', '2.30.0'),
     ('Kent_tools', '411'),
@@ -27,18 +27,42 @@ dependencies = [
     ('pybedtools', '0.8.2', versionsuffix),
 ]
 
-download_dep_fail = True
-use_pip = True
-
-options = {'modulename': 'circ2'}
+components = [
+    # CIRCexplorer2 requires TopHat v2.1.0, since using v2.1.1 has problems, cfr. https://www.biostars.org/p/186979/
+    ('TopHat', '2.1.0', {
+        'easyblock': 'ConfigureMake',
+        'source_urls': ['https://ccb.jhu.edu/software/tophat/downloads/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'patches': ['%(namelower)s-2.0.13-zlib.patch'],
+        'checksums': [
+            'e7fa2b170408e785e4fafd0bccf4ecfab5151c480a2438dffa42183cfda71f99',  # tophat-2.1.0.tar.gz
+            'a33075c2affda995ddbd250933dbcaf94f68768b1eebead58a69705fc40306ef',  # tophat-2.0.13-zlib.patch
+        ],
+        'start_dir': 'tophat-%(version)s',
+        'configopts': '--with-boost=$EBROOTBOOST',
+        'parallel': 1,
+    }),
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['8261ee884f6d895131ce681d5eda6554376e973851a9de4dc50e2b3e242ccc80'],
+        'start_dir': 'CIRCexplorer2-%(version)s',
+        'download_dep_fail': True,
+        'use_pip': True,
+        'options': {'modulename': 'circ2'},
+        'sanity_pip_check': True,
+    }),
+]
 
 sanity_check_paths = {
-    'files': ['bin/CIRCexplorer2'],
+    'files': ['bin/CIRCexplorer2', 'bin/tophat'],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
-sanity_check_commands = ["CIRCexplorer2 denovo --help"]
-
-sanity_pip_check = True
+sanity_check_commands = [
+    "tophat --version",
+    "CIRCexplorer2 denovo --help",
+]
 
 moduleclass = 'bio'
