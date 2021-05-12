@@ -2169,12 +2169,13 @@ exts_list = [
     }),
     ('liquidSVM', '1.2.4', {
         'patches': ['liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch'],
-        'preinstallopts': 'LIQUIDSVM_TARGET="empty"',
         'checksums': [
             '15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba',  # liquidSVM_1.2.4.tar.gz
             # liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch
             '46b09e441c3b59af535f20d8db0dee7f1d6a7ddd511175d252115b53cb8b86f8',
         ],
+        # Don't add optimization flags by liquidSVM which may not be known e.g. on PPC
+        'preinstallopts': 'LIQUIDSVM_TARGET="empty"',
     }),
     ('oddsratio', '2.0.1', {
         'checksums': ['2097e7a8bf623379d55652de5dce4946d05163e85d30df50dc19055962bf60b5'],
@@ -2288,7 +2289,8 @@ exts_list = [
         'checksums': ['4152a1c3c652979e97870e5c50c45a243d0ad8d4ff968091160e3d66509f61db'],
     }),
     ('rda', '1.0.2-2.1', {
-        'checksums': ['eea3a51a2e132a023146bfbc0c384f5373eb3ea2b61743d7658be86a5b04949e'],
+        'checksums': [('6918b62f51252b57f2c05b99debef6136b370f594dc3ae6466268e4c35578ef8',
+                       'eea3a51a2e132a023146bfbc0c384f5373eb3ea2b61743d7658be86a5b04949e')],
     }),
     ('sampling', '2.8', {
         'checksums': ['356923f35971bb55f7e97b178aede3366374aa3ad3d24a97be765660553bf21a'],
@@ -2384,9 +2386,9 @@ exts_list = [
         'checksums': ['a0282a054d0e6ab310ec7edcffa953b77c7e4a858d9ac7028aab1b4fb4ce8cf3'],
     }),
     ('V8', '3.4.0', {
-        'installopts': '--configure-vars="INCLUDE_DIR=$CPATH LIB_DIR=$LIBRARY_PATH"',
-        'preinstallopts': "export CPATH=$EBROOTNODEJS/include/node:$CPATH && ",
         'checksums': ['f5c8a2a03cc1be9f504f47711a0fcd1b962745139c9fb2a10fbd79c4ae103fbd'],
+        'preinstallopts': "export CPATH=$EBROOTNODEJS/include/node:$CPATH && ",
+        'installopts': '--configure-vars="INCLUDE_DIR=$CPATH LIB_DIR=$LIBRARY_PATH"',
     }),
     ('rstan', '2.21.2', {
         'checksums': ['e30e04d38a612e2cb3ac69b53eaa19f7ede8b3548bf82f7892a2e9991d46054a'],
@@ -2649,9 +2651,13 @@ exts_list = [
         'checksums': ['1615ce9ab07a251d06c68780be15ab5a4814df877a23aa93e0faf14ccd56d45c'],
     }),
     ('gWidgets2tcltk', '1.0-6', {
-        'modulename': False,
-        'preinstallopts': "xvfb-run ",
         'checksums': ['aa3a2f4612116a652e5573a369e3d89c5939f7c06067c6826ba40ed3bb07302b'],
+        # need to run installation via xvfb-run to avoid problems on headless systems:
+        # no DISPLAY variable so Tk is not available
+        # [tcl] invalid command name "font"
+        'preinstallopts': "xvfb-run ",
+        # skip 'import' check with library(gWidgets2tcltk), since it also fails on headless systems...
+        'modulename': False,
     }),
     ('mgsub', '1.7.2', {
         'checksums': ['399f23fd311c58c019248625cf875df50c10a1e3ecf1931850d18cfd4d5a810a'],
