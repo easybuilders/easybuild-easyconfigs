@@ -44,7 +44,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import disable_templating, get_easyblock_class, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
@@ -713,7 +713,7 @@ class EasyConfigTest(TestCase):
 
         for ec in changed_ecs:
 
-            with disable_templating(ec):
+            with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
                 easyblock = ec.get('easyblock')
                 exts_defaultclass = ec.get('exts_defaultclass')
