@@ -1,0 +1,47 @@
+# #
+# @Author: Ali Kerrache, University of Manitoba
+# @Date: May 12, 2021.
+# #
+
+easyblock = 'Tarball'
+
+name = 'SpaceRanger'
+version = '1.2.2'
+
+homepage = 'https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/what-is-space-ranger'
+description = """Space Ranger is a set of analysis pipelines that process Visium spatial RNA-seq output and brightfield and fluorescence microscope images in order to detect tissue, align reads, generate feature-spot matrices, perform clustering and gene expression analysis, and place spots in spatial context on the slide image. Space Ranger includes two pipelines relevant to spatial gene expression experiments: 
+   - spaceranger mkfastq wraps Illumina's bcl2fastq to correctly demultiplex Visium-prepared sequencing runs and to convert barcode and read data to FASTQ files.
+   - spaceranger count takes a microscope slide image and FASTQ files from spaceranger mkfastq and performs alignment, tissue detection, fiducial detection, and barcode/UMI counting. The pipeline uses the Visium spatial barcodes to generate feature-spot matrices, determine clusters, and perform gene expression analysis.
+  - spaceranger aggr takes the output of multiple runs of spaceranger count from related samples and aggregates their output, normalizing those runs to the same sequencing depth, and then recomputing the feature-barcode matrices and the analysis on the combined data. The aggr pipeline combines data from multiple samples into an experiment-wide feature-barcode matrix and analysis.
+
+These pipelines combine Visium-specific algorithms with the widely used RNA-seq aligner STAR. Output is delivered in standard BAM, MEX, CSV, HDF5, TIFF, PNG, JPEG and HTML formats that are augmented with spatial information.
+"""
+
+toolchain = SYSTEM
+
+# Download manually from:
+# https://support.10xgenomics.com/spatial-gene-expression/software/downloads/latest
+ 
+source_urls = ['https://support.10xgenomics.com/spatial-gene-expression/software/downloads/latest']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['379b4cf63f0c37a6cc7d3e530788605cda5fdb52328d9b2b1604f753c8e60d3f']
+
+keepsymlinks = True
+
+sanity_check_paths = {
+    'files': ['bin/spaceranger', 'sourceme.bash', 'sourceme.csh', 'builtwith.json'],
+    'dirs': ['bin', 'external', 'lib', 'mro', 'target_panels'],
+}
+
+sanity_check_commands = ['spaceranger testrun --id=tiny']
+
+postinstallcmds = ["chmod -R go+X %(installdir)s"]
+
+modloadmsg = """ To initialize SpaceRanger,
+
+  do:
+       source $EBROOTSPACERANGER/sourceme.bash
+
+"""
+
+moduleclass = 'bio'
