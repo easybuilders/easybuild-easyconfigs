@@ -1,4 +1,4 @@
-# Built with EasyBuild version 4.3.0-rc09d6ca14937467ccd390604052ab2d1c3a0ba6e on 2020-10-29_08-01-34
+# Built with EasyBuild version 4.3.0-rc09d6ca14937467ccd390604052ab2d1c3a0ba6e on 2020-10-21_18-01-15
 easyblock = 'ConfigureMake'
 
 name = 'PLUMED'
@@ -12,7 +12,7 @@ description = """PLUMED is an open source library for free energy calculations i
  The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
 """
 
-toolchain = {'name': 'gomklc', 'version': '2020a'}
+toolchain = {'name': 'iomkl', 'version': '2020a'}
 toolchainopts = {'usempi': 'True'}
 
 source_urls = ['https://github.com/%(namelower)s/plumed2/releases/download/v%(version)s/']
@@ -22,12 +22,11 @@ checksums = ['23b3fe1226ffecd514e93983fe398af284bec8b15f33998d5db7fc252c423604']
 builddependencies = [
 ]
 dependencies = [
-    ('GSL', '2.6'),
+    ('GSL', '2.6', '', ('iccifort', '2020.1.217')),
     ('libmatheval', '1.1.11'),
-    ('SciPy-Stack', '2020a'),
-    ('Boost', '1.72.0'),
+    ('SciPy-Stack', '2020a', '', True),
+    ('Boost', '1.72.0', '', ('iccifort', '2020.1.217')),
     ('XDRfile', '1.1.4', '', ('GCCcore', '9.3.0')),
-    ('ArrayFire', '3.7.3'), # only available in CUDA
 ]
 multi_deps = {'Python': ['3.6', '3.7', '3.8']}
 
@@ -39,10 +38,10 @@ configopts = " ".join([
     "--enable-boost_graph",
     "--enable-boost_serialization",
     "--enable-asmjit",
-    "--enable-af_cuda",
 ])
 
 prebuildopts = "source sourceme.sh && "
+buildopts = 'LD_RO="ld.gold -r -o"'
 
 # copy GROMACS patches to applying them to latest GROMACS releases.
 preinstallopts =  'cp    patches/gromacs-2020.5.config patches/gromacs-2020.6.config && '
@@ -61,6 +60,7 @@ exts_filter = (
 exts_list = [
     ('plumed', version, {
         'prebuildopts': '',
+	'buildopts': '',
 	'preinstallopts': '',
         'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
         'checksums': ['c615e0f5b5a7314801404ebac60ebbdcebe8209f557564f9547ee43b96f15847'],
