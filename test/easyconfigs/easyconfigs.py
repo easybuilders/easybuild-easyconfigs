@@ -866,6 +866,8 @@ class EasyConfigTest(TestCase):
             'http://isl.gforge.inria.fr',
             # https:// leads to File Not Found
             'http://tau.uoregon.edu/',
+            # https:// has outdated SSL configurations
+            'http://faculty.scs.illinois.edu',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
