@@ -1,0 +1,36 @@
+# UCX is hardcoded to only load the modules it is compiled with.
+# This patch adds an optional EB_xxx_MODULES that can override this list, allowing new modules to be loaded later.
+# Author: micketeer@gmail.com 
+--- src/ucs/sys/module.c.orig	2021-05-13 18:33:07.970879181 +0200
++++ src/ucs/sys/module.c	2021-05-15 01:27:13.674697465 +0200
+@@ -25,6 +25,8 @@
+ #include <dlfcn.h>
+ #include <link.h>
+ #include <libgen.h>
++#include <stdlib.h>
++#include <stdio.h>
+ 
+ 
+ #define UCS_MODULE_PATH_MEMTRACK_NAME   "module_path"
+@@ -244,12 +246,20 @@
+     char *modules_str;
+     char *saveptr;
+     char *module_name;
++    char *eb_modules;
++    char env[50];
+ 
+     ucs_module_loader_init_paths();
+ 
+     UCS_INIT_ONCE(init_once) {
+         ucs_module_debug("loading modules for %s", framework);
+-        modules_str = ucs_strdup(modules, "modules_list");
++        sprintf(env, "EB_%s_MODULES", framework);
++        eb_modules = getenv(env);
++        if (eb_modules != NULL) {
++            modules_str = ucs_strdup(eb_modules, "modules_list");
++        } else {
++            modules_str = ucs_strdup(modules, "modules_list");
++        }
+         if (modules_str != NULL) {
+             saveptr     = NULL;
+             module_name = strtok_r(modules_str, ":", &saveptr);

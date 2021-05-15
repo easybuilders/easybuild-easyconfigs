@@ -1,0 +1,69 @@
+easyblock = 'ConfigureMake'
+
+name = 'UCX-CUDA'
+version = '1.10.0'
+local_cudaversion = '11.3.0'
+versionsuffix = '-CUDA-%s' % local_cudaversion
+
+homepage = 'http://www.openucx.org/'
+description = """Unified Communication X
+An open-source production grade communication framework for data centric
+and high-performance applications
+
+This module adds the UCX CUDA support
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
+sources = ['ucx-%(version)s.tar.gz']
+checksums = ['b885e24b1b94724c03cb213c355381e98df1e2d1fd7f633cf8055b6dd05db92d']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('Autotools', '20210128'),
+    ('pkg-config', '0.29.2'),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+dependencies = [
+    ('UCX', version),
+    ('CUDAcore', local_cudaversion, '', True),
+    ('GDRCopy', '2.2'),
+]
+
+configure_cmd = "contrib/configure-release"
+configopts = '--enable-optimizations '
+configopts += '--without-java --disable-doxygen-doc '
+configopts += '--with-cuda=$EBROOTCUDACORE --with-gdrcopy=$EBROOTGDRCOPY '
+configopts += '--libdir=%(installdir)s '  # Skip the lib directory since we just install modules here
+
+prebuildopts = 'unset CUDA_CFLAGS && unset LIBS && '
+buildopts = 'V=1'
+
+# We just want the CUDA modules
+install_cmd = 'make -C src/uct/cuda install && '
+install_cmd += 'make -C src/ucm/cuda install && '
+install_cmd += 'make -C src/tools/perf/cuda install '
+
+modextravars = {
+    'UCX_MODULE_DIR': '%(installdir)s/ucx',
+    'EB_ucm_MODULES': ':cuda',
+    'EB_uct_MODULES': ':cuda:ib:rdmacm:cma',
+    'EB_uct_cuda_MODULES': ':gdrcopy',
+    'EB_uct_ib_MODULES': ':cm',
+    'EB_ucx_perftest_MODULES': ':cuda',
+    # 'EB_uct_rocm_MODULES': '',  # Available for ROCm toolchains.
+}
+
+sanity_check_paths = {
+    'files': ['ucx/lib%s.so' % s for s in
+              ['ucm_cuda', 'uct_cuda_gdrcopy', 'uct_cuda', 'ucx_perftest_cuda']],
+    'dirs': []
+}
+
+sanity_check_commands = ["ucx_info -d"]  # Rerun ucx_info from the UCX dependency with new modules
+
+moduleclass = 'lib'
