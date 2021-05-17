@@ -44,7 +44,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import disable_templating, get_easyblock_class, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
@@ -289,18 +289,21 @@ class EasyConfigTest(TestCase):
                 (r'5\.', [r'Elk-']),
             ],
             # some software depends on numba, which typically requires an older LLVM;
-            # this includes BirdNET, librosa, PyOD, Python-Geometric, scVelo
+            # this includes BirdNET, librosa, PyOD, Python-Geometric, scVelo, cryoDRGN
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
                 (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
                           r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
-                (r'10\.0\.1', [r'numba-0\.52\.0-', r'PyTorch-Geometric-1\.6\.3', r'PyOD-0\.8\.7-']),
+                (r'10\.0\.1', [r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-', r'numba-0\.52\.0-', r'PyOD-0\.8\.7-',
+                               r'PyTorch-Geometric-1\.6\.3']),
             ],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
+            # NanoPlot, NanoComp use an older version of Seaborn
+            'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
@@ -710,7 +713,7 @@ class EasyConfigTest(TestCase):
 
         for ec in changed_ecs:
 
-            with disable_templating(ec):
+            with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
                 easyblock = ec.get('easyblock')
                 exts_defaultclass = ec.get('exts_defaultclass')
@@ -865,6 +868,8 @@ class EasyConfigTest(TestCase):
             'http://isl.gforge.inria.fr',
             # https:// leads to File Not Found
             'http://tau.uoregon.edu/',
+            # https:// has outdated SSL configurations
+            'http://faculty.scs.illinois.edu',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
@@ -1119,6 +1124,11 @@ def template_easyconfig_test(self, spec):
             error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch, ec_fn, checksum)
             res = verify_checksum(patch_full, checksum)
             self.assertTrue(res, error_msg)
+
+    # make sure 'source' step is not being skipped,
+    # since that implies not verifying the checksum
+    error_msg = "'source' step should not be skipped in %s, since that implies not verifying checksums" % ec_fn
+    self.assertFalse(ec['checksums'] and ('source' in ec['skipsteps']), error_msg)
 
     for ext in ec['exts_list']:
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
