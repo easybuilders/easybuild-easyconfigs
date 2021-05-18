@@ -21,10 +21,12 @@ dependencies = [
 ]
 
 default_easyblock = 'ConfigureMake'
+# all components are installed from the same source tarball
 default_component_specs = {
     'source_urls': ['https://github.com/hrue/r-inla/archive/refs/tags/'],
     'sources': [{'download_filename': 'Version_%s.tar.gz' % version, 'filename': 'R-INLA-%s.tar.gz' % version}],
     'skipsteps': ['configure'],
+    'checksums': ['88e7aacbf548bd88aedfdf6e7b1f71ac2f06f95745292d1b9e6f57311a51d8cd'],
 }
 
 local_gmrflib_buildopts = ' -C r-inla-*/gmrflib PREFIX=%(installdir)s CC="$CC" FC="$FC" '
@@ -32,54 +34,37 @@ local_gmrflib_buildopts += ' FLAGS="$CXXFLAGS -DINLA_LINK_WITH_OPENBLAS " '
 
 local_inla_buildopts = '-C r-inla-*/inlaprog PREFIX=%(installdir)s '
 local_inla_buildopts += ' CC="$CC" CXX="$CXX" FC="$FC" '
-local_inla_buildopts += ' FLAGS="$CXXFLAGS -L$EBROOTOPENBLAS/lib -L%(builddir)s/eb_openblaso '
-local_inla_buildopts += ' -DINLA_LINK_WITH_OPENBLAS "'
-
-local_inla_prebuildopts = ' mkdir %(builddir)s/eb_openblaso && '
-local_inla_prebuildopts += ' ln -s $EBROOTOPENBLAS/lib/libopenblas.so.0 %(builddir)s/eb_openblaso/libopenblaso.so.0 && '
-local_inla_prebuildopts += ' ln -s $EBROOTOPENBLAS/lib/libopenblas.so %(builddir)s/eb_openblaso/libopenblaso.so && '
-local_inla_prebuildopts += ' export CPATH=$EBROOTR/lib64/R/include/:$CPATH && '
-local_inla_prebuildopts += ' export CPATH=$EBROOTMUPARSER/include/:$CPATH && '
-local_inla_prebuildopts += ' export LD_LIBRARY_PATH=%(builddir)s/eb_openblaso:$LD_LIBRARY_PATH && '
-
-local_rinla_checksum = '88e7aacbf548bd88aedfdf6e7b1f71ac2f06f95745292d1b9e6f57311a51d8cd'  # # R-INLA-21.03.31.tar.gz
-local_remove_hc_patch_chs = '71576f84bd5fc980d395e83a63c28e66ce8db25a9fd8678f1f568fbe67cbd650'
-local_skip_bin_patch = 'e2b24fe01ca8fb7d5ca6a80b3005144d129464dcfe35c856ec52f3fd3852619d'
+local_inla_buildopts += ' FLAGS="$CXXFLAGS -DINLA_LINK_WITH_OPENBLAS"'
 
 components = [
     ('taucs', version, {
-        'checksums': [local_rinla_checksum],  # R-INLA-21.03.31.tar.gz
         'easyblock': 'MakeCp',
         'prebuildopts': "cd r-inla-*/extlibs && tar xvfz taucs-2.2--my-fix.tgz && cd taucs-2.2--my-fix && ",
         'buildopts': 'CC="$CC" CFLAGS="$CFLAGS" FC="$FC" FFLAGS="$FFLAGS" LIBBLAS="$LIBBLAS" LIBLAPACK="$LIBLAPACK"',
         'files_to_copy': [(['r-inla-*/extlibs/taucs-2.2--my-fix/lib/linux/libtaucs.a'], 'lib')],
     }),
     ('fmesher', version, {
-        'checksums': [local_rinla_checksum],  # R-INLA-21.03.31.tar.gz
         'buildopts': '-C r-inla-*/fmesher PREFIX=%(installdir)s CC="$CC" CXX="$CXX" FLAGS="$CXXFLAGS -std=c++11"',
         'installopts': '-C r-inla-*/fmesher PREFIX=%(installdir)s',
     }),
     ('GMRFLib', version, {
-        'checksums': [local_rinla_checksum],  # R-INLA-21.03.31.tar.gz
         'buildopts': local_gmrflib_buildopts,
         'installopts': '-C r-inla-*/gmrflib PREFIX=%(installdir)s',
     }),
     ('rinla', version, {
-        'checksums': [
-            local_rinla_checksum,  # R-INLA-21.03.31.tar.gz
-            local_remove_hc_patch_chs,  # R-INLA-21.03.31-foss2020b-remove_hardcoding.patch
+        'checksums': default_component_specs['checksums'] + [
+            '71576f84bd5fc980d395e83a63c28e66ce8db25a9fd8678f1f568fbe67cbd650',
         ],
         'patches': ['R-INLA-21.03.31-foss2020b-remove_hardcoding.patch'],
         'easyblock': 'RPackage',
         'start_dir': 'r-inla-Version_%s/rinla' % version,
     }),
     (name, version, {
-        'checksums': [
-            local_rinla_checksum,  # R-INLA-21.03.31.tar.gz
-            local_skip_bin_patch,  # R-INLA-21.03.31-foss2020b-skip_binaries.patch:
+        'checksums': default_component_specs['checksums'] + [
+            'e2b24fe01ca8fb7d5ca6a80b3005144d129464dcfe35c856ec52f3fd3852619d',
         ],
         'patches': ['R-INLA-21.03.31-foss2020b-skip_binaries.patch'],
-        'prebuildopts': local_inla_prebuildopts,
+        'prebuildopts': 'export CPATH=$EBROOTR/lib64/R/include/:$CPATH && ',
         'buildopts': local_inla_buildopts,
         'installopts': '-C r-inla-*/inlaprog PREFIX=%(installdir)s',
     }),
