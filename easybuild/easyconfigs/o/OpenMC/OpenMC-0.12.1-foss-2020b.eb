@@ -1,0 +1,95 @@
+# This easyconfig was created by Simon Branford of the BEAR Software team at the University of Birmingham.
+easyblock = 'CMakeMake'
+
+name = 'OpenMC'
+version = '0.12.1'
+
+homepage = "https://docs.openmc.org/"
+description = """OpenMC is a community-developed Monte Carlo neutron and photon transport simulation code. It is
+ capable of performing fixed source, k-eigenvalue, and subcritical multiplication calculations on models built using
+ either a constructive solid geometry or CAD representation. OpenMC supports both continuous-energy and multigroup
+ transport. The continuous-energy particle interaction data is based on a native HDF5 format that can be generated
+ from ACE files produced by NJOY. Parallelism is enabled via a hybrid MPI and OpenMP programming model."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'usempi': True}
+
+local_extract_cmd_pattern = 'tar -C %%(namelower)s-%%(version)s/vendor/%s --strip-components=1 -xf %%s'
+source_urls = ['https://github.com/openmc-dev/openmc/archive/']
+sources = [
+    'v%(version)s.tar.gz',  # OpenMC
+    {
+        'source_urls': ['https://github.com/fmtlib/fmt/archive'],
+        'download_filename': '258194623141a3f4293a70b4388d52362cafc93a.tar.gz',
+        'filename': 'fmt-20210516.tar.gz',
+        'extract_cmd': local_extract_cmd_pattern % 'fmt',
+    },
+    {
+        'source_urls': ['https://github.com/gsl-lite/gsl-lite/archive'],
+        'download_filename': 'e1c381746c2625a76227255f999ae9f14a062208.tar.gz',
+        'filename': 'gsl-lite-20210422.tar.gz',
+        'extract_cmd': local_extract_cmd_pattern % 'gsl-lite',
+    },
+    {
+        'source_urls': ['https://github.com/zeux/pugixml/archive'],
+        'download_filename': '5c4225b5c90c67307f77e829dcea7fbb1df5c97a.tar.gz',
+        'filename': 'pugixml-20210512.tar.gz',
+        'extract_cmd': local_extract_cmd_pattern % 'pugixml',
+    },
+    {
+        'source_urls': ['https://github.com/xtensor-stack/xtensor/archive'],
+        'download_filename': '1b36ad6d5b5b96ee2bacb0960cd22d18cb457613.tar.gz',
+        'filename': 'xtensor-20210512.tar.gz',
+        'extract_cmd': local_extract_cmd_pattern % 'xtensor',
+    },
+    {
+        'source_urls': ['https://github.com/xtensor-stack/xtl/archive'],
+        'download_filename': 'e2f965b58ac1fc503ffdd79acb1497b3df48bb53.tar.gz',
+        'filename': 'xtl-20210413.tar.gz',
+        'extract_cmd': local_extract_cmd_pattern % 'xtl',
+    },
+]
+patches = [
+    'OpenMC-0.12.1_cmakelists.patch',
+    ('pugixml-cmakelists.patch', 'vendor/pugixml'),
+    ('fmt-strtod_l.patch', 'vendor/fmt'),
+]
+checksums = [
+    'f5b17624b7fd7dbbc5f5f108f52cd2e8b6d1263352bd127db4f920a44ca1e42d',  # v0.12.1.tar.gz
+    '63c4b1cde96ec8a1290d8df685dab2139610f9d865635e37808560ea5c33497b',  # fmt-20210516.tar.gz
+    'ff3196f07ed6855c9d813f245c6d8e6ab10dd14e034fbe05a3f3133e60c7a5bf',  # gsl-lite-20210422.tar.gz
+    '7527cb59163ba785bfc9d0d4bcc1a7910552e764d87f9c84158df69bbd05c553',  # pugixml-20210512.tar.gz
+    'cd7c151f5d867d692bb2a50459040830ade48c88016e8de62a782c3773f829b7',  # xtensor-20210512.tar.gz
+    '31a8e6a9c10891fa259f3d7d3f600c139d15a3278fc86e1ba9f2297f547ac0b6',  # xtl-20210413.tar.gz
+    '4dd5535e192069a3fe920efbb86302b14469c743c0c83aca010f607d442f0269',  # OpenMC-0.12.1_cmakelists.patch
+    'c760329a91d3649c38fe6c53c495f17d4cc8f039601c8734126a658bcb3b4d6e',  # pugixml-cmakelists.patch
+    'c29817b4144aff71816437906a95a9020a3b19ca50bc8f75e137f1a3ea392349',  # fmt-strtod_l.patch
+]
+
+builddependencies = [('CMake', '3.18.4')]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('GSL', '2.6'),
+    ('h5py', '3.1.0'),
+    ('HDF5', '1.10.7'),
+    ('IPython', '7.18.1'),
+    ('lxml', '4.6.3'),
+    ('matplotlib', '3.3.3'),
+    ('SciPy-bundle', '2020.11'),
+    ('uncertainties', '3.1.5'),
+]
+
+postinstallcmds = ['cd %(builddir)s/%(namelower)s-%(version)s && '
+                   'pip install --prefix=%(installdir)s --verbose --no-deps --ignore-installed --no-build-isolation .']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+sanity_check_commands = ['srun -n 1 %(namelower)s --help', "python -c 'import openmc'"]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'phys'
