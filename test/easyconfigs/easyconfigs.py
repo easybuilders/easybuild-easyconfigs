@@ -44,14 +44,15 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import disable_templating, get_easyblock_class, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
 from easybuild.tools import config
+from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, is_generic_easyblock, remove_file
-from easybuild.tools.filetools import verify_checksum, write_file
+from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.py2vs3 import string_type, urlopen
@@ -69,6 +70,12 @@ single_tests_ok = True
 
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
+
+    # make sure that the EasyBuild installation is still known even if we purge an EB module
+    if os.getenv('EB_SCRIPT_PATH') is None:
+        eb_path = which('eb')
+        if eb_path is not None:
+            os.environ['EB_SCRIPT_PATH'] = eb_path
 
     # initialize configuration (required for e.g. default modules_tool setting)
     eb_go = eboptions.parse_options()
@@ -151,7 +158,7 @@ class EasyConfigTest(TestCase):
         self.assertFalse(check_conflicts(EasyConfigTest.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
                          "No conflicts detected")
 
-    def check_dep_vars(self, dep, dep_vars):
+    def check_dep_vars(self, gen, dep, dep_vars):
         """Check whether available variants of a particular dependency are acceptable or not."""
 
         # 'guilty' until proven 'innocent'
@@ -224,11 +231,15 @@ class EasyConfigTest(TestCase):
             if len(blis_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != blis_vsuff_vars[0])
 
-        # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
         if dep == 'ScaLAPACK':
+            # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
             bf_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -bf' in v]
             if len(bf_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != bf_vsuff_vars[0])
+            # filter out ScaLAPACK with -bl versionsuffix, used in goblf toolchain
+            bl_vsuff_vars = [v for v in dep_vars.keys() if '; versionsuffix: -bl' in v]
+            if len(bl_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != bl_vsuff_vars[0])
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
@@ -277,17 +288,22 @@ class EasyConfigTest(TestCase):
                              r'PySCF-', r'Qiskit-', r'WIEN2k-']),
                 (r'5\.', [r'Elk-']),
             ],
-            # both scVelo and Python-Geometric depend on numba, which typically requires an older LLVM
+            # some software depends on numba, which typically requires an older LLVM;
+            # this includes BirdNET, librosa, PyOD, Python-Geometric, scVelo, cryoDRGN
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
-                (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
-                (r'10\.0\.1', [r'numba-0\.52\.0-', r'PyTorch-Geometric-1\.6\.3']),
+                (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
+                          r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
+                (r'10\.0\.1', [r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-', r'numba-0\.52\.0-', r'PyOD-0\.8\.7-',
+                               r'PyTorch-Geometric-1\.6\.3']),
             ],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
+            # NanoPlot, NanoComp use an older version of Seaborn
+            'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
@@ -338,57 +354,76 @@ class EasyConfigTest(TestCase):
             if len(py2_dep_vars) == 1 and len(py3_dep_vars) == 1:
                 res = True
 
+            # for recent generations, there's no versionsuffix anymore for Python 3,
+            # but we still allow variants depending on Python 2.x + 3.x
+            is_recent_gen = False
+            full_toolchain_regex = re.compile(r'^20[1-9][0-9][ab]$')
+            gcc_toolchain_regex = re.compile(r'^GCC(core)?-[0-9]?[0-9]\.[0-9]$')
+            if full_toolchain_regex.match(gen):
+                is_recent_gen = LooseVersion(gen) >= LooseVersion('2020b')
+            elif gcc_toolchain_regex.match(gen):
+                genver = gen.split('-', 1)[1]
+                is_recent_gen = LooseVersion(genver) >= LooseVersion('10.2')
+            else:
+                raise EasyBuildError("Unkown type of toolchain generation: %s" % gen)
+
+            if is_recent_gen:
+                py2_dep_vars = [x for x in dep_vars.keys() if '; versionsuffix: -Python-2.' in x]
+                py3_dep_vars = [x for x in dep_vars.keys() if x.strip().endswith('; versionsuffix:')]
+                if len(py2_dep_vars) == 1 and len(py3_dep_vars) == 1:
+                    res = True
+
         return res
 
     def test_check_dep_vars(self):
         """Test check_dep_vars utility method."""
 
         # one single dep version: OK
-        self.assertTrue(self.check_dep_vars('testdep', {
+        self.assertTrue(self.check_dep_vars('2019b', 'testdep', {
             'version: 1.2.3; versionsuffix:': ['foo-1.2.3.eb', 'bar-4.5.6.eb'],
         }))
-        self.assertTrue(self.check_dep_vars('testdep', {
+        self.assertTrue(self.check_dep_vars('2019b', 'testdep', {
             'version: 1.2.3; versionsuffix: -test': ['foo-1.2.3.eb', 'bar-4.5.6.eb'],
         }))
 
         # two or more dep versions (no special case: not OK)
-        self.assertFalse(self.check_dep_vars('testdep', {
+        self.assertFalse(self.check_dep_vars('2019b', 'testdep', {
             'version: 1.2.3; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 4.5.6; versionsuffix:': ['bar-4.5.6.eb'],
         }))
-        self.assertFalse(self.check_dep_vars('testdep', {
+        self.assertFalse(self.check_dep_vars('2019b', 'testdep', {
             'version: 0.0; versionsuffix:': ['foobar-0.0.eb'],
             'version: 1.2.3; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 4.5.6; versionsuffix:': ['bar-4.5.6.eb'],
         }))
 
         # Java is a special case, with wrapped Java versions
-        self.assertTrue(self.check_dep_vars('Java', {
+        self.assertTrue(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
         }))
         # two Java wrappers is not OK
-        self.assertFalse(self.check_dep_vars('Java', {
+        self.assertFalse(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11.0.2; versionsuffix:': ['bar-4.5.6.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6.eb'],
         }))
         # OK to have two or more wrappers if versionsuffix is used to indicate exception
-        self.assertTrue(self.check_dep_vars('Java', {
+        self.assertTrue(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
         }))
         # versionsuffix must be there for all easyconfigs to indicate exception
-        self.assertFalse(self.check_dep_vars('Java', {
+        self.assertFalse(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb', 'bar-4.5.6.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb', 'bar-4.5.6.eb'],
         }))
-        self.assertTrue(self.check_dep_vars('Java', {
+        self.assertTrue(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
@@ -399,59 +434,59 @@ class EasyConfigTest(TestCase):
 
         # strange situation: odd number of Java versions
         # not OK: two Java wrappers (and no versionsuffix to indicate exception)
-        self.assertFalse(self.check_dep_vars('Java', {
+        self.assertFalse(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6.eb'],
         }))
         # OK because of -Java-11 versionsuffix
-        self.assertTrue(self.check_dep_vars('Java', {
+        self.assertTrue(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8.0_221; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
         }))
         # not OK: two Java wrappers (and no versionsuffix to indicate exception)
-        self.assertFalse(self.check_dep_vars('Java', {
+        self.assertFalse(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11.0.2; versionsuffix:': ['bar-4.5.6.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6.eb'],
         }))
         # OK because of -Java-11 versionsuffix
-        self.assertTrue(self.check_dep_vars('Java', {
+        self.assertTrue(self.check_dep_vars('2019b', 'Java', {
             'version: 1.8; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 11.0.2; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
             'version: 11; versionsuffix:': ['bar-4.5.6-Java-11.eb'],
         }))
 
         # two different versions of Boost is not OK
-        self.assertFalse(self.check_dep_vars('Boost', {
+        self.assertFalse(self.check_dep_vars('2019b', 'Boost', {
             'version: 1.64.0; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
         }))
 
         # a different Boost version that is only used as dependency for a matching Boost.Python is fine
-        self.assertTrue(self.check_dep_vars('Boost', {
+        self.assertTrue(self.check_dep_vars('2019a', 'Boost', {
             'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2019a.eb'],
             'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
         }))
-        self.assertTrue(self.check_dep_vars('Boost', {
-            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2018b.eb'],
+        self.assertTrue(self.check_dep_vars('2019a', 'Boost', {
+            'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2019a.eb'],
             'version: 1.66.0; versionsuffix:': ['Boost.Python-1.66.0-gompi-2019a.eb'],
             'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
         }))
-        self.assertFalse(self.check_dep_vars('Boost', {
+        self.assertFalse(self.check_dep_vars('2019a', 'Boost', {
             'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2019a.eb'],
             'version: 1.66.0; versionsuffix:': ['foo-1.2.3.eb'],
             'version: 1.70.0; versionsuffix:': ['foo-2.3.4.eb'],
         }))
 
-        self.assertTrue(self.check_dep_vars('Boost', {
+        self.assertTrue(self.check_dep_vars('2018a', 'Boost', {
             'version: 1.63.0; versionsuffix: -Python-2.7.14': ['EMAN2-2.21a-foss-2018a-Python-2.7.14-Boost-1.63.0.eb'],
             'version: 1.64.0; versionsuffix:': ['Boost.Python-1.64.0-gompi-2018a.eb'],
             'version: 1.66.0; versionsuffix:': ['BLAST+-2.7.1-foss-2018a.eb'],
         }))
 
-        self.assertTrue(self.check_dep_vars('Boost', {
+        self.assertTrue(self.check_dep_vars('2019a', 'Boost', {
             'version: 1.64.0; versionsuffix:': [
                 'Boost.Python-1.64.0-gompi-2019a.eb',
                 'EMAN2-2.3-foss-2019a-Python-2.7.15.eb',
@@ -460,6 +495,39 @@ class EasyConfigTest(TestCase):
                 'BLAST+-2.9.0-gompi-2019a.eb',
                 'Boost.Python-1.70.0-gompi-2019a.eb',
             ],
+        }))
+
+        # two variants is OK, if they're for Python 2.x and 3.x
+        self.assertTrue(self.check_dep_vars('2020a', 'Python', {
+            'version: 2.7.18; versionsuffix:': ['SciPy-bundle-2020.03-foss-2020a-Python-2.7.18.eb'],
+            'version: 3.8.2; versionsuffix:': ['SciPy-bundle-2020.03-foss-2020a-Python-3.8.2.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('2020a', 'SciPy-bundle', {
+            'version: 2020.03; versionsuffix: -Python-2.7.18': ['matplotlib-3.2.1-foss-2020a-Python-2.7.18.eb'],
+            'version: 2020.03; versionsuffix: -Python-3.8.2': ['matplotlib-3.2.1-foss-2020a-Python-3.8.2.eb'],
+        }))
+
+        # for recent easyconfig generations, there's no versionsuffix anymore for Python 3
+        self.assertTrue(self.check_dep_vars('2020b', 'Python', {
+            'version: 2.7.18; versionsuffix:': ['SciPy-bundle-2020.11-foss-2020b-Python-2.7.18.eb'],
+            'version: 3.8.6; versionsuffix:': ['SciPy-bundle-2020.11-foss-2020b.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('GCCcore-10.2', 'PyYAML', {
+            'version: 5.3.1; versionsuffix:': ['IPython-7.18.1-GCCcore-10.2.0.eb'],
+            'version: 5.3.1; versionsuffix: -Python-2.7.18': ['IPython-7.18.1-GCCcore-10.2.0-Python-2.7.18.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('2020b', 'SciPy-bundle', {
+            'version: 2020.11; versionsuffix: -Python-2.7.18': ['matplotlib-3.3.3-foss-2020b-Python-2.7.18.eb'],
+            'version: 2020.11; versionsuffix:': ['matplotlib-3.3.3-foss-2020b.eb'],
+        }))
+
+        # not allowed for older generations (foss/intel 2020a or older, GCC(core) 10.1.0 or older)
+        self.assertFalse(self.check_dep_vars('2020a', 'SciPy-bundle', {
+            'version: 2020.03; versionsuffix: -Python-2.7.18': ['matplotlib-3.2.1-foss-2020a-Python-2.7.18.eb'],
+            'version: 2020.03; versionsuffix:': ['matplotlib-3.2.1-foss-2020a.eb'],
         }))
 
     def test_dep_versions_per_toolchain_generation(self):
@@ -527,7 +595,7 @@ class EasyConfigTest(TestCase):
             for tc_gen in sorted(all_deps.keys()):
                 for dep in sorted(all_deps[tc_gen].keys()):
                     dep_vars = all_deps[tc_gen][dep]
-                    if not self.check_dep_vars(dep, dep_vars):
+                    if not self.check_dep_vars(tc_gen, dep, dep_vars):
                         multi_dep_vars.append(dep)
                         multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
                         multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
@@ -540,7 +608,7 @@ class EasyConfigTest(TestCase):
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
 
-        if EasyConfigTest.ordered_specs is None:
+        if not EasyConfigTest.parsed_easyconfigs:
             self.process_all_easyconfigs()
 
         for ec in EasyConfigTest.parsed_easyconfigs:
@@ -553,6 +621,22 @@ class EasyConfigTest(TestCase):
                 self.assertTrue(isinstance(ec_scp['dirs'], list), error_msg)
                 self.assertTrue(isinstance(ec_scp['files'], list), error_msg)
                 self.assertTrue(ec_scp['dirs'] or ec_scp['files'], error_msg)
+
+    def test_r_libs_site_env_var(self):
+        """Make sure $R_LIBS_SITE is being updated, rather than $R_LIBS."""
+        # cfr. https://github.com/easybuilders/easybuild-easyblocks/pull/2326
+
+        if not EasyConfigTest.parsed_easyconfigs:
+            self.process_all_easyconfigs()
+
+        r_libs_ecs = []
+        for ec in EasyConfigTest.parsed_easyconfigs:
+            for key in ('modextrapaths', 'modextravars'):
+                if 'R_LIBS' in ec['ec'][key]:
+                    r_libs_ecs.append(ec['spec'])
+
+        error_msg = "%d easyconfigs found which set $R_LIBS, should be $R_LIBS_SITE: %s"
+        self.assertEqual(r_libs_ecs, [], error_msg % (len(r_libs_ecs), ', '.join(r_libs_ecs)))
 
     def test_easyconfig_locations(self):
         """Make sure all easyconfigs files are in the right location."""
@@ -576,7 +660,15 @@ class EasyConfigTest(TestCase):
 
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
-        whitelist = ['Kent_tools-*', 'MATLAB-*', 'OCaml-*', 'OpenFOAM-Extend-4.1-*']
+        whitelist = [
+            'Kent_tools-*',
+            'MATLAB-*',
+            'OCaml-*',
+            'OpenFOAM-Extend-4.1-*',
+            # sources for old versions of Bioconductor packages are no longer available,
+            # so not worth adding checksums for at this point
+            'R-bundle-Bioconductor-3.[2-5]',
+        ]
 
         # the check_sha256_checksums function (again) creates an EasyBlock instance
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
@@ -621,7 +713,7 @@ class EasyConfigTest(TestCase):
 
         for ec in changed_ecs:
 
-            with disable_templating(ec):
+            with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
                 easyblock = ec.get('easyblock')
                 exts_defaultclass = ec.get('exts_defaultclass')
@@ -676,8 +768,11 @@ class EasyConfigTest(TestCase):
             # Tkinter is an exception, since its version always matches the Python version anyway
             # Python 3.8.6 and later are also excluded, as we consider python 3 the default python
             # Also whitelist some updated versions of Amber
-            whitelist_python_suffix = ['Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
-                                       'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb']
+            whitelist_python_suffix = [
+                'Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
+                'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb',
+                'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
+            ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
             has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies']
                                  if LooseVersion(dep['version']) < LooseVersion('3.8.6'))
@@ -698,11 +793,10 @@ class EasyConfigTest(TestCase):
                     failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
-            if use_pip and easyblock in ['PythonBundle', 'PythonPackage']:
+            if easyblock in ['PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
-                if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
-                    if not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
-                        failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
+                if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
+                    failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
 
         if failing_checks:
             self.fail('\n'.join(failing_checks))
@@ -730,10 +824,11 @@ class EasyConfigTest(TestCase):
     def check_sanity_check_paths(self, changed_ecs):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
-        # GoPackage, PythonBundle & PythonPackage already have a decent customised sanity_check_paths
+        # some generic easyblocks already have a decent customised sanity_check_paths,
+        # including CMakePythonPackage, GoPackage, PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CrayToolchain', 'GoPackage', 'ModuleRC', 'PythonBundle', 'PythonPackage',
-                     'Toolchain']
+        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'ModuleRC',
+                     'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git
@@ -773,6 +868,8 @@ class EasyConfigTest(TestCase):
             'http://isl.gforge.inria.fr',
             # https:// leads to File Not Found
             'http://tau.uoregon.edu/',
+            # https:// has outdated SSL configurations
+            'http://faculty.scs.illinois.edu',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
@@ -1027,6 +1124,11 @@ def template_easyconfig_test(self, spec):
             error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch, ec_fn, checksum)
             res = verify_checksum(patch_full, checksum)
             self.assertTrue(res, error_msg)
+
+    # make sure 'source' step is not being skipped,
+    # since that implies not verifying the checksum
+    error_msg = "'source' step should not be skipped in %s, since that implies not verifying checksums" % ec_fn
+    self.assertFalse(ec['checksums'] and ('source' in ec['skipsteps']), error_msg)
 
     for ext in ec['exts_list']:
         if isinstance(ext, (tuple, list)) and len(ext) == 3:

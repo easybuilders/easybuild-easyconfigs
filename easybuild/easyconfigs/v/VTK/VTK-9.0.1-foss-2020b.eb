@@ -53,7 +53,7 @@ configopts = "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
 configopts += "-DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s " % SHLIB_EXT
 configopts += "-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include "
 # Python
-configopts += "-DVTK_WRAP_PYTHON=ON -DVTK_PYTHON_VERSION=3 "
+configopts += "-DVTK_WRAP_PYTHON=ON -DVTK_PYTHON_VERSION=3 -DVTK_PYTHON_OPTIONAL_LINK=OFF "
 # Other
 configopts += "-DVTK_USE_MPI=ON "
 configopts += "-DCMAKE_INSTALL_LIBDIR=lib"
@@ -81,8 +81,11 @@ sanity_check_paths = {
 }
 
 sanity_check_commands = [
-    ('python', "-c 'import %(namelower)s'"),
-    ('python', "-c 'import pkg_resources; pkg_resources.get_distribution(\"vtk\")'"),
+    "python -c 'import %(namelower)s'",
+    "python -c 'import pkg_resources; pkg_resources.get_distribution(\"vtk\")'",
+    # make sure that VTK Python libraries link to libpython (controlled via DVTK_PYTHON_OPTIONAL_LINK=OFF),
+    # see https://gitlab.kitware.com/vtk/vtk/-/issues/17881
+    "ldd $EBROOTVTK/lib/libvtkPythonContext2D-%%(version_major_minor)s.%s | grep /libpython" % SHLIB_EXT,
 ]
 
 
