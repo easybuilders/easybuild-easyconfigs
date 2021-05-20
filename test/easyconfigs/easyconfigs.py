@@ -672,11 +672,11 @@ class EasyConfigTest(TestCase):
 
         # the check_sha256_checksums function (again) creates an EasyBlock instance
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
-        # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
+        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in changed_ecs:
-            if ec['easyblock'] in ['Bundle', 'PythonBundle']:
+            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
