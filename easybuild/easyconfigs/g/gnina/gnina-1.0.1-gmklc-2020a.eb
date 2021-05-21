@@ -1,0 +1,78 @@
+easyblock = 'Bundle'
+
+name = 'gnina'
+version = '1.0.1'
+
+homepage = 'https://github.com/gnina/gnina'
+description = """
+gnina (pronounced NEE-na) is a molecular docking program with integrated support for scoring and optimizing ligands using convolutional neural networks. It is a fork of smina, which is a fork of AutoDock Vina.
+"""
+
+toolchain = {'name': 'gmklc', 'version': '2020a'}
+
+builddependencies = [
+    ('Boost', '1.72.0'),
+    ('protobuf', '3.12.3'),
+    ('HDF5', '1.10.6'),
+    ('CMake', '3.18.4'),
+    ('RDKit', '2020.09.1b1'),
+    ('SciPy-Stack', '2020b'),
+    ('pytest', '6.1.2'),
+]
+
+default_easyblock = 'CMakeMake'
+default_component_specs = {
+    'sources': ['v%(version)s.tar.gz'],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    (
+        # OpenBabel has a bug with its CMake files where it cannot find its installed modules
+        # resulting in failing for gnina. Install a stripped version.
+        'openbabel', '3.1.1', {
+            'source_urls': ['https://github.com/openbabel/openbabel/archive/refs/tags'],
+            'sources': ["%(namelower)s-3-1-1.tar.gz"],
+            'checksums': ['c97023ac6300d26176c97d4ef39957f06e68848d64f1a04b0b284ccff2744f02'],
+            'start_dir': '%(namelower)s-%(namelower)s-3-1-1',
+            'configopts': '-DWITH_MAEPARSER=OFF -DWITH_COORDGEN=OFF',
+        }
+    ),
+    (
+        # libmolgrid needs the special OpenBabel, its sub-cmake does not listen to the global CMake configuration.
+        'libmolgrid', '0.2.1', {
+            'source_urls': ['https://github.com/gnina/libmolgrid/archive/refs/tags'],
+            'checksums': ['08e1d8a1c2d549b28ea6290d9682271956bf85a2021e35255bc021096ee044e2'],
+            'configopts': '-DOPENBABEL3_INCLUDE_DIR=%(installdir)s/include/openbabel3',
+        }
+    ),
+    (
+        'gnina', '1.0.1', {
+            'source_urls': ['https://github.com/gnina/gnina/archive'],
+            'patches': ['gnina-1.0.1_fix_eigen_include.patch'],
+            'checksums': [
+                "08e8b1d2373e02f115fc7e8f5a875c6c61b5529cc8ff2ab695da09d749c5cd99",
+                "24859d41ce95c7024fdcb5c98d815e78a75d24a5fc106e967ffbb05734fd3849",  # gnina-1.0.1_fix_eigen_include.patch
+            ],
+            'configopts': '-DCUDA_ARCH_NAME=All -DBLAS=mkl -DRDKIT_INCLUDE_DIR=$EBROOTRDKIT/include/rdkit',
+        }
+    ),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/gnina',
+        'lib/libgnina.so',
+        'lib/libmolgrid.so',
+        'lib/libopenbabel.so',
+    ],
+    'dirs': [
+        'bin', 'lib', "include"
+    ]
+}
+
+sanity_check_commands = [
+    "gnina --version"
+]
+
+moduleclass = 'chem'
