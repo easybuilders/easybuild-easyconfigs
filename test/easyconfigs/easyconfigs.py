@@ -287,8 +287,13 @@ class EasyConfigTest(TestCase):
                 (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
                 (r'10\.0\.1', [r'numba-0\.52\.0-', r'cell2location-0\.05-alpha-']),
             ],
-            # rampart requires nodejs > 10, artic-ncov2019 requires rampart
-            'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
+            'nodejs': [
+                # rampart requires nodejs > 10, artic-ncov2019 requires rampart
+                ('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13']),
+                # holoviews + geoviews require nodejs > 14
+                ('14.16.1', ['geoviews-1.9.1-', 'holoviews-1.14.3-',
+                             'bokeh-2.3.1-', 'Cartopy-0.18.0-']),
+            ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
@@ -606,7 +611,7 @@ class EasyConfigTest(TestCase):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
         # These packages do not support installation with 'pip'
-        whitelist_pip = [r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
+        whitelist_pip = [r'ESMPy-.*', r'MATLAB-Engine-.*', r'PyTorch-.*', r'Meld-.*']
 
         whitelist_pip_check = [
             r'Mako-1.0.4.*Python-2.7.12.*',

@@ -1,0 +1,47 @@
+name = 'ABAQUS'
+version = '2021'
+local_hotfix = '2117'
+versionsuffix = f'-hotfix-{local_hotfix}'
+
+_intel_ver = '2020.4.304'
+
+homepage = 'https://www.3ds.com/products-services/simulia/products/abaqus/'
+description = """Finite Element Analysis software for modeling, visualization and best-in-class implicit and explicit
+ dynamics FEA."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://registrationcenter-download.intel.com/akdlm/irc_nas/17113']
+sources = [
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.1-5.tar',
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.2-5.tar',
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.3-5.tar',
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.4-5.tar',
+    '%(version)s/%(version)s.AM_SIM_Abaqus_Extend.AllOS.5-5.tar',
+    f'%(version)s/%(version)s.FP.CFA.{local_hotfix}.Part_SIMULIA_EstPrd.Linux64.tar',
+    f'l_comp_lib_{_intel_ver}_comp.for_redist.tgz',
+]
+checksums = [
+    'fbc93662c2c0ea9294df79ed9c9678246582d1f63598ad999bbb17fee0dbf54a',  # 2021.AM_SIM_Abaqus_Extend.AllOS.1-5.tar
+    '4433dee911274f559a9372291c007f359108e8e1ab2db6abe570727e1b13741a',  # 2021.AM_SIM_Abaqus_Extend.AllOS.2-5.tar
+    'ddd79bfa40c238b12cc36c2d37ee3a351c21684fd5d6aba402a87051ee27096d',  # 2021.AM_SIM_Abaqus_Extend.AllOS.3-5.tar
+    'c7b5b04388c1a29f4c5ad46da35e2f5e6d2d493832611fc90860644ff837ded0',  # 2021.AM_SIM_Abaqus_Extend.AllOS.4-5.tar
+    'fafb50a0ee12128cd604563eb9b5b845cbeb4383c24df837220cbce847bd5c58',  # 2021.AM_SIM_Abaqus_Extend.AllOS.5-5.tar
+    # 2021.FP.CFA.2117.Part_SIMULIA_EstPrd.Linux64.tar
+    '194cdef34fa0d0fdfd9e3d489f494cddb045a4c56b15a99838df7e2b43ef5f75',
+    'c61a891eb9e517681cdddeae11e14e0d5fe76c9c60577a73b55681fd2c58c0e3',  # l_comp_lib_2020.4.304_comp.for_redist.tgz
+]
+
+# The current build of ABAQUS has issues running on EL8 but these are resovled by using a recent Intel Fortran redist
+_intel = f'%(builddir)s/l_comp_lib_{_intel_ver}_comp.for_redist/compilers_and_libraries_{_intel_ver}/linux'
+postinstallcmds = [
+    f'cp {_intel}/compiler/lib/intel64_lin/* %(installdir)s/cae/linux_a64/code/bin/',
+    f'cp {_intel}/compiler/lib/intel64_lin/* %(installdir)s/cae/linux_a64/code/bin/SMAExternal/Interop/code/bin/',
+    f'cp {_intel}/compiler/lib/intel64_lin/* %(installdir)s/cae/linux_a64/external/abaqus_2017/',
+    f'cp {_intel}/compiler/lib/intel64_lin/* %(installdir)s/cae/linux_a64/external/abaqus_2018/',
+    f'cp {_intel}/compiler/lib/intel64_lin/* %(installdir)s/cae/linux_a64/external/abaqus_2019/',
+    f'cp {_intel}/compiler/lib/intel64_lin/* %(installdir)s/cae/linux_a64/external/abaqus_2020/',
+    f'cp {_intel}/mpi/intel64/bin/* %(installdir)s/cae/linux_a64/code/bin/SMAExternal/impi/intel64/bin/',
+]
+
+moduleclass = 'cae'
