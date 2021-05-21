@@ -1,0 +1,597 @@
+Avoid name space conflict with BWA in bseq1_t, bseq_read to allow linking existing BWA, FML libs
+Created by tillea:
+  https://github.com/lh3/fermi-lite/pull/10/
+diff -Nru fermi-lite.orig/bfc.c fermi-lite/bfc.c
+--- fermi-lite.orig/bfc.c	2019-03-20 14:21:24.000000000 +0000
++++ fermi-lite/bfc.c	2018-10-25 13:19:00.000000000 +0100
+@@ -7,24 +7,12 @@
+ #include "kmer.h"
+ #include "internal.h"
+ #include "fml.h"
++#include "bfc.h"
+ 
+ /*******************
+  *** BFC options ***
+  *******************/
+ 
+-typedef struct {
+-	int n_threads, q, k, l_pre;
+-	int min_cov; // a k-mer is considered solid if the count is no less than this
+-
+-	int max_end_ext;
+-	int win_multi_ec;
+-	float min_trim_frac;
+-
+-	// these ec options cannot be changed on the command line
+-	int w_ec, w_ec_high, w_absent, w_absent_high;
+-	int max_path_diff, max_heap;
+-} bfc_opt_t;
+-
+ void bfc_opt_init(bfc_opt_t *opt)
+ {
+ 	memset(opt, 0, sizeof(bfc_opt_t));
+@@ -46,26 +34,6 @@
+ 	opt->max_heap = 100;
+ }
+ 
+-/**********************
+- *** K-mer counting ***
+- **********************/
+-
+-#define CNT_BUF_SIZE 256
+-
+-typedef struct { // cache to reduce locking
+-	uint64_t y[2];
+-	int is_high;
+-} insbuf_t;
+-
+-typedef struct {
+-	int k, q;
+-	int n_seqs;
+-	const bseq1_t *seqs;
+-	bfc_ch_t *ch;
+-	int *n_buf;
+-	insbuf_t **buf;
+-} cnt_step_t;
+-
+ bfc_kmer_t bfc_kmer_null = {{0,0,0,0}};
+ 
+ static int bfc_kmer_bufclear(cnt_step_t *cs, int forced, int tid)
+@@ -97,7 +65,7 @@
+ static void worker_count(void *_data, long k, int tid)
+ {
+ 	cnt_step_t *cs = (cnt_step_t*)_data;
+-	const bseq1_t *s = &cs->seqs[k];
++	const fml_seq1_t *s = &cs->seqs[k];
+ 	int i, l;
+ 	bfc_kmer_t x = bfc_kmer_null;
+ 	uint64_t qmer = 0, mask = (1ULL<<cs->k) - 1;
+@@ -111,7 +79,7 @@
+ 	}
+ }
+ 
+-struct bfc_ch_s *fml_count(int n, const bseq1_t *seq, int k, int q, int l_pre, int n_threads)
++struct bfc_ch_s *fml_count(int n, const fml_seq1_t *seq, int k, int q, int l_pre, int n_threads)
+ {
+ 	int i;
+ 	cnt_step_t cs;
+@@ -127,34 +95,6 @@
+ 	return cs.ch;
+ }
+ 
+-/***************
+- *** Correct ***
+- ***************/
+-
+-#define BFC_MAX_KMER     63
+-#define BFC_MAX_BF_SHIFT 37
+-
+-#define BFC_MAX_PATHS 4
+-#define BFC_EC_HIST 5
+-#define BFC_EC_HIST_HIGH 2
+-
+-#define BFC_EC_MIN_COV_COEF .1
+-
+-/**************************
+- * Sequence struct for ec *
+- **************************/
+-
+-#include "kvec.h"
+-
+-typedef struct { // NOTE: unaligned memory
+-	uint8_t b:3, q:1, ob:3, oq:1;
+-	uint8_t dummy;
+-	uint16_t lcov:6, hcov:6, solid_end:1, high_end:1, ec:1, absent:1;
+-	int i;
+-} ecbase_t;
+-
+-typedef kvec_t(ecbase_t) ecseq_t;
+-
+ static int bfc_seq_conv(const char *s, const char *q, int qthres, ecseq_t *seq)
+ {
+ 	int i, l;
+@@ -264,53 +204,6 @@
+ 	return max > 0? (uint64_t)(max_i - max - k + 1) << 32 | max_i : 0;
+ }
+ 
+-/********************
+- * Correct one read *
+- ********************/
+-
+-#include "ksort.h"
+-
+-#define ECCODE_MISC      1
+-#define ECCODE_MANY_N    2
+-#define ECCODE_NO_SOLID  3
+-#define ECCODE_UNCORR_N  4
+-#define ECCODE_MANY_FAIL 5
+-
+-typedef struct {
+-	uint32_t ec_code:3, brute:1, n_ec:14, n_ec_high:14;
+-	uint32_t n_absent:24, max_heap:8;
+-} ecstat_t;
+-
+-typedef struct {
+-	uint8_t ec:1, ec_high:1, absent:1, absent_high:1, b:4;
+-} bfc_penalty_t;
+-
+-typedef struct {
+-	int tot_pen;
+-	int i; // base position
+-	int k; // position in the stack
+-	int32_t ecpos_high[BFC_EC_HIST_HIGH];
+-	int32_t ecpos[BFC_EC_HIST];
+-	bfc_kmer_t x;
+-} echeap1_t;
+-
+-typedef struct {
+-	int parent, i, tot_pen;
+-	uint8_t b;
+-	bfc_penalty_t pen;
+-	uint16_t cnt;
+-} ecstack1_t;
+-
+-typedef struct {
+-	const bfc_opt_t *opt;
+-	const bfc_ch_t *ch;
+-	kvec_t(echeap1_t) heap;
+-	kvec_t(ecstack1_t) stack;
+-	ecseq_t seq, tmp, ec[2];
+-	int mode;
+-	ecstat_t ori_st;
+-} bfc_ec1buf_t;
+-
+ #define heap_lt(a, b) ((a).tot_pen > (b).tot_pen)
+ KSORT_INIT(ec, echeap1_t, heap_lt)
+ 
+@@ -567,20 +460,7 @@
+ 	return s;
+ }
+ 
+-/********************
+- * Error correction *
+- ********************/
+-
+-typedef struct {
+-	const bfc_opt_t *opt;
+-	const bfc_ch_t *ch;
+-	bfc_ec1buf_t **e;
+-	int64_t n_processed;
+-	int n_seqs, flt_uniq;
+-	bseq1_t *seqs;
+-} ec_step_t;
+-
+-static uint64_t max_streak(int k, const bfc_ch_t *ch, const bseq1_t *s)
++static uint64_t max_streak(int k, const bfc_ch_t *ch, const fml_seq1_t *s)
+ {
+ 	int i, l;
+ 	uint64_t max = 0, t = 0;
+@@ -602,7 +482,7 @@
+ static void worker_ec(void *_data, long k, int tid)
+ {
+ 	ec_step_t *es = (ec_step_t*)_data;
+-	bseq1_t *s = &es->seqs[k];
++	fml_seq1_t *s = &es->seqs[k];
+ 	if (es->flt_uniq) {
+ 		uint64_t max;
+ 		max = max_streak(es->opt->k, es->ch, s);
+@@ -624,7 +504,7 @@
+ 	} else bfc_ec1(es->e[tid], s->seq, s->qual);
+ }
+ 
+-float fml_correct_core(const fml_opt_t *opt, int flt_uniq, int n, bseq1_t *seq)
++float fml_correct_core(const fml_opt_t *opt, int flt_uniq, int n, fml_seq1_t *seq)
+ {
+ 	bfc_ch_t *ch;
+ 	int i, mode;
+@@ -663,12 +543,24 @@
+ 	return kcov;
+ }
+ 
+-float fml_correct(const fml_opt_t *opt, int n, bseq1_t *seq)
++// Added by jwala for use in libSeqLib
++void kmer_correct(ec_step_t * es, int mode, bfc_ch_t * ch) {
++  int i = 0;
++  es->e = (bfc_ec1buf_t**)calloc(es->opt->n_threads, sizeof(void*)); //jwala added cast
++  for (i = 0; i < es->opt->n_threads; ++i)
++    es->e[i] = ec1buf_init(es->opt, ch), es->e[i]->mode = mode;
++  kt_for(es->opt->n_threads, worker_ec, es, es->n_seqs);
++  for (i = 0; i < es->opt->n_threads; ++i)
++    ec1buf_destroy(es->e[i]);
++  free(es->e);
++}
++
++float fml_correct(const fml_opt_t *opt, int n, fml_seq1_t *seq)
+ {
+ 	return fml_correct_core(opt, 0, n, seq);
+ }
+ 
+-float fml_fltuniq(const fml_opt_t *opt, int n, bseq1_t *seq)
++float fml_fltuniq(const fml_opt_t *opt, int n, fml_seq1_t *seq)
+ {
+ 	return fml_correct_core(opt, 1, n, seq);
+ }
+diff -Nru fermi-lite.orig/bfc.h fermi-lite/bfc.h
+--- fermi-lite.orig/bfc.h	1970-01-01 01:00:00.000000000 +0100
++++ fermi-lite/bfc.h	2018-10-25 13:19:00.000000000 +0100
+@@ -0,0 +1,153 @@
++#ifndef AC_BFC_H__
++#define AC_BFC_H__
++
++#include <stdlib.h>
++#include <string.h>
++#include <assert.h>
++#include <limits.h>
++#include <stdio.h>
++#include "htab.h"
++/* #include "kmer.h" ... this is actually included by htab.h */
++#include "internal.h"
++#include "fml.h"
++#include "khash.h"
++
++/* Andreas Tille <tille@debian.org>: Its not clear where jwala took this from and what its purpose might be - commenting out for the moment
++#define _cnt_eq(a, b) ((a)>>14 == (b)>>14)
++#define _cnt_hash(a) ((a)>>14)
++KHASH_INIT(cnt, uint64_t, char, 0, _cnt_hash, _cnt_eq)
++typedef khash_t(cnt) cnthash_t;
++
++struct bfc_ch_s {
++  int k;
++  cnthash_t **h;
++  // private
++  int l_pre;
++};
++*/
++
++typedef struct {
++	int n_threads, q, k, l_pre;
++	int min_cov; // a k-mer is considered solid if the count is no less than this
++
++	int max_end_ext;
++	int win_multi_ec;
++	float min_trim_frac;
++
++	// these ec options cannot be changed on the command line
++	int w_ec, w_ec_high, w_absent, w_absent_high;
++	int max_path_diff, max_heap;
++} bfc_opt_t;
++
++/**********************
++ *** K-mer counting ***
++ **********************/
++
++#define CNT_BUF_SIZE 256
++
++typedef struct { // cache to reduce locking
++	uint64_t y[2];
++	int is_high;
++} insbuf_t;
++
++typedef struct {
++	int k, q;
++	int n_seqs;
++	const fml_seq1_t *seqs;
++	bfc_ch_t *ch;
++	int *n_buf;
++	insbuf_t **buf;
++} cnt_step_t;
++
++/***************
++ *** Correct ***
++ ***************/
++
++#define BFC_MAX_KMER     63
++#define BFC_MAX_BF_SHIFT 37
++
++#define BFC_MAX_PATHS 4
++#define BFC_EC_HIST 5
++#define BFC_EC_HIST_HIGH 2
++
++#define BFC_EC_MIN_COV_COEF .1
++
++/**************************
++ * Sequence struct for ec *
++ **************************/
++
++#include "kvec.h"
++
++typedef struct { // NOTE: unaligned memory
++	uint8_t b:3, q:1, ob:3, oq:1;
++	uint8_t dummy;
++	uint16_t lcov:6, hcov:6, solid_end:1, high_end:1, ec:1, absent:1;
++	int i;
++} ecbase_t;
++
++typedef kvec_t(ecbase_t) ecseq_t;
++
++/********************
++ * Correct one read *
++ ********************/
++
++#include "ksort.h"
++
++#define ECCODE_MISC      1
++#define ECCODE_MANY_N    2
++#define ECCODE_NO_SOLID  3
++#define ECCODE_UNCORR_N  4
++#define ECCODE_MANY_FAIL 5
++
++typedef struct {
++	uint32_t ec_code:3, brute:1, n_ec:14, n_ec_high:14;
++	uint32_t n_absent:24, max_heap:8;
++} ecstat_t;
++
++typedef struct {
++	uint8_t ec:1, ec_high:1, absent:1, absent_high:1, b:4;
++} bfc_penalty_t;
++
++typedef struct {
++	int tot_pen;
++	int i; // base position
++	int k; // position in the stack
++	int32_t ecpos_high[BFC_EC_HIST_HIGH];
++	int32_t ecpos[BFC_EC_HIST];
++	bfc_kmer_t x;
++} echeap1_t;
++
++typedef struct {
++	int parent, i, tot_pen;
++	uint8_t b;
++	bfc_penalty_t pen;
++	uint16_t cnt;
++} ecstack1_t;
++
++typedef struct {
++	const bfc_opt_t *opt;
++	const bfc_ch_t *ch;
++	kvec_t(echeap1_t) heap;
++	kvec_t(ecstack1_t) stack;
++	ecseq_t seq, tmp, ec[2];
++	int mode;
++	ecstat_t ori_st;
++} bfc_ec1buf_t;
++
++/********************
++ * Error correction *
++ ********************/
++
++typedef struct {
++	const bfc_opt_t *opt;
++	const bfc_ch_t *ch;
++	bfc_ec1buf_t **e;
++	int64_t n_processed;
++	int n_seqs, flt_uniq;
++	fml_seq1_t *seqs;
++} ec_step_t;
++
++void kmer_correct(ec_step_t * es, int mode, bfc_ch_t * ch);
++void bfc_opt_init(bfc_opt_t *opt);
++
++#endif
+diff -Nru fermi-lite.orig/bseq.c fermi-lite/bseq.c
+--- fermi-lite.orig/bseq.c	2019-03-20 14:21:24.000000000 +0000
++++ fermi-lite/bseq.c	2018-10-25 13:19:00.000000000 +0100
+@@ -6,10 +6,10 @@
+ #include "kseq.h"
+ KSEQ_INIT(gzFile, gzread)
+ 
+-bseq1_t *bseq_read(const char *fn, int *n_)
++fml_seq1_t *fml_seq_read(const char *fn, int *n_)
+ {
+ 	gzFile fp;
+-	bseq1_t *seqs;
++	fml_seq1_t *seqs;
+ 	kseq_t *ks;
+ 	int m, n;
+ 	uint64_t size = 0;
+@@ -21,10 +21,10 @@
+ 
+ 	m = n = 0; seqs = 0;
+ 	while (kseq_read(ks) >= 0) {
+-		bseq1_t *s;
++		fml_seq1_t *s;
+ 		if (n >= m) {
+ 			m = m? m<<1 : 256;
+-			seqs = realloc(seqs, m * sizeof(bseq1_t));
++			seqs = realloc(seqs, m * sizeof(fml_seq1_t));
+ 		}
+ 		s = &seqs[n];
+ 		s->seq = strdup(ks->seq.s);
+diff -Nru fermi-lite.orig/example.c fermi-lite/example.c
+--- fermi-lite.orig/example.c	2019-03-20 14:21:24.000000000 +0000
++++ fermi-lite/example.c	2018-10-25 13:19:00.000000000 +0100
+@@ -7,7 +7,7 @@
+ {
+ 	fml_opt_t opt;
+ 	int c, n_seqs, n_utg, gfa_out = 0;
+-	bseq1_t *seqs;
++	fml_seq1_t *seqs;
+ 	fml_utg_t *utg;
+ 
+ 	fml_opt_init(&opt);
+@@ -41,7 +41,7 @@
+ 		fprintf(stderr, "  -g              output the assembly graph in the GFA format\n");
+ 		return 1;
+ 	}
+-	seqs = bseq_read(argv[optind], &n_seqs);
++	seqs = fml_seq_read(argv[optind], &n_seqs);
+ 	utg = fml_assemble(&opt, n_seqs, seqs, &n_utg);
+ 	if (!gfa_out) fml_utg_print(n_utg, utg);
+ 	else fml_utg_print_gfa(n_utg, utg);
+diff -Nru fermi-lite.orig/fml.h fermi-lite/fml.h
+--- fermi-lite.orig/fml.h	2019-03-20 14:21:24.000000000 +0000
++++ fermi-lite/fml.h	2021-05-11 11:55:02.000000000 +0100
+@@ -8,7 +8,7 @@
+ typedef struct {
+ 	int32_t l_seq;
+ 	char *seq, *qual; // NULL-terminated strings; length expected to match $l_seq
+-} bseq1_t;
++} fml_seq1_t;
+ 
+ #define MAG_F_AGGRESSIVE 0x20 // pop variant bubbles (not default)
+ #define MAG_F_POPOPEN    0x40 // aggressive tip trimming (default)
+@@ -63,7 +63,7 @@
+  *
+  * @return array of sequences
+  */
+-bseq1_t *bseq_read(const char *fn, int *n);
++fml_seq1_t *fml_seq_read(const char *fn, int *n);
+ 
+ /**
+  * Initialize default parameters
+@@ -82,7 +82,7 @@
+  *
+  * @return array of unitigs
+  */
+-fml_utg_t *fml_assemble(const fml_opt_t *opt, int n_seqs, bseq1_t *seqs, int *n_utg);
++fml_utg_t *fml_assemble(const fml_opt_t *opt, int n_seqs, fml_seq1_t *seqs, int *n_utg);
+ 
+ /**
+  * Free unitigs
+@@ -103,7 +103,7 @@
+  * @param n_seqs    number of sequences
+  * @param seqs      array of sequences
+  */
+-void fml_opt_adjust(fml_opt_t *opt, int n_seqs, const bseq1_t *seqs);
++void fml_opt_adjust(fml_opt_t *opt, int n_seqs, const fml_seq1_t *seqs);
+ 
+ /**
+  * Error correction
+@@ -114,8 +114,8 @@
+  *
+  * @return k-mer coverage
+  */
+-float fml_correct(const fml_opt_t *opt, int n, bseq1_t *seq);
+-float fml_fltuniq(const fml_opt_t *opt, int n, bseq1_t *seq);
++float fml_correct(const fml_opt_t *opt, int n, fml_seq1_t *seq);
++float fml_fltuniq(const fml_opt_t *opt, int n, fml_seq1_t *seq);
+ 
+ /**
+  * Construct FMD-index
+@@ -126,7 +126,7 @@
+  *
+  * @return FMD-index on success; NULL if all input sequences are zero in length
+  */
+-struct rld_t *fml_seq2fmi(const fml_opt_t *opt, int n, bseq1_t *seq);
++struct rld_t *fml_seq2fmi(const fml_opt_t *opt, int n, fml_seq1_t *seq);
+ 
+ /**
+  * Generate initial overlap graph
+diff -Nru fermi-lite.orig/internal.h fermi-lite/internal.h
+--- fermi-lite.orig/internal.h	2019-03-20 14:21:24.000000000 +0000
++++ fermi-lite/internal.h	2018-10-25 13:19:00.000000000 +0100
+@@ -12,7 +12,7 @@
+ void kt_for(int n_threads, void (*func)(void*,long,int), void *data, long n);
+ void seq_reverse(int l, unsigned char *s);
+ void seq_revcomp6(int l, unsigned char *s);
+-struct bfc_ch_s *fml_count(int n, const bseq1_t *seq, int k, int q, int l_pre, int n_threads);
++struct bfc_ch_s *fml_count(int n, const fml_seq1_t *seq, int k, int q, int l_pre, int n_threads);
+ 
+ #ifdef __cplusplus
+ }
+diff -Nru fermi-lite.orig/misc.c fermi-lite/misc.c
+--- fermi-lite.orig/misc.c	2019-03-20 14:21:24.000000000 +0000
++++ fermi-lite/misc.c	2018-10-25 13:19:00.000000000 +0100
+@@ -40,7 +40,7 @@
+ 	opt->mag_opt.flag = MAG_F_NO_SIMPL | MAG_F_POPOPEN;
+ }
+ 
+-void fml_opt_adjust(fml_opt_t *opt, int n_seqs, const bseq1_t *seqs)
++void fml_opt_adjust(fml_opt_t *opt, int n_seqs, const fml_seq1_t *seqs)
+ {
+ 	int i, log_len;
+ 	uint64_t tot_len = 0;
+@@ -62,7 +62,7 @@
+ 	return (i == l>>1);
+ }
+ 
+-struct rld_t *fml_fmi_gen(int n, bseq1_t *seq, int is_mt)
++struct rld_t *fml_fmi_gen(int n, fml_seq1_t *seq, int is_mt)
+ {
+ 	mrope_t *mr;
+ 	kstring_t str = {0,0,0};
+@@ -72,15 +72,10 @@
+ 	rld_t *e = 0;
+ 	int k;
+ 
+-	for (k = 0; k < n; ++k)
+-		if (seq[k].l_seq > 0)
+-			break;
+-	if (k == n) return 0;
+-
+ 	mr = mr_init(ROPE_DEF_MAX_NODES, ROPE_DEF_BLOCK_LEN, MR_SO_RCLO);
+ 	for (k = 0; k < n; ++k) {
+ 		int i;
+-		bseq1_t *s = &seq[k];
++		fml_seq1_t *s = &seq[k];
+ 		if (s->l_seq == 0) continue;
+ 		free(s->qual);
+ 		for (i = 0; i < s->l_seq; ++i)
+@@ -121,7 +116,7 @@
+ 	return e;
+ }
+ 
+-struct rld_t *fml_seq2fmi(const fml_opt_t *opt, int n, bseq1_t *seq)
++struct rld_t *fml_seq2fmi(const fml_opt_t *opt, int n, fml_seq1_t *seq)
+ {
+ 	return fml_fmi_gen(n, seq, opt->n_threads > 1? 1 : 0);
+ }
+@@ -277,7 +272,7 @@
+ 
+ #define MAG_MIN_NSR_COEF .1
+ 
+-fml_utg_t *fml_assemble(const fml_opt_t *opt0, int n_seqs, bseq1_t *seqs, int *n_utg)
++fml_utg_t *fml_assemble(const fml_opt_t *opt0, int n_seqs, fml_seq1_t *seqs, int *n_utg)
+ {
+ 	rld_t *e;
+ 	mag_t *g;
+@@ -285,12 +280,10 @@
+ 	fml_opt_t opt = *opt0;
+ 	float kcov;
+ 
+-	*n_utg = 0;
+ 	fml_opt_adjust(&opt, n_seqs, seqs);
+ 	if (opt.ec_k >= 0) fml_correct(&opt, n_seqs, seqs);
+ 	kcov = fml_fltuniq(&opt, n_seqs, seqs);
+ 	e = fml_seq2fmi(&opt, n_seqs, seqs);
+-	if (e == 0) return 0; // this may happen when all sequences are filtered out
+ 	g = fml_fmi2mag(&opt, e);
+ 	opt.mag_opt.min_ensr = opt.mag_opt.min_ensr > kcov * MAG_MIN_NSR_COEF? opt.mag_opt.min_ensr : (int)(kcov * MAG_MIN_NSR_COEF + .499);
+ 	opt.mag_opt.min_ensr = opt.mag_opt.min_ensr < opt0->max_cnt? opt.mag_opt.min_ensr : opt0->max_cnt;
+diff -Nru fermi-lite.orig/README.md fermi-lite/README.md
+--- fermi-lite.orig/README.md	2019-03-20 14:21:24.000000000 +0000
++++ fermi-lite/README.md	2018-10-25 13:19:00.000000000 +0100
+@@ -34,11 +34,11 @@
+ int main(int argc, char *argv[])
+ {
+ 	int i, n_seqs, n_utgs;
+-	bseq1_t *seqs;                      // array of input sequences
++	fml_seq1_t *seqs;                   // array of input sequences
+ 	fml_utg_t *utgs;                    // array of output unitigs
+ 	fml_opt_t opt;
+ 	if (argc == 1) return 1;            // do nothing if there is no input file
+-	seqs = bseq_read(argv[1], &n_seqs); // or fill the array with callers' functions
++	seqs = fml_seq_read(argv[1], &n_seqs); // or fill the array with callers' functions
+ 	fml_opt_init(&opt);                 // initialize parameters
+ 	utgs = fml_assemble(&opt, n_seqs, seqs, &n_utgs); // assemble!
+ 	for (i = 0; i < n_utgs; ++i)        // output in fasta
