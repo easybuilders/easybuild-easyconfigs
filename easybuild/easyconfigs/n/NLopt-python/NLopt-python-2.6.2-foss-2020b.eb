@@ -1,0 +1,48 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'NLopt-python'
+version = '2.6.2'
+
+homepage = 'http://ab-initio.mit.edu/wiki/index.php/NLopt'
+description = """Python bindings for NLopt."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/stevengj/nlopt/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-2.6.2_fix-test-environment.patch']
+checksums = [
+    'cfa5981736dd60d0109c534984c4e13c615314d3584cf1c392a155bfe1a3b17e',  # v2.6.2.tar.gz
+    '989c2e8b58053e806b2337e33a9de66d7e555327f7a8f03a54207fa40ec4402d',  # NLopt-python-2.6.2_fix-test-environment.patch
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('binutils', '2.35'),
+    ('SWIG', '4.0.2'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'), # needed for numpy
+]
+
+# Avoid writing to both lib and lib64 so that symlink works as expected
+local_python_target = '-DINSTALL_PYTHON_DIR=%(installdir)s/lib64/python%(pyshortver)s/site-packages/'
+
+configopts = [
+    '-DBUILD_SHARED_LIBS=ON ' + local_python_target,
+    '-DBUILD_SHARED_LIBS=OFF ' + local_python_target,
+]
+
+runtest = 'test'
+
+options = {'modulename': 'nlopt'}
+
+sanity_check_paths = {
+    'files': ['lib/libnlopt.a', 'lib/libnlopt.%s' % SHLIB_EXT, 'include/nlopt.h'],
+    'dirs': ['lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'numlib'
