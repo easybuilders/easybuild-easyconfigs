@@ -1047,6 +1047,16 @@ def template_easyconfig_test(self, spec):
     error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
     self.assertTrue(easyblock or app_class is not ConfigureMake, error_msg)
 
+    # dump the easyconfig file;
+    # this should be done before creating the easyblock instance (done below via app_class),
+    # because some easyblocks (like PythonBundle) modify easyconfig parameters at initialisation
+    handle, test_ecfile = tempfile.mkstemp()
+    os.close(handle)
+
+    ec.dump(test_ecfile)
+    dumped_ec = EasyConfigParser(test_ecfile).get_config_dict()
+    os.remove(test_ecfile)
+
     app = app_class(ec)
 
     # more sanity checks
@@ -1175,14 +1185,6 @@ def template_easyconfig_test(self, spec):
     app.close_log()
     os.remove(app.logfile)
 
-    # dump the easyconfig file
-    handle, test_ecfile = tempfile.mkstemp()
-    os.close(handle)
-
-    ec.dump(test_ecfile)
-    dumped_ec = EasyConfigParser(test_ecfile).get_config_dict()
-    os.remove(test_ecfile)
-
     # inject dummy values for templates that are only known at a later stage
     dummy_template_values = {
         'builddir': '/dummy/builddir',
@@ -1245,7 +1247,8 @@ def template_easyconfig_test(self, spec):
             error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
             self.assertTrue(dumped_val.startswith(orig_val), error_msg)
         else:
-            self.assertEqual(orig_val, dumped_val)
+            error_msg = "%s value should be equal in original and dumped easyconfig: '%s' vs '%s'"
+            self.assertEqual(orig_val, dumped_val, error_msg % (key, orig_val, dumped_val))
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
@@ -1272,7 +1275,7 @@ def suite():
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
-                innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
+                innertest.__doc__ = "Test for easyconfig %s" % spec
                 # double underscore so parsing tests are run first
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
                 setattr(EasyConfigTest, innertest.__name__, innertest)
