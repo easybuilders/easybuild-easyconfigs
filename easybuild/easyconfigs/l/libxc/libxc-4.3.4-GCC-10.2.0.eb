@@ -30,6 +30,8 @@ builddependencies = [
 
 separate_build_dir = True
 
+parallel = 1
+
 local_common_configopts = "-DENABLE_FORTRAN=ON -DENABLE_FORTRAN03=ON -DENABLE_XHOST=OFF"
 
 # perform iterative build to get both static and shared libraries
@@ -38,6 +40,10 @@ configopts = [
     local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
 ]
 
+# make sure that built libraries (libxc*.so*) in build directory are picked when running tests
+# this is required when RPATH linking is used
+pretestopts = "export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj:$LD_LIBRARY_PATH && "
+
 runtest = 'test'
 
 sanity_check_paths = {
@@ -45,7 +51,5 @@ sanity_check_paths = {
              ['lib/libxc%s.%s' % (x, y) for x in ['', 'f03', 'f90'] for y in ['a', SHLIB_EXT]],
     'dirs': ['include', 'lib/pkgconfig', 'share/cmake/Libxc'],
 }
-
-parallel = 1
 
 moduleclass = 'chem'
