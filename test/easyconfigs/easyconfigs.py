@@ -188,9 +188,16 @@ class EasyConfigTest(TestCase):
 
         # filter out binutils with empty versionsuffix which is used to build toolchain compiler
         if dep == 'binutils' and len(dep_vars) > 1:
-            empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
-            if len(empty_vsuff_vars) == 1:
-                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
+            # binutils 2.35 was updated to 2.35.2, but some ECs were left at 2.35
+            # So treat both as 2.35.2
+            ver_2_35 = dep_vars.pop('version: 2.35; versionsuffix: ', None)
+            if ver_2_35:
+                dep_vars.setdefault('version: 2.35.2; versionsuffix: ', {}).update(ver_2_35)
+
+            if len(dep_vars) > 1:
+                empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
+                if len(empty_vsuff_vars) == 1:
+                    dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
         # same goes for WRF and WPS
