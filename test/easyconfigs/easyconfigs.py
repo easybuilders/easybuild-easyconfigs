@@ -282,10 +282,10 @@ class EasyConfigTest(TestCase):
             'libxc': [(r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
                                    r'PySCF-', r'Qiskit-', r'WIEN2k-'])],
             # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
-            # scVelo, Python-Geometric and cell2location depend on numba
+            # scVelo, Python-Geometric, cell2location and umap-learn depend on numba
             'LLVM': [
                 (r'8\.', [r'numba-0\.47\.0-', r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
-                (r'10\.0\.1', [r'numba-0\.52\.0-', r'cell2location-0\.05-alpha-']),
+                (r'10\.0\.1', [r'numba-0\.52\.0-', r'cell2location-0\.05-alpha-', r'umap-learn-0\.4\.6-']),
             ],
             'nodejs': [
                 # rampart requires nodejs > 10, artic-ncov2019 requires rampart
