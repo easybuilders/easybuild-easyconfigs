@@ -1,0 +1,215 @@
+Fix compilation on PPC which fails due to Eigen using __vector_pair types which cannot be passed by reference
+See https://gitlab.com/libeigen/eigen/-/issues/2259
+
+Includes https://github.com/tensorflow/tensorflow/commit/f4ccc2ca4796d72e0bf60bd1f0ca548a4149b64a
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/eigen3/fix_eigen_macro.patch b/third_party/eigen3/fix_eigen_macro.patch
+new file mode 100644
+index 00000000000..91fdcfd2ff7
+--- /dev/null
++++ b/third_party/eigen3/fix_eigen_macro.patch
+@@ -0,0 +1,151 @@
++diff --git a/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h b/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h
++index 08855bd01..8eb8ec800 100644
++--- a/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h
+++++ b/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h
++@@ -65,20 +65,20 @@ EIGEN_STRONG_INLINE void storeComplexAccumulator(Index i, Index j, const DataMap
++ 
++ // Defaults to float32, since Eigen still supports C++03 we can't use default template arguments
++ template<typename LhsPacket, typename RhsPacket, bool NegativeAccumulate>
++-EIGEN_STRONG_INLINE void pgerMMA(__vector_quad* acc, const RhsPacket& a, const LhsPacket& b)
+++EIGEN_STRONG_INLINE void pgerMMA(__vector_quad* acc, const RhsPacket* a, const LhsPacket& b)
++ {
++   if(NegativeAccumulate)
++   {
++-    __builtin_mma_xvf32gernp(acc, (__vector unsigned char)a, (__vector unsigned char)b);
+++    __builtin_mma_xvf32gernp(acc, (__vector unsigned char)*a, (__vector unsigned char)b);
++   } else {
++-    __builtin_mma_xvf32gerpp(acc, (__vector unsigned char)a, (__vector unsigned char)b);
+++    __builtin_mma_xvf32gerpp(acc, (__vector unsigned char)*a, (__vector unsigned char)b);
++   }
++ }
++ 
++ template<typename LhsPacket, typename RhsPacket, bool NegativeAccumulate>
++-EIGEN_STRONG_INLINE void pgerMMA(__vector_quad* acc, const PacketBlock<Packet2d,2>& a, const Packet2d& b)
+++EIGEN_STRONG_INLINE void pgerMMA(__vector_quad* acc, const PacketBlock<Packet2d,2>* a, const Packet2d& b)
++ {
++-  __vector_pair* a0 = (__vector_pair *)(&a.packet[0]);
+++  __vector_pair* a0 = (__vector_pair *)(&a->packet[0]);
++   if(NegativeAccumulate)
++   {
++     __builtin_mma_xvf64gernp(acc, *a0, (__vector unsigned char)b);
++@@ -88,24 +88,24 @@ EIGEN_STRONG_INLINE void pgerMMA(__vector_quad* acc, const PacketBlock<Packet2d,
++ }
++ 
++ template<typename LhsPacket, typename RhsPacket, bool NegativeAccumulate>
++-EIGEN_STRONG_INLINE void pgerMMA(__vector_quad* acc, const __vector_pair& a, const Packet2d& b)
+++EIGEN_STRONG_INLINE void pgerMMA(__vector_quad* acc, __vector_pair* a, const Packet2d& b)
++ {
++   if(NegativeAccumulate)
++   {
++-    __builtin_mma_xvf64gernp(acc, (__vector_pair)a, (__vector unsigned char)b);
+++    __builtin_mma_xvf64gernp(acc, (__vector_pair)*a, (__vector unsigned char)b);
++   } else {
++-    __builtin_mma_xvf64gerpp(acc, (__vector_pair)a, (__vector unsigned char)b);
+++    __builtin_mma_xvf64gerpp(acc, (__vector_pair)*a, (__vector unsigned char)b);
++   }
++ }
++ 
++ template<typename LhsPacket, typename RhsPacket, bool NegativeAccumulate>
++-EIGEN_STRONG_INLINE void pgerMMA(__vector_quad*, const __vector_pair&, const Packet4f&)
+++EIGEN_STRONG_INLINE void pgerMMA(__vector_quad*, __vector_pair*, const Packet4f&)
++ {
++   // Just for compilation
++ }
++ 
++ template<typename Scalar, typename Packet, typename RhsPacket, bool ConjugateLhs, bool ConjugateRhs, bool LhsIsReal, bool RhsIsReal>
++-EIGEN_STRONG_INLINE void pgercMMA(__vector_quad* accReal, __vector_quad* accImag, const Packet& lhsV, const Packet& lhsVi, const RhsPacket& rhsV, const RhsPacket& rhsVi)
+++EIGEN_STRONG_INLINE void pgercMMA(__vector_quad* accReal, __vector_quad* accImag, const Packet& lhsV, const Packet& lhsVi, RhsPacket* rhsV, RhsPacket* rhsVi)
++ {
++   pgerMMA<Packet, RhsPacket, false>(accReal,  rhsV,  lhsV);
++   if(LhsIsReal) {
++@@ -123,32 +123,32 @@ EIGEN_STRONG_INLINE void pgercMMA(__vector_quad* accReal, __vector_quad* accImag
++ 
++ // This is necessary because ploadRhs for double returns a pair of vectors when MMA is enabled.
++ template<typename Scalar, typename Packet>
++-EIGEN_STRONG_INLINE void ploadRhsMMA(const Scalar* rhs, Packet& rhsV)
+++EIGEN_STRONG_INLINE void ploadRhsMMA(const Scalar* rhs, Packet* rhsV)
++ {
++-  rhsV = ploadRhs<Scalar, Packet>((const Scalar*)(rhs));
+++  *rhsV = ploadRhs<Scalar, Packet>((const Scalar*)(rhs));
++ } 
++ 
++ template<>
++-EIGEN_STRONG_INLINE void ploadRhsMMA<double, PacketBlock<Packet2d, 2> >(const double* rhs, PacketBlock<Packet2d, 2>& rhsV)
+++EIGEN_STRONG_INLINE void ploadRhsMMA<double, PacketBlock<Packet2d, 2> >(const double* rhs, PacketBlock<Packet2d, 2>* rhsV)
++ {
++-  rhsV.packet[0] = ploadRhs<double, Packet2d>((const double *)((Packet2d *)rhs      ));
++-  rhsV.packet[1] = ploadRhs<double, Packet2d>((const double *)(((Packet2d *)rhs) + 1));
+++  rhsV->packet[0] = ploadRhs<double, Packet2d>((const double *)((Packet2d *)rhs      ));
+++  rhsV->packet[1] = ploadRhs<double, Packet2d>((const double *)(((Packet2d *)rhs) + 1));
++ }
++ 
++ template<>
++-EIGEN_STRONG_INLINE void ploadRhsMMA<double, __vector_pair>(const double* rhs, __vector_pair& rhsV)
+++EIGEN_STRONG_INLINE void ploadRhsMMA<double, __vector_pair>(const double* rhs, __vector_pair* rhsV)
++ {
++ #if EIGEN_COMP_LLVM
++-  __builtin_vsx_assemble_pair(&rhsV,
+++  __builtin_vsx_assemble_pair(rhsV,
++     (__vector unsigned char)(ploadRhs<double, Packet2d>((const double *)(((Packet2d *)rhs) + 1))),
++     (__vector unsigned char)(ploadRhs<double, Packet2d>((const double *)((Packet2d *)rhs      ))));
++ #else
++-  __asm__ ("lxvp %x0,%1" : "=wa" (rhsV) : "Y" (*rhs));
+++  __asm__ ("lxvp %x0,%1" : "=wa" (*rhsV) : "Y" (*rhs));
++ #endif
++ }
++ 
++ template<>
++-EIGEN_STRONG_INLINE void ploadRhsMMA(const float*, __vector_pair&)
+++EIGEN_STRONG_INLINE void ploadRhsMMA(const float*, __vector_pair*)
++ {
++   // Just for compilation
++ }
++@@ -169,13 +169,13 @@ EIGEN_STRONG_INLINE void ploadRhsMMA(const float*, __vector_pair&)
++ 
++ #define MICRO_MMA_WORK_ONE(iter, type, peel) \
++   if (unroll_factor > iter) { \
++-    pgerMMA<Packet, type, false>(&accZero##iter, rhsV##peel, lhsV##iter); \
+++    pgerMMA<Packet, type, false>(&accZero##iter, &rhsV##peel, lhsV##iter); \
++   }
++ 
++ #define MICRO_MMA_TYPE_PEEL(func, func2, type, peel) \
++   if (PEEL_MMA > peel) { \
++     Packet lhsV0, lhsV1, lhsV2, lhsV3, lhsV4, lhsV5, lhsV6, lhsV7; \
++-    ploadRhsMMA<Scalar, type>(rhs_ptr + (accRows * peel), rhsV##peel); \
+++    ploadRhsMMA<Scalar, type>(rhs_ptr + (accRows * peel), &rhsV##peel); \
++     MICRO_MMA_UNROLL(func2); \
++     func(0,type,peel) func(1,type,peel) func(2,type,peel) func(3,type,peel) \
++     func(4,type,peel) func(5,type,peel) func(6,type,peel) func(7,type,peel) \
++@@ -397,16 +397,16 @@ void gemmMMA(const DataMapper& res, const Scalar* blockA, const Scalar* blockB,
++ 
++ #define MICRO_COMPLEX_MMA_WORK_ONE(iter, type, peel) \
++   if (unroll_factor > iter) { \
++-    pgercMMA<Scalar, Packet, type, ConjugateLhs, ConjugateRhs, LhsIsReal, RhsIsReal>(&accReal##iter, &accImag##iter, lhsV##iter, lhsVi##iter, rhsV##peel, rhsVi##peel); \
+++    pgercMMA<Scalar, Packet, type, ConjugateLhs, ConjugateRhs, LhsIsReal, RhsIsReal>(&accReal##iter, &accImag##iter, lhsV##iter, lhsVi##iter, &rhsV##peel, &rhsVi##peel); \
++   }
++ 
++ #define MICRO_COMPLEX_MMA_TYPE_PEEL(func, func2, type, peel) \
++   if (PEEL_COMPLEX_MMA > peel) { \
++     Packet lhsV0, lhsV1, lhsV2, lhsV3, lhsV4; \
++     Packet lhsVi0, lhsVi1, lhsVi2, lhsVi3, lhsVi4; \
++-    ploadRhsMMA<Scalar, type>(rhs_ptr_real + (accRows * peel), rhsV##peel); \
+++    ploadRhsMMA<Scalar, type>(rhs_ptr_real + (accRows * peel), &rhsV##peel); \
++     if(!RhsIsReal) { \
++-      ploadRhsMMA<Scalar, type>(rhs_ptr_imag + (accRows * peel), rhsVi##peel); \
+++      ploadRhsMMA<Scalar, type>(rhs_ptr_imag + (accRows * peel), &rhsVi##peel); \
++     } else { \
++       EIGEN_UNUSED_VARIABLE(rhsVi##peel); \
++     } \
++diff --git a/Eigen/src/Core/util/Macros.h b/Eigen/src/Core/util/Macros.h
++index d2e844928..def8ff190 100644
++--- a/Eigen/src/Core/util/Macros.h
+++++ b/Eigen/src/Core/util/Macros.h
++@@ -1065,7 +1065,7 @@ namespace Eigen {
++     template<typename T> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void ignore_unused_variable(const T&) {}
++   }
++ }
++-#define EIGEN_UNUSED_VARIABLE(var) Eigen::internal::ignore_unused_variable(var);
+++#define EIGEN_UNUSED_VARIABLE(var) Eigen::internal::ignore_unused_variable(&var);
++ 
++ #if !defined(EIGEN_ASM_COMMENT)
++   #if EIGEN_COMP_GNUC && (EIGEN_ARCH_i386_OR_x86_64 || EIGEN_ARCH_ARM_OR_ARM64)
+diff --git a/third_party/eigen3/workspace.bzl b/third_party/eigen3/workspace.bzl
+index 233231f5636..dce496142b7 100644
+--- a/third_party/eigen3/workspace.bzl
++++ b/third_party/eigen3/workspace.bzl
+@@ -13,6 +13,7 @@ def repo():
+         name = "eigen_archive",
+         build_file = "//third_party/eigen3:eigen_archive.BUILD",
+         sha256 = EIGEN_SHA256,
++        patch_file = "//third_party/eigen3:fix_eigen_macro.patch",
+         strip_prefix = "eigen-{commit}".format(commit = EIGEN_COMMIT),
+         urls = [
+             "https://storage.googleapis.com/mirror.tensorflow.org/gitlab.com/libeigen/eigen/-/archive/{commit}/eigen-{commit}.tar.gz".format(commit = EIGEN_COMMIT),
+diff --git a/tensorflow/core/common_runtime/gpu/gpu_device.cc b/tensorflow/core/common_runtime/gpu/gpu_device.cc
+index c9696cf230761..ffe842d2f33c9 100644
+--- a/tensorflow/core/common_runtime/gpu/gpu_device.cc
++++ b/tensorflow/core/common_runtime/gpu/gpu_device.cc
+@@ -115,9 +115,7 @@ using se::rocm::ScopedActivateExecutorContext;
+ class EigenGpuStreamDevice : public ::Eigen::StreamInterface {
+  public:
+   EigenGpuStreamDevice()
+-      : scratch_(nullptr), semaphore_(nullptr), context_(nullptr) {
+-    Eigen::initializeDeviceProp();
+-  }
++      : scratch_(nullptr), semaphore_(nullptr), context_(nullptr) {}
+   ~EigenGpuStreamDevice() override {}
+   void Reinitialize(OpKernelContext* context, const gpuStream_t* gpu_stream,
+                     TfDeviceId tf_device_id, ::tensorflow::Allocator* alloc,
+@@ -135,7 +133,7 @@ class EigenGpuStreamDevice : public ::Eigen::StreamInterface {
+     PlatformDeviceId platform_device_id;
+     TF_CHECK_OK(
+         GpuIdManager::TfToPlatformDeviceId(tf_device_id, &platform_device_id));
+-    device_prop_ = &Eigen::m_deviceProperties[platform_device_id.value()];
++    device_prop_ = &Eigen::GetGpuDeviceProperties(platform_device_id.value());
+   }
+ 
+   const gpuStream_t& stream() const override { return *stream_; }
+diff --git a/third_party/eigen3/workspace.bzl b/third_party/eigen3/workspace.bzl
+index a74dcd03ef6f0..73b1fe5e525f9 100644
+--- a/third_party/eigen3/workspace.bzl
++++ b/third_party/eigen3/workspace.bzl
+@@ -6,8 +6,8 @@ def repo():
+     """Imports Eigen."""
+ 
+     # Attention: tools parse and update these lines.
+-    EIGEN_COMMIT = "f612df273689a19d25b45ca4f8269463207c4fee"
+-    EIGEN_SHA256 = "e3fe5cac59763b7419af2de39840b5342d77624ddf8b181fb9f9f532615ec518"
++    EIGEN_COMMIT = "3d9051ea84a5089b277c88dac456b3b1576bfa7f"
++    EIGEN_SHA256 = "1e473b94966cd3084c6df5b4fe0612ea681ac0ae6624bd151950262c29ebb917"
+ 
+     tf_http_archive(
+         name = "eigen_archive",
