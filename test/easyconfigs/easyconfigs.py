@@ -289,13 +289,13 @@ class EasyConfigTest(TestCase):
                 (r'5\.', [r'Elk-']),
             ],
             # some software depends on numba, which typically requires an older LLVM;
-            # this includes BirdNET, librosa, PyOD, Python-Geometric, scVelo, cryoDRGN
+            # this includes BirdNET, cryoDRGN, librosa, PyOD, Python-Geometric, scVelo, scanpy
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
                 (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
                           r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
                 (r'10\.0\.1', [r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-', r'numba-0\.52\.0-', r'PyOD-0\.8\.7-',
-                               r'PyTorch-Geometric-1\.6\.3']),
+                               r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-']),
             ],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
@@ -672,11 +672,11 @@ class EasyConfigTest(TestCase):
 
         # the check_sha256_checksums function (again) creates an EasyBlock instance
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
-        # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
+        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in changed_ecs:
-            if ec['easyblock'] in ['Bundle', 'PythonBundle']:
+            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
@@ -868,6 +868,8 @@ class EasyConfigTest(TestCase):
             'http://isl.gforge.inria.fr',
             # https:// leads to File Not Found
             'http://tau.uoregon.edu/',
+            # https:// has outdated SSL configurations
+            'http://faculty.scs.illinois.edu',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
@@ -1038,6 +1040,16 @@ def template_easyconfig_test(self, spec):
     error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
     self.assertTrue(easyblock or app_class is not ConfigureMake, error_msg)
 
+    # dump the easyconfig file;
+    # this should be done before creating the easyblock instance (done below via app_class),
+    # because some easyblocks (like PythonBundle) modify easyconfig parameters at initialisation
+    handle, test_ecfile = tempfile.mkstemp()
+    os.close(handle)
+
+    ec.dump(test_ecfile)
+    dumped_ec = EasyConfigParser(test_ecfile).get_config_dict()
+    os.remove(test_ecfile)
+
     app = app_class(ec)
 
     # more sanity checks
@@ -1166,14 +1178,6 @@ def template_easyconfig_test(self, spec):
     app.close_log()
     os.remove(app.logfile)
 
-    # dump the easyconfig file
-    handle, test_ecfile = tempfile.mkstemp()
-    os.close(handle)
-
-    ec.dump(test_ecfile)
-    dumped_ec = EasyConfigParser(test_ecfile).get_config_dict()
-    os.remove(test_ecfile)
-
     # inject dummy values for templates that are only known at a later stage
     dummy_template_values = {
         'builddir': '/dummy/builddir',
@@ -1236,7 +1240,8 @@ def template_easyconfig_test(self, spec):
             error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
             self.assertTrue(dumped_val.startswith(orig_val), error_msg)
         else:
-            self.assertEqual(orig_val, dumped_val)
+            error_msg = "%s value should be equal in original and dumped easyconfig: '%s' vs '%s'"
+            self.assertEqual(orig_val, dumped_val, error_msg % (key, orig_val, dumped_val))
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
@@ -1263,7 +1268,7 @@ def suite():
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
-                innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
+                innertest.__doc__ = "Test for easyconfig %s" % spec
                 # double underscore so parsing tests are run first
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
                 setattr(EasyConfigTest, innertest.__name__, innertest)
