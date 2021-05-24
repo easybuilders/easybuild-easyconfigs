@@ -1,0 +1,52 @@
+# create tar ball from recursive clone of repository
+#
+#  John Dey jfdey@fredhutch.org
+#  Felipe Franco <felipe.franco@hpcnow.com>
+#
+easyblock = 'ConfigureMake'
+
+name = 'svaba'
+version = '1.1.0'
+
+homepage = 'https://github.com/walaj/svaba'
+description = """SvABA - Structural variation and indel analysis by assembly"""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+sources = [{
+    'filename': '%(name)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/walaj',
+        'repo_name': 'svaba',
+        'tag': '1.1.0',
+        'recursive': True,
+        'keep_git_dir': True,
+    },
+}]
+
+patches = ['svaba-1.1.0_rle_extern.patch']
+
+checksums = [
+    '212d69bfd7e1c2d75cd177325c1ed9df3be14a3ad085f6f4534e45221c541eb3',  # svaba.tar.gz
+    '69d6bb3342dbcca130dfe9959ac5126d1e27a652fa836d07f121252ba374fe3b',  # svaba-1.1.0_rle_extern.patch
+]
+
+dependencies = [
+    ('R', '4.0.3', '', ('foss', '2020b')),
+    ('XZ', '5.2.5', '', ('GCCcore', '10.2.0')),
+    ('bzip2', '1.0.8', '', ('GCCcore', '10.2.0')),
+]
+
+postinstallcmds = ['mkdir -p %(installdir)s/bin',
+                   'cp -rp %(builddir)s/%(name)s/bin %(installdir)s/',
+                   'cp -rp %(builddir)s/%(name)s/R/* %(installdir)s/bin/',
+                   ]
+
+sanity_check_paths = {
+    'files': ['bin/svaba', 'bin/svaba-annotate.R'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = [('svaba', '-h'), ('svaba-annotate.R', '--help')]
+
+moduleclass = 'bio'
