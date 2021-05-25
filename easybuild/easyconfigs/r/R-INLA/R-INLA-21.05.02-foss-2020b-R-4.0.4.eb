@@ -54,7 +54,7 @@ components = [
     }),
     ('rinla', version, {
         'checksums': default_component_specs['checksums'] + [
-            'c88e22739d1238414d10a5473a99dbc8fa6ccf811f2e6dc7701e015025f62f07',
+            '368bef641bbb55fe198529ee350e603936efebfca7b16f54a6c60573ecef2e9d',
         ],
         'patches': ['R-INLA-%(version)s-foss-2020b-remove-hardcoding.patch'],
         'easyblock': 'RPackage',
@@ -71,19 +71,18 @@ components = [
     }),
 ]
 
-postinstallcmds = ['ln -s %(installdir)s/bin/inla %(installdir)s/INLA/bin/linux/64bit/inla']
+local_bins = ['inla', 'fmesher']
 
-modextrapaths = {'R_LIBS_SITE': ''}
+postinstallcmds = ['ln -s %%(installdir)s/bin/%s %%(installdir)s/INLA/bin/linux/64bit/%s' % (x,x) for x in local_bins]
 
 sanity_check_paths = {
-    'files': ['bin/fmesher', 'bin/inla', 'lib/libGMRFLib.a', 'lib/libGMRFLib-geo.a', 'lib/libtaucs.a'],
+    'files': ['%s/%s' % (p, x) for p in ['bin', 'INLA/bin/linux/64bit'] for x in local_bins] +
+             ['lib/libGMRFLib.a', 'lib/libGMRFLib-geo.a', 'lib/libtaucs.a'],
     'dirs': ['doc', 'include/GMRFLib'],
 }
 
-sanity_check_commands = [
-    "fmesher -h",
-    "inla -h",
-    "Rscript -e 'library(INLA)'",
-]
+sanity_check_commands = ["Rscript -e 'library(INLA)'"] + ["%s -h" % x for x in local_bins]
+
+modextrapaths = {'R_LIBS_SITE': ''}
 
 moduleclass = 'math'
