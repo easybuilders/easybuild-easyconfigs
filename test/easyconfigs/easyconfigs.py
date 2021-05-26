@@ -775,8 +775,8 @@ class EasyConfigTest(TestCase):
                 'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
             ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
-            has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies']
-                                 if LooseVersion(dep['version']) < LooseVersion('3.8.6'))
+            has_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
+                                 for dep in ec['dependencies'] if dep['name'] == 'Python')
             if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
@@ -787,8 +787,8 @@ class EasyConfigTest(TestCase):
                     else:
                         print('\nNote: Failed non-critical check: ' + msg)
             else:
-                has_recent_python3_dep = any(dep['name'] == 'Python' for dep in ec['dependencies']
-                                             if LooseVersion(dep['version']) >= LooseVersion('3.8.6'))
+                has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
+                                             for dep in ec['dependencies'] if dep['name'] == 'Python')
                 if has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
                     failing_checks.append(msg)
