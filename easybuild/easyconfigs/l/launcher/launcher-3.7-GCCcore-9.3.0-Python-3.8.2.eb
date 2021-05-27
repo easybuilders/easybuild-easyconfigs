@@ -1,26 +1,33 @@
-# Autor:  Felipe Franco <felipe.franco@hpcnow.com>
-#
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Felipe Franco <felipe.franco@hpcnow.com>, Jordi Blasco <jordi.blasco@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
 easyblock = 'Tarball'
 
 name = 'launcher'
 version = '3.7'
+local_python_ver = '3.8.2'
+versionsuffix = '-Python-%s' % local_python_ver
 
 homepage = 'https://github.com/TACC/launcher'
 description = """
-Launcher is a utility for performing simple, data parallel, 
-high throughput computing (HTC) workflows on clusters, 
-massively parallel processor (MPP) systems, workgroups of computers, 
+Launcher is a utility for performing simple, data parallel,
+high throughput computing (HTC) workflows on clusters,
+massively parallel processor (MPP) systems, workgroups of computers,
 and personal machines.
 """
 
-toolchain = {'name': 'foss', 'version': '2020a'}
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
 
 sources = [{
     'filename': '%(name)s-%(version)s.tar.gz',
     'git_config': {
         'url': 'https://github.com/tacc',
         'repo_name': 'launcher',
-        'tag': 'v3.7',
+        'tag': 'v%(version)s',
         'recursive': True,
         'keep_git_dir': True,
     },
@@ -29,9 +36,9 @@ sources = [{
 checksums = ['7a3cfc16e4882d9fa08093b1035b1f5e8733477246ca1088cfdc27fc30bf9b90']
 
 dependencies = [
-    ('hwloc', '2.2.0', '', ('GCCcore', '9.3.0')),
+    ('hwloc', '2.2.0'),
+    ('Python', local_python_ver),
 ]
-
 
 sanity_check_paths = {
     'files': ['launcher', 'tests/quicktest'],
@@ -41,6 +48,10 @@ sanity_check_paths = {
 modextravars = {'LAUNCHER_DIR': '%(installdir)s',
                 'LAUNCHER_PLUGIN_DIR': '%(installdir)s/plugins',
                 }
+
+modextrapaths = {
+    'PATH': '',
+}
 
 postinstallcmds = ['chmod 777 %(installdir)s/tests/quicktest']
 
