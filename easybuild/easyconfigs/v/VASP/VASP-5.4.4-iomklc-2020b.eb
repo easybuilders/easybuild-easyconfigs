@@ -1,0 +1,48 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '5.4.4'
+
+homepage = "https://www.vasp.at"
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+ materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+ from first principles."""
+
+toolchain = {'name': 'iomklc', 'version': '2020b'}
+toolchainopts = {'usempi': True}
+
+# source_urls = []
+# VASP is proprietary software. For installation purposes please download from https://www.vasp.at/vasp-portal
+# using the RSG's installation licence.
+sources = ['vasp.5.4.4.pl2.tgz']
+# Note that the file diff.patch in the downloaded archive tar.gz has already been applied.
+patches = [
+    'VASP-5.4.4_intel-gpu.patch',
+]
+checksums = [
+    '98f75fd75399a23d76d060a6155f4416b340a1704f256a00146f89024035bc8e',  # vasp.5.4.4.pl2.tgz
+    '736053fec404e41a30b17d67ee490e16d14a829f7a43e34da94cd2830f3c306e',  # VASP-5.4.4_intel-gpu.patch
+]
+
+prebuildopts = "unset LIBS && cp arch/makefile.include.linux_intel makefile.include && "
+prebuildopts += "sed -i s/mpiifort/mpifort/ makefile.include && "
+prebuildopts += "sed -i s/-lmkl_blacs_intelmpi_lp64/-lmkl_blacs_openmpi_lp64/ makefile.include && "
+prebuildopts += "sed -i s:\$\(I_MPI_ROOT\)/include64/:\$\(MPI_HOME\)/include/: makefile.include && "
+# build type
+buildopts = "gpu gpu_ncl CUDA_ROOT=$EBROOTCUDA "
+buildopts += "GENCODE_ARCH='-gencode=arch=compute_60,code=sm_60'"  # doesn't work with sm_70
+
+# don't use parallel make, results in compilation failure
+parallel = 1
+
+files_to_copy = [(['./bin/vasp_*'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_gpu', 'bin/vasp_gpu_ncl'],
+    'dirs': [],
+}
+
+moduleclass = 'phys'
+
+local_bham_group = "p-vasp"
