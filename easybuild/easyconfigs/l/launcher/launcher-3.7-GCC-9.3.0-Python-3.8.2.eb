@@ -1,0 +1,68 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Felipe Franco <felipe.franco@hpcnow.com>, Jordi Blasco <jordi.blasco@hpcnow.com>
+# License::     GPL-v3.0
+# #
+
+easyblock = 'Tarball'
+
+name = 'launcher'
+version = '3.7'
+local_python_ver = '3.8.2'
+versionsuffix = '-Python-%s' % local_python_ver
+
+homepage = 'https://github.com/TACC/launcher'
+description = """
+Launcher is a utility for performing simple, data parallel,
+high throughput computing (HTC) workflows on clusters,
+massively parallel processor (MPP) systems, workgroups of computers,
+and personal machines.
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/tacc',
+        'repo_name': 'launcher',
+        'tag': 'v%(version)s',
+        'recursive': True,
+        'keep_git_dir': True,
+    },
+}]
+
+patches = ['tests_modification.patch']
+
+checksums = [
+    '7a3cfc16e4882d9fa08093b1035b1f5e8733477246ca1088cfdc27fc30bf9b90',  # launcher-3.7.tar.gz
+    '0311c8e1a1284a55ff8c0dacca2643404c9d0bddb9ac7cbb76bd9961d0d2a843',  # tests_modification.patch
+]
+
+dependencies = [
+    ('hwloc', '2.2.0'),
+    ('Python', local_python_ver),
+]
+
+sanity_check_paths = {
+    'files': ['launcher', 'tests/quicktest'],
+    'dirs': ['tests'],
+}
+
+modextravars = {'LAUNCHER_DIR': '%(installdir)s',
+                'LAUNCHER_PLUGIN_DIR': '%(installdir)s/plugins',
+                'LAUNCHER_JOB_FILE': '%(installdir)s/extras/examples/helloworld_multi',
+                }
+
+postinstallcmds = ['chmod 777 %(installdir)s/tests/quicktest',
+                   'chmod 777 %(installdir)s/tests/quicktest2'
+                   ]
+
+pretestopts = "export LAUNCHER_DIR=%(installdir)s"
+
+tests = ['%(installdir)s/tests/quicktest', '%(installdir)s/tests/quicktest2']
+
+usage = "From your jobscript, run:$LAUNCHER_DIR/paramrun"
+
+moduleclass = 'tools'
