@@ -1,0 +1,39 @@
+diff -ru src.orig/makefile src/makefile
+--- src.orig/makefile	2021-05-31 18:57:46.103060511 +0000
++++ src/makefile	2021-05-31 19:00:38.135178421 +0000
+@@ -51,6 +51,7 @@
+ CUDA_CC ?= 37
+ CUDA_ARCH := compute_$(CUDA_CC)
+ CUDA_CODE := \"compute_$(CUDA_CC),sm_$(CUDA_CC)\"
++CUDA_FLAGS ?= -gencode arch=$(CUDA_ARCH),code=$(CUDA_CODE)
+ 
+ # tools
+ #
+@@ -70,11 +71,11 @@
+ ifneq (,$(findstring x86_64,$(TARGET_ARCH)))
+ ifeq ($(BUILDTYPE),debug)
+ GPPFLAGS = -std=c++14 -g -c -Wall -Wno-unknown-pragmas -O0 -fno-inline -m64 -D_DEBUG=1 -I $(CUDA_INCLUDES)
+-NVCCFLAGS = -std=c++14 -g -c -O0 -m64 -gencode arch=$(CUDA_ARCH),code=$(CUDA_CODE) -Xcompiler -O0,-m64 -I $(CUDA_INCLUDES)
++NVCCFLAGS = -std=c++14 -g -c -O0 -m64 $(CUDA_FLAGS) -Xcompiler -O0,-m64 -I $(CUDA_INCLUDES)
+ else
+ BUILDTYPE = release
+ GPPFLAGS = -std=c++14 -c -Wall -Wno-unknown-pragmas -O3 -m64 -I $(CUDA_INCLUDES)
+-NVCCFLAGS = -std=c++14 -c -O3 -m64 -gencode arch=$(CUDA_ARCH),code=$(CUDA_CODE) -Xcompiler -O3,-m64 -I $(CUDA_INCLUDES)
++NVCCFLAGS = -std=c++14 -c -O3 -m64 $(CUDA_FLAGS) -Xcompiler -O3,-m64 -I $(CUDA_INCLUDES)
+ endif
+ endif
+ 
+@@ -82,11 +83,11 @@
+ ifneq (,$(findstring ppc64,$(TARGET_ARCH)))
+ ifeq ($(BUILDTYPE),debug)
+ GPPFLAGS = -std=c++14 -g -c -Wall -Wno-unknown-pragmas -O0 -fno-inline -D_DEBUG=1 -I $(CUDA_INCLUDES)
+-NVCCFLAGS = -std=c++14 -g -c -O0 -m64 -gencode arch=$(CUDA_ARCH),code=$(CUDA_CODE) -Xcompiler -O0,-m64 -I $(CUDA_INCLUDES)
++NVCCFLAGS = -std=c++14 -g -c -O0 -m64 $(CUDA_FLAGS) -Xcompiler -O0,-m64 -I $(CUDA_INCLUDES)
+ else
+ BUILDTYPE = release
+ GPPFLAGS = -std=c++14 -c -Wall -Wno-unknown-pragmas -O3 -I $(CUDA_INCLUDES)
+-NVCCFLAGS = -std=c++14 -c -O3 -m64 -gencode arch=$(CUDA_ARCH),code=$(CUDA_CODE) -Xcompiler -O3,-m64,-mcpu=power8,-mtune=power8, -I $(CUDA_INCLUDES)
++NVCCFLAGS = -std=c++14 -c -O3 -m64 $(CUDA_FLAGS) -Xcompiler -O3,-m64,-mcpu=power8,-mtune=power8, -I $(CUDA_INCLUDES)
+ endif
+ endif
+ 
