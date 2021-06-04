@@ -1,0 +1,44 @@
+##
+# Based on the easyconfig created by the BEAR Software team at the University of Birmingham.
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'Tarball'
+
+name = 'Forge'
+version = '21.0.2'
+
+homepage = "https://www.arm.com/products/development-tools/server-and-hpc/forge"
+description = """Build reliable and optimized code for the right results on multiple Server and HPC architectures,
+ from the latest compilers and C++ 11 standards to Intel, 64-bit Arm, AMD, OpenPOWER and Nvidia GPU hardware. Arm
+ Forge combines Arm DDT, the leading debugger for time-saving high performance application debugging, Arm MAP, the
+ trusted performance profiler for invaluable optimization advice across native and Python HPC codes, and Arm
+ Performance Reports for advanced reporting capabilities."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://content.allinea.com/downloads/']
+local_tarball_tmpl = 'arm-%%(namelower)s-%%(version)s-linux_%s.tar.gz'
+sources = ['arm-%(namelower)s-%(version)s-linux-x86_64.tar']
+checksums = ['741ff2a995c8cf7ce5d346a3f7d2a552ec602b995e477e9a5a3a6319d3907980']
+
+local_gccver = '10.3.0'
+
+dependencies = [
+    ('GCCcore', local_gccver),
+    ('binutils', '2.36.1', '', ('GCCcore', local_gccver)),
+    ('X11', '20210518', '', ('GCCcore', local_gccver)),
+]
+
+skipsteps = ['install']
+postinstallcmds = [
+    '%(builddir)s/arm-%(namelower)s-%(version)s-linux-x86_64/textinstall.sh --accept-license %(installdir)s'
+]
+
+sanity_check_paths = {
+    'files': ['bin/forge', 'bin/map'],
+    'dirs': ['lib', 'plugins'],
+}
+
+sanity_check_commands = ['forge --help']
+
+moduleclass = 'tools'
