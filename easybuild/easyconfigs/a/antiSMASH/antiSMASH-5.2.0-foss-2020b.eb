@@ -46,8 +46,6 @@ components = [
 
 use_pip = True
 
-exts_default_options = {'source_urls': [PYPI_SOURCE]}
-
 exts_list = [
     ('helperlibs', '0.2.1', {
         'checksums': ['4ec2a0c17fdb75c42c692c5ec582580c14490c31235af5858ec12ad308265732'],
@@ -72,12 +70,25 @@ exts_list = [
             'a6fae892e46fd945701dda4640d07467e2d0ab37913d29da403127833bc77291',  # 5-2-0.tar.gz
             '4ca5d671085761c5f86719603fa3bbd0e82b7b52deefe8cac6eb4a3973825f16',  # antiSMASH-5.2.0_Biopython-1.78.patch
         ],
+        # use http mirrors for ftp URLs
+        'preinstallopts': "sed -i 's/ftp:/http:/g' antismash/download_databases.py && ",
+        # run additional commands to download databases and check prerequisites,
+        # which creates some missing .pkl files (which requires the databases);
+        # this is not done by default because the resulting installation is pretty big (~18GB)
+        # 'postinstallcmds': [
+        #     "download-antismash-databases",
+        #     # check prerequisites, which also creates some missing .pkl files in the installation...
+        #     "antismash --check-prereqs",
+        # ],
     }),
 ]
 
 sanity_check_paths = {
     'files': ['bin/antismash', 'bin/meme'],
-    'dirs': [],
+    'dirs': [
+        # antismash/databases subdirectory is only populated when postinstallcmds above are commented out
+        # 'lib/python%(pyshortver)s/site-packages/antismash/databases',
+    ],
 }
 
 sanity_check_commands = [
