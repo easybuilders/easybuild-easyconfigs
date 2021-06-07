@@ -1,0 +1,36 @@
+easyblock = 'MakeCp'
+
+name = 'Kent_tools'
+version = '411'
+
+homepage = 'https://genome.cse.ucsc.edu/'
+description = """Kent utilities: collection of tools used by the UCSC genome browser."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+source_urls = [
+    'https://hgdownload.cse.ucsc.edu/admin/exe/',
+    'https://hgdownload.cse.ucsc.edu/admin/exe/userApps.archive/',
+]
+sources = ['userApps.v%(version)s.src.tgz']
+checksums = ['17e0562aceeca488fddf1ec83a4de933ac43ba45eeeaedd0e5070a7fb3a000e7']
+
+files_to_copy = [(['bin/*'], 'bin'), 'licenseBlat.txt', 'licenseUcscGenomeBrowser.txt']
+
+dependencies = [
+    ('MariaDB', '10.5.8'),
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+    ('util-linux', '2.36'),
+]
+
+buildopts = 'CC="$CC" COPT="$CFLAGS -fcommon" PNGLIB="-L$EBROOTLIBPNG/lib -lpng" ZLIB="-L$EBROOTZLIB/lib -lz" '
+buildopts += 'MYSQLLIBS="-L$EBROOTMARIADB/lib -lmariadb -lstdc++" '
+
+local_binaries = ['blat', 'bedPartition', 'getRna', 'liftOver', 'mafGene', 'splitFile', 'twoBitToFa']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
