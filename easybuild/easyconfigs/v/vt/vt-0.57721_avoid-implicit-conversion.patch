@@ -1,0 +1,32 @@
+Patch created by Jasper Grimm (UoY)
+Avoid implicit conversion by casting bcf_get_pos1 to int32_t
+Explicitly include algorithm library 
+diff -Nru vt-0.57721b/bcf_ordered_writer.cpp vt-0.57721c/bcf_ordered_writer.cpp
+--- vt-0.57721b/bcf_ordered_writer.cpp	2021-05-17 15:11:33.000000000 +0100
++++ vt-0.57721c/bcf_ordered_writer.cpp	2021-05-17 15:01:54.000000000 +0100
+@@ -22,6 +22,7 @@
+ */
+ 
+ #include "bcf_ordered_writer.h"
++#include <algorithm>
+ 
+ BCFOrderedWriter::BCFOrderedWriter(std::string output_vcf_file_name, int32_t window, int32_t compression)
+ {
+@@ -155,7 +156,7 @@
+ 
+                 if (i==buffer.end())
+                 {
+-                    int32_t cutoff_pos1 =  std::max(bcf_get_pos1(buffer.front())-window,1);
++                    int32_t cutoff_pos1 =  std::max((int32_t)bcf_get_pos1(buffer.front())-window,1);
+                     if (bcf_get_pos1(v)<cutoff_pos1)
+                     {
+                         fprintf(stderr, "[%s:%d %s] Might not be sorted for window size %d at current record %s:%d < %d (%d [last record] - %d), please increase window size to at least %d.\n",
+@@ -251,7 +252,7 @@
+     {
+         if (buffer.size()>1)
+         {
+-            int32_t cutoff_pos1 =  std::max(bcf_get_pos1(buffer.front())-window,1);
++            int32_t cutoff_pos1 =  std::max((int32_t)bcf_get_pos1(buffer.front())-window,1);
+ 
+             while (buffer.size()>1)
+             {
