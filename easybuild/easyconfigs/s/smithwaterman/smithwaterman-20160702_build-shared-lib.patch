@@ -1,0 +1,128 @@
+Author: Jasper Grimm (UoY)
+Add targets to build shared, static libraries
+Add install target
+diff -Nru smithwaterman-2610e259611ae4cde8f03c72499d28f03f6d38a7.orig/Makefile smithwaterman-2610e259611ae4cde8f03c72499d28f03f6d38a7/Makefile
+--- smithwaterman-2610e259611ae4cde8f03c72499d28f03f6d38a7.orig/Makefile	2021-05-05 12:54:25.000000000 +0100
++++ smithwaterman-2610e259611ae4cde8f03c72499d28f03f6d38a7/Makefile	2021-05-07 15:43:45.000000000 +0100
+@@ -6,6 +6,7 @@
+ # ----------------------------------
+ # define our source and object files
+ # ----------------------------------
++
+ SOURCES= smithwaterman.cpp BandedSmithWaterman.cpp SmithWatermanGotoh.cpp Repeats.cpp LeftAlign.cpp IndelAllele.cpp
+ OBJECTS= $(SOURCES:.cpp=.o) disorder.o
+ OBJECTS_NO_MAIN= disorder.o BandedSmithWaterman.o SmithWatermanGotoh.o Repeats.o LeftAlign.o IndelAllele.o
+@@ -14,53 +15,68 @@
+ # compiler options
+ # ----------------
+ 
+-# Use ?= to allow overriding from the env or command-line
+-CXX?=		c++
+-CXXFLAGS?=	-O3
+-OBJ?=		sw.o
+-
+-# I don't think := is useful here, since there is nothing to expand
+-LDFLAGS:=	-Wl,-s
+-#CXXFLAGS=-g
+-EXE:=		smithwaterman
+-LIBS=
+-
+-all: $(EXE) $(OBJ)
+-
+-.PHONY: all
+-
+-libsw.a: smithwaterman.o BandedSmithWaterman.o SmithWatermanGotoh.o LeftAlign.o Repeats.o IndelAllele.o disorder.o
+-	ar rs $@ smithwaterman.o SmithWatermanGotoh.o disorder.o BandedSmithWaterman.o LeftAlign.o Repeats.o IndelAllele.o
+-
+-sw.o:  BandedSmithWaterman.o SmithWatermanGotoh.o LeftAlign.o Repeats.o IndelAllele.o disorder.o
+-	ld -r $^ -o sw.o -L.
+-	#$(CXX) $(CFLAGS) -c -o smithwaterman.cpp $(OBJECTS_NO_MAIN) -I.
+-
+-### @$(CXX) $(LDFLAGS) $(CFLAGS) -o $@ $^ -I.
+-$(EXE): smithwaterman.o BandedSmithWaterman.o SmithWatermanGotoh.o disorder.o LeftAlign.o Repeats.o IndelAllele.o
+-	$(CXX) $(CFLAGS) $^ -I. -o $@
+-
+-#smithwaterman: $(OBJECTS)
+-#	$(CXX) $(CXXFLAGS) -o $@ $< -I.
+-
+-smithwaterman.o: smithwaterman.cpp disorder.o
+-	$(CXX) $(CXXFLAGS) -c -o $@ smithwaterman.cpp -I.
+-
+-disorder.o: disorder.cpp disorder.h
+-	$(CXX) $(CXXFLAGS) -c -o $@ $< -I.
+-BandedSmithWaterman.o: BandedSmithWaterman.cpp BandedSmithWaterman.h
+-	$(CXX) $(CXXFLAGS) -c -o $@ $< -I.
+-SmithWatermanGotoh.o: SmithWatermanGotoh.cpp SmithWatermanGotoh.h disorder.o
+-	$(CXX) $(CXXFLAGS) -c -o $@ $< -I.
+-Repeats.o: Repeats.cpp
+-	$(CXX) $(CXXFLAGS) -c -o $@ $< -I.
+-LeftAlign.o: LeftAlign.cpp
+-	$(CXX) $(CXXFLAGS) -c -o $@ $< -I.
+-IndelAllele.o: IndelAllele.cpp
+-	$(CXX) $(CXXFLAGS) -c -o $@ $< -I.
++# Use ?= to allow overriding from the env or command-line, e.g.
++#
++#       make CXXFLAGS="-O3 -fPIC" install
++#
++# Package managers will override many of these variables automatically, so
++# this is aimed at making it easy to create packages (Debian packages,
++# FreeBSD ports, MacPorts, pkgsrc, etc.)
++
++CXX ?=		c++
++CXXFLAGS ?=	-O3
++
++PREFIX ?=	/usr/local
++STRIP ?=	strip
++INSTALL ?=	install -c
++MKDIR ?=	mkdir -p
++AR ?=		ar
++ARFLAGS ?=	rs
++
++BIN =		smithwaterman
++LIB =		libsw.a
++SOVERSION =	1
++SLIB =		libsw.so
++OBJS =		disorder.o BandedSmithWaterman.o SmithWatermanGotoh.o \
++		Repeats.o LeftAlign.o IndelAllele.o
++
++BINDIR = $(DESTDIR)$(PREFIX)/bin
++INCDIR = $(DESTDIR)$(PREFIX)/include/smithwaterman
++LIBDIR = $(DESTDIR)$(PREFIX)/lib
++
++.SUFFIXES:.cpp .o .pico .so
++
++.cpp.o:
++	$(CXX) $(CXXFLAGS) -I. -c -o $@ $<
++
++.cpp.pico:
++	$(CXX) $(CXXFLAGS) -I. -fPIC -c -o $@ $<
++
++all: $(BIN) $(LIB) $(SLIB)
++
++$(LIB): $(OBJS)
++	$(AR) $(ARFLAGS) $@ $^
++
++$(SLIB): $(OBJS:.o=.pico)
++	$(CXX) -shared -Wl,-soname,$(SLIB).$(SOVERSION) $(LDFLAGS) -o $@ $^ $(LIBS)
++	ln -sf $@ $(SLIB).$(SOVERSION)
++
++$(BIN): $(OBJS) smithwaterman.cpp
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
++
++install: all
++	$(MKDIR) $(BINDIR)
++	$(MKDIR) $(INCDIR)
++	$(MKDIR) $(LIBDIR)
++	$(INSTALL) $(BIN) $(BINDIR)
++	$(INSTALL) *.h $(INCDIR)
++	$(INSTALL) $(LIB) $(SLIB) $(SLIB).$(SOVERSION) $(LIBDIR)
++
++install-strip: install
++	$(STRIP) $(BINDIR)/$(BIN) $(LIBDIR)/$(LIB) $(LIBDIR)/$(SLIB)
+ 
+ .PHONY: clean
+ 
+ clean:
+ 	@echo "Cleaning up."
+-	@rm -f *.o $(PROGRAM) *~
++	@rm -rf $(BIN) $(LIB) $(SLIB) $(OBJS) $(DESTDIR)
