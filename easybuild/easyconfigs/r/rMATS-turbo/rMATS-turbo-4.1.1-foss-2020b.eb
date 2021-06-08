@@ -1,0 +1,68 @@
+easyblock = 'Bundle'
+
+name = 'rMATS-turbo'
+version = '4.1.1'
+
+homepage = 'https://github.com/Xinglab/rmats-turbo'
+description = """rMATS turbo is the C/Cython version of rMATS (refer to http://rnaseq-mats.sourceforge.net)."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+dependencies = [
+    ('Python', '3.8.6'),
+    ('GSL', '2.6'),
+    ('SAMtools', '1.11'),
+    ('STAR', '2.7.6a'),
+    ('BamTools', '2.5.1'),
+]
+
+local_ldflags = " -lm -lgfortran -lgsl -lgslcblas -lgomp -lopenblas $LIBLAPACK "
+local_buildopts = '  CC="$CC" CXX="$CXX" FC="$FC" LDFLAGS="%s"' % local_ldflags
+
+default_component_specs = {
+    'sources': ['v%(version)s.tar.gz'],
+    'source_urls': ['https://github.com/Xinglab/%(name)s/archive/refs/tags/'],
+    'checksums': ['cdfde24b68be0b41b4ca43e5414d3c292deb7efd617d7ee2315e2d6e6bcb1c92'],
+}
+
+components = [
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'start_dir': 'rmats-turbo-%(version)s/rMATS_C',
+        'buildopts': "%s" % local_buildopts,
+        'files_to_copy': [(['rMATSexe', '../rmats.py'], 'bin')],
+    }),
+    ('rmats-turbo-python', version, {
+        'easyblock': 'PythonPackage',
+        'patches': [('rMATS-turbo-%(version)s_bamtools_as_dependency.patch')],
+        'checksums': [
+            'cdfde24b68be0b41b4ca43e5414d3c292deb7efd617d7ee2315e2d6e6bcb1c92',
+            'e3b4d6a8d612a909cb9b920a7770406955f093b2788f6d7bf6ccab5527eda86a',
+        ],
+        'start_dir': 'rmats-turbo-%(version)s/rMATS_pipeline',
+        'use_pip': True,
+        'download_dep_fail': True,
+        'sanity_pip_check': True,
+        'options': {'modulename': 'rmatspipeline'},
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+
+postinstallcmds = ["chmod a+x %(installdir)s/bin/rmats.py"]
+
+sanity_check_commands = [
+    'rmats.py --version',
+]
+
+sanity_check_paths = {
+    'files': ['bin/rMATSexe', 'bin/rmats.py'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
