@@ -1,0 +1,118 @@
+# author: Denis Kristak (INUITS)
+easyblock = 'CMakePythonPackage'
+
+name = 'GenomeWorks'
+version = '2021.02.2'
+local_git_commit = '691380d1122a9ad86f91b3038c8b6625d137b6ed'
+
+homepage = 'https://github.com/clara-parabricks/GenomeWorks'
+description = "SDK for GPU accelerated genome assembly and analysis"
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/clara-parabricks/GenomeWorks/archive/'],
+        'filename': 'v%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/google/benchmark/archive'],
+        'filename': 'benchmark-20190513.tar.gz',
+        'download_filename': '090faecb454fbd6e6e17a75ef8146acb037118d4.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/NVIDIA/cub/archive'],
+        'filename': 'cub-20201123.tar.gz',
+        'download_filename': '618a46c27764f0e0b86fb3643a572ed039180ad8.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/google/googletest/archive'],
+        'filename': 'googletest-20190424.tar.gz',
+        'download_filename': '84d986531e8df9fb6ea4a7bae8fb130c05b3782c.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/samtools/htslib/archive'],
+        'filename': 'htslib-20200806.tar.gz',
+        'download_filename': 'a79009b38ce83e39bcbc8f54c00cf203621aa5bb.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/cartoonist/kseqpp/archive'],
+        'filename': 'kseqpp-20181009.tar.gz',
+        'download_filename': 'c7add979ac77ec8ada07b25aab7dcf0c5e87f90e.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/NVIDIA/libcudacxx/archive'],
+        'filename': 'libcudacxx-20201003.tar.gz',
+        'download_filename': 'd0bafdb9fdde2ee99932d42f1deec74d53e19514.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/rvaser/spoa/archive'],
+        'filename': 'spoa-20190416.tar.gz',
+        'download_filename': '0b9e56da3241d6a887d64adcfd1ebfae29810c04.tar.gz',
+    },
+]
+
+builddependencies = [('CMake', '3.18.4')]
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Autoconf', '2.69'),
+    ('matplotlib', '3.3.3'),
+    ('SciPy-bundle', '2020.11'),
+    ('networkx', '2.5'),
+    ('tqdm', '4.56.2'),
+]
+local_vendor_dir = '%(builddir)s/GenomeWorks-*/3rdparty/'
+# benchmark
+preconfigopts = "mv %%(builddir)s/benchmark-*/* %s/benchmark/ && " % local_vendor_dir
+# cub
+preconfigopts += "mv %%(builddir)s/cub-*/* %s/cub/ && " % local_vendor_dir
+# googletest
+preconfigopts += "mv %%(builddir)s/googletest-*/* %s/googletest/ && " % local_vendor_dir
+# htslib
+preconfigopts += "mv %%(builddir)s/htslib-*/* %s/htslib/ && " % local_vendor_dir
+# kseqpp
+preconfigopts += "mv %%(builddir)s/kseqpp-*/* %s/kseqpp/ && " % local_vendor_dir
+# libcudacxx
+preconfigopts += "mv %%(builddir)s/libcudacxx-*/* %s/libcudacxx/ && " % local_vendor_dir
+# spoa
+preconfigopts += "mv %%(builddir)s/spoa-*/* %s/spoa/ && " % local_vendor_dir
+
+# add missing include to a file
+preconfigopts += "sed -i'' 's/#include <exception>/#include <exception>\\n#include <stdexcept>/g'"
+preconfigopts += " %(builddir)s/GenomeWorks-*/3rdparty/spoa/src/alignment_engine.cpp && """
+
+configopts = "-Dgw_cuda_gen_all_arch=OFF"
+
+skipsteps = ['test']
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': ['https://github.com/clara-parabricks/GenomeWorks/archive/'],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('genomeworks', '%s' % version, {
+        'sources': ['v%(version)s.tar.gz'],
+        'patches': ['GenomeWorks-2021-02-2_dep_versions_n_file_extension.patch'],
+        'start_dir': 'pygenomeworks',
+        'preinstallopts': """export GW_INSTALL_DIR=%(installdir)s &&
+            export GW_VERSION=%(version)s &&
+            export GW_ROOT_DIR=%(builddir)s/GenomeWorks-%(version)s &&
+            """,
+        'postinstallcmds': ["""
+            sed -i'' 's/==/>=/g' %(builddir)s/GenomeWorks-%(version)s/pygenomeworks/requirements.txt
+            """],
+    }),
+    ('sortedcollections', '2.1.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/sortedcollections/'],
+    }),
+    ('pytest', '6.2.4', {
+        'source_urls': ['https://pypi.python.org/packages/source/p/pytest/'],
+    }),
+]
+
+moduleclass = 'bio'
