@@ -92,8 +92,14 @@ preconfigopts += "mv %%(builddir)s/spoa-*/* %s/spoa/ && " % local_vendor_dir
 preconfigopts += "sed -i'' 's/#include <exception>/#include <exception>\\n#include <stdexcept>/g'"
 preconfigopts += " %(builddir)s/GenomeWorks-*/3rdparty/spoa/src/alignment_engine.cpp && """
 
-configopts = "-Dgw_cuda_gen_all_arch=OFF"
+preconfigopts += "sed -i 's/==/>=/g' %(builddir)s/GenomeWorks-%(version)s/pygenomeworks/requirements.txt && "
+preconfigopts += "sed -i 's/~=/>=/g' %(builddir)s/GenomeWorks-%(version)s/pygenomeworks/requirements.txt && "
 
+# instruction from GenomeWorks' readme
+configopts = "-Dgw_cuda_gen_all_arch=OFF "
+configopts += " --enable-shared "
+
+# no test targets
 skipsteps = ['test']
 
 exts_defaultclass = 'PythonPackage'
@@ -104,16 +110,18 @@ exts_default_options = {
     'use_pip': True,
 }
 
+local_genomeworks_preinstallopts = "export GW_INSTALL_DIR=%(installdir)s && "
+local_genomeworks_preinstallopts += "export GW_VERSION=%(version)s && "
+local_genomeworks_preinstallopts += "export GW_ROOT_DIR=%(builddir)s/GenomeWorks-%(version)s && "
+
 exts_list = [
+    ('sortedcollections', '2.1.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/sortedcollections/'],
+        'checksums': ['d8e9609d6c580a16a1224a3dc8965789e03ebc4c3e5ffd05ada54a2fed5dcacd'],
+    }),
     ('genomeworks', version, {
         'patches': ['GenomeWorks-2021-02-2_dep_versions_n_file_extension.patch'],
-        'postinstallcmds': ["""
-                            sed -i'' 's/==/>=/g' %(builddir)s/GenomeWorks-%(version)s/pygenomeworks/requirements.txt
-                            """],
-        'preinstallopts': """export GW_INSTALL_DIR=%(installdir)s &&
-            export GW_VERSION=%(version)s &&
-            export GW_ROOT_DIR=%(builddir)s/GenomeWorks-%(version)s &&
-            """,
+        'preinstallopts': "export GW_INSTALL_DIR=%(installdir)s && export GW_VERSION=%(version)s && export GW_ROOT_DIR=%(builddir)s/GenomeWorks-%(version)s && ",
         'sources': ['v%(version)s.tar.gz'],
         'start_dir': 'pygenomeworks',
         'checksums': [
@@ -121,14 +129,6 @@ exts_list = [
             # GenomeWorks-2021-02-2_dep_versions_n_file_extension.patch
             '3e33e4ecc03aa43699748a623a331ed9be45a9e8a9c519c0fca6deff17144baf',
         ],
-    }),
-    ('sortedcollections', '2.1.0', {
-        'source_urls': ['https://pypi.python.org/packages/source/s/sortedcollections/'],
-        'checksums': ['d8e9609d6c580a16a1224a3dc8965789e03ebc4c3e5ffd05ada54a2fed5dcacd'],
-    }),
-    ('pytest', '6.2.4', {
-        'source_urls': ['https://pypi.python.org/packages/source/p/pytest/'],
-        'checksums': ['50bcad0a0b9c5a72c8e4e7c9855a3ad496ca6a881a3641b4260605450772c54b'],
     }),
 ]
 
