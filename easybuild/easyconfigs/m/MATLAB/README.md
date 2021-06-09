@@ -1,7 +1,7 @@
 # Source preparation
 
 Download all ISO files from Mathworks.
-Newer easyconfigs use the ISO files directly and unpacks them with the `7z` command.
+Newer easyconfigs use the ISO files directly and unpack them with the `7z` command.
 Older versions repackaged the ISOs as a tarball, e.g:
 ```
 $ mkdir R2018a
@@ -16,7 +16,7 @@ $ tar -zcvf /my/easybuild/download/path/matlab-2018a.tar.gz R2018a
 
 # License
 
-* Your Matlab license should have a "`File Installation Key`" in under "`Advanced Options`" in the "`Install and Activate`" tab of your "`License Center`".
+* Your Matlab license should have a "`File Installation Key`" under "`Advanced Options`" in the "`Install and Activate`" tab of your "`License Center`".
   This will only install the products associated with this license.
 * If you need to install all of the toolboxes to support multiple licenses Mathworks can enable a "`All Product File Installation Key`".
   This will install all of the client products but will not install server products like MDCS.
