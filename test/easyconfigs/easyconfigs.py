@@ -1109,8 +1109,10 @@ def template_easyconfig_test(self, spec):
         if requires_binutils:
             # dependencies() returns both build and runtime dependencies
             # in some cases, binutils can also be a runtime dep (e.g. for Clang)
+            # Also using GCC directly as a build dep is also allowed (it includes the correct binutils)
             dep_names = [d['name'] for d in ec.dependencies()]
-            self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
+            self.assertTrue('binutils' in dep_names or 'GCC' in dep_names,
+                            "binutils or GCC is a build dep in %s: %s" % (spec, dep_names))
 
     # make sure that OpenSSL wrapper is used rather than OS dependency,
     # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
