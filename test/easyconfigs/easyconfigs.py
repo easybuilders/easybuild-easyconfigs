@@ -317,6 +317,10 @@ class EasyConfigTest(TestCase):
             'h5py': [
                 (r'2\.', [r'yaff-1\.6\.0-'], [r'LAMMPS-29Oct20-']),
             ],
+            # LAMMPS requires Eigen 3.3.9
+            'Eigen': [
+                (r'3\.3\.9', [r'LAMMPS-29Oct20-']),
+            ],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
