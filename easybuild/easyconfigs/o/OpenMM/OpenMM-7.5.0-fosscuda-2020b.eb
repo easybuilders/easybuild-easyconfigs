@@ -16,8 +16,10 @@ toolchainopts = {'opt': True}
 
 source_urls = ['https://github.com/openmm/openmm/archive/']
 sources = ['%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix_path_to_nvcc.patch']
 checksums = [
     '516748b4f1ae936c4d70cc6401174fc9384244c65cd3aef27bc2c53eac6d6de5',  # 7.5.0.tar.gz
+    '050d5b81e70b34d06ef87eafc6d540b2cf716a61f53b1d2a3786504da3ec2e3c',  # OpenMM-7.5.0_fix_path_to_nvcc.patch
 ]
 
 builddependencies = [
@@ -34,10 +36,11 @@ dependencies = [
 ]
 
 # Flags for CUDA-enabled build
-configopts = "-DOPENMM_BUILD_CUDA_LIB=ON -DCUDA_CUDA_LIBRARY=$EBROOTCUDACORE/lib64/stubs/libcuda.so"
+configopts = "-DOPENMM_BUILD_CUDA_LIB=ON -DCUDA_CUDA_LIBRARY=$EBROOTCUDACORE/lib64/stubs/libcuda.%s" % SHLIB_EXT
 
 pretestopts = "export OPENMM_CUDA_COMPILER=nvcc && CTEST_OUTPUT_ON_FAILURE=1"
-runtest = """test -e ARGS="-E \'(Integrator)|(Thermostat)|(Barostat)|(Rpmd)|(Amoeba)\'" """
+local_ignore_pattern = "(Integrator)|(Thermostat)|(Barostat)|(Rpmd)|(Amoeba)"
+runtest = """test -e ARGS="-E \'%s\'" """ % local_ignore_pattern
 
 preinstallopts = ' export OPENMM_INCLUDE_PATH=%(installdir)s/include && '
 preinstallopts += ' export OPENMM_LIB_PATH=%(installdir)s/lib && '
@@ -56,9 +59,6 @@ modextrapaths = {
     'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
     'OPENMM_INCLUDE_PATH': 'include',
     'OPENMM_LIB_PATH': 'lib',
-}
-modextravars = {
-    'OPENMM_CUDA_COMPILER': 'nvcc',
 }
 
 moduleclass = 'bio'
