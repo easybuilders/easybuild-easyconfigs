@@ -1,0 +1,268 @@
+Patch created by Jasper Grimm (UoY)
+Fix include statements (correct subdirectory level)
+Link external BWA, fermi-lite, SSW instead of building SeqLib shipped versions
+Respect CPPFLAGS
+Use libtool to build static and dynamic libraries
+diff -Nru SeqLib-1.2.0/benchmark/benchmark.cpp SeqLib-1.2.0b/benchmark/benchmark.cpp
+--- SeqLib-1.2.0/benchmark/benchmark.cpp	2021-05-11 12:29:50.000000000 +0100
++++ SeqLib-1.2.0b/benchmark/benchmark.cpp	2021-05-11 16:51:21.000000000 +0100
+@@ -30,11 +30,11 @@
+ #ifdef RUN_HTSLIB
+ #include <iostream>
+ extern "C" {
+-#include "htslib/htslib/hts.h"
+-#include "htslib/htslib/sam.h"
+-#include "htslib/htslib/bgzf.h"
+-#include "htslib/htslib/kstring.h"
+-#include "htslib/htslib/faidx.h"
++#include "htslib/hts.h"
++#include "htslib/sam.h"
++#include "htslib/bgzf.h"
++#include "htslib/kstring.h"
++#include "htslib/faidx.h"
+ }
+ #endif
+ 
+diff -Nru SeqLib-1.2.0/configure.ac SeqLib-1.2.0b/configure.ac
+--- SeqLib-1.2.0/configure.ac	2021-05-10 16:49:50.000000000 +0100
++++ SeqLib-1.2.0b/configure.ac	2021-05-12 14:25:56.000000000 +0100
+@@ -4,13 +4,19 @@
+ AM_INIT_AUTOMAKE(foreign)
+ AC_CONFIG_SRCDIR([src/BamReader.cpp])
+ AC_CONFIG_HEADER([config.h])
++AC_CONFIG_MACRO_DIRS([m4])
+ AM_MAINTAINER_MODE([disable])
+ ##m4_include([m4/m4_ax_openmp.m4])
++LT_INIT
++
++LIB_VERSION=2
++
++AC_SUBST([VERSION])
++AC_SUBST([LIB_VERSION])
+ 
+ # Checks for programs.
+ AC_PROG_CXX ## test for cpp compiler
+ AC_PROG_CC ## test for C compiler
+-AC_PROG_RANLIB ## required if libraries are built in package
+ 
+ # Check for headers
+ AC_LANG([C++])
+@@ -32,6 +38,8 @@
+     fail_on_warning="-Werror"
+ fi
+ 
++PKG_CHECK_MODULES[[hts], [htslib]]
++
+ # Set compiler flags.
+ AC_SUBST(AM_CXXFLAGS, "-g $fail_on_warning -std=c++11 -Wno-unknown-pragmas")
+ AC_SUBST(CXXFLAGS, "$CXXFLAGS")
+diff -Nru SeqLib-1.2.0/Makefile.am SeqLib-1.2.0b/Makefile.am
+--- SeqLib-1.2.0/Makefile.am	2021-05-10 16:49:50.000000000 +0100
++++ SeqLib-1.2.0b/Makefile.am	2021-05-12 17:22:39.000000000 +0100
+@@ -1,8 +1,10 @@
+ AUTOMAKE_OPTIONS = foreign
+-SUBDIRS = bwa htslib fermi-lite src
+-
+-install:  
+-	mkdir -p lib && cp src/libseqlib.a fermi-lite/libfml.a bwa/libbwa.a htslib/libhts.a lib
+-
+-seqtools:
+-	mkdir -p bin && cd src/seqtools && make && mv seqtools ../../bin
++ACLOCAL_AMFLAGS = -I m4
++SUBDIRS = src src/seqtools
++nobase_include_HEADERS = SeqLib/BFC.h SeqLib/BWAWrapper.h SeqLib/BamHeader.h SeqLib/BamReader.h \
++		    SeqLib/BamRecord.h SeqLib/BamWalker.h SeqLib/BamWriter.h SeqLib/FastqReader.h \
++		    SeqLib/FermiAssembler.h SeqLib/GenomicRegion.h \
++		    SeqLib/GenomicRegionCollection.cpp SeqLib/GenomicRegionCollection.h \
++		    SeqLib/IntervalTree.h SeqLib/ReadFilter.h SeqLib/RefGenome.h \
++		    SeqLib/SeqLibCommon.h SeqLib/SeqLibUtils.h SeqLib/SeqPlot.h \
++		    SeqLib/ThreadPool.h SeqLib/UnalignedSequence.h SeqLib/aho_corasick.hpp
+diff -Nru SeqLib-1.2.0/SeqLib/BamHeader.h SeqLib-1.2.0b/SeqLib/BamHeader.h
+--- SeqLib-1.2.0/SeqLib/BamHeader.h	2021-05-11 12:29:50.000000000 +0100
++++ SeqLib-1.2.0b/SeqLib/BamHeader.h	2021-05-11 16:51:21.000000000 +0100
+@@ -1,10 +1,10 @@
+ #ifndef SEQLIB_BAM_HEADER_H__
+ #define SEQLIB_BAM_HEADER_H__
+ 
+-#include "htslib/htslib/hts.h"
+-#include "htslib/htslib/sam.h"
+-#include "htslib/htslib/bgzf.h"
+-#include "htslib/htslib/kstring.h"
++#include "htslib/hts.h"
++#include "htslib/sam.h"
++#include "htslib/bgzf.h"
++#include "htslib/kstring.h"
+ 
+ #include "SeqLib/SeqLibUtils.h"
+ #include <string>
+diff -Nru SeqLib-1.2.0/SeqLib/BamRecord.h SeqLib-1.2.0b/SeqLib/BamRecord.h
+--- SeqLib-1.2.0/SeqLib/BamRecord.h	2021-05-11 12:29:50.000000000 +0100
++++ SeqLib-1.2.0b/SeqLib/BamRecord.h	2021-05-11 16:51:21.000000000 +0100
+@@ -10,11 +10,11 @@
+ #include <algorithm>
+ 
+ extern "C" {
+-#include "htslib/htslib/hts.h"
+-#include "htslib/htslib/sam.h"
+-#include "htslib/htslib/bgzf.h"
+-#include "htslib/htslib/kstring.h"
+-#include "htslib/htslib/faidx.h"
++#include "htslib/hts.h"
++#include "htslib/sam.h"
++#include "htslib/bgzf.h"
++#include "htslib/kstring.h"
++#include "htslib/faidx.h"
+ 
+ }
+ 
+diff -Nru SeqLib-1.2.0/SeqLib/BFC.h SeqLib-1.2.0b/SeqLib/BFC.h
+--- SeqLib-1.2.0/SeqLib/BFC.h	2021-05-11 12:29:51.000000000 +0100
++++ SeqLib-1.2.0b/SeqLib/BFC.h	2021-05-11 16:51:21.000000000 +0100
+@@ -2,8 +2,8 @@
+ #define SEQLIB_BFC_H
+ 
+ extern "C" {
+-  #include "fermi-lite/bfc.h"
+-  #include "fermi-lite/fml.h"
++  #include "fml/bfc.h"
++  #include "fml/fml.h"
+ }
+ 
+ #include "SeqLib/BamRecord.h"
+diff -Nru SeqLib-1.2.0/SeqLib/FermiAssembler.h SeqLib-1.2.0b/SeqLib/FermiAssembler.h
+--- SeqLib-1.2.0/SeqLib/FermiAssembler.h	2021-05-11 12:29:50.000000000 +0100
++++ SeqLib-1.2.0b/SeqLib/FermiAssembler.h	2021-05-11 16:51:21.000000000 +0100
+@@ -9,9 +9,9 @@
+ 
+ extern "C" 
+ {
+-#include "fermi-lite/htab.h"
+-#include "fermi-lite/fml.h"
+-#include "fermi-lite/bfc.h"
++#include "fml/htab.h"
++#include "fml/fml.h"
++#include "fml/bfc.h"
+ }
+ namespace SeqLib {
+ 
+@@ -80,7 +80,7 @@
+ 
+     /** Aggressively trim graph to discard heterozygotes. 
+      * Suggested by lh3 for bacterial assembly
+-     * @note See: https://github.com/lh3/fermi-lite/blob/master/example.c
++     * @note See: https://github.com/lh3/fml/blob/master/example.c
+      */
+     void SetAggressiveTrim() { opt.mag_opt.flag |= MAG_F_AGGRESSIVE; }
+ 
+diff -Nru SeqLib-1.2.0/SeqLib/RefGenome.h SeqLib-1.2.0b/SeqLib/RefGenome.h
+--- SeqLib-1.2.0/SeqLib/RefGenome.h	2021-05-11 12:29:51.000000000 +0100
++++ SeqLib-1.2.0b/SeqLib/RefGenome.h	2021-05-11 16:51:21.000000000 +0100
+@@ -5,7 +5,7 @@
+ #include <cstdlib>
+ #include <iostream>
+ 
+-#include "htslib/htslib/faidx.h"
++#include "htslib/faidx.h"
+ 
+ namespace SeqLib {
+   
+diff -Nru SeqLib-1.2.0/seq_test/Makefile.am SeqLib-1.2.0b/seq_test/Makefile.am
+--- SeqLib-1.2.0/seq_test/Makefile.am	2021-05-10 16:49:50.000000000 +0100
++++ SeqLib-1.2.0b/seq_test/Makefile.am	2021-05-11 16:51:21.000000000 +0100
+@@ -2,17 +2,9 @@
+ 
+ AUTOMAKE_OPTIONS = subdir-objects
+ 
+-seq_test_CPPFLAGS = \
+-     -I../src \
+-     -I../htslib \
+-     -I.. \
+-     -I../fermi-lite --coverage -D_GLIBCXX_USE_CXX11_ABI=0
++seq_test_CPPFLAGS = $(CPPFLAGS) -I../src -I.. --coverage -D_GLIBCXX_USE_CXX11_ABI=0
+ 
+-seq_test_LDADD = \
+-	../fermi-lite/libfml.a \
+-	../bwa/libbwa.a \
+-	../htslib/libhts.a \
+-	-lboost_unit_test_framework -lboost_system -lboost_timer -lboost_chrono -lbz2 -llzma
++seq_test_LDADD = -lboost_unit_test_framework -lboost_system -lboost_timer -lboost_chrono -lbz2 -llzma
+ 
+ seq_test_LDFLAGS = --coverage -pthread
+ 
+@@ -22,4 +14,4 @@
+ 	../src/ReadFilter.cpp ../src/BamRecord.cpp \
+ 	../src/BWAWrapper.cpp \
+         ../src/RefGenome.cpp ../src/SeqPlot.cpp ../src/BamHeader.cpp \
+-	../src/FermiAssembler.cpp ../src/ssw_cpp.cpp ../src/ssw.c ../src/jsoncpp.cpp
++	../src/FermiAssembler.cpp
+
+diff -Nru SeqLib-1.2.0/src/BamRecord.cpp SeqLib-1.2.0b/src/BamRecord.cpp
+--- SeqLib-1.2.0/src/BamRecord.cpp	2021-05-11 12:29:49.000000000 +0100
++++ SeqLib-1.2.0b/src/BamRecord.cpp	2021-05-11 16:51:20.000000000 +0100
+@@ -5,7 +5,7 @@
+ #include <cctype>
+ #include <stdexcept>
+ 
+-#include "SeqLib/ssw_cpp.h"
++#include "ssw/ssw_cpp.h"
+ 
+ #define TAG_DELIMITER "^"
+ #define CTAG_DELIMITER '^'
+diff -Nru SeqLib-1.2.0/src/FermiAssembler.cpp SeqLib-1.2.0b/src/FermiAssembler.cpp
+--- SeqLib-1.2.0/src/FermiAssembler.cpp	2021-05-11 12:29:49.000000000 +0100
++++ SeqLib-1.2.0b/src/FermiAssembler.cpp	2021-05-11 16:51:20.000000000 +0100
+@@ -1,5 +1,5 @@
+ #include "SeqLib/FermiAssembler.h"
+-#include "fermi-lite/fml.h"
++#include "fml/fml.h"
+ #define MAG_MIN_NSR_COEF .1
+ 
+ namespace SeqLib {
+@@ -20,7 +20,7 @@
+     }
+ 
+     // code copied and slightly modified from
+-    // fermi-lite/misc.c by Heng Li
++    // fml/misc.c by Heng Li
+     void FermiAssembler::DirectAssemble(float kcov)
+     {
+       rld_t *e = fml_seq2fmi(&opt, n_seqs, m_seqs);
+diff -Nru SeqLib-1.2.0/src/Makefile.am SeqLib-1.2.0b/src/Makefile.am
+--- SeqLib-1.2.0/src/Makefile.am	2021-05-10 16:49:50.000000000 +0100
++++ SeqLib-1.2.0b/src/Makefile.am	2021-05-12 16:39:37.000000000 +0100
+@@ -1,7 +1,9 @@
+-noinst_LIBRARIES = libseqlib.a
++lib_LTLIBRARIES = libseqlib.la
+ 
+-libseqlib_a_CPPFLAGS =  -I../htslib -Wno-sign-compare
++libseqlib_la_CPPFLAGS =  $(CPPFLAGS) -Wno-sign-compare
+ 
+-libseqlib_a_SOURCES =   FastqReader.cpp BFC.cpp ReadFilter.cpp SeqPlot.cpp ssw_cpp.cpp ssw.c \
++libseqlib_la_SOURCES =   FastqReader.cpp BFC.cpp ReadFilter.cpp SeqPlot.cpp \
+ 			GenomicRegion.cpp RefGenome.cpp BamWriter.cpp BamReader.cpp \
+-			BWAWrapper.cpp BamRecord.cpp FermiAssembler.cpp BamHeader.cpp jsoncpp.cpp
++			BWAWrapper.cpp BamRecord.cpp FermiAssembler.cpp BamHeader.cpp
++
++libseqlib_la_LDFLAGS =	-version-info @LIB_VERSION@ -lbwa -lfml -lhts -ljsoncpp -lssw
+diff -Nru SeqLib-1.2.0/src/ReadFilter.cpp SeqLib-1.2.0b/src/ReadFilter.cpp
+--- SeqLib-1.2.0/src/ReadFilter.cpp	2021-05-11 12:29:50.000000000 +0100
++++ SeqLib-1.2.0b/src/ReadFilter.cpp	2021-05-11 16:51:20.000000000 +0100
+@@ -1,7 +1,7 @@
+ #include "SeqLib/ReadFilter.h"
+ 
+ #include <cassert>
+-#include "htslib/htslib/khash.h"
++#include "htslib/khash.h"
+ 
+ //#define QNAME "D0EN0ACXX111207:7:2306:6903:136511"
+ //#define QFLAG -1
+diff -Nru SeqLib-1.2.0/src/seqtools/Makefile.am SeqLib-1.2.0b/src/seqtools/Makefile.am
+--- SeqLib-1.2.0/src/seqtools/Makefile.am	2021-05-10 16:49:50.000000000 +0100
++++ SeqLib-1.2.0b/src/seqtools/Makefile.am	2021-05-12 16:42:26.000000000 +0100
+@@ -1,4 +1,4 @@
+ bin_PROGRAMS = seqtools
+ seqtools_SOURCES = seqtools.cpp
+-seqtools_LDADD=../libseqlib.a ../../htslib/libhts.a ../../bwa/libbwa.a ../../fermi-lite/libfml.a $(LDFLAGS)
+-seqtools_CPPFLAGS=-I../../htslib -I../..
++seqtools_LDADD=../libseqlib.la $(LDFLAGS)
++seqtools_CPPFLAGS=$(CPPFLAGS) -I../..
