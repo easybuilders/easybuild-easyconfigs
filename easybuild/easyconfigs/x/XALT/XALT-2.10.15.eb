@@ -12,38 +12,63 @@ description = """XALT 2 is a tool to allow a site to track user executables
 toolchain = SYSTEM
 
 # The location of XALT configuration file must be specified via
-# 'config_py' easyconfig parameter.  You can edit the easyconfig file,
-# or use 'eb --try-amend=config_py=<path>'. " See
+# 'config_py' easyconfig parameter. See
 # https://xalt.readthedocs.io/en/latest/030_site_filtering.html for
 # more information.
-config_py = None
+config_py = '%(builddir)s/CC_config.py'
 
 # The name of the system must be specified via the 'syshost'
-# easyconfig parameter.  You can edit the easyconfig file, or use 'eb
-# --try-amend=syshost=<string>'.  See
+# easyconfig parameter. See
 # https://xalt.readthedocs.io/en/latest/020_site_configuration.html
 # for more information.
-syshost = None
+syshost = 'env_var:CC_CLUSTER'
 
 # The XALT transmission method must be specified via the
-# 'transmission' easyconfig parameter.  You can edit the easyconfig
-# file, or use 'eb --try-amend=transmission=<string>'.  See
+# 'transmission' easyconfig parameter. See
 # https://xalt.readthedocs.io/en/latest/020_site_configuration.html
 # for more information.
-transmission = None
+transmission = 'file'
 
 # Additional options
+
+# Enable XALT tracking when module is loaded.
 executable_tracking = True
+
+# Enable GPU tracking. Setting to None automatically detects if
+# necessary configuration is present. See
+# https://xalt.readthedocs.io/en/latest/020_site_configuration.html
+# for more information.
 gpu_tracking = None
+
+# URL for cURL file transmission method.
 logging_url = None
+
+# MySQL support. Needs MySQL packages and python MySQL package. See
+# https://xalt.readthedocs.io/en/latest/060_setup_db.html
+# for more information.
 mysql = False
+
+# Enable the scalar sampling rules set in the config.py file.
 scalar_sampling = True
+
+# If XALT is built with a more recent compiler than the system
+# compiler, then XALT likely will depend on symbol versions not
+# available in the system libraries. Link statically as a workaround.
 static_cxx = False
-file_prefix = None
+
+# Where the XALT record files are stored. Defaults to $HOME/.xalt.d
+# if file_prefix is set to None.
+file_prefix = '/var/log/xalt'
 
 source_urls = ['https://github.com/xalt/xalt/archive/']
-sources = [SOURCELOWER_TAR_GZ]
-checksums = ['debc7bee65617a30093c0cf5f6cb318cc0b7a4e368b2534b56c9e69af2e39fc1']
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {'filename':'CC_config.py','extract_cmd':'cp %s .'}
+]
+checksums = [
+    'debc7bee65617a30093c0cf5f6cb318cc0b7a4e368b2534b56c9e69af2e39fc1',  # xalt-2.10.15.tar.gz
+    'f99b740e1c0af1da44207807b4c02919b669ad5d9cb8844b6deca443869b0cd1',  # CC_config.py
+]
 
 osdependencies = [
     ('bc'),
