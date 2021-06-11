@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'UShER'
+version = '0.3.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/yatisht/usher'
+description = """Ultrafast Sample Placement on Existing Trees (UShER) is a program that rapidly places
+ new samples onto an existing phylogeny using maximum parsimony."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+github_account = 'yatisht'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['8f4416e2fb7b63fbc675c9ce009fb71a16e9bedca5247723d030be033ae9edd1']
+
+builddependencies = [('CMake', '3.12.1')]
+
+dependencies = [
+    ('Boost', '1.68.0', versionsuffix),
+    ('MAFFT', '7.427', '-with-extensions'),
+    ('protobuf-python', '3.12.4', versionsuffix),
+    ('Python', '3.7.0'),
+    ('tbb', '2019_U9'),
+]
+
+configopts = '-DTBB_DIR=${TBBROOT} -DCMAKE_PREFIX_PATH=${TBBROOT}/cmake'
+
+separate_build_dir = True
+
+postinstallcmds = [
+    "rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/faToVcf %(installdir)s/bin",
+    "chmod +x %(installdir)s/bin/faToVcf",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': []
+}
+
+sanity_check_commands = ['%(namelower)s --version']
+
+moduleclass = 'bio'
