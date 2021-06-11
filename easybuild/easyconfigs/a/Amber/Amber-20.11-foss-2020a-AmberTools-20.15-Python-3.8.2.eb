@@ -1,0 +1,52 @@
+name = 'Amber'
+local_amber_ver = 20
+local_ambertools_ver = 20
+# Patch levels from http://ambermd.org/AmberPatches.php and http://ambermd.org/ATPatches.php
+patchlevels = (15, 11)  # (AmberTools, Amber)
+version = '%s.%s' % (local_amber_ver, patchlevels[1])
+versionsuffix = '-AmberTools-%s.%s-Python-%%(pyver)s' % (local_ambertools_ver, patchlevels[0])
+
+homepage = 'http://ambermd.org/amber.html'
+description = """Amber (originally Assisted Model Building with Energy Refinement) is software for performing
+ molecular dynamics and structure prediction."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+sources = [
+    '%%(name)s%s.tar.bz2' % local_amber_ver,
+    'AmberTools%s.tar.bz2' % local_ambertools_ver,
+]
+patches = [
+    '%%(name)s-%s_cmake-locate-netcdf.patch' % local_amber_ver,
+]
+
+builddependencies = [
+    ('Bison', '3.5.3'),
+    ('CMake', '3.16.4'),
+    ('flex', '2.6.4'),
+    ('make', '4.3'),
+]
+
+dependencies = [
+    ('Boost.Python', '1.72.0'),
+    ('bzip2', '1.0.8'),
+    ('libreadline', '8.0'),
+    ('matplotlib', '3.2.1', '-Python-%(pyver)s'),
+    ('netCDF-Fortran', '4.5.2'),
+    ('netCDF', '4.7.4'),
+    ('Perl', '5.30.2'),
+    ('PnetCDF', '1.12.1'),
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', '-Python-%(pyver)s'),  # mpi4py required for MMPBSA
+    ('Tkinter', '3.8.2'),
+    ('X11', '20200222'),
+    ('zlib', '1.2.11'),
+]
+
+# Tests are flaky
+runtest = False
+
+static = False
+
+moduleclass = 'chem'
