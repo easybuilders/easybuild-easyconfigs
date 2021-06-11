@@ -1,0 +1,39 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - http://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'SDL'
+version = '1.2.15'
+
+homepage = 'https://www.libsdl.org/'
+description = "SDL: Simple DirectMedia Layer, a cross-platform multimedia library"
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.libsdl.org/release/']
+sources = [SOURCE_TAR_GZ]
+patches = ['SDL-%(version)s-91ad7b43317a.patch']
+checksums = [
+    'd6d316a793e5e348155f0dd93b979798933fb98aa1edebcc108829d6474aad00',  # SDL-1.2.15.tar.gz
+    '48e6afdad171e896e81d7d7aa610a54f0f51175423c5093efe083c70b5219151',  # SDL-1.2.15-91ad7b43317a.patch
+]
+
+builddependencies = [
+    ('Autotools', '20170619'),
+    ('binutils', '2.28'),
+]
+
+dependencies = [
+    ('X11', '20180131'),
+]
+
+# else we get error: conflicting types for ‘_XData32’... even with patch above
+preconfigopts = "./autogen.sh && "
+
+sanity_check_paths = {
+    'dirs': ['bin', 'include/SDL', 'lib/pkgconfig', 'share/man/man3'],
+    'files': ['bin/sdl-config', 'lib/libSDL.%s' % SHLIB_EXT],
+}
+
+moduleclass = 'lib'

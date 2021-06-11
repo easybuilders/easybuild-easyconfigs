@@ -1,0 +1,42 @@
+easyblock = 'PythonPackage'
+
+name = 'torchtext'
+version = '0.7.0'
+local_pytorch_version = '1.6.0'
+local_python_suffix = '-Python-%(pyver)s'
+versionsuffix = '%s-PyTorch-%s' % (local_python_suffix, local_pytorch_version)
+
+homepage = 'https://github.com/pytorch/text'
+description = "Data loaders and abstractions for text and NLP"
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+# The tarball of the final v0.7.0 release is labelled as a release candidate
+# see https://github.com/pytorch/text/releases/tag/v0.7.0-rc3
+local_tarball_version = '%(version)s-rc3'
+
+# Sources are no longer available in PyPI, it only has wheels
+source_urls = ['https://github.com/pytorch/text/archive/']
+sources = ['v%s.tar.gz' % local_tarball_version]
+checksums = ['b1365b845da1cb9537658b13ef1f29be99c127b31ad70c6af308222357f50bcb']
+
+builddependencies = [
+    ('RE2', '2020-07-01'),
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', local_python_suffix),
+    ('SentencePiece', '0.1.85', local_python_suffix),
+    ('tqdm', '4.41.1'),
+    ('PyTorch', local_pytorch_version, local_python_suffix),
+]
+
+# Disable bundled libraries to use those from EB: RE2, SentencePiece
+preinstallopts = "sed -i '/third_party/d;/BuildExtension/d' setup.py &&"
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+moduleclass = 'tools'
