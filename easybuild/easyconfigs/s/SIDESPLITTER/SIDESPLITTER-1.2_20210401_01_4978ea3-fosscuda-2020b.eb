@@ -1,0 +1,59 @@
+# Thomas Hoffman, EMBL Heidelberg, structures-it@embl.de, 2021/06
+easyblock = 'CMakeMake'
+
+name = 'SIDESPLITTER'
+local_ver = '1.2'
+local_sha = '4978ea3a9c35a072eba1335298417138fa55028b'
+local_commitdate = '20210401'
+local_commitnr = '01'
+version = '%s_%s_%s_%s' % (local_ver, local_commitdate, local_commitnr, local_sha[:7])
+local_tc = 'fosscuda'
+local_tcv = '2020b'
+
+homepage = 'https://github.com/StructuralBiology-ICLMedicine/SIDESPLITTER'
+
+description = """Single particle analysis of cryo-EM images enables macromolecular structure     
+determination at resolutions approaching the atomic scale. Experimental images  
+are extremely noisy, however, and during iterative refinement it is possible to 
+stably incorporate noise into the reconstructed density. Such “over-fitting” can
+ lead to misinterpretation of the structure, and thereby flawed biological      
+results. Several strategies are routinely used to prevent the spurious          
+incorporation of noise within reconstructed volumes, the most common being      
+independent refinement of two sides of a split dataset.
+
+In this study, we show that over-fitting remains an issue within regions of low 
+local signal-to-noise in reconstructed volumes refined using the half-set       
+strategy. We propose a modified filtering process during refinement through the 
+application of a local signal-to-noise filter, SIDESPLITTER, which we show to be
+ capable of reducing over-fitting in both idealised and experimental settings,  
+while maintaining independence between the two sides of a split refinement.     
+SIDESPLITTER can also improve the final resolution in refinements of structures 
+prone to severe over-fitting, such as membrane proteins in detergent micelles."""
+
+toolchain = {'name': local_tc, 'version': local_tcv}
+toolchainopts = {'opt': True}
+
+
+source_urls = ['https://github.com/StructuralBiology-ICLMedicine/SIDESPLITTER/archive']
+sources = ['%s.tar.gz' % local_sha[:12]]
+checksums = ['362c9e2c8984ae8141108fa2d13edbc629478792502829ba02712b91af3414d3']
+
+modextravars = {
+    'RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE': '%(installdir)s/bin/sidesplitter_wrapper.sh',
+    'SIDESPLITTER': '%(installdir)s/bin/sidesplitter',
+    # Assuming the relion module EXTRA4 to define addiontal modules loaded at cluster job execution:
+    'RELION_QSUB_EXTRA4_DEFAULT': 'SIDESPLITTER-%(version)s-' + local_tc + '-' + local_tcv,
+    'RELION_ADDITIONAL_ARGUMENTS': ' --external_reconstruct ',
+}
+builddependencies = [('CMake', '3.18.4')]
+separate_build_dir = False
+# find_package/_library fails. We pass locations as configopt:
+preconfigopts = 'sed -i "s/^find_library(FFTW3/#&/g;s/find_package(FFTW3/#&/g" CMakeLists.txt &&'
+configopts = ' -DFFTW3_INCLUDE_DIRS=$EBROOTFFTW/include -DFFTW3=$EBROOTFFTW/lib/libfftw3.%s ' % SHLIB_EXT
+configopts += '-DFFTW3_THREADS=$EBROOTFFTW/lib/libfftw3_threads.%s ' % SHLIB_EXT
+sanity_check_paths = {
+    'files': ['bin/sidesplitter', 'bin/sidesplitter_wrapper.sh'],
+    'dirs': ["."]
+}
+
+moduleclass = 'bio'
