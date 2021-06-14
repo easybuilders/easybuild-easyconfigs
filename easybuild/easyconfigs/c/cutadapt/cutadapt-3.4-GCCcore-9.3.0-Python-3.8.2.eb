@@ -13,28 +13,36 @@ easyblock = 'PythonBundle'
 
 name = 'cutadapt'
 version = '3.4'
-versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'https://opensource.scilifelab.se/projects/cutadapt/'
 description = """Cutadapt finds and removes adapter sequences, primers, poly-A tails and
- other types of unwanted sequence from your high-throughput sequencing reads."""
+    other types of unwanted sequence from your high-throughput sequencing reads."""
 
 toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+local_python = "Python"
+local_pythonversion = "3.8.2"
+
+versionsuffix = "-%s-%s" % (local_python, local_pythonversion)
 
 builddependencies = [
     ('binutils', '2.34'),
 ]
 
 dependencies = [
-    ('Python', '3.8.2'),
+    (local_python, local_pythonversion),
 ]
 
-use_pip = True
-sanity_pip_check = True
-
-# exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
 
 exts_list = [
+    ('isal', '0.10.0', {
+        'checksums': ['3f89471065c2837d1235877dbdcdbd8b7649068723026b0582010fa106a71ff3'],
+    }),
     ('xopen', '1.1.0', {
         'checksums': ['38277eb96313b2e8822e19e793791801a1f41bf13ee5b48616a97afc65e9adb3'],
     }),
@@ -50,7 +58,5 @@ sanity_check_paths = {
     'files': ['bin/cutadapt'],
     'dirs': ['lib/python3.8/site-packages'],
 }
-
-sanity_check_commands = ["%(name)s --help"]
 
 moduleclass = 'bio'
