@@ -1,45 +1,24 @@
-easyblock = 'IntelBase'
+easyblock = 'Bundle'
 name = 'intel-opencl'
-version = '2020.3.494'
+version = '2021.2.0'
 
-homepage = 'https://software.intel.com/content/www/us/en/develop/tools/opencl-sdk.html'
-description = "Intel's implementation of the OpenCL standard"
+homepage = 'https://software.intel.com/content/www/us/en/develop/articles/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html'
+description = "Intel's OpenCL CPU runtime"
 
 toolchain = SYSTEM
 
-source_urls = ['https://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/17205']
-sources = ['intel_sdk_for_opencl_applications_%(version)s.tar.gz']
-checksums = ['75cc2aa08d652e5e2fddca15b9e0026b69794c97f058c19d1c8594fd57804612']
+builddependencies = [('intel-compilers', version)]
 
-requires_runtime_license = False
-license_activation = 'no_license'
-
+# refer to the runtime in the oneAPI compiler module via an icd file
 postinstallcmds = [
-  '''/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s
-     installdir=%(installdir)s
-     publicdir=${installdir/restricted.computecanada.ca/soft.computecanada.ca}
-     for i in $(grep installdir $installdir/system_studio_2020/opencl_compilers_and_libraries_18.1.0.013/licensing/redist.txt | cut -c 13-); do
-       if [ -f $installdir/system_studio_2020/$i ]; then
-         mkdir -p $(dirname $publicdir/system_studio_2020/$i)
-         cp -p $installdir/system_studio_2020/$i $publicdir/system_studio_2020/$i
-       fi
-     done
-     cd $installdir
-     for i in system_studio_2020/opencl_compilers_and_libraries_18.1.0.013/linux/compiler/lib/intel64_lin/*; do
-       if [ -L $i ]; then
-         cp -a $i $publicdir/$i
-       fi
-     done'''
+    'mkdir -p %(installdir)s/etc',
+    'echo ${EBROOTINTELMINCOMPILERS/restricted/soft}/compiler/%(version)s/linux/lib/x64/libintelocl.so > %(installdir)s/etc/intel-cpu.icd',
 ]
 
-modextrapaths = {
-    'LIBRARY_PATH': 'system_studio_2020/opencl_compilers_and_libraries_18.1.0.013/linux/compiler/lib/intel64_lin/',
-    'CPATH': 'system_studio_2020/opencl/SDK/include',
-}
+modextravars = {'OCL_ICD_VENDORS': '%(installdir)s/etc/'}
 
 sanity_check_paths = {
-    'files': ['system_studio_2020/opencl_compilers_and_libraries_18.1.0.013/linux/compiler/lib/intel64_lin/libOpenCL.so',
-              'system_studio_2020/opencl/SDK/include/CL/cl.h'],
+    'files': ['etc/intel-cpu.icd'],
     'dirs' : [],
 }
 
