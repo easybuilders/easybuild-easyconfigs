@@ -8,10 +8,6 @@ description = "An open-source software library for Machine Intelligence"
 
 toolchain = {'name': 'foss', 'version': '2020b'}
 toolchainopts = {'pic': True}
-if ARCH == 'x86_64':
-    # required workaround for failing tests on Intel Skylake and Cascade Lake,
-    # see https://github.com/tensorflow/tensorflow/issues/49944
-    toolchainopts['extra_cxxflags'] = '-mno-avx512f'
 
 builddependencies = [
     ('Bazel', '3.7.2'),
@@ -158,6 +154,7 @@ exts_list = [
             'TensorFlow-2.4.0_dont-use-var-lock.patch',
             'TensorFlow-2.5.0_add-default-shell-env.patch',
             'TensorFlow-2.5.0_add-protobuf-deps.patch',
+            'TensorFlow-2.5.0_disable_avx512-extensions.patch',
             'TensorFlow-2.5.0_fix-alignment-in-matmul-test.patch',
             'TensorFlow-2.5.0_fix-arm-vector-intrinsics.patch',
         ],
@@ -170,6 +167,8 @@ exts_list = [
             '09b0c5d4ff04f56a9657875471ed78001d4201cac795aeff62019d582115b468',
             # TensorFlow-2.5.0_add-protobuf-deps.patch
             '2aa79b89cff13e81f83e385761917d5d6dbdffd6b0366d90580761b958f14363',
+            # TensorFlow-2.5.0_disable_avx512-extensions.patch
+            '3655ce24c97569ac9738c07cac85347ba6f5c815ada95b19b606ffa46d4dda03',
             # TensorFlow-2.5.0_fix-alignment-in-matmul-test.patch
             '6a4d6cbf45a622b8a2c3ea0b1c0171f01f595684d9c57d415bb39b1b27e1180f',
             # TensorFlow-2.5.0_fix-arm-vector-intrinsics.patch
@@ -199,8 +198,6 @@ exts_list = [
             '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
         ],
         'testopts': "--test_timeout=3600 --test_size_filters=small",
-        'testopts_gpu': "--test_timeout=3600 --test_size_filters=small " +
-                        "--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute",
         'with_xla': True,
     }),
 ]
