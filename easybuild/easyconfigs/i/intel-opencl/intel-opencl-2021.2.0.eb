@@ -1,0 +1,25 @@
+easyblock = 'Bundle'
+name = 'intel-opencl'
+version = '2021.2.0'
+
+homepage = 'https://software.intel.com/content/www/us/en/develop/articles/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html'
+description = "Intel's OpenCL CPU runtime"
+
+toolchain = SYSTEM
+
+builddependencies = [('intel-compilers', version)]
+
+# refer to the runtime in the oneAPI compiler module via an icd file
+postinstallcmds = [
+    'mkdir -p %(installdir)s/etc',
+    'echo ${EBROOTINTELMINCOMPILERS/restricted/soft}/compiler/%(version)s/linux/lib/x64/libintelocl.so > %(installdir)s/etc/intel-cpu.icd',
+]
+
+modextravars = {'OCL_ICD_VENDORS': '%(installdir)s/etc/'}
+
+sanity_check_paths = {
+    'files': ['etc/intel-cpu.icd'],
+    'dirs' : [],
+}
+
+moduleclass = 'system'
