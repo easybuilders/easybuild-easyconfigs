@@ -313,6 +313,8 @@ class EasyConfigTest(TestCase):
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
             'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'decona-0.1.2-',
                       'NGSpeciesID-0.1.1.1-'])],
+            # yaff requires h5py 2.10.0. LAMMPS depends on yaff.
+            'h5py': [(r'2\.10\.0', [r'yaff-1\.6\.0-', r'LAMMPS-29Oct2020-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
