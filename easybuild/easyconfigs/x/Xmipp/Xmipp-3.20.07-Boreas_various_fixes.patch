@@ -1,0 +1,233 @@
+Add missing pthread lib to XmippInterfaceCuda
+Add missing pthread lib to XmippParallel
+cuda_gpu_multidim_array.cu is just an include file containing templates.
+Needs to be before cuda_gpu_geo_transformer.cu
+Don't add useless libraries to XmippInterfaceCuda and XmippParallelCuda
+Author: Åke Sandgren, 20191023
+
+Make sure scons sees the complete environment from EasyBuild.
+Only use CXXFLAGS from EasyBuild.
+Author: Åke Sandgren, 2019-10-10
+
+Move cuda_compatibility.cu code to cuda_compatibility.h to make sure it is compiled
+Account for API change attr.memoryType to attr.type in CUDA versions >= 10
+Fix parsing of "nvcc --version" output
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -Nur xmipp-3.20.07-Boreas.orig/src/xmipp/libraries/reconstruction_cuda/cuda_all.cpp xmipp-3.20.07-Boreas/src/xmipp/libraries/reconstruction_cuda/cuda_all.cpp
+--- xmipp-3.20.07-Boreas.orig/src/xmipp/libraries/reconstruction_cuda/cuda_all.cpp	2020-10-14 13:39:35.000000000 +0200
++++ xmipp-3.20.07-Boreas/src/xmipp/libraries/reconstruction_cuda/cuda_all.cpp	2021-05-12 15:57:55.355140000 +0200
+@@ -31,6 +31,6 @@
+  */
+ 
+ #include "cuda_gpu_bilib.cu"
++#include "cuda_gpu_multidim_array.cu"
+ #include "cuda_gpu_geo_transformer.cu"
+ #include "cuda_gpu_iirconvolve.cu"
+-#include "cuda_gpu_multidim_array.cu"
+diff -Nur xmipp-3.20.07-Boreas.orig/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.cu xmipp-3.20.07-Boreas/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.cu
+--- xmipp-3.20.07-Boreas.orig/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.cu	2020-10-14 13:39:35.000000000 +0200
++++ xmipp-3.20.07-Boreas/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.cu	1970-01-01 01:00:00.000000000 +0100
+@@ -1,52 +0,0 @@
+-/***************************************************************************
+- *
+- * Authors:    David Strelak (davidstrelak@gmail.com)
+- *
+- * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+- * 02111-1307  USA
+- *
+- *  All comments concerning this program package may be sent to the
+- *  e-mail address 'xmipp@cnb.csic.es'
+- ***************************************************************************/
+-
+-#ifndef LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_CU_
+-#define LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_CU_
+-
+-#include "cuda_compatibility.h"
+-
+-#if __CUDA_ARCH__ < 600
+-__device__ double atomicAdd(double* address, double val)
+-{
+-    unsigned long long int* address_as_ull =
+-                              (unsigned long long int*)address;
+-    unsigned long long int old = *address_as_ull, assumed;
+-
+-    do {
+-        assumed = old;
+-        old = atomicCAS(address_as_ull, assumed,
+-                        __double_as_longlong(val +
+-                               __longlong_as_double(assumed)));
+-
+-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+-    } while (assumed != old);
+-
+-    return __longlong_as_double(old);
+-}
+-#endif
+-
+-
+-#endif /* LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_CU_ */
+diff -Nur xmipp-3.20.07-Boreas.orig/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.h xmipp-3.20.07-Boreas/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.h
+--- xmipp-3.20.07-Boreas.orig/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.h	2020-10-14 13:39:35.000000000 +0200
++++ xmipp-3.20.07-Boreas/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.h	2021-05-20 09:06:30.400718000 +0200
+@@ -26,8 +26,27 @@
+ #ifndef LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_H_
+ #define LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_H_
+ 
++//#if __CUDA_ARCH__ < 600
++#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 600)
+ 
+-__device__ double atomicAdd(double* address, double val);
++__device__ double atomicAdd(double* address, double val)
++{
++    unsigned long long int* address_as_ull =
++                              (unsigned long long int*)address;
++    unsigned long long int old = *address_as_ull, assumed;
+ 
++    do {
++        assumed = old;
++        old = atomicCAS(address_as_ull, assumed,
++                        __double_as_longlong(val +
++                               __longlong_as_double(assumed)));
++
++    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
++    } while (assumed != old);
++
++    return __longlong_as_double(old);
++}
++#endif
+ 
+ #endif /* LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_H_ */
++
+diff -Nur xmipp-3.20.07-Boreas.orig/src/xmipp/libraries/reconstruction_cuda/gpu.cpp xmipp-3.20.07-Boreas/src/xmipp/libraries/reconstruction_cuda/gpu.cpp
+--- xmipp-3.20.07-Boreas.orig/src/xmipp/libraries/reconstruction_cuda/gpu.cpp	2020-10-14 13:39:35.000000000 +0200
++++ xmipp-3.20.07-Boreas/src/xmipp/libraries/reconstruction_cuda/gpu.cpp	2021-05-20 09:31:57.227126000 +0200
+@@ -28,6 +28,7 @@
+ #include <cuda_runtime.h>
+ #include "cuda_asserts.h"
+ #include <nvml.h>
++#include <cuda.h>
+ 
+ GPU::~GPU() {
+     if (m_isSet) {
+@@ -152,5 +153,9 @@
+         cudaGetLastError(); // clear out the previous API error
+         return false;
+     }
++#if (CUDA_VERSION >= 10000)
++    return cudaMemoryTypeDevice == attr.type;
++#else
+     return cudaMemoryTypeDevice == attr.memoryType;
++#endif
+ }
+diff -Nur xmipp-3.20.07-Boreas.orig/src/xmipp/SConscript xmipp-3.20.07-Boreas/src/xmipp/SConscript
+--- xmipp-3.20.07-Boreas.orig/src/xmipp/SConscript	2020-10-14 13:39:35.000000000 +0200
++++ xmipp-3.20.07-Boreas/src/xmipp/SConscript	2021-05-12 15:56:38.614997259 +0200
+@@ -154,7 +154,7 @@
+ 
+ # CUDA
+ if cuda:
+-    addLib('XmippInterfaceCuda', dirs=['libraries'], patterns=['reconstruction_adapt_cuda/*.cpp'], libs=['Xmipp'])
++    addLib('XmippInterfaceCuda', dirs=['libraries'], patterns=['reconstruction_adapt_cuda/*.cpp'], libs=['Xmipp', 'pthread'])
+     addLib('XmippCuda', dirs=['libraries'], patterns=['reconstruction_cuda/*.cpp'], nvcc=True, suffix=".a")
+     addLib('XmippParallelCuda', dirs=['libraries'], patterns=['parallel_adapt_cuda/*.cpp'],
+            libs=['Xmipp','XmippInterfaceCuda','XmippCuda'], mpi=True)
+@@ -163,7 +163,7 @@
+ dirs = ['libraries']
+ patterns=['parallel/*.cpp']
+ addLib('XmippParallel',dirs=dirs,patterns=patterns, incs=python_incdirs,
+-       libs=['Xmipp', PYTHON_LIB], mpi=True)
++       libs=['Xmipp', 'pthread', PYTHON_LIB], mpi=True)
+ 
+ 
+ #  ***********************************************************************
+diff -Nur xmipp-3.20.07-Boreas.orig/src/xmipp/SConstruct xmipp-3.20.07-Boreas/src/xmipp/SConstruct
+--- xmipp-3.20.07-Boreas.orig/src/xmipp/SConstruct	2020-10-14 13:39:35.000000000 +0200
++++ xmipp-3.20.07-Boreas/src/xmipp/SConstruct	2021-05-19 22:28:05.609853405 +0200
+@@ -150,7 +150,6 @@
+ env['CCFLAGS'] = os.environ.get('CCFLAGS', '').split()
+ cxxFlags = os.environ.get('CXXFLAGS', '')
+ env['CXXFLAGS'] = cxxFlags.split()
+-os.environ['CXXFLAGS'] = cxxFlags # FIXME use only env or os.environ in the rest of the code
+ env['LINKFLAGS'] = os.environ.get('LINKFLAGS', '').split()
+ 
+ 
+@@ -212,9 +211,7 @@
+     """
+     _libs = list(libs)
+     _libpath = list(libpath)+external_libdirs
+-    if name == "XmippInterfaceCuda":
+-        _libs.append("XmippCuda")
+-    if "Cuda" in name:
++    if name == "XmippCuda":
+         _libs.append("cudart")
+         #_libs.append("cuda")
+         _libs.append("cufft")
+@@ -238,7 +235,8 @@
+     # the reason is a compilation error for CUDA, which results in a multiple symbol detection
+     # when the order is different. This has to be fixed in the future by changing the CUDA
+     # build system FIXME David Strelak
+-    env2 = Environment()
++    print(sources)
++    env2 = Environment(ENV=os.environ)
+     env2['ENV']['PATH'] = env['ENV']['PATH']
+     env2['CXXFLAGS']=list(env['CXXFLAGS']) # list(.) causes a true copy and not just a pointer 
+     env2['LINKFLAGS']=list(env['LINKFLAGS'])
+@@ -427,7 +425,7 @@
+     ldLibraryPathCopy = [env['LIBPATH']]
+     appendUnique(libPathsCopy, external_libdirs) # This order is important, because if we should use Scipion libs, these will be before the system libs
+     appendUnique(libPathsCopy, env.get('LIBPATH', '').split(os.pathsep))
+-    env2 = Environment()
++    env2 = Environment(ENV=os.environ)
+     env2['ENV']['LD_LIBRARY_PATH'] = env['ENV'].get('LD_LIBRARY_PATH', '')
+     env2['ENV']['PATH'] = env['ENV']['PATH']
+ 
+@@ -488,7 +486,7 @@
+ 
+ def libraryTest(env, name, lang='c'):
+     """Check the existence of a concrete C/C++ library."""
+-    env2 = Environment(LIBS=env.get('LIBS',''))
++    env2 = Environment(ENV=os.environ,LIBS=env.get('LIBS',''))
+     conf = Configure(env2)
+     conf.CheckLib(name, language=lang)
+     env2 = conf.Finish()
+diff -Nur xmipp-3.20.07-Boreas.orig/xmipp xmipp-3.20.07-Boreas/xmipp
+--- xmipp-3.20.07-Boreas.orig/xmipp	2020-10-14 13:39:35.000000000 +0200
++++ xmipp-3.20.07-Boreas/xmipp	2021-05-18 13:08:47.923089166 +0200
+@@ -681,13 +681,6 @@
+         configDict["INCDIRFLAGS"] += ' '.join(map(lambda x: '-I' + str(x), getDependenciesInclude()))
+         configDict["INCDIRFLAGS"] += " -I%s" % localInc
+ 
+-        # extra includes
+-        if not findFileInDirList("hdf5.h", [localInc, "/usr/include"]):
+-            print(yellow("\nHeaders for 'libhdf5' not found at '%s'." % localInc))
+-            hdf5Inc = findFileInDirList("hdf5.h", "/usr/include/hdf5/serial")    # Add more candidates if needed
+-            hdf5Inc = askPath(hdf5Inc, askUser)
+-            if hdf5Inc:
+-                configDict["INCDIRFLAGS"] += " -I%s" % hdf5Inc
+ 
+     if configDict["PYTHON_LIB"] == "":
+         # malloc flavour is not needed from 3.8
+@@ -1648,7 +1641,8 @@
+     log = []
+     runJob(nvcc + " --version", show_output=False, show_command=False, log=log)
+     # expected lst line: 'Cuda compilation tools, release 8.0, V8.0.61'
+-    full_version = log[-1].strip().split(', ')[-1].lstrip('V')
++    verline = [x for x in log if x.startswith('Cuda compilation tools')]
++    full_version = verline[0].strip().split(', ')[-1].lstrip('V')
+     tokens = full_version.split('.')
+     if len(tokens) < 2:
+         tokens.append('0')  # just in case when only one digit is returned
