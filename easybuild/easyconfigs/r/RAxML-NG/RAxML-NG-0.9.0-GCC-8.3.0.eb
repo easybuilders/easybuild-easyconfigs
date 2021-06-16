@@ -1,0 +1,86 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'RAxML-NG'
+version = '0.9.0'
+
+local_terrap_commit = '6dcb061ceb6ed41a7ebe1a8af1f3354e0126125c'
+local_pllmod_commit = '840a19525ed133ad243afb23124911b849d4685d'
+local_libpll_commit = '6874327c9ca9544e27b426c0e7205c8b6f4ed297'
+
+homepage = "https://github.com/amkozlov/raxml-ng"
+description = """RAxML-NG is a phylogenetic tree inference tool which
+uses maximum-likelihood (ML) optimality criterion. Its search heuristic
+ is based on iteratively performing a series of Subtree Pruning and Regrafting
+ (SPR) moves, which allows to quickly navigate to the best-known ML tree."""
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+local_extract_lib = 'tar --strip-components=1 -C %%(builddir)s/raxml-ng-%%(version)s/libs/%s -xzf %%s'
+
+sources = [
+    {
+        'source_urls': ['https://github.com/amkozlov/raxml-ng/archive/'],
+        'filename': '%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/amkozlov/terraphast-one/archive/'],
+        'download_filename': '%s.tar.gz' % local_terrap_commit,
+        'filename': 'terraphast-one-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'terraphast',
+    },
+    {
+        'source_urls': ['https://github.com/ddarriba/pll-modules/archive/'],
+        'download_filename': '%s.tar.gz' % local_pllmod_commit,
+        'filename': 'pll-modules-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'pll-modules',
+    },
+    {
+        'source_urls': ['https://github.com/xflouris/libpll-2/archive/'],
+        'download_filename': '%s.tar.gz' % local_libpll_commit,
+        'filename': 'libpll-2-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'pll-modules/libs/libpll',
+    },
+]
+checksums = [
+    '43b95ee1bddae0daee84644e9ee760a77f28bb16e2071e95cca79a30f39373e5',  # 0.9.0.tar.gz
+    '79ed9aebd1b7a58af1c9e99b087005e1b5ea10b99202c387f59f9c2f886b1c66',  # terraphast-one-0.9.0.tar.gz
+    '59fd7464dd697a819dff2aa167182cca81dbd3be75af2785ab74ded6a2ec4697',  # pll-modules-0.9.0.tar.gz
+    '6197cf7a4ae80060517ad2b47434b2a36c4aca0154b8390e278e40d6a11741b8',  # libpll-2-0.9.0.tar.gz
+]
+
+dependencies = [
+    ('GMP', '6.1.2'),
+]
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('CMake', '3.15.3'),
+    ('googletest', '1.10.0'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.3.2'),
+]
+
+configopts = '-DUSE_MPI=OFF '
+configopts += '-DUSE_GMP=ON '
+
+build_type = 'Release'
+
+separate_build_dir = True
+
+# too much parallellism makes the build fail with:
+# No rule to make target 'localdeps/lib/libterraces.a';
+# see https://github.com/amkozlov/raxml-ng/issues/108
+maxparallel = 10
+
+files_to_copy = [
+    (['bin/raxml-ng'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/raxml-ng'],
+    'dirs':  [],
+}
+
+sanity_check_commands = ['raxml-ng -h']
+
+moduleclass = 'bio'

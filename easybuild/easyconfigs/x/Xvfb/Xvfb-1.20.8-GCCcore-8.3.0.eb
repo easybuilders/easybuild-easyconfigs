@@ -12,6 +12,7 @@ toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
 builddependencies = [
     ('binutils', '2.32'),
     ('pkg-config', '0.29.2'),
+    ('Python', '3.7.4'),
 ]
 
 dependencies = [
@@ -27,7 +28,7 @@ dependencies = [
 default_easyblock = 'ConfigureMake'
 
 local_xvfb_configopts = "--enable-xvfb --disable-xorg --disable-xnest --disable-xwin "
-local_xvfb_configopts += "--disable-dri --disable-dri2 --disable-dri3 "
+local_xvfb_configopts += "--disable-dri --disable-dri2 --disable-dri3 --disable-libunwind "
 local_xvfb_configopts += "--with-fontrootdir=%(installdir)s/share/fonts/X11"
 
 # use 'make V=1' to see compiler commands
@@ -43,13 +44,28 @@ default_component_specs = {
     'start_dir': '%(name)s-%(version)s',
 }
 
+local_font_misc_preconfigopts = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
+local_font_misc_preconfigopts += "export PATH=%(installdir)s/bin:$PATH && "
+
 components = [
+    ('mkfontscale', '1.2.1', {
+        'source_urls': ['https://www.x.org/archive//individual/app/'],
+        'checksums': ['e5b687029e44d0bd3ccd254a4da6a5cbfc40350aa8b43fcca16ef6e9b9bb9f22'],
+    }),
+    ('mkfontdir', '1.0.7', {
+        'source_urls': ['https://www.x.org/archive//individual/app/'],
+        'checksums': ['bccc5fb7af1b614eabe4a22766758c87bfc36d66191d08c19d2fa97674b7b5b7'],
+    }),
+    ('bdftopcf', '1.1', {
+        'source_urls': ['https://www.x.org/archive//individual/app/'],
+        'checksums': ['699d1a62012035b1461c7f8e3f05a51c8bd6f28f348983249fb89bbff7309b47'],
+    }),
     ('font-util', '1.3.2', {
         'checksums': ['f115a3735604de1e852a4bf669be0269d8ce8f21f8e0e74ec5934b31dadc1e76'],
     }),
     ('font-misc-misc', '1.1.2', {
         'checksums': ['46142c876e176036c61c0c24c0a689079704d5ca5b510d48c025861ee2dbf829'],
-        'preconfigopts': "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ",
+        'preconfigopts': local_font_misc_preconfigopts,
     }),
     ('xkbcomp', '1.4.3', {
         'source_urls': ['https://www.x.org/archive//individual/app/'],
@@ -57,8 +73,17 @@ components = [
     }),
     ('xkeyboard-config', '2.29', {
         'source_urls': ['https://www.x.org/archive//individual/data/xkeyboard-config/'],
-        'checksums': ['d8034c8b771b51140409039f8e3351e90a0092238b81af04239794e8d3dc0813'],
+        'patches': ['xkeyboard-config-%(version)s_fix-shebang-map-variants.patch'],
+        'checksums': [
+            'd8034c8b771b51140409039f8e3351e90a0092238b81af04239794e8d3dc0813',  # xkeyboard-config-2.29.tar.gz
+            # xkeyboard-config-2.29_fix-shebang-map-variants.patch
+            '91ba9a6e5cef7723a6ec68de0359089b6254b585c2b47a338257021bb0e4c0e8',
+        ],
         'configopts': '--with-xkb-rules-symlink=xorg',
+    }),
+    ('xauth', '1.1', {
+        'source_urls': ['https://www.x.org/releases/individual/app/'],
+        'checksums': ['e9fce796c8c5c9368594b9e8bbba237fb54b6615f5fd60e8d0a5b3c52a92c5ef'],
     }),
     (name, version, {
         'source_urls': ['https://www.x.org/releases/individual//xserver/'],

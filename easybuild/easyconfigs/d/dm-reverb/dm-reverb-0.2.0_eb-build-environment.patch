@@ -1,0 +1,418 @@
+Refactor the build environment to use dependencies from EasyBuild
+* fix detection of Python installation
+* define a single local repo using files from EB for the following dependencies:
+  * local com_google_protobuf replaces protobuf_archive, protobuf_protoc and
+    external com_google_protobuf
+  * local zlib replaces zlib_includes and external zlib
+  * local snappy replaces snappy_includes
+  * local pybind11 replaces http archive source
+* use C++11 ABI as it is used in protobuf from EB
+* disable toolchain definitions with gcc-7
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- reverb-0.2.0/WORKSPACE.orig	2020-12-15 17:27:23.000000000 +0100
++++ reverb-0.2.0/WORKSPACE	2021-05-05 22:43:22.615142000 +0200
+@@ -13,8 +13,15 @@
+ #
+ # *WARNING* If using the REVERB_PROTOC_VERSION environment variable, sha256
+ # checking is disabled.  Use at your own risk.
+-PROTOC_VERSION = "3.9.0"
+-PROTOC_SHA256 = "15e395b648a1a6dda8fd66868824a396e9d3e89bc2c8648e3b9ab9801bea5d55"
++# PROTOC_VERSION = "3.9.0"
++# PROTOC_SHA256 = "15e395b648a1a6dda8fd66868824a396e9d3e89bc2c8648e3b9ab9801bea5d55"
++
++load(
++    "//reverb/cc/platform/default:repo.bzl",
++    "cc_tf_configure",
++)
++
++cc_tf_configure()
+ 
+ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+ 
+@@ -72,15 +79,3 @@
+ apple_support_dependencies()
+ ## End GRPC related deps
+ 
+-load(
+-    "//reverb/cc/platform/default:repo.bzl",
+-    "cc_tf_configure",
+-    "reverb_protoc_deps",
+-    "reverb_python_deps",
+-)
+-
+-cc_tf_configure()
+-
+-reverb_python_deps()
+-
+-reverb_protoc_deps(version = PROTOC_VERSION, sha256 = PROTOC_SHA256)
+--- reverb-0.2.0/reverb/cc/platform/default/repo.bzl.orig	2020-12-15 17:27:23.000000000 +0100
++++ reverb-0.2.0/reverb/cc/platform/default/repo.bzl	2021-05-05 22:40:15.058608262 +0200
+@@ -91,13 +91,13 @@
+     version = exec_result.stdout.splitlines()[-1]
+     basename = "lib{}.so".format(version)
+     exec_result = repo_ctx.execute(
+-        ["{}-config".format(version), "--configdir"],
++        ["{}-config".format(version), "--prefix"],
+         quiet = True,
+     )
+     if exec_result.return_code != 0:
+         fail("Could not locate python shared library path:\n{}"
+             .format(exec_result.stderr))
+-    solib_dir = exec_result.stdout.splitlines()[-1]
++    solib_dir = "{}/{}".format(exec_result.stdout.splitlines()[-1], "lib")
+     full_path = repo_ctx.path("{}/{}".format(solib_dir, basename))
+     if not full_path.exists:
+         fail("Unable to find python shared library file:\n{}/{}"
+@@ -125,62 +125,66 @@
+     )
+ 
+ def _nsync_includes_repo_impl(repo_ctx):
+-    tf_include_path = _find_tf_include_path(repo_ctx)
+-    repo_ctx.symlink(tf_include_path + "/external", "nsync_includes")
++    nsync_root = repo_ctx.os.environ.get("EBROOTNSYNC")
++    repo_ctx.symlink(nsync_root, "nsync")
+     repo_ctx.file(
+         "BUILD",
+         content = """
+ cc_library(
+     name = "includes",
+-    hdrs = glob(["nsync_includes/nsync/public/*.h"]),
+-    includes = ["nsync_includes"],
++    hdrs = glob(["nsync/**/*.h"]),
++    includes = ["nsync/include"],
+     visibility = ["//visibility:public"],
+ )
+ """,
+         executable = False,
+     )
+ 
+-def _zlib_includes_repo_impl(repo_ctx):
+-    tf_include_path = _find_tf_include_path(repo_ctx)
+-    repo_ctx.symlink(
+-        tf_include_path + "/external/zlib",
+-        "zlib",
+-    )
++def _zlib_repo_impl(repo_ctx):
++    zlib_root = repo_ctx.os.environ.get("EBROOTZLIB")
++    repo_ctx.symlink(zlib_root, "zlib")
+     repo_ctx.file(
+         "BUILD",
+         content = """
+ cc_library(
++    name = "zlib",
++    srcs = ["zlib/lib/libz.so"],
++    visibility = ["//visibility:public"],
++)
++cc_library(
+     name = "includes",
+     hdrs = glob(["zlib/**/*.h"]),
+-    includes = ["zlib"],
++    includes = ["zlib/include"],
+     visibility = ["//visibility:public"],
+ )
+ """,
+         executable = False,
+     )
+ 
+-def _snappy_includes_repo_impl(repo_ctx):
+-    tf_include_path = _find_tf_include_path(repo_ctx)
+-    repo_ctx.symlink(
+-        tf_include_path + "/external/snappy",
+-        "snappy",
+-    )
++def _snappy_repo_impl(repo_ctx):
++    snappy_root = repo_ctx.os.environ.get("EBROOTSNAPPY")
++    repo_ctx.symlink(snappy_root, "snappy")
+     repo_ctx.file(
+         "BUILD",
+         content = """
+ cc_library(
+     name = "includes",
+-    hdrs = glob(["snappy/*.h"]),
+-    includes = ["snappy"],
++    hdrs = glob(["snappy/**/*.h"]),
++    includes = ["snappy/include"],
+     visibility = ["//visibility:public"],
+ )
+ """,
+         executable = False,
+     )
+ 
+-def _protobuf_includes_repo_impl(repo_ctx):
+-    tf_include_path = _find_tf_include_path(repo_ctx)
+-    repo_ctx.symlink(tf_include_path, "tf_includes")
++def _pybind11_includes_repo_impl(repo_ctx):
++    protobuf_root = repo_ctx.os.environ.get("EBROOTPYBIND11")
++    repo_ctx.symlink("{}/include".format(protobuf_root), "include")
++    repo_ctx.symlink(Label("//third_party:pybind11.BUILD"), "BUILD")
++
++def _protobuf_repo_impl(repo_ctx):
++    protobuf_root = repo_ctx.os.environ.get("EBROOTPROTOBUF")
++    repo_ctx.symlink(protobuf_root, "protobuf")
+     repo_ctx.symlink(Label("//third_party:protobuf.BUILD"), "BUILD")
+ 
+ def _tensorflow_includes_repo_impl(repo_ctx):
+@@ -201,9 +205,9 @@
+     includes = ["tensorflow_includes"],
+     deps = [
+         "@eigen_archive//:includes",
+-        "@protobuf_archive//:includes",
+-        "@zlib_includes//:includes",
+-        "@snappy_includes//:includes",
++        "@com_google_protobuf//:includes",
++        "@zlib//:includes",
++        "@snappy//:includes",
+     ],
+     visibility = ["//visibility:public"],
+ )
+@@ -274,17 +278,21 @@
+     )
+     make_nsync_repo(name = "nsync_includes")
+     make_zlib_repo = repository_rule(
+-        implementation = _zlib_includes_repo_impl,
++        implementation = _zlib_repo_impl,
+     )
+-    make_zlib_repo(name = "zlib_includes")
++    make_zlib_repo(name = "zlib")
+     make_snappy_repo = repository_rule(
+-        implementation = _snappy_includes_repo_impl,
++        implementation = _snappy_repo_impl,
+     )
+-    make_snappy_repo(name = "snappy_includes")
++    make_snappy_repo(name = "snappy")
++    make_pybind11_repo = repository_rule(
++        implementation = _pybind11_includes_repo_impl,
++    )
++    make_pybind11_repo(name = "pybind11")
+     make_protobuf_repo = repository_rule(
+-        implementation = _protobuf_includes_repo_impl,
++        implementation = _protobuf_repo_impl,
+     )
+-    make_protobuf_repo(name = "protobuf_archive")
++    make_protobuf_repo(name = "com_google_protobuf")
+     make_tfinc_repo = repository_rule(
+         implementation = _tensorflow_includes_repo_impl,
+     )
+@@ -297,65 +305,3 @@
+         implementation = _python_includes_repo_impl,
+     )
+     make_python_inc_repo(name = "python_includes")
+-
+-def reverb_python_deps():
+-    http_archive(
+-        name = "pybind11",
+-        urls = [
+-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/pybind/pybind11/archive/v2.4.3.tar.gz",
+-            "https://github.com/pybind/pybind11/archive/v2.4.3.tar.gz",
+-        ],
+-        sha256 = "1eed57bc6863190e35637290f97a20c81cfe4d9090ac0a24f3bbf08f265eb71d",
+-        strip_prefix = "pybind11-2.4.3",
+-        build_file = clean_dep("//third_party:pybind11.BUILD"),
+-    )
+-
+-    http_archive(
+-        name = "absl_py",
+-        sha256 = "603febc9b95a8f2979a7bdb77d2f5e4d9b30d4e0d59579f88eba67d4e4cc5462",
+-        strip_prefix = "abseil-py-pypi-v0.9.0",
+-        urls = [
+-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/abseil/abseil-py/archive/pypi-v0.9.0.tar.gz",
+-            "https://github.com/abseil/abseil-py/archive/pypi-v0.9.0.tar.gz",
+-        ],
+-    )
+-
+-def _reverb_protoc_archive(ctx):
+-    version = ctx.attr.version
+-    sha256 = ctx.attr.sha256
+-
+-    override_version = ctx.os.environ.get("REVERB_PROTOC_VERSION")
+-    if override_version:
+-        sha256 = ""
+-        version = override_version
+-
+-    urls = [
+-        "https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-linux-x86_64.zip" % (version, version),
+-    ]
+-    ctx.download_and_extract(
+-        url = urls,
+-        sha256 = sha256,
+-    )
+-
+-    ctx.file(
+-        "BUILD",
+-        content = """
+-filegroup(
+-    name = "protoc_bin",
+-    srcs = ["bin/protoc"],
+-    visibility = ["//visibility:public"],
+-)
+-""",
+-        executable = False,
+-    )
+-
+-reverb_protoc_archive = repository_rule(
+-    implementation = _reverb_protoc_archive,
+-    attrs = {
+-        "version": attr.string(mandatory = True),
+-        "sha256": attr.string(mandatory = True),
+-    },
+-)
+-
+-def reverb_protoc_deps(version, sha256):
+-    reverb_protoc_archive(name = "protobuf_protoc", version = version, sha256 = sha256)
+--- reverb-0.2.0/third_party/protobuf.BUILD.orig	2020-12-15 17:27:23.000000000 +0100
++++ reverb-0.2.0/third_party/protobuf.BUILD	2021-05-05 22:44:13.386009000 +0200
+@@ -1,9 +1,9 @@
+ _CHECK_VERSION = """
+-PROTOC_VERSION=$$($(location @protobuf_protoc//:protoc_bin) --version \
++PROTOC_VERSION=$$($(location protobuf/bin/protoc) --version \
+   | cut -d' ' -f2 | sed -e 's/\\./ /g')
+ PROTOC_VERSION=$$(printf '%d%03d%03d' $${PROTOC_VERSION})
+ TF_PROTO_VERSION=$$(grep '#define PROTOBUF_MIN_PROTOC_VERSION' \
+-  $(location tf_includes/google/protobuf/port_def.inc) | cut -d' ' -f3)
++  $(location protobuf/include/google/protobuf/port_def.inc) | cut -d' ' -f3)
+ if [ "$${PROTOC_VERSION}" -ne "$${TF_PROTO_VERSION}" ]; then
+   echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 1>&2
+   echo Your protoc version does not match the tensorflow proto header \
+@@ -20,9 +20,9 @@
+     name = "compare_protobuf_version",
+     outs = ["versions_compared"],
+     srcs = [
+-        "tf_includes/google/protobuf/port_def.inc",
++        "protobuf/include/google/protobuf/port_def.inc",
+     ],
+-    tools = ["@protobuf_protoc//:protoc_bin"],
++    tools = ["protobuf/bin/protoc"],
+     cmd = _CHECK_VERSION,
+ )
+ 
+@@ -30,11 +30,45 @@
+     name = "includes",
+     data = [":versions_compared"],
+     hdrs = glob([
+-        "tf_includes/google/protobuf/*.h",
+-        "tf_includes/google/protobuf/*.inc",
+-        "tf_includes/google/protobuf/**/*.h",
+-        "tf_includes/google/protobuf/**/*.inc",
++        "protobuf/include/google/protobuf/*.h",
++        "protobuf/include/google/protobuf/*.inc",
++        "protobuf/include/google/protobuf/**/*.h",
++        "protobuf/include/google/protobuf/**/*.inc",
+     ]),
+-    includes = ["tf_includes"],
++    includes = ["protobuf/include"],
++    visibility = ["//visibility:public"],
++)
++cc_library(
++    name = "protobuf_headers",
++    data = [":versions_compared"],
++    hdrs = glob([
++        "protobuf/include/google/protobuf/*.h",
++        "protobuf/include/google/protobuf/*.inc",
++        "protobuf/include/google/protobuf/**/*.h",
++        "protobuf/include/google/protobuf/**/*.inc",
++    ]),
++    includes = ["protobuf/include"],
++    visibility = ["//visibility:public"],
++)
++cc_library(
++    name = "protobuf_lite",
++    srcs = ["protobuf/lib/libprotobuf-lite.so"],
++    visibility = ["//visibility:public"],
++)
++cc_library(
++    name = "protobuf",
++    srcs = ["protobuf/lib/libprotobuf.so"],
++    visibility = ["//visibility:public"],
++    deps = [":protobuf_lite"],
++)
++cc_library(
++    name = "protoc_lib",
++    srcs = ["protobuf/lib/libprotoc.so"],
++    visibility = ["//visibility:public"],
++    deps = [":protobuf"],
++)
++filegroup(
++    name = "protoc_bin",
++    srcs = ["protobuf/bin/protoc"],
+     visibility = ["//visibility:public"],
+ )
+--- reverb-0.2.0/reverb/cc/platform/default/build_rules.bzl.orig	2021-05-05 23:53:06.498618134 +0200
++++ reverb-0.2.0/reverb/cc/platform/default/build_rules.bzl	2021-05-05 23:52:16.222563978 +0200
+@@ -90,12 +90,12 @@
+         srcs = srcs,
+         outs = gen_srcs + gen_hdrs,
+         tools = dep_srcs + [
+-            "@protobuf_protoc//:protoc_bin",
++            "@com_google_protobuf//:protoc_bin",
+             "@tensorflow_includes//:protos",
+         ],
+         cmd = """
+         OUTDIR=$$(echo $(RULEDIR) | sed -e 's#reverb/.*##')
+-        $(location @protobuf_protoc//:protoc_bin) \
++        $(location @com_google_protobuf//:protoc_bin) \
+           --proto_path=external/tensorflow_includes/tensorflow_includes/ \
+           --proto_path=. \
+           --cpp_out=$$OUTDIR {}""".format(
+@@ -165,12 +165,12 @@
+         srcs = srcs,
+         outs = gen_srcs,
+         tools = proto_deps + [
+-            "@protobuf_protoc//:protoc_bin",
++            "@com_google_protobuf//:protoc_bin",
+             "@tensorflow_includes//:protos",
+         ],
+         cmd = """
+         OUTDIR=$$(echo $(RULEDIR) | sed -e 's#reverb/.*##')
+-        $(location @protobuf_protoc//:protoc_bin) \
++        $(location @com_google_protobuf//:protoc_bin) \
+           --proto_path=external/tensorflow_includes/tensorflow_includes/ \
+           --proto_path=. \
+           --python_out=$$OUTDIR {}""".format(
+@@ -227,13 +227,13 @@
+         srcs = srcs,
+         outs = gen_srcs + gen_hdrs + gen_mocks,
+         tools = proto_src_deps + [
+-            "@protobuf_protoc//:protoc_bin",
++            "@com_google_protobuf//:protoc_bin",
+             "@tensorflow_includes//:protos",
+             "@com_github_grpc_grpc//src/compiler:grpc_cpp_plugin",
+         ],
+         cmd = """
+         OUTDIR=$$(echo $(RULEDIR) | sed -e 's#reverb/.*##')
+-        $(location @protobuf_protoc//:protoc_bin) \
++        $(location @com_google_protobuf//:protoc_bin) \
+           --plugin=protoc-gen-grpc=$(location @com_github_grpc_grpc//src/compiler:grpc_cpp_plugin) \
+           --proto_path=external/tensorflow_includes/tensorflow_includes/ \
+           --proto_path=. \
+--- reverb-0.2.0/reverb/cc/opensource/opensource_only.files.orig	2020-12-15 17:27:23.000000000 +0100
++++ reverb-0.2.0/reverb/cc/opensource/opensource_only.files	2021-05-05 21:46:36.453161000 +0200
+@@ -1,8 +1,5 @@
+ reverb/third_party/BUILD.oss
+ reverb/third_party/protobuf.BUILD.oss
+ reverb/third_party/pybind11.BUILD.oss
+-reverb/third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2010/BUILD.oss
+-reverb/third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2010/cc_toolchain_config.bzl.oss
+-reverb/third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2010/dummy_toolchain.bzl.oss
+ reverb/platform/default/BUILD.oss
+ reverb/pip_package/BUILD.oss
+--- reverb-0.2.0/third_party/opensource_only.files.orig	2020-12-15 17:27:23.000000000 +0100
++++ reverb-0.2.0/third_party/opensource_only.files	2021-05-05 21:46:36.453567000 +0200
+@@ -6,6 +6,3 @@
+ third_party/BUILD
+ third_party/protobuf.BUILD
+ third_party/pybind11.BUILD
+-third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2010/BUILD
+-third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2010/cc_toolchain_config.bzl
+-third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2010/dummy_toolchain.bzl
+\ No newline at end of file
+--- reverb-0.2.0/.bazelrc.orig	2021-05-05 23:46:33.126216000 +0200
++++ reverb-0.2.0/.bazelrc	2021-05-05 23:46:39.328782000 +0200
+@@ -13,7 +13,7 @@
+ 
+ build -c opt
+ build --cxxopt="-std=c++14"
+-build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0"
++build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=1"
+ build --auto_output_filter=subpackages
+ build --copt="-Wall" --copt="-Wno-sign-compare"
+ build --linkopt="-lrt -lm"

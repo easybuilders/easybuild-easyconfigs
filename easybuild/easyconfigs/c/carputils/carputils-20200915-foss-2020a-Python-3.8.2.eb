@@ -1,0 +1,72 @@
+easyblock = 'PythonBundle'
+
+name = 'carputils'
+local_commit = 'f5573e0d'
+version = '20200915'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://git.opencarp.org/openCARP/carputils'
+description = "carputils is a Python framework for generating and running openCARP examples."
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('openCARP', '3.2', versionsuffix),
+    ('matplotlib', '3.2.1', versionsuffix),
+    ('PyTables', '3.6.1', versionsuffix),
+    ('meshtool', '16'),
+    ('meshalyzer', '2.0', versionsuffix),
+]
+
+use_pip = True
+
+# version restrictions are too strict, so strip them out
+local_carputils_preinstallopts = "sed -i 's/[=><]=[0-9].*//g' requirements.txt && "
+# inject proper version, to prevent installing carputils with 0.0.0 as version...
+local_carputils_preinstallopts += """sed -i 's/ description=/ version="0.0.1-pre", description=/g' setup.py && """
+
+exts_list = [
+    ('doxypypy', '0.8.8.6', {
+        'checksums': ['627571455c537eb91d6998d95b32efc3c53562b2dbadafcb17e49593e0dae01b'],
+    }),
+    ('pyDOE', '0.3.8', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'checksums': ['cbd6f14ae26d3c9f736013205f53ea1191add4567033c3ee77b7dd356566c4b6'],
+        'modulename': 'pyDOE',
+    }),
+    (name, version, {
+        'source_urls': ['https://git.opencarp.org/openCARP/carputils/-/archive/%s/' % local_commit],
+        'source_tmpl': 'carputils-%s.tar.gz' % local_commit,
+        'checksums': ['695af109e4b23797ac94a86b49ce5a98b4d002dc094b062927b53efa72f822f0'],
+        # version restrictions are too strict, so strip them out
+        'preinstallopts': local_carputils_preinstallopts,
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+postinstallcmds = [
+    "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+    "%(installdir)s/bin/cusettings %(installdir)s/settings.yaml",
+    # location to openCARP bin subdirectory
+    r'sed -i "s@^\([ ]*CPU: \).*@\1$EBROOTOPENCARP/bin@" %(installdir)s/settings.yaml',
+    r'sed -i "s@^\(MESHTOOL_DIR: \).*@\1$EBROOTMESHTOOL/bin@" %(installdir)s/settings.yaml',
+    r'sed -i "s@^\(MESHALYZER_DIR: \).*@\1$EBROOTMESHALYZER@" %(installdir)s/settings.yaml',
+    r'sed -i "s@^\(REGRESSION_REF: \).*@\1/path/to/carp-tests-reference@" %(installdir)s/settings.yaml',
+    r'sed -i "s/^\(EMAIL: \).*/\1 example@email.com/" %(installdir)s/settings.yaml',
+]
+
+sanity_check_paths = {
+    'files': ['bin/carphelp', 'bin/carptests', 'bin/cusettings'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["carphelp --help"]
+
+sanity_pip_check = True
+
+modextravars = {'CARPUTILS_SETTINGS': '%(installdir)s/settings.yaml'}
+
+moduleclass = 'bio'
