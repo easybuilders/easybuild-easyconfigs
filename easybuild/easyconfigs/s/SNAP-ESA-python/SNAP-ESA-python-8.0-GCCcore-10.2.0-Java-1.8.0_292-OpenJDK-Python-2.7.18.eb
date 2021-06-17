@@ -1,0 +1,48 @@
+easyblock = 'Bundle'
+
+name = 'SNAP-ESA-python'
+version = '8.0'
+local_javasuffix = '-Java-%(javaver)s-OpenJDK'
+versionsuffix = local_javasuffix + '-Python-%(pyver)s'
+
+homepage = 'https://step.esa.int/main/toolboxes/snap/'
+description = "Python interface to the Sentinel Application Platform (SNAP) API"
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+dependencies = [
+    ('Java', '1.8.0_292', '-OpenJDK', True),
+    ('SNAP-ESA', version, local_javasuffix, True),
+    ('Python', '2.7.18'),
+]
+
+local_pysite = 'lib/python%(pyshortver)s/site-packages'
+local_pyinstalldir = '%%(installdir)s/%s' % local_pysite
+
+postinstallcmds = [
+    # Install snappy from SNAP-ESA
+    # snappy-conf is buggy and it hangs after doing the installation of snappy,
+    # start snappy-conf in a new SID and kill all processes of its PGID
+    # whenever it prints the final line starting with "or copy"
+    "mkdir -p %s" % local_pyinstalldir,
+    ('LOG="$(mktemp -d)/snappy-conf.log"; mkfifo $LOG; trap "rm -f $LOG" EXIT;'
+     'setsid snappy-conf $EBROOTPYTHON/bin/python %s 2>&1 > $LOG & CONFPID=$!;'
+     'while read line; do echo "$line"; [ -z "${line##or copy*}" ] && kill -- -$CONFPID; done < $LOG;')
+    % local_pyinstalldir,
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [local_pysite],
+}
+
+sanity_check_commands = ["python -c 'import snappy'"]
+
+modextrapaths = {'PYTHONPATH': [local_pysite]}
+
+local_javaopts = " -Dsnap.pythonExecutable=python"
+local_javaopts += " -Dsnap.pythonModuleDir=%s" % local_pyinstalldir
+
+modluafooter = 'setenv("JAVA_TOOL_OPTIONS", os.getenv("JAVA_TOOL_OPTIONS").."%s")' % local_javaopts
+
+moduleclass = 'geo'
