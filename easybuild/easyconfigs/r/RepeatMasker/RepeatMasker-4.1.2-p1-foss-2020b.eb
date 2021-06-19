@@ -1,0 +1,53 @@
+easyblock = 'Tarball'
+
+name = 'RepeatMasker'
+version = '4.1.2-p1'
+
+homepage = 'https://www.repeatmasker.org/'
+description = """RepeatMasker is a program that screens DNA sequences for interspersed repeats
+ and low complexity DNA sequences."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://www.repeatmasker.org/%(name)s']
+sources = [
+    SOURCE_TAR_GZ,
+    # optional but recommended: RepBase RepeatMasker Edition
+    # requires subscription and academic license, download from here: https://www.girinst.org/server/RepBase/index.php
+    # {
+    #     'filename': 'RepBaseRepeatMaskerEdition-20181026.tar.gz',
+    #     'extract_cmd': "tar -xzf %s -C %(builddir)s/%(name)s/Libraries --strip-components 1",
+    # },
+]
+checksums = [
+    '4be54bf6c050422b211e24a797feb06fd7954c8b4ee6f3ece94cb6faaf6b0e96',  # RepeatMasker-4.1.2-p1.tar.gz
+    # 'd7fa3bcd55703da14aa456fdc25c0487f171ad34ddfef886f847552993b32d34',  # RepBaseRepeatMaskerEdition-20181026.tar.gz
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Perl', '5.32.0'),
+    ('TRF', '4.09.1'),
+    ('h5py', '3.1.0'),
+    # At least one search engine of: RMBlast, HMMER, ABBlast/WUBlast, Cross_Match
+    ('HMMER', '3.3.2'),
+    ('RMBlast', '2.11.0'),
+]
+
+local_default_search_engine = 'RMBlast'
+
+preinstall_cmd = './configure -perlbin "$EBROOTPERL/bin/perl" -trf_prgm "$EBROOTTRF/bin/trf" '
+preinstall_cmd += '-hmmer_dir "$EBROOTHMMER/bin" -rmblast_dir "$EBROOTRMBLAST/bin" '
+preinstall_cmd += '-default_search_engine %s' % local_default_search_engine.lower()
+# preinstall_cmd += '-libdir="RepeatMasker/Libraries"
+
+sanity_check_paths = {
+    'files': ['RepeatMasker', 'RepeatMaskerConfig.pm'],
+    'dirs': ['Libraries', 'util'],
+}
+
+sanity_check_commands = ['RepeatMasker -help']
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

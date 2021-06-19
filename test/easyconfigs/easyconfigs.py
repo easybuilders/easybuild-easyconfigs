@@ -832,8 +832,8 @@ class EasyConfigTest(TestCase):
                      'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
-        # CESM-deps: Python + Perl + netCDF + ESMF + git
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC']
+        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS']
 
         failing_checks = []
 
@@ -1109,8 +1109,31 @@ def template_easyconfig_test(self, spec):
         if requires_binutils:
             # dependencies() returns both build and runtime dependencies
             # in some cases, binutils can also be a runtime dep (e.g. for Clang)
+            # Also using GCC directly as a build dep is also allowed (it includes the correct binutils)
             dep_names = [d['name'] for d in ec.dependencies()]
-            self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
+            self.assertTrue('binutils' in dep_names or 'GCC' in dep_names,
+                            "binutils or GCC is a build dep in %s: %s" % (spec, dep_names))
+
+    # make sure that OpenSSL wrapper is used rather than OS dependency,
+    # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
+    osdeps = ec['osdependencies']
+    print(spec, osdeps)
+    if osdeps:
+        # check whether any entry in osdependencies related to OpenSSL
+        openssl_osdep = False
+        for osdep in osdeps:
+            if isinstance(osdep, string_type):
+                osdep = [osdep]
+            if any('libssl' in x for x in osdep) or any('openssl' in x for x in osdep):
+                openssl_osdep = True
+
+        if openssl_osdep:
+            tcname = ec['toolchain']['name']
+            tcver = LooseVersion(ec['toolchain']['version'])
+
+            gcc_subtc_2021a = tcname in ('GCCcore', 'GCC') and tcver > LooseVersion('10.3')
+            if gcc_subtc_2021a or (tcname in ('foss', 'gompi', 'iimpi', 'intel') and tcver >= LooseVersion('2021')):
+                self.assertFalse(openssl_osdep, "OpenSSL should not be listed as OS dependency in %s" % spec)
 
     src_cnt = len(ec['sources'])
     patch_checksums = ec['checksums'][src_cnt:]
