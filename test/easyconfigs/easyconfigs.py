@@ -773,6 +773,11 @@ class EasyConfigTest(TestCase):
                 'Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
                 'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb',
                 'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
+                # don't require Python versionsuffix for old Ninja easyconfigs,
+                # cfr. https://github.com/easybuilders/easybuild-easyconfigs/pull/13219
+                'Ninja-1.8.2-.*.eb',
+                'Ninja-1.9.0-.*.eb',
+                'Ninja-1.10.0-GCCcore-9.3.0.eb',
             ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
             has_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
