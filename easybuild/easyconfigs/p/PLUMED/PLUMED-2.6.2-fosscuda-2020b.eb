@@ -1,5 +1,7 @@
 # by Ward Poelmans <wpoely86@gmail.com>
 
+import subprocess as _subprocess  # NOQA
+
 easyblock = 'ConfigureMake'
 
 name = 'PLUMED'
@@ -31,7 +33,11 @@ dependencies = [
 preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
 configopts = '--exec-prefix=%(installdir)s --enable-gsl --enable-modules=all --enable-python '
 configopts += '--enable-boost_graph --enable-boost_serialization '
-configopts += '--enable-asmjit '
+
+_arch = _subprocess.check_output(['uname', '-m'], universal_newlines=True).strip()
+if _arch != 'ppc64le':
+    configopts += '--enable-asmjit '
+
 prebuildopts = 'source sourceme.sh && '
 
 # make sure that ld.gold linker is used
