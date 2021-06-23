@@ -212,6 +212,12 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # filter out Perl with -minimal versionsuffix which are only used in makeinfo-minimal
+        if dep == 'Perl':
+            minimal_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -minimal')]
+            if len(minimal_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != minimal_vsuff_vars[0])
+
         # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
         if dep in ['FFTW', 'imkl']:
             serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
