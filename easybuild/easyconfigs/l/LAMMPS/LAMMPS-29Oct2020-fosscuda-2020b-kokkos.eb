@@ -1,3 +1,6 @@
+import subprocess as _subprocess  # NOQA
+import os as _os
+
 name = 'LAMMPS'
 version = '29Oct2020'
 versionsuffix = '-kokkos'
@@ -14,7 +17,7 @@ simulation domain. The code is designed to be easy to modify or extend with new
 functionality.
 """
 
-toolchain = {'name': 'foss', 'version': '2020b'}
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
 toolchainopts = {'openmp': True, 'usempi': True, 'cstd': 'c++11'}
 
 # 'https://github.com/lammps/lammps/archive/'
@@ -30,7 +33,6 @@ checksums = [
     '1baf5c1509e945b4a4aa1ea08ac3799f55d101bef824aa5bddbf759491491351',  # LAMMPS-29Oct2020_VTK9.patch
 ]
 
-# see https://github.com/lammps/lammps/pull/1483 for why this is needed
 local_source_dir_name = '%(namelower)s-%(version)s'
 
 builddependencies = [
@@ -56,9 +58,9 @@ dependencies = [
     ('Voro++', '0.4.6'),
     ('kim-api', '2.2.1'),
     ('Eigen', '3.3.9'),
-    ('yaff', '1.6.0'),
+    ('yaff', {'arch=x86_64': '1.6.0', 'arch=POWER': False}),
     ('PLUMED', '2.6.2'),
-    ('ScaFaCoS', '1.0.1'),
+    ('ScaFaCoS', {'arch=x86_64': '1.0.1', 'arch=POWER': False}),
     ('VTK', '9.0.1'),
 ]
 
@@ -67,6 +69,9 @@ dependencies = [
 # https://github.com/lammps/lammps/blob/master/cmake/README.md#lammps-configuration-options
 # The docs build with a python virtualenv that doesn't seem to work in Python 3.8 - so disable them.
 configopts = "-DBUILD_DOC=no "
+
+# default options use libtbbmalloc.so (ASCII text file pointing to libtbbmalloc.so.2), which nvlink fails to open
+configopts += "-DTBB_MALLOC_LIBRARY=$EBROOTTBB/lib/libtbbmalloc.so.2 "
 
 # auto-enabled by easyblock
 # 'GPU'    - if cuda package is present and kokkos is disabled
@@ -84,13 +89,31 @@ general_packages = [
 
 # not enabled (yet), needs more work/additional dependencies:
 # ADIOS - https://lammps.sandia.gov/doc/Build_extras.html#user-adios-package
+# AWPMD - https://lammps.sandia.gov/doc/Build_extras.html#user-awpmd-package
 # QUIP  - https://lammps.sandia.gov/doc/Build_extras.html#user-quip-package
+# SCAFACOS (listed below) will only be enabled if ScaFaCoS is a dependency (I.e. on x86_64 only)
+# YAFF(listed below) will only be enabled if yaff is a dependency (I.e. on x86_64 only)
 user_packages = [
-    'ATC', 'AWPMD', 'BOCS', 'CGDNA', 'CGSDK', 'COLVARS', 'DIFFRACTION', 'DPD', 'DRUDE',
+    'ATC', 'BOCS', 'CGDNA', 'CGSDK', 'COLVARS', 'DIFFRACTION', 'DPD', 'DRUDE',
     'EFF', 'FEP', 'H5MD', 'LB', 'MANIFOLD', 'MEAMC', 'MESODPD', 'MESONT', 'MGPT', 'MISC',
     'MOFFF', 'MOLFILE', 'NETCDF', 'PHONON', 'PLUMED', 'PTM', 'QTB', 'REAXC',
     'SCAFACOS', 'SDPD', 'SMD', 'SMTBQ', 'SPH', 'TALLY', 'UEF', 'YAFF', 'VTK'
 ]
+
+# Specify this on the command line or here
+#   cuda_compute_capabilities = ["7.0"]
+#   --cuda-compute-capabilities=7.0
+# The easyblock takes the highest number if you specify a list in the easyconfig, even if the GPU doesn't support it.
+
+_arch = _subprocess.check_output(['uname', '-m'], universal_newlines=True).strip()
+_cpu = _os.environ.get('BB_CPU')
+if _arch == 'ppc64le':
+    cuda_compute_capabilities = ["7.0"]
+else:
+    if _cpu == 'haswell':
+        cuda_compute_capabilities = ["6.0"]
+    else:
+        cuda_compute_capabilities = ["8.0"]
 
 enhance_sanity_check = True
 
