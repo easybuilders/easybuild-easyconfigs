@@ -1,4 +1,4 @@
-easyblock = 'Binary'
+easyblock = 'EB_crisprdav'
 
 name = 'crispr-dav'
 version = '2.3.4'
@@ -11,10 +11,14 @@ toolchain = {'name': 'foss', 'version': '2020b'}
 
 source_urls = ['https://github.com/pinetree1/crispr-dav/archive/']
 sources = ['v%(version)s.tar.gz']
+patches = ['crispr-dav-2.3.4-foss2020b_remove_hardcoding.patch']
+checksums = [
+    '49975cd48bdbf31fe5a9e2aaa3f5ed85d3cc6f65a422ee3aa8daed890159d2ae',  # v2.3.4.tar.gz
+    # crispr-dav-2.3.4-foss2020b_remove_hardcoding.patch
+    'a06414a1cf00be359cea46a36133fc312f948f50c2e4bc9043d2e83f3a011e97',
+]
 
 extract_sources = True
-
-patches = ['crispr-dav-2.3.4-foss2020b_remove_hardcoding.patch']
 
 dependencies = [
     ('R', '4.0.3'),
@@ -24,11 +28,28 @@ dependencies = [
     ('Excel-Writer-XLSX', '1.09'),
     ('naturalsort', '0.1.3'),
     ('pysamstats', '1.1.2'),
+    ('ABRA2', '2.23'),
+    ('PRINSEQ', '0.20.4', '-Perl-%(perlver)s'),
+    ('SAMtools', '1.12'),
+    ('BEDTools', '2.30.0'),
+    ('FLASH', '2.2.00'),
 ]
+
+postinstallcmds = ' mkdir bin && ln -s crispr.pl bin/crispr.pl && chmod +x bin/crispr.pl '
+
+modextrapaths = {'PATH': ['bin/']}
 
 sanity_check_paths = {
     'files': [],
     'dirs': ['Modules', 'Examples', 'Rscripts'],
 }
+
+sanity_check_commands = [("""crispr.pl --conf $EBROOTCRISPRMINDAV/Examples/example1/conf.txt \
+                         --region $EBROOTCRISPRMINDAV/Examples/example1/amplicon.bed \
+                         --crispr $EBROOTCRISPRMINDAV/Examples/example1/site.bed \
+                         --sitemap $EBROOTCRISPRMINDAV/Examples/example1/sample.site \
+                         --fastqmap $EBROOTCRISPRMINDAV/Examples/example1/fastq.list \
+                         --genome genomex  2>&1 | grep 'Generated HTML report for GENEX_CR1'""", ''),
+                         ("crispr.pl --help 2>&1 | grep 'Usage: '", '')]
 
 moduleclass = 'bio'
