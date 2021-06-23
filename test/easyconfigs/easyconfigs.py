@@ -569,7 +569,7 @@ class EasyConfigTest(TestCase):
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
-        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', r'GCCcore-[7-9]\.[0-9]']:
+        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', r'GCCcore-([7-9]|1[0-9])\.[0-9]']:
             all_deps = {}
             regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
