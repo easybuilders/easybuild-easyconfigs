@@ -1123,7 +1123,6 @@ def template_easyconfig_test(self, spec):
     # make sure that OpenSSL wrapper is used rather than OS dependency,
     # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
     osdeps = ec['osdependencies']
-    print(spec, osdeps)
     if osdeps:
         # check whether any entry in osdependencies related to OpenSSL
         openssl_osdep = False
