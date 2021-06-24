@@ -1,0 +1,63 @@
+Patch created by Jasper Grimm (UoY)
+Add makefile targets to build shared library as well as static
+Avoid setting variables that are already set (CC, CPPFLAGS etc)
+diff -Nru fermi-lite/Makefile fermi-lite.2/Makefile
+--- fermi-lite/Makefile	2018-10-25 13:19:00.000000000 +0100
++++ fermi-lite.2/Makefile	2021-05-12 15:22:33.000000000 +0100
+@@ -1,26 +1,39 @@
+-CC=			gcc
+-CFLAGS=		-g -Wall -O2 -Wno-unused-function #-fno-inline-functions -fno-inline-functions-called-once
+-CPPFLAGS=
+-INCLUDES=	
+-OBJS=		kthread.o misc.o \
+-			bseq.o htab.o bfc.o \
+-			rle.o rope.o mrope.o rld0.o \
+-			unitig.o mag.o bubble.o ksw.o
+-PROG=		fml-asm
+-LIBS=		-lm -lz -lpthread
++CC ?=		gcc
++CFLAGS ?=	-g -Wall -O2 -Wno-unused-function #-fno-inline-functions -fno-inline-functions-called-once
++CPPFLAGS ?=
++INCLUDES ?=	
++OBJS =		kthread.o misc.o \
++		bseq.o htab.o bfc.o \
++		rle.o rope.o mrope.o rld0.o \
++		unitig.o mag.o bubble.o ksw.o
++PROG =		fml-asm
++LIBS =		-lm -lz -lpthread
++AR ?=		ar
++ARFLAGS ?=	csru
++
++LIB =		libfml.a
++SOVER =		1
++SLIB = 		libfml.so
+ 
+-.SUFFIXES:.c .o
++.SUFFIXES:.c .o .pico
+ 
+ .c.o:
+-		$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
++	$(CC) $(CFLAGS) -c $(CPPFLAGS) -o $@ $<
+ 
+-all:$(PROG)
++.c.pico:
++	$(CC) $(CFLAGS) -fPIC -c $(CPPFLAGS) -o $@ $<
+ 
+-fml-asm:libfml.a example.o
+-		$(CC) $(CFLAGS) $^ -o $@ -L. -lfml $(LIBS)
++all: 	$(PROG) $(LIB) $(SLIB)
+ 
+-libfml.a:$(OBJS)
+-		$(AR) -csru $@ $(OBJS)
++$(LIB): $(OBJS)
++	$(AR) $(ARFLAGS) $@ $^
++
++$(SLIB): $(OBJS:.o=.pico)
++	$(CC) -shared -Wl,-soname,$(SLIB).$(SOVER) $(LDFLAGS) -o $@ $^ $(LIBS)
++	ln -sf $@ $(SLIB).$(SOVER)
++
++$(PROG): example.o $(LIB)
++	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ example.o -L. -lfml $(LIBS)
+ 
+ clean:
+ 		rm -fr gmon.out *.o ext/*.o a.out $(PROG) *~ *.a *.dSYM session*
