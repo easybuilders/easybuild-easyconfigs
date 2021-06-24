@@ -44,7 +44,7 @@ from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
-from easybuild.framework.easyconfig.easyconfig import disable_templating, get_easyblock_class, letter_dir_for
+from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
@@ -212,6 +212,12 @@ class EasyConfigTest(TestCase):
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
+        # filter out Perl with -minimal versionsuffix which are only used in makeinfo-minimal
+        if dep == 'Perl':
+            minimal_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -minimal')]
+            if len(minimal_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != minimal_vsuff_vars[0])
+
         # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
         if dep in ['FFTW', 'imkl']:
             serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
@@ -289,19 +295,22 @@ class EasyConfigTest(TestCase):
                 (r'5\.', [r'Elk-']),
             ],
             # some software depends on numba, which typically requires an older LLVM;
-            # this includes BirdNET, librosa, PyOD, Python-Geometric, scVelo
+            # this includes BirdNET, cell2location, cryoDRGN, librosa, PyOD, Python-Geometric, scVelo, scanpy
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
                 (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
                           r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
-                (r'10\.0\.1', [r'loompy-3\.0\.6-', r'numba-0\.52\.0-', r'PyOD-0\.8\.7-',
-                               r'PyTorch-Geometric-1\.6\.3']),
+                (r'10\.0\.1', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
+                               r'numba-0\.52\.0-', r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3',
+                               r'scanpy-1\.7\.2-', r'umap-learn-0\.4\.6-']),
             ],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
+            # NanoPlot, NanoComp use an older version of Seaborn
+            'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
@@ -566,7 +575,7 @@ class EasyConfigTest(TestCase):
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
-        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', r'GCCcore-[7-9]\.[0-9]']:
+        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', r'GCCcore-([7-9]|[1-9][0-9])\.[0-9]']:
             all_deps = {}
             regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
@@ -670,11 +679,11 @@ class EasyConfigTest(TestCase):
 
         # the check_sha256_checksums function (again) creates an EasyBlock instance
         # for easyconfigs using the Bundle easyblock, this is a problem because the 'sources' easyconfig parameter
-        # is updated in place (sources for components are added the 'parent' sources) in Bundle's __init__;
+        # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in changed_ecs:
-            if ec['easyblock'] in ['Bundle', 'PythonBundle']:
+            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
@@ -711,7 +720,7 @@ class EasyConfigTest(TestCase):
 
         for ec in changed_ecs:
 
-            with disable_templating(ec):
+            with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
                 easyblock = ec.get('easyblock')
                 exts_defaultclass = ec.get('exts_defaultclass')
@@ -772,8 +781,8 @@ class EasyConfigTest(TestCase):
                 'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
             ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
-            has_python_dep = any(dep['name'] == 'Python' for dep in ec['dependencies']
-                                 if LooseVersion(dep['version']) < LooseVersion('3.8.6'))
+            has_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
+                                 for dep in ec['dependencies'] if dep['name'] == 'Python')
             if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
                 if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
@@ -784,8 +793,8 @@ class EasyConfigTest(TestCase):
                     else:
                         print('\nNote: Failed non-critical check: ' + msg)
             else:
-                has_recent_python3_dep = any(dep['name'] == 'Python' for dep in ec['dependencies']
-                                             if LooseVersion(dep['version']) >= LooseVersion('3.8.6'))
+                has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
+                                             for dep in ec['dependencies'] if dep['name'] == 'Python')
                 if has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                     msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
                     failing_checks.append(msg)
@@ -829,8 +838,8 @@ class EasyConfigTest(TestCase):
                      'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
-        # CESM-deps: Python + Perl + netCDF + ESMF + git
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC']
+        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS']
 
         failing_checks = []
 
@@ -866,6 +875,8 @@ class EasyConfigTest(TestCase):
             'http://isl.gforge.inria.fr',
             # https:// leads to File Not Found
             'http://tau.uoregon.edu/',
+            # https:// has outdated SSL configurations
+            'http://faculty.scs.illinois.edu',
         ]
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
@@ -1036,6 +1047,16 @@ def template_easyconfig_test(self, spec):
     error_msg = "%s relies on automagic fallback to ConfigureMake, should use easyblock = 'ConfigureMake' instead" % fn
     self.assertTrue(easyblock or app_class is not ConfigureMake, error_msg)
 
+    # dump the easyconfig file;
+    # this should be done before creating the easyblock instance (done below via app_class),
+    # because some easyblocks (like PythonBundle) modify easyconfig parameters at initialisation
+    handle, test_ecfile = tempfile.mkstemp()
+    os.close(handle)
+
+    ec.dump(test_ecfile)
+    dumped_ec = EasyConfigParser(test_ecfile).get_config_dict()
+    os.remove(test_ecfile)
+
     app = app_class(ec)
 
     # more sanity checks
@@ -1094,8 +1115,31 @@ def template_easyconfig_test(self, spec):
         if requires_binutils:
             # dependencies() returns both build and runtime dependencies
             # in some cases, binutils can also be a runtime dep (e.g. for Clang)
+            # Also using GCC directly as a build dep is also allowed (it includes the correct binutils)
             dep_names = [d['name'] for d in ec.dependencies()]
-            self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
+            self.assertTrue('binutils' in dep_names or 'GCC' in dep_names,
+                            "binutils or GCC is a build dep in %s: %s" % (spec, dep_names))
+
+    # make sure that OpenSSL wrapper is used rather than OS dependency,
+    # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
+    osdeps = ec['osdependencies']
+    print(spec, osdeps)
+    if osdeps:
+        # check whether any entry in osdependencies related to OpenSSL
+        openssl_osdep = False
+        for osdep in osdeps:
+            if isinstance(osdep, string_type):
+                osdep = [osdep]
+            if any('libssl' in x for x in osdep) or any('openssl' in x for x in osdep):
+                openssl_osdep = True
+
+        if openssl_osdep:
+            tcname = ec['toolchain']['name']
+            tcver = LooseVersion(ec['toolchain']['version'])
+
+            gcc_subtc_2021a = tcname in ('GCCcore', 'GCC') and tcver > LooseVersion('10.3')
+            if gcc_subtc_2021a or (tcname in ('foss', 'gompi', 'iimpi', 'intel') and tcver >= LooseVersion('2021')):
+                self.assertFalse(openssl_osdep, "OpenSSL should not be listed as OS dependency in %s" % spec)
 
     src_cnt = len(ec['sources'])
     patch_checksums = ec['checksums'][src_cnt:]
@@ -1164,14 +1208,6 @@ def template_easyconfig_test(self, spec):
     app.close_log()
     os.remove(app.logfile)
 
-    # dump the easyconfig file
-    handle, test_ecfile = tempfile.mkstemp()
-    os.close(handle)
-
-    ec.dump(test_ecfile)
-    dumped_ec = EasyConfigParser(test_ecfile).get_config_dict()
-    os.remove(test_ecfile)
-
     # inject dummy values for templates that are only known at a later stage
     dummy_template_values = {
         'builddir': '/dummy/builddir',
@@ -1234,7 +1270,8 @@ def template_easyconfig_test(self, spec):
             error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
             self.assertTrue(dumped_val.startswith(orig_val), error_msg)
         else:
-            self.assertEqual(orig_val, dumped_val)
+            error_msg = "%s value should be equal in original and dumped easyconfig: '%s' vs '%s'"
+            self.assertEqual(orig_val, dumped_val, error_msg % (key, orig_val, dumped_val))
 
     # test passed, so set back to True
     single_tests_ok = True and prev_single_tests_ok
@@ -1261,7 +1298,7 @@ def suite():
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
-                innertest.__doc__ = "Test for parsing of easyconfig %s" % spec
+                innertest.__doc__ = "Test for easyconfig %s" % spec
                 # double underscore so parsing tests are run first
                 innertest.__name__ = "test__parse_easyconfig_%s" % spec
                 setattr(EasyConfigTest, innertest.__name__, innertest)
