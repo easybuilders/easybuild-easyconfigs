@@ -321,6 +321,8 @@ class EasyConfigTest(TestCase):
                 # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
                 ('2.2.0;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'Horovod-0.19.5-', 'decona-0.1.2-',
                             'NGSpeciesID-0.1.1.1-']),
+                # medaka 1.4.3 depends on TensorFlow 2.2.2
+                ('2.2.2;', ['medaka-1.4.3-']),
             ],
             # medaka 1.1.* and 1.2.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
