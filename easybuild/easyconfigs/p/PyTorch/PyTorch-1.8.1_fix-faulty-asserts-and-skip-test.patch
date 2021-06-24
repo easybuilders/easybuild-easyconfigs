@@ -1,0 +1,226 @@
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Tue, 18 May 2021 15:08:41 +0200
+Subject: [PATCH 1/2] Fix usage of TORCH_INTERNAL_ASSERT with message
+
+Using only a string as the argument for TORCH_INTERNAL_ASSERT will never
+trigger a failure as a string is always a truethy value.
+This hides actual bugs and makes users and devs think all worked while
+it did not.
+Change to use TORCH_INTERNAL_ASSERT(false, "msg")
+
+Subject: [PATCH 2/2] Add missing skip decorator for
+test_preserve_bundled_inputs_methods
+
+This test uses optimize_for_mobile which requires NNPACK to work
+
+diff --git a/aten/src/ATen/native/BinaryOps.cpp b/aten/src/ATen/native/BinaryOps.cpp
+index c4edadb03e..e889cd03a8 100644
+--- a/aten/src/ATen/native/BinaryOps.cpp
++++ b/aten/src/ATen/native/BinaryOps.cpp
+@@ -106,6 +106,7 @@ Tensor& add_relu_impl(
+     max_val = std::numeric_limits<double>::max();
+   } else {
+     TORCH_INTERNAL_ASSERT(
++        false,
+         "Unsupported datatype for add_relu:", self.dtype().name());
+   }
+ 
+diff --git a/aten/src/ATen/native/quantized/cpu/qembeddingbag.cpp b/aten/src/ATen/native/quantized/cpu/qembeddingbag.cpp
+index 050fdce2ca..7e72263917 100644
+--- a/aten/src/ATen/native/quantized/cpu/qembeddingbag.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qembeddingbag.cpp
+@@ -780,6 +780,7 @@ class QEmbeddingBag final {
+           include_last_offset);
+     } else {
+       TORCH_INTERNAL_ASSERT(
++          false,
+           "Currently only support 8-bit embedding_bag quantization");
+     }
+   }
+@@ -808,6 +809,7 @@ class QEmbedding final {
+ 
+     } else {
+       TORCH_INTERNAL_ASSERT(
++          false,
+           "Currently only support 8-bit embedding quantization");
+     }
+     return output;
+diff --git a/aten/src/ATen/native/quantized/cpu/qnnpack_utils.h b/aten/src/ATen/native/quantized/cpu/qnnpack_utils.h
+index 6de646acfe..66341c959d 100644
+--- a/aten/src/ATen/native/quantized/cpu/qnnpack_utils.h
++++ b/aten/src/ATen/native/quantized/cpu/qnnpack_utils.h
+@@ -131,6 +131,7 @@ struct PackedConvWeightsQnnp : public ConvPackedParamsBase<kSpatialDim> {
+ 
+           if (conv_p.per_channel && conv_p.ukernel_type == pytorch_qnnp_ukernel_type_xzp_gemm) {
+             TORCH_INTERNAL_ASSERT(
++              false,
+               "Per channel quantized weights are not supported for XZP kernels");
+           }
+ 
+@@ -140,6 +141,7 @@ struct PackedConvWeightsQnnp : public ConvPackedParamsBase<kSpatialDim> {
+               static_cast<pytorch_qnnp_operator_t>(calloc(1, sizeof(struct pytorch_qnnp_operator)));
+           if (convolution == nullptr) {
+             TORCH_INTERNAL_ASSERT(
++                false,
+                 "failed to allocate %zu bytes for pytorch_qnnp_operator structure",
+                 sizeof(struct pytorch_qnnp_operator));
+           }
+@@ -406,7 +408,7 @@ std::pair<std::vector<uint8_t>, at::Tensor> make_zero_points_and_scales_tensor(
+               128);
+     }
+   } else {
+-    TORCH_INTERNAL_ASSERT("Unsupported quantization scheme.");
++    TORCH_INTERNAL_ASSERT(false, "Unsupported quantization scheme.");
+   }
+   at:: Tensor weight_scales =
+     at::empty(
+@@ -423,7 +425,7 @@ std::pair<std::vector<uint8_t>, at::Tensor> make_zero_points_and_scales_tensor(
+         weight_contig.q_per_channel_scales()[i].item<float>();
+     }
+   } else {
+-    TORCH_INTERNAL_ASSERT("Unsupported quantization scheme.");
++    TORCH_INTERNAL_ASSERT(false, "Unsupported quantization scheme.");
+   }
+   for (int i = num_output_channels; i <  num_output_channels_padded; ++i) {
+     weight_scales_data[i] = 1.f;
+diff --git a/test/test_mobile_optimizer.py b/test/test_mobile_optimizer.py
+index 11ef019a26..7b5ac1a239 100644
+--- a/test/test_mobile_optimizer.py
++++ b/test/test_mobile_optimizer.py
+@@ -269,6 +269,9 @@ class TestOptimizer(TestCase):
+         bi_module_lint_list = generate_mobile_module_lints(bi_module)
+         self.assertEqual(len(bi_module_lint_list), 0)
+ 
++    @unittest.skipUnless(torch.backends.xnnpack.enabled,
++                         " XNNPACK must be enabled for these tests."
++                         " Please build with USE_XNNPACK=1.")
+     def test_preserve_bundled_inputs_methods(self):
+         class MyBundledInputModule(torch.nn.Module):
+             def __init__(self):
+diff --git a/torch/csrc/jit/api/module.cpp b/torch/csrc/jit/api/module.cpp
+index 38592b80b9..8f9508321b 100644
+--- a/torch/csrc/jit/api/module.cpp
++++ b/torch/csrc/jit/api/module.cpp
+@@ -305,7 +305,7 @@ void Module::train(bool on) {
+     if (auto slot = m._ivalue()->type()->findAttributeSlot("training")) {
+       m._ivalue()->setSlot(*slot, on);
+     } else {
+-      TORCH_INTERNAL_ASSERT("'training' attribute not found");
++      TORCH_INTERNAL_ASSERT(false, "'training' attribute not found");
+     }
+   }
+ }
+diff --git a/torch/csrc/jit/passes/quantization/insert_quant_dequant.cpp b/torch/csrc/jit/passes/quantization/insert_quant_dequant.cpp
+index 53a13b6cf1..93c2b5a7da 100644
+--- a/torch/csrc/jit/passes/quantization/insert_quant_dequant.cpp
++++ b/torch/csrc/jit/passes/quantization/insert_quant_dequant.cpp
+@@ -304,6 +304,7 @@ Node* insertEmbeddingBagOps(Node* observer, const std::string& op_name) {
+     quant_fn = "quantized::embedding_bag_byte_rowwise_offsets";
+   } else {
+     TORCH_INTERNAL_ASSERT(
++        false,
+         "Graph Mode Quantization currently supports 4-bit and 8-bit embedding bag quantization.");
+   }
+ 
+diff --git a/torch/csrc/jit/passes/vulkan_rewrite.cpp b/torch/csrc/jit/passes/vulkan_rewrite.cpp
+index 4e381c47da..63c64ecd07 100644
+--- a/torch/csrc/jit/passes/vulkan_rewrite.cpp
++++ b/torch/csrc/jit/passes/vulkan_rewrite.cpp
+@@ -225,21 +225,25 @@ script::Module vulkanOptimizeForMobile(
+ 
+ void vulkanInsertPrePackedOps(std::shared_ptr<Graph>& graph) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "Vulkan is not enabled. Please build with USE_VULKAN=1");
+ }
+ 
+ void vulkanInsertPrePackedOps(script::Module& module) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "Vulkan is not enabled. Please build with USE_VULKAN=1");
+ }
+ 
+ void vulkanFusePrePackedConvWithClamp(script::Module& module) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "Vulkan is not enabled. Please build with USE_VULKAN=1");
+ }
+ 
+ void vulkanFoldPrePackingOps(script::Module& m) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "Vulkan is not enabled. Please build with USE_VULKAN=1");
+ }
+ 
+@@ -247,6 +251,7 @@ script::Module vulkanOptimizeForMobile(
+     const script::Module& module,
+     const std::vector<std::string>& preserved_methods) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "Mobile optimizaiton only available with Vulkan at the moment. "
+       "Vulkan is not enabled. Please build with USE_VULKAN=1");
+   return module;
+diff --git a/torch/csrc/jit/passes/xnnpack_rewrite.cpp b/torch/csrc/jit/passes/xnnpack_rewrite.cpp
+index 3be480068c..2289f028ae 100644
+--- a/torch/csrc/jit/passes/xnnpack_rewrite.cpp
++++ b/torch/csrc/jit/passes/xnnpack_rewrite.cpp
+@@ -405,21 +405,25 @@ script::Module optimizeForMobile(
+ 
+ void insertPrePackedOps(std::shared_ptr<Graph>& graph) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "XNNPACK is not enabled. Please build with USE_XNNPACK=1");
+ }
+ 
+ void insertPrePackedOps(script::Module& module) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "XNNPACK is not enabled. Please build with USE_XNNPACK=1");
+ }
+ 
+ void fusePrePackedLinearConvWithClamp(script::Module& module) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "XNNPACK is not enabled. Please build with USE_XNNPACK=1");
+ }
+ 
+ void FoldPrePackingOps(script::Module& m) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "XNNPACK is not enabled. Please build with USE_XNNPACK=1");
+ }
+ 
+@@ -428,6 +432,7 @@ script::Module optimizeForMobile(
+     const std::set<MobileOptimizerType>& blocklist,
+     const std::vector<std::string>& preserved_methods) {
+   TORCH_INTERNAL_ASSERT(
++      false,
+       "Mobile optimization only available with XNNPACK at the moment. "
+       "XNNPACK is not enabled. Please build with USE_XNNPACK=1");
+   return module;
+diff --git a/torch/csrc/jit/runtime/register_ops_utils.cpp b/torch/csrc/jit/runtime/register_ops_utils.cpp
+index 537716e1ad..3bcff0af55 100644
+--- a/torch/csrc/jit/runtime/register_ops_utils.cpp
++++ b/torch/csrc/jit/runtime/register_ops_utils.cpp
+@@ -182,7 +182,7 @@ IValue tensorToListRecursive(
+     } else if (inner_result.isBool()) {
+       result.emplace_back(inner_result.toBool());
+     } else {
+-      TORCH_INTERNAL_ASSERT("Unknown return type for tensorToListRecursive");
++      TORCH_INTERNAL_ASSERT(false, "Unknown return type for tensorToListRecursive");
+     }
+ 
+     data += strides[cur_dim] * element_size;
+diff --git a/torch/lib/c10d/ProcessGroup.cpp b/torch/lib/c10d/ProcessGroup.cpp
+index 7909bfa7c9..9e2a51f291 100644
+--- a/torch/lib/c10d/ProcessGroup.cpp
++++ b/torch/lib/c10d/ProcessGroup.cpp
+@@ -43,7 +43,7 @@ std::string opTypeToString(OpType opType) {
+     case OpType::UNKNOWN:
+       return "UNKNOWN";
+     default:
+-      TORCH_INTERNAL_ASSERT("Unknown op type!");
++      TORCH_INTERNAL_ASSERT(false, "Unknown op type!");
+   }
+   return "UNKNOWN";
+ }
