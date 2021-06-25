@@ -71,42 +71,49 @@ single_tests_ok = True
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
-    # make sure that the EasyBuild installation is still known even if we purge an EB module
-    if os.getenv('EB_SCRIPT_PATH') is None:
-        eb_path = which('eb')
-        if eb_path is not None:
-            os.environ['EB_SCRIPT_PATH'] = eb_path
+    @classmethod
+    def setUpClass(cls):
+        """Setup environment for all tests. Called once!"""
+        # make sure that the EasyBuild installation is still known even if we purge an EB module
+        if os.getenv('EB_SCRIPT_PATH') is None:
+            eb_path = which('eb')
+            if eb_path is not None:
+                os.environ['EB_SCRIPT_PATH'] = eb_path
 
-    # initialize configuration (required for e.g. default modules_tool setting)
-    eb_go = eboptions.parse_options()
-    config.init(eb_go.options, eb_go.get_options_by_section('config'))
-    build_options = {
-        'check_osdeps': False,
-        'external_modules_metadata': {},
-        'force': True,
-        'local_var_naming_check': 'error',
-        'optarch': 'test',
-        'robot_path': get_paths_for("easyconfigs")[0],
-        'silent': True,
-        'suffix_modules_path': GENERAL_CLASS,
-        'valid_module_classes': config.module_classes(),
-        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
-    }
-    config.init_build_options(build_options=build_options)
-    set_tmpdir()
-    del eb_go
+        # initialize configuration (required for e.g. default modules_tool setting)
+        eb_go = eboptions.parse_options()
+        config.init(eb_go.options, eb_go.get_options_by_section('config'))
+        build_options = {
+            'check_osdeps': False,
+            'external_modules_metadata': {},
+            'force': True,
+            'local_var_naming_check': 'error',
+            'optarch': 'test',
+            'robot_path': get_paths_for("easyconfigs")[0],
+            'silent': True,
+            'suffix_modules_path': GENERAL_CLASS,
+            'valid_module_classes': config.module_classes(),
+            'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+        }
+        config.init_build_options(build_options=build_options)
+        set_tmpdir()
 
-    # put dummy 'craype-test' module in place, which is required for parsing easyconfigs using Cray* toolchains
-    TMPDIR = tempfile.mkdtemp()
-    os.environ['MODULEPATH'] = TMPDIR
-    write_file(os.path.join(TMPDIR, 'craype-test'), '#%Module\n')
+        # put dummy 'craype-test' module in place, which is required for parsing easyconfigs using Cray* toolchains
+        cls.TMPDIR = tempfile.mkdtemp()
+        os.environ['MODULEPATH'] = cls.TMPDIR
+        write_file(os.path.join(cls.TMPDIR, 'craype-test'), '#%Module\n')
 
-    log = fancylogger.getLogger("EasyConfigTest", fname=False)
+        log = fancylogger.getLogger("EasyConfigTest", fname=False)
 
-    # make sure a logger is present for main
-    eb_main._log = log
-    ordered_specs = None
-    parsed_easyconfigs = []
+        # make sure a logger is present for main
+        eb_main._log = log
+        cls.ordered_specs = None
+        cls.parsed_easyconfigs = []
+
+    @classmethod
+    def tearDownClass(cls):
+        """Cleanup after running all tests"""
+        shutil.rmtree(cls.TMPDIR)
 
     def process_all_easyconfigs(self):
         """Process all easyconfigs and resolve inter-easyconfig dependencies."""
@@ -1006,10 +1013,6 @@ class EasyConfigTest(TestCase):
                 self.check_R_packages(changed_ecs)
                 self.check_sanity_check_paths(changed_ecs)
                 self.check_https(changed_ecs)
-
-    def test_zzz_cleanup(self):
-        """Dummy test to clean up global temporary directory."""
-        shutil.rmtree(self.TMPDIR)
 
 
 def template_easyconfig_test(self, spec):
