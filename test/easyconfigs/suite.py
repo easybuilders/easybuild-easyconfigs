@@ -46,7 +46,7 @@ fancylogger.disableDefaultHandlers()
 fancylogger.setLogLevelError()
 
 # make sure no deprecated behaviour is triggered
-os.environ['EASYBUILD_DEPRECATED'] = '10000'
+# os.environ['EASYBUILD_DEPRECATED'] = '10000'
 
 os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
