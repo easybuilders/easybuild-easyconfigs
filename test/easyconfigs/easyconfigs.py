@@ -167,9 +167,11 @@ class EasyConfigTest(TestCase):
 
         # make sure a logger is present for main
         eb_main._log = log
+
         cls._ordered_specs = None
         cls._parsed_easyconfigs = []
         cls._parsed_all_easyconfigs = False
+        cls._changed_ecs = None  # ECs changed in a PR
 
     @classmethod
     def tearDownClass(cls):
@@ -203,6 +205,42 @@ class EasyConfigTest(TestCase):
         cls._ordered_specs = resolve_dependencies(
             cls._parsed_easyconfigs, modules_tool(), retain_all_deps=True)
 
+    def _get_changed_easyconfigs(self):
+        """Gather all added or modified easyconfigs"""
+        # get list of changed easyconfigs
+        changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
+        added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
+        if changed_ecs_filenames:
+            print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
+        if added_ecs_filenames:
+            print("\nList of added easyconfig files in this PR:\n\t%s" % '\n\t'.join(added_ecs_filenames))
+        EasyConfigTest._changed_ecs_filenames = changed_ecs_filenames
+        EasyConfigTest._added_ecs_filenames = added_ecs_filenames
+
+        # grab parsed easyconfigs for changed easyconfig files
+        changed_ecs = []
+        for ec_fn in changed_ecs_filenames + added_ecs_filenames:
+            match = None
+            for ec in self.parsed_easyconfigs:
+                if os.path.basename(ec['spec']) == ec_fn:
+                    match = ec['ec']
+                    break
+
+            if match:
+                changed_ecs.append(match)
+            else:
+                # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
+                # so as a last resort, try to find the easyconfig file in __archive__
+                easyconfigs_path = get_paths_for("easyconfigs")[0]
+                specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
+                if len(specs) == 1:
+                    ec = process_easyconfig(specs[0])[0]
+                    changed_ecs.append(ec['ec'])
+                else:
+                    raise RuntimeError("Failed to find parsed easyconfig for %s"
+                                       " (and could not isolate it in easyconfigs archive either)" % ec_fn)
+        EasyConfigTest._changed_ecs = changed_ecs
+
     @property
     def parsed_easyconfigs(self):
         # parse all easyconfigs if they haven't been already
@@ -215,6 +253,24 @@ class EasyConfigTest(TestCase):
         if EasyConfigTest._ordered_specs is None:
             EasyConfigTest.resolve_all_dependencies()
         return EasyConfigTest._ordered_specs
+
+    @property
+    def changed_ecs_filenames(self):
+        if EasyConfigTest._changed_ecs is None:
+            self._get_changed_easyconfigs()
+        return EasyConfigTest._changed_ecs_filenames
+
+    @property
+    def added_ecs_filenames(self):
+        if EasyConfigTest._changed_ecs is None:
+            self._get_changed_easyconfigs()
+        return EasyConfigTest._added_ecs_filenames
+
+    @property
+    def changed_ecs(self):
+        if EasyConfigTest._changed_ecs is None:
+            self._get_changed_easyconfigs()
+        return EasyConfigTest._changed_ecs
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -735,7 +791,8 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
-    def check_sha256_checksums(self, changed_ecs):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_sha256_checksums(self):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
 
         # list of software for which checksums can not be required,
@@ -755,7 +812,7 @@ class EasyConfigTest(TestCase):
         # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
             if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper']:
                 ec['sources'] = []
                 ec['patches'] = []
@@ -763,14 +820,15 @@ class EasyConfigTest(TestCase):
 
         # filter out deprecated easyconfigs
         retained_changed_ecs = []
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
             if not ec['deprecated']:
                 retained_changed_ecs.append(ec)
 
         checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
-    def check_python_packages(self, changed_ecs, added_ecs_filenames):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_python_packages(self):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
         # These packages do not support installation with 'pip'
@@ -791,7 +849,7 @@ class EasyConfigTest(TestCase):
 
         python_default_urls = PythonPackage.extra_options()['source_urls'][0]
 
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
 
             with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
@@ -861,7 +919,7 @@ class EasyConfigTest(TestCase):
                     msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
                     # This is only a failure for newly added ECs, not for existing ECS
                     # As that would probably break many ECs
-                    if ec_fn in added_ecs_filenames:
+                    if ec_fn in self.added_ecs_filenames:
                         failing_checks.append(msg)
                     else:
                         print('\nNote: Failed non-critical check: ' + msg)
@@ -881,11 +939,12 @@ class EasyConfigTest(TestCase):
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
-    def check_R_packages(self, changed_ecs):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_R_packages(self):
         """Several checks for easyconfigs that install (bundles of) R packages."""
         failing_checks = []
 
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
             exts_defaultclass = ec.get('exts_defaultclass')
             if exts_defaultclass == 'RPackage' or ec.name == 'R':
@@ -901,7 +960,8 @@ class EasyConfigTest(TestCase):
                         seen_exts.add(ext_name)
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
-    def check_sanity_check_paths(self, changed_ecs):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_sanity_check_paths(self):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
@@ -916,7 +976,7 @@ class EasyConfigTest(TestCase):
 
         failing_checks = []
 
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
 
             easyblock = ec.get('easyblock')
 
@@ -929,7 +989,8 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
-    def check_https(self, changed_ecs):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_https(self):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
@@ -969,7 +1030,7 @@ class EasyConfigTest(TestCase):
         http_regex = re.compile('http://[^"\'\n]+', re.M)
 
         failing_checks = []
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
 
             # skip whitelisted easyconfigs
@@ -989,48 +1050,6 @@ class EasyConfigTest(TestCase):
                     failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
         if failing_checks:
             self.fail('\n'.join(failing_checks))
-
-    @skip_if_not_pr_to_non_main_branch
-    def test_changed_files_pull_request(self):
-        """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
-        # get list of changed easyconfigs
-        changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
-        added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
-        if changed_ecs_filenames:
-            print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
-        if added_ecs_filenames:
-            print("\nList of added easyconfig files in this PR:\n\t%s" % '\n\t'.join(added_ecs_filenames))
-
-        # grab parsed easyconfigs for changed easyconfig files
-        changed_ecs = []
-        for ec_fn in changed_ecs_filenames + added_ecs_filenames:
-            match = None
-            for ec in self.parsed_easyconfigs:
-                if os.path.basename(ec['spec']) == ec_fn:
-                    match = ec['ec']
-                    break
-
-            if match:
-                changed_ecs.append(match)
-            else:
-                # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
-                # so as a last resort, try to find the easyconfig file in __archive__
-                easyconfigs_path = get_paths_for("easyconfigs")[0]
-                specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
-                if len(specs) == 1:
-                    ec = process_easyconfig(specs[0])[0]
-                    changed_ecs.append(ec['ec'])
-                else:
-                    error_msg = "Failed to find parsed easyconfig for %s" % ec_fn
-                    error_msg += " (and could not isolate it in easyconfigs archive either)"
-                    self.assertTrue(False, error_msg)
-
-        # run checks on changed easyconfigs
-        self.check_sha256_checksums(changed_ecs)
-        self.check_python_packages(changed_ecs, added_ecs_filenames)
-        self.check_R_packages(changed_ecs)
-        self.check_sanity_check_paths(changed_ecs)
-        self.check_https(changed_ecs)
 
 
 def template_easyconfig_test(self, spec):
