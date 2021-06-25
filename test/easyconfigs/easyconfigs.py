@@ -34,7 +34,7 @@ import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from unittest import TestCase, TestLoader, main
+from unittest import TestCase, TestLoader, main, skip
 
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
@@ -66,6 +66,66 @@ from easybuild.tools.utilities import nub
 # and that bigger tests (building dep graph, testing for conflicts, ...) can be run as well
 # other than optimizing for time, this also helps to get around problems like http://bugs.python.org/issue10949
 single_tests_ok = True
+
+
+def is_pr():
+    """Return true if run in a pull request CI"""
+    # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
+    travis_pr_test = re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', ''))
+
+    # when testing a PR in GitHub Actions, $GITHUB_EVENT_NAME will be set to 'pull_request'
+    github_pr_test = os.environ.get('GITHUB_EVENT_NAME') == 'pull_request'
+    return travis_pr_test or github_pr_test
+
+
+def get_target_branch():
+    """Return the target branch of a pull request"""
+    # target branch should be anything other than 'master';
+    # usually is 'develop', but could also be a release branch like '3.7.x'
+    target_branch = os.environ.get('GITHUB_BASE_REF', None)
+    if not target_branch:
+        target_branch = os.environ.get('TRAVIS_BRANCH', None)
+    if not target_branch:
+        raise RuntimeError("Did not find a target branch")
+    return target_branch
+
+
+def skip_if_not_pr_to_non_main_branch():
+    if not is_pr():
+        return skip("Only run for pull requests")
+    if get_target_branch() == "main":
+        return skip("Not run for pull requests against main")
+    return lambda func: func
+
+
+def get_eb_files_from_diff(diff_filter):
+    """Return the files changed on HEAD relative to the current target branch"""
+    target_branch = get_target_branch()
+
+    # relocate to top-level directory of repository to run 'git diff' command
+    top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
+    cwd = change_dir(top_dir)
+
+    # first determine the 'merge base' between target branch and PR branch
+    # cfr. https://git-scm.com/docs/git-merge-base
+    cmd = "git merge-base %s HEAD" % target_branch
+    out, ec = run_cmd(cmd, simple=False, log_ok=False)
+    if ec == 0:
+        merge_base = out.strip()
+        print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
+    else:
+        msg = "Failed to determine merge base (ec: %s, output: '%s'), "
+        msg += "falling back to specifying target branch %s"
+        print(msg % (ec, out, target_branch))
+        merge_base = target_branch
+
+    # determine list of changed files using 'git diff' and merge base determined above
+    cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
+    out, _ = run_cmd(cmd, simple=False)
+    files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
+
+    change_dir(cwd)
+    return files
 
 
 class EasyConfigTest(TestCase):
@@ -930,91 +990,47 @@ class EasyConfigTest(TestCase):
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
+    @skip_if_not_pr_to_non_main_branch
     def test_changed_files_pull_request(self):
         """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
-        def get_eb_files_from_diff(diff_filter):
+        # get list of changed easyconfigs
+        changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
+        added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
+        if changed_ecs_filenames:
+            print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
+        if added_ecs_filenames:
+            print("\nList of added easyconfig files in this PR:\n\t%s" % '\n\t'.join(added_ecs_filenames))
 
-            # first determine the 'merge base' between target branch and PR branch
-            # cfr. https://git-scm.com/docs/git-merge-base
-            cmd = "git merge-base %s HEAD" % target_branch
-            out, ec = run_cmd(cmd, simple=False, log_ok=False)
-            if ec == 0:
-                merge_base = out.strip()
-                print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
+        # grab parsed easyconfigs for changed easyconfig files
+        changed_ecs = []
+        for ec_fn in changed_ecs_filenames + added_ecs_filenames:
+            match = None
+            for ec in self.parsed_easyconfigs:
+                if os.path.basename(ec['spec']) == ec_fn:
+                    match = ec['ec']
+                    break
+
+            if match:
+                changed_ecs.append(match)
             else:
-                msg = "Failed to determine merge base (ec: %s, output: '%s'), "
-                msg += "falling back to specifying target branch %s"
-                print(msg % (ec, out, target_branch))
-                merge_base = target_branch
+                # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
+                # so as a last resort, try to find the easyconfig file in __archive__
+                easyconfigs_path = get_paths_for("easyconfigs")[0]
+                specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
+                if len(specs) == 1:
+                    ec = process_easyconfig(specs[0])[0]
+                    changed_ecs.append(ec['ec'])
+                else:
+                    error_msg = "Failed to find parsed easyconfig for %s" % ec_fn
+                    error_msg += " (and could not isolate it in easyconfigs archive either)"
+                    self.assertTrue(False, error_msg)
 
-            # determine list of changed files using 'git diff' and merge base determined above
-            cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
-            out, _ = run_cmd(cmd, simple=False)
-            return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
-
-        # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
-        travis_pr_test = re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)'))
-
-        # when testing a PR in GitHub Actions, $GITHUB_EVENT_NAME will be set to 'pull_request'
-        github_pr_test = os.environ.get('GITHUB_EVENT_NAME') == 'pull_request'
-
-        if travis_pr_test or github_pr_test:
-
-            # target branch should be anything other than 'master';
-            # usually is 'develop', but could also be a release branch like '3.7.x'
-            if travis_pr_test:
-                target_branch = os.environ.get('TRAVIS_BRANCH', None)
-            else:
-                target_branch = os.environ.get('GITHUB_BASE_REF', None)
-
-            if target_branch is None:
-                self.assertTrue(False, "Failed to determine target branch for current pull request.")
-
-            if target_branch != 'main':
-                # relocate to top-level directory of repository to run 'git diff' command
-                top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
-                cwd = change_dir(top_dir)
-
-                # get list of changed easyconfigs
-                changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
-                added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
-                if changed_ecs_filenames:
-                    print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
-                if added_ecs_filenames:
-                    print("\nList of added easyconfig files in this PR:\n\t%s" % '\n\t'.join(added_ecs_filenames))
-
-                change_dir(cwd)
-
-                # grab parsed easyconfigs for changed easyconfig files
-                changed_ecs = []
-                for ec_fn in changed_ecs_filenames + added_ecs_filenames:
-                    match = None
-                    for ec in self.parsed_easyconfigs:
-                        if os.path.basename(ec['spec']) == ec_fn:
-                            match = ec['ec']
-                            break
-
-                    if match:
-                        changed_ecs.append(match)
-                    else:
-                        # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
-                        # so as a last resort, try to find the easyconfig file in __archive__
-                        easyconfigs_path = get_paths_for("easyconfigs")[0]
-                        specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
-                        if len(specs) == 1:
-                            ec = process_easyconfig(specs[0])[0]
-                            changed_ecs.append(ec['ec'])
-                        else:
-                            error_msg = "Failed to find parsed easyconfig for %s" % ec_fn
-                            error_msg += " (and could not isolate it in easyconfigs archive either)"
-                            self.assertTrue(False, error_msg)
-
-                # run checks on changed easyconfigs
-                self.check_sha256_checksums(changed_ecs)
-                self.check_python_packages(changed_ecs, added_ecs_filenames)
-                self.check_R_packages(changed_ecs)
-                self.check_sanity_check_paths(changed_ecs)
-                self.check_https(changed_ecs)
+        # run checks on changed easyconfigs
+        self.check_sha256_checksums(changed_ecs)
+        self.check_python_packages(changed_ecs, added_ecs_filenames)
+        self.check_R_packages(changed_ecs)
+        self.check_sanity_check_paths(changed_ecs)
+        self.check_https(changed_ecs)
 
 
 def template_easyconfig_test(self, spec):
