@@ -878,6 +878,20 @@ class EasyConfigTest(TestCase):
             # https:// has outdated SSL configurations
             'http://faculty.scs.illinois.edu',
         ]
+        # Cache: Mapping of already checked HTTP urls to whether the HTTPS variant works
+        checked_urls = dict()
+
+        def check_https_url(http_url):
+            """Check if the https url works"""
+            http_url = http_url.rstrip('/')  # Remove trailing slashes
+            https_url_works = checked_urls.get(http_url)
+            if https_url_works is None:
+                https_url = http_url.replace('http://', 'https://')
+                try:
+                    https_url_works = bool(urlopen(https_url, timeout=5))
+                except Exception:
+                    https_url_works = False
+            checked_urls[http_url] = https_url_works
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
 
@@ -898,13 +912,7 @@ class EasyConfigTest(TestCase):
                 if any(http_url.startswith(x) for x in url_whitelist):
                     continue
 
-                https_url = http_url.replace('http://', 'https://')
-                try:
-                    https_url_works = bool(urlopen(https_url, timeout=5))
-                except Exception:
-                    https_url_works = False
-
-                if https_url_works:
+                if check_https_url(http_url):
                     failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
         if failing_checks:
             self.fail('\n'.join(failing_checks))
