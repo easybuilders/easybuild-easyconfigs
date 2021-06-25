@@ -1335,11 +1335,11 @@ def suite():
     # define new inner functions that can be added as class methods to InitTest
     easyconfigs_path = get_paths_for('easyconfigs')[0]
     cnt = 0
-    for (subpath, _, specs) in os.walk(easyconfigs_path, topdown=True):
+    for (subpath, dirs, specs) in os.walk(easyconfigs_path, topdown=True):
 
         # ignore archived easyconfigs
-        if '__archive__' in subpath:
-            continue
+        if '__archive__' in dirs:
+            dirs.remove('__archive__')
 
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
