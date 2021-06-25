@@ -141,7 +141,7 @@ class EasyConfigTest(TestCase):
                 os.environ['EB_SCRIPT_PATH'] = eb_path
 
         # initialize configuration (required for e.g. default modules_tool setting)
-        eb_go = eboptions.parse_options()
+        eb_go = eboptions.parse_options(args=[])  # Ignore cmdline args as those are meant for the unittest framework
         config.init(eb_go.options, eb_go.get_options_by_section('config'))
         build_options = {
             'check_osdeps': False,
