@@ -1324,7 +1324,7 @@ def template_easyconfig_test(self, spec):
     single_tests_ok = True and prev_single_tests_ok
 
 
-def suite():
+def suite(loader=None):
     """Return all easyblock initialisation tests."""
     def make_inner_test(spec_path):
         def innertest(self):
@@ -1351,7 +1351,9 @@ def suite():
                 setattr(EasyConfigTest, innertest.__name__, innertest)
 
     print("Found %s easyconfigs..." % cnt)
-    return TestLoader().loadTestsFromTestCase(EasyConfigTest)
+    if not loader:
+        loader = TestLoader()
+    return loader.loadTestsFromTestCase(EasyConfigTest)
 
 
 if __name__ == '__main__':
