@@ -1,0 +1,47 @@
+easyblock = 'PythonPackage'
+
+name = 'eggnog-mapper'
+version = '2.1.4'
+
+homepage = 'https://github.com/eggnogdb/eggnog-mapper'
+description = """EggNOG-mapper is a tool for fast functional annotation of novel
+sequences. It uses precomputed orthologous groups and phylogenies from the
+eggNOG database (http://eggnog5.embl.de) to transfer functional information from
+fine-grained orthologs only. Common uses of eggNOG-mapper include the annotation
+of novel genomes, transcriptomes or even metagenomic gene catalogs."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+github_account = 'eggnogdb'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Biopython', '1.78'),
+    ('HMMER', '3.3.2'),
+    ('DIAMOND', '2.0.7'),
+    ('prodigal', '2.6.3'),
+    ('wget', '1.20.3'),
+    ('MMseqs2', '13-45111'),
+    ('XlsxWriter', '1.4.0'),
+]
+
+# Relax version constraings
+preinstallopts = "sed -i 's/biopython==1.76/biopython==1.78/' setup.cfg && "
+preinstallopts += "sed -i 's/xlsxwriter==1.4.3/xlsxwriter==1.4.0/' setup.cfg && "
+preinstallopts += "sed -i 's/psutil==5.7.0/psutil==5.7.2/' setup.cfg && "
+
+use_pip = True
+sanity_pip_check = True
+download_dep_fail = True
+
+sanity_check_commands = [
+    'download_eggnog_data.py --help',
+    'create_dbs.py --help',
+    'emapper.py --version | grep %(version)s',
+]
+
+options = {'modulename': 'eggnogmapper'}
+
+moduleclass = 'bio'
