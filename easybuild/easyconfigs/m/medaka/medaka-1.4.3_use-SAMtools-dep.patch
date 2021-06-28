@@ -1,0 +1,48 @@
+use SAMtools provided as dependency rather than building libhts.a from scratch
+
+author: Kenneth Hoste (HPC-UGent)
+--- medaka-1.4.3/build.py.orig	2021-06-21 19:06:16.000000000 +0200
++++ medaka-1.4.3/build.py	2021-06-24 17:38:34.231762728 +0200
+@@ -3,12 +3,8 @@
+ 
+ from cffi import FFI
+ 
+-#samver is pulled from this file in the Makefile
+-samver = "1.11"
+-htslib_dir=os.path.join('submodules', 'samtools-{}'.format(samver), 'htslib-{}'.format(samver))
+-
+ libraries=['m', 'z', 'lzma', 'bz2', 'pthread', 'curl', 'crypto']
+-library_dirs=[htslib_dir]
++library_dirs=[]
+ src_dir='src'
+ 
+ ffibuilder = FFI()
+@@ -27,14 +23,14 @@
+     """,
+     libraries=libraries,
+     library_dirs=library_dirs,
+-    include_dirs=[src_dir, htslib_dir],
++    include_dirs=[src_dir],
+     sources=[
+         os.path.join(src_dir, x) for x in (
+             'medaka_bamiter.c', 'medaka_common.c', 'medaka_counts.c',
+             'fastrle.c', 'medaka_trimbam.c', 'medaka_pytrimbam.c',
+             'medaka_rnn_variants.c')],
+     extra_compile_args=['-std=c99', '-msse3', '-O3'],
+-    extra_objects=['libhts.a']
++    extra_objects=[os.path.join(os.getenv('EBROOTSAMTOOLS'), 'lib', 'libhts.a')]
+ )
+ 
+ cdef = []
+--- medaka-1.4.3/setup.py.orig	2021-06-24 18:53:32.019117378 +0200
++++ medaka-1.4.3/setup.py	2021-06-24 18:54:04.229468742 +0200
+@@ -165,9 +165,6 @@
+         },
+         scripts=['scripts/medaka_consensus', 'scripts/medaka_variant', 'scripts/medaka_haploid_variant', 'scripts/mini_align', 'scripts/hdf2tf.py'],
+         zip_safe=False,
+-        cmdclass={
+-            'build_ext': HTSBuild
+-        },
+     )
+ 
+     if os.environ.get('MEDAKA_BINARIES') is not None:
