@@ -1,0 +1,46 @@
+easyblock = 'PythonPackage'
+
+name = 'CRISPResso2'
+version = '2.1.2'
+
+homepage = 'https://github.com/pinellolab/CRISPResso2/'
+description = """CRISPResso2 is a software pipeline designed to enable rapid and
+intuitive interpretation of genome editing experiments."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://github.com/pinellolab/CRISPResso2/archive/']
+sources = ['v%(version)s.tar.gz']
+
+sources = [
+    {'source_urls': ['https://github.com/pinellolab/CRISPResso2/archive/'],
+     'filename': 'v%(version)s.tar.gz'},
+    {'source_urls': ['https://crispresso.pinellolab.partners.org/static/demo/'],
+     'filename': 'base_editor.fastq.gz', 'extract_cmd': 'cp %s %(builddir)s'}]
+
+dependencies = [
+    ('Java', '11', '', True),
+    ('Python', '2.7.18'),
+    ('SciPy-bundle', '2020.11', '-Python-%(pyver)s'),
+    ('matplotlib', '2.2.5', '-Python-%(pyver)s'),
+    ('Trimmomatic', '0.39', '-Java-%(javashortver)s', True),
+    ('FLASH', '2.2.00'),
+    ('SAMtools', '1.12'),
+    ('Bowtie2', '2.4.2'),
+    ('Seaborn', '0.9.1', '-Python-%(pyver)s'),
+]
+download_dep_fail = True
+use_pip = True
+options = {'modulename': False}
+
+local_seq_str = 'GGCCCCAGTGGCTGCTCTGGGGGCCTCCTGAGTTTCTCATCTGTGCCCCTCCCTCCCTGGCCCAGGTGAAGGTGTGGTTCCAGAACCGGAGGACAAAGTAC'
+local_seq_str += 'AAACGGCAGAAGCTGGAGGAGGAAGGGCCTGAGTCCGAGCAGAAGAAGAAGGGCTCCCATCACATCAACCGGTGGCGCATTGCCACGAAGCAGGCCAATG'
+local_seq_str += 'GGGAGGACATCGATGTCACCTCCAATGACTAGGGTGG'
+sanity_check_commands = [('CRISPResso -h'),
+                         ("""CRISPResso --fastq_r1 %%(builddir)s/base_editor.fastq.gz --amplicon_seq %s \
+                          --guide_seq GAGTCCGAGCAGAAGAAGAA --quantification_window_size 10 \
+                          --quantification_window_center -10 --base_editor_output""" % local_seq_str)]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages/CRISPResso2']}
+
+moduleclass = 'bio'
