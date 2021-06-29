@@ -1,0 +1,54 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# 
+# Author: Jonas Demeulemeester
+# The Francis Crick Insitute, London, UK
+##
+easyblock = 'Bundle'
+
+name = 'cget'
+version = '0.1.9'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://cget.readthedocs.io/en/latest/index.html'
+description = """Cmake package retrieval. This can be used to download and install cmake packages"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+# Since cget uses CMake to install packages, CMake is a runtime dependency
+dependencies = [
+    ('Python', '3.8.6'),
+    ('CMake', '3.18.4'),
+]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+exts_list = [
+    ('click', '8.0.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/c/click/'],
+        'checksums': ['8c04c11192119b1ef78ea049e0a6f0463e4c48ef00a30160c704337586f3ad7a'],
+    }),
+    ('six', '1.16.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/six/'],
+        'checksums': ['1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926'],
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/c/cget/'],
+        'checksums': ['2a7913b601bec615208585eda7e69998a43cc17080d36c2ff2ce8742c9794bf6'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cget'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = ["cget --help"]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'lib'
