@@ -796,7 +796,7 @@ class EasyConfigTest(TestCase):
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
-        return
+
         # list of software for which checksums can not be required,
         # e.g. because 'source' files need to be constructed manually
         whitelist = [
@@ -870,7 +870,7 @@ class EasyConfigTest(TestCase):
             pure_ec = ec.parser.get_config_dict()
 
             # download_dep_fail should be set when using PythonPackage
-            if False and easyblock == 'PythonPackage':
+            if easyblock == 'PythonPackage':
                 if download_dep_fail is None:
                     failing_checks.append("'download_dep_fail' should be set in %s" % ec_fn)
 
@@ -879,7 +879,7 @@ class EasyConfigTest(TestCase):
                                           "in %s" % ec_fn)
 
             # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
-            if False and easyblock in ['PythonBundle', 'PythonPackage']:
+            if easyblock in ['PythonBundle', 'PythonPackage']:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' should be set in %s" % ec_fn)
 
@@ -901,7 +901,7 @@ class EasyConfigTest(TestCase):
                     # both download_dep_fail and use_pip should be set via exts_default_options
                     # when installing Python packages as extensions
                     for key in ['download_dep_fail', 'use_pip']:
-                        if False and exts_default_options.get(key) is None:
+                        if exts_default_options.get(key) is None:
                             failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix
@@ -933,7 +933,7 @@ class EasyConfigTest(TestCase):
                     failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
-            if False and easyblock in ['PythonBundle', 'PythonPackage']:
+            if easyblock in ['PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
