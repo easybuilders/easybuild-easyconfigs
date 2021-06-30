@@ -1,0 +1,98 @@
+name = 'PyTorch'
+version = '1.8.1'
+
+homepage = 'https://pytorch.org/'
+description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+PyTorch is a deep learning framework that puts Python first."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/pytorch',
+        'repo_name': 'pytorch',
+        'tag': 'v%(version)s',
+        'recursive': True,
+    },
+}]
+patches = [
+    'PyTorch-1.6.0_fix-test-dataloader-fixed-affinity.patch',
+    'PyTorch-1.7.0_avoid-nan-in-test-torch.patch',
+    'PyTorch-1.7.0_disable-dev-shm-test.patch',
+    'PyTorch-1.7.1_fix-alias-violation-in-bitwise-ops.patch',
+    'PyTorch-1.8.0_fix-noMKL-linear-algebra.patch',
+    'PyTorch-1.8.0_correct-skip-tests-decorators.patch',
+    'PyTorch-1.8.1_dont-sync-gpu-for-cpu-test.patch',
+    'PyTorch-1.8.1_fix-arange-on-VSX.patch',
+    'PyTorch-1.8.1_fix-faulty-asserts-and-skip-test.patch',
+    'PyTorch-1.8.1_fix-vsx-vector-functions.patch',
+    'PyTorch-1.8.1_increase-distributed-test-timeout.patch',
+    'PyTorch-1.8.1_skip-complex-grad-check-on-ppc.patch',
+]
+checksums = [
+    None,  # can't add proper SHA256 checksum, because source tarball is created locally after recursive 'git clone'
+    # PyTorch-1.6.0_fix-test-dataloader-fixed-affinity.patch
+    'a4208a46cd2098744daaba96cebb96cd91166f8fc616924315e05974bad80c67',
+    'b899aa94d9e60f11ee75a706563312ccefa9cf432756c470caa8e623991c8f18',  # PyTorch-1.7.0_avoid-nan-in-test-torch.patch
+    '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a',  # PyTorch-1.7.0_disable-dev-shm-test.patch
+    # PyTorch-1.7.1_fix-alias-violation-in-bitwise-ops.patch
+    'e92f054f1297df83ace901e7af38222787b709ee29580f5f2b89a300ca03666b',
+    'a1ca9382b0eb333090536633092bab6fa281d26b491bf7b1849117f68ab0730c',  # PyTorch-1.8.0_fix-noMKL-linear-algebra.patch
+    # PyTorch-1.8.0_correct-skip-tests-decorators.patch
+    'eb0ca83e88196cc5cf9bc8a50f6ee4c7fd4ae045ab0d549896b82b0526ee50f9',
+    # PyTorch-1.8.1_dont-sync-gpu-for-cpu-test.patch
+    'a5bc86837c59a36d59311be9cbd0c6d86ea6be235c2a7ffb400b89c758b28490',
+    'eca718ce0ecc61b57659808179cc660919b3c25b5dce326f51c1cc5a5bfb9829',  # PyTorch-1.8.1_fix-arange-on-VSX.patch
+    # PyTorch-1.8.1_fix-faulty-asserts-and-skip-test.patch
+    '1601eacd336e01176bdbdbc5a2207743dc2999b535a738a8e36b3da3e8a2f3b6',
+    'a8fcb63cf963dc743e8b0a96b966f18d8edde6a4e76365d6de56aa2c71ce6d3f',  # PyTorch-1.8.1_fix-vsx-vector-functions.patch
+    # PyTorch-1.8.1_increase-distributed-test-timeout.patch
+    'c94eda2289692d00873e2ae8cecaaf7a1e5e657dfa4cfcd94b56093f6f4766ad',
+    # PyTorch-1.8.1_skip-complex-grad-check-on-ppc.patch
+    'b0000aa9e028ad24ac4bb62d42db9e56ab78818e812aa4a4943a4456505927c7',
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('hypothesis', '5.41.5'),
+]
+
+dependencies = [
+    ('Ninja', '1.10.1'),  # Required for JIT compilation of C++ extensions
+    ('Python', '3.8.6'),
+    ('protobuf', '3.14.0'),
+    ('protobuf-python', '3.14.0'),
+    ('pybind11', '2.6.0'),
+    ('SciPy-bundle', '2020.11'),
+    ('typing-extensions', '3.7.4.3'),
+    ('PyYAML', '5.3.1'),
+    ('MPFR', '4.1.0'),
+    ('GMP', '6.2.0'),
+    ('numactl', '2.0.13'),
+    ('FFmpeg', '4.3.1'),
+    ('Pillow', '8.0.1'),
+]
+
+excluded_tests = {
+    'POWER': [
+        # https://github.com/pytorch/pytorch/issues/57617
+        'test_autograd',
+    ],
+    '': [
+        # Test from this suite timeout often. The process group backend is deprecated anyway
+        'distributed/rpc/test_process_group_agent',
+        # Potentially problematic save/load issue with test_lstm on only some machines. Tell users to verify save&load!
+        # https://github.com/pytorch/pytorch/issues/43209
+        'test_quantization',
+    ]
+}
+
+runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
+
+sanity_check_commands = ["python -c 'import caffe2.python'"]
+tests = ['PyTorch-check-cpp-extension.py']
+
+moduleclass = 'devel'
