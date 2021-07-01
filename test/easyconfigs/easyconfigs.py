@@ -845,6 +845,8 @@ class EasyConfigTest(TestCase):
             r'Mako-1.0.4.*Python-2.7.12.*',
             # no pip 9.x or newer for configparser easyconfigs using a 2016a or 2016b toolchain
             r'configparser-3.5.0.*-2016[ab].*',
+            # mympirun is installed with system Python, pip may not be installed for system Python
+            r'vsc-mympirun.*',
         ]
 
         failing_checks = []
