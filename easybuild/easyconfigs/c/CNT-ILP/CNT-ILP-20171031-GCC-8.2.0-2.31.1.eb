@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'CNT-ILP'
+version = '20171031'
+local_commit = '637029b'
+
+homepage = 'https://compbio.cs.brown.edu/projects/cnt-ilp/'
+description = """ Integer Linear Program for the Copy-Number Tree Problem """
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/raphael-group/CNT-ILP/archive/']
+sources = ['%s.tar.gz' % local_commit]
+checksums = ['2798ae15f671f944dd1a5050d28a8475fd94a4a3a598ab936cce1e2dae51cc38']
+
+dependencies = [
+    ('CPLEX', '12.9'),
+    ('LEMON', '1.3.1'),
+]
+
+builddependencies = [('CMake', '3.13.3')]
+
+separate_build_dir = True
+
+configopts = '-DLIBLEMON_ROOT=$EBROOTLEMON '
+configopts += '-DCPLEX_INC_DIR=$EBROOTCPLEX/cplex/include/ '
+configopts += '-DCPLEX_LIB_DIR=$EBROOTCPLEX/cplex/lib/x86-64_linux/static_pic '
+configopts += '-DCONCERT_INC_DIR=$EBROOTCPLEX/concert/include/ '
+configopts += '-DCONCERT_LIB_DIR=$EBROOTCPLEX/concert/lib/x86-64_linux/static_pic '
+configopts += '-DCMAKE_EXE_LINKER_FLAGS=-ldl '
+
+install_cmd = 'mkdir %(installdir)s/bin && cp -a cnt compare visualize %(installdir)s/bin/ && '
+install_cmd += 'cd ../%(name)s-* && cp -a data utils contributors.txt  LICENSE.txt  README.md %(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/cnt', 'bin/compare', 'bin/visualize'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['cnt -s 2 %(installdir)s/data/20160430/simC_c1_k4_n10_u1_s1_del02.input']
+
+moduleclass = 'bio'

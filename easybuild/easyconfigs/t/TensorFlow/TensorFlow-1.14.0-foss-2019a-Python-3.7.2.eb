@@ -1,0 +1,121 @@
+easyblock = 'PythonBundle'
+
+name = 'TensorFlow'
+version = '1.14.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'usempi': True}
+
+builddependencies = [
+    # must be Bazel 0.24.1 <= version <= 0.25.2 (not 0.25.3...)
+    ('Bazel', '0.25.2'),
+    ('protobuf', '3.6.1.2'),
+]
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('SciPy-bundle', '2019.03'),
+    ('h5py', '2.9.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    # tensorboard 1.14.0 has requirement setuptools>=41.0.0
+    ('setuptools', '41.3.0', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'checksums': ['9f5c54b529b2156c6f288e837e625581bb31ff94d4cfd116b8f271c589749556'],
+    }),
+    ('protobuf-python', '3.8.0', {
+        'modulename': 'google.protobuf',
+        'patches': ['TensorFlow-1.13.1_protobuf-3.6.1.2_fix_26155.patch'],
+        'source_tmpl': 'protobuf-python-%(version)s.tar.gz',
+        'source_urls': ['https://github.com/google/protobuf/releases/download/v%(version)s/'],
+        'start_dir': 'python',
+        'use_pip': False,
+        'checksums': [
+            '3b7c258a79839056f2ee3be467581b4acac3e091f7757c8203360b354d32afd5',  # protobuf-python-3.8.0.tar.gz
+            # TensorFlow-1.13.1_protobuf-3.6.1.2_fix_26155.patch
+            'db514d3698d37e329cecdd2245dcd6ff65f2b739a66730f303e8a9f6c107392b',
+        ],
+    }),
+    ('absl-py', '0.7.1', {
+        'modulename': 'absl',
+        'checksums': ['b943d1c567743ed0455878fcd60bc28ac9fae38d129d1ccfad58079da00b8951'],
+    }),
+    ('astor', '0.8.0', {
+        'checksums': ['37a6eed8b371f1228db08234ed7f6cfdc7817a3ed3824797e20cbb11dc2a7862'],
+    }),
+    ('google-pasta', '0.1.8', {
+        'checksums': ['713813a9f7d6589e5defdaf21e80e4392eb124662f8bd829acd51a4f8735c0cb'],
+        'modulename': 'pasta',
+    }),
+    ('gast', '0.2.2', {
+        'checksums': ['fe939df4583692f0512161ec1c880e0a10e71e6a232da045ab8edd3756fbadf0'],
+    }),
+    ('grpcio', '1.22.0', {
+        'modulename': 'grpc',
+        'checksums': ['8805d486c6128cc0fcc8ecf16c4095d99a8693a541ef851429ab334e028a4a97'],
+    }),
+    ('Markdown', '3.1.1', {
+        'checksums': ['2e50876bcdd74517e7b71f3e7a76102050edec255b3983403f1a63e7c8a41e7a'],
+    }),
+    ('tensorboard', version, {
+        'source_tmpl': 'tensorboard-%(version)s-py3-none-any.whl',
+        'unpack_sources': False,
+        'checksums': ['50e0b1bdcd488dbe39fd9416976e089b2ff4df18d9f1fab47abf4c498209c3fc'],
+    }),
+    ('termcolor', '1.1.0', {
+        'checksums': ['1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b'],
+    }),
+    ('Werkzeug', '0.15.5', {
+        'checksums': ['a13b74dd3c45f758d4ebdb224be8f1ab8ef58b3c0ffc1783a8c7d9f4f50227e6'],
+    }),
+    ('Keras-Applications', '1.0.8', {
+        'modulename': 'keras_applications',
+        'source_tmpl': 'Keras_Applications-%(version)s.tar.gz',
+        'checksums': ['5579f9a12bcde9748f4a12233925a59b93b73ae6947409ff34aa2ba258189fe5'],
+    }),
+    ('Keras-Preprocessing', '1.1.0', {
+        'modulename': 'keras_preprocessing',
+        'source_tmpl': 'Keras_Preprocessing-%(version)s.tar.gz',
+        'checksums': ['5a8debe01d840de93d49e05ccf1c9b81ae30e210d34dacbcc47aeb3049b528e5'],
+    }),
+    ('tensorflow-estimator', version, {
+        'source_tmpl': 'tensorflow_estimator-%(version)s-py2.py3-none-any.whl',
+        'unpack_sources': False,
+        'checksums': ['ca073f66063407a091d610ec1b22e39ea30248710198cc6f13769320bdbe3992'],
+    }),
+    ('wrapt', '1.11.2', {
+        'checksums': ['565a021fd19419476b9362b05eeaa094178de64f8361e44468f9e9d7843901e1'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'patches': [
+            'TensorFlow-%(version)s_swig-env.patch',
+            'TensorFlow-1.11.0_remove-msse-hardcoding.patch',
+            'TensorFlow-1.13.1_lrt-flag.patch',
+            'TensorFlow-1.13.1_fix_protobuf_problem.patch',
+            'TensorFlow-%(version)s_fix-mpi-undeclared-inclusion.patch',
+        ],
+        'checksums': [
+            'aa2a6a1daafa3af66807cfe0bc77bfe1144a9a53df9a96bab52e3e575b3047ed',  # v1.14.0.tar.gz
+            'b83cce6b91c7d19b8b320158ffc50fb4b2de454f5ac191c58d704234a1bf9005',  # TensorFlow-1.11.0_swig-env.patch
+            # TensorFlow-1.11.0_remove-msse-hardcoding.patch
+            'a0f00ee4d03bb4fd3a645ee06045cedaf97d0b85675ec35187e9dd7e479d7bb6',
+            'b388be35f2581786bcd533b1bfa375165d7f35e38a3aab74570019312816bf1b',  # TensorFlow-1.13.1_lrt-flag.patch
+            # TensorFlow-1.13.1_fix_protobuf_problem.patch
+            'd2fab1497078a2980a68adeea4d0f8719be5bef03741ea4775163745a1e52d40',
+            # TensorFlow-1.14.0_fix-mpi-undeclared-inclusion.patch
+            '09e5fdce89588074b3c2abb6a4705b1f141b43395c960660320cf1cb79cd1ef4',
+        ],
+    }),
+]
+
+moduleclass = 'lib'

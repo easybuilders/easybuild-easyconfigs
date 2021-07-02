@@ -1,0 +1,59 @@
+download database from Dropbox rather than Bitbucket (see repo is removed there)
+
+see https://github.com/biobakery/MetaPhlAn/commit/ca6684acda58c5b0cdc8820c00fd93c237744a0f
+diff --git a/metaphlan2.py b/metaphlan2.py
+index d1d68f1..2ea6a60 100755
+--- a/metaphlan2.py
++++ b/metaphlan2.py
+@@ -58,7 +58,8 @@
+ 
+ 
+ # set the location of the database download url
+-DATABASE_DOWNLOAD = "https://bitbucket.org/biobakery/metaphlan2/downloads/"
++DATABASE_DOWNLOAD = "https://www.dropbox.com/sh/7qze7m7g9fe2xjg/AADHWzATSQcI0CNFD0sk7MAga"
++FILE_LIST= "https://www.dropbox.com/sh/7qze7m7g9fe2xjg/AAA4XDP85WHon_eHvztxkamTa/file_list.txt?dl=1"
+ # get the directory that contains this script
+ metaphlan2_script_install_folder = os.path.dirname(os.path.abspath(__file__))
+ # get the default database folder
+@@ -715,7 +716,7 @@ def download(url, download_file):
+         sys.stderr.write("\nFile {} already present!\n".format(download_file))
+ 
+ 
+-def download_unpack_tar(url, download_file_name, folder, bowtie2_build, nproc):
++def download_unpack_tar(FILE_LIST, download_file_name, folder, bowtie2_build, nproc):
+     """
+     Download the url to the file and decompress into the folder
+     """
+@@ -732,13 +733,21 @@ def download_unpack_tar(url, download_file_name, folder, bowtie2_build, nproc):
+         sys.exit("ERROR: The directory is not writeable: " + folder + ". "
+                  "Please modify the permissions.")
+ 
++    #Download the list of all the files in the Dropbox folder
++    list_file_path = os.path.join(folder, "file_list.txt")
++    download(FILE_LIST, list_file_path)
++
++    if os.path.isfile(list_file_path):
++        with open(list_file_path) as f:
++            ls_f = dict( [row.strip().split() for row in f])
++
+     tar_file = os.path.join(folder, "mpa_" + download_file_name + ".tar")
+-    url_tar_file = os.path.join(url, "mpa_" + download_file_name + ".tar")
++    url_tar_file = ls_f["mpa_" + download_file_name + ".tar"]
+     download(url_tar_file, tar_file)
+ 
+     # download MD5 checksum
+     md5_file = os.path.join(folder, "mpa_" + download_file_name + ".md5")
+-    url_md5_file = os.path.join(url, "mpa_" + download_file_name + ".md5")
++    url_md5_file = ls_f["mpa_" + download_file_name + ".md5"]
+     download(url_md5_file, md5_file)
+ 
+     md5_md5 = None
+@@ -824,7 +833,7 @@ def check_and_install_database(index, bowtie2_db, bowtie2_build, nproc):
+     # download the tar archive and decompress
+     sys.stderr.write("\nDownloading MetaPhlAn2 database\nPlease note due to "
+                      "the size this might take a few minutes\n")
+-    download_unpack_tar(DATABASE_DOWNLOAD, index, bowtie2_db, bowtie2_build, nproc)
++    download_unpack_tar(FILE_LIST, index, bowtie2_db, bowtie2_build, nproc)
+     sys.stderr.write("\nDownload complete\n")
+ 
+ 

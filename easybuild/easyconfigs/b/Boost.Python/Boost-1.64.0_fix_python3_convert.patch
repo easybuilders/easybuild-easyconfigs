@@ -1,0 +1,22 @@
+fix compilation with Python 3
+author: Åke Sandgren
+--- boost_1_64_0/libs/python/src/converter/builtin_converters.cpp	2017-04-17 04:22:24.000000000 +0200
++++ boost_1_70_0/libs/python/src/converter/builtin_converters.cpp	2019-04-09 21:36:22.000000000 +0200
+@@ -45,11 +45,16 @@
+   {
+       return PyString_Check(obj) ? PyString_AsString(obj) : 0;
+   }
+-#else
++#elif PY_VERSION_HEX < 0x03070000
+   void* convert_to_cstring(PyObject* obj)
+   {
+       return PyUnicode_Check(obj) ? _PyUnicode_AsString(obj) : 0;
+   }
++#else
++  void* convert_to_cstring(PyObject* obj)
++  {
++      return PyUnicode_Check(obj) ? const_cast<void*>(reinterpret_cast<const void*>(_PyUnicode_AsString(obj))) : 0;
++  }
+ #endif
+
+   // Given a target type and a SlotPolicy describing how to perform a

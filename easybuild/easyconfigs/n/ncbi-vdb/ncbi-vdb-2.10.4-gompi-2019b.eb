@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'ncbi-vdb'
+version = '2.10.4'
+
+homepage = 'https://github.com/ncbi/ncbi-vdb'
+description = """The SRA Toolkit and SDK from NCBI is a collection of tools and libraries for
+ using data in the INSDC Sequence Read Archives."""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+
+github_account = 'ncbi'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['b78d574b1b20c4b864a0358e0660481497fc1b269f9bee621b4aa7866d81dfb7']
+
+builddependencies = [('Perl', '5.30.0')]
+
+dependencies = [
+    ('NGS', version, '-Java-11'),
+    ('file', '5.38'),  # provides libmagic
+    ('HDF5', '1.10.5'),
+    ('libxml2', '2.9.9'),
+    ('bzip2', '1.0.8'),
+]
+
+# add addtional libraries needed to statically link HDF5 from EB
+preconfigopts = "sed -i 's/-lhdf5 -Wl,-Bdynamic/-lhdf5 -Wl,-Bdynamic -lmpi -lsz/' setup/konfigure.perl &&"
+
+configopts = "--build-prefix=%(builddir)s "  # change default build directory
+configopts += "--with-ngs-sdk-prefix=$EBROOTNGS --with-ngs-java-prefix=$EBROOTNGS/jar/ngs-java.jar "
+configopts += "--with-hdf5-prefix=$EBROOTHDF5 --with-xml2-prefix=$EBROOTLIBXML2"
+
+# replace hardcoded optimization flags with EB settings
+prebuildopts = "find build/ -name \"Makefile*\" -exec sed -i 's/-O3/$(EBFLAGS)/g' {} + && EBFLAGS=\"$CFLAGS\" "
+preinstallopts = 'EBFLAGS="$CFLAGS" '
+
+sanity_check_paths = {
+    'files': ['include/ncbi-vdb/NGS.hpp', ('lib/libncbi-ngs-c++.a', 'lib64/libncbi-ngs-c++.a')] +
+             [('lib/libncbi-%s.%s' % (l, e), 'lib64/libncbi-%s.%s' % (l, e))
+              for l in ['vdb', 'wvdb'] for e in ['a', SHLIB_EXT]],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

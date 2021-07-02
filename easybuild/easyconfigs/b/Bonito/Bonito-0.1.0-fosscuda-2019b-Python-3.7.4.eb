@@ -1,0 +1,103 @@
+easyblock = 'PythonBundle'
+
+name = 'Bonito'
+version = '0.1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/nanoporetech/bonito'
+description = "Convolution Basecaller for Oxford Nanopore Reads"
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('PyTorch', '1.3.1', versionsuffix),
+    ('h5py', '2.10.0', versionsuffix),
+    ('Mako', '1.1.0'),
+    ('PyYAML', '5.1.2'),
+    ('apex', '20200325', versionsuffix),
+    ('python-parasail', '1.2', versionsuffix),
+    ('tqdm', '4.41.1'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('toml', '0.10.0', {
+        'checksums': ['229f81c57791a41d65e399fc06bf0848bab550a9dfd5ed66df18ce5f05e73d5c'],
+    }),
+    ('python-editor', '1.0.4', {
+        'modulename': 'editor',
+        'checksums': ['51fda6bcc5ddbbb7063b2af7509e43bd84bfc32a4ff71349ec7847713882327b'],
+    }),
+    ('alembic', '1.4.2', {
+        'checksums': ['035ab00497217628bf5d0be82d664d8713ab13d37b630084da8e1f98facf4dbf'],
+    }),
+    ('cmd2', '1.0.1', {
+        'checksums': ['d339166d8f65d342f37df01b7fb4820f9618209937d12e8f1af6245f12605c3a'],
+    }),
+    ('prettytable', '0.7.2', {
+        'checksums': ['2d5460dc9db74a32bcc8f9f67de68b2c4f4d2f01fa3bd518764c69156d9cacd9'],
+    }),
+    ('cliff', '3.1.0', {
+        # drop too strict version requirements for cmd2
+        'preinstallopts': "sed -i'' 's/cmd2.*/cmd2/g' requirements.txt && ",
+        'checksums': ['529b0ee0d2d38c7cbbababbbe3472b43b667a5c36025ef1b6cd00851c4313849'],
+    }),
+    ('colorlog', '4.1.0', {
+        'checksums': ['30aaef5ab2a1873dec5da38fd6ba568fa761c9fa10b40241027fa3edea47f3d2'],
+    }),
+    ('SQLAlchemy', '1.3.15', {
+        'checksums': ['c4cca4aed606297afbe90d4306b49ad3a4cd36feb3f87e4bfd655c57fd9ef445'],
+    }),
+    ('optuna', '1.1.0', {
+        'checksums': ['322df88051b60f3f42c89285a9434f01b650a4b0b3bcd7b46fbc328424df4eda'],
+    }),
+    ('colorama', '0.4.3', {
+        'checksums': ['e96da0d330793e2cb9485e9ddfd918d456036c7149416295932478192f4436a1'],
+    }),
+    ('pyperclip', '1.7.0', {
+        'checksums': ['979325468ccf682104d5dcaf753f869868100631301d3e72f47babdea5700d1c'],
+    }),
+    ('stevedore', '1.32.0', {
+        'checksums': ['18afaf1d623af5950cc0f7e75e70f917784c73b652a34a12d90b309451b5500b'],
+    }),
+    ('progressbar33', '2.4', {
+        'modulename': 'progressbar',
+        'checksums': ['51fe0d9b3b4023db2f983eeccdfc8c9846b84db8443b9bee002c7f58f4376eff'],
+    }),
+    ('ont-fast5-api', '3.0.1', {
+        'checksums': ['e5e82a54b5628f19597710e50cb0117fb6e78fd41d345b424f58d2613fbadaf2'],
+    }),
+    ('fast-ctc-decode', '0.2.3', {
+        'source_tmpl': 'fast_ctc_decode-0.2.3-cp37-cp37m-manylinux1_x86_64.whl',
+        'unpack_sources': False,
+        'checksums': ['20aa7a30ee6023ed0c20f583c7af2c27f49a812700e9cf9f21f540650f6e62cb'],
+    }),
+    ('ont-bonito', version, {
+        'modulename': 'bonito',
+        'patches': [
+            'Bonito-%(version)s_install-scripts.patch',
+            'Bonito-%(version)s_fix-convert-data.patch',
+            'Bonito-%(version)s_multi-gpi-train.patch',
+        ],
+        'checksums': [
+            '0098ce0cb09f022b7df4534dc7ba7f09cf4b30e358778fbed4adb200966e453d',  # ont-bonito-0.1.0.tar.gz
+            '10d35c0ae2cbf6e052f77fae16473f3a2ef0455018c2217c151ad9632d396947',  # Bonito-0.1.0_install-scripts.patch
+            '024a687be3c3930ca3bbdb4df2ebb3b246179a70b769480a81330dc420d5d5ee',  # Bonito-0.1.0_fix-convert-data.patch
+            'a5d1cf36c62d95f92b171ab8f9ff7ba922a5854915233c7ab15c455e0587cd61',  # Bonito-0.1.0_multi-gpi-train.patch
+        ],
+        'preinstallopts': "sed -i 's/==/>=/g' requirements.txt && ",
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/bonito', 'bin/convert-data', 'bin/get-models', 'bin/get-training-data'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["bonito --help"]
+
+moduleclass = 'bio'

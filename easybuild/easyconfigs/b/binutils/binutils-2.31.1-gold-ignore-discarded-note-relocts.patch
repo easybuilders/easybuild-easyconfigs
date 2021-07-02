@@ -1,0 +1,17 @@
+# Patch ld.gold to skip warnings about unresolvable relocations in
+# the .gnu.build.attributes section. The patch is authored by Nick
+# Clifton and extracted from binutils-2.31.1-25.fc29.src.rpm.
+#
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1600431 for more information.
+#
+diff -ru binutils-2.31.1.orig/gold/target-reloc.h binutils-2.31.1/gold/target-reloc.h
+--- binutils-2.31.1.orig/gold/target-reloc.h	2018-06-24 20:38:57.000000000 +0200
++++ binutils-2.31.1/gold/target-reloc.h	2019-11-04 23:03:35.697024789 +0100
+@@ -136,6 +136,7 @@
+     if (Layout::is_debug_info_section(name))
+       return CB_PRETEND;
+     if (strcmp(name, ".eh_frame") == 0
++	|| strncmp(name, ".gnu.build.attributes", 21) == 0     // FIXME: We should really be checking the section type for ST_NOTE...
+ 	|| strcmp(name, ".gcc_except_table") == 0)
+       return CB_IGNORE;
+     return CB_ERROR;

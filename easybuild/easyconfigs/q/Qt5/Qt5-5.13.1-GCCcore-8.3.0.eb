@@ -1,0 +1,69 @@
+easyblock = 'EB_Qt'
+
+name = 'Qt5'
+version = '5.13.1'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz']
+patches = [
+    'Qt5-%(version)s_fix-avx2.patch',
+    'Qt5-%(version)s_fix-qmake-libdir.patch',
+    'Qt5-%(version)s_fix-mantissatable.patch',
+    'Qt5-%(version)s_fix-webrtc.patch',
+]
+checksums = [
+    'adf00266dc38352a166a9739f1a24a1e36f1be9c04bf72e16e142a256436974e',  # qt-everywhere-src-5.13.1.tar.xz
+    '6f46005f056bf9e6ff3e5d012a874d18ee03b33e685941f2979c970be91a9dbc',  # Qt5-5.13.1_fix-avx2.patch
+    '511ca9c0599ceb1989f73d8ceea9199c041512d3a26ee8c5fd870ead2c10cb63',  # Qt5-5.13.1_fix-qmake-libdir.patch
+    'cb23b917dd145b6775d7ffb3d8c143749d183d32972111f0c31133e41803f56b',  # Qt5-5.13.1_fix-mantissatable.patch
+    '0e449fce243587b9001d8060d6417c285d4ad8fe969b1a2528a3058a29bc6af6',  # Qt5-5.13.1_fix-webrtc.patch
+]
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('pkg-config', '0.29.2'),
+    # deps for QtWebEngine
+    ('Bison', '3.3.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+    ('Ninja', '1.9.0'),
+    ('Python', '2.7.16'),
+    ('re2c', '1.2.1')
+]
+
+dependencies = [
+    ('double-conversion', '3.1.4'),
+    ('GLib', '2.62.0'),
+    ('PCRE2', '10.33'),
+    ('libpng', '1.6.37'),
+    # deps for QtWebEngine
+    ('X11', '20190717'),
+    ('fontconfig', '2.13.1'),
+    ('DBus', '1.13.12'),
+    ('libevent', '2.1.11'),
+    ('libGLU', '9.0.1'),
+    ('libjpeg-turbo', '2.0.3'),
+    ('NSS', '3.45'),
+    ('snappy', '1.1.7'),
+    ('JasPer', '2.0.14'),
+    ('bzip2', '1.0.8'),
+]
+
+# qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
+configopts = '-skip qtgamepad'
+
+# make sure QtWebEngine component is being built & installed
+check_qtwebengine = True
+
+moduleclass = 'devel'

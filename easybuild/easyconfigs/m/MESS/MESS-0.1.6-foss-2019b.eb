@@ -1,0 +1,54 @@
+easyblock = 'Bundle'
+
+name = 'MESS'
+# see meta.yaml for corresponding version
+local_commit = '2e98ff3debfe7cc21eb360000124641d78c4b03e'
+version = '0.1.6'
+
+homepage = 'https://github.com/PACChem/MESS'
+description = "Master Equation System Solver (MESS)"
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://github.com/PACChem/MESS/archive/']
+
+builddependencies = [('CMake', '3.15.3')]
+
+dependencies = [('SLATEC', '4.1')]
+
+components = [
+    # MPACK includes old copies of GMP/MPFR/MPC,
+    # providing those as proper dependencies is not an option (due to API changes in recent versions)
+    ('MPACK', 'included', {
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': 'MESS-%s.tar.gz' % version}],
+        'checksums': ['d09d71f52771ac945f4898c6d000bca00798c406772432a8993e0b24de526c43'],
+        'easyblock': 'ConfigureMake',
+        'start_dir': 'MESS-%s/external/MPACK' % local_commit,
+        'preconfigopts': 'export BLAS_LIBS="$LIBBLAS" && export LAPACK_LIBS="$LIBLAPACK" && ',
+        # MPACK code is quite old, need -std=c++98 to avoid errors like 'lvalue required as left operand of assignment'
+        'buildopts': 'CXXFLAGS="$CXXFLAGS -std=c++98"',
+    }),
+    (name, version, {
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['d09d71f52771ac945f4898c6d000bca00798c406772432a8993e0b24de526c43'],
+        'easyblock': 'CMakeMake',
+        'start_dir': 'MESS-%s' % local_commit,
+        'configopts': "-DCMAKE_EXE_LINKER_FLAGS='-lgfortran'",
+    }),
+]
+
+local_libs = ['gmp', 'mblas_dd', 'mblas_dd_ref', 'mblas_double', 'mblas_double_ref', 'mblas_gmp', 'mblas_gmp_ref',
+              'mblas_mpfr', 'mblas_mpfr_ref', 'mblas_qd', 'mblas_qd_ref', 'mlapack_dd', 'mlapack_dd_ref',
+              'mlapack_double', 'mlapack_double_ref', 'mlapack_gmp', 'mlapack_gmp_ref', 'mlapack_mpfr',
+              'mlapack_mpfr_ref', 'mlapack_qd', 'mlapack_qd_ref', 'mpfr', 'mpc', 'qd']
+
+sanity_check_paths = {
+    'files': ['bin/mess', 'bin/messabs', 'bin/messpf', 'bin/messsym'] + ['lib/lib%s.a' % l for l in local_libs] +
+             ['lib/lib%s.%s' % (l, SHLIB_EXT) for l in local_libs if l != 'qd'],  # no libqd.so, only libqd.a
+    'dirs': ['include/qd'],
+}
+
+# running without arguments prints usage and exits with 0
+sanity_check_commands = ["mess"]
+
+moduleclass = 'chem'

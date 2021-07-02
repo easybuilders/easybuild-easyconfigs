@@ -1,0 +1,63 @@
+# Updated from previous config
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'QUAST'
+version = '5.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ablab/%(namelower)s'
+description = """QUAST evaluates genome assemblies by computing various metrics.
+ It works both with and without reference genomes. The tool accepts multiple
+ assemblies, thus is suitable for comparison."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('Perl', '5.30.2'),
+    ('matplotlib', '3.2.1', versionsuffix),
+    ('Java', '11', '', True),
+    ('Boost', '1.72.0'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('simplejson', '3.17.0', {
+        'checksums': ['2b4b2b738b3b99819a17feaf118265d0753d5536049ea570b3c43b51c4701e81'],
+    }),
+    (name, version, {
+        'install_target': 'install_full',
+        'modulename': 'quast_libs',
+        'patches': ['QUAST-%(version)s_fix-Python-3.8.patch'],
+        'source_tmpl': 'quast_%(version)s.tar.gz',
+        'source_urls': ['https://github.com/ablab/quast/archive/'],
+        'checksums': [
+            '9f30c03e0bfd261492fe6b72fb07645bdee5b29d741f75fc75857b6fa095d91d',  # quast_5.0.2.tar.gz
+            '8ae7ebf45e5368ebc058fc208822a23d32ce1052bd53fd8c3aaa4ad14d3c95aa',  # QUAST-5.0.2_fix-Python-3.8.patch
+        ],
+    }),
+]
+
+postinstallcmds = ["cd %(installdir)s/bin && ln -s quast.py quast"]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/%(namelower)s.py', 'bin/meta%(namelower)s.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "wget quast.sf.net/test_data.tar.gz && "
+    "tar xzf test_data.tar.gz && "
+    "%(namelower)s.py --test && "
+    "rm ./test_data.tar.gz ./test_data -rf",
+    "%(namelower)s -h",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

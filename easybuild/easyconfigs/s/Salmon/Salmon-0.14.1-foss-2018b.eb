@@ -1,0 +1,45 @@
+# Contribution from the Crick Scientific Computing team
+# uploaded by J. Sassmannshausen
+
+easyblock = 'CMakeMake'
+
+name = 'Salmon'
+version = '0.14.1'
+
+github_account = 'COMBINE-lab'
+homepage = 'https://github.com/%(github_account)s/%(namelower)s'
+description = """Salmon is a wicked-fast program to produce a highly-accurate,
+ transcript-level quantification estimates from RNA-seq data."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['05289170e69b5f291a8403b40d6b9bff54cc38825e9f721c210192b51a19273e']
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('pkg-config', '0.29.2'),
+    ('jemalloc', '5.1.0'),
+]
+
+dependencies = [
+    ('Boost', '1.67.0'),
+    ('tbb', '2018_U5'),
+]
+
+configopts = '-DJEMALLOC_ROOT=$EBROOTJEMALLOC'
+
+# need to unset the $LD_PRELOAD set be jemalloc to avoid hanging 'make test'
+# since jemalloc is statically linked in Salmon (and hence only a build dep),
+# this only affects the tests
+pretestopts = "unset LD_PRELOAD && "
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,55 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+easyblock = 'ConfigureMake'
+
+name = 'PMIx'
+version = '3.1.1'
+
+homepage = 'https://pmix.org/'
+description = """Process Management for Exascale Environments
+PMI Exascale (PMIx) represents an attempt to
+provide an extended version of the PMI standard specifically designed
+to support clusters up to and including exascale sizes. The overall
+objective of the project is not to branch the existing pseudo-standard
+definitions - in fact, PMIx fully supports both of the existing PMI-1
+and PMI-2 APIs - but rather to (a) augment and extend those APIs to
+eliminate some current restrictions that impact scalability, and (b)
+provide a reference implementation of the PMI-server that demonstrates
+the desired level of scalability.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '6.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/pmix/pmix/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.bz2']
+patches = [
+    '%(name)s-%(version)s_fix_various_problems.patch',
+    '%(name)s-2.2.1_fix_seg_hdr_problem.patch',
+]
+checksums = [
+    '6d4780e7a198dc72965d6e3c41e1c41edd69ff44ac089f185123c49950cb43ab',  # pmix-3.1.1.tar.bz2
+    '23a5dd33055ecc3f94116a52d17ac6151dcc730292a825e33fb9140a02f43e92',  # PMIx-3.1.1_fix_various_problems.patch
+    'cf4ec59d68b938904fa8881eeb6e0a318a8690e0716c132192b3bcb6ed45f2e8',  # PMIx-2.2.1_fix_seg_hdr_problem.patch
+]
+
+builddependencies = [('binutils', '2.28')]
+
+dependencies = [
+    ('libevent', '2.1.8'),
+    ('zlib', '1.2.11'),
+    ('hwloc', '1.11.7'),
+]
+
+configopts = ' --with-libevent=$EBROOTLIBEVENT --with-zlib=$EBROOTZLIB'
+configopts += ' --with-hwloc=$EBROOTHWLOC'
+configopts += ' --enable-pmix-binaries'
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/pevent', 'bin/plookup', 'bin/pmix_info', 'bin/pps'],
+    'dirs': ['etc', 'include', 'lib', 'share']
+}
+
+moduleclass = 'lib'

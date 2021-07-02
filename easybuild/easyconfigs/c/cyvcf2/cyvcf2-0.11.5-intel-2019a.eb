@@ -1,0 +1,53 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+easyblock = 'PythonBundle'
+
+name = 'cyvcf2'
+version = '0.11.5'
+
+homepage = 'https://github.com/brentp/cyvcf2'
+description = """cython + htslib == fast VCF and BCF processing"""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+multi_deps = {'Python': ['3.7.2', '2.7.15']}
+
+dependencies = [
+    ('SciPy-bundle', '2019.03'),
+    ('HTSlib', '1.9'),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+use_pip = True
+
+exts_list = [
+    ('monotonic', '1.5', {
+        'checksums': ['23953d55076df038541e648a53676fb24980f7a1be290cdda21300b3bc21dfb0'],
+    }),
+    ('humanfriendly', '4.18', {
+        'checksums': ['33ee8ceb63f1db61cce8b5c800c531e1a61023ac5488ccde2ba574a85be00a85'],
+    }),
+    ('coloredlogs', '10.0', {
+        'checksums': ['b869a2dda3fa88154b9dd850e27828d8755bfab5a838a1c97fbc850c6e377c36'],
+    }),
+    (name, version, {
+        'checksums': ['20924e5b30e8308756575ac3ae8c28a8c717ed3c53b2adb297201428f43fae6e'],
+        'prebuildopts': 'rm -r htslib && ln -s $EBROOTHTSLIB htslib && export LDSHARED="icc -shared" &&',
+        'preinstallopts': 'export LDSHARED="icc -shared" &&',
+        # Runtest will fail - possibly broken test-suite. Otherwise useful.
+        # 'pretestopts': 'export LDSHARED="icc -shared" &&',
+        # 'runtest': 'python setup.py test',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cyvcf2'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["cyvcf2 --help"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

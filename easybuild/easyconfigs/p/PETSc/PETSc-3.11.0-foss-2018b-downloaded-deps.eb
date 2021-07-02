@@ -1,0 +1,43 @@
+name = 'PETSc'
+version = '3.11.0'
+versionsuffix = '-downloaded-deps'
+
+homepage = 'https://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://ftp.mcs.anl.gov/pub/petsc/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_hypre-git-moved.patch']
+checksums = [
+    'b3bed2a9263193c84138052a1b92d47299c3490dd24d1d0bf79fb884e71e678a',  # petsc-3.11.0.tar.gz
+    '922a271535f252dda15a52e5bb432936ee1bf4fad9bc654d6642d99b675a71fe',  # PETSc-3.11.0_hypre-git-moved.patch
+]
+
+# (build) dependencies provided through EasyBuild
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.5'),
+    ('Python', '2.7.15'),
+]
+dependencies = [
+    ('HDF5', '1.10.2'),
+    ('Valgrind', '3.14.0'),
+]
+
+# external packages that are downloaded with --download-<package>=1 and --download-<package>-static=1
+download_deps_static = ['hypre', 'metis', 'ml', 'mumps', 'parmetis', 'prometheus', 'ptscotch', 'suitesparse',
+                        'superlu', 'superlu_dist']
+
+# triangle cannot be downloaded with --download-triangle-static because it fails
+download_deps = ['triangle']
+
+configopts = "--with-hdf5=1 --with-hdf5-dir=$EBROOTHDF5 --with-debugging --with-cxx-dialect=C++11"
+
+shared_libs = True
+
+moduleclass = 'numlib'

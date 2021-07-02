@@ -1,0 +1,54 @@
+easyblock = 'EB_OpenFOAM'
+
+name = 'OpenFOAM-Extend'
+version = '4.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.extend-project.de/'
+description = """OpenFOAM is a free, open source CFD software package.
+OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+involving chemical reactions, turbulence and heat transfer,
+to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/Unofficial-Extend-Project-Mirror/foam-extend-foam-extend-%(version)s/archive']
+sources = [{'download_filename': '268bb07.tar.gz', 'filename': 'v%(version)s-20181028.tar.gz'}]
+patches = [
+    'OpenFOAM-Extend-3.2-ParMGridGen.patch',
+    'OpenFOAM-Extend-3.1_build-qa.patch',
+    'OpenFOAM-Extend-3.1_comp-mpi.patch',
+    'OpenFOAM-Extend-3.1_skip-ThirdParty-OpenMPI.patch',
+]
+checksums = [
+    'cbdae138b9b1bd1c3056e22c13845f91e32d193af3e06df9a92cbc8561016a35',  # v4.0-20181028.tar.gz
+    'f7676a7a12ced7c74caea64c62826a28449fdb2beb8b5be2c4ae7528ffece16e',  # OpenFOAM-Extend-3.2-ParMGridGen.patch
+    '14dcc12ea7191ba42a9c297fcb2f4fbc2c55bf57226029489aa116e2d060b4bf',  # OpenFOAM-Extend-3.1_build-qa.patch
+    '89fe47abec4cd9dbe863887140421e803e16801655bb2c7fb7bb1ac8532861ca',  # OpenFOAM-Extend-3.1_comp-mpi.patch
+    # OpenFOAM-Extend-3.1_skip-ThirdParty-OpenMPI.patch
+    'c88b23cd2f5dcf3bd86e02d7ea5dc6719c2049cf4b20e39f1b3262381dee3c50',
+]
+
+dependencies = [
+    ('hwloc', '1.11.12'),
+    ('ParMETIS', '4.0.3'),
+    ('METIS', '5.1.0'),  # order matters, METIS need to be listed after ParMETIS to get $CPATH right
+    ('SCOTCH', '6.0.9'),
+    ('Mesquite', '2.3.0'),
+    ('ParMGridGen', '1.0'),
+    ('Python', '2.7.16'),
+    # Libccmio v2.6.1, zoltan v3.5
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.3.2'),
+    ('M4', '1.4.18'),
+    ('CMake', '3.15.3'),
+]
+
+# too many builds in parallel actually slows down the build
+maxparallel = 4
+
+moduleclass = 'cae'

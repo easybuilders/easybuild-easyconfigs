@@ -1,0 +1,35 @@
+easyblock = "ConfigureMake"
+
+name = 'magma'
+version = '2.5.0'
+
+homepage = 'http://icl.cs.utk.edu/magma/'
+description = """The MAGMA project aims to develop a dense linear algebra library similar to
+ LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
+
+toolchain = {'name': 'fosscuda', 'version': '2018b'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['http://icl.cs.utk.edu/projectsfiles/magma/downloads/']
+sources = [SOURCE_TAR_GZ]
+patches = [('%(name)s-%(version)s-fix-makefile.patch')]
+checksums = [
+    '4fd45c7e46bd9d9124253e7838bbfb9e6003c64c2c67ffcff02e6c36d2bcfa33',  # magma-2.5.0.tar.gz
+    '2839e33a17134e686ccd9fde7e008b40495e4e8bafb3ae1bd49cb0e39852e7ac',  # magma-2.5.0-fix-makefile.patch
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'touch make.inc && '
+# magma 2.5.0 does not build on sm_30 - so remove Kepler and specify sm_35
+# http://icl.cs.utk.edu/magma/forum/viewtopic.php?f=2&t=1906&sid=7048fadfd48a0d00c3c4294ddef6a096
+prebuildopts += 'GPU_TARGET="sm_35 Maxwell Pascal Volta" '
+
+installopts = 'prefix=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['lib/libmagma.so', 'lib/libmagma.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'

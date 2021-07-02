@@ -1,0 +1,32 @@
+# Allow WRF source code directory to be located in EasyBuild module tree
+# ============================================================================
+# Since WPS v4.0, the WPS build system seems to make strong assumptions on 
+# where to find the WRF source code.  This patch allows the WRF source code to
+# be found also when WRF is located in the EasyBuild module tree.  $WRF_DIR_PRE 
+# is being set from the wps EasyBlock.
+# Patch written by @andreas-h (Oct 2018)
+
+diff -uNr WPS-4.0.2.orig/arch/preamble WPS-4.0.2/arch/preamble
+--- WPS-4.0.2.orig/arch/preamble	2018-11-10 01:13:04.000000000 +0100
++++ WPS-4.0.2/arch/preamble	2018-11-21 16:42:38.066848290 +0100
+@@ -39,16 +39,16 @@
+ # repository, or an older WRF v3.x tar file.
+ # To override the path to the compiled WRF code, just set the WRF_DIR variable after the "endif" below
+ #
+-ifneq ($(wildcard $(DEV_TOP)/../WRF-4.0.2), ) # Check for WRF v4.0.2 directory (probably GitHub archive)
++ifneq ($(wildcard $(WRF_DIR_PRE)/../WRF-4.0.2), ) # Check for WRF v4.0.2 directory (probably GitHub archive)
+ 	WRF_DIR = ../WRF-4.0.2
+ else
+-ifneq ($(wildcard $(DEV_TOP)/../WRF-4.0.1), ) # Check for WRF v4.0.1 directory (probably GitHub archive)
++ifneq ($(wildcard $(WRF_DIR_PRE)/../WRF-4.0.1), ) # Check for WRF v4.0.1 directory (probably GitHub archive)
+ 	WRF_DIR = ../WRF-4.0.1
+ else
+-ifneq ($(wildcard $(DEV_TOP)/../WRF-4.0), )   # Check for WRF v4.0 directory (probably GitHub archive)
++ifneq ($(wildcard $(WRF_DIR_PRE)/../WRF-4.0), )   # Check for WRF v4.0 directory (probably GitHub archive)
+ 	WRF_DIR = ../WRF-4.0
+ else
+-ifneq ($(wildcard $(DEV_TOP)/../WRF), )       # Check for clone of the WRF repository
++ifneq ($(wildcard $(WRF_DIR_PRE)/../WRF), )       # Check for clone of the WRF repository
+ 	WRF_DIR = ../WRF
+ else                                          # Check for old WRF v3.x directory
+ 	WRF_DIR = ../WRFV3

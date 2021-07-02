@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'libfabric'
+version = '1.10.1'
+
+homepage = 'https://ofiwg.github.io/libfabric/'
+description = """
+Libfabric is a core component of OFI. It is the library that defines and exports
+the user-space API of OFI, and is typically the only software that applications
+deal with directly. It works in conjunction with provider libraries, which are
+often integrated directly into libfabric.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'ofiwg'
+source_urls = ['https://github.com/ofiwg/%(name)s/releases/download/v%(version)s']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['889fa8c99eed1ff2a5fd6faf6d5222f2cf38476b24f3b764f2cbb5900fee8284']
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('pkg-config', '0.29.2'),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+# Disable deprecated "sockets" provider
+configopts = "--disable-sockets "
+
+# Disable usNIC provider by default as this requires specific osdependencies 
+# If you want to enable this provider you need to uncomment the following line:
+# osdependencies.append(('libnl3-devel', 'libnl3-dev'))
+configopts += "--disable-usnic "
+
+sanity_check_paths = {
+    'files': ['bin/fi_info', 'bin/fi_pingpong', 'bin/fi_strerror'] +
+             ['lib/libfabric.%s' % x for x in ['a', SHLIB_EXT]],
+    'dirs': ['include/rdma', 'lib/pkgconfig', 'share']
+}
+
+sanity_check_commands = ['fi_info']
+
+moduleclass = 'lib'

@@ -1,0 +1,35 @@
+fix intel compiler error: identifier "_mm_hint" is undefined cache_prefetch(sample1.x_csv+i, PREFETCH_L1)
+Author: Samuel Moors, Vrije Universiteit Brussel (VUB)
+diff -ur liquidSVM.orig/MD5 liquidSVM/MD5
+--- liquidSVM.orig/MD5	2019-01-10 21:10:03.000000000 +0100
++++ liquidSVM/MD5	2019-04-03 16:15:56.458387551 +0200
+@@ -162,7 +162,7 @@
+ cbd209324ad752e19be10d8975d65e2f *src/sources/shared/system_support/os_specifics.h
+ 54e8583d2e8e269ff2b6d7a79d57cbd5 *src/sources/shared/system_support/parallel_control.cpp
+ fd14e7613065d218f8f4af60d9a86e92 *src/sources/shared/system_support/parallel_control.h
+-a13c47e6412181278450927da739ee0d *src/sources/shared/system_support/simd_basics.h
++2fc61f25da6f44b203a6cf3d79e82681 *src/sources/shared/system_support/simd_basics.h
+ 16556dabd9a86100c4238bf47c1472de *src/sources/shared/system_support/simd_basics.ins.cpp
+ 43de099c1955a3670fbf6688d5c0b4ab *src/sources/shared/system_support/thread_manager.cpp
+ 76ef26f0446a6dcdd7c68d913b821534 *src/sources/shared/system_support/thread_manager.h
+diff -ur liquidSVM.orig/src/sources/shared/system_support/simd_basics.h liquidSVM/src/sources/shared/system_support/simd_basics.h
+--- liquidSVM.orig/src/sources/shared/system_support/simd_basics.h	2019-01-10 20:28:51.000000000 +0100
++++ liquidSVM/src/sources/shared/system_support/simd_basics.h	2019-04-03 16:15:05.802202840 +0200
+@@ -63,7 +63,7 @@
+ 	
+ 	#define simdd__ __m256d
+ 	#define SIMD_WORD_SIZE 4
+-	#if defined(__MACH__) || defined __clang__
++	#if defined(__MACH__) || defined __clang__ || defined __INTEL_COMPILER
+ 		#define cache_prefetch(address, hint) _mm_prefetch(address, hint)
+ 	#elif defined(_WIN32) && !defined(__MINGW32__)
+ 		#define cache_prefetch(address, hint) _mm_prefetch( (char*)((void*)(address)), int(hint))
+@@ -98,7 +98,7 @@
+ 
+ 	#define simdd__ __m128d
+ 	#define SIMD_WORD_SIZE 2
+-	#if defined(__MACH__) || defined __clang__
++	#if defined(__MACH__) || defined __clang__ || defined __INTEL_COMPILER
+ 		#define cache_prefetch(address, hint) _mm_prefetch(address, hint)
+ 	#elif defined(_WIN32) && !defined(__MINGW32__)
+ 		#define cache_prefetch(address, hint) _mm_prefetch( (char*)((void*)(address)), int(hint))

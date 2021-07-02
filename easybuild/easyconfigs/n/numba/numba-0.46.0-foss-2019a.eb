@@ -1,0 +1,48 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'PythonBundle'
+
+name = 'numba'
+version = '0.46.0'
+
+homepage = 'https://numba.pydata.org/'
+description = """Numba is an Open Source NumPy-aware optimizing compiler for
+Python sponsored by Continuum Analytics, Inc. It uses the remarkable LLVM
+compiler infrastructure to compile Python syntax to machine code."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'pic': True}
+
+multi_deps = {'Python': ['3.7.2', '2.7.15']}
+
+dependencies = [
+    ('SciPy-bundle', '2019.03'),
+    ('LLVM', '7.0.1'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('llvmlite', '0.30.0', {
+        'patches': ['llvmlite-0.30.0_fix-ffi-Makefile.patch'],
+        'checksums': [
+            '4eaa398d4cafb76e2d8f30ca6ab875039a1023c91e7a690c6ddec20e58bb9a07',  # llvmlite-0.30.0.tar.gz
+            '672aba7b753dcfe5cb07c731bf1ec8bde1de148d4e0e2d10f6be81fb17f34bbc',
+            # llvmlite-0.30.0_fix-ffi-Makefile.patch
+        ],
+    }),
+    (name, version, {
+        'checksums': ['c2cbaeae60f80805290fff50175028726fae12692404a36babd3326730fbceee'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['bin/numba', 'bin/pycc'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["numba --help"]
+
+moduleclass = 'lang'

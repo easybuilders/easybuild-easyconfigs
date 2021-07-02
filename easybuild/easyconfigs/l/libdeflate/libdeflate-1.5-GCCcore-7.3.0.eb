@@ -1,0 +1,39 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'ConfigureMake'
+
+name = 'libdeflate'
+version = '1.5'
+
+homepage = 'https://github.com/ebiggers/libdeflate'
+description = """Heavily optimized library for DEFLATE/zlib/gzip compression and decompression."""
+
+toolchain = {'name': 'GCCcore', 'version': '7.3.0'}
+
+# https://github.com/ebiggers/libdeflate
+github_account = 'ebiggers'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['45b1b2332f443b705c59d06a49be009827291d2c487b076dc8ec2791eff4c711']
+
+builddependencies = [('binutils', '2.30')]
+
+skipsteps = ['configure']
+buildopts = 'PREFIX="%(installdir)s" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS"'
+installopts = 'PREFIX="%(installdir)s" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS"'
+
+sanity_check_paths = {
+    'files': [
+        'bin/%(name)s-gunzip', 'bin/%(name)s-gzip',
+        'lib/%(name)s.a', 'lib/%%(name)s.%s' % SHLIB_EXT,
+        'include/%(name)s.h',
+    ],
+    'dirs': [],
+}
+sanity_check_commands = [
+    '%(name)s-gzip -h',
+    '%(name)s-gunzip -h',
+]
+
+moduleclass = 'system'

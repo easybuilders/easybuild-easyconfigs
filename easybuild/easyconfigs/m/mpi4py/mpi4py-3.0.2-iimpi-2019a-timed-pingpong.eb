@@ -1,0 +1,39 @@
+easyblock = 'PythonPackage'
+
+name = 'mpi4py'
+version = '3.0.2'
+local_label = 'timed-pingpong'
+versionsuffix = '-%s' % local_label
+
+homepage = 'https://bitbucket.org/mpi4py/mpi4py'
+description = """MPI for Python (mpi4py) provides bindings of the Message Passing Interface (MPI) standard for
+ the Python programming language, allowing any Python program to exploit multiple processors."""
+
+toolchain = {'name': 'iimpi', 'version': '2019a'}
+
+sources = [SOURCE_TAR_GZ]
+patches = ['mpi4py-3.0.0_%s.patch' % local_label]
+checksums = [
+    'f8d629d1e3e3b7b89cb99d0e3bc5505e76cc42089829807950d5c56606ed48e0',  # mpi4py-3.0.2.tar.gz
+    '185fbf0943373ea409ab8caafd4a854b5e035a7a5352c08588230cf2470b1b25',  # mpi4py-3.0.0_timed-pingpong.patch
+]
+
+multi_deps = {'Python': ['3.7.2', '2.7.15']}
+
+# force rebuilding everything, including patched files
+preinstallopts = "python setup.py build --force && "
+
+download_dep_fail = True
+use_pip = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+}
+
+# check that timed pingpong routines that are added via the patch are available
+sanity_check_commands = [
+    ('python', '-c "from mpi4py.MPI import Comm; import sys; sys.exit((1, 0)[\'PingpongRS\' in dir(Comm)])"'),
+]
+
+moduleclass = 'lib'

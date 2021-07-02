@@ -1,0 +1,63 @@
+# Changes:
+# - Use EB deps
+# - Use EB install prefix
+# - Fix bug (unneeded line with unexisting type)
+# wpoely86@gmail.com
+diff --git a/makefiles/Makefile.python.mk b/makefiles/Makefile.python.mk
+index 2b548e0..b7f72ae 100755
+--- a/makefiles/Makefile.python.mk
++++ b/makefiles/Makefile.python.mk
+@@ -1113,7 +1113,8 @@ endif # ifneq ($(PYTHON_EXECUTABLE),)
+ 
+ .PHONY: install_python # Install Python OR-Tools on the host system
+ install_python: pypi_archive
+-	cd "$(PYPI_ARCHIVE_TEMP_DIR)$Sortools" && "$(PYTHON_EXECUTABLE)" setup.py install --user
++	mkdir -p $(DESTDIR)/lib/python$(UNIX_PYTHON_VER)/site-packages
++	cd "$(PYPI_ARCHIVE_TEMP_DIR)$Sortools" && PYTHONPATH=$(DESTDIR)/lib/python$(UNIX_PYTHON_VER)/site-packages:$(PYTHONPATH) "$(PYTHON_EXECUTABLE)" setup.py install --prefix $(DESTDIR)
+ 
+ .PHONY: uninstall_python # Uninstall Python OR-Tools from the host system
+ uninstall_python:
+diff --git a/makefiles/Makefile.unix.mk b/makefiles/Makefile.unix.mk
+index 354ea9e..5726fc6 100644
+--- a/makefiles/Makefile.unix.mk
++++ b/makefiles/Makefile.unix.mk
+@@ -99,7 +99,7 @@ ifdef UNIX_SCIP_DIR
+   SCIP_SWIG = $(SCIP_INC)
+ endif
+ ifdef UNIX_GUROBI_DIR
+-  GUROBI_INC = -I$(UNIX_GUROBI_DIR)/$(GUROBI_PLATFORM)/include -DUSE_GUROBI
++  GUROBI_INC = -I$(UNIX_GUROBI_DIR)/include -DUSE_GUROBI
+   GUROBI_SWIG = $(GUROBI_INC)
+ endif
+ ifdef UNIX_CPLEX_DIR
+@@ -134,13 +134,13 @@ ifeq ($(PLATFORM),LINUX)
+   ifdef UNIX_GUROBI_DIR
+     ifeq ($(PTRLENGTH),64)
+       GUROBI_LNK = \
+- -Wl,-rpath $(UNIX_GUROBI_DIR)/linux64/lib/ \
+- -L$(UNIX_GUROBI_DIR)/linux64/lib/ -m64 -lc -ldl -lm -lpthread \
++ -Wl,-rpath $(UNIX_GUROBI_DIR)/lib/ \
++ -L$(UNIX_GUROBI_DIR)/lib/ -m64 -lc -ldl -lm -lpthread \
+  -lgurobi$(GUROBI_LIB_VERSION)
+     else
+       GUROBI_LNK = \
+- -Wl,-rpath $(UNIX_GUROBI_DIR)/linux32/lib/ \
+- -L$(UNIX_GUROBI_DIR)/linux32/lib/ -m32 -lc -ldl -lm -lpthread \
++ -Wl,-rpath $(UNIX_GUROBI_DIR)/lib/ \
++ -L$(UNIX_GUROBI_DIR)/lib/ -m32 -lc -ldl -lm -lpthread \
+  -lgurobi$(GUROBI_LIB_VERSION)
+     endif
+   endif
+diff --git a/ortools/linear_solver/gurobi_interface.cc b/ortools/linear_solver/gurobi_interface.cc
+index dcc993e..de9adbd 100644
+--- a/ortools/linear_solver/gurobi_interface.cc
++++ b/ortools/linear_solver/gurobi_interface.cc
+@@ -175,7 +175,7 @@ class GurobiInterface : public MPSolverInterface {
+   GRBenv* env_;
+   bool mip_;
+   int current_solution_index_;
+-  MPCallback* callback_ = nullptr;
++//  MPCallback* callback_ = nullptr;
+ };
+ 
+ namespace {

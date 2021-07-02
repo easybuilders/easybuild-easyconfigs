@@ -1,0 +1,62 @@
+easyblock = 'CMakeMake'
+
+name = 'WebKitGTK+'
+version = '2.24.1'
+
+homepage = 'https://webkitgtk.org/'
+description = """WebKitGTK+ is a full-featured port of the WebKit
+rendering engine, suitable for projects requiring any kind of web
+integration, from hybrid HTML/CSS applications to full-fledged web
+browsers. It offers WebKit’s full functionality and is useful in a wide
+range of systems from desktop computers to embedded systems like phones,
+tablets, and televisions."""
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+
+source_urls = ['https://webkitgtk.org/releases']
+sources = ['webkitgtk-%(version)s.tar.xz']
+patches = ['%(name)s-%(version)s_turn_off_various_problematic_features.patch']
+checksums = [
+    '53cb8eaad2ca4caaae663d68331b83fd27d5bd5f6c5388d6ea3c455e338f396d',  # webkitgtk-2.24.1.tar.xz
+    # WebKitGTK+-2.24.1_turn_off_various_problematic_features.patch
+    'e555454ca07a88442acafd6b71e35e99f9ed2049d8f80b39e48b2b04b3d43ae0',
+]
+
+osdependencies = [
+    # Would be better to use the system package due to security reasons
+    # But we need at least libgcrypt 1.7.0 and Ubuntu 16.04 and RH 7.5
+    # are both using a too old version.
+    # ('libgcrypt-dev', 'libgcrypt20-dev', 'libgcrypt-devel'),
+    # libsecret is not actually needed since USE_LIBSECRET option is disabled by default in patch
+    # ('libsecret-1-dev', 'libsecret-devel'),
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('Python', '3.7.2'),
+    ('Perl', '5.28.1'),
+    ('GObject-Introspection', '1.60.1', '-Python-3.7.2'),
+]
+dependencies = [
+    ('gperf', '3.1'),
+    ('cairo', '1.16.0'),
+    ('GTK+', '3.24.8'),
+    ('LibSoup', '2.66.1'),
+    ('ATK', '2.32.0'),
+    ('libgcrypt', '1.8.4'),
+    ('libwebp', '1.0.2'),
+    ('libxslt', '1.1.33'),
+    ('libtasn1', '4.13'),
+    ('GStreamer', '1.16.0'),
+    ('OpenJPEG', '2.3.1'),
+    ('Ruby', '2.6.3'),
+]
+
+configopts = "-DPORT=GTK -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python -DRUBY_EXECUTABLE=$EBROOTRUBY/bin/ruby "
+
+sanity_check_paths = {
+    'files': ['bin/WebKitWebDriver', 'lib/libwebkit2gtk-4.0.%s' % SHLIB_EXT],
+    'dirs': ['include/webkitgtk-4.0/webkit2', 'libexec/webkit2gtk-4.0'],
+}
+
+moduleclass = 'lib'

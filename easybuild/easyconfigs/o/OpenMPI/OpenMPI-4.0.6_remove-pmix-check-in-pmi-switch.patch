@@ -1,0 +1,351 @@
+If --with-pmi is given OpenMPI will always search for a PMIx in the same directory and the system first
+before honoring a potential --with-pmix option.
+This patch removes that.
+See https://github.com/open-mpi/ompi/issues/9105
+
+Author: Alexander Grund (TU Dresden)
+
+diff -ur a/configure b/configure
+--- a/configure	2021-06-14 22:53:22.000000000 +0200
++++ b/configure	2021-07-01 18:16:23.062505971 +0200
+@@ -13441,340 +13441,6 @@
+ fi
+ fi
+ 
+-           # check for pmix lib installed by slurm */
+-           slurm_pmix_found=no
+-
+-
+-
+-
+-    # Is the private index set?  If not, set it.
+-    if test "x$opal_scope_index" = "x"; then
+-        opal_scope_index=1
+-    fi
+-
+-    # First, check to see if any of these variables are already set.
+-    # This is a simple sanity check to ensure we're not already
+-    # overwriting pre-existing variables (that have a non-empty
+-    # value).  It's not a perfect check, but at least it's something.
+-    for opal_var in opal_external_pmix_save_CPPFLAGS opal_external_pmix_save_LDFLAGS opal_external_pmix_save_LIBS; do
+-        opal_str="opal_str=\"\$$opal_var\""
+-        eval $opal_str
+-
+-        if test "x$opal_str" != "x"; then
+-            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Found configure shell variable clash at line $LINENO!" >&5
+-$as_echo "$as_me: WARNING: Found configure shell variable clash at line $LINENO!" >&2;}
+-            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OPAL_VAR_SCOPE_PUSH called on \"$opal_var\"," >&5
+-$as_echo "$as_me: WARNING: OPAL_VAR_SCOPE_PUSH called on \"$opal_var\"," >&2;}
+-            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: but it is already defined with value \"$opal_str\"" >&5
+-$as_echo "$as_me: WARNING: but it is already defined with value \"$opal_str\"" >&2;}
+-            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This usually indicates an error in configure." >&5
+-$as_echo "$as_me: WARNING: This usually indicates an error in configure." >&2;}
+-            as_fn_error $? "Cannot continue" "$LINENO" 5
+-        fi
+-    done
+-
+-    # Ok, we passed the simple sanity check.  Save all these names so
+-    # that we can unset them at the end of the scope.
+-    opal_str="opal_scope_$opal_scope_index=\"opal_external_pmix_save_CPPFLAGS opal_external_pmix_save_LDFLAGS opal_external_pmix_save_LIBS\""
+-    eval $opal_str
+-    unset opal_str
+-
+-    env | grep opal_scope
+-    opal_scope_index=`expr $opal_scope_index + 1`
+-
+-    opal_external_pmix_happy=no
+-
+-    # Make sure we have the headers and libs in the correct location
+-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pmix.h in $check_pmi_install_dir" >&5
+-$as_echo_n "checking for pmix.h in $check_pmi_install_dir... " >&6; }
+-    files=`ls $check_pmi_install_dir/pmix.h 2> /dev/null | wc -l`
+-    if test "$files" -gt 0; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-          opal_external_pmix_header_happy=yes
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-          { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pmix.h in $check_pmi_install_dir/include" >&5
+-$as_echo_n "checking for pmix.h in $check_pmi_install_dir/include... " >&6; }
+-          files=`ls $check_pmi_install_dir/include/pmix.h 2> /dev/null | wc -l`
+-          if test "$files" -gt 0; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                 opal_external_pmix_header_happy=yes
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-                 opal_external_pmix_header_happy=no
+-fi
+-fi
+-
+-    if test "$opal_external_pmix_header_happy" = "yes"; then :
+-  if test -n "$check_pmi_lib_dir"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking libpmix.* in $check_pmi_lib_dir" >&5
+-$as_echo_n "checking libpmix.* in $check_pmi_lib_dir... " >&6; }
+-                 files=`ls $check_pmi_lib_dir/libpmix.* 2> /dev/null | wc -l`
+-                 if test "$files" -gt 0; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                        pmix_ext_install_libdir=$check_pmi_lib_dir
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-                        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libpmix.* in $check_pmi_lib_dir/lib64" >&5
+-$as_echo_n "checking libpmix.* in $check_pmi_lib_dir/lib64... " >&6; }
+-                        files=`ls $check_pmi_lib_dir/lib64/libpmix.* 2> /dev/null | wc -l`
+-                        if test "$files" -gt 0; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                               pmix_ext_install_libdir=$check_pmi_lib_dir/lib64
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-                               { $as_echo "$as_me:${as_lineno-$LINENO}: checking libpmix.* in $check_pmi_lib_dir/lib" >&5
+-$as_echo_n "checking libpmix.* in $check_pmi_lib_dir/lib... " >&6; }
+-                               files=`ls $check_pmi_lib_dir/lib/libpmix.* 2> /dev/null | wc -l`
+-                               if test "$files" -gt 0; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                                      pmix_ext_install_libdir=$check_pmi_lib_dir/lib
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-                                      as_fn_error $? "Cannot continue" "$LINENO" 5
+-fi
+-fi
+-fi
+-else
+-  # check for presence of lib64 directory - if found, see if the
+-                 # desired library is present and matches our build requirements
+-                 { $as_echo "$as_me:${as_lineno-$LINENO}: checking libpmix.* in $check_pmi_install_dir/lib64" >&5
+-$as_echo_n "checking libpmix.* in $check_pmi_install_dir/lib64... " >&6; }
+-                 files=`ls $check_pmi_install_dir/lib64/libpmix.* 2> /dev/null | wc -l`
+-                 if test "$files" -gt 0; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                        pmix_ext_install_libdir=$check_pmi_install_dir/lib64
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-                        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libpmix.* in $check_pmi_install_dir/lib" >&5
+-$as_echo_n "checking libpmix.* in $check_pmi_install_dir/lib... " >&6; }
+-                        files=`ls $check_pmi_install_dir/lib/libpmix.* 2> /dev/null | wc -l`
+-                        if test "$files" -gt 0; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                               pmix_ext_install_libdir=$check_pmi_install_dir/lib
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-                               as_fn_error $? "Cannot continue" "$LINENO" 5
+-fi
+-fi
+-fi
+-
+-          # check the version
+-          opal_external_pmix_save_CPPFLAGS=$CPPFLAGS
+-          opal_external_pmix_save_LDFLAGS=$LDFLAGS
+-          opal_external_pmix_save_LIBS=$LIBS
+-
+-          # if the pmix_version.h file does not exist, then
+-          # this must be from a pre-1.1.5 version OMPI does
+-          # NOT support anything older than v1.2.5
+-          { $as_echo "$as_me:${as_lineno-$LINENO}: checking PMIx version" >&5
+-$as_echo_n "checking PMIx version... " >&6; }
+-          CPPFLAGS="-I$check_pmi_install_dir/include $CPPFLAGS"
+-          if test "x`ls $check_pmi_install_dir/include/pmix_version.h 2> /dev/null`" = "x"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: version file not found - assuming v1.1.4" >&5
+-$as_echo "version file not found - assuming v1.1.4" >&6; }
+-                 opal_external_pmix_version_found=1
+-                 opal_external_pmix_happy=no
+-                 opal_external_pmix_version=internal
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: version file found" >&5
+-$as_echo "version file found" >&6; }
+-                 opal_external_pmix_version_found=0
+-fi
+-
+-          # if it does exist, then we need to parse it to find
+-          # the actual release series
+-          if test "$opal_external_pmix_version_found" = "0"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking version 4x" >&5
+-$as_echo_n "checking version 4x... " >&6; }
+-                 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-                                                     #include <pmix_version.h>
+-                                                     #if (PMIX_VERSION_MAJOR < 4L)
+-                                                     #error "not version 4 or above"
+-                                                     #endif
+-
+-int
+-main ()
+-{
+-
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_cpp "$LINENO"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                                     opal_external_pmix_version=4x
+-                                     opal_external_pmix_version_major=4
+-                                     opal_external_pmix_version_found=1
+-                                     opal_external_pmix_happy=yes
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-fi
+-rm -f conftest.err conftest.i conftest.$ac_ext
+-fi
+-
+-          if test "$opal_external_pmix_version_found" = "0"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking version 3x or above" >&5
+-$as_echo_n "checking version 3x or above... " >&6; }
+-                 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-                                              #include <pmix_version.h>
+-                                              #if (PMIX_VERSION_MAJOR != 3L)
+-                                              #error "not version 3"
+-                                              #endif
+-
+-int
+-main ()
+-{
+-
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_cpp "$LINENO"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                                    opal_external_pmix_version=3x
+-                                    opal_external_pmix_version_major=3
+-                                    opal_external_pmix_version_found=1
+-                                    opal_external_pmix_happy=yes
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-fi
+-rm -f conftest.err conftest.i conftest.$ac_ext
+-fi
+-
+-          if test "$opal_external_pmix_version_found" = "0"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking version 2x" >&5
+-$as_echo_n "checking version 2x... " >&6; }
+-                 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-                                              #include <pmix_version.h>
+-                                              #if (PMIX_VERSION_MAJOR != 2L)
+-                                              #error "not version 2"
+-                                              #endif
+-
+-int
+-main ()
+-{
+-
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_cpp "$LINENO"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                                    opal_external_pmix_version=2x
+-                                    opal_external_pmix_version_major=2
+-                                    opal_external_pmix_version_found=1
+-                                    opal_external_pmix_happy=yes
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-fi
+-rm -f conftest.err conftest.i conftest.$ac_ext
+-fi
+-
+-          if test "$opal_external_pmix_version_found" = "0"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking version 1x" >&5
+-$as_echo_n "checking version 1x... " >&6; }
+-                 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-                                              #include <pmix_version.h>
+-                                              #if (PMIX_VERSION_MAJOR != 1L && PMIX_VERSION_MINOR != 2L)
+-                                              #error "not version 1.2.x"
+-                                              #endif
+-
+-int
+-main ()
+-{
+-
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_cpp "$LINENO"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+-$as_echo "found" >&6; }
+-                                    opal_external_pmix_version=1x
+-                                    opal_external_pmix_version_major=1
+-                                    opal_external_pmix_version_found=1
+-                                    opal_external_have_pmix1=1
+-                                    opal_external_pmix_happy=yes
+-else
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+-$as_echo "not found" >&6; }
+-fi
+-rm -f conftest.err conftest.i conftest.$ac_ext
+-fi
+-
+-          if test "x$opal_external_pmix_version" = "x"; then :
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: External PMIx support detected, but version" >&5
+-$as_echo "$as_me: WARNING: External PMIx support detected, but version" >&2;}
+-                 { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: information of the external lib could not" >&5
+-$as_echo "$as_me: WARNING: information of the external lib could not" >&2;}
+-                 { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: be detected" >&5
+-$as_echo "$as_me: WARNING: be detected" >&2;}
+-                 opal_external_pmix_happy=no
+-fi
+-
+-          CPPFLAGS=$opal_external_pmix_save_CPPFLAGS
+-          LDFLAGS=$opal_external_pmix_save_LDFLAGS
+-          LIBS=$opal_external_pmix_save_LIBS
+-
+-fi
+-    if test "$opal_external_pmix_happy" = "yes"; then :
+-  opal_enable_pmix=yes
+-else
+-  opal_enable_pmix=no
+-fi
+-
+-
+-    # Unwind the index
+-    opal_scope_index=`expr $opal_scope_index - 1`
+-    opal_scope_test=`expr $opal_scope_index \> 0`
+-    if test "$opal_scope_test" = "0"; then
+-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: OPAL_VAR_SCOPE_POP popped too many OPAL configure scopes." >&5
+-$as_echo "$as_me: WARNING: OPAL_VAR_SCOPE_POP popped too many OPAL configure scopes." >&2;}
+-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This usually indicates an error in configure." >&5
+-$as_echo "$as_me: WARNING: This usually indicates an error in configure." >&2;}
+-        as_fn_error $? "Cannot continue" "$LINENO" 5
+-    fi
+-
+-    # Get the variable names from that index
+-    opal_str="opal_str=\"\$opal_scope_$opal_scope_index\""
+-    eval $opal_str
+-
+-    # Iterate over all the variables and unset them all
+-    for opal_var in $opal_str; do
+-        unset $opal_var
+-    done
+-
+-
+-
+            # since support was explicitly requested, then we should error out
+            # if we didn't find the required support
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking can PMI support be built" >&5

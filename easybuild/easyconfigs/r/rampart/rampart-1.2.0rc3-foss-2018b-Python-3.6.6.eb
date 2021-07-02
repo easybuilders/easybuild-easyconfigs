@@ -1,0 +1,67 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'rampart'
+version = '1.2.0rc3'
+
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://github.com/artic-network/rampart/"
+description = "Read Assignment, Mapping, and Phylogenetic Analysis in Real Time."
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+dependencies = [
+    ('nodejs', '12.16.1'),
+    ('Python', '3.6.6'),  # pandas,
+    ('Biopython', '1.72', versionsuffix),
+    ('snakemake', '5.2.4', versionsuffix),
+    ('minimap2', '2.13'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    # This is not upstream version, but artic tweaked one, which is exactly required.
+    ('Porechop', '0.3.2pre', {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/artic-network/Porechop/archive'],
+        'checksums': ['85980d6f37d38a44c66182e7b39bad487211ccfd8cb820c866ceed7ef7a15523'],
+    }),
+    ('binlorry', '1.3.1', {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/rambaut/binlorry/archive'],
+        'checksums': ['001b74cad497b7253b821ceaac8c0b829b2787396a896fc2d3940a704a149b48'],
+    }),
+]
+
+# Don't ever try to install unpacked source of nodejs globally!
+# Always use 'npm install -g downloaded_file.tar.gz` or you will end up having broken links and installation will fail.
+# -d (debug) and --timing can show errors while downloading dependencies
+local_install_cmd = "npm install -d --timing --prefix %(installdir)s -g v%(version)s.tar.gz"
+
+components = [
+    (name, version, {
+        'easyblock': 'Binary',
+        'source_urls': ['https://github.com/artic-network/rampart/archive/'],
+        'sources': [{
+            'filename': 'v%(version)s.tar.gz',
+            # Don't extract downloaded .tar.gz, just copy that to builddir
+            'extract_cmd': "cp %s .",
+        }],
+        'checksums': ['c7696257af96618d05607bd015b5393b8c0827cfee10f4562e4adad5a1bd74f4'],
+        'install_cmd': local_install_cmd,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/binlorry', 'bin/porechop', 'bin/rampart'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = [
+    'rampart --help'
+]
+
+moduleclass = 'bio'

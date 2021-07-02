@@ -11,9 +11,8 @@ toolchain = {'name': 'GCCcore', 'version': '6.3.0'}
 source_urls = [
     XORG_LIB_SOURCE,
     XORG_PROTO_SOURCE,
-    'http://xcb.freedesktop.org/dist/',
-    'http://xkbcommon.org/download/',
-    'http://cgit.freedesktop.org/xorg/util/macros/snapshot',
+    'https://xcb.freedesktop.org/dist/',
+    'https://xkbcommon.org/download/',
     XORG_DATA_SOURCE + '/xkeyboard-config',
     XORG_DATA_SOURCE,
 ]
@@ -23,6 +22,7 @@ dependencies = [
     ('fontconfig', '2.12.1'),
     ('freetype', '2.7.1'),
     ('zlib', '1.2.11'),
+    ('xorg-macros', '1.19.1'),
 ]
 builddependencies = [
     # use same binutils version that was used when building GCCcore toolchain
@@ -31,7 +31,7 @@ builddependencies = [
     ('Bison', '3.0.4'),
     ('gettext', '0.19.8.1'),
     ('pkg-config', '0.29.1'),
-    ('intltool', '0.51.0', '-Perl-5.24.1')
+    ('intltool', '0.51.0', '-Perl-5.24.1'),
 ]
 
 default_easyblock = 'ConfigureMake'
@@ -41,11 +41,6 @@ default_component_specs = {
     'start_dir': '%(name)s-%(version)s',
 }
 components = [
-    ('xorg-macros', '1.19.1', {  # 2017-01-29
-        'sources': ['util-macros-%(version)s.tar.gz'],
-        'checksums': ['f056411c49a9955f141cad4d7b258a1a5e5bcc0f2a197ee00c63ac3bbe9f347a'],
-        'start_dir': 'util-macros-%(version)s',
-    }),
     ('libpthread-stubs', '0.3', {  # 2009-10-14
         'checksums': ['3031f466cf0b06de6b3ccbf2019d15c4fcf75229b7d226a711bc1885b3a82cde'],
     }),
@@ -283,14 +278,15 @@ components = [
 
 # Python is required for xcb-proto
 allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
-pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[0:2])
+local_pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[0:2])
 
 preconfigopts = "if [ ! -f configure ]; then ./autogen.sh; fi && "
 
 sanity_check_paths = {
     'files': ['include/X11/Xlib.h', 'include/X11/Xutil.h'],
     'dirs': ['include/GL', 'include/X11', 'include/X11/extensions', 'lib',
-             'lib/python%s/site-packages/xcbgen' % pyshortver, 'lib/pkgconfig', 'share/pkgconfig', 'share/X11/xkb'],
+             'lib/python%s/site-packages/xcbgen' % local_pyshortver,
+             'lib/pkgconfig', 'share/pkgconfig', 'share/X11/xkb'],
 }
 
 moduleclass = 'vis'
