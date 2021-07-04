@@ -1,0 +1,51 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'PythonBundle'
+
+name = 'numba'
+version = '0.53.1'
+
+homepage = 'https://numba.pydata.org/'
+description = """Numba is an Open Source NumPy-aware optimizing compiler for
+Python sponsored by Continuum Analytics, Inc. It uses the remarkable LLVM
+compiler infrastructure to compile Python syntax to machine code."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('LLVM', '11.0.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+local_llvmlite_preinstallopts = "export LLVM_CONFIG=${EBROOTLLVM}/bin/llvm-config && "
+local_llvmlite_preinstallopts += "export LLVMLITE_SKIP_LLVM_VERSION_CHECK=1 && "
+
+exts_list = [
+    ('llvmlite', '0.36.0', {
+        'patches': ['llvmlite-0.36.0_fix-LLVM-11.patch'],
+        'preinstallopts': local_llvmlite_preinstallopts,
+        'checksums': [
+            '765128fdf5f149ed0b889ffbe2b05eb1717f8e20a5c87fa2b4018fbcce0fcfc9',  # llvmlite-0.36.0.tar.gz
+            '17ebf3e8eaea2dd820bf4e089983d5743656613eb6313c1ffed30c58e8d66be4',  # llvmlite-0.36.0_fix-LLVM-11.patch
+        ],
+    }),
+    (name, version, {
+        'checksums': ['9cd4e5216acdc66c4e9dab2dfd22ddb5bef151185c070d4a3cd8e78638aff5b0'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['bin/numba', 'bin/pycc'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["numba --help"]
+
+moduleclass = 'lang'

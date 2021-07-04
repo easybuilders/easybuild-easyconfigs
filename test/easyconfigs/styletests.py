@@ -57,9 +57,11 @@ class StyleTest(TestCase):
         self.assertEqual(result, 0, "Found code style errors (and/or warnings): %s" % result)
 
 
-def suite():
+def suite(loader=None):
     """Return all style tests for easyconfigs."""
-    return TestLoader().loadTestsFromTestCase(StyleTest)
+    if not loader:
+        loader = TestLoader()
+    return loader.loadTestsFromTestCase(StyleTest)
 
 
 if __name__ == '__main__':
