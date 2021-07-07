@@ -1,0 +1,65 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonPackage'
+
+name = 'goatools'
+version = '1.1.6'
+
+homepage = 'https://github.com/tanghaibao/goatools'
+description = "A Python library for Gene Ontology analyses"
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+# extra downloaded files are needed acc. to docs: https://github.com/tanghaibao/goatools#installation
+sources = [
+    {'source_urls': ['https://github.com/tanghaibao/goatools/archive/'],
+     'filename': 'v%(version)s.tar.gz'},
+    {'source_urls': ['http://geneontology.org/ontology/'],
+     'filename': 'go-basic.obo', 'extract_cmd': 'cp %s %(builddir)s'},
+    {'source_urls': ['http://www.geneontology.org/ontology/subsets/'],
+     'filename': 'goslim_generic.obo', 'extract_cmd': 'cp %s %(builddir)s'}]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('XlsxWriter', '1.4.0'),
+    ('statsmodels', '0.12.1'),
+    ('pydot', '1.4.2'),
+]
+
+preinstallopts = "sed -i 's/==[0-9]*.[0-9]*.[0-9]*//g' requirements.txt && "
+# wget was here only to download some src files which we download via sources
+preinstallopts += "sed -i 's/wget//g' requirements.txt && "
+
+local_go_path = "%(installdir)s/bin/goafiles"
+
+
+local_data_dir = '%(builddir)s/%(name)s-%(version)s/data/*'
+# copy downloaded GOA files into dedicated folder for user and to bin/ for sanity_check
+postinstallcmds = ["mkdir %s" % local_go_path,
+                   "cp %%(builddir)s/go-basic.obo %s" % local_go_path,
+                   "cp %%(builddir)s/goslim_generic.obo %s" % local_go_path,
+                   "cp %(builddir)s/go-basic.obo %(installdir)s/bin/",
+                   "cp %(builddir)s/goslim_generic.obo %(installdir)s/bin/",
+                   "mkdir %%(installdir)s/bin/data && cp -r %s %%(installdir)s/bin/data" % local_data_dir]
+
+# making sure user knows about downloaded files
+modextravars = {'GOAFILES': local_go_path}
+modloadmsg = """\n GOATOOLS: Downloaded files from "geneontology.org" are accessible in a directory behind a variable \
+$GOAFILES.\n You need to have them in a directory from which you run goatools commands."""
+
+use_pip = True
+
+sanity_check_paths = {
+    'files': ['bin/find_enrichment.py'],
+    'dirs': ['bin/data'],
+}
+
+# example from https://github.com/tanghaibao/goatools#find-go-enrichment-of-genes-under-study
+local_cmd = "cd %(installdir)s/bin && find_enrichment.py --pval=0.05\
+    --indent data/study data/population data/association && cd -"
+sanity_check_commands = [local_cmd]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
