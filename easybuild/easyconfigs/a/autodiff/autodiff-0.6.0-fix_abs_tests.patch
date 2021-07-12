@@ -1,0 +1,71 @@
+From eade989bf5450cc3366e7813a1bf5294d444f69c Mon Sep 17 00:00:00 2001
+From: Wil Thomason <wil.thomason@gmail.com>
+Date: Thu, 8 Jul 2021 19:32:09 -0400
+Subject: [PATCH] Fix #167: Use std::abs for floating point values in tests
+
+This PR fixes the failing tests from #167 by using std::abs for the
+absolute value of floating point values in the forward dual and real
+tests.
+
+However, why the tests in #167 did not fail for @allenleal remains
+unknown.
+---
+ tests/forward/dual/dual.test.cpp |  4 ++--
+ tests/forward/real/real.test.cpp | 20 ++++++++++----------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/tests/forward/dual/dual.test.cpp b/tests/forward/dual/dual.test.cpp
+index ed5c5d7..f775641 100644
+--- a/tests/forward/dual/dual.test.cpp
++++ b/tests/forward/dual/dual.test.cpp
+@@ -451,10 +451,10 @@ TEST_CASE("testing autodiff::dual", "[forward][dual]")
+         CHECK_DERIVATIVES_FX(pow(x, 2.0 * x), pow(val(x), 2.0 * val(x)), 2.0 * (log(x) + 1) * pow(x, 2.0 * x));
+ 
+         // Testing abs function (when x > 0)
+-        x = 1.0; CHECK_DERIVATIVES_FX(abs(x), abs(val(x)), 1.0);
++        x = 1.0; CHECK_DERIVATIVES_FX(abs(x), std::abs(val(x)), 1.0);
+ 
+         // Testing abs function (when x < 0)
+-        x = -1.0; CHECK_DERIVATIVES_FX(abs(x), abs(val(x)), -1.0);
++        x = -1.0; CHECK_DERIVATIVES_FX(abs(x), std::abs(val(x)), -1.0);
+ 
+         // Testing erf function (when x = 1.0)
+         x =  1.0; CHECK_DERIVATIVES_FX(erf(x), erf(val(x)), 0.4151074974);
+diff --git a/tests/forward/real/real.test.cpp b/tests/forward/real/real.test.cpp
+index 3b6e17a..e290c19 100644
+--- a/tests/forward/real/real.test.cpp
++++ b/tests/forward/real/real.test.cpp
+@@ -353,20 +353,20 @@ TEST_CASE("testing autodiff::real", "[forward][real]")
+ 
+     y = abs(x);
+ 
+-    CHECK_APPROX( y[0], abs(x[0]) );
+-    CHECK_APPROX( y[1], abs(x[0])/x[0] * x[1] );
+-    CHECK_APPROX( y[2], abs(x[0])/x[0] * x[2] );
+-    CHECK_APPROX( y[3], abs(x[0])/x[0] * x[3] );
+-    CHECK_APPROX( y[4], abs(x[0])/x[0] * x[4] );
++    CHECK_APPROX( y[0], std::abs(x[0]) );
++    CHECK_APPROX( y[1], std::abs(x[0])/x[0] * x[1] );
++    CHECK_APPROX( y[2], std::abs(x[0])/x[0] * x[2] );
++    CHECK_APPROX( y[3], std::abs(x[0])/x[0] * x[3] );
++    CHECK_APPROX( y[4], std::abs(x[0])/x[0] * x[4] );
+ 
+     y = -x;
+     z = abs(y);
+ 
+-    CHECK_APPROX( z[0], abs(y[0]) );
+-    CHECK_APPROX( z[1], abs(y[0])/(y[0]) * y[1] );
+-    CHECK_APPROX( z[2], abs(y[0])/(y[0]) * y[2] );
+-    CHECK_APPROX( z[3], abs(y[0])/(y[0]) * y[3] );
+-    CHECK_APPROX( z[4], abs(y[0])/(y[0]) * y[4] );
++    CHECK_APPROX( z[0], std::abs(y[0]) );
++    CHECK_APPROX( z[1], std::abs(y[0])/(y[0]) * y[1] );
++    CHECK_APPROX( z[2], std::abs(y[0])/(y[0]) * y[2] );
++    CHECK_APPROX( z[3], std::abs(y[0])/(y[0]) * y[3] );
++    CHECK_APPROX( z[4], std::abs(y[0])/(y[0]) * y[4] );
+ 
+     //=====================================================================================================================
+     //
+-- 
+2.31.0
+
