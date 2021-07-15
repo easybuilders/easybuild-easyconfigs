@@ -1,0 +1,72 @@
+From 510ff5def87c70836fdbf832228661ae28e524b6 Mon Sep 17 00:00:00 2001
+From: Jakub Jelinek <jakub@redhat.com>
+Date: Thu, 4 Mar 2021 19:38:08 +0100
+Subject: [PATCH] expand: Fix ICE in store_bit_field_using_insv [PR93235]
+
+The following testcase ICEs on aarch64.  The problem is that
+op0 is (subreg:HI (reg:HF ...) 0) and because we can't create a SUBREG of a
+SUBREG and aarch64 doesn't have HImode insv, only SImode insv,
+store_bit_field_using_insv tries to create (subreg:SI (reg:HF ...) 0)
+which is not valid for the target and so gen_rtx_SUBREG ICEs.
+
+The following patch fixes it by punting if the to be created SUBREG
+doesn't validate, callers of store_bit_field_using_insv can handle
+the fallback.
+
+2021-03-04  Jakub Jelinek  <jakub@redhat.com>
+
+	PR middle-end/93235
+	* expmed.c (store_bit_field_using_insv): Return false of xop0 is a
+	SUBREG and a SUBREG to op_mode can't be created.
+
+	* gcc.target/aarch64/pr93235.c: New test.
+
+(cherry picked from commit 0ad6de3883a1641f7ec0bd9cf56d41fa5b313dae)
+---
+ gcc/expmed.c                               | 13 ++++++++++---
+ gcc/testsuite/gcc.target/aarch64/pr93235.c | 12 ++++++++++++
+ 2 files changed, 22 insertions(+), 3 deletions(-)
+ create mode 100644 gcc/testsuite/gcc.target/aarch64/pr93235.c
+
+diff --git a/gcc/expmed.c b/gcc/expmed.c
+index e7c03fbf92c04..96ced5c8c8b61 100644
+--- a/gcc/expmed.c
++++ b/gcc/expmed.c
+@@ -625,9 +625,16 @@ store_bit_field_using_insv (const extraction_insn *insv, rtx op0,
+       /* If xop0 is a register, we need it in OP_MODE
+ 	 to make it acceptable to the format of insv.  */
+       if (GET_CODE (xop0) == SUBREG)
+-	/* We can't just change the mode, because this might clobber op0,
+-	   and we will need the original value of op0 if insv fails.  */
+-	xop0 = gen_rtx_SUBREG (op_mode, SUBREG_REG (xop0), SUBREG_BYTE (xop0));
++	{
++	  /* If such a SUBREG can't be created, give up.  */
++	  if (!validate_subreg (op_mode, GET_MODE (SUBREG_REG (xop0)),
++				SUBREG_REG (xop0), SUBREG_BYTE (xop0)))
++	    return false;
++	  /* We can't just change the mode, because this might clobber op0,
++	     and we will need the original value of op0 if insv fails.  */
++	  xop0 = gen_rtx_SUBREG (op_mode, SUBREG_REG (xop0),
++				 SUBREG_BYTE (xop0));
++	}
+       if (REG_P (xop0) && GET_MODE (xop0) != op_mode)
+ 	xop0 = gen_lowpart_SUBREG (op_mode, xop0);
+     }
+diff --git a/gcc/testsuite/gcc.target/aarch64/pr93235.c b/gcc/testsuite/gcc.target/aarch64/pr93235.c
+new file mode 100644
+index 0000000000000..829ae13f199fc
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/aarch64/pr93235.c
+@@ -0,0 +1,12 @@
++/* PR middle-end/93235 */
++/* { dg-do compile } */
++/* { dg-options "-O2 -fno-strict-aliasing" } */
++
++struct sfp16 { __fp16 f; };
++struct sfp16
++foo (short x)
++{
++  struct sfp16 a;
++  *(short*)&a.f = x;
++  return a;
++}
