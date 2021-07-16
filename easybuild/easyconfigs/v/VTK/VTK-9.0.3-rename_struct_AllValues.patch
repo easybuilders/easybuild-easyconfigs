@@ -1,0 +1,147 @@
+Rename struct vtkDataArrayPrivate::AllValues() to 
+              vtkDataArrayPrivate::VtkAllValues()
+
+This is needed because Xutil defines a macro AllValues which, when applied
+by the C-preprocessor changes (breaks) the VTK source code.
+In [1] the recommendation is to rename this struct as a workaround until
+VTK solves the issue. This patch implements this renaming.
+
+
+[1] https://discourse.vtk.org/t/building-opencascade-7-5-0-with-vtk-9-0-1/4673
+[2] https://gitlab.kitware.com/vtk/vtk/-/issues/18048
+
+author: Oliver Stueker (ACENET/Compute Canada)
+date: 2021-07-15
+
+diff -r -u VTK-9.0.3.orig/Common/Core/vtkDataArray.cxx VTK-9.0.3/Common/Core/vtkDataArray.cxx
+--- VTK-9.0.3.orig/Common/Core/vtkDataArray.cxx	2021-07-02 13:01:21.000000000 -0230
++++ VTK-9.0.3/Common/Core/vtkDataArray.cxx	2021-07-15 16:07:04.188463922 -0230
+@@ -1627,7 +1627,7 @@
+   void operator()(ArrayT* array)
+   {
+     this->Success = vtkDataArrayPrivate::DoComputeScalarRange(
+-      array, this->Range, vtkDataArrayPrivate::AllValues());
++      array, this->Range, vtkDataArrayPrivate::VtkAllValues());
+   }
+ };
+ 
+@@ -1646,7 +1646,7 @@
+   void operator()(ArrayT* array)
+   {
+     this->Success = vtkDataArrayPrivate::DoComputeVectorRange(
+-      array, this->Range, vtkDataArrayPrivate::AllValues());
++      array, this->Range, vtkDataArrayPrivate::VtkAllValues());
+   }
+ };
+ 
+diff -r -u VTK-9.0.3.orig/Common/Core/vtkDataArray.h VTK-9.0.3/Common/Core/vtkDataArray.h
+--- VTK-9.0.3.orig/Common/Core/vtkDataArray.h	2021-07-02 13:01:21.000000000 -0230
++++ VTK-9.0.3/Common/Core/vtkDataArray.h	2021-07-15 15:57:04.626300664 -0230
+@@ -599,7 +599,7 @@
+ // vtkGenericDataArray.h as well.
+ namespace vtkDataArrayPrivate
+ {
+-struct AllValues
++struct VtkAllValues
+ {
+ };
+ struct FiniteValues
+diff -r -u VTK-9.0.3.orig/Common/Core/vtkDataArrayPrivate.txx VTK-9.0.3/Common/Core/vtkDataArrayPrivate.txx
+--- VTK-9.0.3.orig/Common/Core/vtkDataArrayPrivate.txx	2021-07-02 13:01:21.000000000 -0230
++++ VTK-9.0.3/Common/Core/vtkDataArrayPrivate.txx	2021-07-15 16:12:35.232762868 -0230
+@@ -301,7 +301,7 @@
+ struct ComputeScalarRange
+ {
+   template <class ArrayT, typename RangeValueType>
+-  bool operator()(ArrayT* array, RangeValueType* ranges, AllValues)
++  bool operator()(ArrayT* array, RangeValueType* ranges, VtkAllValues)
+   {
+     AllValuesMinAndMax<NumComps, ArrayT> minmax(array);
+     vtkSMPTools::For(0, array->GetNumberOfTuples(), minmax);
+@@ -435,7 +435,7 @@
+ };
+ 
+ template <class ArrayT, typename RangeValueType>
+-bool GenericComputeScalarRange(ArrayT* array, RangeValueType* ranges, AllValues)
++bool GenericComputeScalarRange(ArrayT* array, RangeValueType* ranges, VtkAllValues)
+ {
+   AllValuesGenericMinAndMax<ArrayT> minmax(array);
+   vtkSMPTools::For(0, array->GetNumberOfTuples(), minmax);
+@@ -518,7 +518,7 @@
+ //----------------------------------------------------------------------------
+ // generic implementation that operates on ValueType.
+ template <typename ArrayT, typename RangeValueType>
+-bool DoComputeVectorRange(ArrayT* array, RangeValueType range[2], AllValues)
++bool DoComputeVectorRange(ArrayT* array, RangeValueType range[2], VtkAllValues)
+ {
+   range[0] = vtkTypeTraits<RangeValueType>::Max();
+   range[1] = vtkTypeTraits<RangeValueType>::Min();
+diff -r -u VTK-9.0.3.orig/Common/Core/vtkGenericDataArray.h VTK-9.0.3/Common/Core/vtkGenericDataArray.h
+--- VTK-9.0.3.orig/Common/Core/vtkGenericDataArray.h	2021-07-02 13:01:21.000000000 -0230
++++ VTK-9.0.3/Common/Core/vtkGenericDataArray.h	2021-07-15 16:15:02.487785692 -0230
+@@ -414,7 +414,7 @@
+ template <typename A, typename R, typename T>
+ bool DoComputeScalarRange(A*, R*, T);
+ template <typename A, typename R>
+-bool DoComputeVectorRange(A*, R[2], AllValues);
++bool DoComputeVectorRange(A*, R[2], VtkAllValues);
+ template <typename A, typename R>
+ bool DoComputeVectorRange(A*, R[2], FiniteValues);
+ } // namespace vtkDataArrayPrivate
+@@ -466,11 +466,11 @@
+ 
+ #define VTK_INSTANTIATE_VALUERANGE_ARRAYTYPE(ArrayType, ValueType)                                 \
+   template VTKCOMMONCORE_EXPORT bool DoComputeScalarRange(                                         \
+-    ArrayType*, ValueType*, vtkDataArrayPrivate::AllValues);                                       \
++    ArrayType*, ValueType*, vtkDataArrayPrivate::VtkAllValues);                                       \
+   template VTKCOMMONCORE_EXPORT bool DoComputeScalarRange(                                         \
+     ArrayType*, ValueType*, vtkDataArrayPrivate::FiniteValues);                                    \
+   template VTKCOMMONCORE_EXPORT bool DoComputeVectorRange(                                         \
+-    ArrayType*, ValueType[2], vtkDataArrayPrivate::AllValues);                                     \
++    ArrayType*, ValueType[2], vtkDataArrayPrivate::VtkAllValues);                                     \
+   template VTKCOMMONCORE_EXPORT bool DoComputeVectorRange(                                         \
+     ArrayType*, ValueType[2], vtkDataArrayPrivate::FiniteValues);
+ 
+@@ -516,18 +516,18 @@
+ template <typename A, typename R, typename T>
+ bool DoComputeScalarRange(A*, R*, T);
+ template <typename A, typename R>
+-bool DoComputeVectorRange(A*, R[2], AllValues);
++bool DoComputeVectorRange(A*, R[2], VtkAllValues);
+ template <typename A, typename R>
+ bool DoComputeVectorRange(A*, R[2], FiniteValues);
+ } // namespace vtkDataArrayPrivate
+ 
+ #define VTK_DECLARE_VALUERANGE_ARRAYTYPE(ArrayType, ValueType)                                     \
+   extern template VTKCOMMONCORE_EXPORT bool DoComputeScalarRange(                                  \
+-    ArrayType*, ValueType*, vtkDataArrayPrivate::AllValues);                                       \
++    ArrayType*, ValueType*, vtkDataArrayPrivate::VtkAllValues);                                       \
+   extern template VTKCOMMONCORE_EXPORT bool DoComputeScalarRange(                                  \
+     ArrayType*, ValueType*, vtkDataArrayPrivate::FiniteValues);                                    \
+   extern template VTKCOMMONCORE_EXPORT bool DoComputeVectorRange(                                  \
+-    ArrayType*, ValueType[2], vtkDataArrayPrivate::AllValues);                                     \
++    ArrayType*, ValueType[2], vtkDataArrayPrivate::VtkAllValues);                                     \
+   extern template VTKCOMMONCORE_EXPORT bool DoComputeVectorRange(                                  \
+     ArrayType*, ValueType[2], vtkDataArrayPrivate::FiniteValues);
+ 
+diff -r -u VTK-9.0.3.orig/Common/Core/vtkGenericDataArray.txx VTK-9.0.3/Common/Core/vtkGenericDataArray.txx
+--- VTK-9.0.3.orig/Common/Core/vtkGenericDataArray.txx	2021-07-02 13:01:21.000000000 -0230
++++ VTK-9.0.3/Common/Core/vtkGenericDataArray.txx	2021-07-15 16:16:21.152332091 -0230
+@@ -1192,7 +1192,7 @@
+   using namespace vtk_GDA_detail;
+   using Supported = IsSupported<DerivedT, ValueTypeT>;
+   return ComputeScalarValueRangeImpl(
+-    static_cast<DerivedT*>(this), ranges, vtkDataArrayPrivate::AllValues{}, Supported{});
++    static_cast<DerivedT*>(this), ranges, vtkDataArrayPrivate::VtkAllValues{}, Supported{});
+ }
+ 
+ //-----------------------------------------------------------------------------
+@@ -1202,7 +1202,7 @@
+   using namespace vtk_GDA_detail;
+   using Supported = IsSupported<DerivedT, ValueTypeT>;
+   return ComputeVectorValueRangeImpl(
+-    static_cast<DerivedT*>(this), range, vtkDataArrayPrivate::AllValues{}, Supported{});
++    static_cast<DerivedT*>(this), range, vtkDataArrayPrivate::VtkAllValues{}, Supported{});
+ }
+ 
+ //-----------------------------------------------------------------------------
