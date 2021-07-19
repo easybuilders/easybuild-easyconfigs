@@ -1,0 +1,25 @@
+Fix CMake OpenCASCADEConfig faiing with .../lib64/
+
+When OpenCASCADE is installed with libraries located in 'lib64'instead 
+of the default 'lib' directory, or a symlink lib64 -> lib exists and a 
+cmake of a packages intending to link against OpenCASCADE prefers lib64
+over lib (or finds it first), the logic determining the string for 
+OpenCASCADE_INSTALL_PREFIX fails, as it won't chop off the lib64 dir.
+
+This patch will chop off either 'lib' or 'lib64' from the string, 
+resulting in the correct OpenCASCADE_INSTALL_PREFIX in either case.
+
+Author: Oliver Stueker (ACENET/Compute Canada)
+
+diff -ur occt-0dc2c37.orig/adm/templates/OpenCASCADEConfig.cmake.in occt-0dc2c37/adm/templates/OpenCASCADEConfig.cmake.in
+--- occt-0dc2c37.orig/adm/templates/OpenCASCADEConfig.cmake.in	2021-04-20 04:37:58.000000000 -0230
++++ occt-0dc2c37/adm/templates/OpenCASCADEConfig.cmake.in	2021-07-19 14:24:40.895482156 -0230
+@@ -27,7 +27,7 @@
+ if (OpenCASCADE_INSTALL_PREFIX MATCHES "/cmake$")
+   get_filename_component (OpenCASCADE_INSTALL_PREFIX "${OpenCASCADE_INSTALL_PREFIX}" PATH)
+ endif()
+-if (OpenCASCADE_INSTALL_PREFIX MATCHES "/lib$")
++if (OpenCASCADE_INSTALL_PREFIX MATCHES "/lib$" OR OpenCASCADE_INSTALL_PREFIX MATCHES "/lib64$")
+   get_filename_component (OpenCASCADE_INSTALL_PREFIX "${OpenCASCADE_INSTALL_PREFIX}" PATH)
+ endif()
+ if (OpenCASCADE_INSTALL_PREFIX MATCHES "/libs/${CMAKE_ANDROID_ARCH_ABI}$")
