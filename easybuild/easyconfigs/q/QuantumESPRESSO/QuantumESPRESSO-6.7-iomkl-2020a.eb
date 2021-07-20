@@ -1,0 +1,68 @@
+name = 'QuantumESPRESSO'
+
+version = '6.7'
+
+homepage = 'https://www.quantum-espresso.org'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes for electronic-structure calculations and materials modeling at the nanoscale. It is based on density-functional theory, plane waves, and pseudopotentials (both norm-conserving and ultrasoft).
+"""
+
+toolchain = {'name': 'iomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = [
+    'https://github.com/QEF/q-e/releases/download/qe-%(version)s.0/',
+    #'https://github.com/dceresoli/qe-gipaw/archive/',
+    'https://github.com/dceresoli/qe-gipaw/releases/download/6.7MaX/',
+    'https://github.com/wannier-developers/wannier90/archive/refs/tags/',
+    'https://github.com/dalcorso/thermo_pw/releases/download/1.4.1/',
+]
+sources = [
+    'qe-%(version)s-ReleasePack.tgz',
+    # to be uncommented once qe-gipaw-6.7 is released:
+    # {'filename': 'qe-gipaw-%(version)s.tar.gz', 'download_filename': '%(version)s.tar.gz'},
+    {'filename': 'qe-gipaw-%(version)sMaX.tar.gz'},
+    {'filename': 'wannier90-3.1.0.tar.gz', 'download_filename': 'v3.1.0.tar.gz'},
+    {'filename':'thermo_pw.1.4.1.tar.gz', 'extract_cmd': 'tar xzf %s && mv thermo_pw qe-6.7/'},
+]
+checksums = [
+    '8f06ea31ae52ad54e900a2f51afd5c70f78096d9dcf39c86c2b17dccb1ec9c87',  # qe-6.7-ReleasePack.tgz
+    '718931a12cf0b6b6f7ec662c896aad722f8daa1689a75c9d198bcf78f4774f55',  # qe-gipaw-6.7MaX.tar.gz
+    '40651a9832eb93dec20a8360dd535262c261c34e13c41b6755fa6915c936b254',  # wannier90-3.1.0.tar.gz
+    '061393b470d6ad5f6b1bcb410e6ed86c5cd9e1c173bf3fb6a0492bdefacffdac',  # thermo_pw.1.4.1.tar.gz
+]
+
+dependencies = [
+    ('netCDF-Fortran', '4.5.2'),
+    ('ELPA', '2020.05.001'),
+    ('libxc', '5.1.3'),
+]
+
+# The third party packages should be installed separately and added
+# as dependencies. The exception is w90, which is force built
+
+# Options:
+# gipaw:    NMR and EPR spectra
+# w90:      Maximally localised Wannier Functions
+# want:     Quantum Transport with Wannier functions
+# yambo:    electronic excitations with plane waves
+# d3q:      general third-order code and thermal transport codes
+# gwl:      GW with Lanczos chains
+# xspectra: X-ray core-hole spectroscopy calculations
+# couple:   Library interface for coupling to external codes
+# epw:      Electron-Phonon Coupling with wannier functions
+# gui:      Graphical User Interface
+
+# all:      same as "make pwall cp ld1 tddfpt hp"
+# pwall:    same as "make pw ph pp pwcond neb"
+
+# gipaw want yambo d3q
+
+preconfigopts = 'cd %(builddir)s/qe-6.7/thermo_pw && make join_qe && cd - &&'
+
+buildopts = 'all gwl xspectra couple epw w90 pwall gui thermo_pw gipaw'
+
+# parallel build tends to fail
+
+parallel = 1
+
+moduleclass = 'chem'

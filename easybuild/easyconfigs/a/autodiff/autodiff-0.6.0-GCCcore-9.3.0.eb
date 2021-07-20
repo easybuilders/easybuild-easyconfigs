@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'autodiff'
+version = '0.6.0'
+
+homepage = 'https://github.com/autodiff/autodiff'
+description = """autodiff is a C++17 library that uses modern and advanced programming techniques to enable automatic computation of derivatives in an efficient, easy, and intuitive way."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0' }
+toolchainopts = {'opt': True, 'cstd': 'c++17'}
+
+source_urls = ['https://github.com/autodiff/autodiff/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['autodiff-0.6.0-fix_abs_tests.patch',]
+checksums = [
+    'b76e6a96e539f173a2a24eefa6f4e7cff54b1144cc51c51eba44ac3779a14013', # v0.6.0.tar.gz
+    '53f5c9e29b4173d78831c93408cb9d70d83a3fa7f4bd55854a55ceffc85632e9', # autodiff-0.6.0-fix_abs_tests.patch
+]
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.7", "3.8"]}
+
+builddependencies = [
+    ('Eigen', '3.3.7'),
+    ('Catch2', '2.11.0'),
+    ('CMake', '3.20.1'),
+]
+
+preconfigopts = " && ".join([
+    "pip install pybind11 --prefix=%(builddir)s",
+    "" # To append &&
+])
+
+configopts = " ".join([
+    "-Dpybind11_DIR=%(builddir)s/lib/python%(pyshortver)s/site-packages/pybind11/share/cmake/pybind11/",
+])
+
+runtest = "tests"
+
+modextrapaths = { 'EBPYTHONPREFIXES' : '' }
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': [
+    ],
+    'dirs': [
+        "include/autodiff",
+        "lib/python%(pyshortver)s/site-packages/",
+    ]
+}
+
+sanity_check_commands = [
+    "python -c 'import autodiff'",
+]
+
+moduleclass = 'math'

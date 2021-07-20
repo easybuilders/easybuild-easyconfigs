@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenCASCADE'
+version = '7.5.2'
+
+homepage = 'https://www.opencascade.com/open-cascade-technology/'
+description = """Open CASCADE Technology (OCCT) is a world-known 3D modeling kernel, freely available in open source. It's a software development kit (SDK) intended for the development of applications dealing with 3D CAD data. OCCT includes a set of C++ class libraries providing services for 3D surface and solid modeling, visualization, data exchange and rapid application development."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+# No direct download. It requires a registration:
+# https://old.opencascade.com/content/latest-release
+
+sources = ['%(namelower)s-%(version)s.tgz']
+patches = [
+  'OpenCASCADE-7.5.2-fix_lib64_issue_OpenCASCADEConfig_cmake.patch',
+  'OpenCASCADE-7.5.2-ShapeUpgrade.patch',
+]
+checksums = [
+    'e1b5a4711fce38ea6f2d77e07afc4df28d93c85ec8f36a784f6f44dc1a742296', # opencascade-7.5.2.tgz
+    # OpenCASCADE-7.5.2-fix_lib64_issue_OpenCASCADEConfig_cmake.patch :
+    '906f9dfdb7b5d7be24c9f8e6ec3104a49e5e6f82111aacc2f4defb3104b8a059',
+    'efeeca16267b97373d689da1c77217861f1ef800538b5e20a2a2c5ed62b46459', # OpenCASCADE-7.5.2-ShapeUpgrade.patch
+]
+
+dependencies = [
+    ('VTK', '9.0.3', '-mpi'),
+    ('tbb', '2020.2'),
+]
+
+separate_build_dir = True
+
+configopts  = '-DINSTALL_SAMPLES=ON '
+configopts += '-DINSTALL_TEST_CASES=ON '
+configopts += '-DUSE_FFMPEG=ON '
+configopts += '-DUSE_FREEIMAGE=ON '
+configopts += '-DUSE_GLES2=ON '
+configopts += '-DUSE_TBB=ON '
+
+# let's skip VTK
+configopts += '-DUSE_VTK=ON '
+configopts += '-D3RDPARTY_VTK_INCLUDE_DIR=$EBROOTVTK/include/vtk-9.0 '
+
+configopts += '-D3RDPARTY_TCL_INCLUDE_DIR=$EBROOTGENTOO/include '
+configopts += '-D3RDPARTY_TCL_LIBRARY_DIR=$EBROOTGENTOO/lib '
+configopts += '-D3RDPARTY_TK_INCLUDE_DIR=$EBROOTGENTOO/include '
+
+sanity_check_paths = {
+    'files': ['bin/DRAWEXE'],
+    'dirs': ['include', 'lib/cmake', 'share'],
+}
+
+moduleclass = 'numlib'

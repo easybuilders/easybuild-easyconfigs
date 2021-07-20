@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'Julia'
+version = '1.6.1'
+
+homepage = 'http://julialang.org'
+description = "A high-level, high-performance dynamic language for technical computing."
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/JuliaLang/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [('%(namelower)s-1.5.2-openblas-0.3.9.patch', 1)]
+checksums = [
+    '366b8090bd9b2f7817ce132170d569dfa3435d590a1fa5c3e2a75786bd5cdfd5',  # julia-1.6.1.tar.gz
+    '9ce69722ac41aaa950a5150310c00fa56686864bf20cadc6ba22ff7c2e7ebf84',  # julia-1.5.2-openblas-0.3.9.patch
+]
+
+prebuildopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+
+buildopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+preinstallopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+installopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+skipsteps = ['configure']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib'],
+}
+
+# : means the default path, this way extension modules can append to it
+
+modextravars = {
+    'JULIA_DEPOT_PATH': ':',
+    'JULIA_LOAD_PATH': ':',
+}
+
+moduleclass = 'lang'

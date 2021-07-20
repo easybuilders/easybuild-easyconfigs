@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'Rust'
+version = '1.52.1'
+
+homepage = 'https://www.rust-lang.org'
+description = """Rust is a systems programming language that runs blazingly fast, prevents segfaults,
+ and guarantees thread safety."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://static.rust-lang.org/dist/']
+sources = ['rustc-%(version)s-src.tar.gz']
+checksums = ['3a6f23a26d0e8f87abbfbf32c5cd7daa0c0b71d0986abefc56b9a5fbfbd0bf98']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('CMake', '3.20.1'),
+]
+
+dependencies = [
+    ('OpenSSL', '1.1', '', True),
+]
+
+configopts = "--enable-extended --sysconfdir=%(installdir)s/etc "
+
+# avoid build dependency on Ninja, which requires Python,
+# since Rust is a build dependency for cryptography that is included with Python
+configopts += "--set=llvm.ninja=false "
+
+# avoid failure when home directory is an NFS mount,
+# see https://github.com/rust-lang/cargo/issues/6652
+prebuildopts = "export CARGO_HOME=%(builddir)s/cargo && "
+preinstallopts = prebuildopts
+
+sanity_check_paths = {
+    'files': ['bin/cargo', 'bin/rustc', 'bin/rustdoc'],
+    'dirs': ['lib/rustlib', 'share/doc', 'share/man'],
+}
+
+sanity_check_commands = [
+    "cargo --version",
+    "rustc --version",
+]
+
+moduleclass = 'lang'

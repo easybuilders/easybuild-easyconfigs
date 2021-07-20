@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'ErlangOTP'
+version = "23.3"
+
+homepage = 'http://www.erlang.org/'
+description = """Erlang is a general-purpose concurrent, garbage-collected programming language and runtime system."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = [
+    'http://www.erlang.org/download',
+    'https://github.com/erlang/rebar3/archive/refs/tags/',
+]
+sources = [
+    'otp_src_%(version)s.tar.gz',
+    '3.16.1.tar.gz',
+]
+checksums = [
+    '3c888d8f46124e134b75a9ba5d845f079020b7198ed2de64411e183d07e9002a',  # otp_src_23.3.tar.gz
+    'a14711b09f6e1fc1b080b79d78c304afebcbb7fafed9d0972eb739f0ed89121b',  # 3.16.1.tar.gz
+]
+
+builddependencies = [('Java', '13', '')]
+
+configopts = '--with-javac --with-ssl=${EBROOTGENTOO-$NIXUSER_PROFILE} '
+
+postinstallcmds = ["export PATH=%(installdir)s/bin:$PATH && cd %(builddir)s/rebar3-3.16.1/; ./bootstrap; cp rebar3 %(installdir)s/bin/"]
+
+sanity_check_paths = {
+    'files': ['bin/erl', 'bin/rebar3'],
+    'dirs': ['lib/erlang/bin', 'lib/erlang/lib', 'lib/erlang/lib/jinterface-1.11.1'],
+}
+
+moduleclass = 'lang'

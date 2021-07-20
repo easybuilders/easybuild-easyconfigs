@@ -1,0 +1,43 @@
+# Built with EasyBuild version 4.3.3-r3ff498d1f735c51b313c04c5e4abeeaecc23589b on 2021-03-05_23-15-26
+# Built with EasyBuild version 4.1.1-rf312b754b3a377fbd5057b6207f73845cab491ab on 2020-02-19_23-09-18
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = '5.50-84.0'
+versionsuffix = '-data'
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """This module containes only InterProScan data part. 
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+
+toolchain = SYSTEM
+source_urls = [
+    'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/',
+]
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+checksums = ['3b792b33a14091a144a13ba35d70fbaa45abb8102f240a6da4e24bb07babaac4']
+
+dependencies = [
+    ('Python', '3.7'),
+]
+
+
+postinstallcmds = [
+'cd %(installdir)s && ls | sed -e "/data/d" -e "/initial_setup.py/d" -e "/interproscan.properties/d" '
+'-e "/bin/d" | xargs rm -rf &&  for i in h3f h3i h3m h3p; do find . -name "*.${i}" -exec rm {} + ; done &&' \
+'python %(installdir)s/initial_setup.py && mv data/* %(installdir)s && '
+'rm -rf %(installdir)s/data initial_setup.py bin interproscan.properties && chmod -R a+r %(installdir)s/*'
+]
+
+sanity_check_paths = {
+    'files': ['hamap/2020_05/hamap.hmm.lib.h3p'],
+    'dirs': ['cdd', 'gene3d', 'hamap', 'panther', 'pfam', 'phobius', 'pirsf', 
+             'prints', 'prosite', 'sfld', 'smart', 'superfamily', 'tigrfam', 
+             'tmhmm']
+}
+
+moduleclass = 'bio'
+
+

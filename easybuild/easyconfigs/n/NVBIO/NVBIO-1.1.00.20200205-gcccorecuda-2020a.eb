@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'NVBIO'
+version = '1.1.00.20200205'
+
+homepage = 'https://github.com/NVlabs/nvbio'
+description = """NVBIO is a library of reusable components designed by NVIDIA Corporation to accelerate bioinformatics
+applications using CUDA."""
+
+toolchain = {'name': 'gcccorecuda', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/NVlabs/nvbio/archive']
+local_commit = "5916f3e"
+sources = ['%s.tar.gz' % local_commit]
+checksums = ['a354e79654501e512dcf38cfa7539f035fbe9ea09d79cd6813dd9a1776eca956']
+
+local_gencodes = ' '.join([
+	'sm_52',
+	'-gencode=arch=compute_52,code=sm_52',
+	'-gencode=arch=compute_60,code=sm_60',
+	'-gencode=arch=compute_61,code=sm_61', 
+	'-gencode=arch=compute_70,code=sm_70', 
+	'-gencode=arch=compute_75,code=sm_75',
+	'-gencode=arch=compute_80,code=sm_80',
+	'-gencode=arch=compute_80,code=compute_80'
+])
+
+configopts = "-DGPU_ARCHITECTURE='%s'" % local_gencodes
+
+# make install is broken
+local_files_to_copy = [
+	'nvSSA', 'sufsort-test', 'sw-benchmark', 'nvMicroAssembly', 
+	'nvLighter', 'nvExtractReads', 'nvBWT', 'nvbio-aln-diff', 
+	'nvFM-server', 'nvSetBWT', 'nvbio-test', 'nvmem', 'nvBowtie'
+]
+install_cmd = " && ".join(['make install', 'mkdir %(installdir)s/bin'] +
+	["cp %s/%s %%(installdir)s/bin" % (name,name) for name in local_files_to_copy])
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('binutils', '2.34'),
+]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_files_to_copy],
+    'dirs': ['bin' ]
+}
+moduleclass = 'bio'

@@ -1,0 +1,34 @@
+easyblock = 'CMakeMake'
+
+name = 'usd'
+version = '21.05'
+
+homepage = 'https://graphics.pixar.com/usd/docs/index.html'
+description = """Universal Scene Description (USD) is an efficient, scalable system for authoring, reading, and streaming time-sampled scene description for interchange between graphics applications."""
+
+toolchain = {'name': 'gcccuda', 'version': '2020a'}
+checksums = ['f63736f66fe7f81d17c7a046cb6dbc39']
+source_urls = ['https://github.com/PixarAnimationStudios/USD/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+
+dependencies = [
+('GLFW', '3.3.2'),
+('tbb', '2020.2'),
+('OpenSubdiv', '3.4.4'),
+('Boost', '1.72.0'),
+('ptex', '2.3.2'),
+('glew', '2.1.0'),
+('Python', '3.7.9'),
+]
+
+configopts = '-DPXR_USE_PYTHON_3=ON'
+preconfigopts = 'pwd && PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/python%(pyshortver)s/site-packages ; pip install PySide2 PyOpenGL jinja2 --prefix=%(installdir)s/ && '
+build_cmd = "PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/python%(pyshortver)s/site-packages && make"
+sanity_check_paths = {
+    'files': [['bin/%s' % x for x in ['sdfdump','sdffilter','testusdview','usdcat','usdchecker','usddiff','usddumpcrate','usdedit','usdGenSchema','usdrecord','usdresolve','usdstitch','usdstitchclips','usdtree','usdview','usdzip']]],
+    'dirs': ['lib/python','include','plugin','share']
+}
+parallel = 1
+postinstallcmds = ["PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/python%(pyshortver)s/site-packages ; pip install PySide2 PyOpenGL jinja2 --prefix=%(installdir)s/"]
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages:lib/python'}
+moduleclass = 'vis'

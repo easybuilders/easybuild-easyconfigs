@@ -1,0 +1,79 @@
+Patch created by Jasper Grimm (UoY)
+Avoid setting CXX, CXXFLAGS etc. if already defined
+Link to external libdeflate, HTSlib, Rmath, PCRE2 and LIBSVM
+Define MATHLIB_STANDALONE
+Define PCRE2_CODE_UNIT_WITH=8
+diff -Nru vt-0.57721.orig/Makefile vt-0.57721/Makefile
+--- vt-0.57721.orig/Makefile	2021-05-14 16:41:53.000000000 +0100
++++ vt-0.57721/Makefile	2021-05-17 15:31:57.000000000 +0100
+@@ -1,7 +1,8 @@
+-OPTFLAG = -O3
+-INCLUDES = -I./lib -I. -I./lib/htslib -I./lib/Rmath -I./lib/pcre2
+-CXXFLAGS = -pipe -std=c++0x $(OPTFLAG) $(INCLUDES) -D__STDC_LIMIT_MACROS
+-CXX = g++
++OPTFLAG ?= -O3
++CPPFLAGS += -I.
++CXXFLAGS ?= -pipe -std=c++0x $(OPTFLAG)
++DFLAGS ?= -D__STDC_LIMIT_MACROS -DMATHLIB_STANDALONE -DPCRE2_CODE_UNIT_WIDTH=8
++CXX ?= g++
+ 
+ SOURCESONLY =
+ 
+@@ -139,39 +140,39 @@
+ TARGET = vt
+ TOOLSRC = $(SOURCES:=.cpp) $(SOURCESONLY)
+ TOOLOBJ = $(TOOLSRC:.cpp=.o)
+-LIBDEFLATE = lib/libdeflate/libdeflate.a
+-LIBHTS = lib/htslib/libhts.a
+-LIBRMATH = lib/Rmath/libRmath.a
+-LIBPCRE2 = lib/pcre2/libpcre2.a
+-LIBSVM = lib/libsvm/libsvm.a
++# LIBDEFLATE = lib/libdeflate/libdeflate.a
++# LIBHTS = lib/htslib/libhts.a
++# LIBRMATH = lib/Rmath/libRmath.a
++# LIBPCRE2 = lib/pcre2/libpcre2.a
++# LIBSVM = lib/libsvm/libsvm.a
+ 
+ all : $(TARGET)
+ 
+-${LIBDEFLATE} :
+-	cd lib/libdeflate; $(MAKE) || exit 1; 
++# ${LIBDEFLATE} :
++#	cd lib/libdeflate; $(MAKE) || exit 1; 
+ 	
+-${LIBHTS} : ${LIBDEFLATE}
+-	export LDFLAGS=-L${PWD}/lib/libdeflate;	export CPPFLAGS=-I${PWD}/lib/libdeflate; cd lib/htslib; autoheader; autoconf; ./configure; $(MAKE) libhts.a || exit 1; 
++# ${LIBHTS} : ${LIBDEFLATE}
++#	export LDFLAGS=-L${PWD}/lib/libdeflate;	export CPPFLAGS=-I${PWD}/lib/libdeflate; cd lib/htslib; autoheader; autoconf; ./configure; $(MAKE) libhts.a || exit 1; 
+ 
+-${LIBRMATH} :
+-	cd lib/Rmath; $(MAKE) libRmath.a || exit 1; 
++# ${LIBRMATH} :
++#	cd lib/Rmath; $(MAKE) libRmath.a || exit 1; 
+ 
+-${LIBPCRE2} :
+-	cd lib/pcre2; $(MAKE) libpcre2.a || exit 1; 
++# ${LIBPCRE2} :
++#	cd lib/pcre2; $(MAKE) libpcre2.a || exit 1; 
+ 
+-${LIBSVM} :
+-	cd lib/libsvm; $(MAKE) libsvm.a || exit 1; 
++# ${LIBSVM} :
++#	cd lib/libsvm; $(MAKE) libsvm.a || exit 1; 
+ 
+ version :
+ 	git rev-parse HEAD | cut -c 1-8 | awk '{print "#define VERSION \"0.5772-"$$0"\""}' > version.h;
+ 
+-$(TARGET) : ${LIBHTS} ${LIBRMATH} ${LIBPCRE2}  ${LIBSVM} $(TOOLOBJ) 
+-	$(CXX) $(CXXFLAGS) -o $@ $(TOOLOBJ) $(LIBHTS) $(LIBRMATH) ${LIBPCRE2} ${LIBDEFLATE} -lz -lpthread -lbz2 -llzma -lcurl -lcrypto
++$(TARGET) : $(TOOLOBJ) 
++	$(CXX) $(DFLAGS) $(LDFLAGS) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ -lz -lm -lpthread -lbz2 -llzma -lcurl -lcrypto -ldeflate -lpcre2-8 -lsvm -lhts -lRmath
+ 
+ $(TOOLOBJ): $(HEADERSONLY)
+ 
+ .cpp.o :
+-	$(CXX) $(CXXFLAGS) -o $@ -c $*.cpp
++	$(CXX) $(DFLAGS) $(LDFLAGS) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c $*.cpp
+ 
+ .PHONY: clean cleanvt test version
+ 

@@ -1,0 +1,100 @@
+# Updated from previous config
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'QUAST'
+version = '5.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ablab/%(namelower)s'
+description = """QUAST evaluates genome assemblies by computing various metrics.
+ It works both with and without reference genomes. The tool accepts multiple
+ assemblies, thus is suitable for comparison."""
+
+toolchain = SYSTEM #{'name': 'GCC', 'version': '9.3.0'}
+
+dependencies = [
+    ('Rust', '1.47.0'),
+    ('Python', '3.8',),
+    ('SciPy-Stack', '2020b'),
+]
+
+postinstallcmds = ['cd %(installdir)s/bin && ln -s %(namelower)s.py %(namelower)s']
+exts_defaultclass = 'PythonPackage'
+exts_filter = (
+    'python -c "import %(ext_name)s"',
+    '',
+)
+sanity_pip_check = True
+use_pip = True
+
+exts_default_options = {
+    'buildcmd': 'build',
+    'check_ldshared': None,
+    'download_dep_fail': True,
+    'install_target': 'install',
+    'options': {},
+    'pip_ignore_installed': True,
+    'req_py_majver': None,
+    'req_py_minver': None,
+    'runtest': True,
+    'sanity_pip_check': True,
+    'unpack_sources': True,
+    'use_easy_install': False,
+    'use_pip': True,
+    'use_pip_editable': False,
+    'use_pip_extras': None,
+    'use_pip_for_deps': False,
+    'use_pip_requirement': False,
+    'use_setup_py_develop': False,
+    'zipped_egg': False,
+}
+
+exts_list = [
+    ('toml', '0.10.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/t/toml'],
+        'checksums': ['b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f'],
+    }),
+    ('semantic-version', '2.8.5', {
+        'source_tmpl': 'semantic_version-2.8.5.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/s/semantic-version'],
+        'checksums': ['d2cb2de0558762934679b9a104e82eca7af448c9f4974d1f3eeccff651df8a54'],
+    }),
+    ('setuptools-rust', '0.11.6', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/setuptools-rust'],
+        'checksums': ['a5b5954909cbc5d66b914ee6763f81fa2610916041c7266105a469f504a7c4ca'],
+    }),
+    ('simplejson', '3.17.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/simplejson'],
+        'checksums': ['2b4b2b738b3b99819a17feaf118265d0753d5536049ea570b3c43b51c4701e81'],
+    }),
+    ('joblib', '0.17.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/j/joblib'],
+        'checksums': ['9e284edd6be6b71883a63c9b7f124738a3c16195513ad940eae7e3438de885d5'],
+    }),
+    (name, version, {
+        'install_target': 'install_full',
+        'modulename': 'quast_libs',
+        'patches': ['QUAST-%(version)s_fix-Python-3.8.patch'],
+        'source_tmpl': 'quast_%(version)s.tar.gz',
+        'source_urls': ['https://github.com/ablab/quast/archive/'],
+        'checksums': [
+            '9f30c03e0bfd261492fe6b72fb07645bdee5b29d741f75fc75857b6fa095d91d',  # quast_5.0.2.tar.gz
+            '8ae7ebf45e5368ebc058fc208822a23d32ce1052bd53fd8c3aaa4ad14d3c95aa',  # QUAST-5.0.2_fix-Python-3.8.patch
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/%(namelower)s.py', 'bin/meta%(namelower)s.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "wget %(namelower)s.sf.net/test_data.tar.gz && tar xzf test_data.tar.gz && %(namelower)s.py --test && rm ./test_data.tar.gz ./test_data -rf",
+    "%(namelower)s -h",
+]
+
+moduleclass = 'bio'

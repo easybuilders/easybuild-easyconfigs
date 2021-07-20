@@ -1,0 +1,42 @@
+easyblock = 'MakeCp'
+
+name = 'Arioc'
+version = '1.43'
+
+homepage = 'https://sourceforge.net/projects/actc'
+description = "ACTC converts independent triangles into triangle strips or fans."
+
+toolchain = {'name': 'gcccorecuda', 'version': '2020a'}
+toolchainopts = {'pic': True}
+#https://github.com/RWilton/Arioc/archive/refs/tags/v1.43.tar.gz
+# https://github.com/RWilton/Arioc/releases/download/v1.43/Arioc.x.143.zip
+source_urls = ['https://github.com/RWilton/Arioc/releases/download/v%(version)s/']
+sources = ["Arioc.x.%(version_major)s%(version_minor)s.zip"]
+patches = ["%(name)s-%(version)s-cudaflags.patch"]
+checksums = [
+    '5840297f2a6b403cd66d1c5d83794cfb7a87c2ef2b90cd55a3e5ff73aa75e785',  # Arioc.x.143.zip
+    '09c1abae724478617cf9ef3989684a9635cab0a80b2496669bf923e53cb002be',  # Arioc-1.43-cudaflags.patch
+]
+
+build_cmd_targets = ['AriocE', 'AriocU', 'AriocP']
+local_opts = ' '.join([
+	'-arch=sm_52',
+	'-gencode=arch=compute_52,code=sm_52',
+	'-gencode=arch=compute_60,code=sm_60',
+	'-gencode=arch=compute_61,code=sm_61', 
+	'-gencode=arch=compute_70,code=sm_70', 
+	'-gencode=arch=compute_75,code=sm_75',
+	'-gencode=arch=compute_80,code=sm_80',
+	'-gencode=arch=compute_80,code=compute_80'
+])
+buildopts = "CUDA_FLAGS='%s'" % local_opts
+files_to_copy = [
+    (['../bin/%s' % x for x in build_cmd_targets], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in build_cmd_targets],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

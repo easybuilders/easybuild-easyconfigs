@@ -1,0 +1,54 @@
+# Built with EasyBuild version 4.3.3-r3ff498d1f735c51b313c04c5e4abeeaecc23589b on 2021-03-11_15-41-13
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# 3.9.0:
+# Modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'CMakeMake'
+
+name = 'hpcSPAdes'
+version = "3.15.0"
+local_name = 'SPAdes'
+homepage = 'http://cab.spbu.ru/software/spades/'
+description = "Genome assembler for single-cell and isolates data sets"
+
+toolchain = {'name': 'gomkl', 'version': '2020a'}
+
+source_urls = ['http://cab.spbu.ru/files/%(name)s']
+sources = ['SPAdes-%(version)s-hpc.tar.gz']
+checksums = ['0b0ace38d7e90c19e3f5a82aa387cb809adcda4bc893385ff203d7027440dfb3']
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('binutils', '2.34'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('libreadline', '8.0'),
+]
+
+start_dir = 'src'
+
+configopts = " -DBoost_NO_BOOST_CMAKE=ON"
+
+local_spades_binaries =  [
+    'spades.py', 'metaspades.py', 'plasmidspades.py', #'metaplasmidspades.py',not in distro
+    'rnaspades.py', 'truspades.py', 'spades-hpc', 'spades-gbuilder', 
+    'spades-gmapper', 'spades-kmercount', 'spades-hammer', 'spades-ionhammer', 
+    'spades-bwa', 'spades-corrector-core', 'spades-truseq-scfcorrection'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_spades_binaries],
+    'dirs': [],
+}
+
+sanity_check_commands = [('spades.py', '--test')]
+
+moduleclass = 'bio'
