@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'SageMath'
+version = '9.3'
+
+homepage = 'http://www.sagemath.org/'
+description = """SageMath is a free open-source mathematics software system licensed under the GPL. It builds on 
+top of many existing open-source packages: NumPy, SciPy, matplotlib, Sympy, Maxima, GAP, FLINT, R and many more. 
+Access their combined power through a common, Python-based language or directly via interfaces or wrappers."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.cecm.sfu.ca/sage/src/']
+sources = ['sage-%(version)s.tar.gz']
+patches = ["SageMath-9.3-fix-broken-python-scripts.patch"]
+checksums = [
+    'ab57d72579ed8f66bf806055d2cf8d42c45c2d8d0a82469c8bacdacb2ebab31e',  # sage-9.3.tar.gz
+    '63f1f0754aa60b46e092da184db37e153dbfe879dfcbb284d831fcf6cac5327c',  # SageMath-9.3-fix-broken-python-scripts.patch
+]
+
+dependencies = [
+    ('Python', '3.8'),
+]
+buildininstalldir = True
+configopts = '--with-system-python3=yes --with-python=$EBROOTPYTHON/bin/python3 '
+preconfigopts = "export PIP_CONFIG_FILE= && "   # need to remove the constraint on pip<21
+preconfigopts += 'export CFLAGS="${CFLAGS} -I$EBROOTGENTOO/include" && '   # need this to build their own wheels
+preconfigopts += 'export LDFLAGS="${LDFLAGS} -L$EBROOTGENTOO/lib" && '   # need this to build their own wheels
+prebuildopts = preconfigopts
+sanity_check_paths = {
+    'files':['bin/sage'],
+    'dirs': ['lib', 'share']
+}
+
+modextravars = {'SAGE_ROOT': '%(installdir)s'}
+
+moduleclass = 'math'
