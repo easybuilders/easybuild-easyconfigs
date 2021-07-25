@@ -1,0 +1,47 @@
+easyblock = 'MakeCp'
+name = 'mpas'
+version = '7.0'
+
+homepage = 'https://mpas-dev.github.io'
+description = "The Model for Prediction Across Scales (MPAS) is a collaborative project for developing atmosphere, ocean and other earth-system simulation components for use in climate, regional climate and weather studies."
+
+toolchain = {'name': 'iompi', 'version': '2020a'}
+
+source_urls = ['https://github.com/MPAS-Dev/MPAS-Model/archive/refs/tags']
+sources = ['v7.0.tar.gz']
+patches = ['MPAS-7.0-PIO2_libs_Makefile.patch']
+
+checksums = [
+	'f898ce257e66cff9e29320458870570e55721d16cb000de7f2cc27de7fdef14f', # v7.0.tar.gz
+        '1da650ce6dbdcf1d131e5cd8495234e8117eb06fb2bebd968fc98cd87a225652', # PIO2_libs_Makefile.patch
+]
+
+separate_build_dir = True
+
+dependencies = [
+    ('parallelio/2.5.4', EXTERNAL_MODULE),
+    ('pnetcdf/1.10.0', EXTERNAL_MODULE),
+    ('netCDF-Fortran', '4.5.2', '-mpi'),
+    ('netCDF', '4.7.4', '-mpi'),
+    ('HDF5', '1.10.6', '-mpi')
+]
+
+prebuildopts = 'NETCDF=$EBROOTNETCDF/lib64 PNETCDF=$EBROOTPNETCDF'
+buildopts='ifort CORE=atmosphere USE_PIO2=true'
+
+files_to_copy = [
+'atmosphere_model',
+'src/core_atmosphere',
+]
+modextrapaths={
+'PATH':[""]
+}
+
+sanity_check_paths = {
+    'files': ['atmosphere_model'],
+    'dirs': [],
+}
+
+moduleclass = 'geo'
+
+
