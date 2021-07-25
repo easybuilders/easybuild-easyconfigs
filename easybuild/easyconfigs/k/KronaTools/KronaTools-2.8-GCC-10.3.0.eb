@@ -1,0 +1,41 @@
+# Contribution from the Crick HPC team
+# uploaded by J. Sassmannshausen
+# this is a bug fix to make sure the symlinks in bin are not getting destroyed 
+# by Easybuild when it is tidying up
+# This build also links updateTaxonomy.sh and updateAccessions.sh in the bin folder
+# so users can install their own Taxonomy database
+
+easyblock = 'Tarball'
+
+name = 'KronaTools'
+version = '2.8'
+
+homepage = 'https://github.com/marbl/Krona/wiki/KronaTools'
+description = """Krona Tools is a set of scripts to create Krona charts from 
+several Bioinformatics tools as well as from text and XML files."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/marbl/Krona/releases/download/v%(version)s/']
+sources = ['%(name)s-%(version)s.tar']
+checksums = ['56efc028b6226a1aea8ec4e9f049836b07d4833e7e4d5b9189118ed51a47c9c0']
+
+dependencies = [('Perl', '5.32.1')]
+
+postinstallcmds = [
+    "cd %(installdir)s && ./install.pl --prefix=%(installdir)s;",
+    "cd %(installdir)s/bin && ln -s ../updateAccessions.sh . && ln -s ../updateTaxonomy.sh .",
+]
+
+sanity_check_paths = {
+    'files': ['bin/ktClassifyBLAST', 'bin/ktImportBLAST', 'bin/ktImportTaxonomy',
+              'bin/updateAccessions.sh', 'bin/updateTaxonomy.sh'],
+    'dirs': ['data', 'img', 'scripts'],
+}
+
+sanity_check_commands = [
+    "updateAccessions.sh --help",
+    "ktImportText",
+]
+
+moduleclass = 'bio'
