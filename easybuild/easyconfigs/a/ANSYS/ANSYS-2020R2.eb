@@ -1,6 +1,10 @@
+# Requires manually loading StdEnv/2016 before building to install under
+# [roberpj@build-node:~/.local/easybuild/software/2017/Core/ansys/2020R2] or
+# [roberpj@buidl-node:/cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2020R2] 
+
 name = 'ANSYS'
 version = '2020R2'
-versionsuffix = 'v202'
+versionsuffix = '202'
 versionprefix = '2018.3.222'
 
 homepage = 'http://www.ansys.com'
@@ -10,32 +14,35 @@ description = """ANSYS simulation software enables organizations to confidently 
 
 toolchain = SYSTEM
 
-# create tar ball from the installation iso files
+# create tar ball from installation isos
 sources = ['ANSYS-%(version)s.tar']
 
 # sha256sum ANSYS-2020R2.tar
 checksums = ['ba81b7b7697c893485105061c0c9e8bc']
 
 postinstallcmds = [
-        # Fix missing execute permission for others on at least one folder
-	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
-        # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
-	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
-          sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-        # Rename built-in libstdc++.so* to libstdc++.so*.bak as they are older than whats in nix, and cause problem with other binaries
-        "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
-        # Run setrpaths.sh in all directories
-        "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
-        # Run setrpaths.sh for any_interpreter
-        "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
-          /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-        # Enable additive extension on the workbench ACT start page
-        "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
-          %(installdir)s/%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
-        # Manually patch setup-mwuser (original filesize 4470 -> 4472 when patched) for ansys versions >= 17.2
-        # /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2020R2/v202/commonfiles/MainWin/linx64/mw/setup-mwuser
-        "cp -a %(installdir)s/%(versionsuffix)s/commonfiles/MainWin/linx64/mw/setup-mwuser %(installdir)s/%(versionsuffix)s/commonfiles/MainWin/linx64/mw/orig_setup-mwuser",
-        "patch -d%(installdir)s/%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/setup-mwuser.patch-2020R2",
+  # Set same perms on all directories
+  "find %(installdir)s -type d -exec chmod 755 {} \;",
+  # Set same perms on all shared libraries to avoid warning in log file
+  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
+  # Rename built-in libstdc++.so* to libstdc++.so*.bak as they are older than whats in nix, and cause problem with other binaries
+  "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+  # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+  # Run setrpaths.sh in all dirs so all bins use nix interpreter and all bins/libs find qt libs for ensight
+  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s \
+    --add_path %(installdir)s/v%(versionsuffix)s/CEI/apex%(versionsuffix)s/machines/linux_2.6_64/qt-5.12.6/lib",
+  # Set any_interpreter for some license binaries
+  "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
+    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+  # Enable additive extension on the workbench ACT start page
+  "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
+    %(installdir)s/v%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
+  # Manually patch setup-mwuser (original filesize 4470 -> 4472 when patched) for ansys versions >= 17.2
+  # /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2020R2/v202/commonfiles/MainWin/linx64/mw/setup-mwuser
+  "cp -a %(installdir)s/v%(versionsuffix)s/commonfiles/MainWin/linx64/mw/setup-mwuser %(installdir)s/v%(versionsuffix)s/commonfiles/MainWin/linx64/mw/orig_setup-mwuser",
+  "patch -d%(installdir)s/v%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/setup-mwuser.patch-2020R2",
 ]
 
 modluafooter = """
@@ -52,11 +59,12 @@ elseif (path) then
 	-- load the license file which should contain Lua commands to set the license path
 	assert(loadfile(path))()
 end
+setenv("ENSIGHT10_LM","ansys")
 setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
 if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
         -- /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys \
         --   /2020R2/v202/commonfiles/MPI/Intel/2018.3.222/linx64/etc/tmi.conf
-        setenv("TMI_CONFIG",pathJoin(root,"%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
+        setenv("TMI_CONFIG",pathJoin(root,"v%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
 end
 """
 
