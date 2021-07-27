@@ -34,7 +34,7 @@ import shutil
 import sys
 import tempfile
 from distutils.version import LooseVersion
-from unittest import TestCase, TestLoader, main
+from unittest import TestCase, TestLoader, main, skip
 
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
@@ -68,65 +68,209 @@ from easybuild.tools.utilities import nub
 single_tests_ok = True
 
 
+def is_pr():
+    """Return true if run in a pull request CI"""
+    # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
+    travis_pr_test = re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', ''))
+
+    # when testing a PR in GitHub Actions, $GITHUB_EVENT_NAME will be set to 'pull_request'
+    github_pr_test = os.environ.get('GITHUB_EVENT_NAME') == 'pull_request'
+    return travis_pr_test or github_pr_test
+
+
+def get_target_branch():
+    """Return the target branch of a pull request"""
+    # target branch should be anything other than 'master';
+    # usually is 'develop', but could also be a release branch like '3.7.x'
+    target_branch = os.environ.get('GITHUB_BASE_REF', None)
+    if not target_branch:
+        target_branch = os.environ.get('TRAVIS_BRANCH', None)
+    if not target_branch:
+        raise RuntimeError("Did not find a target branch")
+    return target_branch
+
+
+def skip_if_not_pr_to_non_main_branch():
+    if not is_pr():
+        return skip("Only run for pull requests")
+    if get_target_branch() == "main":
+        return skip("Not run for pull requests against main")
+    return lambda func: func
+
+
+def get_eb_files_from_diff(diff_filter):
+    """Return the files changed on HEAD relative to the current target branch"""
+    target_branch = get_target_branch()
+
+    # relocate to top-level directory of repository to run 'git diff' command
+    top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
+    cwd = change_dir(top_dir)
+
+    # first determine the 'merge base' between target branch and PR branch
+    # cfr. https://git-scm.com/docs/git-merge-base
+    cmd = "git merge-base %s HEAD" % target_branch
+    out, ec = run_cmd(cmd, simple=False, log_ok=False)
+    if ec == 0:
+        merge_base = out.strip()
+        print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
+    else:
+        msg = "Failed to determine merge base (ec: %s, output: '%s'), "
+        msg += "falling back to specifying target branch %s"
+        print(msg % (ec, out, target_branch))
+        merge_base = target_branch
+
+    # determine list of changed files using 'git diff' and merge base determined above
+    cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
+    out, _ = run_cmd(cmd, simple=False)
+    files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
+
+    change_dir(cwd)
+    return files
+
+
 class EasyConfigTest(TestCase):
     """Baseclass for easyconfig testcases."""
 
-    # make sure that the EasyBuild installation is still known even if we purge an EB module
-    if os.getenv('EB_SCRIPT_PATH') is None:
-        eb_path = which('eb')
-        if eb_path is not None:
-            os.environ['EB_SCRIPT_PATH'] = eb_path
+    @classmethod
+    def setUpClass(cls):
+        """Setup environment for all tests. Called once!"""
+        # make sure that the EasyBuild installation is still known even if we purge an EB module
+        if os.getenv('EB_SCRIPT_PATH') is None:
+            eb_path = which('eb')
+            if eb_path is not None:
+                os.environ['EB_SCRIPT_PATH'] = eb_path
 
-    # initialize configuration (required for e.g. default modules_tool setting)
-    eb_go = eboptions.parse_options()
-    config.init(eb_go.options, eb_go.get_options_by_section('config'))
-    build_options = {
-        'check_osdeps': False,
-        'external_modules_metadata': {},
-        'force': True,
-        'local_var_naming_check': 'error',
-        'optarch': 'test',
-        'robot_path': get_paths_for("easyconfigs")[0],
-        'silent': True,
-        'suffix_modules_path': GENERAL_CLASS,
-        'valid_module_classes': config.module_classes(),
-        'valid_stops': [x[0] for x in EasyBlock.get_steps()],
-    }
-    config.init_build_options(build_options=build_options)
-    set_tmpdir()
-    del eb_go
+        # initialize configuration (required for e.g. default modules_tool setting)
+        eb_go = eboptions.parse_options(args=[])  # Ignore cmdline args as those are meant for the unittest framework
+        config.init(eb_go.options, eb_go.get_options_by_section('config'))
+        build_options = {
+            'check_osdeps': False,
+            'external_modules_metadata': {},
+            'force': True,
+            'local_var_naming_check': 'error',
+            'optarch': 'test',
+            'robot_path': get_paths_for("easyconfigs")[0],
+            'silent': True,
+            'suffix_modules_path': GENERAL_CLASS,
+            'valid_module_classes': config.module_classes(),
+            'valid_stops': [x[0] for x in EasyBlock.get_steps()],
+        }
+        config.init_build_options(build_options=build_options)
+        set_tmpdir()
 
-    # put dummy 'craype-test' module in place, which is required for parsing easyconfigs using Cray* toolchains
-    TMPDIR = tempfile.mkdtemp()
-    os.environ['MODULEPATH'] = TMPDIR
-    write_file(os.path.join(TMPDIR, 'craype-test'), '#%Module\n')
+        # put dummy 'craype-test' module in place, which is required for parsing easyconfigs using Cray* toolchains
+        cls.TMPDIR = tempfile.mkdtemp()
+        os.environ['MODULEPATH'] = cls.TMPDIR
+        write_file(os.path.join(cls.TMPDIR, 'craype-test'), '#%Module\n')
 
-    log = fancylogger.getLogger("EasyConfigTest", fname=False)
+        log = fancylogger.getLogger("EasyConfigTest", fname=False)
 
-    # make sure a logger is present for main
-    eb_main._log = log
-    ordered_specs = None
-    parsed_easyconfigs = []
+        # make sure a logger is present for main
+        eb_main._log = log
 
-    def process_all_easyconfigs(self):
-        """Process all easyconfigs and resolve inter-easyconfig dependencies."""
+        cls._ordered_specs = None
+        cls._parsed_easyconfigs = []
+        cls._parsed_all_easyconfigs = False
+        cls._changed_ecs = None  # ECs changed in a PR
+
+    @classmethod
+    def tearDownClass(cls):
+        """Cleanup after running all tests"""
+        shutil.rmtree(cls.TMPDIR)
+
+    @classmethod
+    def parse_all_easyconfigs(cls):
+        """Parse all easyconfigs."""
+        if cls._parsed_all_easyconfigs:
+            return
         # all available easyconfig files
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
+        parsed_specs = set(ec['spec'] for ec in cls._parsed_easyconfigs)
+        for spec in specs:
+            if spec not in parsed_specs:
+                cls._parsed_easyconfigs.extend(process_easyconfig(spec))
+        cls._parsed_all_easyconfigs = True
 
-        # parse all easyconfigs if they haven't been already
-        if not EasyConfigTest.parsed_easyconfigs:
-            for spec in specs:
-                EasyConfigTest.parsed_easyconfigs.extend(process_easyconfig(spec))
-
+    @classmethod
+    def resolve_all_dependencies(cls):
+        """Resolve dependencies between easyconfigs"""
+        # Parse all easyconfigs if not done yet
+        cls.parse_all_easyconfigs()
         # filter out external modules
-        for ec in EasyConfigTest.parsed_easyconfigs:
+        for ec in cls._parsed_easyconfigs:
             for dep in ec['dependencies'][:]:
                 if dep.get('external_module', False):
                     ec['dependencies'].remove(dep)
+        cls._ordered_specs = resolve_dependencies(
+            cls._parsed_easyconfigs, modules_tool(), retain_all_deps=True)
 
-        EasyConfigTest.ordered_specs = resolve_dependencies(
-            EasyConfigTest.parsed_easyconfigs, modules_tool(), retain_all_deps=True)
+    def _get_changed_easyconfigs(self):
+        """Gather all added or modified easyconfigs"""
+        # get list of changed easyconfigs
+        changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
+        added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
+        if changed_ecs_filenames:
+            print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
+        if added_ecs_filenames:
+            print("\nList of added easyconfig files in this PR:\n\t%s" % '\n\t'.join(added_ecs_filenames))
+        EasyConfigTest._changed_ecs_filenames = changed_ecs_filenames
+        EasyConfigTest._added_ecs_filenames = added_ecs_filenames
+
+        # grab parsed easyconfigs for changed easyconfig files
+        changed_ecs = []
+        for ec_fn in changed_ecs_filenames + added_ecs_filenames:
+            match = None
+            for ec in self.parsed_easyconfigs:
+                if os.path.basename(ec['spec']) == ec_fn:
+                    match = ec['ec']
+                    break
+
+            if match:
+                changed_ecs.append(match)
+            else:
+                # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
+                # so as a last resort, try to find the easyconfig file in __archive__
+                easyconfigs_path = get_paths_for("easyconfigs")[0]
+                specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
+                if len(specs) == 1:
+                    ec = process_easyconfig(specs[0])[0]
+                    changed_ecs.append(ec['ec'])
+                else:
+                    raise RuntimeError("Failed to find parsed easyconfig for %s"
+                                       " (and could not isolate it in easyconfigs archive either)" % ec_fn)
+        EasyConfigTest._changed_ecs = changed_ecs
+
+    @property
+    def parsed_easyconfigs(self):
+        # parse all easyconfigs if they haven't been already
+        EasyConfigTest.parse_all_easyconfigs()
+        return EasyConfigTest._parsed_easyconfigs
+
+    @property
+    def ordered_specs(self):
+        # Resolve dependencies if not done
+        if EasyConfigTest._ordered_specs is None:
+            EasyConfigTest.resolve_all_dependencies()
+        return EasyConfigTest._ordered_specs
+
+    @property
+    def changed_ecs_filenames(self):
+        if EasyConfigTest._changed_ecs is None:
+            self._get_changed_easyconfigs()
+        return EasyConfigTest._changed_ecs_filenames
+
+    @property
+    def added_ecs_filenames(self):
+        if EasyConfigTest._changed_ecs is None:
+            self._get_changed_easyconfigs()
+        return EasyConfigTest._added_ecs_filenames
+
+    @property
+    def changed_ecs(self):
+        if EasyConfigTest._changed_ecs is None:
+            self._get_changed_easyconfigs()
+        return EasyConfigTest._changed_ecs
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -136,10 +280,7 @@ class EasyConfigTest(TestCase):
             (hn, fn) = tempfile.mkstemp(suffix='.dot')
             os.close(hn)
 
-            if EasyConfigTest.ordered_specs is None:
-                self.process_all_easyconfigs()
-
-            dep_graph(fn, EasyConfigTest.ordered_specs)
+            dep_graph(fn, self.ordered_specs)
 
             remove_file(fn)
         else:
@@ -152,10 +293,7 @@ class EasyConfigTest(TestCase):
             print("(skipped conflicts test)")
             return
 
-        if EasyConfigTest.ordered_specs is None:
-            self.process_all_easyconfigs()
-
-        self.assertFalse(check_conflicts(EasyConfigTest.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
+        self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
                          "No conflicts detected")
 
     def check_dep_vars(self, gen, dep, dep_vars):
@@ -211,6 +349,12 @@ class EasyConfigTest(TestCase):
                 boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
+
+        # filter out Perl with -minimal versionsuffix which are only used in makeinfo-minimal
+        if dep == 'Perl':
+            minimal_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -minimal')]
+            if len(minimal_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != minimal_vsuff_vars[0])
 
         # filter out FFTW and imkl with -serial versionsuffix which are used in non-MPI subtoolchains
         if dep in ['FFTW', 'imkl']:
@@ -315,11 +459,13 @@ class EasyConfigTest(TestCase):
                 # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
                 ('2.2.0;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'Horovod-0.19.5-', 'decona-0.1.2-',
                             'NGSpeciesID-0.1.1.1-']),
+                # medaka 1.4.3 depends on TensorFlow 2.2.2
+                ('2.2.2;', ['medaka-1.4.3-']),
             ],
-            # medaka 1.1.* and 1.2.* requires Pysam 0.16.0.1,
+            # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
-            'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'decona-0.1.2-',
+            'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                       'NGSpeciesID-0.1.1.1-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
@@ -537,11 +683,8 @@ class EasyConfigTest(TestCase):
         This is enforced to try and limit the chance of running into conflicts when multiple modules built with
         the same toolchain are loaded together.
         """
-        if EasyConfigTest.ordered_specs is None:
-            self.process_all_easyconfigs()
-
-        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in EasyConfigTest.parsed_easyconfigs)
-        if len(ecs_by_full_mod_name) != len(EasyConfigTest.parsed_easyconfigs):
+        ecs_by_full_mod_name = dict((ec['full_mod_name'], ec) for ec in self.parsed_easyconfigs)
+        if len(ecs_by_full_mod_name) != len(self.parsed_easyconfigs):
             self.fail('Easyconfigs with duplicate full_mod_name found')
 
         # Cache already determined dependencies
@@ -569,12 +712,12 @@ class EasyConfigTest(TestCase):
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
-        for pattern in ['201[89][ab]', '20[2-9][0-9][ab]', r'GCCcore-[7-9]\.[0-9]']:
+        for pattern in ['20(1[89]|[2-9][0-9])[ab]', r'GCCcore-([7-9]|[1-9][0-9])\.[0-9]']:
             all_deps = {}
             regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
             # collect variants for all dependencies of easyconfigs that use a toolchain that matches
-            for ec in EasyConfigTest.ordered_specs:
+            for ec in self.ordered_specs:
                 ec_file = os.path.basename(ec['spec'])
 
                 # take into account software which also follows a <year>{a,b} versioning scheme
@@ -609,10 +752,7 @@ class EasyConfigTest(TestCase):
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
 
-        if not EasyConfigTest.parsed_easyconfigs:
-            self.process_all_easyconfigs()
-
-        for ec in EasyConfigTest.parsed_easyconfigs:
+        for ec in self.parsed_easyconfigs:
             ec_scp = ec['ec']['sanity_check_paths']
             if ec_scp != {}:
                 # if sanity_check_paths is specified (i.e., non-default), it must adher to the requirements
@@ -627,11 +767,8 @@ class EasyConfigTest(TestCase):
         """Make sure $R_LIBS_SITE is being updated, rather than $R_LIBS."""
         # cfr. https://github.com/easybuilders/easybuild-easyblocks/pull/2326
 
-        if not EasyConfigTest.parsed_easyconfigs:
-            self.process_all_easyconfigs()
-
         r_libs_ecs = []
-        for ec in EasyConfigTest.parsed_easyconfigs:
+        for ec in self.parsed_easyconfigs:
             for key in ('modextrapaths', 'modextravars'):
                 if 'R_LIBS' in ec['ec'][key]:
                     r_libs_ecs.append(ec['spec'])
@@ -656,7 +793,8 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
-    def check_sha256_checksums(self, changed_ecs):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_sha256_checksums(self):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
 
         # list of software for which checksums can not be required,
@@ -676,7 +814,7 @@ class EasyConfigTest(TestCase):
         # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
             if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper']:
                 ec['sources'] = []
                 ec['patches'] = []
@@ -684,14 +822,15 @@ class EasyConfigTest(TestCase):
 
         # filter out deprecated easyconfigs
         retained_changed_ecs = []
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
             if not ec['deprecated']:
                 retained_changed_ecs.append(ec)
 
         checksum_issues = check_sha256_checksums(retained_changed_ecs, whitelist=whitelist)
         self.assertTrue(len(checksum_issues) == 0, "No checksum issues:\n%s" % '\n'.join(checksum_issues))
 
-    def check_python_packages(self, changed_ecs, added_ecs_filenames):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_python_packages(self):
         """Several checks for easyconfigs that install (bundles of) Python packages."""
 
         # These packages do not support installation with 'pip'
@@ -706,13 +845,15 @@ class EasyConfigTest(TestCase):
             r'Mako-1.0.4.*Python-2.7.12.*',
             # no pip 9.x or newer for configparser easyconfigs using a 2016a or 2016b toolchain
             r'configparser-3.5.0.*-2016[ab].*',
+            # mympirun is installed with system Python, pip may not be installed for system Python
+            r'vsc-mympirun.*',
         ]
 
         failing_checks = []
 
         python_default_urls = PythonPackage.extra_options()['source_urls'][0]
 
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
 
             with ec.disable_templating():
                 ec_fn = os.path.basename(ec.path)
@@ -782,7 +923,7 @@ class EasyConfigTest(TestCase):
                     msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
                     # This is only a failure for newly added ECs, not for existing ECS
                     # As that would probably break many ECs
-                    if ec_fn in added_ecs_filenames:
+                    if ec_fn in self.added_ecs_filenames:
                         failing_checks.append(msg)
                     else:
                         print('\nNote: Failed non-critical check: ' + msg)
@@ -802,11 +943,12 @@ class EasyConfigTest(TestCase):
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
-    def check_R_packages(self, changed_ecs):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_R_packages(self):
         """Several checks for easyconfigs that install (bundles of) R packages."""
         failing_checks = []
 
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
             exts_defaultclass = ec.get('exts_defaultclass')
             if exts_defaultclass == 'RPackage' or ec.name == 'R':
@@ -822,7 +964,8 @@ class EasyConfigTest(TestCase):
                         seen_exts.add(ext_name)
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
-    def check_sanity_check_paths(self, changed_ecs):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_sanity_check_paths(self):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
@@ -832,12 +975,12 @@ class EasyConfigTest(TestCase):
                      'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
-        # CESM-deps: Python + Perl + netCDF + ESMF + git
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC']
+        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS']
 
         failing_checks = []
 
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
 
             easyblock = ec.get('easyblock')
 
@@ -850,7 +993,8 @@ class EasyConfigTest(TestCase):
 
         self.assertFalse(failing_checks, '\n'.join(failing_checks))
 
-    def check_https(self, changed_ecs):
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_https(self):
         """Make sure https:// URL is used (if it exists) for homepage/source_urls (rather than http://)."""
 
         whitelist = [
@@ -872,11 +1016,25 @@ class EasyConfigTest(TestCase):
             # https:// has outdated SSL configurations
             'http://faculty.scs.illinois.edu',
         ]
+        # Cache: Mapping of already checked HTTP urls to whether the HTTPS variant works
+        checked_urls = dict()
+
+        def check_https_url(http_url):
+            """Check if the https url works"""
+            http_url = http_url.rstrip('/')  # Remove trailing slashes
+            https_url_works = checked_urls.get(http_url)
+            if https_url_works is None:
+                https_url = http_url.replace('http://', 'https://')
+                try:
+                    https_url_works = bool(urlopen(https_url, timeout=5))
+                except Exception:
+                    https_url_works = False
+            checked_urls[http_url] = https_url_works
 
         http_regex = re.compile('http://[^"\'\n]+', re.M)
 
         failing_checks = []
-        for ec in changed_ecs:
+        for ec in self.changed_ecs:
             ec_fn = os.path.basename(ec.path)
 
             # skip whitelisted easyconfigs
@@ -892,110 +1050,10 @@ class EasyConfigTest(TestCase):
                 if any(http_url.startswith(x) for x in url_whitelist):
                     continue
 
-                https_url = http_url.replace('http://', 'https://')
-                try:
-                    https_url_works = bool(urlopen(https_url, timeout=5))
-                except Exception:
-                    https_url_works = False
-
-                if https_url_works:
+                if check_https_url(http_url):
                     failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
         if failing_checks:
             self.fail('\n'.join(failing_checks))
-
-    def test_changed_files_pull_request(self):
-        """Specific checks only done for the (easyconfig) files that were changed in a pull request."""
-        def get_eb_files_from_diff(diff_filter):
-
-            # first determine the 'merge base' between target branch and PR branch
-            # cfr. https://git-scm.com/docs/git-merge-base
-            cmd = "git merge-base %s HEAD" % target_branch
-            out, ec = run_cmd(cmd, simple=False, log_ok=False)
-            if ec == 0:
-                merge_base = out.strip()
-                print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
-            else:
-                msg = "Failed to determine merge base (ec: %s, output: '%s'), "
-                msg += "falling back to specifying target branch %s"
-                print(msg % (ec, out, target_branch))
-                merge_base = target_branch
-
-            # determine list of changed files using 'git diff' and merge base determined above
-            cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
-            out, _ = run_cmd(cmd, simple=False)
-            return [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
-
-        # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
-        travis_pr_test = re.match('^[0-9]+$', os.environ.get('TRAVIS_PULL_REQUEST', '(none)'))
-
-        # when testing a PR in GitHub Actions, $GITHUB_EVENT_NAME will be set to 'pull_request'
-        github_pr_test = os.environ.get('GITHUB_EVENT_NAME') == 'pull_request'
-
-        if travis_pr_test or github_pr_test:
-
-            # target branch should be anything other than 'master';
-            # usually is 'develop', but could also be a release branch like '3.7.x'
-            if travis_pr_test:
-                target_branch = os.environ.get('TRAVIS_BRANCH', None)
-            else:
-                target_branch = os.environ.get('GITHUB_BASE_REF', None)
-
-            if target_branch is None:
-                self.assertTrue(False, "Failed to determine target branch for current pull request.")
-
-            if target_branch != 'main':
-
-                if not EasyConfigTest.parsed_easyconfigs:
-                    self.process_all_easyconfigs()
-
-                # relocate to top-level directory of repository to run 'git diff' command
-                top_dir = os.path.dirname(os.path.dirname(get_paths_for('easyconfigs')[0]))
-                cwd = change_dir(top_dir)
-
-                # get list of changed easyconfigs
-                changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
-                added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
-                if changed_ecs_filenames:
-                    print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
-                if added_ecs_filenames:
-                    print("\nList of added easyconfig files in this PR:\n\t%s" % '\n\t'.join(added_ecs_filenames))
-
-                change_dir(cwd)
-
-                # grab parsed easyconfigs for changed easyconfig files
-                changed_ecs = []
-                for ec_fn in changed_ecs_filenames + added_ecs_filenames:
-                    match = None
-                    for ec in EasyConfigTest.parsed_easyconfigs:
-                        if os.path.basename(ec['spec']) == ec_fn:
-                            match = ec['ec']
-                            break
-
-                    if match:
-                        changed_ecs.append(match)
-                    else:
-                        # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
-                        # so as a last resort, try to find the easyconfig file in __archive__
-                        easyconfigs_path = get_paths_for("easyconfigs")[0]
-                        specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
-                        if len(specs) == 1:
-                            ec = process_easyconfig(specs[0])[0]
-                            changed_ecs.append(ec['ec'])
-                        else:
-                            error_msg = "Failed to find parsed easyconfig for %s" % ec_fn
-                            error_msg += " (and could not isolate it in easyconfigs archive either)"
-                            self.assertTrue(False, error_msg)
-
-                # run checks on changed easyconfigs
-                self.check_sha256_checksums(changed_ecs)
-                self.check_python_packages(changed_ecs, added_ecs_filenames)
-                self.check_R_packages(changed_ecs)
-                self.check_sanity_check_paths(changed_ecs)
-                self.check_https(changed_ecs)
-
-    def test_zzz_cleanup(self):
-        """Dummy test to clean up global temporary directory."""
-        shutil.rmtree(self.TMPDIR)
 
 
 def template_easyconfig_test(self, spec):
@@ -1012,7 +1070,7 @@ def template_easyconfig_test(self, spec):
         ec = ecs[0]['ec']
 
         # cache the parsed easyconfig, to avoid that it is parsed again
-        EasyConfigTest.parsed_easyconfigs.append(ecs[0])
+        EasyConfigTest._parsed_easyconfigs.append(ecs[0])
     else:
         self.assertTrue(False, "easyconfig %s does not contain blocks, yields only one parsed easyconfig" % spec)
 
@@ -1109,8 +1167,30 @@ def template_easyconfig_test(self, spec):
         if requires_binutils:
             # dependencies() returns both build and runtime dependencies
             # in some cases, binutils can also be a runtime dep (e.g. for Clang)
+            # Also using GCC directly as a build dep is also allowed (it includes the correct binutils)
             dep_names = [d['name'] for d in ec.dependencies()]
-            self.assertTrue('binutils' in dep_names, "binutils is a build dep in %s: %s" % (spec, dep_names))
+            self.assertTrue('binutils' in dep_names or 'GCC' in dep_names,
+                            "binutils or GCC is a build dep in %s: %s" % (spec, dep_names))
+
+    # make sure that OpenSSL wrapper is used rather than OS dependency,
+    # for easyconfigs using a 2021a (sub)toolchain or more recent common toolchain version
+    osdeps = ec['osdependencies']
+    if osdeps:
+        # check whether any entry in osdependencies related to OpenSSL
+        openssl_osdep = False
+        for osdep in osdeps:
+            if isinstance(osdep, string_type):
+                osdep = [osdep]
+            if any('libssl' in x for x in osdep) or any('openssl' in x for x in osdep):
+                openssl_osdep = True
+
+        if openssl_osdep:
+            tcname = ec['toolchain']['name']
+            tcver = LooseVersion(ec['toolchain']['version'])
+
+            gcc_subtc_2021a = tcname in ('GCCcore', 'GCC') and tcver > LooseVersion('10.3')
+            if gcc_subtc_2021a or (tcname in ('foss', 'gompi', 'iimpi', 'intel') and tcver >= LooseVersion('2021')):
+                self.assertFalse(openssl_osdep, "OpenSSL should not be listed as OS dependency in %s" % spec)
 
     src_cnt = len(ec['sources'])
     patch_checksums = ec['checksums'][src_cnt:]
@@ -1248,7 +1328,7 @@ def template_easyconfig_test(self, spec):
     single_tests_ok = True and prev_single_tests_ok
 
 
-def suite():
+def suite(loader=None):
     """Return all easyblock initialisation tests."""
     def make_inner_test(spec_path):
         def innertest(self):
@@ -1259,11 +1339,11 @@ def suite():
     # define new inner functions that can be added as class methods to InitTest
     easyconfigs_path = get_paths_for('easyconfigs')[0]
     cnt = 0
-    for (subpath, _, specs) in os.walk(easyconfigs_path, topdown=True):
+    for (subpath, dirs, specs) in os.walk(easyconfigs_path, topdown=True):
 
         # ignore archived easyconfigs
-        if '__archive__' in subpath:
-            continue
+        if '__archive__' in dirs:
+            dirs.remove('__archive__')
 
         for spec in specs:
             if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
@@ -1275,7 +1355,9 @@ def suite():
                 setattr(EasyConfigTest, innertest.__name__, innertest)
 
     print("Found %s easyconfigs..." % cnt)
-    return TestLoader().loadTestsFromTestCase(EasyConfigTest)
+    if not loader:
+        loader = TestLoader()
+    return loader.loadTestsFromTestCase(EasyConfigTest)
 
 
 if __name__ == '__main__':

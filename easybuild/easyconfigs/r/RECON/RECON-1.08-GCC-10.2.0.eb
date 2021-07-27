@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'RECON'
+version = '1.08'
+
+homepage = 'https://www.repeatmasker.org/RepeatModeler/'
+description = """Patched version of RECON to be used with RepeatModeler."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+source_urls = ['https://www.repeatmasker.org/RepeatModeler/']
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['699765fa49d18dbfac9f7a82ecd054464b468cb7521abe9c2bd8caccf08ee7d8']
+
+dependencies = [('Perl', '5.32.0')]
+
+start_dir = 'src'
+
+buildopts = 'CC="$CC"'
+
+local_bins = ['edgeredef', 'eledef', 'eleredef', 'famdef', 'imagespread']
+local_scripts = ['scripts/%s' % x for x in ['MSPCollect.pl', 'recon.pl']]
+
+files_to_copy = [
+    (['src/%s' % x for x in local_bins], 'bin'),
+    'scripts', 'COPYRIGHT', 'LICENSE', '00README',
+]
+
+postinstallcmds = ["sed -i 's|$path = \"\"|$path = \"%(installdir)s/bin\"|g' %(installdir)s/scripts/recon.pl"]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins] + local_scripts,
+    'dirs': [],
+}
+
+sanity_check_commands = [("recon.pl 2>&1 | grep 'usage: recon seq_name_list_file MSP_file integer'", '')]
+
+modextrapaths = {'PATH': 'scripts'}
+
+moduleclass = 'bio'

@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'ParallelIO'
+version = '2.5.4'
+
+homepage = 'https://github.com/NCAR/ParallelIO'
+description = """A high-level Parallel I/O Library for structured grid applications"""
+
+toolchain = {'name': 'iompi', 'version': '2020a'}
+
+source_urls = ['https://github.com/NCAR/ParallelIO/archive/', ]
+
+sources = ['pio2_5_4.tar.gz', ]
+
+checksums = ['e51dc71683da808a714deddc1a80c2650ce847110383e42f1710f3ba567e7a65',]
+
+separate_build_dir = True
+
+dependencies = [
+    ('pnetcdf/1.10.0', EXTERNAL_MODULE),
+    ('netCDF-Fortran', '4.5.2', '-mpi'),
+    ('netCDF', '4.7.4', '-mpi'),
+    ('HDF5', '1.10.6', '-mpi')
+]
+
+configopts = "-DCMAKE_C_COMPILER=mpicc -DCMAKE_Fortran_COMPILER=mpifort "
+configopts += "-DPnetCDF_Fortran_LIBRARY=$EBROOTPNETCDF/lib64/libpnetcdf.a "
+configopts += "-DPnetCDF_Fortran_INCLUDE_DIR=$EBROOTPNETCDF/include "
+configopts += "-DPnetCDF_C_LIBRARY=$EBROOTPNETCDF/lib64/libpnetcdf.a "
+configopts += "-DPnetCDF_C_INCLUDE_DIR=$EBROOTPNETCDF/include "
+configopts += "-DNetCDF_C_LIBRARY=$EBROOTNETCDF/lib64/libnetcdf.so "
+configopts += "-DNetCDF_C_INCLUDE_DIR=$EBROOTNETCDF/include "
+configopts += "-DHDF5_HL_LIBRARY=$EBROOTHDF5/lib64/libhdf5_hl.so "
+configopts += "-DHDF5_HL_INCLUDE_DIR=$EBROOTHDF5/include "
+configopts += "-DHDF5_C_LIBRARY=$EBROOTHDF5/lib64/libhdf5_cpp.so "
+configopts += "-DHDF5_C_INCLUDE_DIR=$EBROOTHDF5/include "
+configopts += "-DNetCDF_Fortran_LIBRARY=$EBROOTHDF5/lib64/libhdf5_fortran.so "
+configopts += "-DNetCDF_Fortran_INCLUDE_DIR=$EBROOTHDF5/include "
+configopts += "-DPIO_ENABLE_TIMING=OFF"
+
+sanity_check_paths = {
+    'files': ['lib/libpiof.a', 'include/pio.mod'],
+    'dirs': [],
+}
+
+modextravars = {
+    'PIO': '%(installdir)s'
+}
+
+moduleclass = 'data'
