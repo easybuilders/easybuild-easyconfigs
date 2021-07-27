@@ -1,0 +1,90 @@
+Make TensorFlow use the environment as set by EasyBuild
+
+From https://github.com/tensorflow/tensorflow/pull/44549
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/core/kernels/mlir_generated/build_defs.bzl b/tensorflow/core/kernels/mlir_generated/build_defs.bzl
+index f03d2b1670d..592d2ece255 100644
+--- a/tensorflow/core/kernels/mlir_generated/build_defs.bzl
++++ b/tensorflow/core/kernels/mlir_generated/build_defs.bzl
+@@ -156,6 +156,7 @@ def _gen_kernel_bin_impl(ctx):
+             "--enable_ftz=%s" % (ctx.attr.data_type == "f32"),
+             "--cpu_codegen=%s" % ctx.attr.cpu_codegen,
+         ],
++        use_default_shell_env = True,
+         mnemonic = "compile",
+     )
+     compilation_outputs = cc_common.create_compilation_outputs(
+diff --git a/third_party/flatbuffers/build_defs.bzl b/third_party/flatbuffers/build_defs.bzl
+index d409f836cb0..754db3f5d86 100644
+--- a/third_party/flatbuffers/build_defs.bzl
++++ b/third_party/flatbuffers/build_defs.bzl
+@@ -394,6 +394,7 @@ def _concat_flatbuffer_py_srcs_impl(ctx):
+             ctx.attr.deps[0].files.to_list()[0].path,
+             ctx.outputs.out.path,
+         ),
++        use_default_shell_env = True,
+     )
+ 
+ _concat_flatbuffer_py_srcs = rule(
+diff --git a/third_party/mlir/tblgen.bzl b/third_party/mlir/tblgen.bzl
+index c0127ed1f16..9234f997093 100644
+--- a/third_party/mlir/tblgen.bzl
++++ b/third_party/mlir/tblgen.bzl
+@@ -153,6 +153,7 @@ def _gentbl_rule_impl(ctx):
+         inputs = trans_srcs,
+         executable = ctx.executable.tblgen,
+         arguments = [args],
++        use_default_shell_env = True,
+     )
+ 
+     return [DefaultInfo()]
+diff --git a/third_party/nccl/build_defs.bzl.tpl b/third_party/nccl/build_defs.bzl.tpl
+index ceb65e3b632..4bf2dfcb719 100644
+--- a/third_party/nccl/build_defs.bzl.tpl
++++ b/third_party/nccl/build_defs.bzl.tpl
+@@ -100,6 +100,7 @@ def _device_link_impl(ctx):
+                 "--output-file=%s" % cubin.path,
+             ] + [file.path for file in inputs],
+             mnemonic = "nvlink",
++            use_default_shell_env = True,
+         )
+         cubins.append(cubin)
+         images.append("--image=profile=%s,file=%s" % (arch, cubin.path))
+@@ -125,6 +126,7 @@ def _device_link_impl(ctx):
+         arguments = arguments_list + images,
+         tools = [bin2c],
+         mnemonic = "fatbinary",
++        use_default_shell_env = True,
+     )
+ 
+     # Generate the source file #including the headers generated above.
+@@ -203,6 +205,7 @@ def _prune_relocatable_code_impl(ctx):
+             executable = ctx.file._nvprune,
+             arguments = arguments,
+             mnemonic = "nvprune",
++            use_default_shell_env = True,
+         )
+         output.append(outputs)
+ 
+@@ -236,6 +239,7 @@ def _merge_archive_impl(ctx):
+         inputs = ctx.files.srcs,  # + ctx.files._crosstool,
+         outputs = [ctx.outputs.out],
+         command = "echo -e \"%s\" | %s -M" % (mri_script, cc_toolchain.ar_executable),
++        use_default_shell_env = True,
+     )
+ 
+ _merge_archive = rule(
+diff --git a/third_party/systemlibs/grpc.bazel.generate_cc.bzl b/third_party/systemlibs/grpc.bazel.generate_cc.bzl
+index 1534e526fd1..cd7304a9515 100644
+--- a/third_party/systemlibs/grpc.bazel.generate_cc.bzl
++++ b/third_party/systemlibs/grpc.bazel.generate_cc.bzl
+@@ -140,6 +140,7 @@ def generate_cc_impl(ctx):
+         outputs = out_files,
+         executable = ctx.executable._protoc,
+         arguments = arguments,
++        use_default_shell_env = True,
+     )
+ 
+     return struct(files = depset(out_files))
