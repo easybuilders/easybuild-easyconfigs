@@ -1,0 +1,342 @@
+This fixes multiple bugs introduced by the VSX optimized code in https://github.com/pytorch/pytorch/pull/41541
+
+- min/max/clamp now consistently return nan when any value is NaN as on other architectures
+- The non-complex angle functions return PI for negative values now
+- The complex angle functions have been corrected and optimized
+- The float32-log function implementation returned a wrong result when inf was passed (and maybe other inputs), replaced by the sleef function just as for float64
+
+See https://github.com/pytorch/pytorch/pull/59382
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_complex_double_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_complex_double_vsx.h
+index f62ac36850..ed511c45ed 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_complex_double_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_complex_double_vsx.h
+@@ -236,17 +236,14 @@ class Vec256<ComplexDbl> {
+     // angle = atan2(b/a)
+     // auto b_a = _mm256_permute_pd(values, 0x05);     // b        a
+     // return Sleef_atan2d4_u10(values, b_a);          // 90-angle angle
+-    auto ret = el_swapped();
+-    for (int i = 0; i < 2; i++) {
+-      ret._vec0[i] = std::atan2(_vec0[i], ret._vec0[i]);
+-      ret._vec1[i] = std::atan2(_vec1[i], ret._vec0[i]);
+-    }
++    Vec256<ComplexDbl> ret;
++    ret._vec0[0] = std::atan2(_vec0[1], _vec0[0]);
++    ret._vec1[0] = std::atan2(_vec1[1], _vec1[0]);
+     return ret;
+   }
+ 
+   Vec256<ComplexDbl> angle() const {
+-    auto a = angle_().el_swapped();
+-    return a & vd_real_mask;
++    return angle_() & vd_real_mask;
+   }
+ 
+   Vec256<ComplexDbl> real_() const {
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_complex_float_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_complex_float_vsx.h
+index cb9b4c90fb..4e6433b093 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_complex_float_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_complex_float_vsx.h
+@@ -357,17 +357,16 @@ class Vec256<ComplexFlt> {
+     // angle = atan2(b/a)
+     // auto b_a = _mm256_permute_ps(values, 0xB1); // b        a
+     // return Sleef_atan2f8_u10(values, b_a); // 90-angle angle
+-    auto ret = el_swapped();
+-    for (int i = 0; i < 4; i++) {
+-      ret._vec0[i] = std::atan2(_vec0[i], ret._vec0[i]);
+-      ret._vec1[i] = std::atan2(_vec1[i], ret._vec0[i]);
++    Vec256<ComplexFlt> ret;
++    for (int i = 0; i < 4; i += 2) {
++      ret._vec0[i] = std::atan2(_vec0[i + 1], _vec0[i]);
++      ret._vec1[i] = std::atan2(_vec1[i + 1], _vec1[i]);
+     }
+     return ret;
+   }
+ 
+   Vec256<ComplexFlt> angle() const {
+-    auto a = angle_().el_swapped();
+-    return a & real_mask;
++    return angle_() & real_mask;
+   }
+ 
+   Vec256<ComplexFlt> sin() const {
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h
+index f4fa4faa80..3ea237ac32 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h
+@@ -249,7 +259,8 @@ class Vec256<double> {
+   }
+ 
+   Vec256<double> angle() const {
+-    return Vec256<double>{0};
++    auto tmp = blendv(Vec256<double>(0), Vec256<double>(c10::pi<double>), *this < Vec256<double>(0));
++    return blendv(tmp, *this, isnan());
+   }
+   Vec256<double> real() const {
+     return *this;
+@@ -367,8 +378,8 @@ class Vec256<double> {
+   DEFINE_MEMBER_OP(operator-, double, vec_sub)
+   DEFINE_MEMBER_OP(operator*, double, vec_mul)
+   DEFINE_MEMBER_OP(operator/, double, vec_div)
+-  DEFINE_MEMBER_OP(maximum, double, vec_max)
+-  DEFINE_MEMBER_OP(minimum, double, vec_min)
++  DEFINE_MEMBER_OP(maximum, double, vec_max_nan2)
++  DEFINE_MEMBER_OP(minimum, double, vec_min_nan2)
+   DEFINE_MEMBER_OP(operator&, double, vec_and)
+   DEFINE_MEMBER_OP(operator|, double, vec_or)
+   DEFINE_MEMBER_OP(operator^, double, vec_xor)
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h
+index 2a1a87aa72..5bcf818232 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h
+@@ -282,7 +282,8 @@ class Vec256<float> {
+   }
+ 
+   Vec256<float> angle() const {
+-    return Vec256<float>{0};
++    auto tmp = blendv(Vec256<float>(0), Vec256<float>(c10::pi<float>), *this < Vec256<float>(0));
++    return blendv(tmp, *this, isnan());
+   }
+   Vec256<float> real() const {
+     return *this;
+@@ -340,54 +341,16 @@ class Vec256<float> {
+   }
+ 
+   Vec256<float> C10_ALWAYS_INLINE log() const {
+-    auto temp = *this;
+-    auto invalid_mask = temp < zero;
+-    // cut off denormalized stuff
+-    auto x = temp.maximum(min_norm_pos);
+-    vint32 imm0 = vec_sr(vint32(x._vec0), vu_23);
+-    vint32 imm1 = vec_sr(vint32(x._vec1), vu_23);
+-    // keep only the fractional part
+-    x = x & inv_mant_mask;
+-    x = x | half;
+-    imm0 = imm0 - v0x7f;
+-    imm1 = imm1 - v0x7f;
+-    Vec256<float> ex;
+-    ex._vec0 = vec_float(imm0);
+-    ex._vec1 = vec_float(imm1);
+-    ex = ex + one;
+-    auto mask = x < cephes_SQRTHF;
+-    auto t = x & mask;
+-    x = x - one;
+-    ex = ex - (mask & one);
+-    x = x + t;
+-    auto z = x * x;
+-    auto y = x.madd(log_p0, log_p1);
+-    y = y.madd(x, log_p2);
+-    y = y.madd(x, log_p3);
+-    y = y.madd(x, log_p4);
+-    y = y.madd(x, log_p5);
+-    y = y.madd(x, log_p6);
+-    y = y.madd(x, log_p7);
+-    y = y.madd(x, log_p8);
+-    y = y * x * z;
+-    y = ex.madd(log_q1, y);
+-    y = y - z * half;
+-    x = x + y;
+-    x = ex.madd(log_q2, x);
+-    // negative arg will be NAN
+-    x = blendv(x, v_nan, invalid_mask);
+-    // zero is -inf
+-    x = blendv(x, min_inf, (temp == zero));
+-    return x;
++    return {Sleef_logf4_u10vsx(_vec0), Sleef_logf4_u10vsx(_vec1)};
+   }
+   Vec256<float> C10_ALWAYS_INLINE log10() const {
+-    return log() * log10e_inv;
++     return {Sleef_log10f4_u10vsx(_vec0), Sleef_log10f4_u10vsx(_vec1)};
+   }
+   Vec256<float> C10_ALWAYS_INLINE log1p() const {
+-    return ((*this) + one).log();
++     return {Sleef_log1pf4_u10vsx(_vec0), Sleef_log1pf4_u10vsx(_vec1)};
+   }
+   Vec256<float> C10_ALWAYS_INLINE log2() const {
+-    return log() * log2e_inv;
++     return {Sleef_log2f4_u10vsx(_vec0), Sleef_log2f4_u10vsx(_vec1)};
+   }
+   Vec256<float> C10_ALWAYS_INLINE ceil() const {
+     return {vec_ceil(_vec0), vec_ceil(_vec1)};
+@@ -593,27 +593,7 @@ class Vec256<float> {
+   }
+ 
+   Vec256<float> C10_ALWAYS_INLINE pow(const Vec256<float>& exp) const {
+-    auto x = *this;
+-    auto sign_bit = (*this) & sign_mask;
+-    // |b|
+-    auto exp_abs = exp.abs();
+-    auto exp_trunc = exp.trunc();
+-    Vec256<float> odd_mask;
+-    odd_mask._vecb0 = (vec_signed(exp._vec0) & vi_1) != vi_0;
+-    odd_mask._vecb1 = (vec_signed(exp._vec1) & vi_1) != vi_0;
+-    // using ln fuction
+-    auto temp = (abs().log() * exp).exp();
+-
+-    // is odd or even check from Sleef
+-    auto is_int = (exp == exp_trunc) | (exp_abs >= vcheck);
+-    auto is_odd = odd_mask & is_int & (exp_abs < vcheck);
+-    // if even then then pow result should be absolute
+-    auto temp_sign = temp | sign_bit; // copy_sign
+-    auto out = blendv(temp, temp_sign, is_odd);
+-    // x<0 and y != N, then NAN
+-    auto out1 = blendv(out, v_nan, ((exp.floor() != exp) & (x < zero)));
+-    // y = 0 then 1
+-    return blendv(out1, one, (exp_abs == zero));
++    return {Sleef_powf4_u10vsx(_vec0, b._vec0), Sleef_powf4_u10vsx(_vec1, b._vec1)};
+   }
+ 
+   Vec256<float> fmod(const Vec256<float>& b) const {
+@@ -653,8 +616,8 @@ class Vec256<float> {
+   DEFINE_MEMBER_OP(operator-, float, vec_sub)
+   DEFINE_MEMBER_OP(operator*, float, vec_mul)
+   DEFINE_MEMBER_OP(operator/, float, vec_div)
+-  DEFINE_MEMBER_OP(maximum, float, vec_max)
+-  DEFINE_MEMBER_OP(minimum, float, vec_min)
++  DEFINE_MEMBER_OP(maximum, float, vec_max_nan2)
++  DEFINE_MEMBER_OP(minimum, float, vec_min_nan2)
+   DEFINE_MEMBER_OP(operator&, float, vec_and)
+   DEFINE_MEMBER_OP(operator|, float, vec_or)
+   DEFINE_MEMBER_OP(operator^, float, vec_xor)
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h
+index 33460abe2a..f9d33febdf 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h
+@@ -287,7 +287,7 @@ class Vec256<int16_t> {
+   int16_t& operator[](int idx) = delete;
+ 
+   Vec256<int16_t> angle() const {
+-    return Vec256<int16_t>{0};
++    return blendv(Vec256<int16_t>(0), Vec256<int16_t>(c10::pi<int16_t>), *this < Vec256<int16_t>(0));
+   }
+   Vec256<int16_t> real() const {
+     return *this;
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h
+index 2ee2318f03..3fd92551e2 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h
+@@ -218,7 +218,7 @@ class Vec256<int32_t> {
+   int32_t& operator[](int idx) = delete;
+ 
+   Vec256<int32_t> angle() const {
+-    return Vec256<int32_t>{0};
++    return blendv(Vec256<int32_t>(0), Vec256<int32_t>(c10::pi<int32_t>), *this < Vec256<int32_t>(0));
+   }
+   Vec256<int32_t> real() const {
+     return *this;
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h
+index d752f71c9a..e628aeac54 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h
+@@ -170,7 +170,7 @@ class Vec256<int64_t> {
+   int64_t& operator[](int idx) = delete;
+ 
+   Vec256<int64_t> angle() const {
+-    return Vec256<int64_t>{0};
++    return blendv(Vec256<int64_t>(0), Vec256<int64_t>(c10::pi<int64_t>), *this < Vec256<int64_t>(0));
+   }
+   Vec256<int64_t> real() const {
+     return *this;
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vsx_helpers.h b/aten/src/ATen/cpu/vec256/vsx/vsx_helpers.h
+index 61a572e1ab..716fa2c128 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vsx_helpers.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vsx_helpers.h
+@@ -85,6 +85,69 @@ vec_sldw_aux(const vfloat32& vec_in0, const vfloat32& vec_in1) {
+ 
+ #define vec_not(a) vec_nor(a, a)
+ 
++// Vectorized min/max which return a if any operand is nan
++template <class T>
++C10_ALWAYS_INLINE T vec_min_nan(const T& a, const T& b) {
++  return vec_min(a, b);
++}
++template <class T>
++C10_ALWAYS_INLINE T vec_max_nan(const T& a, const T& b) {
++  return vec_max(a, b);
++}
++
++// Specializations for float/double taken from Eigen
++template<>
++C10_ALWAYS_INLINE vfloat32 vec_min_nan<vfloat32>(const vfloat32& a, const vfloat32& b)
++{
++  // NOTE: about 10% slower than vec_min, but consistent with std::min and SSE regarding NaN
++  vfloat32 ret;
++  __asm__ ("xvcmpgesp %x0,%x1,%x2\n\txxsel %x0,%x1,%x2,%x0" : "=&wa" (ret) : "wa" (a), "wa" (b));
++  return ret;
++}
++// Specializations for float/double taken from Eigen
++template<>
++C10_ALWAYS_INLINE vfloat32 vec_max_nan<vfloat32>(const vfloat32& a, const vfloat32& b)
++{
++  // NOTE: about 10% slower than vec_max, but consistent with std::min and SSE regarding NaN
++  vfloat32 ret;
++   __asm__ ("xvcmpgtsp %x0,%x2,%x1\n\txxsel %x0,%x1,%x2,%x0" : "=&wa" (ret) : "wa" (a), "wa" (b));
++  return ret;
++}
++
++template<>
++C10_ALWAYS_INLINE vfloat64 vec_min_nan<vfloat64>(const vfloat64& a, const vfloat64& b)
++{
++  // NOTE: about 10% slower than vec_min, but consistent with std::min and SSE regarding NaN
++  vfloat64 ret;
++  __asm__ ("xvcmpgedp %x0,%x1,%x2\n\txxsel %x0,%x1,%x2,%x0" : "=&wa" (ret) : "wa" (a), "wa" (b));
++  return ret;
++}
++template<>
++C10_ALWAYS_INLINE vfloat64 vec_max_nan<vfloat64>(const vfloat64& a, const vfloat64& b)
++{
++  // NOTE: about 10% slower than vec_max, but consistent with std::max and SSE regarding NaN
++  vfloat64 ret;
++  __asm__ ("xvcmpgtdp %x0,%x2,%x1\n\txxsel %x0,%x1,%x2,%x0" : "=&wa" (ret) : "wa" (a), "wa" (b));
++  return ret;
++}
++
++// Vectorizes min/max function which returns nan if any side is nan
++#define C10_VSX_VEC_NAN_PROPAG(name, type, btype, func)       \
++  C10_ALWAYS_INLINE type name(const type& a, const type& b) { \
++    type tmp = func(a, b);                                    \
++    btype nan_a = vec_cmpne(a, a);                            \
++    btype nan_b = vec_cmpne(b, b);                            \
++    tmp = vec_sel(tmp, a, nan_a);                             \
++    return vec_sel(tmp, b, nan_b);                            \
++  }
++
++C10_VSX_VEC_NAN_PROPAG(vec_min_nan2, vfloat32, vbool32, vec_min)
++C10_VSX_VEC_NAN_PROPAG(vec_max_nan2, vfloat32, vbool32, vec_max)
++C10_VSX_VEC_NAN_PROPAG(vec_min_nan2, vfloat64, vbool64, vec_min)
++C10_VSX_VEC_NAN_PROPAG(vec_max_nan2, vfloat64, vbool64, vec_max)
++
++#undef C10_VSX_VEC_NAN_PROPAG
++
+ #define DEFINE_MEMBER_UNARY_OP(op, op_type, func)     \
+   Vec256<op_type> C10_ALWAYS_INLINE op() const {      \
+     return Vec256<op_type>{func(_vec0), func(_vec1)}; \
+@@ -137,20 +200,22 @@ vec_sldw_aux(const vfloat32& vec_in0, const vfloat32& vec_in1) {
+       const Vec256<operand_type>& min,                                  \
+       const Vec256<operand_type>& max) {                                \
+     return Vec256<operand_type>{                                        \
+-        vec_min(max.vec0(), vec_max(a.vec0(), min.vec0())),             \
+-        vec_min(max.vec1(), vec_max(a.vec1(), min.vec1()))};            \
++        vec_min_nan(vec_max_nan(a.vec0(), min.vec0()), max.vec0()),     \
++        vec_min_nan(vec_max_nan(a.vec1(), min.vec1()), max.vec1())};    \
+   }                                                                     \
+   template <>                                                           \
+   Vec256<operand_type> C10_ALWAYS_INLINE clamp_min(                     \
+       const Vec256<operand_type>& a, const Vec256<operand_type>& min) { \
+     return Vec256<operand_type>{                                        \
+-        vec_max(a.vec0(), min.vec0()), vec_max(a.vec1(), min.vec1())};  \
++        vec_max_nan(a.vec0(), min.vec0()),                              \
++        vec_max_nan(a.vec1(), min.vec1())};                             \
+   }                                                                     \
+   template <>                                                           \
+   Vec256<operand_type> C10_ALWAYS_INLINE clamp_max(                     \
+       const Vec256<operand_type>& a, const Vec256<operand_type>& max) { \
+     return Vec256<operand_type>{                                        \
+-        vec_min(a.vec0(), max.vec0()), vec_min(a.vec1(), max.vec1())};  \
++        vec_min_nan(a.vec0(), max.vec0()),                              \
++        vec_min_nan(a.vec1(), max.vec1())};                             \
+   }
+ 
+ #define DEFINE_REINTERPRET_CAST_FUNCS(                             \
