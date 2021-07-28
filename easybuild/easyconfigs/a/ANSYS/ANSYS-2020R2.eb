@@ -30,9 +30,12 @@ postinstallcmds = [
   # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
   "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
     sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-  # Run setrpaths.sh in all dirs so all bins use nix interpreter and all bins/libs find qt libs for ensight
-  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s \
+  # Run setrpaths.sh under CEI so bins use nix interpreter and bins/libs find qt libs for ensight
+  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/v202/CEI \
     --add_path %(installdir)s/v%(versionsuffix)s/CEI/apex%(versionsuffix)s/machines/linux_2.6_64/qt-5.12.6/lib",
+  # Run setrpaths under all subdirectoreis except CEI so bins use nix interpreter 
+  "for d in $(find %(installdir)s/v202 -mindepth 1 -maxdepth 1 -not -name CEI); \
+    do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
   # Set any_interpreter for some license binaries
   "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
     /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
