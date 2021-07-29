@@ -1,0 +1,34 @@
+name = 'TensorRT'
+version = '7.2.2.3'
+
+local_cudnn_version = '8.0.4.30'
+local_cudnn_majmin = '.'.join(local_cudnn_version.split('.')[:2])
+local_cuda_cudnn = 'cuda-%%(cudamajver)s.%%(cudaminver)s.cudnn' + local_cudnn_majmin
+
+homepage = 'https://developer.nvidia.com/tensorrt'
+description = """NVIDIA TensorRT is a platform for high-performance deep learning inference"""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+# Requires manual download from
+# https://developer.nvidia.com/nvidia-tensorrt-7x-download
+local_tarball_tmpl = '.'.join(['%%(name)s-%%(version)s', 'CentOS-7.8', '%s-gnu', local_cuda_cudnn, 'tar.gz'])
+sources = [local_tarball_tmpl % '%(arch)s']
+checksums = [
+    {
+        local_tarball_tmpl % 'x86_64':
+            '4153b4f54409e3a42bc2f1f25229bbb1c9d6e6882d2b588992abbe43336fe732',
+    }
+]
+
+builddependencies = [
+    ('protobuf', '3.14.0'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('cuDNN', local_cudnn_version, '-CUDA-%(cudaver)s', True),
+    ('protobuf-python', '3.14.0'),
+]
+
+moduleclass = 'lib'
