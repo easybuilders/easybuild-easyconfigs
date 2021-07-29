@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+
+name = 'nanopolish'
+version = '0.13.3'
+
+homepage = 'https://github.com/jts/nanopolish'
+description = "Software package for signal-level analysis of Oxford Nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = [
+    'https://github.com/jts/nanopolish/archive/',
+    'https://github.com/mateidavid/fast5/archive/',
+]
+sources = [
+    {'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ},
+    {'download_filename': 'v0.6.5.tar.gz', 'filename': 'fast5-v0.6.5.tar.gz'},
+]
+checksums = [
+    'eac02b7db76f223375e246fa361a0a4fbf74021b9094573e5324fd7f75743d55',  # nanopolish-0.13.3.tar.gz
+    'f8b1ce2c07adb56b4f13337ef008e124255f86cdb7e74e4233afa8dca878ee1a',  # fast5-v0.6.5.tar.gz
+]
+
+builddependencies = [('Eigen', '3.3.7', '', True)]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Python', '3.8.6'),
+    ('Biopython', '1.78'),
+    ('Pysam', '0.16.0.1'),
+    ('HDF5', '1.10.7'),
+    ('HTSlib', '1.11'),
+    ('minimap2', '2.18'),
+]
+
+prebuildopts = "rmdir fast5 && ln -s %(builddir)s/fast5-*/ fast5 && "
+buildopts = "HDF5=noinstall EIGEN=noinstall HTS=noinstall MINIMAP2=noinstall"
+
+runtest = 'test ' + buildopts
+
+files_to_copy = [(['nanopolish'], 'bin'), 'scripts']
+
+postinstallcmds = ["chmod a+rx %(installdir)s/scripts/*"]
+
+sanity_check_paths = {
+    'files': ['bin/nanopolish'],
+    'dirs': ['scripts'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+
+moduleclass = 'bio'
