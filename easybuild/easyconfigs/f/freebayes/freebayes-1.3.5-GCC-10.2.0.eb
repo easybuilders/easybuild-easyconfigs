@@ -8,37 +8,57 @@ description = "Bayesian haplotype-based genetic polymorphism discovery and genot
 
 toolchain = {'name': 'GCC', 'version': '10.2.0'}
 
-sources = [{
-    'filename': SOURCE_TAR_GZ,
-    'git_config': {
-        'url': 'https://github.com/freebayes',
-        'repo_name': 'freebayes',
-        'tag': 'v1.3.5',
-        'recursive': True,
-    },
-}]
-checksums = ['b614a44cb53a164ab8579d75c8eb6fc17415a502628aeeb12b42218893a10278']
+github_account = '%(name)s'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['freebayes-1.3.5_fix-meson-build.patch']
+checksums = [
+    'af195a8c54b742d01af5a7e1fd1781a89290d726b310216c83e78c650d7aee49',  # v1.3.5.tar.gz
+    'c408bda1092d6f72d14eb22ab842e12ba27f52be35d82e3a33506e64e04077d8',  # freebayes-1.3.5_fix-meson-build.patch
+]
 
 builddependencies = [
     ('binutils', '2.35'),
+    ('CMake', '3.18.4'),
     ('Meson', '0.55.3'),
     ('Ninja', '1.10.1'),
+    ('pkg-config', '0.29.2'),
 ]
 
 dependencies = [
     ('parallel', '20210322'),
     ('VCFtools', '0.1.16'),
+    ('vcflib', '1.0.2'),
+    ('SeqLib', '1.2.0'),
+    ('fastahack', '1.0.0'),
+    ('intervaltree', '0.1'),
+    ('multichoose', '1.0.3'),
+    ('smithwaterman', '20160702'),
 ]
 
-configopts = "--buildtype debug"
+# freebayes expects intervaltree headers in its source directory
+local_intervaltree_path = '%(builddir)s/%(name)s-%(version)s/intervaltree'
+preconfigopts = "mv %(i)s %(i)s.orig && " % {'i': local_intervaltree_path}
+preconfigopts += "ln -s $EBROOTINTERVALTREE/include/intervaltree %(i)s && " % {'i': local_intervaltree_path}
+# workaround for direct includes of multichoose headers
+preconfigopts += 'CPPFLAGS="-I${EBROOTMULTICHOOSE}/include/multichoose ${CPPFLAGS}" '
+# add missing linker flags for fastahack and smithwaterman
+preconfigopts += 'LDFLAGS="-lsw -lfastahack ${LDFLAGS}"'
 
-postinstallcmds = ['cp %(builddir)s/freebayes/scripts/* %(installdir)s/']
+configopts = "--buildtype release"
 
-modextrapaths = {'PATH': ['']}
+postinstallcmds = [
+    # add extra scripts
+    "cp -r %(builddir)s/%(name)s-%(version)s/scripts %(installdir)s/",
+    # only make freebayes-parallel directly executable
+    "cd %(installdir)s/bin && ln -s ../scripts/freebayes-parallel",
+]
 
 sanity_check_paths = {
-    'files': ['bin/freebayes', 'bin/bamleftalign', 'freebayes-parallel'],
-    'dirs': [],
+    'files': ['bin/freebayes', 'bin/bamleftalign', 'bin/freebayes-parallel'],
+    'dirs': ['scripts'],
 }
+
+sanity_check_commands = ["freebayes --help"]
 
 moduleclass = 'bio'
