@@ -1,0 +1,57 @@
+diff --git a/gulp-6.0.org/Src/mkgulp b/gulp-6.0/Src/mkgulp
+index 28afb80..84549b0 100755
+--- a/gulp-6.0.org/Src/mkgulp
++++ b/gulp-6.0/Src/mkgulp
+@@ -170,7 +170,7 @@ fi
+ #  Include file directories
+ #
+ #--USER--Start
+-echo 'INC=-I.. -I/usr/local/include/' >> makefile
++echo 'INC=-I.. -I${EBROOTFFTW}/include -I/usr/local/include/' >> makefile
+ #--USER--End
+ #  If using Macports then use the following instead
+ #--USER--Start
+@@ -202,19 +202,19 @@ case $compiler in
+                echo 'SLIBS= ' >> makefile
+ #  If there are optimised maths libraries available replace the routines below
+ #--USER--Start
+-               echo 'MLIBS=lapack.o blas.o' >> makefile
++               echo 'MLIBS=-L${LD_LIBRARY_APTH} -lscalapack -lopenblas ' >> makefile
+ #--USER--End
+            else
+ # NB: For gfortran v10 then uncomment these lines and comment the ones immediately below!
+-#               echo 'RUNF90=mpif90 -fallow-argument-mismatch ' >> makefile
+-#               echo 'RUNCC=mpif90 -fallow-argument-mismatch ' >> makefile
+-               echo 'RUNF90=mpif90 ' >> makefile
+-               echo 'RUNCC=mpif90 ' >> makefile
++               echo 'RUNF90=mpif90 -fallow-argument-mismatch ' >> makefile
++               echo 'RUNCC=mpif90 -fallow-argument-mismatch ' >> makefile
++#               echo 'RUNF90=mpif90 ' >> makefile
++#               echo 'RUNCC=mpif90 ' >> makefile
+ #  Provide the location and name of Scalapack, Blacs, Pblas, Lapack and Blas libraries.
+ #  On the Mac the following is sufficient when using Macports:
+ #--USER--Start
+-               echo 'SLIBS=-L/opt/local/lib -lscalapack ' >> makefile
+-               echo 'MLIBS= ' >> makefile
++               echo 'SLIBS=-L${LD_LIBRARY_PATH} -lscalapack ' >> makefile
++               echo 'MLIBS=-L${LD_LIBRARY_APTH} -lscalapack -lopenblas ' >> makefile
+ #--USER--End
+            fi
+            ;;
+@@ -321,12 +321,13 @@ then
+ else
+   echo 'FDEFS=-DFFTW3 ' >> makefile
+   if [ "$parallel" = "" ]
++  then
+ #--USER--Start
+-    echo 'FLIBS=-L/usr/local/lib/ -lfftw3.a' >> makefile
++    echo 'FLIBS=-L${LD_LIBRARY_PATH} -lfftw3' >> makefile
+ #--USER--End
+-  then
++  else
+ #--USER--Start
+-    echo 'FLIBS=-L/usr/local/lib/ -lfftw3 -lfftw3_mpi' >> makefile
++    echo 'FLIBS=-L${LD_LIBRARY_PATH} -lfftw3 -lfftw3_mpi' >> makefile
+ #  The following is for NCI
+ #    echo 'FLIBS=-mkl -lfftw3x_cdft_openmpi_lp64'
+ #--USER--End
