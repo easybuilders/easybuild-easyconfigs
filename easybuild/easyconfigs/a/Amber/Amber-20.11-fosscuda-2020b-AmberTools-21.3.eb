@@ -1,0 +1,64 @@
+name = 'Amber'
+local_amber_ver = 20
+local_ambertools_ver = 21
+# Patch levels from http://ambermd.org/AmberPatches.php and http://ambermd.org/ATPatches.php
+patchlevels = (3, 11)  # (AmberTools, Amber)
+version = '%s.%s' % (local_amber_ver, patchlevels[1])
+versionsuffix = '-AmberTools-%s.%s' % (local_ambertools_ver, patchlevels[0])
+
+homepage = 'http://ambermd.org/amber.html'
+description = """Amber (originally Assisted Model Building with Energy Refinement) is software for performing
+ molecular dynamics and structure prediction."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+sources = [
+    '%%(name)s%s.tar.bz2' % local_amber_ver,
+    'AmberTools%s.tar.bz2' % local_ambertools_ver,
+]
+patches = [
+    'AmberTools-20_cmake-locate-netcdf.patch',
+    'AmberTools-20_fix_missing_MPI_LIBRARY_error.patch',
+    'AmberTools-20_fix_xblas_missing_make_dependency.patch',
+]
+checksums = [
+    'a4c53639441c8cc85adee397933d07856cc4a723c82c6bea585cd76c197ead75',  # Amber20.tar.bz2
+    'f55fa930598d5a8e9749e8a22d1f25cab7fcf911d98570e35365dd7f262aaafd',  # AmberTools21.tar.bz2
+    '473e07c53b6f641d96d333974a6af2e03413fecef79f879d3fdecf7fecaab4d0',  # AmberTools-20_cmake-locate-netcdf.patch
+    # AmberTools-20_fix_missing_MPI_LIBRARY_error.patch
+    '185040c79c8799d4f2d75139b7c648a1863f3484c4e1baab3470d2cf8d660b65',
+    # AmberTools-20_fix_xblas_missing_make_dependency.patch
+    'ff25e91fdc72347a778c3837b581e174d6a8c71efa5b46e11391b18bca84fd65',
+]
+
+builddependencies = [
+    ('Bison', '3.7.1'),
+    ('CMake', '3.18.4'),
+    ('flex', '2.6.4'),
+    ('make', '4.3'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),  # mpi4py required for MMPBSA
+    ('Perl', '5.32.0'),
+    ('Boost', '1.74.0'),
+    ('libreadline', '8.0'),
+    ('matplotlib', '3.3.3'),
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.3'),
+    ('PnetCDF', '1.12.2'),
+    ('Tkinter', '3.8.6'),
+    ('X11', '20201008'),
+    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s', True),
+]
+
+# Some CUDA tests differs from expected results
+runtest = False
+
+static = False
+
+moduleclass = 'chem'
