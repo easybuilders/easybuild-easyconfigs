@@ -1,0 +1,40 @@
+
+# Author:: Jack Perdue <j-perdue@tamu.edu> - TAMU SC Facil.  http://sc.tamu.edu
+# Author:: Maxime Boissonneault <maxime.boissonneault@calculquebec.ca> - Calcul Quebec, Universite Laval
+
+name = 'VisIt'
+version = '3.2.1'
+
+homepage = 'https://wci.llnl.gov/simulation/computer-codes/visit'
+description = """ VisIt is an Open Source, interactive, scalable,
+    visualization, animation and analysis tool."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+source_urls = ['https://github.com/visit-dav/visit/releases/download/v%(version)s']
+local_build_visit = "build_visit%s" % version.replace('.', '_')
+sources = [{'filename': local_build_visit, 'extract_cmd': "cp %s build_visit3_2_1"}]
+patches = [
+    'VisIt-3.2.1-HDF4-libtirpc.patch',
+    'VisIt-3.2.1-system-qt.patch',
+]
+checksums = [
+    '9d44a851bce53546744b310297af0ebb47b7a234e43bfd5d8f19e3239f1b97d4',
+    '17d613d33f5d42a84ad19715916b7c8cf058f0c8cdbeb52328dd1c7e90cf8854',
+    'f92100ac699e672969922b9419d59a7a1bc68111686fe8b61bc34ffa0c56dc91',
+]
+
+builddependencies = [('Python', '3.7.7'), ('Qt5', '5.12.8')]
+
+prebuildopts = "chmod +x build_visit3_2_1 && rm *.orig && export CPATH=$EBROOTGENTOO/include/tirpc:$CPATH CXX_COMPILER=mpicxx PAR_COMPILER=mpicc PAR_COMPILER_CXX=mpicxx && "
+visit_options = "--parallel --cmake --mesagl --llvm --vtk --python --netcdf --hdf4 --hdf5 --silo --cfitsio --szip --xdmf --zlib --system-cmake --system-python --system-qt --makeflags -j4"
+postinstallcmds = [ 
+	"find %(installdir)s -name 'libGL.so*' -exec mv {} {}.bak \;",
+	]
+
+sanity_check_paths = {
+    'files': ['bin/visit'],
+    'dirs': ['bin', version],
+}
+
+moduleclass = 'vis'
