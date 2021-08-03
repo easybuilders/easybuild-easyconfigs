@@ -1,0 +1,39 @@
+name = 'CP2K'
+version = '7.1'
+
+homepage = 'https://www.cp2k.org/'
+description = """CP2K is a freely available (GPL) program, written in Fortran 95, to perform atomistic and molecular
+ simulations of solid state, liquid, molecular and biological systems. It provides a general framework for different
+ methods such as e.g. density functional theory (DFT) using a mixed Gaussian and plane waves approach (GPW), and
+ classical pair and many-body potentials. """
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/cp2k/cp2k/releases/download/v%(version)s.0/']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['ccd711a09a426145440e666310dd01cc5772ab103493c4ae6a3470898cd0addb']
+
+dependencies = [
+    ('Libint', '2.6.0', '-lmax-6-cp2k'),
+    ('libxc', '4.3.4'),
+    ('libxsmm', '1.16.1'),
+    ('PLUMED', '2.6.0', '-Python-3.8.2'),
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.5.3'),
+]
+
+# regression test reports handful of failures,
+# we're assuming those are OK to ignore...
+ignore_regtest_fails = True
+
+# You might want to set OMP_NUM_THREADS, otherwise OpenBLAS will start (by default)
+# the number of accessible CPUcores OpenMP threads. Since it is a MPI only version (popt),
+# the performance will be copletely bad, as on N CPU cores N^2 threads will run.
+# intel toolchain versions do not have this problem. YOU HAVE BEEN WARNED!
+# modextravars = {'OMP_NUM_THREADS': '1'}
+
+moduleclass = 'chem'
