@@ -1,0 +1,85 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/08
+easyblock = 'MakeCp'
+
+name = 'Curves+'
+version = '2.6'
+
+# Parameters to compile additionl Cur+_max with increased maximum number of nucleotides, heavy atoms, and ions.
+# (see user guide)
+local_maxatoms = '200000'
+local_maxatomsH = '300000'
+# local_maxsubunits = '15000'   # uncomment if required.
+local_maxnucleotides = '5000'
+local_maxligands = '1000'
+
+homepage = 'https://bisi.ibcp.fr/tools/curves_plus'
+description = """Curves+ is a revised version of the Curves approaech for analysing the structure
+of nucleic acids. It respects the international conventions for nucleic acid   
+analysis, runs much faster and provides new data.
+
+As well as treating single nucleic acid structures, Curves+, with the help of   
+Canal, can analyse molecular dynamics trajectories and generate time series,   
+time averaged properties and search for correlations between variables.
+
+In conjunction with Canion, Curves+ can now be used to analyze the distribution
+of ions or molecules around nucleic acids in curvilinear helicoidal coordinates
+
+Library files are available at $EBROOTCURVESPLUS.
+Additional binary Cur+_max is available wit increased limits: """
+description += "\n\tMax number of atoms: %s" % local_maxatoms
+description += "\n\tMax number of atoms including hydrogens: %s" % local_maxatomsH
+description += "\n\tMax number of nucleotides: %s" % local_maxnucleotides
+description += "\n\tMax number of ligands: %s" % local_maxligands
+# description += "\n\tMax number of subunits: %s" % local_maxsubunits  # uncomment if required
+
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+sources = [
+    {
+        'download_filename': '%(namelower)s.tar',
+        'filename': '%(namelower)s-%(version)s.tar',
+        'source_urls': ['https://bisi.ibcp.fr/tools/curves_plus/ewExternalFiles/']
+    },
+    {
+        'download_filename': '%(name)snew.pdf',
+        'filename': '%(name)s-%(version)s.pdf',
+        'source_urls': ['https://bisi.ibcp.fr/tools/curves_plus/ewExternalFiles/'],
+        'extract_cmd': 'cp %s .'
+    },
+]
+
+checksums = [
+    'd7267ac24b2a6e37f2768ec7ab2ac7478954a1ecce826ddc9f9ad168cce4b613',  # curves+-2.6.tar
+    'dc1b595dcd9f878ae0b530662f3808da65aaa307dd7ca23a3a4ccd315a556ad4',  # Curves+-2.6.pdf
+]
+
+
+prebuildopts = [
+    'sed -i "s/^FFLAG.*/& $CFLAGS/g" Makefile &&',
+    # Additionally compile Cur+_max with increased maximum number of nucleotides, heavy atoms, and ions.
+    'sed -i "s/^FFLAG.*/& $CFLAGS -O0 -fbounds-check/g" Makefile &&'
+    'sed -i "s/Cur+/&_max/g" Makefile &&' +
+    'sed -i "s/n1=.*)/n1=%s)/g" curves_data.inc &&' % local_maxatoms +
+    'sed -i "s/n1p=.*)/n1p=%s)/g" curves_data.inc &&' % local_maxatomsH +
+    # 'sed -i "s/n2=.*)/n2=%s)/g" Makefile &&' % local_maxsubunits +  # uncomment if required
+    'sed -i "s/n3=.*)/n3=%s)/g" curves_data.inc &&' % local_maxnucleotides +
+    'sed -i "s/n6=.*)/n6=%s)/g" curves_data.inc &&' % local_maxligands
+]
+builddependencies = [('binutils', '2.35')]
+docpaths = ['%(name)s-%(version)s.pdf']
+files_to_copy = {
+    'Cur+*': '',
+    '*.lib': '',
+    '*.pdf': ''
+}
+modextrapaths = {'PATH': '.'}
+sanity_check_paths = {
+    'files': [
+        'Cur+', 'Cur+_max', '%(name)s-%(version)s.pdf',
+        'standard_b.lib', 'standard_i.lib', 'standard_s.lib', 'water_i.lib'
+    ],
+    'dirs': ['']
+}
+
+moduleclass = 'bio'
