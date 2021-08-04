@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'OGRE'
+version = '1.12.12'
+
+homepage = 'https://ogrecave.github.io/ogre/'
+description = """OGRE (Object-Oriented Graphics Rendering Engine) is a scene-oriented, flexible 3D engine written 
+in C++ designed to make it easier and more intuitive for developers to produce games and demos utilising 3D 
+hardware. The class library abstracts all the details of using the underlying system libraries like Direct3D and 
+OpenGL and provides an interface based on world objects and other intuitive classes."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/OGRECave/ogre/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-site-packages.patch']
+checksums = [
+    '3b8a5ef0188f1e3cfa2262b6e145400121d61a9004ad347e88e662174f0059a6',  # v1.12.12.tar.gz
+    '2bc34e947185b70cc4001d2814a50d8eb78e57d1650d4aab35299276911dfe9d',  # OGRE-site-packages.patch
+]
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('CMake', '3.16.4'),
+    ('Qt5', '5.12.8'),
+    ('OpenEXR', '2.5.2'),
+    ('Java', '13'),
+    ('Mono', '6.12.0.122'),
+]
+multi_deps = {'Python': ['3.7']}  # the code does not support 3.8+
+configopts = " -DOGRE_BUILD_DEPENDENCIES=OFF "
+
+postinstallcmds = ['/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %%(installdir)s/lib/python%s --add_path %%(installdir)s/lib --any_interpreter' % x for x in multi_deps['Python']]
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+sanity_check_paths = {
+    'files': ['lib/libOgre%s.%s' % (x, SHLIB_EXT) for x in
+             ['BitesQt', 'Bites', 'JNI', 'Main', 'MeshLodGenerator', 'Overlay', 
+	      'Paging', 'Property', 'RTShaderSystem', 'Terrain', 'Volume']] + 
+             ['bin/Ogre%s' % x for x in ['AssimpConverter', 'MeshUpgrader', 'XMLConverter']],
+    'dirs': ['include/OGRE', 'share'] +
+	    ['lib/python%s/site-packages/Ogre' % x for x in multi_deps['Python']] 
+}
+
+moduleclass = 'vis'
