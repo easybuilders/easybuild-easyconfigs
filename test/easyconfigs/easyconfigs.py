@@ -444,6 +444,13 @@ class EasyConfigTest(TestCase):
             ],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
+            # some software depends on an older numba;
+            # this includes BirdNET, cell2location, cryoDRGN, librosa, PyOD, Python-Geometric, scVelo, scanpy
+            'numba': [
+                (r'0\.52\.0', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
+                               r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-',
+                               r'umap-learn-0\.4\.6-']),
+            ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
