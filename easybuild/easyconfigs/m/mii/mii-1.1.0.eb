@@ -39,14 +39,19 @@ local index_root = "/cvmfs/soft.computecanada.ca/custom/mii"
 setenv("MII", pathJoin(root, "bin/mii"))
 setenv("MII_INDEX_FILE", pathJoin(index_root, "data/index"))
 
-local hook_name = "command_not_found_handle"
-local hook_def = "source " .. pathJoin(root, "share/mii/init/common") .. " $@"
+local shell = myShellName()
 
--- Correct the hook name if shell is zsh
-if (myShellName() == "zsh") then
-    hook_name = hook_name .. 'r'
+-- If shell is supported, provide shell integration
+if (shell == "bash" or shell == "zsh") then
+    local hook_name = "command_not_found_handle"
+    local hook_def = "source " .. pathJoin(root, "share/mii/init/common") .. " $@"
+
+    -- Correct the hook name if shell is zsh
+    if (shell == "zsh") then
+        hook_name = hook_name .. 'r'
+    end
+
+    -- Define command not found hook
+    set_shell_function(hook_name, hook_def, "")
 end
-
--- Define command not found hook
-set_shell_function(hook_name, hook_def, "")
 """
