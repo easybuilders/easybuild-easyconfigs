@@ -1,0 +1,45 @@
+--- lipsia_hm/lipsia-setup.sh.orig	2021-08-02 10:23:07.386214000 -0000
++++ lipsia_hm/lipsia-setup.sh	2021-08-03 15:17:31.419011000 -0000
+@@ -14,8 +14,8 @@
+ 	[[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}";
+     }
+ 
+-I_AM=$(realpath ${BASH_SOURCE[0]})
+-MY_PLACE=${I_AM%/*} # does 'dirname' exist on a mac ?
++#I_AM=$(realpath ${BASH_SOURCE[0]})
++MY_PLACE=$TMP_BUILDDIR
+ 
+ VERBOSE=0
+ SILENCE=0
+@@ -81,11 +81,11 @@
+     echo
+ }
+ function Find_H () {
+-    local dirList="${LIPSIA_INST} ${LIPSIA_EXT}/include /usr/include /usr/local/include /opt/include"
++    local dirList="${LIPSIA_INST} ${LIPSIA_EXT}/include /usr/include /usr/local/include /opt/include ${EBROOTGSL}"
+     echo $(Find_DIR "$dirList" $1)
+ }
+ function Find_LIB () {
+-    local dirList="${LIPSIA_INST} ${LIPSIA_EXT}/lib /usr/lib64 /usr/local/lib64 /usr/local/lib /opt/lib"
++    local dirList="${LIPSIA_INST} ${LIPSIA_EXT}/lib /usr/lib64 /usr/local/lib64 /usr/local/lib /opt/lib ${EBROOTGSL}"
+     echo $(Find_DIR "$dirList" $1)
+ }
+ 
+@@ -155,7 +155,7 @@
+ testDir "${LIPSIA_DEV}/bin"     || return $?
+ 
+ # lipsia installation folder
+-LIPSIA_DEFAULT_INST_DIR=/opt/lipsia3.0
++LIPSIA_DEFAULT_INST_DIR=$TMP_INSTALLDIR
+ #LIPSIA_DEFAULT_INST_DIR=/usr
+ #LIPSIA_DEFAULT_INST_DIR=/usr/local
+ #LIPSIA_DEFAULT_INST_DIR="$HOME/bin"
+@@ -176,7 +176,7 @@
+ Prepend LD_LIBRARY_PATH "${LIPSIA_LIB}"
+ 
+ ############################################################################
+-export LIPSIA_CFLAGS="-O2 -ansi -Wall"
++export LIPSIA_CFLAGS="-O0 -ansi -Wall"
+ # if all binaries will exclusively run on homogenous hardware like a cluster
+ # of identical machines or maybe on your own PC _only_, try this instead:
+ #export LIPSIA_CFLAGS="-march=native -fast -ansi -Wall"
