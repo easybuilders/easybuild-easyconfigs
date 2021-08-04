@@ -1,0 +1,98 @@
+From c87000e3945090ed13d91885a09f80d37576ff15 Mon Sep 17 00:00:00 2001
+From: JLague <justin.lague@calculquebec.ca>
+Date: Mon, 2 Aug 2021 11:27:01 -0400
+Subject: [PATCH] add global index support using env var
+
+Default behaviour remains unchanged. If MII_INDEX_FILE
+is set, it will be used as the _mii_datafile. The
+behaviour for _mii_datadir also remains unchanged,
+so disabling and enabling mii can be done on a
+per-user basis.
+
+Also, disabled sync on sourcing shell integration if
+MII_INDEX_FILE is set, indicating a global index.
+
+The parent directory of MII_INDEX_FILE needs to be
+created manually before generating the index.
+---
+ init/bash |  6 ++++--
+ init/zsh  |  6 ++++--
+ src/mii.c | 24 ++++++++++++++++++++++--
+ 3 files changed, 30 insertions(+), 6 deletions(-)
+
+diff --git a/init/bash b/init/bash
+index 42aee05..051b1b9 100644
+--- a/init/bash
++++ b/init/bash
+@@ -24,8 +24,10 @@ if [ ! -x "$MII" ]; then
+     return
+ fi
+ 
+-# synchronize the index quietly and quickly
+-(mii sync 2>/dev/null &) 
++# synchronize the index quietly and quickly if no global index
++if [ ! -x "$MII_INDEX_FILE" ]; then
++    (mii sync 2>/dev/null &)
++fi
+ 
+ # execute the common handler
+ command_not_found_handle() {
+diff --git a/init/zsh b/init/zsh
+index 409496c..f6d87e7 100644
+--- a/init/zsh
++++ b/init/zsh
+@@ -24,8 +24,10 @@ if [ ! -x "$MII" ]; then
+     return
+ fi
+ 
+-# synchronize the index quickly and quietly
+-(mii sync 2>/dev/null &)
++# synchronize the index quickly and quietly if no global index
++if [ ! -x "$MII_INDEX_FILE" ]; then
++    (mii sync 2>/dev/null &)
++fi
+ 
+ # execute the common handler
+ command_not_found_handler() {
+diff --git a/src/mii.c b/src/mii.c
+index 4d4e632..0dcb1be 100644
+--- a/src/mii.c
++++ b/src/mii.c
+@@ -39,7 +39,24 @@ int mii_init() {
+         }
+     }
+ 
+-    if (!_mii_datadir) {
++    /* -d option has priority */
++    if (!_mii_datadir)
++    {
++        char *index_file = getenv("MII_INDEX_FILE");
++
++        /* can't read file if file exists */
++        if (index_file && (access(index_file, R_OK) != 0 && errno != ENOENT))
++        {
++            mii_error("%s exists and is not readable!", index_file);
++            return -1;
++        }
++
++        /* env var is set and file is OK */
++        if (index_file)
++        {
++            _mii_datafile = mii_strdup(index_file);
++        }
++
+         char* home = getenv("HOME");
+ 
+         if (!home) {
+@@ -57,7 +74,10 @@ int mii_init() {
+         return -1;
+     }
+ 
+-    _mii_datafile = mii_join_path(_mii_datadir, "index");
++    if (!_mii_datafile) 
++    {
++        _mii_datafile = mii_join_path(_mii_datadir, "index");
++    }
+ 
+     mii_debug("Initialized mii with cache path %s", _mii_datafile);
+     return 0;

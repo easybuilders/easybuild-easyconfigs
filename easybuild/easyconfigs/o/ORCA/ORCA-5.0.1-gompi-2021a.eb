@@ -1,0 +1,65 @@
+easyblock = "PackedBinary"
+
+name = "ORCA"
+version = '5.0.1'
+
+openmpiversion = '4.1.1'
+
+import os
+
+homepage = 'http://cec.mpg.de/forum/'
+description = """ORCA is a flexible, efficient and easy-to-use general purpose tool for quantum chemistry
+ with specific emphasis on spectroscopic properties of open-shell molecules.
+  It features a wide variety of standard quantum chemical methods ranging from semiempirical methods to DFT to single-
+ and multireference correlated ab initio methods.
+ It can also treat environmental and relativistic effects."""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+
+# Download from https://cec.mpg.de/orcadownload/index.php
+
+sources = [
+    '%%(namelower)s_%s_linux_x86-64_openmpi411_part1.tar.xz' % (version.replace('.', '_') ),
+    '%%(namelower)s_%s_linux_x86-64_openmpi411_part2.tar.xz' % (version.replace('.', '_') ),
+    '%%(namelower)s_%s_linux_x86-64_openmpi411_part3.tar.xz' % (version.replace('.', '_') ),
+    '%%(namelower)s_%s_linux_x86-64_openmpi411_part4.tar.xz' % (version.replace('.', '_') ),
+]
+checksums = [
+    # orca_5_0_1_linux_x86-64_openmpi411_part1.tar.xz
+    '251b6f6bb570e3755254cdc7c14b464c21a474ad8c287c83fdbdb940532d078b',
+    # orca_5_0_1_linux_x86-64_openmpi411_part2.tar.xz
+    'f24818809b4dee4dc52c9578d7698b0cae299ea0c90ec6fd62d04c776f7f0c29',
+    # orca_5_0_1_linux_x86-64_openmpi411_part3.tar.xz
+    '44353ce99734095fc0e69f873d90b2c0950019d21fc3cc8a4c052b014936cc74',
+    # orca_5_0_1_linux_x86-64_openmpi411_part4.tar.xz
+    '170f64766571e43a5d9823761d1daa21b4a48382b484280147a6094f3dc3d868',
+]
+
+postinstallcmds = [ '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path=$EBROOTOPENMPI/lib' ]
+
+# orca_mp2 was droped on the version 5.0.0: only mpi version is available
+# orca_gtoint
+
+orca_binaries = [
+    "anoint", "casscf", "cis", "cpscf", "eprnmr", "mdci", 
+    "mrci", "pc", "rocis", "scf", "scfgrad", "soc",
+]
+
+orca_suffixes = [
+    "2mkl", "asa", "chelpg", "ciprep", "eca", "ecplib", "euler", 
+    "fci", "fitpes", "gstep", "loc", "mapspc", "md", "mergefrag", 
+    "ndoint", "numfreq", "plot", "pltvib", "pop", "rel", "vib", "vpot",
+]
+
+sanity_check_paths = {
+    'files': ['orca_%s%s' % (x, y) for x in orca_binaries 
+             for y in ["", "_mpi"]] +
+             ['orca_%s' % x for x in orca_suffixes] + 
+             ['orca', 'orca_mp2_mpi'],
+    'dirs': [],
+}
+
+if os.environ.get('USER') == 'ebuser':
+	group = 'soft_orca'
+
+moduleclass = 'chem'
