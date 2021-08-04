@@ -1,0 +1,46 @@
+#EasyBuild easyconfig
+easyblock = 'ConfigureMake'
+
+name = 'mii'
+version = '1.1.0'
+
+homepage = 'https://github.com/codeandkey/mii'
+description = """A smart search engine for module environments."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/codeandkey/mii/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['mii-1.1.0_global-index.patch', 'mii-1.1.0_hierarchic-modulepath.patch']
+checksums = [
+    'cfca1318eac3db5f1452aaa82cb1a95de6175922075ba3fab1111b8594e6072c',  # v1.1.0.tar.gz
+    '72db9fa725e542d56544f027e9462d10435ee8d7a2aad36880e78d3ee9ae23d3',  # mii-1.1.0_global-index.patch
+    '2814dba2b4600226c591e9f3f6e2e3c783b399c9ff2f95c59feb27371b3465e4',  # mii-1.1.0_hierarchic-modulepath.patch
+]
+
+# only make install is needed
+skipsteps = ['configure', 'build']
+
+installopts =  'PREFIX=%(installdir)s/ '
+installopts += 'MII_ENABLE_SPIDER=yes '
+
+postinstallcmds = ['mkdir -p %(installdir)s/data/']
+
+sanity_check_paths = {
+    'files': ["bin/mii", "share/mii/init/bash", "share/mii/init/zsh", "share/mii/init/common"],
+    'dirs': [],
+}
+
+sanity_check_commands = [('mii', 'version')]
+
+modluafooter = """
+setenv("MII", pathJoin(root, "bin/mii"))
+setenv("MII_INDEX_FILE", pathJoin(root, "data/index"))
+
+local hook_name = "command_not_found_handle"
+local hook_def = "source " .. pathJoin(root, "share/mii/init/common") .. " $@"
+
+-- Define hooks for both bash and zsh
+set_shell_function(hook_name, hook_def, "")
+set_shell_function(hook_name .. 'r', hook_def, "")
+"""
