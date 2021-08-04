@@ -1,0 +1,94 @@
+# This build still relies on the following libraries (or part of them) shipped with FSL:
+#    GDCHART, libprob, libcprob, cprob, newran, newmat
+# Attempts to use externally built libraries failed. Worth trying again in the future...
+#
+# Some tools like icmp are missing since they are built with the fslpython_install.sh script
+# which locally installs Miniconda and creates a virtual environment. This is too messy and
+# an alternative solution is necessary to install them.
+# https://github.com/easybuilders/easybuild-easyconfigs/issues/7899
+# https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation#imcp.2Fimglob.2Fimmv_errors_after_installation
+
+name = 'FSL'
+version = '6.0.4'
+
+homepage = 'https://www.fmrib.ox.ac.uk/fsl/'
+description = """FSL is a comprehensive library of analysis tools for FMRI, MRI and DTI brain imaging data."""
+
+toolchain = {'name': 'gmklc', 'version': '2020a'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://www.fmrib.ox.ac.uk/fsldownloads/']
+sources = ['%(namelower)s-%(version)s-sources.tar.gz',
+{ 'filename': 'requirements-%(version)s.txt', 'extract_cmd': "cp %s ."}
+]
+patches = [
+    'FSL-6.0.4_Makefile_fixes.patch',
+    'FSL-6.0.2_Build_extras.patch',
+    'FSL-6.0.1_Melodic-use-ifstream-good.patch',
+    'FSL-6.0.1_Fix_fsl_exec_script.patch',
+    'FSL-6.0.4_eblapack_ebblas.patch',
+    'FSL-6.0.3_libxml2_gentoo.patch',
+    'FSL-6.0.4_sqlite_shared.patch',
+    'FSL-6.0.4_thrust.patch',
+    'FSL-6.0.4_build_fixes.patch',
+#    'FSL-6.0.1_slurm.patch',
+]
+checksums = [
+    '58b88f38e080b05d70724d57342f58e1baf56e2bd3b98506a72b4446cad5033e',  # fsl-6.0.4-sources.tar.gz
+    '57bfc63ea40f9f56520a45f5aecb89bce01dfa46d77aed5b06c2c8d8f3aa0450',  # requirements-6.0.4.txt
+    '6012568a15a980048c077c5c0aa6460fd6fec8b1485bb59307b8692845512428',  # FSL-6.0.4_Makefile_fixes.patch
+    '168157f07818e7dfd04c222916e663e9d21db84b4b86df5b79bab56e3bf8ccf5',  # FSL-6.0.2_Build_extras.patch
+    'c07644fbd89cf9c70db5a1a8f4f2918ab5daeb60cdf0ce4ee2b91f8ae48173fa',  # FSL-6.0.1_Melodic-use-ifstream-good.patch
+    'aa155f8576dc5f010757ecf66fc0bf673454b6c6c40346cbb01cbe59236ed6ef',  # FSL-6.0.1_Fix_fsl_exec_script.patch
+    'a943d574172a9837cbf518a519a3f5caff48b7d6f8be78a8692538d0020bc0e0',  # FSL-6.0.4_eblapack_ebblas.patch
+    '1130259d1ca1c0868e6c3c4a96edfac75f9b72da8118cc4dc2912dc0801808a3',  # FSL-6.0.3_libxml2_gentoo.patch
+    '07dd24dce279514ae8e7e3e4cf6c7dbd478af4d96d4cae6725a91020b65b32f8',  # FSL-6.0.4_sqlite_shared.patch
+    'b15701282af73314719e5de1fef2ce9ad6b5e1e770c84dfb38c512f4d41e18fe',  # FSL-6.0.4_thrust.patch
+    '1bc83cfeffff21a68db47b6929e94634fc8aaf3db8e276e160e3f468f0889000', # FSL-6.0.4_build_fixes.patch
+]
+
+builddependencies = [
+    ('Boost', '1.72.0'),
+]
+
+dependencies = [
+    ('libgd', '2.3.0'),
+    ('libxml2', '2.9.9'),
+#    ('libxml++', '2.40.1'),
+    ('SQLite', '3.29.0'),
+    ('libpng', '1.6.37'),
+    ('Tk', '8.6.9'),
+    ('NLopt', '2.6.1'),
+#    ('freeglut', '3.2.1'),
+#    ('expat', '2.2.7'),
+    ('zlib', '1.2.11'),
+    ('VTK', '8.2.0'),
+    ('GSL', '2.6'),
+    ('Qwt', '6.1.4'),
+    ('wxWidgets', '3.1.4'),
+    ('JsonCpp', '1.9.4'),
+    ('Python', '3.7'),
+]
+
+prebuildopts = "mkdir %(installdir)s/fsl/bin && ln -s $EBROOTGENTOO/bin/tclsh %(installdir)s/fsl/bin/fsltclsh && "
+
+postinstallcmds = [
+    "pwd && virtualenv %(installdir)s/fsl/venv; source %(installdir)s/fsl/venv/bin/activate; pip install --no-index -r %(installdir)s/requirements-%(version)s.txt",
+    # create symlinks
+    """cd %(installdir)s/fsl/venv/bin;
+ln -s python ../../bin/fslpython;
+ln -s ipython ../../bin/fslipython;
+ln -s python ../../bin/fslpythonw;
+for f in *; do ln -s ../venv/bin/$f ../../bin; done
+rm ../../bin/{python*,pip*,wheel*,easy_install*,activate*}
+    """,
+]
+
+modextravars = {
+    'FSLOUTPUTTYPE': 'NIFTI_GZ',
+    'FSLMULTIFILEQUIT': 'TRUE',
+    'FSLTCLSH': 'tclsh',
+    'FSLWISH': 'wish8.6'
+}
+
+moduleclass = 'bio'
