@@ -7,7 +7,7 @@ version = '1.1.0'
 homepage = 'https://github.com/codeandkey/mii'
 description = """A smart search engine for module environments."""
 
-toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchain = SYSTEM
 
 source_urls = ['https://github.com/codeandkey/mii/archive']
 sources = ['v%(version)s.tar.gz']
@@ -34,13 +34,24 @@ sanity_check_paths = {
 sanity_check_commands = [('mii', 'version')]
 
 modluafooter = """
+local index_root = "/cvmfs/soft.computecanada.ca/custom/mii"
+
 setenv("MII", pathJoin(root, "bin/mii"))
-setenv("MII_INDEX_FILE", pathJoin(root, "data/index"))
+setenv("MII_INDEX_FILE", pathJoin(index_root, "data/index"))
 
-local hook_name = "command_not_found_handle"
-local hook_def = "source " .. pathJoin(root, "share/mii/init/common") .. " $@"
+local shell = myShellName()
 
--- Define hooks for both bash and zsh
-set_shell_function(hook_name, hook_def, "")
-set_shell_function(hook_name .. 'r', hook_def, "")
+-- If shell is supported, provide shell integration
+if (shell == "bash" or shell == "zsh") then
+    local hook_name = "command_not_found_handle"
+    local hook_def = "source " .. pathJoin(root, "share/mii/init/common") .. " $@"
+
+    -- Correct the hook name if shell is zsh
+    if (shell == "zsh") then
+        hook_name = hook_name .. 'r'
+    end
+
+    -- Define command not found hook
+    set_shell_function(hook_name, hook_def, "")
+end
 """
