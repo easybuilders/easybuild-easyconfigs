@@ -1,7 +1,7 @@
 From 9d02c6009994d1e9ad3b21299ce6c3fb158f261c Mon Sep 17 00:00:00 2001
 From: JLague <justin.lague@calculquebec.ca>
 Date: Wed, 28 Jul 2021 16:16:22 -0400
-Subject: [PATCH 1/8] add hierarchical modulepath support
+Subject: [PATCH 1/9] add hierarchical modulepath support
 
 if MII_ENABLE_SPIDER is set to yes at build time, mii
 will use the spider command provided by Lmod to find
@@ -4436,7 +4436,7 @@ index 9b889d6..35b773c 100644
 From ecd6f428ed2c1b4929af74c1a0c99d08438d3817 Mon Sep 17 00:00:00 2001
 From: JLague <justin.lague@calculquebec.ca>
 Date: Thu, 29 Jul 2021 14:13:34 -0400
-Subject: [PATCH 2/8] use selection sort instead of bubble sort
+Subject: [PATCH 2/9] use selection sort instead of bubble sort
 
 ---
  src/search_result.c | 21 +++++++++++++--------
@@ -4485,7 +4485,7 @@ index d949299..3b9f9e2 100644
 From 27ad901680d74cb5993cade39ebbfaf1e6dfdb70 Mon Sep 17 00:00:00 2001
 From: JLague <justin.lague@calculquebec.ca>
 Date: Thu, 29 Jul 2021 15:46:41 -0400
-Subject: [PATCH 3/8] fix various memory leaks
+Subject: [PATCH 3/9] fix various memory leaks
 
 Namely, the number of results was modified, so
 not every search result was freed. Also, condition
@@ -4580,7 +4580,7 @@ index 3b9f9e2..cf919eb 100644
 From d5e9dcd1e83d18de4a89f4d5d03b16b04bb37a3a Mon Sep 17 00:00:00 2001
 From: JLague <justin.lague@calculquebec.ca>
 Date: Thu, 29 Jul 2021 15:49:30 -0400
-Subject: [PATCH 4/8] compare versions alphabetically if not number
+Subject: [PATCH 4/9] compare versions alphabetically if not number
 
 Previously, when sorting, versions were compared based
 only on numbers, but now they are also compared
@@ -4615,7 +4615,7 @@ index cf919eb..7157311 100644
 From df5c38610719b405780b470971555ea58b1645c2 Mon Sep 17 00:00:00 2001
 From: JLague <justin.lague@calculquebec.ca>
 Date: Fri, 30 Jul 2021 10:35:14 -0400
-Subject: [PATCH 5/8] check if LMOD_DIR is set when using spider
+Subject: [PATCH 5/9] check if LMOD_DIR is set when using spider
 
 ---
  src/modtable.c | 12 +++++++++---
@@ -4648,7 +4648,7 @@ index d03e7b2..04ed38e 100644
 From 11319d1bb171f06b78dda19e72425b64e209ad19 Mon Sep 17 00:00:00 2001
 From: JLague <justin.lague@calculquebec.ca>
 Date: Fri, 30 Jul 2021 10:38:10 -0400
-Subject: [PATCH 6/8] remove unused constant in modtable.h file
+Subject: [PATCH 6/9] remove unused constant in modtable.h file
 
 ---
  src/modtable.h | 2 +-
@@ -4671,7 +4671,7 @@ index 380e3d0..6b3f7ce 100644
 From be8ba38d3110154e52b855d3e273f466029ff562 Mon Sep 17 00:00:00 2001
 From: JLague <justin.lague@calculquebec.ca>
 Date: Fri, 30 Jul 2021 11:06:51 -0400
-Subject: [PATCH 7/8] add cJSON object cleanup when make clean
+Subject: [PATCH 7/9] add cJSON object cleanup when make clean
 
 ---
  makefile | 6 ++++--
@@ -4712,7 +4712,7 @@ index e3e933e..6884b72 100644
 From 0df7e1e31c1181f90e2045daced5d0ffe67cf6cf Mon Sep 17 00:00:00 2001
 From: JLague <justin.lague@calculquebec.ca>
 Date: Fri, 30 Jul 2021 11:53:57 -0400
-Subject: [PATCH 8/8] fix bash integration not loading all modules
+Subject: [PATCH 8/9] fix bash integration not loading all modules
 
 ---
  init/common | 6 ++----
@@ -4735,3 +4735,27 @@ index dc2b554..8a9d406 100755
      $@
  elif [ $res = 2 ]; then
      echo "$1: command not found!" 1>&2
+
+From 36a1e925102e8be8ba89250da628c45697e5b611 Mon Sep 17 00:00:00 2001
+From: JLague <justin.lague@calculquebec.ca>
+Date: Fri, 6 Aug 2021 11:17:30 -0400
+Subject: [PATCH 9/9] fix off-by-one error
+
+spider command size was off-by-one
+---
+ src/modtable.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/modtable.c b/src/modtable.c
+index 04ed38e..81e12cd 100644
+--- a/src/modtable.c
++++ b/src/modtable.c
+@@ -678,7 +678,7 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
+     }
+ 
+     /* generate the spider command and run it */
+-    char* cmd = malloc(strlen(lmod_dir)+ strlen(path) + 23);
++    char* cmd = malloc(strlen(lmod_dir)+ strlen(path) + 24);
+     sprintf(cmd, "%s/%s %s", lmod_dir, "spider -o spider-json", path);
+     FILE* pf = popen(cmd, "r");
+ 
