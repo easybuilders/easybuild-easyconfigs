@@ -1,0 +1,141 @@
+From b7be64f9079dee9f326c791bcec1897047ae0de5 Mon Sep 17 00:00:00 2001
+From: Tobias Burnus <tobias@codesourcery.com>
+Date: Thu, 17 Dec 2020 10:39:09 +0100
+Subject: [PATCH] Fortran: Delay vtab generation until after parsing [PR92587]
+
+gcc/fortran/ChangeLog:
+
+	PR fortran/92587
+	* match.c (gfc_match_assignment): Move gfc_find_vtab call from here ...
+	* resolve.c (gfc_resolve_code): ... to here.
+
+gcc/testsuite/ChangeLog:
+
+	PR fortran/92587
+	* gfortran.dg/finalize_37.f90: New test.
+
+(cherry picked from commit ba9fa684053917a07bfa8f4742da0e196e72b9a2)
+---
+ gcc/fortran/match.c                       |  3 -
+ gcc/fortran/resolve.c                     |  3 +
+ gcc/testsuite/gfortran.dg/finalize_37.f90 | 80 +++++++++++++++++++++++
+ 3 files changed, 83 insertions(+), 3 deletions(-)
+ create mode 100644 gcc/testsuite/gfortran.dg/finalize_37.f90
+
+diff --git a/gcc/fortran/match.c b/gcc/fortran/match.c
+index 9cd5b5b9606..c87755a02e6 100644
+--- a/gcc/fortran/match.c
++++ b/gcc/fortran/match.c
+@@ -1374,9 +1374,6 @@ gfc_match_assignment (void)
+ 
+   gfc_check_do_variable (lvalue->symtree);
+ 
+-  if (lvalue->ts.type == BT_CLASS)
+-    gfc_find_vtab (&rvalue->ts);
+-
+   return MATCH_YES;
+ }
+ 
+diff --git a/gcc/fortran/resolve.c b/gcc/fortran/resolve.c
+index bc40f444cb2..d9d51424e08 100644
+--- a/gcc/fortran/resolve.c
++++ b/gcc/fortran/resolve.c
+@@ -11515,6 +11515,9 @@ start:
+ 	  if (!t)
+ 	    break;
+ 
++	  if (code->expr1->ts.type == BT_CLASS)
++	   gfc_find_vtab (&code->expr2->ts);
++
+ 	  /* Remove a GFC_ISYM_CAF_GET inserted for a coindexed variable on
+ 	     the LHS.  */
+ 	  if (code->expr1->expr_type == EXPR_FUNCTION
+diff --git a/gcc/testsuite/gfortran.dg/finalize_37.f90 b/gcc/testsuite/gfortran.dg/finalize_37.f90
+new file mode 100644
+index 00000000000..6d5be0247c9
+--- /dev/null
++++ b/gcc/testsuite/gfortran.dg/finalize_37.f90
+@@ -0,0 +1,80 @@
++! { dg-do run }
++! { dg-additional-options "-fdump-tree-original" }
++!
++! PR fortran/92587
++!
++
++module m
++  implicit none (type, external)
++  type t2
++  contains
++    final :: fini
++  end type
++  type t3
++    type(t2) :: a
++  end type
++  type, extends(t3) :: t4
++  end type
++  class(t4), allocatable :: y
++  class(t4), allocatable :: z
++  integer :: fini_cnt = 0
++contains
++  subroutine sub
++    y = z
++  end
++  subroutine fini(x)
++    type(t2) :: x
++    fini_cnt = fini_cnt + 1
++  end
++end
++
++module m2
++  use m
++  implicit none (type, external)
++  type, extends(t3) :: t5
++  end type
++  type, extends(t3) :: t6
++  contains
++    final :: fin2
++  end type
++  integer :: fin2_cnt = 0
++contains
++  subroutine bar(x, y, z)
++    class(t4), allocatable, intent(out) :: x
++    class(t5), allocatable, intent(out) :: y
++    class(t6), allocatable, intent(out) :: z
++  end
++  subroutine fin2 (x)
++    type(t6) :: x
++    fin2_cnt = fin2_cnt + 1
++  end
++end  
++
++  use m
++  use m2
++  implicit none (type, external)
++  class(t4), allocatable :: x2
++  class(t5), allocatable :: y2
++  class(t6), allocatable :: z2
++
++  if (fini_cnt /= 0 .or. fin2_cnt /= 0) stop 1
++  call bar (x2, y2, z2)
++  if (fini_cnt /= 0 .or. fin2_cnt /= 0) stop 2
++  if (allocated(x2) .or. allocated(y2) .or. allocated(z2)) stop 3
++
++  allocate(t4 :: x2)
++  allocate(t5 :: y2)
++  allocate(t6 :: z2)
++  call bar (x2, y2, z2)
++  if (fini_cnt /= 3 .or. fin2_cnt /= 1) stop 4
++  if (allocated(x2) .or. allocated(y2) .or. allocated(z2)) stop 5
++
++  allocate(t6 :: z2)
++  call bar (x2, y2, z2)
++  if (fini_cnt /= 4 .or. fin2_cnt /= 2) stop 6
++  if (allocated(x2) .or. allocated(y2) .or. allocated(z2)) stop 7
++end
++
++! { dg-final { scan-tree-dump "__final_m_T2 \\\(struct" "original" } }
++! { dg-final { scan-tree-dump "__final_m_T3 \\\(struct" "original" } }
++! { dg-final { scan-tree-dump "__final_m2_T6 \\\(struct" "original" } }
+-- 
+2.27.0
+
