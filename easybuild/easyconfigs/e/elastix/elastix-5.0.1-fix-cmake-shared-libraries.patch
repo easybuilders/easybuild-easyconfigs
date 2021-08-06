@@ -1,0 +1,121 @@
+# This patch enables the building of shared libraries
+# Author: Maxime Boissonneault
+diff -ru elastix-5.0.1.orig/CMakeLists.txt elastix-5.0.1/CMakeLists.txt
+--- elastix-5.0.1.orig/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/CMakeLists.txt	2021-08-06 13:41:10.686838928 +0000
+@@ -6,7 +6,9 @@
+ set(CMAKE_CXX_STANDARD 11)
+ 
+ if( BUILD_SHARED_LIBS )
+-  message(FATAL_ERROR "Elastix does not support BUILD_SHARED_LIBS")
++	#  message(FATAL_ERROR "Elastix does not support BUILD_SHARED_LIBS")
++	set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC" )
++	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC" )
+ endif()
+ 
+ #---------------------------------------------------------------------
+diff -ru elastix-5.0.1.orig/Common/CMakeLists.txt elastix-5.0.1/Common/CMakeLists.txt
+--- elastix-5.0.1.orig/Common/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/Common/CMakeLists.txt	2021-08-06 13:50:20.713349143 +0000
+@@ -189,7 +189,7 @@
+ #---------------------------------------------------------------------
+ # Create the elxCommon library.
+ 
+-add_library( elxCommon STATIC
++add_library( elxCommon 
+   ${CommonFiles}
+   ${CostFunctionFiles}
+   ${TransformFiles}
+diff -ru elastix-5.0.1.orig/Common/MevisDicomTiff/CMakeLists.txt elastix-5.0.1/Common/MevisDicomTiff/CMakeLists.txt
+--- elastix-5.0.1.orig/Common/MevisDicomTiff/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/Common/MevisDicomTiff/CMakeLists.txt	2021-08-06 13:50:05.019277518 +0000
+@@ -3,7 +3,7 @@
+ 
+ if( ELASTIX_USE_MEVISDICOMTIFF )
+   add_definitions( -D_ELASTIX_USE_MEVISDICOMTIFF )
+-  add_library( mevisdcmtiff STATIC
++  add_library( mevisdcmtiff 
+     itkMevisDicomTiffImageIO.cxx
+     itkMevisDicomTiffImageIOFactory.cxx
+     itkUseMevisDicomTiff.cxx
+@@ -11,7 +11,7 @@
+ else()
+   # avoid dependencies, but compile the lib, so that customers of this
+   # lib can just call RegisterMevisDicomTiff without checking.
+-  add_library( mevisdcmtiff STATIC
++  add_library( mevisdcmtiff 
+     itkUseMevisDicomTiff.cxx
+   )
+ endif()
+diff -ru elastix-5.0.1.orig/Common/OpenCL/CMakeLists.txt elastix-5.0.1/Common/OpenCL/CMakeLists.txt
+--- elastix-5.0.1.orig/Common/OpenCL/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/Common/OpenCL/CMakeLists.txt	2021-08-06 13:50:15.414324959 +0000
+@@ -53,7 +53,7 @@
+ )
+ 
+ # Create the openCL library
+-add_library( elxOpenCL STATIC ${OpenCL_Files} )
++add_library( elxOpenCL ${OpenCL_Files} )
+ 
+ # Link it against the necessary libraries.
+ target_link_libraries( elxOpenCL
+diff -ru elastix-5.0.1.orig/Common/ParameterFileParser/CMakeLists.txt elastix-5.0.1/Common/ParameterFileParser/CMakeLists.txt
+--- elastix-5.0.1.orig/Common/ParameterFileParser/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/Common/ParameterFileParser/CMakeLists.txt	2021-08-06 13:50:09.869299653 +0000
+@@ -8,7 +8,7 @@
+ 
+ source_group( "Parser" FILES ${param_SRCS} )
+ 
+-add_library( param STATIC ${param_SRCS} )
++add_library( param ${param_SRCS} )
+ install( TARGETS param
+   ARCHIVE DESTINATION ${ELASTIX_ARCHIVE_DIR}
+   LIBRARY DESTINATION ${ELASTIX_LIBRARY_DIR}
+diff -ru elastix-5.0.1.orig/Common/xout/CMakeLists.txt elastix-5.0.1/Common/xout/CMakeLists.txt
+--- elastix-5.0.1.orig/Common/xout/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/Common/xout/CMakeLists.txt	2021-08-06 13:50:50.274484054 +0000
+@@ -18,7 +18,7 @@
+   xoutcell.h )
+ 
+ # a lib defining the global variable xout.
+-add_library( xoutlib STATIC xoutmain.cxx ${xouthxxfiles} ${xouthfiles} )
++add_library( xoutlib xoutmain.cxx ${xouthxxfiles} ${xouthfiles} )
+ install( TARGETS xoutlib
+   ARCHIVE DESTINATION ${ELASTIX_ARCHIVE_DIR}
+   LIBRARY DESTINATION ${ELASTIX_LIBRARY_DIR}
+diff -ru elastix-5.0.1.orig/Components/CMakeLists.txt elastix-5.0.1/Components/CMakeLists.txt
+--- elastix-5.0.1.orig/Components/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/Components/CMakeLists.txt	2021-08-06 13:50:31.442398108 +0000
+@@ -127,7 +127,7 @@
+ 
+     # Create project and static library
+     project( ${name} )
+-    add_library( ${name} STATIC ${filelist} )
++    add_library( ${name} ${filelist} )
+     target_link_libraries( ${name} ${elxLinkLibs} )
+     install( TARGETS ${name}
+       ARCHIVE DESTINATION ${ELASTIX_ARCHIVE_DIR}
+diff -ru elastix-5.0.1.orig/Components/Metrics/KNNGraphAlphaMutualInformation/KNN/CMakeLists.txt elastix-5.0.1/Components/Metrics/KNNGraphAlphaMutualInformation/KNN/CMakeLists.txt
+--- elastix-5.0.1.orig/Components/Metrics/KNNGraphAlphaMutualInformation/KNN/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/Components/Metrics/KNNGraphAlphaMutualInformation/KNN/CMakeLists.txt	2021-08-06 13:50:59.670526936 +0000
+@@ -33,7 +33,7 @@
+ add_subdirectory( ann_1.1 )
+ 
+ # Create the KNN library
+-add_library( KNNlib STATIC ${KNN_Files} )
++add_library( KNNlib ${KNN_Files} )
+ 
+ # Link it against the necessary libraries.
+ target_link_libraries( KNNlib ANNlib ${ITK_LIBRARIES} )
+diff -ru elastix-5.0.1.orig/Core/CMakeLists.txt elastix-5.0.1/Core/CMakeLists.txt
+--- elastix-5.0.1.orig/Core/CMakeLists.txt	2020-09-27 11:18:40.000000000 +0000
++++ elastix-5.0.1/Core/CMakeLists.txt	2021-08-06 13:49:48.782203415 +0000
+@@ -95,7 +95,7 @@
+ #---------------------------------------------------------------------
+ # Create the elxCore library.
+ 
+-add_library( elxCore STATIC
++add_library( elxCore 
+   ${KernelFilesForComponents}
+   ${InstallFilesForComponents}
+   ${ConfigurationFiles}
