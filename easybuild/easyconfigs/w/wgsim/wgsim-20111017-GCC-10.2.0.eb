@@ -1,36 +1,32 @@
-easyblock = 'MakeCp'
+easyblock = 'CmdCp'
 
 name = 'wgsim'
 version = '20111017'
 local_commit = 'a12da3375ff3b51a5594d4b6fa35591173ecc229'
 
 homepage = 'https://github.com/lh3/wgsim/'
-description = """Wgsim is a small tool for simulating sequence reads from a reference genome."""
+description = "Wgsim is a small tool for simulating sequence reads from a reference genome."
 
 toolchain = {'name': 'GCC', 'version': '10.2.0'}
 
 github_account = 'lh3'
 source_urls = [GITHUB_SOURCE]
-sources = [{'download_filename': '%s.zip' % local_commit, 'filename': SOURCE_TAR_GZ}]
-patches = [
-    ('wgsim-%(version)s_add_makefile.patch', 1)
-]
-checksums = [
-    '1180fdd1d66691da5634e8c98b78c4742d0faf10042f35c2d17d26844d550f1c',  # wgsim-20111017.tar.gz
-    '81b61c6cceaa4a05e9ee12976dede0df1639f9504ded11e7099cbd1f932c6c9d',  # wgsim-20111017_add_makefile.patch
+sources = [{'download_filename': '%s.zip' % local_commit, 'filename': SOURCE_ZIP}]
+checksums = ['1180fdd1d66691da5634e8c98b78c4742d0faf10042f35c2d17d26844d550f1c']
+
+dependencies = [
+    ('zlib', '1.2.11'),
 ]
 
-dependencies = [('zlib', '1.2.11')]
+cmds_map = [('.*', "$CC $CFLAGS -o %(name)s %(name)s.c $LDFLAGS -lz -lm")]
 
-buildopts = 'CC="$CC" CFLAGS="$CLFAGS"'
-
-files_to_copy = [(["wgsim"], 'bin')]
-
-sanity_check_commands = [("%(name)s -h 2>&1 | grep 'Program: wgsim (short read simulator)'")]
+files_to_copy = [(['wgsim'], 'bin')]
 
 sanity_check_paths = {
     'files': ['bin/wgsim'],
     'dirs': [],
 }
+
+sanity_check_commands = ["wgsim -h 2>&1 | grep 'Program: wgsim (short read simulator)'"]
 
 moduleclass = 'bio'
