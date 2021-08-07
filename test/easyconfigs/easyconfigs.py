@@ -247,6 +247,12 @@ class EasyConfigTest(TestCase):
             if len(bl_vsuff_vars) == 1:
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != bl_vsuff_vars[0])
 
+        # filter out HDF5 with -serial versionsuffix which is used in HDF5 for Python (h5py)
+        if dep in ['HDF5']:
+            serial_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: -serial')]
+            if len(serial_vsuff_vars) == 1:
+                dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != serial_vsuff_vars[0])
+
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
         if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'PyTorch', 'R', 'TensorFlow'] and len(dep_vars) > 1:
