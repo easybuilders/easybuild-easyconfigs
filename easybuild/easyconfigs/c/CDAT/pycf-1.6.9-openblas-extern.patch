@@ -1,0 +1,65 @@
+Replace hardcoded searching for BLAS/LAPACK with Easybuild-provided values.
+Also take care of `extern` definitions which occurs generateLibCFConfig.py parses
+netCDF headers and produces invalid Python syntax.
+
+Author: Jakub Zárybnický
+
+diff -ru pycf-1.6.9/py/generateLibCFConfig.py pycf-1.6.9-edit/py/generateLibCFConfig.py
+--- pycf-1.6.9/py/generateLibCFConfig.py	2016-09-06 22:28:57.000000000 +0200
++++ pycf-1.6.9-edit/py/generateLibCFConfig.py	2021-03-03 11:41:23.339894364 +0100
+@@ -69,7 +69,7 @@
+         m = re.match(f1, line)
+         if m:
+            name, value = m.group(1), m.group(2)
+-           nameValue.append([name, value])
++           nameValue.append([name, value.replace(' extern', '')])
+     return nameValue
+ 
+ # parse netcdf header
+diff -ru pycf-1.6.9/setup.py pycf-1.6.9-edit/setup.py
+--- pycf-1.6.9/setup.py	2017-01-31 05:07:44.000000000 +0100
++++ pycf-1.6.9-edit/setup.py	2021-03-03 10:57:47.647624973 +0100
+@@ -100,25 +100,6 @@
+ cmd = subprocess.check_output(['nc-config', '--libs']).decode("utf-8")
+ netcdf_libdirs, netcdf_libs = parseLinkCommand(cmd)
+ 
+-
+-# Get LAPACK and BLAS. If not set then search common locations
+-dirs = (os.path.dirname(sys.executable) + '/../lib', '/usr/local/lib', '/usr/lib', '/usr/lib64')
+-blas_libraries = []
+-# prefer MKL
+-USE_MKL = True
+-lapack_libraries = findLibrary(dirs, 'mkl_core')
+-if not lapack_libraries:
+-  USE_MKL = False
+-  lapack_libraries = os.environ.get('LAPACK_LIBRARIES', findLibrary(dirs, 'lapack'))
+-  blas_libraries = os.environ.get('BLAS_LIBRARIES', findLibrary(dirs, 'blas'))
+-  if not blas_libraries:
+-    print('ERROR: could not find blas -- set environment variable BLAS_LIBRARIES and rerun')
+-    sys.exit(2)
+-
+-if not lapack_libraries:
+-  print('ERROR: could not find lapack -- set environment variable LAPACK_LIBRARIES and rerun')
+-  sys.exit(1)
+-
+ # generate cf_config.h
+ cfg = open('cf_config.h', mode='w')
+ print('#define VERSION "{}"'.format(getVersion()), file=cfg)
+@@ -126,15 +107,8 @@
+ print('#define HAVE_CONFIG_H', file=cfg)
+ cfg.close()
+ 
+-lapack_dir, lapack_lib = breakLibraryPath(lapack_libraries)
+-libdirs = netcdf_libdirs + [lapack_dir]
+-libs = netcdf_libs + [lapack_lib]
+-if USE_MKL:
+-  libs += ['mkl_sequential', 'mkl_rt']
+-if blas_libraries:
+-  blas_dir, blas_lib = breakLibraryPath(blas_libraries)
+-  libdirs += [blas_dir]
+-  libs += [blas_lib]
++libdirs = netcdf_libdirs + getValuesFromOption('-L', os.environ.get('LDFLAGS'))
++libs = netcdf_libs + getValuesFromOption('-l', os.environ.get('LIBBLAS'))
+ 
+ # list all the directories that contain source file to be compiled 
+ # into a shared library

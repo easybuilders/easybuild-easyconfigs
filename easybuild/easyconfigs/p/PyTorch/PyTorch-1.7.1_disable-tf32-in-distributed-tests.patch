@@ -1,0 +1,64 @@
+Fix test failures in DDP (distributed) tests on Ampere GPUs by disabling TF32 mode
+
+From https://github.com/pytorch/pytorch/pull/52941
+See https://github.com/pytorch/pytorch/issues/52278
+
+From 6c0052a1a6c02f99c500d29680775957c723cf2b Mon Sep 17 00:00:00 2001
+From: Xiang Gao <qasdfgtyuiop@gmail.com>
+Date: Fri, 26 Feb 2021 12:40:07 -0800
+Subject: [PATCH] Disable TF32 on DDP tests
+
+---
+ test/distributed/test_distributed_fork.py  | 3 +++
+ test/distributed/test_distributed_spawn.py | 4 ++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/test/distributed/test_distributed_fork.py b/test/distributed/test_distributed_fork.py
+index 84d23e71af951..5b7034f55eb94 100644
+--- a/test/distributed/test_distributed_fork.py
++++ b/test/distributed/test_distributed_fork.py
+@@ -11,6 +11,8 @@
+     DistributedTest, TestDistBackend
+ )
+ 
++torch.backends.cuda.matmul.allow_tf32 = False
++
+ CPP_EXTENSIONS_WARNING = """
+ Ninja (https://ninja-build.org) must be available to run C++ extensions tests,
+ but it could not be found. Install ninja with `pip install ninja`
+@@ -48,6 +50,7 @@ class TestDistBackendWithFork(TestDistBackend, DistributedTest._DistTestBase):
+         def setUp(self):
+             super().setUp()
+             self._fork_processes()
++            torch.backends.cudnn.flags(allow_tf32=False).__enter__()
+ 
+ 
+ elif BACKEND == "mpi":
+diff --git a/test/distributed/test_distributed_spawn.py b/test/distributed/test_distributed_spawn.py
+index 48a21db72a666..4692b0b1c0562 100644
+--- a/test/distributed/test_distributed_spawn.py
++++ b/test/distributed/test_distributed_spawn.py
+@@ -3,12 +3,15 @@
+ import sys
+ import unittest
+ 
++import torch
+ import torch.distributed as dist
+ from torch.testing._internal.common_utils import run_tests, TEST_WITH_ASAN, NO_MULTIPROCESSING_SPAWN
+ from torch.testing._internal.distributed.distributed_test import (
+     DistributedTest, TestDistBackend
+ )
+ 
++torch.backends.cuda.matmul.allow_tf32 = False
++
+ if not dist.is_available():
+     print("Distributed not available, skipping tests", file=sys.stderr)
+     sys.exit(0)
+@@ -28,6 +31,7 @@ class TestDistBackendWithSpawn(TestDistBackend, DistributedTest._DistTestBase):
+         def setUp(self):
+             super().setUp()
+             self._spawn_processes()
++            torch.backends.cudnn.flags(allow_tf32=False).__enter__()
+ 
+ 
+ if __name__ == "__main__":
