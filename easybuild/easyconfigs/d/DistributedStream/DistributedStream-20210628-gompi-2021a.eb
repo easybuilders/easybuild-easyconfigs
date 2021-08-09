@@ -1,0 +1,34 @@
+easyblock = 'MakeCp'
+
+name = 'DistributedStream'
+version = '20210628'
+local_commit = '998f747'
+
+homepage = 'https://github.com/adrianjhpc/DistributedStream'
+description = """A MPI distributed stream benchmark, useful to identifying nodes with poor memory performance and
+characterising memory bandwidth variation over systems."""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/adrianjhpc/DistributedStream/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['af44b702ac9a5a66deed58f77c19a7a7398d7ff19b871a1bb11e295360408f9b']
+
+dependencies = [('Mini-XML', '3.2')]
+
+start_dir = 'src'
+
+prebuildopts = 'sed -i "s/-O3/$CFLAGS/g" Makefile && '
+buildopts = 'CC="$CC" MXMLINC="-I$EBROOTMINIMINXML/include" MXMLLIB="-L$EBROOTMINIMINXML/lib -lmxml"'
+
+files_to_copy = [(['src/distributed_streams'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/distributed_streams'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["distributed_streams"]
+
+moduleclass = 'perf'
