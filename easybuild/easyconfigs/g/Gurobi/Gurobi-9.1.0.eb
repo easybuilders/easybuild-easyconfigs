@@ -9,19 +9,25 @@ latest algorithms."""
 
 toolchain = SYSTEM
 
-# Registration required so manually downloaded software into:
-# sha256sum /cvmfs/restricted.computecanada.ca/easybuild/sources/g/Gurobi/gurobi9.1.0_linux64.tar.gz
+#local_gccver = '9.3.0'
+#dependencies = [
+#    ('GCC', local_gccver),
+#]
+
+# Registration required so manually download sources instead
 # source_urls = ['https://packages.gurobi.com/%(version_major_minor)s/']
 sources = ['%(namelower)s%(version)s_linux64.tar.gz']
+# sha256sum /cvmfs/restricted.computecanada.ca/easybuild/sources/g/Gurobi/gurobi9.1.0_linux64.tar.gz
 checksums = ['92e2d8972d3f0edec9c35eb5a7d5bd50390c5526a04aef50d771d2dd9d94a16a']
 
-# license_file = HOME + '/licenses/%(name)s/%(namelower)s.lic'
-license_file = '/cvmfs/soft.computecanada.ca/config/licenses/gurobi/computecanada.lic'
+license_file = '/cvmfs/soft.computecanada.ca/config/licenses/%(namelower)s/computecanada.lic'
 
 postinstallcmds = [
     "for d in $(find %(installdir)s -name 'bin' -o -name 'lib'); \
-	do echo Calling setrpaths.sh --path $d --add_path %(installdir)s/lib --add_path %(installdir)s/lib; \
-	/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d --add_path %(installdir)s/lib; done"
+	do echo Calling setrpaths.sh --path $d --add_path %(installdir)s/lib; \
+	/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d --add_path %(installdir)s/lib; done",
+    "mv %(installdir)s/lib/libgurobi_c++.a %(installdir)s/lib/libgurobi_c++.a-orig",
+    "cd %(installdir)s/src/build; gcc -v >& make.out; make >> make.out; cp libgurobi_c++.a ../../lib",
 ]
 
 sanity_check_commands = ["gurobi_cl --help"]
