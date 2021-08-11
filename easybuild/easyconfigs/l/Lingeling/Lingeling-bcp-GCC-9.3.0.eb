@@ -1,0 +1,36 @@
+easyblock = 'MakeCp'
+
+name = 'Lingeling'
+version = 'bcp'
+local_commit = '7d5db72420b95ab356c98ca7f7a4681ed2c59c70'
+
+homepage = 'http://fmv.jku.at/lingeling/'
+description = """
+One of the design principles of the state-of-the-art SAT solver Lingeling is to
+use as compact data structures as possible. These reduce memory usage, increase
+cache efficiency and thus improve runtime, particularly, when using multiple
+solver instances on multi-core machines, as in our parallel portfolio solver
+Plingeling and our cube and conquer solver Treengeling."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'arminbiere'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['cf04c8f5706c14f00dd66e4db529c48513a450cc0f195242d8d0762b415f4427']
+
+# Custom execution of configure at build time because Lingeling has a custom script incompatible with configure step
+prebuildopts = "./configure.sh && "
+prebuildopts += "sed -i 's/CFLAGS=-W -Wall -O3/CFLAGS+=-W -Wall/' makefile && "
+buildopts = 'CC="$CC"'
+
+local_bins = ['lingeling', 'ilingeling', 'plingeling', 'treengeling']
+files_to_copy = [(local_bins, 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
