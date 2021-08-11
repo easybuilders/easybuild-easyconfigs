@@ -27,8 +27,11 @@ builddependencies = [
     ('zstd', '1.4.5', '', ('GCCcore', local_gccver)),
 ]
 
-preconfigopts = 'LDFLAGS="-static"'
-configopts = '-DENABLE_DOCUMENTATION=OFF -DENABLE_IPO=ON -DZSTD_LIBRARY="$EBROOTZSTD/lib/libzstd.a"'
+# use BFD linker rather than default ld.gold (required on CentOS 8)
+preconfigopts = 'LDFLAGS="-static -fuse-ld=bfd"'
+configopts = '-DENABLE_DOCUMENTATION=OFF -DENABLE_IPO=ON -DZSTD_LIBRARY="$EBROOTZSTD/lib/libzstd.a" '
+# disable hunt for faster linker, since using ld.gold may fail (on CentOS 8, for example)
+configopts += '-DUSE_FASTER_LINKER=OFF'
 
 sanity_check_paths = {
     'files': ['bin/ccache'],
