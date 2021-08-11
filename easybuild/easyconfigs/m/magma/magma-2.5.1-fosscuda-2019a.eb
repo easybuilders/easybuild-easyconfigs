@@ -1,31 +1,28 @@
-easyblock = "ConfigureMake"
+easyblock = "CMakeMake"
 
 name = 'magma'
 version = '2.5.1'
 
-homepage = 'http://icl.cs.utk.edu/magma/'
+homepage = 'https://icl.cs.utk.edu/magma/'
 description = """The MAGMA project aims to develop a dense linear algebra library similar to
  LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
 
 toolchain = {'name': 'fosscuda', 'version': '2019a'}
 toolchainopts = {'pic': True, 'openmp': True}
 
-source_urls = ['http://icl.cs.utk.edu/projectsfiles/magma/downloads/']
+source_urls = ['https://icl.cs.utk.edu/projectsfiles/magma/downloads/']
 sources = [SOURCE_TAR_GZ]
-patches = [('%(name)s-2.5.0-fix-makefile.patch')]
-checksums = [
-    'ce32c199131515336b30c92a907effe0c441ebc5c5bdb255e4b06b2508de109f',  # magma-2.5.1.tar.gz
-    '2839e33a17134e686ccd9fde7e008b40495e4e8bafb3ae1bd49cb0e39852e7ac',  # magma-2.5.0-fix-makefile.patch
+checksums = ['ce32c199131515336b30c92a907effe0c441ebc5c5bdb255e4b06b2508de109f']
+
+builddependencies = [
+    ('CMake', '3.13.3'),
 ]
 
-skipsteps = ['configure']
-
-prebuildopts = 'touch make.inc && '
-# magma 2.5.0 does not build on sm_30 - so remove Kepler and specify sm_35
-# http://icl.cs.utk.edu/magma/forum/viewtopic.php?f=2&t=1906&sid=7048fadfd48a0d00c3c4294ddef6a096
-prebuildopts += 'GPU_TARGET="sm_35 Maxwell Pascal Volta" '
-
-installopts = 'prefix=%(installdir)s'
+local_gpu_target = '-DGPU_TARGET="Kepler Maxwell Pascal Volta"'
+# make sure both static and shared libs are built
+configopts = [
+    '-DBUILD_SHARED_LIBS=%s %s ' % (local_shared, local_gpu_target) for local_shared in ('ON', 'OFF')
+]
 
 sanity_check_paths = {
     'files': ['lib/libmagma.so', 'lib/libmagma.a'],

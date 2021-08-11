@@ -1,0 +1,29 @@
+easyblock = 'CMakeMake'
+
+name = 'googletest'
+version = '1.10.0'
+
+homepage = 'https://github.com/google/googletest'
+description = "Google's framework for writing C++ tests on a variety of platforms"
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/google/googletest/archive/']
+sources = ['release-%(version)s.tar.gz']
+checksums = ['9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb']
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('CMake', '3.16.4'),
+]
+# build twice, once for static, once for shared libraries
+configopts = ['', ' -DBUILD_SHARED_LIBS=ON ']
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (local_lib, local_ext) for local_lib in ['gmock', 'gmock_main', 'gtest', 'gtest_main']
+              for local_ext in ['a', SHLIB_EXT]],
+    'dirs': ['include/gmock', 'include/gtest'],
+}
+
+moduleclass = 'tools'

@@ -1,0 +1,55 @@
+easyblock = 'PackedBinary'
+
+name = 'Nek5000'
+version = '17.0'
+
+homepage = 'https://nek5000.mcs.anl.gov/'
+description = "a fast and scalable high-order solver for computational fluid dynamics"
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/Nek5000/Nek5000/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_hypre_blas.patch',
+    '%(name)s-%(version)s_sundials.patch',
+]
+
+checksums = [
+    '4d8d4793ce3c926c54e09a5a5968fa959fe0ba46bd2e6b8043e099528ee35a60',  # v17.0.tar.gz
+    'b3820a9e141a1c3087aaabbb140ecf11756b552a175619f9e12d913afd850794',  # Nek5000-17.0_hypre_blas.patch
+    'af9e3771483d9a1732135ca1fd25f902706bf6e8f9c8552bc4bdf24d9a1c0244',  # Nek5000-17.0_sundials.patch
+]
+
+builddependencies = [('CMake', '3.10.2')]
+
+dependencies = [('X11', '20180131')]
+
+buildininstalldir = True
+
+install_cmd = (
+    'mv %(name)s-%(version)s/{*,.[^.]*} . && rmdir %(name)s-%(version)s && cd tools && ./maketools all &&'
+    'cd ../3rd_party/gslib && env GSLIB_OPT="USREXIT=1 BLAS=2 PREFIX=gslib_ FPREFIX=fgslib_" ./install &&'
+    'cd ../cvode && ./install'
+)
+
+postinstallcmds = [
+    'sed -i -e "s|^#FC=.*|FC=$FC|" bin/makenek',
+    'sed -i -e "s|^#CC=.*|CC=$CC|" bin/makenek',
+    'sed -i -e "s|^#FFLAGS=.*|FFLAGS=<dquote>$FFLAGS<dquote>|" bin/makenek',
+    'sed -i -e "s|^#CFLAGS=.*|CFLAGS=<dquote>$CFLAGS<dquote>|" bin/makenek',
+    """sed -i -e 's|<dquote>|"|g' bin/makenek""",
+]
+
+sanity_check_paths = {
+    'files': ['bin/amg_hypre', 'bin/genmap', 'bin/nekmerge', 'bin/prex', 'bin/genbox', 'bin/n2to3', 'bin/postx',
+              'bin/reatore2', 'bin/re2torea'],
+    'dirs': []
+}
+
+modextrapaths = {
+    'SOURCE_ROOT': '',
+}
+
+moduleclass = 'cae'
