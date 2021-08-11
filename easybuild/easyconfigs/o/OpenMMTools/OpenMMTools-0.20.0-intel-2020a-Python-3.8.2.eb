@@ -1,0 +1,77 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'OpenMMTools'
+version = '0.20.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/choderalab/openmmtools'
+description = """A batteries-included toolkit for the GPU-accelerated OpenMM molecular simulation engine.
+openmmtools is a Python library layer that sits on top of OpenMM to provide access to a variety of useful tools 
+for building full-featured molecular simulation packages.
+"""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('OpenMM', '7.4.2', versionsuffix),
+    ('netcdf4-python', '1.5.3', versionsuffix),
+    ('MDTraj', '1.9.4', versionsuffix),
+    ('PyYAML', '5.3'),
+]
+
+use_pip = True
+exts_list = [
+    ('ipython_genutils', '0.2.0', {
+        'checksums': ['eb2e116e75ecef9d4d228fdc66af54269afa26ab4463042e33785b887c628ba8'],
+    }),
+    ('pyrsistent', '0.16.0', {
+        'checksums': ['28669905fe725965daa16184933676547c5bb40a5153055a8dee2a4bd7933ad3'],
+    }),
+    ('jsonschema', '3.2.0', {
+        'checksums': ['c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a'],
+    }),
+    ('jupyter_core', '4.6.3', {
+        'checksums': ['394fd5dd787e7c8861741880bdf8a00ce39f95de5d18e579c74b882522219e7e'],
+    }),
+    ('traitlets', '4.3.3', {
+        'checksums': ['d023ee369ddd2763310e4c3eae1ff649689440d4ae59d7485eb4cfbbe3e359f7'],
+    }),
+    ('nbformat', '5.0.7', {
+        'checksums': ['54d4d6354835a936bad7e8182dcd003ca3dc0cedfee5a306090e04854343b340'],
+    }),
+    ('mpiplus', '0.0.1', {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/choderalab/mpiplus/archive/'],
+        'checksums': ['a3d50157a274decab87589ad78b9e41e9f3d34eb27a7d50cc6e7ef34def98b44'],
+    }),
+    ('sortedcontainers', '2.2.2', {
+        'checksums': ['4e73a757831fc3ca4de2859c422564239a31d8213d09a2a666e375807034d2ba'],
+    }),
+    ('hypothesis', '5.20.0', {
+        'checksums': ['50a69d6ab99e3c027c67e217654b33f41c499ba5a05e5d386ef12dd6b8f13c40'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/choderalab/openmmtools/archive/'],
+        'checksums': ['05cfa136b7ca16418f156724c8ab9199b89d25dd9f92133108796034563ca685'],
+        # import check requires use of mpirun, handled via sanity_check_commands
+        'modulename': False,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/test-openmm-platforms'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["%(mpi_cmd_prefix)s python -c 'import %(namelower)s'"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

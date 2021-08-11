@@ -12,9 +12,12 @@ description = """HDF5 for Python (h5py) is a general-purpose Python interface to
 toolchain = {'name': 'fosscuda', 'version': '2019b'}
 toolchainopts = {'usempi': True}
 
-source_urls = [PYPI_SOURCE]
 sources = [SOURCE_TAR_GZ]
-checksums = ['84412798925dc870ffd7107f045d7659e60f5d46d1c70c700375248bf6bf512d']
+patches = ['h5py-%(version)s_avoid-mpi-init.patch']
+checksums = [
+    '84412798925dc870ffd7107f045d7659e60f5d46d1c70c700375248bf6bf512d',  # h5py-2.10.0.tar.gz
+    '6bacb71f5d9fbd7bd9a01018d7fe21b067a2317f33c4a7c21fde9cd404c1603f',  # h5py-2.10.0_avoid-mpi-init.patch
+]
 
 builddependencies = [('pkgconfig', '1.5.1', versionsuffix)]
 
@@ -24,10 +27,10 @@ dependencies = [
     ('HDF5', '1.10.5'),
 ]
 
-use_pip = False
+use_pip = True
+sanity_pip_check = True
 download_dep_fail = True
 
-# to really use mpi enabled hdf5 we now seem to need a configure step, which is the reason we can't use pip
-prebuildopts = ' python setup.py configure --mpi --hdf5=$EBROOTHDF5 && '
+preinstallopts = 'HDF5_MPI=ON HDF5_DIR="$EBROOTHDF5" '
 
 moduleclass = 'data'
