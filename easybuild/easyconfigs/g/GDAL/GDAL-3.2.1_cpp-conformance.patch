@@ -1,0 +1,26 @@
+diff -ru gdal-3.2.1.orig/port/cpl_vsil_curl_class.h gdal-3.2.1/port/cpl_vsil_curl_class.h
+--- gdal-3.2.1.orig/port/cpl_vsil_curl_class.h	2020-12-29 13:16:45.000000000 +0100
++++ gdal-3.2.1/port/cpl_vsil_curl_class.h	2021-07-02 20:59:48.375889808 +0200
+@@ -681,6 +681,10 @@
+         std::map<ContextPathItem, Stats> children{};
+ 
+         void AsJSON(CPLJSONObject& oJSON) const;
++
++	// Constructor must be defined after the class definition as Intel prohibits
++	// the use of its constructor while constructing its members.
++	Stats();
+     };
+ 
+     Stats m_stats{};
+@@ -729,6 +733,11 @@
+     static CPLString GetReportAsSerializedJSON();
+ };
+ 
++// Constructor definition must be outside the class to work around Intel
++// preventing the use of the constructor while initializing members in the
++// default constructor.
++inline NetworkStatisticsLogger::Stats::Stats() = default;
++
+ struct NetworkStatisticsFileSystem
+ {
+     inline explicit NetworkStatisticsFileSystem(const char* pszName) {

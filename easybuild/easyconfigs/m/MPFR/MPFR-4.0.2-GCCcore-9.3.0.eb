@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'MPFR'
+version = '4.0.2'
+
+homepage = 'https://www.mpfr.org'
+
+description = """
+ The MPFR library is a C library for multiple-precision floating-point
+ computations with correct rounding.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://www.mpfr.org/mpfr-%(version)s/']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = ['%(name)s-%(version)s_include_float.patch']
+checksums = [
+    'c05e3f02d09e0e9019384cdd58e0f19c64e6db1fd6f5ecf77b4b1c61ca253acc',  # mpfr-4.0.2.tar.bz2
+    '9e462dd578ad2a8a111983dd7fad60d08f6e481b6dd43abb12f53e5721a51364',  # MPFR-4.0.2_include_float.patch
+]
+
+builddependencies = [
+    ('binutils', '2.34'),
+]
+
+dependencies = [
+    ('GMP', '6.2.0'),
+]
+
+runtest = 'check'
+
+# copy libmpfr.so* to <installdir>/lib to make sure that it  is picked up by tests
+# when EasyBuild is configured with --rpath, and clean up afterwards (let 'make install' do its job)
+pretestopts = "mkdir -p %%(installdir)s/lib && cp -a src/.libs/libmpfr.%s* %%(installdir)s/lib && " % SHLIB_EXT
+testopts = " && rm -r %(installdir)s/lib"
+
+sanity_check_paths = {
+    'files': ['lib/libmpfr.%s' % SHLIB_EXT, 'include/mpfr.h'],
+    'dirs': [],
+}
+
+moduleclass = 'math'

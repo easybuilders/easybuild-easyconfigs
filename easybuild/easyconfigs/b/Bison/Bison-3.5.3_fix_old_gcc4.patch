@@ -1,0 +1,61 @@
+From 6e89bc0fd27ee8bf1095544504c6970530e9527c Mon Sep 17 00:00:00 2001
+From: Akim Demaille <akim.demaille@gmail.com>
+Date: Thu, 2 Apr 2020 07:09:27 +0200
+Subject: build: fix compatibility with old compilers
+
+GCC 4.2 dies with
+
+    src/InadequacyList.c: In function 'InadequacyList__new_conflict':
+    src/InadequacyList.c:37: error: #pragma GCC diagnostic not allowed inside functions
+    src/InadequacyList.c:37: error: #pragma GCC diagnostic not allowed inside functions
+    src/InadequacyList.c:40: error: #pragma GCC diagnostic not allowed inside functions
+
+Reported by Evan Lavelle.
+See https://lists.gnu.org/r/bug-bison/2020-03/msg00021.html
+and https://trac.macports.org/ticket/59927.
+
+* src/system.h (GCC_VERSION): New.
+Use it to control IGNORE_TYPE_LIMITS_BEGIN and
+IGNORE_TYPE_LIMITS_END.
+---
+ THANKS       |  1 +
+ src/system.h | 11 ++++++++---
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/THANKS b/THANKS
+index d8ef2c0c..9a06506b 100644
+--- a/THANKS
++++ b/THANKS
+@@ -61,6 +61,7 @@ Enrico Scholz             enrico.scholz@informatik.tu-chemnitz.de
+ Eric Blake                ebb9@byu.net
+ Eric S. Raymond           esr@thyrsus.com
+ Étienne Renault           renault@lrde.epita.fr
++Evan Lavelle              eml-bison@cyconix.com
+ Evan Nemerson             evan@nemerson.com
+ Evgeny Stambulchik        fnevgeny@plasma-gate.weizmann.ac.il
+ Fabrice Bauzac            noon@cote-dazur.com
+diff --git a/src/system.h b/src/system.h
+index 0210f6c6..6073048f 100644
+--- a/src/system.h
++++ b/src/system.h
+@@ -73,9 +73,14 @@ typedef size_t uintptr_t;
+ # include <verify.h>
+ # include <xalloc.h>
+ 
+-
+-/* See https://lists.gnu.org/archive/html/bug-bison/2019-10/msg00061.html. */
+-# if defined __GNUC__ && ! defined __clang__ && ! defined __ICC && __GNUC__ < 5
++// Clang and ICC like to pretend they are GCC.
++#if defined __GNUC__ && !defined __clang__ && !defined __ICC
++# define GCC_VERSION (__GNUC__ * 100 + __GNUC_MINOR__)
++#endif
++
++// See https://lists.gnu.org/archive/html/bug-bison/2019-10/msg00061.html
++// and https://trac.macports.org/ticket/59927.
++#if defined GCC_VERSION && 405 <= GCC_VERSION
+ #  define IGNORE_TYPE_LIMITS_BEGIN \
+      _Pragma ("GCC diagnostic push") \
+      _Pragma ("GCC diagnostic ignored \"-Wtype-limits\"")
+-- 
+cgit v1.2.1
+

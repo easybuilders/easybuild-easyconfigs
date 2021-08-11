@@ -1,0 +1,57 @@
+# Resolves compilation bug https://bugs.openfoam.org/view.php?id=3303
+#
+# authors: Henry Weller, Bruno Santos
+--- OpenFOAM-7/wmake/wclean.orig	2019-11-28 16:10:41.511704188 +0100
++++ OpenFOAM-7/wmake/wclean	2019-11-28 16:13:12.535866056 +0100
+@@ -3,7 +3,7 @@
+ # =========                 |
+ # \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+ #  \\    /   O peration     | Website:  https://openfoam.org
+-#   \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
++#   \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+ #    \\/     M anipulation  |
+ #------------------------------------------------------------------------------
+ # License
+@@ -260,10 +260,11 @@
+ if [ -d "$MakeDir" ]
+ then
+     objectsDir=$MakeDir/$WM_OPTIONS
+-    if [[ "$PWD" = *"$WM_PROJECT_DIR"* ]]
++    expandPath "$PWD"
++    if [[ "$exPath" = *"$WM_PROJECT_DIR"* ]]
+     then
+         platformPath=$WM_PROJECT_DIR/platforms/${WM_OPTIONS}
+-        objectsDir=$platformPath${PWD//$WM_PROJECT_DIR/}
++	objectsDir=$platformPath${exPath//$WM_PROJECT_DIR/}
+     fi
+     rm -rf "$objectsDir" 2>/dev/null
+ fi
+--- OpenFOAM-7/wmake/wrmdep.orig	2019-11-28 16:13:30.359882390 +0100
++++ OpenFOAM-7/wmake/wrmdep	2019-11-28 16:15:36.511999016 +0100
+@@ -3,7 +3,7 @@
+ # =========                 |
+ # \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+ #  \\    /   O peration     | Website:  https://openfoam.org
+-#   \\  /    A nd           | Copyright (C) 2015-2018 OpenFOAM Foundation
++#   \\  /    A nd           | Copyright (C) 2015-2019 OpenFOAM Foundation
+ #    \\/     M anipulation  |
+ #------------------------------------------------------------------------------
+ # License
+@@ -227,12 +227,16 @@
+ 
+ updateMode)
+ 
+-    if [ "$PWD" != "$WM_PROJECT_DIR" ]
++    expandPath "$PWD"
++    if [ "$exPath" != "$WM_PROJECT_DIR" ]
+     then
+         echo "Cannot 'update', not in the project top-level directory"
+         exit 1
+     fi
+ 
++    # Go into the real path
++    cd "$exPath"
++
+     echo "Removing dep files corresponding to source files that no longer exist..."
+     fileNameList=$(find -L src applications -name '*.[CHL]' -type l)
+ 
