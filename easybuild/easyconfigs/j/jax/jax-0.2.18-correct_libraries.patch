@@ -1,20 +1,82 @@
-solving bug in jaxlib's tensorflow dependency by providing it with correct env variables
+# using system environment variables + reparing build.py script + using EB downloaded TensorFlow tarball
+diff -ruN jax_orig/build/build.py jax/build/build.py
+--- jax_orig/build/build.py	2021-07-30 10:18:43.599233082 +0200
++++ jax/build/build.py	2021-08-05 17:28:04.071995000 +0200
+@@ -208,15 +208,20 @@
+ 
+ 
+ def check_bazel_version(bazel_path):
+-  try:
+-    version_output = shell([bazel_path, "--bazelrc=/dev/null", "version"])
+-  except subprocess.CalledProcessError:
+-    return False
+-  match = re.search("Build label: *([0-9\\.]+)[^0-9\\.]", version_output)
+-  if match is None:
+-    return False
+-  actual_ints = [int(x) for x in match.group(1).split(".")]
+-  return actual_ints >= [2, 0, 0]
++    # try:
++    #     version_output = shell([bazel_path, "--version"])
++    # except subprocess.CalledProcessError:
++    #     return False
++    # match = re.search("(Build label:|bazel) *([0-9\\.]+)", version_output)
++    try:
++        version_output = shell([bazel_path, "--bazelrc=/dev/null", "version"])
++    except subprocess.CalledProcessError:
++        return False
++    match = re.search("Build label: *([0-9\\.]+)[^0-9\\.]", version_output)
++    if match is None:
++        return False
++    actual_ints = [int(x) for x in match.group(1).split(".")]
++    return actual_ints >= [2, 0, 0]
+ 
+ 
+ BAZELRC_TEMPLATE = """
+@@ -597,8 +602,7 @@
+     f"--cpu={wheel_cpu}"])
+   print(" ".join(command))
+   shell(command)
+-  shell([bazel_path, "shutdown"])
+-
++  shell([bazel_path] + args.bazel_startup_options + ["shutdown"])
+ 
+ if __name__ == "__main__":
+   main()
 Binary files jax_orig/.git/index and jax/.git/index differ
 diff -ruN jax_orig/WORKSPACE jax/WORKSPACE
 --- jax_orig/WORKSPACE	2021-07-30 10:18:43.503078000 +0200
-+++ jax/WORKSPACE	2021-08-05 11:48:00.882688000 +0200
-@@ -12,13 +12,9 @@
-     urls = [
-         "https://github.com/tensorflow/tensorflow/archive/8cc3ffa8d8e4dd659c1534849cf5984ef4ec3532.tar.gz",
-     ],
-+    patch_cmds=['sed -i -e "s|arguments = \[args\],|arguments = \[args\],\\n\\tuse_default_shell_env = True,|" third_party/mlir/tblgen.bzl']
++++ jax/WORKSPACE	2021-08-11 12:20:41.169549000 +0200
+@@ -5,20 +5,21 @@
+ # b) get the sha256 hash of the commit by running:
+ #    curl -L https://github.com/tensorflow/tensorflow/archive/<git hash>.tar.gz | sha256sum
+ #    and update the sha256 with the result.
+-http_archive(
++# http_archive(
++#     name = "org_tensorflow",
++#     sha256 = "de22145c9dc51b3ed9399dbee2ab681f094f09e5213d6819451da500f163a14b",
++#     strip_prefix = "tensorflow-8cc3ffa8d8e4dd659c1534849cf5984ef4ec3532",
++#     urls = [
++#         "https://github.com/tensorflow/tensorflow/archive/8cc3ffa8d8e4dd659c1534849cf5984ef4ec3532.tar.gz",
++#     ],
++#     patch_cmds=['sed -i -e "s|arguments = \[args\],|arguments = \[args\],\\n\\tuse_default_shell_env = True,|" third_party/mlir/tblgen.bzl']
++# )
++
++local_repository(
+     name = "org_tensorflow",
+-    sha256 = "de22145c9dc51b3ed9399dbee2ab681f094f09e5213d6819451da500f163a14b",
+-    strip_prefix = "tensorflow-8cc3ffa8d8e4dd659c1534849cf5984ef4ec3532",
+-    urls = [
+-        "https://github.com/tensorflow/tensorflow/archive/8cc3ffa8d8e4dd659c1534849cf5984ef4ec3532.tar.gz",
+-    ],
++    path = "pathToSed",
  )
- 
+-
 -# For development, one can use a local TF repository instead.
 -# local_repository(
 -#    name = "org_tensorflow",
 -#    path = "tensorflow",
 -# )
++# WIP
  
  load("//third_party/pocketfft:workspace.bzl", pocketfft = "repo")
  pocketfft()

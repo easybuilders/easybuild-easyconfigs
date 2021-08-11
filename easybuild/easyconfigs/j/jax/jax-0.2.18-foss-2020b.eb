@@ -1,4 +1,6 @@
-easyblock = 'PythonPackage'
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonBundle'
 
 name = 'jax'
 version = '0.2.18'
@@ -9,27 +11,66 @@ more"""
 
 toolchain = {'name': 'foss', 'version': '2020b'}
 
-source_urls = ['https://github.com/google/jax/archive/']
-sources = ['%(name)s-v%(version)s.tar.gz']
-patches = [
-    'jax-0.2.18-correct_libraries.patch',
-]
+# downloading TF tarball for better control of what Bazel will use during installation of Jax
+local_tf_tarball_version = '2.5.0'
 
-preinstallopts = 'python build/build.py '
-preinstallopts += '--bazel_startup_options="--output_user_root=%(builddir)s" '
-preinstallopts += '--bazel_options=--subcommands --bazel_options=--jobs=1 --bazel_options=--action_env=PYTHONPATH --bazel_options=--action_env=EBPYTHONPREFIXES && '
-preinstallopts += 'pip install --prefix %(installdir)s dist/*.whl && '
+builddependencies = [
+    ('Bazel', '3.7.2'),
+]
 
 dependencies = [
     ('Python', '3.8.6'),
-    ('Bazel', '3.7.2'),
     ('SciPy-bundle', '2020.11'),
     ('Cython', '0.29.22'),
+    ('absl-py', '0.13.0'),
+    ('opt-einsum', '3.3.0'),
+    ('flatbuffers-python', '1.12'),
 ]
 
-use_pip = True
-download_dep_fail = True
-sanity_pip_check = True
+local_tf_builddir = "%%(builddir)s/tensorflow-%s" % local_tf_tarball_version
 
+local_jax_preinstallopts = "sed -i -e 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
+local_jax_preinstallopts += 'python build/build.py '
+local_jax_preinstallopts += '--bazel_startup_options="--output_user_root=%(builddir)s" '
+local_jax_preinstallopts += '--bazel_path="$EBROOTBAZEL/bin/bazel" '
+local_jax_preinstallopts += '--bazel_options=--subcommands '
+local_jax_preinstallopts += '--bazel_options=--jobs=1 --bazel_options=--action_env=PYTHONPATH '
+local_jax_preinstallopts += '--bazel_options=--action_env=EBPYTHONPREFIXES && '
+local_jax_preinstallopts += 'pip install --prefix %(installdir)s dist/*.whl && '
+
+exts_list = [
+    ('opt-einsum', '3.3.0', {
+        'source_tmpl': 'opt_einsum-%(version)s.tar.gz',
+        'modulename': 'opt_einsum',
+    }),
+    ('absl-py', '0.13.0', {
+        'modulename': 'absl'
+    })]
+
+components = [
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'sources': [
+            '%(name)s-v%(version)s.zip',
+            {
+                'download_filename': 'v%s.tar.gz' % local_tf_tarball_version,
+                'filename': 'tensorflow_v%s.tar.gz' % local_tf_tarball_version,
+            }
+        ],
+        'source_urls': [
+            'https://github.com/google/jax/archive/',
+            'https://github.com/tensorflow/tensorflow/archive/'
+        ],
+        'patches': [
+            ('%s-%s-correct_libraries.patch' % (name, version), 1),
+            ('%s-%s-controlled_tf_tarball.patch' % (name, version), '../tensorflow-%s' % local_tf_tarball_version),
+        ],
+        'start_dir': '%(name)s-%(name)s-v%(version)s',
+        'preinstallopts': local_jax_preinstallopts,
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
+    }),
+]
 
 moduleclass = 'tools'
