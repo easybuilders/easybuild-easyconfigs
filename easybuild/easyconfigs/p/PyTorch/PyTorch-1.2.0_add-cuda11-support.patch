@@ -1,0 +1,59 @@
+From 5a4911834d0236f28ca194aeee63010d4668ae23 Mon Sep 17 00:00:00 2001
+From: "Gao, Xiang" <qasdfgtyuiop@gmail.com>
+Date: Tue, 30 Jun 2020 13:47:58 -0700
+Subject: [PATCH] Add CUDA11 build and test (#40452)
+
+Summary: Pull Request resolved: https://github.com/pytorch/pytorch/pull/40452
+
+Differential Revision: D22316007
+
+Pulled By: malfet
+
+fbshipit-source-id: 94f4b4ba2a46ff3d3042ba842a615f8392cdc350
+---
+diff --git a/aten/src/ATen/cudnn/Handle.cpp b/aten/src/ATen/cudnn/Handle.cpp
+index d657d05f70..6ae30939a5 100644
+--- a/aten/src/ATen/cudnn/Handle.cpp
++++ b/aten/src/ATen/cudnn/Handle.cpp
+@@ -42,10 +42,15 @@ struct Handle {
+ // happens in fbcode setting. @colesbury and I decided to not destroy
+ // the handle as a workaround.
+ //   - @soumith
+-#ifdef NO_CUDNN_DESTROY_HANDLE
+-#else
+-      cudnnDestroy(handle);
+-#endif
++//
++// Further note: this is now disabled globally, because we are seeing
++// the same issue as mentioned above in CUDA 11 CI.
++//   - @zasdfgbnm
++//
++// #ifdef NO_CUDNN_DESTROY_HANDLE
++// #else
++//   cudnnDestroy(handle);
++// #endif
+     }
+   }
+ };
+diff --git a/c10/cuda/CUDAStream.h b/c10/cuda/CUDAStream.h
+index b23f8aa1c6..d9bc553aa2 100644
+--- a/c10/cuda/CUDAStream.h
++++ b/c10/cuda/CUDAStream.h
+@@ -155,10 +155,16 @@ public:
+ 
+   static std::tuple<int, int> priority_range() {
+     #ifndef __HIP_PLATFORM_HCC__
++      // Note: this returns the range of priority **supported by PyTorch**, not
++      // the range of priority **supported by CUDA**. The former is a subset of
++      // the latter. Curently PyTorch only supports 0 and -1, which are "low" and
++      // "high" priority.
+       int least_priority, greatest_priority;
+       C10_CUDA_CHECK(
+         cudaDeviceGetStreamPriorityRange(&least_priority, &greatest_priority));
+-      return std::make_tuple(least_priority, greatest_priority);
++      TORCH_INTERNAL_ASSERT(least_priority >= 0, "Unexpected CUDA stream priority range");
++      TORCH_INTERNAL_ASSERT(greatest_priority <= -1, "Unexpected CUDA stream priority range");
++      return std::make_tuple(0, -1);
+     #else
+       AT_ERROR("cuDeviceGetStreamPriorityRange with HIP is not supported");
+     #endif

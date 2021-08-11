@@ -1,0 +1,78 @@
+# Automatically converted from Mesa-17.2.4-intel-2017b.eb
+# Original message:
+# the purpose of the easyconfig is to build a Mesa for software rendering,
+# not hardware rendering. This means you want at least SSE4.2. We build:
+# - llvmpipe: the high-performance Gallium LLVM driver
+# - swr: Intel's OpenSWR
+# it will try to use the llvmpipe by default. It you want swr, do:
+# GALLIUM_DRIVER=swr
+
+name = 'Mesa'
+version = '19.2.1'
+
+homepage = 'https://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+source_urls = [
+    'https://mesa.freedesktop.org/archive/',
+    'https://mesa.freedesktop.org/archive/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x',
+]
+sources = [SOURCELOWER_TAR_XZ]
+patches = [
+    'Mesa-19.2.1-match-swrast-loosely.patch',
+    'Mesa-19.2.1-meson-avoid-march.patch',
+]
+
+checksums = [
+    '4cc53ca1a8d12c6ff0e5ea44a5213c05c88447ab50d7e28bb350cd29199f01e9',  # mesa-19.2.1.tar.xz
+    'e7bf37e6840314b661966aac7ec960208bbc7b5588952bdf7863b1441ed91f66',  # Mesa-19.2.1-match-swrast-loosely.patch
+    '4782df17cd27c8a07d543d07c13336e257bd0bd047d2a538f855e9df65e8ec32',  # Mesa-19.2.1-meson-avoid-march.patch
+]
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('Meson', '0.51.2', '-Python-3.7.4'),
+    ('Ninja', '1.9.0'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.3.2'),
+    ('pkg-config', '0.29.2'),
+    ('Mako', '1.1.0'),
+    ('libxml2', '2.9.9'),
+    ('expat', '2.2.7'),
+    ('gettext', '0.20.1'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('nettle', '3.5.1'),
+    ('libdrm', '2.4.99'),
+    ('LLVM', '9.0.0'),
+    ('X11', '20190717'),
+    ('libunwind', '1.3.1'),
+    ('libglvnd', '1.2.0'),
+]
+
+configopts = " -Dplatforms=x11 -Dosmesa=gallium -Ddri-drivers='' -Dvulkan-drivers=''"
+configopts += " -Dllvm=true -Dshared-llvm=true"
+configopts += " -Dlibunwind=true"
+configopts += " -Dglvnd=true"
+
+# Easybuild will automatically add appropriate Gallium drivers for the processor architecture of the host
+# If you need a different configuration, it possible to override those values by setting your own configopts
+# configopts += " -Dgallium-drivers=swrast,swr -Dswr-arches=avx,avx2,skx,knl"
+
+# symlink indirect to mesa GLX, similar to Debian, see
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=881789
+# This helps in certain X forwarding situations (e.g. XQuartz)
+postinstallcmds = ["ln -s libGLX_mesa.so.0 %(installdir)s/lib/libGLX_indirect.so.0"]
+
+# Tells libglvnd where to find EGL libraries
+modextrapaths = {"__EGL_VENDOR_LIBRARY_DIRS": "share/glvnd/egl_vendor.d"}
+
+moduleclass = 'vis'

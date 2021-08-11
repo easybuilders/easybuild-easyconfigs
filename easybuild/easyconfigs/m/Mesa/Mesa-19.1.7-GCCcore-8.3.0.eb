@@ -1,0 +1,63 @@
+# Automatically converted from Mesa-17.2.4-intel-2017b.eb
+# Original message:
+# the purpose of the easyconfig is to build a Mesa for software rendering,
+# not hardware rendering. This means you want at least SSE4.2. We build:
+# - llvmpipe: the high-performance Gallium LLVM driver
+# - swr: Intel's OpenSWR
+# it will try to use the llvmpipe by default. It you want swr, do:
+# GALLIUM_DRIVER=swr
+
+name = 'Mesa'
+version = '19.1.7'
+
+homepage = 'https://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+# Intel's SWR generates AVX instructions even on CPUs without support for it (ignoring march=native).
+# In that case it is necessary to explicitly set the march of your CPU, for instance for an AMD Opteron 6100
+# toolchainopts = {'optarch': 'march=barcelona'}
+
+source_urls = [
+    'https://mesa.freedesktop.org/archive/',
+    'https://mesa.freedesktop.org/archive/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x',
+]
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['e287920fdb38712a9fed448dc90b3ca95048c7face5db52e58361f8b6e0f3cd5']
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('Meson', '0.51.2', '-Python-3.7.4'),
+    ('Ninja', '1.9.0'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.3.2'),
+    ('pkg-config', '0.29.2'),
+    ('Mako', '1.1.0'),
+    ('libxml2', '2.9.9'),
+    ('expat', '2.2.7'),
+    ('gettext', '0.20.1'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('nettle', '3.5.1'),
+    ('libdrm', '2.4.99'),
+    ('LLVM', '9.0.0'),
+    ('X11', '20190717'),
+    ('libunwind', '1.3.1'),
+]
+
+configopts = " -Dplatforms=x11 -Dosmesa=gallium -Ddri3=false -Ddri-drivers='' -Dvulkan-drivers=''"
+configopts += " -Dgbm=false -Dglx-direct=false -Degl=false"
+configopts += " -Dllvm=true -Dshared-llvm=true"
+configopts += " -Dlibunwind=true -Dglx=gallium-xlib"
+
+# Easybuild will automatically add appropriate Gallium drivers for the processor architecture of the host
+# If you need a different configuration, it possible to override those values by setting your own configopts
+# configopts += " -Dgallium-drivers=swrast,swr -Dswr-arches=avx,avx2,skx,knl"
+
+moduleclass = 'vis'

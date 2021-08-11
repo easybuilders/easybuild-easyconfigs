@@ -12,20 +12,21 @@ easyblock = 'MesonNinja'
 name = 'Mesa'
 version = '19.0.1'
 
-homepage = 'http://www.mesa3d.org/'
+homepage = 'https://www.mesa3d.org/'
 description = """Mesa is an open-source implementation of the OpenGL specification -
  a system for rendering interactive 3D graphics."""
 
 toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
-# swr detects and builds parts specific for AVX and AVX2. If we use
-# -xHost, this always gets overwritten and will fail.
-toolchainopts = {'optarch': False}
+# Intel's SWR generates AVX instructions even on CPUs without support for it (ignoring march=native).
+# In that case it is necessary to explicitly set the march of your CPU, for instance for an AMD Opteron 6100
+# toolchainopts = {'optarch': 'march=barcelona'}
 
 source_urls = [
     'https://mesa.freedesktop.org/archive/',
     'https://mesa.freedesktop.org/archive/%(version)s',
     'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
     'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x',
 ]
 sources = [SOURCELOWER_TAR_XZ]
 checksums = [
@@ -57,7 +58,11 @@ dependencies = [
 configopts = " -Dplatforms=x11 -Dosmesa=gallium -Ddri3=false -Ddri-drivers='' -Dvulkan-drivers=''"
 configopts += " -Dgbm=false -Dglx-direct=false -Dgallium-drivers='swrast,swr' -Degl=false"
 configopts += " -Dllvm=true -Dshared-llvm=true"
-configopts += " -Dlibunwind=true -Dglx=xlib"
+configopts += " -Dlibunwind=true -Dglx=gallium-xlib"
+
+# also install header files located include/GL/internal/
+# we can't enable both DRI and Gallium drivers, but we can provide the DRI header file (GL/internal/dri_interface.h)
+postinstallcmds = ["cp -a %(builddir)s/mesa-%(version)s/include/GL/internal %(installdir)s/include/GL/"]
 
 sanity_check_paths = {
     'files': ['lib/libGL.%s' % SHLIB_EXT, 'lib/libOSMesa.%s' % SHLIB_EXT,
@@ -67,7 +72,7 @@ sanity_check_paths = {
               'include/GL/gl.h', 'include/GL/glxext.h',
               'include/GL/glx_mangle.h', 'include/GLES/gl.h',
               'include/GLES2/gl2.h', 'include/GLES3/gl3.h'],
-    'dirs': []
+    'dirs': ['include/GL/internal'],
 }
 
 moduleclass = 'vis'

@@ -1,0 +1,58 @@
+easyblock = 'ConfigureMake'
+
+name = 'GDRCopy'
+version = '2.1'
+local_cudaversion = '11.1.1'
+versionsuffix = '-CUDA-%s' % local_cudaversion
+
+homepage = 'https://github.com/NVIDIA/gdrcopy'
+description = "A low-latency GPU memory copy library based on NVIDIA GPUDirect RDMA technology."
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['cecc7dcc071107f77396f5553c9109790b6d2298ae29eb2dbbdd52b2a213e4ea']
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('Autotools', '20200321'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('CUDAcore', local_cudaversion, '', True),  # needed by GDRCopy binaries, which are tools for testing
+    ('Check', '0.15.2'),
+]
+
+# This easyconfig only installs the library and binaries of GDRCopy. Please
+# keep in mind that GDRCopy also needs the following kernel modules at runtime:
+#
+# 1. Kernel module for GDRCopy: improves Host to GPU communication
+#    https://github.com/NVIDIA/gdrcopy
+#    RPM: 'gdrcopy-kmod', DEB: 'gdrdrv-dkms'
+#    Requirements: version of GDRCopy kernel module (gdrdrv.ko) >= 2.0
+#
+# 2. (optional) Kernel module for GPUDirect RDMA: improves GPU to GPU communication
+#    https://github.com/Mellanox/nv_peer_memory
+#    RPM: 'nvidia_peer_memory'
+#    Requirements: Mellanox HCA with MLNX_OFED 2.1
+#
+# These kernel modules are not listed as system dependencies to lower the system
+# requirements to build this easyconfig, as they are not needed for the build.
+
+skipsteps = ['configure']
+
+local_envopts = "PREFIX=%(installdir)s CUDA=$EBROOTCUDACORE"
+prebuildopts = "PATH=$PATH:/sbin "  # ensures that ldconfig is found
+buildopts = "config lib exes %s" % local_envopts
+installopts = local_envopts
+
+sanity_check_paths = {
+    'files': ['bin/copybw', 'bin/copylat', 'bin/sanity', 'lib/libgdrapi.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'

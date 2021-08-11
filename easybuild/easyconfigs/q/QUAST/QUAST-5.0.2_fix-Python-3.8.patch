@@ -1,0 +1,71 @@
+see also https://github.com/ablab/quast/pull/129
+
+From bc4af762a7f53176d66bd5e6c5b7d28376d28e11 Mon Sep 17 00:00:00 2001
+From: Roberto Rossini <roberto.rossini.9533@student.uu.se>
+Date: Mon, 24 Feb 2020 15:11:05 +0100
+Subject: [PATCH] Use html.escape instead of cgi.escape under Python3
+
+According to Python3's [documentation](https://docs.python.org/3.7/library/cgi.html#cgi.escape)
+`cgi.escape` has been deprecated since Python 3.2.
+Furthermore it looks like it was removed altogether since Python 3.8.
+
+This PR replaces `cgi.escape` with `html.escape` when the
+interpreter is Python3, solving the
+`AttributeError: module 'cgi' has no attribute 'escape'` that occurs
+when running QUAST with Python 3.8 or newer.
+---
+ .../site_packages/jsontemplate/jsontemplate.py      | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/quast_libs/site_packages/jsontemplate/jsontemplate.py b/quast_libs/site_packages/jsontemplate/jsontemplate.py
+index a5ec585e1..975f0dc6b 100644
+--- a/quast_libs/site_packages/jsontemplate/jsontemplate.py
++++ b/quast_libs/site_packages/jsontemplate/jsontemplate.py
+@@ -47,7 +47,10 @@
+ import sys
+ 
+ # For formatters
+-import cgi  # cgi.escape
++try:
++    from html import escape as escape_html
++except:
++    from cgi import escape as escape_html
+ try:
+     from urllib  import urlencode, quote_plus
+ except:
+@@ -555,7 +558,7 @@ def _ToString(x):
+ 
+ 
+ def _HtmlAttrValue(x):
+-  return cgi.escape(x, quote=True)
++  return escape_html(x, quote=True)
+ 
+ 
+ def _AbsUrl(relative_url, context, unused_args):
+@@ -580,7 +583,7 @@ def _AbsUrl(relative_url, context, unused_args):
+ # This is a *public* constant, so that callers can use it construct their own
+ # formatter lookup dictionaries, and pass them in to Template.
+ _DEFAULT_FORMATTERS = {
+-    'html': cgi.escape,
++    'html': escape_html,
+ 
+     # The 'htmltag' name is deprecated.  The html-attr-value name is preferred
+     # because it can be read with "as":
+@@ -607,7 +610,7 @@ def _AbsUrl(relative_url, context, unused_args):
+ 
+     # Just show a plain URL on an HTML page (without anchor text).
+     'plain-url': lambda x: '<a href="%s">%s</a>' % (
+-        cgi.escape(x, quote=True), cgi.escape(x)),
++        escape_html(x, quote=True), escape_html(x)),
+ 
+     # A context formatter
+     'AbsUrl': _AbsUrl,
+@@ -840,7 +843,7 @@ def CompileTemplate(
+ 
+     more_formatters:
+         Something that can map format strings to formatter functions.  One of:
+-          - A plain dictionary of names -> functions  e.g. {'html': cgi.escape}
++          - A plain dictionary of names -> functions  e.g. {'html': html.escape}
+           - A higher-order function which takes format strings and returns
+             formatter functions.  Useful for when formatters have parsed
+             arguments.
