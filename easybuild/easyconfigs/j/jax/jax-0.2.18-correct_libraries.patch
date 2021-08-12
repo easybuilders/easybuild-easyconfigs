@@ -1,8 +1,7 @@
-# using system environment variables + reparing build.py script + using EB downloaded TensorFlow tarball
 diff -ruN jax_orig/build/build.py jax/build/build.py
 --- jax_orig/build/build.py	2021-07-30 10:18:43.599233082 +0200
-+++ jax/build/build.py	2021-08-05 17:28:04.071995000 +0200
-@@ -208,15 +208,20 @@
++++ jax/build/build.py	2021-08-12 11:27:08.067502000 +0200
+@@ -208,15 +208,15 @@
  
  
  def check_bazel_version(bazel_path):
@@ -15,16 +14,11 @@ diff -ruN jax_orig/build/build.py jax/build/build.py
 -    return False
 -  actual_ints = [int(x) for x in match.group(1).split(".")]
 -  return actual_ints >= [2, 0, 0]
-+    # try:
-+    #     version_output = shell([bazel_path, "--version"])
-+    # except subprocess.CalledProcessError:
-+    #     return False
-+    # match = re.search("(Build label:|bazel) *([0-9\\.]+)", version_output)
 +    try:
-+        version_output = shell([bazel_path, "--bazelrc=/dev/null", "version"])
++        version_output = shell([bazel_path, "--version"])
 +    except subprocess.CalledProcessError:
 +        return False
-+    match = re.search("Build label: *([0-9\\.]+)[^0-9\\.]", version_output)
++    match = re.search(r"bazel *([0-9\\.]+)", version_output)
 +    if match is None:
 +        return False
 +    actual_ints = [int(x) for x in match.group(1).split(".")]
@@ -32,7 +26,7 @@ diff -ruN jax_orig/build/build.py jax/build/build.py
  
  
  BAZELRC_TEMPLATE = """
-@@ -597,8 +602,7 @@
+@@ -597,8 +597,7 @@
      f"--cpu={wheel_cpu}"])
    print(" ".join(command))
    shell(command)

@@ -29,13 +29,14 @@ dependencies = [
 local_tf_builddir = "%%(builddir)s/tensorflow-%s" % local_tf_tarball_version
 
 local_jax_preinstallopts = "sed -i -e 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
-local_jax_preinstallopts += 'python build/build.py '
-local_jax_preinstallopts += '--bazel_startup_options="--output_user_root=%(builddir)s" '
-local_jax_preinstallopts += '--bazel_path="$EBROOTBAZEL/bin/bazel" '
-local_jax_preinstallopts += '--bazel_options=--subcommands '
-local_jax_preinstallopts += '--bazel_options=--jobs=1 --bazel_options=--action_env=PYTHONPATH '
-local_jax_preinstallopts += '--bazel_options=--action_env=EBPYTHONPREFIXES && '
-local_jax_preinstallopts += 'pip install --prefix %(installdir)s dist/*.whl && '
+
+local_jax_build_cmd = 'python build/build.py '
+local_jax_build_cmd += '--bazel_startup_options="--output_user_root=%(builddir)s" '
+local_jax_build_cmd += '--bazel_path="$EBROOTBAZEL/bin/bazel" '
+local_jax_build_cmd += '--bazel_options=--subcommands '
+local_jax_build_cmd += '--bazel_options=--jobs=1 --bazel_options=--action_env=PYTHONPATH '
+local_jax_build_cmd += '--bazel_options=--action_env=EBPYTHONPREFIXES && '
+
 
 exts_list = [
     ('opt-einsum', '3.3.0', {
@@ -69,6 +70,8 @@ components = [
         'use_pip': True,
         'sanity_pip_check': True,
         'download_dep_fail': True,
+        'buildcmd': local_jax_build_cmd,
+        'install_src': 'dist/*.whl',
     }),
 ]
 
