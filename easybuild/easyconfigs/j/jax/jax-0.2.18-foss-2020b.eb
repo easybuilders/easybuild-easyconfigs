@@ -4,7 +4,7 @@ easyblock = 'PythonBundle'
 
 name = 'jax'
 version = '0.2.18'
-
+local_jaxlib_ver = '0.1.70'
 homepage = 'https://pypi.python.org/pypi/jax'
 description = """Composable transformations of Python+NumPy programs: differentiate, vectorize, JIT to GPU/TPU, and
 more"""
@@ -30,12 +30,13 @@ local_tf_builddir = "%%(builddir)s/tensorflow-%s" % local_tf_tarball_version
 
 local_jax_preinstallopts = "sed -i -e 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
 
-local_jax_build_cmd = 'python build/build.py '
+local_jax_build_cmd = "sed -i -e 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
+local_jax_build_cmd += 'python build/build.py '
 local_jax_build_cmd += '--bazel_startup_options="--output_user_root=%(builddir)s" '
 local_jax_build_cmd += '--bazel_path="$EBROOTBAZEL/bin/bazel" '
 local_jax_build_cmd += '--bazel_options=--subcommands '
 local_jax_build_cmd += '--bazel_options=--jobs=1 --bazel_options=--action_env=PYTHONPATH '
-local_jax_build_cmd += '--bazel_options=--action_env=EBPYTHONPREFIXES && '
+local_jax_build_cmd += '--bazel_options=--action_env=EBPYTHONPREFIXES'
 
 
 exts_list = [
@@ -47,11 +48,16 @@ exts_list = [
         'modulename': 'absl'
     })]
 
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'start_dir': '%(name)s-%(version)s',
+}
+
 components = [
-    (name, version, {
+    ('jaxlib', local_jaxlib_ver, {
         'easyblock': 'PythonPackage',
         'sources': [
-            '%(name)s-v%(version)s.zip',
+            'jaxlib-v%s.zip' % local_jaxlib_ver,
             {
                 'download_filename': 'v%s.tar.gz' % local_tf_tarball_version,
                 'filename': 'tensorflow_v%s.tar.gz' % local_tf_tarball_version,
@@ -62,16 +68,19 @@ components = [
             'https://github.com/tensorflow/tensorflow/archive/'
         ],
         'patches': [
-            ('%s-%s-correct_libraries.patch' % (name, version), 1),
-            ('%s-%s-controlled_tf_tarball.patch' % (name, version), '../tensorflow-%s' % local_tf_tarball_version),
+            ('jaxlib-%s-correct_libraries.patch' % local_jaxlib_ver, 1),
+            ('jaxlib-%s-controlled_tf_tarball.patch' % local_jaxlib_ver, '../tensorflow-%s' % local_tf_tarball_version),
         ],
-        'start_dir': '%(name)s-%(name)s-v%(version)s',
+        'start_dir': 'jax-jaxlib-v%s' % local_jaxlib_ver,
         'preinstallopts': local_jax_preinstallopts,
         'use_pip': True,
         'sanity_pip_check': True,
         'download_dep_fail': True,
         'buildcmd': local_jax_build_cmd,
         'install_src': 'dist/*.whl',
+    }),
+    ('jax', '0.2.18', {
+        'easyblock': 'PythonPackage',
     }),
 ]
 
