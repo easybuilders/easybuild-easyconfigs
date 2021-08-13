@@ -13,6 +13,8 @@ toolchain = {'name': 'foss', 'version': '2020b'}
 
 builddependencies = [
     ('Bazel', '3.7.2'),
+    ('pytest-xdist', '2.3.0'),
+    ('pytest-benchmark', '3.4.1'),
 ]
 
 dependencies = [
@@ -99,6 +101,13 @@ components = [
         'buildcmd': local_jax_build_cmd,
         'install_src': 'dist/*.whl',
     }),
+]
+
+# can't run tests in sanity check step, because build dependencies must be availabl
+postinstallcmds = [
+    "cd %%(builddir)s/jax-jaxlib-v%s && "
+    "PYTHONPATH=%%(installdir)s/lib/python%%(pyshortver)s/site-packages:$PYTHONPATH "
+    "pytest -n auto tests" % local_jaxlib_ver,
 ]
 
 sanity_pip_check = True
