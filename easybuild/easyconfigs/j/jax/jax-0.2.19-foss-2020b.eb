@@ -3,7 +3,7 @@
 easyblock = 'PythonBundle'
 
 name = 'jax'
-version = '0.2.18'
+version = '0.2.19'
 local_jaxlib_ver = '0.1.70'
 homepage = 'https://pypi.python.org/pypi/jax'
 description = """Composable transformations of Python+NumPy programs: differentiate, vectorize, JIT to GPU/TPU, and
@@ -41,17 +41,6 @@ local_jax_build_cmd += '--bazel_options=--jobs=%(parallel)s --bazel_options=--ac
 local_jax_build_cmd += '--bazel_options=--action_env=EBPYTHONPREFIXES'
 
 use_pip = True
-
-exts_list = [
-    ('opt-einsum', '3.3.0', {
-        'source_tmpl': 'opt_einsum-%(version)s.tar.gz',
-        'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
-    }),
-    (name, version, {
-        'easyblock': 'PythonPackage',
-        'checksums': ['b08d5137189a7384429541b39575a022d4bbf777cdb081e8c1bf6bc14eefcd41'],
-    }),
-]
 
 default_component_specs = {
     'sources': [SOURCE_TAR_GZ],
@@ -103,7 +92,16 @@ components = [
     }),
 ]
 
-# can't run tests in sanity check step, because build dependencies must be availabl
+exts_list = [
+    ('opt_einsum', '3.3.0', {
+        'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
+    }),
+    (name, version, {
+        'checksums': ['e55534680a05b6ced92dadde307bd3b2207efd1aaaec304e96197b00ad7560d3'],
+    }),
+]
+
+# can't run tests in sanity check step, because build dependencies must be available
 postinstallcmds = [
     "cd %%(builddir)s/jax-jaxlib-v%s && "
     "PYTHONPATH=%%(installdir)s/lib/python%%(pyshortver)s/site-packages:$PYTHONPATH "
