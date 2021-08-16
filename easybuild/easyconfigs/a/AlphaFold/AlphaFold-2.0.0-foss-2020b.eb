@@ -19,6 +19,8 @@ dependencies = [
     ('PyYAML', '5.3.1'),
     ('TensorFlow', '2.4.1'),
     ('Biopython', '1.78'),
+    ('OpenMM', '7.5.1'),  # for simtk
+    ('PDBFixer', '1.7'),
     ('jax', '0.2.19'),  # also provides absl-py
 ]
 
@@ -67,9 +69,30 @@ exts_list = [
     (name, version, {
         'source_urls': ['https://github.com/deepmind/alphafold/archive/refs/tags/'],
         'sources': ['v%(version)s.tar.gz'],
-        'checksums': ['78cf443a2d9250917b05f5d40ede140ed8e8341b42fdfa54340336aca52f53f2'],
+        'patches': ['AlphaFold-%(version)s_fix-packages.patch'],
+        'checksums': [
+            '78cf443a2d9250917b05f5d40ede140ed8e8341b42fdfa54340336aca52f53f2',  # v2.0.0.tar.gz
+            '826d2d1a5d6ac52c51a60ba210e1947d5631a1e2d76f8815305b5d23f74458db',  # AlphaFold-2.0.0_fix-packages.patch
+        ],
     }),
 ]
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/bin",
+    # run_alphafold.py script is missing a shebang...
+    "echo '#!/usr/bin/env python' > %(installdir)s/bin/run_alphafold.py",
+    "cat %(builddir)s/AlphaFold/alphafold-%(version)s/run_alphafold.py >> %(installdir)s/bin/run_alphafold.py",
+    "chmod a+x %(installdir)s/bin/run_alphafold.py",
+    "cd %(installdir)s/bin && ln -s run_alphafold.py alphafold",
+    "cp -a %(builddir)s/AlphaFold/alphafold-%(version)s/scripts %(installdir)s/",
+]
+
+sanity_check_paths = {
+    'files': ['bin/alphafold', 'bin/run_alphafold.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts'],
+}
+
+sanity_check_commands = ["alphafold --help"]
 
 sanity_pip_check = True
 
