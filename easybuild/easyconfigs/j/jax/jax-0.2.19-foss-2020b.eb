@@ -29,16 +29,7 @@ dependencies = [
 local_tf_commit = '4039feeb743bc42cd0a3d8146ce63fc05d23eb8d'
 
 local_tf_builddir = "%%(builddir)s/tensorflow-%s" % local_tf_commit
-
 local_jax_prebuildopts = "sed -i -e 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
-
-local_jax_build_cmd = 'python build/build.py '
-local_jax_build_cmd += '--target_cpu_features=native '
-local_jax_build_cmd += '--bazel_startup_options="--output_user_root=%(builddir)s" '
-local_jax_build_cmd += '--bazel_path="$EBROOTBAZEL/bin/bazel" '
-local_jax_build_cmd += '--bazel_options=--subcommands '
-local_jax_build_cmd += '--bazel_options=--jobs=%(parallel)s --bazel_options=--action_env=PYTHONPATH '
-local_jax_build_cmd += '--bazel_options=--action_env=EBPYTHONPREFIXES'
 
 use_pip = True
 
@@ -56,7 +47,7 @@ components = [
         'use_pip': True,
     }),
     ('jaxlib', local_jaxlib_ver, {
-        'easyblock': 'PythonPackage',
+        'easyblock': 'EB_jaxlib',
         'sources': [
             'jaxlib-v%s.zip' % local_jaxlib_ver,
             {
@@ -84,10 +75,8 @@ components = [
         ],
         'start_dir': 'jax-jaxlib-v%s' % local_jaxlib_ver,
         'prebuildopts': local_jax_prebuildopts,
-        'use_pip': True,
         'sanity_pip_check': True,
         'download_dep_fail': True,
-        'buildcmd': local_jax_build_cmd,
         'install_src': 'dist/*.whl',
     }),
 ]
@@ -99,13 +88,6 @@ exts_list = [
     (name, version, {
         'checksums': ['e55534680a05b6ced92dadde307bd3b2207efd1aaaec304e96197b00ad7560d3'],
     }),
-]
-
-# can't run tests in sanity check step, because build dependencies must be available
-postinstallcmds = [
-    "cd %%(builddir)s/jax-jaxlib-v%s && "
-    "PYTHONPATH=%%(installdir)s/lib/python%%(pyshortver)s/site-packages:$PYTHONPATH "
-    "pytest -n auto tests" % local_jaxlib_ver,
 ]
 
 sanity_pip_check = True
