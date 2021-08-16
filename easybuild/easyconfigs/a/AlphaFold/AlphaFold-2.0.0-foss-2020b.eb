@@ -27,6 +27,44 @@ dependencies = [
     ('jax', '0.2.19'),  # also provides absl-py
 ]
 
+# commit to use for downloading stereo_chemical_props.txt and copy to alphafold/common,
+# see docker/Dockerfile in AlphaFold repository
+local_scp_commit = '7102c6'
+
+components = [
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'source_urls': [
+            'https://github.com/deepmind/alphafold/archive/refs/tags/',
+            'https://git.scicore.unibas.ch/schwede/openstructure/-/raw/%s/modules/mol/alg/src/' % local_scp_commit,
+        ],
+        'sources': [
+            'v%(version)s.tar.gz',
+            {
+                'download_filename': 'stereo_chemical_props.txt',
+                'filename': 'stereo_chemical_props-%s.txt' % local_scp_commit,
+                'extract_cmd': "cp -a %s .",
+            },
+        ],
+        'patches': [
+            'AlphaFold-%(version)s_fix-packages.patch',
+            'AlphaFold-%(version)s_data-dep-paths.patch',
+            'AlphaFold-%(version)s_n-cpu.patch',
+            'AlphaFold-2.0.0_fix-scp-path.patch',
+        ],
+        'checksums': [
+            '78cf443a2d9250917b05f5d40ede140ed8e8341b42fdfa54340336aca52f53f2',  # v2.0.0.tar.gz
+            '24510899eeb49167cffedec8fa45363a4d08279c0c637a403b452f7d0ac09451',  # stereo_chemical_props-7102c6.txt
+            '826d2d1a5d6ac52c51a60ba210e1947d5631a1e2d76f8815305b5d23f74458db',  # AlphaFold-2.0.0_fix-packages.patch
+            '2ccf9a9c8dbae9d47ef1958ede78710cb7ebd4c5231bdb268f44664b45f4e950',  # AlphaFold-2.0.0_data-dep-paths.patch
+            '90db20bf420c56ab787c1fdeddc190d47095f9717523e0058767d2c209e21a1a',  # AlphaFold-2.0.0_n-cpu.patch
+            '83dc82a8b1c647eb7e217aef683153e98a4fc7f871a85280976c92a1bfe28f27',  # AlphaFold-2.0.0_fix-scp-path.patch
+        ],
+        'start_dir': 'alphafold-%(version)s',
+        'use_pip': True,
+    }),
+]
+
 use_pip = True
 
 exts_list = [
@@ -69,31 +107,17 @@ exts_list = [
         # see https://github.com/google/ml_collections/issues/7
         'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
     }),
-    (name, version, {
-        'source_urls': ['https://github.com/deepmind/alphafold/archive/refs/tags/'],
-        'sources': ['v%(version)s.tar.gz'],
-        'patches': [
-            'AlphaFold-%(version)s_fix-packages.patch',
-            'AlphaFold-%(version)s_data-dep-paths.patch',
-            'AlphaFold-%(version)s_n-cpu.patch',
-        ],
-        'checksums': [
-            '78cf443a2d9250917b05f5d40ede140ed8e8341b42fdfa54340336aca52f53f2',  # v2.0.0.tar.gz
-            '826d2d1a5d6ac52c51a60ba210e1947d5631a1e2d76f8815305b5d23f74458db',  # AlphaFold-2.0.0_fix-packages.patch
-            '2ccf9a9c8dbae9d47ef1958ede78710cb7ebd4c5231bdb268f44664b45f4e950',  # AlphaFold-2.0.0_data-dep-paths.patch
-            '90db20bf420c56ab787c1fdeddc190d47095f9717523e0058767d2c209e21a1a',  # AlphaFold-2.0.0_n-cpu.patch
-        ],
-    }),
 ]
 
 postinstallcmds = [
     "mkdir -p %(installdir)s/bin",
     # run_alphafold.py script is missing a shebang...
     "echo '#!/usr/bin/env python' > %(installdir)s/bin/run_alphafold.py",
-    "cat %(builddir)s/AlphaFold/alphafold-%(version)s/run_alphafold.py >> %(installdir)s/bin/run_alphafold.py",
+    "cat %(builddir)s/alphafold-%(version)s/run_alphafold.py >> %(installdir)s/bin/run_alphafold.py",
     "chmod a+x %(installdir)s/bin/run_alphafold.py",
     "cd %(installdir)s/bin && ln -s run_alphafold.py alphafold",
-    "cp -a %(builddir)s/AlphaFold/alphafold-%(version)s/scripts %(installdir)s/",
+    "cp -a %(builddir)s/alphafold-%(version)s/scripts %(installdir)s/",
+    "cp -a %%(builddir)s/stereo_chemical_props-%s.txt %%(installdir)s/stereo_chemical_props.txt" % local_scp_commit,
 ]
 
 sanity_check_paths = {
@@ -101,7 +125,10 @@ sanity_check_paths = {
     'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts'],
 }
 
-sanity_check_commands = ["alphafold --help 2>&1 | grep 'Full AlphaFold protein structure prediction script'"]
+sanity_check_commands = [
+    "python -c 'import alphafold'",
+    "alphafold --help 2>&1 | grep 'Full AlphaFold protein structure prediction script'",
+]
 
 sanity_pip_check = True
 
