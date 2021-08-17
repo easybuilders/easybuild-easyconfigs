@@ -5,10 +5,10 @@ easyblock = 'PythonBundle'
 name = 'jax'
 version = '0.2.19'
 homepage = 'https://pypi.python.org/pypi/jax'
-description = """Composable transformations of Python+NumPy programs: 
+description = """Composable transformations of Python+NumPy programs:
 differentiate, vectorize, JIT to GPU/TPU, and more"""
 
-toolchain = {'name': 'foss', 'version': '2020b'}
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
 
 builddependencies = [
     ('Bazel', '3.7.2'),
@@ -20,6 +20,8 @@ dependencies = [
     ('Python', '3.8.6'),
     ('SciPy-bundle', '2020.11'),
     ('flatbuffers-python', '1.12'),
+    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', True),
+    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
 ]
 
 # downloading TensorFlow tarball to avoid that Bazel downloads it during the build
@@ -64,6 +66,7 @@ components = [
             '%(name)s-%(version)s_add-bazel-args-to-shutdown.patch',
             '%(name)s-%(version)s_no-tensorflow-download.patch',
             ('TensorFlow-%s_mlir-build-env.patch' % local_tf_commit, '../' + local_tf_dir),
+            ('TensorFlow-2.1.0_fix-cuda-build.patch', '../' + local_tf_dir),
         ],
         'checksums': [
             # jaxlib-v0.1.70.tar.gz
@@ -76,6 +79,8 @@ components = [
             '1496c6be9336fb563b997f8da83d690a9b3a0a6e29fdd87fac60409300a2fd95',
             # TensorFlow-4039feeb743bc42cd0a3d8146ce63fc05d23eb8d-build-env.patch
             'd067836b1d18d66a8c69fb3db311855c8a56c0106d42a11299a1733c385e9c22',
+            # TensorFlow-2.1.0_fix-cuda-build.patch
+            '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         'prebuildopts': local_jax_prebuildopts,
