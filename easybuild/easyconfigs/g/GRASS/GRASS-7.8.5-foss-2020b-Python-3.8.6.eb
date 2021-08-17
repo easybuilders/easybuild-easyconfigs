@@ -1,0 +1,110 @@
+easyblock = 'ConfigureMake'
+
+name = 'GRASS'
+version = '7.8.5'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://grass.osgeo.org"
+description = """The Geographic Resources Analysis Support System - used
+ for geospatial data management and analysis, image processing,
+ graphics and maps production, spatial modeling, and visualization"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://grass.osgeo.org/grass%s/source' % ''.join(version.split('.')[:2])]
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-7.6.0_GCC_ldlibs.patch']
+checksums = [
+    'a359bb665524ecccb643335d70f5436b1c84ffb6a0e428b78dffebacd983ff37',  # grass-7.8.5.tar.gz
+    '1927578fc81cb8f9d930874b0fd3453f446720b50eb95b9bd1fb2c940ca02e6e',  # GRASS-7.6.0_GCC_ldlibs.patch
+]
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.1'),
+    ('Autotools', '20200321'),
+]
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('cairo', '1.16.0'),
+    ('FFmpeg', '4.3.1'),
+    ('freetype', '2.10.3'),
+    ('GDAL', '3.2.1'),
+    ('GEOS', '3.8.2', versionsuffix),
+    ('gettext', '0.21'),
+    ('libGLU', '9.0.1'),
+    # ('libLAS', '1.8.1', versionsuffix),   # build without libLAS, it has been superseded by PDAL
+    ('libpng', '1.6.37'),
+    ('libreadline', '8.0'),
+    ('libspatialite', '5.0.0', versionsuffix),
+    ('LibTIFF', '4.1.0'),
+    ('libxml2', '2.9.10'),
+    ('Mesa', '20.2.1'),
+    ('ncurses', '6.2'),
+    ('netCDF', '4.7.4'),
+    ('PDAL', '2.2.0', versionsuffix),
+    ('Pillow', '8.0.1'),
+    ('PostgreSQL', '13.3'),
+    ('PROJ', '7.2.1'),
+    ('Python', '3.8.6'),
+    ('SQLite', '3.33.0'),
+    ('wxPython', '4.1.1', versionsuffix),
+    ('X11', '20201008'),
+    ('zlib', '1.2.11'),
+    ('zstd', '1.4.5'),
+]
+
+preconfigopts = "sed -e 's/-lblas/$LIBBLAS/g' -e 's/-llapack/$LIBLAPACK/g' -i configure && "
+configopts = '--enable-64bit '
+configopts += '--enable-largefile=yes '
+configopts += '--with-cairo=yes '
+configopts += '--with-cxx '
+configopts += '--with-ffmpeg --with-ffmpeg-libs=$EBROOTFFMPEG/lib --with-ffmpeg-includes=$EBROOTFFMPEG/include/* '
+configopts += '--with-fftw --with-fftw-libs=$EBROOTFFTW/lib --with-fftw-includes=$EBROOTFFTW/include '
+configopts += '--with-freetype '
+configopts += '--with-freetype-libs=$EBROOTFREETYPE/lib --with-freetype-includes=$EBROOTFREETYPE/include '
+configopts += '--with-geos=$EBROOTGEOS/bin/geos-config '
+configopts += '--without-glw '
+configopts += '--with-lapack '
+configopts += '--with-lapack-lib=$LAPACK_LIB_DIR '
+configopts += '--with-lapack-includes=$LAPACK_INC_DIR '
+configopts += '--with-blas '
+configopts += '--with-blas-lib=$BLAS_LIB_DIR '
+configopts += '--with-blas-includes=$BLAS_INC_DIR '
+configopts += '--with-netcdf=$EBROOTNETCDF/bin/nc-config '
+configopts += '--without-odbc '
+configopts += '--with-opengl '
+configopts += '--with-openmp '
+configopts += '--with-png '
+configopts += '--with-png-libs="$EBROOTLIBPNG/lib $EBROOTZLIB/lib" --with-png-includes=$EBROOTLIBPNG/include '
+configopts += '--with-postgres '
+configopts += '--with-proj --with-proj-libs=$EBROOTPROJ/lib '
+configopts += '--with-proj-includes=$EBROOTPROJ/include --with-proj-share=$EBROOTPROJ/share/proj '
+configopts += '--with-pthread '
+configopts += '--with-python '
+configopts += '--with-readline '
+configopts += '--with-readline-libs=$EBROOTLIBREADLINE/lib --with-readline-includes=$EBROOTLIBREADLINE/include '
+configopts += '--with-spatialite '
+configopts += '--with-sqlite '
+configopts += '--with-tiff-libs=$EBROOTLIBTIFF/lib --with-tiff-includes=$EBROOTLIBTIFF/include '
+configopts += '--with-wxwidgets=$EBROOTWXPYTHON/bin/wx-config '
+configopts += '--with-x '
+configopts += '--with-zlib --with-zlib-libs=$EBROOTZLIB/lib --with-zlib-includes=$EBROOTZLIB/include '
+configopts += '--with-bzlib --with-bzlib-libs=$EBROOTBZIP2/lib --with-ibzlib-includes=$EBROOTBZIP2/include '
+configopts += '--with-zstd --with-zstd-libs=$EBROOTZSTD/lib --with-zstd-includes=$EBROOTZSTD/include '
+configopts += '--with-pdal=$EBROOTPDAL/bin/pdal-config '
+# configopts += '--with-liblas=$EBROOTLIBLAS/bin/liblas-config '  # build without libLAS, it has been superseded by PDAL
+
+modextrapaths = {
+    'LIBRARY_PATH': 'grass78/lib', 
+    'LD_LIBRARY_PATH': 'grass78/lib', 
+    'CPATH': 'grass78/include',
+}
+
+sanity_check_paths = {
+    'files': ['bin/grass78', 'grass78/lib/libgrass_gis.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'grass78', 'grass78/lib'],
+}
+
+moduleclass = 'geo'
