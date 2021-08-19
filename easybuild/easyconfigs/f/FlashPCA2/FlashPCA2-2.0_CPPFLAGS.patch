@@ -1,0 +1,45 @@
+diff -ruN flashpca-2.0.orig/Makefile flashpca-2.0/Makefile
+--- flashpca-2.0.orig/Makefile	2016-12-15 20:33:56.000000000 -0800
++++ flashpca-2.0/Makefile	2021-08-17 17:31:26.778234000 -0700
+@@ -19,7 +19,8 @@
+    data.o \
+    util.o
+ 
+-CXXFLAGS = -I${SPECTRA_INC} -I${BOOST_INC} -I${EIGEN_INC}
++CXXFLAGS = $(CXXFLAGS)
++CPPFLAGS ?= $(CPPFLAGS) -I${SPECTRA_INC} -I${BOOST_INC} -I${EIGEN_INC}
+ 
+ UNAME := $(shell uname)
+ ifeq ($(UNAME), Darwin)
+@@ -40,16 +41,16 @@
+ flashpca: CXXFLAGS += -O3 -DNDEBUG -DVERSION=\"$(VERSION)\" \
+    -funroll-loops -ftree-vectorize -ffast-math
+ flashpca: flashpca.o randompca.o data.o util.o svdwide.o svdtall.o
+-	$(CXX) $(CXXFLAGS) -o flashpca $^ $(LDFLAGS)
++	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o flashpca $^ $(LDFLAGS)
+ 
+ flashpca_x86-64: LDFLAGS = $(BOOST) -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
+ flashpca_x86-64: CXXFLAGS += -O3 -DNDEBUG -DVERSION=\"$(VERSION)\" \
+    -funroll-loops -ftree-vectorize -ffast-math -static
+ flashpca_x86-64: $(OBJ)
+-	$(CXX) $(CXXFLAGS) -o flashpca_x86-64 $^ $(LDFLAGS)
++	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o flashpca_x86-64 $^ $(LDFLAGS)
+ 
+ $(OBJ): %.o: %.cpp
+-	$(CXX) $(CXXFLAGS) -c $< -o $@
++	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+ 
+ clean:
+ 	rm -f $(OBJ) flashpca flashpca_x86-64
+diff -ruN flashpca-2.0.orig/randompca.h flashpca-2.0/randompca.h
+--- flashpca-2.0.orig/randompca.h	2016-12-15 20:33:56.000000000 -0800
++++ flashpca-2.0/randompca.h	2021-08-17 16:49:36.325372000 -0700
+@@ -20,7 +20,7 @@
+ #include <boost/math/distributions.hpp>
+ #include <boost/math/distributions/fisher_f.hpp>
+ 
+-#ifdef RENV
++#ifdef SPECTRA 
+ #include <Spectra/SymEigsSolver.h> // one or the other will be available
+ #else
+ #include <SymEigsSolver.h>
