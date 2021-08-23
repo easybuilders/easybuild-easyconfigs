@@ -1,0 +1,84 @@
+easyblock = 'Tarball'
+
+name = 'RoseTTAFold'
+version = '1.0.0'
+local_pytorch_version = '1.8.1'
+local_pytorch_suffix = '-PyTorch-%s' % local_pytorch_version
+local_python_suffix = '-Python-%(pyver)s'
+versionsuffix = local_python_suffix + local_pytorch_suffix
+
+homepage = 'https://github.com/RosettaCommons/RoseTTAFold'
+description = """Official implementation of RoseTTAFold: Accurate prediction
+of protein structures and interactions using a 3-track network."""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+toolchainopts = {'openmp': True}
+
+github_account = 'RosettaCommons'
+source_urls = [GITHUB_SOURCE]
+sources = [
+    'v%(version)s.tar.gz',
+    'weights.tar.gz',
+]
+
+patches = [
+    'RoseTTAFold-1.0.0_cpu_mem_from_env.patch',
+    'RoseTTAFold-1.0.0_db_paths_from_env.patch',
+    'RoseTTAFold-1.0.0_no_conda.patch',
+    'RoseTTAFold-1.0.0_use_eb_paths.patch',
+    'RoseTTAFold-1.0.0_fix_cache_directory.patch',
+    'RoseTTAFold-1.0.0_lddt_path.patch',
+]
+
+checksums = [
+    'c3db4ec7a0d933c5877a76112d51aa0466d86698807603614c419286261df524',  # v1.0.0.tar.gz
+    '6379adffe1e0a26fcaa33a228f695be9a10deeba565b38cb0b1b9231d8b5c369',  # weights.tar.gz
+    '06de539538fb48ce2efdf3a989f50f02fd360556b76df18f3e0083af5d573461',  # RoseTTAFold-1.0.0_cpu_mem_from_env.patch
+    'f7a163cdf7d2c62e18a691a322c81c2fd20a2f92bdbd6e806f93246842092e3e',  # RoseTTAFold-1.0.0_db_paths_from_env.patch
+    'a1ea483525cd94712e56107de6513c0c27be8942fd9f3ad627482d787b3c3a50',  # RoseTTAFold-1.0.0_no_conda.patch
+    '9d4d56993e5e1bc52ecb3c67b3f71e3b869d559c0c85281750bc0a708b271d55',  # RoseTTAFold-1.0.0_use_eb_paths.patch
+    '6e7abdce5c677803aeb174b527d1a360212ef4cc494cf949f75f6baeaffc29b5',  # RoseTTAFold-1.0.0_fix_cache_directory.patch
+    '39c56e08b27b2a570d0c920cf1150326ddd583d467ae530a6ba559c183f110d6',  # RoseTTAFold-1.0.0_lddt_path.patch
+]
+
+dependencies = [
+    ('Biopython', '1.75', local_python_suffix),
+    ('BLAST', '2.2.26', '-Linux_x86_64', True),
+    ('HH-suite', '3.2.0'),
+    ('lddt', '1.2', '', True),
+    ('PyRosetta', '4.release-292', local_python_suffix),
+    ('PyTorch-Geometric', '1.6.3', versionsuffix),
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', local_python_suffix),
+    ('TensorFlow', '1.15.2', local_python_suffix),
+    ('csblast', '2.2.3'),
+    ('dgl', '0.6.1', versionsuffix),
+    ('lie_learn', '0.0.1.post1', local_python_suffix),
+    ('parallel', '20190922'),
+    ('psipred', '4.02'),
+    ('torchvision', '0.9.1', versionsuffix),
+]
+
+local_broken_symlinks = ['example/pyrosetta/model/model_%s.pdb' % i for i in range(1, 6)]
+preinstallopts = 'cp -r ../weights . && rm %s && ' % ' '.join(local_broken_symlinks)
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'dirs': [
+        'DAN-msa',
+        'folding',
+        'network',
+        'weights',
+    ],
+    'files': [
+        'run_e2e_ver.sh',
+        'run_pyrosetta_ver.sh',
+        'input_prep/make_ss.sh',
+        'input_prep/make_msa.sh',
+        'network/predict_e2e.py',
+        'network/predict_pyRosetta.py',
+    ]
+}
+
+moduleclass = 'bio'

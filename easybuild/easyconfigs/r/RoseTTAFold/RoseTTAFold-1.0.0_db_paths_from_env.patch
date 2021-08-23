@@ -1,0 +1,61 @@
+Read the database path from environment instead of assuming them in the installation directory
+author: Christoph Siegert (Leipzig University)
+
+diff -ruN RoseTTAFold.orig/input_prep/make_msa.sh RoseTTAFold/input_prep/make_msa.sh
+--- RoseTTAFold.orig/input_prep/make_msa.sh	2021-08-16 12:54:05.769231102 +0200
++++ RoseTTAFold/input_prep/make_msa.sh	2021-08-16 13:22:02.508663769 +0200
+@@ -9,8 +9,8 @@
+ MEM="$4"
+ 
+ # sequence databases
+-DB="$PIPEDIR/UniRef30_2020_06/UniRef30_2020_06"
+-MYDB="$PIPEDIR/bfd/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt"
++DB="$UNIREF30PATH/UniRef30_2020_06"
++MYDB="$BFDPATH/bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt"
+ 
+ # setup hhblits command
+ HHBLITS="hhblits -o /dev/null -mact 0.35 -maxfilt 100000000 -neffmax 20 -cov 25 -cpu $CPU -nodiff -realign_max 100000000 -maxseq 1000000 -maxmem $MEM -n 4 -d $DB -d $MYDB"
+diff -ruN RoseTTAFold.orig/run_e2e_ver.sh RoseTTAFold/run_e2e_ver.sh
+--- RoseTTAFold.orig/run_e2e_ver.sh	2021-08-16 12:54:04.081235616 +0200
++++ RoseTTAFold/run_e2e_ver.sh	2021-08-16 13:21:02.188832795 +0200
+@@ -22,6 +22,9 @@
+ IN="$1"                # input.fasta
+ WDIR=`realpath -s $2`  # working folder
+ 
++BFDPATH=${BFDPATH:-"$PIPEDIR/bfd/"}
++PDB100PATH=${PDB100PATH:-"$PIPEDIR/pdb100_2021Mar03/"}
++UNIREF30PATH=${UNIREF30PATH:-"$PIPEDIR/UniRef30_2020_06/"}
+ 
+ LEN=`tail -n1 $IN | wc -m`
+ 
+@@ -51,7 +54,7 @@
+ ############################################################
+ # 3. search for templates
+ ############################################################
+-DB="$PIPEDIR/pdb100_2021Mar03/pdb100_2021Mar03"
++DB="$PDB100PATH/pdb100_2021Mar03"
+ if [ ! -s $WDIR/t000_.hhr ]
+ then
+     echo "Running hhsearch"
+diff -ruN RoseTTAFold.orig/run_pyrosetta_ver.sh RoseTTAFold/run_pyrosetta_ver.sh
+--- RoseTTAFold.orig/run_pyrosetta_ver.sh	2021-08-16 12:54:04.081235616 +0200
++++ RoseTTAFold/run_pyrosetta_ver.sh	2021-08-16 13:21:37.380734181 +0200
+@@ -22,6 +22,9 @@
+ IN="$1"                # input.fasta
+ WDIR=`realpath -s $2`  # working folder
+ 
++BFDPATH=${BFDPATH:-"$PIPEDIR/bfd/"}
++PDB100PATH=${PDB100PATH:-"$PIPEDIR/pdb100_2021Mar03/"}
++UNIREF30PATH=${UNIREF30PATH:-"$PIPEDIR/UniRef30_2020_06/"}
+ 
+ LEN=`tail -n1 $IN | wc -m`
+ 
+@@ -51,7 +54,7 @@
+ ############################################################
+ # 3. search for templates
+ ############################################################
+-DB="$PIPEDIR/pdb100_2021Mar03/pdb100_2021Mar03"
++DB="$PDB100PATH/pdb100_2021Mar03"
+ if [ ! -s $WDIR/t000_.hhr ]
+ then
+     echo "Running hhsearch"
