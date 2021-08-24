@@ -1,0 +1,39 @@
+diff -ru mii-1.1.0.orig/init/bash mii-1.1.0/init/bash
+--- mii-1.1.0.orig/init/bash	2021-08-24 18:01:34.379338718 +0000
++++ mii-1.1.0/init/bash	2021-08-24 18:08:40.965626009 +0000
+@@ -2,7 +2,7 @@
+ # should be sourced from a bash shell
+ 
+ # don't init in non-interactive shells
+-[ -z "$PS1" ] && return
++[[ $- == *i* ]] && return
+ 
+ # find a modules installation
+ if ! type module 2>&1 >/dev/null; then
+diff -ru mii-1.1.0.orig/init/common mii-1.1.0/init/common
+--- mii-1.1.0.orig/init/common	2021-08-24 18:01:34.379338718 +0000
++++ mii-1.1.0/init/common	2021-08-24 18:14:38.804528235 +0000
+@@ -1,5 +1,11 @@
+ # mii common handler
+ 
++# return if it is interactive
++if [[ $- == *i* ]]; then
++    # show a normal command not found prompt
++    exec echo "$1: command not found!" 1>&2
++fi
++
+ # grab status, don't do anything if not enabled
+ state=$($MII status | grep "status" | cut -d' ' -f2)
+ 
+diff -ru mii-1.1.0.orig/init/zsh mii-1.1.0/init/zsh
+--- mii-1.1.0.orig/init/zsh	2021-08-24 18:01:34.379338718 +0000
++++ mii-1.1.0/init/zsh	2021-08-24 18:08:47.165659253 +0000
+@@ -2,7 +2,7 @@
+ # should be sourced from a zsh shell
+ 
+ # don't init in non-interactive shells
+-[[ ! -o interactive ]] && return
++[[ $- == *i* ]] && return
+ 
+ # find a modules installation
+ if ! type module 2>&1 >/dev/null; then
