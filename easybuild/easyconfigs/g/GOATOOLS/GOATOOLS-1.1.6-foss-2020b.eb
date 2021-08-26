@@ -1,0 +1,52 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonPackage'
+
+name = 'GOATOOLS'
+version = '1.1.6'
+
+homepage = 'https://github.com/tanghaibao/goatools'
+description = "A Python library for Gene Ontology analyses"
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://github.com/tanghaibao/goatools/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['41222308c2bc34eefd3292326a61bc215bd32831b4b2652eff00b1b8e3fcf8c6']
+
+builddependencies = [('cURL', '7.72.0')]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('XlsxWriter', '1.4.0'),
+    ('statsmodels', '0.12.1'),
+    ('pydot', '1.4.2'),
+]
+
+download_dep_fail = True
+use_pip = True
+
+preinstallopts = "sed -i 's/==[0-9]*.[0-9]*.[0-9]*//g' requirements.txt && "
+# wget was here only to download some src files which we download via sources
+preinstallopts += "sed -i 's/wget//g' requirements.txt && "
+
+local_data_dir = '%(builddir)s/%(namelower)s-%(version)s/data/*'
+postinstallcmds = ["mkdir %%(installdir)s/data && cp -r %s %%(installdir)s/data" % local_data_dir]
+
+sanity_check_paths = {
+    'files': ['bin/find_enrichment.py'],
+    'dirs': ['data'],
+}
+
+# example test run, see https://github.com/tanghaibao/goatools/blob/master/run.sh
+sanity_check_commands = [
+    "cd %(builddir)s && curl -OL http://geneontology.org/ontology/go-basic.obo",
+    "cd %(builddir)s && curl -OL http://www.geneontology.org/ontology/subsets/goslim_generic.obo",
+    "cd %(builddir)s && cp -a %(installdir)s/data .",
+    "cd %(builddir)s && find_enrichment.py --pval=0.05 --indent data/study data/population data/association",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
