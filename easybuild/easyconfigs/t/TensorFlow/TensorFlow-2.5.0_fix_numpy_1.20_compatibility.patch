@@ -1,0 +1,47 @@
+# Caspar van Leeuwen:
+# TF-2.5.0 and 2.6.0 are not compatible with numpy > 1.20
+# During the testing phase, TensorFlow throws errors like this
+# "Cannot convert a symbolic Tensor (lstm/strided_slice:0) to a numpy array.
+# This error may indicate that you're trying to pass a Tensor to a NumPy call,
+# which is not supported"
+# The problem is known, and a PR is available, but not merged yet,
+# because TF's CI relies on Python-3.6, which needs numpy < 1.20:
+# https://github.com/tensorflow/tensorflow/pull/48935
+# This patch implements the suggested changes from that PR to the actual code
+# (we ignore the canges to setup.py & friends)
+diff --git a/tensorflow/python/ops/array_ops.py b/tensorflow/python/ops/array_ops.py
+index 519f2ef26fcef..d143ee96a2fc9 100644
+--- a/tensorflow/python/ops/array_ops.py
++++ b/tensorflow/python/ops/array_ops.py
+@@ -36,6 +36,7 @@
+ from tensorflow.python.framework.constant_op import constant
+ from tensorflow.python.ops import gen_array_ops
+ from tensorflow.python.ops import gen_math_ops
++from tensorflow.python.ops import math_ops
+ # go/tf-wildcard-import
+ # pylint: disable=wildcard-import
+ from tensorflow.python.ops.gen_array_ops import *
+@@ -2894,7 +2895,7 @@ def matrix_set_diag(
+ 
+ def _constant_if_small(value, shape, dtype, name):
+   try:
+-    if np.prod(shape) < 1000:
++    if math_ops.reduce_prod(shape) < 1000:
+       return constant(value, shape=shape, dtype=dtype, name=name)
+   except TypeError:
+     # Happens when shape is a Tensor, list with Tensor elements, etc.
+diff --git a/tensorflow/python/eager/function_test.py b/tensorflow/python/eager/function_test.py
+index ccf3f117e3970..69985f6557c17 100644
+--- a/tensorflow/python/eager/function_test.py
++++ b/tensorflow/python/eager/function_test.py
+@@ -279,8 +279,8 @@ def testImplementsAttributeAssertsOnSideInput(self):
+       z = array_ops.zeros(0)
+       v = def_function.function(
+           experimental_implements='func')(lambda x, y: x + y + z)
+-      a = array_ops.ones((1.0,))
+-      b = array_ops.ones((1.0,))
++      a = array_ops.ones((1,))
++      b = array_ops.ones((1,))
+       with self.assertRaisesRegex(AssertionError,
+                                   'variables are always captured'):
+         v(a, b)
