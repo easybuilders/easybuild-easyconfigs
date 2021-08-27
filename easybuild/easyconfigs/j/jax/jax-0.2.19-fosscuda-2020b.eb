@@ -5,10 +5,10 @@ easyblock = 'PythonBundle'
 name = 'jax'
 version = '0.2.19'
 homepage = 'https://pypi.python.org/pypi/jax'
-description = """Composable transformations of Python+NumPy programs: 
+description = """Composable transformations of Python+NumPy programs:
 differentiate, vectorize, JIT to GPU/TPU, and more"""
 
-toolchain = {'name': 'foss', 'version': '2020b'}
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
 
 builddependencies = [
     ('Bazel', '3.7.2'),
@@ -22,6 +22,8 @@ dependencies = [
     ('Python', '3.8.6'),
     ('SciPy-bundle', '2020.11'),
     ('flatbuffers-python', '1.12'),
+    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', True),
+    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
 ]
 
 # downloading TensorFlow tarball to avoid that Bazel downloads it during the build
@@ -33,10 +35,6 @@ local_tf_builddir = '%(builddir)s/' + local_tf_dir
 local_jax_prebuildopts = "sed -i 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
 
 use_pip = True
-
-# running the tests with lots of cores results in test failures because not enough threads can be started,
-# so limit to a reasonable number of cores to use at maximum
-maxparallel = 10
 
 default_easyblock = 'PythonPackage'
 default_component_specs = {
@@ -68,7 +66,9 @@ components = [
         'patches': [
             '%(name)s-%(version)s_add-bazel-args-to-shutdown.patch',
             '%(name)s-%(version)s_no-tensorflow-download.patch',
+            '%(name)s-%(version)s_fix-gpu-translation-rule.patch',
             ('TensorFlow-%s_mlir-build-env.patch' % local_tf_commit, '../' + local_tf_dir),
+            ('TensorFlow-2.1.0_fix-cuda-build.patch', '../' + local_tf_dir),
         ],
         'checksums': [
             # jaxlib-v0.1.70.tar.gz
@@ -79,8 +79,12 @@ components = [
             'c0ea6abd7827d3c37bdd60c30c7b0613fc86b91274c6a1a4cf13a3c7f9ce7631',
             # jaxlib-0.1.70_no-tensorflow-download.patch
             '1496c6be9336fb563b997f8da83d690a9b3a0a6e29fdd87fac60409300a2fd95',
+            # jaxlib-0.1.70_fix-gpu-translation-rule.patch
+            'ce3cf8ee3b393f6580fb88bc39cc2660be46f2a48a315a3779403725ad49f946',
             # TensorFlow-4039feeb743bc42cd0a3d8146ce63fc05d23eb8d-build-env.patch
             'd067836b1d18d66a8c69fb3db311855c8a56c0106d42a11299a1733c385e9c22',
+            # TensorFlow-2.1.0_fix-cuda-build.patch
+            '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         'prebuildopts': local_jax_prebuildopts,
@@ -94,8 +98,19 @@ exts_list = [
     (name, version, {
         'source_tmpl': '%(name)s-v%(version)s.tar.gz',
         'source_urls': ['https://github.com/google/jax/archive/'],
-        'checksums': ['fb6f665b1461ac67954c1004da00d12e1c41b65b744a5fa0311d26d1a784a96c'],
-        'runtest': 'pytest -n %(parallel)s tests',
+        'patches': ['jax-%(version)s_skip-heap-profiler-test.patch'],
+        'checksums': [
+            'fb6f665b1461ac67954c1004da00d12e1c41b65b744a5fa0311d26d1a784a96c',  # jax-v0.2.19.tar.gz
+            # jax-0.2.19_skip-heap-profiler-test.patch
+            'a431ce1b6588b5098872f36575dc2c5023b1010760bf6aaa889125c9a09227b0',
+        ],
+        # deliberately not testing in parallel, as that results in (additional) failing tests;
+        # use XLA_PYTHON_CLIENT_ALLOCATOR=platform when running GPU tests in parallel,
+        # to avoid each test fully allocating the GPU memory...,
+        # see https://github.com/google/jax/issues/7323 and
+        # https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
+        # use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
+        'runtest': 'CUDA_VISIBLE_DEVICES=0 JAX_ENABLE_X64=true pytest tests',
     }),
 ]
 
