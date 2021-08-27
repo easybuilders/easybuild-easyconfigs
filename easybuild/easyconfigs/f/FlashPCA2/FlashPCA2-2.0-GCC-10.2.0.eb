@@ -1,41 +1,47 @@
+# EasyBuild easyconfig
+#
+# John Dey <jfdey@fredhutch.org>
+#
+# Fred Hutchinson - Seattle Washington US
+#
 easyblock = 'MakeCp'
 
 name = 'FlashPCA2'
 version = '2.0'
 
 homepage = 'https://github.com/gabraham/flashpca'
-description = """FlashPCA performs fast principal component analysis (PCA) of single nucleotide polymorphism (SNP) data."""
+description = """FlashPCA performs fast principal component analysis (PCA) of single nucleotide
+ polymorphism (SNP) data."""
 
 toolchain = {'name': 'GCC', 'version': '10.2.0'}
 
 source_urls = ['https://github.com/gabraham/flashpca/archive/refs/tags']
 sources = ['v%(version)s.tar.gz']
 patches = ['%(name)s-%(version)s_CPPFLAGS.patch']
+checksums = [
+    'e50955e2fbe9aa77fa656900e2468622aeae7e56ca026071fe1087583aa3d518',  # v2.0.tar.gz
+    'a9603b02a790bdda07ac0ef0fff7e6feb7b6cc6a4be1eadbaee99c0192a3963d',  # FlashPCA2-2.0_CPPFLAGS.patch
+]
 
 dependencies = [
     ('Boost', '1.74.0'),
-    ('Eigen', '3.3.8'),
-    ('SpectrA', '0.9.0'),
+    ('SpectrA', '0.9.0'),  # contains Eigen
     ('Boost', '1.74.0'),
     ('PLINK2', '20210701-linux_x86_64', '', True),
 ]
 
-buildopts = 'CXXFLAGS="$CXXFLAGS -DSPECTRA"'
+prebuildopts = 'export CXXFLAGS="$CXXFLAGS -fpermissive -DSPECTRA" && '
 
 files_to_copy = [
-    (["flashpca2"], 'bin'),
-    "NOTE", "release"
+    (["flashpca"], 'bin'),
+    "LICENSE",
 ]
 
 sanity_check_paths = {
-    'files': ["bin/flashpca2", "bin/2bwt-builder"],
+    'files': ["bin/flashpca"],
     'dirs': [],
 }
 
-moduleclass = 'bio'
+sanity_check_commands = ['flashpca --help']
 
-# CXXFLAGS set to -O2 -ftree-vectorize -march=native -fno-math-errno (previously undefined)
-#INFO Environment variable CPPFLAGS set to 
-#  -I/app/software/Boost/1.74.0-GCC-10.2.0/include 
-#  -I/app/software/SpectrA/1.0.0-GCC-10.2.0/include 
-#  -I/app/software/Eigen/3.3.8-GCCcore-10.2.0/include 
+moduleclass = 'bio'
