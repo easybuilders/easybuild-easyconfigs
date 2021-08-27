@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'faiss'
+version = '1.7.1'
+
+homepage = 'https://github.com/facebookresearch/faiss'
+description = """
+Faiss is a library for efficient similarity search and clustering of dense vectors. It
+contains algorithms that search in sets of vectors of any size, up to ones that possibly do
+not fit in RAM. It also contains supporting code for evaluation and parameter tuning.
+Faiss is written in C++ with complete wrappers for Python/numpy. Some of the most
+useful algorithms are implemented on the GPU.
+"""
+
+toolchain = {'name': 'gmklc', 'version': '2020a'}
+
+source_urls = ['https://github.com/facebookresearch/faiss/archive/']
+sources = ["v%(version)s.tar.gz"]
+
+configopts = "-DPython_EXECUTABLE=$EBROOTPYTHON/bin/python -DBUILD_SHARED_LIBS=ON "
+buildopts = " && cd %(builddir)s/easybuild_obj/faiss/python && python setup.py bdist_wheel "
+installopts = " && pip install %(builddir)s/easybuild_obj/faiss/python/dist/faiss-%(version)s-py3-none-any.whl --prefix=%(installdir)s "
+
+multi_deps = {'Python': ['3.7', '3.8', '3.9']}
+builddependencies = [
+	('SWIG', '3.0.12'),
+	('CMake', '3.18.4'),
+]
+dependencies = [
+	('SciPy-Stack', '2021a'),
+]
+multi_deps_load_default = False
+
+sanity_check_paths = {
+    'files': ['lib/libfaiss.so'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'include/faiss'],
+}
+
+sanity_check_commands = [
+    "python -c 'import faiss; index = faiss.IndexFlatL2(64)'",
+]
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+moduleclass = 'lib'

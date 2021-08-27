@@ -1,0 +1,81 @@
+easyblock = 'CMakeMake'
+
+name = 'ecCodes'
+version = '2.21.0'
+
+homepage = 'https://software.ecmwf.int/wiki/display/ECC/ecCodes+Home'
+description = """ecCodes is a package developed by ECMWF which provides an application programming interface and
+ a set of tools for decoding and encoding messages in the following formats: WMO FM-92 GRIB edition 1 and edition 2,
+ WMO FM-94 BUFR edition 3 and edition 4, WMO GTS abbreviated header (only decoding)."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['https://confluence.ecmwf.int/download/attachments/45757960/']
+sources = ['eccodes-%(version)s-Source.tar.gz']
+checksums = ['da0a0bf184bb436052e3eae582defafecdb7c08cdaab7216780476e49b509755']
+
+builddependencies = [
+	('CMake', '3.16.4'),
+	('binutils', '2.34'),
+	('SciPy-Stack', '2021a')
+]
+dependencies = [
+    ('netCDF.Serial', '4.7.4'),
+    ('JasPer', '2.0.16'),
+]
+
+multi_deps = {'Python': ['3.7', '3.8', '3.9']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('eccodes', '1.3.2', {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'eccodes',
+        'patches': ['eccodes-python-1.3.2-gribapi-bindings.patch'],
+        'preconfigopts': '#',
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': [
+            'f282adfdc1bc658356163c9cef1857d4b2bae99399660d3d4fcb145a52d3b2a6',  # eccodes-1.3.2.tar.gz
+            # eccodes-python-1.3.2-gribapi-bindings.patch
+            '67f8e339bfa1400cc750f4ede7acc1d74277ad1bcf2c22fa7b72114195cbee45',
+        ],
+    }),
+    ('cfgrib', '0.9.9.0', {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'cfgrib',
+        'preconfigopts': '#',
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['6ff0227df9c5ee34aa7d6ab1f7af3fbe6838523a8a9891c74040b419b03ad289'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+separate_build_dir = True
+
+configopts  =  "-DENABLE_NETCDF=ON"
+configopts += " -DENABLE_JPG=ON"
+configopts += " -DENABLE_PYTHON=OFF"
+configopts += " -DENABLE_ECCODES_OMP_THREADS=ON"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bufr_copy', 'bufr_dump', 'bufr_filter', 'bufr_ls',
+                                     'codes_count', 'codes_info', 'codes_split_file',
+                                     'grib_copy', 'grib_dump', 'grib_filter', 'grib_ls']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+	"python -c 'import eccodes'",
+	"python -c 'import cfgrib'"
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': [''],}
+
+moduleclass = 'tools'

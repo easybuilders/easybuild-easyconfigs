@@ -39,8 +39,14 @@ local_base_prebuild = "find build/ -name \"Makefile*\" -exec sed -i 's/-O3/$(EBF
 local_base_prebuild += 'EBFLAGS="$CFLAGS" '
 local_base_preinstall = 'EBFLAGS="$CFLAGS" '
 
+# Avoid static linking in VDB (causes -fPIC issues)
+local_vdb_prebuild = "find build/ -name \"ld*.sh\" -exec sed -i 's/-Bstatic/-Bdynamic/g' {} + && "
+local_vdb_prebuild += local_base_prebuild
+
 # Standalone compilation of utf8proc to ensure that its shared objects are available
 local_sra_prebuild = "make -C tools/driver-tool/utf8proc && "
+# Link dynamically all dependencies of pacbio
+local_sra_prebuild += "sed -i 's/	-s/	-l/' tools/pacbio-load/Makefile && "
 # Linking libxml2 dynamically
 local_sra_prebuild += "find build/ -name \"ld*.sh\" -exec sed -i 's/-lxml2/-Wl,-Bdynamic -lxml2/g' {} + && "
 local_sra_prebuild += local_base_prebuild
@@ -64,7 +70,7 @@ components = [
             'e8f22dbd0c2e564e296bafdf76ba0e0e2da0d13e22be5aaf322135e5f26eb133',
         ],
         'configopts': local_vdb_config,
-        'prebuildopts': local_base_prebuild,
+        'prebuildopts': local_vdb_prebuild,
     }),
     ('SRA-Tools', version, {
         'patches': ['SRA-Toolkit-%(version)s_fix-LD_LIBRARY_PATH.patch'],
