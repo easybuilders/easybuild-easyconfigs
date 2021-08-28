@@ -1,11 +1,12 @@
 name = 'PyTorch'
 version = '1.8.1'
+versionsuffix = '-Python-%(pyver)s'
 
 homepage = 'https://pytorch.org/'
 description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
 PyTorch is a deep learning framework that puts Python first."""
 
-toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
 
 sources = [{
     'filename': '%(name)s-%(version)s.tar.gz',
@@ -38,6 +39,7 @@ patches = [
     'PyTorch-1.8.1_skip_dist_autograd_sync_streams.patch',
     'PyTorch-1.8.1_skip-nccl-error-tests.patch',
     'PyTorch-1.8.1_fix_test_collect_shards.patch',
+    'PyTorch-1.8.1_skip_test_kineto_cu101.patch',
 ]
 checksums = [
     None,  # can't add proper SHA256 checksum, because source tarball is created locally after recursive 'git clone'
@@ -74,36 +76,37 @@ checksums = [
     '7940e571f41c350d3b634e98b1658a7001c96fdb1b1920835b8f5484ce389d09',
     '33704164ad2da7426a6c21482389826345b92690d37cbf938896eef421a62575',  # PyTorch-1.8.1_skip-nccl-error-tests.patch
     '8d0f60bb4025ca90bbf21d945867a934738560323d232e3b69ae478c364156d3',  # PyTorch-1.8.1_fix_test_collect_shards.patch
+    'cc493437740479e23f6e48f886c979245d038705cba4b781d910d69a00229390',  # PyTorch-1.8.1_skip_test_kineto_cu101.patch
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
 
 builddependencies = [
-    ('CMake', '3.18.4'),
-    ('hypothesis', '5.41.5'),
+    ('CMake', '3.15.3'),
+    ('hypothesis', '4.44.2', versionsuffix),
 ]
 
 dependencies = [
-    ('Ninja', '1.10.1'),  # Required for JIT compilation of C++ extensions
-    ('Python', '3.8.6'),
-    ('protobuf', '3.14.0'),
-    ('protobuf-python', '3.14.0'),
-    ('pybind11', '2.6.0'),
-    ('SciPy-bundle', '2020.11'),
-    ('typing-extensions', '3.7.4.3'),
-    ('PyYAML', '5.3.1'),
-    ('MPFR', '4.1.0'),
-    ('GMP', '6.2.0'),
-    ('numactl', '2.0.13'),
-    ('FFmpeg', '4.3.1'),
-    ('Pillow', '8.0.1'),
-    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', True),
+    ('Ninja', '1.9.0'),  # Required for JIT compilation of C++ extensions
+    ('Python', '3.7.4'),
+    ('protobuf', '3.10.0'),
+    ('protobuf-python', '3.10.0', versionsuffix),
+    ('pybind11', '2.4.3', versionsuffix),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('typing-extensions', '3.7.4.3', versionsuffix),
+    ('PyYAML', '5.1.2'),
+    ('MPFR', '4.0.2'),
+    ('GMP', '6.1.2'),
+    ('numactl', '2.0.12'),
+    ('FFmpeg', '4.2.1'),
+    ('Pillow', '6.2.1'),
+    ('cuDNN', '7.6.4.38'),
     ('magma', '2.5.4'),
-    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
+    ('NCCL', '2.4.8'),
 ]
 
 # default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
-cuda_compute_capabilities = ['3.5', '3.7', '5.2', '6.0', '6.1', '7.0', '7.2', '7.5', '8.0']
+cuda_compute_capabilities = ['3.5', '3.7', '5.2', '6.0', '6.1', '7.0', '7.2', '7.5']
 
 custom_opts = ["USE_CUPTI_SO=1"]
 
