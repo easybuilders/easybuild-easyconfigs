@@ -33,6 +33,11 @@ dependencies = [
 local_openmm_preinstallopts = "export OPENMM_INCLUDE_PATH=%(installdir)s/include && "
 local_openmm_preinstallopts += " export OPENMM_LIB_PATH=%(installdir)s/lib && "
 
+# required to install OpenMM Python API;
+# avoid that setup.py partially uninstalls existing OpenMM Python bindings...
+local_openmm_installopts = " && cd python && sed -i 's/uninstall()/pass/g' setup.py && "
+local_openmm_installopts += "python setup.py build && python setup.py install --prefix=%(installdir)s"
+
 # commit to use for downloading stereo_chemical_props.txt and copy to alphafold/common,
 # see docker/Dockerfile in AlphaFold repository
 local_scp_commit = '7102c6'
@@ -50,8 +55,7 @@ components = [
         ],
         'start_dir': 'openmm-%(version)s',
         'preinstallopts': local_openmm_preinstallopts,
-        # required to install OpenMM Python API
-        'installopts': " && cd python && python setup.py build && python setup.py install --prefix=%(installdir)s",
+        'installopts': local_openmm_installopts,
     }),
     (name, version, {
         'easyblock': 'PythonPackage',
@@ -142,12 +146,16 @@ postinstallcmds = [
     "cd %(installdir)s/bin && ln -s run_alphafold.py alphafold",
     "cp -a %(builddir)s/alphafold-%(version)s/scripts %(installdir)s/",
     "cp -a %%(builddir)s/stereo_chemical_props-%s.txt %%(installdir)s/stereo_chemical_props.txt" % local_scp_commit,
+    # run tests for run_alphafold.py script;
+    # shouldn't do this in sanity check to avoid breaking use of --module-only
+    "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+    "python %(builddir)s/alphafold-%(version)s/run_alphafold_test.py",
 ]
 
 sanity_check_paths = {
     'files': ['bin/alphafold', 'bin/run_alphafold.py', 'lib/libOpenMM.%s' % SHLIB_EXT,
               'lib/python%(pyshortver)s/site-packages/simtk/openmm/openmm.py'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts', 'stereo_chemical_props.txt'],
 }
 
 sanity_check_commands = [
@@ -156,11 +164,11 @@ sanity_check_commands = [
     "alphafold --help 2>&1 | grep 'Full AlphaFold protein structure prediction script'",
 ]
 
+sanity_pip_check = True
+
 modextrapaths = {
     'OPENMM_INCLUDE_PATH': 'include',
     'OPENMM_LIB_PATH': 'lib',
 }
-
-sanity_pip_check = True
 
 moduleclass = 'bio'
