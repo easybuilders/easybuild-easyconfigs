@@ -1,0 +1,93 @@
+easyblock = 'CMakeMake'
+
+name = 'QGIS'
+version = '3.16.10'
+
+homepage = 'http://www.qgis.org/'
+description = "QGIS is a user friendly Open Source Geographic Information System (GIS)"
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'gnu++11'}
+
+source_urls = ['http://qgis.org/downloads/']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['d67c12217e0261d0335238b96eaf235427a34635aa2651b83ead7c006a3c03c2']
+
+dependencies = [
+    ('Qt5', '5.12.8'),
+    ('Qt5Webkit', '5.212.0-alpha4'),
+    ('PROJ', '7.2.1'),
+    ('GEOS', '3.9.1'),
+    ('SQLite', '3.27.2'),
+    ('libspatialite', '5.0.1'),
+    ('libspatialindex', '1.8.5'),
+    ('GDAL', '3.2.3'),
+    ('Qwt', '6.1.4'),
+    ('QwtPolar', '1.1.1'),
+    ('expat', '2.2.9'),
+    ('QCA', '2.3.0'),
+    ('QScintilla', '2.11.2'),
+    ('GSL', '2.6'),
+    ('QJson', '0.9.0'),
+    ('libzip', '1.5.2'),
+    ('QtKeychain', '0.9.1'),
+    ('ICU', '64.2'),
+    ('protobuf', '3.12.3'),
+]
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.5'),
+    ('PostgreSQL', '12.4'),
+]
+multi_deps = {'Python': ['3.7', '3.8', '3.9'] }
+separate_build_dir = True
+
+# specify locations that CMake can't figure out correctly
+configopts = "-DCMAKE_PREFIX_PATH=$EBROOTQT -DQJSON_DIR=$EBROOTQJSON/lib/cmake/qjson "
+configopts += "-DQSCINTILLA_LIBRARY=$EBROOTQSCINTILLA/lib/libqscintilla2_qt5.%s " % SHLIB_EXT
+configopts += "-DWITH_QTWEBKIT=OFF "
+#configopts += "-DQt5WebKit_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKit "
+#configopts += "-DQt5WebKitWidgets_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKitWidgets "
+configopts += "-DPYQT5_SIP_DIR=$EBROOTQT5/share/python%(pyshortver)s/sip/PyQt5 -DQSCI_SIP_DIR=$EBROOTQSCINTILLA/share/sip/PyQt5"
+
+sanity_check_paths = {
+    'files': ['bin/qgis', 'bin/qgis_bench', 'lib/libqgis_analysis.%s' % SHLIB_EXT,
+              'lib/libqgis_app.%s' % SHLIB_EXT, 'lib/libqgis_core.%s' % SHLIB_EXT, 'lib/libqgis_gui.%s' % SHLIB_EXT,
+              'lib/libqgis_native.%s' % SHLIB_EXT, 'lib/libqgispython.%s' % SHLIB_EXT],
+    'dirs': ['include/qgis', 'man', 'share/qgis'],
+}
+
+postinstallcmds = [
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --add_origin --add_path %(installdir)s/lib --path %(installdir)s/lib/qgis/plugins ",
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --add_origin --add_path %(installdir)s/lib --path %(installdir)s/share/qgis/python ",
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('psycopg2', '2.9.1', {
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['de5303a6f1d0a7a34b9d40e4d3bef684ccc44a49bbe3eb85e3c0bffb4a131b7c'],
+    }),
+    ('PyYAML', '5.4.1', {
+        'modulename': 'yaml',
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['607774cbba28732bfa802b54baa7484215f530991055bb562efbed5b2f20a45e'],
+    }),
+    ('OWSLib', '0.24.1', {
+        'modulename': 'owslib',
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['4973c2ba65ec850a3fcc1fb94cefe5ed2fed83aaf2a5e2135c78810ad2a8f0e1'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+    'PYTHONPATH': ['share/qgis/python', 'share/qgis/python/plugins'],
+}
+
+modluafooter = """
+depends_on("scipy-stack/2021a")
+"""
+
+moduleclass = 'geo'
