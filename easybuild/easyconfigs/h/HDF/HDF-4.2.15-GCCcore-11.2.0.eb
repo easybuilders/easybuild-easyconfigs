@@ -1,0 +1,62 @@
+easyblock = 'ConfigureMake'
+
+name = 'HDF'
+version = '4.2.15'
+
+homepage = 'https://www.hdfgroup.org/products/hdf4/'
+
+description = """
+ HDF (also known as HDF4) is a library and multi-object file format for
+ storing and managing data between machines.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.hdfgroup.org/ftp/HDF/releases/HDF%(version)s/src/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['HDF-4.2.15_fix-aarch64.patch']
+checksums = [
+    'dbeeef525af7c2d01539906c28953f0fdab7dba603d1bc1ec4a5af60d002c459',  # hdf-4.2.15.tar.gz
+    '1b4341e309cccefc6ea4310c8f8b08cc3dfe1fa9609b7fa7aee80e4dac598473',  # HDF-4.2.15_fix-aarch64.patch
+]
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('Bison', '3.7.6'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('libjpeg-turbo', '2.0.6'),
+    ('Szip', '2.1.1'),
+    ('zlib', '1.2.11'),
+    ('libtirpc', '1.3.2'),
+]
+
+preconfigopts = "LIBS='-ltirpc' "
+local_common_configopts = '--with-szlib=$EBROOTSZIP CFLAGS="$CFLAGS -I$EBROOTLIBTIRPC/include/tirpc" '
+local_common_configopts += '--includedir=%(installdir)s/include/%(namelower)s '
+configopts = [
+    # -fallow-argument-mismatch is required to compile with GCC 10.x
+    local_common_configopts + 'FFLAGS="$FFLAGS -fallow-argument-mismatch"',
+    # Cannot build shared libraries and Fortran...
+    # https://trac.osgeo.org/gdal/wiki/HDF#IncompatibilitywithNetCDFLibraries
+    # netcdf must be disabled to allow HDF to be used by GDAL
+    local_common_configopts + "--enable-shared --disable-fortran --disable-netcdf",
+]
+
+modextrapaths = {'CPATH': 'include/hdf'}
+
+sanity_check_paths = {
+    'files': ['bin/h4cc', 'bin/ncdump', 'lib/libdf.a', 'lib/libhdf4.settings', 'lib/libmfhdf.a',
+              'lib/libmfhdf.%s' % SHLIB_EXT],
+    'dirs': ['include/hdf'],
+}
+
+sanity_check_commands = [
+    "h4cc --help",
+    "ncdump -V",
+]
+
+moduleclass = 'data'
