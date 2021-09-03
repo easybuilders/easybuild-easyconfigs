@@ -1,0 +1,74 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'CmdCp'
+
+name = 'MALT'
+version = '0.5.2'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://software-ab.informatik.uni-tuebingen.de/download/malt/welcome.html'
+description = """MALT, an acronym for MEGAN alignment tool, is a sequence
+ alignment and analysis tool designed for processing high-throughput sequencing
+ data, especially in the context of metagenomics. It is an extension of MEGAN6,
+ the MEGenome Analyzer and is designed to provide the input for MEGAN6, but can
+ also be used independently of MEGAN6.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+local_jloda_ver = '2.1'
+local_megan_ver = '6.21.1'
+
+github_account = 'husonlab'
+source_urls = [
+    'https://github.com/%(github_account)s/jloda/archive/tags',
+    'https://github.com/%(github_account)s/megan-ce/archive/tags',
+    'https://github.com/%(github_account)s/malt/archive/tags',
+]
+sources = [
+    {'filename': 'v%s.tar.gz' % local_jloda_ver, 'extract_cmd': 'mkdir jloda && tar xfvz %s -C jloda --strip-components=1'},
+    {'filename': 'V%s.tar.gz' % local_megan_ver, 'extract_cmd': 'mkdir megan-ce && tar xfvz %s -C megan-ce --strip-components=1'},
+    {'filename': 'v%(version)s.tar.gz', 'extract_cmd': 'mkdir malt && tar xfvz %s -C malt --strip-components=1'},
+]
+patches = [
+    ('jloda-2.1_use-javafx_home-env-var.patch', 'jloda'),
+    ('megan-ce-6.21.1_fix-ant-build.patch', '../megan-ce'),
+    ('MALT-0.5.2_use-javafx_home-env-var.patch', '../malt'),
+    ('MALT-0.5.2_malt-wrapper-scripts.patch', 1),
+]
+checksums = [
+    '4bc91720ceaae5169ae7743aedaa8eba17b1252f7bf02afd9f0a4e1ae1e0555d',  # v2.1.tar.gz
+    '8eb2671f94fe3d03a186fdebb3ddcd511f603b8689080398f2fb4505c639768d',  # V6.21.1.tar.gz
+    '75b25dc6027f82eef5b30c2fa3d77742e9142c14caf1ae8989c09e82dad44639',  # v0.5.2.tar.gz
+    '490c7baa7edd667606e1b0ddc2c766c40e4d189aa03e40f330d18e37cc7e8f21',  # jloda-2.1_use-javafx_home-env-var.patch
+    'fabc0e679380b25de896d5aaaba172a94729ddd2b43089ebbe677476c32c0652',  # megan-ce-6.21.1_fix-ant-build.patch
+    'a11c6beba389f7c913b83dc423a83330e83a53c8b6f39fbf6524383e0dec747a',  # MALT-0.5.2_use-javafx_home-env-var.patch
+    '29a64c617c2ff4b8ebcd1da4274b28e50284313c7cc7c4b149dc4c0435bcd393',  # MALT-0.5.2_malt-wrapper-scripts.patch
+]
+
+builddependencies = [('ant', '1.10.11', versionsuffix, True)]
+
+dependencies = [
+    ('Java', '13', '', True),
+    ('JavaFX', '16+8', versionsuffix),
+    ('ControlsFX', '11.1.0', versionsuffix, True),
+]
+
+start_dir = '%(builddir)s/malt'
+
+cmds_map = [('.*', 'mkdir -p jars && ant -f antbuild/build.xml')]
+
+files_to_copy = ['antbuild/*.jar', 'malt-build', 'malt-run']
+
+postinstallcmds = ["chmod a+x %(installdir)s/malt-{build,run}"]
+
+sanity_check_paths = {
+    'files': ['malt-build', 'malt-run'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["malt-build -h", "malt-run -h"]
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'
