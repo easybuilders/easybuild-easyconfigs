@@ -1,0 +1,60 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'CmdCp'
+
+name = 'JavaFX'
+version = '16+8'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://openjfx.io'
+description = """JavaFX is an open source, next generation client application
+ platform for desktop, mobile and embedded systems built on Java. It is a
+ collaborative effort by many individuals and companies with the goal of
+ producing a modern, efficient, and fully featured toolkit for developing rich
+ client applications.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/openjdk/jfx/archive/tags']
+sources = ['%(version)s.tar.gz']
+checksums = ['0983febd8d1640c44cab9a9bd4b2887d3147a14858853bc407324305ec42381b']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('Gradle', '6.9.1', '', True),
+    ('ant', '1.10.11', versionsuffix, True),
+    ('pkg-config', '0.29.2'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+    ('CMake', '3.20.1'),
+    ('Ninja', '1.10.2'),
+]
+
+dependencies = [
+    ('Java', '13', '', True),
+    ('GTK2', '2.24.33'),
+    ('GTK3', '3.24.29'),
+    ('Pango', '1.48.5'),
+]
+
+local_build_cmd = 'gradle clean build'
+# Disable web project test (need WebKit and Media shared libraries)
+local_buildopts = "-x :web:test"
+
+cmds_map = [('.*', '%s %s' % (local_build_cmd, local_buildopts))]
+
+files_to_copy = [
+    (['build/sdk/*'], ''),
+]
+
+local_jars = ['javafx%s.jar' % x for x in ['.base', '.controls', '.fxml', '.graphics',
+                                           '.media', '.swing', '-swt', '.web']]
+sanity_check_paths = {
+    'files': ['lib/%s' % x for x in local_jars],
+    'dirs': [],
+}
+
+modextravars = {'JAVAFX_HOME': '%(installdir)s'}
+
+moduleclass = 'lib'

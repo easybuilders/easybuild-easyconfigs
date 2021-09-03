@@ -1,0 +1,49 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'CmdCp'
+
+name = 'ControlsFX'
+version = '11.1.0'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://github.com/controlsfx/controlsfx'
+description = """ControlsFX is an open source project for JavaFX that aims to
+ provide really high quality UI controls and other tools to complement the core
+ JavaFX distribution.
+"""
+
+toolchain = SYSTEM
+
+github_account = '%(namelower)s'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['0500b0fe1adfd8b879b7fe1602a95a1417b4281f1037b192f04b762c888ccc87']
+
+builddependencies = [('Gradle', '6.9.1')]
+
+dependencies = [('Java', '13')]
+
+local_components = {
+    'controlsfx': version,
+    'controlsfx-samples': version,
+    'fxsampler': '1.0.12-SNAPSHOT',
+}
+
+local_build_cmd = 'gradle clean build'
+# Disable documentation
+local_buildopts = " ".join(['-x :%s:javadoc' % x for x in local_components])
+
+cmds_map = [('.*', '%s %s' % (local_build_cmd, local_buildopts))]
+
+files_to_copy = [
+    (['%s/build/libs/%s-%s.jar' % (x, x, y) for x, y in local_components.items()], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/%s-%s.jar' % x for x in local_components.items()],
+    'dirs': [],
+}
+
+modextravars = {'CONTROLSFX_HOME': '%(installdir)s'}
+
+moduleclass = 'lib'
