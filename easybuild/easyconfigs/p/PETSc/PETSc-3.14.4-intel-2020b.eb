@@ -1,0 +1,47 @@
+name = 'PETSc'
+version = '3.14.4'
+
+homepage = 'https://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+source_urls = [
+    'https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/',
+    'ftp://ftp.mcs.anl.gov/pub/petsc/release-snapshots/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'PETSc_ranlib-fix.patch',
+]
+checksums = [
+    '2fb431434b91e054cc3a176f7cb008951088243b5dcb3efc8eec8ce589a2658e',  # petsc-3.14.4.tar.gz
+    '64cf9d5008d5e92117e65bdec5316d991b6a6b8c8ecf7ea46eb790a498266297',  # PETSc_ranlib-fix.patch
+]
+
+builddependencies = [('CMake', '3.18.4')]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('Boost', '1.74.0'),
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '6.1.0'),
+    ('MUMPS', '5.3.5', '-metis'),
+    ('SuiteSparse', '5.8.1', '-METIS-5.1.0'),
+    ('Hypre', '2.20.0'),
+]
+
+# enabling --with-mpi4py seems to be totally broken, leads to make errors like:
+# No rule to make target 'mpi4py-build'
+configopts = '--LIBS="$LIBS -lrt" --with-mpi4py=0 '
+
+shared_libs = 1
+
+# only required when building PETSc in a SLURM job environment
+# configopts += '--with-batch=1 --known-mpi-shared-libraries=1 --known-64-bit-blas-indices=0 '
+# prebuildopts = "srun ./conftest-arch-linux2-c-opt && ./reconfigure-arch-linux2-c-opt.py && "
+
+moduleclass = 'numlib'

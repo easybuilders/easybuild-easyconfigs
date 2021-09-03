@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'preCICE'
+version = '2.1.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.precice.org/'
+description = """preCICE (Precise Code Interaction Coupling Environment)
+is a coupling library for partitioned multi-physics simulations,
+including, but not restricted to fluid-structure interaction and
+conjugate heat transfer simulations. Partitioned means that preCICE
+couples existing programs (solvers) capable of simulating a subpart of
+the complete physics involved in a simulation. This allows for the high
+flexibility that is needed to keep a decent time-to-solution for complex
+multi-physics scenarios."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+# Needed to make the PETSc testing work.
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/precice/precice/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['729b7c24a7a61b3953bb70d96a954ad3a85729a29a35a288b59ba25661117064']
+
+builddependencies = [('CMake', '3.16.4')]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('Boost', '1.72.0'),
+    ('Eigen', '3.3.7'),
+    ('libxml2', '2.9.10'),
+    ('PETSc', '3.12.4', versionsuffix),
+]
+
+# Make sure PythonActions support is enabled
+configopts = "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s "
+configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)s.%s " % SHLIB_EXT
+configopts += '-DPRECICE_PythonActions=ON '
+
+separate_build_dir = True
+build_shared_libs = True
+
+sanity_check_paths = {
+    'files': ['bin/binprecice'] +
+             ['include/precice/%s' % x for x in ['SolverInterfaceC.h', 'SolverInterfaceFASTEST.hpp',
+                                                 'SolverInterfaceFortran.hpp', 'SolverInterface.hpp']] +
+             ['lib/libprecice.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

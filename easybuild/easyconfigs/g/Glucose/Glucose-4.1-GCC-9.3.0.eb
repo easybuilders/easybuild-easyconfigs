@@ -1,0 +1,44 @@
+easyblock = 'Bundle'
+
+name = 'Glucose'
+version = '4.1'
+
+homepage = 'https://www.labri.fr/perso/lsimon/glucose/'
+description = """
+Glucose is based on a new scoring scheme (well, not so new now, it was
+introduced in 2009) for the clause learning mechanism of so called Modern SAT
+solvers (it is based on our IJCAI'09 paper). It is designed to be parallel, since v4.0."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+# All components are installed from the same tarball
+local_sources = '%s-syrup-%s' % (name.lower(), version)
+
+default_easyblock = 'MakeCp'
+default_component_specs = {
+    'source_urls': ['https://www.labri.fr/perso/lsimon/downloads/softwares'],
+    'sources': ['%s.tgz' % local_sources],
+    'checksums': ['51aa1cf1bed2b14f1543b099e85a56dd1a92be37e6e3eb0c4a1fd883d5cc5029'],
+}
+components = [
+    ('Glucose', version, {
+        'start_dir': '%s/simp' % local_sources,
+        'files_to_copy': [(['%(namelower)s'], 'bin')],
+    }),
+    ('Glucose-Syrup', version, {
+        'start_dir': '%s/parallel' % local_sources,
+        'files_to_copy': [(['%(namelower)s'], 'bin')],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/glucose', 'bin/glucose-syrup'],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
