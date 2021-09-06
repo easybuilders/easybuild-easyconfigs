@@ -1,0 +1,116 @@
+easyblock = 'CMakeMake'
+
+name = 'TRIQS'
+version = '3.0.0'
+
+homepage = 'https://triqs.github.io/triqs'
+description = """
+ TRIQS (Toolbox for Research on Interacting Quantum Systems) is a
+ scientific project providing a set of C++ and Python libraries to
+ develop new tools for the study of interacting quantum systems.
+"""
+
+docurls = ['https://triqs.github.io/triqs/%(version_major_minor)s.x/']
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/TRIQS/triqs/releases/download/%(version)s/']
+sources = [
+    'triqs-%(version)s.tar.gz',
+    {
+        'filename': 'ccp2py-2.0.0.tar.gz',
+        'download_filename': '2.0.0.tar.gz',
+        'source_urls': ['https://github.com/TRIQS/cpp2py/archive/refs/tags/'],
+        'extract_cmd': "tar -C triqs-%(version)s/deps -zxf %s && mv triqs-%(version)s/deps/cpp2py-2.0.0 triqs-%(version)s/deps/Cpp2Py",
+    },
+    {
+        'filename': 'release-1.10.0.tar.gz',
+        'source_urls': ['https://github.com/google/googletest/archive/refs/tags/'],
+        'extract_cmd': "tar -C triqs-%(version)s/deps -zxf %s && mv triqs-%(version)s/deps/googletest-release-1.10.0 triqs-%(version)s/deps/GTest",
+    },
+    {
+        'filename': 'itertools-1.0.0.tar.gz',
+        'download_filename': '1.0.0.tar.gz',
+        'source_urls': ['https://github.com/TRIQS/itertools/archive/refs/tags/'],
+        'extract_cmd': "tar -C triqs-%(version)s/deps -zxf %s && mv triqs-%(version)s/deps/itertools-1.0.0 triqs-%(version)s/deps/itertools",
+    },
+    {
+        'filename': 'mpi-1.0.0.tar.gz',
+        'download_filename': '1.0.0.tar.gz',
+        'source_urls': ['https://github.com/TRIQS/mpi/archive/refs/tags/'],
+        'extract_cmd': "tar -C triqs-%(version)s/deps -zxf %s && mv triqs-%(version)s/deps/mpi-1.0.0 triqs-%(version)s/deps/mpi",
+    },
+    {
+        'filename': 'h5-1.0.0.tar.gz',
+        'download_filename': '1.0.0.tar.gz',
+        'source_urls': ['https://github.com/TRIQS/h5/archive/refs/tags/'],
+        'extract_cmd': "tar -C triqs-%(version)s/deps -zxf %s && mv triqs-%(version)s/deps/h5-1.0.0 triqs-%(version)s/deps/h5",
+    }
+]
+
+# Backport of https://github.com/TRIQS/triqs/commit/57b33abd050ef1b5ecc85aff42616398d2e8792e:
+# > Increase tolerance in test_delta_infty
+# > This fixes a test failure that occurs when compiling with GCC 10.
+# (In 3.0.x branch but not yet in a release)
+patches = ['test-3.0.0-tail_issues-gcc10.patch']
+
+checksums = [
+    '21239fb42ba73f84a77b63abce84c0d2b9162277233d5839aaf39e22e1be8128', # triqs-3.0.0-tar.gz
+    'df67dc69ef3a57c615f39ea14b63bb00309adfaf6130e64cf84b2df1553696f6', # ccp2py-2.0.0.tar.gz
+    '9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb', # release-1.10.0.tar.gz
+    'd3a1acd63be10b78a19a0e3047b9ea96cef64f8a8222882167a9617e06e5d498', # itertools-1.0.0.tar.gz
+    '64772763904984d62c6365ee14d01ff6360a3fc7943a864f2470673ea8aaf673', # mpi-1.0.0.tar.gz
+    'a0ed14b286b5b2119fb391b9126d236a728a4244bd4245c2b3564b88a2e50ed3', # h5-1.0.0.tar.gz
+    'e4368fbbe595776461ad83764aeffbb005082143913e54ab60f6fc2d94fef5ff'  # test-3.0.0-tail_issues-gcc10.patch
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('Boost', '1.74.0'),
+    ('Clang', '11.0.1'),
+    ('Clang-Python-bindings', '11.0.1'),
+    ('GMP', '6.2.0'),
+    ('HDF5', '1.10.7'),
+    ('Mako', '1.1.3')
+]
+
+builddependencies = [
+    ('CMake', '3.18.4')
+]
+
+separate_build_dir = True
+
+# Remove installation directory before building. This fixes problems with
+# failing builds in the presence of preexisting installation.
+preconfigopts = "rm -rf %(installdir)s && "
+
+configopts = "-DBuild_Deps=Always"
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libtriqs.%s' % SHLIB_EXT],
+    'dirs': ['include/triqs', 'include/itertools', 'include/mpi', 'include/cpp2py',
+             'lib/python%(pyshortver)s/site-packages', 'share'],
+}
+
+sanity_check_commands = [
+    "triqs++ --help",
+    "c++2py --help",
+    "python -c 'import triqs'"
+]
+
+modextrapaths = {
+    'CPLUS_INCLUDE_PATH': 'include',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'CMAKE_PREFIX_PATH': ['lib/cmake/triqs', 'lib/cmake/cpp2py']
+}
+modextravars = {
+    'TRIQS_ROOT': '%(installdir)s',
+    'TRIQS_VERSION': '%(version)s'
+}
+
+moduleclass = 'phys'

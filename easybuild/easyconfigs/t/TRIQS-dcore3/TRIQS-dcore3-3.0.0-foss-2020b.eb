@@ -1,0 +1,64 @@
+easyblock = 'PythonPackage'
+
+name = 'TRIQS-dcore3'
+version = '3.0.0'
+
+homepage = 'https://issp-center-dev.github.io/DCore/master/about.html'
+description = """
+DCore is aimed at model calculations and ab-initio calculations by the dynamical mean-field theory (DMFT).
+This package consists of programs with text-based and hdf5-based interface.
+These programs enable users to perform DMFT calculations and analyze results without writing computer code.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+sources = [{
+    'source_urls': ['https://github.com/issp-center-dev/DCore/archive/refs/tags'],
+    'download_filename': 'v%(version)s.tar.gz',
+    'filename': 'DCore-%(version)s.tar.gz',
+}]
+checksums = ['60f2694c52191ac5f99e5d7412b0b77582b255dcfe5a69b3f3f99065f6908ab4']
+
+options = {
+    'modulename': 'dcore',  # Used for sanity check
+}
+
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+builddependencies = [('CMake', '3.18.4')]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'), # numpy and scipy
+    ('matplotlib', '3.4.2'),
+    ('h5py', '3.1.0'),
+    ('TRIQS-dft_tools', '3.0.0'),
+    ('TRIQS-cthyb', '3.0.0'),
+    ('TRIQS-hubbardI', '3.0.0')
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/dcore_pre',
+        'bin/dcore',
+        'bin/dcore_post'
+    ],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/dcore'],
+}
+
+
+sanity_check_commands = [
+    # Tests require the package to be installed, so doing it pre-
+    # install via runtest is not working.  They also need running
+    # before cleanup, so tests (testcases) is also not appropriate.
+    "pytest %(builddir)s/DCore-%(version)s/tests/non-mpi/*/*.py",
+    "python -c 'from dcore.dcore_check import dcore_check'",
+    "dcore_pre --help",
+    "dcore --help",
+    "dcore_post --help"
+]
+
+moduleclass = 'phys'
