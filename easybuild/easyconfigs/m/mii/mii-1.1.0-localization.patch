@@ -1,23 +1,16 @@
-commit b1deb322d50321c9c676356ca656631522a7d98e
-Author: Maxime Boissonneault <maxime.boissonneault@calculquebec.ca>
-Date:   Fri Aug 27 19:34:38 2021 +0000
-
-    use gettext to get the command not found error localized
-
-diff --git a/init/common b/init/common
-index 6a0618f..59b509d 100755
---- a/init/common
-+++ b/init/common
-@@ -3,7 +3,7 @@
- # return if it is interactive
- if [[ ! $- == *i* ]]; then
-     # show a normal command not found prompt
+diff -ru mii-1.1.0.orig/init/common mii-1.1.0/init/common
+--- mii-1.1.0.orig/init/common	2021-09-08 13:53:56.068454387 +0000
++++ mii-1.1.0/init/common	2021-09-08 13:55:55.360245682 +0000
+@@ -2,7 +2,7 @@
+ 
+ # return if not interactive or sourced
+ if [[ $- != *i* ]] || [[ "$SOURCED" = "1" ]]; then
 -    exec echo "$1: command not found!" 1>&2
 +    exec echo $0: $(printf "$(gettext bash '%s: command not found')" $1) 1>&2
  fi
  
  # grab status, don't do anything if not enabled
-@@ -11,7 +11,7 @@ state=$($MII status | grep "status" | cut -d' ' -f2)
+@@ -10,7 +10,7 @@
  
  if [ "$state" = "disabled" ]; then
      # show a normal command not found prompt
@@ -26,3 +19,10 @@ index 6a0618f..59b509d 100755
  fi
  
  # run mii select on the command, see if it returns OK
+@@ -22,5 +22,5 @@
+     module load ${mods[@]}
+     $@
+ elif [ $res = 2 ]; then
+-    echo "$1: command not found!" 1>&2
++    exec echo $0: $(printf "$(gettext bash '%s: command not found')" $1) 1>&2
+ fi
