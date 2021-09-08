@@ -1,0 +1,45 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = '5.52-86.0'
+
+homepage = 'http://www.ebi.ac.uk/interpro/'
+
+description = """
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+print('Installing InterProScan %(version)s with data linked from data.rsnt')
+
+toolchain = SYSTEM
+source_urls = ['ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/%(version)s',
+]
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+checksums = ['50a03c47fb16c669c265e99ba05c4a8558b82047f713c9945f362d3d4be6069a']
+
+dependencies = [
+    ('Java','11.0.2',),
+    ('Python', '3.7',),
+    ('Perl', '5.30.2'),
+]
+
+modextrapaths = {'PATH': '.'}
+postinstallcmds = [
+"rm -rf %(installdir)s/data && "
+"ln -s /cvmfs/data.rsnt.computecanada.ca/content/easybuild/software/2020/Core/interproscan/%(version)s %(installdir)s/data",
+"sed -i 's/head -n 1/grep version/g' %(installdir)s/interproscan.sh",
+]
+
+
+sanity_check_paths = {
+    'files': ['%(namelower)s-%(version_major)s.jar', '%(namelower)s.sh', '%(namelower)s.properties'],
+    'dirs': ['bin', 'lib',],
+}
+
+modextravars = {'JAVA': '/cvmfs/soft.computecanada.ca/easybuild/software/2020/Core/java/11.0.2/bin/java'}
+
+#sanity_check_commands = ["interproscan.sh -h"]
+
+
+moduleclass = 'bio'
