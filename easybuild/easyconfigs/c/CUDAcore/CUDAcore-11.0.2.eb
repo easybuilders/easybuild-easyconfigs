@@ -24,4 +24,16 @@ checksums = [
 
 installopts = "--override"
 
+local_nvprof_wrapper = """
+#!/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash
+export LD_LIBRARY_PATH=%(installdir)s/lib64:$LD_LIBRARY_PATH
+exec nvprof.exe \${1+"\$@"}
+"""
+postinstallcmds = [
+	"mv %(installdir)s/bin/nvprof{,.exe}",
+	"""cat <<EOF >> %%(installdir)s/bin/nvprof
+%s
+EOF""" % local_nvprof_wrapper, 
+	"chmod +x %(installdir)s/bin/nvprof",
+]
 moduleclass = 'system'
