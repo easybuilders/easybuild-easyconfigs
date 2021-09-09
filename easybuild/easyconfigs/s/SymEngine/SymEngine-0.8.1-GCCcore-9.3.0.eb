@@ -1,0 +1,57 @@
+easyblock = 'CMakeMake'
+
+name = 'SymEngine'
+version = '0.8.1'
+
+homepage = 'https://github.com/symengine/symengine'
+description = "SymEngine is a standalone fast C++ symbolic manipulation library."
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/symengine/symengine/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['41eb6ae6901c09e53d7f61f0758f9201e81fc534bfeecd4b2bd4b4e6f6768693']
+
+builddependencies = [('CMake', '3.20.1')]
+
+dependencies = [('GMP', '6.2.0')]
+
+configopts = " ".join([
+    "-DBUILD_SHARED_LIBS=ON",
+    "-DWITH_GMP=ON",
+    "-DWITH_MPFR=ON",
+    "-DWITH_MPC=ON",
+])
+
+multi_deps = {'Python': ['3.7', '3.8', '3.9']}
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('symengine', '0.8.1', {
+        'sources': [{
+            'source_urls': ["https://github.com/symengine/symengine.py/archive/refs/tags"],
+            'filename': "symengine.py-0.8.1.tar.gz",
+            'download_filename': "v0.8.1.tar.gz"
+        }],
+        'checksums': ['02fe79e6d5e9b39a1d4e6fee05a2c1d1b10fd032157c7738ed97e32406ffb087'],
+        'use_pip': True,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': ['lib64/libsymengine.so'],
+    'dirs': ['include/symengine', 'lib/cmake/symengine', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import symengine'",
+    "python -c 'from symengine import var;var(\"x y z\");e = (x+y+z)**2;e.expand();'",
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'lib'
