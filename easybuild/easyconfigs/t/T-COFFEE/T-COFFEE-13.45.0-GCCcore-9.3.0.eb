@@ -1,0 +1,67 @@
+# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# Author:   Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# #
+# Modyfied and updated by HPCNow! (http://hpcnow.com)
+# Authors:     Pau Ruiz, Erica Bianco <erica.bianco@hpcnow.com>
+# License:     GPL-v3.0
+# #
+easyblock = 'Binary'
+
+name = 'T-COFFEE'
+version = '13.45.0'
+local_release = '4846264'
+
+homepage = 'http://www.tcoffee.org/Projects/tcoffee/'
+description = """ T-Coffee is a multiple sequence alignment package. You can use T-Coffee to 
+ align sequences or to combine the output of your favorite alignment methods (Clustal, Mafft, 
+ Probcons, Muscle...) into one unique alignment """
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['http://www.tcoffee.org/Packages/Stable/Latest']
+sources = ['T-COFFEE_installer_Version_13.45.0.4846264_linux_x64.bin']
+# T-COFFEE_installer_Version_13.45.0.4846264_linux_x64.bin
+checksums = ['0eb0e2b1283650ee8bf366185a350f504e82cbdb5542b3a7b85b685811b61ef5']
+
+dependencies = [
+    ('Perl', '5.30.2'),
+]
+
+install_cmd = './T-COFFEE_installer_Version_%(version)s.4846264_linux_x64.bin '
+install_cmd += '--mode unattended --prefix %(installdir)s '
+install_cmd += '--user_email dummy@email.com'
+
+postinstallcmds = [' && '.join([
+    'cd %(installdir)s/perl/bin',
+    'rm enc2xs json_pp lwp-dump lwp-request config_data encguess lwp-download lwp-mirror piconv',
+])]
+
+modextrapaths = {
+    'PATH': ['perl/bin', 'plugins/linux'],
+    'PERL5LIB': 'perl/lib/perl5/'
+}
+
+modextravars = {
+    'EMAIL_4_TCOFFEE': 'dummy@email.com',
+    'MAX_N_PID_4_TCOFFEE': '9999999',
+}
+
+modluafooter = """
+setenv("DIR_4_TCOFFEE", os.getenv('PWD'))
+setenv("CACHE_4_TCOFFEE", os.getenv('PWD') .. "/.t_coffee/cache/")
+setenv("TMP_4_TCOFFEE", os.getenv('PWD') .. "/.t_coffee/tmp/")
+setenv("LOCKDIR_4_TCOFFEE", os.getenv('PWD') .. "/.t_coffee/lck/")
+"""
+
+sanity_check_paths = {
+    'files': ['bin/t_coffee'],
+    'dirs': ['mcoffee', 'perl', 'plugins', 'src']
+}
+
+sanity_check_commands = [
+    't_coffee -version'
+]
+
+moduleclass = 'bio'
