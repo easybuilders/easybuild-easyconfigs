@@ -1293,6 +1293,10 @@ def template_easyconfig_test(self, spec):
     ec_dict = ec.parser.get_config_dict()
     orig_toolchain = ec_dict['toolchain']
     for key in ec_dict:
+        if os.path.basename(spec) == 'foss-2021a.eb':
+            # skip these tests on foss/2021a due to the flexiblas / openblas on P9 switch
+            continue
+
         # skip parameters for which value is equal to default value
         orig_val = ec_dict[key]
         if key in DEFAULT_CONFIG and orig_val == DEFAULT_CONFIG[key][0]:
