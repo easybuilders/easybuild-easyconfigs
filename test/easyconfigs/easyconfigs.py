@@ -120,6 +120,7 @@ def get_eb_files_from_diff(diff_filter):
     cmd = "git merge-base %s HEAD" % target_branch
     out, ec = run_cmd(cmd, simple=False, log_ok=False)
     if ec == 0:
+        merge_base = merge_base.splitlines()[-1]
         merge_base = out.strip()
         print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
     else:
