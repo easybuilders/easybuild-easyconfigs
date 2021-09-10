@@ -68,6 +68,15 @@ from easybuild.tools.utilities import nub
 single_tests_ok = True
 
 
+# Exclude these tool chains from tests
+EXCLUDE_TOOLCHAINS = ['{}-{}'.format(x, y) for y in ['2014', '2015', '2016', '2017', '2018', '2019', '2020a', '2020b']
+                      for x in ['foss', 'intel', 'fosscuda', 'intelcuda', 'iomkl', 'iimpi', 'gompi', 'gcccuda',
+                                'gompic', 'iimpic']]
+EXCLUDE_TOOLCHAINS.extend(['{}-{}'.format(x, y) for x in ['GCC', 'GCCcore']
+                           for y in ['4.', '5.', '6.', '7.', '8.', '9.']])
+EXCLUDE_TOOLCHAINS.extend(['ictce', 'giolf', 'golf', 'goolf', 'gimkl'])
+
+
 def is_pr():
     """Return true if run in a pull request CI"""
     # $TRAVIS_PULL_REQUEST should be a PR number, otherwise we're not running tests for a PR
@@ -111,7 +120,8 @@ def get_eb_files_from_diff(diff_filter):
     cmd = "git merge-base %s HEAD" % target_branch
     out, ec = run_cmd(cmd, simple=False, log_ok=False)
     if ec == 0:
-        merge_base = out.strip()
+        last_line = out.splitlines()[-1]
+        merge_base = last_line.strip()
         print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
     else:
         msg = "Failed to determine merge base (ec: %s, output: '%s'), "
@@ -1359,7 +1369,13 @@ def suite(loader=None):
             dirs.remove('__archive__')
 
         for spec in specs:
-            if spec.endswith('.eb') and spec != 'TEMPLATE.eb':
+            # bypass easyconfigs from lots of toolchains which we do not use in this repository
+            exlcude_easyconfig_due_to_toolchain = False
+            for toolchain in EXCLUDE_TOOLCHAINS:
+                if toolchain in spec:
+                    exlcude_easyconfig_due_to_toolchain = True
+                    break
+            if spec.endswith('.eb') and spec != 'TEMPLATE.eb' and not exlcude_easyconfig_due_to_toolchain:
                 cnt += 1
                 innertest = make_inner_test(os.path.join(subpath, spec))
                 innertest.__doc__ = "Test for easyconfig %s" % spec
