@@ -1,6 +1,6 @@
 name = 'ANSYS'
 version = '2019R3'
-versionsuffix = 'v195'
+versionsuffix = '195'
 versionprefix = '2018.3.222'
 
 homepage = 'http://www.ansys.com'
@@ -17,37 +17,40 @@ sources = ['ANSYS-%(version)s.tar']
 checksums = ['82e691a2d7d0dcd5b880ee3b9d1d20323519d7613bf8ca05311dc178674a8cf2']
 
 postinstallcmds = [
-	# fix missing execute permission for others on at least one folder
-	"for d in $(find %(installdir)s -type d -not -perm /o=x); do echo chmod o+x $d; chmod o+x $d; done",
-	# find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
-	"for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
-           sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-	# rename built-in libstdc++.so* to libstdc++.so*.bak because they are older than what we have in Nix, and cause problem with other binaries
-        "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
-	# call setrpaths.sh on binary containing directories
-        "for d in $(find %(installdir)s -name 'bin' -o -name 'lnamd64' -o -name 'linx64' -o -name 'Linux64' -o -name 'machines'); \
-	  do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
-	# run setrpaths.sh on all instances of lmutil for any_interpreter
-        "find %(installdir)s -name 'lmutil' -exec /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-	# revert changes made by setrpaths.sh to system interpreter for: ansyscl ansysli_client ansysli_util ansysls_client ie)
-	# patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/shared_files/licensing/linx64/filename
-        "find %(installdir)s -name 'ansyscl' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-        "find %(installdir)s -name 'ansysli_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-        "find %(installdir)s -name 'ansysli_util' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-        "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-	# enable additive extension on workbench ACT start page
-        "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
-          %(installdir)s/%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
-	# for ansys versions >= 17.2 manually patch setup-mwuser (the original filesize 4470 should become 4472 when patched)
-	# /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/v195/commonfiles/MainWin/linx64/mw/setup-mwuser
-        "cp -a %(installdir)s/%(versionsuffix)s/commonfiles/MainWin/linx64/mw/setup-mwuser %(installdir)s/%(versionsuffix)s/commonfiles/MainWin/linx64/mw/orig_setup-mwuser",
-        "patch -d%(installdir)s/%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/setup-mwuser.patch",
-	# for ansys versions >= 19.1 manually patch runwb2 (the original filesize 8917 should become 9173 when patched)
-	# /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/v195/Framework/bin/Linux64/runwb2
-        "cp -a %(installdir)s/%(versionsuffix)s/Framework/bin/Linux64/runwb2 %(installdir)s/%(versionsuffix)s/Framework/bin/Linux64/orig_runwb2",
-        "patch -d%(installdir)s/%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/runwb2.patch",
-        # libs for /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/v195/ansys/syslib/dyna/linx64/lsprepost.e
-        "cp -a /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/libs/lib* %(installdir)s/%(versionsuffix)s/ansys/syslib/dyna/linx64"
+  # Set same perms on all directories
+  "find %(installdir)s -type d -exec chmod 755 {} \;",
+  # Set same perms on all shared libraries to avoid warning in log file
+  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
+  # Rename built-in libstdc++.so* to libstdc++.so*.bak as they are older than whats in nix, and cause problem with other binaries
+  "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+  # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+  # Run setrpaths.sh under CEI so bins use nix interpreter and bins/libs find qt libs for ensight
+  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/v%(versionsuffix)s/CEI \
+    --add_path %(installdir)s/v%(versionsuffix)s/CEI/apex%(versionsuffix)s/machines/linux_2.6_64/qt-5.10.1/lib",
+  # Run setrpaths under all subdirectoreis except CEI so bins use nix interpreter 
+  "for d in $(find %(installdir)s/v%(versionsuffix)s -mindepth 1 -maxdepth 1 -not -name CEI); \
+    do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
+  # Set any_interpreter for some license binaries
+  "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
+    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+  # revert changes made by setrpaths.sh to system interpreter for: ansyscl ansysli_client ansysli_util ansysls_client ie)
+  "find %(installdir)s -name 'ansyscl' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+  "find %(installdir)s -name 'ansysli_util' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+  "find %(installdir)s -name 'ansysli_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+  "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
+  # enable additive extension on workbench ACT start page
+  "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
+     %(installdir)s/v%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
+  # for ansys versions >= 17.2 manually patch setup-mwuser (original filesize 4470 should become 4472 when patched)
+   "cp -a %(installdir)s/v%(versionsuffix)s/commonfiles/MainWin/linx64/mw/setup-mwuser %(installdir)s/v%(versionsuffix)s/commonfiles/MainWin/linx64/mw/orig_setup-mwuser",
+     "patch -d%(installdir)s/v%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/setup-mwuser.patch-%(version)s",
+  # for ansys versions 19.1 -> 202R1 manually patch runwb2 (original filesize 8917 should become 9173 when patched)
+   "cp -a %(installdir)s/v%(versionsuffix)s/Framework/bin/Linux64/runwb2 %(installdir)s/v%(versionsuffix)s/Framework/bin/Linux64/orig_runwb2",
+     "patch -d%(installdir)s/v%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/runwb2.patch-%(version)s",
+  # missing dependencies for /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/v195/ansys/bin/linx64/lsprepost.e
+   "cp -a /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/libs/lib* %(installdir)s/v%(versionsuffix)s/ansys/syslib/dyna/linx64"
 ]
 
 modluafooter = """
@@ -66,7 +69,7 @@ elseif (path) then
 end
 setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
 if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
-        setenv("TMI_CONFIG",pathJoin(root,"%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
+        setenv("TMI_CONFIG",pathJoin(root,"v%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
 end
 """
 
