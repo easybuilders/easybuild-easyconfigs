@@ -1,0 +1,41 @@
+diff --git a/init/bash b/init/bash
+index 395bf9b..64f25a6 100644
+--- a/init/bash
++++ b/init/bash
+@@ -31,5 +31,8 @@ fi
+ 
+ # execute the common handler
+ command_not_found_handle() {
++    # check if being sourced
++    [[ -n "${BASH_SOURCE[1]}" ]] && SOURCED=1 || SOURCED=0
++
+     source $THISDIR/common $@
+ }
+diff --git a/init/common b/init/common
+index 6a0618f..aca5f7f 100755
+--- a/init/common
++++ b/init/common
+@@ -1,8 +1,7 @@
+ # mii common handler
+ 
+-# return if it is interactive
+-if [[ ! $- == *i* ]]; then
+-    # show a normal command not found prompt
++# return if not interactive or sourced
++if [[ $- != *i* ]] || [[ "$SOURCED" = "1" ]]; then
+     exec echo "$1: command not found!" 1>&2
+ fi
+ 
+diff --git a/init/zsh b/init/zsh
+index dd73b33..b0475a5 100644
+--- a/init/zsh
++++ b/init/zsh
+@@ -31,5 +31,8 @@ fi
+ 
+ # execute the common handler
+ command_not_found_handler() {
++    # check if sourced
++    [[ $ZSH_EVAL_CONTEXT =~ '.*file.*' ]] && SOURCED=1 || SOURCED=0
++
+     source $THISDIR/common $@
+ }

@@ -17,6 +17,7 @@ patches = [
     'mii-1.1.0_global-index.patch', 
     'mii-1.1.0_hierarchic-modulepath.patch',
     'mii-1.1.0-interactive-detection.patch',
+    'mii-1.1.0_source_detection.patch',
     'mii-1.1.0-localization.patch',
 ]
 checksums = [
@@ -24,7 +25,8 @@ checksums = [
     '72db9fa725e542d56544f027e9462d10435ee8d7a2aad36880e78d3ee9ae23d3',  # mii-1.1.0_global-index.patch
     'a59532b1778feeea0f3b92caf8a6fe700ecd05f306953de56a6f759928203a0c',  # mii-1.1.0_hierarchic-modulepath.patch
     'fc29395437297c17dcc00bed6f65b5d95cccb5cba56fe36233f0a0862121c5f3',  # mii-1.1.0-interactive-detection.patch
-    '74ea5d0ba3ba4098eb1b2078cdcca8db65c9f6c4e449a2e35f2f3cd87b188d9b',  # mii-1.1.0-localization.patch
+    '985c9c62009ef824aef09de562e04824f950493650892ff198351a0dbcce9a16',  # mii-1.1.0_source_detection.patch
+    '08b8fa1971ec3c1002509a1100a5e481128d16ba0f4a317a26fc85b423486f59',  # mii-1.1.0-localization.patch
 ]
 
 # only make install is needed
@@ -59,6 +61,14 @@ if (shell == "bash" or shell == "zsh") then
     -- Correct the hook name if shell is zsh
     if (shell == "zsh") then
         hook_name = hook_name .. 'r'
+    end
+
+    -- detect if the current context is being sourced
+    if (shell == "zsh") then
+    	hook_def = "[[ $ZSH_EVAL_CONTEXT =~ '.*file.*' ]] && SOURCED=1 || SOURCED=0; " .. hook_def
+    end
+    if (shell == "bash") then
+    	hook_def = '[[ -n "${BASH_SOURCE[1]}" ]] && SOURCED=1 || SOURCED=0; ' .. hook_def
     end
 
     -- Define command not found hook

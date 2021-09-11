@@ -1,0 +1,101 @@
+easyblock = 'CMakeMake'
+
+name = 'dealii'
+version = '9.3.1'
+
+homepage = 'http://www.dealii.org/'
+description = """A C++ software library supporting the creation of finite element codes and an open community of users and developers."""
+
+toolchain = {'name': 'gomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://dealii.kyomu.43-1.org/downloads/']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+
+checksums = ['a62f4676ab2dc029892251d141427fb75cbb83cddd606019f615d0dde9c61ab8']
+
+separate_build_dir = True
+
+builddependencies = [
+   ('CMake', '3.18.4'),
+   ('Boost', '1.72.0', '-mpi'),
+   ('SymEngine', '0.6.0'),
+   ('nanoflann', '1.3.2'),
+]
+
+dependencies = [
+   ('p4est', '2.2'),
+   ('GSL', '2.6'),
+   ('SuiteSparse', '5.7.1'),
+   ('tbb', '2020.2'),
+   ('SUNDIALS', '2.7.0'),
+   ('gmsh', '4.7.0'),
+   ('ADOL-C', '2.7.2'),
+   ('arpack-ng', '3.7.0'),
+   ('ASSIMP', '5.0.0'),
+   ('HDF5', '1.10.6', '-mpi'),
+   ('METIS', '5.1.0'),
+   ('muParser', '2.3.2'),
+   ('netCDF-C++', '4.2', '-mpi'),
+   ('PETSc', '3.14.1'),
+   ('SLEPc', '3.14.2'),
+   ('occt', '7.4.0'),
+   ('Trilinos', '13.0.1'),
+   ('METIS', '5.1.0'),
+]
+
+preconfigopts = 'export TRILINOS_DIR=$EBROOTTRILINOS && '
+preconfigopts += 'declare -A ARCH_MAP=( [sse3]=SSE2 [avx]=AVX [avx2]=AVX [avx512]=AVX512 ) && '
+
+configopts = '-DDEAL_II_ALLOW_PLATFORM_INTROSPECTION=OFF '
+configopts += '-DDEAL_II_HAVE_${ARCH_MAP[$RSNT_ARCH]}=ON '
+configopts += '-DDEAL_II_WITH_BOOST=ON -DBOOST_DIR=$EBROOTBOOST '
+configopts += '-DDEAL_II_WITH_P4EST=ON '
+configopts += '-DDEAL_II_WITH_MPI=ON '
+configopts += '-DDEAL_II_WITH_TRILINOS=ON '
+configopts += '-DTBB_DIR=$EBROOTTBB '
+configopts += '-DTrilinos_ENABLE_Sacado=ON '
+configopts += '-DTrilinos_ENABLE_Stratimikos=ON '
+configopts += '-DTrilinos_FIND_COMPONENTS="Pike;PikeImplicit;PikeBlackBox;TrilinosCouplings;Panzer;PanzerMiniEM;PanzerAdaptersSTK;PanzerDiscFE;PanzerDofMgr;PanzerCore;Piro;ROL;Stokhos;Tempus;Rythmos;ShyLU;ShyLU_DD;ShyLU_DDCommon;ShyLU_DDFROSch;ShyLU_DDBDDC;Zoltan2;Zoltan2Sphynx;MueLu;Moertel;NOX;Phalanx;Percept;STK;STKExprEval;STKDoc_tests;STKUnit_tests;STKBalance;STKTools;STKTransfer;STKSearchUtil;STKSearch;STKUnit_test_utils;STKNGP_TEST;STKIO;STKMesh;STKTopology;STKSimd;STKUtil;STKMath;Compadre;Intrepid2;Intrepid;Teko;FEI;Stratimikos;Ifpack2;Anasazi;Komplex;SEACAS;SEACASEx2ex1v2;SEACASTxtexo;SEACASNumbers;SEACASNemspread;SEACASNemslice;SEACASMat2exo;SEACASMapvar-kd;SEACASMapvar;SEACASMapvarlib;SEACASExplore;SEACASGrepos;SEACASGenshell;SEACASGen3D;SEACASGjoin;SEACASFastq;SEACASEx1ex2v2;SEACASExo_format;SEACASExotxt;SEACASExomatlab;SEACASExodiff;SEACASExo2mat;SEACASEpu;SEACASEjoin;SEACASConjoin;SEACASBlot;SEACASAprepro;SEACASAlgebra;SEACASPLT;SEACASSVDI;SEACASSuplibCpp;SEACASSuplibC;SEACASSuplib;SEACASSupes;SEACASAprepro_lib;SEACASChaco;SEACASIoss;SEACASNemesis;SEACASExoIIv2for32;SEACASExodus_for;SEACASExodus;Amesos2;ShyLU_Node;ShyLU_NodeTacho;ShyLU_NodeHTS;Belos;ML;Ifpack;Zoltan2Core;Pamgen;Amesos;Galeri;AztecOO;Pliris;Isorropia;Xpetra;Thyra;ThyraTpetraAdapters;ThyraEpetraExtAdapters;ThyraEpetraAdapters;ThyraCore;Domi;TrilinosSS;Tpetra;TpetraCore;TpetraTSQR;TpetraClassic;EpetraExt;Triutils;Shards;Zoltan;Epetra;MiniTensor;Sacado;RTOp;KokkosKernels;Teuchos;TeuchosKokkosComm;TeuchosKokkosCompat;TeuchosRemainder;TeuchosNumerics;TeuchosComm;TeuchosParameterList;TeuchosParser;TeuchosCore;Kokkos;KokkosAlgorithms;KokkosContainers;KokkosCore;Gtest;TrilinosATDMConfigTests;TrilinosFrameworkTests" '
+configopts += '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+configopts += '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DCMAKE_C_COMPILER=mpicc '
+configopts += '-DCMAKE_CXX_COMPILER=mpiCC '
+configopts += '-DCMAKE_Fortran_COMPILER=mpif90 '
+configopts += '-DLAPACK_FOUND=true '
+configopts += '-DLAPACK_LIBRARIES="$LIBLAPACK" '
+configopts += '-DSCALAPACK_DIR=$SCALAPACK_LIB_DIR '
+configopts += '-DSCALAPACK_LIBRARIES="$LIBSCALAPACK -lm" '
+configopts += '-DP4EST_DIR=${EBROOTP4EST} '
+configopts += '-DTRILINOS_DIR=${EBROOTTRILINOS} '
+configopts += '-DGSL_LIBRARIES=${EBROOTGSL}/lib/libgsl.a '
+configopts += '-DGSL_INCLUDE_DIRS=${EBROOTGSL}/include '
+configopts += '-DDEAL_II_HAVE_USABLE_FLAGS_RELEASE=ON '
+configopts += '-DGMSH_DIR=$EBROOTGMSH '
+configopts += '-DSUNDIALS_DIR=$EBROOTSUNDIALS '
+configopts += '-DUMFPACK_DIR=$EBROOTSUITESPARSE/UMFPACK '
+configopts += '-DZLIB_INCLUDE_DIR=$EBROOTGENTOO/include '
+configopts += '-DZLIB_LIBRARY=$EBROOTGENTOO/lib/libz.so '
+configopts += '-DADOLC_DIR=$EBROOTADOLMINC '
+configopts += '-DARPACK_DIR=$EBROOTARPACKMINNG '
+configopts += '-DASSIMP_DIR=$EBROOTASSIMP '
+configopts += '-DHDF5_DIR=$EBROOTHDF5 '
+configopts += '-DMETIS_DIR=$EBROOTMETIS '
+configopts += '-DMETIS_INCLUDE_DIR=$EBROOTMETIS/include '
+configopts += '-DMETIS_LIBRARY=$EBROOTMETIS/lib/libmetis.so '
+configopts += '-DMUPARSER_DIR=$EBROOTMUPARSER '
+configopts += '-DNETCDF_DIR=$EBROOTNETCDFMINCPLUSPLUS '
+configopts += '-DPETSC_DIR=$EBROOTPETSC '
+configopts += '-DSLEPC_DIR=$EBROOTSLEPC '
+
+# Too parallel is too slow, and may cause build/tests to fail:
+
+maxparallel = 10
+
+sanity_check_paths = {
+    'files': [('lib/libdeal_II.so')],
+    'dirs': ['include', 'lib'],
+}
+
+moduleclass = 'numlib'
