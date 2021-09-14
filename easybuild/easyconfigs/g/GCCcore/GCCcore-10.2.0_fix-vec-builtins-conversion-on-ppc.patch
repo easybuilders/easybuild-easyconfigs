@@ -1,0 +1,124 @@
+From a8c8ff7712d2cce5d7f26224160d8422b87babfc Mon Sep 17 00:00:00 2001
+From: Peter Bergner <bergner@linux.ibm.com>
+Date: Sat, 8 Aug 2020 11:54:48 -0500
+Subject: [PATCH] rs6000: MMA built-ins reject typedefs of MMA types
+
+We do not allow conversions between the MMA types and other types.
+However, we are being too strict in not matching MMA types with
+typdefs of those types.  Use TYPE_CANONICAL to see through the
+types to their canonical types before comparing them.
+
+2020-08-08  Peter Bergner  <bergner@linux.ibm.com>
+
+gcc/
+	PR target/96530
+	* config/rs6000/rs6000.c (rs6000_invalid_conversion): Use canonical
+	types for type comparisons.  Refactor code to simplify it.
+
+gcc/testsuite/
+	PR target/96530
+	* gcc.target/powerpc/pr96530.c: New test.
+
+(cherry picked from commit e2882e76089cecdc268d0835c54cabfa80b5b0be)
+---
+ gcc/config/rs6000/rs6000.c                 | 48 ++++++++++++++--------
+ gcc/testsuite/gcc.target/powerpc/pr96530.c | 20 +++++++++
+ 2 files changed, 51 insertions(+), 17 deletions(-)
+ create mode 100644 gcc/testsuite/gcc.target/powerpc/pr96530.c
+
+diff --git a/gcc/config/rs6000/rs6000.c b/gcc/config/rs6000/rs6000.c
+index a96aaeefefb97..8001fc7a55c37 100644
+--- a/gcc/config/rs6000/rs6000.c
++++ b/gcc/config/rs6000/rs6000.c
+@@ -26733,34 +26733,48 @@ rs6000_cannot_substitute_mem_equiv_p (rtx mem)
+ static const char *
+ rs6000_invalid_conversion (const_tree fromtype, const_tree totype)
+ {
+-  if (element_mode (fromtype) != element_mode (totype))
++  /* Make sure we're working with the canonical types.  */
++  if (TYPE_CANONICAL (fromtype) != NULL_TREE)
++    fromtype = TYPE_CANONICAL (fromtype);
++  if (TYPE_CANONICAL (totype) != NULL_TREE)
++    totype = TYPE_CANONICAL (totype);
++
++  machine_mode frommode = TYPE_MODE (fromtype);
++  machine_mode tomode = TYPE_MODE (totype);
++
++  if (frommode != tomode)
+     {
+       /* Do not allow conversions to/from PXImode and POImode types.  */
+-      if (TYPE_MODE (fromtype) == PXImode)
++      if (frommode == PXImode)
+ 	return N_("invalid conversion from type %<__vector_quad%>");
+-      if (TYPE_MODE (totype) == PXImode)
++      if (tomode == PXImode)
+ 	return N_("invalid conversion to type %<__vector_quad%>");
+-      if (TYPE_MODE (fromtype) == POImode)
++      if (frommode == POImode)
+ 	return N_("invalid conversion from type %<__vector_pair%>");
+-      if (TYPE_MODE (totype) == POImode)
++      if (tomode == POImode)
+ 	return N_("invalid conversion to type %<__vector_pair%>");
+     }
+   else if (POINTER_TYPE_P (fromtype) && POINTER_TYPE_P (totype))
+     {
++      /* We really care about the modes of the base types.  */
++      frommode = TYPE_MODE (TREE_TYPE (fromtype));
++      tomode = TYPE_MODE (TREE_TYPE (totype));
++
+       /* Do not allow conversions to/from PXImode and POImode pointer
+ 	 types, except to/from void pointers.  */
+-      if (TYPE_MODE (TREE_TYPE (fromtype)) == PXImode
+-	  && TYPE_MODE (TREE_TYPE (totype)) != VOIDmode)
+-	return N_("invalid conversion from type %<* __vector_quad%>");
+-      if (TYPE_MODE (TREE_TYPE (totype)) == PXImode
+-	  && TYPE_MODE (TREE_TYPE (fromtype)) != VOIDmode)
+-	return N_("invalid conversion to type %<* __vector_quad%>");
+-      if (TYPE_MODE (TREE_TYPE (fromtype)) == POImode
+-	  && TYPE_MODE (TREE_TYPE (totype)) != VOIDmode)
+-	return N_("invalid conversion from type %<* __vector_pair%>");
+-      if (TYPE_MODE (TREE_TYPE (totype)) == POImode
+-	  && TYPE_MODE (TREE_TYPE (fromtype)) != VOIDmode)
+-	return N_("invalid conversion to type %<* __vector_pair%>");
++      if (frommode != tomode
++	  && frommode != VOIDmode
++	  && tomode != VOIDmode)
++	{
++	  if (frommode == PXImode)
++	    return N_("invalid conversion from type %<* __vector_quad%>");
++	  if (tomode == PXImode)
++	    return N_("invalid conversion to type %<* __vector_quad%>");
++	  if (frommode == POImode)
++	    return N_("invalid conversion from type %<* __vector_pair%>");
++	  if (tomode == POImode)
++	    return N_("invalid conversion to type %<* __vector_pair%>");
++	}
+     }
+ 
+   /* Conversion allowed.  */
+diff --git a/gcc/testsuite/gcc.target/powerpc/pr96530.c b/gcc/testsuite/gcc.target/powerpc/pr96530.c
+new file mode 100644
+index 0000000000000..29bb9e3cc53eb
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/powerpc/pr96530.c
+@@ -0,0 +1,20 @@
++/* PR target/96530 */
++/* { dg-do compile } */
++/* { dg-require-effective-target power10_ok } */
++/* { dg-options "-mdejagnu-cpu=power10 -O2" } */
++
++/* Verify we do not reject bar() below due to the typedef.  */
++
++typedef __vector_quad vquad_t;
++
++void
++foo (__vector_quad *dst)
++{
++  __builtin_mma_xxsetaccz (dst);
++}
++
++void
++bar (vquad_t *dst)
++{
++  __builtin_mma_xxsetaccz (dst);
++}
