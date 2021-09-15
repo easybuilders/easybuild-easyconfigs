@@ -26,9 +26,11 @@ dependencies = [
 
 modextrapaths = {'PATH': '.'}
 postinstallcmds = [
-"rm -rf %(installdir)s/data && "
-"ln -s /cvmfs/data.rsnt.computecanada.ca/content/easybuild/software/2020/Core/interproscan/%(version)s %(installdir)s/data",
-"sed -i 's/head -n 1/grep version/g' %(installdir)s/interproscan.sh",
+'export DATA_DIR=%(installdir)s && '
+'export DATA_DIR=${DATA_DIR///soft.computecanada.ca\/easybuild\/software\//data.rsnt.computecanada.ca\/content\/easybuild\/data/}'
+'&& for i in h3f h3i h3m h3p; do find . -name "*.${i}" -exec rm {} + ; done &&'
+'python %(installdir)s/initial_setup.py && mkdir -p ${DATA_DIR} && mv data/* ${DATA_DIR} && rm -rf %(installdir)s/data/* && '
+"ln -s ${DATA_DIR}/* %(installdir)s/data/ && sed -i 's/head -n 1/grep version/g' %(installdir)s/interproscan.sh",
 ]
 
 
@@ -38,8 +40,6 @@ sanity_check_paths = {
 }
 
 modextravars = {'JAVA': '/cvmfs/soft.computecanada.ca/easybuild/software/2020/Core/java/11.0.2/bin/java'}
-
-#sanity_check_commands = ["interproscan.sh -h"]
 
 
 moduleclass = 'bio'
