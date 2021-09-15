@@ -19,10 +19,10 @@ builddependencies = [('Autotools', '20200321')]
 
 dependencies = [
     ('Python', '3.8.6'),  # includes cffi
-    # TensorFlow 2.2.2 required by medaka 1.4.3, see requirements.txt
-    ('TensorFlow', '2.2.2'),
+    # TensorFlow 2.2.3 required by medaka 1.4.3, see requirements.txt
+    # We need to patch medaka to use that version, see below. 
+    ('TensorFlow', '2.2.3'),
     ('Biopython', '1.78'),
-    ('h5py', '3.1.0'),
     # Pysam 0.16.0.1 is strictly required, see requirements.txt
     ('Pysam', '0.16.0.1'),
     ('SAMtools', '1.12'),
@@ -34,13 +34,32 @@ dependencies = [
     ('networkx', '2.6.2'),
     ('edlib', '1.3.9'),
     ('pyspoa', '0.0.8'),
-    ('ont-fast5-api', '3.3.0'),
     ('pyfaidx', '0.5.9.5'),
 ]
 
 use_pip = True
+sanity_pip_check = True
 
 exts_list = [
+    # TF <= 2.4 needs h5py 2.10, later versions allow 3.x
+    ('h5py', '2.10.0', {
+        'patches': ['h5py-2.10.0_avoid-mpi-init.patch'],
+        'checksums': [
+            '84412798925dc870ffd7107f045d7659e60f5d46d1c70c700375248bf6bf512d',  # h5py-2.10.0.tar.gz
+            # h5py-2.10.0_avoid-mpi-init.patch
+            '6bacb71f5d9fbd7bd9a01018d7fe21b067a2317f33c4a7c21fde9cd404c1603f',
+        ],
+        'preinstallopts': 'HDF5_MPI=ON HDF5_DIR="$EBROOTHDF5" ',
+    }),
+    # This is a requirement for ont-fast5-api below
+    ('progressbar33', '2.4', {
+        'checksums': ['51fe0d9b3b4023db2f983eeccdfc8c9846b84db8443b9bee002c7f58f4376eff'],
+        'modulename': 'progressbar',
+    }),
+    # ont-fast-5-api in EB uses h5py-3.x, but see above. So we put it here
+    ('ont-fast5-api', '3.3.0', {
+        'checksums': ['8ccbf8d203ba90c2757f25b6bbcfb0e5c90bbbb9972f2e19c3f6d6d9943d9f15'],
+    }),
     ('mappy', '2.20', {
         'checksums': ['00c8720783ac982b514b01b86349ede9809eeaccdf1328acb5a16dfeef51458b'],
     }),
@@ -63,10 +82,14 @@ exts_list = [
         'checksums': ['25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88'],
     }),
     (name, version, {
-        'patches': ['medaka-1.4.3_use-SAMtools-dep.patch'],
+        'patches': [
+            'medaka-1.4.3_use-SAMtools-dep.patch',
+            'medaka-1.4.3-TF-version-fix.patch',
+        ],
         'checksums': [
             '59997b5fdaff6f2040f2df2d3d3eb2d6d1805916a720e8275309caf4d2d4b8a5',  # medaka-1.4.3.tar.gz
             '06b1d8344035ebcfaf1893e62f37db9b4cab0053ad7a073113630872d44be33e',  # medaka-1.4.3_use-SAMtools-dep.patch
+            'cdafcd05150a8193747d8d240d9b2d3499ae901483917e9252bb91b02fa56b03',  # medaka-1.4.3-TF-version-fix.patch
         ],
     }),
 ]
