@@ -1148,6 +1148,23 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
+    def test_pr_CMAKE_BUILD_TYPE(self):
+        """Make sure -DCMAKE_BUILD_TYPE is no longer used (replaced by build_type)"""
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            configopts = ec.get('configopts')
+            build_type = ec.get('build_type')
+
+            if configopts and '-DCMAKE_BUILD_TYPE' in configopts:
+                failing_checks.append("Found -DCMAKE_BUILD_TYPE in configopts. Use build_type instead: %s" % ec_fn)
+            if build_type == 'Release':
+                failing_checks.append("build_type was set to the default of 'Release'. "
+                                      "Ommit this to base it on toolchain_opts.debug: %s" % ec_fn)
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
     def test_pr_patch_descr(self):
         """
         Check whether all patch files touched in PR have a description on top.
