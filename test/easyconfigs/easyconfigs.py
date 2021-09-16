@@ -98,7 +98,7 @@ def skip_if_not_pr_to_non_main_branch():
     return lambda func: func
 
 
-def get_files_from_diff(diff_filter, ext, basename=True):
+def get_files_from_diff(diff_filter, ext):
     """Return the files changed on HEAD relative to the current target branch"""
     target_branch = get_target_branch()
 
@@ -122,10 +122,7 @@ def get_files_from_diff(diff_filter, ext, basename=True):
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
     out, _ = run_cmd(cmd, simple=False)
-    if basename:
-        files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith(ext)]
-    else:
-        files = [f for f in out.strip().split('\n') if f.endswith(ext)]
+    files = [os.path.join(top_dir, f) for f in out.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
     return files
@@ -217,8 +214,10 @@ class EasyConfigTest(TestCase):
     def _get_changed_easyconfigs(self):
         """Gather all added or modified easyconfigs"""
         # get list of changed easyconfigs
-        changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
-        added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
+        changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
+        added_ecs_files = get_eb_files_from_diff(diff_filter='A')
+        changed_ecs_filenames = [os.path.basename(f) for f in changed_ecs_files]
+        added_ecs_filenames = [os.path.basename(f) for f in added_ecs_files]
         if changed_ecs_filenames:
             print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
         if added_ecs_filenames:
@@ -228,41 +227,36 @@ class EasyConfigTest(TestCase):
 
         # grab parsed easyconfigs for changed easyconfig files
         changed_ecs = []
-        for ec_fn in changed_ecs_filenames + added_ecs_filenames:
-            match = None
-            for ec in self.parsed_easyconfigs:
-                if os.path.basename(ec['spec']) == ec_fn:
-                    match = ec['ec']
-                    break
+        easyconfigs_path = get_paths_for("easyconfigs")[0]
+        for ec_file in changed_ecs_files + added_ecs_files:
+            # Search in already parsed ECs first
+            match = next((ec['ec'] for ec in EasyConfigTest._parsed_easyconfigs if ec['spec'] == ec_file), None)
 
             if match:
                 changed_ecs.append(match)
+            elif ec_file.startswith(easyconfigs_path):
+                ec = process_easyconfig(ec_file)
+                # Cache non-archived files
+                if '__archive__' not in ec_file:
+                    EasyConfigTest._parsed_easyconfigs.extend(ec)
+                changed_ecs.append(ec[0]['ec'])
             else:
-                # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
-                # so as a last resort, try to find the easyconfig file in __archive__
-                easyconfigs_path = get_paths_for("easyconfigs")[0]
-                specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
-                if len(specs) == 1:
-                    ec = process_easyconfig(specs[0])[0]
-                    changed_ecs.append(ec['ec'])
-                else:
-                    raise RuntimeError("Failed to find parsed easyconfig for %s"
-                                       " (and could not isolate it in easyconfigs archive either)" % ec_fn)
+                raise RuntimeError("Failed to find parsed easyconfig for %s" % os.path.basename(ec_file))
         EasyConfigTest._changed_ecs = changed_ecs
 
     def _get_changed_patches(self):
         """Gather all added or modified patches"""
 
         # get list of changed/added patch files
-        changed_patches_filenames = get_files_from_diff(diff_filter='M', ext='.patch', basename=False)
-        added_patches_filenames = get_files_from_diff(diff_filter='A', ext='.patch', basename=False)
+        changed_patches = get_files_from_diff(diff_filter='M', ext='.patch')
+        added_patches = get_files_from_diff(diff_filter='A', ext='.patch')
 
-        if changed_patches_filenames:
-            print("\nList of changed patch files in this PR:\n\t%s" % '\n\t'.join(changed_patches_filenames))
-        if added_patches_filenames:
-            print("\nList of added patch files in this PR:\n\t%s" % '\n\t'.join(added_patches_filenames))
+        if changed_patches:
+            print("\nList of changed patch files in this PR:\n\t%s" % '\n\t'.join(changed_patches))
+        if added_patches:
+            print("\nList of added patch files in this PR:\n\t%s" % '\n\t'.join(added_patches))
 
-        EasyConfigTest._changed_patches = changed_patches_filenames + added_patches_filenames
+        EasyConfigTest._changed_patches = changed_patches + added_patches
 
     @property
     def parsed_easyconfigs(self):
