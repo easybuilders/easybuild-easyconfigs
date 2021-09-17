@@ -1,0 +1,150 @@
+easyblock = 'Bundle'
+
+name = 'ROCm'
+version = '4.3.1'
+versionsuffix = '-amd'
+
+homepage = 'https://github.com/RadeonOpenCompute'
+description = "Platform for GPU Enabled HPC and UltraScale Computing"
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+builddependencies = [('CMake', '3.20.1')]
+
+dependencies = [
+    ('elfutils', '0.185'),  # required by ROCR-Runtime
+    ('Mesa', '21.1.1'),  # required by ROCclr (for GL/glx.h)
+]
+
+# being a member of the 'video' group is required,
+# and need to run 'newgrp video' to have write access to /dev/kfd
+# cfr. https://rocmdocs.amd.com/en/latest/Installation_Guide/Installation-Guide.html
+group = 'video'
+
+local_llvm_configopts = "-DLLVM_ENABLE_PROJECTS='compiler-rt;lld;clang;clang-tools-extra;libcxx;libcxxabi;lld;openmp' "
+local_llvm_configopts += "-DGCC_INSTALL_PREFIX=$EBROOTGCC "
+
+local_openmp_configopts = local_llvm_configopts
+local_openmp_configopts += "-DCMAKE_C_COMPILER=%(installdir)s/bin/clang -DCMAKE_CXX_COMPILER=%(installdir)s/bin/clang++"
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/RadeonOpenCompute/%(name)s/archive/'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    }],
+    'srcdir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('rocm-cmake', 'rocm-4.3.1', {
+        'checksums': ['acf2a58e2cd486f473194bf01247c52dbf20bd5f6465810fb221470298f2557f'],
+    }),
+    ('ROCT-Thunk-Interface', 'rocm-4.3.1', {
+        'checksums': ['9d0727e746d4ae6e2709e3534d91046640be511a71c027f47db25e529fe3b4d4'],
+        # fix for "unknown -z option" linker error with ld.gold,
+        # see also https://github.com/RadeonOpenCompute/ROCT-Thunk-Interface/pull/68
+        'preconfigopts': r"""sed -i 's/\({HSAKMT_LINK_FLAGS}\)" \(-.*\) )/\1 \2" )/g' ../ROCT-*/CMakeLists.txt && """,
+        'installopts': " && cp -a %(builddir)s/%(name)s-%(version)s/include %(installdir)s/",
+    }),
+    ('llvm-project', 'rocm-4.3.1', {
+        'checksums': ['b53c6b13be7d77dc93a7c62e4adbb414701e4e601e1af2d1e98da4ee07c9837f'],
+        'srcdir': '%(name)s-%(version)s/llvm',
+        'configopts': local_llvm_configopts,
+        # need to unset $CPATH to avoid that libunwind that is pulled in via Mesa causes trouble when building LLVM
+        'prebuildopts': "unset CPATH && ",
+    }),
+    ('Clang-OpenMP', 'rocm-4.3.1', {
+        # uses same sources as llvm-project component
+        'sources': ['llvm-project-%(version)s.tar.gz'],
+        'checksums': ['b53c6b13be7d77dc93a7c62e4adbb414701e4e601e1af2d1e98da4ee07c9837f'],
+        'srcdir': 'llvm-project-%(version)s/openmp',
+        'configopts': local_openmp_configopts,
+    }),
+    ('ROCm-Device-Libs', 'rocm-4.3.1', {
+        'checksums': ['a7291813168e500bfa8aaa5d1dccf5250764ddfe27535def01b51eb5021d4592'],
+    }),
+    ('ROCR-Runtime', 'rocm-4.3.1', {
+        'checksums': ['85fbd1645120b71635844090ce8bd9f7af0a3d1065d5fae476879f99ba0c0475'],
+        'srcdir': '%(name)s-%(version)s/src',
+    }),
+    # only required for AMD hardware
+    ('rocminfo', 'rocm-4.3.1', {
+        'checksums': ['d042947d3f29e943a2e3294a2a2d759ca436cebe31151ce048e49bc4f02d6993'],
+        'configopts': "-DROCM_DIR=%(installdir)s",
+    }),
+    ('ROCm-CompilerSupport', 'rocm-4.3.1', {
+        'checksums': ['f1d99550383ed7b3a01d304eedc3d86a8e45b271aa5a80b1dd099c22fda3f745'],
+        'srcdir': '%(name)s-%(version)s/lib/comgr',
+    }),
+    ('ROCclr', 'rocm-4.3.1', {
+        'sources': [
+            {
+                'source_urls': ['https://github.com/ROCm-Developer-Tools/%(name)s/archive/'],
+                'download_filename': '%(version)s.tar.gz',
+                'filename': '%(name)s-%(version)s.tar.gz',
+            },
+            {
+                'source_urls': ['https://github.com/RadeonOpenCompute/ROCm-OpenCL-Runtime/archive/'],
+                'download_filename': '%(version)s.tar.gz',
+                'filename': 'ROCm-OpenCL-Runtime-%(version)s.tar.gz',
+            },
+        ],
+        'checksums': [
+            'bda52c65f03a69a9d8ab1a118d45646d76843249fb975d67e5141e63fa3acc79',  # ROCclr-rocm-4.3.1.tar.gz
+            '7f98f7d4707b4392f8aa7017aaca9e27cb20263428a1a81fb7ec7c552e60c4ca',  # ROCm-OpenCL-Runtime-rocm-4.3.1.tar.gz
+        ],
+        'configopts': "-DOPENCL_DIR=%(builddir)s/ROCm-OpenCL-Runtime-%(version)s",
+    }),
+    ('HIP', 'rocm-4.3.1', {
+        'source_urls': ['https://github.com/ROCm-Developer-Tools/%(name)s/archive/'],
+        'checksums': ['955311193819f487f9a2d64bffe07c4b8c3a0dc644dc3ad984f7c66a325bdd6f'],
+        'configopts': "-DHIP_PATH=%(installdir)s/hip -DHSA_PATH=%(installdir)s/hsa",
+        'prebuildopts': "export CPATH=%(builddir)s/ROCm-OpenCL-Runtime-%(version)s"
+                        ":%(installdir)s/include/elf:%(installdir)s/include/compiler/lib/include"
+                        ":$CPATH"
+                        " && export HIP_CLANG_PATH=%(installdir)s/bin"
+                        " && export DEVICE_LIB_PATH=%(installdir)s/lib"
+                        " && export HIP_VERSION=%(version)s && ",
+        'install_target_subdir': 'hip',
+    }),
+]
+
+postinstallcmds = [
+    # .info/version-dev file in installation is expected to contain the ROCm version
+    "mkdir %(installdir)s/.info && echo '%(version)s' > %(installdir)s/.info/version-dev",
+    "ln -s %(installdir)s/hip/include/hip %(installdir)s/include/hip",
+    "ln -s %(installdir)s/hip/rocclr %(installdir)s/include/rocclr",
+]
+
+sanity_check_paths = {
+    'files': ['bin/clang', 'bin/rocminfo', 'hip/bin/hipcc', 'hip/bin/hipconfig', 'hip/bin/hipify-perl',
+              '.info/version-dev', 'include/amd_comgr.h', 'include/hsa/hsa.h', 'include/hip/hip_runtime.h',
+              'hsa/lib/libhsa-runtime64.%s' % SHLIB_EXT],
+    'dirs': ['include/hip', 'include/hsa', 'include/rocclr', 'share/rocm/cmake'],
+}
+
+sanity_check_commands = [
+    "rocminfo",
+    "hipcc --help",
+    "hipconfig",
+]
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'hip/lib',
+    'PATH': 'hip/bin',
+}
+modextravars = {
+    'DEVICE_LIB_PATH': '%(installdir)s/lib',
+    'HIP_CLANG_PATH': '%(installdir)s/bin',
+    'HIP_PATH': '%(installdir)s/hip',
+    'HIP_PLATFORM': 'amd',
+    'HIP_VERSION': '%(version)s',
+    'HSA_PATH': '%(installdir)s/hsa',
+    'ROCM_PATH': '%(installdir)s',
+}
+
+moduleclass = 'tools'
