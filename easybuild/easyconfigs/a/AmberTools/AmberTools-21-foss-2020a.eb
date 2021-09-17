@@ -1,0 +1,47 @@
+# This easyconfig is to build AmberTools with  MPI and CUDA - enabled QUICK binaries 
+# It can be adapted to buld PMEMD with NCCL  by fixing the following issues:
+# CMake config fails to build PMEMD (and AmberTools as well) with NCCL library due to bugs in CMake scripts
+# 1. FindNCCL function is never called even when NCCL build is enabled (3rdPartyTools.cmake, l.538)
+# 2. The logic to check for NCCL is wrong; it emits error when NCCL is found (PMEMDCompilerFlags.cmake, l.230) 
+
+easyblock = 'CMakeMake'
+
+name = 'AmberTools'
+version = '21'
+
+homepage = "https://ambermd.org/AmberTools.php"
+description = "AmberTools consists of several independently developed packages that work well by themselves, and with Amber20 itself. The suite can also be used to carry out complete molecular dynamics simulations, with either explicit water or generalized Born solvent models."
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+sources = ["AmberTools%(version)s.tar.bz2"]
+
+dependencies = [
+    ('netCDF', '4.7.4', None, ('GCC', '9.3.0')),
+    ('netCDF-Fortran', '4.5.2', None, ('GCC', '9.3.0')),
+    ('arpack-ng', '3.7.0','', ('gmkl','2020a')),
+    ('Boost', '1.72.0', '', ('GCC', '9.3.0')),
+    ('CUDA', '11.1.1', '', ('GCC', '9.3.0')),
+    ('SciPy-Stack', '2020a'),
+]
+
+separate_build_dir = True
+
+configopts =  ' -DBUILD_QUICK=TRUE'
+configopts += ' -DCUDA=TRUE'
+configopts += ' -DOPENMP=TRUE'
+configopts += ' -DMPI=TRUE'
+configopts += ' -DCOMPILER=GNU'
+configopts += ' -DDOWNLOAD_MINICONDA=FALSE'
+configopts += ' -DTRUST_SYSTEM_LIBS=TRUE'
+configopts += ' -DFORCE_DISABLE_LIBS=plumed'
+configopts += ' -DINSTALL_TESTS=TRUE'
+
+checksums = 'f55fa930598d5a8e9749e8a22d1f25cab7fcf911d98570e35365dd7f262aaafd',  # AmberTools21.tar.bz2
+
+modloadmsg = """Before using AmberTools source the file \033[91m $EBROOTAMBERTOOLS/amber.sh \033[0m
+or add the line \033[91m source $EBROOTAMBERTOOLS/amber.sh \033[0m to your \033[91m ~/.bash_profile \033[0m
+"""
+
+moduleclass = 'chem'
