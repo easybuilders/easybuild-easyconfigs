@@ -32,6 +32,7 @@ local_tf_builddir = '%(builddir)s/' + local_tf_dir
 local_jax_prebuildopts = "sed -i 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
 
 use_pip = True
+sanity_pip_check = True
 
 # running the tests with lots of cores results in test failures because not enough threads can be started,
 # so limit to a reasonable number of cores to use at maximum
@@ -67,6 +68,7 @@ components = [
         'patches': [
             'jaxlib-0.1.70_add-bazel-args-to-shutdown.patch',
             'jaxlib-%(version)s_no-tensorflow-download.patch',
+            ('jaxlib-%(version)s_fix-llvm-env.patch', '../' + local_tf_dir),
         ],
         'checksums': [
             # jaxlib-v0.1.71.tar.gz
@@ -77,6 +79,8 @@ components = [
             'c0ea6abd7827d3c37bdd60c30c7b0613fc86b91274c6a1a4cf13a3c7f9ce7631',
             # jaxlib-0.1.71_no-tensorflow-download.patch
             '693cff114553fa5591aa4cb3d777c9b7dea1ded1effef76d7d45d11cd2fc3819',
+            # jaxlib-0.1.71_fix-llvm-env.patch
+            '73f5a83dd13c71cc1ed2c3db084a67861d418a8dd56d862cb2310a522de1a4ee',
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         'prebuildopts': local_jax_prebuildopts,
@@ -94,7 +98,5 @@ exts_list = [
         'checksums': ['2e40bd8e2493a3609177b122c583636c0c88c5e695f8041190eefdfd42a6fc5b'],
     }),
 ]
-
-sanity_pip_check = True
 
 moduleclass = 'tools'
