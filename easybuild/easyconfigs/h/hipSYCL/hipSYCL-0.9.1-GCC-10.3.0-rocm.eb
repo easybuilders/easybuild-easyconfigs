@@ -1,0 +1,47 @@
+easyblock = 'CMakeMake'
+
+name = 'hipSYCL'
+version = '0.9.1'
+versionsuffix = '-rocm'
+
+homepage = 'https://github.com/illuhad/hipSYCL'
+description = """hipSYCL is a modern SYCL implementation targeting CPUs and
+GPUs, with a focus on leveraging existing toolchains such as CUDA or HIP"""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ["https://github.com/illuhad/hipSYCL/archive/refs/tags/"]
+sources = ["v%(version)s.tar.gz"]
+checksums = ['0a1ae3a79c743fd826dd9d666e0b9cec8b66940756d4ab6e4961e93604dff559']
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('ROCm', '4.3.1', '-amd'),
+    ('Python', '3.9.5'),
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+]
+
+# Force EasyBuild to use ROCm compiler when building
+configopts = '-DCMAKE_C_COMPILER="$EBROOTROCM/bin/clang" '
+configopts += '-DCMAKE_CXX_COMPILER="$EBROOTROCM/bin/clang++" '
+# Used by hipSYCL to pick up correct LLVM install
+configopts += '-DLLVM_DIR=$EBROOTROCM '
+configopts += '-DROCM_PATH=$EBROOTROCM '
+configopts += '-DCLANG_EXECUTABLE_PATH=$EBROOTROCM/bin/clang++ '
+# Control which backends to build
+configopts += '-DWITH_CPU_BACKEND=ON '
+configopts += '-DWITH_ROCM_BACKEND=ON '
+configopts += '-DWITH_CUDA_BACKEND=OFF '
+
+sanity_check_paths = {
+    'files': ['bin/syclcc-clang', 'include/sycl/sycl.hpp',
+              'lib/hipSYCL/librt-backend-omp.%s' % SHLIB_EXT,
+              'lib/hipSYCL/librt-backend-hip.%s' % SHLIB_EXT],
+    'dirs': ['include/CL', 'include/hipSYCL', 'include/SYCL', 'lib'],
+}
+sanity_check_commands = ['syclcc --help']
+
+moduleclass = 'compiler'
