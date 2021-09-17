@@ -474,8 +474,8 @@ class EasyConfigTest(TestCase):
                             'NGSpeciesID-0.1.1.1-']),
                 # medaka 1.4.3 (foss/2019b) depends on TensorFlow 2.2.2
                 ('2.2.2;', ['medaka-1.4.3-']),
-                # medaka 1.4.3 (foss/2020b) depends on TensorFlow 2.2.3
-                ('2.2.3;', ['medaka-1.4.3-']),
+                # medaka 1.4.3 (foss/2020b) depends on TensorFlow 2.2.3; longread_umi depends on medaka
+                ('2.2.3;', ['medaka-1.4.3-', 'longread_umi-0.3.2-']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
