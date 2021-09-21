@@ -46,9 +46,9 @@ components = [
     }),
 ]
 
-# Adapt the build-in tool check, but make it fail on error
+# Adapt the built-in tool check but make it fail on error, replace usearch with vsearch and use our version
 local_deps_patch = (
-    "sed -i"
+    "sed -i "
     "-e '2s;^;set -e ;' "
     "-e 's/USEARCH=usearch/USEARCH=vsearch/'"
     "-e 's;$(git --git-dir ${LONGREAD_UMI_PATH}/.git describe --tag);%(version)s;'"
@@ -58,6 +58,7 @@ local_deps_patch = (
 postinstallcmds = [
     'find %(installdir)s -name "*.sh" -exec chmod +x {} \;',
     'ln -s %(installdir)s/longread_umi.sh %(installdir)s/bin/longread_umi',
+    # Part of the installation process; longread uses porechop with custom adapters
     'cp %(installdir)s/scripts/adapters.py %(installdir)s/lib/python%(pyshortver)s/site-packages/porechop/',
     local_deps_patch,
 ]
