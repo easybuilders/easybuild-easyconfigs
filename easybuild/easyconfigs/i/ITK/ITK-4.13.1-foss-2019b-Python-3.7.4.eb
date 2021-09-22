@@ -1,0 +1,63 @@
+# Contributors:
+# Fenglai Liu (fenglai@accre.vanderbilt.edu) - Vanderbilt University
+# Alex Domingo (alex.domingo.toro@vub.be) - Vrije Universiteit Brussel (VUB)
+# Denis Kristak (INUITS)
+easyblock = 'CMakePythonPackage'
+
+name = 'ITK'
+version = '4.13.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'pic': True}
+
+github_account = 'InsightSoftwareConsortium'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['b352060d8b7289916a3cb033dfdbcf423423ba474643b79706966e679268e3d7']
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('Bison', '3.3.2'),
+    ('Eigen', '3.3.7', '', True),
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('double-conversion', '3.1.4'),
+    ('expat', '2.2.7'),
+    ('HDF5', '1.10.5'),
+    ('libjpeg-turbo', '2.0.3'),
+    ('libpng', '1.6.37'),
+    ('LibTIFF', '4.0.10'),
+    ('VTK', '8.2.0', versionsuffix),
+    ('zlib', '1.2.11'),
+    ('SWIG', '4.0.1'),
+    ('PCRE', '8.43'),
+]
+
+configopts = '-DCMAKE_BUILD_TYPE=Release -DITK_WRAP_PYTHON=ON '
+configopts += '-DBUILD_TESTING=OFF -DITK_USE_SYSTEM_SWIG=ON -DITK_USE_SYSTEM_HDF5=ON'
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON '
+
+# preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+separate_build_dir = True
+
+# modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver',
+              'lib/libITKVtkGlue-%(version_major_minor)s.a', 'lib/libitkhdf5.a',
+              'lib/libitkjpeg-%(version_major_minor)s.a', 'lib/libitkpng-%(version_major_minor)s.a'],
+    'dirs': ['include/ITK-%(version_major_minor)s',
+             'lib/python%(pyshortver)s/site-packages',
+             'share'],
+}
+
+moduleclass = 'data'
