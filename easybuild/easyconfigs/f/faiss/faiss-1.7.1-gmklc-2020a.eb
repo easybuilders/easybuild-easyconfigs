@@ -16,24 +16,47 @@ toolchain = {'name': 'gmklc', 'version': '2020a'}
 
 source_urls = ['https://github.com/facebookresearch/faiss/archive/']
 sources = ["v%(version)s.tar.gz"]
+patches = ["faiss-1.7.1_fix_missing_so.patch"]
+checksums = [
+	"d676d3107ad41203a49e0afda2630519299dc8666f8d23322cbe1eac0c431871",
+	"2704efc38ce6b309727e1015f9a73ee9eb7dc8c08c452cea2be2862709d65568",
+]
 
-configopts = "-DPython_EXECUTABLE=$EBROOTPYTHON/bin/python -DBUILD_SHARED_LIBS=ON "
+# Opt. level are {generic, avx2, sse4}.
+configopts = " ".join([
+	"-DPython_EXECUTABLE=$EBROOTPYTHON/bin/python",
+	"-DBUILD_SHARED_LIBS=ON",
+	"-DFAISS_OPT_LEVEL=avx2",
+	"-DBUILD_TESTING=OFF",
+])
 buildopts = " && cd %(builddir)s/easybuild_obj/faiss/python && python setup.py bdist_wheel "
 installopts = " && pip install %(builddir)s/easybuild_obj/faiss/python/dist/faiss-%(version)s-py3-none-any.whl --prefix=%(installdir)s "
 
 multi_deps = {'Python': ['3.7', '3.8', '3.9']}
 builddependencies = [
-	('SWIG', '3.0.12'),
-	('CMake', '3.18.4'),
+	('SWIG', '4.0.1'),
+	('CMake', '3.20.1'),
 ]
 dependencies = [
 	('SciPy-Stack', '2021a'),
 ]
-multi_deps_load_default = False
+
+postinstallcmds = [
+	'patchelf --set-rpath "\\$ORIGIN:%(installdir)s/lib64:$CUDA_HOME/lib" %(installdir)s/lib/python%(pyshortver)s/site-packages/faiss/{}'.format(lib)
+	for lib in ("_swigfaiss.so", "_swigfaiss_avx2.so")
+]
 
 sanity_check_paths = {
-    'files': ['lib/libfaiss.so'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages', 'include/faiss'],
+    'files': [
+    	'lib64/libfaiss.so',
+    	'lib/python%(pyshortver)s/site-packages/faiss/_swigfaiss.so',
+    	'lib/python%(pyshortver)s/site-packages/faiss/_swigfaiss_avx2.so',
+    	'lib/python%(pyshortver)s/site-packages/faiss/libfaiss_python_callbacks.so',
+    ],
+    'dirs': [
+    	'lib/python%(pyshortver)s/site-packages',
+    	'include/faiss'
+    ],
 }
 
 sanity_check_commands = [
