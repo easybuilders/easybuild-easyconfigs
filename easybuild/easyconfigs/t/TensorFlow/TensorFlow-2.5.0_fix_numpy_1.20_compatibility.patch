@@ -1,0 +1,55 @@
+TF-2.5.0 and 2.6.0 are not compatible with numpy > 1.20
+During the testing phase, TensorFlow throws errors like this
+"Cannot convert a symbolic Tensor (lstm/strided_slice:0) to a numpy array.
+This error may indicate that you're trying to pass a Tensor to a NumPy call, which is not supported"
+See https://github.com/tensorflow/tensorflow/pull/48935
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/python/framework/ops.py b/tensorflow/python/framework/ops.py
+index 4e12a8a1d17..73afdd4ed8a 100644
+--- a/tensorflow/python/framework/ops.py
++++ b/tensorflow/python/framework/ops.py
+@@ -864,7 +864,7 @@ class Tensor(internal.NativeObject, core_tf_types.Tensor):
+   __array_priority__ = 100
+ 
+   def __array__(self):
+-    raise NotImplementedError(
++    raise TypeError(
+         "Cannot convert a symbolic Tensor ({}) to a numpy array."
+         " This error may indicate that you're trying to pass a Tensor to"
+         " a NumPy call, which is not supported".format(self.name))
+diff --git a/tensorflow/python/framework/ops_test.py b/tensorflow/python/framework/ops_test.py
+index c72b18e8df5..f69ec4a9ae2 100644
+--- a/tensorflow/python/framework/ops_test.py
++++ b/tensorflow/python/framework/ops_test.py
+@@ -188,7 +188,7 @@ class TensorAndShapeTest(test_util.TensorFlowTestCase):
+     with ops.Graph().as_default():
+       x = array_ops.ones((3, 4), name="test_ones")
+ 
+-    with self.assertRaisesRegex(NotImplementedError,
++    with self.assertRaisesRegex(TypeError,
+                                 r"Cannot convert a symbolic.+test_ones"):
+       np.array(x)
+ 
+diff --git a/tensorflow/python/ops/array_ops.py b/tensorflow/python/ops/array_ops.py
+index 77cebdad660..3c650d7808f 100644
+--- a/tensorflow/python/ops/array_ops.py
++++ b/tensorflow/python/ops/array_ops.py
+@@ -36,6 +36,7 @@ from tensorflow.python.framework import tensor_util
+ from tensorflow.python.framework.constant_op import constant
+ from tensorflow.python.ops import gen_array_ops
+ from tensorflow.python.ops import gen_math_ops
++from tensorflow.python.ops import math_ops
+ # go/tf-wildcard-import
+ # pylint: disable=wildcard-import
+ from tensorflow.python.ops.gen_array_ops import *
+@@ -2897,7 +2898,7 @@ def matrix_set_diag(
+ 
+ def _constant_if_small(value, shape, dtype, name):
+   try:
+-    if np.prod(shape) < 1000:
++    if math_ops.reduce_prod(shape) < 1000:
+       return constant(value, shape=shape, dtype=dtype, name=name)
+   except (NotImplementedError, TypeError):
+     # Happens when shape is a Tensor, list with Tensor elements, etc.

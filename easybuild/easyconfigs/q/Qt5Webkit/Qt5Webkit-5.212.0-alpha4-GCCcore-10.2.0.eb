@@ -1,0 +1,56 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'CMakeNinja'
+
+name = 'Qt5Webkit'
+# Qt5 > 5.9 required at least version 5.212.0
+# At the time of writing the latest version was 5.212.0-alpha3
+version = '5.212.0-alpha4'
+
+homepage = 'https://github.com/qt/qtwebkit'
+description = "Qt Port of WebKit. WebKit is an open source web browser engine."
+docurls = ['https://github.com/qt/qtwebkit/blob/dev/README']
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+source_urls = ['https://github.com/qtwebkit/qtwebkit/releases/download/qtwebkit-%(version)s/']
+sources = ['qtwebkit-%(version)s.tar.xz']
+patches = ['%(name)s-%(version)s_bison3.7.patch']
+checksums = [
+    '9ca126da9273664dd23a3ccd0c9bebceb7bb534bddd743db31caf6a5a6d4a9e6',  # qtwebkit-5.212.0-alpha4.tar.xz
+    '34f37b53ee0bc31c63ce85ebd1ae95543a8ba28483e387b20efd50574bd813be',  # Qt5Webkit-5.212.0-alpha4_bison3.7.patch
+]
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('CMake', '3.18.4'),
+    ('pkg-config', '0.29.2'),
+    ('Bison', '3.7.1'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+    ('Ninja', '1.10.1'),
+    ('Python', '3.8.6'),
+    ('Ruby', '2.7.2'),
+]
+
+dependencies = [
+    ('Qt5', '5.14.2'),
+    ('zlib', '1.2.11'),
+    ('SQLite', '3.33.0'),
+    ('ICU', '67.1'),
+    ('libxslt', '1.1.34'),
+    ('libjpeg-turbo', '2.0.5'),
+]
+
+configopts = "-G Ninja -DPORT=Qt -DCMAKE_BUILD_TYPE=Release -DUSE_LIBHYPHEN=OFF -DUSE_GSTREAMER=OFF "
+
+sanity_check_paths = {
+    'files': [
+        'lib64/libQt5WebKit.%s' % SHLIB_EXT,
+        'lib64/libQt5WebKitWidgets.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['include/QtWebKit', 'include/QtWebKitWidgets'],
+}
+
+moduleclass = 'devel'
