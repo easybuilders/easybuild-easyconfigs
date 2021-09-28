@@ -1,3 +1,7 @@
+description: setup.py extension to locate ucp headers from UCX_MODULE_DIR
+             configuraton key provided by ucx_info.
+issue: https://github.com/rapidsai/ucx-py/issues/783
+author: Zdenek Matej, MAX IV Laboratory, Lund University
 --- setup.py
 +++ setup.py
 @@ -24,9 +24,30 @@ library_dirs = [get_config_var("LIBDIR")]
@@ -5,7 +9,7 @@
  extra_compile_args = ["-std=c99", "-Werror"]
  
 +def get_ucx_incpath():
-+    import os, subprocess
++    import subprocess
 +    res = include_dirs[0]
 +    # get output of ucx_info configuration
 +    p = subprocess.Popen("ucx_info -c", stdout=subprocess.PIPE, shell=True)
@@ -28,7 +32,7 @@
  
  def get_ucp_version():
 -    with open(include_dirs[0] + "/ucp/api/ucp_version.h") as f:
-+    with open(get_ucx_incpath() + "/ucp/api/ucp_version.h") as f:
++    with open(os.path.join(get_ucx_incpath(),"ucp/api/ucp_version.h")) as f:
          ftext = f.read()
          major = re.findall("^#define.*UCP_API_MAJOR.*", ftext, re.MULTILINE)
          minor = re.findall("^#define.*UCP_API_MINOR.*", ftext, re.MULTILINE)
