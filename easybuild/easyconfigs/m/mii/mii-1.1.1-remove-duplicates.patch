@@ -1,0 +1,83 @@
+diff --git a/src/main.c b/src/main.c
+index bdb8ac6..a4bd110 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -241,7 +241,9 @@ int main(int argc, char** argv) {
+                     if (select_colors) fprintf(stderr, "\033[0;39m");
+                     fprintf(stderr, "\n");
+                 } else {
+-                    /* no near-matches, so we can just recommened some almost similar ones */
++                    /* no near-matches, so we can just recommened some almost similar (and unique) ones */
++                    char** bins = NULL;
++                    mii_search_result_get_unique_bins(&res, &bins, &maximum);
+                     if (select_colors) fprintf(stderr, "\033[0;39m");
+                     fprintf(stderr, "[mii] ");
+                     if (select_colors) fprintf(stderr, "\033[0;36m");
+@@ -249,13 +251,15 @@ int main(int argc, char** argv) {
+                     if (select_colors) fprintf(stderr, "\033[0;39m");
+                     fprintf(stderr, " not found! Similar commands: ");
+ 
+-                    for (int i = 0; i < maximum && i < res.num_results; ++i) {
++                    for (int i = 0; i < maximum; ++i) {
+                         if (select_colors) fprintf(stderr, "\033[0;39m");
+                         if (i) fprintf(stderr, ", ");
+                         if (select_colors) fprintf(stderr, "\033[0;36m");
+-                        fprintf(stderr, "\"%s\"", res.bins[i]);
++                        fprintf(stderr, "\"%s\"", bins[i]);
+                     }
+ 
++                    free(bins);
++
+                     if (select_colors) fprintf(stderr, "\033[0;39m");
+                     fprintf(stderr, "\n");
+                 }
+diff --git a/src/search_result.c b/src/search_result.c
+index 7157311..1c706d5 100644
+--- a/src/search_result.c
++++ b/src/search_result.c
+@@ -421,3 +421,29 @@ int _mii_search_result_get_priority(const char* parents, const char* code) {
+ 
+     return priority;
+ }
++
++
++int mii_search_result_get_unique_bins(mii_search_result* res, char*** bins_out, int* num_results) {
++    /* get first <*num_results> unique bins */
++
++    int unique_count = 0;
++
++    for (int i = 0, j; i < res->num_results && unique_count < *num_results; ++i) {
++        for (j = 0 ; j < unique_count; ++j) {
++            if (strcmp(res->bins[i], (*bins_out)[j]) == 0) {
++                /* duplicate found */
++                break;
++            }
++        }
++        if (j == unique_count) {
++            /* unique bin */
++            *bins_out = realloc(*bins_out, sizeof(char*) * (unique_count + 1));
++            (*bins_out)[unique_count++] = res->bins[i];
++        }
++    }
++
++    /* return true number of unique bins */
++    *num_results = unique_count;
++
++    return 0;
++}
+diff --git a/src/search_result.h b/src/search_result.h
+index 35b773c..3c10d62 100644
+--- a/src/search_result.h
++++ b/src/search_result.h
+@@ -44,9 +44,10 @@ void mii_search_result_free(mii_search_result* dest);
+ 
+ void mii_search_result_add(mii_search_result* p, const char* code, const char* bin, int distance, const char* parent);
+ 
+-/* sorting results */
++/* sorting/filtering results */
+ 
+ void mii_search_result_sort(mii_search_result* p);
++int mii_search_result_get_unique_bins(mii_search_result* res, char*** bins_out, int* num_results);
+ 
+ /* reading/outputting results */
+ 
