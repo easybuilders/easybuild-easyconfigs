@@ -450,6 +450,9 @@ class EasyConfigTest(TestCase):
                                r'numba-0\.52\.0-', r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3',
                                r'scanpy-1\.7\.2-', r'umap-learn-0\.4\.6-']),
             ],
+            # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
+            # Horovod depends on TensorFlow, so same exception required there
+            'NCCL': [(r'2\.11\.4', [r'TensorFlow-2\.[5-9]\.', r'Horovod-0\.2[2-9]'])],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
             # some software depends on an older numba;
