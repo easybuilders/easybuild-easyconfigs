@@ -1,0 +1,228 @@
+--- arch/makefile.include.linux_intel.orig	2021-09-28 14:35:29.000000000 -0700
++++ arch/makefile.include.linux_intel	2021-09-28 14:33:54.000000000 -0700
+@@ -7,7 +7,10 @@
+              -Dvasp6 \
+              -Duse_bse_te \
+              -Dtbdyn \
+-             -Dfock_dblbuf
++             -Dfock_dblbuf \
++	     -Dsol_compat \
++	     -Dlibbeef \
++	     -DVASP2WANNIER90
+ 
+ CPP        = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
+ 
+@@ -16,7 +19,7 @@
+ 
+ FREE       = -free -names lowercase
+ 
+-FFLAGS     = -assume byterecl -w -xHOST
++FFLAGS     = -assume byterecl -w 
+ OFLAG      = -O2
+ OFLAG_IN   = $(OFLAG)
+ DEBUG      = -O0
+@@ -31,7 +34,7 @@
+ 
+ INCS       =-I$(MKLROOT)/include/fftw
+ 
+-LLIBS      = $(SCALAPACK) $(LAPACK) $(BLAS)
++LLIBS      = $(SCALAPACK) $(LAPACK) $(BLAS) -lbeef -lwannier
+ 
+ OBJECTS_O1 += fftw3d.o fftmpi.o fftmpiw.o
+ OBJECTS_O2 += fft3dlib.o
+@@ -67,7 +70,7 @@
+ 
+ # Minimal requirement is CUDA >= 10.X. For "sm_80" you need CUDA >= 11.X.
+ CUDA_ROOT  ?= /usr/local/cuda/
+-NVCC       := $(CUDA_ROOT)/bin/nvcc -ccbin=icc -allow-unsupported-compiler
++NVCC       := nvcc -ccbin=icc -allow-unsupported-compiler
+ CUDA_LIB   := -L$(CUDA_ROOT)/lib64 -lnvToolsExt -lcudart -lcuda -lcufft -lcublas
+ 
+ GENCODE_ARCH    := -gencode=arch=compute_60,code=\"sm_60,compute_60\" \
+--- src/.objects.orig	2021-04-29 11:13:18.000000000 -0700
++++ src/.objects	2021-09-28 14:31:01.000000000 -0700
+@@ -98,6 +98,19 @@
+ 	dos.o \
+ 	elf.o \
+ 	hamil_rot.o \
++        bfgs.o \
++	dynmat.o \
++	instanton.o \
++	lbfgs.o \
++	sd.o \
++	cg.o \
++	dimer.o \
++	bbm.o \
++	fire.o \
++	lanczos.o \
++	neb.o \
++	qm.o \
++	opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	fileio.o \
+@@ -352,6 +365,19 @@
+ 	dos.o \
+ 	elf.o \
+ 	hamil_rot.o \
++	bfgs.o \
++	dynmat.o \
++	instanton.o \
++	lbfgs.o \
++	sd.o \
++	cg.o \
++	dimer.o \
++	bbm.o \
++	fire.o \
++	lanczos.o \
++	neb.o \
++	qm.o \
++	opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	us.o \
+--- src/main.F.orig	2021-09-28 14:37:17.000000000 -0700
++++ src/main.F	2021-09-28 14:39:25.000000000 -0700
+@@ -3403,7 +3403,7 @@
+       ENDIF
+ 
+       CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
+-           LATT_CUR%A,LATT_CUR%B,IO%IU6)
++           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6)
+ 
+       CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
+            LATT_CUR%A,LATT_CUR%B,IO%IU6)
+--- src/mpi_gpu.F.orig	2021-09-28 15:39:29.000000000 -0700
++++ src/mpi_gpu.F	2021-09-28 15:40:23.000000000 -0700
+@@ -1786,35 +1786,35 @@
+ !!!
+ !!!----------------------------------------------------------------------
+ !!
+-!!      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
+-!!      USE string, ONLY: str
+-!!      USE tutor, ONLY: vtutor
+-!!      USE mpimy
+-!!      IMPLICIT NONE
+-!!
+-!!      TYPE(communic) COMM
+-!!      INTEGER n
+-!!      REAL(q) vec(n),v1,v2,v3,v4
+-!!
+-!!      vec=0
+-!!
+-!!      IF (n>0) vec(1)=v1
+-!!      IF (n>1) vec(2)=v2
+-!!      IF (n>2) vec(3)=v3
+-!!      IF (n>3) vec(4)=v4
+-!!      IF (n>4) THEN
+-!!          WRITE(*,*) 'internal ERROR: invalid n in M_sum_s ', n
+-!!          STOP
+-!!      END IF
+-!!
+-!!      CALL M_sumb_d(COMM, vec, n)
+-!!
+-!!      IF (n>0) v1=vec(1)
+-!!      IF (n>1) v2=vec(2)
+-!!      IF (n>2) v3=vec(3)
+-!!      IF (n>3) v4=vec(4)
+-!!      RETURN
+-!!      END SUBROUTINE
++      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
++      USE string, ONLY: str
++      USE tutor, ONLY: vtutor
++      USE mpimy
++      IMPLICIT NONE
++
++      TYPE(communic) COMM
++      INTEGER n
++      REAL(q) vec(n),v1,v2,v3,v4
++
++      vec=0
++
++      IF (n>0) vec(1)=v1
++      IF (n>1) vec(2)=v2
++      IF (n>2) vec(3)=v3
++      IF (n>3) vec(4)=v4
++      IF (n>4) THEN
++          WRITE(*,*) 'internal ERROR: invalid n in M_sum_s ', n
++          STOP
++      END IF
++
++      CALL M_sumb_d(COMM, vec, n)
++
++      IF (n>0) v1=vec(1)
++      IF (n>1) v2=vec(2)
++      IF (n>2) v3=vec(3)
++      IF (n>3) v4=vec(4)
++      RETURN
++      END SUBROUTINE
+ 
+ !----------------------------------------------------------------------
+ !
+--- src/mpi.F.orig	2021-09-28 16:22:06.281064381 -0700
++++ src/mpi.F	2021-09-28 16:22:58.932376987 -0700
+@@ -1811,35 +1811,35 @@
+ !!!
+ !!!----------------------------------------------------------------------
+ !!
+-!!      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
+-!!      USE string, ONLY: str
+-!!      USE tutor, ONLY: vtutor
+-!!      USE mpimy
+-!!      IMPLICIT NONE
+-!!
+-!!      TYPE(communic) COMM
+-!!      INTEGER n
+-!!      REAL(q) vec(n),v1,v2,v3,v4
+-!!
+-!!      vec=0
+-!!
+-!!      IF (n>0) vec(1)=v1
+-!!      IF (n>1) vec(2)=v2
+-!!      IF (n>2) vec(3)=v3
+-!!      IF (n>3) vec(4)=v4
+-!!      IF (n>4) THEN
+-!!          WRITE(*,*) 'M_sum_s: invalid n ', n
+-!!          STOP
+-!!      END IF
+-!!
+-!!      CALL M_sumb_d(COMM, vec, n)
+-!!
+-!!      IF (n>0) v1=vec(1)
+-!!      IF (n>1) v2=vec(2)
+-!!      IF (n>2) v3=vec(3)
+-!!      IF (n>3) v4=vec(4)
+-!!      RETURN
+-!!      END SUBROUTINE M_sum_s
++      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
++      USE string, ONLY: str
++      USE tutor, ONLY: vtutor
++      USE mpimy
++      IMPLICIT NONE
++
++      TYPE(communic) COMM
++      INTEGER n
++      REAL(q) vec(n),v1,v2,v3,v4
++
++      vec=0
++
++      IF (n>0) vec(1)=v1
++      IF (n>1) vec(2)=v2
++      IF (n>2) vec(3)=v3
++      IF (n>3) vec(4)=v4
++      IF (n>4) THEN
++          WRITE(*,*) 'M_sum_s: invalid n ', n
++          STOP
++      END IF
++
++      CALL M_sumb_d(COMM, vec, n)
++
++      IF (n>0) v1=vec(1)
++      IF (n>1) v2=vec(2)
++      IF (n>2) v3=vec(3)
++      IF (n>3) v4=vec(4)
++      RETURN
++      END SUBROUTINE M_sum_s
+ 
+ !----------------------------------------------------------------------
+ !
