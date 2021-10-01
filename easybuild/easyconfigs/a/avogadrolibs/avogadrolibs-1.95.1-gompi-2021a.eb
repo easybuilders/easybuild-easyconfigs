@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'avogadrolibs'
+version = '1.95.1'
+
+homepage = 'https://two.avogadro.cc/'
+description = """Avogadro is an advanced molecule editor and visualizer
+designed for cross-platform use in computational chemistry, molecular
+modeling, bioinformatics, materials science, and related areas. It
+offers flexible high quality rendering and a powerful plugin
+architecture.
+
+This is avogadrolibs for Avogadro2.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+
+source_urls = ['https://github.com/OpenChemistry/avogadrolibs/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_fix_VTK_component_names.patch',
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('pybind11', '2.6.2'),
+    ('zlib', '1.2.11'),
+    ('Eigen', '3.3.9'),
+    ('spglib', '1.16.2'),
+    ('mmtf-cpp', '1.0.0'),
+    ('libmsym', '0.2.3'),
+    ('glew', '2.1.0'),
+    ('HDF5', '1.12.1'),
+    ('X11', '20210518'),
+    ('Mesa', '21.1.1'),
+    ('Qt5', '5.15.2'),
+    # ('VTK', '9.0.1'), # Current VTK lacks the GUISupportQt and RenderingContextOpenGL2 components
+]
+
+configopts = '-DUSE_PYTHON=ON -DOpenGL_GL_PREFERENCE=GLVND -DBUILD_GPL_PLUGINS=ON -DBUILD_YAEHMOP_PLUGIN=ON '
+configopts += '-DUSE_HDF5=ON '
+# configopts += '-DUSE_VTK=ON '
+# configopts += '-DENABLE_TESTING=ON ' # This requires GTest from google/googletest
+
+sanity_check_paths = {
+    'files': ['include/avogadro/core/avogadrocore.h', 'lib/avogadro/__init__.py'] +
+             ['lib/libAvogadro%s.%s' % (x, SHLIB_EXT) for x in ['Core', 'IO', 'MoleQueue', 'QtGui', 'QtOpenGL',
+                                                                'QtPlugins', 'QuantumIO', 'Rendering']],
+    'dirs': ['include/avogadro/%s' % x for x in ['io', 'molequeue', 'qtgui', 'qtopengl', 'qtplugins', 'quantumio', 'rendering']] + 
+            ['lib/avogadro2', 'share/avogadro2/crystals', 'share/avogadro2/molecules'],
+}
+
+sanity_check_commands = [
+    "python -c 'import avogadro'",
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib'],
+}
+
+moduleclass = 'vis'
