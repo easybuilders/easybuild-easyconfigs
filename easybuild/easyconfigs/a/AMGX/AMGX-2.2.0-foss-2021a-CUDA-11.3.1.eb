@@ -13,7 +13,11 @@ toolchainopts = {'openmp': True}
 github_account = 'NVIDIA'
 source_urls = [GITHUB_SOURCE]
 sources = ['v%(version)s.tar.gz']
-checksums = ['dac78516bb528135cad903399fe0093aa0904e304565ef2d3da4fae05eda7928']
+patches= ['AMGX-%(version)s-cuda_arch_with_dot.patch']
+checksums = [
+    'dac78516bb528135cad903399fe0093aa0904e304565ef2d3da4fae05eda7928',  # v2.2.0.tar.gz
+    '5d5e81a916ce13ae396bc44e430d3c65e086574367152055b01187ef066f84f6',  # AMGX-2.2.0-cuda_arch_with_dot.patch
+]
 
 builddependencies = [
     ('CMake', '3.20.1'),
@@ -22,15 +26,17 @@ builddependencies = [
 dependencies = [
     ('CUDA', '11.3.1', '', True),
     ('UCX-CUDA', '1.10.0', versionsuffix),
+    ('magma', '2.6.1', versionsuffix),
 ]
 
-configopts = '-DCUDA_ARCH=%(cuda_cc_semicolon_sep)s'
+if '%(cuda_cc_space_sep)s':
+    configopts = '-DCUDA_ARCH="%(cuda_cc_space_sep)s"'
 
 runtest = "tests -j"
 
 sanity_check_paths = {
-    'files': ['lib/libamgx.%s' % SHLIB_EXT],
-    'dirs': ['include/amgx'],
+    'files': ['include/amg_c.h', 'lib/libamgx.a', 'libamgxsh.%s' % SHLIB_EXT],
+    'dirs': [],
 }
 
 moduleclass = 'lib'
