@@ -1,0 +1,389 @@
+diff --git a/src/analysis.c b/src/analysis.c
+index 1b16312..8a01703 100644
+--- a/src/analysis.c
++++ b/src/analysis.c
+@@ -49,6 +49,15 @@ static lua_State *lua_state;
+ int _mii_analysis_lua_run(lua_State* lua_state, const char* code, char*** paths_out, int* num_paths_out);
+ #endif
+ 
++static char** ignore_paths = NULL;
++static int num_ignore_paths = 0;
++static char** ignore_mods = NULL;
++static int num_ignore_mods = 0;
++
++/* module filter function */
++int _mii_analysis_is_mod_ignored(const char* path, const char* mod);
++int _mii_analysis_filter_init(const char* filter, const char* sep, char*** out, int* num_out);
++
+ /* word expansion functions */
+ char* _mii_analysis_expand(const char* expr);
+ 
+@@ -354,7 +363,20 @@ char* _mii_analysis_expand(const char* expr) {
+ #if MII_ENABLE_SPIDER
+ 
+ /* parse the json and fill module info */
+-int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry* mod) {
++int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry** mod) {
++    /* get the code */
++    cJSON* code = cJSON_GetObjectItemCaseSensitive(mod_json, "fullName");
++    if (code == NULL) {
++        mii_error("Couldn't find the code in the JSON!");
++        return -1;
++    }
++
++    /* should we filter out the module? */
++    if (_mii_analysis_is_mod_ignored(mod_json->string, code->valuestring)) {
++        mii_debug("Filtered out module %s", code->valuestring);
++        return 0;
++    }
++
+     /* stat the type */
+     struct stat st;
+     if (stat(mod_json->string, &st) != 0) {
+@@ -362,35 +384,30 @@ int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry* mo
+         return -1;
+     }
+ 
+-    /* get the code */
+-    cJSON* code = cJSON_GetObjectItemCaseSensitive(mod_json, "fullName");
+-    if (code == NULL) {
+-        mii_error("Couldn't find the code in the JSON!");
+-        return -1;
+-    }
++    *mod = malloc(sizeof **mod);
+ 
+     /* get the parents */
+     cJSON* parents_arrs = cJSON_GetObjectItemCaseSensitive(mod_json, "parentAA");
+-    if(_mii_analysis_parents_from_json(parents_arrs, &mod->parents, &mod->num_parents)) {
++    if(_mii_analysis_parents_from_json(parents_arrs, &(*mod)->parents, &(*mod)->num_parents)) {
+         mii_error("Couldn't get parents from JSON!");
+         return -1;
+     }
+ 
+     /* fill up some of the info */
+-    mod->bins = NULL;
+-    mod->num_bins = 0;
+-    mod->path = mii_strdup(mod_json->string);
+-    mod->type = MII_MODTABLE_MODTYPE_LMOD;
+-    mod->timestamp = st.st_mtime;
+-    mod->code = mii_strdup(code->valuestring);
+-    mod->analysis_complete = 1;
++    (*mod)->bins = NULL;
++    (*mod)->num_bins = 0;
++    (*mod)->path = mii_strdup(mod_json->string);
++    (*mod)->type = MII_MODTABLE_MODTYPE_LMOD;
++    (*mod)->timestamp = st.st_mtime;
++    (*mod)->code = mii_strdup(code->valuestring);
++    (*mod)->analysis_complete = 1;
+ 
+     /* get the bins */
+     cJSON* bin_paths = cJSON_GetObjectItemCaseSensitive(mod_json, "pathA");
+     if (bin_paths != NULL) {
+         for (cJSON* path = bin_paths->child; path != NULL; path = path->next) {
+             /* analyze the bin paths */
+-            _mii_analysis_scan_path(path->string, &mod->bins, &mod->num_bins);
++            _mii_analysis_scan_path(path->string, &(*mod)->bins, &(*mod)->num_bins);
+         }
+     }
+ 
+@@ -442,5 +459,76 @@ int _mii_analysis_parents_from_json(const cJSON* json, char*** parents_out, int*
+ 
+     return 0;
+ }
+-
+ #endif
++
++int mii_analysis_filters_init(const char* paths, const char* modules) {
++    /* init path filter */
++    int res = _mii_analysis_filter_init(paths, MII_ANALYSIS_PATH_SEP, &ignore_paths, &num_ignore_paths);
++
++    if (res) return res;
++
++    /* init module filter */
++    return _mii_analysis_filter_init(modules, MII_ANALYSIS_MOD_SEP, &ignore_mods, &num_ignore_mods);
++}
++
++int _mii_analysis_filter_init(const char* filter, const char* sep, char*** out, int* num_out) {
++    /* initialize any filter type */
++
++    /* if NULL, nothing to do */
++    if (filter == NULL) {
++        *out = NULL;
++        *num_out = 0;
++        return 0;
++    }
++
++    char* filter_copy = strdup(filter);
++
++    for (char* tok = strtok(filter_copy, sep); tok; tok = strtok(NULL, sep), ++(*num_out)) {
++        *out = (char**) realloc(*out, sizeof(char*) * (*num_out + 1));
++
++        if (*out == NULL) {
++            mii_error("Couldn't allocate memory for filter: %s", strerror(errno));
++            free(filter_copy);
++            return -1;
++        }
++
++        (*out)[*num_out] = strdup(tok);
++    }
++    free(filter_copy);
++
++    return 0;
++}
++
++int mii_analysis_filters_free() {
++    for (int i = 0; i < num_ignore_paths; ++i) {
++        free(ignore_paths[i]);
++    }
++    for (int i = 0; i < num_ignore_mods; ++i) {
++        free(ignore_mods[i]);
++    }
++
++    if (ignore_paths) free(ignore_paths);
++    if (ignore_mods) free(ignore_mods);
++
++    return 0;
++}
++
++int _mii_analysis_is_mod_ignored(const char* path, const char* mod) {
++    /* returns a truthy value if the module should be ignored based on the filters */
++
++    /* check if the path is ignored */
++    for (size_t i = 0; i < num_ignore_paths; ++i) {
++        if (strstr(path, ignore_paths[i]) == path) {
++            return 1;
++        }
++    }
++
++    /* check if the module is ignored */
++    for (size_t i = 0; i < num_ignore_mods; ++i) {
++        if (strstr(mod, ignore_mods[i]) == mod) {
++            return 1;
++        }
++    }
++
++    return 0;
++}
+diff --git a/src/analysis.h b/src/analysis.h
+index fbb2ccd..637ac64 100644
+--- a/src/analysis.h
++++ b/src/analysis.h
+@@ -7,6 +7,8 @@
+ #endif
+ 
+ #define MII_ANALYSIS_LINEBUF_SIZE 512
++#define MII_ANALYSIS_PATH_SEP ":"
++#define MII_ANALYSIS_MOD_SEP ","
+ 
+ /*
+  * analysis.h
+@@ -19,8 +21,11 @@ void mii_analysis_free();
+ 
+ int mii_analysis_run(const char* modfile, int modtype, char*** bins_out, int* num_bins_out);
+ 
++int mii_analysis_filters_init(const char* paths, const char* modules);
++int mii_analysis_filters_free();
++
+ #if MII_ENABLE_SPIDER
+-int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry* mod);
++int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry** mod);
+ #endif
+ 
+ #endif
+diff --git a/src/main.c b/src/main.c
+index bdb8ac6..33b6853 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -21,8 +21,10 @@ static const char* USAGE_STRING =
+     "    -h, --help       Show this message\n"
+     "    -v, --version    Show Mii build version\n"
+     "\nOPTIONS:\n"
+-    "    -d, --datadir <datadir>    Use <datadir> to store index data\n"
+-    "    -m, --modulepath <path>    Use <path> instead of $MODULEPATH\n"
++    "    -d, --datadir <datadir>        Use <datadir> to store index data\n"
++    "    -m, --modulepath <path>        Use <path> instead of $MODULEPATH\n"
++    "    -p, --ignore-paths <path>      Ignore <path> when searching for modules, works with spider mode only\n"
++    "    -n, --ignore-modules <names>   Ignore <names> (comma-separated) when searching for modules, works with spider mode only\n"
+     "\nSUBCOMMANDS:\n"
+     "    build               Regenerate the module index\n"
+     "    sync                Update the module index\n"
+@@ -38,12 +40,14 @@ static const char* USAGE_STRING =
+     "    help                Show this message\n";
+ 
+ static struct option long_options[] = {
+-    { "datadir",    required_argument, NULL, 'd' },
+-    { "modulepath", required_argument, NULL, 'm' },
+-    { "help",       no_argument,       NULL, 'h' },
+-    { "json",       no_argument,       NULL, 'j' },
+-    { "version",    no_argument,       NULL, 'v' },
+-    { NULL,         0,                 NULL,  0 },
++    { "datadir",        required_argument, NULL, 'd' },
++    { "modulepath",     required_argument, NULL, 'm' },
++    { "ignore-paths",   required_argument, NULL, 'p' },
++    { "ignore-modules", required_argument, NULL, 'n' },
++    { "help",           no_argument,       NULL, 'h' },
++    { "json",           no_argument,       NULL, 'j' },
++    { "version",        no_argument,       NULL, 'v' },
++    { NULL,             0,                 NULL,  0 },
+ };
+ 
+ static void usage(int header, char* a0);
+@@ -54,7 +58,7 @@ int main(int argc, char** argv) {
+     int opt;
+     int search_result_flags = 0;
+ 
+-    while ((opt = getopt_long(argc, argv, "d:m:hjv", long_options, NULL)) != -1) {
++    while ((opt = getopt_long(argc, argv, "d:m:p:n:hjv", long_options, NULL)) != -1) {
+         switch (opt) {
+         case 'd': /* set datadir */
+             mii_option_datadir(optarg);
+@@ -62,6 +66,12 @@ int main(int argc, char** argv) {
+         case 'm': /* set modulepath */
+             mii_option_modulepath(optarg);
+             break;
++        case 'p': /* set paths to ignore */
++            mii_option_ignore_paths(optarg);
++            break;
++        case 'n': /* set modules to ignore */
++            mii_option_ignore_modules(optarg);
++            break;
+         case 'j':
+             search_result_flags |= MII_SEARCH_RESULT_JSON;
+             break;
+diff --git a/src/mii.c b/src/mii.c
+index 2813f92..e0c5a24 100644
+--- a/src/mii.c
++++ b/src/mii.c
+@@ -14,8 +14,10 @@
+ #include <unistd.h>
+ 
+ /* options */
+-static char* _mii_modulepath = NULL;
+-static char* _mii_datadir    = NULL;
++static char* _mii_modulepath     = NULL;
++static char* _mii_datadir        = NULL;
++static char* _mii_ignore_paths   = NULL;
++static char* _mii_ignore_modules = NULL;
+ 
+ /* state */
+ static char* _mii_datafile = NULL;
+@@ -28,6 +30,14 @@ void mii_option_datadir(const char* datadir) {
+     if (datadir) _mii_datadir = mii_strdup(datadir);
+ }
+ 
++void mii_option_ignore_paths(const char* paths) {
++    if (paths) _mii_ignore_paths = mii_strdup(paths);
++}
++
++void mii_option_ignore_modules(const char* modules) {
++    if (modules) _mii_ignore_modules = mii_strdup(modules);
++}
++
+ int mii_init() {
+     if (!_mii_modulepath) {
+         char* env_modulepath = getenv("MODULEPATH");
+@@ -91,9 +101,11 @@ int mii_init() {
+ }
+ 
+ void mii_free() {
+-    if (_mii_modulepath) free(_mii_modulepath);
+-    if (_mii_datadir) free(_mii_datadir);
+-    if (_mii_datafile) free(_mii_datafile);
++    if (_mii_modulepath)   free(_mii_modulepath);
++    if (_mii_datadir)      free(_mii_datadir);
++    if (_mii_datafile)     free(_mii_datafile);
++    if (_mii_ignore_paths)   free(_mii_ignore_paths);
++    if (_mii_ignore_modules) free(_mii_ignore_modules);
+ }
+ 
+ int mii_build() {
+@@ -107,7 +119,7 @@ int mii_build() {
+     int count;
+ 
+ #if MII_ENABLE_SPIDER
+-    if (mii_modtable_spider_gen(&index, _mii_modulepath, &count)) {
++    if (mii_modtable_spider_gen(&index, _mii_modulepath, &count, _mii_ignore_paths, _mii_ignore_modules)) {
+         mii_error("Unexpected failure generating the index with spider!");
+         return -1;
+     }
+diff --git a/src/mii.h b/src/mii.h
+index 3a713c5..c7474e8 100644
+--- a/src/mii.h
++++ b/src/mii.h
+@@ -14,6 +14,8 @@
+ 
+ void mii_option_modulepath(const char* modulepath);
+ void mii_option_datadir(const char* datadir);
++void mii_option_ignore_paths(const char* paths);
++void mii_option_ignore_modules(const char* modules);
+ 
+ int mii_init();
+ void mii_free();
+diff --git a/src/modtable.c b/src/modtable.c
+index 81e12cd..54c929c 100644
+--- a/src/modtable.c
++++ b/src/modtable.c
+@@ -670,7 +670,7 @@ mii_modtable_entry* _mii_modtable_locate_entry(mii_modtable* p, const char* path
+ #if MII_ENABLE_SPIDER
+ 
+ /* generate the index using the spider command provided by Lmod */
+-int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
++int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count, const char* skip_paths, const char* skip_modules) {
+     char* lmod_dir = getenv("LMOD_DIR");
+     if (lmod_dir == NULL || strlen(lmod_dir) == 0) {
+         mii_error("Couldn't find Lmod's directory. Please set LMOD_DIR.");
+@@ -726,18 +726,24 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
+         return -1;
+     }
+ 
++    mii_analysis_filters_init(skip_paths, skip_modules);
++
+     /* iterate over every modulefile found by the spider */
+     for (cJSON* module = json->child; module != NULL; module = module->next) {
+         for (cJSON* modulefile = module->child; modulefile != NULL; modulefile = modulefile->next) {
+             /* allocate memory and get info */
+-            mii_modtable_entry* new_module = malloc(sizeof *new_module);
++            mii_modtable_entry* new_module = NULL;
+ 
+-            if(mii_analysis_parse_module_json(modulefile, new_module)) {
++            if(mii_analysis_parse_module_json(modulefile, &new_module)) {
+                 mii_error("Couldn't parse JSON for module %s", modulefile->string);
+-                free(new_module);
+                 return -1;
+             }
+ 
++            /* module was filtered out */
++            if (!new_module) {
++                continue;
++            }
++
+             mii_debug("analysis for %s : %d bins", new_module->path, new_module->num_bins);
+ 
+             /* add to the modtable */
+@@ -750,10 +756,13 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
+         }
+     }
+     cJSON_Delete(json);
++    mii_analysis_filters_free();
+ 
+     *count = p->num_modules;
+ 
+     return 0;
+ }
+ 
++
++
+ #endif
+diff --git a/src/modtable.h b/src/modtable.h
+index 6b3f7ce..201d866 100644
+--- a/src/modtable.h
++++ b/src/modtable.h
+@@ -46,7 +46,7 @@ int mii_modtable_gen(mii_modtable* p, char* modulepath); /* scan for modules and
+ int mii_modtable_import(mii_modtable* p, const char* path); /* import an existing table from the disk */
+ 
+ #if MII_ENABLE_SPIDER
+-int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count);
++int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count, const char* skip_paths, const char* skip_modules);
+ #endif
+ 
+ int mii_modtable_preanalysis(mii_modtable* p, const char* path); /* preanalyze up-to-date modules */
