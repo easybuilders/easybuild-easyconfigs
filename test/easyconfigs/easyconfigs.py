@@ -484,7 +484,7 @@ class EasyConfigTest(TestCase):
             ],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
-            'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-']),],
+            'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
