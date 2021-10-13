@@ -482,6 +482,8 @@ class EasyConfigTest(TestCase):
                 # medaka 1.4.3 (foss/2020b) depends on TensorFlow 2.2.3; longread_umi and artic depend on medaka
                 ('2.2.3;', ['medaka-1.4.3-', 'artic-ncov2019-2021.06.24-', 'longread_umi-0.3.2-']),
             ],
+            # For 2021b we want to keep UCX-CUDA v1.11.2 and v1.11.0 which depends on UCX v1.11.0
+            'UCX-CUDA': [('1.11.0;', ['UCX-1.11.0']),],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
