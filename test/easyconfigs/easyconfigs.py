@@ -393,7 +393,14 @@ class EasyConfigTest(TestCase):
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
-        if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'PyTorch', 'R', 'TensorFlow'] and len(dep_vars) > 1:
+        versionsuffix_deps = ['ASE', 'Boost', 'CUDAcore', 'CUDA', 'Java', 'Lua',
+                              'PLUMED', 'PyTorch', 'R', 'TensorFlow']
+        if dep in versionsuffix_deps and len(dep_vars) > 1:
+
+            # check for '-CUDA-*' versionsuffix for CUDAcore dependency
+            if dep == 'CUDAcore':
+                dep = 'CUDA'
+
             for key in list(dep_vars):
                 dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
                 # use version of Java wrapper rather than full Java version
