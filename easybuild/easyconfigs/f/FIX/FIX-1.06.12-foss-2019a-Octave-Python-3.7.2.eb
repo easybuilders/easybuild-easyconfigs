@@ -1,0 +1,62 @@
+easyblock = 'Tarball'
+
+name = 'FIX'
+version = '1.06.12'
+local_interpreter = 'Octave'
+local_python_ver = '-Python-3.7.2'
+versionsuffix = '-%s%s' % (local_interpreter, local_python_ver)
+
+homepage = 'https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FIX'
+description = """FIX attempts to auto-classify ICA components into "good" vs "bad" components, so that the bad
+components can be removed from the 4D FMRI data."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = ['https://www.fmrib.ox.ac.uk/~steve/ftp/']
+sources = ['fix-%(version)s.tar.gz']
+checksums = ['bb10a24f28b3c26a382744faa127c1c7bf3167dc7a4f06da1aab89b58b74ac72']
+
+dependencies = [
+    ('FSL', '6.0.2', local_python_ver),
+    ('Octave', '5.1.0'),
+    ('R', '3.6.0'),
+    ('ConnectomeWorkbench', '1.3.2')
+]
+
+exts_defaultclass = 'RPackage'
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+# FIX depends on a specific, older version of the party package
+exts_list = [
+    ('coin', '1.2-2', {
+        'checksums': ['d518065d3e1eb00121cb4e0200e1e4ae6b68eca6e249afc38bbffa35d24105bb'],
+    }),
+    ('party', '1.0-25', {
+        'checksums': ['d4206f594c6fca0ab6e2fae1649333083e7938d5ca995a038cc730b80edc5921'],
+    }),
+]
+
+# add the installation dir to PATH
+modextrapaths = {
+    'PATH': '',
+    'R_LIBS_SITE': '',
+}
+
+sanity_check_paths = {
+    'files': ['fix'],
+    'dirs': [''],
+}
+
+# Set FSL_FIX_MATLAB_MODE here, since modextrapaths does not accept integers.
+modtclfooter = "setenv FSL_FIX_MATLAB_MODE 2"
+modluafooter = 'setenv("FSL_FIX_MATLAB_MODE", 2)'
+
+moduleclass = 'bio'

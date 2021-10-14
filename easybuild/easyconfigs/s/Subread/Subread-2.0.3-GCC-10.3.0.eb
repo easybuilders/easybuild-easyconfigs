@@ -1,0 +1,41 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'MakeCp'
+
+name = 'Subread'
+version = '2.0.3'
+
+# HTTPS is not valid
+homepage = 'http://%(namelower)s.sourceforge.net/'
+description = """High performance read alignment, quantification and mutation discovery"""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%(namelower)s-%(version)s-source.tar.gz']
+
+checksums = ['56cef3a2f914d432713069d5c282f48831c3a1ecc89432ad5580caa322a5f56b']
+
+start_dir = 'src'
+
+prebuildopts = "sed -i 's/-mtune=core2//g' Makefile.Linux && "
+prebuildopts += "sed -i 's/-mtune=core2//g' longread-one/Makefile && "
+
+buildopts = " -f Makefile.Linux"
+
+files_to_copy = ['bin']
+
+local_binaries_list = [
+    'exactSNP', 'featureCounts', 'subindel', 'subjunc', 'sublong', 'subread-align', 'subread-buildindex',
+]
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_binaries_list],
+    'dirs': ['bin/utilities'],
+}
+
+sanity_check_commands = [
+    'cd %(builddir)s/%(namelower)s-%(version)s-source/test && bash test_all.sh'
+]
+
+moduleclass = 'bio'

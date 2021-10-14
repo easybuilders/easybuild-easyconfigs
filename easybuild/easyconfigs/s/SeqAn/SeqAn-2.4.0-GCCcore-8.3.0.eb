@@ -1,0 +1,50 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'CMakeMake'
+
+name = 'SeqAn'
+version = '2.4.0'
+
+homepage = 'https://github.com/seqan/seqan'
+
+description = """
+ SeqAn is an open source C++ library of efficient algorithms and data structures
+ for the analysis of sequences with the focus on biological data.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+source_urls = ['https://github.com/seqan/seqan/archive/']
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+checksums = ['d7084d17729214003e84818e0280a16f223c8f1c6a30eeef040c27e0c0047bd7']
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('CMake', '3.15.3'),
+    ('Python', '3.7.4'),
+]
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.11'),
+]
+
+separate_build_dir = True
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/util/cmake",
+    "cp -a %(builddir)s/seqan-*/util/cmake/seqan-config.cmake %(installdir)s/util/cmake/",
+    "cp -a %(builddir)s/seqan-*/include %(installdir)s",
+]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["gustaf_mate_joining", "mason_materializer", "mason_variator",
+                                     "rabema_prepare_sam", "razers3", "seqan_tcoffee", "s4_join", "samcat", "splazers",
+                                     "yara_mapper"]] + ['util/cmake/seqan-config.cmake'],
+    'dirs': ['include/seqan'],
+}
+
+moduleclass = 'bio'
