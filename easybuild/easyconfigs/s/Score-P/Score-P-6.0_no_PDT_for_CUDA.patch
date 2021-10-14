@@ -1,0 +1,16 @@
+Prevent PDT from instrumenting .cu files; fixes 'make installcheck' when both
+PDT and CUDA are enabled.  Patch backported from upstream repo; fix will be
+included in releases after v6.0.
+--- a/src/tools/instrumenter/scorep_instrumenter_pdt.cpp
++++ b/src/tools/instrumenter/scorep_instrumenter_pdt.cpp
+@@ -74,6 +74,10 @@ SCOREP_Instrumenter_PdtAdapter::precompile( SCOREP_Instrumenter&         instrum
+                                             SCOREP_Instrumenter_CmdLine& cmdLine,
+                                             const std::string&           source_file )
+ {
++    if ( is_cuda_file( source_file ) )
++    {
++        return source_file;
++    }
+     std::string extension = get_extension( source_file );
+     if ( is_fortran_file( source_file ) )
+     {

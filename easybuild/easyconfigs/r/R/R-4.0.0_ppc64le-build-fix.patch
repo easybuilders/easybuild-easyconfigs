@@ -1,0 +1,55 @@
+R build gets stuck in an infinite loop on ppc64le (https://stat.ethz.ch/pipermail/r-devel/2020-April/079382.html)
+Upstream fix: https://github.com/wch/r-source/commit/2159f0296056693da2d25a4fb9d2635f769836c3
+Patch prepared for EasyBuild by Simon Branford, University of Birmingham
+diff --git a/src/main/machar.c b/src/main/machar.c
+index 8db54f1350f..cede6e6d582 100644
+--- a/src/main/machar.c
++++ b/src/main/machar.c
+@@ -98,21 +98,22 @@ MACH_NAME(int *ibeta, int *it, int *irnd, int *ngrd, int *machep, int *negep,
+ {
+ 	volatile DTYPE a, b, beta, betain, betah, one,
+ 		t, temp, tempa, temp1, two, y, z, zero;
+-	int i, itemp, iz, j, k, mx, nxres;
++	int i, iz, j, k, mx, nxres;
+ 
+ 	one = 1;
+ 	two = one+one;
+ 	zero = one-one;
+ 
+ 		/* determine ibeta, beta ala malcolm. */
+-
+-	a = one;
++	a = one; // a = <large> = 9.0072e+15 for 'double' is used later
+ 	do {
+ 		a = a + a;
+ 		temp = a + one;
+ 		temp1 = temp - a;
+ 	}
+ 	while(temp1 - one == zero);
++#ifdef _no_longer___did_overflow_ // on IBM PowerPPC ('Power 8')
++	int itemp;
+ 	b = one;
+ 	do {
+ 		b = b + b;
+@@ -121,6 +122,9 @@ MACH_NAME(int *ibeta, int *it, int *irnd, int *ngrd, int *machep, int *negep,
+ 	}
+ 	while (itemp == 0);
+ 	*ibeta = itemp;
++#else
++	*ibeta = (int) FLT_RADIX;
++#endif
+ 	beta = *ibeta;
+ 
+ 		/* determine it, irnd */
+diff --git a/src/main/platform.c b/src/main/platform.c
+index 2cdaeed05a5..ef93c0b0e5f 100644
+--- a/src/main/platform.c
++++ b/src/main/platform.c
+@@ -43,6 +43,7 @@
+ #include <Rinterface.h>
+ #include <Fileio.h>
+ #include <ctype.h>			/* toupper */
++#include <float.h> // -> FLT_RADIX
+ #include <limits.h>
+ #include <string.h>
+ #include <stdlib.h>			/* for realpath */

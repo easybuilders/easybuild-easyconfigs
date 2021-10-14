@@ -1,5 +1,3 @@
-easyblock = 'PythonPackage'
-
 name = 'PyTorch'
 version = '1.3.1'
 versionsuffix = '-Python-%(pyver)s'
@@ -72,12 +70,6 @@ sources = [
         'download_filename': 'cb3d8066f20e6bca306454934d09d6abd826264a.tar.gz',
         'filename': 'onnx-tensorrt-20190425.tar.gz',
         'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'onnx-tensorrt'),
-    },
-    {
-        'source_urls': ['https://github.com/google/protobuf/archive'],
-        'download_filename': '48cb18e5c419ddd23d9badcfe4e9df7bde1979b2.tar.gz',
-        'filename': 'protobuf-20180727.tar.gz',
-        'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'protobuf'),
     },
     {
         'source_urls': ['https://github.com/Maratyszcza/pthreadpool/archive'],
@@ -170,12 +162,6 @@ sources = [
         'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'gemmlowp/gemmlowp'),
     },
     {
-        'source_urls': ['https://github.com/NVIDIA/nccl/archive'],
-        'download_filename': '7c72dee660e4d055b81721dd6b03e4e1c0a983cf.tar.gz',
-        'filename': 'nccl-20190625.tar.gz',
-        'extract_cmd': local_extract_cmd_pattern % (local_pytorchthirdpartydir, 'nccl/nccl'),
-    },
-    {
         'source_urls': ['https://github.com/NVlabs/cub/archive'],
         'download_filename': '285aeebaa34b0e8a7670867a2e66c1a52d998d6a.tar.gz',
         'filename': 'cub-20170829.tar.gz',
@@ -210,6 +196,7 @@ patches = [
     '%(name)s-1.2.0_fix-findAVX.patch',
     '%(name)s-1.2.0_disable-tests-ppc64le.patch',
     '%(name)s-%(version)s_fix-missing-sleef_h.patch',
+    '%(name)s-1.4.0_fix-missing-source-dir.patch',
 ]
 checksums = [
     'ab6feb5044f7d36f6e93dce4668d8c593e89d34aca7023fd99a38d215ca9dfc0',  # v1.3.1.tar.gz
@@ -222,7 +209,6 @@ checksums = [
     'c7682e9007ddfd94072647abab3e89ffd9084089460ae47d67060974467b58bf',  # benchmark-20180525.tar.gz
     '02407529fd8431cf627d45638b4d9a6c02b8aa5bf50d73b8fa12217918c57ff4',  # pybind11-20170919.tar.gz
     '1a98c6fece7878c88b59ffe651b427c15b4929c801a09655cd14ca44553787c3',  # onnx-tensorrt-20190425.tar.gz
-    'f5a35e17fb07f3b13517264cd17a089636fcbb2912f9df7bef7414058969a8d2',  # protobuf-20180727.tar.gz
     '90ab4f60ae0e99c0172dd5201dccc6de6c8f384a21b3d959588f4c1e00beec0f',  # pthreadpool-20181008.tar.gz
     '07625551202a1f35fe5e826669ad495962b26f6a139290e90b321c5996f002ef',  # FXdiv-20181016.tar.gz
     'afd27417c6df1c85f79a68361055dd3adc292174913c39c1f58b698b9cfd7926',  # psimd-20180906.tar.gz
@@ -238,7 +224,6 @@ checksums = [
     '0de43b6eaddd356f1d6cd164f73f37faf2f6c96fd684e1f7ea543ce49c1d144e',  # benchmark-20180606.tar.gz
     '2ec954f18cec50a7063a7358ce555f7e11788a7f6d4e7e597d83687dc2f3b989',  # eigen-20190126.tar.gz
     'fdd6f08bdb33d33f4df516ffb91730fdb163479c19502cfc983083fd9cf43bfa',  # gemmlowp-20181127.tar.gz
-    'ef8b624ef28e9e2d0e162065932dd2f25de8d6d1dc58df91bd36977e4bc0224c',  # nccl-20190625.tar.gz
     '7224b03af4acbc54525105bb42e3ecd75c66a3a5b47e8a725ab008467c4109f9',  # cub-20170829.tar.gz
     'b444b4428adc4befc777d9a1af2fd9bbf5f5a2339913668357196c5133e9cc7b',  # foxi-20190424.tar.gz
     'b8fb8b4871cc3da4bded01c476957a08f51949c20f834f39f90f9e10811d6dfe',  # ideep-20190912.tar.gz
@@ -249,15 +234,17 @@ checksums = [
     '001c9bf604aebe4b39ccad15332a71130b07b780c539ceca84d6c64cd6fc8a68',  # PyTorch-1.2.0_fix-findAVX.patch
     'c4183bcb29a8bcbadea0341e93a3a32afdf860aa31331b768e787d899183da92',  # PyTorch-1.2.0_disable-tests-ppc64le.patch
     '1337647ff64a1208d1e401fc84052d0bc6174b133cec2f3521319cb593f524fa',  # PyTorch-1.3.1_fix-missing-sleef_h.patch
+    '797987fb9c9bf9f1d75a1be878ddf9f418f9524006b0985ca8e6d65d4e2b6998',  # PyTorch-1.4.0_fix-missing-source-dir.patch
 ]
 
 builddependencies = [
     ('CMake', '3.15.3'),
     ('hypothesis', '4.44.2', versionsuffix),
-    ('Ninja', '1.9.0'),
 ]
 
 dependencies = [
+    ('Ninja', '1.9.0'),
+    ('protobuf', '3.10.0'),
     ('Python', '3.7.4'),
     ('SciPy-bundle', '2019.10', versionsuffix),
     ('PyYAML', '5.1.2'),
@@ -265,32 +252,25 @@ dependencies = [
     ('GMP', '6.1.2'),
     ('numactl', '2.0.12'),
     ('FFmpeg', '4.2.1'),
-    ('gflags', '2.2.2'),
-    ('glog', '0.4.0'),
     ('Pillow', '6.2.1'),
 ]
 
-download_dep_fail = True
-
-prebuildopts = 'PYTORCH_BUILD_VERSION=%(version)s PYTORCH_BUILD_NUMBER=1 VERBOSE=1 '
-prebuildopts += 'MAX_JOBS=%(parallel)s '
-prebuildopts += 'LDFLAGS="$LDFLAGS -ldl" '
-prebuildopts += 'USE_FFMPEG=ON USE_IBVERBS=1 USE_GFLAGS=ON USE_GLOG=ON '
-
-preinstallopts = prebuildopts
-
-runtest = 'export PYTHONPATH=%(builddir)s/%(namelower)s-%(version)s/' \
-          'build/lib.linux-%(arch)s-%(pyshortver)s:$PYTHONPATH '
-runtest += '&& export LD_LIBRARY_PATH=%(builddir)s/%(namelower)s-%(version)s/torch/lib64:$LD_LIBRARY_PATH '
-runtest += '&& python test/run_test.py --verbose '
-
-options = {'modulename': 'torch'}
-
-postinstallcmds = ['cp -a %(builddir)s/%(namelower)s-%(version)s/torch/lib*/* %(installdir)s/lib/']
-
-sanity_check_paths = {
-    'files': [],
-    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+excluded_tests = {
+    'POWER': [
+        # https://github.com/pytorch/pytorch/issues/41186
+        'autograd',
+        # https://github.com/pytorch/pytorch/issues/41400
+        'jit',
+        # https://github.com/pytorch/pytorch/issues/41469
+        'nn',
+        # Sporadically fails for unknown reason. Fixed in newer versions
+        'torch',
+    ],
 }
+
+# OpenMP causes e.g. torch.matmul to return invalid results at least on POWER
+# See e.g. https://github.com/pytorch/pytorch/issues/3716#issuecomment-387776917
+runtest = 'cd test && OMP_NUM_THREADS=1 %(python)s run_test.py --verbose %(excluded_tests)s'
+tests = ['PyTorch-check-cpp-extension.py']
 
 moduleclass = 'devel'

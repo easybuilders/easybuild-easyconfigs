@@ -1,0 +1,47 @@
+# Author: Denis Krišťák (INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'leidenalg'
+version = '0.8.3'
+
+homepage = 'https://github.com/vtraag/leidenalg'
+description = """Implementation of the Leiden algorithm for various quality
+functions to be used with igraph in Python."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('PyYAML', '5.3.1'),
+    ('Bison', '3.7.1'),
+    ('libtool', '2.4.6'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('igraph', '0.9.1'),
+    ('python-igraph', '0.9.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('ddt', '1.4.2', {
+        'checksums': ['64a67366a2715e636b88694cc6075cc02db292f01098b8e385397c894d395378'],
+    }),
+    (name, version, {
+        'checksums': ['84c2fa673390b62986e51258cbe048a49c163e516ee791b372c2779c928d8e7e'],
+        'buildopts': '--use-pkg-config',
+        'runtest': "python setup.py test",
+        'testopts': '--use-pkg-config',
+    }),
+]
+
+sanity_check_commands = ["python -c 'import leidenalg; import igraph as ig; "
+                         "leidenalg.find_partition(ig.Graph.Erdos_Renyi(100, 0.1), "
+                         "leidenalg.ModularityVertexPartition)'"]
+
+moduleclass = 'chem'

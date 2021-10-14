@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'igraph'
+version = '0.8.5'
+
+homepage = 'https://igraph.org'
+description = """igraph is a collection of network analysis tools with the emphasis on 
+efficiency, portability and ease of use. igraph is open source and free. igraph can be 
+programmed in R, Python and C/C++."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['2e5da63a2b8e9bb497893a17cf77c691df1739c298664f8adb1310a01218f95b']
+
+builddependencies = [
+    ('Autotools', '20200321'),
+    ('pkg-config', '0.29.2'),
+    ('binutils', '2.35'),
+]
+
+dependencies = [
+    ('GLPK', '4.65'),
+    ('libxml2', '2.9.10'),
+    ('zlib', '1.2.11'),
+]
+
+preconfigopts = 'autoreconf -i && '
+# Remove hardcoded links to BLAS/LAPACK
+preconfigopts += "sed -i 's/-lblas/$LIBBLAS/' configure && "
+preconfigopts += "sed -i 's/-llapack/$LIBLAPACK/' configure && "
+
+configopts = "--with-external-blas --with-external-lapack --with-external-glpk"
+
+sanity_check_paths = {
+    'files': ['lib/libigraph.%s' % SHLIB_EXT, 'lib/libigraph.la', 'lib/pkgconfig/igraph.pc'] +
+             ['include/igraph/%s' % x for x in ['igraph_version.h', 'igraph_types.h', 'igraph_constants.h']],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

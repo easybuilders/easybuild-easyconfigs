@@ -1,0 +1,37 @@
+# parallal::detectCores() detects physical cores and not available cores. It is ususally problem in queue systems
+# like PBS or Slurm. This patch gives solution for that problem for PBS and with Slurm with PBS compatibility switched
+# on. For other queue systems, a different solutiom might needed.
+# April 13th 2021 by B. Hajgato (UGent)
+diff -ru DMCfun.orig/MD5 DMCfun/MD5
+--- DMCfun.orig/MD5	2021-01-10 18:50:10.000000000 +0100
++++ DMCfun/MD5	2021-04-13 09:31:31.242654188 +0200
+@@ -4,7 +4,7 @@
+ a835c7e49694b2c835c438362b16946f *R/DMCfun.R
+ 034299149a3219bf581d440b19d94fbb *R/RcppExports.R
+ 4e07b13ccaf91457dfc167540129c61f *R/dmcData.R
+-0bce9adf54182001c9eadbca3c6af0f8 *R/dmcFit.R
++d66108a6cddee34ca0dc1556b6b24f53 *R/dmcFit.R
+ 655fea3d9c03b02d6f2539ec478ab9b0 *R/dmcSim.R
+ f301185baf6007e9ade686f9964ecf23 *R/methods.R
+ 1b5964cab6608330647f601921f15a5c *R/plot.R
+diff -ru DMCfun.orig/R/dmcFit.R DMCfun/R/dmcFit.R
+--- DMCfun.orig/R/dmcFit.R	2020-12-03 18:53:03.000000000 +0100
++++ DMCfun/R/dmcFit.R	2021-04-13 09:28:47.506520017 +0200
+@@ -159,7 +159,7 @@
+     if (nzchar(chk) && (chk == "true")) {
+       num_cores <- 2L
+     } else {
+-      num_cores <- parallel::detectCores() / 2
++      num_cores <- as.numeric(Sys.getenv("SLURM_CPUS_ON_NODE", Sys.getenv("PBS_NUM_PPN", parallel::detectCores() / 2)))
+     }
+     
+     # Older code (pre June 2020) used doSNOW progress bar 
+@@ -297,7 +297,7 @@
+   if (nzchar(chk) && (chk == "true")) {
+     num_cores <- 2L
+   } else {
+-    num_cores <- parallel::detectCores() / 2
++    num_cores <- as.numeric(Sys.getenv("SLURM_CPUS_ON_NODE", Sys.getenv("PBS_NUM_PPN", parallel::detectCores() / 2)))
+   }
+   cl <- parallel::makeCluster(num_cores)
+   invisible(parallel::clusterExport(cl = cl, varlist=c("dmcSim", "calculateCostValue")))

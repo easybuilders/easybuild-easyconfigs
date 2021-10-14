@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'IQ-TREE'
+version = '2.1.2'
+
+# HTTPS is not working
+homepage = 'http://www.iqtree.org/'
+description = """Efficient phylogenomic software by maximum likelihood"""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+# Including 'usempi' will take precedence and override IQTREE_FLAGS and produces only 'iqtree-mpi' binary
+
+source_urls = ['https://github.com/iqtree/iqtree2/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_use_EB_LSD2.patch']
+checksums = [
+    '3aaf5ac7f60d852ac8b733fb82832c049ca48b7203a6a865e99c5af359fcca5a',  # v2.1.2.tar.gz
+    'daa2ab12d44e26eb5607c4ed6acb9d970e230a83dabcf21461f37bc48263b816',  # IQ-TREE-2.1.2_use_EB_LSD2.patch
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('Eigen', '3.3.7'),
+]
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Boost', '1.72.0'),
+    ('LSD2', '1.9.7'),
+]
+
+local_conf_opts = ' -DUSE_LSD2=ON '
+configopts = [
+    '-DIQTREE_FLAGS=omp' + local_conf_opts,
+    '-DIQTREE_FLAGS=mpi' + local_conf_opts,
+]
+
+sanity_check_paths = {
+    'files': ['bin/iqtree2', 'bin/iqtree2-mpi'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
