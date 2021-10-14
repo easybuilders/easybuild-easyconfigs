@@ -424,10 +424,12 @@ class EasyConfigTest(TestCase):
 
         # filter out variants that are specific to a particular version of CUDA
         cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
-        if len(dep_vars) > len(cuda_dep_vars):
+        if len(dep_vars) >= len(cuda_dep_vars):
             for key in list(dep_vars):
                 if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
                     dep_vars.pop(key)
+                    if len(dep_vars) == 1:
+                        break
 
         # some software packages require a specific (older/newer) version of a particular dependency
         old_dep_versions = {
