@@ -393,7 +393,7 @@ class EasyConfigTest(TestCase):
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
-        versionsuffix_deps = ['ASE', 'Boost', 'CUDAcore', 'CUDA', 'Java', 'Lua',
+        versionsuffix_deps = ['ASE', 'Boost', 'CUDAcore', 'Java', 'Lua',
                               'PLUMED', 'PyTorch', 'R', 'TensorFlow']
         if dep in versionsuffix_deps and len(dep_vars) > 1:
 
@@ -424,10 +424,11 @@ class EasyConfigTest(TestCase):
 
         # filter out variants that are specific to a particular version of CUDA
         cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
-        if len(dep_vars) >= len(cuda_dep_vars):
+        if len(dep_vars) >= len(cuda_dep_vars) and len(dep_vars) > 1:
             for key in list(dep_vars):
                 if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
                     dep_vars.pop(key)
+                    # always retain at least one dep variant
                     if len(dep_vars) == 1:
                         break
 
