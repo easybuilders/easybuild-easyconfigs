@@ -1,0 +1,57 @@
+fix issues in numpy distutils pkg w.r.t. detecting BLAS/LAPACK libraries
+by Kenneth Hoste (HPC-UGent)
+
+Remade against numpy-1.18.2, 20200317, Åke Sandgren (HPC2N)
+diff -ru numpy-1.18.2.orig/numpy/distutils/fcompiler/__init__.py numpy-1.18.2/numpy/distutils/fcompiler/__init__.py
+--- numpy-1.18.2.orig/numpy/distutils/fcompiler/__init__.py	2020-03-09 17:18:24.000000000 +0100
++++ numpy-1.18.2/numpy/distutils/fcompiler/__init__.py	2020-03-17 20:05:39.284278141 +0100
+@@ -637,7 +637,10 @@
+         return options
+ 
+     def library_option(self, lib):
+-        return "-l" + lib
++        if lib[0]=='-':
++            return lib
++        else:
++            return "-l" + lib
+     def library_dir_option(self, dir):
+         return "-L" + dir
+ 
+diff -ru numpy-1.18.2.orig/numpy/distutils/system_info.py numpy-1.18.2/numpy/distutils/system_info.py
+--- numpy-1.18.2.orig/numpy/distutils/system_info.py	2020-03-09 17:18:24.000000000 +0100
++++ numpy-1.18.2/numpy/distutils/system_info.py	2020-03-17 20:05:39.284278141 +0100
+@@ -831,7 +831,7 @@
+             if is_string(default):
+                 return [default]
+             return default
+-        return [b for b in [a.strip() for a in libs.split(',')] if b]
++        return [b for b in [a.strip().replace(':',',') for a in libs.split(',')] if b]
+ 
+     def get_libraries(self, key='libraries'):
+         if hasattr(self, '_lib_names'):
+@@ -918,6 +918,9 @@
+         # make sure we preserve the order of libs, as it can be important
+         found_dirs, found_libs = [], []
+         for lib in libs:
++            if lib[0] == '-':
++                found_libs.append(lib)
++                continue
+             for lib_dir in lib_dirs:
+                 found_lib = self._find_lib(lib_dir, lib, exts)
+                 if found_lib:
+diff -ru numpy-1.18.2.orig/numpy/distutils/unixccompiler.py numpy-1.18.2/numpy/distutils/unixccompiler.py
+--- numpy-1.18.2.orig/numpy/distutils/unixccompiler.py	2020-03-09 17:18:24.000000000 +0100
++++ numpy-1.18.2/numpy/distutils/unixccompiler.py	2020-03-17 20:05:39.284278141 +0100
+@@ -137,3 +137,12 @@
+ 
+ replace_method(UnixCCompiler, 'create_static_lib',
+                UnixCCompiler_create_static_lib)
++
++def UnixCCompiler_library_option(self, lib):
++    if lib[0]=='-':
++        return lib
++    else:
++        return "-l" + lib
++
++replace_method(UnixCCompiler, 'library_option',
++               UnixCCompiler_library_option)

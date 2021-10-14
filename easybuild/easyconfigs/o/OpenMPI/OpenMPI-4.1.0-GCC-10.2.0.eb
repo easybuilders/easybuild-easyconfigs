@@ -1,0 +1,47 @@
+name = 'OpenMPI'
+version = '4.1.0'
+
+homepage = 'https://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-3 implementation."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'OpenMPI-4.1.1_fix-bufferoverflow-in-common_ofi.patch',
+    'OpenMPI-4.0.1_remove-pmix-check-in-pmi-switch.patch'
+]
+checksums = [
+    '228467c3dd15339d9b26cf26a291af3ee7c770699c5e8a1b3ad786f9ae78140a',  # openmpi-4.1.0.tar.gz
+    # OpenMPI-4.1.1_fix-bufferoverflow-in-common_ofi.patch
+    'a189d834506f3d7c31eda6aa184598a3631ea24a94bc551d5ed1f053772ca49e',
+    # OpenMPI-4.0.1_remove-pmix-check-in-pmi-switch.patch
+    'a5737061eb9006e862f30019776adf092d800f681272be7f1575e74b4bfa20fb',
+]
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('hwloc', '2.2.0'),
+    ('libevent', '2.1.12'),
+    ('UCX', '1.9.0'),
+    ('libfabric', '1.11.0'),
+    ('PMIx', '3.1.5'),
+]
+
+# replace -march=skylake-avx512 option with equivalent -m* flags,
+# to avoid problems when building on systems which don't support AVX-512;
+# cfr. https://github.com/open-mpi/ompi/issues/8306
+preconfigopts = "sed -i 's/-march=skylake-avx512/-mavx512f -mavx512bw -mavx512vl -mavx512dq/g' configure && "
+
+# disable MPI1 compatibility for now, see what breaks...
+# configopts = '--enable-mpi1-compatibility '
+
+# to enable SLURM integration (site-specific)
+# configopts += '--with-slurm --with-pmi=/usr/include/slurm --with-pmi-libdir=/usr'
+
+moduleclass = 'mpi'

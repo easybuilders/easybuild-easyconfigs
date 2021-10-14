@@ -1,0 +1,50 @@
+From 3094fc6c83c7a623f9a7e7846eb711a8a99ddfff Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Thu, 1 Oct 2020 15:41:42 +0200
+Subject: [PATCH] Lazyly reinit threads after a fork in OMP mode
+
+This initializes the per-thread memory buffers which get
+cleared/released on a fork via pthread_at_fork. Not doing so leads to
+each thread calling blas_memory_alloc on almost every execution which
+slows down the code significantly as the threads race for the memory
+allocation using locks to serialize that.
+---
+ driver/others/blas_server_omp.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/driver/others/blas_server_omp.c b/driver/others/blas_server_omp.c
+index d126955e4..da0a5674a 100644
+--- a/driver/others/blas_server_omp.c
++++ b/driver/others/blas_server_omp.c
+@@ -48,6 +48,21 @@
+ 
+ #else
+ 
++#ifndef likely
++#ifdef __GNUC__
++#define likely(x) __builtin_expect(!!(x), 1)
++#else
++#define likely(x) (x)
++#endif
++#endif
++#ifndef unlikely
++#ifdef __GNUC__
++#define unlikely(x) __builtin_expect(!!(x), 0)
++#else
++#define unlikely(x) (x)
++#endif
++#endif
++
+ #ifndef OMP_SCHED
+ #define OMP_SCHED static
+ #endif
+@@ -350,6 +365,9 @@ static void exec_threads(blas_queue_t *queue, int buf_index){
+ 
+ int exec_blas(BLASLONG num, blas_queue_t *queue){
+ 
++  // Handle lazy re-init of the thread-pool after a POSIX fork
++  if (unlikely(blas_server_avail == 0)) blas_thread_init();
++
+   BLASLONG i, buf_index;
+ 
+   if ((num <= 0) || (queue == NULL)) return 0;

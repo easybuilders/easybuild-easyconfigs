@@ -1,0 +1,62 @@
+Avoid failures by not running large dataset tests on CPU but only on GPU as originally intended
+Those tests fail e.g. on POWER9 CPU
+
+See https://github.com/pytorch/pytorch/issues/41469 for the issue
+See https://github.com/pytorch/pytorch/issues/46536 for the cause
+See https://github.com/pytorch/pytorch/pull/45332 and https://github.com/pytorch/pytorch/pull/48429 for the fix
+
+Author (backport): Alexander Grund (TU Dresden)
+
+
+diff --git a/test/test_nn.py b/test/test_nn.py
+index 8bd88e51d6..2cbf206e23 100644
+--- a/test/test_nn.py
++++ b/test/test_nn.py
+@@ -10791,6 +10791,7 @@ class TestNNDeviceType(NNTestCase):
+             # test non-persistent softmax kernel
+             _test_helper((4, 1536))
+ 
++    @onlyCUDA
+     @largeCUDATensorTest('12GB')
+     def test_conv_large_nosplit(self, device):
+         # Here we just test the convolution correctly route to the fallback implementation
+@@ -10992,6 +10993,7 @@ class TestNNDeviceType(NNTestCase):
+             small_image.grad.zero_()
+             large_view.grad.zero_()
+ 
++    @onlyCUDA
+     @largeCUDATensorTest('12GB')
+     def test_conv_transposed_large(self, device):
+         dtype = torch.half if self.device_type == 'cuda' else torch.float
+@@ -11008,6 +11010,7 @@ class TestNNDeviceType(NNTestCase):
+         self.assertEqual(maxdiff2, 0)
+         self.assertEqual(maxdiff3, 0)
+ 
++    @onlyCUDA
+     @skipCUDAIfRocm
+     @largeCUDATensorTest('12GB')
+     def test_conv_large(self, device):
+diff --git a/test/test_tensor_creation_ops.py b/test/test_tensor_creation_ops.py
+index b0777c7fa1..1c2c248759 100644
+--- a/test/test_tensor_creation_ops.py
++++ b/test/test_tensor_creation_ops.py
+@@ -757,6 +757,7 @@ class TestTensorCreation(TestCase):
+     def test_logspace_steps_warning(self, device, dtype):
+         self._linspace_logspace_warning_helper(torch.logspace, device, dtype)
+ 
++    @onlyCUDA
+     @largeCUDATensorTest('16GB')
+     def test_range_factories_64bit_indexing(self, device):
+         bigint = 2 ** 31 + 1
+diff --git a/test/test_torch.py b/test/test_torch.py
+index ec5f2a47f0..5ce1a6d53a 100644
+--- a/test/test_torch.py
++++ b/test/test_torch.py
+@@ -9390,6 +9390,7 @@ class TestTorchDeviceType(TestCase):
+             expected = fn(y, 1, keepdim=False)
+             self.assertEqual(x[:, 1], expected, msg='{} with out= kwarg'.format(fn_name))
+ 
++    @onlyCUDA
+     @largeCUDATensorTest('10GB')
+     def test_reduction_split(self, device):
+         # Test reduction when there is a 32bit-indexing split

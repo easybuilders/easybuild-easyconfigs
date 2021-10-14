@@ -1,0 +1,74 @@
+From 37e0df8a9be5a8232f4ccb73cdadb02121ba523f Mon Sep 17 00:00:00 2001
+From: Jiufu Guo <guojiufu@linux.ibm.com>
+Date: Tue, 10 Mar 2020 13:51:57 +0800
+Subject: [PATCH] rs6000: Check -+0 and NaN for smax/smin generation
+
+PR93709 mentioned regressions on maxlocval_4.f90 and minlocval_f.f90 which
+relates to max of '-inf' and 'nan'. This regression occur on P9 because
+P9 new instruction 'xsmaxcdp' is generated.
+And for C code `a < b ? b : a` is also generated as `xsmaxcdp` under -O2
+for P9. While this instruction behavior more like C/C++ semantic (a>b?a:b).
+
+This generates prevents 'xsmaxcdp' to be generated for those cases.
+'xsmincdp' also is handled in patch.
+
+gcc/
+2020-03-10  Jiufu Guo  <guojiufu@linux.ibm.com>
+
+	PR target/93709
+	* gcc/config/rs6000/rs6000.c (rs6000_emit_p9_fp_minmax): Check
+	NAN and SIGNED_ZEROR for smax/smin.
+
+gcc/testsuite
+2020-03-10  Jiufu Guo  <guojiufu@linux.ibm.com>
+
+	PR target/93709
+	* gcc.target/powerpc/p9-minmax-3.c: New test.
+---
+ gcc/ChangeLog                                  |  6 ++++++
+ gcc/config/rs6000/rs6000.c                     |  6 +++++-
+ gcc/testsuite/ChangeLog                        |  5 +++++
+ gcc/testsuite/gcc.target/powerpc/p9-minmax-3.c | 17 +++++++++++++++++
+ 4 files changed, 33 insertions(+), 1 deletion(-)
+ create mode 100644 gcc/testsuite/gcc.target/powerpc/p9-minmax-3.c
+
+diff --git a/gcc/config/rs6000/rs6000.c b/gcc/config/rs6000/rs6000.c
+index 848a4ef451e4..46b7dec2abd4 100644
+--- a/gcc/config/rs6000/rs6000.c
++++ b/gcc/config/rs6000/rs6000.c
+@@ -14831,7 +14831,11 @@ rs6000_emit_p9_fp_minmax (rtx dest, rtx op, rtx true_cond, rtx false_cond)
+   if (rtx_equal_p (op0, true_cond) && rtx_equal_p (op1, false_cond))
+     ;
+ 
+-  else if (rtx_equal_p (op1, true_cond) && rtx_equal_p (op0, false_cond))
++  /* Only when NaNs and signed-zeros are not in effect, smax could be
++     used for `op0 < op1 ? op1 : op0`, and smin could be used for
++     `op0 > op1 ? op1 : op0`.  */
++  else if (rtx_equal_p (op1, true_cond) && rtx_equal_p (op0, false_cond)
++	   && !HONOR_NANS (compare_mode) && !HONOR_SIGNED_ZEROS (compare_mode))
+     max_p = !max_p;
+ 
+   else
+diff --git a/gcc/testsuite/gcc.target/powerpc/p9-minmax-3.c b/gcc/testsuite/gcc.target/powerpc/p9-minmax-3.c
+new file mode 100644
+index 000000000000..141603e05b43
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/powerpc/p9-minmax-3.c
+@@ -0,0 +1,17 @@
++/* { dg-do compile { target { powerpc*-*-* } } } */
++/* { dg-require-effective-target powerpc_p9vector_ok } */
++/* { dg-options "-mdejagnu-cpu=power9 -O2 -mpower9-minmax" } */
++/* { dg-final { scan-assembler-not "xsmaxcdp"   } } */
++/* { dg-final { scan-assembler-not "xsmincdp"   } } */
++
++double
++dbl_max1 (double a, double b)
++{
++  return a < b ? b : a;
++}
++
++double
++dbl_min1 (double a, double b)
++{
++  return a > b ? b : a;
++}
