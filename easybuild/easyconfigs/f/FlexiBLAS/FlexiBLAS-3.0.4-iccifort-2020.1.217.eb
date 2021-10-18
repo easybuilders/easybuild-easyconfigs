@@ -29,18 +29,12 @@ builddependencies = [
     ('imkl', '2021.2.0'),
     ('BLIS', '0.8.1'),
     ('OpenBLAS', '0.3.17'),
-    ('FlexiBLAS', version, '', SYSTEM),
 ]
-
-preconfigopts = "sed -i 's/\"FLEXIBLAS_LIBRARY_PATH\"/\"FLEXIBLAS_INTEL_LIBRARY_PATH\"/' ../*/config.h.in && "
-preconfigopts += "sed -i 's/_DIR \"flexiblas\"/_DIR \"flexiblas_intel\"/' ../*/CMakeLists.txt && "
 
 postinstallcmds = [
-    'ln -s $EBROOTFLEXIBLAS/lib64/{flexiblas,libflexiblas.so*} %(installdir)s/lib64',
+    # symlink to be able to use the GCC-compiled FlexiBLAS; the Intel-compiled one is called
+    # libflexiblas_intel.so.
+    'ln -s ../../../../../Core/%(namelower)s/%(version)s/lib64/libflexiblas.so{,.3,.3.0} %(installdir)s/lib64',
 ]
-
-modextrapaths = {
-    'FLEXIBLAS_LIBRARY_PATH': 'lib64/flexiblas',
-}
 
 moduleclass = 'lib'
