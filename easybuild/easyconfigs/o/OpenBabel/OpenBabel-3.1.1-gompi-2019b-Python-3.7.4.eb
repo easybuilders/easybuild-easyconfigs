@@ -44,6 +44,13 @@ configopts = '-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEA
 # Enable support for OpenMP compilation of forcefield code (optional)
 configopts += '-DENABLE_OPENMP=ON '
 
+# OpenBabel-3.1.1 creates directories named 3.1.0, which leads to BABEL_LIBDIR and BABEL_DATDIR
+# (set in the easyblock) having invalid values.  Work around this with some symlinks.
+postinstallcmds = [
+    'ln -s %(installdir)s/lib/openbabel/3.1.0 %(installdir)s/lib/openbabel/%(version)s',
+    'ln -s %(installdir)s/share/openbabel/3.1.0 %(installdir)s/share/openbabel/%(version)s',
+]
+
 pretestopts = 'cp lib/_openbabel.%s %%(builddir)s/openbabel-*/scripts/python/openbabel/ && ' % SHLIB_EXT
 runtest = 'test'
 

@@ -1,0 +1,86 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak (INUITS)
+
+easyblock = "CMakeMake"
+
+name = 'VMTK'
+version = '1.4.0'
+
+homepage = 'https://vmtk.org'
+description = """vmtk is a collection of libraries and tools
+for 3D reconstruction, geometric analysis, mesh generation and
+surface data analysis for image-based modeling of blood vessels. """
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+versionsuffix = '-Python-%(pyver)s'
+local_vtk_shortver = '8.2'
+local_itk_shortver = '4.13'
+
+# fetching specific commit of VMTK bcs of some bugfixes
+local_commit = '63a3b99'
+
+local_vmtk_test_commit = "cbf09e4da03aa332c584b2709c4254017db9d4ef"
+source_urls = [
+    'https://github.com/vmtk/vmtk/archive/',
+    "https://raw.githubusercontent.com/vmtk/vmtk-test-data/%s/input/" % local_vmtk_test_commit,
+]
+sources = [
+    {
+        'download_filename': '%s.tar.gz' % local_commit,
+        'filename': SOURCE_TAR_GZ},
+    {
+        'download_filename': 'vase.vti',
+        'filename': 'vase-20180313.vti',
+        'extract_cmd': 'cp %s %(builddir)s/vase.vti',
+    },
+]
+checksums = [
+    '39aeb1de6bba8511dff45f0a69c9d6dc8d61f323739312ddceb22f8773e21459',  # VMTK-1.4.0.tar.gz
+    'b5f761d7a923ee19cd9cc8df7fbc794ffaa16aca101455fcdf9ceaa610ca3f57',  # vase-20180313.vti
+]
+
+builddependencies = [('CMake', '3.15.3')]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('VTK', '8.2.0', versionsuffix),
+    ('h5py', '2.10.0', versionsuffix),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    # vmtk now works well with ITK 4.x only. see https://github.com/vmtk/vmtk/issues/381
+    ('ITK', local_itk_shortver + '.1', versionsuffix),
+    ('X11', '20190717'),
+    ('libGLU', '9.0.1'),
+    ('zlib', '1.2.11'),
+    ('Mesa', '19.1.7'),
+    ('Tkinter', '3.7.4'),
+]
+
+preconfigopts = "export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:$EBROOTITK/lib/cmake/ITK-%s/ && " % local_itk_shortver
+
+configopts = '-DITK_USE_SYSTEM_DOUBLECONVERSION=ON -DITK_USE_SYSTEM_EIGEN=ON -DITK_USE_SYSTEM_EXPAT=ON '
+configopts += '-DITK_USE_SYSTEM_JPEG=ON -DITK_USE_SYSTEM_PNG=ON -DITK_USE_SYSTEM_TIFF=ON '
+configopts += '-DITK_USE_SYSTEM_ZLIB=ON '
+configopts += ' -DUSE_SYSTEM_VTK=ON '
+configopts += ' -DVTK_DIR=$EBROOTVTK '
+configopts += ' -DUSE_SYSTEM_ITK=ON '
+configopts += ' -DCMAKE_MODULE_PATH=$EBROOTVTK/lib/cmake/vtk-%s/Modules ' % local_vtk_shortver
+configopts += ' -DSUPERBUILD_INSTALL_PREFIX=%(installdir)s '
+configopts += ' -DVMTK_BUILD_TESTING=ON '
+
+preinstallopts = 'cd VMTK-Build && '
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_paths = {
+    'files': ['bin/vmtk', 'bin/vmtkactivetubes'],
+    'dirs': ['bin', 'lib/python%(pyshortver)s/site-packages', 'include'],
+}
+
+sanity_check_commands = [
+    "cd %(builddir)s && vmtkimagereader -ifile vase.vti",
+    "vmtk --help",
+]
+
+moduleclass = 'bio'

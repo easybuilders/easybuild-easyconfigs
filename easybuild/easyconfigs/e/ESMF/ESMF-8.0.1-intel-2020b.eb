@@ -1,0 +1,31 @@
+name = 'ESMF'
+version = '8.0.1'
+
+homepage = 'https://www.earthsystemcog.org/projects/esmf/'
+description = """The Earth System Modeling Framework (ESMF) is a suite of software tools for developing
+ high-performance, multi-component Earth science modeling applications."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/esmf-org/esmf/archive/']
+sources = ['%%(name)s_%s.tar.gz' % '_'.join(version.split('.'))]
+patches = ['ESMF-6.1.1_libopts.patch']
+checksums = [
+    '9172fb73f3fe95c8188d889ee72fdadb4f978b1d969e1d8e401e8d106def1d84',  # ESMF_8_0_1.tar.gz
+    '3851627f07c32a7da55d99072d619942bd3a1d9dd002e1557716158e7aacdaf4',  # ESMF-6.1.1_libopts.patch
+]
+
+dependencies = [
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.3'),
+    ('netCDF-C++4', '4.3.1'),
+]
+
+buildopts = 'ESMF_NETCDF_INCLUDE=$EBROOTNETCDFMINFORTRAN/include '
+buildopts += 'ESMF_NETCDF_LIBS="`nc-config --libs` `nf-config --flibs` `ncxx4-config --libs`"'
+
+# too parallel causes the build to become really slow
+maxparallel = 8
+
+moduleclass = 'geo'
