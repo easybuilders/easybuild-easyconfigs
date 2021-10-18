@@ -1,0 +1,52 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# uploaded by J. Sassmannshausen
+# we recommend to use --download-timeout=1000 when fetching the files
+
+easyblock = 'MakeCp'
+
+name = 'Regenie'
+version = '2.2.4'
+
+homepage = 'https://rgcgithub.github.io/regenie'
+description = """Regenie is a C++ program for whole genome regression modelling of large genome-wide 
+association studies.
+It is developed and supported by a team of scientists at the Regeneron Genetics Center."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/rgcgithub/regenie/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(namelower)s-Makefile-lapacke.patch']
+
+checksums = [
+    'ddaca3295048c2b88617305a1e1a9ba8d0da5fe448595e85eaf4453bb18fbc37',  # v2.2.4.tar.gz
+    'e9ecd333992119fc9eeb148388aca186c60a49f3c4131ad1b04305ef07704809',  # regine-Makfile-lapacke.patch
+]
+
+builddependencies = [
+    ('Boost', '1.76.0'),
+]
+
+dependencies = [
+    ('BGEN', '1.1.7'),
+    ('OpenBLAS', '0.3.17'),
+]
+
+build_cmd = "make BGEN_PATH=$EBROOTBGEN  HAS_BOOST_IOSTREAM=0 OPENBLAS_ROOT=$EBROOTOPENBLAS STATIC=0"
+
+files_to_copy = [
+    (['regenie'], 'bin'),
+    (['example/*'], 'example'),
+    (['docs/*'], 'docs'),
+]
+
+runtest = './regenie --help'
+
+sanity_check_paths = {
+    'files': ['bin/regenie'],
+    'dirs': ['bin', 'example', 'docs'],
+}
+
+
+moduleclass = 'bio'
