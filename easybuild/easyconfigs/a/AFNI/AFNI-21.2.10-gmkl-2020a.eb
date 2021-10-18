@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'AFNI'
+version = '21.2.10'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'gmkl', 'version': '2020a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/']
+sources = ['AFNI_%(version)s.tar.gz']
+checksums = ['e45ecb8cb4d145e939e34ef23861898a659bcd48f6b2087719354c9cb4ee0616']
+
+builddependencies = [
+    ('M4', '1.4.18'),
+]
+
+dependencies = [
+    ('R', '4.0.2', '', ('gcccoremkl', '2020a')),
+    ('Qt5', '5.12.8', '', ('GCCcore', '9.3.0')),
+    ('GSL', '2.6', '', ('GCC', '9.3.0')),
+    ('R-bundle-Bioconductor', '3.12', '-R-4.0.2'),
+    ('expat', '2.2.9', '', True),
+    ('Python', '3.7', '', ('GCCcore', '9.3.0')),
+]
+
+prebuildopts = "cd src && cp Makefile.linux_centos_7_64  Makefile && "
+
+buildopts = 'totality LGIFTI="$EBROOTEXPAT/lib/libexpat.so" LDPYTHON="-lpython%(pyshortver)sm" '
+buildopts += 'CC="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCVOL="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCFAST="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCOLD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCMIN="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCSVD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'LD="${CC} \$(CPROF)" LZLIB="${EBROOTZLIB}/lib/libz.so" XLIBS="-lXm -lXt" '
+buildopts += 'IFLAGS="-I. -I$EBROOTPYTHON/include/python%(pyshortver)sm '
+buildopts += '-I$EBROOTGLIB/lib/glib-2.0/include -I$EBROOTGLIB/include/glib-2.0"'
+buildopts += ' COMP_SUMA=True '
+buildopts += ' INSTALLDIR=%(installdir)s'
+
+parallel = 1
+
+postinstallcmds = ['chmod -R go+X %(installdir)s']
+
+skipsteps = [
+    'configure',
+    'install',
+]
+
+sanity_check_paths = {
+    'files': ['%(namelower)s'],
+    'dirs': [],
+}
+
+modextrapaths = {'PATH': ['']}
+
+moduleclass = 'bio'

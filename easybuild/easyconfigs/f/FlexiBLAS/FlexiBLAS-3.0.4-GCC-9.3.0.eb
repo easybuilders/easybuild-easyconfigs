@@ -1,33 +1,24 @@
 name = 'FlexiBLAS'
+easyblock = 'Bundle'
 version = '3.0.4'
+altroot = 'FlexiBLAS'
 
 homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
 description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
 used by a program without recompiling or relinking it."""
 
 toolchain = {'name': 'GCC', 'version': '9.3.0'}
-local_extra_flags = "-fstack-protector-strong -fstack-clash-protection"
-toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
-
-source_urls = ['https://csc.mpi-magdeburg.mpg.de/mpcsc/software/flexiblas/']
-sources = [SOURCELOWER_TAR_GZ]
-patches = ['FlexiBLAS-3.0.4_cmake-mkl-fixes.patch']
-checksums = [
-    '50a88f2e88994dda91b2a2621850afd9654b3b84820e737e335687a46751be5c',
-    '5774e38308be7d0f56f3889a8bfcf41957a46bc600721675ce24e4719ff44539'
-]
 
 builddependencies = [
-    ('CMake', '3.20.1'),
-    ('Python', '3.9.5'),  # required for running the tests
+    ('FlexiBLAS', version, '', SYSTEM),
 ]
 
-# note: first listed library will be used as default by FlexiBLAS,
-# unless otherwise specified via easyconfig parameter flexiblas_default
-dependencies = [
-    ('imkl', '2021.2.0'),
-    ('BLIS', '0.8.1'),
-    ('OpenBLAS', '0.3.17'),
+postinstallcmds = [
+    'ln -s $EBROOTFLEXIBLAS/lib64 %(installdir)s/lib64'
 ]
+
+modextrapaths = {
+    'FLEXIBLAS_LIBRARY_PATH': 'lib64/flexiblas',
+}
 
 moduleclass = 'lib'

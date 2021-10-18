@@ -2,20 +2,18 @@ easyblock = 'ConfigureMake'
 
 name = 'BLIS'
 version = '0.8.1'
-modaltsoftname = 'bliscore'
-hidden = True
 
 homepage = 'https://github.com/flame/blis/'
 description = """BLIS is a portable software framework for instantiating high-performance
 BLAS-like dense linear algebra libraries."""
 
-toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+toolchain = {'name': 'iccifort', 'version': '2020.1.217'}
 
 source_urls = ['https://github.com/flame/blis/archive/']
 sources = ['%(version)s.tar.gz']
 patches = [
-    'BLIS-%(version)s_fix_dgemm-fpe-signalling-on-broadwell.patch',
-    'BLIS-%(version)s_family-avx2.patch'
+    '%(name)s-%(version)s_fix_dgemm-fpe-signalling-on-broadwell.patch',
+    '%(name)s-%(version)s_family-avx2.patch'
 ]
 checksums = [
     '729694128719801e82fae7b5f2489ab73e4a467f46271beff09588c9265a697b',  # 0.8.1.tar.gz
@@ -24,15 +22,15 @@ checksums = [
     'd1f874cf1f2975f58dd26a14806233157ccef2565136d18dd84ed759db560d50',  # BLIS-0.8.1_family-avx2.patch
 ]
 
-builddependencies = [
-    ('Python', '3.9.5'),
-    ('Perl', '5.32.1'),
-]
+# use gcc + its CFLAGS because icc is blacklisted, but libiomp5 instead of libgomp for linking.
+preconfigopts = "sed -i 's/LDFLAGS.*+= -fopenmp/LDFLAGS += -liomp5/' common.mk &&"
+preconfigopts += "declare -A ARCH_MAP=( [sse3]='x86_64' [avx]='sandybridge' [avx2]='avx2' [avx512]='skx' ) && "
+preconfigopts += "declare -A ARCH_MAP2=( [sse3]='nocona -mtune=generic' [avx]='corei7-avx' [avx2]='core-avx2' [avx512]='skylake-avx512' ) && "
+configopts = '--enable-cblas --enable-threading=openmp --enable-shared CC=gcc '
+configopts += 'CFLAGS="-O2 -ftree-vectorize -march=${ARCH_MAP2[$RSNT_ARCH]} -fno-math-errno" ${ARCH_MAP[$RSNT_ARCH]}'
 
-preconfigopts = "declare -A ARCH_MAP=( [sse3]='x86_64' [avx]='sandybridge' [avx2]='avx2' [avx512]='skx' ) &&"
-configopts = '--enable-cblas --enable-threading=openmp --enable-shared CC="$CC" ${ARCH_MAP[$RSNT_ARCH]}'
-
-runtest = 'check'
+# issues with f2c-ed cdotu/cdotc/zdotu/zdotc in cblat1/zblat1 tests cause crashes
+# runtest = 'check'
 
 sanity_check_paths = {
     'files': ['include/blis/cblas.h', 'include/blis/blis.h',
