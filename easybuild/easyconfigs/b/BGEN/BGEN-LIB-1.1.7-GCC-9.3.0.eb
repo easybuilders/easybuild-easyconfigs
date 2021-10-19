@@ -1,0 +1,48 @@
+easyblock = 'Tarball'
+
+name = 'BGEN-LIB'
+version = '1.1.7'
+
+homepage = 'https://enkre.net/cgi-bin/code/bgen'
+description = """
+This repository contains a reference implementation of the BGEN format, written in C++. 
+The library can be used as the basis for BGEN support in other software, or as a reference 
+for developers writing their own implementations of the BGEN format.
+What's included?
+
+This repository contains the library itself, a set of example data files, and a number of 
+example programs (e.g. bgen_to_vcf) that demonstrate the use of the library API.
+
+In addition, a number of utilities built using the library are also included in this repository:
+
+    bgenix - a tool to index and efficiently retrieve subsets of a BGEN file.
+    cat-bgen - a tool to efficiently concatenate BGEN files.
+    edit-bgen - a tool to edit BGEN file metadata.
+    An R package called rbgen is also constructed in the build directory. See the rbgen wiki page 
+    for more information on using this package.
+
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+sources = [{
+    'source_urls': ['http://code.enkre.net/bgen/tarball/release'],
+    'filename': 'bgen.tgz',
+    'extract_cmd': "tar xfvz %s"
+}]
+checksums = ['22a5e9254b71a08f233779350472f03c6f32a60cb6e07750305a9115454d7470']
+start_dir = 'bgen.tgz'
+preinstall_cmd = './waf configure && ./waf'
+
+sanity_check_commands = [
+    "%(installdir)s/build/test/unit/test_bgen",
+    "%(installdir)s/build/apps/bgenix -g %(installdir)s/example/example.16bits.bgen -list"
+]
+
+sanity_check_paths = {
+    'files': ['genfile/include/genfile/bgen/bgen.hpp'],
+    'dirs': ['3rd_party', 'apps', 'build', 'db', 'example', 'genfile'],
+}
+
+modextrapaths = {'R_LIBS': ''}
+
+moduleclass = 'lib'
