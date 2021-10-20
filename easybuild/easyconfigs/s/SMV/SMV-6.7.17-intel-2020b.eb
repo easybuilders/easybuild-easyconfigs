@@ -15,11 +15,16 @@ toolchain = {'name': 'intel', 'version': '2020b'}
 
 source_urls = ['https://github.com/firemodels/%(name)s/archive/refs/tags/']
 sources = ['%(name)s%(version)s.tar.gz']
-patches = ['SMV-%(version)s_missing-includes.patch']
+patches = [
+    'SMV-%(version)s_missing-includes.patch',
+    ('SMV-%(version)s_example_file.patch', 1)  # eb cant figure this out on its own
+]
 checksums = [
     '2e718af991e48228bf374fdefcce00d2e8b5827cc29ae2138ae267fda896f127',  # SMV6.7.17.tar.gz
     '5f69669b45ad7be0510785fe2d956b000c81cbe622fc31c256fd4eb2c8d470a4',  # SMV-6.7.17_missing-includes.patch
+    '33f0c6a580772c1a5adc31e0c301e7befc0f3011a2d6d8e12ecdc2f8d4904610',  # SMV-6.7.17_example_file.patch
 ]
+
 
 dependencies = [
     ('libgd', '2.3.0'),
@@ -31,11 +36,13 @@ dependencies = [
     ('lpeg', '1.0.2'),
     ('libGLU', '9.0.1'),
     ('glew', '2.1.0'),
+    ('Xvfb', '1.20.9'),
 ]
 
 local_compiler_lib_append = '/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/'
 
-local_buildopts = ' -lglui -lglut -lfreeglut -lGLU -lGL LDFLAGS=" -L%(installdir)s -L$EBROOTFREEGLUT/lib " '
+local_buildopts = ' -lglui -lglut -lfreeglut -lGLU -lGL -llibgd '
+local_buildopts += ' LDFLAGS=" -L%(installdir)s -L$EBROOTFREEGLUT/lib -L$EBROOTLIBGD/lib " '
 local_buildopts += ' IFLAGS=" -I$EBROOTFREEGLUT/include/GL -I%(builddir)s/smv-SMV%(version)s/Source/glui_v2_1_beta/ '
 local_buildopts += ' -I%(builddir)s/smv-SMV%(version)s/Source/glui_gl/GL/glut.h "'
 local_buildopts += ' EB_L_PATH=%(installdir)s '
@@ -51,12 +58,23 @@ buildopts = ' intel_linux_64 ' + local_buildopts
 buildopts += ' && make -j 36 intel_linux_64_db ' + local_buildopts
 
 files_to_copy = [
-    (["./Build/smokeview/*.o", "./Build/smokeview/smokeview_linux_64*"], 'bin')
+    (["./Build/smokeview/*.o", "./Build/smokeview/smokeview_linux_64*", "example.smv"], 'bin')
+]
+
+postinstallcmds = [
+    'ln -s %(installdir)s/bin/smokeview_linux_64 %(installdir)s/bin/smokeview'
+]
+
+modextrapaths = {'PATH': ['bin']}
+
+sanity_check_commands = [
+    # 'cd %(installdir)s/bin && xvfb-run smokeview example'
+    "cd %(installdir)s/bin && timeout 10 xvfb-run smokeview example 2>&1 | grep 'Terminated' "
 ]
 
 sanity_check_paths = {
     'files': [],
-    'dirs': ["bin"],
+    'dirs': ["bin/smokeview"],
 }
 
 moduleclass = 'bio'
