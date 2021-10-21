@@ -33,6 +33,14 @@ configopts = [
     '--with-shared --enable-overwrite --enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/'
 ]
 
+# Symlink libtinfo to libncurses (since it can handle the API) so it doesn't get picked up from the OS
+postinstallcmds = [
+    "(cd %(installdir)s/lib && ln -s libncurses.so libtinfo.so)",
+    "(cd %(installdir)s/lib && ln -s libncurses.so.%(version_major)s libtinfo.so.%(version_major)s)",
+    "(cd %(installdir)s/lib && ln -s libncurses.so.%(version_major_minor)s libtinfo.so.%(version_major_minor)s)",
+    "(cd %(installdir)s/lib && ln -s libncurses.a libtinfo.a)"
+]
+
 local_libs = ["form", "menu", "ncurses", "panel"]
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ["captoinfo", "clear", "infocmp", "infotocap", "ncurses5-config",
