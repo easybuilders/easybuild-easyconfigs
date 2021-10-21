@@ -1,0 +1,101 @@
+easyblock = 'Binary'
+
+name = 'ANSYSEDT'
+version = '2021R2'
+local_hotfix = '2'
+versionsuffix = '-hotfix-%s' % local_hotfix
+
+homepage = 'http://www.ansys.com'
+description = """ANSYS simulation software enables organizations to confidently predict
+    how their products will operate in the real world. We believe that every product is
+    a promise of something greater."""
+
+toolchain = SYSTEM
+
+# [roberpj@build-node:/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYSEDT/2021R2]
+sources = [
+  '%(version)s/ELECTRONICS_%(version)s_LINX64.tgz',                      # ELECTRONICS_2021R2_LINX64.tgz
+  '%%(version)s/ELECTRONICS_%%(version)s.%s_LINX64.zip' % local_hotfix,  # ELECTRONICS_2021R2.2_LINX64.zip
+  #'%(version)s/ELECTRONICS_LOCAL_HELP_%(version)s.zip'                  # ELECTRONICS_LOCAL_HELP_2021R2.zip
+]
+
+# [roberpj@build-node:/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYSEDT] sha256sum *2021R2*
+checksums = [
+
+  '1497d77d81c6133a674fc96023b0ebafec632c72efd7377399f59c8640c0a57d',  # ELECTRONICS_2021R2_LINX64.tgz
+  '1ccc02aad9994fc28a00cba6efbc8e00d75e4bc89117d566c9c6063bec82628b',  # ELECTRONICS_2021R2.2_LINX64.zip
+  #'43a61286be445969df4a74196a32854a4a396cce816da73b1d78405e67c2f71e'  # ELECTRONICS_LOCAL_HELP_2021R2.zip
+]
+
+# Installation directories: [roberpj@build-node:~/.local/easybuild/software/2020/Core/ansysedt/2021R2]
+# [roberpj@build-node:/cvmfs/restricted.computecanada.ca/easybuild/software/2020/Core/ansysedt/2021R2] 
+extract_sources = True
+install_cmd = "\
+cd %(builddir)s/Electronics_212_linx64/Linux/AnsysEM/disk1;\
+issfile=SilentInstallationTemplate.iss;\
+instdir=%(installdir)s;\
+licport=1055;\
+licsrvr=license3.sharcnet.ca;\
+tmpdiry=TempDirectory;\
+sed -i.orig '/installLocation/d' $issfile;\
+sed -i '/LicenseOption.tcpPort/d' $issfile;\
+sed -i '/LicenseOption.serverName1/d' $issfile;\
+sed -i '/TempDirectory.tempPath/d' $issfile;\
+echo \"-P installLocation=\"$instdir\"\" >> $issfile;\
+echo \"-W LicenseOption.tcpPort=$licport\" >> $issfile;\
+echo \"-W LicenseOption.serverName1=\"$licsrvr\"\" >> $issfile;\
+echo \"-W TempDirectory.tempPath=\"$tmpdiry\"\" >> $issfile;\
+./setup.exe -options \"$PWD/$issfile\" -silent;\
+cd %(builddir)s/Electronics_21.2.2_linx64;\
+./install_patch.bash --force_overwrite  --install_dir $instdir;\
+"
+sanity_check_paths = {
+     'files': ['AnsysEM21.2/Linux64/ansysedt'],
+     'dirs' : ['shared_files','AnsysEM21.2'],
+}
+
+postinstallcmds = [
+  "find %(installdir)s -type d -exec chmod -v 755 {} \;",
+  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod -v 755 {} \;",
+  "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYSEDT/2021R2/Linux64-cust;\
+    for b in $(cd $a; find . -type f -printf '%P\n'); do echo \"Updating $b\";\
+      mv -v %(installdir)s/AnsysEM21.2/Linux64/$b{,-orig};\
+      cp -v $a/$b %(installdir)s/AnsysEM21.2/Linux64/$b;\
+      chmod -v 744 %(installdir)s/AnsysEM21.2/Linux64/$b; done",
+  "mv -v %(installdir)s/AnsysEM21.2/Linux64/defer{,-avoid}",
+  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s --exclude=*-orig); do echo Modifying file $f;\
+    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+  # "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  "find %(installdir)s -type f ! -size 0 -print0 | xargs -0 grep -ILZ {} | while IFS=\"\" read -r -d \"\" f; do \
+    if [[ `file -b --mime-type $f` == 'application/x-executable' ]]; then num=$(strings -f \"${f}\" | grep /usr/lib | wc -l);\
+      if [[ \"$num\" -eq \"0\" ]]; then patchelf --set-interpreter $EPREFIX/lib/ld-linux-x86-64.so.2 $f; fi;\
+    fi; done",
+]
+
+modextrapaths = {
+     'PATH': ['AnsysEM21.2/Linux64'],
+}
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+setenv("NO_DEP_CHECK","1")
+setenv("ANS_IGNOREOS","1")
+setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
+if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
+        setenv("TMI_CONFIG",pathJoin(root,"AnsysEM21.2/Linux64/fluent/fluent21.2.0/multiport/mpi/lnamd64/intel/etc/tmi.conf"))
+end
+"""
+
+moduleclass = 'tools'
