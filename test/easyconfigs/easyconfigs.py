@@ -480,6 +480,8 @@ class EasyConfigTest(TestCase):
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
             'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                       'NGSpeciesID-0.1.1.1-'])],
+            # RoseTTAFold on Ivy Bridge needs HH-Suite-3.3.0 or newer
+            'HH-Suite': [('3.3.0;', ['RoseTTAFold-1.0.0-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
