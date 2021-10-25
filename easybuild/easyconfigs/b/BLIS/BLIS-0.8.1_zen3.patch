@@ -683,6 +683,87 @@ index bdd3d2228..d472325c7 100644
  zen2:        zen2/zen2/zen/haswell
  zen:         zen/zen/haswell
  excavator:   excavator/piledriver
+diff --git a/configure b/configure
+index d0ac29ae1..3c865dad9 100755
+--- a/configure
++++ b/configure
+@@ -686,13 +692,21 @@
+ 				if [ "${mem}" != "${mems_mem}" ]; then
+ 
+ 					#clist="${config_registry[$config]}"
+-					clist=$(query_array "config_registry" ${config})
++					clisttmp=$(query_array "config_registry" ${config})
+ 
+ 					# Replace the current config with its constituent config set,
+ 					# canonicalize whitespace, and then remove duplicate config
+ 					# set names, if they exist. Finally, update the config registry
+ 					# with the new config list.
+-					newclist=$(echo -e "${clist}" | sed -e "s/${mem}/${mems_mem}/g")
++					# NOTE: WE must use substitute_words() rather than a simple sed
++					# expression because we need to avoid matching partial strings.
++					# For example, if clist above contains "foo bar barsk" and we use
++					# sed to substitute "bee boo" as the members of "bar", the
++					# result would (incorrectly) be "foo bee boo bee boosk",
++					# which would then get reduced, via rm_duplicate_words(), to
++					# "foo bee boo boosk".
++					#newclist=$(echo -e "${clist}" | sed -e "s/${mem}/${mems_mem}/g")
++					newclist=$(substitute_words "${mem}" "${mems_mem}" "${clisttmp}")
+ 					newclist=$(canonicalize_ws "${newclist}")
+ 					newclist=$(rm_duplicate_words "${newclist}")
+ 
+@@ -775,7 +789,15 @@
+ 					# canonicalize whitespace, and then remove duplicate kernel
+ 					# set names, if they exist. Finally, update the kernel registry
+ 					# with the new kernel list.
+-					newklist=$(echo -e "${klisttmp}" | sed -e "s/${ker}/${kers_ker}/g")
++					# NOTE: WE must use substitute_words() rather than a simple sed
++					# expression because we need to avoid matching partial strings.
++					# For example, if klist above contains "foo bar barsk" and we use
++					# sed to substitute "bee boo" as the members of "bar", the
++					# result would (incorrectly) be "foo bee boo bee boosk",
++					# which would then get reduced, via rm_duplicate_words(), to
++					# "foo bee boo boosk".
++					#newklist=$(echo -e "${klisttmp}" | sed -e "s/${ker}/${kers_ker}/g")
++					newklist=$(substitute_words "${ker}" "${kers_ker}" "${klisttmp}")
+ 					newklist=$(canonicalize_ws "${newklist}")
+ 					newklist=$(rm_duplicate_words "${newklist}")
+ 
+@@ -797,6 +819,26 @@
+ 	done
+ }
+ 
++substitute_words()
++{
++	local word new_words list newlist
++
++	word="$1"
++	new_words="$2"
++	list="$3"
++
++	for str in ${list}; do
++
++		if [ "${str}" == "${word}" ]; then
++			newlist="${newlist} ${new_words}"
++		else
++			newlist="${newlist} ${str}"
++		fi
++	done
++
++	echo "${newlist}"
++}
++
+ build_kconfig_registry()
+ {
+ 	local familyname clist config kernels kernel cur_configs newvalue
+@@ -1401,7 +1443,7 @@
+ 		cc_version=$(${cc} -dumpversion)
+ 	# If compiler is AOCC, first grep for clang and then the version number.
+ 	elif [ "${cc_vendor}" = "clang" ]; then
+-		cc_version=$(echo "${vendor_string}" | egrep -o 'clang version [0-9]+\.[0-9]+\.?[0-9]*' | egrep -o '[0-9]+\.[0-9]+\.?[0-9]*')
++		cc_version=$(echo "${vendor_string}" | egrep -o '(clang|LLVM) version [0-9]+\.[0-9]+\.?[0-9]*' | egrep -o '[0-9]+\.[0-9]+\.?[0-9]*')
+ 	elif [ "${cc_vendor}" = "oneAPI" ]; then
+ 		# Treat Intel oneAPI's clang as clang, not icc.
+ 		cc_vendor="clang"
 diff --git a/frame/base/bli_arch.c b/frame/base/bli_arch.c
 index c8d8eec79..54aa64d42 100644
 --- a/frame/base/bli_arch.c
@@ -846,3 +927,13 @@ index fe030f193..cef0f2421 100644
  	BLIS_ARCH_ZEN2,
  	BLIS_ARCH_ZEN,
  	BLIS_ARCH_EXCAVATOR,
+diff --git a/kernels/zen3/.gitignore b/kernels/zen3/.gitignore
+new file mode 100644
+index 000000000..5e7d2734c
+--- /dev/null
++++ b/kernels/zen3/.gitignore
+@@ -0,0 +1,4 @@
++# Ignore everything in this directory
++*
++# Except this file
++!.gitignore
