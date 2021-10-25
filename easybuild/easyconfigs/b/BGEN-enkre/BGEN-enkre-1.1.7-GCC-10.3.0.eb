@@ -1,0 +1,65 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# uploaded by J. Sassmannshausen
+# we recommend to use --download-timeout=1000 when fetching the files
+
+easyblock = 'CmdCp'
+
+name = 'BGEN-enkre'
+version = '1.1.7'
+
+homepage = 'https://enkre.net/cgi-bin/code/bgen/dir?ci=trunk'
+description = """This repository contains a reference implementation 
+of the BGEN format, written in C++. The library can be used as the 
+basis for BGEN support in other software, or as a reference for 
+developers writing their own implementations of the BGEN format.
+Please cite:
+Band, G. and Marchini, J., "BGEN: a binary file format for imputed genotype and haplotype data", 
+bioArxiv 308296; doi: https://doi.org/10.1101/308296
+"""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://code.enkre.net/bgen/tarball/release/']
+sources = ['%(version)s.tgz']
+patches = [
+    '3rd-party-removal.patch'
+]
+checksums = [
+    '8173d614ae629f00c84c0e6edd7d16f56a61af2e5a8717e8fe0167f530a6aabb',  # 1.1.7.tgz
+    '9763af6882b3ddf752a808adb2805f075e996248a645b70c29150b6883260fbe',  # 3rd-party-removal.patch
+]
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('Python', '3.9.5', '-bare'),
+]
+
+dependencies = [
+    ('SQLite', '3.35.4'),
+    ('zstd', '1.4.9'),
+]
+
+cmds_map = [
+    ('.*', "./waf configure && echo LIB_zstd = [\\'zstd\\'] >> build/c4che/_cache.py && echo LIB_sqlite3 = [\\'sqlite3\\'] >> build/c4che/_cache.py &&  ./waf"),
+]
+
+files_to_copy = [
+    (['build/apps/edit-bgen', 'build/apps/bgenix', 'build/apps/cat-bgen'], 'bin'),
+    (['build/db/libdb.a', 'build/libbgen.a', 'build/3rd_party/boost_1_55_0/libboost.a'], 'lib'),
+    (['genfile/include/*', 'db/include/*', '3rd_party/boost_1_55_0/*'], 'include'),
+]
+
+# runtest = './build/test/unit/test_bgen && ./build/apps/bgenix -g example/example.16bits.bgen -list'
+# pretestopts  = './build/test/unit/test_bgen && ./build/apps/bgenix -g ../example/example.16bits.bgen -list &&'
+# pretestopts  = './build/apps/bgenix -g ./example/example.16bits.bgen -list &&'
+# pretestopts  = './build/apps/bgenix -help &&'
+# pretestopts  = './build/test/unit/test_bgen ; ' 
+# runtest = ' clean &> /dev/null'
+
+sanity_check_paths = {
+    'files': ['bin/edit-bgen', 'bin/bgenix', 'bin/cat-bgen'],
+    'dirs': ['bin', 'lib', 'include'],
+}
+
+moduleclass = 'bio'
