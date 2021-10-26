@@ -1,0 +1,47 @@
+From 414dea09876ad2e6b4a4c726285e78f198852476 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Tue, 22 Jun 2021 16:36:51 +0200
+Subject: [PATCH] Increase tolerance for some distributed tests to 5e-5
+
+On A100 GPUs 10 tests fail due to slightly higher deviations.
+This fixes those.
+---
+ test/distributed/test_c10d_common.py | 2 +-
+ test/distributed/test_c10d_nccl.py   | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/test/distributed/test_c10d_common.py b/test/distributed/test_c10d_common.py
+index a25ef9a046bf5..520c00927d71b 100644
+--- a/test/distributed/test_c10d_common.py
++++ b/test/distributed/test_c10d_common.py
+@@ -376,7 +376,7 @@ def update_parameters(model):
+                 len(list(model.parameters())), len(list(ddp_model.parameters()))
+             )
+             for i, j in zip(model.parameters(), ddp_model.parameters()):
+-                self.assertEqual(i, j)
++                self.assertEqual(i, j, rtol=1.3e-06, atol=5e-5)
+ 
+             # Shuffle the input so that DDP input is different
+             torch.manual_seed(1337 + iteration)
+diff --git a/test/distributed/test_c10d_nccl.py b/test/distributed/test_c10d_nccl.py
+index a22cfa0352ec2..e905c6b1bb060 100644
+--- a/test/distributed/test_c10d_nccl.py
++++ b/test/distributed/test_c10d_nccl.py
+@@ -1134,7 +1134,7 @@ def step_model(model, input, target):
+                 )
+                 for i, j in zip(model.parameters(), ddp_model.parameters()):
+                     # TODO(#38095): Replace assertEqualIgnoreType. See issue #38095
+-                    self.assertEqualIgnoreType(i.grad, j.grad)
++                    self.assertEqualIgnoreType(i.grad, j.grad, rtol=1.3e-06, atol=5e-5)
+ 
+             # Shuffle the input so that DDP input is different
+             torch.manual_seed(1337 + iteration)
+@@ -1777,7 +1777,7 @@ def _test_ddp_checkpointing(
+             for i, j in zip(model.parameters(), ddp_model.parameters()):
+                 self.assertTrue(i.grad is not None)
+                 self.assertTrue(j.grad is not None)
+-                self.assertEqual(i.grad, j.grad)
++                self.assertEqual(i.grad, j.grad, rtol=1.3e-06, atol=5e-5)
+ 
+     # DDP works as expect when layer is checkpointed only once
+     @requires_nccl()

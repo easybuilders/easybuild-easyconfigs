@@ -1,0 +1,41 @@
+name = 'Java'
+local_java_version = '8'
+local_patch_version = '292'
+local_build_version = '10'
+version = '1.%s.0_%s' % (local_java_version, local_patch_version)
+versionsuffix = '-OpenJDK'
+
+homepage = 'https://openjdk.java.net'
+description = """Java Platform, Standard Edition (Java SE) lets you develop and deploy
+ Java applications on desktops and servers."""
+
+toolchain = SYSTEM
+
+local_jdk_version = 'jdk%su%s-b%s' % (local_java_version, local_patch_version, local_build_version)
+source_urls = ['https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/%s' % local_jdk_version]
+
+local_tarball_version = '%su%sb%s' % (local_java_version, local_patch_version, local_build_version)
+local_tarball_tmpl = '_'.join(
+    ['OpenJDK%sU-jdk' % local_java_version, '%s', 'linux', 'hotspot', '%s.tar.gz' % local_tarball_version]
+)
+
+sources = [
+    {
+        'filename': local_tarball_tmpl % '%(jdkarch)s',
+        # extract and remove dangling symlinks,
+        # issue https://github.com/adoptium/adoptium-support/issues/298
+        'extract_cmd': "tar xzf %%s && unlink %s/jre/lib/*/server/libjsig.debuginfo" % local_jdk_version,
+    }
+]
+checksums = [
+    {
+        local_tarball_tmpl % 'x64':
+            '0949505fcf42a1765558048451bb2a22e84b3635b1a31dd6191780eeccaa4ada',
+        local_tarball_tmpl % 'ppc64le':
+            '7ecf00e57033296fd23201477a64dc13a1356b16a635907e104d079ddb544e4b',
+        local_tarball_tmpl % 'aarch64':
+            'a29edaf66221f7a51353d3f28e1ecf4221268848260417bc562d797e514082a8',
+    }
+]
+
+moduleclass = 'lang'
