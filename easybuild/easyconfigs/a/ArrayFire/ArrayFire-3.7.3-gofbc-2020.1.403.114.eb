@@ -11,7 +11,7 @@ description = """
  including CPUs, GPUs, and other hardware acceleration devices.
 """
 
-toolchain = {'name': 'gomklc', 'version': '2020a'}
+toolchain = {'name': 'gofbc', 'version': '2020.1.403.114'}
 
 source_urls = ['https://github.com/arrayfire/arrayfire/releases/download/v%(version)s/']
 sources = ['%(namelower)s-full-%(version)s.tar.bz2']
@@ -25,6 +25,7 @@ multi_deps_extensions_only = True
 dependencies = [
     ('Boost', '1.72.0'),
     ('FFTW', '3.3.8'),
+    ('cuDNN', '8.2.0'),
 ]
 exts_defaultclass = 'PythonPackage'
 exts_default_options = {'source_urls': [PYPI_SOURCE]}
@@ -43,7 +44,9 @@ exts_filter = ("python -c 'import %(ext_name)s'", '')
 
 separate_build_dir = True
 
-configopts = '-DUSE_CPU_MKL=ON -DUSE_OPENCL_MKL=ON -DCUDA_architecture_build_targets="3.5;5.0;5.2;6.0;6.1;7.0;7.0+PTX;8.0" '
+configopts = '-DCUDA_architecture_build_targets="%(cuda_cc_semicolon_sep)s" '
+configopts += '-DCBLAS_INCLUDE_DIR=$BLAS_INC_DIR -DCBLAS_LIBRARIES="$LIBBLAS" '
+configopts += '-DLAPACK_INCLUDE_DIR=$LAPACK_INC_DIR -DLAPACK_LIBRARIES="$LIBLAPACK" '
 
 sanity_check_paths = {
     'files': ['include/af/version.h', 'lib64/libaf.%s' % SHLIB_EXT],
