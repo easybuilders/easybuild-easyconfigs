@@ -16,19 +16,27 @@ toolchain = {'name': 'foss', 'version': '2021a'}
 
 source_urls = ['https://github.com/rstudio/rstudio/archive']
 sources = ['v%(version)s.tar.gz']
-checksums = ['3af234180fd7cef451aef40faac2c7b52860f14a322244c1c7aede029814d261']
+patches = [
+    'RStudio-Server-1.4.1717-no_var_paths.patch',
+    'RStudio-Server-1.2.1335-fix_env.patch',
+]
+checksums = [
+    '3af234180fd7cef451aef40faac2c7b52860f14a322244c1c7aede029814d261',  # v1.4.1717.tar.gz
+    'ad3520cdf8779209c9a31c2a02cfce292257039f58f4e4ec7bfbfb70a75fb7dd',  # RStudio-Server-1.4.1717-no_var_paths.patch
+    'a7b6edab4f5605f5695b5a987f2f1b229e90dbcfcb7a85cc2ea9341e8766941b',  # RStudio-Server-1.2.1335-fix_env.patch
+]
 
 builddependencies = [
     ('pkg-config', '0.29.2'),
     ('CMake', '3.20.1'),
     ('ant', '1.10.11', '-Java-%(javaver)s', True),
-    ('SOCI', '4.0.2'),
 ]
 
 dependencies = [
     ('Boost', '1.76.0'),
     ('R', '4.1.0'),
     ('Java', '11', '', True),
+    ('SOCI', '4.0.2'),
 ]
 
 osdependencies = [
@@ -62,5 +70,12 @@ sanity_check_paths = {
     'files': ["bin/rstudio-server"],
     'dirs': ['bin', 'extras', 'resources', 'www', 'www-symbolmaps', 'R'],
 }
+
+sanity_check_commands = [
+    # This command requires environment variables R_HOME and R_DOC_DIR
+    "R_HOME=$EBROOTR/lib64/R R_DOC_DIR=$R_HOME/doc rsession --verify-installation=1",
+    "rserver --verify-installation=1",
+    "rstudio-server verify-installation",
+]
 
 moduleclass = 'lang'
