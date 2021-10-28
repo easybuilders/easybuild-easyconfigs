@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'Octopus'
+version = '11.2'
+
+homepage = 'http://octopus-code.org'
+description = """Octopus is a scientific program aimed at the ab initio virtual experimentation 
+on a hopefully ever-increasing range of system types. Electrons are described quantum-mechanically 
+within density-functional theory (DFT), in its time-dependent form (TDDFT) when doing simulations 
+in time. Nuclei are described classically as point particles. 
+Electron-nucleus interaction is described within the pseudopotential approximation."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'usempi': True, 'opt': True, 'openmp': True}
+
+source_urls = ['http://www.octopus-code.org/down.php?file=%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['eca1d8b51fd77f42ecf43de73d78cc80798f9a4a948647e79102d090fbd76ade']
+
+builddependencies = [
+    ('Perl', '5.32.0'),
+]
+
+dependencies = [
+    ('libxc', '4.3.4'),
+    ('GSL', '2.6'),
+    ('netCDF-Fortran', '4.5.3'),
+    ('NLopt', '2.6.2'),
+    ('PSolver', '1.8.3'),
+    ('ParMETIS', '4.0.3'),
+]
+
+configopts = '--enable-mpi --enable-openmp --with-max-dim=4 '
+configopts += '--with-blas="-L$BLAS_LIB_DIR $LIBBLAS_MT" --with-blacs="-L$SCALAPACK_LIB_DIR $LIBSCALAPACK_MT" '
+configopts += 'FCFLAGS_FFTW="-I${EBROOTIMKL}/mkl/include/fftw" '
+configopts += '--with-libxc-prefix=$EBROOTLIBXC '
+configopts += '--with-netcdf-prefix=$EBROOTNETCDFMINFORTRAN '
+configopts += '--with-nlopt-prefix=$EBROOTNLOPT '
+configopts += '--with-futile-prefix=$EBROOTFUTILE '
+configopts += '--with-psolver-prefix=$EBROOTPSOLVER '
+
+# Run only the short tests, as the full testsuite can take a lot of time.
+# Use only two threads as the tests are not large enough to exploit OpenMP parallelism efficiently.
+runtest = 'OMP_NUM_THREADS=2 MPIEXEC="`which mpirun` --bind-to none" check-short'
+
+sanity_check_paths = {
+    'files': ['bin/octopus'],
+    'dirs': ['share/octopus']
+}
+
+moduleclass = 'phys'
