@@ -1,0 +1,136 @@
+Removal of sqlite3 and zstd from 3-party modules but leave boost 
+Author: J. Sassmannshausen
+diff --git a/bgen.tgz.orig/3rd_party/wscript b/bgen.tgz/3rd_party/wscript
+index 220728a..f72075d 100644
+--- a/bgen.tgz.orig/3rd_party/wscript
++++ b/bgen.tgz/3rd_party/wscript
+@@ -1,2 +1,2 @@
+ def build( bld ):
+-	bld.recurse( [ 'boost_1_55_0', 'sqlite3', 'zstd-1.1.0' ] )
++	bld.recurse( [ 'boost_1_55_0' ] )
+diff --git a/bgen.tgz.orig/db/include/db/SQLStatement.hpp b/bgen.tgz/db/include/db/SQLStatement.hpp
+index e107bd2..fca5957 100644
+--- a/bgen.tgz.orig/db/include/db/SQLStatement.hpp
++++ b/bgen.tgz/db/include/db/SQLStatement.hpp
+@@ -12,7 +12,7 @@
+ #include <vector>
+ #include <exception>
+ #include <stdint.h>
+-#include "sqlite3/sqlite3.h"
++#include "sqlite3.h"
+ #include "db/SQLite3Connection.hpp"
+ 
+ namespace db {
+diff --git a/bgen.tgz.orig/db/include/db/SQLite3Connection.hpp b/bgen.tgz/db/include/db/SQLite3Connection.hpp
+index b4bd219..cfbbd3a 100644
+--- a/bgen.tgz.orig/db/include/db/SQLite3Connection.hpp
++++ b/bgen.tgz/db/include/db/SQLite3Connection.hpp
+@@ -10,7 +10,7 @@
+ #include <cassert>
+ #include <string>
+ #include <exception>
+-#include "sqlite3/sqlite3.h"
++#include "sqlite3.h"
+ #include "db/Connection.hpp"
+ #include "db/Transaction.hpp"
+ #include "db/Error.hpp"
+diff --git a/bgen.tgz.orig/db/include/db/SQLite3Statement.hpp b/bgen.tgz/db/include/db/SQLite3Statement.hpp
+index d41a710..76dbfb6 100644
+--- a/bgen.tgz.orig/db/include/db/SQLite3Statement.hpp
++++ b/bgen.tgz/db/include/db/SQLite3Statement.hpp
+@@ -11,7 +11,7 @@
+ #include <string>
+ #include <exception>
+ 
+-#include "sqlite3/sqlite3.h"
++#include "sqlite3.h"
+ #include "db/SQLite3Connection.hpp"
+ #include "db/SQLStatement.hpp"
+ 
+diff --git a/bgen.tgz.orig/db/src/SQLStatement.cpp b/bgen.tgz/db/src/SQLStatement.cpp
+index 60168c6..32576ca 100644
+--- a/bgen.tgz.orig/db/src/SQLStatement.cpp
++++ b/bgen.tgz/db/src/SQLStatement.cpp
+@@ -7,7 +7,7 @@
+ #include <cassert>
+ #include <string>
+ #include <stdint.h>
+-#include "sqlite3/sqlite3.h"
++#include "sqlite3.h"
+ #include "db/SQLStatement.hpp"
+ 
+ namespace db {
+diff --git a/bgen.tgz.orig/db/src/SQLite3Statement.cpp b/bgen.tgz/db/src/SQLite3Statement.cpp
+index 84e0658..03b3d5e 100644
+--- a/bgen.tgz.orig/db/src/SQLite3Statement.cpp
++++ b/bgen.tgz/db/src/SQLite3Statement.cpp
+@@ -9,7 +9,7 @@
+ #include <string>
+ #include <exception>
+ #include <boost/lexical_cast.hpp>
+-#include "sqlite3/sqlite3.h"
++#include "sqlite3.h"
+ #include "db/SQLite3Connection.hpp"
+ #include "db/SQLStatement.hpp"
+ #include "db/SQLite3Statement.hpp"
+diff --git a/bgen.tgz.orig/db/wscript b/bgen.tgz/db/wscript
+index 7b0b617..2605387 100644
+--- a/bgen.tgz.orig/db/wscript
++++ b/bgen.tgz/db/wscript
+@@ -5,8 +5,8 @@ def build( bld ):
+ 	bld.stlib(
+ 		target = 'db',
+ 		source = sources,
+-		includes='./include',
++		includes='/home/sassy/apps/software/SQLite/3.33.0-GCCcore-10.2.0/include ./include',
+ 		cxxflags = [],
+ 		use = 'boost sqlite3',
+-		export_includes = './include'
++		export_includes = '/home/sassy/apps/software/SQLite/3.33.0-GCCcore-10.2.0/include ./include'
+ 	)
+diff --git a/bgen.tgz.orig/wscript b/bgen.tgz/wscript
+index a6385d9..e214097 100644
+--- a/bgen.tgz.orig/wscript
++++ b/bgen.tgz/wscript
+@@ -126,12 +126,12 @@ class ReleaseBuilder:
+ 		shutil.copytree( 'R/package/', rbgen_dir )
+ 		os.makedirs( os.path.join( rbgen_dir, "src", "include" ))
+ 		os.makedirs( os.path.join( rbgen_dir, "src", "include", "boost" ))
+-		os.makedirs( os.path.join( rbgen_dir, "src", "include", "zstd-1.1.0" ))
++		os.makedirs( os.path.join( rbgen_dir, "src", "include", "zstd" ))
+ 		os.makedirs( os.path.join( rbgen_dir, "src", "db" ))
+ 		os.makedirs( os.path.join( rbgen_dir, "src", "bgen" ))
+ 		os.makedirs( os.path.join( rbgen_dir, "src", "boost" ))
+ 		os.makedirs( os.path.join( rbgen_dir, "src", "sqlite3" ))
+-		os.makedirs( os.path.join( rbgen_dir, "src", "zstd-1.1.0" ))
++		os.makedirs( os.path.join( rbgen_dir, "src", "zstd" ))
+ 
+ 		# Copy source files in
+ 		from glob import glob
+@@ -141,11 +141,11 @@ class ReleaseBuilder:
+ 		for filename in glob( 'db/src/*.cpp' ):
+ 			shutil.copy( filename, os.path.join( rbgen_dir, "src", "db", os.path.basename( filename ) ) )
+ 
+-		for filename in glob( '3rd_party/sqlite3/sqlite3/sqlite3.c' ):
+-			shutil.copy( filename, os.path.join( rbgen_dir, "src", "sqlite3", os.path.basename( filename ) ) )
++#		for filename in glob( '3rd_party/sqlite3/sqlite3/sqlite3.c' ):
++#			shutil.copy( filename, os.path.join( rbgen_dir, "src", "sqlite3", os.path.basename( filename ) ) )
+ 
+-		for filename in glob( '3rd_party/zstd-1.1.0/lib/common/*.c' ) + glob( '3rd_party/zstd-1.1.0/lib/compress/*.c' ) + glob( '3rd_party/zstd-1.1.0/lib/decompress/*.c' ):
+-			shutil.copy( filename, os.path.join( rbgen_dir, "src", "zstd-1.1.0", os.path.basename( filename ) ) )
++#		for filename in glob( '3rd_party/zstd-1.1.0/lib/common/*.c' ) + glob( '3rd_party/zstd-1.1.0/lib/compress/*.c' ) + glob( '3rd_party/zstd-1.1.0/lib/decompress/*.c' ):
++#			shutil.copy( filename, os.path.join( rbgen_dir, "src", "zstd-1.1.0", os.path.basename( filename ) ) )
+ 
+ 		boostGlobs = [
+ 			'libs/system/src/*.cpp',
+@@ -166,8 +166,8 @@ class ReleaseBuilder:
+ 
+ 		include_paths = [
+ 			"3rd_party/boost_1_55_0/boost/",
+-			"3rd_party/zstd-1.1.0/",
+-			"3rd_party/sqlite3/",
++                        "${EBROOTZSTD}",
++                        "${EBROOTSQLITE}",
+ 			"genfile/include/genfile",
+ 			"db/include/db"
+ 		]
