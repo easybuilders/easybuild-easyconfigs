@@ -1,0 +1,46 @@
+# Fixes test in an environment where not all CPUs are available, e.g. because of cgroups
+# Based on https://github.com/pytorch/pytorch/pull/44369 with adapted line numbers for PT-1.10
+diff -Nru pytorch.orig/test/test_dataloader.py pytorch/test/test_dataloader.py
+--- pytorch.orig/test/test_dataloader.py	2021-10-22 10:41:08.421327256 +0200
++++ pytorch/test/test_dataloader.py	2021-10-22 10:43:10.064917022 +0200
+@@ -2367,29 +2367,34 @@
+                 self._run_ind_worker_queue_test(batch_size=batch_size, num_workers=num_workers + 1)
+ 
+ 
+class SetAffinityDataset(IterableDataset):
+ 
+     def __iter__(self):
+         torch.randperm(1)
+         after = os.sched_getaffinity(0)
+         return iter(after)
+ 
+-
+-def worker_set_affinity(_):
+-    os.sched_setaffinity(0, [multiprocessing.cpu_count() - 1])
+-
+-
+ @unittest.skipIf(
+     not hasattr(os, 'sched_setaffinity'),
+     "os.sched_setaffinity is not available")
+ class TestSetAffinity(TestCase):
+     def test_set_affinity_in_worker_init(self):
++        # Query the current affinity mask to avoid setting a disallowed one
++        old_affinity = os.sched_getaffinity(0)
++        if not old_affinity:
++            self.skipTest("No affinity information")
++        # Choose any
++        expected_affinity = list(old_affinity)[-1]
++
++        def worker_set_affinity(_):
++            os.sched_setaffinity(0, [expected_affinity])
++
+         dataset = SetAffinityDataset()
+ 
+         dataloader = torch.utils.data.DataLoader(
+             dataset, num_workers=2, worker_init_fn=worker_set_affinity)
+         for sample in dataloader:
+-            self.assertEqual(sample, [multiprocessing.cpu_count() - 1])
++            self.assertEqual(sample, [expected_affinity])
+ 
+ class ConvDataset(Dataset):
+     def __init__(self):

@@ -1,0 +1,78 @@
+diff -Nru pytorch.orig/test/distributed/test_c10d_nccl.py pytorch/test/distributed/test_c10d_nccl.py
+--- pytorch.orig/test/distributed/test_c10d_nccl.py	2021-10-22 10:41:08.420327251 +0200
++++ pytorch/test/distributed/test_c10d_nccl.py	2021-10-22 17:18:52.399649457 +0200
+@@ -2277,6 +2277,7 @@
+     @requires_nccl_version((2, 4, 0), "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_clean_exit(self):
+         self._test_nccl_errors_blocking(lambda: sys.exit(0))
+ 
+@@ -2285,6 +2286,7 @@
+     @requires_nccl_version((2, 4, 0), "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_nonzero_exit(self):
+         self._test_nccl_errors_blocking(lambda: sys.exit(1))
+ 
+@@ -2296,6 +2298,7 @@
+     @sandcastle_skip(
+         "Frequently times out see https://github.com/pytorch/pytorch/issues/58920"
+     )
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_abort(self):
+         self._test_nccl_errors_blocking(lambda: os.abort())
+ 
+@@ -2304,6 +2307,7 @@
+     @requires_nccl_version((2, 4, 0), "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_sigkill(self):
+         self._test_nccl_errors_blocking(lambda: os.kill(os.getpid(), signal.SIGKILL))
+ 
+@@ -2312,6 +2316,7 @@
+     @requires_nccl_version((2, 4, 0), "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
+     @skip_if_rocm
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_sigterm(self):
+         self._test_nccl_errors_blocking(lambda: os.kill(os.getpid(), signal.SIGTERM))
+ 
+@@ -2319,6 +2324,7 @@
+     @requires_nccl()
+     @requires_nccl_version((2, 4, 0), "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_blocking_wait_with_barrier(self):
+         store = c10d.FileStore(self.file_name, self.world_size)
+         process_group = c10d.ProcessGroupNCCL(
+@@ -2364,6 +2370,7 @@
+     @with_nccl_blocking_wait
+     @requires_nccl()
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_timeout(self):
+         store = c10d.FileStore(self.file_name, self.world_size)
+ 
+diff -Nru pytorch.orig/torch/testing/_internal/distributed/distributed_test.py pytorch/torch/testing/_internal/distributed/distributed_test.py
+--- pytorch.orig/torch/testing/_internal/distributed/distributed_test.py	2021-10-22 10:41:08.329326810 +0200
++++ pytorch/torch/testing/_internal/distributed/distributed_test.py	2021-10-22 17:14:52.756479108 +0200
+@@ -7352,6 +7352,7 @@
+         @require_backends_available({"gloo", "nccl"})
+         @skip_if_rocm
+         @skip_if_lt_x_gpu(int(os.environ["WORLD_SIZE"]))
++        @unittest.skip("Broken on recent NCCL")
+         def test_monitored_barrier_allreduce_hang(self):
+             # tests expected behavior when nonzero rank hangs and we want to
+             # report first timed out rank.
+@@ -7362,6 +7363,7 @@
+         @require_backends_available({"gloo", "nccl"})
+         @skip_if_rocm
+         @skip_if_lt_x_gpu(int(os.environ["WORLD_SIZE"]))
++        @unittest.skip("Broken on recent NCCL")
+         def test_monitored_barrier_allreduce_hang_wait_all_ranks(self):
+             # tests expected behavior when nonzero rank hangs and we want to
+             # report all timed out ranks.
