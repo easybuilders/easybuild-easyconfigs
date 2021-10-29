@@ -1,0 +1,40 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Updated: Denis Kristak
+easyblock = 'CMakeMake'
+
+name = 'lerc'
+version = '3.0'
+
+homepage = 'https://github.com/Esri/lerc'
+description = """LERC is an open-source image or raster format which supports rapid encoding and decoding
+for any pixel type (not just RGB or Byte). Users set the maximum compression error per pixel while encoding,
+so the precision of the original input image is preserved (within user defined error bounds)."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = [
+    'https://github.com/Esri/lerc/archive/',
+    'https://raw.githubusercontent.com/Esri/lerc/33910e56d2d46e402b6233492eabb6c4fe0b3c5e/src/LercTest/',
+]
+
+local_testfile_sed_cmd = "sed -i -e 's|../LercLib/include/||' %(builddir)s/main.cpp"
+
+sources = [
+    'v%(version)s.tar.gz',
+    {'filename': 'main.cpp', 'extract_cmd': 'cp %s %(builddir)s && ' + local_testfile_sed_cmd },
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+
+sanity_check_commands = [
+    "cd %(builddir)s && g++ -o output_bin main.cpp -lLerc && ./output_bin "
+]
+
+sanity_check_paths = {
+    'files': ['lib/libLerc.so'],
+    'dirs': ['lib/', 'include/'],
+}
+
+moduleclass = 'tools'
