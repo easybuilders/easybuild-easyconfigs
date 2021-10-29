@@ -1,0 +1,79 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonPackage'
+
+name = 'nnUNet'
+version = '1.7.0'
+
+homepage = 'https://github.com/MIC-DKFZ/nnUNet'
+description = """
+nnU-Net is the first segmentation method that is designed to deal with the dataset diversity found in the domain.
+It condenses and automates the keys decisions for designing a successful segmentation pipeline for any given dataset.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = [PYPI_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+
+builddependencies = [
+    ('Bazel', '3.7.2')
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('PyTorch', '1.7.1'),
+    ('tqdm', '4.56.2'),
+    ('dicom2nifti', '2.3.0'),
+    ('scikit-image', '0.18.1'),
+    ('TensorFlow', '2.5.0'),
+    ('SciPy-bundle', '2020.11'),
+    ('batchgenerators', '0.23'),
+    ('scikit-learn', '0.23.2'),
+    ('requests', '2.26.0'),
+    ('NiBabel', '3.2.1'),
+    ('SimpleITK', '2.1.0'),
+    ('tifffile', '2021.8.30'),
+    ('MedPy', '0.4.0'),
+    ('jax', '0.2.19')
+]
+
+# sklearn is incorrect package name
+preinstallopts = "sed -i 's/sklearn/scikit-learn/g' setup.py && "
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('absl-py', '0.15.0', {
+        'modulename': 'absl',
+    }),
+    ('dm-haiku', '0.0.4', {
+        'modulename': 'haiku',
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+    }),
+    ('dm-tree', '0.1.6', {
+        'modulename': 'tree',
+    }),
+    ('immutabledict', '2.1.0', {
+    }),
+    ('ml_collections', '0.1.0', {
+        # see https://github.com/google/ml_collections/issues/7
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+    }),
+]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_commands = ['nnUNet_train --help']
+
+moduleclass = 'data'
