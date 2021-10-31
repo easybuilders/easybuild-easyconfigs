@@ -38,8 +38,6 @@ dependencies = [
     ('Xvfb', '1.20.9'),
 ]
 
-local_compiler_lib_append = '/compilers_and_libraries_$EBVERSIONICCIFORT/linux/compiler/lib/intel64_lin/'
-
 local_buildopts = ' -lglui -lglut -lfreeglut -lGLU -lGL -llibgd '
 local_buildopts += ' LDFLAGS=" -L%(installdir)s -L$EBROOTFREEGLUT/lib -L$EBROOTLIBGD/lib " '
 local_buildopts += ' IFLAGS=" -I$EBROOTFREEGLUT/include/GL -I%(builddir)s/smv-SMV%(version)s/Source/glui_v2_1_beta/ '
@@ -51,10 +49,9 @@ prebuildopts = "cd %(builddir)s/smv-SMV%(version)s/Build/LIBS/intel_linux_64/ &&
 prebuildopts += " make all -f make_LIBS.make "
 prebuildopts += "SRCDIR=%(builddir)s/smv-SMV%(version)s/Source/ LIBDIR=%(installdir)s && "
 prebuildopts += "cd %(builddir)s/smv-SMV%(version)s/Build/smokeview/ && "
-prebuildopts += "export IFORT_COMPILER_LIB=$EBROOTICCIFORT%s && " % local_compiler_lib_append
+prebuildopts += "export IFORT_COMPILER_LIB=$EBROOTICCIFORT/lib64/intel64/ && "
 
 buildopts = ' intel_linux_64 ' + local_buildopts
-buildopts += ' && make -j %(parallel)s intel_linux_64_db ' + local_buildopts
 
 files_to_copy = [
     (["./Build/smokeview/*.o", "./Build/smokeview/smokeview_linux_64*"], 'bin'),
@@ -64,15 +61,13 @@ postinstallcmds = [
     'ln -s %(installdir)s/bin/smokeview_linux_64 %(installdir)s/bin/smokeview'
 ]
 
-modextrapaths = {'PATH': ['bin']}
-
 sanity_check_commands = [
     "cd %(builddir)s/smv-SMV%(version)s && timeout 10 xvfb-run smokeview example 2>&1 | grep 'Terminated' ",
 ]
 
 sanity_check_paths = {
-    'files': ["bin/smokeview"],
-    'dirs': ["bin"],
+    'files': ['bin/smokeview'],
+    'dirs': [],
 }
 
-moduleclass = 'bio'
+moduleclass = 'vis'
