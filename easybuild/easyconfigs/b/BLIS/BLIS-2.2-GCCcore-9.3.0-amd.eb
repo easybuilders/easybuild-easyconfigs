@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '2.2'
+versionsuffix = '-amd'
+
+homepage = 'https://developer.amd.com/amd-cpu-libraries/blas-library/'
+description = """AMD's fork of BLIS. BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/amd/blis/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['BLIS-2.2-amd_fix-undefined-reference-blist-abort.patch']
+checksums = [
+    'e1feb60ac919cf6d233c43c424f6a8a11eab2c62c2c6e3f2652c15ee9063c0c9',  # 2.2.tar.gz
+    # BLIS-2.2-amd_fix-undefined-reference-blist-abort.patch
+    'e879bd79e4438f7e6905461af1d483d27d14945eb9e75509b22c7584b8ba93c4',
+]
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('Python', '3.8.2'),
+    ('Perl', '5.30.2'),
+]
+
+# Build Serial and multithreaded library
+configopts = ['--enable-cblas --enable-shared CC="$CC" auto',
+              '--enable-cblas --enable-threading=openmp --enable-shared CC="$CC" auto']
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT,
+              'lib/libblis-mt.a', 'lib/libblis-mt.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'

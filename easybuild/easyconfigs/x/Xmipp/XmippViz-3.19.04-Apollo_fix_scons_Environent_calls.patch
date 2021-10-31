@@ -1,0 +1,24 @@
+Make sure scons sees the complete environment from EasyBuild.
+
+Åke Sandgren, 2019-10-23
+diff -ru xmippViz-3.19.04-Apollo.orig/SConstruct xmippViz-3.19.02/SConstruct
+--- xmippViz-3.19.04-Apollo.orig/SConstruct	2019-01-30 14:46:50.000000000 +0100
++++ xmippViz-3.19.04-Apollo/SConstruct	2019-10-21 16:22:41.398842811 +0200
+@@ -235,7 +235,7 @@
+     if not sources and env.TargetInBuild(name):
+         Exit('No sources found for Library: %s. Exiting!!!' % name)
+ 
+-    env2 = Environment()
++    env2 = Environment(ENV=os.environ)
+     env2['ENV']['PATH'] = env['ENV']['PATH']
+ 
+     mpiArgs = {}
+@@ -467,7 +467,7 @@
+ 
+ def libraryTest(env, name, lang='c'):
+     """Check the existence of a concrete C/C++ library."""
+-    env2 = Environment(LIBS=env.get('LIBS',''))
++    env2 = Environment(ENV=os.environ,LIBS=env.get('LIBS',''))
+     conf = Configure(env2)
+     conf.CheckLib(name, language=lang)
+     env2 = conf.Finish()

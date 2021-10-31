@@ -1,0 +1,44 @@
+easyblock = 'Tarball'
+
+name = 'netMHC'
+version = '4.0a'
+
+homepage = 'http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHC'
+description = """ NetMHC 4.0 software  predicts binding of peptides to a number of different
+ HLA alleles  using artificial neural networks (ANN). """
+
+toolchain = SYSTEM
+
+# netMHC is proprietary software, but free for academcs
+# see: http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHC
+source_urls = ['http://www.cbs.dtu.dk/services/NetMHC-4.0']
+sources = [
+    {
+        'filename': '%(name)s-%(version)s.Linux.tar.gz',
+        'extract_cmd': 'tar --strip-components=1 -xzf %s',
+    },
+    {
+        'download_filename': 'data.tar.gz',
+        'filename': '%(name)s-%(version)s-data.tar.gz',
+    },
+]
+checksums = [
+    'd9938388c50bf49d748e5c1293435d7d9fae5d0a33303d795e767429508e368a',  # netMHC-4.0a.Linux.tar.gz
+    'f3fb6d77ec11bc51de963e96fd75a0622f5098a2d1e37d750afa3709d5b876d1',  # netMHC-4.0a-data.tar.gz
+]
+
+postinstallcmds = [
+    'sed -i -e "s|setenv[[:space:]]NMHOME.*|setenv NMHOME \$EBROOTNETMHC|" %(installdir)s/netMHC',
+    'sed -i -e "s|setenv[[:space:]]TMPDIR.*|setenv TMPDIR /tmp|" %(installdir)s/netMHC',
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ['netMHC', 'Linux_x86_64/bin/netMHC'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['netMHC -h']
+
+moduleclass = 'bio'

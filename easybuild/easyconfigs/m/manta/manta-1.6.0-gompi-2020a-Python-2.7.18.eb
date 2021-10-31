@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'manta'
+version = '1.6.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/Illumina/manta'
+description = """
+Manta calls structural variants (SVs) and indels from mapped paired-end sequencing reads.
+It is optimized for analysis of germline variation in small sets of individuals and
+somatic variation in tumor/normal sample pairs. Manta discovers, assembles and
+scores large-scale SVs, medium-sized indels and large insertions within a
+single efficient workflow.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+github_account = 'Illumina'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['76ce7c4a95a3b92cb16381f9a3b091afa234948ae6f028982abbd49e21206421']
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('Doxygen', '1.8.17'),
+]
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('Boost', '1.72.0'),
+    ('zlib', '1.2.11'),
+]
+
+local_binaries = ['CheckSVLoci', 'DumpSVLoci', 'EstimateSVLoci', 'GenerateSVCandidates', 'GetAlignmentStats',
+                  'GetChromDepth', 'MergeAlignmentStats', 'MergeSVLoci', 'SummarizeAlignmentStats', 'SummarizeSVLoci',
+                  'TestAssembler']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['configManta.py', 'runMantaWorkflowDemo.py']] +
+             ['libexec/%s' % x for x in local_binaries],
+    'dirs': ['lib/python', 'share'],
+}
+
+sanity_check_commands = ['runMantaWorkflowDemo.py']
+
+modextrapaths = {
+    'PATH': 'libexec',
+    'PYTHONPATH': 'lib/python',
+}
+
+moduleclass = 'bio'

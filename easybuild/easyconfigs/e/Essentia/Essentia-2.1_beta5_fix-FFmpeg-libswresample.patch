@@ -1,0 +1,197 @@
+fix for libavresample not being found (deprecated in recent FFmpeg versions)
+see https://github.com/MTG/essentia/issues/808
+fix taken from https://github.com/MTG/essentia/pull/811
+
+From dd2f1ba00ac8a4091a3a86c71da9406cfa9e04ae Mon Sep 17 00:00:00 2001
+From: Martchus <martchus@gmx.net>
+Date: Wed, 26 Dec 2018 02:57:49 +0100
+Subject: [PATCH] Use libswresample instead of libavresample
+
+---
+ src/algorithms/io/audioloader.cpp   | 20 +++++++++-----------
+ src/algorithms/io/audioloader.h     |  2 +-
+ src/essentia/utils/audiocontext.cpp | 20 +++++++++-----------
+ src/essentia/utils/audiocontext.h   |  2 +-
+ src/essentia/utils/ffmpegapi.h      |  4 ++--
+ src/wscript                         |  4 ++--
+ 6 files changed, 24 insertions(+), 28 deletions(-)
+
+diff --git a/src/algorithms/io/audioloader.cpp b/src/algorithms/io/audioloader.cpp
+index d838b565..22cd27a2 100644
+--- a/src/algorithms/io/audioloader.cpp
++++ b/src/algorithms/io/audioloader.cpp
+@@ -119,8 +119,8 @@ void AudioLoader::openAudioFile(const string& filename) {
+     E_DEBUG(EAlgorithm, "AudioLoader: converting from " << (fmt ? fmt : "unknown") << " to FLT");
+     */
+ 
+-    E_DEBUG(EAlgorithm, "AudioLoader: using sample format conversion from libavresample");
+-    _convertCtxAv = avresample_alloc_context();
++    E_DEBUG(EAlgorithm, "AudioLoader: using sample format conversion from libswresample");
++    _convertCtxAv = swr_alloc();
+         
+     av_opt_set_int(_convertCtxAv, "in_channel_layout", layout, 0);
+     av_opt_set_int(_convertCtxAv, "out_channel_layout", layout, 0);
+@@ -129,8 +129,8 @@ void AudioLoader::openAudioFile(const string& filename) {
+     av_opt_set_int(_convertCtxAv, "in_sample_fmt", _audioCtx->sample_fmt, 0);
+     av_opt_set_int(_convertCtxAv, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+ 
+-    if (avresample_open(_convertCtxAv) < 0) {
+-        throw EssentiaException("AudioLoader: Could not initialize avresample context");
++    if (swr_init(_convertCtxAv) < 0) {
++        throw EssentiaException("AudioLoader: Could not initialize swresample context");
+     }
+ 
+     av_init_packet(&_packet);
+@@ -150,8 +150,8 @@ void AudioLoader::closeAudioFile() {
+     }
+ 
+     if (_convertCtxAv) {
+-        avresample_close(_convertCtxAv);
+-        avresample_free(&_convertCtxAv);
++        swr_close(_convertCtxAv);
++        swr_free(&_convertCtxAv);
+     }
+ 
+     // Close the codec
+@@ -286,17 +286,15 @@ int AudioLoader::decode_audio_frame(AVCodecContext* audioCtx,
+             memcpy(output, _decodedFrame->data[0], inputPlaneSize);
+         }
+         else {
+-          int samplesWrittern = avresample_convert(_convertCtxAv, 
++          int samplesWrittern = swr_convert(_convertCtxAv,
+                                           (uint8_t**) &output, 
+-                                          outputPlaneSize,
+                                           outputBufferSamples, 
+-                                          (uint8_t**)_decodedFrame->data,               
+-                                          inputPlaneSize, 
++                                          (const uint8_t**)_decodedFrame->data,
+                                           inputSamples);
+ 
+           if (samplesWrittern < inputSamples) {
+               // TODO: there may be data remaining in the internal FIFO buffer
+-              // to get this data: call avresample_convert() with NULL input 
++              // to get this data: call swr_convert() with NULL input
+               // Test if this happens in practice
+               ostringstream msg;
+               msg << "AudioLoader: Incomplete format conversion (some samples missing)"
+diff --git a/src/algorithms/io/audioloader.h b/src/algorithms/io/audioloader.h
+index 08cfe88a..f2cd313b 100644
+--- a/src/algorithms/io/audioloader.h
++++ b/src/algorithms/io/audioloader.h
+@@ -60,7 +60,7 @@ class AudioLoader : public Algorithm {
+   bool _computeMD5;
+   AVFrame* _decodedFrame;
+ 
+-  struct AVAudioResampleContext* _convertCtxAv;
++  struct SwrContext* _convertCtxAv;
+ 
+   int _streamIdx; // index of the audio stream among all the streams contained in the file
+   std::vector<int> _streams;
+diff --git a/src/essentia/utils/audiocontext.cpp b/src/essentia/utils/audiocontext.cpp
+index 5390c9f4..729e2f6b 100644
+--- a/src/essentia/utils/audiocontext.cpp
++++ b/src/essentia/utils/audiocontext.cpp
+@@ -145,8 +145,8 @@ int AudioContext::create(const std::string& filename,
+   strncpy(_muxCtx->filename, _filename.c_str(), sizeof(_muxCtx->filename));
+ 
+   // Configure sample format convertion
+-  E_DEBUG(EAlgorithm, "AudioContext: using sample format conversion from libavresample");
+-  _convertCtxAv = avresample_alloc_context();
++  E_DEBUG(EAlgorithm, "AudioContext: using sample format conversion from libswresample");
++  _convertCtxAv = swr_alloc();
+         
+   av_opt_set_int(_convertCtxAv, "in_channel_layout", _codecCtx->channel_layout, 0);
+   av_opt_set_int(_convertCtxAv, "out_channel_layout", _codecCtx->channel_layout, 0);
+@@ -155,8 +155,8 @@ int AudioContext::create(const std::string& filename,
+   av_opt_set_int(_convertCtxAv, "in_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+   av_opt_set_int(_convertCtxAv, "out_sample_fmt", _codecCtx->sample_fmt, 0);
+ 
+-  if (avresample_open(_convertCtxAv) < 0) {
+-      throw EssentiaException("AudioLoader: Could not initialize avresample context");
++  if (swr_init(_convertCtxAv) < 0) {
++      throw EssentiaException("AudioLoader: Could not initialize swresample context");
+   }
+ 
+   return _codecCtx->frame_size;
+@@ -206,8 +206,8 @@ void AudioContext::close() {
+   _buffer = 0;
+ 
+   if (_convertCtxAv) {
+-    avresample_close(_convertCtxAv);
+-    avresample_free(&_convertCtxAv);
++    swr_close(_convertCtxAv);
++    swr_free(&_convertCtxAv);
+   }
+ 
+   _isOpen = false;
+@@ -284,17 +284,15 @@ void AudioContext::encodePacket(int size) {
+     throw EssentiaException("Could not allocate output buffer for sample format conversion");
+   }
+  
+-  int written = avresample_convert(_convertCtxAv,
++  int written = swr_convert(_convertCtxAv,
+                                    &bufferFmt, 
+-                                   outputPlaneSize,
+                                    size, 
+-                                   (uint8_t**) &_buffer,
+-                                   inputPlaneSize, 
++                                   (const uint8_t**) &_buffer,
+                                    size);
+ 
+   if (written < size) {
+     // The same as in AudioLoader. There may be data remaining in the internal 
+-    // FIFO buffer to get this data: call avresample_convert() with NULL input 
++    // FIFO buffer to get this data: call swr_convert() with NULL input
+     // But we just throw exception instead.
+     ostringstream msg;
+     msg << "AudioLoader: Incomplete format conversion (some samples missing)"
+diff --git a/src/essentia/utils/audiocontext.h b/src/essentia/utils/audiocontext.h
+index ae58f949..55939c7d 100644
+--- a/src/essentia/utils/audiocontext.h
++++ b/src/essentia/utils/audiocontext.h
+@@ -45,7 +45,7 @@ class AudioContext {
+   float* _buffer;      // input FLT buffer interleaved
+   uint8_t* _buffer_test; // input buffer in converted to codec sample format
+ 
+-  struct AVAudioResampleContext* _convertCtxAv;
++  struct SwrContext* _convertCtxAv;
+ 
+   //const static int FFMPEG_BUFFER_SIZE = MAX_AUDIO_FRAME_SIZE * 2;
+   // MAX_AUDIO_FRAME_SIZE is in bytes, multiply it by 2 to get some margin
+diff --git a/src/essentia/utils/ffmpegapi.h b/src/essentia/utils/ffmpegapi.h
+index 20cf3a32..9e53302d 100644
+--- a/src/essentia/utils/ffmpegapi.h
++++ b/src/essentia/utils/ffmpegapi.h
+@@ -24,8 +24,8 @@ extern "C" {
+ #include <libavcodec/avcodec.h>
+ #include <libavformat/avformat.h>
+ #include <libavutil/md5.h>
+-#include<libavresample/avresample.h>
+-#include<libavutil/opt.h>
++#include <libswresample/swresample.h>
++#include <libavutil/opt.h>
+ }
+ 
+ 
+diff --git a/src/wscript b/src/wscript
+index c3c999d1..72bdf8e3 100644
+--- a/src/wscript
++++ b/src/wscript
+@@ -130,7 +130,7 @@ def configure(ctx):
+         ctx.check_cfg(package='libavutil', uselib_store='AVUTIL',
+                       args=check_cfg_args, mandatory=False)
+ 
+-        ctx.check_cfg(package='libavresample', uselib_store='AVRESAMPLE',
++        ctx.check_cfg(package='libswresample', uselib_store='AVRESAMPLE',
+                       args=check_cfg_args, mandatory=False)
+ 
+     if 'libsamplerate' in ctx.env.WITH_LIBS_LIST:
+@@ -476,7 +476,7 @@ def build(ctx):
+ 
+     ctx(source='../essentia.pc.in', **ctx.env.pcfile_opts)
+     # TODO Ideally we should use the Requires.private field in the .pc file
+-    # Requires.private: gaia2 fftw3f yaml-0.1 libavcodec libavformat libavutil libavresample samplerate taglib libchromaprint
++    # Requires.private: gaia2 fftw3f yaml-0.1 libavcodec libavformat libavutil libswresample samplerate taglib libchromaprint
+ 
+     ctx.add_group()
+ 
