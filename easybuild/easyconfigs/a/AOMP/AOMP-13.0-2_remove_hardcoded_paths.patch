@@ -1,0 +1,225 @@
+# This patch removes many of the hardcoded assumptions that the AOMP build
+# expects around system GCC. In addition it fixes a few hardcoded variables
+# that EasyBuild would like to have control over, such as the number of
+# threads. Most of the changes are down to linking the LLVM build with the
+# EasyBuild supplied GCC.
+#
+# This patch was manually created
+--- a/aomp/bin/aomp_common_vars
++++ b/aomp/bin/aomp_common_vars
+@@ -80,8 +80,6 @@ AOMP_STANDALONE_BUILD=${AOMP_STANDALONE_BUILD:-1}
+ if [ "$AOMP_PROC" == "ppc64le" ] ; then
+    AOMP_BUILD_CUDA=1
+    AOMP_STANDALONE_BUILD=1
+-else
+-   AOMP_BUILD_CUDA=0
+ fi
+ if [ $AOMP_STANDALONE_BUILD == 1 ] ; then
+    # Default is to build nvptx for STANDALONE build
+@@ -139,16 +137,17 @@ GFXLIST=${GFXLIST:-"gfx700 gfx701 gfx801 gfx803 gfx900 gfx902 gfx906 gfx908"}
+ export GFXLIST
+ 
+ # Calculate the number of threads to use for make
+-NUM_THREADS=
++_THREADS=
+ if [ ! -z `which "getconf"` ]; then
+-   NUM_THREADS=$(`which "getconf"` _NPROCESSORS_ONLN)
++   _THREADS=$(`which "getconf"` _NPROCESSORS_ONLN)
+    if [ "$AOMP_PROC" == "ppc64le" ] ; then
+-      NUM_THREADS=$(( NUM_THREADS / 6))
++      _THREADS=$(( _THREADS / 6))
+    fi
+    if [ "$AOMP_PROC" == "aarch64" ] ; then
+-      NUM_THREADS=$(( NUM_THREADS / 4))
++      _THREADS=$(( _THREADS / 4))
+    fi
+ fi
++NUM_THREADS=${NUM_THREADS:-$_THREADS}
+ 
+ # These are the web sites where the AOMP git repos are pulled from
+ GITROC="https://github.com/radeonopencompute"
+--- a/aomp/bin/build_aomp.sh
++++ b/aomp/bin/build_aomp.sh
+@@ -28,19 +28,6 @@ thisdir=$(getdname $0)
+ # --- end standard header ----
+ 
+ function build_aomp_component() {
+-   osversion=$(cat /etc/os-release | grep -e ^VERSION_ID)
+-
+-   if [[ $osversion =~ '"7.' ]]; then
+-     echo "OS version 7 found `cat /etc/os-release`"
+-     [ -f /opt/rh/devtoolset-7/enable ] &&  . /opt/rh/devtoolset-7/enable
+-   elif [[ $osversion =~ '"8' ]]; then
+-     echo "OS version 8 found `cat /etc/os-release`"
+-     echo
+-     echo "Get updated gcc 8: export PATH=/usr/bin:\$PATH"
+-     export PATH=/usr/bin:$PATH
+-     gcc --version
+-   fi
+-
+    $AOMP_REPOS/$AOMP_REPO_NAME/bin/build_$COMPONENT.sh "$@"
+    rc=$?
+    if [ $rc != 0 ] ; then 
+--- a/aomp/bin/build_comgr.sh
++++ b/aomp/bin/build_comgr.sh
+@@ -96,6 +96,7 @@ if [ "$1" != "nocmake" ] && [ "$1" != "install" ] ; then
+       -DROCM_DIR=$AOMP_INSTALL_DIR  \
+       -DLLVM_DIR=$AOMP_INSTALL_DIR \
+       -DClang_DIR=$AOMP_INSTALL_DIR \
++      -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE \
+       $AOMP_REPOS/$AOMP_COMGR_REPO_NAME/lib/comgr
+ 
+    if [ $? != 0 ] ; then 
+--- a/aomp/bin/build_extras.sh
++++ b/aomp/bin/build_extras.sh
+@@ -113,7 +113,7 @@ if [ "$1" != "nocmake" ] && [ "$1" != "install" ] ; then
+   fi
+ 
+   if [ $AOMP_STANDALONE_BUILD == 1 ] ; then
+-    MYCMAKEOPTS="-DLLVM_DIR=$LLVM_DIR $AOMP_ORIGIN_RPATH -DCMAKE_BUILD_TYPE=$BUILDTYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_EXTRAS -DROCM_DIR=$ROCM_DIR -DAOMP_STANDALONE_BUILD=$AOMP_STANDALONE_BUILD -DAOMP_VERSION_STRING=$AOMP_VERSION_STRING -DCMAKE_PREFIX_PATH=$BUILD_DIR/build/libdevice"
++    MYCMAKEOPTS="-DLLVM_DIR=$LLVM_DIR $AOMP_ORIGIN_RPATH -DCMAKE_BUILD_TYPE=$BUILDTYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_EXTRAS -DROCM_DIR=$ROCM_DIR -DAOMP_STANDALONE_BUILD=$AOMP_STANDALONE_BUILD -DAOMP_VERSION_STRING=$AOMP_VERSION_STRING -DCMAKE_PREFIX_PATH=$BUILD_DIR/build/libdevice -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+   else
+     MYCMAKEOPTS="-DLLVM_DIR=$LLVM_DIR $AOMP_ORIGIN_RPATH -DCMAKE_BUILD_TYPE=$BUILDTYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_EXTRAS -DROCM_DIR=$ROCM_DIR -DAOMP_STANDALONE_BUILD=$AOMP_STANDALONE_BUILD -DDEVICELIBS_ROOT=$DEVICELIBS_ROOT -DAOMP_VERSION_STRING=$AOMP_VERSION_STRING"
+   fi
+--- a/aomp/bin/build_flang.sh
++++ b/aomp/bin/build_flang.sh
+@@ -45,7 +45,7 @@ REPO_BRANCH=$AOMP_FLANG_REPO_BRANCH
+ REPO_DIR=$AOMP_REPOS/$AOMP_FLANG_REPO_NAME
+ COMP_INC_DIR=$REPO_DIR/runtime/libpgmath/lib/common
+ 
+-MYCMAKEOPTS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_FLANG -DLLVM_ENABLE_ASSERTIONS=ON $AOMP_ORIGIN_RPATH -DLLVM_CONFIG=$INSTALL_FLANG/bin/llvm-config -DCMAKE_CXX_COMPILER=$AOMP_INSTALL_DIR/bin/clang++ -DCMAKE_C_COMPILER=$AOMP_INSTALL_DIR/bin/clang -DCMAKE_Fortran_COMPILER=gfortran -DLLVM_TARGETS_TO_BUILD=$TARGETS_TO_BUILD -DFLANG_OPENMP_GPU_AMD=ON -DFLANG_OPENMP_GPU_NVIDIA=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON -DFLANG_INCLUDE_TESTS=OFF -DCMAKE_C_FLAGS=-I$COMP_INC_DIR -DCMAKE_CXX_FLAGS=-I$COMP_INC_DIR"
++MYCMAKEOPTS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_FLANG -DLLVM_ENABLE_ASSERTIONS=ON $AOMP_ORIGIN_RPATH -DLLVM_CONFIG=$INSTALL_FLANG/bin/llvm-config -DCMAKE_CXX_COMPILER=$AOMP_INSTALL_DIR/bin/clang++ -DCMAKE_C_COMPILER=$AOMP_INSTALL_DIR/bin/clang -DCMAKE_Fortran_COMPILER=gfortran -DLLVM_TARGETS_TO_BUILD=$TARGETS_TO_BUILD -DFLANG_OPENMP_GPU_AMD=ON -DFLANG_OPENMP_GPU_NVIDIA=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON -DFLANG_INCLUDE_TESTS=OFF -DCMAKE_C_FLAGS=-I$COMP_INC_DIR -DCMAKE_CXX_FLAGS=-I$COMP_INC_DIR -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+ 
+ 
+ 
+--- a/aomp/bin/build_flang_runtime.sh
++++ b/aomp/bin/build_flang_runtime.sh
+@@ -48,7 +48,7 @@ REPO_BRANCH=$AOMP_FLANG_REPO_BRANCH
+ REPO_DIR=$AOMP_REPOS/$AOMP_FLANG_REPO_NAME
+ COMP_INC_DIR=$REPO_DIR/runtime/libpgmath/lib/common
+ 
+-MYCMAKEOPTS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_FLANG -DLLVM_ENABLE_ASSERTIONS=ON $AOMP_ORIGIN_RPATH -DLLVM_CONFIG=$INSTALL_FLANG/bin/llvm-config -DCMAKE_CXX_COMPILER=$AOMP_INSTALL_DIR/bin/clang++ -DCMAKE_C_COMPILER=$AOMP_INSTALL_DIR/bin/clang -DCMAKE_Fortran_COMPILER=$AOMP_INSTALL_DIR/bin/flang -DLLVM_TARGETS_TO_BUILD=$TARGETS_TO_BUILD -DLLVM_INSTALL_RUNTIME=ON -DFLANG_BUILD_RUNTIME=ON -DOPENMP_BUILD_DIR=$BUILD_DIR/build/openmp/runtime/src -DFLANG_INCLUDE_TESTS=OFF -DCMAKE_C_FLAGS=-I$COMP_INC_DIR -DCMAKE_CXX_FLAGS=-I$COMP_INC_DIR"
++MYCMAKEOPTS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_FLANG -DLLVM_ENABLE_ASSERTIONS=ON $AOMP_ORIGIN_RPATH -DLLVM_CONFIG=$INSTALL_FLANG/bin/llvm-config -DCMAKE_CXX_COMPILER=$AOMP_INSTALL_DIR/bin/clang++ -DCMAKE_C_COMPILER=$AOMP_INSTALL_DIR/bin/clang -DCMAKE_Fortran_COMPILER=$AOMP_INSTALL_DIR/bin/flang -DLLVM_TARGETS_TO_BUILD=$TARGETS_TO_BUILD -DLLVM_INSTALL_RUNTIME=ON -DFLANG_BUILD_RUNTIME=ON -DOPENMP_BUILD_DIR=$BUILD_DIR/build/openmp/runtime/src -DFLANG_INCLUDE_TESTS=OFF -DCMAKE_C_FLAGS=-I$COMP_INC_DIR -DCMAKE_CXX_FLAGS=-I$COMP_INC_DIR -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+ 
+ if [ "$1" == "-h" ] || [ "$1" == "help" ] || [ "$1" == "-help" ] ; then 
+   help_build_aomp
+--- a/aomp/bin/build_hipvdi.sh
++++ b/aomp/bin/build_hipvdi.sh
+@@ -112,7 +112,8 @@ if [ "$1" != "nocmake" ] && [ "$1" != "install" ] ; then
+  -D__HIP_ENABLE_PCH=OFF \
+  -DLIBROCclr_STATIC_DIR=$ROCclr_BUILD_DIR \
+  -DCMAKE_PREFIX_PATH=$ROCclr_BUILD_DIR;$ROCM_DIR/include;$ROCM_DIR;$ROCM_DIR/lib \
+- -DCMAKE_CXX_FLAGS=-Wno-ignored-attributes "
++ -DCMAKE_CXX_FLAGS=-Wno-ignored-attributes \
++ -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+  # -DLLVM_INCLUDES=$ROCM_DIR/include "
+ 
+   echo mkdir -p $BUILD_DIR/build/hipvdi
+--- a/aomp/bin/build_libdevice.sh
++++ b/aomp/bin/build_libdevice.sh
+@@ -44,7 +44,7 @@ REPO_BRANCH=$AOMP_LIBDEVICE_REPO_BRANCH
+ REPO_DIR=$AOMP_REPOS/$AOMP_LIBDEVICE_REPO_NAME
+ checkrepo
+ 
+-MYCMAKEOPTS="-DLLVM_DIR=$LLVM_DIR -DBUILD_HC_LIB=ON"
++MYCMAKEOPTS="-DLLVM_DIR=$LLVM_DIR -DBUILD_HC_LIB=ON -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+ 
+ if [ ! -d $AOMP_INSTALL_DIR/lib ] ; then 
+   echo "ERROR: Directory $AOMP/lib is missing"
+--- a/aomp/bin/build_openmp.sh
++++ b/aomp/bin/build_openmp.sh
+@@ -88,14 +88,14 @@ function getgcc9orless(){
+    _loc=`which gcc`
+    [ "$_loc" == "" ] && return
+    gccver=`$_loc --version | grep gcc | cut -d")" -f2 | cut -d"." -f1`
+-   [ $gccver -gt $GCCMIN ] && _loc=`which gcc-$GCCMIN`
++   [ $gccver -gt $GCCMIN ]
+    echo $_loc
+ }
+ function getgxx9orless(){
+    _loc=`which g++`
+    [ "$_loc" == "" ] && return
+    gxxver=`$_loc --version | grep g++ | cut -d")" -f2 | cut -d"." -f1`
+-   [ $gxxver -gt $GCCMIN ] && _loc=`which g++-$GCCMIN`
++   [ $gxxver -gt $GCCMIN ]
+    echo $_loc
+ }
+ 
+@@ -126,7 +126,8 @@ COMMON_CMAKE_OPTS="-DOPENMP_ENABLE_LIBOMPTARGET=1
+ -DROCDL=$AOMP_REPOS/$AOMP_LIBDEVICE_REPO_NAME
+ -DLIBOMP_COPY_EXPORTS=OFF
+ -DAOMP_STANDALONE_BUILD=$AOMP_STANDALONE_BUILD
+--DLLVM_DIR=$LLVM_DIR"
++-DLLVM_DIR=$LLVM_DIR
++-DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+ 
+ if [ "$AOMP_STANDALONE_BUILD" == 0 ]; then
+   COMMON_CMAKE_OPTS="$COMMON_CMAKE_OPTS
+--- a/aomp/bin/build_pgmath.sh
++++ b/aomp/bin/build_pgmath.sh
+@@ -45,9 +45,9 @@ fi
+ COMP_INC_DIR=$(ls -d $AOMP_INSTALL_DIR/lib/clang/*/include )
+ 
+ if [ "$AOMP_PROC" == "ppc64le" ] ; then
+-    MYCMAKEOPTS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_FLANG -DLLVM_ENABLE_ASSERTIONS=ON $AOMP_ORIGIN_RPATH -DCMAKE_Fortran_COMPILER=$AOMP_INSTALL_DIR/bin/flang -DLLVM_TARGETS_TO_BUILD=$TARGETS_TO_BUILD -DCMAKE_C_FLAGS=-I$COMP_INC_DIR -DCMAKE_CXX_FLAGS=-I$COMP_INC_DIR"
++    MYCMAKEOPTS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_FLANG -DLLVM_ENABLE_ASSERTIONS=ON $AOMP_ORIGIN_RPATH -DCMAKE_Fortran_COMPILER=$AOMP_INSTALL_DIR/bin/flang -DLLVM_TARGETS_TO_BUILD=$TARGETS_TO_BUILD -DCMAKE_C_FLAGS=-I$COMP_INC_DIR -DCMAKE_CXX_FLAGS=-I$COMP_INC_DIR -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+ else
+-    MYCMAKEOPTS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_FLANG -DLLVM_ENABLE_ASSERTIONS=ON $AOMP_ORIGIN_RPATH -DLLVM_CONFIG=$INSTALL_FLANG/bin/llvm-config -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang  -DLLVM_TARGETS_TO_BUILD=$TARGETS_TO_BUILD -DCMAKE_C_FLAGS=-I$COMP_INC_DIR -DCMAKE_CXX_FLAGS=-I$COMP_INC_DIR"
++    MYCMAKEOPTS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_FLANG -DLLVM_ENABLE_ASSERTIONS=ON $AOMP_ORIGIN_RPATH -DLLVM_CONFIG=$INSTALL_FLANG/bin/llvm-config -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang  -DLLVM_TARGETS_TO_BUILD=$TARGETS_TO_BUILD -DCMAKE_C_FLAGS=-I$COMP_INC_DIR -DCMAKE_CXX_FLAGS=-I$COMP_INC_DIR -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+ fi
+ 
+ if [ "$1" == "-h" ] || [ "$1" == "help" ] || [ "$1" == "-help" ] ; then 
+--- a/aomp/bin/build_project.sh
++++ b/aomp/bin/build_project.sh
+@@ -42,7 +42,7 @@ if [ "$AOMP_PROC" == "ppc64le" ] ; then
+    COMPILERS="-DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7"
+    TARGETS_TO_BUILD="AMDGPU;${AOMP_NVPTX_TARGET}PowerPC"
+ else
+-   COMPILERS="-DCMAKE_C_COMPILER=$AOMP_CC_COMPILER -DCMAKE_CXX_COMPILER=$AOMP_CXX_COMPILER"
++   COMPILERS="-DCMAKE_C_COMPILER=$AOMP_CC_COMPILER -DCMAKE_CXX_COMPILER=$AOMP_CXX_COMPILER -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+    if [ "$AOMP_PROC" == "aarch64" ] ; then
+       TARGETS_TO_BUILD="AMDGPU;${AOMP_NVPTX_TARGET}AArch64"
+    else
+--- a/aomp/bin/build_qmcpack.sh
++++ b/aomp/bin/build_qmcpack.sh
+@@ -118,6 +118,7 @@ $AOMP_CMAKE -DCMAKE_C_COMPILER=$OPENMPI_INSTALL/bin/mpicc \
+ -DCMAKE_CXX_FLAGS="-march=native -Xopenmp-target=amdgcn-amd-amdhsa -march=$AOMP_GPU" \
+ -DQMC_MIXED_PRECISION=1 -DENABLE_OFFLOAD=ON -DOFFLOAD_TARGET="amdgcn-amd-amdhsa" \
+ -DENABLE_TIMERS=1 \
++-DGCC_INSTALL_PREFIX=$EBROOTGCCCORE \
+ ..
+ fi
+ 
+--- a/aomp/bin/build_rocminfo.sh
++++ b/aomp/bin/build_rocminfo.sh
+@@ -110,7 +110,7 @@ if [ "$1" != "nocmake" ] && [ "$1" != "install" ] ; then
+      rm -rf $BUILD_DIR/build/rocminfo
+   fi
+ 
+-  MYCMAKEOPTS="$AOMP_ORIGIN_RPATH -DCMAKE_BUILD_TYPE=$BUILDTYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_RINFO -DROCM_DIR=$ROCM_DIR -DROCRTST_BLD_TYPE=$BUILDTYPE -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON -DCMAKE_INSTALL_RPATH='\$ORIGIN/../lib' -DCMAKE_EXE_LINKER_FLAGS='-Wl,--disable-new-dtags'"
++  MYCMAKEOPTS="$AOMP_ORIGIN_RPATH -DCMAKE_BUILD_TYPE=$BUILDTYPE -DCMAKE_INSTALL_PREFIX=$INSTALL_RINFO -DROCM_DIR=$ROCM_DIR -DROCRTST_BLD_TYPE=$BUILDTYPE -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON -DCMAKE_INSTALL_RPATH='\$ORIGIN/../lib' -DCMAKE_EXE_LINKER_FLAGS='-Wl,--disable-new-dtags' -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE"
+ 
+   mkdir -p $BUILD_DIR/build/rocminfo
+   cd $BUILD_DIR/build/rocminfo
+--- a/aomp/bin/build_rocr.sh
++++ b/aomp/bin/build_rocr.sh
+@@ -80,7 +80,7 @@ if [ "$1" != "nocmake" ] && [ "$1" != "install" ] ; then
+    BUILDTYPE="Release"
+    echo rm -rf $BUILD_AOMP/build/rocr
+    rm -rf $BUILD_AOMP/build/rocr
+-   MYCMAKEOPTS="-DCMAKE_INSTALL_PREFIX=$INSTALL_ROCM -DCMAKE_BUILD_TYPE=$BUILDTYPE -DCMAKE_PREFIX_PATH=$ROCM_DIR -DIMAGE_SUPPORT=OFF $AOMP_ORIGIN_RPATH"
++   MYCMAKEOPTS="-DCMAKE_INSTALL_PREFIX=$INSTALL_ROCM -DCMAKE_BUILD_TYPE=$BUILDTYPE -DCMAKE_PREFIX_PATH=$ROCM_DIR -DIMAGE_SUPPORT=OFF $AOMP_ORIGIN_RPATH -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE -DCMAKE_C_FLAGS=-fuse-ld=bfd -DCMAKE_CXX_FLAGS=-fuse-ld=bfd"
+    mkdir -p $BUILD_AOMP/build/rocr
+    cd $BUILD_AOMP/build/rocr
+    echo " -----Running rocr cmake ---- " 
+--- a/aomp/bin/build_roct.sh
++++ b/aomp/bin/build_roct.sh
+@@ -76,7 +76,7 @@ if [ "$1" != "nocmake" ] && [ "$1" != "install" ] ; then
+    BUILDTYPE="Release"
+    echo $SUDO rm -rf $BUILD_AOMP/build/roct
+    $SUDO rm -rf $BUILD_AOMP/build/roct
+-   MYCMAKEOPTS="-DCMAKE_INSTALL_PREFIX=$INSTALL_ROCT -DCMAKE_BUILD_TYPE=$BUILDTYPE $AOMP_ORIGIN_RPATH -DCMAKE_INSTALL_LIBDIR=$AOMP_INSTALL_DIR/lib"
++   MYCMAKEOPTS="-DCMAKE_INSTALL_PREFIX=$INSTALL_ROCT -DCMAKE_BUILD_TYPE=$BUILDTYPE $AOMP_ORIGIN_RPATH -DCMAKE_INSTALL_LIBDIR=$AOMP_INSTALL_DIR/lib -DGCC_INSTALL_PREFIX=$EBROOTGCCCORE -DCMAKE_C_FLAGS=-fuse-ld=bfd -DCMAKE_CXX_FLAGS=-fuse-ld=bfd"
+    mkdir -p $BUILD_AOMP/build/roct
+    cd $BUILD_AOMP/build/roct
+    echo " -----Running roct cmake ---- " 

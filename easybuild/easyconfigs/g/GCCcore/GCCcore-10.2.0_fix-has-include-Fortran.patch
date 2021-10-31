@@ -1,0 +1,99 @@
+see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95889
+
+From f6fe3bbf9f6c0b7249933e19b94560b6b26bf269 Mon Sep 17 00:00:00 2001
+From: =?utf8?q?Tiziano=20M=C3=BCller?= <tiziano.mueller@chem.uzh.ch>
+Date: Wed, 29 Jul 2020 07:28:23 -0700
+Subject: [PATCH] preprocessor: Teach traditional about has_include [PR95889]
+
+Traditional cpp (used by fortran) didn;t know about the new
+__has_include__ implementation.  Hey, since when did traditional cpp
+grow __has_include__? That wasn't in knr!
+
+	libcpp/
+	* init.c (builtin_array): Add xref comment.
+	* traditional.c (fun_like_macro): Add HAS_INCLUDE codes.
+	gcc/testsuite/
+	* c-c++-common/cpp/has-include-1-traditional.c: New.
+---
+ .../cpp/has-include-1-traditional.c           | 38 +++++++++++++++++++
+ libcpp/init.c                                 |  3 ++
+ libcpp/traditional.c                          |  4 +-
+ 3 files changed, 44 insertions(+), 1 deletion(-)
+ create mode 100644 gcc/testsuite/c-c++-common/cpp/has-include-1-traditional.c
+
+diff --git a/gcc/testsuite/c-c++-common/cpp/has-include-1-traditional.c b/gcc/testsuite/c-c++-common/cpp/has-include-1-traditional.c
+new file mode 100644
+index 00000000000..b0acdbece4d
+--- /dev/null
++++ b/gcc/testsuite/c-c++-common/cpp/has-include-1-traditional.c
+@@ -0,0 +1,38 @@
++/* { dg-do preprocess { target c } } */
++/* { dg-options "-traditional-cpp" } */
++
++#if __has_include ("stdlib.h")
++#else
++#error error 1
++#endif
++#if __has_include (<stdlib.h>)
++#else
++#error error 2
++#endif
++#if !__has_include ("stdlib.h")
++#error error 3
++#elif !__has_include (<stdlib.h>)
++#error error 4
++#endif
++#if __has_include ("stdlib.h") && __has_include (<stdlib.h>)
++#else
++#error error 5
++#endif
++#if !defined(__has_include)
++#error error 6
++#endif
++#ifndef __has_include
++#error error 7
++#endif
++#ifdef __has_include
++#else
++#error error 8
++#endif
++#define m1 __has_include("stdlib.h")
++#define m2 <stdlib.h>
++#if !m1
++#error error 9
++#endif
++#if !__has_include (m2)
++#error error 13
++#endif
+diff --git a/libcpp/init.c b/libcpp/init.c
+index f9f1fb204f0..aba5854d357 100644
+--- a/libcpp/init.c
++++ b/libcpp/init.c
+@@ -400,6 +400,9 @@ static const struct builtin_macro builtin_array[] =
+   B("__LINE__",		 BT_SPECLINE,      true),
+   B("__INCLUDE_LEVEL__", BT_INCLUDE_LEVEL, true),
+   B("__COUNTER__",	 BT_COUNTER,       true),
++  /* Make sure to update the list of built-in
++     function-like macros in traditional.c:
++     fun_like_macro() when adding more following */
+   B("__has_attribute",	 BT_HAS_ATTRIBUTE, true),
+   B("__has_cpp_attribute", BT_HAS_ATTRIBUTE, true),
+   B("__has_builtin",	 BT_HAS_BUILTIN,   true),
+diff --git a/libcpp/traditional.c b/libcpp/traditional.c
+index 77adb3bf595..b087072c9b4 100644
+--- a/libcpp/traditional.c
++++ b/libcpp/traditional.c
+@@ -330,7 +330,9 @@ fun_like_macro (cpp_hashnode *node)
+ {
+   if (cpp_builtin_macro_p (node))
+     return (node->value.builtin == BT_HAS_ATTRIBUTE
+-	    || node->value.builtin == BT_HAS_BUILTIN);
++	    || node->value.builtin == BT_HAS_BUILTIN
++	    || node->value.builtin == BT_HAS_INCLUDE
++	    || node->value.builtin == BT_HAS_INCLUDE_NEXT);
+   return node->value.macro->fun_like;
+ }
+ 
+-- 
+2.18.4
+

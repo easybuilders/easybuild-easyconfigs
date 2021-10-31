@@ -1,0 +1,80 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '5.6.2'
+versionsuffix = '-Python-%(pyver)s-mpi'
+
+homepage = "https://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["ParaView-v%(version)s.tar.xz"]
+checksums = ['1f3710b77c58a46891808dbe23dc59a1259d9c6b7bb123aaaeaa6ddf2be882ea']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', '-Python-3.7.4'),
+    ('XZ', '5.2.4'),
+    ('HDF5', '1.10.5'),
+    ('netCDF', '4.7.1'),
+    ('libGLU', '9.0.1'),
+    ('X11', '20190717'),
+    ('Mesa', '19.1.7'),
+    ('Qt5', '5.13.1'),
+    ('zlib', '1.2.11'),
+    ('FFmpeg', '4.2.1'),
+    ('Szip', '2.1.1'),
+]
+
+builddependencies = [('CMake', '3.15.3')]
+
+separate_build_dir = True
+
+# Paraview
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DBUILD_SHARED_LIBS=ON '
+configopts += '-DPARAVIEW_QT_VERSION=5 -DQT_QMAKE_EXECUTABLE=$EBROOTQT5/bin/qmake '
+configopts += '-DPARAVIEW_USE_MPI=ON '
+configopts += '-DPARAVIEW_ENABLE_FFMPEG=ON '
+configopts += '-DPARAVIEW_ENABLE_PYTHON=ON '
+
+# Python
+configopts += "-DVTK_WRAP_PYTHON=ON "
+configopts += "-DVTK_PYTHON_VERSION=%(pyver)s "
+configopts += "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)sm "
+configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)sm.%s " % SHLIB_EXT
+
+# Third party libs
+configopts += '-DVTK_USE_SYSTEM_MPI4PY=ON '
+configopts += "-DVTK_USE_SYSTEM_LZMA=ON "
+configopts += "-DVTK_USE_SYSTEM_HDF5=ON "
+configopts += "-DVTK_USE_SYSTEM_NETCDF=ON "
+
+# OpenGL & Mesa
+configopts += '-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s ' % SHLIB_EXT
+configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include -DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s ' % SHLIB_EXT
+configopts += '-DVTK_OPENGL_HAS_OSMESA=ON '
+configopts += '-DOSMESA_INCLUDE_DIR=$EBROOTMESA/include -DOSMESA_LIBRARY=$EBROOTMESA/lib/libOSMesa.%s ' % SHLIB_EXT
+
+
+# Without internet connection turn off testing (uncomment the following line)
+# configopts += '-DBUILD_TESTING=OFF '
+# Or consult https://gitlab.kitware.com/vtk/vtk/blob/master/Documentation/dev/git/data.md
+# and download ExternalData to $EASYBUILD_SOURCEPATH and adjust -DExternalData_OBJECT_STORES accordingly
+# Without internet connection, comment the following two lines (configopts and prebuildopts)
+configopts += '-DExternalData_OBJECT_STORES=%(builddir)s/ExternalData '
+
+# The ParaView server can be cranky, test downloads are quite often failing, especially in the case
+# of parallel downloads. Using ; insted of && gives a second chance to download the test files, if the
+# first serial attempt would fail.
+prebuildopts = 'make VTKData ;'
+
+sanity_check_paths = {
+    'files': ['bin/paraview'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib'],
+}
+
+moduleclass = 'vis'

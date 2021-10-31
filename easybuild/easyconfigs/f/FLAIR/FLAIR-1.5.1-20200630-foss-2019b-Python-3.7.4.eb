@@ -1,0 +1,80 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'Tarball'
+
+name = 'FLAIR'
+version = '1.5.1-20200630'
+local_commit = '0f71b5f'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/BrooksLabUCSC/flair'
+description = """FLAIR (Full-Length Alternative Isoform analysis of RNA) 
+for the correction, isoform definition, and alternative splicing analysis of noisy reads. 
+FLAIR has primarily been used for nanopore cDNA, native RNA, and PacBio sequencing reads."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+# https://github.com/BrooksLabUCSC/flair
+github_account = 'BrooksLabUCSC'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['FLAIR-%(version)s_fix-pandas2ri.py2rpy.patch']
+checksums = [
+    'fb621b7c4613cd691cbb844ee5d354f2e3076b28f2bbe347f305d4033a3a07b5',  # FLAIR-1.5.1-20200630.tar.gz
+    # FLAIR-1.5.1-20200630_fix-pandas2ri.py2rpy.patch
+    '3babe0aeae9fd308512ed82efefcdd82f5087983c2545009946c011fd1d4389d',
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('R', '3.6.2'),  # provides ggplot2, qqman
+    ('SciPy-bundle', '2019.10', versionsuffix),  # provides numpy, pandas
+    ('rpy2', '3.2.6', versionsuffix),
+    ('tqdm', '4.41.1'),
+    ('SAMtools', '1.10'),
+    ('BEDTools', '2.29.2'),
+    ('pybedtools', '0.8.1'),
+    ('minimap2', '2.17'),
+    ('Pysam', '0.15.3'),
+    ('R-bundle-Bioconductor', '3.10'),  # provides DESeq2, DRIMSeq, stageR
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('Seaborn', '0.10.0', versionsuffix),
+    ('Kent_tools', '401'),  # required for bedPartition command
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_LOWER_SOURCE],
+    'source_tmpl': SOURCE_TAR_GZ,
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+exts_list = [
+    ('ncls', '0.0.53', {
+        'checksums': ['a1b927c8b4898f3071e502bb9bf42ceb5bcbc39910035bd1c1a987dc02061993'],
+    }),
+    ('kerneltree', '0.0.5', {
+        'checksums': ['27d9d8dda1b72657ae2f9edc87881e92dbea2d6da469b7c06e33271ffcb72f37'],
+    }),
+]
+
+postinstallcmds = [
+    'ln -s %(installdir)s/%(namelower)s.py %(installdir)s/bin/%(namelower)s.py',
+    'chmod +x %(installdir)s/bin/*',
+]
+
+fix_python_shebang_for = ['bin/*.py', '%(namelower)s.py']
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s.py', 'bin/ssPrep.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+local_subcommands = ['align', 'correct', 'collapse', 'quantify', 'diffExp', 'diffSplice']
+sanity_check_commands = ["%%(namelower)s.py %s --help" % c for c in local_subcommands] + [
+    "ssPrep.py --help",
+]
+
+moduleclass = 'bio'

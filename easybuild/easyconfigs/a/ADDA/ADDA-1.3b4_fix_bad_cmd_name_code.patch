@@ -1,0 +1,21 @@
+Fix bad code for detecting executables name.
+
+Åke Sandgren, 20190502
+diff -ru adda-1.3b4.orig/src/param.c adda-1.3b4/src/param.c
+--- adda-1.3b4.orig/src/param.c	2014-02-20 15:48:03.000000000 +0100
++++ adda-1.3b4/src/param.c	2019-05-02 12:53:34.618014688 +0200
+@@ -1919,9 +1919,11 @@
+ 	// try to determine terminal width
+ 	if ((p1=getenv("COLUMNS"))!=NULL && sscanf(p1,"%d",&tmp)==1 && tmp>=MIN_TERM_WIDTH) term_width=tmp;
+ 	// get name of executable; remove all path overhead
+-	if ((p1=strrchr(argv[0],'\\'))==NULL) p1=argv[0];
+-	if ((p2=strrchr(argv[0],'/'))==NULL) p2=argv[0];
+-	exename=MAX(p1,p2)+1;
++        if ((exename = strrchr(argv[0],'/')) == NULL) {
++            if ((exename = strrchr(argv[0],'\\')) == NULL) {
++                exename = argv[0];
++            }
++        }
+ 	// initialize option
+ 	opt.l1=UNDEF;
+ 	// check first argument

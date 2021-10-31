@@ -1,0 +1,41 @@
+easyblock = 'Tarball'
+
+name = 'Metaxa2'
+version = '2.2'
+
+homepage = 'https://microbiology.se/software/metaxa2/'
+description = "Metaxa2 -- Identifies Small Subunit (SSU) rRNAs and classifies them taxonomically"
+
+toolchain = {'name': 'gompi', 'version': '2019a'}
+
+source_urls = ['https://microbiology.se/sw/']
+sources = ['Metaxa2_%(version)s.tar.gz']
+checksums = ['2f423c075301ed93c0eb79aa57a56eadd6b07396d250d06f6869a489a0c30468']
+
+dependencies = [
+    ('Perl', '5.28.1'),
+    ('HMMER', '3.2.1'),
+    ('BLAST+', '2.9.0'),
+    ('MAFFT', '7.429', '-with-extensions'),
+]
+
+# metaxa2_db is a directory, should not be included...
+local_metaxa2_scripts = ['metaxa2', 'metaxa2_c', 'metaxa2_dbb', 'metaxa2_dc', 'metaxa2_rf',
+                         'metaxa2_si', 'metaxa2_ttt', 'metaxa2_uc', 'metaxa2_x']
+
+fix_perl_shebang_for = local_metaxa2_scripts
+
+postinstallcmds = [
+    "sed -i 's/^\$plus = 0;/$plus = 1;  # use blastn + blastdbcmd provided by BLAST+/g' %(installdir)s/metaxa2{,_c}",
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': local_metaxa2_scripts,
+    'dirs': [],
+}
+
+sanity_check_commands = ['%s --help' % s for s in local_metaxa2_scripts]
+
+moduleclass = 'bio'

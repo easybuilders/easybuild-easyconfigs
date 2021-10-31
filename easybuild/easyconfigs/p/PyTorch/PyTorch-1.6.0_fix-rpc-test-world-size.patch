@@ -1,0 +1,93 @@
+From 2531b075c18a4bc5f96140156071037ea4454868 Mon Sep 17 00:00:00 2001
+From: Luca Wehrstedt <lcw@fb.com>
+Date: Tue, 30 Jun 2020 13:55:17 -0700
+Subject: [PATCH] [RPC tests] Remove world_size and init_method from TensorPipe
+ fixture
+
+Summary of the entire stack:
+--
+
+This diff is part of an attempt to refactor the RPC tests. They currently suffer from several problems:
+- Several ways to specify the agent to use: there exists one "generic" fixture that uses the global variable TEST_CONFIG to look up the agent name, and is used for process group and Thrift, and then there are separate fixtures for the flaky agent and the TensorPipe one.
+- These two ways lead to having two separate decorators (`@requires_process_group_agent` and `@_skip_if_tensorpipe_agent`) which must both be specified, making it unclear what the effect of each of them is and what happens if only one is given.
+- Thrift must override the TEST_CONFIG global variable before any other import (in order for the `@requires_process_group_agent` decorator to work correctly) and for that it must use a "trap" file, which makes it even harder to track which agent is being used, and which is specific to Buck, and thus cannot be used in OSS by other agents.
+- Even if the TensorPipe fixture doesn't use TEST_CONFIG, it still needs to set it to the right value for other parts of the code to work. (This is done in `@dist_init`).
+- There are a few functions in dist_utils.py that return some properties of the agent (e.g., a regexp to match against the error it returns in case of shutdown). These functions are effectively chained if/elses on the various agents, which has the effect of "leaking" some part of the Thrift agent into OSS.
+- Each test suite (RPC, dist autograd/dist optimizer, their JIT versions, remote module, ...) must be run on each agent (or almost; the faulty one is an exception) in both fork and spawn mode. Each of these combinations is a separate file, which leads to a proliferation of scripts.
+- There is no "master list" of what combinations make sense and should be run. Therefore it has happened that when adding new tests or new agents we forgot to enroll them into the right tests. (TensorPipe is still missing a few tests, it turns out).
+- All of these tiny "entry point" files contain almost the same duplicated boilerplate. This makes it very easy to get the wrong content into one of them due to a bad copy-paste.
+
+This refactoring aims to address these problems by:
+- Avoiding global state, defaults/override, traps, if/elses, ... and have a single way to specify the agent, based on an abstract base class and several concrete subclasses which can be "mixed in" to any test suite.
+- Instead of enabling/disabling tests using decorators, the tests that are specific to a certain agent are now in a separate class (which is a subclass of the "generic" test suite) so that they are only picked up by the agent they apply to.
+- Instead of having one separate entry point script for each combination, it uses one entry point for each agent, and in that script it provides a list of all the test suites it wants to run on that agent. And it does that by trying to deduplicate the boilerplate as much as possible. (In fact, the various agent-suite combinations could be grouped in any way, not necessarily by agent as I did here).
+
+It provides further advantages:
+- It puts all the agents on equal standing, by not having any of them be the default, making it thus easier to migrate from process group to TensorPipe.
+- It will make it easier to add more versions of the TensorPipe tests (e.g., one that disables the same-machine backends in order to test the TCP-based ones) without a further duplication of entry points, of boilerplate, ...
+
+Summary of this commit
+--
+This prepares the stack by simplifying the TensorPipe fixture. A comment says that the TensorPipe fixture cannot subclass the generic fixture class as that would lead to a diamond class hierarchy which Python doesn't support (whereas in fact it does), and therefore it copies over two properties that are defined on the generic fixture. However, each class that uses the TensorPipe fixture also inherits from the generic fixture, so there's no need to redefine those properties. And, in fact, by not redefining it we save ourselves some trouble when the TensorPipe fixture would end up overriding another override.
+
+Differential Revision: [D22287533](https://our.internmc.facebook.com/intern/diff/D22287533/)
+
+[ghstack-poisoned]
+---
+ .../rpc/tensorpipe/test_ddp_under_dist_autograd.py    |  8 --------
+ .../rpc/tensorpipe_rpc_agent_test_fixture.py          | 11 -----------
+ 2 files changed, 19 deletions(-)
+
+diff --git a/test/distributed/rpc/tensorpipe/test_ddp_under_dist_autograd.py b/test/distributed/rpc/tensorpipe/test_ddp_under_dist_autograd.py
+index 32c28d94a56cf..ebb6234a7216e 100644
+--- a/test/distributed/rpc/tensorpipe/test_ddp_under_dist_autograd.py
++++ b/test/distributed/rpc/tensorpipe/test_ddp_under_dist_autograd.py
+@@ -16,10 +16,6 @@
+ )
+ class TestDdpUnderDistAutogradTensorPipe(TensorPipeRpcAgentTestFixture, ddp_under_dist_autograd_test.TestDdpUnderDistAutograd):
+ 
+-    @property
+-    def world_size(self) -> int:
+-        return ddp_under_dist_autograd_test.WORLD_SIZE
+-
+     @dist_init
+     def test_verify_backend_options(self):
+         self.assertEqual(self.rpc_backend, rpc.backend_registry.BackendType.TENSORPIPE)
+@@ -29,10 +25,6 @@ def test_verify_backend_options(self):
+ )
+ class TestDdpComparisonTensorPipe(TensorPipeRpcAgentTestFixture, ddp_under_dist_autograd_test.TestDdpComparison):
+ 
+-    @property
+-    def world_size(self) -> int:
+-        return ddp_under_dist_autograd_test.WORLD_SIZE
+-
+     @dist_init
+     def test_verify_backend_options(self):
+         self.assertEqual(self.rpc_backend, rpc.backend_registry.BackendType.TENSORPIPE)
+diff --git a/torch/testing/_internal/distributed/rpc/tensorpipe_rpc_agent_test_fixture.py b/torch/testing/_internal/distributed/rpc/tensorpipe_rpc_agent_test_fixture.py
+index d306027e968cb..c147cb0f3f77d 100644
+--- a/torch/testing/_internal/distributed/rpc/tensorpipe_rpc_agent_test_fixture.py
++++ b/torch/testing/_internal/distributed/rpc/tensorpipe_rpc_agent_test_fixture.py
+@@ -1,5 +1,4 @@
+ import torch.distributed.rpc as rpc
+-import torch.testing._internal.dist_utils as dist_utils
+ 
+ # In order to run the existing test RPC and Distributed Autograd test suites
+ # with Tensorpipe, we introduce a new class in both rpc_test.py and
+@@ -8,16 +7,6 @@
+ # inherit from RpcAgentTestFixture, since this and the base test classes would
+ # then have a common ancestor (RpcAgentTestFixture), which is not allowed.
+ class TensorPipeRpcAgentTestFixture(object):
+-    @property
+-    def world_size(self):
+-        return 4
+-
+-    @property
+-    def init_method(self):
+-        return dist_utils.INIT_METHOD_TEMPLATE.format(
+-            file_name=self.file_name
+-        )
+-
+     @property
+     def rpc_backend(self):
+         return rpc.backend_registry.BackendType[
