@@ -35,11 +35,10 @@ sources = [
 ]
 patches = ['InChI-%(version)s_fedora-build-fixes.patch']
 checksums = [
-    '4874e310c0f2f81b881e90dd0c534752e1b9421d7d92ccfb037710022c7e7efd',  # INCHI-1-SRC.zip
-    '3c870ef97c8ebc86f64946db395582b87d79732000fa73d173f46c05ca19c1ff',  # INCHI-1-TEST.zip
+    '4874e310c0f2f81b881e90dd0c534752e1b9421d7d92ccfb037710022c7e7efd',  # INCHI-1.06-SRC.zip
+    '3c870ef97c8ebc86f64946db395582b87d79732000fa73d173f46c05ca19c1ff',  # INCHI-1.06-TEST.zip
     '98acd66e46d3c5c2c3b1531e9c84e129b503e23d3a7602f3f64f37c74e420840',  # InChI-1.06_fedora-build-fixes.patch
 ]
-
 
 # dos2unix may be another builddependency useful to "clean" some files
 builddependencies = [
@@ -55,7 +54,6 @@ build_cmd += 'LINKER_OPTIONS="$OPTFLAGS" '
 build_cmd += 'OPTFLAGS="$OPTFLAGS -Wno-comment -Wno-parentheses -Wno-unused -Wno-unused-but-set-variable" '
 build_cmd += 'make'
 
-
 files_to_copy = [
     (['INCHI_EXE/bin/Linux/inchi-1'],                                                     'bin'),
     (['INCHI_API/bin/Linux/libinchi.so*'],                                                'lib'),
@@ -67,11 +65,10 @@ files_to_copy = [
 # NOTE libinchi.so are not symlinks in the final build, but redundant copies!
 # NOTE `keepsymlinks = True` does not look to do it, so use this trick
 postinstallcmds = ["cd %(installdir)s/lib/ && rm -f libinchi.so.1 && "
-                   "ln -s libinchi.so.1.* libinchi.so.1 && ln -s libinchi.so.1 libinchi.so"]
-
+                   "ln -s libinchi.so.1.* libinchi.so.1 && ln -s libinchi.so.1 libinchi.%s" % SHLIB_EXT]
 
 sanity_check_paths = {
-    'files': ["bin/inchi-1", "lib/libinchi.so", "LICENCE.pdf", "readme.txt"],
+    'files': ['bin/inchi-1', 'lib/libinchi.%s' % SHLIB_EXT, 'LICENCE.pdf', 'readme.txt'],
     'dirs': ['lib', 'include']
 }
 
