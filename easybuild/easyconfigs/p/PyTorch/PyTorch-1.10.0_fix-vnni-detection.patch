@@ -1,0 +1,22 @@
+# Author: Caspar van Leeuwen, SURF
+# 
+# A bug in the test_lstm test was triggered on machines with AVX512_vnni support
+# See https://github.com/pytorch/pytorch/issues/59098
+# It was supposed to skip this test based on IS_AVX512_VNNI_SUPPORTED
+# But the test function only searched for 'avx512vnni', while my /proc/cpuinfo 
+# contained 'avx512_vnni'
+# This patch should fix the avx512_vnni detection and skip any incompatible tests
+# VNNI detection issue: https://github.com/pytorch/pytorch/issues/67685
+# And PR: https://github.com/pytorch/pytorch/pull/67686
+diff -Nru pytorch.orig/torch/testing/_internal/common_utils.py pytorch/torch/testing/_internal/common_utils.py
+--- pytorch.orig/torch/testing/_internal/common_utils.py	2021-11-02 15:50:14.328727067 +0100
++++ pytorch/torch/testing/_internal/common_utils.py	2021-11-02 15:59:44.621177782 +0100
+@@ -620,7 +620,7 @@
+         return False
+     with open("/proc/cpuinfo", encoding="ascii") as f:
+         lines = f.read()
+-    return "avx512vnni" in lines
++    return any(s in lines for s in ("avx512_vnni", "avx512vnni"))
+ 
+ IS_AVX512_VNNI_SUPPORTED = is_avx512_vnni_supported()
+ 
