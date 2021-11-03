@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'TOWHEE'
+version = '8.2.3'
+
+homepage = 'http://towhee.sourceforge.net/'
+description = """Towhee is a Monte Carlo molecular simulation code originally designed for the prediction of fluid phase equilibria using atom-based force fields and the Gibbs ensemble with particular attention paid to algorithms addressing molecule conformation sampling. The code has subsequently been extended to several ensembles, many different force fields, and solid (or at least porous) phases."""
+
+toolchain = {'name': 'gomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = [('https://sourceforge.net/projects/towhee/files/%(namelower)s/', 'download')]
+sources = ['%(namelower)s-%(version)s.tar.gz']
+
+checksums = ['240bf17691618cbbc46d5f17c59a85b429bd32a7fe85625f2e2051521a0d6c41']
+
+configopts  = 'FC=mpif90  CC=mpicc CXX=mpiCC  '
+configopts += '--enable-interal --enable-fix-GNU '
+configopts += '--enable-mpi '
+
+buildopts = 'LIBS="$LIBS -lm "' 
+parallel = 1
+
+local_towhee_binaries = [
+    "analyse_histogram", "car2towhee", "faux2towhee", "forcefield", "maftodensity",
+    "rdf2pmfpair", "unitcell", "xtl2towhee", "analyse_movie", "charmm2pdb", "fitcoex",
+    "jre_to_towhee", "pdb2towhee", "towhee", "xmd2towhee", "xyz2towhee",
+]
+
+postinstallcmds =  ['cp -r Examples ForceFields %(installdir)s && cp Utils/parse_vlcc_plots.script %(installdir)s/bin/']
+
+modextrapaths = {'PATH': 'ForceFields'}
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_towhee_binaries],
+    'dirs': ['Examples', 'ForceFields'],
+}
+
+moduleclass = 'phys'
