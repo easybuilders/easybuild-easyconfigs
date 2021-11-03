@@ -28,15 +28,19 @@ dependencies = [
 ]
 start_dir = 'SimpleITK'
 
-configopts = '-DWRAP_PYTHON=ON -DWRAP_LUA=OFF -DWRAP_RUBY=OFF -DWRAP_TCL=OFF -DWRAP_JAVA=OFF -DWRAP_R=OFF -DWRAP_CSHARP=OFF '
+configopts = '-DWRAP_PYTHON=ON -DWRAP_LUA=OFF -DWRAP_RUBY=OFF '
+configopts += ' -DWRAP_TCL=OFF -DWRAP_JAVA=OFF -DWRAP_R=OFF -DWRAP_CSHARP=OFF '
 
 preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
 local_pyinstpath = "%(installdir)s/lib/python%(pyshortver)s/site-packages"
+
+local_postinstall_cmds = "mkdir -p %s " % local_pyinstpath
+local_postinstall_cmds += " && cd %(builddir)s/easybuild_obj/Wrapping/Python "
+local_postinstall_cmds += " && export PYTHONPATH=%s:$PYTHONPATH " % local_pyinstpath
+local_postinstall_cmds += " && pip install --prefix=%(installdir)s . "
+
 postinstallcmds = [
-    "mkdir -p %s " % local_pyinstpath
-    + " && cd %(builddir)s/easybuild_obj/Wrapping/Python "
-    + " && export PYTHONPATH=%s:$PYTHONPATH " % local_pyinstpath
-    + " && pip install --prefix=%(installdir)s . "
+    local_postinstall_cmds
 ]
 separate_build_dir = True
 

@@ -1,0 +1,85 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonPackage'
+
+name = 'nnU-Net'
+version = '1.7.0'
+
+homepage = 'https://github.com/MIC-DKFZ/nnUNet'
+description = """
+nnU-Net is the first segmentation method that is designed to deal with the dataset diversity found in the domain.
+It condenses and automates the keys decisions for designing a successful segmentation pipeline for any given dataset.
+"""
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://files.pythonhosted.org/packages/8e/cf/0e5a45faba472c1df80da8d3fcb8d90b31a2258e48fdbc47cd2e30c16233/']
+sources = ['nnunet-%(version)s.tar.gz']
+checksums = ['7ad3d5b89af389fa86cea58f409bd2353b511a746587f37d26c00a756849f356']
+
+builddependencies = [
+    ('Bazel', '3.7.2')
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('PyTorch', '1.7.1'),
+    ('tqdm', '4.56.2'),
+    ('dicom2nifti', '2.3.0'),
+    ('scikit-image', '0.18.1'),
+    ('TensorFlow', '2.5.0'),
+    ('SciPy-bundle', '2020.11'),
+    ('batchgenerators', '0.23'),
+    ('scikit-learn', '0.23.2'),
+    ('requests', '2.26.0'),
+    ('NiBabel', '3.2.1'),
+    ('SimpleITK', '2.1.0'),
+    ('tifffile', '2021.8.30'),
+    ('MedPy', '0.4.0'),
+    ('jax', '0.2.19')
+]
+
+# sklearn is incorrect package name
+preinstallopts = "sed -i 's/sklearn/scikit-learn/g' setup.py && "
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('absl-py', '0.15.0', {
+        'modulename': 'absl',
+        'checksums': ['72d782fbeafba66ba3e525d46bccac949b9a174dbf66233e50ece09ee688dc81'],
+    }),
+    ('dm-haiku', '0.0.4', {
+        'modulename': 'haiku',
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'checksums': ['5faa387ad6b522516283cbe45adbc4c46bedcf501c82db2f9174945f3ec2ea7d'],
+    }),
+    ('dm-tree', '0.1.6', {
+        'modulename': 'tree',
+        'checksums': ['6776404b23b4522c01012ffb314632aba092c9541577004ab153321e87da439a'],
+    }),
+    ('immutabledict', '2.1.0', {
+        'checksums': ['673fb8f30f46d23dd394050b979f5b7f4c5398982b99ebc854fb873e646b967a'],
+    }),
+    ('ml_collections', '0.1.0', {
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'checksums': ['59a17fcd1c140153009788517f304caaddd7a94f06690f9f0ed09987beebcf3c'],
+    }),
+]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+options = {'modulename': 'nnunet'}
+
+sanity_check_commands = ['nnUNet_train --help']
+
+moduleclass = 'data'
