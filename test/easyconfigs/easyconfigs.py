@@ -1000,6 +1000,9 @@ class EasyConfigTest(TestCase):
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS']
+        # The BEAR-* modules are just meta modules to simplify module loading in the BlueBEAR Portal
+        bundles_whitelist.extend(['BEAR-R-bio', 'BEAR-R-geo', 'BEAR-Python-DataScience', 'BEAR-Python-Sciences',
+                                  'BEAR-R-economics', 'BEAR-Python-MSc-Bioinformatics'])
 
         failing_checks = []
 
