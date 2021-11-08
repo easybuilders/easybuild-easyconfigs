@@ -3,20 +3,20 @@ pick up on $ALPHAFOLD_DATA_DIR to specify location to downloaded data
 pick up on HH-suite, HHMER, Kalign dependencies provided via EasyBuild
 author: Kenneth Hoste (HPC-UGent)
 update 2.0.1 -> 2.1.0: Thomas Hoffmann (EMBL);
-diff -ru alphafold-2.1.0/run_alphafold.py alphafold-2.1.0_data-dep-paths/run_alphafold.py
---- alphafold-2.1.0/run_alphafold.py	2021-11-02 15:33:58.000000000 +0100
-+++ alphafold-2.1.0_data-dep-paths/run_alphafold.py	2021-11-05 10:12:44.908788630 +0100
+diff -ru alphafold-2.1.1/run_alphafold.py alphafold-2.1.1_data-dep-paths/run_alphafold.py
+--- alphafold-2.1.1/run_alphafold.py	2021-11-05 10:38:51.000000000 +0100
++++ alphafold-2.1.1_data-dep-paths/run_alphafold.py	2021-11-08 14:18:45.264272641 +0100
 @@ -40,6 +40,45 @@
  
  from alphafold.model import data
  # Internal import (7716).
 +use_reduced_dbs = any("--db_preset=reduced_dbs" in s for s in sys.argv[1:])
-+use_monomer_preset = any("--model_preset=monomer" in s for s in sys.argv[1:])
++use_monomer_preset = not any("--model_preset=multimer" in s for s in sys.argv[1:])
 +
 +data_dir = os.getenv('ALPHAFOLD_DATA_DIR')
 +
 +if data_dir:
-+    mgnify_database_path = os.path.join(data_dir, 'mgnify', 'mgy_clusters.fa')
++    mgnify_database_path = os.path.join(data_dir, 'mgnify', 'mgy_clusters_2018_12.fa')
 +    uniref90_database_path = os.path.join(data_dir, 'uniref90', 'uniref90.fasta')
 +    template_mmcif_dir = os.path.join(data_dir, 'pdb_mmcif', 'mmcif_files')
 +    obsolete_pdbs_path = os.path.join(data_dir, 'pdb_mmcif', 'obsolete.dat')
@@ -53,8 +53,8 @@ diff -ru alphafold-2.1.0/run_alphafold.py alphafold-2.1.0_data-dep-paths/run_alp
  logging.set_verbosity(logging.INFO)
  
 @@ -56,7 +95,7 @@
-                   'origin is unknown. These values determine the pairing '
-                   'method for the MSA.')
+     'where it is not, or where the origin is unknown. These values determine '
+     'the pairing method for the MSA.')
  
 -flags.DEFINE_string('data_dir', None, 'Path to directory of supporting data.')
 +flags.DEFINE_string('data_dir', data_dir, 'Path to directory of supporting data.')
@@ -122,6 +122,3 @@ diff -ru alphafold-2.1.0/run_alphafold.py alphafold-2.1.0_data-dep-paths/run_alp
    ])
  
    app.run(main)
-Only in alphafold-2.1.0_data-dep-paths: .run_alphafold.py.swn
-Only in alphafold-2.1.0_data-dep-paths: .run_alphafold.py.swo
-Only in alphafold-2.1.0_data-dep-paths: .run_alphafold.py.swp
