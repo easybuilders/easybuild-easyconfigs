@@ -5,9 +5,9 @@ easyblock = 'CMakeMake'
 name = 'SimpleITK'
 version = '2.1.0'
 
-homepage = 'https://github.com/scikit-learn-contrib/imbalanced-learn'
-description = """imbalanced-learn is a Python package offering a number of re-sampling techniques commonly used in
- datasets showing strong between-class imbalance."""
+homepage = 'http://www.simpleitk.org'
+description = """SimpleITK is a simplified programming interface to the algorithms and data structures of
+ the Insight Toolkit (ITK)."""
 
 toolchain = {'name': 'foss', 'version': '2020b'}
 
@@ -26,32 +26,24 @@ dependencies = [
     ('ITK', '5.2.1'),
     ('scikit-build', '0.11.1'),
 ]
+
 start_dir = 'SimpleITK'
 
-configopts = '-DWRAP_PYTHON=ON -DWRAP_LUA=OFF -DWRAP_RUBY=OFF '
-configopts += ' -DWRAP_TCL=OFF -DWRAP_JAVA=OFF -DWRAP_R=OFF -DWRAP_CSHARP=OFF '
-
-preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
-local_pyinstpath = "%(installdir)s/lib/python%(pyshortver)s/site-packages"
-
-local_postinstall_cmds = "mkdir -p %s " % local_pyinstpath
-local_postinstall_cmds += " && cd %(builddir)s/easybuild_obj/Wrapping/Python "
-local_postinstall_cmds += " && export PYTHONPATH=%s:$PYTHONPATH " % local_pyinstpath
-local_postinstall_cmds += " && pip install --prefix=%(installdir)s . "
+configopts = "-DWRAP_PYTHON=ON -DWRAP_LUA=OFF -DWRAP_RUBY=OFF "
+configopts += "-DWRAP_TCL=OFF -DWRAP_JAVA=OFF -DWRAP_R=OFF -DWRAP_CSHARP=OFF "
 
 postinstallcmds = [
-    local_postinstall_cmds
+    "cd %(builddir)s/easybuild_obj/Wrapping/Python && "
+    "pip install --ignore-installed --no-deps --prefix=%(installdir)s . ",
 ]
-separate_build_dir = True
 
-# todo make nicer dir path
-modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages/']}
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
 sanity_check_paths = {
     'files': ['lib/libSimpleITK_ITKBiasCorrection-%(version_major_minor)s.a'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages', 'include/%(name)s-%(version_major_minor)s'],
+    'dirs': ['include/%(name)s-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
 }
 
-sanity_check_commands = [('python', "-c 'import %(name)s'")]
+sanity_check_commands = ["python -c 'import %(name)s'"]
 
 moduleclass = 'tools'
