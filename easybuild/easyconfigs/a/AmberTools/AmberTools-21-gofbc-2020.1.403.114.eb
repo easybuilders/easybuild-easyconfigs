@@ -1,0 +1,48 @@
+# This easyconfig is to build AmberTools with  MPI and CUDA - enabled QUICK binaries 
+# It can be adapted to buld PMEMD with NCCL  by fixing the following issues:
+# CMake config fails to build PMEMD (and AmberTools as well) with NCCL library due to bugs in CMake scripts
+# 1. FindNCCL function is never called even when NCCL build is enabled (3rdPartyTools.cmake, l.538)
+# 2. The logic to check for NCCL is wrong; it emits error when NCCL is found (PMEMDCompilerFlags.cmake, l.230) 
+
+easyblock = 'EB_Amber'
+
+name = 'AmberTools'
+version = '21'
+patchlevels = (9, 0)
+
+homepage = "https://ambermd.org/AmberTools.php"
+description = "AmberTools consists of several independently developed packages that work well by themselves, and with Amber20 itself. The suite can also be used to carry out complete molecular dynamics simulations, with either explicit water or generalized Born solvent models."
+
+toolchain = {'name': 'gofbc', 'version': '2020.1.403.114'}
+toolchainopts = {'openmp': True}   #, 'usempi': True}
+
+sources = ["AmberTools%(version)s.tar.bz2"]
+dependencies = [
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+    ('arpack-ng', '3.8.0'),
+    ('Boost', '1.72.0'),
+    ('SciPy-Stack', '2021a'),
+    ('FFTW', '3.3.8', '-mpi'), 
+]
+
+separate_build_dir = True
+
+configopts = ' ' 
+#configopts =  ' -DBUILD_QUICK=TRUE '    # not supported with CUDA 11.4, issue https://github.com/merzlab/QUICK/issues/218
+#configopts += ' -DCUDA=TRUE' => handled by EasyBlock
+#configopts += ' -DOPENMP=TRUE' => handled by EasyBlock and toolchainopts
+configopts += ' -DMPI=TRUE'  #  => handled by the EasyBlock and toolchainopts
+configopts += ' -DCOMPILER=GNU'   # => compiler auto in EasyBlock
+#configopts += ' -DDOWNLOAD_MINICONDA=FALSE' => handled in EasyBlock
+#configopts += ' -DTRUST_SYSTEM_LIBS=TRUE' => handled in EasyBlock
+configopts += ' -DFORCE_DISABLE_LIBS=plumed'
+#configopts += ' -DINSTALL_TESTS=TRUE'  => removed by EasyBlock
+checksums = 'f55fa930598d5a8e9749e8a22d1f25cab7fcf911d98570e35365dd7f262aaafd',  # AmberTools21.tar.bz2
+
+#configopts += ' -DNetCDF_INCLUDES=$EBROOTNETCDFMINFORTRAN/include '
+modloadmsg = """Before using AmberTools source the file \033[91m $EBROOTAMBERTOOLS/amber.sh \033[0m
+or add the line \033[91m source $EBROOTAMBERTOOLS/amber.sh \033[0m to your \033[91m ~/.bash_profile \033[0m
+"""
+
+moduleclass = 'chem'
