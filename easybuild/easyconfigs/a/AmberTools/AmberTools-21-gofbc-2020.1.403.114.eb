@@ -17,19 +17,30 @@ toolchain = {'name': 'gofbc', 'version': '2020.1.403.114'}
 toolchainopts = {'openmp': True}   #, 'usempi': True}
 
 sources = ["AmberTools%(version)s.tar.bz2"]
+patches = [
+	"%(name)s-%(version)s_quick_cuda11.4.patch"
+]
+checksums = [
+	'f55fa930598d5a8e9749e8a22d1f25cab7fcf911d98570e35365dd7f262aaafd',  # AmberTools21.tar.bz2
+	'016811635261b9af439abe6d078e4c7650958fc532f51fe4ec8c4ce42c318d01',  # AmberTools-21_quick_cuda11.4.patch
+]
 dependencies = [
+    ('Python', '3.8'),
+    ('SciPy-Stack', '2021a'),
+    ('Perl', '5.30.2'),
+    ('Boost', '1.72.0'),
     ('netCDF', '4.7.4'),
     ('netCDF-Fortran', '4.5.2'),
     ('arpack-ng', '3.8.0'),
-    ('Boost', '1.72.0'),
-    ('SciPy-Stack', '2021a'),
+    ('PnetCDF', '1.12.2'),
     ('FFTW', '3.3.8', '-mpi'), 
+    ('mpi4py', '3.0.3'),
 ]
 
 separate_build_dir = True
 
 configopts = ' ' 
-#configopts =  ' -DBUILD_QUICK=TRUE '    # not supported with CUDA 11.4, issue https://github.com/merzlab/QUICK/issues/218
+configopts =  ' -DBUILD_QUICK=TRUE '    
 #configopts += ' -DCUDA=TRUE' => handled by EasyBlock
 #configopts += ' -DOPENMP=TRUE' => handled by EasyBlock and toolchainopts
 configopts += ' -DMPI=TRUE'  #  => handled by the EasyBlock and toolchainopts
@@ -37,8 +48,7 @@ configopts += ' -DCOMPILER=GNU'   # => compiler auto in EasyBlock
 #configopts += ' -DDOWNLOAD_MINICONDA=FALSE' => handled in EasyBlock
 #configopts += ' -DTRUST_SYSTEM_LIBS=TRUE' => handled in EasyBlock
 configopts += ' -DFORCE_DISABLE_LIBS=plumed'
-#configopts += ' -DINSTALL_TESTS=TRUE'  => removed by EasyBlock
-checksums = 'f55fa930598d5a8e9749e8a22d1f25cab7fcf911d98570e35365dd7f262aaafd',  # AmberTools21.tar.bz2
+configopts += ' -DINSTALL_TESTS=TRUE'  #=> removed by EasyBlock
 
 #configopts += ' -DNetCDF_INCLUDES=$EBROOTNETCDFMINFORTRAN/include '
 modloadmsg = """Before using AmberTools source the file \033[91m $EBROOTAMBERTOOLS/amber.sh \033[0m
