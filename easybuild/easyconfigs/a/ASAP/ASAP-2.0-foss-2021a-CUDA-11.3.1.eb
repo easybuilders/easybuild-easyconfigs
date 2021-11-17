@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+separate_build_dir = True
+
+name = 'ASAP'
+version = '2.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "https://computationalpathologygroup.github.io/ASAP/"
+description = """ASAP focuses on fast and fluid image viewing with an easy-to-use interface 
+for making annotations. It consists of two main components: an IO library for reading and writing 
+multi-resolution images and a viewer component for visualizing such images."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://github.com/computationalpathologygroup/ASAP/archive']
+sources = ['%(name)s-%(version)s.tar.gz']
+patches = [
+    'ASAP-2.0_libjpeg.patch',
+]
+checksums = [
+    'e5d8b0aff6f86a3c7319062ca1f9e35b867da1c80667a80b55ee2a876f897202',  # ASAP-2.0.tar.gz
+    '7cf1403da21cc2bbf9ea95f39de46982d95e375559203deb0f9826e4cf168e04',  # ASAP-1.9_libjpeg.patch
+]
+
+configopts = '-DOPENSLIDE_INCLUDE_DIR=$EBROOTOPENSLIDE/include/openslide '
+configopts += '-DPugiXML_INCLUDE_DIR=$EBROOTPUGIXML/include '
+configopts += '-DDCMTKJPEG_INCLUDE_DIR=$EBROOTDCMTK '
+configopts += '-DWRAP_MULTIRESOLUTIONIMAGEINTERFACE_PYTHON=TRUE -DBUILD_ASAP=TRUE '
+configopts += '-DBUILD_EXECUTABLES=TRUE -DBUILD_IMAGEPROCESSING=TRUE '
+configopts += '-DBUILD_MULTIRESOLUTIONIMAGEINTERFACE_VSI_SUPPORT=TRUE '
+# Otherwise, it picks up on the system swig
+configopts += '-DSWIG_EXECUTABLE=$EBROOTSWIG/bin/swig '
+
+dependencies = [
+    ('CUDA', '11.3.1', '', True),
+    ('Boost', '1.76.0'),
+    ('Python', '3.9.5'),
+    ('OpenCV', '4.5.3', '-CUDA-%(cudaver)s-contrib'),
+    ('Qt5', '5.15.2'),
+    ('LibTIFF', '4.2.0'),
+    ('libjpeg-turbo', '2.0.6'),
+    ('JasPer', '2.0.28'),
+    ('DCMTK', '3.6.6'),
+    ('SWIG', '4.0.2'),
+    ('OpenSlide', '3.4.1', '-largefiles'),
+    ('pugixml', '1.11.4'),
+    ('zlib', '1.2.11'),
+]
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('CMake',    '3.20.1'),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin']
+}
+
+# ASAP installs its python interface in bin. Ugly, but we'll need to add it to PYTHONPATH
+modextrapaths = {'PYTHONPATH': ['bin']}
+
+moduleclass = 'vis'
