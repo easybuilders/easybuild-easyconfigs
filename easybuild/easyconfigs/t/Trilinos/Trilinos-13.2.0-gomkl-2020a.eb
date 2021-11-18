@@ -1,0 +1,54 @@
+name = 'Trilinos'
+version = "13.2.0"
+
+homepage = 'https://trilinos.org'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'gomkl', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = [
+    'https://github.com/trilinos/Trilinos/archive'
+]
+sources = ['%(namelower)s-release-13-0-1.tar.gz']
+checksums = ['0bce7066c27e83085bc189bf524e535e5225636c9ee4b16291a38849d6c2216d']
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.7", "3.8", "3.9"]}
+
+builddependencies = [
+    ('Boost', '1.72.0'),
+    ('netCDF', '4.7.4'),
+    ('MATIO', '1.5.19'),
+    ('SWIG', '4.0.1'),
+]
+
+preconfigopts  = "unset EBPYTHONPREFIXES && "
+preconfigopts += "pyver=$(python -c 'import sys; print(\"python%s.%s\"%sys.version_info[:2])') && "
+preconfigopts += "pip install numpy --prefix=%(installdir)s && "
+preconfigopts += "export PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/$pyver/site-packages && "
+preconfigopts += "export CPATH=$CPATH:%(installdir)s/lib/$pyver/site-packages/numpy/core/include && "
+
+configopts  = '-DNetCDF_NEEDS_HDF5=ON -DShyLU_NodeTacho_ENABLE_EXAMPLES=OFF -DShyLU_Node_ENABLE_EXAMPLES=OFF '
+configopts += '-DXpetra_ENABLE_EXAMPLES=OFF -DXpetra_ENABLE_TESTS=OFF -DIfpack2_ENABLE_TESTS=OFF '
+configopts += '-DShyLU_DDFROSch_ENABLE_TESTS=OFF -DShyLU_DD_ENABLE_TESTS=OFF '
+configopts += '-DTrilinosCouplings_ENABLE_EXAMPLES=OFF -DMPI_BASE_DIR=$EBROOTOPENMPI'
+
+openmp = False
+
+build_shared_libs = True
+
+preinstallopts = preconfigopts
+
+postinstallcmds = [
+   "sed -i 's/PyTrilinos;//' %(installdir)s/lib/cmake/Trilinos/TrilinosConfig.cmake",
+]
+
+# too parallel is too slow because of memory requirements (results in swapping), and may cause build/tests to fail
+# building with 20 cores seems to require about 100GB of memory (peak usage)
+
+maxparallel = 10
+
+moduleclass = 'numlib'
