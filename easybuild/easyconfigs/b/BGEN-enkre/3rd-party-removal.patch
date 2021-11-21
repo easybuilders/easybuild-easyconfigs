@@ -1,13 +1,34 @@
-Removal of sqlite3 and zstd from 3-party modules but leave boost 
+Removal of sqlite3, boost and zstd from 3-party modules
 Author: J. Sassmannshausen
 diff --git a/bgen.tgz.orig/3rd_party/wscript b/bgen.tgz/3rd_party/wscript
-index 220728a..f72075d 100644
+index 220728a..e69de29 100644
 --- a/bgen.tgz.orig/3rd_party/wscript
 +++ b/bgen.tgz/3rd_party/wscript
-@@ -1,2 +1,2 @@
- def build( bld ):
+@@ -1,2 +0,0 @@
+-def build( bld ):
 -	bld.recurse( [ 'boost_1_55_0', 'sqlite3', 'zstd-1.1.0' ] )
-+	bld.recurse( [ 'boost_1_55_0' ] )
+diff --git a/bgen.tgz.orig/Makefile b/bgen.tgz/Makefile
+index a7b0ac8..c62ac16 100644
+--- a/bgen.tgz.orig/Makefile
++++ b/bgen.tgz/Makefile
+@@ -1,14 +1,9 @@
+ FLAGS = -g -std=c++11 -lz \
+ -I genfile/include \
+ -I db/include \
+--I 3rd_party/boost_1_55_0 \
+--I 3rd_party/zstd-1.1.0 \
+--I 3rd_party/zstd-1.1.0/lib \
+--I 3rd_party/zstd-1.1.0/lib/common \
+--I 3rd_party/zstd-1.1.0/lib/compress \
+--I 3rd_party/zstd-1.1.0/lib/decompress \
+--I 3rd_party/sqlite3 \
+--I include/3rd_party/sqlite3 \
++-I ${EBBOST}/include \
++-I ${EBDEVELZSTD}/include \
++-I ${EBSQLITE3}/include \
+ -D SQLITE_ENABLE_COLUMN_METADATA \
+ -D SQLITE_ENABLE_STAT4 \
+ -D SQLITE_MAX_EXPR_DEPTH=10000 \
 diff --git a/bgen.tgz.orig/db/include/db/SQLStatement.hpp b/bgen.tgz/db/include/db/SQLStatement.hpp
 index e107bd2..fca5957 100644
 --- a/bgen.tgz.orig/db/include/db/SQLStatement.hpp
@@ -74,7 +95,7 @@ index 84e0658..03b3d5e 100644
  #include "db/SQLStatement.hpp"
  #include "db/SQLite3Statement.hpp"
 diff --git a/bgen.tgz.orig/db/wscript b/bgen.tgz/db/wscript
-index 7b0b617..2605387 100644
+index 7b0b617..a3861f0 100644
 --- a/bgen.tgz.orig/db/wscript
 +++ b/bgen.tgz/db/wscript
 @@ -5,8 +5,8 @@ def build( bld ):
@@ -82,16 +103,25 @@ index 7b0b617..2605387 100644
  		target = 'db',
  		source = sources,
 -		includes='./include',
-+		includes='/home/sassy/apps/software/SQLite/3.33.0-GCCcore-10.2.0/include ./include',
++		includes='${EBSQLITE}/include ./include',
  		cxxflags = [],
  		use = 'boost sqlite3',
 -		export_includes = './include'
-+		export_includes = '/home/sassy/apps/software/SQLite/3.33.0-GCCcore-10.2.0/include ./include'
++		export_includes = '${EBSQLITE}/include ./include'
  	)
 diff --git a/bgen.tgz.orig/wscript b/bgen.tgz/wscript
-index a6385d9..e214097 100644
+index a6385d9..47b9fc9 100644
 --- a/bgen.tgz.orig/wscript
 +++ b/bgen.tgz/wscript
+@@ -63,7 +63,7 @@ def build( bld ):
+ 		use = 'zlib zstd sqlite3 db',
+ 		export_includes = 'genfile/include'
+ 	)
+-	bld.recurse( [ '3rd_party', 'appcontext', 'genfile', 'db', 'apps', 'example', 'test', 'R' ] )
++	bld.recurse( [ 'appcontext', 'genfile', 'db', 'apps', 'example', 'test', 'R' ] )
+ 	# Copy files into rbgen package directory
+ 	for source in bgen_sources:
+ 		bld( rule = 'cp ${SRC} ${TGT}', source = source, target = 'R/rbgen/src/bgen/' + os.path.basename( source.abspath() ), always = True )
 @@ -126,12 +126,12 @@ class ReleaseBuilder:
  		shutil.copytree( 'R/package/', rbgen_dir )
  		os.makedirs( os.path.join( rbgen_dir, "src", "include" ))
@@ -123,14 +153,24 @@ index a6385d9..e214097 100644
  
  		boostGlobs = [
  			'libs/system/src/*.cpp',
-@@ -166,8 +166,8 @@ class ReleaseBuilder:
+@@ -160,14 +160,14 @@ class ReleaseBuilder:
+ 			'libs/chrono/src/*.cpp',
+ 		]
+ 
+-		for pattern in boostGlobs:
+-			for filename in glob( '3rd_party/boost_1_55_0/%s' % pattern ):
+-				shutil.copy( filename, os.path.join( rbgen_dir, "src", "boost", os.path.basename( filename ) ) )
++#		for pattern in boostGlobs:
++#			for filename in glob( '3rd_party/boost_1_55_0/%s' % pattern ):
++#				shutil.copy( filename, os.path.join( rbgen_dir, "src", "boost", os.path.basename( filename ) ) )
  
  		include_paths = [
- 			"3rd_party/boost_1_55_0/boost/",
+-			"3rd_party/boost_1_55_0/boost/",
 -			"3rd_party/zstd-1.1.0/",
 -			"3rd_party/sqlite3/",
-+                        "${EBROOTZSTD}",
-+                        "${EBROOTSQLITE}",
++			"${EBBOOST}",
++			"${EBROOTZSTD}",
++			"${EBROOTSQLITE}",
  			"genfile/include/genfile",
  			"db/include/db"
  		]
