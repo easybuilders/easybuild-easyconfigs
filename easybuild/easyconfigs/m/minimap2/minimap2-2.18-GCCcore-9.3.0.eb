@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+
+name = 'minimap2'
+version = '2.18'
+
+homepage = 'https://github.com/lh3/minimap2'
+description = """Minimap2 is a fast sequence mapping and alignment
+program that can find overlaps between long noisy reads, or map long
+reads or their assemblies to a reference genome optionally with detailed
+alignment (i.e. CIGAR). At present, it works efficiently with query
+sequences from a few kilobases to ~100 megabases in length at an error
+rate ~15%. Minimap2 outputs in the PAF or the SAM format. On limited
+test data sets, minimap2 is over 20 times faster than most other
+long-read aligners. It will replace BWA-MEM for long reads and contig
+alignment."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/lh3/%(name)s/releases/download/v%(version)s/']
+sources = ['%(name)s-%(version)s.tar.bz2']
+patches = [
+	('minimap2-pkg-config.patch', 1),
+	'minimap2-makefile-fixes.patch'
+]
+
+builddependencies = [('binutils', '2.36.1')]
+
+multi_deps = {'Python': ['3.7', '3.8', '3.9']}
+multi_deps_extensions_only = True
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_list = [
+    ('mappy', version, {
+        'use_pip': True,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+ 
+files_to_copy = [
+    (['%(name)s'], 'bin'),
+    (['lib%(name)s.a'], 'lib'),
+    (['*.h'], 'include'),
+    'LICENSE.txt', 'NEWS.md', 'README.md',
+    (['%(name)s.1'], 'share/man/man1'),
+    (['%(name)s.pc'], 'lib/pkgconfig')
+]
+postinstallcmds = ['sed -i -e "s;~~PREFIX~~;%(installdir)s;g" -e "s/~~VERSION~~/%(version)s/g" %(installdir)s/lib/pkgconfig/%(name)s.pc']
+modextrapaths = {'EBPYTHONPREFIXES': '' }
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'lib/lib%(name)s.a'],
+    'dirs': ['include',
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+sanity_check_commands = [
+    "minimap2 --help",
+    "cd %(builddir)s/minimap2-%(version)s && minimap2 -a test/MT-human.fa test/MT-orang.fa > test.sam",
+]
+
+moduleclass = 'bio'
