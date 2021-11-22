@@ -20,11 +20,20 @@ dependencies = [
 moduleclass = 'toolchain'
 
 modluafooter = """
-if isloaded("imkl") then
+if isloaded("imkl") and not isloaded("imkl/11.3.4.258") then
     always_load("imkl/11.3.4.258")
 end
 
-prepend_path("INTEL_LICENSE_FILE", pathJoin("/cvmfs/soft.computecanada.ca/config/licenses/intel", os.getenv("CC_CLUSTER") .. ".lic"))
+require("SitePackage")
+local found = find_and_define_license_file("INTEL_LICENSE_FILE","intel")
+if (not found) then
+        local error_message = [[
+        We did not find a suitable license for Intel.  If you have access to one, you can create the file $HOME/.licenses/intel.lic  with the license information. If you think you should have access to one as    part of your institution, please write to support@computecanada.ca so that we can configure it.
+
+        Nous n'avons pas trouve de licence utilisable pour Intel.  Si vous avez acces a une licence de Intel,  vous pouvez creer le fichier $HOME/.licenses/intel.lic  avec l'information de la licence. Si vous    pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+        ]]
+        LmodError(error_message)
+end
 
 prepend_path("MODULEPATH", pathJoin("/cvmfs/soft.computecanada.ca/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/intel2016.4"))
 if isDir(pathJoin(os.getenv("HOME"), ".local/easybuild/modules/2017", os.getenv("RSNT_ARCH"), "Compiler/intel2016.4")) then
