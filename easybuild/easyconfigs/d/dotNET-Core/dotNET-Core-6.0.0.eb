@@ -1,0 +1,47 @@
+# Built with EasyBuild version 4.2.2-r64415f53d9bdff498788ce494f68a98641a3883d on 2020-09-25_21-06-54
+easyblock = "Tarball"
+
+name = "dotNET-Core"
+version = "6.0.0"
+
+homepage = "https://www.microsoft.com/net/"
+description = """.NET is a free, cross-platform, open source developer platform for building many different types of applications.
+
+With .NET, you can use multiple languages, editors, and libraries to build for web, mobile, desktop, gaming, and IoT.
+
+Contains the SDK and the Runtime.
+"""
+
+toolchain = SYSTEM
+
+# The SDK also contains the runtime
+source_urls = [
+    "https://download.visualstudio.microsoft.com/download/pr/17b6759f-1af0-41bc-ab12-209ba0377779/e8d02195dbf1434b940e0f05ae086453"
+]
+sources = ["dotnet-sdk-6.0.100-linux-x64.tar.gz"]
+checksums = ['8489a798fcd904a32411d64636e2747edf108192e0b65c6c3ccfb0d302da5ecb']
+
+sanity_check_paths = {
+    "files": ["dotnet", "LICENSE.txt"],
+    "dirs": [
+        "shared/Microsoft.NETCore.App/%(version)s",
+        "shared/Microsoft.AspNetCore.App/%(version)s",
+        "sdk",
+    ],
+}
+
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_origin"
+]
+
+modextrapaths = {"PATH": [""]}
+
+"""
+We are not sending usage stats to Microsoft...hopefully.
+
+The .NET Core tools collect usage data in order to help us improve your experience. The data is anonymous. It is collected by Microsoft and shared with the community. You can opt-out of telemetry by setting the DOTNET_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using your favorite shell.
+
+Read more about .NET Core CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry
+"""
+modextravars = {"DOTNET_ROOT": "%(installdir)s", "DOTNET_CLI_TELEMETRY_OPTOUT": 1}
+
