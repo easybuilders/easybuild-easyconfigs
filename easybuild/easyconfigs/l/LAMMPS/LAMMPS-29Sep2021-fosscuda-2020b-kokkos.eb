@@ -1,0 +1,170 @@
+# Installation command used: 
+# eb --include-easyblocks=$PWD/Custom_EasyBlocks/lammps.py,"$EASYBUILD_INCLUDE_EASYBLOCKS"\\
+# --mpi-cmd-template='echo %(nr_ranks)s && %(cmd)s' \\
+# LAMMPS/LAMMPS-29Sep2021-fosscuda-2020b-kokkos.eb
+name = 'LAMMPS'
+version = '29Sep2021'
+versionsuffix = '-kokkos'
+
+homepage = 'https://lammps.sandia.gov/'
+description = """LAMMPS is a classical molecular dynamics code, and an acronym
+for Large-scale Atomic/Molecular Massively Parallel Simulator. LAMMPS has
+potentials for solid-state materials (metals, semiconductors) and soft matter
+(biomolecules, polymers) and coarse-grained or mesoscopic systems. It can be
+used to model atoms or, more generically, as a parallel particle simulator at
+the atomic, meso, or continuum scale. LAMMPS runs on single processors or in
+parallel using message-passing techniques and a spatial-decomposition of the
+simulation domain. The code is designed to be easy to modify or extend with new
+functionality.
+"""
+
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchainopts = {'openmp': True, 'cstd': 'c++14', 'usempi': True}
+
+# 'https://github.com/lammps/lammps/archive/'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [
+    'stable_%(version)s.tar.gz',
+    {'extract_cmd': 'cp %s %(builddir)s', 'filename': 'lammps_vs_yaff_test_single_point_energy.py'},
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('pkg-config', '0.29.2'),
+    ('archspec', '0.1.0', '-Python-%(pyver)s'),
+]
+dependencies = [
+    ('CUDA', '11.1.1'),
+    ('Python', '3.8.6'),
+    ('libpng', '1.6.37'),
+    ('libjpeg-turbo', '2.0.5'),
+    ('netCDF', '4.7.4'),
+    ('GSL', '2.6'),
+    ('zlib', '1.2.11'),
+    ('gzip', '1.10'),
+    ('cURL', '7.72.0'),
+    ('HDF5', '1.10.7','',['gompic','2020b']),
+    ('tbb', '2020.3'),
+    ('PCRE', '8.44'),
+    ('libxml2', '2.9.10'),
+    ('FFmpeg', '4.3.1'),
+    ('Voro++', '0.4.6'),
+    ('kim-api', '2.2.1','',['fosscuda','2020b']),
+    ('Eigen', '3.3.8'),
+    #('yaff', '1.6.0', '-Python-%(pyver)s'),
+    ('PLUMED', '2.7.0'),
+    ('ScaFaCoS', '1.0.1'),
+    ('VTK', '9.0.1'),
+]
+
+
+enhance_sanity_check = True
+
+cuda_compute_capabilities = ['8.0','7.5'] #can support 8.6 with an updated EasyBlock
+
+# To use additional custom configuration options, use the 'configopts' easyconfig parameter
+# See docs and lammps easyblock for more information.
+# https://github.com/lammps/lammps/blob/master/cmake/README.md#lammps-configuration-options
+
+# Use the bfd linker for C++ (this will only be picked up when using Kokkos)
+preconfigopts = 'export CXXFLAGS="-fuse-ld=bfd $CXXFLAGS" &&'
+# docs require virtualenv (which we don't have)
+configopts = ' -DBUILD_DOC=off -DPKG_USER-INTEL=off -DLAMMPS_OMP_COMPAT=4 '
+
+# auto-enabled by easyblock
+# 'GPU'    - if cuda package is present and kokkos is disabled
+# 'KOKKOS' - if kokkos is enabled (by default)
+#
+# not enabled (yet), needs more work/additional dependencies:
+# 'LATTE', - https://lammps.sandia.gov/doc/Build_extras.html#latte-package
+# 'MSCG',  - https://lammps.sandia.gov/doc/Build_extras.html#mscg-package
+#
+# not enabled (yet), needs more work/additional dependencies:
+# ADIOS - https://lammps.sandia.gov/doc/Build_extras.html#user-adios-package
+# AWPMD - https://lammps.sandia.gov/doc/Build_extras.html#user-awpmd-package
+# QMMM  - https://lammps.sandia.gov/doc/Packages_details.html#pkg-user-qmmm
+# QUIP  - https://lammps.sandia.gov/doc/Build_extras.html#user-quip-package
+# YAFF - not compatible with h5py yet
+
+# USER packages no longer exist as of July 2021
+user_packages = [
+]
+
+general_packages = [
+    'ASPHERE',
+    'BODY',
+    'CLASS2',
+    'COLLOID',
+    'COMPRESS',
+    'CORESHELL',
+    'DIPOLE',
+    'GRANULAR',
+    'KIM',
+    'KSPACE',
+    'MANYBODY',
+    'MC',
+    'MESSAGE',
+    'MISC',
+    'MLIAP',
+    'MOLECULE',
+    'MPIIO',
+    'PERI',
+    'POEMS',
+    'PYTHON',
+    'QEQ',
+    'REPLICA',
+    'RIGID',
+    'SHOCK',
+    'SNAP',
+    'SPIN',
+    'SRD',
+    'VORONOI',
+    'ATC',
+    'BOCS',
+    'CGDNA',
+    'CGSDK',
+    'COLVARS',
+    'DIFFRACTION',
+    'DPD',
+    'DRUDE',
+    'EFF',
+    'EXTRA-PAIR',
+    'FEP',
+    'H5MD',
+    'LB',
+    'MANIFOLD',
+    'MEAMC',
+    'MESODPD',
+    'MESONT',
+    'MGPT',
+    'MISC',
+    'MOFFF',
+    'MOLFILE',
+    'NETCDF',
+    'PHONON',
+    'PLUMED',
+    'PTM',
+    'QTB',
+    'REACTION',
+    'REAXC',
+    'SCAFACOS',
+    'SDPD',
+    'SMD',
+    'SMTBQ',
+    'SPH',
+    'TALLY',
+    'UEF',
+    #'YAFF',
+]
+
+# run short test case to make sure installation doesn't produce blatently incorrect results;
+# this catches a problem where having the USER-INTEL package enabled causes trouble when installing with intel/2019b
+# (requires an MPI context for intel/2020a)
+# sanity_check_commands = ['cd %(builddir)s && %(mpi_cmd_prefix)s python lammps_vs_yaff_test_single_point_energy.py']
+
+modluafooter = '''
+add_property("arch","gpu")
+'''
+
+moduleclass = 'chem'
