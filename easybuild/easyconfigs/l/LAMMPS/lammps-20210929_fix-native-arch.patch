@@ -1,0 +1,129 @@
+diff -ru lammps-stable_29Sep2021.orig/cmake/CMakeLists.txt lammps-stable_29Sep2021/cmake/CMakeLists.txt
+--- lammps-stable_29Sep2021.orig/cmake/CMakeLists.txt	2021-11-25 17:39:23.138333214 +0000
++++ lammps-stable_29Sep2021/cmake/CMakeLists.txt	2021-11-25 17:44:09.805302226 +0000
+@@ -86,7 +86,7 @@
+   if(CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 17.3 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 17.4)
+     set(CMAKE_TUNE_DEFAULT "-xCOMMON-AVX512")
+   else()
+-    set(CMAKE_TUNE_DEFAULT "-xHost")
++    set(CMAKE_TUNE_DEFAULT "")
+   endif()
+ endif()
+ 
+diff -ru lammps-stable_29Sep2021.orig/cmake/Modules/Packages/INTEL.cmake lammps-stable_29Sep2021/cmake/Modules/Packages/INTEL.cmake
+--- lammps-stable_29Sep2021.orig/cmake/Modules/Packages/INTEL.cmake	2021-11-25 17:39:23.192333585 +0000
++++ lammps-stable_29Sep2021/cmake/Modules/Packages/INTEL.cmake	2021-11-25 17:41:26.170178275 +0000
+@@ -72,7 +72,7 @@
+   if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+     message(FATAL_ERROR "Must use Intel compiler with INTEL for KNL architecture")
+   endif()
+-  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -xHost -qopenmp -qoffload")
++  set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -qopenmp -qoffload")
+   set(MIC_OPTIONS "-qoffload-option,mic,compiler,\"-fp-model fast=2 -mGLOB_default_function_attrs=\\\"gather_scatter_loop_unroll=4\\\"\"")
+   target_compile_options(lammps PRIVATE -xMIC-AVX512 -qoffload -fno-alias -ansi-alias -restrict -qoverride-limits ${MIC_OPTIONS})
+   target_compile_definitions(lammps PRIVATE -DLMP_INTEL_OFFLOAD)
+diff -ru lammps-stable_29Sep2021.orig/lib/gpu/Makefile.oneapi lammps-stable_29Sep2021/lib/gpu/Makefile.oneapi
+--- lammps-stable_29Sep2021.orig/lib/gpu/Makefile.oneapi	2021-11-25 17:39:27.735364790 +0000
++++ lammps-stable_29Sep2021/lib/gpu/Makefile.oneapi	2021-11-25 17:41:57.734395078 +0000
+@@ -12,7 +12,7 @@
+ LMP_INC = -DLAMMPS_SMALLBIG
+ 
+ OCL_INC =
+-OCL_CPP = mpiicpc -std=c++11 -xHost -O2 -qopenmp -qopenmp-simd  -DMPICH_IGNORE_CXX_SEEK $(LMP_INC) $(OCL_INC)
++OCL_CPP = mpiicpc -std=c++11 -O2 -qopenmp -qopenmp-simd  -DMPICH_IGNORE_CXX_SEEK $(LMP_INC) $(OCL_INC)
+ OCL_LINK = -lOpenCL
+ OCL_PREC = -D_SINGLE_DOUBLE
+ OCL_TUNE = -DMPI_GERYON -DGERYON_NUMA_FISSION -DUCL_NO_EXIT -fp-model fast=2 -no-prec-div
+diff -ru lammps-stable_29Sep2021.orig/src/MAKE/MACHINES/Makefile.aarch64_g++_openmpi_armpl lammps-stable_29Sep2021/src/MAKE/MACHINES/Makefile.aarch64_g++_openmpi_armpl
+--- lammps-stable_29Sep2021.orig/src/MAKE/MACHINES/Makefile.aarch64_g++_openmpi_armpl	2021-11-25 17:39:31.128388095 +0000
++++ lammps-stable_29Sep2021/src/MAKE/MACHINES/Makefile.aarch64_g++_openmpi_armpl	2021-11-25 17:43:25.942000944 +0000
+@@ -8,7 +8,7 @@
+ 
+ export OMPI_CXX = g++
+ CC =		mpicxx
+-CCFLAGS =	-O3 -march=native -mcpu=native -std=c++11
++CCFLAGS =	-O3 -std=c++11
+ SHFLAGS =	-fPIC
+ DEPFLAGS =	-M
+ 
+diff -ru lammps-stable_29Sep2021.orig/src/MAKE/MACHINES/Makefile.aarch64_g++_serial_armpl lammps-stable_29Sep2021/src/MAKE/MACHINES/Makefile.aarch64_g++_serial_armpl
+--- lammps-stable_29Sep2021.orig/src/MAKE/MACHINES/Makefile.aarch64_g++_serial_armpl	2021-11-25 17:39:31.129388102 +0000
++++ lammps-stable_29Sep2021/src/MAKE/MACHINES/Makefile.aarch64_g++_serial_armpl	2021-11-25 17:46:50.163403667 +0000
+@@ -7,7 +7,7 @@
+ # specify flags and libraries needed for your compiler
+ 
+ CC =		g++
+-CCFLAGS =	-O3 -march=native -mcpu=native -std=c++11
++CCFLAGS =	-O3 -std=c++11
+ SHFLAGS =	-fPIC
+ DEPFLAGS =	-M
+ 
+diff -ru lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.intel_coprocessor lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.intel_coprocessor
+--- lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.intel_coprocessor	2021-11-25 17:39:31.144388205 +0000
++++ lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.intel_coprocessor	2021-11-25 17:46:13.435151394 +0000
+@@ -8,7 +8,7 @@
+ 
+ CC =		mpiicpc -std=c++11
+ MIC_OPT =       -qoffload-option,mic,compiler,"-fp-model fast=2 -mGLOB_default_function_attrs=\"gather_scatter_loop_unroll=4\""
+-OPTFLAGS =      -xHost -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
++OPTFLAGS =      -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
+                 -qopt-zmm-usage=high $(MIC_OPT)
+ CCFLAGS =	-qopenmp -qoffload -ansi-alias -restrict \
+                 -DLMP_INTEL_USELRT -DLMP_USE_MKL_RNG -DLMP_INTEL_OFFLOAD \
+@@ -17,7 +17,7 @@
+ DEPFLAGS =	-M
+ 
+ LINK =		mpiicpc -std=c++11
+-LINKFLAGS =	-O2 -xHost -qopenmp -qoffload -L$(MKLROOT)/lib/intel64/
++LINKFLAGS =	-O2 -qopenmp -qoffload -L$(MKLROOT)/lib/intel64/
+ LIB =           -ltbbmalloc -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core
+ SIZE =		size
+ 
+diff -ru lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.intel_cpu_intelmpi lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.intel_cpu_intelmpi
+--- lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.intel_cpu_intelmpi	2021-11-25 17:39:31.145388212 +0000
++++ lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.intel_cpu_intelmpi	2021-11-25 17:45:20.740789455 +0000
+@@ -7,7 +7,7 @@
+ # specify flags and libraries needed for your compiler
+ 
+ CC =		mpiicpc -std=c++11
+-OPTFLAGS =      -xHost -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
++OPTFLAGS =      -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
+                 -qopt-zmm-usage=high
+ CCFLAGS =	-qopenmp -qno-offload -ansi-alias -restrict \
+                 -DLMP_INTEL_USELRT -DLMP_USE_MKL_RNG $(OPTFLAGS) \
+diff -ru lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.intel_cpu_mpich lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.intel_cpu_mpich
+--- lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.intel_cpu_mpich	2021-11-25 17:39:31.145388212 +0000
++++ lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.intel_cpu_mpich	2021-11-25 17:45:42.934941899 +0000
+@@ -7,7 +7,7 @@
+ # specify flags and libraries needed for your compiler
+ 
+ CC =		mpicxx -cxx=icc -std=c++11
+-OPTFLAGS =      -xHost -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
++OPTFLAGS =      -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
+                 -qopt-zmm-usage=high
+ CCFLAGS =	-qopenmp -qno-offload -ansi-alias -restrict \
+                 -DLMP_INTEL_USELRT -DLMP_USE_MKL_RNG $(OPTFLAGS) \
+diff -ru lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.intel_cpu_openmpi lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.intel_cpu_openmpi
+--- lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.intel_cpu_openmpi	2021-11-25 17:39:31.145388212 +0000
++++ lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.intel_cpu_openmpi	2021-11-25 17:44:34.590472466 +0000
+@@ -8,7 +8,7 @@
+ 
+ export OMPI_CXX = icc
+ CC =		mpicxx -std=c++11
+-OPTFLAGS =      -xHost -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
++OPTFLAGS =      -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
+                 -qopt-zmm-usage=high
+ CCFLAGS =	-qopenmp -qno-offload -ansi-alias -restrict \
+                 -DLMP_INTEL_USELRT -DLMP_USE_MKL_RNG $(OPTFLAGS) \
+diff -ru lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.oneapi lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.oneapi
+--- lammps-stable_29Sep2021.orig/src/MAKE/OPTIONS/Makefile.oneapi	2021-11-25 17:39:31.149388240 +0000
++++ lammps-stable_29Sep2021/src/MAKE/OPTIONS/Makefile.oneapi	2021-11-25 17:44:56.620623783 +0000
+@@ -7,7 +7,7 @@
+ # specify flags and libraries needed for your compiler
+ 
+ CC =		mpiicpc -std=c++11
+-OPTFLAGS =      -xHost -O2 -fp-model fast=2 -no-prec-div -qoverride-limits
++OPTFLAGS =      -O2 -fp-model fast=2 -no-prec-div -qoverride-limits
+ CCFLAGS =	-qopenmp -qopenmp-simd -qno-offload -ansi-alias -restrict \
+                 -DLMP_INTEL_USELRT -DLMP_USE_MKL_RNG $(OPTFLAGS) \
+                 -I$(MKLROOT)/include
