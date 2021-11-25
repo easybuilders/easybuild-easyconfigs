@@ -24,12 +24,12 @@ patches = [
 ]
 checksums = [
     '8e94767275fc5352ff192afed783b00b720b6214d8779edc44e9ebe636e9833e',  # 0.8.0.tar.gz
-    'dfda9a6ca33e37236cbbc27a1d65bb54d361f27ecdb2b9855e46ac6dab6e255e',  # Shasta-0.8.0-foss-2020b-fix_links.patch
+    'd9696b8a667f6a0db724f779083accb8004398bdfdf5cf15ef5cdaed89f339d0',  # Shasta-0.8.0-foss-2020b-fix_links.patch
 ]
 
 builddependencies = [
     ('CMake', '3.18.4'),
-    ('binutils', '2.35'),
+    ('Cereal', '1.3.0', '', True),
 ]
 
 dependencies = [
@@ -37,33 +37,33 @@ dependencies = [
     ('Boost', '1.74.0'),
     ('libpng', '1.6.37'),
     ('SeqAn', '2.4.0'),
-    ('BLAST', '2.11.0', '-Linux_x86_64', True),
+    ('BLAST+', '2.11.0'),
     ('gnuplot', '5.4.1'),
     ('Graphviz', '2.47.0', '-Java-11'),
     ('Python', '3.8.6'),
     ('pybind11', '2.6.0'),
-    ('Cereal', '1.3.0', '', True),
-    ('spoa', '3.4.0'),
-    ('ScaLAPACK', '2.1.0'),
-    ('OpenBLAS', '0.3.12'),
+    ('spoa', '3.4.0'),  # older spoa is needed, since new is truly incompatible
     ('cpu_features', '0.6.0'),
 ]
 
 prebuildopts = "export CPATH=$EBROOTBOOST/include/boost/:$CPATH && "
 
+# we need this because CMakeLists here is hard to configure, so we stick to default install path (inside sub-folder)
+# and copy installed files afterwards
 buildopts = " && make install -j %(parallel)s"
 
 files_to_copy = [
     (['shasta-install/bin/*'], 'bin'),
-    (['shasta-install/bin/*.a'], 'lib'),
-    (['shasta-install/bin/*.so'], 'lib')
+    (['shasta-install/bin/*.a', 'shasta-install/bin/*.%s' % SHLIB_EXT], 'lib')
 ]
 
 fix_python_shebang_for = ['bin/*.py']
 
 sanity_check_paths = {
-    'files': ['lib/shasta.so', 'lib/shasta.a', 'bin/shasta', 'bin/SaveRun.py', 'bin/Copy.py'],
+    'files': ['bin/Copy.py', 'bin/SaveRun.py', 'bin/shasta', 'lib/shasta.a', 'lib/shasta.%s' % SHLIB_EXT],
     'dirs': []
 }
+
+sanity_check_commands = ['shasta --help']
 
 moduleclass = 'bio'
