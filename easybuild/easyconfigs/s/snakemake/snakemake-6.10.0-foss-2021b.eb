@@ -1,0 +1,75 @@
+easyblock = 'PythonBundle'
+
+name = 'snakemake'
+version = '6.10.0'
+
+homepage = 'https://snakemake.readthedocs.io'
+description = "The Snakemake workflow management system is a tool to create reproducible and scalable data analyses."
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('PyYAML', '5.4.1'),
+    ('GitPython', '3.1.24'),
+    ('IPython', '7.26.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+# snakemake-6.6.1_fix_jobs.patch is needed for clusters that do not support copying the full env into the batch job
+exts_list = [
+    ('wrapt', '1.13.3', {
+        'checksums': ['1fea9cd438686e6682271d36f3481a9f3636195578bab9ca3382e2f5f01fc185'],
+    }),
+    ('ratelimiter', '1.2.0.post0', {
+        'checksums': ['5c395dcabdbbde2e5178ef3f89b568a3066454a6ddc223b76473dac22f89b4f7'],
+    }),
+    ('ConfigArgParse', '1.5.3', {
+        'checksums': ['1b0b3cbf664ab59dada57123c81eff3d9737e0d11d8cf79e3d6eb10823f1739f'],
+    }),
+    ('datrie', '0.8.2', {
+        'checksums': ['525b08f638d5cf6115df6ccd818e5a01298cd230b2dac91c8ff2e6499d18765d'],
+    }),
+    ('toposort', '1.7', {
+        'checksums': ['ddc2182c42912a440511bd7ff5d3e6a1cabc3accbc674a3258c8c41cbfbb2125'],
+    }),
+    ('amply', '0.1.4', {
+        'checksums': ['cb12dcb49d16b168c02be128a1527ecde50211e4bd94af76ff4e67707f5a2d38'],
+    }),
+    ('PuLP', '2.5.1', {
+        'checksums': ['27c2a87a98ea0e9a08c7c46e6df47d6d4e753ad9991fea2901892425d89c99a6'],
+    }),
+    ('smart_open', '5.2.1', {
+        'checksums': ['75abf758717a92a8f53aa96953f0c245c8cedf8e1e4184903db3659b419d4c17'],
+    }),
+    ('connection_pool', '0.0.3', {
+        'checksums': ['bf429e7aef65921c69b4ed48f3d48d3eac1383b05d2df91884705842d974d0dc'],
+    }),
+    ('stopit', '1.1.2', {
+        'checksums': ['f7f39c583fd92027bd9d06127b259aee7a5b7945c1f1fa56263811e1e766996d'],
+    }),
+    (name, version, {
+        # 'patches': ['snakemake-%(version)s_fix_jobs.patch'],
+        'checksums': [
+            '199a86c8d1fcfdb88c4271a1507b0ab371a15bc407f2dad9b0ab8c43438adff8',  # snakemake-6.10.0.tar.gz
+            # '916875eaf4869c65b93098e362b8676cf55c6e37067a54b191f34b13e06c37e3',  # snakemake-6.6.1_fix_jobs.patch
+        ],
+    }),
+]
+
+# SNAKEMAKE_LOAD_MODULE is needed for snakemake-6.6.1_fix_jobs.patch to work
+# local_snakemake_load is the command for loading this module (here: default EB module naming scheme)
+# local_snakemake_load = 'module load %(module_name)s'
+# modextravars = {'SNAKEMAKE_LOAD_MODULE': local_snakemake_load}
+
+sanity_check_paths = {
+    'files': ['bin/snakemake'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/snakemake'],
+}
+
+sanity_check_commands = ['snakemake --help']
+
+moduleclass = 'tools'
