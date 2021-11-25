@@ -1,0 +1,74 @@
+Author: Denis Kristak
+disabling tests that require display (gui)
+diff -ruN rpy2-3.4.5_orig/rpy2/tests/ipython/test_rmagic.py rpy2-3.4.5/rpy2/tests/ipython/test_rmagic.py
+--- rpy2-3.4.5_orig/rpy2/tests/ipython/test_rmagic.py	2021-11-25 12:37:30.723114034 +0000
++++ rpy2-3.4.5/rpy2/tests/ipython/test_rmagic.py	2021-11-25 12:40:54.277153346 +0000
+@@ -119,8 +119,7 @@
+     np.testing.assert_equal(result, 12345)
+ 
+ 
+-@pytest.mark.skipif(IPython is None,
+-                    reason='The optional package IPython cannot be imported.')
++@pytest.mark.skip(reason="Cannot test with GUI")
+ def test_run_cell_with_error(ipython_with_magic, clean_globalenv):
+     """Run an R block with an error."""
+ 
+@@ -239,8 +238,7 @@
+     np.testing.assert_almost_equal(ipython_with_magic.user_ns['r'], np.array([-0.2,  0.9, -1. ,  0.1,  0.2]))
+ 
+ 
+-@pytest.mark.skipif(IPython is None,
+-                    reason='The optional package IPython cannot be imported.')
++@pytest.mark.skip(reason="Cannot test with GUI")
+ def test_cell_magic_localconverter(ipython_with_magic, clean_globalenv):
+     x = (1,2,3)
+     from rpy2.rinterface import IntSexpVector
+@@ -283,8 +281,7 @@
+     assert isinstance(globalenv['x'], vectors.IntVector)
+ 
+ 
+-@pytest.mark.skipif(IPython is None,
+-                    reason='The optional package IPython cannot be imported.')
++@pytest.mark.skip(reason="Cannot test with GUI")
+ def test_rmagic_localscope(ipython_with_magic, clean_globalenv):
+     ipython_with_magic.push({'x':0})
+     ipython_with_magic.run_line_magic('R', '-i x -o result result <-x+1')
+@@ -331,8 +328,7 @@
+         ipython_with_magic.run_cell_magic('R', line, cell)
+ 
+ 
+-@pytest.mark.skipif(IPython is None,
+-                    reason='The optional package IPython cannot be imported.')
++@pytest.mark.skip(reason="Cannot test with GUI")
+ def test_display_args(ipython_with_magic, clean_globalenv):
+ 
+     cell = '''
+diff -ruN rpy2-3.4.5_orig/rpy2/tests/robjects/lib/test_grdevices.py rpy2-3.4.5/rpy2/tests/robjects/lib/test_grdevices.py
+--- rpy2-3.4.5_orig/rpy2/tests/robjects/lib/test_grdevices.py	2021-11-25 12:37:30.724114020 +0000
++++ rpy2-3.4.5/rpy2/tests/robjects/lib/test_grdevices.py	2021-11-25 12:42:11.886984001 +0000
+@@ -20,14 +20,13 @@
+             os.unlink(fn)
+ 
+ 
+-@pytest.mark.xfail(os.name == 'nt',
+-                   reason='Windows produces non-empty file with no plot')
++@pytest.mark.skip(reason="Cannot test with GUI")
+ def test_rendertobytes_noplot():
+     with grdevices.render_to_bytesio(grdevices.png) as b:
+         pass
+     assert len(b.getvalue()) == 0
+ 
+-
++@pytest.mark.skip(reason="Cannot test with GUI")
+ def test_rendertofile():
+     fn = tempfile.mktemp(suffix=".png")
+     with set_filenames_to_delete() as todelete:
+@@ -38,7 +37,7 @@
+             r(''' plot(0) ''')
+         assert os.path.exists(fn)
+ 
+-
++@pytest.mark.skip(reason="Cannot test with GUI")
+ def test_rendertobytes_plot():
+     with grdevices.render_to_bytesio(grdevices.png) as b:
+         r(''' plot(0) ''')
