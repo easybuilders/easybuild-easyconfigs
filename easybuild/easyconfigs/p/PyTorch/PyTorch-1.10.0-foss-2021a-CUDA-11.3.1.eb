@@ -62,7 +62,7 @@ checksums = [
     # PyTorch-1.10.0_skip_nan_tests_openblas.patch
     '7d3f83e3056d9e47a460790313238f28708beb596cafaa7ae55e374d368bbedf',
     # PyTorch-1.10.0_skip_cmake_rpath.patch
-    'de49323432b41fc401ddaf86f11eb565aa43eeb56380fdd2b1385db1a05dd4ad',
+    'ac05943bb205623f91ef140aa00869efc5fe844184bd666bebf5405808610448',
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
@@ -116,7 +116,12 @@ excluded_tests = {
 
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
 
-sanity_check_commands = ["python -c 'import caffe2.python'"]
+# The readelf sanity check can be taken out once the TestRPATH test from https://github.com/pytorch/pytorch/pull/68912
+# is accepted, since it is then checked as part of the PyTorch test suite
+sanity_check_commands = [
+    "python -c 'import caffe2.python'",
+    "readelf -d $EBROOTPYTORCH/lib/python3.9/site-packages/torch/lib/libcaffe2_nvrtc.so |  egrep 'RPATH|RUNPATH' | grep -v stubs",
+]
 tests = ['PyTorch-check-cpp-extension.py']
 
 moduleclass = 'devel'
