@@ -1,0 +1,94 @@
+--- OMCompiler/Makefile.common.orig	2021-10-17 20:53:37.309737879 +0200
++++ OMCompiler/Makefile.common	2021-10-19 17:40:14.202433529 +0200
+@@ -60,7 +60,7 @@
+ $(info $(shell mkdir -p $(BUILD_DIRS)))
+ endif
+ 
+-.PHONY : interactive omc release all fmi test install-dirs susan susan_all susgen sustst install-openturns runtimeCPPinstall runtimeCPPinstallOld CMinpack metis Cdaskr boehm-gc libzmq cppzmq libffi $(MINGW_EXTRA_LIBS) antlr-copy $(SEMLA_LIB) $(SEMLA_CLEAN)
++.PHONY : interactive omc release all fmi test install-dirs susan susan_all susgen sustst install-openturns runtimeCPPinstall runtimeCPPinstallOld CMinpack metis Cdaskr boehm-gc libzmq cppzmq $(MINGW_EXTRA_LIBS) antlr-copy $(SEMLA_LIB) $(SEMLA_CLEAN)
+ 
+ ifeq ($(OMENCRYPTION),yes)
+ semla:
+@@ -107,7 +107,7 @@
+ 	cp -a "$<" "$@"
+ idl: $(builddir_share)/omc/omc_communication.idl
+ 
+-interactive-common: .testvariables graphstream boehm-gc idl ModelicaExternalC antlr-copy libffi $(MINGW_EXTRA_LIBS)
++interactive-common: .testvariables graphstream boehm-gc idl ModelicaExternalC antlr-copy $(MINGW_EXTRA_LIBS)
+ 
+ interactive-short: .testvariables interactive-common
+ 	$(MAKE) -C SimulationRuntime/c -f $(defaultMakefileTarget) bootstrap-dependencies OMBUILDDIR=$(OMBUILDDIR)
+@@ -482,7 +482,7 @@
+ 	# OpenBLAS make clean actually gives error-messages. Let it do it, but silently
+ 	test ! -d 3rdParty/OpenBLAS-0.2.8 || $(MAKE) -C 3rdParty/OpenBLAS-0.2.8 clean > /dev/null 2>&1
+ 
+-clean: $(SEMLA_CLEAN) fmil-clean opencl_rt_clean gc-clean lis-clean runtimeCPPclean CMinpack-clean metis-clean Cdaskr-clean bootstrap-clean msgpack-clean graphstream-clean openblas-clean suitesparse-clean OMSI-clean libffi-clean
++clean: $(SEMLA_CLEAN) fmil-clean opencl_rt_clean gc-clean lis-clean runtimeCPPclean CMinpack-clean metis-clean Cdaskr-clean bootstrap-clean msgpack-clean graphstream-clean openblas-clean suitesparse-clean OMSI-clean 
+ 	(cd SimulationRuntime/c && $(MAKE) -f $(defaultMakefileTarget) clean OMBUILDDIR=$(OMBUILDDIR))
+ 	(cd Compiler && $(MAKE) -f $(defaultMakefileTarget) clean OMBUILDDIR=$(OMBUILDDIR))
+ 	(cd Parser && $(MAKE) -f $(defaultMakefileTarget) clean OMBUILDDIR=$(OMBUILDDIR))
+@@ -679,15 +679,15 @@
+ 	rm -f $(builddir_lib_omc)/cpp/lib{belos,loca,ml,nox,teuchos}*
+ 
+ # Build libffi
+-LIBFFI=3rdParty/libffi
+-libffi: $(LIBFFI)
+-	(cd "$(LIBFFI)" && (test -f Makefile || ./autogen.sh))
+-	(cd "$(LIBFFI)" && (test -f Makefile || (./configure --prefix="`pwd`/install" --enable-shared=no --disable-docs CC="$(CC)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" && $(MAKE) clean)))
+-	$(MAKE) -C "$(LIBFFI)"
+-	$(MAKE) -C "$(LIBFFI)" install
+-
+-libffi-clean:
+-	-$(MAKE) -C "$(LIBFFI)" clean
++#LIBFFI=3rdParty/libffi
++#libffi: $(LIBFFI)
++#	(cd "$(LIBFFI)" && (test -f Makefile || ./autogen.sh))
++#	(cd "$(LIBFFI)" && (test -f Makefile || (./configure --prefix="`pwd`/install" --disable-docs CC="$(CC)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" && $(MAKE) clean)))
++#	$(MAKE) -C "$(LIBFFI)"
++#	$(MAKE) -C "$(LIBFFI)" install
++#
++#libffi-clean:
++#	-$(MAKE) -C "$(LIBFFI)" clean
+ 
+ sanity-check: omc
+ 	$(OMBUILDDIR)/bin/omc Examples/SanityCheck.mos
+
+--- OMCompiler/Compiler/runtime/ffi_omc.c.orig        2021-10-19 17:57:38.226414451 +0200
++++ OMCompiler/Compiler/runtime/ffi_omc.c     2021-10-19 17:58:33.998413432 +0200
+@@ -30,11 +30,12 @@
+  */
+ 
+ 
+-#if defined(__APPLE__) /* MacOS doesn't like static libffi, use the system one */
++// #if defined(__APPLE__) /* MacOS doesn't like static libffi, use the system one */
++// #include <ffi.h>
++// #else /* sane systems */
++// #include "../../3rdParty/libffi/install/include/ffi.h"
++// #endif
+ #include <ffi.h>
+-#else /* sane systems */
+-#include "../../3rdParty/libffi/install/include/ffi.h"
+-#endif
+ 
+ #include <gc.h>
+ 
+--- OMCompiler/Compiler/boot/Makefile.common.orig	2021-10-19 20:19:54.714258461 +0200
++++ OMCompiler/Compiler/boot/Makefile.common	2021-10-19 20:20:35.926257708 +0200
+@@ -27,11 +27,13 @@
+ # Darwin doesn't like our static libffi, use the system one
+ # we get dyld: Symbol not found: _ffi_type_double, basically
+ # no ffi symbols are put in libOpenModelicaCompiler.dylib
+-ifeq ($(detected_OS),Darwin)
++#ifeq ($(detected_OS),Darwin)
++#LIBFFI=-lffi
++#else # sane systems
++#LIBFFI=$(TOP_DIR)/3rdParty/libffi/install/lib*/libffi.a
++#endif
+ LIBFFI=-lffi
+-else # sane systems
+-LIBFFI=$(TOP_DIR)/3rdParty/libffi/install/lib*/libffi.a
+-endif
++
+ LIBOMCGRAPHSTREAMAR=$(TOP_DIR)/Compiler/runtime/libomcgraphstream.a
+ LIBOMCBACKENDRUNTIMEAR=$(TOP_DIR)/Compiler/runtime/libomcbackendruntime.a
+ 
