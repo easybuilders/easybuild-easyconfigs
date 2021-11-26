@@ -2,20 +2,20 @@ easyblock = "PythonBundle"
 
 name = 'jupyter-matlab-proxy'
 version = '0.3.4'
-local_matlab_version = '2021a'
-versionsuffix = '-MATLAB-%s' % local_matlab_version
 
 homepage = 'https://github.com/mathworks/jupyter-matlab-proxy'
 description = 'MATLAB Integration for Jupyter'
 
 toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
 
+builddependencies = [
+    ('nodejs', '14.17.2'),
+]
+
 dependencies = [
     ('Python', '3.9.5'),
     ('JupyterLab', '3.0.16'),  # Contains most of the jupyter dependencies we need.
-    ('nodejs', '14.17.2'),
     ('Xvfb', '1.20.11'),
-    ('MATLAB', local_matlab_version, '', True),
 ]
 
 use_pip = True
@@ -44,9 +44,16 @@ exts_list = [
         'checksums': ['30d57976090980f4380cb0a80e8e829dfd74d0a19edb64329239def9feefcde4'],
     }),
     (name, version, {
-        'checksums': ['05235c77aadf6ffb2b7193f6c6e4962eff68e4e5908370525363180d81bf9348'],
+        'patches': ['jupyter-matlab-proxy-%(version)s_eb-matlab-license-file.patch'],
+        'checksums': [
+            '05235c77aadf6ffb2b7193f6c6e4962eff68e4e5908370525363180d81bf9348',  # jupyter-matlab-proxy-0.3.4.tar.gz
+            # jupyter-matlab-proxy-0.3.4_eb-matlab-license-file.patch
+            '6d83f73019313394982b7f8eb1d28859442460668284e4d86e2c5d465cfb00ba',
+        ],
     }),
 ]
+
+modloadmsg = 'jupyter-matlab-proxy requires MATLAB to be loaded separately (2020b or later)'
 
 sanity_check_paths = {
     'files': ['bin/matlab-jupyter-app'],
