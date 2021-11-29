@@ -26,6 +26,10 @@ checksums = ['ebc742a6a1b36ad6b650df22c4f252415d42fd4a9a30e0ce5ab55df91ead46d6']
 builddependencies = [
     ('binutils', '2.37'),
 ]
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Perl', '5.34.0'),
+]
 
 local_binaries = [
     'run-trust4', 'trust4', 'bam-extractor', 'fastq-extractor', 'annotator',
@@ -42,17 +46,24 @@ files_to_copy = [
     (['scripts/%s' % x for x in local_scripts], 'bin'),
 ]
 
+postinstallcmds = [
+    'sed -i "1i #!/usr/bin/env python" %(installdir)s/bin/*.py',
+    'sed -i "1i #!/usr/bin/env perl" %(installdir)s/bin/*.pl',
+    'chmod a+x %(installdir)s/bin/*'
+]
+
 sanity_check_paths = {
-    'files': ['bin/%s' % x for x in local_binaries],
-    'dirs': ['bin'],
+    'files': ['bin/' + x for x in local_binaries + local_scripts],
+    'dirs': [],
 }
 
 sanity_check_commands = [
     "run-trust4 2>&1 | grep 'TRUST4 v%(version)s'",
-
+    "BuildDatabaseFa.pl 2>&1 | grep 'usage: perl BuildDatabaseFa.pl'",
+    "trust-cluster.py 2>&1 | grep 'usage: a.py trust_cdr3.out'",
     "cd %(builddir)s/%(name)s-%(version)s && "
     "run-trust4 -b example/example.bam -f hg38_bcrtcr.fa --ref human_IMGT+C.fa && "
     "[ -e example/TRUST_example_report.tsv ]"
 ]
 
-moduleclass = 'lib'
+moduleclass = 'bio'
