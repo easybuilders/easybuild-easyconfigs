@@ -46,11 +46,10 @@ files_to_copy = [
     (['scripts/%s' % x for x in local_scripts], 'bin'),
 ]
 
-postinstallcmds = [
-    'sed -i "1i #!/usr/bin/env python" %(installdir)s/bin/*.py',
-    'sed -i "1i #!/usr/bin/env perl" %(installdir)s/bin/*.pl',
-    'chmod a+x %(installdir)s/bin/*'
-]
+fix_perl_shebang_for = ['bin/*.pl']
+fix_python_shebang_for = ['bin/*.py']
+
+postinstallcmds = ["chmod a+x %(installdir)s/bin/*"]
 
 sanity_check_paths = {
     'files': ['bin/' + x for x in local_binaries + local_scripts],
@@ -63,7 +62,7 @@ sanity_check_commands = [
     "trust-cluster.py 2>&1 | grep 'usage: a.py trust_cdr3.out'",
     "cd %(builddir)s/%(name)s-%(version)s && "
     "run-trust4 -b example/example.bam -f hg38_bcrtcr.fa --ref human_IMGT+C.fa && "
-    "[ -e example/TRUST_example_report.tsv ]"
+    "test -f example/TRUST_example_report.tsv"
 ]
 
 moduleclass = 'bio'
