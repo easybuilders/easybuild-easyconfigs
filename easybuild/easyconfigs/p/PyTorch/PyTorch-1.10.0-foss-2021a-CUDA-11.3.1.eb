@@ -32,6 +32,7 @@ patches = [
     'PyTorch-1.10.0_increase_zero_optimizer_test_tolerance.patch',
     'PyTorch-1.10.0_skip_failing_ops_tests.patch',
     'PyTorch-1.10.0_skip_nan_tests_openblas.patch',
+    'PyTorch-1.10.0_skip_cmake_rpath.patch',
 ]
 checksums = [
     None,  # can't add proper SHA256 checksum, because source tarball is created locally after recursive 'git clone'
@@ -60,6 +61,8 @@ checksums = [
     '399af94ffcef4a6db5226552c46f11e9b0f0f371b2d7924b9e5764d2281581ab',
     # PyTorch-1.10.0_skip_nan_tests_openblas.patch
     '7d3f83e3056d9e47a460790313238f28708beb596cafaa7ae55e374d368bbedf',
+    # PyTorch-1.10.0_skip_cmake_rpath.patch
+    'ac05943bb205623f91ef140aa00869efc5fe844184bd666bebf5405808610448',
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
@@ -113,7 +116,13 @@ excluded_tests = {
 
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
 
-sanity_check_commands = ["python -c 'import caffe2.python'"]
+# The readelf sanity check can be taken out once the TestRPATH test from https://github.com/pytorch/pytorch/pull/68912
+# is accepted, since it is then checked as part of the PyTorch test suite
+local_libcaffe2 = "$EBROOTPYTORCH/lib/python%%(pyshortver)s/site-packages/torch/lib/libcaffe2_nvrtc.%s" % SHLIB_EXT
+sanity_check_commands = [
+    "python -c 'import caffe2.python'",
+    "readelf -d %s | egrep 'RPATH|RUNPATH' | grep -v stubs" % local_libcaffe2,
+]
 tests = ['PyTorch-check-cpp-extension.py']
 
 moduleclass = 'devel'
