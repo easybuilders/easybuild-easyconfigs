@@ -32,18 +32,21 @@ builddependencies = [('CMake', '3.18.4')]
 
 dependencies = [
     ('zlib', '1.2.11'),
-    ('R', '4.0.3'),     # required for some analysis scripts
+    # Python (numpy), and R required for some scripts
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('R', '4.0.3'),
 ]
 
 runtest = 'test'
 
 # script directories to add to path:
-local_scripts = ['DetectSelection', 'EstimatePopulationSize', 'PrepareInputFiles', 'RelateParallel',
-                 'SampleBranchLengths', 'TreeView']
+local_script_dirs = ['DetectSelection', 'EstimatePopulationSize', 'PrepareInputFiles', 'RelateParallel',
+                     'SampleBranchLengths', 'TreeView']
 # un/comment as appropriate:
-# local_scripts += ['RelateLSF']
-# local_scripts += ['EstimatePopulationSizeSGE', 'RelateSGE']
-# local_scripts += ['RelateSlurm']
+# local_script_dirs += ['RelateLSF']
+# local_script_dirs += ['EstimatePopulationSizeSGE', 'RelateSGE']
+# local_script_dirs += ['RelateSlurm']
 
 local_bins = ['bin/%s%s' % (name, x) for x in ['', 'CoalescentRate', 'Extract', 'FileFormats',
                                                'MutationRate', 'Selection', 'TreeView']]
@@ -53,7 +56,7 @@ local_libs = ['lib/libtskitStatic.a'] + [
 
 sanity_check_paths = {
     'files': local_bins + local_libs,
-    'dirs': ['bin', 'lib', 'example'] + ['scripts/%s' % x for x in local_scripts],
+    'dirs': ['bin', 'lib', 'example'] + ['scripts/%s' % x for x in local_script_dirs],
 }
 
 sanity_check_commands = [
@@ -63,6 +66,16 @@ sanity_check_commands = [
      --annot data/example.annot --seed 1 -o example",
 ]
 
-modextrapaths = {'PATH': ['scripts/%s' % x for x in local_scripts]}
+modextrapaths = {'PATH': ['scripts/%s' % x for x in local_script_dirs]}
+
+modloadmsg = """
+Relate provides various scripts for parallel execution, supporting a variety of schedulers (LSF,
+ SGE, Slurm), located in `$EBROOTRELATE/scripts`. If the suitable script directory is not already
+ in `$PATH`, you can add this with:
+    [*] LSF   : export PATH=$EBROOTRELATE/scrips/RelateLSF:$PATH
+    [*] SGE   : export PATH=$EBROOTRELATE/scrips/RelateSGE:$EBROOTRELATE/scripts/EstimatePopulationSizeSGE:$PATH
+    [*] Slurm : export PATH=$EBROOTRELATE/scrips/RelateSlurm:$PATH
+ This should not be necessary for the other data preparation, output and analysis scripts included.
+"""
 
 moduleclass = 'bio'
