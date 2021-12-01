@@ -1,6 +1,5 @@
 name = 'PyTorch'
 version = '1.10.0'
-versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'https://pytorch.org/'
 description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
@@ -21,7 +20,6 @@ patches = [
     'PyTorch-1.7.0_avoid-nan-in-test-torch.patch',
     'PyTorch-1.7.0_disable-dev-shm-test.patch',
     'PyTorch-1.7.1_correctly-pass-jit_opt_level.patch',
-    'PyTorch-1.8.1_dont-use-gpu-ccc-in-test.patch',
     'PyTorch-1.8.1_increase-distributed-test-timeout.patch',
     'PyTorch-1.9.0_limit-world-size-for-zero-redundancy-opt-test.patch',
     'PyTorch-1.10.0_fix-test-dataloader-fixed-affinity.patch',
@@ -32,7 +30,6 @@ patches = [
     'PyTorch-1.10.0_increase_zero_optimizer_test_tolerance.patch',
     'PyTorch-1.10.0_skip_failing_ops_tests.patch',
     'PyTorch-1.10.0_skip_nan_tests_openblas.patch',
-    'PyTorch-1.10.0_skip_cmake_rpath.patch',
 ]
 checksums = [
     None,  # can't add proper SHA256 checksum, because source tarball is created locally after recursive 'git clone'
@@ -40,7 +37,6 @@ checksums = [
     '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a',  # PyTorch-1.7.0_disable-dev-shm-test.patch
     # PyTorch-1.7.1_correctly-pass-jit_opt_level.patch
     'd4d967d47f8a6172fcbf57f0a61835482968850967c4fdb01108b720696a988d',
-    '89ac7a8e9e7df2e64cf8404fe3a279f5e9b759fee41c9de3aaff9c22f385c2c6',  # PyTorch-1.8.1_dont-use-gpu-ccc-in-test.patch
     # PyTorch-1.8.1_increase-distributed-test-timeout.patch
     '7a6e512274f0b8673f4f207a5bc53387d88be7e79833f42d20365668b2118071',
     # PyTorch-1.9.0_limit-world-size-for-zero-redundancy-opt-test.patch
@@ -61,8 +57,6 @@ checksums = [
     '399af94ffcef4a6db5226552c46f11e9b0f0f371b2d7924b9e5764d2281581ab',
     # PyTorch-1.10.0_skip_nan_tests_openblas.patch
     '7d3f83e3056d9e47a460790313238f28708beb596cafaa7ae55e374d368bbedf',
-    # PyTorch-1.10.0_skip_cmake_rpath.patch
-    'ac05943bb205623f91ef140aa00869efc5fe844184bd666bebf5405808610448',
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
@@ -73,7 +67,6 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('CUDA', '11.3.1', '', True),
     ('Ninja', '1.10.2'),  # Required for JIT compilation of C++ extensions
     ('Python', '3.9.5'),
     ('protobuf', '3.17.3'),
@@ -87,9 +80,6 @@ dependencies = [
     ('numactl', '2.0.14'),
     ('FFmpeg', '4.3.2'),
     ('Pillow', '8.2.0'),
-    ('cuDNN', '8.2.1.32', '-CUDA-%(cudaver)s', True),
-    ('magma', '2.6.1', '-CUDA-%(cudaver)s'),
-    ('NCCL', '2.10.3', '-CUDA-%(cudaver)s'),
     ('expecttest', '0.1.3'),
 ]
 
@@ -116,13 +106,7 @@ excluded_tests = {
 
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
 
-# The readelf sanity check can be taken out once the TestRPATH test from https://github.com/pytorch/pytorch/pull/68912
-# is accepted, since it is then checked as part of the PyTorch test suite
-local_libcaffe2 = "$EBROOTPYTORCH/lib/python%%(pyshortver)s/site-packages/torch/lib/libcaffe2_nvrtc.%s" % SHLIB_EXT
-sanity_check_commands = [
-    "python -c 'import caffe2.python'",
-    "readelf -d %s | egrep 'RPATH|RUNPATH' | grep -v stubs" % local_libcaffe2,
-]
+sanity_check_commands = ["python -c 'import caffe2.python'"]
 tests = ['PyTorch-check-cpp-extension.py']
 
 moduleclass = 'devel'
