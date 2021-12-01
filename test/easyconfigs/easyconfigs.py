@@ -460,6 +460,10 @@ class EasyConfigTest(TestCase):
                                r'numba-0\.52\.0-', r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3',
                                r'scanpy-1\.7\.2-', r'umap-learn-0\.4\.6-']),
             ],
+            'Lua': [
+                # SimpleITK 2.1.0 requires Lua 5.3.x, MedPy and nnU-Net depend on SimpleITK
+                (r'5\.3\.5', [r'nnU-Net-1\.7\.0-', r'MedPy-0\.4\.0-', r'SimpleITK-2\.1\.0-']),
+            ],
             # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
             # Horovod depends on TensorFlow, so same exception required there
             'NCCL': [(r'2\.11\.4', [r'TensorFlow-2\.[5-9]\.', r'Horovod-0\.2[2-9]'])],
@@ -477,6 +481,8 @@ class EasyConfigTest(TestCase):
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
             # NanoPlot, NanoComp use an older version of Seaborn
             'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
+            # Shasta requires spoa 3.x
+            'spoa': [(r'3\.4\.0', [r'Shasta-0\.8\.0-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
