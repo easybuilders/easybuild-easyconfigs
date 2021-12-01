@@ -1,0 +1,71 @@
+# #
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Erica Bianco <erica.bianco@hpcnow.com>, Danilo Gonzalez, Maicon Faria
+# License::     GPL-v3.0
+# #
+easyblock = 'ConfigureMake'
+
+name = 'AFNI'
+version = '21.11.07'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+versionsuffix = '-R-%(rver)s-Python-%(pyver)s'
+
+source_urls = ['https://afni.nimh.nih.gov/pub/dist/tgz/']
+sources = [{
+    'download_filename': '%(namelower)s_src.tgz',
+    'filename': SOURCELOWER_TGZ
+}]
+patches = ['%(name)s-%(version)s-Makefile.patch']
+checksums = [
+    '955e703d751c0179be2a3d88f46ee03b0e5c6619fbeea1617ec7afd2e8a31e16',  # afni-21.11.07.tgz
+    'fd375cc51f4d0a9ae9cf72ba9b86468dcf2957ab59d64962e8b1060e5d5d22b7',  # AFNI-21.11.07-Makefile.patch
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('X11', '20200222'),
+    ('tcsh', '6.22.02'),
+    ('motif', '2.3.8'),
+    ('R', '3.6.3'),
+    ('expat', '2.2.9'),
+    ('libjpeg-turbo', '2.0.4'),
+    ('GSL', '2.6'),
+    ('zlib', '1.2.11'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = "cp Makefile.linux_openmp_64 Makefile ; "
+buildopts = 'INSTALLDIR=%(installdir)s '
+buildopts += 'CC="${CC} ${CFLAGS} -DREAD_WRITE_64 -DLINUX2 $(CEXTRA)" '
+install_cmd = 'cd %(builddir)s/afni_src && make clean INSTALLDIR=%(installdir)s && '
+install_cmd += 'cp -r %(builddir)s/afni_src %(installdir)s'
+
+postinstallcmds = [' && '.join([
+    'cd %(installdir)s/afni_src',
+    "for i in $(find . -iname '*.c' ); do rm $i; done",
+    "for i in $(find . -iname '*.a' ); do rm $i; done",
+    "for i in $(find . -iname '*.h' ); do rm $i; done",
+    "for i in $(find . -iname '*.f' ); do rm $i; done",
+    "for i in $(find . -iname '*Makefile*' ); do rm $i; done",
+    "find . -type d -empty -delete",
+])]
+
+parallel = 1
+
+modextrapaths = {'PATH': 'afni_src/'}
+
+sanity_check_paths = {
+    'files': ['afni_src/afni'],
+    'dirs': ['afni_src'],
+}
+
+moduleclass = 'bio'
