@@ -1,0 +1,84 @@
+easyblock = 'PythonBundle'
+
+name = 'antiSMASH'
+version = '6.0.1'
+
+homepage = 'https://github.com/antismash/antismash'
+description = """antiSMASH allows the rapid genome-wide identification, annotation and analysis of secondary
+ metabolite biosynthesis gene clusters in bacterial and fungal genomes."""
+
+docurls = ['https://docs.antismash.secondarymetabolites.org']
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+dependencies = [
+    ('libxml2', '2.9.10'),
+    ('libxslt', '1.1.34'),
+    ('zlib', '1.2.11'),
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('DIAMOND', '2.0.7'),
+    ('FastTree', '2.1.11'),
+    ('GlimmerHMM', '3.0.4c'),
+    ('HMMER2', '2.3.2'),
+    ('HMMER', '3.3.2'),
+    ('MUSCLE', '3.8.31'),
+    ('BLAST+', '2.11.0'),
+    ('prodigal', '2.6.3'),
+    ('Biopython', '1.78'),
+    ('matplotlib', '3.3.3'),
+    ('scikit-learn', '0.23.2'),
+]
+
+# install MEME as a component in this installation,
+# since antiSMASH requires very specific old version
+# see https://docs.antismash.secondarymetabolites.org/install/#full-manual-install
+components = [
+    ('MEME', '5.4.0', {
+        'source_urls': ['http://meme-suite.org/meme-software/%(version)s/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['e446baf78ce8f9b9dc72723bc91c1d60523174a862af19971a92332a7298d56e'],
+        'easyblock': 'ConfigureMake',
+        'start_dir': 'meme-%(version)s',
+    }),
+]
+
+use_pip = True
+
+exts_list = [
+    ('helperlibs', '0.2.1', {
+        'checksums': ['4ec2a0c17fdb75c42c692c5ec582580c14490c31235af5858ec12ad308265732'],
+    }),
+    ('pysvg-py3', '0.2.2.post3', {
+        'modulename': 'pysvg',
+        'checksums': ['a1183aa5d89871298c11f25d28640edc3798b6ed1e2b2a95c30d35985d6431d0'],
+    }),
+    ('bcbio-gff', '0.6.8', {
+        'modulename': 'BCBio.GFF',
+        'checksums': ['8578d3c917a81e39898fa588e969c934fb942c2f3e11c275fa492c679a5f36a1'],
+    }),
+    ('pyScss', '1.3.7', {
+        'modulename': 'scss',
+        'checksums': ['f1df571569021a23941a538eb154405dde80bed35dc1ea7c5f3e18e0144746bf'],
+    }),
+    (name, version, {
+        'source_tmpl': '6-0-1.tar.gz',
+        'source_urls': ['https://github.com/antismash/antismash/archive/'],
+        'checksums': ['3bd162f44e61ed68efb1d5e98968bdf80691b5d8382eecd66257a6f3a2703de7'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/antismash', 'bin/meme'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    # 'meme -h' exits with non-zero exit status, so use 'grep' to check for pattern
+    "meme -h 2>&1 | grep 'Usage:[ \t]*meme'",
+    "antismash --version",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
