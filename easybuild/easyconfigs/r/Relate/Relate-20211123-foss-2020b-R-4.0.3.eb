@@ -1,0 +1,81 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'CMakeMake'
+
+name = 'Relate'
+version = '20211123'
+local_commit = '78964f4'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://myersgroup.github.io/relate/'
+description = "Software for estimating genome-wide genealogies for thousands of samples"
+citing = """
+[1] Leo Speidel, Marie Forest, Sinan Shi, Simon Myers. A method for estimating genome-wide
+    genealogies for thousands of samples. Nature Genetics 51: 1321-1329, 2019.
+[2] Leo Speidel, Lara Cassidy, Robert W. Davies, Garrett Hellenthal, Pontus Skoglund, Simon Myers.
+    Inferring population histories for ancient genomes using genome-wide genealogies.
+    bioRxiv:2021.02.17.431573.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+github_account = 'MyersGroup'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%s.tar.gz' % local_commit]
+patches = ['%(name)s-20211123_add-cmake-install-targets.patch']
+checksums = [
+    'cc19a50036f78ede9f4d52cc0cbb81d90d1bdb51f8b70a1f001a4f32dd26dbd0',  # 78964f4.tar.gz
+    # Relate-20211123_add-cmake-install-targets.patch
+    'd4565aeef0036013b82b37e00909965a6447ab14b154caa3e304307d6f7818e4',
+]
+
+builddependencies = [('CMake', '3.18.4')]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    # Python (numpy), and R required for some scripts
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('R', '4.0.3'),
+]
+
+runtest = 'test'
+
+# script directories to add to path:
+local_script_dirs = ['DetectSelection', 'EstimatePopulationSize', 'PrepareInputFiles', 'RelateParallel',
+                     'SampleBranchLengths', 'TreeView']
+# un/comment as appropriate:
+# local_script_dirs += ['RelateLSF']
+# local_script_dirs += ['EstimatePopulationSizeSGE', 'RelateSGE']
+# local_script_dirs += ['RelateSlurm']
+
+local_bins = ['bin/%s%s' % (name, x) for x in ['', 'CoalescentRate', 'Extract', 'FileFormats',
+                                               'MutationRate', 'Selection', 'TreeView']]
+local_libs = ['lib/libtskitStatic.a'] + [
+    'lib/lib%s%s' % (x, y) for x in ['gzstream', 'kastore', 'relate'] for y in ['Shared.%s' % SHLIB_EXT, 'Static.a']
+]
+
+sanity_check_paths = {
+    'files': local_bins + local_libs,
+    'dirs': ['bin', 'lib', 'example'] + ['scripts/%s' % x for x in local_script_dirs],
+}
+
+sanity_check_commands = [
+    "%(name)s --help",
+    "cd %(builddir)s/relate-*/example && gunzip data/*.gz && Relate --mode All -m 1.25e-8 -N 30000 \
+     --haps data/example.haps --sample data/example.sample --map data/genetic_map_*.txt \
+     --annot data/example.annot --seed 1 -o example",
+]
+
+modextrapaths = {'PATH': ['scripts/%s' % x for x in local_script_dirs]}
+
+modloadmsg = """
+Relate provides various scripts for parallel execution, supporting a variety of schedulers (LSF,
+ SGE, Slurm), located in `$EBROOTRELATE/scripts`. If the suitable script directory is not already
+ in `$PATH`, you can add this with:
+    [*] LSF   : export PATH=$EBROOTRELATE/scrips/RelateLSF:$PATH
+    [*] SGE   : export PATH=$EBROOTRELATE/scrips/RelateSGE:$EBROOTRELATE/scripts/EstimatePopulationSizeSGE:$PATH
+    [*] Slurm : export PATH=$EBROOTRELATE/scrips/RelateSlurm:$PATH
+ This should not be necessary for the other data preparation, output and analysis scripts included.
+"""
+
+moduleclass = 'bio'
