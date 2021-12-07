@@ -25,12 +25,34 @@ builddependencies = [
     ('CMake', '3.18.4'),
 ]
 
+dependencies = [
+    ('Python', '3.8.6')
+]
+
+# python wrapping around Brotli
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'source_urls': [PYPI_SOURCE],
+    'sources': [SOURCE_ZIP]
+}
+exts_list = [
+    (name, version, {
+        'modulename': 'brotli',
+        'checksums': ['4d1b810aa0ed773f81dceda2cc7b403d01057458730e309856356d4ef4188438'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
 sanity_check_paths = {
     'files': ['bin/brotli', 'lib/libbrotlidec.%s' % SHLIB_EXT, 'lib/libbrotlienc.%s' % SHLIB_EXT,
               'lib/libbrotlidec-static.a', 'lib/libbrotlienc-static.a'],
     'dirs': [],
 }
 
-sanity_check_commands = ["brotli --help"]
+sanity_check_commands = ["brotli --help", "python -c 'import brotli'"]
 
 moduleclass = 'lib'
