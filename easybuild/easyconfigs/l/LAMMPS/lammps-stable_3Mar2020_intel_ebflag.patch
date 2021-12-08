@@ -1,0 +1,26 @@
+# remove hard coded -xHost flag for intel compilers (useful on AMD systems, as -xHost may lead to mmx/sse code)
+# OCT 26th 2020 by B. Hajgato (UGent)
+diff -ru lammps-stable_3Mar2020.orig/cmake/Modules/Packages/USER-INTEL.cmake lammps-stable_3Mar2020/cmake/Modules/Packages/USER-INTEL.cmake
+--- lammps-stable_3Mar2020.orig/cmake/Modules/Packages/USER-INTEL.cmake	2020-03-03 16:27:12.000000000 +0100
++++ lammps-stable_3Mar2020/cmake/Modules/Packages/USER-INTEL.cmake	2020-10-27 08:54:15.816960998 +0100
+@@ -77,7 +77,7 @@
+       if(CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 17.3 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 17.4)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xCOMMON-AVX512")
+       else()
+-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost")
++        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ")
+       endif()
+       include(CheckCXXCompilerFlag)
+       foreach(_FLAG -O2 -fp-model fast=2 -no-prec-div -qoverride-limits -qopt-zmm-usage=high -qno-offload -fno-alias -ansi-alias -restrict)
+diff -ru lammps-stable_3Mar2020.orig/src/MAKE/OPTIONS/Makefile.intel_cpu_intelmpi lammps-stable_3Mar2020/src/MAKE/OPTIONS/Makefile.intel_cpu_intelmpi
+--- lammps-stable_3Mar2020.orig/src/MAKE/OPTIONS/Makefile.intel_cpu_intelmpi	2020-03-03 16:27:12.000000000 +0100
++++ lammps-stable_3Mar2020/src/MAKE/OPTIONS/Makefile.intel_cpu_intelmpi	2020-10-26 16:41:59.900088648 +0100
+@@ -7,7 +7,7 @@
+ # specify flags and libraries needed for your compiler
+ 
+ CC =		mpiicpc -std=c++11
+-OPTFLAGS =      -xHost -O2 -fp-model fast=2 -no-prec-div -qoverride-limits \
++OPTFLAGS =      ${EBVAROPTFLAGS} -fp-model fast=2 -no-prec-div -qoverride-limits \
+                 -qopt-zmm-usage=high
+ CCFLAGS =	-qopenmp -qno-offload -ansi-alias -restrict \
+                 -DLMP_INTEL_USELRT -DLMP_USE_MKL_RNG $(OPTFLAGS) \
