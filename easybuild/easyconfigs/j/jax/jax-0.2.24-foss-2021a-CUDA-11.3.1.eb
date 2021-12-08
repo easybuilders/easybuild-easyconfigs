@@ -1,38 +1,49 @@
 # This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
 # Author: Denis Kristak
+# Updated by: Alex Domingo (Vrije Universiteit Brussel)
 easyblock = 'PythonBundle'
 
 name = 'jax'
-version = '0.2.19'
+version = '0.2.24'
+versionsuffix = '-CUDA-%(cudaver)s'
+
 homepage = 'https://pypi.python.org/pypi/jax'
 description = """Composable transformations of Python+NumPy programs:
 differentiate, vectorize, JIT to GPU/TPU, and more"""
 
-toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchain = {'name': 'foss', 'version': '2021a'}
 
 builddependencies = [
     ('Bazel', '3.7.2'),
-    ('Cython', '0.29.22'),
     ('pytest-xdist', '2.3.0'),
     # git 2.x required to fetch repository 'io_bazel_rules_docker'
-    ('git', '2.28.0', '-nodocs'),
+    ('git', '2.32.0', '-nodocs'),
 ]
 
 dependencies = [
-    ('Python', '3.8.6'),
-    ('SciPy-bundle', '2020.11'),
-    ('flatbuffers-python', '1.12'),
-    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', True),
-    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
+    ('CUDA', '11.3.1', '', True),
+    ('cuDNN', '8.2.1.32', versionsuffix, True),
+    ('NCCL', '2.10.3', versionsuffix),
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('flatbuffers-python', '2.0'),
+    ('typing-extensions', '3.10.0.0'),
 ]
+
+# running the tests with lots of cores results in test failures because not enough threads can be started,
+# and running with a single core also results in systematic test failures
+# 4 cores seems to work best
+parallel = 4
 
 # downloading TensorFlow tarball to avoid that Bazel downloads it during the build
 # note: this *must* be the exact same commit as used in jaxlib-*/WORKSPACE
-local_tf_commit = '4039feeb743bc42cd0a3d8146ce63fc05d23eb8d'
+local_tf_commit = 'e98b052c08e5d1e7906ac2f6caf95c51a1e04985'
 local_tf_dir = 'tensorflow-%s' % local_tf_commit
 local_tf_builddir = '%(builddir)s/' + local_tf_dir
 
-local_jax_prebuildopts = "sed -i 's$pathToSed$%s$g' WORKSPACE && " % local_tf_builddir
+# replace remote TensorFlow repository with the local one from EB
+local_jax_prebuildopts = "sed -i -f jaxlib_local-tensorflow-repo.sed WORKSPACE && "
+local_jax_prebuildopts += "sed -i 's|EB_TF_REPOPATH|%s|' WORKSPACE && " % local_tf_builddir
 
 use_pip = True
 
@@ -47,11 +58,11 @@ default_component_specs = {
 }
 
 components = [
-    ('absl-py', '0.13.0', {
+    ('absl-py', '0.15.0', {
         'options': {'modulename': 'absl'},
-        'checksums': ['6953272383486044699fd0e9f00aad167a27e08ce19aae66c6c4b10e7e767793'],
+        'checksums': ['72d782fbeafba66ba3e525d46bccac949b9a174dbf66233e50ece09ee688dc81'],
     }),
-    ('jaxlib', '0.1.70', {
+    ('jaxlib', '0.1.73', {
         'sources': [
             '%(name)s-v%(version)s.tar.gz',
             {
@@ -64,27 +75,21 @@ components = [
             'https://github.com/tensorflow/tensorflow/archive/'
         ],
         'patches': [
-            '%(name)s-%(version)s_add-bazel-args-to-shutdown.patch',
-            '%(name)s-%(version)s_no-tensorflow-download.patch',
-            '%(name)s-%(version)s_fix-gpu-translation-rule.patch',
-            ('TensorFlow-%s_mlir-build-env.patch' % local_tf_commit, '../' + local_tf_dir),
-            ('TensorFlow-2.1.0_fix-cuda-build.patch', '../' + local_tf_dir),
+            ('jaxlib_local-tensorflow-repo.sed', '.'),
+            'jaxlib-0.1.70_add-bazel-args-to-shutdown.patch',
+            ('TensorFlow-2.7.0_cuda-noncanonical-include-paths.patch', '../' + local_tf_dir),
         ],
         'checksums': [
-            # jaxlib-v0.1.70.tar.gz
-            '5d136c4b72bb254a3700cbac276ebe77108841936ff6d728050775f24a8e36fe',
-            # tensorflow-4039feeb743bc42cd0a3d8146ce63fc05d23eb8d.tar.gz
-            '0f13410284b9186e436350e9617b3bed2d65f1dc1a220fd37ad9ef43c2035663',
+            # jaxlib-v0.1.73.tar.gz
+            '4cb1a7a9881c6566cf6d0d88f70ba2b8732e8b1dc6010da7deaff399f21873ed',
+            # tensorflow-e98b052c08e5d1e7906ac2f6caf95c51a1e04985.tar.gz
+            'b2c8b912e7be71306ab6fee063fb4ec1dfbe7158e7e8469d674f8af6583434d4',
+            # jaxlib_local-tensorflow-repo.sed
+            'abb5c3b97f4e317bce9f22ed3eeea3b9715365818d8b50720d937e2d41d5c4e5',
             # jaxlib-0.1.70_add-bazel-args-to-shutdown.patch
             'c0ea6abd7827d3c37bdd60c30c7b0613fc86b91274c6a1a4cf13a3c7f9ce7631',
-            # jaxlib-0.1.70_no-tensorflow-download.patch
-            '1496c6be9336fb563b997f8da83d690a9b3a0a6e29fdd87fac60409300a2fd95',
-            # jaxlib-0.1.70_fix-gpu-translation-rule.patch
-            'ce3cf8ee3b393f6580fb88bc39cc2660be46f2a48a315a3779403725ad49f946',
-            # TensorFlow-4039feeb743bc42cd0a3d8146ce63fc05d23eb8d-build-env.patch
-            'd067836b1d18d66a8c69fb3db311855c8a56c0106d42a11299a1733c385e9c22',
-            # TensorFlow-2.1.0_fix-cuda-build.patch
-            '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',
+            # TensorFlow-2.7.0_cuda-noncanonical-include-paths.patch
+            '0a759010c253d49755955cd5f028e75de4a4c447dcc8f5a0d9f47cce6881a9db',
         ],
         'start_dir': 'jax-jaxlib-v%(version)s',
         'prebuildopts': local_jax_prebuildopts,
@@ -99,15 +104,16 @@ exts_list = [
         'source_tmpl': '%(name)s-v%(version)s.tar.gz',
         'source_urls': ['https://github.com/google/jax/archive/'],
         'patches': [
-            'jax-%(version)s_fix-update-of-cache-access-time.patch',
-            'jax-%(version)s_skip-heap-profiler-test.patch'
+            'jax-0.2.19_fix-update-of-cache-access-time.patch',
+            'jax-0.2.24-foss-2021a_unimplemented.patch',
         ],
         'checksums': [
-            'fb6f665b1461ac67954c1004da00d12e1c41b65b744a5fa0311d26d1a784a96c',  # jax-v0.2.19.tar.gz
-            # jax-0.2.19_increase-cache-test-sleep-time.patch
+            # jax-v0.2.24.tar.gz
+            '9ffbf86e97a05591eaa1a7a5194cf9ceaed8cf6c2aaa8ffc394568a3a131cae0',
+            # jax-0.2.19_fix-update-of-cache-access-time.patch
             'e20562f67d63cc7e3478f7a92940291b2c8e328d605426bbabf89d8c2e1dd806',
-            # jax-0.2.19_skip-heap-profiler-test.patch
-            'a431ce1b6588b5098872f36575dc2c5023b1010760bf6aaa889125c9a09227b0',
+            # jax-0.2.24-foss-2021a_unimplemented.patch
+            '96fe1b15b55611727b0ae76409b89c44ae21a1c10002507ca8e3c06c2b134f4e',
         ],
         # deliberately not testing in parallel, as that results in (additional) failing tests;
         # use XLA_PYTHON_CLIENT_ALLOCATOR=platform when running GPU tests in parallel,
