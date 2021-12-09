@@ -1,0 +1,121 @@
+--- afni-AFNI_21.3.10/src/Makefile.linux_openmp_64	2021-08-22 09:37:27.000000000 -0400
++++ afni-AFNI_21.3.10.patch/src/Makefile.linux_openmp_64	2021-09-01 11:32:11.940381000 -0400
+@@ -6,7 +6,8 @@
+ USE_ZLIB = -DHAVE_ZLIB
+ LZLIB    = -lz
+ USE_GIFTI = -DHAVE_GIFTI
+-LGIFTI    = /usr/lib64/libexpat.a
++LGIFTI    = -lexpat
++LFLAGS := $(shell echo $(LIBRARY_PATH) | sed -e 's/^/-L/' | sed -e 's/:/ -L/g')
+ 
+ # ------------------------------
+ # python from C (off for now)
+@@ -19,7 +20,7 @@
+ # uncomment to build using local /usr/local/afniX 'X' tree
+ USE_LOCAL_X_TREE = 1
+ ifdef USE_LOCAL_X_TREE
+-    XROOT = /usr/local/afniX
++    XROOT = ~/afniX
+     XROOT_I = -I$(XROOT)/include
+ else
+     XROOT = /usr
+@@ -30,10 +31,10 @@
+ ifdef USE_LESSTIF
+     LESSTIF_DEFS = -DUSING_LESSTIF
+ 
+-    XLIBS = $(XROOT)/lib64/libXm.a $(XROOT)/lib64/libXt.a
++    XLIBS = -lXm -lXt
+ else
+     # default is static motif
+-    XLIBS = $(XROOT)/lib64/libXm.a -lXt
++    XLIBS = -lXm -lXt
+ endif
+ 
+ # in case user wants to override with system dynamic libs
+@@ -42,52 +43,52 @@
+ 
+ CCDEBS = -DAFNI_DEBUG -DIMSEQ_DEBUG -DDISPLAY_DEBUG -DTHD_DEBUG
+ CEXTRA = -Wcomment -Wformat -DUSE_TRACING -DHAVE_XDBE $(CPROF) \
+-	 -DDONT_USE_XTDESTROY -D_GNU_SOURCE -DREPLACE_XT $(LESSTIF_DEFS)
++	 -fPIC -ggdb -DDONT_USE_XTDESTROY -D_GNU_SOURCE -DREPLACE_XT $(LESSTIF_DEFS)
+ 
+-CC     = /usr/bin/gcc -O2 -m64 -fPIC -DREAD_WRITE_64 -DLINUX2 $(CEXTRA)
+-CCVOL  = /usr/bin/gcc -O2 -m64 -fPIC -DREAD_WRITE_64 -DLINUX2 $(CEXTRA)
+-CCFAST = /usr/bin/gcc -O2 -m64 -fPIC -DREAD_WRITE_64 -DLINUX2 $(CEXTRA)
+-CCOLD  = /usr/bin/gcc -V 34 -O2 -m64 -fPIC -DREAD_WRITE_64 -DLINUX2 $(CEXTRA)
++CC     = gcc -O2 -m64 -fPIC -DREAD_WRITE_64 -DLINUX2 $(CEXTRA)
++CCVOL  = $(CC)
++CCFAST = $(CC)
++CCOLD  = $(CC)
+ 
+ # The following line includes compiling for the SSE operations.
+ # However, I found that it actually makes things worse in some test code.
+ # Your mileage may vary.
+ 
+-# CCFAST = /usr/bin/gcc -O3 -march=i686 -ffast-math -mmmx -msse -mfpmath=sse -DLINUX2 $(CEXTRA)
++# CCFAST = gcc -O3 -march=i686 -ffast-math -mmmx -msse -mfpmath=sse -DLINUX2 $(CEXTRA)
+ 
+ OMPFLAG = -fopenmp -DUSE_OMP
+-CCMIN  = /usr/bin/gcc -m64 -fPIC $(CPROF)
++CCMIN  = gcc -m64 -fPIC $(CPROF)
+ CCD    = $(CC) $(CCDEBS)
+ 
+-IFLAGS = -I. $(XROOT_I) -I/usr/include
++IFLAGS = -I. $(XROOT_I)
+-LFLAGS = -L. -L/usr/lib64
++LFLAGS = -L. 
+ 
+-CCSVD  = /usr/bin/gcc -O0 -m64 -fPIC
++CCSVD  = gcc -O0 -m64 -fPIC
+ 
+ PLUGIN_SUFFIX = so
+ PLUGIN_LFLAGS = -shared -fPIC
+ PLUGIN_CC     = $(CC)
+-PLFLAGS       = -rdynamic -L. -L/usr/lib64
++PLFLAGS       = -rdynamic -L. $(LFLAGS)
+ 
+ SYSTEM_NAME = linux_openmp_64
+ SHOWOFF = -DSHOWOFF=$(SYSTEM_NAME)
+ 
+-AR     = /usr/bin/ar
+-RANLIB = /usr/bin/ranlib
+-TAR    = /bin/tar
+-MKDIR  = /bin/mkdir
+-GZIP   = /bin/gzip
+-LD     = /usr/bin/gcc $(CPROF)
+-
+-RM = /bin/rm -f
+-MV = /bin/mv -f
+-CP = /bin/cp -f
++AR     = ar
++RANLIB = ranlib
++TAR    = tar
++MKDIR  = mkdir
++GZIP   = gzip
++LD     = gcc $(CPROF) -ggdb
++
++RM = rm -f
++MV = mv -f
++CP = cp -f
+ 
+-LINT = /usr/bin/lint -a -b -u -v -x $(IFLAGS) $(CCDEFS)
++#LINT = lint -a -b -u -v -x $(IFLAGS) $(CCDEFS)
+ 
+-INSTALLDIR = ./linux_openmp_64
++INSTALLDIR = ${INSTALLDIR}
+ LIBDIR = $(INSTALLDIR)
+-
++$(info libdir is ${LIBDIR} and installdir is ${INSTALLDIR})
+ #INSTALL_PREREQ = suma
+ INSTALL_PREREQ = suma_gts
+ # uncomment if the Gnu Scientific Library is installed (libgsl, libgslcblas)
+@@ -126,7 +127,7 @@
+ GLw_IPATH  = -IGLw_local
+ GLw_LIB = libGLws.a
+ 
+-SUMA_INCLUDE_PATH = $(GLw_IPATH) $(IFLAGS) -I.. -I../niml -Igts/src -I/usr/include/glib-1.2 -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include
++SUMA_INCLUDE_PATH = $(GLw_IPATH) $(IFLAGS) -I.. -I../niml -Igts/src
+ SUMA_LINK_PATH = -L.. $(LFLAGS)
+ #use -lGLw if you have libGLw.a or libGLw.so* or 
+ #  -lMesaGLw if you have Mesa's version (libMesaGLw*) of libGLw
+
