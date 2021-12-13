@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.2.1'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True}
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = ['vasp.6.2.1.tgz']
+
+checksums = ['d25e2f477d83cb20fce6a2a56dcee5dccf86d045dd7f76d3ae19af8343156a13']
+
+prebuildopts = 'cp arch/makefile.include.linux_gnu ./makefile.include && '
+
+# Add -fallow-argument-mismatch option
+prebuildopts += 'sed -i "s|^FREE.*|& -fallow-argument-mismatch|" makefile.include && '
+
+# VASP uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+buildopts = 'all FFTW="$EBROOTFFTW" BLAS="" SCALAPACK=" -L$EBROOTFLEXIBLAS -lflexiblas -lscalapack -lgfortran"'
+
+parallel = 1
+
+files_to_copy = [(['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'],
+    'dirs': []
+}
+
+moduleclass = 'phys'
