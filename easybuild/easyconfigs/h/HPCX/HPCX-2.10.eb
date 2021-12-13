@@ -1,0 +1,78 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'Tarball'
+
+name = 'HPCX'
+version = '2.10'
+
+homepage = 'http://www.mellanox.com/page/products_dyn?product_family=189&mtag=hpc-x'
+description = """The Mellanox HPC-X Toolkit
+is a comprehensive MPI and SHMEM/PGAS software suite
+for high performance computing environments"""
+
+toolchain = SYSTEM
+
+# By downloading, you accept the HPC SDK Software License Agreement (https://docs.nvidia.com/hpc-sdk/eula/index.html)
+# accept_eula = True
+source_urls = ['https://content.mellanox.com/hpc/hpc-x/v%(version)s/']
+sources = ['%(namelower)s-v%(version)s-gcc-MLNX_OFED_LINUX-5-redhat8-cuda11-gdrcopy2-nccl2.11-x86_64.tbz']
+checksums = ['973e301cdb02faf422d34063ea2abd9828dfd6c21ebe762c1d63fa8820dc028f']
+
+local_gccver = '11.2.0'
+dependencies = [
+    ('GCCcore', local_gccver),
+    ('binutils', '2.37', '', ('GCCcore', local_gccver)),
+    # This is necessary to avoid cases where just libnuma.so.1 is present in the system and -lnuma fails
+    ('numactl', '2.0.14', '', ('GCCcore', local_gccver))
+]
+
+local_binaries = [
+    'orted', 'orterun', 'profile2mat.pl', 'orte-clean', 'aggregate_profile.pl',
+    'orte-server', 'oshmem_info', 'ompi_info', 'orte-info', 'opal_wrapper'
+]
+
+local_dirs = [ 'hcoll', 'ompi', 'sharp', 'ucx' ]
+
+local_subdirs = [ 'bin', 'include', 'lib' ]
+
+sanity_check_paths = {
+    'files': ['ompi/bin/%s' % x for x in local_binaries],
+    'dirs':  ['%s/%s' % (x, y) for x in local_dirs for y in local_subdirs] +
+             ['%s/lib' % x for x in local_dirs] +
+             ['nccl_rdma_sharp_plugin', 'clusterkit']
+}
+
+modextrapaths = { 'CPATH':           ['hcoll/include', 'sharp/include', 'ucx/include', 'ompi/include'],
+                  'LD_LIBRARY_PATH': ['hcoll/lib', 'nccl_rdma_sharp_plugin/lib', 'sharp/lib', 'ucx/lib', 'ucx/lib/ucx', 'ompi/lib'],
+                  'LIBRARY_PATH':    ['hcoll/lib', 'nccl_rdma_sharp_plugin/lib', 'sharp/lib', 'ucx/lib', 'ompi/lib'],
+                  'MANPATH':         'ompi/share/man',
+                  'PATH':            ['clusterkit/bin', 'hcoll/bin', 'ucx/bin', 'ompi/bin', 'ompi/tests/imb'],
+                  'PKG_CONFIG_PATH': ['hcoll/lib/pkgconfig', 'ompi/lib/pkgconfig', 'sharp/lib/pkgconfig', 'ucx/lib/pkgconfig'],
+}
+
+modextravars = {
+    'HPCX_CLUSTERKIT_DIR':             '%(installdir)s/clusterkit',
+    'HPCX_DIR':                        '%(installdir)s',
+    'HPCX_HCOLL_DIR':                  '%(installdir)s/hcoll',
+    'HPCX_HOME':                       '%(installdir)s',
+    'HPCX_IPM_DIR':                    '%(installdir)s/ompi/tests/ipm-2.0.6',
+    'HPCX_IPM_LIB':                    '%(installdir)s/ompi/tests/ipm-2.0.6/lib/libipm.so',
+    'HPCX_MPI_DIR':                    '%(installdir)s/ompi',
+    'HPCX_MPI_TESTS_DIR':              '%(installdir)s/ompi/tests',
+    'HPCX_NCCL_RDMA_SHARP_PLUGIN_DIR': '%(installdir)s/nccl_rdma_sharp_plugin',
+    'HPCX_OSHMEM_DIR':                 '%(installdir)s/ompi',
+    'HPCX_OSU_CUDA_DIR':               '%(installdir)s/ompi/tests/osu-micro-benchmarks-5.6.2-cuda',
+    'HPCX_OSU_DIR':                    '%(installdir)s/ompi/tests/osu-micro-benchmarks-5.6.2',
+    'HPCX_SHARP_DIR':                  '%(installdir)s/sharp',
+    'HPCX_UCX_DIR':                    '%(installdir)s/ucx',
+    'MPI_HOME':                        '%(installdir)s/ompi',
+    'OMPI_HOME':                       '%(installdir)s/ompi',
+    'OPAL_PREFIX':                     '%(installdir)s/ompi',
+    'OSHMEM_HOME':                     '%(installdir)s/ompi',
+    'PMIX_INSTALL_PREFIX':             '%(installdir)s/ompi',
+    'SHMEM_HOME':                      '%(installdir)s/ompi',
+}
+
+moduleclass = 'mpi'
+
