@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'STRUMPACK'
+version = '6.1.0'
+
+homepage = 'https://fastmath-scidac.llnl.gov/software/strumpack.html'
+description = """STRUMPACK - STRUctured Matrix PACKage - Fast linear solvers and preconditioner
+ for both dense and sparse systems using low-rank structured factorization with randomized sampling."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/pghysels/%(name)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['219ec7360594172464aafa6ecac1fd161097db6fb9ee35af5c1ca61531f4f5c4']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('ParMETIS', '4.0.3'),
+    ('SCOTCH', '6.1.0'),
+]
+
+separate_build_dir = True
+
+configopts  = '-DCMAKE_BUILD_TYPE=Release '
+configopts += '-DCMAKE_CXX_COMPILER=mpicxx '
+configopts += '-DCMAKE_C_COMPILER=mpicc '
+configopts += '-DCMAKE_Fortran_COMPILER=mpifort '
+configopts += '-DSTRUMPACK_USE_OPENMP=ON '
+configopts += '-DNO_MODULES=ON '
+configopts += '-DTPL_METIS_INCLUDE_DIRS=${EBROOTPARMETIS}/include '
+configopts += '-DTPL_METIS_LIBRARIES=${EBROOTPARMETIS}/lib/libmetis.a '
+configopts += '-DTPL_ENABLE_BPACK=OFF '
+configopts += '-DTPL_ENABLE_ZFP=OFF '
+configopts += '-DTPL_ENABLE_SLATE=OFF '
+configopts += '-DTPL_ENABLE_PARMETIS=ON '
+configopts += '-DTPL_PARMETIS_INCLUDE_DIRS=${EBROOTPARMETIS}/include '
+configopts += '-DTPL_PARMETIS_LIBRARIES=${EBROOTPARMETIS}/lib/libparmetis.a '
+configopts += '-DTPL_ENABLE_SCOTCH=ON '
+configopts += '-DTPL_SCOTCH_INCLUDE_DIRS=${EBROOTSCOTCH}/include '
+configopts += '-DTPL_SCOTCH_LIBRARIES="${EBROOTSCOTCH}/lib/libscotch.a;${EBROOTSCOTCH}/lib/libscotcherr.a;${EBROOTSCOTCH}/lib/libptscotch.a;${EBROOTSCOTCH}/lib/libptscotcherr.a" '
+
+sanity_check_paths = {
+    'files': ['lib/libstrumpack.a'],
+    'dirs': ['include/BLR', 'include/clustering', 'include/dense', 'include/HSS', 'include/kernel', 'include/misc', 'include/python', 'include/sparse', 'lib'],
+}
+
+moduleclass = 'numlib'
