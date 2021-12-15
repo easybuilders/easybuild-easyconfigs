@@ -9,7 +9,7 @@ description = """The Worker framework has been developed to help deal with param
  see also https://vscentrum.be/neutral/documentation/cluster-doc/running-jobs/worker-framework."""
 
 local_tcname = 'foss'
-local_tcver = '2019a'
+local_tcver = '2021b'
 toolchain = {'name': local_tcname, 'version': local_tcver}
 toolchainopts = {'usempi': True}
 
@@ -18,13 +18,17 @@ sources = ['%(version)s.tar.gz']
 checksums = ['503ad9db78d949999bd5f3ba15b18f746cad2eaf2ff49240398b2b6792f9ffbd']
 
 dependencies = [
-    ('Perl', '5.28.1')
+    ('Perl', '5.34.0')
 ]
+
+# need to replace MPI_Type_struct by MPI_Type_create_struct, since MPI_Type_struct was removed in MPI 3.0;
+# see also https://github.com/gjbex/worker/pull/45
+preconfigopts = "sed -i 's/MPI_Type_struct/MPI_Type_create_struct/g' src/worker.c && "
 
 # adjust worker configuration file
 # note: tweak this to your local setup
 postinstallcmds = [
-    'sed -i "s/ cores_per_node = .*/ cores_per_node = 16/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ cores_per_node = .*/ cores_per_node = 32/g" %(installdir)s/conf/worker.conf',
     'sed -i "s@ qsub = .*@ qsub = `which qsub`@g" %(installdir)s/conf/worker.conf',
     'sed -i "s/ email = .*/ email = hpc-support@example.com/g" %(installdir)s/conf/worker.conf',
     'sed -i "s/ unload_modules = .*/ unload_modules = %s/g" %%(installdir)s/conf/worker.conf' % local_tcname,
