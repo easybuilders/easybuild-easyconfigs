@@ -1,0 +1,91 @@
+# This is an EasyBuild easyconfig file for building VASP
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.2.0'
+# Use a unique versionsuffix to differentiate variants, e.g:
+#versionsuffix = '-BEEF'
+#versionsuffix = '-VTST-BEEF'
+#versionsuffix = '-VTST-BEEF-experimentX'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'usempi': True}
+
+# List all the sources you need for the build
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+sources = [
+    'vasp.6.2.0.tgz'
+]
+
+checksums = [
+    '49e7ba351bd634bc5f5f67a8ef1e38e64e772857a1c02f602828898a84197e25',  # vasp.6.2.0.tgz
+]
+
+# List the patches you want to apply here:
+# Optional external dependencies (dependent on the build you want):
+dependencies = [
+    #('BEEF', '0.1.1'),
+]
+
+prebuildopts = 'cp arch/makefile.include.linux_intel ./makefile.include && '
+
+# Increase MPI block size:
+prebuildopts += 'sed -i "s|MPI_BLOCK=8000|MPI_BLOCK=65536|" makefile.include && '
+# Alignment
+prebuildopts += 'sed -i "s|FFLAGS *=|FFLAGS     = -align array32byte -align dcommons -align rec32byte |" makefile.include && '
+# Add -xavx flag:
+prebuildopts += 'sed -i "s|OFLAG *=|OFLAG      = -xavx |" makefile.include && '
+# Other options unknown app-expert decided to add:
+prebuildopts += 'sed -i "s|CPP_OPTIONS *=|CPP_OPTIONS = -DLONGCHAR -DnoSTOPCAR |" makefile.include && '
+
+# To enable BEEF support, uncomment the following lines
+# BEEF support:
+#prebuildopts += 'sed -i "s|FFLAGS *=|FFLAGS     = -Dlibbeef |" makefile.include && '
+#prebuildopts += 'sed -i "s|LLIBS *=|LLIBS      = -lbeef |" makefile.include && '
+#prebuildopts += 'sed -i "s|CPP_OPTIONS *=|CPP_OPTIONS = -Dlibbeef |" makefile.include && '
+
+# Fix the issue with the path to libfftw3xf_intel.a that is hardcoded in the porvided makefile.include
+prebuildopts += 'sed -i "s|\$(MKLROOT)/interfaces/fftw3xf|\$(FFTW_LIB_DIR)|" makefile.include && '
+
+# Remove mkl flag to prevent mixing dynamic libs with the static libs in LIBBLACS/SCALAPACK
+prebuildopts += 'sed -i "s|-mkl=sequential||" makefile.include && '
+
+
+# VASP uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+
+# Unlimit the stack size for the pass all tests (Needed from VASP6)
+pretestopts = 'ulimit -s unlimited && '
+
+
+# Tell VASP to use the BLACS and SCALAPACK link flags that EasyBuild sets up for us:
+buildopts = 'std gam ncl BLACS="$LIBBLACS" SCALAPACK="$LIBSCALAPACK"'
+
+# VASPs build scripts are very poorly written, and doesn't support parallel builds. We have to force "make -j 1"
+parallel = 1
+
+files_to_copy = [
+    (['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl'], 'bin'),
+    (['../vdw_kernel.bindat'], '.')
+]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_std', 'bin/vasp_gam', 'bin/vasp_ncl', 'vdw_kernel.bindat'],
+    'dirs': []
+}
+
+runtest = "test"  # Run make test after build to verify
+
+# This environment variable works together with the vasp-vdw_kernel_file.patch
+# so that it can be used without having to copy this file around.
+modextravars = {
+    'VDW_KERNEL': '%(installdir)s/vdw_kernel.bindat',
+}
+
+moduleclass = 'phys'
