@@ -331,8 +331,8 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS
-        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS')]:
+        # same goes for WRF and WPS; Gurobi and Rgurobi
+        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS'), ('Gurobi', 'Rgurobi')]:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     ecs = dep_vars[key]
@@ -506,6 +506,8 @@ class EasyConfigTest(TestCase):
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
             'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                       'NGSpeciesID-0.1.1.1-'])],
+            # UShER requires tbb-2020.3 as newer versions will not build
+            'tbb': [('2020.3', ['UShER-0.5.0-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -854,7 +856,7 @@ class EasyConfigTest(TestCase):
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in self.changed_ecs:
-            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper']:
+            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper'] or ec['name'] in ['Clang-AOMP']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
@@ -1015,7 +1017,7 @@ class EasyConfigTest(TestCase):
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle']
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'ROCm']
 
         failing_checks = []
 
@@ -1192,7 +1194,7 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
-        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
+        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['ANIcalculator', 'Eigen']
 
         # let's also exclude the very special case where the system GCC is used as GCCcore, and only apply this
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
