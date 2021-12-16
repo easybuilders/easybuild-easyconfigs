@@ -24,15 +24,17 @@ prebuildopts = "sed -i '1d' Makefile && "
 # -fallow-argument-mismatch needed for GCC 10+
 buildopts = '-j 1 LIBS="$LIBBLAS -lsymspg" FFLAGS="$FFLAGS -fallow-argument-mismatch"'
 
-files_to_copy = [([name], 'bin'), 'Test-*', 'LICENSE', 'README.md']
+local_tests = ["Test-%s" % x for x in ['QE', 'RTA', 'VASP']]
+
+files_to_copy = [([name], 'bin'), (['LICENSE', 'README.md'], 'share')] + local_tests
 
 sanity_check_paths = {
     'files': ['bin/%(name)s'],
-    'dirs': [],
+    'dirs': ['share'] + local_tests,
 }
 
 sanity_check_commands = [
-    "cd %%(builddir)s/*%%(namelower)s*/Test-%s && mpirun -n %%(parallel)s %%(name)s" % x for x in ['QE', 'RTA', 'VASP']
+    "cd %%(builddir)s/*%%(namelower)s*/%s && %%(mpi_cmd_prefix)s %%(name)s" % x for x in local_tests
 ]
 
 moduleclass = 'phys'
