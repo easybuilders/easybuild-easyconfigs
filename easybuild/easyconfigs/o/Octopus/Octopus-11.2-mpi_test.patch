@@ -1,0 +1,43 @@
+Remove sanity check for the MPI launcher used for running the tests. The checks
+could only handle absolute paths and whenever the script could not be sure the
+MPI launcher did exist it was switching to serial with a single line of warning
+at the beginning of the usually very long testsuite log.
+author: Micael Oliveira (Max Planck Institute for the Structure and Dynamics of Matter)
+diff --git a/testsuite/oct-run_regression_test.pl b/testsuite/oct-run_regression_test.pl
+index 0b6ef4ea0..251c432d3 100755
+--- a/testsuite/oct-run_regression_test.pl
++++ b/testsuite/oct-run_regression_test.pl
+@@ -125,7 +125,6 @@ my $global_np = get_env("OCT_TEST_MPI_NPROCS");
+ #$np = "serial";
+ my $is_parallel = 0;
+ my $mpiexec;
+-my $mpiexec_raw;
+ my $machinelist;
+ my ($np, $nslots, $my_nslots, $specify_np);
+ 
+@@ -141,20 +140,8 @@ if(!$opt_s) {
+     if( "$mpiexec" eq "" ) { 
+         print "No mpiexec found: running in serial.\n\n";
+     } else {
+-        # mpiexec without arguments (to check if it is available)
+-        $mpiexec_raw = $mpiexec;
+-        $mpiexec_raw =~ s/\ (.*)//;
+-        if ( ! -e "$mpiexec_raw" ) {
+-            print "mpiexec command ($mpiexec_raw) does not exist: running in serial.\n\n";
+-            $mpiexec = "";
+-        } elsif( ! -x "$mpiexec_raw" ) {
+-            print "mpiexec command ($mpiexec_raw) is not executable: running in serial.\n\n";
+-            $mpiexec = "";
+-        } else {
+-            # default number of processors is 1
+-            $np = 1;
+-            $is_parallel = 1;
+-        }
++        $np = 1;
++        $is_parallel = 1;
+     }
+ } else {
+     $mpiexec = "";
+-- 
+2.20.1
+
