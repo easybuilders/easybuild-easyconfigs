@@ -1,0 +1,78 @@
+# Updated by: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonPackage'
+
+name = 'BUSCO'
+version = '5.2.2'
+
+homepage = 'https://busco.ezlab.org/'
+description = "BUSCO: assessing genome assembly and annotation completeness with single-copy orthologs"
+
+
+#toolchain = {'name': 'gomkl', 'version': '2020a'}
+toolchain = {'name': 'gofb', 'version': '2020a'}
+source_urls = ['https://gitlab.com/ezlab/%(namelower)s/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['48ce7ba0e397186ac2e578bfd18d4faca29759aef14f3037daceb3cd5b410ae9']
+
+dependencies = [
+    ('Python', '3.8.10'),
+    ('SciPy-Stack', '2021a'),  # for pandas
+    ('R', '4.1.2'),
+    ('BLAST+', '2.12.0'),
+    ('HMMER', '3.2.1'),
+    ('prodigal', '2.6.3'),
+    ('AUGUSTUS', '3.4.0'),
+    ('MetaEuk', '4-a0f584d'),
+    ('pplacer', '1.1.alpha19'),
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin %(installdir)s/doc',
+    'cp %(builddir)s/%(namelower)s-%(version)s/scripts/* %(installdir)s/bin',
+    'cp %(builddir)s/%(namelower)s-%(version)s/LICENSE %(installdir)s/doc',
+    'cp -r %(builddir)s/%(namelower)s-%(version)s/test_data %(installdir)s',
+    'cp -r %(builddir)s/%(namelower)s-%(version)s/config %(installdir)s',
+]
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('biopython', '1.79', {
+        'easyblock': 'PythonPackage',
+        'modulename': 'Bio',
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['http://biopython.org/DIST/'],
+        'checksums': ['edb07eac99d3b8abd7ba56ff4bedec9263f76dfc3c3f450e7d2e2bcdecf8559b'],
+    }),
+    ('DendroPy', '4.5.1', {
+        'easyblock': 'PythonPackage',
+        'modulename': 'dendropy',
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/jeetsukumaran/DendroPy/archive/refs/tags/'],
+        'checksums': ['6ef3f66d47126047575fd47578fc1b2fc6a21390cf2d2ee57d0678852bce52ed'],
+    }),
+    ('sepp', '4.5.1', {
+        'easyblock': 'PythonPackage',
+        'modulename': 'sepp',
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/smirarab/sepp/archive/refs/tags/'],
+	'buildcmd': 'python setup.py config -c',
+	'postinstallcmds': ['cp -r %(builddir)s/sepp/sepp-*/.sepp %(installdir)s/lib/python%(pyshortver)s/site-packages && echo "%(installdir)s/lib/python%(pyshortver)s/site-packages/.sepp" > %(installdir)s/lib/python%(pyshortver)s/site-packages/home.path'],
+        'checksums': ['51e052569ae89f586a1a94c804f09fe1b7910a3ffff7664e2005f18c7d3f717b'],
+    }),
+]
+sanity_check_paths = {
+    'files': ['bin/busco', 'bin/generate_plot.py'],
+    'dirs': ['test_data', 'lib/python%(pyshortver)s/site-packages/busco']
+}
+
+sanity_check_commands = [
+    "busco --help",
+    "busco -i %(installdir)s/test_data/bacteria/genome.fna -c 8 --mode geno --out test_bacteria.out",
+    "busco -i %(installdir)s/test_data/eukaryota/genome.fna -c 8 --mode geno --out test_eukaryota.out",
+]
+
+moduleclass = 'bio'

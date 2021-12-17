@@ -1,0 +1,55 @@
+##
+# @Author :: Ali Kerrache, University of Manitoba/WestGrid/Compute Canada.
+# @Date :: Dec 6, 2021.
+#
+# Notes ::
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'M2'
+version = '1.19.1'
+
+homepage = 'https://github.com/Macaulay2/M2'
+description = """Macaulay2 is a system for computing in commutative algebra, algebraic geometry and related fields.  The system was originally written by Dan Grayson and Mike Stillman. David Eisenbud joined the project a number of years ago, and many users are writing packages for the system, and some are contributing source code."""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2020a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+# Direct download does not work:
+# git clone --recursive https://github.com/Macaulay2/M2.git
+# mv M2 M2-1.19.1
+# tar -cvf M2-1.19.1.tar M2-1.19.1
+# gzip M2-1.19.1.tar
+
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['cf1b0b440e13a64b1afea484342a01721b1dd807b437ca5d19bc6f2a0e48ebc2']
+
+dependencies = [
+    ('Boost', '1.72.0'),
+    ('tbb', '2020.2'),
+    ('GMP', '6.2.0'),
+    #('gc', '8.0.4'),   # available in gentoo.
+    ('tbb', '2020.2'),
+    ('4ti2', '1.6.9'),
+    #('flex', '2.6.4'),
+    ('Eigen', '3.3.7'),
+    ('MPSolve', '3.2.1'),
+]
+
+start_dir = 'M2'
+
+preconfigopts  = 'autoreconf -fvi && '
+preconfigopts += 'export BLASLIBS="$LIBLAPACK" && '
+preconfigopts += 'export LIBS="$LIBLAPACK $LIBS" && '
+
+configopts  = '--enable-download '
+configopts += '--with-boost=${EBROOTBOOST} '
+configopts += '--with-boost-libdir=${EBROOTBOOST}/lib '
+
+sanity_check_paths = {
+    'files': ['bin/M2', 'bin/M2-binary'],
+    'dirs': ['bin', 'lib', 'libexec', 'share'],
+}
+
+moduleclass = 'math'
