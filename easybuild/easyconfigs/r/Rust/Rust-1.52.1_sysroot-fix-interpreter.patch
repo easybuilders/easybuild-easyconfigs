@@ -16,9 +16,9 @@ author: Kenneth Hoste (HPC-UGent)
 +        sysroot = os.getenv("EASYBUILD_SYSROOT")
 +        if sysroot and not fname.endswith(".so"):
 +            # determine patch to interpreter in host via output produced by 'file -b /bin/bash'
-+            file_b_out = subprocess.check_output(['file', '-b', '/bin/bash']).decode('ascii', 'ignore').strip()
-+            regex = re.compile('.*, interpreter ([^,]*),.*')
-+            res = regex.match(file_b_out)
++            readelf_out = subprocess.check_output(['readelf', '-l', '/bin/bash']).decode('ascii', 'ignore').strip()
++            regex = re.compile('.*program interpreter: ([^\]]+)', re.M)
++            res = regex.search(readelf_out)
 +            interpreter_path = os.path.join(sysroot, res.group(1).lstrip('/'))
 +            if not os.path.exists(interpreter_path):
 +                raise Exception("Derived path to interpreter does not exist: %s" % interpreter_path)
