@@ -1,0 +1,2830 @@
+# This should fix what was described in this thread https://www.jiscmail.ac.uk/cgi-bin/webadmin?A2=ind1911&L=FSL&O=D&X=C89E84F6301F100D81&Y=caspar.vanleeuwen%40surfsara.nl&P=96399
+# In addition, I included a change in tractographyInput.cc to explicitely call 'round' from the namespace 'MISCMATHS'.
+diff -ru fsl.orig/src/ptx2/CUDA/memManager_gpu.cu fsl/src/ptx2/CUDA/memManager_gpu.cu
+--- fsl.orig/src/ptx2/CUDA/memManager_gpu.cu	2019-09-11 15:25:08.000000000 +0200
++++ fsl/src/ptx2/CUDA/memManager_gpu.cu	2020-01-04 20:06:17.763681565 +0100
+@@ -66,8 +66,9 @@
+     University, to negotiate a licence. Contact details are:
+     fsl@innovation.ox.ac.uk quoting Reference Project 9564, FSL.*/
+ 
+-cudaError_t checkCuda(cudaError_t result){
++cudaError_t checkCuda(cudaError_t result, const char *msg=NULL){
+   if (result != cudaSuccess) {
++    if (msg) fprintf(stderr, "Error: %s\n", msg);
+     fprintf(stderr, "CUDA Runtime Error: %s\n", 
+ 	    cudaGetErrorString(result));
+     exit(1);
+@@ -468,62 +469,155 @@
+   }
+ }
+ 
++size_t calculate_mem_required(tractographyData&	data_host){
++  probtrackxOptions& opts =probtrackxOptions::getInstance();
++  size_t total_mem_required;
++  total_mem_required = sizeof(tractographyData);
++  total_mem_required += data_host.nseeds*3*sizeof(float); // seeds
++  if(opts.network.value()) total_mem_required += data_host.nseeds*sizeof(float); // network
++  total_mem_required += 2*data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(float); //mask & lut_vol2mat
++  total_mem_required += 3*data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float); // samples
++
++  size_t seedVolSize=data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float);
++  size_t voxFacesIndexSize = (data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int);
++  if(data_host.avoid.NVols) total_mem_required += seedVolSize;
++  if(data_host.avoid.NSurfs){
++    size_t surfSize = size_t(data_host.avoid.sizesStr[1]*sizeof(float)) +  data_host.avoid.sizesStr[2]*sizeof(int)
++                      + data_host.avoid.sizesStr[3]*sizeof(int) + voxFacesIndexSize;
++    total_mem_required += surfSize;
++  } 
++  if(data_host.stop.NVols) total_mem_required += seedVolSize;
++  if(data_host.stop.NSurfs){
++    size_t surfSize = size_t(data_host.stop.sizesStr[1]*sizeof(float)) +  data_host.stop.sizesStr[2]*sizeof(int)
++                      + data_host.stop.sizesStr[3]*sizeof(int) + voxFacesIndexSize;
++    total_mem_required += surfSize;
++  } 
++  if(data_host.wtstop.NVols)  total_mem_required += data_host.wtstop.NVols * seedVolSize;
++  if(data_host.wtstop.NSurfs){
++    size_t surfSize = size_t(data_host.wtstop.sizesStr[1]*sizeof(float)) +  data_host.wtstop.sizesStr[2]*sizeof(int)
++                      + data_host.wtstop.sizesStr[3]*sizeof(int) + data_host.wtstop.NSurfs*voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  if(data_host.network.NVols) total_mem_required += data_host.network.NVols * seedVolSize;
++  if(data_host.network.NSurfs){
++    size_t surfSize = size_t(data_host.network.sizesStr[1]*sizeof(float)) +  data_host.network.sizesStr[2]*sizeof(int)
++                      + data_host.network.sizesStr[3]*sizeof(int) + data_host.network.NSurfs*voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  if(data_host.network.NVols||data_host.network.NSurfs){
++    total_mem_required += data_host.network.NVols+data_host.network.NSurfs*sizeof(int);
++  }
++  if(data_host.networkREF.NVols) total_mem_required += seedVolSize;
++  if(data_host.networkREF.NSurfs){
++    size_t surfSize = size_t(data_host.networkREF.sizesStr[1]*sizeof(float)) +  data_host.networkREF.sizesStr[2]*sizeof(int)
++                      + data_host.networkREF.sizesStr[3]*sizeof(int) + voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  if(data_host.waypoint.NVols) total_mem_required += data_host.waypoint.NVols * seedVolSize;
++  if(data_host.waypoint.NSurfs){
++    size_t surfSize = size_t(data_host.waypoint.sizesStr[1]*sizeof(float)) +  data_host.waypoint.sizesStr[2]*sizeof(int)
++                      + data_host.waypoint.sizesStr[3]*sizeof(int) + data_host.waypoint.NSurfs*voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  if(data_host.waypoint.NVols||data_host.waypoint.NSurfs){
++    total_mem_required += data_host.waypoint.NVols+data_host.waypoint.NSurfs*sizeof(int);
++  }
++  if(data_host.targets.NVols) total_mem_required += data_host.targets.NVols * seedVolSize;
++  if(data_host.targets.NSurfs){
++    size_t surfSize = size_t(data_host.targets.sizesStr[1]*sizeof(float)) +  data_host.targets.sizesStr[2]*sizeof(int)
++                      + data_host.targets.sizesStr[3]*sizeof(int) + data_host.targets.NSurfs*voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  if(data_host.targets.NVols||data_host.targets.NSurfs){
++    total_mem_required += data_host.targets.NVols+data_host.targets.NSurfs*sizeof(int);
++  }
++  if(data_host.targetsREF.NVols) total_mem_required += seedVolSize;
++  if(data_host.targetsREF.NSurfs){
++    size_t surfSize = size_t(data_host.targetsREF.sizesStr[1]*sizeof(float)) +  data_host.targetsREF.sizesStr[2]*sizeof(int)
++                      + data_host.targetsREF.sizesStr[3]*sizeof(int) + voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  if(data_host.lrmatrix1.NVols){
++    if(opts.matrix2out.value())
++      total_mem_required += data_host.lrmatrix1.NVols*data_host.M2sizes[0]*data_host.M2sizes[1]*data_host.M2sizes[2]*sizeof(float);
++    else
++      total_mem_required += data_host.lrmatrix1.NVols * seedVolSize;
++  }
++  if(data_host.lrmatrix1.NSurfs){
++    size_t surfSize = size_t(data_host.lrmatrix1.sizesStr[0]*sizeof(int)) 
++                      + data_host.lrmatrix1.sizesStr[1]*sizeof(float) +  data_host.lrmatrix1.sizesStr[2]*sizeof(int)
++                      + data_host.lrmatrix1.sizesStr[3]*sizeof(int) + data_host.lrmatrix1.NSurfs*voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  if(data_host.matrix3.NVols) total_mem_required += data_host.matrix3.NVols * seedVolSize;
++  if(data_host.matrix3.NSurfs){
++    size_t surfSize = size_t(data_host.matrix3.sizesStr[0]*sizeof(int)) 
++                      + data_host.matrix3.sizesStr[1]*sizeof(float) +  data_host.matrix3.sizesStr[2]*sizeof(int)
++                      + data_host.matrix3.sizesStr[3]*sizeof(int) + data_host.matrix3.NSurfs*voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  if(data_host.lrmatrix3.NVols) total_mem_required += data_host.lrmatrix3.NVols * seedVolSize;		
++  if(data_host.lrmatrix3.NSurfs){
++    size_t surfSize = size_t(data_host.lrmatrix3.sizesStr[0]*sizeof(int)) 
++                      + data_host.lrmatrix3.sizesStr[1]*sizeof(float) +  data_host.lrmatrix3.sizesStr[2]*sizeof(int)
++                      + data_host.lrmatrix3.sizesStr[3]*sizeof(int) + data_host.lrmatrix3.NSurfs*voxFacesIndexSize;
++    total_mem_required += surfSize;
++  }
++  return total_mem_required;
++}
++
+ 
+ void copy_to_gpu( 	tractographyData&	data_host,
+-			tractographyData*&	data_gpu)
++			              tractographyData*&	data_gpu)
+ {
+   probtrackxOptions& opts =probtrackxOptions::getInstance();
+ 
++  size_t total_mem_required = calculate_mem_required(data_host);
++  cout << "Memory required for allocating data (MB): "<< total_mem_required/1048576 << endl;
++
++  size_t free,total;
++  cudaMemGetInfo(&free,&total);
++  if(total_mem_required > free){
++    cout << "Not enough Memory available on device. Exiting ..." << endl;
++    terminate();
++  }
++  
+   checkCuda(cudaMalloc((void**)&data_gpu,sizeof(tractographyData)));	
+   checkCuda(cudaMemcpy(data_gpu,&data_host,sizeof(tractographyData),cudaMemcpyHostToDevice));
+ 	
+   int* auxI;
+   float* auxF;
+-  
+-  // sizes and dims .... now in Constant memory
+-	
++
+   // seeds
+-  checkCuda(cudaMalloc((void**)&auxF,data_host.nseeds*3*sizeof(float)));
++  checkCuda(cudaMalloc((void**)&auxF,data_host.nseeds*3*sizeof(float)), "Allocating seeds");
+   checkCuda(cudaMemcpy(auxF,data_host.seeds,data_host.nseeds*3*sizeof(float),cudaMemcpyHostToDevice));
+   checkCuda(cudaMemcpy(&data_gpu->seeds,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
+   if(opts.network.value()){
+-    checkCuda(cudaMalloc((void**)&auxF,data_host.nseeds*sizeof(float)));
++    checkCuda(cudaMalloc((void**)&auxF,data_host.nseeds*sizeof(float)), "Allocating Network ROIs");
+     checkCuda(cudaMemcpy(auxF,data_host.seeds_ROI,data_host.nseeds*sizeof(float),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->seeds_ROI,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
+   }
+   // mask
+-  checkCuda(cudaMalloc((void**)&auxF,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(float)));
++  checkCuda(cudaMalloc((void**)&auxF,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(float)), "Allocating mask");
+   checkCuda(cudaMemcpy(auxF,data_host.mask,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(float),cudaMemcpyHostToDevice));
+-  checkCuda(cudaMemcpy(&data_gpu->mask,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
++  checkCuda(cudaMemcpy(&data_gpu->mask,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
+   // th_samples
+-  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)));
++  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)), "Allocating th_samples");
+   checkCuda(cudaMemcpy(auxF,data_host.thsamples,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float),cudaMemcpyHostToDevice));
+-  checkCuda(cudaMemcpy(&data_gpu->thsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
++  checkCuda(cudaMemcpy(&data_gpu->thsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
+   // ph_samples
+-  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)));
++  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)), "Allocating ph_samples");
+   checkCuda(cudaMemcpy(auxF,data_host.phsamples,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float),cudaMemcpyHostToDevice));
+-  checkCuda(cudaMemcpy(&data_gpu->phsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
++  checkCuda(cudaMemcpy(&data_gpu->phsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
+   // f_samples
+-  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)));
++  checkCuda(cudaMalloc((void**)&auxF,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float)), "Allocating f_samples");
+   checkCuda(cudaMemcpy(auxF,data_host.fsamples,data_host.nfibres*data_host.nsamples*data_host.nvoxels*sizeof(float),cudaMemcpyHostToDevice));
+-  checkCuda(cudaMemcpy(&data_gpu->fsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
++  checkCuda(cudaMemcpy(&data_gpu->fsamples,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
+   // lut_vol2mat
+-  checkCuda(cudaMalloc((void**)&auxI,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(int)));
++  checkCuda(cudaMalloc((void**)&auxI,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(int)), "Allocating lut_vol2mat");
+   checkCuda(cudaMemcpy(auxI,data_host.lut_vol2mat,data_host.Dsizes[0]*data_host.Dsizes[1]*data_host.Dsizes[2]*sizeof(int),cudaMemcpyHostToDevice));
+   checkCuda(cudaMemcpy(&data_gpu->lut_vol2mat,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
+ 
+-  //Seeds_to_DTI...... now in Constant memory
+- 
+-  //DTI_to_Seeds...... now in Constant memory
+-  
+-  //VOX2MM...... now in Constant memory
+-
+-  //NON-LINEAR ...... now in Constant memory and Texture Memory
+-
+-  //Warp sizes.... now in constant memory
+-
+-  //Sampling Inverse.... now in constant memory
+-  
+   //Avoid mask
+   if(data_host.avoid.NVols){
+     checkCuda(cudaMalloc((void**)&auxF,data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]*sizeof(float)));
+@@ -531,10 +625,6 @@
+     checkCuda(cudaMemcpy(&data_gpu->avoid.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
+   }
+   if(data_host.avoid.NSurfs){
+-    //cudaMalloc((void**)&auxI,data_host.avoid.sizesStr[0]*sizeof(int));
+-    //cudaMemcpy(auxI,data_host.avoid.locs,data_host.avoid.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
+-    //cudaMemcpy(&data_gpu->avoid.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);
+-    // no deed locs
+     checkCuda(cudaMalloc((void**)&auxF,data_host.avoid.sizesStr[1]*sizeof(float)));
+     checkCuda(cudaMemcpy(auxF,data_host.avoid.vertices,data_host.avoid.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->avoid.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
+@@ -555,10 +645,6 @@
+     checkCuda(cudaMemcpy(&data_gpu->stop.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
+   }
+   if(data_host.stop.NSurfs){
+-    //cudaMalloc((void**)&auxI,data_host.stop.sizesStr[0]*sizeof(int));
+-    //cudaMemcpy(auxI,data_host.stop.locs,data_host.stop.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
+-    //cudaMemcpy(&data_gpu->stop.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);
+-    // no need locs
+     checkCuda(cudaMalloc((void**)&auxF,data_host.stop.sizesStr[1]*sizeof(float)));
+     checkCuda(cudaMemcpy(auxF,data_host.stop.vertices,data_host.stop.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->stop.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
+@@ -579,10 +665,6 @@
+     checkCuda(cudaMemcpy(&data_gpu->wtstop.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
+   }
+   if(data_host.wtstop.NSurfs){
+-    //cudaMalloc((void**)&auxI,data_host.wtstop.sizesStr[0]*sizeof(int));
+-    //cudaMemcpy(auxI,data_host.wtstop.locs,data_host.wtstop.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
+-    //cudaMemcpy(&data_gpu->wtstop.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);
+-    // no need locs
+     checkCuda(cudaMalloc((void**)&auxF,data_host.wtstop.sizesStr[1]*sizeof(float)));
+     checkCuda(cudaMemcpy(auxF,data_host.wtstop.vertices,data_host.wtstop.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->wtstop.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
+@@ -592,8 +674,8 @@
+     checkCuda(cudaMalloc((void**)&auxI,data_host.wtstop.sizesStr[3]*sizeof(int)));
+     checkCuda(cudaMemcpy(auxI,data_host.wtstop.VoxFaces,data_host.wtstop.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->wtstop.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
+-    checkCuda(cudaMalloc((void**)&auxI,(data_host.wtstop.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
+-    checkCuda(cudaMemcpy(auxI,data_host.wtstop.VoxFacesIndex,(data_host.wtstop.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
++    checkCuda(cudaMalloc((void**)&auxI,(data_host.wtstop.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
++    checkCuda(cudaMemcpy(auxI,data_host.wtstop.VoxFacesIndex,(data_host.wtstop.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->wtstop.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
+   }
+   // Network mask
+@@ -603,10 +685,6 @@
+     checkCuda(cudaMemcpy(&data_gpu->network.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));
+   }
+   if(data_host.network.NSurfs){	
+-    //cudaMalloc((void**)&auxI,data_host.network.sizesStr[0]*sizeof(int));
+-    //cudaMemcpy(auxI,data_host.network.locs,data_host.network.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
+-    //cudaMemcpy(&data_gpu->network.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);
+-    // no locs
+     checkCuda(cudaMalloc((void**)&auxF,data_host.network.sizesStr[1]*sizeof(float)));
+     checkCuda(cudaMemcpy(auxF,data_host.network.vertices,data_host.network.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->network.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
+@@ -616,8 +694,8 @@
+     checkCuda(cudaMalloc((void**)&auxI,data_host.network.sizesStr[3]*sizeof(int)));
+     checkCuda(cudaMemcpy(auxI,data_host.network.VoxFaces,data_host.network.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->network.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
+-    checkCuda(cudaMalloc((void**)&auxI,(data_host.network.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
+-    checkCuda(cudaMemcpy(auxI,data_host.network.VoxFacesIndex,(data_host.network.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
++    checkCuda(cudaMalloc((void**)&auxI,(data_host.network.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
++    checkCuda(cudaMemcpy(auxI,data_host.network.VoxFacesIndex,(data_host.network.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->network.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
+   }
+   if(data_host.network.NVols||data_host.network.NSurfs){
+@@ -654,9 +732,6 @@
+     checkCuda(cudaMemcpy(&data_gpu->waypoint.volume,&auxF,sizeof(float*),cudaMemcpyHostToDevice));		
+   }
+   if(data_host.waypoint.NSurfs){
+-    //cudaMalloc((void**)&auxI,data_host.waypoint.sizesStr[0]*sizeof(int));
+-    //cudaMemcpy(auxI,data_host.waypoint.locs,data_host.waypoint.sizesStr[0]*sizeof(int),cudaMemcpyHostToDevice);
+-    //cudaMemcpy(&data_gpu->waypoint.locs,&auxI,sizeof(int*),cudaMemcpyHostToDevice);	
+     checkCuda(cudaMalloc((void**)&auxF,data_host.waypoint.sizesStr[1]*sizeof(float)));
+     checkCuda(cudaMemcpy(auxF,data_host.waypoint.vertices,data_host.waypoint.sizesStr[1]*sizeof(float),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->waypoint.vertices,&auxF,sizeof(float*),cudaMemcpyHostToDevice));	
+@@ -666,8 +741,8 @@
+     checkCuda(cudaMalloc((void**)&auxI,data_host.waypoint.sizesStr[3]*sizeof(int)));
+     checkCuda(cudaMemcpy(auxI,data_host.waypoint.VoxFaces,data_host.waypoint.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->waypoint.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
+-    checkCuda(cudaMalloc((void**)&auxI,(data_host.waypoint.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
+-    checkCuda(cudaMemcpy(auxI,data_host.waypoint.VoxFacesIndex,(data_host.waypoint.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
++    checkCuda(cudaMalloc((void**)&auxI,(data_host.waypoint.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
++    checkCuda(cudaMemcpy(auxI,data_host.waypoint.VoxFacesIndex,(data_host.waypoint.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->waypoint.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
+   }
+   if(data_host.waypoint.NVols||data_host.waypoint.NSurfs){
+@@ -692,8 +767,8 @@
+     checkCuda(cudaMalloc((void**)&auxI,data_host.targets.sizesStr[3]*sizeof(int)));
+     checkCuda(cudaMemcpy(auxI,data_host.targets.VoxFaces,data_host.targets.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->targets.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
+-    checkCuda(cudaMalloc((void**)&auxI,(data_host.targets.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
+-    checkCuda(cudaMemcpy(auxI,data_host.targets.VoxFacesIndex,(data_host.targets.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
++    checkCuda(cudaMalloc((void**)&auxI,(data_host.targets.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
++    checkCuda(cudaMemcpy(auxI,data_host.targets.VoxFacesIndex,(data_host.targets.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->targets.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
+   }
+   if(data_host.targets.NVols||data_host.targets.NSurfs){
+@@ -748,8 +823,8 @@
+     checkCuda(cudaMalloc((void**)&auxI,data_host.lrmatrix1.sizesStr[3]*sizeof(int)));
+     checkCuda(cudaMemcpy(auxI,data_host.lrmatrix1.VoxFaces,data_host.lrmatrix1.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->lrmatrix1.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
+-    checkCuda(cudaMalloc((void**)&auxI,(data_host.lrmatrix1.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
+-    checkCuda(cudaMemcpy(auxI,data_host.lrmatrix1.VoxFacesIndex,(data_host.lrmatrix1.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
++    checkCuda(cudaMalloc((void**)&auxI,(data_host.lrmatrix1.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
++    checkCuda(cudaMemcpy(auxI,data_host.lrmatrix1.VoxFacesIndex,(data_host.lrmatrix1.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->lrmatrix1.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
+     //cudaMalloc((void**)&auxI,data_host.lrmatrix1.sizesStr[4]*sizeof(int));
+     //cudaMemcpy(auxI,data_host.lrmatrix1.IndexRoi,data_host.lrmatrix1.sizesStr[4]*sizeof(int),cudaMemcpyHostToDevice);
+@@ -774,8 +849,8 @@
+     checkCuda(cudaMalloc((void**)&auxI,data_host.matrix3.sizesStr[3]*sizeof(int)));
+     checkCuda(cudaMemcpy(auxI,data_host.matrix3.VoxFaces,data_host.matrix3.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->matrix3.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
+-    checkCuda(cudaMalloc((void**)&auxI,(data_host.matrix3.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
+-    checkCuda(cudaMemcpy(auxI,data_host.matrix3.VoxFacesIndex,(data_host.matrix3.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
++    checkCuda(cudaMalloc((void**)&auxI,(data_host.matrix3.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
++    checkCuda(cudaMemcpy(auxI,data_host.matrix3.VoxFacesIndex,(data_host.matrix3.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->matrix3.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
+     //cudaMalloc((void**)&auxI,data_host.matrix3.sizesStr[4]*sizeof(int));
+     //cudaMemcpy(auxI,data_host.matrix3.IndexRoi,data_host.matrix3.sizesStr[4]*sizeof(int),cudaMemcpyHostToDevice);
+@@ -800,8 +875,8 @@
+     checkCuda(cudaMalloc((void**)&auxI,data_host.lrmatrix3.sizesStr[3]*sizeof(int)));
+     checkCuda(cudaMemcpy(auxI,data_host.lrmatrix3.VoxFaces,data_host.lrmatrix3.sizesStr[3]*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->lrmatrix3.VoxFaces,&auxI,sizeof(int*),cudaMemcpyHostToDevice));	
+-    checkCuda(cudaMalloc((void**)&auxI,(data_host.lrmatrix3.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int)));
+-    checkCuda(cudaMemcpy(auxI,data_host.lrmatrix3.VoxFacesIndex,(data_host.lrmatrix3.NSurfs*data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1)*sizeof(int),cudaMemcpyHostToDevice));
++    checkCuda(cudaMalloc((void**)&auxI,(data_host.lrmatrix3.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int)));
++    checkCuda(cudaMemcpy(auxI,data_host.lrmatrix3.VoxFacesIndex,(data_host.lrmatrix3.NSurfs*(data_host.Ssizes[0]*data_host.Ssizes[1]*data_host.Ssizes[2]+1))*sizeof(int),cudaMemcpyHostToDevice));
+     checkCuda(cudaMemcpy(&data_gpu->lrmatrix3.VoxFacesIndex,&auxI,sizeof(int*),cudaMemcpyHostToDevice));
+     //cudaMalloc((void**)&auxI,data_host.lrmatrix3.sizesStr[4]*sizeof(int));
+     //cudaMemcpy(auxI,data_host.lrmatrix3.IndexRoi,data_host.lrmatrix3.sizesStr[4]*sizeof(int),cudaMemcpyHostToDevice);
+diff -ru fsl.orig/src/ptx2/CUDA/tractographyData.h fsl/src/ptx2/CUDA/tractographyData.h
+--- fsl.orig/src/ptx2/CUDA/tractographyData.h	2019-09-11 15:25:09.000000000 +0200
++++ fsl/src/ptx2/CUDA/tractographyData.h	2020-01-04 20:07:55.043647152 +0100
+@@ -99,7 +99,7 @@
+ 	int		nvoxels;
+ 	int		nsamples;
+ 	int		nfibres;
+-	int		nseeds;
++	size_t nseeds;
+ 	int		nparticles;
+ 	int		nsteps;
+ 
+diff -ru fsl.orig/src/ptx2/CUDA/tractography_gpu.cu fsl/src/ptx2/CUDA/tractography_gpu.cu
+--- fsl.orig/src/ptx2/CUDA/tractography_gpu.cu	2019-09-11 15:25:09.000000000 +0200
++++ fsl/src/ptx2/CUDA/tractography_gpu.cu	2020-01-04 20:08:50.823607811 +0100
+@@ -92,7 +92,7 @@
+   init_gpu();
+   size_t free,total;
+   cudaMemGetInfo(&free,&total);
+-  cout << "Free memory at the beginning: "<< free <<  " ---- Total memory: " << total << "\n";
++  cout << "Device memory available (MB): "<< free/1048576 <<  " ---- Total device memory(MB): " << total/1048576 << "\n";
+   
+   probtrackxOptions& opts=probtrackxOptions::getInstance();
+   
+@@ -103,7 +103,7 @@
+   copy_ToTextureMemory(data_host);	// Set Texture memory
+   
+   cuMemGetInfo(&free,&total);
+-  cout << "Free memory after copying masks: "<< free <<  " ---- Total memory: " << total << "\n";
++  cout << "Device memory available after copying data (MB): "<< free/1048576 << "\n";
+   
+   int MAX_SLs;
+   int THREADS_STREAM; // MAX_Streamlines and NSTREAMS must be multiples
+@@ -219,7 +219,6 @@
+   
+   checkCuda(cudaDeviceSynchronize());
+   cuMemGetInfo(&free,&total);
+-  cout << "Free memory before running iterations: "<< free <<  " ---- Total memory: " << total << "\n";
+ 
+   // run iterations
+   for(int iter=0;iter<niters;iter++){
+@@ -356,7 +355,6 @@
+ 	      for(int i=0;i<THREADS_STREAM;i++){
+ 	        if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){ 
+ 	          vector<float> tmp;
+-	          bool included_seed=false;
+             if(lengths_host[0][pos]>0){
+               int posSEED=i*data_host.nsteps*3;
+               int posCURRENT=0;
+@@ -365,12 +363,10 @@
+                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3+1]);
+                 tmp.push_back(paths_host[0][posSEED+posCURRENT*3+2]);
+ 	            }
+-	            included_seed=true;
+ 	          }
+ 	          if(lengths_host[0][pos+1]>0){
+               int pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
+               int co=0;
+-              //if(included_seed) co=1;
+ 	            for(;co<lengths_host[0][pos+1];co++){
+                 tmp.push_back(paths_host[0][pos2+co*3]);
+                 tmp.push_back(paths_host[0][pos2+co*3+1]);
+@@ -457,7 +453,6 @@
+     for(int i=0;i<last_iter;i++){
+       if(lengths_host[0][pos]>0||lengths_host[0][pos+1]>0){ 
+         vector<float> tmp;
+-        bool included_seed=false;
+         if(lengths_host[0][pos]>0){
+           int posSEED=i*data_host.nsteps*3;
+           int posCURRENT=0;
+@@ -466,12 +461,10 @@
+             tmp.push_back(paths_host[0][posSEED+posCURRENT*3+1]);
+             tmp.push_back(paths_host[0][posSEED+posCURRENT*3+2]);
+           }
+-          included_seed=true;
+         }
+ 	      if(lengths_host[0][pos+1]>0){
+           int pos2=i*data_host.nsteps*3+((data_host.nsteps/2)*3);
+           int co=0;
+-          //if(included_seed) co=1;
+           for(;co<lengths_host[0][pos+1];co++){
+             tmp.push_back(paths_host[0][pos2+co*3]);
+             tmp.push_back(paths_host[0][pos2+co*3+1]);
+diff -ru fsl.orig/src/ptx2/CUDA/tractographyInput.cc fsl/src/ptx2/CUDA/tractographyInput.cc
+--- fsl.orig/src/ptx2/CUDA/tractographyInput.cc	2019-09-11 15:25:09.000000000 +0200
++++ fsl/src/ptx2/CUDA/tractographyInput.cc	2020-01-04 20:09:33.313593417 +0100
+@@ -85,26 +85,15 @@
+   coords[1] = MISCMATHS::round(v(2));
+   coords[2] = MISCMATHS::round(v(3));
+ }
+-/*void applycoordchange(Matrix& coordvol, const Matrix& old2new_mat)
+-{
+-    for (int n=1; n<=coordvol.Nrows(); n++) {
+-      ColumnVector v(4);
+-      v << coordvol(n,1) << coordvol(n,2) << coordvol(n,3) << 1.0;
+-      v = old2new_mat * v;
+-      coordvol(n,1) = MISCMATHS::round(v(1));
+-      coordvol(n,2) = MISCMATHS::round(v(2));
+-      coordvol(n,3) = MISCMATHS::round(v(3));
+-    }
+-    }*/
+-
+-void  tractographyInput::load_mesh(	string&		filename,
+-					vector<float>&	vertices,	
+-					vector<int>&	faces,
+-					vector<int>&	locs,
+-					int&		nlocs,
+-					bool		wcoords,
+-					int		nroi,
+-					vector<float>&	coords)
++
++void  tractographyInput::load_mesh(	string&		      filename,
++                                    vector<float>&	vertices,	
++                                    vector<int>&	  faces,
++                                    vector<int>&	  locs,
++                                    int&		        nlocs,
++                                    bool		        wcoords,
++                                    int		          nroi,
++                                    vector<float>&	coords)
+ {
+   int type=meshFileType(filename);
+   if (type==ASCII){
+@@ -119,14 +108,14 @@
+   }
+ }
+ 
+-void tractographyInput::load_mesh_ascii(	string&		filename,
+-						vector<float>&	vertices,
+-						vector<int>&	faces,
+-						vector<int>&	locs,
+-						int&		nlocs,
+-						bool		wcoords,
+-						int		nroi,
+-						vector<float>&	coords)
++void tractographyInput::load_mesh_ascii(	string&		      filename,
++                                          vector<float>&	vertices,
++                                          vector<int>&	  faces,
++                                          vector<int>&	  locs,
++                                          int&		        nlocs,
++                                          bool		        wcoords,
++                                          int		          nroi,
++                                          vector<float>&	coords)
+ { 
+   // load a freesurfer ascii mesh
+   ifstream f(filename.c_str());
+@@ -139,10 +128,10 @@
+       cerr<<"Loading ascii file: error in the header"<<endl;exit(1);
+     }
+     // reading the size of the mesh
+-    int NVertices, NFaces;
++    size_t NVertices, NFaces;
+     f>>NVertices>>NFaces;
+ 
+-    int posV,posF,initV,posLV;
++    size_t posV,posF,initV,posLV;
+     posV=vertices.size();	// maybe there were some more vertices before
+     posLV=locs.size();
+     initV=posV;
+@@ -162,7 +151,7 @@
+     values.resize(NVertices);
+     bool zeros=false;
+     bool nonzeros=false;	
+-    for (int i=0; i<NVertices; i++){
++    for (size_t i=0; i<NVertices; i++){
+       f>>vertices[posV]>>vertices[posV+1]>>vertices[posV+2]>>values[i]; // write from file to vector
+       if(values[i]==0) zeros=true;
+       else nonzeros=true;
+@@ -171,30 +160,30 @@
+     if (zeros&&nonzeros) allMesh=false;	// then some values should be ignored
+ 
+     // storing locations: use same structure for active-nonactive vertex
+-    int auxCount=posV-NVertices*3;
+-    int local_loc=1;
+-    for (int i=0; i<NVertices; i++){
++    size_t auxCount=posV-NVertices*3;
++    size_t local_loc=1;
++    for (size_t i=0; i<NVertices; i++){
+       if(allMesh||values[i]!=0){
+-	locs[posLV]=nlocs;
+-	posLV++;
+-	nlocs++;
+-	if (wcoords){
+-	  coords.push_back(MISCMATHS::round(vertices[auxCount]));
+-	  coords.push_back(MISCMATHS::round(vertices[auxCount+1]));
+-	  coords.push_back(MISCMATHS::round(vertices[auxCount+2]));
+-	  coords.push_back(nroi);
+-	  coords.push_back(local_loc);
+-	  local_loc++;
+-	  auxCount+=3;
+-	}
++        locs[posLV]=nlocs;
++        posLV++;
++        nlocs++;
++	      if (wcoords){
++          coords.push_back(MISCMATHS::round(vertices[auxCount]));
++          coords.push_back(MISCMATHS::round(vertices[auxCount+1]));
++          coords.push_back(MISCMATHS::round(vertices[auxCount+2]));
++          coords.push_back(nroi);
++          coords.push_back(local_loc);
++          local_loc++;
++          auxCount+=3;
++	      }
+       }else{
+-	locs[posLV]=-1;
+-	posLV++;
+-	auxCount+=3;
++        locs[posLV]=-1;
++        posLV++;
++        auxCount+=3;
+       }
+     }      
+     // reading the triangles
+-    for (int i=0; i<NFaces; i++){
++    for (size_t i=0; i<NFaces; i++){
+       int p0, p1, p2;
+       float val;
+       f>>p0>>p1>>p2>>val;
+@@ -208,14 +197,14 @@
+   }else {cout<<"Loading ascii file: error opening file: "<<filename<<endl; exit(1);}
+ }
+ 
+-void tractographyInput::load_mesh_vtk(string&		filename,
+-					vector<float>&	vertices,
+-					vector<int>&	faces,
+-					vector<int>&	locs,
+-					int&		nlocs,
+-					bool		wcoords,
+-					int		nroi,
+-					vector<float>&	coords)
++void tractographyInput::load_mesh_vtk(string&		      filename,
++                                      vector<float>&	vertices,
++                                      vector<int>&	  faces,
++                                      vector<int>&	  locs,
++                                      int&		        nlocs,
++                                      bool		        wcoords,
++                                      int		          nroi,
++                                      vector<float>&	coords)
+ {
+   ifstream f(filename.c_str());
+   if (f.is_open()){	
+@@ -229,9 +218,9 @@
+     getline(f,header);
+     getline(f,header);
+     getline(f,header);
+-    int NVertices, NFaces;
++    size_t NVertices, NFaces;
+     f>>header>>NVertices>>header;
+-    int posV,posF,initV,posLV;
++    size_t posV,posF,initV,posLV;
+     posV=vertices.size();
+     posLV=locs.size();
+     initV=posV;
+@@ -241,16 +230,16 @@
+     // reading the points
+     // if is not possible to define values, then all vertices are activated
+     int local_loc=1;
+-    for (int i=0; i<NVertices; i++){
++    for (size_t i=0; i<NVertices; i++){
+       f>>vertices[posV]>>vertices[posV+1]>>vertices[posV+2];
+       locs[posLV]=nlocs;
+       if (wcoords){
+-	coords.push_back(MISCMATHS::round(vertices[posV]));
+-	coords.push_back(MISCMATHS::round(vertices[posV+1]));
+-	coords.push_back(MISCMATHS::round(vertices[posV+2]));
+-	coords.push_back(nroi);
+-	coords.push_back(local_loc);
+-	local_loc++;
++        coords.push_back(MISCMATHS::round(vertices[posV]));
++        coords.push_back(MISCMATHS::round(vertices[posV+1]));
++        coords.push_back(MISCMATHS::round(vertices[posV+2]));
++        coords.push_back(nroi);
++        coords.push_back(local_loc);
++	      local_loc++;
+       }
+       posV=posV+3;
+       posLV++;
+@@ -261,7 +250,7 @@
+     faces.resize(posF+NFaces*3);
+ 
+     // reading the triangles
+-    for (int i=0; i<NFaces; i++){
++    for (size_t i=0; i<NFaces; i++){
+       int p0, p1, p2;
+       int j;
+       f>>j>>p0>>p1>>p2;
+@@ -278,22 +267,22 @@
+   }
+ }
+ 
+-void  tractographyInput::load_mesh_gifti(	string&		filename,
+-						vector<float>&	vertices,	
+-						vector<int>&	faces,
+-						vector<int>&	locs,
+-						int&		nlocs,
+-						bool		wcoords,
+-						int		nroi,
+-						vector<float>&	coords)
++void tractographyInput::load_mesh_gifti(string&		      filename,
++                                        vector<float>&	vertices,	
++                                        vector<int>&	  faces,
++                                        vector<int>&	  locs,
++                                        int&		        nlocs,
++                                        bool		        wcoords,
++                                        int		          nroi,
++                                        vector<float>&	coords)
+ {
+   fslsurface_name::fslSurface<float,unsigned int> surf;
+   read_surface(surf,filename);        
+-  int posV,posF,initV,posLV;
++  size_t posV,posF,initV,posLV;
+   posV=vertices.size();
+   posLV=locs.size();
+   initV=posV;
+-  int count=0;
++  size_t count=0;
+   for (vector< fslsurface_name::vertex<float> >::iterator  i= surf.vbegin(); i!= surf.vend();++i){
+     vertices.resize(posV+3);
+     vertices[posV]=i->x;
+@@ -326,42 +315,42 @@
+     }
+     if (zeros&&nonzeros) allMesh=false;
+     int local_loc=1;
+-    int auxCount=posV-count*3;
+-    for (int i=0; i<count; i++){
++    size_t auxCount=posV-count*3;
++    for (size_t i=0; i<count; i++){
+       locs.resize(posLV+1);
+       if (allMesh||values[i]!=0){
+-	locs[posLV]=nlocs;
+-	if (wcoords){
+-	  coords.push_back(MISCMATHS::round(vertices[auxCount]));
+-	  coords.push_back(MISCMATHS::round(vertices[auxCount+1]));
+-	  coords.push_back(MISCMATHS::round(vertices[auxCount+2]));
+-	  coords.push_back(nroi);
+-	  coords.push_back(local_loc);
+-	  local_loc++;
+-	  auxCount+=3;
+-	}
+-	posLV++;
+-	nlocs++;
++        locs[posLV]=nlocs;
++        if (wcoords){
++          coords.push_back(MISCMATHS::round(vertices[auxCount]));
++          coords.push_back(MISCMATHS::round(vertices[auxCount+1]));
++          coords.push_back(MISCMATHS::round(vertices[auxCount+2]));
++          coords.push_back(nroi);
++          coords.push_back(local_loc);
++          local_loc++;
++          auxCount+=3;
++        }
++        posLV++;
++        nlocs++;
+       }else{
+-	locs[posLV]=-1;
+-	posLV++;
+-	auxCount+=3;
++        locs[posLV]=-1;
++        posLV++;
++        auxCount+=3;
+       }
+     }      
+   }else{	// it is possible that gifti surfaces do not have values 
+     int local_loc=0;
+-    int auxCount=posV-count*3;
+-    for (int i=0; i<count; i++){
++    size_t auxCount=posV-count*3;
++    for (size_t i=0; i<count; i++){
+       locs.resize(posLV+1);
+       locs[posLV]=nlocs;
+       if (wcoords){
+-	coords.push_back(MISCMATHS::round(vertices[auxCount]));
+-	coords.push_back(MISCMATHS::round(vertices[auxCount+1]));
+-	coords.push_back(MISCMATHS::round(vertices[auxCount+2]));
+-	coords.push_back(nroi);
+-	coords.push_back(local_loc);
+-	local_loc++;
+-	auxCount+=3;
++        coords.push_back(MISCMATHS::round(vertices[auxCount]));
++        coords.push_back(MISCMATHS::round(vertices[auxCount+1]));
++        coords.push_back(MISCMATHS::round(vertices[auxCount+2]));
++        coords.push_back(nroi);
++        coords.push_back(local_loc);
++        local_loc++;
++        auxCount+=3;
+       }
+       posLV++;
+       nlocs++;
+@@ -370,34 +359,38 @@
+ }
+ 
+ void  tractographyInput::load_volume(	string&		filename,
+-					int*		Ssizes,
+-					float*		Vout,
+-					int&		nlocs,
+-					bool		reset, //if true, set -1 where not activated,
+-					// reset must be 0 if mixed volume: stop / exclusion / network REF
+-					bool		wcoords, // write coords
+-					int		nroi,
+-					vector<float>&	coords)
++                                      int*		  Ssizes,
++                                      float*		Vout,
++                                      int&		  nlocs,
++                                      bool		  reset,
++                                      bool		  wcoords,
++                                      int		    nroi,
++                                      vector<float>&	coords)
+ {
++  //reset: if true, it sets -1 voxels not present in mask,
++  //reset must be false if mixed volume: stop / exclusion / targetREF, networkREF
+   int local_loc=1;
+   volume<float> tmpvol;
+   read_volume(tmpvol,filename);
+   for (int z=0;z<Ssizes[2];z++){
+     for (int y=0;y<Ssizes[1];y++){
+       for (int x=0;x<Ssizes[0];x++){
+-	if (reset && tmpvol(x,y,z)==0) Vout[z*Ssizes[0]*Ssizes[1]+y*Ssizes[0]+x]=-1;
+-	else{
+-	  Vout[z*Ssizes[0]*Ssizes[1]+y*Ssizes[0]+x]=nlocs;
+-	  nlocs++;
+-	  if (wcoords){
+-	    coords.push_back(x);
+-	    coords.push_back(y);
+-	    coords.push_back(z);
+-	    coords.push_back(nroi);
+-	    coords.push_back(local_loc);
+-	    local_loc++;
+-	  }
+-	}
++	      if (tmpvol(x,y,z)==0){
++          if (reset) Vout[z*Ssizes[0]*Ssizes[1]+y*Ssizes[0]+x]=-1;
++        }else{
++          size_t posVox = z*Ssizes[0]*Ssizes[1]+y*Ssizes[0]+x;
++          Vout[posVox]=nlocs;
++          nlocs++;
++          if (wcoords){
++            // write coords
++            coords.push_back(x);
++            coords.push_back(y);
++            coords.push_back(z);
++            coords.push_back(nroi);
++            coords.push_back(local_loc);
++            local_loc++;
++          }
++        }
+       }
+     }
+   }
+@@ -444,20 +437,20 @@
+       int voxY = MISCMATHS::round(crossed[i](2));
+       int voxZ = MISCMATHS::round(crossed[i](3));
+       if (voxX>=0 && voxX<Ssizes[0]  && voxY>=0 && voxY<Ssizes[1] && voxZ>=0 && voxZ<Ssizes[2]){	// in the limits
+-	int val = surfvol(voxX,voxY,voxZ);
+-	if (val==-1){ 			// this voxel hasn't been labeled yet
+-	  vector<int> t(1);
+-	  t[0]=j;     		// this position is relative to this portion of faces !!!!!!
+-	  triangles.push_back(t); // add to set of triangles that cross voxels
+-	  surfvol(voxX,voxY,voxZ)=triangles.size()-1;	
+-	  total++;
+-	}else{ 				// voxel already labeled as "crossed"
+-	  triangles[val].push_back(j); 	// add this triangle to the set that cross this voxel
+-	  total++;
+-	}		
++        int val = surfvol(voxX,voxY,voxZ);
++        if (val==-1){ 			// this voxel hasn't been labeled yet
++          vector<int> t(1);
++          t[0]=j;     		// this position is relative to this portion of faces !!!!!!
++          triangles.push_back(t); // add to set of triangles that cross voxels
++          surfvol(voxX,voxY,voxZ)=triangles.size()-1;	
++          total++;
++	      }else{ 				// voxel already labeled as "crossed"
++          triangles[val].push_back(j); 	// add this triangle to the set that cross this voxel
++          total++;
++	      }		
+       }else{
+-	printf("Warning: Ignoring some vertices because they are defined outside the limits\n");
+-	printf("Please check that your meshspace is defined correctly\n");
++        printf("Warning: Ignoring some vertices because they are defined outside the limits\n");
++        printf("Please check that your meshspace is defined correctly\n");
+       }
+     }
+   }
+@@ -471,41 +464,41 @@
+   for (int z=0;z<Ssizes[2];z++){
+     for (int y=0;y<Ssizes[1];y++){
+       for (int x=0;x<Ssizes[0];x++){
+-	int val = surfvol(x,y,z);
+-	if (val!=-1){
+-	  vector<int> t;
+-	  t.insert(t.end(),triangles[val].begin(),triangles[val].end());  // get position of the triangles (faces) crossed by this voxel
+-	  for (unsigned int i=0;i<t.size();i++){		
+-	    voxFaces[initvoxFaces+count]=initfaces+t[i]; 		// store their positions (maybe position relative !!! -> add initfaces)
+-	    count++;
+-	  }
+-	  voxFacesIndex[index+1]=voxFacesIndex[index]+t.size();
+-	}else{
+-	  voxFacesIndex[index+1]=voxFacesIndex[index];
+-	}
+-	index++;
++        int val = surfvol(x,y,z);
++        if (val!=-1){
++          vector<int> t;
++          t.insert(t.end(),triangles[val].begin(),triangles[val].end());  // get position of the triangles (faces) crossed by this voxel
++          for (unsigned int i=0;i<t.size();i++){		
++            voxFaces[initvoxFaces+count]=initfaces+t[i]; 		// store their positions (maybe position relative !!! -> add initfaces)
++            count++;
++          }
++	        voxFacesIndex[index+1]=voxFacesIndex[index]+t.size();
++	      }else{
++	        voxFacesIndex[index+1]=voxFacesIndex[index];
++        }
++        index++;
+       }
+     }
+   }
+ }
+ 
+ void  tractographyInput::csv_tri_crossed_voxels(	float 			tri[3][3],
+-							vector<ColumnVector>&	crossed)
++							                                    vector<ColumnVector>&	crossed)
+ {
+-  int minx=(int)round(tri[0][0]);
+-  int miny=(int)round(tri[0][1]);
+-  int minz=(int)round(tri[0][2]);
++  int minx=(int)MISCMATHS::round(tri[0][0]);
++  int miny=(int)MISCMATHS::round(tri[0][1]);
++  int minz=(int)MISCMATHS::round(tri[0][2]);
+   int maxx=minx,maxy=miny,maxz=minz;
+   crossed.clear();
+   int i=0;int tmpi;
+   do{
+-    tmpi=(int)round(tri[i][0]);
++    tmpi=(int)MISCMATHS::round(tri[i][0]);
+     minx=tmpi<minx?tmpi:minx;
+     maxx=tmpi>maxx?tmpi:maxx;
+-    tmpi=(int)round(tri[i][1]);
++    tmpi=(int)MISCMATHS::round(tri[i][1]);
+     miny=tmpi<miny?tmpi:miny;
+     maxy=tmpi>maxy?tmpi:maxy;
+-    tmpi=(int)round(tri[i][2]);
++    tmpi=(int)MISCMATHS::round(tri[i][2]);
+     minz=tmpi<minz?tmpi:minz;
+     maxz=tmpi>maxz?tmpi:maxz;
+     i++;
+@@ -516,26 +509,26 @@
+   for (int x=minx-s;x<=maxx+s;x+=1){
+     for (int y=miny-s;y<=maxy+s;y+=1){
+       for (int z=minz-s;z<=maxz+s;z+=1){
+-	boxcentre[0]=(float)x;
+-	boxcentre[1]=(float)y;
+-	boxcentre[2]=(float)z;
+-	if (triBoxOverlap(boxcentre,boxhalfsize,tri)){
+-	  v<<x<<y<<z;
+-	  crossed.push_back(v);
+-	}
++        boxcentre[0]=(float)x;
++        boxcentre[1]=(float)y;
++        boxcentre[2]=(float)z;
++	      if (triBoxOverlap(boxcentre,boxhalfsize,tri)){
++	        v<<x<<y<<z;
++	        crossed.push_back(v);
++	      }
+       }
+     }
+   }
+ }
+ 
+ // This method read the ROIs without saving IDs and reusing volume and Surface
+-// for exclusion & stop masks, and network REFerence
++// for exclusion & stop masks, targetREF and network REFerence
+ void  tractographyInput::load_rois_mixed(	string		filename,
+-						Matrix		mm2vox,
+-						float*		Sdims,
+-						int*		Ssizes,
+-						// Output
+-						MaskData&	data)
++                                          Matrix		mm2vox,
++                                          float*		Sdims,
++                                          int*		  Ssizes,
++                                          // Output
++                                          MaskData&	data)
+ {
+   data.sizesStr=new int[4];
+   data.sizesStr[0]=0;
+@@ -550,10 +543,12 @@
+   vector<int> voxFacesVec;
+   vector<float> nullV;
+ 
++  size_t sizeVol = Ssizes[0]*Ssizes[1]*Ssizes[2];
++
+   if (fsl_imageexists(filename)){
+     // filename is a volume
+-    data.volume=new float[Ssizes[0]*Ssizes[1]*Ssizes[2]];
+-    //memset(data.volume,-1,Ssizes[0]*Ssizes[1]*Ssizes[2]*sizeof(float));
++    data.volume=new float[sizeVol];
++    //memset(data.volume,-1,sizeVol*sizeof(float));
+     load_volume(filename,Ssizes,data.volume,data.nlocs,true,false,0,nullV);
+     data.NVols=1;
+   }else if (meshExists(filename)){  
+@@ -567,8 +562,8 @@
+     if (fs){
+       fs>>tmp;
+       do{
+-	fnames.push_back(tmp);
+-	fs>>tmp;
++	      fnames.push_back(tmp);
++	      fs>>tmp;
+       }while (!fs.eof());
+     }else{
+       cerr<<filename<<" does not exist"<<endl;
+@@ -577,26 +572,26 @@
+ 
+     for (unsigned int i=0;i<fnames.size();i++){   
+       if (fsl_imageexists(fnames[i])){
+-	if (data.NVols==0){
+-	  data.volume=new float[Ssizes[0]*Ssizes[1]*Ssizes[2]];
+-	  //memset(data.volume,-1,Ssizes[0]*Ssizes[1]*Ssizes[2]*sizeof(float));
+-	  data.NVols=1;
+-	  load_volume(fnames[i],Ssizes,data.volume,data.nlocs,true,false,0,nullV);
+-	}else{
+-	  load_volume(fnames[i],Ssizes,data.volume,data.nlocs,false,false,0,nullV);
+-  	  // do not unset voxels that are not present, maybe they are in other volume file
++        if (data.NVols==0){
++          data.volume=new float[sizeVol];
++          //memset(data.volume,-1,sizeVol*sizeof(float));
++          data.NVols=1;
++          load_volume(fnames[i],Ssizes,data.volume,data.nlocs,true,false,0,nullV);
++        }else{
++          load_volume(fnames[i],Ssizes,data.volume,data.nlocs,false,false,0,nullV);
++            // do not unset voxels that are not present, maybe they are in other volume file
+         }
+       }else if (meshExists(fnames[i])){
+-	load_mesh(fnames[i],verticesVec,facesVec,locsVec,data.nlocs,false,0,nullV);
+-	data.NSurfs=1;
++        load_mesh(fnames[i],verticesVec,facesVec,locsVec,data.nlocs,false,0,nullV);
++        data.NSurfs=1;
+       }else{
+-	cerr<<"load_rois_mixed: Unknown file type: "<<fnames[i]<<endl;
+-	exit(1);
++        cerr<<"load_rois_mixed: Unknown file type: "<<fnames[i]<<endl;
++        exit(1);
+       }
+     }
+   }
+   if (data.NSurfs){
+-    data.VoxFacesIndex=new int[Ssizes[0]*Ssizes[1]*Ssizes[2]+1];
++    data.VoxFacesIndex=new int[sizeVol+1];
+     init_surfvol(Ssizes,mm2vox,verticesVec,&facesVec[0],facesVec.size(),
+ 		 0,voxFacesVec,data.VoxFacesIndex,locsVec);
+ 
+@@ -618,19 +613,19 @@
+   }
+ }
+ 
+-void  tractographyInput::load_rois(
+-	// Input
+-	string     	filename,
+-	Matrix		mm2vox,
+-	float*		Sdims,	// Or Matrix2 sizes
+-	int*		Ssizes,
+-	int		wcoords, 
+-	// 0 do not write, 1 write only coords, 2 write also ROI-id and position
+-	volume<float>& 	refVol,
+-	// Output
+-	MaskData&	data,
+-	Matrix&		coords)
++void  tractographyInput::load_rois( // Input
++	                                  string     	    filename,
++                                    Matrix		      mm2vox,
++                                    float*		      Sdims,	// Or Matrix2 sizes
++                                    int*		        Ssizes,
++                                    int		          wcoords, 
++                                    volume<float>& 	refVol,
++                                    // Output
++                                    MaskData&	      data,
++                                    Matrix&		      coords)
+ {
++  //wcoords:0 do not write, 1 write only coords, 2 write also ROI-id and position
++
+   data.sizesStr=new int[3];
+   data.sizesStr[0]=0;
+   data.sizesStr[1]=0;
+@@ -644,10 +639,12 @@
+   vector<int> voxFacesVec;
+   vector<float> coordsV;
+ 
++  size_t sizeVol = Ssizes[0]*Ssizes[1]*Ssizes[2];
++
+   if (fsl_imageexists(filename)){
+     // filename is a volume
+-    data.volume=new float[Ssizes[0]*Ssizes[1]*Ssizes[2]];
+-    //memset(data.volume,-1,Ssizes[0]*Ssizes[1]*Ssizes[2]*sizeof(float));
++    data.volume=new float[sizeVol];
++    //memset(data.volume,-1,sizeSeed*sizeof(float));
+     load_volume(filename,Ssizes,data.volume,data.nlocs,true,wcoords,0,coordsV);
+     data.NVols=1;
+     data.IndexRoi=new int[1];
+@@ -655,7 +652,8 @@
+     data.sizesStr[4]=1;
+   }else if (meshExists(filename)){  
+     load_mesh(filename,verticesVec,facesVec,locsVec,data.nlocs,wcoords,0,coordsV);
+-    data.VoxFacesIndex=new int[Ssizes[0]*Ssizes[1]*Ssizes[2]+1];
++    size_t sizeVox2Face = sizeVol+1;
++    data.VoxFacesIndex=new int[sizeVox2Face];
+     init_surfvol(Ssizes,mm2vox,verticesVec,&facesVec[0],facesVec.size(),
+ 		 0,voxFacesVec,data.VoxFacesIndex,locsVec);
+     data.NSurfs=1;
+@@ -670,20 +668,21 @@
+     if (fs){
+       fs>>tmp;
+       do{
+-	fnames.push_back(tmp);
+-	if (fsl_imageexists(tmp)) data.NVols++; 
+-	if (meshExists(tmp)) data.NSurfs++;
+-	fs>>tmp;
++        fnames.push_back(tmp);
++        if (fsl_imageexists(tmp)) data.NVols++; 
++        if (meshExists(tmp)) data.NSurfs++;
++	      fs>>tmp;
+       }while (!fs.eof());
+     }else{
+       cerr<<filename<<" does not exist"<<endl;
+       exit(0);
+     }
+-    data.volume=new float[data.NVols*Ssizes[0]*Ssizes[1]*Ssizes[2]];
+-    //memset(data.volume,-1,data.NVols*Ssizes[0]*Ssizes[1]*Ssizes[2]*sizeof(float));
+-
++    size_t size_AllSeedvols = data.NVols*sizeVol;
++    data.volume=new float[size_AllSeedvols];
++    //memset(data.volume,-1,size_AllSeedvols*sizeof(float));
+     data.IndexRoi=new int[data.NVols+data.NSurfs];
+-    data.VoxFacesIndex=new int[data.NSurfs*(Ssizes[0]*Ssizes[1]*Ssizes[2]+1)];
++    size_t size_AllVox2Face = data.NSurfs*(sizeVol+1);
++    data.VoxFacesIndex=new int[size_AllVox2Face];
+ 
+     int nv=0;
+     int ns=0;
+@@ -692,22 +691,23 @@
+ 
+     for (unsigned int i=0;i<fnames.size();i++){
+       if (fsl_imageexists(fnames[i])){
+-	load_volume(fnames[i],Ssizes,&data.volume[nv*Ssizes[0]*Ssizes[1]*Ssizes[2]],data.nlocs,
+-		    true,wcoords,nroi,coordsV);
+-	data.IndexRoi[nv]=nroi;
+-	nv++;
+-	nroi++;
++        size_t posSeedvol = static_cast<size_t>(nv)*sizeVol;
++	      load_volume(fnames[i],Ssizes,&data.volume[posSeedvol],data.nlocs,true,wcoords,nroi,coordsV);
++	      data.IndexRoi[nv]=nroi;
++        nv++;
++        nroi++;
+       }else if (meshExists(fnames[i])){
+-	load_mesh(fnames[i],verticesVec,facesVec,locsVec,data.nlocs,wcoords,nroi,coordsV);
+-	init_surfvol(Ssizes,mm2vox,verticesVec,&facesVec[lastfacesSize],facesVec.size()-lastfacesSize,lastfacesSize,
+-		     voxFacesVec,&data.VoxFacesIndex[ns*(Ssizes[0]*Ssizes[1]*Ssizes[2]+1)],locsVec);
+-	data.IndexRoi[data.NVols+ns]=nroi;
+-	ns++;
+-	nroi++;	
+-	lastfacesSize=facesVec.size();
++        size_t posSeedsurf = size_t(ns)*(sizeVol+1);
++        load_mesh(fnames[i],verticesVec,facesVec,locsVec,data.nlocs,wcoords,nroi,coordsV);
++        init_surfvol(Ssizes,mm2vox,verticesVec,&facesVec[lastfacesSize],facesVec.size()-lastfacesSize,lastfacesSize,
++              voxFacesVec,&data.VoxFacesIndex[posSeedsurf],locsVec);
++        data.IndexRoi[data.NVols+ns]=nroi;
++        ns++;
++        nroi++;	
++        lastfacesSize=facesVec.size();
+       }else{
+-	cerr<<"load_rois: Unknown file type: "<<fnames[i]<<endl;
+-	exit(1);
++        cerr<<"load_rois: Unknown file type: "<<fnames[i]<<endl;
++        exit(1);
+       }
+     }
+     data.sizesStr[4]=nroi;
+@@ -737,39 +737,37 @@
+       coords.ReSize(nRows,5);
+       int posV=0;
+       for (int i=0;i<nRows;i++){
+-	coords.Row(i+1) << coordsV[posV]
+-			<< coordsV[posV+1] << coordsV[posV+2]
+-			<< coordsV[posV+3] << coordsV[posV+4];
+-	posV=posV+5;
++	      coords.Row(i+1) << coordsV[posV]
++        << coordsV[posV+1] << coordsV[posV+2]
++        << coordsV[posV+3] << coordsV[posV+4];
++	      posV=posV+5;
+       }
+-    }
+-    else{		// wcoords is 1
++    }else{		// wcoords is 1
+       int nRows=coordsV.size()/5;
+       coords.ReSize(nRows,3);
+       int posV=0;
+       float Newcoords[3];
+       for (int i=0;i<nRows;i++){
+-	Newcoords[0]=coordsV[posV];
+-	Newcoords[1]=coordsV[posV+1];
+-	Newcoords[2]=coordsV[posV+2];
+-	applycoordchange(Newcoords,refVol.niftivox2newimagevox_mat().i());
+-	coords.Row(i+1) << Newcoords[0]
+-			<< Newcoords[1] << Newcoords[2];
+-	posV=posV+5;
++        Newcoords[0]=coordsV[posV];
++        Newcoords[1]=coordsV[posV+1];
++        Newcoords[2]=coordsV[posV+2];
++        applycoordchange(Newcoords,refVol.niftivox2newimagevox_mat().i());
++        coords.Row(i+1) << Newcoords[0]
++        << Newcoords[1] << Newcoords[2];
++	      posV=posV+5;
+       }
+-
+     }
+   }
+ }
+ 
+ void search_triangles(// Input 
+-		      int		id_vertex,
+-		      int		id_search,
+-		      vector<int> 	facesVec,
+-		      // Output
+-		      int*		matrix1_locs,
+-		      int*		matrix1_idTri,
+-		      int*		matrix1_Ntri)
++		                  int		        id_vertex,
++                      int		        id_search,
++                      vector<int> 	facesVec,
++                      // Output
++                      int*		      matrix1_locs,
++                      int*		      matrix1_idTri,
++                      int*		      matrix1_Ntri)
+ {
+   int id=id_search*3;
+   int num_triangles=0;
+@@ -783,21 +781,19 @@
+   matrix1_Ntri[id_vertex]=num_triangles;
+ }
+ 
+-
+-
+ void  tractographyInput::load_rois_matrix1(	tractographyData&	tData,
+-						// Input
+-						string			filename,
+-						Matrix			mm2vox,
+-						float*			Sdims,
+-						int*			Ssizes,
+-						bool			wcoords,
+-						volume<float>& 		refVol, 
+-						// Output
+-						MaskData&		data,
+-						Matrix&			coords)
++                                            // Input
++                                            string			      filename,
++                                            Matrix			      mm2vox,
++                                            float*			      Sdims,
++                                            int*			        Ssizes,
++                                            bool			        wcoords,
++                                            volume<float>& 		refVol, 
++                                            // Output
++                                            MaskData&		      data,
++                                            Matrix&			      coords)
+ {
+-  // a maximum of 12 triangles per seed ?
++  // a maximum of 12 triangles per seed
+   tData.matrix1_locs=new int[12*tData.nseeds];
+   tData.matrix1_idTri=new int[12*tData.nseeds];
+   tData.matrix1_Ntri=new int[tData.nseeds];
+@@ -815,10 +811,12 @@
+   vector<int> voxFacesVec;
+   vector<float> coordsV;
+ 
++  size_t sizeVol = Ssizes[0]*Ssizes[1]*Ssizes[2];
++
+   if (fsl_imageexists(filename)){
+     // filename is a volume
+-    data.volume=new float[Ssizes[0]*Ssizes[1]*Ssizes[2]];
+-    //memset(data.volume,-1,Ssizes[0]*Ssizes[1]*Ssizes[2]*sizeof(float));
++    data.volume=new float[sizeVol];
++    //memset(data.volume,-1,sizeVol*sizeof(float));
+     load_volume(filename,Ssizes,data.volume,data.nlocs,true,wcoords,0,coordsV);
+     data.NVols=1;
+     data.IndexRoi=new int[1];
+@@ -832,7 +830,7 @@
+     }
+   }else if (meshExists(filename)){  
+     load_mesh(filename,verticesVec,facesVec,locsVec,data.nlocs,wcoords,0,coordsV);
+-    data.VoxFacesIndex=new int[Ssizes[0]*Ssizes[1]*Ssizes[2]+1];
++    data.VoxFacesIndex=new int[sizeVol+1];
+     init_surfvol(Ssizes,mm2vox,verticesVec,&facesVec[0],facesVec.size(),
+ 		 0,voxFacesVec,data.VoxFacesIndex,locsVec);
+     data.NSurfs=1;
+@@ -850,20 +848,19 @@
+     if (fs){
+       fs>>tmp;
+       do{
+-	fnames.push_back(tmp);
+-	if (fsl_imageexists(tmp)) data.NVols++; 
+-	if (meshExists(tmp)) data.NSurfs++;
+-	fs>>tmp;
++        fnames.push_back(tmp);
++        if (fsl_imageexists(tmp)) data.NVols++; 
++        if (meshExists(tmp)) data.NSurfs++;
++        fs>>tmp;
+       }while (!fs.eof());
+     }else{
+       cerr<<filename<<" does not exist"<<endl;
+       exit(0);
+     }
+-    data.volume=new float[data.NVols*Ssizes[0]*Ssizes[1]*Ssizes[2]];
+-    //memset(data.volume,-1,data.NVols*Ssizes[0]*Ssizes[1]*Ssizes[2]*sizeof(float));
+-
++    data.volume=new float[data.NVols*sizeVol];
++    //memset(data.volume,-1,data.NVols*sizeVol*sizeof(float));
+     data.IndexRoi=new int[data.NVols+data.NSurfs];
+-    data.VoxFacesIndex=new int[data.NSurfs*(Ssizes[0]*Ssizes[1]*Ssizes[2]+1)];
++    data.VoxFacesIndex=new int[data.NSurfs*(sizeVol+1)];
+ 
+     int nv=0;
+     int ns=0;
+@@ -874,34 +871,34 @@
+     int locs_from_volume=0;
+     for (unsigned int file=0;file<fnames.size();file++){
+       if (fsl_imageexists(fnames[file])){
+-	load_volume(fnames[file],Ssizes,&data.volume[nv*Ssizes[0]*Ssizes[1]*Ssizes[2]],
+-		    data.nlocs, true,wcoords,nroi,coordsV);
+-	data.IndexRoi[nv]=nroi;
+-	nv++;
+-	nroi++;
+-
+-	for(int i=last_loc;i<data.nlocs;i++){
+-	  tData.matrix1_locs[MAX_TRI_SEED*i]=i;
+-	  tData.matrix1_idTri[MAX_TRI_SEED*i]=-1;
+-	  tData.matrix1_Ntri[i]=1;
+-	}
+-	locs_from_volume+=data.nlocs-last_loc;
++	      load_volume(fnames[file],Ssizes,&data.volume[nv*sizeVol],
++		        data.nlocs, true,wcoords,nroi,coordsV);
++            data.IndexRoi[nv]=nroi;
++        nv++;
++        nroi++;
++
++        for(int i=last_loc;i<data.nlocs;i++){
++          tData.matrix1_locs[MAX_TRI_SEED*i]=i;
++          tData.matrix1_idTri[MAX_TRI_SEED*i]=-1;
++          tData.matrix1_Ntri[i]=1;
++        }
++        locs_from_volume+=data.nlocs-last_loc;
+       }else if (meshExists(fnames[file])){
+-	load_mesh(fnames[file],verticesVec,facesVec,locsVec,data.nlocs,wcoords,nroi,coordsV);
+-	init_surfvol(Ssizes,mm2vox,verticesVec,
+-		     &facesVec[lastfacesSize],facesVec.size()-lastfacesSize,lastfacesSize,
+-		     voxFacesVec,&data.VoxFacesIndex[ns*(Ssizes[0]*Ssizes[1]*Ssizes[2]+1)],locsVec);
+-	data.IndexRoi[data.NVols+ns]=nroi;
+-	ns++;
+-	nroi++;	
+-	lastfacesSize=facesVec.size();
+-
+-	for(int i=last_loc;i<data.nlocs;i++){
+-	  search_triangles(i,i-locs_from_volume,facesVec,tData.matrix1_locs,tData.matrix1_idTri,tData.matrix1_Ntri);
+-	}
++        load_mesh(fnames[file],verticesVec,facesVec,locsVec,data.nlocs,wcoords,nroi,coordsV);
++        init_surfvol(Ssizes,mm2vox,verticesVec,
++              &facesVec[lastfacesSize],facesVec.size()-lastfacesSize,lastfacesSize,
++              voxFacesVec,&data.VoxFacesIndex[ns*(sizeVol+1)],locsVec);
++        data.IndexRoi[data.NVols+ns]=nroi;
++        ns++;
++	      nroi++;	
++	      lastfacesSize=facesVec.size();
++
++        for(int i=last_loc;i<data.nlocs;i++){
++          search_triangles(i,i-locs_from_volume,facesVec,tData.matrix1_locs,tData.matrix1_idTri,tData.matrix1_Ntri);
++        }
+       }else{
+-	cerr<<"load_rois: Unknown file type: "<<fnames[file]<<endl;
+-	exit(1);
++        cerr<<"load_rois: Unknown file type: "<<fnames[file]<<endl;
++        exit(1);
+       }
+       last_loc=data.nlocs;
+     }
+@@ -944,28 +941,28 @@
+   }
+ }
+ 
+-
+-int  tractographyInput::load_seeds_rois(	tractographyData&	tData,
+-						string			seeds_filename,
+-						string			ref_filename,
+-						float*			Sdims,
+-						int*			Ssizes,
+-						int			convention,
+-						float*&			seeds,
+-						int*&			seeds_ROI,
+-						Matrix&			mm2vox,
+-						float*			vox2mm,
+-						volume<float>*&		m_prob,
+-						bool			initialize_m_prob,
+-						volume<float>*&		m_prob2,
+-						bool			initialize_m_prob2,
+-						volume4D<float>*&	m_localdir,
+-						volume<float>&		refVol) // reference
++size_t tractographyInput::load_seeds_rois(	tractographyData&	tData,
++                                            string			      seeds_filename,
++                                            string			      ref_filename,
++                                            float*			      Sdims,
++                                            int*			        Ssizes,
++                                            int			          convention,
++                                            float*&			      seeds,
++                                            int*&			        seeds_ROI,
++                                            Matrix&			      mm2vox,
++                                            float*			      vox2mm,
++                                            volume<float>*&		m_prob,
++                                            bool			        initialize_m_prob,
++                                            volume<float>*&		m_prob2,
++                                            bool			        initialize_m_prob2,
++                                            volume4D<float>*&	m_localdir,
++                                            volume<float>&		refVol) // reference
+ {
+   Log& logger = LogSingleton::getInstance();
+   probtrackxOptions& opts=probtrackxOptions::getInstance();
+   vector<float> nullV;
+-  int nseeds=0;
++  size_t nseeds=0;
++
+   if (fsl_imageexists(seeds_filename)){
+     // a volume file
+     if(opts.network.value()){
+@@ -981,19 +978,20 @@
+     Ssizes[0]=seedsVol.xsize(); 
+     Ssizes[1]=seedsVol.ysize(); 
+     Ssizes[2]=seedsVol.zsize();
++    size_t sizeVol = Ssizes[0]*Ssizes[1]*Ssizes[2];
+     set_vox2mm(convention,Sdims,Ssizes,seedsVol,mm2vox,vox2mm);
+ 
+-    seeds=new float[3*Ssizes[0]*Ssizes[1]*Ssizes[2]];	//max
++    seeds=new float[3*sizeVol];
+     for (int z=0;z<Ssizes[2];z++){
+       for (int y=0;y<Ssizes[1];y++){
+-	for (int x=0;x<Ssizes[0];x++){
+-	  if (seedsVol(x,y,z)){
+-	    seeds[nseeds*3]=x; 
+-	    seeds[nseeds*3+1]=y; 
+-	    seeds[nseeds*3+2]=z; 
+-	    nseeds++;
+-	  }
+-	}
++        for (int x=0;x<Ssizes[0];x++){
++          if (seedsVol(x,y,z)){
++            seeds[nseeds*3]=x; 
++            seeds[nseeds*3+1]=y; 
++            seeds[nseeds*3+2]=z; 
++            nseeds++;
++          }
++        }
+       }
+     }
+     if (initialize_m_prob){
+@@ -1023,32 +1021,32 @@
+       exit(1);
+     }else{
+       if (fsl_imageexists(ref_filename)){
+-	read_volume(refVol,ref_filename);
+-	Sdims[0]=refVol.xdim();
+-	Sdims[1]=refVol.ydim();
+-	Sdims[2]=refVol.zdim();
+-	Ssizes[0]=refVol.xsize(); 
+-	Ssizes[1]=refVol.ysize(); 
+-	Ssizes[2]=refVol.zsize();
+-	set_vox2mm(convention,Sdims,Ssizes,refVol,mm2vox,vox2mm);
+-	if (initialize_m_prob){
+-	  m_prob->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
+-	  copybasicproperties(refVol,*m_prob);
+-	  *m_prob=0;
+-	}
+-	if (initialize_m_prob2){
+-	  m_prob2->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
+-	  copybasicproperties(refVol,*m_prob2);
+-	  *m_prob2=0;
+-	}
+-	if(opts.opathdir.value()){ 	// OPATHDIR 
+-	  m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
+-	  copybasicproperties(refVol,*m_localdir);
+-	  *m_localdir=0;
+-	}
++        read_volume(refVol,ref_filename);
++        Sdims[0]=refVol.xdim();
++        Sdims[1]=refVol.ydim();
++        Sdims[2]=refVol.zdim();
++        Ssizes[0]=refVol.xsize(); 
++        Ssizes[1]=refVol.ysize(); 
++        Ssizes[2]=refVol.zsize();
++        set_vox2mm(convention,Sdims,Ssizes,refVol,mm2vox,vox2mm);
++        if (initialize_m_prob){
++          m_prob->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
++          copybasicproperties(refVol,*m_prob);
++          *m_prob=0;
++        }
++        if (initialize_m_prob2){
++          m_prob2->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
++          copybasicproperties(refVol,*m_prob2);
++          *m_prob2=0;
++        }
++        if(opts.opathdir.value()){ 	// OPATHDIR 
++          m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
++          copybasicproperties(refVol,*m_localdir);
++          *m_localdir=0;
++        }
+       }else{
+-	cerr<<"Reference volume "<<ref_filename<<" does not exist"<<endl;
+-	exit(1);
++        cerr<<"Reference volume "<<ref_filename<<" does not exist"<<endl;
++        exit(1);
+       }
+       int nlocs=0;
+       vector<int> locs;
+@@ -1059,38 +1057,38 @@
+       int loc=0;
+       float c1,c2,c3;
+       for (unsigned int vertex=0;vertex<vertices.size();vertex+=3){
+-	if (locs[loc]!=-1){	// if activated
+-	  // get voxel that correspond to the vertex 				
+-	  c1=vertices[vertex];
+-	  c2=vertices[vertex+1]; 
+-	  c3=vertices[vertex+2]; 
+-	  seeds[nseeds*3]=mm2vox(1,1)*c1+mm2vox(1,2)*c2+mm2vox(1,3)*c3+mm2vox(1,4);
+-	  seeds[nseeds*3+1]=mm2vox(2,1)*c1+mm2vox(2,2)*c2+mm2vox(2,3)*c3+mm2vox(2,4);
+-	  seeds[nseeds*3+2]=mm2vox(3,1)*c1+mm2vox(3,2)*c2+mm2vox(3,3)*c3+mm2vox(3,4);
+-	  nseeds++;
+-	}
+-	if(opts.s2tout.value()){
+-	  tData.seeds_vertices.push_back(vertices[vertex]);
+-	  tData.seeds_vertices.push_back(vertices[vertex+1]);
+-	  tData.seeds_vertices.push_back(vertices[vertex+2]);
+-	  if (locs[loc]!=-1){
+-	    tData.seeds_act.push_back(1);
+-	  }else{
+-	    tData.seeds_act.push_back(0);
+-	  }
+-	}
+-	loc++;
++        if (locs[loc]!=-1){	// if activated
++          // get voxel that correspond to the vertex 				
++          c1=vertices[vertex];
++          c2=vertices[vertex+1]; 
++          c3=vertices[vertex+2]; 
++          seeds[nseeds*3]=mm2vox(1,1)*c1+mm2vox(1,2)*c2+mm2vox(1,3)*c3+mm2vox(1,4);
++          seeds[nseeds*3+1]=mm2vox(2,1)*c1+mm2vox(2,2)*c2+mm2vox(2,3)*c3+mm2vox(2,4);
++          seeds[nseeds*3+2]=mm2vox(3,1)*c1+mm2vox(3,2)*c2+mm2vox(3,3)*c3+mm2vox(3,4);
++          nseeds++;
++        }
++        if(opts.s2tout.value()){
++          tData.seeds_vertices.push_back(vertices[vertex]);
++          tData.seeds_vertices.push_back(vertices[vertex+1]);
++          tData.seeds_vertices.push_back(vertices[vertex+2]);
++          if (locs[loc]!=-1){
++            tData.seeds_act.push_back(1);
++          }else{
++            tData.seeds_act.push_back(0);
++          }
++        }
++	      loc++;
+       }
+       if(opts.s2tout.value()){
+-	tData.seeds_mesh_info.push_back(loc);
+-	int ntri=0;
+-	for (unsigned int tri=0;tri<faces.size();tri+=3){
+-	  tData.seeds_faces.push_back(faces[tri]/3);
+-	  tData.seeds_faces.push_back(faces[tri+1]/3);
+-	  tData.seeds_faces.push_back(faces[tri+2]/3);
+-	  ntri++;
+-	}
+-	tData.seeds_mesh_info.push_back(ntri);
++        tData.seeds_mesh_info.push_back(loc);
++        int ntri=0;
++        for (unsigned int tri=0;tri<faces.size();tri+=3){
++          tData.seeds_faces.push_back(faces[tri]/3);
++          tData.seeds_faces.push_back(faces[tri+1]/3);
++          tData.seeds_faces.push_back(faces[tri+2]/3);
++          ntri++;
++        }
++	      tData.seeds_mesh_info.push_back(ntri);
+       }
+     }
+     return nseeds;
+@@ -1105,8 +1103,8 @@
+     if (fs){
+       fs>>tmp;
+       do{
+-	fnames.push_back(tmp);
+-	fs>>tmp;
++        fnames.push_back(tmp);
++        fs>>tmp;
+       }while (!fs.eof());
+     }else{
+       cerr<<"Seed file "<<seeds_filename<<" does not exist"<<endl;
+@@ -1115,73 +1113,73 @@
+     // read all volumes first to search a reference volume
+     for (unsigned int i=0;i<fnames.size();i++){
+       if (fsl_imageexists(fnames[i])){
+-	volume<float> seedsVol;
+-	read_volume(seedsVol,fnames[i]);
+-	if (!found_vol){
+-	  refVol=seedsVol;
+-	  Sdims[0]=seedsVol.xdim();
+-	  Sdims[1]=seedsVol.ydim();
+-	  Sdims[2]=seedsVol.zdim();
+-	  Ssizes[0]=seedsVol.xsize(); 
+-	  Ssizes[1]=seedsVol.ysize(); 
+-	  Ssizes[2]=seedsVol.zsize();
+-	  set_vox2mm(convention,Sdims,Ssizes,seedsVol,mm2vox,vox2mm);
+-	  if (initialize_m_prob){
+-	    m_prob->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
+-	    copybasicproperties(seedsVol,*m_prob);
+-	    *m_prob=0;
+-	  }
+-	  if (initialize_m_prob2){
+-	    m_prob2->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
+-	    copybasicproperties(seedsVol,*m_prob2);
+-	    *m_prob2=0;
+-	  }
+-	  if(opts.opathdir.value()){ 	// OPATHDIR 
+-	    m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
+-	    copybasicproperties(seedsVol,*m_localdir);
+-	    *m_localdir=0;
+-	  }
+-	}else{
+-	  if (Sdims[0]!=seedsVol.xdim()||Sdims[1]!=seedsVol.ydim()||Sdims[2]!=seedsVol.zdim()||
+-	      Ssizes[0]!=seedsVol.xsize()||Ssizes[1]!=seedsVol.ysize()||Ssizes[2]!=seedsVol.zsize()){
+-	    cerr<<"Seed volumes must have same dimensions"<<endl;
+-	    exit(1);
+-	  }
+-	}
+-	found_vol=true;
++        volume<float> seedsVol;
++        read_volume(seedsVol,fnames[i]);
++	      if (!found_vol){
++          refVol=seedsVol;
++          Sdims[0]=seedsVol.xdim();
++          Sdims[1]=seedsVol.ydim();
++          Sdims[2]=seedsVol.zdim();
++          Ssizes[0]=seedsVol.xsize(); 
++          Ssizes[1]=seedsVol.ysize(); 
++          Ssizes[2]=seedsVol.zsize();
++          set_vox2mm(convention,Sdims,Ssizes,seedsVol,mm2vox,vox2mm);
++          if (initialize_m_prob){
++            m_prob->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
++            copybasicproperties(seedsVol,*m_prob);
++            *m_prob=0;
++          }
++          if (initialize_m_prob2){
++            m_prob2->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
++            copybasicproperties(seedsVol,*m_prob2);
++            *m_prob2=0;
++          }
++          if(opts.opathdir.value()){ 	// OPATHDIR 
++            m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
++            copybasicproperties(seedsVol,*m_localdir);
++            *m_localdir=0;
++          }
++	      }else{
++          if (Sdims[0]!=seedsVol.xdim()||Sdims[1]!=seedsVol.ydim()||Sdims[2]!=seedsVol.zdim()||
++              Ssizes[0]!=seedsVol.xsize()||Ssizes[1]!=seedsVol.ysize()||Ssizes[2]!=seedsVol.zsize()){
++                cerr<<"Seed volumes must have same dimensions"<<endl;
++                exit(1);
++	        }
++	      }
++	      found_vol=true;
+       }
+     }
+     if (!found_vol){
+       if (ref_filename==""){
+-	cerr<<"Error: need to set a reference volume when defining a surface-based seed mask"<<endl;
+-	exit(1);
++        cerr<<"Error: need to set a reference volume when defining a surface-based seed mask"<<endl;
++        exit(1);
+       }else if (fsl_imageexists(ref_filename)){
+-	read_volume(refVol,ref_filename);
+-	Sdims[0]=refVol.xdim();
+-	Sdims[1]=refVol.ydim();
+-	Sdims[2]=refVol.zdim();
+-	Ssizes[0]=refVol.xsize(); 
+-	Ssizes[1]=refVol.ysize(); 
+-	Ssizes[2]=refVol.zsize();
+-	set_vox2mm(convention,Sdims,Ssizes,refVol,mm2vox,vox2mm);
+-	if (initialize_m_prob){
+-	  m_prob->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
+-	  copybasicproperties(refVol,*m_prob);
+-	  *m_prob=0;
+-	}
+-	if (initialize_m_prob2){
+-	  m_prob2->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
+-	  copybasicproperties(refVol,*m_prob2);
+-	  *m_prob2=0;
+-	}
+-	if(opts.opathdir.value()){ 	// OPATHDIR 
+-	  m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
+-	  copybasicproperties(refVol,*m_localdir);
+-	  *m_localdir=0;
+-	}
++        read_volume(refVol,ref_filename);
++        Sdims[0]=refVol.xdim();
++        Sdims[1]=refVol.ydim();
++        Sdims[2]=refVol.zdim();
++        Ssizes[0]=refVol.xsize(); 
++        Ssizes[1]=refVol.ysize(); 
++        Ssizes[2]=refVol.zsize();
++        set_vox2mm(convention,Sdims,Ssizes,refVol,mm2vox,vox2mm);
++        if (initialize_m_prob){
++          m_prob->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
++          copybasicproperties(refVol,*m_prob);
++          *m_prob=0;
++        }
++        if (initialize_m_prob2){
++          m_prob2->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2]);
++          copybasicproperties(refVol,*m_prob2);
++          *m_prob2=0;
++        }
++        if(opts.opathdir.value()){ 	// OPATHDIR 
++          m_localdir->reinitialize(Ssizes[0],Ssizes[1],Ssizes[2],6);
++          copybasicproperties(refVol,*m_localdir);
++          *m_localdir=0;
++        }
+       }else{
+-	cerr<<"Reference volume "<<ref_filename<<" does not exist"<<endl;
+-	exit(1);
++        cerr<<"Reference volume "<<ref_filename<<" does not exist"<<endl;
++        exit(1);
+       }
+     }
+ 
+@@ -1191,105 +1189,105 @@
+     }
+ 
+     // for network mode, to know the ROI id of each seed
+-    int* sizes_rois= new int[fnames.size()];
++    size_t* sizes_rois= new size_t[fnames.size()];
+     int last_num_seeds=0;		
+ 
+     // read all volumes & surfaces
+     for (unsigned int i=0;i<fnames.size();i++){
+       if (meshExists(fnames[i])){
+-	int nlocs=0;
+-	vector<int> locs;
+-	vector<float> vertices;
+-	vector<int> faces;
+-	load_mesh(fnames[i],vertices,faces,locs,nlocs,false,0,nullV);
+-	seedsV.resize(seedsV.size()+vertices.size()*3);
+-	int loc=0;
+-	float c1,c2,c3;
+-	float s1,s2,s3;
+-	for (unsigned int vertex=0;vertex<vertices.size();vertex+=3){
+-	  if (locs[loc]!=-1){	// if activated
+-	    // get voxel that correspond to the vertex 				
+-	    c1=vertices[vertex];
+-	    c2=vertices[vertex+1]; 
+-	    c3=vertices[vertex+2];
+-	    s1=mm2vox(1,1)*c1+mm2vox(1,2)*c2+mm2vox(1,3)*c3+mm2vox(1,4);
+-	    s2=mm2vox(2,1)*c1+mm2vox(2,2)*c2+mm2vox(2,3)*c3+mm2vox(2,4);
+-	    s3=mm2vox(3,1)*c1+mm2vox(3,2)*c2+mm2vox(3,3)*c3+mm2vox(3,4);
+-	    if (s1>=0 && s1<Ssizes[0] && s2>=0 && s2<Ssizes[1] && s3>=0 && s3<Ssizes[2]){
+-	      seedsV[nseeds*3]=s1;
+-	      seedsV[nseeds*3+1]=s2;
+-	      seedsV[nseeds*3+2]=s3;
+-	      nseeds++;
+-	    }else{
+-	      printf("Warning: Ignoring some seeds because they are defined outside the limits\n");
+-	      printf("Please check that your meshspace is defined correctly\n");
+-	    }
+-	  }
+-	  if(opts.s2tout.value()){
+-	    tData.seeds_vertices.push_back(vertices[vertex]);
+-	    tData.seeds_vertices.push_back(vertices[vertex+1]);
+-	    tData.seeds_vertices.push_back(vertices[vertex+2]);
+-	    if (locs[loc]!=-1){
+-	      tData.seeds_act.push_back(1);
+-	    }else{
+-	      tData.seeds_act.push_back(0);
+-	    }
+-	  }
+-
+-	  loc++;
+-	}
+-	sizes_rois[i]=(nseeds-last_num_seeds);
+-	last_num_seeds=nseeds;
+-	if(opts.s2tout.value()){
+-	  tData.seeds_mesh_info.push_back(loc);
+-	  int ntri=0;
+-	  for (unsigned int tri=0;tri<faces.size();tri+=3){
+-	    tData.seeds_faces.push_back(faces[tri]/3);
+-	    tData.seeds_faces.push_back(faces[tri+1]/3);
+-	    tData.seeds_faces.push_back(faces[tri+2]/3);
+-	    ntri++;
+-	  }
+-	  tData.seeds_mesh_info.push_back(ntri);
+-	}
+-      }else if (fsl_imageexists(fnames[i])){
+-	volume<float> seedsVol;
+-	read_volume(seedsVol,fnames[i]);
+-	seedsV.resize(seedsV.size()+3*Ssizes[0]*Ssizes[1]*Ssizes[2]);	//max
+-	for (int z=0;z<Ssizes[2];z++){
+-	  for (int y=0;y<Ssizes[1];y++){
+-	    for (int x=0;x<Ssizes[0];x++){
+-	      if (seedsVol(x,y,z)){
+-		seedsV[nseeds*3]=x; 
+-		seedsV[nseeds*3+1]=y; 
+-		seedsV[nseeds*3+2]=z; 
+-		nseeds++;
++        int nlocs=0;
++        vector<int> locs;
++        vector<float> vertices;
++        vector<int> faces;
++        load_mesh(fnames[i],vertices,faces,locs,nlocs,false,0,nullV);
++        seedsV.resize(seedsV.size()+vertices.size()*3);
++        int loc=0;
++        float c1,c2,c3;
++        float s1,s2,s3;
++        for (unsigned int vertex=0;vertex<vertices.size();vertex+=3){
++          if (locs[loc]!=-1){	// if activated
++            // get voxel that correspond to the vertex 				
++            c1=vertices[vertex];
++            c2=vertices[vertex+1]; 
++            c3=vertices[vertex+2];
++            s1=mm2vox(1,1)*c1+mm2vox(1,2)*c2+mm2vox(1,3)*c3+mm2vox(1,4);
++            s2=mm2vox(2,1)*c1+mm2vox(2,2)*c2+mm2vox(2,3)*c3+mm2vox(2,4);
++            s3=mm2vox(3,1)*c1+mm2vox(3,2)*c2+mm2vox(3,3)*c3+mm2vox(3,4);
++            if (s1>=0 && s1<Ssizes[0] && s2>=0 && s2<Ssizes[1] && s3>=0 && s3<Ssizes[2]){
++              seedsV[nseeds*3]=s1;
++              seedsV[nseeds*3+1]=s2;
++              seedsV[nseeds*3+2]=s3;
++              nseeds++;
++            }else{
++              printf("Warning: Ignoring some seeds because they are defined outside the limits\n");
++              printf("Please check that your meshspace is defined correctly\n");
++            }
++          }
++          if(opts.s2tout.value()){
++            tData.seeds_vertices.push_back(vertices[vertex]);
++            tData.seeds_vertices.push_back(vertices[vertex+1]);
++            tData.seeds_vertices.push_back(vertices[vertex+2]);
++            if (locs[loc]!=-1){
++              tData.seeds_act.push_back(1);
++            }else{
++              tData.seeds_act.push_back(0);
++            }
++          }
++	        loc++;
+ 	      }
+-	    }
+-	  }
+-	}
+-	sizes_rois[i]=(nseeds-last_num_seeds);
+-	last_num_seeds=nseeds;
++        sizes_rois[i]=(nseeds-last_num_seeds);
++        last_num_seeds=nseeds;
++        if(opts.s2tout.value()){
++          tData.seeds_mesh_info.push_back(loc);
++          int ntri=0;
++          for (unsigned int tri=0;tri<faces.size();tri+=3){
++            tData.seeds_faces.push_back(faces[tri]/3);
++            tData.seeds_faces.push_back(faces[tri+1]/3);
++            tData.seeds_faces.push_back(faces[tri+2]/3);
++            ntri++;
++          }
++          tData.seeds_mesh_info.push_back(ntri);
++        }
++      }else if (fsl_imageexists(fnames[i])){
++        volume<float> seedsVol;
++        read_volume(seedsVol,fnames[i]);
++        size_t sizeVol = Ssizes[0]*Ssizes[1]*Ssizes[2];
++        seedsV.resize(seedsV.size()+3*sizeVol);	//max
++        for (int z=0;z<Ssizes[2];z++){
++          for (int y=0;y<Ssizes[1];y++){
++            for (int x=0;x<Ssizes[0];x++){
++              if (seedsVol(x,y,z)){
++                seedsV[nseeds*3]=x; 
++                seedsV[nseeds*3+1]=y; 
++                seedsV[nseeds*3+2]=z; 
++                nseeds++;
++              }
++            }
++          }
++        }
++        sizes_rois[i]=(nseeds-last_num_seeds);
++        last_num_seeds=nseeds;
+       }else{
+-	cerr<<"Unknown file type: "<<fnames[i]<<endl;
+-	exit(1);
++        cerr<<"Unknown file type: "<<fnames[i]<<endl;
++        exit(1);
+       }	
+     }
+     seeds=new float[nseeds*3];
+     memcpy(seeds,&seedsV[0],nseeds*3*sizeof(float));
+     if(opts.network.value()){
+       seeds_ROI=new int[nseeds];
+-      int pos=0;
++      size_t pos=0;
+       for (unsigned int i=0;i<fnames.size();i++){
+-	for (int j=0;j<sizes_rois[i];j++){
+-	  seeds_ROI[pos]=i;
+-	  pos++;
+-	}
++        for (size_t j=0;j<sizes_rois[i];j++){
++          seeds_ROI[pos]=i;
++          pos++;
++        }
+       }
+     }
+     // write in a file the number of seeds of each ROI, for statistics
+     Matrix M_sizes_rois(fnames.size(),1);
+     for (unsigned int i=0;i<fnames.size();i++){
+-	M_sizes_rois(i+1,1)=sizes_rois[i];
++	    M_sizes_rois(i+1,1)=sizes_rois[i];
+     }
+     write_ascii_matrix(M_sizes_rois,logger.appendDir("NumSeeds_of_ROIs"));
+     ////
+@@ -1298,12 +1296,12 @@
+   }
+ }
+ 
+-void  tractographyInput::set_vox2mm(	int		convention,
+-					float*		Sdims,
+-					int*		Ssizes,
+-					volume<float>	vol,
+-					Matrix&		mm2vox,
+-					float*		vox2mm)
++void  tractographyInput::set_vox2mm(int		        convention,
++                                    float*		    Sdims,
++                                    int*		      Ssizes,
++                                    volume<float>	vol,
++                                    Matrix&		    mm2vox,
++                                    float*		    vox2mm)
+ {
+   // VOX2MM 
+   Matrix Mvox2mm(4,4);
+@@ -1315,9 +1313,9 @@
+     // freesurfer
+     Matrix mat(4,4);
+     mat << -1/Sdims[0] << 0 << 0 << Ssizes[0]/2
+-	<< 0 << 0 << -1/Sdims[1] << Ssizes[2]/2
+-	<< 0 << 1/Sdims[2] << 0 << Ssizes[1]/2
+-	<< 0 << 0 << 0 << 1;
++      << 0 << 0 << -1/Sdims[1] << Ssizes[2]/2
++      << 0 << 1/Sdims[2] << 0 << Ssizes[1]/2
++      << 0 << 0 << 0 << 1;
+     mm2vox=mat;
+     Mvox2mm=mm2vox.i();
+   }else if (convention==2){
+@@ -1349,25 +1347,26 @@
+   vox2mm[12]=Mvox2mm(4,1); vox2mm[13]=Mvox2mm(4,2); vox2mm[14]=Mvox2mm(4,3); vox2mm[15]=Mvox2mm(4,4); 
+ }
+ 
+-void tractographyInput::load_tractographyData(	tractographyData&	tData,
+-						volume<float>*&		m_prob,
+-						volume<float>*&		m_prob2,
+-						float**&		ConNet,
+-						float**&		ConNetb,
+-						int&			nRowsNet,
+-						int&			nColsNet,
+-						float**&		ConMat1,
+-						float**&		ConMat1b,
+-						int&			nRowsMat1,
+-						int&			nColsMat1,
+-						float**&		ConMat3,
+-						float**&		ConMat3b,
+-						int&			nRowsMat3,
+-						int&			nColsMat3,
+-						float*&			m_s2targets,
+-						float*&			m_s2targetsb,
+-						volume4D<float>*&	m_localdir)
++void tractographyInput::load_tractographyData(tractographyData&	tData,
++                                              volume<float>*&		m_prob,
++                                              volume<float>*&		m_prob2,
++                                              float**&		      ConNet,
++                                              float**&		      ConNetb,
++                                              int&			        nRowsNet,
++                                              int&			        nColsNet,
++                                              float**&		      ConMat1,
++                                              float**&		      ConMat1b,
++                                              int&			        nRowsMat1,
++                                              int&			        nColsMat1,
++                                              float**&		      ConMat3,
++                                              float**&		      ConMat3b,
++                                              int&			        nRowsMat3,
++                                              int&			        nColsMat3,
++                                              float*&			      m_s2targets,
++                                              float*&			      m_s2targetsb,
++                                              volume4D<float>*&	m_localdir)
+ {
++  printf("Loading tractography data\n");
+   probtrackxOptions& opts=probtrackxOptions::getInstance();
+   Log& logger = LogSingleton::getInstance();
+ 
+@@ -1427,7 +1426,7 @@
+   for(int z=0;z<mask3D.zsize();z++){
+     for(int y=0;y<mask3D.ysize();y++){
+       for(int x=0;x<mask3D.xsize();x++){
+-	tData.mask[z*mask3D.xsize()*mask3D.ysize()+y*mask3D.xsize()+x]=mask3D(x,y,z);
++	      tData.mask[z*mask3D.xsize()*mask3D.ysize()+y*mask3D.xsize()+x]=mask3D(x,y,z);
+       }
+     }
+   }
+@@ -1455,27 +1454,28 @@
+     tmpmat=tmpvol.matrix(mask3D);
+     tData.nvoxels=tmpmat.Ncols();
+     tData.nsamples=tmpmat.Nrows();
+-    tData.nfibres=1;		
+-    tData.thsamples=new float[tData.nfibres*tData.nsamples*tData.nvoxels];
+-    tData.phsamples=new float[tData.nfibres*tData.nsamples*tData.nvoxels];
+-    tData.fsamples=new float[tData.nfibres*tData.nsamples*tData.nvoxels];
++    tData.nfibres=1;
++    size_t samplesSize = tData.nfibres*tData.nsamples*tData.nvoxels;
++    tData.thsamples=new float[samplesSize];
++    tData.phsamples=new float[samplesSize];
++    tData.fsamples=new float[samplesSize];
+     for(int s=0;s<tData.nsamples;s++){
+       for(int v=0;v<tData.nvoxels;v++){
+-	tData.thsamples[s*tData.nvoxels  +v]=tmpmat(s+1,v+1);
++	      tData.thsamples[s*tData.nvoxels  +v]=tmpmat(s+1,v+1);
+       }
+     }
+     read_volume4D(tmpvol,basename+"_phsamples");
+     tmpmat=tmpvol.matrix(mask3D);
+     for(int s=0;s<tData.nsamples;s++){
+       for(int v=0;v<tData.nvoxels;v++){
+-	tData.phsamples[s*tData.nvoxels+v]=tmpmat(s+1,v+1);
++	      tData.phsamples[s*tData.nvoxels+v]=tmpmat(s+1,v+1);
+       }
+     }
+     read_volume4D(tmpvol,basename+"_fsamples");
+     tmpmat=tmpvol.matrix(mask3D);
+     for(int s=0;s<tData.nsamples;s++){
+       for(int v=0;v<tData.nvoxels;v++){
+-	tData.fsamples[s*tData.nvoxels+v]=tmpmat(s+1,v+1);
++	      tData.fsamples[s*tData.nvoxels+v]=tmpmat(s+1,v+1);
+       }
+     }
+   }else{
+@@ -1489,32 +1489,33 @@
+     tmpmat=tmpvol.matrix(mask3D);
+     tData.nvoxels=tmpmat.Ncols();
+     tData.nsamples=tmpmat.Nrows();
+-    tData.thsamples=new float[tData.nfibres*tData.nsamples*tData.nvoxels];
+-    tData.phsamples=new float[tData.nfibres*tData.nsamples*tData.nvoxels];
+-    tData.fsamples=new float[tData.nfibres*tData.nsamples*tData.nvoxels];
++    size_t samplesSize = tData.nfibres*tData.nsamples*tData.nvoxels;
++    tData.thsamples=new float[samplesSize];
++    tData.phsamples=new float[samplesSize];
++    tData.fsamples=new float[samplesSize];
+     for(int f=0;f<tData.nfibres;f++){
+       if(f>0){
+-	read_volume4D(tmpvol,basename+"_th"+num2str(f+1)+"samples");
+-	tmpmat=tmpvol.matrix(mask3D);
++        read_volume4D(tmpvol,basename+"_th"+num2str(f+1)+"samples");
++        tmpmat=tmpvol.matrix(mask3D);
+       }
+       for(int s=0;s<tData.nsamples;s++){
+-	for(int v=0;v<tData.nvoxels;v++){
+-	  tData.thsamples[f*tData.nsamples*tData.nvoxels+s*tData.nvoxels+v]=tmpmat(s+1,v+1);
+-	}
++	      for(int v=0;v<tData.nvoxels;v++){
++	        tData.thsamples[f*tData.nsamples*tData.nvoxels+s*tData.nvoxels+v]=tmpmat(s+1,v+1);
++	      }
+       }
+       read_volume4D(tmpvol,basename+"_ph"+num2str(f+1)+"samples");
+       tmpmat=tmpvol.matrix(mask3D);
+       for(int s=0;s<tData.nsamples;s++){
+-	for(int v=0;v<tData.nvoxels;v++){
+-	  tData.phsamples[f*tData.nsamples*tData.nvoxels+s*tData.nvoxels+v]=tmpmat(s+1,v+1);
+-	}
++        for(int v=0;v<tData.nvoxels;v++){
++          tData.phsamples[f*tData.nsamples*tData.nvoxels+s*tData.nvoxels+v]=tmpmat(s+1,v+1);
++        }
+       }
+       read_volume4D(tmpvol,basename+"_f"+num2str(f+1)+"samples");
+       tmpmat=tmpvol.matrix(mask3D);
+       for(int s=0;s<tData.nsamples;s++){
+-	for(int v=0;v<tData.nvoxels;v++){
+-	  tData.fsamples[f*tData.nsamples*tData.nvoxels+s*tData.nvoxels+v]=tmpmat(s+1,v+1);
+-	}
++        for(int v=0;v<tData.nvoxels;v++){
++          tData.fsamples[f*tData.nsamples*tData.nvoxels+s*tData.nvoxels+v]=tmpmat(s+1,v+1);
++        }
+       }
+     }
+   }
+@@ -1527,7 +1528,7 @@
+   for(int z=0;z<mask3D.zsize();z++){
+     for(int y=0;y<mask3D.ysize();y++){
+       for(int x=0;x<mask3D.xsize();x++){
+-	tData.lut_vol2mat[z*mask3D.ysize()*mask3D.xsize()+y*mask3D.xsize()+x]=tmpvol2(x,y,z);
++	      tData.lut_vol2mat[z*mask3D.ysize()*mask3D.xsize()+y*mask3D.xsize()+x]=tmpvol2(x,y,z);
+       }
+     }
+   }	
+@@ -1550,8 +1551,8 @@
+       FnirtFileReader ffr(opts.seeds_to_dti.value());
+       //MSeeds_to_DTI_warp=ffr.FieldAsNewimageVolume4D(true);
+       if(opts.dti_to_seeds.value()==""){
+-	cerr << "Error: Seeds transform needed (DTI to Seeds space)" << endl;
+-	exit(1);
++        cerr << "Error: Seeds transform needed (DTI to Seeds space)" << endl;
++        exit(1);
+       }
+       FnirtFileReader iffr(opts.dti_to_seeds.value());
+       //MDTI_to_Seeds_warp=iffr.FieldAsNewimaheVolume4D(true);
+@@ -1601,7 +1602,6 @@
+   tData.DTI_to_Seeds[10]=DTI_to_Seeds_read[10]*tData.Ddims[2]/div[2];
+   tData.DTI_to_Seeds[11]=DTI_to_Seeds_read[11]/div[2];
+ 
+-
+   ///////////////////////////////
+   ////// NON LINEAR warps ///////
+   ///////////////////////////////
+@@ -1633,17 +1633,17 @@
+       tData.Warp_S2D_sizes[2]=SeedDTIwarp4D.zsize();
+       tData.SeedDTIwarp= new float[3*size];	
+       for(int v=0;v<3;v++){
+-	for(int z=0;z<tData.Warp_S2D_sizes[2];z++){
+-	  for(int y=0;y<tData.Warp_S2D_sizes[1];y++){
+-	    for(int x=0;x<tData.Warp_S2D_sizes[0];x++){
+-	      tData.SeedDTIwarp[v*size+z*tData.Warp_S2D_sizes[0]*tData.Warp_S2D_sizes[1]+y*tData.Warp_S2D_sizes[0]+x]=SeedDTIwarp4D[v](x,y,z);
+-	    }
+-	  }
+-	}
++        for(int z=0;z<tData.Warp_S2D_sizes[2];z++){
++          for(int y=0;y<tData.Warp_S2D_sizes[1];y++){
++            for(int x=0;x<tData.Warp_S2D_sizes[0];x++){
++              tData.SeedDTIwarp[v*size+z*tData.Warp_S2D_sizes[0]*tData.Warp_S2D_sizes[1]+y*tData.Warp_S2D_sizes[0]+x]=SeedDTIwarp4D[v](x,y,z);
++            }
++          }
++        }
+       }	
+       if(opts.dti_to_seeds.value()==""){
+-	cerr << "TRACT::Streamliner:: DTI -> Seeds transform needed" << endl;
+-	exit(1);
++        cerr << "TRACT::Streamliner:: DTI -> Seeds transform needed" << endl;
++        exit(1);
+       }
+       FnirtFileReader iffr(opts.dti_to_seeds.value());
+       volume4D<float> DTISeedwarp4D = iffr.FieldAsNewimageVolume4D(true);
+@@ -1653,13 +1653,13 @@
+       tData.Warp_D2S_sizes[2]=DTISeedwarp4D.zsize();
+       tData.DTISeedwarp = new float[3*size];	
+       for(int v=0;v<3;v++){
+-	for(int z=0;z<tData.Warp_D2S_sizes[2];z++){
+-	  for(int y=0;y<tData.Warp_D2S_sizes[1];y++){
+-	    for(int x=0;x<tData.Warp_D2S_sizes[0];x++){
+-	      tData.DTISeedwarp[v*size+z*tData.Warp_D2S_sizes[0]*tData.Warp_D2S_sizes[1]+y*tData.Warp_D2S_sizes[0]+x]=DTISeedwarp4D[v](x,y,z);
+-	    }
+-	  }
+-	}
++        for(int z=0;z<tData.Warp_D2S_sizes[2];z++){
++          for(int y=0;y<tData.Warp_D2S_sizes[1];y++){
++            for(int x=0;x<tData.Warp_D2S_sizes[0];x++){
++              tData.DTISeedwarp[v*size+z*tData.Warp_D2S_sizes[0]*tData.Warp_D2S_sizes[1]+y*tData.Warp_D2S_sizes[0]+x]=DTISeedwarp4D[v](x,y,z);
++            }
++          }
++        }
+       }	
+       Matrix samp=IdentityMatrix(4);
+       samp(1,1) = tData.Sdims[0];
+@@ -2007,5 +2007,3 @@
+     load_rois_mixed(opts.seedfile.value(),mm2vox,tData.Sdims,tData.Ssizes,tData.networkREF);
+   }
+ }
+-
+-
+diff -ru fsl.orig/src/ptx2/CUDA/tractographyInput.h fsl/src/ptx2/CUDA/tractographyInput.h
+--- fsl.orig/src/ptx2/CUDA/tractographyInput.h	2019-09-11 15:25:10.000000000 +0200
++++ fsl/src/ptx2/CUDA/tractographyInput.h	2020-01-04 20:10:04.073580459 +0100
+@@ -83,84 +83,84 @@
+ 
+   /// Method load all the necessary data from the input files to perform GPU Tractography
+   void load_tractographyData( tractographyData&	tData,	
+-				volume<float>*&		m_prob,
+-				volume<float>*&		m_prob2,
+-				float**&		ConNet,
+-				float**&		ConNetb,
+-				int&			nRowsNet,
+-				int&			nColsNet,
+-				float**&		ConMat1,
+-				float**&		ConMat1b,
+-				int&			nRowsMat1,
+-				int&			nColsMat1,
+-				float**&		ConMat3,
+-				float**&		ConMat3b,
+-				int&			nRowsMat3,
+-				int&			nColsMat3,
+-				float*&			m_s2targets,
+-				float*&			m_s2targetsb,
+-				volume4D<float>*&	m_localdir);
++															volume<float>*&		m_prob,
++															volume<float>*&		m_prob2,
++															float**&					ConNet,
++															float**&					ConNetb,
++															int&							nRowsNet,
++															int&							nColsNet,
++															float**&					ConMat1,
++															float**&					ConMat1b,
++															int&							nRowsMat1,
++															int&							nColsMat1,
++															float**&					ConMat3,
++															float**&					ConMat3b,
++															int&							nRowsMat3,
++															int&							nColsMat3,
++															float*&						m_s2targets,
++															float*&						m_s2targetsb,
++															volume4D<float>*&	m_localdir);
+ 
+   /// General Method to read a Surface file in ASCII, VTK or GIFTI format
+-  void load_mesh(	string&		filename,
+-			vector<float>&	vertices,	// all the vertices, same order than file
+-			vector<int>&	faces,		// all the faces, same order than file
+-			vector<int>& 	locs,		// used to store the id of a vertex in the Matrix. If -1, then vertex is non-activated	
+-			int&		nlocs,		// number of ids(vertices) in the Matrix
+-			bool		wcoords,	// save coordinates of the vertices in a file ?
+-			int		nroi,		// number of ROI to identify coordinates
+-			vector<float>&	coords);	// coordinates xyz of the vertices
++  void load_mesh(	string&					filename,
++									vector<float>&	vertices,	// all the vertices, same order than file
++									vector<int>&		faces, 		// all the faces, same order than file
++									vector<int>& 		locs,			// used to store the id of a vertex in the Matrix. If -1, then vertex is non-activated	
++									int&						nlocs,		// number of ids(vertices) in the Matrix
++									bool						wcoords,	// save coordinates of the vertices in a file ?
++									int							nroi,			// number of ROI to identify coordinates
++									vector<float>&	coords);	// coordinates xyz of the vertices
+ 
+   /// Method to read a surface file in ASCII format
+-  void load_mesh_ascii(	string&		filename,
+-			vector<float>&	vertices,
+-			vector<int>&	faces,					
+-			vector<int>&	locs,		
+-			int&		nlocs,	
+-			bool		wcoords,	
+-			int		nroi,	
+-			vector<float>&	coords);
++  void load_mesh_ascii(	string&				filename,
++											vector<float>&	vertices,
++											vector<int>&		faces,					
++											vector<int>&		locs,		
++											int&						nlocs,	
++											bool						wcoords,	
++											int							nroi,	
++											vector<float>&	coords);
+ 
+   /// Method to read a surface file in VTK format
+-  void load_mesh_vtk(	string&		filename,
+-			vector<float>&	vertices,
+-			vector<int>&	faces,
+-			vector<int>&	locs,
+-			int&		nlocs,
+-			bool		wcoords,
+-			int		nroi,
+-			vector<float>&	coords);
++  void load_mesh_vtk(	string&					filename,
++											vector<float>&	vertices,
++											vector<int>&		faces,
++											vector<int>&		locs,
++											int&						nlocs,
++											bool						wcoords,
++											int							nroi,
++											vector<float>&	coords);
+ 
+   /// Method to read a surface file in GIFTI format
+-  void load_mesh_gifti(	string&		filename,
+-			vector<float>&	vertices,
+-			vector<int>&	faces,
+-			vector<int>&	locs,
+-			int&		nlocs,
+-			bool		wcoords,
+-			int		nroi,
+-			vector<float>&	coords);
++  void load_mesh_gifti(	string&					filename,
++												vector<float>&	vertices,
++												vector<int>&		faces,
++												vector<int>&		locs,
++												int&						nlocs,
++												bool						wcoords,
++												int							nroi,
++												vector<float>&	coords);
+ 
+   /// Method to read a Volume
+   void load_volume(	string&		filename,
+-			int*		Ssizes,
+-			float*		Vout,
+-			int&		nlocs,
+-			bool		reset,
+-			bool		wcoords,
+-			int		nroi,
+-			vector<float>&	coords);
++										int*			Ssizes,
++										float*		Vout,
++										int&			nlocs,
++										bool			reset,
++										bool			wcoords,
++										int				nroi,
++										vector<float>&	coords);
+ 	
+   /// Method to initialise the realtionship between voxels and triangles for a Surface
+-  void init_surfvol(	int*		Ssizes,
+-			Matrix&		mm2vox,	
+-			vector<float>&	vertices,
+-			int*		faces,
+-			int		sizefaces,	// number of faces this time (maybe there are several ROIs for the same mask)
+-			int		initfaces,	// number of faces in previos times
+-			vector<int>&	voxFaces,	// list of faces of all the voxels
+-			int*		voxFacesIndex,	// starting point of each voxel in the list
+-			vector<int>&	locsV);
++  void init_surfvol(	int*						Ssizes,
++											Matrix&					mm2vox,	
++											vector<float>&	vertices,
++											int*						faces,
++											int							sizefaces,	// number of faces this time (maybe there are several ROIs for the same mask)
++											int							initfaces,	// number of faces in previos times
++											vector<int>&		voxFaces,	// list of faces of all the voxels
++											int*						voxFacesIndex,	// starting point of each voxel in the list
++											vector<int>&		locsV);
+ 
+   /// Method to find out what voxels are crossed by a triangle
+   void csv_tri_crossed_voxels(float			tri[3][3],
+@@ -168,62 +168,62 @@
+ 
+   /// Method to read all the ROIs of a mask in the same structure: for stop and avoid masks
+   void load_rois_mixed(string		filename,
+-			Matrix		mm2vox,
+-			float*		Sdims,
+-			int*		Ssizes,
+-			// Output
+-			MaskData&	matData);
++											Matrix		mm2vox,
++											float*		Sdims,
++											int*			Ssizes,
++											// Output
++											MaskData&	matData);
+ 
+   /// Method to read the ROIs of a mask in concatenated structures: for wtstop and waypoints masks
+-  void load_rois(// Input
+-		 string		filename,
+-		 Matrix		mm2vox,
+-		 float*		Sdims,
+-		 int*		Ssizes,
+-		 int		wcoords,
+-		 volume<float>& refVol, 
+-		 // Output
+-		 MaskData&	matData,
+-		 Matrix&	coords);
++  void load_rois(	// Input
++									string					filename,
++									Matrix					mm2vox,
++									float*					Sdims,
++									int*						Ssizes,
++									int							wcoords,
++									volume<float>& 	refVol, 
++									// Output
++									MaskData&				matData,
++									Matrix&					coords);
+ 
+   /// Same than load_rois but it includes the initialisation of the rows (including triangles) of Matrix1
+   void  load_rois_matrix1(	tractographyData&	tData,
+-				// Input
+-				string			filename,
+-				Matrix			mm2vox,
+-				float*			Sdims,
+-				int*			Ssizes,
+-				bool			wcoords,
+-				volume<float>& 		refVol, 
+-				// Output
+-				MaskData&		data,
+-				Matrix&			coords);
++														// Input
++														string						filename,
++														Matrix						mm2vox,
++														float*						Sdims,
++														int*							Ssizes,
++														bool							wcoords,
++														volume<float>& 		refVol, 
++														// Output
++														MaskData&					data,
++														Matrix&						coords);
+ 
+   /// Method to load the seeds. Can be defined by volumes and/or by surfaces
+-  int load_seeds_rois(tractographyData&	tData,
+-			string			seeds_filename,
+-			string			ref_filename,
+-			float*			Sdims,
+-			int*			Ssizes,
+-			int			convention,
+-			float*&			seeds,
+-			int*&			seeds_ROI,
+-			Matrix&			mm2vox,
+-			float*			vox2mm,
+-			volume<float>*&		m_prob,
+-			bool 			initialize_m_prob,
+-			volume<float>*&		m_prob2,
+-			bool			initialize_m_prob2,
+-			volume4D<float>*&	m_localdir,
+-			volume<float>&          refVol);
++  size_t load_seeds_rois(tractographyData&	tData,
++												string							seeds_filename,
++												string							ref_filename,
++												float*							Sdims,
++												int*								Ssizes,
++												int									convention,
++												float*&							seeds,
++												int*&								seeds_ROI,
++												Matrix&							mm2vox,
++												float*							vox2mm,
++												volume<float>*&			m_prob,
++												bool 								initialize_m_prob,
++												volume<float>*&			m_prob2,
++												bool								initialize_m_prob2,
++												volume4D<float>*&		m_localdir,
++												volume<float>&      refVol);
+ 
+   /// Method to set the transformation: voxel to milimeters
+-  void set_vox2mm(int		convention,
+-		  float*        Sdims,
+-		  int*		Ssizes,
+-		  volume<float>	vol,
+-		  Matrix&       mm2vox,   // 4x4
+-		  float*        vox2mm);  // 4x4
++  void set_vox2mm(int						convention,
++									float*        Sdims,
++									int*					Ssizes,
++									volume<float>	vol,
++									Matrix&       mm2vox,   // 4x4
++									float*        vox2mm);  // 4x4
+ 
+ };
+ 
+diff -ru fsl.orig/src/ptx2/CUDA/tractographyKernels.cu fsl/src/ptx2/CUDA/tractographyKernels.cu
+--- fsl.orig/src/ptx2/CUDA/tractographyKernels.cu	2019-09-11 15:25:10.000000000 +0200
++++ fsl/src/ptx2/CUDA/tractographyKernels.cu	2020-01-04 20:10:35.513573164 +0100
+@@ -77,17 +77,17 @@
+ 
+ template <int randfib,bool loopcheck,bool modeuler>
+ __global__ void get_path_kernel(
+-				tractographyData*	data_gpu,
+-				const int		      maxThread,
++				tractographyData* data_gpu,
++				const int         maxThread,
+ 				//essential 
+-				curandState*		  state,
+-				const long long		offset,	
++				curandState*      state,
++				const long long   offset,	
+ 				//loopcheck
+-				int*			        loopcheckkeys,
+-				float3*			      loopcheckdirs,						
++				int*              loopcheckkeys,
++				float3*           loopcheckdirs,						
+ 				//OUTPUT
+-				float*			      path,
+-				int*			        lengths)
++				float*            path,
++				int*              lengths)
+ {
+   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+@@ -124,13 +124,15 @@
+ 	
+   // Use path to store my intial coordinates
+   // We want to start at the same exact point, even if sampvox is activated
+-  path[id*data_gpu->nsteps*3]= data_gpu->seeds[numseed*3];
+-  path[id*data_gpu->nsteps*3+1]= data_gpu->seeds[numseed*3+1];
+-  path[id*data_gpu->nsteps*3+2]= data_gpu->seeds[numseed*3+2];
+-
+-  path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)]= data_gpu->seeds[numseed*3];
+-  path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)+1]= data_gpu->seeds[numseed*3+1];
+-  path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)+2]= data_gpu->seeds[numseed*3+2];
++  uint offset_path_fw = id*data_gpu->nsteps*3;
++  uint offset_path_bw = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
++  path[offset_path_fw]= data_gpu->seeds[numseed*3];
++  path[offset_path_fw+1]= data_gpu->seeds[numseed*3+1];
++  path[offset_path_fw+2]= data_gpu->seeds[numseed*3+2];
++
++  path[offset_path_bw]= data_gpu->seeds[numseed*3];
++  path[offset_path_bw+1]= data_gpu->seeds[numseed*3+1];
++  path[offset_path_bw+2]= data_gpu->seeds[numseed*3+2];
+ 
+ 		
+   if(data_gpu->sampvox>0){
+@@ -145,13 +147,13 @@
+ 	      rej=false;
+     }
+ 
+-    path[id*data_gpu->nsteps*3]+=dx/C_Sdims[0];
+-    path[id*data_gpu->nsteps*3+1]+=dy/C_Sdims[1];
+-    path[id*data_gpu->nsteps*3+2]+=dz/C_Sdims[2];
+-
+-    path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)]+=dx/C_Sdims[0];
+-    path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)+1]+=dy/C_Sdims[1];
+-    path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)+2]+=dz/C_Sdims[2];
++    path[offset_path_fw]+=dx/C_Sdims[0];
++    path[offset_path_fw+1]+=dy/C_Sdims[1];
++    path[offset_path_fw+2]+=dz/C_Sdims[2];
++
++    path[offset_path_bw]+=dx/C_Sdims[0];
++    path[offset_path_bw+1]+=dy/C_Sdims[1];
++    path[offset_path_bw+2]+=dz/C_Sdims[2];
+   }
+   // track in one direction
+   lengths[id*2]=streamline<randfib,loopcheck,modeuler>(data_gpu,
+@@ -161,7 +163,7 @@
+ 						       &partRx[threadIdx.x],&partRy[threadIdx.x],&partRz[threadIdx.x],
+ 						       &memSH_a[threadIdx.x],&memSH_b[threadIdx.x],&memSH_c[threadIdx.x],
+ 						       &memSH_d[threadIdx.x],&memSH_e[threadIdx.x],&memSH_f[threadIdx.x],
+-						       &path[id*data_gpu->nsteps*3],part_init,part_has_jumped);
++						       &path[offset_path_fw],part_init,part_has_jumped);
+ 
+   // track in the other direction
+   lengths[id*2+1]=streamline<randfib,loopcheck,modeuler>(data_gpu,
+@@ -171,7 +173,7 @@
+ 							 &partRx[threadIdx.x],&partRy[threadIdx.x],&partRz[threadIdx.x],
+ 							 &memSH_a[threadIdx.x],&memSH_b[threadIdx.x],&memSH_c[threadIdx.x],
+ 							 &memSH_d[threadIdx.x],&memSH_e[threadIdx.x],&memSH_f[threadIdx.x],
+-							 &path[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)],part_init,part_has_jumped);
++							 &path[offset_path_bw],part_init,part_has_jumped);
+ 
+   state[id]=localState; // save state, otherwise random numbers will be repeated (start at the same point)
+ }
+@@ -180,11 +182,11 @@
+ /////// AVOID MASK ///////
+ /////////////////////////
+ template <bool avoidVol,bool avoidSurf>
+-__global__ void avoid_masks_kernel(	tractographyData*	data_gpu,
+-					const int		maxThread,
+-					//INPUT-OUTPUT
+-					float*			paths,
+-					int*			  lengths)
++__global__ void avoid_masks_kernel( tractographyData*   data_gpu,
++                                    const int           maxThread,
++                                    //INPUT-OUTPUT
++                                    float*              paths,
++                                    int*                lengths)
+ {	
+   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+@@ -199,7 +201,8 @@
+   ///////////////////////
+   ////// ONE WAY ////////
+   ///////////////////////
+-  float* mypath=&paths[id*data_gpu->nsteps*3];
++  uint offset_path = id*data_gpu->nsteps*3;
++  float* mypath=&paths[offset_path];
+   int mylength=lengths[id*2];            
+   int2 rejflag;
+ 
+@@ -253,8 +256,9 @@
+   ///////////////////////	
+   ////// OTHER WAY /////
+   ///////////////////////	
+-  rejflag.y=0;    
+-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
++  rejflag.y=0;
++  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
++  mypath=&paths[offset_path];
+   mylength=lengths[id*2+1];
+ 	
+   segmentAx[threadIdx.x]=mypath[0];
+@@ -313,11 +317,11 @@
+ /////// STOP MASK ///////
+ /////////////////////////
+ template <bool stopVol,bool stopSurf>
+-__global__ void stop_masks_kernel(	tractographyData*	data_gpu,
+-					const int		maxThread,
+-					// INPUT-OUTPUT
+-					float*			paths,
+-					int*			  lengths)	// num of coordinates
++__global__ void stop_masks_kernel(  tractographyData*   data_gpu,
++                                    const int           maxThread,
++                                    // INPUT-OUTPUT
++                                    float*              paths,
++                                    int*                lengths)	// num of coordinates
+ {	
+   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+@@ -333,7 +337,8 @@
+   ///////////////////////
+   ////// ONE WAY ////////
+   ///////////////////////
+-  float* mypath=&paths[id*data_gpu->nsteps*3];
++  uint offset_path = id*data_gpu->nsteps*3;
++  float* mypath=&paths[offset_path];
+   int mylength=lengths[id*2];        
+   segmentAx[threadIdx.x]=mypath[0];
+   segmentAy[threadIdx.x]=mypath[1];
+@@ -387,8 +392,9 @@
+   }
+   ///////////////////////	
+   ////// OTHER WAY /////
+-  ///////////////////////	
+-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
++  ///////////////////////
++  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);	
++  mypath=&paths[offset_path];
+   mylength=lengths[id*2+1];
+ 	
+   segmentAx[threadIdx.x]=mypath[0];
+@@ -454,11 +460,11 @@
+ // ignoring forcefirststep ... if seed is inside wtstop: is treated
+ 
+ template <bool wtstopVol,bool wtstopSurf>
+-__global__ void wtstop_masks_kernel(	tractographyData*	data_gpu,
+-					const int		maxThread,
+-					// INPUT-OUTPUT
+-					float*			paths,
+-					int*			  lengths)
++__global__ void wtstop_masks_kernel(  tractographyData*   data_gpu,
++                                      const int           maxThread,
++                                      // INPUT-OUTPUT
++                                      float*              paths,
++                                      int*                lengths)
+ {
+   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+@@ -480,7 +486,8 @@
+   /////////////////	
+   //// ONE WAY ////
+   /////////////////
+-  float* mypath=&paths[id*data_gpu->nsteps*3];
++  uint offset_path = id*data_gpu->nsteps*3;
++  float* mypath=&paths[offset_path];
+   int mylength=lengths[id*2];            
+   bool wtstop=false;
+   // set flags to 1 (still not in roi)
+@@ -546,7 +553,8 @@
+   ////////////////////	
+   //// OTHER WAY /////
+   ////////////////////
+-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
++  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
++  mypath=&paths[offset_path];
+   mylength=lengths[id*2+1];
+   wtstop=false;
+   // set flags to 1 (still not in roi)
+@@ -615,11 +623,11 @@
+ /////// WAYPOINTS MASK ////////
+ ///////////////////////////////
+ template <bool wayVol,bool waySurf>
+-__global__ void way_masks_kernel(	tractographyData*	data_gpu,
+-					const int		maxThread,
+-					// INNPUT-OUTPUT
+-					float*			paths,
+-					int*			lengths)
++__global__ void way_masks_kernel( tractographyData*     data_gpu,
++                                  const int              maxThread,
++                                  // INNPUT-OUTPUT
++                                  float*                paths,
++                                  int*                  lengths)
+ {
+   ///// DYNAMIC SHARED MEMORY /////
+   extern __shared__ float shared[];
+@@ -634,7 +642,8 @@
+   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+ 
+-  float* mypath=&paths[id*data_gpu->nsteps*3];
++  uint offset_path = id*data_gpu->nsteps*3;
++  float* mypath=&paths[offset_path];
+   int mylength=lengths[id*2];
+ 	
+   int numpassed=0; 
+@@ -745,7 +754,8 @@
+     numpassed=0;
+     order=true;
+   }
+-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
++  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
++  mypath=&paths[offset_path];
+   mylength=lengths[id*2+1];
+ 
+   if(waySurf){
+@@ -841,18 +851,17 @@
+ /////////////////////////////
+ template <bool netVol,bool netSurf,int savelength,bool flags_in_shared>
+ // savelength 0: no --pd, nor --ompl | 1: --pd | 2: --ompl (ConNet pathlengths, ConNetb binary hits, and later calculates mean)
+-__global__ void net_masks_kernel(
+-				 tractographyData*	data_gpu,
+-				 const int		maxThread,
+-				 const long long  offset,
+-				 // INNPUT-OUTPUT
+-				 float*			paths,
+-				 int*			  lengths,
+-				 float*			ConNet,
+-				 float*			ConNetb,
+-				 // To use in case too many Net ROIs
+-				 float*			net_flags_Global,
+-				 float*			net_values_Global)
++__global__ void net_masks_kernel( tractographyData*   data_gpu,
++                                  const int           maxThread,
++                                  const long long     offset,
++                                  // INNPUT-OUTPUT
++                                  float*              paths,
++                                  int*                lengths,
++                                  float*              ConNet,
++                                  float*              ConNetb,
++                                  // To use in case too many Net ROIs
++                                  float*              net_flags_Global,
++                                  float*              net_values_Global)
+ {
+   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+@@ -887,7 +896,8 @@
+   int numseed = (offset+id)/data_gpu->nparticles;
+   int ROI = data_gpu->seeds_ROI[numseed];
+ 
+-  float* mypath=&paths[id*data_gpu->nsteps*3];
++  uint offset_path = id*data_gpu->nsteps*3;
++  float* mypath=&paths[offset_path];
+   int mylength=lengths[id*2];
+   int numpassed=1; // count my own ROI
+ 	
+@@ -987,7 +997,8 @@
+   net_flags[ROI]=1; // my own ROI
+   numpassed=1; // count my own ROI
+ 
+-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
++  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
++  mypath=&paths[offset_path];
+   mylength=lengths[id*2+1];
+ 
+   if(netSurf){
+@@ -1092,16 +1103,16 @@
+ /////////////////////////////
+ template <bool targVol,bool targSurf,int savelength, bool flags_in_shared>
+ // savelength 0: no --pd or --ompl | 1: --pd | 2: --ompl 
+-__global__ void targets_masks_kernel( tractographyData*	data_gpu,
+-			const int		  maxThread,
+-			const long long offset,
+-			// INNPUT-OUTPUT
+-			float*			  paths,
+-			int*			    lengths,
+-			float*			  s2targets_gpu,		// a values for each Seed and for each target (Nseeds x NTragets)
+-      float*			  s2targetsb_gpu,
+-      // To use in case too many Net ROIs
+-			float*			  targ_flags_Global)
++__global__ void targets_masks_kernel( tractographyData*     data_gpu,
++                                      const int             maxThread,
++                                      const long long       offset,
++                                      // INNPUT-OUTPUT
++                                      float*                paths,
++                                      int*                  lengths,
++                                      float*                s2targets_gpu,		// (Nseeds x NTargets)
++                                      float*                s2targetsb_gpu,
++                                      // To use in case too many Net ROIs
++                                      float*                targ_flags_Global)
+ {
+   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+@@ -1127,7 +1138,8 @@
+     targ_flags = &targ_flags_Global[id*totalTargets];		
+   }		
+ 
+-  float* mypath=&paths[id*data_gpu->nsteps*3];
++  uint offset_path = id*data_gpu->nsteps*3;
++  float* mypath=&paths[offset_path];
+   int mylength=lengths[id*2];
+ 	
+   for(int i=0;i<totalTargets;i++){
+@@ -1204,7 +1216,8 @@
+   //// OTHER WAY ////
+   ///////////////////
+   pathlength=data_gpu->steplength;
+-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
++  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
++  mypath=&paths[offset_path];
+   mylength=lengths[id*2+1];
+ 
+   if(targSurf){
+@@ -1289,16 +1302,16 @@
+ /////// MATRIX  MASKs /////////
+ ///////////////////////////////
+ template <bool HVols,bool HSurfs, bool M2> // M2 is for Matrix2: it can be defined in a different space
+-__global__ void matrix_kernel(	tractographyData*	data_gpu,
+-				const int		maxThread,
+-				float*			paths,
+-				int*			lengths,
+-				bool 			pathdist,
+-				bool			omeanpathlength,
+-				MaskData*		matrixData, 	// info vols & surfs
+-				// OUTPUT
+-				float3*			crossed,
+-				int*			numcrossed)
++__global__ void matrix_kernel(  tractographyData*     data_gpu,
++                                const int             maxThread,
++                                float*                paths,
++                                int*                  lengths,
++                                bool                  pathdist,
++                                bool                  omeanpathlength,
++                                MaskData*             matrixData, // info vols & surfs
++                                // OUTPUT
++                                float3*               crossed,
++                                int*                   numcrossed)
+ {	
+   unsigned int id = threadIdx.x+blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+@@ -1331,7 +1344,8 @@
+   /////////////////	
+   //// ONE WAY ////
+   /////////////////
+-  float* mypath=&paths[id*data_gpu->nsteps*3];
++  uint offset_path = id*data_gpu->nsteps*3;
++  float* mypath=&paths[offset_path];
+   if(HSurfs){
+     if(M2){
+       vox_to_vox_S2M2(mypath,&segmentAx[threadIdx.x],&segmentAy[threadIdx.x],&segmentAz[threadIdx.x]);
+@@ -1388,7 +1402,8 @@
+   if(pathdist||omeanpathlength) pathlength=-data_gpu->steplength; // it starts with the second coordinate of the path 
+   // reverse, m_tracksign !! . If different directions when crossing 2 nodes, then the path distance is longer.
+ 
+-  mypath=&paths[id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3)];
++  offset_path = id*data_gpu->nsteps*3+((data_gpu->nsteps/2)*3);
++  mypath=&paths[offset_path];
+   mylength=lengths[id*2+1];
+   if(HSurfs){
+     if(M2){
+@@ -1444,21 +1459,22 @@
+ ///////// UPDATE PATHS VOLUME ///////
+ /////////////////////////////////////
+ template <bool pathdist, bool omeanpathlength, bool opathdir>
+-__global__ void update_path_kernel(	tractographyData*	data_gpu,
+-					const int		maxThread,
+-					float* 			path,
+-					int*			  lengths,
+-					int*			  beenhere,					
+-					const int 	upper_limit,
+-					// OUTPUT
+-					float*			m_prob,
+-					float*			m_prob2,	// for omeanpathlength
+-					float*			m_localdir)	// for opathdir
++__global__ void update_path_kernel( tractographyData*     data_gpu,
++                                    const int             maxThread,
++                                    float*                path,
++                                    int*                  lengths,
++                                    int*                  beenhere,					
++                                    const int             upper_limit,
++                                    // OUTPUT
++                                    float*                m_prob,
++                                    float*                m_prob2,	// for omeanpathlength
++                                    float*                m_localdir)	// for opathdir
+ {
+   int id = threadIdx.x + blockIdx.x*blockDim.x;
+   if(id>=maxThread) return;
+ 
+-  float* mypath = &path[id*data_gpu->nsteps*3];
++  uint offset_path = id*data_gpu->nsteps*3;
++  float* mypath = &path[offset_path];
+   int mylength = lengths[id*2];
+   int* m_beenhere = &beenhere[id*(data_gpu->nsteps)];
+   int coordinatex,coordinatey,coordinatez;
+@@ -1555,7 +1571,8 @@
+   }	
+ 
+   // other way
+-  mypath = &path[id*data_gpu->nsteps*3+(data_gpu->nsteps/2)*3];
++  offset_path = id*data_gpu->nsteps*3+(data_gpu->nsteps/2)*3;
++  mypath = &path[offset_path];
+   mylength = lengths[id*2+1];
+   pathlength=0.0f;
+ 	
+diff -ru fsl.orig/src/ptx2/saveResults_ptxGPU.cc fsl/src/ptx2/saveResults_ptxGPU.cc
+--- fsl.orig/src/ptx2/saveResults_ptxGPU.cc	2019-09-11 15:25:05.000000000 +0200
++++ fsl/src/ptx2/saveResults_ptxGPU.cc	2020-01-04 20:11:24.863549470 +0100
+@@ -326,7 +326,7 @@
+   ////// save seeds to targets //////
+   ///////////////////////////////////
+   if(opts.s2tout.value()){
+-    long pos=0;
++    size_t pos=0;
+     int ntargets=data_host.targets.NVols+data_host.targets.NSurfs;
+     if (fsl_imageexists(opts.seedfile.value())){
+       volume<float> tmp;
+@@ -392,7 +392,7 @@
+ 	int nfaces=data_host.seeds_mesh_info[1];
+ 	
+ 	if(f.is_open()){
+-	  int pos2=0;
++	  size_t pos2=0;
+ 	  for(int i=0;i<nvertices;i++){
+ 	    flot<<data_host.seeds_vertices[pos2]<<" "
+ 		<<data_host.seeds_vertices[pos2+1]<<" "
+@@ -531,7 +531,7 @@
+ 	    int nvertices=data_host.seeds_mesh_info[id_mesh*2];
+ 	    int nfaces=data_host.seeds_mesh_info[id_mesh*2+1];
+ 	    if (f.is_open()){
+-	      int pos2=0;
++	      size_t pos2=0;
+ 	      for(int i=0;i<id_mesh;i++) pos2+= (data_host.seeds_mesh_info[i*2]*3);
+ 	      for(int i=0;i<nvertices;i++){
+ 		flot<<data_host.seeds_vertices[pos2]<<" "
+@@ -610,7 +610,7 @@
+       if(opts.omeanpathlength.value()){
+ 	out2= new ofstream(file2.c_str());
+       }
+-      for(int i=0;i<data_host.nseeds;i++){
++      for(size_t i=0;i<data_host.nseeds;i++){
+ 	pos=i;
+ 	for(int j=0;j<ntargets;j++){
+ 	  if(!opts.omeanpathlength.value()){			

@@ -1,0 +1,40 @@
+easyblock = 'PythonPackage'
+
+name = 'Theano'
+version = '1.0.4'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://deeplearning.net/software/theano'
+description = """Theano is a Python library that allows you to define, optimize,
+and evaluate mathematical expressions involving multi-dimensional arrays efficiently."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+sources = [SOURCE_TAR_GZ]
+checksums = ['35c9bbef56b61ffa299265a42a4e8f8cb5a07b2997dabaef0f8830b397086913']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('mkl-service', '2.3.0', versionsuffix),
+]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+fix_python_shebang_for = ['bin/theano-cache', 'bin/theano-nose']
+
+sanity_check_paths = {
+    'files': ['bin/theano-cache', 'bin/theano-nose'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+local_blas_warning = "Using NumPy C-API based implementation for BLAS functions"
+sanity_check_commands = [
+    # make sure that warning about falling back to (slow) NumPy C-API for BLAS functions is *not* printed
+    # mkl-service dependency is required to ensure this doesn't happen
+    "python -c 'import theano.tensor' 2>&1 | grep '%s'; test $? != 0" % local_blas_warning,
+]
+
+moduleclass = 'math'
