@@ -1,0 +1,29 @@
+# Author: @maxim-masterov (SURF)
+# This patch fixes:
+# - the error with the missing header
+# - the error with the operands of a binary numeric operator "/".
+diff -Nru ncl-6.6.2.orig/ncarg2d/src/libncarg/areasC/c_argeti.c ncl-6.6.2/ncarg2d/src/libncarg/areasC/c_argeti.c
+--- ncl-6.6.2.orig/ncarg2d/src/libncarg/areasC/c_argeti.c	2021-08-23 11:15:57.122195429 +0200
++++ ncl-6.6.2/ncarg2d/src/libncarg/areasC/c_argeti.c	2021-08-23 11:18:42.945882692 +0200
+@@ -12,6 +12,7 @@
+ ************************************************************************/
+ 
+ #include <ncarg/ncargC.h>
++#include <string.h>
+ 
+ extern void NGCALLF(argeti,ARGETI)(NGstring,int*,int);
+ 
+diff -Nru ncl-6.6.2.orig/ncarg2d/src/libncarg_gks/bwi/argb2ci.f ncl-6.6.2/ncarg2d/src/libncarg_gks/bwi/argb2ci.f
+--- ncl-6.6.2.orig/ncarg2d/src/libncarg_gks/bwi/argb2ci.f	2021-08-23 11:16:04.115140069 +0200
++++ ncl-6.6.2/ncarg2d/src/libncarg_gks/bwi/argb2ci.f	2021-08-25 16:58:47.574322219 +0200
+@@ -31,8 +31,8 @@
+       mindist = 2e31
+       nearest = 0
+       do i=1,mol
+-          r = (iand(index, RMASK) / Z'0000FFFF') / 255.
+-          g = (iand(index, GMASK) / Z'000000FF') / 255.
++          r = (iand(index, RMASK) / int(Z'0000FFFF', 4)) / 255.
++          g = (iand(index, GMASK) / int(Z'000000FF', 4)) / 255.
+           b = (iand(index, BMASK))               / 255.
+ 
+ C         we don't need absolute distance, so forego the sqrt operation...

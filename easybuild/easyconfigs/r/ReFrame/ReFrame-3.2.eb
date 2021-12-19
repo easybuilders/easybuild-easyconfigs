@@ -1,0 +1,81 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '3.2'
+
+homepage = 'https://github.com/eth-cscs/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+req_py_majver = 3
+req_py_minver = 6
+
+use_pip = True
+
+exts_default_options = {
+    # need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing packages
+    'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && ",
+}
+
+exts_list = [
+    ('pip', '20.2.4', {
+        'checksums': ['85c99a857ea0fb0aedf23833d9be5c40cf253fe24443f0829c7b472e23c364a1'],
+        'use_pip': False,
+    }),
+    ('setuptools', '50.3.2', {
+        'source_tmpl': 'setuptools-%(version)s.zip',
+        'checksums': ['ed0519d27a243843b05d82a5e9d01b0b083d9934eaa3d02779a23da18077bd3c'],
+    }),
+    ('wheel', '0.35.1', {
+        'checksums': ['99a22d87add3f634ff917310a3d87e499f19e663413a52eb9232c447aa646c9f'],
+    }),
+    ('zipp', '3.3.1', {
+        # install via pre-built wheel, because installing zipp from source is a huge mess,
+        # lots of weird trouble with 0.0.0 being used a a version due to use of setuptools_scm
+        'source_tmpl': 'zipp-%(version)s-py3-none-any.whl',
+        'checksums': ['16522f69653f0d67be90e8baa4a46d66389145b734345d68a257da53df670903'],
+        'unpack_sources': False,
+    }),
+    ('attrs', '20.2.0', {
+        'modulename': 'attr',
+        'checksums': ['26b54ddbbb9ee1d34d5d3668dd37d6cf74990ab23c828c2888dccdceee395594'],
+    }),
+    ('importlib_metadata', '2.0.0', {
+        'checksums': ['77a540690e24b0305878c37ffd421785a6f7e53c8b5720d211b211de8d0e95da'],
+    }),
+    ('pygelf', '0.3.6', {
+        'checksums': ['3e5bc59e3b5a754556a76ff2c69fcf2003218ad7b5ff8417482fa1f6a7eba5f9'],
+    }),
+    ('pyrsistent', '0.17.3', {
+        'checksums': ['2e636185d9eb976a18a8a8e96efce62f2905fea90041958d8cc2a189756ebf3e'],
+    }),
+    ('jsonschema', '3.2.0', {
+        'checksums': ['c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a'],
+    }),
+    ('six', '1.15.0', {
+        'checksums': ['30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259'],
+    }),
+    ('reframe', version, {
+        'source_urls': ['https://github.com/eth-cscs/reframe/archive/'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'checksums': ['dc7f72e31386e549a874699067666607a72835914fef18c38ae6032ab5e5ed51'],
+    }),
+]
+
+postinstallcmds = [
+    "cd %(builddir)s/reframe/reframe-%(version)s && cp -r tutorials %(installdir)s",
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe'],
+    'dirs': ['lib', 'tutorials']
+}
+
+sanity_check_commands = ['reframe -V']
+
+sanity_pip_check = True
+
+moduleclass = 'devel'

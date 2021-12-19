@@ -1,0 +1,55 @@
+Removed hardcoded flags. Linked imkl and replaced cblas for mkl_cblas
+
+Author: Pavel Grochal (INUITS)
+diff -ru tsne-0.1.8.orig/setup.py tsne-0.1.8/setup.py
+--- tsne-0.1.8.orig/setup.py	2018-06-06 19:22:12.000000000 +0200
++++ tsne-0.1.8/setup.py	2020-09-23 16:46:58.816718252 +0200
+@@ -49,12 +49,12 @@
+                    extra_link_args=['-Wl,-framework', '-Wl,Accelerate', '-lcblas'],
+                    language='c++')]
+ else:
+-    extra_link_args = ['-lcblas']
+-    dist = platform.linux_distribution(full_distribution_name=0)[0]
+-    redhat_dists = set(["redhat", "fedora", "centos"])
+-    if dist in redhat_dists:
+-        extra_link_args = ['-lsatlas']
+-    
++    extra_link_args = ['-lmkl_core', '-lmkl_intel_thread', '-lmkl_intel_lp64', '-lmkl_def', '-lpthread']
++    # dist = platform.linux_distribution(full_distribution_name=0)[0]
++    # redhat_dists = set(["redhat", "fedora", "centos"])
++    # if dist in redhat_dists:
++    #     extra_link_args = ['-lsatlas']
++
+     # LINUX
+     ext_modules = [Extension(name='bh_sne',
+                    sources=['tsne/bh_sne_src/quadtree.cpp', 'tsne/bh_sne_src/tsne.cpp', 'tsne/bh_sne.pyx'],
+diff -ru tsne-0.1.8.orig/tsne/bh_sne_src/quadtree.cpp tsne-0.1.8/tsne/bh_sne_src/quadtree.cpp
+--- tsne-0.1.8.orig/tsne/bh_sne_src/quadtree.cpp	2018-06-06 19:13:25.000000000 +0200
++++ tsne-0.1.8/tsne/bh_sne_src/quadtree.cpp	2020-09-23 16:59:31.380365015 +0200
+@@ -9,7 +9,7 @@
+ 
+ #include <math.h>
+ #include <float.h>
+-#include <cblas.h>
++#include <mkl_cblas.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include "quadtree.h"
+@@ -383,4 +383,3 @@
+         southWest->print();
+     }
+ }
+-
+diff -ru tsne-0.1.8.orig/tsne/bh_sne_src/tsne.cpp tsne-0.1.8/tsne/bh_sne_src/tsne.cpp
+--- tsne-0.1.8.orig/tsne/bh_sne_src/tsne.cpp	2018-06-06 19:20:55.000000000 +0200
++++ tsne-0.1.8/tsne/bh_sne_src/tsne.cpp	2020-09-23 16:59:36.356282664 +0200
+@@ -18,7 +18,7 @@
+ #include "tsne.h"
+ 
+ extern "C" {
+-    #include <cblas.h>
++    #include <mkl_cblas.h>
+ }
+ 
+ 
+

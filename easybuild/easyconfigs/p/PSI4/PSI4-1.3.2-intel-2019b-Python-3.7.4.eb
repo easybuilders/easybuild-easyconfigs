@@ -1,0 +1,63 @@
+easyblock = 'EB_PSI'
+
+name = 'PSI4'
+version = '1.3.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+github_account = 'psi4'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['PSI4-%(version)s_fix_cmake_release.patch']
+checksums = [
+    'ed76c67803b6420f35f57a6dd31c47108b9145b8c9fced5c94cdc179f6b5fbf3',  # v1.3.2.tar.gz
+    '62252bfc3e974fb62db9377246467af637f007e95b5889be472b8e7c2e7fd546',  # PSI4-1.3.2_fix_cmake_release.patch
+]
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    # Perl needed for the ctest test suite during the installation, not for the pytest test suite after the installation
+    # ('Perl', '5.30.0'),
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    #  PCMSolver recent versions fail with recent intel compilers.
+    #  Tried with intel/201{7,8}b, and versions 1.1.12, and 1.2.1
+    #  See in more details: https://github.com/PCMSolver/pcmsolver/issues/159
+    ('PCMSolver', '1.2.3', versionsuffix),
+    ('CheMPS2', '1.8.9'),
+    ('pytest', '6.0.1', versionsuffix),
+    ('networkx', '2.4', versionsuffix),
+    ('deepdiff', '5.0.2', versionsuffix),
+    ('libxc', '4.3.4'),
+    ('pybind11', '2.4.3', versionsuffix),
+    ('pydantic', '1.6.1', versionsuffix),
+    ('Pint', '0.14', versionsuffix),
+]
+
+configopts = '-DENABLE_MPI=ON -DENABLE_PLUGINS=ON -DENABLE_XHOST=OFF '
+#  Install python mudule to the standard location instead of lib
+configopts += '-DPYMOD_INSTALL_LIBDIR=/python%(pyshortver)s/site-packages '
+#  Add bundled (downloaded) packages
+# -DENABLE_simint=ON does not work with intel/2018, so have to make with GCCcore
+configopts += '-DENABLE_dkh=ON -DENABLE_gdma=ON -DENABLE_resp=ON -DENABLE_snsmp2=ON '
+
+# runtest uses ctest, and some of the thests have to be manually compared
+# to the reference output (those tests are marked failed)
+# After installing PSI4, you can test the package using psi4 --test command. (This uses pytest framework)
+# runtest = '-L smoke'
+runtest = False
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_commands = ["python -c 'import psi4'"]
+
+moduleclass = 'chem'
