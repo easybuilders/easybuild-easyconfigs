@@ -1,0 +1,46 @@
+# by Ward Poelmans <wpoely86@gmail.com>
+
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.5.0'
+
+homepage = 'http://www.plumed-code.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/plumed/plumed2/releases/download/v%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['f782d1eafffb919f27fcafc1b317c08b498ff51727ae20d15491f26ed332bbff']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('GSL', '2.5'),
+    ('libmatheval', '1.1.11'),
+]
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+configopts = ' --exec-prefix=%(installdir)s --enable-gsl --enable-modules=all'
+prebuildopts = 'source sourceme.sh && '
+# make sure that ld.gold linker is used
+# requires to work around problems like "ld: BFD (GNU Binutils) 2.30 assertion fail elf.c:3564"
+buildopts = 'LD_RO="ld.gold -r -o"'
+
+sanity_check_paths = {
+    'files': ['bin/plumed', 'lib/libplumedKernel.%s' % SHLIB_EXT, 'lib/libplumed.%s' % SHLIB_EXT],
+    'dirs': ['lib/plumed']
+}
+
+modextrapaths = {
+    'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT,
+    'PLUMED_ROOT': 'lib/plumed',
+}
+
+moduleclass = 'chem'

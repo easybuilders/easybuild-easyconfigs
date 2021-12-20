@@ -1,0 +1,44 @@
+# fix for MKL error "PDSTEDC parameter number 10 had an illegal value"
+# (github.com/GlobalArrays/ga/pull/122)
+diff --git a/global/src/scalapack.F b/global/src/scalapack.F
+index 74ef1a9..cd80884 100644
+--- a/global/src/scalapack.F
++++ b/global/src/scalapack.F
+@@ -3030,6 +3030,7 @@ c
+       integer alen, blen
+       integer block_dims_A(2),block_dims_B(2),blocks(2)
+       integer gridA(2), gridB(2)
++      double precision mywork
+       logical use_direct
+ 
+       external pdlamch,iceil,indxg2p
+@@ -3201,20 +3202,16 @@ c
+ c     
+ c     
+       liwork4=liwork
+-#if 0
+       lcwork4=-1
+-          call pdsyevd(jobz, uplo,
+-     1         n, dbl_mb(adrA), one4, one4, descA,
+-     1         eval, dbl_mb(adrB), one4, one4, 
+-     2         descB, dbl_mb(adrcwork), lcwork4,
+-     2         dum, liwork4, info)
+-          lcwork=dum
+-#else
+-
+-          lcwork = MAX( 1+6*N+2*NP*NQ, 
+-     =         3*N + MAX( NB*( NP+1 ), 3*NB ))+ 2*N
+-          lcwork=max(lcwork,16384)
+-#endif
++      call pdsyevd(jobz, uplo,
++     1     n, dbl_mb(adrA), one4, one4, descA,
++     1     eval, dbl_mb(adrB), one4, one4, 
++     2     descB, mywork, lcwork4,
++     2     int_mb(adriwork), liwork4, info)
++      lcwork = MAX( 1+6*N+2*NP*NQ, 
++     =     3*N + MAX( NB*( NP+1 ), 3*NB ))+ 2*N
++      lcwork=max(lcwork,16384)
++      lcwork=max(int(mywork),lcwork)
+ 
+ c     
+       if(lcwork.ne.0)

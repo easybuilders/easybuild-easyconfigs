@@ -1,0 +1,45 @@
+name = 'Blender'
+version = '2.79b'
+local_cuda_ver = '9.2.88'
+versionsuffix = '-Python-%%(pyver)s-CUDA-%s' % local_cuda_ver
+
+homepage = 'https://www.blender.org/'
+description = """Blender is the free and open source 3D creation suite. It supports
+ the entirety of the 3D pipeline-modeling, rigging, animation, simulation, rendering,
+ compositing and motion tracking, even video editing and game creation."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['http://download.blender.org/source/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['4c944c304a49e68ac687ea06f5758204def049b66dc211e1cffa1857716393bc']
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('Boost', '1.67.0'),
+    ('libjpeg-turbo', '2.0.0'),
+    ('zlib', '1.2.11'),
+    ('X11', '20180604'),
+    ('Mesa', '18.1.1'),
+    ('libGLU', '9.0.0'),
+    ('OpenColorIO', '1.1.0'),  # for advanced color management
+    ('OpenImageIO', '1.8.16'),  # required for cycles render engine
+    ('CUDA', local_cuda_ver, '', True),
+]
+
+builddependencies = [('CMake', '3.12.1')]
+
+configopts = '-DCYCLES_CUDA_BINARIES_ARCH="sm_30;sm_35;sm_37;sm_50;sm_52;sm_60;sm_61;sm_62;sm_72" '
+
+# remove CUPTI headers, included in CUDA, from CPATH
+# the CUPTI directory contains old GL headers, which interfere with Blender
+# see: https://github.com/easybuilders/easybuild-easyblocks/issues/1492
+# see: https://github.com/easybuilders/easybuild-easyblocks/pull/1306/files
+# FOO=${FOO/bar/} results in $FOO value with 'bar' removed
+# quotes are required here because value to remove includes slashes (/)
+buildopts = 'CPATH=${CPATH/"$EBROOTCUDA/extras/CUPTI/include:"/}'
+
+# use Intel software rasterizer by default (no GPU hardware acceleration)
+modextravars = {'GALLIUM_DRIVER': 'swr'}
+
+moduleclass = 'vis'

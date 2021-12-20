@@ -1,0 +1,19 @@
+fix PYTHON_PREFIX and paths in PYTHON_INCLUDES for installations with Python 3
+author: Alex Domingo (VUB)
+--- configure.ac.orig	2020-01-27 18:33:39.946359000 +0100
++++ configure.ac	2020-01-27 18:36:24.361033734 +0100
+@@ -1180,8 +1180,12 @@
+       if test "x$PYTHON" = "x"; then
+ 	use_python="No (python is too old)"
+       else
+-        PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix"`
+-        PYTHON_INCLUDES=-I$PYTHON_PREFIX/include/python$PYTHON_VERSION_SHORT
++        PYTHON_PREFIX=`$PYTHON -c "import sys; print(sys.prefix)"`
++        if test $PYTHON_VERSION_MAJOR -ge 3; then
++            PYTHON_INCLUDES=-I$PYTHON_PREFIX/include/python${PYTHON_VERSION_SHORT}m
++        else
++            PYTHON_INCLUDES=-I$PYTHON_PREFIX/include/python$PYTHON_VERSION_SHORT
++        fi
+ #        PYTHON_LIBS="-lpython$PYTHON_VERSION_SHORT"
+ 	PYTHON_LIBS="-undefined dynamic_lookup"
+         PYTHON_INSTALL_DIR="`$PYTHON $srcdir/config/config_python.py archsitelib`"

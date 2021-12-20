@@ -1,0 +1,27 @@
+The current function doesn't take into account that a custom install prefix might have been set
+at installation time which we do in EB.
+Insert a quick hack to make it work as it should (fixed in 2.5.0)
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/pybind11/__init__.py b/pybind11/__init__.py
+index c625e8c..5c2e3bd 100644
+--- a/pybind11/__init__.py
++++ b/pybind11/__init__.py
+@@ -27,10 +27,16 @@ def get_include(user=False):
+ 
+         dist_cobj = dist.get_command_obj('install', create=True)
+ 
++        # Very crude hack to get install prefix from <prefix>/lib/python3.7/site-packages/pybind11
++        from pathlib import Path
++        prefix = prefix = Path(__file__).resolve().parents[4]
++
+         # Search for packages in user's home directory?
+         if user:
+             dist_cobj.user = user
+             dist_cobj.prefix = ""
++        else:
++            dist_cobj.prefix = prefix
+         dist_cobj.finalize_options()
+ 
+         return os.path.dirname(dist_cobj.install_headers)

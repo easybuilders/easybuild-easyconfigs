@@ -1,0 +1,49 @@
+#
+# The CLAPACK needs to run the command of "ulimit -s unlimited" before running the eb file,
+# else if directly compiled the CLAPACK, it gives the following error:
+#
+# NEP: Testing Nonsymmetric Eigenvalue Problem routines
+# ./xeigtstz < nep.in > znep.out 2>&1 
+# /bin/sh: line 1:  4778 Segmentation fault      ./xeigtstz < nep.in > znep.out 2>&1 
+# make[1]: *** [znep.out] Error 139
+#
+# The solution of "ulimit -s unlimited" is provided in the link:
+#
+# https://unix.stackexchange.com/questions/428394/lapack-make-fails-recipe-for-target-znep-out-failed-error
+#
+# As described in another link, the error only pertains to the testing module; which related to improperly 
+# setting the testing matrix:
+# 
+# https://github.com/Reference-LAPACK/lapack/issues/85
+#
+# Therefore there's nothing harmful for the code section.
+#
+easyblock = 'ConfigureMake'
+
+name = 'CLAPACK'
+version = '3.2.1'
+
+homepage = 'http://www.netlib.org/clapack'
+description = "C version of LAPACK"
+
+toolchain = {'name': 'iccifort', 'version': '2017.4.196-GCC-6.4.0-2.28'}
+
+source_urls = ['http://www.netlib.org/clapack/']
+sources = [SOURCELOWER_TGZ]
+checksums = ['6dc4c382164beec8aaed8fd2acc36ad24232c406eda6db462bd4c41d5e455fac']
+
+unpack_options = '--strip-components=1'
+buildininstalldir = True
+skipsteps = ['configure', 'install']
+
+prebuildopts = 'ulimit -s unlimited && cp make.inc.example make.inc && '
+buildopts = 'CC="$CC" LOADER="$CC" '
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['lapack_LINUX.a', 'tmglib_LINUX.a'],
+    'dirs': [],
+}
+
+moduleclass = 'math'

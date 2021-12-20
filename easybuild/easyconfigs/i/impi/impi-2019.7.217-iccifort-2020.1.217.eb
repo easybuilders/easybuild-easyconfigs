@@ -1,0 +1,40 @@
+# This is an easyconfig file for EasyBuild, see http://easybuilders.github.io/easybuild
+
+name = 'impi'
+version = '2019.7.217'
+
+homepage = 'https://software.intel.com/en-us/intel-mpi-library/'
+description = "Intel MPI Library, compatible with MPICH ABI"
+
+toolchain = {'name': 'iccifort', 'version': '2020.1.217'}
+
+source_urls = ['https://registrationcenter-download.intel.com/akdlm/irc_nas/tec/16546/']
+sources = ['l_mpi_%(version)s.tgz']
+checksums = ['90383b0023f84ac003a55d8bb29dbcf0c639f43a25a2d8d8698a16e770ac9c07']
+
+dependencies = [
+    # needed by libfabric provider MLX introduced in Intel MPI v2019.6,
+    # https://software.intel.com/en-us/articles/improve-performance-and-stability-with-intel-mpi-library-on-infiniband
+    ('UCX', '1.8.0'),
+]
+
+dontcreateinstalldir = True
+
+components = ['intel-mpi', 'intel-psxe', 'intel-imb']
+
+# set up all the mpi commands to default to intel compilers
+# set_mpi_wrappers_all = True
+
+modextravars = {
+    # to enable SLURM integration with srun (site-specific)
+    # 'I_MPI_PMI_LIBRARY': 'libpmi2.so',
+
+    # set this if mpirun gives you a floating point exception (SIGFPE), see
+    # https://software.intel.com/en-us/forums/intel-clusters-and-hpc-technology/topic/852307
+    # 'I_MPI_HYDRA_TOPOLIB': 'ipl',
+}
+
+# may be needed if you enable I_MPI_PMI_LIBRARY above
+# osdependencies = [('slurm-libpmi')]
+
+moduleclass = 'mpi'

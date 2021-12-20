@@ -1,0 +1,82 @@
+* skip downloading and building of Jellyfish, since it's provided via EasyBuild already
+* don't hardcode $CMAKE_CXX_FLAGS
+author: Paul Jähne, ported to FuSeq 1.1.2 by Kenneth Hoste (HPC-UGent)
+--- sailfish-0.10.0/CMakeLists.txt.orig	2016-04-14 03:24:40.000000000 +0200
++++ sailfish-0.10.0/CMakeLists.txt	2020-03-06 14:33:25.642153644 +0100
+@@ -25,7 +25,7 @@
+
+ ## Set the standard required compile flags
+ # Nov 18th --- removed -DHAVE_CONFIG_H
+-set (CMAKE_CXX_FLAGS "-pthread -funroll-loops -fPIC -fomit-frame-pointer -Ofast -DHAVE_ANSI_TERM -DHAVE_SSTREAM -DRAPMAP_SALMON_SUPPORT -Wall -std=c++11 -Wreturn-type -Werror=return-type")
++set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L$ENV{EBROOTJELLYFISH}/lib -ljellyfish-2.0 -pthread -DHAVE_ANSI_TERM -DHAVE_SSTREAM -DRAPMAP_SALMON_SUPPORT -Wall -std=c++11 -Wreturn-type -Werror=return-type")
+
+ ##
+ # OSX is strange (some might say, stupid in this regard).  Deal with it's quirkines here.
+@@ -286,26 +286,6 @@
+     )
+ set(SUFFARRAY_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/external/install/include)
+
+-find_package(Jellyfish 2.2.5)
+-
+-if (NOT JELLYFISH_FOUND)
+-message("Build system will fetch and build Jellyfish")
+-message("==================================================================")
+-ExternalProject_Add(libjellyfish
+-    DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external
+-    DOWNLOAD_COMMAND curl -k -L https://github.com/gmarcais/Jellyfish/releases/download/v2.2.5/jellyfish-2.2.5.tar.gz -o jellyfish-2.2.5.tgz &&
+-    	rm -fr jellyfish-2.2.5 &&
+-     	tar -xzvf jellyfish-2.2.5.tgz
+-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.5
+-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/install
+-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/external/jellyfish-2.2.5/configure --prefix=<INSTALL_DIR> CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+-    BUILD_COMMAND ${MAKE} CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${JELLYFISH_CXX_FLAGS}
+-    BUILD_IN_SOURCE 1
+-    INSTALL_COMMAND make install
+-)
+-endif()
+-
+-
+ find_package(TBB)
+ ##
+ #
+--- FuSeq-1.1.2/src/CMakeLists.txt.orig	2019-09-09 15:45:37.000000000 +0200
++++ FuSeq-1.1.2/src/CMakeLists.txt	2020-03-06 15:45:21.977875953 +0100
+@@ -73,12 +73,6 @@
+ ${Boost_INCLUDE_DIRS}
+ )
+ 
+-if (JELLYFISH_FOUND)
+-    include_directories(${JELLYFISH_INCLUDE_DIR})
+-else()
+-    include_directories(${GAT_SOURCE_DIR}/external/install/include/jellyfish-2.2.5)
+-endif()
+-
+  
+ link_directories( 
+ ${GAT_SOURCE_DIR}/lib
+@@ -155,8 +149,7 @@
+     gff
+     ${ZLIB_LIBRARY} 
+     ${SUFFARRAY_LIB}
+-    ${SUFFARRAY64_LIB}
+-    ${GAT_SOURCE_DIR}/external/install/lib/libjellyfish-2.0.a 
++    ${SUFFARRAY64_LIB} 
+     m
+     ${TBB_LIBRARIES}
+     ${LIBSAILFISH_LINKER_FLAGS} 
+@@ -174,7 +167,6 @@
+     ${ZLIB_LIBRARY} 
+     ${SUFFARRAY_LIB}
+     ${SUFFARRAY64_LIB}
+-    ${GAT_SOURCE_DIR}/external/install/lib/libjellyfish-2.0.a 
+     m
+     ${TBB_LIBRARIES}
+     ${LIBSAILFISH_LINKER_FLAGS} 
+@@ -191,7 +183,6 @@
+     ${ZLIB_LIBRARY} 
+     ${SUFFARRAY_LIB}
+     ${SUFFARRAY64_LIB}
+-    ${GAT_SOURCE_DIR}/external/install/lib/libjellyfish-2.0.a 
+     m
+     ${TBB_LIBRARIES}
+     ${LIBSAILFISH_LINKER_FLAGS} 
