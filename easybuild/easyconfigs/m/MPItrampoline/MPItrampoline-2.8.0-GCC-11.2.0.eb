@@ -1,0 +1,53 @@
+easyblock = 'Bundle'
+
+name = 'MPItrampoline'
+version = '2.8.0'
+
+homepage = 'https://github.com/eschnett/MPItrampoline'
+description = "A forwarding MPI implementation that can use any other MPI implementation via an MPI ABI"
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('OpenMPI', '4.1.2'),
+]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {'start_dir': '%(name)s-%(version)s'}
+
+components = [
+    ('MPIwrapper', '2.2.1', {
+        'source_urls': ['https://github.com/eschnett/MPIwrapper/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['4ce058d47e515ff3dc62a6e175a9b1f402d25cc3037be0d9c26add2d78ba8da9'],
+    }),
+    ('MPItrampoline', '2.8.0', {
+        'source_urls': ['https://github.com/eschnett/MPItrampoline/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['bc2a075ced19e5f7ea547060e284887bdbb0761d34d1adb6f16d2e9e096a7d38'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mpicc', 'bin/mpicxx', 'bin/mpiexec', 'bin/mpifc', 'bin/mpifort', 'bin/mpiwrapperexec',
+              'lib/libmpi.a', 'lib/libmpifort.a', 'lib/libmpiwrapper.%s' % SHLIB_EXT, 'lib/pkgconfig/MPItrampoline.pc'],
+    'dirs': ['include', 'lib/cmake/MPItrampoline'],
+}
+
+sanity_check_commands = [
+    "mpicc --help",
+    "MPITRAMPOLINE_MPIEXEC=$EBROOTOPENMPI/bin/mpiexec mpiexec --help",
+    "mpifort --help",
+]
+
+modextravars = {
+    'MPITRAMPOLINE_LIB': '%%(installdir)s/lib/libmpiwrapper.%s' % SHLIB_EXT,
+    #'MPITRAMPOLINE_MPIEXEC': 
+}
+
+moduleclass = 'lib'
