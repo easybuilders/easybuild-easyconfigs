@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'ABRA2'
+version = '2.23'
+
+homepage = 'https://github.com/mozack/abra2'
+description = "Assembly Based ReAligner"
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/mozack/abra2/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['ABRA2-2.22_fix-Makefile.patch']
+checksums = [
+    '3993f66a493070ee49df2865b6786a45a0cf6c379bae83e94b8339abbe673289',  # v2.23.tar.gz
+    '05090efb306fc84d09f007a848ce0d0472f8633633b0a6eaf86ab075d092bc0d',  # ABRA2-2.22_fix-Makefile.patch
+]
+
+builddependencies = [('Maven', '3.6.3', '', True)]
+
+dependencies = [
+    ('Java', '11', '', True),
+    ('BWA', '0.7.17'),
+]
+
+parallel = 1
+
+buildopts = 'CXX="$CXX" CXXFLAGS="$CXXFLAGS"'
+buildopts += '&& make standalone CXX="$CXX" CXXFLAGS="$CXXFLAGS"'
+
+files_to_copy = [
+    (['abra'], 'bin'),
+    (['target/libAbra.%s' % SHLIB_EXT], 'lib'),
+    'target/abra2-%(version)s-jar-with-dependencies.jar',
+]
+
+postinstallcmds = ["cd %(installdir)s && mv abra2-%(version)s-jar-with-dependencies.jar abra2-%(version)s.jar"]
+
+sanity_check_paths = {
+    'files': ['abra2-%(version)s.jar', 'bin/abra', 'lib/libAbra.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
