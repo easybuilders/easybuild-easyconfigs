@@ -1,0 +1,143 @@
+From d55d6715893ad950cda29a2c7272b15e6ce76bc3 Mon Sep 17 00:00:00 2001
+From: Sebastian Ehlert <28669218+awvwgk@users.noreply.github.com>
+Date: Mon, 1 Feb 2021 18:55:07 +0100
+Subject: [PATCH] Add testing with Intel oneAPI (#29)
+
+- builds crest with Intel oneAPI classic compilers using meson
+- installs xtb from selected release in testing environment
+- runs example 0 to check for basic functionality
+---
+ .github/workflows/build.yml | 86 +++++++++++++++++++++++++++++++++++++
+ CMakeLists.txt              | 10 ++---
+ meson.build                 | 10 ++---
+ 3 files changed, 96 insertions(+), 10 deletions(-)
+ create mode 100644 .github/workflows/build.yml
+
+diff --git a/.github/workflows/build.yml b/.github/workflows/build.yml
+new file mode 100644
+index 0000000..a6564dc
+--- /dev/null
++++ b/.github/workflows/build.yml
+@@ -0,0 +1,86 @@
++name: CI
++on: [push, pull_request]
++
++env:
++  BUILD_DIR: _build
++  XTB_VERSION: 6.4.0
++
++jobs:
++  intel-meson-build:
++    runs-on: ${{ matrix.os }}
++    strategy:
++      fail-fast: false
++      matrix:
++        os: [ubuntu-20.04]
++        fc: [ifort]
++        cc: [icc]
++    env:
++      FC: ${{ matrix.fc }}
++      CC: ${{ matrix.cc }}
++      APT_PACKAGES: >-
++        intel-oneapi-compiler-fortran
++        intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic
++        intel-oneapi-mkl
++        intel-oneapi-mkl-devel
++
++    steps:
++    - name: Checkout code
++      uses: actions/checkout@v2
++
++    - name: Setup Python
++      uses: actions/setup-python@v1
++      with:
++        python-version: 3.x
++
++    - name: Add Intel repository
++      if: contains(matrix.os, 'ubuntu')
++      run: |
++        wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
++        sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
++        rm GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
++        echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
++        sudo apt-get update
++
++    - name: Install Intel oneAPI compiler
++      if: contains(matrix.os, 'ubuntu')
++      run: |
++        sudo apt-get install ${{ env.APT_PACKAGES }}
++        source /opt/intel/oneapi/setvars.sh
++        printenv >> $GITHUB_ENV
++
++    - name: Install meson
++      run: pip3 install meson==0.55.3 ninja
++
++    - name: Configure meson build
++      run: meson setup ${{ env.BUILD_DIR }} --prefix=/ -Dfortran_args=-qopenmp
++
++    - name: Build project
++      run: ninja -C ${{ env.BUILD_DIR }}
++
++    - name: Install package
++      run: |
++        meson install -C ${{ env.BUILD_DIR }} --no-rebuild
++      env:
++        DESTDIR: ${{ env.PWD }}/_dist
++
++    - name: Add crest to path
++      run: |
++        echo ${{ env.PWD }}/_dist/bin >> $GITHUB_PATH
++
++    - name: Download xtb
++      uses: i3h/download-release-asset@v1
++      with:
++        owner: grimme-lab
++        repo: xtb
++        tag: v${{ env.XTB_VERSION }}
++        file: '/xtb-\d+\.tar\.xz/'
++
++    - name: Add xtb to path
++      run: |
++        tar xvf xtb-*.tar.xz
++        echo ${{ env.PWD }}/xtb-${{ env.XTB_VERSION }}/bin >> $GITHUB_PATH
++
++    - name: Run example 0
++      run: |
++        bash run.sh
++      working-directory: examples/expl-0
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0a4b9b1..82f57fd 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -74,8 +74,8 @@ install(
+   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+ )
+ 
+-install(
+-  PROGRAMS
+-  "${CMAKE_CURRENT_SOURCE_DIR}/combi-scripts/crest_combi"
+-  DESTINATION "${CMAKE_INSTALL_BINDIR}"
+-)
++# install(
++#   PROGRAMS
++#   "${CMAKE_CURRENT_SOURCE_DIR}/combi-scripts/crest_combi"
++#   DESTINATION "${CMAKE_INSTALL_BINDIR}"
++# )
+diff --git a/meson.build b/meson.build
+index 4c83b7d..c9dbc12 100644
+--- a/meson.build
++++ b/meson.build
+@@ -41,8 +41,8 @@ crest_exe = executable(
+   link_language: 'fortran',
+ )
+ 
+-install_data(
+-  files('combi-scripts/crest_combi'),
+-  install_dir: get_option('bindir'),
+-  install_mode: 'rwxr--r--',
+-)
++# install_data(
++#   files('combi-scripts/crest_combi'),
++#   install_dir: get_option('bindir'),
++#   install_mode: 'rwxr--r--',
++# )

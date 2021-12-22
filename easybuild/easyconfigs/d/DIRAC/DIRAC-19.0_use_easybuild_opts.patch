@@ -1,0 +1,70 @@
+# Take EasyBuild compiler flags for C, C++, and Fortran
+# OCT 5th, 2020 by B. Hajgato (UGent)
+# Updated by Alexander Grund (TU Dresden)
+diff -ur DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/GNU.C.cmake DIRAC-19.0-Source/cmake/custom/compiler_flags/GNU.C.cmake
+--- DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/GNU.C.cmake	2021-08-04 17:42:21.340186361 +0200
++++ DIRAC-19.0-Source/cmake/custom/compiler_flags/GNU.C.cmake	2021-08-04 17:53:53.657008099 +0200
+@@ -3,7 +3,5 @@
+         message(STATUS "Added gcc -maix64 flag due to IBM AIX XL Fortran and integer*8")
+         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -maix64 ")
+     endif()
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+-    set(CMAKE_C_FLAGS_RELEASE "-O2 -Wno-unused")
+-    set(CMAKE_C_FLAGS_DEBUG "-O0")
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused")
+ endif()
+diff -ur DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/GNU.CXX.cmake DIRAC-19.0-Source/cmake/custom/compiler_flags/GNU.CXX.cmake
+--- DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/GNU.CXX.cmake	2021-08-04 17:42:21.340186361 +0200
++++ DIRAC-19.0-Source/cmake/custom/compiler_flags/GNU.CXX.cmake	2021-08-04 17:53:53.657008099 +0200
+@@ -1,5 +1,4 @@
+ if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wno-unknown-pragmas -Wno-sign-compare -Woverloaded-virtual -Wwrite-strings -Wno-unused")
+-    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -DNDEBUG -Wno-unused")
+-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -DDEBUG")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unknown-pragmas -Wno-sign-compare -Woverloaded-virtual -Wwrite-strings -Wno-unused")
++    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+ endif()
+diff -ur DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/GNU.Fortran.cmake DIRAC-19.0-Source/cmake/custom/compiler_flags/GNU.Fortran.cmake
+--- DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/GNU.Fortran.cmake	2021-08-04 17:42:21.340186361 +0200
++++ DIRAC-19.0-Source/cmake/custom/compiler_flags/GNU.Fortran.cmake	2021-08-04 17:53:53.657008099 +0200
+@@ -4,7 +4,6 @@
+         set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}  -maix64")
+         message(STATUS "Added gfortran -maix64 flag due to IBM AIX and integer*8")
+     endif()
+-    set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -funroll-all-loops -w")
+-    set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -O0 -fbounds-check -finit-real=nan -finit-integer=-9999 -Wall")
+-    #set(CMAKE_Fortran_FLAGS_DEBUG "-O0")
++    set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -funroll-all-loops -w")
++    set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -fbounds-check -finit-real=nan -finit-integer=-9999 -Wall")
+ endif()
+diff -ur DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/Intel.C.cmake DIRAC-19.0-Source/cmake/custom/compiler_flags/Intel.C.cmake
+--- DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/Intel.C.cmake	2021-08-04 17:42:21.340186361 +0200
++++ DIRAC-19.0-Source/cmake/custom/compiler_flags/Intel.C.cmake	2021-08-04 17:53:53.657008099 +0200
+@@ -1,5 +1,3 @@
+ if(CMAKE_C_COMPILER_ID MATCHES Intel)
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -wd981 -wd279 -wd383 -wd1572 -wd177")
+-    set(CMAKE_C_FLAGS_RELEASE "-O2")
+-    set(CMAKE_C_FLAGS_DEBUG "-O0")
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -wd981 -wd279 -wd383 -wd1572 -wd177")
+ endif()
+diff -ur DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/Intel.CXX.cmake DIRAC-19.0-Source/cmake/custom/compiler_flags/Intel.CXX.cmake
+--- DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/Intel.CXX.cmake	2021-08-04 17:42:21.340186361 +0200
++++ DIRAC-19.0-Source/cmake/custom/compiler_flags/Intel.CXX.cmake	2021-08-04 17:53:53.657008099 +0200
+@@ -1,5 +1,4 @@
+ if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+-    set(CMAKE_CXX_FLAGS_RELEASE "-debug -O3 -DNDEBUG")
+-    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -debug -DDEBUG")
++    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+ endif()
+diff -ur DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/Intel.Fortran.cmake DIRAC-19.0-Source/cmake/custom/compiler_flags/Intel.Fortran.cmake
+--- DIRAC-19.0-Source.orig/cmake/custom/compiler_flags/Intel.Fortran.cmake	2021-08-04 17:42:21.340186361 +0200
++++ DIRAC-19.0-Source/cmake/custom/compiler_flags/Intel.Fortran.cmake	2021-08-04 17:53:53.657008099 +0200
+@@ -1,5 +1,4 @@
+ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -w -assume byterecl -g -traceback -DVAR_IFORT")
+-    set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ip")
+-    set(CMAKE_Fortran_FLAGS_DEBUG "-O0")
++    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -w -assume byterecl -DVAR_IFORT")
++    set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -ip")
+ endif()
