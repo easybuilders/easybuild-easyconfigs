@@ -1,0 +1,62 @@
+# Author: Caspar van Leeuwen
+# The jpeg_mem_src function name conflicts with a function from the jpeglib8.h dependency.
+# I give the function in jpeg_mem_src.h another name, and changed all the calls to this function.
+diff -Nru ASAP-1.9-orig/multiresolutionimageinterface/jpeg_mem_src.h ASAP-1.9/multiresolutionimageinterface/jpeg_mem_src.h
+--- ASAP-1.9-orig/multiresolutionimageinterface/jpeg_mem_src.h	2021-06-24 13:17:55.766247981 +0200
++++ ASAP-1.9/multiresolutionimageinterface/jpeg_mem_src.h	2021-06-24 13:30:46.499644233 +0200
+@@ -47,7 +47,7 @@
+ 	}
+ }
+ 
+-static void jpeg_mem_src( j_decompress_ptr cinfo, jpeg_source_mgr * const src, void const * const buffer, long nbytes )
++static void jpeg_mem_src_asap( j_decompress_ptr cinfo, jpeg_source_mgr * const src, void const * const buffer, long nbytes )
+ {
+     src->init_source = mem_init_source;
+     src->fill_input_buffer = mem_fill_input_buffer;
+@@ -57,4 +57,4 @@
+     src->bytes_in_buffer = nbytes;
+     src->next_input_byte = (JOCTET*)buffer;
+     cinfo->src = src;
+-}
+\ No newline at end of file
++}
+diff -Nru ASAP-1.9-orig/multiresolutionimageinterface/VSIImage.cpp ASAP-1.9/multiresolutionimageinterface/VSIImage.cpp
+--- ASAP-1.9-orig/multiresolutionimageinterface/VSIImage.cpp	2021-06-24 13:17:55.750246541 +0200
++++ ASAP-1.9/multiresolutionimageinterface/VSIImage.cpp	2021-06-24 13:32:19.868051172 +0200
+@@ -11,7 +11,7 @@
+ // Include DCMTK LIBJPEG for lossy and lossless JPEG compression
+ extern "C" {
+ #define boolean ijg_boolean
+-#include "dcmtk/dcmjpeg/libijg8/jpeglib8.h"
++#include "jpeglib.h"
+ #include "jpeg_mem_src.h"
+ #undef boolean
+ #undef const
+@@ -234,7 +234,7 @@
+       jpeg_source_mgr src_mem;
+       jpeg_create_decompress(&cinfo);
+       cinfo.err = jpeg_std_error(&jerr);      
+-      jpeg_mem_src(&cinfo, &src_mem, (void*)buf, size);
++      jpeg_mem_src_asap(&cinfo, &src_mem, (void*)buf, size);
+       jpeg_read_header(&cinfo, true);
+       if (_compressionType == 2) {
+         cinfo.jpeg_color_space = JCS_YCbCr;
+diff -Nru ASAP-1.9-orig/multiresolutionimageinterface/VSIImageReader.cpp ASAP-1.9/multiresolutionimageinterface/VSIImageReader.cpp
+--- ASAP-1.9-orig/multiresolutionimageinterface/VSIImageReader.cpp	2021-06-24 13:17:55.762247620 +0200
++++ ASAP-1.9/multiresolutionimageinterface/VSIImageReader.cpp	2021-06-24 13:31:06.457441248 +0200
+@@ -260,7 +260,7 @@
+       jpeg_source_mgr src_mem;
+       jpeg_create_decompress(&cinfo);
+       cinfo.err = jpeg_std_error(&jerr);      
+-      jpeg_mem_src(&cinfo, &src_mem, (void*)buf, size);
++      jpeg_mem_src_asap(&cinfo, &src_mem, (void*)buf, size);
+       jpeg_read_header(&cinfo, true);
+       if (_compressionType == 2) {
+         cinfo.jpeg_color_space = JCS_YCbCr;
+@@ -337,4 +337,4 @@
+           outputCol = 0;
+         }
+       }
+-}
+\ No newline at end of file
++}

@@ -1,0 +1,36 @@
+easyblock = 'PackedBinary'
+
+name = 'miRDeep2'
+version = '0.1.1'
+versionsuffix = '-Python-3.6.6'
+
+homepage = 'https://github.com/rajewsky-lab/mirdeep2'
+description = """ miRDeep2 is a completely overhauled tool which 
+discovers microRNA genes by analyzing sequenced RNAs """
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/rajewsky-lab/mirdeep2/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['0083202626bb444c2b4a4434d273e044ed164661a5de0bb4d5034c792e687ff9']
+
+dependencies = [
+    ('Perl', '5.28.0'),  # provides PDF::API2
+    ('Bowtie', '1.2.2'),
+    ('ViennaRNA', '2.4.11', versionsuffix),
+    ('randfold', '2.0.1'),  # also provides SQUID
+]
+
+install_cmd = "cp -a mirdeep*/src %(installdir)s/bin && chmod a+x %(installdir)s/bin/*.pl && "
+install_cmd += 'sed -i "s@#!/usr/bin/perl@#!$EBROOTPERL/bin/perl@" %(installdir)s/bin/*.pl && '
+install_cmd += "cp -a mirdeep*/Rfam_for_miRDeep.fa %(installdir)s && "
+
+# scripts include a hard check for a file called 'install_successful' in the install directory...
+install_cmd += "touch %(installdir)s/install_successful"
+
+sanity_check_paths = {
+    'files': ['bin/mapper.pl', 'bin/miRDeep2.pl'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

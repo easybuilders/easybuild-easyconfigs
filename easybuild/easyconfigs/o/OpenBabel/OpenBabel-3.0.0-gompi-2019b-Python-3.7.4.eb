@@ -1,0 +1,43 @@
+name = 'OpenBabel'
+version = '3.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://openbabel.org'
+description = """Open Babel is a chemical toolbox designed to speak the many
+ languages of chemical data. It's an open, collaborative project allowing anyone
+ to search, convert, analyze, or store data from molecular modeling, chemistry,
+ solid-state materials, biochemistry, or related areas."""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+# avoid failing tests on skylake and broadwell CPUs.
+# remove option 'optarch' when building on CPUs that don't support AVX2
+# see also: https://github.com/openbabel/openbabel/issues/2138
+toolchainopts = {'pic': True, 'optarch': 'mavx2'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%%(namelower)s-%s.tar.gz' % version.replace('.', '-')]
+checksums = ['5c630c4145abae9bb4ab6c56a940985acb6dadf3a8c3a8073d750512c0220f30']
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('SWIG', '4.0.1'),
+]
+dependencies = [
+    ('Python', '3.7.4'),
+    ('zlib', '1.2.11'),
+    ('libxml2', '2.9.9'),
+    ('Eigen', '3.3.7', '', True),
+    ('RapidJSON', '1.1.0'),
+    ('cairo', '1.16.0'),  # optional: for .png output
+    ('Boost', '1.71.0'),  # optional: for Maestro formats
+]
+
+configopts = '-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib '
+# Enable support for OpenMP compilation of forcefield code (optional)
+configopts += '-DENABLE_OPENMP=ON '
+
+pretestopts = 'cp lib/_openbabel.%s %%(builddir)s/openbabel-*/scripts/python/openbabel/ && ' % SHLIB_EXT
+pretestopts += 'test -f test/unittest || cp bin/unittest test/ && '
+runtest = 'test'
+
+moduleclass = 'chem'

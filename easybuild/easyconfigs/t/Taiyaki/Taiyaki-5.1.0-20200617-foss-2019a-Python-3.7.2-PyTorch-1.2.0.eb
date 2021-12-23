@@ -1,0 +1,67 @@
+easyblock = 'PythonBundle'
+
+name = 'Taiyaki'
+local_commit = '589863d'
+version = '5.1.0-20200617'
+# this version of Taiyaki is not compatible with more recent version of PyTorch!
+# see hardcoded version requirement for 'torch' in setup.py
+local_pytorch_ver = '1.2.0'
+versionsuffix = '-Python-%%(pyver)s-PyTorch-%s' % local_pytorch_ver
+
+homepage = 'https://github.com/nanoporetech/taiyaki'
+description = "Taiyaki is research software for training models for basecalling Oxford Nanopore reads."
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('SciPy-bundle', '2019.03'),
+    ('h5py', '2.9.0'),
+    ('Biopython', '1.73'),
+    ('Pysam', '0.15.2'),
+    ('matplotlib', '3.0.3', '-Python-%(pyver)s'),
+    ('PyTorch', local_pytorch_ver, '-Python-%(pyver)s'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('patsy', '0.5.1', {
+        'checksums': ['f115cec4201e1465cd58b9866b0b0e7b941caafec129869057405bfe5b5e3991'],
+    }),
+    ('statsmodels', '0.12.0', {
+        'checksums': ['5c7d6707ad3112b67f564abaf1845d3c02ecc7174c2d990d539f45c37e98ad35'],
+    }),
+    ('progressbar33', '2.4', {
+        'modulename': 'progressbar',
+        'checksums': ['51fe0d9b3b4023db2f983eeccdfc8c9846b84db8443b9bee002c7f58f4376eff'],
+    }),
+    ('ont-fast5-api', '3.1.6', {
+        'checksums': ['586b819bd48d38f446b33dac4a34f33c1004beeef0baf16ae1253d5fa360b951'],
+    }),
+    (name, version, {
+        'source_tmpl': '%s.tar.gz' % local_commit,
+        'source_urls': ['https://github.com/nanoporetech/taiyaki/archive/'],
+        'checksums': ['b7cae83cf3b84844f1eceab909a66f878e5c0eeaa4e03ae0b67a3206b7a5dec2'],
+    }),
+]
+
+postinstallcmds = ["cp %(builddir)s/Taiyaki/taiyaki-*/misc -a %(installdir)s"]
+
+fix_python_shebang_for = ['bin/*.py', 'misc/*.py']
+
+sanity_check_paths = {
+    'files': ['bin/basecall.py', 'bin/prepare_mapped_reads.py', 'bin/train_flipflop.py', 'misc/upgrade_model.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "basecall.py --help",
+    "upgrade_model.py --help",
+]
+
+sanity_pip_check = True
+
+modextrapaths = {'PATH': 'misc'}
+
+moduleclass = 'bio'
