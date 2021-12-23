@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'gc'
+version = '8.0.4'
+local_libatomic_version = '7.6.10'
+
+homepage = 'https://hboehm.info/gc/'
+description = """The Boehm-Demers-Weiser conservative garbage collector can be used as a
+ garbage collecting replacement for C malloc or C++ new.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = [
+    'https://github.com/ivmai/bdwgc/releases/download/v%(version)s/',  # preferred for gc-%(version)s.tar.gz
+    'https://hboehm.info/gc/gc_source/',  # alternate for gc-%(version)s.tar.gz
+    'https://github.com/ivmai/libatomic_ops/releases/download/v%s/' % local_libatomic_version,
+]
+sources = [
+    SOURCE_TAR_GZ,
+    'libatomic_ops-%s.tar.gz' % local_libatomic_version,
+]
+checksums = [
+    '436a0ddc67b1ac0b0405b61a9675bca9e075c8156f4debd1d06f3a56c7cd289d',  # gc-8.0.4.tar.gz
+    '587edf60817f56daf1e1ab38a4b3c729b8e846ff67b4f62a6157183708f099af',  # libatomic_ops-7.6.10.tar.gz
+]
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+]
+
+preconfigopts = 'ln -s %(builddir)s/libatomic_ops*/ libatomic_ops && '
+
+configopts = "--enable-static"
+
+sanity_check_paths = {
+    'files': ['include/gc.h', 'lib/libcord.a', 'lib/libcord.%s' % SHLIB_EXT,
+              'lib/libgc.a', 'lib/libgc.%s' % SHLIB_EXT],
+    'dirs': ['include/gc', 'share'],
+}
+
+moduleclass = 'lib'

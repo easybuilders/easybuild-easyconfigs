@@ -1,0 +1,52 @@
+easyblock = 'MakeCp'
+
+name = 'S4'
+local_commit = '7fd00a2'
+local_commit_date = '20180610'
+version = '1.1.1-%s' % local_commit_date
+
+homepage = 'https://web.stanford.edu/group/fan/S4'
+description = """S4 stands for Stanford Stratified Structure Solver, a frequency domain code
+ to solve the linear Maxwell’s equations in layered periodic structures. Internally, it uses
+ Rigorous Coupled Wave Analysis (RCWA, also called the Fourier Modal Method (FMM)) and the
+ S-matrix algorithm."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+
+# The original Makefile includes O3 optimization. It is then assumed safe
+# to use a higher optimization level
+toolchainopts = {'pic': True, 'usempi': True, 'opt': True}
+
+source_urls = ['https://github.com/victorliu/S4/archive']
+sources = [{'filename': 'S4-%%(version)s-%s.tar.gz' % local_commit, 'download_filename': '%s.tar.gz' % local_commit}]
+patches = ['S4-%(version)s_Fix_makefile_foss.patch']
+checksums = [
+    'aca604e727d1dc42029a01b9b3362a9912ee795c7408372fff9aff67c9b4d487',  # S4-1.1.1-20180610-7fd00a2.tar.gz
+    'c879f99c246a84123d739fd2daf949e8f0f217ed4c82060fd31a9e1a51f9ee51',  # S4-1.1.1-20180610_Fix_makefile_foss.patch
+]
+
+dependencies = [
+    ('SuiteSparse', '5.1.2', '-METIS-5.1.0'),
+    ('Lua', '5.2.4')
+]
+
+# S4 makefile does not support parallel build
+parallel = 1
+
+files_to_copy = [
+    (['build/S4'], 'bin'),
+    (['build/FunctionSampler1D.%s' % SHLIB_EXT,
+      'build/FunctionSampler2D.%s' % SHLIB_EXT,
+      'build/RCWA.%s' % SHLIB_EXT,
+      'build/libS4.a'], 'lib')
+]
+
+sanity_check_commands = [('S4 -v')]
+
+sanity_check_paths = {
+    'files': ['bin/S4', 'lib/FunctionSampler1D.%s' % SHLIB_EXT, 'lib/FunctionSampler2D.%s' % SHLIB_EXT,
+              'lib/RCWA.%s' % SHLIB_EXT, 'lib/libS4.a'],
+    'dirs': []
+}
+
+moduleclass = 'phys'

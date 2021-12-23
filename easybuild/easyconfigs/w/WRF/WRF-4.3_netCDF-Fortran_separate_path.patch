@@ -1,0 +1,260 @@
+# Allow netCDF library with separate directories for C and Fortran
+# ============================================================================
+# This patch has been around in EasyBuild since WRF3.5; it was committed by
+# @boegel then.  Adapted by @andreas-h to accomodate WRFv4 and foss toolchain
+# Adapted by @maxim-masterov for WRF-v4.3
+
+diff -Nru WRF-4.3.orig/arch/Config.pl WRF-4.3/arch/Config.pl
+--- WRF-4.3.orig/arch/Config.pl	2021-08-04 15:09:59.634194394 +0200
++++ WRF-4.3/arch/Config.pl	2021-08-05 11:14:34.614153019 +0200
+@@ -8,6 +8,7 @@
+ select((select(STDOUT), $|=1)[0]);
+ $sw_perl_path = perl ;
+ $sw_netcdf_path = "" ;
++$sw_netcdff_path = "" ;  # for netCDF 4.2 and greater, Fortran lib might be in a different path
+ $sw_pnetcdf_path = "" ;
+ $sw_hdf5_path=""; 
+ $sw_phdf5_path=""; 
+@@ -91,6 +92,10 @@
+           }
+       }
+   }
++  if ( substr( $ARGV[0], 1, 8 ) eq "netcdff=" )
++  {
++    $sw_netcdff_path = substr( $ARGV[0], 9 ) ;
++  }
+   if ( substr( $ARGV[0], 1, 8 ) eq "pnetcdf=" )
+   {
+     $sw_pnetcdf_path = substr( $ARGV[0], 9 ) ;
+@@ -118,6 +123,7 @@
+   if ( substr( $ARGV[0], 1, 11 ) eq "USENETCDFF=" )
+   {
+     $sw_usenetcdff = substr( $ARGV[0], 12 ) ;
++    $sw_usenetcdff =~ s/!/ /g ;
+   }
+   if ( substr( $ARGV[0], 1, 10 ) eq "USENETCDF=" )
+   {
+@@ -458,6 +464,7 @@
+   {
+     $_ =~ s/CONFIGURE_PERL_PATH/$sw_perl_path/g ;
+     $_ =~ s/CONFIGURE_NETCDF_PATH/$sw_netcdf_path/g ;
++    $_ =~ s/CONFIGURE_NETCDFF_PATH/$sw_netcdff_path/g ;
+     $_ =~ s/CONFIGURE_PNETCDF_PATH/$sw_pnetcdf_path/g ;
+     $_ =~ s/CONFIGURE_HDF5_PATH/$sw_hdf5_path/g ;
+     $_ =~ s/CONFIGURE_PHDF5_PATH/$sw_phdf5_path/g ;
+@@ -504,7 +511,7 @@
+         } elsif ( $sw_os eq "Interix" ) {
+ 	  $_ =~ s:CONFIGURE_NETCDF_LIB_PATH:\$\(WRF_SRC_ROOT_DIR\)/external/io_netcdf/libwrfio_nf.a -L$sw_netcdf_path/lib $sw_usenetcdff $sw_usenetcdf : ;
+         } else {
+-	  $_ =~ s:CONFIGURE_NETCDF_LIB_PATH:-L\$\(WRF_SRC_ROOT_DIR\)/external/io_netcdf -lwrfio_nf -L$sw_netcdf_path/lib $sw_usenetcdff $sw_usenetcdf : ;
++	  $_ =~ s:CONFIGURE_NETCDF_LIB_PATH:-L\$\(WRF_SRC_ROOT_DIR\)/external/io_netcdf -lwrfio_nf -L$sw_netcdff_path/lib -L$sw_netcdf_path/lib64 $sw_usenetcdff $sw_usenetcdf : ;
+         }
+ 	 }
+     else                   
+diff -Nru WRF-4.3.orig/arch/configure.defaults WRF-4.3/arch/configure.defaults
+--- WRF-4.3.orig/arch/configure.defaults	2021-08-04 15:09:59.603194629 +0200
++++ WRF-4.3/arch/configure.defaults	2021-08-05 11:23:16.835203445 +0200
+@@ -1602,6 +1602,7 @@
+ 
+ LIB_EXTERNAL    = \
+                      ../external/io_netcdf/libwrfio_nf.a CONFIGURE_NETCDF_PATH/lib/libnetcdf.lib \
++                     CONFIGURE_NETCDFF_PATH/lib/libnetcdff.lib \
+                      ../external/wavelet/libWavelet.a ../external/wavelet/lib_wavelet.a
+ ESMF_IO_LIB     =    ../external/esmf_time_f90/libesmf_time.a
+ LIB_BUNDLED     = \
+diff -Nru WRF-4.3.orig/arch/conf_tokens WRF-4.3/arch/conf_tokens
+--- WRF-4.3.orig/arch/conf_tokens	2021-08-04 15:09:59.624194471 +0200
++++ WRF-4.3/arch/conf_tokens	2021-08-05 11:23:57.889893151 +0200
+@@ -5,6 +5,7 @@
+        CONFIGURE_DMPARALLEL
+ CONFIGURE_RWORDSIZE
+ CONFIGURE_NETCDF_FLAG
++CONFIGURE_NETCDFF_FLAG
+ CONFIGURE_GRIB2_FLAG
+ CONFIGURE_NETCDF_LIB_PATH
+ CONFIGURE_GRIB2_LIB
+@@ -13,4 +14,5 @@
+ CONFIGURE_WRFIO_NF 
+ CONFIGURE_WRFIO_GRIB2 
+ CONFIGURE_NETCDF_PATH
++CONFIGURE_NETCDFF_PATH
+ CONFIGURE_GRIB2_INC
+diff -Nru WRF-4.3.orig/arch/postamble WRF-4.3/arch/postamble
+--- WRF-4.3.orig/arch/postamble	2021-08-04 15:09:59.629194433 +0200
++++ WRF-4.3/arch/postamble	2021-08-05 11:28:36.010792236 +0200
+@@ -52,6 +52,7 @@
+                       -I$(WRF_SRC_ROOT_DIR)/phys \
+                       -I$(WRF_SRC_ROOT_DIR)/wrftladj \
+                       -I$(WRF_SRC_ROOT_DIR)/chem -I$(WRF_SRC_ROOT_DIR)/inc \
++                      -I$(NETCDFPATH)/include -I$(NETCDFFPATH)/include \
+                       -I$(NETCDFPATH)/include \
+                       CONFIGURE_RTTOV_INC CONFIGURE_CTSM_INC
+ REGISTRY        =    Registry
+@@ -62,6 +63,7 @@
+ ENVCOMPDEFS     =    CONFIGURE_COMPILEFLAGS
+ CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) CONFIGURE_COMMS_INCLUDE
+ NETCDFPATH      =    CONFIGURE_NETCDF_PATH
++NETCDFFPATH     =    CONFIGURE_NETCDFF_PATH
+ HDF5PATH        =    CONFIGURE_HDF5_PATH
+ WRFPLUSPATH     =    CONFIGURE_WRFPLUS_PATH
+ RTTOVPATH       =    CONFIGURE_RTTOV_PATH
+@@ -93,13 +95,13 @@
+ 
+ wrfio_nf : 
+ 	( cd $(WRF_SRC_ROOT_DIR)/external/io_netcdf ; \
+-          make $(J) NETCDFPATH="$(NETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
++          make $(J) NETCDFPATH="$(NETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
+           CC="$(SCC)" CFLAGS="$(CFLAGS)" \
+           FC="$(SFC) $(PROMOTION) $(OMP) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
+ 
+ wrfio_pnf : 
+ 	( cd $(WRF_SRC_ROOT_DIR)/external/io_pnetcdf ; \
+-          make $(J) NETCDFPATH="$(PNETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP) $(ARCHFLAGS)" \
++          make $(J) NETCDFPATH="$(PNETCDFPATH)" NETCDFFPATH="$(PNETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP) $(ARCHFLAGS)" \
+           FC="$(FC) $(PROMOTION) $(OMP) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
+ 
+ wrfio_grib_share :
+diff -Nru WRF-4.3.orig/configure WRF-4.3/configure
+--- WRF-4.3.orig/configure	2021-08-04 15:10:11.719102875 +0200
++++ WRF-4.3/configure	2021-08-05 11:34:41.078036732 +0200
+@@ -183,9 +183,13 @@
+   if [ -f "$NETCDF/lib/libnetcdff.a" -o -f "$NETCDF/lib/libnetcdff.so" -o -f "$NETCDF/lib/libnetcdff.dll.a" ] ; then
+     USENETCDFF="-lnetcdff"
+   else
+-    USENETCDFF=" "
++    if [ -f "$NETCDFF/lib/libnetcdff.a" -o -f "$NETCDFF/lib/libnetcdff.so" -o -f "$NETCDFF/lib64/libnetcdff.so" -o -f "$NETCDFF/lib64/libnetcdff.so" ] ; then
++      USENETCDFF="-L$NETCDFF/lib!-L$NETCDFF/lib64!-lnetcdff" # ! will be replaced with space
++    else
++      USENETCDFF=" "
++    fi
+   fi
+-  if [ -f "$NETCDF/lib/libnetcdf.a" -o -f "$NETCDF/lib/libnetcdf.so" -o -f "$NETCDF/lib/libnetcdf.dll.a" ] ; then
++  if [ -f "$NETCDF/lib/libnetcdf.a" -o -f "$NETCDF/lib/libnetcdf.so" -o -f "$NETCDF/lib64/libnetcdf.a" -o -f "$NETCDF/lib64/libnetcdf.so" ] ; then
+     USENETCDF="-lnetcdf"
+   else
+     USENETCDF=" "
+@@ -552,7 +556,7 @@
+    srch=`grep -i "^#ARCH.*$os" arch/configure.defaults | grep -i "$mach"`
+    if [ -n "$srch" ] ; then
+      $PERL arch/Config.pl -dmparallel=$COMMLIB -ompparallel=$OMP -perl=$PERL \
+-          -netcdf=$NETCDF -pnetcdf=$PNETCDF -hdf5=$HDF5 -phdf5=$PHDF5 -os=$os -mach=$mach -ldflags=$ldflags \
++          -netcdf=$NETCDF -netcdff=$NETCDFF -pnetcdf=$PNETCDF -hdf5=$HDF5 -phdf5=$PHDF5 -os=$os -mach=$mach -ldflags=$ldflags \
+           -compileflags=$compileflags -opt_level=$opt_level -USENETCDFF=$USENETCDFF -USENETCDF=$USENETCDF \
+           -time=$FORTRAN_COMPILER_TIMER -tfl="$TFL" -cfl="$CFL" -config_line="$config_line" \
+           -wrf_core=$wrf_core -gpfs=$GPFS_PATH -curl=$CURL_PATH -dep_lib_path="$DEP_LIB_PATH"
+@@ -634,14 +638,14 @@
+ echo "If you wish to change the default options, edit the file:"
+ echo "     arch/configure.defaults"
+ 
+-if test -n "$NETCDF" ; then
+-  if [ ! -f $NETCDF/include/netcdf.inc ] ; then
++if test -n "$NETCDFF" ; then
++  if [ ! -f $NETCDFF/include/netcdf.inc ] ; then
+     echo
+-    echo "Error : Not found $NETCDF/include/netcdf.inc"
++    echo "Error : Not found $NETCDFF/include/netcdf.inc"
+     echo "        Please check this installation of NetCDF and re-run this configure script"
+     exit -1
+   fi
+-  grep nf_format_64bit $NETCDF/include/netcdf.inc > /dev/null
++  grep nf_format_64bit $NETCDFF/include/netcdf.inc > /dev/null
+   configure_aaaa=$? ; export configure_aaaa
+   if [ $configure_aaaa -a -z "$WRFIO_NCD_NO_LARGE_FILE_SUPPORT" ] ; then
+     echo "NetCDF users note:"
+diff -Nru WRF-4.3.orig/external/io_netcdf/makefile WRF-4.3/external/io_netcdf/makefile
+--- WRF-4.3.orig/external/io_netcdf/makefile	2021-08-04 15:10:07.298136355 +0200
++++ WRF-4.3/external/io_netcdf/makefile	2021-08-05 11:36:26.046244872 +0200
+@@ -3,9 +3,9 @@
+ OBJSL   = wrf_io.o field_routines.o module_wrfsi_static.o
+ OBJS    = $(OBJSL)
+ CODE    = ext_ncd_get_dom_ti.code ext_ncd_get_var_td.code ext_ncd_get_var_ti.code ext_ncd_put_dom_ti.code ext_ncd_put_var_td.code ext_ncd_put_var_ti.code transpose.code 
+-FFLAGS  =  $(FCFLAGS) -I$(NETCDFPATH)/include -I../ioapi_share
+-LIBS    = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -lnetcdf
+-LIBFFS  = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -lnetcdff -lnetcdf $(NETCDF4_DEP_LIB)
++FFLAGS  =  $(FCFLAGS) -I$(NETCDFFPATH)/include -I../ioapi_share
++LIBS    = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -L$(NETCDFPATH)/lib64 -lnetcdf
++LIBFFS  = $(LIB_LOCAL) -L$(NETCDFPATH)/lib -L$(NETCDFPATH)/lib64 -L$(NETCDFFPATH)/lib -L$(NETCDFFPATH)/lib64 -lnetcdff -lnetcdf $(NETCDF4_DEP_LIB)
+ CPP1    = $(CPP) -P $(TRADFLAG)
+ M4      = m4 -Uinclude -Uindex -Ulen
+ AR      = ar
+@@ -24,7 +24,7 @@
+ 			$(RANLIB) $@
+ 
+ wrf_io.o:               wrf_io.F90 $(CODE)
+-			grep nf_format_64bit $(NETCDFPATH)/include/netcdf.inc ;\
++			grep nf_format_64bit $(NETCDFFPATH)/include/netcdf.inc ;\
+                         a=$$? ; export a ; \
+ 			if [ $$a -a "$$WRFIO_NCD_LARGE_FILE_SUPPORT" = "1" ] ; then \
+                           $(CPP1) -DWRFIO_NCD_LARGE_FILE_SUPPORT -I../ioapi_share wrf_io.F90 | $(M4) - > wrf_io.f ; \
+@@ -43,14 +43,14 @@
+ 	x=`echo "$(FC)" | awk '{print $$1}'` ; export x ; \
+ 	if [ $$x = "gfortran" ] ; then \
+            echo removing external declaration of iargc for gfortran ; \
+-	   $(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share diffwrf.F90 | sed '/integer *, *external.*iargc/d' > diffwrf.f ;\
++	   $(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share diffwrf.F90 | sed '/integer *, *external.*iargc/d' > diffwrf.f ;\
+         else \
+-	   $(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share diffwrf.F90 > diffwrf.f ; \
++	   $(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share diffwrf.F90 > diffwrf.f ; \
+         fi
+ 	$(FC) -c $(FFLAGS) diffwrf.f
+ 	@if [ \( -f ../../frame/wrf_debug.o \) -a \( -f ../../frame/module_wrf_error.o \) -a \( -f $(ESMF_MOD_DEPENDENCE) \) -a \( -f ../../frame/clog.o \) ] ; then \
+ 	  echo "diffwrf io_netcdf is being built now. " ; \
+-          if [ \( -f $(NETCDFPATH)/lib/libnetcdff.a -o -f $(NETCDFPATH)/lib/libnetcdff.so -o -f $(NETCDFPATH)/lib/libnetcdff.dll.a \) ] ; then \
++          if [ \( -f $(NETCDFFPATH)/lib/libnetcdff.a -o -f $(NETCDFFPATH)/lib/libnetcdff.so -o -f $(NETCDFFPATH)/lib64/libnetcdff.a -o -f $(NETCDFFPATH)/lib64/libnetcdff.so \) ] ; then \
+             $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBFFS) ;\
+           else \
+             $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBS) ;\
+diff -Nru WRF-4.3.orig/external/io_pnetcdf/Makefile WRF-4.3/external/io_pnetcdf/Makefile
+--- WRF-4.3.orig/external/io_pnetcdf/Makefile	2021-08-04 15:10:05.733148207 +0200
++++ WRF-4.3/external/io_pnetcdf/Makefile	2021-08-05 11:37:34.441729005 +0200
+@@ -9,8 +9,8 @@
+ 	  ext_pnc_put_var_td.code \
+ 	  ext_pnc_put_var_ti.code \
+ 	  transpose.code 
+-FFLAGS  = $(FCFLAGS) -I$(NETCDFPATH)/include -I../ioapi_share
+-LIBS    = -L$(NETCDFPATH)/lib -lpnetcdf
++FFLAGS  = $(FCFLAGS) -I$(NETCDFFPATH)/include -I../ioapi_share
++LIBS    = -L$(NETCDFFPATH)/lib -lpnetcdf
+ CPP1    = $(CPP) -P $(TRADFLAG)
+ M4      = m4 -Uinclude -Uindex -Ulen
+ AR      = ar
+@@ -25,15 +25,15 @@
+ 			$(RANLIB) libwrfio_pnf.a
+ 
+ wrf_io.o:               wrf_io.F90 $(CODE)
+-			$(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share wrf_io.F90 | $(M4) - > wrf_io.f
++			$(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share wrf_io.F90 | $(M4) - > wrf_io.f
+ 			$(FC) $(FFLAGS) -c wrf_io.f
+ 
+ module_wrfsi_static.o:  module_wrfsi_static.F90
+-			$(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share module_wrfsi_static.F90 > module_wrfsi_static.f
++			$(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share module_wrfsi_static.F90 > module_wrfsi_static.f
+ 			$(FC) $(FFLAGS) -c module_wrfsi_static.f
+ 
+ field_routines.o:	field_routines.F90 wrf_io.o
+-			$(CPP1) -I$(NETCDFPATH)/include -I../ioapi_share field_routines.F90 > field_routines.f
++			$(CPP1) -I$(NETCDFFPATH)/include -I../ioapi_share field_routines.F90 > field_routines.f
+ 			$(FC) $(FFLAGS) -c field_routines.f
+ 
+ superclean:
+diff -Nru WRF-4.3.orig/Makefile WRF-4.3/Makefile
+--- WRF-4.3.orig/Makefile	2021-08-04 15:10:04.526157349 +0200
++++ WRF-4.3/Makefile	2021-08-05 11:38:25.538343676 +0200
+@@ -1003,7 +1003,7 @@
+ 	@ echo '--------------------------------------'
+ 	( cd frame ; $(MAKE) $(J) LLIST="$(LINKLIST)" framework ; \
+           cd ../external/io_netcdf ; \
+-          $(MAKE) NETCDFPATH="$(NETCDFPATH)" \
++          $(MAKE) NETCDFPATH="$(NETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" \
+                FC="$(FC) $(FCBASEOPTS) $(PROMOTION) $(FCDEBUG) $(OMP)" RANLIB="$(RANLIB)" \
+                CPP="$(CPP)" LDFLAGS="$(LDFLAGS)" TRADFLAG="$(TRADFLAG)" ESMF_IO_LIB_EXT="$(ESMF_IO_LIB_EXT)" \
+                LIB_LOCAL="$(LIB_LOCAL)" \
+@@ -1133,7 +1133,7 @@
+ 
+ # rule used by configure to test if this will compile with netcdf4
+ nc4_test:
+-	@cd tools ; /bin/rm -f nc4_test.{exe,nc,o} ; $(SCC) -o nc4_test.exe nc4_test.c -I$(NETCDF)/include -L$(NETCDF)/lib $(USENETCDF) ; cd ..
++	@cd tools ; /bin/rm -f nc4_test.{exe,nc,o} ; $(SCC) -o nc4_test.exe nc4_test.c -I$(NETCDF)/include -L$(NETCDF)/lib64 $(USENETCDF) ; cd ..
+ 
+ # rule used by configure to test if Fortran 2003 IEEE signaling is available
+ fortran_2003_ieee_test:

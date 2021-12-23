@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'libpci'
+version = '3.7.0'
+
+homepage = 'https://github.com/pciutils/pciutils'
+description = "Library for portable access to PCI bus configuration registers from PCI Utils."
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/pciutils/pciutils/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix-install-lib-symlinks.patch']
+checksums = [
+    'ea768aa0187ba349391c6c157445ecc2b42e7d671fc1ce8c53ff5ef513f1e2ab',  # v3.7.0.tar.gz
+    '4f078fcfe76b79d82a7b428afcfe866aab94c9e4bd52d0bf41c57a4ef47d124c',  # libpci-3.7.0_fix-install-lib-symlinks.patch
+]
+
+builddependencies = [
+    ('binutils', '2.35'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+skipsteps = ['configure']
+
+buildopts = "PREFIX=%(installdir)s SHARED=yes ZLIB=yes"
+
+# only install the library and header files
+install_cmd = "make install-lib"
+installopts = buildopts
+
+sanity_check_paths = {
+    'files': ['lib/libpci.%s' % SHLIB_EXT],
+    'dirs': ['include/pci', 'lib/pkgconfig'],
+}
+
+moduleclass = 'system'

@@ -1,0 +1,15 @@
+# pyTables expects that LIBS is a list of library names and will add
+# a -l by itself.
+# original patch by ward.poelmans@ugent.be, ported to PyTables 3.5.2 by Kenneth Hoste (HPC-UGent)
+--- PyTables-3.5.2/setup.py.orig	2019-08-23 10:35:55.467589283 +0200
++++ PyTables-3.5.2/setup.py	2019-08-23 10:36:39.408195074 +0200
+@@ -478,6 +478,9 @@
+     # is not a good idea.
+     CFLAGS = os.environ.get('CFLAGS', '').split()
+     LIBS = os.environ.get('LIBS', '').split()
++    for idx, lib in enumerate(LIBS):
++        if lib.startswith("-l"):
++            LIBS[idx] = lib.replace("-l", "")
+     CONDA_PREFIX = os.environ.get('CONDA_PREFIX', '')
+     # We start using pkg-config since some distributions are putting HDF5
+     # (and possibly other libraries) in exotic locations.  See issue #442.

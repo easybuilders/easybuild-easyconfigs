@@ -1,0 +1,63 @@
+easyblock = 'ConfigureMake'
+
+name = 'AFNI'
+version = '19.0.01'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/afni/afni/archive/']
+sources = ['AFNI_%(version)s.tar.gz']
+patches = ['AFNI-18.1.09_omp-pragma-statement-fix.patch']
+checksums = [
+    'da4b49e90dc542101bc69a471fae45e2fe95558b9c83c8146aa7b1999bb70835',  # AFNI_19.0.01.tar.gz
+    '8b739ddc09d6e398ac7fa86d89f6a02f26f2b58b17caea627d5c07de5282aab2',  # AFNI-18.1.09_omp-pragma-statement-fix.patch
+]
+
+builddependencies = [('M4', '1.4.18')]
+
+dependencies = [
+    ('tcsh', '6.20.00'),
+    ('Python', '2.7.14'),
+    ('X11', '20171023'),
+    ('motif', '2.3.8'),
+    ('R', '3.4.3', '-X11-20171023'),
+    ('PyQt5', '5.9.2', versionsuffix),
+    ('expat', '2.2.4'),
+    ('libpng', '1.6.32'),
+    ('libjpeg-turbo', '1.5.2'),
+    ('GSL', '2.4'),
+    ('GLib', '2.53.5'),  # must match version used in Qt5 (via PyQt5)
+    ('zlib', '1.2.11'),
+]
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = "cd src && cp Makefile.linux_openmp_64 Makefile && "
+buildopts = 'totality LGIFTI="$EBROOTEXPAT/lib/libexpat.a" LDPYTHON="-lpython%(pyshortver)s" '
+buildopts += 'CC="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCVOL="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCFAST="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCOLD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCMIN="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'CCSVD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \$(CEXTRA)" '
+buildopts += 'LD="${CC} \$(CPROF)" LZLIB="${EBROOTZLIB}/lib/libz.a" XLIBS="-lXm -lXt" '
+buildopts += 'IFLAGS="-I. -I$EBROOTPYTHON/include/python%(pyshortver)sm '
+buildopts += '-I$EBROOTGLIB/lib/glib-2.0/include -I$EBROOTGLIB/include/glib-2.0"'
+buildopts += ' INSTALLDIR=%(installdir)s'
+
+parallel = 1
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['afni'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

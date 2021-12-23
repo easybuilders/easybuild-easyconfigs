@@ -1,0 +1,52 @@
+easyblock = 'PythonPackage'
+
+name = 'horton'
+version = '2.1.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://theochem.github.io/horton'
+description = """HORTON is a Helpful Open-source Research TOol for N-fermion systems, written
+ primarily in the Python programming language. (HORTON is named after the helpful
+ pachyderm, not the Canadian caffeine supply store.) The ultimate goal of HORTON
+ is to provide a platform for testing new ideas on the quantum many-body problem
+ at a reasonable computational cost. Although HORTON is primarily designed to be
+ a quantum-chemistry program, it can perform computations involving model
+ Hamiltonians, and could be extended for computations in nuclear physics."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/theochem/horton/releases/download/%s' % version]
+sources = [SOURCE_TAR_GZ]
+checksums = ['4b3f87920d881030ba80f097326a744de2cfee5316aa4499cc9a6501f64b5060']
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('h5py', '2.8.0', versionsuffix),
+    ('matplotlib', '2.2.3', versionsuffix),
+    ('Libint', '2.0.3'),
+    ('libxc', '2.2.2'),
+]
+
+download_dep_fail = True
+use_pip = False
+
+prebuildopts = ' '.join([
+    'BLAS_EXTRA_COMPILE_ARGS=-DMKL_ILP64:-I${MKLROOT}/include',
+    'BLAS_LIBRARY_DIRS=${MKLROOT}/lib/intel64',
+    'BLAS_LIBRARIES=mkl_intel_ilp64:mkl_core:mkl_sequential:pthread:m:mkl_def',
+])
+
+# Avoid need for X11 in tests by specifying "backend: agg" in matplotlibrc
+runtest = ' '.join([
+    'export MATPLOTLIBRC=$PWD;',
+    'echo "backend: agg" > $MATPLOTLIBRC/matplotlibrc;',
+    '%s python setup.py build_ext -i; ' % prebuildopts,
+    'nosetests -v',
+])
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/horton'],
+}
+
+moduleclass = 'chem'

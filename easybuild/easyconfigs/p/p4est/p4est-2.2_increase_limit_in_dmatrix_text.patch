@@ -1,0 +1,38 @@
+From 8dfd331ad3722f83c55bdbad30912dfa1d1757c3 Mon Sep 17 00:00:00 2001
+From: Matthias Maier <tamiko@43-1.org>
+Date: Wed, 10 Jul 2019 07:33:37 -0500
+Subject: [PATCH] test/test_dmatrix - Increase tolerance and make test more
+ robust
+
+It turns out that on non-amd64 architectures the test test_dmatrix fails
+due to differences in the compared matrices larger than floating point
+roundoff errors [1]. Changing the limit from DBL_MIN to 1.0e4 *
+DBL_EPSILON [2] (assuming that differences are indeed of the order of
+eps) fixes the problem .
+
+[1] https://launchpad.net/~ginggs/+archive/ubuntu/testing/+sourcepub/10330424/+listing-archive-extra
+[2] https://en.cppreference.com/w/c/types/limits
+
+Origin: other, https://github.com/cburstedde/libsc/pull/16
+Author: Matthias Maier <tamiko@43-1.org>
+Bug: https://github.com/cburstedde/libsc/pull/16
+---
+ test/test_dmatrix.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/test_dmatrix.c b/test/test_dmatrix.c
+index 2f4b9a1..7ffa8da 100644
+--- a/sc/test/test_dmatrix.c
++++ b/sc/test/test_dmatrix.c
+@@ -73,7 +73,7 @@ test_dmatrix_check_error_identical (const sc_dmatrix_t * mat_chk,
+   SC_ASSERT (totalsize == mat_ref->m * mat_ref->n);
+ 
+   for (i = 0; i < totalsize; ++i) {
+-    if (DBL_MIN < fabs (mat_chk_data[i] - mat_ref_data[i])) {
++    if (1.e4 * DBL_EPSILON < fabs (mat_chk_data[i] - mat_ref_data[i])) {
+       error_count++;
+     }
+   }
+-- 
+2.21.0
+

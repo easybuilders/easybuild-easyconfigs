@@ -1,0 +1,62 @@
+##
+# EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>, Kenneth Hoste (UGent)
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of
+# the policy: http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'BLAST+'
+version = '2.9.0'
+
+homepage = 'https://blast.ncbi.nlm.nih.gov/'
+description = """Basic Local Alignment Search Tool, or BLAST, is an algorithm
+ for comparing primary biological sequence information, such as the amino-acid
+ sequences of different proteins or the nucleotides of DNA sequences."""
+
+toolchain = {'name': 'iimpi', 'version': '2019a'}
+toolchainopts = {'cstd': 'c++14', 'usempi': True}
+
+source_urls = ['http://ftp.ncbi.nlm.nih.gov/blast/executables/%(namelower)s/%(version)s/']
+sources = ['ncbi-blast-%(version)s+-src.tar.gz']
+patches = [
+    'BLAST+-%(version)s_fix_boost.patch',
+    'BLAST+-%(version)s_fix-64-icc.patch',
+]
+checksums = [
+    'a390cc2d7a09422759fc178db84de9def822cbe485916bbb2ec0d215dacdc257',  # ncbi-blast-2.9.0+-src.tar.gz
+    '44dc4a931896953d78c13097433ea6fc8d7990bd759c4e4e5bbb9b2574fb4154',  # BLAST+-2.9.0_fix_boost.patch
+    'adf52ef6da03b951bde7ec4fabc8686186b66ecd88373263bc74c21b32a1f354',  # BLAST+-2.9.0_fix-64-icc.patch
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.6'),
+    ('PCRE', '8.43'),
+    ('Boost', '1.70.0'),
+    ('GMP', '6.1.2'),
+    ('libpng', '1.6.36'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('LMDB', '0.9.23'),
+]
+
+configopts = "--with-64 --with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 "
+configopts += "--with-pcre=$EBROOTPCRE --with-boost=$EBROOTBOOST "
+configopts += "--with-gmp=$EBROOTGMP --with-png=$EBROOTLIBPNG "
+configopts += "--with-jpeg=$EBROOTLIBJPEGMINTURBO --with-lmdb=$EBROOTLMDB "
+
+# configure script uses -openmp with Intel compilers, which is no longer valid (-fopenmp is more generic than -qopenmp)
+configopts += "OPENMP_FLAGS='-fopenmp'"
+
+sanity_check_paths = {
+    'files': ['bin/blastn', 'bin/blastp', 'bin/blastx'],
+    'dirs': []
+}
+
+moduleclass = 'bio'
