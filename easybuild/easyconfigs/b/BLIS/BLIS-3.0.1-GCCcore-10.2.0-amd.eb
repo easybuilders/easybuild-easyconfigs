@@ -1,0 +1,41 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '3.0.1'
+versionsuffix = '-amd'
+
+homepage = 'https://developer.amd.com/amd-cpu-libraries/blas-library/'
+description = """AMD's fork of BLIS. BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+source_urls = ['https://github.com/amd/blis/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['dff643e6ef946846e91e8f81b75ff8fe21f1f2d227599aecd654d184d9beff3e']
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('Python', '3.8.6'),
+    ('Perl', '5.32.0'),
+]
+
+# Build Serial and multithreaded library
+configopts = ['--enable-cblas --enable-shared CC="$CC" auto',
+              '--enable-cblas --enable-threading=openmp --enable-shared CC="$CC" auto']
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT,
+              'lib/libblis-mt.a', 'lib/libblis-mt.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'

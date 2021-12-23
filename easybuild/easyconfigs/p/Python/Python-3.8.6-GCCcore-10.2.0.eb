@@ -14,6 +14,7 @@ checksums = ['313562ee9986dc369cd678011bdfd9800ef62fbf7b1496228a18f86b36428c21']
 
 builddependencies = [
     ('UnZip', '6.0'),
+    ('git', '2.28.0', '-nodocs'),  # required for pbr
 ]
 
 dependencies = [
@@ -25,7 +26,7 @@ dependencies = [
     ('SQLite', '3.33.0'),
     ('XZ', '5.2.5'),
     ('GMP', '6.2.0'),  # required for pycrypto
-    ('libffi', '3.3'),  # required for cryptography
+    ('libffi', '3.3'),
     # OS dependency should be preferred if the os version is more recent then this version,
     # it's nice to have an up to date openssl for security reasons
     # Python 3.7 requires OpenSSL >= 1.0.2, uncomment line below if OS version is too old (e.g. CentOS 6)
@@ -34,9 +35,7 @@ dependencies = [
 
 osdependencies = [OS_PKG_OPENSSL_DEV]
 
-# symlink 'pip' command to 'pip3' that is included with Python installation
-# required so we can update pip to version included in extensions, using pip
-installopts = " && ln -s %(installdir)s/bin/pip3 %(installdir)s/bin/pip"
+install_pip = True
 
 exts_default_options = {
     'download_dep_fail': True,
@@ -49,16 +48,15 @@ exts_default_options = {
 # order is important!
 # package versions updated 13 October 2020
 exts_list = [
-    ('pip', '20.2.3', {
-        'use_pip': False,
-        'checksums': ['30c70b6179711a7c4cf76da89e8a0f5282279dfb0278bec7b94134be92543b6d'],
-    }),
     ('setuptools', '50.3.0', {
         'source_tmpl': '%(name)s-%(version)s.zip',
         'checksums': ['39060a59d91cf5cf403fa3bacbb52df4205a8c3585e0b9ba4b30e0e19d4c4b18'],
     }),
     ('wheel', '0.35.1', {
         'checksums': ['99a22d87add3f634ff917310a3d87e499f19e663413a52eb9232c447aa646c9f'],
+    }),
+    ('pip', '20.2.3', {
+        'checksums': ['30c70b6179711a7c4cf76da89e8a0f5282279dfb0278bec7b94134be92543b6d'],
     }),
     ('nose', '1.3.7', {
         'checksums': ['f1bffef9cbc82628f6e7d7b40d7e255aefaa1adb6a1b1d26c69a8b79e6208a98'],
@@ -331,24 +329,16 @@ exts_list = [
     ('intreehooks', '1.0', {
         'checksums': ['87e600d3b16b97ed219c078681260639e77ef5a17c0e0dbdd5a302f99b4e34e1'],
     }),
-    ('crashtest', '0.3.1', {
-        'use_pip': False,
-        'checksums': ['42ca7b6ce88b6c7433e2ce47ea884e91ec93104a4b754998be498a8e6c3d37dd'],
-    }),
     ('pylev', '1.3.0', {
         'checksums': ['063910098161199b81e453025653ec53556c1be7165a9b7c50be2f4d57eae1c3'],
     }),
     ('pastel', '0.2.1', {
-        'use_pip': False,
-        'checksums': ['e6581ac04e973cac858828c6202c1e1e81fee1dc7de7683f3e1ffe0bfd8a573d'],
+        'source_tmpl': SOURCE_WHL,
+        'checksums': ['4349225fcdf6c2bb34d483e523475de5bb04a5c10ef711263452cb37d7dd4364'],
     }),
     ('clikit', '0.6.2', {
-        'use_pip': False,
-        'checksums': ['442ee5db9a14120635c5990bcdbfe7c03ada5898291f0c802f77be71569ded59'],
-    }),
-    ('jeepney', '0.4.3', {
-        'use_pip': False,
-        'checksums': ['3479b861cc2b6407de5188695fa1a8d57e5072d7059322469b62628869b8e36e'],
+        'source_tmpl': SOURCE_WHL,
+        'checksums': ['71268e074e68082306e23d7369a7b99f824a0ef926e55ba2665e911f7208489e'],
     }),
     ('SecretStorage', '3.1.2', {
         'checksums': ['15da8a989b65498e29be338b3b279965f1b8f09b9668bd8010da183024c8bff6'],
@@ -362,8 +352,8 @@ exts_list = [
         'checksums': ['f70ef01a8f2b968b83643db370a1e85bc0e4bc8b358f9661504279afb019d21d'],
     }),
     ('tomlkit', '0.7.0', {
-        'use_pip': False,
-        'checksums': ['ac57f29693fab3e309ea789252fcce3061e19110085aa31af5446ca749325618'],
+        'source_tmpl': SOURCE_WHL,
+        'checksums': ['6babbd33b17d5c9691896b0e68159215a9387ebfa938aa3ac42f4a4beeb2b831'],
     }),
     ('shellingham', '1.3.2', {
         'checksums': ['576c1982bea0ba82fb46c36feb951319d7f42214a82634233f58b40d858a751e'],
@@ -393,8 +383,8 @@ exts_list = [
         'checksums': ['b2e5b40261e20f354d198eae92afc10d750afb487ed5e50f9c4eaf07c184146f'],
     }),
     ('cleo', '0.8.1', {
-        'use_pip': False,
-        'checksums': ['3d0e22d30117851b45970b6c14aca4ab0b18b1b53c8af57bed13208147e4069f'],
+        'source_tmpl': SOURCE_WHL,
+        'checksums': ['141cda6dc94a92343be626bb87a0b6c86ae291dfc732a57bf04310d4b4201753'],
     }),
     ('cachy', '0.3.0', {
         'checksums': ['186581f4ceb42a0bbe040c407da73c14092379b1e4c0e327fdb72ae4a9b269b1'],
@@ -406,7 +396,6 @@ exts_list = [
         'checksums': ['be9aa45477a134aee56c8fac518627e1154df063e85f67d4f83ce0ccc23688e8'],
     }),
     ('ptyprocess', '0.6.0', {
-        'use_pip': False,
         'checksums': ['923f299cc5ad920c68f2bc0bc98b75b9f838b93b599941a6b63ddbc2476394c0'],
     }),
     ('lockfile', '0.12.2', {
@@ -418,6 +407,12 @@ exts_list = [
     }),
     ('poetry', '1.1.3', {
         'checksums': ['49eae89e2c44b0323214d0bbcefc21ebe3a19baa44db98eefabd4db9e82c7253'],
+    }),
+    ('crashtest', '0.3.1', {
+        'checksums': ['42ca7b6ce88b6c7433e2ce47ea884e91ec93104a4b754998be498a8e6c3d37dd'],
+    }),
+    ('jeepney', '0.4.3', {
+        'checksums': ['3479b861cc2b6407de5188695fa1a8d57e5072d7059322469b62628869b8e36e'],
     }),
     ('fsspec', '0.8.4', {
         'checksums': ['e1e494d4814f6804769f3c7bfd7a722a15113cc0339d14755297f09306b8f21f'],
