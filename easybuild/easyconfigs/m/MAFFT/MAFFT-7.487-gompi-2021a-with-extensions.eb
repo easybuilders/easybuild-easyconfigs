@@ -1,0 +1,52 @@
+easyblock = 'Bundle'
+
+name = 'MAFFT'
+version = '7.487'
+versionsuffix = '-with-extensions'
+
+homepage = 'https://mafft.cbrc.jp/alignment/software/'
+description = """MAFFT is a multiple sequence alignment program for unix-like operating systems.
+It offers a range of multiple alignment methods, L-INS-i (accurate; for alignment
+of <~200 sequences), FFT-NS-2 (fast; for alignment of <~30,000 sequences), etc."""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+toolchainopts = {'usempi': True}
+
+default_easyblock = 'ConfigureMake'
+default_component_specs = {
+    'source_urls': ['https://mafft.cbrc.jp/alignment/software/'],
+    'sources': ['mafft-%(version)s%(versionsuffix)s-src.tgz'],
+    'checksums': ['ea05f55e51d980925ce00b2289948ccd2a3ddd0397ebd60feaddc41ddd5d8ef1'],
+    'skipsteps': ['configure'],
+    'installopts': 'PREFIX=%(installdir)s',
+}
+
+components = [
+    (name, version, {
+        'start_dir': 'mafft-%(version)s%(versionsuffix)s/core',
+    }),
+    ('%s Extensions' % name, version, {
+        'start_dir': 'mafft-%(version)s%(versionsuffix)s/extensions',
+    }),
+    ('%s MPI' % name, version, {
+        'start_dir': 'mafft-%(version)s%(versionsuffix)s/MPI',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mafft'] + ['libexec/mafft/%s' % x for x in [
+        'mxscarnamod',  # installed by MAFFT Extensions
+        'mpiscript', 'nodepair_mpi',  # installed by MAFFT MPI
+    ]],
+    'dirs': ['libexec/mafft'],
+}
+
+sanity_check_commands = ['mafft --version']
+
+modextrapaths = {'MAFFT_BINARIES': 'libexec/mafft'}
+
+modextravars = {'MAFFT_N_THREADS_PER_PROCESS': '1'}
+# MAFFT MPI requires other environment variables that depend on job resources
+# More information at at https://mafft.cbrc.jp/alignment/software/mpi.html
+
+moduleclass = 'bio'
