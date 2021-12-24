@@ -1,0 +1,74 @@
+easyblock = 'PackedBinary'
+
+name = 'FlexiDot'
+version = '1.06'
+local_commit = 'be8397a'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/molbio-dresden/flexidot'
+description = """ Highly customizable, ambiguity-aware dotplots for visual sequence analyses """
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/molbio-dresden/flexidot/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['edb182e2fcb879fe45d72127909e8c0b98b19bc71f87dd070b4a5bad04af0268']
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Biopython', '1.72', versionsuffix),
+    ('matplotlib', '2.2.3', versionsuffix),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('regex', '2019.04.14', {
+        'checksums': ['d56ce4c7b1a189094b9bee3b81c4aeb3f1ba3e375e91627ec8561b6ab483d0a8'],
+    }),
+    ('colorama', '0.4.1', {
+        'checksums': ['05eed71e2e327246ad6b38c540c4a3117230b19679b875190486ddd2d721422d'],
+    }),
+    ('colorlog', '4.0.2', {
+        'checksums': ['3cf31b25cbc8f86ec01fef582ef3b840950dea414084ed19ab922c8b493f9b42'],
+    }),
+    ('pexpect', '4.7.0', {
+        'checksums': ['9e2c1fd0e6ee3a49b28f95d4b33bc389c89b20af6a1255906e90ff1262ce62eb'],
+    }),
+    ('easydev', '0.9.37', {
+        'checksums': ['38bd1a7e489673847e109c27f83f8e373e45907b70ea78eb2d38d96464f3a4e3'],
+    }),
+    ('colormap', '1.0.2', {
+        'checksums': ['c0193efe8f7d626cfc78225fc03a56513a4cfb8d3fc43856ccfb97b9646cc1b1'],
+    }),
+    ('colour', '0.1.5', {
+        'checksums': ['af20120fefd2afede8b001fbef2ea9da70ad7d49fafdb6489025dae8745c3aee'],
+    }),
+    ('ptyprocess', '0.6.0', {
+        'checksums': ['923f299cc5ad920c68f2bc0bc98b75b9f838b93b599941a6b63ddbc2476394c0'],
+    }),
+]
+
+postinstallcmds = [
+    'mv %(installdir)s/code/flexidot_v%(version)s.py %(installdir)s/bin/flexidot.py',
+    'chmod +x %(installdir)s/bin/flexidot.py',
+    "sed -i -e '1 s|^.*$|#!/usr/bin/env python|' %(installdir)s/bin/flexidot.py",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/flexidot.py'],
+    'dirs': [],
+}
+
+
+sanity_check_commands = ['flexidot.py -h']
+
+moduleclass = 'vis'

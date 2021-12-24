@@ -1,0 +1,65 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '3.6.3'
+
+homepage = 'https://github.com/eth-cscs/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+req_py_majver = 3
+req_py_minver = 6
+
+use_pip = True
+
+exts_list = [
+    ('pip', '21.1.2', {
+        'use_pip': False,
+        'checksums': ['eb5df6b9ab0af50fe1098a52fd439b04730b6e066887ff7497357b9ebd19f79b'],
+    }),
+    ('setuptools', '53.0.0', {
+        'source_tmpl': 'setuptools-%(version)s.tar.gz',
+        'checksums': ['1b18ef17d74ba97ac9c0e4b4265f123f07a8ae85d9cd093949fa056d3eeeead5'],
+    }),
+    ('reframe', version, {
+        # need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing packages
+        'prebuildopts': "export PATH=%(installdir)s/bin:$PATH && "
+                        "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && "
+                        "PYTHONPATH=%(builddir)s/reframe/reframe-%(version)s/external:$PYTHONPATH ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/eth-cscs/reframe/archive/'],
+        'use_pip': False,
+        'checksums': ['3616478c886c89385385d04f5bce625a690eec6bdca603cd5ac3a6f443168ac2'],
+    }),
+]
+
+postinstallcmds = [
+    'cp -r tutorials %(installdir)s',
+    'mkdir -p %(installdir)s/share/man/man1 %(installdir)s/share/man/man8',
+    'cp docs/man/man1/reframe.1 %(installdir)s/share/man/man1',
+    'cp docs/man/man8/reframe.settings.8 %(installdir)s/share/man/man8',
+    'cp -r share/completions %(installdir)s/share/completions'
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe', 'share/man/man1/reframe.1',
+              'share/man/man8/reframe.settings.8',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['lib', 'tutorials', 'external']
+}
+
+sanity_check_commands = ['reframe -V']
+
+sanity_pip_check = True
+
+modextrapaths = {
+    # bootstrap script installs required dependencies to 'external' subdirectory
+    'PYTHONPATH': 'external',
+}
+
+moduleclass = 'devel'

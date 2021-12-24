@@ -1,0 +1,62 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'CMakeMake'
+name = 'OpenMolcas'
+version = '18.09'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://gitlab.com/Molcas/OpenMolcas"
+description = "OpenMolcas is a quantum chemistry software package"
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://gitlab.com/Molcas/OpenMolcas/-/archive/v%(version)s/']
+sources = ["OpenMolcas-v%(version)s.tar.gz"]
+
+# This patch avoids a forced extra copy of 'pymolcas' script
+# in a local folder of the user doing the build
+# The 'make install' process will already install it in
+# %(installdir)s/sbin/
+patches = ["OpenMolcas-pymolcas_only_in_ebprefix.patch"]
+
+checksums = [
+    # OpenMolcas-18.09.tar.gz
+    ('b4f310fb65205c865ccc6373ce9c3833a586f8ff63a71a624cf793559c9b39cf',
+     '540ce05a6a08b42d0669a112abb22aa64ef62949c15cbc8b1a0bbef06e2d87c0'),
+    # OpenMolcas-pymolcas_only_in_ebprefix.patch
+    '56165ab4a752ef7cdbe3340c8c922fca04510e8ee2e4024ea654e6bcd83198f8'
+]
+
+dependencies = [
+    ('GlobalArrays', '5.7'),
+    ('HDF5', '1.10.2'),
+    ('Python', '3.6.6'),
+]
+
+builddependencies = [('CMake', '3.12.1')]
+
+separate_build_dir = True
+
+preconfigopts = 'GAROOT=$EBROOTGLOBALARRAYS'
+configopts = '-DLINALG=MKL -DMKLROOT=$EBROOTIMKL/mkl -DMPI=ON -DGA=ON -DBUILD_SHARED_LIBS=ON -DTOOLS=ON -DFDE=ON'
+
+modextravars = {
+    'MOLCAS': '%(installdir)s',
+    'MOLCAS_DRIVER': '%(installdir)s/sbin/pymolcas',
+    'MOLCAS_SOURCE': '%(installdir)s',
+}
+
+sanity_check_paths = {
+    'files': ['lib/libmolcas.so', 'bin/alaska.exe', 'bin/casvb.exe', 'bin/cht3.exe', 'bin/espf.exe', 'bin/gateway.exe',
+              'bin/gugaci.exe', 'bin/last_energy.exe', 'bin/mbpt2.exe', 'bin/mcpdft.exe', 'bin/mrci.exe',
+              'bin/qmstat.exe', 'bin/rassi.exe', 'bin/seward.exe', 'bin/vibrot.exe', 'bin/averd.exe', 'bin/ccsdt.exe',
+              'bin/cpf.exe', 'bin/expbas.exe', 'bin/genano.exe', 'bin/gugadrt.exe', 'bin/localisation.exe',
+              'bin/mckinley.exe', 'bin/motra.exe', 'bin/numerical_gradient.exe', 'bin/quater.exe', 'bin/rpa.exe',
+              'bin/slapaf.exe', 'bin/caspt2.exe', 'bin/chcc.exe', 'bin/dynamix.exe', 'bin/ffpt.exe', 'bin/guessorb.exe',
+              'bin/guga.exe', 'bin/loprop.exe', 'bin/mclr.exe', 'bin/mpprop.exe', 'bin/parnell.exe', 'bin/rasscf.exe',
+              'bin/scf.exe', 'bin/surfacehop.exe', 'sbin/pymolcas', 'sbin/help_basis'],
+    'dirs': ['data/', 'basis_library/'],
+}
+
+moduleclass = 'chem'

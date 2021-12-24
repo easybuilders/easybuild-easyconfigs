@@ -1,5 +1,3 @@
-easyblock = 'ConfigureMake'
-
 name = 'OpenBLAS'
 version = '0.3.1'
 
@@ -20,26 +18,24 @@ sources = ['v%(version)s.tar.gz']
 patches = [
     ('large.tgz', '.'),
     ('timing.tgz', '.'),
+    # this patch together with buildopts = 'USE_SIMPLE_THREADED_LEVEL3=1'
+    # is a workaround for the matrix multiplication issues
+    # https://lists.ugent.be/wws/arc/easybuild/2019-05/msg00006.html
+    # https://github.com/eylenth/Openblas_matrix_issue
+    'OpenBLAS-%(version)s_disable-special-handling-of-OpenMP-thread-memory-allocation.patch',
 ]
 checksums = [
     '1f5e956f35f3acdd3c74516e955d797a320c2e0135e31d838cbdb3ea94d0eb33',  # v0.3.1.tar.gz
     'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1',  # large.tgz
     '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af',  # timing.tgz
+    # OpenBLAS-0.3.1_disable-special-handling-of-OpenMP-thread-memory-allocation.patch
+    'c85de436d6fff5d9cec1e24127ea9921551cdee373319dbade922d5cd3facd6a',
 ]
 
-skipsteps = ['configure']
-
-buildopts = 'BINARY=64 USE_THREAD=1 USE_OPENMP=1 CC="$CC" FC="$F77"'
-installopts = "USE_THREAD=1 USE_OPENMP=1 PREFIX=%(installdir)s"
+# added as workaround for the matrices multiplication issue. see the patches above
+buildopts = 'USE_SIMPLE_THREADED_LEVEL3=1'
 
 # extensive testing can be enabled by uncommenting the line below
 # runtest = 'PATH=.:$PATH lapack-timing'
-
-sanity_check_paths = {
-    'files': ['include/cblas.h', 'include/f77blas.h', 'include/lapacke_config.h', 'include/lapacke.h',
-              'include/lapacke_mangling.h', 'include/lapacke_utils.h', 'include/openblas_config.h',
-              'lib/libopenblas.a', 'lib/libopenblas.%s' % SHLIB_EXT],
-    'dirs': [],
-}
 
 moduleclass = 'numlib'

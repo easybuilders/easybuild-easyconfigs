@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'MDSplus'
+version = '7.96.8'
+
+homepage = 'https://mdsplus.org/'
+description = """MDSplus is a set of software tools for data acquisition and storage and a methodology
+ for management of complex scientific data."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/%(name)s/%(namelower)s/archive']
+sources = ['stable_release-%s.zip' % version.replace('.', '-')]
+checksums = ['d63ae3b6ea5ca9228a1f680780000fb220ea97a55d71a8a93258741a352f247d']
+
+builddependencies = [('binutils', '2.34')]
+
+dependencies = [
+    ('libxml2', '2.9.10'),
+    ('zlib', '1.2.11'),
+    ('ncurses', '6.2'),
+    ('libreadline', '8.0')
+]
+
+configopts = [' --disable-doxygen-doc --disable-java --disable-valgrind'
+              ' --without-idl --without-labview --without-srb --without-gsi'
+              ' --without-x --without-docker-image']
+
+preconfigopts = 'export CFLAGS="$CFLAGS -I$EBROOTLIBXML2/include/libxml2 " && '
+
+parallel = 1
+
+modextravars = {
+    'MDSPLUS_DIR': '%(installdir)s',
+    'MDS_PATH': '%(installdir)s/tdi',
+}
+
+sanity_check_paths = {
+    'files': ['lib/libMdsLib.so', 'lib/libTreeShr.so', 'include/mdslib.h',
+              'include/mdsobjects.h'],
+    'dirs': ['bin', 'include', 'lib', 'tdi'],
+}
+
+moduleclass = 'data'

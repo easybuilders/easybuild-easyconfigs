@@ -1,0 +1,40 @@
+The location to a model snapshot file is hardcoded in the analyze.py script.
+This patch allows users to override the default location to that file by setting $BIRDNET_MODEL.
+
+The same is done for two locations to metadata files in config.py;
+they can now be overridden by using $EBIRD_SPECIES_CODES and $EBIRD_MDATA.
+
+Author: Bob Dröge (University of Groningen)
+
+--- analyze.py	2021-04-20 15:16:25.000000000 +0200
++++ analyze.py	2021-04-20 15:12:39.000000000 +0200
+@@ -34,7 +34,9 @@
+ def loadModel():
+ 
+     # Load trained net
+-    snapshot = model.loadSnapshot('model/BirdNET_Soundscape_Model.pkl')
++    default_model_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'model', 'BirdNET_Soundscape_Model.pkl')
++    model_path = os.getenv('BIRDNET_MODEL', default_model_path)
++    snapshot = model.loadSnapshot(model_path)
+ 
+     # Build simple model
+     net = model.buildNet()
+
+--- config.py	2021-04-22 12:36:49.833750795 +0200
++++ config.py	2021-04-22 12:39:27.162404283 +0200
+@@ -1,9 +1,12 @@
++import os
++
+ # BirdNET uses eBird checklist frequency data to determine plausible species
+ # occurrences for a specific location (lat, lon) and one week. An EBIRD_THRESHOLD
+ # of 0.02 means that a species must occur on at least 2% of all checklists
+ # for a location to be considered plausible.
+-EBIRD_SPECIES_CODES = 'metadata/eBird_taxonomy_codes_2018.json'
+-EBIRD_MDATA = 'metadata/eBird_grid_data_weekly.gz'
++default_metadata_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'metadata')
++EBIRD_SPECIES_CODES = os.getenv('EBIRD_SPECIES_CODES', os.path.join(default_metadata_dir, 'eBird_taxonomy_codes_2018.json'))
++EBIRD_MDATA = os.getenv('EBIRD_MDATA', os.path.join(default_metadata_dir, 'eBird_grid_data_weekly.gz'))
+ USE_EBIRD_CHECKLIST = True
+ EBIRD_THRESHOLD = 0.02
+ DEPLOYMENT_LOCATION = (-1, -1)
+
