@@ -324,6 +324,8 @@ class EasyConfigTest(TestCase):
                 if key not in retained_dep_vars:
                     del dep_vars[key]
 
+        version_regex = re.compile('^version: (?P<version>[^;]+);')
+
         # filter out binutils with empty versionsuffix which is used to build toolchain compiler
         if dep == 'binutils' and len(dep_vars) > 1:
             empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
@@ -337,7 +339,7 @@ class EasyConfigTest(TestCase):
                 for key in list(dep_vars):
                     ecs = dep_vars[key]
                     # filter out dep variants that are only used as dependency for parent with same version
-                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    dep_ver = version_regex.search(key).group('version')
                     if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
@@ -346,7 +348,7 @@ class EasyConfigTest(TestCase):
             for key in list(dep_vars):
                 ecs = dep_vars[key]
                 # filter out Boost variants that are only used as dependency for Boost.Python with same version
-                boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                boost_ver = version_regex.search(key).group('version')
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
@@ -402,7 +404,7 @@ class EasyConfigTest(TestCase):
                 dep = 'CUDA'
 
             for key in list(dep_vars):
-                dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                dep_ver = version_regex.search(key).group('version')
                 # use version of Java wrapper rather than full Java version
                 if dep == 'Java':
                     dep_ver = '.'.join(dep_ver.split('.')[:2])
