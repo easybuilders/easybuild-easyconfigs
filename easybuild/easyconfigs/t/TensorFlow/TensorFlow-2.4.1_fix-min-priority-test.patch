@@ -1,0 +1,37 @@
+From 1e6532cc1aab8ba0a627a31db02ec807762c7666 Mon Sep 17 00:00:00 2001
+From: Artem Belevich <tra@google.com>
+Date: Wed, 21 Apr 2021 15:35:20 -0700
+Subject: [PATCH] Use large priority value to allow for changes in valid ranges
+ across drivers. Recent NVIDIA drivers bumped allowed range from {-2,0} ->
+ {-5,0} which resulted in the unintentional test failure. Ideally we want to
+ query for the valid range and use the invalid value outside of that range,
+ but a fixed large value should do for now.
+
+PiperOrigin-RevId: 369749515
+Change-Id: I19f2991a5e422cfbd33e3d5b6f1e0e013c6767fd
+---
+ tensorflow/core/common_runtime/gpu/gpu_device_test.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tensorflow/core/common_runtime/gpu/gpu_device_test.cc b/tensorflow/core/common_runtime/gpu/gpu_device_test.cc
+index 277872c7a08a8..ca79775077045 100644
+--- a/tensorflow/core/common_runtime/gpu/gpu_device_test.cc
++++ b/tensorflow/core/common_runtime/gpu/gpu_device_test.cc
+@@ -236,7 +236,7 @@ TEST_F(GPUDeviceTest, SingleVirtualDeviceWithInvalidPriority) {
+ #else
+     // Priority outside the range (-2, 0) for NVidia GPUs
+     SessionOptions opts =
+-        MakeSessionOptions("0", 0, 1, {{123, 456}}, {{-3, 0}});
++        MakeSessionOptions("0", 0, 1, {{123, 456}}, {{-9999, 0}});
+ #endif
+     std::vector<std::unique_ptr<Device>> devices;
+     Status status = DeviceFactory::GetFactory("GPU")->CreateDevices(
+@@ -249,7 +249,7 @@ TEST_F(GPUDeviceTest, SingleVirtualDeviceWithInvalidPriority) {
+         " virtual device 0 on GPU# 0");
+ #else
+     ExpectErrorMessageSubstr(
+-        status, "Priority -3 is outside the range of supported priorities");
++        status, "Priority -9999 is outside the range of supported priorities");
+ #endif
+   }
+   {
