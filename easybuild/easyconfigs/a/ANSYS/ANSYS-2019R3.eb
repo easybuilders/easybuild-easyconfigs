@@ -1,12 +1,11 @@
 name = 'ANSYS'
 version = '2019R3'
-versionsuffix = '195'
-versionprefix = '2018.3.222'
+local_sfx = 'v195'
 
 homepage = 'http://www.ansys.com'
 description = """ANSYS simulation software enables organizations to confidently predict 
     how their products will operate in the real world. We believe that every product is 
-    a promise of something greater. """
+    a promise of something greater."""
 
 toolchain = SYSTEM
 
@@ -26,32 +25,23 @@ postinstallcmds = [
   # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
   "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
     sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-  # Run setrpaths.sh under CEI so bins use nix interpreter and bins/libs find qt libs for ensight
-  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/v%(versionsuffix)s/CEI \
-    --add_path %(installdir)s/v%(versionsuffix)s/CEI/apex%(versionsuffix)s/machines/linux_2.6_64/qt-5.10.1/lib",
-  # Run setrpaths under all subdirectoreis except CEI so bins use nix interpreter 
-  "for d in $(find %(installdir)s/v%(versionsuffix)s -mindepth 1 -maxdepth 1 -not -name CEI); \
-    do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
-  # Set any_interpreter for some license binaries
+  # Run setrpaths.sh in all directories
+  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Run setrpaths.sh for any_interpreter
   "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
-    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-  # revert changes made by setrpaths.sh to system interpreter for: ansyscl ansysli_client ansysli_util ansysls_client ie)
-  "find %(installdir)s -name 'ansyscl' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-  "find %(installdir)s -name 'ansysli_util' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-  "find %(installdir)s -name 'ansysli_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-  "find %(installdir)s -name 'ansysls_client' -exec patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 {} \;",
-  # enable additive extension on workbench ACT start page
-  "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
-     %(installdir)s/v%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
-  # for ansys versions >= 17.2 manually patch setup-mwuser (original filesize 4470 should become 4472 when patched)
-   "cp -a %(installdir)s/v%(versionsuffix)s/commonfiles/MainWin/linx64/mw/setup-mwuser %(installdir)s/v%(versionsuffix)s/commonfiles/MainWin/linx64/mw/orig_setup-mwuser",
-     "patch -d%(installdir)s/v%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/setup-mwuser.patch-%(version)s",
-  # for ansys versions 19.1 -> 202R1 manually patch runwb2 (original filesize 8917 should become 9173 when patched)
-   "cp -a %(installdir)s/v%(versionsuffix)s/Framework/bin/Linux64/runwb2 %(installdir)s/v%(versionsuffix)s/Framework/bin/Linux64/orig_runwb2",
-     "patch -d%(installdir)s/v%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/runwb2.patch-%(version)s",
-  # missing dependencies for /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2019R3/v195/ansys/bin/linx64/lsprepost.e
-   "cp -a /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/libs/lib* %(installdir)s/v%(versionsuffix)s/ansys/syslib/dyna/linx64"
+     /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+  # Avoid the following symbol lookup error when running fluent gui ...
+  # /cvmfs/soft.computecanada.ca/gentoo/2020/usr/lib64/libfontconfig.so.1: undefined symbol: FT_Done_MM_Var
+  "mv %%(installdir)s/%s/Framework/bin/Linux64/libfreetype.so.6 \
+     %%(installdir)s/%s/Framework/bin/Linux64/libfreetype.so.6.bak" % (local_sfx, local_sfx),
+  # Enable additive extension on the workbench ACT start page
+  "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%%(version)s \
+    %%(installdir)s/%s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex" % (local_sfx),
 ]
+
+modextravars = {
+    'ANS_FLEXLM_DISABLE_DEFLICPATH': '1',
+}
 
 modluafooter = """
 require("SitePackage")
@@ -66,10 +56,6 @@ Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a u
 elseif (path) then
 	-- load the license file which should contain Lua commands to set the license path
 	assert(loadfile(path))()
-end
-setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
-if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
-        setenv("TMI_CONFIG",pathJoin(root,"v%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
 end
 """
 

@@ -1,11 +1,6 @@
-# Requires manually loading StdEnv/2016 before building to install under
-# [roberpj@build-node:~/.local/easybuild/software/2017/Core/ansys/2020R2] or
-# [roberpj@buidl-node:/cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2020R2] 
-
 name = 'ANSYS'
 version = '2020R2'
-versionsuffix = '202'
-versionprefix = '2018.3.222'
+local_sfx = 'v202'
 
 homepage = 'http://www.ansys.com'
 description = """ANSYS simulation software enables organizations to confidently predict 
@@ -14,11 +9,11 @@ description = """ANSYS simulation software enables organizations to confidently 
 
 toolchain = SYSTEM
 
-# create tar ball from installation isos
+# create tar ball from the installation iso files
 sources = ['ANSYS-%(version)s.tar']
 
 # sha256sum ANSYS-2020R2.tar
-checksums = ['ba81b7b7697c893485105061c0c9e8bc']
+checksums = ['108b7c9375df80b9bda39efeb6d3a03b1b4d33d21705f437742cb8e99954c2c4']
 
 postinstallcmds = [
   # Set same perms on all directories
@@ -30,23 +25,23 @@ postinstallcmds = [
   # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
   "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
     sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-  # Run setrpaths.sh under CEI so bins use nix interpreter and bins/libs find qt libs for ensight
-  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/v202/CEI \
-    --add_path %(installdir)s/v%(versionsuffix)s/CEI/apex%(versionsuffix)s/machines/linux_2.6_64/qt-5.12.6/lib",
-  # Run setrpaths under all subdirectoreis except CEI so bins use nix interpreter 
-  "for d in $(find %(installdir)s/v202 -mindepth 1 -maxdepth 1 -not -name CEI); \
-    do echo Calling setrpaths.sh --path $d; /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d; done",
-  # Set any_interpreter for some license binaries
+  # Run setrpaths.sh in all directories
+  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Run setrpaths.sh for any_interpreter
   "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
-    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+     /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+  # Avoid the following symbol lookup error when running fluent gui ...
+  # /cvmfs/soft.computecanada.ca/gentoo/2020/usr/lib64/libfontconfig.so.1: undefined symbol: FT_Done_MM_Var
+  "mv %%(installdir)s/%s/Framework/bin/Linux64/libfreetype.so.6 \
+     %%(installdir)s/%s/Framework/bin/Linux64/libfreetype.so.6.bak" % (local_sfx, local_sfx),
   # Enable additive extension on the workbench ACT start page
-  "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%(version)s \
-    %(installdir)s/v%(versionsuffix)s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex",
-  # Manually patch setup-mwuser (original filesize 4470 -> 4472 when patched) for ansys versions >= 17.2
-  # /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys/2020R2/v202/commonfiles/MainWin/linx64/mw/setup-mwuser
-  "cp -a %(installdir)s/v%(versionsuffix)s/commonfiles/MainWin/linx64/mw/setup-mwuser %(installdir)s/v%(versionsuffix)s/commonfiles/MainWin/linx64/mw/orig_setup-mwuser",
-  "patch -d%(installdir)s/v%(versionsuffix)s -p2 < /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/setup-mwuser.patch-2020R2",
+  "cp /cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/wizard/AdditiveWizard.wbex-%%(version)s \
+    %%(installdir)s/%s/aisol/WBAddins/MechanicalExtensions/AdditiveWizard.wbex" % (local_sfx),
 ]
+
+modextravars = {
+    'ANS_FLEXLM_DISABLE_DEFLICPATH': '1',
+}
 
 modluafooter = """
 require("SitePackage")
@@ -61,13 +56,6 @@ Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a u
 elseif (path) then
 	-- load the license file which should contain Lua commands to set the license path
 	assert(loadfile(path))()
-end
-setenv("ENSIGHT10_LM","ansys")
-setenv("ANS_FLEXLM_DISABLE_DEFLICPATH","1")
-if os.getenv("RSNT_INTERCONNECT") == "omnipath" then
-        -- /cvmfs/restricted.computecanada.ca/easybuild/software/2017/Core/ansys \
-        --   /2020R2/v202/commonfiles/MPI/Intel/2018.3.222/linx64/etc/tmi.conf
-        setenv("TMI_CONFIG",pathJoin(root,"v%(versionsuffix)s/commonfiles/MPI/Intel/%(versionprefix)s/linx64/etc/tmi.conf"))
 end
 """
 
