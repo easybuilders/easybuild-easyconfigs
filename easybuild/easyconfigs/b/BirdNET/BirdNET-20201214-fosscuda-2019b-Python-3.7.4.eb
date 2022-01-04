@@ -1,0 +1,78 @@
+easyblock = 'Tarball'
+
+name = 'BirdNET'
+version = '20201214'
+versionsuffix = '-Python-%(pyver)s'
+local_commit = '022a6d5'
+
+homepage = 'https://birdnet.cornell.edu/'
+description = """BirdNET is a research platform that aims at recognizing birds by sound at scale.
+We support various hardware and operating systems such as Arduino microcontrollers, the Raspberry Pi, 
+smartphones, web browsers, workstation PCs, and even cloud services. BirdNET is a citizen science 
+platform as well as an analysis software for extremely large collections of audio.
+BirdNET aims to provide innovative tools for conservationists, biologists, and birders alike."""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+
+github_account = 'kahst'
+sources = [
+    {
+        'source_urls': [GITHUB_SOURCE],
+        'download_filename': '%s.tar.gz' % local_commit,
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://tuc.cloud/index.php/s/m9smX4FkqmJaxLW/'],
+        'download_filename': 'download',
+        'filename': 'BirdNET_Soundscape_Model.pkl',
+        'extract_cmd': 'cp %s %(builddir)s/BirdNET-*/model',
+    },
+]
+patches = ['BirdNET-20201214_add-model-path-envvar.patch']
+checksums = [
+    '3a7a5f562bfdd55138603847d206125328f02a25df5e86278d2fb35242bb1c1d',  # BirdNET-20201214.tar.gz
+    '7db0b2fe57da002aff62fe1aecf56b16065c2b699dcbee1d8d7e07a42719b3fe',  # BirdNET_Soundscape_Model.pkl
+    'd7587d82a4c21df58c589b9044df720752abab7efcb2769a671f75feb9661337',  # BirdNET-20201214_add-model-path-envvar.patch
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('libgpuarray', '0.7.6', versionsuffix),
+    ('librosa', '0.7.2', versionsuffix),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('Theano', '1.0.4', versionsuffix),
+]
+
+postinstallcmds = ['chmod +x %(installdir)s/analyze.py']
+
+fix_python_shebang_for = ['analyze.py']
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'use_pip': True,
+    'download_dep_fail': True,
+}
+
+exts_list = [
+    ('Lasagne', '5d3c63c', {
+        'module': 'lasagne',
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/%(name)s/%(name)s/archive/'],
+        'checksums': ['6dbcc97b5378e4f17e7ba4043d1a65cb4adb33c616a0a8683244e8e1423e83f3'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['analyze.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['analyze.py --help']
+
+modextrapaths = {
+    'PATH': '',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'THEANORC': '.theanorc',
+}
+
+moduleclass = 'bio'

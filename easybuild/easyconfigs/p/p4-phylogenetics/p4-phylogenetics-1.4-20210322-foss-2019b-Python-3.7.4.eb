@@ -1,0 +1,44 @@
+easyblock = 'PythonPackage'
+
+name = 'p4-phylogenetics'
+version = '1.4-20210322'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://p4.nhm.ac.uk/'
+description = "A Python phyloinformatic toolkit, and an implementation of tree-heterogeneous models of evolution."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+github_account = 'pgfoster'
+local_commit = 'd9c8d1b1'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['681c4d0c2d38b9fe080903691562e20304a51a2404be8d70036d69ac9e70639b']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('bitarray', '1.2.1', versionsuffix),
+    ('GSL', '2.6'),
+    ('NLopt', '2.6.1'),
+]
+
+use_pip = False
+download_dep_fail = True
+
+# Set paths to GSL from EasyBuild
+prebuildopts = 'sed -i "48d;s|^#my_lib_dirs.*|my_lib_dirs = [\'$EBROOTGSL/lib\']|" setup.py && '
+prebuildopts += 'sed -i "47d;s|^#my_include_dirs.*|my_include_dirs = [\'$EBROOTGSL/include\']|" setup.py && '
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/p4'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [('p4 --help')]
+
+options = {'modulename': 'p4'}
+
+moduleclass = 'bio'

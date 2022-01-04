@@ -1,0 +1,35 @@
+don't blindly overwrite $LD_LIBRARY_PATH (which breaks ld.gold linker because it requires a sufficiently recent libstdc++.so)
+author: Kenneth Hoste (HPC-UGent)
+diff -ruN sra-tools-2.10.9.orig/build/ld.linux.dlib.sh sra-tools-2.10.9/build/ld.linux.dlib.sh
+--- sra-tools-2.10.9.orig/build/ld.linux.dlib.sh	2020-12-16 10:13:51.000000000 -0800
++++ sra-tools-2.10.9/build/ld.linux.dlib.sh	2021-02-24 20:04:43.186483000 -0800
+@@ -83,8 +83,7 @@
+     done
+ 
+     # update LD_LIBRARY_PATH
+-    unset LD_LIBRARY_PATH
+-    export LD_LIBRARY_PATH="$LDIRS:$XDIRS"
++    export LD_LIBRARY_PATH="$LDIRS:$XDIRS:$LD_LIBRARY_PATH"
+ 
+     # tack on libraries, finding as we go
+     for LIB in $LIBS
+@@ -308,4 +307,4 @@
+     echo "$MSG" >> $LOGFILE
+ 
+     "$BUILD_DIR/scm-collect.sh" "$OBJS" "$SLIBS" | sort -u > "$TARG.md5"
+-fi
+\ No newline at end of file
++fi
+diff -ruN sra-tools-2.10.9.orig/build/ld.linux.exe.sh sra-tools-2.10.9/build/ld.linux.exe.sh
+--- sra-tools-2.10.9.orig/build/ld.linux.exe.sh	2020-12-16 10:13:51.000000000 -0800
++++ sra-tools-2.10.9/build/ld.linux.exe.sh	2021-02-24 20:04:00.372302000 -0800
+@@ -96,8 +96,7 @@
+     done
+ 
+     # update LD_LIBRARY_PATH
+-    unset LD_LIBRARY_PATH
+-    export LD_LIBRARY_PATH="$LDIRS:$XDIRS"
++    export LD_LIBRARY_PATH="$LDIRS:$XDIRS:$LD_LIBRARY_PATH"
+ 
+     # tack on libraries, finding as we go
+     for LIB in $LIBS
