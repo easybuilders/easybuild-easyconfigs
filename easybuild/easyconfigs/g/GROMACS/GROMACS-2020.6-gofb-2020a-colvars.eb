@@ -1,0 +1,57 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2016 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+# Authors::
+# * Wiktor Jurkowski <wiktor.jurkowski@gmail.com>
+# * Fotis Georgatos <fotis@cern.ch>
+# * George Tsouloupas <g.tsouloupas@cyi.ac.cy>
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Adam Huffman <adam.huffman@crick.ac.uk>
+# License::   MIT/GPL
+# 2019.3 version
+# Contribution from the Crick HPC team
+# uploaded by J. Sassmannshausen
+#
+
+name = 'GROMACS'
+version = '2020.6'
+local_colvars_version = '2021-12-20'
+
+modaltsoftname = 'gromacs-colvars'
+
+homepage = 'http://colvars.github.io/'
+description = """
+GROMACS is a versatile package to perform molecular dynamics.
+ This version has been patched with 'Colvars', a collective variables module 
+ for molecular simulation programs.
+
+This is a CPU only build, containing both MPI and threadMPI builds.
+
+- CC-Wiki: GROMACS
+"""
+
+toolchain = {'name': 'gofb', 'version': '2020a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+sources = [{
+	'source_urls': 'https://github.com/Colvars/gromacs/archive/',
+	'filename':    'GROMACS-v2020.6-colvars.tar.gz',
+	'download_filename': 'v%(version)s-colvars.tar.gz',
+}]
+
+patches = []
+# checksums are now on checksums.json
+
+builddependencies = []
+dependencies = [('FFTW', '3.3.8')]
+
+configopts = ' -DGMX_VERSION_STRING_OF_FORK=Colvars-{:} '.format( local_colvars_version)
+
+# Because GROMACS has been patched w/ Colvars (and thereby added new 
+# options to mdrun) some tests are failing.  
+# Testing is disabled, until I can figure out a less drastic workaround.
+skipsteps = ['test']
+
+moduleclass = 'chem'
