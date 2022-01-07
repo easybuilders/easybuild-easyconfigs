@@ -28,18 +28,23 @@ description = """
 """
 
 toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
-toolchainopts = {'optarch': True, 'pic': True}
+toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/lh3/%(name)s/archive/']
 sources = ['v%(version)s.tar.gz']
 checksums = ['980b9591b61c60042c4a39b9e31ccaad8d17ff179d44d347997825da3fdf47fd']
 
 builddependencies = [
+    ('Perl', '5.34.0'),
     ('binutils', '2.37'),
 ]
 
 dependencies = [('zlib', '1.2.11')]
 
-buildopts = 'CFLAGS="$CFLAGS -fcommon"'
+# Allow use of x86 intrinsics on PPC
+prebuildopts = 'export CFLAGS="$CFLAGS -fcommon -DNO_WARN_X86_INTRINSICS" && '
+prebuildopts += "sed -i 's|^CC=|#CC=|g' Makefile && "
+prebuildopts += "sed -i 's|^CFLAGS=|#CFLAGS=|g' Makefile && "
+prebuildopts += "sed -i 's|^LIBS=|LIBS= $(LDFLAGS) |g' Makefile && "
 
 moduleclass = 'bio'
