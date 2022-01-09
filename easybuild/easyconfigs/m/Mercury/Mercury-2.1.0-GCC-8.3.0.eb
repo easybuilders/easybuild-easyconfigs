@@ -1,0 +1,47 @@
+easyblock = "CMakeMake"
+
+
+name = "Mercury"
+version = "2.1.0"
+
+homepage = "https://github.com/mercury-hpc/mercury"
+description = """ 
+ Mercury is an RPC framework specifically designed for use in HPC systems 
+ that allows asynchronous transfer of parameters and execution requests,
+ as well as direct support of large data arguments.
+"""
+
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+builddependencies = [('CMake', '3.15.3')]
+dependencies = [
+    ('libfabric', '1.12.1'),
+    ('UCX', '1.6.1'),
+    ('OpenMPI', '3.1.4'),
+    ('Boost', '1.76.0'),
+    ('mchecksum', '1.0.0'),
+]
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/mercury-hpc',
+        'repo_name': 'mercury',
+        'tag': 'v%(version)s',
+        'recursive': True,
+    },
+
+}]
+checksums = ['80bf23f5f71d4791d349cd5644d6903d1e0d9159980fcedc65b64f9c167b840e']
+
+configure_cmd = (
+    "cmake -DMERCURY_USE_SELF_FORWARD:BOOL=ON -DBUILD_TESTING:BOOL=ON -DMERCURY_USE_BOOST_PP:BOOL=ON"
+    " -DBUILD_SHARED_LIBS:BOOL=ON  -DCMAKE_INSTALL_PREFIX=%(installdir)s ../mercury/ -DNA_USE_OFI:BOOL=ON"
+    " -DMERCURY_USE_CHECKSUMS=ON -DMERCURY_USE_SYSTEM_MCHECKSUM=OFF -DMERCURY_USE_XDR=OFF"
+    ) 
+
+sanity_check_paths = {
+    'files': ['include/mercury.h','lib/libmercury.so'],
+    'dirs': []
+}
+
