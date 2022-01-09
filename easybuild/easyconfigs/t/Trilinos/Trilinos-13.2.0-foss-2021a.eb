@@ -35,9 +35,7 @@ dependencies = [
     ('X11', '20210518'),
 ]
 
-build_shared_libs = True
-
-# https://www.dealii.org/current/external-libs/trilinos.html
+# based off https://www.dealii.org/current/external-libs/trilinos.html
 configopts = '-DTrilinos_ENABLE_Amesos=ON '
 configopts += '-DTrilinos_ENABLE_Epetra=ON '
 configopts += '-DTrilinos_ENABLE_EpetraExt=ON '
@@ -50,10 +48,10 @@ configopts += '-DTrilinos_ENABLE_MueLu=ON '
 configopts += '-DTrilinos_ENABLE_ML=ON '
 configopts += '-DTrilinos_ENABLE_ROL=ON '
 configopts += '-DTrilinos_ENABLE_Tpetra=ON '
-configopts += '-DTrilinos_ENABLE_COMPLEX_DOUBLE=ON '
-configopts += '-DTrilinos_ENABLE_COMPLEX_FLOAT=ON '
+configopts += '-DTrilinos_ENABLE_COMPLEX=OFF '
+configopts += '-DTrilinos_ENABLE_COMPLEX_DOUBLE=OFF '
+configopts += '-DTrilinos_ENABLE_COMPLEX_FLOAT=OFF '
 configopts += '-DTrilinos_ENABLE_Zoltan=ON '
-configopts += '-DTrilinos_VERBOSE_CONFIGURE=OFF '
 configopts += '-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION=ON '
 configopts += '-DNetCDF_NEEDS_HDF5=ON '
 configopts += '-DTPL_ENABLE_HDF5=ON '
@@ -65,6 +63,20 @@ configopts += '-DTPL_ENABLE_Scotch=ON '
 configopts += '-DBLAS_LIBRARY_NAMES=flexiblas -DBLAS_LIBRARY_DIRS=$EBROOTFLEXIBLAS/lib '
 configopts += '-DLAPACK_LIBRARY_NAMES=flexiblas -DLAPACK_LIBRARY_DIRS=$EBROOTFLEXIBLAS/lib '
 configopts += '-DCMAKE_VERBOSE_MAKEFILE=OFF '
+configopts += '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DTrilinos_VERBOSE_CONFIGURE=OFF '
+configopts += '-DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=ON '
+
+# https://github.com/kokkos/kokkos/wiki/Compiling#architecture-keywords
+import os as _os  # NOQA
+_bb_cpu = _os.environ.get('BB_CPU')
+if _bb_cpu == 'haswell':
+    configopts += '-DKokkos_ARCH_HSW=ON '
+elif _bb_cpu == 'cascadelake' or _bb_cpu == 'icelake':
+    configopts += '-DKokkos_ARCH_SKX=ON '
+else:
+    print("Kokkos_ARCH needs setting for CPU type")
+    exit()
 
 sanity_check_paths = {
     'files': ['lib/libtrilinosss.so'],
