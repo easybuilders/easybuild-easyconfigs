@@ -1,0 +1,49 @@
+easyblock = 'Tarball'
+
+name = 'MinPath'
+version = '1.6'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://omics.informatics.indiana.edu/MinPath'
+description = """MinPath (Minimal set of Pathways) is a parsimony approach for biological pathway reconstructions
+ using protein family predictions, achieving a more conservative, yet more faithful, estimation of the biological
+ pathways for a query dataset."""
+
+toolchain = {'name': 'intel', 'version': '2021b'}
+
+sources = [{
+    'filename': 'minpath%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/mgtools/',
+        'repo_name': 'MinPath',
+        'commit': '46d3e81a4dca2310d558bea970bc002b15d44767',
+    },
+}]
+checksums = ['8ae836a0223f49d81991a16f9b5ae0d9a2d2f129dd345355fc04047d655cf8db']
+
+patches = ['MinPath-%(version)s_fix-glpsol-path.patch']
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('GLPK', '5.0'),
+]
+
+# remove included old GLPK copy
+postinstallcmds = ["rm -rf %(installdir)s/glpk-*/*"]
+
+sanity_check_paths = {
+    'files': ['MinPath.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "python3 MinPath.py -ko examples/demo.ko -report /dev/null -details /dev/null",
+    "python3 MinPath.py -fig examples/demo.fig -report /dev/null -details /dev/null",
+    "python3 MinPath.py -any examples/demo.ec -map ec2path -report /dev/null -details /dev/null",
+]
+
+modextrapaths = {'PATH': ''}
+
+modextravars = {'MinPath': '%(installdir)s'}
+
+moduleclass = 'bio'
