@@ -1,0 +1,37 @@
+easyblock = 'PackedBinary'
+
+name = 'qctool'
+version = '2.2.0'
+
+homepage = 'https://www.well.ox.ac.uk/~gav/qctool_v2/index.html'
+description = "QCTOOL is a command-line utility program for basic quality control of gwas datasets"
+
+toolchain = {'name': 'GCCcore', 'version': '7.3.0'}
+
+source_urls = ['https://github.com/gavinband/qctool/archive/refs/tags/']
+https://github.com/gavinband/qctool/archive/refs/tags/v2.2.0.tar.gz
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'download_filename': 'v%(version)s.tar.gz'
+}]
+
+checksums = [
+    '2afe85eefc1ed73ae0d4128c8b232b379fa7ccf34e42809ebebb620f7d166a03',
+]
+
+configure_and_build_cmd  = 'cd "%s/%s-%s/" && ' % (builddir, name, version')
+configure_and_build_cmd += 'chmod +x waf && '
+configure_and_build_cmd += './waf configure && '
+configure_and_build_cmd += './waf && '
+configure_and_build_cmd += 'mkdir "%s/bin/" && ' % ('%(installdir)s/')
+configure_and_build_cmd += 'cp "%s/qctool-%s/build/release/apps/"*_v2.1-dev "%s/bin/" && ' % (builddir, version, installdir)
+configure_and_build_cmd += 'rename "_v%s" "" "%s/bin/"*' % (version, installdir)
+
+install_cmd = '%s' % (configure_and_build_cmd)
+
+sanity_check_paths = {
+    'files': ['bin/hptest', 'bin/inthinnerator', 'bin/ldbird', 'bin/multifinemap', 'bin/qctool', 'bin/selfmap'],
+    'dirs': ['bin']
+}
+
+moduleclass = 'bio'
