@@ -23,6 +23,7 @@ dependencies = [
 ]
 
 default_component_specs = {'start_dir': '%(namelower)s-%(version)s'}
+sanity_check_all_components = True
 
 # Also build and install LAPACKE, which FlexiBLAS does not support yet
 components = [
@@ -36,15 +37,14 @@ components = [
         'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
         'sources': ['v%(version)s.tar.gz'],
         'checksums': ['328c1bea493a32cac5257d84157dc686cc3ab0b004e2bea22044e0a59f6f8a19'],
-        'configopts': '-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON \
-                       -DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON \
-                       -DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas',
+        'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
+        'sanity_check_paths': {
+            'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
+            'dirs': [],
+        },
     }),
 ]
-
-sanity_check_paths = {
-    'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
-    'dirs': [],
-}
 
 moduleclass = 'lib'
