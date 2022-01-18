@@ -1020,8 +1020,6 @@ class EasyConfigTest(TestCase):
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
         bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'ROCm']
-        # also allow bundles that enable per-component sanity checks
-        bundle_sanity_check_components = ec.get('sanity_check_components') or ec.get('sanity_check_all_components')
 
         failing_checks = []
 
@@ -1029,9 +1027,12 @@ class EasyConfigTest(TestCase):
 
             easyblock = ec.get('easyblock')
 
+            bundle_sanity_check_components = ec['sanity_check_components'] or ec['sanity_check_all_components']
+            
             if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
                 if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
                     pass
+                # also allow bundles that enable per-component sanity checks
                 elif easyblock == 'Bundle' and bundle_sanity_check_components:
                     pass
                 else:
