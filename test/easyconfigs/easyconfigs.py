@@ -1027,8 +1027,13 @@ class EasyConfigTest(TestCase):
 
             easyblock = ec.get('easyblock')
 
+            bundle_sanity_check_components = ec['sanity_check_components'] or ec['sanity_check_all_components']
+
             if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
                 if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
+                    pass
+                # also allow bundles that enable per-component sanity checks
+                elif easyblock == 'Bundle' and bundle_sanity_check_components:
                     pass
                 else:
                     ec_fn = os.path.basename(ec.path)
