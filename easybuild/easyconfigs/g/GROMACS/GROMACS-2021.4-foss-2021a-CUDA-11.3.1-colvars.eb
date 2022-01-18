@@ -1,0 +1,80 @@
+name = 'GROMACS'
+version = '2021.4'
+versionsuffix = '-CUDA-%(cudaver)s-colvars'
+
+homepage = 'https://colvars.github.io/'
+description = """
+GROMACS is a versatile package to perform molecular dynamics, i.e. simulate the
+Newtonian equations of motion for systems with hundreds to millions of
+particles.
+
+This is a GPU enabled build, containing both MPI and threadMPI builds.
+
+It also contains the gmxapi extension for the single precision MPI build.
+
+Colvars is a software module for molecular simulation and analysis that
+provides a high-performance implementation of sampling algorithms defined on a
+reduced space of continuously differentiable functions (aka collective
+variables).
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = [
+    'https://github.com/Colvars/gromacs/archive/',
+]
+sources = ['v%(version)s-colvars.tar.gz']
+patches = [
+    'GROMACS-2019_fix_omp_num_threads_and_google_test_death_style_in_tests.patch',
+    'GROMACS-2019_increase_test_timeout_for_GPU.patch',
+    'GROMACS-2021_fix_gmxapi_gmx_allowed_cmd_name.patch',
+    'GROMACS-%(version)s_fix_threads_gpu_Gmxapitests.patch',
+    'GROMACS-2021.3_skip_test_for_plumed.patch',
+]
+checksums = [
+    '56f8f0fd203af31945eb72b55f51703c70ca05ef2c4641117702b3463bdd8f81',  # v2021.4-colvars.tar.gz
+    # GROMACS-2019_fix_omp_num_threads_and_google_test_death_style_in_tests.patch
+    '406f5edd204be812f095a6f07ebc2673c5f6ddf1b1c1428fd336a80b9c629275',
+    # GROMACS-2019_increase_test_timeout_for_GPU.patch
+    '0d16f53d428155197a0ed0b0974ce03422f199d7c463c4a9156a3b99e3c86234',
+    # GROMACS-2021_fix_gmxapi_gmx_allowed_cmd_name.patch
+    'b7ffb292ec362e033db1bedd340353f0644dbaae872127750f3dda1ac7e87d49',
+    # GROMACS-2021.4_fix_threads_gpu_Gmxapitests.patch
+    '4c077af81bb5340634a1286ce66e58ee0115a40b8ea5148e2cbef3e882673a57',
+    'c06d0a8c3e75b232224f46bc3b70e135c4c02ec4151712970f5edd85d890f018',  # GROMACS-2021.3_skip_test_for_plumed.patch
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('scikit-build', '0.11.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('networkx', '2.5.1'),
+    ('CUDA', '11.3.1', '', True),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('gmxapi', '0.2.2.1', {
+        'preinstallopts': "export GMXTOOLCHAINDIR=%(installdir)s/share/cmake/gromacs_mpi && ",
+        'checksums': ['e24d507585e1a7808a5ee3ed04da5d6577f2a8961bbeafa7068528e00aa6b20d'],
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+}
+
+moduleclass = 'bio'
