@@ -1,0 +1,181 @@
+Add flexiblas detection to numpy.
+This is just a copy of the openblas detection with name changed.
+
+Åke Sandgren, 2022-01-13
+diff -ru numpy-1.16.6.orig/numpy/distutils/system_info.py numpy-1.16.6/numpy/distutils/system_info.py
+--- numpy-1.16.6.orig/numpy/distutils/system_info.py	2019-12-27 17:24:44.000000000 +0100
++++ numpy-1.16.6/numpy/distutils/system_info.py	2022-01-13 16:48:14.754235308 +0100
+@@ -20,6 +20,7 @@
+   blas_info
+   lapack_info
+   openblas_info
++  flexiblas_info
+   blis_info
+   blas_opt_info       # usage recommended
+   lapack_opt_info     # usage recommended
+@@ -395,6 +396,9 @@
+           # openblas with embedded lapack
+           'openblas_lapack': openblas_lapack_info, # use blas_opt instead
+           'openblas_clapack': openblas_clapack_info, # use blas_opt instead
++          'flexiblas': flexiblas_info,          # use blas_opt instead
++          'flexiblas_lapack': flexiblas_lapack_info,          # use blas_opt instead
++          'flexiblas_clapack': flexiblas_clapack_info,          # use blas_opt instead
+           'blis': blis_info,                  # use blas_opt instead
+           'lapack_mkl': lapack_mkl_info,      # use lapack_opt instead
+           'blas_mkl': blas_mkl_info,          # use blas_opt instead
+@@ -1549,6 +1553,16 @@
+             self.set_info(**lapack_mkl_info)
+             return
+ 
++        flexiblas_info = get_info('flexiblas_lapack')
++        if flexiblas_info:
++            self.set_info(**flexiblas_info)
++            return
++
++        flexiblas_info = get_info('flexiblas_clapack')
++        if flexiblas_info:
++            self.set_info(**flexiblas_info)
++            return
++
+         openblas_info = get_info('openblas_lapack')
+         if openblas_info:
+             self.set_info(**openblas_info)
+@@ -1633,6 +1647,11 @@
+             self.set_info(**blis_info)
+             return
+ 
++        flexiblas_info = get_info('flexiblas')
++        if flexiblas_info:
++            self.set_info(**flexiblas_info)
++            return
++
+         openblas_info = get_info('openblas')
+         if openblas_info:
+             self.set_info(**openblas_info)
+@@ -1749,6 +1768,126 @@
+         return res
+ 
+ 
++class flexiblas_info(blas_info):
++    section = 'flexiblas'
++    dir_env_var = 'FLEXIBLAS'
++    _lib_names = ['flexiblas']
++    notfounderror = BlasNotFoundError
++
++    def check_embedded_lapack(self, info):
++        return True
++
++    def calc_info(self):
++        c = customized_ccompiler()
++
++        lib_dirs = self.get_lib_dirs()
++
++        flexiblas_libs = self.get_libs('libraries', self._lib_names)
++        if flexiblas_libs == self._lib_names: # backward compat with 1.8.0
++            flexiblas_libs = self.get_libs('flexiblas_libs', self._lib_names)
++
++        info = self.check_libs(lib_dirs, flexiblas_libs, [])
++
++        if c.compiler_type == "msvc" and info is None:
++            from numpy.distutils.fcompiler import new_fcompiler
++            f = new_fcompiler(c_compiler=c)
++            if f and f.compiler_type == 'gnu95':
++                # Try gfortran-compatible library files
++                info = self.check_msvc_gfortran_libs(lib_dirs, flexiblas_libs)
++                # Skip lapack check, we'd need build_ext to do it
++                assume_lapack = True
++        elif info:
++            assume_lapack = False
++            info['language'] = 'c'
++
++        if info is None:
++            return
++
++        # Add extra info for OpenBLAS
++        extra_info = self.calc_extra_info()
++        dict_append(info, **extra_info)
++
++        if not (assume_lapack or self.check_embedded_lapack(info)):
++            return
++
++        info['define_macros'] = [('HAVE_CBLAS', None)]
++        self.set_info(**info)
++
++    def check_msvc_gfortran_libs(self, library_dirs, libraries):
++        # First, find the full path to each library directory
++        library_paths = []
++        for library in libraries:
++            for library_dir in library_dirs:
++                # MinGW static ext will be .a
++                fullpath = os.path.join(library_dir, library + '.a')
++                if os.path.isfile(fullpath):
++                    library_paths.append(fullpath)
++                    break
++            else:
++                return None
++
++        # Generate numpy.distutils virtual static library file
++        tmpdir = os.path.join(os.getcwd(), 'build', 'flexiblas')
++        if not os.path.isdir(tmpdir):
++            os.makedirs(tmpdir)
++
++        info = {'library_dirs': [tmpdir],
++                'libraries': ['flexiblas'],
++                'language': 'f77'}
++
++        fake_lib_file = os.path.join(tmpdir, 'flexiblas.fobjects')
++        fake_clib_file = os.path.join(tmpdir, 'flexiblas.cobjects')
++        with open(fake_lib_file, 'w') as f:
++            f.write("\n".join(library_paths))
++        with open(fake_clib_file, 'w') as f:
++            pass
++
++        return info
++
++class flexiblas_lapack_info(flexiblas_info):
++    section = 'flexiblas'
++    dir_env_var = 'FLEXIBLAS'
++    _lib_names = ['flexiblas']
++    notfounderror = BlasNotFoundError
++
++    def check_embedded_lapack(self, info):
++        res = False
++        c = customized_ccompiler()
++
++        tmpdir = tempfile.mkdtemp()
++        s = """void zungqr_();
++        int main(int argc, const char *argv[])
++        {
++            zungqr_();
++            return 0;
++        }"""
++        src = os.path.join(tmpdir, 'source.c')
++        out = os.path.join(tmpdir, 'a.out')
++        # Add the additional "extra" arguments
++        try:
++            extra_args = info['extra_link_args']
++        except Exception:
++            extra_args = []
++        if sys.version_info < (3, 5) and sys.version_info > (3, 0) and c.compiler_type == "msvc":
++            extra_args.append("/MANIFEST")
++        try:
++            with open(src, 'wt') as f:
++                f.write(s)
++            obj = c.compile([src], output_dir=tmpdir)
++            try:
++                c.link_executable(obj, out, libraries=info['libraries'],
++                                  library_dirs=info['library_dirs'],
++                                  extra_postargs=extra_args)
++                res = True
++            except distutils.ccompiler.LinkError:
++                res = False
++        finally:
++            shutil.rmtree(tmpdir)
++        return res
++
++class flexiblas_clapack_info(flexiblas_lapack_info):
++    _lib_names = ['flexiblas', 'lapack']
++
+ class openblas_info(blas_info):
+     section = 'openblas'
+     dir_env_var = 'OPENBLAS'
