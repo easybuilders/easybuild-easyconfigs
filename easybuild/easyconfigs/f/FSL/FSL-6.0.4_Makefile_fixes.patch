@@ -1,6 +1,19 @@
-diff -ru fsl.orig/config/buildSettings.mk fsl/config/buildSettings.mk
---- fsl.orig/config/buildSettings.mk	2021-07-27 13:18:33.838146248 +0000
-+++ fsl/config/buildSettings.mk	2021-07-27 13:38:51.975215192 +0000
+Fix the Makefile to use libraries built with EB instead of the ones
+shipped with the code.
+Also: invoke the system's tclsh, instead of the one shipped with fsl
+Author: Caspar van Leeuwen (SURFsara)
+diff -Nru fsl.orig/config/buildSettings.mk fsl/config/buildSettings.mk
+--- fsl.orig/config/buildSettings.mk	2020-06-19 15:48:02.000000000 +0200
++++ fsl/config/buildSettings.mk	2021-02-24 11:44:50.000000000 +0100
+@@ -18,7 +18,7 @@
+ CHMOD = /bin/chmod
+ MKDIR = /bin/mkdir
+ INSTALL = install -p
+-TCLSH = ${FSLDIR}/bin/fsltclsh
++TCLSH = tclsh
+ DEPENDFLAGS = -MM
+ MACHDBGFLAGS = -g
+ #####################################################################
 @@ -33,17 +33,17 @@
  LIB_CEPHES = ${FSLEXTLIB}
  INC_CEPHES = ${FSLEXTINC}/cephes
@@ -96,7 +109,8 @@ diff -ru fsl.orig/config/buildSettings.mk fsl/config/buildSettings.mk
 +LIB_ZLIB = ${EBROOTZLIB}/lib
 +INC_ZLIB = ${EBROOTZLIB}/include
  # QT library
- QTDIR = /usr/lib/qt3
+-QTDIR = /usr/lib/qt3
++QTDIR = ${EBROOTQT}
  LIB_QT = ${QTDIR}/lib
  INC_QT = ${QTDIR}/include
  # VTK library
@@ -109,11 +123,9 @@ diff -ru fsl.orig/config/buildSettings.mk fsl/config/buildSettings.mk
  # openblas
  LIB_NEWMAT = ${FSLEXTLIB} -lopenblas
  # get and then parse gcc version to run context specific builds
-Seulement dans fsl/config: buildSettings.mk.orig
-Seulement dans fsl/config: buildSettings.mk.rej
-diff -ru fsl.orig/config/common/vars.mk fsl/config/common/vars.mk
---- fsl.orig/config/common/vars.mk	2021-07-27 13:18:34.811152691 +0000
-+++ fsl/config/common/vars.mk	2021-07-27 13:34:57.158659510 +0000
+diff -Nru fsl.orig/config/common/vars.mk fsl/config/common/vars.mk
+--- fsl.orig/config/common/vars.mk	2020-06-19 15:48:02.000000000 +0200
++++ fsl/config/common/vars.mk	2021-02-24 11:12:18.000000000 +0100
 @@ -24,14 +24,14 @@
  USRCFLAGS = 
  USRCXXFLAGS =
@@ -133,9 +145,9 @@ diff -ru fsl.orig/config/common/vars.mk fsl/config/common/vars.mk
  	${AccumulatedIncFlags}
  
  HFILES = *.h
-diff -ru fsl.orig/etc/fslconf/fsl.csh fsl/etc/fslconf/fsl.csh
---- fsl.orig/etc/fslconf/fsl.csh	2021-07-27 13:18:32.690138641 +0000
-+++ fsl/etc/fslconf/fsl.csh	2021-07-27 13:34:57.158659510 +0000
+diff -Nru fsl.orig/etc/fslconf/fsl.csh fsl/etc/fslconf/fsl.csh
+--- fsl.orig/etc/fslconf/fsl.csh	2019-11-26 14:56:10.000000000 +0100
++++ fsl/etc/fslconf/fsl.csh	2021-02-24 09:58:49.000000000 +0100
 @@ -25,8 +25,8 @@
  # The following variables specify paths for programs and can be changed
  #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
@@ -147,9 +159,9 @@ diff -ru fsl.orig/etc/fslconf/fsl.csh fsl/etc/fslconf/fsl.csh
  
  # The following variables are used for running code in parallel across
  #  several machines ( i.e. for FDT )
-diff -ru fsl.orig/etc/fslconf/fsl-devel.sh fsl/etc/fslconf/fsl-devel.sh
---- fsl.orig/etc/fslconf/fsl-devel.sh	2021-07-27 13:18:33.175141856 +0000
-+++ fsl/etc/fslconf/fsl-devel.sh	2021-07-27 13:34:57.158659510 +0000
+diff -Nru fsl.orig/etc/fslconf/fsl-devel.sh fsl/etc/fslconf/fsl-devel.sh
+--- fsl.orig/etc/fslconf/fsl-devel.sh	2019-11-26 14:56:10.000000000 +0100
++++ fsl/etc/fslconf/fsl-devel.sh	2021-02-24 09:59:22.000000000 +0100
 @@ -26,8 +26,8 @@
  # The following variables specify paths for programs and can be changed
  #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
@@ -161,9 +173,9 @@ diff -ru fsl.orig/etc/fslconf/fsl-devel.sh fsl/etc/fslconf/fsl-devel.sh
  
  export FSLTCLSH FSLWISH 
  
-diff -ru fsl.orig/etc/fslconf/fsl.sh fsl/etc/fslconf/fsl.sh
---- fsl.orig/etc/fslconf/fsl.sh	2021-07-27 13:18:32.623138199 +0000
-+++ fsl/etc/fslconf/fsl.sh	2021-07-27 13:34:57.158659510 +0000
+diff -Nru fsl.orig/etc/fslconf/fsl.sh fsl/etc/fslconf/fsl.sh
+--- fsl.orig/etc/fslconf/fsl.sh	2019-11-26 14:56:10.000000000 +0100
++++ fsl/etc/fslconf/fsl.sh	2021-02-24 09:59:46.000000000 +0100
 @@ -26,8 +26,8 @@
  # The following variables specify paths for programs and can be changed
  #  or replaced by different programs ( e.g. FSLDISPLAY=open   for MacOSX)
@@ -175,9 +187,9 @@ diff -ru fsl.orig/etc/fslconf/fsl.sh fsl/etc/fslconf/fsl.sh
  
  export FSLTCLSH FSLWISH 
  
-diff -ru fsl.orig/src/film/Makefile fsl/src/film/Makefile
---- fsl.orig/src/film/Makefile	2021-07-27 13:31:26.296262527 +0000
-+++ fsl/src/film/Makefile	2021-07-27 13:34:57.159659517 +0000
+diff -Nru fsl.orig/src/film/Makefile fsl/src/film/Makefile
+--- fsl.orig/src/film/Makefile	2020-07-15 11:54:04.000000000 +0200
++++ fsl/src/film/Makefile	2021-02-24 10:01:51.000000000 +0100
 @@ -28,7 +28,7 @@
  	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} ftoz.o ${LIBS}
  
@@ -187,9 +199,9 @@ diff -ru fsl.orig/src/film/Makefile fsl/src/film/Makefile
  
  film_gls_res:${OBJS} film_gls_res.o
  	${CXX}  ${CXXFLAGS} ${LDFLAGS} -o $@ ${OBJS} film_gls_res.o ${LIBS}
-diff -ru fsl.orig/src/fslsurface/Makefile fsl/src/fslsurface/Makefile
---- fsl.orig/src/fslsurface/Makefile	2021-07-27 13:30:32.556906498 +0000
-+++ fsl/src/fslsurface/Makefile	2021-07-27 13:34:57.159659517 +0000
+diff -Nru fsl.orig/src/fslsurface/Makefile fsl/src/fslsurface/Makefile
+--- fsl.orig/src/fslsurface/Makefile	2014-12-16 15:52:05.000000000 +0100
++++ fsl/src/fslsurface/Makefile	2021-02-24 13:46:49.000000000 +0100
 @@ -37,7 +37,7 @@
  USRLDFLAGS = -L${LIB_NEWMAT}  -L${LIB_PROB} -L${LIB_ZLIB}
  
@@ -199,9 +211,9 @@ diff -ru fsl.orig/src/fslsurface/Makefile fsl/src/fslsurface/Makefile
  
  APPLY_ZLIB = -DHAVE_ZLIB
  
-diff -ru fsl.orig/src/libmeshutils/Makefile fsl/src/libmeshutils/Makefile
---- fsl.orig/src/libmeshutils/Makefile	2021-07-27 13:31:33.956313276 +0000
-+++ fsl/src/libmeshutils/Makefile	2021-07-27 13:34:57.159659517 +0000
+diff -Nru fsl.orig/src/libmeshutils/Makefile fsl/src/libmeshutils/Makefile
+--- fsl.orig/src/libmeshutils/Makefile	2014-12-16 15:20:18.000000000 +0100
++++ fsl/src/libmeshutils/Makefile	2021-02-24 10:05:09.000000000 +0100
 @@ -3,7 +3,7 @@
  
  PROJNAME = meshUtils
@@ -211,9 +223,9 @@ diff -ru fsl.orig/src/libmeshutils/Makefile fsl/src/libmeshutils/Makefile
  
  USRINCFLAGS = -I${INC_NEWMAT} -I${INC_ZLIB} -I${INC_PROB} -I${INC_BOOST} 
  USRLDFLAGS =  -L${LIB_PROB} -L${LIB_NEWMAT} -L${LIB_ZLIB}
-diff -ru fsl.orig/src/mist/Makefile fsl/src/mist/Makefile
---- fsl.orig/src/mist/Makefile	2021-07-27 13:31:08.627145468 +0000
-+++ fsl/src/mist/Makefile	2021-07-27 13:36:57.196454772 +0000
+diff -Nru fsl.orig/src/mist/Makefile fsl/src/mist/Makefile
+--- fsl.orig/src/mist/Makefile	2019-01-07 15:22:09.000000000 +0100
++++ fsl/src/mist/Makefile	2021-02-24 10:07:34.000000000 +0100
 @@ -1,16 +1,16 @@
  include ${FSLCONFDIR}/default.mk
  
