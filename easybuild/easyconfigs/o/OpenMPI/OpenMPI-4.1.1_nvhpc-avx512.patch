@@ -1,0 +1,225 @@
+Work around AVX512 issues in NVHPC.
+
+This means it won't use optimized avx2/avx512 functions for 32-bit and 64-bit
+integer reductions.
+--- ompi/mca/op/avx/configure.m4.orig   2021-11-30 16:31:43.153342521 +0000
++++ ompi/mca/op/avx/configure.m4        2021-11-30 16:32:26.940625340 +0000
+@@ -50,8 +50,8 @@
+                   AC_LINK_IFELSE(
+                       [AC_LANG_PROGRAM([[#include <immintrin.h>]],
+                                        [[
+-#if defined(__ICC) && !defined(__AVX512F__)
+-#error "icc needs the -m flags to provide the AVX* detection macros
++#if !defined(__AVX512BW__) || !defined(__AVX512F__) || !defined(__AVX512VL__)
++#error "compiler needs the -m flags to provide the AVX* detection macros"
+ #endif
+     __m512 vA, vB;
+     _mm512_add_ps(vA, vB)
+@@ -67,8 +67,8 @@
+                          AC_LINK_IFELSE(
+                              [AC_LANG_PROGRAM([[#include <immintrin.h>]],
+                                               [[
+-#if defined(__ICC) && !defined(__AVX512F__)
+-#error "icc needs the -m flags to provide the AVX* detection macros
++#if !defined(__AVX512BW__) || !defined(__AVX512F__) || !defined(__AVX512VL__)
++#error "compiler needs the -m flags to provide the AVX* detection macros"
+ #endif
+     __m512 vA, vB;
+     _mm512_add_ps(vA, vB)
+@@ -90,8 +90,8 @@
+                          AC_LINK_IFELSE(
+                              [AC_LANG_PROGRAM([[#include <immintrin.h>]],
+                                       [[
+-#if defined(__ICC) && !defined(__AVX512F__)
+-#error "icc needs the -m flags to provide the AVX* detection macros
++#if !defined(__AVX512BW__) || !defined(__AVX512F__) || !defined(__AVX512VL__)
++#error "compiler needs the -m flags to provide the AVX* detection macros"
+ #endif
+     int A[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+     __m512i vA = _mm512_loadu_si512((__m512i*)&(A[1]))
+@@ -112,8 +112,8 @@
+                          AC_LINK_IFELSE(
+                              [AC_LANG_PROGRAM([[#include <immintrin.h>]],
+                                       [[
+-#if defined(__ICC) && !defined(__AVX512F__)
+-#error "icc needs the -m flags to provide the AVX* detection macros
++#if !defined(__AVX512BW__) || !defined(__AVX512F__) || !defined(__AVX512VL__)
++#error "compiler needs the -m flags to provide the AVX* detection macros"
+ #endif
+     __m512i vA, vB;
+     _mm512_mullo_epi64(vA, vB)
+--- ompi/mca/op/avx/op_avx_functions.c.orig	2021-04-24 17:28:07.000000000 +0000
++++ ompi/mca/op/avx/op_avx_functions.c	2022-01-19 12:26:53.163589617 +0000
+@@ -276,6 +276,37 @@
+     }                                                                          \
+ }
+ 
++#ifdef __NVCOMPILER
++#define OP_AVX_FUNC_MINMAX(name, type_sign, type_size, type, op)                      \
++static void OP_CONCAT(ompi_op_avx_2buff_##name##_##type,PREPEND)(const void *_in, void *_out, int *count, \
++                                                                 struct ompi_datatype_t **dtype, \
++                                                                 struct ompi_op_base_module_1_0_0_t *module) \
++{                                                                              \
++    int left_over = *count;                                                    \
++    type *in = (type*)_in, *out = (type*)_out;                                 \
++    OP_AVX_AVX2_FUNC(name, type_sign, type_size, type, op);                    \
++    OP_AVX_SSE4_1_FUNC(name, type_sign, type_size, type, op);                  \
++    while( left_over > 0 ) {                                                   \
++        int how_much = (left_over > 8) ? 8 : left_over;                        \
++        switch(how_much) {                                                     \
++        case 8: out[7] = current_func(out[7], in[7]);                          \
++        case 7: out[6] = current_func(out[6], in[6]);                          \
++        case 6: out[5] = current_func(out[5], in[5]);                          \
++        case 5: out[4] = current_func(out[4], in[4]);                          \
++        case 4: out[3] = current_func(out[3], in[3]);                          \
++        case 3: out[2] = current_func(out[2], in[2]);                          \
++        case 2: out[1] = current_func(out[1], in[1]);                          \
++        case 1: out[0] = current_func(out[0], in[0]);                          \
++        }                                                                      \
++        left_over -= how_much;                                                 \
++        out += how_much;                                                       \
++        in += how_much;                                                        \
++    }                                                                          \
++}
++#else
++#define OP_AVX_FUNC_MINMAX OP_AVX_FUNC
++#endif
++
+ #if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512)
+ #if __AVX512BW__ && __AVX__
+ #define OP_AVX_AVX512_MUL(name, type_sign, type_size, type, op)         \
+@@ -629,9 +660,9 @@
+     OP_AVX_FUNC(max, u, 8,   uint8_t, max)
+     OP_AVX_FUNC(max, i, 16,  int16_t, max)
+     OP_AVX_FUNC(max, u, 16, uint16_t, max)
+-    OP_AVX_FUNC(max, i, 32,  int32_t, max)
+-    OP_AVX_FUNC(max, u, 32, uint32_t, max)
+-#if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512)
++    OP_AVX_FUNC_MINMAX(max, i, 32,  int32_t, max)
++    OP_AVX_FUNC_MINMAX(max, u, 32, uint32_t, max)
++#if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512) && !defined(__NVCOMPILER)
+     OP_AVX_FUNC(max, i, 64,  int64_t, max)
+     OP_AVX_FUNC(max, u, 64, uint64_t, max)
+ #endif
+@@ -649,9 +680,9 @@
+     OP_AVX_FUNC(min, u, 8,   uint8_t, min)
+     OP_AVX_FUNC(min, i, 16,  int16_t, min)
+     OP_AVX_FUNC(min, u, 16, uint16_t, min)
+-    OP_AVX_FUNC(min, i, 32,  int32_t, min)
+-    OP_AVX_FUNC(min, u, 32, uint32_t, min)
+-#if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512)
++    OP_AVX_FUNC_MINMAX(min, i, 32,  int32_t, min)
++    OP_AVX_FUNC_MINMAX(min, u, 32, uint32_t, min)
++#if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512) && !defined(__NVCOMPILER)
+     OP_AVX_FUNC(min, i, 64,  int64_t, min)
+     OP_AVX_FUNC(min, u, 64, uint64_t, min)
+ #endif
+@@ -852,6 +883,40 @@
+     }                                                                   \
+ }
+ 
++#ifdef __NVCOMPILER
++#define OP_AVX_FUNC_3_MINMAX(name, type_sign, type_size, type, op)               \
++static void OP_CONCAT(ompi_op_avx_3buff_##name##_##type,PREPEND)(const void * restrict _in1, \
++                                                                 const void * restrict _in2, \
++                                                                 void * restrict _out, int *count, \
++                                                                 struct ompi_datatype_t **dtype, \
++                                                                 struct ompi_op_base_module_1_0_0_t *module) \
++{                                                                       \
++    type *in1 = (type*)_in1, *in2 = (type*)_in2, *out = (type*)_out;    \
++    int left_over = *count;                                             \
++    OP_AVX_AVX2_FUNC_3(name, type_sign, type_size, type, op);           \
++    OP_AVX_SSE4_1_FUNC_3(name, type_sign, type_size, type, op);         \
++    while( left_over > 0 ) {                                            \
++        int how_much = (left_over > 8) ? 8 : left_over;                 \
++        switch(how_much) {                                              \
++        case 8: out[7] = current_func(in1[7], in2[7]);                  \
++        case 7: out[6] = current_func(in1[6], in2[6]);                  \
++        case 6: out[5] = current_func(in1[5], in2[5]);                  \
++        case 5: out[4] = current_func(in1[4], in2[4]);                  \
++        case 4: out[3] = current_func(in1[3], in2[3]);                  \
++        case 3: out[2] = current_func(in1[2], in2[2]);                  \
++        case 2: out[1] = current_func(in1[1], in2[1]);                  \
++        case 1: out[0] = current_func(in1[0], in2[0]);                  \
++        }                                                               \
++        left_over -= how_much;                                          \
++        out += how_much;                                                \
++        in1 += how_much;                                                \
++        in2 += how_much;                                                \
++    }                                                                   \
++}
++#else
++#define OP_AVX_FUNC_3_MINMAX OP_AVX_FUNC_3
++#endif
++
+ #if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512)
+ #if __AVX512BW__ && __AVX__
+ #define OP_AVX_AVX512_MUL_3(name, type_sign, type_size, type, op)       \
+@@ -1216,9 +1281,9 @@
+     OP_AVX_FUNC_3(max, u, 8,   uint8_t, max)
+     OP_AVX_FUNC_3(max, i, 16,  int16_t, max)
+     OP_AVX_FUNC_3(max, u, 16, uint16_t, max)
+-    OP_AVX_FUNC_3(max, i, 32,  int32_t, max)
+-    OP_AVX_FUNC_3(max, u, 32, uint32_t, max)
+-#if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512)
++    OP_AVX_FUNC_3_MINMAX(max, i, 32,  int32_t, max)
++    OP_AVX_FUNC_3_MINMAX(max, u, 32, uint32_t, max)
++#if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512) && !defined(__NVCOMPILER)
+     OP_AVX_FUNC_3(max, i, 64,  int64_t, max)
+     OP_AVX_FUNC_3(max, u, 64, uint64_t, max)
+ #endif
+@@ -1236,9 +1301,9 @@
+     OP_AVX_FUNC_3(min, u, 8,   uint8_t, min)
+     OP_AVX_FUNC_3(min, i, 16,  int16_t, min)
+     OP_AVX_FUNC_3(min, u, 16, uint16_t, min)
+-    OP_AVX_FUNC_3(min, i, 32,  int32_t, min)
+-    OP_AVX_FUNC_3(min, u, 32, uint32_t, min)
+-#if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512)
++    OP_AVX_FUNC_3_MINMAX(min, i, 32,  int32_t, min)
++    OP_AVX_FUNC_3_MINMAX(min, u, 32, uint32_t, min)
++#if defined(GENERATE_AVX512_CODE) && defined(OMPI_MCA_OP_HAVE_AVX512) && (1 == OMPI_MCA_OP_HAVE_AVX512) && !defined(__NVCOMPILER)
+     OP_AVX_FUNC_3(min, i, 64,  int64_t, min)
+     OP_AVX_FUNC_3(min, u, 64, uint64_t, min)
+ #endif
+@@ -1388,12 +1453,20 @@
+     },
+     /* Corresponds to MPI_MAX */
+     [OMPI_OP_BASE_FORTRAN_MAX] = {
++#ifdef __NVCOMPILER
++        C_INTEGER_8_16_32(max, 2buff),
++#else
+         C_INTEGER_OPTIONAL(max, 2buff),
++#endif
+         FLOATING_POINT(max, 2buff),
+     },
+     /* Corresponds to MPI_MIN */
+     [OMPI_OP_BASE_FORTRAN_MIN] = {
++#ifdef __NVCOMPILER
++        C_INTEGER_8_16_32(min, 2buff),
++#else
+         C_INTEGER_OPTIONAL(min, 2buff),
++#endif
+         FLOATING_POINT(min, 2buff),
+     },
+     /* Corresponds to MPI_SUM */
+@@ -1451,12 +1524,20 @@
+     },
+     /* Corresponds to MPI_MAX */
+     [OMPI_OP_BASE_FORTRAN_MAX] = {
++#ifdef __NVCOMPILER
++        C_INTEGER_8_16_32(max, 3buff),
++#else
+         C_INTEGER_OPTIONAL(max, 3buff),
++#endif
+         FLOATING_POINT(max, 3buff),
+     },
+     /* Corresponds to MPI_MIN */
+     [OMPI_OP_BASE_FORTRAN_MIN] = {
++#ifdef __NVCOMPILER
++        C_INTEGER_8_16_32(min, 3buff),
++#else
+         C_INTEGER_OPTIONAL(min, 3buff),
++#endif
+         FLOATING_POINT(min, 3buff),
+     },
+     /* Corresponds to MPI_SUM */
