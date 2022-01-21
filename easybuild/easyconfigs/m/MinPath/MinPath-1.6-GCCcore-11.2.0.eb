@@ -1,0 +1,46 @@
+easyblock = 'Tarball'
+
+name = 'MinPath'
+version = '1.6'
+# no tagged commit for MinPath 1.6, commit was determined based on commit history
+local_commit = '46d3e81a4dca2310d558bea970bc002b15d44767'
+
+homepage = 'https://omics.informatics.indiana.edu/MinPath'
+description = """MinPath (Minimal set of Pathways) is a parsimony approach for biological pathway reconstructions
+ using protein family predictions, achieving a more conservative, yet more faithful, estimation of the biological
+ pathways for a query dataset."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/mgtools/MinPath/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['MinPath-%(version)s_fix-glpsol-path.patch']
+checksums = [
+    '57e6b55cd00507578bad7528c60e3ad055311f62db928bd7c8de793513cec5a3',  # MinPath-1.6.tar.gz
+    '117e45c6f35e3c944232dd5dd4789400d44c4b9b733b936adbb548b58e046c4b',  # MinPath-1.6_fix-glpsol-path.patch
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('GLPK', '5.0'),
+]
+
+# remove included old GLPK copy
+postinstallcmds = ["rm -rf %(installdir)s/glpk-*/*"]
+
+fix_python_shebang_for = ['*.py']
+
+sanity_check_paths = {
+    'files': ['MinPath.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "MinPath.py -ko examples/demo.ko -report /dev/null -details /dev/null",
+    "MinPath.py -fig examples/demo.fig -report /dev/null -details /dev/null",
+    "MinPath.py -any examples/demo.ec -map ec2path -report /dev/null -details /dev/null",
+]
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'
