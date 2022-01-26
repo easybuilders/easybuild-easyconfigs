@@ -1,0 +1,71 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMM-PLUMED'
+version = '1.0'
+
+homepage = 'https://github.com/openmm/openmm-plumed/'
+description = """This project provides a connection between OpenMM and
+PLUMED. It allows you to bias or analyze an OpenMM simulation based on
+collective variables."""
+
+toolchain = {'name': 'iofbc', 'version': '2020.1.403.114'}
+
+# https://github.com/openmm/openmm-plumed/archive/refs/tags/v1.0.tar.gz
+github_account = 'openmm'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+# checksums are now in checksums.json
+
+multi_deps = {'Python': ['3.7', '3.8', '3.9']}
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('SWIG', '4.0.1'),
+]
+
+dependencies = [
+    ('OpenMM', '7.7.0'),
+    ('PLUMED', '2.7.3'),
+]
+
+separate_build_dir = True
+
+configopts = '-DPLUMED_INCLUDE_DIR="$EBROOTPLUMED/include/plumed" '
+configopts += '-DPLUMED_LIBRARY_DIR="$EBROOTPLUMED/lib" '
+configopts += '-DOPENMM_DIR="$EBROOTOPENMM" '
+configopts += '-DCUDA_TOOLKIT_ROOT_DIR="$EBROOTCUDA" '
+configopts += '-DPLUMED_BUILD_CUDA_LIB=ON '
+configopts += '-DPLUMED_BUILD_OPENCL_LIB=OFF '
+
+installopts = ''.join([
+  ' && make -f python/CMakeFiles/PythonInstall.dir/build.make python/PlumedPluginWrapper.cpp',
+  ' && cd python',
+  ' && python%(pyshortver)s setup.py build',
+  ' && python%(pyshortver)s setup.py install --prefix=%(installdir)s',
+])
+
+postinstallcmds = [
+  '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --path %(installdir)s/lib --add_path "%(installdir)s/lib"',
+]
+
+sanity_check_paths = {
+    'files': ['include/PlumedForce.h', 'include/PlumedKernels.h',
+              'lib/libOpenMMPlumed.%s' % SHLIB_EXT,
+              'lib/python%(pyshortver)s/site-packages/openmmplumed.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['python%(pyshortver)s -c "from openmmplumed import PlumedForce"']
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': ''
+}
+
+# if some python is already loaded, use it, otherwise use default python module
+modluafooter = """
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+        depends_on(between('python','3.7<','<3.10'))
+end
+"""
+
+moduleclass = 'chem'
