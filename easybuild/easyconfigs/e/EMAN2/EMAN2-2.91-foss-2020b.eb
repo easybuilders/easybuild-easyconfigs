@@ -1,41 +1,63 @@
-easyblock = 'CMakeMake'
+easyblock = 'Bundle'
 
 name = 'EMAN2'
 version = '2.91'
+local_boost_ver = '1.74.0'
 
 homepage = 'https://blake.bcm.edu/emanwiki/EMAN2'
 description = """EMAN2 is the successor to EMAN1. It is a broadly based greyscale scientific image processing suite
  with a primary focus on processing data from transmission electron microscopes. """
 
 toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True}
 
-source_urls = ['https://github.com/cryoem/eman2/archive']
-sources = ['v%(version)s.tar.gz']
-patches = [
-    'EMAN2-2.3_fix_sp_dir.patch',
-    'EMAN2-2.3_use_default_cmake_search_paths.patch',
-    'EMAN2-2.3_fix_gsl_include.patch',
-    'EMAN2-2.3_fix_missing_stdio.patch',
-    'EMAN2-%(version)s_fix_install_prefix.patch',
-    'EMAN2-%(version)s_fix_sp_dir_installs.patch',
-    'EMAN2-%(version)s_fix_bad_use_cx11_abi_setting.patch',
-    'EMAN2-%(version)s_fix_multiref_polar_ali_2d_delta_definition.patch',
-    'EMAN2-%(version)s_switch_boost_target_python%(pyshortver)s.patch',
-]
-checksums = [
-    '7a82cdc1621fc9fae6fbe585e7626b5d40428b4597eef9ff56351e8db93b0427',  # v2.91.tar.gz
-    '21ab132d712138c423c50adccc2301de41f5611da35c3d8ebcce5acb4df40512',  # EMAN2-2.3_fix_sp_dir.patch
-    # EMAN2-2.3_use_default_cmake_search_paths.patch
-    '21b1b546e5b3eba795780acd2c32b662e741e8a366eb354288ca6a3b22760d65',
-    '5b0e45292c1446ebb9a31c46b7bd4ff317cdb246fdc218ff61e4892aeff87a20',  # EMAN2-2.3_fix_gsl_include.patch
-    '4b09bb41dd81f6d7caa468f0e8849cebe28fd0a1229c883101fa32cdfcb14e7d',  # EMAN2-2.3_fix_missing_stdio.patch
-    '6d7bcd1722d6cc8d8cbf15f0a9d637b02852df04d4ada749b439d5bd17514a6d',  # EMAN2-2.91_fix_install_prefix.patch
-    'ea4933d746412d3320101891aa0250e4863c120352105f9a844d416f0b2e9d97',  # EMAN2-2.91_fix_sp_dir_installs.patch
-    '1ca9f1a0b7d274154c7ee738e1e208a9f96d6fb420999ae4c5ab0bef0779f946',  # EMAN2-2.91_fix_bad_use_cx11_abi_setting.patch
-    # EMAN2-2.91_fix_multiref_polar_ali_2d_delta_definition.patch
-    '47458b2d8741a3d3e48bbe75b00a5a5b9489c37f0e2d41ae8e5b552c081a197a',
-    # EMAN2-2.91_switch_boost_target_python3.8.patch
-    'd9c42ef0667c8efdbe0c2fc4d869ca95b25a074447e349bfac6ca26e32ad7942',
+components = [
+    ('Boost.Python', local_boost_ver, {  # build as bundle component in order to rpvide boost.numpy
+        'easyblock': 'EB_Boost',
+        'start_dir': 'boost_%s' % '_'.join(local_boost_ver.split('.')),
+        'only_python_bindings': True,
+        'source_urls': ['https://boostorg.jfrog.io/artifactory/main/release/%s/source/' % local_boost_ver],
+        'sources': ['boost_%s.tar.gz' % '_'.join(local_boost_ver.split('.'))],
+        'patches': ['Boost-1.71.0_fix-Python3.patch'],
+        'checksums': [
+            'afff36d392885120bcac079148c177d1f6f7730ec3d47233aa51b0afa4db94a5',  # boost_1_74_0.tar.gz
+            '60e3aede2f444a3855f4efed94d1de5c2887983876e0fae21f6ca5cfdc53ea96',  # Boost-1.71.0_fix-Python3.patch
+        ]
+    }),
+    (name, version, {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/cryoem/eman2/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'patches': [
+            'EMAN2-2.3_fix_sp_dir.patch',
+            'EMAN2-2.3_use_default_cmake_search_paths.patch',
+            'EMAN2-2.3_fix_gsl_include.patch',
+            'EMAN2-2.3_fix_missing_stdio.patch',
+            'EMAN2-%(version)s_fix_install_prefix.patch',
+            'EMAN2-%(version)s_fix_sp_dir_installs.patch',
+            'EMAN2-%(version)s_fix_bad_use_cx11_abi_setting.patch',
+            'EMAN2-%(version)s_fix_multiref_polar_ali_2d_delta_definition.patch',
+            'EMAN2-%(version)s_switch_boost_target_python%(pyshortver)s.patch',
+        ],
+        'start_dir': '%(namelower)s-%(version)s',
+        'configopts': '-DENABLE_EMAN_CUDA=OFF -DENABLE_SPARX_CUDA=OFF '
+                      '-DPYTHON_INCLUDE_PATH="$EBROOTPYTHON/include/python%(pyshortver)s" ',
+        'checksums': [
+            '7a82cdc1621fc9fae6fbe585e7626b5d40428b4597eef9ff56351e8db93b0427',  # v2.91.tar.gz
+            '21ab132d712138c423c50adccc2301de41f5611da35c3d8ebcce5acb4df40512',  # EMAN2-2.3_fix_sp_dir.patch
+            # EMAN2-2.3_use_default_cmake_search_paths.patch
+            '21b1b546e5b3eba795780acd2c32b662e741e8a366eb354288ca6a3b22760d65',
+            '5b0e45292c1446ebb9a31c46b7bd4ff317cdb246fdc218ff61e4892aeff87a20',  # EMAN2-2.3_fix_gsl_include.patch
+            '4b09bb41dd81f6d7caa468f0e8849cebe28fd0a1229c883101fa32cdfcb14e7d',  # EMAN2-2.3_fix_missing_stdio.patch
+            '6d7bcd1722d6cc8d8cbf15f0a9d637b02852df04d4ada749b439d5bd17514a6d',  # EMAN2-2.91_fix_install_prefix.patch
+            'ea4933d746412d3320101891aa0250e4863c120352105f9a844d416f0b2e9d97',  # EMAN2-2.91_fix_sp_dir_installs.patch
+            # EMAN2-2.91_fix_bad_use_cx11_abi_setting.patch
+            '1ca9f1a0b7d274154c7ee738e1e208a9f96d6fb420999ae4c5ab0bef0779f946',
+            # EMAN2-2.91_fix_multiref_polar_ali_2d_delta_definition.patch
+            '47458b2d8741a3d3e48bbe75b00a5a5b9489c37f0e2d41ae8e5b552c081a197a',
+            # EMAN2-2.91_switch_boost_target_python3.8.patch
+            'd9c42ef0667c8efdbe0c2fc4d869ca95b25a074447e349bfac6ca26e32ad7942',
+        ]})
 ]
 
 builddependencies = [
@@ -45,7 +67,7 @@ builddependencies = [
 
 dependencies = [
     ('Python', '3.8.6'),
-    ('Boost.Python', '1.74.0', '-numpy'),
+    ('Boost', local_boost_ver),
     ('freetype', '2.10.3'),
     ('FTGL', '2.1.3-rc5'),  # this is the latest version of FTGL since 2008 (included in Ubuntu 16.04 and CentOS 7.4)
     ('GSL', '2.6'),
@@ -65,8 +87,6 @@ dependencies = [
 
 separate_build_dir = True
 
-configopts = '-DENABLE_EMAN_CUDA=OFF -DENABLE_SPARX_CUDA=OFF '
-configopts += '-DPYTHON_INCLUDE_PATH="$EBROOTPYTHON/include/python%(pyshortver)s" '
 
 sanity_check_paths = {
     'files': ['bin/e2proc2d.py', 'bin/e2proc3d.py', 'bin/e2bdb.py', 'bin/e2iminfo.py', 'bin/e2display.py',
