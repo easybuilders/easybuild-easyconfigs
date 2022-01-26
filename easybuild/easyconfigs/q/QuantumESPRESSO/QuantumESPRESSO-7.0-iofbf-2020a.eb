@@ -1,0 +1,89 @@
+name = 'QuantumESPRESSO'
+
+version = '7.0'
+
+homepage = 'https://www.quantum-espresso.org'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes for electronic-structure calculations and materials modeling at the nanoscale. It is based on density-functional theory, plane waves, and pseudopotentials (both norm-conserving and ultrasoft).
+"""
+
+toolchain = {'name': 'iofbf', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = [
+    'https://github.com/QEF/q-e/releases/download/qe-%(version)s/',
+    'https://github.com/dceresoli/qe-gipaw/archive/',
+    'https://github.com/wannier-developers/wannier90/archive/refs/tags/',
+    'https://github.com/dalcorso/thermo_pw/releases/download/1.6.1/',
+    'https://github.com/QEF/want/archive/',
+    'https://github.com/yambo-code/yambo/archive/refs/tags/',
+]
+sources = [
+    'qe-%(version)s-ReleasePack.tgz',
+    {'filename': 'qe-gipaw-%(version)s.tar.gz', 'download_filename': '%(version)s.tar.gz'},
+    {'filename': 'wannier90-3.1.0.tar.gz', 'download_filename': 'v3.1.0.tar.gz'},
+    {'filename':'thermo_pw.1.6.1.tar.gz', 'extract_cmd': 'tar xzf %s && mv thermo_pw qe-7.0/'},
+    'want-2.6.1.tar.gz',
+    '5.0.4.tar.gz',
+]
+checksums = [
+    '268ec506f88c56ba4e9b691c1e81e33a6ad7949f857f1c6c32197f9c2af2a957',  # qe-7.0-ReleasePack.tgz
+    '8868ba979dea3453449088640419e294d10648bc5cd2af3496da78703817425e',  # qe-gipaw-7.0.tar.gz
+    '40651a9832eb93dec20a8360dd535262c261c34e13c41b6755fa6915c936b254',  # wannier90-3.1.0.tar.gz
+    '6d05f8f50c5bb1be39530759bc2a8fb251d2b929af5febecfb0525db03b3d6b0',  # thermo_pw.1.6.1.tar.gz
+    '459564ad5127249b654bab1ebd17d3fdd3d5afac6053352678022eeffcdc3112',  # want-2.6.1.tar.gz
+    '1841ded51cc31a4293fa79252d7ce893d998acea7ccc836e321c3edba19eae8a',  # 5.0.4.tar.gz
+]
+
+dependencies = [
+    ('HDF5', '1.10.6'),
+    #('ELPA', '2020.05.001'),
+    ('libxc', '5.1.3'),
+]
+
+with_ace = True
+
+# The third party packages should be installed separately and added
+# as dependencies. The exception is w90, which is force built
+
+# where target identifies one or multiple CORE PACKAGES:
+#  pw           basic code for scf, structure optimization, MD
+#  ph           phonon code, Gamma-only and third-order derivatives
+#  hp           calculation of the Hubbard parameters from DFPT
+#  pwcond       ballistic conductance
+#  neb          code for Nudged Elastic Band method
+#  pp           postprocessing programs
+#  pwall        same as "make pw ph pp pwcond neb"
+#  cp           CP code: Car-Parrinello molecular dynamics
+#  all_currents QEHeat code: energy flux and charge current
+#  tddfpt       time dependent dft code
+#  gwl          GW with Lanczos chains
+#  ld1          utilities for pseudopotential generation
+#  xspectra     X-ray core-hole spectroscopy calculations
+#  couple       Library interface for coupling to external codes
+#  epw          Electron-Phonon Coupling with Wannier functions
+#  gui          Graphical User Interface
+#  all          same as "make pwall cp ld1 tddfpt xspectra hp"
+
+# where target identifies one or multiple THIRD-PARTIES PACKAGES:
+#  gipaw        NMR and EPR spectra
+#  w90          Maximally localised Wannier Functions
+#  want         Quantum Transport with Wannier functions
+#  yambo        electronic excitations with plane waves
+#  d3q          general third-order code and thermal transport codes
+
+#  pw ph hp pwcond neb pp pwall cp all_currents tddfpt gwl 
+#  ld1 xspectra couple epw gui all gipaw w90 want yambo d3q
+#  all = pwall cp ld1 tddfpt xspectra hp
+#  pwall = pw ph pp pwcond neb
+
+preconfigopts = 'cd %(builddir)s/qe-7.0/thermo_pw && make join_qe && cd - &&'
+
+buildopts = 'all gwl xspectra couple epw w90 gui all_currents thermo_pw' # d3q
+
+# want yambo
+
+# Parallel build tends to fail:
+
+parallel = 1
+
+moduleclass = 'chem'
