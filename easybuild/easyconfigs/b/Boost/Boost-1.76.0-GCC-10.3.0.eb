@@ -12,7 +12,7 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://boostorg.jfrog.io/artifactory/main/release/%(version)s/source/']
 sources = ['%%(namelower)s_%s.tar.gz' % '_'.join(version.split('.'))]
-checksums = ['7bd7ddceec1a1dfdcbdb3e609b60d01739c38390a5f956385a12f3122049f0ca']
+patches = ['Boost-1.65.1_python3.patch' ]
 
 dependencies = [
     ('bzip2', '1.0.8'),
@@ -21,10 +21,16 @@ dependencies = [
     ('ICU', '69.1'),
 ]
 
-configopts = '--without-libraries=python,mpi'
+# we need to move files back to the temp install directory, because easyblock copies
+# from there in the installation step
+prebuildopts = [''] + 2*['mv %(installdir)s/* %(builddir)s/obj && ']
+
+multi_deps = {'Python': ['3.7', '3.8', '3.9']}
 
 # disable MPI, build Boost libraries with tagged layout
 boost_mpi = False
-tagged_layout = True
+# also build boost multi-thread
+boost_multi_thread = True
+#tagged_layout = True
 
 moduleclass = 'devel'
