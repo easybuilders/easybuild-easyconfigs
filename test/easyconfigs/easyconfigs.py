@@ -490,8 +490,8 @@ class EasyConfigTest(TestCase):
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
             'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                       'NGSpeciesID-0.1.1.1-'])],
-            # PICI does not build with VTK 9
-            'VTK': [('8.2.0;', ['PICI-LIGGGHTS-'])],
+            # PICI does not build with VTK 9; LAMMPS should be used with VTK 8.2
+            'VTK': [('8.2.0;', ['PICI-LIGGGHTS-', 'LAMMPS-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
