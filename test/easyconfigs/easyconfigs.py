@@ -324,6 +324,8 @@ class EasyConfigTest(TestCase):
                 if key not in retained_dep_vars:
                     del dep_vars[key]
 
+        version_regex = re.compile('^version: (?P<version>[^;]+);')
+
         # filter out binutils with empty versionsuffix which is used to build toolchain compiler
         if dep == 'binutils' and len(dep_vars) > 1:
             empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
@@ -331,13 +333,13 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS
-        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS')]:
+        # same goes for WRF and WPS; Gurobi and Rgurobi
+        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS'), ('Gurobi', 'Rgurobi')]:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     ecs = dep_vars[key]
                     # filter out dep variants that are only used as dependency for parent with same version
-                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    dep_ver = version_regex.search(key).group('version')
                     if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
@@ -346,7 +348,7 @@ class EasyConfigTest(TestCase):
             for key in list(dep_vars):
                 ecs = dep_vars[key]
                 # filter out Boost variants that are only used as dependency for Boost.Python with same version
-                boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                boost_ver = version_regex.search(key).group('version')
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
@@ -402,7 +404,7 @@ class EasyConfigTest(TestCase):
                 dep = 'CUDA'
 
             for key in list(dep_vars):
-                dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                dep_ver = version_regex.search(key).group('version')
                 # use version of Java wrapper rather than full Java version
                 if dep == 'Java':
                     dep_ver = '.'.join(dep_ver.split('.')[:2])
@@ -460,6 +462,10 @@ class EasyConfigTest(TestCase):
                                r'numba-0\.52\.0-', r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3',
                                r'scanpy-1\.7\.2-', r'umap-learn-0\.4\.6-']),
             ],
+            'Lua': [
+                # SimpleITK 2.1.0 requires Lua 5.3.x, MedPy and nnU-Net depend on SimpleITK
+                (r'5\.3\.5', [r'nnU-Net-1\.7\.0-', r'MedPy-0\.4\.0-', r'SimpleITK-2\.1\.0-']),
+            ],
             # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
             # Horovod depends on TensorFlow, so same exception required there
             'NCCL': [(r'2\.11\.4', [r'TensorFlow-2\.[5-9]\.', r'Horovod-0\.2[2-9]'])],
@@ -477,6 +483,8 @@ class EasyConfigTest(TestCase):
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
             # NanoPlot, NanoComp use an older version of Seaborn
             'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
+            # Shasta requires spoa 3.x
+            'spoa': [(r'3\.4\.0', [r'Shasta-0\.8\.0-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
@@ -500,6 +508,8 @@ class EasyConfigTest(TestCase):
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
             'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                       'NGSpeciesID-0.1.1.1-'])],
+            # UShER requires tbb-2020.3 as newer versions will not build
+            'tbb': [('2020.3', ['UShER-0.5.0-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -848,7 +858,7 @@ class EasyConfigTest(TestCase):
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in self.changed_ecs:
-            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper']:
+            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper'] or ec['name'] in ['Clang-AOMP']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
@@ -1009,18 +1019,25 @@ class EasyConfigTest(TestCase):
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle']
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'ROCm']
 
         failing_checks = []
 
         for ec in self.changed_ecs:
-
             easyblock = ec.get('easyblock')
-
             if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
+
+                sanity_check_ok = False
+
                 if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
-                    pass
-                else:
+                    sanity_check_ok = True
+
+                # also allow bundles that enable per-component sanity checks
+                elif easyblock == 'Bundle':
+                    if ec['sanity_check_components'] or ec['sanity_check_all_components']:
+                        sanity_check_ok = True
+
+                if not sanity_check_ok:
                     ec_fn = os.path.basename(ec.path)
                     failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 
@@ -1186,7 +1203,7 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
-        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
+        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['ANIcalculator', 'Eigen']
 
         # let's also exclude the very special case where the system GCC is used as GCCcore, and only apply this
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)
