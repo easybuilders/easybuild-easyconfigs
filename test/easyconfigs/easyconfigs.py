@@ -1024,13 +1024,20 @@ class EasyConfigTest(TestCase):
         failing_checks = []
 
         for ec in self.changed_ecs:
-
             easyblock = ec.get('easyblock')
-
             if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
+
+                sanity_check_ok = False
+
                 if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
-                    pass
-                else:
+                    sanity_check_ok = True
+
+                # also allow bundles that enable per-component sanity checks
+                elif easyblock == 'Bundle':
+                    if ec['sanity_check_components'] or ec['sanity_check_all_components']:
+                        sanity_check_ok = True
+
+                if not sanity_check_ok:
                     ec_fn = os.path.basename(ec.path)
                     failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 
