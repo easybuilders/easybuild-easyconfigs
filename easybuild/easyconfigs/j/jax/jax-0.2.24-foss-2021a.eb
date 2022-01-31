@@ -1,0 +1,116 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.2.24'
+
+homepage = 'https://pypi.python.org/pypi/jax'
+description = """Composable transformations of Python+NumPy programs:
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+builddependencies = [
+    ('Bazel', '3.7.2'),
+    ('pytest-xdist', '2.3.0'),
+    # git 2.x required to fetch repository 'io_bazel_rules_docker'
+    ('git', '2.32.0', '-nodocs'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('flatbuffers-python', '2.0'),
+    ('typing-extensions', '3.10.0.0'),
+]
+
+# running the tests with lots of cores results in test failures because not enough threads can be started,
+# and running with a single core also results in systematic test failures
+# 4 cores seems to work best
+parallel = 4
+
+# downloading TensorFlow tarball to avoid that Bazel downloads it during the build
+# note: this *must* be the exact same commit as used in jaxlib-*/WORKSPACE
+local_tf_commit = 'e98b052c08e5d1e7906ac2f6caf95c51a1e04985'
+local_tf_dir = 'tensorflow-%s' % local_tf_commit
+local_tf_builddir = '%(builddir)s/' + local_tf_dir
+
+# replace remote TensorFlow repository with the local one from EB
+local_jax_prebuildopts = "sed -i -f jaxlib_local-tensorflow-repo.sed WORKSPACE && "
+local_jax_prebuildopts += "sed -i 's|EB_TF_REPOPATH|%s|' WORKSPACE && " % local_tf_builddir
+
+use_pip = True
+
+default_easyblock = 'PythonPackage'
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'source_urls': [PYPI_SOURCE],
+    'start_dir': '%(name)s-%(version)s',
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'download_dep_fail': True,
+}
+
+components = [
+    ('absl-py', '0.15.0', {
+        'options': {'modulename': 'absl'},
+        'checksums': ['72d782fbeafba66ba3e525d46bccac949b9a174dbf66233e50ece09ee688dc81'],
+    }),
+    ('jaxlib', '0.1.73', {
+        'sources': [
+            '%(name)s-v%(version)s.tar.gz',
+            {
+                'download_filename': '%s.tar.gz' % local_tf_commit,
+                'filename': 'tensorflow-%s.tar.gz' % local_tf_commit,
+            }
+        ],
+        'source_urls': [
+            'https://github.com/google/jax/archive/',
+            'https://github.com/tensorflow/tensorflow/archive/'
+        ],
+        'patches': [
+            ('jaxlib_local-tensorflow-repo.sed', '.'),
+            'jaxlib-0.1.70_add-bazel-args-to-shutdown.patch',
+        ],
+        'checksums': [
+            # jaxlib-v0.1.73.tar.gz
+            '4cb1a7a9881c6566cf6d0d88f70ba2b8732e8b1dc6010da7deaff399f21873ed',
+            # tensorflow-e98b052c08e5d1e7906ac2f6caf95c51a1e04985.tar.gz
+            'b2c8b912e7be71306ab6fee063fb4ec1dfbe7158e7e8469d674f8af6583434d4',
+            # jaxlib_local-tensorflow-repo.sed
+            'abb5c3b97f4e317bce9f22ed3eeea3b9715365818d8b50720d937e2d41d5c4e5',
+            # jaxlib-0.1.70_add-bazel-args-to-shutdown.patch
+            'c0ea6abd7827d3c37bdd60c30c7b0613fc86b91274c6a1a4cf13a3c7f9ce7631',
+        ],
+        'start_dir': 'jax-jaxlib-v%(version)s',
+        'prebuildopts': local_jax_prebuildopts,
+    }),
+]
+
+exts_list = [
+    ('opt_einsum', '3.3.0', {
+        'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(name)s-v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/google/jax/archive/'],
+        'patches': [
+            'jax-0.2.19_fix-update-of-cache-access-time.patch',
+            'jax-0.2.24-foss-2021a_unimplemented.patch',
+        ],
+        'checksums': [
+            # jax-v0.2.24.tar.gz
+            '9ffbf86e97a05591eaa1a7a5194cf9ceaed8cf6c2aaa8ffc394568a3a131cae0',
+            # jax-0.2.19_fix-update-of-cache-access-time.patch
+            'e20562f67d63cc7e3478f7a92940291b2c8e328d605426bbabf89d8c2e1dd806',
+            # jax-0.2.24-foss-2021a_unimplemented.patch
+            '96fe1b15b55611727b0ae76409b89c44ae21a1c10002507ca8e3c06c2b134f4e',
+        ],
+        'runtest': "pytest -n %(parallel)s tests",
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'
