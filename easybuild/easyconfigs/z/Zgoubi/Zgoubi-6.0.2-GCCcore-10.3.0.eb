@@ -1,0 +1,33 @@
+easyblock = 'MakeCp'
+
+name = 'Zgoubi'
+version = '6.0.2'
+
+homepage = 'https://zgoubi.sourceforge.io'
+description = """Zgoubi is a ray-tracing code in use for charged particle beam dynamics simulations. 
+It can simulate beam dynamics in a large variety of machines and optical systems."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+]
+
+source_urls = ['https://sourceforge.net/projects/zgoubi/files/zgoubi/']
+sources = ['%(version)s/zgoubi-%(version)s.tar.bz2']
+checksums = ['0b0f3d28496edbf7be868c24b0c927b7f1bc88cc29df9c235d9b28dc933489e0']
+
+prebuildopts = 'cp Makefile_zgoubi_gfortran Makefile &&'
+prebuildopts += "sed -i '/guide/d' Makefile &&"
+
+buildopts = ' FFLAGS="$FFLAGS -fno-automatic -pedantic -cpp" CFLAGS="$CXXFLAGS -DGFORTRAN4"'
+
+files_to_copy = [(['zgoubi/zgoubi', 'zpop/zpop'], 'bin'), 'exemples']
+postinstallcmds = ["mv %(installdir)s/exemples %(installdir)s/examples"]
+
+sanity_check_paths = {
+    'files': ["bin/zgoubi", "bin/zpop"],
+    'dirs': [],
+}
+
+moduleclass = 'phys'

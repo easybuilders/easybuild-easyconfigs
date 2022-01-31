@@ -1,0 +1,43 @@
+# Use EasyBuild installation dir for dalton wrapper.
+# No need to try to find it in a complicated way.
+#
+# Åke Sandgren
+diff -ru dalton.orig/dalton.in dalton/dalton.in
+--- dalton.orig/dalton.in	2021-10-05 14:33:14.000000000 +0200
++++ dalton/dalton.in	2021-10-15 12:45:56.751803496 +0200
+@@ -16,17 +16,7 @@
+ dalton="dalton"
+ DALTON="DALTON"
+ 
+-# radovan: this is to figure out the location of this script
+-# http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
+-SOURCE="${BASH_SOURCE[0]}"
+-while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+-    SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+-    SOURCE="$(readlink "$SOURCE")"
+-    # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+-    [[ $SOURCE != /* ]] && SOURCE="$SCRIPT_DIR/$SOURCE"
+-done
+-SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+-
++SCRIPT_DIR="$EBROOTDALTON"
+ 
+ ## If your computer ressource uses modules, then you can make sure the right modules are loaded
+ ## by uncommenting and adapting the two lines starting with #module following this comment.
+@@ -38,7 +28,15 @@
+ #module purge
+ #module load python intel openmpi-i8
+ 
+-DALTON_EXECUTABLE=$SCRIPT_DIR/$dalton.x
++if [ -e "$SCRIPT_DIR/bin/$dalton.x" ]; then
++    DALTON_EXECUTABLE=$SCRIPT_DIR/bin/$dalton.x
++elif [ -e "$SCRIPT_DIR/$dalton.x" ]; then
++    # To make sure we can run tests from the build dir
++    DALTON_EXECUTABLE=$SCRIPT_DIR/$dalton.x
++else
++    echo "$dalton.x not found in $SCRIPT_DIR nor in $SCRIPT_DIR/bin"
++    exit 1
++fi
+ 
+ which mpirun > /dev/null # check if mpirun exists, if not, then assume mpiexec
+ if [ $? -eq 0 ]; then
