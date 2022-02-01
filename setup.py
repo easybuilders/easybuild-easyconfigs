@@ -84,7 +84,7 @@ that specify the build parameters for software packages (version, compiler toolc
 versions, etc.).""",
     license="GPLv2",
     keywords="software build building installation installing compilation HPC scientific",
-    url="https://easybuilders.github.io/easybuild/",
+    url="https://easybuild.io",
     data_files=get_data_files(),
     long_description=read("README.rst"),
     classifiers=[
