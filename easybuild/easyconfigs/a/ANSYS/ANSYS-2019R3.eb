@@ -20,8 +20,9 @@ postinstallcmds = [
   "find %(installdir)s -type d -exec chmod 755 {} \;",
   # Set same perms on all shared libraries to avoid warning in log file
   "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
-  # Rename built-in libstdc++.so* to libstdc++.so*.bak as they are older than whats in nix, and cause problem with other binaries
+  # Rename some libs as these maybe older than system equivalents and missing new symbols
   "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s -name 'libcrypto.so*' -exec mv {} {}.bak \;",
   # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
   "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
     sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
