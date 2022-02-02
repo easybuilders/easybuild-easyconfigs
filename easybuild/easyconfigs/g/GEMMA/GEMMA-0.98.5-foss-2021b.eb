@@ -1,0 +1,46 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# Updated to 0.98.5
+# J Sassmannshausen NHS/GSTT
+
+easyblock = 'MakeCp'
+
+name = 'GEMMA'
+version = '0.98.5'
+
+homepage = 'https://github.com/genetics-statistics/GEMMA'
+description = "Genome-wide Efficient Mixed Model Association"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/genetics-statistics/GEMMA/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['GEMMA-disable-debug.patch']
+checksums = [
+    '3ed336deee29e370f96ec8f1a240f7b62550e57dcd1694245ce7ec8f42241677',
+    '39b55e87af662f99aa5177de7b11968303a5c41fc9eb38b0269bc9e2ae19b84a',  # GEMMA-disable-debug.patch
+]
+builddependencies = [
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('GSL', '2.7'),
+    ('zlib', '1.2.11'),
+    ('FlexiBLAS', '3.0.4'),
+]
+
+buildopts = 'WITH_OPENBLAS="" LIBS="$LIBS $LIBBLAS -lgsl -lz "'  # Needed for FlexiBLAS
+
+files_to_copy = ["bin", "doc", "example", "LICENSE", "README.md", "RELEASE-NOTES.md", "scripts", "VERSION"]
+
+sanity_check_commands = ["cd %(builddir)s/%(name)s-%(version)s/ && make check "]
+
+sanity_check_paths = {
+    'files': ["bin/gemma"],
+    'dirs': []
+}
+
+moduleclass = 'bio'
