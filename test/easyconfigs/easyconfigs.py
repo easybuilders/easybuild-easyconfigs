@@ -439,8 +439,8 @@ class EasyConfigTest(TestCase):
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': [('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-'])],
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
-            # ncbi-vdb v2.x require HDF5 v1.10.x
-            'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.'])],
+            # ncbi-vdb v2.x require HDF5 v1.10.x (HISAT2 depends on ncbi-vdb)
+            'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.'])],
             # VMTK 1.4.x requires ITK 4.13.x
             'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
