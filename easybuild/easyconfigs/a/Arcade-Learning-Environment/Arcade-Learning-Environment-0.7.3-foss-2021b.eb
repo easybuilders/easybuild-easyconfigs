@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'Arcade-Learning-Environment'
+version = '0.7.3'
+
+homepage = 'https://github.com/mgbellemare/Arcade-Learning-Environment'
+description = """The Arcade Learning Environment (ALE) is a simple framework that allows
+researchers and hobbyists to develop AI agents for Atari 2600 games. It is
+built on top of the Atari 2600 emulator Stella and separates the details of
+emulation from agent design. This video depicts over 50 games currently
+supported in the ALE."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+github_account = 'mgbellemare'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['e3bada34cc6c116377c4a807c24d9890ce33afa854ffc45e32dc90ba0dcc9140']
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('pybind11', '2.7.1'),
+    ('SciPy-bundle', '2021.10'),
+    ('SDL2', '2.0.20'),
+    ('zlib', '1.2.11'),
+]
+
+# main build of C++ libraries
+configopts = "-DBUILD_PYTHON_LIB=OFF"
+
+# install Python bindings and its dependencies
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+exts_list = [
+    ('ale-py', version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'checksums': ['e3bada34cc6c116377c4a807c24d9890ce33afa854ffc45e32dc90ba0dcc9140'],
+        'preinstallopts': "ALE_BUILD_VERSION=%(version)s",
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ale-import-roms', 'lib64/libale.a'],
+    'dirs': ['include/ale', 'lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = ["ale-import-roms --help"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'tools'
