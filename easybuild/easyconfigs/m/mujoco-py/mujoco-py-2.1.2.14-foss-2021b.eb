@@ -1,0 +1,49 @@
+easyblock = 'PythonBundle'
+
+name = 'mujoco-py'
+version = '2.1.2.14'
+
+homepage = 'https://github.com/openai/mujoco-py'
+description = """MuJoCo is a physics engine for detailed, efficient rigid body simulations with
+contacts. mujoco-py allows using MuJoCo from Python 3."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+builddependencies = [
+    ('patchelf', '0.13'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('GLFW', '3.3.4'),
+    ('imageio', '2.13.5'),
+    ('MuJoCo', '2.1.1'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('glfw', '2.5.0', {
+        'checksums': ['52544a4a512ba7f829f809759a458d6bbf801565769cf88b4e1c359a4493ebb1'],
+    }),
+    ('fasteners', '0.17.2', {
+        'checksums': ['2aceacb2bd618ce8526676f7a3e84ea25d0165ef10abb574a45b4a9c07292d2e'],
+    }),
+    (name, version, {
+        'patches': ['%(name)s-%(version)s_fix-builder.patch'],
+        'preinstallopts': 'MUJOCO_PY_MUJOCO_PATH=$EBROOTMUJOCO',
+        'checksums': [
+            'eb5b14485acf80a3cf8c15f4b080c6a28a9f79e68869aa696d16cbd51ea7706f',  # mujoco-py-2.1.2.14.tar.gz
+            '892dac4810a83def104debb4593189beafcfb4379bb07bd18347fe4b1c14adc1',  # mujoco-py-2.1.2.14_fix-builder.patch
+        ],
+    }),
+]
+
+sanity_pip_check = True
+
+modluafooter = """
+setenv("MUJOCO_PY_MUJOCO_PATH", os.getenv("EBROOTMUJOCO"))
+"""
+
+moduleclass = 'lib'
