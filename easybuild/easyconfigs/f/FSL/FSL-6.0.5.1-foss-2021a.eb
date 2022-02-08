@@ -1,0 +1,76 @@
+# This build still relies on the following libraries (or part of them) shipped with FSL:
+#    GDCHART, libprob, libcprob, cprob, newran, newmat
+# Attempts to use externally built libraries failed. Worth trying again in the future...
+#
+# Added fslpy 3.7.1, which includes fixes for temporary file handling
+
+name = 'FSL'
+version = '6.0.5.1'
+
+homepage = 'https://www.fmrib.ox.ac.uk/fsl/'
+description = """FSL is a comprehensive library of analysis tools for FMRI, MRI and DTI brain imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'cstd': 'c++11'}
+# toolchainopts = {'cstd': 'c++14'}
+
+source_urls = ['https://www.fmrib.ox.ac.uk/fsldownloads/']
+sources = ['%(namelower)s-%(version)s-sources.tar.gz']
+patches = [
+    'FSL-6.0.5.1_Makefile_fixes.patch',
+    'FSL-6.0.5.1_disable_cuda.patch',
+    'FSL-6.0.5.1_build_fixes.patch',
+    'FSL-6.0.2_Build_extras.patch',
+    'FSL-6.0.1_Fix_fsl_exec_script.patch',
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('Boost', '1.76.0'),
+    ('libgd', '2.3.1'),
+    ('libxml2', '2.9.10'),
+    ('libxml++', '2.40.1'),
+    ('SQLite', '3.35.4'),
+    ('libpng', '1.6.37'),
+    ('Tk', '8.6.11'),
+    ('NLopt', '2.7.0'),
+    ('freeglut', '3.2.1'),
+    ('expat', '2.2.9'),
+    ('zlib', '1.2.11'),
+    ('VTK', '9.0.1'),
+    ('GSL', '2.7'),
+    ('Qwt', '6.1.5'),
+    ('h5py', '3.2.1'),
+]
+
+# Fixes `#include "cprob/libprob.h"` error
+prebuildopts = 'export CPATH=%(installdir)s/fsl/extras/include:${CPATH} && export CPPFLAGS="-I%(installdir)s/fsl/extras/include"'
+
+modextrapaths = {'PYTHONPATH': ['fsl/lib/python%(pyshortver)s/site-packages']}
+
+# The executable files 'imglob' and 'imcp' come from fslpy
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('fslpy', '3.7.1', {
+        'installopts': '--prefix=%(installdir)s/fsl',
+        'source_urls': ['https://pypi.python.org/packages/source/f/fslpy/'],
+        'checksums': ['3975c9a79316912f1075d8e2898d25c88d19398d0c9cf74beda50c40d5cc8f66'],
+    }),
+]
+
+modextravars = {
+    'FSLOUTPUTTYPE': 'NIFTI_GZ',
+    'FSLMULTIFILEQUIT': 'TRUE',
+    'FSLTCLSH': 'tclsh',
+    'FSLWISH': 'wish8.6'
+}
+
+moduleclass = 'bio'
+
+
+# https://giters.com/gentoo/sci/issues/963
