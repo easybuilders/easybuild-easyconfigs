@@ -439,6 +439,8 @@ class EasyConfigTest(TestCase):
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': [('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-'])],
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
+            # ncbi-vdb v2.x require HDF5 v1.10.x (HISAT2 depends on ncbi-vdb)
+            'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.'])],
             # VMTK 1.4.x requires ITK 4.13.x
             'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
@@ -1024,13 +1026,20 @@ class EasyConfigTest(TestCase):
         failing_checks = []
 
         for ec in self.changed_ecs:
-
             easyblock = ec.get('easyblock')
-
             if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
+
+                sanity_check_ok = False
+
                 if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
-                    pass
-                else:
+                    sanity_check_ok = True
+
+                # also allow bundles that enable per-component sanity checks
+                elif easyblock == 'Bundle':
+                    if ec['sanity_check_components'] or ec['sanity_check_all_components']:
+                        sanity_check_ok = True
+
+                if not sanity_check_ok:
                     ec_fn = os.path.basename(ec.path)
                     failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 

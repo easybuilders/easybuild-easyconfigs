@@ -1,0 +1,60 @@
+Fix path to MuJoCo libraries in mujoco-py builder
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- a/mujoco_py/builder.py	2022-01-18 01:36:26.458344000 +0100
++++ b/mujoco_py/builder.py	2022-01-18 01:36:37.646121008 +0100
+@@ -67,7 +67,7 @@
+ The easy solution is to `import mujoco_py` _before_ `import glfw`.
+ ''')
+ 
+-    lib_path = os.path.join(mujoco_path, "bin")
++    lib_path = os.path.join(mujoco_path, "lib")
+     if sys.platform == 'darwin':
+         Builder = MacExtensionBuilder
+     elif sys.platform == 'linux':
+@@ -177,8 +177,8 @@
+ 
+     # Fix the rpath of the generated library -- i lost the Stackoverflow
+     # reference here
+-    from_mujoco_path = '@executable_path/libmujoco210.dylib'
+-    to_mujoco_path = '%s/libmujoco210.dylib' % mj_bin_path
++    from_mujoco_path = '@executable_path/libmujoco.dylib'
++    to_mujoco_path = '%s/libmujoco.dylib' % mj_bin_path
+     subprocess.check_call(['install_name_tool',
+                            '-change',
+                            from_mujoco_path,
+@@ -213,7 +213,7 @@
+                 join(mujoco_path, 'include'),
+                 np.get_include(),
+             ],
+-            libraries=['mujoco210'],
++            libraries=['mujoco'],
+             library_dirs=[join(mujoco_path, 'bin')],
+             extra_compile_args=[
+                 '-fopenmp',  # needed for OpenMP
+@@ -277,7 +277,7 @@
+     def _build_impl(self):
+         so_file_path = super()._build_impl()
+         # Removes absolute paths to libraries. Allows for dynamic loading.
+-        fix_shared_library(so_file_path, 'libmujoco210.so', 'libmujoco210.so')
++        fix_shared_library(so_file_path, 'libmujoco.so', 'libmujoco.so')
+         fix_shared_library(so_file_path, 'libglewosmesa.so', 'libglewosmesa.so')
+         return so_file_path
+ 
+@@ -296,7 +296,7 @@
+         so_file_path = super()._build_impl()
+         fix_shared_library(so_file_path, 'libOpenGL.so', 'libOpenGL.so.0')
+         fix_shared_library(so_file_path, 'libEGL.so', 'libEGL.so.1')
+-        fix_shared_library(so_file_path, 'libmujoco210.so', 'libmujoco210.so')
++        fix_shared_library(so_file_path, 'libmujoco.so', 'libmujoco.so')
+         fix_shared_library(so_file_path, 'libglewegl.so', 'libglewegl.so')
+         return so_file_path
+ 
+@@ -483,7 +483,7 @@
+     ffibuilder.set_source(name, source_string,
+                           include_dirs=[join(mujoco_path, 'include')],
+                           library_dirs=[join(mujoco_path, 'bin')],
+-                          libraries=['mujoco210'])
++                          libraries=['mujoco'])
+     # Catch compilation exceptions so we can cleanup partial files in that case
+     try:
+         library_path = ffibuilder.compile(verbose=True)
