@@ -80,6 +80,9 @@ exts_default_options = {
 # !! order of packages is important !!
 # packages updated on 1st November 2021
 exts_list = [
+    # include packages that are part of the base installation of R,
+    # both to make sure they are available (via sanity check),
+    # and to be able to pass the check for required dependencies when installing extensions in parallel
     'base',
     'compiler',
     'datasets',
@@ -2248,7 +2251,7 @@ exts_list = [
     ('lpSolveAPI', '5.5.2.0-17.7', {
         'checksums': ['9ebc8e45ad73eb51e0b25049598a5bc758370cf89508e2328cf4bd93d68d55bb'],
     }),
-    ('ergm', version, {
+    ('ergm', '4.1.2', {
         'checksums': ['1abc6ef53376a4132530c376ce477ae7a2590e95fe8feb011c0da9cfb4d49ba0'],
     }),
     ('networkDynamic', '0.11.0', {
@@ -2295,6 +2298,7 @@ exts_list = [
     }),
     ('liquidSVM', '1.2.4', {
         'patches': ['liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch'],
+        # Don't add optimization flags by liquidSVM which may not be known e.g. on PPC
         'preinstallopts': 'LIQUIDSVM_TARGET="empty"',
         'checksums': [
             '15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba',  # liquidSVM_1.2.4.tar.gz
@@ -2414,7 +2418,8 @@ exts_list = [
         'checksums': ['57b53882fd7a195b38bbdbbf0b17745405eb3159b1b42f7f11ce80c78ab94eb7'],
     }),
     ('rda', '1.0.2-2.1', {
-        'checksums': ['eea3a51a2e132a023146bfbc0c384f5373eb3ea2b61743d7658be86a5b04949e'],
+        'checksums': [('6918b62f51252b57f2c05b99debef6136b370f594dc3ae6466268e4c35578ef8',
+                       'eea3a51a2e132a023146bfbc0c384f5373eb3ea2b61743d7658be86a5b04949e')],
     }),
     ('sampling', '2.9', {
         'checksums': ['7f5ba5978f6cdbbbdb6f51958197b28b6fc63e7eeee59e6845ea09fb37d1b187'],
@@ -2803,9 +2808,13 @@ exts_list = [
         'checksums': ['1615ce9ab07a251d06c68780be15ab5a4814df877a23aa93e0faf14ccd56d45c'],
     }),
     ('gWidgets2tcltk', '1.0-6', {
-        'modulename': False,
-        'preinstallopts': "xvfb-run ",
         'checksums': ['aa3a2f4612116a652e5573a369e3d89c5939f7c06067c6826ba40ed3bb07302b'],
+        # need to run installation via xvfb-run to avoid problems on headless systems:
+        # no DISPLAY variable so Tk is not available
+        # [tcl] invalid command name "font"
+        'preinstallopts': "xvfb-run ",
+        # skip 'import' check with library(gWidgets2tcltk), since it also fails on headless systems...
+        'modulename': False,
     }),
     ('mgsub', '1.7.3', {
         'checksums': ['c9ae2560fe2690bedc5248af3fc89e7ef2bc6c147d46ced28f9824584c3791d5'],
