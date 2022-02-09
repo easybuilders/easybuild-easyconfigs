@@ -492,6 +492,8 @@ class EasyConfigTest(TestCase):
                       'NGSpeciesID-0.1.1.1-'])],
             # PICI does not build with VTK 9; LAMMPS should be used with VTK 8.2
             'VTK': [('8.2.0;', ['PICI-LIGGGHTS-', 'LAMMPS-'])],
+            # Cellpose uses the older PyTorch
+            'PyTorch': [('1.9.1;', ['Cellpose-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
