@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'ABINIT'
+version = '9.6.2'
+
+homepage = 'http://www.abinit.org/'
+description = """ABINIT is a package whose main program allows one to find the total energy, charge density and
+ electronic structure of systems made of electrons and nuclei (molecules and periodic solids) within Density Functional
+ Theory (DFT), using pseudopotentials and a planewave or wavelet basis."""
+
+toolchain = {'name': 'iofbf', 'version': '2020a'}
+
+source_urls = ['https://www.%(namelower)s.org/sites/default/files/packages/']
+sources = [
+    {'filename': SOURCELOWER_TAR_GZ, 
+    'extract_cmd': 'tar xf %s && cd %(namelower)s-%(version)s/fallbacks && tar xf %(namelower)s-fallbacks-9.2.tar.gz'},
+]
+patches = [
+    '%(namelower)s-9.2.2.patch',
+    ('ifort_no_ice.patch', 1),
+]
+checksums = [
+    'b018c2ff24338a5952c5550a7e09d4c7793b62402c7aa4e09273e9a666e674fb',  # abinit-9.6.2.tar.gz
+    '433e7df02a2aa7038bd85ecf2c7f4aa7b0669f2c59245307338f59fc28b5518f',  # abinit-9.2.2.patch
+    '2e7e69cbf9983c2f4ca732bc96a022a7cf67ab7cdaa4e94577c75b6ecdebaf7e',  # ifort_no_ice.patch
+]
+
+dependencies = [
+    ('libxc', '4.3.4'),
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+    ('HDF5', '1.10.6', '-mpi'),
+    #('ELPA', '2021.11.001'),
+]
+
+preconfigopts = """sed -i "s!-mkl=cluster!$LIBSCALAPACK!g" configure; mkdir build ; cd fallbacks ; sed -i "s|tmpflags_options='--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\"'|tmpflags_options='--without-archives --with-moduledir=\\"\\$(prefix)/\\$(bigdft_pkg_inst)/include\\" --with-blacs=\\"$LIBBLACS\\" LIBS=\\"$LIBSCALAPACK\\" --with-scalapack=\\"$LIBSCALAPACK\\"'|g" %(namelower)s-fallbacks-9.2/configure; export FC=mpif90 CC=mpicc CXX=mpiCC; sh ./build-%(namelower)s-fallbacks.sh.in ; cd ../build ; export BIGDFT_FCFLAGS="-I%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/bigdft/default/include" ; export BIGDFT_LDFLAGS="-L%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/bigdft/default/lib"; export WANNIER90_FCFLAGS="-I%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/wannier90/default/include"; export WANNIER90_LDFLAGS="-L%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/wannier90/default/lib"; export XMLF90_FCFLAGS="-I%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/xmlf90/default/include"; export XMLF90_LDFLAGS="-L%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/xmlf90/default/lib"; export LIBPSML_FCFLAGS="-I%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/libpsml/default/include"; export LIBPSML_LDFLAGS="-L%(builddir)s/%(namelower)s-%(version)s/fallbacks/install/libpsml/default/lib"; export NETCDF_FCFLAGS="-I$EBROOTNETCDF/include"; export NETCDF_LDFLAGS="-L$EBROOTNETCDF/lib"; export NETCDF_FORTRAN_FCFLAGS="-I$EBROOTNETCDFMINFORTRAN/include"; export NETCDF_FORTRAN_LDFLAGS="-L$EBROOTNETCDFMINFORTRAN/lib"; """
+
+configopts = 'FC=mpif90 CC=mpicc CXX=mpiCC --enable-openmp --enable-mpi-io --with-netcdf=$EBROOTNETCDF --with-netcdf-fortran="$EBROOTNETCDFMINFORTRAN" --with-libxc="$EBROOTLIBXC" --with-wannier90 --with-libpsml --with-xmlf90 --with-hdf5 --with-mpi --enable-bigdft '
+# --with-linalg-flavor="mkl"
+
+parallel = 8
+
+build_cmd = "cd build; export FC=mpif90 CC=mpicc CXX=mpiCC; make"
+
+configure_cmd = ' ../configure LDFLAGS="$LIBSCALAPACK" LINALG_LIBS="-L$LIBBLACS" '
+
+install_cmd = "cd build; make install"
+
+local_binaries = [
+    '%(namelower)s', 'aim', 'anaddb', 'atdep', 'band2eps', 'conducti', 'cut3d',
+    'fftprof', 'fold2Bloch', 'ioprof', 'lapackprof', 'macroave', 'mrgddb',
+    'mrgdv', 'mrggkk', 'mrgscr', 'multibinit', 'testtransposer', 'ujdet',
+    'vdw_kernelgen', 'optic',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'phys'

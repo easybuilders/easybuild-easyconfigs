@@ -1,39 +1,50 @@
---- common.mk.orig	2021-02-18 06:04:37.618679084 +0000
-+++ common.mk	2021-02-18 06:06:02.253066333 +0000
-@@ -172,7 +172,7 @@
+--- common.mk.orig	2022-02-03 22:51:52.252232784 +0000
++++ common.mk	2022-02-03 22:53:16.781785364 +0000
+@@ -109,7 +109,7 @@
  ifeq ($(TARGET),mingw32)
     $(error Error: Should not build using MinGW gcc tool chain instead use MingGW-w64)
  endif
 -ifneq ($(words $(subst -, ,$(TARGET))),3)
 +ifneq ($(words $(subst -, ,$(TARGET))),4)
-    $(error Value of build TARGET doesn't appear to be a machine-vendor-system triplet)
+    $(error Value of build TARGET does not appear to be a machine-vendor-system triplet)
  endif
- ARCH   := $(or $(word 1,$(subst -, ,$(TARGET))),$(shell uname -m))
-@@ -336,10 +336,10 @@
- GD_LDFLAGS := -lgd -lpng
  
- LZO2_LDFLAGS :=
--ifeq ($(SYSTEM),mingw32)
-+#ifeq ($(SYSTEM),mingw32)
-    # Compile for static Linux library instead of Windows DLL
-    LZO2_LDFLAGS += -llzo2
--endif
-+#endif
+ #ifneq ($(ARCH),darwin)
+
+--- src/Visualization/Makefile.orig	2022-02-07 21:49:08.948535863 +0000
++++ src/Visualization/Makefile	2022-02-07 21:50:01.549845425 +0000
+@@ -256,7 +256,7 @@
+ 	$(LD) $(LDFLAGS) $^ $(LIBARCHIVE_LDFLAGS) \
+ 	   $(PWIZ_LDFLAGS) $(GSL_LDFLAGS) $(FANN_LDFLAGS)  \
+ 		$(GZSTREAM_LDFLAGS) $(BOOST_LDFLAGS) \
+-			$(LZO2_LDFLAGS) -lz -lbz2 -o $@
++			$(LZO2_LDFLAGS) -lz -lbz2 -llzo2 -o $@
  
  
- GSL_CXXFLAGS := 
+ VISUAL_ALL += $(BUILD_CGI)/ShowXIC.cgi
+--- src/Parsers/Makefile.orig	2022-02-07 21:37:04.896274779 +0000
++++ src/Parsers/Makefile	2022-02-07 21:39:28.572120318 +0000
+@@ -169,7 +169,7 @@
+  $(PARSERS_BLDDIR)/AnalysisSummaryParser/AnalysisSummaryParser.o \
+  $(PARSERS_BLDDIR)/AnalysisSummaryParser/AnalysisSummaryParserMain.o \
+  $(LIBTPP) | $(MKDIR)
+-	$(LD) $(LDFLAGS) $^ $(GZSTREAM_LDFLAGS) $(PWIZ_LDFLAGS) $(FANN_LDFLAGS) $(GSL_LDFLAGS) $(BOOST_LDFLAGS) -lz -o $@ 
++	$(LD) $(LDFLAGS) $^ $(GZSTREAM_LDFLAGS) $(PWIZ_LDFLAGS) $(FANN_LDFLAGS) $(GSL_LDFLAGS) $(BOOST_LDFLAGS) -lz  -o $@ 
  
---- extern/Makefile.orig	2022-02-07 23:32:01.386068758 +0000
-+++ extern/Makefile	2022-02-07 23:32:55.459404218 +0000
-@@ -357,6 +357,7 @@
+ PARSERS_ALL += $(BUILD_BIN)/CombineOut 
+ $(BUILD_BIN)/CombineOut : \
+@@ -204,7 +204,7 @@
+  $(LIBTPP) | $(MKDIR)
+ 	$(LD) $(LDFLAGS) $^ $(MZPARSER_LDFLAGS) $(PWIZ_LDFLAGS) \
+ 	$(BOOST_LDFLAGS) $(GZSTREAM_LDFLAGS) $(LIBARCHIVE_LDFLAGS) \
+-        $(BZIP2_LDFLAGS) $(LZO2_LDFLAGS) -lz -o $@ 
++        $(BZIP2_LDFLAGS) $(LZO2_LDFLAGS) -lz -llzo2 -o $@ 
  
- $(COMET_SRC)/ : $(COMET_ZIP) | $(BUILD_DIR)/
- 	unzip -d $(COMET_SRC) $(COMET_ZIP)
-+	cp -r $(TPP_EXT)/MSToolkit/include/MSReader.h $(COMET_SRC)/MSToolkit/include/
- 
- comet-source : $(COMET_SRC)/ 
- 
-@@ -539,7 +540,7 @@
+ PARSERS_ALL += $(BUILD_BIN)/MzXML2Search 
+ $(BUILD_BIN)/MzXML2Search : \
+--- extern/Makefile.orig	2022-02-07 22:43:59.987328576 +0000
++++ extern/Makefile		2022-02-07 22:44:30.639516481 +0000
+@@ -556,7 +556,7 @@
  
  $(FANN_SRC)/ : | $(BUILD_DIR)/
  	tar xzf $(FANN_TGZ) -C $(dir $(FANN_SRC))
@@ -42,7 +53,7 @@
  	   --enable-shared=no --enable-static=yes --build=x86_64 \
  	   --includedir $(BUILD_DIR)/include --libdir $(BUILD_LIB) 
  
-@@ -585,7 +586,7 @@
+@@ -601,7 +601,7 @@
  
  $(GSL_SRC)/ : | $(BUILD_DIR)/
  	tar xzf $(GSL_TGZ) -C $(dir $(GSL_SRC))
@@ -51,7 +62,7 @@
  	   --enable-shared=no --enable-static=yes --build=x86_64 \
  	   --prefix $(BUILD_DIR) \
  	   --includedir $(BUILD_DIR)/include --libdir $(BUILD_LIB) 
-@@ -832,7 +833,7 @@
+@@ -848,7 +848,7 @@
  $(LIBARCHIVE_SRC)/ : | $(BUILD_DIR)/
  	mkdir -p $(dir $(LIBARCHIVE_SRC))
  	tar xzf $(LIBARCHIVE_TGZ) -C $(dir $(LIBARCHIVE_SRC))
@@ -60,7 +71,7 @@
  	   --enable-shared=no --disable-shared \
  	   --enable-static=yes --enable-static=yes \
  	   --disable-bsdtar --disable-bsdcpio \
-@@ -934,13 +935,11 @@
+@@ -950,13 +950,11 @@
  $(LIBGD_SRC)/ : | $(BUILD_DIR)/
  	mkdir -p $(dir $(LIBGD_SRC))
  	tar xzf $(LIBGD_TGZ) -C $(dir $(LIBGD_SRC))
@@ -76,12 +87,12 @@
  	   --without-x
  	$(foreach P, $(LIBGD_PATCHES), 					\
  	   @echo "### ...applying GD patch $(notdir $(P))" $(nl) 	\
-@@ -948,7 +947,7 @@
+@@ -964,7 +962,7 @@
  	)
  
  # libpng has to come before libgd because of LIBPNG_LIB requirement
 -$(LIBGD_LIB) : $(LIBPNG_LIB) | $(LIBGD_SRC)/
-+$(LIBGD_LIB) :  $(LIBGD_SRC)/
++$(LIBGD_LIB) : $(LIBGD_SRC)/
  	make -C $(LIBGD_SRC) 
  	make -C $(LIBGD_SRC) install
  
