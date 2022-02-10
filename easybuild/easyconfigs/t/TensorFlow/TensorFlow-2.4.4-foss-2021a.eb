@@ -155,6 +155,8 @@ exts_list = [
         'checksums': ['d2cdc776873635ed421315c4d22e63280042456bbfa07397817e687b142b9667'],
     }),
     (name, version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
         'patches': [
             'TensorFlow-2.1.0_fix-cuda-build.patch',
             'TensorFlow-2.3.1_disable-float128-on-power.patch',
@@ -171,32 +173,6 @@ exts_list = [
             'TensorFlow-2.4.4_fix-compatibility-with-numpy-1.20.patch',
             'TensorFlow-2.4.4_fix-assertion-bijector-test.patch',
         ],
-        'source_tmpl': 'v%(version)s.tar.gz',
-        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
-        'test_script': 'TensorFlow-2.x_mnist-test.py',
-        'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
-        'test_targets': [
-            '//tensorflow/core/...',
-            '-//tensorflow/core:example_java_proto',
-            '-//tensorflow/core/example:example_protos_closure',
-            '//tensorflow/cc/...',
-            '//tensorflow/c/...',
-            '//tensorflow/python/...',
-            '-//tensorflow/core/profiler/internal/gpu:device_tracer_test',
-            '-//tensorflow/c/eager:c_api_test_gpu',
-            '-//tensorflow/c/eager:c_api_distributed_test',
-            '-//tensorflow/c/eager:c_api_distributed_test_gpu',
-            '-//tensorflow/c/eager:c_api_cluster_test_gpu',
-            '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
-            '-//tensorflow/c/eager:c_api_remote_test_gpu',
-            '-//tensorflow/core/kernels:sparse_matmul_op_test',
-            '-//tensorflow/core/kernels:sparse_matmul_op_test_gpu',
-            '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
-            '-//tensorflow/core/common_runtime:mkl_layout_pass_test',
-            '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
-        ],
-        'testopts': "--test_timeout=3600 --test_size_filters=small",
-        'with_xla': True,
         'checksums': [
             'f1abc3ed92c3ce955db2a7db5ec422a3a98f015331183194f97b99fe77a09bb4',  # v2.4.4.tar.gz
             '78c20aeaa7784b8ceb46238a81e8c2461137d28e0b576deeba8357d23fbe1f5a',  # TensorFlow-2.1.0_fix-cuda-build.patch
@@ -226,6 +202,36 @@ exts_list = [
             # TensorFlow-2.4.4_fix-assertion-bijector-test.patch
             'ac8aee69ab0269a89b390b247ec32bfb0a4582f86231e094febedec1b3204637',
         ],
+        'test_script': 'TensorFlow-2.x_mnist-test.py',
+        'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
+        'test_targets': [
+            '//tensorflow/core/...',
+            '-//tensorflow/core:example_java_proto',
+            '-//tensorflow/core/example:example_protos_closure',
+            '//tensorflow/cc/...',
+            '//tensorflow/c/...',
+            '//tensorflow/python/...',
+            # Requires access to CUPTI (privileged!)
+            '-//tensorflow/core/profiler/internal/gpu:device_tracer_test',
+            # Fails on some nodes but C API isn't installed anyway
+            '-//tensorflow/c/eager:c_api_test_gpu',
+            '-//tensorflow/c/eager:c_api_distributed_test',
+            '-//tensorflow/c/eager:c_api_distributed_test_gpu',
+            # Race condition with port picker: https://github.com/tensorflow/tensorflow/issues/46602
+            '-//tensorflow/c/eager:c_api_cluster_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_test_gpu',
+            # Invalid alignment: https://github.com/tensorflow/tensorflow/issues/46460
+            '-//tensorflow/core/kernels:sparse_matmul_op_test',
+            '-//tensorflow/core/kernels:sparse_matmul_op_test_gpu',
+            # Fails to open its own test.xml(?)
+            '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
+            # Fails on non-AVX-512 systems: https://github.com/tensorflow/tensorflow/issues/46532
+            '-//tensorflow/core/common_runtime:mkl_layout_pass_test',
+            '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
+        ],
+        'testopts': "--test_timeout=3600 --test_size_filters=small",
+        'with_xla': True,
     }),
 ]
 
