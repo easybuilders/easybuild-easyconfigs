@@ -22,16 +22,24 @@ author: Alex Domingo (Vrije Universiteit Brussel)
      subprocess.check_call(['install_name_tool',
                             '-change',
                             from_mujoco_path,
-@@ -213,7 +213,7 @@
+@@ -213,8 +213,8 @@
                  join(mujoco_path, 'include'),
                  np.get_include(),
              ],
 -            libraries=['mujoco210'],
+-            library_dirs=[join(mujoco_path, 'bin')],
 +            libraries=['mujoco'],
-             library_dirs=[join(mujoco_path, 'bin')],
++            library_dirs=[join(mujoco_path, 'lib')],
              extra_compile_args=[
                  '-fopenmp',  # needed for OpenMP
-@@ -277,7 +277,7 @@
+                 '-w',  # suppress numpy compilation warnings
+@@ -272,12 +272,12 @@
+         self.extension.sources.append(
+             join(self.CYMJ_DIR_PATH, "gl", "osmesashim.c"))
+         self.extension.libraries.extend(['glewosmesa', 'OSMesa', 'GL'])
+-        self.extension.runtime_library_dirs = [join(mujoco_path, 'bin')]
++        self.extension.runtime_library_dirs = [join(mujoco_path, 'lib')]
+ 
      def _build_impl(self):
          so_file_path = super()._build_impl()
          # Removes absolute paths to libraries. Allows for dynamic loading.
@@ -40,7 +48,14 @@ author: Alex Domingo (Vrije Universiteit Brussel)
          fix_shared_library(so_file_path, 'libglewosmesa.so', 'libglewosmesa.so')
          return so_file_path
  
-@@ -296,7 +296,7 @@
+@@ -290,13 +290,13 @@
+         self.extension.sources.append(self.CYMJ_DIR_PATH + "/gl/eglshim.c")
+         self.extension.include_dirs.append(self.CYMJ_DIR_PATH + '/vendor/egl')
+         self.extension.libraries.extend(['glewegl'])
+-        self.extension.runtime_library_dirs = [join(mujoco_path, 'bin')]
++        self.extension.runtime_library_dirs = [join(mujoco_path, 'lib')]
+ 
+     def _build_impl(self):
          so_file_path = super()._build_impl()
          fix_shared_library(so_file_path, 'libOpenGL.so', 'libOpenGL.so.0')
          fix_shared_library(so_file_path, 'libEGL.so', 'libEGL.so.1')
@@ -49,11 +64,22 @@ author: Alex Domingo (Vrije Universiteit Brussel)
          fix_shared_library(so_file_path, 'libglewegl.so', 'libglewegl.so')
          return so_file_path
  
-@@ -483,7 +483,7 @@
+@@ -309,7 +309,7 @@
+         self.extension.sources.append(self.CYMJ_DIR_PATH + "/gl/dummyshim.c")
+         self.extension.libraries.extend(['glfw.3'])
+         self.extension.define_macros = [('ONMAC', None)]
+-        self.extension.runtime_library_dirs = [join(mujoco_path, 'bin')]
++        self.extension.runtime_library_dirs = [join(mujoco_path, 'lib')]
+ 
+     def _build_impl(self):
+         if not os.environ.get('CC'):
+@@ -482,8 +482,8 @@
+     # Link against mujoco so we can call mujoco functions from within callback
      ffibuilder.set_source(name, source_string,
                            include_dirs=[join(mujoco_path, 'include')],
-                           library_dirs=[join(mujoco_path, 'bin')],
+-                          library_dirs=[join(mujoco_path, 'bin')],
 -                          libraries=['mujoco210'])
++                          library_dirs=[join(mujoco_path, 'lib')],
 +                          libraries=['mujoco'])
      # Catch compilation exceptions so we can cleanup partial files in that case
      try:
