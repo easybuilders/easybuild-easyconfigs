@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'SOCI'
+version = '4.0.2'
+
+homepage = 'http://soci.sourceforge.net/'
+description = """SOCI is a database access library for C++ that makes the illusion of embedding SQL queries in the
+ regular C++ code, staying entirely within the Standard C++."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/SOCI/soci/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f293192a412ed82693d17dfe46e2734b140bff835bc3259e3cbd7c315e5e2d74']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('CMake', '3.20.1'),
+]
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('SQLite', '3.35.4'),
+    ('PostgreSQL', '13.3'),
+]
+
+# Matches RStudio (1.4.1717) install options
+# https://github.com/rstudio/rstudio/blob/ddcd7191ec89c4da00e77afae7e9f27e61e87c36/dependencies/common/install-soci
+configopts = "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true "
+configopts += "-DSOCI_TESTS=OFF "
+configopts += "-DSOCI_CXX11=ON "
+configopts += "-DSOCI_EMPTY=OFF "
+configopts += '-DCMAKE_INCLUDE_PATH="$EBROOTBOOST/include" '
+configopts += "-DBoost_USE_STATIC_LIBS=ON "
+configopts += '-DCMAKE_LIBRARY_PATH="$EBROOTBOOST/lib" '
+configopts += "-DWITH_BOOST=ON "
+configopts += "-DWITH_POSTGRESQL=ON "
+configopts += "-DWITH_SQLITE3=ON "
+configopts += "-DWITH_DB2=OFF "
+configopts += "-DWITH_MYSQL=OFF "
+configopts += "-DWITH_ORACLE=OFF "
+configopts += "-DWITH_FIREBIRD=OFF "
+configopts += "-DWITH_ODBC=OFF "
+configopts += "-DBoost_DEBUG=1 "
+
+local_dbs = ['postgresql', 'sqlite3']
+
+sanity_check_paths = {
+    'files': ['lib/libsoci_%s.%s' % (x, SHLIB_EXT) for x in local_dbs + ['core']],
+    'dirs': ['include/soci/%s' % x for x in local_dbs],
+}
+
+moduleclass = 'lang'
