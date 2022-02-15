@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'tesseract'
+version = '5.0.1'
+
+homepage = 'https://github.com/tesseract-ocr/tesseract'
+description = """Tesseract is an optical character recognition engine"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'cstd': 'c++17', 'pic': True}
+
+github_account = 'tesseract-ocr'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = [
+    'b5b0e561650ed67feb1e9de38d4746121d302ae4c876c95b99b8b6f9f89d5c58',  # 5.0.1.tar.gz
+]
+
+builddependencies = [
+    ('CMake', '3.21.4'),
+]
+
+dependencies = [
+    ('Leptonica', '1.82.0'),
+]
+
+configopts = " ".join([
+    "-DMARCH_NATIVE_OPT=OFF",
+    "-DOPENMP_BUILD=ON",
+    "-DUSE_SYSTEM_ICU=ON",
+    "-DCOMPILER_SUPPORTS_MARCH_NATIVE=OFF", # Turn off the cmake check
+    "-DMARCH_NATIVE_OPT=OFF", # Ensure it is still set to false
+])
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['bin/tesseract', 'lib/libtesseract.a'],
+    'dirs': ['include/tesseract']
+}
+
+sanity_check_commands = [
+    "tesseract --version"
+]
+
+moduleclass = 'vis'
