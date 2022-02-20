@@ -448,10 +448,12 @@ class EasyConfigTest(TestCase):
             # Libint 1.1.6 is required by older CP2K versions
             'Libint': [(r'1\.1\.6', [r'CP2K-[3-6]'])],
             # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
+            # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
                 (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
                              r'PySCF-', r'Qiskit-', r'WIEN2k-']),
+                (r'4\.', [r'libGridXC-']),
                 (r'5\.', [r'Elk-']),
             ],
             # some software depends on numba, which typically requires an older LLVM;
@@ -501,6 +503,8 @@ class EasyConfigTest(TestCase):
                 ('2.2.2;', ['medaka-1.4.3-']),
                 # medaka 1.4.3 (foss/2020b) depends on TensorFlow 2.2.3; longread_umi and artic depend on medaka
                 ('2.2.3;', ['medaka-1.4.3-', 'artic-ncov2019-2021.06.24-', 'longread_umi-0.3.2-']),
+                # AlphaFold 2.1.2 (foss/2020b) depends on TensorFlow 2.5.0
+                ('2.5.0;', ['AlphaFold-2.1.2-']),
             ],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
