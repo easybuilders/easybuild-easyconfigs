@@ -492,6 +492,8 @@ class EasyConfigTest(TestCase):
                       'NGSpeciesID-0.1.1.1-'])],
             # PICI does not build with VTK 9; LAMMPS should be used with VTK 8.2
             'VTK': [('8.2.0;', ['PICI-LIGGGHTS-', 'LAMMPS-'])],
+            # p4est 2.3.3 fails to build with intel compilers
+            'p4est': [('2.3.2;', ['deal.II-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
