@@ -492,6 +492,8 @@ class EasyConfigTest(TestCase):
                       'NGSpeciesID-0.1.1.1-'])],
             # PICI does not build with VTK 9; LAMMPS should be used with VTK 8.2
             'VTK': [('8.2.0;', ['PICI-LIGGGHTS-', 'LAMMPS-'])],
+            # Cellpose uses the older PyTorch
+            'PyTorch': [('1.9.1;', ['Cellpose-'])],
             # p4est 2.3.3 fails to build with intel compilers
             'p4est': [('2.3.2;', ['deal.II-'])],
         }
