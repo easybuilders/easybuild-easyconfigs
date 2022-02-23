@@ -14,11 +14,52 @@ toolchainopts = {'pic': True, 'usempi': True}
 
 source_urls = ['https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%(version_major_minor)s/hdf5-%(version)s/src']
 sources = [SOURCELOWER_TAR_GZ]
-checksums = ['79c66ff67e666665369396e9c90b32e238e501f345afd2234186bfb8331081ca']
 
 dependencies = [
     ('zlib', '1.2.11'),
     ('Szip', '2.1.1'),
 ]
+
+# For the extensions
+builddependencies = [
+    ('SciPy-Stack', '2022a'),
+    ('pytest', '7.0.1'),
+    ('mpi4py', '3.1.3'),
+]
+
+multi_deps = {'Python': ['3.8', '3.9', '3.10']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_list = [
+    ('cached-property', '1.5.2', {
+	'use_pip': True,
+    }),
+    ('h5py', '3.6.0', {
+        'preconfigopts': '#',
+        'prebuildopts': ' sed -i -e "/cmdclass = CMDCLASS,/a zip_safe = False," setup.py && HDF5_MPI="ON" H5PY_SETUP_REQUIRES=0 ',
+	'preinstallopts': ' HDF5_MPI="ON" H5PY_SETUP_REQUIRES=0 ',
+        'buildopts': '#', # Avoid appending env vars to `python setup.py build`
+#        'runtest': 'HDF5_MPI="ON" python setup.py test',
+    }),
+    ('tables', '3.7.0', {
+        'prebuildopts': ' unset LIBS && ',
+        'buildopts': '#', # Avoid appending env vars to `python setup.py build`
+#        'runtest': 'python setup.py test',
+    }),
+]
+exts_filter = ("module load mpi4py/3.1.3; module load scipy-stack/2022a;  python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': [
+        'lib/libhdf5.so'
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
 
 moduleclass = 'data'
