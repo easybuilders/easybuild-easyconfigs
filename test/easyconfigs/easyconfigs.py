@@ -494,6 +494,8 @@ class EasyConfigTest(TestCase):
             'VTK': [('8.2.0;', ['PICI-LIGGGHTS-', 'LAMMPS-'])],
             # Cellpose uses the older PyTorch
             'PyTorch': [('1.9.1;', ['Cellpose-'])],
+            # p4est 2.3.3 fails to build with intel compilers
+            'p4est': [('2.3.2;', ['deal.II-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
