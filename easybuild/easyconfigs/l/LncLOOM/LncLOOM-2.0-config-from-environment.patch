@@ -1,0 +1,77 @@
+Specify for_eclip_annotation.txt/for_track_annotation.txt via the environment
+variables LNCLOOM_ECLIP_CONFIG/LNCLOOM_TRACK_CONFIG instead of hardcoded paths.
+
+Relax biopython dependency (<= 1.78).
+
+Author: Jakub Zárybnický <jakub@zarybnicky.com>
+
+diff -ru LncLOOMv2/LncLOOMv2/LncLOOM.py LncLOOMv2-edit/LncLOOMv2/LncLOOM.py
+--- LncLOOMv2/LncLOOMv2/LncLOOM.py	2021-02-18 10:45:46.000000000 +0100
++++ LncLOOMv2-edit/LncLOOMv2/LncLOOM.py	2021-03-01 14:06:44.600554538 +0100
+@@ -115,14 +115,24 @@
+ 
+ 
+     if args.eclip== True:
+-        efile = os.path.join(os.path.dirname(__file__), 'src', 'for_eclip_annotation.txt')
++        try:
++            efile = os.environ['LNCLOOM_ECLIP_CONFIG']
++        except KeyError:
++            print('To use --eclip, specify a config file via the '
++                  'LNCLOOM_ECLIP_CONFIG environment variable')
++            exit()
+         if not os.path.exists(str(efile)):
+             print("ERROR! Cannot find src file:"+str(efile))
+             Valid = False
+ 
+     if args.track == True:
+         #check bedfile_output.txt is found
+-        tfile = os.path.join(os.path.dirname(__file__), 'src', 'for_track_output.txt')
++        try:
++            tfile = os.environ['LNCLOOM_TRACK_CONFIG']
++        except KeyError:
++            print('To use --track, specify a config file via the '
++                  'LNCLOOM_TRACK_CONFIG environment variable')
++            exit()
+         if not os.path.exists(tfile):
+             print("ERROR! Cannot find src file:for_track_output.txt")
+             Valid = False
+@@ -276,7 +286,12 @@
+         track_bed = ''
+         format_file = True
+         if track ==True:
+-            tfile = os.path.join(os.path.dirname(__file__), 'src', 'for_track_output.txt')
++            try:
++                tfile = os.environ['LNCLOOM_TRACK_CONFIG']
++            except KeyError:
++                print('To use --track, specify a config file via the '
++                      'LNCLOOM_TRACK_CONFIG environment variable')
++                exit()
+             b = open(tfile,'r')
+             blines = b.readlines()
+             b.close()
+@@ -420,7 +435,12 @@
+         #Annotate eCLIP: here we are annotating and creating tables for all combined and sub-kmers in the selected query layer.
+         #This only needs to be done once, as the annotations for all k-mers will be stored - loop not needed here
+         if eCLIP==True:
+-            efile = os.path.join(os.path.dirname(__file__), 'src', 'for_eclip_annotation.txt')
++            try:
++                efile = os.environ['LNCLOOM_ECLIP_CONFIG']
++            except KeyError:
++                print('To use --eclip, specify a config file via the '
++                      'LNCLOOM_ECLIP_CONFIG environment variable')
++                exit()
+             e = open(efile,'r')
+             elines = e.readlines()
+             e.close()
+diff -ru LncLOOMv2/setup.py LncLOOMv2-edit/setup.py
+--- LncLOOMv2/setup.py	2021-02-18 10:45:46.000000000 +0100
++++ LncLOOMv2-edit/setup.py	2021-03-01 14:01:42.430780746 +0100
+@@ -10,7 +10,7 @@
+     packages=find_packages(include=['LncLOOMv2', 'LncLOOMv2.*']),
+     install_requires=[
+         'networkx',
+-        'numpy>=1.14.5','biopython<=1.76','pulp','pyBigWig'
++        'numpy>=1.14.5','biopython<=1.78','pulp','pyBigWig'
+     ],
+ 
+     entry_points={

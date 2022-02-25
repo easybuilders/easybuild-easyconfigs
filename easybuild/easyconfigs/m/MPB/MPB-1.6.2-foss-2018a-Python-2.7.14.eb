@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'MPB'
+version = '1.6.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://mpb.readthedocs.io/en/latest/'
+description = """MPB is a free and open-source software package for computing
+ the band structures, or dispersion relations, and electromagnetic
+ modes of periodic dielectric structures, on both serial
+ and parallel computers. MPB is an acronym for MIT Photonic Bands."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/NanoComp/mpb/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['aae270f9f51e7ff852fe578b8ef775b22489d4198f6a35ee0a91a60548fd1e3a']
+
+builddependencies = [
+    ('Autotools', '20170619'),
+]
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('HDF5', '1.10.1'),
+    ('libctl', '4.1.3'),
+    ('Guile', '1.8.8'),
+    ('libreadline', '7.0'),
+]
+
+local_common_configopts = "--with-pic --with-blas=openblas --with-lapack=openblas "
+local_common_configopts += "--with-libctl=$EBROOTLIBCTL/share/libctl --enable-shared "
+
+configopts = [
+    local_common_configopts + " ",
+    local_common_configopts + " --with-inv-symmetry",
+    local_common_configopts + " --with-mpi ",
+    local_common_configopts + " --with-mpi --with-inv-symmetry",
+]
+
+sanity_check_paths = {
+    'files': ['bin/mpb%s' % x for x in ['', '-data', 'i', 'i-data', 'i-mpi', 'i-split', '-mpi', '-split']] +
+             ['lib/libmpb.a', 'lib/libmpbi_mpi.a', 'lib/libmpbi.a', 'lib/libmpb_mpi.a', 'lib/libmpb.%s' % SHLIB_EXT,
+              'lib/libmpbi_mpi.%s' % SHLIB_EXT, 'lib/libmpbi.%s' % SHLIB_EXT, 'lib/libmpb_mpi.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'phys'
