@@ -1,0 +1,35 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'MakeCp'
+
+name = 'ExaML'
+version = '3.0.22'
+versionsuffix = '-hybrid-avx'
+
+homepage = 'https://github.com/stamatak/ExaML/'
+description = "Exascale Maximum Likelihood (ExaML) code for phylogenetic inference using MPI"
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+toolchainopts = {'usempi': True}
+
+github_account = 'stamatak'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['802e673b0c2ea83fdbe6b060048d83f22b6978933a04be64fb9b4334fe318ca3']
+
+prebuildopts = 'cd examl &&'
+buildopts = '-f Makefile.OMP.AVX.gcc CC="$CC" &&'
+buildopts += 'cd ../parser && make -f Makefile.SSE3.gcc CC="$CC"'
+
+files_to_copy = [(['examl/examl-OMP-AVX', 'parser/parse-examl'], 'bin'), 'README.md', 'manual']
+
+postinstallcmds = ["cd %(installdir)s/bin && ln -s examl-OMP-AVX examl"]
+
+sanity_check_paths = {
+    'files': ['bin/examl', 'bin/parse-examl'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["examl -%s" % x for x in ['h', 'v']]
+
+moduleclass = 'bio'

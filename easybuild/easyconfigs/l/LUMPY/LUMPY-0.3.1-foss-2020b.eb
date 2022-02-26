@@ -1,0 +1,51 @@
+easyblock = 'MakeCp'
+
+name = 'LUMPY'
+version = '0.3.1'
+
+homepage = 'https://github.com/arq5x/lumpy-sv'
+description = """A probabilistic framework for structural variant discovery.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/arq5x/lumpy-sv/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['6a75dffafd238417011416c62d4351f64ea71bd018b5a7660383566f2cbb7c5d']
+
+builddependencies = [('CMake', '3.18.4')]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('Pysam', '0.16.0.1'),
+    ('SAMtools', '1.11'),
+    ('samblaster', '0.1.26'),
+    ('Sambamba', '0.8.0'),
+    ('gawk', '5.1.0'),
+    ('bzip2', '1.0.8'),
+    ('cURL', '7.72.0'),
+    ('XZ', '5.2.5'),
+    ('zlib', '1.2.11'),
+]
+
+prebuildopts = "export ZLIB_PATH=$EBROOTZLIB/lib && "
+
+# prevent building of included HTSlib for lumpy_filter
+prebuildopts += "mkdir bin && ln -s $EBROOTSAMTOOLS/lib/libhts.a lib/htslib/libhts.a && "
+prebuildopts += "sed -i 's/-lz/-lz -llzma -lbz2/g' src/filter/Makefile && "
+prebuildopts += "make -C src/filter && cp src/filter/lumpy_filter bin/ && "
+
+buildopts = "lumpyexpress lumpy"
+
+files_to_copy = [(['bin/*'], 'bin'), 'data', 'LICENSE']
+
+sanity_check_paths = {
+    'files': ['bin/lumpy', 'bin/lumpy_filter', 'bin/lumpyexpress'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["lumpyexpress -h"]
+
+moduleclass = 'bio'

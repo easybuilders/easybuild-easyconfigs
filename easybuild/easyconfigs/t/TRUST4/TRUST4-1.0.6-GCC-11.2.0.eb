@@ -1,0 +1,68 @@
+easyblock = 'MakeCp'
+
+name = 'TRUST4'
+version = '1.0.6'
+
+homepage = 'https://github.com/liulab-dfci/TRUST4'
+description = """Tcr Receptor Utilities for Solid Tissue (TRUST) is a
+computational tool to analyze TCR and BCR sequences using unselected RNA
+sequencing data, profiled from solid tissues, including tumors. TRUST4 performs
+de novo assembly on V, J, C genes including the hypervariable
+complementarity-determining region 3 (CDR3) and reports consensus of BCR/TCR
+sequences. TRUST4 then realigns the contigs to IMGT reference gene sequences to
+report the corresponding information. TRUST4 supports both single-end and
+paired-end sequencing data with any read length."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+github_account = 'liulab-dfci'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['ebc742a6a1b36ad6b650df22c4f252415d42fd4a9a30e0ce5ab55df91ead46d6']
+
+# TRUST4 uses an old API of SAMtools and links agains libbam.a, that has been
+# removed in SAMtools 1.14 (https://github.com/liulab-dfci/TRUST4/issues/95).
+# For this reason, we use the SAMtools bundled by TRUST4.
+builddependencies = [
+    ('binutils', '2.37'),
+]
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Perl', '5.34.0'),
+]
+
+local_binaries = [
+    'run-trust4', 'trust4', 'bam-extractor', 'fastq-extractor', 'annotator',
+    'BuildDatabaseFa.pl', 'BuildImgtAnnot.pl', 'BuildImgtVquestAnnot.pl',
+    'FilterAnnotatedAssembly.pl', 'trust-airr.pl', 'trust-barcoderep.pl',
+    'trust-simplerep.pl', 'trust-smartseq.pl',
+]
+local_scripts = [
+    'AddSequenceToCDR3File.pl', 'barcoderep-filter.py', 'GetFullLengthAssembly.pl',
+    'trust-barcoderep-to-10X.pl', 'trust-cluster.py', 'trust-stats.py'
+]
+files_to_copy = [
+    (local_binaries, 'bin'),
+    (['scripts/%s' % x for x in local_scripts], 'bin'),
+]
+
+fix_perl_shebang_for = ['bin/*.pl']
+fix_python_shebang_for = ['bin/*.py']
+
+postinstallcmds = ["chmod a+x %(installdir)s/bin/*"]
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in local_binaries + local_scripts],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "run-trust4 2>&1 | grep 'TRUST4 v%(version)s'",
+    "BuildDatabaseFa.pl 2>&1 | grep 'usage: perl BuildDatabaseFa.pl'",
+    "trust-cluster.py 2>&1 | grep 'usage: a.py trust_cdr3.out'",
+    "cd %(builddir)s/%(name)s-%(version)s && "
+    "run-trust4 -b example/example.bam -f hg38_bcrtcr.fa --ref human_IMGT+C.fa && "
+    "test -f example/TRUST_example_report.tsv"
+]
+
+moduleclass = 'bio'
