@@ -51,7 +51,7 @@ from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_gra
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
-from easybuild.tools.filetools import change_dir, is_generic_easyblock, remove_file
+from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
 from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
@@ -98,7 +98,7 @@ def skip_if_not_pr_to_non_main_branch():
     return lambda func: func
 
 
-def get_eb_files_from_diff(diff_filter):
+def get_files_from_diff(diff_filter, ext, basename=True):
     """Return the files changed on HEAD relative to the current target branch"""
     target_branch = get_target_branch()
 
@@ -122,10 +122,18 @@ def get_eb_files_from_diff(diff_filter):
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
     out, _ = run_cmd(cmd, simple=False)
-    files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
+    if basename:
+        files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith(ext)]
+    else:
+        files = [f for f in out.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
     return files
+
+
+def get_eb_files_from_diff(diff_filter):
+    """Return the easyconfig files changed on HEAD relative to the current target branch"""
+    return get_files_from_diff(diff_filter, '.eb')
 
 
 class EasyConfigTest(TestCase):
@@ -171,7 +179,8 @@ class EasyConfigTest(TestCase):
         cls._ordered_specs = None
         cls._parsed_easyconfigs = []
         cls._parsed_all_easyconfigs = False
-        cls._changed_ecs = None  # ECs changed in a PR
+        cls._changed_ecs = None  # easyconfigs changed in a PR
+        cls._changed_patches = None  # patches changed in a PR
 
     @classmethod
     def tearDownClass(cls):
@@ -241,6 +250,20 @@ class EasyConfigTest(TestCase):
                                        " (and could not isolate it in easyconfigs archive either)" % ec_fn)
         EasyConfigTest._changed_ecs = changed_ecs
 
+    def _get_changed_patches(self):
+        """Gather all added or modified patches"""
+
+        # get list of changed/added patch files
+        changed_patches_filenames = get_files_from_diff(diff_filter='M', ext='.patch', basename=False)
+        added_patches_filenames = get_files_from_diff(diff_filter='A', ext='.patch', basename=False)
+
+        if changed_patches_filenames:
+            print("\nList of changed patch files in this PR:\n\t%s" % '\n\t'.join(changed_patches_filenames))
+        if added_patches_filenames:
+            print("\nList of added patch files in this PR:\n\t%s" % '\n\t'.join(added_patches_filenames))
+
+        EasyConfigTest._changed_patches = changed_patches_filenames + added_patches_filenames
+
     @property
     def parsed_easyconfigs(self):
         # parse all easyconfigs if they haven't been already
@@ -271,6 +294,12 @@ class EasyConfigTest(TestCase):
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs
+
+    @property
+    def changed_patches(self):
+        if EasyConfigTest._changed_patches is None:
+            self._get_changed_patches()
+        return EasyConfigTest._changed_patches
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -1110,6 +1139,19 @@ class EasyConfigTest(TestCase):
                     failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
         if failing_checks:
             self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_patch_descr(self):
+        """
+        Check whether all patch files touched in PR have a description on top.
+        """
+        no_descr_patches = []
+        for patch in self.changed_patches:
+            patch_txt = read_file(patch)
+            if patch_txt.startswith('--- '):
+                no_descr_patches.append(patch)
+
+        self.assertFalse(no_descr_patches, "No description found in patches: %s" % ', '.join(no_descr_patches))
 
 
 def template_easyconfig_test(self, spec):
