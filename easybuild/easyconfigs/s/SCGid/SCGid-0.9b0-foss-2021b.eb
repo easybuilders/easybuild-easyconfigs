@@ -1,0 +1,78 @@
+easyblock = 'PythonPackage'
+
+name = 'SCGid'
+version = '0.9b0'
+# No tagged commit for SCGid 0.9b, taking commit from commit history
+local_commit = 'be106e4cd888fd913a527ea821e510e0afb100be'
+
+homepage = 'https://github.com/amsesk/SCGid'
+description = 'A consensus approach to contig filtering and genome prediction from single-cell sequencing libraries'
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ["https://github.com/amsesk/SCGid/archive"]
+sources = ['%s.tar.gz' % local_commit]
+patches = ["SCGid-0.9-fixPrintToPython3.patch"]
+checksums = [
+    # be106e4cd888fd913a527ea821e510e0afb100be.tar.gz
+    '1f625e8f87b4d5e4ec9831ebe48763676679d6d6c41b05ef0bb59e6a7f839153',
+    'b912ace0a2fabe4cdf43e70ea2d3ff799894da9edb2a078198dde5d7b91daf67',  # SCGid-0.9-fixPrintToPython3.patch
+]
+
+local_clams_commit = "e326c34307803b9ea8ffc975ddd9bd05643af931"
+
+builddependencies = [('Python', '3.9.6')]
+
+dependencies = [
+    ('R', '4.1.2'),
+    ('BLAST+', '2.12.0'),
+    ('AUGUSTUS', '3.4.0'),
+    ('Java', '11', '', True),
+    ('Maven', '3.6.3', '', True),
+    ('plotly.py', '5.4.0'),
+    ('ETE', '3.1.2'),
+    ('PyYAML', '5.4.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_defaultclass = "Tarball"
+
+postinstallcmds = [
+    'export PATH=$PATH:$EBROOTAUGUSTUS',
+    'export PATH=$PATH:$EBROOTBLAST',
+    'echo $EBROOTR',
+    # Set paths to make init available
+    "PATH=%(installdir)s/bin:$PATH "
+    "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+    # Go through init step of installation and download required database
+    'scgid init <<<"%(installdir)s/esom-1.1/src\n'
+    '%(installdir)s/ClaMS-CLI-fork-e326c34307803b9ea8ffc975ddd9bd05643af931/ClaMS-CLI.jar\n'
+    '$EBROOTR/bin/Rscript\n'
+    'y\n'
+    'y\n'
+    'y"'
+]
+
+options = {'modulename': False}
+
+exts_list = [
+    ('ClaMS-CLI', '31012020', {
+        'install_type': 'merge',
+        'source_tmpl': 'e326c34307803b9ea8ffc975ddd9bd05643af931.tar.gz',
+        'source_urls': ['https://github.com/amsesk/ClaMS-CLI-fork/archive'],
+        'checksums': ['743397fc8308e363f127bd7e5165ac9d769c10305f6e33d9e408db8f343170db'],
+    }),
+    ('ESOM', '1.1', {
+        'install_type': 'merge',
+        'preconfigopts': "export ESOM_HOME=%(installdir)s && cd esom-%(version)s && maven jar install &&",
+        'source_tmpl': 'esom-%(version)s-src.tar.gz',
+        'source_urls': ['https://sourceforge.net/projects/databionic-esom/files/databionic-esom/%(version)s/'],
+        'checksums': ['48d8a3f04946850cbbc3beb9f92bcaa5a98fd301c511388adb4e329467070d38'],
+    }),
+]
+
+sanity_check_commands = ["scgid --help"]
+
+moduleclass = 'bio'
