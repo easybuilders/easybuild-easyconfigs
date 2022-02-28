@@ -1,0 +1,49 @@
+easyblock = 'MesonNinja'
+
+name = 'xtb-python'
+version = '20.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://xtb-python.readthedocs.io'
+description = """ Python API for the extended tight binding program xtb """
+
+toolchain = {'name': 'intel', 'version': '2021b'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['37d0f6239c3fa536caeb3638a2ffb4f4070cb3cc2ca314be4504905f96c4aaf1']
+
+github_account = 'grimme-lab'
+builddependencies = [
+    ('Meson', '0.58.2'),
+    ('Ninja', '1.10.2'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('xtb', '6.4.1'),
+    ('SciPy-bundle', '2021.10')
+]
+
+configopts = "--default-library=shared "
+configopts += "-Dla_backend=mkl "
+configopts += "--buildtype=release "
+
+# Tests can be performed after installation if ASE and QCSchema are
+# installed, i.e. pytest --pyargs xtb, some ASE and QCSchema tests
+# may fail but they can be ignored, see
+# https://github.com/grimme-lab/xtb-python/issues/71
+
+local_shared_lib_file = 'lib/_libxtb.cpython-%(pymajver)s%(pyminver)s-%(arch)s' + '-linux-gnu.%s' % SHLIB_EXT
+sanity_check_paths = {
+    'files': [local_shared_lib_file],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = [('python', '-c "import xtb.interface"')]
+
+postinstallcmds = ['cp -r %(builddir)s/%(namelower)s-%(version_major_minor)s %(installdir)s', 'cp %(installdir)s/' + local_shared_lib_file + ' %(installdir)s/%(namelower)s-%(version_major_minor)s/xtb/']
+
+modextrapaths = {'PYTHONPATH': '%(namelower)s-%(version_major_minor)s'}
+
+moduleclass = 'chem'
