@@ -16,10 +16,10 @@ builddependencies = [
     # git 2.x required, see also https://github.com/tensorflow/tensorflow/issues/29053
     ('git', '2.32.0', '-nodocs'),
     ('pybind11', '2.6.2'),
+    ('UnZip', '6.0'),
 ]
 dependencies = [
     ('CUDA', '11.3.1', '', True),
-    ('UCX-CUDA', '1.10.0', versionsuffix),
     ('cuDNN', '8.2.1.32', versionsuffix, True),
     ('NCCL', '2.10.3', versionsuffix),
     ('Python', '3.9.5'),
@@ -88,6 +88,7 @@ exts_list = [
     ('grpcio', '1.39.0', {
         'modulename': 'grpc',
         'checksums': ['57974361a459d6fe04c9ae0af1845974606612249f467bbd2062d963cb90f407'],
+        'preinstallopts': "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && ",
     }),
     # Required for tensorboard_plugin_profile
     ('gviz-api', '1.9.0', {
@@ -221,6 +222,8 @@ exts_list = [
             # Fails on non-AVX-512 systems: https://github.com/tensorflow/tensorflow/issues/46532
             '-//tensorflow/core/common_runtime:mkl_layout_pass_test',
             '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
+            # Fails on AMD EPYC systems: https://github.com/tensorflow/tensorflow/issues/52151
+            '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
         ],
         'testopts': "--test_timeout=3600 --test_size_filters=small",
         'testopts_gpu': "--test_timeout=3600 --test_size_filters=small " +
