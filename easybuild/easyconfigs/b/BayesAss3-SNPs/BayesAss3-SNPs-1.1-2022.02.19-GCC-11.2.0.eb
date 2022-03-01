@@ -1,0 +1,72 @@
+easyblock = 'Bundle'
+
+name = 'BayesAss3-SNPs'
+local_commit = '680f236'
+version = '1.1-2022.02.19'
+
+homepage = 'https://github.com/stevemussmann/BayesAss3-SNPs'
+description = """Modification of BayesAss 3.0.4 to allow handling of large SNP datasets generated via methods such as
+RADseq protocols."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Perl', '5.34.0'),
+    ('Boost', '1.77.0'),
+    ('GSL', '2.7'),
+]
+
+local_file_converters_commit = '759d788be614afb35467e8c3067405ba6902ee82'
+local_file_converters_version = '2021-09-14'
+
+components = [
+    ('BA3-SNPS-autotune', '2.1.2', {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://github.com/stevemussmann/BA3-SNPS-autotune/archive/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['c0d9f80c5f08aa37724f86a847fed551c63dcd8bd318709970e1808d540d900e'],
+        'start_dir': '%(name)s-%(version)s',
+    }),
+    ('file_converters', local_file_converters_version, {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://github.com/stevemussmann/file_converters/archive/'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_file_converters_commit, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['57224cdba82e8b995d734e731bb76626589beaa6875b6e8d3535fb41e9f0e640'],
+        'start_dir': 'file_converters-%s' % local_file_converters_commit,
+        'install_type': 'merge',
+    }),
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'source_urls': ['https://github.com/stevemussmann/BayesAss3-SNPs/archive/'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['c5c6a7b34fe5a4e534d2aed2d20b53cf014d1dc5f41281700701939259ce652c'],
+        'prebuildopts': "cd BayesAss3-SNPs-*/ && ",
+        'files_to_copy': [
+            (['BayesAss3-SNPs-*/BA3-SNPS', 'BayesAss3-SNPs-*/countLociImmanc.sh'], 'bin'),
+            (['BayesAss3-SNPs-*/example_files/*'], 'example_files'),
+        ],
+    }),
+]
+
+fix_perl_shebang_for = ['bin/*.pl']
+fix_python_shebang_for = ['bin/*.py']
+
+postinstallcmds = [
+    "chmod a+x %(installdir)s/bin/countLociImmanc.sh %(installdir)s/*.pl",
+    "cd %(installdir)s && for x in $(ls *.pl *.py); do cd bin && ln -s ../$x && cd -; done", 
+]
+
+sanity_check_paths = {
+    'files': ['bin/BA3-SNPS', 'bin/BA3-SNPS-autotune.py', 'bin/countLociImmanc.sh', 'bin/stacksStr2immanc.pl'],
+    'dirs': ['example_files'],
+}
+
+sanity_check_commands = [
+    "BA3-SNPS --help",
+    "BA3-SNPS-autotune.py --help",
+    "countLociImmanc.sh -h",
+    "stacksStr2immanc.pl -h | grep 'stacksStr2immanc.pl is a perl script'",
+]
+
+moduleclass = 'bio'
