@@ -1,0 +1,42 @@
+replace assertions by highlight on JIT tests to regular expression match
+workaround for issue: https://github.com/pytorch/pytorch/issues/72516
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- a/test/jit/test_builtins.py
++++ b/test/jit/test_builtins.py
+@@ -86,14 +86,14 @@
+ 
+         self.checkScript(fn, ([1, 2, 3],))
+ 
+-        with self.assertRaisesRegexWithHighlight(RuntimeError, "undefined value", "a"):
++        with self.assertRaisesRegex(RuntimeError, "undefined value a"):
+             @torch.jit.script
+             def fn(x):
+                 a = x ** 2
+                 del a
+                 return a
+ 
+-        with self.assertRaisesRegexWithHighlight(RuntimeError, "undefined value", "a"):
++        with self.assertRaisesRegex(RuntimeError, "undefined value a"):
+             @torch.jit.script
+             def fn(x):
+                 a = x ** 2
+@@ -101,7 +101,7 @@
+                     del a
+                 return a
+ 
+-        with self.assertRaisesRegexWithHighlight(RuntimeError, "undefined value", "b"):
++        with self.assertRaisesRegex(RuntimeError, "undefined value b"):
+             @torch.jit.script
+             def fn(x):
+                 a = x ** 2
+--- a/test/test_jit.py
++++ b/test/test_jit.py
+@@ -13161,7 +13161,7 @@ dedent """
+             if isinstance(t, tuple):
+                 a, b = t
+             return a + b
+-        with self.assertRaisesRegexWithHighlight(RuntimeError, "Provided tuple is not fully defined/refined", "t"):
++        with self.assertRaisesRegex(RuntimeError, "Provided tuple is not fully defined/refined"):
+             s = torch.jit.script(fn)
+ 
+     def test_augmented_assign(self):
