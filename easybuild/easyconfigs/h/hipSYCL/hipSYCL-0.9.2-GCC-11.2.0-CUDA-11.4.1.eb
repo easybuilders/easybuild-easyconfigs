@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'hipSYCL'
+version = '0.9.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/illuhad/hipSYCL'
+description = """hipSYCL is a modern SYCL implementation targeting CPUs and
+GPUs, with a focus on leveraging existing toolchains such as CUDA or HIP"""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = ["https://github.com/illuhad/hipSYCL/archive/refs/tags/"]
+sources = ["v%(version)s.tar.gz"]
+patches = ["hipSYCL-0.9.2-filter-cuda-stubs-rpath.patch"]
+checksums = [
+    # hipSYCL-0.9.2.tar.gz
+    '086cd259345627cd1205a2fbb96fb1f3d1c4f3a13f9520753a4f4df313445c6d',
+    # hipSYCL-0.9.2-filter-cuda-stubs-rpath.patch
+    '482fa016d1ba70ec456e70deb6b9e54259cd006f433be0ef8ef984908cd8f3b0']
+
+dependencies = [
+    ('Boost', '1.77.0'),
+    ('CUDA', '11.4.1', '', True),
+    ('Clang', '13.0.1', '-CUDA-%(cudaver)s'),
+    ('Python', '3.9.6'),
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+]
+
+configopts = '-DCMAKE_C_COMPILER="$EBROOTCLANG/bin/clang" '
+configopts += '-DCMAKE_CXX_COMPILER="$EBROOTCLANG/bin/clang++" '
+configopts += '-DLLVM_DIR=$EBROOTCLANG/lib/cmake/ '
+configopts += '-DWITH_CPU_BACKEND=ON '
+configopts += '-DWITH_CUDA_BACKEND=ON '
+configopts += '-DWITH_ROCM_BACKEND=OFF '
+
+sanity_check_paths = {
+    'files': ['bin/syclcc-clang', 'include/sycl/sycl.hpp',
+              'lib/hipSYCL/librt-backend-omp.%s' % SHLIB_EXT,
+              'lib/hipSYCL/librt-backend-cuda.%s' % SHLIB_EXT,
+              'lib/libhipSYCL_clang.%s' % SHLIB_EXT,
+              'lib/libhipSYCL-rt.%s' % SHLIB_EXT],
+    'dirs': ['include/CL', 'include/hipSYCL', 'include/SYCL', 'lib'],
+}
+sanity_check_commands = ['syclcc --help']
+
+moduleclass = 'compiler'
