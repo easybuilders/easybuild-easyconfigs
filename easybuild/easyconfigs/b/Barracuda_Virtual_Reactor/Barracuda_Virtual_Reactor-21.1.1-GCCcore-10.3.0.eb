@@ -1,0 +1,46 @@
+easyblock = 'CmdCp'
+
+name = 'Barracuda_Virtual_Reactor'
+version = '21.1.1'
+
+homepage = 'https://cpfd-software.com'
+description = "The world leader in fluidized bed reactor simulation software for CAE/CFD."
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+# Compiled software provided as tar.gz by software publisher as there were
+# issues using their installer on BlueBEAR
+source_urls = ['https://cpfd-software.com/wp-content/uploads/2022/02/']
+sources = ['%(namelower)s-%(version)s-Linux.tar.gz']
+checksums = ['20c30cc1eaccef0f58629a7bb3cf4bf0571e0b1d774e97064a3714170363dff0']
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('X11', '20210518'),
+]
+
+local_command_list = [
+    "rm -rf %(installdir)s &&",  # If installdir already contains files then the subsequent install cmd will fail
+    "./%(namelower)s-%(version)s-Linux.run",
+    "install",
+    "--accept-licenses",
+    "--confirm-command",
+    "--auto-answer installationErrorWithCancel=Ignore",
+    "--default-answer",
+    "--root %(installdir)s",
+]
+
+cmds_map = [('.*', " ".join(local_command_list))]
+
+skipsteps = ['install']  # the install step blows-away the directory created by the above command
+
+files_to_copy = []
+
+sanity_check_paths = {
+    'files': ['bin/barracuda'],
+    'dirs': ['bin', 'scripts'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+
+moduleclass = 'cae'
