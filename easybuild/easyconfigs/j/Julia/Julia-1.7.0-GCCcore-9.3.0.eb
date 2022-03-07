@@ -16,7 +16,12 @@ checksums = [
     'd5f9aa2467efac5807ccea287c0f29b54850dbd20a6e9302b4da7da9427a20f3',  # julia-1.7.0-openblas.patch
 ]
 
-prebuildopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+builddependencies = [('imkl', '2020.1.217')]
+
+# Use bfd linker so libcurl is compatible with binary packages
+prebuildopts = "sed -i 's@ftp.pcre.org/pub/pcre@github.com/PhilipHazel/pcre2/releases/download/pcre2-$(PCRE_VER)@' deps/pcre.mk && "
+prebuildopts += "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+prebuildopts += "LDFLAGS=\"$LDFLAGS -fuse-ld=bfd\" "
 
 # Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
 
@@ -24,6 +29,9 @@ buildopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_
 
 preinstallopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
 installopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+# so that the Pardiso Julia package can find MKL
+postinstallcmds = ["patchelf --set-rpath '$ORIGIN:$ORIGIN/..:'\"$MKLROOT/lib/intel64\" %(installdir)s/lib/julia/libjulia-internal.so.1.7"]
 
 skipsteps = ['configure']
 
