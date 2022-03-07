@@ -1,0 +1,66 @@
+# Contributors:
+# Fenglai Liu (fenglai@accre.vanderbilt.edu) - Vanderbilt University
+# Alex Domingo (alex.domingo.toro@vub.be) - Vrije Universiteit Brussel (VUB)
+#
+easyblock = 'CMakeMake'
+
+name = 'ITK'
+version = '5.1.2'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020a'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+github_account = 'InsightSoftwareConsortium'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    '651284ce6f68e8bd31db176a6b53f5679209a8ed5b6b5480c3591d66c6e10b60',  # v5.1.2.tar.gz
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('Bison', '3.5.3'),
+    ('Eigen', '3.3.7'),
+]
+
+dependencies = [
+    ('double-conversion', '3.1.5'),
+    ('expat', '2.2.9'),
+    ('HDF5', '1.10.6'),
+    ('libjpeg-turbo', '2.0.4'),
+    ('libpng', '1.6.37'),
+    ('LibTIFF', '4.1.0'),
+    ('VTK', '8.2.0', '-Python-3.8.2'),
+    ('zlib', '1.2.11'),
+]
+
+local_sys_deps = ['DOUBLECONVERSION', 'EIGEN', 'EXPAT', 'HDF5', 'JPEG', 'PNG', 'TIFF', 'ZLIB']
+local_sys_cmake = ['-DITK_USE_SYSTEM_%s=ON' % d for d in local_sys_deps]
+
+configopts = '-DBUILD_TESTING=OFF '
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON -DModule_SimpleITKFilters=ON '
+configopts += '-DITK_WRAP_PYTHON:BOOL=OFF '
+configopts += '-DITK_USE_CUFFTW:BOOL=ON '
+configopts += '-DITK_LEGACY_REMOVE:BOOL=OFF '  # needed by SimpleITK
+configopts += ' '.join(local_sys_cmake)
+
+build_shared_libs = True
+
+# See https://insightsoftwareconsortium.atlassian.net/browse/ITK-3538
+prebuildopts = "LC_ALL=C "
+
+local_lib_names = ['ITKCommon', 'ITKIOHDF5', 'ITKIOJPEG', 'ITKIOPNG', 'ITKIOTIFF',
+                   'ITKReview', 'ITKVTK', 'ITKVtkGlue', 'itkSimpleITKFilters']
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver'] +
+             ['lib/lib%s-%%(version_major)s.%%(version_minor)s.%s' % (i, SHLIB_EXT) for i in local_lib_names],
+    'dirs': ['include/ITK-%(version_major)s.%(version_minor)s', 'share'],
+}
+
+moduleclass = 'data'

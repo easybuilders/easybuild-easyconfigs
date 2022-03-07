@@ -1,0 +1,46 @@
+Fix hang in corner cases of alltoallv using point to point send/recv.
+Extracted from https://github.com/NVIDIA/nccl/commit/911d61f214d45c98df1ee8c0ac23c33fb94b63de
+
+Extracted by: Alexander Grund (TU Dresden)
+
+diff --git a/src/group.cc b/src/group.cc
+index 78a74b65c..43a93284f 100644
+--- a/src/group.cc
++++ b/src/group.cc
+@@ -233,7 +233,7 @@ ncclResult_t ncclGroupEnd() {
+         // schedule delta 0, +1, -1, +2, -2, ...
+         // also make sure we don't do 0 twice, nor +n/2 and -n/2 if n is even.
+         for (int d=0; d<=nRanks/4; d++) {
+-          int deltas[4] = { d, (nRanks-d)%nRanks, nRanks/2-d, nRanks-(nRanks/2-d) };
++          int deltas[4] = { d, (nRanks-d)%nRanks, nRanks/2-d, (nRanks-(nRanks/2-d))%nRanks };
+           int index = 0;
+           int delta = deltas[index];
+ sched_delta:
+@@ -258,6 +258,10 @@ ncclResult_t ncclGroupEnd() {
+               ssize_t sendbytes = totSendBytes-sendOffset;
+               if (recvbytes > recvChunkSize) { recvbytes = recvChunkSize; } else { recvRemaining = 0; }
+               if (sendbytes > sendChunkSize) { sendbytes = sendChunkSize; } else { sendRemaining = 0; }
++              // 0-bytes send/recv are considered as syncs. Make sure we only add syncs when requested
++              // (total size == 0), otherwise set size to -1 so that the kernel skips the operation.
++              if (sendbytes == 0 && totSendBytes != 0) sendbytes = -1;
++              if (recvbytes == 0 && totRecvBytes != 0) recvbytes = -1;
+               if (sendbytes >= 0 || recvbytes >= 0) {
+                 NCCLCHECKGOTO(scheduleSendRecv(comm, delta, channelId,
+                       recvbytes, recv ? ((char*)(recv->buff)) + recvOffset : NULL,
+diff --git a/src/misc/utils.cc b/src/misc/utils.cc
+index b231eb19a..79e61704d 100644
+--- a/src/misc/utils.cc
++++ b/src/misc/utils.cc
+@@ -67,10 +67,10 @@ ncclResult_t getHostName(char* hostname, int maxlen, const char delim) {
+ }
+ 
+ uint64_t getHash(const char* string, int n) {
+-  // Based on DJB2, result = result * 33 + char
++  // Based on DJB2a, result = result * 33 ^ char
+   uint64_t result = 5381;
+   for (int c = 0; c < n; c++) {
+-    result = ((result << 5) + result) + string[c];
++    result = ((result << 5) + result) ^ string[c];
+   }
+   return result;
+ }

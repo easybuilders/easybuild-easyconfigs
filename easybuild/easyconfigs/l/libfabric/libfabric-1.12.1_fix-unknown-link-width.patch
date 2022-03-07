@@ -1,0 +1,26 @@
+fix for "iunknown link width 0x10" warning
+extracted from https://github.com/ofiwg/libfabric/commit/794990cb2a4b2a5bc479240aff4e8573398bc773#diff-a406b74c02115a3845d75f2058ae8a132261b2fb7dff4345bb700f99a87e6dc9
+
+diff -ru libfabric-1.12.1.orig/prov/psm3/psm3/psm_verbs_ep.c libfabric-1.12.1/prov/psm3/psm3/psm_verbs_ep.c
+--- libfabric-1.12.1.orig/prov/psm3/psm3/psm_verbs_ep.c	2021-04-01 23:01:25.000000000 +0200
++++ libfabric-1.12.1/prov/psm3/psm3/psm_verbs_ep.c	2021-11-19 19:07:44.000000000 +0100
+@@ -2057,6 +2057,19 @@
+ 				_HFI_ERROR( "unknown link speed 0x%x\n", speed);
+ 				return PSM_IBV_RATE_100_GBPS;
+ 		}
++	case 16: /* 2x */
++		switch (speed) {
++		case 1: return PSM_IBV_RATE_5_GBPS;
++		case 2: return PSM_IBV_RATE_10_GBPS;
++		case 4: /* fall through */
++		case 8: return PSM_IBV_RATE_20_GBPS;
++		case 16: return PSM_IBV_RATE_28_GBPS;
++		case 32: return PSM_IBV_RATE_50_GBPS;
++		case 64: return PSM_IBV_RATE_100_GBPS;
++		default:
++				_HFI_ERROR( "unknown link speed 0x%x\n", speed);
++				return PSM_IBV_RATE_100_GBPS;
++		}
+ 	default:
+ 		_HFI_ERROR( "unknown link width 0x%x\n", width);
+ 		return PSM_IBV_RATE_100_GBPS;

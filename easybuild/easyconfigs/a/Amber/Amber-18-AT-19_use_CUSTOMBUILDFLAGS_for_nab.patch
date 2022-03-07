@@ -1,0 +1,122 @@
+commit 3b0d6cbeb82e43cf1f3a2079bd57239d1ff8aa07
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Mon Jul 13 15:12:53 2020 +0200
+
+    Make nab always use CUSTOMBUILDFLAGS so openmp flags get added when needed.
+    
+    Åke Sandgren, 20171012
+
+diff --git a/AmberTools/src/amberlite/Makefile b/AmberTools/src/amberlite/Makefile
+index 75f607d..bc4451e 100644
+--- a/AmberTools/src/amberlite/Makefile
++++ b/AmberTools/src/amberlite/Makefile
+@@ -16,13 +16,13 @@ $(BINDIR)/nab$(SFX): ../nab/nab.c
+ 	cd ../nab && $(MAKE) $@
+ 
+ $(BINDIR)/ffgbsa$(SFX): ffgbsa.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/ffgbsa$(SFX) ffgbsa.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/ffgbsa$(SFX) ffgbsa.nab $(CUSTOMBUILDFLAGS)
+ 
+ $(BINDIR)/minab$(SFX): minab.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/minab$(SFX) minab.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/minab$(SFX) minab.nab $(CUSTOMBUILDFLAGS)
+ 
+ $(BINDIR)/mdnab$(SFX): mdnab.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mdnab$(SFX) mdnab.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mdnab$(SFX) mdnab.nab $(CUSTOMBUILDFLAGS)
+ 
+ clean:
+ 	/bin/rm -f *.c
+diff --git a/AmberTools/src/etc/Makefile b/AmberTools/src/etc/Makefile
+index 2777d90..1a8ce83 100644
+--- a/AmberTools/src/etc/Makefile
++++ b/AmberTools/src/etc/Makefile
+@@ -76,7 +76,7 @@ elsize$(SFX): elsize.o
+ 
+ molsurf$(SFX):  molsurf.nab
+ 	@echo "[ETC]  NAB $@"
+-	$(VB)$(BINDIR)/nab$(SFX) -o molsurf$(SFX) molsurf.nab
++	$(VB)$(BINDIR)/nab$(SFX) -o molsurf$(SFX) molsurf.nab $(CUSTOMBUILDFLAGS)
+ 
+ resp$(SFX):	lapack.o resp.o
+ 	@echo "[ETC]  FC $@"
+@@ -85,7 +85,7 @@ resp$(SFX):	lapack.o resp.o
+ 
+ tinker_to_amber$(SFX): tinker_to_amber.o cspline.o
+ 	@echo "[ETC]  FC $@"
+-	$(VB)$(FC) -o tinker_to_amber$(SFX) tinker_to_amber.o cspline.o
++	$(VB)$(FC) -o tinker_to_amber$(SFX) tinker_to_amber.o cspline.o $(CUSTOMBUILDFLAGS)
+ 
+ new_crd_to_dyn$(SFX): new_crd_to_dyn.o nxtsec
+ 	@echo "[ETC]  FC $@"
+diff --git a/AmberTools/src/mm_pbsa/Makefile b/AmberTools/src/mm_pbsa/Makefile
+index 6da491a..e25bd20 100644
+--- a/AmberTools/src/mm_pbsa/Makefile
++++ b/AmberTools/src/mm_pbsa/Makefile
+@@ -21,7 +21,7 @@ $(BINDIR)/make_crd_hg$(SFX): make_crd_hg.o $(LIBOBJ)
+ 
+ #Note dependency on nab from AMBERTools here.
+ $(BINDIR)/mm_pbsa_nabnmode$(SFX): mm_pbsa_nabnmode.nab
+-	$(BINDIR)/nab$(SFX) $(NABFLAGS) -o $(BINDIR)/mm_pbsa_nabnmode$(SFX) mm_pbsa_nabnmode.nab
++	$(BINDIR)/nab$(SFX) $(NABFLAGS) -o $(BINDIR)/mm_pbsa_nabnmode$(SFX) mm_pbsa_nabnmode.nab $(CUSTOMBUILDFLAGS)
+ 
+ ../lib/amopen.o: ../lib/amopen.F
+ 	cd ../lib; $(MAKE) amopen.o
+diff --git a/AmberTools/src/mmpbsa_py/Makefile b/AmberTools/src/mmpbsa_py/Makefile
+index bf479ee..8027f9e 100644
+--- a/AmberTools/src/mmpbsa_py/Makefile
++++ b/AmberTools/src/mmpbsa_py/Makefile
+@@ -9,10 +9,10 @@ install: $(BINDIR)/mmpbsa_py_nabnmode$(SFX) $(BINDIR)/mmpbsa_py_energy$(SFX)
+ 	$(PYTHON) setup.py install -f $(PYTHON_INSTALL) --install-scripts=$(BINDIR)
+ 
+ $(BINDIR)/mmpbsa_py_nabnmode$(SFX): mmpbsa_entropy.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mmpbsa_py_nabnmode$(SFX) mmpbsa_entropy.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mmpbsa_py_nabnmode$(SFX) mmpbsa_entropy.nab $(CUSTOMBUILDFLAGS)
+ 
+ $(BINDIR)/mmpbsa_py_energy$(SFX): mmpbsa_energy.nab
+-	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mmpbsa_py_energy$(SFX) mmpbsa_energy.nab
++	$(BINDIR)/nab$(SFX) -o $(BINDIR)/mmpbsa_py_energy$(SFX) mmpbsa_energy.nab $(CUSTOMBUILDFLAGS)
+ 
+ serial: install
+ 
+diff --git a/AmberTools/src/nss/Makefile b/AmberTools/src/nss/Makefile
+index 916ed3c..d0c7645 100644
+--- a/AmberTools/src/nss/Makefile
++++ b/AmberTools/src/nss/Makefile
+@@ -54,28 +54,28 @@ libsym:	$(SYMOBJS)
+ 	-ranlib $(LIBDIR)/libnab.a
+ 
+ matextract$(SFX): matextract.o
+-	$(NAB) -o matextract$(SFX) matextract.o
++	$(NAB) -o matextract$(SFX) matextract.o $(CUSTOMBUILDFLAGS)
+ 
+ matgen$(SFX):	matgen.o
+-	$(NAB) -o matgen$(SFX) matgen.o
++	$(NAB) -o matgen$(SFX) matgen.o $(CUSTOMBUILDFLAGS)
+ 
+ matmerge$(SFX):	matmerge.o
+-	$(NAB) -o matmerge$(SFX) matmerge.o
++	$(NAB) -o matmerge$(SFX) matmerge.o $(CUSTOMBUILDFLAGS)
+ 
+ matmul$(SFX):	matmul.o
+-	$(NAB) -o matmul$(SFX) matmul.o
++	$(NAB) -o matmul$(SFX) matmul.o $(CUSTOMBUILDFLAGS)
+ 
+ transform$(SFX):	transform.o
+-	$(NAB) -o transform$(SFX) transform.o
++	$(NAB) -o transform$(SFX) transform.o $(CUSTOMBUILDFLAGS)
+ 
+ tss_init$(SFX):	tss_init.o
+-	$(NAB) -o tss_init$(SFX) tss_init.o
++	$(NAB) -o tss_init$(SFX) tss_init.o $(CUSTOMBUILDFLAGS)
+ 
+ tss_main$(SFX):	tss_main.o
+-	$(NAB) -o tss_main$(SFX) tss_main.o
++	$(NAB) -o tss_main$(SFX) tss_main.o $(CUSTOMBUILDFLAGS)
+ 
+ tss_next$(SFX):	tss_next.o
+-	$(NAB) -o tss_next$(SFX) tss_next.o
++	$(NAB) -o tss_next$(SFX) tss_next.o $(CUSTOMBUILDFLAGS)
+ 
+ clean:
+ 	/bin/rm -f	\

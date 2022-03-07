@@ -1,0 +1,53 @@
+easyblock = 'PythonBundle'
+
+name = 'netcdf4-python'
+version = '1.5.3'
+versionsuffix = "-Python-%(pyver)s"
+
+homepage = 'https://unidata.github.io/netcdf4-python/'
+description = """Python/numpy interface to netCDF."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+dependencies = [
+    ('Python', '2.7.16'),
+    ('SciPy-bundle', '2019.10', versionsuffix),  # depends on numpy
+    ('netCDF', '4.7.1'),
+    ('cURL', '7.66.0'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('cftime', '1.1.1.2', {
+        'checksums': ['35711b5ec3928b9e724817bfa1b7325da205788ee04eae9166cbcd96ea7976a6'],
+    }),
+    (name, version, {
+        'source_urls': ['https://pypi.python.org/packages/source/n/netCDF4'],
+        'source_tmpl': 'netCDF4-%(version)s.tar.gz',
+        'patches': ['netcdf4-python-1.1.8-avoid-diskless-test.patch'],
+        'checksums': [
+            '2a3ca855848f4bbf07fac366da77a681fcead18c0a8813d91d46302f562dc3be',  # netCDF4-1.5.3.tar.gz
+            # netcdf4-python-1.1.8-avoid-diskless-test.patch
+            'a8b262fa201d55f59015e1bc14466c1d113f807543bc1e05a22481ab0d216d72',
+        ],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "nc4tonc3 --help",
+    "nc3tonc4 --help",
+    "ncinfo --help",
+]
+
+moduleclass = 'data'

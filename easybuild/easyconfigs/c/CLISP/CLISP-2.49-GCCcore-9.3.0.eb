@@ -1,0 +1,56 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - https://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'CLISP'
+version = '2.49'
+
+homepage = 'https://clisp.sourceforge.io/'
+
+description = """
+ Common Lisp is a high-level, general-purpose, object-oriented, dynamic,
+ functional programming language.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = [GNU_SOURCE + '/release/%(version)s']
+sources = [SOURCELOWER_TAR_BZ2]
+
+patches = ['CLISP-%(version)s_fix-readline.patch']
+
+checksums = [
+    '8132ff353afaa70e6b19367a25ae3d5a43627279c25647c220641fed00f8e890',  # clisp-2.49.tar.bz2
+    '903ca7367721e5bfe216fd8151659c4d127739311fac61f812e0031faec100ea',  # CLISP-2.49_fix-readline.patch
+]
+
+builddependencies = [
+    ('binutils', '2.34'),
+]
+
+dependencies = [
+    ('DB', '18.1.32'),
+    ('libffcall', '2.2'),
+    ('libreadline', '8.0'),
+    ('libsigsegv', '2.12'),
+    ('PCRE', '8.44'),
+    ('zlib', '1.2.11'),
+]
+
+configopts = 'build'
+
+# disable "streams" test due to problems with https://
+# see https://sourceforge.net/p/clisp/mailman/message/36224219/
+prebuildopts = "sed -e 's/\"streams\"/\"streamslong\"/' -i.eb tests/tests.lisp && cd build && "
+buildopts = 'all check'
+
+parallel = 1
+
+preinstallopts = 'cd build && '
+
+sanity_check_paths = {
+    'files': ['bin/clisp', 'lib/%(namelower)s-%(version)s/base/lisp.a'],
+    'dirs': ['share/aclocal', 'share/doc'],
+}
+
+moduleclass = 'lang'

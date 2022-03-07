@@ -1,0 +1,62 @@
+easyblock = 'SCons'
+
+name = 'SeisSol'
+local_commit_id = 'fb97bef'
+version = '201703'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.seissol.org'
+description = """SeisSol is a software package for simulating wave propagation and dynamic rupture based on
+ the arbitrary high-order accurate derivative discontinuous Galerkin method (ADER-DG)."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+sources = [{
+    'git_config': {
+        'url': 'https://github.com/SeisSol',
+        'repo_name': 'SeisSol',
+        'commit': local_commit_id,
+        'recursive': True,
+    },
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = [None]
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('SCons', '3.0.1', versionsuffix),
+]
+dependencies = [
+    ('Python', '2.7.15'),
+    ('lxml', '4.2.5', versionsuffix),
+    ('HDF5', '1.10.2'),
+    ('netCDF', '4.6.1'),
+    ('libxsmm', '1.10'),
+    ('ParMETIS', '4.0.3'),
+    ('GLM', '0.9.8.3'),
+]
+
+skipsteps = ['install']
+
+# avoid passing PREFIX=<installdir> during build step
+prefix_arg = None
+
+buildopts = "compiler=gcc compileMode=release arch=dhsw "  # dhsw means: double precision + haswell architecture
+buildopts += "order=6 unitTests=fast "
+buildopts += "netcdf=yes netcdfDir=$EBROOTNETCDF hdf5=yes hdf5Dir=$EBROOTHDF5 "
+# only supported for recent commits
+# parallelization=hybrid metis=yes metisDir=$EBROOTPARMETIS "
+
+# actual installation step: copy SeisSol binary to install directory
+# take into account that the installation directory may already exist (and could be read-only)
+buildopts += " && if [ -d %(installdir)s ]; then chmod -R u+w %(installdir)s && rm -rf %(installdir)s; fi && "
+buildopts += "mkdir -p %(installdir)s/bin && cp -a build/SeisSol* %(installdir)s/bin/SeisSol"
+
+sanity_check_paths = {
+    'files': ['bin/SeisSol'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['SeisSol --help |grep "Show this help message"']
+
+moduleclass = 'geo'

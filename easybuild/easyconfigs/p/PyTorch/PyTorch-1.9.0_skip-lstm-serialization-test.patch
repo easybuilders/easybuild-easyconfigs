@@ -1,0 +1,25 @@
+This test fails due to use of AVX512 instructions by FBGEMM (on Skylake and up)
+See https://github.com/pytorch/pytorch/issues/59098
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/quantization/test_backward_compatibility.py b/test/quantization/test_backward_compatibility.py
+index f4e8518de5..4a21337d9f 100644
+--- a/test/quantization/test_backward_compatibility.py
++++ b/test/quantization/test_backward_compatibility.py
+@@ -2,6 +2,7 @@
+ 
+ import sys
+ import os
++import unittest
+ 
+ # torch
+ import torch
+@@ -216,6 +217,7 @@ class TestSerialization(TestCase):
+             # TODO: graph mode quantized conv3d module
+ 
++    @unittest.skip("Test fails on AVX512")
+     @override_qengines
+     def test_lstm(self):
+         class LSTMModule(torch.nn.Module):
+             def __init__(self):

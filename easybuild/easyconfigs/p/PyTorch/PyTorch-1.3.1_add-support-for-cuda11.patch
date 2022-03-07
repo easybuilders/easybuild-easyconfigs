@@ -1,0 +1,273 @@
+Add support for CUDA 11 and CCC 8.0 using various changes from upstream (PyTorch 1.6+)
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/utils/cpp_extension.py b/torch/utils/cpp_extension.py
+index 98ad0f4f7d..99b5a706ee 100644
+--- a/torch/utils/cpp_extension.py
++++ b/torch/utils/cpp_extension.py
+@@ -963,7 +963,7 @@ def _get_cuda_arch_flags(cflags=None):
+     ])
+ 
+     supported_arches = ['3.5', '3.7', '5.0', '5.2', '5.3', '6.0', '6.1', '6.2',
+-                        '7.0', '7.2', '7.5']
++                        '7.0', '7.2', '7.5', '8.0']
+     valid_arch_strings = supported_arches + [s + "+PTX" for s in supported_arches]
+ 
+     # The default is sm_30 for CUDA 9.x and 10.x
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 909d6b914a..f1e1e2e37e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -502,6 +502,8 @@ if(NOT APPLE AND UNIX)
+   list(APPEND Caffe2_DEPENDENCY_LIBS dl)
+ endif()
+ 
++add_definitions(-DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT -DCUB_IGNORE_DEPRECATED_CPP_DIALECT)
++
+ # Prefix path to Caffe2 headers.
+ # If a directory containing installed Caffe2 headers was inadvertently
+ # added to the list of include directories, prefixing
+diff --git a/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cu b/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cu
+index e13d383221..2be3fd2b73 100644
+--- a/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cu
++++ b/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cu
+@@ -2,14 +2,29 @@
+ #include <ATen/cuda/CUDAContext.h>
+ #include <c10/util/Exception.h>
+ #include <ATen/native/sparse/cuda/SparseCUDABlas.cuh>
++#include <c10/cuda/CUDACachingAllocator.h>
+ 
+ #include <TH/THGeneral.h>
+ 
+ #include <cusparse.h>
+ 
+-namespace at { namespace native { namespace sparse { namespace cuda {
++// LIMITATION (cusparseSpMM):
++// The generic APIs are available on all platforms on CUDA 11.0
++// For CUDA 10.1+ it is available for all platforms except Windows.
++// Using these APIs in any other systems will result in compile-time or run-time failures.
++// Their support will be extended in the next releases.
++
++#if defined(__CUDACC__) && (CUSPARSE_VERSION >= 11000 || (!defined(_MSC_VER) && CUSPARSE_VERSION >= 10301))
++#define IS_SPMM_AVAILABLE() 1
++#else
++#define IS_SPMM_AVAILABLE() 0
++#endif
++
++#if IS_SPMM_AVAILABLE()
++#include <library_types.h>
++#endif
+ 
+-#if (!((CUSPARSE_VER_MAJOR >= 10) && (CUSPARSE_VER_MINOR >= 2)))
++#if !defined(CUSPARSE_VERSION) || (CUSPARSE_VERSION < 10100)
+ std::string cusparseGetErrorString(cusparseStatus_t status) {
+   switch(status)
+   {
+@@ -66,7 +81,9 @@ inline cusparseHandle_t setCUDASparseStream() {
+   return handle;
+ }
+ 
+-void Xcoo2csr(const int *coorowind, int64_t nnz, int64_t m, int *csrrowptr) {
++namespace at { namespace native { namespace sparse { namespace cuda {
++
++  void Xcoo2csr(const int *coorowind, int64_t nnz, int64_t m, int *csrrowptr) {
+   TORCH_CHECK((m <= INT_MAX) && (nnz <= INT_MAX),
+     "cusparseXcoo2csr only supports m, nnz with the bound [val] <= ",
+     INT_MAX);
+@@ -106,6 +123,116 @@ void adjustLd(char transb, int64_t m, int64_t n, int64_t k, int64_t *ldb, int64_
+   }
+ }
+ 
++#if IS_SPMM_AVAILABLE()
++
++template<typename T>
++void csrmm2(
++  char transa, char transb,
++  int64_t m, int64_t n, int64_t k, int64_t nnz,
++  T alpha, T *csrvala, int *csrrowptra, int *csrcolinda,
++  T *b, int64_t ldb, T beta, T *c, int64_t ldc)
++{
++  static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "csrmm2 only supports float and double value types");
++  constexpr auto cusparse_value_type = std::is_same<float, T>::value ? CUDA_R_32F : CUDA_R_64F;
++
++  if (csrvala == nullptr || b == nullptr || c == nullptr) return;
++
++  cusparseOperation_t opa = convertTransToCusparseOperation(transa);
++  cusparseOperation_t opb = convertTransToCusparseOperation(transb);
++
++  // cusparseSpMM actually supports int64_t.
++  // In order to support int64 here, index pointers csrrowptra, csrcolinda have to be passed as int64_t.
++  TORCH_CHECK((m <= INT_MAX) && (n <= INT_MAX) && (k <= INT_MAX) && (nnz <= INT_MAX) && (ldb <= INT_MAX) && (ldc <= INT_MAX),
++    "At the moment, cusparseSpMM only supports m, n, k, nnz, ldb, ldc with the bound [val] <= ", INT_MAX, ".",
++    "If you need this, please file an issue on GitHub."
++  );
++
++  int64_t ma = m, ka = k;
++  if (transa != 'n') std::swap(ma, ka);
++
++  cusparseSpMatDescr_t descA;
++  CUSPARSE_CHECK(cusparseCreateCsr(
++    &descA,                     /* output */
++    ma, ka, nnz,                /* rows, cols, number of non zero elements */
++    csrrowptra,                 /* row offsets of the sparse matrix, size = rows +1 */
++    csrcolinda,                 /* column indices of the sparse matrix, size = nnz */
++    csrvala,                    /* values of the sparse matrix, size = nnz */
++    CUSPARSE_INDEX_32I,         /* data type of row offsets index */
++    CUSPARSE_INDEX_32I,         /* data type of col indices */
++    CUSPARSE_INDEX_BASE_ZERO,   /* base index of row offset and col indes */
++    cusparse_value_type         /* data type of values */
++  ));
++
++  int64_t kb = k, nb = n;
++  if (transb != 'n') std::swap(kb, nb);
++
++  cusparseDnMatDescr_t descB;
++  CUSPARSE_CHECK(cusparseCreateDnMat(
++    &descB,               /* output */
++    kb, nb, ldb,          /* rows, cols, leading dimension */
++    b,                    /* values */
++    cusparse_value_type,  /* data type of values */
++    CUSPARSE_ORDER_COL    /* memory layout, ONLY column-major is supported now */
++  ));
++
++  cusparseDnMatDescr_t descC;
++  CUSPARSE_CHECK(cusparseCreateDnMat(
++    &descC,               /* output */
++    m, n, ldc,            /* rows, cols, leading dimension */
++    c,                    /* values */ 
++    cusparse_value_type,  /* data type of values */ 
++    CUSPARSE_ORDER_COL    /* memory layout, ONLY column-major is supported now */
++  ));
++
++
++  auto handle = at::cuda::getCurrentCUDASparseHandle();
++
++  // cusparseSpMM_bufferSize returns the bufferSize that can be used by cusparseSpMM
++  size_t bufferSize;
++  CUSPARSE_CHECK(cusparseSpMM_bufferSize(
++    handle, opa, opb,
++    &alpha,
++    descA, descB,
++    &beta,
++    descC,
++    cusparse_value_type,  /* data type in which the computation is executed */
++    CUSPARSE_CSRMM_ALG1,  /* default computing algorithm for CSR sparse matrix format */
++    &bufferSize           /* output */
++  ));
++
++  auto& allocator = *c10::cuda::CUDACachingAllocator::get();
++  auto dataPtr = allocator.allocate(bufferSize);
++
++  CUSPARSE_CHECK(cusparseSpMM(
++    handle, opa, opb,
++    &alpha,
++    descA, descB,
++    &beta,
++    descC,
++    cusparse_value_type,  /* data type in which the computation is executed */
++    CUSPARSE_CSRMM_ALG1,  /* default computing algorithm for CSR sparse matrix format */
++    dataPtr.get()         /* external buffer */
++  ));
++
++  CUSPARSE_CHECK(cusparseDestroySpMat(descA));
++  CUSPARSE_CHECK(cusparseDestroyDnMat(descB));
++  CUSPARSE_CHECK(cusparseDestroyDnMat(descC));
++
++  // TODO: Proper fix is to create real descriptor classes
++}
++template void csrmm2<float>(
++  char transa, char transb,
++  int64_t m, int64_t n, int64_t k, int64_t nnz,
++  float alpha, float *csrvala, int *csrrowptra, int *csrcolinda,
++  float *b, int64_t ldb, float beta, float *c, int64_t ldc);
++template void csrmm2<double>(
++  char transa, char transb,
++  int64_t m, int64_t n, int64_t k, int64_t nnz,
++  double alpha, double *csrvala, int *csrrowptra, int *csrcolinda,
++  double *b, int64_t ldb, double beta, double *c, int64_t ldc);
++
++#else
++
+ /* Level 3 */
+ void Scsrmm2(char transa, char transb, int64_t m, int64_t n, int64_t k, int64_t nnz, float alpha, float *csrvala, int *csrrowptra, int *csrcolinda, float *b, int64_t ldb, float beta, float *c, int64_t ldc)
+ {
+@@ -153,6 +280,37 @@ void Dcsrmm2(char transa, char transb, int64_t m, int64_t n, int64_t k, int64_t
+   // TODO: Proper fix is to create real descriptor classes
+ }
+ 
++// T can only be float or double
++template<typename T>
++void csrmm2(
++  char transa, char transb,
++  int64_t m, int64_t n, int64_t k, int64_t nnz,
++  T alpha, T *csrvala, int *csrrowptra, int *csrcolinda,
++  T *b, int64_t ldb, T beta, T *c, int64_t ldc)
++{
++  TORCH_INTERNAL_ASSERT(false, "cusparse csr MM only supports data type of float and double.");
++}
++
++template<> void csrmm2<float>(
++  char transa, char transb,
++  int64_t m, int64_t n, int64_t k, int64_t nnz,
++  float alpha, float *csrvala, int *csrrowptra, int *csrcolinda,
++  float *b, int64_t ldb, float beta, float *c, int64_t ldc)
++{
++  Scsrmm2(transa, transb, m, n, k, nnz, alpha, csrvala, csrrowptra, csrcolinda, b, ldb, beta, c, ldc);
++}
++
++template<> void csrmm2<double>(
++  char transa, char transb,
++  int64_t m, int64_t n, int64_t k, int64_t nnz,
++  double alpha, double *csrvala, int *csrrowptra, int *csrcolinda,
++  double *b, int64_t ldb, double beta, double *c, int64_t ldc)
++{
++  Dcsrmm2(transa, transb, m, n, k, nnz, alpha, csrvala, csrrowptra, csrcolinda, b, ldb, beta, c, ldc);
++}
++
++#endif
++
+ /* format conversion */
+ void CreateIdentityPermutation(int64_t nnz, int *P) {
+   TORCH_CHECK((nnz <= INT_MAX),
+diff --git a/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cuh b/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cuh
+index ed800fcb93..1979f3af4c 100644
+--- a/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cuh
++++ b/aten/src/ATen/native/sparse/cuda/SparseCUDABlas.cuh
+@@ -7,12 +7,8 @@ namespace at { namespace native { namespace sparse { namespace cuda {
+ AT_CUDA_API void Xcoo2csr(const int *coorowind, int64_t nnz, int64_t m, int *csrrowptr);
+ 
+ /* Level 3 */
+-AT_CUDA_API void Scsrmm2(char transa, char transb, int64_t m, int64_t n, int64_t k, int64_t nnz, float alpha, float *csrvala, int *csrrowptra, int *csrcolinda, float *b, int64_t ldb, float beta, float *c, int64_t ldc);
+-AT_CUDA_API void Dcsrmm2(char transa, char transb, int64_t m, int64_t n, int64_t k, int64_t nnz, double alpha, double *csrvala, int *csrrowptra, int *csrcolinda, double *b, int64_t ldb, double beta, double *c, int64_t ldc);
+-
+-// overloaded version
+-inline void csrmm2(char transa, char transb, int64_t m, int64_t n, int64_t k, int64_t nnz, float alpha, float *csrvala, int *csrrowptra, int *csrcolinda, float *b, int64_t ldb, float beta, float *c, int64_t ldc) { Scsrmm2(transa, transb, m, n, k, nnz, alpha, csrvala, csrrowptra, csrcolinda, b, ldb, beta, c, ldc); }
+-inline void csrmm2(char transa, char transb, int64_t m, int64_t n, int64_t k, int64_t nnz, double alpha, double *csrvala, int *csrrowptra, int *csrcolinda, double *b, int64_t ldb, double beta, double *c, int64_t ldc) { Dcsrmm2(transa, transb, m, n, k, nnz, alpha, csrvala, csrrowptra, csrcolinda, b, ldb, beta, c, ldc); }
++template<typename T>
++AT_CUDA_API void csrmm2(char transa, char transb, int64_t m, int64_t n, int64_t k, int64_t nnz, T alpha, T *csrvala, int *csrrowptra, int *csrcolinda, T *b, int64_t ldb, T beta, T *c, int64_t ldc);
+ 
+ /* format conversion */
+ AT_CUDA_API void CreateIdentityPermutation(int64_t nnz, int *P);
+diff --git a/caffe2/utils/GpuDefs.cuh b/caffe2/utils/GpuDefs.cuh
+index 73c8cfdf26..d24cc6f58c 100644
+--- a/caffe2/utils/GpuDefs.cuh
++++ b/caffe2/utils/GpuDefs.cuh
+@@ -7,16 +7,9 @@ namespace caffe2 {
+ 
+ // Static definition of GPU warp size for unrolling and code generation
+ 
+-#ifdef __CUDA_ARCH__
+-#if __CUDA_ARCH__ <= 750
+-constexpr int kWarpSize = 32;
+-#else
+-#error Unknown __CUDA_ARCH__; please define parameters for compute capability
+-#endif // __CUDA_ARCH__ types
+-#elif defined(__HIP_PLATFORM_HCC__)
++#if defined(__HIP_PLATFORM_HCC__)
+ constexpr int kWarpSize = warpSize;   // = 64 (Defined in hip_runtime.h)
+ #else
+-// dummy value for host compiler
+ constexpr int kWarpSize = 32;
+ #endif // __CUDA_ARCH__
+ 
