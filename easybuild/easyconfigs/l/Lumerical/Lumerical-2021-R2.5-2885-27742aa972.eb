@@ -1,0 +1,45 @@
+name = 'Lumerical'
+
+version = '2021-R2.5-2885-27742aa972'
+
+homepage = 'http://www.lumerical.com/'
+description = """The Lumerical Software Suite consists of a numner of tools to simulate 
+photonic components, circuits and systems, such as, FDTD 3D Electromagnetic Simulator, 
+MODE Waveguide Simulator, DGTD 3D Electromagnetic Simulator, FEEM Waveguide Simulator, 
+and CML Photonic Compact Model Library.
+"""
+
+toolchain = SYSTEM
+
+sources = [SOURCE_TAR_GZ] # Lumerical-2021-R2.5-2885-27742aa972.tar.gz
+#skipsteps = ['install']
+patches = ['%(name)s-2021-r2.5-fix-pbs-template.patch']
+checksums = [
+    '5a86721052d217a0765132bacfcec95a70fe587be7fd59105150274e2a0659ab',  # Lumerical-2021-R2.5-2885-27742aa972.tar.gz
+    '884accf5cada43e5085b16b22cda96e9fb7ad79abfb40e9bb0a186270080a007',  # Lumerical-2021-r2.5-fix-pbs-template.patch
+]
+
+keepsymlinks = True
+
+postinstallcmds = [
+   #'cp -r --preserve=links  %(builddir)s/%(name)s-%(version)s/opt/lumerical/v202/* %(installdir)s/',
+   '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_origin ',
+]
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__LUMERICL_LICENSE_FILE", "lumerical")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for Lumerical. If you have access to one, you can create the file $HOME/.licenses/lumerical.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an Lumerical license, please see https://docs.computecanada.ca/wiki/Lumerical
+
+Nous n'avons pas trouve de licence utilisable pour Lumerical. Si vous avez acces a une licence de Lumerical, vous pouvez creer le fichier $HOME/.licenses/lumerical.lic avec l'information de la licence. Si vous pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour Lumerical, veuillez consulter la page https://docs.computecanada.ca/wiki/Lumerical/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+"""
+
+moduleclass = 'cae'
