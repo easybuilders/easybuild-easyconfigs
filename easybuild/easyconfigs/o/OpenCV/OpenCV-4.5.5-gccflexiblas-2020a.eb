@@ -1,0 +1,101 @@
+easyblock = "CMakeMake"
+
+name = "OpenCV"
+version = "4.5.5"
+
+homepage = "http://opencv.org/"
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {"name": "gccflexiblas", "version": "2020a"}
+
+sources = [
+    {
+        # opencv
+        'source_urls': ["https://github.com/%(namelower)s/%(namelower)s/archive/"],
+        "download_filename": "%(version)s.zip",
+        "filename": "%(name)s-%(version)s.zip"
+    },
+    {
+        # opencv-contrib
+        'source_urls': ['https://github.com/%(namelower)s/opencv_contrib/archive/'],
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-contrib-%(version)s.tar.gz',
+    }
+]
+patches = ["%(name)s-4.2.0-hal-internal.patch"]
+
+builddependencies = [
+    ("ant", "1.10.8"),
+    ("Java", "13"),
+    ("Eigen", "3.3.7"),
+    ("JasPer", "2.0.16"),
+    ("CMake", "3.21.4"),
+    ('HDF5', '1.12.1'),
+    ("Julia", "1.7.0"),
+]
+
+dependencies = [
+    ("SciPy-Stack", "2022a"),
+]
+
+multi_deps = {"Python": ["3.8", "3.9", "3.10"]}
+multi_deps_load_default = False
+
+configopts = " ".join(
+    [
+        "-DWITH_IPP=ON",
+        "-DWITH_OPENMP=ON",
+        "-DWITH_CUDA=OFF",
+        "-DOPENCV_SKIP_LAPACK_EXTERN_C=ON",
+        "-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages",
+        "-DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python3",
+        "-DPYTHON3_NUMPY_INCLUDE_DIRS=$EBROOTSCIPYMINSTACK/lib/python%(pyshortver)s/site-packages/numpy/core/include",
+        "-DENABLE_HEADLESS=ON",
+        "-DENABLE_CONTRIB=ON",
+        "-DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/opencv_contrib-%(version)s/modules",
+    ]
+)
+
+# This step does not iterate as sanity_check does.
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python{}/site-packages --add_path %(installdir)s/lib64".format(local_py)
+    for local_py in multi_deps["Python"]
+]
+
+local_contrib_libs = [
+    "alphamat", "aruco", "bgsegm", "bioinspired", "ccalib", "datasets", "dnn_objdetect", "dnn_superres", "dpm", "face", "freetype",
+    "fuzzy", "hdf", "hfs", "img_hash", "line_descriptor", "optflow", "phase_unwrapping", "plot", "quality", "reg",
+    "rgbd", "saliency", "shape", "stereo", "structured_light", "superres", "surface_matching", "text", "tracking",
+    "videostab", "xfeatures2d", "ximgproc", "xobjdetect", "xphoto"
+]
+
+sanity_check_paths = {
+    "files": [
+        "lib/libopencv_core.so",
+        "bin/opencv_annotation",
+        "bin/opencv_interactive-calibration",
+        "bin/opencv_version",
+        "bin/opencv_visualisation",
+    ] + ["lib64/libopencv_{}.so".format(l) for l in local_contrib_libs],
+    "dirs": [
+        "bin",
+        "include",
+        "lib/python%(pyshortver)s/site-packages",
+        "lib64",
+        "share"
+    ],
+}
+
+sanity_check_commands = [
+    "python -c 'import cv2'",
+]
+
+modextrapaths = {
+    "CLASSPATH": "share/java/opencv4",
+    "EBPYTHONPREFIXES": "",
+}
+
+moduleclass = "vis"
