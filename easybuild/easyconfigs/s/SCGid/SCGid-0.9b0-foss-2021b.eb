@@ -12,11 +12,15 @@ toolchain = {'name': 'foss', 'version': '2021b'}
 
 source_urls = ["https://github.com/amsesk/SCGid/archive"]
 sources = ['%s.tar.gz' % local_commit]
-patches = ["SCGid-0.9-fixPrintToPython3.patch"]
+patches = [
+    "SCGid-0.9-fixPrintToPython3.patch",
+    "SCGid-0.9b0-initEdit.patch"
+]
 checksums = [
     # be106e4cd888fd913a527ea821e510e0afb100be.tar.gz
     '1f625e8f87b4d5e4ec9831ebe48763676679d6d6c41b05ef0bb59e6a7f839153',
-    'b912ace0a2fabe4cdf43e70ea2d3ff799894da9edb2a078198dde5d7b91daf67',  # SCGid-0.9-fixPrintToPython3.patch
+    'ee251b71ed3eed097b05751a3cea302d954000e1a8112e6e3f297e67c84996f7',  # SCGid-0.9-fixPrintToPython3.patch
+    '5deb9911beef69bc127b966f94199511800069737f822e15ca5115a16d8b50c5',  # SCGid-0.9b0-initEdit.patch
 ]
 
 local_clams_commit = "e326c34307803b9ea8ffc975ddd9bd05643af931"
@@ -39,38 +43,33 @@ sanity_pip_check = True
 download_dep_fail = False
 
 exts_defaultclass = "Tarball"
+local_config_path = "%(installdir)s/lib/python3.9/site-packages/config.yaml"
+local_config_prep = "%%(installdir)s/SCGid-%s/config.yaml" % local_commit
 
 postinstallcmds = [
+    'ln -s %%(installdir)s/ClaMS-CLI-fork-%s/ClaMS-CLI.jar %%(installdir)s/ClaMS-CLI.jar' % local_clams_commit,
     'export PATH=$PATH:$EBROOTAUGUSTUS',
     'export PATH=$PATH:$EBROOTBLAST',
-    'echo $EBROOTR',
-    # Set paths to make init available
-    "PATH=%(installdir)s/bin:$PATH "
-    "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
-    # Go through init step of installation and download required database
-    'scgid init <<<"%(installdir)s/esom-1.1/src\n'
-    '%(installdir)s/ClaMS-CLI-fork-e326c34307803b9ea8ffc975ddd9bd05643af931/ClaMS-CLI.jar\n'
-    '$EBROOTR/bin/Rscript\n'
-    'y\n'
-    'y\n'
-    'y"'
 ]
 
 options = {'modulename': False}
 
 exts_list = [
     ('ClaMS-CLI', '31012020', {
-        'install_type': 'merge',
         'source_tmpl': 'e326c34307803b9ea8ffc975ddd9bd05643af931.tar.gz',
         'source_urls': ['https://github.com/amsesk/ClaMS-CLI-fork/archive'],
         'checksums': ['743397fc8308e363f127bd7e5165ac9d769c10305f6e33d9e408db8f343170db'],
     }),
     ('ESOM', '1.1', {
-        'install_type': 'merge',
-        'preconfigopts': "export ESOM_HOME=%(installdir)s && cd esom-%(version)s && maven jar install &&",
-        'source_tmpl': 'esom-%(version)s-src.tar.gz',
-        'source_urls': ['https://sourceforge.net/projects/databionic-esom/files/databionic-esom/%(version)s/'],
-        'checksums': ['48d8a3f04946850cbbc3beb9f92bcaa5a98fd301c511388adb4e329467070d38'],
+        'download_instructions': """
+            You need to manually provide Databionics ESOM. Please, follow these steps:
+            (1): Go to https://sourceforge.net/projects/databionic-esom/files/databionic-esom/1.1/ and download "esom-1.1-installer.jar"
+            (2): Run the file and follow through the installation process (ensure you have Java installed to run the file)
+            (3): Open terminal in the folder where you have installed ESOM and create Tarball of its contents (tar -czvf esom.tar.gz *)
+            (4): Paste the file created (esom.tar.gz) into the same folder where your easyconfig is
+            (5): Re-run the build.
+            """,
+        'source_tmpl': 'esom.tar.gz',
     }),
 ]
 
