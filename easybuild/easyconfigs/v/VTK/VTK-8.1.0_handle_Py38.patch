@@ -1,0 +1,416 @@
+commit 8837686ffa484e42a9bf1fbf7df27c0825904608
+Author: David Gobbi <david.gobbi@gmail.com>
+Date:   Mon Jul 23 06:50:53 2018 -0600
+
+    Safe wrapping of non-const char pointer arguments
+    
+    Previously, the contents of a Python 'str' would be passed
+    directly to C++ methods that took non-const 'char *' arguments.
+    This was bad, since 'str' is immutable but there was no guarantee
+    that the C++ method wouldn't try to modify the string.  Now the
+    C++ method receives a copy of the Python string for 'char *' args
+    and only directly receives the contents for 'const char *' args.
+    If a bytearray or other mutable sequence is passed as 'char *',
+    then the wrappers will write any modifications back to Python.
+    
+    In Python 3.7 the PyUnicode_AsUTF8() method was changed so that
+    it returns "const char *" instead of returning "char *", so this
+    commit is needed in order to compile VTK with Python 3.7.
+
+diff --git a/Wrapping/PythonCore/vtkPythonArgs.cxx b/Wrapping/PythonCore/vtkPythonArgs.cxx
+index 9e24d21f58..cf0cb6d703 100644
+--- a/Wrapping/PythonCore/vtkPythonArgs.cxx
++++ b/Wrapping/PythonCore/vtkPythonArgs.cxx
+@@ -90,14 +90,48 @@ bool vtkPythonGetUnsignedLongLongValue(PyObject *o, T &a)
+ }
+ 
+ 
+-template <class T> inline
+-bool vtkPythonGetStringValue(PyObject *o, T *&a, const char *exctext)
++Py_ssize_t vtkPythonGetStringSize(PyObject *o)
++{
++  if (PyBytes_Check(o))
++  {
++    return PyBytes_GET_SIZE(o);
++  }
++  else if (PyByteArray_Check(o))
++  {
++    return PyByteArray_GET_SIZE(o);
++  }
++#ifdef Py_USING_UNICODE
++  else if (PyUnicode_Check(o))
++  {
++#if PY_VERSION_HEX >= 0x03030000
++    Py_ssize_t size;
++    PyUnicode_AsUTF8AndSize(o, &size);
++    return size;
++#else
++    PyObject *s = _PyUnicode_AsDefaultEncodedString(o, nullptr);
++    if (s)
++    {
++      return PyBytes_GET_SIZE(s);
++    }
++#endif
++  }
++#endif
++  return 0;
++}
++
++
++bool vtkPythonGetStringValue(PyObject *o, const char *&a, const char *exctext)
+ {
+   if (PyBytes_Check(o))
+   {
+     a = PyBytes_AS_STRING(o);
+     return true;
+   }
++  else if (PyByteArray_Check(o))
++  {
++    a = PyByteArray_AS_STRING(o);
++    return true;
++  }
+ #ifdef Py_USING_UNICODE
+   else if (PyUnicode_Check(o))
+   {
+@@ -112,12 +146,19 @@ bool vtkPythonGetStringValue(PyObject *o, T *&a, const char *exctext)
+       return true;
+     }
+ 
+-    exctext = "(unicode conversion error)";
++    if (exctext)
++    {
++      // set a more specific error message
++      exctext = "(unicode conversion error)";
++    }
+ #endif
+   }
+ #endif
+ 
+-  PyErr_SetString(PyExc_TypeError, exctext);
++  if (exctext)
++  {
++    PyErr_SetString(PyExc_TypeError, exctext);
++  }
+   return false;
+ }
+ 
+@@ -292,7 +333,6 @@ bool vtkPythonGetValue(
+   return r;
+ }
+ 
+-
+ inline
+ bool vtkPythonGetValue(PyObject *o, const char *&a)
+ {
+@@ -302,15 +342,6 @@ bool vtkPythonGetValue(PyObject *o, const char *&a)
+           vtkPythonGetStringValue(o, a, "string or None required"));
+ }
+ 
+-inline
+-bool vtkPythonGetValue(PyObject *o, char *&a)
+-{
+-  a = nullptr;
+-
+-  return (o == Py_None ||
+-          vtkPythonGetStringValue(o, a, "string or None required"));
+-}
+-
+ inline
+ bool vtkPythonGetValue(PyObject *o, std::string &a)
+ {
+@@ -575,6 +606,53 @@ bool vtkPythonGetArray(PyObject *o, T *a, int n)
+   return true;
+ }
+ 
++inline bool vtkPythonGetArray(PyObject *o, char *a, int n)
++{
++  if (a)
++  {
++    Py_ssize_t m = n;
++    const char *b;
++
++    if (vtkPythonGetStringValue(o, b, nullptr))
++    {
++      m = vtkPythonGetStringSize(o);
++      if (m == n)
++      {
++        for (int i = 0; i < n; i++)
++        {
++          a[i] = b[i];
++        }
++        // terminate so it can be used as a C string
++        a[n] = '\0';
++        return true;
++      }
++    }
++    else if (PySequence_Check(o))
++    {
++      m = PySequence_Size(o);
++      if (m == n)
++      {
++        bool r = true;
++        for (int i = 0; i < n && r; i++)
++        {
++          r = false;
++          PyObject *s = PySequence_GetItem(o, i);
++          if (s && vtkPythonGetValue(s, a[i]))
++          {
++            Py_DECREF(s);
++            r = true;
++          }
++        }
++        return r;
++      }
++    }
++
++    return vtkPythonSequenceError(o, n, m);
++  }
++
++  return true;
++}
++
+ //--------------------------------------------------------------------
+ // Method for setting an n-dimensional C++ arrays from a Python sequence.
+ 
+@@ -708,6 +786,51 @@ bool vtkPythonSetArray(PyObject *o, const T *a, int n)
+   return true;
+ }
+ 
++inline bool vtkPythonSetArray(PyObject *o, const char *a, int n)
++{
++  if (a)
++  {
++    Py_ssize_t m = n;
++
++    if (PyByteArray_Check(o))
++    {
++      m = PyByteArray_GET_SIZE(o);
++      if (m == n)
++      {
++        char *b = PyByteArray_AS_STRING(o);
++        for (int i = 0; i < n; i++)
++        {
++          b[i] = a[i];
++        }
++        return true;
++      }
++    }
++    else if (PySequence_Check(o))
++    {
++      m = PySequence_Size(o);
++      if (m == n)
++      {
++        bool r = true;
++        for (int i = 0; i < n && r; i++)
++        {
++          r = false;
++          PyObject *s = vtkPythonArgs::BuildValue(a[i]);
++          if (s)
++          {
++            r = (PySequence_SetItem(o, i, s) != -1);
++            Py_DECREF(s);
++          }
++        }
++        return r;
++      }
++    }
++
++    return vtkPythonSequenceError(o, n, m);
++  }
++
++  return true;
++}
++
+ //--------------------------------------------------------------------
+ // Method for setting a python array from an n-dimensional C++ array
+ 
+@@ -985,7 +1108,6 @@ bool vtkPythonArgs::GetValue(PyObject *o, T &a) \
+   return vtkPythonGetValue(o, a); \
+ }
+ 
+-VTK_PYTHON_GET_ARG(char *)
+ VTK_PYTHON_GET_ARG(const char *)
+ VTK_PYTHON_GET_ARG(std::string)
+ VTK_PYTHON_GET_ARG(vtkUnicodeString)
+@@ -1418,6 +1540,23 @@ int vtkPythonArgs::GetArgSize(int i)
+   return size;
+ }
+ 
++//--------------------------------------------------------------------
++// Checking size of string arg.
++int vtkPythonArgs::GetStringSize(int i)
++{
++  int size = 0;
++  if (this->M + i < this->N)
++  {
++    PyObject *o = PyTuple_GET_ITEM(this->Args, this->M + i);
++    size = static_cast<int>(vtkPythonGetStringSize(o));
++    if (size == 0 && PySequence_Check(o))
++    {
++      size = static_cast<int>(PySequence_Size(o));
++    }
++  }
++  return size;
++}
++
+ //--------------------------------------------------------------------
+ // Check if 'm' equals 'n', and report an error for arg i if not.
+ bool vtkPythonArgs::CheckSizeHint(int i, Py_ssize_t m, Py_ssize_t n)
+diff --git a/Wrapping/PythonCore/vtkPythonArgs.h b/Wrapping/PythonCore/vtkPythonArgs.h
+index 7a9fe808df..c0c5c97509 100644
+--- a/Wrapping/PythonCore/vtkPythonArgs.h
++++ b/Wrapping/PythonCore/vtkPythonArgs.h
+@@ -126,6 +126,14 @@ public:
+    */
+   bool NoArgsLeft() { return (this->I >= this->N); }
+ 
++  /**
++   * Get the size of an arg, if it is a string.
++   * The returned size does not include the null byte.
++   * If the arg is out of range, or is not a string,
++   * then it returns 0 but doesn't set error.
++   */
++  int GetStringSize(int i);
++
+   /**
+    * Get the size of an arg, if it is a sequence.
+    * If no size is available, or if the arg is out of range,
+@@ -303,8 +311,6 @@ public:
+    */
+   bool GetValue(const char *&v);
+   static bool GetValue(PyObject *o, const char *&v);
+-  bool GetValue(char *&v);
+-  static bool GetValue(PyObject *o, char *&v);
+   bool GetValue(std::string &v);
+   static bool GetValue(PyObject *o, std::string &v);
+   bool GetValue(vtkUnicodeString &v);
+diff --git a/Wrapping/PythonCore/vtkPythonOverload.cxx b/Wrapping/PythonCore/vtkPythonOverload.cxx
+index 64b1145aee..542e09dcd3 100644
+--- a/Wrapping/PythonCore/vtkPythonOverload.cxx
++++ b/Wrapping/PythonCore/vtkPythonOverload.cxx
+@@ -464,7 +464,7 @@ int vtkPythonOverload::CheckArg(
+ #endif
+       }
+ #endif
+-      else if (!PyBytes_Check(arg))
++      else if (!PyBytes_Check(arg) && !PyByteArray_Check(arg))
+       {
+         penalty = VTK_PYTHON_INCOMPATIBLE;
+       }
+diff --git a/Wrapping/Tools/vtkWrap.c b/Wrapping/Tools/vtkWrap.c
+index b4dadf4f8d..9040935ea3 100644
+--- a/Wrapping/Tools/vtkWrap.c
++++ b/Wrapping/Tools/vtkWrap.c
+@@ -1021,15 +1021,11 @@ void vtkWrap_DeclareVariable(
+       fprintf(fp,"const ");
+     }
+   }
+-  /* do the same for "const char *" with initializer */
++  /* do the same for "const char *" arguments */
+   else
+   {
+     if ((val->Type & VTK_PARSE_CONST) != 0 &&
+-        aType == VTK_PARSE_CHAR_PTR &&
+-        val->Value &&
+-        strcmp(val->Value, "0") != 0 &&
+-        strcmp(val->Value, "nullptr") != 0 &&
+-        strcmp(val->Value, "NULL") != 0)
++        aType == VTK_PARSE_CHAR_PTR)
+     {
+       fprintf(fp,"const ");
+     }
+diff --git a/Wrapping/Tools/vtkWrapPythonMethod.c b/Wrapping/Tools/vtkWrapPythonMethod.c
+index 40995fd0bc..965175cea1 100644
+--- a/Wrapping/Tools/vtkWrapPythonMethod.c
++++ b/Wrapping/Tools/vtkWrapPythonMethod.c
+@@ -102,7 +102,8 @@ void vtkWrapPython_DeclareVariables(
+ 
+     /* temps for arrays */
+     if (vtkWrap_IsArray(arg) || vtkWrap_IsNArray(arg) ||
+-        vtkWrap_IsPODPointer(arg))
++        vtkWrap_IsPODPointer(arg) ||
++        (vtkWrap_IsCharPointer(arg) && !vtkWrap_IsConst(arg)))
+     {
+       /* for non-const arrays, alloc twice as much space */
+       const char *mtwo = "";
+@@ -110,7 +111,24 @@ void vtkWrapPython_DeclareVariables(
+       {
+         mtwo = "2*";
+       }
+-      if (arg->CountHint || vtkWrap_IsPODPointer(arg))
++      if (vtkWrap_IsCharPointer(arg))
++      {
++        /* prepare for "char *" arg for non-const char pointer */
++        fprintf(fp,
++              "  int size%d = ap.GetStringSize(%d);\n"
++              "  vtkPythonArgs::Array<char> store%d(%ssize%d + 1);\n"
++              "  char *temp%d = store%d.Data();\n",
++              i, i,
++              i, mtwo, i,
++              i, i);
++        if (!vtkWrap_IsRef(arg))
++        {
++          fprintf(fp,
++              "  char *save%d = temp%d + size%d + 1;\n",
++              i, i, i);
++        }
++      }
++      else if (arg->CountHint || vtkWrap_IsPODPointer(arg))
+       {
+         /* prepare for "T *" arg, where T is a plain type */
+         fprintf(fp,
+@@ -306,7 +324,7 @@ void vtkWrapPython_GetSingleArgument(
+             prefix, argname, i, i);
+   }
+   else if (vtkWrap_IsString(arg) ||
+-           vtkWrap_IsCharPointer(arg))
++           (vtkWrap_IsCharPointer(arg) && vtkWrap_IsConst(arg)))
+   {
+     fprintf(fp, "%sGetValue(%stemp%d)",
+             prefix, argname, i);
+@@ -328,7 +346,8 @@ void vtkWrapPython_GetSingleArgument(
+     fprintf(fp, "%sGetArray(%stemp%d, size%d)",
+             prefix, argname, i, i);
+   }
+-  else if (vtkWrap_IsPODPointer(arg))
++  else if (vtkWrap_IsPODPointer(arg) ||
++           vtkWrap_IsCharPointer(arg))
+   {
+     fprintf(fp, "%sGetArray(%stemp%d, size%d)",
+             prefix, argname, i, i);
+@@ -751,13 +770,14 @@ void vtkWrapPython_SaveArrayArgs(FILE *fp, FunctionInfo *currentFunction)
+   {
+     arg = currentFunction->Parameters[i];
+     n = arg->NumberOfDimensions;
+-    if (n < 1 && (vtkWrap_IsArray(arg) || vtkWrap_IsPODPointer(arg)))
++    if (n < 1 && (vtkWrap_IsArray(arg) || vtkWrap_IsPODPointer(arg) ||
++                  vtkWrap_IsCharPointer(arg)))
+     {
+       n = 1;
+     }
+ 
+     if ((vtkWrap_IsArray(arg) || vtkWrap_IsNArray(arg) ||
+-         vtkWrap_IsPODPointer(arg)) &&
++         vtkWrap_IsPODPointer(arg) || vtkWrap_IsCharPointer(arg)) &&
+         (arg->Type & VTK_PARSE_CONST) == 0 &&
+         !vtkWrap_IsRef(arg))
+     {
+@@ -1005,7 +1025,8 @@ static void vtkWrapPython_WriteBackToArgs(
+   {
+     arg = currentFunction->Parameters[i];
+     n = arg->NumberOfDimensions;
+-    if (n < 1 && (vtkWrap_IsArray(arg) || vtkWrap_IsPODPointer(arg)))
++    if (n < 1 && (vtkWrap_IsArray(arg) || vtkWrap_IsPODPointer(arg) ||
++                  (vtkWrap_IsCharPointer(arg) && !vtkWrap_IsConst(arg))))
+     {
+       n = 1;
+     }
+@@ -1044,7 +1065,7 @@ static void vtkWrapPython_WriteBackToArgs(
+               "    }\n");
+     }
+     else if ((vtkWrap_IsArray(arg) || vtkWrap_IsNArray(arg) ||
+-              vtkWrap_IsPODPointer(arg)) &&
++              vtkWrap_IsPODPointer(arg) || vtkWrap_IsCharPointer(arg)) &&
+              !vtkWrap_IsConst(arg) &&
+              !vtkWrap_IsSetVectorMethod(currentFunction))
+     {

@@ -1,0 +1,31 @@
+Make sure the config step knows about using GLVND instead of only legacy GL
+And add missing OPENGL_LIBRARIES to avtqtviswindow.
+
+Åke Sandgren, 2022-02-14
+diff -ru visit3.2.2.orig/src/avt/QtVisWindow/CMakeLists.txt visit3.2.2/src/avt/QtVisWindow/CMakeLists.txt
+--- visit3.2.2.orig/src/avt/QtVisWindow/CMakeLists.txt	2022-01-13 18:39:59.000000000 +0100
++++ visit3.2.2/src/avt/QtVisWindow/CMakeLists.txt	2022-02-11 16:40:27.761351038 +0100
+@@ -52,6 +52,6 @@
+ LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY})
+ 
+ ADD_LIBRARY(avtqtviswindow ${AVTQTVISWINDOW_SOURCES})
+-TARGET_LINK_LIBRARIES(avtqtviswindow visitcommon avtviswindow_ser vtkqt ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
++TARGET_LINK_LIBRARIES(avtqtviswindow visitcommon avtviswindow_ser vtkqt ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${OPENGL_LIBRARIES})
+ 
+ VISIT_INSTALL_TARGETS(avtqtviswindow)
+diff -ru visit3.2.2.orig/src/CMake/VisItOpenGL.cmake visit3.2.2/src/CMake/VisItOpenGL.cmake
+--- visit3.2.2.orig/src/CMake/VisItOpenGL.cmake	2020-01-24 23:01:21.000000000 +0100
++++ visit3.2.2/src/CMake/VisItOpenGL.cmake	2022-02-14 08:53:45.587006110 +0100
+@@ -61,7 +61,11 @@
+     else()
+         # Standard find of system GL
+         include(${CMAKE_ROOT}/Modules/FindOpenGL.cmake)
+-        set(OPENGL_LIBRARIES ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY})
++        if (OpenGL_GL_PREFERENCE STREQUAL "GLVND")
++            set(OPENGL_LIBRARIES ${OPENGL_opengl_LIBRARY} ${OPENGL_glu_LIBRARY})
++        else()
++            set(OPENGL_LIBRARIES ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY})
++        endif()
+     endif()
+ endif()
+ 

@@ -1,0 +1,127 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-97.html
+##
+
+easyblock = 'CMakeMake'
+
+name = 'VTK'
+version = '8.1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.vtk.org'
+description = """The Visualization Toolkit (VTK) is an open-source, freely available software system for
+ 3D computer graphics, image processing and visualization. VTK consists of a C++ class library and several
+ interpreted interface layers including Tcl/Tk, Java, and Python. VTK supports a wide variety of visualization
+ algorithms including: scalar, vector, tensor, texture, and volumetric methods; and advanced modeling techniques
+ such as: implicit modeling, polygon reduction, mesh smoothing, cutting, contouring, and Delaunay triangulation."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+#toolchainopts = {'usempi': True, 'debug': True, 'noopt': True}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://www.vtk.org/files/release/%(version_major_minor)s']
+sources = [
+    SOURCE_TAR_GZ,
+    '%(name)sData-%(version)s.tar.gz',
+]
+patches = [
+    'VTK-8.2.0_python_3.8_compatibility.patch',
+    ('vtk-version.egg-info', '.'),
+    'VTK-8.1.0_dont_look_for_netcdf_CXX.patch',
+    'VTK-8.1.0_fix_char_pointer_in_builtins.patch',
+    'VTK-8.1.0_handle_Py38.patch',
+]
+checksums = [
+    '6e269f07b64fb13774f5925161fb4e1f379f4e6a0131c8408c555f6b58ef3cb7',  # VTK-8.1.0.tar.gz
+    '320562de621a93bc173e6823968353f5ee2cbeac8623093a6057d76cb4315d05',  # VTKData-8.1.0.tar.gz
+    'a7586f60501de145d4c31e48aa0589547d9fe7a39f96ab31dae8e82aa5fb4403',  # VTK-8.2.0_python_3.8_compatibility.patch
+    '787b82415ae7a4a1f815b4db0e25f7abc809a05fc85d7d219627f3a7e5d3867b',  # vtk-version.egg-info
+    '6f51c2618dcaa5923c16f031c13ec732cd880ab96ede98fd740b698cbebea2a4',  # VTK-8.1.0_dont_look_for_netcdf_CXX.patch
+    '2be78adbba4e813fdbc96ae753046e9d7f3b9dc579a621e06158be44e5784b11',  # VTK-8.1.0_fix_char_pointer_in_builtins.patch
+    'bc25392ef21d89130bfb9892e4ded11080c82cd3386ebc2a621441255ab3cfa2',  # VTK-8.1.0_handle_Py38.patch
+]
+
+builddependencies = [('CMake', '3.16.4')]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('XZ', '5.2.5'),
+    ('lz4', '1.9.2'),
+    ('expat', '2.2.9'),
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('HDF5', '1.10.6'),
+    ('netCDF', '4.7.4'),
+    ('X11', '20200222'),
+    ('libglvnd', '1.2.0'),
+    ('Mesa', '20.0.2'),
+    ('Qt5', '5.14.1'),
+    ('freetype', '2.10.1'),
+    ('LibTIFF', '4.1.0'),
+    ('libpng', '1.6.37'),
+    ('libjpeg-turbo', '2.0.4'),
+    ('libxml2', '2.9.10'),
+    ('Eigen', '3.3.7'),
+    ('JsonCpp', '1.9.4'),
+    ('GL2PS', '1.4.2'),
+]
+
+configopts = "-DBUILD_DOCUMENTATION:BOOL=false -DBUILD_TESTING:BOOL=false "
+
+configopts += "-DOpenGL_GL_PREFERENCE=GLVND "
+configopts += "-DVTK_OPENGL_HAS_OSMESA:BOOL=ON "
+configopts += "-DOSMESA_LIBRARY:FILEPATH=$EBROOTMESA/lib/libOSMesa.%s " % SHLIB_EXT
+configopts += "-DOSMESA_INCLUDE_DIR:PATH=$EBROOTMESA/include "
+
+configopts += "-DVTK_WRAP_PYTHON=ON "
+configopts += "-DVTK_PYTHON_VERSION=%(pyshortver)s "
+
+configopts += "-DVTK_QT_VERSION=5 "
+
+configopts += "-DVTK_USE_SYSTEM_EXPAT:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_FREETYPE:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_GL2PS:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_HDF5:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_JSONCPP:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_LIBXML2:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_LZ4:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_MPI4PY:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_NETCDF:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_NETCDFCPP:BOOL=OFF "
+configopts += "-DVTK_USE_SYSTEM_PNG:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_TIFF:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_JPEG:BOOL=ON "
+configopts += "-DVTK_USE_SYSTEM_ZLIB:BOOL=ON -DZLIB_INCLUDE_DIR:PATH=$EBROOTZLIB "
+
+# Can't use out glew since it needs to be built with OSMesa support.
+# configopts += "-DVTK_USE_SYSTEM_GLEW:BOOL=ON "
+
+configopts += "-DVTK_Group_MPI:BOOL=ON "
+
+# Visit additions
+configopts += "-DVTK_LEGACY_REMOVE:BOOL=true -DVTK_REPORT_OPENGL_ERRORS:BOOL=true "
+configopts += "-DVTK_ALL_NEW_OBJECT_FACTORY:BOOL=true "
+configopts += "-DModule_vtkGUISupportQtOpenGL:BOOL=true "
+configopts += "-DModule_vtklibxml2:BOOL=true "
+
+preinstallopts = "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages/ && "
+preinstallopts += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/vtk%s-%%(version_major_minor)s' % x for x in ['EncodeString', 'HashSource']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/', 'include/vtk-%(version_major_minor)s'],
+}
+
+sanity_check_commands = [('python', "-c 'import %(namelower)s'")]
+
+moduleclass = 'vis'

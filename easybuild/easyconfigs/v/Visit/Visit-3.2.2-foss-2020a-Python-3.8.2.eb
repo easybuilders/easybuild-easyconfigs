@@ -1,0 +1,84 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+##
+
+easyblock = 'CMakeMake'
+
+name = 'Visit'
+version = '3.2.2'
+local_pysuffix = '-Python-%(pyver)s'
+versionsuffix = local_pysuffix
+
+homepage = 'https://wci.llnl.gov/simulation/computer-codes/visit'
+description = """
+VisIt is an Open Source, interactive, scalable, visualization, animation
+and analysis tool. From Unix, Windows or Mac workstations, users can
+interactively visualize and analyze data ranging in scale from small
+(<101 core) desktop-sized projects to large (>105 core) leadership-class
+computing facility simulation campaigns. Users can quickly generate
+visualizations, animate them through time, manipulate them with a
+variety of operators and mathematical expressions, and save the
+resulting images and animations for presentations. VisIt contains a rich
+set of visualization features to enable users to view a wide variety of
+data including scalar and vector fields defined on two- and
+three-dimensional (2D and 3D) structured, adaptive and unstructured
+meshes. Owing to its customizeable plugin design, VisIt is capabable of
+visualizing data from over 120 different scientific data formats.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+source_urls = ['https://github.com/visit-dav/visit/releases/download/v%(version)s']
+sources = ['%(namelower)s%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_use_glvnd_libs.patch',
+    '%(name)s-%(version)s_use_EB_osmesa_mesagl.patch',
+    '%(name)s-%(version)s_use_EB_tiff_png_jpeg.patch',
+]
+checksums = [
+    'd19ac24c622a3bc0a71bc9cd6e5c9860e43f39e3279672129278b6ebce8d0ead',  # visit3.2.2.tar.gz
+    '3b4ad837bbaab43be4a179c29a925e3fa4b615cd0630cd2eaebaeeb67c0a62ad',  # Visit-3.2.2_use_glvnd_libs.patch
+    '248edbbab4daba54ffbc15e2fa1970016c74122be74042dd6aecb3d03a7ab95c',  # Visit-3.2.2_use_EB_osmesa_mesagl.patch
+    '97148a669ceac25201f9fc911ccf2815960b55b3a6187b2dcc8688dba905f477',  # Visit-3.2.2_use_EB_tiff_png_jpeg.patch
+]
+
+builddependencies = [('CMake', '3.16.4')]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', local_pysuffix),
+    ('X11', '20200222'),
+    ('Mesa', '20.0.2'),
+    ('libglvnd', '1.2.0'),
+    ('Qt5', '5.14.1'),
+    ('Qwt', '6.1.5'),
+    ('VTK', '8.1.0', versionsuffix),
+]
+
+configopts = "-DVISIT_ZLIB_DIR=$EBROOTZLIB "
+configopts += "-DVISIT_VTK_DIR=$EBROOTVTK "
+configopts += "-DVISIT_VTK_VERSION=$EBVERSIONVTK "
+configopts += "-DVISIT_QT_DIR=$EBROOTQT5 "
+configopts += "-DVISIT_QWT_DIR=$EBROOTQWT "
+configopts += "-DVISIT_OSMESA_DIR=$EBROOTMESA "
+configopts += "-DVISIT_MESAGL_DIR=$EBROOTLIBGLVND "
+
+configopts += "-DPYTHON_DIR=$EBROOTPYTHON "
+configopts += "-DVISIT_PYTHON_SKIP_INSTALL=ON "
+configopts += "-DVISIT_PARALLEL=ON -DVISIT_MPI_COMPILER=$MPICC -DVISIT_MPI_COMPILER_CXX=$MPICXX "
+
+configopts += " -DOpenGL_GL_PREFERENCE=GLVND "
+
+preinstallopts = "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages/ && "
+preinstallopts += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+modextrapaths = {'PYTHONPATH': ['%(version)/linux-x86_64/lib//site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['frontendlauncher', 'frontendlauncher.py', 'visit']],
+    'dirs': ['%(version)s/bin'],
+}
+
+moduleclass = 'vis'
