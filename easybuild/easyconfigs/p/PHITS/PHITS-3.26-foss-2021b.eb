@@ -1,0 +1,85 @@
+easyblock = 'MakeCp'
+
+name = 'PHITS'
+version = '3.26'
+_num_ver = version.replace('.', '')
+
+homepage = 'https://phits.jaea.go.jp'
+description = """PHITS (Particle and Heavy Ion Transport code System) is a general purpose Monte
+Carlo particle transport simulation code developed under collaboration between
+JAEA, RIST, KEK and several other institutes. It can deal with the transport of
+all particles over wide energy ranges, using several nuclear reaction models
+and nuclear data libraries. PHITS can support your researches in the fields of
+accelerator technology, radiotherapy, space radiation, and in many other fields
+which are related to particle and heavy ion transport phenomena."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {"usempi": True}
+
+# Sources have to be requested by following the instructions at https://phits.jaea.go.jp/howtoget.html
+# You will receive a password protected .zip file, with a name of the form {phits}{version numbers}.zip
+# Extract "phits.zip" from it and rename it to PHITS-%(version)s.zip
+sources = [SOURCE_ZIP]
+checksums = ['e6c5d3fbeb32db063f8b152bdc139d43d923c4383d61b715be447dd09345f3be']
+
+start_dir = 'src'
+
+_fflags_common = '-fallow-argument-mismatch -std=legacy'
+_fflags_phits = '-fdefault-double-8 -fdefault-real-8 -fdollar-ok ' + _fflags_common
+
+# PHITS: build serial, OpenMP and MPI variants
+buildopts = 'ENVFLAGS="LinGfort" FFLAGS="$FFLAGS %s" && ' % _fflags_phits
+buildopts += 'make -j %%(parallel)s ENVFLAGS="LinGfort" USEMPI="true" FLAGS="$FFLAGS %s" && ' % _fflags_phits
+buildopts += 'make -j %%(parallel)s ENVFLAGS="LinGfort" USEOMP="true" FLAGS="$FFLAGS -fopenmp %s" && ' % _fflags_phits
+# ANGEL
+buildopts += 'make -f make.ang FC="gfortran" FFLAGS="$FFLAGS %s" CC="gcc" CFLAGS="$CFLAGS" && ' % _fflags_common
+# DCHAIN
+buildopts += 'cd ../dchain-sp/src && make ENVFLAGS="LinGfort" FFLAGS="$FFLAGS %s -I./include"' % _fflags_common
+
+_phits_bin = ['phits_LinGfort', 'phits_LinGfort_OMP', 'phits_LinGfort_MPI']
+_phits_extra_dirs = ['data', 'document', 'lecture', 'manual', 'phig3d', 'recommendation', 'sample', 'utility', 'XS']
+_dchain_extra_dirs = ['data', 'data2001', 'manual', 'sample']
+
+files_to_copy = [
+    (_phits_bin + ['bin/phits.sh'], 'bin'),
+    (_phits_extra_dirs, ''),
+    (['angel_lin.exe', 'bin/angel.sh'], 'bin'),
+    (['bin/phig3d.sh'], 'bin'),
+    (['dchain-sp/src/dchain.exe', 'dchain-sp/bin/dchain.sh'], 'dchain-sp/bin'),
+    (['dchain-sp/%s' % x for x in _dchain_extra_dirs], 'dchain-sp'),
+]
+
+postinstallcmds = [
+    # fix permissions
+    "find %(installdir)s -type f -exec chmod a-x {} \;",
+    "chmod a+x %(installdir)s/bin/* %(installdir)s/dchain-sp/bin/* %(installdir)s/utility/script/*.sh",
+    "chmod a+x %(installdir)s/phig3d/linux-x86_64/{phig3d_lin.sh,bin/phig3d}",
+    # add symlins with commonly used executable names
+    "cd %%(installdir)s/bin && ln -s phits_LinGfort phits%s_lin.exe" % _num_ver,
+    "cd %%(installdir)s/bin && ln -s phits_LinGfort_MPI phits%s_lin_mpi.exe" % _num_ver,
+    "cd %%(installdir)s/bin && ln -s phits_LinGfort_OMP phits%s_lin_openmp.exe" % _num_ver,
+    "cd %(installdir)s/dchain-sp/bin && ln -s dchain.exe dchain_lin.exe",
+    # mend wrapper scripts
+    "sed -i 's|_mac|_lin|g' %(installdir)s/bin/{phits.sh,angel.sh}",
+    "sed -i 's|PATH1=.*|PATH1=%(installdir)s/dchain-sp/bin/dchain_lin.exe|' %(installdir)s/dchain-sp/bin/dchain.sh",
+    "sed -i 's|PATH2=.*|PATH2=%(installdir)s/bin/angel_lin.exe|' %(installdir)s/dchain-sp/bin/dchain.sh",
+    "sed -i 's|/phits|%(installdir)s|g' %(installdir)s/dchain-sp/bin/dchain.sh",
+    # mend data files
+    "sed -i 's|^datapath=.*|datapath=%(installdir)s/XS|' %(installdir)s/data/xsdir.jnd",
+    "find %(installdir)s/lecture -type f -exec sed -i 's|[cC]:/phits|%(installdir)s|g' {} \;",
+    "find %(installdir)s/sample -type f -exec sed -i 's|[cC]:/phits|%(installdir)s|g' {} \;",
+    "find %(installdir)s/recommendation -type f -exec sed -i 's|[cC]:/phits|%(installdir)s|g' {} \;",
+]
+
+sanity_check_paths = {
+    'files': ['bin/phits%s_lin%s.exe' % (_num_ver, x) for x in ['', '_mpi', '_openmp']] +
+             ['bin/angel_lin.exe', 'dchain-sp/bin/dchain_lin.exe'],
+    'dirs': _phits_extra_dirs + ['dchain-sp/%s' % x for x in _dchain_extra_dirs],
+}
+
+modextrapaths = {
+    'PATH': ['dchain-sp/bin', 'phig3d/linux-x86_64', 'phig3d/linux-x86_64/bin', 'utility/script'],
+    'PHITSPATH': '',
+}
+
+moduleclass = 'phys'
