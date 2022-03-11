@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'SYMPHONY'
+version = '5.6.18'
+
+homepage = 'https://github.com/coin-or/SYMPHONY/wiki'
+description = """SYMPHONY is an open-source solver for mixed-integer linear programs (MILPs) written in C."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/coin-or/SYMPHONY/archive/refs/tags/releases']
+sources = ['%(version)s.tar.gz']
+checksums = ['f6c2b9c9e60ebff4a665e243e765649334c5d0680f536d3d9c0c372025ab96dc']
+
+builddependencies = [
+    ('Autotools', '20210726'),
+    ('Doxygen', '1.9.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('CoinUtils', '2.11.6'),
+    ('Osi', '0.108.7'),
+    ('Clp', '1.17.7'),
+    ('Cgl', '0.60.5'),
+    ('GLPK', '5.0'),
+]
+
+# Use BLAS/LAPACK from OpenBLAS
+configopts = '--with-blas="$LIBBLAS" --with-lapack="$LIBLAPACK" '
+# Use GLPK from EB
+configopts += '--with-glpk '
+# Use CoinUtils from EB
+configopts += '--with-coinutils-lib="-lCoinUtils" '
+configopts += '--with-coinutils-datadir=$EBROOTCOINUTILS/share/coin/Data'
+# Use Clp from EB
+configopts += '--with-clp-lib="-lOsiClp -lClpSolver -lClp" '
+# Use Osi from EB (also needs links to Clp due to OsiClpSolver)
+configopts += '--with-osi-lib="-lOsiClp -lClpSolver -lClp -lOsi" '
+# Use Cgl from EB
+configopts += '--with-cgl-lib="-lCgl" '
+
+sanity_check_paths = {
+    'dirs':  ['bin', 'include', 'lib/pkgconfig', 'share'],
+    'files': ['bin/symphony',
+              'include/coin/SymConfig.h',
+              'lib/libSym.%s' % SHLIB_EXT,
+              'share/coin/doc/SYMPHONY/README']
+}
+
+moduleclass = 'math'

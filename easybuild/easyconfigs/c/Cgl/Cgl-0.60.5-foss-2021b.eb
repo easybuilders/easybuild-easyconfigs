@@ -1,0 +1,47 @@
+easyblock = "ConfigureMake"
+
+name = 'Cgl'
+version = '0.60.5'
+
+homepage = "https://github.com/coin-or/Cgl"
+description = """The COIN-OR Cut Generation Library (Cgl) is a collection of cut generators that
+can be used with other COIN-OR packages that make use of cuts, such as, among
+others, the linear solver Clp or the mixed integer linear programming solvers
+Cbc or BCP. Cgl uses the abstract class OsiSolverInterface (see Osi) to use or
+communicate with a solver. It does not directly call a solver."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/coin-or/Cgl/archive/refs/tags/releases']
+sources = ['%(version)s.tar.gz']
+checksums = ['5a2e7ca380425b3d7279d0759c625a367d06ec8293698b59f82fae38ae5df64e']
+
+builddependencies = [
+    ('Autotools', '20210726'),
+    ('Doxygen', '1.9.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('CoinUtils', '2.11.6'),
+    ('Osi', '0.108.7'),
+    ('Clp', '1.17.7'),
+]
+
+# Use CoinUtils from EB
+configopts = '--with-coinutils-lib="-lCoinUtils" '
+# Use Clp from EB
+configopts += '--with-clp-lib="-lOsiClp -lClpSolver -lClp" '
+# Use Osi from EB (also needs links to Clp due to OsiClpSolver)
+configopts += '--with-osi-lib="-lOsiClp -lClpSolver -lClp -lOsi" '
+
+sanity_check_paths = {
+    'files': ['lib/libCgl.%s' % SHLIB_EXT],
+    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin']
+}
+
+# other coin-or projects expect <header.hpp> instead of <coin/header.hpp>
+modextrapaths = {'CPATH': 'include/coin'}
+
+moduleclass = "math"
