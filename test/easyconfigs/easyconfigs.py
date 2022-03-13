@@ -534,6 +534,8 @@ class EasyConfigTest(TestCase):
                 ('2.2.3;', ['medaka-1.4.3-', 'artic-ncov2019-2021.06.24-', 'longread_umi-0.3.2-']),
                 # AlphaFold 2.1.2 (foss/2020b) depends on TensorFlow 2.5.0
                 ('2.5.0;', ['AlphaFold-2.1.2-']),
+                # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
+                ('2.5.3;', ['medaka-1.5.0-']),
             ],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
