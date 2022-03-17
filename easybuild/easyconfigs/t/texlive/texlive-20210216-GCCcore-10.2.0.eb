@@ -1,0 +1,60 @@
+# Easyconfig file for TexLive 2021
+
+easyblock = 'Tarball'
+
+name = 'texlive'
+version = '20210216'
+
+homepage = 'http://tug.org'
+description = """TeX is a typesetting language. Instead of visually
+formatting your text, you enter your manuscript text intertwined with TeX
+commands in a plain text file. You then run TeX to produce formatted output,
+such as a PDF file. Thus, in contrast to standard word processors, your
+document is a separate file that does not pretend to be a representation
+of the final typeset output, and so can be easily edited and manipulated."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+sources = [{
+    'source_urls': ['http://mirror.ctan.org/systems/texlive/tlnet/'],
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'download_filename': 'install-tl-unx.tar.gz',  # provided source tarball is not versioned...
+    'extract_cmd': "tar xfvz %s",  # source file is actually a gzipped tarball (filename should be .tar.gz)
+}]
+checksums = ['538c7bd8a5eddefd03ebc0bd6d125d449b0ae4ed0a1b48c0172f770d05294321']
+
+dependencies = [
+    ('X11', '20201008'),
+    ('libpng', '1.6.37'),
+    ('libGLU', '9.0.1'),
+    ('Perl', '5.32.0'),
+    ('HarfBuzz', '2.6.7'),
+    ('poppler', '20.12.1'),
+    ('cairo', '1.16.0'),
+    ('fontconfig', '2.13.92'),
+    ('zlib', '1.2.11'),
+    ('graphite2', '1.3.14'),
+]
+
+postinstallcmds = ['echo TEXDIR %(installdir)s > local-profile',
+                   'echo TEXMFLOCAL %(installdir)s/texmf-local >> local-profile',
+                   'echo TEXMFSYSVAR %(installdir)s/texmf-var >> local-profile ',
+                   'echo TEXMFSYSCONFIG %(installdir)s/texmf-config >> local-profile',
+                   'echo TEXMFVAR ~/.texlive/texmf-var >> local-profile',
+                   'echo TEXMFCONFIG ~/.texlive/texmf-config >> local-profile',
+                   'echo TEXMFHOME ~/.texlive/texmf >> local-profile ',
+                   '%(builddir)s/install-tl-%(version)s/install-tl -profile local-profile',
+                   'mv %(installdir)s/bin/x86_64-linux/mex %(installdir)s/bin/x86_64-linux/mex-legacy']
+
+modextrapaths = {
+    'PATH': 'bin/x86_64-linux',
+}
+
+sanity_check_paths = {
+    'files': ['bin/x86_64-linux/tex',
+              'bin/x86_64-linux/latex'],
+    'dirs': ['bin/x86_64-linux',
+             'texmf-dist']
+}
+
+moduleclass = 'devel'
