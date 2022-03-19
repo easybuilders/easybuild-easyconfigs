@@ -1,0 +1,65 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'PythonBundle'
+
+name = 'DECODE'
+version = '20220120'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "https://github.com/TuragaLab/DECODE"
+description = """DECODE is a Python and Pytorch based deep learning tool for single molecule localization microscopy
+ (SMLM)."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('Ninja', '1.10.2'),
+]
+
+dependencies = [
+    ('CUDA', '11.3.1', '', True),
+    ('Python', '3.9.5'),
+    ('PyTorch', '1.10.0', versionsuffix),
+    ('SciPy-bundle', '2021.05'),
+    ('matplotlib', '3.4.2'),
+    ('scikit-image', '0.18.3'),
+    ('scikit-learn', '0.24.2'),
+    ('GitPython', '3.1.18'),
+    ('h5py', '3.2.1'),
+    ('TensorFlow', '2.6.0', versionsuffix),
+    ('tqdm', '4.61.2'),
+    ('pybind11', '2.6.2'),
+]
+
+sanity_pip_check = True
+use_pip = True
+
+exts_list = [
+    ('seaborn', '0.10.0', {  # different version to standard 2021a, so included here
+        'checksums': ['59fe414e138d7d5ea08b0feb01b86caf4682e36fa748e3987730523a89aecbb9'],
+    }),
+    ('Deprecated', '1.2.13', {
+        'checksums': ['43ac5335da90c31c24ba028af536a91d41d53f9e6901ddb021bcc572ce44e38d'],
+    }),
+    ('importlib_resources', '5.4.0', {
+        'checksums': ['d756e2f85dd4de2ba89be0b21dba2a3bbec2e871a42a3a16719258a11f87506b'],
+    }),
+    ('Spline', '0.10.0', {
+        'source_tmpl': 'v0.10.0.tar.gz',
+        'source_urls': ['https://github.com/TuragaLab/SplinePSF/archive'],
+        'checksums': ['849f0251c5a1841822b46afc067c101742bd629ea6383b7ed49570180a57be64'],
+        'start_dir': 'python',
+        'preinstallopts': "sed -i 's$../cpp_cuda_c$%(builddir)s/Spline/SplinePSF-0.10.0/cpp_cuda_c$' setup.py && Python_ROOT_DIR=$EBROOTPYTHON ",
+    }),
+    (name, version, {
+        'source_tmpl': '8977766.tar.gz',
+        'source_urls': ['https://github.com/TuragaLab/DECODE/archive'],
+        'patches': ['DECODE-8977766_fix-import.patch'],
+        'checksums': [
+            'abc7df298d322c4c1b3f54c5072dab9fee6af6050feb68b135f23b0dd38d8e60',  # 8977766.tar.gz
+            '13a14f81f5fddf910a8e2e12462a39296f3e6a4296149885e9adeb026c373f1d',  # DECODE-8977766_fix-import.patch
+        ],
+    }),
+]
+
+moduleclass = 'data'
