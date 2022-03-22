@@ -16,11 +16,18 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/RRZE-HPC/likwid/archive/']
 sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_use_EB_hwloc.patch',
+]
 checksums = ['aa6dccacfca59e52d8f3be187ffcf292b2a2fa1f51a81bf8912b9d48e5a257e0']
 
 builddependencies = [
     ('binutils', '2.36.1'),
     ('Perl', '5.32.1'),
+]
+
+dependencies = [
+    ('hwloc', '2.4.1'),
 ]
 
 skipsteps = ['configure']
@@ -33,11 +40,12 @@ prebuildopts += """ make/include_GCC.mk && """
 
 buildopts = 'CC="$CC" CFLAGS="$CFLAGS -std=c99" PREFIX=%(installdir)s BUILDFREQ="" ACCESSMODE=perf_event '
 buildopts += 'FORTRAN_INTERFACE=true '
-buildopts += 'CFG_FILE_PATH=%(installdir)s/etc/likwid.cfg  TOPO_FILE_PATH=%(installdir)s/etc/likwid_topo.cfg'
+buildopts += 'CFG_FILE_PATH=%(installdir)s/etc/likwid.cfg  TOPO_FILE_PATH=%(installdir)s/etc/likwid_topo.cfg '
+buildopts += 'HWLOC_INCLUDE_DIR=$EBROOTHWLOC/include HWLOC_LIB_DIR=$EBROOTHWLOC/lib HWLOC_LIB_NAME=hwloc '
 
 maxparallel = 1
 
-installopts = 'PREFIX=%(installdir)s INSTALL_CHOWN="" BUILDFREQ="" ACCESSMODE=perf_event '
+installopts = buildopts + 'INSTALL_CHOWN="" '
 
 sanity_check_paths = {
     'files': ['bin/likwid-memsweeper', 'bin/likwid-mpirun', 'bin/likwid-perfctr',
