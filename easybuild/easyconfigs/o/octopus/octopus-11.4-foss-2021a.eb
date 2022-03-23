@@ -1,0 +1,74 @@
+easyblock = 'ConfigureMake'
+
+name = 'octopus'
+version = '11.4'
+
+homepage = 'https://octopus-code.org/wiki/Main_Page'
+description = """Octopus is a scientific program aimed at the ab initio
+virtual experimentation on a hopefully ever-increasing range of system
+types. Electrons are described quantum-mechanically within
+density-functional theory (DFT), in its time-dependent form (TDDFT) when
+doing simulations in time. Nuclei are described classically as point
+particles. Electron-nucleus interaction is described within the
+pseudopotential approximation."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['http://octopus-code.org/down.php?file=%(version)s']
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'octopus-11.4_fix_shebang_perl.patch',
+]
+
+builddependencies = [
+    ('Perl', '5.32.1'),
+]
+
+dependencies = [
+    ('libxc', '5.1.5'),
+    ('GSL', '2.7'),
+    ('netCDF', '4.8.0'),
+    ('netCDF-Fortran', '4.5.3'),
+    ('ETSF_IO', '1.0.4'),
+    ('futile', '1.8.3'),
+    ('PSolver', '1.8.3'),
+    ('CGAL', '4.14.3'),
+    ('likwid', '5.2.0'),
+    ('DFTB+', '21.1'),
+    ('libvdwxc', '0.4.0'),
+    ('NLopt', '2.7.0'),
+    ('libyaml', '0.2.5'),
+    ('ELPA', '2021.05.001'),
+    # ('BerkeleyGW', '3.0.1'),  # Problems with output/output.F90, keep disabled
+    # ('libgd', '2.3.1'),  # requires v2.2.x for configure to find it
+    # ('libpspio', '0.2.4'),  # Requires older version where libnames are libfpspio and not libpspiof
+]
+
+preconfigopts = 'export FCCPP=cpp FCFLAGS="$FCFLAGS -fallow-argument-mismatch" && '
+preconfigopts += 'export FCFLAGS_ELPA="-I$EBROOTELPA/include/elpa_openmp-$EBVERSIONELPA/modules" && '
+preconfigopts += 'export LIBS_ELPA=-lelpa_openmp && '
+
+configopts = '--enable-openmp --enable-mpi '
+configopts += '--with-blas=flexiblas --with-blacs=scalapack --with-scalapack=scalapack '
+configopts += '--with-fftw-prefix=$EBROOTFFTW --with-libxc-prefix=$EBROOTLIBXC '
+configopts += '--with-netcdf-prefix=$EBROOTNETCDFMINFORTRAN --with-nlopt-prefix=$EBROOTNLOPT '
+configopts += '--with-futile-prefix=$EBROOTFUTILE --with-psolver-prefix=$EBROOTPSOLVER '
+configopts += '--with-cgal=$EBROOTCGAL --with-libvdwxc-prefix=$EBROOTLIBVDWXC '
+configopts += '--with-dftbplus-prefix=$EBROOTDFTBPLUS --with-yaml-prefix=$EBROOTLIBYAML '
+configopts += '--with-likwid-prefix=$EBROOTLIKWID --with-etsf-io-prefix=$EBROOTETSF_IO '
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['create_combinations.py', 'oct-analyze_projections', 'oct-atomic_occupations',
+                                     'oct-casida_spectrum', 'octopus']] +
+             ['include/liboct_parser.h', 'include/string_f.h'] +
+             ['lib/liboct.a', 'lib/liboct_parser.a'] +
+             ['share/octopus/pseudopotentials/PSF/T.psf'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'octopus --version',
+]
+
+moduleclass = 'phys'
