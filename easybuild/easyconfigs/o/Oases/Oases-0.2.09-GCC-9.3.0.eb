@@ -1,0 +1,50 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2013 The Cyprus Institute
+# Authors::   Andreas Panteli <a.panteli@cyi.ac.cy>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+#
+##
+# foss-2016b modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock = "MakeCp"
+
+name = 'Oases'
+version = '0.2.09'
+
+homepage = 'https://github.com/dzerbino/oases'
+description = """Oases is a de novo transcriptome assembler designed to produce transcripts from
+ short read sequencing technologies, such as Illumina, SOLiD, or 454 in the absence of any genomic assembly."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+local_velvetver = '1.2.10'
+
+source_urls = [
+    'https://github.com/dzerbino/oases/archive/refs/tags/',
+    'https://github.com/dzerbino/velvet/archive/refs/tags/'
+]
+sources = [
+    '%(version)s.tar.gz',
+    'v%s.tar.gz' % local_velvetver
+]
+checksums = [
+    '7aad1195b3e5d88291150669acd9a32cc328df173d88697287f1c2b9da24d3bd',  # 0.2.09.tar.gz
+    '4615e52dc2e8a05f1009daf2c0978c218860be364afa044f73677cd298f10c7b',  # v1.2.10.tar.gz
+]
+
+# listed make targets exclude 'doc' on purpose
+buildopts = ['VELVET_DIR=../velvet-%s cleanobj velvet oases' % local_velvetver]
+parallel = 1
+
+files_to_copy = [(["oases"], 'bin'), "data", "scripts", "src", "doc", "LICENSE.txt", "README.md"]
+
+sanity_check_paths = {
+    'files': ["bin/oases", "LICENSE.txt", "README.md"],
+    'dirs': ["data", "scripts", "src", "doc"]
+}
+
+moduleclass = 'bio'
