@@ -1,0 +1,54 @@
+name = 'NWChem'
+
+version = '7.0.2-p1'
+local_version = '7.0.2'
+
+local_verdate = '2020-10-12'
+local_revision = 'b9985dfa'
+
+homepage = 'https://www.nwchem-sw.org'
+description = """NWChem aims to provide its users with computational chemistry tools that are scalable both in
+ their ability to treat large scientific computational chemistry problems efficiently, and in their use of available
+ parallel computing resources from high-performance parallel supercomputers to conventional workstation clusters.
+ NWChem software can handle: biomolecules, nanostructures, and solid-state; from quantum to classical, and all
+ combinations; Gaussian basis functions or plane-waves; scaling from one to thousands of processors; properties
+ and relativity."""
+
+toolchain = {'name': 'iofbf', 'version': '2020a'}
+toolchainopts = {'i8': True}
+
+# https://github.com/nwchemgit/nwchem/releases/download/v7.0.2-release/
+# nwchem-7.0.2-release.revision-b9985dfa-src.2020-10-12.tar.bz2
+
+source_urls = ['https://github.com/nwchemgit/nwchem/releases/download/v%(version)s-release/']
+sources = ['nwchem-%s-release.revision-%s-src.%s.tar.bz2' % (local_version, local_revision, local_verdate)]
+patches = [
+    'NWChem-7.0.2_fix_gnumakefile.patch',
+    '52b09da6d9121dfb6d6538f3167d2cae8d9bcb69.patch',
+]
+checksums = [
+    # nwchem-7.0.2-release.revision-b9985dfa-src.2020-10-12.tar.bz2
+    'd9d19d87e70abf43d61b2d34e60c293371af60d14df4a6333bf40ea63f6dc8ce',
+    '89c634a652d4c8c358f8388ac01ee441659e3c0256c39b6494e2885c91f9aca4',  # NWChem-7.0.2_fix_gnumakefile.patch
+    # 52b09da6d9121dfb6d6538f3167d2cae8d9bcb69.patch
+    '8f502a3a7ab7d92917e2ca27fed25526833777613380baf590e480599c35ffb9',
+]
+
+dependencies = [
+    ('GlobalArrays', '5.7.2', '-peigs', ('iomkl', '2020a')),
+    ('Python', '3.9'),
+]
+
+preconfigopts  = 'export EXTRA_LIBS=-lutil && '
+
+modules = 'all python'
+
+modloadmsg = """
+  ------------------------------------------------------------------------------
+  This module includes a patch for the issue 475 reported at:
+  https://githubhot.com/repo/nwchemgit/nwchem/issues/475
+  Discrepancy between code and docs: D3 and D3(BJ) correction with B2PLYP #475 
+  ------------------------------------------------------------------------------
+"""
+
+moduleclass = 'chem'

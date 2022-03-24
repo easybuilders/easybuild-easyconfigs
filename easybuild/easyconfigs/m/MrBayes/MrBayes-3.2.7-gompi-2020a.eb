@@ -1,29 +1,31 @@
-# Built with EasyBuild version 3.2.0-r9aeb017af7b43d6eec137d4d95135d3479bd836e on 2017-05-26_18-50-48
+easyblock = 'ConfigureMake'
 
 name = 'MrBayes'
 version = '3.2.7'
 
-homepage = 'http://mrbayes.csit.fsu.edu'
-description = "MrBayes is a program for the Bayesian estimation of phylogeny."
+homepage = "https://nbisweden.github.io/MrBayes/"
+description = """MrBayes is a program for Bayesian inference and model choice across
+ a wide range of phylogenetic and evolutionary models."""
 
 toolchain = {'name': 'gompi', 'version': '2020a'}
-toolchainopts = {'usempi': True}
 
-source_urls = ['https://github.com/NBISweden/%(name)s/archive/']
-sources = ['v%(version)s.tar.gz']
-checksums = ['64da39c01f606d0413ce90a1dd3c1ce2cbdef4cbad99aee8a4b2391a2e8db244']
-
-builddependencies = [
-    ('Autotools', '20150215'),
-]
+source_urls = ['https://github.com/NBISweden/MrBayes/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['39d9eb269969b501268d5c27f77687c6eaa2c71ccf15c724e6f330fc405f24b9']
 
 dependencies = [
+    ('libreadline', '8.0'),
     ('beagle-lib', '3.1.2'),
-    ('libreadline', '6.3'),
 ]
 
-#configopts = '--disable-sse --disable-avx --disable-fma '
+configopts  = "--with-mpi --with-readline --with-beagle=$EBROOTBEAGLEMINLIB "
+configopts += "--disable-sse --disable-avx --disable-fma "
 
-configopts = "--enable-sse --enable-avx --enable-fma "
+sanity_check_paths = {
+    'files': ['bin/mb'],
+    'dirs': ['share']
+}
+
+sanity_check_commands = ["mb -help"]
 
 moduleclass = 'bio'

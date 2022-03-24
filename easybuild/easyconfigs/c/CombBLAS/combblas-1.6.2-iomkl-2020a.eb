@@ -1,0 +1,33 @@
+easyblock = "CMakeMake"
+name = 'CombBLAS'
+version = '1.6.2'
+
+homepage = 'https://people.eecs.berkeley.edu/~aydin/CombBLAS/html/'
+description = """The Combinatorial BLAS (CombBLAS) is an extensible distributed-memory parallel graph library offering a small but powerful set of linear algebra primitives specifically targeting graph analytics."""
+
+
+toolchain = {'name': 'iomkl', 'version' : '2020a'}
+source_urls = ['http://eecs.berkeley.edu/~aydin/CombBLAS_FILES']
+sources = ['%(name)s_beta_16_2.tgz']
+patches = ['CombBLAS.patch']
+checksums = [
+    '2a35c725606f18d010c110c66814b6558dae26f6807ac01c843c788fdb5b3ca9',  # CombBLAS_beta_16_2.tgz
+    '1d3dfd82b9a52eee8d517146e43584d697bc060a32d60226cde130d487c3e064',  # CombBLAS.patch
+]
+
+local_configopts_single = '-DCMAKE_CXX_COMPILER="mpicxx" '
+local_configopts_single += '-DCMAKE_C_COMPILER="mpicc" '
+
+configopts = [ local_configopts_single ]
+
+parallel = 1
+separate_build_dir = False
+postinstallcmds = ['mkdir %(installdir)s/include/BipartiteMatchings ; cp BipartiteMatchings/*.h %(installdir)s/include/BipartiteMatchings/']
+sanity_check_paths = { 
+    'files': ['lib/libCombBLAS.a', 'lib/libGraphGenlib.a', 'lib/libUsortlib.a'],
+    'dirs' : ['include']
+}
+moduleclass = 'math'
+
+
+
