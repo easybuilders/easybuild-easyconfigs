@@ -13,10 +13,12 @@ source_urls = ['https://ftp.mozilla.org/pub/security/nss/releases/NSS_%(version_
 sources = [SOURCELOWER_TAR_GZ]
 patches = [
     'NSS-3.39_pkgconfig.patch',
+    'NSS-3.65_CVE-2021-43527.patch',
 ]
 checksums = [
     '32170f6c188212a78bf9fdacffa2eeed0d564ef8faae63fd8ae971b208e8c637',  # nss-3.65.tar.gz
     '5c4b55842e5afd1e8e67b90635f6474510b89242963c4ac2622d3e3da9062774',  # NSS-3.39_pkgconfig.patch
+    'b9ccfdeb692f703e40e83202366bbdea9ef9506003b368e8061fc1fa439ebbc3',  # NSS-3.65_CVE-2021-43527.patch
 ]
 
 builddependencies = [('binutils', '2.36.1')]
@@ -41,9 +43,14 @@ buildopts += "cd config && make PREFIX=%(installdir)s BUILD_OPT=1 USE_64=1 && cd
 files_to_copy = ['../dist/Linux*.OBJ/*', (['../dist/public/*'], 'include')]
 
 sanity_check_paths = {
-    'files': ['lib/libnss.a'],
-    'dirs': ['bin', 'include/dbm', 'include/nss'],
+    'files': ['bin/nss-config', 'bin/multinit', 'lib/libnss.a'],
+    'dirs': ['include/dbm', 'include/nss'],
 }
+
+sanity_check_commands = [
+    "multinit --help",
+    "nss-config --version",
+]
 
 modextrapaths = {'CPATH': 'include/nss'}
 
