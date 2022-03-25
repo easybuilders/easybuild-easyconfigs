@@ -1,0 +1,70 @@
+easyblock = 'ConfigureMake'
+name = 'Environ'
+version = '2.0.3'
+local_qe_version = '7.0'
+versionsuffix = '-qe-%s' %(local_qe_version,)
+homepage = 'https://www.quantum-environ.org/'
+description = """A module to handle environment effects in first-principles condensed-matter simulations, \
+in particular for applications in surface science and materials design. It is a Quantum-ESPRESSO module currently compatible with QE-6.3 and up.
+"""
+
+toolchain = {'name': 'intel', 'version': '2021a'}
+
+# A workaround to usage of -fopenmp flags instead of -qopenmp flag intended for Intel OpenMP
+# Later on, I also update LDFLAGS to use -qopenmp, otherwise, linking breaks
+toolchainopts = {'usempi': True, 'openmp': False, 'extra_cxxflags' : '-qopenmp', 'extra_f90flags' : '-qopenmp'}
+
+# The Environ installation script requires that you select the QE package to extend 
+#   1 - PW
+#   2 - CP
+#   3 - TDDFPT
+#   4 - XSpectra
+#   5 - NEB
+#   6 - ALL
+
+local_environ_extension_package = 6
+
+# The script also accepts the number of threads for multithreaded compilation
+
+local_number_of_threads = 8
+
+source_urls = [
+    'https://github.com/environ-developers/Environ/archive/refs/tags/'
+    'https://github.com/QEF/q-e/releases/download/qe-%(version)s/',
+]
+
+sources = [
+    'qe-%s-ReleasePack.tgz' % (local_qe_version,),
+    {
+        'filename': 'Environ.tar.gz', 
+        'download_filename' : 'v%(version)s.tar.gz', 
+        'extract_cmd' : "tar xvf %s; mv Environ-%(version)s " + " qe-%s/Environ" % (local_qe_version) 
+    }
+]
+
+patches = ['environ_mpiifort_omp_compiler_error.patch']
+
+checksums = [
+    '268ec506f88c56ba4e9b691c1e81e33a6ad7949f857f1c6c32197f9c2af2a957',  # qe-7.0-ReleasePack.tgz
+    '6eba3d155a5a42a9541d6210d0554a222b010f1864c8888214b642683a4cd893',  # Environ.tar.gz
+    '94a1ab93e749082d60fad4e2517e51c7c5f36d6a276e93d4e3d42fc9e2b8f165',  # environ_mpiifort_omp_compiler_error.patch
+]
+
+configure_cmd = './configure LDFLAGS=\"$LDFLAGS -qopenmp\" && cd Environ; ./configure --with-scalapack=intel LDFLAGS=\"$LDFLAGS -qopenmp\"'
+
+build_cmd = 'cd Environ; printf \'%s\n%s\' |  make install' % (local_environ_extension_package,local_number_of_threads)
+
+install_cmd = 'mkdir -p %(installdir)s/bin && cp bin/* %(installdir)s/bin/'
+
+sanity_check_paths = {
+    'files': ['bin/cell2ibrav.x',  'bin/cppp.x',  'bin/cp.x',  'bin/dist.x',  'bin/ev.x',  'bin/ibrav2cell.x', \
+              'bin/kpoints.x',  'bin/manycp.x',  'bin/manypw.x',  'bin/molecularnexafs.x',  'bin/neb.x',  \
+              'bin/path_interpolation.x',  'bin/pwi2xsf.x',  'bin/pw.x',  'bin/scan_ibrav.x',  'bin/spectra_correction.x',  \
+              'bin/turbo_davidson.x',  'bin/turbo_eels.x',  'bin/turbo_lanczos.x',  'bin/turbo_magnons.x',  \
+              'bin/turbo_spectrum.x',  'bin/wfdd.x',  'bin/xspectra.x'],
+    'dirs': []
+}
+
+parallel = 0
+
+moduleclass = 'chem'
