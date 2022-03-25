@@ -1,0 +1,38 @@
+easyblock = 'CMakeMake'
+
+name = 'rocminfo'
+version = '4.5.0'
+
+homepage = 'https://github.com/RadeonOpenCompute/rocminfo'
+description = """ROCm Application for Reporting System Info"""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ["https://github.com/RadeonOpenCompute/rocminfo/archive/refs/tags/"]
+sources = ["rocm-%(version)s.tar.gz"]
+checksums = ['421ed55192780eb478f0341fd1ce47a0dd3ffafbec9d7a02109a411878a58ee5']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('CMake', '3.21.1'),
+]
+dependencies = [
+    ('ROCR-Runtime', '%(version)s'),
+    ('Python', '3.9.6'),  # Needed for 'rocm_agent_enumerator' which is a Python script
+]
+
+configopts = "-DCMAKE_EXE_LINKER_FLAGS='-Wl,--disable-new-dtags'"
+configopts += " -DROCRTST_BLD_TYPE=Release"
+configopts += " -DROCM_DIR=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/rocminfo', 'bin/rocm_agent_enumerator'],
+    'dirs': [],
+}
+sanity_check_commands = [
+    'rocminfo --help',
+    'rocm_agent_enumerator'
+]
+
+moduleclass = 'tools'
