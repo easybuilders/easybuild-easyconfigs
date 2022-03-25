@@ -1,0 +1,178 @@
+diff -Nru qe-7.0.orig/Environ/FFTs/fft_parallel.f90 qe-7.0/Environ/FFTs/fft_parallel.f90
+--- qe-7.0.orig/Environ/FFTs/fft_parallel.f90	2022-03-11 16:37:32.000000000 +0100
++++ qe-7.0/Environ/FFTs/fft_parallel.f90	2022-03-24 15:32:48.763871717 +0100
+@@ -416,12 +416,12 @@
+             IF (isgn > 0) THEN ! G -> R
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(i, j)
+-                !$omp&         shared(howmany, f, nnr_, isgn, dfft, aux)
+-                !$omp&         shared(nsticks_z, n3, nx3)
+-                !$omp&         shared(nsticks_y, n2, nx2)
+-                !$omp&         shared(nsticks_x, n1, nx1)
+-                !$omp&         shared(nsticks_zx, nsticks_yx)
++                !$omp&         private(i, j) &
++                !$omp&         shared(howmany, f, nnr_, isgn, dfft, aux) &
++                !$omp&         shared(nsticks_z, n3, nx3) &
++                !$omp&         shared(nsticks_y, n2, nx2) &
++                !$omp&         shared(nsticks_x, n1, nx1) &
++                !$omp&         shared(nsticks_zx, nsticks_yx) 
+                 !
+                 !$omp do
+                 DO i = 0, howmany - 1
+@@ -487,12 +487,12 @@
+             ELSE ! R -> G
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(i)
+-                !$omp&         shared(howmany, f, isgn, nnr_, dfft, aux)
+-                !$omp&         shared(nsticks_z, n3, nx3)
+-                !$omp&         shared(nsticks_y, n2, nx2)
+-                !$omp&         shared(nsticks_x, n1, nx1)
+-                !$omp&         shared(nsticks_zx, nsticks_yx)
++                !$omp&         private(i) &
++                !$omp&         shared(howmany, f, isgn, nnr_, dfft, aux) &
++                !$omp&         shared(nsticks_z, n3, nx3) &
++                !$omp&         shared(nsticks_y, n2, nx2) &
++                !$omp&         shared(nsticks_x, n1, nx1) &
++                !$omp&         shared(nsticks_zx, nsticks_yx) 
+                 !
+                 !$omp do
+                 DO i = 0, howmany - 1
+diff -Nru qe-7.0.orig/Environ/FFTs/fft_scatter.f90 qe-7.0/Environ/FFTs/fft_scatter.f90
+--- qe-7.0.orig/Environ/FFTs/fft_scatter.f90	2022-03-11 16:37:32.000000000 +0100
++++ qe-7.0/Environ/FFTs/fft_scatter.f90	2022-03-24 15:32:37.523908143 +0100
+@@ -423,9 +423,9 @@
+             IF (nproc2 == 1) THEN
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(i, j, k, ip, it, m1, m2, i1, icompact)
+-                !$omp&         shared(howmany, ncpx, nr2px, nr1p_, iplx)
+-                !$omp&         shared(desc, f_aux, f_in, indx)
++                !$omp&         private(i, j, k, ip, it, m1, m2, i1, icompact) &
++                !$omp&         shared(howmany, ncpx, nr2px, nr1p_, iplx) &
++                !$omp&         shared(desc, f_aux, f_in, indx, io)
+                 !
+                 ip = nr1p_(1) * desc%my_nr3p + 1
+                 !
+@@ -475,9 +475,9 @@
+             ELSE
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(iproc2, i, j, k, kdest, kfrom)
+-                !$omp&         shared(nproc2, howmany, ncpx, sendsize, nr1p_)
+-                !$omp&         shared(nr2px, desc, f_aux, f_in, me2)
++                !$omp&         private(iproc2, i, j, k, kdest, kfrom) &
++                !$omp&         shared(nproc2, howmany, ncpx, sendsize, nr1p_) &
++                !$omp&         shared(nr2px, desc, f_aux, f_in, me2, io) 
+                 !
+                 !$omp do
+                 DO k = 0, howmany - 1
+@@ -507,9 +507,9 @@
+                 IF (ABS(ierr) /= 0) CALL io%error(sub_name, 'info<>0', ABS(ierr))
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(iproc2, i, j, k, ip, it, m1, m2, icompact, it0, i1)
+-                !$omp&         shared(nproc2, howmany, ncpx, sendsize, nr2px, indx)
+-                !$omp&         shared(desc, f_aux, f_in, iplx, nr1p_)
++                !$omp&         private(iproc2, i, j, k, ip, it, m1, m2, icompact, it0, i1) &
++                !$omp&         shared(nproc2, howmany, ncpx, sendsize, nr2px, indx) &
++                !$omp&         shared(desc, f_aux, f_in, iplx, nr1p_) 
+                 !
+                 !$omp do
+                 DO k = 0, howmany - 1
+@@ -570,9 +570,9 @@
+             IF (nproc2 == 1) THEN
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(i, j, k, ip, it, m1, m2, i1, icompact)
+-                !$omp&         shared(howmany, ncpx, nr2px, nr1p_)
+-                !$omp&         shared(desc, f_aux, f_in, indx)
++                !$omp&         private(i, j, k, ip, it, m1, m2, i1, icompact) &
++                !$omp&         shared(howmany, ncpx, nr2px, nr1p_) &
++                !$omp&         shared(desc, f_aux, f_in, indx, io) 
+                 !
+                 ip = nr1p_(1) * desc%my_nr3p + 1
+                 !
+@@ -604,9 +604,9 @@
+             ELSE
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(iproc2, i, j, k, ip, it, m1, m2, icompact, it0, i1)
+-                !$omp&         shared(nproc2, howmany, ncpx, sendsize, nr2px, indx)
+-                !$omp&         shared(desc, f_aux, f_in, nr1p_)
++                !$omp&         private(iproc2, i, j, k, ip, it, m1, m2, icompact, it0, i1) &
++                !$omp&         shared(nproc2, howmany, ncpx, sendsize, nr2px, indx) &
++                !$omp&         shared(desc, f_aux, f_in, nr1p_, io) 
+                 !
+                 !$omp do
+                 DO k = 0, howmany - 1
+@@ -648,9 +648,9 @@
+                 ! step one: store contiguously the columns
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(iproc2, i, j, k, kdest, kfrom)
+-                !$omp&         shared(nproc2, howmany, ncpx, sendsize, nr2px)
+-                !$omp&         shared(desc, f_aux, f_in, nr1p_, me2)
++                !$omp&         private(iproc2, i, j, k, kdest, kfrom) &
++                !$omp&         shared(nproc2, howmany, ncpx, sendsize, nr2px) &
++                !$omp&         shared(desc, f_aux, f_in, nr1p_, me2, io)
+                 !
+                 !$omp do
+                 DO k = 0, howmany - 1
+@@ -1119,9 +1119,9 @@
+             IF (nproc3 == 1) THEN
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(i, j, k, it, mc, m1, m2, i1)
+-                !$omp&         shared(howmany, ncpx, nr3px, desc, f_aux, f_in)
+-                !$omp&         shared(ncp_, me2, ir1p_, my_nr1p_)
++                !$omp&         private(i, j, k, it, mc, m1, m2, i1) &
++                !$omp&         shared(howmany, ncpx, nr3px, desc, f_aux, f_in) &
++                !$omp&         shared(ncp_, me2, ir1p_, my_nr1p_, sub_name, io)
+                 !
+                 !$omp do collapse(2)
+                 DO k = 0, howmany - 1
+@@ -1158,11 +1158,11 @@
+             ELSE
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(i, j, k, kdest, kfrom, iproc3)
+-                !$omp&         private(it, mc, m1, m2, i1)
+-                !$omp&         shared(nproc3, howmany, ncpx, sendsize, nr3px)
+-                !$omp&         shared(ncp_, ir1p_, my_nr1p_, ierr)
+-                !$omp&         shared(desc, f_aux, f_in, me2, me3)
++                !$omp&         private(i, j, k, kdest, kfrom, iproc3) &
++                !$omp&         private(it, mc, m1, m2, i1) &
++                !$omp&         shared(nproc3, howmany, ncpx, sendsize, nr3px) &
++                !$omp&         shared(ncp_, ir1p_, my_nr1p_, ierr) &
++                !$omp&         shared(desc, f_aux, f_in, me2, me3, sub_name, io)
+                 !
+                 !$omp do collapse(3)
+                 DO k = 0, howmany - 1
+@@ -1248,9 +1248,9 @@
+             IF (nproc3 == 1) THEN
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(i, j, k, it, mc, m1, m2, i1)
+-                !$omp&         shared(howmany, ncpx, nr3px, desc, f_aux, f_in)
+-                !$omp&         shared(ncp_, me2, ir1p_, my_nr1p_)
++                !$omp&         private(i, j, k, it, mc, m1, m2, i1) &
++                !$omp&         shared(howmany, ncpx, nr3px, desc, f_aux, f_in) &
++                !$omp&         shared(ncp_, me2, ir1p_, my_nr1p_, io)
+                 !
+                 !$omp do collapse(2)
+                 DO k = 0, howmany - 1
+@@ -1277,9 +1277,9 @@
+             ELSE
+                 !
+                 !$omp parallel default(none) &
+-                !$omp&         private(iproc3, i, j, k, ip, it, mc, m1, m2, i1, it0,kdest,kfrom)
+-                !$omp&         shared(nproc3, howmany, ncpx, sendsize, nr3px, desc, me3)
+-                !$omp&         shared(f_aux, f_in, ncp_, me2, ir1p_, my_nr1p_, ierr)
++                !$omp&         private(iproc3, i, j, k, ip, it, mc, m1, m2, i1, it0,kdest,kfrom) &
++                !$omp&         shared(nproc3, howmany, ncpx, sendsize, nr3px, desc, me3) &
++                !$omp&         shared(f_aux, f_in, ncp_, me2, ir1p_, my_nr1p_, ierr, sub_name, io) 
+                 !
+                 !$omp do collapse(3)
+                 DO k = 0, howmany - 1
