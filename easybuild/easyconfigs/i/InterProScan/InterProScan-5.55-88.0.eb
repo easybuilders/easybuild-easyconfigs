@@ -12,7 +12,8 @@ InterProScan is a sequence analysis application (nucleotide and protein
 sequences) that combines different protein signature recognition methods 
 into one resource."""
 
-print('Installing InterProScan %(version)s with data linked from data.rsnt')
+# WARNING: THIS RECIPE DOES NOT PREPARES THE DATA, SEE COMMENTED SECTION BEFORE postinstallcmds
+# TO INCLUDE THE DATA PART IF NOT ON THE DATA REPO
 
 toolchain = SYSTEM
 source_urls = ['ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/%(version)s',
@@ -27,12 +28,19 @@ dependencies = [
 ]
 
 modextrapaths = {'PATH': '.'}
+#'export DATA_DIR=$(echo %(installdir)s | sed "s/-/./g") && '
+#'export DATA_DIR=${DATA_DIR///soft.computecanada.ca\/easybuild\/software\///data.rsnt.computecanada.ca\/content\/easybuild\/data/}'
+#'&& for i in h3f h3i h3m h3p; do find . -name "*.${i}" -exec rm {} + ; done &&'
+#'python %(installdir)s/initial_setup.py && mkdir -p ${DATA_DIR} && cp -r data/* ${DATA_DIR} && rm -rf %(installdir)s/data/* && '
+#"ln -s ${DATA_DIR}/* %(installdir)s/data/ && sed -i 's/head -n 1/grep version/g' %(installdir)s/interproscan.sh",
 postinstallcmds = [
 'export DATA_DIR=$(echo %(installdir)s | sed "s/-/./g") && '
 'export DATA_DIR=${DATA_DIR///soft.computecanada.ca\/easybuild\/software\///data.rsnt.computecanada.ca\/content\/easybuild\/data/}'
-'&& for i in h3f h3i h3m h3p; do find . -name "*.${i}" -exec rm {} + ; done &&'
-'python %(installdir)s/initial_setup.py && mkdir -p ${DATA_DIR} && cp -r data/* ${DATA_DIR} && rm -rf %(installdir)s/data/* && '
-"ln -s ${DATA_DIR}/* %(installdir)s/data/ && sed -i 's/head -n 1/grep version/g' %(installdir)s/interproscan.sh",
+' && rm -rf %(installdir)s/data/* && ln -s ${DATA_DIR}/* %(installdir)s/data/ && '
+"sed -i 's/head -n 1/grep version/g' %(installdir)s/interproscan.sh",
+'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --any_interpreter',
+'find %(installdir)s/bin -type d | xargs -i /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter',
+'find %(installdir)s/lib -type d | xargs -i  /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter',
 ]
 
 
@@ -40,6 +48,66 @@ sanity_check_paths = {
     'files': ['%(namelower)s-%(version_major)s.jar', '%(namelower)s.sh', '%(namelower)s.properties'],
     'dirs': ['bin', 'lib',],
 }
+
+sanity_check_commands = [
+#'interproscan.sh --help', # Help always return code 1
+#'%(installdir)s/bin/pirsr/0.1/pirsr-preprocess.pl -help', # Help always return code 1
+'%(installdir)s/bin/pirsr/0.1/pirsr.py -h',
+'%(installdir)s/bin/ncoils/2.2.1/ncoils -h',
+#'%(installdir)s/bin/prosite/altbin/pfsearchV3.centos7 --help', # Help always return code 1
+#'%(installdir)s/bin/prosite/altbin/pfscan.centos7 --help', # Help always return code 1
+#'%(installdir)s/bin/prosite/pfscan --help', # Help always return code 1
+'%(installdir)s/bin/prosite/pfscanV3 --help',
+#'%(installdir)s/bin/prosite/ps_scan.pl -h',  # Help always return code 1
+#'%(installdir)s/bin/prosite/pfsearch -h', # Help always return code 255
+'%(installdir)s/bin/prosite/pfsearchV3 -h',
+#'%(installdir)s/bin/pirsf/3.10/pirsf.pl -h',# Help always return code 255
+'%(installdir)s/bin/sfld/sfld_postprocess -h',
+'%(installdir)s/bin/mobidb/2.0/binx/espritz/bin/align/getAlignments.pl',
+#'%(installdir)s/bin/mobidb/2.0/binx/espritz/bin/espritz.pl --help', # Help always return code 255
+#'%(installdir)s/bin/superfamily/1.75/a2m2selex.pl -h',  # Help always return code 255
+#'%(installdir)s/bin/superfamily/1.75/ass3.pl', # Help always return code 255
+#'%(installdir)s/bin/superfamily/1.75/hmmscan.pl -h', # Help always return code 1
+#'%(installdir)s/bin/superfamily/1.75/fasta_checker.pl -h', # Help always return code 1
+'%(installdir)s/bin/gene3d/4.3.0/cath-resolve-hits -h',
+#'%(installdir)s/bin/nucleotide/esl-translate -h', # Help always return code 1
+'%(installdir)s/bin/blast/ncbi-blast-2.10.1+/rpsblast -h',
+'%(installdir)s/bin/blast/ncbi-blast-2.10.1+/rpsbproc -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/hmmsearch -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-seqstat -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-alipid -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-selectn -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-construct -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-stranslate -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-afetch -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-alimap -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-compstruct -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-compalign -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-mask -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-weight -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-seqrange -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-reformat -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-alimask -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-histplot -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-shuffle -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-alistat -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-cluster -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-sfetch -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-ssdraw -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-alimerge -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/easel/miniapps/esl-alimanip -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/hmmpress -h', 
+'%(installdir)s/bin/hmmer/hmmer3/3.1b1/hmmscan -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.3/esl-translate -h',
+'%(installdir)s/bin/hmmer/hmmer3/3.3/hmmsearch -h', 
+'%(installdir)s/bin/hmmer/hmmer3/3.3/hmmpress -h', 
+'%(installdir)s/bin/hmmer/hmmer3/3.3/hmmscan -h',
+'%(installdir)s/bin/hmmer/hmmer2/2.3.2/hmmconvert -h',
+'%(installdir)s/bin/hmmer/hmmer2/2.3.2/hmmpfam -h' ,
+'%(installdir)s/bin/hmmer/hmmer2/2.3.2/hmmsearch -h',
+'%(installdir)s/bin/hmmer/hmmer2/2.3.2/hmmbuild -h',
+'%(installdir)s/bin/hmmer/hmmer2/2.3.2/hmmcalibrate -h',
+]
 
 modextravars = {'JAVA': '/cvmfs/soft.computecanada.ca/easybuild/software/2020/Core/java/11.0.2/bin/java'}
 
