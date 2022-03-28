@@ -1,0 +1,55 @@
+name = 'LS-DYNA'
+version = '13.0'
+easyblock = "Tarball"
+modaltsoftname = 'ls-dyna-mpi'
+
+homepage = 'http://www.lstc.com/products/ls-dyna'
+description = """LS-DYNA is a general-purpose finite element program capable of simulating complex real world problems. 
+It is used by the automobile, aerospace, construction, military, manufacturing, and bioengineering industries. 
+LS-DYNA is optimized for shared and distributed memory Unix, Linux, and Windows based, platforms, and it is fully 
+QA'd by LSTC. The code's origins lie in highly nonlinear, transient dynamic finite element analysis using explicit 
+time integration.
+"""
+
+# module load StdEnv/2020
+toolchain = {'name': 'iompi', 'version': '2020a'}
+
+# download sources from ftp.lstc.com
+sources = [
+	'ls-dyna_mpp_s_R13_0_0_x64_centos610_ifort190_avx2_openmpi4.0.0.gz',
+        'ls-dyna_mpp_d_R13_0_0_x64_centos610_ifort190_avx2_openmpi4.0.0.gz',
+        'ansyscl_R13.gz'
+]
+# sha256sum 
+checksums = [
+        '4d2a225542325cbc1851bc1fcf4cc4560a5b30069702aaa129a83b771f9aca10',
+        '9137c67eea4148feb6368677af1d3bb4ad6a4e51648dfcfa6adb7d2829e03e6c',
+        'f1199efb03c21466858ccb36e148599d761a055ea2f8a6ec1bec0f59ac530dad'
+]
+
+postinstallcmds = [
+        'mv %(installdir)s/ansyscl_R13 %(installdir)s/ansyscl',
+	'ln -s ls-dyna_mpp_s_R13_0_0_x64_centos610_ifort190_avx2_openmpi4.0.0 %(installdir)s/ls-dyna_s',
+	'ln -s ls-dyna_mpp_d_R13_0_0_x64_centos610_ifort190_avx2_openmpi4.0.0 %(installdir)s/ls-dyna_d',
+	'chmod +x %(installdir)s/{ls-dyna_mpp_s_R13_0_0_x64_centos610_ifort190_avx2_openmpi4.0.0,ls-dyna_mpp_d_R13_0_0_x64_centos610_ifort190_avx2_openmpi4.0.0,ansyscl}',
+	'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path $EBROOTOPENMPI/lib'
+]
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ["ls-dyna_s", "ls-dyna_d", "ls-dyna_mpp_s_R13_0_0_x64_centos610_ifort190_avx2_openmpi4.0.0", "ls-dyna_mpp_d_R13_0_0_x64_centos610_ifort190_avx2_openmpi4.0.0", "ansyscl" ],
+    'dirs': []
+}
+
+modluafooter = """
+require("SitePackage")
+local found = find_and_define_license_file("LSTC_FILE","ls-dyna")
+if (not found) then
+        local error_message = [[
+	We did not find a suitable license for LS-DYNA. If you have access to one, you can create the file $HOME/.licenses/ls-dyna.lic with the license information. If you think you should have access to one as    part of your institution, please write to support@computecanada.ca so that we can configure it.
+
+	Nous n'avons pas trouve de licence utilisable pour LS-DYNA. Si vous avez acces a une licence de LS-DYNA, vous pouvez creer le fichier $HOME/.licenses/ls-dyna.lic avec l'information de la licence. Si vous    pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+	]]
+	LmodError(error_message)
+end
+"""
