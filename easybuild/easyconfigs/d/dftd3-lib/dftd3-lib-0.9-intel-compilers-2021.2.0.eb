@@ -1,0 +1,41 @@
+easyblock = 'MakeCp'
+
+name = 'dftd3-lib'
+version = '0.9'
+
+homepage = 'https://github.com/dftbplus/dftd3-lib'
+description = """This is a repackaged version of the DFTD3 program by S. Grimme and his coworkers.
+The original program (V3.1 Rev 1) was downloaded at 2016-04-03. It has been
+converted to free format and encapsulated into modules."""
+
+toolchain = {'name': 'intel-compilers', 'version': '2021.2.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'dftbplus'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = ['dftd3-lib-%(version)s_fix-extras-syntax.patch']
+checksums = [
+    '0a015659b5179dff1728a109c3e9b095e6bccc5704de9239aa3844008a9a82df',  # 0.9.tar.gz
+    '717e719170258544555bfc33390a70c2573d971c6548d8f2c951a5606ec77f74',  # dftd3-lib-0.9_fix-extras-syntax.patch
+]
+
+parallel = 1
+
+buildopts = 'FC="$FC" LN="$FC" FCFLAGS="$FCFLAGS" LNFLAGS="$LDFLAGS"'
+
+files_to_copy = [
+    (['prg/dftd3', 'test/testapi'], 'bin'),
+    (['lib/libdftd3.a'], 'lib'),
+    (['lib/*.mod', 'prg/*.mod'], 'include'),
+    (['doc/man.pdf', 'CHANGELOG.rst', 'LICENSE', 'README.rst'], 'share'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/dftd3', 'bin/testapi', 'lib/libdftd3.a'],
+    'dirs': ['include', 'share'],
+}
+
+sanity_check_commands = ["dftd3 --help"]
+
+moduleclass = 'chem'
