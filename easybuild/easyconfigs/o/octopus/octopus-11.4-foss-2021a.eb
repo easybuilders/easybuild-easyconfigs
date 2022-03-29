@@ -25,11 +25,8 @@ checksums = [
     'd16d72f5f0e1b33a45000100982a8f7ee93643f512d86df6f2fdcb960859d290',  # octopus-11.4_fix_shebang_perl.patch
 ]
 
-builddependencies = [
-    ('Perl', '5.32.1'),
-]
-
 dependencies = [
+    ('Perl', '5.32.1'),
     ('libxc', '5.1.5'),
     ('GSL', '2.7'),
     ('netCDF', '4.8.0'),
@@ -44,6 +41,8 @@ dependencies = [
     ('NLopt', '2.7.0'),
     ('libyaml', '0.2.5'),
     ('ELPA', '2021.05.001'),
+    # ('METIS', '5.1.0', '-single_prec'),  # octopus requires METIS built in single precision, we con't have that yet
+    # ('ParMETIS', '4.0.3', '-single_prec'),  # See METIS comment
     # ('BerkeleyGW', '3.0.1'),  # Problems with output/output.F90, keep disabled
     # ('libgd', '2.3.1'),  # requires v2.2.x for configure to find it
     # ('libpspio', '0.2.4'),  # Requires older version where libnames are libfpspio and not libpspiof
@@ -62,6 +61,10 @@ configopts += '--with-cgal=$EBROOTCGAL --with-libvdwxc-prefix=$EBROOTLIBVDWXC '
 configopts += '--with-dftbplus-prefix=$EBROOTDFTBPLUS --with-yaml-prefix=$EBROOTLIBYAML '
 configopts += '--with-likwid-prefix=$EBROOTLIKWID --with-etsf-io-prefix=$EBROOTETSF_IO '
 
+# Checks takes a VERY long time and it will run tests for parts that
+# it doesn't find during configure, like BerkeleyGW
+# runtest = 'check'
+
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['create_combinations.py', 'oct-analyze_projections', 'oct-atomic_occupations',
                                      'oct-casida_spectrum', 'octopus']] +
@@ -73,6 +76,7 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     'octopus --version',
+    'OMP_NUM_THREADS=1 oct-run_testsuite.sh -g tutorials',
 ]
 
 moduleclass = 'phys'
