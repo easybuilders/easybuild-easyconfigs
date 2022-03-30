@@ -101,6 +101,7 @@ versions, etc.).""",
         "Programming Language :: Python :: 3.9",
         "Topic :: Software Development :: Build Tools",
     ],
+    packages=[],
     platforms="Linux",
     requires=[
         "easybuild_framework(>=%s.0)" % MAJ_VER,
