@@ -1,0 +1,77 @@
+easyblock = 'CmdCp'
+
+name = 'ORCA'
+version = '5.0.3'
+
+homepage = 'http://cec.mpg.de/forum/'
+description = """ORCA is a flexible, efficient and easy-to-use general purpose tool for quantum chemistry
+ with specific emphasis on spectroscopic properties of open-shell molecules.
+  It features a wide variety of standard quantum chemical methods ranging from semiempirical methods to DFT to single-
+ and multireference correlated ab initio methods.
+ It can also treat environmental and relativistic effects."""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+
+# Download from https://cec.mpg.de/orcadownload/index.php
+
+source_urls = ['https://github.com/grimme-lab/xtb/releases/download/v6.4.1/']
+sources = [
+    '%%(namelower)s_%s_linux_x86-64_openmpi411_part1.tar.xz' % (version.replace('.', '_') ),
+    '%%(namelower)s_%s_linux_x86-64_openmpi411_part2.tar.xz' % (version.replace('.', '_') ),
+    '%%(namelower)s_%s_linux_x86-64_openmpi411_part3.tar.xz' % (version.replace('.', '_') ),
+    'xtb-6.4.1-linux-x86_64.tar.xz',
+]
+
+checksums = [
+    # orca_5_0_3_linux_x86-64_openmpi411_part1.tar.xz
+    '66c34c9e32b89aa9aa0ffc8e68d8e470b420ecdd93b60a8730ea643151bd6dcd',
+    # orca_5_0_3_linux_x86-64_openmpi411_part2.tar.xz
+    '92984684b69d1fe6bb829a6c7747c0cb194e158c76ea543e8aeeff18a028ca0e',
+    # orca_5_0_3_linux_x86-64_openmpi411_part3.tar.xz
+    '7104596a9bd47f02ec19bb89671f1be97c742f50a0fa71f9b3ac7125e9066ca0',
+    '4c8b4b38d53cc89cde2f2fde82c6f619f7a04b8fceefb377c172db868cbd4dc8',  # xtb-6.4.1-linux-x86_64.tar.xz
+]
+
+keepsymlinks = True
+
+# Implementing XTB with ORCA:
+# Download the binary:
+# https://github.com/grimme-lab/xtb/releases/download/v6.4.1/xtb-6.4.1-linux-x86_64.tar.xz
+# Create a symlink: ln -s %(installdir)s/bin/xtb %(installdir)s/otool_xtb
+
+files_to_copy = ['%(builddir)s/orca_5_0_3_linux_x86-64_openmpi411_part*/*']
+
+cmds_map = [('.*', ' ')]
+
+postinstallcmds = [
+    "cp %(builddir)s/xtb-6.4.1/bin/xtb %(installdir)s/otool_xtb",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path=$EBROOTOPENMPI/lib",
+    "chmod -R go+X %(installdir)s",
+]
+
+local_orca_binaries = [
+    'anoint', 'casscf', 'cis', 'cpscf', 'eprnmr', 'mdci', 'mp2',
+    'mrci', 'pc', 'rocis', 'scf', 'scfgrad', 'soc', 'gtoint',
+]
+
+local_orca_suffixes = [
+    '2mkl', 'asa', 'chelpg', 'ciprep', 'eca', 'ecplib', 'euler',
+    'fci', 'fitpes', 'gstep', 'loc', 'mapspc', 'md', 'mergefrag',
+    'ndoint', 'numfreq', 'plot', 'pltvib', 'pop', 'rel', 'vib', 'vpot',
+]
+
+sanity_check_paths = {
+    'files': ['orca_%s%s' % (x, y) for x in local_orca_binaries for y in ["", "_mpi"]] +
+             ['orca_%s' % x for x in local_orca_suffixes] +
+             ['orca'] +
+	     ['otool_xtb'],
+    'dirs': ['ORCACompoundMethods'],
+}
+
+group = 'soft_orca'
+
+modloadmsg = """To execute %(name)s, run: 
+   ${EBROOTORCA}/%(namelower)s %(namelower)s.inp > %(namelower)s.out
+"""
+
+moduleclass = 'chem'

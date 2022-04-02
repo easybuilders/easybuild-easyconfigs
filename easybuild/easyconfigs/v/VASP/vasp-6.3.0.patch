@@ -1,0 +1,174 @@
+--- src/.objects.orig	2022-03-28 11:57:12.000000000 -0700
++++ src/.objects	2022-03-28 11:58:19.000000000 -0700
+@@ -115,6 +115,19 @@
+ 	dos.o \
+ 	elf.o \
+ 	hamil_rot.o \
++	bfgs.o \
++        dynmat.o \
++        instanton.o \
++        lbfgs.o \
++        sd.o \
++        cg.o \
++        dimer.o \
++        bbm.o \
++        fire.o \
++        lanczos.o \
++        neb.o \
++        qm.o \
++        opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	fileio.o \
+--- src/main.F.orig	2022-03-28 12:01:13.000000000 -0700
++++ src/main.F	2022-03-28 12:01:04.000000000 -0700
+@@ -3517,7 +3517,7 @@
+       ENDIF
+ 
+       CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
+-           LATT_CUR%A,LATT_CUR%B,IO%IU6)
++           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6)
+ 
+       CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
+            LATT_CUR%A,LATT_CUR%B,IO%IU6)
+--- arch/makefile.include.intel_omp.orig	2022-01-20 07:09:58.000000000 -0800
++++ arch/makefile.include.intel_omp	2022-03-30 11:05:29.000000000 -0700
+@@ -7,12 +7,11 @@
+               -Dvasp6 \
+               -Duse_bse_te \
+               -Dtbdyn \
+-              -Dfock_dblbuf \
+-              -D_OPENMP
++              -Dfock_dblbuf 
+ 
+ CPP         = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
+ 
+-FC          = mpiifort -qopenmp
++FC          = mpiifort 
+ FCL         = mpiifort
+ 
+ FREE        = -free -names lowercase
+@@ -49,28 +48,45 @@
+ 
+ # When compiling on the target machine itself, change this to the
+ # relevant target when cross-compiling for another architecture
+-FFLAGS     += -xHOST
++#FFLAGS     += -xHOST
+ 
+-# Intel MKL (FFTW, BLAS, LAPACK, and scaLAPACK)
+-# (Note: for Intel Parallel Studio's MKL use -mkl instead of -qmkl)
+-FCL        += -qmkl
+-MKLROOT    ?= /path/to/your/mkl/installation
+-LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+-INCS        =-I$(MKLROOT)/include/fftw
++# Flexiblas  (FFTW, BLAS, LAPACK, and scaLAPACK)
++LLIBS      += -lflexiblas_intel -lscalapack -lfftw3 
+ 
+ # HDF5-support (optional but strongly recommended)
+-#CPP_OPTIONS+= -DVASP_HDF5
++CPP_OPTIONS+= -DVASP_HDF5
+ #HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
++LLIBS      +=  -lhdf5_fortran
+ #INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
++CPP_OPTIONS    += -DVASP2WANNIER90
+ #WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++LLIBS          += -lwannier
+ 
+ # For the fftlib library (experimental)
+ #FCL         = mpiifort fftlib.o -qmkl
+ #CXX_FFTLIB  = icpc -qopenmp -std=c++11 -DFFTLIB_USE_MKL -DFFTLIB_THREADSAFE
+ #INCS_FFTLIB = -I./include -I$(MKLROOT)/include/fftw
+ #LIBS       += fftlib
++
++#Libbeef-support
++CPP_OPTIONS  += -Dlibbeef
++LLIBS        += -lbeef
++
++#VASPsol support
++CPP_OPTIONS += -Dsol_compat
++
++#Libxc-support 
++CPP_OPTIONS += -DUSELIBXC
++LLIBS       += -lxcf03 -lxc
++
++
++#DFTD4- support 
++CPP_OPTIONS += -DDFTD4
++DFTD4_ROOT  ?= $(EBROOTDFTD4)
++LLIBS += -ldftd4
++INCS        += -I$(DFTD4_ROOT)/include/dftd4
++
++
++
+--- src/mpi.F.orig	2022-03-30 13:10:00.000000000 -0700
++++ src/mpi.F	2022-03-30 14:22:49.000000000 -0700
+@@ -1917,35 +1917,35 @@
+ !!!
+ !!!----------------------------------------------------------------------
+ !!
+-!!      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
+-!!      USE string, ONLY: str
+-!!      USE tutor, ONLY: vtutor
+-!!      USE mpimy
+-!!      IMPLICIT NONE
+-!!
+-!!      TYPE(communic) COMM
+-!!      INTEGER n
+-!!      REAL(q) vec(n),v1,v2,v3,v4
+-!!
+-!!      vec=0
+-!!
+-!!      IF (n>0) vec(1)=v1
+-!!      IF (n>1) vec(2)=v2
+-!!      IF (n>2) vec(3)=v3
+-!!      IF (n>3) vec(4)=v4
+-!!      IF (n>4) THEN
+-!!          WRITE(*,*) 'M_sum_s: invalid n ', n
+-!!          STOP
+-!!      END IF
+-!!
+-!!      CALL M_sumb_d(COMM, vec, n)
+-!!
+-!!      IF (n>0) v1=vec(1)
+-!!      IF (n>1) v2=vec(2)
+-!!      IF (n>2) v3=vec(3)
+-!!      IF (n>3) v4=vec(4)
+-!!      RETURN
+-!!      END SUBROUTINE M_sum_s
++      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
++      USE string, ONLY: str
++      USE tutor, ONLY: vtutor
++      USE mpimy
++      IMPLICIT NONE
++
++      TYPE(communic) COMM
++      INTEGER n
++      REAL(q) vec(n),v1,v2,v3,v4
++
++      vec=0
++
++      IF (n>0) vec(1)=v1
++      IF (n>1) vec(2)=v2
++      IF (n>2) vec(3)=v3
++      IF (n>3) vec(4)=v4
++      IF (n>4) THEN
++          WRITE(*,*) 'M_sum_s: invalid n ', n
++          STOP
++      END IF
++
++      CALL M_sumb_d(COMM, vec, n)
++
++      IF (n>0) v1=vec(1)
++      IF (n>1) v2=vec(2)
++      IF (n>2) v3=vec(3)
++      IF (n>3) v4=vec(4)
++      RETURN
++      END SUBROUTINE M_sum_s
+ 
+ !----------------------------------------------------------------------
+ !
