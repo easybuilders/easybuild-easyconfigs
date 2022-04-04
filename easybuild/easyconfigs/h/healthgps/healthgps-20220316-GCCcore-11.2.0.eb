@@ -1,0 +1,73 @@
+# Contribution from Imperial College London, UK
+# uploaded by J. Sassmannshausen
+
+easyblock = 'CMakeMakeCp'
+
+name = 'healthgps'
+local_commit = '9289a13'
+version = '20220316'
+
+homepage = 'https://github.com/imperialCHEPI/healthgps'
+description = """
+Health-GPS microsimulation is part of the STOP project, and support researchers 
+and policy makers in the analysis of the health and economic impacts of alternative 
+measures to tackle chronic diseases and obesity in children. The model reproduces 
+the characteristics of a population and simulates key individual event histories 
+associated with key components of relevant behaviours, such as physical activity, 
+and diseases such as diabetes or cancer."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/imperialCHEPI/healthgps/archive/%s' % local_commit]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['healthgps-20220316-CMake.patch']
+
+checksums = [
+    '61468ea3331bbc0e24fff73284ec0586731d4c14b4e94ed183cb2227cdb8f715',  # healthgps-20220316.tar.gz
+    '315e70c12edfe15535dbd54ac99ea66d41df3989a0917b8da7f024fdea2af609',  # healthgps-20220316-CMake.patch
+]
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('CMake', '3.22.1'),
+    ('Ninja', '1.10.2'),
+
+]
+
+dependencies = [
+    ('crossguide', '20190529'),
+    ('nlohmann_json', '3.10.4'),
+    ('rapidcsv', '8.62'),
+    ('rapidcsv', '8.62'),
+    ('fmt', '8.1.1'),
+    ('googletest', '1.11.0'),
+    ('cxxopts', '3.0.0', '', True),
+    ('LibUUID', '1.0.3'),
+    ('indicators', '2.2'),
+]
+
+# We want to use the presets: 
+# configure_cmd = "export"
+#install_cmd = "cmake --preset='linux-release' && "
+# this does not copy over the data folder to the build-dir:
+install_cmd = "cp -R ../healthgps*/data .  ; "
+install_cmd += "cmake --build --preset='release-build-linux'"
+
+# this crashes right at the beginning as it does not find the presets:
+# configure_cmd = "cp -R ../healthgps*/data .  && "
+# configure_cmd  += "cmake --build --preset='release-build-linux'"
+# install_cmd = ''
+
+files_to_copy = [
+    (['src/HealthGPS.Console/HealthGPS.Console'], 'bin'),
+    'data'
+]
+
+# sanity_check_paths = {
+#     'files': ['lib/libcrossguid.a', 'bin/crossguid-test'],
+#     'dirs': ['include'],
+# }
+
+# sanity_check_commands = [("ctest --preset='core-test-linux'")]
+
+moduleclass = 'bio'
