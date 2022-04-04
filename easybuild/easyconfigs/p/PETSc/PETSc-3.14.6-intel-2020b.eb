@@ -1,0 +1,54 @@
+name = 'PETSc'
+version = '3.14.6'
+
+homepage = 'https://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+# https:// does not work here
+source_urls = [
+    'http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/',
+    'ftp://ftp.mcs.anl.gov/pub/petsc/release-snapshots/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'PETSc_ranlib-fix.patch',
+]
+checksums = [
+    '21000d26883f808287b7718afb4cb62f27c7e0a090d563b90df002d276ef9dfd',  # petsc-3.14.6.tar.gz
+    '64cf9d5008d5e92117e65bdec5316d991b6a6b8c8ecf7ea46eb790a498266297',  # PETSc_ranlib-fix.patch
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('make', '4.3'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('Boost', '1.74.0'),
+    ('ParMETIS', '4.0.3'),
+    ('SCOTCH', '6.1.3'),
+    ('MUMPS', '5.4.1'),
+    ('SuiteSparse', '5.10.1'),
+    ('Hypre', '2.20.0'),
+    ('SuperLU_DIST', '6.4.0'),
+    ('Eigen', '3.3.9'),
+]
+
+# enabling --with-mpi4py seems to be totally broken, leads to make errors like:
+# No rule to make target 'mpi4py-build'
+configopts  = '--LIBS="$LIBS -lrt " --with-mpi4py=0 --with-openmp=1 --with-eigen=1 '
+configopts += '--with-superlu_dist=1 --with-superlu_dist-dir=$EBROOTSUPERLU_DIST --with-metis=1 --with-metis-dir=$EBROOTPARMETIS '
+
+shared_libs = 1
+
+# only required when building PETSc in a SLURM job environment
+# configopts += '--with-batch=1 --known-mpi-shared-libraries=1 --known-64-bit-blas-indices=0 '
+# prebuildopts = "srun ./conftest-arch-linux2-c-opt && ./reconfigure-arch-linux2-c-opt.py && "
+
+moduleclass = 'numlib'
