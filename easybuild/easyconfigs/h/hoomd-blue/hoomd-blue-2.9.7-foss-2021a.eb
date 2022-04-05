@@ -1,0 +1,66 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'CMakeMake'
+
+name = 'hoomd-blue'
+local_commit = 'b6cfe0bc2'
+version = '2.9.7'
+
+local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+homepage = 'https://glotzerlab.engin.umich.edu/hoomd-blue'
+description = """HOOMD-blue is a general purpose particle simulation toolkit.
+ It performs hard particle Monte Carlo simulations of a variety of shape classes,
+ and molecular dynamics simulations of particles with a range of pair, bond,
+ angle, and other potentials. HOOMD-blue runs fast on NVIDIA GPUs, and can scale
+ across thousands of nodes."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+github_account = 'glotzerlab'
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/glotzerlab',
+        'repo_name': '%(name)s',
+        'commit': local_commit,
+        'recursive': True,
+    }
+}]
+patches = ['%(name)s-%(version)s_fix_hpmc_compilation_double_precision.patch']
+
+checksums = [
+    # hoomd-blue-2.9.7.tar.gz
+    '5d980cb696c4376b3bd25983bbcacbea1447f6ea457209e2f1e7834f3a160e4a',
+    # hoomd-blue-2.9.7_fix_hpmc_compilation_double_precision.patch
+    '4d007941c9facbab4c1e8794a6acaac186ffb3de712f51dc925ae8dec768d356',
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    # Optional
+    ('git', '2.32.0', '-nodocs'),
+    # Useful
+    ('Doxygen', '1.9.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('pybind11', '2.6.2'),  # required by scipy
+    ('SciPy-bundle', '2021.05'),  # required for numpy, scipy, ...
+    ('Eigen', '3.3.9'),
+    ('tbb', '2021.4.0'),
+]
+
+configopts = "-DUPDATE_SUBMODULES=OFF -DSINGLE_PRECISION=OFF -DENABLE_TBB=ON -DENABLE_MPI=ON -DENABLE_MPI_CUDA=OFF -DENABLE_CUDA=OFF -DBUILD_CGCMM=ON -DBUILD_DEPRECATED=ON -DBUILD_HPMC=ON -DBUILD_MD=ON -DBUILD_METAL=ON -DBUILD_DEM=ON -DBUILD_TESTING=ON -DBUILD_VALIDATION=OFF -DENABLE_HPMC_MIXED_PRECISION=OFF -DENABLE_HOST=ON -DCMAKE_INSTALL_PREFIX=%s" % local_pylibdir
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/hoomd/init.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/hoomd/md'],
+}
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'tools'
