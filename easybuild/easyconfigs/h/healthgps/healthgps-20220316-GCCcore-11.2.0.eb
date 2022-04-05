@@ -31,7 +31,6 @@ builddependencies = [
     ('binutils', '2.37'),
     ('CMake', '3.22.1'),
     ('Ninja', '1.10.2'),
-
 ]
 
 dependencies = [
@@ -46,28 +45,21 @@ dependencies = [
     ('indicators', '2.2'),
 ]
 
-# We want to use the presets: 
-# configure_cmd = "export"
-#install_cmd = "cmake --preset='linux-release' && "
-# this does not copy over the data folder to the build-dir:
-install_cmd = "cp -R ../healthgps*/data .  ; "
-install_cmd += "cmake --build --preset='release-build-linux'"
-
-# this crashes right at the beginning as it does not find the presets:
-# configure_cmd = "cp -R ../healthgps*/data .  && "
-# configure_cmd  += "cmake --build --preset='release-build-linux'"
-# install_cmd = ''
+# We need to make sure we find the data-dir, so we just link it.
+# This is bash, so we need to do a hack about the source directory.
+prebuildopts = 'ln -s ../healthgps*/data data && '
 
 files_to_copy = [
-    (['src/HealthGPS.Console/HealthGPS.Console'], 'bin'),
+    (['src/HealthGPS.Console/HealthGPS.Console', 'src/HealthGPS.Tests/HealthGPS.Tests'], 'bin'),
     'data'
 ]
 
-# sanity_check_paths = {
-#     'files': ['lib/libcrossguid.a', 'bin/crossguid-test'],
-#     'dirs': ['include'],
-# }
 
-# sanity_check_commands = [("ctest --preset='core-test-linux'")]
+sanity_check_paths = {
+    'files': ['bin/HealthGPS.Console', 'bin/HealthGPS.Tests'],
+    'dirs': ['data'],
+}
+
+sanity_check_commands = ['HealthGPS.Tests']
 
 moduleclass = 'bio'
