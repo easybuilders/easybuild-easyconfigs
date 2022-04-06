@@ -1,0 +1,52 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'ConfigureMake'
+
+name = 'libgdiplus'
+version = '6.1'
+
+homepage = 'https://www.mono-project.com/docs/gui/libgdiplus'
+description = """Libgdiplus is the Mono library that provides a GDI+-compatible
+ API on non-Windows operating systems."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+github_account = 'mono'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = ['%(name)s-6.1_use-external-googletest.patch']
+checksums = [
+    '6ba47acef48ffa2a75d71f8958e0de7f8f52ea066ed97409b33e7a32f31835fd',  # 6.1.tar.gz
+    '79715140ef1db1e99bacceda56351c410966a5d6b0ad3f5c7bed69d7adf1d079',  # libgdiplus-6.1_use-external-googletest.patch
+]
+
+builddependencies = [
+    ('Autotools', '20210726'),
+    ('binutils', '2.37'),
+    ('pkg-config', '0.29.2'),
+    ('googletest', '1.11.0'),
+]
+
+dependencies = [
+    ('cairo', '1.16.0'),
+    ('libjpeg-turbo', '2.0.6'),
+    ('LibTIFF', '4.3.0'),
+    ('libexif', '0.6.24'),
+    ('giflib', '5.2.1'),
+    ('Pango', '1.48.8'),
+]
+
+# if using Pango, also need to link pangoft2
+preconfigopts = "sed -i 's/pangocairo/pangocairo pangoft2/g' configure.ac &&"
+# autogen.sh also runs configure, passing on arguments
+configure_cmd = "./autogen.sh"
+configopts = '--with-pango'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['lib/%s.%s' % (name, x) for x in ['a', 'la', SHLIB_EXT]] + ['lib/pkgconfig/%(name)s.pc'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
