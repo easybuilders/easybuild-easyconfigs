@@ -1,0 +1,69 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'CMakeMake'
+
+name = 'CloudCompare'
+version = '2.12.0'
+
+homepage = "https://www.danielgm.net/cc/"
+description = """CloudCompare is a 3D point cloud (and triangular mesh) processing software. It was originally
+ designed to perform comparison between two 3D points clouds (such as the ones obtained with a laser scanner) or
+ between a point cloud and a triangular mesh. It relies on an octree structure that is highly optimized for this
+ particular use-case. It was also meant to deal with huge point clouds (typically more than 10 million points,
+ and up to 120 million with 2 GB of memory)."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/CloudCompare/',
+        'repo_name': name,
+        'tag': 'v%(version)s',
+        'recursive': True,
+    },
+}]
+# no checksum for source tarball because it's created locally via 'git clone'
+checksums = [None]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+]
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('GDAL', '3.3.0'),
+    ('Eigen', '3.3.9'),
+    ('libpng', '1.6.37'),
+    #('occt', '7.5.0p1'),
+    ('OpenCV', '4.5.3', '-contrib'),
+    ('PCL', '1.12.1'),
+    ('Qt5', '5.15.2'),
+    ('Xerces-C++', '3.2.3'),
+]
+
+# see https://www.cloudcompare.org/doc/wiki/index.php?title=Compilation
+# and https://github.com/cloudcompare/cloudcompare/blob/master/BUILD.md
+configopts = "-DOPTION_USE_GDAL=ON "
+# IO
+configopts += "-DPLUGIN_IO_QADDITIONAL=ON -DPLUGIN_IO_QCSV_MATRIX=ON -DPLUGIN_IO_QE57=ON "
+# Plugins
+configopts += "-DPLUGIN_STANDARD_QANIMATION=ON -DPLUGIN_STANDARD_QBROOM=ON -DPLUGIN_STANDARD_QCANUPO=ON "
+configopts += "-DPLUGIN_STANDARD_QCOLORIMETRIC_SEGMENTER=ON -DPLUGIN_STANDARD_QCOMPASS=ON "
+configopts += "-DPLUGIN_STANDARD_QCSF=ON -DPLUGIN_STANDARD_QFACETS=ON -DPLUGIN_STANDARD_QHOUGH_NORMALS=ON "
+configopts += "-DPLUGIN_STANDARD_QHPR=ON -DPLUGIN_STANDARD_QJSONRPC=ON -DPLUGIN_STANDARD_QM3C2=ON "
+configopts += "-DPLUGIN_STANDARD_QMPLANE=ON -DPLUGIN_STANDARD_QPCL=ON -DPLUGIN_STANDARD_QPCV=ON "
+configopts += "-DPLUGIN_STANDARD_QPOISSON_RECON=ON -DPLUGIN_STANDARD_QRANSAC_SD=ON -DPLUGIN_STANDARD_QSRA=ON "
+configopts += "-DPLUGIN_STANDARD_MASONRY_QAUTO_SEG=ON -DPLUGIN_STANDARD_MASONRY_QMANUAL_SEG=ON "
+# Pointers to directories required for the above
+#configopts += "-DOPENCASCADE_INC_DIR=$EBROOTOCCT/include -DOPENCASCADE_LIB_DIR=$EBROOTOCCT/lib "
+configopts += "-DEIGEN_ROOT_DIR=$EBROOTEIGEN "
+
+sanity_check_paths = {
+    'files': ["bin/ccViewer", "bin/CloudCompare"] +
+             ["lib/cloudcompare/lib%s.%s" % (x, SHLIB_EXT) for x in ['CCAppCommon', 'CCCoreLib']] +
+             ["lib/cloudcompare/plugins/lib%s.%s" % (x, SHLIB_EXT) for x in ['QADDITIONAL_IO_PLUGIN',
+                                                                             'QCSV_MATRIX_IO_PLUGIN']],
+    'dirs': ["share/cloudcompare"],
+}
+
+moduleclass = 'geo'
