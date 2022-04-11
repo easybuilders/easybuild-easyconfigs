@@ -1,0 +1,175 @@
+Only in DualSPHysics-5.0.164: DualSPHysics_5.0.164_Nvidia_11.patch
+diff -ru DualSPHysics-5.0.164.orig/src/source/Makefile DualSPHysics-5.0.164/src/source/Makefile
+--- DualSPHysics-5.0.164.orig/src/source/Makefile	2021-01-19 16:34:08.963407000 +0000
++++ DualSPHysics-5.0.164/src/source/Makefile	2021-01-20 18:43:56.545595604 +0000
+@@ -1,10 +1,10 @@
+ #DualSPHysics GPU/CPU v5.0.164 21-11-2020
+ 
+ #=============== Compilation Options (YES/NO) ===============
+-USE_GCC5=NO
++USE_GCC5=YES
+ USE_DEBUG=NO
+ USE_FAST_MATH=YES
+-USE_NATIVE_CPU_OPTIMIZATIONS=NO
++USE_NATIVE_CPU_OPTIMIZATIONS=YES
+ COMPILE_VTKLIB=YES
+ COMPILE_NUMEXLIB=YES
+ COMPILE_CHRONO=YES
+@@ -27,7 +27,9 @@
+     CCFLAGS+= -ffast-math
+   endif
+   ifeq ($(USE_NATIVE_CPU_OPTIMIZATIONS), YES)
+-    CCFLAGS+= -march=native
++	ifeq ($(shell uname -p), x86_64)
++		CCFLAGS+= -march=native
++	endif
+   endif
+ endif
+ CC=g++
+@@ -61,7 +63,7 @@
+ endif
+ 
+ #=============== CUDA selection ===============
+-CUDAVER=92
++CUDAVER=110
+ 
+ #=============== CUDA toolkit directory (make appropriate for local CUDA installation) ===============
+ ifeq ($(CUDAVER),00)
+@@ -76,6 +78,9 @@
+ ifeq ($(CUDAVER),92)
+   DIRTOOLKIT=/exports/opt/NVIDIA/cuda-9.2
+ endif
++ifeq ($(CUDAVER),110)
++  DIRTOOLKIT=$(EBROOTCUDA)
++endif
+ 
+ #=============== Select GPU architectures ===============
+ ifeq ($(CUDAVER),00)
+@@ -107,6 +112,13 @@
+   GENCODE:=$(GENCODE) -gencode=arch=compute_61,code=\"sm_61,compute_61\"
+   GENCODE:=$(GENCODE) -gencode=arch=compute_70,code=\"sm_70,compute_70\"
+ endif
++ifeq ($(CUDAVER),110)
++  GENCODE:=$(GENCODE) -gencode=arch=compute_52,code=\"sm_52,compute_52\"
++  GENCODE:=$(GENCODE) -gencode=arch=compute_61,code=\"sm_61,compute_61\"
++  GENCODE:=$(GENCODE) -gencode=arch=compute_70,code=\"sm_70,compute_70\"
++  GENCODE:=$(GENCODE) -gencode=arch=compute_75,code=\"sm_75,compute_75\"
++  GENCODE:=$(GENCODE) -gencode=arch=compute_80,code=\"sm_80,compute_80\"
++endif
+ 
+ 
+ #=============== Files to compile ===============
+diff -ru DualSPHysics-5.0.164.orig/src/source/Makefile_cpu DualSPHysics-5.0.164/src/source/Makefile_cpu
+--- DualSPHysics-5.0.164.orig/src/source/Makefile_cpu	2021-01-19 16:34:09.045918000 +0000
++++ DualSPHysics-5.0.164/src/source/Makefile_cpu	2021-01-20 18:44:22.191177000 +0000
+@@ -1,10 +1,10 @@
+ #DualSPHysics CPU v5.0.164 21-11-2020
+ 
+ #=============== Compilation Options (YES/NO) ===============
+-USE_GCC5=NO
++USE_GCC5=YES
+ USE_DEBUG=NO
+ USE_FAST_MATH=YES
+-USE_NATIVE_CPU_OPTIMIZATIONS=NO
++USE_NATIVE_CPU_OPTIMIZATIONS=YES
+ COMPILE_VTKLIB=YES
+ COMPILE_NUMEXLIB=YES
+ COMPILE_CHRONO=YES
+@@ -27,7 +27,9 @@
+     CCFLAGS+= -ffast-math
+   endif
+   ifeq ($(USE_NATIVE_CPU_OPTIMIZATIONS), YES)
+-    CCFLAGS+= -march=native
++    ifeq ($(shell uname -p), x86_64)
++		CCFLAGS+= -march=native
++	endif
+   endif
+ endif
+ CC=g++
+diff -ru DualSPHysics-5.0.164.orig/src_mphase/DSPH_v5.0_NNewtonian/source/Makefile DualSPHysics-5.0.164/src_mphase/DSPH_v5.0_NNewtonian/source/Makefile
+--- DualSPHysics-5.0.164.orig/src_mphase/DSPH_v5.0_NNewtonian/source/Makefile	2021-01-19 16:34:07.356044000 +0000
++++ DualSPHysics-5.0.164/src_mphase/DSPH_v5.0_NNewtonian/source/Makefile	2021-01-20 18:44:55.846815377 +0000
+@@ -1,10 +1,10 @@
+ #DualSPHysics NNewtonian GPU/CPU v5.0.164 21-11-2020
+ 
+ #=============== Compilation Options (YES/NO) ===============
+-USE_GCC5=NO
++USE_GCC5=YES
+ USE_DEBUG=NO
+ USE_FAST_MATH=YES
+-USE_NATIVE_CPU_OPTIMIZATIONS=NO
++USE_NATIVE_CPU_OPTIMIZATIONS=YES
+ COMPILE_VTKLIB=YES
+ COMPILE_NUMEXLIB=YES
+ COMPILE_CHRONO=YES
+@@ -27,7 +27,9 @@
+     CCFLAGS+= -ffast-math
+   endif
+   ifeq ($(USE_NATIVE_CPU_OPTIMIZATIONS), YES)
+-    CCFLAGS+= -march=native
++	ifeq ($(shell uname -p), x86_64)
++    	CCFLAGS+= -march=native
++	endif
+   endif
+ endif
+ CC=g++
+@@ -61,7 +63,7 @@
+ endif
+ 
+ #=============== CUDA selection ===============
+-CUDAVER=92
++CUDAVER=110
+ 
+ #=============== CUDA toolkit directory (make appropriate for local CUDA installation) ===============
+ ifeq ($(CUDAVER),00)
+@@ -76,6 +78,9 @@
+ ifeq ($(CUDAVER),92)
+   DIRTOOLKIT=/exports/opt/NVIDIA/cuda-9.2
+ endif
++ifeq ($(CUDAVER),110)
++  DIRTOOLKIT=$(EBROOTCUDA)
++endif
+ 
+ #=============== Select GPU architectures ===============
+ ifeq ($(CUDAVER),00)
+@@ -107,6 +112,13 @@
+   GENCODE:=$(GENCODE) -gencode=arch=compute_61,code=\"sm_61,compute_61\"
+   GENCODE:=$(GENCODE) -gencode=arch=compute_70,code=\"sm_70,compute_70\"
+ endif
++ifeq ($(CUDAVER),110)
++  GENCODE:=$(GENCODE) -gencode=arch=compute_52,code=\"sm_52,compute_52\"
++  GENCODE:=$(GENCODE) -gencode=arch=compute_61,code=\"sm_61,compute_61\"
++  GENCODE:=$(GENCODE) -gencode=arch=compute_70,code=\"sm_70,compute_70\"
++  GENCODE:=$(GENCODE) -gencode=arch=compute_75,code=\"sm_75,compute_75\"
++  GENCODE:=$(GENCODE) -gencode=arch=compute_80,code=\"sm_80,compute_80\"
++endif
+ 
+ 
+ #=============== Files to compile ===============
+diff -ru DualSPHysics-5.0.164.orig/src_mphase/DSPH_v5.0_NNewtonian/source/Makefile_cpu DualSPHysics-5.0.164/src_mphase/DSPH_v5.0_NNewtonian/source/Makefile_cpu
+--- DualSPHysics-5.0.164.orig/src_mphase/DSPH_v5.0_NNewtonian/source/Makefile_cpu	2021-01-19 16:34:07.439185000 +0000
++++ DualSPHysics-5.0.164/src_mphase/DSPH_v5.0_NNewtonian/source/Makefile_cpu	2021-01-20 18:45:39.214486000 +0000
+@@ -1,10 +1,10 @@
+ #DualSPHysics NNewtonian CPU v5.0.164 21-11-2020
+ 
+ #=============== Compilation Options (YES/NO) ===============
+-USE_GCC5=NO
++USE_GCC5=YES
+ USE_DEBUG=NO
+ USE_FAST_MATH=YES
+-USE_NATIVE_CPU_OPTIMIZATIONS=NO
++USE_NATIVE_CPU_OPTIMIZATIONS=YES
+ COMPILE_VTKLIB=YES
+ COMPILE_NUMEXLIB=YES
+ COMPILE_CHRONO=YES
+@@ -27,7 +27,9 @@
+     CCFLAGS+= -ffast-math
+   endif
+   ifeq ($(USE_NATIVE_CPU_OPTIMIZATIONS), YES)
+-    CCFLAGS+= -march=native
++	ifeq ($(shell uname -p), x86_64)
++    	CCFLAGS+= -march=native
++	endif
+   endif
+ endif
+ CC=g++

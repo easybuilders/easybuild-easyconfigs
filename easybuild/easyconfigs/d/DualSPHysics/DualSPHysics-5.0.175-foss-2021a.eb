@@ -1,0 +1,47 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'ConfigureMake'
+
+name = 'DualSPHysics'
+version = '5.0.175'
+
+homepage = "https://dual.sphysics.org"
+description = """DualSPHysics is based on the Smoothed Particle Hydrodynamics model named SPHysics (www.sphysics.org).
+ The code is developed (GNU Lesser General Public License) to study free-surface flow phenomena where Eulerian methods
+ can be difficult to apply. DualSPHysics is a set of C++, CUDA and Java codes designed to deal with real-life
+ engineering problems."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://github.com/DualSPHysics/DualSPHysics/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s_%(version)s_makefiles.patch']
+checksums = [
+    'd65bb7b8b4a21582091a534142348e46cff0a288a97ef86643bc2dde15637575',  # v5.0.175.tar.gz
+    '89c7073cb4440d8f026b139bfdacf1d207585d11a1f8687bc1539a042c37d647',  # DualSPHysics_5.0.175_makefiles.patch
+]
+
+dependencies = [
+    ('Java', '11', '', True),
+]
+
+skipsteps = ['configure']
+
+buildininstalldir = True
+build_cmd = 'cd src/source && make -f Makefile_cpu && '
+build_cmd += 'cd ../../src_mphase/DSPH_v5.0_NNewtonian/source && make -f Makefile_cpu'
+
+install_cmd = 'chmod 755 bin/linux/*'
+
+modextrapaths = {
+    'PATH': '%(name)s-%(version)s/bin/linux',
+    'LD_LIBRARY_PATH': ['%%(name)s-%%(version)s/%s' % x for x in ['src/lib/linux_gcc',
+                        'src_mphase/DSPH_v5.0_NNewtonian/lib/linux_gcc']],
+}
+
+sanity_check_paths = {
+    'files': ['%%(name)s-%%(version)s/bin/linux/DualSPHysics5.0%s' % x for x in ['CPU_linux64',
+              '_NNewtonianCPU_linux64']],
+    'dirs': ['%(name)s-%(version)s/src'],
+}
+
+moduleclass = 'phys'
