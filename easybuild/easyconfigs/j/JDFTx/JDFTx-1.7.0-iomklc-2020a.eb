@@ -1,0 +1,39 @@
+##
+# @Author: Ali Kerrache, University of Manitoba.
+# @Date: Nov 15, 2018.
+##
+
+easyblock = 'CMakeMake'
+
+name = 'JDFTx'
+version = '1.7.0'
+
+homepage = 'http://jdftx.org/index.html'
+description = """JDFTx is a plane-wave density-functional theory (DFT) code designed to be as easy to develop with as it is easy to use. It is distributed under the GPL license (version 3 or higher) and publications resulting from its use must cite:
+ R. Sundararaman, K. Letchworth-Weaver, K.A. Schwarz, D. Gunceler, Y. Ozhabes and T.A. Arias, 'JDFTx: software for joint density-functional theory"""
+
+toolchain = {'name': 'iomklc', 'version': '2020a'}
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/shankar1729/jdftx/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['876374efbf785d02fdf547f7cf64deedc6f5618f5449e775a4c20b28f1696e3d']
+
+dependencies = [
+    ('FFTW', '3.3.8'),
+    ('GSL', '2.6'),
+]
+
+separate_build_dir = True
+
+start_dir = 'jdftx'
+
+skipsteps = ['install']
+
+configopts  = '-DEnableMKL=yes -DForceFFTW=yes -DMKL_PATH="$MKLROOT" '
+configopts += '-DFFTW3_PATH=$EBROOTFFTW -DGSL_PATH=$EBROOTGSL '
+configopts += '-DEnableCUDA=yes '
+
+postinstallcmds = ['mkdir -p %(installdir)s/bin %(installdir)s/lib %(installdir)s/share/jdftx && cd %(builddir)s/easybuild_obj/ && cp jdftx phonon wannier %(installdir)s/bin/ && cp libjdftx.so %(installdir)s/lib && cp -r pseudopotentials %(installdir)s/share/jdftx']
+
+moduleclass = 'chem'
