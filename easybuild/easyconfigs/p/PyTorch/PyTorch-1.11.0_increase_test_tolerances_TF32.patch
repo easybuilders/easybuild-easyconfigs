@@ -103,4 +103,41 @@ diff -Nru pytorch_orig/test/test_stateless.py pytorch/test/test_stateless.py
 +        self.assertEqual(x, res, rtol=1e-04, atol=1e-04)
          # check that the weight remain unmodified
          cur_weight = to_check.l1.weight
-         cur_buffer = to_check.buffer
+         uur_buffer = to_check.buffer
+c PyTorch-1.11.0_increase_test_tolerances_TF32.patch
+rig/test/test_jit_fuser_te.py pytorch/test/test_jit_fuser_te.py
+--- pytorch_orig/test/test_jit_fuser_te.py  2022-04-07 18:31:13.046680000 +0200
++++ pytorch/test/test_jit_fuser_te.py   2022-04-12 18:21:00.355114000 +0200
+@@ -956,7 +956,7 @@
+     def test_lstm_traced(self):
+         for device in self.devices:
+             inputs = get_lstm_inputs(device)
+-            ge = self.checkTrace(LSTMCellF, inputs)
++            ge = self.checkTrace(LSTMCellF, inputs, atol=1e-4, rtol=1e-5)
+             graph = ge.graph_for(*inputs)
+             fusion_groups = self.findFusionGroups(graph)
+             # TODO: chunk
+diff -Nru pytorch_orig/torch/testing/_internal/jit_utils.py pytorch/torch/testing/_internal/jit_utils.py
+--- pytorch_orig/torch/testing/_internal/jit_utils.py   2022-04-07 18:28:54.339477000 +0200
++++ pytorch/torch/testing/_internal/jit_utils.py    2022-04-12 18:19:59.614272000 +0200
+@@ -525,7 +525,7 @@
+     def checkTrace(self, func, reference_tensors, input_tensors=None,
+                    drop=None, allow_unused=False, verbose=False,
+                    inputs_require_grads=True, check_tolerance=1e-5, export_import=True,
+-                   _force_outplace=False):
++                   _force_outplace=False, rtol=None, atol=None):
+
+         # TODO: check gradients for parameters, not just inputs
+         def allSum(vs):
+@@ -618,7 +618,10 @@
+
+         self.assertEqual(outputs, outputs_ge)
+         if inputs_require_grads:
+-            self.assertEqual(grads, grads_ge)
++            if atol is not None and rtol is not None:
++                self.assertEqual(grads, grads_ge, atol=atol, rtol=rtol)
++            else:
++                self.assertEqual(grads, grads_ge)
+             for g2, g2_ge in zip(grads2, grads2_ge):
+                 if g2 is None and g2_ge is None:
+                     continue
