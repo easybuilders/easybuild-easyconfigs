@@ -1,0 +1,30 @@
+easyblock = 'Tarball'
+
+name = 'QCTOOL'
+version = '2.2.0'
+
+homepage = 'https://www.well.ox.ac.uk/~gav/qctool_v2/'
+description = """QCTOOL is a command-line utility program for manipulation and quality control of 
+gwas datasets and other genome-wide data."""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2020a'}
+
+# current release does not include source code
+source_urls = ['https://www.well.ox.ac.uk/~gav/resources/']
+sources = ['%(namelower)s_v%(version)s-CentOS_Linux7.8.2003-x86_64.tgz']
+checksums = ['0b0cc4f2f793c5f0841e7050080ebc0092dd4e1bf2b8188830f3c19b767fc14d']
+
+
+local_bins = ['qctool']
+preinstall_cmd = "mkdir bin && mv %s bin" % " ".join(local_bins)
+postinstallcmds = [
+	'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path $EBROOTFLEXIBLAS/lib64',
+	'patchelf --replace-needed liblapack.so.3 libflexiblas.so %(installdir)s/bin/qctool'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
