@@ -1,0 +1,38 @@
+easyblock = 'CmdCp'
+
+name = 'gocryptfs'
+version = '2.0.1'
+
+homepage = 'https://nuetzlich.net/gocryptfs/'
+description = """
+Encrypted overlay filesystem written in Go. gocryptfs uses file-based encryption
+that is implemented as a mountable FUSE filesystem. Each file in gocryptfs is stored as one
+corresponding encrypted file on the hard disk.
+"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/rfjakob/gocryptfs/releases/download/v%(version)s/']
+sources = ['%(name)s_v%(version)s_src-deps.tar.gz']
+checksums = ['31be3f3a9400bd5eb8a4d5f86f7aee52a488207e12d312f2601ae08e7e26dd02']
+
+builddependencies = [
+    ('Go', '1.14.1')
+]
+osdependencies = [
+    ('openssl-devel', 'libssl-dev', 'libopenssl-devel'),
+    ('fuse'),
+]
+
+cmds_map = [
+    ('.*', "cd .. && mkdir -p src/github.com/rfjakob/ && ln -s $(pwd)/gocryptfs* src/github.com/rfjakob/gocryptfs && export GOPATH=$(pwd) && cd src/github.com/rfjakob/gocryptfs && ./build.bash")
+]
+
+files_to_copy = [(['gocryptfs'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/gocryptfs'],
+    'dirs': []
+}
+
+moduleclass = 'tools'
