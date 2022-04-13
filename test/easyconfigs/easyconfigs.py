@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2021 Ghent University
+# Copyright 2013-2022 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -534,6 +534,8 @@ class EasyConfigTest(TestCase):
                 ('2.2.3;', ['medaka-1.4.3-', 'artic-ncov2019-2021.06.24-', 'longread_umi-0.3.2-']),
                 # AlphaFold 2.1.2 (foss/2020b) depends on TensorFlow 2.5.0
                 ('2.5.0;', ['AlphaFold-2.1.2-']),
+                # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
+                ('2.5.3;', ['medaka-1.5.0-']),
             ],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
@@ -1214,11 +1216,9 @@ def template_easyconfig_test(self, spec):
     self.assertTrue(ec['version'], app.version)
 
     # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
-    # but give recent EasyBuild easyconfigs special treatment to avoid breaking "eb --install-latest-eb-release"
     ec_fn = os.path.basename(spec)
-    if not (ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.')):
-        error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
-        self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
+    error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
+    self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
     res = re.findall(r'.*\$root.*', ec.rawtxt, re.M)
