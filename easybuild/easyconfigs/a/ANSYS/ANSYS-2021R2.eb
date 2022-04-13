@@ -16,12 +16,21 @@ sources = ['ANSYS-%(version)s.tar']
 checksums = ['6ae209cff46ccdbc165b08b946bc89fccd2c2f01ba7349a3b4af8b7007adb26d']
 
 postinstallcmds = [
+  # Replace two files and patch properly later 
+  "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/file/2021R2;\
+  mv -v %(installdir)s/v212/aisol/.workbench{,-orig};\
+  cp -v $a/.workbench %(installdir)s/v212/aisol/.workbench;\
+  chmod -v 744 %(installdir)s/v212/aisol/.workbench;\
+  mv -v %(installdir)s/v212/commonfiles/MainWin/linx64/mw/setmwruntime{,-orig};\
+  cp -v $a/setmwruntime %(installdir)s/v212/commonfiles/MainWin/linx64/mw/setmwruntime;\
+  chmod -v 744 %(installdir)s/v212/commonfiles/MainWin/linx64/mw/setmwruntime;",
   # Set same perms on all directories
   "find %(installdir)s -type d -exec chmod 755 {} \;",
   # Set same perms on all shared libraries to avoid warning in log file
   "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
-  # Rename built-in libstdc++.so* to libstdc++.so*.bak as they are older than whats in nix, and cause problem with other binaries
-  "find %(installdir)s -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+  # Rename some libs as these maybe older than system equivalents and missing new symbols
+  "find %(installdir)s \( -type f -o -type l \) -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgcc_s.so*' -exec mv {} {}.bak \;",
   # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
   "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
     sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
@@ -29,11 +38,22 @@ postinstallcmds = [
   "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
   # Run setrpaths.sh for any_interpreter
   "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
-     /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-  # Avoid following symbol lookup error when running the fluent gui ie)
+    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+  # Avoid symbol lookup error when running fluent gui for example
   # /cvmfs/soft.computecanada.ca/gentoo/2020/usr/lib64/libfontconfig.so.1: undefined symbol: FT_Done_MM_Var
   "mv %%(installdir)s/%s/Framework/bin/Linux64/libfreetype.so.6 \
-     %%(installdir)s/%s/Framework/bin/Linux64/libfreetype.so.6.bak" % (local_sfx, local_sfx),
+    %%(installdir)s/%s/Framework/bin/Linux64/libfreetype.so.6.bak" % (local_sfx, local_sfx),
+  # Create domainname -> /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname
+  "cd %(installdir)s/v212/Tools/mono/Linux64/bin;\
+    ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
+  # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh' for example
+  # cat 2021R2/v212/CFX/tools/perl-5.32.0/lib/5.32.0/ExtUtils/MM_Unix.pm | grep /bin/sh
+  "find %(installdir)s -type f ! -size 0 -print0 | xargs -0 grep -riIlZ \'/bin/sh\' | while IFS= read -r -d $'\\0' file;\
+    do sed -i 's|'\/bin\/sh'|'\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh'|g' \"$file\"; done;",
+  # Replace #!/bin/sh with #!/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh for example
+  # cat 2021R2/v212/Addins/ACT/extensions/optiSLang\ 21.2.0.1994/images/make_windows_icon.sh | grep /bin/sh
+  "find %(installdir)s -type f ! -size 0 -print0 | xargs -0 grep -riIlZ '#!/bin/sh' | while IFS= read -r -d $'\\0' file;\
+    do sed -i 's|#!\/bin\/sh|#!\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
 ]
 
 modextravars = {
