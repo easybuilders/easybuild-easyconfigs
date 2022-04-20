@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+# Grigory Shamov, U of Manitoba
+# OpenSees now has a CMake based build system.
+
+name = 'OpenSees'
+version = '3.4.0'
+
+homepage = 'https://opensees.berkeley.edu/index.php'
+description = "Open System for Earthquake Engineering Simulation"
+
+toolchain = {'name': 'iccifort', 'version': '2020.1.217'}
+
+# https://github.com/OpenSees/OpenSees
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['36f62f77f0255cb8f0103ed46d1e79ccdd44deb54aab995b632b7e8d81357dc0']
+
+dependencies = [
+ ('HDF5','1.12.1'),
+ ('Python','3.8'),
+ ('MySQL','5.7.36','-clientonly'),
+ ('imkl','2020.1.217'),
+# ('METIS', '5.1.0'),
+# ('MUMPS', '5.2.1', '-metis'),
+]
+
+builddependencies = [('CMake', '3.21.4')]
+
+configopts = '-DCMAKE_C_COMPILER=`which $CC` -DCMAKE_CXX_COMPILER=`which $CXX` -DCMAKE_Fortran_COMPILER=`which $FC` -DCMAKE_EXE_LINKER_FLAGS="-ltcl8.6 -ltk "'
+
+#files_to_copy = ['bin']
+
+postinstallcmds = ['make OpenSeesPy',' mkdir %(installdir)s/lib  && cp %(builddir)s/easybuild_obj/*.a %(installdir)s/lib','cp %(builddir)s/easybuild_obj/OpenSeesPy.so %(installdir)s/lib ']
+
+sanity_check_paths = {
+    'files': ['bin/OpenSees'],
+    'dirs': ['bin','lib'],
+}
+
+sanity_check_commands = ['OpenSees -h']
+
+moduleclass = 'cae'
