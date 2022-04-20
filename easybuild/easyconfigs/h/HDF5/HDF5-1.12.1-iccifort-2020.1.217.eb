@@ -1,0 +1,68 @@
+# Built with EasyBuild version 4.4.2-r2b230fd9707e678c1711c32d6ff85ef239be7503 on 2021-10-29_14-50-00
+name = 'HDF5'
+version = '1.12.1'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'iccifort', 'version': '2020.1.217'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%(version_major_minor)s/hdf5-%(version)s/src']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['79c66ff67e666665369396e9c90b32e238e501f345afd2234186bfb8331081ca']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Szip', '2.1.1'),
+   ('SciPy-Stack', '2021a'),
+]
+
+# For the extensions
+builddependencies = [
+    ('SciPy-Stack', '2021a'),
+    ('pytest', '6.2.5'),
+]
+
+multi_deps = {'Python': ['3.7', '3.8', '3.9']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE]}
+exts_list = [
+    ('cached-property', '1.5.2', {
+        'use_pip': True,
+        'checksums': ['9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130'],
+    }),
+    ('h5py', '3.5.0', {
+        'buildopts': '#',
+        'prebuildopts': ' sed -i -e "/cmdclass = CMDCLASS,/a zip_safe = False," setup.py && HDF5_MPI="OFF" ',
+        'preconfigopts': '#',
+#        'runtest': "python -c 'import h5py; h5py.run_tests()'",
+        'checksums': ['77c7be4001ac7d3ed80477de5b6942501d782de1bbe4886597bdfec2a7ab821f'],
+    }),
+    ('tables', '3.6.1', {
+        'buildopts': '#',
+        'prebuildopts': " unset LIBS && ",
+#        'runtest': "python setup.py test",
+        'checksums': ['49a972b8a7c27a8a173aeb05f67acb45fe608b64cd8e9fa667c0962a60b71b49'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': [
+        'lib/libhdf5.so'
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'data'
+
