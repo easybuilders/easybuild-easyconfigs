@@ -1,0 +1,60 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'MesonNinja'
+
+name = 'freebayes'
+version = '1.3.6'
+
+homepage = 'https://github.com/freebayes/freebayes'
+description = """FreeBayes is a Bayesian genetic variant detector designed to find small
+ polymorphisms, specifically SNPs (single-nucleotide polymorphisms), indels (insertions and
+ deletions), MNPs (multi-nucleotide polymorphisms), and complex events (composite insertion and
+ substitution events) smaller than the length of a short-read sequencing alignment.
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+github_account = name
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-1.3.6_find-external-libs.patch',
+    '%(name)s-1.3.5_fix-includes.patch',
+    '%(name)s-1.3.6_install-libs-headers.patch',
+]
+checksums = [
+    'd668c0b433cc0f11498ace10e48d72a7f0f40ca23b391b72e975ffafd1c13044',  # v1.3.6.tar.gz
+    '4836a9ceaa9044e6e66b3ca0387b058a5e0505ddeaa62c428b526b5e234aff3b',  # freebayes-1.3.6_find-external-libs.patch
+    '4c6c74b30bf3b2f04b8a50bbdef26e74f6e2412f3efbd81512226e557c2a53d1',  # freebayes-1.3.5_fix-includes.patch
+    '5ba006ca6956905bbd81107a17e02287c515890ee25884c444ebf5b95da1caae',  # freebayes-1.3.6_install-libs-headers.patch
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('Meson', '0.55.1'), #, versionsuffix),
+    ('Ninja', '1.10.0'),
+#    ('pkgconfig', '1.5.1', versionsuffix),
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SAMtools', '1.11'),
+#    ('parallel', '20200522'),
+    ('intervaltree', '0.1'),
+    ('libffi', '3.3'),
+    ('SeqLib', '1.2.0'),
+    ('vcflib', '1.0.3'),
+    ('VCFtools', '0.1.16'),
+]
+
+postinstallcmds = ['echo %(builddir)s; cp %(builddir)s/easybuild_obj/libfreebayes.{a,so} %(installdir)s/lib; cp %(builddir)s/easybuild_obj/{freebayes,bamleftalign} %(installdir)s/bin']
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/bamleftalign', 'scripts/%(name)s-parallel'],
+    'dirs': ['bin', 'scripts'],
+}
+sanity_check_commands = ["%(name)s -h"]
+
+modextrapaths = {'PATH': ['scripts']}
+
+moduleclass = 'bio'
