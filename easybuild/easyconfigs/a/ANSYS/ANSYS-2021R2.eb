@@ -16,7 +16,7 @@ sources = ['ANSYS-%(version)s.tar']
 checksums = ['6ae209cff46ccdbc165b08b946bc89fccd2c2f01ba7349a3b4af8b7007adb26d']
 
 postinstallcmds = [
-  # Replace these files (create patch files to apply later)
+  # Directly replace these files (create patch files and apply later)
   "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/2021R2;\
   mv -v %(installdir)s/v212/aisol/.workbench{,-orig};\
   cp -v $a/.workbench %(installdir)s/v212/aisol/.workbench;\
@@ -46,14 +46,14 @@ postinstallcmds = [
   # Create domainname -> /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname
   "cd %(installdir)s/v212/Tools/mono/Linux64/bin;\
     ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
-  # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh' for example
+  # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh' ie)
   # cat 2021R2/v212/CFX/tools/perl-5.32.0/lib/5.32.0/ExtUtils/MM_Unix.pm | grep /bin/sh
   "find %(installdir)s -type f ! -size 0 -print0 | xargs -0 grep -riIlZ \'/bin/sh\' | while IFS= read -r -d $'\\0' file;\
     do sed -i 's|'\/bin\/sh'|'\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh'|g' \"$file\"; done;",
-  # Replace #!/bin/sh with #!/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh for example
+  # Replace #!/bin/sh with #!/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh ie)
   # cat 2021R2/v212/Addins/ACT/extensions/optiSLang\ 21.2.0.1994/images/make_windows_icon.sh | grep /bin/sh
-  "find %(installdir)s -type f ! -size 0 -print0 | xargs -0 grep -riIlZ '#!/bin/sh' | while IFS= read -r -d $'\\0' file;\
-    do sed -i 's|#!\/bin\/sh|#!\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
+  "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -print0 | xargs -0 grep -riIlZ '#!/bin/sh' | while IFS= \
+    read -r -d $'\\0' file; do sed -i 's|#!\/bin\/sh|#!\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
 ]
 
 modextravars = {
