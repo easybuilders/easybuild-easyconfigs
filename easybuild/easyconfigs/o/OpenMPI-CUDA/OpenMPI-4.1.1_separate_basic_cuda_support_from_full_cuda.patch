@@ -1,0 +1,77 @@
+commit a211812271e084f83b7e88e0f0185b6e2ecf00b3
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Thu Feb 3 16:38:02 2022 +0100
+
+    Add configure separation between enbling cuda and having full cuda support, i.e. cuda.h
+
+diff --git a/config/opal_check_cuda.m4 b/config/opal_check_cuda.m4
+index 67059a8c85..e02c12f83a 100644
+--- a/config/opal_check_cuda.m4
++++ b/config/opal_check_cuda.m4
+@@ -47,14 +47,22 @@ AC_MSG_CHECKING([if --with-cuda is set])
+ # us to make use of AC_REQUIRE to ensure this check has been done.
+ AS_IF([test "$with_cuda" = "no" || test "x$with_cuda" = "x"],
+       [opal_check_cuda_happy="no"
+-       AC_MSG_RESULT([not set (--with-cuda=$with_cuda)])],
+-      [AS_IF([test "$with_cuda" = "yes"],
++       opal_check_cuda_requested=no,
++       AC_MSG_RESULT([not set (--with-cuda=$with_cuda)])
++       CUDA_SUPPORT=0],
++      [AS_IF([test "$with_cuda" = "enable"],
++        AC_MSG_RESULT([base support requested])
++        CUDA_SUPPORT=1
++        opal_check_cuda_happy=no
++        opal_check_cuda_requested=yes,
++          [AS_IF([test "$with_cuda" = "yes"],
+              [AS_IF([test "x`ls /usr/local/cuda/include/cuda.h 2> /dev/null`" = "x"],
+                     [AC_MSG_RESULT([not found in standard location])
+                      AC_MSG_WARN([Expected file /usr/local/cuda/include/cuda.h not found])
+                      AC_MSG_ERROR([Cannot continue])],
+                     [AC_MSG_RESULT([found])
+                      opal_check_cuda_happy=yes
++                     opal_check_cuda_requested=yes,
+                      opal_cuda_incdir=/usr/local/cuda/include])],
+              [AS_IF([test ! -d "$with_cuda"],
+                     [AC_MSG_RESULT([not found])
+@@ -69,8 +77,9 @@ AS_IF([test "$with_cuda" = "no" || test "x$with_cuda" = "x"],
+                                    opal_cuda_incdir=$with_cuda
+                                    AC_MSG_RESULT([found ($with_cuda/cuda.h)])])],
+                            [opal_check_cuda_happy=yes
++                            opal_check_cuda_requested=yes,
+                             opal_cuda_incdir="$with_cuda/include"
+-                            AC_MSG_RESULT([found ($opal_cuda_incdir/cuda.h)])])])])])
++                            AC_MSG_RESULT([found ($opal_cuda_incdir/cuda.h)])])])])])])
+ 
+ dnl We cannot have CUDA support without dlopen support.  HOWEVER, at
+ dnl this point in configure, we can't know whether the DL framework
+@@ -113,20 +122,27 @@ AS_IF([test "$opal_check_cuda_happy"="yes"],
+         [#include <$opal_cuda_incdir/cuda.h>]),
+     [])
+ 
+-AC_MSG_CHECKING([if have cuda support])
++AC_MSG_CHECKING([if have full cuda support])
+ if test "$opal_check_cuda_happy" = "yes"; then
+     AC_MSG_RESULT([yes (-I$opal_cuda_incdir)])
++    FULL_CUDA_SUPPORT=1
+     CUDA_SUPPORT=1
+     opal_datatype_cuda_CPPFLAGS="-I$opal_cuda_incdir"
+     AC_SUBST([opal_datatype_cuda_CPPFLAGS])
+ else
+     AC_MSG_RESULT([no])
+-    CUDA_SUPPORT=0
++    FULL_CUDA_SUPPORT=0
+ fi
+ 
+-OPAL_SUMMARY_ADD([[Miscellaneous]],[[CUDA support]],[opal_cuda], [$opal_check_cuda_happy])
++OPAL_SUMMARY_ADD([[Miscellaneous]],[[CUDA support requested]],[opal_cuda], [$opal_check_cuda_requested])
++OPAL_SUMMARY_ADD([[Miscellaneous]],[[Full CUDA support]],[opal_cuda], [$opal_check_cuda_happy])
+ 
+ AM_CONDITIONAL([OPAL_cuda_support], [test "x$CUDA_SUPPORT" = "x1"])
++AM_CONDITIONAL([OPAL_full_cuda_support], [test "x$FULL_CUDA_SUPPORT" = "x1"])
++
++AC_DEFINE_UNQUOTED([OPAL_FULL_CUDA_SUPPORT],$FULL_CUDA_SUPPORT,
++                   [Whether we have full cuda support])
++
+ AC_DEFINE_UNQUOTED([OPAL_CUDA_SUPPORT],$CUDA_SUPPORT,
+                    [Whether we want cuda device pointer support])
+ 

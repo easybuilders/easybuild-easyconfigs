@@ -1,0 +1,58 @@
+commit 0443edac9b8e5272545a4e2e5d969fb3d365fc9e
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Thu Feb 3 16:36:37 2022 +0100
+
+    Add missing OPAL_CUDA_GDR_SUPPORT where needed
+    
+    Åke Sandgren, 2022-02-03
+
+diff --git a/ompi/mca/pml/ob1/pml_ob1_cuda.c b/ompi/mca/pml/ob1/pml_ob1_cuda.c
+index 84f6464a75..192cd14665 100644
+--- a/ompi/mca/pml/ob1/pml_ob1_cuda.c
++++ b/ompi/mca/pml/ob1/pml_ob1_cuda.c
+@@ -127,7 +127,10 @@ size_t mca_pml_ob1_rdma_cuda_btls(
+             if( NULL != bml_btl->btl->btl_register_mem ) {
+                 /* register the memory */
+                 handle = bml_btl->btl->btl_register_mem (bml_btl->btl, bml_btl->btl_endpoint,
+-                                                         base, size, MCA_BTL_REG_FLAG_CUDA_GPU_MEM |
++                                                         base, size,
++#if OPAL_CUDA_GDR_SUPPORT
++                                                         MCA_BTL_REG_FLAG_CUDA_GPU_MEM |
++#endif
+                                                          MCA_BTL_REG_FLAG_REMOTE_READ);
+             }
+ 
+diff --git a/opal/mca/btl/smcuda/btl_smcuda.c b/opal/mca/btl/smcuda/btl_smcuda.c
+index 80f371dc1a..38d7590d73 100644
+--- a/opal/mca/btl/smcuda/btl_smcuda.c
++++ b/opal/mca/btl/smcuda/btl_smcuda.c
+@@ -1053,9 +1053,11 @@ static struct mca_btl_base_registration_handle_t *mca_btl_smcuda_register_mem (
+     int access_flags = flags & MCA_BTL_REG_FLAG_ACCESS_ANY;
+     int rcache_flags = 0;
+ 
++#if OPAL_CUDA_GDR_SUPPORT
+     if (MCA_BTL_REG_FLAG_CUDA_GPU_MEM & flags) {
+         rcache_flags |= MCA_RCACHE_FLAGS_CUDA_GPU_MEM;
+     }
++#endif
+ 
+     smcuda_module->rcache->rcache_register (smcuda_module->rcache, base, size, rcache_flags,
+                                             access_flags, (mca_rcache_base_registration_t **) &reg);
+diff --git a/opal/mca/btl/smcuda/btl_smcuda_component.c b/opal/mca/btl/smcuda/btl_smcuda_component.c
+index 66e2554eae..8e449c0fc8 100644
+--- a/opal/mca/btl/smcuda/btl_smcuda_component.c
++++ b/opal/mca/btl/smcuda/btl_smcuda_component.c
+@@ -203,11 +203,13 @@ static int smcuda_register(void)
+     if (0 == mca_btl_smcuda.super.btl_cuda_max_send_size) {
+         mca_btl_smcuda.super.btl_cuda_max_send_size = 128*1024;
+     }
++#if OPAL_CUDA_GDR_SUPPORT
+     /* If user has not set the value, then set to magic number which will be converted to the minimum
+      * size needed to fit the PML header (see pml_ob1.c) */
+     if (0 == mca_btl_smcuda.super.btl_cuda_eager_limit) {
+         mca_btl_smcuda.super.btl_cuda_eager_limit = SIZE_MAX; /* magic number */
+     }
++#endif
+     mca_common_cuda_register_mca_variables();
+ #endif /* OPAL_CUDA_SUPPORT */
+     return mca_btl_smcuda_component_verify();

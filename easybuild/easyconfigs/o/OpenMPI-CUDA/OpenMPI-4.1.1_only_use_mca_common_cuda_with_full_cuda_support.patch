@@ -1,0 +1,336 @@
+commit feb544e55036107a79da7eb90544a5c0545ffe9b
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Thu Feb 3 16:40:42 2022 +0100
+
+    Only use the mca_common_cuda.la library and its functions when we have full cuda support.
+    
+    Åke Sandgren, 2022-02-03
+
+diff --git a/ompi/mca/pml/ob1/Makefile.am b/ompi/mca/pml/ob1/Makefile.am
+index d0044bb6b6..4cc0f90d26 100644
+--- a/ompi/mca/pml/ob1/Makefile.am
++++ b/ompi/mca/pml/ob1/Makefile.am
+@@ -68,9 +68,13 @@ mcacomponent_LTLIBRARIES = $(component_install)
+ mca_pml_ob1_la_SOURCES = $(ob1_sources)
+ mca_pml_ob1_la_LDFLAGS = -module -avoid-version
+ 
+-if OPAL_cuda_support
++if OPAL_full_cuda_support
+ mca_pml_ob1_la_LIBADD = $(top_builddir)/ompi/lib@OMPI_LIBMPI_NAME@.la \
+     $(OMPI_TOP_BUILDDIR)/opal/mca/common/cuda/lib@OPAL_LIB_PREFIX@mca_common_cuda.la
++else
++if OPAL_cuda_support
++mca_pml_ob1_la_LIBADD = $(top_builddir)/ompi/lib@OMPI_LIBMPI_NAME@.la
++endif
+ endif
+ 
+ noinst_LTLIBRARIES = $(component_noinst)
+diff --git a/ompi/mca/pml/ucx/pml_ucx.c b/ompi/mca/pml/ucx/pml_ucx.c
+index a2126ca41e..bcf865189a 100644
+--- a/ompi/mca/pml/ucx/pml_ucx.c
++++ b/ompi/mca/pml/ucx/pml_ucx.c
+@@ -254,7 +254,7 @@ int mca_pml_ucx_open(void)
+     ompi_pml_ucx.request_size     = attr.request_size;
+     ompi_pml_ucx.cuda_initialized = false;
+ 
+-#if HAVE_UCP_ATTR_MEMORY_TYPES && OPAL_CUDA_SUPPORT
++#if HAVE_UCP_ATTR_MEMORY_TYPES && OPAL_FULL_CUDA_SUPPORT
+     if (attr.memory_types & UCS_BIT(UCS_MEMORY_TYPE_CUDA)) {
+         mca_common_cuda_stage_one_init();
+         ompi_pml_ucx.cuda_initialized = true;
+@@ -267,7 +267,7 @@ int mca_pml_ucx_close(void)
+ {
+     PML_UCX_VERBOSE(1, "mca_pml_ucx_close");
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+     if (ompi_pml_ucx.cuda_initialized) {
+         mca_common_cuda_fini();
+     }
+diff --git a/opal/mca/btl/openib/Makefile.am b/opal/mca/btl/openib/Makefile.am
+index c66d1619ae..69a21e5c60 100644
+--- a/opal/mca/btl/openib/Makefile.am
++++ b/opal/mca/btl/openib/Makefile.am
+@@ -117,7 +117,7 @@ mca_btl_openib_la_LDFLAGS = -module -avoid-version $(btl_openib_LDFLAGS)
+ mca_btl_openib_la_LIBADD = $(top_builddir)/opal/lib@OPAL_LIB_PREFIX@open-pal.la \
+ 	$(btl_openib_LIBS) \
+     $(OPAL_TOP_BUILDDIR)/opal/mca/common/verbs/lib@OPAL_LIB_PREFIX@mca_common_verbs.la
+-if OPAL_cuda_support
++if OPAL_full_cuda_support
+ mca_btl_openib_la_LIBADD += \
+     $(OPAL_TOP_BUILDDIR)/opal/mca/common/cuda/lib@OPAL_LIB_PREFIX@mca_common_cuda.la
+ endif
+diff --git a/opal/mca/btl/openib/btl_openib_component.c b/opal/mca/btl/openib/btl_openib_component.c
+index d93178fb53..7ae3d4458d 100644
+--- a/opal/mca/btl/openib/btl_openib_component.c
++++ b/opal/mca/btl/openib/btl_openib_component.c
+@@ -98,12 +98,12 @@ static int btl_openib_component_open(void);
+ static int btl_openib_component_close(void);
+ static mca_btl_base_module_t **btl_openib_component_init(int*, bool, bool);
+ static int btl_openib_component_progress(void);
+-#if OPAL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
++#if OPAL_FULL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
+ static void btl_openib_handle_incoming_completion(mca_btl_base_module_t* btl,
+                                                   mca_btl_openib_endpoint_t *ep,
+                                                   mca_btl_base_descriptor_t* des,
+                                                   int status);
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+ /*
+  * Local variables
+  */
+@@ -159,7 +159,7 @@ static int btl_openib_component_register(void)
+         return OPAL_ERR_NOT_AVAILABLE;
+     }
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+     mca_common_cuda_register_mca_variables();
+ #endif
+ 
+@@ -190,9 +190,9 @@ static int btl_openib_component_open(void)
+     OBJ_CONSTRUCT(&mca_btl_openib_component.ib_procs, opal_list_t);
+     mca_btl_openib_component.memory_registration_verbose = -1;
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+     mca_common_cuda_stage_one_init();
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+ 
+     return OPAL_SUCCESS;
+ }
+@@ -221,9 +221,9 @@ static int btl_openib_component_close(void)
+     /* close memory registration debugging output */
+     opal_output_close (mca_btl_openib_component.memory_registration_verbose);
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+     mca_common_cuda_fini();
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+ 
+     return rc;
+ }
+@@ -562,7 +562,7 @@ static int openib_reg_mr (void *reg_data, void *base, size_t size,
+                          "openib_reg_mr: base=%p, bound=%p, size=%d, flags=0x%x", reg->base, reg->bound,
+                          (int) (reg->bound - reg->base + 1), reg->flags));
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+     if (reg->flags & MCA_RCACHE_FLAGS_CUDA_REGISTER_MEM) {
+         mca_common_cuda_register (base, size,
+             openib_reg->base.rcache->rcache_component->rcache_version.mca_component_name);
+@@ -588,7 +588,7 @@ static int openib_dereg_mr(void *reg_data, mca_rcache_base_registration_t *reg)
+             return OPAL_ERROR;
+         }
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+         if (reg->flags & MCA_RCACHE_FLAGS_CUDA_REGISTER_MEM) {
+             mca_common_cuda_unregister(openib_reg->base.base,
+                 openib_reg->base.rcache->rcache_component->rcache_version.mca_component_name);
+@@ -3029,14 +3029,14 @@ btl_openib_component_init(int *num_btl_modules,
+         mca_btl_openib_component.if_exclude_list = NULL;
+     }
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+    if (mca_btl_openib_component.cuda_want_gdr && (0 == opal_leave_pinned)) {
+         opal_show_help("help-mpi-btl-openib.txt",
+                        "CUDA_gdr_and_nopinned", true,
+                        opal_process_info.nodename);
+         goto no_btls;
+     }
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+ 
+     mca_btl_openib_component.memory_registration_verbose = opal_output_open(NULL);
+     opal_output_set_verbosity (mca_btl_openib_component.memory_registration_verbose,
+@@ -3206,13 +3206,13 @@ static int btl_openib_handle_incoming(mca_btl_openib_module_t *openib_btl,
+         /* call registered callback */
+         mca_btl_active_message_callback_t* reg;
+ 
+-#if OPAL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
++#if OPAL_FULL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
+         /* The COPY_ASYNC flag should not be set */
+         assert(0 == (des->des_flags & MCA_BTL_DES_FLAGS_CUDA_COPY_ASYNC));
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+         reg = mca_btl_base_active_message_trigger + hdr->tag;
+         reg->cbfunc( &openib_btl->super, hdr->tag, des, reg->cbdata );
+-#if OPAL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
++#if OPAL_FULL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
+         if (des->des_flags & MCA_BTL_DES_FLAGS_CUDA_COPY_ASYNC) {
+             /* Since ASYNC flag is set, we know this descriptor is being used
+              * for asynchronous copy and cannot be freed yet. Therefore, set
+@@ -3222,7 +3222,7 @@ static int btl_openib_handle_incoming(mca_btl_openib_module_t *openib_btl,
+             to_in_frag(des)->endpoint = ep;
+             return OPAL_SUCCESS;
+         }
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+         if(MCA_BTL_OPENIB_RDMA_FRAG(frag)) {
+             cqp = (hdr->credits >> 11) & 0x0f;
+             hdr->credits &= 0x87ff;
+@@ -3313,7 +3313,7 @@ static int btl_openib_handle_incoming(mca_btl_openib_module_t *openib_btl,
+     return OPAL_SUCCESS;
+ }
+ 
+-#if OPAL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
++#if OPAL_FULL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
+ /**
+  * Called by the PML when the copying of the data out of the fragment
+  * is complete.
+@@ -3391,7 +3391,7 @@ static void btl_openib_handle_incoming_completion(mca_btl_base_module_t* btl,
+     send_credits(ep, cqp);
+ 
+ }
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+ 
+ static char* btl_openib_component_status_to_string(enum ibv_wc_status status)
+ {
+@@ -3899,7 +3899,7 @@ static int btl_openib_component_progress(void)
+         }
+     }
+ 
+-#if OPAL_CUDA_SUPPORT /* CUDA_ASYNC_SEND */
++#if OPAL_FULL_CUDA_SUPPORT /* CUDA_ASYNC_SEND */
+     /* Check to see if there are any outstanding dtoh CUDA events that
+      * have completed.  If so, issue the PML callbacks on the fragments.
+      * The only thing that gets completed here are asynchronous copies
+@@ -3918,7 +3918,7 @@ static int btl_openib_component_progress(void)
+     if (count > 0) {
+         OPAL_OUTPUT((-1, "btl_openib: DONE with openib progress, count=%d", count));
+     }
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+ 
+     return count;
+ 
+diff --git a/opal/mca/btl/smcuda/Makefile.am b/opal/mca/btl/smcuda/Makefile.am
+index 733965596f..9732ace282 100644
+--- a/opal/mca/btl/smcuda/Makefile.am
++++ b/opal/mca/btl/smcuda/Makefile.am
+@@ -52,7 +52,7 @@ mca_btl_smcuda_la_LDFLAGS = -module -avoid-version
+ mca_btl_smcuda_la_LIBADD = $(top_builddir)/opal/lib@OPAL_LIB_PREFIX@open-pal.la \
+     $(OPAL_TOP_BUILDDIR)/opal/mca/common/sm/lib@OPAL_LIB_PREFIX@mca_common_sm.la
+ mca_btl_smcuda_la_CPPFLAGS = $(btl_smcuda_CPPFLAGS)
+-if OPAL_cuda_support
++if OPAL_full_cuda_support
+ mca_btl_smcuda_la_LIBADD += \
+     $(OPAL_TOP_BUILDDIR)/opal/mca/common/cuda/lib@OPAL_LIB_PREFIX@mca_common_cuda.la
+ endif
+diff --git a/opal/mca/btl/smcuda/configure.m4 b/opal/mca/btl/smcuda/configure.m4
+index 016f691944..78361a0f90 100644
+--- a/opal/mca/btl/smcuda/configure.m4
++++ b/opal/mca/btl/smcuda/configure.m4
+@@ -22,7 +22,7 @@ AC_DEFUN([MCA_opal_btl_smcuda_CONFIG],[
+     AC_REQUIRE([OPAL_CHECK_CUDA])
+ 
+     # Only build if CUDA support is available
+-    AS_IF([test "x$CUDA_SUPPORT" = "x1"],
++    AS_IF([test "x$FULL_CUDA_SUPPORT" = "x1"],
+           [$1],
+           [$2])
+ 
+diff --git a/opal/mca/btl/tcp/Makefile.am b/opal/mca/btl/tcp/Makefile.am
+index 322a29507e..c8324307d7 100644
+--- a/opal/mca/btl/tcp/Makefile.am
++++ b/opal/mca/btl/tcp/Makefile.am
+@@ -56,9 +56,13 @@ mcacomponentdir = $(opallibdir)
+ mcacomponent_LTLIBRARIES = $(component)
+ mca_btl_tcp_la_SOURCES = $(component_sources)
+ mca_btl_tcp_la_LDFLAGS = -module -avoid-version
+-if OPAL_cuda_support
++if OPAL_full_cuda_support
+ mca_btl_tcp_la_LIBADD = $(top_builddir)/opal/lib@OPAL_LIB_PREFIX@open-pal.la \
+     $(OPAL_TOP_BUILDDIR)/opal/mca/common/cuda/lib@OPAL_LIB_PREFIX@mca_common_cuda.la
++else
++if OPAL_cuda_support
++mca_btl_tcp_la_LIBADD = $(top_builddir)/opal/lib@OPAL_LIB_PREFIX@open-pal.la
++endif
+ endif
+ 
+ noinst_LTLIBRARIES = $(lib)
+diff --git a/opal/mca/btl/tcp/btl_tcp_component.c b/opal/mca/btl/tcp/btl_tcp_component.c
+index 2d1004bcf7..335bed1dea 100644
+--- a/opal/mca/btl/tcp/btl_tcp_component.c
++++ b/opal/mca/btl/tcp/btl_tcp_component.c
+@@ -476,9 +476,9 @@ static int mca_btl_tcp_component_close(void)
+     OBJ_DESTRUCT(&mca_btl_tcp_component.tcp_frag_user);
+     OBJ_DESTRUCT(&mca_btl_tcp_component.tcp_lock);
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+     mca_common_cuda_fini();
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+ 
+     return OPAL_SUCCESS;
+ }
+@@ -1291,9 +1291,9 @@ mca_btl_base_module_t** mca_btl_tcp_component_init(int *num_btl_modules,
+         }
+     }
+ 
+-#if OPAL_CUDA_SUPPORT
++#if OPAL_FULL_CUDA_SUPPORT
+     mca_common_cuda_stage_one_init();
+-#endif /* OPAL_CUDA_SUPPORT */
++#endif /* OPAL_FULL_CUDA_SUPPORT */
+ 
+     memcpy(btls, mca_btl_tcp_component.tcp_btls, mca_btl_tcp_component.tcp_num_btls*sizeof(mca_btl_tcp_module_t*));
+     *num_btl_modules = mca_btl_tcp_component.tcp_num_btls;
+diff --git a/opal/mca/common/cuda/configure.m4 b/opal/mca/common/cuda/configure.m4
+index 6083e087a3..4537e6e32c 100644
+--- a/opal/mca/common/cuda/configure.m4
++++ b/opal/mca/common/cuda/configure.m4
+@@ -23,7 +23,7 @@ AC_DEFUN([MCA_opal_common_cuda_CONFIG],[
+     # make sure that CUDA-aware checks have been done
+     AC_REQUIRE([OPAL_CHECK_CUDA])
+ 
+-    AS_IF([test "x$CUDA_SUPPORT" = "x1"],
++    AS_IF([test "x$FULL_CUDA_SUPPORT" = "x1"],
+           [$1],
+           [$2])
+ 
+diff --git a/opal/mca/rcache/gpusm/Makefile.am b/opal/mca/rcache/gpusm/Makefile.am
+index 6b1f7191eb..39585ec532 100644
+--- a/opal/mca/rcache/gpusm/Makefile.am
++++ b/opal/mca/rcache/gpusm/Makefile.am
+@@ -50,7 +50,7 @@ mca_rcache_gpusm_la_SOURCES = $(sources)
+ mca_rcache_gpusm_la_LDFLAGS = -module -avoid-version
+ mca_rcache_gpusm_la_LIBADD = $(top_builddir)/opal/lib@OPAL_LIB_PREFIX@open-pal.la \
+ 	$(rcache_gpusm_LIBS)
+-if OPAL_cuda_support
++if OPAL_full_cuda_support
+ mca_rcache_gpusm_la_LIBADD += \
+     $(OPAL_TOP_BUILDDIR)/opal/mca/common/cuda/lib@OPAL_LIB_PREFIX@mca_common_cuda.la
+ endif
+diff --git a/opal/mca/rcache/grdma/Makefile.am b/opal/mca/rcache/grdma/Makefile.am
+index 64826f6cb6..b7271e16c3 100644
+--- a/opal/mca/rcache/grdma/Makefile.am
++++ b/opal/mca/rcache/grdma/Makefile.am
+@@ -49,7 +49,7 @@ mca_rcache_grdma_la_SOURCES = $(sources)
+ mca_rcache_grdma_la_LDFLAGS = -module -avoid-version
+ mca_rcache_grdma_la_LIBADD = $(top_builddir)/opal/lib@OPAL_LIB_PREFIX@open-pal.la \
+ 	$(rcache_grdma_LIBS)
+-if OPAL_cuda_support
++if OPAL_full_cuda_support
+ mca_rcache_grdma_la_LIBADD += \
+     $(OPAL_TOP_BUILDDIR)/opal/mca/common/cuda/lib@OPAL_LIB_PREFIX@mca_common_cuda.la
+ endif
+diff --git a/opal/mca/rcache/rgpusm/Makefile.am b/opal/mca/rcache/rgpusm/Makefile.am
+index 8afc4235c3..90462b1ba1 100644
+--- a/opal/mca/rcache/rgpusm/Makefile.am
++++ b/opal/mca/rcache/rgpusm/Makefile.am
+@@ -48,7 +48,7 @@ mca_rcache_rgpusm_la_SOURCES = $(sources)
+ mca_rcache_rgpusm_la_LDFLAGS = -module -avoid-version
+ mca_rcache_rgpusm_la_LIBADD = $(top_builddir)/opal/lib@OPAL_LIB_PREFIX@open-pal.la \
+ 	$(rcache_rgpusm_LIBS)
+-if OPAL_cuda_support
++if OPAL_full_cuda_support
+ mca_rcache_rgpusm_la_LIBADD += \
+     $(OPAL_TOP_BUILDDIR)/opal/mca/common/cuda/lib@OPAL_LIB_PREFIX@mca_common_cuda.la
+ endif
