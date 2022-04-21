@@ -1,0 +1,36 @@
+easyblock = 'CMakeMake'
+
+name = 'dftd4'
+version = '3.3.0'
+
+homepage = 'https://github.com/dftd4/dftd4/'
+description = "DFTD4 van-der-Waals functional is generally Applicable Atomic-Charge Dependent London Dispersion Correction."
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/%(name)s/%(name)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s.patch']
+checksums = [
+    '60d4f30d97cae95a7b48a99e10848ef600b605f9da98c4893a6034bded1a7f24',  # v3.3.0.tar.gz
+    '1c68bde885ae71829e22be5c0310db32a47092b74973ca273498d29eee50ee3b',  # dftd4-3.3.0.patch
+]
+
+builddependencies = [
+    ('Python', '3.8.10'),
+    ('FlexiBLAS', '3.0.4'),
+    ('CMake', '3.21.4'),
+]
+
+configopts = [
+    '-DWITH_API_V2="on" -DCMAKE_INSTALL_LIBDIR="lib" -DBUILD_SHARED_LIBS=ON -DBLAS_LIBRARIES="-lflexiblas" -DLAPACK_LIBRARIES="-lflexiblas"',
+]
+
+postinstallcmds = ['cd ../%(name)s-%(version)s/python; export CC=icc ; pip install ./ --prefix=%(installdir)s']
+
+sanity_check_paths = {
+    'files': ['lib64/libdftd4.so', 'lib64/libmctc-lib.so', 'lib64/libmstore.so', 'lib64/libmulticharge.so.0', 'bin/%(name)s', 'bin/mctc-convert', 'bin/mstore-fortranize', 'bin/mstore-info', 'bin/multicharge'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
