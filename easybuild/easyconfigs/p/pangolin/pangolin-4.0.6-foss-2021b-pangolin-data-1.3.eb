@@ -1,0 +1,75 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# Based on a EC provided by Paul Jähne
+# uploaded by J. Sassmannshausen
+# using the pangoLEARN extension to distinguish between different versions
+
+easyblock = 'PythonBundle'
+
+name = 'pangolin'
+version = '4.0.6'
+local_pdata_version = '1.3'
+versionsuffix = '-pangolin-data-%s' % local_pdata_version
+
+homepage = 'https://cov-lineages.org/pangolin.html'
+description = """Software package for assigning SARS-CoV-2 genome sequences to global lineages.
+This module also contains the faToVcf tool"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('Biopython', '1.79'),
+    ('gofasta', '0.0.5', '', True),
+    ('minimap2', '2.22'),
+    ('Pysam', '0.17.0'),
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('snakemake', '6.10.0'),
+    ('UShER', '0.5.0'),
+    ('scikit-learn', '1.0.1'),
+    ('Kent_tools', '422'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+github_account = 'cov-lineages'
+exts_default_options = {
+    'source_urls': [GITHUB_SOURCE],
+    'sources': [{
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    }],
+}
+
+exts_list = [
+    (name, version, {
+        'checksums': ['7fd6fd715b74550f56abf46b42940931082d3fdcbdd92bd4924890cda6f14028'],
+    }),
+    ('scorpio', '0.3.17', {
+        'checksums': ['8c17b2fabb788b0f418ad9c6ce4146b22b81ea2a544979f3d3beef02e97cd9b9'],
+    }),
+    ('constellations', '0.1.7', {
+        'checksums': ['775292fe32aeb749a124d7253ec8ee31a0cf68d3b59a724a67d32b63ede82008'],
+    }),
+    ('pangolin-data', local_pdata_version, {
+        'checksums': ['602f59eae69ec4abbef8e0eae3b391f65213e7a3e709918471f90c3eefca9ae3'],
+    }),
+]
+
+local_binaries = [
+    'constellations', 'extract_definitions.py', '%(name)s', 'pangolin_data', 'scorpio', 'type_constellations.py',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    '%(name)s -v',
+    '%(name)s -pv',
+    'scorpio -v',
+]
+
+moduleclass = 'bio'
