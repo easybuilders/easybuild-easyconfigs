@@ -1,0 +1,81 @@
+Patch Makefile.mpi so FFTW3, PNG are included, C++ std set to c++11, VTK-9.1 used instead of 6.2
+Patch finish.cpp so it is same as in master branch (25.4.2022)
+Patch util.h to deal with compile problem
+Authors: J. Sassmannshausen (Imperial College London/UK) with help from Lars Viklund (UMU/Sweden)
+diff --git a/LIGGGHTS-PUBLIC-3.8.0.orig/src/MAKE/Makefile.mpi b/LIGGGHTS-PUBLIC-3.8.0/src/MAKE/Makefile.mpi
+index 562db16..7eb07b9 100644
+--- a/LIGGGHTS-PUBLIC-3.8.0.orig/src/MAKE/Makefile.mpi
++++ b/LIGGGHTS-PUBLIC-3.8.0/src/MAKE/Makefile.mpi
+@@ -8,7 +8,7 @@ SHELL = /bin/sh
+ 
+ CC =		mpic++
+ # Optimized version
+-CCFLAGS =	-O2 -funroll-loops -fstrict-aliasing -Wall -Wno-unused-result -fPIC
++CCFLAGS =	-O2 -funroll-loops -fstrict-aliasing -Wall -Wno-unused-result -fPIC -std=c++11
+ # Debug version
+ #CCFLAGS =	-Og -g -pg -fPIC
+ SHFLAGS =	-fPIC
+@@ -54,9 +54,9 @@ MPI_LIB =
+ # PATH = path for FFT library
+ # LIB = name of FFT library
+ 
+-FFT_INC =
+-FFT_PATH =
+-FFT_LIB =
++FFT_INC = -DFFT_FFTW3
++FFT_PATH = -L${EBROOTFFTW}/lib
++FFT_LIB = -lfftw3
+ 
+ # JPEG and/or PNG library, OPTIONAL
+ # see discussion in doc/Section_start.html#2_2 (step 7)
+@@ -65,18 +65,18 @@ FFT_LIB =
+ # PATH = path(s) for JPEG library and/or PNG library
+ # LIB = name(s) of JPEG library and/or PNG library
+ 
+-JPG_INC =
+-JPG_PATH =
+-JPG_LIB =
++JPG_INC = -DLAMMPS_PNG
++JPG_PATH = -L${EBROOTLIBPNG}/lib
++JPG_LIB = -lpng
+ 
+ # VTK library, OPTIONAL
+ # INC = path for VTK header files
+ # PATH = path for VTK library
+ # LIB = name of VTK library
+ 
+-VTK_INC =	-I/usr/include/vtk-6.2
+-VTK_PATH =	#-L/usr/lib/x86_64-linux-gnu
+-VTK_LIB =	-lvtkCommonCore-6.2 -lvtkIOCore-6.2 -lvtkIOXML-6.2 -lvtkIOLegacy-6.2 -lvtkCommonDataModel-6.2 -lvtkIOParallel-6.2 -lvtkParallelCore-6.2 -lvtkParallelMPI-6.2 -lvtkIOImage-6.2 -lvtkCommonExecutionModel-6.2 -lvtkFiltersCore-6.2 -lvtkIOParallelXML-6.2
++VTK_INC =	-I${EBROOTVTK}/include/vtk-9.1
++VTK_PATH =	-L${EBROOTVTK}/lib
++VTK_LIB =	-lvtkCommonCore-9.1 -lvtkIOCore-9.1 -lvtkIOXML-9.1 -lvtkIOLegacy-9.1 -lvtkCommonDataModel-9.1 -lvtkIOParallel-9.1 -lvtkParallelCore-9.1 -lvtkParallelMPI-9.1 -lvtkIOImage-9.1 -lvtkCommonExecutionModel-9.1 -lvtkFiltersCore-9.1 -lvtkIOParallelXML-9.1
+ 
+ # ---------------------------------------------------------------------
+ # build rules and dependencies
+diff --git a/LIGGGHTS-PUBLIC-3.8.0.orig/src/finish.cpp b/LIGGGHTS-PUBLIC-3.8.0/src/finish.cpp
+index 2acb1cc..07eaded 100644
+--- a/LIGGGHTS-PUBLIC-3.8.0.orig/src/finish.cpp
++++ b/LIGGGHTS-PUBLIC-3.8.0/src/finish.cpp
+@@ -719,7 +719,7 @@ void Finish::end(int flag)
+ 
+     nneighfull = 0;
+     if (m < neighbor->old_nrequest) {
+-      if (neighbor->lists[m]->numneigh > 0) {
++      if (neighbor->lists[m]->inum > 0) {
+         int inum = neighbor->lists[m]->inum;
+         int *ilist = neighbor->lists[m]->ilist;
+         int *numneigh = neighbor->lists[m]->numneigh;
+diff --git a/LIGGGHTS-PUBLIC-3.8.0.orig/src/utils.h b/LIGGGHTS-PUBLIC-3.8.0/src/utils.h
+index fab00e9..d379838 100644
+--- a/LIGGGHTS-PUBLIC-3.8.0.orig/src/utils.h
++++ b/LIGGGHTS-PUBLIC-3.8.0/src/utils.h
+@@ -67,7 +67,7 @@ namespace Utils {
+ 
+   inline std::string int_to_string(int a)
+   {
+-    return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << a ) ).str();
++    std::to_string(a); 
+   }
+ 
+   inline std::string double_to_string(double dbl)
