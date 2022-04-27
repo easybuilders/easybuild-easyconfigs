@@ -1,0 +1,55 @@
+Patch Makefile to be EB friendly.
+We use just one Makefile regardless of toolchain.
+
+Åke Sandgren, 2021-04-27
+diff -ru wannier_tools-2.5.1.orig/src/Makefile.intel-mpi wannier_tools-2.5.1/src/Makefile.intel-mpi
+--- wannier_tools-2.5.1.orig/src/Makefile.intel-mpi	2020-03-10 20:15:21.000000000 +0100
++++ wannier_tools-2.5.1/src/Makefile.intel-mpi	2021-04-27 16:24:07.826585523 +0200
+@@ -11,31 +11,34 @@
+        main.o
+ 
+ # compiler
+-F90  = mpiifort -fpp -DMPI
++#F90  = mpiifort -fpp -DMPI
+ 
+-INCLUDE = -I${MKLROOT}/include
+-WFLAG = -nogen-interface
+-OFLAG = -O3 -g -traceback -static-intel
+-FFLAG = $(OFLAG) $(WFLAG)
+-LFLAG = $(OFLAG)
++#INCLUDE = -I${MKLROOT}/include
++#WFLAG = -nogen-interface
++#OFLAG = -O3 -g -traceback -static-intel
++#FFLAG = $(OFLAG) $(WFLAG)
++#LFLAG = $(OFLAG)
+ 
+ # blas and lapack libraries
+ # static linking
+-LIBS = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a \
+-        ${MKLROOT}/lib/intel64/libmkl_sequential.a \
+-        ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
++#LIBS = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a \
++#        ${MKLROOT}/lib/intel64/libmkl_sequential.a \
++#        ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
+ 
+ # dynamic linking
+ # LIBS = -L/${MKLROOT}/lib/intel64 -lmkl_core -lmkl_sequential -lmkl_intel_lp64 -lpthread
+  
+-main : $(OBJ)
+-	$(F90) $(LFLAG) $(OBJ) -o wt.x $(LIBS)
+-	cp -f wt.x ../bin
++wt.x : $(OBJ)
++	$(F90) $(LDFLAGS) $(OBJ) -o wt.x $(LIBLAPACK) $(LIBBLAS)
+ 
+ .SUFFIXES: .o .f90
+ 
+ .f90.o :
+-	$(F90) $(FFLAG) $(INCLUDE) -c $*.f90
++	$(F90) $(F90FLAGS) -c $*.f90
++
++install: wt.x
++	install -d $(PREFIX)/bin
++	install wt.x $(PREFIX)/bin
+ 
+ clean :
+ 	rm -f *.o *.mod *~ wt.x

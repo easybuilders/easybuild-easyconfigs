@@ -1,0 +1,163 @@
+commit c85f964871fd352b573804d819e220d4aacfe5e0
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Mon Jul 13 14:17:44 2020 +0200
+
+    Force using FFTW from external or mkl.
+    
+    Åke Sandgren, 20170517
+
+diff --git a/AmberTools/src/configure2 b/AmberTools/src/configure2
+index 40280d5..a03e109 100755
+--- a/AmberTools/src/configure2
++++ b/AmberTools/src/configure2
+@@ -3063,62 +3063,82 @@ if [ "$compiler" = "intel" ]; then
+ fi
+ 
+ if [ "$has_fftw3" = 'yes' ]; then
+-    echo
+-    echo "Configuring fftw-3.3 (may be time-consuming)..."
+-    echo
+-    enable_mpi=""
+-    enable_debug=""
+-    enable_sse="--enable-sse=no --enable-sse2=no --enable-avx=no"
+-    mpicc=""
+-    if [ "$mpi" = "yes" ]; then
+-        enable_mpi="--enable-mpi=yes"
+-    fi
+-    if [ "$intelmpi" = "yes" ]; then
+-        mpicc="MPICC=mpiicc"
+-    fi
+-    if [ "$debug" = "yes" ]; then
+-        enable_debug="--enable-debug=yes --enable-debug-malloc=yes --enable-debug-alignment=yes"
+-    fi
+-    if [ "$sse" = "yes" ]; then
+-        enable_sse="--enable-sse2=yes" # --enable-avx=yes"
+-    fi
+-    if [ "$mic" = 'yes' ]; then
+-      echo "   --configuring for mic (native mode)..."
+-      echo
+-      cd fftw-3.3 && \
+-      ./configure --prefix=$amberprefix --libdir=$amberprefix/lib \
+-        --enable-static --host=x86_64-k1om-linux \
+-      --build=x86_64-unknown-linux \
+-       $enable_mpi $mpicc $enable_debug \
+-        CC="$cc -mmic" CFLAGS="$cflags $coptflags " \
+-        F77="$fc -mmic" FFLAGS="$fflags $foptflags " \
+-        FLIBS="$flibs_arch" \
+-        > ../fftw3_config.log 2>&1
+-      ncerror=$?
+-    else
+-      cd fftw-3.3 && \
+-        ./configure --prefix=$amberprefix --libdir=$amberprefix/lib \
+-        --enable-static $enable_mpi $mpicc $enable_debug $enable_sse\
+-        CC="$cc" CFLAGS="$cflags $coptflags" \
+-        F77="$fc" FFLAGS="$fflags $foptflags" \
+-        FLIBS="$flibs_arch" \
+-        > ../fftw3_config.log 2>&1
+-      ncerror=$?
+-    fi
+-    if [ $ncerror -gt 0 ]; then
+-        echo "Error: FFTW configure returned $ncerror"
+-        echo "       FFTW configure failed! Check the fftw3_config.log file"
+-        echo "       in the $AMBERHOME/AmberTools/src directory."
+-        exit 1
++    if [ -n "$EBROOTFFTW" ]; then
++        echo
++        echo "Using external FFTW3"
++        echo
++        flibs_fftw3="-lfftw3"
++        if [ "$mpi" = 'yes' ]; then
++            flibs_fftw3="-lfftw3_mpi $flibs_fftw3"
++        fi
++        flibs_fftw3="-L$FFT_LIB_DIR $flibs_fftw3"
++        fftw3=""
++        fppflags="$fppflags -I$FFT_INC_DIR"
++    elif [ -n "$MKL_HOME" ]; then
++        echo
++        echo "Using FFTW3 from MKL"
++        echo
++        flibs_fftw3="-lfftw3xf_intel $flibs_mkl"
++        fftw3=""
++        fppflags="$fppflags -I$FFT_INC_DIR"
+     else
+-        echo "    fftw-3.3 configure succeeded."
+-    fi
+-    cd ..
+-    flibs_fftw3="-lfftw3"
+-    fftw3="\$(LIBDIR)/libfftw3.a"
+-    if [ "$mpi" = 'yes' -a "$intelmpi" = 'no' ]; then
+-        flibs_fftw3="-lfftw3_mpi $flibs_fftw3"
+-        fftw3="\$(LIBDIR)/libfftw3_mpi.a \$(LIBDIR)/libfftw3.a"
++        echo
++        echo "Configuring fftw-3.3 (may be time-consuming)..."
++        echo
++        enable_mpi=""
++        enable_debug=""
++        enable_sse="--enable-sse=no --enable-sse2=no --enable-avx=no"
++        mpicc=""
++        if [ "$mpi" = "yes" ]; then
++            enable_mpi="--enable-mpi=yes"
++        fi
++        if [ "$intelmpi" = "yes" ]; then
++            mpicc="MPICC=mpiicc"
++        fi
++        if [ "$debug" = "yes" ]; then
++            enable_debug="--enable-debug=yes --enable-debug-malloc=yes --enable-debug-alignment=yes"
++        fi
++        if [ "$sse" = "yes" ]; then
++            enable_sse="--enable-sse2=yes" # --enable-avx=yes"
++        fi
++        if [ "$mic" = 'yes' ]; then
++          echo "   --configuring for mic (native mode)..."
++          echo
++          cd fftw-3.3 && \
++          ./configure --prefix=$amberprefix --libdir=$amberprefix/lib \
++            --enable-static --host=x86_64-k1om-linux \
++          --build=x86_64-unknown-linux \
++           $enable_mpi $mpicc $enable_debug \
++            CC="$cc -mmic" CFLAGS="$cflags $coptflags " \
++            F77="$fc -mmic" FFLAGS="$fflags $foptflags " \
++            FLIBS="$flibs_arch" \
++            > ../fftw3_config.log 2>&1
++          ncerror=$?
++        else
++          cd fftw-3.3 && \
++            ./configure --prefix=$amberprefix --libdir=$amberprefix/lib \
++            --enable-static $enable_mpi $mpicc $enable_debug $enable_sse\
++            CC="$cc" CFLAGS="$cflags $coptflags" \
++            F77="$fc" FFLAGS="$fflags $foptflags" \
++            FLIBS="$flibs_arch" \
++            > ../fftw3_config.log 2>&1
++          ncerror=$?
++        fi
++        if [ $ncerror -gt 0 ]; then
++            echo "Error: FFTW configure returned $ncerror"
++            echo "       FFTW configure failed! Check the fftw3_config.log file"
++            echo "       in the $AMBERHOME/AmberTools/src directory."
++            exit 1
++        else
++            echo "    fftw-3.3 configure succeeded."
++        fi
++        cd ..
++        flibs_fftw3="-lfftw3"
++        fftw3="\$(LIBDIR)/libfftw3.a"
++        if [ "$mpi" = 'yes' -a "$intelmpi" = 'no' ]; then
++            flibs_fftw3="-lfftw3_mpi $flibs_fftw3"
++            fftw3="\$(LIBDIR)/libfftw3_mpi.a \$(LIBDIR)/libfftw3.a"
++        fi
+     fi
+ elif [ "$mdgx" = 'yes' ]; then
+     echo
+diff --git a/AmberTools/src/rism/Makefile b/AmberTools/src/rism/Makefile
+index 6a7bc84..fde2dc3 100644
+--- a/AmberTools/src/rism/Makefile
++++ b/AmberTools/src/rism/Makefile
+@@ -5,7 +5,7 @@ include ../config.h
+ export AMBERHOME=$(AMBER_PREFIX)
+ 
+ # rism1d Fortran source files are free format
+-LOCALFLAGS = $(FREEFORMAT_FLAG)
++LOCALFLAGS = $(FREEFORMAT_FLAG) -I$$FFT_INC_DIR
+ 
+ # ------- rism1d information: ----------------------------------------------
+ 

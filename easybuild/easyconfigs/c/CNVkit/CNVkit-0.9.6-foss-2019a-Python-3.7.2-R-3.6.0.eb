@@ -1,0 +1,56 @@
+easyblock = 'PythonBundle'
+
+name = 'CNVkit'
+version = '0.9.6'
+versionsuffix = '-Python-%(pyver)s-R-%(rver)s'
+
+homepage = 'https://github.com/etal/cnvkit'
+description = """A command-line toolkit and Python library for detecting copy
+ number variants and alterations genome-wide from high-throughput sequencing."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('Biopython', '1.73'),
+    ('matplotlib', '3.0.3', '-Python-%(pyver)s'),
+    ('networkx', '2.3', '-Python-%(pyver)s'),
+    ('Pillow', '6.0.0'),
+    ('Pysam', '0.15.2'),
+    ('PyYAML', '5.1'),
+    ('R', '3.6.0'),
+    ('R-bundle-Bioconductor', '3.9', '-R-%(rver)s'),
+]
+
+use_pip = False
+
+exts_list = [
+    ('reportlab', '3.5.23', {
+        'checksums': ['6c81ee26753fa09062d8404f6340eefb02849608b619e3843e0d17a7cda8798f'],
+    }),
+    ('pyfaidx', '0.5.5.2', {
+        'checksums': ['9ac22bdc7b9c5d995d32eb9dc278af9ba970481636ec75c0d687d38c26446caa'],
+    }),
+    ('pomegranate', '0.11.1', {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/jmschrei/pomegranate/archive'],
+        'checksums': ['2663db98fc64fac6d2c732d05f41b1a961f820e788b044f216fd3bf7b049646f'],
+    }),
+    (name, version, {
+        'modulename': 'cnvlib',
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/etal/cnvkit/archive/'],
+        'checksums': ['c6f20e7cf22b20c81325f7cd55d4a8c835b37b1227f274386a6cc48450be9acd'],
+        # Run tests after installation
+        'installopts': "&& cd test && make && make test",
+    }),
+]
+
+postinstallcmds = ['rm %(installdir)s/bin/easy_install*']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ["cnvkit.py", "faidx"]],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'bio'

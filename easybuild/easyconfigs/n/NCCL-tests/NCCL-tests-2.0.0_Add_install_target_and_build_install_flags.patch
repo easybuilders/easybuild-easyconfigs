@@ -1,0 +1,43 @@
+commit 7f54197d15c91221ec2c24f5397eb255532ac1f6
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Tue Mar 16 12:45:16 2021 +0100
+
+    Add install target and propagate MAKEFLAGS.
+    Needed to propagate the necessary build/install opts for EasyBuild.
+
+diff --git a/Makefile b/Makefile
+index 29409a8..8f6dd60 100644
+--- a/Makefile
++++ b/Makefile
+@@ -11,10 +11,14 @@ default : src.build
+ TARGETS=src
+ 
+ all:   ${TARGETS:%=%.build}
++install:   ${TARGETS:%=%.install}
+ clean: ${TARGETS:%=%.clean}
+ 
+ %.build:
+-	${MAKE} -C $* build
++	${MAKE} -C $* build ${MAKEFLAGS}
++
++%.install:
++	${MAKE} -C $* install ${MAKEFLAGS}
+ 
+ %.clean:
+-	${MAKE} -C $* clean
++	${MAKE} -C $* clean ${MAKEFLAGS}
+diff --git a/src/Makefile b/src/Makefile
+index 034cc67..b1db244 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -65,6 +65,10 @@ BIN_FILES := $(BIN_FILES_LIST:%=${DST_DIR}/%_perf)
+ 
+ build: ${BIN_FILES}
+ 
++install: build
++	install -d ${PREFIX}/bin
++	install ${BIN_FILES} ${PREFIX}/bin
++
+ clean:
+ 	rm -rf ${DST_DIR}
+ 

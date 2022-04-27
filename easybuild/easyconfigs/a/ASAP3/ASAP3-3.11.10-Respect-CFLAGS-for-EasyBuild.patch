@@ -1,0 +1,32 @@
+From 3f17ee404ba0e294e8325fda2cf8fcf934ca04a0 Mon Sep 17 00:00:00 2001
+From: Jakob Schiotz <schiotz@fysik.dtu.dk>
+Date: Fri, 16 Aug 2019 15:19:41 +0200
+Subject: [PATCH] Respect CFLAGS when building the executable (important for
+ EasyBuild).
+
+This fixes an issue when using EasyBuild's foss/2019a toolchain, where
+an overly aggressive optimization is otherwise enabled, causing core
+dumps in parallel simulations.
+---
+ setup.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/setup.py b/setup.py
+index 49ef7e7..0458257 100644
+--- a/setup.py
++++ b/setup.py
+@@ -308,7 +308,10 @@ def build_interpreter(compiler, common_src, parallel_src,
+                                          cfgDict['LINKFORSHARED']]
+     # Compile
+     all_objects = []
+-    cflags = cfgDict['CFLAGS'].split()
++    if 'CFLAGS' in os.environ:
++        cflags = os.environ['CFLAGS'].split()
++    else:
++        cflags = cfgDict['CFLAGS'].split()
+     compile_args_c = cflags + list(extra_compile_args)
+     compile_args_cpp = cflags + list(extra_compile_args)
+     if '-std=c++11' in compile_args_c:
+-- 
+1.8.3.1
+

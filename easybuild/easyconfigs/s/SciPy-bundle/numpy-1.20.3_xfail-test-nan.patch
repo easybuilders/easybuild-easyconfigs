@@ -1,0 +1,57 @@
+mark test_nan as expected failure (xfail), see https://github.com/numpy/numpy/issues/18914
+and https://github.com/numpy/numpy/pull/18943
+
+From acf249e0c663f148ee6389327f0b35298fc14833 Mon Sep 17 00:00:00 2001
+From: Ralf Gommers <ralf.gommers@gmail.com>
+Date: Sat, 8 May 2021 14:52:03 +0200
+Subject: [PATCH] TST: xfail `TestCond.test_nan` unconditionally
+
+This is happening on too many build configurations, and it's not
+completely clear if it's just an OpenBLAS version or also depends
+on something else. Reported as happening mostly on macOS, but
+also on Fedora.
+---
+ numpy/linalg/tests/test_linalg.py | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/numpy/linalg/tests/test_linalg.py b/numpy/linalg/tests/test_linalg.py
+index 8a270f194147..c6e8cdd039f1 100644
+--- a/numpy/linalg/tests/test_linalg.py
++++ b/numpy/linalg/tests/test_linalg.py
+@@ -684,7 +684,7 @@ def hermitian(mat):
+             axes = list(range(mat.ndim))
+             axes[-1], axes[-2] = axes[-2], axes[-1]
+             return np.conj(np.transpose(mat, axes=axes))
+-        
++
+         assert_almost_equal(np.matmul(u, hermitian(u)), np.broadcast_to(np.eye(u.shape[-1]), u.shape))
+         assert_almost_equal(np.matmul(vt, hermitian(vt)), np.broadcast_to(np.eye(vt.shape[-1]), vt.shape))
+         assert_equal(np.sort(s)[..., ::-1], s)
+@@ -766,6 +766,9 @@ def test_singular(self):
+         for A, p in itertools.product(As, p_neg):
+             linalg.cond(A, p)
+ 
++    @pytest.mark.xfail(True, run=False,
++                       reason="Platform/LAPACK-dependent failure, "
++                              "see gh-18914")
+     def test_nan(self):
+         # nans should be passed through, not converted to infs
+         ps = [None, 1, -1, 2, -2, 'fro']
+@@ -981,7 +984,7 @@ def test_incompatible_dims(self):
+             linalg.lstsq(A, y, rcond=None)
+ 
+ 
+-@pytest.mark.parametrize('dt', [np.dtype(c) for c in '?bBhHiIqQefdgFDGO']) 
++@pytest.mark.parametrize('dt', [np.dtype(c) for c in '?bBhHiIqQefdgFDGO'])
+ class TestMatrixPower:
+ 
+     rshft_0 = np.eye(4)
+@@ -1010,7 +1013,7 @@ def tz(M):
+             mz = matrix_power(M, 0)
+             assert_equal(mz, identity_like_generalized(M))
+             assert_equal(mz.dtype, M.dtype)
+-        
++
+         for mat in self.rshft_all:
+             tz(mat.astype(dt))
+             if dt != object:

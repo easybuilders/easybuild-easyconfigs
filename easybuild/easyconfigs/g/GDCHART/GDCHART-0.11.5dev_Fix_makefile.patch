@@ -1,0 +1,86 @@
+Fix Makefile to use flags and paths from EasyBuild
+Author: Davide Vanzo (Vanderbilt University)
+diff -ru gdchart0.11.5dev.orig/Makefile gdchart0.11.5dev/Makefile
+--- gdchart0.11.5dev.orig/Makefile	2019-08-06 09:57:15.703746776 -0500
++++ gdchart0.11.5dev/Makefile	2019-08-06 11:33:59.895907382 -0500
+@@ -1,4 +1,4 @@
+-CC=gcc
++CC := ${CC}
+ # gcc 2.7.1 or better is required
+ # CFLAGS=
+ # CFLAGS=-g -ansi -pedantic
+@@ -9,8 +9,8 @@
+ GDC_LIB=libgdc.a
+ 
+ # ----- install locations -----
+-PREFIX_INC = /usr/local/include
+-PREFIX_LIB = /usr/local/lib
++PREFIX_INC := ${INSTALLDIR}/include
++PREFIX_LIB := ${INSTALLDIR}/lib
+ 
+ # INCLUDEDIRS=-I. -I/usr/include/freetype2 -I/usr/include/X11 -I/usr/X11R6/include/X11 -I/usr/local/include 
+ 
+@@ -18,42 +18,42 @@
+ # GDChart requires the gd library - www.boutell.com/gd/
+ # gd 2.0.28 or better is required (GIF support has returned to libgd)
+ # if it's not installed in a standard location edit these lines for your installation
+-GD_INCL=/usr/local/include/
+-GD_LD=/usr/local/lib/
+-GD_LIB=libgd.so
++GD_INCL  := ${EBROOTLIBGD}/include/
++GD_LD    := ${EBROOTLIBGD}/lib/
++GD_LIB   = libgd.so
+ # a static libgd is also available
+ # GD_LIB=libgd.a
+ 
+ # ----- lib png -----
+ # libgd requires libpng
+ # if it's not installed in a standard location edit these lines for your installation
+-# PNG_INCL = ../libpng-1.0.8
+-# PNG_LD   = ../libpng-1.0.8
++PNG_INCL := ${EBROOTLIBPNG}/include
++PNG_LD   := ${EBROOTLIBPNG}/lib
+ 
+ # ----- lib z -----
+ # libgd requires zlib
+ # if it's not installed in a standard location edit these lines for your installation
+-# ZLIB_INCL = ../zlib-1.1.3
+-# ZLIB_LD   = ../zlib-1.1.3
++ZLIB_INCL := ${EBROOTZLIB}/include
++ZLIB_LD   := ${EBROOTZLIB}/lib
+ 
+ # ----- lib jpeg -----
+ # libgd optionally uses libjpeg to produce JPEG images
+-# JPEG_INCL = ../libjpeg
+-# JPEG_LD   = ../libjpeg
++JPEG_INCL := ${EBROOTLIBJPEGMINTURBO}/include
++JPEG_LD   := ${EBROOTLIBJPEGMINTURBO}/lib
+ JPEG_DEF  = -DHAVE_JPEG
+ JPEG_LK   = -ljpeg
+ 
+ # libgd optionally uses libfreetype to use TTFs
+-# FT_LD  = /usr/local/lib
++FT_LD     := ${EBROOTFREETYPE}/lib
+ FT_DEF    = -DHAVE_LIBFREETYPE
+ FT_LK     = -lfreetype
+ 
+ DEFS = $(FT_DEF) $(JPEG_DEF)
+ LIBS = $(FT_LK) $(JPEG_LK)
+ 
+-LIB_PATHS   = -L$(GD_LD) -L$(GDC_LD)
++#LIB_PATHS   = -L$(GD_LD) -L$(GDC_LD)
+ # if not installed in standard paths (/lib, /usr/lib), or LD_LIBRARY_PATH
+-# LIB_PATHS   = -L$(GD_LD) -L$(PNG_LD) -L$(ZLIB_LD) -L$(JPEG_LD)
++LIB_PATHS   = -L$(GD_LD) -L$(PNG_LD) -L$(ZLIB_LD) -L$(JPEG_LD) -L./
+ 
+ # NOTE:
+ # libpng, libz, etc. are usually linked in as dynamic libs
+@@ -135,6 +135,8 @@
+ 
+ # ----- install -----
+ install: gdc.h gdchart.h gdcpie.h libgdc.a
++	mkdir -p $(PREFIX_INC)
++	mkdir -p $(PREFIX_LIB)
+ 	cp gdc.h  gdchart.h  gdcpie.h $(PREFIX_INC)/
+ 	cp libgdc.a $(PREFIX_LIB)/
+ 

@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'PAML'
+version = '4.9j'
+
+homepage = 'http://abacus.gene.ucl.ac.uk/software/paml.html'
+description = """PAML is a package of programs for phylogenetic
+ analyses of DNA or protein sequences using maximum likelihood."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['http://abacus.gene.ucl.ac.uk/software']
+sources = ['%(namelower)s%(version)s.tgz']
+checksums = ['9b00fbd37fe825129a160599372ba4c8e88b22d14c0388044a711fb281a0191d']
+
+builddependencies = [('binutils', '2.37')]
+
+start_dir = 'src'
+
+prebuildopts = "sed -i 's/enum/extern enum/g' paml.h &&"
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS"'
+
+files_to_copy = [
+    (['GeneticCode.txt', '%(builddir)s/%(namelower)s%(version)s/README.txt'], ''),
+    (['*.trees', '*.ctl', '*.nuc', '*.dat', 'paup*', 'stewart.aa'], ''),
+    (['src/baseml', 'src/basemlg', 'src/chi2', 'src/codeml', 'src/evolver'], 'bin'),
+    (['src/infinitesites', 'src/mcmctree', 'src/pamp', 'src/yn00'], 'bin'),
+    (['dat/*'], 'dat'),
+    (['doc/*'], 'doc'),
+    (['examples/*'], 'examples'),
+    (['Technical/*'], 'Technical'),
+]
+
+sanity_check_paths = {
+    'files': ['baseml.ctl', 'codeml.ctl', 'bin/baseml', 'bin/codeml'],
+    'dirs': ['dat', 'doc', 'examples'],
+}
+
+sanity_check_commands = [
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/examples/HIVNSsites %(builddir)s && "
+    "cd %(builddir)s/HIVNSsites && codeml",
+]
+
+moduleclass = 'bio'

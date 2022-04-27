@@ -1,0 +1,41 @@
+fix build on Skylake/Cannonlake by commenting out problematic define statements in tensorflow/lite
+(this has no impact on performance since tensorflow/lite will not be used when built from source)
+
+see also https://github.com/tensorflow/tensorflow/issues/31187 and https://github.com/tensorflow/tensorflow/issues/32026
+
+patch taken from https://github.com/Huawei-MRC-OSI/tensorflow/commit/c45d98ba2d92fcbf9ceb6baea13fbfc68ef1a1f7
+
+From c45d98ba2d92fcbf9ceb6baea13fbfc68ef1a1f7 Mon Sep 17 00:00:00 2001
+From: Sergey Mironov <mironov.sergey@huawei.com>
+Date: Wed, 11 Sep 2019 16:13:06 +0300
+Subject: [PATCH] Workaround Skylake bug as suggested by TF #31187
+
+Ref https://github.com/tensorflow/tensorflow/issues/31187#issuecomment-523673269
+---
+ tensorflow/lite/experimental/ruy/platform.h | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/tensorflow/lite/experimental/ruy/platform.h b/tensorflow/lite/experimental/ruy/platform.h
+index 7a83173acb0b..90a08d9294dc 100644
+--- a/tensorflow/lite/experimental/ruy/platform.h
++++ b/tensorflow/lite/experimental/ruy/platform.h
+@@ -53,12 +53,14 @@ limitations under the License.
+ // compilation.
+ //
+ // TODO(b/138433137) Select AVX-512 at runtime rather than via compile options.
+-#if defined(__AVX512F__) && defined(__AVX512DQ__) && defined(__AVX512CD__) && \
+-    defined(__AVX512BW__) && defined(__AVX512VL__)
+-#define RUY_DONOTUSEDIRECTLY_AVX512 1
+-#else
++/* #if defined(__AVX512F__) && defined(__AVX512DQ__) && defined(__AVX512CD__) && \ */
++/*     defined(__AVX512BW__) && defined(__AVX512VL__) */
++/* #define RUY_DONOTUSEDIRECTLY_AVX512 1 */
++/* #else */
++/* #define RUY_DONOTUSEDIRECTLY_AVX512 0 */
++/* #endif */
++
+ #define RUY_DONOTUSEDIRECTLY_AVX512 0
+-#endif
+ 
+ // Detect APPLE
+ #ifdef __APPLE__

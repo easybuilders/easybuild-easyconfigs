@@ -1,0 +1,55 @@
+name = 'OpenFOAM'
+local_commit = '1f35a0f'
+version = '2.2.x'
+
+homepage = 'https://www.openfoam.com'
+description = """OpenFOAM is a free, open source CFD software package.
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer,
+ to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+source_urls = [
+    'https://github.com/OpenFOAM/OpenFOAM-%(version)s/archive/',
+    'https://downloads.sourceforge.net/foam/%(version_major_minor)s.2',  # for ThirdParty source tarball
+]
+sources = [
+    {
+        'download_filename': '%s.tar.gz' % local_commit,
+        'filename': 'OpenFOAM-%(version)s-20150104.tar.gz',
+        'extract_cmd': "tar xfz %s && mv OpenFOAM-2.2.x-* OpenFOAM-2.2.x",
+    },
+    'ThirdParty-%(version_major_minor)s.2.tgz',
+]
+patches = [
+    'cleanup-OpenFOAM-%(version)s.patch',
+    'OpenFOAM-2.2.0_libreadline.patch',
+    ('cleanup-ThirdParty-2.2.2.patch', ".."),  # patch should not be applied in OpenFOAM subdir
+    'OpenFOAM-3.0.1_fix_isnan.patch',
+]
+checksums = [
+    '111f198300c42551a3eb36c64a92ebe0003d3197be8d5bde35865bc8233e7f88',  # OpenFOAM-2.2.x-20150104.tar.gz
+    '0507ed5c050b87090010f2fe9798caccee30402434f29b867614d452bfd84bd2',  # ThirdParty-2.2.2.tgz
+    'd8110c053d61025efb8056e8caebe3b34ccf95ac5c182f9e144cfb89b9665acd',  # cleanup-OpenFOAM-2.2.x.patch
+    'f1c94764fe07a43877d85497d5c7958a3f162d1b5f1370232084912a6d606181',  # OpenFOAM-2.2.0_libreadline.patch
+    'acae6d27ab8d5197d1df167f986a03188e6404aa58d710f41a693008a11e2583',  # cleanup-ThirdParty-2.2.2.patch
+    'fb545ccd2a81a8d405382bcfe11996ef6790aede1b553426283680c2cb9b39de',  # OpenFOAM-3.0.1_fix_isnan.patch
+]
+
+dependencies = [
+    ('libreadline', '8.0'),
+    ('METIS', '5.1.0'),
+    ('ncurses', '6.1'),
+    ('SCOTCH', '6.0.6'),
+    ('Boost', '1.70.0'),
+]
+
+
+builddependencies = [
+    ('flex', '2.5.39'),
+    ('Bison', '3.0.5'),
+    ('CMake', '3.13.3'),
+]
+
+moduleclass = 'cae'

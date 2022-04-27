@@ -1,0 +1,49 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Adam Huffman
+# Big Data Institute, University of Oxford
+# Updated to 2.20
+# J. Sassmannshausen / GSTT
+
+easyblock = 'MakeCp'
+
+name = 'minimap2'
+version = '2.20'
+
+homepage = 'https://github.com/lh3/minimap2'
+description = """Minimap2 is a fast sequence mapping and alignment
+program that can find overlaps between long noisy reads, or map long
+reads or their assemblies to a reference genome optionally with detailed
+alignment (i.e. CIGAR). At present, it works efficiently with query
+sequences from a few kilobases to ~100 megabases in length at an error
+rate ~15%. Minimap2 outputs in the PAF or the SAM format. On limited
+test data sets, minimap2 is over 20 times faster than most other
+long-read aligners. It will replace BWA-MEM for long reads and contig
+alignment."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/lh3/%(name)s/releases/download/v%(version)s/']
+sources = ['%(name)s-%(version)s.tar.bz2']
+checksums = ['f9eff90a7f14f999df93dff6ed4e3428277edbbd6bda6bdb1800e8d57c9135e3']
+
+builddependencies = [('binutils', '2.36.1')]
+
+files_to_copy = [
+    (['%(name)s'], 'bin'),
+    (['lib%(name)s.a'], 'lib'),
+    (['*.h'], 'include'),
+    'LICENSE.txt', 'NEWS.md', 'README.md',
+    (['%(name)s.1'], 'share/man/man1')
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'lib/lib%(name)s.a'],
+    'dirs': ['include']
+}
+
+sanity_check_commands = [
+    "minimap2 --help",
+    "cd %(builddir)s/minimap2-%(version)s && minimap2 -a test/MT-human.fa test/MT-orang.fa > test.sam",
+]
+
+moduleclass = 'bio'

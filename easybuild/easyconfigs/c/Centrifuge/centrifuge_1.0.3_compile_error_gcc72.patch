@@ -1,0 +1,113 @@
+From 473da2345365d920b10fd7d7de1aa384395023e7 Mon Sep 17 00:00:00 2001
+From: Florian Breitwieser <florian.bw@gmail.com>
+Date: Thu, 19 Apr 2018 10:44:13 -0400
+Subject: [PATCH] Rename HitCount.rank to HitCount._rank to fix compilation
+ errors w/ g++ 7.2.0
+
+Errors:
+```
+classifier.h:431:45: error: the value of 'rank' is not usable in a constant expression
+                     while(_hitMap[i].rank < rank) {
+                                             ^~~~
+classifier.h:427:21: note: 'uint8_t rank' is not const
+             uint8_t rank = 0;
+                     ^~~~
+classifier.h:431:45: error: type/value mismatch at argument 1 in template parameter list for 'template<class> struct std::rank'
+                     while(_hitMap[i].rank < rank) {
+                                             ^~~~
+classifier.h:431:45: note:   expected a type, got 'rank'
+```
+
+Fixes #106
+---
+ classifier.h | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/classifier.h b/classifier.h
+index f234334..ad6f86e 100644
+--- a/classifier.h
++++ b/classifier.h
+@@ -41,7 +41,7 @@ struct HitCount {
+     bool     leaf;
+     uint32_t num_leaves;
+     
+-    uint8_t rank;
++    uint8_t _rank;  // there are compilation error w/ g++ v7.2.0 on OSX when naming the member 'rank' instead of '_rank' 
+     EList<uint64_t> path;
+     
+     void reset() {
+@@ -50,7 +50,7 @@ struct HitCount {
+         summedHitLen = 0.0;
+         summedHitLens[0][0] = summedHitLens[0][1] = summedHitLens[1][0] = summedHitLens[1][1] = 0.0;
+         readPositions.clear();
+-        rank = 0;
++        _rank = 0;
+         path.clear();
+         leaf = true;
+         num_leaves = 1;
+@@ -77,7 +77,7 @@ struct HitCount {
+         readPositions = o.readPositions;
+         leaf = o.leaf;
+         num_leaves = o.num_leaves;
+-        rank = o.rank;
++        _rank = o._rank;
+         path = o.path;
+         
+         return *this;
+@@ -428,16 +428,16 @@ class Classifier : public HI_Aligner<index_t, local_index_t> {
+             while(_hitMap.size() > (size_t)rp.khits) {
+                 _hitTaxCount.clear();
+                 for(size_t i = 0; i < _hitMap.size(); i++) {
+-                    while(_hitMap[i].rank < rank) {
+-                        if(_hitMap[i].rank + 1 >= _hitMap[i].path.size()) {
+-                            _hitMap[i].rank = std::numeric_limits<uint8_t>::max();
++                    while(_hitMap[i]._rank < rank) {
++                        if(_hitMap[i]._rank + 1 >= _hitMap[i].path.size()) {
++                            _hitMap[i]._rank = std::numeric_limits<uint8_t>::max();
+                             break;
+                         }
+-                        _hitMap[i].rank += 1;
+-                        _hitMap[i].taxID = _hitMap[i].path[_hitMap[i].rank];
++                        _hitMap[i]._rank += 1;
++                        _hitMap[i].taxID = _hitMap[i].path[_hitMap[i]._rank];
+                         _hitMap[i].leaf = false;
+                     }
+-                    if(_hitMap[i].rank > rank) continue;
++                    if(_hitMap[i]._rank > rank) continue;
+                     
+                     uint64_t parent_taxID = (rank + 1 >= _hitMap[i].path.size() ? 1 : _hitMap[i].path[rank + 1]);
+                     // Traverse up the tree more until we get non-zero taxID.
+@@ -470,12 +470,12 @@ class Classifier : public HI_Aligner<index_t, local_index_t> {
+                     uint64_t parent_taxID = _hitTaxCount[j].second;
+                     int64_t max_score = 0;
+                     for(size_t i = 0; i < _hitMap.size(); i++) {
+-                        assert_geq(_hitMap[i].rank, rank);
+-                        if(_hitMap[i].rank != rank) continue;
++                        assert_geq(_hitMap[i]._rank, rank);
++                        if(_hitMap[i]._rank != rank) continue;
+                         uint64_t cur_parent_taxID = (rank + 1 >= _hitMap[i].path.size() ? 1 : _hitMap[i].path[rank + 1]);
+                         if(parent_taxID == cur_parent_taxID) {
+                             _hitMap[i].uniqueID = std::numeric_limits<uint64_t>::max();
+-                            _hitMap[i].rank = rank + 1;
++                            _hitMap[i]._rank = rank + 1;
+                             _hitMap[i].taxID = parent_taxID;
+                             _hitMap[i].leaf = false;
+                         }
+@@ -508,7 +508,7 @@ class Classifier : public HI_Aligner<index_t, local_index_t> {
+                     if(_hitMap.size() <= (size_t)rp.khits)
+                         break;
+                 }
+-                rank++;
++                ++rank;
+                 if(rank > _hitMap[0].path.size())
+                     break;
+             }
+@@ -1036,7 +1036,7 @@ class Classifier : public HI_Aligner<index_t, local_index_t> {
+ 		    hitCount.readPositions.clear();
+ 		    hitCount.readPositions.push_back(make_pair(offset, length));
+ 		    hitCount.path = _tempPath;
+-		    hitCount.rank = rank;
++		    hitCount._rank = rank;
+ 		    hitCount.taxID = taxID;
+ 	    }
+ 

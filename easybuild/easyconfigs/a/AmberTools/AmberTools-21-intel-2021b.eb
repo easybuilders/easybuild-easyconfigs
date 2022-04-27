@@ -1,0 +1,58 @@
+easyblock = 'EB_Amber'
+
+name = 'AmberTools'
+version = '21'
+
+homepage = 'https://ambermd.org/'
+description = """AmberTools consists of several independently developed packages that work well by themselves,
+ and with Amber itself. The suite can also be used to carry out complete molecular dynamics simulations,
+ with either explicit water or generalized Born solvent models."""
+
+toolchain = {'name': 'intel', 'version': '2021b'}
+toolchainopts = {'usempi': True}
+
+# download requires registration, see http://ambermd.org/AmberTools17-get.html
+local_download_credentials = '?Name=Easybuild&Institution=Easybuild&City=Internet&State=Other&Country=Belgium'
+source_urls = ['https://ambermd.org/cgi-bin/AmberTools21-get.pl']
+sources = [{
+    'download_filename': local_download_credentials,
+    'filename': SOURCE_TAR_BZ2,
+}]
+patches = [
+    'AmberTools-20_fix_missing_MPI_LIBRARY_error.patch',
+    'AmberTools-20_cmake-locate-netcdf.patch',
+    'AmberTools-20_fix_xblas_missing_make_dependency.patch',
+]
+checksums = [
+    'f55fa930598d5a8e9749e8a22d1f25cab7fcf911d98570e35365dd7f262aaafd',  # AmberTools-21.tar.bz2
+    # AmberTools-20_fix_missing_MPI_LIBRARY_error.patch
+    '0b89a0624167bc23876bcdefcb1055f591e38e3bd559a71d5749e342bd311acc',
+    '473e07c53b6f641d96d333974a6af2e03413fecef79f879d3fdecf7fecaab4d0',  # AmberTools-20_cmake-locate-netcdf.patch
+    # AmberTools-20_fix_xblas_missing_make_dependency.patch
+    'ff25e91fdc72347a778c3837b581e174d6a8c71efa5b46e11391b18bca84fd65',
+]
+
+builddependencies = [
+    ('Bison', '3.7.6'),
+    ('pkg-config', '0.29.2'),
+    ('CMake', '3.22.1'),
+    ('flex', '2.6.4'),
+    ('make', '4.3'),
+]
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('matplotlib', '3.4.3'),
+    ('netCDF', '4.8.1'),
+    ('netCDF-Fortran', '4.5.3'),
+    ('FFTW', '3.3.10'),
+]
+
+# pysander should link with icc and not gcc
+prebuildopts = """sed -i 's/import sys/import sys; os.environ["LDSHARED"] = "icc -shared "/g' """
+prebuildopts += "%(builddir)s/AmberTools/src/pysander/setup.py && "
+
+# Tests use pmemd which is not part of AmberTools
+runtest = False
+
+moduleclass = 'chem'
