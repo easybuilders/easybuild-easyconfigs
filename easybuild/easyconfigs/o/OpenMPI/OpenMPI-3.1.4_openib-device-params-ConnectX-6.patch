@@ -1,0 +1,55 @@
+fixes "WARNING: No preset parameters were found for the device that Open MPI detected"
+on a system with ConnectX-6 Mellanox cards (see output of "lspci | grep -i mellanox")
+
+see https://github.com/open-mpi/ompi/pull/7179
+
+From 922e2b69c54b563deeda443e5e810314a0a55ca1 Mon Sep 17 00:00:00 2001
+From: Akshay Venkatesh <akvenkatesh@nvidia.com>
+Date: Tue, 19 Nov 2019 07:20:28 -0800
+Subject: [PATCH] OPAL/MCA/BTL/OPENIB: Detect ConnectX-6 HCAs
+
+Detection code was added after openib was removed from master but it is still
+addressing a need on release branch 3.1.x. This is reason behind why a commit
+from master was not cherry-picked into 3.1.x
+
+Signed-off-by: Akshay Venkatesh <akvenkatesh@nvidia.com>
+---
+ opal/mca/btl/openib/mca-btl-openib-device-params.ini | 9 +++++++++
+ opal/mca/common/verbs/common_verbs_port.c            | 4 ++++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/opal/mca/btl/openib/mca-btl-openib-device-params.ini b/opal/mca/btl/openib/mca-btl-openib-device-params.ini
+index 51b2470b757..b51a7dcdde7 100644
+--- a/opal/mca/btl/openib/mca-btl-openib-device-params.ini
++++ b/opal/mca/btl/openib/mca-btl-openib-device-params.ini
+@@ -190,6 +190,15 @@ max_inline_data = 256
+ 
+ ############################################################################
+ 
++[Mellanox ConnectX6]
++vendor_id = 0x2c9,0x5ad,0x66a,0x8f1,0x1708,0x03ba,0x15b3,0x119f
++vendor_part_id = 4123
++use_eager_rdma = 1
++mtu = 4096
++max_inline_data = 256
++
++############################################################################
++
+ [IBM eHCA 4x and 12x]
+ vendor_id = 0x5076
+ vendor_part_id = 0
+diff --git a/opal/mca/common/verbs/common_verbs_port.c b/opal/mca/common/verbs/common_verbs_port.c
+index 973a82666ef..56166dcb776 100644
+--- a/opal/mca/common/verbs/common_verbs_port.c
++++ b/opal/mca/common/verbs/common_verbs_port.c
+@@ -94,6 +94,10 @@ int opal_common_verbs_port_bw(struct ibv_port_attr *port_attr,
+         /* 12x */
+         *bandwidth *= 12;
+         break;
++    case 16:
++        /* 16x */
++        *bandwidth *= 16;
++        break;
+     default:
+         /* Who knows? */
+         return OPAL_ERR_NOT_FOUND;

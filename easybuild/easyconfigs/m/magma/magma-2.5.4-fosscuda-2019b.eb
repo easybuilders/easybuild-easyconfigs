@@ -1,0 +1,41 @@
+easyblock = "CMakeMake"
+
+name = 'magma'
+version = '2.5.4'
+
+homepage = 'https://icl.cs.utk.edu/magma/'
+description = """The MAGMA project aims to develop a dense linear algebra library similar to
+ LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['https://icl.cs.utk.edu/projectsfiles/magma/downloads/']
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'magma-2.5.4_allow-all-sms.patch',
+    'magma-2.5.4_el8-ppc64le.patch',
+]
+checksums = [
+    '7734fb417ae0c367b418dea15096aef2e278a423e527c615aab47f0683683b67',  # magma-2.5.4.tar.gz
+    '4e47ecc080ff761866f179c9b383b8930e4daa2fcee1c2a48db585fc50531561',  # magma-2.5.4_allow-all-sms.patch
+    'aa53dbd733524690a432908215691b668fb378260426230d7afd9c3410f0295e',  # magma-2.5.4_el8-ppc64le.patch
+]
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['3.0', '3.5', '5.0', '6.0', '7.0', '7.5']  # or 'Kepler Maxwell Pascal Volta Turing'
+# make sure both static and shared libs are built
+configopts = [
+    '-DBUILD_SHARED_LIBS=%s -DGPU_TARGET="%%(cuda_sm_space_sep)s" ' % local_shared for local_shared in ('ON', 'OFF')
+]
+
+sanity_check_paths = {
+    'files': ['lib/libmagma.so', 'lib/libmagma.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'

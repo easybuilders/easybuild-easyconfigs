@@ -1,0 +1,31 @@
+# Patch so MKL is being used as this is working well
+# Contribution from the Crick HPC team
+# uploaded by J. Sassmannshausen
+diff -Nru cytosim-3ecab2584958081f0bbb42642e849c84f7d34c0b-orig/makefile.inc cytosim-3ecab2584958081f0bbb42642e849c84f7d34c0b/makefile.inc
+--- cytosim-3ecab2584958081f0bbb42642e849c84f7d34c0b-orig/makefile.inc	2019-01-17 09:14:25.000000000 +0000
++++ cytosim-3ecab2584958081f0bbb42642e849c84f7d34c0b/makefile.inc	2019-03-13 11:11:44.649196000 +0000
+@@ -21,7 +21,7 @@
+ #     HAS_MKL = 2 for static linking
+ # otherwise, use HAS_MKL = 0;
+ 
+-HAS_MKL := 0
++HAS_MKL := 1
+ 
+ #---------------- PNG image export support
+ # `libpng` needs to be installed to save PNG images:
+@@ -246,13 +246,13 @@
+ ifeq ($(HAS_MKL),1)
+ 
+     # sequential dynamic linking:
+-    MKL_LIBS := -lmkl_intel$(MKL_EXT) -lmkl_sequential -lmkl_core
++    MKL_LIBS := -Wl,--no-as-needed -lmkl_intel$(MKL_EXT) -lmkl_sequential -lmkl_core
+     
+     # threaded dynamic linking:
+     #MKL_LIBS := -lmkl_intel$(MKL_EXT) -lmkl_intel_thread -lmkl_core -liomp5
+ 
+     # modify the linking command:
+-    LINK := -L$(MKL_PATH) $(MKL_LIBS) -lpthread    
++    LINK := -L$(MKL_PATH) $(MKL_LIBS) -lpthread -lm 
+ 
+ endif
+ 

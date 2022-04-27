@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'MDSplus-Python'
+version = '7.96.12'
+local_pyver = '3.8.2'
+
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://mdsplus.org'
+description = """MDSplus is a set of software tools for data acquisition and storage and a methodology
+ for management of complex scientific data."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/MDSplus/mdsplus/archive']
+sources = ['stable_release-%s.zip' % version.replace('.', '-')]
+checksums = ['72f97f5ecf4eac40629c0e0c869cc48f7b8caa52ea9dc52d77c37d436190a318']
+
+dependencies = [
+    ('Python', local_pyver),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('MDSplus', version),
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+local_moddir = modextrapaths['PYTHONPATH'] + '/MDSplus'
+
+skipsteps = ['build', 'test']
+
+configopts = '--disable-doxygen-doc --disable-java'
+# hardcode version via configure script (git is unavailable)
+configopts += ' RELEASE_VERSION=%(version)s BRANCH=stable'
+
+# install by simply copying into a subdir because
+# running setup.py will try to make an egg link instead of installing.
+install_cmd = 'mkdir -p %(installdir)s/' + local_moddir
+install_cmd += ' && pwd && cp -a python/MDSplus/* %(installdir)s/' + local_moddir + '/'
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [local_moddir],
+}
+
+# MDSplus.__version__ shows an ugly non-fatal warning,
+# the logic in the mdsplus package seems broken and may need patching.
+sanity_check_commands = [
+    ('python', "-c 'import MDSplus ; print(MDSplus.__version__)'"),
+]
+moduleclass = 'data'

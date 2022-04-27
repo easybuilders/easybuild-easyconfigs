@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'WannierTools'
+version = '2.5.1'
+
+homepage = 'http://www.wanniertools.com'
+description = """WannierTools is an open source software that studies the physical properties of given tight-binding
+ model."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/quanshengwu/wannier_tools/archive']
+sources = ['V%(version)s.tar.gz']
+patches = ['WannierTools-2.5.1_fix_Makefile.patch']
+checksums = [
+    '22aad8e95f2da07ac2dd892c2ca0438010779e6cc542e30f34ea5c3f580fd72c',  # V2.5.1.tar.gz
+    '1752319cad40fc258c5b9753baa9db4ca1c5a4d931234164d66212c7ba92f7cb',  # WannierTools-2.5.1_fix_Makefile.patch
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'cd src && '
+preinstallopts = prebuildopts
+
+# use -cpp -fallow-argument-mismatch -ffree-line-length-512 for GNU based compilers
+# use -fpp for Intel based compilers
+# We use the same Makefile regardless of toolchain due to the Makefile patch
+buildopts = '-f Makefile.intel-mpi F90FLAGS="$F90FLAGS -fpp -DMPI" '
+installopts = '-f Makefile.intel-mpi PREFIX=%(installdir)s '
+
+# No dependecies in the Makefile
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/wt.x'],
+    'dirs': []
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,66 @@
+easyblock = 'PythonBundle'
+
+name = 'nanocompore'
+version = '1.0.0rc3-2'
+versionsuffix = "-Python-%(pyver)s"
+
+homepage = 'https://nanocompore.rna.rocks/'
+description = "Nanocompore identifies differences in ONT nanopore "
+description += "sequencing raw signal corresponding to RNA modifications by comparing 2 samples"
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('tqdm', '4.47.0'),
+    ('matplotlib', '3.2.1', versionsuffix),
+    ('Seaborn', '0.10.1', versionsuffix),
+    ('scikit-learn', '0.23.1', versionsuffix),
+    ('statsmodels', '0.11.1', versionsuffix),
+    ('poetry', '1.0.9', versionsuffix),
+    ('PyYAML', '5.3'),
+]
+
+use_pip = True
+
+# poetry has unnecessarily restrictive dependencies
+local_nanocompore_preinstallopts = """sed -i'' 's/\^/>=/g' pyproject.toml && """
+local_nanocompore_preinstallopts += """sed -i'' 's/~/>=/g' pyproject.toml && """
+
+# removing argparse from dependencies - it is part of python standard library since 3.6+
+local_bedparse_preinstallopts = """sed -i'' 's/argparse//' setup.py && """
+
+exts_list = [
+    ('pyfaidx', '0.5.9.1', {
+        'checksums': ['eda8af04ba4da4fd63fdc35a62e0e41dfc06aa1a511728dfbdd7707e3b382855'],
+    }),
+    ('bedparse', '0.2.3', {
+        'preinstallopts': local_bedparse_preinstallopts,
+        'checksums': ['d1597b3de525a8d2e4ffe9ca73b2d6b59c1f54f0fe3ad248b42c2f36e50ce8f3'],
+    }),
+    (name, version, {
+        'preinstallopts': local_nanocompore_preinstallopts,
+        'source_tmpl': 'v1.0.0rc3-2.tar.gz',
+        'source_urls': ['https://github.com/tleonardi/nanocompore/archive'],
+        'checksums': ['a978bc955e5a672fddfc9561523909c69d5bd23d42ca9a3c50ddf77b19d187da'],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/nanocompore'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'nanocompore -h',
+    # cannot use runtest in extension because import of the package is needed
+    # assertion of the tool's computation results fail, possibly because this
+    # has not been thought of in nanocompore source code (possible lack of support for python 3.5+)
+    # already created an issue https://github.com/tleonardi/nanocompore/issues/156
+    # 'cd %%(builddir)s/%s/%s-%s/tests && pytest -vv' % (name, name, version)
+]
+
+moduleclass = 'bio'

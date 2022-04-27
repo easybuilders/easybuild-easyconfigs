@@ -1,0 +1,44 @@
+find and set appropriate targets for libxml2 and libxslt libraries found in the system
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- src/cmake/cxxConfigure.cmake.orig	2017-06-22 19:14:50.000000000 +0200
++++ src/cmake/cxxConfigure.cmake	2021-06-03 00:46:03.509256295 +0200
+@@ -101,6 +101,9 @@
+ if((NOT HAVE_LIBXML2) OR (NOT HAVE_LIBXSLT))
+   find_package_version(LibXml2 ${BCL2FASTQ_LIBXML2_VERSION})
+   find_package_version(LibXslt ${BCL2FASTQ_LIBXSLT_VERSION})
++  find_library_env(LIBXML2 libxml/xpath.h xml2)
++  find_library_env(LIBEXSLT libexslt/exslt.h exslt)
++  find_library_env(LIBXSLT libxslt/xsltconfig.h xslt)
+ endif((NOT HAVE_LIBXML2) OR (NOT HAVE_LIBXSLT))
+ 
+ if((NOT HAVE_LIBXML2) OR (NOT HAVE_LIBXSLT))
+--- src/cmake/bcl2fastq_redist_macros.cmake.orig	2017-06-22 19:14:50.000000000 +0200
++++ src/cmake/bcl2fastq_redist_macros.cmake	2021-06-03 00:45:41.825960000 +0200
+@@ -103,4 +103,27 @@
+ 
+ endmacro(find_library_redist name pathhint header)
+ 
++#
++# Find a library in environment, assume version will be correct
++#
++macro(find_library_env name header library)
++    unset(${name}_LIBRARIES CACHE)
++    # Search for library
++    unset(${name}_LIBRARIES CACHE)
++    find_library(${name}_LIBRARIES NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}${library}${CMAKE_STATIC_LIBRARY_SUFFIX} HINTS ENV LIBRARY_PATH)
++    
++    message(STATUS "Find library ${namenolib}: ${${name}_LIBRARIES}")
++    # Search for include path
++    unset(${name}_INCLUDE_DIR CACHE)
++    string(TOLOWER ${name} namel)
++    find_path(${name}_INCLUDE_DIR ${header} HINTS ENV C_INCLUDE_PATH ENV CPATH ENV CPLUS_INCLUDE_PATH)
++    set(${name}_INCLUDE_DIR ${${name}_INCLUDE_DIR} CACHE STRING "lib BOOL" FORCE)
++
++    if(${name}_INCLUDE_DIR AND ${name}_LIBRARIES)
++        set (HAVE_${name} true CACHE BOOL "lib bool" FORCE)
++        message (STATUS "Found ${name}  header: ${${name}_INCLUDE_DIR}/${header}")
++        message (STATUS "Found ${name} library: ${${name}_LIBRARY}")
++    endif(${name}_INCLUDE_DIR AND ${name}_LIBRARIES)
++
++endmacro(find_library_env name pathhint header)
+ 

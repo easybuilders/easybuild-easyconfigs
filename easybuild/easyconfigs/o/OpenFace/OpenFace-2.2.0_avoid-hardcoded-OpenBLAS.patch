@@ -1,0 +1,38 @@
+replace hardcoding of OpenBLAS to allow use of other BLAS library like FlexiBLAS
+
+author: Jakub Zárybnický (Inuits)
+--- OpenFace-OpenFace_2.2.0/CMakeLists.txt.orig	2021-12-18 14:00:40.813909912 +0100
++++ OpenFace-OpenFace_2.2.0/CMakeLists.txt	2021-12-18 14:07:55.707025240 +0100
+@@ -11,22 +11,19 @@
+ set(CONFIG_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_CONFIG_DIR}")
+ add_definitions(-DCONFIG_DIR="${CONFIG_DIR}")
+ 
+-# make sure we'll use OpenBLAS only: there's a header file naming difference between different
+-# implementations; so OpenFace wants OpenBLAS;
+-find_package(OpenBLAS REQUIRED)
+-if ( ${OpenBLAS_FOUND} )
+-    MESSAGE("OpenBLAS information:")
+-    MESSAGE("  OpenBLAS_LIBRARIES: ${OpenBLAS_LIB}")
+-else()
+-    MESSAGE(FATAL_ERROR "OpenBLAS not found in the system.")
++if ( DEFINED ENV{LIBBLAS} )
++    SET(OpenBLAS_LIB "-L$ENV{BLAS_LIB_DIR} $ENV{LIBBLAS}")
++    MESSAGE("BLAS information:")
++    MESSAGE("  BLAS_LIBRARIES: ${OpenBLAS_LIB}")
++ else()
++    MESSAGE(FATAL_ERROR "BLAS not found in the system via \${LIBBLAS}.")
+ endif()
+ 
+-if ( ${OpenBLAS_INCLUDE_FOUND} )
+-    MESSAGE("  OpenBLAS_INCLUDE: ${OpenBLAS_INCLUDE_DIR}")
++if ( DEFINED ENV{BLAS_INC_DIR} )
++    SET(OpenBLAS_INCLUDE_DIR $ENV{BLAS_INC_DIR})
++    MESSAGE("  BLAS_INCLUDE: ${OpenBLAS_INCLUDE_DIR}")
+ else()
+-    MESSAGE(WARNING "OpenBLAS include not found in the system. Using the one vended with OpenFace.")
+-	set(OpenBLAS_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/lib/3rdParty/OpenBLAS/include")
+-    MESSAGE("  OpenBLAS_INCLUDE: ${OpenBLAS_INCLUDE_DIR}")
++    MESSAGE(FATAL_ERROR "BLAS include dir not found in the system via \${BLAS_INC_DIR}.")
+ endif()
+ 
+ find_package( OpenCV 4.0 REQUIRED COMPONENTS core imgproc calib3d highgui objdetect)

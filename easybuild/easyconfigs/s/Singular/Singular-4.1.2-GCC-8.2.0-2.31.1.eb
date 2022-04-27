@@ -1,0 +1,54 @@
+easyblock = 'ConfigureMake'
+
+name = 'Singular'
+version = '4.1.2'
+
+homepage = 'https://www.singular.uni-kl.de/'
+description = """Singular is a computer algebra system for polynomial computations,
+with special emphasis on commutative and non-commutative algebra, algebraic geometry,
+and singularity theory."""
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/Singular/Sources/archive']
+sources = ['Release-%s.tar.gz' % version.replace('.', '-')]
+checksums = ['2193bc790a2a87e9fb1561fd527e30065da5985d8b0ad050b262e49ca38bb5aa']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('Doxygen', '1.8.15'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('libreadline', '8.0'),
+    ('GMP', '6.1.2'),
+    ('MPFR', '4.0.2'),
+    ('FLINT', '2.5.2'),
+    ('NTL', '11.3.4'),
+    ('cddlib', '0.94i'),
+    ('4ti2', '1.6.9'),
+]
+
+preconfigopts = "./autogen.sh && "
+configopts = "--with-gmp=$EBROOTGMP --with-flint=$EBROOTFLINT --with-ntl=$EBROOTNTL"
+
+# Disable man pages because the doc folder is missing in the source tarball (issue Singular/Sources#975)
+local_disable_man = "dist_man1_MANS=''"
+
+buildopts = local_disable_man
+
+runtest = 'check %s' % local_disable_man
+
+installopts = local_disable_man
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ESingular', 'Singular', 'TSingular', 'libpolys-config', 'libsingular-config']] +
+             ['lib/lib%s.%s' % (l, e) for l in ['Singular', 'factory', 'gfan', 'omalloc', 'polys', 'singular_resources']
+              for e in ['a', SHLIB_EXT]],
+    'dirs': ['include/%s' % h for h in ['factory', 'gfanlib', 'omalloc', 'resources', 'singular']] +
+            ['libexec/singular', 'share'],
+}
+
+moduleclass = 'math'

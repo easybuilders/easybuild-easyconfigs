@@ -1,0 +1,34 @@
+easyblock = 'ConfigureMake'
+
+name = 'libGridXC'
+version = '0.9.6'
+
+homepage = 'https://gitlab.com/siesta-project/libraries/libgridxc'
+description = """A library to compute the exchange and correlation energy
+ and potential in spherical (i.e. atoms) or periodic systems."""
+
+toolchain = {'name': 'iimpi', 'version': '2020b'}
+toolchainopts = {'usempi': True, 'opt': True}
+
+source_urls = ['https://gitlab.com/siesta-project/libraries/libgridxc/uploads/e6e4ec1e3ec648a45b3613e724c7be04']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['ee513eeb08b631e2efaaea62e73d85b6fbf204da85963be785915802e5497463']
+
+local_common_configopts = "--enable-static --enable-shared --enable-multiconfig --with-libxc"
+
+configopts = [
+    local_common_configopts + " --without-mpi",
+    local_common_configopts + " CC=$MPICC FC=$MPIFC CXX=$MPICXX --with-mpi",
+]
+
+dependencies = [('libxc', '4.3.4')]
+
+sanity_check_paths = {
+    'files':
+        ['include/gridxc_dp%s/gridxc.mod' % x for x in ['', '_mpi']] +
+        [('lib/libgridxc_dp.a', 'lib64/libgridxc_dp.a')] +
+        [('lib/libgridxc_dp_mpi.a', 'lib64/libgridxc_dp_mpi.a')],
+    'dirs': [],
+}
+
+moduleclass = 'phys'
