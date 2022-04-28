@@ -5,26 +5,27 @@ easyblock = 'Tarball'
 
 name = 'HPCX'
 version = '2.10'
+versionsuffix = '-redhat8'
 
 homepage = 'http://www.mellanox.com/page/products_dyn?product_family=189&mtag=hpc-x'
 description = """The Mellanox HPC-X Toolkit
 is a comprehensive MPI and SHMEM/PGAS software suite
 for high performance computing environments"""
 
-toolchain = SYSTEM
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
 
 # By downloading, you accept the HPC SDK Software License Agreement (https://docs.nvidia.com/hpc-sdk/eula/index.html)
-# accept_eula = True
+accept_eula = True
 source_urls = ['https://content.mellanox.com/hpc/hpc-x/v%(version)s/']
 sources = ['%(namelower)s-v%(version)s-gcc-MLNX_OFED_LINUX-5-redhat8-cuda11-gdrcopy2-nccl2.11-x86_64.tbz']
 checksums = ['973e301cdb02faf422d34063ea2abd9828dfd6c21ebe762c1d63fa8820dc028f']
 
-local_gccver = '11.2.0'
+builddependencies = [
+    ('binutils', '2.36.1'),
+]
+
 dependencies = [
-    ('GCCcore', local_gccver),
-    ('binutils', '2.37', '', ('GCCcore', local_gccver)),
-    # This is necessary to avoid cases where just libnuma.so.1 is present in the system and -lnuma fails
-    ('numactl', '2.0.14', '', ('GCCcore', local_gccver))
+    ('numactl', '2.0.14')
 ]
 
 local_binaries = [
@@ -32,9 +33,9 @@ local_binaries = [
     'orte-server', 'oshmem_info', 'ompi_info', 'orte-info', 'opal_wrapper'
 ]
 
-local_dirs = ['hcoll', 'ompi', 'sharp', 'ucx']
+local_dirs = [ 'hcoll', 'ompi', 'sharp', 'ucx' ]
 
-local_subdirs = ['bin', 'include', 'lib']
+local_subdirs = [ 'bin', 'include', 'lib' ]
 
 sanity_check_paths = {
     'files': ['ompi/bin/%s' % x for x in local_binaries],
@@ -43,13 +44,12 @@ sanity_check_paths = {
              ['nccl_rdma_sharp_plugin', 'clusterkit']
 }
 
-modextrapaths = {
-    'CPATH':           ['hcoll/include', 'sharp/include', 'ucx/include', 'ompi/include'],
-    'LD_LIBRARY_PATH': ['hcoll/lib', 'nccl_rdma_sharp_plugin/lib', 'sharp/lib', 'ucx/lib', 'ucx/lib/ucx', 'ompi/lib'],
-    'LIBRARY_PATH':    ['hcoll/lib', 'nccl_rdma_sharp_plugin/lib', 'sharp/lib', 'ucx/lib', 'ompi/lib'],
-    'MANPATH':         'ompi/share/man',
-    'PATH':            ['clusterkit/bin', 'hcoll/bin', 'ucx/bin', 'ompi/bin', 'ompi/tests/imb'],
-    'PKG_CONFIG_PATH': ['hcoll/lib/pkgconfig', 'ompi/lib/pkgconfig', 'sharp/lib/pkgconfig', 'ucx/lib/pkgconfig'],
+modextrapaths = { 'CPATH':           ['hcoll/include', 'sharp/include', 'ucx/include', 'ompi/include'],
+                  'LD_LIBRARY_PATH': ['hcoll/lib', 'nccl_rdma_sharp_plugin/lib', 'sharp/lib', 'ucx/lib', 'ucx/lib/ucx', 'ompi/lib'],
+                  'LIBRARY_PATH':    ['hcoll/lib', 'nccl_rdma_sharp_plugin/lib', 'sharp/lib', 'ucx/lib', 'ompi/lib'],
+                  'MANPATH':         'ompi/share/man',
+                  'PATH':            ['clusterkit/bin', 'hcoll/bin', 'ucx/bin', 'ompi/bin', 'ompi/tests/imb'],
+                  'PKG_CONFIG_PATH': ['hcoll/lib/pkgconfig', 'ompi/lib/pkgconfig', 'sharp/lib/pkgconfig', 'ucx/lib/pkgconfig'],
 }
 
 modextravars = {
@@ -76,3 +76,4 @@ modextravars = {
 }
 
 moduleclass = 'mpi'
+
