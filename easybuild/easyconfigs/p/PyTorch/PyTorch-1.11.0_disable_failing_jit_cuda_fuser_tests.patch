@@ -2,19 +2,14 @@
 # Company: SURF
 # We've seen that these tests fail for version 1.11.0, see https://github.com/pytorch/pytorch/issues/76107
 # These failures probably point to underlying issues, but the PR that fixes them touches a ton of files
-# It's near-impossible to cherry pick that, without causing other issues. Moreover, 
+# It's near-impossible to cherry pick that, without causing other issues. Moreover,
 # PyTorch devs have pointed out that nvfuser is not enabled by default in 1.11.0, so chances of anyone
 # hitting these issues are very small
 # We simply disable the tests and accept that in v 1.11.0 in PyTorch, this functionality is broken.
 diff -Nru pytorch_orig/test/test_jit_cuda_fuser.py pytorch/test/test_jit_cuda_fuser.py
---- pytorch_orig/test/test_jit_cuda_fuser.py	2022-04-29 14:03:49.399226000 +0200
+--- pytorch_orig/test/test_jit_cuda_fuser.py	2022-04-29 14:54:30.771378000 +0200
 +++ pytorch/test/test_jit_cuda_fuser.py	2022-04-29 14:05:54.067297000 +0200
-@@ -1301,11 +1308,17 @@
-                 norm_shape = [input_shape[idx] for idx in range(dims - offset, dims)]
-                 self._native_layer_norm_helper(input_shape, norm_shape, torch.float16, "cuda", 5e-3)
- 
-     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
-     @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+@@ -1313,6 +1313,12 @@
      @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
                       "Requires fusion optimization pass to be effective")
      @unittest.skipIf(not TEST_BF16, "device does not support BFloat16")
@@ -27,11 +22,7 @@ diff -Nru pytorch_orig/test/test_jit_cuda_fuser.py pytorch/test/test_jit_cuda_fu
      def test_native_layer_norm_bfloat(self):
          dims = 4
          rnds = 3
-@@ -2817,10 +2830,16 @@
-                                           ref_module.bn.running_var,
-                                           e0))
- 
-     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
+@@ -2828,6 +2834,12 @@
      @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
      @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
                       "Requires fusion optimization pass to be effective")
@@ -44,11 +35,7 @@ diff -Nru pytorch_orig/test/test_jit_cuda_fuser.py pytorch/test/test_jit_cuda_fu
      def test_batch_norm_half(self):
          with torch.backends.cudnn.flags(enabled=True):
              setups = [
-@@ -2832,10 +2851,16 @@
-                 training, track_running_stats = training_and_track
-                 self._test_batch_norm_impl_index_helper(4, 8, 5, affine, track_running_stats, training, torch.half)
- 
-     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
+@@ -2843,6 +2855,12 @@
      @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
      @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
                       "Requires fusion optimization pass to be effective")
