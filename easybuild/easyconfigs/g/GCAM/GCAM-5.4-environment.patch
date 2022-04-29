@@ -1,0 +1,183 @@
+Patching various files so we can use the EasyBuild environment
+This also includes patching for Hector and the JAR files which are coming from EasyBuild
+Author: J. Sassmannshausen
+diff --git a/gcam-core-gcam-v5.4.orig/cvs/objects/build/linux/config.system b/gcam-core-gcam-v5.4/cvs/objects/build/linux/config.system
+index 3848156..02ddac3 100644
+--- a/gcam-core-gcam-v5.4.orig/cvs/objects/build/linux/config.system
++++ b/gcam-core-gcam-v5.4/cvs/objects/build/linux/config.system
+@@ -1,24 +1,20 @@
+ ## environment for PIC systems
+ ## Note you will hava to execute 'module load java' before JAVA_HOME will be set.
+-ifeq (constance,$(findstring constance,$(HOSTNAME)))
+ GCAMLIB_HOME    = /pic/projects/GCAM/GCAM-libraries
+-BOOST_INCLUDE   = $(GCAMLIB_HOME)/include
+-BOOST_LIB	    = $(GCAMLIB_HOME)/lib/boost
+-BOOSTROOT	    = $(GCAMLIB_HOME)/src/boost
+-EIGEN_INCLUDE   = $(GCAMLIB_HOME)/include
+-TBB_INCLUDE     = $(GCAMLIB_HOME)/include/oneapi
+-TBB_LIB	        = $(GCAMLIB_HOME)/lib
+-XERCES_INCLUDE  = $(GCAMLIB_HOME)/include
+-XERCES_LIB      = $(GCAMLIB_HOME)/lib
+-JAVA_INCLUDE    = ${JAVA_HOME}/include
+-JAVA_LIB        = ${JAVA_HOME}/jre/lib/amd64/server
+-JARS_LIB       = $(GCAMLIB_HOME)/lib/basex-8.6.7/BaseX.jar:$(GCAMLIB_HOME)/lib/jars/*
++BOOST_INCLUDE   = ${EBROOTBOOST}/include
++BOOST_LIB       = ${EBROOTBOOST}/lib/boost
++BOOSTROOT       = ${EBROOTBOOST}
++EIGEN_INCLUDE   = ${EBROOTEIGEN}/include
++TBB_INCLUDE     = ${EBROOTTBB}/include/oneapi
++TBB_LIB         = ${EBROOTTBB}/lib
++XERCES_INCLUDE  = ${EBROOTXERCESMINCPLUSPLUS}include
++XERCES_LIB      = ${EBROOTXERCESMINCPLUSPLUS}/lib
++JAVA_INCLUDE    = ${EBROOTJAVA}/include
++JAVA_LIB        = ${EBROOTJAVA}/lib/server
++JARS_LIB        = ${EBROOTGCAMMINMODELMININTERFACES}/jars/BaseX.jar:${EBROOTGCAMMINMODELMININTERFACES}/jars/*
+ ## `module load mkl/15.0.1` will get you the following variables:
+-ifdef MLIB_CFLAGS
+ MKL_CFLAGS      = $(MLIB_CFLAGS) -fopenmp
+-MKL_LIB         = $(MLIB_LIB)
++MKL_LIB         = ${EBROOTIMKL}/mkl/latest/lib/intel64/
+ MKL_LDFLAGS     = -fopenmp -L$(MKL_LIB) -lmkl_intel_lp64 -lmkl_core -lmkl_gnu_thread -ldl -lpthread -lm
+-MKL_RPATH       = -Wl,rpath,$(MKL_LIB)
+-endif
++MKL_RPATH       = 
+ 
+-endif
+diff --git a/gcam-core-gcam-v5.4.orig/cvs/objects/build/linux/configure.gcam b/gcam-core-gcam-v5.4/cvs/objects/build/linux/configure.gcam
+index 684d000..fe951ab 100644
+--- a/gcam-core-gcam-v5.4.orig/cvs/objects/build/linux/configure.gcam
++++ b/gcam-core-gcam-v5.4/cvs/objects/build/linux/configure.gcam
+@@ -11,9 +11,9 @@ endif
+ ifeq ($(strip $(CC)),)
+ CC		= gcc
+ endif
+-CXXOPTIM        = -O2 -pthread
++CXXOPTIM        = -O2 -pthread -DNDEBUG
+ CXXDEBUG        = -ggdb -DNDEBUG -DFUSION_MAX_VECTOR_SIZE=30
+-CXXBASEOPTS     = $(CXXDEBUG)
++CXXBASEOPTS     = 
+ 
+ ARCH_FLAGS      = 
+ ENVLIBS         = 
+@@ -52,14 +52,9 @@ ifeq ($(USE_HECTOR),1)
+ 
+   # hector Makefile is looking for slightly different names for BOOST
+   # include and lib
+-  BOOSTROOT=$(BOOST_INCLUDE)
+-  BOOSTLIB=$(BOOST_LIB)
+-  export BOOSTROOT BOOSTLIB
+-
+-  HECTOR_INCLUDE = -I../../climate/source/hector/headers
+-
+-  HECTOR_LIB = -L$(BOOST_LIB) -Wl,-rpath,$(BOOST_LIB) -lhector -lboost_system -lboost_filesystem
+-endif  # if(USE_HECTOR==1)
++  HECTOR_INC = -I${EBROOTHECTOR}/inst/include
++  HECTOR_LIB = -L${EBROOTHECTOR}/lib -L${EBROOTBOOST}/lib  -lhector -lboost_system -lboost_filesystem
++endif 
+ 
+ # we may want to not use TBB in which case we have guard against empty -I or -L directives
+ ifneq ($(strip $(TBB_INCLUDE)),)
+@@ -68,7 +63,6 @@ endif
+ #
+ ifneq ($(strip $(TBB_LIB)),)
+ TBB_LIBRARY     = -L$(TBB_LIB)
+-TBB_RPATH	= -Wl,-rpath,$(TBB_LIB)
+ endif
+ #
+ # Set the environment var TBB_LINK_DEBUG to get debugging versions of libraries
+@@ -89,8 +83,7 @@ endif
+ # Set up Java paths for compiling via environment variables if we are using it
+ ifneq ($(HAVE_JAVA),0) 
+ ## custom values set by environment variables
+-OSNAME_LOWERCASE := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+-JAVAINC = -I$(JAVA_INCLUDE) -I$(JAVA_INCLUDE)/$(OSNAME_LOWERCASE)
++JAVAINC = -I$(JAVA_INCLUDE)
+ JAVALIB = -L$(JAVA_LIB)
+ JAVA_RPATH = -Wl,-rpath,$(JAVA_LIB)
+ JAVALINK = -ljvm
+@@ -114,7 +107,7 @@ XERCESINC	      = $(XERCES_INCLUDE)
+ 
+ #
+ ### locations of libraries
+-LIBDIR		= -L/usr/local/lib -L$(XERCES_LIB) -L$(BUILDPATH) $(JAVALIB) $(TBB_LIBRARY)
++LIBDIR		= -L$(XERCES_LIB) -L$(BUILDPATH) $(JAVALIB) $(TBB_LIBRARY)
+ 
+ ### The rest should be mostly compiler independent
+ ## Note $(PROF) will be set as needed if we are building the gcam-prof target
+@@ -122,15 +115,13 @@ CPPFLAGS	= $(INCLUDE) $(ARCH_FLAGS) $(JARSLIB) -DGCAM_PARALLEL_ENABLED=$(USE_GCA
+ CXXFLAGS        = $(CXXOPTIM) $(CXXBASEOPTS) $(PROF) -MMD -std=c++14 -Wno-deprecated
+ FCFLAGS         = $(FCOPTIM) $(FCBASEOPTS) $(PROF)
+ LD              = $(CXX) $(PROF)
+-LDFLAGS         = $(CXXFLAGS) -Wl,-rpath,$(XERCES_LIB) $(JAVA_RPATH) $(TBB_RPATH) $(MKL_LDFLAGS)
++LDFLAGS         = $(CXXFLAGS)  $(JAVA_RPATH) $(MKL_LDFLAGS)
+ AR              = ar ru
+ #MAKE            = make -i -r
+ RANLIB          = ranlib
+ LIB             = ${ENVLIBS} $(LIBDIR) -lxerces-c $(JAVALINK) $(HECTOR_LIB) $(TBB_LIB_IMPORT) -lm
+-INCLUDE         = -I$(BOOSTINC) $(JAVAINC) $(TBB_INC) $(HECTOR_INCLUDE) -I$(EIGEN_INCLUDE) \
+-		 -I$(XERCESINC) \
+-		 -I${PATHOFFSET} \
+-		 -I${HOME}/include
++INCLUDE         = -I$(BOOSTINC) $(JAVAINC) $(TBB_INC) $(HECTOR_INC) -I$(EIGEN_INCLUDE) \
++		 -I$(XERCESINC) -I${PATHOFFSET} 
+ 
+ ### rule for building the dependency information
+ # %.d: %.cpp
+diff --git a/gcam-core-gcam-v5.4.orig/cvs/objects/climate/include/hector_model.hpp b/gcam-core-gcam-v5.4/cvs/objects/climate/include/hector_model.hpp
+index fad3989..ee9e586 100644
+--- a/gcam-core-gcam-v5.4.orig/cvs/objects/climate/include/hector_model.hpp
++++ b/gcam-core-gcam-v5.4/cvs/objects/climate/include/hector_model.hpp
+@@ -52,8 +52,8 @@
+ #include <vector>
+ 
+ #include "climate/include/iclimate_model.h"
+-#include "climate/source/hector/inst/include/core.hpp"
+-#include "climate/source/hector/inst/include/csv_outputstream_visitor.hpp"
++#include <core.hpp>
++#include <csv_outputstream_visitor.hpp>
+ 
+ class IVisitor;
+ 
+diff --git a/gcam-core-gcam-v5.4.orig/cvs/objects/climate/source/Makefile b/gcam-core-gcam-v5.4/cvs/objects/climate/source/Makefile
+index 4179172..532a7c2 100644
+--- a/gcam-core-gcam-v5.4.orig/cvs/objects/climate/source/Makefile
++++ b/gcam-core-gcam-v5.4/cvs/objects/climate/source/Makefile
+@@ -20,11 +20,10 @@ endif
+ climate_dir: $(TARGS)
+ 
+ hector_dir:
+-	$(MAKE) -C ./hector/src -f makefile.standalone libhector.a
+-	cp -f ./hector/src/libhector.a ../../build/linux/
++	cp -f ${EBROOTHECTOR}/lib/libhector.a ../../build/linux/
++ 
+ 
+ -include $(DEPS)
+ 
+ clean:
+ 	rm *.o *.d
+-	$(MAKE) -C ./hector/src -f makefile.standalone clean
+diff --git a/gcam-core-gcam-v5.4.orig/cvs/objects/climate/source/hector_model.cpp b/gcam-core-gcam-v5.4/cvs/objects/climate/source/hector_model.cpp
+index bd7c354..3320a5d 100644
+--- a/gcam-core-gcam-v5.4.orig/cvs/objects/climate/source/hector_model.cpp
++++ b/gcam-core-gcam-v5.4/cvs/objects/climate/source/hector_model.cpp
+@@ -55,13 +55,13 @@
+ #include "util/base/include/xml_helper.h"
+ #include "util/base/include/ivisitor.h"
+ 
+-#include "climate/source/hector/inst/include/component_data.hpp"
+-#include "climate/source/hector/inst/include/unitval.hpp"
+-#include "climate/source/hector/inst/include/message_data.hpp"
+-#include "climate/source/hector/inst/include/core.hpp"
+-#include "climate/source/hector/inst/include/ini_to_core_reader.hpp"
+-#include "climate/source/hector/inst/include/h_exception.hpp"
+-#include "climate/source/hector/inst/include/csv_outputstream_visitor.hpp"
++#include <component_data.hpp>
++#include <unitval.hpp>
++#include <message_data.hpp>
++#include <core.hpp>
++#include <ini_to_core_reader.hpp>
++#include <h_exception.hpp>
++#include <csv_outputstream_visitor.hpp>
+ 
+ using namespace std;
+ using namespace xercesc;
