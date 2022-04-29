@@ -1,0 +1,77 @@
+easyblock = 'PythonBundle'
+
+name = 'DXchange'
+version = '0.1.8'
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+github_account = 'data-exchange'
+homepage = "https://github.com/%(github_account)s/dxchange"
+
+description = """DXchange provides an interface with TomoPy and raw tomographic data
+ collected at different synchrotron facilities worldwide."""
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('netcdf4-python', '1.5.5.1'),
+    ('h5py', '3.1.0'),
+    ('astropy', '4.2.1'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('edffile', '5.0.0', {
+        'modulename': 'EdfFile',
+        'patches': ['DXchange-edffile-6541299-python-dep.patch'],
+        'source_urls': ['https://github.com/conda-forge/edffile-feedstock/archive'],
+        'sources': ['6541299.tar.gz'],
+        'start_dir': 'recipe/src',
+        'checksums': [
+            '31e2035a21b938e8771035604979e9bb2227a27ac5f54f6fb57b2ddd5483e662',  # 6541299.tar.gz
+            '8da04ed98dcbc291585f1d08c144186cf0893e9a56ae54de954877a4bb2bf546',
+            # DXchange-edffile-6541299-python-dep.patch
+        ],
+    }),
+    ('spefile', '1.6.1', {
+        'source_urls': ['https://github.com/conda-forge/spefile-feedstock/archive'],
+        'sources': ['21c152c.tar.gz'],
+        'start_dir': 'recipe/src',
+        'checksums': ['defd7c96ad4d7faa4144c40f8b3cb84b4bccfd25920bc6e33eb36979e6634020'],
+    }),
+    ('dxfile', '0.5', {
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['6317fa9f1b4f12039ca68eab2d9c96d95930499d084f5802a02bb49c5fb1c88d'],
+    }),
+    ('tifffile', '2022.4.28', {
+        'checksums': ['52d86c507a3cf8f2fd93c1095d52137f273858d5d44af2834921b6944f00e8dc'],
+    }),
+    ('olefile', '0.46', {
+        'source_urls': ['https://github.com/decalage2/%(name)s/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['11d1a3810e50956c9360a4c76f1ecebf3e54f9d8406f75127bd0d296638488f4'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['81187add9144d2673835c8edd4de9b0a94d9f634a18514f6e01c12b5e1adb0ff'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/EdfFile.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'python -c "import dxchange"',
+    'python -c "import dxchange.reader"',
+    'python -c "import dxchange.writer"',
+    'python -c "import dxchange.exchange"',
+]
+
+sanity_pip_check = True
+
+moduleclass = 'data'
