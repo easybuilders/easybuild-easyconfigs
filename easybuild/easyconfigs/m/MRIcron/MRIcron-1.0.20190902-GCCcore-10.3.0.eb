@@ -1,0 +1,37 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+
+easyblock = 'Tarball'
+
+name = 'MRIcron'
+version = '1.0.20190902'
+
+homepage = "https://people.cas.sc.edu/rorden/mricron/index.html"
+description = """Simple medical imaging visualization tool designed for NIfTI images. Includes dcm2nii for conversion of
+ DICOM, Philips, and other proprietary formats."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/neurolabusc/MRIcron/releases/download/v%(version)s']
+sources = ['%(name)s_linux.zip']
+checksums = ['0b5e79bbd76f604c9645f4efdca350148e9a3162008e0bdd488a8cb985483900']
+
+dependencies = [
+    ('Qt5', '5.15.2'),
+]
+
+preinstall_cmd = 'sed -i s:./mricron:%(installdir)s/MRIcron: %(builddir)s/%(namelower)s/Resources/*.bat && '
+preinstall_cmd += 'sed -i s:./templates:%(installdir)s/Resources/templates: %(builddir)s/%(namelower)s/Resources/*.bat && '
+preinstall_cmd += 'sed -i s:./example:%(installdir)s/Resources/example:g %(builddir)s/%(namelower)s/Resources/*.bat'
+
+modextrapaths = {
+    'PATH': ['', 'Resources']
+}
+
+sanity_check_paths = {
+    'files': ['MRIcron', 'dcm2niix'] + 
+             ['Resources/%s' % x for x in ['mricron.svg', 'pigz_mricron']] +
+             ['Resources/%s.bat' % x for x in ['xclip', 'xcut', 'xfmri', 'xfmri2', 'xfmri3']],
+    'dirs': ['Resources/%s' % x for x in ['lut', 'templates', 'render']]
+}
+
+moduleclass = 'bio'
