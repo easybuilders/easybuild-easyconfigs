@@ -1,0 +1,54 @@
+easyblock = 'PythonPackage'
+
+name = 'multiqc'
+version = '1.11'            # Same as the vanilla Python module on which these add-on modules depend.
+
+# solving santiy check:
+#   sanity tries to import module pythonplus, as it thinks it's python module = fail
+# solution (implemented in 2013)
+#   https://github.com/easybuilders/easybuild-framework/blob/develop/easybuild/framework/extension.py#L204
+#   https://www.mail-archive.com/easybuild@lists.ugent.be/msg06020.html
+options = {'modulename': False,} 
+
+homepage = 'https://www.python.org/'
+description = """The PythonPlus bundle contains a plain vanilla Python supplemented with a selection of add-on modules."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+# depend on numpy because of https://github.com/biocore/scikit-bio/issues/1734
+dependencies = [
+    ('Python', '3.10.2', '-bare'),
+    ('LZO', '2.10'),
+    ('libxml2', '2.9.8'),
+    ('libxslt', '1.1.33'),
+    ('libpng', '1.6.37'),
+    ('cairo', '1.16.0'),
+    ('libffi', '3.3'),
+    ('ICU', '64.2'),
+]
+
+# make sure they do not involve pip or setuptools as those two should be
+# alredy included in python core
+sources = ['%(name)s-%(version)s-foss-2018b-requirements_hashes.txt']
+checksums = ['40dcee803ef22a129f74049d680a76bd587dc29930879ed7bc12565e13ea2dcd']
+
+pip_ignore_installed = False
+sanity_pip_check = True
+unpack_sources = False
+use_pip = True
+use_pip_for_deps = True
+use_pip_requirement = True
+installopts = '--require-hashes'
+
+#
+# Sanity checking.
+#
+
+binaries = ['futurize', 'multiqc', 'pasteurize']
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in binaries],
+    'dirs':  ['bin', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'lang'

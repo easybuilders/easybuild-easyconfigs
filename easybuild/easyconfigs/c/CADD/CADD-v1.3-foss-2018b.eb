@@ -18,11 +18,11 @@ description = """Tool for scoring the deleteriousness of variants in the human g
 toolchain = {'name': 'foss', 'version': '2018b'}
 
 dependencies = [
+    ('PythonPlus', '2.7.16', '-v21.08.1'),
+    ('HTSlib', '1.14'),
+    ('SAMtools', '1.14'),
     ('PerlPlus', '5.22.0', '-v17.01.1'),
-    ('Mozilla-CA', '20160104', '', ('dummy', '')),
-    ('PythonPlus', '2.7.11', '-v16.11.1'),
-    ('HTSlib', '1.3.2'),
-    ('SAMtools', '1.3.1'),
+    ('Mozilla-CA', '20200520'),
     ('VEP', '76', '', ('dummy', '')),
 ]
 
@@ -34,29 +34,51 @@ source_urls = [
     'http://krishna.gs.washington.edu/download/%(name)s/v1.2/',         # Only for annotations which were not updated for v1.3 except for primates.
 ]
 sources = [
-    'cadd_%(version)s_scripts.tgz',
-    'annotations.tgz',
+{
+        'filename': 'cadd_%(version)s_scripts.tgz',  
+        'extract_cmd': 'tar -xzvf %s -C %(builddir)s/'
+    },
+    {
+        'filename': 'annotations.tgz',
+	'extract_cmd': 'cp %s %(builddir)s/'
+    },
     #
     # Overwrite the content of the annotations/primateWGA folder from annotation.tgz with the update from primateWGA_annoUpdate.tgz
     # and then move the annotations folder inside the main CADD folder.
     #
-    ('primateWGA_annoUpdate.tgz', 'rm -Rf annotations/primateWGA && tar -xzf %s && mv annotations %(name)s_%(version)s/'),
+{
+	'filename': 'primateWGA_annoUpdate.tgz',
+	'extract_cmd': 'rm -Rf annotations/primateWGA && tar -xzvf %s -C %(builddir)s/ && mv annotations %(name)s_%(version)s/'
+},
     #
     # Do not decompress the pre-scored variant files and their indices, but move them "as is" to the build dir.
     #
-    ('InDels.tsv.gz.tbi',            'cp %s %(builddir)s'),
-    ('InDels.tsv.gz',                'cp %s %(builddir)s'),
-    ('whole_genome_SNVs.tsv.gz.tbi', 'cp %s %(builddir)s'),
-    ('whole_genome_SNVs.tsv.gz',     'cp %s %(builddir)s'),
+{
+        'filename': 'InDels.tsv.gz.tbi',
+        'extract_cmd': 'cp %s %(builddir)s/'
+	},
+{
+        'filename': 'InDels.tsv.gz',
+        'extract_cmd': 'cp %s %(builddir)s/'
+	},
+{
+        'filename': 'whole_genome_SNVs.tsv.gz',
+        'extract_cmd': 'cp %s %(builddir)s/'
+	},
+{
+        'filename': 'whole_genome_SNVs.tsv.gz.tbi',
+        'extract_cmd': 'cp %s %(builddir)s/'
+	},
+
 ]
 checksums = [
-    'ae55f90dd1041650009965532d09933d', # cadd_v1.3_scripts.tgz
-    'dc43f2a3b4e07150639fce6fefac006b', # annotations.tgz
-    'a2a667958fbe2650d3dfd3f1513e1f17', # primateWGA_annoUpdate.tgz
-    '37d98e4da9f6a61aab9f3db179f9f69f', # InDels.tsv.gz.tbi
-    'add232ba847cb2bb862983f445a9482d', # InDels.tsv.gz
-    '8b2284bb66e327651bd64850a3f0a910', # whole_genome_SNVs.tsv.gz.tbi
-    'aca5795946b37c13a5170bd8554f5833', # whole_genome_SNVs.tsv.gz
+    '7d516829e89790d737b91bc5d8dd7c121e88341a32c74918f8df63175351d695', # cadd_v1.3_scripts.tgz
+    'be070988a91b55e06ea63a5b02dcc09707eb090b3d9dc5ac6c5e6f350ffb875d', # annotations.tgz
+    '65aa563cecfcbb441b73e20b09c0f3b91b84649b48f480fe6d1cb627c48eafe1', # primateWGA_annoUpdate.tgz
+    'acda1a394915dc026b5ad73918a891ea2e2998e766b5c45cdc2c73bd13b75028', # InDels.tsv.gz.tbi
+    'db94c45744b4133c2cf16c229a9e312cb302f9f6de5018e074a0509810e70df2', # InDels.tsv.gz
+    '6df6e97ad92929c1d3e826b9d54d6936381a5981b1fce7198bc2db5c260eedd4', # whole_genome_SNVs.tsv.gz.tbi
+ #   '1a43d532fcd97fa05f13a44f0fc86bc8d1531320090755f5a1640a93f6db9806', # whole_genome_SNVs.tsv.gz
 ]
 
 #
@@ -84,7 +106,7 @@ sanity_check_paths = {
     'files': ['bin/%s' % x for x in bash_scripts]
              + ['bin/src/%s' % x for x in python_scripts]
              + ['%s' % x for x in not_scripts],
-    'dirs': ['annotations', 'bin', 'prescored'],
+    'dirs': ['bin','prescored','annotations'],
 }
 
 moduleclass = 'bio'
