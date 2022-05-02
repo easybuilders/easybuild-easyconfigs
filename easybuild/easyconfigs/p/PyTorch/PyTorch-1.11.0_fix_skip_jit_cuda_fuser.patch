@@ -1,3 +1,14 @@
+# Author: Caspar van Leeuwen
+# Company: SURF
+# The CudaFuser test suite checks CUDA capabilities, even if 'RUN_CUDA' is false.
+# That makes the test fail on non-GPU nodes.
+# In this patch, I wrapped the logic in 'if RUN_CUDA' blocks in order to make sure
+# no CUDA calls are made when RUN_CUDA=false
+# Furthermore, I swapped all occurences of @unittest.skipIf(not RUN_CUDA, ...) and @unittest.skipIf(is_pre_volta())
+# The latter check is a more specific 'skip' condition: you should only check if a GPU is pre-volta,
+# if there are CUDA devices present to begin with. Again, doing this in the wrong order would incur CUDA calls
+# on non-CUDA nodes.
+# Note that this has been fixed in master, so we probably don't need this patch beyond PT 1.11
 diff -Nru pytorch-1.11.0-rc3.orig/test/test_jit_cuda_fuser.py pytorch-1.11.0-rc3/test/test_jit_cuda_fuser.py
 --- pytorch-1.11.0-rc3.orig/test/test_jit_cuda_fuser.py	2022-02-24 18:06:55.180421593 +0100
 +++ pytorch-1.11.0-rc3/test/test_jit_cuda_fuser.py	2022-02-25 13:30:47.112845480 +0100
