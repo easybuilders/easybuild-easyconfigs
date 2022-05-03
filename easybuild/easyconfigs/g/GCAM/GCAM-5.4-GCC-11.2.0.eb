@@ -29,6 +29,8 @@ population, economy, technology, and climate mitigation policy."""
 toolchain = {'name': 'GCC', 'version': '11.2.0'}
 toolchainopts = {'openmp': True}
 
+# We install the Java jar-files as a component so we don't need a specific EC file for that.
+# This means, we also install GCAM as a component. 
 components = [
     ('GCAM-model-interfaces', '5.1', {
         'easyblock': 'CmdCp',
@@ -38,7 +40,7 @@ components = [
         'skipsteps': ['configure', 'build'],
         'install_cmd': 'unzip jars.zip',
         'files_to_copy': [
-            (['*'], 'jars'),
+            (['jars/*'], 'jars'),
         ],
         'sanity_check_paths': {
             'files': ['jars/BaseX-8.6.7.jar'],
@@ -54,9 +56,10 @@ components = [
             '0194714cf30b96de1a202c9204b3079a40eee123f2dc1600fa57825c61e8d8f9',  # gcam-v5.4.tar.gz
             '45f335ceff780237cfad5527422f4367f791fe0e2898a989f80abc129ca61efd',  # GCAM-5.4-environment.patch
         ],
-        'start_dir': 'gcam-core-%(namelower)s-v%(version)s/cvs/objects/build/linux',
+        'start_dir': 'gcam-core-%(namelower)s-v%(version)s',
+        'prebuildopts': 'cd cvs/objects/build/linux && ',
         'files_to_copy': [
-            (['../../../../exe/gcam.exe'], 'bin'),
+            (['exe/gcam.exe'], 'bin'),
             'input', 'output', 'exe'
         ]}),
 ]
@@ -69,7 +72,6 @@ builddependencies = [
 
 dependencies = [
     ('Boost', '1.79.0'),
-    ('GCAM-model-interfaces', '5.1'),
     ('imkl', '2021.4.0', '', True),
     ('hector', '2.5.0'),
     ('tbb', '2021.4.0'),
