@@ -1,7 +1,7 @@
 # Contribution from Imperial College London, UK
 # uploaded by J. Sassmannshausen
 
-easyblock = 'MakeCp'
+easyblock = 'Bundle'
 
 name = 'GCAM'
 version = '5.4'
@@ -29,16 +29,42 @@ population, economy, technology, and climate mitigation policy."""
 toolchain = {'name': 'GCC', 'version': '11.2.0'}
 toolchainopts = {'openmp': True}
 
-source_urls = ['https://github.com/JGCRI/gcam-core/archive']
-sources = ['%(namelower)s-v%(version)s.tar.gz']
-patches = ['GCAM-5.4-environment.patch']
-checksums = [
-    '0194714cf30b96de1a202c9204b3079a40eee123f2dc1600fa57825c61e8d8f9',  # gcam-v5.4.tar.gz
-    '45f335ceff780237cfad5527422f4367f791fe0e2898a989f80abc129ca61efd',  # GCAM-5.4-environment.patch
+components = [
+    ('GCAM-model-interfaces', '5.1', {
+        'easyblock': 'CmdCp',
+        'source_urls': ['https://github.com/JGCRI/modelinterface/releases/download'],
+        'sources': ['v5.1/jars.zip'],
+        'checksums': ['734b75cc5843c8fc1eaa84152964886ac35cdac12d1976b1fc3cfc2db0275ae3'],
+        'skipsteps': ['configure', 'build'],
+        'install_cmd': 'unzip jars.zip',
+        'files_to_copy': [
+            (['*'], 'jars'),
+        ],
+        'sanity_check_paths': {
+            'files': ['jars/BaseX-8.6.7.jar'],
+            'dirs': []
+        }}),
+
+    (name, version, {
+        'easyblock': 'MakeCp',
+        'source_urls': ['https://github.com/JGCRI/gcam-core/archive'],
+        'sources': ['%(namelower)s-v%(version)s.tar.gz'],
+        'patches': ['GCAM-5.4-environment.patch'],
+        'checksums': [
+            '0194714cf30b96de1a202c9204b3079a40eee123f2dc1600fa57825c61e8d8f9',  # gcam-v5.4.tar.gz
+            '45f335ceff780237cfad5527422f4367f791fe0e2898a989f80abc129ca61efd',  # GCAM-5.4-environment.patch
+        ],
+        'start_dir': 'gcam-core-%(namelower)s-v%(version)s/cvs/objects/build/linux',
+        'files_to_copy': [
+            (['../../../../exe/gcam.exe'], 'bin'),
+            'input', 'output', 'exe'
+        ]}),
 ]
 
 builddependencies = [
     ('Eigen', '3.4.0'),
+    ('Zip', '3.0'),
+    ('binutils', '2.37'),
 ]
 
 dependencies = [
@@ -49,13 +75,7 @@ dependencies = [
     ('tbb', '2021.4.0'),
     ('Java', '11', '', True),
     ('Xerces-C++', '3.2.3'),
-]
-
-start_dir = 'cvs/objects/build/linux'
-
-files_to_copy = [
-    (['../../../../exe/gcam.exe'], 'bin'),
-    'input', 'output', 'exe'
+    ('Java', '11.0.2', '', True),
 ]
 
 sanity_check_paths = {
