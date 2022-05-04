@@ -1,0 +1,56 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'XGBoost'
+version = '1.6.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/dmlc/xgboost'
+description = """XGBoost is an optimized distributed gradient boosting library designed to be highly efficient,
+ flexible and portable."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+sources = [{
+    'filename': 'xgboost.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/dmlc',
+        'repo_name': 'xgboost',
+        'tag': 'v1.6.0',
+        'recursive': True,
+        'keep_git_dir': True,
+    },
+}]
+
+# Can't add proper SHA256 checksum, because source tarball is created locally after recursive 'git clone'
+checksums = [None]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('CUDA', '11.3.1', '', True),
+    ('Python', '3.9.5'),
+]
+
+dependencies = [
+    ('CUDA', '11.3.1', '', True),
+    ('SciPy-bundle', '2021.05'),
+]
+
+local_cuda_compute_capabilities = '80'
+
+configopts = "-DUSE_CUDA=ON "
+configopts += '-DGPU_COMPUTE_VER=%s' % local_cuda_compute_capabilities
+
+install_cmd = "cd ../xgboost/python-package && python setup.py install --prefix=%(installdir)s "
+
+download_dep_fail = True
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/xgboost/lib/libxgboost.so'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = ["python -c 'import xgboost'"]
+
+moduleclass = 'lib'
