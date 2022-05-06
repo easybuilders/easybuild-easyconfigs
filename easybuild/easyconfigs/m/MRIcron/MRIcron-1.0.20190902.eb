@@ -1,0 +1,50 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+
+easyblock = 'Tarball'
+
+name = 'MRIcron'
+version = '1.0.20190902'
+
+homepage = "https://people.cas.sc.edu/rorden/mricron/index.html"
+description = """Simple medical imaging visualization tool designed for NIfTI images. Includes dcm2nii for conversion of
+ DICOM, Philips, and other proprietary formats."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/neurolabusc/MRIcron/releases/download/v%(version)s']
+sources = [
+    # MRIcron
+    {
+        'filename': '%(name)s_linux.zip',
+    },
+    # Licence file (needs to be included)
+    {
+        'source_urls': ['https://github.com/neurolabusc/MRIcron/archive'],
+        'filename': 'v%(version)s.tar.gz',
+    },
+
+]
+checksums = [
+    '0b5e79bbd76f604c9645f4efdca350148e9a3162008e0bdd488a8cb985483900',  # MRIcron_linux.zip
+    '90338704672cbfbf4d885227e81f57795e03eb8b470527c717d348fda29df3e6',  # v1.0.20190902.tar.gz
+]
+
+preinstall_cmd = 'cp %(builddir)s/%(name)s-%(version)s/license.txt %(builddir)s/%(namelower)s && '
+preinstall_cmd += 'chmod a-x %(builddir)s/%(namelower)s/license.txt && '
+preinstall_cmd += 'sed -i s:./mricron:\$EBROOTMRICRON/MRIcron: %(builddir)s/%(namelower)s/Resources/*.bat && '
+preinstall_cmd += 'sed -i s:./templates:\$EBROOTMRICRON/Resources/templates: '
+preinstall_cmd += '%(builddir)s/%(namelower)s/Resources/*.bat && '
+preinstall_cmd += 'sed -i s:./example:\$EBROOTMRICRON/Resources/example:g %(builddir)s/%(namelower)s/Resources/*.bat'
+
+modextrapaths = {
+    'PATH': ['', 'Resources']
+}
+
+sanity_check_paths = {
+    'files': ['MRIcron', 'dcm2niix', 'license.txt'] +
+             ['Resources/%s' % x for x in ['mricron.svg', 'pigz_mricron']] +
+             ['Resources/%s.bat' % x for x in ['xclip', 'xcut', 'xfmri', 'xfmri2', 'xfmri3']],
+    'dirs': ['Resources/%s' % x for x in ['lut', 'templates', 'render']]
+}
+
+moduleclass = 'bio'
