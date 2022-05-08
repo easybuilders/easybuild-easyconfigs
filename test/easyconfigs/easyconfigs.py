@@ -458,7 +458,7 @@ class EasyConfigTest(TestCase):
             dep_ver = version_regex.search(key).group('version')
             if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                 dep_vars.pop(key)
-                        
+
         # filter out variants that are specific to a particular version of CUDA
         cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
         if len(dep_vars) >= len(cuda_dep_vars) and len(dep_vars) > 1:
