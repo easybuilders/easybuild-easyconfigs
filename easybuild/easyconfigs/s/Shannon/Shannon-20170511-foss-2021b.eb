@@ -1,0 +1,48 @@
+easyblock = 'Tarball'
+
+name = 'Shannon'
+version = '20170511'
+local_commit = '30a8619'
+
+homepage = 'https://sreeramkannan.github.io/Shannon/'
+description = """Shannon is a program for assembling transcripts from RNA-Seq data"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'download_filename': '%s.tar.gz' % local_commit,
+}]
+source_urls = ['https://github.com/sreeramkannan/Shannon/archive/']
+checksums = ['436a5ec9723a13314cd18f95b89e18d4da94f3710545291d4b18162447f28ab3']
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('CVXOPT', '1.3.0'),
+    ('Jellyfish', '2.3.0'),
+    ('Quorum', '1.1.1'),
+    ('parallel', '20210722'),
+]
+
+fix_python_shebang_for = ['*.py']
+
+postinstallcmds = [
+    "chmod +x %(installdir)s/*.py",
+    "dos2unix %(installdir)s/*.py",
+    "sed -i 's/\t/        /g' %(installdir)s/*.py",
+    "2to3 -w %(installdir)s/*.py",
+]
+
+modextrapaths = {
+    'PATH': '',
+}
+
+sanity_check_paths = {
+    'files': ['shannon.py', 'run_quorum.py'],
+    'dirs': []
+}
+
+sanity_check_commands = ['shannon.py --version']
+
+moduleclass = 'bio'
