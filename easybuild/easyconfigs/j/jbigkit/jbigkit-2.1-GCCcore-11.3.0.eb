@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'jbigkit'
+version = '2.1'
+
+homepage = 'https://www.cl.cam.ac.uk/~mgk25/jbigkit/'
+
+description = """JBIG-KIT is a software implementation of the JBIG1 data
+ compression standard (ITU-T T.82), which was designed for bi-level image
+ data, such as scanned documents."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.cl.cam.ac.uk/~mgk25/jbigkit/download']
+sources = [SOURCE_TAR_GZ]
+patches = [
+    '%(name)s-%(version)s_libpath.patch',
+    '%(name)s-%(version)s_shlib.patch',
+]
+checksums = [
+    'de7106b6bfaf495d6865c7dd7ac6ca1381bd12e0d81405ea81e7f2167263d932',  # jbigkit-2.1.tar.gz
+    '97c88956090097b484fcdb90e12eab82212e67ddc862f035d7c6446a696786ce',  # jbigkit-2.1_libpath.patch
+    '54ae429e8ec949eceee0f902b676f572f1cdfbff46f77c7222acdeafb643a696',  # jbigkit-2.1_shlib.patch
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('pkgconf', '1.8.0'),
+]
+
+files_to_copy = [
+    (['libjbig/libjbig%s.%s' % (x, y) for x in ['85', ''] for y in ['a', SHLIB_EXT, SHLIB_EXT + '.0']], 'lib'),
+    (['libjbig/jbig85.h', 'libjbig/jbig.h', 'libjbig/jbig_ar.h'], 'include'),
+    (['pbmtools/pbmtojbg', 'pbmtools/jbgtopbm'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libjbig85.a', 'lib/libjbig.a',
+              'bin/pbmtojbg', 'bin/jbgtopbm',
+              'include/jbig.h', 'include/jbig_ar.h',
+              ],
+    'dirs': ['bin', 'include', 'lib']
+}
+
+moduleclass = 'vis'
