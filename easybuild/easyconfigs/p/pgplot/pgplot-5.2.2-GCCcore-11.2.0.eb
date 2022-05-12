@@ -1,0 +1,51 @@
+# Contribution from Imperial College London (UK)
+# Uploaded by J. Sassmannshausen
+
+easyblock = 'CmdCp'
+
+name = 'pgplot'
+version = '5.2.2'
+
+homepage = 'https://sites.astro.caltech.edu/~tjp/pgplot/'
+description = """The PGPLOT Graphics Subroutine Library is a Fortran- or C-callable, 
+device-independent graphics package for making simple scientific graphs. It is intended 
+for making graphical images of publication quality with minimum effort on the part of 
+the user. For most applications, the program can be device-independent, and the output 
+can be directed to the appropriate device at run time."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['ftp://ftp.astro.caltech.edu/pub/pgplot/']
+sources = ['%%(name)s%s.tar.gz' % version.replace('.', '')]
+patches = ['pgplot-compiler.patch']
+
+checksums = [
+    'a5799ff719a510d84d26df4ae7409ae61fe66477e3f1e8820422a9a4727a5be4',   # pgplot522.tar.gz
+    'ce098908b69f0a20f4f5e8efdab3779d9674f4ca6f0d4af7861bb0f541384ace',   # pgplot-compiler.patch
+]
+
+builddependencies = [
+    ('binutils', '2.37'),
+]
+
+dependencies = [
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+]
+
+cmds_map = [('.*', './makemake . linux g77_gcc && make ')]
+
+files_to_copy = [
+    (['pgdemo*'], 'bin'),
+    (['libpgplot.a', 'libpgplot.so'], 'lib'),
+    (['grfont.dat'], 'share'),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libpgplot.a'],
+    'dirs': []
+}
+
+modextravars = {'PGPLOT_FONT': '%(installdir)s/share/grfont.dat'}
+
+moduleclass = 'vis'
