@@ -1,0 +1,50 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'ConfigureMake'
+
+name = 'DualSPHysics'
+version = '5.0.164'
+
+homepage = "https://dual.sphysics.org"
+description = """DualSPHysics is based on the Smoothed Particle Hydrodynamics model named SPHysics (www.sphysics.org).
+ The code is developed (GNU Lesser General Public License) to study free-surface flow phenomena where Eulerian methods
+ can be difficult to apply. DualSPHysics is a set of C++, CUDA and Java codes designed to deal with real-life
+ engineering problems."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+# Download source files from https://dual.sphysics.org/downloads/
+# Note: this link contains the complete package, with various binary files
+# that are not included on github (https://github.com/DualSPHysics/DualSPHysics).
+sources = ['%(name)s_v%(version)s.zip']
+patches = ['%(name)s_%(version)s_makefiles.patch']
+checksums = [
+    '235b2b999a022725e15d8e1ea6bc0e441edb30d08b37d91d733bf9e575c3830f',  # DualSPHysics_v5.0.164.zip
+    'b1d016be5b26f006fe670a740ac729f1f501fcc4fceedcb90b5399fe70fd2c21',  # DualSPHysics_5.0.164_makefiles.patch
+]
+
+dependencies = [
+    ('Java', '11', '', True),
+]
+
+skipsteps = ['configure']
+
+buildininstalldir = True
+build_cmd = 'cd src/source && make -f Makefile_cpu && '
+build_cmd += 'cd ../../src_mphase/DSPH_v5.0_NNewtonian/source && make -f Makefile_cpu'
+
+install_cmd = 'chmod 755 bin/linux/*'
+
+modextrapaths = {
+    'PATH': ['%%(name)s_v%%(version_major_minor)s/bin/linux/%s' % x for x in ['', 'DSNNewtonian']],
+    'LD_LIBRARY_PATH': ['%%(name)s-%%(version_major_minor)s/%s' % x for x in ['src/lib/linux_gcc',
+                        'src_mphase/DSPH_v5.0_NNewtonian/lib/linux_gcc', 'DSNNewtonian']],
+}
+
+sanity_check_paths = {
+    'files': ['%%(name)s_v%%(version_major_minor)s/bin/linux/%s' % x for x in
+             ['%(name)s%(version_major_minor)sCPU_linux64',
+              'DSNNewtonian/%(name)s%(version_major_minor)s_NNewtonianCPU_linux64', 'BoundaryVTK_linux64']],
+    'dirs': ['%(name)s_v%(version_major_minor)s/src'],
+}
+
+moduleclass = 'phys'
