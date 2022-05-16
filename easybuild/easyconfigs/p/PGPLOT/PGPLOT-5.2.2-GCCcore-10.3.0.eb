@@ -3,7 +3,7 @@
 
 easyblock = 'CmdCp'
 
-name = 'pgplot'
+name = 'PGPLOT'
 version = '5.2.2'
 
 homepage = 'https://sites.astro.caltech.edu/~tjp/pgplot/'
@@ -16,12 +16,12 @@ can be directed to the appropriate device at run time."""
 toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
 
 source_urls = ['ftp://ftp.astro.caltech.edu/pub/pgplot/']
-sources = ['%%(name)s%s.tar.gz' % version.replace('.', '')]
-patches = ['pgplot-compiler.patch']
+sources = ['%%(namelower)s%s.tar.gz' % version.replace('.', '')]
+patches = ['pgplot-compiler-pgplot522.patch']
 
 checksums = [
     'a5799ff719a510d84d26df4ae7409ae61fe66477e3f1e8820422a9a4727a5be4',   # pgplot522.tar.gz
-    '6166acd642c581e3f5631f6e03a1e27ac7cc3d5ed484380833bbc4aab1595278',   # pgplot-compiler.patch
+    'b1822eb32499dc18aa4aa4fae0b31c3c64ff8abb3a243716e78addafa7e58cec',   # pgplot-compiler-pgplot522.patch
 ]
 
 builddependencies = [
@@ -34,13 +34,19 @@ dependencies = [
     ('X11', '20210518'),
 ]
 
-cmds_map = [('.*', './makemake . linux g77_gcc && make && make cpg')]
+cmds_map = [('.*', './makemake . linux g77_gcc && make && make shared && make cpg && make cpg-shared')]
 
 files_to_copy = [
     (['pgdemo*'], 'bin'),
-    (['libpgplot.a', 'libcpgplot.a'], 'lib'),
+    (['libpgplot.*', 'libcpgplot.*'], 'lib'),
     (['grfont.dat'], 'share'),
     (['cpgplot.h'], 'include'),
+]
+
+postinstallcmds = [
+    # create symlinks
+    "cd %(installdir)s/lib && ln -s libcpgplot.so.5.2.2 libcpgplot.so.5 ; ln -s libcpgplot.so.5.2.2 libcpgplot.so && "
+    " ln -s libpgplot.so.5.2.2 libpgplot.so.5 ; ln -s libpgplot.so.5.2.2 libpgplot.so"
 ]
 
 sanity_check_paths = {
