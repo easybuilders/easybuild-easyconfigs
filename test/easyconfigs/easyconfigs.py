@@ -498,7 +498,7 @@ class EasyConfigTest(TestCase):
             # p4est 2.3.3 fails to build with intel compilers
             'p4est': [('2.3.2;', ['deal.II-'])],
             # mutiple scVelo / CellRank combinations in 2021a
-            'scVelo': [(0.2.4;', ['CellRank-'])],
+            'scVelo': [('0.2.4;', ['CellRank-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
