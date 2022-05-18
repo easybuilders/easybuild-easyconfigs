@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'PaStiX'
+version = '6.2.1'
+
+homepage = 'https://solverstack.gitlabpages.inria.fr/pastix/'
+description = """PaStiX (Parallel Sparse matriX package) is a scientific library that provides a high performance
+ parallel solver for very large sparse linear systems based on direct methods."""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://gitlab.inria.fr/solverstack/pastix//uploads/3fc798eb3ca6282e21506349df7f9da2']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['b680cbfc265df8cba18d3a7093fcc02e260198c4a2d6a86d1e684bb291e309dd']
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+]
+
+dependencies = [
+    ('SCOTCH', '6.1.0'),
+    ('METIS', '5.1.0'),
+    ('FlexiBLAS', '3.0.4'),
+    ('Python', '3.9.5'),
+]
+
+configopts = "-DBUILD_SHARED_LIBS=ON -DPASTIX_WITH_MPI=ON -DPASTIX_INT64=OFF -DPASTIX_ORDERING_METIS=ON"
+
+# A full 'make test' would take a few hours to run as it is single core only!
+runtest = "example && ./example/simple --lap 100 && ./example/simple --xlap 100"
+
+sanity_check_paths = {
+    'files': ['bin/pastix_env.sh', 'lib/libpastixf.%s' % SHLIB_EXT, 'lib/libpastix.%s' % SHLIB_EXT,
+              'lib/libspmf.%s' % SHLIB_EXT, 'lib/libpastix_kernels.so'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
