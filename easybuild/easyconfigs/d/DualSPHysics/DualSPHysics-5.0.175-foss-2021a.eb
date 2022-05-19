@@ -3,6 +3,7 @@ easyblock = 'ConfigureMake'
 
 name = 'DualSPHysics'
 version = '5.0.175'
+_website_ver = '5.0.193'  # version of DualSPHysics at https://dual.sphysics.org/downloads/
 
 homepage = "https://dual.sphysics.org"
 description = """DualSPHysics is based on the Smoothed Particle Hydrodynamics model named SPHysics (www.sphysics.org).
@@ -12,11 +13,23 @@ description = """DualSPHysics is based on the Smoothed Particle Hydrodynamics mo
 
 toolchain = {'name': 'foss', 'version': '2021a'}
 
-source_urls = ['https://github.com/DualSPHysics/DualSPHysics/archive']
-sources = ['v%(version)s.tar.gz']
+sources = [
+    {
+        'source_urls': ['https://github.com/DualSPHysics/DualSPHysics/archive'],
+        'filename': 'v%(version)s.tar.gz',
+    },
+    # Also download source files from https://dual.sphysics.org/downloads/
+    # (contains binaries which are not on github, but some files, such as libChronoEngine_parallel.so, are missing).
+    # Note: the version of each binary file can be found in the bin/linux/VERSION_INFO.txt file
+    # (likely to be different versions on website and github).
+    {
+        'filename': '%%(name)s_v%s.zip' % _website_ver,  # downloaded file renamed to reflect DualSPHysics version.
+    },
+]
 patches = ['%(name)s_%(version)s_makefiles.patch']
 checksums = [
     'd65bb7b8b4a21582091a534142348e46cff0a288a97ef86643bc2dde15637575',  # v5.0.175.tar.gz
+    '235b2b999a022725e15d8e1ea6bc0e441edb30d08b37d91d733bf9e575c3830f',  # DualSPHysics_v5.0.193.zip
     '89c7073cb4440d8f026b139bfdacf1d207585d11a1f8687bc1539a042c37d647',  # DualSPHysics_5.0.175_makefiles.patch
 ]
 
@@ -26,8 +39,18 @@ dependencies = [
 
 skipsteps = ['configure']
 
+_missing_binaries = ['%s_linux64' % x for x in ['BIFileInfo', 'BoundaryVTK', 'ComputeForces',
+                     'FloatingInfo', 'FlowTool', 'PartVTKOut', 'ReadSwash', 'swash']]
+
 buildininstalldir = True
-build_cmd = 'cd src/source && make -f Makefile_cpu && '
+
+build_cmd = ''
+# copy missing binaries from files downloaded from website
+for _file in _missing_binaries:
+    build_cmd += 'cp %%(builddir)s/%%(name)s_v5.0/bin/linux/%s %%(builddir)s/%%(name)s-%%(version)s/bin/linux && ' % _file
+
+build_cmd += 'rm -r %(builddir)s/%(name)s_v5.0 && '
+build_cmd += 'cd src/source && make -f Makefile_cpu && '
 build_cmd += 'cd ../../src_mphase/DSPH_v5.0_NNewtonian/source && make -f Makefile_cpu'
 
 install_cmd = 'chmod 755 bin/linux/*'
@@ -39,9 +62,12 @@ modextrapaths = {
 }
 
 sanity_check_paths = {
-    'files': ['%%(name)s-%%(version)s/bin/linux/DualSPHysics5.0%s' % x for x in ['CPU_linux64',
-              '_NNewtonianCPU_linux64']],
+    'files': ['%%(name)s-%%(version)s/bin/linux/%s_linux64' % x for x in ['%(name)s5.0CPU',
+              '%(name)s5.0_NNewtonianCPU']] +
+             ['%%(name)s-%%(version)s/bin/linux/%s' % x for x in _missing_binaries],
     'dirs': ['%(name)s-%(version)s/src'],
 }
+
+sanity_check_commands = ['%s_linux64 -h' % x for x in ['%(name)s5.0CPU', '%(name)s5.0_NNewtonianCPU', 'BoundaryVTK']]
 
 moduleclass = 'phys'
