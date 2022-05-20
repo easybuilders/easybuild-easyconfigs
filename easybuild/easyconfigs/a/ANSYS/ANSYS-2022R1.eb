@@ -1,0 +1,77 @@
+name = 'ANSYS'
+version = '2022R1'
+local_sfx = 'v221'
+
+homepage = 'http://www.ansys.com'
+description = """ANSYS simulation software enables organizations to confidently predict 
+    how their products will operate in the real world. We believe that every product is 
+    a promise of something greater."""
+
+toolchain = SYSTEM
+
+# create tar ball from the installation iso files
+sources = ['ANSYS-%(version)s.tar']
+
+# sha256sum ANSYS-2021R2.tar
+checksums = ['2d1666974da9b56fdde6e810c510e61253ae44298bf4c206ef030ef63a172cc3']
+
+postinstallcmds = [
+  # Directly replace files (create patches and apply later)
+  "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/2022R1;\
+  mv -v %(installdir)s/v221/aisol/.workbench{,-orig};\
+  cp -v $a/.workbench %(installdir)s/v221/aisol/.workbench;\
+  chmod -v 755 %(installdir)s/v221/aisol/.workbench;\
+  mv -v %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime{,-orig};\
+  cp -v $a/setmwruntime %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime;\
+  chmod -v 755 %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime;\
+  mv -v %(installdir)s/v221/ansys/bin/anssh.ini{,-orig};\
+  cp -v $a/anssh.ini %(installdir)s/v221/ansys/bin/anssh.ini;\
+  chmod -v 755 %(installdir)s/v221/ansys/bin/anssh.ini;",
+  # Set same perms on all directories
+  "find %(installdir)s -type d -exec chmod 755 {} \;",
+  # Set same perms on all shared libraries to avoid warning in log file
+  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
+  # Rename some libs as these maybe older than system equivalents and missing new symbols
+  "find %(installdir)s \( -type f -o -type l \) -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgcc_s.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libfreetype*' -exec mv {} {}.bak \;",
+  # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+  # Run setrpaths.sh in all directories
+  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Run setrpaths.sh for any_interpreter
+  "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
+    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+  # Create domainname -> /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname
+  "cd %(installdir)s/v221/Tools/mono/Linux64/bin;\
+    ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
+  # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh' in ie)
+  # 2021R2/v212/CFX/tools/perl-5.32.0/lib/5.32.0/ExtUtils/MM_Unix.pm
+  # 2021R2/v212/Addins/ACT/extensions/optiSLang\ 21.2.0.1994/images/make_windows_icon.sh
+  "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -print0 | xargs -0 \
+    grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; sed -i \
+    's|\/bin\/sh|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
+]
+
+modextravars = {
+    'ANS_FLEXLM_DISABLE_DEFLICPATH': '1',
+}
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+"""
+
+moduleclass = 'tools'
