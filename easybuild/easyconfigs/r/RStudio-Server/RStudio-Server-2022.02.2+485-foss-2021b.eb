@@ -1,0 +1,60 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '2022.02.2+485'
+
+homepage = 'https://www.rstudio.com/'
+description = """RStudio Server enables you to provide a browser
+based interface to a version of R running on a remote Linux
+server, bringing the power and productivity of the
+RStudio IDE to server-based deployments of R."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-1.2.1335-fix_env.patch']
+
+builddependencies = [
+    ('Boost', '1.79.0'),
+    ('ant', '1.10.11', '-Java-11', True),
+    ('SOCI', '4.0.3'),
+]
+dependencies = [
+    ('Java', '11', '', True),
+    ('R', '4.2.0'),
+]
+
+preconfigopts = "unset JAVA_TOOLS_OPTIONS && "
+preconfigopts += "export RSTUDIO_TOOLS_ROOT=%(builddir)s && "
+preconfigopts += "cd %(builddir)s/rstudio-*/dependencies/common && "
+preconfigopts += "env HOME=%(installdir)s ./install-cef && "
+preconfigopts += "env HOME=%(installdir)s ./install-dictionaries && "
+preconfigopts += "env HOME=%(installdir)s ./install-mathjax && "
+preconfigopts += "env HOME=%(installdir)s ./install-pandoc && "
+preconfigopts += "env HOME=%(installdir)s ./install-packages && "
+preconfigopts += "env HOME=%(installdir)s ./install-yaml-cpp && "
+preconfigopts += "env HOME=%(installdir)s ./install-npm-dependencies && "
+preconfigopts += "env HOME=%(installdir)s ./install-quarto && "
+preconfigopts += "cd %(builddir)s/rstudio-*/ && env HOME=%(installdir)s "
+configopts = "-DCMAKE_BUILD_TYPE=RELEASE "
+configopts += "-DRSTUDIO_TARGET=Server "
+configopts += "-DRSTUDIO_BOOST_SIGNALS_VERSION=2 "
+configopts += "-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.so "
+configopts += "-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.so "
+configopts += "-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.so "
+
+separate_build_dir = False
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/rsession', 'bin/rserver', 'bin/rserver-pam', 'bin/rpostback'],
+    'dirs': ['R', 'resources', 'www', 'www-symbolmaps'],
+}
+
+sanity_check_commands = [
+    # This command requires environment variables R_HOME and R_DOC_DIR
+    "R_HOME=$EBROOTR/lib64/R R_DOC_DIR=$R_HOME/doc rsession --verify-installation=1",
+    """MYTMP=$(mktemp -d) && echo -e "provider=sqlite
+directory=$MYTMP/db" >> $MYTMP/db.conf && rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf --server-data-dir=$MYTMP/sdd --server-user=$USER""",
+]
+
