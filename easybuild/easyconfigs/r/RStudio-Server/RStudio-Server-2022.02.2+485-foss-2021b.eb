@@ -23,6 +23,9 @@ builddependencies = [
     ('CMake', '3.22.1'),
     ('pkg-config', '0.29.2'),
     ('nodejs', '14.17.6'),
+    ('yaml-cpp', '0.7.0'),
+    # Only a build dep as the install takes a copy of the binary
+    ('Pandoc', '2.18', '', True),
 ]
 dependencies = [
     ('ant', '1.10.11', '-Java-11', True),
@@ -30,25 +33,34 @@ dependencies = [
     ('Boost', '1.79.0'),
     ('Java', '11', '', True),
     ('R', '4.2.0'),
-    ('Pandoc', '2.13', '', True),
     ('renv', '0.15.4', '-R-4.2.0'),
 ]
 
 preconfigopts = "unset JAVA_TOOLS_OPTIONS && "
 preconfigopts += "export RSTUDIO_TOOLS_ROOT=%(builddir)s && "
+
+# Fake installation of pandoc which is already a binary install
+# (same approach can be taken with quarto once it supports aarch64)
+preconfigopts += "mkdir -p %(builddir)s/pandoc && "
+preconfigopts += "ln -s $EBROOTPANDOC $RSTUDIO_TOOLS_ROOT/pandoc/2.16.2 && "
+
+# Now do the rest (which unfortunately do downloads)
 preconfigopts += "cd %(builddir)s/rstudio-*/dependencies/common && "
-preconfigopts += "env HOME=%(installdir)s ./install-cef && "
-preconfigopts += "env HOME=%(installdir)s ./install-dictionaries && "
-preconfigopts += "env HOME=%(installdir)s ./install-mathjax && "
-# preconfigopts += "env HOME=%(installdir)s ./install-pandoc && "
-# preconfigopts += "env HOME=%(installdir)s ./install-packages && "
-preconfigopts += "env HOME=%(installdir)s ./install-yaml-cpp && "
-preconfigopts += "env HOME=%(installdir)s ./install-npm-dependencies && "
-preconfigopts += "env HOME=%(installdir)s ./install-quarto && "
-preconfigopts += "cd %(builddir)s/rstudio-*/ && env HOME=%(installdir)s "
+# yarn abuses $HOME so let's change it temporarily
+preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT ./install-cef && "
+preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT ./install-dictionaries && "
+preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT ./install-mathjax && "
+preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT ./install-npm-dependencies && "
+preconfigopts += "cd %(builddir)s/rstudio-*/ && " 
+# Now the main config command
+preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT "
 configopts = "-DCMAKE_BUILD_TYPE=RELEASE "
+configopts += "-DRSTUDIO_UNINSTALL_PREVIOUS=On "
+configopts += "-DRSTUDIO_USE_SYSTEM_YAML_CPP=On "
 configopts += "-DRSTUDIO_TARGET=Server "
 configopts += "-DRSTUDIO_BOOST_SIGNALS_VERSION=2 "
+# No ARM support for Quarto (yet) so stick to Pandoc
+configopts += "-DQUARTO_ENABLED=FALSE "
 configopts += "-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.so "
 configopts += "-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.so "
 configopts += "-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.so "
