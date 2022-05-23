@@ -1,0 +1,66 @@
+# Based on FreeFem++-3.58-foss-2017b-downloaded-deps.eb but included all the dependendies
+# as EasyConfig files
+# Contribution from Imperial College Loncon / UK
+# uploaded by J. Sassmannshausen
+
+easyblock = 'ConfigureMake'
+
+name = 'FreeFEM'
+version = '4.11'
+
+homepage = 'https://freefem.org'
+description = """FreeFEM offers a fast interpolation algorithm and a language for the manipulation
+ of data on multiple meshes."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/FreeFem/FreeFem-sources/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['d0c6921791e5f94646d8dde4d9ed3c11b979e47e7bbb3c0a66467b04dd56983a']
+
+builddependencies = [
+    ('Autotools', '20210128'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+    ('CMake', '3.20.1'),
+]
+
+dependencies = [
+    ('GSL', '2.7'),
+    ('HDF5', '1.12.1'),
+    ('SuiteSparse', '5.10.1', '-METIS-5.1.0'),
+    ('freeglut', '3.2.1'),
+    ('PETSc', '3.15.1'),
+    ('SLEPc', '3.15.1'),
+    ('NLopt', '2.7.0'),
+    ('ParMETIS', '4.0.3'),
+    ('SuperLU', '5.3.0'),
+    ('hpddm', '2.2.1'),
+    ('Ipopt', '3.14.6'),
+]
+
+preconfigopts = "autoreconf -i &&"
+
+configopts = '--disable-mkl --disable-download --enable-optim --with-blas="-lflexiblas" '
+configopts += '--with-lapack="-lflexiblas" --with-arpack="-larpack" --with-metis-include=$EBROOTMETIS/include '
+configopts += '--with-umfpack="-L$EBROOTSUITESPARSE/lib -lcholmod -lumfpack" '
+configopts += '--with-petsc=$EBROOTPETSC/lib/petsc/conf/petscvariables '
+configopts += '--with-petsc_complex=$EBROOTPETSC/lib/petsc/conf/petscvariables '
+configopts += '--with-slepc-include="-I$EBROOTSLEPC/include" --with-slepccomplex-include="-I$EBROOTSLEPC/include" '
+configopts += '--with-superlu-include="-I$EBROOTSUPERLU/include" --with-mmg3d-include="-I$EBROOTMMG/include" '
+configopts += '--with-mmg-include="-I$EBROOTMMG/include" --with-metis-include="-I$EBROOTMETIS/include" '
+configopts += '--with-nlopt-include="-I$EBROOTNLOPT/include" --with-parmetis-include="-I$EBROOTPARMETIS/include" '
+configopts += '--with-mumps-include="-I$EBROOTMUMPS/include" --with-nlopt-include="-I$EBROOTNLOPT/include" '
+configopts += '--with-scotch-include="-I$EBROOTSCOTCH/include" --with-hpddm-include="-I$EBROOTHPDDM/include" '
+configopts += '--with-ipopt-include="-I$EBROOTIPOPT/include" '
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bamg', 'cvmsh2', 'ffglut', 'ffmedit']] +
+             ['bin/ff-%s' % x for x in ['c++', 'get-dep', 'mpirun', 'pkg-download']] +
+             ['bin/FreeFem++%s' % x for x in ['', '-mpi', '-nw']],
+    'dirs': ['share/FreeFEM/%(version)s/'] +
+            ['lib/ff++/%%(version)s/%s' % x for x in ['bin', 'etc', 'idp', 'include', 'lib']]
+}
+
+moduleclass = 'math'
