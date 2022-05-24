@@ -1,0 +1,59 @@
+# Author: Alexander Michels (UIUC)
+# This work was supported by the CyberGIS Center: https://cybergis.illinois.edu/
+
+easyblock = 'MakeCp'
+
+name = 'SUMMA'
+version = '3.0.3'
+
+homepage = 'https://summa.readthedocs.io/'
+description = """SUMMA (Clark et al., 2015a;b;c) is a hydrologic modeling 
+ framework that can be used for the systematic analysis of alternative model 
+ conceptualizations with respect to flux parameterizations, spatial configurations, 
+ and numerical solution techniques."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/NCAR',
+        'repo_name': 'summa',
+        'commit': '4ee457df3d3c0779696c6388c67962ba76736df9',
+        'keep_git_dir': True,
+    }
+}]
+patches = [
+    'SUMMA-%(version)s_correct_version.patch'
+]
+checksums = [
+    '442cad6f3b587545355c9b99ef2521f743bc9180ccb0af4c652688b2d674c01a',  # SOURCE_TAR_GZ
+    '8e61b6ac2ea8a5f3b850b430df8cfb57b4036a6df64f1d70f9118731428b425d'  # SUMMA-3.0.3_correct_version.path
+]
+
+dependencies = [
+    ('netCDF-Fortran', '4.5.2')
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'export FC=gfortran && '
+prebuildopts += 'export FC_EXE=gfortran && '
+prebuildopts += 'export INCLUDES="-I/usr/local/include -L/usr/local/lib -I$EBROOTNETCDFMINFORTRAN/include -I$EBROOTOPENBLAS/include" && '
+prebuildopts += 'export LIBRARIES="-L$EBROOTNETCDFMINFORTRAN/lib -lnetcdff -L$EBROOTOPENBLAS/lib $LIBBLAS" && '
+prebuildopts += 'export F_MASTER=$(pwd) && make -C build check &&  '
+buildopts = "-C build || make -C build"
+
+files_to_copy = [(['bin/summa.exe'], 'bin')]
+
+postinstallcmds = ["chmod +x bin/summa.exe"]
+
+sanity_check_paths = {
+    'files': ['bin/summa.exe'],
+    'dirs': ['bin']
+}
+
+sanity_check_commands = ["summa.exe --version"]
+
+moduleclass = 'geo'
