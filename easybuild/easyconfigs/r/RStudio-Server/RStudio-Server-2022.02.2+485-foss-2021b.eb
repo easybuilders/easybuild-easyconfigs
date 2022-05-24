@@ -25,8 +25,6 @@ builddependencies = [
     ('nodejs', '14.17.6'),
     ('yaml-cpp', '0.7.0'),
     ('ant', '1.10.11', '-Java-11', True),
-    # Only a build dep as the install takes a copy of the binary
-    ('Pandoc', '2.18', '', True),
 ]
 dependencies = [
     ('SOCI', '4.0.3'),
@@ -36,34 +34,35 @@ dependencies = [
     ('renv', '0.15.4', '-R-4.1.2'),
 ]
 
-preconfigopts = "unset JAVA_TOOLS_OPTIONS && "
-preconfigopts += "export RSTUDIO_TOOLS_ROOT=%(builddir)s && "
+# Quarto currently not supported on ARM (or CentOS7?) so pandoc is used as a fallback
+local_markdown_package = {'aarch64': 'pandoc', 'x86_64': 'quarto'}
+local_quarto = {'aarch64': 'FALSE', 'x86_64': 'TRUE'}
 
-# Fake installation of pandoc which is already a binary install
-# (same approach can be taken with quarto once it supports aarch64)
-preconfigopts += "mkdir -p %(builddir)s/pandoc && "
-preconfigopts += "ln -s $EBROOTPANDOC $RSTUDIO_TOOLS_ROOT/pandoc/2.16.2 && "
+preconfigopts = " && ".join([
+    "unset JAVA_TOOLS_OPTIONS",
+    "export RSTUDIO_TOOLS_ROOT=%(builddir)s", # otherwise sudo
+    "cd %(builddir)s/rstudio-*/dependencies/common",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-cef",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-dictionaries",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-mathjax",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-%s" % local_markdown_package[ARCH],
+    "env HOME=$RSTUDIO_TOOLS_ROOT ./install-npm-dependencies",
+    "cd %(builddir)s/rstudio-*/",
+    "env HOME=$RSTUDIO_TOOLS_ROOT ", # Also set HOME for CMake command
+])
 
-# Now do the rest (which unfortunately do downloads)
-preconfigopts += "cd %(builddir)s/rstudio-*/dependencies/common && "
-# yarn abuses $HOME so let's change it temporarily
-preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT ./install-cef && "
-preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT ./install-dictionaries && "
-preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT ./install-mathjax && "
-preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT ./install-npm-dependencies && "
-preconfigopts += "cd %(builddir)s/rstudio-*/ && "
 # Now the main config command
-preconfigopts += "env HOME=$RSTUDIO_TOOLS_ROOT "
-configopts = "-DCMAKE_BUILD_TYPE=RELEASE "
-configopts += "-DRSTUDIO_UNINSTALL_PREVIOUS=On "
-configopts += "-DRSTUDIO_USE_SYSTEM_YAML_CPP=On "
-configopts += "-DRSTUDIO_TARGET=Server "
-configopts += "-DRSTUDIO_BOOST_SIGNALS_VERSION=2 "
-# No ARM support for Quarto (yet) so stick to Pandoc
-configopts += "-DQUARTO_ENABLED=FALSE "
-configopts += "-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.so "
-configopts += "-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.so "
-configopts += "-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.so "
+configopts = " ".join([
+    '-DCMAKE_BUILD_TYPE=RELEASE',
+    '-DRSTUDIO_TARGET=Server',
+    '-DRSTUDIO_BOOST_SIGNALS_VERSION=2',
+    '-DRSTUDIO_UNINSTALL_PREVIOUS=ON',
+    '-DRSTUDIO_USE_SYSTEM_YAML_CPP=ON',
+    '-DQUARTO_ENABLED=%s' % local_quarto[ARCH],
+    '-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.so',
+    '-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.so',
+    '-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.so',
+])
 
 separate_build_dir = False
 
@@ -75,10 +74,14 @@ sanity_check_paths = {
 sanity_check_commands = [
     # This command requires environment variables R_HOME and R_DOC_DIR
     "R_HOME=$EBROOTR/lib64/R R_DOC_DIR=$R_HOME/doc rsession --verify-installation=1",
-    """MYTMP=$(mktemp -d) && \
-    echo -e "provider=sqlite \ndirectory=$MYTMP/db" >> $MYTMP/db.conf && \
-    rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf --server-data-dir=$MYTMP/sdd \
-    --server-user=$USER""",
+    # This command requires a db conf (this may also be needed for live use)
+    # and need the current user, otherwise defaults to root
+    ' && '.join([
+        'MYTMP=$(mktemp -d)',
+        'echo -e "provider=sqlite\ndirectory=$MYTMP/db" >> $MYTMP/db.conf',
+        """rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf \
+        --server-data-dir=$MYTMP/sdd --server-user=$USER""",
+    ])
 ]
 
 moduleclass = 'devel'
