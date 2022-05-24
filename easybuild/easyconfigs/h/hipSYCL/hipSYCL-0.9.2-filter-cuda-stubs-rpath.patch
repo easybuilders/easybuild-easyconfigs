@@ -1,0 +1,32 @@
+# This patch filters out the CUDA stubs directory from the RPATH of the CUDA
+# runtime module of hipSYCL.
+#
+# Inspiration: https://github.com/easybuilders/easybuild-easyconfigs/pull/14382
+
+--- hipSYCL-0.9.2/src/runtime/CMakeLists.txt.orig	2022-03-02 08:22:35.379883966 +0100
++++ hipSYCL-0.9.2/src/runtime/CMakeLists.txt	2022-03-02 08:28:52.125868898 +0100
+@@ -81,8 +81,22 @@
+   target_include_directories(rt-backend-cuda PRIVATE
+     ${HIPSYCL_SOURCE_DIR}/include
+     ${CUDA_TOOLKIT_ROOT_DIR}/include)
+-  
+-  target_link_libraries(rt-backend-cuda PRIVATE hipSYCL-rt ${CUDA_LIBRARIES} ${CUDA_DRIVER_LIBRARY})
++
++  set(hipSYCL_CUDA_LIBS ${CUDA_LIBRARIES} ${CUDA_DRIVER_LIBRARY})
++  foreach(LIB in LISTS hipSYCL_CUDA_LIBS)
++    message("LIB: ${LIB}")
++    if(LIB MATCHES "stubs")
++      message("Filtering ${LIB} from being set in hipSYCL RPATH, because it appears to be the CUDA stubs directory which should not be in the RPATH")
++    else()
++      cmake_path(GET LIB PARENT_PATH LIB_PATH)
++      message("LIBPATH: ${LIB_PATH}")
++      list(APPEND hipSYCL_CUDA_RPATH ${LIB_PATH})
++    endif()
++  endforeach()
++  message("hipSYCL_CUDA_RPATH: ${hipSYCL_CUDA_RPATH}")
++  set_target_properties(rt-backend-cuda PROPERTIES INSTALL_RPATH_USE_LINK_PATH FALSE)
++  set_target_properties(rt-backend-cuda PROPERTIES INSTALL_RPATH "${hipSYCL_CUDA_RPATH}")
++  target_link_libraries(rt-backend-cuda PRIVATE hipSYCL-rt ${hipSYCL_CUDA_LIBS})
+ 
+   install(TARGETS rt-backend-cuda
+         RUNTIME DESTINATION bin/hipSYCL
