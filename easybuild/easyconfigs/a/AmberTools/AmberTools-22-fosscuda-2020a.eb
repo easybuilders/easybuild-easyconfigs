@@ -1,0 +1,91 @@
+# This easyconfig is to build AmberTools with  MPI and CUDA - enabled QUICK binaries 
+# It can be adapted to buld PMEMD with NCCL  by fixing the following issues:
+# CMake config fails to build PMEMD (and AmberTools as well) with NCCL library due to bugs in CMake scripts
+# 1. FindNCCL function is never called even when NCCL build is enabled (3rdPartyTools.cmake, l.538)
+# 2. The logic to check for NCCL is wrong; it emits error when NCCL is found (PMEMDCompilerFlags.cmake, l.230) 
+
+easyblock = 'CMakeMake'
+
+name = 'AmberTools'
+version = '22'
+
+homepage = "https://ambermd.org/AmberTools.php"
+description = "AmberTools consists of several independently developed packages that work well by themselves, and with Amber20 itself. The suite can also be used to carry out complete molecular dynamics simulations, with either explicit water or generalized Born solvent models."
+
+toolchain = {'name': 'fosscuda', 'version': '2020a'}
+
+sources = ["AmberTools%(version)s.tar.bz2"]
+
+# patch to exit the path-scripts in case AMBERHOME variable is already correctly set.
+patches = ['AmberTools-22-pathscripts.patch']
+
+dependencies = [
+    ('netCDF', '4.7.4', None, ('GCC', '9.3.0')),
+    ('netCDF-Fortran', '4.5.2', None, ('GCC', '9.3.0')),
+    ('arpack-ng', '3.7.0','', ('gmkl','2020a')),
+    ('Boost', '1.72.0', '', ('GCC', '9.3.0')),
+    ('Python', '3.9'),
+    ('SciPy-Stack', '2022a'),
+#    ('CUDA', '11.4', '', ('GCC', '9.3.0')),
+]
+
+# Notes on Python version:
+# ------------------------
+# Ambertools 22 could/should use newer modules
+#  - SciPy-Stack 2022a 
+#  - python/3.9
+#  - mpi4py/3.1.3
+
+builddependencies = [
+    ('mpi4py', '3.0.3'),
+]
+
+separate_build_dir = True
+
+configopts =  ' -DBUILD_QUICK=TRUE'
+configopts += ' -DCUDA=TRUE'
+configopts += ' -DOPENMP=TRUE'
+configopts += ' -DMPI=TRUE'
+configopts += ' -DCOMPILER=GNU'
+configopts += ' -DDOWNLOAD_MINICONDA=FALSE'
+configopts += ' -DTRUST_SYSTEM_LIBS=TRUE'
+configopts += ' -DFORCE_DISABLE_LIBS=plumed'
+configopts += ' -DINSTALL_TESTS=TRUE'
+
+checksums = {
+'7beec30ec5eac5e1873cfcd1380fd8af83d9d8d0fc597474e79c6da1e969c226',  # AmberTools-22-pathscripts.patch
+'1571d4e0f7d45b2a71dce5999fa875aea8c90ee219eb218d7916bf30ea229121',  # AmberTools22.tar.bz2
+}
+postinstallcmds = [
+   ' '.join([
+        '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh',
+	'--path %(installdir)s/',
+	'--any_interpreter',
+	'--add_origin',
+	'--add_path %(installdir)s/lib',
+    ])
+]
+
+modextravars = {
+    'AMBERHOME': '%(installdir)s',
+    'QUICK_BASIS': '%(installdir)s/AmberTools/src/quick/basis',
+}
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+    'PERL5LIB': ['lib/perl'],
+}
+
+# Exact version of mpi4py doesn't matter.
+modluafooter = """
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+    depends_on(atleast('mpi4py','3.0.3'))
+end
+"""
+
+# Setting if the needed variables is now handled by the Lmod module.
+#modloadmsg = """Before using AmberTools source the file \033[91m $EBROOTAMBERTOOLS/amber.sh \033[0m
+#or add the line \033[91m source $EBROOTAMBERTOOLS/amber.sh \033[0m to your \033[91m ~/.bash_profile \033[0m
+#"""
+
+moduleclass = 'chem'

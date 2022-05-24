@@ -1,0 +1,39 @@
+
+Patch to bail out of the pathscripts amber.sh and amber.csh, when
+environment variables AMBERTOOLS and EBPYTHONPREFIXES already
+exist and are set correctly.
+
+Explanation:
+Amber/AmberTools install the pathscripts amber.sh and amber.csh that set/extend
+the environment variables AMBERTOOLS, QUICK_BASIS, PATH, PYTHONPATH, PERL5LIB
+when they are "sourced".
+It's better to handle this in the module, so that it can be cleanly unloaded.
+Also using EBPYTHONPREFIXES instead of PYTHONPATH allows for Python packages
+to "shadow" those versions that are installed within the module.
+
+Author: Oliver Stueker (ACENET)
+
+--- amber22_src/cmake-packaging/pathscripts/amber.in.sh.orig	2022-05-20 13:24:57.518036702 +0000
++++ amber22_src/cmake-packaging/pathscripts/amber.in.sh	2022-05-24 16:48:53.360547454 +0000
+@@ -18,7 +18,15 @@
+     exit 2
+ fi
+ 
+-export AMBERHOME=$(cd "$(dirname "$this_script")"; pwd)
++TEMP_AMBERHOME=$(cd "$(dirname "$this_script")"; pwd)
++if [[ -n $AMBERHOME && "$AMBERHOME" == "$TEMP_AMBERHOME" && \
++      "$EBPYTHONPREFIXES" =~ "$TEMP_AMBERHOME"  ]]; then
++   echo "The environment has already been set by the module."
++   echo "Not making any changes."
++else 
++# skip from here to EOF
++
++export AMBERHOME=$TEMP_AMBERHOME
+ export PATH="$AMBERHOME/bin:@EXTRA_PATH_PART@$PATH"
+ 
+ # Add Amber lib folder to LD_LIBRARY_PATH (if your platform supports it)
+@@ -54,3 +62,4 @@
+ if [ @AMBERSH_QUICK_SUPPORT@ = 1 ]; then
+ 	export QUICK_BASIS="$AMBERHOME/AmberTools/src/quick/basis"
+ fi
++fi # closes else clause to skip setting variables.
