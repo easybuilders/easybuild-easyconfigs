@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'SLEPc'
+version = '3.17.0'
+
+homepage = 'https://gitlab.com/slepc/slepc'
+description = """SLEPc (Scalable Library for Eigenvalue Problem Computations) is a software library for the solution
+ of large scale sparse eigenvalue problems on parallel computers. It is an extension of PETSc and can be used for
+ either standard or generalized eigenproblems, with real or complex arithmetic. It can also be used for computing a
+ partial SVD of a large, sparse, rectangular matrix, and to solve quadratic eigenvalue problems."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['https://slepc.upv.es/download/distrib']
+sources = [SOURCELOWER_TAR_GZ]
+
+checksums = [
+    'd4685fed01b2351c66706cbd6d08e4083a4645df398ef5ccd68fdfeb2f86ea97',   # slepc-3.17.0.tar.gz
+]
+
+dependencies = [('PETSc', '3.17.0')]
+
+preconfigopts = ' export PETSC_DIR=${EBROOTPETSC} && '
+build_cmd = 'make SLEPC_DIR=%(builddir)s/%(namelower)s-%(version)s PETSC_DIR=${EBROOTPETSC}'
+install_cmd = 'make SLEPC_DIR=%(builddir)s/%(namelower)s-%(version)s PETSC_DIR=${EBROOTPETSC} install'
+
+runtest = 'SLEPC_DIR=%(builddir)s/%(namelower)s-%(version)s PETSC_DIR=${EBROOTPETSC} check'
+
+sanity_check_paths = {
+    'files': ['lib/libslepc.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share']
+}
+
+moduleclass = 'numlib'
