@@ -1,0 +1,49 @@
+Removed -Werror as only deprecated warnings were printed, changed CHAR_WIDTH to CHAR_SIZE
+author: J. Sassmannshausen (ICL/UK)
+diff --git a/mp-3.1.0.orig/include/mp/format.h b/mp-3.1.0/include/mp/format.h
+index c5d09b5..c473041 100644
+--- a/mp-3.1.0.orig/include/mp/format.h
++++ b/mp-3.1.0/include/mp/format.h
+@@ -1747,21 +1747,21 @@ class ArgFormatterBase : public ArgVisitor<Impl, void> {
+     typedef typename BasicWriter<Char>::CharPtr CharPtr;
+     Char fill = internal::CharTraits<Char>::cast(spec_.fill());
+     CharPtr out = CharPtr();
+-    const unsigned CHAR_WIDTH = 1;
+-    if (spec_.width_ > CHAR_WIDTH) {
++    const unsigned CHAR_SIZE = 1;
++    if (spec_.width_ > CHAR_SIZE) {
+       out = writer_.grow_buffer(spec_.width_);
+       if (spec_.align_ == ALIGN_RIGHT) {
+-        std::uninitialized_fill_n(out, spec_.width_ - CHAR_WIDTH, fill);
+-        out += spec_.width_ - CHAR_WIDTH;
++        std::uninitialized_fill_n(out, spec_.width_ - CHAR_SIZE, fill);
++        out += spec_.width_ - CHAR_SIZE;
+       } else if (spec_.align_ == ALIGN_CENTER) {
+         out = writer_.fill_padding(out, spec_.width_,
+-                                   internal::check(CHAR_WIDTH), fill);
++                                   internal::check(CHAR_SIZE), fill);
+       } else {
+-        std::uninitialized_fill_n(out + CHAR_WIDTH,
+-                                  spec_.width_ - CHAR_WIDTH, fill);
++        std::uninitialized_fill_n(out + CHAR_SIZE,
++                                  spec_.width_ - CHAR_SIZE, fill);
+       }
+     } else {
+-      out = writer_.grow_buffer(CHAR_WIDTH);
++      out = writer_.grow_buffer(CHAR_SIZE);
+     }
+     *out = internal::CharTraits<Char>::cast(value);
+   }
+diff --git a/mp-3.1.0.orig/thirdparty/benchmark/CMakeLists.txt b/mp-3.1.0/thirdparty/benchmark/CMakeLists.txt
+index 2c72252..360c91f 100644
+--- a/mp-3.1.0.orig/thirdparty/benchmark/CMakeLists.txt
++++ b/mp-3.1.0/thirdparty/benchmark/CMakeLists.txt
+@@ -56,7 +56,7 @@ else()
+ 
+   add_cxx_compiler_flag(-Wextra)
+   add_cxx_compiler_flag(-Wshadow)
+-  add_cxx_compiler_flag(-Werror RELEASE)
++#  add_cxx_compiler_flag(-Werror RELEASE)
+   add_cxx_compiler_flag(-pedantic)
+   add_cxx_compiler_flag(-pedantic-errors)
+   add_cxx_compiler_flag(-Wshorten-64-to-32)
