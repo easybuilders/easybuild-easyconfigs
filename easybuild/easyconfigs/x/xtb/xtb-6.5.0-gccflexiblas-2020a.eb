@@ -1,0 +1,103 @@
+easyblock = 'MesonNinja'
+
+name = 'xtb'
+version = '6.5.0'
+
+homepage = 'https://github.com/grimme-lab/xtb'
+description = "xtb - Extended tight-binding semi-empirical quantum mechanics"
+
+toolchain = {'name': 'gccflexiblas', 'version': '2020a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/grimme-lab/%(name)s/archive/']
+sources = [
+    {   # xtb
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': 'xtb-%(version)s.tar.gz',
+    },
+    {   # xtb-python
+        'filename': 'xtb-python-%(version)s.tar.gz',
+        'download_filename': 'xtb-python-%(version)s.tar.gz',
+        'git_config': {
+            'url': 'https://github.com/grimme-lab',
+            'repo_name': 'xtb-python',
+            'commit': '0aaf169', # HEAD at the time of writing, no tags
+            'recursive': False,
+            'keep_git_dir': False,
+        },
+    },
+]
+# Must use --disable-enforce-checksums as checksums are not reliable on a JIT created tarball
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+]
+
+dependencies = [
+    ('SciPy-Stack', '2022a'),
+]
+
+configopts = " ".join([
+    "--buildtype release",
+    "--optimization=2",
+    "-Dopenmp=true",
+    "-Dla_backend=custom",
+    '-Dcustom_libraries=flexiblas',
+])
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj -t 60'
+
+multi_deps = {'Python': ['3.8', '3.9', '3.10']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE], 'use_pip': True, 'runtest': False}
+exts_list = [
+    # Extension name is `xtb` not `xtb-python`.
+    ('xtb', version, {
+        # BUT extension source must use xtb-python archive!
+        'sources': [{'filename': 'xtb-python-%(version)s.tar.gz', 'download_filename': 'xtb-python-%(version)s.tar.gz'}],
+        'use_pip': True,  # pip instead of setup as its build a correct wheel that can be installed.
+        'preinstallopts': " && ".join([
+             # Ensure that Meson configure and use a clean build directory for each extension!
+             "meson setup ./build%(pyshortver)s --prefix=%(installdir)s/lib/python%(pyshortver)s/site-packages --default-library=shared --libdir=xtb --optimization=2 -Dpy=%(pyshortver)s",
+             "ninja -C ./build%(pyshortver)s install",
+             "",
+         ]),
+    }),
+    ('ase', '3.22.1', {'checksums': ['004df6b0ea04b1114c790fadfe45d4125eb0e53125c66a93425af853d82ab432'],}),
+    ('qcelemental', '0.24.0', {'checksums': ['5dcb11f3db6edba106e40717aa69dd90448b19667c78a99392368bce2a2c6b01'],}),
+    ('pydantic', '1.9.1', {'checksums': ['1ed987c3ff29fff7fd8c3ea3a3ea877ad310aae2ef9889a119e22d3f2db0691a'],}),
+    ('Pint', '0.19.2', {'checksums': ['e1d4989ff510b378dad64f91711e7bdabe5ca78d75b06a18569ac454678c4baf'],}),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'include/%(name)s.h', 'lib64/libxtb.a', 'lib64/libxtb.so'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [
+    "xtb --help",
+    "python -c 'from xtb.libxtb import get_api_version;print(get_api_version())'",
+    "module load scipy-stack/2022a && python -c '{}'".format("; ".join([
+            "from ase import Atoms",
+            "from xtb.ase.calculator import XTB",
+            "atoms = Atoms(\"CO\", positions=[(0, 0, 0), (0, 0, 1.1)])",
+            "calc = XTB(method=\"GFN0-xTB\")",
+            "atoms.calc = calc",
+            "print(atoms.get_potential_energy())",
+    ])),
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+modextravars = {
+    'XTBHOME': '%(installdir)s',
+    'XTBPATH': '%(installdir)s/share/%(name)s'
+}
+
+moduleclass = 'chem'
