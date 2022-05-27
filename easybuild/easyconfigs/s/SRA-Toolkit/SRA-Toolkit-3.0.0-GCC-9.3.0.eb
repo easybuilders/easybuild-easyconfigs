@@ -1,0 +1,63 @@
+easyblock = 'Bundle'
+
+name = 'SRA-Toolkit'
+version = '3.0.0'
+
+homepage = 'https://github.com/ncbi/sra-tools'
+description = """The SRA Toolkit, and the source-code SRA System Development
+ Kit (SDK), will allow you to programmatically access data housed within SRA
+ and convert it from the SRA format"""
+github_account = 'ncbi'
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+builddependencies = [
+    ('Perl', '5.30.2'),
+    ('Python', '3.9'),
+]
+
+dependencies = [
+    ('file', '5.38'),  # provides libmagic
+    ('HDF5', '1.10.6'),
+    ('libxml2', '2.9.10'),
+    ('Java', '13'),
+]
+
+default_easyblock = 'CMakeMake'
+default_component_specs = {
+    'source_urls': [GITHUB_LOWER_SOURCE],
+    'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    # NCBI-VDB has to be installed as component instead of dependency because SRA-Tools needs its sources
+    ('NCBI-VDB', version),
+    ('SRA-Tools', version, {
+    	'configopts': '-DVDB_INCDIR=%(installdir)s/include -DVDB_LIBDIR=%(installdir)s/lib64 ' ,
+	'patches': ['SRA-Toolkit-3.0.0-fix-javadoc-workingdir.patch']
+    }),
+]
+
+local_bin = ['abi-dump', 'abi-load', 'align-info', 'bam-load', 'cache-mgr', 'cg-load', 'copycat', 'fasterq-dump',
+             'fastq-dump', 'fastq-load', 'helicos-load', 'illumina-dump', 'illumina-load', 'kar', 'kdbmeta', 
+             'latf-load', 'magic', 'pacbio-load', 'prefetch', 'rcexplain', 'sam-dump', 'sff-dump', 'sff-load',
+             'srapath', 'sra-pileup', 'sra-sort', 'sra-stat', 'sratools', 'srf-load', 'test-sra', 'vdb-config',
+             'vdb-copy', 'vdb-decrypt', 'vdb-dump', 'vdb-encrypt', 'vdb-lock', 'vdb-passwd', 'vdb-unlock',
+             'vdb-validate']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bin] +
+             ['include/ncbi-vdb/NGS.hpp', ('lib/libncbi-ngs-c++.a', 'lib64/libncbi-ngs-c++.a')] +
+             [('lib/libncbi-%s.%s' % (l, e), 'lib64/libncbi-%s.%s' % (l, e))
+              for l in ['vdb', 'wvdb'] for e in ['a', SHLIB_EXT]],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "abi-dump --help",
+    "kar --help",
+    "sra-sort --help",
+]
+
+moduleclass = 'bio'
