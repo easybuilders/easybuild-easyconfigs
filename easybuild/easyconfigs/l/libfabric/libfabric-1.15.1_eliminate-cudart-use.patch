@@ -1,0 +1,301 @@
+--- libfabric-1.15.1/include/ofi_hmem.h.orig	2022-05-27 17:46:13.783290471 +0000
++++ libfabric-1.15.1/include/ofi_hmem.h	2022-05-27 22:38:56.531674820 +0000
+@@ -46,7 +46,8 @@
+ #if HAVE_CUDA
+ 
+ #include <cuda.h>
+-#include <cuda_runtime.h>
++#define cudaError_t CUresult
++enum cudaMemcpyKind { cudaMemcpyDefault = 0 };
+ 
+ /* Libfabric supported CUDA operations. */
+ cudaError_t ofi_cudaMemcpy(void* dst, const void* src, size_t count,
+--- libfabric-1.15.1/src/hmem_cuda.c.orig	2022-05-27 15:25:17.348963673 +0000
++++ libfabric-1.15.1/src/hmem_cuda.c	2022-05-28 00:22:28.393506482 +0000
+@@ -41,15 +41,20 @@
+ #if HAVE_CUDA
+ 
+ #include <cuda.h>
+-#include <cuda_runtime.h>
++#define cudaSuccess CUDA_SUCCESS
++#define cudaErrorNoDevice CUDA_ERROR_NO_DEVICE
++#define cudaErrorInvalidValue CUDA_ERROR_INVALID_VALUE
++#define cudaHostRegisterDefault 0
++#define cudart_handle cuda_handle
++#define cudaIpcMemHandle_t CUipcMemHandle
++#define cudaIpcMemLazyEnablePeerAccess CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS
+ 
+ struct cuda_ops {
+-	cudaError_t (*cudaMemcpy)(void *dst, const void *src, size_t size,
+-				  enum cudaMemcpyKind kind);
+-	cudaError_t (*cudaFree)(void* ptr);
+-	cudaError_t (*cudaMalloc)(void** ptr, size_t size);
+-	const char *(*cudaGetErrorName)(cudaError_t error);
+-	const char *(*cudaGetErrorString)(cudaError_t error);
++	cudaError_t (*cudaMemcpy)(CUdeviceptr dst, CUdeviceptr src, size_t size);
++	cudaError_t (*cudaFree)(CUdeviceptr buf);
++	cudaError_t (*cudaMalloc)(CUdeviceptr *ptr, size_t size);
++	cudaError_t (*cudaGetErrorName)(cudaError_t error, const char **pstr);
++	cudaError_t (*cudaGetErrorString)(cudaError_t error, const char **pstr);
+ 	CUresult (*cuPointerGetAttribute)(void *data,
+ 					  CUpointer_attribute attribute,
+ 					  CUdeviceptr ptr);
+@@ -57,27 +62,20 @@
+ 					unsigned int flags);
+ 	cudaError_t (*cudaHostUnregister)(void *ptr);
+ 	cudaError_t (*cudaGetDeviceCount)(int *count);
+-	cudaError_t (*cudaGetDevice)(int *device);
+-	cudaError_t (*cudaSetDevice)(int device);
+-	cudaError_t (*cudaIpcOpenMemHandle)(void **devptr,
+-					    cudaIpcMemHandle_t handle,
+-					    unsigned int flags);
+-	cudaError_t (*cudaIpcGetMemHandle)(cudaIpcMemHandle_t *handle,
+-					   void *devptr);
+-	cudaError_t (*cudaIpcCloseMemHandle)(void *devptr);
++	cudaError_t (*cudaIpcOpenMemHandle)(CUdeviceptr *devptr, CUipcMemHandle handle, unsigned int flags);
++	cudaError_t (*cudaIpcGetMemHandle)(CUipcMemHandle *handle, CUdeviceptr devptr);
++	cudaError_t (*cudaIpcCloseMemHandle)(CUdeviceptr devptr);
+ };
+ 
+ static bool hmem_cuda_use_gdrcopy;
+ static bool cuda_ipc_enabled;
+ 
+-static cudaError_t cuda_disabled_cudaMemcpy(void *dst, const void *src,
+-					    size_t size, enum cudaMemcpyKind kind);
++static cudaError_t cuda_disabled_cudaMemcpy(CUdeviceptr dst, CUdeviceptr src, size_t size);
+ 
+ #if ENABLE_CUDA_DLOPEN
+ 
+ #include <dlfcn.h>
+ 
+-static void *cudart_handle;
+ static void *cuda_handle;
+ static struct cuda_ops cuda_ops;
+ 
+@@ -105,17 +103,21 @@
+ cudaError_t ofi_cudaMemcpy(void *dst, const void *src, size_t size,
+ 			   enum cudaMemcpyKind kind)
+ {
+-	return cuda_ops.cudaMemcpy(dst, src, size, kind);
++	return cuda_ops.cudaMemcpy((CUdeviceptr)dst, (CUdeviceptr)src, size);
+ }
+ 
+ const char *ofi_cudaGetErrorName(cudaError_t error)
+ {
+-	return cuda_ops.cudaGetErrorName(error);
++	const char *str;
++	cuda_ops.cudaGetErrorName(error, &str);
++	return str;
+ }
+ 
+ const char *ofi_cudaGetErrorString(cudaError_t error)
+ {
+-	return cuda_ops.cudaGetErrorString(error);
++	const char *str;
++	cuda_ops.cudaGetErrorString(error, &str);
++	return str;
+ }
+ 
+ CUresult ofi_cuPointerGetAttribute(void *data, CUpointer_attribute attribute,
+@@ -141,12 +143,12 @@
+ 
+ cudaError_t ofi_cudaMalloc(void **ptr, size_t size)
+ {
+-	return cuda_ops.cudaMalloc(ptr, size);
++	return cuda_ops.cudaMalloc((CUdeviceptr *)ptr, size);
+ }
+ 
+ cudaError_t ofi_cudaFree(void *ptr)
+ {
+-	return cuda_ops.cudaFree(ptr);
++	return cuda_ops.cudaFree((CUdeviceptr)ptr);
+ }
+ 
+ int cuda_copy_to_dev(uint64_t device, void *dst, const void *src, size_t size)
+@@ -213,7 +215,7 @@
+ 	cudaError_t cuda_ret;
+ 
+ 	cuda_ret = cuda_ops.cudaIpcGetMemHandle((cudaIpcMemHandle_t *)handle,
+-						dev_buf);
++						(CUdeviceptr)dev_buf);
+ 
+ 	if (cuda_ret == cudaSuccess)
+ 		return FI_SUCCESS;
+@@ -230,7 +232,7 @@
+ {
+ 	cudaError_t cuda_ret;
+ 
+-	cuda_ret = cuda_ops.cudaIpcOpenMemHandle(ipc_ptr,
++	cuda_ret = cuda_ops.cudaIpcOpenMemHandle((CUdeviceptr *)ipc_ptr,
+ 						 *(cudaIpcMemHandle_t *)handle,
+ 						 cudaIpcMemLazyEnablePeerAccess);
+ 
+@@ -249,7 +251,7 @@
+ {
+ 	cudaError_t cuda_ret;
+ 
+-	cuda_ret = cuda_ops.cudaIpcCloseMemHandle(ipc_ptr);
++	cuda_ret = cuda_ops.cudaIpcCloseMemHandle((CUdeviceptr)ipc_ptr);
+ 
+ 	if (cuda_ret == cudaSuccess)
+ 		return FI_SUCCESS;
+@@ -262,8 +264,7 @@
+ 	return -FI_EINVAL;
+ }
+ 
+-static cudaError_t cuda_disabled_cudaMemcpy(void *dst, const void *src,
+-					    size_t size, enum cudaMemcpyKind kind)
++static cudaError_t cuda_disabled_cudaMemcpy(CUdeviceptr dst, CUdeviceptr src, size_t size)
+ {
+ 	FI_WARN(&core_prov, FI_LOG_CORE,
+ 		"cudaMemcpy was called but FI_HMEM_CUDA_ENABLE_XFER = 0, "
+@@ -278,13 +279,6 @@
+ 	/* Assume failure to dlopen CUDA runtime is caused by the library not
+ 	 * being found. Thus, CUDA is not supported.
+ 	 */
+-	cudart_handle = dlopen("libcudart.so", RTLD_NOW);
+-	if (!cudart_handle) {
+-		FI_INFO(&core_prov, FI_LOG_CORE,
+-			"Failed to dlopen libcudart.so\n");
+-		return -FI_ENOSYS;
+-	}
+-
+ 	cuda_handle = dlopen("libcuda.so", RTLD_NOW);
+ 	if (!cuda_handle) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+@@ -292,25 +286,25 @@
+ 		goto err_dlclose_cudart;
+ 	}
+ 
+-	cuda_ops.cudaMemcpy = dlsym(cudart_handle, "cudaMemcpy");
++	cuda_ops.cudaMemcpy = dlsym(cudart_handle, "cuMemcpy");
+ 	if (!cuda_ops.cudaMemcpy) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find cudaMemcpy\n");
+ 		goto err_dlclose_cuda;
+ 	}
+ 
+-	cuda_ops.cudaFree = dlsym(cudart_handle, "cudaFree");
++	cuda_ops.cudaFree = dlsym(cudart_handle, "cuMemFree_v2");
+ 	if (!cuda_ops.cudaFree) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find cudaFree\n");
+ 		goto err_dlclose_cuda;
+ 	}
+ 
+-	cuda_ops.cudaMalloc = dlsym(cudart_handle, "cudaMalloc");
++	cuda_ops.cudaMalloc = dlsym(cudart_handle, "cuMemAlloc_v2");
+ 	if (!cuda_ops.cudaMalloc) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find cudaMalloc\n");
+ 		goto err_dlclose_cuda;
+ 	}
+ 
+-	cuda_ops.cudaGetErrorName = dlsym(cudart_handle, "cudaGetErrorName");
++	cuda_ops.cudaGetErrorName = dlsym(cudart_handle, "cuGetErrorName");
+ 	if (!cuda_ops.cudaGetErrorName) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+ 			"Failed to find cudaGetErrorName\n");
+@@ -318,7 +312,7 @@
+ 	}
+ 
+ 	cuda_ops.cudaGetErrorString = dlsym(cudart_handle,
+-					    "cudaGetErrorString");
++					    "cuGetErrorString");
+ 	if (!cuda_ops.cudaGetErrorString) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+ 			"Failed to find cudaGetErrorString\n");
+@@ -333,7 +327,7 @@
+ 		goto err_dlclose_cuda;
+ 	}
+ 
+-	cuda_ops.cudaHostRegister = dlsym(cudart_handle, "cudaHostRegister");
++	cuda_ops.cudaHostRegister = dlsym(cudart_handle, "cuMemHostRegister");
+ 	if (!cuda_ops.cudaHostRegister) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+ 			"Failed to find cudaHostRegister\n");
+@@ -341,7 +335,7 @@
+ 	}
+ 
+ 	cuda_ops.cudaHostUnregister = dlsym(cudart_handle,
+-					    "cudaHostUnregister");
++					    "cuMemHostUnregister");
+ 	if (!cuda_ops.cudaHostUnregister) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+ 			"Failed to find cudaHostUnregister\n");
+@@ -349,31 +343,15 @@
+ 	}
+ 
+ 	cuda_ops.cudaGetDeviceCount = dlsym(cudart_handle,
+-					    "cudaGetDeviceCount");
++					    "cuDeviceGetCount");
+ 	if (!cuda_ops.cudaGetDeviceCount) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+ 			"Failed to find cudaGetDeviceCount\n");
+ 		goto err_dlclose_cuda;
+ 	}
+ 
+-	cuda_ops.cudaGetDevice = dlsym(cudart_handle,
+-					    "cudaGetDevice");
+-	if (!cuda_ops.cudaGetDevice) {
+-		FI_WARN(&core_prov, FI_LOG_CORE,
+-			"Failed to find cudaGetDevice\n");
+-		goto err_dlclose_cuda;
+-	}
+-
+-	cuda_ops.cudaSetDevice = dlsym(cudart_handle,
+-					    "cudaSetDevice");
+-	if (!cuda_ops.cudaSetDevice) {
+-		FI_WARN(&core_prov, FI_LOG_CORE,
+-			"Failed to find cudaSetDevice\n");
+-		goto err_dlclose_cuda;
+-	}
+-
+ 	cuda_ops.cudaIpcOpenMemHandle = dlsym(cudart_handle,
+-					    "cudaIpcOpenMemHandle");
++					    "cuIpcOpenMemHandle");
+ 	if (!cuda_ops.cudaIpcOpenMemHandle) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+ 			"Failed to find cudaIpcOpenMemHandle\n");
+@@ -381,7 +359,7 @@
+ 	}
+ 
+ 	cuda_ops.cudaIpcGetMemHandle = dlsym(cudart_handle,
+-					    "cudaIpcGetMemHandle");
++					    "cuIpcGetMemHandle");
+ 	if (!cuda_ops.cudaIpcGetMemHandle) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+ 			"Failed to find cudaIpcGetMemHandle\n");
+@@ -389,7 +367,7 @@
+ 	}
+ 
+ 	cuda_ops.cudaIpcCloseMemHandle = dlsym(cudart_handle,
+-					    "cudaIpcCloseMemHandle");
++					    "cuIpcCloseMemHandle");
+ 	if (!cuda_ops.cudaIpcCloseMemHandle) {
+ 		FI_WARN(&core_prov, FI_LOG_CORE,
+ 			"Failed to find cudaIpcCloseMemHandle\n");
+@@ -401,7 +379,6 @@
+ err_dlclose_cuda:
+ 	dlclose(cuda_handle);
+ err_dlclose_cudart:
+-	dlclose(cudart_handle);
+ 
+ 	return -FI_ENODATA;
+ #else
+@@ -413,7 +390,6 @@
+ {
+ #if ENABLE_CUDA_DLOPEN
+ 	dlclose(cuda_handle);
+-	dlclose(cudart_handle);
+ #endif
+ }
+ 
+--- libfabric-1.15.1/prov/psm3/psm3/psm_user.h.orig	2022-05-28 02:46:55.813427414 +0000
++++ libfabric-1.15.1/prov/psm3/psm3/psm_user.h	2022-05-28 02:47:05.941497549 +0000
+@@ -737,7 +737,7 @@
+  */
+ extern uint32_t gdr_copy_limit_recv;
+ 
+-uint64_t psm3_gpu_cache_evict;
++extern uint64_t psm3_gpu_cache_evict;
+ 
+ // Only valid if called for a GPU buffer
+ #define PSMI_USE_GDR_COPY_RECV(len) ((len) >=1 && (len) <= gdr_copy_limit_recv)
