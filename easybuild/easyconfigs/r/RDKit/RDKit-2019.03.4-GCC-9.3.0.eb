@@ -1,0 +1,70 @@
+easyblock = 'CMakeMake'
+
+name = 'RDKit'
+version = '2019.03.4'
+
+homepage = 'http://www.rdkit.org/'
+description = """RDKit is a collection of cheminformatics and machine-learning software written in C++ and Python."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0' }
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/rdkit/rdkit/archive']
+sources = ['Release_%s.tar.gz' % version.replace('.','_')]
+checksums = ['33c8eb5b3162296662ec06f8dd58e11fc21fa2ebcb13b456fcb3c4f3a39a357c']
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.6", "3.7"]}
+
+builddependencies = [
+    ('Eigen', '3.3.7'),
+    ('SciPy-Stack', '2020a'),
+    ('CMake', '3.21.4'),
+]
+
+dependencies = [
+    ('Boost', '1.72.0'),
+]
+
+configopts = " ".join([
+    "-DBOOST_ROOT=$EBROOTBOOST",
+    "-DCMAKE_SKIP_RPATH=ON",
+    "-DRDK_INSTALL_INTREE=OFF",
+    "-DRDK_OPTIMIZE_NATIVE=OFF",
+    "-DRDK_BUILD_CPP_TESTS=OFF",
+    "-DRDK_BUILD_AVALON_SUPPORT=ON",
+    "-DRDK_BUILD_INCHI_SUPPORT=ON",
+    "-DRDK_BUILD_CAIRO_SUPPORT=ON",
+    "-DPYTHON_VERSION_MAJOR=3",
+    "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python",
+    "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s$(python3-config --abiflags)",
+    "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%(pyshortver)s$(python3-config --abiflags).so",
+    "-DPYTHON_NUMPY_INCLUDE_PATH=$EBROOTSCIPYMINSTACK/lib/python%(pyshortver)s/site-packages/numpy/core/include",
+])
+
+# This step does not iterate as sanity_check does.
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python{}/site-packages --add_path %(installdir)s/lib".format(local_py)
+    for local_py in multi_deps["Python"]
+]
+
+modextrapaths = { 'EBPYTHONPREFIXES' : '' }
+moduleclass = 'chem'
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': [
+        "lib/libRDKitEigenSolvers.so",
+        "lib/libRDKitRDBoost.so",
+        "lib/libRDKitRDGeneral.so",
+        "lib/python%(pyshortver)s/site-packages/rdkit/rdBase.so",
+        "lib/python%(pyshortver)s/site-packages/rdkit/RDConfig.py",
+    ],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "python --version",
+    "python -c 'import rdkit'",
+    "module load scipy-stack/2020a && python -c 'from rdkit import Chem; m = Chem.MolFromSmiles(\"Cc1ccccc1\");'",
+]
