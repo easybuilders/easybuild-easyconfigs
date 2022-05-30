@@ -1,0 +1,81 @@
+# Built with EasyBuild version 4.4.2-r70243fd7e2a672699d8f1af6e2283e599943b20b on 2021-10-07_18-34-16
+easyblock = 'CmdCp'
+
+name = 'RepeatModeler'
+version = '2.0.3'
+
+homepage = 'http://repeatmasker.org/RepeatModeler/'
+description = """RepeatModeler is a de-novo repeat family identification and 
+modeling package. At the heart of RepeatModeler are two de-novo repeat 
+finding programs ( RECON and RepeatScout ) which employ complementary 
+computational methods for identifying repeat element boundaries and family 
+relationships from sequence data. RepeatModeler assists in automating the 
+runs of RECON and RepeatScout given a genomic database and uses the output to
+ build, refine and classify consensus models of putative interspersed repeats.
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['http://repeatmasker.org/RepeatModeler/']
+sources = [
+    '%(name)s-%(version)s.tar.gz',
+]
+checksums = ['063bb8ab6b9f4bf18458504f6f90c0022ef5a5aebf2176f78f87f9e69faf7408']
+
+dependencies = [
+               ('RepeatMasker', '4.1.2-p1'),
+               ('RMBlast', '2.10.0'),
+               ('RECON', '1.08'),
+               ('RepeatScout', '1.0.5'),
+               ('Perl', '5.30.2'),
+               ('TRF', '4.09.1'),
+               ('MAFFT', '7.471', '-with-extensions'),
+               ('CD-HIT','4.8.1'),
+               ('Ninja-Phylogenetics', '0.97', '-cluster_only'),
+               ('GenomeTools', '1.6.1'),
+               ('LTR_retriever', '2.9.0')
+]
+
+skipsteps = ['build']
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('Data::Dumper', '2.179', {
+        'runtest': 'test',
+        'source_tmpl': 'Data-Dumper-2.181.tar.gz',
+        'source_urls': ['http://www.cpan.org/modules/by-module/Data/NWCLARK/'],
+        'checksums': ['c840fbaa520dc076d0a040cddb71184c41584d8f4a0c4f7b295a8d32ebd0c473'],
+    }),
+]
+
+files_to_copy=[
+   (['*'], ''),
+]
+
+
+sanity_check_paths = {
+    'files': ['configure'],
+    'dirs': ['Libraries'],
+}
+
+postinstallcmds = [
+   'sed -i -e "s|/home/rhubley/src/cd-hit-v4.8.1-2019-0228|$EBROOTCDMINHIT/bin|g" '
+   '-e "s|/home/rhubley/src/genometools-1.5.9/bin|$EBROOTGENOMETOOLS/bin|g" '
+   '-e "s|/home/rhubley/src/LTR_retriever-2.6|$EBROOTLTR_RETRIEVER|g" '
+   '-e "s|/usr/local/mafft/bin|$EBROOTMAFFT/bin|g" '
+   '-e "s|/home/rhubley/projects/NINJA/NINJA|$EBROOTNINJAMINPHYLOGENETICS/bin|g" '
+   '-e "s|/usr/local/RECON|$EBROOTRECON/bin|g" '
+   '-e "s|/usr/local/RepeatMasker|$EBROOTREPEATMASKER|g" '
+   '-e "s|/usr/local/rmblast/bin|$EBROOTRMBLAST/bin|g" '
+   '-e "s|/usr/local/RepeatScout-1.0.6|$EBROOTREPEATSCOUT/bin|g" '
+   '-e "s|/usr/local/bin/trf409.linux64|$EBROOTTRF/bin/trf|g" %(installdir)s/RepModelConfig.pm',
+   "sed -i '/use Devel::Size qw(size total_size);/d' %(installdir)s/RepeatModeler" 
+]
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': 'lib/perl5/site_perl/5.30.2'
+}
+
+moduleclass = 'bio'
