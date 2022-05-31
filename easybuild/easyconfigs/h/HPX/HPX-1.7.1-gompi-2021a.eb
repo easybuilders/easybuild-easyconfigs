@@ -32,18 +32,25 @@ dependencies = [
     ('Valgrind', '3.17.0'),
 ]
 
-configopts = '-DHPX_WITH_TESTS=ON '
+# Only consider the unit tests for now.
+# Regression and benchmarks are slow and examples require installation first.
+configopts = '-DHPX_WITH_TESTS_UNIT=ON '
+configopts += '-DHPX_WITH_TESTS_REGRESSIONS=OFF '
+configopts += '-DHPX_WITH_TESTS_BENCHMARKS=OFF '
+configopts += '-DHPX_WITH_TESTS_EXAMPLES=OFF '
+configopts += '-DHPX_WITH_EXAMPLES=OFF '
+
 configopts += '-DHPX_WITH_MALLOC=mimalloc '
 configopts += '-DHPX_WITH_PAPI=ON '
 configopts += '-DHPX_WITH_TOOLS=ON '
-configopts += '-DHPX_WITH_EXAMPLES=ON '
 configopts += '-DHPX_WITH_ASYNC_MPI=ON '
 configopts += '-DHPX_WITH_GENERIC_CONTEXT_COROUTINES=ON '
 configopts += '-DHPX_DATASTRUCTURES-WITH_ADAPT_STD_TUPLE=OFF '
+# Optional parameters
 # configopts += '-DHPX_WITH_MAX_CPU_COUNT=64 ' 
 # configopts += '-DHPX_WITH_MAX_NUMA_DOMAIN_COUNT=8 '
 
-runtest = "tests -j %(parallel)s"
+runtest = "tests -j %(parallel)s && ctest -R tests\.unit\..* -j %(parallel)s"
 
 modextrapaths = {'LD_LIBRARY_PATH': 'lib/hpx'}
 
