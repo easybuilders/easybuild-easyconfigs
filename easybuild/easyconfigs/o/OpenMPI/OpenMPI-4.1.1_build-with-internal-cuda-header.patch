@@ -1,0 +1,93 @@
+Allow building Open MPI with --with-cuda=internal, by providing an
+internal minimal cuda.h header file. This eliminate the CUDA
+(build)dependency; as long as the runtime CUDA version is 8.0+,
+libcuda.so will be dlopen'ed and used successfully.
+
+Author: Bart Oldeman <bart.oldeman@calculquebec.ca>
+--- openmpi-4.1.3.orig/config/opal_check_cuda.m4	2022-03-31 16:04:13.000000000 +0000
++++ openmpi-4.1.3/config/opal_check_cuda.m4	2022-05-04 17:37:57.576260311 +0000
+@@ -45,6 +45,12 @@
+ # macro as that would error out after not finding it in the first directory.
+ # Note that anywhere CUDA aware code is in the Open MPI repository requires
+ # us to make use of AC_REQUIRE to ensure this check has been done.
++opal_check_cuda_internal=""
++AS_IF([test "$with_cuda" = "internal"],
++      [AC_MSG_RESULT([internal support requested])
++       with_cuda="${OPAL_TOP_SRCDIR}/opal/mca/common/cuda/cuda"
++       opal_check_cuda_internal=" (internal)"
++      ])
+ AS_IF([test "$with_cuda" = "no" || test "x$with_cuda" = "x"],
+       [opal_check_cuda_happy="no"
+        AC_MSG_RESULT([not set (--with-cuda=$with_cuda)])],
+@@ -124,7 +130,7 @@
+     CUDA_SUPPORT=0
+ fi
+ 
+-OPAL_SUMMARY_ADD([[Miscellaneous]],[[CUDA support]],[opal_cuda], [$opal_check_cuda_happy])
++OPAL_SUMMARY_ADD([[Miscellaneous]],[[CUDA support]],[opal_cuda], [$opal_check_cuda_happy$opal_check_cuda_internal])
+ 
+ AM_CONDITIONAL([OPAL_cuda_support], [test "x$CUDA_SUPPORT" = "x1"])
+ AC_DEFINE_UNQUOTED([OPAL_CUDA_SUPPORT],$CUDA_SUPPORT,
+--- openmpi-4.1.3.orig/opal/mca/common/cuda/cuda/cuda.h	1970-01-01 00:00:00.000000000 +0000
++++ openmpi-4.1.3/opal/mca/common/cuda/cuda/cuda.h	2022-05-04 18:52:14.991300184 +0000
+@@ -0,0 +1,60 @@
++/* This header provides minimal parts of the CUDA Driver API, without having to
++   rely on the proprietary CUDA toolkit.
++
++   References (to avoid copying from NVidia's proprietary cuda.h):
++   https://github.com/gcc-mirror/gcc/blob/master/include/cuda/cuda.h
++   https://github.com/Theano/libgpuarray/blob/master/src/loaders/libcuda.h
++   https://github.com/CPFL/gdev/blob/master/cuda/driver/cuda.h
++   https://github.com/CudaWrangler/cuew/blob/master/include/cuew.h
++*/
++
++#define CUDA_VERSION 8000
++
++typedef void *CUcontext;
++typedef int CUdevice;
++#if defined(__LP64__) || defined(_WIN64)
++typedef unsigned long long CUdeviceptr;
++#else
++typedef unsigned CUdeviceptr;
++#endif
++typedef void *CUevent;
++typedef void *CUstream;
++
++typedef enum {
++  CUDA_SUCCESS = 0,
++  CUDA_ERROR_NOT_INITIALIZED = 3,
++  CUDA_ERROR_DEINITIALIZED = 4,
++  CUDA_ERROR_ALREADY_MAPPED = 208,
++  CUDA_ERROR_NOT_READY = 600,
++} CUresult;
++
++enum {
++  CU_EVENT_DISABLE_TIMING = 0x2,
++  CU_EVENT_INTERPROCESS = 0x4,
++};
++
++enum {
++  CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS = 0x1,
++};
++
++typedef enum {
++  CU_POINTER_ATTRIBUTE_CONTEXT = 1,
++  CU_POINTER_ATTRIBUTE_MEMORY_TYPE = 2,
++  CU_POINTER_ATTRIBUTE_SYNC_MEMOPS = 6,
++  CU_POINTER_ATTRIBUTE_BUFFER_ID = 7,
++  CU_POINTER_ATTRIBUTE_IS_MANAGED = 8,
++} CUpointer_attribute;
++
++typedef enum {
++  CU_MEMORYTYPE_HOST = 0x01,
++} CUmemorytype;
++
++typedef struct CUipcEventHandle CUipcEventHandle;
++
++#define CU_IPC_HANDLE_SIZE 64
++typedef struct CUipcMemHandle_st {
++    char reserved[CU_IPC_HANDLE_SIZE];
++} CUipcMemHandle;
++
++CUresult cuPointerGetAttributes (unsigned int numAttributes,
++  CUpointer_attribute *attributes, void **data, CUdeviceptr ptr);
