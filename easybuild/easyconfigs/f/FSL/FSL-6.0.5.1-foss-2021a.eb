@@ -1,8 +1,6 @@
 # This build still relies on the following libraries (or part of them) shipped with FSL:
 #    GDCHART, libprob, libcprob, cprob, newran, newmat
 # Attempts to use externally built libraries failed. Worth trying again in the future...
-#
-# Added fslpy 3.7.1, which includes fixes for temporary file handling
 
 name = 'FSL'
 version = '6.0.5.1'
@@ -14,7 +12,10 @@ toolchain = {'name': 'foss', 'version': '2021a'}
 toolchainopts = {'cstd': 'c++11'}
 
 source_urls = ['https://www.fmrib.ox.ac.uk/fsldownloads/']
-sources = ['%(namelower)s-%(version)s-sources.tar.gz']
+sources = [
+    '%(namelower)s-%(version)s-sources.tar.gz',
+    {'filename': 'FSL-%(version)s-condarc', 'extract_cmd': "cp %s ."},
+]
 patches = [
     'FSL-6.0.5.1_Makefile_fixes.patch',
     'FSL-6.0.5.1_disable_cuda.patch',
@@ -58,21 +59,28 @@ dependencies = [
 
 prebuildopts = 'export CPATH=%(installdir)s/fsl/extras/include:${CPATH} &&'
 
-modextrapaths = {'PYTHONPATH': ['fsl/lib/python%(pyshortver)s/site-packages']}
+_conda_env_cmd_list = [
+    'eval "$(${EBROOTMINICONDA3}/bin/conda shell.bash hook)" &&',
+    "CONDA_PKGS_DIRS=${TMPDIR}",  # need to check where best to dump the pkg files
+    "CONDARC=%(installdir)s/FSL-%(version)s-condarc",
+    "${EBROOTMINICONDA3}/bin/conda",
+    "env create --verbose",
+    "-f %(installdir)s/fsl/etc/fslconf/fslpython_environment.yml",
+    "-p %(installdir)s/fsl/fslpython/conda-env",
+]
 
-# The executable files 'imglob' and 'imcp' come from fslpy
-exts_defaultclass = 'PythonPackage'
-exts_default_options = {
-    'download_dep_fail': True,
-    'use_pip': True,
-}
+_conda_symlink_cmd_list = [
+    "cd %(installdir)s/fsl/fslpython/conda-env/bin;",
+    "ln -s %(installdir)s/fsl/fslpython/conda-env/bin/python ../../../bin/fslpython;",
+    "ln -s %(installdir)s/fsl/fslpython/conda-env/bin/ipython ../../../bin/fslipython;",
+    "ln -s %(installdir)s/fsl/fslpython/conda-env/bin/python ../../../bin/fslpythonw;",
+    "for f in *; do ln -s ../fslpython/conda-env/bin/$f ../../../bin; done;",
+    "rm ../../../bin/{python*,pip*,wheel*}",
+]
 
-exts_list = [
-    ('fslpy', '3.8.1', {
-        'installopts': '--prefix=%(installdir)s/fsl',
-        'source_urls': ['https://pypi.python.org/packages/source/f/fslpy/'],
-        'checksums': ['9314df8695bc185e9bca2771fef8fd561253fdbcd82b477ebdcbaf090b9205de'],
-    }),
+postinstallcmds = [
+    " ".join(_conda_env_cmd_list),
+    " ".join(_conda_symlink_cmd_list),
 ]
 
 modextravars = {
@@ -82,6 +90,6 @@ modextravars = {
     'FSLWISH': 'wish8.6'
 }
 
-sanity_check_commands = ["python -c 'import %(namelower)s' "]
+sanity_check_commands = ["fslpython --version"]
 
 moduleclass = 'bio'
