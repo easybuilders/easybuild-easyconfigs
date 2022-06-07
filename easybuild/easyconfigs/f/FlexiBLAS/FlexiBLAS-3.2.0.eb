@@ -2,6 +2,8 @@ easyblock = 'Bundle'
 
 name = 'FlexiBLAS'
 version = '3.2.0'
+modaltsoftname = 'flexiblascore'
+hidden = True
 
 homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
 description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
@@ -54,6 +56,21 @@ components = [
         },
     }),
 ]
+
+# these can be accessed via the RSNT_ARCH patch in arch-specific hidden FlexiBLAS modules
+postinstallcmds = [
+    # move lapacke headers to flexiblas directory
+    'mv %(installdir)s/include/*.h %(installdir)s/include/flexiblas',
+    'echo "[BLIS]" > %(installdir)s/etc/flexiblasrc.d/BLIS.conf',
+    'echo "library = libflexiblas_blis.so" >> %(installdir)s/etc/flexiblasrc.d/BLIS.conf',
+    'echo "[OpenBLAS]" > %(installdir)s/etc/flexiblasrc.d/OpenBLAS.conf',
+    'echo "library = libflexiblas_openblas.so" >> %(installdir)s/etc/flexiblasrc.d/OpenBLAS.conf',
+]
+
+modextravars = {
+    'EBROOTFLEXIBLASCORE': '%(installdir)s',
+    'EBVERSIONFLEXIBLASCORE': '%(version)s',
+}
 
 modextrapaths = {'CPATH': 'include/flexiblas'}
 
