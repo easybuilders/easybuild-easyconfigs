@@ -1,0 +1,34 @@
+name = 'FlexiBLAS-backends'
+easyblock = 'EB_FlexiBLAS'
+version = '3.2.0'
+# only used for backends directly from FlexiBLAS-with-SYSTEM-toolchain
+modaltsoftname = 'flexiblas'
+hidden = True
+
+homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
+description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
+used by a program without recompiling or relinking it."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+local_extra_flags = "-fstack-protector-strong -fstack-clash-protection"
+toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
+
+source_urls = ['https://github.com/mpimd-csc/flexiblas/releases/download/v%(version)s/']
+sources = ['flexiblas-%(version)s.tar.gz']
+patches = ['FlexiBLAS-3.0.4_fix-imkl.patch']
+checksums = [
+    'a3f4d66a30b6fa6473e492de86d34abc5f9d4e69d4d91ba23618388e8df05904',  # flexiblas-3.2.0.tar.gz
+    'a078e46ad126574cc42314abd5b40461cdc6e950af79d105dbf92875c254c87c',  # FlexiBLAS-3.0.4_fix-imkl.patch
+]
+
+# note: first listed library will be used as default by FlexiBLAS,
+# unless otherwise specified via easyconfig parameter flexiblas_default
+builddependencies = [
+    ('imkl', '2022.1.0'),
+    ('BLIS', '0.9.0'),
+    ('OpenBLAS', '0.3.20'),
+]
+
+flexiblas_default = 'imkl'
+
+moduleclass = 'lib'

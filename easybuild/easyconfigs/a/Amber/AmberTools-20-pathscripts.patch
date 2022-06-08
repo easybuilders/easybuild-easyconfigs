@@ -1,0 +1,83 @@
+Patch to bail out of the pathscripts amber.sh and amber.csh, when
+environment variables AMBERTOOLS and EBPYTHONPREFIXES already
+exist and are set correctly.
+
+This patch is for Amber/AmberTools without QUICK.
+
+Explanation:
+Amber/AmberTools install the pathscripts amber.sh and amber.csh that set/extend
+the environment variables AMBERTOOLS, PATH, PYTHONPATH, PERL5LIB
+when they are "sourced".
+It's better to handle this in the module, so that it can be cleanly unloaded.
+Also using EBPYTHONPREFIXES instead of PYTHONPATH allows for Python packages
+to "shadow" those versions that are installed within the module.
+
+Author: Oliver Stueker (ACENET)
+
+diff -ru orig/cmake-packaging/pathscripts/amber.in.csh src/cmake-packaging/pathscripts/amber.in.csh
+--- amber20_src.orig/cmake-packaging/pathscripts/amber.in.csh	2021-04-26 11:15:47.000000000 -0230
++++ amber20_src/cmake-packaging/pathscripts/amber.in.csh	2022-06-02 14:13:35.237735065 -0230
+@@ -16,13 +16,21 @@
+         echo "          Your shell does not appear to be a C shell:  $0"
+ endif
+ 
+-# Get path used for this source file (credit scott brozell).
+-set invocationpath = `echo $_ | cut -d' ' -f2- | sed "s@$myname.*@@"`
+-if ( "$invocationpath" == '' ) then
+-        set invocationpath = '.'
+-endif
++## Get path used for this source file (credit scott brozell).
++#set invocationpath = `echo $_ | cut -d' ' -f2- | sed "s@$myname.*@@"`
++#if ( "$invocationpath" == '' ) then
++#        set invocationpath = '.'
++#endif
++
++set TEMP_AMBERHOME = "$EBROOTAMBERTOOLS"
++
++if ( "$AMBERHOME" != "" && "$AMBERHOME" == "$TEMP_AMBERHOME" && "$EBPYTHONPREFIXES" =~ "$TEMP_AMBERHOME" ) then
++    echo "The environment has already been set by the module."
++    echo "Not making any changes."
++else
++# skip to EOF
+ 
+-setenv AMBERHOME `cd "$invocationpath" >&! /dev/null; pwd`
++setenv AMBERHOME $TEMP_AMBERHOME
+ setenv PATH "$AMBERHOME/bin:@EXTRA_PATH_PART@$PATH"
+ 
+ # Add Amber lib folder to LD_LIBRARY_PATH (if platform supports it).  Note that
+@@ -55,3 +63,5 @@
+ 	setenv PYTHONPATH "$AMBERHOME@AMBERSH_RELATIVE_PYTHONPATH@"
+ endif
+ 
++endif # closes else clause to skip to end
++
+diff -ru orig/cmake-packaging/pathscripts/amber.in.sh src/cmake-packaging/pathscripts/amber.in.sh
+--- orig/cmake-packaging/pathscripts/amber.in.sh	2022-06-02 14:13:02.166509203 -0230
++++ src/cmake-packaging/pathscripts/amber.in.sh	2022-06-02 14:15:06.652359575 -0230
+@@ -18,7 +18,15 @@
+     exit 2
+ fi
+ 
+-export AMBERHOME=$(cd "$(dirname "$this_script")"; pwd)
++TEMP_AMBERHOME=$(cd "$(dirname "$this_script")"; pwd)
++if [[ -n $AMBERHOME && "$AMBERHOME" == "$TEMP_AMBERHOME" && \
++      "$EBPYTHONPREFIXES" =~ "$TEMP_AMBERHOME"  ]]; then
++   echo "The environment has already been set by the module."
++   echo "Not making any changes."
++else 
++# skip from here to EOF
++
++export AMBERHOME=$TEMP_AMBERHOME
+ export PATH="$AMBERHOME/bin:@EXTRA_PATH_PART@$PATH"
+ 
+ # Add Amber lib folder to LD_LIBRARY_PATH (if your platform supports it)
+@@ -48,4 +56,7 @@
+ 	else
+ 		export PYTHONPATH="$AMBERHOME@AMBERSH_RELATIVE_PYTHONPATH@:$PYTHONPATH"
+ 	fi
+-fi
+\ No newline at end of file
++fi
++
++fi # closes else clause to skip setting variables.
++

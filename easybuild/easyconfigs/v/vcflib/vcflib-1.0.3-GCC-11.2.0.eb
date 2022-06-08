@@ -14,10 +14,14 @@ toolchain = {'name': 'GCC', 'version': '11.2.0'}
 
 source_urls = [GITHUB_SOURCE]
 sources = ['v%(version)s.tar.gz']
-patches = ['%(name)s-%(version)s_use-external-deps.patch']
+patches = [
+    '%(name)s-%(version)s_use-external-deps.patch',
+    'vcflib-1.0.3_fix-shared-linking.patch',
+]
 checksums = [
     '5fd05f46dc251a56a322809da92c93c85318036aa9ac39a2eefc4fbd39b5df6c',  # v1.0.3.tar.gz
     '58ac47209e74dff9b14f2f4790990d4104dfa4dd7218747af9913d003d309747',  # vcflib-1.0.3_use-external-deps.patch
+    '2584e33e447c07a66eefc46263161873498910e19035f9beed1600cbd05fd4b0',  # vcflib-1.0.3_fix-shared-linking.patch
 ]
 
 builddependencies = [
@@ -49,9 +53,13 @@ preconfigopts += " -e 's|multichoose.h|multichoose/multichoose.h|g' -e 's|fileve
 preconfigopts += " -e 's|tabix.hpp|tabixpp/tabix.hpp|g' -e 's|Fasta.h|fastahack/Fasta.h|g'"
 preconfigopts += " -e 's|disorder.h|smithwaterman/disorder.h|g' {} \; && "
 
+postinstallcmds = ["cp -r %(builddir)s/%(name)s-%(version)s/scripts %(installdir)s"]
+
+modextrapaths = {'PATH': ['scripts']}
+
 sanity_check_paths = {
     'files': ['bin/vcfannotate', 'bin/vcfcombine', 'lib/libvcflib.%s' % SHLIB_EXT],
-    'dirs': [],
+    'dirs': ['scripts'],
 }
 
 sanity_check_commands = ["vcfremap"]

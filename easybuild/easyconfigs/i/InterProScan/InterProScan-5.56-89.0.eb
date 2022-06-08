@@ -1,0 +1,44 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = "5.56-89.0"
+
+homepage = 'http://www.ebi.ac.uk/interpro/'
+
+description = """
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+print('Installing InterProScan %(version)s with data linked from data.rsnt')
+
+toolchain = SYSTEM
+
+source_urls = ['ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/%(version)s']
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+checksums = ['1894ad56276725225a0318a1bea53bded855506e9ee003d7cabce8be93c7be9c']
+
+dependencies = [
+    ('Java','11.0.2',),
+    ('Python', '3.7',),
+    ('Perl', '5.30.2'),
+]
+
+modextrapaths = {'PATH': '.'}
+
+postinstallcmds = [
+    'export DATA_DIR=$(echo %(installdir)s | sed "s/-/./g") && '
+    'export DATA_DIR=${DATA_DIR///soft.computecanada.ca\/easybuild\/software\///data.rsnt.computecanada.ca\/content\/easybuild\/data/}'
+    '&& for i in h3f h3i h3m h3p; do find . -name "*.${i}" -exec rm {} + ; done &&'
+    'python %(installdir)s/initial_setup.py && mkdir -p ${DATA_DIR} && cp -r data/* ${DATA_DIR} && rm -rf %(installdir)s/data/* && '
+    "ln -s ${DATA_DIR}/* %(installdir)s/data/ && sed -i 's/head -n 1/grep version/g' %(installdir)s/interproscan.sh",
+]
+
+sanity_check_paths = {
+    'files': ['%(namelower)s-%(version_major)s.jar', '%(namelower)s.sh', '%(namelower)s.properties'],
+    'dirs': ['bin', 'lib',],
+}
+
+modextravars = {'JAVA': '/cvmfs/soft.computecanada.ca/easybuild/software/2020/Core/java/11.0.2/bin/java'}
+
+moduleclass = 'bio'

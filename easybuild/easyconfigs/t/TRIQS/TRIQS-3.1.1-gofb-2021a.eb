@@ -1,0 +1,116 @@
+easyblock = 'CMakeMake'
+
+name = 'TRIQS'
+version = '3.1.1'
+
+homepage = 'https://triqs.github.io/triqs'
+description = """
+ TRIQS (Toolbox for Research on Interacting Quantum Systems) is a
+ scientific project providing a set of C++ and Python libraries to
+ develop new tools for the study of interacting quantum systems.
+"""
+
+docurls = ['https://triqs.github.io/triqs/%(version_major_minor)s.x/']
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'gofb', 'version': '2021a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/TRIQS/triqs/releases/download/%(version)s/']
+sources = ['triqs-%(version)s.tar.gz']
+checksums = ['cf4f6064ea962fc088e0c2833bf7c4e52f4c827ea331bf3c57d1c9303649042b']
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('Clang', '13.0.1'),
+    ('FFTW', '3.3.9'),
+    ('HDF5', '1.12.1'),
+    ('mpi4py', '3.1.3'),
+    ('SciPy-Stack', '2022a'),
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('pytest', '7.0.1'),
+]
+
+multi_deps = {'Python': ['3.8','3.9','3.10']}
+
+#install Python package Mako needed for configure step
+preconfigopts = ' && '.join([
+    'PYTHONPATH=$PYTHONPATH:%(builddir)s/lib/python%(pyshortver)s/site-packages',
+    'pip install mako==1.1.4 --prefix=%(builddir)s/ && '
+])
+
+installopts = ' && '.join([
+#reinstall mako needed for TRIQS extension 
+#don't use keeppreviousinstall=True as we need manually to delete the installdir during rebuild
+    " && pip install --prefix=%(installdir)s mako==1.1.4 --no-index",
+#TRIQS set LD_LIBRARY_PATH for its Python extension to find its lib
+#However, we don't not use LD_LIBRARY_PATH and to avoid sourcing triqsvar.sh
+#each time, we add installdir/lib to the RPATH
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --any_interpreter --add_path %(installdir)s/lib"
+])
+
+separate_build_dir = True
+
+#runtest = 'test'
+
+exts_defaultclass = "CMakePythonPackage"
+exts_list = [
+    ('triqs_maxent', '1.1.1', {
+        'source_urls' : ['https://github.com/TRIQS/maxent/releases/download/%(version)s/'],
+        'sources' : ['maxent-%(version)s.tar.gz'],
+        'checksums' : ['b0e00bcd5e8b143faf23d47225c53b8ceec36537ce4a97fe725874e7e9214289'],
+        'configopts': ' '.join([
+            '-DBuild_Documentation=OFF',
+            '-DMeasureG2=ON',
+            '-DHybridisation_is_complex=ON',
+            '-DLocal_hamiltonian_is_complex=ON',
+        ]),
+    }),
+    ('triqs_cthyb', '3.1.0', {
+        'source_urls' : ['https://github.com/TRIQS/cthyb/releases/download/%(version)s/'],
+        'sources' : ['cthyb-%(version)s.tar.gz'],
+        'checksums' : ['8d6d2c4d5b3928d062b72fad4ea9df9aae198e39dd9c1fd3cc5dc34a5019acc0'],
+    }),
+    ('triqs_hubbardI', '3.1.0', {
+        'source_urls' : ['https://github.com/TRIQS/hubbardI/releases/download/%(version)s/'],
+        'sources' : ['hubbardI-%(version)s.tar.gz'],
+        'checksums' : ['a5748c90bfe4138f37c516fad5fb4cdc02bca3283a2328558d9c3224e0d372c7'],
+        'modulename' : 'triqs_hubbardI',
+    }),
+    ('triqs_tprf', '3.1.0', {
+        'source_urls' : ['https://github.com/TRIQS/tprf/releases/download/%(version)s/'],
+        'sources' : ['tprf-%(version)s.tar.gz'],
+        'checksums' : ['75f6e79d891342951652353ea4d9914074d9947c67cad60844ebaa3f82bd17b5'],
+    }),
+    ('triqs_dft_tools', '3.1.0', { #https://triqs.github.io/dft_tools/
+        'source_urls' : ['https://github.com/TRIQS/dft_tools/releases/download/%(version)s/'],
+        'sources' : ['dft_tools-%(version)s.tar.gz'],
+        'checksums' : ['57b7d0fe5a96c5a42bb684c60ca8e136a33e1385bf6cd7e9d1371fa507dc2ec4'],
+    }),
+    ('solid_dmft', '3.1.1', { #https://flatironinstitute.github.io/solid_dmft/      
+        'source_urls' : ['https://github.com/flatironinstitute/solid_dmft/archive/refs/tags/'],
+        'sources' : ['%(version)s.tar.gz'],
+        'checksums' : ['ea6fd229272a14b8aa36be2187a37cd31b57fbc3a5181177cd012764b6b6c068'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libtriqs.%s' % SHLIB_EXT],
+    'dirs': ['include/triqs', 'include/itertools', 'include/mpi', 'include/cpp2py',
+             'lib/python%(pyshortver)s/site-packages', 'share'],
+}
+
+sanity_check_commands = [
+    "triqs++ --help",
+    "c++2py --help",
+    "python -c 'import triqs'"
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+
+moduleclass = 'phys'

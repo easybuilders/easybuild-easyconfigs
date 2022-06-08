@@ -1,0 +1,85 @@
+easyblock = 'Bundle'
+
+name = 'FlexiBLAS'
+version = '3.0.4'
+
+homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
+description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
+used by a program without recompiling or relinking it."""
+
+toolchain = {'name': 'NVHPC', 'version': '22.1'}
+local_extra_flags = "-D__ELF__"
+toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Python', '3.9.6'),  # required for running the tests
+    ('BLIS', '0.8.1'),
+    ('OpenBLAS', '0.3.18'),
+    # imkl is commented out, since installing it requires accepting the Intel oneAPI EULA;
+    # note: also commented out the lines below to add imkl to 'backends'!
+    ('imkl', {'arch=x86_64': '2021.4.0', 'arch=*': False}, '', True),
+]
+
+# note: first listed backend will be used as default by FlexiBLAS,
+# unless otherwise specified via easyconfig parameter flexiblas_default
+local_backends = ['OpenBLAS', 'BLIS']
+
+if ARCH == 'x86_64':
+     local_backends.append('imkl')
+
+default_component_specs = {'start_dir': '%(namelower)s-%(version)s'}
+sanity_check_all_components = True
+
+# Also build and install LAPACKE, which FlexiBLAS does not support yet
+components = [
+    (name, version, {
+        'source_urls': ['https://csc.mpi-magdeburg.mpg.de/mpcsc/software/flexiblas/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+	'patches': [
+             'FlexiBLAS-3.0.4_fix-imkl.patch',
+             'FlexiBLAS-3.0.4_fix-wrapper_blas_intel.patch',
+             'FlexiBLAS-3.0.4_remove-semicolon.patch',
+        ],
+        'checksums': [
+             '50a88f2e88994dda91b2a2621850afd9654b3b84820e737e335687a46751be5c',  # flexiblas-3.0.4.tar.gz
+             'a078e46ad126574cc42314abd5b40461cdc6e950af79d105dbf92875c254c87c',  # FlexiBLAS-3.0.4_fix-imkl.patch
+             '30ae7d1edbcff2beb18bca9b751dcaf0bf9a996d41fbe669b0a11592ec01c7ac',  # FlexiBLAS-3.0.4_fix-wrapper_blas_intel.patch
+             'a3bbcff7aeca6f8bab989e7e3a8069f2b7b660e4559042221eecaa30dc0ce300',  # FlexiBLAS-3.0.4_remove-semicolon.patch
+        ],
+       	'configopts': '-DABI=Intel',
+        'backends': local_backends,
+	'flexiblas_default': 'imkl',
+    }),
+    ('LAPACK', '3.9.0', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'patches': ['%(name)s-%(version)s-restore-missing-prototypes.patch',
+                    '%(name)s-%(version)s-fix-cmake.patch'],
+        'checksums': [
+             '106087f1bb5f46afdfba7f569d0cbe23dacb9a07cd24733765a0e89dbe1ad573',
+             '327d62ee39eeb967ce48b4ed0b95e78c6210f688b5c3f944810aafe68d2dadfa',
+             'c4ec266ba64efd3d93482e17c4e1e34034121e64e392613c3c4b01d9a4febffd',  # LAPACK-3.9.0-fix-cmake.patch
+	],
+        'preconfigopts': 'module unload imkl && ',
+        'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
+        'sanity_check_paths': {
+            'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
+            'dirs': [],
+        },
+    }),
+]
+
+postinstallcmds = [
+    # symlink to be able to use the GCC-compiled FlexiBLAS; the PGI-compiled one is called
+    # libflexiblas_intel.so.
+    'ln -s ../../../../../Core/%(namelower)s/%(version)s/lib64/libflexiblas.so{,.3,.3.0} %(installdir)s/lib64',
+]
+
+modextrapaths = {'CPATH': 'include/flexiblas'}
+
+moduleclass = 'lib'
+
