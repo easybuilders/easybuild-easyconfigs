@@ -1,0 +1,81 @@
+# This build still relies on the following libraries (or part of them) shipped with FSL:
+#    GDCHART, libprob, libcprob, cprob, newran, newmat
+# Attempts to use externally built libraries failed. Worth trying again in the future...
+#
+# Added fslpy 3.7.1, which includes fixes for temporary file handling
+
+name = 'FSL'
+version = '6.0.5.1'
+
+homepage = 'https://www.fmrib.ox.ac.uk/fsl/'
+description = """FSL is a comprehensive library of analysis tools for FMRI, MRI and DTI brain imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://www.fmrib.ox.ac.uk/fsldownloads/']
+sources = ['%(namelower)s-%(version)s-sources.tar.gz']
+patches = [
+    'FSL-6.0.5.1_Makefile_fixes.patch',
+    'FSL-6.0.5.1_disable_cuda.patch',
+    'FSL-6.0.5.1_build_fixes.patch',
+    'FSL-6.0.2_Build_extras.patch',
+    'FSL-6.0.1_Fix_fsl_exec_script.patch',
+]
+checksums = [
+    'd8ab2ebc87d3e33ce1097dde18d8a55f62d4a27b45efc4f68adccfb6e8e1425c',  # fsl-6.0.5.1-sources.tar.gz
+    '09a80c653af682179e3c1f7a30c98cf9af473ec2634ec79419ab75f86ee9889a',  # FSL-6.0.5.1_Makefile_fixes.patch
+    '20a9026635ba9e07e89146627268a3fbc9571e7e2499d891eafeb17f01bc6556',  # FSL-6.0.5.1_disable_cuda.patch
+    '54ea189a0e17859e39d43a0e83172e8261d4684bab2c878e9b72f6d398c3d064',  # FSL-6.0.5.1_build_fixes.patch
+    '168157f07818e7dfd04c222916e663e9d21db84b4b86df5b79bab56e3bf8ccf5',  # FSL-6.0.2_Build_extras.patch
+    'aa155f8576dc5f010757ecf66fc0bf673454b6c6c40346cbb01cbe59236ed6ef',  # FSL-6.0.1_Fix_fsl_exec_script.patch
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('Boost', '1.76.0'),
+    ('libgd', '2.3.1'),
+    ('libxml2', '2.9.10'),
+    ('libxml++', '2.40.1'),
+    ('SQLite', '3.35.4'),
+    ('libpng', '1.6.37'),
+    ('Tk', '8.6.11'),
+    ('NLopt', '2.7.0'),
+    ('freeglut', '3.2.1'),
+    ('expat', '2.2.9'),
+    ('zlib', '1.2.11'),
+    ('VTK', '9.0.1'),
+    ('GSL', '2.7'),
+    ('Qwt', '6.1.5'),
+    ('h5py', '3.2.1'),
+]
+
+prebuildopts = 'export CPATH=%(installdir)s/fsl/extras/include:${CPATH} &&'
+
+modextrapaths = {'PYTHONPATH': ['fsl/lib/python%(pyshortver)s/site-packages']}
+
+# The executable files 'imglob' and 'imcp' come from fslpy
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('fslpy', '3.8.1', {
+        'installopts': '--prefix=%(installdir)s/fsl',
+        'source_urls': ['https://pypi.python.org/packages/source/f/fslpy/'],
+        'checksums': ['9314df8695bc185e9bca2771fef8fd561253fdbcd82b477ebdcbaf090b9205de'],
+    }),
+]
+
+modextravars = {
+    'FSLOUTPUTTYPE': 'NIFTI_GZ',
+    'FSLMULTIFILEQUIT': 'TRUE',
+    'FSLTCLSH': 'tclsh',
+    'FSLWISH': 'wish8.6'
+}
+
+sanity_check_commands = ["python -c 'import %(namelower)s' "]
+
+moduleclass = 'bio'
