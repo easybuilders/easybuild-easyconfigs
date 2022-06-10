@@ -1,0 +1,116 @@
+easyblock = 'CMakeMake'
+
+name = 'HIP'
+version = '4.5.0'
+versionsuffix = '-amd'
+
+homepage = 'https://github.com/ROCm-Developer-Tools/HIP'
+description = """HIP is a C++ Runtime API and Kernel Language that allows
+developers to create portable applications for AMD and NVIDIA GPUs from single
+source code."""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/ROCm-Developer-Tools/hipamd/archive/'],
+        'download_filename': 'rocm-%(version)s.tar.gz',
+        'filename': 'hipamd-rocm-%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/ROCm-Developer-Tools/ROCclr/archive/'],
+        'download_filename': 'rocm-%(version)s.tar.gz',
+        'filename': 'ROCclr-rocm-%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/ROCm-Developer-Tools/HIP/archive/'],
+        'download_filename': 'rocm-%(version)s.tar.gz',
+        'filename': 'HIP-rocm-%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/RadeonOpenCompute/ROCm-OpenCL-Runtime/archive/'],
+        'download_filename': 'rocm-%(version)s.tar.gz',
+        'filename': 'ROCm-OpenCL-Runtime-rocm-%(version)s.tar.gz',
+    },
+]
+
+patches = ['hipamd-rocm-%(version)s-remove-testing.patch']
+
+checksums = [
+    '7b93ab64d6894ff9b5ba0be35e3ed8501d6b18a2a14223d6311d72ab8a9cdba6',  # hipamd-rocm-4.5.0.tar.gz
+    'ca8d6305ff0e620d9cb69ff7ac3898917db9e9b6996a7320244b48ab6511dd8e',  # ROCclr-rocm-4.5.0.tar.gz
+    '4026f31fb4f8050e9aa9d4294f29c3410bfb38422dbbae4236ccd65fed4d55b2',  # HIP-rocm-4.5.0.tar.gz
+    '3a163aed24619b3faf5e8ba17325bdcedd1667a904ea20914ac6bdd33fcdbca8',  # ROCm-OpenCL-Runtime-rocm-4.5.0.tar.gz
+    'bd7651bdb4c38622c7a3ea4fd1be91118917bdf1e1125686c7fc2ecd0ea9db14',  # hipamd-4.5.0-remove-testing.patch
+]
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('CMake', '3.21.1'),
+]
+dependencies = [
+    ('Clang-AOMP', '%(version)s'),
+    ('Perl', '5.34.0'),
+    ('ROCR-Runtime', '%(version)s'),
+    ('ROCm-CompilerSupport', '%(version)s'),
+    ('libglvnd', '1.3.3'),
+    ('libxml2', '2.9.10'),
+    ('numactl', '2.0.14'),
+    ('rocm-cmake', '%(version)s'),
+    ('rocminfo', '%(version)s'),
+    ('zlib', '1.2.11'),
+]
+
+# AMD uses 'gfx' to identify the GPU, the first number identifies the generation, according to
+# https://www.x.org/wiki/RadeonFeature/#index5h2 while the rest identifies the specific GPU.
+# In the context of EasyBuild this identifier can be thought of as equivalent to the 'sm_<xx>'
+# nomenclature of Nvidia.
+local_default_gfx = 'gfx900'
+
+configopts = "-DAMD_OPENCL_PATH=%(builddir)s/ROCm-OpenCL-Runtime-rocm-%(version)s/"
+configopts += " -DHIP_COMMON_DIR=%(builddir)s/HIP-rocm-%(version)s/"
+configopts += " -DHIP_PLATFORM=amd"
+configopts += " -DOFFLOAD_ARCH_STR='%s'" % local_default_gfx
+configopts += " -DROCCLR_PATH=%(builddir)s/ROCclr-rocm-%(version)s/"
+
+postinstallcmds = [
+    'sed -i "s|HIP_CLANG_INCLUDE_PATH = .*|'
+    'HIP_CLANG_INCLUDE_PATH = \\$ENV{\"HIP_CLANG_INCLUDE_PATH\"};|g" %(installdir)s/bin/hipcc',
+    'sed -i "s|ROCM_AGENT_ENUM = .*|ROCM_AGENT_ENUM = \"rocm_agent_enumerator\";|g" %(installdir)s/bin/hipcc',
+]
+
+sanity_check_paths = {
+    'files': ['bin/hipcc', 'bin/hipconfig', 'include/hip/hip_common.h', 'include/hip/hip_runtime.h',
+              'lib/libamdhip64.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+sanity_check_commands = [
+    'hipcc --help',
+    'hipconfig --full'
+]
+
+modextravars = {
+    'HIP_COMPILER': 'clang',
+    'HIP_INCLUDE_PATH': '%(installdir)s/include',
+    'HIP_LIB_PATH': '%(installdir)s/lib',
+    'HIP_PATH': '%(installdir)s',
+    'HIP_RUNTIME': 'rocclr',
+    'ROCM_PATH': '%(installdir)s',
+}
+
+modluafooter = """
+setenv("DEVICE_LIB_PATH", os.getenv("EBROOTCLANGMINAOMP") .. "/amdgcn/bitcode")
+setenv("HIP_CLANG_INCLUDE_PATH", os.getenv("EBROOTCLANGMINAOMP") .. "/include")
+setenv("HIP_CLANG_PATH", os.getenv("EBROOTCLANGMINAOMP") .. "/bin")
+setenv("HSA_PATH", os.getenv("EBROOTROCRMINRUNTIME"))
+"""
+
+modtclfooter = """
+setenv DEVICE_LIB_PATH $::env(EBROOTCLANGMINAOMP)/amdgcn/bitcode
+setenv HIP_CLANG_INCLUDE_PATH $::env(EBROOTCLANGMINAOMP)/include
+setenv HIP_CLANG_PATH $::env(EBROOTCLANGMINAOMP)/bin
+setenv HSA_PATH $::env(EBROOTROCRMINRUNTIME)
+"""
+
+moduleclass = 'tools'

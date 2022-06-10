@@ -1,0 +1,34 @@
+easyblock = 'ConfigureMake'
+
+name = 'Judy'
+version = '1.0.5'
+
+homepage = 'http://judy.sourceforge.net/'
+description = "A C library that implements a dynamic array."
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+
+source_urls = ['http://downloads.sourceforge.net/judy']
+sources = ['%(name)s-%(version)s.tar.gz']
+patches = ['Judy-1.0.5_parallel-make.patch']  # fix Make dependencies, so parallel build also works
+checksums = [
+    'd2704089f85fdb6f2cd7e77be21170ced4b4375c03ef1ad4cf1075bd414a63eb',  # Judy-1.0.5.tar.gz
+    '14c2eba71088f3db9625dc4605c6d7183d72412d75ef6c9fd9b95186165cf009',  # Judy-1.0.5_parallel-make.patch
+]
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('binutils', '2.31.1'),
+]
+
+preconfigopts = "sed -i 's/AM_CONFIG_HEADER/AC_CONFIG_HEADERS/g' configure.ac && "
+preconfigopts += "autoreconf -i && "
+
+configopts = '--enable-shared --enable-static'
+
+sanity_check_paths = {
+    'files': ["include/%(name)s.h", "lib/lib%(name)s.a", "lib/lib%(name)s.la", "lib/lib%%(name)s.%s" % SHLIB_EXT],
+    'dirs': ["share/man"]
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,31 @@
+From 18f954796326c9b227b655f1acc325bb76a423d6 Mon Sep 17 00:00:00 2001
+From: "A. Unique TensorFlower" <gardener@tensorflow.org>
+Date: Thu, 29 Apr 2021 11:06:40 -0700
+Subject: [PATCH] Fix alignment issue in sparse_matmul_op_test (#46460)
+
+The class relies on over-aligned members, but is constructed via non-aligned
+`new`.  Here we add Eigen's custom-aligned `new` operator to ensure proper
+alignment. This is a no-op in c++17.
+
+Fixes #46460.
+
+PiperOrigin-RevId: 371159511
+Change-Id: Ic46030a2021575299f4ef6b404b87e6f9205c6ad
+---
+ tensorflow/core/kernels/sparse_matmul_op_test.cc | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tensorflow/core/kernels/sparse_matmul_op_test.cc b/tensorflow/core/kernels/sparse_matmul_op_test.cc
+index a0f07d4c4deb1..aec5807bb834b 100644
+--- a/tensorflow/core/kernels/sparse_matmul_op_test.cc
++++ b/tensorflow/core/kernels/sparse_matmul_op_test.cc
+@@ -317,6 +317,9 @@ class SparseMatmulOpTest : public ::testing::Test {
+   // bfloat16 representation of data3
+   EIGEN_ALIGN_MAX float data3_bfloat16[kMaxPacketSize];
+   EIGEN_ALIGN_MAX float ref[kMaxPacketSize];
++
++ public:
++  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ };
+ 
+ TEST_F(SparseMatmulOpTest, BroadcastPacketTest) {

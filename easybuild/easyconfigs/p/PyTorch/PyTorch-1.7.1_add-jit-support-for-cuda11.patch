@@ -1,0 +1,32 @@
+Add SM 8 for nvrtc 11 so it can JIT compile to SM 8.0 directly instead of to 7.x first
+and the having the CUDA driver compile for SM 8.0 again.
+
+Author: Alexander Grund (TU Dresden)
+diff --git a/torch/csrc/jit/codegen/fuser/cuda/fused_kernel.cpp b/torch/csrc/jit/codegen/fuser/cuda/fused_kernel.cpp
+index 4f2f7ebb9b..b2d310316f 100644
+--- a/torch/csrc/jit/codegen/fuser/cuda/fused_kernel.cpp
++++ b/torch/csrc/jit/codegen/fuser/cuda/fused_kernel.cpp
+@@ -51,16 +51,15 @@ static void getMajorMinor(
+     minor = 0;
+   } else if (nvrtc_major <= 9 && prop->major >= 7) { // 9 supports 3-7.2
+     major = 7;
+-    if (prop->major == 7 && prop->minor <= 2)
+-      minor = prop->minor;
+-    else
+-      minor = 0;
++    minor = (prop->major == 7 && prop->minor <= 2) ? prop->minor : 0;
+   } else if (nvrtc_major <= 10 && prop->major >= 7) { // 10 supports 3-7.5
+     major = 7;
+-    if (prop->major == 7 && prop->minor <= 5)
+-      minor = prop->minor;
+-    else
+-      minor = 0;
++    minor = (prop->major == 7 && prop->minor <= 5) ? prop->minor : 0;
++  } else if (
++      nvrtc_major == 11 && nvrtc_minor == 0 &&
++      prop->major >= 8) { // 11.0 supports 3.5-8.0
++    major = 8;
++    minor = 0;
+   }
+ }
+ 

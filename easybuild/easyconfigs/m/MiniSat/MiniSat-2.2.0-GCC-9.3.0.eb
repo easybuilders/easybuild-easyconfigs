@@ -1,0 +1,42 @@
+easyblock = 'Bundle'
+
+name = 'MiniSat'
+version = '2.2.0'
+
+homepage = 'http://minisat.se/'
+description = """
+MiniSat is a minimalistic, open-source SAT solver, developed to help
+researchers and developers alike to get started on SAT."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++03'}
+
+source_urls = ['https://github.com/niklasso/minisat/archive/releases']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+default_easyblock = 'MakeCp'
+default_component_specs = {
+    'sources': [{'filename': '%(version)s.tar.gz', 'extract_cmd': "tar --strip-components 1 -xzf %s"}],
+    'checksums': ['3ed44da999744c0a1be269df23c3ed8731cdb83c44a4f3aa29b3d6859bb2a4da'],
+    'prebuildopts': 'MROOT=%(builddir)s CFLAGS="$CXXFLAGS -Wno-parentheses -fpermissive"',
+    'buildopts': "EXEC=%(namelower)s",
+    'files_to_copy': [(['%(namelower)s'], 'bin')],
+}
+components = [
+    ('MiniSat-core', version, {
+        'start_dir': 'core',
+    }),
+    ('MiniSat-simp', version, {
+        'start_dir': 'simp',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/minisat-core', 'bin/minisat-simp'],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'

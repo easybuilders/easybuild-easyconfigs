@@ -1,0 +1,33 @@
+# Includes the parallel eigen value solver (used by NWChem).
+# This requires additional external symbols during linking, so it won't work for software that doesn't use it.
+
+easyblock = 'ConfigureMake'
+name = 'GlobalArrays'
+version = '5.7.2'
+versionsuffix = '-peigs'
+
+homepage = 'https://hpc.pnl.gov/globalarrays'
+description = "Global Arrays (GA) is a Partitioned Global Address Space (PGAS) programming model"
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/GlobalArrays/ga/releases/download/']
+sources = ['v%(version)s/ga-%(version)s.tar.gz']
+checksums = ['8cd0fcfd85bc7f9c168c831616f66f1e8b9b2ca31dc7dd93cc55b27cc7fe7069']
+
+configopts = ' --with-mpi --enable-i8'
+configopts += ' --with-blas8="-L$EBROOTIMKL/mkl/lib/intel64 -lmkl_sequential -lmkl_intel_ilp64"'
+configopts += ' --with-scalapack8="-L$EBROOTIMKL/mkl/lib/intel64 -lmkl_sequential -lmkl_scalapack_ilp64"'
+# Required by NWChem:
+configopts += ' --enable-peigs --enable-underscoring'
+
+# select armci network as (Comex) MPI-1 two-sided
+configopts += ' --with-mpi-ts'
+
+sanity_check_paths = {
+    'files': ['bin/adjust.x', 'bin/collisions.x', 'bin/ga-config', 'lib/libarmci.a', 'lib/libcomex.a', 'lib/libga.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'

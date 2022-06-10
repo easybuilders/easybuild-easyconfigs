@@ -1,0 +1,53 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# Copyright:: Copyright 2013-2019 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+
+easyblock = 'EB_Score_minus_P'
+
+name = 'OTF2'
+version = '2.2'
+
+homepage = 'https://www.score-p.org'
+description = """
+ The Open Trace Format 2 is a highly scalable, memory efficient event trace
+ data format plus support library. It is the new standard trace format for
+ Scalasca, Vampir, and TAU and is open for other tools.
+
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://www.vi-hps.org/cms/upload/packages/otf2/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = [
+    'd0519af93839dc778eddca2ce1447b1ee23002c41e60beac41ea7fe43117172d',  # otf2-2.2.tar.gz
+]
+
+builddependencies = [
+    # use same binutils version that was used when building GCCcore
+    ('binutils', '2.34'),
+]
+
+dependencies = [
+    # SIONlib container support (optional):
+    ('SIONlib', '1.7.6', '-tools'),
+]
+
+configopts = '--enable-shared'
+
+sanity_check_paths = {
+    'files': ['bin/otf2-config', 'include/otf2/otf2.h',
+              'lib/libotf2.a', 'lib/libotf2.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = ['otf2-config --help']
+
+moduleclass = 'perf'

@@ -1,0 +1,44 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'MakeCp'
+
+name = 'CGmapTools'
+version = '0.1.2'
+
+homepage = 'https://cgmaptools.github.io/'
+description = "Command-line Toolset for Bisulfite Sequencing Data Analysis"
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+# https://github.com/guoweilong/cgmaptools
+github_account = 'guoweilong'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [('%(name)s-%(version)s_add-Makefile.patch', 0)]
+checksums = [
+    'afcf3d7192e74bda94ec473c46de8406b56470463c3c75fcc3dce56d646c288c',  # v0.1.2.tar.gz
+    '231fabc9a422ee3c514b310b8c8ce8b789b5f178bb8d0d6e105032939b1746fb',  # CGmapTools-0.1.2_add-Makefile.patch
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('SAMtools', '0.1.20'),
+]
+
+buildopts = 'CC="$CC" CXX="$CXX" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"'
+
+local_c_bin_list = ['ATCGbzFetchRegion', 'ATCGbzToATCGmap', 'ATCGmapToATCGbz', 'CGbzFetchRegion',
+                    'CGbzToCGmap', 'CGmapFromBAM', 'CGmapToCGbz']
+local_cpp_bin_list = ['ATCGmapMerge', 'CGmapSelectByRegion', 'CGmapMethInBed', 'CGmapMethInFragReg']
+
+files_to_copy = ['bin']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_c_bin_list + local_cpp_bin_list],
+    'dirs': []
+}
+# cpp bins return exit(1) on help
+sanity_check_commands = ['%s -h' % f for f in local_c_bin_list]
+
+moduleclass = 'bio'

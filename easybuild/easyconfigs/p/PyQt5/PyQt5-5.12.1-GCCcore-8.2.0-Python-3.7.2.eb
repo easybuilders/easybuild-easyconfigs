@@ -1,0 +1,108 @@
+easyblock = 'Bundle'
+
+name = 'PyQt5'
+version = '5.12.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.riverbankcomputing.co.uk/software/pyqt'
+description = """PyQt5 is a set of Python bindings for v5 of the Qt application framework from The Qt Company.
+This bundle includes PyQtWebEngine, a set of Python bindings for The Qt Company’s Qt WebEngine framework."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+builddependencies = [('binutils', '2.31.1')]
+dependencies = [
+    ('Python', '3.7.2'),
+    ('Qt5', '5.12.3'),
+]
+
+default_easyblock = 'ConfigureMakePythonPackage'
+
+local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+local_sip_configopts = " ".join([
+    "configure.py",
+    "--bindir %(installdir)s/bin",
+    "--incdir %(installdir)s/include",
+    "--destdir %s" % local_pylibdir,
+    "--sipdir=%(installdir)s/share/sip",
+    # required for PyQt5, cfr. https://www.riverbankcomputing.com/static/Docs/PyQt5/installation.html#downloading-sip
+    "--sip-module PyQt5.sip",
+    "--no-stubs",
+])
+
+local_pyqt5_configopts = " ".join([
+    "configure.py",
+    "--confirm-license --verbose --no-python-dbus",
+    "--bindir=%(installdir)s/bin",
+    "--destdir=%s" % local_pylibdir,
+    "--sip=%(installdir)s/bin/sip",
+    "--sip-incdir %(installdir)s/include/",
+    "--sipdir=%(installdir)s/share/sip/PyQt5",
+    "--designer-plugindir=%(installdir)s/plugins/designer",
+    "--qml-plugindir=%(installdir)s/plugins/PyQt5",
+    "--qsci-api-destdir=%(installdir)s/qsci",
+    "--no-stubs",
+])
+
+local_pyqtweb_configopts = " ".join([
+    "configure.py",
+    "--verbose",
+    "--destdir=%s/PyQt5" % local_pylibdir,
+    "--apidir=%(installdir)s/qsci",
+    "--pyqt-sipdir=%(builddir)s/PyQt5_gpl-%(version)s/sip",
+    "--no-stubs",
+])
+
+local_setup_env = "export PATH=%(installdir)s/bin:$PATH && "
+local_setup_env += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+local_sipver = '4.19.16'
+components = [
+    ('SIP', local_sipver, {
+        'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/sip/%s' % local_sipver],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['184c790d58e9527fc6bdac2bbf8638f3d1b41dea922cad8eb83172b4ba70c620'],
+        'start_dir': 'sip-%s' % local_sipver,
+        'configopts': local_sip_configopts,
+        'options': {'modulename': 'PyQt5.sip'},
+    }),
+    (name, version, {
+        'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/%(name)s/%(version)s/'],
+        'sources': ['%(name)s_gpl-%(version)s.tar.gz'],
+        'checksums': ['3718ce847d824090fd5f95ff3f13847ee75c2507368d4cbaeb48338f506e59bf'],
+        'start_dir': '%(name)s_gpl-%(version)s',
+        'preconfigopts': local_setup_env,
+        'configopts': local_pyqt5_configopts,
+        'preinstallopts': local_setup_env,
+        'options': {'modulename': 'PyQt5.QtCore'},
+    }),
+    ('PyQtWebEngine', version, {
+        'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/%(name)s/%(version)s/'],
+        'sources': ['%(name)s_gpl-%(version)s.tar.gz'],
+        'checksums': ['860704672ea1b616e1347be1f347bc1c749e64ed378370863fe209e84e9bd473'],
+        'start_dir': '%(name)s_gpl-%(version)s',
+        'preconfigopts': local_setup_env,
+        'configopts': local_pyqtweb_configopts,
+        'options': {'modulename': 'PyQt5.QtWebEngine'},
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/sip', 'include/sip.h'] + ['lib/python%%(pyshortver)s/site-packages/%s' % x for x in (
+        'sipconfig.py',
+        'sipdistutils.py',
+        '%%(name)s/sip.%s' % SHLIB_EXT,
+        '%%(name)s/QtCore.%s' % SHLIB_EXT,
+        '%%(name)s/QtWebEngine.%s' % SHLIB_EXT,
+    )],
+    'dirs': ['include', 'plugins', 'share/sip/PyQt5']
+}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'QT_INSTALL_DATA': 'qsci',
+    'QT_PLUGIN_PATH': 'plugins',
+}
+
+moduleclass = 'vis'

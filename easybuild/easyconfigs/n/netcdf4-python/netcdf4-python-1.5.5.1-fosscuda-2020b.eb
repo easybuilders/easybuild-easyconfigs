@@ -1,0 +1,53 @@
+# Author: Denis Krišťák (INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'netcdf4-python'
+version = '1.5.5.1'
+
+homepage = 'https://unidata.github.io/netcdf4-python/'
+description = """Python/numpy interface to netCDF."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchainopts = {'usempi': True}
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('netCDF', '4.7.4'),
+    ('cURL', '7.72.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('cftime', '1.4.1', {
+        'checksums': ['7c55540bc164746c3c4f86a07c9c7b9ed4dfb0b0d988348ec63cec065c58766d'],
+    }),
+    (name, version, {
+        'patches': ['netcdf4-python-1.1.8-avoid-diskless-test.patch'],
+        'source_urls': ['https://pypi.python.org/packages/source/n/netCDF4'],
+        'source_tmpl': 'netCDF4-%(version)s.tar.gz',
+        'checksums': [
+            'd957e55a667d1fc651ddef22fea10ded0f142b7d9dbbf4d08c0012d32f445abd',  # netCDF4-1.5.5.1.tar.gz
+            # netcdf4-python-1.1.8-avoid-diskless-test.patch
+            'a8b262fa201d55f59015e1bc14466c1d113f807543bc1e05a22481ab0d216d72',
+        ],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['bin/nc3tonc4', 'bin/nc4tonc3', 'bin/ncinfo'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "nc4tonc3 --help",
+    "nc3tonc4 --help",
+    "ncinfo --help",
+]
+
+moduleclass = 'data'

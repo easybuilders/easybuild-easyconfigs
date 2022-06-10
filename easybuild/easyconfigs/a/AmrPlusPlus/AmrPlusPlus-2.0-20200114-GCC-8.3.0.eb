@@ -1,0 +1,85 @@
+##
+# This is a contribution from DeepThought HPC Service, Flinders University, Adelaide, Australia
+# Homepage: 		https://staff.flinders.edu.au/research/deep-thought
+#
+# Authors::		Robert Qiao <rob.qiao@flinders.edu.au>
+# Software License::	MIT
+#
+# Notes::
+##
+
+easyblock = 'CmdCp'
+
+name = 'AmrPlusPlus'
+version = '2.0-20200114'
+local_commit = '8afc0af5234f8e322cc0f5e40cc553ecd5c932b8'
+
+github_account = 'meglab-metagenomics'
+
+homepage = 'https://megares.meglab.org/amrplusplus/latest/html/v2'
+description = """AmrPlusPlus v2.0 can process the raw data from the sequencer,
+identify the fragments of DNA, and count them. It also provides a count of the
+polymorphisms that occur in each DNA fragment with respect to the reference database.
+"""
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+source_urls = ['https://github.com/%(github_account)s/%(name)s_v%(version_major)s/archive']
+sources = [{
+    'download_filename': '%s.zip' % local_commit,
+    'filename': SOURCE_ZIP,
+}]
+checksums = ['04af67517b752e15b5add27f4584f8c11293a0ed1353d3c1dd60c3c6e2dcb329']
+
+dependencies = [
+    ('Java', '11', '', True),
+    ('BWA', '0.7.17'),
+    ('Trimmomatic', '0.39', '-Java-%(javashortver)s', True),
+    ('SAMtools', '1.10'),
+    ('Nextflow', '19.12.0', '', True),
+]
+
+local_exe_files = [
+    'main_AmrPlusPlus_v2.nf',
+    'main_AmrPlusPlus_v2_withKraken.nf',
+    'main_AmrPlusPlus_v2_withRGI_Kraken.nf',
+    'main_AmrPlusPlus_v2_withRGI.nf',
+    'launch_mpi_slurm.sh',
+    'download_minikraken.sh',
+    'nextflow.config'
+]
+
+local_dir = ['bin', 'data', 'docs', 'config']
+
+local_files = [
+    'main_AmrPlusPlus_v2.nf',
+    'bin/RGI_aro_hits.py',
+    'bin/RGI_long_combine.py',
+    'bin/samtools_idxstats.py',
+    'bin/kraken_long_to_wide.py',
+    'bin/trimmomatic_stats.py'
+]
+
+skipsteps = ['configure', 'build']
+
+files_to_copy = [
+    (local_exe_files, '%(installdir)s'),
+    (local_dir, '%(installdir)s')
+]
+
+install_cmd = "chmod +x %(installdir)s/*.nf && "
+install_cmd += "chmod +x %(installdir)s/*.sh"
+
+modextravars = {
+    'JAVA': '${EBROOTJAVA}/bin/java',
+    'BWA': '${EBROOTBWA}/bin/bwa'
+}
+
+modloadmsg = """To execute AmrPlusPlus, run:\n nextflow run $EBROOTAMRPLUSPLUS/main_AmrPlusPlus_v2.nf [options]\n"""
+
+sanity_check_paths = {
+    'files': ['%s' % x for x in local_files],
+    'dirs': ['config']
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,45 @@
+easyblock = 'Tarball'
+
+name = 'AutoMap'
+local_commit = 'ea813dd'
+version = '1.0'
+versionsuffix = '-20200324'
+
+homepage = 'https://github.com/mquinodo/AutoMap'
+description = "Tool to find regions of homozygosity (ROHs) from sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://github.com/mquinodo/AutoMap/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = ['AutoMap-%(version)s-foss-2019b%(versionsuffix)s_fix-log.patch']
+checksums = [
+    'cbf60a89984ee0e0119e362be5b620c1f28182d765280bd08c0ba6f9c7697625',  # AutoMap-1.0.tar.gz
+    'a381f130217b92a7c961234e8255c96c9ff76e2a002277c23b99f14dcacb17c6',  # AutoMap-1.0-foss-2019b-20200324_fix-log.patch
+]
+
+dependencies = [
+    ('BCFtools', '1.10.2'),
+    ('BEDTools', '2.29.2'),
+    ('Perl', '5.30.0'),
+    ('R', '3.6.2'),
+]
+
+fix_perl_shebang_for = ['Scripts/*.pl']
+
+postinstallcmds = [
+    "chmod a+x %(installdir)s/AutoMap_v%(version)s.sh",
+    "rm %(installdir)s/AutoMap_v%(version)s.sh.orig",  # remove leftovers from patch
+]
+
+sanity_check_paths = {
+    'files': ['AutoMap_v%(version)s.sh'],
+    'dirs': ['Resources', 'Scripts'],
+}
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

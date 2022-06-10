@@ -1,0 +1,47 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'MakeCp'
+
+name = 'BatMeth2'
+version = '2.1'
+
+homepage = 'https://github.com/GuoliangLi-HZAU/BatMeth2'
+description = "An Integrated Package for Bisulfite DNA Methylation Data Analysis with Indel-sensitive Mapping."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+# https://github.com/GuoliangLi-HZAU/BatMeth2
+github_account = 'GuoliangLi-HZAU'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(name)s-v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix-automake-rerun.patch']
+checksums = [
+    'c9a63601e4dad8afdf32e95bc4f066115b517121523379bc81f6f3b450a122d4',  # BatMeth2-v2.1.tar.gz
+    'ecba708843fce088383406c3c32859a0a97e39c9916b8d5318d33946d9904aba',  # BatMeth2-2.1_fix-automake-rerun.patch
+]
+
+dependencies = [
+    ('Perl', '5.30.0'),
+    ('GSL', '2.6'),
+    ('zlib', '1.2.11'),
+    ('R', '3.6.2'),
+    ('SAMtools', '0.1.20'),
+    ('fastp', '0.20.0'),
+]
+
+with_configure = True
+buildopts = '&& make copy -j %(parallel)s'
+
+files_to_copy = ['bin']
+
+fix_perl_shebang_for = ['bin/*.pl']
+
+# Testing only few scripts. Bin folder contains > 50 files
+sanity_check_paths = {
+    'files': ['bin/BatMeth2', 'bin/ann2loc.pl', 'bin/DMCannotation.r'],
+    'dirs': []
+}
+sanity_check_commands = ['BatMeth2 -h']
+
+moduleclass = 'bio'

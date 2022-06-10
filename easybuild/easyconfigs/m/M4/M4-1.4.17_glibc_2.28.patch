@@ -1,0 +1,54 @@
+fix problems occuring from changes in glibc 2.28
+https://github.com/coreutils/gnulib/commit/4af4a4a71827c0bc5e0ec67af23edef4f15cee8e
+
+diff -ru m4-1.4.17.orig/lib/freadahead.c m4-1.4.17/lib/freadahead.c
+--- m4-1.4.17.orig/lib/freadahead.c	2019-06-19 15:21:26.897812071 -0400
++++ m4-1.4.17/lib/freadahead.c	2019-06-19 15:25:40.075547063 -0400
+@@ -25,7 +25,7 @@
+ size_t
+ freadahead (FILE *fp)
+ {
+-#if defined _IO_ftrylockfile || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
++#if defined _IO_EOF_SEEN || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
+   if (fp->_IO_write_ptr > fp->_IO_write_base)
+     return 0;
+   return (fp->_IO_read_end - fp->_IO_read_ptr)
+diff -ru m4-1.4.17.orig/lib/fseeko.c m4-1.4.17/lib/fseeko.c
+--- m4-1.4.17.orig/lib/fseeko.c	2019-06-19 15:21:26.897812071 -0400
++++ m4-1.4.17/lib/fseeko.c	2019-06-19 15:27:19.368232257 -0400
+@@ -47,7 +47,7 @@
+ #endif
+ 
+   /* These tests are based on fpurge.c.  */
+-#if defined _IO_ftrylockfile || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
++#if defined _IO_EOF_SEEN || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
+   if (fp->_IO_read_end == fp->_IO_read_ptr
+       && fp->_IO_write_ptr == fp->_IO_write_base
+       && fp->_IO_save_base == NULL)
+@@ -121,7 +121,7 @@
+           return -1;
+         }
+ 
+-#if defined _IO_ftrylockfile || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
++#if defined _IO_EOF_SEEN || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
+       fp->_flags &= ~_IO_EOF_SEEN;
+       fp->_offset = pos;
+ #elif defined __sferror || defined __DragonFly__ /* FreeBSD, NetBSD, OpenBSD, DragonFly, Mac OS X, Cygwin */
+diff -ru m4-1.4.17.orig/lib/stdio-impl.h m4-1.4.17/lib/stdio-impl.h
+--- m4-1.4.17.orig/lib/stdio-impl.h	2019-06-19 15:21:26.909812152 -0400
++++ m4-1.4.17/lib/stdio-impl.h	2019-06-19 15:29:10.789003521 -0400
+@@ -21,6 +21,14 @@
+ 
+ /* BSD stdio derived implementations.  */
+ 
++/* Glibc 2.28 made _IO_IN_BACKUP private.  For now, work around this
++   problem by defining it ourselves.  FIXME: Do not rely on glibc
++   internals.  */
++
++#if !defined _IO_IN_BACKUP && defined _IO_EOF_SEEN
++# define _IO_IN_BACKUP 0x100
++#endif
++
+ #if defined __NetBSD__                         /* NetBSD */
+ /* Get __NetBSD_Version__.  */
+ # include <sys/param.h>
