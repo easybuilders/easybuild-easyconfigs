@@ -28,7 +28,9 @@ exts_list = [
         'checksums': ['6bac238ffdf24e8806c61440e755192470352850f3419a52f26ffe0a1a64f465'],
     }),
     ('reframe', version, {
-        'preinstallopts': "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && "
+        # need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing packages
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && "
                           "PYTHONPATH=%(builddir)s/reframe/reframe-%(version)s/external:$PYTHONPATH ",
         'source_tmpl': 'v%(version)s.tar.gz',
         'source_urls': ['https://github.com/eth-cscs/reframe/archive/'],
@@ -53,9 +55,7 @@ sanity_check_commands = ['reframe -V']
 
 sanity_pip_check = True
 
-# need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing extensions
 modextrapaths = {
-    'PATH': 'bin',
     # bootstrap script installs required dependencies to 'external' subdirectory
     'PYTHONPATH': 'external',
 }
