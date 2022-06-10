@@ -1,0 +1,36 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'ConfigureMake'
+
+name = 'expat'
+version = '2.2.9'
+
+homepage = 'https://libexpat.github.io'
+
+description = """
+ Expat is an XML parser library written in C. It is a stream-oriented parser
+ in which an application registers handlers for things the parser might find
+ in the XML document (like start tags)
+"""
+
+toolchain = {'name': 'FCC', 'version': '4.5.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/libexpat/libexpat/releases/download/R_%s/' % version.replace('.', '_')]
+sources = [SOURCE_TAR_BZ2]
+checksums = ['f1063084dc4302a427dabcca499c8312b3a32a29b7d2506653ecc8f950a9a237']
+
+builddependencies = [('binutils', '2.36.1')]
+
+# Since expat 2.2.6, docbook2X is needed to produce manpage of xmlwf.
+# Docbook2X needs XML-Parser and XML-Parser needs expat.
+# -> circular dependency. "--without-docbook" breaks this circle.
+configopts = ['--without-docbook']
+
+sanity_check_paths = {
+    'files': ['include/expat.h', 'lib/libexpat.a', 'lib/libexpat.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'tools'

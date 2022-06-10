@@ -1,0 +1,43 @@
+The Intel compiler throws an internal error 04010026_1450 where bitwise
+AND and OR operator are used. Converting them to logical operator seems
+more correct.
+Author: Davide Vanzo (Vanderbilt University)
+diff -ru locfit.orig/src/lf_adap.c locfit/src/lf_adap.c
+--- locfit.orig/src/lf_adap.c	2019-07-22 08:20:24.778193326 -0500
++++ locfit/src/lf_adap.c	2019-07-22 08:44:12.342245385 -0500
+@@ -118,7 +118,7 @@
+   h1 = des->h = h0;
+   done = 0; nu1 = 0.0;
+   inc = 0; ncp = 0.0;
+-  while ((!done) & (nu1<(n-p)*0.95))
++  while ((!done) && (nu1<(n-p)*0.95))
+   { fixh(sp) = (1+0.3/d)*des->h;
+     nbhd(lfd,des,0,1,sp);
+     if (locfit(lfd,des,sp,1,0,0) > 0) WARN(("aband2: failed fit"));
+@@ -129,7 +129,7 @@
+         tlo = des->cf[0]-pen(sp)*t[5];
+         tup = des->cf[0]+pen(sp)*t[5];
+ /* printf("h %8.5f  tlo %8.5f  tup %8.5f\n",des->h,tlo,tup); */
+-        done = ((tlo>cup) | (tup<clo));
++        done = ((tlo>cup) || (tup<clo));
+         if (!done)
+         { clo = MAX(clo,tlo);
+           cup = MIN(cup,tup);
+@@ -142,7 +142,7 @@
+         if (cp<mcp) { mcp = cp; h1 = des->h; }
+         if (cp>=ncp) inc++; else inc = 0;
+         ncp = cp;
+-        done = (inc>=10) | ((inc>=3) & ((t[0]-t[2])>=10) & (cp>1.5*mcp));
++        done = (inc>=10) || ((inc>=3) && ((t[0]-t[2])>=10) && (cp>1.5*mcp));
+         break;
+       case AMDI:
+         cp = mmse(lfd,sp,dv,des);
+@@ -185,7 +185,7 @@
+     { case AKAT:
+         tlo = des->cf[0]-pen(sp)*t[5];
+         tup = des->cf[0]+pen(sp)*t[5];
+-        if ((tlo>cup) | (tup<clo)) /* done */
++        if ((tlo>cup) || (tup<clo)) /* done */
+           i = 2;
+         else
+         { h1 = des->h;

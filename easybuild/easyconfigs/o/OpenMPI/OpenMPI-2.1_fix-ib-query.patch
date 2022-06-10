@@ -1,0 +1,28 @@
+commit d70f27f9b209a00b89814fd11f7895eb82bec773
+Author: Howard Pritchard <howardp@lanl.gov>
+Date:   Wed Oct 31 14:50:15 2018 -0600
+
+    btl/openib: fix a problem with ib query
+    
+    Under certain circumstances, ibv_exp_query_device was
+    returning an error due to uninitialized fields in the
+    extended attributes struct.
+    
+    Fixes: #5810
+    Fixes: #5914
+    
+    Signed-off-by: Howard Pritchard <howardp@lanl.gov>
+    (cherry picked from commit 8126779a354b3e0c720d3e1790f7b936dd5b93b2)
+
+diff --git a/opal/mca/btl/openib/btl_openib_component.c b/opal/mca/btl/openib/btl_openib_component.c
+index 44792a1..8b86cbb 100644
+--- a/opal/mca/btl/openib/btl_openib_component.c
++++ b/opal/mca/btl/openib/btl_openib_component.c
+@@ -1642,6 +1642,7 @@ static int init_one_device(opal_list_t *btl_list, struct ibv_device* ib_dev)
+         goto error;
+     }
+ #if HAVE_DECL_IBV_EXP_QUERY_DEVICE
++    memset(&device->ib_exp_dev_attr, 0, sizeof(device->ib_exp_dev_attr));
+     device->ib_exp_dev_attr.comp_mask = IBV_EXP_DEVICE_ATTR_RESERVED - 1;
+     if(ibv_exp_query_device(device->ib_dev_context, &device->ib_exp_dev_attr)){
+         BTL_ERROR(("error obtaining device attributes for %s errno says %s",

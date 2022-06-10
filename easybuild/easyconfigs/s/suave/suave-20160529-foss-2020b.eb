@@ -1,0 +1,45 @@
+easyblock = 'PythonPackage'
+
+name = 'suave'
+version = '20160529'
+
+homepage = 'https://github.com/dellytools/suave'
+description = """suave is an interactive web application to visualize read depth
+ratios between two samples and the structural variants of one of the samples
+(typically the "case" sample in a case/control setup such as tumor/normal
+comparison)."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://github.com/dellytools/suave/archive']
+sources = ['45e4963d1a2c84cc0acdfaa603f29df10ff2ce49.tar.gz']
+patches = [('suave-setup-py.patch', 1)]
+checksums = [
+    # 45e4963d1a2c84cc0acdfaa603f29df10ff2ce49.tar.gz
+    'f585f27adcf1f3a8aeaead2e5f190f6f0d23522cf6bbe1c3388f4c3270d0fb9c',
+    'aed388bae77cdb1178c4f7ad5284756dfde38f62b6739c07d88f90ed9e5a60f7',  # suave-setup-py.patch
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Flask', '1.1.2'),
+    ('h5py', '3.1.0'),
+    ('Pysam', '0.16.0.1'),
+]
+
+preinstallopts = """sed -i 's/setup(/setup(version="%(version)s",/g' setup.py && """
+
+use_pip = True
+sanity_pip_check = True
+download_dep_fail = True
+
+sanity_check_paths = {
+    'files': ['bin/suave_server', 'bin/suave_bam_to_h5'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/templates'],
+}
+
+sanity_check_commands = ['suave_server --help']
+
+options = {'modulename': 'suave_server'}
+
+moduleclass = 'bio'

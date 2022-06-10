@@ -1,0 +1,55 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'ConfigureMake'
+
+name = 'ViennaRNA'
+version = '2.4.10'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://www.tbi.univie.ac.at/RNA/'
+description = """The Vienna RNA Package consists of a C code library and several
+stand-alone programs for the prediction and comparison of RNA secondary structures."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://www.tbi.univie.ac.at/RNA/download/sourcecode/%(version_major)s_%(version_minor)s_x/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['87c1d8f25009925baa0dfae06d635ad39eefe930e372842b412b118a10ecc15c']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('flex', '2.6.4'),
+    ('pkg-config', '0.29.2'),
+    ('Bison', '3.0.5'),
+    ('SWIG', '3.0.12', versionsuffix),
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('Perl', '5.28.0'),
+    ('GSL', '2.5'),
+    ('libgd', '2.2.5'),
+    ('X11', '20180604'),
+]
+
+configopts = "--with-cluster --with-kinwalker "
+# Uncomment this if you compile on pre SSE4.1 CPU
+configopts += "--enable-sse "
+
+sanity_check_paths = {
+    'files': ['bin/RNA%s' % x for x in ['fold', 'eval', 'heat', 'pdist', 'distance',
+                                        'inverse', 'plot', 'subopt', 'Lfold', 'cofold',
+                                        'paln', 'duplex', 'alifold', 'plfold', 'up',
+                                        'aliduplex', 'Lalifold', '2Dfold', 'parconv',
+                                        'PKplex', 'plex', 'snoop', 'forester']] +
+    ['bin/Kinfold'],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+}
+
+moduleclass = 'bio'

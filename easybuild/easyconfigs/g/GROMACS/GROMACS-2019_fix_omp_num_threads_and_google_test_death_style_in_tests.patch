@@ -1,0 +1,20 @@
+Fix test execution to explicitly set OMP_NUM_THREADS when needed.
+Also make sure google death test uses threadsafe mode.
+
+Åke Sandgren, 2019-01-02
+diff -ru gromacs-2019.orig/src/testutils/TestMacros.cmake gromacs-2019/src/testutils/TestMacros.cmake
+--- gromacs-2019.orig/src/testutils/TestMacros.cmake	2018-11-13 04:49:55.000000000 +0100
++++ gromacs-2019/src/testutils/TestMacros.cmake	2019-01-02 15:39:56.010980145 +0100
+@@ -153,8 +153,11 @@
+                 list(APPEND _cmd -ntmpi ${ARG_MPI_RANKS})
+             endif()
+         endif()
++        if (ARG_OPENMP_THREADS)
++            set(_cmd "env" "OMP_NUM_THREADS=${ARG_OPENMP_THREADS}" ${_cmd})
++        endif()
+         add_test(NAME ${NAME}
+-                 COMMAND ${_cmd} --gtest_output=xml:${_xml_path})
++                 COMMAND ${_cmd} --gtest_death_test_style=threadsafe --gtest_output=xml:${_xml_path})
+         set_tests_properties(${NAME} PROPERTIES LABELS "${_labels}")
+         set_tests_properties(${NAME} PROPERTIES TIMEOUT ${_timeout})
+         add_dependencies(tests ${EXENAME})

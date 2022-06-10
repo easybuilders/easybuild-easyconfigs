@@ -1,0 +1,55 @@
+Fix for compilation error on OS with recent glibc when using Intel compilers:
+
+arithmetic.c(61): warning #274: declaration is not visible outside of function
+  int matherr(struct exception *exc)
+                     ^
+
+arithmetic.c(63): error: pointer to incomplete class type is not allowed
+      switch (exc->type) {
+              ^
+
+The R configure script only checks for the existence of the matherr function,
+and assumes the exception struct is also defined when matherr is defined by glibc's math.h .
+That is no longer the case in recent glibc versions, where the exception struct is no longer defined.
+
+author: Kenneth Hoste (HPC-UGent)
+
+See also:
+* https://community.intel.com/t5/Intel-C-Compiler/Error-when-compiling-R-from-source-code-ubuntu-18-04/td-p/1176401
+* https://stat.ethz.ch/pipermail/r-help/2020-May/466997.html
+--- R-3.6.2/configure.orig	2020-09-18 09:25:26.171766714 +0200
++++ R-3.6.2/configure	2020-09-18 09:38:59.035921459 +0200
+@@ -35539,6 +35539,15 @@
+ done
+ 
+ 
++# check for exception struct in math.h
++ac_fn_c_check_member "$LINENO" "struct exception" "type" "ac_cv_member_struct_exception_type" "#include <math.h>"
++if test "x$ac_cv_member_struct_exception_type" = xyes; then :
++cat >>confdefs.h <<_ACEOF
++#define HAVE_STRUCT_EXCEPTION 1
++_ACEOF
++fi
++
++
+ ## POSIX functions
+ for ac_func in fcntl
+ do
+--- R-3.6.2/src/main/arithmetic.c.orig	2020-09-18 09:24:17.969082474 +0200
++++ R-3.6.2/src/main/arithmetic.c	2020-09-18 09:39:53.736470218 +0200
+@@ -53,6 +53,7 @@
+ #include <errno.h>
+ 
+ #ifdef HAVE_MATHERR
++#ifdef HAVE_STRUCT_EXCEPTION
+ 
+ /* Override the SVID matherr function:
+    the main difference here is not to print warnings.
+@@ -81,6 +82,7 @@
+ }
+ #endif
+ #endif
++#endif
+ 
+ typedef union
+ {

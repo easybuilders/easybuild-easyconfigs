@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'libunwind'
+version = '1.3.1'
+
+homepage = 'https://www.nongnu.org/libunwind/'
+description = """The primary goal of libunwind is to define a portable and efficient C programming interface
+ (API) to determine the call-chain of a program. The API additionally provides the means to manipulate the
+ preserved (callee-saved) state of each call-frame and to resume execution at any point in the call-chain
+ (non-local goto). The API supports both local (same-process) and remote (across-process) operation.
+ As such, the API is useful in a number of applications"""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+source_urls = [GNU_SAVANNAH_SOURCE]
+sources = [SOURCE_TAR_GZ]
+patches = ['libunwind-1.3.1_fix_ppc64_fpreg_t.patch']
+checksums = [
+    '43997a3939b6ccdf2f669b50fdb8a4d3205374728c2923ddc2354c65260214f8',
+    '61a507eec7ece286b06be698c742f0016d8c605eaeedf34f451cf1d0e510ec86',  # libunwind-1.3.1_fix_ppc64_fpreg_t.patch
+]
+
+builddependencies = [('binutils', '2.32')]
+
+dependencies = [
+    ('XZ', '5.2.4'),
+]
+
+preconfigopts = 'export LIBS="$LIBS -llzma" && export CFLAGS="$CFLAGS -fuse-ld=bfd" && '
+
+sanity_check_paths = {
+    'files': ['include/libunwind.h', 'lib/libunwind.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'lib'

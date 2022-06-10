@@ -1,0 +1,39 @@
+easyblock = 'ConfigureMake'
+
+name = 'ncbi-vdb'
+version = '2.8.2'
+
+homepage = 'https://github.com/ncbi/ncbi-vdb'
+description = """The SRA Toolkit and SDK from NCBI is a collection of tools and libraries for
+ using data in the INSDC Sequence Read Archives."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+
+source_urls = ['https://github.com/ncbi/ncbi-vdb/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['15c9a47a9ebaf01822c567817acd681c4a594b4ac92e8bcf08d4d580f62296a9']
+
+dependencies = [
+    ('libxml2', '2.9.4'),
+    ('file', '5.33'),
+    ('HDF5', '1.10.1'),
+    ('NGS', '1.3.0')
+]
+
+# override default of using $HOME/ncbi-outdir
+configopts = "--build-prefix=%(builddir)s/ncbi-outdir "
+
+configopts += "--with-ngs-sdk-prefix=$EBROOTNGS --with-ngs-java-prefix=$EBROOTNGS "
+configopts += "--with-hdf5-prefix=$EBROOTHDF5 --with-xml2-prefix=$EBROOTLIBXML2"
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['include/ncbi-vdb/NGS.hpp', ('lib/libncbi-vdb.%s' % SHLIB_EXT, 'lib64/libncbi-vdb.%s' % SHLIB_EXT),
+              ('lib/libncbi-wvdb.%s' % SHLIB_EXT, 'lib64/libncbi-wvdb.%s' % SHLIB_EXT),
+              ('lib/libncbi-ngs-c++.a', 'lib64/libncbi-ngs-c++.a'), ('lib/libncbi-vdb.a', 'lib64/libncbi-vdb.a'),
+              ('lib/libncbi-wvdb.a', 'lib64/libncbi-wvdb.a')],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

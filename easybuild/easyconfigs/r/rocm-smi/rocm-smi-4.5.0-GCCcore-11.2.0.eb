@@ -1,0 +1,35 @@
+easyblock = 'CMakeMake'
+
+name = 'rocm-smi'
+version = '4.5.0'
+
+homepage = 'https://github.com/RadeonOpenCompute/rocm_smi_lib'
+description = """The ROCm System Management Interface Library, or ROCm SMI
+library, is part of the Radeon Open Compute ROCm software stack. It is a C
+library for Linux that provides a user space interface for applications to
+monitor and control GPU applications."""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ["https://github.com/RadeonOpenCompute/rocm_smi_lib/archive/"]
+sources = ["rocm-%(version)s.tar.gz"]
+
+checksums = ['43a2cc2ec548cc28698ca4fa01a947a4414febd433936a8d9770bf6f6ed55e4f']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('CMake', '3.21.1'),
+]
+
+# This package hardcodes 'noexecheap' as a linker flag which is not supported
+# by 'ld.gold', to get around we explicitly force 'ld.bfd' here
+configopts = "-DCMAKE_CXX_FLAGS='-fuse-ld=bfd'"
+
+sanity_check_paths = {
+    'files': ['bin/rocm_smi.py', 'lib/librocm_smi64.%s' % SHLIB_EXT],
+    'dirs': ['rocm_smi/bindings', 'rocm_smi/include'],
+}
+sanity_check_commands = ['rocm-smi --help']
+
+moduleclass = 'tools'

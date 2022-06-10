@@ -1,0 +1,28 @@
+# See https://github.com/perl5-dbi/DBD-mysql/issues/220
+#
+# Patch generated from:
+# https://github.com/perl5-dbi/DBD-mysql/commit/0f0cebe87fab335873fd3701bc304922da826940
+diff -ru DBD-mysql-4.046.orig/mysql.xs DBD-mysql-4.046/mysql.xs
+--- DBD-mysql-4.046.orig/mysql.xs	2019-01-15 09:06:48.510818649 -0600
++++ DBD-mysql-4.046/mysql.xs	2019-01-15 09:12:05.166818309 -0600
+@@ -819,15 +819,14 @@
+ 	    retsv = newSVpvn("`", 1);
+ 	    break;
+ 	case SQL_MAXIMUM_STATEMENT_LENGTH:
+-#if !defined(MARIADB_BASE_VERSION) && MYSQL_VERSION_ID >= 50709
+-        /* MariaDB 10 is not MySQL source level compatible so this
+-           only applies to MySQL*/
+-	    /* mysql_get_option() was added in mysql 5.7.3 */
+-	    /* MYSQL_OPT_NET_BUFFER_LENGTH was added in mysql 5.7.9 */
++        /* net_buffer_length macro is not defined in MySQL 5.7 and some MariaDB
++        versions - if it is not available, use newer mysql_get_option */
++#if !defined(net_buffer_length)
++            ;
++            unsigned long buffer_len;
+ 	    mysql_get_option(NULL, MYSQL_OPT_NET_BUFFER_LENGTH, &buffer_len);
+ 	    retsv = newSViv(buffer_len);
+ #else
+-	    /* before mysql 5.7.9 use net_buffer_length macro */
+ 	    retsv = newSViv(net_buffer_length);
+ #endif
+ 	    break;

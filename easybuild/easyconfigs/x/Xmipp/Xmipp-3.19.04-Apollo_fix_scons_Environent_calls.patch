@@ -1,0 +1,33 @@
+Make sure scons sees the complete environment from EasyBuild.
+
+Åke Sandgren, 2019-10-10
+diff -ru xmipp-3.19.04-Apollo.orig/SConstruct xmipp-3.19.02/SConstruct
+--- xmipp-3.19.04-Apollo.orig/SConstruct	2019-02-12 16:07:49.000000000 +0100
++++ xmipp-3.19.04-Apollo/SConstruct	2019-10-10 10:22:21.337093882 +0200
+@@ -235,7 +235,7 @@
+     # the reason is a compilation error for CUDA, which results in a multiple symbol detection
+     # when the order is different. This has to be fixed in the future by changing the CUDA
+     # build system FIXME David Strelak
+-    env2 = Environment()
++    env2 = Environment(ENV=os.environ)
+     env2['ENV']['PATH'] = env['ENV']['PATH']
+     env2['CXXFLAGS']=list(env['CXXFLAGS']) # list(.) causes a true copy and not just a pointer 
+     env2['LINKFLAGS']=list(env['LINKFLAGS'])
+@@ -417,7 +417,7 @@
+     ldLibraryPathCopy = [env['LIBPATH']]
+     appendUnique(libPathsCopy, external_libdirs) # This order is important, because if we should use Scipion libs, these will be before the system libs
+     appendUnique(libPathsCopy, env.get('LIBPATH', '').split(os.pathsep))
+-    env2 = Environment()
++    env2 = Environment(ENV=os.environ)
+     env2['ENV']['LD_LIBRARY_PATH'] = env['ENV'].get('LD_LIBRARY_PATH', '')
+     env2['ENV']['PATH'] = env['ENV']['PATH']
+ 
+@@ -478,7 +478,7 @@
+ 
+ def libraryTest(env, name, lang='c'):
+     """Check the existence of a concrete C/C++ library."""
+-    env2 = Environment(LIBS=env.get('LIBS',''))
++    env2 = Environment(ENV=os.environ,LIBS=env.get('LIBS',''))
+     conf = Configure(env2)
+     conf.CheckLib(name, language=lang)
+     env2 = conf.Finish()

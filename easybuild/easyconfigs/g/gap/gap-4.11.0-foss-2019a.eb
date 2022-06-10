@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+name = 'gap'
+version = '4.11.0'
+
+homepage = 'https://www.gap-system.org'
+description = """GAP is a system for computational discrete algebra,
+with particular emphasis on Computational Group Theory."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://www.gap-system.org/pub/gap/gap-%(version_major_minor)s/tar.gz/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['6fda7af23394708aeb3b4bca8885f5fdcb7c3ae4419639dfb2d9f67d3f590abb']
+
+unpack_options = '--strip-components=1'
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('Perl', '5.28.1'),  # needed to install NormalizInterface
+]
+
+dependencies = [
+    ('GMP', '6.1.2'),
+    ('libreadline', '8.0'),
+    ('zlib', '1.2.11'),
+    ('4ti2', '1.6.9'),  # needed by 4ti2Interface, HeLP
+    ('cddlib', '0.94i'),  # needed by CddInterface
+    ('cURL', '7.63.0'),  # needed by curlInterface
+    ('lrslib', '7.0a'),  # needed by HeLP
+    ('ncurses', '6.1'),  # needed by Browse
+    ('Normaliz', '3.7.4'),  # needed by NormalizInterface, HeLP
+    ('Singular', '4.1.2'),  # needed by singular
+    ('ZeroMQ', '4.3.2'),  # needed by ZeroMQInterface
+]
+
+# It doesn't have a working make install and hardcodes the build path
+buildininstalldir = True
+skipsteps = ['install']
+
+# Disable bundled script to download and build Normaliz
+prebuildopts = "sed -i 's|./build-normaliz.sh|#build-normaliz.sh|' bin/BuildPackages.sh && "
+# BuildPackages.sh tries to build any GAP packages that require compilation
+# If one fails due to missing dependencies, it's skipped automatically
+buildopts = ' && cd pkg && ../bin/BuildPackages.sh'
+
+runtest = "testinstall"
+
+postinstallcmds = ["cd bin && ln -s gap.sh gap"]
+
+sanity_check_paths = {
+    'files': ['bin/gap.sh', 'bin/gap', 'gap', 'gac'],
+    'dirs': ['pkg']
+}
+
+moduleclass = 'math'

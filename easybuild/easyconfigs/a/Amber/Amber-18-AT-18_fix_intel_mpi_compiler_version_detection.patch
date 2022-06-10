@@ -1,0 +1,26 @@
+Fix incorrect intel mpi compiler version detection.
+
+Åke Sandgren, 20170517
+diff -ru amber18.orig/AmberTools/src/configure2 amber18/AmberTools/src/configure2
+--- amber18.orig/AmberTools/src/configure2	2018-04-16 01:39:34.000000000 +0200
++++ amber18/AmberTools/src/configure2	2018-10-30 09:39:49.343247582 +0100
+@@ -314,7 +314,8 @@
+                   | sed -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
+     else
+       cc_version=`$cc $1 2>&1 | grep -E "$basecc |[vV]ersion " \
+-                  | sed -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
++                  | sed -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//' \
++                  | grep -v '^Intel(R)'`
+     fi
+     if [ -z "$cc_version" ] ; then
+        echo "Error: $cc is not well formed or produces unusual version details!"
+@@ -365,7 +366,8 @@
+                   -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
+     else
+       fc_version=`$fc $1 2>&1 | grep -E "$basefc |$basecc |[vV]ersion " | sed -e "s@$basefc @@" \
+-                  -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//'`
++                  -e 's/Open64//' -e 's/^[a-zA-Z :]* //' -e 's/ .*//' \
++                  | grep -v '^Intel(R)'`
+     fi
+     if [ -z "$fc_version" ] ; then
+       # DRR - Last ditch; compiler name may not be in version string so just

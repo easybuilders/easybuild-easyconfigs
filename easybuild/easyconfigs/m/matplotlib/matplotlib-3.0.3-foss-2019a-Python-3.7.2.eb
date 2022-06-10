@@ -1,0 +1,53 @@
+easyblock = 'PythonBundle'
+
+name = 'matplotlib'
+version = '3.0.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://matplotlib.org'
+description = """matplotlib is a python 2D plotting library which produces publication quality figures in a variety of
+ hardcopy formats and interactive environments across platforms. matplotlib can be used in python scripts, the python
+ and ipython shell, web application servers, and six graphical user interface toolkits."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('SciPy-bundle', '2019.03'),
+    ('libpng', '1.6.36'),
+    ('freetype', '2.9.1'),
+    ('Tkinter', '%(pyver)s'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('Cycler', '0.10.0', {
+        'modulename': 'cycler',
+        'source_tmpl': 'cycler-%(version)s.tar.gz',
+        'checksums': ['cd7b2d1018258d7247a71425e9f26463dfb444d411c39569972f4ce586b0c9d8'],
+    }),
+    ('kiwisolver', '1.1.0', {
+        'checksums': ['53eaed412477c836e1b9522c19858a8557d6e595077830146182225613b11a75'],
+    }),
+    (name, version, {
+        'prebuildopts': "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && ",
+        'preinstallopts': "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && ",
+        'checksums': ['e1d33589e32f482d0a7d1957bf473d43341115d40d33f578dad44432e47df7b7'],
+    }),
+]
+
+sanity_check_commands = [
+    """python -c 'import matplotlib; matplotlib.use("TkAgg"); import matplotlib.pyplot' """,
+    "python -c 'from mpl_toolkits.mplot3d import Axes3D'",
+]
+
+# use non-interactive plotting backend as default
+# see https://matplotlib.org/tutorials/introductory/usage.html#what-is-a-backend
+modextravars = {'MPLBACKEND': 'Agg'}
+
+moduleclass = 'vis'

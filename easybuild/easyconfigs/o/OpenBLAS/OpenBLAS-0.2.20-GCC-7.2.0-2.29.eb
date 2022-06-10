@@ -7,9 +7,9 @@ homepage = 'http://xianyi.github.com/OpenBLAS/'
 description = "OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."
 
 toolchain = {'name': 'GCC', 'version': '7.2.0-2.29'}
-
-large_src = 'large.tgz'
-timing_src = 'timing.tgz'
+# need to build with -fno-tree-vectorize due to asm constraint bugs in OpenBLAS<0.3.6
+# cfr. https://github.com/easybuilders/easybuild-easyconfigs/issues/7180
+toolchainopts = {'vectorize': False}
 
 source_urls = [
     # order matters, trying to download the large.tgz/timing.tgz LAPACK tarballs from GitHub causes trouble
@@ -17,20 +17,19 @@ source_urls = [
     'https://github.com/xianyi/OpenBLAS/archive/',
 ]
 sources = ['v%(version)s.tar.gz']
+patches = [
+    ('large.tgz', '.'),
+    ('timing.tgz', '.'),
+    'OpenBLAS-%(version)s_fix-Intel-L1-cache-size-detection.patch',
+    'OpenBLAS-%(version)s_revert-honor-cpuset.patch',
+]
 checksums = [
-    '5ef38b15d9c652985774869efd548b8e3e972e1e99475c673b25537ed7bcf394',  # v0.2.20.tar.gz (OpenBLAS)
+    '5ef38b15d9c652985774869efd548b8e3e972e1e99475c673b25537ed7bcf394',  # v0.2.20.tar.gz
     'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1',  # large.tgz
     '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af',  # timing.tgz
     # OpenBLAS-0.2.20_fix-Intel-L1-cache-size-detection.patch
     '1d043e4838ec1f90b2b49318b780e3ab13b46133cb72a8d83eb0e3b1b056c4d6',
     '1e6a046ab658c6e0b351de901d2812db28c2042f9f141416144c2faaf71fbb37',  # OpenBLAS-0.2.20_revert-honor-cpuset.patch
-]
-
-patches = [
-    (large_src, '.'),
-    (timing_src, '.'),
-    'OpenBLAS-%(version)s_fix-Intel-L1-cache-size-detection.patch',
-    'OpenBLAS-%(version)s_revert-honor-cpuset.patch',
 ]
 
 skipsteps = ['configure']

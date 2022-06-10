@@ -1,0 +1,36 @@
+fix for "error obtaining device attributes for mlx4_0 errno says Invalid argument"
+
+see also:
+* https://github.com/open-mpi/ompi/issues/5810
+* https://github.com/open-mpi/ompi/pull/6038
+
+From d70f27f9b209a00b89814fd11f7895eb82bec773 Mon Sep 17 00:00:00 2001
+From: Howard Pritchard <howardp@lanl.gov>
+Date: Wed, 31 Oct 2018 14:50:15 -0600
+Subject: [PATCH] btl/openib: fix a problem with ib query
+
+Under certain circumstances, ibv_exp_query_device was
+returning an error due to uninitialized fields in the
+extended attributes struct.
+
+Fixes: #5810
+Fixes: #5914
+
+Signed-off-by: Howard Pritchard <howardp@lanl.gov>
+(cherry picked from commit 8126779a354b3e0c720d3e1790f7b936dd5b93b2)
+---
+ opal/mca/btl/openib/btl_openib_component.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/opal/mca/btl/openib/btl_openib_component.c b/opal/mca/btl/openib/btl_openib_component.c
+index 44792a13ab8..8b86cbb587f 100644
+--- a/opal/mca/btl/openib/btl_openib_component.c
++++ b/opal/mca/btl/openib/btl_openib_component.c
+@@ -1642,6 +1642,7 @@ static int init_one_device(opal_list_t *btl_list, struct ibv_device* ib_dev)
+         goto error;
+     }
+ #if HAVE_DECL_IBV_EXP_QUERY_DEVICE
++    memset(&device->ib_exp_dev_attr, 0, sizeof(device->ib_exp_dev_attr));
+     device->ib_exp_dev_attr.comp_mask = IBV_EXP_DEVICE_ATTR_RESERVED - 1;
+     if(ibv_exp_query_device(device->ib_dev_context, &device->ib_exp_dev_attr)){
+         BTL_ERROR(("error obtaining device attributes for %s errno says %s",

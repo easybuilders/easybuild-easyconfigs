@@ -1,0 +1,57 @@
+easyblock = 'Tarball'
+
+name = 'Spark'
+version = '2.4.0'
+local_hadoopver = '2.7'
+versionsuffix = '-Hadoop-%s-Java-%%(javaver)s-Python-%%(pyver)s' % local_hadoopver
+
+homepage = 'https://spark.apache.org'
+description = """Spark is Hadoop MapReduce done in memory"""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+source_urls = [
+    'http://apache.belnet.be/%(namelower)s/%(namelower)s-%(version)s/',
+    'http://www.eu.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+    'http://www.us.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+]
+sources = ['%%(namelower)s-%%(version)s-bin-hadoop%s.tgz' % local_hadoopver]
+checksums = ['c93c096c8d64062345b26b34c85127a6848cff95a4bb829333a06b83222a5cfa']
+
+dependencies = [
+    ('Java', '1.8', '', True),
+    ('Python', '3.6.6'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('wheel', '0.33.6', {
+        'checksums': ['10c9da68765315ed98850f8e048347c3eb06dd81822dc2ab1d4fde9dc9702646'],
+    }),
+    ('py4j', '0.10.8.1', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'checksums': ['8329bb156a0cf37be9642a2a060dbdb627b5fcb827919be65d95102daccca274'],
+    }),
+    ('pyspark', version, {
+        'start_dir': 'python',
+        'checksums': ['c9d7b7c5e91b13488b657e364ff392a80b2e374b182138e5ec8702a1822bffdc'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+modextravars = {'SPARK_HOME': '%(installdir)s'}
+
+sanity_check_paths = {
+    'files': ['bin/spark-shell', 'bin/pyspark'],
+    'dirs': ['python']
+}
+
+moduleclass = 'devel'
