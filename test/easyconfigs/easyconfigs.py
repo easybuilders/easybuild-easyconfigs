@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2021 Ghent University
+# Copyright 2013-2022 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -51,7 +51,7 @@ from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_gra
 from easybuild.tools import config
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
-from easybuild.tools.filetools import change_dir, is_generic_easyblock, remove_file
+from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
 from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
@@ -98,7 +98,7 @@ def skip_if_not_pr_to_non_main_branch():
     return lambda func: func
 
 
-def get_eb_files_from_diff(diff_filter):
+def get_files_from_diff(diff_filter, ext, basename=True):
     """Return the files changed on HEAD relative to the current target branch"""
     target_branch = get_target_branch()
 
@@ -122,10 +122,18 @@ def get_eb_files_from_diff(diff_filter):
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
     out, _ = run_cmd(cmd, simple=False)
-    files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith('.eb')]
+    if basename:
+        files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith(ext)]
+    else:
+        files = [f for f in out.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
     return files
+
+
+def get_eb_files_from_diff(diff_filter):
+    """Return the easyconfig files changed on HEAD relative to the current target branch"""
+    return get_files_from_diff(diff_filter, '.eb')
 
 
 class EasyConfigTest(TestCase):
@@ -171,7 +179,8 @@ class EasyConfigTest(TestCase):
         cls._ordered_specs = None
         cls._parsed_easyconfigs = []
         cls._parsed_all_easyconfigs = False
-        cls._changed_ecs = None  # ECs changed in a PR
+        cls._changed_ecs = None  # easyconfigs changed in a PR
+        cls._changed_patches = None  # patches changed in a PR
 
     @classmethod
     def tearDownClass(cls):
@@ -241,6 +250,20 @@ class EasyConfigTest(TestCase):
                                        " (and could not isolate it in easyconfigs archive either)" % ec_fn)
         EasyConfigTest._changed_ecs = changed_ecs
 
+    def _get_changed_patches(self):
+        """Gather all added or modified patches"""
+
+        # get list of changed/added patch files
+        changed_patches_filenames = get_files_from_diff(diff_filter='M', ext='.patch', basename=False)
+        added_patches_filenames = get_files_from_diff(diff_filter='A', ext='.patch', basename=False)
+
+        if changed_patches_filenames:
+            print("\nList of changed patch files in this PR:\n\t%s" % '\n\t'.join(changed_patches_filenames))
+        if added_patches_filenames:
+            print("\nList of added patch files in this PR:\n\t%s" % '\n\t'.join(added_patches_filenames))
+
+        EasyConfigTest._changed_patches = changed_patches_filenames + added_patches_filenames
+
     @property
     def parsed_easyconfigs(self):
         # parse all easyconfigs if they haven't been already
@@ -271,6 +294,12 @@ class EasyConfigTest(TestCase):
         if EasyConfigTest._changed_ecs is None:
             self._get_changed_easyconfigs()
         return EasyConfigTest._changed_ecs
+
+    @property
+    def changed_patches(self):
+        if EasyConfigTest._changed_patches is None:
+            self._get_changed_patches()
+        return EasyConfigTest._changed_patches
 
     def test_dep_graph(self):
         """Unit test that builds a full dependency graph."""
@@ -324,6 +353,8 @@ class EasyConfigTest(TestCase):
                 if key not in retained_dep_vars:
                     del dep_vars[key]
 
+        version_regex = re.compile('^version: (?P<version>[^;]+);')
+
         # filter out binutils with empty versionsuffix which is used to build toolchain compiler
         if dep == 'binutils' and len(dep_vars) > 1:
             empty_vsuff_vars = [v for v in dep_vars.keys() if v.endswith('versionsuffix: ')]
@@ -331,13 +362,13 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS
-        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS')]:
+        # same goes for WRF and WPS; Gurobi and Rgurobi
+        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS'), ('Gurobi', 'Rgurobi')]:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     ecs = dep_vars[key]
                     # filter out dep variants that are only used as dependency for parent with same version
-                    dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                    dep_ver = version_regex.search(key).group('version')
                     if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
@@ -346,7 +377,7 @@ class EasyConfigTest(TestCase):
             for key in list(dep_vars):
                 ecs = dep_vars[key]
                 # filter out Boost variants that are only used as dependency for Boost.Python with same version
-                boost_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                boost_ver = version_regex.search(key).group('version')
                 if all(ec.startswith('Boost.Python-%s-' % boost_ver) for ec in ecs):
                     dep_vars.pop(key)
 
@@ -393,9 +424,16 @@ class EasyConfigTest(TestCase):
 
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
-        if dep in ['ASE', 'Boost', 'Java', 'Lua', 'PLUMED', 'PyTorch', 'R', 'TensorFlow'] and len(dep_vars) > 1:
+        versionsuffix_deps = ['ASE', 'Boost', 'CUDAcore', 'Java', 'Lua',
+                              'PLUMED', 'PyTorch', 'R', 'TensorFlow']
+        if dep in versionsuffix_deps and len(dep_vars) > 1:
+
+            # check for '-CUDA-*' versionsuffix for CUDAcore dependency
+            if dep == 'CUDAcore':
+                dep = 'CUDA'
+
             for key in list(dep_vars):
-                dep_ver = re.search('^version: (?P<ver>[^;]+);', key).group('ver')
+                dep_ver = version_regex.search(key).group('version')
                 # use version of Java wrapper rather than full Java version
                 if dep == 'Java':
                     dep_ver = '.'.join(dep_ver.split('.')[:2])
@@ -417,25 +455,36 @@ class EasyConfigTest(TestCase):
 
         # filter out variants that are specific to a particular version of CUDA
         cuda_dep_vars = [v for v in dep_vars.keys() if '-CUDA' in v]
-        if len(dep_vars) > len(cuda_dep_vars):
+        if len(dep_vars) >= len(cuda_dep_vars) and len(dep_vars) > 1:
             for key in list(dep_vars):
                 if re.search('; versionsuffix: .*-CUDA-[0-9.]+', key):
                     dep_vars.pop(key)
+                    # always retain at least one dep variant
+                    if len(dep_vars) == 1:
+                        break
 
         # some software packages require a specific (older/newer) version of a particular dependency
         old_dep_versions = {
+            # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
+            'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': [('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-'])],
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
+            # ncbi-vdb v2.x require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
+            'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.', r'shovill-1\.1\.'])],
+            # VMTK 1.4.x requires ITK 4.13.x
+            'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
             'Jellyfish': [(r'1\.', [r'Kraken-1\.', r'Roary-3\.12\.0', r'metaWRAP-1\.2'])],
             # Libint 1.1.6 is required by older CP2K versions
             'Libint': [(r'1\.1\.6', [r'CP2K-[3-6]'])],
             # libxc 2.x or 3.x is required by ABINIT, AtomPAW, CP2K, GPAW, horton, PySCF, WIEN2k
+            # libxc 4.x is required by libGridXC
             # (Qiskit depends on PySCF), Elk 7.x requires libxc >= 5
             'libxc': [
                 (r'[23]\.', [r'ABINIT-', r'AtomPAW-', r'CP2K-', r'GPAW-', r'horton-',
                              r'PySCF-', r'Qiskit-', r'WIEN2k-']),
+                (r'4\.', [r'libGridXC-']),
                 (r'5\.', [r'Elk-']),
             ],
             # some software depends on numba, which typically requires an older LLVM;
@@ -443,11 +492,18 @@ class EasyConfigTest(TestCase):
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
                 (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
-                          r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[34]\.2']),
+                          r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[346]\.[23]']),
                 (r'10\.0\.1', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
                                r'numba-0\.52\.0-', r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3',
                                r'scanpy-1\.7\.2-', r'umap-learn-0\.4\.6-']),
             ],
+            'Lua': [
+                # SimpleITK 2.1.0 requires Lua 5.3.x, MedPy and nnU-Net depend on SimpleITK
+                (r'5\.3\.5', [r'nnU-Net-1\.7\.0-', r'MedPy-0\.4\.0-', r'SimpleITK-2\.1\.0-']),
+            ],
+            # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
+            # Horovod depends on TensorFlow, so same exception required there
+            'NCCL': [(r'2\.11\.4', [r'TensorFlow-2\.[5-9]\.', r'Horovod-0\.2[2-9]'])],
             # rampart requires nodejs > 10, artic-ncov2019 requires rampart
             'nodejs': [('12.16.1', ['rampart-1.2.0rc3-', 'artic-ncov2019-2020.04.13'])],
             # some software depends on an older numba;
@@ -457,11 +513,20 @@ class EasyConfigTest(TestCase):
                                r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-',
                                r'umap-learn-0\.4\.6-']),
             ],
+            # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
+            # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
+            # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
+            'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
+                      'NGSpeciesID-0.1.1.1-'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
             # NanoPlot, NanoComp use an older version of Seaborn
             'Seaborn': [(r'0\.10\.1', [r'NanoComp-1\.13\.1-', r'NanoPlot-1\.33\.0-'])],
+            # Shasta requires spoa 3.x
+            'spoa': [(r'3\.4\.0', [r'Shasta-0\.8\.0-'])],
+            # UShER requires tbb-2020.3 as newer versions will not build
+            'tbb': [('2020.3', ['UShER-0.5.0-'])],
             'TensorFlow': [
                 # medaka 0.11.4/0.12.0 requires recent TensorFlow <= 1.14 (and Python 3.6),
                 # artic-ncov2019 requires medaka
@@ -472,14 +537,18 @@ class EasyConfigTest(TestCase):
                 # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
                 ('2.2.0;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'Horovod-0.19.5-', 'decona-0.1.2-',
                             'NGSpeciesID-0.1.1.1-']),
-                # medaka 1.4.3 depends on TensorFlow 2.2.2
+                # medaka 1.4.3 (foss/2019b) depends on TensorFlow 2.2.2
                 ('2.2.2;', ['medaka-1.4.3-']),
+                # medaka 1.4.3 (foss/2020b) depends on TensorFlow 2.2.3; longread_umi and artic depend on medaka
+                ('2.2.3;', ['medaka-1.4.3-', 'artic-ncov2019-2021.06.24-', 'longread_umi-0.3.2-']),
+                # AlphaFold 2.1.2 (foss/2020b) depends on TensorFlow 2.5.0
+                ('2.5.0;', ['AlphaFold-2.1.2-']),
+                # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
+                ('2.5.3;', ['medaka-1.5.0-']),
             ],
-            # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
-            # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
-            # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
-            'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
-                      'NGSpeciesID-0.1.1.1-'])],
+            # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
+            # (for 2021b, UCX was updated to v1.11.2)
+            'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
         }
         if dep in old_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -828,7 +897,7 @@ class EasyConfigTest(TestCase):
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
         for ec in self.changed_ecs:
-            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper']:
+            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper'] or ec['name'] in ['Clang-AOMP']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
@@ -989,18 +1058,25 @@ class EasyConfigTest(TestCase):
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS']
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'ROCm']
 
         failing_checks = []
 
         for ec in self.changed_ecs:
-
             easyblock = ec.get('easyblock')
-
             if is_generic_easyblock(easyblock) and not ec.get('sanity_check_paths'):
+
+                sanity_check_ok = False
+
                 if easyblock in whitelist or (easyblock == 'Bundle' and ec['name'] in bundles_whitelist):
-                    pass
-                else:
+                    sanity_check_ok = True
+
+                # also allow bundles that enable per-component sanity checks
+                elif easyblock == 'Bundle':
+                    if ec['sanity_check_components'] or ec['sanity_check_all_components']:
+                        sanity_check_ok = True
+
+                if not sanity_check_ok:
                     ec_fn = os.path.basename(ec.path)
                     failing_checks.append("No custom sanity_check_paths found in %s" % ec_fn)
 
@@ -1068,6 +1144,19 @@ class EasyConfigTest(TestCase):
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_patch_descr(self):
+        """
+        Check whether all patch files touched in PR have a description on top.
+        """
+        no_descr_patches = []
+        for patch in self.changed_patches:
+            patch_txt = read_file(patch)
+            if patch_txt.startswith('--- '):
+                no_descr_patches.append(patch)
+
+        self.assertFalse(no_descr_patches, "No description found in patches: %s" % ', '.join(no_descr_patches))
+
 
 def template_easyconfig_test(self, spec):
     """Tests for an individual easyconfig: parsing, instantiating easyblock, check patches, ..."""
@@ -1129,11 +1218,9 @@ def template_easyconfig_test(self, spec):
     self.assertTrue(ec['version'], app.version)
 
     # make sure that deprecated 'dummy' toolchain is no longer used, should use 'system' toolchain instead
-    # but give recent EasyBuild easyconfigs special treatment to avoid breaking "eb --install-latest-eb-release"
     ec_fn = os.path.basename(spec)
-    if not (ec_fn == 'EasyBuild-3.9.4.eb' or ec_fn.startswith('EasyBuild-4.')):
-        error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
-        self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
+    error_msg_tmpl = "%s should use 'system' toolchain rather than deprecated 'dummy' toolchain"
+    self.assertFalse(ec['toolchain']['name'] == 'dummy', error_msg_tmpl % os.path.basename(spec))
 
     # make sure that $root is not used, since it is not compatible with module files in Lua syntax
     res = re.findall(r'.*\$root.*', ec.rawtxt, re.M)
@@ -1166,7 +1253,7 @@ def template_easyconfig_test(self, spec):
     # make sure binutils is included as a (build) dep if toolchain is GCCcore
     if ec['toolchain']['name'] == 'GCCcore':
         # with 'Tarball' easyblock: only unpacking, no building; Eigen is also just a tarball
-        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['Eigen']
+        requires_binutils = ec['easyblock'] not in ['Tarball'] and ec['name'] not in ['ANIcalculator', 'Eigen']
 
         # let's also exclude the very special case where the system GCC is used as GCCcore, and only apply this
         # exception to the dependencies of binutils (since we should eventually build a new binutils with GCCcore)

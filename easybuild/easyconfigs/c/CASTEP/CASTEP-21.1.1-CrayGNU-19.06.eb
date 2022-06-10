@@ -1,0 +1,32 @@
+easyblock = 'ConfigureMake'
+
+name = 'CASTEP'
+version = '21.1.1'
+
+homepage = 'http://www.castep.org'
+description = """CASTEP is an electronic structure materials modelling code based on density functional theory (DFT), 
+with functionality including geometry optimization molecular dynamics, phonons, NMR chemical shifts and much more."""
+toolchain = {'name': 'CrayGNU', 'version': '19.06'}
+
+# CASTEP is proprietary software, available under a free-of-charge license for academic use only. 
+# Visit http://www.castep.org and navigate to "Getting Castep" to apply for a license.
+local_patch_ver = version.split('.')[-1]
+sources = ['CASTEP-%%(version_major_minor)s%s.tar.gz' % local_patch_ver]
+
+checksums = ['d909936a51dd3dff7a0847c2597175b05c8d0018d5afe416737499408914728f']
+
+dependencies = [('cray-fftw', EXTERNAL_MODULE)]
+
+skipsteps = ['configure']
+
+buildopts = 'COMMS_ARCH=mpi FFT=fftw3 FFTLIBDIR= castep tools'
+
+preinstallopts = 'mkdir -p %(installdir)s/bin &&'
+installopts = 'COMMS_ARCH=mpi FFT=fftw3 INSTALL_DIR="%(installdir)s/bin" install-castep install-tools'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['castep.mpi', 'optados.mpi', 'orbitals2bands']],
+    'dirs': [],
+}
+
+moduleclass = 'phys'

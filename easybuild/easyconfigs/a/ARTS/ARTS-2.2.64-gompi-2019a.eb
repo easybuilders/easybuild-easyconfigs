@@ -1,0 +1,50 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - https://hprc.tamu.edu
+
+easyblock = 'CMakeMake'
+
+name = 'ARTS'
+version = '2.2.64'
+
+homepage = 'http://www.radiativetransfer.org/'
+description = """ARTS is a radiative transfer model for the millimeter and sub-millimeter
+ spectral range. There are a number of models mostly developed explicitly
+ for the different sensors."""
+
+toolchain = {'name': 'gompi', 'version': '2019a'}
+toolchainopts = {'opt': True, 'cstd': 'gnu++98', 'openmp': True}
+
+source_urls = ['http://www.radiativetransfer.org/misc/download/stable/2.2/']
+sources = [
+    SOURCELOWER_TAR_GZ,
+    '%(namelower)s-xml-data-2.2.5.tar.gz',
+]
+checksums = [
+    'e33308b0c9d7697fa885a865f18e8c6ec5feddafc815df907c2905bd150d0b01',
+    '6a4e15ebd5c718e46f41c2e7d7d1462578c008fd96e78f4d8cc59e366b91c795',
+]
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('Doxygen', '1.8.15'),
+]
+
+dependencies = [
+    ('netCDF', '4.6.2'),
+    ('netCDF-C++4', '4.3.0'),
+]
+
+separate_build_dir = True
+
+configopts = "-DENABLE_FORTRAN=1 -DARTS_XML_DATA_PATH=../arts-xml-data-2.2.5 "
+configopts += "-DNETCDF_INCLUDE_DIR=$EBROOTNETCDF/include "
+configopts += "-DNETCDF_LIBRARY=$EBROOTNETCDF/lib64/libnetcdf.%s " % SHLIB_EXT
+configopts += "-DNETCDFXX_LIBRARY=$EBROOTNETCDFMINCPLUSPLUS4/lib/libnetcdf_c++4.%s" % SHLIB_EXT
+
+sanity_check_paths = {
+    'files': ['bin/arts'],
+    'dirs': ['bin', 'share/arts/controlfiles/artscomponents'],
+}
+
+sanity_check_commands = ["arts --help"]
+
+moduleclass = 'phys'
