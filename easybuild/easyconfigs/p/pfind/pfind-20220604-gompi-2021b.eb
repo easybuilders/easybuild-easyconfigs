@@ -1,0 +1,38 @@
+easyblock = 'Binary'
+
+name = 'pfind'
+version = '20220604'
+local_commit = 'd97bcb9'
+
+homepage = 'https://github.com/VI4IO/pfind'
+description = 'Drop-in replacement for find, implemented for using parallel access and MPI.'
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+source_urls = ['https://github.com/VI4IO/pfind/archive']
+sources = [local_commit + '.tar.gz']
+patches = ['pfind-%(version)s_fix_help.patch']
+checksums = [
+    '2c60b1a87abc2d72c3b1a54aeb3a27c47dbd1de76a27a54373538cb527894beb',  # d97bcb9.tar.gz
+    '5fbce1b13625511cc8be3a811e5bd4c47fc4ace9001da1831ee26b7dfaaa912d',  # pfind-20220604_fix_help.patch
+]
+
+dependencies = [
+    ('lz4', '1.9.3'),
+]
+
+extract_sources = True
+staged_install = True
+
+# Less work to write the build command than to try to patch the build scripts
+install_cmd = 'mkdir %(installdir)s/bin && '
+install_cmd += '$MPICC -o %(installdir)s/bin/pfind src/*.c $CFLAGS -DLZ4 -llz4'
+
+sanity_check_paths = {
+    'files': ['bin/pfind'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['pfind --help']
+
+moduleclass = 'tools'
