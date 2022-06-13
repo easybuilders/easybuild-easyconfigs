@@ -518,7 +518,7 @@ class EasyConfigTest(TestCase):
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
             # WhatsHap 1.4 requires Pysam >= 0.18.0
             'Pysam': [
-                ('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-', 
+                ('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                                'NGSpeciesID-0.1.1.1-']),
                 ('0.18.0;', ['WhatsHap-1.4-']),
             ],
