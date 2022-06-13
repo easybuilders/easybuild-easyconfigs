@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'CASTEP'
+version = '20.11'
+
+homepage = 'http://www.castep.org/'
+description = """CASTEP is a leading code for calculating the properties of materials from first principles. 
+Using density functional theory, it can simulate a wide range of properties of materials proprieties including 
+energetics, structure at the atomic level, vibrational properties, electronic response properties etc. In 
+particular it has a wide range of spectroscopic features that link directly to experiment, such as infra-red and 
+Raman spectroscopies, NMR, and core level spectra."""
+
+toolchain = {'name': 'iofbf', 'version': '2020a'}
+
+sources = ['CASTEP-%(version)s.tar.gz']
+#patches = ['CASTEP-19.11-fix-makefiles.patch']
+checksums = [
+    '9f487a5c64eadc467f488930cc09a60884d8251d12ecaf53180fb7a2345e995f',  # CASTEP-20.11.tar.gz
+    #'158ac684d6dbe8f3effcdd42972ff2563161f5ccf5a10ba814b2aeef8d152392',  # CASTEP-19.11-fix-makefiles.patch
+]
+
+skipsteps = ['configure']
+
+dependencies = [
+    #('FFTW','3.3.8'),
+    ('OpenBLAS', '0.3.18'),
+]
+
+buildopts  = " COMMS_ARCH=mpi SUBARCH=mpi FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+buildopts += " MATHLIBS=openblas MATHLIBDIR=$EBROOTOPENBLAS/lib "
+buildopts += " && make -j FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+buildopts += " MATHLIBS=openblas MATHLIBDIR=$EBROOTOPENBLAS/lib"
+
+preinstallopts = "mkdir %(installdir)s/bin && "
+
+installopts  = " COMMS_ARCH=mpi SUBARCH=mpi FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+installopts += " MATHLIBS=openblas MATHLIBDIR=$EBROOTOPENBLAS/lib INSTALL_DIR=%(installdir)s/bin "
+installopts += " && make -j FFT=fftw3 FFTLIBDIR=$EBROOTFFTW/lib "
+installopts += " MATHLIBS=openblas MATHLIBDIR=$EBROOTOPENBLAS/lib INSTALL_DIR=%(installdir)s/bin install"
+
+sanity_check_paths = {
+    'files': ['bin/c2x', 'bin/mdtep', 'bin/castep.mpi', 'bin/castep.serial'],
+    'dirs': [],
+}
+
+moduleclass = 'math'
