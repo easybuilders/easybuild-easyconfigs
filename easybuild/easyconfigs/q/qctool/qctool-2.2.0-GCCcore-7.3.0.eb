@@ -1,0 +1,40 @@
+easyblock = 'PackedBinary'
+
+name = 'qctool'
+version = '2.2.0'
+
+homepage = 'https://www.well.ox.ac.uk/~gav/qctool_v2/index.html'
+description = "QCTOOL is a command-line utility program for basic quality control of gwas datasets"
+
+toolchain = {'name': 'GCCcore', 'version': '7.3.0'}
+
+source_urls = ['https://github.com/gavinband/qctool/archive/refs/tags/']
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'download_filename': 'v%(version)s.tar.gz'
+}]
+patches = ['%(name)s-%(version)s.patch']
+checksums = [
+    '2afe85eefc1ed73ae0d4128c8b232b379fa7ccf34e42809ebebb620f7d166a03',  # qctool-2.2.0.tar.gz
+    '269f48b85c66b6be52c073f3fbfe801e288f07c11eda810d900f9b35a98ad2c6',  # qctool-2.2.0.patch
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+configure_and_build_cmd  = 'cd "%s/%s-%s/" && ' % ('%(builddir)s', name, version)
+configure_and_build_cmd += 'chmod +x waf && '
+configure_and_build_cmd += './waf configure --prefix="%s" && ' % ('%(installdir)s')
+configure_and_build_cmd += './waf && '
+configure_and_build_cmd += './waf install && '
+configure_and_build_cmd += 'rename "_v%s" "" "%s/bin/"*' % (version, '%(installdir)s')
+
+install_cmd = '%s' % (configure_and_build_cmd)
+
+sanity_check_paths = {
+    'files': ['bin/hptest', 'bin/inthinnerator', 'bin/ldbird', 'bin/qctool', 'bin/selfmap'],
+    'dirs': ['bin']
+}
+
+moduleclass = 'bio'
