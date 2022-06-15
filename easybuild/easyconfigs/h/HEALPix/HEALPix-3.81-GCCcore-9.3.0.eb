@@ -1,0 +1,51 @@
+easyblock = "MakeCp"
+
+name = 'HEALPix'
+version = '3.81'
+
+homepage = 'http://healpix.sourceforge.net/'
+description = """Hierarchical Equal Area isoLatitude Pixelation of a sphere."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['Healpix_%(version)s_2022Jan25.tar.gz']
+patches = ['HEALPix_noXtest.patch', 'HEALPix-3.81_prefix_hack.patch']
+checksums = [
+    '82d92bb21626371f9d280e59e82ad0f47d9ae62c70d86ccd1026e0310f193551',  # Healpix_3.81_2020Jan25.tar.gz
+    'ec82c8b2beb80937c83d2e545e26ade08b3647ab5a3401c8703e6523b0782c08',  # HEALPix_noXtest.patch
+    'cbf5986fa380ecf29e1448c94b8d770c9d12d4f3cf95f26b65f1ad1e23949805',  # HEALPix-3.81_prefix_hack.patch
+]
+
+dependencies = [
+    ('CFITSIO', '4.1.0'),
+]
+
+with_configure=True
+
+# Must override SHARP_COPT as by default it uses -march=native
+configure_cmd_prefix = ' '.join([
+    'FITSDIR=$EBROOTCFITSIO/lib',
+    'FITSINC=$EBROOTCFITSIO/include',
+    'SHARP_COPT="-ffast-math $CFLAGS"',
+    '',
+])
+# Don't build healpy, but rather provide it as a wheel
+configopts = "-L --auto=profile,sharp,c,cxx,f90,idl "
+
+files_to_copy = ['bin', 'lib', 'include', 'data']
+
+sanity_check_paths = {
+    'files': [
+        'lib/libchealpix.a',
+        'lib/libhealpix.a',
+        'lib/libsharp.a',
+        'lib/libsharp.so',
+        'lib/libhealpix_cxx.a',
+        'lib/libhealpix_cxx.so',
+    ],
+    'dirs': ['bin', 'lib', 'include', 'include/healpix_cxx', 'data'],
+}
+
+moduleclass = 'astro'
