@@ -1,0 +1,74 @@
+diff -Nru fpc-3.2.2.x86_64-linux.orig/install.sh fpc-3.2.2.x86_64-linux/install.sh
+--- fpc-3.2.2.x86_64-linux.orig/install.sh	2022-05-21 00:40:39.400528000 +0100
++++ fpc-3.2.2.x86_64-linux/install.sh	2022-05-21 20:31:55.918014444 +0100
+@@ -341,28 +341,28 @@
+          PREFIX=/usr
+      fi
+   ;;
+-  *)
+-     # Install in /usr/local or /usr ?
+-     if checkpath /usr/local/bin; then
+-         PREFIX=/usr/local
+-     else
+-         PREFIX=/usr
+-     fi
+-  ;;
++#  *)
++#     # Install in /usr/local or /usr ?
++#     if checkpath /usr/local/bin; then
++#         PREFIX=/usr/local
++#     else
++#         PREFIX=/usr
++#     fi
++#  ;;
+ esac
+ 
+ # If we can't write on prefix, select subdir of home dir
+-if [ ! -w "$PREFIX" ]; then
+-  PREFIX="$HOME/fpc-$VERSION"
+-fi
++#if [ ! -w "$PREFIX" ]; then
++#  PREFIX="$HOME/fpc-$VERSION"
++#fi
+ 
+ case "$OSNAME" in
+   haiku)
+      ask "Install prefix (/boot/common or /boot/home/config) " PREFIX
+   ;;
+-  *)
+-     ask "Install prefix (/usr or /usr/local) " PREFIX
+-  ;;
++  # *)
++  #   ask "Install prefix (/usr or /usr/local) " PREFIX
++  # ;;
+ esac
+ 
+ # Support ~ expansion
+@@ -421,7 +421,7 @@
+ 
+ # Install the documentation. Optional.
+ if [ -f doc-pdf.tar.gz ]; then
+-  if yesno "Install documentation"; then
++  if [ "$INSTALL_DOCS" == "yes" ]; then
+     echo Installing documentation in "$DOCDIR" ...
+     makedirhierarch "$DOCDIR"
+     unztar doc-pdf.tar.gz "$DOCDIR" "$strip_tar_opt"
+@@ -432,8 +432,7 @@
+ 
+ # Install the demos. Optional.
+ if [ -f demo.tar.gz ]; then
+-  if yesno "Install demos"; then
+-    ask "Install demos in" DEMODIR
++  if [ "$INSTALL_DEMOS" == "yes" ]; then
+     echo Installing demos in "$DEMODIR" ...
+     makedirhierarch "$DEMODIR"
+     unztar demo.tar.gz "$DEMODIR"
+@@ -443,7 +442,7 @@
+ echo
+ 
+ # Post substitution of FPC_VERSION to $fpc_version in cfg scripts
+-subst_pattern=ask
++subst_pattern=no
+ 
+ function substitute_version_string ()
+ {
