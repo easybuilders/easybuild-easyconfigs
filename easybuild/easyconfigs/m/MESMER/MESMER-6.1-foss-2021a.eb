@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'MESMER'
+version = '6.1'
+
+homepage = 'https://www.chem.leeds.ac.uk/mesmer.html'
+description = """An open source, general purpose program for calculating rate coefficients through solving the chemical
+ master equation"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['Mesmer%(version)s-source.tar.gz']
+checksums = ['c16b81c6bf220cebeca6ebe235e65051162bf0aad496879329041e071e8278b9']
+
+dependencies = [
+    ('QD', '2.3.23'),
+]
+
+# build internal tinyxml
+prebuildopts = "cd tinyxml && make -f MakeLib DEBUG=NO && cd ../src && "
+
+# build parallel (i.e. MPI) and set the include and library paths
+buildopts = "install DEBUG=NO PARALLEL=YES "
+buildopts += """INCS="-I../tinyxml/ -I$EBROOTQD/include -I$EBROOTOPENMPI/include" """
+buildopts += """LIBS="../tinyxml/tinyxml.a $EBROOTQD/lib/libqd.a -L$EBROOTOPENMPI/lib -lmpi" """
+
+parallel = 1
+
+files_to_copy = ['bin', 'Documentation', 'examples', 'MesmerQA', 'schemas', '*.xsl', '*.xml', 'License.txt']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%(namelower)s --help"]
+
+moduleclass = 'chem'
