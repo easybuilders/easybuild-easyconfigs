@@ -1,5 +1,5 @@
---- src/.objects.orig	2022-03-28 11:57:12.000000000 -0700
-+++ src/.objects	2022-03-28 11:58:19.000000000 -0700
+--- vasp.6.3.0/src/.objects.orig	2022-03-28 11:57:12.000000000 -0700
++++ vasp.6.3.0/src/.objects	2022-03-28 11:58:19.000000000 -0700
 @@ -115,6 +115,19 @@
  	dos.o \
  	elf.o \
@@ -20,19 +20,28 @@
  	chain.o \
  	dyna.o \
  	fileio.o \
---- src/main.F.orig	2022-03-28 12:01:13.000000000 -0700
-+++ src/main.F	2022-03-28 12:01:04.000000000 -0700
+--- vasp.6.3.0/src/main.F.orig  2022-06-15 10:27:12.328756083 -0700
++++ vasp.6.3.0/src/main.F       2022-06-15 10:29:02.849593669 -0700
+@@ -922,7 +922,7 @@
+ ! init all chains (INCAR reader)
+ !-----------------------------------------------------------------------
+       LCHAIN = IMAGES > 0 .AND. .NOT.AFQMC_SET % ACTIVE
+-      IF (LCHAIN) CALL chain_init( T_INFO, IO)
++      CALL chain_init( T_INFO, IO)
+ !-----------------------------------------------------------------------
+ !xml finish copying parameters from INCAR to xml file
+ ! no INCAR reading from here
 @@ -3517,7 +3517,7 @@
        ENDIF
- 
+
        CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
 -           LATT_CUR%A,LATT_CUR%B,IO%IU6)
 +           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6)
- 
+
        CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
             LATT_CUR%A,LATT_CUR%B,IO%IU6)
---- arch/makefile.include.intel_omp.orig	2022-01-20 07:09:58.000000000 -0800
-+++ arch/makefile.include.intel_omp	2022-03-30 11:05:29.000000000 -0700
+--- vasp.6.3.0/arch/makefile.include.intel_omp.orig	2022-01-20 07:09:58.000000000 -0800
++++ vasp.6.3.0/arch/makefile.include.intel_omp	2022-03-30 11:05:29.000000000 -0700
 @@ -7,12 +7,11 @@
                -Dvasp6 \
                -Duse_bse_te \
@@ -105,70 +114,55 @@
 +
 +
 +
---- src/mpi.F.orig	2022-03-30 13:10:00.000000000 -0700
-+++ src/mpi.F	2022-03-30 14:22:49.000000000 -0700
-@@ -1917,35 +1917,35 @@
- !!!
- !!!----------------------------------------------------------------------
- !!
--!!      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
--!!      USE string, ONLY: str
--!!      USE tutor, ONLY: vtutor
--!!      USE mpimy
--!!      IMPLICIT NONE
--!!
--!!      TYPE(communic) COMM
--!!      INTEGER n
--!!      REAL(q) vec(n),v1,v2,v3,v4
--!!
--!!      vec=0
--!!
--!!      IF (n>0) vec(1)=v1
--!!      IF (n>1) vec(2)=v2
--!!      IF (n>2) vec(3)=v3
--!!      IF (n>3) vec(4)=v4
--!!      IF (n>4) THEN
--!!          WRITE(*,*) 'M_sum_s: invalid n ', n
--!!          STOP
--!!      END IF
--!!
--!!      CALL M_sumb_d(COMM, vec, n)
--!!
--!!      IF (n>0) v1=vec(1)
--!!      IF (n>1) v2=vec(2)
--!!      IF (n>2) v3=vec(3)
--!!      IF (n>3) v4=vec(4)
--!!      RETURN
--!!      END SUBROUTINE M_sum_s
-+      SUBROUTINE M_sum_s(COMM, n, v1, v2, v3, v4)
-+      USE string, ONLY: str
-+      USE tutor, ONLY: vtutor
+--- vasp.6.3.0/src/mpi.F.orig	2022-01-20 07:10:06.000000000 -0800
++++ vasp.6.3.0/src/mpi.F	2022-06-09 13:44:16.000000000 -0700
+@@ -2043,6 +2043,30 @@
+ 
+ #endif // MPI_INPLACE
+ 
++! Subroutine for VASPsol - Added by D. Gaissmaier
++!----------------------------------------------------------------------
++!
++! Global sum function - required for VASPsol
++!
++!----------------------------------------------------------------------
++
++      SUBROUTINE M_sum_1(COMM, v1)
 +      USE mpimy
 +      IMPLICIT NONE
 +
 +      TYPE(communic) COMM
-+      INTEGER n
-+      REAL(q) vec(n),v1,v2,v3,v4
++      REAL(q) vec(1),v1
 +
-+      vec=0
++      vec(1)=v1
 +
-+      IF (n>0) vec(1)=v1
-+      IF (n>1) vec(2)=v2
-+      IF (n>2) vec(3)=v3
-+      IF (n>3) vec(4)=v4
-+      IF (n>4) THEN
-+          WRITE(*,*) 'M_sum_s: invalid n ', n
-+          STOP
-+      END IF
++      CALL M_sumb_d(COMM, vec, 1)
 +
-+      CALL M_sumb_d(COMM, vec, n)
++      v1=vec(1)
 +
-+      IF (n>0) v1=vec(1)
-+      IF (n>1) v2=vec(2)
-+      IF (n>2) v3=vec(3)
-+      IF (n>3) v4=vec(4)
 +      RETURN
-+      END SUBROUTINE M_sum_s
- 
++      END SUBROUTINE
++! End of VASPsol subroutine
++
  !----------------------------------------------------------------------
  !
+ ! to make live easier, a global sum for 2 scalars
+--- vasp.6.3.0/src/pot.F.orig	2022-06-13 15:01:24.000000000 -0700
++++ vasp.6.3.0/src/pot.F	2022-06-13 15:02:10.000000000 -0700
+@@ -406,6 +406,16 @@
+       IF (LBEXTERNAL()) CALL BEXT_ADDV(CVTOT,GRIDC,SIZE(CVTOT,2))
+ ! bexternal__
+       CALL POT_FLIP(CVTOT, GRIDC,WDES%NCDIJ )
++! --- VASPsol modification ---------------------------------------------
++! --- Added by D. Gaissmaier -------------------------------------------
++! --- Patch (pbz_patch_541) Compute the FERMI SHIFT (VASPsol)  ---------
++! ----------------------------------------------------------------------
++! solvation__
++! vaclevel
++      IF (LSOL) CALL GET_FERMISHIFT(LATT_CUR, T_INFO, GRIDC, WDES, CWORK, CHTOT)
++! vaclevel
++! solvation
++! --- End of VASPsol modification --------------------------------------
+ !=======================================================================
+ ! if overlap is used :
+ ! copy CVTOT to SV and set contribution of unbalanced lattice-vectors
