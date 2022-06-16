@@ -1,0 +1,63 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Ake Sandgren
+# HPC2N
+# Umea University
+easyblock = 'PackedBinary'
+
+name = 'MotionCor2'
+version = '1.4.7'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://msg.ucsf.edu/'
+description = """MotionCor2 correct anisotropic image motion at the
+single pixel level across the whole frame, suitable for both single
+particle and tomographic images. Iterative, patch-based motion detection
+is combined with spatial and temporal constraints and dose weighting.
+
+Cite publication: Shawn Q. Zheng, Eugene Palovcak, Jean-Paul Armache,
+Yifan Cheng and David A. Agard (2016) Anisotropic Correction of
+Beam-induced Motion for Improved Single-particle Electron
+Cryo-microscopy, Nature Methods, submitted.
+BioArxiv: https://biorxiv.org/content/early/2016/07/04/061960
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+# No longer directly downloadable, available from https://msg.ucsf.edu/software
+sources = [
+    '%(name)s_%(version)s.zip',
+]
+checksums = ['8c33969b10916835b55f14f3c370f67ebe5c4b2a9df9ec487c5251710f038e6b']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+]
+
+dependencies = [
+    ('CUDA', '11.3.1', '', True),
+    ('zlib', '1.2.11'),
+    ('libjpeg-turbo', '2.0.6'),
+    ('LibTIFF', '4.2.0'),
+]
+
+# This should be the correct binary for the available CUDA version
+_binary = 'MotionCor2_1.4.7_Cuda113_12-07-2021'
+# Move the correct binary to bin/, create a symlink, and delete all incorrect binaries
+_cmds = [
+    "cd %(installdir)s",
+    "mkdir bin",
+    "mv %s bin/." % _binary,
+    "rm MotionCor2_1.4.7_*",
+    "cd bin",
+    "ln -s %s %%(namelower)s" % _binary,
+]
+postinstallcmds = [' && '.join(_cmds)]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%(namelower)s --help"]
+
+moduleclass = 'bio'
