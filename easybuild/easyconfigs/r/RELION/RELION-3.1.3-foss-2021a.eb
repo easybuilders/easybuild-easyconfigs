@@ -1,0 +1,81 @@
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+version = '3.1.3'
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-alone computer
+ program that employs an empirical Bayesian approach to refinement of (multiple) 3D reconstructions or 2D class
+ averages in electron cryo-microscopy (cryo-EM)."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'opt': True}
+
+source_urls = ['https://github.com/3dem/relion/archive']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-3.0.4_drop_usage_of_mpi_include_path.patch',
+    '%(name)s-3.0_beta_cuda_capabilities.patch',
+    '%(name)s-%(version)s_add_bham_submit_file_args.patch',
+    ('relion_sbatch.sh', '.'),
+]
+checksums = [
+    'f10934058e0670807b7004899d7b5103c21ad77841219352c66a33f98586d42e',  # 3.1.3.tar.gz
+    # RELION-3.0.4_drop_usage_of_mpi_include_path.patch
+    '5477564782a102e435527573ff0dbd4f8675c948492bb103cfbee92c5c997f83',
+    'aedc0c7e1806094274d8442680aade810943648b08875148f5da226121753a0e',  # RELION-3.0_beta_cuda_capabilities.patch
+    'a39d7b3674a462f06f2d799f12bf51733ab5490451446f9bd63e9391a18cb1fe',  # RELION-3.1.3_add_bham_submit_file_args.patch
+    '648a87b60a441000bda953f648ef00d8a7f0d573900073ff580dc7d98c97df10',  # relion_sbatch.sh
+]
+
+builddependencies = [('CMake', '3.20.1')]
+
+dependencies = [
+    ('X11', '20210518'),
+    ('FLTK', '1.3.6'),
+    ('libpng', '1.6.37'),
+    ('LibTIFF', '4.2.0'),
+    ('tbb', '2020.3'),
+    ('zlib', '1.2.11'),
+    ('ctffind', '4.1.14'),
+    ('gnuplot', '5.4.2'),
+    ('tcsh', '6.22.04'),
+    ('ResMap', '1.1.4', '', True),
+]
+
+# Execute commands in the pipeline directly, not through `which`
+local_pipejob_src = '%(builddir)s/%(namelower)s-%(version)s/src/pipeline_jobs.cpp'
+preconfigopts = "sed -i 's/`which \([a-z_]*\)`/\\1/g;s/`//g' %s &&" % local_pipejob_src
+
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-lpthread' -DALTCPU=ON "
+configopts += "-DCUDA=OFF -DCudaTexture=OFF "
+
+postinstallcmds = [
+    'cp ../%(namelower)s-%(version)s/relion_sbatch.sh %(installdir)s/bin',
+    'chmod +x %(installdir)s/bin/relion_sbatch.sh',
+]
+
+sanity_check_paths = {
+    'files': ['bin/relion', 'bin/relion_refine_mpi'],
+    'dirs': []
+}
+
+sanity_check_commands = ["relion --version"]
+
+modextravars = {
+    'RELION_QSUB_TEMPLATE': '%(installdir)s/bin/relion_sbatch.sh',
+    'RELION_QSUB_COMMAND': 'sbatch',
+    'RELION_ERROR_LOCAL_MPI': '1',
+    'RELION_CTFFIND_EXECUTABLE': 'ctffind',
+    'RELION_RESMAP_EXECUTABLE': 'ResMap-1.1.4-linux64',
+    # These will be mapped to XXXextra1XXX from relion_sbatch.sh
+    'RELION_QSUB_EXTRA_COUNT': '3',
+    'RELION_QSUB_EXTRA1': 'Job time limit',
+    'RELION_QSUB_EXTRA1_HELP': 'Set the job time limit.',
+    'RELION_QSUB_EXTRA2': 'Slurm Account / Project code',
+    'RELION_QSUB_EXTRA2_HELP': "Set the slurm project account code.",
+    'RELION_QSUB_EXTRA3': "GPU (e.g. '--gres gpu:1')",
+    'RELION_QSUB_EXTRA3_HELP': "For jobs requiring GPU, set the Slurm: '--gres gpu:1'",
+}
+
+moduleclass = 'bio'
