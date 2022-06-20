@@ -1,0 +1,45 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'ConfigureMake'
+
+name = 'GlobalArrays'
+version = '5.8.1'
+
+homepage = 'https://hpc.pnl.gov/globalarrays'
+description = "Global Arrays (GA) is a Partitioned Global Address Space (PGAS) programming model"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/GlobalArrays/ga/releases/download/v%(version)s']
+sources = ['ga-%(version)s.tar.gz']
+checksums = ['844639b52444f839854cf9735203a76a9052fd485f2d4eae70d21d03a7ecaade']
+
+builddependencies = [
+    ('libtool', '2.4.6'),
+    ('Perl', '5.34.0', '-minimal'),
+]
+
+# avoid name collision with poll.h from system
+preconfigopts = "sed -i 's|poll|comexpoll|g' comex/src-ofi/* && "
+# run tests with %(parallel)s instead of default 4
+preconfigopts += "NPROCS=%(parallel)s"
+
+configopts = '--with-mpi --enable-i8 '
+configopts += '--with-blas8="$BLAS_LIB_DIR $LIBBLAS" --with-lapack="$LAPACK_LIB_DIR $LIBLAPACK" '
+configopts += '--with-scalapack8="$SCALAPACK_LIB_DIR $LIBSCALAPACK" '
+
+# select armci network (see https://github.com/GlobalArrays/ga#full-list-of-runtimes)
+# configopts += '--with-mpi-ts '    # MPI-1 two-sided
+configopts += '--with-ofi '         # OFI
+
+# build both static and shared libraries
+configopts += '--enable-static --enable-shared '
+
+_bins = ['bin/%s' % x for x in ['adjust.x', 'collisions.x', 'ga-config']]
+_libs = ['lib/lib%s.%s' % (x, y) for x in ['armci', 'comex', 'ga'] for y in ['a', 'la', SHLIB_EXT]]
+sanity_check_paths = {
+    'files': _bins + _libs,
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'
