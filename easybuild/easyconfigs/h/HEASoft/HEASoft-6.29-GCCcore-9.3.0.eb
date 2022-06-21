@@ -1,0 +1,95 @@
+easyblock = 'ConfigureMake'
+
+name = 'HEASoft'
+version = '6.29'
+
+homepage = 'https://heasarc.gsfc.nasa.gov/lheasoft/'
+description = """
+HEASOFT is the HEASARC's software suite that currently encompasses
+both new and legacy mission-independent or multi-mission FTOOLS,
+the XANADU suite (XSPEC, XRONOS, and XIMAGE), XSTAR,
+and numerous mission-specific packages.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+#toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+sources = ['heasoft-%(version)ssrc_no_xspec_modeldata.tar.gz']
+source_urls = [
+    'https://www.isdc.unige.ch/~savchenk/cache/heasoft/',
+    'https://heasarc.gsfc.nasa.gov/FTP/software/lheasoft/lheasoft%(version)s/',
+]
+
+patches = ['heasoft-move-platform-dependent.patch']
+
+builddependencies = [('binutils', '2.34')]
+
+dependencies = [
+    ('CFITSIO', '3.48'),
+    ('Perl', '5.30.2'),
+    ('X11', '20200222'),
+    ('OpenSSL', '1.1.1e')
+]
+
+
+
+
+preconfigopts = "cd BUILD_DIR/ &&"
+
+# configopts = "--disable-x"
+
+prebuildopts = "cd BUILD_DIR/ &&"
+
+# build fails with parallel
+parallel = False
+
+preinstallopts = "cd BUILD_DIR/ &&"
+
+
+modextrapaths = {
+    'PYTHONPATH': ['lib'],
+}
+
+modextravars = dict(
+    HEADAS="%(installdir)s",
+    EXT="lnx",
+    LYNX_CFG="%(installdir)s/lib",
+    FTOOLS="%(installdir)s",
+    FTOOLSINPUT="stdin",
+    FTOOLSOUTPUT="stdout",
+    LHEAPERL="perl",
+    LHEASOFT="%(installdir)s",
+    LHEA_DATA="%(installdir)s/refdata",
+    LHEA_HELP="%(installdir)s/help",
+    PFCLOBBER="1",
+    PGPLOT_DIR="%(installdir)s/lib",
+    PGPLOT_FONT="%(installdir)s/lib/grfont.dat",
+    PGPLOT_RGB="%(installdir)s/lib/rgb.txt",
+    POW_LIBRARY="%(installdir)s/lib/pow",
+    TCLRL_LIBDIR="%(installdir)s/lib",
+    XANADU="%(installdir)s",
+    XANBIN="%(installdir)s",
+    XRDEFAULTS="%(installdir)s/xrdefaults",
+)
+
+modluafooter = """
+  local home = os.getenv("HOME")
+  pushenv("PFILES", pathJoin(home, "pfiles") .. ";%(installdir)s/syspfiles")
+"""
+
+sanity_check_paths = {
+    'files': ['bin/fstatistic',
+              'bin/fv',
+              'lib/libXSUtil.so'],
+    'dirs': ['bin',
+             'lib'],
+}
+
+# Check the Python bindings
+
+sanity_check_commands = [
+    "fversion",
+    "plist batfftimage"
+]
+
