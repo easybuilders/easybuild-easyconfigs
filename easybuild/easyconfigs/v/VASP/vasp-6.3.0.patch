@@ -40,80 +40,6 @@
 
        CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
             LATT_CUR%A,LATT_CUR%B,IO%IU6)
---- vasp.6.3.0/arch/makefile.include.intel_omp.orig	2022-01-20 07:09:58.000000000 -0800
-+++ vasp.6.3.0/arch/makefile.include.intel_omp	2022-03-30 11:05:29.000000000 -0700
-@@ -7,12 +7,11 @@
-               -Dvasp6 \
-               -Duse_bse_te \
-               -Dtbdyn \
--              -Dfock_dblbuf \
--              -D_OPENMP
-+              -Dfock_dblbuf 
- 
- CPP         = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
- 
--FC          = mpiifort -qopenmp
-+FC          = mpiifort 
- FCL         = mpiifort
- 
- FREE        = -free -names lowercase
-@@ -49,28 +48,45 @@
- 
- # When compiling on the target machine itself, change this to the
- # relevant target when cross-compiling for another architecture
--FFLAGS     += -xHOST
-+#FFLAGS     += -xHOST
- 
--# Intel MKL (FFTW, BLAS, LAPACK, and scaLAPACK)
--# (Note: for Intel Parallel Studio's MKL use -mkl instead of -qmkl)
--FCL        += -qmkl
--MKLROOT    ?= /path/to/your/mkl/installation
--LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
--INCS        =-I$(MKLROOT)/include/fftw
-+# Flexiblas  (FFTW, BLAS, LAPACK, and scaLAPACK)
-+LLIBS      += -lflexiblas_intel -lscalapack -lfftw3 
- 
- # HDF5-support (optional but strongly recommended)
--#CPP_OPTIONS+= -DVASP_HDF5
-+CPP_OPTIONS+= -DVASP_HDF5
- #HDF5_ROOT  ?= /path/to/your/hdf5/installation
--#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
-+LLIBS      +=  -lhdf5_fortran
- #INCS       += -I$(HDF5_ROOT)/include
- 
- # For the VASP-2-Wannier90 interface (optional)
--#CPP_OPTIONS    += -DVASP2WANNIER90
-+CPP_OPTIONS    += -DVASP2WANNIER90
- #WANNIER90_ROOT ?= /path/to/your/wannier90/installation
--#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
-+LLIBS          += -lwannier
- 
- # For the fftlib library (experimental)
- #FCL         = mpiifort fftlib.o -qmkl
- #CXX_FFTLIB  = icpc -qopenmp -std=c++11 -DFFTLIB_USE_MKL -DFFTLIB_THREADSAFE
- #INCS_FFTLIB = -I./include -I$(MKLROOT)/include/fftw
- #LIBS       += fftlib
-+
-+#Libbeef-support
-+CPP_OPTIONS  += -Dlibbeef
-+LLIBS        += -lbeef
-+
-+#VASPsol support
-+CPP_OPTIONS += -Dsol_compat
-+
-+#Libxc-support 
-+CPP_OPTIONS += -DUSELIBXC
-+LLIBS       += -lxcf03 -lxc
-+
-+
-+#DFTD4- support 
-+CPP_OPTIONS += -DDFTD4
-+DFTD4_ROOT  ?= $(EBROOTDFTD4)
-+LLIBS += -ldftd4
-+INCS        += -I$(DFTD4_ROOT)/include/dftd4
-+
-+
-+
 --- vasp.6.3.0/src/mpi.F.orig	2022-01-20 07:10:06.000000000 -0800
 +++ vasp.6.3.0/src/mpi.F	2022-06-09 13:44:16.000000000 -0700
 @@ -2043,6 +2043,30 @@
@@ -166,3 +92,69 @@
  !=======================================================================
  ! if overlap is used :
  ! copy CVTOT to SV and set contribution of unbalanced lattice-vectors
+--- vasp.6.3.0/arch/makefile.include.intel_omp.orig	2022-06-22 12:44:12.000000000 -0700
++++ vasp.6.3.0/arch/makefile.include.intel_omp	2022-06-22 12:47:31.000000000 -0700
+@@ -7,12 +7,11 @@
+               -Dvasp6 \
+               -Duse_bse_te \
+               -Dtbdyn \
+-              -Dfock_dblbuf \
+-              -D_OPENMP
++              -Dfock_dblbuf 
+ 
+ CPP         = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
+ 
+-FC          = mpiifort -qopenmp
++FC          = mpiifort 
+ FCL         = mpiifort
+ 
+ FREE        = -free -names lowercase
+@@ -49,28 +48,37 @@
+ 
+ # When compiling on the target machine itself, change this to the
+ # relevant target when cross-compiling for another architecture
+-FFLAGS     += -xHOST
++#FFLAGS     += -xHOST
++
++# Flexiblas  (FFTW, BLAS, LAPACK, and scaLAPACK)
++LLIBS      += -lflexiblas_intel -lscalapack -lfftw3 
+ 
+-# Intel MKL (FFTW, BLAS, LAPACK, and scaLAPACK)
+-# (Note: for Intel Parallel Studio's MKL use -mkl instead of -qmkl)
+-FCL        += -qmkl
+-MKLROOT    ?= /path/to/your/mkl/installation
+-LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+-INCS        =-I$(MKLROOT)/include/fftw
+ 
+ # HDF5-support (optional but strongly recommended)
+-#CPP_OPTIONS+= -DVASP_HDF5
++CPP_OPTIONS+= -DVASP_HDF5
+ #HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
++LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
+ #INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
++CPP_OPTIONS    += -DVASP2WANNIER90
+ #WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++LLIBS          += -lwannier
+ 
+ # For the fftlib library (experimental)
+ #FCL         = mpiifort fftlib.o -qmkl
+ #CXX_FFTLIB  = icpc -qopenmp -std=c++11 -DFFTLIB_USE_MKL -DFFTLIB_THREADSAFE
+ #INCS_FFTLIB = -I./include -I$(MKLROOT)/include/fftw
+ #LIBS       += fftlib
++
++#Libbeef-support
++CPP_OPTIONS  += -Dlibbeef
++LLIBS        += -lbeef
++
++#VASPsol support
++CPP_OPTIONS += -Dsol_compat
++
++#Libxc-support
++CPP_OPTIONS += -DUSELIBXC
++LLIBS       += -lxcf03 -lxc
++
