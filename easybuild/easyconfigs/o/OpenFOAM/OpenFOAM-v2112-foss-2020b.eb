@@ -1,6 +1,8 @@
 ##
 # Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
 ##
+# Modified by: Ben Langenberg <ben.langenberg@ufz.de>
+##
 name = 'OpenFOAM'
 version = 'v2112'
 
@@ -11,12 +13,24 @@ description = """OpenFOAM is a free, open source CFD software package.
  to solid dynamics and electromagnetics."""
 
 toolchain = {'name': 'foss', 'version': '2020b'}
-toolchainopts = {'cstd': 'c++11'}
+toolchainopts = {'cstd': 'c++11', 'vectorize': False}
 
 source_urls = ['https://sourceforge.net/projects/openfoam/files/%(version)s/']
 sources = [SOURCE_TGZ]
+patches = [
+    ('OpenFOAM-v2012-cleanup.patch', 1),
+    'OpenFOAM-v1906-wmake-ompi.patch',
+]
 checksums = [
     '3e838731e79db1c288acc27aad8cc8a43d9dac1f24e5773e3b9fa91419a8c3f7',  # OpenFOAM-v2112.tgz
+    'cdd2597a1ac1448e9bd33a364a8dfe17f51cc9ab5a8e0ab67cf92bba3ed9da43',  # OpenFOAM-v2012-cleanup.patch
+    '518e27683c5c41400cfbc17b31effa50b31b25916dccbf85b18b0b955f642505',  # OpenFOAM-v1906-wmake-ompi.patch
+]
+
+builddependencies = [
+    ('Bison', '3.7.1'),
+    ('CMake', '3.18.4'),
+    ('flex', '2.6.4'),
 ]
 
 dependencies = [
@@ -29,16 +43,5 @@ dependencies = [
     ('ParaView', '5.8.1', '-mpi'),
     ('gnuplot', '5.4.1'),
 ]
-
-builddependencies = [
-    ('Bison', '3.7.1'),
-    ('CMake', '3.18.4'),
-    ('flex', '2.6.4'),
-]
-
-sanity_check_paths = {
-    'files': ['%(installdir)s/%(name)s-%(version)s/platforms/linux64GccDPInt32Opt/lib/dummy/libscotchDecomp.so'],
-    'dirs': ['%(installdir)s/%(name)s-%(version)s/platforms/linux64GccDPInt32Opt/lib/dummy'],
-}
 
 moduleclass = 'cae'
