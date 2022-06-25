@@ -554,6 +554,8 @@ class EasyConfigTest(TestCase):
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
+            # WPS 3.9.1 requires WRF 3.9.1.1
+            'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
