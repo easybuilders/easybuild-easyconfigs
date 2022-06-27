@@ -521,7 +521,7 @@ class EasyConfigTest(TestCase):
             'Pysam': [
                 ('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                                'NGSpeciesID-0.1.1.1-']),
-                ('0.18.0;', ['WhatsHap-1.4-']),
+                ('0.18.0;', ['WhatsHap-1.4-', 'medaka-1.6.0-']),
             ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
