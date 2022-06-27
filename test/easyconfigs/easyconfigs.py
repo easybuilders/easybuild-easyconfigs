@@ -464,7 +464,8 @@ class EasyConfigTest(TestCase):
                         break
 
         # some software packages require a specific (older/newer) version of a particular dependency
-        old_dep_versions = {
+        alt_dep_versions = {
+            'jax': [(r'0\.3\.9', [r'AlphaFold-2\.2\.2-'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
@@ -516,8 +517,12 @@ class EasyConfigTest(TestCase):
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
-            'Pysam': [('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
-                      'NGSpeciesID-0.1.1.1-'])],
+            # WhatsHap 1.4 requires Pysam >= 0.18.0
+            'Pysam': [
+                ('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
+                               'NGSpeciesID-0.1.1.1-']),
+                ('0.18.0;', ['WhatsHap-1.4-']),
+            ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
@@ -550,10 +555,10 @@ class EasyConfigTest(TestCase):
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
         }
-        if dep in old_dep_versions and len(dep_vars) > 1:
+        if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
-                for version_pattern, parents in old_dep_versions[dep]:
-                    # filter out known old dependency versions
+                for version_pattern, parents in alt_dep_versions[dep]:
+                    # filter out known alternative dependency versions
                     if re.search('^version: %s' % version_pattern, key):
                         # only filter if the easyconfig using this dep variants is known
                         if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
