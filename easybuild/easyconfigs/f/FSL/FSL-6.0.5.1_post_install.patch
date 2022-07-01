@@ -1,0 +1,20 @@
+In FSL 6.0.5 it is necessary to use the post_install command, since it
+creates the fsl_sub command that is required for using FSL with Slurm.
+Author: Henrik R. Nagel (NTNU)
+diff -ru fsl.orig/build fsl/build
+--- fsl.orig/build	2021-05-25 16:54:43.000000000 +0200
++++ fsl/build	2022-06-30 13:53:56.000000000 +0200
+@@ -160,6 +160,13 @@
+ 
+ echo "Building projects - see build.log file for progress..."
+ ./config/common/buildproj $PROJECTS > ./build.log 2>&1
++
++finalStatus=$?
++if [ $finalStatus -eq 0 ]; then
++    echo "Performing post installation - see build.log file for progress..."
++    ./etc/fslconf/post_install.sh . > ./build.log 2>&1
++fi
++
+ finalStatus=$?
+ if [ $finalStatus -eq 0 ]; then
+     echo "Build completed successfully.";
