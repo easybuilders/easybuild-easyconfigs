@@ -6,23 +6,24 @@ easyblock = 'ConfigureMake'
 name = 'IGoR'
 version = '1.4.0'
 
-homepage = 'https://qmarcou.github.io/IGoR/'
+homepage = 'https://github.com/statbiophys/IGoR'
 description = """
-IGoR is a C++ software designed to infer V(D)J recombination related processes from sequencing data such as:
-    Recombination model probability distribution
-    Hypermutation model
-    Best candidates recombination scenarios
-    Generation probabilities of sequences (even hypermutated)."""
+This repository contains all sources and models useful to infer V(D)J 
+recombination related processes for TCR or BCR sequencing data using IGoR."""
 
 toolchain = {'name': 'GCC', 'version': '11.2.0'}
-toolchainopts = {'extra_cxxflags': '-pipe -g3'}
+toolchainopts = {'extra_cxxflags': '-pipe '}
 
 source_urls = ['https://github.com/qmarcou/IGoR/archive']
 sources = ['%(version)s.tar.gz']
-patches = ['igor-1.4.0.patch']
+patches = [
+    'igor-1.4.0-c++.patch',
+    'igor-1.4.0-3rd-party.patch',
+]
 checksums = [
     '803315b0b55f78ec04852fb81b8167b2e57bc18f0df50bd2f5f507880b9707ff',   # v1.4.0.tar.gz
-    '57246dc63eb1d9b6407ba0880225802cda146f2446530ba60f73ddf978f6268a',   # igor-1.4.0.patch
+    'fe8afb79b8ebfa68765ee5c0cc109e69638a506222775a0d5308b93d1023e7fb',   # igor-1.4.0-c++.patch
+    'be285e64831a6a1e77389257c8b722de8ce475d289d4610c0a965a097f3ec2ff',   # igor-1.4.0-3rd-party.patch
 ]
 
 builddependencies = [
@@ -34,13 +35,13 @@ builddependencies = [
 dependencies = [
     ('GSL', '2.7'),
     ('jemalloc', '5.2.1'),
-    ('GSL', '2.7'),
     ('FlexiBLAS', '3.0.4'),
 ]
 
 preconfigopts = "autoreconf -i &&"
 
-sanity_check_commands = ["igor -version"]
+# The sanity check runs within 2 mins on 2 cores but ensures a correct build
+sanity_check_commands = ["igor -version && OMP_NUM_THREADS=2 igor -run_demo"]
 
 sanity_check_paths = {
     'files': ['bin/igor', 'bin/igor-compute_pgen'],
