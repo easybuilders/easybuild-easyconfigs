@@ -1,0 +1,83 @@
+Removes jemalloc and gsl_sub and replaces with EasyBuild builds
+Addresses bug https://github.com/qmarcou/IGoR/issues/22
+Adding missing include
+Author: J. Sassmannshausen (ICL/UK)
+diff --git a/IGoR-1.4.0.orig/Makefile.am b/IGoR-1.4.0/Makefile.am
+index ff37386..72a6f16 100644
+--- a/IGoR-1.4.0.orig/Makefile.am
++++ b/IGoR-1.4.0/Makefile.am
+@@ -1,5 +1,5 @@
+ ACLOCAL_AMFLAGS = -I m4
+-SUBDIRS = libs igor_src
++SUBDIRS = igor_src
+ 
+ # modelsdir = $(pkgdatadir) 
+ # models_DATA = models demo
+@@ -10,7 +10,7 @@ demodir = $(pkgdatadir)/demo
+ demo_DATA = demo/genomicVs_with_primers.fasta demo/genomicDs.fasta demo/genomicJs_all_curated.fasta demo/murugan_naive1_noncoding_demo_seqs.txt
+ 
+ #Install the generated man pages
+-man_MANS = igor.1
++# man_MANS = igor.1
+ 
+ # Scripts
+ bin_SCRIPTS = \
+diff --git a/IGoR-1.4.0.orig/configure.ac b/IGoR-1.4.0/configure.ac
+index 2353e5e..174d5be 100644
+--- a/IGoR-1.4.0.orig/configure.ac
++++ b/IGoR-1.4.0/configure.ac
+@@ -36,9 +36,6 @@ AC_TYPE_SIZE_T
+ AC_CHECK_FUNCS([pow sqrt])
+ 
+ AC_CONFIG_FILES([Makefile
+-                 igor_src/Makefile
+-                 libs/Makefile])
+-AC_CONFIG_SUBDIRS([libs/gsl_sub
+-                   libs/jemalloc
+-					igor_src])
++                 igor_src/Makefile ])
++AC_CONFIG_SUBDIRS([igor_src])
+ AC_OUTPUT
+diff --git a/IGoR-1.4.0.orig/igor_src/CDR3SeqData.h b/IGoR-1.4.0/igor_src/CDR3SeqData.h
+index a7f16b5..9f6b9cb 100644
+--- a/IGoR-1.4.0.orig/igor_src/CDR3SeqData.h
++++ b/IGoR-1.4.0/igor_src/CDR3SeqData.h
+@@ -6,6 +6,8 @@
+  * 
+  */
+ 
++#include <string>
++
+ #ifndef CDR3SEQDATA_H
+ #define CDR3SEQDATA_H
+ 
+diff --git a/IGoR-1.4.0.orig/igor_src/Makefile.am b/IGoR-1.4.0/igor_src/Makefile.am
+index 7f114bc..95c13aa 100644
+--- a/IGoR-1.4.0.orig/igor_src/Makefile.am
++++ b/IGoR-1.4.0/igor_src/Makefile.am
+@@ -11,16 +11,16 @@ igor_SOURCES = $(SOURCES) main.cpp
+ 
+ # Include GSL subparts and jemalloc without installation
+ 
+-igor_LDADD = ../libs/gsl_sub/libgsl_sub.la ../libs/jemalloc/lib/libjemalloc.a -lpthread -ldl #Need to link pthread since it is not statically linked with jemalloc (for now)
++igor_LDADD = -L${EBROOTGSL}/lib -lgsl -L${EBROOTJEMALLOC}/lib -ljemalloc -L${EBROOTFLEXIBLAS}/lib -lflexiblas -lpthread -ldl #Need to link pthread since it is not statically linked with jemalloc (for now)
+ 
+ 
+-igor_CXXFLAGS = -I$(srcdir)/../libs/jemalloc/include/jemalloc -I$(srcdir)/../libs/gsl_sub $(OPENMP_CXXFLAGS) -DIGOR_DATA_DIR=\"$(pkgdatadir)\"
++igor_CXXFLAGS = -I${EBROOTJEMALLOC}/include/jemalloc -I${EBROOTGSL}/include $(OPENMP_CXXFLAGS) -DIGOR_DATA_DIR=\"$(pkgdatadir)\"
+ 
+ 
+ # Pass IGoR data install directory path through the compiler with -DIGOR_DATA_DIR=\"$(pkgdatadir)\"
+ # and not in config.h (as it is best practice according to: https://stackoverflow.com/questions/5867136/autoconf-how-to-get-installation-paths-into-config-h#11317815)
+ 
+-
++igor_AM_CPPFLAGS = -std=c++11
+ 
+ #igor_AM_CPPFLAGS = -std=c++11 -I$(srcdir)/../libs/gsl_sub 
+ #igor_AM_CXXFLAGS = -I$(srcdir)/../libs/jemalloc/include/jemalloc $(OPENMP_CXXFLAGS)
+diff --git a/IGoR-1.4.0.orig/libs/Makefile.am b/IGoR-1.4.0/libs/Makefile.am
+index c7d0ed8..e69de29 100644
+--- a/IGoR-1.4.0.orig/libs/Makefile.am
++++ b/IGoR-1.4.0/libs/Makefile.am
+@@ -1 +0,0 @@
+-SUBDIRS = gsl_sub jemalloc

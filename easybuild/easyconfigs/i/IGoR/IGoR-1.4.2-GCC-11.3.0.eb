@@ -1,0 +1,52 @@
+# Contribution from Imperial College Loncon / UK
+# uploaded by J. Sassmannshausen
+
+easyblock = 'ConfigureMake'
+
+name = 'IGoR'
+version = '1.4.2'
+
+homepage = 'https://github.com/statbiophys/IGoR'
+description = """
+This repository contains all sources and models useful to infer V(D)J 
+recombination related processes for TCR or BCR sequencing data using IGoR.
+This is the fork from the Statbiophys GitHub page!"""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'extra_cxxflags': '-pipe '}
+
+source_urls = ['https://github.com/statbiophys/IGoR/archive']
+sources = ['%(version)s.tar.gz']
+patches = [
+    'igor-1.4.0-c++.patch',
+    'igor-1.4.0-3rd-party.patch',
+]
+checksums = [
+    '81604e3bb7d593a00cd89f79d43ab25f54fa8f64c67d92665636fffa6973ba0d',   # v1.4.2.tar.gz
+    'fe8afb79b8ebfa68765ee5c0cc109e69638a506222775a0d5308b93d1023e7fb',   # igor-1.4.0-c++.patch
+    'be285e64831a6a1e77389257c8b722de8ce475d289d4610c0a965a097f3ec2ff',   # igor-1.4.0-3rd-party.patch
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('M4', '1.4.19'),
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('GSL', '2.7'),
+    ('jemalloc', '5.3.0'),
+    ('FlexiBLAS', '3.2.0'),
+]
+
+preconfigopts = "autoreconf -i &&"
+
+# The sanity check runs within 2 mins on 2 cores but ensures a correct build
+sanity_check_commands = ["igor -version && OMP_NUM_THREADS=2 igor -run_demo"]
+
+sanity_check_paths = {
+    'files': ['bin/igor', 'bin/igor-compute_pgen'],
+    'dirs': ['share/igor']
+}
+
+moduleclass = 'bio'

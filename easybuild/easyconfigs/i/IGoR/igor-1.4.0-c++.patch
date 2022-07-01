@@ -1,0 +1,60 @@
+Addresses various buffer-overflow issues in Aligner.cpp
+Done with the help of Mikael Öhman (Chalmers University of Technology)
+Adresses issue mentioned in https://github.com/qmarcou/IGoR/pull/67
+Done with the help of Alex Dewar (ICL/UK)
+Author: J. Sassmannshausen (ICL/UK)
+diff --git a/IGoR-1.4.0.orig/igor_src/Aligner.cpp b/IGoR-1.4.0/igor_src/Aligner.cpp
+index eb9099d..b9d65f5 100644
+--- a/IGoR-1.4.0.orig/igor_src/Aligner.cpp
++++ b/IGoR-1.4.0/igor_src/Aligner.cpp
+@@ -85,6 +85,9 @@ vector<pair<const int, const string>> read_fasta(string filename){
+ 	vector<pair<const int, const std::string>> sequence_vect;
+ 
+ 	while (getline(infile,temp_str)){
++                if(temp_str.empty()) {
++                        continue;
++                }
+ 		if(temp_str[temp_str.size()-1] == '\r'){
+ 			temp_str.erase(temp_str.size()-1);
+ 		}
+@@ -128,6 +131,9 @@ vector<pair<string,string>> read_genomic_fasta(string filename){
+ 		vector<pair<string,std::string>> sequence_vect;
+ 
+ 		while (getline(infile,temp_str)){
++                        if(temp_str.empty()) {
++                                continue;
++                        }
+ 			if(temp_str[temp_str.size()-1] == '\r'){
+ 				temp_str.erase(temp_str.size()-1);
+ 			}
+@@ -198,6 +204,9 @@ vector<pair<const int , const string>> read_txt(string filename){
+ 	string seq_str;
+ 
+ 	while(getline(infile,seq_str)){
++                if(seq_str.empty()) {
++			continue;
++                }
+ 		if(seq_str[seq_str.size()-1] == '\r'){
+ 			seq_str.erase(seq_str.size()-1);
+ 		}
+@@ -895,7 +904,7 @@ Int_Str nt2int(string nt_sequence){
+ /**
+  * This function compares nucleotides and output a boolean if they do not necessarily imply an error (ambiguous nucleotides are thus treated in a loose sense).
+  */
+-bool inline comp_nt_int(const int& nt_1 , const int& nt_2){
++bool comp_nt_int(const int& nt_1 , const int& nt_2){
+ 	if(nt_1 != nt_2){
+ 		if( (nt_1<4) & (nt_2<4)){
+ 			return false;
+diff --git a/IGoR-1.4.0.orig/igor_src/Utils.h b/IGoR-1.4.0/igor_src/Utils.h
+index 23fbea3..ffc6a57 100644
+--- a/IGoR-1.4.0.orig/igor_src/Utils.h
++++ b/IGoR-1.4.0/igor_src/Utils.h
+@@ -139,6 +139,7 @@ public:
+ 		for(int i = 0 ; i != rows*cols ; i++){
+ 			this->array_p[i] = other.array_p[i];
+ 		}
++		return *this;
+ 	}
+ 
+ 	T& operator()(const int& i ,const int& j ){
