@@ -1,0 +1,55 @@
+easyblock = 'Bundle'
+
+name = 'xtensor'
+version = '0.24.2'
+
+homepage = 'https://github.com/xtensor-stack/xtensor'
+description = "xtensor is a C++ library meant for numerical analysis with multi-dimensional array expressions."
+
+# Header-only libraries
+toolchain = SYSTEM
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('python-build-bundle', '2022a'),
+    ('SciPy-Stack', '2022a'),
+    ('R', '4.1.2', '', ('gcccoreflexiblas', '2020a')),
+]
+
+# This is a generic header library (C++) first, that can use any python or r version. Do not lock in its dependencies.
+# PyBind11 and Numpy are be required at runtime, either from a virtual environment or modules (python).
+# Rcpp is required at runtime (R)
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/xtensor-stack/%(name)s/archive/'],
+    'sources': ['%(version)s.tar.gz'],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('xtl', '0.7.4', {
+        'checksums': ['3c88be0e696b64150c4de7a70f9f09c00a335186b0b0b409771ef9f56bca7d9a'],
+    }),
+    ('xsimd', '8.1.0', {
+        'checksums': ['d52551360d37709675237d2a0418e28f70995b5b7cdad7c674626bcfbbf48328'],
+    }),
+    ('xtensor', version, {
+        'checksums': ['790d9e449add817154177157a850b9afd0260dc0f9df857d8b3a38886a10ef8b'],
+        'configopts': ' -DXTENSOR_USE_XSIMD=ON '
+    }),
+    ('xtensor-python', '0.26.1', {
+        'checksums': ['eb64155c6824be471decf93927beedae3645714c8ce92f38e037434db2c2454a'],
+    }),
+    ('xtensor-r', '0.14.0', {
+        'checksums': ['3d5ce2b977ace9ddd7bd3a7320aaf50f918078e2ee9d0d0f7bbab493fa247833'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['include/xtensor.hpp', 'lib/pkgconfig/xsimd.pc', 'lib/pkgconfig/xtensor.pc'],
+    'dirs': ['include/xsimd', 'include/xtensor', 'include/xtensor-python', 'include/xtensor-r', 'include/xtl', 'lib/cmake'],
+}
+
+moduleclass = 'lib'
