@@ -1,0 +1,71 @@
+name = 'DPC++'
+easyblock = 'CMakeMake'
+version = '2022-06'
+
+homepage = "https://github.com/intel/llvm"
+description = """DPC++ is a LLVM-based compiler project that implements 
+compiler and runtime support for the SYCL language."""
+
+toolchain = {'name': 'gcccorecuda', 'version': '2021a'}
+
+source_urls = ['https://github.com/intel/llvm/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+checksums = ['065455dba4cfb5c621b4cf01afc54b6ed885a4cc35fa344f7af09c9dd8221cfc']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.22.1'),
+    ('Python', '3.10'),
+]
+
+dependencies = [
+    ('ncurses', '6.3'),
+    ('zlib', '1.2.12'),
+]
+
+srcdir = 'llvm'
+
+local_srcdir = '%(builddir)s/llvm-%(version)s/'
+
+preconfigopts = ";".join([
+    """pushd %s/clang"""%local_srcdir,
+    """sed -i -e "s@DEFAULT_SYSROOT \\"\\"@DEFAULT_SYSROOT \\"${EPREFIX}\\"@" CMakeLists.txt""",
+    """pushd lib/Driver/ToolChains""",
+    """sed -i -e "/LibDir.*Loader/s@return \\"\/\\"@return \\"${EPREFIX%/}/\\"@" Linux.cpp""",
+    """sed -i -e "$(grep -n -B1 sysroot= Gnu.cpp | sed -ne '{1s/-.*//;1p}'),+1 d" Gnu.cpp""",
+    """popd""",
+    """popd""",
+    """CUDA_LIB_PATH=$CUDA_ROOT/lib64/stubs """
+])
+configopts = " ".join([
+    "-DLLVM_ENABLE_ASSERTIONS=ON",
+    "-DLLVM_TARGETS_TO_BUILD='X86;NVPTX'",
+    "-DLLVM_EXTERNAL_PROJECTS='sycl;llvm-spirv;opencl;libdevice;xpti;xptifw;openmp'",
+    "-DLLVM_EXTERNAL_OPENMP_SOURCE_DIR=%s%s" % (local_srcdir, "openmp"),
+    "-DOPENMP_ENABLE_LIBOMPTARGET=OFF",
+    "-DLLVM_EXTERNAL_SYCL_SOURCE_DIR=%s%s" % (local_srcdir, "sycl"),
+    "-DLLVM_EXTERNAL_LLVM_SPIRV_SOURCE_DIR=%s%s" % (local_srcdir, "llvm-spirv"),
+    "-DLLVM_EXTERNAL_XPTI_SOURCE_DIR=%s%s" % (local_srcdir, "xpti"),
+    "-DXPTI_SOURCE_DIR=%s%s" % (local_srcdir, "xpti"),
+    "-DLLVM_EXTERNAL_XPTIFW_SOURCE_DIR=%s%s" % (local_srcdir, "xptifw"),
+    "-DLLVM_EXTERNAL_LIBDEVICE_SOURCE_DIR=%s%s" % (local_srcdir, "libdevice"),
+    "-DLLVM_ENABLE_PROJECTS='clang;sycl;llvm-spirv;opencl;libdevice;xpti;xptifw;libclc;openmp'",
+    "-DLIBCLC_TARGETS_TO_BUILD='nvptx64--;nvptx64--nvidiacl'",
+    "-DLIBCLC_GENERATE_REMANGLED_VARIANTS=ON",
+    "-DSYCL_BUILD_PI_HIP_PLATFORM=AMD",
+    "-DLLVM_BUILD_TOOLS=ON",
+    "-DSYCL_INCLUDE_TESTS=ON",
+    "-DSYCL_ENABLE_XPTI_TRACING=ON",
+    "-DBUILD_SHARED_LIBS=ON",
+    "-DSYCL_ENABLE_PLUGINS='level_zero;cuda;opencl'",
+])
+buildopts = 'sycl-toolchain'
+
+sanity_check_paths = {
+    'files': ['bin/llvm-ar', 'bin/clang++'],
+    'dirs': ['include/llvm', 'include/llvm-c'],
+}
+
+sanity_check_commands = ["llvm-ar --help"]
+
+moduleclass = 'compiler'
