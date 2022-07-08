@@ -1,0 +1,71 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'Shasta'
+version = '0.10.0'
+
+homepage = 'https://github.com/chanzuckerberg/shasta'
+description = """
+The goal of the Shasta long read assembler is to rapidly produce accurate assembled sequence using DNA reads generated
+by Oxford Nanopore flow cells as input. Computational methods used by the Shasta assembler include:
+Using a run-length representation of the read sequence. This makes the assembly process more resilient to errors in
+homopolymer repeat counts, which are the most common type of errors in Oxford Nanopore reads. Using in some phases of
+the computation a representation of the read sequence based on markers, a fixed subset of short k-mers (k ≈ 10).
+"""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2020a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/chanzuckerberg/shasta/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    "Shasta-%(version)s-fix_dyn_links.patch"
+]
+checksums = [
+    '619830d07e7dbd7c0fdb64aa7a3408b0cb7e9afeed8a224973d9e21755f91dcf',  # 0.10.0.tar.gz
+    '353b216475c969392136cb5c27646d917c10a22639e6193262276d9d61365042',  # Shasta-0.10.0-fix_dyn_links.patch
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Cereal', '1.3.0', '', True),
+    ('SeqAn-library', '2.4.0'),
+    ('spoa', '3.4.0'),  # older spoa is needed, since new is truly incompatible
+    ('Boost', '1.72.0'),
+    ('python-build-bundle', '2022a'),
+    ('cpu_features', '0.6.0'),
+]
+
+dependencies = [
+    ('BLAST+', '2.12.0'),
+    ('Python', '3.9.6'), # Badly designed software, needs 1 python. I chose 3.9.6
+]
+
+
+# Don't build static as we do not have libpng.a
+configopts = ' '.join([
+    '-DBUILD_ID=%(version)s',
+    '-DBUILD_DYNAMIC_LIBRARY=ON',
+    '-DBUILD_DYNAMIC_EXECUTABLE=ON',
+    '-DBUILD_STATIC_LIBRARY=OFF',
+    '-DBUILD_STATIC_EXECUTABLE=OFF',
+])
+
+# we need this because CMakeLists here is hard to configure, so we stick to default install path (inside sub-folder)
+# and copy installed files afterwards
+buildopts = " && make install -j %(parallel)s"
+
+files_to_copy = [
+    (['shasta-install/bin/*'], 'bin'),
+    (['shasta-install/bin/*.%s' % SHLIB_EXT], 'lib')
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+sanity_check_paths = {
+    'files': ['bin/Copy.py', 'bin/SaveRun.py', 'bin/shasta', 'lib/shasta.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+sanity_check_commands = ['shasta --help']
+
+moduleclass = 'bio'
