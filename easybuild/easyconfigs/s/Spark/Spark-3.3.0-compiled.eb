@@ -1,0 +1,67 @@
+easyblock = 'CmdCp'
+
+name = 'Spark'
+version = '3.3.0'
+versionsuffix = '-compiled'
+
+homepage = 'http://spark.apache.org'
+description = """Spark is Hadoop MapReduce done in memory"""
+
+toolchain = SYSTEM
+
+sources = ['%(namelower)s-%(version)s.tgz']
+source_urls = ["https://dlcdn.apache.org/%(namelower)s/%(namelower)s-%(version)s"]
+checksums = [
+    "9b357aa165e3d78820702f0eee3fa32097839d42c9d0f5b19563fd23b796d13c", # Spark-3.3.0.tgz
+    "ffba2bb124fde919e1c02324b5ff9e8c78eaf429f7e3ff46c086c078f7e0fa5f"  # Spark-3.3.0.patch
+]
+
+patches = [('%(name)s-3.3.0.patch', 1)]
+
+builddependencies = [
+    ('FlexiBLAS', '3.0.4'),
+    ('R', '4.1.2', '', ('gcccoreflexiblas', '2020a'))
+]
+
+dependencies = [
+    ('Java', '13.0.2')
+]
+
+cmds_map = [
+    ('.*', "dev/make-distribution.sh -Psparkr")
+]
+
+postinstallcmds = [
+    'mkdir %(installdir)s/lib',
+    'ln -sf $EBROOTFLEXIBLAS/lib64/libflexiblas.so %(installdir)s/lib/libblas.so.3',
+    'ln -sf $EBROOTFLEXIBLAS/lib64/libflexiblas.so %(installdir)s/lib/liblapack.so.3',
+    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/jars/blas-2.2.1.jar --add_path %(installdir)s/lib',
+    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/jars/lapack-2.2.1.jar --add_path %(installdir)s/lib',
+    'rm %(installdir)s/bin/*.cmd %(installdir)s/conf/*.template',
+]
+
+files_to_copy = ['dist/*']
+
+sanity_check_paths = {
+    'files': ['bin/spark-shell', 'bin/pyspark', 'bin/sparkR'],
+    'dirs': ['bin', 'conf', 'python', 'R', 'sbin']
+}
+
+sanity_check_commands = [
+    "module load python && python -c 'import pyspark'"
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['python', 'python/lib/py4j-0.10.9.5-src.zip'],
+    'R_LIBS_SITE': ['R/lib']
+}
+
+modextravars =  {'SPARK_HOME': '%(installdir)s'}
+
+moduleclass = 'devel'
+
+modluafooter = """
+setenv("SPARK_CONF_DIR", pathJoin(os.getenv('HOME'), ".spark/%(version)s/conf"))
+setenv("SPARK_LOG_DIR", pathJoin(os.getenv('HOME'), ".spark/%(version)s/log"))
+setenv("SPARK_USER", os.getenv('USER'))
+"""
