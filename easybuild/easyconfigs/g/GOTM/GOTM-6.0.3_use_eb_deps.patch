@@ -1,0 +1,44 @@
+Fix CMake build to use dependencies from EasyBuild
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff --git a/CMakeLists.txt.orig b/CMakeLists.txt
+index 5b94a3c..a02d3df 100644
+--- a/CMakeLists.txt.orig
++++ b/CMakeLists.txt
+@@ -50,13 +50,14 @@ mark_as_advanced(GOTM_EXTRA_OUTPUT)
+ # Dependencies
+ # ----------------------------
+ 
+-if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/extern/flexout/src/CMakeLists.txt")
+-   message(FATAL_ERROR "Flexible output manager not found at extern/flexout. Please retrieve this submodule first by running \"git submodule update --init --recursive\" within your GOTM source directory.")
+-else()
+-   set(FLEXOUT_USE_NetCDF ${GOTM_USE_NetCDF} CACHE BOOL "Enable output in NetCDF format" FORCE)
+-   mark_as_advanced(FLEXOUT_USE_NetCDF)
+-   add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/extern/flexout" extern/flexout)
+-endif()
++set(FLEXOUT_USE_NetCDF ${GOTM_USE_NetCDF} CACHE BOOL "Enable output in NetCDF format" FORCE)
++mark_as_advanced(FLEXOUT_USE_NetCDF)
++include_directories(SYSTEM
++    "$ENV{EBROOTFLEXOUT}/include"
++    "$ENV{EBROOTFORTRANMINYAML}/include"
++    "$ENV{EBROOTNETCDFMINFORTRAN}/include"
++)
++link_directories("$ENV{EBROOTFLEXOUT}/lib")
+ 
+ if(GOTM_USE_CVMIX)
+    if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/extern/CVMix-src/CMakeLists.txt")
+diff --git a/src/gotm/CMakeLists.txt.orig b/src/gotm/CMakeLists.txt
+index a851721..5734510 100644
+--- a/src/gotm/CMakeLists.txt.orig
++++ b/src/gotm/CMakeLists.txt
+@@ -5,7 +5,10 @@ add_library(gotm
+    deprecated_output.F90
+    print_version.F90
+ )
+-target_link_libraries(gotm PUBLIC util airsea_driver config meanflow stokes_drift turbulence output_manager input_manager)
++target_link_libraries(gotm PUBLIC util airsea_driver airsea config meanflow stokes_drift turbulence output_manager input_manager observations)
++if(GOTM_USE_NetCDF)
++   target_link_libraries(gotm PUBLIC netcdff)
++endif()
+ if(GOTM_USE_CVMIX)
+    target_compile_definitions(gotm PRIVATE -D_CVMIX_)
+    target_link_libraries(gotm PRIVATE cvmix_static PUBLIC gotm_cvmix)
