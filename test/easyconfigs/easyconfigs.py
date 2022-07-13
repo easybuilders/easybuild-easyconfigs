@@ -464,7 +464,8 @@ class EasyConfigTest(TestCase):
                         break
 
         # some software packages require a specific (older/newer) version of a particular dependency
-        old_dep_versions = {
+        alt_dep_versions = {
+            'jax': [(r'0\.3\.9', [r'AlphaFold-2\.2\.2-'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
@@ -550,14 +551,18 @@ class EasyConfigTest(TestCase):
                 # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
                 ('2.5.3;', ['medaka-1.5.0-']),
             ],
+            # smooth-topk uses a newer version of torchvision
+            'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
+            # WPS 3.9.1 requires WRF 3.9.1.1
+            'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
         }
-        if dep in old_dep_versions and len(dep_vars) > 1:
+        if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
-                for version_pattern, parents in old_dep_versions[dep]:
-                    # filter out known old dependency versions
+                for version_pattern, parents in alt_dep_versions[dep]:
+                    # filter out known alternative dependency versions
                     if re.search('^version: %s' % version_pattern, key):
                         # only filter if the easyconfig using this dep variants is known
                         if all(any(re.search(p, x) for p in parents) for x in dep_vars[key]):
