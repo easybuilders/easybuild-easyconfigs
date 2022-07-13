@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'Meep'
+version = '1.23.0'
+
+homepage = 'https://meep.readthedocs.io'
+description = """Meep is a free and open-source software package for electromagnetics simulation via
+ the finite-difference time-domain (FDTD) method spanning a broad range of applications."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'opt': True, 'optarch': True, 'unroll': True, 'pic': True}
+
+source_urls = ['https://github.com/NanoComp/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['acf5433614bfe86ef88735ebb6a5782ef4903081f898efba52b314d8d86de739']
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('SWIG', '4.0.2'),
+]
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('matplotlib', '3.4.2'),
+    ('autograd', '1.4'),
+    ('HDF5', '1.10.7'),
+    ('Guile', '2.2.7'),
+    ('libctl', '4.5.1'),
+    ('Harminv', '1.4.1'),
+    ('GSL', '2.7'),
+    ('MPB', '1.11.1'),
+    ('libGDSII', '0.21'),
+]
+
+configopts = '--with-pic --with-mpi --with-blas="$LIBBLAS" --with-lapack="$LIBLAPACK" --without-gcc-arch '
+configopts += '--with-libctl=${EBROOTLIBCTL}/share/libctl '
+configopts += '--enable-shared GUILE_CONFIG="$EBROOTGUILE/bin/guile -e main -s $EBROOTGUILE/bin/guile-config"'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'lib/libmeep.so'],
+    'dirs': ['include', 'lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+sanity_check_commands = ["python -c 'import %(namelower)s'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'phys'
