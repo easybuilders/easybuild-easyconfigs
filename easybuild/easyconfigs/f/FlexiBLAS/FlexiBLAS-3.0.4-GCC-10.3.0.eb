@@ -11,6 +11,13 @@ toolchain = {'name': 'GCC', 'version': '10.3.0'}
 local_extra_flags = "-fstack-protector-strong -fstack-clash-protection"
 toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
 
+if ARCH == 'ppc64le':
+    # Workaround optimizer bug in GCC
+    # See https://github.com/easybuilders/easybuild-easyconfigs/issues/12968
+    local_configopts = '-DCMAKE_C_FLAGS_RELEASE="-O0"'
+else:
+    local_configopts = ''
+
 builddependencies = [
     ('CMake', '3.20.1'),
     ('Python', '3.9.5'),  # required for running the tests
@@ -35,6 +42,7 @@ components = [
         'sources': [SOURCELOWER_TAR_GZ],
         'checksums': ['50a88f2e88994dda91b2a2621850afd9654b3b84820e737e335687a46751be5c'],
         'backends': local_backends,
+        'configopts': local_configopts,
     }),
     ('LAPACK', '3.10.0', {
         'easyblock': 'CMakeMake',
