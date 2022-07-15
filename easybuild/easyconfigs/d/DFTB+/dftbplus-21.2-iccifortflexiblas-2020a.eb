@@ -1,0 +1,117 @@
+easyblock = 'CMakeMake'
+
+name = 'dftbplus'
+version = '21.2'
+
+homepage = 'https://www.dftb-plus.info'
+description = """DFTB+ is a fast and efficient versatile quantum mechanical simulation package.
+It is based on the Density Functional Tight Binding (DFTB) method, containing
+almost all of the useful extensions which have been developed for the DFTB
+framework so far.  Using DFTB+ you can carry out quantum mechanical simulations
+like with ab-initio density functional theory based packages, but in an
+approximate way gaining typically around two order of magnitude in speed."""
+
+toolchain = {'name': 'iccifortflexiblas', 'version': '2020a'}
+
+separate_build_dir = True
+
+parallel = 8
+
+local_external_dir = '%%(builddir)s/dftbplus-%%(version)s/external/%s/origin/'
+local_external_extract  = ' mkdir -p %s && tar -C %s' % (local_external_dir, local_external_dir)
+local_external_extract += ' --strip-components=1 -xzf %%s'
+
+sources = [
+    {
+        # DFTB+ source code
+        'source_urls': ['https://github.com/dftbplus/dftbplus/archive'],
+        'download_filename': '%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        # libmbd source code
+        'source_urls': ['https://github.com/libmbd/libmbd/archive/refs/tags'],
+        'download_filename': '0.12.1.tar.gz',
+        'filename': 'mbd-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('mbd', 'mbd'),
+    },
+    {
+        # libnegf source code
+        'source_urls': ['https://github.com/libnegf/libnegf/archive/refs/tags'],
+        'download_filename': 'v1.0.2.tar.gz',
+        'filename': 'libnegf-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('libnegf', 'libnegf'),
+    },
+    {
+        # dftd3 source code
+        'source_urls': ['http://github.com/aradi/dftd3-lib/archive'],
+        'download_filename': 'cmake.tar.gz',
+        'filename': 'dftd3-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('dftd3', 'dftd3'),
+    },
+    {
+        # Slater-Koster data for testing
+        'source_urls': ['https://github.com/dftbplus/testparams/archive'],
+        'download_filename': '26439495c4b5b0d07be6ceec4dade3d149425465.tar.gz',
+        'filename': 'slakos-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('slakos', 'slakos'),
+    },
+    {
+        # GBSA parameters for testing
+        'source_urls': ['https://github.com/grimme-lab/gbsa-parameters/archive'],
+        'download_filename': '6836c4d997e4135e418cfbe273c96b1a3adb13e2.tar.gz',
+        'filename': 'gbsa-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('gbsa', 'gbsa'),
+    },
+]
+checksums = [
+    'e73aa698ff951b59f7fe2ea027b292bae16abf545c9fdbb11b5b5127f04a3c10',  # dftbplus-21.2.tar.gz
+    'e2826bf836aca39ce1ff14b36236a36d72fad108c15bda3d64b014299a8ac18f',  # mbd-21.2.tar.gz
+    '9ee909d59987d80c65f9d30fba3adc31dfba35d824e4aa01aa2091084c47c27c',  # libnegf-21.2.tar.gz
+    '226a4534d4e78ac322eeca79b35f273d31e2a20c622ab1878bca31c58976602d',  # dftd3-21.2.tar.gz
+    '6f65da7b64ef255fd777de7a972c63f7fa8ed2041442823b2c601bc8f0e55d98',  # slakos-21.2.tar.gz
+    'd464f9f7b1883d1353b433d0c7eae2f5606af092d9b51d38e9ed15e072610a79',  # gbsa-21.2.tar.gz
+]
+
+dependencies = [
+    ('Python', '3.8'),
+    ('SciPy-Stack', '2021a'),
+    ('arpack-ng', '3.8.0'),
+]
+
+configure_cmd_prefix = 'FC=ifort CC=icc'
+
+configopts  = ' -DWITH_ARPACK=TRUE'
+configopts += ' -DWITH_MBD=TRUE'
+configopts += ' -DWITH_TRANSPORT=TRUE'
+configopts += ' -DWITH_DFTD3=TRUE'
+configopts += ' -DWITH_MPI=FALSE'
+configopts += ' -DWITH_PYTHON=TRUE '
+configopts += ' -DWITH_TBLITE=TRUE '
+configopts += ' -DBLAS_LIBRARY=$LIBBLAS '
+
+#local_dftb_binaries = [
+#    'dftb+', 'dp_bands', 'dp_dos', 'gen2cif', 'gen2xyz', 'makecube',
+#    'modes', 'repeatgen', 'straingen', 'waveplot', 'xyz2gen',
+#]
+
+local_dftb_binaries = [
+    'buildwire', 'calc_timeprop_spectrum', 'flux', 'makecube', 'phonons',
+    'printunits', 'skderivs', 'waveplot', 'calc_timeprop_maxpoldir', 
+    'dftb+', 'integvalue', 'modes', 'polyvalue', 'setupgeom', 'splvalue',
+]
+
+pretestopts = 'cd %(builddir)s/easybuild_obj && '
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in local_dftb_binaries],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [('python', '-c "import dptools"')]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'phys'
