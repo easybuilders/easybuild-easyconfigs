@@ -11,7 +11,7 @@ It is developed in the research group of Sjors Scheres at the MRC Laboratory of 
 """
 
 toolchain = {'name': 'gomklc', 'version': '2020a'}
-#toolchainopts = {'pic': True}
+toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/3dem/relion/archive/']
 sources = ['%(version)s.tar.gz']
@@ -28,16 +28,24 @@ dependencies = [
 
 builddependencies = [('CMake', '3.12.2')]
 
+# GPU only:
+
 configopts = '-DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_BUILD_TYPE=Release '
 configopts += '-DCUDA=ON -DALTCPU=OFF -DCudaTexture=ON -DMKLFFT=ON -DGUI=ON -DFORCE_OWN_FFT=OFF '
 configopts += '-DMPI_INCLUDE_PATH=$EBROOTOPENMPI/include '
+
 parallel = 4
 
 separate_build_dir = True
 
+local_relion_binaries = [
+    "qsub.csh", "star_datablock_singlefiles", "star_loopheader", "star_printtable",
+    "star_datablock_ctfdat", "star_datablock_stack", "star_plottable",
+]
+
 sanity_check_paths = {
-    'files': [ "bin/relion_qsub.csh", "bin/relion_star_datablock_singlefiles", "bin/relion_star_loopheader", "bin/relion_star_printtable", "bin/relion_star_datablock_ctfdat", "bin/relion_star_datablock_stack", "bin/relion_star_plottable",], 
-    'dirs': [ ],
+    'files': ['bin/relion_%s' % x for x in local_relion_binaries],
+    'dirs': [],
 }
 
 moduleclass = 'bio'
