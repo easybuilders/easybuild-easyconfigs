@@ -1,0 +1,45 @@
+diff -ur saga-8.2.2-orig/saga-gis/CMakeLists.txt saga-8.2.2/saga-gis/CMakeLists.txt
+--- saga-8.2.2-orig/saga-gis/CMakeLists.txt	2022-06-14 11:39:22.000000000 +0000
++++ saga-8.2.2/saga-gis/CMakeLists.txt	2022-06-19 21:16:50.835117472 +0000
+@@ -59,7 +59,7 @@
+ # create windows resouce file
+ set(windows_version_rc "${CMAKE_BINARY_DIR}/win_version_info.rc")
+ gen_win_version_resource("${PROJECT_NAME}" "${windows_version_rc}"
+-	${SAGA_VERSION_MAJOR} ${SAGA_VERSION_MINOR} ${SAGA_VERSION_PATCH} ${GIT_COUNT}
++	${SAGA_VERSION_MAJOR} ${SAGA_VERSION_MINOR} ${SAGA_VERSION_PATCH} "${GIT_COUNT}"
+ 	${SAGA_VERSION_FULL_STRING})
+ 
+ # include the generated header files
+diff -ur saga-8.2.2-orig/saga-gis/version.cmake saga-8.2.2/saga-gis/version.cmake
+--- saga-8.2.2-orig/saga-gis/version.cmake	2022-06-14 11:39:22.000000000 +0000
++++ saga-8.2.2/saga-gis/version.cmake	2022-06-19 21:14:34.162047806 +0000
+@@ -15,7 +15,7 @@
+ # define version strings
+ gen_version_string(SAGA_VERSION_STRING SAGA_VERSION_FULL_STRING
+ 	${SAGA_VERSION_MAJOR} ${SAGA_VERSION_MINOR} ${SAGA_VERSION_PATCH}
+-	${GIT_COUNT} ${GIT_COMMIT})
++	"${GIT_COUNT}" "${GIT_COMMIT}")
+ 
+ message("GIT_BRANCH:         ${GIT_BRANCH}")
+ message("VERSON_STRING:      ${SAGA_VERSION_STRING}")
+diff -ur saga-8.2.2-orig/saga-gis/src/saga_core/saga_api/saga_api_python/CMakeLists.txt saga-8.2.2/saga-gis/src/saga_core/saga_api/saga_api_python/CMakeLists.txt
+--- saga-8.2.2-orig/saga-gis/src/saga_core/saga_api/saga_api_python/CMakeLists.txt	2022-06-14 11:39:20.000000000 +0000
++++ saga-8.2.2/saga-gis/src/saga_core/saga_api/saga_api_python/CMakeLists.txt	2022-06-19 22:44:01.302038796 +0000
+@@ -60,11 +60,11 @@
+ 		swig_link_libraries(saga_api_python ${Python_LIBRARIES})
+ 
+ 
+-        if(EXISTS ${Python_SITELIB})
+-            message(STATUS "Python site-packages: ${PYTHON_SITELIB}")
+-            install(TARGETS saga_api_python DESTINATION ${Python_SITELIB})
+-            install(FILES ${CMAKE_BINARY_DIR}/src/saga_core/saga_api/saga_api_python/saga_api.py DESTINATION ${Python_SITELIB})
+-            install(FILES ${CMAKE_SOURCE_DIR}/src/accessories/python/examples/saga_helper.py DESTINATION ${Python_SITELIB})
+-		endif()
++		if (NOT CMAKE_INSTALL_PYTHON_LIBDIR)
++			set(CMAKE_INSTALL_PYTHON_LIBDIR "${CMAKE_INSTALL_LIBDIR}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages")
++		endif ()
++		install(TARGETS saga_api_python DESTINATION "${CMAKE_INSTALL_PYTHON_LIBDIR}")
++            install(FILES ${CMAKE_BINARY_DIR}/src/saga_core/saga_api/saga_api_python/saga_api.py DESTINATION "${CMAKE_INSTALL_PYTHON_LIBDIR}")
++            install(FILES ${CMAKE_SOURCE_DIR}/src/accessories/python/examples/saga_helper.py DESTINATION "${CMAKE_INSTALL_PYTHON_LIBDIR}")
+ 	endif()
+ endif()

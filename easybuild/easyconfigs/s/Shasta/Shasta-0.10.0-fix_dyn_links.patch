@@ -1,0 +1,97 @@
+diff --git a/dynamicExecutable/CMakeLists.txt b/dynamicExecutable/CMakeLists.txt
+index 77e0f363..ad26ed64 100644
+--- a/dynamicExecutable/CMakeLists.txt
++++ b/dynamicExecutable/CMakeLists.txt
+@@ -56,30 +56,38 @@ add_definitions(-DSHASTA_PYTHON_API)
+ # Source files
+ file(GLOB SOURCES ../srcMain/*.cpp)
+ 
++find_package(BLAS REQUIRED)
++find_package(LAPACK REQUIRED)
++
+ # Include directory.
+ include_directories(../src)
++include_directories(${BLAS_INCLUDE_DIRS})
++include_directories(${LAPACK_INCLUDE_DIRS})
+ 
+ # Define our executable.
+ add_executable(shastaDynamicExecutable ${SOURCES})
+-set_target_properties(shastaDynamicExecutable PROPERTIES OUTPUT_NAME "shastaDynamic")
++set_target_properties(shastaDynamicExecutable PROPERTIES OUTPUT_NAME "shasta")
+ 
+ # This is needed to make sure the executable looks for the shared
+ # library in the same directory.
+ set_target_properties(shastaDynamicExecutable PROPERTIES INSTALL_RPATH "\$ORIGIN")
+ 
++find_library(PNG_LIBRARY libpng.so REQUIRED)
++
+ # Libraries to link with.
+ if(X86_64)
+     target_link_libraries(
+         shastaDynamicExecutable
+         shastaDynamicLibrary
+-        atomic boost_system boost_program_options boost_chrono spoa cpu_features png z 
+-        lapack blas gfortran quadmath pthread)
++        atomic boost_system boost_program_options boost_chrono spoa
++        cpu_features ${PNG_LIBRARY} z 
++        ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} gfortran quadmath pthread)
+ else(X86_64)
+     target_link_libraries(
+         shastaDynamicExecutable
+         shastaDynamicLibrary
+-        atomic boost_system boost_program_options boost_chrono spoa png z 
+-        lapack blas gfortran pthread)
++        atomic boost_system boost_program_options boost_chrono spoa ${PNG_LIBRARY} z 
++        ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} gfortran pthread)
+ endif(X86_64)
+ 
+ if(BUILD_DEBUG) 
+@@ -93,4 +101,3 @@ install(TARGETS shastaDynamicExecutable DESTINATION shasta-install/bin)
+ if(BUILD_APPIMAGE)
+ install(CODE "execute_process(COMMAND ${CMAKE_SOURCE_DIR}/AppImage/CreateAppImage.py shasta-install)")
+ endif(BUILD_APPIMAGE)
+-
+diff --git a/dynamicLibrary/CMakeLists.txt b/dynamicLibrary/CMakeLists.txt
+index fa9571de..3a9bf55e 100644
+--- a/dynamicLibrary/CMakeLists.txt
++++ b/dynamicLibrary/CMakeLists.txt
+@@ -57,8 +57,13 @@ add_definitions(-DSHASTA_PYTHON_API)
+ # Sources files.
+ file(GLOB SOURCES ../src/*.cpp)
+ 
++find_package(BLAS REQUIRED)
++find_package(LAPACK REQUIRED)
++
+ # Include directory.
+ include_directories(../src)
++include_directories(${BLAS_INCLUDE_DIRS})
++include_directories(${LAPACK_INCLUDE_DIRS})
+ 
+ # Define our library.
+ add_library(shastaDynamicLibrary SHARED ${SOURCES})
+@@ -71,22 +76,18 @@ set_target_properties(shastaDynamicLibrary PROPERTIES DEFINE_SYMBOL "")
+ 
+ 
+ # Python 3 and pybind11.
+-execute_process(COMMAND /usr/bin/python3-config --embed --libs OUTPUT_VARIABLE SHASTA_PYTHON_LIBRARIES)
++execute_process(COMMAND python3-config --embed --libs OUTPUT_VARIABLE SHASTA_PYTHON_LIBRARIES)
+ execute_process(COMMAND python3 -m pybind11 --includes OUTPUT_VARIABLE SHASTA_PYTHON_INCLUDES)
+ add_definitions(${SHASTA_PYTHON_INCLUDES})
+ string(STRIP ${SHASTA_PYTHON_LIBRARIES} SHASTA_PYTHON_LIBRARIES)
+ SET(CMAKE_LINKER_FLAGS  "${CMAKE_LINKER_FLAGS} ${SHASTA_PYTHON_LIBRARIES}")
+ 
+-
++find_library(PNG_LIBRARY libpng.so REQUIRED)
+ 
+ # Libraries to link with.
+ target_link_libraries(
+     shastaDynamicLibrary 
+-     atomic png boost_program_options pthread z spoa lapack blas ${SHASTA_PYTHON_LIBRARIES})
++     atomic ${PNG_LIBRARY} boost_program_options pthread z spoa ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${SHASTA_PYTHON_LIBRARIES})
+ 
+ # Install the shared library into the bin directory.
+ install(TARGETS shastaDynamicLibrary DESTINATION shasta-install/bin)
+-
+-
+-
+-

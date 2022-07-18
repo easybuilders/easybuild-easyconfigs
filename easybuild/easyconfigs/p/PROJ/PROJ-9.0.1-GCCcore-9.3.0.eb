@@ -1,0 +1,74 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2014-2015 The Cyprus Institute
+# Authors:: Thekla Loizou <t.loizou@cyi.ac.cy>
+# License:: MIT/GPL
+#
+##
+easyblock = 'CMakeMake'
+
+name = 'PROJ'
+version = '9.0.1'
+
+homepage = 'https://proj.org'
+description = """Program proj is a standard Unix filter function which converts
+geographic longitude and latitude coordinates into cartesian coordinates"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://download.osgeo.org/proj/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['737eaacbe7906d0d6ff43f0d9ebedc5c734cccc9e6b8d7beefdec3ab22d9a6a3']
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('binutils', '2.34'),
+    ('SciPy-Stack', '2022a')
+]
+
+dependencies = [
+    ('SQLite', '3.38.5'),
+    ('LibTIFF', '4.1.0'),
+    ('cURL', '7.69.1'),
+]
+
+multi_deps= {'Python': ['3.8', '3.9', '3.10']}
+multi_deps_extensions_only = True
+
+configopts = ' '.join([
+    '-DEXE_SQLITE3=${EBROOTSQLITE}/bin/sqlite3',
+    '-DSQLITE3_INCLUDE_DIR=${EBROOTSQLITE}/include',
+    '-DSQLITE3_LIBRARY=${EBROOTSQLITE}/lib/libsqlite3.so',
+])
+
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('pyproj', '3.3.0', {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'pyproj',
+        'preconfigopts': '#',
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['ce8bfbc212729e9a643f5f5d77f7a93394e032eda1e2d8799ae902d08add747e'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': ['bin/cct', 'bin/cs2cs', 'bin/geod', 'bin/gie', 'bin/proj', 'bin/projinfo',
+              'lib/libproj.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = [
+    "module load scipy-stack && python -c 'import pyproj;'",
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': [''],}
+
+moduleclass = 'lib'

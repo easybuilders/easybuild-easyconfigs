@@ -1,0 +1,71 @@
+#EasyBuild easyconfig
+import os
+
+easyblock = 'ConfigureMake'
+
+name = 'mii'
+version = '1.1.2'
+
+homepage = 'https://github.com/codeandkey/mii'
+description = """A smart search engine for module environments."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/codeandkey/mii/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'mii-1.1.2-localization.patch',
+    'mii-1.1.1-build-filter.patch'
+]
+checksums = [
+    'bdf2cfe93b2b0989cd47f1447e8787d8339440295299c0a70d2646e2c02e29b8',  # v1.1.2.tar.gz
+    'eda9acfbbef3536756e57565507c0e2867ab0045e54488c71f238e68e7689838',  # mii-1.1.2-localization.patch
+    '623f6bee0f715a04b45114eccadd369e8544cfa425c3790084571e7b22c4dc63',  # mii-1.1.1-build-filter.patch
+]
+
+# only make install is needed
+skipsteps = ['configure', 'build']
+
+installopts =  'PREFIX=%(installdir)s/ '
+installopts += 'MII_ENABLE_SPIDER=yes '
+
+_index_dir = '/cvmfs/soft.computecanada.ca/custom/mii/data'
+
+postinstallcmds = [
+    'mkdir -p %s' % _index_dir,
+]
+
+sanity_check_paths = {
+    'files': ["bin/mii", "share/mii/init/bash", "share/mii/init/zsh", "share/mii/init/common"],
+    'dirs': [_index_dir],
+}
+
+sanity_check_commands = [('mii', 'version')]
+
+modluafooter = """
+setenv("MII", pathJoin(root, "bin/mii"))
+
+local shell = myShellName()
+
+-- If shell is supported, provide shell integration
+if (shell == "bash" or shell == "zsh") then
+    local hook_name = "command_not_found_handle"
+    local hook_def = "source " .. pathJoin(root, "share/mii/init/common") .. ' "$@"'
+
+    -- Correct the hook name if shell is zsh
+    if (shell == "zsh") then
+        hook_name = hook_name .. 'r'
+    end
+
+    -- detect if the current context is being sourced
+    if (shell == "zsh") then
+    	hook_def = "[[ $ZSH_EVAL_CONTEXT =~ '.*file.*' ]] && SOURCED=1 || SOURCED=0; " .. hook_def
+    end
+    if (shell == "bash") then
+    	hook_def = '[[ -n "${BASH_SOURCE[1]}" ]] && SOURCED=1 || SOURCED=0; ' .. hook_def
+    end
+
+    -- Define command not found hook
+    set_shell_function(hook_name, hook_def, "")
+end
+"""

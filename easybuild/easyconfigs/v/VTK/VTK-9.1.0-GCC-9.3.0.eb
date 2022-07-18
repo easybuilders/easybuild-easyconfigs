@@ -17,9 +17,12 @@ sources = [
     SOURCE_TAR_GZ,
     '%(name)sData-%(version)s.tar.gz',
 ]
+
+patches = [('vtk-version.egg-info', '.')]
 checksums = [
     '8fed42f4f8f1eb8083107b68eaa9ad71da07110161a3116ad807f43e5ca5ce96',  # VTK-9.1.0.tar.gz
     'b9442cf1c30e1e44502e6dc36d3c6c2dc3d3f7d03306ee1d10737e9abadaa85d',  # VTKData-9.1.0.tar.gz
+    '787b82415ae7a4a1f815b4db0e25f7abc809a05fc85d7d219627f3a7e5d3867b',  # vtk-version.egg-info
 ]
 
 multi_deps = { 'Python': ['3.10', '3.9', '3.8'] }
@@ -50,7 +53,15 @@ configopts = ' '.join([
 ])
 
 preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
-postinstallcmds = ['/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib --any_interpreter' ]
+
+local_egg_info_src = '%(builddir)s/VTK-%(version)s/vtk-version.egg-info'
+
+postinstallcmds = [
+    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib --any_interpreter',
+] + [
+    'sed "s/#VTK_VERSION#/%(version)s/" %(builddir)s/VTK-%(version)s/vtk-version.egg-info > %(installdir)s/lib/python{}/site-packages/vtk-%(version)s.egg-info'.format(x) for x in multi_deps['Python'] 
+]
+
 sanity_check_paths = {
     'files': ['bin/vtk%s-%%(version_major_minor)s' % x for x in
               ['WrapJava', 'ParseJava', 'WrapPythonInit', 'WrapPython', 'WrapHierarchy']] +
