@@ -1,0 +1,67 @@
+name = 'R'
+version = '4.2.1'
+
+homepage = 'https://www.r-project.org/'
+description = """R is a free software environment for statistical computing and graphics."""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2020a'}
+
+source_urls = ['https://cloud.r-project.org/src/base/R-%(version_major)s']
+sources = [SOURCE_TAR_GZ]
+checksums = [
+    '4d52db486d27848e54613d4ee977ad952ec08ce17807e1b525b10cd4436c643f',  # R-4.2.1.tar.gz
+]
+
+dependencies = [
+    ('Tk', '8.6.6'),
+    ('Tcl', '8.6.5'),
+    #('Tktable', '2.10'),
+    ('libreadline', '6.3'),
+    ('ncurses', '6.0'),
+    ('bzip2', '1.0.6'),
+    ('XZ', '5.2.2'),
+    ('zlib', '1.2.8'),
+    ('SQLite', '3.13.0'),
+    ('PCRE', '8.38'),
+    ('libpng', '1.6.23'),  # for plotting in R
+    ('libjpeg-turbo', '1.5.0'),  # for plottting in R
+    ('LibTIFF', '4.0.6'),
+    ('Java', '13', '', True),  # Java bindings are built if Java is found, might as well provide it
+    # OS dependency should be preferred if the os version is more recent then this version,
+    # it's nice to have an up to date openssl for security reasons
+    # ('OpenSSL', '1.0.2h'),
+]
+
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+
+# make sure configure does not add $EBROOTGENTOO/lib64 to R's LD_LIBRARY_PATH
+preconfigopts = 'sed -i "s@/usr/lib64:/lib64:/usr/lib:/lib@$EBROOTGENTOO/lib64@" configure && '
+
+configopts = " ".join([
+    '--enable-java',
+    '--enable-largefile',
+    '--enable-long-double',
+    '--enable-openmp',
+    '--enable-R-shlib',
+    '--enable-shared',
+    '--enable-threads',
+    '--with-cairo',
+    '--with-jpeglib',
+    '--with-libpng',
+    '--with-libtiff',
+    '--with-pic',
+    '--with-readline',
+    '--with-tcl-config=${NIXUSER_PROFILE-EBROOTGENTOO}/lib/tclConfig.sh',
+    '--with-tk-config=${NIXUSER_PROFILE-EBROOTGENTOO}/lib/tkConfig.sh',
+    '--with-x=yes',
+    'FLIBS="-lgfortran -lm"',
+])
+
+installopts = ' && cd src/nmath/standalone && make && make install '
+
+# Ensure libR.so is found since --enable-R-shlib is given
+postinstallcmds = [
+    "setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib64/R/lib --any_interpreter"
+]
+
+moduleclass = 'lang'
