@@ -1,0 +1,48 @@
+easyblock = 'CmdCp'
+
+name = 'GLM-AED'
+version = '3.3.0a5'
+
+homepage = 'https://github.com/AquaticEcoDynamics/glm-aed'
+description = """The General Lake Model (GLM) is a water balance and one-dimensional vertical
+stratification hydrodynamic model, which is dynamically coupled with the AED
+water quality modelling library. GLM-AED is suitable for simulating conditions
+in a wide range of natural and engineered lakes, including shallow (well-mixed)
+and deep (stratified) systems. The model has been successfully applied to
+systems from the scale of individual ponds and wetlands, to actively operated
+reservoirs, upto the scale of the Great Lakes."""
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+source_urls = ['https://github.com/AquaticEcoDynamics/glm-aed/archive/']
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/AquaticEcoDynamics',
+        'repo_name': '%(namelower)s',
+        'tag': 'v%(version)s',
+        'recursive': True,
+    }
+}]
+checksums = [None]
+
+dependencies = [
+    ('netCDF-Fortran', '4.5.3'),
+]
+
+start_dir = 'glm-source'
+
+# Use build environment from EasyBuild
+_prebuildcmd = "sed -i 's/FFLAGS=/FFLAGS+=/g' */Makefile && "
+cmds_map = [('.*', _prebuildcmd + "./build_glm.sh --gfort")]
+
+files_to_copy = [(['GLM/glm'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/glm'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["glm -h"]
+
+moduleclass = 'geo'
