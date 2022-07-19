@@ -1,0 +1,70 @@
+Do not build local HTSlib, Use EasyBuild defined CPPFLAGS. Clean up Makefile variables
+--- alleleCount-4.2.1.orig/c/Makefile	2020-11-17 08:02:34.000000000 -0800
++++ alleleCount-4.2.1/c/Makefile	2022-07-19 15:53:08.141102000 -0700
+@@ -1,30 +1,15 @@
+ VERSION=$(shell perl -I../perl/lib -MSanger::CGP::AlleleCount -e 'print Sanger::CGP::AlleleCount->VERSION;')
+ 
+ #Compiler
+-CC = gcc -O3 -DALLELECOUNTER_VERSION='"$(VERSION)"'
++CC ?= gcc
+ 
+ #compiler flags
+ # -g adds debug info to the executable file
+ # -Wall turns on most warnings from compiler
+-CFLAGS = -g -Wall
+-
+-#Location of samtools/htslib libraries
+-HTSLOC?=$(HTSLIB)
+-
+-HTSTMP?=./htslib_tmp
+-prefix?=/usr/local/
++CFLAGS = -O3 -Wall -DALLELECOUNTER_VERSION='"$(VERSION)"'
+ 
+ #Define locations of header files
+-OPTINC?=-I$(HTSLOC)/
+-INCLUDES= -Isrc/ $(OPTINC) -rdynamic
+-
+-JOIN_INCLUDES= -I$(prefix)/include
+-CAT_LFLAGS= -L$(prefix)/lib
+-
+-# define library paths in addition to /usr/lib
+-#   if I wanted to include libraries not in /usr/lib I'd specify
+-#   their path using -Lpath, something like:
+-LFLAGS?= -L$(HTSTMP)
++CPPFLAGS += -Isrc/
+ 
+ # define any libraries to link into executable:
+ #   if I want to link in libraries (libx.so or libx.a) I use the -llibname
+@@ -59,19 +44,19 @@
+ # deleting dependencies appended to the file from 'make depend'
+ #
+ 
+-.PHONY: depend clean coverage test make_htslib_tmp remove_htslib_tmp
++.PHONY: depend clean coverage test
+ 
+ .NOTPARALLEL: test
+ 
+-all: clean make_bin make_htslib_tmp $(COUNTER_TARGET) test remove_htslib_tmp
++all: clean make_bin $(COUNTER_TARGET) test 
+ 	@echo  Binaries have been compiled.
+ 
+ $(COUNTER_TARGET): $(OBJS)
+-	$(CC) $(JOIN_INCLUDES) $(INCLUDES) $(CFLAGS) -o $(COUNTER_TARGET) $(OBJS) $(LFLAGS) $(CAT_LFLAGS) $(LIBS) ./src/alleleCounter.c
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $(COUNTER_TARGET) $(OBJS) $(LIBS) ./src/alleleCounter.c
+ 
+ #Unit Tests
+ test: $(COUNTER_TARGET)
+-test: CFLAGS += $(JOIN_INCLUDES) $(INCLUDES) $(OBJS) $(LFLAGS) $(LIBS) $(CAT_LFLAGS)
++test: CFLAGS += $(LDFLAGS) $(OBJS) $(LDFLAGS) $(LIBS)
+ test: $(TESTS)
+ 	sh ./tests/runtests.sh
+ 
+@@ -100,7 +85,7 @@
+ # the rule(a .c file) and $@: the name of the target of the rule (a .o file)
+ # (see the gnu make manual section about automatic variables)
+ .c.o:
+-	$(CC) $(CFLAGS) $(JOIN_INCLUDES) $(INCLUDES) -c $<  -o $@
++	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -c $<  -o $@
+ 
+ clean:
+ 	$(RM) ./src/*.o *~ $(COUNTER_TARGET) ./bin/* ./tests/tests_log $(TESTS) ./src/*.gcda ./src/*.gcov ./src/*.gcno *.gcda *.gcov *.gcno ./tests/*.gcda ./tests/*.gcov ./tests/*.gcno

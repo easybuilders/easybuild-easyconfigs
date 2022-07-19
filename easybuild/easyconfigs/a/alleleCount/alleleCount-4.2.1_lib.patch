@@ -1,0 +1,27 @@
+Use EasyBuild HTSlib and libdeflate
+diff -ruN alleleCount-4.2.1.orig/build/opt-build.sh alleleCount-4.2.1/build/opt-build.sh
+--- alleleCount-4.2.1.orig/build/opt-build.sh	2020-11-17 08:02:34.000000000 -0800
++++ alleleCount-4.2.1/build/opt-build.sh	2022-07-19 13:13:24.875339000 -0700
+@@ -64,7 +64,9 @@
+ fi
+ 
+ ## libdeflate
+-if [ ! -e $SETUP_DIR/libdeflate.success ]; then
++if [[ $LD_LIBRARY_PATH  == *libdeflate* ]]; then 
++  echo Library libdeflate found
++elif [ ! -e $SETUP_DIR/libdeflate.success ]; then
+   rm -rf tmp_deflate
+   mkdir -p tmp_deflate
+   curl -sSL --retry 10 https://github.com/ebiggers/libdeflate/archive/${VER_LIBDEFLATE}.tar.gz > distro.tar.gz
+@@ -76,6 +78,11 @@
+   touch $SETUP_DIR/libdeflate.success
+ fi
+ 
++if [[ $LD_LIBRARY_PATH == *HTSlib* ]]; then
++  echo Library HTSLIB found, using system HTSLIB
++  exit
++fi
++
+ SOURCE_HTSLIB="https://github.com/samtools/htslib/releases/download/${VER_HTSLIB}/htslib-${VER_HTSLIB}.tar.bz2"
+ 
+ cd $SETUP_DIR
