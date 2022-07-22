@@ -26,21 +26,34 @@ checksums = [
 # need to use -P preprocessor option for recent GCC versions (cfr. https://gcc.gnu.org/gcc-5/porting_to.html)
 preconfigopts = "export CPPFLAGS='-P' && "
 
+_config = {
+    # options to build shared librares and separate libtinfo
+    'default': "--with-shared --with-termlib ",
+    # options to enable UTF-8
+    'utf8': "--enable-ext-colors --enable-widec ",
+    # options to enable multi-threading
+    'mt': "--with-pthread ",
+}
+
 configopts = [
-    # default build
-    '--with-shared --enable-overwrite',
-    # the UTF-8 enabled version (ncursesw)
-    '--with-shared --enable-overwrite --enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/'
+    # build ncurses: default build overwriting curses (-lcurses)
+    _config['default'] + '--enable-overwrite',
+    # build ncursesw: the UTF-8 version
+    _config['default'] + _config['utf8'] + '--includedir=%(installdir)s/include/ncursesw/',
+    # build ncursest: the multi-threaded version
+    _config['default'] + _config['mt'] + '--includedir=%(installdir)s/include/ncursest/',
+    # build ncursestw: the multi-threaded UTF-8 version
+    _config['default'] + _config['utf8'] + _config['mt'] + '--includedir=%(installdir)s/include/ncursestw/',
 ]
 
-local_libs = ["form", "menu", "ncurses", "panel"]
+local_libs = ['form', 'menu', 'ncurses', 'panel', 'tinfo']
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ["captoinfo", "clear", "infocmp", "infotocap", "ncurses5-config",
                                      "reset", "tabs", "tic", "toe", "tput", "tset"]] +
-             ['lib/lib%s%s.a' % (x, y) for x in local_libs for y in ['', '_g', 'w', 'w_g']] +
-             ['lib/lib%s%s.so' % (x, y) for x in local_libs for y in ['', 'w']] +
-             ['lib/libncurses++%s.a' % x for x in ['', 'w']],
-    'dirs': ['include', 'include/ncursesw'],
+             ['lib/lib%s%s%s.a' % (x, y, z) for x in local_libs for y in ['', 'w', 't', 'tw'] for z in ['', '_g']] +
+             ['lib/lib%s%s.so' % (x, y) for x in local_libs for y in ['', 'w', 't', 'tw']] +
+             ['lib/libncurses++%s.a' % x for x in ['', 'w', 't', 'tw']],
+    'dirs': ['include', 'include/ncursesw', 'include/ncursest', 'include/ncursestw'],
 }
 
 moduleclass = 'devel'
