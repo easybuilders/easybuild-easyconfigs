@@ -1,17 +1,12 @@
 From: Alexander Grund <alexander.grund@tu-dresden.de>
 Date: Tue, 18 May 2021 15:08:41 +0200
-Subject: [PATCH 1/2] Fix usage of TORCH_INTERNAL_ASSERT with message
+Subject: Fix usage of TORCH_INTERNAL_ASSERT with message
 
 Using only a string as the argument for TORCH_INTERNAL_ASSERT will never
 trigger a failure as a string is always a truethy value.
 This hides actual bugs and makes users and devs think all worked while
 it did not.
 Change to use TORCH_INTERNAL_ASSERT(false, "msg")
-
-Subject: [PATCH 2/2] Add missing skip decorator for
-test_preserve_bundled_inputs_methods
-
-This test uses optimize_for_mobile which requires NNPACK to work
 
 diff --git a/aten/src/ATen/native/BinaryOps.cpp b/aten/src/ATen/native/BinaryOps.cpp
 index c4edadb03e..e889cd03a8 100644
@@ -83,20 +78,6 @@ index 6de646acfe..66341c959d 100644
    }
    for (int i = num_output_channels; i <  num_output_channels_padded; ++i) {
      weight_scales_data[i] = 1.f;
-diff --git a/test/test_mobile_optimizer.py b/test/test_mobile_optimizer.py
-index 11ef019a26..7b5ac1a239 100644
---- a/test/test_mobile_optimizer.py
-+++ b/test/test_mobile_optimizer.py
-@@ -269,6 +269,9 @@ class TestOptimizer(TestCase):
-         bi_module_lint_list = generate_mobile_module_lints(bi_module)
-         self.assertEqual(len(bi_module_lint_list), 0)
- 
-+    @unittest.skipUnless(torch.backends.xnnpack.enabled,
-+                         " XNNPACK must be enabled for these tests."
-+                         " Please build with USE_XNNPACK=1.")
-     def test_preserve_bundled_inputs_methods(self):
-         class MyBundledInputModule(torch.nn.Module):
-             def __init__(self):
 diff --git a/torch/csrc/jit/api/module.cpp b/torch/csrc/jit/api/module.cpp
 index 38592b80b9..8f9508321b 100644
 --- a/torch/csrc/jit/api/module.cpp
