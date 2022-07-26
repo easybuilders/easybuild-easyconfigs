@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'BOLT-LMM'
+version = '2.4'
+
+homepage = 'https://data.broadinstitute.org/alkesgroup/BOLT-LMM/'
+description = """The BOLT-LMM software package currently consists of two main algorithms, the BOLT-LMM algorithm for mixed model association testing, and the BOLT-REML algorithm for variance components analysis (i.e., partitioning of SNP-heritability and estimation of genetic correlations). The BOLT-LMM algorithm computes statistics for testing association between phenotype and genotypes using a linear mixed model (LMM). The BOLT-REML algorithm estimates heritability explained by genotyped SNPs and genetic correlations among multiple traits measured on the same set of individuals. Like the GCTA software."""
+
+toolchain = {'name': 'iccifortflexiblas', 'version': '2020a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://data.broadinstitute.org/alkesgroup/BOLT-LMM/downloads']
+sources = ["%(name)s_v%(version)s.tar.gz"]
+checksums = ['1fcb9acfe5aaf226770722dcb08649d8c171ca9cf8a09253801c70b7e9cadf3c']
+
+builddependencies = [
+    ('Boost', '1.72.0'),
+    ('NLopt', '2.7.0'),
+]
+
+buildopts = ' '.join([
+    "BOOST_INSTALL_DIR=$EBROOTBOOST",
+    "NLOPT_INSTALL_DIR=$EBROOTNLOPT",
+    "CC=$CXX",
+    'LLAPACK="$LIBLAPACK"',
+    # Use general cflags from makefile, but append ours at the end instead of prepending.
+    'CFLAGS="-msse -msse2 -DUSE_SSE -DMEASURE_DGEMM -DVERBOSE $CFLAGS"',
+])
+
+start_dir='src'
+
+files_to_copy = [
+    (['bolt'], 'bin'),
+    'tables',
+    'example'
+]
+
+sanity_check_paths = {
+    'files': ['bin/bolt'],
+    'dirs': ['bin', 'example', 'tables'],
+}
+
+sanity_check_commands = ['bolt -h']
+
+moduleclass = 'bio'
