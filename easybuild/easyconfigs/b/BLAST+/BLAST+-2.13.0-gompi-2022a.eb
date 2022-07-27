@@ -38,9 +38,15 @@ dependencies = [
     ('LMDB', '0.9.29'),
 ]
 
-preconfigopts = "sed -i 's/FAST_CXXFLAGS)/FAST_CXXFLAGS) -fno-tree-vectorize/g' src/algo/blast/api/Makefile.xblast.lib &&"
-configopts = "--with-64 --with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 --with-pcre=$EBROOTPCRE --with-boost=$EBROOTBOOST --with-gmp=$EBROOTGMP --with-png=$EBROOTLIBPNG --with-jpeg=$EBROOTLIBJPEGMINTURBO --with-lmdb=$EBROOTLMDB"
+# Disable auto-vectorization for the API on CPUs with AVX512 (Intel Skylake and onwards)
+# Compilation fails on src/algo/blast/api/prelim_stage.cpp
+local_apimake = 'src/algo/blast/api/Makefile.xblast.lib'
+preconfigopts = "sed -i 's/FAST_CXXFLAGS)/FAST_CXXFLAGS) -fno-tree-vectorize/g' %s &&" % local_apimake
 
+configopts = "--with-64 --with-z=$EBROOTZLIB --with-bz2=$EBROOTBZIP2 "
+configopts += "--with-pcre=$EBROOTPCRE --with-boost=$EBROOTBOOST "
+configopts += "--with-gmp=$EBROOTGMP --with-png=$EBROOTLIBPNG "
+configopts += "--with-jpeg=$EBROOTLIBJPEGMINTURBO --with-lmdb=$EBROOTLMDB"
 
 sanity_check_paths = {
     'files': ['bin/blastn', 'bin/blastp', 'bin/blastx'],
