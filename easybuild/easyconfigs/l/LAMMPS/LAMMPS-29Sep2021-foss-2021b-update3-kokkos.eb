@@ -1,14 +1,16 @@
-# Based on PR #14653 with some additional modules and some which were 
-# not building moved to user_packages (see below). 
+# Based on PR #14653 with the sanity check using YAFF and also based on
+# PR #15877 for the LAMMPS modules
 # HDF5 needs to be version 1.10.x to build
 # YAFF. As that is pulled in by netCDF it is not added again.
 # Authors:
 # Arkadiy (Univeristy of Warwick/UK)
+# Alan O'Cais (CECAM)
 # J. Sassmannshausen (Imperial College London/UK)
+# Needs to be build with an updated EasyBlock PR #2213
 
 name = 'LAMMPS'
 version = '29Sep2021'
-versionsuffix = '-kokkos'
+versionsuffix = '-update3-kokkos'
 local_hdf5vers = '1.10.8'
 
 homepage = 'https://www.lammps.org'
@@ -24,16 +26,17 @@ functionality.
 """
 
 toolchain = {'name': 'foss', 'version': '2021b'}
-toolchainopts = {'openmp': True, 'usempi': True, 'cstd': 'c++14'}
+toolchainopts = {'openmp': True, 'usempi': True}
 
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
 sources = [
-    'stable_%(version)s.tar.gz',
+    'stable_%(version)s_update3.tar.gz',
     {'filename': 'lammps_vs_yaff_test_single_point_energy.py', 'extract_cmd': "cp %s %(builddir)s"},
 ]
+
 checksums = [
-    '2dff656cb21fd9a6d46c818741c99d400cfb1b12102604844663b655fb2f893d',  # stable_29Sep2021.tar.gz
+    'e4c274f0dc5fdedc43f2b365156653d1105197a116ff2bafe893523cdb22532e',  # stable_29Sep2021.tar.gz
     'c28fa5a1ea9608e4fd8686937be501c3bed8cc03ce1956f1cf0a1efce2c75349',  # lammps_vs_yaff_test_single_point_energy.py
 ]
 
@@ -41,14 +44,13 @@ builddependencies = [
     ('CMake', '3.22.1'),
     ('pkg-config', '0.29.2'),
     ('archspec', '0.1.3'),
-    ('Doxygen', '1.9.1'),
 ]
 
 dependencies = [
     ('Python', '3.9.6'),
     ('libpng', '1.6.37'),
     ('libjpeg-turbo', '2.0.6'),
-    ('netCDF', '4.8.1', '-HDF5-%s' % local_hdf5vers),
+    ('netCDF', '4.8.1', '-HDF5-%s' % local_hdf5vers),  # YAFF does not build with the 1.12 version of HDF5!
     ('GSL', '2.7'),
     ('zlib', '1.2.11'),
     ('gzip', '1.10'),
@@ -60,14 +62,18 @@ dependencies = [
     ('Voro++', '0.4.6'),
     ('kim-api', '2.3.0'),
     ('Eigen', '3.4.0'),
-    ('yaff', '1.6.0'),
     ('PLUMED', '2.8.0'),
     ('ScaFaCoS', '1.0.1'),
+    ('SciPy-bundle', '2021.10'),
+    # VTK package is auto-disabled if this dep is not available
+    # This does not seem to build right now
+    # ('VTK', '9.1.0'),
+    # YAFF is needed for the sanity check it seems
+    ('yaff', '1.6.0'),
 ]
 
 # To use additional custom configuration options, use the 'configopts' easyconfig parameter
 # See docs and lammps easyblock for more information.
-# This links seems to be broken though.
 # https://github.com/lammps/lammps/blob/master/cmake/README.md#lammps-configuration-options
 
 # OpenMP-Kokkos build is default in the current easyblock. One can switch to serial backend of Kokkos,
@@ -83,57 +89,77 @@ configopts = "-DBUILD_DOC=no "
 #
 # not enabled (yet), needs more work/additional dependencies:
 # 'ADIOS',  -  https://docs.lammps.org/Build_extras.html#adios
-# 'AWPMD',  - https://docs.lammps.org/Build_extras.html#awpmd
 # 'LATTE',  - https://docs.lammps.org/Build_extras.html#latte
+# 'MESONT' (requires very large files downloaded during build)
+# 'ML-HDNNP' (requires N2P2)
 # 'ML-QUIP',- https://docs.lammps.org/Build_extras.html#ml-quip
 # 'MSCG',   - https://docs.lammps.org/Build_extras.html#mscg-package
 # 'QMMM',   - https://docs.lammps.org/Build_extras.html#qmmm
-# 'VTK',    - https://docs.lammps.org/Build_extras.html#vtk
-# These ones from the original PR (#14653) were moved to user_packages but do not build right now:
-# 'USER-CGDNA', 'USER-CGSDK', 'USER-DPD', 'USER-LB', 'USER-MEAMC', 'USER-MESO', 
-# 'USER-REAXC', 'USER-SDPD', 'USER-SMD', 'USER-SNAP'
-
 general_packages = [
     'ASPHERE',
     'ATC',
+    'AWPMD',
     'BOCS',
     'BODY',
+    'BPM',
+    'BROWNIAN',
+    'CG-DNA',
+    'CG-SDK',
     'CLASS2',
     'COLLOID',
     'COLVARS',
     'COMPRESS',
     'CORESHELL',
+    'DIELECTRIC',
     'DIFFRACTION',
     'DIPOLE',
+    'DPD-BASIC',
+    'DPD-MESO',
+    'DPD-REACT',
+    'DPD-SMOOTH',
     'DRUDE',
     'EFF',
+    'ELECTRODE',
+    'EXTRA-COMPUTE',
+    'EXTRA-DUMP',
+    'EXTRA-FIX',
     'EXTRA-MOLECULE',
     'EXTRA-PAIR',
     'FEP',
     'GRANULAR',
     'H5MD',
+    'INTERLAYER',
     'KIM',
     'KSPACE',
+    'LATBOLTZ',
     'MANIFOLD',
+    'MACHDYN',
     'MANYBODY',
     'MC',
-    'MESSAGE',
+    'MEAM',
     'MGPT',
     'MISC',
+    'ML-IAP',
+    'ML-PACE',
+    'ML-RANN',
+    'ML-SNAP',
     'MOFFF',
     'MOLECULE',
     'MOLFILE',
     'MPIIO',
     'NETCDF',
     'OPENMP',
+    'ORIENT',
     'PERI',
     'PHONON',
+    'PLUGIN',
     'PLUMED',
     'POEMS',
     'PTM',
     'PYTHON',
     'QEQ',
     'QTB',
+    'REACTION',
     'REAXFF',
     'REPLICA',
     'RIGID',
@@ -146,20 +172,11 @@ general_packages = [
     'TALLY',
     'UEF',
     'VORONOI',
+    'VTK',
     'YAFF',
 ]
 
 user_packages = [
-    'CGDNA',
-    'CGSDK',
-    'DPD',
-    'LB',
-    'MEAMC',
-    'MESO',
-    'REAXC',
-    'SDPD',
-    'SMD',
-    'SNAP'
 ]
 
 enhance_sanity_check = True
