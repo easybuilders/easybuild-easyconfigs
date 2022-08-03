@@ -1422,7 +1422,11 @@ def template_easyconfig_test(self, spec):
                 # 4th value is toolchain spec
                 if len(dumped_dep) >= 4:
                     if len(orig_dep) >= 4:
-                        self.assertEqual(dumped_dep[3], orig_dep[3])
+                        # A SYSTEM toolchain is dumped as True
+                        if orig_dep[3] == {'version': 'system', 'name': 'system'}:
+                            self.assertEqual(dumped_dep[3], True)
+                        else:
+                            self.assertEqual(dumped_dep[3], orig_dep[3])
                     else:
                         # if a subtoolchain is specifed (only) in the dumped easyconfig,
                         # it should *not* be the same as the parent toolchain
