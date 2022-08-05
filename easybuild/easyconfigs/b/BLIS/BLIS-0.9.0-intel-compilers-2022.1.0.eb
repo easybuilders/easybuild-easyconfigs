@@ -8,20 +8,18 @@ description = """BLIS is a portable software framework for instantiating high-pe
 BLAS-like dense linear algebra libraries."""
 
 toolchain = {'name': 'intel-compilers', 'version': '2022.1.0'}
-toolchainopts = {'precise': True, 'extra_cflags': '-fp-speculation=safe -ftz'}
+toolchainopts = {'oneapi': True}
 
 source_urls = ['https://github.com/flame/blis/archive/']
 sources = ['%(version)s.tar.gz']
-patches = [
-    '%(name)s-%(version)s_family-avx2.patch',
-]
-checksums = [
-    '1135f664be7355427b91025075562805cdc6cc730d3173f83533b2c5dcc2f308',  # 0.9.0.tar.gz
-    '823c62b353c8c3bb96ad30af2b0f484064a9d108e2a46c62850bd8f843f992d2',  # BLIS-0.9.0_family-avx2.patch
+checksums = ['1135f664be7355427b91025075562805cdc6cc730d3173f83533b2c5dcc2f308']
+
+builddependencies = [
+    ('Python', '3.10.4', '-bare'),
+    ('Perl', '5.34.1'),
 ]
 
-preconfigopts = "declare -A ARCH_MAP=( [sse3]='x86_64' [avx]='sandybridge' [avx2]='avx2' [avx512]='skx' ) &&"
-configopts = '--enable-cblas --enable-threading=openmp --enable-shared CC="icx" ${ARCH_MAP[$RSNT_ARCH]}'
+configopts = '--enable-cblas --enable-threading=openmp --enable-shared --complex-return=intel CC="$CC" auto'
 
 # Intel expects classic f2c-style calling convention.
 pretestopts = 'for cu in c u; do for cz in c z; do '
