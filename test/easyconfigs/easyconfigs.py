@@ -1307,7 +1307,6 @@ def template_easyconfig_test(self, spec):
 
     src_cnt = len(ec['sources'])
     patch_checksums = ec['checksums'][src_cnt:]
-    patch_checksums_cnt = len(patch_checksums)
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
@@ -1323,7 +1322,7 @@ def template_easyconfig_test(self, spec):
             self.assertTrue(os.path.isfile(patch_full), msg)
 
         # verify checksum for each patch file
-        if idx < patch_checksums_cnt and (os.path.exists(patch_full) or patch.endswith('.patch')):
+        if idx < len(patch_checksums) and (os.path.exists(patch_full) or patch.endswith('.patch')):
             checksum = patch_checksums[idx]
             error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch, ec_fn, checksum)
             res = verify_checksum(patch_full, checksum)
@@ -1334,35 +1333,40 @@ def template_easyconfig_test(self, spec):
     error_msg = "'source' step should not be skipped in %s, since that implies not verifying checksums" % ec_fn
     self.assertFalse(ec['checksums'] and ('source' in ec['skipsteps']), error_msg)
 
-    for ext in ec['exts_list']:
+    for ext in ec.get_ref('exts_list'):
         if isinstance(ext, (tuple, list)) and len(ext) == 3:
-
             ext_name = ext[0]
+            self.assertTrue(isinstance(ext[2], dict),
+                            "3rd element of extension spec for %s must be a dictionary" % ext_name)
 
-            self.assertTrue(isinstance(ext[2], dict), "3rd element of extension spec is a dictionary")
+    # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
+    for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
+        try:
+            ext_options = ext['options']
+        except KeyError:
+            # No options --> Only have a name which is valid, so nothing to check
+            continue
 
-            # fall back to assuming a single source file for an extension
-            src_cnt = len(ext[2].get('sources', [])) or 1
+        checksums = ext_options.get('checksums', [])
+        src_cnt = len(ext_options.get('sources', [])) or 1
+        patch_checksums = checksums[src_cnt:]
 
-            checksums = ext[2].get('checksums', [])
-            patch_checksums = checksums[src_cnt:]
+        for idx, ext_patch in enumerate(ext.get('patches', [])):
+            if isinstance(ext_patch, (tuple, list)):
+                ext_patch = ext_patch[0]
 
-            for idx, ext_patch in enumerate(ext[2].get('patches', [])):
-                if isinstance(ext_patch, (tuple, list)):
-                    ext_patch = ext_patch[0]
+            # only check actual patch files, not other files being copied via the patch functionality
+            ext_patch_full = os.path.join(specdir, ext_patch['name'])
+            if ext_patch_full.endswith('.patch'):
+                msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
+                self.assertTrue(os.path.isfile(ext_patch_full), msg)
 
-                # only check actual patch files, not other files being copied via the patch functionality
-                ext_patch_full = os.path.join(specdir, ext_patch)
-                if ext_patch.endswith('.patch'):
-                    msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
-                    self.assertTrue(os.path.isfile(ext_patch_full), msg)
-
-                # verify checksum for each patch file
-                if idx < patch_checksums_cnt and (os.path.exists(ext_patch_full) or ext_patch.endswith('.patch')):
-                    checksum = patch_checksums[idx]
-                    error_msg = "Invalid checksum for patch file %s for %s extension in %s: %s"
-                    res = verify_checksum(ext_patch_full, checksum)
-                    self.assertTrue(res, error_msg % (ext_patch, ext_name, ec_fn, checksum))
+            # verify checksum for each patch file
+            if idx < len(patch_checksums) and (os.path.exists(ext_patch_full) or ext_patch.endswith('.patch')):
+                checksum = patch_checksums[idx]
+                error_msg = "Invalid checksum for patch %s for %s extension in %s: %s"
+                res = verify_checksum(ext_patch_full, checksum)
+                self.assertTrue(res, error_msg % (ext_patch, ext_name, ec_fn, checksum))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
