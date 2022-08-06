@@ -1,0 +1,88 @@
+easyblock = 'Bundle'
+
+name = 'podman'
+version = '4.1.1'
+
+homepage = 'https://podman.io'
+description = """Podman is a daemonless container engine for developing, managing,
+and running OCI Containers on your Linux System."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://github.com/containers/conmon/archive/refs/tags/',
+    'https://github.com/containers/podman/archive/refs/tags/',
+]
+
+builddependencies = [('Go', '1.18.3')]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'skipsteps': ['configure'],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('conmon', '2.1.3', {
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['145b5aa1c5d1d9977ad0d15a53c11aad1e65e8233f7e0fd176ac85f67d6d6fbe'],
+	'install_cmd': 'make podman PREFIX=%(installdir)s',
+    }),
+    ('podman', '4.1.1', {
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['27bf32e9b1afee94cb08ebd59389104788d687f402a541f3631f94c7916b10a5'],
+        # silence warnings we can't avoid, prefix etc and usr/share for config files
+	'prebuildopts': ('sed -i "s!/usr/libexec/podman/conmon!%(installdir)s/libexec/podman/conmon!g" '
+                         + 'vendor/github.com/containers/common/pkg/config/default.go && '
+                         + 'sed -i "s!logrus.Warnf\(.*force_mask\)!logrus.Debugf\\1!" '
+                         + 'vendor/github.com/containers/storage/drivers/overlay/overlay.go && '
+                         + 'sed -i "s!logrus.Warnf\(.*rootless\)!logrus.Debugf\\1!" '
+                         + 'pkg/rootless/rootless_linux.go && '
+                         + 'sed -i "s!logrus.ErrorLevel!logrus.DebugLevel!" '
+                         + 'pkg/rootless/rootless_linux.go && '
+                         + 'sed -i "s!/usr/share!%(installdir)s/share!" '
+                         + 'vendor/github.com/containers/storage/types/options.go '
+                         + 'vendor/github.com/containers/common/pkg/config/config.go && '
+                         + 'sed -i "s!/etc/!%(installdir)s/etc/!" '
+                         + 'vendor/github.com/containers/common/pkg/config/config.go && '
+                         + 'sed -i "s!/etc/containers!%(installdir)s/etc/containers!" '
+                         + 'vendor/github.com/containers/storage/types/options.go '
+                         + 'vendor/github.com/containers/common/pkg/config/default.go '
+                         + 'vendor/github.com/containers/image/v5/signature/policy_config.go '
+                         + 'pkg/trust/trust.go '
+                         + 'vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go && '),
+        'buildopts': 'BUILDTAGS="selinux seccomp exclude_graphdriver_btrfs"',
+	'installopts': 'PREFIX=%(installdir)s',
+    }),
+]
+
+local_storage_conf = '''
+%s
+driver = "overlay"
+
+%s
+ignore_chown_errors = "true"
+force_mask = "700"
+''' % ('[storage]', '[storage.options.overlay]')
+
+local_containers_conf = '''
+%s
+netns = "host"
+''' % ('[containers]')
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/etc/containers',
+    'cat > %(installdir)s/etc/containers/storage.conf <<EOF' + local_storage_conf + 'EOF',
+    'cat > %(installdir)s/etc/containers/containers.conf <<EOF' + local_containers_conf + 'EOF',
+    'curl -o %(installdir)s/etc/containers/policy.json https://raw.githubusercontent.com/containers/skopeo/main/default-policy.json',
+    'curl -o %(installdir)s/etc/containers/registries.conf https://src.fedoraproject.org/rpms/containers-common/raw/main/f/registries.conf',
+]
+
+sanity_check_paths = {
+    'files': ['bin/podman', 'bin/podman-remote'],
+    'dirs': ['lib/tmpfiles.d', 'libexec/podman',
+             'share/man/man1', 'share/man/man5'],
+}
+
+moduleclass = 'tools'
