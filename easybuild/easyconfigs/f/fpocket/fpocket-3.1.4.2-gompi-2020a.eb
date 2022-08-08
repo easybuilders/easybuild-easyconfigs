@@ -1,0 +1,37 @@
+easyblock = 'MakeCp'
+
+name = 'fpocket'
+version = '3.1.4.2'
+
+homepage = 'https://github.com/Discngine/fpocket'
+description = """The fpocket suite of programs is a very fast open source protein pocket detection algorithm based on
+Voronoi tessellation. The platform is suited for the scientific community willing to develop new scoring functions and 
+extract pocket descriptors on a large scale level."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+toolchainopts = {'usempi': False, 'cstd': 'c99'}
+
+source_urls = ['https://github.com/Discngine/fpocket/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['6a801c7a4af0f76a58369b558ca5f6674571e1825024d459bba20bc07ae4f8b7']
+
+dependencies = [('netCDF', '4.7.4')]
+
+parallel = 1
+
+# Don't overwrite $LD_LIBRARY_PATH, but append fpocket paths to it.
+prebuildopts = 'sed -i "s/LD_LIBRARY_PATH=/LD_LIBRARY_PATH=\$(LD_LIBRARY_PATH):/g" makefile && '
+# Use CFLAGS from EB
+prebuildopts += 'sed -i "s/-O2.*c99/$CFLAGS/g" makefile && '
+
+files_to_copy = [
+    (['bin/fpocket', 'bin/tpocket', 'bin/dpocket', 'bin/mdpocket'], 'bin'),
+    (['man/*'], 'man/man8'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/fpocket'],
+    'dirs': ['bin', 'man'],
+}
+
+moduleclass = 'bio'

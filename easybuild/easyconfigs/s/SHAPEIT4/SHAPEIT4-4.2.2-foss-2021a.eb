@@ -1,0 +1,45 @@
+easyblock = "MakeCp"
+
+name = 'SHAPEIT4'
+version = '4.2.2'
+
+homepage = 'https://odelaneau.github.io/shapeit4/'
+description = """
+SHAPEIT4 is a fast and accurate method for estimation of haplotypes
+(aka phasing) for SNP array and high coverage sequencing data.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'opt': True, 'cstd': 'c++11'}
+
+github_account = 'odelaneau'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['SHAPEIT4_%(version)s_use_EB_settings.patch']
+checksums = [
+    '9f109e307b5cc22ab68e7bf77de2429a9bbb2212d66303386e6a3dd81a5bc556',  # v4.2.2.tar.gz
+    '92ed45545bfcde7b1fbe079e6321ccae00865c8f0f66a924e872967d762df885',  # SHAPEIT4_4.2.2_use_EB_settings.patch
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.2.5'),
+    ('Boost', '1.76.0'),
+    ('HTSlib', '1.12'),
+]
+
+buildopts = 'HTSLIB_INC="$EBROOTHTSLIB/include" HTSLIB_LIB=-lhts '
+buildopts += 'BOOST_INC="$EBROOTBOOST/include" BOOST_LIB_IO=-lboost_iostreams BOOST_LIB_PO=-lboost_program_options '
+buildopts += 'CXX="$CXX" CXXFLAG="$CXXFLAGS" LDFLAG="$CXXFLAGS" '
+
+files_to_copy = [(['bin/shapeit4.2'], 'bin'), 'maps']
+
+sanity_check_paths = {
+    'files': ["bin/shapeit4.2"],
+    'dirs': ['maps']
+}
+
+sanity_check_commands = ['shapeit4.2 --help']
+
+moduleclass = 'bio'

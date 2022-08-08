@@ -1,0 +1,54 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+easyblock = 'ConfigureMake'
+
+name = 'UCX'
+version = '1.8.0'
+
+homepage = 'http://www.openucx.org/'
+description = """Unified Communication X
+An open-source production grade communication framework for data centric
+and high-performance applications
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+patches = [
+    'UCX-1.7.0_binutils_2.34_api_fix.patch',
+    'UCX-1.8.0_fix-undefined-symbol.patch',
+]
+checksums = [
+    'e400f7aa5354971c8f5ac6b881dc2846143851df868088c37d432c076445628d',  # ucx-1.8.0.tar.gz
+    'c09ebe4d734d520ae23f56d95ba0b91e464a42ccbaf435675424515ebd3fa3a9',  # UCX-1.7.0_binutils_2.34_api_fix.patch
+    'eb757242ab3eecd8a851f329cb4baf3c64d46788ab61675f29ab4cc6a0274a45',  # UCX-1.8.0_fix-undefined-symbol.patch
+]
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('Autotools', '20180311'),
+    ('pkg-config', '0.29.2'),
+]
+
+osdependencies = [('libibverbs-dev', 'libibverbs-devel', 'rdma-core-devel')]
+
+dependencies = [
+    ('numactl', '2.0.13'),
+]
+
+preconfigopts = 'autoreconf && '
+configopts = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
+configopts += '--without-java --disable-doxygen-doc '
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/ucx_info', 'bin/ucx_perftest', 'bin/ucx_read_profile'],
+    'dirs': ['include', 'lib', 'share']
+}
+
+sanity_check_commands = ["ucx_info -d"]
+
+moduleclass = 'lib'

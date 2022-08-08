@@ -1,0 +1,392 @@
+This patch makes Reapr compatible with EasyBuild.
+
+Henrik R. Nagel, 20191119
+diff -ruN Reapr_1.0.18.orig/Makefile Reapr_1.0.18/Makefile
+--- Reapr_1.0.18.orig/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ Reapr_1.0.18/Makefile	2019-11-13 12:17:03.000000000 +0100
+@@ -0,0 +1,8 @@
++all:
++	cd third_party/tabix ; make
++	cd third_party/snpomatic ; make
++	mkdir -p bin/tabix ; cp third_party/tabix/tabix third_party/tabix/bgzip third_party/tabix/tabix++ bin/tabix
++	mkdir bin/snpomatic ; cp third_party/snpomatic/findknownsnps bin/snpomatic
++	cp third_party/smalt_x86_64 bin/smalt
++	cd src ; make
++	cd bin ; ln -s reapr.pl reapr
+diff -ruN Reapr_1.0.18.orig/src/Makefile Reapr_1.0.18/src/Makefile
+--- Reapr_1.0.18.orig/src/Makefile	2014-03-13 11:15:43.000000000 +0100
++++ Reapr_1.0.18/src/Makefile	2019-11-18 14:34:49.000000000 +0100
+@@ -1,6 +1,4 @@
+-BAMTOOLS_ROOT = $(CURDIR)/bamtools
+-CC = g++
+-CFLAGS = -Wl,-rpath,$(BAMTOOLS_ROOT)/lib  -Wall -O3  -I $(BAMTOOLS_ROOT)/include -L $(BAMTOOLS_ROOT)/lib
++INC = -I$(EBROOTBAMTOOLS)/include/bamtools
+ TABIX = tabix/tabix.o  -L./tabix -ltabix -lz
+ STATS_OBJS =  trianglePlot.o coveragePlot.o fasta.o histogram.o utils.o
+ SCORE_OBJS = errorWindow.o utils.o histogram.o
+@@ -18,108 +16,109 @@
+ EXECUTABLES = task_score task_stats task_break bam2fragCov bam2insert bam2fcdEstimate make_plots fa2gaps fa2gc scaff2contig n50 task_gapresize task_fcdrate bam2perfect
+ 
+ all: $(EXECUTABLES)
++	cp $(EXECUTABLES) *.pl ../bin
+ 
+ errorWindow.o: errorWindow.cpp
+-	$(CC) $(CFLAGS) -c errorWindow.cpp
++	$(CXX) $(CFLAGS) $(INC) -c errorWindow.cpp
+ 
+ trianglePlot.o: trianglePlot.cpp utils.o
+-	$(CC) $(CFLAGS) -c trianglePlot.cpp
++	$(CXX) $(CFLAGS) $(INC) -c trianglePlot.cpp
+ 
+ coveragePlot.o: coveragePlot.cpp
+-	$(CC) $(CFLAGS) -c coveragePlot.cpp
++	$(CXX) $(CFLAGS) $(INC) -c coveragePlot.cpp
+ 
+ fasta.o: fasta.cpp
+-	$(CC) $(CFLAGS) -c fasta.cpp
++	$(CXX) $(CFLAGS) $(INC) -c fasta.cpp
+ 
+ histogram.o: histogram.cpp
+-	$(CC) $(CFLAGS) -c histogram.cpp
++	$(CXX) $(CFLAGS) $(INC) -c histogram.cpp
+ 
+ utils.o: utils.cpp
+-	$(CC) $(CFLAGS) -lbamtools -c utils.cpp
++	$(CXX) $(CFLAGS) $(INC) -lbamtools -c utils.cpp
+ 
+ task_stats: task_stats.o $(STATS_OBJS)
+-	$(CC) $(CFLAGS) task_stats.o $(STATS_OBJS) -lbamtools -o task_stats $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_stats.o $(STATS_OBJS) -lbamtools -o task_stats $(TABIX)
+ 
+ task_stats.o: task_stats.cpp $(STATS_OBJS)
+-	$(CC) $(CFLAGS) -c task_stats.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_stats.cpp
+ 
+ task_score: task_score.o $(SCORE_OBJS)
+-	$(CC) $(CFLAGS) task_score.o $(SCORE_OBJS) -lbamtools -o task_score $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_score.o $(SCORE_OBJS) -lbamtools -o task_score $(TABIX)
+ 
+ task_score.o: task_score.cpp $(SCORE_OBJS)
+-	$(CC) $(CFLAGS) -c task_score.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_score.cpp
+ 
+ task_break: task_break.o $(BREAK_OBJS)
+-	$(CC) $(CFLAGS) task_break.o $(BREAK_OBJS) -lbamtools -o task_break $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_break.o $(BREAK_OBJS) -lbamtools -o task_break $(TABIX)
+ 
+ task_break.o: task_break.cpp $(BREAK_OBJS)
+-	$(CC) $(CFLAGS) -c task_break.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_break.cpp
+ 
+ bam2fragCov: bam2fragCov.o $(BAM2COV_OBJS)
+-	$(CC) $(CFLAGS) bam2fragCov.o $(BAM2COV_OBJS) -lbamtools -o bam2fragCov $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) bam2fragCov.o $(BAM2COV_OBJS) -lbamtools -o bam2fragCov $(TABIX)
+ 
+ bam2fragCov.o: bam2fragCov.cpp $(BAM2COV_OBJS)
+-	$(CC) $(CFLAGS) -c bam2fragCov.cpp
++	$(CXX) $(CFLAGS) $(INC) -c bam2fragCov.cpp
+ 
+ bam2insert: bam2insert.o $(BAM2INSERT_OBJS)
+-	$(CC) $(CFLAGS) bam2insert.o $(BAM2INSERT_OBJS) -lbamtools -o bam2insert $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) bam2insert.o $(BAM2INSERT_OBJS) -lbamtools -o bam2insert $(TABIX)
+ 
+ bam2insert.o: bam2insert.cpp $(BAM2INSERT_OBJS)
+-	$(CC) $(CFLAGS) -c bam2insert.cpp
++	$(CXX) $(CFLAGS) $(INC) -c bam2insert.cpp
+ 
+ bam2perfect: bam2perfect.o $(BAM2PERFECT_OBJS)
+-	$(CC) $(CFLAGS) bam2perfect.o $(BAM2PERFECT_OBJS) -lbamtools -o bam2perfect $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) bam2perfect.o $(BAM2PERFECT_OBJS) -lbamtools -o bam2perfect $(TABIX)
+ 
+ bam2perfect.o: bam2perfect.cpp $(BAM2PERFECT_OBJS)
+-	$(CC) $(CFLAGS) -c bam2perfect.cpp
++	$(CXX) $(CFLAGS) $(INC) -c bam2perfect.cpp
+ 
+ bam2fcdEstimate: bam2fcdEstimate.o $(BAM2FCDESTIMATE_OBJS)
+-	$(CC) $(CFLAGS) bam2fcdEstimate.o $(BAM2FCDESTIMATE_OBJS) -lbamtools -o bam2fcdEstimate $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) bam2fcdEstimate.o $(BAM2FCDESTIMATE_OBJS) -lbamtools -o bam2fcdEstimate $(TABIX)
+ 
+ bam2fcdEstimate.o: bam2fcdEstimate.cpp $(BAM2FCDESTIMATE_OBJS)
+-	$(CC) $(CFLAGS) -c bam2fcdEstimate.cpp
++	$(CXX) $(CFLAGS) $(INC) -c bam2fcdEstimate.cpp
+ 
+ make_plots: make_plots.o
+-	$(CC) $(CFLAGS) make_plots.o -o make_plots
++	$(CXX) $(CFLAGS) $(INC) make_plots.o -o make_plots
+ 
+ make_plots.o: make_plots.cpp
+-	$(CC) $(CFLAGS) -c make_plots.cpp
++	$(CXX) $(CFLAGS) $(INC) -c make_plots.cpp
+ 
+ fa2gc: fa2gc.o $(FA2GC_OBJS)
+-	$(CC) $(CFLAGS) fa2gc.o $(FA2GC_OBJS) -o fa2gc
++	$(CXX) $(CFLAGS) $(INC) fa2gc.o $(FA2GC_OBJS) -o fa2gc
+ 
+ fa2gc.o: fa2gc.cpp $(FA2GC_OBJS)
+-	$(CC) $(CFLAGS) -c fa2gc.cpp
++	$(CXX) $(CFLAGS) $(INC) -c fa2gc.cpp
+ 
+ fa2gaps: fa2gaps.o $(FA2GAPS_OBJS)
+-	$(CC) $(CFLAGS) fa2gaps.o $(FA2GAPS_OBJS) -o fa2gaps
++	$(CXX) $(CFLAGS) $(INC) fa2gaps.o $(FA2GAPS_OBJS) -o fa2gaps
+ 
+ fa2gaps.o: fa2gaps.cpp $(FA2GAPS_OBJS)
+-	$(CC) $(CFLAGS) -c fa2gaps.cpp
++	$(CXX) $(CFLAGS) $(INC) -c fa2gaps.cpp
+ 
+ n50: n50.o $(N50_OBJS)
+-	$(CC) $(CFLAGS) n50.o $(N50_OBJS) -o n50
++	$(CXX) $(CFLAGS) $(INC) n50.o $(N50_OBJS) -o n50
+ 
+ n50.o: n50.cpp $(N50_OBJS)
+-	$(CC) $(CFLAGS) -c n50.cpp
++	$(CXX) $(CFLAGS) $(INC) -c n50.cpp
+ 
+ scaff2contig: scaff2contig.o $(SCAFF2CONTIG_OBJS)
+-	$(CC) $(CFLAGS) scaff2contig.o $(SCAFF2CONTIG_OBJS) -o scaff2contig
++	$(CXX) $(CFLAGS) $(INC) scaff2contig.o $(SCAFF2CONTIG_OBJS) -o scaff2contig
+ 
+ scaff2contig.o: scaff2contig.cpp $(SCAFF2CONTIG_OBJS)
+-	$(CC) $(CFLAGS) -c scaff2contig.cpp
++	$(CXX) $(CFLAGS) $(INC) -c scaff2contig.cpp
+ 
+ task_gapresize: task_gapresize.o $(GAPRESIZE_OBJS)
+-	$(CC) $(CFLAGS) task_gapresize.o $(GAPRESIZE_OBJS) -lbamtools -o task_gapresize $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_gapresize.o $(GAPRESIZE_OBJS) -lbamtools -o task_gapresize $(TABIX)
+ 
+ task_gapresize.o: task_gapresize.cpp $(GAPRESIZE_OBJS)
+-	$(CC) $(CFLAGS) -c task_gapresize.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_gapresize.cpp
+ 
+ task_fcdrate: task_fcdrate.o $(FCDRATE_OBJS)
+-	$(CC) $(CFLAGS) task_fcdrate.o $(FCDRATE_OBJS) -lbamtools -o task_fcdrate $(TABIX)
++	$(CXX) $(CFLAGS) $(INC) task_fcdrate.o $(FCDRATE_OBJS) -lbamtools -o task_fcdrate $(TABIX)
+ 
+ task_fcdrate.o: task_fcdrate.cpp $(FCDRATE_OBJS)
+-	$(CC) $(CFLAGS) -c task_fcdrate.cpp
++	$(CXX) $(CFLAGS) $(INC) -c task_fcdrate.cpp
+ 
+ clean:
+ 	rm -rf *.o $(EXECUTABLES)
+diff -ruN Reapr_1.0.18.orig/src/task_perfectfrombam.pl Reapr_1.0.18/src/task_perfectfrombam.pl
+--- Reapr_1.0.18.orig/src/task_perfectfrombam.pl	2013-04-05 14:22:12.000000000 +0200
++++ Reapr_1.0.18/src/task_perfectfrombam.pl	2019-11-13 12:02:08.000000000 +0100
+@@ -62,7 +62,7 @@
+ my $ERROR_PREFIX = '[REAPR perfectfrombam]';
+ my $perfect_bam = "$out_prefix.tmp.perfect.bam";
+ my $repetitive_bam = "$out_prefix.tmp.repetitive.bam";
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++# my $samtools = File::Spec->catfile($scriptdir, 'samtools');
+ my %seq_lengths;
+ my %used_seqs;
+ my $hist_file = "$out_prefix.hist";
+@@ -75,7 +75,7 @@
+ system_call("$bam2perfect $bam_in $out_prefix.tmp $min_insert $max_insert $max_repeat_map_qual $min_perfect_map_qual $min_align_score");
+ 
+ # Get sequence length info from bam header
+-open F, "$samtools view -H $bam_in |" or die "$ERROR_PREFIX Error reading header of '$bam_in'";
++open F, "samtools view -H $bam_in |" or die "$ERROR_PREFIX Error reading header of '$bam_in'";
+ while (<F>) {
+     if (/^\@SQ/) {
+         my $id;
+@@ -99,7 +99,7 @@
+ 
+ # run samtools mpileup on the perfect coverage BAM, writing the coverage to a new file.
+ # Have to be careful because mpileup only reports bases with != coverage.
+-open FIN, "$samtools mpileup $perfect_bam | cut -f 1,2,4|" or die "$ERROR_PREFIX Error running samtools mpileup on '$perfect_bam'";
++open FIN, "samtools mpileup $perfect_bam | cut -f 1,2,4|" or die "$ERROR_PREFIX Error running samtools mpileup on '$perfect_bam'";
+ open FOUT, "| $bgzip -c > $perfect_cov_out" or die "$ERROR_PREFIX Error opening '$perfect_cov_out'";
+ my $current_ref = "";
+ my $current_pos = 1;
+@@ -164,7 +164,7 @@
+ 
+ # get the regions of nonzero repetitive coverage from the
+ # repetitive BAM
+-open FIN, "$samtools mpileup -A -C 0  $repetitive_bam | cut -f 1,2,4|" or die "$ERROR_PREFIX Error running samtools mpileup on '$repetitive_bam'";
++open FIN, "samtools mpileup -A -C 0  $repetitive_bam | cut -f 1,2,4|" or die "$ERROR_PREFIX Error running samtools mpileup on '$repetitive_bam'";
+ open FOUT, "| $bgzip -c > $repetitive_regions_out" or die "$ERROR_PREFIX Error opening '$repetitive_regions_out'";
+ $current_ref = "";
+ my $interval_start = -1;
+diff -ruN Reapr_1.0.18.orig/src/task_perfectmap.pl Reapr_1.0.18/src/task_perfectmap.pl
+--- Reapr_1.0.18.orig/src/task_perfectmap.pl	2012-11-15 17:27:30.000000000 +0100
++++ Reapr_1.0.18/src/task_perfectmap.pl	2019-11-13 12:03:01.000000000 +0100
+@@ -45,7 +45,7 @@
+ my $tmp_bin_single_match = "$tmp_bin\_single_match.fastq";
+ my $tabix = File::Spec->catfile($scriptdir, 'tabix/tabix');
+ my $bgzip = File::Spec->catfile($scriptdir, 'tabix/bgzip');
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++# my $samtools = File::Spec->catfile($scriptdir, 'samtools');
+ my $all_bases_outfile = "$preout.perfect_cov.gz";
+ my $hist_outfile = "$preout.hist";
+ my @coverage = (0) x 101;
+@@ -56,7 +56,7 @@
+ 
+ # we want an indexed fasta file
+ unless (-e "$ref_fa.fai"){
+-    system_call("$samtools faidx $ref_fa");
++    system_call("samtools faidx $ref_fa");
+ }
+ 
+ # snp-o-matic can't take gzipped reads, so decompress them first if necessary
+diff -ruN Reapr_1.0.18.orig/src/task_plots.pl Reapr_1.0.18/src/task_plots.pl
+--- Reapr_1.0.18.orig/src/task_plots.pl	2013-03-08 13:58:00.000000000 +0100
++++ Reapr_1.0.18/src/task_plots.pl	2019-11-13 12:03:19.000000000 +0100
+@@ -52,7 +52,7 @@
+ 
+ my $tabix = File::Spec->catfile($scriptdir, 'tabix/tabix');
+ my $bgzip = File::Spec->catfile($scriptdir, 'tabix/bgzip');
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++# my $samtools = File::Spec->catfile($scriptdir, 'samtools');
+ my @plot_list = ('frag_cov', 'frag_cov_cor', 'read_cov', 'read_ratio_f', 'read_ratio_r', 'clip', 'FCD_err');
+ my @file_list;
+ my $fa_out = "$outprefix.ref.fa";
+@@ -85,7 +85,7 @@
+ if (-e $perfect_plot) {push @file_list, $perfect_plot};
+ 
+ # get the reference sequence from the fasta file
+-system_call("$samtools faidx $ref_fa '$ref_id' > $fa_out");
++system_call("samtools faidx $ref_fa '$ref_id' > $fa_out");
+ 
+ # bgzip the plots
+ foreach (@file_list) {
+diff -ruN Reapr_1.0.18.orig/src/task_preprocess.pl Reapr_1.0.18/src/task_preprocess.pl
+--- Reapr_1.0.18.orig/src/task_preprocess.pl	2014-07-18 13:05:19.000000000 +0200
++++ Reapr_1.0.18/src/task_preprocess.pl	2019-11-13 12:03:35.000000000 +0100
+@@ -54,7 +54,7 @@
+ my $r_script = File::Spec->catfile($sample_dir, 'gc_vs_cov.R');
+ my $tabix = File::Spec->catfile($scriptdir, 'tabix/tabix');
+ my $bgzip = File::Spec->catfile($scriptdir, 'tabix/bgzip');
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++# my $samtools = File::Spec->catfile($scriptdir, 'samtools');
+ 
+ # make directory and soft links to required files
+ $fasta_in = File::Spec->rel2abs($fasta_in);
+@@ -76,14 +76,14 @@
+     symlink "$fasta_in.fai", "$ref.fai";
+ }
+ else {
+-    system_call("$samtools faidx $ref");
++    system_call("samtools faidx $ref");
+ }
+ 
+ if (-e "$bam_in.bai") {
+     symlink "$bam_in.bai", "$bam.bai";
+ }
+ else {
+-    system_call("$samtools index $bam");
++    system_call("samtools index $bam");
+ }
+ 
+ # make gaps file of gaps in reference
+diff -ruN Reapr_1.0.18.orig/src/task_seqrename.pl Reapr_1.0.18/src/task_seqrename.pl
+--- Reapr_1.0.18.orig/src/task_seqrename.pl	2014-02-24 17:35:11.000000000 +0100
++++ Reapr_1.0.18/src/task_seqrename.pl	2019-11-13 12:03:52.000000000 +0100
+@@ -7,7 +7,7 @@
+ use Getopt::Long;
+ 
+ my ($scriptname, $scriptdir) = fileparse($0);
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++# my $samtools = File::Spec->catfile($scriptdir, 'samtools');
+ my %options;
+ my $usage = qq/<rename file> <in.bam> <out.bam>
+ 
+@@ -52,8 +52,8 @@
+ $old2new{'='} = '=';
+ 
+ # make the new bam file
+-open FIN, "$samtools view -h $bam_in|" or die $!;
+-open FOUT, "| $samtools view -bS - > $bam_out" or die $!;
++open FIN, "samtools view -h $bam_in|" or die $!;
++open FOUT, "| samtools view -bS - > $bam_out" or die $!;
+ 
+ while (<FIN>) {
+     chomp;
+diff -ruN Reapr_1.0.18.orig/src/task_smaltmap.pl Reapr_1.0.18/src/task_smaltmap.pl
+--- Reapr_1.0.18.orig/src/task_smaltmap.pl	2014-03-13 09:31:14.000000000 +0100
++++ Reapr_1.0.18/src/task_smaltmap.pl	2019-11-13 12:04:27.000000000 +0100
+@@ -77,7 +77,7 @@
+ my $reads_2 = $ARGV[2];
+ my $final_bam = $ARGV[3];
+ my $ERROR_PREFIX = '[REAPR smaltmap]';
+-my $samtools = File::Spec->catfile($scriptdir, 'samtools');
++# my $samtools = File::Spec->catfile($scriptdir, 'samtools');
+ my $smalt = File::Spec->catfile($scriptdir, 'smalt');
+ my $tmp_prefix = "$final_bam.tmp.$$.smaltmap";
+ my $smalt_index = "$tmp_prefix.smalt_index";
+@@ -115,7 +115,7 @@
+ # already). The .fai file would get made in the samtools view -T .. call
+ # anyway.
+ unless (-e "$assembly.fai") {
+-    my $cmd = "$samtools faidx $assembly";
++    my $cmd = "samtools faidx $assembly";
+     if (system($cmd)) {
+         print STDERR "$ERROR_PREFIX Error in system call:\n$cmd\n\n";
+         print STDERR "This means samtools is unhappy with the assembly
+@@ -152,24 +152,24 @@
+ 
+ push @commands, "$smalt map -r 0 -x -y $options{y} $n_option $m_option -g $smalt_sample -f samsoft $smalt_index $reads_1 $reads_2"
+                . q{ | awk '$1!~/^#/'  }  # SMALT writes some stuff to do with the sampling to stdout
+-               . " | $samtools view -S -T $assembly -b - > $raw_bam";
++               . " | samtools view -S -T $assembly -b - > $raw_bam";
+ 
+ # sort the bam by coordinate
+-push @commands, "$samtools sort $raw_bam $raw_bam.sort";
++push @commands, "samtools sort $raw_bam $raw_bam.sort";
+ 
+ # remove duplicates
+-push @commands, "$samtools rmdup $raw_bam.sort.bam $rmdup_bam";
++push @commands, "samtools rmdup $raw_bam.sort.bam $rmdup_bam";
+ 
+ # Bamtools needs the @HD line of the BAM to be present.
+ # So need to make new header for the BAM
+ 
+ # need to get tab characters printed properly. Can't rely on echo -e working, so pipe through awk
+ push @commands, q~echo "@HD VN:1.0 SO:coordinate" | awk '{OFS="\t"; $1=$1; print}' > ~ . "$header";
+-push @commands, "$samtools view -H $rmdup_bam >> $header";
+-push @commands, "$samtools reheader $header $rmdup_bam > $final_bam";
++push @commands, "samtools view -H $rmdup_bam >> $header";
++push @commands, "samtools reheader $header $rmdup_bam > $final_bam";
+ 
+ # index the BAM
+-push @commands, "$samtools index $final_bam";
++push @commands, "samtools index $final_bam";
+ 
+ # clean up temp files
+ push @commands, "rm $tmp_prefix.*";
+diff -ruN Reapr_1.0.18.orig/third_party/ekg-tabixpp-fbdde77/Makefile Reapr_1.0.18/third_party/ekg-tabixpp-fbdde77/Makefile
+--- Reapr_1.0.18.orig/third_party/ekg-tabixpp-fbdde77/Makefile	2013-02-25 17:47:26.000000000 +0100
++++ Reapr_1.0.18/third_party/ekg-tabixpp-fbdde77/Makefile	2019-11-18 14:23:07.000000000 +0100
+@@ -1,6 +1,3 @@
+-CC=			gcc
+-CPP= 		g++
+-CFLAGS=		-g -Wall -O2 -fPIC #-m64 #-arch ppc
+ DFLAGS=		-D_FILE_OFFSET_BITS=64 -D_USE_KNETFILE
+ LOBJS=		bgzf.o kstring.o knetfile.o index.o bedidx.o
+ AOBJS=		main.o
+@@ -40,13 +37,13 @@
+ 		ranlib $@
+ 
+ tabix:lib $(AOBJS)
+-		$(CC) $(CFLAGS) -o $@ $(AOBJS) -lm $(LIBPATH) -L. -ltabix -lz
++		$(CXX) $(CFLAGS) -o $@ $(AOBJS) -lm $(LIBPATH) -L. -ltabix -lz
+ 
+ tabix.o: tabix.hpp tabix.cpp
+-		$(CPP) $(CFLAGS) -c tabix.cpp
++		$(CXX) $(CFLAGS) -c tabix.cpp
+ 
+ tabix++:lib tabix.o main.cpp
+-		$(CPP) $(CFLAGS) -o $@ main.cpp tabix.o bgzf.o -lm $(LIBPATH) -L. -ltabix -lz
++		$(CXX) $(CFLAGS) -o $@ main.cpp tabix.o bgzf.o -lm $(LIBPATH) -L. -ltabix -lz
+ 
+ bgzip:bgzip.o bgzf.o knetfile.o
+ 		$(CC) $(CFLAGS) -o $@ bgzip.o bgzf.o knetfile.o -lz
+diff -ruN Reapr_1.0.18.orig/third_party/snpomatic/Makefile Reapr_1.0.18/third_party/snpomatic/Makefile
+--- Reapr_1.0.18.orig/third_party/snpomatic/Makefile	2012-03-21 14:00:17.000000000 +0100
++++ Reapr_1.0.18/third_party/snpomatic/Makefile	2019-11-18 13:48:16.000000000 +0100
+@@ -1,6 +1,3 @@
+-# Use g++
+-CXX=g++
+-CXXFLAGS=-g -O3
+ LIBS=-lm
+ 
+ # Use Intel compiler (faster!)

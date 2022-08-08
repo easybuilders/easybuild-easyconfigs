@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ##
-# Copyright 2012-2019 Ghent University
+# Copyright 2012-2022 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -32,42 +32,38 @@ Usage: "python -m easybuild.easyconfigs.test.suite.py" or "./easybuild/easyconfi
 """
 import os
 import shutil
-import sys
 import tempfile
 import unittest
+from unittest import main
 
-from vsc.utils import fancylogger
-
-import easybuild.tools.build_log  # initialize EasyBuild logging, so we disable it
+import easybuild.tools.build_log  # noqa initialize EasyBuild logging, so we can disable it
 import test.easyconfigs.easyconfigs as e
 import test.easyconfigs.styletests as s
+from easybuild.base import fancylogger
 
 # disable all logging to significantly speed up tests
 fancylogger.disableDefaultHandlers()
 fancylogger.setLogLevelError()
 
 # make sure no deprecated behaviour is triggered
-os.environ['EASYBUILD_DEPRECATED'] = '10000'
+# os.environ['EASYBUILD_DEPRECATED'] = '10000'
 
-os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
-# call suite() for each module and then run them all
-SUITE = unittest.TestSuite([x.suite() for x in [e, s]])
+class EasyConfigsTestSuite(unittest.TestSuite):
+    def __init__(self, loader):
+        # call suite() for each module and then run them all
+        super(EasyConfigsTestSuite, self).__init__([x.suite(loader) for x in [e, s]])
 
-# uses XMLTestRunner if possible, so we can output an XML file that can be supplied to Jenkins
-xml_msg = ""
-try:
-    import xmlrunner  # requires unittest-xml-reporting package
-    xml_dir = 'test-reports'
-    res = xmlrunner.XMLTestRunner(output=xml_dir, verbosity=1).run(SUITE)
-    xml_msg = ", XML output of tests available in %s directory" % xml_dir
-except ImportError, err:
-    sys.stderr.write("WARNING: xmlrunner module not available, falling back to using unittest...\n\n")
-    res = unittest.TextTestRunner().run(SUITE)
+    def run(self, *args, **kwargs):
+        os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
+        super(EasyConfigsTestSuite, self).run(*args, **kwargs)
+        shutil.rmtree(os.environ['EASYBUILD_TMP_LOGDIR'])
+        del os.environ['EASYBUILD_TMP_LOGDIR']
 
-shutil.rmtree(os.environ['EASYBUILD_TMP_LOGDIR'])
-del os.environ['EASYBUILD_TMP_LOGDIR']
 
-if not res.wasSuccessful():
-    sys.stderr.write("ERROR: Not all tests were successful.\n")
-    sys.exit(2)
+def load_tests(loader, tests, pattern):
+    return EasyConfigsTestSuite(loader)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,256 @@
+Description: Use autotools to build shared library
+ This patch uses autoconf, automake, and libtool to build shared
+ and static libraries that enable the use of dSFMT by other packages.
+ All optimization flags of the upstream makefile are preserved, but
+ each flag is queried for compatibility with the compiler. Options
+ are provided for disabling the optimization flags, and for enabling
+ SSE2 or AltiVec support. Separate libraries are built for each of the
+ Mersenne exponents. The install target creates convenience symbolic
+ links to the development libraries for the primarily used Mersenne
+ exponent 19937.
+Author: Peter Colberg <peter@colberg.org>
+Forwarded: no
+Last-Update: 2015-10-28
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+--- /dev/null
++++ b/Makefile.am
+@@ -0,0 +1,103 @@
++ACLOCAL_AMFLAGS = -I m4
++
++include_HEADERS = dSFMT.h
++
++lib_LTLIBRARIES = libdSFMT-521.la libdSFMT-1279.la libdSFMT-2203.la \
++	libdSFMT-4253.la libdSFMT-11213.la libdSFMT-19937.la \
++	libdSFMT-44497.la libdSFMT-86243.la libdSFMT-132049.la \
++	libdSFMT-216091.la
++
++libdSFMT_CPPFLAGS = -DDSFMT_BUILDING_LIB -DDSFMT_DO_NOT_USE_OLD_NAMES
++libdSFMT_LDFLAGS = -version-info $(LIB_VERSION)
++
++libdSFMT_521_la_SOURCES = dSFMT.c
++libdSFMT_521_la_CPPFLAGS = -DDSFMT_MEXP=521 $(libdSFMT_CPPFLAGS)
++libdSFMT_521_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_1279_la_SOURCES = dSFMT.c
++libdSFMT_1279_la_CPPFLAGS = -DDSFMT_MEXP=1279 $(libdSFMT_CPPFLAGS)
++libdSFMT_1279_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_2203_la_SOURCES = dSFMT.c
++libdSFMT_2203_la_CPPFLAGS = -DDSFMT_MEXP=2203 $(libdSFMT_CPPFLAGS)
++libdSFMT_2203_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_4253_la_SOURCES = dSFMT.c
++libdSFMT_4253_la_CPPFLAGS = -DDSFMT_MEXP=4253 $(libdSFMT_CPPFLAGS)
++libdSFMT_4253_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_11213_la_SOURCES = dSFMT.c
++libdSFMT_11213_la_CPPFLAGS = -DDSFMT_MEXP=11213 $(libdSFMT_CPPFLAGS)
++libdSFMT_11213_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_19937_la_SOURCES = dSFMT.c
++libdSFMT_19937_la_CPPFLAGS = -DDSFMT_MEXP=19937 $(libdSFMT_CPPFLAGS)
++libdSFMT_19937_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_44497_la_SOURCES = dSFMT.c
++libdSFMT_44497_la_CPPFLAGS = -DDSFMT_MEXP=44497 $(libdSFMT_CPPFLAGS)
++libdSFMT_44497_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_86243_la_SOURCES = dSFMT.c
++libdSFMT_86243_la_CPPFLAGS = -DDSFMT_MEXP=86243 $(libdSFMT_CPPFLAGS)
++libdSFMT_86243_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_132049_la_SOURCES = dSFMT.c
++libdSFMT_132049_la_CPPFLAGS = -DDSFMT_MEXP=132049 $(libdSFMT_CPPFLAGS)
++libdSFMT_132049_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++libdSFMT_216091_la_SOURCES = dSFMT.c
++libdSFMT_216091_la_CPPFLAGS = -DDSFMT_MEXP=216091 $(libdSFMT_CPPFLAGS)
++libdSFMT_216091_la_LDFLAGS = $(libdSFMT_LDFLAGS)
++
++install-exec-hook:
++	cd $(DESTDIR)$(libdir) && if test -f libdSFMT-19937.la; then $(LN_S) -f libdSFMT-19937.la libdSFMT.la; fi
++	cd $(DESTDIR)$(libdir) && if test -f libdSFMT-19937.so; then $(LN_S) -f libdSFMT-19937.so libdSFMT.so; fi
++	cd $(DESTDIR)$(libdir) && if test -f libdSFMT-19937.a; then $(LN_S) -f libdSFMT-19937.a libdSFMT.a; fi
++
++noinst_PROGRAMS = test-M521 test-M1279 test-M2203 test-M4253 \
++	test-M11213 test-M19937 test-M44497 test-M86243 \
++	test-M132049 test-M216091
++
++test_M521_SOURCES = test.c
++test_M521_CPPFLAGS = -DDSFMT_MEXP=521
++test_M521_LDADD = libdSFMT-521.la
++
++test_M1279_SOURCES = test.c
++test_M1279_CPPFLAGS = -DDSFMT_MEXP=1279
++test_M1279_LDADD = libdSFMT-1279.la
++
++test_M2203_SOURCES = test.c
++test_M2203_CPPFLAGS = -DDSFMT_MEXP=2203
++test_M2203_LDADD = libdSFMT-2203.la
++
++test_M4253_SOURCES = test.c
++test_M4253_CPPFLAGS = -DDSFMT_MEXP=4253
++test_M4253_LDADD = libdSFMT-4253.la
++
++test_M11213_SOURCES = test.c
++test_M11213_CPPFLAGS = -DDSFMT_MEXP=11213
++test_M11213_LDADD = libdSFMT-11213.la
++
++test_M19937_SOURCES = test.c
++test_M19937_CPPFLAGS = -DDSFMT_MEXP=19937
++test_M19937_LDADD = libdSFMT-19937.la
++
++test_M44497_SOURCES = test.c
++test_M44497_CPPFLAGS = -DDSFMT_MEXP=44497
++test_M44497_LDADD = libdSFMT-44497.la
++
++test_M86243_SOURCES = test.c
++test_M86243_CPPFLAGS = -DDSFMT_MEXP=86243
++test_M86243_LDADD = libdSFMT-86243.la
++
++test_M132049_SOURCES = test.c
++test_M132049_CPPFLAGS = -DDSFMT_MEXP=132049
++test_M132049_LDADD = libdSFMT-132049.la
++
++test_M216091_SOURCES = test.c
++test_M216091_CPPFLAGS = -DDSFMT_MEXP=216091
++test_M216091_LDADD = libdSFMT-216091.la
++
++check test: $(noinst_PROGRAMS)
++	./check.sh test
+--- /dev/null
++++ b/configure.ac
+@@ -0,0 +1,109 @@
++AC_PREREQ([2.69])
++AC_INIT([dSFMT], [2.2.3])
++AC_CONFIG_SRCDIR([dSFMT.h])
++AC_CONFIG_MACRO_DIR([m4])
++AM_INIT_AUTOMAKE([foreign])
++LT_INIT
++
++AC_PROG_CC_C99
++AC_PROG_MAKE_SET
++AC_PROG_LN_S
++
++AX_CHECK_COMPILE_FLAG([-Wall],
++	[AM_CFLAGS="$AM_CFLAGS -Wall"],
++	[],
++	[-Werror])
++
++AX_CHECK_COMPILE_FLAG([-Wmissing-prototypes],
++	[AM_CFLAGS="$AM_CFLAGS -Wmissing-prototypes"],
++	[],
++	[-Werror])
++
++AC_MSG_CHECKING([whether to enable debugging assertions])
++AC_ARG_ENABLE([debug],
++	[AC_HELP_STRING([--enable-debug], [enable debugging assertions @<:@default=no@:>@])],
++	[enable_debug=$enableval],
++	[enable_debug=no])
++AC_MSG_RESULT([$enable_debug])
++
++if test "$enable_debug" != "yes"; then
++	AC_DEFINE([NDEBUG], [1], [Define to disable debugging assertions])
++fi
++
++AC_MSG_CHECKING([whether to enable optimization flags])
++AC_ARG_ENABLE([optimize],
++	[AC_HELP_STRING([--enable-optimize], [enable optimization flags @<:@default=yes@:>@])],
++	[enable_optimize=$enableval],
++	[enable_optimize=yes])
++AC_MSG_RESULT([$enable_optimize])
++
++if test "$enable_optimize" = "yes"; then
++	AX_CHECK_COMPILE_FLAG([-finline-functions],
++		[AM_CFLAGS="$AM_CFLAGS -finline-functions"],
++		[],
++		[-Werror])
++
++	AX_CHECK_COMPILE_FLAG([-fomit-frame-pointer],
++		[AM_CFLAGS="$AM_CFLAGS -fomit-frame-pointer"],
++		[],
++		[-Werror])
++
++	AX_CHECK_COMPILE_FLAG([-fno-strict-aliasing],
++		[AM_CFLAGS="$AM_CFLAGS -fno-strict-aliasing"],
++		[],
++		[-Werror])
++
++	AX_CHECK_COMPILE_FLAG([--param=max-inline-insns-single=1800],
++		[AM_CFLAGS="$AM_CFLAGS --param=max-inline-insns-single=1800"],
++		[],
++		[-Werror])
++
++	AX_CHECK_COMPILE_FLAG([--param=inline-unit-growth=500],
++		[AM_CFLAGS="$AM_CFLAGS --param=inline-unit-growth=500"],
++		[],
++		[-Werror])
++
++	AX_CHECK_COMPILE_FLAG([--param=large-function-growth=900],
++		[AM_CFLAGS="$AM_CFLAGS --param=large-function-growth=900"],
++		[],
++		[-Werror])
++fi
++
++AC_MSG_CHECKING([whether to enable SSE2 support])
++AC_ARG_ENABLE([sse2],
++	[AC_HELP_STRING([--enable-sse2], [enable SSE2 support @<:@default=no@:>@])],
++	[enable_sse2=$enableval],
++	[enable_sse2=no])
++AC_MSG_RESULT([$enable_sse2])
++
++if test "$enable_sse2" = "yes"; then
++	AX_CHECK_COMPILE_FLAG([-msse2],
++		[AM_CFLAGS="$AM_CFLAGS -msse2"],
++		[AC_MSG_ERROR([Need C compiler that supports SSE2])],
++		[-Werror])
++	AC_DEFINE([HAVE_SSE2], [1], [Define to enable SSE2 support])
++fi
++
++AC_MSG_CHECKING([whether to enable AltiVec support])
++AC_ARG_ENABLE([altivec],
++	[AC_HELP_STRING([--enable-altivec], [enable AltiVec support @<:@default=no@:>@])],
++	[enable_altivec=$enableval],
++	[enable_altivec=no])
++AC_MSG_RESULT([$enable_altivec])
++
++if test "$enable_altivec" = "yes"; then
++	AX_CHECK_COMPILE_FLAG([-mabi=altivec -maltivec],
++		[AM_CFLAGS="$AM_CFLAGS -mabi=altivec -maltivec"],
++		[AX_CHECK_COMPILE_FLAG([-faltivec -maltivec],
++			[AM_CFLAGS="$AM_CFLAGS -faltivec -maltivec"],
++			[AC_MSG_ERROR([Need C compiler that supports AltiVec])],
++			[-Werror])],
++		[-Werror])
++	AC_DEFINE([HAVE_ALTIVEC], [1], [Define to enable AltiVec support])
++fi
++
++AC_SUBST([LIB_VERSION], [1:0:0])
++AC_SUBST([AM_CFLAGS])
++AC_CONFIG_HEADERS([config.h])
++AC_CONFIG_FILES([Makefile])
++AC_OUTPUT
+--- a/dSFMT.c
++++ b/dSFMT.c
+@@ -11,6 +11,10 @@
+  *
+  * The new BSD License is applied to this software, see LICENSE.txt
+  */
++#if defined(HAVE_CONFIG_H)
++#  include "config.h"
++#endif
++
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+--- a/test.c
++++ b/test.c
+@@ -1,3 +1,7 @@
++#if defined(HAVE_CONFIG_H)
++#  include "config.h"
++#endif
++
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <limits.h>

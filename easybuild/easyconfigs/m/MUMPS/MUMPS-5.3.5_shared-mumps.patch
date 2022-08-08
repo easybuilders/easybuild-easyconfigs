@@ -1,0 +1,47 @@
+Heavily inspired from https://src.fedoraproject.org/rpms/MUMPS//blob/rawhide/f/MUMPS-shared.patch
+Author: micketeer@gmail.com
+
+diff -ru MUMPS_5.3.5.orig/src/Makefile MUMPS_5.3.5/src/Makefile
+--- MUMPS_5.3.5.orig/src/Makefile	2021-08-11 11:43:32.097349091 +0200
++++ MUMPS_5.3.5/src/Makefile	2021-08-11 12:02:10.305435406 +0200
+@@ -23,6 +23,8 @@
+ include $(topdir)/Makefile.inc
+ 
+ mumps_lib:    $(incdir)/mumps_int_def.h \
++              $(libdir)/libmumps_common$(PLAT).so \
++              $(libdir)/lib$(ARITH)mumps$(PLAT).so \
+               $(libdir)/libmumps_common$(PLAT)$(LIBEXT) \
+               $(libdir)/lib$(ARITH)mumps$(PLAT)$(LIBEXT)
+ 
+@@ -196,6 +198,14 @@
+ 	$(AR)$@ $?
+ 	$(RANLIB) $@
+ 
++$(libdir)/libmumps_common$(PLAT).so:      $(OBJS_COMMON_MOD) $(OBJS_COMMON_OTHER)
++	$(FC) -shared $^ -Wl,-soname,libmumps_common$(PLAT)-$(SONAME_VERSION).so $(OPTL) -L$(libdir) $(LORDERINGS) -lpthread $(MUMPS_LIBF77) $(MPIFLIB) $(MPICLIB) $(METISLIB) -o $(libdir)/libmumps_common$(PLAT)-$(SONAME_VERSION).so $(OPTL) -Wl,-z,defs
++	ln -fs libmumps_common$(PLAT)-$(SONAME_VERSION).so $@
++
++$(libdir)/lib$(ARITH)mumps$(PLAT).so:    $(OBJS_MOD) $(OBJS_OTHER)
++	$(FC) -shared $^ -Wl,-soname,lib$(ARITH)mumps$(PLAT)-$(SONAME_VERSION).so $(OPTL) -L$(libdir) -lmumps_common$(PLAT) -lpthread $(MUMPS_LIBF77) $(LORDERINGS) $(MPIFLIB) $(METISLIB) $(SCALAP) -o $(libdir)/lib$(ARITH)mumps$(PLAT)-$(SONAME_VERSION).so $(OPTL) -Wl,-z,defs
++	ln -fs lib$(ARITH)mumps$(PLAT)-$(SONAME_VERSION).so $@
++
+ # Dependencies between modules:
+ # i) arithmetic-dependent modules:
+ $(ARITH)ana_aux.o:              $(ARITH)mumps_struc_def.o \
+@@ -405,13 +415,13 @@
+ 
+ .SUFFIXES: .c .F .o
+ .F.o:
+-	$(FC) $(OPTF) -I. -I../include $(INCS) $(IORDERINGSF) $(ORDERINGSF) -c $*.F $(OUTF)$*.o
++	$(FC) $(OPTF) -I. -I../include $(INCS) $(IORDERINGSF) $(ORDERINGSF) -fPIC -c $*.F $(OUTF)$*.o
+ .c.o:
+-	$(CC) $(OPTC) -I../include $(INCS) $(CDEFS) $(IORDERINGSC) $(ORDERINGSC) -c $*.c $(OUTC)$*.o
++	$(CC) $(OPTC) -I../include $(INCS) $(CDEFS) $(IORDERINGSC) $(ORDERINGSC) -fPIC -c $*.c $(OUTC)$*.o
+ 
+ $(ARITH)mumps_c.o:	mumps_c.c
+ 	$(CC) $(OPTC) -I../include $(INCS) $(CDEFS) -DMUMPS_ARITH=MUMPS_ARITH_$(ARITH) \
+-	      $(IORDERINGSC) $(ORDERINGSC) -c mumps_c.c $(OUTC)$@
++	      $(IORDERINGSC) $(ORDERINGSC) -fPIC -c mumps_c.c $(OUTC)$@
+ 
+ clean:
+ 	$(RM) *.o *.mod $(incdir)/mumps_int_def.h

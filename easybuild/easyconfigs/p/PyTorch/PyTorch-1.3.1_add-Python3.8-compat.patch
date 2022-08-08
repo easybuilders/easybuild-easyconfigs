@@ -1,0 +1,751 @@
+From 86c64440c9169d94bffb58b523da1db00c896703 Mon Sep 17 00:00:00 2001
+From: vishwakftw <vishwaks@cs.cmu.edu>
+Date: Thu, 7 Nov 2019 09:18:38 -0800
+Subject: [PATCH] Make PyTorch Python 3.8 compatible (#29302)
+
+Summary:
+PEP 590 modifies the `tp_print` offset to `tp_vectorcall_offset` - which requires a Py_ssize_t object.
+Passing a nullptr caused compatibility issues for Python 3.8.
+
+Changelog:
+- Modify all occurrences of `nullptr  /* tp_print */` to 0  /* tp_vectorcall_offset */
+- Minor formatting changes
+Pull Request resolved: https://github.com/pytorch/pytorch/pull/29302
+
+Test Plan:
+- Local fresh build with Python 3.8 completed successfully.
+
+Fixes https://github.com/pytorch/pytorch/issues/28060.
+Fixes https://github.com/pytorch/pytorch/issues/29162.
+
+Supersedes https://github.com/pytorch/pytorch/pull/28364
+
+Differential Revision: D18372022
+
+Pulled By: ezyang
+
+fbshipit-source-id: 8e9a15b0d0f72101ccc69bd489f5efa216b880bb
+---
+ .../templates/python_torch_functions.cpp      |  2 +-
+ torch/csrc/Device.cpp                         | 46 +++++++--------
+ torch/csrc/Dtype.cpp                          | 54 ++++++++---------
+ torch/csrc/Generator.cpp                      |  2 +-
+ torch/csrc/Layout.cpp                         | 58 +++++++++----------
+ torch/csrc/MemoryFormat.cpp                   |  2 +-
+ torch/csrc/PtrWrapper.cpp                     | 20 +++----
+ torch/csrc/QScheme.cpp                        |  2 +-
+ torch/csrc/Size.cpp                           | 48 +++++++--------
+ torch/csrc/TypeInfo.cpp                       |  4 +-
+ torch/csrc/autograd/python_engine.cpp         | 20 +++----
+ torch/csrc/autograd/python_function.cpp       | 26 ++++-----
+ .../csrc/autograd/python_legacy_variable.cpp  | 18 +++---
+ torch/csrc/autograd/python_variable.cpp       | 26 ++++-----
+ torch/csrc/cuda/Event.cpp                     |  2 +-
+ torch/csrc/cuda/Stream.cpp                    |  2 +-
+ torch/csrc/generic/Storage.cpp                | 22 +++----
+ 17 files changed, 177 insertions(+), 177 deletions(-)
+
+diff --git a/tools/autograd/templates/python_torch_functions.cpp b/tools/autograd/templates/python_torch_functions.cpp
+index 935a01f6cc10d..9d10f0324647d 100644
+--- a/tools/autograd/templates/python_torch_functions.cpp
++++ b/tools/autograd/templates/python_torch_functions.cpp
+@@ -489,7 +489,7 @@ static PyTypeObject THPVariableFunctions = {
+   0,                                     /* tp_basicsize */
+   0,                                     /* tp_itemsize */
+   0,                                     /* tp_dealloc */
+-  0,                                     /* tp_print */
++  0,                                     /* tp_vectorcall_offset */
+   0,                                     /* tp_getattr */
+   0,                                     /* tp_setattr */
+   0,                                     /* tp_reserved */
+diff --git a/torch/csrc/Device.cpp b/torch/csrc/Device.cpp
+index 6bdfcb47570d8..d24530feb61f0 100644
+--- a/torch/csrc/Device.cpp
++++ b/torch/csrc/Device.cpp
+@@ -181,39 +181,39 @@ PyTypeObject THPDeviceType = {
+   "torch.device",                        /* tp_name */
+   sizeof(THPDevice),                     /* tp_basicsize */
+   0,                                     /* tp_itemsize */
+-  nullptr,                                     /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
+-  nullptr,                                     /* tp_getattr */
+-  nullptr,                                     /* tp_setattr */
+-  nullptr,                                     /* tp_reserved */
++  nullptr,                               /* tp_dealloc */
++  0,                                     /* tp_vectorcall_offset */
++  nullptr,                               /* tp_getattr */
++  nullptr,                               /* tp_setattr */
++  nullptr,                               /* tp_reserved */
+   (reprfunc)THPDevice_repr,              /* tp_repr */
+-  nullptr,                                     /* tp_as_number */
+-  nullptr,                                     /* tp_as_sequence */
+-  nullptr,                                     /* tp_as_mapping */
++  nullptr,                               /* tp_as_number */
++  nullptr,                               /* tp_as_sequence */
++  nullptr,                               /* tp_as_mapping */
+   (hashfunc)THPDevice_hash,              /* tp_hash  */
+-  nullptr,                                     /* tp_call */
++  nullptr,                               /* tp_call */
+   (reprfunc)THPDevice_str,               /* tp_str */
+-  nullptr,                                     /* tp_getattro */
+-  nullptr,                                     /* tp_setattro */
+-  nullptr,                                     /* tp_as_buffer */
++  nullptr,                               /* tp_getattro */
++  nullptr,                               /* tp_setattro */
++  nullptr,                               /* tp_as_buffer */
+   Py_TPFLAGS_DEFAULT,                    /* tp_flags */
+   nullptr,                               /* tp_doc */
+-  nullptr,                                     /* tp_traverse */
+-  nullptr,                                     /* tp_clear */
++  nullptr,                               /* tp_traverse */
++  nullptr,                               /* tp_clear */
+   (richcmpfunc)THPDevice_rc,             /* tp_richcompare */
+   0,                                     /* tp_weaklistoffset */
+-  nullptr,                                     /* tp_iter */
+-  nullptr,                                     /* tp_iternext */
++  nullptr,                               /* tp_iter */
++  nullptr,                               /* tp_iternext */
+   THPDevice_methods,                     /* tp_methods */
+-  nullptr,                                     /* tp_members */
++  nullptr,                               /* tp_members */
+   THPDevice_properties,                  /* tp_getset */
+-  nullptr,                                     /* tp_base */
+-  nullptr,                                     /* tp_dict */
+-  nullptr,                                     /* tp_descr_get */
+-  nullptr,                                     /* tp_descr_set */
++  nullptr,                               /* tp_base */
++  nullptr,                               /* tp_dict */
++  nullptr,                               /* tp_descr_get */
++  nullptr,                               /* tp_descr_set */
+   0,                                     /* tp_dictoffset */
+-  nullptr,                                     /* tp_init */
+-  nullptr,                                     /* tp_alloc */
++  nullptr,                               /* tp_init */
++  nullptr,                               /* tp_alloc */
+   THPDevice_pynew,                       /* tp_new */
+ };
+ 
+diff --git a/torch/csrc/Dtype.cpp b/torch/csrc/Dtype.cpp
+index dc3c7c44ac9d6..c0a084712f847 100644
+--- a/torch/csrc/Dtype.cpp
++++ b/torch/csrc/Dtype.cpp
+@@ -61,40 +61,40 @@ PyTypeObject THPDtypeType = {
+   "torch.dtype",                         /* tp_name */
+   sizeof(THPDtype),                      /* tp_basicsize */
+   0,                                     /* tp_itemsize */
+-  nullptr,                                     /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
+-  nullptr,                                     /* tp_getattr */
+-  nullptr,                                     /* tp_setattr */
+-  nullptr,                                     /* tp_reserved */
++  nullptr,                               /* tp_dealloc */
++  0,                                     /* tp_vectorcall_offset */
++  nullptr,                               /* tp_getattr */
++  nullptr,                               /* tp_setattr */
++  nullptr,                               /* tp_reserved */
+   (reprfunc)THPDtype_repr,               /* tp_repr */
+-  nullptr,                                     /* tp_as_number */
+-  nullptr,                                     /* tp_as_sequence */
+-  nullptr,                                     /* tp_as_mapping */
+-  nullptr,                                     /* tp_hash  */
+-  nullptr,                                     /* tp_call */
+-  nullptr,                                     /* tp_str */
+-  nullptr,                                     /* tp_getattro */
+-  nullptr,                                     /* tp_setattro */
+-  nullptr,                                     /* tp_as_buffer */
++  nullptr,                               /* tp_as_number */
++  nullptr,                               /* tp_as_sequence */
++  nullptr,                               /* tp_as_mapping */
++  nullptr,                               /* tp_hash  */
++  nullptr,                               /* tp_call */
++  nullptr,                               /* tp_str */
++  nullptr,                               /* tp_getattro */
++  nullptr,                               /* tp_setattro */
++  nullptr,                               /* tp_as_buffer */
+   Py_TPFLAGS_DEFAULT,                    /* tp_flags */
+   nullptr,                               /* tp_doc */
+-  nullptr,                                     /* tp_traverse */
+-  nullptr,                                     /* tp_clear */
+-  nullptr,                                     /* tp_richcompare */
++  nullptr,                               /* tp_traverse */
++  nullptr,                               /* tp_clear */
++  nullptr,                               /* tp_richcompare */
+   0,                                     /* tp_weaklistoffset */
+-  nullptr,                                     /* tp_iter */
+-  nullptr,                                     /* tp_iternext */
++  nullptr,                               /* tp_iter */
++  nullptr,                               /* tp_iternext */
+   THPDtype_methods,                      /* tp_methods */
+-  nullptr,                                     /* tp_members */
++  nullptr,                               /* tp_members */
+   THPDtype_properties,                   /* tp_getset */
+-  nullptr,                                     /* tp_base */
+-  nullptr,                                     /* tp_dict */
+-  nullptr,                                     /* tp_descr_get */
+-  nullptr,                                     /* tp_descr_set */
++  nullptr,                               /* tp_base */
++  nullptr,                               /* tp_dict */
++  nullptr,                               /* tp_descr_get */
++  nullptr,                               /* tp_descr_set */
+   0,                                     /* tp_dictoffset */
+-  nullptr,                                     /* tp_init */
+-  nullptr,                                     /* tp_alloc */
+-  nullptr,                                     /* tp_new */
++  nullptr,                               /* tp_init */
++  nullptr,                               /* tp_alloc */
++  nullptr,                               /* tp_new */
+ };
+ 
+ void THPDtype_init(PyObject *module)
+diff --git a/torch/csrc/Generator.cpp b/torch/csrc/Generator.cpp
+index 2d7458dd99016..7ffe1b231b2b2 100644
+--- a/torch/csrc/Generator.cpp
++++ b/torch/csrc/Generator.cpp
+@@ -182,7 +182,7 @@ PyTypeObject THPGeneratorType = {
+   sizeof(THPGenerator),                        /* tp_basicsize */
+   0,                                           /* tp_itemsize */
+   (destructor)THPGenerator_dealloc,            /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+diff --git a/torch/csrc/Layout.cpp b/torch/csrc/Layout.cpp
+index 5bbd30d82ab23..552ca6121078b 100644
+--- a/torch/csrc/Layout.cpp
++++ b/torch/csrc/Layout.cpp
+@@ -32,40 +32,40 @@ PyTypeObject THPLayoutType = {
+   "torch.layout",                        /* tp_name */
+   sizeof(THPLayout),                     /* tp_basicsize */
+   0,                                     /* tp_itemsize */
+-  nullptr,                                     /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
+-  nullptr,                                     /* tp_getattr */
+-  nullptr,                                     /* tp_setattr */
+-  nullptr,                                     /* tp_reserved */
++  nullptr,                               /* tp_dealloc */
++  0,                                     /* tp_vectorcall_offset */
++  nullptr,                               /* tp_getattr */
++  nullptr,                               /* tp_setattr */
++  nullptr,                               /* tp_reserved */
+   (reprfunc)THPLayout_repr,              /* tp_repr */
+-  nullptr,                                     /* tp_as_number */
+-  nullptr,                                     /* tp_as_sequence */
+-  nullptr,                                     /* tp_as_mapping */
+-  nullptr,                                     /* tp_hash  */
+-  nullptr,                                     /* tp_call */
+-  nullptr,                                     /* tp_str */
+-  nullptr,                                     /* tp_getattro */
+-  nullptr,                                     /* tp_setattro */
+-  nullptr,                                     /* tp_as_buffer */
++  nullptr,                               /* tp_as_number */
++  nullptr,                               /* tp_as_sequence */
++  nullptr,                               /* tp_as_mapping */
++  nullptr,                               /* tp_hash  */
++  nullptr,                               /* tp_call */
++  nullptr,                               /* tp_str */
++  nullptr,                               /* tp_getattro */
++  nullptr,                               /* tp_setattro */
++  nullptr,                               /* tp_as_buffer */
+   Py_TPFLAGS_DEFAULT,                    /* tp_flags */
+   nullptr,                               /* tp_doc */
+-  nullptr,                                     /* tp_traverse */
+-  nullptr,                                     /* tp_clear */
+-  nullptr,                                     /* tp_richcompare */
++  nullptr,                               /* tp_traverse */
++  nullptr,                               /* tp_clear */
++  nullptr,                               /* tp_richcompare */
+   0,                                     /* tp_weaklistoffset */
+-  nullptr,                                     /* tp_iter */
+-  nullptr,                                     /* tp_iternext */
+-  nullptr,                                     /* tp_methods */
+-  nullptr,                                     /* tp_members */
+-  nullptr,                                     /* tp_getset */
+-  nullptr,                                     /* tp_base */
+-  nullptr,                                     /* tp_dict */
+-  nullptr,                                     /* tp_descr_get */
+-  nullptr,                                     /* tp_descr_set */
++  nullptr,                               /* tp_iter */
++  nullptr,                               /* tp_iternext */
++  nullptr,                               /* tp_methods */
++  nullptr,                               /* tp_members */
++  nullptr,                               /* tp_getset */
++  nullptr,                               /* tp_base */
++  nullptr,                               /* tp_dict */
++  nullptr,                               /* tp_descr_get */
++  nullptr,                               /* tp_descr_set */
+   0,                                     /* tp_dictoffset */
+-  nullptr,                                     /* tp_init */
+-  nullptr,                                     /* tp_alloc */
+-  nullptr,                                     /* tp_new */
++  nullptr,                               /* tp_init */
++  nullptr,                               /* tp_alloc */
++  nullptr,                               /* tp_new */
+ };
+ 
+ void THPLayout_init(PyObject *module)
+diff --git a/torch/csrc/MemoryFormat.cpp b/torch/csrc/MemoryFormat.cpp
+index 54ce6aad1240d..85d8750c659ca 100644
+--- a/torch/csrc/MemoryFormat.cpp
++++ b/torch/csrc/MemoryFormat.cpp
+@@ -33,7 +33,7 @@ PyTypeObject THPMemoryFormatType = {
+   sizeof(THPMemoryFormat),                     /* tp_basicsize */
+   0,                                           /* tp_itemsize */
+   nullptr,                                     /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+diff --git a/torch/csrc/PtrWrapper.cpp b/torch/csrc/PtrWrapper.cpp
+index 407c40ea8e025..aa48c49949b9b 100644
+--- a/torch/csrc/PtrWrapper.cpp
++++ b/torch/csrc/PtrWrapper.cpp
+@@ -53,11 +53,11 @@ static void THPWrapper_dealloc(THPWrapper* self)
+ 
+ PyTypeObject THPWrapperType = {
+   PyVarObject_HEAD_INIT(nullptr, 0)
+-  "torch._C._PtrWrapper",                /* tp_name */
+-  sizeof(THPWrapper),                    /* tp_basicsize */
+-  0,                                     /* tp_itemsize */
+-  (destructor)THPWrapper_dealloc,        /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  "torch._C._PtrWrapper",                      /* tp_name */
++  sizeof(THPWrapper),                          /* tp_basicsize */
++  0,                                           /* tp_itemsize */
++  (destructor)THPWrapper_dealloc,              /* tp_dealloc */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+@@ -71,12 +71,12 @@ PyTypeObject THPWrapperType = {
+   nullptr,                                     /* tp_getattro */
+   nullptr,                                     /* tp_setattro */
+   nullptr,                                     /* tp_as_buffer */
+-  Py_TPFLAGS_DEFAULT,                    /* tp_flags */
+-  nullptr,                                  /* tp_doc */
++  Py_TPFLAGS_DEFAULT,                          /* tp_flags */
++  nullptr,                                     /* tp_doc */
+   nullptr,                                     /* tp_traverse */
+   nullptr,                                     /* tp_clear */
+   nullptr,                                     /* tp_richcompare */
+-  0,                                     /* tp_weaklistoffset */
++  0,                                           /* tp_weaklistoffset */
+   nullptr,                                     /* tp_iter */
+   nullptr,                                     /* tp_iternext */
+   nullptr,                                     /* tp_methods */
+@@ -86,10 +86,10 @@ PyTypeObject THPWrapperType = {
+   nullptr,                                     /* tp_dict */
+   nullptr,                                     /* tp_descr_get */
+   nullptr,                                     /* tp_descr_set */
+-  0,                                     /* tp_dictoffset */
++  0,                                           /* tp_dictoffset */
+   nullptr,                                     /* tp_init */
+   nullptr,                                     /* tp_alloc */
+-  THPWrapper_pynew,                      /* tp_new */
++  THPWrapper_pynew,                            /* tp_new */
+ };
+ 
+ bool THPWrapper_init(PyObject *module)
+diff --git a/torch/csrc/QScheme.cpp b/torch/csrc/QScheme.cpp
+index eb73652a6a408..274ccf890df3c 100644
+--- a/torch/csrc/QScheme.cpp
++++ b/torch/csrc/QScheme.cpp
+@@ -43,7 +43,7 @@ PyTypeObject THPQSchemeType = {
+   sizeof(THPQScheme),                          /* tp_basicsize */
+   0,                                           /* tp_itemsize */
+   nullptr,                                     /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+diff --git a/torch/csrc/Size.cpp b/torch/csrc/Size.cpp
+index 15902d9b09667..d02d016876b67 100644
+--- a/torch/csrc/Size.cpp
++++ b/torch/csrc/Size.cpp
+@@ -186,39 +186,39 @@ PyTypeObject THPSizeType = {
+   "torch.Size",                          /* tp_name */
+   sizeof(THPSize),                       /* tp_basicsize */
+   0,                                     /* tp_itemsize */
+-  nullptr,                                     /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
+-  nullptr,                                     /* tp_getattr */
+-  nullptr,                                     /* tp_setattr */
+-  nullptr,                                     /* tp_reserved */
++  nullptr,                               /* tp_dealloc */
++  0,                                     /* tp_vectorcall_offset */
++  nullptr,                               /* tp_getattr */
++  nullptr,                               /* tp_setattr */
++  nullptr,                               /* tp_reserved */
+   (reprfunc)THPSize_repr,                /* tp_repr */
+-  nullptr,                                     /* tp_as_number */
++  nullptr,                               /* tp_as_number */
+   &THPSize_as_sequence,                  /* tp_as_sequence */
+   &THPSize_as_mapping,                   /* tp_as_mapping */
+-  nullptr,                                     /* tp_hash  */
+-  nullptr,                                     /* tp_call */
+-  nullptr,                                     /* tp_str */
+-  nullptr,                                     /* tp_getattro */
+-  nullptr,                                     /* tp_setattro */
+-  nullptr,                                     /* tp_as_buffer */
++  nullptr,                               /* tp_hash  */
++  nullptr,                               /* tp_call */
++  nullptr,                               /* tp_str */
++  nullptr,                               /* tp_getattro */
++  nullptr,                               /* tp_setattro */
++  nullptr,                               /* tp_as_buffer */
+   Py_TPFLAGS_DEFAULT,                    /* tp_flags */
+   nullptr,                               /* tp_doc */
+-  nullptr,                                     /* tp_traverse */
+-  nullptr,                                     /* tp_clear */
+-  nullptr,                                     /* tp_richcompare */
++  nullptr,                               /* tp_traverse */
++  nullptr,                               /* tp_clear */
++  nullptr,                               /* tp_richcompare */
+   0,                                     /* tp_weaklistoffset */
+-  nullptr,                                     /* tp_iter */
+-  nullptr,                                     /* tp_iternext */
++  nullptr,                               /* tp_iter */
++  nullptr,                               /* tp_iternext */
+   THPSize_methods,                       /* tp_methods */
+-  nullptr,                                     /* tp_members */
+-  nullptr,                                     /* tp_getset */
++  nullptr,                               /* tp_members */
++  nullptr,                               /* tp_getset */
+   &PyTuple_Type,                         /* tp_base */
+-  nullptr,                                     /* tp_dict */
+-  nullptr,                                     /* tp_descr_get */
+-  nullptr,                                     /* tp_descr_set */
++  nullptr,                               /* tp_dict */
++  nullptr,                               /* tp_descr_get */
++  nullptr,                               /* tp_descr_set */
+   0,                                     /* tp_dictoffset */
+-  nullptr,                                     /* tp_init */
+-  nullptr,                                     /* tp_alloc */
++  nullptr,                               /* tp_init */
++  nullptr,                               /* tp_alloc */
+   THPSize_pynew,                         /* tp_new */
+ };
+ 
+diff --git a/torch/csrc/TypeInfo.cpp b/torch/csrc/TypeInfo.cpp
+index 8fd9a0b49c701..56d668e1ae972 100644
+--- a/torch/csrc/TypeInfo.cpp
++++ b/torch/csrc/TypeInfo.cpp
+@@ -193,7 +193,7 @@ PyTypeObject THPFInfoType = {
+     sizeof(THPFInfo), /* tp_basicsize */
+     0, /* tp_itemsize */
+     nullptr, /* tp_dealloc */
+-    nullptr, /* tp_print */
++    0, /* tp_vectorcall_offset */
+     nullptr, /* tp_getattr */
+     nullptr, /* tp_setattr */
+     nullptr, /* tp_reserved */
+@@ -243,7 +243,7 @@ PyTypeObject THPIInfoType = {
+     sizeof(THPIInfo), /* tp_basicsize */
+     0, /* tp_itemsize */
+     nullptr, /* tp_dealloc */
+-    nullptr, /* tp_print */
++    0, /* tp_vectorcall_offset */
+     nullptr, /* tp_getattr */
+     nullptr, /* tp_setattr */
+     nullptr, /* tp_reserved */
+diff --git a/torch/csrc/autograd/python_engine.cpp b/torch/csrc/autograd/python_engine.cpp
+index 26f1a412bb86b..0b40ce3e98814 100644
+--- a/torch/csrc/autograd/python_engine.cpp
++++ b/torch/csrc/autograd/python_engine.cpp
+@@ -255,11 +255,11 @@ static struct PyMethodDef THPEngine_methods[] = {
+ 
+ PyTypeObject THPEngineType = {
+   PyVarObject_HEAD_INIT(nullptr, 0)
+-  "torch._C._EngineBase",                /* tp_name */
+-  sizeof(THPEngine),                     /* tp_basicsize */
+-  0,                                     /* tp_itemsize */
++  "torch._C._EngineBase",                      /* tp_name */
++  sizeof(THPEngine),                           /* tp_basicsize */
++  0,                                           /* tp_itemsize */
+   nullptr,                                     /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+@@ -273,25 +273,25 @@ PyTypeObject THPEngineType = {
+   nullptr,                                     /* tp_getattro */
+   nullptr,                                     /* tp_setattro */
+   nullptr,                                     /* tp_as_buffer */
+-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+-  nullptr,                               /* tp_doc */
++  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,    /* tp_flags */
++  nullptr,                                     /* tp_doc */
+   nullptr,                                     /* tp_traverse */
+   nullptr,                                     /* tp_clear */
+   nullptr,                                     /* tp_richcompare */
+-  0,                                     /* tp_weaklistoffset */
++  0,                                           /* tp_weaklistoffset */
+   nullptr,                                     /* tp_iter */
+   nullptr,                                     /* tp_iternext */
+-  THPEngine_methods,                     /* tp_methods */
++  THPEngine_methods,                           /* tp_methods */
+   nullptr,                                     /* tp_members */
+   nullptr,                                     /* tp_getset */
+   nullptr,                                     /* tp_base */
+   nullptr,                                     /* tp_dict */
+   nullptr,                                     /* tp_descr_get */
+   nullptr,                                     /* tp_descr_set */
+-  0,                                     /* tp_dictoffset */
++  0,                                           /* tp_dictoffset */
+   nullptr,                                     /* tp_init */
+   nullptr,                                     /* tp_alloc */
+-  THPEngine_new                          /* tp_new */
++  THPEngine_new                                /* tp_new */
+ };
+ 
+ static void child_atfork() {
+diff --git a/torch/csrc/autograd/python_function.cpp b/torch/csrc/autograd/python_function.cpp
+index 517bb068f7803..df17cb194a84e 100644
+--- a/torch/csrc/autograd/python_function.cpp
++++ b/torch/csrc/autograd/python_function.cpp
+@@ -1063,11 +1063,11 @@ static struct PyMethodDef THPFunction_methods[] = {
+ 
+ PyTypeObject THPFunctionType = {
+   PyVarObject_HEAD_INIT(nullptr, 0)
+-  "torch._C._FunctionBase",              /* tp_name */
+-  sizeof(THPFunction),                   /* tp_basicsize */
+-  0,                                     /* tp_itemsize */
+-  (destructor)THPFunction_dealloc,       /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  "torch._C._FunctionBase",                    /* tp_name */
++  sizeof(THPFunction),                         /* tp_basicsize */
++  0,                                           /* tp_itemsize */
++  (destructor)THPFunction_dealloc,             /* tp_dealloc */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+@@ -1082,24 +1082,24 @@ PyTypeObject THPFunctionType = {
+   nullptr,                                     /* tp_setattro */
+   nullptr,                                     /* tp_as_buffer */
+   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /* tp_flags */
+-  nullptr,                               /* tp_doc */
+-  (traverseproc)THPFunction_traverse,    /* tp_traverse */
+-  (inquiry)THPFunction_clear,            /* tp_clear */
++  nullptr,                                     /* tp_doc */
++  (traverseproc)THPFunction_traverse,          /* tp_traverse */
++  (inquiry)THPFunction_clear,                  /* tp_clear */
+   nullptr,                                     /* tp_richcompare */
+-  0,                                     /* tp_weaklistoffset */
++  0,                                           /* tp_weaklistoffset */
+   nullptr,                                     /* tp_iter */
+   nullptr,                                     /* tp_iternext */
+-  THPFunction_methods,                   /* tp_methods */
++  THPFunction_methods,                         /* tp_methods */
+   nullptr,                                     /* tp_members */
+-  THPFunction_properties,                /* tp_getset */
++  THPFunction_properties,                      /* tp_getset */
+   nullptr,                                     /* tp_base */
+   nullptr,                                     /* tp_dict */
+   nullptr,                                     /* tp_descr_get */
+   nullptr,                                     /* tp_descr_set */
+-  0,                                     /* tp_dictoffset */
++  0,                                           /* tp_dictoffset */
+   nullptr,                                     /* tp_init */
+   nullptr,                                     /* tp_alloc */
+-  THPFunction_new                        /* tp_new */
++  THPFunction_new                              /* tp_new */
+ };
+ 
+ bool THPFunction_initModule(PyObject *module)
+diff --git a/torch/csrc/autograd/python_legacy_variable.cpp b/torch/csrc/autograd/python_legacy_variable.cpp
+index c57975bbda77b..c27579d40c6e3 100644
+--- a/torch/csrc/autograd/python_legacy_variable.cpp
++++ b/torch/csrc/autograd/python_legacy_variable.cpp
+@@ -90,11 +90,11 @@ static PyObject *THPVariable_pynew(PyTypeObject* type, PyObject *args, PyObject
+ 
+ PyTypeObject THPLegacyVariableType = {
+   PyVarObject_HEAD_INIT(nullptr, 0)
+-  "torch._C._LegacyVariableBase",        /* tp_name */
+-  0,                                     /* tp_basicsize */
+-  0,                                     /* tp_itemsize */
++  "torch._C._LegacyVariableBase",              /* tp_name */
++  0,                                           /* tp_basicsize */
++  0,                                           /* tp_itemsize */
+   nullptr,                                     /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+@@ -108,12 +108,12 @@ PyTypeObject THPLegacyVariableType = {
+   nullptr,                                     /* tp_getattro */
+   nullptr,                                     /* tp_setattro */
+   nullptr,                                     /* tp_as_buffer */
+-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+-  nullptr,                               /* tp_doc */
++  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,    /* tp_flags */
++  nullptr,                                     /* tp_doc */
+   nullptr,                                     /* tp_traverse */
+   nullptr,                                     /* tp_clear */
+   nullptr,                                     /* tp_richcompare */
+-  0,                                     /* tp_weaklistoffset */
++  0,                                           /* tp_weaklistoffset */
+   nullptr,                                     /* tp_iter */
+   nullptr,                                     /* tp_iternext */
+   nullptr,                                     /* tp_methods */
+@@ -123,10 +123,10 @@ PyTypeObject THPLegacyVariableType = {
+   nullptr,                                     /* tp_dict */
+   nullptr,                                     /* tp_descr_get */
+   nullptr,                                     /* tp_descr_set */
+-  0,                                     /* tp_dictoffset */
++  0,                                           /* tp_dictoffset */
+   nullptr,                                     /* tp_init */
+   nullptr,                                     /* tp_alloc */
+-  THPVariable_pynew                      /* tp_new */
++  THPVariable_pynew                            /* tp_new */
+ };
+ 
+ void init_legacy_variable(PyObject *module) {
+diff --git a/torch/csrc/autograd/python_variable.cpp b/torch/csrc/autograd/python_variable.cpp
+index cd97099780eb6..a77a00d0b35f4 100644
+--- a/torch/csrc/autograd/python_variable.cpp
++++ b/torch/csrc/autograd/python_variable.cpp
+@@ -541,18 +541,18 @@ static PyMethodDef extra_methods[] = {
+ 
+ PyTypeObject THPVariableType = {
+   PyVarObject_HEAD_INIT(nullptr, 0)
+-  "torch._C._TensorBase",                /* tp_name */
+-  sizeof(THPVariable),                   /* tp_basicsize */
+-  0,                                     /* tp_itemsize */
+-  (destructor)THPVariable_dealloc,       /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  "torch._C._TensorBase",                      /* tp_name */
++  sizeof(THPVariable),                         /* tp_basicsize */
++  0,                                           /* tp_itemsize */
++  (destructor)THPVariable_dealloc,             /* tp_dealloc */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+   nullptr,                                     /* tp_repr */
+   nullptr,                                     /* tp_as_number */
+   nullptr,                                     /* tp_as_sequence */
+-  &THPVariable_as_mapping,               /* tp_as_mapping */
++  &THPVariable_as_mapping,                     /* tp_as_mapping */
+   nullptr,                                     /* tp_hash  */
+   nullptr,                                     /* tp_call */
+   nullptr,                                     /* tp_str */
+@@ -560,24 +560,24 @@ PyTypeObject THPVariableType = {
+   nullptr,                                     /* tp_setattro */
+   nullptr,                                     /* tp_as_buffer */
+   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /* tp_flags */
+-  nullptr,                               /* tp_doc */
+-  (traverseproc)THPVariable_traverse,    /* tp_traverse */
+-  (inquiry)THPVariable_clear,            /* tp_clear */
++  nullptr,                                     /* tp_doc */
++  (traverseproc)THPVariable_traverse,          /* tp_traverse */
++  (inquiry)THPVariable_clear,                  /* tp_clear */
+   nullptr,                                     /* tp_richcompare */
+-  0,                                     /* tp_weaklistoffset */
++  0,                                           /* tp_weaklistoffset */
+   nullptr,                                     /* tp_iter */
+   nullptr,                                     /* tp_iternext */
+   nullptr,                                     /* tp_methods */
+   nullptr,                                     /* tp_members */
+-  THPVariable_properties,                /* tp_getset */
++  THPVariable_properties,                      /* tp_getset */
+   nullptr,                                     /* tp_base */
+   nullptr,                                     /* tp_dict */
+   nullptr,                                     /* tp_descr_get */
+   nullptr,                                     /* tp_descr_set */
+-  0,                                     /* tp_dictoffset */
++  0,                                           /* tp_dictoffset */
+   nullptr,                                     /* tp_init */
+   nullptr,                                     /* tp_alloc */
+-  THPVariable_pynew                      /* tp_new */
++  THPVariable_pynew                            /* tp_new */
+ };
+ 
+ namespace torch { namespace autograd {
+diff --git a/torch/csrc/cuda/Event.cpp b/torch/csrc/cuda/Event.cpp
+index 6615dbd4c417b..c19e57db4c1b3 100644
+--- a/torch/csrc/cuda/Event.cpp
++++ b/torch/csrc/cuda/Event.cpp
+@@ -164,7 +164,7 @@ PyTypeObject THCPEventType = {
+   sizeof(THCPEvent),                     /* tp_basicsize */
+   0,                                     /* tp_itemsize */
+   (destructor)THCPEvent_dealloc,         /* tp_dealloc */
+-  0,                                     /* tp_print */
++  0,                                     /* tp_vectorcall_offset */
+   0,                                     /* tp_getattr */
+   0,                                     /* tp_setattr */
+   0,                                     /* tp_reserved */
+diff --git a/torch/csrc/cuda/Stream.cpp b/torch/csrc/cuda/Stream.cpp
+index bbe4b0eeadaa3..761b68efb6bfd 100644
+--- a/torch/csrc/cuda/Stream.cpp
++++ b/torch/csrc/cuda/Stream.cpp
+@@ -126,7 +126,7 @@ PyTypeObject THCPStreamType = {
+   sizeof(THCPStream),                    /* tp_basicsize */
+   0,                                     /* tp_itemsize */
+   (destructor)THCPStream_dealloc,        /* tp_dealloc */
+-  0,                                     /* tp_print */
++  0,                                     /* tp_vectorcall_offset */
+   0,                                     /* tp_getattr */
+   0,                                     /* tp_setattr */
+   0,                                     /* tp_reserved */
+diff --git a/torch/csrc/generic/Storage.cpp b/torch/csrc/generic/Storage.cpp
+index 5faac8f25596d..e39d1c4b576bc 100644
+--- a/torch/csrc/generic/Storage.cpp
++++ b/torch/csrc/generic/Storage.cpp
+@@ -235,30 +235,30 @@ static PyMappingMethods THPStorage_(mappingmethods) = {
+ // TODO: implement equality
+ PyTypeObject THPStorageType = {
+   PyVarObject_HEAD_INIT(nullptr, 0)
+-  "torch._C." THPStorageBaseStr,         /* tp_name */
+-  sizeof(THPStorage),                    /* tp_basicsize */
+-  0,                                     /* tp_itemsize */
+-  (destructor)THPStorage_(dealloc),      /* tp_dealloc */
+-  nullptr,                                     /* tp_print */
++  "torch._C." THPStorageBaseStr,               /* tp_name */
++  sizeof(THPStorage),                          /* tp_basicsize */
++  0,                                           /* tp_itemsize */
++  (destructor)THPStorage_(dealloc),            /* tp_dealloc */
++  0,                                           /* tp_vectorcall_offset */
+   nullptr,                                     /* tp_getattr */
+   nullptr,                                     /* tp_setattr */
+   nullptr,                                     /* tp_reserved */
+   nullptr,                                     /* tp_repr */
+   nullptr,                                     /* tp_as_number */
+   nullptr,                                     /* tp_as_sequence */
+-  &THPStorage_(mappingmethods),          /* tp_as_mapping */
++  &THPStorage_(mappingmethods),                /* tp_as_mapping */
+   nullptr,                                     /* tp_hash  */
+   nullptr,                                     /* tp_call */
+   nullptr,                                     /* tp_str */
+   nullptr,                                     /* tp_getattro */
+   nullptr,                                     /* tp_setattro */
+   nullptr,                                     /* tp_as_buffer */
+-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+-  nullptr,                                  /* tp_doc */
++  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,    /* tp_flags */
++  nullptr,                                     /* tp_doc */
+   nullptr,                                     /* tp_traverse */
+   nullptr,                                     /* tp_clear */
+   nullptr,                                     /* tp_richcompare */
+-  0,                                     /* tp_weaklistoffset */
++  0,                                           /* tp_weaklistoffset */
+   nullptr,                                     /* tp_iter */
+   nullptr,                                     /* tp_iternext */
+   nullptr,   /* will be assigned in init */    /* tp_methods */
+@@ -268,10 +268,10 @@ PyTypeObject THPStorageType = {
+   nullptr,                                     /* tp_dict */
+   nullptr,                                     /* tp_descr_get */
+   nullptr,                                     /* tp_descr_set */
+-  0,                                     /* tp_dictoffset */
++  0,                                           /* tp_dictoffset */
+   nullptr,                                     /* tp_init */
+   nullptr,                                     /* tp_alloc */
+-  THPStorage_(pynew),                    /* tp_new */
++  THPStorage_(pynew),                          /* tp_new */
+ };
+ 
+ static struct PyMemberDef THPStorage_(members)[] = {

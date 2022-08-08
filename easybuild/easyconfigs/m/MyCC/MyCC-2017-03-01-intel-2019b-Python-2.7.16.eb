@@ -1,0 +1,69 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = "CmdCp"
+
+name = "MyCC"
+version = "2017-03-01"
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = "https://sourceforge.net/projects/sb2nhri/files/MyCC/"
+description = "MyCC is built and delivered as a tailored solution for metagenomics sequencesclassfication."
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+source_urls = [('https://sourceforge.net/projects/sb2nhri/files/MyCC/', 'download')]
+sources = [{'download_filename': 'Tools.tar.gz', 'filename': '%s-%s.tar.gz' % (name, version)}]
+patches = ['%(name)s-%(version)s_fix_paths.patch']
+checksums = [
+    '173210a759e90c7b1ff98bf537a88e8b7e893e60fe91fca50407ffede7e08de6',  # MyCC-2017-03-01.tar.gz
+    'f20fdf13ccd04c2e523c87a8f0a80194443fa09f7916b4b7ecb5a9751e1f6ee8',  # MyCC-2017-03-01_fix_paths.patch
+]
+
+dependencies = [
+    ('Python', '2.7.16'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('scikit-learn', '0.20.4', versionsuffix),
+    ('matplotlib', '2.2.4', versionsuffix),
+    ('prodigal', '2.6.3'),
+    ('fetchMG', '1.0'),
+    ('UCLUST', '1.2.22q', '-i86linux64', True),
+    ('CD-HIT', '4.8.1'),
+    ('tsne', '0.1.8', versionsuffix),
+]
+
+skipsteps = ['build']
+
+local_bin_files = [
+    '1_bhsne.py', '1_ClusterCorrection_Split.py', '1_GetCDHitHeader.py', '1_GetCOG.py', '1_GetRepeatGeneMaskedFa.py',
+    '1_rename.py', '1_tsne.py', '2_ap.py', '2_ClusterCorrection_Merge_3d.py', '2_ClusterCorrection_Merge.py',
+    '2_GetFeatures_4mer.py', '2_GetFeatures_5mer_p6mer.py', '2_GetFeatures_5mer.py', '2_GetFeatures_TimeSeries.py',
+    '3_GetMatrix_4mer.py', '3_GetMatrix.py', '4_AppendToCluster.py', '4_CorrectionAP.py', '5_CorrectionCovAP.py',
+    '6_GetScfByCluster.py', '7_AppendToCluster_spearman.py', 'AnnotateCluster.py', 'ColorMark.py',
+    'ColorMark_ToDraw.py', 'ColorMark_to_Species.py', 'Evaluate.py', 'GetAliasName.py', 'getCentroid.py',
+    'Get_Coverage.py', 'GetOutput.py', 'GetPreSen.py', 'GetPreSen_weight.py', 'GetThr.py', 'MyCC.py', 'N50.py',
+    'ToDrawAP.py', 'ToDrawPDF.py', 'ToDraw.py', 'UCLUST_GetCOG.py', 'soap2sam.pl'
+]
+
+fix_perl_shebang_for = ['bin/*.pl']
+fix_python_shebang_for = ['bin/*.py']
+
+files_to_copy = [
+    # all Python and Perl file
+    (['*.py'], 'bin'), (['*.pl'], 'bin'),
+
+    # https://www.bioinf.jku.at/software/apcluster/
+    # just copy included version for now, never used in other eb.
+    # Depends on R, likely not worth the effort.
+    (['ap/apcluster'], 'bin'), (['ap/apclusterunix64.%s' % SHLIB_EXT], 'lib'),
+    (['ap/apclusterdemo_linux.c', 'ap/apcluster.h'], 'include'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_bin_files],
+    'dirs': ['bin', 'lib', 'include'],
+}
+
+sanity_check_commands = ['MyCC.py']
+
+moduleclass = 'bio'

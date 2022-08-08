@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'CNVkit'
+version = '0.9.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/etal/cnvkit'
+description = """A command-line toolkit and Python library for detecting copy number variants and alterations
+ genome-wide from high-throughput sequencing."""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+
+dependencies = [
+    ('Python', '3.6.4'),
+    ('Biopython', '1.71', versionsuffix),
+    ('matplotlib', '2.1.2', versionsuffix),
+    ('Pysam', '0.14.1', versionsuffix),
+    ('Pillow', '5.0.0', versionsuffix),
+    ('R-bundle-Bioconductor', '3.6', '-R-3.4.4'),
+    ('hmmlearn', '0.2.0', versionsuffix),
+]
+
+use_pip = True
+
+exts_list = [
+    ('reportlab', '3.4.0', {
+        'checksums': ['5beaf35e59dfd5ebd814fdefd76908292e818c982bd7332b5d347dfd2f01c343'],
+    }),
+    ('pyfaidx', '0.5.4', {
+        'checksums': ['2a15b8820bc1f27c4b6fe7c82a98d2520972cb6c167055d158562778af8aa53e'],
+    }),
+    ('future', '0.16.0', {
+        'checksums': ['e39ced1ab767b5936646cedba8bcce582398233d6a627067d4c6a454c90cfedb'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/etal/cnvkit/archive/'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'patches': ['CNVkit-0.9.3_disable-hanging-test.patch'],
+        'checksums': [
+            '51a7e9c83de481656cc4f33c5d7de230b781106045f3967c2947e9d6fc63b86f',  # v0.9.3.tar.gz
+            # CNVkit-0.9.3_disable-hanging-test.patch
+            '328729c2c3893e90d030cae059637d155cf81989e476bef0fa59782984e1a2f7',
+        ],
+        'use_pip': False,
+        # Run tests after installation
+        'installopts': "&& cd test && make && make test",
+        'modulename': 'cnvlib',
+    }),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+sanity_check_paths = {
+    'files': ['bin/cnvkit.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["cnvkit.py -h"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
