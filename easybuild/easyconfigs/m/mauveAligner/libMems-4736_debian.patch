@@ -1,0 +1,407 @@
+# Selected patches from
+# http://deb.debian.org/debian/pool/main/libm/libmems/libmems_1.6.0+4725-8.debian.tar.xz
+# SEP 18th 2020 by B. Hajgato (UGent)
+Author: Andrei Zavada <johnhommer@gmail.com>
+Last-Update: Sat, 18 Apr 2015 23:27:38 +0300
+Description: fix ctors of {MatchLeftEnd,LabeledMem}Comparator to enable sort/3 with g++-4.9
+
+--- a/libMems/Aligner.cpp
++++ b/libMems/Aligner.cpp
+@@ -939,7 +939,7 @@ public:
+ 	MatchLeftEndComparator( unsigned seq = 0 ){
+ 		m_seq = seq;
+ 	}
+-	MatchLeftEndComparator( MatchLeftEndComparator& msc ){
++	MatchLeftEndComparator( const MatchLeftEndComparator& msc ){
+ 		m_seq = msc.m_seq;
+ 	}
+ 	// TODO??  make this do a wraparound comparison if all is equal?
+--- a/libMems/Aligner.h
++++ b/libMems/Aligner.h
+@@ -49,7 +49,7 @@ public:
+ 	LabeledMemComparator( uint seq ){
+ 		m_seq = seq;
+ 	}
+-	LabeledMemComparator( LabeledMemComparator& lmc ){
++	LabeledMemComparator( const LabeledMemComparator& lmc ){
+ 		m_seq = lmc.m_seq;
+ 	}
+ 	boolean operator()(const LabeledMem& a, const LabeledMem& b) const{
+Author: Andrei Zavada <johnhommer@gmail.com>
+Last-Update: Sat, 18 Apr 2015 23:27:39 +0300
+Description: fix a -Wformat (boy, that's a bloody serious error)
+
+---
+ libMems/dmSML/dmsort.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/libMems/dmSML/dmsort.c
++++ b/libMems/dmSML/dmsort.c
+@@ -825,7 +825,7 @@ int InitdmSML( long working_mb, long buf
+ 		if ( fgets(buf, sizeof(buf), fp) )
+ 		{
+ 			sscanf(buf, "MemTotal: %ld kB", &memTotal);
+-			fprintf( stderr, buf );
++			fprintf( stderr, "%s", buf );
+ 		}
+ 		fclose(fp);
+ 		// allocate about 6/10 of physical memory
+Description: Updates the boost.m4 file to correct problems with gcc-5
+ This patch updates the m4/boost.m4 file to the  git version d9ff75
+ of boost.m4 upstream 
+ .
+Author: Gert Wollny <gw.fossdev@gmail.com>
+
+Origin: other, https://github.com/tsuna/boost.m4
+Bug-Debian: https://bugs.debian.org/795344
+Forwarded: no
+Last-Update: 2015-08-17
+
+--- libmems-1.6.0+4725.orig/m4/boost.m4
++++ libmems-1.6.0+4725/m4/boost.m4
+@@ -22,7 +22,7 @@
+ # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ m4_define([_BOOST_SERIAL], [m4_translit([
+-# serial 23
++# serial 24
+ ], [#
+ ], [])])
+ 
+@@ -72,8 +72,25 @@ dnl strip `\n' with backquotes, not the
+ dnl boost_cv_lib_version='1_37\r' for instance, which breaks
+ dnl everything else.
+ dnl Cannot use 'dnl' after [$4] because a trailing dnl may break AC_CACHE_CHECK
++dnl
++dnl Beware that GCC 5, when expanding macros, may embed # line directives
++dnl a within single line:
++dnl
++dnl # 1 "conftest.cc"
++dnl # 1 "<built-in>"
++dnl # 1 "<command-line>"
++dnl # 1 "conftest.cc"
++dnl # 1 "/opt/local/include/boost/version.hpp" 1 3
++dnl # 2 "conftest.cc" 2
++dnl boost-lib-version =
++dnl # 2 "conftest.cc" 3
++dnl                    "1_56"
++dnl
++dnl So get rid of the # lines, and glue the remaining ones together.
+ (eval "$ac_cpp conftest.$ac_ext") 2>&AS_MESSAGE_LOG_FD |
++  grep -v '#' |
+   tr -d '\r' |
++  tr -s '\n' ' ' |
+   $SED -n -e "$1" >conftest.i 2>&1],
+   [$3],
+   [$4])
+@@ -208,7 +225,7 @@ AC_LANG_POP([C++])dnl
+   AC_CACHE_CHECK([for Boost's header version],
+     [boost_cv_lib_version],
+     [m4_pattern_allow([^BOOST_LIB_VERSION$])dnl
+-     _BOOST_SED_CPP([/^boost-lib-version = /{s///;s/\"//g;p;q;}],
++     _BOOST_SED_CPP([[/^boost-lib-version = /{s///;s/[\" ]//g;p;q;}]],
+                     [#include <boost/version.hpp>
+ boost-lib-version = BOOST_LIB_VERSION],
+     [boost_cv_lib_version=`cat conftest.i`])])
+@@ -216,7 +233,7 @@ boost-lib-version = BOOST_LIB_VERSION],
+     boost_major_version=`echo "$boost_cv_lib_version" | sed 's/_//;s/_.*//'`
+     case $boost_major_version in #(
+       '' | *[[!0-9]]*)
+-        AC_MSG_ERROR([invalid value: boost_major_version=$boost_major_version])
++        AC_MSG_ERROR([invalid value: boost_major_version='$boost_major_version'])
+         ;;
+     esac
+ fi
+@@ -557,13 +574,40 @@ BOOST_FIND_LIB([chrono], [$1],
+                 [boost/chrono.hpp],
+                 [boost::chrono::thread_clock d;])
+ if test $enable_static_boost = yes && test $boost_major_version -ge 135; then
+-  BOOST_FILESYSTEM_LIBS="$BOOST_FILESYSTEM_LIBS $BOOST_SYSTEM_LIBS"
++  BOOST_CHRONO_LIBS="$BOOST_CHRONO_LIBS $BOOST_SYSTEM_LIBS"
+ fi
+ LIBS=$boost_filesystem_save_LIBS
+ LDFLAGS=$boost_filesystem_save_LDFLAGS
+ ])# BOOST_CHRONO
+ 
+ 
++# BOOST_CONTEXT([PREFERRED-RT-OPT])
++# -----------------------------------
++# Look for Boost.Context.  For the documentation of PREFERRED-RT-OPT, see the
++# documentation of BOOST_FIND_LIB above.  This library was introduced in Boost
++# 1.51.0
++BOOST_DEFUN([Context],
++[BOOST_FIND_LIB([context], [$1],
++                [boost/context/all.hpp],[[
++// creates a stack
++void * stack_pointer = new void*[4096];
++std::size_t const size = sizeof(void*[4096]);
++
++// context fc uses f() as context function
++// fcontext_t is placed on top of context stack
++// a pointer to fcontext_t is returned
++fc = ctx::make_fcontext(stack_pointer, size, f);
++return ctx::jump_fcontext(&fcm, fc, 3) == 6;]],[dnl
++namespace ctx = boost::context;
++// context
++static ctx::fcontext_t fcm, *fc;
++// context-function
++static void f(intptr_t i) {
++    ctx::jump_fcontext(fc, &fcm, i * 2);
++}])
++])# BOOST_CONTEXT
++
++
+ # BOOST_CONVERSION()
+ # ------------------
+ # Look for Boost.Conversion (cast / lexical_cast)
+@@ -573,6 +617,44 @@ BOOST_FIND_HEADER([boost/lexical_cast.hp
+ ])# BOOST_CONVERSION
+ 
+ 
++# BOOST_COROUTINE([PREFERRED-RT-OPT])
++# -----------------------------------
++# Look for Boost.Coroutine.  For the documentation of PREFERRED-RT-OPT, see the
++# documentation of BOOST_FIND_LIB above.  This library was introduced in Boost
++# 1.53.0
++BOOST_DEFUN([Coroutine],
++[
++boost_coroutine_save_LIBS=$LIBS
++boost_coroutine_save_LDFLAGS=$LDFLAGS
++# Link-time dependency from coroutine to context
++BOOST_CONTEXT([$1])
++# Starting from Boost 1.55 a dependency on Boost.System is added
++if test $boost_major_version -ge 155; then
++  BOOST_SYSTEM([$1])
++fi
++m4_pattern_allow([^BOOST_(CONTEXT|SYSTEM)_(LIBS|LDFLAGS)])
++LIBS="$LIBS $BOOST_CONTEXT_LIBS $BOOST_SYSTEM_LIBS"
++LDFLAGS="$LDFLAGS $BOOST_CONTEXT_LDFLAGS"
++
++BOOST_FIND_LIB([coroutine], [$1],
++                [boost/coroutine/coroutine.hpp],
++                [boost::coroutines::coroutine< int(int) > coro; coro.empty();])
++
++# Link-time dependency from coroutine to context, existed only in 1.53, in 1.54
++# coroutine doesn't use context from its headers but from its library.
++if test $boost_major_version -eq 153 || test $enable_static_boost = yes && test $boost_major_version -ge 154; then
++  BOOST_COROUTINE_LIBS="$BOOST_COROUTINE_LIBS $BOOST_CONTEXT_LIBS"
++  BOOST_COROUTINE_LDFLAGS="$BOOST_COROUTINE_LDFLAGS $BOOST_CONTEXT_LDFLAGS"
++fi
++if test $enable_static_boost = yes && test $boost_major_version -ge 155; then
++  BOOST_COROUTINE_LIBS="$BOOST_COROUTINE_LIBS $BOOST_SYSTEM_LIBS"
++  BOOST_COROUTINE_LDFLAGS="$BOOST_COROUTINE_LDFLAGS $BOOST_SYSTEM_LDFLAGS"
++fi
++LIBS=$boost_coroutine_save_LIBS
++LDFLAGS=$boost_coroutine_save_LDFLAGS
++])# BOOST_COROUTINE
++
++
+ # BOOST_CRC()
+ # -----------
+ # Look for Boost.CRC
+@@ -699,6 +781,15 @@ BOOST_DEFUN([Lambda],
+ [BOOST_FIND_HEADER([boost/lambda/lambda.hpp])])
+ 
+ 
++# BOOST_LOCALE()
++# --------------
++# Look for Boost.Locale
++BOOST_DEFUN([Locale],
++[BOOST_FIND_LIB([locale], [$1],
++    [boost/locale.hpp],
++    [[boost::locale::generator gen; std::locale::global(gen(""));]])
++])# BOOST_LOCALE
++
+ # BOOST_LOG([PREFERRED-RT-OPT])
+ # -----------------------------
+ # Look for Boost.Log.  For the documentation of PREFERRED-RT-OPT, see the
+@@ -794,6 +885,12 @@ BOOST_DEFUN([Preprocessor],
+ [BOOST_FIND_HEADER([boost/preprocessor/repeat.hpp])])
+ 
+ 
++# BOOST_RANGE()
++# --------------------
++# Look for Boost.Range
++BOOST_DEFUN([Range],
++[BOOST_FIND_HEADER([boost/range/adaptors.hpp])])
++
+ # BOOST_UNORDERED()
+ # -----------------
+ # Look for Boost.Unordered
+@@ -1199,6 +1296,8 @@ if test x$boost_cv_inc_path != xno; then
+   # I'm not sure about my test for `il' (be careful: Intel's ICC pre-defines
+   # the same defines as GCC's).
+   for i in \
++    _BOOST_mingw_test(5, 0) \
++    _BOOST_gcc_test(5, 0) \
+     _BOOST_mingw_test(4, 10) \
+     _BOOST_gcc_test(4, 10) \
+     _BOOST_mingw_test(4, 9) \
+Description: Add some dependencies to the linker command  
+Author: Andreas Tille <tille@debian.org>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Forwarded: no
+Last-Update: 2015-08-17
+
+--- libmems-1.6.0+4725.orig/libMems/Makefile.am
++++ libmems-1.6.0+4725/libMems/Makefile.am
+@@ -61,7 +61,7 @@ libmems_include_HEADERS = $(LIBMEMS_H)
+ # build libraries with gcc (no suffix)
+ lib_LTLIBRARIES = libMems-1.6.la
+ libMems_1_6_la_SOURCES = $(LIBMEMS_SRC) $(HOMOLOGYHMM_SRC) $(DMSML_SRC)
+-
++libMems_1_6_la_LIBADD = @DEPS_LIBS@ @BOOST_FILESYSTEM_LIBS@ @BOOST_IOSTREAMS_LIBS@  @BOOST_SYSTEM_LIBS@
+ libMems_1_6_la_LDFLAGS= -version-info $(GENERIC_LIBRARY_VERSION)  
+ 
+ homologyhmm_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)-$(GENERIC_API_VERSION)/$(GENERIC_LIBRARY_NAME)/HomologyHMM
+Description: Correct compilation with g++-6
+Author: Gert Wollny <gw.fossdev@gmail.com>
+Bug-Debian: https://bugs.debian.org/811870
+Forwarded: yes
+Bug: https://sourceforge.net/p/mauve/bugs/46/
+Last-Update: 2016-06-30
+
+--- a/libMems/ProgressiveAligner.cpp
++++ b/libMems/ProgressiveAligner.cpp
+@@ -1599,7 +1599,7 @@
+ 		c.SetLeftEnd(child_1, ancestral_matches[mI]->LeftEnd(1));
+ 		c.SetOrientation(child_1, ancestral_matches[mI]->Orientation(1));
+ 		c.SetLength(ancestral_matches[mI]->Length(1), child_1);
+-		cga_list.push_back(make_tuple(c.Copy(), &bs[mI], ancestral_matches[mI]));
++		cga_list.push_back(boost::tuples::make_tuple(c.Copy(), &bs[mI], ancestral_matches[mI]));
+ 	}
+ 
+ 	stack<node_id_t> node_stack;
+Author: Andreas Tille <tille@debian.org>
+Last-Updated: Tue, 08 Nov 2016 14:16:07 +0100
+Description: This patch *really* enables droping the version
+ from package names but it is not activated here since this might
+ be considered a "transition" and we are in transition freeze.
+
+--- a/libMems/Makefile.am
++++ b/libMems/Makefile.am
+@@ -55,19 +55,19 @@ dmSML/util.c dmSML/sorting.c dmSML/dmsor
+ dmSML/timing.c dmSML/sml.c
+ 
+ 
+-libmems_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)-$(GENERIC_API_VERSION)/$(GENERIC_LIBRARY_NAME)
++libmems_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)
+ libmems_include_HEADERS = $(LIBMEMS_H) 
+ 
+ # build libraries with gcc (no suffix)
+-lib_LTLIBRARIES = libMems-1.6.la
+-libMems_1_6_la_SOURCES = $(LIBMEMS_SRC) $(HOMOLOGYHMM_SRC) $(DMSML_SRC)
+-libMems_1_6_la_LIBADD = @DEPS_LIBS@ @BOOST_FILESYSTEM_LIBS@ @BOOST_IOSTREAMS_LIBS@  @BOOST_SYSTEM_LIBS@
+-libMems_1_6_la_LDFLAGS= -version-info $(GENERIC_LIBRARY_VERSION)  
++lib_LTLIBRARIES = libMems.la
++libMems_la_SOURCES = $(LIBMEMS_SRC) $(HOMOLOGYHMM_SRC) $(DMSML_SRC)
++libMems_la_LIBADD = @DEPS_LIBS@ @BOOST_FILESYSTEM_LIBS@ @BOOST_IOSTREAMS_LIBS@  @BOOST_SYSTEM_LIBS@
++libMems_la_LDFLAGS= -version-info @GENERIC_LIBRARY_VERSION@
+ 
+-homologyhmm_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)-$(GENERIC_API_VERSION)/$(GENERIC_LIBRARY_NAME)/HomologyHMM
++homologyhmm_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)/HomologyHMM
+ homologyhmm_include_HEADERS = $(HOMOLOGYHMM_H)
+ 
+-dmsml_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)-$(GENERIC_API_VERSION)/$(GENERIC_LIBRARY_NAME)/dmSML
++dmsml_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)/dmSML
+ dmsml_include_HEADERS = $(DMSML_H)
+ 
+ EXTRA_DIST = \
+Description: Fix FTBFS with Boost 1.62
+ Add missing include so that BOOST_WORKAROUND is defined.
+Author: Graham Inggs <ginggs@debian.org>
+Last-Update: 2016-11-08
+Bug-Debian: https://bugs.debian.org/843628
+
+--- a/libMems/AbstractMatch.h
++++ b/libMems/AbstractMatch.h
+@@ -16,6 +16,7 @@
+ #include "libGenome/gnClone.h"
+ #include <vector>
+ #include <algorithm>
++#include <boost/detail/workaround.hpp>
+ #include <boost/type_traits/remove_pointer.hpp>
+ #include <boost/type_traits/add_pointer.hpp>
+ #include <boost/dynamic_bitset.hpp>
+--- a/libMems/dmSML/Makefile.am
++++ b/libMems/dmSML/Makefile.am
+@@ -12,7 +12,7 @@ alibc.c awin32aio.c buffer.c \
+ util.c sorting.c dmsort.c \
+ timing.c sml.c
+ 
+-library_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)-$(GENERIC_API_VERSION)/$(GENERIC_LIBRARY_NAME)/dmSML
++library_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)/dmSML
+ 
+ library_include_HEADERS = $(DMSML_H)
+ 
+Author: Andreas Tille <tille@debian.org>
+Last-Updated: Sun, 19 Apr 2015 20:20:17 +0200
+Description: Fix lintian error
+  E: libmems-1.6-dev: pkg-config-bad-directive usr/lib/x86_64-linux-gnu/pkgconfig/libMems-1.6.pc -Wno-deprecated
+ by not appending "-Wno-deprecated"
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -73,7 +73,7 @@ dnl Check what compiler we're using
+ AM_CONDITIONAL(ICC, test x$CXX = xicc )
+ EXTRA_CXX_FLAGS=""
+ if( test x$CC == "xgcc" ) then
+-	EXTRA_CXX_FLAGS="-Wno-deprecated"
++	EXTRA_CXX_FLAGS=""
+ fi
+ AC_SUBST(EXTRA_CXX_FLAGS)
+ 
+Author: Andreas Tille <tille@debian.org>
+Last-Update: Wed, 18 Jul 2018 15:15:58 +0200
+Description: Drop version number from library file name
+
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -8,7 +8,7 @@ projects/libMems.sln \
+ projects/libMems.vcproj
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+-pkgconfig_DATA = libMems-@GENERIC_API_VERSION@.pc
++pkgconfig_DATA = libMems.pc
+ 
+ SUBDIRS = libMems 
+ 
+--- /dev/null
++++ b/libMems.pc.in
+@@ -0,0 +1,12 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libMems 
++Description: c++ library supporting DNA sequence and genome alignment 
++Version: @VERSION@
++Requires: libGenome-1.3 libMUSCLE-3.7
++Libs: -L${libdir} @OPENMP_CXXFLAGS@ -lMems @BOOST_SYSTEM_LDFLAGS@ @BOOST_SYSTEM_LIBS@ @BOOST_FILESYSTEM_LIBS@ @BOOST_PROGRAM_OPTIONS_LIBS@ @BOOST_IOSTREAMS_LIBS@ @LIBS@ 
++Cflags: -I${includedir}/@GENERIC_LIBRARY_NAME@ @BOOST_CPPFLAGS@ @OPENMP_CXXFLAGS@ @EXTRA_CXX_FLAGS@ 
++
+--- a/libMems-1.6.pc.in
++++ /dev/null
+@@ -1,12 +0,0 @@
+-prefix=@prefix@
+-exec_prefix=@exec_prefix@
+-libdir=@libdir@
+-includedir=@includedir@
+-
+-Name: libMems 
+-Description: c++ library supporting DNA sequence and genome alignment 
+-Version: @VERSION@
+-Requires: libGenome-1.3 libMUSCLE-3.7
+-Libs: -L${libdir} @OPENMP_CXXFLAGS@ -lMems-@GENERIC_API_VERSION@ @BOOST_SYSTEM_LDFLAGS@ @BOOST_SYSTEM_LIBS@ @BOOST_FILESYSTEM_LIBS@ @BOOST_PROGRAM_OPTIONS_LIBS@ @BOOST_IOSTREAMS_LIBS@ @LIBS@ 
+-Cflags: -I${includedir}/@GENERIC_LIBRARY_NAME@-@GENERIC_API_VERSION@ @BOOST_CPPFLAGS@ @OPENMP_CXXFLAGS@ @EXTRA_CXX_FLAGS@ 
+-
+--- a/configure.ac
++++ b/configure.ac
+@@ -133,5 +133,5 @@ AC_PROG_GCC_TRADITIONAL
+ dnl SAVE_LIBRARY_VERSION
+ AC_SUBST(LIBTOOL_VERSION_INFO)
+ 
+-AC_OUTPUT(Makefile libMems/Makefile libMems-1.6.pc )
++AC_OUTPUT(Makefile libMems/Makefile libMems.pc )
+ #doc/html/Makefile  doc/man/Makefile  doc/man/man3/Makefile)

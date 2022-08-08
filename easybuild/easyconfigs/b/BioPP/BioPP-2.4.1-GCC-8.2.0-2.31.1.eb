@@ -1,0 +1,59 @@
+easyblock = 'Bundle'
+
+name = 'BioPP'
+version = '2.4.1'
+
+homepage = 'https://github.com/BioPP/bpp-core'
+description = '''
+Bio++ is a set of C++ libraries for Bioinformatics, including sequence
+analysis, phylogenetics, molecular evolution and population genetics. Bio++ is
+Object Oriented and is designed to be both easy to use and computer efficient.
+Bio++ intends to help programmers to write computer expensive programs, by
+providing them a set of re-usable tools.
+'''
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+
+github_account = 'BioPP'
+
+builddependencies = [('CMake', '3.13.3')]
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+    'source_urls': [GITHUB_SOURCE],
+    'start_dir': '%(name)s-%(version)s',
+}
+components = [
+    ('bpp-core', version, {
+        'checksums': ['1150b8ced22cff23dd4770d7c23fad11239070b44007740e77407f0d746c0af6'],
+    }),
+    ('bpp-seq', version, {
+        'checksums': ['dbfcb04803e4b7f08f9f159da8a947c91906c3ca8b20683ac193f6dc524d4655'],
+    }),
+    ('bpp-phyl', version, {
+        'checksums': ['e7bf7d4570f756b7773904ffa600ffcd77c965553ddb5cbc252092d1da962ff2'],
+    }),
+    ('bpp-seq-omics', version, {
+        'checksums': ['200da925b42065998d825f0b2a37e26b00a865883c85bc332beb3a94cae1e08b'],
+    }),
+    ('bpp-phyl-omics', version, {
+        'checksums': ['fb0908422e59c71065db874e68d5c71acddf66d8a51776f7e04a5f8d5f0f6577'],
+    }),
+    ('bpp-popgen', version, {
+        'checksums': ['03b57d71a63c8fa7f11c085e531d0d691fc1d40d4ea541070dabde0ab3baf413'],
+    }),
+    ('bppsuite', version, {
+        'checksums': ['0485adcc17e37439069d27e4fac144e5ae38036ba21f31e6d21f070ce4ea5199'],
+    })
+]
+
+local_libs = [local_component[0] for local_component in components if local_component[0] != 'bppsuite']
+
+sanity_check_paths = {
+    'files': ['bin/bppseqgen'] +
+             ['lib64/lib%s.%s' % (local_lib, local_ext) for local_lib in local_libs for local_ext in ['a', SHLIB_EXT]],
+    'dirs': ['include/Bpp', 'share/man'] +
+            ['lib64/cmake/%s' % local_lib for local_lib in local_libs]
+}
+moduleclass = 'vis'
