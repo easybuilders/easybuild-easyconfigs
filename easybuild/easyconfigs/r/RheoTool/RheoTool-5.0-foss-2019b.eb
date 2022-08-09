@@ -1,0 +1,40 @@
+easyblock = "Binary"
+
+name = "RheoTool"
+version = "5.0"
+
+homepage = "https://github.com/fppimenta/rheoTool"
+description = """RheoTool is an open-source toolbox based on OpenFOAM to simulate Generalized Newtonian Fluids (GNF)
+and viscoelastic fluids under pressure-driven and/or electrically-driven flows."""
+
+toolchain = {"name": "foss", "version": "2019b"}
+
+source_urls = ["https://github.com/fppimenta/rheoTool/archive/refs/tags/"]
+sources = ["v%(version)s.tar.gz"]
+checksums = ["2e0899684d6d7f9ddee0d93b39a6ed56262b171bc4e5536914645209b66003ed"]
+
+dependencies = [
+    ("OpenFOAM", "7"),
+    ("Eigen", "3.3.7", "", True),
+    ("PETSc", "3.12.4", "-Python-3.7.4"),
+]
+
+extract_sources = True
+
+install_cmd = "export HOME_orig=$HOME && "
+install_cmd += "export HOME=%(installdir)s && "
+install_cmd += "source $FOAM_BASH && "
+install_cmd += "export EIGEN_RHEO=$EBROOTEIGEN && "
+install_cmd += "cd of70/src && "
+install_cmd += "./Allwmake -j %(parallel)s && "
+install_cmd += "export HOME=$HOME_orig && "
+install_cmd += "mv %(installdir)s/OpenFOAM/vsc*/platforms/linux*/* %(installdir)s/ "
+
+sanity_check_paths = {
+    "files": ["bin/rheoBDFoam", "lib/libthermoRheoTool.so"],
+    "dirs": [],
+}
+
+sanity_check_commands = ["rheoBDFoam -help"]
+
+moduleclass = "cae"
