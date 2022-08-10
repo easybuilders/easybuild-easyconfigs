@@ -1,0 +1,68 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Description: enhance the cmake build scripts to:
+ - allow targetting of multiple CUDA architectures (with -gencode=)
+ - introduce DEFAULT_CUDA_ARCH to set the default CUDA arch target (-arch=)
+-----------------------------------------------------------------------------------
+diff -Nru relion.orig/cmake/BuildTypes.cmake relion.3/cmake/BuildTypes.cmake
+--- relion.orig/cmake/BuildTypes.cmake	2022-04-27 11:43:59.000000000 +0100
++++ relion.3/cmake/BuildTypes.cmake	2022-06-10 14:45:59.000000000 +0100
+@@ -5,8 +5,9 @@
+ # Add -G to allow cuda-gdb to break inside kernels.
+ set(EXTRA_NVCC_FLAGS "-D__INTEL_COMPILER --default-stream per-thread --std=c++11")
+ 
+-set(RELION_NVCC_FLAGS "${CUDARCH} ${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
+-#message(STATUS "RELION_NVCC_FLAGS: ${RELION_NVCC_FLAGS}")
++cuda_select_nvcc_arch_flags(CUDA_GENCODE "${CUDA_ARCH}")
++list(APPEND CUDA_NVCC_FLAGS ${CUDA_SM} ${CUDA_GENCODE})
++set(RELION_NVCC_FLAGS "${CUDA_SM} ${CUDA_GENCODE} ${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
+ 
+ # -------------------------- 
+ #        Debug BUILD 
+diff -Nru relion.orig/CMakeLists.txt relion.3/CMakeLists.txt
+--- relion.orig/CMakeLists.txt	2022-04-27 11:43:59.000000000 +0100
++++ relion.3/CMakeLists.txt	2022-06-10 14:45:49.000000000 +0100
+@@ -73,13 +73,20 @@
+ # ------------------OPTIONS WHICH ARE NEEDED TO SET BUILD-TYPES (COMPILATION FLAGS)--
+ # ------------------------------------------------------------------------CUDA-ARCH--
+ if(NOT DEFINED CUDA_ARCH)
+-    message(STATUS "Setting fallback CUDA_ARCH=50")
+-    set(CUDARCH "-arch=sm_50")
++    message(STATUS "Setting fallback CUDA_ARCH=5.0")
++    set(CUDA_ARCH "5.0")
+ else(NOT DEFINED CUDA_ARCH)
+     message(STATUS "Using provided CUDA_ARCH=${CUDA_ARCH}")
+-    set(CUDARCH "-arch=sm_${CUDA_ARCH}")
+ endif(NOT DEFINED CUDA_ARCH)
+-    
++
++if(NOT DEFINED DEFAULT_CUDA_ARCH)
++    string(REGEX MATCH "[0-9]+\\.[0-9]+" DEFAULT_CUDA_ARCH ${CUDA_ARCH})
++    message(STATUS "Setting fallback DEFAULT_CUDA_ARCH=${DEFAUT_CUDA_ARCH}")
++endif()
++
++string(REPLACE "." "" DEFAULT_CUDA_SM ${DEFAULT_CUDA_ARCH})
++set(CUDA_SM "-arch=sm_${DEFAULT_CUDA_SM}")
++
+ # -------------------------------------------------------------------FURTHER OPTIONS--
+ 
+ 
+@@ -133,9 +140,6 @@
+ endif()
+ 
+ # ----------------------------------------------------------INCLUDE ALL BUILD TYPES--
+- #This *has* to be AFTER project()
+-include(${CMAKE_SOURCE_DIR}/cmake/BuildTypes.cmake)
+-
+ if(CUDA)
+     # -----------------------------------------------------------------------------CUDA--
+     # DOC: http://www.cmake.org/cmake/help/v3.0/module/FindCUDA.html
+@@ -159,6 +163,9 @@
+     message(STATUS "Using non-cuda compilation....")
+ endif(CUDA_FOUND)
+ 
++#This *has* to be AFTER project()
++include(${CMAKE_SOURCE_DIR}/cmake/BuildTypes.cmake)
++
+ # ------------------------------------------------------------------ALLOCATOR CHOICE--
+ option(CachedAlloc "CachedAlloc" ON)
+ if(NOT CachedAlloc)
