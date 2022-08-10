@@ -1,0 +1,147 @@
+# Update to use EB variables
+# S.D.Pinches
+diff -Nru mdsplus-java-7.131.6-orig/mdsplus/java/jdispatcher/src/main/java/mds/jdispatcher/MdsHelper.java mdsplus-java-7.131.6/mdsplus/java/jdispatcher/src/main/java/mds/jdispatcher/MdsHelper.java
+--- mdsplus-java-7.131.6-orig/mdsplus/java/jdispatcher/src/main/java/mds/jdispatcher/MdsHelper.java	2022-04-07 15:50:24.000000000 +0200
++++ mdsplus-java-7.131.6/mdsplus/java/jdispatcher/src/main/java/mds/jdispatcher/MdsHelper.java	2022-04-07 18:34:25.982218932 +0200
+@@ -114,7 +114,7 @@
+ 		{
+ 			final Vector<String> paths = new Vector<>();
+ 			{// add mdsplus_dir
+-				final String path = System.getenv("MDSPLUS_DIR");
++				final String path = System.getenv("EBROOTMDSPLUSMINJAVA");
+ 				if (path != null)
+ 					paths.add(new File(path, "local").getPath());
+ 			}
+diff -Nru mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/CompileTree.template mdsplus-java-7.131.6/mdsplus/java/jtraverser/CompileTree.template
+--- mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/CompileTree.template	2022-04-07 15:50:24.000000000 +0200
++++ mdsplus-java-7.131.6/mdsplus/java/jtraverser/CompileTree.template	2022-04-07 18:35:23.439686808 +0200
+@@ -4,19 +4,19 @@
+ #
+ lib=lib
+ if java -d64 -version >  /dev/null 2>&1; then
+-  if [ -r $MDSPLUS_DIR/lib64 ] ; then
++  if [ -r $EBROOTMDSPLUSMINJAVA/lib64 ] ; then
+     lib=/lib64
+   fi
+ else
+-  if [ -r $MDSPLUS_DIR/lib32 ]; then
++  if [ -r $EBROOTMDSPLUSMINJAVA/lib32 ]; then
+      lib=lib32
+   fi
+ fi
+ exec env \
+-LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MDSPLUS_DIR/${lib} \
+-SHLIB_PATH=$SHLIB_PATH:$MDSPLUS_DIR/${lib} \
+-DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$MDSPLUS_DIR/${lib} \
++LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
++SHLIB_PATH=$SHLIB_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
++DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
+ CLASSPATH=\
+-$MDSPLUS_DIR/java/classes/jTraverser.jar:\
+-$MDSPLUS_DIR/java/classes/mdsobjects.jar \
+-java -Xss5M -Djava.library.path=$MDSPLUS_DIR/${lib} mds.jtraverser.CompileTree $1 $2 
++$EBROOTMDSPLUSMINJAVA/java/classes/jTraverser.jar:\
++$EBROOTMDSPLUSMINJAVA/java/classes/mdsobjects.jar \
++java -Xss5M -Djava.library.path=$EBROOTMDSPLUSMINJAVA/${lib} mds.jtraverser.CompileTree $1 $2 
+diff -Nru mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/DecompileTree.template mdsplus-java-7.131.6/mdsplus/java/jtraverser/DecompileTree.template
+--- mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/DecompileTree.template	2022-04-07 15:50:24.000000000 +0200
++++ mdsplus-java-7.131.6/mdsplus/java/jtraverser/DecompileTree.template	2022-04-07 18:35:23.440780642 +0200
+@@ -4,19 +4,19 @@
+ #
+ lib=lib
+ if java -d64 -version >  /dev/null 2>&1; then
+-  if [ -r $MDSPLUS_DIR/lib64 ] ; then
++  if [ -r $EBROOTMDSPLUSMINJAVA/lib64 ] ; then
+     lib=/lib64
+   fi
+ else
+-  if [ -r $MDSPLUS_DIR/lib32 ]; then
++  if [ -r $EBROOTMDSPLUSMINJAVA/lib32 ]; then
+      lib=lib32
+   fi
+ fi
+ exec env \
+-LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MDSPLUS_DIR/${lib} \
+-SHLIB_PATH=$SHLIB_PATH:$MDSPLUS_DIR/${lib} \
+-DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$MDSPLUS_DIR/${lib} \
++LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
++SHLIB_PATH=$SHLIB_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
++DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
+ CLASSPATH=\
+-$MDSPLUS_DIR/java/classes/jTraverser.jar:\
+-$MDSPLUS_DIR/java/classes/mdsobjects.jar \
+-java -Xss5M -Djava.library.path=$MDSPLUS_DIR/${lib} mds.jtraverser.DecompileTree $1 $2 
++$EBROOTMDSPLUSMINJAVA/java/classes/jTraverser.jar:\
++$EBROOTMDSPLUSMINJAVA/java/classes/mdsobjects.jar \
++java -Xss5M -Djava.library.path=$EBROOTMDSPLUSMINJAVA/${lib} mds.jtraverser.DecompileTree $1 $2 
+diff -Nru mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/jTraverser.bat mdsplus-java-7.131.6/mdsplus/java/jtraverser/jTraverser.bat
+--- mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/jTraverser.bat	2022-04-07 15:50:24.000000000 +0200
++++ mdsplus-java-7.131.6/mdsplus/java/jtraverser/jTraverser.bat	2022-04-07 18:35:23.441894000 +0200
+@@ -1 +1 @@
+-@start "" javaw -Xss5M -jar "%MDSPLUS_DIR%\java\classes\jTraverser.jar" %*
++@start "" javaw -Xss5M -jar "%EBROOTMDSPLUSMINJAVA%\java\classes\jTraverser.jar" %*
+diff -Nru mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/jTraverser.template mdsplus-java-7.131.6/mdsplus/java/jtraverser/jTraverser.template
+--- mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/jTraverser.template	2022-04-07 15:50:24.000000000 +0200
++++ mdsplus-java-7.131.6/mdsplus/java/jtraverser/jTraverser.template	2022-04-07 18:35:23.443016866 +0200
+@@ -1,16 +1,16 @@
+ #!/bin/sh
+ lib=lib
+ if java -d64 -version >  /dev/null 2>&1; then
+-  if [ -r $MDSPLUS_DIR/lib64 ] ; then
++  if [ -r $EBROOTMDSPLUSMINJAVA/lib64 ] ; then
+     lib=/lib64
+   fi
+ else
+-  if [ -r $MDSPLUS_DIR/lib32 ]; then
++  if [ -r $EBROOTMDSPLUSMINJAVA/lib32 ]; then
+      lib=lib32
+   fi
+ fi
+ exec env \
+-LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MDSPLUS_DIR/${lib} \
+-SHLIB_PATH=$SHLIB_PATH:$MDSPLUS_DIR/${lib} \
+-DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$MDSPLUS_DIR/${lib} \
+-java -Xss5M -Djava.library.path=$MDSPLUS_DIR/${lib} -jar $MDSPLUS_DIR/java/classes/jTraverser.jar "$@"
++LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
++SHLIB_PATH=$SHLIB_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
++DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$EBROOTMDSPLUSMINJAVA/${lib} \
++java -Xss5M -Djava.library.path=$EBROOTMDSPLUSMINJAVA/${lib} -jar $EBROOTMDSPLUSMINJAVA/java/classes/jTraverser.jar "$@"
+diff -Nru mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/make_jTraverser.bat mdsplus-java-7.131.6/mdsplus/java/jtraverser/make_jTraverser.bat
+--- mdsplus-java-7.131.6-orig/mdsplus/java/jtraverser/make_jTraverser.bat	2022-04-07 15:50:24.000000000 +0200
++++ mdsplus-java-7.131.6/mdsplus/java/jtraverser/make_jTraverser.bat	2022-04-07 18:35:23.445326708 +0200
+@@ -21,7 +21,7 @@
+ SET JAR="%JDK_HOME%\bin\jar.exe"
+ SET JARDIR=%PWD%\classes
+ SET JCFLAGS=-O -source 6 -g:none
+-SET CLASSPATH=-classpath ".;%MDSPLUS_DIR%\java\classes\mdsobjects.jar;%MDSPLUS_DIR%\java\classes\jScope.jar"
++SET CLASSPATH=-classpath ".;%EBROOTMDSPLUSMINJAVA%\java\classes\mdsobjects.jar;%EBROOTMDSPLUSMINJAVA%\java\classes\jScope.jar"
+ 
+ SET OUTFILE=%PWD%\jTraverser.jar
+ SET SOURCES=*.java^
+@@ -62,10 +62,10 @@
+ CLS
+ "%JDK_HOME%\bin\java.exe" -cp ^
+ "%OUTFILE%^
+-;%MDSPLUS_DIR%\java\classes\mdsobjects.jar^
+-;%MDSPLUS_DIR%\java\classes\jScope.jar^
+-;%MDSPLUS_DIR%\java\classes\DeviceBeans.jar^
+-;%MDSPLUS_DIR%\java\classes\jDevices.jar^
++;%EBROOTMDSPLUSMINJAVA%\java\classes\mdsobjects.jar^
++;%EBROOTMDSPLUSMINJAVA%\java\classes\jScope.jar^
++;%EBROOTMDSPLUSMINJAVA%\java\classes\DeviceBeans.jar^
++;%EBROOTMDSPLUSMINJAVA%\java\classes\jDevices.jar^
+ " -Xss5M jTraverser
+ 
+ :end
+diff -Nru mdsplus-java-7.131.6-orig/mdsplus/java/mdsobjects/src/test/java/MDSplus/MdsConnectionTest.java mdsplus-java-7.131.6/mdsplus/java/mdsobjects/src/test/java/MDSplus/MdsConnectionTest.java
+--- mdsplus-java-7.131.6-orig/mdsplus/java/mdsobjects/src/test/java/MDSplus/MdsConnectionTest.java	2022-04-07 15:50:24.000000000 +0200
++++ mdsplus-java-7.131.6/mdsplus/java/mdsobjects/src/test/java/MDSplus/MdsConnectionTest.java	2022-04-07 18:34:03.293033301 +0200
+@@ -23,7 +23,7 @@
+ 			try
+ 			{
+ 				new DatagramSocket(port).close();
+-				java.lang.String hostspath = System.getenv("MDSPLUS_DIR") + "/testing/mdsip.hosts";
++				java.lang.String hostspath = System.getenv("EBROOTMDSPLUSMINJAVA") + "/testing/mdsip.hosts";
+ 				if (!new File(hostspath).exists())
+ 				{
+ 					hostspath = "/etc/mdsip.hosts";

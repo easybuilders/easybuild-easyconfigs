@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'MDSplus'
+version = '7.131.6'
+
+homepage = 'http://mdsplus.org/'
+description = """MDSplus is a set of software tools for data acquisition
+  and storage and a methodology for management of complex scientific data."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/%(name)s/%(namelower)s/archive']
+sources = ['stable_release-%s.zip' % version.replace('.', '-')]
+checksums = ['e4762f41e8afb4e22e7fc1ea7c02a51945102dc0a5143e149f8eab0a268bea99']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('Autotools', '20220317'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+]
+
+dependencies = [
+    ('libxml2', '2.9.13'),
+    ('zlib', '1.2.12'),
+    ('ncurses', '6.3'),
+    ('libreadline', '8.1.2')
+]
+
+preconfigopts = 'export CFLAGS="$CFLAGS -I$EBROOTLIBXML2/include/libxml2 -std=c++14" && '
+preconfigopts += 'export FCFLAGS="$FCFLAGS -std=legacy -fallow-invalid-boz" && '
+preconfigopts += './bootstrap && '
+
+configopts = '--disable-doxygen-doc --disable-java '
+# hardcode version via configure script (git is unavailable)
+configopts += 'RELEASE_VERSION=%(version)s BRANCH=stable '
+
+parallel = 1
+
+modextravars = {
+    'MDSPLUS_DIR': '%(installdir)s',
+    'MDS_PATH': '%(installdir)s/tdi',
+}
+
+modextrapaths = {
+    'IDL_PATH': 'idl',
+}
+
+moduleclass = 'data'
