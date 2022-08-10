@@ -14,6 +14,11 @@ checksums = ['a6b6f7ac360d4aabd54e299cc1d8fa7b234cd81b9401693da21221c62569a23e']
 
 builddependencies = [
     ('binutils', '2.35'),
+    ('CMake', '3.20.1'),
+    ('scikit-build', '0.15.0'),
+]
+
+dependencies = [
     ('Python', '3.8.6'),
 ]
 
@@ -21,11 +26,32 @@ cmds_map = [('.*', "./configure.py --bootstrap")]
 
 files_to_copy = [(['ninja'], 'bin')]
 
-sanity_check_paths = {
-    'files': ['bin/ninja'],
-    'dirs': [],
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
 }
 
-sanity_check_commands = ["ninja --version"]
+exts_list = [
+    ('ninja', '1.10.2.3', {
+        'checksums': ['e1b86ad50d4e681a7dbdff05fc23bb52cb773edb90bc428efba33fa027738408'],
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_paths = {
+    'files': ['bin/ninja'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "ninja --version",
+    "pip check",
+    "python -c 'import ninja'",
+]
 
 moduleclass = 'tools'
