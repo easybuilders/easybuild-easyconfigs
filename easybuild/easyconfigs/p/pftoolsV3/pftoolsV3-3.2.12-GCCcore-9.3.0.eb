@@ -1,0 +1,59 @@
+# #
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+# #
+easyblock = 'CMakeMake'
+
+name = 'pftoolsV3'
+version = '3.2.12'
+
+homepage = 'https://github.com/sib-swiss/pftools3'
+description = "A suite of tools to build and search generalized profiles (protein and DNA)."
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/sib-swiss/pftools3/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['1de33d6444015942afa690d54a103ad5a3d68f416fad63f247c12fa3f71a550c']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('CMake', '3.23.1', '', True),
+    #('make', '4.3'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Perl', '5.30.2', '', True),
+    ('PCRE', '8.44'),
+    ('libharu', '2.3.0'),
+    ('zlib', '1.2.11'),
+    ('libgd', '2.3.1'),
+    ('libpng', '1.6.37'),
+    ('libjpeg-turbo', '2.0.6'),
+]
+
+software_license = 'LicenseGPLv2'
+
+runtest = 'test'
+
+configure_cmd = "cmake -DCMAKE_INSTALL_PREFIX:PATH=%(installdir)s -DCMAKE_BUILD_TYPE=Release -DUSE_GRAPHICS=OFF -DUSE_PDF=ON -DUSE_AFFINITY=OFF ../pftools3-%(version)s"
+
+local_pftools3_binaries = [
+    "ptof", "htop", "6ft", "2ft", "pfdump", "pfscan", "pfsearch", "pfscanV3", "pfsearchV3",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_pftools3_binaries],
+    'dirs': ['share/doc', 'share/man'],
+}
+
+sanity_check_commands = [
+    "pfsearchV3 --help",
+    "pfscanV3 --help",
+]
+
+moduleclass = 'bio'
