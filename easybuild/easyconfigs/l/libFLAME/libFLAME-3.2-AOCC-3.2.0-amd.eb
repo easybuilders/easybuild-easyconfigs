@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+
+name = 'libFLAME'
+version = '3.2'
+versionsuffix = '-amd'
+
+homepage = 'https://developer.amd.com/amd-cpu-libraries/blas-library/#libflame'
+description = """AMD fork of libFLAME. libFLAME is a portable library for dense matrix computations,
+providing much of the functionality present in LAPACK."""
+
+toolchain = {'name': 'AOCC', 'version': '3.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/amd/libflame/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['libFLAME-3.2-AOCC_ignore_lwp.patch']
+checksums = [
+    '6b5337fb668b82d0ed0a4ab4b5af4e2f72e4cedbeeb4a8b6eb9a3ef057fb749a',  # 3.2.tar.gz
+    '7e5927ee08d0620d78f73293c4c0e154a51a4d3346573e9a047614a0bd431772',  # libFLAME-3.2-AOCC_ignore_lwp.patch
+]
+
+# '--enable-max-arg-list-hack --enable-dynamic-build' requires 'file' function from GNU Make 4.x
+builddependencies = [
+    ('binutils', '2.38'),
+    ('Python', '3.10.4'),
+    ('make', '4.3'),  # needed on Cent OS 7  where make 3 is installed
+]
+
+dependencies = [('BLIS', version, versionsuffix)]
+
+# Use unset FLIBS to let configure pick up LDFLAGS
+preconfigopts = 'unset FLIBS && '
+preconfigopts += 'LIBS="-lblis-mt $LIBS" '
+preconfigopts += 'LDFLAGS="$LDFLAGS -L$EBROOTBLIS/lib -fopenmp -lalm -lpthread" '
+preconfigopts += 'CFLAGS="$CFLAGS -I$EBROOTBLIS/include/blis" '
+
+
+configopts = '--enable-max-arg-list-hack '
+configopts += '--enable-lapack2flame '
+configopts += '--enable-external-lapack-interfaces '
+configopts += '--enable-cblas-interfaces '
+configopts += '--enable-dynamic-build '
+configopts += '--enable-multithreading=openmp '
+configopts += '--enable-amd-aocc-flags '
+
+# libFLAME C++ Template API tests
+# runtest = 'checkcpp LIBBLAS=$EBROOTBLIS/lib/libblis.a'
+
+# sanity_check_commands = [
+#     'cd %(builddir)s/%(namelower)s-%(version)s/test '
+#     '&& make LIBBLAS=$EBROOTBLIS/lib/libblis-mt.so LDFLAGS="-fopenmp -lm -lpthread" '
+#     '&& ./test_libfame.x'
+# ]
+
+sanity_check_paths = {
+    'files': ['include/FLAME.h', 'lib/libflame.a', 'lib/libflame.%s' % SHLIB_EXT],
+    'dirs': ['lib'],
+}
+
+moduleclass = 'numlib'
