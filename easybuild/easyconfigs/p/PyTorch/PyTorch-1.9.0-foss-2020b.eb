@@ -85,9 +85,15 @@ excluded_tests = {
         # Possibly related to NCCL 2.8.3: https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-8-3.html
         'distributed/test_distributed_fork',
         'distributed/test_distributed_spawn',
+        # Fails on A10s: https://github.com/pytorch/pytorch/issues/63079
+        'test_optim',
         # Test from this suite timeout often. The process group backend is deprecated anyway
         'distributed/rpc/test_process_group_agent',
-    ]
+    ],
+    'POWER': [
+        # Works when run alone, fails when run as part of the suite. So far only observed on PPC
+        'distributed/rpc/test_tensorpipe_agent',
+    ],
 }
 
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
