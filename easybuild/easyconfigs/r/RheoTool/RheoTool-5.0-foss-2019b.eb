@@ -21,12 +21,23 @@ dependencies = [
 
 extract_sources = True
 
+# workaround
 install_cmd = "export HOME_orig=$HOME && "
 install_cmd += "export HOME=%(installdir)s && "
+
 install_cmd += "source $FOAM_BASH && "
 install_cmd += "export EIGEN_RHEO=$EBROOTEIGEN && "
 install_cmd += "cd of70/src && "
+
+# this should be the proper way to set installdir - acc. to https://github.com/fppimenta/rheoTool/issues/85
+# but for now, changing $HOME works as a workaround
+# install_cmd += "export FOAM_USER_APPBIN=%(installdir)s/bin && "
+# install_cmd += "export FOAM_USER_LIBBIN=%(installdir)s/lib && "
+# install_cmd += "export WM_PROJECT_USER_DIR=%(installdir)s/ && "
+
 install_cmd += "./Allwmake -j %(parallel)s  && "
+
+# workaround
 install_cmd += "export HOME=$HOME_orig && "
 install_cmd += "mv %(installdir)s/OpenFOAM/vsc*/platforms/linux*/* %(installdir)s/ "
 
@@ -37,5 +48,7 @@ sanity_check_paths = {
 
 # source $FOAM_BASH must run before using RheoTool, otherwise there will be missing libraries
 sanity_check_commands = ["source $FOAM_BASH && rheoBDFoam -help"]
+
+modloadmsg = 'Please run command "source $FOAM_BASH " before using RheoTool, otherwise there will be missing libraries.'
 
 moduleclass = "cae"
