@@ -14,7 +14,7 @@ sources = ["v%(version)s.tar.gz"]
 checksums = ["2e0899684d6d7f9ddee0d93b39a6ed56262b171bc4e5536914645209b66003ed"]
 
 dependencies = [
-    ("OpenFOAM", "7"),
+    ("OpenFOAM", "7", "-20200508"),
     ("Eigen", "3.3.7", "", True),
     ("PETSc", "3.12.4", "-Python-3.7.4"),
 ]
@@ -26,7 +26,7 @@ install_cmd += "export HOME=%(installdir)s && "
 install_cmd += "source $FOAM_BASH && "
 install_cmd += "export EIGEN_RHEO=$EBROOTEIGEN && "
 install_cmd += "cd of70/src && "
-install_cmd += "./Allwmake -j %(parallel)s && "
+install_cmd += "./Allwmake -j %(parallel)s  && "
 install_cmd += "export HOME=$HOME_orig && "
 install_cmd += "mv %(installdir)s/OpenFOAM/vsc*/platforms/linux*/* %(installdir)s/ "
 
@@ -35,6 +35,7 @@ sanity_check_paths = {
     "dirs": [],
 }
 
-sanity_check_commands = ["rheoBDFoam -help"]
+# source $FOAM_BASH must run before using RheoTool, otherwise there will be missing libraries
+sanity_check_commands = ["source $FOAM_BASH && rheoBDFoam -help"]
 
 moduleclass = "cae"
