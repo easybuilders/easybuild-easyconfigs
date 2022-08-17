@@ -1,0 +1,50 @@
+easyblock = "CMakeMake"
+
+name = "dakota"
+version = "6.16.0"
+
+homepage = "https://dakota.sandia.gov/"
+description = """
+The Dakota project delivers both state-of-the-art research and robust, usable software
+for optimization and UQ. Broadly, the Dakota software's advanced parametric analyses enable
+design exploration, model calibration, risk analysis, and quantification of margins and
+uncertainty with computational models.
+"""
+
+toolchain = {"name": "foss", "version": "2021b"}
+toolchainopts = {"usempi": True}
+
+source_urls = ["https://dakota.sandia.gov/sites/default/files/distributions/public/"]
+
+sources = ["%(name)s-%(version)s-public-src-cli.tar.gz"]
+
+patches = [("Dakota_custom_blas.patch", 0)]
+
+builddependencies = [
+    ("CMake", "3.21.1"),
+]
+
+dependencies = [
+    ("Boost", "1.79.0"),
+    ("Python", "3.9.6"),
+    ("HDF5", "1.12.1"),
+    ("GSL", "2.7"),
+]
+
+# preconfigopts = "ln -s $EBROOTSCALAPACK/lib/cmake/scalapack-2.1.0/scalapack-config.cmake %(installdir)s/LAPACKConfig.cmake && "
+# preconfigopts = "echo xxxxxxxxxxxxxxxxxxxxxx && "
+# preconfigopts += "echo $EBROOTSCALAPACK && "
+
+
+configopts = "-DLAPACK_DIR=$EBROOTSCALAPACK "
+configopts += "-DBLAS_DIR=$EBROOTFLEXIBLAS "
+configopts += (
+    "-C %(builddir)s/%(name)s-%(version)s-public-src-cli/cmake/BuildDakotaCustom.cmake "
+)
+
+sanity_check_paths = {
+    "files": [],
+    "dirs": ["include", "lib", "bin"],
+}
+
+moduleclass = "math"
