@@ -1,0 +1,71 @@
+Patch to adjust the installation process for the cluster environment and to
+circumvent the setup.sh as much as possible.
+
+Jakub Kropáček (anselmicz), 2022-05-20
+diff -ru vaspkit.1.3.3-orig/how_to_set_auto_plot vaspkit.1.3.3/how_to_set_auto_plot
+--- vaspkit.1.3.3-orig/how_to_set_auto_plot	2022-05-20 11:16:25.581946906 +0200
++++ vaspkit.1.3.3/how_to_set_auto_plot	2022-05-20 11:20:52.216556854 +0200
+@@ -1,7 +1,7 @@
+ (1) Make sure you have installed python3, numpy, scipy, matplotlib, etc.
+ (2) Add the following parameters in the ~/.vaspkit file;
+ #######################################################################
+-    PYTHON_BIN        ~/anaconda3/bin/python3
++    PYTHON_BIN        $EBROOTPYTHON/bin/python3
+     AUTO_PLOT         .TRUE.
+ #######################################################################
+ (3) Copy the plot presets from the vaspkit/how_to_set_environment_variable file to the ~/.vaspkit file. Must copy the block from #BEGIN_CUSTOMIZE_PLOT to #END_CUSTOMIZE_PLOT.
+diff -ru vaspkit.1.3.3-orig/how_to_set_environment_variables vaspkit.1.3.3/how_to_set_environment_variables
+--- vaspkit.1.3.3-orig/how_to_set_environment_variables	2022-05-20 11:16:25.564947122 +0200
++++ vaspkit.1.3.3/how_to_set_environment_variables	2022-05-20 11:27:19.284633083 +0200
+@@ -11,8 +11,8 @@
+ MINI_INCAR                    =     .FALSE.                        # .TRUE. or .FALSE.; A simplified INCAR will be written when MINI_INCAR set to .TRUE.
+ USER_DEFINED_INCAR            =     .FALSE.                        # .TRUE. or .FALSE.; whether to use embedded INCAR templates or user defined INCAR templates
+ WRITE_SELECTIVE_DYNAMICS      =     .FALSE.                        # .TRUE. or .FALSE.; whether the selective dymanics set will be forced to write when SET_SELECTIVE_DYNAMICS_MODE set to .FALSE.
+-PYTHON_BIN                    =     ~/anaconda3/bin/python3        #  Python executable program with its installation path. I recommend you install anaconda package for Python data science 
+-VASPKIT_UTILITIES_PATH        =     ~/vaspkit/utilities            #  IF ADVANCED_USER is .TRUE., set VASPKIT_UTILITIES_PATH like ~/vaspkit.1.x.x/utilities in order to use scripts in it.
++PYTHON_BIN                    =     $EBROOTPYTHON/bin/python3      #  Python executable program with its installation path. I recommend you install anaconda package for Python data science 
++VASPKIT_UTILITIES_PATH        =     $EBROOTVASPKIT/utilities       #  IF ADVANCED_USER is .TRUE., set VASPKIT_UTILITIES_PATH like ~/vaspkit.1.x.x/utilities in order to use scripts in it.
+ ADVANCED_USER                 =     .TRUE.                         # .TRUE. or .FALSE.; Please fill in your settings in the block 'USER_DEFINED' if you want vaspkit to integrate your own scripts in the 'UTILITIES' file.
+ SET_INCAR_WRITE_MODE          =      OVERRIDE                      #  OVERRIDE, APPEND, BACK-UP-OLD,BACK-UP-NEW;  "Customize INCAR File"  whether to override existing or appending existing INCAR/backup existing INCAR to INCAR.old && write into INCAR/write into INCAR.new
+ SCISSOR_CORRECTION            =     .FALSE.                        # .TRUE. or .FALSE.; whether to correct the DFT-band gap of nonmagnetic semiconductors to matches with that of the experimental, HSE or GW value (default: .FALSE)
+diff -ru vaspkit.1.3.3-orig/setup.sh vaspkit.1.3.3/setup.sh
+--- vaspkit.1.3.3-orig/setup.sh	2022-05-20 11:16:20.530011136 +0200
++++ vaspkit.1.3.3/setup.sh	2022-05-20 11:30:45.085014860 +0200
+@@ -1,34 +1,12 @@
+ #!/bin/bash
+-vaspkit_path=`pwd`
+-vaspkit_env=~
+-cp ~/.bashrc ~/.bashrc.bk
++vaspkit_path="$EBROOTVASPKIT"
++vaspkit_env="$HOME"
+    echo "+------------------------------------------------------------------------+"
+ if [ ! -f "${vaspkit_env}/.vaspkit" ]; then
+-   cp how_to_set_environment_variables ~/.vaspkit
++   cp "$EBROOTVASPKIT/how_to_set_environment_variables" "$HOME/.vaspkit"
+    echo "| The ~/.vaspkit file for vaspkit code has been added.                   |"
+    echo "| Please modify ~/.vaspkit based on your account settings!               |"
+ else
+    echo "| The ~/.vaspkit file already existed and skipped.                       |"
+ fi
+-if [ `grep -c "vaspkit" ~/.bashrc` -eq '1' ]; then
+-   n=`grep -rin "vaspkit" ~/.bashrc|awk  -F ':'  '{print $1}'`
+-   sed -i ""${n}"c  export PATH=${vaspkit_path}/bin:\${PATH}" ~/.bashrc
+-   echo "| The PATH variable for vaspkit code has been updated.                   |"
+-else
+-   echo "export PATH=${vaspkit_path}/bin:\${PATH}" >>~/.bashrc
+-   echo "| The PATH variable for vaspkit code has been added.                     |"
+-fi
+-
+-VASPKIT_UTILITIES_PATH_VARIABLE="VASPKIT_UTILITIES_PATH    ${vaspkit_path}/utilities"
+-if [ `grep -c "VASPKIT_UTILITIES_PATH" ~/.vaspkit` -eq '1' ]; then
+-   n=`grep -rin "VASPKIT_UTILITIES_PATH" ~/.vaspkit|awk  -F ':'  '{print $1}'`
+-   sed -i ""${n}"c  ${VASPKIT_UTILITIES_PATH_VARIABLE}" ~/.vaspkit
+-   echo "| The VASPKIT_UTILITIES_PATH variable has been updated.                  |"
+-else
+-   echo "${VASPKIT_UTILITIES_PATH_VARIABLE}" >>~/.vaspkit
+-   echo "| The VASPKIT_UTILITIES_PATH variable has been added.                    |"
+-fi
+-   echo "| The old environment variables have been backed up to ~/.bashrc.bk file |"
+    echo "+------------------------------------------------------------------------+"
+-   echo ' The last step left to complete installation. '
+-   echo ' Please run source ~/.bashrc '
