@@ -20,9 +20,9 @@ name = 'HH-suite'
 version = '3.3.0'
 
 homepage = 'https://github.com/soedinglab/hh-suite'
-description = """The HH-suite is an open-source software package 
-for sensitive protein sequence searching based on the pairwise 
-alignment of hidden Markov models (HMMs)."""
+description = """The HH-suite is an open-source software package
+ for sensitive protein sequence searching based on the pairwise
+ alignment of hidden Markov models (HMMs)."""
 
 toolchain = {'name': 'gompi', 'version': '2021b'}
 
@@ -39,28 +39,52 @@ dependencies = [
     ('Python', '3.9.6'),
 ]
 
-_binaries = [
-    'hhalign', 'hhalign_mpi', 'hhalign_omp',
-    'hhblits', 'hhblits_mpi', 'hhblits_omp',
-    'hhsearch', 'hhsearch_mpi', 'hhsearch_omp',
-    'hhmake', 'hhfilter', 'hhconsensus',
+_binaries_help = [
+    'cstranslate', 'cstranslate_mpi', 'hhalign', 'hhalign_mpi', 'hhalign_omp', 'hhconsensus',
+    'hhfilter', 'hhmake'
 ]
 
-_scriptfiles = [
-    'hhmakemodel.py', 'hh_reader.py', 'hhsuitedb.py', 'cif2fasta.py',
+_binaries_h = [
+    'a3m_database_extract', 'a3m_database_filter', 'a3m_database_reduce', 'a3m_extract', 'a3m_reduce',
+    'hhblits', 'hhblits_ca3m', 'hhblits_mpi', 'hhblits_omp', 'hhsearch', 'hhsearch_mpi', 'hhsearch_omp'
 ]
+
+_binaries_version = ['ffindex_build', 'ffindex_from_fasta', 'ffindex_modify']
+
+_binaries_v = ['ffindex_from_fasta_with_split']
+
+_binaries_helpless = [
+    'ffindex_apply', 'ffindex_apply_mpi', 'ffindex_get',
+    'ffindex_order', 'ffindex_reduce', 'ffindex_unpack'
+]
+
+_scriptfiles = ['hhmakemodel.py', 'hh_reader.py', 'hhsuitedb.py', 'cif2fasta.py']
 
 fix_perl_shebang_for = ['scripts/*pl']
 
 sanity_check_paths = {
-    'files': ['bin/%s' % x for x in _binaries] +
+    'files': ['bin/%s' % x for x in _binaries_help] +
+             ['bin/%s' % x for x in _binaries_h] +
+             ['bin/%s' % x for x in _binaries_version] +
+             ['bin/%s' % x for x in _binaries_v] +
+             ['bin/%s' % x for x in _binaries_helpless] +
              ['scripts/%s' % y for y in _scriptfiles],
     'dirs': ['data', 'scripts']
 }
 
+sanity_check_commands = ['%s --help' % x for x in _binaries_help]
+sanity_check_commands += ['%s -h' % x for x in _binaries_h]
+sanity_check_commands += ['%s --version' % x for x in _binaries_version]
+sanity_check_commands += ['%s -v' % x for x in _binaries_v]
+sanity_check_commands += ['%s 2>&1 | grep USAGE' % x for x in _binaries_helpless]
+
 modextrapaths = {
     'PATH': 'scripts',
     'PERL5LIB': 'scripts',
+}
+
+modextravars = {
+    'HHLIB': '%(installdir)s',
 }
 
 moduleclass = 'bio'
