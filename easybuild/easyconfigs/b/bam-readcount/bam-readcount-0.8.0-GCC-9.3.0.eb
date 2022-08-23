@@ -1,0 +1,51 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Adam Huffman
+# The Francis Crick Institute
+easyblock = 'CMakeMake'
+
+name = 'bam-readcount'
+version = '0.8.0'
+
+homepage = 'https://github.com/genome/bam-readcount'
+description = """Count DNA sequence reads in BAM files"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/genome/%(name)s/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['4f4dd558e3c6bfb24d6a57ec441568f7524be6639b24f13ea6f2bb350c7ea65f']
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+]
+
+dependencies = [
+    ('SAMtools', '1.10'),
+    ('zlib', '1.2.11'),
+    ('ncurses', '6.2'),
+]
+
+# bam-readcount uses git to insert the version during configuration with CMake
+# but in the release archives there is no git information
+# local_commit is the git commit hash of the release
+local_commit = 'dea4199'
+local_versionfile = '%(builddir)s/%(name)s*/version/version.h.in'
+preconfigopts = "sed -i -e 's/@FULL_VERSION@/%%(version)s/' %s && " % local_versionfile
+preconfigopts += "sed -i -e 's/@COMMIT_HASH@/%s/' %s && " % (local_commit, local_versionfile)
+
+prebuildopts = "export SAMTOOLS_ROOT=${EBROOTSAMTOOLS}/include/bam && "
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ["bin/bam-readcount"],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    # --help exists with exit code 1, so use grep to check for expected pattern in help output
+    "bam-readcount --help 2>&1 | grep 'Example: bam-readcount -f'",
+    "bam-readcount --version | grep 'version: %(version)s '",
+]
+
+moduleclass = 'bio'

@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'pbs_python'
+version = '4.6.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://oss.trac.surfsara.nl/pbs_python'
+description = """The pbs_python package is a wrapper class for the Torque C library. With this package you now can
+ write utilities/extensions in Python instead of C. We developed this package because we want to replace xpbsmon by
+ an ascii version named pbsmon. PBSQuery is also included in this package. This is a python module build on top of
+ the pbs python module to simplify querying the batch server, eg: how many jobs, how many nodes, ..."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = ['https://ftp.sara.nl/pub/outgoing/']
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'pbs_python-%(version)s_CC.patch',
+    'pbs_python-%(version)s_remove-printf.patch',
+]
+checksums = [
+    '2f7e1416b801cc6498395aa824772fd6092572ad98eec74550ddc222ae4b30f7',  # pbs_python-4.6.0.tar.gz
+    '3d4e0b2aa6f69a80ea2e84f8dd42e101f0cea48d880187f5c1734f0da0abccc0',  # pbs_python-4.6.0_CC.patch
+    'e2f368d28763a0ffa1a59ffa76ce70d93535e7aa82daa3281c284e1d235f2352',  # pbs_python-4.6.0_remove-printf.patch
+]
+
+dependencies = [('Python', '2.7.13')]
+
+osdependencies = ['torque-devel']
+
+# use CFLAGS from EB and torque headers from host system
+prebuildopts = 'export CFLAGS="$CFLAGS -I/usr/include/torque/" && '
+preinstallopts = prebuildopts
+
+local_pythonpath = 'lib/python%(pyshortver)s/site-packages'
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['%s/pbs' % local_pythonpath, 'share/doc']
+}
+
+sanity_check_commands = ["python -c 'import PBSQuery'"]
+
+modextrapaths = {'PYTHONPATH': [local_pythonpath, '%s/pbs' % local_pythonpath]}
+
+moduleclass = 'tools'

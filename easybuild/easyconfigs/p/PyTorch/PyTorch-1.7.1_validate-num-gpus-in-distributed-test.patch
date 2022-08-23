@@ -1,0 +1,15 @@
+Validate number of GPUs in distributed_test - https://github.com/pytorch/pytorch/pull/47259
+Fixes "RuntimeError: NCCL error in: ../torch/lib/c10d/ProcessGroupNCCL.cpp:784, invalid usage, NCCL version 2.7.8"
+Patch prepared for EasyBuild by Simon Branford, University of Birmingham
+--- a/torch/testing/_internal/distributed/distributed_test.py
++++ b/torch/testing/_internal/distributed/distributed_test.py
+@@ -289,6 +289,9 @@ def _run(cls, rank, test_name, file_name):
+         self = cls(test_name)
+         self.rank = rank
+         self.file_name = file_name
++
++        if torch.cuda.device_count() < int(self.world_size):
++            sys.exit(TEST_SKIPS['multi-gpu'].exit_code)
+         try:
+             dist.init_process_group(
+                 init_method=self.init_method,

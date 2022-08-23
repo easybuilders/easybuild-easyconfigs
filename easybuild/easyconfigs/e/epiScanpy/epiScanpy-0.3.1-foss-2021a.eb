@@ -1,0 +1,59 @@
+easyblock = 'PythonBundle'
+
+name = 'epiScanpy'
+version = '0.3.1'
+
+homepage = 'https://github.com/colomemaria/episcanpy'
+description = """EpiScanpy is a toolkit to analyse single-cell open chromatin
+(scATAC-seq) and single-cell DNA methylation (for example scBS-seq)
+data. EpiScanpy is the epigenomic extension of the very popular scRNA-seq
+analysis tool Scanpy (Genome Biology, 2018) [Wolf18]."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('Seaborn', '0.11.2'),
+    ('scanpy', '1.8.1'),  # includes anndata
+    ('SciPy-bundle', '2021.05'),
+    ('Pysam', '0.16.0.1'),
+    ('scikit-learn', '0.24.2'),
+    ('statsmodels', '0.12.2'),
+    ('numba', '0.53.1'),
+    ('python-igraph', '0.9.6'),
+    ('tbb', '2020.3'),
+]
+
+exts_list = [
+    ('pyliftover', '0.4', {
+        'checksums': ['72bcfb7de907569b0eb75e86c817840365297d63ba43a961da394187e399da41'],
+    }),
+    ('bamnostic', '1.1.7', {
+        'checksums': ['27e70c6f3d258a00d8d3e1a5ded403ea02152fcf42288788fb5fb3c66f53939b'],
+    }),
+    ('python-louvain', '0.15', {
+        'modulename': 'community.community_louvain',
+        'checksums': ['2a856edfbe29952a60a5538a84bb78cca18f6884a88b9325e85a11c8dd4917eb'],
+    }),
+    ('get_version', '3.2', {
+        'use_pip': False,
+        'checksums': ['b01a7d84d60a4839d035375151ae03b9ee902baa503effb0cf8ccd6d4d79aa1d'],
+    }),
+    ('legacy-api-wrap', '1.2', {
+        'use_pip': False,
+        'checksums': ['034a44612da7e9943d3964363a98937ab54d55e3301075374abe0d521eb8101b'],
+    }),
+    ('episcanpy', version, {
+        'checksums': ['ee90ebec33d7c03bd11863de3d7fe60779e41e206952eca27ff95b4667cefdb2'],
+        # strip out tbb as required dependency, to ensure that 'pip check' passes;
+        # note that the tbb Python bindings are actually provided by the tbb dependency,
+        # but pip doesn't know about them due to the way in which they were installed...
+        'preinstallopts': "sed -i 's/tbb//' requirements.txt && ",
+        'modulename': 'episcanpy.api',
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+moduleclass = 'bio'

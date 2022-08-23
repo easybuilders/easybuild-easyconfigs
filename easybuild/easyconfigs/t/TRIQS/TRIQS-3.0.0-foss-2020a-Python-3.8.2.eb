@@ -1,0 +1,71 @@
+easyblock = 'CMakeMake'
+
+name = 'TRIQS'
+version = '3.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://triqs.github.io/triqs'
+description = """
+ TRIQS (Toolbox for Research on Interacting Quantum Systems) is a
+ scientific project providing a set of C++ and Python libraries to
+ develop new tools for the study of interacting quantum systems.
+"""
+
+docurls = ['https://triqs.github.io/triqs/%(version_major_minor)s.x/']
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/TRIQS/triqs/releases/download/%(version)s/']
+sources = ['triqs-%(version)s.tar.gz']
+checksums = ['21239fb42ba73f84a77b63abce84c0d2b9162277233d5839aaf39e22e1be8128']
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', '-Python-%(pyver)s'),
+    ('Boost', '1.72.0'),
+    ('Clang', '10.0.1'),
+    ('Clang-Python-bindings', '10.0.1', '-Python-%(pyver)s'),
+    ('GMP', '6.2.0'),
+    ('HDF5', '1.10.6'),
+    ('Mako', '1.1.2')
+]
+
+builddependencies = [
+    ('CMake', '3.16.4')
+]
+
+separate_build_dir = True
+
+# Remove installation directory before building. This fixes problems with
+# failing builds in the presence of preexisting installation.
+preconfigopts = "rm -rf %(installdir)s && "
+
+configopts = "-DBuild_Deps=Always"
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libtriqs.%s' % SHLIB_EXT],
+    'dirs': ['include/triqs', 'include/itertools', 'include/mpi', 'include/cpp2py',
+             'lib/python%(pyshortver)s/site-packages', 'share'],
+}
+
+sanity_check_commands = [
+    "triqs++ --help",
+    "c++2py --help",
+    "python -c 'import triqs'"
+]
+
+modextrapaths = {
+    'CPLUS_INCLUDE_PATH': 'include',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'CMAKE_PREFIX_PATH': ['lib/cmake/triqs', 'lib/cmake/cpp2py']
+}
+modextravars = {
+    'TRIQS_ROOT': '%(installdir)s',
+    'TRIQS_VERSION': '%(version)s'
+}
+
+moduleclass = 'phys'

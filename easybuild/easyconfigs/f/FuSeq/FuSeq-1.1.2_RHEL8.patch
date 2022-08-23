@@ -1,0 +1,52 @@
+# Fix CHAR_WIDTH glibc clash 
+# see: https://github.com/Cantera/cantera/issues/369#issuecomment-254090244
+# https://github.com/gabime/spdlog/issues/300 and https://github.com/3Hren/blackhole/pull/184
+# SEP 24th 2020 by B. Hajgato (UGent)
+diff -ru sailfish-0.10.0.orig/include/spdlog/details/format.h sailfish-0.10.0/include/spdlog/details/format.h
+--- sailfish-0.10.0.orig/include/spdlog/details/format.h	2016-04-14 03:24:40.000000000 +0200
++++ sailfish-0.10.0/include/spdlog/details/format.h	2020-09-24 17:26:19.195521057 +0200
+@@ -2053,29 +2053,29 @@
+         typedef typename BasicWriter<Char>::CharPtr CharPtr;
+         Char fill = internal::CharTraits<Char>::cast(spec_.fill());
+         CharPtr out = CharPtr();
+-        const unsigned CHAR_WIDTH = 1;
+-        if (spec_.width_ > CHAR_WIDTH)
++        const unsigned CHAR_WIDTH_NOCLASH = 1;
++        if (spec_.width_ > CHAR_WIDTH_NOCLASH)
+         {
+             out = writer_.grow_buffer(spec_.width_);
+             if (spec_.align_ == ALIGN_RIGHT)
+             {
+-                std::uninitialized_fill_n(out, spec_.width_ - CHAR_WIDTH, fill);
+-                out += spec_.width_ - CHAR_WIDTH;
++                std::uninitialized_fill_n(out, spec_.width_ - CHAR_WIDTH_NOCLASH, fill);
++                out += spec_.width_ - CHAR_WIDTH_NOCLASH;
+             }
+             else if (spec_.align_ == ALIGN_CENTER)
+             {
+                 out = writer_.fill_padding(out, spec_.width_,
+-                                           internal::check(CHAR_WIDTH), fill);
++                                           internal::check(CHAR_WIDTH_NOCLASH), fill);
+             }
+             else
+             {
+-                std::uninitialized_fill_n(out + CHAR_WIDTH,
+-                                          spec_.width_ - CHAR_WIDTH, fill);
++                std::uninitialized_fill_n(out + CHAR_WIDTH_NOCLASH,
++                                          spec_.width_ - CHAR_WIDTH_NOCLASH, fill);
+             }
+         }
+         else
+         {
+-            out = writer_.grow_buffer(CHAR_WIDTH);
++            out = writer_.grow_buffer(CHAR_WIDTH_NOCLASH);
+         }
+         *out = internal::CharTraits<Char>::cast(value);
+     }
+@@ -4358,4 +4358,4 @@
+ # include "format.cc"
+ #endif
+ 
+-#endif  // FMT_FORMAT_H_
+\ No newline at end of file
++#endif  // FMT_FORMAT_H_

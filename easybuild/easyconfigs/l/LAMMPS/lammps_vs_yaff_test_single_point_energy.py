@@ -12,12 +12,9 @@
 
 import numpy as np
 import os
-import h5py
 from mpi4py import MPI
-from glob import glob
-from yaff import *
+from yaff import log, System, angstrom, ForceField, swap_noncovalent_lammps
 from molmod import kjmol
-from io import StringIO
 import tempfile
 
 
@@ -42,31 +39,34 @@ def main():
     np.random.seed(5)
     # Turn off logging for all processes, it can be turned on for one selected process later on
     log.set_level(log.silent)
-    if rank==0: log.set_level(log.medium)
+    if rank == 0:
+        log.set_level(log.medium)
 
     # Load in the structure and the force field
     system = System.from_file(init_chk)
 
     # Initialize the Yaff and LAMMPS force fields
-    rcut = 12*angstrom
-    ff_yaff = ForceField.generate(system, pars_txt, rcut=rcut, smooth_ei=False, gcut_scale=1.5, alpha_scale=3.2)#, tailcorrections=True)
-    ff = swap_noncovalent_lammps(ff_yaff, fn_system='lammps.dat', fn_log="log.lammps", suffix='', fn_table='lammps_smoothei2.table', comm=comm)
+    rcut = 12 * angstrom
+    ff_yaff = ForceField.generate(system, pars_txt, rcut=rcut, smooth_ei=False,
+                                  gcut_scale=1.5, alpha_scale=3.2)  # , tailcorrections=True)
+    ff = swap_noncovalent_lammps(ff_yaff, fn_system='lammps.dat', fn_log="log.lammps",
+                                 suffix='', fn_table='lammps_smoothei2.table', comm=comm)
 
     # Print out the Yaff single-point energy
     print('Yaff energy')
     energy_yaff = ff_yaff.compute()
-    print(energy_yaff/kjmol)
+    print(energy_yaff / kjmol)
     for part in ff_yaff.parts:
-        print('%s: %.3f kJ/mol' %(part.name,part.energy/kjmol))
+        print('%s: %.3f kJ/mol' % (part.name, part.energy / kjmol))
 
     # Print out the LAMMPS single-point energy
     print('LAMMPS energy')
     energy_lammps = ff.compute()
-    print(energy_lammps/kjmol)
+    print(energy_lammps / kjmol)
     for part in ff.parts:
-        print('%s: %.3f kJ/mol' %(part.name,part.energy/kjmol))
+        print('%s: %.3f kJ/mol' % (part.name, part.energy / kjmol))
 
-    assert np.abs(energy_yaff- energy_lammps) < 1*kjmol, "The two energies are not the same"
+    assert np.abs(energy_yaff - energy_lammps) < 1 * kjmol, "The two energies are not the same"
 
 
 INIT_CHK = """bonds                                     kind=intar 592,2
@@ -1274,7 +1274,7 @@ FIXQ:ATOM     H_OH  0.0000000000000   0.7240000000
 
 # Bond parameters
 # ----------------------------------------------------
-# KEY         label0   label1           P_AB          
+# KEY         label0   label1           P_AB
 # ----------------------------------------------------
 FIXQ:BOND      C_PH      C_PH   0.0000928607
 FIXQ:BOND      C_CA      C_PC   0.0432515406

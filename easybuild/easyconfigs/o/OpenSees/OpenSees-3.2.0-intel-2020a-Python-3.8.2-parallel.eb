@@ -1,0 +1,56 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'MakeCp'
+
+name = 'OpenSees'
+version = '3.2.0'
+versionsuffix = '-Python-%(pyver)s-parallel'
+
+homepage = 'https://opensees.berkeley.edu/index.php'
+description = "Open System for Earthquake Engineering Simulation"
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+# https://github.com/OpenSees/OpenSees
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    ('%(name)s-%(version)s-add_Makefile_def_parallel.patch', 1),
+    '%(name)s-%(version)s-fix_superlu_dist.patch',
+]
+checksums = [
+    '200f70fc86b7c4c2978eaef1aacd206cb40791fa797e1b9cc51da9633b53eb36',  # v3.2.0.tar.gz
+    # OpenSees-3.2.0-add_Makefile_def_parallel.patch
+    'd9eca142b325b0c64d9e1db11f2eb994af86530c1262ed29eec44dc2d75b3ea1',
+    '438932059c2d1d02164a50d968dacc32f372bc3a7dffaeb609eabbf5cbf753d2',  # OpenSees-3.2.0-fix_superlu_dist.patch
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('METIS', '5.1.0'),
+    ('MUMPS', '5.2.1', '-metis'),
+    ('SuiteSparse', '5.7.1', '-METIS-5.1.0'),
+    ('arpack-ng', '3.7.0'),
+    ('Tk', '8.6.10'),
+    ('SuperLU', '5.2.2'),
+    # This is latest working version with smallest possible patch
+    ('SuperLU_DIST', '5.4.0', '-trisolve-merge'),
+]
+
+buildopts = 'BUILDDIR="%(builddir)s/%(name)s-%(version)s" '
+buildopts += 'PROGRAMMING_MODE="PARALLEL_INTERPRETERS" CC="$CC" CC++="$CXX" FC="$FC"'
+
+files_to_copy = ['bin', 'lib']
+
+# Testing only few scripts. Bin folder contains > 50 files
+sanity_check_paths = {
+    'files': ['bin/OpenSeesMP', 'lib/libOpenSees.a', 'lib/libOpenSeesTclCommands.a'],
+    'dirs': []
+}
+sanity_check_commands = [
+    '%(mpi_cmd_prefix)s OpenSeesMP -h',
+]
+
+moduleclass = 'cae'
