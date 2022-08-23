@@ -471,6 +471,9 @@ class EasyConfigTest(TestCase):
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
             'Boost': [('1.64.0;', [r'Boost.Python-1\.64\.0-', r'EMAN2-2\.3-'])],
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
+            # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
+            'CLHEP': [('2.4.5.1;', [r'GATE-9\.2-foss-2021b'])],
+            'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
             # ncbi-vdb v2.x require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
             'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.', r'shovill-1\.1\.'])],
             # VMTK 1.4.x requires ITK 4.13.x
@@ -521,7 +524,7 @@ class EasyConfigTest(TestCase):
             'Pysam': [
                 ('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                                'NGSpeciesID-0.1.1.1-']),
-                ('0.18.0;', ['WhatsHap-1.4-']),
+                ('0.18.0;', ['WhatsHap-1.4-', 'medaka-1.6.0-']),
             ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
