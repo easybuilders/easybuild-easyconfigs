@@ -1,0 +1,67 @@
+easyblock = 'ConfigureMake'
+
+name = 'MUSCLE3'
+version = '0.5.0'
+
+homepage = 'https://muscle3.readthedocs.io/en/latest/index.html'
+
+description = """MUSCLE3 allows connecting multiple simulation models
+ together into a multiscale simulation. Simulation models can be as
+ simple as a single Python file, or as complex as a combination of
+ multiple separate simulation codes written in C++ or Fortran, and
+ running on an HPC machine."""
+
+toolchain = {'name': 'gompi', 'version': '2020b'}
+
+source_urls = ['https://github.com/multiscale/%(namelower)s/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = ['abdbad412929d16a303b7e2909d2f1267857bc33514339c1c6f0b89dff2f5b4f']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+
+dependencies = [
+    ('msgpack-c', '3.3.0'),
+    ('OpenSSL', '1.1', '', True),
+    ('protobuf', '3.10.0'),
+    ('zlib', '1.2.11'),
+    ('googletest', '1.10.0'),
+]
+
+skipsteps =['configure']
+
+prebuildopts = 'protobuf_ROOT=$EBROOTPROTOBUF '
+prebuildopts += 'grpc_ROOT=$EBROOTGRPC '
+
+preinstallopts = 'PREFIX=%(installdir)s '
+
+modextrapaths = {
+    'MUSCLE3_HOME': '',
+}
+
+sanity_check_paths = {
+    'files': ['include/libmuscle.f90',
+              'include/libmuscle.mod',
+              'include/libmuscle/libmuscle.hpp',
+              'include/ymmsl/ymmsl.hpp',
+              'lib/libmuscle.a',
+              'lib/libmuscle.%s' % SHLIB_EXT,
+              'lib/libmuscle_fortran.a',
+              'lib/libmuscle_fortran.%s' % SHLIB_EXT,
+              'lib/libymmsl.a',
+              'lib/libymmsl.%s' % SHLIB_EXT,
+              'lib/libymmsl_fortran.a',
+              'lib/libymmsl_fortran.%s' % SHLIB_EXT,
+              'lib/pkgconfig/libmuscle.pc',
+              'lib/pkgconfig/libmuscle_fortran.pc',
+              'lib/pkgconfig/ymmsl.pc',
+              'lib/pkgconfig/ymmsl_fortran.pc'],
+    'dirs':  ['bin',
+              'include/libmuscle/mcp',
+              'include/ymmsl',
+              'lib/pkgconfig',
+              'lib64']
+}
+
+moduleclass = 'tools'
