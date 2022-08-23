@@ -1,0 +1,66 @@
+From 8bbfb3a6aae83e8de3c5c4bcbcd473b0a2a77852 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jens=20J=C3=B8rgen=20Mortensen?= <jensj@fysik.dtu.dk>
+Date: Mon, 3 Feb 2020 13:03:37 +0100
+Subject: [PATCH] Wrap #pragma omp simd in #ifdef _OPENMP blocks
+
+---
+ c/bmgs/fd.c    | 2 ++
+ c/bmgs/relax.c | 4 ++++
+ c/symmetry.c   | 2 ++
+ 3 files changed, 8 insertions(+)
+
+diff --git a/c/bmgs/fd.c b/c/bmgs/fd.c
+index c05e425..e75eb6a 100644
+--- a/c/bmgs/fd.c
++++ b/c/bmgs/fd.c
+@@ -36,7 +36,9 @@ void *Z(bmgs_fd_worker)(void *threadarg)
+ 
+     for (int i1 = 0; i1 < s->n[1]; i1++)
+       {
++#ifdef _OPENMP
+ #pragma omp simd
++#endif
+         for (int i2 = 0; i2 < s->n[2]; i2++)
+           {
+             T x = 0.0;
+diff --git a/c/bmgs/relax.c b/c/bmgs/relax.c
+index d0be905..6c95bf3 100644
+--- a/c/bmgs/relax.c
++++ b/c/bmgs/relax.c
+@@ -25,7 +25,9 @@ if (relax_method == 1)
+     {
+       for (int i1 = 0; i1 < nstep[1]; i1++)
+         {
++#ifdef _OPENMP
+ #pragma omp simd
++#endif
+           for (int i2 = 0; i2 < nstep[2]; i2++)
+             {
+               double x = 0.0;
+@@ -53,7 +55,9 @@ else
+     {
+       for (int i1 = 0; i1 < s->n[1]; i1++)
+         {
++#ifdef _OPENMP
+ #pragma omp simd
++#endif
+           for (int i2 = 0; i2 < s->n[2]; i2++)
+             {
+               double x = 0.0;
+diff --git a/c/symmetry.c b/c/symmetry.c
+index 207e82b..7db4bf2 100644
+--- a/c/symmetry.c
++++ b/c/symmetry.c
+@@ -36,7 +36,9 @@ PyObject* symmetrize(PyObject *self, PyObject *args)
+ 
+     const double* a_g = (const double*)PyArray_DATA(a_g_obj);
+     double* b_g = (double*)PyArray_DATA(b_g_obj);
++#ifdef _OPENMP
+ #pragma omp simd
++#endif
+     for (int g0 = o_c[0]; g0 < Ng0; g0++)
+         for (int g1 = o_c[1]; g1 < Ng1; g1++)
+             for (int g2 = o_c[2]; g2 < Ng2; g2++) {
+-- 
+1.8.3.1
+

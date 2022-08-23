@@ -1,0 +1,55 @@
+easyblock = 'CMakeMakeCp'
+
+name = 'HPDBSCAN'
+version = '20210826'
+local_commit = 'ae0c74c'
+
+homepage = 'https://github.com/Markus-Goetz/hpdbscan'
+description = "Highly parallel density based spatial clustering for application with noise"
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/Markus-Goetz/hpdbscan/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': '%(name)s-%(version)s.tar.gz'}]
+checksums = ['52ff343f77aeea5a425a911d88a57314c6bc877c18209eb53819d114421a868d']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+
+dependencies = [
+    ('HDF5', '1.10.7'),
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),  # for mpi4py
+    ('SWIG', '4.0.2'),
+]
+
+# There is not an install method, so build in the source directory to simplify files_to_copy
+separate_build_dir = False
+
+files_to_copy = [
+    (['hpdbscan'], 'bin'),
+    (['libhpdbscan.%s' % SHLIB_EXT], 'lib'),
+    (['hpdbscan.py', '_hpdbscan.%s' % SHLIB_EXT], 'lib/python%(pyshortver)s/site-packages'),
+    'include', 'LICENSE.txt',
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/hpdbscan', 'lib/libhpdbscan.%s' % SHLIB_EXT, 'include/hpdbscan.h'],
+    'dirs': [],
+}
+
+# Check the Python bindings
+_hpdbscan_python_check = 'python -c "import hpdbscan; import numpy; '
+_hpdbscan_python_check += 'clusterer = hpdbscan.HPDBSCAN(epsilon=0.3, min_points=4); '
+_hpdbscan_python_check += 'clusterer.cluster(numpy.random.rand(100, 3))"'
+
+sanity_check_commands = [
+    "hpdbscan --help",
+    _hpdbscan_python_check,
+]
+
+moduleclass = 'tools'

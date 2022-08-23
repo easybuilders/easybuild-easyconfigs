@@ -3,7 +3,7 @@ easyblock = 'ConfigureMake'
 name = 'GMP'
 version = '6.1.2'
 
-homepage = 'http://gmplib.org/'
+homepage = 'https://gmplib.org/'
 
 description = """
  GMP is a free library for arbitrary precision arithmetic, operating on signed
@@ -14,7 +14,7 @@ toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
 toolchainopts = {'pic': True, 'precise': True}
 
 sources = [SOURCELOWER_TAR_BZ2]
-source_urls = ['http://ftp.gnu.org/gnu/gmp']
+source_urls = ['https://ftp.gnu.org/gnu/gmp']
 checksums = ['5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2']
 
 builddependencies = [
@@ -24,6 +24,11 @@ builddependencies = [
 
 # enable C++ interface
 configopts = '--enable-cxx'
+
+# copy libgmp.so* to <installdir>/lib to make sure that it is picked up by tests
+# when EasyBuild is configured with --rpath, and clean up afterwards (let 'make install' do its job)
+pretestopts = "mkdir -p %%(installdir)s/lib && cp -a .libs/libgmp.%s* %%(installdir)s/lib && " % SHLIB_EXT
+testopts = " && rm -r %(installdir)s/lib"
 
 runtest = 'check'
 

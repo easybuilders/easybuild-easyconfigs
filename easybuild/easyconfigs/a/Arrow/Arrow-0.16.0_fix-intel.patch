@@ -1,0 +1,74 @@
+* avoid "Unknown compiler" CMake error
+* fix compilation error by replacing '__force_inline' (no longer known by Intel compiler) with 'inline'
+author: Kenneth Hoste (HPC-UGent)
+--- apache-arrow-0.16.0/cpp/cmake_modules/SetupCxxFlags.cmake.orig	2020-03-13 11:49:23.932615096 +0100
++++ apache-arrow-0.16.0/cpp/cmake_modules/SetupCxxFlags.cmake	2020-03-13 11:50:15.413167338 +0100
+@@ -152,7 +152,7 @@
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-unused-parameter")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-unknown-warning-option")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-constant-logical-operand")
+-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
++elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wall")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-conversion")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-sign-conversion")
+@@ -174,7 +174,7 @@
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Weverything")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-c++98-compat")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-c++98-compat-pedantic")
+-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
++  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wall")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wpedantic")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wextra")
+@@ -194,7 +194,8 @@
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} /W3")
+   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+          OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+-         OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
++         OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
++         OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wall")
+   else()
+     message(FATAL_ERROR "${UNKNOWN_COMPILER_MESSAGE}")
+--- apache-arrow-0.16.0/cpp/src/arrow/vendored/uriparser/UriDefsConfig.h.orig	2020-03-13 14:08:51.748940651 +0100
++++ apache-arrow-0.16.0/cpp/src/arrow/vendored/uriparser/UriDefsConfig.h	2020-03-13 14:09:22.638967172 +0100
+@@ -82,7 +82,7 @@
+ /* Intel C/C++ */
+ /* http://predef.sourceforge.net/precomp.html#sec20 */
+ /* http://www.intel.com/support/performancetools/c/windows/sb/CS-007751.htm#2 */
+-# define URI_INLINE __force_inline
++# define URI_INLINE inline
+ #elif defined(_MSC_VER)
+ /* Microsoft Visual C++ */
+ /* http://predef.sourceforge.net/precomp.html#sec32 */
+--- apache-arrow-0.16.0/python/cmake_modules/SetupCxxFlags.cmake.orig	2020-03-13 15:06:14.151091256 +0100
++++ apache-arrow-0.16.0/python/cmake_modules/SetupCxxFlags.cmake	2020-03-13 15:07:17.301133945 +0100
+@@ -152,7 +152,7 @@
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-unused-parameter")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-unknown-warning-option")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-constant-logical-operand")
+-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
++  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wall")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-conversion")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-sign-conversion")
+@@ -174,7 +174,7 @@
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Weverything")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-c++98-compat")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wno-c++98-compat-pedantic")
+-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
++  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wall")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wpedantic")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wextra")
+@@ -194,7 +194,8 @@
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} /W3")
+   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+          OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+-         OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
++         OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
++         OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+     set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -Wall")
+   else()
+     message(FATAL_ERROR "${UNKNOWN_COMPILER_MESSAGE}")

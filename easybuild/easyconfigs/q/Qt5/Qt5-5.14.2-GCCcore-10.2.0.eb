@@ -1,0 +1,81 @@
+easyblock = 'EB_Qt'
+
+name = 'Qt5'
+version = '5.14.2'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+]
+sources = ['qt-everywhere-src-%(version)s.tar.xz']
+patches = [
+    'Qt5-5.13.1_fix-avx2.patch',
+    'Qt5-5.13.1_fix-qmake-libdir.patch',
+    'Qt5-5.14.1_fix-OF-Gentoo.patch',
+    'Qt5-5.14.2_fix-missing-stdint.patch',
+    'Qt5-5.14.2_fix-webengine-bison.patch',
+    'Qt5-5.14.2_fix-std-runtime_error.patch',
+    'Qt5-5.14.2_fix-include-math.patch',
+]
+checksums = [
+    'c6fcd53c744df89e7d3223c02838a33309bd1c291fcb6f9341505fe99f7f19fa',  # qt-everywhere-src-5.14.2.tar.xz
+    '6f46005f056bf9e6ff3e5d012a874d18ee03b33e685941f2979c970be91a9dbc',  # Qt5-5.13.1_fix-avx2.patch
+    '511ca9c0599ceb1989f73d8ceea9199c041512d3a26ee8c5fd870ead2c10cb63',  # Qt5-5.13.1_fix-qmake-libdir.patch
+    '0b9defb7ce75314d85bebe07e143db7f7de316fec64c17cbd13f7eec5d2d1afa',  # Qt5-5.14.1_fix-OF-Gentoo.patch
+    '648e2a92d5ea139543db5d01a80aa33d4721e52bb59c785490b64497b0ede4ab',  # Qt5-5.14.2_fix-missing-stdint.patch
+    '6ace4735e35dee95d6b6c7eea3a7c46c264589a319d745310282ee724f632861',  # Qt5-5.14.2_fix-webengine-bison.patch
+    '290d91efe8fc7c6daedf01f4a055ff30123c987d41b1832a34920ef521579f5c',  # Qt5-5.14.2_fix-std-runtime_error.patch
+    '32c975b4ad12150f872554f1960c7108bc9c994e318988bab27e762a6c666fa2',  # Qt5-5.14.2_fix-include-math.patch
+]
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('pkg-config', '0.29.2'),
+    # deps for QtWebEngine
+    ('Bison', '3.7.1'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+    ('Ninja', '1.10.1'),
+    ('Python', '2.7.18'),
+    ('re2c', '2.0.3')
+]
+
+dependencies = [
+    ('double-conversion', '3.1.5'),
+    ('GLib', '2.66.1'),
+    ('PCRE2', '10.35'),
+    ('libpng', '1.6.37'),
+    # deps for QtWebEngine
+    ('X11', '20201008'),
+    ('fontconfig', '2.13.92'),
+    ('DBus', '1.13.18'),
+    ('libevent', '2.1.12'),
+    ('libGLU', '9.0.1'),
+    ('libjpeg-turbo', '2.0.5'),
+    ('NSS', '3.57'),
+    ('snappy', '1.1.8'),
+    ('JasPer', '2.0.24'),
+    ('bzip2', '1.0.8'),
+    # OS dependency should be preferred if the os version is more recent then this version,
+    # it is nice to have an up to date openssl for security reasons
+    # ('OpenSSL', '1.1.1h'),  # Qt5 > 5.15.0 requires OpenSSL 1.1.1
+]
+
+osdependencies = [OS_PKG_OPENSSL_DEV]
+
+# qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
+# qtwayland fails to build on (some) Centos 7 systems
+configopts = '-skip qtgamepad  -skip qtwayland'
+
+# make sure QtWebEngine component is being built & installed
+check_qtwebengine = True
+
+moduleclass = 'devel'

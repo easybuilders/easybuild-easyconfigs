@@ -1,0 +1,27 @@
+From cd3c41eb5a29ca475b7bafc42aa71e94363d46df Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Tue, 28 Jul 2020 19:51:13 +0200
+Subject: [PATCH] Fix environment for protobuf compilation in grpc
+
+Add use_default_shell_env = True to protoc invocation for grpc to mirror
+what the protobuf cc_proto_library & co are doing
+Fixes a failure in invocing protoc when it is build in a non-default
+environment (e.g. with a custom LD_LIBRARY_PATH)
+
+Fixes #11852, fixes #11855
+---
+ third_party/grpc/bazel/generate_cc.bzl | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/third_party/grpc/bazel/generate_cc.bzl b/third_party/grpc/bazel/generate_cc.bzl
+index 38a5b460f90..d5a4e27bc88 100644
+--- a/third_party/grpc/bazel/generate_cc.bzl
++++ b/third_party/grpc/bazel/generate_cc.bzl
+@@ -123,6 +123,7 @@ def generate_cc_impl(ctx):
+         outputs = out_files,
+         executable = ctx.executable.protoc,
+         arguments = arguments,
++        use_default_shell_env = True,
+     )
+ 
+     return struct(files = depset(out_files))

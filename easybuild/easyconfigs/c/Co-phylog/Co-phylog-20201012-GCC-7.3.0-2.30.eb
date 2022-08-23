@@ -1,0 +1,40 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'CmdCp'
+
+name = 'Co-phylog'
+version = '20201012'
+
+homepage = 'https://github.com/yhg926/co-phylog'
+description = """Co-phylog: an assembly-free phylogenomic approach for closely
+related organisms H Yi, L Jin Nucleic acids research 41 (7), e75-e75"""
+
+toolchain = {'name': 'GCC', 'version': '7.3.0-2.30'}
+
+source_urls = ['https://github.com/yhg926/co-phylog/archive/']
+local_git_commit = '6f29045'
+sources = ['%s.tar.gz' % (local_git_commit)]
+checksums = ['2cafdda678f9fea32d79460be9867e98846c68f9e6affd56920e7449306345a7']
+
+cmds_map = [
+    ('.*', ' && '.join([
+        "$CC fasta2co_v18.3.c $CFLAGS -Wall -o fasta2co",
+        "$CC fastq2co.c $CFLAGS -Wall -o fastq2co",
+        "$CC co2dist2.c $CFLAGS -Wall -o co2dist",
+        "$CC readco.c $CFLAGS -Wall -o readco",
+    ])),
+]
+
+files_to_copy = [(['fasta2co', 'fastq2co', 'co2dist', 'readco'], 'bin')]
+
+postinstallcmds = ["chmod 755 %(installdir)s/bin/*"]
+
+sanity_check_paths = {
+    'files': ['bin/fasta2co', 'bin/fastq2co', 'bin/co2dist', 'bin/readco'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

@@ -25,6 +25,14 @@ dependencies = [
     ('ncurses', '6.1'),
 ]
 
+# bam-readcount uses git to insert the version during configuration with CMake
+# but in the release archives there is no git information
+# local_commit is the git commit hash of the release
+local_commit = 'dea4199'
+local_versionfile = '%(builddir)s/%(name)s*/version/version.h.in'
+preconfigopts = "sed -i -e 's/@FULL_VERSION@/%%(version)s/' %s && " % local_versionfile
+preconfigopts += "sed -i -e 's/@COMMIT_HASH@/%s/' %s && " % (local_commit, local_versionfile)
+
 prebuildopts = "export SAMTOOLS_ROOT=${EBROOTSAMTOOLS}/include/bam && "
 
 separate_build_dir = True
@@ -33,5 +41,11 @@ sanity_check_paths = {
     'files': ["bin/bam-readcount"],
     'dirs': []
 }
+
+sanity_check_commands = [
+    # --help exists with exit code 1, so use grep to check for expected pattern in help output
+    "bam-readcount --help 2>&1 | grep 'Example: bam-readcount -f'",
+    "bam-readcount --version | grep 'version: %(version)s '",
+]
 
 moduleclass = 'bio'

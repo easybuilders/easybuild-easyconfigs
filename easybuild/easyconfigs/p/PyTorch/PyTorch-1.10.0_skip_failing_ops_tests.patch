@@ -1,0 +1,33 @@
+# Author: Caspar van Leeuwen, SURF
+# Test 'test_fn_grad_linalg_det_singular_cpu_complex128' was failing
+# It was noticed by the PyTorch devs that this is flaky and recommended to skip it for now
+# See https://github.com/pytorch/pytorch/issues/67767
+# Test 'test_variant_consistency_jit_contiguous_cpu_float32' was also failing
+# However, the test passes when run individually
+# See https://github.com/pytorch/pytorch/issues/67838
+diff -Nru pytorch.orig/torch/testing/_internal/common_methods_invocations.py pytorch/torch/testing/_internal/common_methods_invocations.py
+--- pytorch.orig/torch/testing/_internal/common_methods_invocations.py	2021-11-02 15:50:14.328727067 +0100
++++ pytorch/torch/testing/_internal/common_methods_invocations.py	2021-11-04 12:04:29.794149360 +0100
+@@ -6448,7 +6448,10 @@
+            supports_forward_ad=True,
+            autodiff_fusible_nodes=['aten::contiguous'],
+            assert_jit_shape_analysis=True,
+-           supports_out=False),
++           supports_out=False,
++           skips=(
++               DecorateInfo(unittest.skip("Skipped!"), 'TestJit', 'test_variant_consistency_jit', device_type='cpu'),
++           )),
+     OpInfo('symeig',
+            dtypes=floating_and_complex_types(),
+            check_batched_gradgrad=False,
+@@ -7060,6 +7063,10 @@
+                # Probable fix (open PR): https://github.com/pytorch/pytorch/pull/62570
+                DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_fn_grad', device_type='cuda',
+                             dtypes=(torch.complex128,)),
++               # It also breaks on CPU. We'll revisit this once `linalg.lu_solve` is a thing
++               # See https://github.com/pytorch/pytorch/pull/64387 and https://github.com/pytorch/pytorch/issues/67767
++               DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_fn_grad',
++                            dtypes=(torch.complex128,)),
+                DecorateInfo(unittest.skip("Skipped!"), 'TestCommon', 'test_dtypes'),
+                DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_fn_gradgrad'),
+                # This test fails because singular inputs cannot be reliably

@@ -1,0 +1,55 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+# 6.1.4 modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'MakeCp'
+
+name = 'EIGENSOFT'
+version = '7.2.1'
+
+homepage = 'http://www.hsph.harvard.edu/alkes-price/software/'
+description = """The EIGENSOFT package combines functionality from our population genetics methods (Patterson et al. 
+2006)  and our EIGENSTRAT stratification correction method (Price et al. 2006). The EIGENSTRAT method uses principal 
+components  analysis to explicitly model ancestry differences between cases and controls along continuous axes of 
+variation;  the resulting correction is specific to a candidate marker’s variation in frequency across ancestral 
+populations,  minimizing spurious associations while maximizing power to detect true associations. The EIGENSOFT 
+package has a built-in plotting script and supports multiple file formats and quantitative phenotypes."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = ['https://github.com/DReichLab/EIG/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_Fix_makefile_openblas.patch',
+    ('%(name)s-%(version)s_restore-ploteig.patch', 0),
+]
+checksums = [
+    'f09a46ec4b83c5062ec71eaca48a78f2373f1666fe23cbf17757150a679c8650',  # v7.2.1.tar.gz
+    'e49e3754f2326210114fe5a731a77c7ffd240c8a9134eb8e8e1517bfe06c71e1',  # EIGENSOFT-7.2.1_Fix_makefile_openblas.patch
+    '8a7a0273ae4d0d3ec0c9927facd41a1a43b8540725af3bd06e007cd86afaf9e0',  # EIGENSOFT-7.2.1_restore-ploteig.patch
+]
+
+dependencies = [
+    ('GSL', '2.5'),
+    ('Perl', '5.28.1'),
+]
+
+start_dir = 'src'
+
+# Run "make install" after make to copy all binaries to the bin dir
+buildopts = ' && make install'
+
+files_to_copy = ['bin', 'CONVERTF', 'EIGENSTRAT', 'POPGEN', 'README']
+
+fix_perl_shebang_for = ['bin/*.perl', 'bin/ploteig']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ["baseprog", "convertf", "eigenstrat", "eigenstratQTL", "ploteig"]],
+    'dirs': []
+}
+
+moduleclass = 'bio'

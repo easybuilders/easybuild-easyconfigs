@@ -1,0 +1,75 @@
+fix for "fatal: Failed to resolve 'HEAD' as a valid ref."
+see http://savannah.gnu.org/support/?107689
+--- gettext-0.19.8.1/gettext-tools/misc/autopoint.in.orig	2016-06-10 00:56:00.000000000 +0200
++++ gettext-0.19.8.1/gettext-tools/misc/autopoint.in	2019-09-21 08:47:08.277613496 +0200
+@@ -610,7 +610,12 @@
+     (git --version) >/dev/null 2>/dev/null || func_fatal_error "git program not found"
+     mkdir "$work_dir/archive"
+     gzip -d -c < "$gettext_datadir/archive.git.tar.gz" | (cd "$work_dir/archive" && tar xf -)
+-    (cd "$work_dir/archive" && git checkout -q "gettext-$ver") || {
++    (unset GIT_CONFIG
++     unset XDG_CONFIG_HOME
++     unset HOME
++     GIT_CONFIG_NOSYSTEM=1; export GIT_CONFIG_NOSYSTEM
++     cd "$work_dir/archive" && git checkout -q "gettext-$ver"
++    ) || {
+       rm -rf "$work_dir"
+       func_fatal_error "infrastructure files for version $ver not found; this is autopoint from GNU $package $version"
+     }
+--- gettext-0.19.8.1/gettext-tools/misc/convert-archive.in.orig	2016-03-20 08:37:53.000000000 +0100
++++ gettext-0.19.8.1/gettext-tools/misc/convert-archive.in	2019-09-21 08:47:08.277613496 +0200
+@@ -208,23 +208,27 @@
+ 
+     mkdir "$work_dir/master" || func_fatal_error "mkdir failed"
+     gzip -d -c < "$fromfile" | (cd "$work_dir/master" && tar xf -)
+-    cd "$work_dir"
+-    tags=`cd master && git tag`
+-    test -n "$tags" || func_fatal_error "no release tags found"
+-    for tag in $tags; do
+-      if test $tag != empty; then
+-        version=$tag
+-        (cd master && git checkout -q $tag) \
+-          || func_fatal_error "git checkout failed"
+-        rm -f master/.gitignore
+-        mv master/.git .git
+-        mkdir "$unpacked/$version" || func_fatal_error "mkdir failed"
+-        (cd master && tar cf - .) | (cd "$unpacked/$version" && tar xf -) \
+-          || func_fatal_error "file copy failed"
+-        mv .git master/.git
+-      fi
+-    done
+-    cd ..
++    (unset GIT_CONFIG
++     unset XDG_CONFIG_HOME
++     unset HOME
++     GIT_CONFIG_NOSYSTEM=1; export GIT_CONFIG_NOSYSTEM
++     cd "$work_dir"
++     tags=`cd master && git tag`
++     test -n "$tags" || func_fatal_error "no release tags found"
++     for tag in $tags; do
++       if test $tag != empty; then
++         version=$tag
++         (cd master && git checkout -q $tag) \
++           || func_fatal_error "git checkout failed"
++         rm -f master/.gitignore
++         mv master/.git .git
++         mkdir "$unpacked/$version" || func_fatal_error "mkdir failed"
++         (cd master && tar cf - .) | (cd "$unpacked/$version" && tar xf -) \
++           || func_fatal_error "file copy failed"
++         mv .git master/.git
++       fi
++     done
++    )
+     rm -rf "$work_dir"
+     ;;
+ esac
+@@ -320,6 +324,9 @@
+     git_dir=`pwd`/tmpgit$$
+     mkdir "$git_dir" || func_fatal_error "mkdir failed"
+     unset GIT_CONFIG
++    unset XDG_CONFIG_HOME
++    unset HOME
++    GIT_CONFIG_NOSYSTEM=1; export GIT_CONFIG_NOSYSTEM
+     (cd "$git_dir" && {
+       git init -q
+       git config user.name 'GNU Gettext Build'

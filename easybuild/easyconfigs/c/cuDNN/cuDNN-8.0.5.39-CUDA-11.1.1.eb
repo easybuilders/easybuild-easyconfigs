@@ -1,0 +1,39 @@
+##
+# Author:    Stephane Thiell <sthiell@stanford.edu>
+##
+
+name = 'cuDNN'
+version = '8.0.5.39'
+local_cuda_version = '11.1.1'
+local_cuda_version_majmin = '.'.join(local_cuda_version.split('.')[:2])
+versionsuffix = '-CUDA-%s' % local_cuda_version
+
+homepage = 'https://developer.nvidia.com/cudnn'
+description = """The NVIDIA CUDA Deep Neural Network library (cuDNN) is
+a GPU-accelerated library of primitives for deep neural networks."""
+
+toolchain = SYSTEM
+
+# By downloading, you accept the cuDNN Software License Agreement
+# (https://docs.nvidia.com/deeplearning/sdk/cudnn-sla/index.html)
+# accept_eula = True
+source_urls = ['https://developer.download.nvidia.com/compute/redist/cudnn/v%s/' % '.'.join(version.split('.')[:3])]
+local_tarball_tmpl = '-'.join(['%%(namelower)s', local_cuda_version_majmin, 'linux', '%s', 'v%%(version)s.tgz'])
+sources = [local_tarball_tmpl % '%(cudnnarch)s']
+checksums = [
+    {
+        local_tarball_tmpl % 'x64':
+            '1d046bfa79399dabcc6f6cb1507918754439442ea0ca9e0fbecdd446f9b00cce',
+        local_tarball_tmpl % 'aarch64sbsa':
+            '0c3542c51b42131247cd9f839d0ebefe4e02bb46d1716be1682cb2919278085a',
+    }
+]
+
+dependencies = [('CUDAcore', local_cuda_version)]
+
+sanity_check_paths = {
+    'files': ['include/cudnn.h', 'lib64/libcudnn_static.a'],
+    'dirs': ['include', 'lib64'],
+}
+
+moduleclass = 'numlib'

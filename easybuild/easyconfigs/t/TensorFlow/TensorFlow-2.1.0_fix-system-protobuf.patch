@@ -1,0 +1,43 @@
+From 9cee90ac957f2575da2415242c5c127c0dd61430 Mon Sep 17 00:00:00 2001
+From: Jason Zaman <jason@perfinion.com>
+Date: Wed, 8 Apr 2020 03:15:14 +0800
+Subject: [PATCH] systemlibs: protobuf: update for
+ --incompatible_no_support_tools_in_action_inputs
+
+Just the minimal changes needed to work with the change instead of
+pulling the entire updated file which would be a much larger change
+
+Signed-off-by: Jason Zaman <jason@perfinion.com>
+---
+ third_party/systemlibs/protobuf.bzl | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/third_party/systemlibs/protobuf.bzl b/third_party/systemlibs/protobuf.bzl
+index bb807e904a3fc..367ac286395cb 100644
+--- a/third_party/systemlibs/protobuf.bzl
++++ b/third_party/systemlibs/protobuf.bzl
+@@ -93,6 +93,7 @@ def _proto_gen_impl(ctx):
+         args += ["--python_out=" + gen_dir]
+ 
+     inputs = srcs + deps
++    tools = [ctx.executable.protoc]
+     if ctx.executable.plugin:
+         plugin = ctx.executable.plugin
+         lang = ctx.attr.plugin_language
+@@ -106,7 +107,7 @@ def _proto_gen_impl(ctx):
+             outdir = ",".join(ctx.attr.plugin_options) + ":" + outdir
+         args += ["--plugin=protoc-gen-%s=%s" % (lang, plugin.path)]
+         args += ["--%s_out=%s" % (lang, outdir)]
+-        inputs += [plugin]
++        tools.append(plugin)
+ 
+     if args:
+         ctx.actions.run(
+@@ -115,6 +116,7 @@ def _proto_gen_impl(ctx):
+             arguments = args + import_flags + [s.path for s in srcs],
+             executable = ctx.executable.protoc,
+             mnemonic = "ProtoCompile",
++            tools = tools,
+             use_default_shell_env = True,
+         )
+ 

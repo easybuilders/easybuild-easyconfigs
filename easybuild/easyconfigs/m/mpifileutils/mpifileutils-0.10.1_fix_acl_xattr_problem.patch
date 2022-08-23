@@ -1,0 +1,40 @@
+Copy of mpifileutils PR #401
+
+commit 19b5e6b5d417a5b42c24f8a914fb72e297baecfb
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Sat Oct 3 09:17:47 2020 +0200
+
+    Fix problems with copying xattrs that contain ACLs causing write-protected dirs
+    Fixes issue https://github.com/hpc/mpifileutils/issues/400
+    
+    Signed-off-by: Åke Sandgren <ake.sandgren@hpc2n.umu.se>
+
+diff --git a/src/common/mfu_flist_copy.c b/src/common/mfu_flist_copy.c
+index 3d9109c..187be5d 100644
+--- a/src/common/mfu_flist_copy.c
++++ b/src/common/mfu_flist_copy.c
+@@ -324,14 +324,16 @@ static int mfu_copy_xattrs(
+ 
+             /* set attribute on destination object */
+             if(got_val) {
+-                errno = 0;
+-                int setrc = lsetxattr(dest_path, name, val, (size_t) val_size, 0);
+-                if(setrc != 0) {
+-                    /* failed to set attribute */
+-                    MFU_LOG(MFU_LOG_ERR, "Failed to set value for name=%s on `%s' llistxattr() (errno=%d %s)",
+-                        name, dest_path, errno, strerror(errno)
+-                       );
+-                    rc = -1;
++                if (strncmp(name, "system.posix_acl", 16)) {
++                    errno = 0;
++                    int setrc = lsetxattr(dest_path, name, val, (size_t) val_size, 0);
++                    if(setrc != 0) {
++                        /* failed to set attribute */
++                        MFU_LOG(MFU_LOG_ERR, "Failed to set value for name=%s on `%s' llistxattr() (errno=%d %s)",
++                            name, dest_path, errno, strerror(errno)
++                           );
++                        rc = -1;
++                    }
+                 }
+             }
+ 
