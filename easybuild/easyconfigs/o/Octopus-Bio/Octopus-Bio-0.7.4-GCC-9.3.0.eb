@@ -1,0 +1,44 @@
+##
+# @author :: Ali Kerrache, Prairies DRI/Digital Research Alliance of Canada, University of Manitoba.
+# @date :: Aug 17, 2022
+##
+
+easyblock = 'CMakeMake'
+
+name = 'Octopus-Bio'
+version = '0.7.4'
+
+homepage = 'https://luntergroup.github.io/octopus/'
+description = """Octopus is a mapping-based variant caller that implements several calling models within a unified haplotype-aware framework. Octopus takes inspiration from particle filtering by constructing a tree of haplotypes and dynamically pruning and extending the tree based on haplotype posterior probabilities in a sequential manner. This allows octopus to implicitly consider all possible haplotypes at a given loci in reasonable time."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['https://github.com/luntergroup/octopus/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['9a67d00c36ab171528a75d430345fa51cd65a80ba3c1398be3ab25b1ff5be252']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('Boost', '1.72.0'),
+    ('GMP', '6.2.1'),
+    ('HTSlib', '1.14'),
+]
+
+separate_build_dir = True
+
+configopts  = '-DHTSlib_INCLUDE_DIR=$EBROOTHTSLIB/include '
+configopts += '-DGMP_INCLUDES=$EBROOTGMP/include '
+configopts += '-DGMP_VERSION="6.2.1" '
+
+postinstallcmds = ['mkdir -p %(installdir)s/bin && mv %(installdir)s/octopus %(installdir)s/bin/']
+
+sanity_check_paths = {
+    'files': ['bin/octopus'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

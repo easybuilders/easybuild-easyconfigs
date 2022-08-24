@@ -1,0 +1,39 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = "5.56-89.0"
+versionsuffix = '-data'
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """This module containes only InterProScan data part. 
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+
+toolchain = SYSTEM
+source_urls = [
+    'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/',
+]
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+checksums = ['1894ad56276725225a0318a1bea53bded855506e9ee003d7cabce8be93c7be9c']
+
+dependencies = [
+    ('Python', '3.7'),
+]
+
+
+postinstallcmds = [
+    'cd %(installdir)s && ls | sed -e "/data/d" -e "/initial_setup.py/d" -e "/interproscan.properties/d" '
+    '-e "/bin/d" | xargs rm -rf &&  for i in h3f h3i h3m h3p; do find . -name "*.${i}" -exec rm {} + ; done &&' \
+    'python %(installdir)s/initial_setup.py && mv data/* %(installdir)s && '
+    'rm -rf %(installdir)s/data initial_setup.py bin interproscan.properties && chmod -R a+r %(installdir)s/*'
+]
+
+sanity_check_paths = {
+    'files': ['hamap/2021_04/hamap.hmm.lib.h3p'],
+    'dirs': ['cdd', 'gene3d', 'hamap', 'panther', 'pfam', 'phobius', 'pirsf', 
+             'prints', 'prosite', 'sfld', 'smart', 'superfamily', 'tigrfam', 
+             'tmhmm']
+}
+
+moduleclass = 'bio'

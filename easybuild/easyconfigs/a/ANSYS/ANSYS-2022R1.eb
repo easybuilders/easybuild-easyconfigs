@@ -18,15 +18,15 @@ checksums = ['2d1666974da9b56fdde6e810c510e61253ae44298bf4c206ef030ef63a172cc3']
 postinstallcmds = [
   # Directly replace files (create patches and apply later)
   "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/2022R1;\
-  mv %(installdir)s/v221/aisol/.workbench{,-orig};\
-  cp $a/.workbench %(installdir)s/v221/aisol/.workbench;\
-  chmod 755 %(installdir)s/v221/aisol/.workbench;\
-  mv %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime{,-orig};\
-  cp $a/setmwruntime %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime;\
-  chmod 755 %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime;\
-  mv %(installdir)s/v221/ansys/bin/anssh.ini{,-orig};\
-  cp $a/anssh.ini %(installdir)s/v221/ansys/bin/anssh.ini;\
-  chmod -v 755 %(installdir)s/v221/ansys/bin/anssh.ini;",
+   mv %(installdir)s/v221/aisol/.workbench{,-orig};\
+   cp $a/.workbench %(installdir)s/v221/aisol/.workbench;\
+   chmod 755 %(installdir)s/v221/aisol/.workbench;\
+   mv %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime{,-orig};\
+   cp $a/setmwruntime %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime;\
+   chmod 755 %(installdir)s/v221/commonfiles/MainWin/linx64/mw/setmwruntime;\
+   mv %(installdir)s/v221/ansys/bin/anssh.ini{,-orig};\
+   cp $a/anssh.ini %(installdir)s/v221/ansys/bin/anssh.ini;\
+   chmod -v 755 %(installdir)s/v221/ansys/bin/anssh.ini;",
   # Set same perms on all directories
   "find %(installdir)s -type d -exec chmod 755 {} \;",
   # Set same perms on all shared libraries to avoid warning in log file
@@ -35,30 +35,33 @@ postinstallcmds = [
   "find %(installdir)s \( -type f -o -type l \) -name 'libstdc++.so*' -exec mv {} {}.bak \;",
   "find %(installdir)s \( -type f -o -type l \) -name 'libgcc_s.so*' -exec mv {} {}.bak \;",
   "find %(installdir)s \( -type f -o -type l \) -name 'libfreetype*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so.3*bak' -print0 | while IFS= \
+   read -r -d $'\\0' file; do echo \"Removing bak from $file\"; mv \"$file\" \"${file%.bak}\"; done;",
   # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
   "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
-    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+   sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
   # Run setrpaths.sh in all directories
   "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
   # Run setrpaths.sh for any_interpreter
   "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
-    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+   /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
   # Create domainname -> /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname
   "cd %(installdir)s/v221/Tools/mono/Linux64/bin;\
-    ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
+   ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
   # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh'
   "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -print0 | xargs -0 \
-    grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
-    sed -i 's|\/bin\/sh|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
+   grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   sed -i 's|\/bin\/sh|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
   # Replace '/bin/bash' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash'
   "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -print0 | xargs -0 \
-    grep -riIlZ '/bin/bash' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
-    sed -i 's|\/bin\/bash|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/bash|g' \"$file\"; done;",
+   grep -riIlZ '/bin/bash' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   sed -i 's|\/bin\/bash|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/bash|g' \"$file\"; done;",
   # Remove /sbin/ from both /sbin/lspci entries in libApipWrapper.so
   "find %(installdir)s -type f ! -size 0 -name 'libApipWrapper.so' -print0 | xargs -0 \
-    grep -rilZ '/sbin/lspci' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
-    perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; \
-    perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; done;",
+   grep -rilZ '/sbin/lspci' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; \
+   perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; done;",
 ]
 
 modextravars = {
