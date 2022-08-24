@@ -1,0 +1,32 @@
+easyblock = 'PythonPackage'
+
+name = 'MATLAB-Engine'
+version = '2021a'
+
+homepage = 'https://www.mathworks.com/help/matlab/matlab-engine-for-python.html'
+description = """The MATLAB Engine API for Python provides a package for Python
+ to call MATLAB as a computational engine."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+dependencies = [
+    ('MATLAB', version, '', True),
+    ('Python', '3.9.6'),
+]
+
+use_pip = False
+download_dep_fail = True
+
+# Since this setup.py does not provide a separate --build-base for the install
+# step, both build and install must be performed in a single command.
+prebuildopts = "cd $EBROOTMATLAB/extern/engines/python && "
+buildopts = "--build-base=%(builddir)s install --prefix=%(installdir)s"
+
+skipsteps = ['install']
+
+# Test that connection with MATLAB can be established successfully
+sanity_check_commands = ["python -c 'import matlab.engine; eng = matlab.engine.start_matlab(); eng.quit()'"]
+
+options = {'modulename': 'matlab.engine'}
+
+moduleclass = 'math'
