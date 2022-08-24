@@ -1,0 +1,95 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = "Binary"
+
+name = "BigDFT"
+version = "1.9.1"
+
+homepage = "https://gitlab.com/l_sim/bigdft-suite"
+description = """
+BigDFT: electronic structure calculation based on Daubechies wavelets.
+bigdft-suite is a set of different packages to run bigdft.
+"""
+
+toolchain = {"name": "foss", "version": "2021b"}
+toolchainopts = {
+    "usempi": True,
+    "extra_fflags": "-fallow-argument-mismatch",
+    "extra_fcflags": "-fallow-argument-mismatch",
+    "extra_f90flags": "-fallow-argument-mismatch",
+}
+
+source_urls = ["https://gitlab.com/l_sim/bigdft-suite/-/archive/%(version)s/"]
+sources = ["bigdft-suite-%(version)s.tar.gz"]
+patches = ["bigdft_suite_index_bug.patch"]
+
+builddependencies = [
+    ("CMake", "3.21.1"),
+]
+
+dependencies = [
+    ("Autoconf", "2.71"),
+    ("Python", "3.9.6"),
+    ("OpenCV", "4.5.5", "-contrib"),
+    ("XZ", "5.2.5"),
+]
+
+extract_sources = True
+
+local_configopts = " ".join(
+    [
+        'CC=\\"$MPICC\\" FC=\\"$MPIFC\\" --enable-mpi',
+        'FCFLAGS=\\"$CPPFLAGS $FCFLAGS -std=legacy\\"',
+        'FFLAGS=\\"$CPPFLAGS $FFLAGS -std=legacy\\"',
+        'F90FLAGS=\\"$CPPFLAGS $F90FLAGS -std=legacy\\"',
+        '--with-ext-linalg=\\"-L$SCALAPACK_LIB_DIR $LIBSCALAPACK -L$LAPACK_LIB_DIR $LIBBLAS\\"',
+        '--with-yaml-path=\\"$EBROOTLIBYAML\\"',
+    ]
+)
+
+install_cmd = " && ".join(
+    [
+        "mkdir bigdft_builddir",
+        "cd bigdft_builddir",
+        "python3 ../Installer.py build bigdft -y -v -c %s" % local_configopts,
+        "cp -r install/* %(installdir)s",
+    ]
+)
+
+modextrapaths = {"PYTHONPATH": ["lib/python%(pyshortver)s/site-packages"]}
+
+sanity_check_paths = {
+    "files": [
+        "include/futile.mod",
+        "include/futile.h",
+        "bin/bigdft",
+        "bin/bigdftvars.sh",
+        "lib/python3.9/site-packages/BigDFT/Systems.py",
+        "lib64/libbigdft-1.a",
+    ],
+    "dirs": [],
+}
+
+local_test_script = """
+from BigDFT.Systems import System
+from BigDFT.Fragments import Fragment
+from BigDFT.IO import XYZReader
+N2 = System()
+with XYZReader("N2") as ifile:
+    N2["N:0"] = Fragment([next(ifile)])
+    N2["N:1"] = Fragment([next(ifile)])
+print(N2.get_posinp())
+"""
+
+local_sanity_cmd = " && ".join(
+    [
+        "tmpdir=$(mktemp -d)",
+        "echo '" + local_test_script + "' > " + "$tmpdir/bigdft_test.py",
+        "python $tmpdir/bigdft_test.py",
+        "rm -r $tmpdir",
+    ]
+)
+
+sanity_check_commands = [(local_sanity_cmd)]
+
+moduleclass = "phys"
