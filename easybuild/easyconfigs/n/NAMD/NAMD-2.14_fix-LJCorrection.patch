@@ -1,0 +1,24 @@
+# Fix LJ correction for alchemical simulation
+# Patch is taken from https://www.ks.uiuc.edu/Research/namd/2.14/bugfixes.html
+# Author: maxim-masterov (SURF)
+diff -Nru NAMD_2.14_Source.orig/src/Molecule.C NAMD_2.14_Source/src/Molecule.C
+--- NAMD_2.14_Source.orig/src/Molecule.C	2022-08-25 12:50:46.282906000 +0200
++++ NAMD_2.14_Source/src/Molecule.C	2022-08-25 12:54:31.616781099 +0200
+@@ -10159,7 +10159,7 @@
+     numLJsites1 = numLJsites2 = numLJsites;
+     int alch_counter = 0;
+     for (int i=0; i < numAtoms; ++i) {
+-      int alchFlagi;
++      int alchFlagi = 0;
+       if (get_fep_type(i) == 2 || get_fep_type(i) == 4) alchFlagi = -1;
+       if (get_fep_type(i) == 1 || get_fep_type(i) == 3) alchFlagi = 1;
+       if (params->get_vdw_pair_params(atoms[i].vdw_type, atoms[i].vdw_type,
+@@ -10182,7 +10182,7 @@
+         else if (alchFlagi == -1) numLJsites1--;
+       }
+       for (int j=i+1; j < numAtoms; ++j) {
+-        int alchFlagj;
++        int alchFlagj = 0;
+         if (get_fep_type(j) == 2 || get_fep_type(j) == 4) alchFlagj = -1;
+         if (get_fep_type(j) == 1 || get_fep_type(j) == 3) alchFlagj = 1;
+         int alchFlagSum = alchFlagi + alchFlagj;
