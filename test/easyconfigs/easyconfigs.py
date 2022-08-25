@@ -42,6 +42,7 @@ from easybuild.base import fancylogger
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig.constants import EASYCONFIG_CONSTANTS
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
@@ -1429,7 +1430,13 @@ def template_easyconfig_test(self, spec):
                 # 4th value is toolchain spec
                 if len(dumped_dep) >= 4:
                     if len(orig_dep) >= 4:
-                        self.assertEqual(dumped_dep[3], orig_dep[3])
+                        # if True was used to indicate that dependency should use system toolchain,
+                        # then we need to compare the value for the dumped easyconfig more carefully;
+                        # see also https://github.com/easybuilders/easybuild-framework/pull/4069
+                        if orig_dep[3] == True:
+                            self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
+                        else:
+                            self.assertEqual(dumped_dep[3], orig_dep[3])
                     else:
                         # if a subtoolchain is specifed (only) in the dumped easyconfig,
                         # it should *not* be the same as the parent toolchain
