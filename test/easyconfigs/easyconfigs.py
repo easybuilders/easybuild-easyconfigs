@@ -1433,7 +1433,7 @@ def template_easyconfig_test(self, spec):
                         # if True was used to indicate that dependency should use system toolchain,
                         # then we need to compare the value for the dumped easyconfig more carefully;
                         # see also https://github.com/easybuilders/easybuild-framework/pull/4069
-                        if orig_dep[3] == True:
+                        if orig_dep[3] is True:
                             self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
                         else:
                             self.assertEqual(dumped_dep[3], orig_dep[3])
