@@ -1,0 +1,38 @@
+easyblock = 'CMakeMake'
+
+name = 'ROCm-CompilerSupport'
+version = '4.5.0'
+
+homepage = 'https://github.com/RadeonOpenCompute/ROCm-CompilerSupport'
+description = """The compiler support repository provides various Lightning
+Compiler related services"""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ["https://github.com/RadeonOpenCompute/ROCm-CompilerSupport/archive/refs/tags/"]
+sources = ["rocm-%(version)s.tar.gz"]
+checksums = ['03c5880e0922fcff31306f7da2eb9d3a3709d9b5b75b3524dcfae85f4b181678']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('CMake', '3.21.1'),
+]
+dependencies = [
+    ('Clang-AOMP', '%(version)s'),
+]
+
+srcdir = "lib/comgr"
+
+configopts = '-DCMAKE_C_COMPILER=$EBROOTCLANGMINAOMP/bin/clang'
+configopts += ' -DCMAKE_CXX_COMPILER=$EBROOTCLANGMINAOMP/bin/clang++'
+configopts += ' -DLLVM_INSTALL_PREFIX=$EBROOTCLANGMINAOMP'
+configopts += ' -DLLVM_DIR=$EBROOTCLANGMINAOMP'
+configopts += " -DROCM_DIR=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['include/amd_comgr.h', 'lib64/libamd_comgr.%s' % SHLIB_EXT],
+    'dirs': ['lib/cmake', 'share/amd_comgr'],
+}
+
+moduleclass = 'tools'

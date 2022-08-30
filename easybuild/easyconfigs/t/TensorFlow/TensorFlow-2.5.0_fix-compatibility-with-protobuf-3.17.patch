@@ -1,0 +1,54 @@
+From f87e2c2fb623e862fe2ae1616ec4164fa48d1446 Mon Sep 17 00:00:00 2001
+From: Jason Zaman <jason@perfinion.com>
+Date: Sat, 31 Jul 2021 10:30:32 -0700
+Subject: [PATCH 07/10] example_parsing_ops: compatibility with protobuf-3.16
+
+---
+ tensorflow/core/kernels/example_parsing_ops.cc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tensorflow/core/kernels/example_parsing_ops.cc b/tensorflow/core/kernels/example_parsing_ops.cc
+index d0be01578d8..57ed19aeaae 100644
+--- a/tensorflow/core/kernels/example_parsing_ops.cc
++++ b/tensorflow/core/kernels/example_parsing_ops.cc
+@@ -1218,7 +1218,7 @@ class DecodeJSONExampleOp : public OpKernel {
+           resolver_.get(), "type.googleapis.com/tensorflow.Example", &in, &out);
+       OP_REQUIRES(ctx, status.ok(),
+                   errors::InvalidArgument("Error while parsing JSON: ",
+-                                          string(status.error_message())));
++                                          string(status.message())));
+     }
+   }
+ 
+-- 
+2.32.0
+
+From 2ea8d31a2a75de75f838b4650e1531c346dfa6fe Mon Sep 17 00:00:00 2001
+From: sclarkson <sc@lambdal.com>
+Date: Thu, 12 Aug 2021 03:23:28 -0700
+Subject: [PATCH 08/10] Fix protobuf errors when using system protobuf
+
+When tensorflow and python protobuf use the same instance of
+libprotobuf, pywrap_tensorflow must be imported before anything
+else that would import protobuf definitions.
+---
+ tensorflow/python/__init__.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tensorflow/python/__init__.py b/tensorflow/python/__init__.py
+index 6efba380ca0..38d1eb55027 100644
+--- a/tensorflow/python/__init__.py
++++ b/tensorflow/python/__init__.py
+@@ -37,8 +37,8 @@ import traceback
+ # go/tf-wildcard-import
+ # pylint: disable=wildcard-import,g-bad-import-order,g-import-not-at-top
+ 
+-from tensorflow.python.eager import context
+ from tensorflow.python import pywrap_tensorflow as _pywrap_tensorflow
++from tensorflow.python.eager import context
+ 
+ # pylint: enable=wildcard-import
+ 
+-- 
+2.32.0
+

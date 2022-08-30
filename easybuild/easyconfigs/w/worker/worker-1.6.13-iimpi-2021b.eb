@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'worker'
+version = '1.6.13'
+
+homepage = 'https://github.com/gjbex/worker'
+description = """The Worker framework has been developed to help deal with parameter exploration experiments
+ that would otherwise result in many jobs, forcing the user resort to scripting to retain her sanity;
+ see also https://vscentrum.be/neutral/documentation/cluster-doc/running-jobs/worker-framework."""
+
+local_tcname = 'iimpi'
+local_tcver = '2021b'
+toolchain = {'name': local_tcname, 'version': local_tcver}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/gjbex/worker/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fixintel.patch']
+checksums = [
+    'b42b8566d82048c706427913c8f7edcd9f5892d61f190ce1f49e428113b7e1bc',  # 1.6.13.tar.gz
+    'c28bbc837ec5d6fb3390df668b06e0b5169ca31dede907336a2b0637c4a81504',  # worker-1.6.13_fixintel.patch
+]
+
+dependencies = [
+    ('Perl', '5.34.0')
+]
+
+# adjust worker configuration file
+# note: tweak this to your local setup
+postinstallcmds = [
+    'sed -i "s/ cores_per_node = .*/ cores_per_node = 16/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s@ qsub = .*@ qsub = `which qsub`@g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ email = .*/ email = hpc-support@example.com/g" %(installdir)s/conf/worker.conf',
+    'sed -i "s/ unload_modules = .*/ unload_modules = %s/g" %%(installdir)s/conf/worker.conf' % (local_tcname),
+    'sed -i "s@ mpi_module = .*@ mpi_module = %s/%s@g" %%(installdir)s/conf/worker.conf' % (local_tcname, local_tcver),
+    'sed -i "s@ module_path = .*@ module_path = %(installdir)s/../../../modules/all@g" %(installdir)s/conf/worker.conf',
+    "echo PERL=\\'`which perl`\\' > %(installdir)s/conf/worker_perl.sh",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['wcat', 'wconvert', 'wload', 'worker', 'wreduce', 'wresume', 'wsub',
+                                     'wsummarize']],
+    'dirs': ['lib/perl', 'lib/tt'],
+}
+
+sanity_check_commands = ["wsub -help"]
+
+moduleclass = 'tools'
