@@ -1,0 +1,56 @@
+name = 'WRF'
+version = '4.4'
+buildtype = "dmpar"
+versionsuffix = '-%s' % buildtype
+
+homepage = 'https://www.wrf-model.org'
+description = """The Weather Research and Forecasting (WRF) Model is a next-generation mesoscale
+ numerical weather prediction system designed to serve both operational forecasting and atmospheric
+ research needs."""
+
+toolchain = {'name': 'gofb', 'version': '2020a'}
+toolchainopts = {'opt': False}  # don't use agressive optimization, stick to -O2
+
+source_urls = ['https://github.com/wrf-model/WRF/releases/download/v%(version)s/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'WRF-4.4_netCDF-Fortran_separate_path.patch',
+]
+checksums = [
+    '6b649e5ac5532f74d74ab913950b632777ce349d26ebfb7f0042b80f9f4ee83e',  # v4.4.tar.gz
+    '8521b11b82ad717a01cef31a06b57536d955ff3eb7e422ab2b9e64a56bbc7335',  # WRF-4.4_netCDF-Fortran_separate_path.patch
+]
+
+# csh is used by WRF install scripts
+builddependencies = [
+    ('Autotools', '20210128'),
+    ('tcsh', '6.22.04'),
+    ('time', '1.9'),
+    ('Perl', '5.32.1'),
+]
+
+dependencies = [
+    ('JasPer', '2.0.28'),
+    ('netCDF', '4.8.0'),
+    ('netCDF-Fortran', '4.5.3'),
+]
+
+sanity_check_paths = {
+    'files' : [
+        "WRFV4.4/main/wrf.exe",
+        "WRFV4.4/main/ideal.exe",
+        "WRFV4.4/main/real.exe",
+        "WRFV4.4/main/ndown.exe",
+        "WRFV4.4/main/tc.exe",
+    ],
+    'dirs' : [
+        "WRFV4.4/main",
+        "WRFV4.4/run",
+    ],
+}
+
+# limit parallel build to 20
+maxparallel = 20
+
+moduleclass = 'geo'
+
