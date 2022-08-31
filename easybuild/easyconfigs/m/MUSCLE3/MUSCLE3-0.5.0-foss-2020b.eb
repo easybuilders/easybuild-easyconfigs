@@ -1,6 +1,6 @@
-easyblock = 'PythonPackage'
+easyblock = 'ConfigureMakePythonPackage'
 
-name = 'MUSCLE3-Python'
+name = 'MUSCLE3'
 version = '0.5.0'
 
 homepage = 'https://muscle3.readthedocs.io/en/latest/index.html'
@@ -13,25 +13,31 @@ description = """MUSCLE3 allows connecting multiple simulation models
 
 toolchain = {'name': 'foss', 'version': '2020b'}
 
-source_urls = ['https://github.com/multiscale/muscle3/archive/refs/tags/']
+source_urls = ['https://github.com/multiscale/%(namelower)s/archive/refs/tags/']
 sources = ['%(version)s.tar.gz']
 checksums = ['abdbad412929d16a303b7e2909d2f1267857bc33514339c1c6f0b89dff2f5b4f']
 
 builddependencies = [
-    ('Cython', '3.0a5'),
-    ('hypothesis', '6.46.7'),
+    ('CMake', '3.18.4'),
 ]
 
 dependencies = [
+    ('msgpack-c', '3.3.0'),
+    ('OpenSSL', '1.1', '', True),
+    ('protobuf', '3.14.0'),
+    ('zlib', '1.2.11'),
+    ('googletest', '1.10.0'),
     ('Python', '3.8.6'),
     ('SciPy-bundle', '2020.11'),
     ('QCG-PilotJob', '0.13.1'),
 ]
 
-options = {'modulename': 'muscle3'}
+skipsteps = ['configure']
 
-use_pip = True
-download_dep_fail = True
+prebuildopts = 'protobuf_ROOT=$EBROOTPROTOBUF '
+prebuildopts += 'grpc_ROOT=$EBROOTGRPC '
+
+preinstallopts = 'PREFIX=%(installdir)s '
 
 exts_defaultclass = 'PythonPackage'
 
@@ -43,20 +49,6 @@ exts_default_options = {
 }
 
 exts_list = [
-    ('numpy', '1.22.3', {
-        'patches': [
-            'numpy-1.20.3_disable_fortran_callback_test.patch',
-            'numpy-1.22.3_disable-broken-override-test.patch',
-        ],
-        'sources': [SOURCE_ZIP],
-        'checksums': [
-            'dbc7601a3b7472d559dc7b933b18b4b66f9aa7452c120e87dfb33d02008c8a18',  # numpy-1.22.3.zip
-            # numpy-1.20.3_disable_fortran_callback_test.patch
-            '44975a944544fd0e771b7e63c32590d257a3713070f8f7fdf60105dc516f1d75',
-            # numpy-1.22.3_disable-broken-override-test.patch
-            '9c589bb073b28b25ff45eb3c63c57966aa508dd8b318d0b885b6295271e4983c',
-        ],
-    }),
     ('typing_extensions', '3.10.0.2', {
         'checksums': ['49f75d16ff11f1cd258e1b988ccff82a3ca5570217d7ad8c5f48205dd99a677e'],
     }),
@@ -82,6 +74,43 @@ exts_list = [
     ('netifaces', '0.11.0', {
         'checksums': ['043a79146eb2907edf439899f262b3dfe41717d34124298ed281139a8b93ca32'],
     }),
+    ('muscle3', version, {
+        'patches': ['%(namelower)s-%(version)s_numpy.patch'],
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/multiscale/muscle3/archive/refs/tags/'],
+        'checksums': [
+            'abdbad412929d16a303b7e2909d2f1267857bc33514339c1c6f0b89dff2f5b4f',  # 0.5.0.tar.gz
+            '224986b45bb1ca22cf6c1594c7f047daa0fd9c7537de3c542b6fdb7e19be047e',  # muscle3-0.5.0_numpy.patch
+        ],
+    }),
 ]
+
+modextrapaths = {
+    'MUSCLE3_HOME': '',
+}
+
+sanity_check_paths = {
+    'files': ['include/libmuscle.f90',
+              'include/libmuscle.mod',
+              'include/libmuscle/libmuscle.hpp',
+              'include/ymmsl/ymmsl.hpp',
+              'lib/libmuscle.a',
+              'lib/libmuscle.%s' % SHLIB_EXT,
+              'lib/libmuscle_fortran.a',
+              'lib/libmuscle_fortran.%s' % SHLIB_EXT,
+              'lib/libymmsl.a',
+              'lib/libymmsl.%s' % SHLIB_EXT,
+              'lib/libymmsl_fortran.a',
+              'lib/libymmsl_fortran.%s' % SHLIB_EXT,
+              'lib/pkgconfig/libmuscle.pc',
+              'lib/pkgconfig/libmuscle_fortran.pc',
+              'lib/pkgconfig/ymmsl.pc',
+              'lib/pkgconfig/ymmsl_fortran.pc'],
+    'dirs':  ['bin',
+              'include/libmuscle/mcp',
+              'include/ymmsl',
+              'lib/pkgconfig',
+              'lib64']
+}
 
 moduleclass = 'tools'
