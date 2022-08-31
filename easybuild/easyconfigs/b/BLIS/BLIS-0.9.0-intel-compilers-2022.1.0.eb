@@ -12,19 +12,23 @@ toolchainopts = {'oneapi': True}
 
 source_urls = ['https://github.com/flame/blis/archive/']
 sources = ['%(version)s.tar.gz']
-checksums = ['1135f664be7355427b91025075562805cdc6cc730d3173f83533b2c5dcc2f308']
+patches = [
+    '%(name)s-%(version)s_blastest-enable-complex-return-intel.patch',
+    '%(name)s-%(version)s_ifx-complex-return-intel.patch',
+]
+checksums = [
+    '1135f664be7355427b91025075562805cdc6cc730d3173f83533b2c5dcc2f308',  # 0.9.0.tar.gz
+    # BLIS-0.9.0_blastest-enable-complex-return-intel.patch
+    '0f1966b340d1f24cf02070f00f72f232b4cbfcd242ee9ce8c5f09f7220397cb4',
+    '097a2647b5c66386155cf6a33a2a617b876bd0f9096a2912359eb0897a29d2d5',  # BLIS-0.9.0_ifx-complex-return-intel.patch
+]
 
 builddependencies = [
     ('Python', '3.10.4', '-bare'),
     ('Perl', '5.34.1'),
 ]
 
-configopts = '--enable-cblas --enable-threading=openmp --enable-shared --complex-return=intel CC="$CC" auto'
-
-# Intel expects classic f2c-style calling convention.
-pretestopts = 'for cu in c u; do for cz in c z; do '
-pretestopts += 'sed -i "s/\([^ ]*complex\) ${cz}dot${cu}_(/void ${cz}dot${cu}_(\\1 \*, /g;'
-pretestopts += 's/\([qz]__1\) = ${cz}dot${cu}_(/${cz}dot${cu}_(\&\\1, /g" blastest/src/${cz}blat1.c; done; done && '
+configopts = '--enable-cblas --enable-threading=openmp --enable-shared CC="$CC" auto'
 
 runtest = 'check'
 
