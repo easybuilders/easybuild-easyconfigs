@@ -15,29 +15,30 @@ toolchain = {'name': 'foss', 'version': '2022a'}
 
 source_urls = ['https://github.com/multiscale/%(namelower)s/archive/refs/tags/']
 sources = ['%(version)s.tar.gz']
-checksums = ['abdbad412929d16a303b7e2909d2f1267857bc33514339c1c6f0b89dff2f5b4f']
+patches = ['%(namelower)s-%(version)s_lib_path.patch']
+checksums = [
+    'abdbad412929d16a303b7e2909d2f1267857bc33514339c1c6f0b89dff2f5b4f',  # 0.5.0.tar.gz
+    '6e6f9119b84fac4bf3b740925ff701b10fa36ba065c9cba76c3c784eeb7f64da',  # muscle3-0.5.0_lib_path.patch
+]
 
 builddependencies = [
-    ('CMake', '3.23.1'),
+    ('googletest', '1.11.0'),
 ]
 
 dependencies = [
     ('msgpack-c', '3.3.0'),
-    ('OpenSSL', '1.1', '', True),
-    ('protobuf', '3.19.4'),
     ('zlib', '1.2.12'),
-    ('googletest', '1.11.0'),
     ('Python', '3.10.4'),
     ('SciPy-bundle', '2022.05'),
     ('QCG-PilotJob', '0.13.1'),
+    ('ruamel.yaml', '0.17.21'),
 ]
 
 skipsteps = ['configure']
 
-prebuildopts = 'protobuf_ROOT=$EBROOTPROTOBUF '
-prebuildopts += 'grpc_ROOT=$EBROOTGRPC '
-
+prebuildopts = 'msgpack_ROOT=$EBROOTMSGPACKMINC '
 preinstallopts = 'PREFIX=%(installdir)s '
+testopts = 'googletest_ROOT=$EBROOTGOOGLETEST'
 
 exts_defaultclass = 'PythonPackage'
 
@@ -56,13 +57,20 @@ exts_list = [
         'checksums': ['f5d869c18f030202eb412f08b28d2afeea553d6613aee89e200d7aca7ef01f5f'],
     }),
     ('yatiml', '0.9.0', {
-        'checksums': ['3e55a37ba005ca2de2c854dcc6098f3a156a1781f047b5d2b3f5028396c66da6'],
+        'patches': ['%(name)s-%(version)s_ruamel.yaml_version.patch'],
+        'checksums': [
+            '3e55a37ba005ca2de2c854dcc6098f3a156a1781f047b5d2b3f5028396c66da6',  # yatiml-0.9.0.tar.gz
+            # yatiml-0.9.0_ruamel.yaml_version.patch
+            '77e8a0c9f573e32422b599a9392c925b9ee720285cb17d64de7289291820a01f',
+        ],
     }),
     ('ymmsl', '0.12.0', {
-        'checksums': ['2b6773c88cca08897cf4ce47f334fdd17cfbed445d4998f5b75b133f3f604b4f'],
-    }),
-    ('ruamel.yaml', '0.16.12', {
-        'checksums': ['076cc0bc34f1966d920a49f18b52b6ad559fbe656a0748e3535cf7b3f29ebf9e'],
+        'patches': ['%(name)s-%(version)s_ruamel.yaml_version.patch'],
+        'checksums': [
+            '2b6773c88cca08897cf4ce47f334fdd17cfbed445d4998f5b75b133f3f604b4f',  # ymmsl-0.12.0.tar.gz
+            # ymmsl-0.12.0_ruamel.yaml_version.patch
+            '80d9ed39901ef98ebaeac0bc97dd23e0bae01419304895b3b4e90f1fbae57eda',
+        ],
     }),
     ('muscle3', version, {
         'source_tmpl': '%(version)s.tar.gz',
