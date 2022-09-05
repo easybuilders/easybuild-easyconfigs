@@ -1,0 +1,62 @@
+Heavily inspired from https://src.fedoraproject.org/rpms/MUMPS//blob/rawhide/f/MUMPS-shared.patch
+Author: micketeer@gmail.com
+
+diff -ru MUMPS_5.4.0.orig/src/Makefile MUMPS_5.4.0/src/Makefile
+--- MUMPS_5.4.0.orig/src/Makefile	2021-08-11 16:22:27.340180216 +0200
++++ MUMPS_5.4.0/src/Makefile	2021-08-11 16:40:23.930257697 +0200
+@@ -15,18 +15,23 @@
+ 
+ libcommon: $(incdir)/mumps_int_def.h
+ 	$(MAKE) $(libdir)/libmumps_common$(PLAT)$(LIBEXT)
++	$(MAKE) $(libdir)/libmumps_common$(PLAT).so
+ 
+ s: $(incdir)/mumps_int_def.h libcommon
+ 	$(MAKE) ARITH=s $(libdir)/libsmumps$(PLAT)$(LIBEXT)
++	$(MAKE) ARITH=s $(libdir)/libsmumps$(PLAT).so
+ 
+ d: $(incdir)/mumps_int_def.h libcommon
+ 	$(MAKE) ARITH=d $(libdir)/libdmumps$(PLAT)$(LIBEXT)
++	$(MAKE) ARITH=d $(libdir)/libdmumps$(PLAT).so
+ 
+ c: $(incdir)/mumps_int_def.h libcommon
+ 	$(MAKE) ARITH=c $(libdir)/libcmumps$(PLAT)$(LIBEXT)
++	$(MAKE) ARITH=c $(libdir)/libcmumps$(PLAT).so
+ 
+ z: $(incdir)/mumps_int_def.h libcommon
+ 	$(MAKE) ARITH=z $(libdir)/libzmumps$(PLAT)$(LIBEXT)
++	$(MAKE) ARITH=z $(libdir)/libzmumps$(PLAT).so
+ 
+ include $(topdir)/Makefile.inc
+ 
+@@ -200,6 +205,14 @@
+ 	$(AR)$@ $?
+ 	$(RANLIB) $@
+ 
++$(libdir)/libmumps_common$(PLAT).so:      $(OBJS_COMMON_MOD) $(OBJS_COMMON_OTHER)
++	$(FC) -shared $^ -Wl,-soname,libmumps_common$(PLAT)-$(SONAME_VERSION).so $(OPTL) -L$(libdir) $(LORDERINGS) -lpthread $(MUMPS_LIBF77) $(MPIFLIB) $(MPICLIB) $(METISLIB) -o $(libdir)/libmumps_common$(PLAT)-$(SONAME_VERSION).so $(OPTL) -Wl,-z,defs
++	ln -fs libmumps_common$(PLAT)-$(SONAME_VERSION).so $@
++
++$(libdir)/lib$(ARITH)mumps$(PLAT).so:    $(OBJS_MOD) $(OBJS_OTHER)
++	$(FC) -shared $^ -Wl,-soname,lib$(ARITH)mumps$(PLAT)-$(SONAME_VERSION).so $(OPTL) -L$(libdir) -lmumps_common$(PLAT) -lpthread $(MUMPS_LIBF77) $(LORDERINGS) $(MPIFLIB) $(METISLIB) $(SCALAP) -o $(libdir)/lib$(ARITH)mumps$(PLAT)-$(SONAME_VERSION).so $(OPTL) -Wl,-z,defs
++	ln -fs lib$(ARITH)mumps$(PLAT)-$(SONAME_VERSION).so $@
++
+ # Dependencies between modules:
+ # i) arithmetic-dependent modules:
+ $(ARITH)ana_aux.o:              $(ARITH)mumps_struc_def.o \
+@@ -411,13 +424,13 @@
+ 
+ .SUFFIXES: .c .F .o
+ .F.o:
+-	$(FC) $(OPTF) -I. -I../include $(INCS) $(IORDERINGSF) $(ORDERINGSF) -c $*.F $(OUTF)$*.o
++	$(FC) $(OPTF) -I. -I../include $(INCS) $(IORDERINGSF) $(ORDERINGSF) -fPIC -c $*.F $(OUTF)$*.o
+ .c.o:
+-	$(CC) $(OPTC) -I../include $(INCS) $(CDEFS) $(IORDERINGSC) $(ORDERINGSC) -c $*.c $(OUTC)$*.o
++	$(CC) $(OPTC) -I../include $(INCS) $(CDEFS) $(IORDERINGSC) $(ORDERINGSC) -fPIC -c $*.c $(OUTC)$*.o
+ 
+ $(ARITH)mumps_c.o:	mumps_c.c
+ 	$(CC) $(OPTC) -I../include $(INCS) $(CDEFS) -DMUMPS_ARITH=MUMPS_ARITH_$(ARITH) \
+-	      $(IORDERINGSC) $(ORDERINGSC) -c mumps_c.c $(OUTC)$@
++	      $(IORDERINGSC) $(ORDERINGSC) -fPIC -c mumps_c.c $(OUTC)$@
+ 
+ clean:
+ 	$(RM) *.o *.mod $(incdir)/mumps_int_def.h build_mumps_int_def

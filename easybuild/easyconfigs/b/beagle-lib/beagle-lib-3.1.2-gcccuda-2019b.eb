@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'beagle-lib'
+version = '3.1.2'
+
+homepage = 'https://github.com/beagle-dev/beagle-lib'
+description = """beagle-lib is a high-performance library that can perform the core calculations at the heart of most
+ Bayesian and Maximum Likelihood phylogenetics packages."""
+
+toolchain = {'name': 'gcccuda', 'version': '2019b'}
+
+source_urls = ['https://github.com/beagle-dev/beagle-lib/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['dd872b484a3a9f0bce369465e60ccf4e4c0cd7bd5ce41499415366019f236275']
+
+dependencies = [
+    ('Java', '11', '', True),
+    ('pkg-config', '0.29.2'),
+    ('pocl', '1.4'),
+]
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('libtool', '2.4.6'),
+]
+
+preconfigopts = "./autogen.sh && "
+configopts = "--with-opencl=$EBROOTPOCL --with-cuda=$EBROOTCUDA "
+
+sanity_check_paths = {
+    'files': ['include/libhmsbeagle-1/libhmsbeagle/%s' % x for x in ['beagle.h', 'platform.h']] +
+             ['lib/libhmsbeagle%s.%s' % (x, SHLIB_EXT) for x in ['-cpu', '-cpu-sse', '-jni', '']],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'

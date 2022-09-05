@@ -1,0 +1,63 @@
+easyblock = "ConfigureMake"
+
+name = 'Cbc'
+version = '2.10.5'
+
+homepage = "https://github.com/coin-or/Cbc"
+description = """Cbc (Coin-or branch and cut) is an open-source mixed integer linear programming
+solver written in C++. It can be used as a callable library or using a
+stand-alone executable."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://www.coin-or.org/download/source/%(name)s/']
+sources = [SOURCE_TGZ]
+checksums = ['da1a945648679b21ba56b454b81e939451dc7951d9beb3c3e14f18f64dde6972']
+
+builddependencies = [
+    ('Autotools', '20200321'),
+    ('Doxygen', '1.8.20'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('METIS', '5.1.0'),
+    ('MUMPS', '5.3.5', '-metis'),
+    ('CoinUtils', '2.11.4'),
+    ('Osi', '0.108.6'),
+    ('Clp', '1.17.6'),
+    ('Cgl', '0.60.3'),
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.11'),
+]
+
+# Use BLAS/LAPACK from OpenBLAS
+configopts = '--with-blas="$LIBBLAS" --with-lapack="$LIBLAPACK" '
+# Use METIS AND MUMPS from EB
+configopts += '--with-metis-lib="-lmetis" '
+configopts += '--with-mumps-lib="-lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord" '
+# Disable GLPK, dependencies have to be built with it as well
+configopts += '--without-glpk '
+# Use CoinUtils from EB
+configopts += '--with-coinutils-lib="-lCoinUtils" '
+configopts += '--with-coinutils-datadir=$EBROOTCOINUTILS/share/coin/Data'
+# Use Clp from EB
+configopts += '--with-clp-lib="-lOsiClp -lClpSolver -lClp" '
+configopts += '--with-clp-datadir=$EBROOTCLP/share/coin/Data '
+# Use Osi from EB (also needs links to Clp due to OsiClpSolver)
+configopts += '--with-osi-lib="-lOsiClp -lClpSolver -lClp -lOsi" '
+configopts += '--with-osi-datadir=$EBROOTOSI/share/coin/Data '
+# Use Cgl from EB
+configopts += '--with-cgl-lib="-lCgl" '
+configopts += '--with-cgl-datadir=$EBROOTCGL/share/coin/Data '
+
+sanity_check_paths = {
+    'files': ['bin/cbc'] + ['lib/lib%s.%s' % (l, SHLIB_EXT) for l in ['Cbc', 'CbcSolver', 'OsiCbc']],
+    'dirs': ['include/coin', 'lib/pkgconfig', 'share/coin']
+}
+
+# other coin-or projects expect <header.hpp> instead of <coin/header.hpp>
+modextrapaths = {'CPATH': 'include/coin'}
+
+moduleclass = "math"
