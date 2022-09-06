@@ -1,0 +1,62 @@
+# This EC is for a specific version of MatLab. However, it should
+# work with other versions as well. The idea is to have one EC file
+# for various MatLab versions, rather then have several. Thus, just 
+# changing local_matlab_version to the one required should do the trick.
+# Due to GLIBC issues with MatLab, an older toolchain needs to be used.
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'Dynare'
+version = '5.2'
+local_matlab_version = '2022a_Update_3'
+versionsuffix = '-MATLAB-%s' % local_matlab_version
+
+homepage = 'https://www.dynare.org'
+description = """Dynare is a software platform for handling a wide class of economic models, 
+in particular dynamic stochastic general equilibrium (DSGE) and overlapping generations (OLG) 
+models. The models solved by Dynare include those relying on the rational expectations 
+hypothesis, wherein agents form their expectations about the future in a way consistent 
+with the model. But Dynare is also able to handle models where expectations are formed 
+differently: on one extreme, models where agents perfectly anticipate the future; on the 
+other extreme, models where agents have limited rationality or imperfect knowledge of the 
+state of the economy and, hence, form their expectations through a learning process."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://www.dynare.org/release/source']
+sources = ['%(namelower)s-%(version)s.tar.xz']
+
+checksums = ['01849a45d87cac3c1a8e8bf55030d026054ffb9b1ebf5ec09c9981a08d60f55c']
+
+builddependencies = [
+    ('gawk', '5.1.0'),
+    ('Bison', '3.7.1'),
+    ('flex', '2.6.4'),
+    ('Boost', '1.74.0'),
+]
+
+dependencies = [
+    ('Xvfb', '1.20.9'),
+    ('x13as', '1-1-b59'),
+    ('MATIO', '1.5.21'),
+    ('GSL', '2.6'),
+    ('Szip', '2.1.1'),
+    ('MATLAB', '%s' % local_matlab_version, '', SYSTEM),
+    ('SLICOT', '5.0'),
+]
+
+# configopts = "--disable-doc --with-matlab=yes --disable-mex-kalman-steady-state --disable-octave"
+configopts = "--disable-doc --with-matlab=yes --disable-octave"
+
+# The test jobs are running a few hours!
+# runtest = 'check'
+
+sanity_check_commands = ['dynare++ --version', 'dynare++ --help']
+
+sanity_check_paths = {
+    'files': ['bin/dynare++', 'bin/dynare-preprocessor'],
+    'dirs': ['lib/dynare', 'share'],
+}
+
+moduleclass = 'math'
