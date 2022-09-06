@@ -1,0 +1,46 @@
+# We are only building the slicot.a lib and link that to the required 
+# libs for both Matlab and Octave
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'MakeCp'
+
+name = 'SLICOT'
+version = '5.0'
+
+homepage = 'http://slicot.org/'
+description = """The subroutine library SLICOT provides Fortran 77 
+implementations of numerical algorithms for computations in systems 
+and control theory. Based on numerical linear algebra routines from 
+BLAS and LAPACK libraries, SLICOT provides methods for the design 
+and analysis of control systems."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://deb.debian.org/debian/pool/main/s/slicot']
+sources = ['%(namelower)s_%(version)s+20101122.orig.tar.gz']
+patches = ['%(namelower)s-makefile.patch']
+checksums = [
+    'fa80f7c75dab6bfaca93c3b374c774fd87876f34fba969af9133eeaea5f39a3d',  # slicot_5.0+20101122.orig.tar.gz
+    '956566e1f117fe9944f87ac5063ffc6a8db19991a037edcac08099ec87e87e72',  # slicot-makefile.patch
+]
+
+dependencies = [
+    ('OpenBLAS', '0.3.12'),
+]
+
+buildopts = ' lib'
+
+files_to_copy = [(['slicot.a'], 'lib')]
+
+sanity_check_paths = {
+    'files': ['lib/slicot.a'],
+    'dirs': []
+}
+
+postinstallcmds = [
+    ("ln -s %(installdir)s/lib/slicot.a  %(installdir)s/lib/libslicot64_pic.a "),  # for MatLab
+    ("ln -s %(installdir)s/lib/slicot.a  %(installdir)s/lib/libslicot_pic.a "),  # for Octave
+]
+
+moduleclass = 'lib'
