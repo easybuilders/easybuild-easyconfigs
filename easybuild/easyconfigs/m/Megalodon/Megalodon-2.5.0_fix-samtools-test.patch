@@ -1,0 +1,72 @@
+Use command `samtools help` to sanity check the installation of SAMtools
+PR: https://github.com/nanoporetech/megalodon/pull/302
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff --git a/megalodon/mapping.py b/megalodon/mapping.py
+index bab93d3..8b9608f 100755
+--- a/megalodon/mapping.py
++++ b/megalodon/mapping.py
+@@ -267,44 +267,40 @@ class MapInfo:
+ 
+     def test_samtools(self):
+         try:
+-            test_sort_res = subprocess.run(
+-                [self.samtools_exec, "sort"],
++            test_help_res = subprocess.run(
++                [self.samtools_exec, "help"],
+                 stdout=subprocess.PIPE,
+                 stderr=subprocess.PIPE,
+             )
+-            test_index_res = subprocess.run(
+-                [self.samtools_exec, "index"],
+-                stdout=subprocess.PIPE,
+-                stderr=subprocess.PIPE,
++        except FileNotFoundError:
++            LOGGER.warning(
++                "Samtools executable not found. Mappings will "
++                + "not be sorted or indexed."
+             )
+-            # Note index returns non-zero exit status
+-            if test_sort_res.returncode != 0:
++            self.do_sort_mappings = False
++        else:
++            if test_help_res.returncode != 0:
+                 LOGGER.warning(
+                     "Samtools test commands return non-zero exit "
+                     + "status. Mappings will not be sorted or indexed."
+                 )
+                 LOGGER.debug(
+                     (
+-                        "MappingTestFail:   sort_returncode: {}   "
+-                        + "index_returncode: {}\nsort_call_stdout:\n{}\n"
+-                        + "sort_call_stderr:\n{}\nindex_call_stdout:\n{}"
+-                        + "\nindex_call_stderr:\n{}"
++                        "MappingTestFail:   samtools_returncode: {}   "
++                        + "\nsamtools_call_stdout:\n{}"
++                        + "\nsamtools_call_stderr:\n{}"
+                     ).format(
+-                        test_sort_res.returncode,
+-                        test_index_res.returncode,
+-                        test_sort_res.stdout.decode(),
+-                        test_sort_res.stderr.decode(),
+-                        test_index_res.stdout.decode(),
+-                        test_index_res.stderr.decode(),
++                        test_help_res.returncode,
++                        test_help_res.stdout.decode(),
++                        test_help_res.stderr.decode(),
+                     )
+                 )
+                 self.do_sort_mappings = False
+-        except FileNotFoundError:
+-            LOGGER.warning(
+-                "Samtools executable not found. Mappings will "
+-                + "not be sorted or indexed."
+-            )
+-            self.do_sort_mappings = False
++            else:
++                LOGGER.debug(
++                    "Mapping Test Success --- Mappings will be "
++                    + "sorted and indexed with samtools"
++                )
+ 
+ 
+ def align_read(
