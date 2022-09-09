@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# 
+# Author: Jonas Demeulemeester
+# The Francis Crick Insitute, London, UK
+#
+# Updated to 1.16 - gcc-12.1.0
+# Jordi Camps / CNAG
+#
+
+easyblock = 'ConfigureMake'
+
+name = 'BCFtools'
+version = '1.16'
+
+homepage = 'https://www.htslib.org/'
+description = """Samtools is a suite of programs for interacting with high-throughput sequencing data.
+ BCFtools - Reading/writing BCF2/VCF/gVCF files and calling/filtering/summarising SNP and short indel sequence
+ variants"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.1.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/samtools/%(namelower)s/releases/download/%(version)s']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['90bf647c9ad79e10a243b8058c873de057fd7012e250d5ae6574839787a2ecd6']
+
+dependencies = [
+    ('zlib', '1.2.12'),
+    ('HTSlib', '%(version)s'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.2.5'),
+    ('GSL', '2.7'),
+]
+
+configopts = "--with-htslib=$EBROOTHTSLIB --enable-libgsl"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bcftools', 'plot-vcfstats', 'vcfutils.pl']],
+    'dirs': ['libexec/bcftools']
+}
+
+moduleclass = 'bio'
