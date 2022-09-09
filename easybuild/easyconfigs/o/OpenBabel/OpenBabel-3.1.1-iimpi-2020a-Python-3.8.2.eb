@@ -18,11 +18,14 @@ patches = [
     # Ref: https://github.com/openbabel/openbabel/commit/7de27f309db5f7ec026ef5c5235e5b33bf7d1a85.patch
     'OpenBabel-3.1.1_fix-distgeom-test.patch',
     'OpenBabel-3.1.1_fix-testobconv_writers.patch',
+    'OpenBabel-3.1.1_fix-CoordgenLibs-no-templates.patch',
 ]
 checksums = [
     'c97023ac6300d26176c97d4ef39957f06e68848d64f1a04b0b284ccff2744f02',  # openbabel-3-1-1.tar.gz
     '8d7687eb49142bb5ba2997cf90805b42480f313515c44b3912a9f826aaf4fbcd',  # OpenBabel-3.1.1_fix-distgeom-test.patch
     '6d0b153caadc53141e1578972d632afb82b2fc4abdec6c5f07552b45a20e980c',  # OpenBabel-3.1.1_fix-testobconv_writers.patch
+    # OpenBabel-3.1.1_fix-CoordgenLibs-no-templates.patch
+    'cc0396b38a78ef70c869cd93887210c64d6f4293c016aec9269b5a0230fdb51c',
 ]
 
 builddependencies = [
@@ -37,15 +40,13 @@ dependencies = [
     ('RapidJSON', '1.1.0'),
     ('cairo', '1.16.0'),  # optional: for .png output
     ('Boost', '1.72.0'),  # optional: for Maestro formats
+    ('maeparser', '1.3.0'),
+    ('CoordgenLibs', '3.0.1'),
 ]
 
 configopts = '-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib '
 # Enable support for OpenMP compilation of forcefield code (optional)
 configopts += '-DENABLE_OPENMP=ON '
-
-# remove use of -Werror to avoid that warnings are treated as errors
-# required to work around "integer conversion resulted in a change of sign" error with Intel compiler
-prebuildopts = "sed -i 's/-Werror//g' external/coordgen-master/coordgen/CMakeFiles/coordgen.dir/flags.make && "
 
 # OpenBabel-3.1.1 creates directories named 3.1.0, which leads to BABEL_LIBDIR and BABEL_DATDIR
 # (set in the easyblock) having invalid values.  Work around this with some symlinks.
