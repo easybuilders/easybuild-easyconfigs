@@ -1,0 +1,24 @@
+Fix a crash during application shutdown visible in test_profiler on some machines.
+See https://github.com/pytorch/kineto/pull/642
+
+Author: Alexander Grund (TU Dresden)
+
+diff -aur a/third_party/kineto/libkineto/src/EventProfilerController.cpp b/third_party/kineto/libkineto/src/EventProfilerController.cpp
+--- a/third_party/kineto/libkineto/src/EventProfilerController.cpp	2022-08-05 13:10:46.175716618 +0200
++++ b/third_party/kineto/libkineto/src/EventProfilerController.cpp	2022-08-05 13:16:00.654118490 +0200
+@@ -231,9 +231,14 @@
+ 
+ // Must be called under lock
+ void EventProfilerController::start(CUcontext ctx) {
+-  profilerMap()[ctx] = unique_ptr<EventProfilerController>(
++  // Avoid static initialization order fiasco:
++  // We need the profilerMap and with it all controllers to be destroyed
++  // before everything the controller accesses gets destroyed.
++  // Hence access the profilerMap after initialization of the controller.
++  auto controller = unique_ptr<EventProfilerController>(
+       new EventProfilerController(
+           ctx, ConfigLoader::instance(), detail::HeartbeatMonitor::instance()));
++  profilerMap()[ctx] = std::move(controller);
+ }
+ 
+ // Must be called under lock
