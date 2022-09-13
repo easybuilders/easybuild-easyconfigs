@@ -1336,15 +1336,15 @@ def template_easyconfig_test(self, spec):
     basedir = os.path.dirname(os.path.dirname(specdir))
     specfn = os.path.basename(spec)
     for idx, patch in enumerate(ec['patches']):
-        if isinstance(patch, (tuple, list)):
+        patch_dir = specdir
+        if isinstance(patch, string):
+            patch_name = patch
+        elif isinstance(patch, (tuple, list)):
             patch_name = patch[0]
-            patch_dir = specdir
         elif isinstance(patch, dict):
             patch_name = patch['name']
             if patch['alt_location']:
                 patch_dir = os.path.join(basedir, letter_dir_for(patch_name), patch_name)
-            else:
-                patch_dir = specdir
 
         # only check actual patch files, not other files being copied via the patch functionality
         patch_full = os.path.join(patch_dir, patch_name)
