@@ -1337,7 +1337,7 @@ def template_easyconfig_test(self, spec):
     specfn = os.path.basename(spec)
     for idx, patch in enumerate(ec['patches']):
         patch_dir = specdir
-        if isinstance(patch, string):
+        if isinstance(patch, str):
             patch_name = patch
         elif isinstance(patch, (tuple, list)):
             patch_name = patch[0]
