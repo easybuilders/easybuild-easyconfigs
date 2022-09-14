@@ -1344,7 +1344,7 @@ def template_easyconfig_test(self, spec):
         elif isinstance(patch, dict):
             patch_name = patch['name']
             if patch['alt_location']:
-                patch_dir = os.path.join(basedir, letter_dir_for(patch_name), patch_name)
+                patch_dir = os.path.join(basedir, letter_dir_for(patch['alt_location']), patch['alt_location'])
 
         # only check actual patch files, not other files being copied via the patch functionality
         patch_full = os.path.join(patch_dir, patch_name)
