@@ -1,0 +1,86 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '3.12.0'
+
+homepage = 'https://github.com/eth-cscs/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+multi_deps = {
+	'Python': ['3.8.10', '3.9.6', '3.10.2'],
+}
+multi_deps_load_default = False
+
+download_dep_fail = True
+use_pip = True
+
+exts_list = [
+    ('semver', '2.13.0', {
+        'checksums': ['fa0fe2722ee1c3f57eac478820c3a5ae2f624af8264cbdf9000c980ff7f75e3f'],
+    }),
+    ('chardet', '4.0.0', {
+        'checksums': ['0d6f53a15db4120f2b08c94f11e7d93d2c911ee118b6b30a04ec3ee8310179fa'],
+    }),
+    ('certifi', '2021.10.8', {
+        'checksums': ['78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872'],
+    }),
+    ('urllib3', '1.26.9', {
+        'checksums': ['aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e'],
+    }),    
+    ('requests', '2.27.1', {
+        'checksums': ['68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61'],
+    }),
+    ('idna', '3.3', {
+        'checksums': ['9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d'],
+    }),
+    ('jsonschema', '4.4.0', {
+        'checksums': ['636694eb41b3535ed608fe04129f26542b59ed99808b4f688aa32dcf55317a83'],
+    }),
+    ('attrs', '21.4.0', {
+        'modulename': 'attr',
+        'checksums': ['626ba8234211db98e869df76230a137c4c40a12d72445c45d5f5b716f076e2fd'],
+    }),
+    ('importlib_resources', '5.7.1', {
+        'checksums': ['b6062987dfc51f0fcb809187cffbd60f35df7acb4589091f154214af6d0d49d3'],
+    }),
+    ('zipp', '3.8.0', {
+        'checksums': ['56bf8aadb83c24db6c4b577e13de374ccfb67da2078beba1d037c17980bf43ad'],
+    }),
+    ('pyrsistent', '0.18.1', {
+        'checksums': ['d4d61f8b993a7255ba714df3aca52700f8125289f84f704cf80916517c46eb96'],
+    }),
+    ('reframe', version, {
+        # need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing packages
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && "
+                          "PYTHONPATH=%(builddir)s/reframe/reframe-%(version)s/external:$PYTHONPATH ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/reframe-hpc/reframe/archive/'],
+        'checksums': ['425cc546e24edd5b2dbfcdcb61dbbf723ca1a2a2977948e359e893514f5eb10f'],
+    }),
+]
+
+postinstallcmds = [
+    "cp -a hpctestlib tools tutorials %(installdir)s",
+    "mkdir -p %(installdir)s/share && cp -a share/completions %(installdir)s/share/completions",
+    #r"sed -i 's@/\(python[0-9.]*\)$@/\1 -S@g' %(installdir)s/bin/reframe",
+]
+
+
+sanity_check_paths = {
+    'files': ['bin/reframe'],
+    'dirs': []
+}
+
+sanity_check_commands = ['reframe -V']
+modaliases = {
+	'reframe': 'reframe -C /cvmfs/soft.computecanada.ca/custom/reframe/config/settings.py -c /cvmfs/soft.computecanada.ca/custom/reframe/checks'
+}
+modluafooter = """
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+        depends_on(between("python",'3.8.10<','<3.11'))
+end
+"""
+moduleclass = 'devel'
