@@ -1,0 +1,150 @@
+diff -ru regenie-3.2.orig/CMakeLists.txt regenie-3.2/CMakeLists.txt
+--- regenie-3.2.orig/CMakeLists.txt	2022-09-15 19:16:38.454508566 +0000
++++ regenie-3.2/CMakeLists.txt	2022-09-16 14:48:00.000201088 +0000
+@@ -2,6 +2,8 @@
+ #   e.g. MKLROOT=/opt/mkl/ cmake -S regenie_dir/ -B regenie_dir/build/
+ # For OpenBLAS, set OPENBLAS_ROOT=<OpenBLAS_path> when running cmake 
+ #   note: it also requires lapacke library
++# For FlexiBLAS, set FLEXIBLAS_ROOT=<FlexiBLAS_path> when running cmake 
++#   note: it also requires lapacke library
+ # For static compilation on Linux systems, set STATIC=1 when running cmake 
+ #   -> this excludes GLIBC
+ 
+@@ -75,6 +77,15 @@
+   message( STATUS "Will compile with OpenBLAS library")
+ endif()
+ 
++# check FlexiBLAS
++if(NOT "$ENV{FLEXIBLAS_ROOT}" STREQUAL "")
++  set(FLEXIBLAS_ROOT "$ENV{FLEXIBLAS_ROOT}" CACHE INTERNAL "Set FlexiBLAS library path")
++  if (NOT EXISTS ${FLEXIBLAS_ROOT})
++    message( FATAL_ERROR "Specified FlexiBLAS library directory '${FLEXIBLAS_ROOT}' does not exist")
++  endif()
++  message( STATUS "Will compile with FlexiBLAS library")
++endif()
++
+ ######################################
+ ######## set flags and required libraries
+ 
+@@ -190,6 +201,12 @@
+   find_library(LAPACK_LIB lapack REQUIRED)
+   find_library(BLAS_LIB openblas HINTS "${OPENBLAS_ROOT}/lib/" REQUIRED)
+   target_link_libraries(regenie PRIVATE ${LAPACK_LIB} -llapacke ${BLAS_LIB})
++elseif(EXISTS ${FLEXIBLAS_ROOT}) # FlexiBLAS
++  add_definitions(-DWITH_FLEXIBLAS -DEIGEN_USE_BLAS -DEIGEN_USE_LAPACKE)
++  target_include_directories(regenie PRIVATE ${FLEXIBLAS_ROOT}/include/flexiblas)
++  find_library(LAPACK_LIB flexiblas REQUIRED)
++  find_library(BLAS_LIB flexiblas HINTS "${FLEXIBLAS_ROOT}/lib/" REQUIRED)
++  target_link_libraries(regenie PRIVATE ${LAPACK_LIB} -llapacke ${BLAS_LIB})
+ endif()
+ 
+ # cxxopts (header-only)
+diff -ru regenie-3.2.orig/Makefile regenie-3.2/Makefile
+--- regenie-3.2.orig/Makefile	2022-09-15 19:16:38.527509007 +0000
++++ regenie-3.2/Makefile	2022-09-19 14:06:28.976595521 +0000
+@@ -18,10 +18,11 @@
+ #   -> this excludes GLIBC
+ #
+ 
+-BGEN_PATH     =
++BGEN_PATH     = ${EBROOTBGENMINLIB}
+ HAS_BOOST_IOSTREAM := 0
+ MKLROOT       = 
+ OPENBLAS_ROOT = 
++FLEXIBLAS_ROOT = ${EBROOTFLEXIBLAS}
+ STATIC       := 0
+ 
+ ############
+@@ -82,35 +83,39 @@
+ 
+ 
+ # Intel MKL or OpenBLAS
+-ifneq ($(strip $(MKLROOT)),)
+- ifeq ($(UNAME_S),Linux)
+-  RGFLAGS    += -DWITH_MKL -DEIGEN_USE_BLAS -DEIGEN_USE_LAPACKE
+-  INC        += -I${MKLROOT}/include/
+-	# static linking
+-  ifeq ($(strip $(STATIC)),1)
+-   SLIBS     += -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_gnu_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group
+-   DLIBS     += -lgomp -lpthread
+-	# dynamic linking
+-  else
+-   LIBMKL     = -L${MKLROOT}/lib/intel64/
+-   DLIBS     += -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread
+-  endif
+- endif
+-
+-else ifneq ($(strip $(OPENBLAS_ROOT)),)
+- ifeq ($(UNAME_S),Linux)
+-  RGFLAGS    += -DWITH_OPENBLAS -DEIGEN_USE_BLAS -DEIGEN_USE_LAPACKE
+-  INC        += -I${OPENBLAS_ROOT}/include/
+-  # static linking
+-  ifeq ($(strip $(STATIC)),1)
+-   SLIBS     += -Wl,-rpath=${OPENBLAS_ROOT}/lib/ -llapack -llapacke -lopenblas
+-  # dynamic linking
+-  else
+-   DLIBS     += -Wl,-rpath=${OPENBLAS_ROOT}/lib/ -llapack -llapacke -lopenblas
+-  endif
+- endif
+-endif
+-
++#ifneq ($(strip $(MKLROOT)),)
++# ifeq ($(UNAME_S),Linux)
++#  RGFLAGS    += -DWITH_MKL -DEIGEN_USE_BLAS -DEIGEN_USE_LAPACKE
++#  INC        += -I${MKLROOT}/include/
++#	# static linking
++#  ifeq ($(strip $(STATIC)),1)
++#   SLIBS     += -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_gnu_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group
++#   DLIBS     += -lgomp -lpthread
++#	# dynamic linking
++#  else
++#   LIBMKL     = -L${MKLROOT}/lib/intel64/
++#   DLIBS     += -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread
++#  endif
++# endif
++#
++#else ifneq ($(strip $(OPENBLAS_ROOT)),)
++# ifeq ($(UNAME_S),Linux)
++#  RGFLAGS    += -DWITH_OPENBLAS -DEIGEN_USE_BLAS -DEIGEN_USE_LAPACKE
++#  INC        += -I${OPENBLAS_ROOT}/include/
++#  # static linking
++#  ifeq ($(strip $(STATIC)),1)
++#   SLIBS     += -Wl,-rpath=${OPENBLAS_ROOT}/lib/ -llapack -llapacke -lopenblas
++#  # dynamic linking
++#  else
++#   DLIBS     += -Wl,-rpath=${OPENBLAS_ROOT}/lib/ -llapack -llapacke -lopenblas
++#  endif
++# endif
++#endif
++
++INC += -I${BLAS_INC_DIR}
++RGFLAGS += -DEIGEN_USE_BLAS -DEIGEN_USE_LAPACKE
++DLIBS += ${LIBBLAS} -llapacke
++RGFLAGS += ${BLA_VENDOR_DEF}
+ 
+ # pass on version number to software
+ RGFLAGS      += -DVERSION_NUMBER=\"$(RG_VERSION)\"
+diff -ru regenie-3.2.orig/src/Regenie.cpp regenie-3.2/src/Regenie.cpp
+--- regenie-3.2.orig/src/Regenie.cpp	2022-09-15 19:16:50.395580963 +0000
++++ regenie-3.2/src/Regenie.cpp	2022-09-16 14:49:04.907630554 +0000
+@@ -120,6 +120,8 @@
+   o << "Using Intel MKL with Eigen.\n";
+ #elif defined(WITH_OPENBLAS)
+   o << "Using BLAS/LAPACK routines from OpenBLAS with Eigen.\n";
++#elif defined(WITH_FLEXIBLAS)
++  o << "Using BLAS/LAPACK routines from FlexiBLAS with Eigen.\n";
+ #endif
+ 
+   o << "\n";
+diff -ru regenie-3.2.orig/src/Regenie.hpp regenie-3.2/src/Regenie.hpp
+--- regenie-3.2.orig/src/Regenie.hpp	2022-09-15 19:16:50.406581030 +0000
++++ regenie-3.2/src/Regenie.hpp	2022-09-16 14:48:44.502495541 +0000
+@@ -53,6 +53,8 @@
+ #include "lapacke.h"
+ #elif defined(WITH_MKL)
+ #include "mkl_lapacke.h"
++#elif defined(WITH_FLEXIBLAS)
++#include "lapacke.h"
+ #endif
+ 
+ #if defined(__GNUC__)
