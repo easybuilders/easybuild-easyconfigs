@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'ncbi-vdb'
+version = '3.0.0'
+
+homepage = 'https://github.com/ncbi/ncbi-vdb'
+description = """The SRA Toolkit and SDK from NCBI is a collection of tools and libraries for
+ using data in the INSDC Sequence Read Archives."""
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+github_account = 'ncbi'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'ncbi-vdb-3.0.0_fix-LD_LIBRARY_PATH.patch',
+    'ncbi-vdb-3.0.0_cstdlib.patch',
+]
+checksums = [
+    '154317ef265104861fe8d3d2e439939ae98f33b1e28da3c45f32ae8534dbfad7',  # ncbi-vdb-3.0.0.tar.gz
+    'a87d1ab79118e2392d197dbb684347b75a6a26509108cce8a12590feb929e38b',  # ncbi-vdb-3.0.0_fix-LD_LIBRARY_PATH.patch
+    'd550ccfa08d1858f5c555306242b14e0f33a5ea06fa2ddf105ca62f1f5b26cb2',  # ncbi-vdb-3.0.0_cstdlib.patch
+]
+
+builddependencies = [
+    ('Perl', '5.34.0', '-minimal'),
+    ('Python', '3.9.6', '-bare'),
+    ('CMake', '3.22.1'),
+]
+
+dependencies = [
+    #  ('NGS', '2.11.2'), no longer required
+    ('file', '5.41'),  # provides libmagic
+    ('HDF5', '1.10.8'),  # version 1.12.x has changes to API and is not compatible
+    ('libxml2', '2.9.10'),
+    ('bzip2', '1.0.8'),
+]
+
+# add addtional libraries needed to statically link HDF5 from EB
+preconfigopts = "sed -i 's/-lhdf5 -Wl,-Bdynamic/-lhdf5 -Wl,-Bdynamic -lmpi -lsz/' setup/konfigure.perl &&"
+
+configopts = "--build-prefix=%(builddir)s "  # change default build directory
+configopts += "--with-magic-prefix=$EBROOTFILE "
+configopts += "--with-hdf5-prefix=$EBROOTHDF5 --with-xml2-prefix=$EBROOTLIBXML2"
+
+# replace hardcoded optimization flags with EB settings
+prebuildopts = "find build/ -name \"Makefile*\" -exec sed -i 's/-O3/$(EBFLAGS)/g' {} + && EBFLAGS=\"$CFLAGS\" "
+preinstallopts = 'EBFLAGS="$CFLAGS" '
+
+sanity_check_paths = {
+    'files': ['include/ncbi/ncbi.h', 'include/ncbi/vdb-blast.h'] +
+             [('lib/libncbi-%s.%s' % (k, e)) for k in ['vdb', 'wvdb'] for e in ['a', SHLIB_EXT]],
+    'dirs': ['include', 'lib', 'lib64'],
+}
+
+moduleclass = 'bio'
