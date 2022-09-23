@@ -1,0 +1,53 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'Tarball'
+
+name = 'SPM'
+version = '12.5_r7771'
+_matlab_ver = '2021b'
+versionsuffix = '-MATLAB-%s' % _matlab_ver
+
+homepage = 'https://www.fil.ion.ucl.ac.uk/spm'
+description = """SPM (Statistical Parametric Mapping) refers to the construction
+ and assessment of spatially extended statistical processes used to test hypo-
+ theses about functional imaging data. These ideas have been instantiated in
+ software that is called SPM.
+ The SPM software package has been designed for the analysis of brain imaging
+ data sequences. The sequences can be a series of images from different cohorts,
+ or time-series from the same subject. The current release is designed for the
+ analysis of fMRI, PET, SPECT, EEG and MEG.
+"""
+
+toolchain = SYSTEM
+
+_spm_maj_ver = version.split('.')[0]
+_spm_majmin_ver, _spm_update_ver = version.split('_')
+
+sources = [
+    {
+        'source_urls': ['https://www.fil.ion.ucl.ac.uk/spm/download/restricted/eldorado'],
+        'filename': '%%(namelower)s%s.zip' % _spm_majmin_ver,
+    },
+    {
+        'source_urls': ['http://www.fil.ion.ucl.ac.uk/spm/download/spm12_updates'],
+        'filename': '%%(namelower)s%s_updates_%s.zip' % (_spm_maj_ver, _spm_update_ver),
+        'extract_cmd': 'unzip -oqq %%s -d spm%s' % _spm_maj_ver,
+    },
+]
+checksums = [
+    '0dc847eb065ccfcefbaefafdc12201dd20a22b9ee9b33a6b1973d07690a21914',     # spm12.5.zip
+    '2b3cbd5f58fe180231d8bdcd0762c8874aee97240de391d876d9f2e33037a293',     # spm12_updates_r7771.zip
+]
+
+dependencies = [('MATLAB', _matlab_ver)]
+
+sanity_check_paths = {
+    'files': ['spm.m'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['matlab -batch "spm version"']
+
+modextrapaths = {'MATLABPATH': ''}
+
+moduleclass = 'tools'

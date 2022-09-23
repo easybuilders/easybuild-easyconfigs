@@ -1,0 +1,45 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'Tarball'
+
+name = 'AptaSUITE'
+version = '0.9.4'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://drivenbyentropy.github.io/'
+description = """ A full-featured bioinformatics software collection for the
+ comprehensive analysis of aptamers in HT-SELEX experiments """
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/drivenbyentropy/aptasuite/releases/download/v%(version)s/']
+sources = ['%(namelower)s-%(version)s.zip']
+checksums = ['e7b86ddccac38ce11e620d65129654a6f8a2cfe5105c092baa12c8d6e643abc3']
+
+dependencies = [
+    ('Java', '11'),
+    ('JavaFX', '11.0.2', '_linux-x64_bin-sdk'),
+]
+
+postinstallcmds = ["cd %(installdir)s && ln -s aptasuite-%(version)s.jar aptasuite.jar"]
+
+modaliases = {
+    'aptasuite': 'java -jar ${EBROOTAPTASUITE}/aptasuite.jar',
+    'aptasuite-gui': 'java -Dprism.order=sw --module-path ${EBROOTJAVAFX}/lib ' +
+                     '--add-modules javafx.controls,javafx.fxml -jar ${EBROOTAPTASUITE}/aptasuite.jar',
+}
+
+sanity_check_paths = {
+    'files': ['aptasuite-%(version)s.jar', 'aptasuite.jar'],
+    'dirs': []
+}
+
+modloadmsg = """
+To execute on command line run: aptasuite
+To launch the graphical interface run: aptasuite-gui
+"""
+
+moduleclass = 'bio'
