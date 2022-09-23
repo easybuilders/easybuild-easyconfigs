@@ -1,0 +1,58 @@
+easyblock = 'MakeCp'
+
+name = 'DSI-Studio'
+version = '2022.08.03'
+
+homepage = 'https://dsi-studio.labsolver.org/'
+description = """DSI Studio is a tractography software tool that maps brain connections and correlates findings
+ with neuropsychological disorders. It is a collective implementation of several diffusion MRI methods, including
+ diffusion tensor imaging (DTI), generalized q-sampling imaging (GQI), q-space diffeomorphic reconstruction (QSDR),
+ diffusion MRI connectometry, and generalized deterministic fiber tracking."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = "frankyeh"
+sources = [{
+    'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive/refs/tags/'],
+    'filename': '%(version)s.tar.gz',
+    'extract_cmd': 'tar xfvz %s',
+}, {
+    'source_urls': ['https://github.com/%(github_account)s/TIPL/archive/'],
+    'filename': '2ce4190050a9daf4f7c631150b906e140a7b43b5.tar.gz', # Chosen based on the release date of DSI Studio
+    'extract_cmd': 'mkdir %(builddir)s/%(name)s-%(version)s/TIPL && tar xfvz %s --strip-components=1 -C %(builddir)s/%(name)s-%(version)s/TIPL',
+}, {
+    'source_urls': ['https://github.com/%(github_account)s/DSI-Studio-atlas/archive/'],
+    'filename': '897ae54c4c703895fb3a06ce512390fe9d631113.tar.gz', # Chosen based on the release date of DSI Studio
+    'extract_cmd': 'mkdir %(builddir)s/%(name)s-%(version)s/other/atlas && tar xfvz %s --strip-components=1 -C %(builddir)s/%(name)s-%(version)s/other/atlas',
+}]
+checksums = [
+    '1a9da301e1eb9de84f425fc101f531257a89af63c8fdba8a89889df098ff7c21',  # 2022.08.03.tar.gz
+    # 2ce4190050a9daf4f7c631150b906e140a7b43b5.tar.gz
+    '41f4d0b07b21ce260ac9fa77b89dcb579339b1dd502e230b9034d6ae8405fbe8',
+    # 897ae54c4c703895fb3a06ce512390fe9d631113.tar.gz
+    '8c199a4e985fcf9da57a0ca320246fced5aac9c6b086c9d9a497613e2b630a23',
+]
+
+builddependencies = [
+    ('binutils', '2.32'),
+]
+
+dependencies = [
+    ('freeglut', '3.2.1'),
+    ('zlib', '1.2.11'),
+    ('Qt5', '5.13.1'),
+]
+
+prebuildopts = 'qmake dsi_studio.pro && export SUBLIBS="-lstdc++fs" && '
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['dsi_studio'],
+    'dirs': ['atlas'],
+}
+
+files_to_copy = ['dsi_studio', 'other/*']
+
+moduleclass = 'bio'
