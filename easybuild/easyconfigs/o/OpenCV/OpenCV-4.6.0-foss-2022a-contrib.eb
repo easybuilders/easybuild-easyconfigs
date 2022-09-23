@@ -2,6 +2,9 @@ name = 'OpenCV'
 version = '4.6.0'
 versionsuffix = '-contrib'
 
+# the hash is version dependent! see 3rdparty/ippicv/ippicv.cmake
+local_ippicv_hash = 'a56b6ac6f030c312b2dce17430eef13aed9af274'
+
 homepage = 'https://opencv.org/'
 description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
  and machine learning software library. OpenCV was built to provide
@@ -23,7 +26,7 @@ sources = [
         'filename': '%(namelower)s_contrib-%(version)s.zip'
     },
     {
-        'source_urls': ['https://raw.githubusercontent.com/%(namelower)s/opencv_3rdparty/a56b6ac6f030c312b2dce17430eef13aed9af274/ippicv'],  # noqa: E501
+        'source_urls': ['https://raw.githubusercontent.com/opencv/opencv_3rdparty/%s/ippicv' % local_ippicv_hash],
         'filename': 'ippicv_2020_lnx_intel64_20191018_general.tgz',
         'extract_cmd': 'cp %s %(builddir)s'
     },
@@ -73,45 +76,18 @@ configopts = " ".join([
     "-DHARFBUZZ_LINK_LIBRARIES_XXXXX=ON",
     "-DBUILD_opencv_python2=OFF",
 ])
+
 enhance_sanity_check = True
 
+local_contrib_libs = [
+    'aruco', 'bgsegm', 'bioinspired', 'ccalib', 'datasets', 'dnn_objdetect', 'dnn_superres', 'dpm', 'face', 'freetype',
+    'fuzzy', 'hdf', 'hfs', 'img_hash', 'line_descriptor', 'optflow', 'phase_unwrapping', 'plot', 'quality', 'reg',
+    'rgbd', 'saliency', 'shape', 'stereo', 'structured_light', 'superres', 'surface_matching', 'text', 'tracking',
+    'videostab', 'xfeatures2d', 'ximgproc', 'xobjdetect', 'xphoto'
+]
+
 sanity_check_paths = {
-    'files': [
-        'lib64/libopencv_aruco.so',
-        'lib64/libopencv_bgsegm.so',
-        'lib64/libopencv_bioinspired.so',
-        'lib64/libopencv_ccalib.so',
-        'lib64/libopencv_datasets.so',
-        'lib64/libopencv_dnn_objdetect.so',
-        'lib64/libopencv_dnn_superres.so',
-        'lib64/libopencv_dpm.so',
-        'lib64/libopencv_face.so',
-        'lib64/libopencv_freetype.so',
-        'lib64/libopencv_fuzzy.so',
-        'lib64/libopencv_hdf.so',
-        'lib64/libopencv_hfs.so',
-        'lib64/libopencv_img_hash.so',
-        'lib64/libopencv_line_descriptor.so',
-        'lib64/libopencv_optflow.so',
-        'lib64/libopencv_phase_unwrapping.so',
-        'lib64/libopencv_plot.so',
-        'lib64/libopencv_quality.so',
-        'lib64/libopencv_reg.so',
-        'lib64/libopencv_rgbd.so',
-        'lib64/libopencv_saliency.so',
-        'lib64/libopencv_shape.so',
-        'lib64/libopencv_stereo.so',
-        'lib64/libopencv_structured_light.so',
-        'lib64/libopencv_superres.so',
-        'lib64/libopencv_surface_matching.so',
-        'lib64/libopencv_text.so',
-        'lib64/libopencv_tracking.so',
-        'lib64/libopencv_videostab.so',
-        'lib64/libopencv_xfeatures2d.so',
-        'lib64/libopencv_ximgproc.so',
-        'lib64/libopencv_xobjdetect.so',
-        'lib64/libopencv_xphoto.so'
-    ],
+    'files': ['lib64/libopencv_%s.%s' % (l, SHLIB_EXT) for l in local_contrib_libs],
     'dirs': [],
 }
 
