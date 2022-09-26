@@ -1,0 +1,39 @@
+easyblock = 'CMakeNinja'
+
+name = 'pocl'
+version = '3.0'
+
+homepage = 'https://portablecl.org'
+description = "Pocl is a portable open source (MIT-licensed) implementation of the OpenCL standard"
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/pocl/pocl/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['pocl-%(version)s_fix-build-without-ocl-icd.patch']
+checksums = ['a3fd3889ef7854b90b8e4c7899c5de48b7494bf770e39fba5ad268a5cbcc719d']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Ninja', '1.10.2'),
+    ('pkgconf', '1.8.0'),
+]
+
+dependencies = [
+    ('Clang', '13.0.1'),
+    ('hwloc', '2.7.1'),
+    ('libtool', '2.4.7'),
+    ('libxml2', '2.9.13'),
+]
+
+# disable attempt to find an ICD loader, always build libOpenCL.so
+configopts = "-DENABLE_ICD=0 -DINSTALL_OPENCL_HEADERS=1 "
+# make sure we use the easybuild Clang
+configopts += "-DWITH_LLVM_CONFIG=$EBROOTCLANG/bin/llvm-config -DSTATIC_LLVM=ON"
+
+sanity_check_paths = {
+    'files': ['bin/poclcc', 'lib64/libOpenCL.%s' % SHLIB_EXT],
+    'dirs': ['include/CL', 'lib64/pkgconfig'],
+}
+
+moduleclass = 'lib'
