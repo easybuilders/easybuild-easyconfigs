@@ -15,10 +15,15 @@ toolchainopts = {'pic': True}
 
 source_urls = ['https://github.com/cornelisnetworks/opa-psm2/archive/refs/tags']
 sources = ['PSM2_%(version)s.tar.gz']
-patches = [('opa-psm2-hfi-user.patch', 1)]
+patches = [
+    ('opa-psm2-hfi-user.patch', 1),
+    'opa-psm2-fix-silent-data-error.patch',
+]
+
 checksums = [
     '08aa41f41bdb485ee037d3f7e32dd45e79858ce38e744d33b9db2af60e3c627a',  # PSM2_11.2.206.tar.gz
     '7c97f9dc3b2a6f0e5b5d80abca87d44771f03c0895fa363229398de6df4b0884',  # opa-psm2-hfi-user.patch
+    '206db76491f8b6918accb1cd528ed09f77d09ace6383ee25e883eebf2a06363d',  # opa-psm2-fix-silent-data-error.patch
 ]
 
 builddependencies = [('CUDAcore', '10.1.243')]
@@ -26,6 +31,12 @@ builddependencies = [('CUDAcore', '10.1.243')]
 configure_cmd = "sed -i 's|fprintf(stderr,|_HFI_DBG(|' psm_context.c && sed -i 's|/usr|/|' Makefile #"
 buildopts = "arch=x86_64 USE_PSM_UUID=1 PSM_CUDA=1 WERROR="
 installopts = "arch=x86_64 UDEVDIR=/lib/udev DESTDIR=%(installdir)s"
+
+# Make new name for patched library to avoid in-place replacement
+postinstallcmds = [
+    'mv %(installdir)s/lib64/libpsm2.so.2.2{,.1}',
+    'ln -sf libpsm2.so.2.2.1 %(installdir)s/lib64/libpsm2.so.2',
+]
 
 sanity_check_paths = {
     'files': ['lib64/libpsm2.so', 'include/psm2.h'],
