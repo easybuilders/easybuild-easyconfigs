@@ -103,3 +103,23 @@ index f656621d957d6..27b8f3539210a 100644
      global libopenblas_handle = dlopen(libopenblas)
      global libopenblas_path = dlpath(libopenblas_handle)
      global artifact_dir = dirname(Sys.BINDIR)
+--- a/stdlib/LinearAlgebra/src/LinearAlgebra.jl.orig
++++ b/stdlib/LinearAlgebra/src/LinearAlgebra.jl
+@@ -566,6 +566,17 @@
+     try
+         libblas_path = find_library_path(Base.libblas_name)
+         liblapack_path = find_library_path(Base.liblapack_name)
++
++        # make sure OpenBLAS does not set CPU affinity (#1070, #9639)
++        if !haskey(ENV, "OPENBLAS_MAIN_FREE")
++            ENV["OPENBLAS_MAIN_FREE"] = "1"
++        end
++
++        # Ensure that OpenBLAS does not automatically start up a bunch of threads,
++        # it will only do so if requested by another environment variable, or when
++        # LinearAlgebra initializes in its `__init__()` method:
++        ENV["OPENBLAS_DEFAULT_NUM_THREADS"] = "1"
++
+         # We manually `dlopen()` these libraries here, so that we search with `libjulia-internal`'s
+         # `RPATH` and not `libblastrampoline's`.  Once it's been opened, when LBT tries to open it,
+         # it will find the library already loaded.
