@@ -1,0 +1,69 @@
+easyblock = 'ConfigureMake'
+
+name = 'FMM3D'
+version = '1.0.1'
+
+homepage = 'https://fmm3d.readthedocs.io'
+description = """Flatiron Institute Fast Multipole Libraries: a set of libraries to compute N-body
+interactions governed by the Laplace and Helmholtz equations, to a specified precision, in three dimensions, on a
+multi-core shared-memory machine."""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2020a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/flatironinstitute/FMM3D/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['3c378e1a54ffdd3fc2cd97515b5f4b396df44b4826a2decab939fb309fc9123e']
+
+builddependencies = [
+    ('pytest', '7.0.1'),
+]
+
+dependencies = [
+    ('SciPy-Stack', '2022a'),
+]
+
+skipsteps = ['configure']
+
+multi_deps = {'Python': ["3.8", "3.9", "3.10"]}
+
+prebuildopts = ' && '.join([
+    'export FAST_KER=ON',
+    'sed -i "s/-march=native//" makefile',
+    '',
+])
+
+build_cmd ='make lib'
+
+# We need to build a wheel first and not directly pip install as pip out of source build fails.
+installopts = ' && '.join([
+    'PREFIX=%(installdir)s/lib',
+    "make python-dist",
+    "pip install --no-deps --ignore-installed --prefix %(installdir)s python/dist/*.whl",
+])
+
+sanity_check_paths = {
+    'files': [
+        'lib/libfmm3d.a',
+        'lib/libfmm3d.so',
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages'
+    ],
+}
+
+sanity_check_commands = [
+    "python -c 'import fmm3dpy'",
+    "python -c 'from fmm3dpy import hfmm3d'",
+    "python -c 'from fmm3dpy import hfmm3d_fortran'",
+    "python -c 'from fmm3dpy import emfmm3d'",
+    "python -c 'from fmm3dpy import emfmm3d_fortran'",
+    "python -c 'from fmm3dpy import lfmm3d'",
+    "python -c 'from fmm3dpy import lfmm3d_fortran'",
+    "python -c 'from fmm3dpy import stfmm3d'",
+    "python -c 'from fmm3dpy import stfmm3d_fortran'",
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'lib'
