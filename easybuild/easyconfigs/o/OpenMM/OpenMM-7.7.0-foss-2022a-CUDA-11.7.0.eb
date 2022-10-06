@@ -15,7 +15,7 @@ homepage = 'https://openmm.org'
 description = "OpenMM is a toolkit for molecular simulation."
 
 toolchain = {'name': 'foss', 'version': '2022a'}
-toolchainopts = {'opt': True}
+toolchainopts = {'lowopt': True}
 
 source_urls = ['https://github.com/openmm/openmm/archive/']
 sources = ['%(version)s.tar.gz']
@@ -40,7 +40,11 @@ dependencies = [
 ]
 
 # Flags for CUDA-enabled build
-configopts = "-DOPENMM_BUILD_CUDA_LIB=ON"
+configopts = "-DOPENMM_BUILD_CUDA_LIB=ON "
+
+# make sure that correct compiler flags are being used
+# required to avoid that -O3 is used, which triggers an internal compiler error with GCC 11.3.0
+configopts += '-DCMAKE_CXX_FLAGS_RELEASE="$CXXFLAGS -DNDEBUG" '
 
 # defining OPENMM_CUDA_COMPILER=nvcc on pretestops causes 1 test to fail: https://github.com/openmm/openmm/issues/3373
 pretestopts = " CTEST_OUTPUT_ON_FAILURE=1"
