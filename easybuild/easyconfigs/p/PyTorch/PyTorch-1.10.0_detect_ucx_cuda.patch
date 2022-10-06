@@ -1,0 +1,42 @@
+Make PyTorch CUDA-aware-OpenMPI detection aware of UCX.
+The old detection relies on the old pre-UCX smcuda btl from ompi_info.
+Use ucx_info -d to find CUDA enabled UCX if there is no smcuda.
+ucx_info -d only shows cuda_cpy when run on a node with a GPU available.
+
+Åke Sandgren, 2021-12-03
+diff -ru pytorch.orig/cmake/Dependencies.cmake pytorch/cmake/Dependencies.cmake
+--- pytorch.orig/cmake/Dependencies.cmake	2021-11-29 09:13:59.000000000 +0100
++++ pytorch/cmake/Dependencies.cmake	2021-12-03 13:37:47.646865417 +0100
+@@ -1072,16 +1072,29 @@
+     find_program(OMPI_INFO
+       NAMES ompi_info
+       HINTS ${MPI_CXX_LIBRARIES}/../bin)
++    set(CUDA_MPI_FOUND False)
+     if(OMPI_INFO)
+       execute_process(COMMAND ${OMPI_INFO}
+                       OUTPUT_VARIABLE _output)
+       if(_output MATCHES "smcuda")
+-        message(STATUS "Found OpenMPI with CUDA support built.")
++        set(CUDA_MPI_FOUND True)
+       else()
+-        message(WARNING "OpenMPI found, but it is not built with CUDA support.")
+-        set(CAFFE2_FORCE_FALLBACK_CUDA_MPI 1)
++        find_program(UCX_INFO NAMES ucx_info)
++        if(UCX_INFO)
++          execute_process(COMMAND ${UCX_INFO} -d
++                          OUTPUT_VARIABLE _output)
++          if(_output MATCHES "cuda_cpy")
++            set(CUDA_MPI_FOUND True)
++          endif()
++        endif()
+       endif()
+     endif()
++    if (CUDA_MPI_FOUND)
++      message(STATUS "Found OpenMPI with CUDA support built.")
++    else()
++      message(WARNING "OpenMPI found, but it is not built with CUDA support.")
++      set(CAFFE2_FORCE_FALLBACK_CUDA_MPI 1)
++    endif()
+   else()
+     message(WARNING "Not compiling with MPI. Suppress this warning with -DUSE_MPI=OFF")
+     caffe2_update_option(USE_MPI OFF)
