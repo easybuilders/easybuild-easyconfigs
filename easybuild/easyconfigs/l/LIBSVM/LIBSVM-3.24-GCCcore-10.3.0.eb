@@ -1,0 +1,37 @@
+easyblock = 'MakeCp'
+
+name = 'LIBSVM'
+version = '3.24'
+
+homepage = 'https://www.csie.ntu.edu.tw/~cjlin/libsvm'
+description = """LIBSVM is an integrated software for support vector classification, (C-SVC, nu-SVC), regression
+ (epsilon-SVR, nu-SVR) and distribution estimation (one-class SVM). It supports multi-class classification."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://www.csie.ntu.edu.tw/~cjlin/libsvm/oldfiles/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['LIBSVM-3.23_shared_lib.patch']
+checksums = [
+    'd5881a201a4e6227bf8e2f5de7d6eeaef481c6c2bb9540aeca547737844f8696',  # libsvm-3.24.tar.gz
+    'c0ede89365949644f5d7f11382a3f176fd76317c7f5ae5769226ff7c3a801fe6',  # LIBSVM-3.23_shared_lib.patch
+]
+
+dependencies = [('binutils', '2.36.1')]
+
+local_bins = ['svm-%s' % x for x in ['predict', 'scale', 'train']]
+
+files_to_copy = [
+    (local_bins, 'bin'),
+    (['svm.o'], 'lib'),
+    (['libsvm*'], 'lib'),
+    (['svm.h'], 'include/libsvm'),
+    'tools'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins] + ['lib/libsvm.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
