@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMS'
+version = '2.6.0'
+
+homepage = 'https://www.openms.de/'
+description = """As part of the deNBI Center for integrative Bioinformatics, OpenMS offers an open-source software
+ C++ library (+ python bindings) for LC/MS data management and analyses. It provides an infrastructure
+ for the rapid development of mass spectrometry related software as well as a rich toolset built on top of it."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = [
+    'https://github.com/OpenMS/OpenMS/releases/download/Release%(version)s/',
+    'https://github.com/seqan/seqan/archive/refs/tags/',
+]
+sources = [
+    '%(name)s-%(version)s-src.tar.gz',
+    # requires very old version of SeqAn
+    'seqan-v1.4.2.tar.gz',
+]
+
+patches = ['OpenMS-2.6.0-glp_forward_declaration.patch']
+
+checksums = [
+    # OpenMS-2.6.0-src.tar.gz
+    '55f30d09cba420009587e50d70812a4775d012151df8c600c7c39e59079bc10b',
+    # seqan-v1.4.2.tar.gz
+    'c2030ea45b765de086bcc57e6e6e8896e8d93889ddbf4aba5ca8278d54c9a393',
+    # OpenMS-2.6.0-glp_forward_declaration.patch
+    'c52f25643c92a92fa24444632cc0ae0eac8c5061a3cecb3278d526d0f21f4038'
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('Xerces-C++', '3.2.3'),
+    ('LIBSVM', '3.24'),
+    ('GLPK', '5.0'),
+    ('Eigen', '3.3.9'),
+    ('SQLite', '3.35.4'),
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.11'),
+    ('libtool', '2.4.6'),
+    ('Qt5', '5.15.2'),
+    ('Coin', '4.0.0'),
+    ('CoinUtils', '2.11.4'),
+    ('Osi', '0.108.6'),
+    ('Clp', '1.17.6'),
+    ('Cgl', '0.60.3'),
+    ('Cbc', '2.10.5'),
+    ('WildMagic', '5.17'),
+    ('X11', '20210518'),
+]
+
+configopts = "-DCMAKE_PREFIX_PATH=%(builddir)s/seqan-seqan-v1.4.2/core -DCMAKE_CXX_STANDARD_LIBRARIES='-ldl' "
+# Disable reporting to remote servers
+configopts += "-DENABLE_UPDATE_CHECK=OFF "
+# Documentation requires an active X server display and tutorials require LaTex
+configopts += "-DENABLE_DOCS=OFF -DENABLE_TUTORIALS=OFF "
+
+sanity_check_paths = {
+    'files': ['lib/libOpenMS.%s' % SHLIB_EXT, 'lib/libOpenMS_GUI.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include/OpenMS', 'lib', 'share/OpenMS'],
+}
+sanity_check_commands = ['OpenMSInfo']
+
+# Disable notifications on new updates
+modextravars = {'OPENMS_DISABLE_UPDATE_CHECK': 1}
+
+moduleclass = "bio"
