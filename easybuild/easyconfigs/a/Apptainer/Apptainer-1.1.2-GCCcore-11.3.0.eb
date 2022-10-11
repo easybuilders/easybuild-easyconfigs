@@ -1,0 +1,70 @@
+easyblock = 'Bundle'
+
+name = 'Apptainer'
+version = '1.1.2'
+
+homepage = 'https://apptainer.org'
+description = """Apptainer/Singularity is an application containerization solution for High-Performance Computing (HPC). The goal
+of Apptainer is to allow for "mobility of computing": an application containerized on one Linux system should
+be able to run on another system, as it is, and without the need to reconcile software dependencies and Linux
+version differences between the source and target systems."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'sources': [SOURCELOWER_TAR_GZ],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('Go', '1.18.1', '', True),
+    ('pkgconf', '1.8.0'),
+    ('Autotools', '20220317'),
+    ('zlib', '1.2.12'),
+]
+
+osdependencies = [
+    ('libseccomp-dev', 'libseccomp-devel'),
+    ('uidmap', 'shadow-utils'),
+    ('squashfs-tools'),
+    ('squashfuse'),
+    ('fuse2fs', 'e2fsprogs'),
+    ('fuse-overlayfs'),
+    ('fakeroot'),
+    ('cryptsetup'),
+    ('libfuse-dev', 'fuse3-devel'),
+]
+
+components = [
+    ('apptainer', version, {
+        'source_urls': ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s'],
+        'checksums': ['cfb7a26ac752a319ed70e58938155f257d14f1f414167bbe85ab8b941966d563'],
+        'configure_cmd': './mconfig',
+        'prebuildopts': 'cd builddir &&',
+        'preinstallopts': 'cd builddir &&',
+    }),
+    ('squashfuse', '0.1.105', {
+        'source_urls': ['https://github.com/vasi/%(name)s/archive/%(version)s'],
+        'patches': ['%(name)s-%(version)s_pr70.patch'],
+        'checksums': [
+            '3f776892ab2044ecca417be348e482fee2839db75e35d165b53737cb8153ab1e',  # squashfuse-0.1.105.tar.gz
+            '76e4cac8fd60b0abda84c074436978e39de35e3ea89535dfc8e66ac7bc36954d',  # squashfuse-0.1.105_pr70.patch
+        ],
+        'preconfigopts': './autogen.sh && CFLAGS=-std=c99',
+        'configopts': '--enable-multithreading',
+        'buildopts': 'squashfuse_ll',
+        'install_cmd': 'cp squashfuse_ll %(installdir)s/bin',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/apptainer', 'bin/squashfuse_ll'],
+    'dirs': [],
+}
+
+sanity_check_commands = [('apptainer', '--version')]
+
+moduleclass = 'tools'
