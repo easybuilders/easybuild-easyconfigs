@@ -326,6 +326,25 @@ class EasyConfigTest(TestCase):
         self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
                          "No conflicts detected")
 
+    def test_deps(self):
+        """Perform checks on dependencies in easyconfig files"""
+
+        fails = []
+
+        for ec in self.parsed_easyconfigs:
+            # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
+            # since those are released candidates - only even versions (like 1.12) are stable releases;
+            # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
+            for dep in ec['ec'].dependencies():
+                if dep['name'] == 'HDF5':
+                    ver = dep['version']
+                    if int(ver.split('.')[1]) % 2 == 1:
+                        fail = "Odd minor versions of HDF5 should not be used as a dependency: "
+                        fail += "found HDF5 v%s as dependency in %s" % (ver, os.path.basename(ec['spec']))
+                        fails.append(fail)
+
+        self.assertFalse(len(fails), '\n'.join(sorted(fails)))
+
     def check_dep_vars(self, gen, dep, dep_vars):
         """Check whether available variants of a particular dependency are acceptable or not."""
 
@@ -475,8 +494,11 @@ class EasyConfigTest(TestCase):
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'CLHEP': [('2.4.5.1;', [r'GATE-9\.2-foss-2021b'])],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # ncbi-vdb v2.x require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
-            'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.', r'shovill-1\.1\.'])],
+            # ncbi-vdb v2.x and v3.0.0 require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
+            'HDF5': [
+                (r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'ncbi-vdb-3\.0\.0', r'HISAT2-2\.2\.', r'SKESA-2\.4\.',
+                              r'shovill-1\.1\.']),
+            ],
             # VMTK 1.4.x requires ITK 4.13.x
             'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
