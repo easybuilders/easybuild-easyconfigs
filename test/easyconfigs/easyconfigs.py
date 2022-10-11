@@ -1449,11 +1449,11 @@ def template_easyconfig_test(self, spec):
                 # 4th value is toolchain spec
                 if len(dumped_dep) >= 4:
                     if len(orig_dep) >= 4:
-                        # if True was used to indicate that dependency should use system toolchain,
-                        # then we need to compare the value for the dumped easyconfig more carefully;
-                        # see also https://github.com/easybuilders/easybuild-framework/pull/4069
+                        # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
                         if orig_dep[3] is True:
-                            self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
+                            error_msg = "use of `True` to indicate the system toolchain for dependency "
+                            error_msg += "%s is deprecated, use the `SYSTEM` template instead" % dumped_dep[0]
+                            self.fail(error_msg)
                         else:
                             self.assertEqual(dumped_dep[3], orig_dep[3])
                     else:
