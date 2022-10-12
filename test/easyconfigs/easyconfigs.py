@@ -1424,6 +1424,11 @@ def template_easyconfig_test(self, spec):
         orig_val = resolve_template(ec_dict[key], ec.template_values)
         dumped_val = resolve_template(dumped_ec[key], ec.template_values)
 
+        # skip SYSTEM template constant check for pre-2019b toolchain generation easyconfigs
+        # since these fail other CI checks when updated
+        regex = re.compile('(201\d[ab])|(^[1-8]\.\d+\.\d+)')
+        skip_system_template_check = regex.match(ec['toolchain']['version'])
+
         # take into account that dumped value for *dependencies may include hard-coded subtoolchains
         # if no easyconfig was found for the dependency with the 'parent' toolchain,
         # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
@@ -1452,9 +1457,9 @@ def template_easyconfig_test(self, spec):
                 if len(dumped_dep) >= 4:
                     if len(orig_dep) >= 4:
                         # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
-                        if orig_dep[3] is True:
+                        if orig_dep[3] is True and not skip_system_template_check:
                             error_msg = "use of `True` to indicate the system toolchain for dependency "
-                            error_msg += "%s is deprecated, use the `SYSTEM` template instead" % dumped_dep[0]
+                            error_msg += "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
                             self.fail(error_msg)
                         else:
                             self.assertEqual(dumped_dep[3], orig_dep[3])
