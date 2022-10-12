@@ -1,0 +1,160 @@
+--- vasp.6.3.1/src/.objects.orig	2022-09-07 11:45:59.000000000 -0700
++++ vasp.6.3.1/src/.objects	2022-09-07 11:47:08.000000000 -0700
+@@ -115,6 +115,19 @@
+ 	dos.o \
+ 	elf.o \
+ 	hamil_rot.o \
++	bfgs.o \
++	dynmat.o \
++	instanton.o \
++	lbfgs.o \
++	sd.o \
++	cg.o \
++	dimer.o \
++	bbm.o \
++	fire.o \
++	lanczos.o \
++	neb.o \
++	qm.o \
++	opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	fileio.o \
+--- vasp.6.3.1/src/main.F.orig	2022-09-07 11:47:20.000000000 -0700
++++ vasp.6.3.1/src/main.F	2022-09-07 11:49:27.000000000 -0700
+@@ -937,7 +937,7 @@
+ ! init all chains (INCAR reader)
+ !-----------------------------------------------------------------------
+       LCHAIN = IMAGES > 0 .AND. .NOT.AFQMC_SET % ACTIVE
+-      IF (LCHAIN) CALL chain_init( T_INFO, IO)
++      CALL chain_init( T_INFO, IO) 
+ !-----------------------------------------------------------------------
+ !xml finish copying parameters from INCAR to xml file
+ ! no INCAR reading from here 
+@@ -3540,7 +3540,7 @@
+       ENDIF
+ 
+       CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
+-           LATT_CUR%A,LATT_CUR%B,IO%IU6)
++           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6)
+ 
+       CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
+            LATT_CUR%A,LATT_CUR%B,IO%IU6)
+--- vasp.6.3.1/src/mpi.F.orig	2022-09-07 11:49:40.000000000 -0700
++++ vasp.6.3.1/src/mpi.F	2022-09-07 12:34:54.000000000 -0700
+@@ -2042,6 +2042,29 @@
+       END SUBROUTINE M_prodb_z
+ 
+ #endif // MPI_INPLACE
++! Subroutine for VASPsol - Added by D. Gaissmaier
++!----------------------------------------------------------------------
++!
++! Global sum function - required for VASPsol
++!
++!----------------------------------------------------------------------
++
++      SUBROUTINE M_sum_1(COMM, v1)
++      USE mpimy
++      IMPLICIT NONE
++
++      TYPE(communic) COMM
++      REAL(q) vec(1),v1
++
++      vec(1)=v1
++
++      CALL M_sumb_d(COMM, vec, 1)
++
++      v1=vec(1)
++
++      RETURN
++      END SUBROUTINE
++! End of VASPsol subroutine
+ 
+ !----------------------------------------------------------------------
+ !
+--- vasp.6.3.1/src/pot.F.orig	2022-09-07 12:35:04.000000000 -0700
++++ vasp.6.3.1/src/pot.F	2022-09-07 12:36:10.000000000 -0700
+@@ -406,6 +406,16 @@
+       IF (LBEXTERNAL()) CALL BEXT_ADDV(CVTOT,GRIDC,SIZE(CVTOT,2))
+ ! bexternal__
+       CALL POT_FLIP(CVTOT, GRIDC,WDES%NCDIJ )
++! --- VASPsol modification ---------------------------------------------
++! --- Added by D. Gaissmaier -------------------------------------------
++! --- Patch (pbz_patch_541) Compute the FERMI SHIFT (VASPsol)  ---------
++! ----------------------------------------------------------------------
++! solvation__
++! vaclevel
++      IF (LSOL) CALL GET_FERMISHIFT(LATT_CUR, T_INFO, GRIDC, WDES, CWORK, CHTOT)
++! vaclevel
++! solvation
++! --- End of VASPsol modification --------------------------------------
+ !=======================================================================
+ ! if overlap is used :
+ ! copy CVTOT to SV and set contribution of unbalanced lattice-vectors
+--- vasp.6.3.1/arch/makefile.include.intel_omp.orig	2022-09-07 12:45:48.000000000 -0700
++++ vasp.6.3.1/arch/makefile.include.intel_omp	2022-09-07 12:57:10.000000000 -0700
+@@ -7,12 +7,10 @@
+               -Dvasp6 \
+               -Duse_bse_te \
+               -Dtbdyn \
+-              -Dfock_dblbuf \
+-              -D_OPENMP
+-
++              -Dfock_dblbuf
+ CPP         = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
+ 
+-FC          = mpiifort -qopenmp
++FC          = mpiifort 
+ FCL         = mpiifort
+ 
+ FREE        = -free -names lowercase
+@@ -49,29 +47,38 @@
+ 
+ # When compiling on the target machine itself, change this to the
+ # relevant target when cross-compiling for another architecture
+-VASP_TARGET_CPU ?= -xHOST
++VASP_TARGET_CPU ?= 
+ FFLAGS     += $(VASP_TARGET_CPU)
++# Flexiblas  (FFTW, BLAS, LAPACK, and scaLAPACK)
++LLIBS      += -lflexiblas_intel -lscalapack -lfftw3 
+ 
+-# Intel MKL (FFTW, BLAS, LAPACK, and scaLAPACK)
+-# (Note: for Intel Parallel Studio's MKL use -mkl instead of -qmkl)
+-FCL        += -qmkl
+-MKLROOT    ?= /path/to/your/mkl/installation
+-LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+-INCS        =-I$(MKLROOT)/include/fftw
+ 
+ # HDF5-support (optional but strongly recommended)
+-#CPP_OPTIONS+= -DVASP_HDF5
++CPP_OPTIONS+= -DVASP_HDF5
+ #HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
++LLIBS      +=  -lhdf5_fortran
+ #INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
++CPP_OPTIONS    += -DVASP2WANNIER90
+ #WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++LLIBS          +=  -lwannier
+ 
+ # For the fftlib library (hardly any benefit in combination with MKL's FFTs)
+ #FCL         = mpiifort fftlib.o -qmkl
+ #CXX_FFTLIB  = icpc -qopenmp -std=c++11 -DFFTLIB_USE_MKL -DFFTLIB_THREADSAFE
+ #INCS_FFTLIB = -I./include -I$(MKLROOT)/include/fftw
+ #LIBS       += fftlib
++
++#Libbeef-support
++CPP_OPTIONS  += -Dlibbeef
++LLIBS        += -lbeef
++
++#VASPsol support
++CPP_OPTIONS += -Dsol_compat
++
++#Libxc-support
++CPP_OPTIONS += -DUSELIBXC
++LLIBS       += -lxcf03 -lxc
++
++

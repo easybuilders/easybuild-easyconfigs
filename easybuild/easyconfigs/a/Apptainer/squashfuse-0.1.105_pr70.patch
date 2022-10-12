@@ -1,0 +1,1784 @@
+From 2ff837b814e84eedc25574014da9ed24ee44b7b4 Mon Sep 17 00:00:00 2001
+From: Kevin Vigor <kvigor@gmail.com>
+Date: Thu, 6 Feb 2020 09:59:56 -0800
+Subject: [PATCH 1/3] Add locking to cache API in anticipation of multithreaded
+ decompression.
+
+The existing cache API has effectively no locking and relies on the single-
+threaded nature of the code to prevent contention on cache entries.
+As a first step to multithreading the driver, refactor the cache API to allow
+alternative implementations. In this changeset the API is changed but the
+internal cache implementation is not make thread-safe, so it still suitable
+only for single-threaded usage.
+
+Specific changes:
+
+*   sqfs_cache type is made opaque.
+*   previously, newly allocated cache entries were assumed valid. This meant that
+    on any failure path following a cache entry allocation, one had to be careful
+    to call sqfs_cache_invalidate(). The assumption is now reversed, cache
+    entries are invalid until explicitly marked valid with
+    sqfs_cache_entry_valid(). This simplifies error handling.
+*   block cache code was intermixed with generic cache code, relocate to fs.c
+*   cache eviction led to object destruction in block cache. The only thing
+    preventing cache eviction while block object in use is single-threaded
+    nature of code. Instead use a refcounting mechanism on the block entries
+    so that we can independently manage block lifetime.
+---
+ Makefile.am       |   6 +-
+ cache.c           | 142 +++++++++++++++++++++++++++++-----------------
+ cache.h           |  40 ++++++-------
+ common.h          |  26 ++++++++-
+ file.c            |  23 ++++----
+ file.h            |   4 --
+ fs.c              |  61 ++++++++++++++++----
+ fs.h              |   5 ++
+ table.c           |   2 +-
+ tests/cachetest.c | 107 ++++++++++++++++++++++++++++++++++
+ 10 files changed, 314 insertions(+), 102 deletions(-)
+ create mode 100644 tests/cachetest.c
+
+diff --git a/Makefile.am b/Makefile.am
+index 5659cd22..eaf7ac97 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -105,9 +105,11 @@ endif
+ TESTS =
+ if SQ_FUSE_TESTS
+ TESTS += tests/ll-smoke.sh
+-check_PROGRAMS = endiantest
++check_PROGRAMS = cachetest endiantest
++cachetest_SOURCES=tests/cachetest.c
++cachetest_LDADD=libsquashfuse.la $(COMPRESSION_LIBS)
+ endiantest_SOURCES = tests/endiantest.c
+-TESTS += endiantest
++TESTS += cachetest endiantest
+ endif
+ if SQ_DEMO_TESTS
+ TESTS += tests/ls.sh
+diff --git a/cache.c b/cache.c
+index 0deacfca..36d02234 100644
+--- a/cache.c
++++ b/cache.c
+@@ -22,85 +22,121 @@
+  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
++
++#include "config.h"
+ #include "cache.h"
+ 
+ #include "fs.h"
+ 
++#include <assert.h>
+ #include <stdlib.h>
+ 
++typedef struct sqfs_cache_internal {
++	uint8_t *buf;
++
++	sqfs_cache_dispose dispose;
++
++	size_t size, count;
++	size_t next; /* next block to evict */
++} sqfs_cache_internal;
++
++typedef struct {
++	int valid;
++	sqfs_cache_idx idx;
++} sqfs_cache_entry_hdr;
++
+ sqfs_err sqfs_cache_init(sqfs_cache *cache, size_t size, size_t count,
+-		sqfs_cache_dispose dispose) {
+-	cache->size = size;
+-	cache->count = count;
+-	cache->dispose = dispose;
+-	cache->next = 0;
+-	
+-	cache->idxs = calloc(count, sizeof(sqfs_cache_idx));
+-	cache->buf = calloc(count, size);
+-	if (cache->idxs && cache->buf)
++			 sqfs_cache_dispose dispose) {
++
++	sqfs_cache_internal *c = malloc(sizeof(sqfs_cache_internal));
++	if (!c) {
++		return SQFS_ERR;
++	}
++
++	c->size = size + sizeof(sqfs_cache_entry_hdr);
++	c->count = count;
++	c->dispose = dispose;
++	c->next = 0;
++
++	c->buf = calloc(count, c->size);
++
++	if (c->buf) {
++		*cache = c;
+ 		return SQFS_OK;
+-	
+-	sqfs_cache_destroy(cache);
++	}
++
++	sqfs_cache_destroy(&c);
+ 	return SQFS_ERR;
+ }
+ 
+-static void *sqfs_cache_entry(sqfs_cache *cache, size_t i) {
+-	return cache->buf + i * cache->size;
++static sqfs_cache_entry_hdr *sqfs_cache_entry_header(
++						     sqfs_cache_internal* cache,
++						     size_t i) {
++	return (sqfs_cache_entry_hdr *)(cache->buf + i * cache->size);
++}
++
++static void* sqfs_cache_entry(sqfs_cache_internal* cache, size_t i) {
++	return (void *)(sqfs_cache_entry_header(cache, i) + 1);
+ }
+ 
+ void sqfs_cache_destroy(sqfs_cache *cache) {
+-	if (cache->buf && cache->idxs) {
+-		size_t i;
+-		for (i = 0; i < cache->count; ++i) {
+-			if (cache->idxs[i] != SQFS_CACHE_IDX_INVALID)
+-				cache->dispose(sqfs_cache_entry(cache, i));
++	if (cache && *cache) {
++		sqfs_cache_internal *c = *cache;
++		if (c->buf) {
++			size_t i;
++			for (i = 0; i < c->count; ++i) {
++				sqfs_cache_entry_hdr *hdr =
++					sqfs_cache_entry_header(c, i);
++				if (hdr->valid) {
++					c->dispose((void *)(hdr + 1));
++				}
++			}
+ 		}
++		free(c->buf);
++		free(c);
++		*cache = NULL;
+ 	}
+-	free(cache->buf);
+-	free(cache->idxs);
+ }
+ 
+ void *sqfs_cache_get(sqfs_cache *cache, sqfs_cache_idx idx) {
+ 	size_t i;
+-	for (i = 0; i < cache->count; ++i) {
+-		if (cache->idxs[i] == idx)
+-			return sqfs_cache_entry(cache, i);
++	sqfs_cache_internal *c = *cache;
++	sqfs_cache_entry_hdr *hdr;
++
++	for (i = 0; i < c->count; ++i) {
++		hdr = sqfs_cache_entry_header(c, i);
++		if (hdr->idx == idx) {
++			assert(hdr->valid);
++			return sqfs_cache_entry(c, i);
++		}
+ 	}
+-	return NULL;
+-}
+ 
+-void *sqfs_cache_add(sqfs_cache *cache, sqfs_cache_idx idx) {
+-	size_t i = (cache->next++);
+-	cache->next %= cache->count;
+-	
+-	if (cache->idxs[i] != SQFS_CACHE_IDX_INVALID)
+-		cache->dispose(sqfs_cache_entry(cache, i));
+-	
+-	cache->idxs[i] = idx;
+-	return sqfs_cache_entry(cache, i);
+-}
++	/* No existing entry; free one if necessary, allocate a new one. */
++	i = (c->next++);
++	c->next %= c->count;
+ 
+-/* sqfs_cache_add can be called but the caller can fail to fill it (IO
+- * error, etc).  sqfs_cache_invalidate invalidates the cache entry.
+- * It does not call dispose; it merely marks the entry as reusable
+- * since it is never fully initialized.
+- */
+-void sqfs_cache_invalidate(sqfs_cache *cache, sqfs_cache_idx idx) {
+-	size_t i;
+-	for (i = 0; i < cache->count; ++i) {
+-		if (cache->idxs[i] == idx) {
+-			cache->idxs[i] = SQFS_CACHE_IDX_INVALID;
+-			return;
+-		}
++	hdr = sqfs_cache_entry_header(c, i);
++	if (hdr->valid) {
++		/* evict */
++		c->dispose((void *)(hdr + 1));
++		hdr->valid = 0;
+ 	}
++
++	hdr->idx = idx;
++	return (void *)(hdr + 1);
++}
++
++int sqfs_cache_entry_valid(const sqfs_cache *cache, const void *e) {
++	sqfs_cache_entry_hdr *hdr = ((sqfs_cache_entry_hdr *)e) - 1;
++	return hdr->valid;
+ }
+ 
+-static void sqfs_block_cache_dispose(void *data) {
+-	sqfs_block_cache_entry *entry = (sqfs_block_cache_entry*)data;
+-	sqfs_block_dispose(entry->block);
++void sqfs_cache_entry_mark_valid(sqfs_cache *cache, void *e) {
++	sqfs_cache_entry_hdr *hdr = ((sqfs_cache_entry_hdr *)e) - 1;
++	assert(hdr->valid == 0);
++	hdr->valid = 1;
+ }
+ 
+-sqfs_err sqfs_block_cache_init(sqfs_cache *cache, size_t count) {
+-	return sqfs_cache_init(cache, sizeof(sqfs_block_cache_entry), count,
+-		&sqfs_block_cache_dispose);
++void sqfs_cache_put(const sqfs_cache *cache, const void *e) {
++	// nada, we have no locking in single-threaded implementation.
+ }
+diff --git a/cache.h b/cache.h
+index b78c524d..da471352 100644
+--- a/cache.h
++++ b/cache.h
+@@ -33,35 +33,37 @@
+  *  - No thread safety
+  *  - Misses are caller's responsibility
+  */
+-#define SQFS_CACHE_IDX_INVALID 0
+ 
+ typedef uint64_t sqfs_cache_idx;
+ typedef void (*sqfs_cache_dispose)(void* data);
+ 
+-typedef struct {
+-	sqfs_cache_idx *idxs;
+-	uint8_t *buf;
+-	
+-	sqfs_cache_dispose dispose;
+-	
+-	size_t size, count;
+-	size_t next; /* next block to evict */
+-} sqfs_cache;
++struct sqfs_cache_internal;
++typedef struct sqfs_cache_internal *sqfs_cache;
+ 
+ sqfs_err sqfs_cache_init(sqfs_cache *cache, size_t size, size_t count,
+ 	sqfs_cache_dispose dispose);
+ void sqfs_cache_destroy(sqfs_cache *cache);
+ 
++/* Get an entry for the given index.
++ *
++ * This will always succeed (evicting if necessary). The caller must then
++ * call sqfs_cache_entry_valid() to determine if the entry is valid. If not
++ * valid, the entry is newly allocated and the caller is responsible for
++ * initializing it and then calling sqfs_cache_entry_mark_valid().
++ *
++ * This call may block in multithreaded case.
++ *
++ * In multithreaded case, the cache is locked on return (no entries can
++ * be added or removed). Caller must call sqfs_cache_put() when it is safe
++ * to evict the returned cache entry.
++ */
+ void *sqfs_cache_get(sqfs_cache *cache, sqfs_cache_idx idx);
+-void *sqfs_cache_add(sqfs_cache *cache, sqfs_cache_idx idx);
+-void sqfs_cache_invalidate(sqfs_cache *cache, sqfs_cache_idx idx);
+-
+-
+-typedef struct {
+-	sqfs_block *block;
+-	size_t data_size;
+-} sqfs_block_cache_entry;
++/* inform cache it is now safe to evict this entry. */
++void sqfs_cache_put(const sqfs_cache *cache, const void *e);
+ 
+-sqfs_err sqfs_block_cache_init(sqfs_cache *cache, size_t count);
++/* Determine if cache entry contains valid contents. */
++int sqfs_cache_entry_valid(const sqfs_cache *cache, const void *e);
++/* Mark cache entry as containing valid contents. */
++void sqfs_cache_entry_mark_valid(sqfs_cache *cache, void *e);
+ 
+ #endif
+diff --git a/common.h b/common.h
+index aeac5c67..9d50e006 100644
+--- a/common.h
++++ b/common.h
+@@ -32,12 +32,23 @@
+ #include <sys/types.h>
+ 
+ #ifdef _WIN32
+-	#include <win32.h>
++# include <win32.h>
++# include <intrin.h>
++# define atomic_inc_relaxed(ptr) \
++	_InterlockedIncrement(ptr)
++# define atomic_dec_acqrel(ptr) \
++	_InterlockedDecrement(ptr)
+ #else
+ 	typedef mode_t sqfs_mode_t;
+ 	typedef uid_t sqfs_id_t;
+ 	typedef off_t sqfs_off_t;
+ 	typedef int sqfs_fd_t;
++
++# define atomic_inc_relaxed(ptr) \
++	__atomic_add_fetch(&block->refcount, 1, __ATOMIC_RELAXED)
++# define atomic_dec_acqrel(ptr) \
++	__atomic_sub_fetch(&block->refcount, 1, __ATOMIC_ACQ_REL)
++
+ #endif
+ 
+ typedef enum {
+@@ -59,6 +70,7 @@ typedef struct sqfs_inode sqfs_inode;
+ typedef struct {
+ 	size_t size;
+ 	void *data;
++	long refcount;
+ } sqfs_block;
+ 
+ typedef struct {
+@@ -66,4 +78,16 @@ typedef struct {
+ 	size_t offset;
+ } sqfs_md_cursor;
+ 
++/* Increment the refcount on the block. */
++static inline void sqfs_block_ref(sqfs_block *block) {
++	atomic_inc_relaxed(&block->refcount);
++}
++
++/* decrement the refcount on the block, return non-zero if we held the last
++ * reference.
++ */
++static inline int sqfs_block_deref(sqfs_block *block) {
++	return atomic_dec_acqrel(&block->refcount) == 0;
++}
++
+ #endif
+diff --git a/file.c b/file.c
+index a4d894eb..d09f2a7d 100644
+--- a/file.c
++++ b/file.c
+@@ -177,7 +177,7 @@ sqfs_err sqfs_read_range(sqfs *fs, sqfs_inode *inode, sqfs_off_t start,
+ 			take = (size_t)(*size);
+ 		if (block) {
+ 			memcpy(buf, (char*)block->data + data_off + read_off, take);
+-			/* BLOCK CACHED, DON'T DISPOSE */
++			sqfs_block_dispose(block);
+ 		} else {
+ 			memset(buf, 0, take);
+ 		}
+@@ -226,7 +226,7 @@ sqfs_err sqfs_blockidx_init(sqfs_cache *cache) {
+ }
+ 
+ sqfs_err sqfs_blockidx_add(sqfs *fs, sqfs_inode *inode,
+-		sqfs_blockidx_entry **out) {
++		sqfs_blockidx_entry **out, sqfs_blockidx_entry **cachep) {
+ 	size_t blocks;	/* Number of blocks in the file */
+ 	size_t md_size; /* Amount of metadata necessary to hold the blocksizes */
+ 	size_t count; 	/* Number of block-index entries necessary */
+@@ -234,10 +234,6 @@ sqfs_err sqfs_blockidx_add(sqfs *fs, sqfs_inode *inode,
+ 	sqfs_blockidx_entry *blockidx;
+ 	sqfs_blocklist bl;
+ 	
+-	/* For the cache */
+-	sqfs_cache_idx idx;
+-	sqfs_blockidx_entry **cachep;
+-
+ 	size_t i = 0;
+ 	bool first = true;
+ 	
+@@ -270,8 +266,6 @@ sqfs_err sqfs_blockidx_add(sqfs *fs, sqfs_inode *inode,
+ 		}
+ 	}
+ 
+-	idx = inode->base.inode_number + 1; /* zero means invalid */
+-	cachep = sqfs_cache_add(&fs->blockidx, idx);
+ 	*out = *cachep = blockidx;
+ 	return SQFS_OK;
+ }
+@@ -299,12 +293,16 @@ sqfs_err sqfs_blockidx_blocklist(sqfs *fs, sqfs_inode *inode,
+ 	
+ 	/* Get the index, creating it if necessary */
+ 	idx = inode->base.inode_number + 1; /* zero means invalid index */
+-	if ((bp = sqfs_cache_get(&fs->blockidx, idx))) {
++	bp = sqfs_cache_get(&fs->blockidx, idx);
++	if (sqfs_cache_entry_valid(&fs->blockidx, bp)) {
+ 		blockidx = *bp;
+ 	} else {
+-		sqfs_err err = sqfs_blockidx_add(fs, inode, &blockidx);
+-		if (err)
++		sqfs_err err = sqfs_blockidx_add(fs, inode, &blockidx, bp);
++		if (err) {
++			sqfs_cache_put(&fs->blockidx, bp);
+ 			return err;
++		}
++		sqfs_cache_entry_mark_valid(&fs->blockidx, bp);
+ 	}
+ 	
+ 	skipped = (metablock * SQUASHFS_METADATA_SIZE / sizeof(sqfs_blocklist_entry))
+@@ -316,6 +314,9 @@ sqfs_err sqfs_blockidx_blocklist(sqfs *fs, sqfs_inode *inode,
+ 	bl->remain -= skipped;
+ 	bl->pos = (uint64_t)skipped * fs->sb.block_size;
+ 	bl->block = blockidx->data_block;
++
++	sqfs_cache_put(&fs->blockidx, bp);
++
+ 	return SQFS_OK;
+ }
+ 
+diff --git a/file.h b/file.h
+index 249c6413..e3d2b028 100644
+--- a/file.h
++++ b/file.h
+@@ -71,10 +71,6 @@ typedef struct {
+ 
+ sqfs_err sqfs_blockidx_init(sqfs_cache *cache);
+ 
+-/* Fill *out with all the block-index entries for this file */
+-sqfs_err sqfs_blockidx_add(sqfs *fs, sqfs_inode *inode,
+-	sqfs_blockidx_entry **out);
+-
+ /* Get a blocklist fast-forwarded to the correct location */
+ sqfs_err sqfs_blockidx_blocklist(sqfs *fs, sqfs_inode *inode,
+ 	sqfs_blocklist *bl, sqfs_off_t start);
+diff --git a/fs.c b/fs.c
+index d69bb681..1838c5ca 100644
+--- a/fs.c
++++ b/fs.c
+@@ -124,6 +124,8 @@ sqfs_err sqfs_block_read(sqfs *fs, sqfs_off_t pos, bool compressed,
+ 	sqfs_err err = SQFS_ERR;
+ 	if (!(*block = malloc(sizeof(**block))))
+ 		return SQFS_ERR;
++	/* start with refcount one, so dispose on failure path works as expected. */
++	(*block)->refcount = 1;
+ 	if (!((*block)->data = malloc(size)))
+ 		goto error;
+ 	
+@@ -188,44 +190,81 @@ sqfs_err sqfs_data_block_read(sqfs *fs, sqfs_off_t pos, uint32_t hdr,
+ }
+ 
+ sqfs_err sqfs_md_cache(sqfs *fs, sqfs_off_t *pos, sqfs_block **block) {
+-	sqfs_block_cache_entry *entry = sqfs_cache_get(
+-		&fs->md_cache, *pos);
+-	if (!entry) {
++	sqfs_block_cache_entry *entry = sqfs_cache_get(&fs->md_cache, *pos);
++	if (!sqfs_cache_entry_valid(&fs->md_cache, entry)) {
+ 		sqfs_err err = SQFS_OK;
+-		entry = sqfs_cache_add(&fs->md_cache, *pos);
+ 		/* fprintf(stderr, "MD BLOCK: %12llx\n", (long long)*pos); */
+ 		err = sqfs_md_block_read(fs, *pos,
+ 			&entry->data_size, &entry->block);
+ 		if (err) {
+-			sqfs_cache_invalidate(&fs->md_cache, *pos);
++			sqfs_cache_put(&fs->md_cache, entry);
+ 			return err;
+ 		}
++		sqfs_cache_entry_mark_valid(&fs->md_cache, entry);
+ 	}
++	/* block is created with refcount 1, which accounts for presence in the
++	 * cache (will be decremented on eviction).
++	 *
++	 * We increment it here as a convienience for the caller, who will
++	 * obviously want one. Therefore all callers must eventually call deref
++	 * by means of calling sqfs_block_dispose().
++	 */
+ 	*block = entry->block;
+ 	*pos += entry->data_size;
++
++	sqfs_block_ref(entry->block);
++    /* it is now safe to evict the entry from the cache, we have a
++     * reference to the block so eviction will not destroy it.
++     */
++	sqfs_cache_put(&fs->md_cache, entry);
++
+ 	return SQFS_OK;
+ }
+ 
+ sqfs_err sqfs_data_cache(sqfs *fs, sqfs_cache *cache, sqfs_off_t pos,
+ 		uint32_t hdr, sqfs_block **block) {
+ 	sqfs_block_cache_entry *entry = sqfs_cache_get(cache, pos);
+-	if (!entry) {
++	if (!sqfs_cache_entry_valid(cache, entry)) {
+ 		sqfs_err err = SQFS_OK;
+-		entry = sqfs_cache_add(cache, pos);
+ 		err = sqfs_data_block_read(fs, pos, hdr,
+ 			&entry->block);
+ 		if (err) {
+-			sqfs_cache_invalidate(cache, pos);
++            sqfs_cache_put(cache, entry);
+ 			return err;
+ 		}
++		sqfs_cache_entry_mark_valid(cache, entry);
+ 	}
++	/* block is created with refcount 1, which accounts for presence in the
++	 * cache (will be decremented on eviction).
++	 *
++	 * We increment it here as a convenience for the caller, who will
++	 * obviously want one. Therefore all callers must eventually call deref
++	 * by means of calling sqfs_block_dispose().
++	 */
+ 	*block = entry->block;
++	sqfs_block_ref(*block);
++    /* it is now safe to evict the entry from the cache, we have a
++     * reference to the block so eviction will not destroy it.
++     */
++	sqfs_cache_put(cache, entry);
+ 	return SQFS_OK;
+ }
+ 
+ void sqfs_block_dispose(sqfs_block *block) {
+-	free(block->data);
+-	free(block);
++	if (sqfs_block_deref(block)) {
++		free(block->data);
++		free(block);
++	}
++}
++
++static void sqfs_block_cache_dispose(void *data) {
++	sqfs_block_cache_entry *entry = (sqfs_block_cache_entry*)data;
++	sqfs_block_dispose(entry->block);
++}
++
++sqfs_err sqfs_block_cache_init(sqfs_cache *cache, size_t count) {
++	return sqfs_cache_init(cache, sizeof(sqfs_block_cache_entry), count,
++			       &sqfs_block_cache_dispose);
+ }
+ 
+ void sqfs_md_cursor_inode(sqfs_md_cursor *cur, sqfs_inode_id id, sqfs_off_t base) {
+@@ -247,7 +286,6 @@ sqfs_err sqfs_md_read(sqfs *fs, sqfs_md_cursor *cur, void *buf, size_t size) {
+ 			take = size;		
+ 		if (buf)
+ 			memcpy(buf, (char*)block->data + cur->offset, take);
+-		/* BLOCK CACHED, DON'T DISPOSE */
+ 		
+ 		if (buf)
+ 			buf = (char*)buf + take;
+@@ -257,6 +295,7 @@ sqfs_err sqfs_md_read(sqfs *fs, sqfs_md_cursor *cur, void *buf, size_t size) {
+ 			cur->block = pos;
+ 			cur->offset = 0;
+ 		}
++		sqfs_block_dispose(block);
+ 	}
+ 	return SQFS_OK;
+ }
+diff --git a/fs.h b/fs.h
+index d300a3bb..1d475ce0 100644
+--- a/fs.h
++++ b/fs.h
+@@ -97,6 +97,11 @@ sqfs_compression_type sqfs_compression(sqfs *fs);
+ void sqfs_md_header(uint16_t hdr, bool *compressed, uint16_t *size);
+ void sqfs_data_header(uint32_t hdr, bool *compressed, uint32_t *size);
+ 
++typedef struct {
++	sqfs_block *block;
++	size_t data_size;
++} sqfs_block_cache_entry;
++sqfs_err sqfs_block_cache_init(sqfs_cache *cache, size_t count);
+ sqfs_err sqfs_block_read(sqfs *fs, sqfs_off_t pos, bool compressed, uint32_t size,
+ 	size_t outsize, sqfs_block **block);
+ void sqfs_block_dispose(sqfs_block *block);
+diff --git a/table.c b/table.c
+index c035398f..02a5442c 100644
+--- a/table.c
++++ b/table.c
+@@ -76,6 +76,6 @@ sqfs_err sqfs_table_get(sqfs_table *table, sqfs *fs, size_t idx, void *buf) {
+ 		return SQFS_ERR;
+ 	
+ 	memcpy(buf, (char*)(block->data) + off, table->each);
+-	/* BLOCK CACHED, DON'T DISPOSE */
++	sqfs_block_dispose(block);
+ 	return SQFS_OK;
+ }
+diff --git a/tests/cachetest.c b/tests/cachetest.c
+new file mode 100644
+index 00000000..8a2c2363
+--- /dev/null
++++ b/tests/cachetest.c
+@@ -0,0 +1,107 @@
++#include "cache.h"
++#include <stdio.h>
++
++typedef struct {
++    int x;
++    int y;
++} TestStruct;
++
++static void TestStructDispose(void *t) {
++    // nada.
++}
++
++#define EXPECT_EQ(exp1, exp2)						  \
++	do { if ((exp1) != (exp2)) {					  \
++		printf("Test failure: expected " #exp1 " to equal " #exp2 \
++		       " at " __FILE__ ":%d\n", __LINE__);		  \
++		++errors;						  \
++	  }								  \
++	} while (0)
++
++#define EXPECT_NE(exp1, exp2)						   \
++	do { if ((exp1) == (exp2)) {					   \
++		printf("Test failure: expected " #exp1 " to !equal " #exp2 \
++		       " at " __FILE__ ":%d\n", __LINE__);		   \
++		++errors;						   \
++          }								   \
++	} while (0)
++
++
++int test_cache_miss(void) {
++    int errors = 0;
++    sqfs_cache cache;
++    TestStruct *entry;
++
++    EXPECT_EQ(sqfs_cache_init(&cache, sizeof(TestStruct), 16,
++                              TestStructDispose), SQFS_OK);
++    entry = (TestStruct *)sqfs_cache_get(&cache, 1);
++    EXPECT_EQ(sqfs_cache_entry_valid(&cache, entry), 0);
++    sqfs_cache_destroy(&cache);
++
++    return errors == 0;
++}
++
++int test_mark_valid_and_lookup(void) {
++    int errors = 0;
++    sqfs_cache cache;
++    TestStruct *entry;
++
++    EXPECT_EQ(sqfs_cache_init(&cache, sizeof(TestStruct), 16,
++                              TestStructDispose), SQFS_OK);
++    entry = (TestStruct *)sqfs_cache_get(&cache, 1);
++    entry->x = 666;
++    entry->y = 777;
++    sqfs_cache_entry_mark_valid(&cache, entry);
++    sqfs_cache_put(&cache, entry);
++    EXPECT_NE(sqfs_cache_entry_valid(&cache, entry), 0);
++    entry = (TestStruct *)sqfs_cache_get(&cache, 1);
++    EXPECT_NE(sqfs_cache_entry_valid(&cache, entry), 0);
++    EXPECT_EQ(entry->x, 666);
++    EXPECT_EQ(entry->y, 777);
++    sqfs_cache_put(&cache, entry);
++
++    sqfs_cache_destroy(&cache);
++    return errors == 0;
++}
++
++int test_two_entries(void) {
++    int errors = 0;
++    sqfs_cache cache;
++    TestStruct *entry1, *entry2;
++
++    EXPECT_EQ(sqfs_cache_init(&cache, sizeof(TestStruct), 16,
++                              TestStructDispose), SQFS_OK);
++
++    entry1 = (TestStruct *)sqfs_cache_get(&cache, 1);
++    entry1->x = 1;
++    entry1->y = 2;
++    sqfs_cache_entry_mark_valid(&cache, entry1);
++    sqfs_cache_put(&cache, entry1);
++
++    entry2 = (TestStruct *)sqfs_cache_get(&cache, 666);
++    entry2->x = 3;
++    entry2->y = 4;
++    sqfs_cache_entry_mark_valid(&cache, entry2);
++    sqfs_cache_put(&cache, entry2);
++
++    entry1 = (TestStruct *)sqfs_cache_get(&cache, 1);
++    sqfs_cache_put(&cache, entry1);
++    entry2 = (TestStruct *)sqfs_cache_get(&cache, 666);
++    sqfs_cache_put(&cache, entry2);
++    EXPECT_NE(sqfs_cache_entry_valid(&cache, entry1), 0);
++    EXPECT_NE(sqfs_cache_entry_valid(&cache, entry2), 0);
++    EXPECT_EQ(entry1->x, 1);
++    EXPECT_EQ(entry1->y, 2);
++    EXPECT_EQ(entry2->x, 3);
++    EXPECT_EQ(entry2->y, 4);
++
++    sqfs_cache_destroy(&cache);
++
++    return errors == 0;
++}
++
++int main(void) {
++	return test_cache_miss() &&
++		test_mark_valid_and_lookup() &&
++		test_two_entries() ? 0 : 1;
++}
+
+From 379c8507c15ef43b641c1024b43372f2de9fb480 Mon Sep 17 00:00:00 2001
+From: Kevin Vigor <kvigor@gmail.com>
+Date: Thu, 6 Feb 2020 12:20:19 -0800
+Subject: [PATCH 2/3] Implement multi-threaded squashfuse_ll, allowing parallel
+ decompression.
+
+A simple thread-safe cache implementation is added and squashfuse_ll init
+is altered to use fuse_session_loop_mt().
+
+Multithreading must be explicitly enabled at configure time with the
+--enable-multithreading option. If enabled, the resulting squashfuse_ll
+will be multithreaded by default, but this may be disabled at runtime
+with the '-s' FUSE commandline option.
+---
+ Makefile.am                      |   8 +-
+ cache.c                          |   4 +
+ cache_mt.c                       | 169 +++++++++++++++++++++++++++++++
+ configure.ac                     |  11 +-
+ fs.c                             |   9 +-
+ ll.c                             |  77 ++++++++++----
+ ll_main.c                        |  20 +++-
+ m4/squashfuse_c.m4               |  33 +-----
+ squashfs_fs.h                    |   6 +-
+ tests/cachetest.c                |   1 +
+ tests/ll-smoke-singlethreaded.sh |  10 ++
+ tests/ll-smoke.sh                | 141 ++++++++++++++++++++++++++
+ tests/ll-smoke.sh.in             |   6 +-
+ 13 files changed, 432 insertions(+), 63 deletions(-)
+ create mode 100644 cache_mt.c
+ create mode 100755 tests/ll-smoke-singlethreaded.sh
+ create mode 100755 tests/ll-smoke.sh
+
+diff --git a/Makefile.am b/Makefile.am
+index eaf7ac97..17b01be4 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -26,7 +26,7 @@ pkgconfig_DATA 	= squashfuse.pc
+ noinst_LTLIBRARIES += libsquashfuse_convenience.la
+ libsquashfuse_convenience_la_SOURCES = swap.c cache.c table.c dir.c file.c fs.c \
+ 	decompress.c xattr.c hash.c stack.c traverse.c util.c \
+-	nonstd-pread.c nonstd-stat.c \
++	nonstd-pread.c nonstd-stat.c cache_mt.c \
+ 	squashfs_fs.h common.h nonstd-internal.h nonstd.h swap.h cache.h table.h \
+ 	dir.h file.h decompress.h xattr.h squashfuse.h hash.h stack.h traverse.h \
+ 	util.h fs.h
+@@ -105,6 +105,12 @@ endif
+ TESTS =
+ if SQ_FUSE_TESTS
+ TESTS += tests/ll-smoke.sh
++if MULTITHREADED
++# I know this test looks backwards, but the default smoke test is multithreaded
++# when threading is enabled. So we additionally run a singlethreaded test in
++# that case.
++TESTS += tests/ll-smoke-singlethreaded.sh
++endif
+ check_PROGRAMS = cachetest endiantest
+ cachetest_SOURCES=tests/cachetest.c
+ cachetest_LDADD=libsquashfuse.la $(COMPRESSION_LIBS)
+diff --git a/cache.c b/cache.c
+index 36d02234..45408f24 100644
+--- a/cache.c
++++ b/cache.c
+@@ -24,6 +24,9 @@
+  */
+ 
+ #include "config.h"
++
++#ifndef SQFS_MULTITHREADED
++
+ #include "cache.h"
+ 
+ #include "fs.h"
+@@ -140,3 +143,4 @@ void sqfs_cache_entry_mark_valid(sqfs_cache *cache, void *e) {
+ void sqfs_cache_put(const sqfs_cache *cache, const void *e) {
+ 	// nada, we have no locking in single-threaded implementation.
+ }
++#endif /* SQFS_MULTITHREADED */
+diff --git a/cache_mt.c b/cache_mt.c
+new file mode 100644
+index 00000000..1b17fa5a
+--- /dev/null
++++ b/cache_mt.c
+@@ -0,0 +1,169 @@
++#include "config.h"
++
++#ifdef SQFS_MULTITHREADED
++
++/* Thread-safe cache implementation.
++ *
++ * Simple implementation: basic hash table, each individual entry is
++ * protected by a mutex, any collision is handled by eviction.
++ */
++
++#include "cache.h"
++#include "fs.h"
++
++#include <assert.h>
++#include <pthread.h>
++#include <stdlib.h>
++
++typedef struct sqfs_cache_internal {
++    uint8_t *buf;
++    sqfs_cache_dispose dispose;
++    size_t entry_size, count;
++} sqfs_cache_internal;
++
++typedef struct {
++    enum { EMPTY, FULL } state;
++    sqfs_cache_idx idx;
++    pthread_mutex_t lock;
++} sqfs_cache_entry_hdr;
++
++// MurmurHash64A performance-optimized for hash of uint64_t keys
++const static uint64_t kMurmur2Seed = 4193360111ul;
++static uint64_t MurmurRehash64A(uint64_t key) {
++    const uint64_t m = 0xc6a4a7935bd1e995;
++    const int r = 47;
++
++    uint64_t h = (uint64_t)kMurmur2Seed ^ (sizeof(uint64_t) * m);
++
++    key *= m;
++    key ^= key >> r;
++    key *= m;
++
++    h ^= key;
++    h *= m;
++
++    h ^= h >> r;
++    h *= m;
++    h ^= h >> r;
++
++    return h;
++}
++
++static sqfs_cache_entry_hdr *sqfs_cache_entry_header(
++                             sqfs_cache_internal* cache,
++                             size_t i) {
++    assert(i < cache->count);
++    return (sqfs_cache_entry_hdr *)(cache->buf + i * cache->entry_size);
++}
++
++sqfs_err sqfs_cache_init(sqfs_cache *cache, size_t entry_size, size_t count,
++             sqfs_cache_dispose dispose) {
++    size_t i;
++    pthread_mutexattr_t attr;
++    sqfs_cache_internal *c = malloc(sizeof(sqfs_cache_internal));
++
++    if (!c) {
++        return SQFS_ERR;
++    }
++
++    c->entry_size = entry_size + sizeof(sqfs_cache_entry_hdr);
++    c->count = count;
++    c->dispose = dispose;
++
++    pthread_mutexattr_init(&attr);
++#if defined(_GNU_SOURCE) && !defined(NDEBUG)
++    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
++#endif
++
++    c->buf = calloc(c->count, c->entry_size);
++    if (!c->buf) {
++        goto err_out;
++    }
++
++    for (i = 0; i < c->count; ++i) {
++        sqfs_cache_entry_hdr *hdr = sqfs_cache_entry_header(c, i);
++        hdr->state = EMPTY;
++        if (pthread_mutex_init(&hdr->lock, &attr)) {
++            goto err_out;
++        }
++    }
++
++    pthread_mutexattr_destroy(&attr);
++
++    *cache = c;
++    return SQFS_OK;
++
++err_out:
++    sqfs_cache_destroy(&c);
++    return SQFS_ERR;
++}
++
++void sqfs_cache_destroy(sqfs_cache *cache) {
++    if (cache && *cache) {
++        sqfs_cache_internal *c = *cache;
++        if (c->buf) {
++            size_t i;
++            for (i = 0; i < c->count; ++i) {
++                sqfs_cache_entry_hdr *hdr =
++                    sqfs_cache_entry_header(c, i);
++                if (hdr->state == FULL) {
++                    c->dispose((void *)(hdr + 1));
++                }
++                if (pthread_mutex_destroy(&hdr->lock)) {
++                    assert(0);
++                }
++            }
++        }
++        free(c->buf);
++        free(c);
++        *cache = NULL;
++    }
++}
++
++void *sqfs_cache_get(sqfs_cache *cache, sqfs_cache_idx idx) {
++    sqfs_cache_internal *c = *cache;
++    sqfs_cache_entry_hdr *hdr;
++    void *entry;
++
++    uint64_t key = MurmurRehash64A(idx) % c->count;
++
++    hdr = sqfs_cache_entry_header(c, key);
++    if (pthread_mutex_lock(&hdr->lock)) { assert(0); }
++    /* matching unlock is in sqfs_cache_put() */
++    entry = (void *)(hdr + 1);
++
++    if (hdr->state == EMPTY) {
++        hdr->idx = idx;
++        return entry;
++    }
++
++    /* There's a valid entry: it's either a cache hit or a collision. */
++    assert(hdr->state == FULL);
++    if (hdr->idx == idx) {
++        return entry;
++    }
++
++    /* Collision. */
++    c->dispose((void *)(hdr + 1));
++    hdr->state = EMPTY;
++    hdr->idx = idx;
++    return entry;
++}
++
++int sqfs_cache_entry_valid(const sqfs_cache *cache, const void *e) {
++    sqfs_cache_entry_hdr *hdr = ((sqfs_cache_entry_hdr *)e) - 1;
++    return hdr->state == FULL;
++}
++
++void sqfs_cache_entry_mark_valid(sqfs_cache *cache, void *e) {
++    sqfs_cache_entry_hdr *hdr = ((sqfs_cache_entry_hdr *)e) - 1;
++    assert(hdr->state == EMPTY);
++    hdr->state = FULL;
++}
++
++void sqfs_cache_put(const sqfs_cache *cache, const void *e) {
++    sqfs_cache_entry_hdr *hdr = ((sqfs_cache_entry_hdr *)e) - 1;
++    if (pthread_mutex_unlock(&hdr->lock)) { assert(0); }
++}
++
++#endif /* SQFS_MULTITHREADED */
+diff --git a/configure.ac b/configure.ac
+index 762766e9..3869075a 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -10,6 +10,7 @@ AH_BOTTOM([#endif])
+ AC_CANONICAL_BUILD
+ AC_CANONICAL_TARGET
+ AM_INIT_AUTOMAKE([foreign -Wall subdir-objects])
++AC_USE_SYSTEM_EXTENSIONS
+ AM_SILENT_RULES(yes)
+ AM_PROG_AR
+ LT_INIT
+@@ -23,10 +24,8 @@ AC_PROG_SED
+ AC_PROG_CPP
+ AC_SYS_LARGEFILE
+ AM_PROG_CC_C_O
+-SQ_PROG_CPP_POSIX_2001
+ SQ_PROG_CC_WALL
+ 
+-AC_DEFINE([_POSIX_C_SOURCE], [200112L], [POSIX 2001 compatibility])
+ 
+ # Non-POSIX declarations
+ SQ_CHECK_DECL_MAKEDEV
+@@ -97,6 +96,14 @@ AC_CONFIG_FILES([tests/ll-smoke.sh],[chmod +x tests/ll-smoke.sh])
+ AS_IF([test "x$sq_high_level$sq_low_level$sq_demo" = xnonono],
+ 	AC_MSG_FAILURE([Nothing left to build]))
+ 
++AC_ARG_ENABLE([multithreading],
++ 	AS_HELP_STRING([--enable-multithreading], [enable multi-threaded low-level FUSE driver]),
++	[
++    AC_CHECK_LIB([pthread], [pthread_mutex_lock], [], AC_MSG_ERROR([libpthread is required for multithreaded build]))
++    AC_DEFINE(SQFS_MULTITHREADED, 1, [Enable multi-threaded low-level FUSE driver])
++    ])
++AM_CONDITIONAL([MULTITHREADED], [test x$enable_multithreading = xyes])
++
+ AC_SUBST([sq_decompressors])
+ AC_SUBST([sq_high_level])
+ AC_SUBST([sq_low_level])
+diff --git a/fs.c b/fs.c
+index 1838c5ca..ab854b0f 100644
+--- a/fs.c
++++ b/fs.c
+@@ -34,8 +34,13 @@
+ #include <sys/stat.h>
+ 
+ 
+-#define DATA_CACHED_BLKS 1
+-#define FRAG_CACHED_BLKS 3
++#ifdef SQFS_MULTITHREADED
++# define DATA_CACHED_BLKS 48
++# define FRAG_CACHED_BLKS 48
++#else
++# define DATA_CACHED_BLKS 1
++# define FRAG_CACHED_BLKS 3
++#endif
+ 
+ void sqfs_version_supported(int *min_major, int *min_minor, int *max_major,
+ 		int *max_minor) {
+diff --git a/ll.c b/ll.c
+index 4d17ba5b..596c8bf1 100644
+--- a/ll.c
++++ b/ll.c
+@@ -52,11 +52,49 @@ static sig_atomic_t open_refcount = 0;
+ /* same as lib/fuse_signals.c */
+ static struct fuse_session *fuse_instance = NULL;
+ 
++static void update_access_time(void) {
++#ifdef SQFS_MULTITHREADED
++	/* We only need to track access time if we have an idle timeout,
++	 * don't bother with expensive operations if idle_timeout is 0.
++	 */
++	if (idle_timeout_secs) {
++		time_t now = time(NULL);
++		__atomic_store_n(&last_access, now, __ATOMIC_RELEASE);
++	}
++#else
++	last_access = time(NULL);
++#endif
++}
++
++static void update_open_refcount(int delta) {
++#ifdef SQFS_MULTITHREADED
++	__atomic_fetch_add(&open_refcount, delta, __ATOMIC_RELEASE);
++#else
++	open_refcount += delta;
++#endif
++}
++
++static inline time_t get_access_time(void) {
++#ifdef SQFS_MULTITHREADED
++	return __atomic_load_n(&last_access, __ATOMIC_ACQUIRE);
++#else
++	return last_access;
++#endif
++}
++
++static inline sig_atomic_t get_open_refcount(void) {
++#ifdef SQFS_MULTITHREADED
++	return __atomic_load_n(&open_refcount, __ATOMIC_ACQUIRE);
++#else
++	return open_refcount;
++#endif
++}
++
+ void sqfs_ll_op_getattr(fuse_req_t req, fuse_ino_t ino,
+ 		struct fuse_file_info *fi) {
+ 	sqfs_ll_i lli;
+ 	struct stat st;
+-	last_access = time(NULL);
++	update_access_time();
+ 	if (sqfs_ll_iget(req, &lli, ino))
+ 		return;
+ 	
+@@ -71,7 +109,7 @@ void sqfs_ll_op_getattr(fuse_req_t req, fuse_ino_t ino,
+ void sqfs_ll_op_opendir(fuse_req_t req, fuse_ino_t ino,
+ 		struct fuse_file_info *fi) {
+ 	sqfs_ll_i *lli;
+-	last_access = time(NULL);
++	update_access_time();
+ 	
+ 	fi->fh = (intptr_t)NULL;
+ 	
+@@ -86,7 +124,7 @@ void sqfs_ll_op_opendir(fuse_req_t req, fuse_ino_t ino,
+ 			fuse_reply_err(req, ENOTDIR);
+ 		} else {
+ 			fi->fh = (intptr_t)lli;
+-			++open_refcount;
++			update_open_refcount(1);
+ 			fuse_reply_open(req, fi);
+ 			return;
+ 		}
+@@ -96,14 +134,14 @@ void sqfs_ll_op_opendir(fuse_req_t req, fuse_ino_t ino,
+ 
+ void sqfs_ll_op_create(fuse_req_t req, fuse_ino_t parent, const char *name,
+ 			      mode_t mode, struct fuse_file_info *fi) {
+-	last_access = time(NULL);
++	update_access_time();
+ 	fuse_reply_err(req, EROFS);
+ }
+ 
+ void sqfs_ll_op_releasedir(fuse_req_t req, fuse_ino_t ino,
+ 		struct fuse_file_info *fi) {
+-	last_access = time(NULL);
+-	--open_refcount;
++	update_access_time();
++	update_open_refcount(-1);
+ 	free((sqfs_ll_i*)(intptr_t)fi->fh);
+ 	fuse_reply_err(req, 0); /* yes, this is necessary */
+ }
+@@ -132,7 +170,7 @@ void sqfs_ll_op_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
+ 	sqfs_ll_i *lli = (sqfs_ll_i*)(intptr_t)fi->fh;
+ 	int err = 0;
+ 	
+-	last_access = time(NULL);
++	update_access_time();
+ 	if (sqfs_dir_open(&lli->ll->fs, &lli->inode, &dir, off))
+ 		err = EINVAL;
+ 	if (!err && !(bufpos = buf = malloc(size)))
+@@ -173,7 +211,7 @@ void sqfs_ll_op_lookup(fuse_req_t req, fuse_ino_t parent,
+ 	bool found;
+ 	sqfs_inode inode;
+ 	
+-	last_access = time(NULL);
++	update_access_time();
+ 	if (sqfs_ll_iget(req, &lli, parent))
+ 		return;
+ 	
+@@ -223,7 +261,7 @@ void sqfs_ll_op_open(fuse_req_t req, fuse_ino_t ino,
+ 	sqfs_inode *inode;
+ 	sqfs_ll *ll;
+ 	
+-	last_access = time(NULL);
++	update_access_time();
+ 	if (fi->flags & (O_WRONLY | O_RDWR)) {
+ 		fuse_reply_err(req, EROFS);
+ 		return;
+@@ -243,7 +281,7 @@ void sqfs_ll_op_open(fuse_req_t req, fuse_ino_t ino,
+ 	} else {
+ 		fi->fh = (intptr_t)inode;
+ 		fi->keep_cache = 1;
+-		++open_refcount;
++		update_open_refcount(1);
+ 		fuse_reply_open(req, fi);
+ 		return;
+ 	}
+@@ -254,8 +292,8 @@ void sqfs_ll_op_release(fuse_req_t req, fuse_ino_t ino,
+ 		struct fuse_file_info *fi) {
+ 	free((sqfs_inode*)(intptr_t)fi->fh);
+ 	fi->fh = 0;
+-	last_access = time(NULL);
+-	--open_refcount;
++	update_access_time();
++	update_open_refcount(-1);
+ 	fuse_reply_err(req, 0);
+ }
+ 
+@@ -272,7 +310,7 @@ void sqfs_ll_op_read(fuse_req_t req, fuse_ino_t ino,
+ 		return;
+ 	}
+ 	
+-	last_access = time(NULL);
++	update_access_time();
+ 	osize = size;
+ 	err = sqfs_read_range(&ll->fs, inode, off, &osize, buf);
+ 	if (err) {
+@@ -289,7 +327,7 @@ void sqfs_ll_op_readlink(fuse_req_t req, fuse_ino_t ino) {
+ 	char *dst;
+ 	size_t size;
+ 	sqfs_ll_i lli;
+-	last_access = time(NULL);
++	update_access_time();
+ 	if (sqfs_ll_iget(req, &lli, ino))
+ 		return;
+ 	
+@@ -313,7 +351,7 @@ void sqfs_ll_op_listxattr(fuse_req_t req, fuse_ino_t ino, size_t size) {
+ 	char *buf;
+ 	int ferr;
+ 	
+-	last_access = time(NULL);
++	update_access_time();
+ 	if (sqfs_ll_iget(req, &lli, ino))
+ 		return;
+ 
+@@ -351,7 +389,7 @@ void sqfs_ll_op_getxattr(fuse_req_t req, fuse_ino_t ino,
+ 	}
+ #endif
+ 	
+-	last_access = time(NULL);
++	update_access_time();
+ 	if (sqfs_ll_iget(req, &lli, ino))
+ 		return;
+ 	
+@@ -373,7 +411,7 @@ void sqfs_ll_op_getxattr(fuse_req_t req, fuse_ino_t ino,
+ void sqfs_ll_op_forget(fuse_req_t req, fuse_ino_t ino,
+ 		unsigned long nlookup) {
+ 	sqfs_ll_i lli;
+-	last_access = time(NULL);
++	update_access_time();
+ 	sqfs_ll_iget(req, &lli, SQFS_FUSE_INODE_NONE);
+ 	lli.ll->ino_forget(lli.ll, ino, nlookup);
+ 	fuse_reply_none(req);
+@@ -489,7 +527,8 @@ void alarm_tick(int sig) {
+ 		return;
+ 	}
+ 
+-	if (open_refcount == 0 && time(NULL) - last_access > idle_timeout_secs) {
++	if (get_open_refcount() == 0 &&
++		time(NULL) - get_access_time() > idle_timeout_secs) {
+ 		/* Safely shutting down fuse in a cross-platform way is a dark art!
+ 		   But just about any platform should stop on SIGINT, so do that */
+ 		kill(getpid(), SIGINT);
+@@ -499,8 +538,8 @@ void alarm_tick(int sig) {
+ }
+ 
+ void setup_idle_timeout(struct fuse_session *se, unsigned int timeout_secs) {
+-	last_access = time(NULL);
+ 	idle_timeout_secs = timeout_secs;
++	update_access_time();
+ 
+ 	struct sigaction sa;
+ 	memset(&sa, 0, sizeof(struct sigaction));
+diff --git a/ll_main.c b/ll_main.c
+index aca76935..22302085 100644
+--- a/ll_main.c
++++ b/ll_main.c
+@@ -142,8 +142,22 @@ int main(int argc, char *argv[]) {
+ 					if (opts.idle_timeout_secs) {
+ 						setup_idle_timeout(ch.session, opts.idle_timeout_secs);
+ 					}
+-					/* FIXME: multithreading */
+-					err = fuse_session_loop(ch.session);
++#ifdef SQFS_MULTITHREADED
++# if FUSE_USE_VERSION >= 30
++                    if (!fuse_cmdline_opts.singlethread) {
++                        struct fuse_loop_config config;
++                        config.clone_fd = 1;
++                        config.max_idle_threads = 10;
++                        err = fuse_session_loop_mt(ch.session, &config);
++                    }
++# else /* FUSE_USE_VERSION < 30 */
++		    if (fuse_cmdline_opts.mt) {
++			err = fuse_session_loop_mt(ch.session);
++		    }
++# endif /* FUSE_USE_VERSION */
++                    else
++#endif
++					    err = fuse_session_loop(ch.session);
+ 					teardown_idle_timeout();
+ 					fuse_remove_signal_handlers(ch.session);
+ 				}
+@@ -157,4 +171,4 @@ int main(int argc, char *argv[]) {
+ 	free(fuse_cmdline_opts.mountpoint);
+ 	
+ 	return -err;
+-}
+\ No newline at end of file
++}
+diff --git a/m4/squashfuse_c.m4 b/m4/squashfuse_c.m4
+index f29a90b1..c4039c42 100644
+--- a/m4/squashfuse_c.m4
++++ b/m4/squashfuse_c.m4
+@@ -21,37 +21,6 @@
+ # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+-# SQ_PROG_CPP_POSIX_2001
+-#
+-# Check if a preprocessor flag is needed for POSIX-2001 headers.
+-# Needed at least on Solaris and derivatives.
+-AC_DEFUN([SQ_PROG_CPP_POSIX_2001],[
+-AC_CACHE_CHECK([for option for POSIX-2001 preprocessor], 
+-	[sq_cv_prog_cpp_posix2001],
+-[
+-	sq_cv_prog_cpp_posix2001=unknown
+-	sq_save_CPPFLAGS=$CPPFLAGS
+-	for sq_flags in none -std=gnu99 -xc99=all
+-	do
+-		AS_IF([test "x$sq_flags" = xnone],,
+-			[CPPFLAGS="$save_CPPFLAGS $sq_flags"])
+-		AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
+-			#define _POSIX_C_SOURCE 200112L
+-			#include <sys/types.h>
+-		])],[
+-			sq_cv_prog_cpp_posix2001=$sq_flags
+-			break
+-		])
+-	done
+-	CPPFLAGS=$sq_save_CPPFLAGS
+-])
+-AS_IF([test "x$sq_cv_prog_cpp_posix2001" = xunknown],
+-	[AC_MSG_FAILURE([can't preprocess for POSIX-2001])],
+-	[AS_IF([test "x$sq_cv_prog_cpp_posix2001" = xnone],,
+-		CPPFLAGS="$CPPFLAGS $sq_cv_prog_cpp_posix2001")
+-])
+-])
+-
+ # SQ_PROG_CC_WALL
+ #
+ # Check if -Wall is supported
+@@ -67,4 +36,4 @@ AC_CACHE_CHECK([how to enable all compiler warnings],
+ ])
+ AS_IF([test "x$sq_cv_prog_cc_wall" = xunknown],,
+ 	[AC_SUBST([AM_CFLAGS],["$AM_CFLAGS $sq_cv_prog_cc_wall"])])
+-])
+\ No newline at end of file
++])
+diff --git a/squashfs_fs.h b/squashfs_fs.h
+index e0ab1f4e..a85b7606 100644
+--- a/squashfs_fs.h
++++ b/squashfs_fs.h
+@@ -105,7 +105,11 @@
+ 
+ 
+ /* cached data constants for filesystem */
+-#define SQUASHFS_CACHED_BLKS		8
++#ifdef SQFS_MULTITHREADED
++# define SQUASHFS_CACHED_BLKS		128
++#else
++# define SQUASHFS_CACHED_BLKS		8
++#endif
+ 
+ #define SQUASHFS_MAX_FILE_SIZE_LOG	64
+ 
+diff --git a/tests/cachetest.c b/tests/cachetest.c
+index 8a2c2363..c515fcdf 100644
+--- a/tests/cachetest.c
++++ b/tests/cachetest.c
+@@ -36,6 +36,7 @@ int test_cache_miss(void) {
+                               TestStructDispose), SQFS_OK);
+     entry = (TestStruct *)sqfs_cache_get(&cache, 1);
+     EXPECT_EQ(sqfs_cache_entry_valid(&cache, entry), 0);
++    sqfs_cache_put(&cache, entry);
+     sqfs_cache_destroy(&cache);
+ 
+     return errors == 0;
+diff --git a/tests/ll-smoke-singlethreaded.sh b/tests/ll-smoke-singlethreaded.sh
+new file mode 100755
+index 00000000..c7cbfc38
+--- /dev/null
++++ b/tests/ll-smoke-singlethreaded.sh
+@@ -0,0 +1,10 @@
++!/bin/bash
++
++# Singlethreaded ll-smoke test.
++#
++# When multithreading is enabled at build time, it is the default
++# behavior of squashfuse_ll, but can be disabled at runtime with
++# the FUSE '-s' commandline option.
++#
++# So we just re-run the normal ll-smoke test with the '-s' option.
++SFLL_EXTRA_ARGS="-s" $(dirname -- $0)/ll-smoke.sh
+diff --git a/tests/ll-smoke.sh b/tests/ll-smoke.sh
+new file mode 100755
+index 00000000..6b9f4641
+--- /dev/null
++++ b/tests/ll-smoke.sh
+@@ -0,0 +1,141 @@
++#!/bin/sh
++
++. "tests/lib.sh"
++
++# Very simple smoke test for squashfuse_ll. Make some random files.
++# assemble a squashfs image, mount it, compare the files.
++
++SFLL=${1:-./squashfuse_ll}         # The squashfuse_ll binary.
++
++IDLE_TIMEOUT=5
++
++trap cleanup EXIT
++set -e
++
++WORKDIR=$(mktemp -d)
++
++sq_umount() {
++    case linux-gnu in
++        linux*)
++            fusermount3 -u $1
++            ;;
++        *)
++            umount $1
++            ;;
++    esac
++}
++
++sq_is_mountpoint() {
++    mount | grep -q "$1"
++}
++
++cleanup() {
++    set +e # Don't care about errors here.
++    if [ -n "$WORKDIR" ]; then
++        if [ -n "$SQ_SAVE_LOGS" ]; then
++            cp "$WORKDIR/squashfs_ll.log" "$SQ_SAVE_LOGS" || true
++        fi
++        if sq_is_mountpoint "$WORKDIR/mount"; then
++            sq_umount "$WORKDIR/mount"
++        fi
++        rm -rf "$WORKDIR"
++    fi
++}
++
++find_compressors
++
++echo "Generating random test files..."
++mkdir -p "$WORKDIR/source"
++head -c 64000000 /dev/urandom >"$WORKDIR/source/rand1"
++head -c 17000 /dev/urandom >"$WORKDIR/source/rand2"
++head -c 100000000 /dev/urandom >"$WORKDIR/source/rand3"
++head -c 87 /dev/zero >"$WORKDIR/source/z1 with spaces"
++
++for comp in $compressors; do
++    echo "Building $comp squashfs image..."
++    mksquashfs "$WORKDIR/source" "$WORKDIR/squashfs.image" -comp $comp -no-progress
++
++    mkdir -p "$WORKDIR/mount"
++
++    echo "Mounting squashfs image..."
++    $SFLL -f $SFLL_EXTRA_ARGS "$WORKDIR/squashfs.image" "$WORKDIR/mount" >"$WORKDIR/squashfs_ll.log" 2>&1 &
++    # Wait up to 5 seconds to be mounted. TSAN builds can take some time to mount.
++    for _ in $(seq 5); do
++    if sq_is_mountpoint "$WORKDIR/mount"; then
++        break
++    fi
++    sleep 1
++    done
++
++    if ! sq_is_mountpoint "$WORKDIR/mount"; then
++        echo "Image did not mount after 5 seconds."
++        cp "$WORKDIR/squashfs_ll.log" /tmp/squashfs_ll.smoke.log
++        echo "There may be clues in /tmp/squashfs_ll.smoke.log"
++        exit 1
++    fi
++
++    if command -v fio >/dev/null; then
++        echo "FIO tests..."
++        fio --filename="$WORKDIR/mount/rand1" --direct=1 --rw=randread --ioengine=libaio --bs=512 --iodepth=16 --numjobs=4 --name=j1 --minimal --output=/dev/null --runtime 30
++        fio --filename="$WORKDIR/mount/rand2" --rw=randread --ioengine=libaio --bs=4k --iodepth=16 --numjobs=4 --name=j2 --minimal --output=/dev/null --runtime 30
++        fio --filename="$WORKDIR/mount/rand3" --rw=randread --ioengine=psync --bs=128k --name=j3 --minimal --output=/dev/null --runtime 30
++    else
++        echo "Consider installing fio for better test coverage."
++    fi
++
++    echo "Comparing files..."
++    cmp "$WORKDIR/source/rand1" "$WORKDIR/mount/rand1"
++    cmp "$WORKDIR/source/rand2" "$WORKDIR/mount/rand2"
++    cmp "$WORKDIR/source/rand3" "$WORKDIR/mount/rand3"
++    cmp "$WORKDIR/source/z1 with spaces" "$WORKDIR/mount/z1 with spaces"
++
++    echo "Parallel md5sum..."
++    md5sum "$WORKDIR"/mount/* >"$WORKDIR/md5sums"
++    split -l1 "$WORKDIR/md5sums" "$WORKDIR/sumpiece"
++    echo "$WORKDIR"/sumpiece* | xargs -P4 -n1 md5sum -c
++
++    echo "Lookup tests..."
++    # Look for non-existent files to exercise failed lookup path.
++    if [ -e "$WORKDIR/mount/bogus" ]; then
++        echo "Bogus existence test"
++        exit 1
++    fi
++    # Twice so we hit cache path.
++    if [ -e "$WORKDIR/mount/bogus" ]; then
++        echo "Bogus existence test #2"
++        exit 1
++    fi
++
++    SRCSZ=$(wc -c < "$WORKDIR/source/rand1")
++    MNTSZ=$(wc -c < "$WORKDIR/mount/rand1")
++    if [ "$SRCSZ" != "$MNTSZ" ]; then
++        echo "Bogus size $MNTSZ != $SRCSZ"
++        exit 1
++    fi
++
++    echo "Unmounting..."
++    sq_umount "$WORKDIR/mount"
++
++    # Only test timeouts once, it takes a long time
++    if [ -z "$did_timeout" ]; then
++        echo "Remounting with idle unmount option..."
++        $SFLL $SFLL_EXTRA_ARGS -otimeout=$IDLE_TIMEOUT "$WORKDIR/squashfs.image" "$WORKDIR/mount"
++        if ! sq_is_mountpoint "$WORKDIR/mount"; then
++            echo "Not mounted?"
++            exit 1
++        fi
++        echo "Waiting up to $(( IDLE_TIMEOUT + 10 )) seconds for idle unmount..."
++        sleep $(( IDLE_TIMEOUT + 10 ))
++        if sq_is_mountpoint "$WORKDIR/mount"; then
++            echo "FS did not idle unmount in timely way."
++            exit 1
++        fi
++
++        did_timeout=yes
++    fi
++
++    rm -f "$WORKDIR/squashfs.image"
++done
++
++echo "Success."
++exit 0
+diff --git a/tests/ll-smoke.sh.in b/tests/ll-smoke.sh.in
+index 84256267..d7ddd8a1 100755
+--- a/tests/ll-smoke.sh.in
++++ b/tests/ll-smoke.sh.in
+@@ -52,13 +52,13 @@ head -c 100000000 /dev/urandom >"$WORKDIR/source/rand3"
+ head -c 87 /dev/zero >"$WORKDIR/source/z1 with spaces"
+ 
+ for comp in $compressors; do
+-    echo "Building $comp squashfs image,.,"
++    echo "Building $comp squashfs image..."
+     mksquashfs "$WORKDIR/source" "$WORKDIR/squashfs.image" -comp $comp -no-progress
+ 
+     mkdir -p "$WORKDIR/mount"
+ 
+     echo "Mounting squashfs image..."
+-    $SFLL -f  "$WORKDIR/squashfs.image" "$WORKDIR/mount" >"$WORKDIR/squashfs_ll.log" 2>&1 &
++    $SFLL -f $SFLL_EXTRA_ARGS "$WORKDIR/squashfs.image" "$WORKDIR/mount" >"$WORKDIR/squashfs_ll.log" 2>&1 &
+     # Wait up to 5 seconds to be mounted. TSAN builds can take some time to mount.
+     for _ in $(seq 5); do
+     if sq_is_mountpoint "$WORKDIR/mount"; then
+@@ -119,7 +119,7 @@ for comp in $compressors; do
+     # Only test timeouts once, it takes a long time
+     if [ -z "$did_timeout" ]; then
+         echo "Remounting with idle unmount option..."
+-        $SFLL -otimeout=$IDLE_TIMEOUT "$WORKDIR/squashfs.image" "$WORKDIR/mount"
++        $SFLL $SFLL_EXTRA_ARGS -otimeout=$IDLE_TIMEOUT "$WORKDIR/squashfs.image" "$WORKDIR/mount"
+         if ! sq_is_mountpoint "$WORKDIR/mount"; then
+             echo "Not mounted?"
+             exit 1
+
+From 069e8f802481af0636fabef46bec75de1992b220 Mon Sep 17 00:00:00 2001
+From: Kevin Vigor <kvigor@gmail.com>
+Date: Mon, 23 May 2022 14:55:25 -0600
+Subject: [PATCH 3/3] Enable lazy umount on SIGTERM.
+
+libfuse sets SIGTERM signal handler to exit immediately. This is very
+unfortunate if any other processes are still using the filesystem.
+
+Teach squashfuse_ll to respond to SIGTERM with lazy umount. We cannot
+directly call umount2() API from the signal handler, since it is not
+signal safe, but we can fork/exec fusermount3 (yay posix?). This is
+also a win because fusermount is suid, enabling non-privileged users
+to umount. Note that normal libfuse umount uses same strategy when
+running as non-root.
+
+Note that this must be explicitly enabled at configure time with
+--enable-sigterm-handler, and it is only tested on linux.
+---
+ Makefile.am             |  3 ++
+ configure.ac            |  9 +++++
+ ll_main.c               | 87 +++++++++++++++++++++++++++++++++++++++++
+ tests/umount-test.sh.in | 85 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 184 insertions(+)
+ create mode 100755 tests/umount-test.sh.in
+
+diff --git a/Makefile.am b/Makefile.am
+index 17b01be4..67c17cde 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -111,6 +111,9 @@ if MULTITHREADED
+ # that case.
+ TESTS += tests/ll-smoke-singlethreaded.sh
+ endif
++if SIGTERM_HANDLER
++TESTS += tests/umount-test.sh
++endif
+ check_PROGRAMS = cachetest endiantest
+ cachetest_SOURCES=tests/cachetest.c
+ cachetest_LDADD=libsquashfuse.la $(COMPRESSION_LIBS)
+diff --git a/configure.ac b/configure.ac
+index 3869075a..7cd4db77 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -91,6 +91,7 @@ AS_IF([test "x$sq_tests" = x], [sq_tests=" none"])
+ 
+ AC_SUBST([sq_mksquashfs_compressors])
+ AC_CONFIG_FILES([tests/ll-smoke.sh],[chmod +x tests/ll-smoke.sh])
++AC_CONFIG_FILES([tests/umount-test.sh],[chmod +x tests/umount-test.sh])
+ 
+ 
+ AS_IF([test "x$sq_high_level$sq_low_level$sq_demo" = xnonono],
+@@ -104,6 +105,14 @@ AC_ARG_ENABLE([multithreading],
+     ])
+ AM_CONDITIONAL([MULTITHREADED], [test x$enable_multithreading = xyes])
+ 
++AC_ARG_ENABLE([sigterm-handler],
++	AS_HELP_STRING([--enable-sigterm-handler], [enable lazy umount on SIGTERM in low-level FUSE driver]),
++	[
++    AC_CHECK_HEADER([linux/version.h], , [], AC_MSG_ERROR([linux host required for sigterm-handler.]))
++    AC_DEFINE(SQFS_SIGTERM_HANDLER, 1, [Enable lazy umount on SIGTERM in low-level FUSE driver])
++    ])
++AM_CONDITIONAL([SIGTERM_HANDLER], [test x$enable_sigterm_handler = xyes])
++
+ AC_SUBST([sq_decompressors])
+ AC_SUBST([sq_high_level])
+ AC_SUBST([sq_low_level])
+diff --git a/ll_main.c b/ll_main.c
+index 22302085..0f956b5d 100644
+--- a/ll_main.c
++++ b/ll_main.c
+@@ -37,6 +37,90 @@
+ #include <signal.h>
+ #include <unistd.h>
+ 
++
++#if defined(SQFS_SIGTERM_HANDLER)
++#include <sys/utsname.h>
++#include <linux/version.h>
++static bool kernel_version_at_least(unsigned required_major,
++                                    unsigned required_minor,
++                                    unsigned required_micro) {
++    struct utsname info;
++
++    if (uname(&info) >= 0) {
++        unsigned major, minor, micro;
++
++        if (sscanf(info.release, "%u.%u.%u", &major, &minor, &micro) == 3) {
++            return KERNEL_VERSION(major, minor, micro) >=
++                KERNEL_VERSION(required_major, required_minor, required_micro);
++        }
++    }
++    return false;
++}
++
++/* libfuse's default SIGTERM handler (set up in fuse_set_signal_handlers())
++ * immediately calls fuse_session_exit(), which shuts down the filesystem
++ * even if there are active users. This leads to nastiness if other processes
++ * still depend on the filesystem.
++ *
++ * So: we respond to SIGTERM by starting a lazy unmount. This is done
++ * by exec'ing fusermount3, which works properly for unpriviledged
++ * users (we cannot use umount2() syscall because it is not signal safe;
++ * fork() and exec(), amazingly, are).
++ *
++ * If we fail to start the lazy umount, we signal ourself with SIGINT,
++ * which falls back to the old behavior of exiting ASAP.
++ */
++static const char *g_mount_point = NULL;
++static void sigterm_handler(int signum) {
++	/* Unfortunately, lazy umount of in-use fuse filesystem triggers
++	 * kernel bug on kernels < 5.2, Fixed by kernel commit
++	 * e8f3bd773d22f488724dffb886a1618da85c2966 in 5.2.
++	 */
++	if (g_mount_point && kernel_version_at_least(5,2,0)) {
++        int pid = fork();
++        if (pid == 0) {
++            /* child process: disassociate ourself from parent so
++             * we do not become zombie (as parent does not waitpid()).
++             */
++            pid_t parent = getppid();
++            setsid();
++            execl("/bin/fusermount3", "fusermount3",
++                  "-u", "-q", "-z", "--", g_mount_point, NULL);
++            execlp("fusermount3", "fusermount3",
++                   "-u", "-q", "-z", "--", g_mount_point, NULL);
++            /* if we get here, we can't run fusermount,
++             * kill the original process with a harshness.
++             */
++            kill(parent, SIGINT);
++            _exit(0);
++        } else if (pid > 0) {
++            /* parent process: nothing to do, murderous child will do us
++             * in one way or another.
++             */
++            return;
++        }
++    }
++    /* If we get here, we have failed to lazy unmount for whatever reason,
++     * kill ourself more brutally.
++     */
++    kill(getpid(), SIGINT);
++}
++
++static void set_sigterm_handler(const char *mountpoint) {
++    struct sigaction sa;
++
++    g_mount_point = mountpoint;
++    memset(&sa, 0, sizeof(sa));
++    sa.sa_handler = sigterm_handler;
++    sigemptyset(&(sa.sa_mask));
++    sa.sa_flags = SA_RESTART;
++
++    if (sigaction(SIGTERM, &sa, NULL) == -1) {
++        perror("sigaction(SIGTERM)");
++    }
++}
++#endif /* SQFS_SIGTERM_HANDLER */
++
+ int main(int argc, char *argv[]) {
+ 	struct fuse_args args;
+ 	sqfs_opts opts;
+@@ -139,6 +223,9 @@ int main(int argc, char *argv[]) {
+                         ll) == SQFS_OK) {
+ 			if (sqfs_ll_daemonize(fuse_cmdline_opts.foreground) != -1) {
+ 				if (fuse_set_signal_handlers(ch.session) != -1) {
++#if defined(SQFS_SIGTERM_HANDLER)
++					set_sigterm_handler(fuse_cmdline_opts.mountpoint);
++#endif
+ 					if (opts.idle_timeout_secs) {
+ 						setup_idle_timeout(ch.session, opts.idle_timeout_secs);
+ 					}
+diff --git a/tests/umount-test.sh.in b/tests/umount-test.sh.in
+new file mode 100755
+index 00000000..06fed533
+--- /dev/null
++++ b/tests/umount-test.sh.in
+@@ -0,0 +1,85 @@
++#!/bin/bash
++
++. "tests/lib.sh"
++
++SFLL=${1:-./squashfuse_ll}         # The squashfuse_ll binary.
++TIMEOUT=20
++
++case @build_os@ in
++    linux*)
++        ;;
++    *)
++        echo "This test is only enabled on linux hosts."
++        exit 0
++        ;;
++esac
++
++function cleanup {
++    set +e
++    if [[ -n "$TAIL_PID" ]]; then
++        kill "$TAIL_PID"
++    fi
++    @sq_fusermount@ -u "$MNTDIR" >& /dev/null
++    rm -rf "$WORKDIR"
++}
++
++set -e
++WORKDIR=$(mktemp -d)
++MNTDIR="$WORKDIR/mountpoint"
++mkdir -p "$MNTDIR"
++mkdir -p "$WORKDIR/source"
++trap cleanup EXIT
++
++# Make a tiny squashfs filesystem.
++echo "Hello world" >"$WORKDIR/source/hello"
++mksquashfs "$WORKDIR/source" "$WORKDIR/squashfs.image" -comp zstd -no-progress >& /dev/null
++
++# Mount it.
++$SFLL "$WORKDIR/squashfs.image" "$MNTDIR"
++SFPID=$(pgrep -f "squashfuse_ll.*$MNTDIR")
++
++if ! [[ -d /proc/$SFPID ]]; then
++    echo "squashfuse process missing"
++    exit 1
++fi
++if ! grep -q "$MNTDIR" /proc/mounts; then
++    echo "mount missing."
++    exit 1
++fi
++
++# background a task to hold a file open from the image.
++tail -f "${MNTDIR}/hello" >/dev/null &
++TAIL_PID=$!
++
++# SIGTERM the squashfuse process.
++kill -15 "$SFPID"
++
++# Now we expect the mountpoint to disappear due to lazy umount.
++if ! timeout $TIMEOUT bash -c \
++    "while grep -q $MNTDIR /proc/mounts; do \
++        sleep 1;
++     done"; then
++     echo "$MNTDIR did not dismount in response to SIGTERM."
++     exit 1
++fi
++
++# but the process should remain alive, because of the background task.
++if ! [[ -d /proc/$SFPID ]]; then
++    echo "squashfuse process missing"
++    exit 1
++fi
++
++# Now kill the background process.
++kill $TAIL_PID
++TAIL_PID=
++
++# Now we expect the process to die.
++if ! timeout $TIMEOUT bash -c \
++    "while [[ -d /proc/$SFPID ]]; do \
++        sleep 1;
++     done"; then
++     echo "squashfuse process did not die once filesystem was released."
++     exit 1
++fi
++
++echo "Success."

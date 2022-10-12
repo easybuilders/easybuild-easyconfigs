@@ -1,0 +1,71 @@
+easyblock = 'ConfigureMake'
+
+name = 'Meep'
+version = '1.24.0'
+
+homepage = 'https://meep.readthedocs.io/en/latest/'
+description = """Meep is a free and open-source software package for electromagnetics simulation via the finite-difference time-domain (FDTD) method spanning a broad range of applications."""
+
+toolchain = {'name': 'gofb', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'opt': True, 'unroll': True, 'pic': True}
+
+source_urls = ["https://github.com/NanoComp/meep/releases/download/v%(version)s"]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ["e98332b8cc2ffaf32a7232897dfd617a1861352f8dd315a2bd21a3d439be3b99"]
+
+builddependencies = [
+    ('Harminv', '1.4.1', '', ('gcccoreflexiblas', '2020a')),
+    ('libctl', '4.5.0'),
+    ('libGDSII', '0.21'),
+    ('MPB', '1.11.1', '', ('gccflexiblas', '2020a')), # Note: Meep can only link to the serial version of MPB.
+    ('mpi4py', '3.1.3')
+]
+
+dependencies = [
+    ('GSL', '2.6'),
+    ('HDF5', '1.10.6', '-mpi'),
+    ('FFTW', '3.3.8', '-mpi'),
+    ('SciPy-Stack', '2022a'),
+]
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.8", "3.9", "3.10"]}
+
+configopts = " ".join([
+    "--with-pic",
+    "--with-mpi",
+    '--with-blas="$LIBBLAS"',
+    '--with-lapack="$LIBLAPACK"',
+    "--without-gcc-arch",
+    "--with-libctl=$EBROOTLIBCTL/share/libctl",
+    "--enable-shared",
+    "--with-python",
+])
+
+# Tests passes except 3 python ones that segfaults.
+# runtest = "check"
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+sanity_check_paths = {
+    'files': [
+        'bin/meep',
+        'include/meep.hpp',
+        'lib/libmeep.so',
+        'lib/libpympb.so'
+    ],
+    'dirs': [
+        'bin',
+        'include',
+        'include/meep',
+        "lib/python%(pyshortver)s/site-packages",
+        'share'
+    ],
+}
+
+sanity_check_commands = [
+    "meep -V",
+    "python -c 'import meep'",
+]
+
+moduleclass = 'phys'

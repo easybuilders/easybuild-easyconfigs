@@ -29,9 +29,33 @@ builddependencies = [
     ('imkl', '2021.4.0'),
     ('BLIS', '0.8.1'),
     ('OpenBLAS', '0.3.17'),
+    ('CMake', '3.20.1'),
 ]
 
 backends = ['imkl', 'BLIS', 'OpenBLAS']
+
+# Install LAPACKe as extension; it's not a Python package, but this extension class can be
+# used anyway to build it.
+exts_defaultclass = 'CMakePythonPackage'
+exts_list = [
+    ('LAPACK', '3.9.0', {
+        'easyblock': 'CMakePythonPackage',
+        'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'patches': ['%(name)s-%(version)s-restore-missing-prototypes.patch',
+	            '%(name)s-%(version)s-fix-cmake.patch'],
+        'checksums': ['106087f1bb5f46afdfba7f569d0cbe23dacb9a07cd24733765a0e89dbe1ad573',
+                      '327d62ee39eeb967ce48b4ed0b95e78c6210f688b5c3f944810aafe68d2dadfa',
+                      'c4ec266ba64efd3d93482e17c4e1e34034121e64e392613c3c4b01d9a4febffd',  # LAPACK-3.9.0-fix-cmake.patch
+        ],
+        'preconfigopts': 'module unload imkl blis openblas && ',
+        'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
+                       '-DBLAS_LIBRARIES=-lflexiblas_intel '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
+	'modulename': False, # skips Python-specific sanity check
+    }),
+]
 
 postinstallcmds = [
     # symlink to be able to use the GCC-compiled FlexiBLAS; the Intel-compiled one is called

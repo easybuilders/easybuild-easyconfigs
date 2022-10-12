@@ -1,0 +1,51 @@
+easyblock = 'ConfigureMake'
+
+name = 'Julia'
+version = '1.8.1'
+
+homepage = 'http://julialang.org'
+description = "A high-level, high-performance dynamic language for technical computing."
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/JuliaLang/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s-limit-initial-OpenBLAS-threads.patch']
+checksums = [
+    '066f4ca7a2ad39b003e2af77dbecfbfb9b0a1cb1664033f657ffdbe2f374d956',  # julia-1.8.1.tar.gz
+    # Julia-1.8.1-limit-initial-OpenBLAS-threads.patch
+    '997b2be6b0e72f0894890abfc41f7ba6faa42fdb1c313cbb3347dab8d6def1a0',
+]
+
+builddependencies = [('imkl', '2020.1.217')]
+
+# Use bfd linker so libcurl is compatible with binary packages
+prebuildopts = "sed -i 's@ftp.pcre.org/pub/pcre@github.com/PhilipHazel/pcre2/releases/download/pcre2-$(PCRE_VER)@' deps/pcre.mk && "
+prebuildopts += "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+prebuildopts += "LDFLAGS=\"$LDFLAGS -fuse-ld=bfd\" "
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+
+buildopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+preinstallopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+installopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+# so that the Pardiso Julia package can find MKL
+postinstallcmds = ["patchelf --set-rpath '$ORIGIN:$ORIGIN/..:'\"$MKLROOT/lib/intel64\" %(installdir)s/lib/julia/libjulia-internal.so.1.8"]
+
+skipsteps = ['configure']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['lib'],
+}
+
+# : means the default path, this way extension modules can append to it
+
+modluafooter = '''
+append_path("JULIA_DEPOT_PATH", ":")
+append_path("JULIA_LOAD_PATH", ":")
+'''
+
+moduleclass = 'lang'

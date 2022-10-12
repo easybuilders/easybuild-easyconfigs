@@ -1,0 +1,67 @@
+easyblock = 'MakeCp'
+
+name = 'regenie'
+version = '3.2.1'
+
+homepage = 'https://rgcgithub.github.io/regenie/'
+description = """
+regenie is a C++ program for whole genome regression modelling of large genome-wide association studies.
+It is developed and supported by a team of scientists at the Regeneron Genetics Center.
+The method has the following properties
+
+    It works on quantitative and binary traits, including binary traits with unbalanced case-control ratios
+    It can process multiple phenotypes at once
+    For binary traits it supports Firth logistic regression and an SPA test
+    It can perform gene/region-based burden tests
+    It is fast and memory efficient 🔥
+    It supports the BGEN, PLINK bed/bim/fam and PLINK2 pgen/pvar/psam genetic data formats
+    It is ideally suited for implementation in Apache Spark (see GLOW)
+
+Citation
+
+Mbatchou, J., Barnard, L., Backman, J. et al. Computationally efficient whole-genome regression for quantitative
+and binary traits. Nat Genet 53, 1097–1103 (2021). https://doi.org/10.1038/s41588-021-00870-7
+"""
+
+
+toolchain = {'name': 'gccflexiblas', 'version': '2020a'}
+
+github_account = 'rgcgithub'
+source_urls = ['https://github.com/rgcgithub/regenie/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-flexiblas.patch']
+checksums = [
+    'd379cb4fb5d6a31f0ce1d194672f30cd7142eb819c0d4d6f91304986e7c15e99',  # v3.2.1.tar.gz
+    '6400634dd467c6b2f58350cb2b07fe46d7985232140d13dd8ed2814b0b73e32e',  # regenie-3.2.1-flexiblas.patch
+]
+
+builddependencies = [
+   ('CMake', '3.23.1'),
+]
+dependencies = [
+   ('Boost', '1.72.0'),
+   ('BGEN-LIB', '1.1.7')
+]
+
+preconfigopts = "BGEN_PATH=$EBROOTBGENMINLIB FLEXIBLAS_ROOT=$EBROOTFLEXIBLAS HAS_BOOST_IOSTREAM=1 "
+#configopts = "-DBGEN_PATH=$EBROOTBGENMINLIB"
+build_cmd = "make HAS_BOOST_IOSTREAM=1 BLA_VENDOR_DEF='-DWITH_FLEXIBLAS'"
+
+sanity_check_paths = {
+    'files': ['regenie'],
+    'dirs': ['scripts']
+}
+
+files_to_copy = [
+    (['regenie', 'README.md', 'RELEASE_LOG.md', 'VERSION', 'docs',
+      'example', 'external_libs', 'scripts', 'src', 'test'], '')
+    ]
+
+sanity_check_commands = ['bash %(installdir)s/test/test_bash.sh --path %(installdir)s']
+
+modextrapaths = { 'PATH': [''] } 
+
+modluafooter = """
+"""
+
+moduleclass = 'bio'

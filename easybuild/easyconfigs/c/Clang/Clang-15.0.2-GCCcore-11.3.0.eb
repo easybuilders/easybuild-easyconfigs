@@ -1,0 +1,82 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2013-2015 Dmitri Gribenko, Ward Poelmans
+# Authors:: Dmitri Gribenko <gribozavr@gmail.com>
+# Authors:: Ward Poelmans <wpoely86@gmail.com>
+# License:: GPLv2 or later, MIT, three-clause BSD.
+# $Id$
+##
+
+name = 'Clang'
+version = '15.0.2'
+
+homepage = 'https://clang.llvm.org/'
+description = """C, C++, Objective-C compiler, based on LLVM.  Does not
+ include C++ standard library -- use libstdc++ from GCC."""
+
+# Clang also depends on libstdc++ during runtime, but this dependency is
+# already specified as the toolchain.
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s"]
+sources = [
+    'llvm-%(version)s.src.tar.xz',
+    'clang-%(version)s.src.tar.xz',
+    'compiler-rt-%(version)s.src.tar.xz',
+    'polly-%(version)s.src.tar.xz',
+    'openmp-%(version)s.src.tar.xz',
+    # Also include the LLVM linker
+    'lld-%(version)s.src.tar.xz',
+    # Also include the LLVM debugger
+    'lldb-%(version)s.src.tar.xz',
+    'libcxx-%(version)s.src.tar.xz',
+    'libcxxabi-%(version)s.src.tar.xz',
+    'clang-tools-extra-%(version)s.src.tar.xz',
+    'libunwind-%(version)s.src.tar.xz',
+]
+checksums = [
+    '8e1443141bac55c1ba9d4b481006ab696787eb42cb6c6d872e02e77db473797c',  # llvm-15.0.2.src.tar.xz
+    'e5ddf021e744be6d838f7be1f7b745b670fb812c371c6dc2d0d584bdabd8a119',  # clang-15.0.2.src.tar.xz
+    '5af52bd1505ad3ed73cf6565357e58ca01504e0d953f37f61237da11c70bc870',  # compiler-rt-15.0.2.src.tar.xz
+    '8b6e09a623dff90f626bf25edaa02e1383b306e1c3e691481b428a5e58befe08',  # polly-15.0.2.src.tar.xz
+    '2567c5ed2b2d3343a0f3b2d5a4dd116a37776d60c880aa2b0c3313a7f68ba4d8',  # openmp-15.0.2.src.tar.xz
+    'cdac4eef441bd6ac2d7a1b55d6507d90fab77bdb70038e63dffa2d54103a58b3',  # lld-15.0.2.src.tar.xz
+    '6689ef4ed6d0a5f6c80016228cd068ec5e3728b619bf1ccbd3155fb36ede789e',  # lldb-15.0.2.src.tar.xz
+    'd95bc75de21208bf5646571d27108f25fb67000d47fc673b57d120d970d98cf1',  # libcxx-15.0.2.src.tar.xz
+    'fffaf1be22a59d1a03a1a28b7245ba11090e04811e2c6059ac42c949c95fde61',  # libcxxabi-15.0.2.src.tar.xz
+    '8cf2f76fa6cf90cc7f423706196f4469eb5af92f0d212a61400ef9d482c6dfc2',  # clang-tools-extra-15.0.2.src.tar.xz
+    '3440af8d2c26ea273fc58534a028b5b5684ffb1d3579977c65ef361b427eb959',  # libunwind-15.0.2.src.tar.xz
+]
+
+dependencies = [
+    # since Clang is a compiler, binutils is a runtime dependency too
+    ('binutils', '2.37'),
+    ('hwloc', '2.2.0'),
+#    ('hwloc', '2.5.0'),
+    ('libxml2', '2.9.10'),
+    ('ncurses', '6.2'),
+    ('GMP', '6.2.1'),
+#    ('Z3', '4.8.9'),
+#    ('Z3', '4.8.12'),
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Perl', '5.34.0'),
+#    ('elfutils', '0.185'),
+]
+multi_deps = { 'Python': ['3.8', '3.9', '3.10'] }
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+assertions = True
+usepolly = True
+build_lld = True
+build_lldb = True
+libcxx = True
+enable_rtti = True
+build_extra_clang_tools = True
+python_bindings = True
+skip_all_tests = True
+
+moduleclass = 'compiler'

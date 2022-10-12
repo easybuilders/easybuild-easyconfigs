@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '0.9.0'
+
+homepage = 'https://github.com/flame/blis/'
+description = """BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'NVHPC', 'version': '22.7'}
+
+source_urls = ['https://github.com/flame/blis/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_blastest-enable-complex-return-intel.patch',
+    '%(name)s-%(version)s_family-avx2.patch',
+]
+checksums = [
+    '1135f664be7355427b91025075562805cdc6cc730d3173f83533b2c5dcc2f308',  # 0.9.0.tar.gz
+    '0f1966b340d1f24cf02070f00f72f232b4cbfcd242ee9ce8c5f09f7220397cb4',  # BLIS-0.9.0_blastest-enable-complex-return-intel.patch
+    '823c62b353c8c3bb96ad30af2b0f484064a9d108e2a46c62850bd8f843f992d2',  # BLIS-0.9.0_family-avx2.patch
+]
+
+# use gcc + its CFLAGS because nvhpc can't be used directly, but nvc for linking to use libnvomp
+preconfigopts = "sed -i 's/LINKER.*/LINKER := nvc/' common.mk &&"
+preconfigopts += "declare -A ARCH_MAP=( [sse3]='x86_64' [avx]='sandybridge' [avx2]='avx2' [avx512]='skx' ) && "
+preconfigopts += "declare -A ARCH_MAP2=( [sse3]='nocona -mtune=generic' [avx]='corei7-avx' [avx2]='core-avx2' [avx512]='skylake-avx512' ) && "
+configopts = '--complex-return=intel --enable-cblas --enable-threading=openmp --enable-shared CC=gcc '
+configopts += 'CFLAGS="-O2 -ftree-vectorize -march=${ARCH_MAP2[$RSNT_ARCH]} -fno-math-errno" ${ARCH_MAP[$RSNT_ARCH]}'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'
