@@ -1462,8 +1462,10 @@ def template_easyconfig_test(self, spec):
                             if skip_system_template_check:
                                 self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
                             else:
-                                error_msg = "use of `True` to indicate the system toolchain for dependency "
-                                error_msg += "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
+                                error_msg = (
+                                    "use of `True` to indicate the system toolchain for dependency "
+                                    "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
+                                )
                                 self.fail(error_msg)
                         else:
                             self.assertEqual(dumped_dep[3], orig_dep[3])
