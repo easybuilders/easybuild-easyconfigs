@@ -42,6 +42,7 @@ from easybuild.base import fancylogger
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig.constants import EASYCONFIG_CONSTANTS
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
@@ -1457,10 +1458,13 @@ def template_easyconfig_test(self, spec):
                 if len(dumped_dep) >= 4:
                     if len(orig_dep) >= 4:
                         # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
-                        if orig_dep[3] is True and not skip_system_template_check:
-                            error_msg = "use of `True` to indicate the system toolchain for dependency "
-                            error_msg += "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
-                            self.fail(error_msg)
+                        if orig_dep[3] is True:
+                            if skip_system_template_check:
+                                self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
+                            else:
+                                error_msg = "use of `True` to indicate the system toolchain for dependency "
+                                error_msg += "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
+                                self.fail(error_msg)
                         else:
                             self.assertEqual(dumped_dep[3], orig_dep[3])
                     else:
