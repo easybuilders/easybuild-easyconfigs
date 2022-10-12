@@ -1425,9 +1425,9 @@ def template_easyconfig_test(self, spec):
         orig_val = resolve_template(ec_dict[key], ec.template_values)
         dumped_val = resolve_template(dumped_ec[key], ec.template_values)
 
-        # skip SYSTEM template constant check for pre-2019b toolchain generation easyconfigs
+        # skip SYSTEM template constant check for 2019b and older toolchain generation easyconfigs
         # since these fail other CI checks when updated
-        regex = re.compile(r'(201\d[ab])|(^[1-8]\.\d+\.\d+)')
+        regex = re.compile(r'(201\d([ab]|\.\d+))|(^[1-8]\.\d+\.\d+)')
         skip_system_template_check = regex.match(ec['toolchain']['version'])
 
         # take into account that dumped value for *dependencies may include hard-coded subtoolchains
