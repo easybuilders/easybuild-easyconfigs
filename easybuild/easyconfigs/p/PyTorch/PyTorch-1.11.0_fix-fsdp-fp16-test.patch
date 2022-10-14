@@ -1,0 +1,35 @@
+The test fails on a node with more than 5 V100 GPUs or more than 4 A100 GPUs.
+Hence limit the world_size to 4
+See https://github.com/pytorch/pytorch/issues/78975
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_fsdp.py b/torch/testing/_internal/common_fsdp.py
+index ff0fbb69e3..6bf3e71fde 100644
+--- a/torch/testing/_internal/common_fsdp.py
++++ b/torch/testing/_internal/common_fsdp.py
+@@ -324,7 +324,7 @@ class FSDPTest(MultiProcessTestCase):
+ 
+     @property
+     def world_size(self):
+-        return torch.cuda.device_count() if torch.cuda.is_available() else 4
++        return min(4, torch.cuda.device_count()) if torch.cuda.is_available() else 4
+ 
+     @property
+     def init_method(self):
+diff --git a/test/distributed/fsdp/test_fsdp_pure_fp16.py b/test/distributed/fsdp/test_fsdp_pure_fp16.py
+index eea03bea3d..d3a4bb8257 100644
+--- a/test/distributed/fsdp/test_fsdp_pure_fp16.py
++++ b/test/distributed/fsdp/test_fsdp_pure_fp16.py
+@@ -32,6 +32,11 @@ if TEST_WITH_DEV_DBG_ASAN:
+ 
+ class TestPureFP16(FSDPTest):
+ 
++    @property
++    def world_size(self):
++        # Test fails due to inaccuracies when using more than 4 GPUs
++        return min(4, super().world_size)
++
+     @skip_if_lt_x_gpu(2)
+     @parametrize(
+         "cpu_offload",
