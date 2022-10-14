@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'libcint'
+version = '5.1.6'
+
+homepage = 'https://github.com/sunqm/libcint'
+description = """libcint is an open source library for analytical Gaussian integrals."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/sunqm/libcint/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-4.4.0_remove_pyscftest.patch']
+checksums = [
+    'c111d82140e2e8415775e73f571a16456c9deadd36d58795edd170035b06f8a5',  # v5.1.6.tar.gz
+    '6449297a6aee30fef3d6a268aa892dea8dd5c3ca9669a50ae694ab9bcf17842d',  # libcint-4.4.0_remove_pyscftest.patch
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    # Python with numpy only required for 'make test'
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+]
+
+separate_build_dir = False  # Must use the same directory for tests
+
+configopts = '-DWITH_RANGE_COULOMB=on -DWITH_COULOMB_ERF=on -DWITH_F12=on -DENABLE_TEST=on'
+
+buildopts = "VERBOSE=1"
+
+runtest = 'test '
+
+sanity_check_paths = {
+    'files': ['include/cint.h', 'lib/libcint.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
