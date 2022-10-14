@@ -1,0 +1,73 @@
+easyblock = 'PythonBundle'
+
+name = 'purge_dups'
+version = '1.2.5'
+
+homepage = 'https://github.com/dfguan/purge_dups'
+description = "purge haplotigs and overlaps in an assembly based on read depth"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('matplotlib', '3.4.3'),
+    ('minimap2', '2.22'),
+    ('zlib', '1.2.11'),
+]
+
+use_pip = True
+
+default_easyblock = 'MakeCp'
+
+components = [
+    (name, version, {
+        'source_urls': ['https://github.com/dfguan/purge_dups/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['7879a8ecc26e5de1eaaf4b4633cb240ed2802d648068b193652477317a3e2645'],
+        'start_dir': 'purge_dups-%(version)s',
+        'prebuildopts': "cd src && ",
+        'buildopts': 'CC="$CC" CFLAGS="$CFLAGS"',
+        'files_to_copy': ['bin', 'scripts'],
+    }),
+    ('KMC', '20190629', {
+        'source_urls': ['https://github.com/dfguan/KMC/archive/'],
+        'sources': [{'download_filename': 'c05a5f9.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['7251941f4b1913bfdd68759d9292b419d95fe7c63815056e15ecb097a12a0bc4'],
+        'prebuildopts': 'cd KMC-* && ',
+        'buildopts': 'CC="$CXX"',
+        'files_to_copy': [(['KMC-*/bin/*kmc*'], 'bin'), 'KMC-*/spectra.py'],
+    }),
+]
+
+exts_list = [
+    ('runner', '20191220', {
+        'sources': [{
+            'git_config': {
+                'url': 'https://github.com/dfguan/',
+                'repo_name': 'runner',
+                'commit': '73a4d11',
+            },
+            'filename': 'runner-%(version)s.tar.gz',
+        }],
+        'checksums': [None],
+        'preinstallopts': "sed -i 's/0.0.0/%(version)s/g' setup.py && "
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/kmc', 'bin/purge_dups'],
+    'dirs': ['scripts'],
+}
+
+sanity_check_commands = [
+    "purge_dups -h 2>&1 | grep 'Program: purge_dups'",
+    "kmc --help",
+    "run_purge_dups.py -h",
+    "hist_plot.py -h",
+]
+
+sanity_pip_check = True
+
+modextrapaths = {'PATH': 'scripts'}
+
+moduleclass = 'bio'

@@ -1,0 +1,48 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenFace'
+version = '2.2.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/TadasBaltrusaitis/OpenFace'
+description = """OpenFace – a state-of-the art tool intended for facial landmark
+detection, head pose estimation, facial action unit recognition, and eye-gaze
+estimation."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+github_account = 'TadasBaltrusaitis'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(name)s_%(version)s.tar.gz']
+patches = ['OpenFace-2.2.0_avoid-hardcoded-OpenBLAS.patch']
+checksums = [
+    '928e6346bcff41393393a364df99bf09c3410fab85b569f2023e3224d2a1981a',  # OpenFace_2.2.0.tar.gz
+    'de366e8af6ffe639b2bf411032e768ba926800389472bb57bb132744c36077b6',  # OpenFace-2.2.0_avoid-hardcoded-OpenBLAS.patch
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('pkg-config', '0.29.2'),
+    ('patchelf', '0.12')
+]
+dependencies = [
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('cuDNN', '8.2.1.32', '-CUDA-%(cudaver)s', SYSTEM),
+    ('OpenCV', '4.5.3', '-CUDA-%(cudaver)s-contrib'),
+    ('dlib', '19.22', '-CUDA-%(cudaver)s'),
+    ('SDL2', '2.0.14'),
+    ('Boost', '1.76.0'),
+]
+
+# This is the only way I found to remove the banned OpenBLAS from libraries
+# required by the OpenFace executables, as CMake stubbornly includes it there
+preinstallopts = 'patchelf --remove-needed libopenblas.so.0 bin/FaceLandmarkVid'
+preinstallopts += ' bin/FaceLandmarkVidMulti bin/FaceLandmarkImg bin/FeatureExtraction && '
+
+sanity_check_paths = {
+    'files': ['bin/FaceLandmarkVid', 'bin/FaceLandmarkImg', 'bin/FeatureExtraction'],
+    'dirs': [],
+}
+sanity_check_commands = ['FeatureExtraction | grep OpenFace']
+
+moduleclass = 'lib'

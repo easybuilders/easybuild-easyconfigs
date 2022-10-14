@@ -1,0 +1,45 @@
+# easybuild easyconfig
+#
+easyblock = 'ConfigureMake'
+
+name = 'FreeTDS'
+version = '1.3.3'
+
+homepage = "https://www.freetds.org/"
+description = """FreeTDS is a set of libraries for Unix and Linux that allows your programs to
+ natively talk to Microsoft SQL Server and Sybase databases."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://www.freetds.org/files/stable']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['a21a0aa351185049e11e237a795a61e3ca68d2e798259b3b5ea4a9797d5a5535']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('Doxygen', '1.9.1'),
+]
+
+dependencies = [
+    ('libreadline', '8.1'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+configopts = '--with-openssl'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bsqldb', 'datacopy', 'defncopy', 'fisql', 'freebcp',
+                                     'osql', 'tdspool', 'tsql']] +
+             ['etc/%s' % x for x in ['freetds.conf', 'locales.conf', 'pool.conf']] +
+             ['include/%s' % x for x in ['bkpublic.h', 'cstypes.h', 'odbcss.h', 'sqlfront.h',
+                                         'syberror.h', 'tds_sysdep_public.h', 'cspublic.h',
+                                         'ctpublic.h', 'sqldb.h', 'sybdb.h', 'sybfront.h']] +
+             ['lib/libct.%s' % x for x in ['a', 'la', SHLIB_EXT]] +
+             ['lib/libsybdb.%s' % x for x in ['a', 'la', SHLIB_EXT]],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'share/doc', 'share/man', 'share/man/man5'],
+}
+
+_bins = ['bsqldb', 'datacopy', 'defncopy', 'fisql', 'freebcp', 'tdspool', 'tsql']
+sanity_check_commands = ['%s -h 2>&1 |grep -i "^usage:"' % x for x in _bins]
+
+moduleclass = 'data'

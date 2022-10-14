@@ -1,0 +1,41 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'CmdCp'
+
+name = 'TALYS'
+version = '1.95'
+
+homepage = 'https://tendl.web.psi.ch/tendl_2019/talys.html'
+description = "TALYS is a nuclear reaction program."
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+toolchainopts = {'noopt': True}
+
+source_urls = ['https://tendl.web.psi.ch/tendl_2019/talys/']
+sources = ['%(namelower)s%(version)s.tar']
+checksums = ['f7efe1e07cdc072394b2b9ec5801ba70957d4f1be1eaee22c4975cc9840a57c6']
+
+builddependencies = [('binutils', '2.36.1')]
+
+start_dir = 'source'
+
+# Use environment variable to set structure directory path
+local_sed = 'sed -i -e "s|path=.*|call get_environment_variable(\'TALYS_STRUCTURE_DIR\', path)|g" '
+local_sed += ' -e "s|character*132 path|character*256 path|g" '
+local_sed += ' -e "s|//\'abundance|//\'/abundance|g" machine.f && '
+# Also strip hardcoded talys path in verify script
+local_sed += 'sed -i "/talys=.*/d" ../samples/verify '
+
+cmds_map = [('.*', '%s && $FC $FFLAGS $FCFLAGS -o talys *.f' % local_sed)]
+
+files_to_copy = [(['%(namelower)s'], 'bin'), 'structure', 'samples']
+
+sanity_check_paths = {
+    'files': ['bin/talys'],
+    'dirs': ['bin', 'samples', 'structure'],
+}
+
+sanity_check_commands = ["cd %(builddir)s/%(namelower)s/samples && ./verify"]
+
+modextravars = {'TALYS_STRUCTURE_DIR': '%(installdir)s/structure'}
+
+moduleclass = 'phys'

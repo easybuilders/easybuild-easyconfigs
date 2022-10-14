@@ -1,0 +1,85 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# Based on a EC provided by Paul Jähne
+# uploaded by J. Sassmannshausen
+# using the pangoLEARN extension to distinguish between different versions
+
+easyblock = 'PythonBundle'
+
+name = 'pangolin'
+version = '3.1.16'
+local_pLEARN_version = '2021-11-25'
+versionsuffix = '-pangoLEARN-%s' % local_pLEARN_version
+
+homepage = 'https://cov-lineages.org/pangolin.html'
+description = """Software package for assigning SARS-CoV-2 genome sequences to global lineages.
+This module also contains the faToVcf tool"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('Biopython', '1.79'),
+    ('gofasta', '0.0.5', '', SYSTEM),
+    ('minimap2', '2.22'),
+    ('Pysam', '0.17.0'),
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('snakemake', '6.10.0'),
+    ('UShER', '0.5.0'),
+    ('scikit-learn', '1.0.1'),
+    ('Kent_tools', '422'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+github_account = 'cov-lineages'
+exts_default_options = {
+    'source_urls': [GITHUB_SOURCE],
+    'sources': [{
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    }],
+}
+
+
+exts_list = [
+    (name, version, {
+        'checksums': ['f247caf5ee4252a3edbbf9e60f23374438aaad1879d8dfbf6fb7a64bde8bf3fc'],
+    }),
+    ('pangoLEARN', local_pLEARN_version, {
+        'modulename': 'pangoLEARN',
+        'sources': [{
+            'download_filename': '%(version)s.tar.gz',
+            'filename': SOURCE_TAR_GZ,
+        }],
+        'checksums': ['a803da5a30f83d88ad50ac1c6696f5157ff3406d93aa907c8fa176e3ac30b09d'],
+    }),
+    ('scorpio', '0.3.14', {
+        'checksums': ['31108c9e8399691b3167b14689fbedebd7a410b0879c362a12d807cb077ac57a'],
+    }),
+    ('constellations', '0.0.25', {
+        'checksums': ['3fb91ed26803d8e73c18153f6e096c4639d1a96beb3fac3c6b5eaf8656ce050f'],
+    }),
+    ('pango-designation', '1.2.103', {
+        'checksums': ['d9ce36f618d5024d5a687581d6656585dbd52169b4e8f36fc6daca17f0d65c06'],
+    }),
+]
+
+local_binaries = [
+    'constellations', 'extract_definitions.py', 'pango_designation', 'pangoLEARN',
+    'pangolearn.smk', 'pangolin', 'scorpio', 'type_constellations.py'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'pangolin -v',
+    'pangolin -pv',
+    'scorpio -v',
+]
+
+moduleclass = 'bio'

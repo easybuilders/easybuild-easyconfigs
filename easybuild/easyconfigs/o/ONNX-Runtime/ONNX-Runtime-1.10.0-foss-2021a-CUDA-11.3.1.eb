@@ -1,0 +1,58 @@
+easyblock = 'PythonPackage'
+
+name = 'ONNX-Runtime'
+version = '1.10.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://onnxruntime.ai/'
+description = """ONNX Runtime inference can enable faster customer experiences and lower costs,
+supporting models from deep learning frameworks such as PyTorch and
+TensorFlow/Keras as well as classical machine learning libraries such as
+scikit-learn, LightGBM, XGBoost, etc. ONNX Runtime is compatible with different
+hardware, drivers, and operating systems, and provides optimal performance by
+leveraging hardware accelerators where applicable alongside graph optimizations
+and transforms."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+# ONNX Runtime with support for GPUs is distributed under the name 'onnxruntime-gpu' in PyPI
+source_urls = ['http://pypi.python.org/packages/source/o/onnxruntime-gpu']
+local_whl_tmpl = 'onnxruntime_gpu-%%(version)s-cp39-cp39-manylinux_2_17_%s.manylinux2014_%s.whl'
+sources = [local_whl_tmpl % ('%(arch)s', '%(arch)s')]
+checksums = [
+    {
+        local_whl_tmpl % ('x86_64', 'x86_64'):
+            '2ffe8009eef07307a836e654a8449c177c0ef84ef29c4619d464d5ad8ab2d01b',
+    }
+]
+
+dependencies = [
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('Python', '3.9.5'),
+    ('ONNX', '1.11.0'),
+    ('flatbuffers-python', '2.0'),
+]
+
+use_pip = True
+download_dep_fail = True
+
+# Due to its name 'onnxruntime-gpu', this package does not fullfil requirements on 'onnxruntime' although it provides
+# the 'onnxruntime' python module. Fix this dependency issue in pip by creating a stub 'onnxruntime' dist-info folder
+_py_sitepkgs = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+postinstallcmds = [
+    "cp -r %s/onnxruntime{_gpu,}-%%(version)s.dist-info" % _py_sitepkgs,
+    "sed -i 's/onnxruntime.gpu/onnxruntime/g' %s/onnxruntime-%%(version)s.dist-info/{METADATA,RECORD}" % _py_sitepkgs,
+]
+
+sanity_pip_check = True
+
+_py_sitepkgs_dirs = ['onnxruntime', 'onnxruntime-%(version)s.dist-info', 'onnxruntime_gpu-%(version)s.dist-info']
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%%(pyshortver)s/site-packages/%s' % x for x in _py_sitepkgs_dirs],
+}
+
+options = {'modulename': 'onnxruntime'}
+
+moduleclass = 'devel'

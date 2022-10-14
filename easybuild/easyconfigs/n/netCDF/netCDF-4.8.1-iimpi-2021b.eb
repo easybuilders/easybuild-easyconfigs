@@ -1,0 +1,37 @@
+name = 'netCDF'
+version = '4.8.1'
+
+homepage = 'https://www.unidata.ucar.edu/software/netcdf/'
+description = """NetCDF (network Common Data Form) is a set of software libraries
+ and machine-independent data formats that support the creation, access, and sharing of array-oriented
+ scientific data."""
+
+toolchain = {'name': 'iimpi', 'version': '2021b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/Unidata/netcdf-c/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['bc018cc30d5da402622bf76462480664c6668b55eb16ba205a0dfb8647161dd0']
+
+builddependencies = [
+    ('Autotools', '20210726'),
+    ('CMake', '3.21.1'),
+    ('Doxygen', '1.9.1'),
+]
+
+dependencies = [
+    ('HDF5', '1.12.1'),
+    ('cURL', '7.78.0'),
+    ('Szip', '2.1.1'),
+]
+
+# HDF5 version detection is missed in netCDF 4.8.1 when HDF5_C_LIBRARY, HDF5_INCLUDE_DIR, and HDF5_HL_LIBRARY are set
+local_hdf5_version_fix = '-DHDF5_VERSION=$EBVERSIONHDF5'
+
+# make sure both static and shared libs are built
+configopts = [
+    "-DBUILD_SHARED_LIBS=OFF %s " % local_hdf5_version_fix,
+    "-DBUILD_SHARED_LIBS=ON %s " % local_hdf5_version_fix,
+]
+
+moduleclass = 'data'
