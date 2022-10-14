@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'PythonBundle'
 
 name = 'PyMOL'
 version = '2.5.0'
@@ -10,33 +10,6 @@ visualization of proteins, small molecules, density, surfaces, and trajectories.
 It also includes molecular editing, ray tracing, and movies. Open Source PyMOL  
 is free to everyone!
 """
-
-toolchain = {'name': 'foss', 'version': '2020b'}
-
-source_urls = ["https://github.com/schrodinger/pymol-open-source/archive/refs/tags/"]
-sources = ['v%(version)s.tar.gz']
-checksums = ['aa828bf5719bd9a14510118a93182a6e0cadc03a574ba1e327e1e9780a0e80b3']
-
-exts_defaultclass = 'PythonPackage'
-exts_list = [
-    ('Pmw', '2.0.1', {
-        'buildopts': '',
-        'installopts': '',
-        'modulename': 'Pmw',
-        'sources': [{
-            'download_filename': '8bedfc8747e7757c1048bc5e11899d1163717a43.zip',
-            'source_urls': ['https://github.com/schrodinger/pmw-patched/archive/'],
-            'filename': 'Pmw-patched-2.0.1-20200210-8bedfc8.zip'}],
-        'checksums': ['db1ab4ee1020023ad814bb24c74f6361fb72e1011871911f7d37bb6ecf6c79ed'],
-    }),
-]
-exts_default_options = {
-    'use_pip': True,
-    'download_dep_fail': True,
-}
-
-download_dep_fail = True
-use_pip = False
 
 dependencies = [
     ('Python', '3.8.6'),
@@ -51,13 +24,29 @@ dependencies = [
     ('Tkinter', '%(pyver)s'),
 ]
 
-buildopts = ''
-buildopts += '--use-msgpackc=no '
-installopts = buildopts
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+use_pip = False
+sanity_pip_check = True
+
+exts_list = [
+    ('Pmw', '2.0.1', {
+        'modulename': 'Pmw',
+        'source_tmpl': 'Pmw-patched-%(version)s-20200210-8bedfc8.zip',
+        'source_urls': ['https://github.com/schrodinger/pmw-patched/archive/'],
+        'checksums': ['db1ab4ee1020023ad814bb24c74f6361fb72e1011871911f7d37bb6ecf6c79ed'],
+    }),
+    (name, version, {
+        'buildopts':  '--use-msgpackc=no',
+        'installopts': '--use-msgpackc=no',
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ["https://github.com/schrodinger/pymol-open-source/archive/refs/tags/"],
+        'checksums': ['aa828bf5719bd9a14510118a93182a6e0cadc03a574ba1e327e1e9780a0e80b3'],
+    }),
+]
 
 modextravars = {'PYMOL_PATH': 'lib/python%(pyshortver)s/site-packages/pymol/pymol_path'}
 
-sanity_pip_check = True
 sanity_check_paths = {
     'files': ['bin/pymol'],
     'dirs': ['bin', 'lib'],
