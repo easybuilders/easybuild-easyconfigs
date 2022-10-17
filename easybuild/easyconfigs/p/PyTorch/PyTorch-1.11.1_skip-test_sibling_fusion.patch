@@ -1,0 +1,17 @@
+The test fails on pre-volta devices as fusing the at::sum/at::add
+is skipped if the device is not of compute capability >= 7
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_jit_cuda_fuser.py b/test/test_jit_cuda_fuser.py
+index c03ff0b311..feb6e281f9 100644
+--- a/test/test_jit_cuda_fuser.py
++++ b/test/test_jit_cuda_fuser.py
+@@ -3053,6 +3054,7 @@ class TestCudaFuser(JitTestCase):
+             self.assertGraphContainsExactly(graph, op, 0)
+ 
+     @unittest.skipIf(not RUN_CUDA, "requires CUDA")
++    @unittest.skipIf(is_pre_volta(), "reduction not supported in pre volta device")
+     @unittest.skipIf(GRAPH_EXECUTOR != ProfilingMode.PROFILING,
+                      "Requires fusion optimization pass to be effective")
+     def test_sibling_fusion(self):
