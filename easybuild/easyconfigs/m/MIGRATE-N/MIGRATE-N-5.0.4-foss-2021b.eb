@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'MIGRATE-N'
+version = '5.0.4'
+
+homepage = 'https://peterbeerli.com/migrate-html5/index.html'
+description = """
+Migrate estimates population parameters, effective population sizes
+and migration rates of n populations, using genetic data.  It 
+uses a coalescent theory approach taking into account history of 
+mutations and uncertainty of the genealogy. 
+"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ["https://peterbeerli.com/migrate-html5/download_version4"]
+sources = ['migrate-%(version)s.src.tar.gz']
+patches = [
+     'migrate-%(version)s_install.patch',
+     'migrate-%(version)s_locale.patch',
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+configopts = '--enable-A4 "CC=$CC" STDCPLUS=-lstdc++'
+prebuildopts = 'make mpis && make clean &&'
+installopts = "&& make clean && make installmpi"
+
+parallel = 1
+
+start_dir = 'src'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['migrate-n', 'migrate-n-mpi']],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
