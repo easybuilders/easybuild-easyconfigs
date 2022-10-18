@@ -1,0 +1,55 @@
+# Move hardcoded /tmp/rstudio-server/session-rpc-key  
+# https://github.com/rstudio/rstudio/pull/11976
+--- src/cpp/core/system/Xdg.cpp.orig	2022-10-18 02:12:11.572857101 +0200
++++ src/cpp/core/system/Xdg.cpp	2022-10-18 02:15:02.424414893 +0200
+@@ -218,6 +218,22 @@
+    );
+ }
+ 
++FilePath userCacheDir(
++		        const boost::optional<std::string>& user,
++			        const boost::optional<FilePath>& homeDir)
++{
++	   return resolveXdgDir("RSTUDIO_CACHE_HOME",
++			            "XDG_CACHE_HOME",
++#ifdef _WIN32
++				             FOLDERID_InternetCache,
++#endif
++        			"~/.cache",
++               			user,
++                		homeDir
++	   			);
++}
++
++
+ FilePath userLogDir()
+ {
+    return userDataDir().completePath("log");
+--- src/cpp/core/include/core/system/Xdg.hpp.orig	2022-10-18 02:16:31.972755507 +0200
++++ src/cpp/core/include/core/system/Xdg.hpp	2022-10-18 02:17:50.131925616 +0200
+@@ -65,6 +65,14 @@
+ 
+ // Returns the user-specific logging directory underneath the userDataDir
+ FilePath userLogDir();
++
++// Returns the RStudio XDG user cache directory.
++//
++// On Unix-alikes, this is ~/.cache, or XDG_CACHE_HOME.
++// On Windows, this is 'FOLDERID_InternetCache' (typically 'AppData/Local/Microsoft/Windows/Temporary Files')
++FilePath userCacheDir(const boost::optional<std::string>& user = boost::none,
++                      const boost::optional<FilePath>& homeDir = boost::none);
++
+                      
+ // This function verifies that the userConfigDir() and userDataDir() exist and are owned by the running user.
+ // 
+--- src/cpp/server_core/SecureKeyFile.cpp.orig	2022-10-18 09:13:02.729305401 +0200
++++ src/cpp/server_core/SecureKeyFile.cpp	2022-10-18 09:14:50.656927789 +0200
+@@ -113,7 +113,7 @@
+    }
+    else
+    {
+-      secureKeyPath = core::FilePath("/tmp/rstudio-server").completePath(filename);
++      secureKeyPath = core::system::xdg::userCacheDir().completePath(filename);
+       if (secureKeyPath.exists())
+       {
+          LOG_INFO_MESSAGE("Running without privilege; using secure key at " + secureKeyPath.getAbsolutePath());

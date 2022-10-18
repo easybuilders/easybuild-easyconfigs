@@ -1,0 +1,85 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '2022.07.2-576'
+versionsuffix = '-Java-%(javaver)s-R-%(rver)s'
+
+homepage = 'https://www.rstudio.com/'
+description = """This is the RStudio Server version.
+RStudio is a set of integrated tools designed to help you be more productive with R.
+
+The server can be started with:
+  MYTMP=`mktemp -d` && trap "rm -rf ${MYTMP}" INT QUIT ABRT KILL TERM CHLD && \\
+   echo -e "provider=sqlite\\ndirectory=${MYTMP}/sqlite" > ${MYTMP}/db.conf && \\
+   rserver --server-daemonize=0 --www-port=8787 --rsession-which-r=$(which R) \\
+    --server-user=${USER} --secure-cookie-key-file=${MYTMP}/secure-cookie-key \\
+    --server-data-dir=${MYTMP}/sdd --database-config-file=${MYTMP}/db.conf 
+
+Upgrade library(rJava) if you experience RStudio crashes at rJava::.jinit()
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+source_urls = ['https://github.com/rstudio/rstudio/archive/refs/tags']
+sources = ['v%s.tar.gz' % version.replace('-', '+')]
+patches = ['RStudio-Server-2022.07.2-SecureKeyFile.patch']
+checksums = [
+    '55705c36a9b826064b4d9aa87b58c40bb9f7cd2f149b16d554e20136306ce301',  # v2022.07.2+576.tar.gz
+    '3492e9eeecd67e3d1703e7ea2841bc0bb1d008b62d43eca6c135e6c9ced9e8d0',  # RStudio-Server-2022.07.2-SecureKeyFile.patch
+]
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('CMake', '3.23.1'),
+    ('ant', '1.10.11', '-Java-%(javaver)s', True),
+]
+
+dependencies = [
+    ('Boost', '1.79.0'),
+    ('R', '4.2.1'),
+    ('Java', '11', '', True),
+    ('SOCI', '4.0.3'),
+]
+
+osdependencies = [
+    ('pam-devel', 'libpam0g-dev')
+]
+
+build_type = "Release"
+local_dep_dir = "%(builddir)s/rstudio-%(version)s/dependencies/common"
+preconfigopts = (("export RSTUDIO_TOOLS_ROOT={} && "
+                  "cd {} && "
+                  "./install-cef && "
+                  "./install-dictionaries && "
+                  "./install-mathjax && "
+                  "./install-pandoc && "
+                  "./install-packages && "
+                  "./install-yaml-cpp && "
+                  "./install-npm-dependencies && "
+                  "./install-quarto && "
+                  "cd ../../ && "
+                  "mkdir build && cd build && ").format("%(builddir)s", local_dep_dir))
+
+configopts = "-DRSTUDIO_TARGET=Server -DRSTUDIO_BOOST_SIGNALS_VERSION=2 "
+configopts += "-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.a "
+configopts += "-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.a "
+configopts += "-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.a "
+
+prebuildopts = (("cd {} && cd build && ")).format("%(builddir)s/rstudio-%(version)s")
+preinstallopts = (("export RSTUDIO_TOOLS_ROOT={} && "
+                   "cd {} && cd build && ")).format("%(builddir)s", "%(builddir)s/rstudio-%(version)s")
+
+sanity_check_commands = [
+    # This command requires environment variables R_HOME and R_DOC_DIR
+    "R_HOME=$EBROOTR/lib64/R R_DOC_DIR=$R_HOME/doc rsession --verify-installation=1",
+    # This command requires a db conf (this may also be needed for live use)
+    """MYTMP=`mktemp -d` && echo -e "provider=sqlite\ndirectory=$MYTMP/db" >> $MYTMP/db.conf && """
+    "rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf "
+    "--server-data-dir=$MYTMP/sdd --server-user=$USER",
+]
+
+sanity_check_paths = {
+    'files': ["bin/rstudio-server"],
+    'dirs': ['bin', 'extras', 'resources', 'www', 'www-symbolmaps', 'R'],
+}
+
+moduleclass = 'lang'
