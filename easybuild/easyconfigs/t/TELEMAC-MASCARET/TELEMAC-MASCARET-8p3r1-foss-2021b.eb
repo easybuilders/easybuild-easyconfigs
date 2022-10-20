@@ -29,37 +29,38 @@ unpack_options = '--strip-components=1'
 
 buildininstalldir = True
 
-install_cmd = "export HOMETEL=$PWD && "
-# add Python scripts to $PATH and $PYTHONPATH
-install_cmd += "export PATH=$HOMETEL/scripts/python3/:$PATH && "
-install_cmd += "export PYTHONPATH=$HOMETEL/scripts/python3:$PYTHONPATH && "
-# force python to flush its output
-install_cmd += "export PYTHONUNBUFFERED=1 && "
+local_tweak_cfg_cmd = ' '.join([
+    "sed -i -e 's/S9.gfortran/easybuild/g'",
+    # strip out use of AED, GOTM, MED (optional dependencies)
+    "-e 's/\(^[a-z]*_aed:\).*/\\1/g' -e 's/\(^[a-z]*_gotm:\).*/\\1/g' -e 's/\(^[a-z]*_med:\).*/\\1/g'",
+    # replace -O2 with desired compiler options
+    '-e "s/-O2/$F90FLAGS/g"',
+    # fix linker option for BLAS
+    '-e "s/ -lblas/ $LIBBLAS/g"',
+    # downgrade Fortran compiler error to warning
+    "-e 's/^fflags_gfo:/fflags_gfo: -fallow-invalid-boz/g'",
+    "$HOMETEL/configs/systel.easybuild.cfg",
+])
 
-# export LD_LIBRARY_PATH=$HOMETEL/builds/$USETELCFG/wrap_api/lib:$LD_LIBRARY_PATH
-# export PYTHONPATH=$HOMETEL/builds/$USETELCFG/wrap_api/lib:$PYTHONPATH
-
-install_cmd += "cp $HOMETEL/configs/systel.edf.cfg $HOMETEL/configs/systel.easybuild.cfg && "
-install_cmd += "sed -i 's/S9.gfortran/easybuild/g' $HOMETEL/configs/systel.easybuild.cfg && "
-# strip out use of AED, GOTM, MED (optional dependencies)
-install_cmd += "sed -i 's/\(^[a-z]*_aed:\).*/\\1/g' $HOMETEL/configs/systel.easybuild.cfg && "
-install_cmd += "sed -i 's/\(^[a-z]*_gotm:\).*/\\1/g' $HOMETEL/configs/systel.easybuild.cfg && "
-install_cmd += "sed -i 's/\(^[a-z]*_med:\).*/\\1/g' $HOMETEL/configs/systel.easybuild.cfg && "
-# replace -O2 with desired compiler options
-install_cmd += 'sed -i "s/-O2/$F90FLAGS/g" $HOMETEL/configs/systel.easybuild.cfg && '
-# fix linker option for BLAS
-install_cmd += 'sed -i "s/ -lblas/ $LIBBLAS/g" $HOMETEL/configs/systel.easybuild.cfg && '
-# downgrade Fortran compiler error to warning
-install_cmd += "sed -i 's/^fflags_gfo:/fflags_gfo: -fallow-invalid-boz/g' $HOMETEL/configs/systel.easybuild.cfg && "
-install_cmd += "export SYSTELCFG=$HOMETEL/configs/systel.easybuild.cfg && "
-install_cmd += "export USETELCFG=easybuild && "
-
-install_cmd += "export SCALAPACKHOME=$EBROOTSCALAPACK && "
-install_cmd += "export METISHOME=$EBROOTMETIS && "
-install_cmd += "export SCOTCHHOME=$EBROOTSCOTCH && "
-install_cmd += "export MUMPSHOME=$EBROOTMUMPS && "
-install_cmd += "export HDF5HOME=$EBROOTHDF5 && "
-install_cmd += "config.py && compile_telemac.py -j %(parallel)s"
+install_cmd = ' && '.join([
+    "export HOMETEL=$PWD",
+    # add Python scripts to $PATH and $PYTHONPATH
+    "export PATH=$HOMETEL/scripts/python3/:$PATH",
+    "export PYTHONPATH=$HOMETEL/scripts/python3:$PYTHONPATH",
+    # force python to flush its output
+    "export PYTHONUNBUFFERED=1",
+    "cp $HOMETEL/configs/systel.edf.cfg $HOMETEL/configs/systel.easybuild.cfg",
+    local_tweak_cfg_cmd,
+    "export SYSTELCFG=$HOMETEL/configs/systel.easybuild.cfg",
+    "export USETELCFG=easybuild",
+    "export SCALAPACKHOME=$EBROOTSCALAPACK",
+    "export METISHOME=$EBROOTMETIS",
+    "export SCOTCHHOME=$EBROOTSCOTCH",
+    "export MUMPSHOME=$EBROOTMUMPS",
+    "export HDF5HOME=$EBROOTHDF5",
+    "config.py",
+    "compile_telemac.py -j %(parallel)s",
+])
 
 sanity_check_paths = {
     'files': ['builds/easybuild/bin/telemac2d', 'builds/easybuild/bin/telemac3d',
