@@ -1,0 +1,71 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2017 University of Geneva
+# Authors::   Yann Sagon <yann.sagon@unige.ch>
+# License::   MIT/GPL
+# $Id$
+#
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'MaSuRCA'
+version = '4.0.9'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'https://www.genome.umd.edu/masurca.html'
+software_license = 'LicenseGPLv3'
+
+description = '''MaSuRCA is whole genome assembly software. It combines the efficiency of the de Bruijn graph
+ and Overlap-Layout-Consensus (OLC) approaches. MaSuRCA can assemble data sets containing
+ only short reads from Illumina sequencing or a mixture of short reads and long reads
+ (Sanger, 454, Pacbio and Nanopore).'''
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+# need a temporary url to download it. Do it manually here:
+# http://www.genome.umd.edu/masurca_form.html
+
+source_urls = ['https://github.com/alekseyzimin/masurca/releases/download/v%(version)s']
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['a31c2f786452f207c0b0b20e646b6c85b7357dcfd522b697c1009d902d3ed4cf']
+
+builddependencies = [('patchelf', '0.12')]
+
+dependencies = [
+    ('libreadline', '8.1'),
+    ('Tcl',         '8.6.11'),
+    ('Boost',       '1.76.0'),
+    ('zlib',        '1.2.11'),
+    ('Perl',        '5.32.1'),
+    ('bzip2',       '1.0.8'),
+]
+
+buildopts = "install-special"
+start_dir = "global-1"
+
+postinstallcmds = [
+    # fix location of 'bin' in install prefix in runCA and runCA-dedupe scripts
+    # escaping single quotes within single quotes is tricky, so we use $'...' to use ANSI C-like escaping
+    "sed -i $'s|^$bin =.*|$bin = \"$ENV{\'EBROOTMASURCA\'}/bin\";|g' %(installdir)s/bin/runCA",
+    "sed -i $'s|^$bin =.*|$bin = \"$ENV{\'EBROOTMASURCA\'}/bin\";|g' %(installdir)s/bin/runCA-dedupe",
+    # fix hardcoded path in masurca script, just point back to 'bin' subdirectory instead
+    "sed -i 's@../CA8/Linux-amd64/bin@../bin@g' %(installdir)s/bin/masurca",
+    # commands to install built-in version of Flye
+    "cd ../Flye && make && cp -a ../Flye %(installdir)s",
+    # fix missing RPATH
+    "patchelf --force-rpath --set-rpath '$ORIGIN' %(installdir)s/bin/falcon_sense",
+]
+
+sanity_check_paths = {
+    'files': ['bin/masurca', 'Flye/bin/flye'],
+    'dirs': ['include', 'lib'],
+}
+
+sanity_check_commands = [
+    "masurca --help",
+    "runCA --help",
+]
+
+moduleclass = 'bio'
