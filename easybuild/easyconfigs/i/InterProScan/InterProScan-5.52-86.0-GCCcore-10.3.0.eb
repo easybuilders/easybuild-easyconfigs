@@ -1,0 +1,45 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = '5.52-86.0'
+
+homepage = 'https://www.ebi.ac.uk/interpro/'
+description = """InterProScan is a sequence analysis application (nucleotide and protein sequences) that combines
+ different protein signature recognition methods into one resource."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+# from my location, the ftp download is 30x faster than http/https
+source_urls = [
+    'ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/',
+    'https://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/',
+]
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+checksums = ['50a03c47fb16c669c265e99ba05c4a8558b82047f713c9945f362d3d4be6069a']
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('Perl', '5.32.1'),
+    ('libgd', '2.3.1'),
+    ('Python', '3.9.5'),
+    ('pftoolsV3', '3.2.11'),
+]
+
+postinstallcmds = [
+    "cd %(installdir)s && python initial_setup.py",
+    "rm -v %(installdir)s/bin/prosite/*V3",
+    "ln -s $EBROOTPFTOOLSV3/bin/pfscanV3 %(installdir)s/bin/prosite/pfscanV3",
+    "ln -s $EBROOTPFTOOLSV3/bin/pfsearchV3 %(installdir)s/bin/prosite/pfsearchV3",
+]
+
+sanity_check_paths = {
+    'files': ['interproscan-%(version_major)s.jar', 'interproscan.sh', 'interproscan.properties'],
+    'dirs': ['bin', 'lib', 'data/panther/15.0'],
+}
+
+sanity_check_commands = ["interproscan.sh 2>&1 | grep 'Welcome to InterProScan-%(version)s'"]
+
+# also include top install directory in $PATH, to make interproscan.sh available
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

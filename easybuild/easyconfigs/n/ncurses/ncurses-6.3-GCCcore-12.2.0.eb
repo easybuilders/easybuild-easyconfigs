@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'ncurses'
+version = '6.3'
+
+homepage = 'https://www.gnu.org/software/ncurses/'
+description = """
+ The Ncurses (new curses) library is a free software emulation of curses in
+ System V Release 4.0, and more. It uses Terminfo format, supports pads and
+ color and multiple highlights and forms characters and function-key mapping,
+ and has all the other SYSV-curses enhancements over BSD Curses.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['97fc51ac2b085d4cde31ef4d2c3122c21abc217e9090a43a30fc5ec21684e059']
+
+builddependencies = [('binutils', '2.39')]
+
+local_common_configopts = "--with-shared --enable-overwrite --without-ada --enable-symlinks --with-versioned-syms "
+configopts = [
+    # build ncurses: serial build in default paths with shared libraries
+    local_common_configopts,
+    # build ncursesw: serial with UTF-8
+    local_common_configopts + "--enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/",
+]
+
+# Symlink libtinfo to libncurses
+# libncurses with this configopts has all the symbols from libtinfo, but some packages look for libtinfo specifically
+postinstallcmds = ['cd %(installdir)s/lib && for l in libncurses{.,_,w}*; do ln -s "${l}" "${l/ncurses/tinfo}"; done']
+
+_target_suffix = ['', 'w']  # '': ncurses, 'w': ncursesw
+_lib_suffix = ['%s%s' % (x, y) for x in _target_suffix for y in ['.a', '_g.a', '.' + SHLIB_EXT]]
+_lib_names = ['form', 'menu', 'ncurses', 'panel', 'tinfo']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ["captoinfo", "clear", "infocmp", "infotocap", "ncurses%(version_major)s-config",
+                                     "reset", "tabs", "tic", "toe", "tput", "tset"]] +
+             ['lib/lib%s%s' % (x, y) for x in _lib_names for y in _lib_suffix] +
+             ['lib/libncurses++%s.a' % x for x in _target_suffix],
+    'dirs': ['include', 'include/ncursesw'],
+}
+
+moduleclass = 'devel'

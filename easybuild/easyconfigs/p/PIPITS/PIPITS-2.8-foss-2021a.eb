@@ -1,0 +1,66 @@
+easyblock = 'PythonBundle'
+
+name = 'PIPITS'
+version = '2.8'
+
+homepage = 'https://github.com/hsgweon/pipits'
+description = """An automated pipeline for analyses of fungal internal transcribed spacer (ITS) sequences 
+from the Illumina sequencing platform."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('h5py', '3.2.1'),
+    ('VSEARCH', '2.21.1'),
+    ('FASTX-Toolkit', '0.0.14'),
+    ('ITSx', '1.1.3'),
+    ('HMMER', '3.3.2'),
+    ('RDP-Classifier', '2.13', '-Java-11', SYSTEM),
+    ('SeqKit', '2.1.0', '', SYSTEM),
+]
+
+use_pip = True
+
+exts_list = [
+    ('biom-format', '2.1.10', {
+        'modulename': 'biom',
+        'checksums': ['f5a277a8144f0b114606852c42f657b9cfde44b3cefa0b2638ab1c1d5e1d0488'],
+    }),
+    ('python-utils', '3.1.0', {
+        'checksums': ['4dace6420c5f50d6509251fa0aee0e2a0b826bbc8a5d2a6d7e99dca80e78a7f3'],
+    }),
+    ('progressbar2', '4.0.0', {
+        'modulename': 'progressbar',
+        'checksums': ['14d3165a1781d053ffaa117daf27cc706128d2ec1d2977fdb05b6bb079888013'],
+    }),
+    ('pispino', '1.1', {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/hsgweon/pispino/archive/'],
+        'checksums': ['8fb2e1c0ae38ecca7c637de9c0b655eb18fc67d7838ceb5a6902555ea12416c0'],
+    }),
+    (name, version, {
+        'patches': ['PIPITS-2.8_remove-conda-commands.patch'],
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/hsgweon/pipits/archive/'],
+        'checksums': [
+            '2ecc6fd901613bf9d4baec7c15e53ee89b2a2b817dbaa413c02d2dc484c5e5e2',  # 2.8.tar.gz
+            # PIPITS-2.8_remove-conda-commands.patch
+            '47437c243d5a07d3a3548efc9706ca8bd83c883d1ef881c769d10ae7fa6fcbcd',
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['pipits_funits', 'pipits_process',
+                                     'pispino_createreadpairslist',
+                                     'pispino_seqprep']],
+    'dirs': []
+}
+
+sanity_check_commands = ['pipits_process --help']
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
