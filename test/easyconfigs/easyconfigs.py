@@ -497,7 +497,6 @@ class EasyConfigTest(TestCase):
             'glew': [('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0'])],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
             # ncbi-vdb v2.x require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
-            'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.', r'shovill-1\.1\.'])],
             # RoseTTAFold on Ivy Bridge needs HH-Suite-3.3.0 or newer
             'HH-Suite': [('3.3.0;', ['RoseTTAFold-1.0.0-'])],
             # ncbi-vdb v2.x and v3.0.0 require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
@@ -505,7 +504,6 @@ class EasyConfigTest(TestCase):
                 (r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'ncbi-vdb-3\.0\.0', r'HISAT2-2\.2\.', r'SKESA-2\.4\.',
                               r'shovill-1\.1\.']),
             ],
->>>>>>> develop
             # VMTK 1.4.x requires ITK 4.13.x
             'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
