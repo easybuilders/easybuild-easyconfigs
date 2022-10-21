@@ -1,0 +1,66 @@
+easyblock = 'PythonBundle'
+
+name = 'FastFold'
+version = '20220729'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_commit = '665e6c97a7d95d3db2df860d104fa3c456c71fe2'
+
+homepage = 'https://github.com/hpcaitech/FastFold'
+description = "Optimizing Protein Structure Prediction Model Training and Inference on GPU Clusters"
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('SciPy-bundle', '2021.05'),
+    ('PyYAML', '5.4.1'),
+    ('Biopython', '1.79'),
+    ('HH-suite', '3.3.0'),
+    ('HMMER', '3.3.2'),
+    ('Kalign', '3.3.1'),
+    ('UCX-CUDA', '1.10.0', versionsuffix),
+    ('cuDNN', '8.2.1.32', versionsuffix, SYSTEM),
+    ('NCCL', '2.10.3', versionsuffix),
+    ('dm-tree', '0.1.6'),
+    ('einops', '0.4.1'),
+    ('colossalai', '0.1.8', versionsuffix),
+    ('OpenMM', '7.5.1', '-DeepMind-patch'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('PDBFixer', '1.7', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['a0bef3c52a7bbe69a6aea5333f51f3e7d158339be5829aed19b0344bd66d4eea'],
+    }),
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('ml_collections', '0.1.0', {
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'checksums': ['59a17fcd1c140153009788517f304caaddd7a94f06690f9f0ed09987beebcf3c'],
+    }),
+    (name, version, {
+        'preinstallopts': "cp -a benchmark scripts tests %(installdir)s/ && ",
+        'source_urls': ['https://github.com/hpcaitech/FastFold/archive/'],
+        'sources': [{'download_filename': '665e6c97a7d95d3db2df860d104fa3c456c71fe2.tar.gz',
+                     'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['79abc27d481f14c9086ee969f55a73645b9669e0608bdb44db22a839765e5739'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pdbfixer'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'from fastfold.model.fastnn import Evoformer'",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
