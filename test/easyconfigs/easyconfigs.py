@@ -493,9 +493,14 @@ class EasyConfigTest(TestCase):
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'CLHEP': [('2.4.5.1;', [r'GATE-9\.2-foss-2021b'])],
+            # egl variant of glew is required by libwpe
+            'glew': [('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0'])],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # ncbi-vdb v2.x require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
-            'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.', r'shovill-1\.1\.'])],
+            # ncbi-vdb v2.x and v3.0.0 require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
+            'HDF5': [
+                (r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'ncbi-vdb-3\.0\.0', r'HISAT2-2\.2\.', r'SKESA-2\.4\.',
+                              r'shovill-1\.1\.']),
+            ],
             # VMTK 1.4.x requires ITK 4.13.x
             'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
@@ -1333,21 +1338,29 @@ def template_easyconfig_test(self, spec):
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
+    basedir = os.path.dirname(os.path.dirname(specdir))
     specfn = os.path.basename(spec)
     for idx, patch in enumerate(ec['patches']):
-        if isinstance(patch, (tuple, list)):
-            patch = patch[0]
+        patch_dir = specdir
+        if isinstance(patch, str):
+            patch_name = patch
+        elif isinstance(patch, (tuple, list)):
+            patch_name = patch[0]
+        elif isinstance(patch, dict):
+            patch_name = patch['name']
+            if patch['alt_location']:
+                patch_dir = os.path.join(basedir, letter_dir_for(patch['alt_location']), patch['alt_location'])
 
         # only check actual patch files, not other files being copied via the patch functionality
-        patch_full = os.path.join(specdir, patch)
-        if patch.endswith('.patch'):
+        patch_full = os.path.join(patch_dir, patch_name)
+        if patch_name.endswith('.patch'):
             msg = "Patch file %s is available for %s" % (patch_full, specfn)
             self.assertTrue(os.path.isfile(patch_full), msg)
 
         # verify checksum for each patch file
-        if idx < len(patch_checksums) and (os.path.exists(patch_full) or patch.endswith('.patch')):
+        if idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
             checksum = patch_checksums[idx]
-            error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch, ec_fn, checksum)
+            error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch_name, ec_fn, checksum)
             res = verify_checksum(patch_full, checksum)
             self.assertTrue(res, error_msg)
 
@@ -1422,6 +1435,11 @@ def template_easyconfig_test(self, spec):
         orig_val = resolve_template(ec_dict[key], ec.template_values)
         dumped_val = resolve_template(dumped_ec[key], ec.template_values)
 
+        # skip SYSTEM template constant check for 2019b and older toolchain generation easyconfigs
+        # since these fail other CI checks when updated
+        regex = re.compile(r'(201\d([ab]|\.\d+))|(^[1-8]\.\d+\.\d+)')
+        skip_system_template_check = regex.match(ec['toolchain']['version'])
+
         # take into account that dumped value for *dependencies may include hard-coded subtoolchains
         # if no easyconfig was found for the dependency with the 'parent' toolchain,
         # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
@@ -1449,11 +1467,16 @@ def template_easyconfig_test(self, spec):
                 # 4th value is toolchain spec
                 if len(dumped_dep) >= 4:
                     if len(orig_dep) >= 4:
-                        # if True was used to indicate that dependency should use system toolchain,
-                        # then we need to compare the value for the dumped easyconfig more carefully;
-                        # see also https://github.com/easybuilders/easybuild-framework/pull/4069
+                        # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
                         if orig_dep[3] is True:
-                            self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
+                            if skip_system_template_check:
+                                self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
+                            else:
+                                error_msg = (
+                                    "use of `True` to indicate the system toolchain for dependency "
+                                    "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
+                                )
+                                self.fail(error_msg)
                         else:
                             self.assertEqual(dumped_dep[3], orig_dep[3])
                     else:
