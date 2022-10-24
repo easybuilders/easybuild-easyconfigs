@@ -1,0 +1,71 @@
+From https://github.com/rstudio/rstudio/pull/11976
+
+From c131989e8ecb19733fe274fe7ad8a18d490fdcf9 Mon Sep 17 00:00:00 2001
+From: Jonathan McPherson <jonathan@rstudio.com>
+Date: Mon, 19 Sep 2022 14:34:18 -0700
+Subject: [PATCH] use XDG_CACHE_HOME for secure cookie key in low privilege
+ mode
+
+---
+ src/cpp/core/include/core/system/Xdg.hpp |  7 +++++++
+ src/cpp/core/system/Xdg.cpp              | 15 +++++++++++++++
+ src/cpp/server_core/SecureKeyFile.cpp    |  2 +-
+ 3 files changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/src/cpp/core/include/core/system/Xdg.hpp b/src/cpp/core/include/core/system/Xdg.hpp
+index 71cb2a8d50f..ed848ca2476 100644
+--- a/src/cpp/core/include/core/system/Xdg.hpp
++++ b/src/cpp/core/include/core/system/Xdg.hpp
+@@ -66,6 +66,13 @@ FilePath userDataDir(const boost::optional<std::string>& user = boost::none,
+ // Returns the user-specific logging directory underneath the userDataDir
+ FilePath userLogDir();
+                      
++// Returns the RStudio XDG user cache directory.
++//
++// On Unix-alikes, this is ~/.cache, or XDG_CACHE_HOME.
++// On Windows, this is 'FOLDERID_InternetCache' (typically 'AppData/Local/Microsoft/Windows/Temporary Files')
++FilePath userCacheDir(const boost::optional<std::string>& user = boost::none,
++                      const boost::optional<FilePath>& homeDir = boost::none);
++
+ // This function verifies that the userConfigDir() and userDataDir() exist and are owned by the running user.
+ // 
+ // It should be invoked once. Any issues with these directories will be emitted to the session log.
+diff --git a/src/cpp/core/system/Xdg.cpp b/src/cpp/core/system/Xdg.cpp
+index 3866f286437..ca1e7923ac5 100644
+--- a/src/cpp/core/system/Xdg.cpp
++++ b/src/cpp/core/system/Xdg.cpp
+@@ -218,6 +218,21 @@ FilePath userDataDir(
+    );
+ }
+ 
++FilePath userCacheDir(
++        const boost::optional<std::string>& user,
++        const boost::optional<FilePath>& homeDir)
++{
++   return resolveXdgDir("RSTUDIO_CACHE_HOME",
++         "XDG_CACHE_HOME",
++#ifdef _WIN32
++         FOLDERID_InternetCache,
++#endif
++         "~/.cache",
++         user,
++         homeDir
++   );
++}
++
+ FilePath userLogDir()
+ {
+    return userDataDir().completePath("log");
+diff --git a/src/cpp/server_core/SecureKeyFile.cpp b/src/cpp/server_core/SecureKeyFile.cpp
+index d3a5e37c1bd..cbc3a91a44c 100644
+--- a/src/cpp/server_core/SecureKeyFile.cpp
++++ b/src/cpp/server_core/SecureKeyFile.cpp
+@@ -113,7 +113,7 @@ core::Error readSecureKeyFile(const std::string& filename,
+    }
+    else
+    {
+-      secureKeyPath = core::FilePath("/tmp/rstudio-server").completePath(filename);
++      secureKeyPath = core::system::xdg::userCacheDir().completePath(filename);
+       if (secureKeyPath.exists())
+       {
+          LOG_INFO_MESSAGE("Running without privilege; using secure key at " + secureKeyPath.getAbsolutePath());
