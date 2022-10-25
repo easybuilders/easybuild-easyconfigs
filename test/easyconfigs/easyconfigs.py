@@ -445,7 +445,7 @@ class EasyConfigTest(TestCase):
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
         versionsuffix_deps = ['ASE', 'Boost', 'CUDAcore', 'Java', 'Lua',
-                              'PLUMED', 'PyTorch', 'R', 'TensorFlow']
+                              'PLUMED', 'PyTorch', 'R', 'SRA-Tools', 'TensorFlow']
         if dep in versionsuffix_deps and len(dep_vars) > 1:
 
             # check for '-CUDA-*' versionsuffix for CUDAcore dependency
