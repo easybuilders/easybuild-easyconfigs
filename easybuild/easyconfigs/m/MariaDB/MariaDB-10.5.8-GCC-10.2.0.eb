@@ -1,3 +1,6 @@
+# OpenSSL, pkgconf, zstd and PCRE2 added, URL to download source file updated
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
 easyblock = 'CMakeMake'
 
 name = 'MariaDB'
@@ -9,7 +12,10 @@ Included engines: myISAM, Aria, InnoDB, RocksDB, TokuDB, OQGraph, Mroonga."""
 
 toolchain = {'name': 'GCC', 'version': '10.2.0'}
 
-source_urls = ['http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source']
+source_urls = [
+    'http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source',
+    'https://archive.mariadb.org/mariadb-%(version)s/source',
+]
 sources = [SOURCELOWER_TAR_GZ]
 patches = ['MariaDB-10.1.13-link-rt-for-jemalloc.patch']
 checksums = [
@@ -20,6 +26,7 @@ checksums = [
 builddependencies = [
     ('CMake', '3.18.4'),
     ('libaio', '0.3.112'),
+    ('pkgconf', '1.8.0', '', SYSTEM),
 ]
 
 dependencies = [
@@ -35,12 +42,12 @@ dependencies = [
     ('Judy', '1.0.5'),      # needed by OQGraph
     ('PCRE2', '10.35'),     # required, else system one will be used
     ('OpenSSL', '1.1', '', SYSTEM),     # runtime dep for mysql and PCRE2 for mysqltest
+    ('zstd', '1.4.5'),
 ]
 
 separate_build_dir = True
 
-configopts = "-DCMAKE_BUILD_TYPE=Release "
-configopts += "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
 configopts += "-DMYSQL_MAINTAINER_MODE=OFF "  # disabled to not treat warnings as errors (-Werror)
 configopts += "-DWITH_PCRE=auto "  # External download sometimes fails so we build PCRE2 directly.
 configopts += "-DWITH_ZLIB=system "

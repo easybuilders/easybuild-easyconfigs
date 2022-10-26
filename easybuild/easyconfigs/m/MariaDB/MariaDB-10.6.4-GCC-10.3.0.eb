@@ -1,3 +1,6 @@
+# OpenSSL, Bison, zstd and pkgconf added, URL to download source file updated
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
 easyblock = 'CMakeMake'
 
 name = 'MariaDB'
@@ -9,17 +12,28 @@ Included engines: myISAM, Aria, InnoDB, RocksDB, TokuDB, OQGraph, Mroonga."""
 
 toolchain = {'name': 'GCC', 'version': '10.3.0'}
 
-source_urls = ['http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source']
-sources = [SOURCELOWER_TAR_GZ]
+local_pcre2_ver = '10.37'
+source_urls = [
+    'http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source',
+    'https://archive.mariadb.org/mariadb-%(version)s/source',
+    'https://downloads.sourceforge.net/project/pcre/pcre2/%s/' % local_pcre2_ver,
+]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {'filename': 'pcre2-%s.zip' % local_pcre2_ver, 'extract_cmd': "cp %s %(builddir)s/"},
+]
 patches = ['MariaDB-10.1.13-link-rt-for-jemalloc.patch']
 checksums = [
     '75bf9b147a95d38160d01a73b098d50a1960563b46d16a235971fff64d99643c',  # mariadb-10.6.4.tar.gz
+    '7a1dc9322cfbf4d00dd1adaa69f6ac7b91033170a0bcfc6615880803c8440257',  # pcre2-10.37.zip
     '8295837e623f6c782e1d64b00e0877ea98cce4bf8846755bb86c8a7732797c19',  # MariaDB-10.1.13-link-rt-for-jemalloc.patch
 ]
 
 builddependencies = [
     ('CMake', '3.20.1'),
     ('libaio', '0.3.112'),
+    ('pkgconf', '1.8.0', '', SYSTEM),
+    ('Bison', '3.7.6'),
 ]
 
 dependencies = [
@@ -33,12 +47,15 @@ dependencies = [
     ('libxml2', '2.9.10'),  # needed by Connect XML
     ('Boost', '1.76.0'),    # needed by OQGraph
     ('Judy', '1.0.5'),      # needed by OQGraph
+    ('OpenSSL', '1.1', '', SYSTEM),     # runtime dep for mysql and PCRE2 for mysqltest
+    ('zstd', '1.4.9'),
 ]
 
-separate_build_dir = True
+# replace download URL for PCRE2 with path to pre-downloaded PRCE2 source file
+local_pcre2_path = '%%(builddir)s/pcre2-%s.zip' % local_pcre2_ver
+preconfigopts = "sed -i 's@http://.*.zip@file://%s@g' ../mariadb-%%(version)s/cmake/pcre.cmake && " % local_pcre2_path
 
-configopts = "-DCMAKE_BUILD_TYPE=Release "
-configopts += "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
 configopts += "-DMYSQL_MAINTAINER_MODE=OFF "  # disabled to not treat warnings as errors (-Werror)
 configopts += "-DWITH_PCRE=bundled "  # using an external PCRE is broken, see https://bugs.exim.org/show_bug.cgi?id=2173
 configopts += "-DWITH_ZLIB=system "
