@@ -493,8 +493,12 @@ class EasyConfigTest(TestCase):
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'CLHEP': [('2.4.5.1;', [r'GATE-9\.2-foss-2021b'])],
-            # egl variant of glew is required by libwpe
-            'glew': [('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0'])],
+            # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
+            'glew': [
+                ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
+                                                r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
+                                                r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0']),
+            ],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
             # ncbi-vdb v2.x and v3.0.0 require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
             'HDF5': [
