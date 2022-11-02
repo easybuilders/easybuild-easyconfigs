@@ -2,7 +2,7 @@ easyblock = 'ConfigureMake'
 
 name = 'nodejs'
 version = '14.17.6'  # LTS on 2020-08-31
-local_libversion = '83'
+_libversion = '83'
 
 homepage = 'https://nodejs.org'
 description = """Node.js is a platform built on Chrome's JavaScript runtime
@@ -21,21 +21,30 @@ builddependencies = [
     ('Python', '3.9.6', '-bare'),
 ]
 
+dependencies = [
+    ('ICU', '69.1'),
+    ('OpenSSL', '1.1', '', True),
+]
+
+# Use ICU and OpenSSL from EasyBuild
+_common_configopts = "--with-intl=system-icu --shared-openssl "
+
 configopts = [
-    '--with-intl=none',           # Fully disable ICU to avoid issues with the embedded icu-small library
-    '--shared --with-intl=none',  # Build libnode.so in a second run
+    _common_configopts,                  # Static build
+    '--shared %s' % _common_configopts,  # Build libnode.so in a second run
 ]
 
 # Link libv8 libs to libnode
+_extra_sonames = ['libnode', 'libv8', 'libv8_libbase', 'libv8_libplatform']
+_extra_libs = ['%s.%s' % (x, SHLIB_EXT) for x in _extra_sonames]
+_libnode_real = "libnode.%s.%s" % (SHLIB_EXT, _libversion)
+
 postinstallcmds = [
-    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libnode.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
-    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
-    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8_libbase.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
-    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8_libplatform.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+    "cd %%(installdir)s/lib && ln -s %s %s" % (_libnode_real, x) for x in _extra_libs
 ]
 
 sanity_check_paths = {
-    'files': ['bin/node', 'bin/npm', 'lib/libnode.%s.%s' % (SHLIB_EXT, local_libversion)],
+    'files': ['bin/node', 'bin/npm'] + ['lib/%s' % x for x in [_libnode_real] + _extra_libs],
     'dirs': ['lib/node_modules', 'include/node']
 }
 
