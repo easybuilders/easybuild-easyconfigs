@@ -1,27 +1,19 @@
-Author: Jasper Grimm <jasper.grimm@york.ac.uk>
-Description: enhance the cmake build scripts to:
- - allow targetting of multiple CUDA architectures (with -gencode=)
- - introduce DEFAULT_CUDA_ARCH to set the default CUDA arch target (-arch=)
------------------------------------------------------------------------------------
-diff -Nru relion.orig/cmake/BuildTypes.cmake relion.3/cmake/BuildTypes.cmake
---- relion.orig/cmake/BuildTypes.cmake	2022-04-27 11:43:59.000000000 +0100
-+++ relion.3/cmake/BuildTypes.cmake	2022-06-10 14:45:59.000000000 +0100
-@@ -5,8 +5,9 @@
- # Add -G to allow cuda-gdb to break inside kernels.
- set(EXTRA_NVCC_FLAGS "-D__INTEL_COMPILER --default-stream per-thread --std=c++11")
- 
--set(RELION_NVCC_FLAGS "${CUDARCH} ${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
--#message(STATUS "RELION_NVCC_FLAGS: ${RELION_NVCC_FLAGS}")
-+cuda_select_nvcc_arch_flags(CUDA_GENCODE "${CUDA_ARCH}")
-+list(APPEND CUDA_NVCC_FLAGS ${CUDA_SM} ${CUDA_GENCODE})
-+set(RELION_NVCC_FLAGS "${CUDA_SM} ${CUDA_GENCODE} ${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
- 
- # -------------------------- 
- #        Debug BUILD 
-diff -Nru relion.orig/CMakeLists.txt relion.3/CMakeLists.txt
---- relion.orig/CMakeLists.txt	2022-04-27 11:43:59.000000000 +0100
-+++ relion.3/CMakeLists.txt	2022-06-10 14:45:49.000000000 +0100
-@@ -73,13 +73,20 @@
+commit 1db372bc52dcb833f5072894f6a882d10e5eb344
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Thu Nov 3 15:26:48 2022 +0100
+
+    Description: enhance the cmake build scripts to:
+     - allow targetting of multiple CUDA architectures (with -gencode=)
+     - introduce DEFAULT_CUDA_ARCH to set the default CUDA arch target (-arch=)
+    Original Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+    
+    Modified to correctly set NVCC build flags and allow externally setting --std=xxx flag.
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index df5ee61a..c19cae2c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -73,13 +73,20 @@ endif()
  # ------------------OPTIONS WHICH ARE NEEDED TO SET BUILD-TYPES (COMPILATION FLAGS)--
  # ------------------------------------------------------------------------CUDA-ARCH--
  if(NOT DEFINED CUDA_ARCH)
@@ -46,23 +38,28 @@ diff -Nru relion.orig/CMakeLists.txt relion.3/CMakeLists.txt
  # -------------------------------------------------------------------FURTHER OPTIONS--
  
  
-@@ -133,9 +140,6 @@
- endif()
- 
- # ----------------------------------------------------------INCLUDE ALL BUILD TYPES--
-- #This *has* to be AFTER project()
--include(${CMAKE_SOURCE_DIR}/cmake/BuildTypes.cmake)
--
- if(CUDA)
-     # -----------------------------------------------------------------------------CUDA--
-     # DOC: http://www.cmake.org/cmake/help/v3.0/module/FindCUDA.html
-@@ -159,6 +163,9 @@
+@@ -155,6 +162,8 @@ if(CUDA_FOUND)
+     if(CUDA)
+         add_definitions(-D_CUDA_ENABLED)
+     endif()
++    cuda_select_nvcc_arch_flags(CUDA_GENCODE "${CUDA_ARCH}")
++    list(APPEND CUDA_NVCC_FLAGS ${CUDA_SM} ${CUDA_GENCODE})
+ else(CUDA_FOUND)
      message(STATUS "Using non-cuda compilation....")
  endif(CUDA_FOUND)
+diff --git a/cmake/BuildTypes.cmake b/cmake/BuildTypes.cmake
+index db12c27e..80d63ed3 100644
+--- a/cmake/BuildTypes.cmake
++++ b/cmake/BuildTypes.cmake
+@@ -3,9 +3,9 @@
+ # Because gcc is compliant with a float128 type, fftw has become as well. nvcc is NOT. 
+ # So -D__INTEL_COMPILER just manages to avoid compiling float128-targets (see fftw3.h, for instance).
+ # Add -G to allow cuda-gdb to break inside kernels.
+-set(EXTRA_NVCC_FLAGS "-D__INTEL_COMPILER --default-stream per-thread --std=c++11")
++set(EXTRA_NVCC_FLAGS "-D__INTEL_COMPILER --default-stream per-thread")
  
-+#This *has* to be AFTER project()
-+include(${CMAKE_SOURCE_DIR}/cmake/BuildTypes.cmake)
-+
- # ------------------------------------------------------------------ALLOCATOR CHOICE--
- option(CachedAlloc "CachedAlloc" ON)
- if(NOT CachedAlloc)
+-set(RELION_NVCC_FLAGS "${CUDARCH} ${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
++set(RELION_NVCC_FLAGS "${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
+ #message(STATUS "RELION_NVCC_FLAGS: ${RELION_NVCC_FLAGS}")
+ 
+ # -------------------------- 
