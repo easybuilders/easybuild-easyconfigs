@@ -1,0 +1,38 @@
+description: setup.py extension to locate ucp headers from UCX_MODULE_DIR
+             configuraton key provided by ucx_info.
+issue: https://github.com/rapidsai/ucx-py/issues/783
+author: Zdenek Matej, MAX IV Laboratory, Lund University
+--- setup.py
++++ setup.py
+@@ -24,9 +24,30 @@ library_dirs = [get_config_var("LIBDIR")]
+ libraries = ["ucp", "uct", "ucm", "ucs", "hwloc"]
+ extra_compile_args = ["-std=c99", "-Werror"]
+ 
++def get_ucx_incpath():
++    import subprocess
++    res = include_dirs[0]
++    # get output of ucx_info configuration
++    p = subprocess.Popen("ucx_info -c", stdout=subprocess.PIPE, shell=True)
++    (output, err) = p.communicate()
++    p.wait()
++    # get value of UCX_MODULE_DIR key and return path relative to it
++    lines = output.decode("utf-8").split('\n')
++    ucx_config = {}
++    for line in lines:
++        if line:
++            key, val = line.split('=')
++            ucx_config[key] = val
++    if 'UCX_MODULE_DIR' in ucx_config.keys():
++        res = ucx_config['UCX_MODULE_DIR']
++        # remove lib/ucx
++        res = os.path.dirname(os.path.dirname(res))
++        # add include
++        res = os.path.join(res,'include')
++    return res
+ 
+ def get_ucp_version():
+-    with open(include_dirs[0] + "/ucp/api/ucp_version.h") as f:
++    with open(os.path.join(get_ucx_incpath(),"ucp/api/ucp_version.h")) as f:
+         ftext = f.read()
+         major = re.findall("^#define.*UCP_API_MAJOR.*", ftext, re.MULTILINE)
+         minor = re.findall("^#define.*UCP_API_MINOR.*", ftext, re.MULTILINE)
