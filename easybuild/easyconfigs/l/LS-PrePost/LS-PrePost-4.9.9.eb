@@ -1,0 +1,34 @@
+easyblock = "Tarball"
+
+name = 'LS-PrePost'
+version = '4.9.9'
+
+homepage = 'http://lstc.com/products/ls-prepost'
+description = """LS-PrePost is an advanced pre and post-processor that is delivered free with LS-DYNA."""
+
+toolchain = SYSTEM
+
+# Manual download to /cvmfs/restricted.computecanada.ca/easybuild/sources/l/LS-PrePost
+# https://ftp.lstc.com/user/ls-prepost/4.9/linux64/lsprepost-4.9.9-common-14Oct2022.tgz
+sources = ['lsprepost-%(version)s-common-14Oct2022.tgz']
+checksums = ['226e145b5d19a38fabf37b3657f5500cce3935f08d762e984c645cd86fcd4ac3']
+
+postinstallcmds = [
+    'chmod -R go+rX %(installdir)s',
+    'setrpaths.sh --path %(installdir)s',
+    'for x in lsprepost lsrun msuite_ls_64 tetgen; do' +
+    '  patchelf --set-rpath %(installdir)s/lib:%(installdir)s/lib_mesa %(installdir)s/$x;' +
+    '  chmod 755 %(installdir)s/$x;' +
+    'done',
+    'sed -i \'s|\$HOME\/lsprepost4.9_common|%(installdir)s|g\' %(installdir)s/lspp49',
+    'sed -i \'s|\$HOME\/lsprepost4.9_common|%(installdir)s|g\' %(installdir)s/lspp49_mesa'
+]
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['lsprepost'],
+    'dirs': ['lib']
+}
+
+moduleclass = 'cae'
