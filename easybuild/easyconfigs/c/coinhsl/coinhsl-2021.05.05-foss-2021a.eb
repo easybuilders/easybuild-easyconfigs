@@ -1,0 +1,41 @@
+# This requires registration for the HSL library.
+# See download instructions for details. 
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'coinhsl'
+version = '2021.05.05'
+
+homepage = 'https://www.hsl.rl.ac.uk/ipopt/'
+description = """HSL provides a number of linear solvers that can be used in IPOPT.
+We provide several different ways for IPOPT users to download our codes."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+download_instructions = """
+Manually download via https://www.hsl.rl.ac.uk/download/coinhsl-archive/2021.05.05/
+(requires registration) and place the tarball in the same directory as this file"""
+
+sources = ['%(name)s-%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-makefile.patch']
+checksums = [
+    {'coinhsl-2021.05.05.tar.gz': 'f4fa0eee24a181fbc88e8fe5a1c49443c34bb32b93b9f5b3a9c482324f87fa1d'},
+    {'coinhsl-2021.05.05-makefile.patch': 'c539eb304a21178da7ef50b91d13fac80c32cc0fcf2ec299bc4a00969697cbef'},
+]
+
+builddependencies = [('gawk', '5.1.1')]
+
+dependencies = [('METIS', '5.1.0')]
+
+configopts = '--with-blas="$LIBLAPACK" '
+
+# Some programs are still using libhsl.so instead of the new libcoinhsl:
+postinstallcmds = ["cd %(installdir)s/lib/ && ln -s libcoinhsl.so.0.0.0 libhsl.so"]
+
+sanity_check_paths = {
+    'files': ['lib/libcoinhsl.%s' % SHLIB_EXT, 'lib/libcoinhsl.a'],
+    'dirs': ['include', 'lib/pkgconfig'],
+}
+
+moduleclass = 'math'
