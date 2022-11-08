@@ -493,6 +493,12 @@ class EasyConfigTest(TestCase):
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'CLHEP': [('2.4.5.1;', [r'GATE-9\.2-foss-2021b'])],
+            # CUDA 11.8 is required for NVIDIA H100 support for NCCL, UCX-CUDA, magma
+            'CUDA': [
+                ('11.8.0;', [r'NCCL-2\.15\.5-GCCcore-11\.3.0-CUDA-11\.8\.0',
+                             r'UCX-CUDA-1\.12\.1-GCCcore-11\.3\.0-CUDA-11\.8\.0',
+                             r'magma-2\.6\.2-foss-2022a-CUDA-11\.8\.0'])
+            ],
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
@@ -588,6 +594,11 @@ class EasyConfigTest(TestCase):
             # for the sake of backwards compatibility, keep UCX-CUDA v1.11.0 which depends on UCX v1.11.0
             # (for 2021b, UCX was updated to v1.11.2)
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
+            # CUDA 11.8 is required in UCX-CUDA for NVIDIA H100 support for NCCL, magma
+            'UCX-CUDA': [
+                ('1.12.1; versionsuffix: -CUDA-11.8.0', [r'NCCL-2\.15\.5-GCCcore-11\.3.0-CUDA-11\.8\.0',
+                                                         r'magma-2\.6\.2-foss-2022a-CUDA-11\.8\.0'])
+            ],
             # WPS 3.9.1 requires WRF 3.9.1.1
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
         }
