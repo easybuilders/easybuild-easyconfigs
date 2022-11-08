@@ -21,8 +21,6 @@ source_urls = ['https://bitbucket.org/sonnhammergroup/inparanoid/get/']
 sources = ['79d8e39bb243d403ce57b699c1ae104a8a640389.tar.gz']
 checksums = ['efe1a35bbb70608385780c4bf62969a29c46dd8132fbe472034422d23ad4b0c2']  # for commit 79d8e39
 
-builddependencies = [('binutils', '2.36.1')]
-
 # NOTE some dependencies are not listed on the web site such as Java!
 dependencies = [
     ('Perl',    '5.32.1'),  # brings libmoose-perl and libparallel-forkmanager-perl
@@ -33,33 +31,31 @@ dependencies = [
 ]
 
 # NOTE inparanoid.pl uses only local (same directory) paths, so patch it
-postinstallcmds = ["rm -rf %(installdir)s/docker/ %(installdir)s/singularity/ && "
-                   "chmod a+rx %(installdir)s/*.pl && "
-                   "chmod -x %(installdir)s/*.jar && "
-                   "perl -i -pe 's|helpfile = \"help\"|helpfile = \"%(installdir)s/help\"|' "
-                   "%(installdir)s/inparanoid.pl && "
-                   "perl -i -pe 's|seqstat = \"|seqstat = \"%(installdir)s/|' "
-                   "%(installdir)s/inparanoid.pl && "
-                   "perl -i -pe 's|blastParser = \"|blastParser = \"%(installdir)s/|' "
-                   "%(installdir)s/inparanoid.pl && "
-                   "perl -i -pe 's|diamondParser = \"|diamondParser = \"%(installdir)s/|' "
-                   "%(installdir)s/inparanoid.pl && "
-                   "perl -i -pe 's|copy\(\"\./|copy\(\"%(installdir)s/|' "
-                   "%(installdir)s/inparanoid.pl && "
-                   "perl -i -pe 's|\./\$blastParser|\$blastParser|g' "
-                   "%(installdir)s/inparanoid.pl && "
-                   "perl -i -pe 's|#!.*perl|#!/usr/bin/env perl|' %(installdir)s/*.pl"]
+postinstallcmds = [
+    "rm -rf %(installdir)s/docker/ %(installdir)s/singularity/",
+    "chmod a+rx %(installdir)s/*.pl",
+    "chmod -x %(installdir)s/*.jar",
+    "perl -i -pe 's|helpfile = \"help\"|helpfile = \"%(installdir)s/help\"|' %(installdir)s/inparanoid.pl",
+    "perl -i -pe 's|seqstat = \"|seqstat = \"%(installdir)s/|' %(installdir)s/inparanoid.pl",
+    "perl -i -pe 's|blastParser = \"|blastParser = \"%(installdir)s/|' %(installdir)s/inparanoid.pl",
+    "perl -i -pe 's|diamondParser = \"|diamondParser = \"%(installdir)s/|' %(installdir)s/inparanoid.pl",
+    "perl -i -pe 's|copy\(\"\./|copy\(\"%(installdir)s/|' %(installdir)s/inparanoid.pl",
+    "perl -i -pe 's|\./\$blastParser|\$blastParser|g' %(installdir)s/inparanoid.pl",
+]
+
+fix_perl_shebang_for = ['*.pl']
 
 sanity_check_paths = {
     'files': ['inparanoid.pl', 'blast_parser.pl', 'diamondParser.pl'],
-    'dirs': ['matrices'],
+    'dirs': ['matrices', 'testInput'],
 }
 
 modextrapaths = {
     'PATH': '',
 }
 
-sanity_check_commands = ["inparanoid.pl -input-dir %(installdir)s/testInput/ && "
-                         "rm -Rf %(installdir)s/output/"]
+sanity_check_commands = [
+    "cd %(builddir)s && inparanoid.pl -input-dir %(installdir)s/testInput/",
+]
 
 moduleclass = 'bio'
