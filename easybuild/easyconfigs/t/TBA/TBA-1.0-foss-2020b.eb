@@ -1,0 +1,65 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'Tarball'
+
+name = 'TBA'
+version = '1.0'
+
+homepage = 'https://github.com/jenhantao/tba'
+description = """TBA (a Transcription factor Binding Analysis):
+TBA is a multi-functional machine learning tool for identifying 
+transcription factors associated with genomic features"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://github.com/jenhantao/tba/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['97acb78e045bbd066d67213c84417f2af7f48fde1f513be22cbb46ad2966ae2c']
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('Biopython', '1.78'),
+    ('scikit-learn', '0.23.2'),
+    ('Seaborn', '0.11.1'),
+    ('matplotlib', '3.3.3'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('idr', '2.0.3', {
+        'source_urls': ['https://github.com/nboley/idr/archive/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['63e3be099b2deadfa8c7ccc3ab83659afe683f6a35bd41b2319c6ad58ca74de6'],
+    }),
+    ('joblib', '1.2.0', {
+        'checksums': ['e1cee4a79e4af22881164f218d4311f60074197fb707e082e803b61f6d137018'],
+    }),
+]
+
+postinstallcmds = [
+    "mv %(installdir)s/model_training/* %(installdir)s/bin ",
+    "mv %(installdir)s/default_motifs  %(installdir)s/share ",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/train_model_default.sh', 'bin/train_classifier.py',
+              'bin/create_features.py', 'bin/idr'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [
+    "idr --version",
+    "train_classifier.py -h",
+]
+
+moduleclass = 'bio'
