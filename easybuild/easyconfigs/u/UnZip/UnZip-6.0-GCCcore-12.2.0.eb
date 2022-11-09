@@ -33,12 +33,19 @@ dependencies = [
 
 skipsteps = ['configure']
 
-buildopts = '-f unix/Makefile CC="$CC" D_USE_BZ2=-DUSE_BZIP2 L_BZ2=-lbz2 '
-buildopts += 'LF2="$LDFLAGS" '
-# Note: CF is multiple lines
-buildopts += 'CF="$CFLAGS $CPPFLAGS -I. -DACORN_FTYPE_NFS -DWILD_STOP_AT_DIR -DLARGE_FILE_SUPPORT '
-buildopts += '-DUNICODE_SUPPORT -DUNICODE_WCHAR -DUTF8_MAYBE_NATIVE -DNO_LCHMOD '
-buildopts += '-DDATE_FORMAT=DF_YMD -DUSE_BZIP2 -DIZ_HAVE_UXUIDGID -DNOMEMCPY -DNO_WORKING_ISPRINT" unzips '
+local_cf = ['$CFLAGS', '$CPPFLAGS', '-I.', '-DACORN_FTYPE_NFS', '-DWILD_STOP_AT_DIR', '-DLARGE_FILE_SUPPORT'
+            '-DUNICODE_SUPPORT', '-DUNICODE_WCHAR', '-DUTF8_MAYBE_NATIVE', '-DNO_LCHMOD', '-DDATE_FORMAT=DF_YMD',
+            '-DUSE_BZIP2', '-DIZ_HAVE_UXUIDGID', '-DNOMEMCPY', '-DNO_WORKING_ISPRINT']
+
+buildopts = ' '.join([
+    "-f unix/Makefile",
+    'CC="$CC"',
+    'D_USE_BZ2=-DUSE_BZIP2',
+    'L_BZ2=-lbz2',
+    'LF2="$LDFLAGS"',
+    'CF="%s"' % ' '.join(local_cf),
+    'unzips',
+])
 
 installopts = '-f unix/Makefile prefix=%(installdir)s '
 
