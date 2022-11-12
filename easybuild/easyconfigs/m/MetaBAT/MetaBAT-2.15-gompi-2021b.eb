@@ -10,6 +10,7 @@ toolchain = {'name': 'gompi', 'version': '2021b'}
 
 source_urls = ['https://bitbucket.org/berkeleylab/metabat/get/']
 sources = ['v%(version)s.tar.gz']
+patches = ['MetaBAT-2.15_zlib-htslib.patch']
 checksums = ['550487b66ec9b3bc53edf513d00c9deda594a584f53802165f037bde29b4d34e']
 
 builddependencies = [
@@ -28,9 +29,11 @@ dependencies = [
     ('bzip2', '1.0.8'),
 ]
 
-fix_perl_shebang_for = ['bin/*.pl']
+configopts = '-DZLIB_LIBRARY="$EBROOTZLIB/lib/libz.a" -DHTSLIB_LIBRARY="$EBROOTSAMTOOLS/lib/libhts.a" '
+# SAMtools's libhts.a requires additional libraries like cURL to be linked
+configopts += '-DCMAKE_EXE_LINKER_FLAGS_RELEASE="-lcurl -llzma -lbz2 -lssl -lcrypto" '
 
-prebuildopts = "cp -a $EBROOTSAMTOOLS samtools && "
+fix_perl_shebang_for = ['bin/*.pl']
 
 sanity_check_paths = {
     'files': ['bin/aggregateBinDepths.pl', 'bin/aggregateContigOverlapsByBin.pl', 'bin/metabat', 'bin/metabat2'],
