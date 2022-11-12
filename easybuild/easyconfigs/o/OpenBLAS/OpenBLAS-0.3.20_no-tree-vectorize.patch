@@ -1,0 +1,30 @@
+#
+# Disable the gfortran tree vectorizer for lapack-netlib; patch back ported to OpenBLAS 0.3.20.
+# https://github.com/easybuilders/easybuild-easyconfigs/issues/16380
+# https://github.com/xianyi/OpenBLAS/pull/3786
+#
+diff -ru OpenBLAS-0.3.20.original/Makefile OpenBLAS-0.3.20.patched/Makefile
+--- OpenBLAS-0.3.20.original/Makefile	2022-02-20 21:35:05.000000000 +0000
++++ OpenBLAS-0.3.20.patched/Makefile	2022-11-11 22:22:22.961631249 +0000
+@@ -269,7 +269,11 @@
+ lapack_prebuild :
+ ifeq ($(NOFORTRAN), $(filter 0,$(NOFORTRAN)))
+ 	-@echo "FC          = $(FC)" > $(NETLIB_LAPACK_DIR)/make.inc
++ifeq ($(F_COMPILER), GFORTRAN)
++	-@echo "override FFLAGS      = $(LAPACK_FFLAGS) -fno-tree-vectorize" >> $(NETLIB_LAPACK_DIR)/make.inc
++else
+ 	-@echo "override FFLAGS      = $(LAPACK_FFLAGS)" >> $(NETLIB_LAPACK_DIR)/make.inc
++endif
+ 	-@echo "FFLAGS_DRV  = $(LAPACK_FFLAGS)" >> $(NETLIB_LAPACK_DIR)/make.inc
+ 	-@echo "POPTS       = $(LAPACK_FPFLAGS)" >> $(NETLIB_LAPACK_DIR)/make.inc
+ 	-@echo "FFLAGS_NOOPT       = -O0 $(LAPACK_NOOPT)" >> $(NETLIB_LAPACK_DIR)/make.inc
+diff -ru OpenBLAS-0.3.20.original/cmake/lapack.cmake OpenBLAS-0.3.20.patched/cmake/lapack.cmake
+--- OpenBLAS-0.3.20.original/cmake/lapack.cmake	2022-02-20 21:35:05.000000000 +0000
++++ OpenBLAS-0.3.20.patched/cmake/lapack.cmake	2022-11-12 13:24:24.219825696 +0000
+@@ -497,3 +497,6 @@
+   list(APPEND LA_SOURCES "${NETLIB_LAPACK_DIR}/TESTING/MATGEN/${LA_FILE}")
+ endforeach ()
+ set_source_files_properties(${LA_SOURCES} PROPERTIES COMPILE_FLAGS "${LAPACK_FFLAGS}")
++if (${F_COMPILER} STREQUAL "GFORTRAN")
++  set_source_files_properties(${LA_SOURCES} PROPERTIES COMPILE_FLAGS "${LAPACK_FFLAGS} -fno-tree-vectorize")
++endif()
