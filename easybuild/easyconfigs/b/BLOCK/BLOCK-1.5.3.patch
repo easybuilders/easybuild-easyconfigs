@@ -1,0 +1,94 @@
+--- input.h.orig	2020-05-13 14:26:17.364524313 +0800
++++ input.h	2020-05-13 14:26:27.477439042 +0800
+@@ -18,7 +18,7 @@
+ #include "SpinQuantum.h"
+ #include "timer.h"
+ #include "couplingCoeffs.h"
+-#include <boost/tr1/unordered_map.hpp>
++#include <boost/unordered_map.hpp>
+ #include "enumerator.h"
+ 
+ namespace SpinAdapted{
+--- Makefile.orig	2020-05-13 19:05:06.342685559 +0800
++++ Makefile	2020-05-13 22:15:03.926281397 +0800
+@@ -6,15 +6,15 @@
+ ######### GENERAL OPTIONS FOR USER #########
+ 
+ # change to icpc for Intel
+-CXX = clang++
+-MPICXX = mpiicpc
+-export CXX
+-export MPICXX
++#CXX = clang++
++#MPICXX = mpiicpc
++#export CXX
++#export MPICXX
+ 
+ # BOOST include directory
+ #BOOSTINCLUDE = /home/sharma/apps/forServer/boost_1_53_0_mt/boost_1_53_0/
+ #BOOSTINCLUDE = /home/sharma/apps/boost/boost_1_55_0/
+-BOOSTINCLUDE = /opt/local/include
++BOOSTINCLUDE = ${EBROOTBOOST}/include
+ 
+ # set to yes if using BOOST version >= 1.56.0
+ USE_BOOST56 = no
+@@ -26,22 +26,22 @@
+ #BOOSTLIB = -L/home/sharma/apps/forServer/boost_1_53_0_mt/boost_1_53_0/stage/lib -lboost_serialization -lboost_system -lboost_filesystem
+ #BOOSTLIB = -L/home/sharma/apps/boost/boost_1_55_0/stage/lib -lboost_serialization -lboost_system -lboost_filesystem 
+ #BOOSTLIB = -lboost_serialization -lboost_system -lboost_filesystem
+-BOOSTLIB = -L/opt/local/lib  -lboost_system-mt -lboost_filesystem-mt -lboost_serialization-mt
++BOOSTLIB = -L${EBROOTBOOST}/lib -lboost_system -lboost_filesystem -lboost_serialization 
+ 
+ #LAPACKBLAS = -lblas -llapack
+-LAPACKBLAS =    /usr/lib/liblapack.dylib /usr/lib/libblas.dylib
++LAPACKBLAS = ${LIBLAPACK}
+ 
+ # set if we will use MPI or OpenMP
+-USE_MPI = no
+-OPENMP = no
++USE_MPI = yes
++OPENMP = yes
+ 
+ # FLAGS for linking in MKL
+-USE_MKL = no
++USE_MKL = yes
+ 
+ ifeq ($(USE_MKL), yes)
+ MKLLIB = .
+-LAPACKBLAS = -L${MKLLIB} -lmkl_gf_lp64 -lmkl_sequential -lmkl_core #-lrt #-liomp5 
+-MKLFLAGS = /usr/local/server/IntelStudio_2015/mkl/include/
++LAPACKBLAS = ${LIBLAPACK}
++MKLFLAGS = ${EBROOTIMKL}/include
+ MKLOPT = -D_HAS_INTEL_MKL
+ else
+ MKLFLAGS = .
+@@ -111,7 +111,7 @@
+ 
+ ifeq (icpc, $(CXX))
+    ifeq ($(OPENMP), yes)
+-      OPENMP_FLAGS= -openmp 
++      OPENMP_FLAGS= -qopenmp 
+ 	#ifeq ($(USE_MPI), yes)
+ 	#OPENMP_FLAGS += -lmpi_mt
+ 	#endif
+@@ -156,7 +156,7 @@
+ endif
+ 
+ 
+-OPT	+= $(OPENMP_FLAGS) -DBLAS -DUSELAPACK $(MPI_OPT) $(I8) $(B56) $(MOLPRO_BLOCK)  -DFAST_MTP -D_HAS_CBLAS  ${MKLOPT} ${UNITTEST} 
++OPT	+= $(OPENMP_FLAGS) -DBLAS -DUSELAPACK $(MPI_OPT) $(I8) $(B56) $(MOLPRO_BLOCK)  -DFAST_MTP -D_HAS_CBLAS  ${MKLOPT} ${UNITTEST}
+ 
+ SRC_genetic = genetic/CrossOver.C genetic/Evaluate.C genetic/GAInput.C genetic/GAOptimize.C genetic/Generation.C genetic/Mutation.C genetic/RandomGenerator.C genetic/ReadIntegral.C
+
+--- Stackwavefunction.C.orig	2020-05-14 16:26:06.569551798 +0800
++++ Stackwavefunction.C	2020-05-14 16:25:46.807742133 +0800
+@@ -13,7 +13,7 @@
+ #include "MatrixBLAS.h"
+ #include <boost/serialization/vector.hpp>
+ #include "pario.h"
+-#define BOOST_NO_CXX11_SCOPED_ENUMS
++//#define BOOST_NO_CXX11_SCOPED_ENUMS
+ #include <boost/filesystem.hpp>
+ 
+ 
+ 
