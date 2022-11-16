@@ -1,0 +1,59 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'Bundle'
+
+name = 'Wayland'
+version = '1.20.0'
+
+homepage = 'https://wayland.freedesktop.org/'
+description = """
+Wayland is a project to define a protocol for a compositor to talk to
+ its clients as well as a library implementation of the protocol.  The
+ compositor can be a standalone display server running on Linux kernel
+ modesetting and evdev input devices, an X application, or a wayland
+ client itself.  The clients can be traditional applications, X servers
+ (rootless or fullscreen) or other display servers.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Meson', '0.62.1'),
+    ('Ninja', '1.10.2'),
+    ('pkgconf', '1.8.0'),
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('libffi', '3.4.2'),
+    ('expat', '2.4.8'),
+    ('libxml2', '2.9.13'),
+]
+
+default_easyblock = 'MesonNinja'
+default_component_specs = {
+    'source_urls': ['https://wayland.freedesktop.org/releases'],
+    'sources': [SOURCE_TAR_XZ],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('wayland', version, {
+        'checksums': ['b8a034154c7059772e0fdbd27dbfcda6c732df29cae56a82274f6ec5d7cd8725'],
+        'configopts': "-Ddocumentation=false",
+    }),
+    ('wayland-protocols', '1.25', {
+        'checksums': ['f1ff0f7199d0a0da337217dd8c99979967808dc37731a1e759e822b75b571460'],
+        'preconfigopts': "PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH "
+    }),
+]
+
+_libs = ['lib/libwayland-%s.%s' % (x, SHLIB_EXT) for x in ['client', 'cursor', 'egl', 'server']]
+sanity_check_paths = {
+    'files': ['bin/wayland-scanner'] + _libs,
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ["wayland-scanner --help", "wayland-scanner --version"]
+
+moduleclass = 'vis'

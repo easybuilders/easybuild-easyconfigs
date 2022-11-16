@@ -1,0 +1,40 @@
+# This is an easyconfig file for EasyBuild, see http://easybuilders.github.io/easybuild
+
+name = 'iccifort'
+version = '2020.1.217'
+
+homepage = 'https://software.intel.com/en-us/intel-compilers/'
+description = "Intel C, C++ & Fortran compilers"
+
+toolchain = SYSTEM
+
+source_urls = ['https://registrationcenter-download.intel.com/akdlm/irc_nas/tec/16530/']
+sources = ['parallel_studio_xe_%(version_major)s_update%(version_minor)s_composer_edition.tgz']
+patches = ['iccifort-%(version)s_no_mpi_rt_dependency.patch']
+checksums = [
+    # parallel_studio_xe_2020_update1_composer_edition.tgz
+    '26c7e7da87b8a83adfd408b2a354d872be97736abed837364c1bf10f4469b01e',
+    # iccifort-2020.1.217_no_mpi_rt_dependency.patch
+    '61b558089d3d9253fad2139a16dc0899b9f839f34303e094efd70b281fc41a96',
+]
+
+local_gccver = '9.3.0'
+
+dependencies = [
+    ('GCCcore', local_gccver),
+    ('binutils', '2.34', '', ('GCCcore', local_gccver)),
+]
+
+# list of regex for components to install
+# full list of components can be obtained from pset/mediaconfig.xml in unpacked sources
+# cfr. https://software.intel.com/en-us/articles/intel-composer-xe-2015-silent-installation-guide
+components = [
+    'intel-comp', 'intel-ccomp', 'intel-fcomp', 'intel-icc', 'intel-ifort',
+    'intel-openmp', 'intel-ipsc?_', 'intel-gdb(?!.*mic)'
+]
+
+dontcreateinstalldir = True
+
+license_file = HOME + '/licenses/intel/license.lic'
+
+moduleclass = 'compiler'

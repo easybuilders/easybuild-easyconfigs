@@ -1,0 +1,56 @@
+Fix libsanitizer for glibc 2.3.1
+
+glibc 2.31 changes data structures reinterpreted by libsanitizer,
+this patch more accurately models how the structure looks in
+varying glibc versions.
+
+This patch file contains the changes from two upstream GCC commits:
+ce9568e9e9cf6094be30e748821421e703754ffc
+75003cdd23c310ec385344e8040d490e8dd6d2be
+
+diff -ru gcc-9.2.0.orig/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.cc gcc-9.2.0/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.cc
+--- gcc-9.2.0.orig/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.cc	2018-10-31 12:14:23.000000000 +0100
++++ gcc-9.2.0/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.cc	2020-03-03 16:44:35.978418479 +0100
+@@ -1156,8 +1156,9 @@
+ CHECK_SIZE_AND_OFFSET(ipc_perm, gid);
+ CHECK_SIZE_AND_OFFSET(ipc_perm, cuid);
+ CHECK_SIZE_AND_OFFSET(ipc_perm, cgid);
+-#if !defined(__aarch64__) || !SANITIZER_LINUX || __GLIBC_PREREQ (2, 21)
+-/* On aarch64 glibc 2.20 and earlier provided incorrect mode field.  */
++#if !SANITIZER_LINUX || __GLIBC_PREREQ (2, 31)
++/* glibc 2.30 and earlier provided 16-bit mode field instead of 32-bit
++   on many architectures.  */
+ CHECK_SIZE_AND_OFFSET(ipc_perm, mode);
+ #endif
+ 
+diff -ru gcc-9.2.0.orig/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.h gcc-9.2.0/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.h
+--- gcc-9.2.0.orig/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.h	2019-04-08 15:08:30.000000000 +0200
++++ gcc-9.2.0/libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.h	2020-03-03 16:44:35.978418479 +0100
+@@ -211,26 +211,13 @@
+     u64 __unused1;
+     u64 __unused2;
+ #elif defined(__sparc__)
+-#if defined(__arch64__)
+     unsigned mode;
+-    unsigned short __pad1;
+-#else
+-    unsigned short __pad1;
+-    unsigned short mode;
+     unsigned short __pad2;
+-#endif
+     unsigned short __seq;
+     unsigned long long __unused1;
+     unsigned long long __unused2;
+-#elif defined(__mips__) || defined(__aarch64__) || defined(__s390x__)
+-    unsigned int mode;
+-    unsigned short __seq;
+-    unsigned short __pad1;
+-    unsigned long __unused1;
+-    unsigned long __unused2;
+ #else
+-    unsigned short mode;
+-    unsigned short __pad1;
++    unsigned int mode;
+     unsigned short __seq;
+     unsigned short __pad2;
+ #if defined(__x86_64__) && !defined(_LP64)

@@ -1,0 +1,22 @@
+Fix for AttributeError: 'CollectiveAllReduceExtended' object has no attribute '_cfer_fn_cache'
+See https://github.com/tensorflow/tensorflow/issues/39417
+
+Author: Alexander Grund
+--- tensorflow-2.1.0-orig/tensorflow/python/distribute/collective_all_reduce_strategy.py	2020-05-11 18:14:03.682085572 +0200
++++ tensorflow-2.1.0/tensorflow/python/distribute/collective_all_reduce_strategy.py	2020-05-11 18:15:41.623409641 +0200
+@@ -19,6 +19,7 @@
+ from __future__ import print_function
+ 
+ import copy
++import weakref
+ 
+ from tensorflow.core.protobuf import config_pb2
+ from tensorflow.core.protobuf import rewriter_config_pb2
+@@ -172,6 +173,7 @@
+         cross_device_ops_lib.CollectiveCommunication)
+     self._communication = communication
+     self._initialize_strategy(cluster_resolver)
++    self._cfer_fn_cache = weakref.WeakKeyDictionary()
+     assert isinstance(self._get_cross_device_ops(),
+                       cross_device_ops_lib.CollectiveAllReduce)
+ 

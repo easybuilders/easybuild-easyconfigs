@@ -1,0 +1,116 @@
+easyblock = 'Bundle'
+
+name = 'FusionCatcher'
+version = '1.20'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ndaniel/fusioncatcher'
+description = """FusionCatcher searches for novel/known somatic fusion genes, translocations,
+and chimeras in RNA-seq data (paired-end or single-end reads from Illumina NGS
+platforms like Solexa/HiSeq/NextSeq/MiSeq/MiniSeq) from diseased samples."""
+github_account = 'ndaniel'
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('Python', '2.7.16'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('Biopython', '1.75', versionsuffix),
+    ('BLAT', '3.5'),  # preferred over Kent_tools as BLAT is built from source
+    ('Bowtie', '1.2.3'),
+    ('Bowtie2', '2.3.5.1'),
+    ('BWA', '0.7.17'),
+    ('Kent_tools', '401'),  # required for liftOver
+    ('SRA-Toolkit', '2.10.4'),
+    ('STAR', '2.7.2b'),
+    ('picard', '2.21.6', '-Java-11', SYSTEM),  # optional
+    ('Velvet', '1.2.10', '-mt-kmer_191'),  # optional
+    ('openpyxl', '2.6.4', versionsuffix),  # optional
+    ('parallel', '20190922'),  # optional
+    ('pigz', '2.4'),
+    ('zlib', '1.2.11'),
+]
+
+local_bbmap_makefile = 'makefile.%s' % {'Darwin': 'osx', 'Linux': 'linux'}[OS_TYPE]
+
+default_component_specs = {
+    'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    (name, version, {
+        'easyblock': 'Tarball',
+        'source_urls': [GITHUB_SOURCE],
+        'patches': ['FusionCatcher-1.20_fix_bbmap_check.patch'],
+        'checksums': [
+            '4c66dbd7be64aaf52ab1f02278f06d9a8082b7f3f30a8045a50b4899e22a0385',
+            '6770ba19b4cb66b3a55feaceefa2fffdd94129f19f41fab5f7efc98697607e85',
+        ],
+    }),
+    # FusionCatcher requires a fork of seqtk with features not available upstream
+    ('seqtk', '1.2-r101c', {
+        'easyblock': 'MakeCp',
+        'source_urls': ['http://github.com/ndaniel/seqtk/archive'],
+        'checksums': ['4a57fbe828eccaa4f0122c84bf9c4c5409a024ad9deace31ec7bee6d25cf5e49'],
+        'files_to_copy': [(['seqtk'], 'tools/%(name)s')],
+    }),
+    # FusionCatcher requires this very specific version of BBMap
+    ('BBMap', '38.44', {
+        'easyblock': 'MakeCp',
+        'source_urls': [SOURCEFORGE_SOURCE],
+        'sources': ['%(name)s_%(version)s.tar.gz'],
+        'checksums': ['63ecdc83cdb0aaf5106b919df487f50a6b65e816d990501e9f74704c04b2a84a'],
+        'start_dir': '%(namelower)s',
+        'prebuildopts': "cd jni && ",
+        'buildopts': "-f %s" % local_bbmap_makefile,
+        'files_to_copy': [(['*'], 'tools/%(namelower)s')],
+    }),
+]
+
+# Set paths and options in the configuration file
+postinstallcmds = [
+    'sed -i "s|python = /usr/bin/|python = $EBROOTPYTHON/bin/|g" %(installdir)s/etc/configuration.cfg',
+    'sed -i "s|java = /usr/bin/|python = $EBROOTJAVA/bin/|g" %(installdir)s/etc/configuration.cfg',
+    'sed -i "s|paralell/src|parallel/bin|g" %(installdir)s/etc/configuration.cfg',
+    'sed -i "s|aligners = blat,star|aligners = blat,star,bowtie2|g" %(installdir)s/etc/configuration.cfg',
+]
+
+# Create symlinks in tools directory to dependencies from EB
+postinstallcmds += [
+    'ln -s $EBROOT%s %%(installdir)s/tools/%s' % (d, d.lower()) for d in [
+        'BLAT', 'BOWTIE', 'BOWTIE2', 'BWA', 'PARALLEL', 'PICARD', 'PIGZ', 'STAR', 'VELVET'
+    ]
+]
+postinstallcmds += [
+    'ln -s $EBROOT%s %%(installdir)s/tools/%s' % d for d in [
+        ('KENT_TOOLS/bin', 'liftover'),
+        ('SRAMINTOOLKIT', 'sratoolkit'),
+        ('BIOPYTHON/lib/python%(pyshortver)s/site-packages/Bio', 'biopython'),
+        ('SCIPYMINBUNDLE/lib/python%(pyshortver)s/site-packages/numpy', 'numpy'),
+        ('OPENPYXL/lib/python%(pyshortver)s/site-packages/openpyxl', 'openpyxl'),
+        ('PYTHON/lib/python%(pyshortver)s/site-packages/xlrd', 'xlrd'),
+    ]
+]
+
+# Link the required Ensembl database: it can be either downloaded (>16GB) or built on-site
+# - Download: database download script available at %(installdir)s/data/download-human-db.sh
+#             path to downloaded data folder can be set with '--data' option in fusioncatcher
+# - Build: database can be created after install with `fusioncatcher-build -g homo_sapiens -o /path/to/human_v98`
+#          more information at https://github.com/ndaniel/fusioncatcher/blob/master/doc/manual.md
+
+# Tests need 16 cores and 64 GB of RAM as well as the Ensembl database
+# postinstallcmds += ['%(installdir)s/test/test.sh']
+
+sanity_check_paths = {
+    'files': ['bin/fusioncatcher', 'bin/fusioncatcher-batch', 'bin/fusioncatcher-build', 'etc/configuration.cfg',
+              'tools/seqtk/seqtk', 'tools/bbmap/bbmap.sh', 'tools/bbmap/jni/libbbtoolsjni.%s' % SHLIB_EXT],
+    'dirs': ['data', 'test'],
+}
+
+sanity_check_commands = ["fusioncatcher --help"]
+
+modextrapaths = {'PATH': ['tools/bbmap', 'tools/seqtk']}
+
+moduleclass = 'bio'

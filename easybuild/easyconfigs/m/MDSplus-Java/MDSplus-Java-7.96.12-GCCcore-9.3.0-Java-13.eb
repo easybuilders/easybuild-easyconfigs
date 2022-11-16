@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'MDSplus-Java'
+version = '7.96.12'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://mdsplus.org'
+description = """MDSplus is a set of software tools for data acquisition and storage and a methodology
+ for management of complex scientific data."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/MDSplus/mdsplus/archive']
+sources = ['stable_release-%s.zip' % version.replace('.', '-')]
+patches = ['MDSplus-Java-%(version)s_classpath.patch']
+checksums = [
+    '72f97f5ecf4eac40629c0e0c869cc48f7b8caa52ea9dc52d77c37d436190a318',  # stable_release-7-96-12.zip
+    'f2919aa5992b6364a9234bbb35230eecb84d123779c0580461f939bbc7039013',  # MDSplus-Java-7.96.12_classpath.patch
+]
+
+builddependencies = [
+    ('binutils', '2.34')
+]
+
+dependencies = [
+    ('Java', '13', '', SYSTEM),
+    ('MDSplus', version),
+]
+
+preconfigopts = 'find . -type f -regex .*Makefile.* -maxdepth 12 '
+preconfigopts += '-exec sed -i "s/JAVASOURCE = 6/JAVASOURCE = 8/g" {} \\; && '
+preconfigopts += 'export CFLAGS="$CFLAGS -I$EBROOTLIBXML2/include/libxml2 " && '
+
+configopts = '--with-jdk=$JAVA_HOME --enable-java_only --disable-doxygen-doc --disable-valgrind'
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['bin/jTraverser', 'bin/jScope', 'bin/jServer'],
+    'dirs': ['bin', 'include', 'java/classes'],
+}
+
+modextrapaths = {'CLASSPATH': 'java/classes/*'}
+
+moduleclass = 'data'

@@ -1,0 +1,45 @@
+# Authors:: Jack Perdue <j-perdue@tamu.edu> - TAMU HPRC - https://hprc.tamu.edu
+
+easyblock = 'ConfigureMake'
+
+name = 'IPM'
+version = '2.0.6'
+
+homepage = 'https://github.com/nerscadmin/IPM'
+
+description = """
+ IPM is a portable profiling infrastructure for parallel codes. It provides
+ a low-overhead profile of application performance and resource utilization
+ in a parallel program. Communication, computation, and IO are the primary
+ focus.
+"""
+
+toolchain = {'name': 'iimpi', 'version': '2019b'}
+
+source_urls = [' https://github.com/nerscadmin/%(name)s/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['aee102e2b95627869083ed4df5612264b09335da1a0b9fe034f15241f63778bf']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+]
+
+dependencies = [
+    ('libunwind', '1.3.1'),
+    ('PAPI', '6.0.0'),
+]
+
+preconfigopts = "./bootstrap.sh && "
+
+# don't use the provided libtool, but the one provided via Autotools build dep
+preconfigopts += "sed -e 's,$(top_builddir)/libtool,$(EBROOTLIBTOOL)/bin/libtool,' -i.eb configure && "
+
+configopts = '--enable-posixio -with-gnu-ld --with-papi=$EBROOTPAPI --with-libunwind=$EBROOTLIBUNWIND'
+
+sanity_check_paths = {
+    'files': ['bin/ipm_parse', 'etc/ipm_key_mpi',
+              'lib/libipm.%s' % SHLIB_EXT, 'lib/libipmf.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'perf'

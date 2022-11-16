@@ -1,0 +1,64 @@
+easyblock = 'PythonBundle'
+
+name = 'matplotlib'
+version = '3.4.3'
+
+homepage = 'https://matplotlib.org'
+description = """matplotlib is a python 2D plotting library which produces publication quality figures in a variety of
+ hardcopy formats and interactive environments across platforms. matplotlib can be used in python scripts, the python
+ and ipython shell, web application servers, and six graphical user interface toolkits."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('cppy', '1.1.0')
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('libpng', '1.6.37'),
+    ('freetype', '2.11.0'),
+    ('Tkinter', '%(pyver)s'),
+    ('Pillow', '8.3.2'),
+    ('Qhull', '2020.2')
+]
+
+use_pip = True
+sanity_pip_check = True
+
+# avoid that matplotlib downloads and builds its own copies of freetype and qhull
+_fix_setup = "sed -e 's/#system_freetype = False/system_freetype = True/g' "
+_fix_setup += "-e 's/#system_qhull = False/system_qhull = True/g' setup.cfg.template >setup.cfg && "
+
+_include_path = "export CPLUS_INCLUDE_PATH=$EBROOTFREETYPE/include/freetype2:${CPLUS_INCLUDE_PATH} && "
+
+exts_list = [
+    ('Cycler', '0.11.0', {
+        'modulename': 'cycler',
+        'source_tmpl': 'cycler-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/C/Cycler'],
+        'checksums': ['9c87405839a19696e837b3b818fed3f5f69f16f1eec1a1ad77e043dcea9c772f'],
+    }),
+    ('kiwisolver', '1.3.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/k/kiwisolver'],
+        'checksums': ['fc4453705b81d03568d5b808ad8f09c77c47534f6ac2e72e733f9ca4714aa75c'],
+    }),
+    (name, version, {
+        'preinstallopts': _fix_setup + _include_path,
+        'source_urls': ['https://pypi.python.org/packages/source/m/matplotlib'],
+        'checksums': ['fc4f526dfdb31c9bd6b8ca06bf9fab663ca12f3ec9cdf4496fb44bc680140318'],
+    }),
+]
+
+sanity_check_commands = [
+    """python -c 'import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot' """,
+    "python -c 'from mpl_toolkits.mplot3d import Axes3D'",
+]
+
+# use non-interactive plotting backend as default
+# see https://matplotlib.org/tutorials/introductory/usage.html#what-is-a-backend
+modextravars = {'MPLBACKEND': 'Agg'}
+
+moduleclass = 'vis'

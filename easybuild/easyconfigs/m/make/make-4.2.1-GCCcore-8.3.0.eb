@@ -1,0 +1,49 @@
+##
+# This file is an EasyBuild recipy as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/
+##
+easyblock = 'ConfigureMake'
+
+name = 'make'
+version = '4.2.1'
+
+homepage = 'https://www.gnu.org/software/make/make.html'
+description = "GNU version of make utility"
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCE_TAR_BZ2]
+patches = ['%(name)s-%(version)s_RHEL8.patch']
+checksums = [
+    'd6e262bf3601b42d2b1e4ef8310029e1dcf20083c5446b4b7aa67081fdffc589',  # make-4.2.1.tar.bz2
+    'ca9daea8cfdb7de55c5a973e283a5aca35fb11d9eb37cd3bd25f95557f2e6479',  # make-4.2.1_RHEL8.patch
+]
+
+builddependencies = [
+    # needs specifically aclocal 1.15
+    ('Automake', '1.15.1'),
+    ('binutils', '2.32'),
+    ('pkg-config', '0.29.2'),
+]
+
+postinstallcmds = ["cd %(installdir)s/bin && ln -s make gmake"]
+
+sanity_check_paths = {
+    'files': ['bin/gmake', 'bin/make'],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "gmake --help",
+    "make --help",
+]
+
+moduleclass = 'devel'

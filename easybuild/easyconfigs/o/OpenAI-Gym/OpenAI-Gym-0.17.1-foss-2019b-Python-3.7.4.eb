@@ -1,0 +1,57 @@
+easyblock = 'PythonBundle'
+
+name = 'OpenAI-Gym'
+version = '0.17.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://gym.openai.com'
+description = "A toolkit for developing and comparing reinforcement learning algorithms."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('SWIG', '4.0.1'),
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),  # for numpy, scipy
+    ('Pillow', '6.2.1'),
+    ('OpenCV', '4.2.0', versionsuffix),
+]
+
+use_pip = True
+
+exts_list = [
+    ('cloudpickle', '1.3.0', {
+        'checksums': ['38af54d0e7705d87a287bdefe1df00f936aadb1f629dca383e825cca927fa753'],
+    }),
+    ('pyglet', '1.4.10', {
+        'source_tmpl': 'pyglet-%(version)s.zip',
+        'checksums': ['c57e3e18246f45e4d6bb3d29e39d128d6e72b05f4212b10353adc3ba260ceb65'],
+    }),
+    ('atari-py', '0.2.6', {
+        'checksums': ['6249ad5079b0489e87eb44e65485bb1b07cc1b5af729f1ee52ece749503ceb1d'],
+    }),
+    ('box2d-py', '2.3.8', {
+        'checksums': ['bdacfbbc56079bb317548efe49d3d5a86646885cc27f4a2ee97e4b2960921ab7'],
+        'modulename': 'Box2D',
+    }),
+    ('imageio', '2.8.0', {
+        'checksums': ['fb5fd6d3d17126bbaac9af29fe340e2c97a196eb9416d4f28c0e543744a152cf'],
+    }),
+    ('gym', version, {
+        # can't use 'all', because 'mujoco' and 'robotics' extras require MuJoCo (which is not freely available);
+        # see https://github.com/openai/mujoco-py#install-mujoco
+        'use_pip_extras': 'atari,box2d,classic_control',
+        'checksums': ['9cff7061e54a53d359af51ad6ec62a44b4bf374ca2cdce35bfee47a93506bcf8'],
+    }),
+]
+
+local_envs = ['algorithmic', 'atari', 'box2d', 'classic_control', 'toy_text']
+sanity_check_commands = ["python -c 'import gym.envs.%s'" % e for e in local_envs]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'

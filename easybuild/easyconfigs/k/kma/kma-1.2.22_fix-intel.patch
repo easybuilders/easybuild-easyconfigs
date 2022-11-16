@@ -1,0 +1,27 @@
+Fix defined macros for icc
+
+author: Pavel Grochal (INUITS)
+diff genomicepidemiology-kma-f896788e5676/threader.h{.orig,} -ru
+--- genomicepidemiology-kma-f896788e5676/threader.h.orig	2020-03-26 15:04:23.213588802 +0100
++++ genomicepidemiology-kma-f896788e5676/threader.h	2020-03-26 15:07:48.666175413 +0100
+@@ -21,14 +21,14 @@
+ #if _POSIX_C_SOURCE >= 199309L
+ #include <time.h>
+ #define sleepSpec(time)((struct timespec[]){{0, time}})
+-#define lock(exclude) while(__sync_lock_test_and_set(exclude, 1)) {while(*exclude) {nanosleep(sleepSpec(100000),NULL);}}
+-#define lockTime(exclude, time) while(__sync_lock_test_and_set(exclude, 1)) {while(*exclude) {nanosleep(sleepSpec(1000 * time),NULL);}}
+-#define unlock(exclude) (__sync_lock_release(exclude))
++#define lock(exclude) while(__sync_lock_test_and_set((int*)exclude, 1)) {while(*exclude) {nanosleep(sleepSpec(100000),NULL);}}
++#define lockTime(exclude, time) while(__sync_lock_test_and_set((int*)exclude, 1)) {while(*exclude) {nanosleep(sleepSpec(1000 * time),NULL);}}
++#define unlock(exclude) (__sync_lock_release((int*)exclude))
+ #define wait_atomic(src) while(src) {nanosleep(sleepSpec(100000),NULL);}
+ #else
+ #include <unistd.h>
+-#define lock(exclude) while(__sync_lock_test_and_set(exclude, 1)) {while(*exclude) {usleep(100);}}
+-#define lockTime(exclude, spin) while(__sync_lock_test_and_set(exclude, 1)) {while(*exclude) {usleep(spin);}}
+-#define unlock(exclude) (__sync_lock_release(exclude))
++#define lock(exclude) while(__sync_lock_test_and_set((int*)exclude, 1)) {while(*exclude) {usleep(100);}}
++#define lockTime(exclude, spin) while(__sync_lock_test_and_set((int*)exclude, 1)) {while(*exclude) {usleep(spin);}}
++#define unlock(exclude) (__sync_lock_release((int*)exclude))
+ #define wait_atomic(src) while(src) {usleep(100);}
+ #endif

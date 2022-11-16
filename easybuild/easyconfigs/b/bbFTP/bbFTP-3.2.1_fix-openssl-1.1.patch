@@ -1,0 +1,85 @@
+OpenSSL 1.1.0 makes all structs opaque and introduces accessors for
+members like RSA's key and exponent.
+
+This patch branches on OpenSSL version and either accesses the members
+directly or uses their accessor.
+
+Author: Lars Viklund <zao@zao.se>
+diff -ru bbftp-client-3.2.1.orig/bbftpc/connecttoserver.c bbftp-client-3.2.1/bbftpc/connecttoserver.c
+--- bbftp-client-3.2.1.orig/bbftpc/connecttoserver.c	2013-02-07 11:42:46.000000000 +0100
++++ bbftp-client-3.2.1/bbftpc/connecttoserver.c	2020-09-01 12:47:32.197158831 +0200
+@@ -516,6 +516,8 @@
+ 
+ #ifdef WITH_SSL
+     RSA     *hisrsa ;
++    BIGNUM  *hisrsa_n;
++    BIGNUM  *hisrsa_e;
+     int lenrsa ;
+ #endif
+     /*
+@@ -629,13 +631,13 @@
+         /*
+         ** Getting BIGNUM structures to store the key and exponent
+         */
+-        if ( (hisrsa->n = BN_new()) == NULL) {
++        if ( (hisrsa_n = BN_new()) == NULL) {
+             free(readbuffer) ;
+             close(tmpctrlsock) ;
+             printmessage(stderr,CASE_ERROR,56,timestamp,"Error reading encrypted message : %s (%s)\n","getting BIGNUM",(char *) ERR_error_string(ERR_get_error(),NULL)) ;
+             return -1 ;
+         }
+-        if ( (hisrsa->e = BN_new()) == NULL) { 
++        if ( (hisrsa_e = BN_new()) == NULL) { 
+             free(readbuffer) ;
+             close(tmpctrlsock) ;
+             printmessage(stderr,CASE_ERROR,56,timestamp,"Error reading encrypted message : %s (%s)\n","getting BIGNUM",(char *) ERR_error_string(ERR_get_error(),NULL)) ;
+@@ -644,18 +646,24 @@
+         /*
+         ** Copy the key and exponent received
+         */
+-        if ( BN_mpi2bn(pubkey,lenkey,hisrsa->n) == NULL ) {
++        if ( BN_mpi2bn(pubkey,lenkey,hisrsa_n) == NULL ) {
+             free(readbuffer) ;
+             close(tmpctrlsock) ;
+             printmessage(stderr,CASE_ERROR,56,timestamp,"Error reading encrypted message : %s (%s)\n","copying pubkey",(char *) ERR_error_string(ERR_get_error(),NULL)) ;
+             return -1 ;
+         }
+-        if ( BN_mpi2bn(pubexponent,lenexpo,hisrsa->e) == NULL ) {
++        if ( BN_mpi2bn(pubexponent,lenexpo,hisrsa_e) == NULL ) {
+             free(readbuffer) ;
+             close(tmpctrlsock) ;
+             printmessage(stderr,CASE_ERROR,56,timestamp,"Error reading encrypted message : %s (%s)\n","copying pubexponent",(char *) ERR_error_string(ERR_get_error(),NULL)) ;
+             return -1 ;
+         }
++ #if OPENSSL_VERSION_NUMBER < 0x10100000L
++        hisrsa->n = hisrsa_n;
++        hisrsa->e = hisrsa_e;
++#else
++        RSA_set0_key(hisrsa, hisrsa_n, hisrsa_e, NULL);
++#endif
+         lenrsa = RSA_size(hisrsa) ;
+        
+         if (strlen(username) > lenrsa - 41 ) {
+diff -ru bbftp-client-3.2.1.orig/bbftpc/treatcommand.c bbftp-client-3.2.1/bbftpc/treatcommand.c
+--- bbftp-client-3.2.1.orig/bbftpc/treatcommand.c	2013-02-07 11:42:46.000000000 +0100
++++ bbftp-client-3.2.1/bbftpc/treatcommand.c	2020-09-01 12:50:07.447302930 +0200
+@@ -38,6 +38,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <sys/types.h>
++#include <sys/stat.h>
+ #include <unistd.h>
+ #if HAVE_STRING_H
+ # include <string.h>
+@@ -49,6 +50,11 @@
+ #include <netinet/in.h>
+ #include <structures.h>
+ 
++int bbftp_dir(char *remotefile, int *errcode);
++int bbftp_rm(char *filename, int *errcode);
++int bbftp_stat(char *filename, int *errcode);
++int bbftp_statfs(char *filename, int *errcode);
++
+ extern  int     timestamp;
+ extern  int     globaltrymax;
+ extern  int     myexitcode;

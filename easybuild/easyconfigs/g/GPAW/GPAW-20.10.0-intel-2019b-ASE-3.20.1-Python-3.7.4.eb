@@ -1,0 +1,55 @@
+easyblock = "PythonPackage"
+
+name = 'GPAW'
+version = '20.10.0'
+_pythonsuffix = '-Python-%(pyver)s'
+_aseversion = '3.20.1'
+versionsuffix = '-ASE-' + _aseversion + _pythonsuffix
+
+
+homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
+description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
+ method and the atomic simulation environment (ASE). It uses real-space uniform grids and multigrid methods or
+ atom-centered basis-functions."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+toolchainopts = {'usempi': True, 'openmp': False}
+
+source_urls = [PYPI_LOWER_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    ('GPAW-20.1.0-Add-Easybuild-configuration-files.patch', 1),
+    ('GPAW-20.10.0-test-mpi.patch', 1),
+]
+checksums = [
+    '77c3d3918f5cc118e448f8063af4807d163b31d502067f5cbe31fc756eb3971d',  # gpaw-20.10.0.tar.gz
+    # GPAW-20.1.0-Add-Easybuild-configuration-files.patch
+    '2b337399479bf018a86156ed073dd7a78ec8c0df1f28b015f9284c6bf9fa5f15',
+    '50d3d46d87baf365e64eeb2cedf66fe9a28a763e04c157f9c1f8a610fd71eab5',  # GPAW-20.10.0-test-mpi.patch
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', _pythonsuffix),
+    ('ASE', _aseversion, _pythonsuffix),
+    ('libxc', '4.3.4'),
+    ('GPAW-setups', '0.9.20000', '', SYSTEM),
+]
+
+prebuildopts = 'GPAW_CONFIG=doc/platforms/Linux/EasyBuild/config_intel.py'
+preinstallopts = prebuildopts
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+# required because we're building a Python package using Intel compilers on top of Python built with GCC.
+check_ldshared = True
+
+sanity_check_paths = {
+    'files': ['bin/gpaw%s' % x for x in ['', '-analyse-basis', '-basis', '-plot-parallel-timings',
+                                         '-runscript', '-setup', '-upfplot']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'chem'

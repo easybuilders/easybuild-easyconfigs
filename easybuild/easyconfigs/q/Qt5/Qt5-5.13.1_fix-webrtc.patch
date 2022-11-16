@@ -1,0 +1,48 @@
+Patch modified for Qt5 version and easybuild by A Edmondson, 5 October 2020
+Original info follows:
+* https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?id=6e2562dd1efff
+
+From 6e2562dd1efff2b96848e8ec166e8c233029d6cc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Emilio=20Cobos=20=C3=81lvarez?= <emilio@mozilla.com>
+Date: Wed, 29 May 2019 15:30:32 +0200
+Subject: Fix build with recent linux kernel.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Recent kernel commit[1] moved a bit the define for this constant. This revealed
+a missing include in WebRTC.
+
+[1]: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=0768e17073dc5
+
+Bug: webrtc:10677
+Change-Id: I6ed69d307599d077760ae6ad74be10bfbdd1cac6
+Commit-Queue: Karl Wiberg <kwiberg@webrtc.org>
+Reviewed-by: Karl Wiberg <kwiberg@webrtc.org>
+Cr-Commit-Position: refs/heads/master@{#28108}
+See-Also: https://chromium.googlesource.com/external/webrtc/+/6806550d5d51a820104a12205d1f37ce0acebf19
+Reviewed-by: Jüri Valdmann <juri.valdmann@qt.io>
+(cherry picked from commit 74e69da92d0a895122ca65922b9a2b8b3926c882)
+Reviewed-by: Michal Klocek <michal.klocek@qt.io>
+---
+ qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc b/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc
+index ca78499179a..e8c1474762f 100644
+--- a/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc
++++ b/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc
+@@ -52,6 +52,10 @@
+ #include "rtc_base/timeutils.h"
+ #include "rtc_base/win32socketinit.h"
+ 
++#if defined(WEBRTC_LINUX)
++#include <linux/sockios.h>
++#endif
++
+ #if defined(WEBRTC_WIN)
+ #define LAST_SYSTEM_ERROR (::GetLastError())
+ #elif defined(__native_client__) && __native_client__
+-- 
+cgit v1.2.1
+

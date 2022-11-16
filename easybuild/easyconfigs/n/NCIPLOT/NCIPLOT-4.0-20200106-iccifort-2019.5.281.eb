@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'NCIPLOT'
+local_ver = '4.0'
+version = '%s-20200106' % local_ver
+local_commit = '583aebe'
+
+homepage = 'https://www.lct.jussieu.fr/pagesperso/contrera/index-nci.html'
+description = """ NCIPLOT is a program for revealing non covalent interactions
+ based on the reduced density gradient. """
+
+toolchain = {'name': 'iccifort', 'version': '2019.5.281'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/juliacontrerasgarcia/nciplot/archive/']
+sources = ['%s.tar.gz' % local_commit]
+checksums = ['c839bb145d716dcb1d2e021f9c58eea1a72d1b538d8114aa33b886ea6308bcac']
+
+start_dir = 'src_%%(namelower)s_%s' % local_ver
+
+prebuildopts = "sed -i 's/include Makefile.inc//g' Makefile && "
+prebuildopts += "sed -i 's/nciplot: $(OBJS) $(LIBS)/nciplot: $(OBJS)/g' Makefile && "
+buildopts = 'LIBS="$LIBS" LDFLAGS="$LDFLAGS"'
+
+files_to_copy = ['dat', 'LICENSE', (['nciplot'], 'bin')]
+
+modextrapaths = {'NCIPLOT_HOME': ''}
+
+sanity_check_paths = {
+    'files': ['bin/nciplot'],
+    'dirs': ['dat'],
+}
+
+modloadmsg = """
+Set environment variable OMP_NUM_THREADS equal to the number of available cores before running this program.
+"""
+
+moduleclass = 'chem'

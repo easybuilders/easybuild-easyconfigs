@@ -1,0 +1,41 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# Modified by Adam Huffman
+# Francis Crick Institute
+
+easyblock = 'ConfigureMake'
+
+name = 'Clustal-Omega'
+version = '1.2.4'
+
+homepage = 'http://www.clustal.org/omega/'
+description = """ Clustal Omega is a multiple sequence alignment
+ program for proteins. It produces biologically meaningful multiple
+ sequence alignments of divergent sequences. Evolutionary relationships
+ can be seen via viewing Cladograms or Phylograms """
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+source_urls = [homepage]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['8683d2286d663a46412c12a0c789e755e7fd77088fb3bc0342bb71667f05a3ee']
+
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('M4', '1.4.18'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [('argtable', '2.13')]
+
+preconfigopts = 'sed -e "s:-O3::g" -i configure.ac && '  # Remove hardcoded optimization level
+preconfigopts += 'autoreconf -f -i && '
+
+sanity_check_paths = {
+    'files': ['bin/clustalo', 'lib/libclustalo.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,83 @@
+easyblock = 'PythonBundle'
+
+name = 'pySCENIC'
+version = '0.10.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/aertslab/pySCENIC'
+description = """pySCENIC is a lightning-fast python implementation of the SCENIC
+pipeline (Single-Cell rEgulatory Network Inference and Clustering) which enables
+biologists to infer transcription factors, gene regulatory networks and
+cell types from single-cell RNA-seq data."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('PyYAML', '5.3'),
+    ('numba', '0.50.0', versionsuffix),
+    ('Arrow', '0.17.1', versionsuffix),
+    ('scikit-learn', '0.23.1', versionsuffix),
+    ('tqdm', '4.47.0'),
+    ('networkx', '2.4', versionsuffix),
+    ('h5py', '2.10.0', versionsuffix),
+    ('dask', '2.18.1', versionsuffix),
+]
+
+use_pip = True
+
+exts_list = [
+    ('cytoolz', '0.10.1', {
+        'checksums': ['82f5bba81d73a5a6b06f2a3553ff9003d865952fcb32e1df192378dd944d8a5c'],
+    }),
+    ('dill', '0.3.2', {
+        'source_tmpl': 'dill-%(version)s.zip',
+        'checksums': ['6e12da0d8e49c220e8d6e97ee8882002e624f1160289ce85ec2cc0a5246b3a2e'],
+    }),
+    ('multiprocessing_on_dill', '3.5.0a4', {
+        'checksums': ['d6d50c300ff4bd408bb71eb78725e60231039ee9b3d0d9bb7697b9d0e15045e7'],
+    }),
+    ('frozendict', '1.2', {
+        'checksums': ['774179f22db2ef8a106e9c38d4d1f8503864603db08de2e33be5b778230f6e45'],
+    }),
+    ('arboreto', '0.1.5', {
+        'checksums': ['a78c73b367eaae38dadeba150e52ac98aec6fc916df703ce61b79d27fe1015f9'],
+    }),
+    ('boltons', '20.2.0', {
+        'checksums': ['d367506c0b32042bb1ee3bf7899f2dcc8492dceb42ce3727b89e174d85bffe6e'],
+    }),
+    ('interlap', '0.2.6', {
+        'checksums': ['a8585a165bf7e94d4d262811b4cb00674059414c50afc7561c949b0feb78fa09'],
+    }),
+    ('umap-learn', '0.4.6', {
+        'modulename': 'umap',
+        'checksums': ['4276da9a039c79fa5b4f8d3515a8ccaaccf11a2f59ce8d15baf9d2015a5e82b3'],
+    }),
+    ('numpy_groupies', '0.9.10', {
+        'checksums': ['a6835c252b7bd489e0f701f8bf5bc880c647ef251e3b434998b95a8aecc9b68a'],
+    }),
+    ('loompy', '3.0.6', {
+        'checksums': ['58e9763b8ab1af2a4a0e3805d120458b5184fd2b0f3031657ecce33c63ca4c46'],
+    }),
+    ('pyscenic', version, {
+        'patches': ['pySCENIC-%(version)s_fix-pyarrow-FeatherReader.patch'],
+        'checksums': [
+            '517c4fadf6198ba0202116f1c419d61c4d4491fc4099b611fbe738845fe4acc9',  # pyscenic-0.10.3.tar.gz
+            # pySCENIC-0.10.3_fix-pyarrow-FeatherReader.patch
+            '022e69a384771a1389d176db699cc97f5a3c8ee43502a49f0335b82c1932e0e5',
+        ],
+        # strip out version restrictions for required Python packages
+        'preinstallopts': "sed -i 's/[=>]=[0-9].*//g' requirements.txt && ",
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pyscenic'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["pyscenic --help"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

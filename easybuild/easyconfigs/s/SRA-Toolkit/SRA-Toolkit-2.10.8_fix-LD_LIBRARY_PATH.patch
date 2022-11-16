@@ -1,0 +1,33 @@
+don't blindly overwrite $LD_LIBRARY_PATH (which breaks ld.gold linker because it requires a sufficiently recent libstdc++.so)
+author: Kenneth Hoste (HPC-UGent)
+--- sra-tools-2.10.8/build/ld.linux.exe.sh.orig	2020-07-01 18:47:00.699575027 +0200
++++ sra-tools-2.10.8/build/ld.linux.exe.sh	2020-07-01 18:49:35.803226644 +0200
+@@ -96,8 +96,7 @@
+     done
+ 
+     # update LD_LIBRARY_PATH
+-    unset LD_LIBRARY_PATH
+-    export LD_LIBRARY_PATH="$LDIRS:$XDIRS"
++    export LD_LIBRARY_PATH="$LDIRS:$XDIRS:$LD_LIBRARY_PATH"
+ 
+     # tack on libraries, finding as we go
+     for LIB in $LIBS
+--- sra-tools-2.10.8/build/ld.linux.dlib.sh.orig	2020-07-01 18:48:46.122057124 +0200
++++ sra-tools-2.10.8/build/ld.linux.dlib.sh	2020-07-01 18:48:57.662328498 +0200
+@@ -83,8 +83,7 @@
+     done
+ 
+     # update LD_LIBRARY_PATH
+-    unset LD_LIBRARY_PATH
+-    export LD_LIBRARY_PATH="$LDIRS:$XDIRS"
++    export LD_LIBRARY_PATH="$LDIRS:$XDIRS:$LD_LIBRARY_PATH"
+ 
+     # tack on libraries, finding as we go
+     for LIB in $LIBS
+@@ -308,4 +307,4 @@
+     echo "$MSG" >> $LOGFILE
+ 
+     "$BUILD_DIR/scm-collect.sh" "$OBJS" "$SLIBS" | sort -u > "$TARG.md5"
+-fi
+\ No newline at end of file
++fi
