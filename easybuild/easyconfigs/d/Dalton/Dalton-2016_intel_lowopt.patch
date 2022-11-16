@@ -1,0 +1,21 @@
+# Intel compiler breaks some tests (some Cholesky and some R12 calculations).
+# For the fortran sources below the too high level optimizations is the problem.
+# The optimization level was decreased to O1 for those files. 
+# Fsplitting those fortran sources (having more subroutines) could help more
+# precisely locate the problematic code, but it does not worth to do it for me.
+# February 10th 2018 by Balazs Hajgato (Free University Brussels - VUB)
+--- dalton/cmake/compilers/FortranFlags.cmake.orig	2018-02-08 07:41:57.000000000 +0100
++++ dalton/cmake/compilers/FortranFlags.cmake	2018-02-10 20:43:28.980844855 +0100
+@@ -87,6 +87,12 @@
+             "${CMAKE_Fortran_FLAGS} -Qoption,ld,-w"
+             )
+     endif()
++    set(O1_OPT_FORTRAN
++        DALTON/choles/cc_chopt.F
++        DALTON/cc/cc_r12ccsd.F
++        )
++    SET_SOURCE_FILES_PROPERTIES(${O1_OPT_FORTRAN} PROPERTIES COMPILE_FLAGS "-O1")
++
+     set(reorder_definitions " --nocollapse ${reorder_definitions}")
+ endif()
+ 

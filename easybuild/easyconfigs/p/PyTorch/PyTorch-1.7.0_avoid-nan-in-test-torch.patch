@@ -1,0 +1,18 @@
+This test uses in-place operations which may generate NaNs making subsequent tests fail
+See https://github.com/pytorch/pytorch/issues/48591
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_torch.py b/test/test_torch.py
+index 1f3f568f7b..237fb030f6 100644
+--- a/test/test_torch.py
++++ b/test/test_torch.py
+@@ -15060,7 +15060,7 @@ class TestTorchDeviceType(TestCase):
+                 x_c = x.contiguous()
+                 y_c = y.contiguous()
+                 result_c = fn(x_c, y_c)
+-                result = fn(x, y)
++                result = fn(x.clone(), y)
+                 self.assertEqual(result, result_c)
+                 self.assertTrue(
+                     result.is_contiguous(memory_format=memory_format),

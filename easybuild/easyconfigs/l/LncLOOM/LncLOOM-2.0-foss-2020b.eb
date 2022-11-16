@@ -1,0 +1,65 @@
+easyblock = 'PythonBundle'
+
+name = 'LncLOOM'
+version = '2.0'
+
+homepage = 'https://github.com/lncLOOM/lncLOOMv2/'
+description = """LncLOOM is a graph-based framework that uses integer
+programming to identify combinations of short motifs that are deeply conserved
+in rapidly evolving sequences."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('MAFFT', '7.475', '-with-extensions'),
+    ('BLAST+', '2.11.0'),
+    ('Gurobi', '9.1.1'),
+    ('Biopython', '1.78'),
+    ('pyBigWig', '0.3.18'),
+    ('networkx', '2.5'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('amply', '0.1.4', {
+        'checksums': ['cb12dcb49d16b168c02be128a1527ecde50211e4bd94af76ff4e67707f5a2d38'],
+    }),
+    ('PuLP', '2.4', {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/coin-or/pulp/archive/'],
+        'checksums': ['d52d52b6078ea2c503b33814738866902d661cfe60d7a76251d50423e4af3ad0'],
+    }),
+    (name, version, {
+        'modulename': 'LncLOOMv2',
+        'patches': ['LncLOOM-2.0-config-from-environment.patch'],
+        'source_tmpl': '75b82aeb359b65998770577e7516ed54845ba66c.tar.gz',
+        'source_urls': ['https://github.com/lncLOOM/LncLOOMv2/archive/'],
+        'checksums': [
+            # 75b82aeb359b65998770577e7516ed54845ba66c.tar.gz
+            'cc00beec1ddfc879c94948d9e7b7736b2b5156617b8724927d7459e6b88d0e59',
+            # LncLOOM-2.0-config-from-environment.patch
+            'bd8f13af556efe062e70ca06805fb0d1a6046bd50a59eaf69fb0014a844f169d',
+        ],
+    }),
+]
+
+postinstallcmds = [
+    'chmod +x %(installdir)s/lib/python%(pyshortver)s/site-packages/LncLOOMv2/src/blat',
+    'find %(installdir)s/lib/python%(pyshortver)s/site-packages/pulp/'
+    ' -executable -type f -exec chmod +x {} \\;',
+]
+
+sanity_pip_check = True
+sanity_check_paths = {
+    'files': ['bin/LncLOOM'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/LncLOOMv2'],
+}
+sanity_check_commands = [
+    'pulptest',
+    'LncLOOM --help',
+]
+
+moduleclass = 'bio'

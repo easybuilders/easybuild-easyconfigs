@@ -1,0 +1,107 @@
+easyblock = 'Bundle'
+
+name = 'PyQt5'
+version = '5.15.4'
+
+homepage = 'https://www.riverbankcomputing.com/software/pyqt'
+description = """PyQt5 is a set of Python bindings for v5 of the Qt application framework from The Qt Company.
+This bundle includes PyQtWebEngine, a set of Python bindings for The Qt Company’s Qt WebEngine framework."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+builddependencies = [('binutils', '2.37')]
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Qt5', '5.15.2'),
+]
+
+default_easyblock = 'PythonPackage'
+
+local_sipdir = '%(installdir)s/share/sip'
+
+local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+local_pyqt5_sip_install = "sip-install --verbose --target-dir " + local_pylibdir + " "
+local_pyqt5_sip_install += "--confirm-license --no-designer-plugin --no-qml-plugin "
+
+local_pyqtweb_configopts = "configure.py --verbose --destdir=%s/PyQt5 " % local_pylibdir
+local_pyqtweb_configopts += "--apidir=%(installdir)s/qsci "
+local_pyqtweb_configopts += "--pyqt-sipdir=%s " % local_sipdir
+local_pyqtweb_configopts += "--sipdir=%s " % local_sipdir
+local_pyqtweb_configopts += "--no-stubs --no-dist-info"
+
+local_pyqt_configopts = "configure.py --verbose --destdir=%s " % local_pylibdir
+local_pyqt_configopts += "--no-stubs  "
+local_pyqt_configopts += "--confirm-license --no-designer-plugin --no-qml-plugin "
+# prevent installing pyrcc5 and other tools into $EBROOTPYTHON/bin:
+local_pyqt_configopts += "--bindir=%(installdir)s/bin "
+local_pyqt_configopts += "--sipdir=%s " % local_sipdir
+
+local_setup_env = "export PATH=%(installdir)s/bin:$PATH && "
+local_setup_env += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+local_sipver = '5.5.0'
+components = [
+    ('SIP', local_sipver, {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['5d024c419b30fea8a6de8c71a560c7ab0bc3c221fbfb14d55a5b865bd58eaac5'],
+        'start_dir': 'sip-%s' % local_sipver,
+        'use_pip': True,
+        'options': {'modulename': 'PyQt5.sip'},
+    }),
+    ('PyQt-builder', '1.10.1', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['967b0c7bac0331597e9f8c5b336660f173a9896830b721d6d025e14bde647e17'],
+        'start_dir': 'PyQt-builder-%(version)s',
+        'use_pip': True,
+    }),
+    ('PyQt5_sip', '12.9.0', {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['d3e4489d7c2b0ece9d203ae66e573939f7f60d4d29e089c9f11daa17cfeaae32'],
+        'start_dir': 'PyQt5_sip-%(version)s',
+        'use_pip': True,
+    }),
+    (name, version, {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['2a69597e0dd11caabe75fae133feca66387819fc9bc050f547e5551bce97e5be'],
+        'easyblock': 'ConfigureMakePythonPackage',
+        'start_dir': '%(name)s-%(version)s',
+        'preconfigopts': local_setup_env,
+        'configopts': local_pyqt_configopts
+    }),
+    ('PyQtWebEngine', version, {
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['cedc28f54165f4b8067652145aec7f732a17eadf6736835852868cf76119cc19'],
+        'easyblock': 'ConfigureMakePythonPackage',
+        'start_dir': '%(name)s-%(version)s',
+        'preconfigopts': local_setup_env,
+        'configopts': local_pyqtweb_configopts,
+        'options': {'modulename': 'PyQt5.QtWebEngine'},
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in [
+        'pyrcc5', 'pyuic5', 'pylupdate5', 'pyqt-bundle', 'sip-build', 'sip-install', 'sip5']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import PyQt5.QtCore'",
+    "sip5 --help",
+    "pyuic5 --help",
+    "pylupdate5 -version 2>&1 | grep 'pylupdate5 v%(version)s'",
+    "pyrcc5 -version 2>&1 | grep 'pyrcc5 v%(version)s'",
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'QT_INSTALL_DATA': 'qsci',
+}
+
+moduleclass = 'vis'

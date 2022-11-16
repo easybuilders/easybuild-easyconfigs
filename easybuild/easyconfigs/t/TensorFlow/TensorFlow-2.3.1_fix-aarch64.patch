@@ -1,0 +1,19 @@
+fix installation on Arm64 (aarch64)
+
+./tensorflow/lite/kernels/internal/optimized/depthwiseconv_3x3_filter_common.h:132:58: error: cannot convert 'int32x2_t' {aka '__vector(2) int'} to 'int8x8_t' {aka '__vector(8) signed char'}
+
+see also https://github.com/tensorflow/tensorflow/issues/26731 + https://github.com/tensorflow/tensorflow/pull/29515
+
+--- tensorflow-2.3.1/tensorflow/lite/build_def.bzl.orig	2020-11-04 13:06:26.056496930 -0000
++++ tensorflow-2.3.1/tensorflow/lite/build_def.bzl	2020-11-04 13:07:38.265751478 -0000
+@@ -19,6 +19,10 @@
+         clean_dep("//tensorflow:ios_x86_64"): [
+             "-msse4.1",
+         ],
++        clean_dep("//tensorflow:linux_aarch64"): [
++            "-flax-vector-conversions",
++            "-fomit-frame-pointer",
++        ],
+         clean_dep("//tensorflow:windows"): [
+             "/DTFL_COMPILE_LIBRARY",
+             "/wd4018",  # -Wno-sign-compare
