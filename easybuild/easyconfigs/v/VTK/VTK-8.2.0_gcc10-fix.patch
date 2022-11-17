@@ -1,0 +1,72 @@
+exodusII changes from https://gitlab.kitware.com/vtk/vtk/-/merge_requests/6420
+VTKGenerateExportHeader.cmake changes from https://gitlab.kitware.com/vtk/vtk/-/issues/17775#note_794604
+Patch added by Simon Branford (University of Birmingham)
+--- a/ThirdParty/exodusII/vtkexodusII/src/ex_create_par.c
++++ b/ThirdParty/exodusII/vtkexodusII/src/ex_create_par.c
+@@ -216,5 +216,5 @@ int ex_create_par_int(const char *path, int cmode, int *comp_ws, int *io_ws, MPI
+  * Prevent warning in some versions of ranlib(1) because the object
+  * file has no symbols.
+  */
+-const char exodus_unused_symbol_dummy_1;
++const char exodus_unused_symbol_dummy_ex_create_par;
+ #endif
+diff --git a/src/ex_open_par.c b/src/ex_open_par.c
+index b2faa22c294..9df4818767d 100644
+--- a/ThirdParty/exodusII/vtkexodusII/src/ex_open_par.c
++++ b/ThirdParty/exodusII/vtkexodusII/src/ex_open_par.c
+@@ -459,5 +459,5 @@ int ex_open_par_int(const char *path, int mode, int *comp_ws, int *io_ws, float
+  * Prevent warning in some versions of ranlib(1) because the object
+  * file has no symbols.
+  */
+-const char exodus_unused_symbol_dummy_1;
++const char exodus_unused_symbol_dummy_ex_open_par;
+ #endif
+--- a/CMake/VTKGenerateExportHeader.cmake	2022-01-28 11:49:28.902123000 +0000
++++ b/CMake/VTKGenerateExportHeader.cmake	2022-01-28 12:27:17.901428104 +0000
+@@ -170,37 +170,17 @@
+ 
+ macro(_vtk_test_compiler_hidden_visibility)
+ 
+-  if(CMAKE_COMPILER_IS_GNUCXX)
+-    execute_process(COMMAND ${CMAKE_C_COMPILER} --version
+-      OUTPUT_VARIABLE _gcc_version_info
+-      ERROR_VARIABLE _gcc_version_info)
+-    string(REGEX MATCH "[3-9]\\.[0-9]\\.[0-9]*"
+-      _gcc_version "${_gcc_version_info}")
+-    # gcc on mac just reports: "gcc (GCC) 3.3 20030304 ..." without the
+-    # patch level, handle this here:
+-    if(NOT _gcc_version)
+-      string(REGEX REPLACE ".*\\(GCC\\).*([34]\\.[0-9]).*" "\\1.0"
+-        _gcc_version "${_gcc_version_info}")
+-    endif()
+-
+-    if(_gcc_version VERSION_LESS "4.2")
+-      set(GCC_TOO_OLD TRUE)
+-    endif()
++  if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.2")
++    set(GCC_TOO_OLD TRUE)
++    message(WARNING "GCC version older than 4.2")
++  elseif(CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION VERSION_LESS "4.2")
++    set(GCC_TOO_OLD TRUE)
++    message(WARNING "GCC version older than 4.2")
++  elseif(CMAKE_CXX_COMPILER_ID MATCHES Intel AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "12.0")
++    set(_INTEL_TOO_OLD TRUE)
++    message(WARNING "Intel compiler older than 12.0")
+   endif()
+ 
+-  if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -V
+-      OUTPUT_VARIABLE _intel_version_info
+-      ERROR_VARIABLE _intel_version_info)
+-    string(REGEX REPLACE ".*Version ([0-9]+(\\.[0-9]+)+).*" "\\1"
+-      _intel_version "${_intel_version_info}")
+-
+-    if(_intel_version VERSION_LESS "12.0")
+-      set(_INTEL_TOO_OLD TRUE)
+-    endif()
+-  endif()
+-
+-
+   # Exclude XL here because it misinterprets -fvisibility=hidden even though
+   # the check_cxx_compiler_flag passes
+   # http://www.cdash.org/CDash/testDetails.php?test=109109951&build=1419259
