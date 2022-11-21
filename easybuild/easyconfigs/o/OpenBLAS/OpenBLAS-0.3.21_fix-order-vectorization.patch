@@ -1,0 +1,43 @@
+add parentheses to force a certain order that is compatible with non-FMA instructions;
+fixes failing LAPACK tests when -ftree-vectorize is used
+author: Bart Oldeman (Digital Research Alliance of Canada)
+--- OpenBLAS-0.3.21/lapack-netlib/SRC/clahqr.f.orig     2022-08-07 20:36:26.000000000 +0000
++++ OpenBLAS-0.3.21/lapack-netlib/SRC/clahqr.f  2022-10-15 02:56:05.646906448 +0000
+@@ -484,7 +484,7 @@
+ *           in columns K to I2.
+ *
+             DO 80 J = K, I2
+-               SUM = CONJG( T1 )*H( K, J ) + T2*H( K+1, J )
++               SUM = CONJG( T1 )*H( K, J ) + ( T2*H( K+1, J ) )
+                H( K, J ) = H( K, J ) - SUM
+                H( K+1, J ) = H( K+1, J ) - SUM*V2
+    80       CONTINUE
+@@ -493,7 +493,7 @@
+ *           matrix in rows I1 to min(K+2,I).
+ *
+             DO 90 J = I1, MIN( K+2, I )
+-               SUM = T1*H( J, K ) + T2*H( J, K+1 )
++               SUM = T1*H( J, K ) + ( T2*H( J, K+1 ) )
+                H( J, K ) = H( J, K ) - SUM
+                H( J, K+1 ) = H( J, K+1 ) - SUM*CONJG( V2 )
+    90       CONTINUE
+--- OpenBLAS-0.3.21/lapack-netlib/SRC/zlahqr.f.orig     2022-08-07 20:36:26.000000000 +0000
++++ OpenBLAS-0.3.21/lapack-netlib/SRC/zlahqr.f  2022-10-15 02:11:54.111966029 +0000
+@@ -484,7 +484,7 @@
+ *           in columns K to I2.
+ *
+             DO 80 J = K, I2
+-               SUM = DCONJG( T1 )*H( K, J ) + T2*H( K+1, J )
++               SUM = DCONJG( T1 )*H( K, J ) + ( T2*H( K+1, J ) )
+                H( K, J ) = H( K, J ) - SUM
+                H( K+1, J ) = H( K+1, J ) - SUM*V2
+    80       CONTINUE
+@@ -493,7 +493,7 @@
+ *           matrix in rows I1 to min(K+2,I).
+ *
+             DO 90 J = I1, MIN( K+2, I )
+-               SUM = T1*H( J, K ) + T2*H( J, K+1 )
++               SUM = T1*H( J, K ) + ( T2*H( J, K+1 ) )
+                H( J, K ) = H( J, K ) - SUM
+                H( J, K+1 ) = H( J, K+1 ) - SUM*DCONJG( V2 )
+    90       CONTINUE
