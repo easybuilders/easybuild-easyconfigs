@@ -15,7 +15,7 @@ patches = [
 checksums = [
     '92912e175fd1234368c8730c03f4996fe5942e7479bb1d10059405e7f2b3930d',  # openmpi-4.1.4.tar.bz2
     # OpenMPI-4.1.1_build-with-internal-cuda-header.patch
-    '1ceb82b19f62da2525357debaae694d7751b6352adae7ffa55c71e19a4d7101c',
+    '63eac52736bdf7644c480362440a7f1f0ae7c7cae47b7565f5635c41793f8c83',
     # OpenMPI-4.1.1_opal-datatype-cuda-performance.patch
     'b767c7166cf0b32906132d58de5439c735193c9fd09ec3c5c11db8d5fa68750e',
 ]
@@ -36,7 +36,19 @@ dependencies = [
     ('UCC', '1.0.0'),
 ]
 
-preconfigopts = './autogen.pl --force && '
+# Update configure to include changes from the "internal-cuda" patch
+# by running a subset of autogen.pl sufficient to achieve this
+# without doing the full, long-running regeneration.
+preconfigopts = ' && '.join([
+    'cd config',
+    'autom4te --language=m4sh opal_get_version.m4sh -o opal_get_version.sh',
+    'cd ..',
+    'autoconf',
+    'autoheader',
+    'aclocal',
+    'automake',
+    ''
+])
 
 # CUDA related patches and custom configure option can be removed if CUDA support isn't wanted.
 configopts = '--with-cuda=internal '

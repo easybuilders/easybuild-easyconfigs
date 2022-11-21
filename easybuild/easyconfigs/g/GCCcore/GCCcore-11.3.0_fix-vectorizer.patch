@@ -1,0 +1,137 @@
+From 9ed4a849afb5b18b462bea311e7eee454c2c9f68 Mon Sep 17 00:00:00 2001
+From: Richard Biener <rguenther@suse.de>
+Date: Fri, 14 Oct 2022 11:14:59 +0200
+Subject: [PATCH] tree-optimization/107254 - check and support live lanes from
+ permutes
+
+The following fixes an omission from adding SLP permute nodes which
+is live lanes originating from those.  We have to check that we
+can extract the lane and have to actually code generate them.
+
+	PR tree-optimization/107254
+	* tree-vect-slp.cc (vect_slp_analyze_node_operations_1):
+	For permutes also analyze live lanes.
+	(vect_schedule_slp_node): For permutes also code generate
+	live lane extracts.
+
+	* gfortran.dg/vect/pr107254.f90: New testcase.
+---
+ gcc/testsuite/gfortran.dg/vect/pr107254.f90 | 49 +++++++++++++++++++++
+ gcc/tree-vect-slp.cc                        | 33 +++++++++++---
+ 2 files changed, 77 insertions(+), 5 deletions(-)
+ create mode 100644 gcc/testsuite/gfortran.dg/vect/pr107254.f90
+
+diff --git a/gcc/testsuite/gfortran.dg/vect/pr107254.f90 b/gcc/testsuite/gfortran.dg/vect/pr107254.f90
+new file mode 100644
+index 0000000000000..85bcb5f3fa2e3
+--- /dev/null
++++ b/gcc/testsuite/gfortran.dg/vect/pr107254.f90
+@@ -0,0 +1,49 @@
++! { dg-do run }
++
++subroutine dlartg( f, g, s, r )
++  implicit none
++  double precision :: f, g, r, s
++  double precision :: d, p
++
++  d = sqrt( f*f + g*g )
++  p = 1.d0 / d
++  if( abs( f ) > 1 ) then
++     s = g*sign( p, f )
++     r = sign( d, f )
++  else
++     s = g*sign( p, f )
++     r = sign( d, f )
++  end if
++end subroutine
++
++subroutine dhgeqz( n, h, t )
++  implicit none
++  integer            n
++  double precision   h( n, * ), t( n, * )
++  integer            jc
++  double precision   c, s, temp, temp2, tempr
++  temp2 = 10d0
++  call dlartg( 10d0, temp2, s, tempr )
++  c = 0.9d0
++  s = 1.d0
++  do jc = 1, n
++     temp = c*h( 1, jc ) + s*h( 2, jc )
++     h( 2, jc ) = -s*h( 1, jc ) + c*h( 2, jc )
++     h( 1, jc ) = temp
++     temp2 = c*t( 1, jc ) + s*t( 2, jc )
++     t( 2, jc ) = -s*t( 1, jc ) + c*t( 2, jc )
++     t( 1, jc ) = temp2
++  enddo
++end subroutine dhgeqz
++
++program test
++  implicit none
++  double precision h(2,2), t(2,2)  
++  h = 0
++  t(1,1) = 1
++  t(2,1) = 0
++  t(1,2) = 0
++  t(2,2) = 0
++  call dhgeqz( 2, h, t )
++  if (t(2,2).ne.0) STOP 1
++end program test
+diff --git a/gcc/tree-vect-slp.c b/gcc/tree-vect-slp.c
+index 229f2663ebcc6..af27fd56e0242 100644
+--- a/gcc/tree-vect-slp.c
++++ b/gcc/tree-vect-slp.c
+@@ -5930,7 +5930,23 @@ vect_slp_analyze_node_operations_1 (vec_info *vinfo, slp_tree node,
+ 
+   /* Handle purely internal nodes.  */
+   if (SLP_TREE_CODE (node) == VEC_PERM_EXPR)
+-    return vectorizable_slp_permutation (vinfo, NULL, node, cost_vec);
++    {
++      if (!vectorizable_slp_permutation (vinfo, NULL, node, cost_vec))
++	return false;
++
++      stmt_vec_info slp_stmt_info;
++      unsigned int i;
++      FOR_EACH_VEC_ELT (SLP_TREE_SCALAR_STMTS (node), i, slp_stmt_info)
++	{
++	  if (STMT_VINFO_LIVE_P (slp_stmt_info)
++	      && !vectorizable_live_operation (vinfo,
++					       slp_stmt_info, NULL, node,
++					       node_instance, i,
++					       false, cost_vec))
++	    return false;
++	}
++      return true;
++    }
+ 
+   gcc_assert (STMT_SLP_TYPE (stmt_info) != loop_vect);
+ 
+@@ -8897,8 +8913,6 @@ vect_schedule_slp_node (vec_info *vinfo,
+ 	}
+     }
+ 
+-  bool done_p = false;
+-
+   /* Handle purely internal nodes.  */
+   if (SLP_TREE_CODE (node) == VEC_PERM_EXPR)
+     {
+@@ -8909,9 +8923,18 @@ vect_schedule_slp_node (vec_info *vinfo,
+ 	 but open-code it here (partly).  */
+       bool done = vectorizable_slp_permutation (vinfo, &si, node, NULL);
+       gcc_assert (done);
+-      done_p = true;
++      stmt_vec_info slp_stmt_info;
++      unsigned int i;
++      FOR_EACH_VEC_ELT (SLP_TREE_SCALAR_STMTS (node), i, slp_stmt_info)
++	if (STMT_VINFO_LIVE_P (slp_stmt_info))
++	  {
++	    done = vectorizable_live_operation (vinfo,
++						slp_stmt_info, &si, node,
++						instance, i, true, NULL);
++	    gcc_assert (done);
++	  }
+     }
+-  if (!done_p)
++  else
+     vect_transform_stmt (vinfo, stmt_info, &si, node, instance);
+ }
+ 

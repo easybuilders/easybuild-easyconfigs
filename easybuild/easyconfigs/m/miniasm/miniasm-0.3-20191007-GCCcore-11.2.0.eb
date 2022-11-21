@@ -1,0 +1,46 @@
+easyblock = 'MakeCp'
+
+name = 'miniasm'
+version = '0.3-20191007'
+local_commit = 'ce615d1d6b8678d38f2f9d27c9dccd944436ae75'
+
+homepage = 'https://github.com/lh3/minimap2'
+description = """Miniasm is a very fast OLC-based de novo assembler for noisy long reads. It
+takes all-vs-all read self-mappings (typically by minimap) as input and outputs
+an assembly graph in the GFA format. Different from mainstream assemblers,
+miniasm does not have a consensus step. It simply concatenates pieces of read
+sequences to generate the final unitig sequences. Thus the per-base error rate
+is similar to the raw input reads."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+github_account = 'lh3'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['31d62309e8b802d3aebd492c1fed8d2a9197a3243c128345745dccb762457e3d']
+
+builddependencies = [
+    ('binutils', '2.37'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+buildopts = 'CC="${CC}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}"'
+
+files_to_copy = [
+    (['%(name)s', 'minidot'], 'bin'),
+    (['*.h'], 'include'),
+    (['LICENSE.txt', 'PAF.md', 'README.md'], 'share'),
+    (['%(name)s.1'], 'share/man/man1'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'bin/minidot'],
+    'dirs': ['include', 'share']
+}
+
+sanity_check_commands = ["miniasm -V"]
+
+moduleclass = 'bio'
