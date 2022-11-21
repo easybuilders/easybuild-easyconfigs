@@ -1,0 +1,35 @@
+fix compatibility with HarfBuzz v3.x or newer:
+  ../../3rdparty/chromium/components/paint_preview/common/subset_font.cc:74:3: error: hb_subset_input_set_retain_gids was not declared in this scope
+  ../../3rdparty/chromium/components/paint_preview/common/subset_font.cc:76:35: error: hb_subset was not declared in this scope
+see also https://bugs.gentoo.org/817758
+--- qt-everywhere-src-5.15.5/qtwebengine/src/3rdparty/chromium/components/paint_preview/common/subset_font.cc
++++ qt-everywhere-src-5.15.5/qtwebengine/src/3rdparty/chromium/components/paint_preview/common/subset_font.cc
+@@ -71,9 +71,9 @@ sk_sp<SkData> SubsetFont(SkTypeface* typeface, const GlyphUsage& usage) {
+   hb_set_t* glyphs =
+       hb_subset_input_glyph_set(input.get());  // Owned by |input|.
+   usage.ForEach(base::BindRepeating(&AddGlyphs, base::Unretained(glyphs)));
+-  hb_subset_input_set_retain_gids(input.get(), true);
++  hb_subset_input_set_flags(input.get(), HB_SUBSET_FLAGS_RETAIN_GIDS);
+ 
+-  HbScoped<hb_face_t> subset_face(hb_subset(face.get(), input.get()));
++  HbScoped<hb_face_t> subset_face(hb_subset_or_fail(face.get(), input.get()));
+   HbScoped<hb_blob_t> subset_blob(hb_face_reference_blob(subset_face.get()));
+   if (!subset_blob)
+     return nullptr;
+--- qt-everywhere-src-5.15.5/qtwebengine/src/3rdparty/chromium/third_party/skia/src/pdf/SkPDFSubsetFont.cpp
++++ qt-everywhere-src-5.15.5/qtwebengine/src/3rdparty/chromium/third_party/skia/src/pdf/SkPDFSubsetFont.cpp
+@@ -71,11 +71,10 @@ static sk_sp<SkData> subset_harfbuzz(sk_sp<SkData> fontData,
+     hb_set_t* glyphs = hb_subset_input_glyph_set(input.get());
+     glyphUsage.getSetValues([&glyphs](unsigned gid) { hb_set_add(glyphs, gid);});
+ 
+-    hb_subset_input_set_retain_gids(input.get(), true);
+     // TODO: When possible, check if a font is 'tricky' with FT_IS_TRICKY.
+     // If it isn't known if a font is 'tricky', retain the hints.
+-    hb_subset_input_set_drop_hints(input.get(), false);
+-    HBFace subset(hb_subset(face.get(), input.get()));
++    hb_subset_input_set_flags(input.get(), HB_SUBSET_FLAGS_RETAIN_GIDS | HB_SUBSET_FLAGS_NO_HINTING);
++    HBFace subset(hb_subset_or_fail(face.get(), input.get()));
+     HBBlob result(hb_face_reference_blob(subset.get()));
+     return to_data(std::move(result));
+ }
+
