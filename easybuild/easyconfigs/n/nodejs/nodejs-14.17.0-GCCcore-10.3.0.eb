@@ -2,7 +2,7 @@ easyblock = 'ConfigureMake'
 
 name = 'nodejs'
 version = '14.17.0'  # LTS on 2021-06-03
-_libversion = '83'
+local_libversion = '83'
 
 homepage = 'https://nodejs.org'
 description = """Node.js is a platform built on Chrome's JavaScript runtime
@@ -37,24 +37,24 @@ dependencies = [
 ]
 
 # Use ICU and OpenSSL from EasyBuild
-_common_configopts = "--with-intl=system-icu --shared-openssl "
+local_common_configopts = "--with-intl=system-icu --shared-openssl "
 
 configopts = [
-    _common_configopts,                  # Static build
-    '--shared %s' % _common_configopts,  # Build libnode.so in a second run
+    local_common_configopts,                  # Static build
+    '--shared %s' % local_common_configopts,  # Build libnode.so in a second run
 ]
 
 # Link libv8 libs to libnode
-_extra_sonames = ['libnode', 'libv8', 'libv8_libbase', 'libv8_libplatform']
-_extra_libs = ['%s.%s' % (x, SHLIB_EXT) for x in _extra_sonames]
-_libnode_real = "libnode.%s.%s" % (SHLIB_EXT, _libversion)
+local_extra_sonames = ['libnode', 'libv8', 'libv8_libbase', 'libv8_libplatform']
+local_extra_libs = ['%s.%s' % (x, SHLIB_EXT) for x in local_extra_sonames]
+local_libnode_real = "libnode.%s.%s" % (SHLIB_EXT, local_libversion)
 
 postinstallcmds = [
-    "cd %%(installdir)s/lib && ln -s %s %s" % (_libnode_real, x) for x in _extra_libs
+    "cd %%(installdir)s/lib && ln -s %s %s" % (local_libnode_real, x) for x in local_extra_libs
 ]
 
 sanity_check_paths = {
-    'files': ['bin/node', 'bin/npm'] + ['lib/%s' % x for x in [_libnode_real] + _extra_libs],
+    'files': ['bin/node', 'bin/npm'] + ['lib/%s' % x for x in [local_libnode_real] + local_extra_libs],
     'dirs': ['lib/node_modules', 'include/node']
 }
 
