@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'HEALPix'
+version = '3.82'
+
+homepage = 'http://healpix.sourceforge.net/'
+description = """Hierarchical Equal Area isoLatitude Pixelation of a sphere."""
+software_license = "LicenseGPLv2"
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['Healpix_3.82_2022Jul28.tar.gz']
+checksums = ['47629f057a2daf06fca3305db1c6950edb9e61bbe2d7ed4d98ff05809da2a127']
+
+unpack_options = '--strip-components=1'
+
+buildininstalldir = True
+
+builddependencies = [('binutils', '2.37', '', True)]
+
+dependencies = [('CFITSIO', '4.1.0')]
+
+# ConfigureMake easyblock doesn't allow to skip --prefix statement. Following lines tweaks that:
+configure_cmd_prefix = 'FITSDIR=$EBROOTCFITSIO/lib FITSINC=$EBROOTCFITSIO/include NOOP=\"'
+configopts = '\" ./configure --auto=\"c,cxx,f90,sharp\" -L'
+# dummy install_cmd:
+install_cmd = 'true'
+
+# extra paths originally exported in confdir/*_Linux/
+modextravars = {
+    'HEALPIX': '%(installdir)s',
+    'HEXE': '%(installdir)s/bin'
+}
+
+sanity_check_commands = [
+    "cd %(installdir)s && make test &> build/testresults.txt",
+    'test $(grep -c "test completed" %(installdir)s/build/testresults.txt) -eq 4',
+    'test $(grep -c "normal completion" %(installdir)s/build/testresults.txt) -eq 10',
+]
+
+sanity_check_paths = {
+    'files': [
+        'lib/%s' % local_lib for local_lib in [
+            'libchealpix.a',
+            'libhealpix.a',
+            'libhealpix_cxx.a',
+            'libsharp.a'
+        ]
+    ],
+    'dirs': [
+        'bin',
+        'data',
+        'lib'
+    ]
+}
+
+moduleclass = 'astro'
