@@ -1,0 +1,44 @@
+easyblock = 'ConfigureMake'
+
+name = 'FOX-Toolkit'
+version = '1.6.57'
+
+homepage = 'https://www.fox-toolkit.org/'
+description = """FOX is a C++ based Toolkit for developing Graphical User Interfaces easily and
+effectively. It offers a wide, and growing, collection of Controls, and
+provides state of the art facilities such as drag and drop, selection, as well
+as OpenGL widgets for 3D graphical manipulation. FOX also implements icons,
+images, and user-convenience features such as status line help, and tooltips."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['http://fox-toolkit.org/ftp']
+sources = ['fox-%(version)s.tar.gz']
+checksums = ['65ef15de9e0f3a396dc36d9ea29c158b78fad47f7184780357b929c94d458923']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('Autotools', '20210726'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('libjpeg-turbo', '2.0.6'),
+    ('libpng', '1.6.37'),
+    ('LibTIFF', '4.3.0'),
+    ('libGLU', '9.0.2'),
+    ('X11', '20210802'),
+]
+
+preconfigopts = """sed -i '/^CXXFLAGS=""$/d;/LDFLAGS="-s ${LDFLAGS}"/d' configure.ac && """
+preconfigopts += "autoreconf -f -i && "
+
+configopts = '--enable-release'
+
+sanity_check_paths = {
+    'files': ['lib/lib%s-%%(version_major_minor)s.%s' % (n, x) for n in ['CHART', 'FOX'] for x in ['a', SHLIB_EXT]] +
+             ['bin/fox-config'],
+    'dirs': ['include']
+}
+
+moduleclass = 'lib'

@@ -10,7 +10,7 @@ description = """
  """
 
 toolchain = {'name': 'foss', 'version': '2021b'}
-toolchainopts = {'usempi': True}
+toolchainopts = {'pic': True, 'usempi': True, 'openmp': True}
 
 source_urls = ['https://launchpad.net/bigdft/%(version_major_minor)s/%(version)s/+download/']
 sources = ['bigdft-suite-%(version)s.tar.gz']
@@ -24,17 +24,22 @@ unpack_options = " spred-suite/futile-%(version_major_minor)s.tar.gz --strip 1 &
 unpack_options += "tar xzf futile-%(version_major_minor)s.tar.gz --transform='s,%(version_major_minor)s,%(version)s,'"
 start_dir = "futile-%(version)s"
 
-configopts = 'CC=$MPICC FC=$MPIFC FCFLAGS="$FCLAGS -fallow-argument-mismatch" '
-configopts += '--enable-mpi '
-configopts += '--with-ext-linalg="-L$SCALAPACK_LIB_DIR $LIBSCALAPACK '
-configopts += '-L$BLACS_LIB_DIR $LIBBLACS -L$LAPACK_LIB_DIR $LIBLAPACK -L$BLAS_LIB_DIR $LIBBLAS" '
-configopts += '--with-yaml-path=$EBROOTLIBYAML '
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('libyaml', '0.2.5'),
+]
 
-dependencies = [('libyaml', '0.2.5')]
+preconfigopts = 'export FCFLAGS="$FCLAGS -fallow-argument-mismatch" && '
+
+configopts = '--enable-dynamic-libraries '
+configopts += '--with-ext-linalg="$LIBSCALAPACK" '
+configopts += '--with-yaml-path=$EBROOTLIBYAML '
 
 sanity_check_paths = {
     'files': ['include/futile.mod', 'include/futile.h', 'bin/futilevars.sh'] +
-             [('lib/libfutile-1.a', 'lib64/libfutile-1.a')],
+             ['lib/libfutile-1.a', 'lib/libfutile-1.%s' % SHLIB_EXT],
     'dirs': []
 }
 
