@@ -5,6 +5,9 @@ test_forward_mode_AD_norm_inf_cpu_complex128 in test_ops_gradients fails due to 
 Might be fixed by https://github.com/pytorch/pytorch/pull/80082 where a part of the changes
 come from with additional skip for that test similar to other complex128 skips.
 
+Also skip test_forward_mode_AD_nn_functional_max_unpool2d_cpu_float64 & test_forward_mode_AD_nn_functional_max_unpool3d_cpu_float64
+which may unexpectably succeed.
+
 Author: Alexander Grund (TU Dresden)
 
 diff --git a/torch/testing/_internal/common_methods_invocations.py b/torch/testing/_internal/common_methods_invocations.py
@@ -35,6 +38,24 @@ index 00eb3f7f09..8d009cf280 100644
                 DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_fn_gradgrad'),
                 # dtypes are tested in the suite above, no need to repeat it for singular
                 DecorateInfo(unittest.skip("Skipped!"), 'TestCommon', 'test_dtypes'),
+@@ -13447,7 +13447,7 @@ op_db: List[OpInfo] = [
+                # and if there are several indices pointing to the same memory,
+                # gradcheck is oblivious about that and cannot perturb them all at once
+                # (see sample_inputs_max_unpool_grad to find out more).
+-               DecorateInfo(unittest.expectedFailure, 'TestGradients', 'test_forward_mode_AD'),
++               DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_forward_mode_AD'),
+                DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_fn_gradgrad'),
+                DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_fn_grad'),
+            )),
+@@ -13481,7 +13481,7 @@ op_db: List[OpInfo] = [
+                # and if there are several indices pointing to the same memory,
+                # gradcheck is oblivious about that and cannot perturb them all at once
+                # (see sample_inputs_max_unpool_grad to find out more).
+-               DecorateInfo(unittest.expectedFailure, 'TestGradients', 'test_forward_mode_AD'),
++               DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_forward_mode_AD'),
+                DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_fn_gradgrad'),
+                DecorateInfo(unittest.skip("Skipped!"), 'TestGradients', 'test_fn_grad'),
+            )),
 @@ -17230,6 +17230,13 @@ op_db: List[OpInfo] = [
                  device_type="cpu",
                  dtypes=(torch.complex128,),
