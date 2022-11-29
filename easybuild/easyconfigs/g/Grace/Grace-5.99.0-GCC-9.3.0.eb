@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'Grace'
+version = '5.99.0'
+
+homepage = 'http://freecode.com/projects/grace'
+description = """Grace is a WYSIWYG 2D plotting tool for X Windows System and Motif."""
+
+source_urls = ['https://plasma-gate.weizmann.ac.il/pub/grace/src/grace6/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['grace-5.99.0-make.patch']
+checksums = [
+    '113b7cf3d2b28588febf56475a24b7b3612c6663945c5433b2f518657b565338',  # grace-5.99.0.tar.gz
+    '69bfb0f60dee3daa9718121da3552d3ca63ad98b9b0782c18fae978194336f9e',  # grace-5.99.0-make.patch
+]
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+     ('FFTW', '3.3.8'),
+     ('netCDF', '4.7.4'),
+]
+
+# runtest = 'tests'
+
+# We also need to run make links right before or after make install:
+
+configopts  = 'CC=gcc --with-f77=gfortran --with-fftw '
+configopts += '--with-netcdf-libraries="-lnetcdf"  --with-fftw-library="-lfftw" '
+configopts += '--with-x '
+
+installopts = 'links'
+
+postinstallcmds = [
+    'ln -s %(installdir)s/bin/grace-%(version)s %(installdir)s/bin/grace',
+    'ln -s %(installdir)s/bin/gracebat-%(version)s %(installdir)s/bin/gracebat',
+    'ln -s %(installdir)s/bin/xmgrace-%(version)s %(installdir)s/bin/xmgrace',
+]
+
+sanity_check_paths = {
+    'files': ['bin/xmgrace-%(version)s'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'
