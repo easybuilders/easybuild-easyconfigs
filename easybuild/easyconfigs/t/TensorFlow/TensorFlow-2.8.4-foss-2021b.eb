@@ -157,17 +157,24 @@ exts_list = [
             '//tensorflow/cc/...',
             '//tensorflow/c/...',
             '//tensorflow/python/...',
+            # Fails on some nodes but C API isn't installed anyway
             '-//tensorflow/c/eager:c_api_test_gpu',
             '-//tensorflow/c/eager:c_api_distributed_test',
             '-//tensorflow/c/eager:c_api_distributed_test_gpu',
+            # Race condition with port picker: https://github.com/tensorflow/tensorflow/issues/46602
             '-//tensorflow/c/eager:c_api_cluster_test_gpu',
             '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
             '-//tensorflow/c/eager:c_api_remote_test_gpu',
+            # Fails to open its own test.xml(?)
             '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
+            # Fails on non-AVX-512 systems: https://github.com/tensorflow/tensorflow/issues/46532
             '-//tensorflow/core/common_runtime:mkl_layout_pass_test',
             '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
+            # Fails on AMD EPYC systems: https://github.com/tensorflow/tensorflow/issues/52151
             '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
+            # All tests in this directory fail with segfault (TensorFlow Graph IR)
             '-//tensorflow/core/ir/importexport/tests/roundtrip/...',
+            # Fails on e.g. AMD EPYC and known to be flaky on Mac: https://github.com/tensorflow/tensorflow/issues/56717
             '-//tensorflow/python/data/experimental/kernel_tests/service:fault_tolerance_test',
         ],
         'testopts': "--test_timeout=3600 --test_size_filters=small",
