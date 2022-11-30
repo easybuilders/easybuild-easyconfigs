@@ -1,0 +1,19 @@
+Avoid crash with GCC 11's vectorizer involving 256-bit ymm registers.
+
+See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=107451
+
+Bart Oldeman <bart.oldeman@calculquebec.ca>
+
+diff --git a/kernel/x86_64/zdot.c b/kernel/x86_64/zdot.c
+index 27397ccf..e1d43be1 100644
+--- a/kernel/x86_64/zdot.c
++++ b/kernel/x86_64/zdot.c
+@@ -97,7 +97,7 @@ extern int blas_level1_thread_with_return_value(int mode, BLASLONG m, BLASLONG n
+                 
+                 
+ 
+-static void zdot_compute (BLASLONG n, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y,OPENBLAS_COMPLEX_FLOAT *result)
++__attribute__((target("prefer-vector-width=128"))) static void zdot_compute (BLASLONG n, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y,OPENBLAS_COMPLEX_FLOAT *result)
+ {
+ 	BLASLONG i;
+ 	BLASLONG ix,iy;
