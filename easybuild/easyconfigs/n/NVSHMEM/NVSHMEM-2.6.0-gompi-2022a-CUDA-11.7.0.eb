@@ -1,0 +1,52 @@
+##
+# Author:  Abdoul Wahid MAINASSARA <wahid.mainassara@lxp.lu>
+##
+easyblock = 'MakeCp'
+
+name = 'NVSHMEM'
+version = '2.6.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://developer.nvidia.com/nvshmem/'
+description = """NVSHMEM is a parallel programming interface based on OpenSHMEM
+ that provides efficient and scalable communication for NVIDIA GPU clusters.
+ NVSHMEM creates a global address space for data that spans the memory of
+ multiple GPUs and can be accessed with fine-grained GPU-initiated operations,
+ CPU-initiated operations, and operations on CUDA streams."""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+
+source_urls = ['https://developer.download.nvidia.com/compute/redist/%(namelower)s/%(version)s/source']
+sources = ['%(namelower)s_src_%(version)s-1.txz']
+checksums = ['fc0e8de61b034f3a079dc231b1d0955e665a9f57b5013ee98b6743647bd60417']
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('CUDA',  '11.7.0', '', True),
+    ('UCX-CUDA', '1.13.1', versionsuffix),
+    ('NCCL', '2.12.12', versionsuffix),
+]
+
+buildopts = 'NVSHMEM_MPI_SUPPORT=1 NVSHMEM_UCX_SUPPORT=1 UCX_HOME=$EBROOTUCX NVCC_GENCODE="-gencode=arch=compute_80,code=sm_80" NVSHMEM_USE_NCCL=1 NVSHMEM_PMIX_SUPPORT=1'
+#buildopts = 'NVSHMEM_MPI_SUPPORT=1 NVSHMEM_SHMEM_SUPPORT=1 NVSHMEM_UCX_SUPPORT=1 NVSHMEM_USE_NCCL=1 NVSHMEM_PMIX_SUPPORT=1' missing oshcc
+
+local_headers = ['nvshmem_api.h', 'nvshmem_bootstrap.h', 'nvshmem_coll_api.h', 'nvshmem_common.cuh', 'nvshmem_constants.h', 'nvshmem_defines.h', 'nvshmem.h', 'nvshmemi_constants.h', 'nvshmemi_util.h', 'nvshmem_types.h', 'nvshmem_version.h', 'nvshmemx_api.h', 'nvshmemx_coll_api.h', 'nvshmemx_defines.h', 'nvshmemx_error.h', 'nvshmemx.h']
+
+local_libs = ['libnvshmem.a', 'nvshmem_bootstrap_mpi.%s' % SHLIB_EXT, 'nvshmem_bootstrap_pmix.%s' % SHLIB_EXT]
+
+files_to_copy = [
+    (['build/include'], ''),
+    (['build/lib'], ''),
+    (['build/share'], ''),
+]
+
+sanity_check_paths = {
+    'files': ['include/%s' % x for x in local_headers] + 
+             ['lib/%s' % x for x in local_libs],
+    'dirs':  ['include', 'lib', 'share']
+}
+
+moduleclass = 'lang'
