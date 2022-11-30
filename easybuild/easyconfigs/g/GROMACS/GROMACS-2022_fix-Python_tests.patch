@@ -1,0 +1,486 @@
+diff -Nru gromacs-2022.3.orig/admin/ci-scripts/build-and-test-sample_restraint.sh gromacs-2022.3/admin/ci-scripts/build-and-test-sample_restraint.sh
+--- gromacs-2022.3.orig/admin/ci-scripts/build-and-test-sample_restraint.sh	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/admin/ci-scripts/build-and-test-sample_restraint.sh	2022-09-14 09:36:49.000000000 +0200
+@@ -19,7 +19,7 @@
+ 
+ # Build and install gmxapi python package from local source.
+ # Note that tool chain may be provided differently across GROMACS versions.
+-python -m pip install --no-build-isolation --no-cache-dir --no-deps --no-index python_packaging/src
++python -m pip install --no-build-isolation --no-cache-dir --no-deps --no-index python_packaging/gmxapi
+ 
+ pushd python_packaging/sample_restraint
+   rm -rf build
+@@ -27,7 +27,7 @@
+   pushd build
+     # TODO: Update with respect to https://gitlab.com/gromacs/gromacs/-/issues/3133
+     cmake .. \
+-      -C $GROMACS_ROOT/share/cmake/gromacs/gromacs-hints.cmake \
++      -C $GROMACS_ROOT/share/cmake/gromacs${GMX_SUFFIX}/gromacs-hints${GMX_SUFFIX}.cmake \
+       -DPYTHON_EXECUTABLE=`which python` \
+       -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON
+     make -j4 tests
+diff -Nru gromacs-2022.3.orig/cmake/gmxManageMPI.cmake gromacs-2022.3/cmake/gmxManageMPI.cmake
+--- gromacs-2022.3.orig/cmake/gmxManageMPI.cmake	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/cmake/gmxManageMPI.cmake	2022-09-14 11:13:32.000000000 +0200
+@@ -138,7 +138,8 @@
+ # need to find the full MPI library build system support.
+ if (NOT MPIEXEC_EXECUTABLE)
+     find_program(MPIEXEC
+-                 NAMES mpiexec mpirun lamexec srun aprun poe
++#                 NAMES mpiexec mpirun lamexec srun aprun poe
++                 NAMES mpirun
+                  HINTS ${MPI_HOME} $ENV{MPI_HOME}
+                  PATH_SUFFIXES bin
+                  DOC "Executable for running MPI programs.")
+diff -Nru gromacs-2022.3.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt gromacs-2022.3/python_packaging/sample_restraint/tests/CMakeGROMACS.txt
+--- gromacs-2022.3.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2022-09-14 11:21:05.000000000 +0200
+@@ -17,13 +17,11 @@
+     set(GMXAPI_PYTEST_FOUND TRUE CACHE INTERNAL "Suppress checking for Python pytest module.")
+ endif()
+ 
+-# TODO: (#2961) Let the Python package discover required resources instead of passing GMXBIN
+-get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
+ get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
+ get_target_property(PLUGINPATH gmxapi_extension LIBRARY_OUTPUT_DIRECTORY)
+ add_custom_target(gmxapi_extension_pytest
+                   COMMAND ${CMAKE_COMMAND}
+-                               -E env GMXBIN=${GMXBIN} PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++                               -E env PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
+                                ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
+                                ${CMAKE_CURRENT_SOURCE_DIR}
+                   DEPENDS gmxapi_extension _gmxapi)
+@@ -31,3 +29,39 @@
+ add_dependencies(gmxapi_extension_pytest gmx)
+ 
+ add_dependencies(check gmxapi_extension_pytest)
++
++if(MPIEXEC_EXECUTABLE)
++    if(NOT GMXAPI_MPI4PY_FOUND)
++        if (MPI_C_COMPILER)
++            set(_mpicc "MPICC=${MPI_C_COMPILER} ")
++        endif ()
++
++        execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import mpi4py; print(mpi4py.__version__)"
++                        RESULT_VARIABLE mpi4py_not_found OUTPUT_VARIABLE mpi4py_version ERROR_QUIET)
++        if(mpi4py_not_found)
++            message(STATUS "Running the MPI-enable tests requires mpi4py. Please install it manually. "
++                    "(Try: `${_mpicc}${PYTHON_EXECUTABLE} -m pip install mpi4py`, "
++                    "then clear the GMXAPI_MPI4PY_FOUND cache variable "
++                    "or remove the CMakeCache.txt, and configure again.)")
++        elseif(mpi4py_version VERSION_LESS 3.0.3)
++            message(STATUS "Running the MPI-enabled tests requires mpi4py >= 3.0.3. Found: ${mpi4py_version}"
++                    "Please update it (try: ${_mpicc}${PYTHON_EXECUTABLE} -m pip install -U mpi4py)")
++        endif()
++
++        unset(_mpicc)
++        set(GMXAPI_MPI4PY_FOUND TRUE CACHE INTERNAL "Suppress checking for Python mpi4py module.")
++    endif()
++
++    # In case this output becomes too noisy or confusing, Note:
++    #    For Multiple Instruction Multiple Data Model for OpenMPI mpirun, we can
++    #    make the non-root rank less noisy by providing different argv after a colon (`:`)
++    #    (https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php)
++    add_custom_target(
++        gmxapi_extension_pytest_mpi
++        COMMAND ${MPIEXEC_EXECUTABLE} --oversubscribe -n 2 -x PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}:$ENV{PYTHONPATH}
++            ${PYTHON_EXECUTABLE} -m mpi4py -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++            DEPENDS gmxapi_extension _gmxapi gmx
++            )
++
++    add_dependencies(check gmxapi_extension_pytest_mpi)
++endif()
+diff -Nru gromacs-2022.3.orig/python_packaging/sample_restraint/tests/conftest.py gromacs-2022.3/python_packaging/sample_restraint/tests/conftest.py
+--- gromacs-2022.3.orig/python_packaging/sample_restraint/tests/conftest.py	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/python_packaging/sample_restraint/tests/conftest.py	2022-09-14 09:32:07.000000000 +0200
+@@ -43,14 +43,13 @@
+ 
+ 
+ @pytest.fixture(scope='class')
+-def spc_water_box(gmxcli, remove_tempdir):
++def spc_water_box(gmxcli, tmp_path_factory):
+     """Provide a TPR input file for a simple simulation.
+ 
+     Prepare the MD input in a freshly created working directory.
+     """
+     import gmxapi as gmx
+-    # TODO: Remove this import when the the spc_water_box fixture is migrated to gmxapi.testsupport
+-    from gmxapi.testsupport import _cleandir
++    from gmxapi.testsupport import scoped_chdir
+ 
+     # TODO: (#2896) Fetch MD input from package / library data.
+     # Example:
+@@ -60,7 +59,7 @@
+     #     # Ref https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files
+     #     from gmx.data import tprfilename
+ 
+-    with _cleandir(remove_tempdir) as tempdir:
++    with scoped_chdir(tmp_path_factory.mktemp('spc_water_box')) as tempdir:
+ 
+         testdir = os.path.dirname(__file__)
+         with open(os.path.join(testdir, 'testdata.json'), 'r') as fh:
+@@ -84,13 +83,15 @@
+             fh.write('\n')
+ 
+         assert os.path.exists(topfile)
++        assert gmx.version.api_is_at_least(0, 3, 1)
+         solvate = gmx.commandline_operation(gmxcli,
+                                             arguments=['solvate', '-box', '5', '5', '5'],
+                                             # We use the default solvent instead of specifying one.
+                                             # input_files={'-cs': structurefile},
+                                             output_files={'-p': topfile,
+                                                           '-o': structurefile,
+-                                                          }
++                                                          },
++                                            env={'PATH': os.getenv('PATH')},
+                                             )
+         assert os.path.exists(topfile)
+ 
+@@ -128,7 +129,9 @@
+                                                '-c': solvate.output.file['-o'],
+                                                '-po': mdout_mdp,
+                                            },
+-                                           output_files={'-o': tprfile})
++                                           output_files={'-o': tprfile},
++                                           env={'PATH': os.getenv('PATH')},
++                                           )
+         tprfilename = grompp.output.file['-o'].result()
+         if grompp.output.returncode.result() != 0:
+             logging.debug(grompp.output.stderr.result())
+diff -Nru gromacs-2022.3.orig/python_packaging/sample_restraint/tests/test_plugin.py gromacs-2022.3/python_packaging/sample_restraint/tests/test_plugin.py
+--- gromacs-2022.3.orig/python_packaging/sample_restraint/tests/test_plugin.py	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/python_packaging/sample_restraint/tests/test_plugin.py	2022-09-14 09:54:44.000000000 +0200
+@@ -11,7 +11,12 @@
+ 
+ try:
+     import mpi4py.MPI as _MPI
++
++    rank_number = _MPI.COMM_WORLD.Get_rank()
++    comm_size = _MPI.COMM_WORLD.Get_size()
+ except (ImportError, ModuleNotFoundError):
++    rank_number = 0
++    comm_size = 1
+     _MPI = None
+ 
+ import gmxapi as gmx
+@@ -31,6 +36,13 @@
+ 
+ logger = logging.getLogger()
+ 
++mpi_support = pytest.mark.skipif(
++    comm_size > 1
++    and gmx.utility.config()['gmx_mpi_type'] == 'library'
++    and not gmx.version.has_feature('mpi_comm_integration'),
++    reason="Multi-rank MPI contexts require gmxapi 0.4."
++)
++
+ 
+ def test_import():
+     # Suppress inspection warning outside of testing context.
+@@ -39,23 +51,17 @@
+     assert myplugin
+ 
+ 
++@mpi_support
+ @pytest.mark.usefixtures("cleandir")
+ def test_binding_protocol(spc_water_box, mdrun_kwargs):
+     """Test that gmxapi successfully attaches MD plugins."""
+     import myplugin
+ 
+-    if _MPI is not None:
+-        _size = _MPI.COMM_WORLD.Get_size()
+-        _rank = _MPI.COMM_WORLD.Get_rank()
+-    else:
+-        _size = 1
+-        _rank = 0
+-
+     tpr_filename = spc_water_box
+     logger.info("Testing plugin potential with input file {}".format(os.path.abspath(tpr_filename)))
+ 
+     assert gmx.version.api_is_at_least(0, 2, 1)
+-    md = from_tpr([tpr_filename] * _size, append_output=False, **mdrun_kwargs)
++    md = from_tpr([tpr_filename] * comm_size, append_output=False, **mdrun_kwargs)
+ 
+     potential = WorkElement(namespace="myplugin",
+                             operation="null_restraint",
+@@ -77,6 +83,7 @@
+             assert restraint.count() > 1
+ 
+ 
++@mpi_support
+ @pytest.mark.usefixtures("cleandir")
+ def test_ensemble_potential_nompi(spc_water_box, mdrun_kwargs):
+     """Test ensemble potential without an ensemble.
+@@ -114,6 +121,7 @@
+         session.run()
+ 
+ 
++@mpi_support
+ @pytest.mark.withmpi_only
+ @pytest.mark.usefixtures("cleandir")
+ def test_ensemble_potential_withmpi(spc_water_box, mdrun_kwargs):
+diff -Nru gromacs-2022.3.orig/python_packaging/src/gmxapi/commandline.py gromacs-2022.3/python_packaging/src/gmxapi/commandline.py
+--- gromacs-2022.3.orig/python_packaging/src/gmxapi/commandline.py	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/python_packaging/src/gmxapi/commandline.py	2022-09-14 09:39:54.000000000 +0200
+@@ -55,6 +55,7 @@
+ from gmxapi.exceptions import MissingImplementationError
+ from gmxapi.exceptions import UsageError
+ from gmxapi.operation import OutputCollectionDescription
++from gmxapi.utility import config as _config
+ 
+ # Module-level logger
+ logger = root_logger.getChild('commandline')
+@@ -62,20 +63,6 @@
+ 
+ 
+ @functools.lru_cache()
+-def _config() -> dict:
+-    """Get the GROMACS configuration detected during installation.
+-
+-    If this appears to be a useful function, it may become part of the regular
+-    interface, but it is currently unadvertised.
+-    """
+-    import json
+-    from importlib.resources import open_text
+-    with open_text('gmxapi', 'gmxconfig.json') as textfile:
+-        config = json.load(textfile)
+-    return config
+-
+-
+-@functools.lru_cache()
+ def cli_executable() -> pathlib.Path:
+     """Report the installed GROMACS command line executable."""
+     path = _config().get('gmx_executable', None)
+diff -Nru gromacs-2022.3.orig/python_packaging/src/gmxapi/utility.py gromacs-2022.3/python_packaging/src/gmxapi/utility.py
+--- gromacs-2022.3.orig/python_packaging/src/gmxapi/utility.py	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/python_packaging/src/gmxapi/utility.py	2022-09-14 09:42:03.000000000 +0200
+@@ -32,11 +32,40 @@
+ # the research papers on the package. Check out https://www.gromacs.org.
+ 
+ """Provide some additional utilities."""
++import functools
+ import os
++from types import MappingProxyType
+ 
+ from gmxapi.operation import function_wrapper
+ 
+ 
+-@function_wrapper()
+-def join_path(first: str, second: str) -> str:
+-    return os.path.join(first, second)
++@function_wrapper(output={'path': str})
++def join_path(first: str, second: str, output=None):
++    """Get a Future path for use in data flow.
++
++    This is useful when a base path or filename is not known until runtime.
++
++    Attributes:
++        output.path (str): *first* and *second*, joined by the native filesystem path separator.
++    """
++    output.path = os.path.join(first, second)
++
++
++@functools.lru_cache()
++def config():
++    """Get the GROMACS configuration detected during installation.
++
++    Returns read-only dictionary proxy to file written during installation.
++    The :py:class:`~typing.Mapping` contains information about the supporting
++    GROMACS installation that was used to configure the Python package
++    installation. The exact keys in the Mapping is not formally specified,
++    and mostly for internal use.
++
++    .. versionadded:: 0.4
++
++    """
++    import json
++    from importlib.resources import open_text
++    with open_text('gmxapi', 'gmxconfig.json') as textfile:
++        _config = json.load(textfile)
++    return MappingProxyType(_config)
+diff -Nru gromacs-2022.3.orig/python_packaging/src/test/CMakeLists.txt gromacs-2022.3/python_packaging/src/test/CMakeLists.txt
+--- gromacs-2022.3.orig/python_packaging/src/test/CMakeLists.txt	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/python_packaging/src/test/CMakeLists.txt	2022-09-14 09:42:52.000000000 +0200
+@@ -60,7 +60,6 @@
+     set(GMXAPI_PYTEST_FOUND TRUE CACHE INTERNAL "Suppress checking for Python pytest module.")
+ endif()
+ 
+-get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
+ add_custom_target(gmxapi_pytest
+                   COMMAND ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+                   DEPENDS _gmxapi
+@@ -92,9 +91,14 @@
+         set(GMXAPI_MPI4PY_FOUND TRUE CACHE INTERNAL "Suppress checking for Python mpi4py module.")
+     endif()
+ 
++    # In case this output becomes too noisy or confusing, Note:
++    #    For Multiple Instruction Multiple Data Model for OpenMPI mpirun, we can
++    #    make the non-root rank less noisy by providing different argv after a colon (`:`)
++    #    (https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php)
+     add_custom_target(gmxapi_pytest_mpi
+-                      COMMAND ${MPIEXEC_EXECUTABLE} -n 1 ${PYTHON_EXECUTABLE} -m mpi4py -m pytest --log-cli-level
+-                          ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                      COMMAND ${MPIEXEC_EXECUTABLE} -n 2
++                        ${PYTHON_EXECUTABLE} -m mpi4py -m pytest --log-cli-level ERROR
++                        ${CMAKE_CURRENT_SOURCE_DIR}
+                       DEPENDS _gmxapi
+                       WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
+     # The current test fixtures require the `gmx` tool-wrapper executable.
+diff -Nru gromacs-2022.3.orig/python_packaging/src/test/test_mdrun.py gromacs-2022.3/python_packaging/src/test/test_mdrun.py
+--- gromacs-2022.3.orig/python_packaging/src/test/test_mdrun.py	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/python_packaging/src/test/test_mdrun.py	2022-09-14 09:50:39.000000000 +0200
+@@ -49,6 +49,7 @@
+ 
+ # Configure the `logging` module before proceeding any further.
+ from gmxapi.utility import join_path
++from gmxapi.version import api_is_at_least
+ 
+ gmx.logger.setLevel(logging.WARNING)
+ 
+@@ -76,15 +77,37 @@
+ #    logging.getLogger().addHandler(ch)
+ 
+ 
++mpi_support = pytest.mark.skipif(
++    comm_size > 1
++    and gmx.utility.config()['gmx_mpi_type'] == 'library'
++    and not gmx.version.has_feature('mpi_comm_integration'),
++    reason="Multi-rank MPI contexts require gmxapi 0.4."
++)
++
++
++@mpi_support
+ @pytest.mark.usefixtures('cleandir')
+ def test_run_from_tpr(spc_water_box, mdrun_kwargs):
+     assert os.path.exists(spc_water_box)
+ 
++    # TODO(#4422): provide MPI communicator to make the most of available resources.
+     md = gmx.mdrun(spc_water_box, runtime_args=mdrun_kwargs)
+     md.run()
+-    # TODO: better handling of output on unused MPI ranks.
++
++    published_trajectory = md.output.trajectory.result()
++    expected_trajectory = join_path(md.output.directory, 'traj.trr').output.path.result()
++    assert os.path.exists(published_trajectory)
++    assert published_trajectory == expected_trajectory
++
++    # Look for some expected output text to make sure we are capturing
++    # status messages from libgromacs as intended. Ref #4541
++    stderr = md.output.stderr.result()
++    assert os.path.exists(stderr)
++    with open(stderr, 'r') as fh:
++        assert 'starting mdrun' in fh.read()
+ 
+ 
++@mpi_support
+ @pytest.mark.usefixtures('cleandir')
+ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
+     """Test that *runtime_args* is respected.
+@@ -92,7 +115,7 @@
+     When an ensemble is possible, confirm that an array of inputs
+     causes each rank to produce a unique simulation with unique output.
+     """
+-    assert gmx.version.has_feature('mdrun_runtime_args')
++    assert api_is_at_least(0, 3)
+     with caplog.at_level(logging.DEBUG):
+         with caplog.at_level(logging.WARNING, 'gmxapi'), \
+                 caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
+@@ -123,6 +146,7 @@
+                 assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
+ 
+ 
++@mpi_support
+ @pytest.mark.withmpi_only
+ @pytest.mark.usefixtures('cleandir')
+ def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
+@@ -133,7 +157,7 @@
+     * Array of input and array of runtime_args are automatically mapped to parallel data flow.
+     """
+     assert comm_size > 1
+-    assert gmx.version.has_feature('mdrun_runtime_args')
++    assert api_is_at_least(0, 3)
+ 
+     tpr = gmx.read_tpr(spc_water_box)
+     output_files = [f'traj{i}.trr' for i in range(comm_size)]
+@@ -164,12 +188,11 @@
+     assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
+ 
+ 
++@mpi_support
+ @pytest.mark.usefixtures('cleandir')
+ def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
+     assert os.path.exists(spc_water_box)
+-    assert gmx.version.has_feature('mdrun_runtime_args')
+-    assert gmx.version.has_feature('container_futures')
+-    assert gmx.version.has_feature('mdrun_checkpoint_output')
++    assert api_is_at_least(0, 3)
+ 
+     with caplog.at_level(logging.DEBUG):
+         with caplog.at_level(logging.WARNING, 'gmxapi'), \
+@@ -211,6 +234,7 @@
+             # TODO: Check more rigorously when we can read trajectory files.
+ 
+ 
++@mpi_support
+ @pytest.mark.withmpi_only
+ @pytest.mark.usefixtures('cleandir')
+ def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
+@@ -229,7 +253,7 @@
+             assert md.output.ensemble_width == ensemble_width
+             md.run()
+ 
+-            output_directory = md.output._work_dir.result()
++            output_directory = md.output.directory.result()
+             logging.info('output_directory result: {}'.format(str(output_directory)))
+             assert len(output_directory) == ensemble_width
+ 
+@@ -245,6 +269,7 @@
+                 assert os.path.exists(md.output.trajectory.result()[rank_number])
+ 
+ 
++@mpi_support
+ @pytest.mark.usefixtures('cleandir')
+ def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
+     with caplog.at_level(logging.DEBUG):
+@@ -257,6 +282,7 @@
+                 assert os.path.exists(md.output.trajectory.result())
+ 
+ 
++@mpi_support
+ @pytest.mark.usefixtures('cleandir')
+ def test_run_from_modify_input_op(spc_water_box, caplog, mdrun_kwargs):
+     with caplog.at_level(logging.DEBUG):
+diff -Nru gromacs-2022.3.orig/python_packaging/src/test/test_subgraph.py gromacs-2022.3/python_packaging/src/test/test_subgraph.py
+--- gromacs-2022.3.orig/python_packaging/src/test/test_subgraph.py	2022-09-02 09:49:50.000000000 +0200
++++ gromacs-2022.3/python_packaging/src/test/test_subgraph.py	2022-09-14 09:51:24.000000000 +0200
+@@ -32,6 +32,8 @@
+ # the research papers on the package. Check out https://www.gromacs.org.
+ import os
+ 
++import pytest
++
+ import gmxapi as gmx
+ 
+ try:
+@@ -49,6 +51,13 @@
+ else:
+     rank_tag = 'rank{}:'.format(rank_number)
+ 
++mpi_support = pytest.mark.skipif(
++    comm_size > 1
++    and gmx.utility.config()['gmx_mpi_type'] == 'library'
++    and not gmx.version.has_feature('mpi_comm_integration'),
++    reason="Multi-rank MPI contexts require gmxapi 0.4."
++)
++
+ 
+ @gmx.function_wrapper(output={'data': float})
+ def add_float(a: float, b: float) -> float:
+@@ -94,6 +103,7 @@
+         output.data = True
+ 
+ 
++@mpi_support
+ def test_subgraph_simulation_extension(spc_water_box, mdrun_kwargs):
+     tpr_list = gmx.read_tpr([spc_water_box] * comm_size)
+     input_list = gmx.modify_input(tpr_list, parameters={'nsteps': 10 ** 6})
