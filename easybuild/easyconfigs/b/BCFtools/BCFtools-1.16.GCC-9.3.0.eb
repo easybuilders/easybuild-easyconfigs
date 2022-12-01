@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'BCFtools'
+version = '1.16'
+
+homepage = 'https://samtools.github.io/bcftools/'
+description = """
+BCFtools is a program for variant calling and manipulating files in the Variant Call Format (VCF) and its binary counterpart BCF. All commands work transparently with both VCFs and BCFs, both uncompressed and BGZF-compressed. In order to avoid tedious repetion, throughout this document we will use "VCF" and "BCF" interchangeably, unless specifically noted.
+
+Most commands accept VCF, bgzipped VCF and BCF with filetype detected automatically even when streaming from a pipe. Indexed VCF and BCF work in all situations. Unindexed VCF and BCF and streams work in most, but not all situations. In general, whenever multiple VCFs are read simultaneously, they must be indexed and therefore also compressed.
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/samtools/%(namelower)s/releases/download/%(version)s']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['90bf647c9ad79e10a243b8058c873de057fd7012e250d5ae6574839787a2ecd6']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('HTSlib', '1.16'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.2.5'),
+    ('GSL', '2.6'),
+]
+
+configopts = " ".join([
+    "--with-htslib=$EBROOTHTSLIB",
+    "--enable-libgsl",
+])
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bcftools', 'plot-vcfstats', 'vcfutils.pl']],
+    'dirs': ['libexec/bcftools']
+}
+
+moduleclass = 'bio'
