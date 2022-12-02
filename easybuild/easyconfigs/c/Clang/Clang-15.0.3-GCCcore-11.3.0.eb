@@ -1,0 +1,55 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2013-2015 Dmitri Gribenko, Ward Poelmans
+# Authors:: Dmitri Gribenko <gribozavr@gmail.com>
+# Authors:: Ward Poelmans <wpoely86@gmail.com>
+# License:: GPLv2 or later, MIT, three-clause BSD.
+# $Id$
+##
+
+name = 'Clang'
+version = '15.0.3'
+
+homepage = 'https://clang.llvm.org/'
+description = """C, C++, Objective-C compiler, based on LLVM.  Does not
+ include C++ standard library -- use libstdc++ from GCC."""
+
+# Clang also depends on libstdc++ during runtime, but this dependency is
+# already specified as the toolchain.
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-%(version)s"]
+sources = [
+    'llvm-project-%(version)s.src.tar.xz',
+]
+checksums = ['dd07bdab557866344d85ae21bbeca5259d37b4b0e2ebf6e0481f42d1ba0fee88']
+
+dependencies = [
+    # since Clang is a compiler, binutils is a runtime dependency too
+    ('binutils', '2.37'),
+    ('hwloc', '2.2.0'),
+#    ('hwloc', '2.5.0'),
+    ('libxml2', '2.9.10'),
+    ('ncurses', '6.2'),
+    ('GMP', '6.2.1'),
+#    ('Z3', '4.8.9'),
+#    ('Z3', '4.8.12'),
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Perl', '5.34.0'),
+#    ('elfutils', '0.185'),
+]
+multi_deps = { 'Python': ['3.8', '3.9', '3.10'] }
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+assertions = True
+llvm_projects = ['polly', 'lld', 'lldb', 'clang-tools-extra', 'flang']
+llvm_runtimes = ['libunwind', 'libcxx', 'libcxxabi']
+enable_rtti = True
+python_bindings = True
+skip_all_tests = True
+
+moduleclass = 'compiler'

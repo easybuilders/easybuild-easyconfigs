@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'RELION'
+version = '4.0.0'
+
+homepage = 'https://www3.mrc-lmb.cam.ac.uk/relion/'
+description = """
+RELION (for REgularised LIkelihood OptimisatioN) is a stand-alone computer program for Maximum 
+A Posteriori refinement of (multiple) 3D reconstructions or 2D class averages in cryo-electron microscopy. 
+It is developed in the research group of Sjors Scheres at the MRC Laboratory of Molecular Biology.
+"""
+
+toolchain = {'name': 'gofbf', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/3dem/%(namelower)s/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = [
+    {'4.0.0.tar.gz': 'b52cfb75faf59ca4f702a77d206fdec18f1d97512eb7a1b6fd6a0eaca749c0f6'},
+]
+
+builddependencies = [
+    ('CMake', '3.21.4'),
+]
+
+dependencies = [
+    ('tbb', '2020.2', '', True),
+    #('FFTW', '3.3.8', '', ('gompi', '2020a')),
+]
+
+# CPU only
+
+configopts  = '-DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_BUILD_TYPE=Release '
+configopts += '-DCUDA=OFF -DALTCPU=ON -DCudaTexture=OFF -DMKLFFT=OFF -DGUI=ON -DFORCE_OWN_FFT=OFF '
+configopts += '-DMPI_INCLUDE_PATH=$EBROOTOPENMPI/include '
+
+parallel = 4
+
+local_relion_binaries = [
+    "qsub.csh", "star_datablock_singlefiles", "star_loopheader", "star_printtable", 
+    "star_datablock_ctfdat", "star_datablock_stack", "star_plottable",
+]
+
+sanity_check_paths = {
+    'files': ['bin/relion_%s' % x for x in local_relion_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
