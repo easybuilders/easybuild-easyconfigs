@@ -12,18 +12,15 @@ alloys, batteries and fuel cells, and more."""
 
 toolchain = SYSTEM
 
+download_instructions = """MaterialsStudio is proprietary software, licensed users should be able to download it
+ from https://www.3ds.com/support/download."""
+
 sources = ['BIOVIA_%(version)s.MaterialsStudio%(version)s.tar']
 checksums = ['a2f2bd163059b0d9f2da6dbc082e08178cd3beaa9358a6ae68a19bbfb4922a96']
 
 extract_sources = True
 
-local_rpm_version = '22.1.0'
-local_rpm_suffix = '3462.x86_64'
-
-install_cmd = 'rpm2cpio rpms/MaterialsStudio1-%s-%s.rpm | cpio -dium && ' % (local_rpm_version, local_rpm_suffix)
-install_cmd += 'rpm2cpio rpms/MaterialsStudio2-%s-%s.rpm | cpio -dium && ' % (local_rpm_version, local_rpm_suffix)
-install_cmd += 'cp -r opt/BIOVIA/MaterialsStudio22.1/* %(installdir)s && '
-install_cmd += 'LicensePack/lp_setup_linux.sh --nox11 --target %(builddir)s/tmp '
+install_cmd = 'LicensePack/lp_setup_linux.sh --nox11 --target %(builddir)s/tmp '
 install_cmd += '-- -silent -P "licensepack.installLocation=%(installdir)s" '  # flags to licensepack script
 
 # Optional, specify license server directly
@@ -32,8 +29,18 @@ install_cmd += '-- -silent -P "licensepack.installLocation=%(installdir)s" '  # 
 #                os.getenv('EB_MATERIALSSTUDIO_LICENSE_SERVER')
 # install_cmd += '1234@your.license.com'
 
+# patch ./install to allow setting installroot in batch mode
+install_cmd += " && sed -i '/ERROR/d' ./install && "
+
+# run install
+install_cmd += './install --batch --installroot=%(installdir)s --lproot=%(installdir)s && '
+
+# ./install adds a MaterialsStudio22.1 subdir, create links on %(installdir)s
+install_cmd += 'for dir in bin etc lib MpiRunTime share; do \
+                ln -s %(installdir)s/MaterialsStudio22.1/$dir %(installdir)s/$dir; done '
+
 modextrapaths = {
-    'PATH': 'BIOVIA_LicensePack/linux/bin/',
+    'PATH': ['BIOVIA_LicensePack/linux/bin/', 'etc/Scripting/bin'],
     'BIOVIA_LIC_PACK_DIR': 'BIOVIA_LicensePack',
     'LD_LIBRARY_PATH': ['BIOVIA_LicensePack/linux/lib/', 'MpiRunTime/lib/'],
 }
