@@ -1,0 +1,44 @@
+Disable build of DEB package on Ubuntu systems
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff --git a/glm-source/build_glm.sh.orig b/glm-source/build_glm.sh
+index c0c64a4..255abd4 100755
+--- a/glm-source/build_glm.sh.orig
++++ b/glm-source/build_glm.sh
+@@ -216,37 +216,6 @@ ${CURDIR}/vers.sh $VERSION
+ #${CURDIR}/vers.sh $VERSION
+ cd ${CURDIR}/..
+ 
+-if [ "$OSTYPE" = "Linux" ] ; then
+-  if [ $(lsb_release -is) = Ubuntu ] ; then
+-    if [ ! -d binaries/ubuntu/$(lsb_release -rs) ] ; then
+-      mkdir -p binaries/ubuntu/$(lsb_release -rs)/
+-    fi
+-    cd ${CURDIR}
+-    if [ -x glm+ ] ; then
+-       /bin/cp debian/control-with+ debian/control
+-    else
+-       /bin/cp debian/control-no+ debian/control
+-    fi
+-    VERSDEB=`head -1 debian/changelog | cut -f2 -d\( | cut -f1 -d-`
+-    echo debian version $VERSDEB
+-    if [ "$VERSION" != "$VERSDEB" ] ; then
+-      echo updating debian version
+-      dch --newversion ${VERSION}-0 "new version ${VERSION}"
+-    fi
+-    VERSRUL=`grep 'version=' debian/rules | cut -f2 -d=`
+-    if [ "$VERSION" != "$VERSRUL" ] ; then
+-      sed -i "s/version=$VERSRUL/version=$VERSION/" debian/rules
+-    fi
+-
+-    fakeroot ${MAKE} -f debian/rules binary || exit 1
+-
+-    cd ..
+-
+-    mv glm*.deb binaries/ubuntu/$(lsb_release -rs)/
+-  else
+-    echo "No package build for $(lsb_release -is)"
+-  fi
+-fi
+ if [ "$OSTYPE" = "Darwin" ] ; then
+   MOSLINE=`grep 'SOFTWARE LICENSE AGREEMENT FOR ' '/System/Library/CoreServices/Setup Assistant.app/Contents/Resources/en.lproj/OSXSoftwareLicense.rtf'`
+   # pre Lion :   MOSNAME=`echo ${MOSLINE} | awk -F 'Mac OS X ' '{print $NF}'  | tr -d '\\' | tr ' ' '_'`
