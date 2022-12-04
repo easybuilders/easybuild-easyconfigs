@@ -16,7 +16,11 @@ download_instructions = """MaterialsStudio is proprietary software, licensed use
  from https://www.3ds.com/support/download."""
 
 sources = ['BIOVIA_%(version)s.MaterialsStudio%(version)s.tar']
-checksums = ['a2f2bd163059b0d9f2da6dbc082e08178cd3beaa9358a6ae68a19bbfb4922a96']
+patches = ['MaterialsStudio-2022_install.patch']
+checksums = [
+    {'BIOVIA_2022.MaterialsStudio2022.tar': 'a2f2bd163059b0d9f2da6dbc082e08178cd3beaa9358a6ae68a19bbfb4922a96'},
+    {'MaterialsStudio-2022_install.patch': '253e11013fd2ba360aa6dc6bb4a56f687b851a2f01bc766bdcd14c9c1e0d5dd7'},
+]
 
 extract_sources = True
 
@@ -29,15 +33,7 @@ install_cmd += '-- -silent -P "licensepack.installLocation=%(installdir)s" '  # 
 #                os.getenv('EB_MATERIALSSTUDIO_LICENSE_SERVER')
 # install_cmd += '1234@your.license.com'
 
-# patch ./install to allow setting installroot in batch mode
-install_cmd += " && sed -i '/ERROR/d' ./install && "
-
-# run install
-install_cmd += './install --batch --installroot=%(installdir)s --lproot=%(installdir)s && '
-
-# ./install adds a MaterialsStudio22.1 subdir, create links on %(installdir)s
-install_cmd += 'for dir in bin etc lib MpiRunTime share; do \
-                ln -s %(installdir)s/MaterialsStudio22.1/$dir %(installdir)s/$dir; done '
+install_cmd += ' && ./install --batch --installroot=%(installdir)s --lproot=%(installdir)s '
 
 modextrapaths = {
     'PATH': ['BIOVIA_LicensePack/linux/bin/', 'etc/Scripting/bin'],
