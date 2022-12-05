@@ -1,0 +1,62 @@
+easyblock = 'CMakeMake'
+
+name = 'GMT'
+version = '6.4.0'
+local_gshhg_ver = '2.3.7'
+local_dcw_ver = '2.1.1'
+
+homepage = 'https://www.generic-mapping-tools.org/'
+description = """GMT is an open source collection of about 80 command-line tools for manipulating
+ geographic and Cartesian data sets (including filtering, trend fitting, gridding, projecting,
+ etc.) and producing PostScript illustrations ranging from simple x-y plots via contour maps
+ to artificially illuminated surfaces and 3D perspective views; the GMT supplements add another
+ 40 more specialized and discipline-specific tools. """
+
+toolchain = {'name': 'gmkl', 'version': '2020a'}
+
+# 'https://gmt.soest.hawaii.edu/files/download?name=' needs browser with javascript magic
+source_urls = [
+    'ftp://ftp.soest.hawaii.edu/gmt',
+    'ftp://ftp.soest.hawaii.edu/gshhg',
+    'ftp://ftp.soest.hawaii.edu/dcw',
+]
+sources = [
+    '%(namelower)s-%(version)s-src.tar.gz',
+    # coastlines, rivers, and political boundaries
+    'gshhg-gmt-%s.tar.gz' % local_gshhg_ver,
+    # country polygons
+    'dcw-gmt-%s.tar.gz' % local_dcw_ver,
+]
+patches = ['GMT-5.1.2_netCDF.patch']
+checksums = [
+    {'gmt-6.4.0-src.tar.gz': 'd267c0c7d6fb30c9ea7e029ef27dadb26ffd7b92cb4b4703f9a3ba0e8f393a1b'},
+    {'gshhg-gmt-2.3.7.tar.gz': '9bb1a956fca0718c083bef842e625797535a00ce81f175df08b042c2a92cfe7f'},
+    {'dcw-gmt-2.1.1.tar.gz': 'ab72c8253076380c8477a1225370bc41f4aff811c28d2f64d75052ff3d9003af'},
+    {'GMT-5.1.2_netCDF.patch': '2ebe26d55521fba8d0eae48f662611491f7cc0e489833bded11628e9a71f252f'},
+]
+
+builddependencies = [('CMake', '3.18.4')]
+
+dependencies = [
+    ('PCRE', '8.44'),
+    ('GDAL', '3.5.1'),
+    ('netCDF', '4.7.4'),
+    ('Ghostscript', '9.50'),
+    ('cURL', '7.78.0'),
+    ('zlib', '1.2.11'),
+]
+
+separate_build_dir = True
+
+configopts = '-DCOPY_GSHHG=TRUE -DGSHHG_ROOT=%%(builddir)s/gshhg-gmt-%s ' % local_gshhg_ver
+configopts += '-DCOPY_DCW=TRUE -DDCW_ROOT=%%(builddir)s/dcw-gmt-%s ' % local_dcw_ver
+
+sanity_check_paths = {
+    'files': ['bin/%s' % b for b in ['gmt', 'isogmt', 'gmtswitch', 'gmt_shell_functions.sh']] +
+             ['lib64/libgmt.%s.%s' % (SHLIB_EXT, version)],
+    'dirs': ['include/%(namelower)s', 'share']
+}
+
+modextrapaths = {'GMTHOME': ''}
+
+moduleclass = 'geo'
