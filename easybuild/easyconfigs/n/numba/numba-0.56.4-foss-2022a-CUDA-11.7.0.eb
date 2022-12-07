@@ -1,0 +1,61 @@
+easyblock = 'PythonBundle'
+
+name = 'numba'
+version = '0.56.4'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://numba.pydata.org/'
+description = """Numba is an Open Source NumPy-aware optimizing compiler for
+Python sponsored by Continuum Analytics, Inc. It uses the remarkable LLVM
+compiler infrastructure to compile Python syntax to machine code."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('LLVM', '14.0.3'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+local_llvmlite_preinstallopts = "export LLVM_CONFIG=${EBROOTLLVM}/bin/llvm-config && "
+local_llvmlite_preinstallopts += "export LLVMLITE_SKIP_LLVM_VERSION_CHECK=1 && "
+
+
+exts_list = [
+    ('llvmlite', '0.39.1', {
+        'preinstallopts': local_llvmlite_preinstallopts,
+        'patches': ['llvmlite-0.39_passmanager.patch',
+                    'llvmlite-0.39_target.patch',
+                    'llvmlite-0.39_test-binding.patch',
+                    'llvmlite-0.39_targetregistry.patch',
+                    'llvmlite-0.39_pass.patch',
+                    'llvmlite-0.39_getparamattribute.patch',
+        ],
+    }),
+    (name, version, {
+        # 'patches': ['numba-0.54.1_fix-numpy-1.21.patch'],
+        'checksums': [
+            {'numba-0.56.4.tar.gz': '32d9fef412c81483d7efe0ceb6cf4d3310fde8b624a9cecca00f790573ac96ee'},
+            # {'numba-0.54.1_fix-numpy-1.21.patch': 'f038e7adf0cd60f6bdde219b326aad4224fef46515799578ebbbdffa73224199'},
+        ],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['bin/numba', 'bin/pycc'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -m llvmlite.tests",
+    "numba --help",
+]
+
+moduleclass = 'lang'
