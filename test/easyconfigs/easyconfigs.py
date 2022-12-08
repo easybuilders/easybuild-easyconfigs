@@ -485,7 +485,7 @@ class EasyConfigTest(TestCase):
 
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
-            'jax': [(r'0\.3\.9', [r'AlphaFold-2\.2\.2-'])],
+            'jax': [(r'0\.3\.9', [r'AlphaFold-2\.2\.2-foss-2021a', r'scvi-tools-0\.16\.4-foss-2021a'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
@@ -582,6 +582,8 @@ class EasyConfigTest(TestCase):
                 ('2.5.0;', ['AlphaFold-2.1.2-']),
                 # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
                 ('2.5.3;', ['medaka-1.5.0-']),
+                # tensorflow-probability version to TF version
+                ('2.8.4;', ['tensorflow-probability-0.16.0-']),
             ],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
@@ -1092,9 +1094,9 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CMakePythonPackage, GoPackage, PythonBundle & PythonPackage;
+        # including CMakePythonPackage, GoPackage, JuliaBundle, PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'ModuleRC',
+        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
                      'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
