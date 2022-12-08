@@ -1,4 +1,4 @@
-easyblock = 'PythonPackage'
+easyblock = 'PythonBundle'
 
 name = 'ESM-2'
 version = '2.0.0'
@@ -11,10 +11,6 @@ description = """ESM-2 outperforms all tested single-sequence protein language m
 
 toolchain = {'name': 'foss', 'version': '2021a'}
 
-source_urls = ['https://pypi.python.org/packages/source/f/fair-esm']
-sources = ['fair-esm-%(version)s.tar.gz']
-checksums = ['4ed34d4598ec75ed6550a4e581d023bf8d4a8375317ecba6269bb68135f80c85']
-
 dependencies = [
     ('CUDA', '11.3.1', '', SYSTEM),
     ('Python', '3.9.5'),
@@ -22,13 +18,26 @@ dependencies = [
 ]
 
 use_pip = True
-download_dep_fail = True
 sanity_pip_check = True
 
-options = {'modulename': 'esm'}
+# omegaconf is required for esmfold (in addition to OpenFold-1.0.1)
+exts_list = [
+    ('omegaconf', '2.2.3', {
+        'checksums': ['59ff9fba864ffbb5fb710b64e8a9ba37c68fa339a2e2bb4f1b648d6901552523'],
+    }),
+    ('antlr4-python3-runtime', '4.9.3', {
+        'modulename': 'antlr4',
+        'checksums': ['f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b'],
+    }),
+    ('fair-esm', version, {
+        'modulename': 'esm',
+        'checksums': ['4ed34d4598ec75ed6550a4e581d023bf8d4a8375317ecba6269bb68135f80c85'],
+    }),
+]
 
 sanity_check_commands = [
     "python -c 'import esm.pretrained'",
+    "python -c 'import omegaconf'",
 ]
 
 moduleclass = 'bio'
