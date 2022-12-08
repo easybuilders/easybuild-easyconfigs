@@ -1,0 +1,44 @@
+easyblock = 'ConfigureMake'
+
+name = 'NCO'
+version = '5.0.3'
+
+homepage = "https://github.com/nco/nco"
+description = """The NCO toolkit manipulates and analyzes data stored in netCDF-accessible formats, 
+including DAP, HDF4, and HDF5."""
+
+toolchain = {'name': 'intel', 'version': '2021b'}
+
+source_urls = ['https://github.com/nco/nco/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['61b45cdfbb772718f00d40da1a4ce268201fd00a61ebb9515460b8dda8557bdb']
+
+builddependencies = [
+    ('Bison', '3.7.6'),
+    ('flex', '2.6.4'),
+]
+
+dependencies = [
+    ('UDUNITS', '2.2.28'),
+    ('expat', '2.4.1'),
+    ('ANTLR', '2.7.7', '-Java-11'),
+    ('libdap', '3.20.8'),
+    ('GSL', '2.7'),
+    ('netCDF', '4.8.1'),
+    ('ESMF', '8.2.0'),  # ncremap needs ESMF_RegridWeightGen
+]
+
+configopts = "--enable-nco_cplusplus"
+
+sanity_check_paths = {
+    'files': ['bin/nc%s' % x for x in ('ap2', 'atted', 'bo', 'diff', 'ea', 'ecat', 'es',
+                                       'flint', 'ks', 'pdq', 'ra', 'rcat', 'rename', 'wa')] +
+             ['lib/libnco.a', 'lib/libnco.%s' % SHLIB_EXT, 'lib/libnco_c++.a', 'lib/libnco_c++.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+sanity_check_commands = [
+    "ncks -O -7 --cnk_dmn time,10 "
+    "%(builddir)s/%(namelower)s-%(version)s/data/in.nc %(builddir)s/%(namelower)s-%(version)s/data/in4.cdl"
+]
+
+moduleclass = 'tools'

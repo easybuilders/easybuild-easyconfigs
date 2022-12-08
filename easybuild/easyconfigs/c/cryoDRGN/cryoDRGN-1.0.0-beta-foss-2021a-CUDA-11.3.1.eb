@@ -1,0 +1,76 @@
+easyblock = 'PythonBundle'
+
+name = 'cryoDRGN'
+version = '1.0.0-beta'
+versionsuffix = '-CUDA-11.3.1'
+
+homepage = 'https://cb.csail.mit.edu/cb/cryodrgn/'
+description = """cryoDRGN: Deep Reconstructing Generative Networks for cryo-EM heterogeneous
+ reconstruction.
+ CryoDRGN is a neural network based algorithm for heterogeneous cryo-EM reconstruction. In
+ particular, the method models a continuous distribution over 3D structures by using a neural
+ network based representation for the volume.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('IPython', '7.25.0'),
+    ('JupyterLab', '3.0.16'),
+    ('PyTorch', '1.10.0', versionsuffix),
+    ('numba', '0.53.1'),
+    ('plotly.py', '5.1.0'),
+    ('scikit-learn', '0.24.2'),
+    ('matplotlib', '3.4.2'),
+    ('Seaborn', '0.11.2'),
+    ('tqdm', '4.61.2'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('colorlover', '0.3.0', {
+        'checksums': ['b8fb7246ab46e1f5e6715649453c1762e245a515de5ff2d2b4aab7a6e67fa4e2'],
+    }),
+    ('cufflinks', '0.17.3', {
+        'checksums': ['48c1b3406dc030004121966489eebc5518cea70fd4e3f16379b491328501a644'],
+    }),
+    ('pynndescent', '0.5.6', {
+        'checksums': ['61fb31885baac469d67933e2c7c935b6edebb06ee498e2f0f9dfc97c59d3725c'],
+    }),
+    ('umap-learn', '0.5.3', {
+        'modulename': 'umap',
+        'checksums': ['dbd57cb181c2b66d238acb5635697526bf24c798082daed0cf9b87f6a3a6c0c7'],
+    }),
+    ('cryodrgn', version, {
+        'postinstallcmds': [
+            'cp utils/* analysis_scripts/* %(installdir)s/bin',
+            'chmod +x %(installdir)s/bin/*.py',
+        ],
+        'source_urls': ['https://github.com/zhonge/cryodrgn/archive'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': ['8e671289bf839ff65433c6758b9ad14d4d7ca419cf3852587b01d850691c57d2'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+local_scripts = [
+    'add_psize', 'filter_mrcs', 'filter_pkl', 'filter_star', 'flip_hand', 'fsc', 'invert_contrast', 'kmeans',
+    'phase_flip', 'plotfsc', 'plot_loss', 'plot_z1', 'plot_z2', 'plot_z_pca', 'run_umap', 'translate_stack', 'tsne',
+    'view_header', 'view_stack',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s.py' % x for x in local_scripts],
+    'dirs': []
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+sanity_check_commands += ['%s.py -h' % x for x in local_scripts]
+
+sanity_pip_check = True
+
+moduleclass = 'chem'

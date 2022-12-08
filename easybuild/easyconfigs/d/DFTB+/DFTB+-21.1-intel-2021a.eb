@@ -1,0 +1,82 @@
+easyblock = 'CMakeMake'
+
+name = 'DFTB+'
+version = '21.1'
+
+homepage = 'https://www.dftb-plus.info'
+description = """DFTB+ is a fast and efficient versatile quantum mechanical simulation package.
+It is based on the Density Functional Tight Binding (DFTB) method, containing
+almost all of the useful extensions which have been developed for the DFTB
+framework so far.  Using DFTB+ you can carry out quantum mechanical simulations
+like with ab-initio density functional theory based packages, but in an
+approximate way gaining typically around two order of magnitude in speed."""
+
+toolchain = {'name': 'intel', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'extra_fflags': '-I$(EBROOTDFTD3MINLIB)/include'}
+
+local_external_dir = '%%(builddir)s/dftbplus-%%(version)s/external/%s/origin/'
+local_external_extract = 'mkdir -p %s && tar -C %s' % (local_external_dir, local_external_dir)
+local_external_extract += ' --strip-components=1 -xzf %%s'
+
+source_urls = ['https://github.com/dftbplus/dftbplus/releases/download/%(version)s']
+sources = [
+    'dftbplus-%(version)s.tar.xz',
+    {
+        # Slater-Koster (slakos) data for testing
+        'source_urls': ['https://github.com/dftbplus/testparams/archive'],
+        'download_filename': '26439495c4b5b0d07be6ceec4dade3d149425465.tar.gz',
+        'filename': 'slakos-data-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('slakos', 'slakos'),
+    },
+    {
+        # GBSA (gbsa) data for testing
+        'source_urls': ['https://github.com/grimme-lab/gbsa-parameters/archive'],
+        'download_filename': '6836c4d997e4135e418cfbe273c96b1a3adb13e2.tar.gz',
+        'filename': 'gbsa-data-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('gbsa', 'gbsa'),
+    },
+]
+patches = [
+    '%(name)s-%(version)s_use_dftd3_from_EB.patch',
+    '%(name)s-%(version)s_fix_intel_omp_linking.patch',
+    '%(name)s-%(version)s_drop_intel_failing_tests.patch',
+]
+checksums = [
+    '8c1eb8a38f72c421e2ae20118a6db3a656fa84e8b180ef387e549a73ae77f970',  # dftbplus-21.1.tar.xz
+    '6f65da7b64ef255fd777de7a972c63f7fa8ed2041442823b2c601bc8f0e55d98',  # slakos-data-21.1.tar.gz
+    'd464f9f7b1883d1353b433d0c7eae2f5606af092d9b51d38e9ed15e072610a79',  # gbsa-data-21.1.tar.gz
+    '3bd33d8e90e8182f516f15fb8f79d01929a0778e324b33c5fabc7d70112e643a',  # DFTB+-21.1_use_dftd3_from_EB.patch
+    'e922b0d9360d342190c4496173f938c2cb89f0bd0499b2f71abcaf70dc8e5fe1',  # DFTB+-21.1_fix_intel_omp_linking.patch
+    'f0c0e248d567739010897e7a46e471b1e332568bb0f9c1c06fd1e762d3f81aa4',  # DFTB+-21.1_drop_intel_failing_tests.patch
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('dftd3-lib', '0.9'),
+    ('ELSI', '2.7.1', '-PEXSI'),
+]
+
+build_shared_libs = True
+
+configopts = '-DWITH_MPI=1 -DWITH_DFTD3=1 -DWITH_ELSI=1 -DWITH_MBD=1 -DWITH_UNIT_TESTS=1 '
+configopts += '-DSCALAPACK_LIBRARY="$LIBSCALAPACK" '
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in ['dftb+', 'dp_bands', 'dp_dos', 'gen2cif', 'gen2xyz', 'makecube',
+                                   'modes', 'repeatgen', 'straingen', 'waveplot', 'xyz2gen']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [("python -c 'import dptools'")]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'phys'

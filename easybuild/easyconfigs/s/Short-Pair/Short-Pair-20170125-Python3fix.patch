@@ -1,0 +1,205 @@
+Makes Short-Pair compatible with Phyton3
+Created by using already existing version of file from github.com/jtamames/SqueezeMeta (commit 68f8581eef7eb34ffb28ef412fdce1ebf20244b6)
+Patch created by: Filip Kružík (INUITS)
+--- Short-Pair_fix	2022-01-11 17:08:22.763000000 +0100
++++ Short-Pair.py	2022-01-11 17:05:28.709307000 +0100
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/env python3
+ import os
+ import sys
+ import pickle
+@@ -9,10 +9,12 @@
+ from numpy import percentile
+ from numpy import std
+ from numpy import mean
++from os.path import abspath, dirname, realpath	# Tocado JT
+ 
+ 
+-sequence_length_global = 0
+ 
++sequence_length_global = 0
++exec_path = abspath(dirname(realpath(__file__)))	# Tocado JT
+ 
+ def get_first_sequence_in_fasta_file(fasta_file):
+     fi = open(fasta_file, 'rt')
+@@ -29,15 +31,16 @@
+ 
+ 
+ def step1(fastaFile, pattern):
+-    command = "DNA2Protein 1-6 %s %s" % (fastaFile, pattern)
++    command = "%s/DNA2Protein 1-6 %s %s" % (exec_path, fastaFile, pattern) # exec_path, FPS
+     os.system(command)
+     
+ def step2(hmm, inputFile):
+-    inputFileDir = os.path.dirname(inputFile)
++    inputFileDir = abspath(os.path.dirname(inputFile))
++    inputFile = inputFile.split('/')[-1]
+     outputDir = os.path.join(inputFileDir, '../out1')
+     
+-    outputFile = os.path.join(outputDir, inputFile+'.hmmer')
+-    command = 'hmmsearch -E 1000 --domtblout %s %s %s' % (outputFile, hmm, inputFile)    
++    outputFile = os.path.join(outputDir, inputFile +'.hmmer')
++    command = '%s/../hmmer/hmmsearch -E 1000 --domtblout %s %s %s/%s > /dev/null' % (exec_path, outputFile, hmm, inputFileDir, inputFile) # exec_path, FPS 
+     os.system(command)    
+     return outputFile
+     
+@@ -71,12 +74,12 @@
+     
+ def combineHmmer(inputFolder, outputFolder, allOutput, nDomains, namePattern):
+     fa = open(allOutput, 'wt')
+-    for i in xrange(1, nDomains+1):     
++    for i in range(1, nDomains+1):     
+ #    for i in xrange(201, nDomains+1):
+         mapLinesList = []
+         mapScoresList = []
+         readPairSet = set()
+-        for j in xrange(1, 7):
++        for j in range(1, 7):
+             inputFile = namePattern % (i, j)
+             fi = open(inputFolder+'/'+inputFile, 'rt')
+             mapReadPairToLines = {}
+@@ -100,8 +103,8 @@
+         outputFile = os.path.join(outputFolder, outputFile)
+         fo = open(outputFile, 'wt')
+         for pair in sorted(readPairSet):
+-            maxScore = -sys.maxint        
+-            for j in xrange(1, 7):
++            maxScore = -sys.maxsize        
++            for j in range(1, 7):
+                 mapReadPairToLines = mapLinesList[j-1]
+                 mapReadPairToScore = mapScoresList[j-1]
+                 if pair not in mapReadPairToScore:
+@@ -120,7 +123,7 @@
+     mapLinesList = []
+     mapScoresList = []
+     readPairSet = set()
+-    for j in xrange(1, 7):
++    for j in range(1, 7):
+         inputFile = namePattern % (j)
+         fi = open(inputFolder+'/'+inputFile, 'rt')
+         mapReadPairToLines = {}
+@@ -142,8 +145,8 @@
+     ### start to combine   
+     fo = open(outputFile, 'wt')
+     for pair in sorted(readPairSet):
+-        maxScore = -sys.maxint        
+-        for j in xrange(1, 7):
++        maxScore = -sys.maxsize        
++        for j in range(1, 7):
+             mapReadPairToLines = mapLinesList[j-1]
+             mapReadPairToScore = mapScoresList[j-1]
+             if pair not in mapReadPairToScore:
+@@ -240,7 +243,7 @@
+     f.close()
+     return hmmList   
+     
+-def step7(inputFile):    
++def step7(inputFile):
+     hmmYList = []; hmmNList = []
+     hmmList = readHmm(inputFile)
+     for hmm in hmmList:
+@@ -494,7 +497,7 @@
+         os.mkdir(outputFolder)
+     for hmm in sorted(hmmList, key=lambda x:x.name):
+         family = hmm.name
+-        command = "get_hmm.sh %s %s > %s/%s.hmm" % (family, hmmFile, outputFolder,family)        
++        command = "%s/get_hmm.sh %s %s > %s/%s.hmm" % (exec_path, family, hmmFile, outputFolder,family) # exec_path, FPS 
+         os.system(command)    
+ 
+ def runHmmer(inputFile1, inputFile2, inputFile3, hmmFolder, outputFileInput, fastaPath, faaPath, filterFile):
+@@ -530,13 +533,12 @@
+     for (read, family, key) in readSet:
+         readNames.add(read.replace('|','_'))
+     write = False   
+-        
+     fi = open(inputFile2, 'rt')
+     nLine = 0
+     for line in fi:
+         if line[0]=='>':
+             read = line[1:].strip();
+-            read = read.replace("|","_")            
++            read = read.replace("|","_")
+             if read[:-2]+".2" in readNames:
+                 outputFile = r'%s/%s.fasta' % (fastaPath, read)
+                 fo = open(outputFile, 'wt')
+@@ -578,18 +580,20 @@
+             tmpRead = tmpRead[:-2] + '.1'
+         fastaFile = r'%s/%s.fasta' % (fastaPath, tmpRead)
+         faaFile = r'%s/%s.faa' % (faaPath, tmpRead)
+-        command = "DNA2Protein 1-6 %s %s" % (fastaFile, faaFile)
++        command = "%s/DNA2Protein 1-6 %s %s" % (exec_path, fastaFile, faaFile) # exec_path, FPS
+         os.system(command)
+         outputFile = r'%s.allframe' % (faaFile)           
+         fo = open(outputFile, 'wt')
+-        maxScore = -sys.maxint
++        maxScore = -sys.maxsize
+         maxString = ''
+-        for i in xrange(1,7):
+-            command = "hmmer3_pipeline_missing_end.sh"
+-            args = [command, "%s/%s.hmm" % (hmmFolder, family), "%s.frame%d" % (faaFile, i), "%d" % i];
+-            outString = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()[0]
++        for i in range(1,7):
++            command = "%s/hmmer3_pipeline_missing_end.sh" % exec_path # exec_path, FPS
++            args = [command, "%s/%s.hmm" % (hmmFolder, family), "%s.frame%d" % (faaFile, i), "%d" % i, "10"]
++            my_env = os.environ # Add SQM/bin/hmmer to the PATH env. variable for subprocess
++            my_env['PATH'] = '%s/../hmmer:' % exec_path + os.environ['PATH']
++            outString = subprocess.Popen(args, env=my_env, stdout=subprocess.PIPE).communicate()[0].decode()
+             fo.write(outString)
+-            if outString != '':
++            if outString:
+                 row = outString.split()
+                 score = float(row[2])
+                 if score > maxScore:
+@@ -707,7 +711,7 @@
+         mapLengthToFrequency[length] = frequency
+         total += frequency
+     fi.close()
+-    for key in mapLengthToFrequency.keys():
++    for key in list(mapLengthToFrequency.keys()):
+         mapLengthToFrequency[key] = mapLengthToFrequency[key] / float(total)    
+     
+     mapReadToLine = {}    
+@@ -779,7 +783,7 @@
+     fo.close()     
+     
+     mapNumberToFrequency = {}
+-    for read in mapReadToFamilySet.keys():
++    for read in list(mapReadToFamilySet.keys()):
+         number = len(mapReadToFamilySet[read])
+         if number not in mapNumberToFrequency:
+             mapNumberToFrequency[number] = 0
+@@ -800,11 +804,11 @@
+     step1(fastaFile2, pattern2)
+     step3InputList = []
+     step3OutputList = []
+-    for i in xrange(1,7):
++    for i in range(1,7):
+         inputFile = pattern1 + '.frame%d' % i
+         step2Output = step2(hmm, inputFile)
+         step3InputList.append(step2Output)
+-    for i in xrange(1,7):
++    for i in range(1,7):
+         inputFile = pattern2 + '.frame%d' % i
+         step2Output = step2(hmm, inputFile)
+         step3InputList.append(step2Output)        
+@@ -832,8 +836,8 @@
+     step12(hmmFile, hmmList, hmmFolder)
+     step13OutputFile1 = step11Output+'_1'; step13OutputFile2 = step11Output+'_2'
+     workingDir = os.path.dirname(step11Output)
+-    fastaPath = '%s/fasta' % workingDir
+-    faaPath = '%s/faa' % workingDir
++    fastaPath = '%s/fastaSP' % workingDir
++    faaPath = '%s/faaSP' % workingDir
+     step13(step11Output, fastaFile1, fastaFile2, hmmFolder, step13OutputFile1, fastaPath, faaPath, step13OutputFile2)
+     step14Output = step13OutputFile1 + '.remove'
+     step14(step13OutputFile1, step14Output)
+@@ -844,7 +848,7 @@
+ def control(fastaFile1, fastaFile2, hmmFile, seedFile, threshold, outputFile):
+     baseFile = os.path.basename(fastaFile1)
+     fastaName = baseFile.replace('.1.fasta','')
+-    baseDir = os.path.dirname(fastaFile1)
++    baseDir = abspath(os.path.dirname(fastaFile1))
+     patternDir = '%s/Protein' % baseDir
+     
+     if not os.path.isdir(patternDir):
