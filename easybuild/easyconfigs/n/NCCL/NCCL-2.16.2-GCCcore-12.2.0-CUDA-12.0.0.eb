@@ -1,0 +1,42 @@
+name = 'NCCL'
+version = '2.16.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+easyblock = 'Tarball'
+
+homepage = 'https://developer.nvidia.com/nccl'
+description = """The NVIDIA Collective Communications Library (NCCL) implements multi-GPU and multi-node collective
+communication primitives that are performance optimized for NVIDIA GPUs."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+source_urls = [
+    'https://developer.download.nvidia.com/compute/redist/nccl/v%(version)s/'
+]
+sources = ['%(namelower)s_%(version)s-1+cuda%(cudashortver)s_%(arch)s.txz']
+checksums = [{
+    '%(namelower)s_%(version)s-1+cuda%(cudashortver)s_x86_64.txz':
+        'fb630e2d244cdc8cf3fe2cbe07cbf0a50a5213ba546edc717bdba5d5ac757b87',
+    '%(namelower)s_%(version)s-1+cuda%(cudashortver)s_ppc64le.txz':
+        'daac3b7de8d0091369cb59b59d011b494c2f16403c80478c15b97d88a9895651',
+    '%(namelower)s_%(version)s-1+cuda%(cudashortver)s_aarch64.txz':
+        'fb630e2d244cdc8cf3fe2cbe07cbf0a50a5213ba546edc717bdba5d5ac757b87',
+}]
+
+builddependencies = [('binutils', '2.39')]
+
+dependencies = [
+    ('CUDA', '12.0.0', '', SYSTEM),
+    ('UCX-CUDA', '1.13.1', versionsuffix),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['3.5', '5.0', '6.0', '7.0', '7.5', '8.0', '8.6', '9.0']
+
+sanity_check_paths = {
+    'files': [
+        'include/nccl.h', 'lib/libnccl.%s' % SHLIB_EXT, 'lib/libnccl_static.a', 'lib/pkgconfig/nccl.pc'
+    ],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
