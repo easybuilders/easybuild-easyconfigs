@@ -1,0 +1,31 @@
+Fix startup of Xvfb to use EB's Xvfb and don't empty the environment.
+
+Åke Sandgren, 2022-11-29
+diff -ru matlab-proxy-0.5.4.orig/matlab_proxy/settings.py matlab-proxy-0.5.4/matlab_proxy/settings.py
+--- matlab-proxy-0.5.4.orig/matlab_proxy/settings.py	2022-11-10 08:39:50.000000000 +0100
++++ matlab-proxy-0.5.4/matlab_proxy/settings.py	2022-11-29 17:12:54.429102236 +0100
+@@ -239,8 +246,11 @@
+     # Allow child process to use the file descriptor created by parent.
+     os.set_inheritable(dpipe[1], True)
+ 
++    xvfb = shutil.which("Xvfb")
++    if xvfb is None:
++        xvfb = "Xvfb"
+     xvfb_cmd = [
+-        "Xvfb",
++        xvfb,
+         "-displayfd",
+         # Write descriptor
+         str(dpipe[1]),
+diff -ru matlab-proxy-0.5.4.orig/matlab_proxy/util/mw.py matlab-proxy-0.5.4/matlab_proxy/util/mw.py
+--- matlab-proxy-0.5.4.orig/matlab_proxy/util/mw.py	2022-11-10 08:39:50.000000000 +0100
++++ matlab-proxy-0.5.4/matlab_proxy/util/mw.py	2022-11-29 16:49:14.415197842 +0100
+@@ -286,7 +286,7 @@
+     # Creates subprocess asynchronously with environment variables defined in matlab_env
+     # Pipe errors, if any, to the process object instead of stdout.
+     xvfb = await asyncio.create_subprocess_exec(
+-        *xvfb_cmd, close_fds=False, env=env, stderr=asyncio.subprocess.PIPE
++        *xvfb_cmd, close_fds=False, stderr=asyncio.subprocess.PIPE
+     )
+ 
+     read_descriptor, write_descriptor = pipe
