@@ -497,7 +497,10 @@ class EasyConfigTest(TestCase):
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
                                                 r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
-                                                r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0']),
+                                                r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0',
+                                                r'wxPython-4\.2\.0',
+                                                r'GRASS-8\.2\.0',
+                                                r'QGIS-3\.28\.1']),
             ],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
             # ncbi-vdb v2.x and v3.0.0 require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
