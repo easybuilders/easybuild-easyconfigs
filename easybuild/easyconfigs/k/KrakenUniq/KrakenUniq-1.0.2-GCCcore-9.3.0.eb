@@ -1,0 +1,53 @@
+##
+# @author :: Ali Kerrache, Prairies DRI/Digital Research Alliance of Canada, University of Manitoba.
+# @date :: Dec 10, 2022
+##
+
+easyblock = 'CmdCp'
+
+name = 'KrakenUniq'
+version = "1.0.2"
+
+homepage = 'https://github.com/fbreitwieser/krakenuniq'
+description = """krakenuniq: confident and fast metagenomics classification using unique k-mer counts. False-positive identifications are a significant problem in metagenomics classification. KrakenUniq (formerly KrakenHLL) is a novel metagenomics classifier that combines the fast k-mer-based classification of Kraken with an efficient algorithm for assessing the coverage of unique k-mers found in each species in a dataset. On various test datasets, KrakenUniq gives better recall and precision than other methods and effectively classifies and distinguishes pathogens with low abundance from false positives in infectious disease samples. By using the probabilistic cardinality estimator HyperLogLog, KrakenUniq runs as fast as Kraken and requires little additional memory."""
+
+toolchain = {'version': '9.3.0', 'name': 'GCCcore'}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/fbreitwieser/krakenuniq/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['53e74b54f3835e1074e165c78be6d9029d2a04fad73914937988c82c8c0a0586']
+
+dependencies = [
+    ('Jellyfish', '2.3.0'),
+    ('Perl', '5.30.2'),
+    ('BioPerl', '1.7.8'),
+]
+
+cmds_map = [('.*', " sh install_krakenuniq.sh %(installdir)s/bin")]
+
+parallel = 1
+
+local_krackenuniq_binaries = [
+    "build_taxdb", "classify", "classifyExact", "count_unique", "db_shrink",
+    "db_sort", "dump_taxdb", "query_taxdb", "read_uid_mapping", "set_lcas",
+]
+
+files_to_copy = [
+   (["src/build_taxdb", "src/classify", "src/classifyExact"], "bin"), 
+   (["src/count_unique", "src/db_shrink", "src/db_sort", "src/dump_taxdb"], "bin"), 
+   (["src/query_taxdb", "src/read_uid_mapping", "src/set_lcas"], "bin"),
+   "scripts", "tests"
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_krackenuniq_binaries],
+    'dirs': ['scripts/File', 'tests'],
+}
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'PERL5LIB': ['scripts/File', 'scripts'],
+}
+
+moduleclass = 'bio'
