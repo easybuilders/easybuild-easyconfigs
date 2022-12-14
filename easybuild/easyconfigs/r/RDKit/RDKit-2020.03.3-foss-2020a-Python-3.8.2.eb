@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'RDKit'
+version = '2020.03.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.rdkit.org'
+description = "RDKit is a collection of cheminformatics and machine-learning software written in C++ and Python."
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+# avoid failing tests on skylake CPUs. comment out this line when building on CPUs that don't support AVX2
+# see also: https://github.com/rdkit/rdkit/issues/1674
+toolchainopts = {'optarch': 'mavx2', 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/rdkit/rdkit/archive/']
+sources = ['Release_%s.tar.gz' % version.replace('.', '_')]
+patches = [
+    '%(name)s-%(version)s_skip_tests.patch',
+]
+checksums = [
+    'f25529dd80795a499907b90625c4d107ad10211aaf138a07e1a0d8e3426d78c4',  # Release_2020_03_3.tar.gz
+    'f7c42749c9b198226125c353b934a49340b132e5a03cfbfa0fd344e501f544f7',  # RDKit-2020.03.3_skip_tests.patch
+]
+
+# Dependencies varies from version to version
+# https://rdkit.readthedocs.io/en/latest/Install.html#installing-prerequisites-from-source
+builddependencies = [
+    ('CMake', '3.16.4'),
+    ('Eigen', '3.3.7', '', SYSTEM),
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('SQLite', '3.31.1'),
+    ('matplotlib', '3.2.1', versionsuffix),
+    ('Pillow', '7.0.0', versionsuffix),
+    ('Boost.Python', '1.72.0'),
+    ('cairo', '1.16.0'),
+]
+
+separate_build_dir = True
+
+configopts = "-DPy_ENABLE_SHARED=1 -DRDK_INSTALL_STATIC_LIBS=OFF -DRDK_INSTALL_INTREE=OFF "
+configopts += "-DRDK_BUILD_INCHI_SUPPORT=ON "
+configopts += "-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib "
+configopts += "-DBoost_NO_BOOST_CMAKE=ON "
+
+# merge source directory into build directory in order to run the tests
+buildopts = '&& cp -RT %(builddir)s/%(namelower)s-*/ ./ && '
+buildopts += 'export RDBASE=$PWD && export PYTHONPATH=$PWD:$PYTHONPATH && '
+
+# 'ctest' allows to pass additional arguments opposed to 'make test'
+buildopts += 'ctest --output-on-failure'
+
+local_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
+              'Depictor', 'Descriptors', 'DistGeometry', 'DistGeomHelpers', 'EigenSolvers', 'FileParsers',
+              'FilterCatalog', 'Fingerprints', 'FMCS', 'ForceFieldHelpers', 'ForceField', 'FragCatalog', 'GraphMol',
+              'hc', 'InfoTheory', 'maeparser', 'MMPA', 'MolAlign', 'MolCatalog', 'MolChemicalFeatures', 'MolDraw2D',
+              'MolHash', 'MolInterchange', 'MolStandardize', 'MolTransforms', 'Optimizer', 'PartialCharges', 'RDBoost',
+              'RDGeneral', 'RDGeometryLib', 'RDStreams', 'ReducedGraphs', 'RGroupDecomposition', 'RingDecomposerLib',
+              'ScaffoldNetwork', 'ShapeHelpers', 'SimDivPickers', 'SLNParse', 'SmilesParse', 'Subgraphs',
+              'SubstructLibrary', 'SubstructMatch', 'Trajectory']
+
+sanity_check_paths = {
+    'files': ['lib/libRDKit%s.%s' % (x, SHLIB_EXT) for x in local_libs],
+    'dirs': ['include/rdkit', 'lib/python%(pyshortver)s/site-packages/rdkit'],
+}
+
+sanity_check_commands = [
+    "python -c 'import rdkit.rdBase'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'chem'

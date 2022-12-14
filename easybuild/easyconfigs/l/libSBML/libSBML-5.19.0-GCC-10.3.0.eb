@@ -1,0 +1,81 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+# Notes::       Patch libsbml-fix_install_libpaths.patch comes from Fedora
+#               https://src.fedoraproject.org/rpms/libsbml/blob/rawhide/f/libsbml-fix_install_libpaths.patch
+##
+easyblock = 'CMakeMake'
+
+name = 'libSBML'
+version = '5.19.0'
+
+# NOTE not in the license list of EB
+# software_license = 'LGPLv2+'
+software_license_urls = ['http://sbml.org/Software/libSBML/LibSBML_License']
+docurls = [
+    'https://github.com/sbmlteam/libsbml/releases/tag/v%(version)s',
+    'http://sbml.org/Software/libSBML',
+]
+
+homepage = 'http://sbml.org/Software/libSBML'
+description = """libSBML (Systems Biology Markup Language library) is a free, open-source
+programming library to help you read, write, manipulate, translate, and
+validate SBML files and data streams. It's not an application itself (though
+it does come with example programs), but rather a library you embed in your
+own applications."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://downloads.sourceforge.net/project/sbml/libsbml/%(version)s/stable/']
+sources = ['libSBML-%(version)s-core-plus-packages-src.tar.gz']
+patches = [
+    'libsbml-fix_install_libpaths.patch',  # Fix some installation library paths (from Fedora)
+    'libsbml-fix_perl_auto_case.patch',    # Fix the misname for Perl .so binding folder
+                                           # (https://sourceforge.net/p/sbml/libsbml/476/)
+]
+checksums = [
+    'a7f0e18be78ff0e064e4cdb1cd86634d08bc33be5250db4a1878bd81eeb8b547',  # libSBML-5.19.0-core-plus-packages-src.tar.gz
+    '1975b9372be00c5056e1f3408b8829e749adb1edb3345fd109d5c802b5219e45',  # libsbml-fix_install_libpaths.patch
+    '52b3274ce1fdfb329bc53feb67b9862833a1240539eca2f137fcdca00800e34e',  # libsbml-fix_perl_auto_case.patch
+]
+
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('make',  '4.3'),
+    ('Check', '0.15.2'),
+    ('SWIG',  '4.0.2'),
+    ('expat', '2.2.9'),
+    ('bzip2', '1.0.8'),
+    ('zlib',  '1.2.11'),
+]
+
+dependencies = [
+    ('Perl',  '5.32.1'),
+]
+
+# Java jar, Ruby or Octave can also be build here.
+# Python libSBML binding better done from https://pypi.org/project/python-libsbml/
+configure_cmd = 'cmake -DCMAKE_INSTALL_PREFIX=%(installdir)s -DWITH_JAVA=OFF '
+configure_cmd += '-DWITH_CHECK=ON -DWITH_SWIG=ON -DWITH_PERL=ON -DWITH_PYTHON=OFF '
+configure_cmd += '-DWITH_EXPAT=ON -DWITH_LIBXML=OFF '
+configure_cmd += '-DENABLE_{LAYOUT,QUAL,COMP,FBC,RENDER,GROUPS,MULTI,DISTRIB}=ON '
+configure_cmd += '../libSBML-%(version)s-Source/'
+
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['lib64/libsbml.so', 'lib64/perl5/vendor_perl/LibSBML.pm'],
+    'dirs': ['lib64', 'include', 'share']
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib64/perl5/vendor_perl/',
+}
+
+
+moduleclass = 'bio'

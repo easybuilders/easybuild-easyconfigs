@@ -1,0 +1,165 @@
+Patch to fix compilation with MPI 4.
+author: Alin M. Elena (STFC UKRI)
+--- external/PEXSI/include/pexsi/utility_impl.hpp.orig	2020-12-04 16:27:25.652001387 +0000
++++ external/PEXSI/include/pexsi/utility_impl.hpp	2020-12-04 16:40:14.523500099 +0000
+@@ -367,12 +367,12 @@ inline void ParaWriteDistSparseMatrix (
+ 
+   /* create memory type */
+   Int np1 = pspmat.size+1;
+-  MPI_Address( (void *)&np1,  &disps[0]);
+-  MPI_Address(colptrChunk.Data(), &disps[1]);
+-  MPI_Address( (void *)&pspmat.nnz,  &disps[2]);
+-  MPI_Address((void *)pspmat.rowindLocal.Data(),  &disps[3]);
+-  MPI_Address( (void *)&pspmat.nnz,  &disps[4]);
+-  MPI_Address((void *)pspmat.nzvalLocal.Data(),   &disps[5]);
++  MPI_Get_address( (void *)&np1,  &disps[0]);
++  MPI_Get_address(colptrChunk.Data(), &disps[1]);
++  MPI_Get_address( (void *)&pspmat.nnz,  &disps[2]);
++  MPI_Get_address((void *)pspmat.rowindLocal.Data(),  &disps[3]);
++  MPI_Get_address( (void *)&pspmat.nnz,  &disps[4]);
++  MPI_Get_address((void *)pspmat.nzvalLocal.Data(),   &disps[5]);
+ 
+   MPI_Type_create_struct(6, blklens, disps, types, &memtype);
+   MPI_Type_commit(&memtype);
+@@ -440,11 +440,11 @@ inline void ParaReadDistSparseMatrix ( c
+   /* define a struct that describes all our data */
+   lens[0] = 1;
+   lens[1] = 1;
+-  MPI_Address(&pspmat.size, &disps[0]);
+-  MPI_Address(&pspmat.nnz, &disps[1]);
++  MPI_Get_address(&pspmat.size, &disps[0]);
++  MPI_Get_address(&pspmat.nnz, &disps[1]);
+   types[0] = MPI_INT;
+   types[1] = MPI_INT;
+-  MPI_Type_struct(2, lens, disps, types, &type);
++  MPI_Type_create_struct(2, lens, disps, types, &type);
+   MPI_Type_commit(&type);
+ 
+ 
+@@ -470,10 +470,10 @@ inline void ParaReadDistSparseMatrix ( c
+   lens[0] = (mpirank==0)?1:0;
+   lens[1] = numColLocal + 1;
+ 
+-  MPI_Address(&np1, &disps[0]);
+-  MPI_Address(pspmat.colptrLocal.Data(), &disps[1]);
++  MPI_Get_address(&np1, &disps[0]);
++  MPI_Get_address(pspmat.colptrLocal.Data(), &disps[1]);
+ 
+-  MPI_Type_hindexed(2, lens, disps, MPI_INT, &type);
++  MPI_Type_create_hindexed(2, lens, disps, MPI_INT, &type);
+   MPI_Type_commit(&type);
+ 
+   err= MPI_File_read_at_all(fin, myColPtrOffset, MPI_BOTTOM, 1, type, &status);
+@@ -496,10 +496,10 @@ inline void ParaReadDistSparseMatrix ( c
+   lens[0] = (mpirank==0)?1:0;
+   lens[1] = pspmat.nnzLocal;
+ 
+-  MPI_Address(&np1, &disps[0]);
+-  MPI_Address(pspmat.rowindLocal.Data(), &disps[1]);
++  MPI_Get_address(&np1, &disps[0]);
++  MPI_Get_address(pspmat.rowindLocal.Data(), &disps[1]);
+ 
+-  MPI_Type_hindexed(2, lens, disps, MPI_INT, &type);
++  MPI_Type_create_hindexed(2, lens, disps, MPI_INT, &type);
+   MPI_Type_commit(&type);
+ 
+   err= MPI_File_read_at_all(fin, myRowIdxOffset, MPI_BOTTOM, 1, type,&status);
+@@ -516,8 +516,8 @@ inline void ParaReadDistSparseMatrix ( c
+ //  lens[0] = (mpirank==0)?1:0;
+ //  lens[1] = pspmat.nnzLocal;
+ //
+-//  MPI_Address(&np1, &disps[0]);
+-//  MPI_Address(pspmat.nzvalLocal.Data(), &disps[1]);
++//  MPI_Get_address(&np1, &disps[0]);
++//  MPI_Get_address(pspmat.nzvalLocal.Data(), &disps[1]);
+ //
+ //  types[0] = MPI_INT;
+ //  types[1] = MPI_DOUBLE;
+@@ -748,11 +748,11 @@ inline void ParaReadDistSparseMatrix ( c
+   /* define a struct that describes all our data */
+   lens[0] = 1;
+   lens[1] = 1;
+-  MPI_Address(&pspmat.size, &disps[0]);
+-  MPI_Address(&pspmat.nnz, &disps[1]);
++  MPI_Get_address(&pspmat.size, &disps[0]);
++  MPI_Get_address(&pspmat.nnz, &disps[1]);
+   types[0] = MPI_INT;
+   types[1] = MPI_INT;
+-  MPI_Type_struct(2, lens, disps, types, &type);
++  MPI_Type_create_struct(2, lens, disps, types, &type);
+   MPI_Type_commit(&type);
+ 
+ 
+@@ -778,10 +778,10 @@ inline void ParaReadDistSparseMatrix ( c
+   lens[0] = (mpirank==0)?1:0;
+   lens[1] = numColLocal + 1;
+ 
+-  MPI_Address(&np1, &disps[0]);
+-  MPI_Address(pspmat.colptrLocal.Data(), &disps[1]);
++  MPI_Get_address(&np1, &disps[0]);
++  MPI_Get_address(pspmat.colptrLocal.Data(), &disps[1]);
+ 
+-  MPI_Type_hindexed(2, lens, disps, MPI_INT, &type);
++  MPI_Type_create_hindexed(2, lens, disps, MPI_INT, &type);
+   MPI_Type_commit(&type);
+ 
+   err= MPI_File_read_at_all(fin, myColPtrOffset, MPI_BOTTOM, 1, type, &status);
+@@ -804,11 +804,11 @@ inline void ParaReadDistSparseMatrix ( c
+   lens[0] = (mpirank==0)?1:0;
+   lens[1] = pspmat.nnzLocal;
+ 
+-  MPI_Address(&np1, &disps[0]);
+-  MPI_Address(pspmat.rowindLocal.Data(), &disps[1]);
++  MPI_Get_address(&np1, &disps[0]);
++  MPI_Get_address(pspmat.rowindLocal.Data(), &disps[1]);
+ 
+-//  MPI_Type_hindexed(2, lens, disps, MPI_INT, &type);
+-  MPI_Type_hindexed(2, lens, disps, MPI_INT, &type);
++//  MPI_Type_create_hindexed(2, lens, disps, MPI_INT, &type);
++  MPI_Type_create_hindexed(2, lens, disps, MPI_INT, &type);
+   MPI_Type_commit(&type);
+ 
+   err= MPI_File_read_at_all(fin, myRowIdxOffset, MPI_BOTTOM, 1, type,&status);
+@@ -825,8 +825,8 @@ inline void ParaReadDistSparseMatrix ( c
+ //  lens[0] = ((mpirank==0)?1:0)*sizeof(Int);
+ //  lens[1] = pspmat.nnzLocal*sizeof(Complex);
+ //
+-//  MPI_Address(&np1, &disps[0]);
+-//  MPI_Address(pspmat.nzvalLocal.Data(), &disps[1]);
++//  MPI_Get_address(&np1, &disps[0]);
++//  MPI_Get_address(pspmat.nzvalLocal.Data(), &disps[1]);
+ //
+ //  types[0] = MPI_INT;
+ //  types[1] = MPI_DOUBLE_COMPLEX;
+@@ -963,12 +963,12 @@ inline void ParaWriteDistSparseMatrix (
+ 
+   /* create memory type */
+   Int np1 = pspmat.size+1;
+-  MPI_Address( (void *)&np1,  &disps[0]);
+-  MPI_Address(colptrChunk.Data(), &disps[1]);
+-  MPI_Address( (void *)&pspmat.nnz,  &disps[2]);
+-  MPI_Address((void *)pspmat.rowindLocal.Data(),  &disps[3]);
+-  MPI_Address( (void *)&pspmat.nnz,  &disps[4]);
+-  MPI_Address((void *)pspmat.nzvalLocal.Data(),   &disps[5]);
++  MPI_Get_address( (void *)&np1,  &disps[0]);
++  MPI_Get_address(colptrChunk.Data(), &disps[1]);
++  MPI_Get_address( (void *)&pspmat.nnz,  &disps[2]);
++  MPI_Get_address((void *)pspmat.rowindLocal.Data(),  &disps[3]);
++  MPI_Get_address( (void *)&pspmat.nnz,  &disps[4]);
++  MPI_Get_address((void *)pspmat.nzvalLocal.Data(),   &disps[5]);
+ 
+   MPI_Type_create_struct(6, blklens, disps, types, &memtype);
+   MPI_Type_commit(&memtype);
+--- external/PEXSI/include/pexsi/TreeBcast_v2_impl.hpp.orig	2020-12-18 18:03:17.282895534 +0000
++++ external/PEXSI/include/pexsi/TreeBcast_v2_impl.hpp	2020-12-18 18:04:57.686747053 +0000
+@@ -64,8 +64,8 @@ namespace PEXSI{
+       sendPostedCount_ = 0;
+       mainRoot_=ranks[0];
+ #ifdef CHECK_MPI_ERROR
+-          MPI_Errhandler_set(this->comm_, MPI_ERRORS_RETURN);
+-          MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
++          MPI_Comm_set_errhandler(this->comm_, MPI_ERRORS_RETURN);
++          MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+ #endif
+     }
+ 

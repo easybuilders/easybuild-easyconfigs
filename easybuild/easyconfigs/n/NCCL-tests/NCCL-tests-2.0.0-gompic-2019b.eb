@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'NCCL-tests'
+version = '2.0.0'
+
+homepage = 'https://github.com/NVIDIA/nccl-tests'
+description = "Tests check both the performance and the correctness of NCCL operations."
+
+toolchain = {'name': 'gompic', 'version': '2019b'}
+toolchainopts = {'usempi': True}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_Add_install_target_and_build_install_flags.patch',
+    '%(name)s-%(version)s_Rely_on_mpi_compiler_wrappers.patch',
+]
+checksums = [
+    '731fc3b7c37de59cfe880bf198349ac185639ef23570749ea6aef334c850c49c',  # v2.0.0.tar.gz
+    # NCCL-tests-2.0.0_Add_install_target_and_build_install_flags.patch
+    'ad55d5aab36f0b0e8c847bfb0cf933749c37aa4bea88f081696c635108b71d83',
+    # NCCL-tests-2.0.0_Rely_on_mpi_compiler_wrappers.patch
+    '0e68a1922026ac165e5b89910683207c590167f4a4b524c5ec3cc9912c5717d2',
+]
+
+dependencies = [
+    ('NCCL', '2.4.8'),
+]
+
+skipsteps = ['configure']
+
+buildopts = 'VERBOSE=1 MPI=1 CUDA_HOME=$EBROOTCUDA NCCL_HOME=$EBROOTNCCL '
+installopts = 'PREFIX=%(installdir)s '
+
+sanity_check_paths = {
+    'files': ['bin/%s_perf' % x for x in ['all_gather', 'all_reduce', 'broadcast', 'reduce', 'reduce_scatter']],
+    'dirs': [],
+}
+
+moduleclass = 'tools'

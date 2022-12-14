@@ -1,0 +1,62 @@
+Some NCCL error tests fail with e.g.
+"CUDA error: uncorrectable NVLink error detected during the execution"
+
+See https://github.com/pytorch/pytorch/issues/58155 and https://github.com/pytorch/pytorch/issues/59552
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/distributed/test_c10d.py b/test/distributed/test_c10d.py
+index e2985df527..3f973a4adb 100644
+--- a/test/distributed/test_c10d.py
++++ b/test/distributed/test_c10d.py
+@@ -4321,36 +4321,42 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+     @requires_nccl()
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_clean_exit(self):
+         self._test_nccl_errors_blocking(lambda: sys.exit(0))
+ 
+     @requires_nccl()
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_nonzero_exit(self):
+         self._test_nccl_errors_blocking(lambda: sys.exit(1))
+ 
+     @requires_nccl()
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_abort(self):
+         self._test_nccl_errors_blocking(lambda: os.abort())
+ 
+     @requires_nccl()
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_sigkill(self):
+         self._test_nccl_errors_blocking(lambda: os.kill(os.getpid(), signal.SIGKILL))
+ 
+     @requires_nccl()
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_errors_blocking_sigterm(self):
+         self._test_nccl_errors_blocking(lambda: os.kill(os.getpid(), signal.SIGTERM))
+ 
+     @requires_nccl()
+     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_blocking_wait_with_barrier(self):
+         os.environ["NCCL_BLOCKING_WAIT"] = "1"
+         store = c10d.FileStore(self.file_name, self.world_size)
+@@ -4396,6 +4402,7 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
+ 
+     @requires_nccl()
+     @skip_if_lt_x_gpu(3)
++    @unittest.skip("Broken on recent NCCL")
+     def test_nccl_timeout(self):
+         store = c10d.FileStore(self.file_name, self.world_size)
+         os.environ["NCCL_BLOCKING_WAIT"] = "1"

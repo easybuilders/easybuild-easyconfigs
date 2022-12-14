@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'nodejs'
+version = '12.19.0'  # LTS on 2020-10-19
+local_libversion = '72'
+
+homepage = 'https://nodejs.org'
+description = """Node.js is a platform built on Chrome's JavaScript runtime
+ for easily building fast, scalable network applications. Node.js uses an
+ event-driven, non-blocking I/O model that makes it lightweight and efficient,
+ perfect for data-intensive real-time applications that run across distributed devices."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+source_urls = ['http://%(name)s.org/dist/v%(version)s/']
+sources = ['node-v%(version)s.tar.gz']
+checksums = ['1279e49be60d92cf4c1a48c9d92397db4e9284a100bc47689ce7924686bbddd1']
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('Python', '2.7.18'),
+]
+
+configopts = [
+    '--with-intl=none',           # Fully disable ICU to avoid issues with the embedded icu-small library
+    '--shared --with-intl=none',  # Build libnode.so in a second run
+]
+
+# Link libv8 libs to libnode
+postinstallcmds = [
+    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libnode.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8_libbase.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+    "cd %%(installdir)s/lib; ln -s libnode.%s.%s libv8_libplatform.%s" % (SHLIB_EXT, local_libversion, SHLIB_EXT),
+]
+
+sanity_check_paths = {
+    'files': ['bin/node', 'bin/npm', 'lib/libnode.%s.%s' % (SHLIB_EXT, local_libversion)],
+    'dirs': ['lib/node_modules', 'include/node']
+}
+
+moduleclass = 'lang'
