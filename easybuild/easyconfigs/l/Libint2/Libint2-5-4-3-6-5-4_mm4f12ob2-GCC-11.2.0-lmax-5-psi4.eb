@@ -1,0 +1,55 @@
+# This easyconfig is based on the easy config written originally 
+# by Robert Mijakovic <robert.mijakovic@lxp.lu>
+# Author:    Ben Czaja (SURF)
+# Adapted for the use in PSI4 and URL changed to reflect the one used in PSI4
+# This is for PSI-1.6.1!
+# Author:    J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeNinja'
+
+name = 'Libint2'
+version = '5-4-3-6-5-4_mm4f12ob2'
+local_lmax = 5
+# custom configuration, to be used as dependency for PSI4
+versionsuffix = '-lmax-%s-psi4' % local_lmax
+
+homepage = 'https://github.com/loriab/libint'
+description = """Libint - a library for the evaluation of molecular integrals of 
+many-body operators over Gaussian functions.
+This is the version used in PSI4!"""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/loriab/libint/releases/download/v0.1']
+sources = ['%(name)s-export-%(version)s.tgz']
+checksums = ['2e1e4560992185ac0fbc74c53bc80476115ef9d0af60c9ad64c510ebe6235584']
+
+builddependencies = [
+    ('Autotools', '20210726'),
+    ('GMP', '6.2.1'),
+    ('Boost', '1.79.0'),
+    ('Eigen', '3.4.0'),
+    ('Python', '3.9.6'),
+    ('CMake', '3.22.1'),
+    ('Ninja', '1.10.2'),
+]
+
+dependencies = [
+    ('MPFR', '4.1.0'),
+]
+
+# configure options as required by PSI4, taken from an initial config-run of PSI4
+# to get the CMake flags.
+# see https://github.com/psi4/psi4/blob/master/external/upstream/libint2/CMakeLists.txt 
+
+configopts = '-DLIBINT2_SHGAUSS_ORDERING=gaussian -DREQUIRE_CXX_API=ON -DENABLE_XHOST=OFF '
+configopts += '-DENABLE_FORTRAN=OFF -DBUILD_FPIC=ON -DBUILD_SHARED_LIBS=ON '
+configopts += '-DREQUIRE_CXX_API_COMPILED=OFF '
+
+sanity_check_paths = {
+    'files': ['lib/libint2.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'chem'
