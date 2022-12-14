@@ -1,0 +1,49 @@
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'gau2grid'
+version = '2.0.7'
+local_lmax = 5
+# custom configuration, to be used as dependency for PSI4
+versionsuffix = '-lmax-%s-psi4' % local_lmax
+
+homepage = 'https://github.com/dgasmith/gau2grid'
+description = """A collocation code for computing gaussians on a grid of the form:
+
+out_Lp = x^l y^m z^n \\sum_i coeff_i e^(exponent_i * (|center - p|)^2)
+
+Where the returned matrix dimension are the angular momentum (L) by number of 
+requested points (p)."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/dgasmith/gau2grid/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['66e7205646e1e3685e5dd4eea8281fc92b0b8b45ce97ae24b72a09e15a3fd62f']
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+]
+
+local_common_configopts = '-DMAX_AM=%s' % local_lmax
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+# preventing system Python to be picked up:
+local_common_configopts = '-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+sanity_check_paths = {
+    'files': ['lib/libgg.a', 'lib/libgg.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'chem'
