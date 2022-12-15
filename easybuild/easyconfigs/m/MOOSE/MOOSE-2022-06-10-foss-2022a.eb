@@ -1,0 +1,71 @@
+easyblock = 'Binary'
+
+name = 'MOOSE'
+# corresponds to commit 187bc10
+version = '2022-06-10'
+
+homepage = 'https://mooseframework.inl.gov'
+description = """The Multiphysics Object-Oriented Simulation Environment (MOOSE) is a finite-element, multiphysics
+framework primarily developed by Idaho National Laboratory"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('libpng', '1.6.37'),
+    ('libtirpc', '1.3.2'),
+    ('PETSc', '3.17.4'),
+    ('SLEPc', '3.17.2'),
+    ('VTK', '9.2.2'),
+    ('sympy', '1.11.1'),
+    ('ParMETIS', '4.0.3'),
+]
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/idaholab',
+        'repo_name': 'moose',
+        'tag': version,
+        'recursive': True,
+        'keep_git_dir': True,
+    },
+}]
+checksums = [None]
+
+extract_sources = True
+
+buildininstalldir = True
+
+# see https://mooseframework.inl.gov/getting_started/installation/hpc_install_moose.html
+# enable building libmesh with -march=native
+local_libmesg_configopts = "--disable-warnings --enable-march --with-mpi=$EBROOTMPI"
+install_cmd = "sed 's/--disable-warnings/%s/g' scripts/update_and_rebuild_libmesh.sh && " % local_libmesg_configopts
+# build vendored copy of libmesh
+install_cmd += 'export CXXFLAGS="$CXXFLAGS -fpermissive -DLIBMESH_HAVE_XDR" && export MOOSE_JOBS="%(parallel)s V=1" && '
+install_cmd += "./scripts/update_and_rebuild_libmesh.sh --skip-submodule-update && "
+# build MOOSE itself
+install_cmd += "cd test && pwd && make -j %(parallel)s && make -j %(parallel)s hit && "
+# run tests
+install_cmd += "echo 'running tests' && export PYTHONPATH=%(installdir)s/moose/moosetools/contrib/hit:$PYTHONPATH && "
+# run tests, but tolerate failures
+install_cmd += "(python run_tests -j %(parallel)s --max-fails 100 || echo 'Some tests are failing!' >&2)"
+
+sanity_check_paths = {
+    'files': ['moose/framework/libmoose-opt.%s' % SHLIB_EXT,
+              'moose/framework/contrib/hit/hit.%s' % SHLIB_EXT,
+              'moose/framework/contrib/hit/libhit-opt.%s' % SHLIB_EXT],
+    'dirs': ['moose/libmesh', 'moose/python', 'moose/scripts'],
+}
+
+sanity_check_commands = [
+    "python -c 'import mooseutils'",
+    "python -c 'import hit'",
+]
+
+modextrapaths = {'PYTHONPATH': ['moose/python', 'moose/framework/contrib/hit']}
+
+modextravars = {'MOOSE_DIR': '%(installdir)s/moose'}
+
+moduleclass = 'phys'
