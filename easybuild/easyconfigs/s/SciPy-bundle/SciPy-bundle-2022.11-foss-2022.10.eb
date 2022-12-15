@@ -1,0 +1,80 @@
+easyblock = 'PythonBundle'
+
+name = 'SciPy-bundle'
+version = '2022.11'
+
+homepage = 'https://python.org/'
+description = "Bundle of Python packages for scientific software"
+
+toolchain = {'name': 'foss', 'version': '2022.10'}
+toolchainopts = {'pic': True, 'lowopt': True}
+
+builddependencies = [
+    ('hypothesis', '6.59.0'),
+    ('UnZip', '6.0'),
+    ('meson-python', '0.11.0'),
+    # installing numpy 1.23.5 from source requires setuptools < 60.0,
+    # cfr. https://github.com/numpy/numpy/issues/22157 and //github.com/numpy/numpy/issues/22431
+    ('setuptools', '63.4.3'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('pybind11', '2.10.1'),  # required by scipy
+]
+
+use_pip = True
+
+# order is important!
+exts_list = [
+    ('numpy', '1.23.5', {
+        'patches': [
+            'numpy-1.22.3_disable-broken-override-test.patch',
+        ],
+        'checksums': [
+            {'numpy-1.23.5.tar.gz': '1b1766d6f397c18153d40015ddfc79ddb715cabadc04d2d228d4e5a8bc4ded1a'},
+            {'numpy-1.22.3_disable-broken-override-test.patch':
+             '9c589bb073b28b25ff45eb3c63c57966aa508dd8b318d0b885b6295271e4983c'},
+        ],
+    }),
+    ('ply', '3.11', {
+        'checksums': ['00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3'],
+    }),
+    ('gast', '0.5.3', {
+        'checksums': ['cfbea25820e653af9c7d1807f659ce0a0a9c64f2439421a7bba4f0983f532dea'],
+    }),
+    ('beniget', '0.4.1', {
+        'checksums': ['75554b3b8ad0553ce2f607627dad3d95c60c441189875b98e097528f8e23ac0c'],
+    }),
+    ('pythran', '0.12.0', {
+        'checksums': ['eff3dd0d3eebe57372f0d14f82985525e9bcdfb5b1d1010e1932cf9207060f9f'],
+    }),
+    ('scipy', '1.9.3', {
+        'checksums': ['fbc5c05c85c1a02be77b1ff591087c83bc44579c6d2bd9fb798bb64ea5e1a027'],
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && ",
+    }),
+    ('mpi4py', '3.1.4', {
+        'checksums': ['17858f2ebc623220d0120d1fa8d428d033dde749c4bc35b33d81a66ad7f93480'],
+    }),
+    ('numexpr', '2.8.4', {
+        'checksums': ['d5432537418d18691b9115d615d6daa17ee8275baef3edf1afbbf8bc69806147'],
+    }),
+    ('Bottleneck', '1.3.5', {
+        'checksums': ['2c0d27afe45351f6f421893362621804fa7dea14fe29a78eaa52d4323f646de7'],
+    }),
+    ('pandas', '1.5.2', {
+        'checksums': ['220b98d15cee0b2cd839a6358bd1f273d0356bf964c1a1aeb32d47db0215488b'],
+        # make sure $PANDAS_CI is not set to 1, since that implies using -Werror
+        'preinstallopts': "export PANDAS_CI=0 && ",
+    }),
+    ('mpmath', '1.2.1', {
+        'checksums': ['79ffb45cf9f4b101a807595bcb3e72e0396202e0b1d25d689134b48c4216a81a'],
+    }),
+    ('deap', '1.3.3', {
+        'checksums': ['8772f1b0fff042d5e516b0aebac2c706243045aa7d0de8e0b8658f380181cf31'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lang'
