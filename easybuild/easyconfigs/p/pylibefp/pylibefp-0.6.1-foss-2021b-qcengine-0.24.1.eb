@@ -1,0 +1,47 @@
+# We use the qcengine suffix as PSI4 requires a specific version of it.
+# When we are using a new toolchain with only one version of PSI4 in it,
+# we might consider dropping it. 
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'pylibefp'
+version = '0.6.1'
+local_qcengine = '0.24.1'  # version of used qcengine, depends on PSI4 version
+# custom configuration, to be used as dependency for PSI4
+versionsuffix = '-qcengine-%s' % local_qcengine
+
+homepage = 'https://github.com/loriab/pylibefp'
+description = "python wrapper to I. Kaliman's libefp for effective fragment potentials"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/loriab/pylibefp/archive']
+sources = ['v%(version)s.tar.gz']
+
+checksums = [
+    '7126630c7be3bcfde8b3d2ba98ba043a976141d0d90d5497796c004af21cddbf'  # v0.6.1.tar.gz
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('binutils', '2.37'),
+]
+
+dependencies = [
+    ('libefp', '1.5.0', '-psi4'),
+    ('pybind11', '2.7.1'),
+    ('Pint', '0.19.2'),
+    ('SciPy-bundle', '2021.10'),
+    ('qcengine', '%s' % local_qcengine),
+]
+
+# preventing system Python to be picked up:
+configopts = '-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+sanity_check_paths = {
+    'files': ['lib/pylibefp/wrapper.py'],
+    'dirs': ['share'],
+}
+
+moduleclass = 'lib'
