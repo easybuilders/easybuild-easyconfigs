@@ -7,11 +7,13 @@
 # Modified by: Adam Huffman <adam.huffman@crick.ac.uk>
 # The Francis Crick Institute
 # Modified by: Kurt Lust, UAntwerp
+# Modified by: Sebastien Moretti for non-x86_64 systems
+# SIB Swiss Institute of Bioinformatics
 
 name = 'Bowtie2'
 version = '2.4.5'
 
-homepage = 'http://bowtie-bio.sourceforge.net/bowtie2/index.shtml'
+homepage = 'https://bowtie-bio.sourceforge.net/bowtie2/index.shtml'
 description = """ Bowtie 2 is an ultrafast and memory-efficient tool for aligning sequencing reads
  to long reference sequences. It is particularly good at aligning reads of about 50 up to 100s or 1,000s
  of characters, and particularly good at aligning to relatively long (e.g. mammalian) genomes.
@@ -21,9 +23,22 @@ description = """ Bowtie 2 is an ultrafast and memory-efficient tool for alignin
 toolchain = {'name': 'GCC', 'version': '11.3.0'}
 toolchainopts = {'pic': True, 'cstd': 'gnu++98'}
 
-source_urls = [('https://sourceforge.net/projects/bowtie-bio/files/%(namelower)s/%(version)s', 'download')]
-sources = ['%(namelower)s-%(version)s-source.zip']
-checksums = ['d3cbd5f323393b5649aea10325d7c4b77f02035a8b204e5ac18eba95236e076a']
+source_urls = [
+    ('https://sourceforge.net/projects/bowtie-bio/files/%(namelower)s/%(version)s', 'download'),
+    'https://github.com/simd-everywhere/simde-no-tests/archive/refs/heads',
+]
+sources = [
+    '%(namelower)s-%(version)s-source.zip',
+    # SIMD Everywhere implementations only, for non-x86_64 systems
+    {'download_filename': 'master.zip',
+     'filename': 'simde-no-tests.master.zip',
+     'extract_cmd': 'unzip %s && mv simde-no-tests-master/* %(namelower)s-%(version)s/third_party/simde/',
+     },
+]
+checksums = [
+    'd3cbd5f323393b5649aea10325d7c4b77f02035a8b204e5ac18eba95236e076a',  # bowtie2-2.4.5-source.zip
+    'c3da65daa8fcaaeb549059c53b7bbbc31774457af189407e654210ade84f550a',  # simde-no-tests.master.zip
+]
 
 dependencies = [
     ('zlib', '1.2.12'),
