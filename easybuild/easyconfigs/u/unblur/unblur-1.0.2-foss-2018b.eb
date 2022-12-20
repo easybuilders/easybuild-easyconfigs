@@ -1,0 +1,59 @@
+#Thomas Hoffmann, EMBL, Heidelberg, 2017/08  
+#THEMBL 201811: upgrade from foss/2017b to 2018b 
+easyblock = 'ConfigureMake'
+parallel=1
+name = 'unblur'
+version = '1.0.2'
+
+homepage = 'https://www.cl.cam.ac.uk/~mgk25/jbigkit/'
+description = """
+Unblur is used to align the frames of movies recorded
+ on an electron microscope to reduce image blurring due to beam-induced motion.
+ It reads stacks of movies that are stored in MRC/CCP4 format.
+ Unblur generates frame sums that can be used in subsequent image processing
+ steps and optionally applies an exposure-dependent filter to maximize the signal
+ at all resolutions in the frame averages. Movie frame sums can also be 
+calculated using Summovie, which uses the alignment results from a prior run of Unblur.
+ The idea for this procedure was originally developed by Brilot et al.
+ and Campbell et al [1] [2]. Unblur was written by Timothy Grant and 
+Alexis Rohou and is described in [3].
+1. Brilot, AF, Chen JZ, Cheng A, Pan J, Harrison SC, Potter CS, Carragher B,
+ Henderson R, Grigorieff N.  2012.  Beam-induced motion of vitrified 
+specimen on holey carbon film.. J Struct Biol. 177:630-637.
+2. Campbell, MG, Cheng A, Brilot AF, Moeller A, Lyumkis D, Veesler D,
+ Pan J, Harrison SC, Potter CS, Carragher B et al..  2012.  Movies of 
+ice-embedded particles enhance resolution in electron cryo-microscopy. 
+Structure. 20:1823–1828.
+3. Grant, T, Grigorieff N.  2015.  Measuring the optimal exposure for 
+single particle cryo-EM using a 2.6 Å reconstruction of rotavirus 
+VP6. eLife. 4(e06980):1-19."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+#toolchainopts = {'pic': True, 'shared': True}  # toolchain options, e.g. opt, pic, usempi, optarch, ...
+
+# For sources line to work correctly with --try-software-version, you MUST employ %s OR use a construct like SOURCE_TAR_GZ
+sources = ['%(name)s_%(version)s.tar.gz']
+source_urls = ['http://grigoriefflab.janelia.org/sites/all/modules/pubdnldcnt/pubdnldcnt.php?file=http://grigoriefflab.janelia.org/sites/default/files/']
+start_dir='src'
+patches = []
+
+
+builddependencies = [
+  ('jbigkit', '2.1', '-GCCcore-7.3.0',True), #static?
+]
+dependencies = [
+  ('GSL','2.5'), #previously 2.4
+  ('libjpeg-turbo','2.0.2'), #previously 1.5.2
+  ('LibTIFF','4.0.9'), 
+  ]
+configopts=' --with-fftw-libdir=$EBROOTFFTW/lib '
+configopts+=' --with-gsl-libdir=$EBROOTGSL/lib '
+configopts+=' --enable-coarray=yes '
+configopts+=' --enable-openmp=yes '
+configopts+=' LDFLAGS="$LDFLAGS -L$EBROOTJBIGKIT/lib" '
+
+sanity_check_paths = {
+    'files': ['bin/unblur'],
+    'dirs': ["."]
+}
+moduleclass = 'bio'
