@@ -1,0 +1,44 @@
+Heavily inspired from https://src.fedoraproject.org/rpms/MUMPS//blob/rawhide/f/MUMPS-shared.patch
+Author: micketeer@gmail.com
+Updatd to version 5.5.0: J. Sassmannshausen/ICL (UK)
+diff --git a/MUMPS_5.5.0.orig/Makefile b/MUMPS_5.5.0/Makefile
+index 59d74d7..0ed4414 100644
+--- a/MUMPS_5.5.0.orig/Makefile
++++ b/MUMPS_5.5.0/Makefile
+@@ -65,7 +65,7 @@ Makefile.inc:
+ 
+ include Makefile.inc
+ 
+-prerequisites: Makefile.inc $(LIBSEQNEEDED) $(libdir)/libpord$(PLAT)$(LIBEXT)
++prerequisites: Makefile.inc $(LIBSEQNEEDED) $(libdir)/libpord$(PLAT)$(LIBEXT) $(libdir)/libpord$(PLAT).so
+ 
+ prerequisitesshared: Makefile.inc $(LIBSEQNEEDED)sharedlibseq $(libdir)/libpord$(PLAT)$(LIBEXT_SHARED)
+ 
+@@ -106,6 +106,12 @@ $(libdir)/libpord$(PLAT)$(LIBEXT_SHARED):
+ 
+ 
+ 
++$(libdir)/libpord$(PLAT).so:
++	if [ "$(LPORDDIR)" != "" ] ; then \
++	cd $(LPORDDIR); make CC="$(CC)" CFLAGS="$(OPTC)" AR="$(AR)" ARFUNCT= RANLIB="$(RANLIB)" libpord$(PLAT).so; fi;
++	if [ "$(LPORDDIR)" != "" ] ; then \
++	cp -a $(LPORDDIR)/libpord*.so lib/; fi;
++
+ clean:
+ 	(cd src; $(MAKE) clean)
+ 	(cd examples; $(MAKE) clean)
+diff --git a/MUMPS_5.5.0.orig/PORD/lib/Makefile b/MUMPS_5.5.0/PORD/lib/Makefile
+index 8228f52..2650549 100644
+--- a/MUMPS_5.5.0.orig/PORD/lib/Makefile
++++ b/MUMPS_5.5.0/PORD/lib/Makefile
+@@ -31,6 +31,10 @@ libpord$(PLAT)$(LIBEXT):$(OBJS)
+ libpord$(PLAT)$(LIBEXT_SHARED):$(OBJS)
+ 	$(CC) -shared $(OBJS) -o libpord.so
+ 
++libpord$(PLAT).so: $(OBJS)
++	$(CC) -shared $(OBJS) -Wl,-soname,libpord$(PLAT)-$(SONAME_VERSION).so -o libpord$(PLAT)-$(SONAME_VERSION).so $(OPTL) -Wl,-z,defs
++	ln -fs libpord$(PLAT)-$(SONAME_VERSION).so $@
++
+ clean:
+ 	rm -f *.o
+ 

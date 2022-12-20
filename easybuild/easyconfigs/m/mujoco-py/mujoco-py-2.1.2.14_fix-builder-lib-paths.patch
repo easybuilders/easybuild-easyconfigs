@@ -1,0 +1,86 @@
+Fix path to MuJoCo libraries in mujoco-py builder
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- a/mujoco_py/builder.py	2022-01-18 01:36:26.458344000 +0100
++++ b/mujoco_py/builder.py	2022-01-18 01:36:37.646121008 +0100
+@@ -67,7 +67,7 @@
+ The easy solution is to `import mujoco_py` _before_ `import glfw`.
+ ''')
+ 
+-    lib_path = os.path.join(mujoco_path, "bin")
++    lib_path = os.path.join(mujoco_path, "lib")
+     if sys.platform == 'darwin':
+         Builder = MacExtensionBuilder
+     elif sys.platform == 'linux':
+@@ -177,8 +177,8 @@
+ 
+     # Fix the rpath of the generated library -- i lost the Stackoverflow
+     # reference here
+-    from_mujoco_path = '@executable_path/libmujoco210.dylib'
+-    to_mujoco_path = '%s/libmujoco210.dylib' % mj_bin_path
++    from_mujoco_path = '@executable_path/libmujoco.dylib'
++    to_mujoco_path = '%s/libmujoco.dylib' % mj_bin_path
+     subprocess.check_call(['install_name_tool',
+                            '-change',
+                            from_mujoco_path,
+@@ -213,8 +213,8 @@
+                 join(mujoco_path, 'include'),
+                 np.get_include(),
+             ],
+-            libraries=['mujoco210'],
+-            library_dirs=[join(mujoco_path, 'bin')],
++            libraries=['mujoco'],
++            library_dirs=[join(mujoco_path, 'lib')],
+             extra_compile_args=[
+                 '-fopenmp',  # needed for OpenMP
+                 '-w',  # suppress numpy compilation warnings
+@@ -272,12 +272,12 @@
+         self.extension.sources.append(
+             join(self.CYMJ_DIR_PATH, "gl", "osmesashim.c"))
+         self.extension.libraries.extend(['glewosmesa', 'OSMesa', 'GL'])
+-        self.extension.runtime_library_dirs = [join(mujoco_path, 'bin')]
++        self.extension.runtime_library_dirs = [join(mujoco_path, 'lib')]
+ 
+     def _build_impl(self):
+         so_file_path = super()._build_impl()
+         # Removes absolute paths to libraries. Allows for dynamic loading.
+-        fix_shared_library(so_file_path, 'libmujoco210.so', 'libmujoco210.so')
++        fix_shared_library(so_file_path, 'libmujoco.so', 'libmujoco.so')
+         fix_shared_library(so_file_path, 'libglewosmesa.so', 'libglewosmesa.so')
+         return so_file_path
+ 
+@@ -290,13 +290,13 @@
+         self.extension.sources.append(self.CYMJ_DIR_PATH + "/gl/eglshim.c")
+         self.extension.include_dirs.append(self.CYMJ_DIR_PATH + '/vendor/egl')
+         self.extension.libraries.extend(['glewegl'])
+-        self.extension.runtime_library_dirs = [join(mujoco_path, 'bin')]
++        self.extension.runtime_library_dirs = [join(mujoco_path, 'lib')]
+ 
+     def _build_impl(self):
+         so_file_path = super()._build_impl()
+         fix_shared_library(so_file_path, 'libOpenGL.so', 'libOpenGL.so.0')
+         fix_shared_library(so_file_path, 'libEGL.so', 'libEGL.so.1')
+-        fix_shared_library(so_file_path, 'libmujoco210.so', 'libmujoco210.so')
++        fix_shared_library(so_file_path, 'libmujoco.so', 'libmujoco.so')
+         fix_shared_library(so_file_path, 'libglewegl.so', 'libglewegl.so')
+         return so_file_path
+ 
+@@ -309,7 +309,7 @@
+         self.extension.sources.append(self.CYMJ_DIR_PATH + "/gl/dummyshim.c")
+         self.extension.libraries.extend(['glfw.3'])
+         self.extension.define_macros = [('ONMAC', None)]
+-        self.extension.runtime_library_dirs = [join(mujoco_path, 'bin')]
++        self.extension.runtime_library_dirs = [join(mujoco_path, 'lib')]
+ 
+     def _build_impl(self):
+         if not os.environ.get('CC'):
+@@ -482,8 +482,8 @@
+     # Link against mujoco so we can call mujoco functions from within callback
+     ffibuilder.set_source(name, source_string,
+                           include_dirs=[join(mujoco_path, 'include')],
+-                          library_dirs=[join(mujoco_path, 'bin')],
+-                          libraries=['mujoco210'])
++                          library_dirs=[join(mujoco_path, 'lib')],
++                          libraries=['mujoco'])
+     # Catch compilation exceptions so we can cleanup partial files in that case
+     try:
+         library_path = ffibuilder.compile(verbose=True)

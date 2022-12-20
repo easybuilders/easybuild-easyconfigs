@@ -1,0 +1,55 @@
+Fix support for CUDA arch < 6.0
+
+Åke Sandgren, 2022-11-14
+diff --git a/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.cu b/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.cu
+index 83189250..f125e47d 100644
+--- a/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.cu
++++ b/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.cu
+@@ -28,8 +28,9 @@
+ 
+ #include "cuda_compatibility.h"
+ 
++#if defined(__CUDA_ARCH__)
+ #if __CUDA_ARCH__ < 600
+-__device__ double atomicAdd(double* address, double val)
++static __inline__ __device__ double atomicAdd(double* address, double val)
+ {
+     unsigned long long int* address_as_ull =
+                               (unsigned long long int*)address;
+@@ -47,6 +48,7 @@ __device__ double atomicAdd(double* address, double val)
+     return __longlong_as_double(old);
+ }
+ #endif
++#endif
+ 
+ 
+ #endif /* LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_CU_ */
+diff --git a/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.h b/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.h
+index 3bb44e0f..279ccbcb 100644
+--- a/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.h
++++ b/src/xmipp/libraries/reconstruction_cuda/cuda_compatibility.h
+@@ -27,7 +27,11 @@
+ #define LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_H_
+ 
+ 
+-__device__ double atomicAdd(double* address, double val);
++#if defined(__CUDA_ARCH__)
++#if __CUDA_ARCH__ < 600
++static __inline__ __device__ double atomicAdd(double* address, double val);
++#endif
++#endif
+ 
+ 
+ #endif /* LIBRARIES_RECONSTRUCTION_CUDA_CUDA_COMPATIBILITY_H_ */
+diff --git a/src/xmipp/libraries/reconstruction_cuda/cuda_correlation.cu b/src/xmipp/libraries/reconstruction_cuda/cuda_correlation.cu
+index c7dea8fb..9e267336 100644
+--- a/src/xmipp/libraries/reconstruction_cuda/cuda_correlation.cu
++++ b/src/xmipp/libraries/reconstruction_cuda/cuda_correlation.cu
+@@ -27,6 +27,7 @@
+ #define LIBRARIES_RECONSTRUCTION_CUDA_CUDA_CORRELATION_CU_
+ 
+ #include "cuda_compatibility.h"
++#include "cuda_compatibility.cu"
+ 
+ /**
+  * Function computes sum and sum squared for each 2D signal
