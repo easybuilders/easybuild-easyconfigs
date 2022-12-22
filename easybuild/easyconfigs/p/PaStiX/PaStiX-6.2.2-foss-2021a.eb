@@ -22,11 +22,11 @@ patches = [
 ]
 checksums = [
     {'pastix-v6.2.2.tar.gz': 'e3f66cf66c88afc81fcc3aaa0bd0a84a1b1f42b92f1293d68008f0636b1d11f8'},
-    {'PaStiX-6.2.2_submodules.patch': '6b9a723fa41c8715067e5a194e172fe17638442d7a2a4042c725f24460f0ab59'},
+    {'PaStiX-6.2.2_submodules.patch': 'dfdb59cada63934df9fc68b25b835641d2c04e3554b5a6b58cfe5af4a83a34a6'},
     {'PaStiX-6.2.2_external-spm.patch': 'f7057751aa0b2e39c4c2e3cab898230ee87dd224e71d4f03de351952f07f2b63'},
     {'PaStiX-6.2.2_spm-includes.patch': '65967d176913d2175dff613fab2cfe198c7c9890341acff33bf785ee6a6ea292'},
     {'PaStiX-6.2.2_fix-example-linking.patch': '0e5a3e654656094e0c251d03597256222b112de12a815e08bc844222e6f2e245'},
-    {'PaStiX-6.2.2_fix-kernel-includes.patch': 'afcc8f4868af8d38b63d2856a4b8bb70f9614f1c8574ada18a66c6da1d4a9088'},
+    {'PaStiX-6.2.2_fix-kernel-includes.patch': 'eaf0c19092ac0cee91a2ab11d6ec3540c72876af9915814eb72813af0f7e7883'},
 ]
 
 builddependencies = [
@@ -46,7 +46,12 @@ dependencies = [
     # CUDA
 ]
 
-preconfigopts = "rm %(builddir)s/%(namelower)s-v%(version)s/include/{cblas,lapacke}.h && "
+# avoid using the shipped cblas, lapacke headers
+preconfigopts = " && ".join([
+    "rm %(builddir)s/%(namelower)s-v%(version)s/include/{cblas,lapacke}.h",
+    "sed -i -e '/include\/cblas.h/d' -e '/include\/lapacke.h/d' %(builddir)s/%(namelower)s-v%(version)s/CMakeLists.txt",
+    "",
+])
 
 _baseopts = ' '.join([
     '-DCMAKE_MODULE_PATH="$MORSE_MODULE_PATH;$CMAKE_MODULE_PATH"',
@@ -59,14 +64,11 @@ _baseopts = ' '.join([
     '-DPASTIX_ENABLE_FORTRAN=OFF',
     '-DCBLAS_DIR=$EBROOTFLEXIBLAS',
     '-DLAPACKE_DIR=$EBROOTFLEXIBLAS',
-    '--debug-output',
+    '-DCMAKE_SHARED_LINKER_FLAGS="$LIBS"',
 ])
 
-# building shared libs currently doesn't work?
 # iterative build for static + shared libs
-#configopts = ['%s -DBUILD_SHARED_LIBS=%s' % (_baseopts, x) for x in ['OFF', 'ON']]
-
-configopts = "%s -DBUILD_SHARED_LIBS=ON" % _baseopts
+configopts = ['%s -DBUILD_SHARED_LIBS=%s' % (_baseopts, x) for x in ['OFF', 'ON']]
 
 sanity_check_paths = {
     'files': ['bin/pastix-conf', 'lib/libmatrix_driver.a', 'lib/libpastix.a', 'lib/libpastix_murge.a'],
