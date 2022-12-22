@@ -62,6 +62,7 @@ _baseopts = ' '.join([
     '-DPASTIX_WITH_EXTERNAL_SPM=ON',
     '-DPASTIX_WITH_CUDA=OFF',
     '-DPASTIX_ENABLE_FORTRAN=OFF',
+    # make sure flexiblas is linked
     '-DCBLAS_DIR=$EBROOTFLEXIBLAS',
     '-DLAPACKE_DIR=$EBROOTFLEXIBLAS',
     '-DCMAKE_SHARED_LINKER_FLAGS="$LIBS"',
@@ -70,9 +71,14 @@ _baseopts = ' '.join([
 # iterative build for static + shared libs
 configopts = ['%s -DBUILD_SHARED_LIBS=%s' % (_baseopts, x) for x in ['OFF', 'ON']]
 
+_bins = ['bin/pastix_env.sh']
+_incs = ['include/%s.h' % x for x in ['pastix_enums', 'pastixf.mod', 'pastix.h']]
+_libs = ['lib/libpastix%s.%s' % (x, y) for x in ['', 'f', '_kernels'] for y in ['a', SHLIB_EXT]]
+_libs_dirs = ['lib/%s' % x for x in ['cmake', 'pkgconfig', 'julia', 'python']]
+
 sanity_check_paths = {
-    'files': ['bin/pastix-conf', 'lib/libmatrix_driver.a', 'lib/libpastix.a', 'lib/libpastix_murge.a'],
-    'dirs': ['include'],
+    'files': _bins + _incs + _libs,
+    'dirs': ['include/pastix'] + _libs_dirs,
 }
 
 moduleclass = 'math'
