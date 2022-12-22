@@ -1,0 +1,76 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'CMakeMake'
+
+name = 'PaStiX'
+version = '6.2.2'
+
+homepage = 'http://pastix.gforge.inria.fr/'
+description = """PaStiX (Parallel Sparse matriX package) is a scientific library that provides a high performance
+ parallel solver for very large sparse linear systems based on direct methods."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://gitlab.inria.fr/solverstack/%(namelower)s/-/archive/v%(version)s']
+sources = ['%(namelower)s-v%(version)s.tar.gz']
+patches = [
+    '%(name)s-6.2.2_submodules.patch',
+    '%(name)s-6.2.2_external-spm.patch',
+    '%(name)s-6.2.2_spm-includes.patch',
+    '%(name)s-6.2.2_fix-example-linking.patch',
+    'PaStiX-6.2.2_fix-kernel-includes.patch',
+]
+checksums = [
+    {'pastix-v6.2.2.tar.gz': 'e3f66cf66c88afc81fcc3aaa0bd0a84a1b1f42b92f1293d68008f0636b1d11f8'},
+    {'PaStiX-6.2.2_submodules.patch': 'd3dde4e07ca95dadf7bd2ce1321e83387b7e97ef9ff10161f4673e6067494991'},
+    {'PaStiX-6.2.2_external-spm.patch': 'f7057751aa0b2e39c4c2e3cab898230ee87dd224e71d4f03de351952f07f2b63'},
+    {'PaStiX-6.2.2_spm-includes.patch': '65967d176913d2175dff613fab2cfe198c7c9890341acff33bf785ee6a6ea292'},
+    {'PaStiX-6.2.2_fix-example-linking.patch': '0e5a3e654656094e0c251d03597256222b112de12a815e08bc844222e6f2e245'},
+    {'PaStiX-6.2.2_fix-kernel-includes.patch': 'afcc8f4868af8d38b63d2856a4b8bb70f9614f1c8574ada18a66c6da1d4a9088'},
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('morse_cmake', '20220520', '', SYSTEM),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('SPM-solver', '1.1.1'),
+    ('hwloc', '2.4.1'),
+    ('SCOTCH', '6.1.0'),
+    ('METIS', '5.1.0'),
+    ('Python', '3.9.5'),
+    # StarPU
+    # PaRSEC
+    # CUDA
+]
+
+preconfigopts = "rm %(builddir)s/%(namelower)s-v%(version)s/include/{cblas,lapacke}.h && "
+
+_baseopts = ' '.join([
+    '-DCMAKE_MODULE_PATH="$MORSE_MODULE_PATH;$CMAKE_MODULE_PATH"',   # morse_cmake
+    '-DPASTIX_INT64=OFF',           # 64-bit integer support
+    '-DPASTIX_ORDERING_SCOTCH=ON',
+    '-DPASTIX_ORDERING_METIS=ON',
+    '-DPASTIX_WITH_MPI=ON',
+    '-DPASTIX_WITH_EXTERNAL_SPM=ON',
+    '-DPASTIX_WITH_CUDA=OFF',
+    '-DPASTIX_ENABLE_FORTRAN=OFF',
+    '-DCBLAS_DIR=$EBROOTFLEXIBLAS',
+    '-DLAPACKE_DIR=$EBROOTFLEXIBLAS',
+    '--debug-output',
+])
+
+# building shared libs currently doesn't work?
+# iterative build for static + shared libs
+#configopts = ['%s -DBUILD_SHARED_LIBS=%s' % (_baseopts, x) for x in ['OFF', 'ON']]
+
+#configopts = "%s -DBUILD_SHARED_LIBS=ON" % _baseopts
+
+sanity_check_paths = {
+    'files': ['bin/pastix-conf', 'lib/libmatrix_driver.a', 'lib/libpastix.a', 'lib/libpastix_murge.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'

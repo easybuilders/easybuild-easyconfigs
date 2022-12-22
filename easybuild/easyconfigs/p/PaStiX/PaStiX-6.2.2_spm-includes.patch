@@ -1,0 +1,46 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Description: 
+ - fix `{c,d,s,z}_spm.h` include statements to respect spm subdirectory
+ - ensure external SPM fortran module is picked up
+ ---------------------------------------------------------------------------------------------------
+diff -ruN pastix-v6.2.2_p1/sopalin/pastix_task_solve.c pastix-v6.2.2_p2/sopalin/pastix_task_solve.c
+--- pastix-v6.2.2_p1/sopalin/pastix_task_solve.c	2022-09-09 16:48:43.000000000 +0100
++++ pastix-v6.2.2_p2/sopalin/pastix_task_solve.c	2022-09-09 17:31:32.000000000 +0100
+@@ -30,10 +30,10 @@
+ #include "bcsc/bcsc_s.h"
+ 
+ #if defined(PASTIX_DEBUG_SOLVE)
+-#include <z_spm.h>
+-#include <c_spm.h>
+-#include <d_spm.h>
+-#include <s_spm.h>
++#include <spm/z_spm.h>
++#include <spm/c_spm.h>
++#include <spm/d_spm.h>
++#include <spm/s_spm.h>
+ 
+ static volatile int32_t step = 0;
+ 
+diff -ruN pastix-v6.2.2_p1/test/z_bcsc_tests.c pastix-v6.2.2_p2/test/z_bcsc_tests.c
+--- pastix-v6.2.2_p1/test/z_bcsc_tests.c	2022-09-09 16:48:47.000000000 +0100
++++ pastix-v6.2.2_p2/test/z_bcsc_tests.c	2022-09-09 17:31:36.000000000 +0100
+@@ -27,7 +27,7 @@
+ #include <spm.h>
+ #include "bcsc/bcsc.h"
+ #include <lapacke.h>
+-#include <z_spm.h>
++#include <spm/z_spm.h>
+ #include "bcsc/bcsc_z.h"
+ #include "bcsc/bcsc.h"
+ #include <pastix/order.h>
+diff -ruN pastix-v6.2.2_p1/wrappers/fortran90/CMakeLists.txt pastix-v6.2.2_p2/wrappers/fortran90/CMakeLists.txt
+--- pastix-v6.2.2_p1/wrappers/fortran90/CMakeLists.txt	2022-09-09 16:48:42.000000000 +0100
++++ pastix-v6.2.2_p2/wrappers/fortran90/CMakeLists.txt	2022-09-09 17:50:30.000000000 +0100
+@@ -34,6 +34,7 @@
+ set_target_properties( pastixf PROPERTIES VERSION ${PASTIX_VERSION} )
+ set_target_properties( pastixf PROPERTIES SOVERSION ${PASTIX_VERSION_MAJOR} )
+ 
++include_directories( ${SPM_spm_INCLUDEDIR} ${SPM_spmf_INCLUDEDIR} )
+ target_link_libraries( pastixf PRIVATE
+    pastix spmf )
+ 
