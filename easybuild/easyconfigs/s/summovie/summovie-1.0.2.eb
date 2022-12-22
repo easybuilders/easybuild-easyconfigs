@@ -1,0 +1,46 @@
+# Thomas Hoffmann, EMBL, Heidelberg, 2017/08
+
+easyblock = 'BinariesTarball'
+parallel = 1
+name = 'summovie'
+version = '1.0.2'
+
+homepage = 'https://www.cl.cam.ac.uk/~mgk25/jbigkit/'
+description = """
+Unblur is used to align the frames of movies recorded on an electron microscope to reduce image blurring due to
+ beam-induced motion. It reads stacks of movies that are stored in MRC/CCP4 format. Unblur generates frame sums that
+ can be used in subsequent image processing steps and optionally applies an exposure-dependent filter to maximize the
+ signal at all resolutions in the frame averages. Movie frame sums can also be calculated using Summovie, which uses
+ the alignment results from a prior run of Unblur. The idea for this procedure was originally developed by 
+Brilot et al. and Campbell et al [1] [2]. Unblur was written by Timothy Grant and Alexis Rohou and is described in [3].
+1. Brilot, AF, Chen JZ, Cheng A, Pan J, Harrison SC, Potter CS, Carragher B, Henderson R, Grigorieff N.  2012.
+  Beam-induced motion of vitrified specimen on holey carbon film.. J Struct Biol. 177:630-637.
+2. Campbell, MG, Cheng A, Brilot AF, Moeller A, Lyumkis D, Veesler D, Pan J, Harrison SC, Potter CS, Carragher B et
+ al..  2012.  Movies of ice-embedded particles enhance resolution in electron cryo-microscopy. Structure. 20:1823–1828.
+3. Grant, T, Grigorieff N.  2015.  Measuring the optimal exposure for single particle cryo-EM using a 2.6 
+Å reconstruction of rotavirus VP6. eLife. 4(e06980):1-19."""
+
+toolchain = {'name': 'system', 'version': 'dummy'}
+
+# For sources line to work correctly with --try-software-version,
+# you MUST employ %s OR use a construct like SOURCE_TAR_GZ
+sources = ['%(name)s_%(version)s.tar.gz']
+source_urls = ['https://gitlab.unige.ch/hpc/easybuild/-/raw/main/sources/s/']
+start_dir = 'bin'
+patches = []
+
+
+configopts = ' --with-fftw-libdir=$EBROOTFFTW/lib '
+configopts += ' --with-gsl-libdir=$EBROOTGSL/lib '
+configopts += ' --enable-coarray=yes '
+configopts += ' --enable-openmp=yes '
+configopts += ' LDFLAGS="$LDFLAGS -L$EBROOTJBIGKIT/lib" '
+
+postinstallcmds = [
+  'cd %(installdir)s/bin && ln -s sum_movie_openmp_7_17_15.exe summovie'
+]
+sanity_check_paths = {
+    'files': ['bin/summovie'],
+    'dirs': ["."]
+}
+moduleclass = 'bio'
