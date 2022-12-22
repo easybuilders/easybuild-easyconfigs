@@ -1,0 +1,46 @@
+# Updated to 6.2.2 and CMakeNinja
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeNinja'
+
+name = 'PaStiX'
+version = '6.2.2'
+
+homepage = 'http://pastix.gforge.inria.fr/'
+description = """PaStiX (Parallel Sparse matriX package) is a scientific library 
+that provides a high performance parallel solver for very large sparse linear 
+systems based on direct methods."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://gitlab.inria.fr/solverstack/pastix//uploads/d579e932b415103974ced5d216481332']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['cce9a1fe4678b5733c9f1a5a52f77b040eadc3e254418c6fb03d8ab37dede508']
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('Ninja', '1.10.2'),
+]
+
+dependencies = [
+    ('hwloc', '2.5.0'),
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '6.1.2'),
+]
+
+configopts = '-DPASTIX_INT64=OFF -DBUILD_SHARED_LIBS=ON -DPASTIX_WITH_MPI=ON -DPASTIX_ORDERING_METIS=ON '
+configopts += '-DCMAKE_SHARED_LINKER_FLAGS="-lflexiblas -llapacke" -DLAPACKE_DIR=${EBROOTFLEXIBLAS} '
+# This does not seem to work?
+# configopts += '-DPASTIX_ORDERING_PTSCOTCH=ON '
+
+test_cmd = 'ctest'
+runtest = ''
+
+sanity_check_paths = {
+    'files': ['bin/pastix_env.sh', 'lib/libpastixf.%s' % SHLIB_EXT, 'lib/libpastix.%s' % SHLIB_EXT,
+              'lib/libspmf.%s' % SHLIB_EXT, 'lib/libspm.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'
