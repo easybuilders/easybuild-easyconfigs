@@ -1,0 +1,48 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'MakeCp'
+
+name = 'TinyXML'
+version = '2.6.2'
+
+homepage = 'https://sourceforge.net/projects/tinyxml'
+description = """TinyXML is a simple, small, minimal, C++ XML parser that can be easily integrating
+ into other programs. It reads XML and creates C++ objects representing the XML document. The
+ objects can be manipulated, changed, and saved again as XML.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['%%(namelower)s_%s.tar.gz' % version.replace('.', '_')]
+checksums = ['15bdfdcec58a7da30adc87ac2b078e4417dbe5392f3afb719f9ba6d062645593']
+
+builddependencies = [('binutils', '2.38')]
+
+buildopts = ' '.join([
+    'TINYXML_USE_STL=YES CXXFLAGS="$CXXFLAGS $CPPFLAGS" CXX="$CXX" LDFLAGS="$LDFLAGS" LD="$LD"',
+    # build a shared library
+    '&& $CXX -shared -Wl,-soname,lib%(namelower)s.so.%(version)s -o lib%(namelower)s.so.%(version)s $LDFLAGS *.o',
+])
+
+_incs = ['tinystr.h', 'tinyxml.h']
+_libs = ['lib%(namelower)s.so.%(version)s']
+
+files_to_copy = [
+    (_incs, 'include'),
+    (_libs, 'lib'),
+]
+
+postinstallcmds = [
+    "cd %(installdir)s/lib",
+    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so.%(version_major)s",
+    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so.%(version_major_minor)s",
+    "ln -s lib%(namelower)s.so.%(version)s lib%(namelower)s.so",
+]
+
+sanity_check_paths = {
+    'files': ['include/%s' % i for i in _incs] + ['lib/%s' % l for l in _libs],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
