@@ -13,6 +13,9 @@ description = """RELION (for REgularised LIkelihood OptimisatioN,
 
 toolchain = {'name': 'fosscuda', 'version': '2020b'}
 
+local_scr_default_walltime="1-00:00:00"
+
+
 source_urls = ['https://github.com/3dem/relion/archive/refs/tags/']
 sources = ['%(version)s.zip']
 patches = ['RELION-3.0_beta_cuda_capabilities.patch']
@@ -27,6 +30,11 @@ dependencies = [
     ('X11', '20201008'),
     ('FLTK', '1.3.5'),
     ('LibTIFF', '4.1.0'),
+    ('ctffind','4.1.14'),
+#    ('Gctf','1.06'),
+#    ('MotionCor2','1.4.4'),
+    ('topaz-em','0.2.5a-20210519_01_77f9831_a'),
+    ('Ghostscript','9.53.3'),
 ]
 
 # lowest supported capability is 3.5
@@ -37,6 +45,46 @@ local_cuda_arch = ';'.join(['-gencode arch=compute_%s,code=\"sm_%s,compute_%s\"'
 configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-lpthread' -DMPI_INCLUDE_PATH=$EBROOTOPENMPI/include "
 configopts += "-DCUDA=ON -DCudaTexture=ON "
 configopts += '-DCUDA_ARCH=\'' + local_cuda_arch + '\''
+
+files_to_copy=[(['*'],'etc/templates')]
+
+modextravars={
+'RELION_SCRATCH_DIR': '\$SCRATCHDIR',
+'RELION_QSUB_NRMPI': '3',
+'RELION_QSUB_NRTHREADS': '7',
+'RELION_MINIMUM_DEDICATED': '15',
+'RELION_QSUB_EXTRA_COUNT': '7', 
+#'RELION_MPI_MAX': '20',
+#'RELION_THREAD_MAX': '24',
+'RELION_QUEUE_USE': 'true',  
+'RELION_QUEUE_NAME': 'gpu',  
+'RELION_QSUB_COMMAND': 'sbatch -C rome', 
+'RELION_QSUB_EXTRA2_DEFAULT': '60GB',
+'RELION_QSUB_EXTRA2': 'Memory',
+'RELION_QSUB_EXTRA1':'GPU count',
+'RELION_QSUB_EXTRA1_DEFAULT': '2',
+'RELION_QSUB_EXTRA3': 'Walltime',   
+'RELION_QSUB_EXTRA3_DEFAULT': local_scr_default_walltime, 
+'RELION_QSUB_EXTRA4': 'Extra modules',
+'RELION_QSUB_EXTRA4_DEFAULT': '',
+'RELION_QSUB_EXTRA5': 'Extra slurm parameter', 
+'RELION_QSUB_EXTRA5_DEFAULT': "#SBATCH --ntasks-per-core=1",
+'RELION_QSUB_EXTRA6': 'Preprocess command', 
+'RELION_QSUB_EXTRA6_DEFAULT': "", 
+'RELION_QSUB_EXTRA7': 'Postprocess command', 
+'RELION_QSUB_EXTRA7_DEFAULT': "#POSTPROC: replace, if required",
+'RELION_TEMPLATES': '%(installdir)s/etc/templates/',
+'RELION_QSUB_TEMPLATE': '${RELION_TEMPLATES}/gpu.slurm.script',
+'RELION_MOTIONCOR2_EXECUTABLE': "\\`which MotionCor2\\`",
+'RELION_GCTF_EXECUTABLE': '\\`which Gctf\\`',
+'RELION_CTFFIND_EXECUTABLE': '\\`which ctffind\\`',
+#'RELION_UNBLUR_EXECUTABLE': '\\`which unblur\\`',
+'RELION_SUMMOVIE_EXECUTABLE': '\\`which summovie\\`',
+'RELION_RESMAP_EXECUTABLE': '\\`which ResMap\\`',
+'RELION_TOPAZ_EXECUTABLE': '\\`which topaz\\`',
+'RELION_USE_GPU_ACCELERATION': '1',
+#'RELION_DO_OWN_MOTIONCOR': '0'
+}
 
 sanity_check_paths = {
     'files': ['bin/relion'],
