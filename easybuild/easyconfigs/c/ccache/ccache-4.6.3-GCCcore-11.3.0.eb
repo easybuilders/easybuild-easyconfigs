@@ -25,7 +25,7 @@ builddependencies = [
     ('CMake', '3.23.1'),
     ('Ninja', '1.10.2'),
     ('zstd', '1.5.2', ),
-    ('pkg-config', '0.29.2'),
+    ('pkgconfig', '1.5.5', '-python'),
 ]
 
 dependencies = [
@@ -33,15 +33,24 @@ dependencies = [
 ]
 
 # use BFD linker rather than default ld.gold (required on CentOS 8)
-preconfigopts = 'LDFLAGS=" -fuse-ld=bfd"'
-configopts = '-DENABLE_DOCUMENTATION=OFF -DENABLE_IPO=ON -DZSTD_LIBRARY="$EBROOTZSTD/lib/libzstd.a" '
-# disable hunt for faster linker, since using ld.gold may fail (on CentOS 8, for example)
-configopts += '-DUSE_FASTER_LINKER=OFF'
+preconfigopts = 'LDFLAGS="-fuse-ld=bfd"'
+configopts = ' '.join([
+    '-DENABLE_DOCUMENTATION=OFF',
+    '-DENABLE_IPO=ON',
+    '-DZSTD_LIBRARY="$EBROOTZSTD/lib/libzstd.a"',
+    '-DHIREDIS_LIBRARY="$EBROOTHIREDIS/lib/libhiredis.a"',
+    # Disable downloading dependencies
+    '-DZSTD_FROM_INTERNET=OFF -DHIREDIS_FROM_INTERNET=OFF',
+])
 
 sanity_check_paths = {
     'files': ['bin/ccache'],
     'dirs': []
 }
-sanity_check_commands = ['ccache --help']
+sanity_check_commands = [
+    'ccache --help',
+    # Ensure that the binary does not depend on any shared library
+    #'ldd $(which ccache) | grep -q "not a dynamic executable"',
+]
 
 moduleclass = 'tools'
