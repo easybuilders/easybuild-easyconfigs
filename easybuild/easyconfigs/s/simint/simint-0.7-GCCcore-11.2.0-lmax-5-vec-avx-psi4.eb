@@ -1,0 +1,54 @@
+# For the various build options see here:
+# https://www.bennyp.org/research/simint/README.txt
+# lmax is set to 5 which is widely used it seems
+# vec is set to avx, which should work on most platforms
+# This might be changed to other values, if required
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'simint'
+version = '0.7'
+local_lmax = '5'
+# supported: {scalar, sse, avx, avxfma, micavx512}
+# scalar ONLY FOR USE WITH simint-scalar (and only useful for benchmarks), micavx512 experimental!
+local_vec = 'avx'
+
+# custom configuration, to be used as dependency for PSI4
+versionsuffix = '-lmax-%s-vec-%s-psi4' % (local_lmax, local_vec)
+
+homepage = 'https://www.bennyp.org/research/simint/'
+description = """Simint is a vectorized implementation of the Obara-Saika (OS) 
+method of calculating electron repulsion integrals. Speedup is gained by 
+vectorizing the primitive loop of the OS algorithm, with additional vectorization 
+and optimizations left to the compiler."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://www.bennyp.org/research/simint/download/']
+sources = ['%(name)s-v%(version)s.tar.bz2']
+checksums = ['9851fa2323924d4732dd611b366219f4408c8561556abb5e4fa6dbb64a8f919c']
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('binutils', '2.37'),
+]
+
+local_common_configopts = '-DSIMINT_MAXAM=%s ' % local_lmax
+local_common_configopts += '-DSIMINT_VECTOR=%s ' % local_vec
+local_common_configopts += '-DENABLE_TESTS=ON '
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+# run test to valicate accuracy
+runtest = 'OMP_NUM_THREADS=4 test/test_eri ../%(name)s-v%(version)s/test/dat/'
+
+sanity_check_paths = {
+    'files': ['lib/libsimint.a', 'lib/libsimint.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'chem'
