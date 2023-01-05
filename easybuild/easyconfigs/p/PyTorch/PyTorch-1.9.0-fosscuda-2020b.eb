@@ -31,10 +31,12 @@ patches = [
     'PyTorch-1.9.0_fix-min-amount-of-devices-for-test.patch',
     'PyTorch-1.9.0_fix-testnn-on-A100.patch',
     'PyTorch-1.9.0_fix-use-after-destruct-in-cudaipctypes.patch',
+    'PyTorch-1.9.0_fix-kineto-crash.patch',
     'PyTorch-1.9.0_fix-vsx-vector-functions.patch',
     'PyTorch-1.9.0_increase-test-cuda-tolerance.patch',
     'PyTorch-1.9.0_increase-tolerance-for-distributed-tests.patch',
     'PyTorch-1.9.0_limit-world-size-for-zero-redundancy-opt-test.patch',
+    'PyTorch-1.9.0_skip-autograd-thread_shutdown-test.patch',
     'PyTorch-1.9.0_skip-lstm-serialization-test.patch',
     'PyTorch-1.9.0_skip-nccl-error-tests.patch',
 ]
@@ -53,7 +55,7 @@ checksums = [
     # PyTorch-1.8.1_fix-faulty-asserts-and-skip-test.patch
     '1601eacd336e01176bdbdbc5a2207743dc2999b535a738a8e36b3da3e8a2f3b6',
     # PyTorch-1.8.1_increase-distributed-test-timeout.patch
-    'c94eda2289692d00873e2ae8cecaaf7a1e5e657dfa4cfcd94b56093f6f4766ad',
+    '7a6e512274f0b8673f4f207a5bc53387d88be7e79833f42d20365668b2118071',
     # PyTorch-1.8.1_skip_dist_autograd_sync_streams.patch
     '7940e571f41c350d3b634e98b1658a7001c96fdb1b1920835b8f5484ce389d09',
     # PyTorch-1.9.0_avoid-failures-in-test_unary_ufuncs.patch
@@ -63,13 +65,16 @@ checksums = [
     '8e8b417782e2f3004462c32338e12685e7296d15207f3e3087dcb8015e648f98',  # PyTorch-1.9.0_fix-testnn-on-A100.patch
     # PyTorch-1.9.0_fix-use-after-destruct-in-cudaipctypes.patch
     '67960bf9140baf004b07e29f7c2b338e7bc4e4e4f2c931768be44f58526e605f',
-    '56a46c1690467a7fe7f6b904d152f8a3e2385305c5c29717f66b98b38022bf74',  # PyTorch-1.9.0_fix-vsx-vector-functions.patch
+    '1ed5e125f7922ea577d43053a6652aedc21cc036157e101c0e3b9aee9029d3b0',  # PyTorch-1.9.0_fix-kineto-crash.patch
+    'a4733b6b16a0db4ee5f85f2b103abc29bd711cfc5253f8dd8494d2b0c1509516',  # PyTorch-1.9.0_fix-vsx-vector-functions.patch
     # PyTorch-1.9.0_increase-test-cuda-tolerance.patch
     '73de855ab1ed38043c7fb2a983927786b83d7547aefed926f19e554e2214838a',
     # PyTorch-1.9.0_increase-tolerance-for-distributed-tests.patch
     '725922f0000d51c03f726a34b249db8f53eee7e5c67417774a5113de954f5a5c',
     # PyTorch-1.9.0_limit-world-size-for-zero-redundancy-opt-test.patch
     'ff573660913ce055e24cfd194ce747ba5685091c631cfd443eae2a99d56b57ea',
+    # PyTorch-1.9.0_skip-autograd-thread_shutdown-test.patch
+    '94957de0fd5bcbea37482cb6d0d12b4608dccf50a10da0836e151b414954ccc3',
     # PyTorch-1.9.0_skip-lstm-serialization-test.patch
     '0fc14e29bd7530bcc09f4212df3c846072b1313216da86b827e102b85d695f49',
     '9634fb34fedff4589b9175a4e4c3f278b60d4dcbc7b36b0f19604748d32074f0',  # PyTorch-1.9.skip-nccl-error-tests.patch
@@ -96,7 +101,7 @@ dependencies = [
     ('numactl', '2.0.13'),
     ('FFmpeg', '4.3.1'),
     ('Pillow', '8.0.1'),
-    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', True),
+    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', SYSTEM),
     ('magma', '2.5.4'),
     ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
 ]
@@ -111,9 +116,19 @@ excluded_tests = {
         # Bad tests: https://github.com/pytorch/pytorch/issues/60260
         'distributed/elastic/utils/distributed_test',
         'distributed/elastic/multiprocessing/api_test',
+        # These tests fail on A10s at the very least, they time out forever no matter how long the timeout is.
+        # Possibly related to NCCL 2.8.3: https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-8-3.html
+        'distributed/test_distributed_fork',
+        'distributed/test_distributed_spawn',
+        # Fails on A10s: https://github.com/pytorch/pytorch/issues/63079
+        'test_optim',
         # Test from this suite timeout often. The process group backend is deprecated anyway
         'distributed/rpc/test_process_group_agent',
-    ]
+    ],
+    'POWER': [
+        # Works when run alone, fails when run as part of the suite. So far only observed on PPC
+        'distributed/rpc/test_tensorpipe_agent',
+    ],
 }
 
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'

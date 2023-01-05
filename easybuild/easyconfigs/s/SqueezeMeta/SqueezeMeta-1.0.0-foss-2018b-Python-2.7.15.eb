@@ -1,0 +1,81 @@
+easyblock = 'Tarball'
+
+name = 'SqueezeMeta'
+version = '1.0.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/jtamames/SqueezeMeta'
+description = """SqueezeMeta is a full automatic pipeline for metagenomics/metatranscriptomics,
+ covering all steps of the analysis."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = ['https://github.com/jtamames/SqueezeMeta/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['SqueezeMeta-%(version)s_fix-hardcoding.patch']
+checksums = [
+    '35fa45246fa3580e7ab00644176f719151465aa0ed5f0023d30075668baefb11',  # v1.0.0.tar.gz
+    '5fe6b721669d022a1d891472d64061f217791ff8efd1642d34a03de18a21d677',  # SqueezeMeta-1.0.0_fix-hardcoding.patch
+]
+
+dependencies = [
+    ('Perl', '5.28.0'),  # provides XML::Parser
+    ('XML-LibXML', '2.0132', '-Perl-%(perlver)s'),
+    ('Python', '2.7.15'),
+    ('matplotlib', '2.2.3', versionsuffix),
+    ('Pysam', '0.15.1', versionsuffix),
+    ('R', '3.5.1', versionsuffix),
+    ('BLAST+', '2.7.1'),
+    ('BWA', '0.7.17'),
+    ('CD-HIT', '4.6.8'),
+    ('CheckM', '1.0.13', versionsuffix),
+    ('DAS_Tool', '1.1.1', '-R-%(rver)s-Python-%(pyver)s'),  # depends on prodigal & pullseq
+    ('DIAMOND', '0.9.22'),
+    ('MEGAHIT', '1.1.4', versionsuffix),
+    ('minimap2', '2.13'),
+    ('Java', '1.8', '', SYSTEM),
+    ('RDP-Classifier', '2.12', '-Java-%(javaver)s', SYSTEM),
+    ('MetaBAT', '2.12.1', versionsuffix),
+    ('MinPath', '1.4', versionsuffix),  # depends on GPLK (which provides glpsol)
+    ('PRINSEQ', '0.20.4', '-Perl-%(perlver)s'),
+    ('Trimmomatic', '0.38', '-Java-%(javaver)s', SYSTEM),
+    ('AMOS', '3.1.0'),
+    ('MaxBin', '2.2.6', '-Perl-%(perlver)s'),
+    ('SPAdes', '3.13.0'),
+    ('Bowtie2', '2.3.4.2'),
+    ('canu', '1.8', '-Perl-%(perlver)s'),
+    ('HMMER', '3.2.1'),
+    ('MUMmer', '4.0.0beta2'),
+    ('pplacer', '1.1.alpha19', '', SYSTEM),
+    ('Short-Pair', '20170125', versionsuffix),
+    ('SAMtools', '1.9'),
+    ('CompareM', '0.0.23', versionsuffix),
+]
+
+keepsymlinks = True
+
+postinstallcmds = [
+    # backup patched barrnap
+    "cp %(installdir)s/bin/barrnap %(builddir)s/",
+    # remove vendored tools that are include as dependencies
+    "rm -r %(installdir)s/bin/*",
+    "cp %(builddir)s/barrnap %(installdir)s/bin/",
+    # fix shebang in Perl scripts
+    "sed -i 's@#!/usr/bin/perl@#!/usr/bin/env perl@g' %(installdir)s/scripts/*.pl",
+    # also install SQMtools R library
+    "mkdir %(installdir)s/R && R CMD INSTALL lib/SQMtools --library=%(installdir)s/R/ --no-clean-on-error",
+]
+
+sanity_check_paths = {
+    'files': ['scripts/SqueezeMeta.pl'],
+    'dirs': ['scripts/preparing_databases'],
+}
+
+sanity_check_commands = ["""echo 'library("SQMtools")' | R -q --no-save"""]
+
+modextrapaths = {
+    'PATH': 'scripts',
+    'R_LIBS_SITE': 'R',
+}
+
+moduleclass = 'bio'

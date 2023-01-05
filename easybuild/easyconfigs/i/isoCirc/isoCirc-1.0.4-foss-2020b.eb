@@ -1,0 +1,67 @@
+easyblock = 'PythonBundle'
+
+name = 'isoCirc'
+version = '1.0.4'
+
+homepage = 'https://github.com/Xinglab/isoCirc'
+description = """isoCirc: computational pipeline to identify high-confidence
+BSJs and full-length circRNA isoforms from isoCirc long-read data
+"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Biopython', '1.78'),
+    ('SciPy-bundle', '2020.11'),
+    ('matplotlib', '3.3.3'),
+    ('Pysam', '0.16.0.1'),
+    ('pybedtools', '0.8.2'),
+    ('minimap2', '2.18'),
+    ('pyfaidx', '0.5.9.5'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('argcomplete', '1.12.3', {
+        'checksums': ['2c7dbffd8c045ea534921e63b0be6fe65e88599990d8dc408ac8c542b72a5445'],
+    }),
+    ('argh', '0.26.2', {
+        'checksums': ['e9535b8c84dc9571a48999094fda7f33e63c3f1b74f3e5f3ac0105a58405bb65'],
+    }),
+    ('crlibm', '1.0.3', {
+        'checksums': ['48e17981f90d69c6bb0013f68bacbe7a157de864a533d15dd196ca7e98348a35'],
+    }),
+    ('gffutils', '0.10.1', {
+        'checksums': ['a8fc39006d7aa353147238160640e2210b168f7849cb99896be3fc9441e351cb'],
+    }),
+    ('mappy', '2.20', {
+        'checksums': ['00c8720783ac982b514b01b86349ede9809eeaccdf1328acb5a16dfeef51458b'],
+    }),
+    ('pyinterval', '1.2.0', {
+        'modulename': 'interval',
+        'checksums': ['8c46224a05815affa803ed5620432236bba620a246701b860d98ae7358a41d21'],
+    }),
+    (name, version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/Xinglab/isoCirc/archive'],
+        'start_dir': 'isoCirc_pipeline',
+        'checksums': ['c5879820d7e61b4fc25a4357df8967d65f6d6c05aff705d5338a16707ffa849d'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['isocirc', 'isocircPlot']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = [
+    "isocirc --help",
+    (
+        "cd %(builddir)s/%(name)s/%(name)s-%(version)s/test_data && "
+        "isocirc -t 1 read_toy.fa chr16_toy.fa chr16_toy.gtf chr16_circRNA_toy.bed output"
+    ),
+]
+sanity_pip_check = True
+
+moduleclass = 'bio'

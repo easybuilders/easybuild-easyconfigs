@@ -1,0 +1,73 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '1.4.1717'
+versionsuffix = '-Java-%(javaver)s-R-%(rver)s'
+
+homepage = 'https://www.rstudio.com/'
+description = """This is the RStudio Server version.
+RStudio is a set of integrated tools designed to help you be more productive with R.
+
+The server can be started with:
+  rserver --server-daemonize=0 --www-port 8787 --rsession-which-r=$(which R)
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['3af234180fd7cef451aef40faac2c7b52860f14a322244c1c7aede029814d261']
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('CMake', '3.20.1'),
+    ('ant', '1.10.11', '-Java-%(javaver)s', SYSTEM),
+]
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('R', '4.1.0'),
+    ('Java', '11', '', SYSTEM),
+    ('SOCI', '4.0.2'),
+]
+
+osdependencies = [
+    ('pam-devel', 'libpam0g-dev')
+]
+
+build_type = "Release"
+local_dep_dir = "%(builddir)s/rstudio-%(version)s/dependencies/common"
+preconfigopts = (("export RSTUDIO_TOOLS_ROOT={} && "
+                  "cd {} && "
+                  "./install-cef && "
+                  "./install-dictionaries && "
+                  "./install-mathjax && "
+                  "./install-pandoc && "
+                  "./install-packages && "
+                  "./install-yaml-cpp && "
+                  "./install-npm-dependencies && "
+                  "cd ../../ && "
+                  "mkdir build && cd build && ").format("%(builddir)s", local_dep_dir))
+
+configopts = "-DRSTUDIO_TARGET=Server -DRSTUDIO_BOOST_SIGNALS_VERSION=2 "
+configopts += "-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.a "
+configopts += "-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.a "
+configopts += "-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.a "
+
+prebuildopts = (("cd {} && cd build && ")).format("%(builddir)s/rstudio-%(version)s")
+preinstallopts = (("cd {} && cd build && ")).format("%(builddir)s/rstudio-%(version)s")
+
+sanity_check_commands = [
+    # This command requires environment variables R_HOME and R_DOC_DIR
+    "R_HOME=$EBROOTR/lib64/R R_DOC_DIR=$R_HOME/doc rsession --verify-installation=1",
+    # This command requires a db conf (this may also be needed for live use)
+    """MYTMP=`mktemp -d` && echo -e "provider=sqlite\ndirectory=$MYTMP/db" >> $MYTMP/db.conf && """
+    "rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf --server-data-dir=$MYTMP/sdd ",
+]
+
+sanity_check_paths = {
+    'files': ["bin/rstudio-server"],
+    'dirs': ['bin', 'extras', 'resources', 'www', 'www-symbolmaps', 'R'],
+}
+
+moduleclass = 'lang'
