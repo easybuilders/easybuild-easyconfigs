@@ -1,0 +1,22 @@
+Do NOT make files setuid or try to do setcap.
+That's a recipe for disaster.
+
+Åke Sandgren, 20221031
+diff -ru gstreamer-1.20.2.orig/libs/gst/helpers/ptp_helper_post_install.sh gstreamer-1.20.2/libs/gst/helpers/ptp_helper_post_install.sh
+--- gstreamer-1.20.2.orig/libs/gst/helpers/ptp_helper_post_install.sh	2022-05-03 00:29:29.000000000 +0200
++++ gstreamer-1.20.2/libs/gst/helpers/ptp_helper_post_install.sh	2022-10-31 16:39:11.959435316 +0100
+@@ -11,14 +11,10 @@
+   setuid-root)
+     echo "$0: permissions before: "
+     ls -l "$ptp_helper"
+-    chown root "$ptp_helper" || true
+-    chmod u+s "$ptp_helper" || true
+     echo "$0: permissions after: "
+     ls -l "$ptp_helper"
+     ;;
+   capabilities)
+-    echo "Calling $setcap cap_net_bind_service,cap_net_admin+ep $ptp_helper"
+-    $setcap cap_net_bind_service,cap_net_admin+ep "$ptp_helper" || true
+     ;;
+   none)
+     echo "No perms/caps to set for $ptp_helper"
