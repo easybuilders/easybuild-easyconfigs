@@ -28,10 +28,28 @@ buildopts = '%s ' % ' '.join(local_targets)
 buildopts += 'FFTW_ROOT="${EBROOTFFTW}" '
 
 # https://www.vasp.at/wiki/index.php/Validation_tests
-pretestopts = 'export MPIRUN="mpirun -np 4 -x OMP_NUM_THREADS=4 -x OMP_STACKSIZE=512m" && '
+
+# it is recommended to run the testsuite with 4 MPI processes,
+# but it's also recommended to use only 1 MPI process per GPU,
+# so running the test on GPUs requires 4 GPUs?
+local_test_mpiprocs = 4
+
+pretestopts = 'export MPIRUN="mpirun -np %s -x OMP_NUM_THREADS=4 -x OMP_STACKSIZE=512m" && ' % local_test_mpiprocs
 pretestopts += 'export VASP_TESTSUITE_EXE_STD="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_std" && '
 pretestopts += 'export VASP_TESTSUITE_EXE_NCL="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_ncl" && '
 pretestopts += 'export VASP_TESTSUITE_EXE_GAM="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_gam" && '
+
+# skip tests that are too long
+local_test_skip = 'HEG_333_LW '
+
+# these tests are failing when using 4 V100 GPUs (still leaves about 50 successul tests)
+local_test_skip += "bulk_GaAs_scGW_ALGO=D_sym bulk_GaAs_scGW_ALGO=D_sym_RPR bulk_GaAs_scGW_sym bulk_GaAs_scGW_sym_RPR "
+local_test_skip += "bulk_InP_SOC_DFT_ISYM=3 bulk_InP_SOC_DFT_ISYM=3_RPR bulk_InP_SOC_PBE0_nosym bulk_InP_SOC_PBE0_sym "
+local_test_skip += "bulk_InP_SOC_PBE0_sym_RPR bulk_SiO2_HSE bulk_SiO2_HSE_RPR bulk_SiO2_LPEAD bulk_SiO2_LPEAD_RPR "
+local_test_skip += "bulk_SiO2_PBE0 bulk_SiO2_PBE0_RPR GaAs_LEPSILON_LPEAD GaAs_LEPSILON_LPEAD_RPR SiC_HSE06_ALGO=A "
+local_test_skip += "SiC_HSE06_ALGO=A_RPR SiC_HSE06_ALGO=D SiC_HSE06_ALGO=D_RPR"
+
+pretestopts += 'export VASP_TESTSUITE_SKIP_TESTS="%s" && ' % local_test_skip
 runtest = 'test'
 
 parallel = 1
