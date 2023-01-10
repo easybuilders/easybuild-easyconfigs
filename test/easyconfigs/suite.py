@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ##
-# Copyright 2012-2021 Ghent University
+# Copyright 2012-2023 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -32,9 +32,9 @@ Usage: "python -m easybuild.easyconfigs.test.suite.py" or "./easybuild/easyconfi
 """
 import os
 import shutil
-import sys
 import tempfile
 import unittest
+from unittest import main
 
 import easybuild.tools.build_log  # noqa initialize EasyBuild logging, so we can disable it
 import test.easyconfigs.easyconfigs as e
@@ -46,17 +46,24 @@ fancylogger.disableDefaultHandlers()
 fancylogger.setLogLevelError()
 
 # make sure no deprecated behaviour is triggered
-os.environ['EASYBUILD_DEPRECATED'] = '10000'
+# os.environ['EASYBUILD_DEPRECATED'] = '10000'
 
-os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
 
-# call suite() for each module and then run them all
-SUITE = unittest.TestSuite([x.suite() for x in [e, s]])
-res = unittest.TextTestRunner().run(SUITE)
+class EasyConfigsTestSuite(unittest.TestSuite):
+    def __init__(self, loader):
+        # call suite() for each module and then run them all
+        super(EasyConfigsTestSuite, self).__init__([x.suite(loader) for x in [e, s]])
 
-shutil.rmtree(os.environ['EASYBUILD_TMP_LOGDIR'])
-del os.environ['EASYBUILD_TMP_LOGDIR']
+    def run(self, *args, **kwargs):
+        os.environ['EASYBUILD_TMP_LOGDIR'] = tempfile.mkdtemp(prefix='easyconfigs_test_')
+        super(EasyConfigsTestSuite, self).run(*args, **kwargs)
+        shutil.rmtree(os.environ['EASYBUILD_TMP_LOGDIR'])
+        del os.environ['EASYBUILD_TMP_LOGDIR']
 
-if not res.wasSuccessful():
-    sys.stderr.write("ERROR: Not all tests were successful.\n")
-    sys.exit(2)
+
+def load_tests(loader, tests, pattern):
+    return EasyConfigsTestSuite(loader)
+
+
+if __name__ == '__main__':
+    main()

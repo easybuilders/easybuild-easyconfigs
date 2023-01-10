@@ -1,0 +1,66 @@
+Fix test failures due to use of native TF32 types on A100 GPUs.
+See https://github.com/pytorch/pytorch/issues/52278.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_nn.py b/test/test_nn.py
+index 533cff9ea4..fd2654a06c 100644
+--- a/test/test_nn.py
++++ b/test/test_nn.py
+@@ -10079,12 +10079,11 @@ def add_test(test, decorator=None):
+             add(cuda_test_name + '_cdouble', test_cdouble)
+ 
+     else:
+-        if tf32_is_not_fp32() and test.with_tf32:
+-
+-            def with_tf32_off(self, test=test, kwargs=kwargs):
+-                with tf32_off():
+-                    test.test_cuda(self, **kwargs)
++        def with_tf32_off(self, test=test, kwargs=kwargs):
++            with tf32_off():
++                test.test_cuda(self, **kwargs)
+ 
++        if tf32_is_not_fp32() and test.with_tf32:
+             add(cuda_test_name + '_fp32', with_tf32_off)
+ 
+             def with_tf32_on(self, test=test, kwargs=kwargs):
+@@ -10093,7 +10092,7 @@ def add_test(test, decorator=None):
+ 
+             add(cuda_test_name + '_tf32', with_tf32_on)
+         else:
+-            add(cuda_test_name, lambda self, test=test, kwargs=kwargs: test.test_cuda(self, **kwargs))
++            add(cuda_test_name, with_tf32_off)
+ 
+ for test_params in module_tests + new_module_tests:
+     # TODO: CUDA is not implemented yet
+diff --git a/torch/testing/_internal/common_nn.py b/torch/testing/_internal/common_nn.py
+index ee75a6985a..f890838686 100644
+--- a/torch/testing/_internal/common_nn.py
++++ b/torch/testing/_internal/common_nn.py
+@@ -3692,7 +3692,7 @@ new_module_tests = [
+         check_gradgrad=False,
+         desc='gelu_activation',
+         with_tf32=True,
+-        tf32_precision=0.01,
++        tf32_precision=0.05,
+     ),
+     dict(
+         module_name='TransformerDecoderLayer',
+@@ -3704,7 +3704,7 @@ new_module_tests = [
+         check_gradgrad=False,
+         desc='relu_activation',
+         with_tf32=True,
+-        tf32_precision=0.01,
++        tf32_precision=0.05,
+     ),
+     dict(
+         module_name='TransformerDecoderLayer',
+@@ -3717,7 +3717,7 @@ new_module_tests = [
+         check_gradgrad=False,
+         desc='gelu_activation',
+         with_tf32=True,
+-        tf32_precision=0.01,
++        tf32_precision=0.05,
+     ),
+     dict(
+         module_name='Transformer',

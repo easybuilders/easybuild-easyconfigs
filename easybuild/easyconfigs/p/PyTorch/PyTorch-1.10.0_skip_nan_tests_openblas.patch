@@ -1,0 +1,54 @@
+# Author: Caspar van Leeuwen, SURF
+# Skip tests that fail due to how OpenBLAS 0.3.15 and later handle NaN inputs
+# This affects the following tests:
+# ERROR: test_norm_extreme_values_cpu (__main__.TestLinalgCPU)
+# FAIL: test_svd_errors_and_warnings_cpu_complex64 (__main__.TestLinalgCPU)
+# FAIL: test_svd_errors_and_warnings_cpu_float32 (__main__.TestLinalgCPU)
+# FAIL: test_svd_errors_and_warnings_cpu_float64 (__main__.TestLinalgCPU)
+# See https://github.com/pytorch/pytorch/issues/67693
+diff -Nru pytorch.orig/test/test_linalg.py pytorch/test/test_linalg.py
+--- pytorch.orig/test/test_linalg.py	2021-11-02 15:50:15.433729841 +0100
++++ pytorch/test/test_linalg.py	2021-11-03 10:46:52.910339202 +0100
+@@ -1873,6 +1873,11 @@
+                     # These cases are broken because of another issue with svd
+                     # https://github.com/pytorch/pytorch/issues/52633
+                     return True
++            if self.device_type == 'cpu':
++                if torch.any(torch.isnan(x)):
++                    # This case is broken when cpu backend is OpenBLAS >= 0.3.15
++                    # See https://github.com/pytorch/pytorch/issues/67693
++                    return True
+             return False
+ 
+         for matrix in matrices:
+@@ -2896,15 +2901,17 @@
+                     # error from out_v
+                     svd(a, out=(out_u, out_s, out_v))
+ 
++            # Skip test for NaNs, it fails with OpenBLAS since it produces a different error than expected
++            # See https://github.com/pytorch/pytorch/issues/67693
+             # if input contains NaN then an error is triggered for svd
+-            a = torch.full((3, 3), float('nan'), dtype=dtype, device=device)
+-            a[0] = float('nan')
+-            with self.assertRaisesRegex(RuntimeError, "The algorithm failed to converge"):
+-                svd(a)
+-            a = torch.randn(3, 33, 33, dtype=dtype, device=device)
+-            a[1, 0, 0] = float('nan')
+-            with self.assertRaisesRegex(RuntimeError, r"\(Batch element 1\): The algorithm failed to converge"):
+-                svd(a)
++            # a = torch.full((3, 3), float('nan'), dtype=dtype, device=device)
++            # a[0] = float('nan')
++            # with self.assertRaisesRegex(RuntimeError, "The algorithm failed to converge"):
++            #     svd(a)
++            # a = torch.randn(3, 33, 33, dtype=dtype, device=device)
++            # a[1, 0, 0] = float('nan')
++            # with self.assertRaisesRegex(RuntimeError, r"\(Batch element 1\): The algorithm failed to converge"):
++            #     svd(a)
+ 
+     @skipCUDAIfNoMagmaAndNoCusolver
+     @skipCPUIfNoLapack
+Binary files pytorch.orig/torch/__pycache__/autocast_mode.cpython-39.pyc and pytorch/torch/__pycache__/autocast_mode.cpython-39.pyc differ
+Binary files pytorch.orig/torch/__pycache__/__init__.cpython-39.pyc and pytorch/torch/__pycache__/__init__.cpython-39.pyc differ
+Binary files pytorch.orig/torch/__pycache__/torch_version.cpython-39.pyc and pytorch/torch/__pycache__/torch_version.cpython-39.pyc differ
+Binary files pytorch.orig/torch/__pycache__/_utils.cpython-39.pyc and pytorch/torch/__pycache__/_utils.cpython-39.pyc differ
+Binary files pytorch.orig/torch/__pycache__/_utils_internal.cpython-39.pyc and pytorch/torch/__pycache__/_utils_internal.cpython-39.pyc differ

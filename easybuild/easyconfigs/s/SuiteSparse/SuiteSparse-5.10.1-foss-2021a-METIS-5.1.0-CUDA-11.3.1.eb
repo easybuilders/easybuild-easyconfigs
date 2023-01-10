@@ -1,0 +1,33 @@
+name = 'SuiteSparse'
+version = '5.10.1'
+local_metis_ver = '5.1.0'
+versionsuffix = '-METIS-%s-CUDA-%%(cudaver)s' % local_metis_ver
+
+homepage = 'https://faculty.cse.tamu.edu/davis/suitesparse.html'
+description = """SuiteSparse is a collection of libraries manipulate sparse matrices."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'unroll': True, 'pic': True}
+
+source_urls = ['https://github.com/DrTimothyAldenDavis/SuiteSparse/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['acb4d1045f48a237e70294b950153e48dce5b5f9ca8190e86c2b8c54ce00a7ee']
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('M4', '1.4.18'),
+]
+
+dependencies = [
+    ('METIS', local_metis_ver),
+    ('MPFR', '4.1.0'),
+    ('CUDA', '11.3.1', '', SYSTEM),
+]
+
+# default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['3.5', '5.0', '6.0', '7.0', '7.5', '8.0']
+
+# make sure that bin/demo can find libsuitesparseconfig.so.5 during build
+prebuildopts = "export LD_LIBRARY_PATH=%(builddir)s/SuiteSparse-%(version)s/lib:$LD_LIBRARY_PATH && "
+
+moduleclass = 'numlib'

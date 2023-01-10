@@ -32,18 +32,18 @@ dependencies = [
     ('Boost', '1.74.0'),
 ]
 
-separate_build_dir = True
 start_dir = 'cpp'
 
-# see https://arrow.apache.org/docs/python/development.html
-configopts = "-DCMAKE_BUILD_TYPE=Release -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON "
-configopts += "-DCMAKE_INSTALL_LIBDIR=lib"
+# see https://arrow.apache.org/docs/developers/python.html
+configopts = "-DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON "
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib -DPython3_ROOT_DIR=$EBROOTPYTHON"
 
 # also install Python bindings
 local_install_pyarrow_cmds = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
 local_install_pyarrow_cmds += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
 local_install_pyarrow_cmds += "cd %(builddir)s/*arrow-%(version)s/python && export XDG_CACHE_HOME=$TMPDIR && "
 local_install_pyarrow_cmds += "sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && "
+local_install_pyarrow_cmds += "Python3_ROOT_DIR=$EBROOTPYTHON "
 local_install_pyarrow_cmds += "PYARROW_WITH_PARQUET=1 pip install --prefix %(installdir)s ."
 postinstallcmds = [local_install_pyarrow_cmds]
 
