@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2022 Ghent University
+# Copyright 2013-2023 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -485,7 +485,8 @@ class EasyConfigTest(TestCase):
 
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
-            'jax': [(r'0\.3\.9', [r'AlphaFold-2\.2\.2-foss-2021a', r'scvi-tools-0\.16\.4-foss-2021a'])],
+            # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
+            'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
@@ -497,7 +498,10 @@ class EasyConfigTest(TestCase):
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
                                                 r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
-                                                r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0']),
+                                                r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0',
+                                                r'wxPython-4\.2\.0',
+                                                r'GRASS-8\.2\.0',
+                                                r'QGIS-3\.28\.1']),
             ],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
             # ncbi-vdb v2.x and v3.0.0 require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
@@ -592,6 +596,8 @@ class EasyConfigTest(TestCase):
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
             # WPS 3.9.1 requires WRF 3.9.1.1
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
+            # wxPython 4.2.0 depends on wxWidgets 3.2.0
+            'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
