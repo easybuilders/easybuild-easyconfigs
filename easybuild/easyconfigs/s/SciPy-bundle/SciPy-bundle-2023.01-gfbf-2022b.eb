@@ -1,4 +1,4 @@
-easyblock = 'PythonBundle'
+easyblock = 'Bundle'
 
 name = 'SciPy-bundle'
 version = '2023.01'
@@ -12,7 +12,9 @@ toolchainopts = {'pic': True, 'lowopt': True}
 builddependencies = [
     ('hypothesis', '6.62.1'),
     ('UnZip', '6.0'),
-    ('meson-python', '0.11.0'),
+    ('Meson', '0.64.0'),
+    ('Ninja', '1.11.1'),
+    ('pkgconf', '1.9.3'),
 ]
 
 dependencies = [
@@ -20,52 +22,89 @@ dependencies = [
     ('pybind11', '2.10.3'),  # required by scipy
 ]
 
-use_pip = True
+default_easyblock = 'PythonPackage'
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'source_urls': [PYPI_SOURCE],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+_pythonpath = 'PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH'
 
 # order is important!
-exts_list = [
+components = [
     ('numpy', '1.24.1', {
-        'patches': ['numpy-1.22.3_disable-broken-override-test.patch'],
+        'patches': [{'name': 'numpy-1.22.3_disable-broken-override-test.patch', 'alt_location': 'SciPy-bundle'}],
         'checksums': [
             {'numpy-1.24.1.tar.gz': '2386da9a471cc00a1f47845e27d916d5ec5346ae9696e01a8a34760858fe9dd2'},
             {'numpy-1.22.3_disable-broken-override-test.patch':
              '9c589bb073b28b25ff45eb3c63c57966aa508dd8b318d0b885b6295271e4983c'},
         ],
+        'sanity_pip_check': True,
     }),
     ('ply', '3.11', {
         'checksums': ['00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
     ('gast', '0.5.3', {
         'checksums': ['cfbea25820e653af9c7d1807f659ce0a0a9c64f2439421a7bba4f0983f532dea'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
     ('beniget', '0.4.1', {
         'checksums': ['75554b3b8ad0553ce2f607627dad3d95c60c441189875b98e097528f8e23ac0c'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
     ('pythran', '0.12.1', {
         'checksums': ['702c2701187cfb38f66c0c20cc85d04d0e156d260a8d92892da65947faa5360e'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
     ('scipy', '1.10.0', {
-        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && ",
+        'easyblock': 'MesonNinja',
+        'preconfigopts': _pythonpath,
+        'configopts': '-Dblas=flexiblas -Dlapack=flexiblas',
+        'prebuildopts': _pythonpath,
+        'preinstallopts': "PATH=%(installdir)s/bin:$PATH " + _pythonpath,
         'checksums': ['c8b3cbc636a87a89b770c6afc999baa6bcbb01691b5ccbbc1b1791c7c0a07540'],
     }),
     ('numexpr', '2.8.4', {
         'checksums': ['d5432537418d18691b9115d615d6daa17ee8275baef3edf1afbbf8bc69806147'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
     ('Bottleneck', '1.3.5', {
         'checksums': ['2c0d27afe45351f6f421893362621804fa7dea14fe29a78eaa52d4323f646de7'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
     ('pandas', '1.5.2', {
         'preinstallopts': "export PANDAS_CI=0 && ",
         'checksums': ['220b98d15cee0b2cd839a6358bd1f273d0356bf964c1a1aeb32d47db0215488b'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
     ('mpmath', '1.2.1', {
         'checksums': ['79ffb45cf9f4b101a807595bcb3e72e0396202e0b1d25d689134b48c4216a81a'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
     ('deap', '1.3.3', {
         'checksums': ['8772f1b0fff042d5e516b0aebac2c706243045aa7d0de8e0b8658f380181cf31'],
+        'use_pip': True,
+        'sanity_pip_check': True,
+        'download_dep_fail': True,
     }),
 ]
-
-sanity_pip_check = True
 
 moduleclass = 'lang'
