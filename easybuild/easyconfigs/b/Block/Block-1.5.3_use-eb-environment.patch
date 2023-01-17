@@ -1,89 +1,71 @@
 Use build environment defined by EasyBuild
 author: Nicholas Cheng (@nicholascheng94)
 author: Alex Domingo (Vrije Universiteit Brussel)
---- input.h.orig	2022-11-22 15:28:24.141800278 +0100
-+++ input.h	2022-11-22 15:28:56.761244080 +0100
-@@ -18,7 +18,7 @@
- #include "SpinQuantum.h"
- #include "timer.h"
- #include "couplingCoeffs.h"
--#include <boost/tr1/unordered_map.hpp>
-+#include <boost/unordered_map.hpp>
- #include "IntegralMatrix.h"
- 
- 
---- makefile.orig	2022-11-22 16:40:08.227179000 +0100
-+++ makefile	2022-11-22 16:41:34.467330533 +0100
-@@ -6,28 +6,28 @@
- 
- ######### GENERAL OPTIONS FOR USER #########
- #specify boost include file
--BOOSTINCLUDE = /opt/local/include
-+BOOSTINCLUDE = ${EBROOTBOOST}/include
- 
- #specify boost and lapack-blas library locations
--BOOSTLIB = -L/opt/local/lib  -lboost_system -lboost_filesystem -lboost_serialization
-+BOOSTLIB = -L${EBROOTBOOST}/lib -lboost_system -lboost_filesystem -lboost_serialization
- #BOOSTLIB = -lboost_serialization -lboost_system -lboost_filesystem
--LAPACKBLAS =    /usr/lib/liblapack.dylib /usr/lib/libblas.dylib
-+LAPACKBLAS = ${LIBLAPACK}
- 
- # set if using BOOST version >= 1.56.0
--USE_BOOST56 = no
-+USE_BOOST56 = yes
- ifeq ($(USE_BOOST56), yes)
- 	B56 = -DBOOST_1_56_0
- endif
- 
- #use these variable to set if we will use mpi or not 
- USE_MPI = no
- USE_MKL = no
- 
+--- Makefile.orig	2023-01-06 12:46:33.569558000 +0100
++++ Makefile	2023-01-06 15:47:17.535047461 +0100
+@@ -8,16 +8,16 @@
  # change to icpc for Intel
--CXX =  icpc
--MPICXX = mpiicpc
+ #CXX = clang++
+ #MPICXX = mpiicpc
+-CXX = g++
+-MPICXX = mpic++
 -export CXX
 -export MPICXX
-+#CXX =  icpc
-+#MPICXX = mpiicpc
++#CXX = g++
++#MPICXX = mpic++
 +#export CXX
 +#export MPICXX
  
- # use this variable to set if we will use integer size of 8 or not.
- # molpro compilation requires I8, since their integers are long
-@@ -40,7 +40,7 @@
- # molcas compilation w/ -64 option requires I8 as well
- MOLCAS = no
+ # BOOST include directory
+ #BOOSTDIR=/software/StackBlock/boost_1_58_0
+ #BOOSTINCLUDE = ${BOOSTDIR}/include
+-BOOSTDIR=/usr/lib
+-BOOSTINCLUDE =/usr/include
++BOOSTDIR = $(EBROOTBOOST)
++BOOSTINCLUDE = ${BOOSTDIR}/include
  
--OPENMP = no
-+OPENMP = yes
+ # set to yes if using BOOST version >= 1.56.0
+ USE_BOOST56 = yes
+@@ -35,7 +35,7 @@
  
- ifeq ($(USE_MKL), yes)
- MKLLIB = /opt/intel/compilers_and_libraries/linux/mkl/lib/intel64
-@@ -101,7 +101,7 @@
-       OPENMP_FLAGS= -openmp -D_OPENMP 
+ #LAPACKBLAS = -lblas -llapack
+ #LAPACKBLAS =    /usr/lib/liblapack.dylib /usr/lib/libblas.dylib
+-LAPACKBLAS = 
++LAPACKBLAS = ${LIBBLAS}
+ 
+ # set if we will use MPI or OpenMP
+ USE_MPI = no
+@@ -108,12 +108,12 @@
+ 	MOLCAS_BLOCK= -DMOLCAS -fPIC
+ endif
+ 
+-FLAGS =  -I${MKLFLAGS} -I$(INCLUDE1) -I$(INCLUDE2) -I$(NEWMATINCLUDE) -I$(BOOSTINCLUDE) -I$(MOLPROINCLUDE) \
++FLAGS =  $(CPPFLAGS) -I${MKLFLAGS} -I$(INCLUDE1) -I$(INCLUDE2) -I$(NEWMATINCLUDE) -I$(BOOSTINCLUDE) -I$(MOLPROINCLUDE) \
+          -I$(HOME)/modules/generate_blocks/ -I$(HOME)/modules/onepdm -I$(HOME)/modules/twopdm/ \
+          -I$(HOME)/modules/npdm -I$(HOME)/modules/two_index_ops -I$(HOME)/modules/three_index_ops -I$(HOME)/modules/four_index_ops -std=c++0x \
+ 	 -I$(HOME)/modules/ResponseTheory -I$(HOME)/modules/nevpt2 -I$(HOME)/molcas -I$(HOME)/modules/mps_nevpt
+ 
+-LIBS +=  -L$(NEWMATLIB) -lnewmat $(BOOSTLIB) $(LAPACKBLAS) $(MALLOC)
++LIBS := $(LDFLAGS) -L$(NEWMATLIB) -lnewmat $(BOOSTLIB) $(LAPACKBLAS) $(MALLOC) $(LIBS) -lrt
+ MPI_OPT = -DSERIAL
+ 
+ 
+@@ -127,7 +127,7 @@
+ 	#endif
     endif
  # Intel compiler
--   OPT = -DNDEBUG -O3 -funroll-loops -Werror
-+   OPT = -DNDEBUG -funroll-loops $(OPTFLAGS)
- #  OPT = -g -fPIC
-    ifeq ($(USE_MPI), no) 
-       CXX = icc
-@@ -113,7 +113,7 @@
-    ifeq ($(OPENMP), yes)
-       OPENMP_FLAGS= -fopenmp #-D_OPENMP 
-    endif
--   OPT = -DNDEBUG -O3 -g -funroll-loops -Werror
-+   OPT = -DNDEBUG -g -funroll-loops $(OPTFLAGS)
- #   OPT = -g -fPIC
- endif
+-  OPT = -DNDEBUG -O2 -g -funroll-loops #-ipo
++  OPT = -DNDEBUG $(OPTFLAGS) -g -funroll-loops
+ #  OPT = -g
+ #  # Useful option to define a newer g++ binary if the default g++ is too old
+ #  OPT += -gxx-name=g++-4.7
+--- newmat10/makefile.orig	2023-01-06 15:20:52.879226000 +0100
++++ newmat10/makefile	2023-01-06 15:20:30.392463000 +0100
+@@ -1,6 +1,6 @@
+ #CXX = g++
+ $(info $(CXX))
+-CXXFLAGS = -fPIC -O2 -Wall
++#CXXFLAGS = -fPIC -O2 -Wall
  
-@@ -122,7 +122,7 @@
-       OPENMP_FLAGS= -fopenmp #-D_OPENMP 
-    endif
- 
--   OPT = -DNDEBUG -g -Werror
-+   OPT = -DNDEBUG -g $(OPTFLAGS)
- endif
- 
- ifeq ($(DOPROF),yes)
+ DIFF = ./sdiff
+ PRE = ./
