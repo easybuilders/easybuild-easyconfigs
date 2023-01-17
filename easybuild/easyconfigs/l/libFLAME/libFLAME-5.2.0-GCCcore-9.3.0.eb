@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'libFLAME'
+version = '5.2.0'
+
+homepage = 'https://developer.amd.com/amd-cpu-libraries/blas-library/#libflame'
+description = """libFLAME is a portable library for dense matrix computations,
+providing much of the functionality present in LAPACK."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/flame/libflame/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['997c860f351a5c7aaed8deec00f502167599288fd0559c92d5bfd77d0b4d475c']
+
+# '--enable-max-arg-list-hack --enable-dynamic-build' requires 'file' function from GNU Make 4.x
+builddependencies = [
+    ('binutils', '2.34'),
+    ('Python', '3.8.2'),
+    ('make', '4.3'),  # needed on Cent OS 7  where make 3 is installed
+]
+
+dependencies = [('BLIS', '0.8.0')]
+
+# Use unset FLIBS to let configure pick up LDFLAGS
+preconfigopts = 'unset FLIBS && '
+preconfigopts += 'LIBS="-lblis $LIBS" '
+preconfigopts += 'LDFLAGS="$LDFLAGS -L$EBROOTBLIS/lib -fopenmp -lm -lpthread" '
+preconfigopts += 'CFLAGS="$CFLAGS -I$EBROOTBLIS/include/blis" '
+
+configopts = '--enable-max-arg-list-hack '
+configopts += '--enable-lapack2flame '
+configopts += '--enable-external-lapack-interfaces '
+configopts += '--enable-cblas-interfaces '
+configopts += '--enable-dynamic-build '
+configopts += '--enable-multithreading=openmp '
+
+# libFLAME C++ Template API tests
+# runtest = 'checkcpp LIBBLAS=$EBROOTBLIS/lib/libblis.a'
+
+# sanity_check_commands = [
+#     'cd %(builddir)s/%(namelower)s-%(version)s/test '
+#     '&& make LIBBLAS=$EBROOTBLIS/lib/libblis-mt.so LDFLAGS="-fopenmp -lm -lpthread" '
+#     '&& ./test_libfame.x'
+# ]
+
+sanity_check_paths = {
+    'files': ['include/FLAME.h', 'lib/libflame.a', 'lib/libflame.%s' % SHLIB_EXT],
+    'dirs': ['lib'],
+}
+
+moduleclass = 'numlib'

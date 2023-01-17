@@ -1,0 +1,36 @@
+# author: Denis Kristak
+# this patch makes rMATS take bamtools from official dependencies, not from the downloaded folder
+diff -ruN rmats-turbo-4.1.1_orig/rMATS_pipeline/setup.py rmats-turbo-4.1.1/rMATS_pipeline/setup.py
+--- rmats-turbo-4.1.1_orig/rMATS_pipeline/setup.py	2021-05-27 11:08:08.467275054 +0200
++++ rmats-turbo-4.1.1/rMATS_pipeline/setup.py	2021-05-28 16:18:06.005617527 +0200
+@@ -4,15 +4,16 @@
+ from Cython.Build import cythonize
+ from Cython.Distutils import build_ext
+ 
+-bamtools_include = [os.path.abspath('../bamtools/include'),]
+-bamtools_lib = [os.path.abspath('../bamtools/lib'),]
++bamtools_root = os.environ['EBROOTBAMTOOLS']
++bamtools_include = bamtools_root + '/include/bamtools'
++bamtools_lib = bamtools_root + '/lib'
+ source_pattern = 'rmatspipeline/%s.pyx'
+ 
+ asevent_ext = [
+-    Extension('rmats.rmatspipeline', sources=[source_pattern % "rmatspipeline"],
+-              include_dirs=bamtools_include,
++    Extension('rmatspipeline', sources=[source_pattern % "rmatspipeline"],
++              include_dirs=[bamtools_include,],
+               libraries=['m','stdc++','bamtools','z'],
+-              library_dirs=bamtools_lib,
++              library_dirs=[bamtools_lib,],
+               extra_compile_args = ['-O3', '-funroll-loops',
+                                     '-std=c++11', '-fopenmp',
+                                     '-D__STDC_CONSTANT_MACROS',
+@@ -25,7 +26,7 @@
+     ]
+ 
+ setup(
+-    name = 'rmats.rmatspipeline',
++    name = 'rmatspipeline',
+     ext_modules = cythonize(asevent_ext),
+     cmdclass = {'build_ext': build_ext},
+ )

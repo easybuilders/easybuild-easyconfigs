@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'Zip'
+version = '3.0'
+
+homepage = 'http://www.info-zip.org/Zip.html'
+description = """Zip is a compression and file packaging/archive utility.
+Although highly compatible both with PKWARE's PKZIP and PKUNZIP
+utilities for MS-DOS and with Info-ZIP's own UnZip, our primary objectives
+have been portability and other-than-MSDOS functionality"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://download.sourceforge.net/infozip']
+sources = ['%(namelower)s%(version_major)s%(version_minor)s.tar.gz']
+checksums = ['f0e8bb1f9b7eb0b01285495a2699df3a4b766784c1765a8f1aeedf63c0806369']
+
+builddependencies = [
+    ('binutils', '2.34'),
+]
+dependencies = [
+    ('bzip2', '1.0.8'),
+]
+
+skipsteps = ['configure']
+
+buildopts = '-f unix/Makefile CC="$CC" IZ_OUR_BZIP2_DIR=$EBROOTBZIP2 '
+buildopts += 'CFLAGS="$CFLAGS -I. -DUNIX -DBZIP2_SUPPORT -DUNICODE_SUPPORT -DLARGE_FILE_SUPPORT" '
+buildopts += 'generic_gcc'
+
+installopts = '-f unix/Makefile prefix=%(installdir)s '
+
+sanity_check_paths = {
+    'files': ['bin/zip', 'bin/zipcloak', 'bin/zipnote', 'bin/zipsplit'],
+    'dirs': ['man/man1']
+}
+
+sanity_check_commands = ["zip --version"]
+
+moduleclass = 'tools'

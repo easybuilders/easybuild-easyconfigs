@@ -1,0 +1,44 @@
+Fix default binary for arlecore
+Add option to specify variables via command line args
+
+Author: Pavel Grochal (INUITS)
+diff -ru --new-file arlecore_linux.orig/LaunchArlecore.sh arlecore_linux/LaunchArlecore.sh
+--- arlecore_linux.orig/LaunchArlecore.sh	2015-04-11 17:28:48.000000000 +0200
++++ arlecore_linux/LaunchArlecore.sh	2020-04-30 10:01:49.502359866 +0200
+@@ -10,10 +10,25 @@
+ #           graphical interface).
+ 
+ #Modify the following line to state which version of arlecore you are using
+-arlecore=arlecore64.exe  #windows version
++arlecore=arlecore3522_64bit  #Linux version
+ #Modify this if you wan to use another setting file
+ settingsFile=arl_run.ars
+ 
++#Easybuild fix
++while getopts ":b:s:" opt; do
++	case $opt in
++		b) arlecore="$OPTARG"
++		;;
++		s) settingsFile="$OPTARG"
++		;;
++		\?) echo "Invalid option -$OPTARG
++Use -b to specify path to arlecore binary.
++Use -s to specify settings file." >&2
++		exit 1
++		;;
++	esac
++done
++
+ if [ -f $settingsFile ]; then
+ 
+ 	#This loop will analyse all files with the same settings file
+@@ -21,7 +36,7 @@
+ 	do  	
+ 		echo "Processing file $file"
+ 		#Launch arlecore with the same settings for all files
+-		./$arlecore  $file $settingsFile	run_silent
++		$arlecore  $file $settingsFile	run_silent
+ 	done
+ 
+ 	#The following loop would be an alternative to perform specific computations on each file
+Binary files arlecore_linux.orig/.Makefile.swp and arlecore_linux/.Makefile.swp differ

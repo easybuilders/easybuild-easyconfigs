@@ -1,0 +1,82 @@
+easyblock = 'Bundle'
+
+name = 'Alpha'
+version = '20200430'
+local_alpha_commit = '3139d8186403'
+local_pyinc_commit = '0f8a00b8c10c'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.lirmm.fr/~swenson/alpha/alpha.htm'
+description = "Alpha is a tool designed for detailed comparative study of bacteriophage genomes."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+dependencies = [
+    ('Python', '2.7.16'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('Biopython', '1.75', versionsuffix),
+    ('BLAST+', '2.9.0'),
+    ('Clustal-Omega', '1.2.4'),
+    ('GenomeTools', '1.6.1'),
+    ('GTK+', '3.24.13'),
+    ('matplotlib', '2.2.4', versionsuffix),
+    ('networkx', '2.2', versionsuffix),
+    ('pydot', '1.4.1'),
+    ('PyGObject', '3.34.0', versionsuffix),
+    ('pygraphviz', '1.5'),
+    ('python-igraph', '0.8.0'),
+]
+
+components = [
+    ('progressbar', '2.5', {
+        'easyblock': 'PythonPackage',
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'checksums': ['5d81cb529da2e223b53962afd6c8ca0f05c6670e40309a7219eacc36af9b6c63'],
+        'start_dir': '%(name)s-%(version)s',
+    }),
+    ('pyinclude', '20190223', {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://bitbucket.org/thekswenson/%(name)s/get/'],
+        'sources': [{'download_filename': '%s.zip' % local_pyinc_commit, 'filename': '%(name)s-%(version)s.zip'}],
+        'checksums': ['9dc9b2bafbfe7a694ff4025164dc6e356989ee89b914691457fb0a474fe66c9e'],
+        'start_dir': 'thekswenson-%%(name)s-%s' % local_pyinc_commit,
+        'install_type': 'subdir',
+    }),
+    (name, version, {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://bitbucket.org/thekswenson/%(namelower)s/get/'],
+        'sources': [{'download_filename': '%s.zip' % local_alpha_commit, 'filename': '%(name)s-%(version)s.zip'}],
+        'patches': ['%s-%s_fix-email.patch' % (name, version)],
+        'checksums': [
+            '07a2b601305b82fce77c2eaf53c5c550f0f8dbaacd1f314433dab2053f91aaf9',  # Alpha-20200430.zip
+            '342d5d37bcfc19a2487c3b08860adc4246736919948b1968f899b0c595d7125d',  # Alpha-20200430_fix-email.patch
+        ],
+        'start_dir': 'thekswenson-%%(namelower)s-%s' % local_alpha_commit,
+        'install_type': 'subdir',
+        'keepsymlinks': True,
+    }),
+]
+
+local_os = {'Darwin': 'OSX', 'Linux': 'x86_64'}[OS_TYPE]
+postinstallcmds = [
+    'ln -s ${EBROOTGENOMETOOLS} %(installdir)s/%(namelower)s/lib/gtdir',
+    # Alpha provides eqclasses.so for both Linux and OS X
+    'cd %%(installdir)s/%%(namelower)s/lib/ccode && ln -s bin_%s/eqclasses.so eqclasses.so' % local_os,
+]
+
+sanity_check_paths = {
+    'files': ['alpha/%s' % x for x in ['alpha', 'analyzeblocks', 'sequencetool']] +
+             ['alpha/lib/ccode/eqclasses.so'],
+    'dirs': ['alpha/%s' % d for d in ['data', 'lib', 'userdocs']] +
+            ['pyinclude', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["alpha -h"]
+
+modextrapaths = {
+    'PATH': 'alpha',
+    'PYTHONPATH': ['pyinclude', 'lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'bio'

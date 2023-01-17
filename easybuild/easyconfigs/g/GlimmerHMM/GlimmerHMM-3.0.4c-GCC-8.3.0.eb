@@ -1,0 +1,45 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'MakeCp'
+
+name = 'GlimmerHMM'
+version = '3.0.4c'
+
+homepage = 'https://ccb.jhu.edu/software/glimmerhmm'
+description = """GlimmerHMM is a new gene finder based on a Generalized Hidden Markov Model.
+ Although the gene finder conforms to the overall mathematical framework of a GHMM, additionally
+ it incorporates splice site models adapted from the GeneSplicer program and a decision tree adapted
+ from GlimmerM. It also utilizes Interpolated Markov Models for the coding and noncoding models."""
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://ccb.jhu.edu/software/%(namelower)s/dl']
+sources = [SOURCE_TAR_GZ]
+checksums = ['31ee2ceb8f31338205b2de626d83d0f92d2cd55a04d48a6803193a2d0ad1b4a3']
+
+start_dir = 'sources'
+
+# make sure -O0 is not used as compiler option
+prebuildopts = "ls makefile train/makefile | xargs sed -i 's/-O0 .*//g' && "
+
+# also build in 'train' subdirectory to overwrite pre-compiled binaries
+buildopts = "&& cd ../train && make"
+
+local_train_files = ['build1', 'build2', 'build-icm', 'build-icm-noframe', 'erfapp', 'falsecomp',
+                     'findsites', 'karlin', 'score', 'score2', 'scoreATG', 'scoreATG2', 'scoreSTOP',
+                     'scoreSTOP2', 'splicescore', 'trainGlimmerHMM']
+files_to_copy = [
+    (['sources/%(namelower)s'], 'bin'),
+    (['train/%s' % x for x in local_train_files], 'bin'),
+    'trained_dir', 'README', 'train/readme.train',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['trained_dir'],
+}
+
+sanity_check_commands = [('%(namelower)s -h')]
+
+moduleclass = 'bio'

@@ -1,0 +1,52 @@
+easyblock = 'PythonPackage'
+
+name = 'SRST2'
+local_commit = '73f885f'
+version = '0.2.0-20210620'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://katholt.github.io/srst2'
+description = "Short Read Sequence Typing for Bacterial Pathogens"
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['https://github.com/katholt/srst2/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['04b383bae7450b89945053fbd1945ecf7234a78cfd374f90c7ef427d84571d20']
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('SciPy-bundle', '2020.11', versionsuffix),
+    ('Bowtie2', '2.4.2'),
+    ('SAMtools', '1.11'),
+]
+
+download_dep_fail = True
+use_pip = True
+
+# inject Bowtie2/SAMtools version in scripts that check for known version
+preinstallopts = """sed -i "s@,'2.2.9'@,'2.2.9', '$EBVERSIONBOWTIE2'@g" scripts/qsub_srst2.py && """
+preinstallopts += """sed -i "s@,'2.2.9'@,'2.2.9', '$EBVERSIONBOWTIE2'@g" scripts/slurm_srst2.py && """
+preinstallopts += """sed -i "s@,'2.2.9'@,'2.2.9', '$EBVERSIONBOWTIE2'@g" scripts/srst2.py && """
+preinstallopts += """sed -i "s@'0.1.18',@'$EBVERSIONSAMTOOLS', '0.1.18',@g" scripts/qsub_srst2.py && """
+preinstallopts += """sed -i "s@'0.1.18',@'$EBVERSIONSAMTOOLS', '0.1.18',@g" scripts/slurm_srst2.py && """
+preinstallopts += """sed -i "s@'0.1.18',@'$EBVERSIONSAMTOOLS', '0.1.18',@g" scripts/srst2.py && """
+
+fix_python_shebang_for = ['bin/*.py']
+
+postinstallcmds = ["cp -a data %(installdir)s"]
+
+sanity_check_paths = {
+    'files': ['bin/getmlst.py', 'bin/slurm_srst2.py', 'bin/srst2'],
+    'dirs': ['data', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "srst2 --version",
+    "getmlst.py -h",
+    "slurm_srst2.py -h",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

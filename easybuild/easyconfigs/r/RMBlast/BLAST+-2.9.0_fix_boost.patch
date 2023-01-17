@@ -1,0 +1,96 @@
+Make changes necessary to work with Boost-1.70.0
+Without this patch it still works with Boost-1.67.0
+Author: Samuel Moors, Vrije Universiteit Brussel (VUB)
+diff -ur ncbi-blast-2.9.0+-src.orig/c++/include/corelib/test_boost.hpp ncbi-blast-2.9.0+-src/c++/include/corelib/test_boost.hpp
+--- ncbi-blast-2.9.0+-src.orig/c++/include/corelib/test_boost.hpp	2018-09-17 16:00:14.000000000 +0200
++++ ncbi-blast-2.9.0+-src/c++/include/corelib/test_boost.hpp	2019-05-24 19:54:52.702503781 +0200
+@@ -106,7 +106,7 @@
+                               " expected but not raised",               \
+                               TL, CHECK_MSG, _ );                       \
+     } catch( E const& ex ) {                                            \
+-        ::boost::unit_test::ut_detail::ignore_unused_variable_warning( ex ); \
++        ::boost::ignore_unused( ex ); \
+         BOOST_TEST_TOOL_IMPL( 2, P,                                     \
+                               "exception \"" BOOST_STRINGIZE( E )       \
+                               "\" raised as expected" postfix,          \
+@@ -129,7 +129,7 @@
+                               " is expected",                           \
+                               TL, CHECK_MSG, _ );                       \
+     } catch( E const& ex ) {                                            \
+-        ::boost::unit_test::ut_detail::ignore_unused_variable_warning( ex ); \
++        ::boost::ignore_unused( ex ); \
+         BOOST_TEST_TOOL_IMPL( 2, P, prefix BOOST_STRINGIZE( E ) " is caught", \
+                               TL, CHECK_MSG, _  );                      \
+     } catch (...) {                                                     \
+@@ -168,7 +168,7 @@
+     BOOST_CHECK_IMPL( false, "exception " BOOST_STRINGIZE( E )           \
+                              " is expected", TL, CHECK_MSG ); }          \
+ catch( E const& ex ) {                                                   \
+-    boost::unit_test::ut_detail::ignore_unused_variable_warning( ex );   \
++    boost::ignore_unused( ex );   \
+     BOOST_CHECK_IMPL( P, prefix BOOST_STRINGIZE( E ) " is caught",       \
+                       TL, CHECK_MSG );                                   \
+ }                                                                        \
+@@ -206,7 +206,7 @@
+ 
+ #ifdef BOOST_FIXTURE_TEST_CASE_NO_DECOR
+ #  define NCBI_BOOST_DECORATOR_ARG \
+-    , boost::unit_test::decorator::collector::instance()
++    , boost::unit_test::decorator::collector_t::instance()
+ #else
+ #  define NCBI_BOOST_DECORATOR_ARG
+ #endif
+@@ -785,7 +785,7 @@
+ #ifdef BOOST_FIXTURE_TEST_CASE_WITH_DECOR
+     SNcbiTestRegistrar(boost::unit_test::test_case*            tc,
+                        unsigned int                            timeout,
+-                       boost::unit_test::decorator::collector& decorator)
++                       boost::unit_test::decorator::collector_t& decorator)
+         : TParent(tc, decorator)
+     {
+         tc->p_timeout.set(timeout);
+diff -ur ncbi-blast-2.9.0+-src.orig/c++/src/corelib/teamcity_boost.cpp ncbi-blast-2.9.0+-src/c++/src/corelib/teamcity_boost.cpp
+--- ncbi-blast-2.9.0+-src.orig/c++/src/corelib/teamcity_boost.cpp	2017-10-23 16:54:03.000000000 +0200
++++ ncbi-blast-2.9.0+-src/c++/src/corelib/teamcity_boost.cpp	2019-05-24 16:50:56.825303031 +0200
+@@ -55,7 +55,7 @@
+ 
+     virtual void log_start(std::ostream&, boost::unit_test::counter_t test_cases_amount);
+     virtual void log_finish(std::ostream&);
+-    virtual void log_build_info(std::ostream&);
++    virtual void log_build_info(std::ostream&, bool log_build_info = true);
+ 
+     virtual void test_unit_start(std::ostream&, boost::unit_test::test_unit const& tu);
+     virtual void test_unit_finish(std::ostream&,
+@@ -135,7 +135,7 @@
+ void TeamcityBoostLogFormatter::log_finish(std::ostream &/*out*/)
+ {}
+ 
+-void TeamcityBoostLogFormatter::log_build_info(std::ostream &/*out*/)
++void TeamcityBoostLogFormatter::log_build_info(std::ostream &/*out*/, bool log_build_info)
+ {}
+ 
+ void TeamcityBoostLogFormatter::test_unit_start(std::ostream &out, boost::unit_test::test_unit const& tu) {
+diff -ur ncbi-blast-2.9.0+-src.orig/c++/src/corelib/test_boost.cpp ncbi-blast-2.9.0+-src/c++/src/corelib/test_boost.cpp
+--- ncbi-blast-2.9.0+-src.orig/c++/src/corelib/test_boost.cpp	2018-09-17 15:59:01.000000000 +0200
++++ ncbi-blast-2.9.0+-src/c++/src/corelib/test_boost.cpp	2019-05-24 16:51:58.589513416 +0200
+@@ -248,7 +248,7 @@
+     virtual
+     void log_finish       (ostream& ostr);
+     virtual
+-    void log_build_info   (ostream& ostr);
++    void log_build_info   (ostream& ostr, bool log_build_info = true);
+     virtual
+     void test_unit_start  (ostream& ostr, but::test_unit const& tu);
+     virtual
+@@ -2086,9 +2086,9 @@
+ }
+ 
+ void
+-CNcbiBoostLogger::log_build_info(ostream& ostr)
++CNcbiBoostLogger::log_build_info(ostream& ostr, bool log_build_info)
+ {
+-    m_Upper->log_build_info(ostr);
++    m_Upper->log_build_info(ostr, log_build_info);
+ }
+ 
+ void

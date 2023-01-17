@@ -1,0 +1,50 @@
+easyblock = 'MakeCp'
+
+name = 'Reapr'
+version = '1.0.18'
+
+homepage = 'https://www.sanger.ac.uk/science/tools/reapr'
+description = """A tool that evaluates the accuracy of a genome assembly using mapped paired end reads, 
+without the use of a reference genome for comparison."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = ['ftp://ftp.sanger.ac.uk/pub/resources/software/reapr/']
+sources = ['Reapr_%(version)s.tar.gz']
+patches = ['Reapr-1.0.18-cleanup.patch']
+checksums = [
+    '6d691b5b49c58aef332e771d339e32097a7696e9c68bd8f16808b46d648b6660',  # Reapr_1.0.18.tar.gz
+    'f4a8b4a98a6c95c43b8a152d884a38e62285832103df26d656987bfaf358e451'   # Reapr-1.0.18-cleanup.patch
+]
+
+dependencies = [
+    ('Perl', '5.28.1'),
+    ('R', '3.6.0'),
+    ('BamTools', '2.5.1'),
+    ('SAMtools', '1.9'),
+]
+
+builddependencies = [('CMake', '3.13.3')]
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('File::Spec::Link', '0.140', {
+        'source_tmpl': 'File-Copy-Link-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/R/RM/RMBARKER/'],
+        'checksums': ['2063656dcd38bade43dc7f1e2ef5f1b6a8086c2f15d37b334189bd2a28e8ffeb'],
+    })
+]
+
+files_to_copy = [(['bin/*'], "bin")]
+
+sanity_check_paths = {
+    'files': ['bin/reapr'],
+    'dirs': ['lib/perl5'],
+}
+
+sanity_check_commands = ["reapr 2>&1 | grep 'REAPR version: %(version)s'"]
+
+modextrapaths = {'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'}
+
+moduleclass = 'bio'
