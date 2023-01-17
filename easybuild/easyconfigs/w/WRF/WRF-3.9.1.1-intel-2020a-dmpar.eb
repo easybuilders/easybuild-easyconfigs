@@ -1,0 +1,50 @@
+name = 'WRF'
+version = '3.9.1.1'
+buildtype = "dmpar"
+versionsuffix = '-%s' % buildtype
+
+homepage = 'https://www.mmm.ucar.edu/weather-research-and-forecasting-model'
+description = """The Weather Research and Forecasting (WRF) Model is a next-generation mesoscale
+ numerical weather prediction system designed to serve both operational forecasting and atmospheric
+ research needs."""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'opt': False}  # don't use agressive optimization, stick to -O2
+
+source_urls = [
+    'https://www2.mmm.ucar.edu/wrf/src/',
+    'https://www.mmm.ucar.edu/wrf/src/',
+]
+sources = ['%(name)sV%(version)s.TAR.gz']
+patches = [
+    'WRF_parallel_build_fix.patch',
+    'WRF-%(version)s_netCDF-Fortran_separate_path.patch',
+    'WRF-%(version)s_libtirpc.patch',
+]
+checksums = [
+    'e2c503c1b5adc2d3409b39d37df29d60188ff1de8c870eca15197a86d3538299',  # WRFV3.9.1.1.TAR.gz
+    'f93bb6dbb8b52d72f816e2f9a6815bffd536afeca8511552ec5abc4253a59346',  # WRF_parallel_build_fix.patch
+    # WRF-3.9.1.1_netCDF-Fortran_separate_path.patch
+    '49ae0eb4c5bacd3b932be14ccb9ac2d28cbd70828b633d9f13860c92d92b1eb7',
+    '9a8547d6c68b0f318f74063b690c5c8cfcd3437ebebe837dbd1d4a2dc1ad2427',  # WRF-3.9.1.1_libtirpc.patch
+]
+
+# csh is used by WRF install scripts
+builddependencies = [
+    ('Autotools', '20180311'),
+    ('tcsh', '6.22.02'),
+    ('time', '1.9'),
+    ('Perl', '5.30.2'),
+]
+
+dependencies = [
+    ('libtirpc', '1.2.6'),
+    ('JasPer', '2.0.14'),
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+]
+
+# limit parallel build to 20
+maxparallel = 20
+
+moduleclass = 'geo'

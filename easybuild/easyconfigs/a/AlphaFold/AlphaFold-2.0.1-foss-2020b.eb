@@ -1,0 +1,181 @@
+easyblock = 'PythonBundle'
+
+name = 'AlphaFold'
+version = '2.0.1'
+
+homepage = 'https://deepmind.com/research/case-studies/alphafold'
+description = "AlphaFold can predict protein structures with atomic accuracy even where no similar structure is known"
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+builddependencies = [
+    # CMake/Doxygen/SWIG are required for building OpenMM
+    ('CMake', '3.18.4'),
+    ('Doxygen', '1.8.20'),
+    # required for installing dm-tree
+    ('Bazel', '3.7.2'),
+    ('SWIG', '4.0.2'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('PyYAML', '5.3.1'),
+    ('TensorFlow', '2.4.1'),
+    ('Biopython', '1.78'),
+    ('HH-suite', '3.3.0'),
+    ('HMMER', '3.3.2'),
+    ('Kalign', '3.3.1'),
+    ('jax', '0.2.19'),  # also provides absl-py
+]
+
+local_openmm_preinstallopts = "export OPENMM_INCLUDE_PATH=%(installdir)s/include && "
+local_openmm_preinstallopts += " export OPENMM_LIB_PATH=%(installdir)s/lib && "
+
+# required to install OpenMM Python API;
+# avoid that setup.py partially uninstalls existing OpenMM Python bindings...
+local_openmm_installopts = " && cd python && sed -i 's/uninstall()/pass/g' setup.py && "
+local_openmm_installopts += "python setup.py build && python setup.py install --prefix=%(installdir)s"
+
+# commit to use for downloading stereo_chemical_props.txt and copy to alphafold/common,
+# see docker/Dockerfile in AlphaFold repository
+local_scp_commit = '7102c6'
+
+components = [
+    # for simtk
+    ('OpenMM', '7.5.1', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/openmm/openmm/archive/'],
+        'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'patches': [('OpenMM-%(version)s_AlphaFold.patch', 'wrappers/python')],
+        'checksums': [
+            'c88d6946468a2bde2619acb834f57b859b5e114a93093cf562165612e10f4ff7',  # OpenMM-7.5.1.tar.gz
+            '1b109dfff3af5c6aa70690bca14618612953c68840a7e64f679db7ca33c1aff6',  # OpenMM-7.5.1_AlphaFold.patch
+        ],
+        'start_dir': 'openmm-%(version)s',
+        'preinstallopts': local_openmm_preinstallopts,
+        'installopts': local_openmm_installopts,
+    }),
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'source_urls': [
+            'https://github.com/deepmind/alphafold/archive/refs/tags/',
+            'https://git.scicore.unibas.ch/schwede/openstructure/-/raw/%s/modules/mol/alg/src/' % local_scp_commit,
+        ],
+        'sources': [
+            {
+                'download_filename': 'v%(version)s.tar.gz',
+                'filename': SOURCE_TAR_GZ,
+            },
+            {
+                'download_filename': 'stereo_chemical_props.txt',
+                'filename': 'stereo_chemical_props-%s.txt' % local_scp_commit,
+                'extract_cmd': "cp %s .",
+            },
+        ],
+        'patches': [
+            'AlphaFold-2.0.0_fix-packages.patch',
+            'AlphaFold-2.0.1_data-dep-paths.patch',
+            'AlphaFold-2.0.0_n-cpu.patch',
+            'AlphaFold-2.0.0_fix-scp-path.patch',
+            'AlphaFold-2.0.1_setup_rm_tfcpu.patch',
+        ],
+        'checksums': [
+            'b3dfdd3877343516f98bc49f8adbbb5101e8900524470816d4495a22ed986857',  # v2.0.1.tar.gz
+            '24510899eeb49167cffedec8fa45363a4d08279c0c637a403b452f7d0ac09451',  # stereo_chemical_props-7102c6.txt
+            '826d2d1a5d6ac52c51a60ba210e1947d5631a1e2d76f8815305b5d23f74458db',  # AlphaFold-2.0.0_fix-packages.patch
+            '60c60abc254e713787843a1a53fcccefc56d242fa1cfa826701a5ff39227bd52',  # AlphaFold-2.0.1_data-dep-paths.patch
+            'dfda4dd5f9aba19fe2b6eb9a0ec583d12dcefdfee8ab8803fc57ad48d582db04',  # AlphaFold-2.0.0_n-cpu.patch
+            '83dc82a8b1c647eb7e217aef683153e98a4fc7f871a85280976c92a1bfe28f27',  # AlphaFold-2.0.0_fix-scp-path.patch
+            '1a2e4e843bd9a4d15ee39e6c37cc63ba281311cc7a0a5610f0e43b52ef93faac',  # AlphaFold-2.0.1_setup_rm_tfcpu.patch
+        ],
+        'start_dir': 'alphafold-%(version)s',
+        'use_pip': True,
+    }),
+]
+
+use_pip = True
+
+exts_list = [
+    ('PDBFixer', '1.7', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['a0bef3c52a7bbe69a6aea5333f51f3e7d158339be5829aed19b0344bd66d4eea'],
+    }),
+    ('toolz', '0.11.1', {
+        'checksums': ['c7a47921f07822fe534fb1c01c9931ab335a4390c782bd28c6bcc7c2f71f3fbf'],
+    }),
+    ('chex', '0.0.8', {
+        'checksums': ['d6ce1329470116b6f172a72b1131bfd4d11fb7eb465e6077c3b36224b5b09fe4'],
+    }),
+    ('tabulate', '0.8.9', {
+        'checksums': ['eb1d13f25760052e8931f2ef80aaf6045a6cceb47514db8beab24cded16f13a7'],
+    }),
+    ('dm-haiku', '0.0.4', {
+        # source tarball on PyPI is missing requirements.txt,
+        # see https://github.com/deepmind/dm-haiku/issues/44
+        'source_urls': ['https://github.com/deepmind/dm-haiku/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['e9896d161938b53f869fde207f3f6fca496d09b2a47d21dd9b6b65e897ad6aab'],
+        'modulename': 'haiku',
+    }),
+    ('dm-tree', '0.1.6', {
+        'checksums': ['6776404b23b4522c01012ffb314632aba092c9541577004ab153321e87da439a'],
+        'modulename': 'tree',
+    }),
+    ('websocket-client', '1.2.1', {
+        'checksums': ['8dfb715d8a992f5712fff8c843adae94e22b22a99b2c5e6b0ec4a1a981cc4e0d'],
+        'modulename': 'websocket',
+    }),
+    ('docker', '5.0.0', {
+        'checksums': ['3e8bc47534e0ca9331d72c32f2881bb13b93ded0bcdeab3c833fb7cf61c0a9a5'],
+    }),
+    ('immutabledict', '2.1.0', {
+        'checksums': ['673fb8f30f46d23dd394050b979f5b7f4c5398982b99ebc854fb873e646b967a'],
+    }),
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('ml_collections', '0.1.0', {
+        'checksums': ['59a17fcd1c140153009788517f304caaddd7a94f06690f9f0ed09987beebcf3c'],
+        # see https://github.com/google/ml_collections/issues/7
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+    }),
+]
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/bin",
+    # run_alphafold.py script is missing a shebang...
+    "echo '#!/usr/bin/env python' > %(installdir)s/bin/run_alphafold.py",
+    "cat %(builddir)s/alphafold-%(version)s/run_alphafold.py >> %(installdir)s/bin/run_alphafold.py",
+    "chmod a+x %(installdir)s/bin/run_alphafold.py",
+    "cd %(installdir)s/bin && ln -s run_alphafold.py alphafold",
+    "cp -a %(builddir)s/alphafold-%(version)s/scripts %(installdir)s/",
+    "cp %%(builddir)s/stereo_chemical_props-%s.txt %%(installdir)s/stereo_chemical_props.txt" % local_scp_commit,
+    # run tests for run_alphafold.py script;
+    # shouldn't do this in sanity check to avoid breaking use of --module-only
+    "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+    "python %(builddir)s/alphafold-%(version)s/run_alphafold_test.py",
+]
+
+sanity_check_paths = {
+    'files': ['bin/alphafold', 'bin/pdbfixer', 'bin/run_alphafold.py', 'lib/libOpenMM.%s' % SHLIB_EXT,
+              'lib/python%(pyshortver)s/site-packages/simtk/openmm/openmm.py', 'stereo_chemical_props.txt'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts'],
+}
+
+sanity_check_commands = [
+    "pdbfixer --help",
+    "python -m simtk.testInstallation",
+    "python -c 'import alphafold'",
+    "alphafold --help 2>&1 | grep 'Full AlphaFold protein structure prediction script'",
+]
+
+sanity_pip_check = True
+
+modextrapaths = {
+    'OPENMM_INCLUDE_PATH': 'include',
+    'OPENMM_LIB_PATH': 'lib',
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,51 @@
+# Author: Denis Krišťák (INUITS)
+# License: GPLv2
+
+easyblock = 'Binary'
+
+name = 'NewHybrids'
+version = '1.1_Beta3'
+
+homepage = 'https://ib.berkeley.edu/labs/slatkin/eriq/software/software.htm#NewHybs'
+description = """This implements a Gibbs sampler to estimate the posterior probability that genetically sampled
+individuals fall into each of a set of user-defined hybrid categories."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/eriqande',
+        'repo_name': 'newhybrids',
+        'commit': '6fc8fd9ca6e64ee0be08af12ec8bfe73a7de00cc',
+        'recursive': True,
+    }
+}]
+checksums = [None]
+
+extract_sources = True
+
+# options to be used in compilation
+local_compiler_options = "$CC $CFLAGS $CPPFLAGS "
+
+local_compile_script = "%(builddir)s/newhybrids/Compile-with-no-gui-Linux.sh"
+# replacing hardcoded compilation cmd with general options
+install_cmd = "sed -i -e 's/gcc -O3/%s/g' %s && " % (local_compiler_options, local_compile_script)
+# running compilation script
+install_cmd += "%s && " % local_compile_script
+# create and copy created binaries & test data
+install_cmd += "mkdir %(installdir)s/bin && "
+install_cmd += "cp -a %(builddir)s/newhybrids/newhybrids-no-gui-linux.exe %(installdir)s/bin/newhybs && "
+install_cmd += "cp -ar %(builddir)s/newhybrids/test_data %(installdir)s/"
+
+sanity_check_paths = {
+    'files': ['bin/newhybs'],
+    'dirs': ['test_data'],
+}
+
+sanity_check_commands = [
+    # don't run longer than 4 minutes, otherwise it's probably stuck (no test_data found)
+    'timeout 240 newhybs -d %(installdir)s/test_data/TestDat.txt --no-gui | grep "Output is in the following files"',
+]
+
+moduleclass = 'bio'

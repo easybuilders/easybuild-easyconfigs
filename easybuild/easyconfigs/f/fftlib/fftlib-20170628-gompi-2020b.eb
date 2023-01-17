@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'fftlib'
+version = '20170628'
+local_commit = '44c5fa0'
+
+homepage = 'https://github.com/flwende/fftlib'
+description = """A library that intercepts FFTW calls and adds features on top of it.
+ In particular, it enables FFT plan reuse when there are multiple calls for the same geometry."""
+
+toolchain = {'name': 'gompi', 'version': '2020b'}
+toolchainopts = {'openmp': True, 'cstd': 'c++11'}
+
+source_urls = ['https://github.com/flwende/fftlib/archive/']
+sources = [{'download_filename': '%s.zip' % local_commit, 'filename': SOURCE_ZIP}]
+checksums = ['f73dffeaf5c2e6972a5bc67d11ec28390f9eda281a7cb47edc1ee2fe394ed057']
+
+dependencies = [('FFTW', '3.3.8')]
+
+local_options = "-DFFTLIB_THREADSAFE "  # use this when multiple threads access fftlib
+# local_options += "-DFFTLIB_USE_MKL "  # use symbols from MKL's fft library
+# local_options += "-DFFTLIB_BYPASS "  # bypass fftlib's internal logic
+# local_options += "-DFFTLIB_OWN_LOCK "  # use fftlib's reader/writer lock
+# local_options += "-DFFTLIB_UNSAFE_OPT "  # activate unsafe optimizations in fftlib
+# local_options += "-DFFTLIB_DEBUG "  # print debug messages (infos and warnings)
+# local_options += "-DFFTLIB_WARNINGS_ONLY "  # print warnings only
+# local_options += "-DFFTLIB_COMPOSED_FFT "  # split 3d FFT computation into 2d+1d FFT
+
+start_dir = 'src'
+
+parallel = False
+
+build_cmd = "$CXX $CXXFLAGS -I../include -I$EBROOTFFTW/include %s -c fftlib.cpp -o fftlib.o" % local_options
+
+files_to_copy = [(['fftlib.o'], 'lib')]
+
+sanity_check_paths = {
+    'files': ['lib/fftlib.o'],
+    'dirs': ["."]
+}
+
+# this should be prepended to $LIBFFT(_MT) when building applications in order to intercept their FFT calls
+modextravars = {'FFTLIB': "%(installdir)s/lib/fftlib.o -lgomp -lstdc++ -ldl"}
+
+moduleclass = 'lib'

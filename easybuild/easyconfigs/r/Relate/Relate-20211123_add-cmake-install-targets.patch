@@ -1,0 +1,35 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+---
+Add CMake install targets (for bin, lib, scripts and example)
+Install shared and static libraries to lib instead of bin
+
+diff -Nru relate-78964f420ce99e28887d7756d0c34bcebfa07130.orig/CMakeLists.txt relate-78964f420ce99e28887d7756d0c34bcebfa07130/CMakeLists.txt
+--- relate-78964f420ce99e28887d7756d0c34bcebfa07130.orig/CMakeLists.txt	2021-11-25 16:59:55.000000000 +0000
++++ relate-78964f420ce99e28887d7756d0c34bcebfa07130/CMakeLists.txt	2021-11-26 10:46:14.000000000 +0000
+@@ -17,8 +17,9 @@
+ 
+ # Set dir
+ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
++set(CMAKE_LIBRARY_DIR ${CMAKE_SOURCE_DIR}/lib)
+ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+-set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
++set(LIBRARY_OUTPUT_PATH ${CMAKE_LIBRARY_DIR})
+ set(PROJECT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/include/src)
+ set(PIPELINE_DIR ${CMAKE_SOURCE_DIR}/include/pipeline)
+ set(EVALUATE_DIR ${CMAKE_SOURCE_DIR}/include/evaluate)
+@@ -53,3 +54,15 @@
+ enable_testing()
+ add_test(UnitTest ${CMAKE_BINARY_DIR}/Tests)
+ add_custom_command(TARGET Tests COMMENT "Run tests" POST_BUILD WORKING_DIRECTORY ${CMAKE_BINARY_DIR} COMMAND Tests)
++
++
++INSTALL ( TARGETS Relate RelateCoalescentRate RelateExtract RelateFileFormats RelateMutationRate RelateSelection RelateTreeView RUNTIME DESTINATION bin )
++
++INSTALL ( TARGETS relateStatic relateShared gzstreamShared gzstreamStatic kastoreShared kastoreStatic tskitStatic
++    LIBRARY DESTINATION lib
++    ARCHIVE DESTINATION lib
++)
++
++INSTALL ( DIRECTORY scripts DESTINATION . USE_SOURCE_PERMISSIONS )
++
++INSTALL ( DIRECTORY example DESTINATION . USE_SOURCE_PERMISSIONS )

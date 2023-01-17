@@ -1,0 +1,88 @@
+From 51205942b1f41abdf841771deac4e0e35d7d5016 Mon Sep 17 00:00:00 2001
+From: Sascha Steinbiss <satta@debian.org>
+Date: Wed, 22 Apr 2020 21:59:57 +0200
+Subject: [PATCH 1/2] make sure to not ignore snprintf output
+
+GCC 10 will warn about the (here intended) silent string truncation
+done by snprintf() unless the return value is handled.
+Obviously this will break the build as we use -Werror. We
+circumvent the problem by checking the output value and printing a
+warning if we notice a truncation.
+---
+ src/ltr/ltrdigest_file_out_stream.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/src/ltr/ltrdigest_file_out_stream.c b/src/ltr/ltrdigest_file_out_stream.c
+index 723b8cf9a..61325b693 100644
+--- a/src/ltr/ltrdigest_file_out_stream.c
++++ b/src/ltr/ltrdigest_file_out_stream.c
+@@ -1,5 +1,5 @@
+ /*
+-  Copyright (c) 2008-2015 Sascha Steinbiss <sascha@steinbiss.name>
++  Copyright (c) 2008-2020 Sascha Steinbiss <sascha@steinbiss.name>
+   Copyright (c) 2008-2013 Center for Bioinformatics, University of Hamburg
+ 
+   Permission to use, copy, modify, and distribute this software for any
+@@ -33,6 +33,7 @@
+ #include "core/symbol.h"
+ #include "core/undef_api.h"
+ #include "core/unused_api.h"
++#include "core/warning_api.h"
+ #include "extended/extract_feature_sequence.h"
+ #include "extended/feature_node.h"
+ #include "extended/feature_node_iterator_api.h"
+@@ -416,6 +417,8 @@ int gt_ltrfileout_stream_next(GtNodeStream *ns, GtGenomeNode **gn, GtError *err)
+ 
+     if (!had_err) {
+       GtRange rng;
++      int ret = 0;
++
+       ls->element.seqid = gt_calloc((size_t) ls->seqnamelen+1, sizeof (char));
+       (void) snprintf(ls->element.seqid,
+                       GT_MIN((size_t) gt_str_length(sdesc),
+@@ -425,12 +428,16 @@ int gt_ltrfileout_stream_next(GtNodeStream *ns, GtGenomeNode **gn, GtError *err)
+       if (gt_str_length(sdesc) > (GtUword) ls->seqnamelen)
+         ls->element.seqid[ls->seqnamelen] = '\0';
+ 
+-      (void) gt_ltrelement_format_description(&ls->element,
+-                                              ls->seqnamelen,
+-                                              desc,
+-                                              (size_t) (GT_MAXFASTAHEADER-1));
++      ret = gt_ltrelement_format_description(&ls->element,
++                                             ls->seqnamelen,
++                                             desc,
++                                             (size_t) (GT_MAXFASTAHEADER-1));
++      if (ret < 0) {
++        gt_warning("FASTA header truncated: %s", desc);
++      }
+       gt_str_delete(sdesc);
+ 
++
+       /* output basic retrotransposon data */
+       lltr_rng = gt_genome_node_get_range((GtGenomeNode*) ls->element.leftLTR);
+       rltr_rng = gt_genome_node_get_range((GtGenomeNode*) ls->element.rightLTR);
+
+From 30ae36037228dc4ed174e8462f3489638e6f5e76 Mon Sep 17 00:00:00 2001
+From: Sascha Steinbiss <satta@debian.org>
+Date: Wed, 22 Apr 2020 22:01:00 +0200
+Subject: [PATCH 2/2] declare hashmap type as extern
+
+This fixes a build issue with GCC 10.
+Closes #941.
+---
+ src/mgth/metagenomethreader.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/mgth/metagenomethreader.h b/src/mgth/metagenomethreader.h
+index 92f16d498..7f76fffb9 100644
+--- a/src/mgth/metagenomethreader.h
++++ b/src/mgth/metagenomethreader.h
+@@ -221,7 +221,7 @@ typedef struct
+ } ParseStruct;
+ 
+ /* specific access mode of queryhash */
+-DECLARE_HASHMAP(char *, gt_cstr_nofree, GtUword *, ulp,,)
++DECLARE_HASHMAP(char *, gt_cstr_nofree, GtUword *, ulp, extern,)
+ DECLARE_SAFE_DEREF(GtUword *, ulp)
+ 
+ /* Funktion, mit der der Metagenomethreader gestartet wird

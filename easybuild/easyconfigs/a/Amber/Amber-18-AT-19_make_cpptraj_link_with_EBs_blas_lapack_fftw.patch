@@ -1,0 +1,89 @@
+commit c29fd3416b6f7b74832a40d62ee70c6b51706197
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Mon Jul 13 15:20:32 2020 +0200
+
+    Make cpptraj link with the BLAS/LAPACK/FFTW/Zlib/Bzip2 from EasyBuild.
+    
+    Åke Sandgren, 20181126
+
+diff --git a/AmberTools/src/configure2 b/AmberTools/src/configure2
+index 89bf90d..2d1c43e 100755
+--- a/AmberTools/src/configure2
++++ b/AmberTools/src/configure2
+@@ -3378,7 +3378,7 @@ if [ "$macAccelerate" = 'yes' ] ; then
+ elif [ -n "$MKL_HOME" -o "$intel_compiler_flag_mkl" = 'yes' ]; then
+   CPPTRAJOPTS="$CPPTRAJOPTS -mkl"
+ elif [ "$gotolib" = 'yes' ] ; then
+-  CPPTRAJOPTS="$CPPTRAJOPTS -openblas -lblas=$GOTO --requires-pthread"
++  CPPTRAJOPTS="$CPPTRAJOPTS -openblas --requires-pthread"
+ else # TODO use libsci for cray?
+   CPPTRAJOPTS="$CPPTRAJOPTS --with-blas=$CPPTRAJHOME --with-lapack=$CPPTRAJHOME"
+ fi
+diff --git a/AmberTools/src/cpptraj/configure b/AmberTools/src/cpptraj/configure
+index 1136472..f86c1ed 100755
+--- a/AmberTools/src/cpptraj/configure
++++ b/AmberTools/src/cpptraj/configure
+@@ -183,38 +183,38 @@ LIB_D_ON[$LPARANC]='-DHAS_PNETCDF'
+ LIB_DOFF[$LPARANC]=''
+ LIB_TYPE[$LPARANC]='ld'
+ 
+-LIB_STAT[$LBZIP]='enabled'
++LIB_STAT[$LBZIP]='direct'
+ LIB_CKEY[$LBZIP]='bzlib'
+ LIB_HOME[$LBZIP]=''
+-LIB_FLAG[$LBZIP]='-lbz2'
++LIB_FLAG[$LBZIP]="-L$EBROOTBZIP2/lib -lbz2"
+ LIB_STTC[$LBZIP]='libbz2.a'
+ LIB_D_ON[$LBZIP]='-DHASBZ2'
+ LIB_DOFF[$LBZIP]=''
+ LIB_TYPE[$LBZIP]='ld'
+ 
+-LIB_STAT[$LZIP]='enabled'
++LIB_STAT[$LZIP]='direct'
+ LIB_CKEY[$LZIP]='zlib'
+ LIB_HOME[$LZIP]=''
+-LIB_FLAG[$LZIP]='-lz'
++LIB_FLAG[$LZIP]="-L$EBROOTZLIB/lib -lz"
+ LIB_STTC[$LZIP]='libz.a'
+ LIB_D_ON[$LZIP]='-DHASGZ'
+ LIB_DOFF[$LZIP]=''
+ LIB_TYPE[$LZIP]='ld'
+ 
+-LIB_STAT[$LBLAS]='enabled'
++LIB_STAT[$LBLAS]='direct'
+ LIB_CKEY[$LBLAS]='blas'
+ LIB_HOME[$LBLAS]=''
+-LIB_FLAG[$LBLAS]='-lblas'
+-LIB_STTC[$LBLAS]='libblas.a'
++LIB_FLAG[$LBLAS]="$LIBBLAS"
++LIB_STTC[$LBLAS]="$LIBBLAS"
+ LIB_D_ON[$LBLAS]=''
+ LIB_DOFF[$LBLAS]='-DNO_MATHLIB'
+ LIB_TYPE[$LBLAS]='cpp'
+ 
+-LIB_STAT[$LLAPACK]='enabled'
++LIB_STAT[$LLAPACK]='direct'
+ LIB_CKEY[$LLAPACK]='lapack'
+ LIB_HOME[$LLAPACK]=''
+-LIB_FLAG[$LLAPACK]='-llapack'
+-LIB_STTC[$LLAPACK]='liblapack.a'
++LIB_FLAG[$LLAPACK]="$LIBLAPACK"
++LIB_STTC[$LLAPACK]="$LIBLAPACK"
+ LIB_D_ON[$LLAPACK]=''
+ LIB_DOFF[$LLAPACK]=''
+ LIB_TYPE[$LLAPACK]='cpp'
+@@ -228,11 +228,11 @@ LIB_D_ON[$LARPACK]=''
+ LIB_DOFF[$LARPACK]='-DNO_ARPACK'
+ LIB_TYPE[$LARPACK]='cpp'
+ 
+-LIB_STAT[$LFFTW3]='off'
++LIB_STAT[$LFFTW3]='direct'
+ LIB_CKEY[$LFFTW3]='fftw3'
+ LIB_HOME[$LFFTW3]=''
+-LIB_FLAG[$LFFTW3]='-lfftw3'
+-LIB_STTC[$LFFTW3]='libfftw3.a'
++LIB_FLAG[$LFFTW3]="$LIBFFT"
++LIB_STTC[$LFFTW3]="$LIBFFT"
+ LIB_D_ON[$LFFTW3]='-DFFTW_FFT'
+ LIB_DOFF[$LFFTW3]=''
+ LIB_TYPE[$LFFTW3]='cpp'

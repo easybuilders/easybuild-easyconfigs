@@ -1,0 +1,48 @@
+From c7c7460fd3a49a9d289394b80d9ecf61898edf49 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Wed, 9 Sep 2020 08:47:03 +0200
+Subject: [PATCH] Choose test affinity based on current affinity
+
+---
+ test/test_dataloader.py | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/test/test_dataloader.py b/test/test_dataloader.py
+index ca0c9e6cb511f..745942bcf01f2 100644
+--- a/test/test_dataloader.py
++++ b/test/test_dataloader.py
+@@ -2128,22 +2128,28 @@ def __iter__(self):
+         after = os.sched_getaffinity(0)
+         return iter(after)
+ 
+-
+-def worker_set_affinity(_):
+-    os.sched_setaffinity(0, [2])
+-
+-
+ @unittest.skipIf(
+     not hasattr(os, 'sched_setaffinity'),
+     "os.sched_setaffinity is not available")
+ class TestSetAffinity(TestCase):
+     def test_set_affinity_in_worker_init(self):
++        # Query the current affinity mask to avoid setting a disallowed one
++        old_affinity = os.sched_getaffinity(0)
++        if not old_affinity:
++            self.skipTest("No affinity information")
++        # Choose any
++        expected_affinity = list(old_affinity)[-1]
++
++        def worker_set_affinity(_):
++            os.sched_setaffinity(0, [expected_affinity])
++
++
+         dataset = SetAffinityDataset()
+ 
+         dataloader = torch.utils.data.DataLoader(
+             dataset, num_workers=2, worker_init_fn=worker_set_affinity)
+         for sample in dataloader:
+-            self.assertEqual(sample, [2])
++            self.assertEqual(sample, [expected_affinity])
+ 
+ 
+ 
