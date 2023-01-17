@@ -1,0 +1,131 @@
+diff -ruN archspec-0.1.3.orig/archspec/cpu/detect.py archspec-0.1.3/archspec/cpu/detect.py
+--- archspec-0.1.3.orig/archspec/cpu/detect.py	2021-10-22 13:57:34.215254800 +0200
++++ archspec-0.1.3/archspec/cpu/detect.py	2022-01-24 17:49:18.591176274 +0100
+@@ -61,7 +61,7 @@
+     ``/proc/cpuinfo``
+     """
+     info = {}
+-    with open("/proc/cpuinfo") as file:
++    with open("/proc/cpuinfo") as file:  # pylint: disable=unspecified-encoding
+         for line in file:
+             key, separator, value = line.partition(":")
+ 
+@@ -80,7 +80,9 @@
+ 
+ 
+ def _check_output(args, env):
+-    output = subprocess.Popen(args, stdout=subprocess.PIPE, env=env).communicate()[0]
++    output = subprocess.Popen(  # pylint: disable=consider-using-with
++        args, stdout=subprocess.PIPE, env=env
++    ).communicate()[0]
+     return six.text_type(output.decode("utf-8"))
+ 
+ 
+@@ -288,7 +290,7 @@
+     arch_root = TARGETS[basename]
+     return (
+         (target == arch_root or arch_root in target.ancestors)
+-        and (target.vendor == vendor or target.vendor == "generic")
++        and target.vendor in (vendor, "generic")
+         and target.features.issubset(features)
+     )
+ 
+@@ -303,7 +305,7 @@
+     arch_root = TARGETS[basename]
+     return (
+         (target == arch_root or arch_root in target.ancestors)
+-        and (target.vendor == vendor or target.vendor == "generic")
++        and target.vendor in (vendor, "generic")
+         and target.features.issubset(features)
+     )
+ 
+diff -ruN archspec-0.1.3.orig/archspec/cpu/schema.py archspec-0.1.3/archspec/cpu/schema.py
+--- archspec-0.1.3.orig/archspec/cpu/schema.py	2021-09-03 17:23:36.193003000 +0200
++++ archspec-0.1.3/archspec/cpu/schema.py	2022-01-24 17:49:18.594040000 +0100
+@@ -11,7 +11,7 @@
+ try:
+     from collections.abc import MutableMapping  # novm
+ except ImportError:
+-    from collections import MutableMapping
++    from collections import MutableMapping  # pylint: disable=deprecated-class
+ 
+ 
+ class LazyDictionary(MutableMapping):
+@@ -56,7 +56,7 @@
+ 
+     def _factory():
+         filename = os.path.join(json_dir, json_file)
+-        with open(filename, "r") as file:
++        with open(filename, "r") as file:  # pylint: disable=unspecified-encoding
+             return json.load(file)
+ 
+     return _factory
+diff -ruN archspec-0.1.3.orig/pyproject.toml archspec-0.1.3/pyproject.toml
+--- archspec-0.1.3.orig/pyproject.toml	2021-10-22 13:57:34.215254800 +0200
++++ archspec-0.1.3/pyproject.toml	2022-01-24 17:49:18.594944000 +0100
+@@ -25,46 +25,51 @@
+ ]
+ 
+ [tool.poetry.dependencies]
+-python = ">=2.7 !=3.4.* !=3.3.* !=3.2.* !=3.1.* !=3.0.* <4"
++python = "==2.7 || ^3.5"
+ six = "^1.13.0"
+-click = ">=7.1.2,<8.0"
++click = [
++  {version = "^8", python = '^3.6'},
++  {version = "^7", python = '==3.5'},
++  {version = "^7", python = '==2.7'}
++]
+ 
+ [tool.poetry.dev-dependencies]
+ pytest = [
+-  {version = ">=5.3.2", python = '^3.5'},
+-  {version = ">=3.5.2", python = '^2.7'}
++  {version = "^6", python = '^3.6'},
++  {version = "~5", python = '==3.5'},
++  {version = "~3", python = '==2.7'}
+ ]
+ more_itertools = [
+-  {version = ">=5.0.0", python = '^2.7'}
++  {version = "~5", python = '==2.7'}
+ ]
+ scandir = [
+-  {version = ">=1.10.0", python = '^2.7'}
++  {version = "~1", python = '==2.7'}
+ ]
+ pytest-cov = "^2.8.1"
+ coverage = "^5.3"
+ pylint = [
+-  {version = "^2.4.4", python = "^3.5"}
++  {version = "^2", python = "^3.6"}
+ ]
+ flake8 = [
+-  {version = "^3.7.9", python = "^3.5"}
++  {version = "^4", python = "^3.6"}
+ ]
+ black = [
+-  {version = ">19.10b0", python = "^3.6"}
++  {version = "==21.12b0", python = "^3.8"}
+ ]
+ sphinx = [
+-  {version = "^2.3.1", python = "^3.5"}
++  {version = "^4", python = "^3.6"}
+ ]
+ sphinx_rtd_theme = [
+-  {version = "^0.4.3", python = "^3.5"}
++  {version = "^1", python = "^3.6"}
+ ]
+ jsonschema = "^3.2.0"
+ pyrsistent = [
+-  {version="<0.17.0", python="^2.7"}
++  {version="~0.16", python="==2.7"}
+ ]
+ 
+ [tool.poetry.scripts]
+ archspec = 'archspec.cli:main'
+ 
+ [build-system]
+-requires = ["poetry>=0.12"]
+-build-backend = "poetry.masonry.api"
++requires = ["poetry>=1.0.0"]
++build-backend = "poetry.core.masonry.api"

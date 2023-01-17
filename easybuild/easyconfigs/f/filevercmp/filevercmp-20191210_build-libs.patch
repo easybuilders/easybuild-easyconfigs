@@ -1,0 +1,90 @@
+# Patch to build static and dynamic libraries. Based on PR by outpaddling:
+# https://github.com/ekg/filevercmp/pull/2
+# Updated: Denis Kristak (INUITS)
+diff -ruN filevercmp-master_orig/Makefile filevercmp-master/Makefile
+--- filevercmp-master_orig/Makefile	2019-12-10 10:58:23.000000000 +0100
++++ filevercmp-master/Makefile	2021-07-13 16:35:15.738330513 +0200
+@@ -4,18 +4,69 @@
+ 
+ OBJS=	main.o filevercmp.o
+ 
+-all: filevercmp
++# Use ?= to allow overriding from the env or command-line, e.g.
++#
++#       make CXXFLAGS="-O3 -fPIC" install
++#
++# Package managers will override many of these variables automatically, so
++# this is aimed at making it easy to create packages (Debian packages,
++# FreeBSD ports, MacPorts, pkgsrc, etc.)
++
++CC ?=		cc
++CFLAGS ?=	-O -g  #-m64 #-arch ppc
++
++PREFIX ?=	/usr/local
++STRIP ?=	strip
++INSTALL ?=	install -c
++MKDIR ?=	mkdir -p
++AR ?=		ar
++ARFLAGS ?=	rs
++
++BIN =		filevercmp
++LIB =		libfilevercmp.a
++SOVERSION =	0
++SLIB =		libfilevercmp.so
++OBJS =		filevercmp.o
++
++LIBDIR = $(DESTDIR)$(PREFIX)/lib
++BINDIR = $(DESTDIR)$(PREFIX)/bin
++INCDIR = $(DESTDIR)$(PREFIX)/include/filevercmp
++
++.SUFFIXES:.c .o .pico .so
++
++.c.o:
++	$(CC) $(CFLAGS) -I. -c -o $@ $<
++
++.c.pico:
++	$(CC) $(CFLAGS) -I. -fPIC -c -o $@ $<
++
++all:	$(BIN) $(SLIB) $(LIB)
++
++$(LIB): $(OBJS)
++	$(AR) $(ARFLAGS) $@ $^
++
++$(SLIB): $(OBJS:.o=.pico)
++	$(CC) -shared -Wl,-soname,$(SLIB).$(SOVERSION) $(LDFLAGS) -o $@ $^ $(LIBS)
++	ln -sf $@ $(SLIB).$(SOVERSION)
++
++$(BIN): $(OBJS) main.c
++	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
++
++install: all
++	$(MKDIR) $(BINDIR)
++	$(MKDIR) $(LIBDIR)
++	$(MKDIR) $(INCDIR)
++	$(INSTALL) $(BIN) $(BINDIR)
++	$(INSTALL) *.h $(INCDIR)
++	$(INSTALL) $(LIB) $(SLIB) $(SLIB).$(SOVERSION) $(LIBDIR)
++
++install-strip: install
++	$(STRIP) $(BINDIR)/$(BIN) $(LIBDIR)/$(LIB)
++
++cleanlocal:
++	rm -rf $(BIN) $(LIB) $(SLIB) $(OBJS) $(DESTDIR)
++	rm -fr gmon.out *.o a.out *.dSYM $(BIN) *~ *.a tabix.aux tabix.log \
++		tabix.pdf *.class libtabix.*.dylib
++	cd htslib && $(MAKE) clean
+ 
+-clean:
+-	rm -f filevercmp ${OBJS}
+-
+-.PHONY: all clean
+-
+-filevercmp.o: filevercmp.c filevercmp.h
+-	$(CC) $(CPPFLAGS) $(CFLAGS) -c filevercmp.c
+-
+-main.o: main.c filevercmp.h
+-	$(CC) $(CPPFLAGS) $(CFLAGS) -c main.c
+-
+-filevercmp: ${OBJS}
+-	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -o filevercmp ${OBJS}
++clean:	cleanlocal-recur

@@ -1,0 +1,91 @@
+easyblock = 'Bundle'
+
+name = 'horton'
+version = '2.1.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://theochem.github.io/horton'
+description = """HORTON is a Helpful Open-source Research TOol for N-fermion systems, written
+ primarily in the Python programming language. (HORTON is named after the helpful
+ pachyderm, not the Canadian caffeine supply store.) The ultimate goal of HORTON
+ is to provide a platform for testing new ideas on the quantum many-body problem
+ at a reasonable computational cost. Although HORTON is primarily designed to be
+ a quantum-chemistry program, it can perform computations involving model
+ Hamiltonians, and could be extended for computations in nuclear physics."""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('h5py', '2.10.0', versionsuffix),
+    ('matplotlib', '2.2.5', versionsuffix),
+]
+
+local_horton_prebuildopts = ' '.join([
+    'BLAS_EXTRA_COMPILE_ARGS=-DMKL_ILP64:-I${MKLROOT}/include',
+    'BLAS_LIBRARY_DIRS=${MKLROOT}/lib/intel64',
+    'BLAS_LIBRARIES=mkl_intel_ilp64:mkl_core:mkl_sequential:pthread:m:mkl_def',
+    'LIBRARY_PATH=%(installdir)s/lib:$LIBRARY_PATH',
+])
+
+# Avoid need for X11 in tests by specifying "backend: agg" in matplotlibrc
+local_horton_runtest = ' '.join([
+    'export MPLBACKEND=agg;',
+    '%s python setup.py build_ext -i; ' % local_horton_prebuildopts,
+    'nosetests -v',
+])
+
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+# Horton 2.1.1 requires very specific versions of libxc (2.2.2) and Libint (2.0.3),
+# so we install these as components along with Horton itself
+components = [
+    ('Libint', '2.0.3', {
+        'toolchainopts': {'pic': True},
+        'source_urls': ['http://downloads.sourceforge.net/project/libint/libint-for-mpqc'],
+        'sources': ['libint-%(version)s-stable.tgz'],
+        'checksums': ['5d4944ed6e60b08d05b4e396b10dc7deee7968895984f4892fd17159780f5b02'],
+        'start_dir': 'libint-%(version)s-stable',
+        'easyblock': 'EB_Libint',
+    }),
+    ('libxc', '2.2.2', {
+        'easyblock': 'ConfigureMake',
+        # Results for some functionals (e.g. mgga_c_tpss) deviate with too aggressive optimization settings.
+        # Tests also fail with Intel Compilers on Haswell when optarch is enabled.
+        'toolchainopts': {'lowopt': True, 'optarch': False},
+        'source_urls': ['https://www.tddft.org/programs/libxc/down.php?file=%(version)s/'],
+        'checksums': ['6ca1d0bb5fdc341d59960707bc67f23ad54de8a6018e19e02eee2b16ea7cc642'],
+        'configopts': 'FC="$F77" FCFLAGS="$FFLAGS" --enable-shared --enable-fortran',
+        'parallel': 1,
+        'runtest': 'check',
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/theochem/horton/releases/download/%(version)s'],
+        'checksums': ['4b3f87920d881030ba80f097326a744de2cfee5316aa4499cc9a6501f64b5060'],
+        'easyblock': 'PythonPackage',
+        'download_dep_fail': True,
+        'use_pip': False,
+        'prebuildopts': local_horton_prebuildopts,
+        'runtest': local_horton_runtest,
+    }),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+sanity_check_paths = {
+    'files': ['include/xc.h', 'lib/libint2.a', 'lib/libint2.%s' % SHLIB_EXT] +
+             ['lib/libxc%s.%s' % (x, y) for x in ['', 'f90'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['bin', 'include/horton', 'include/libint2', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import horton'",
+    "horton-esp-fit.py --version",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'chem'
