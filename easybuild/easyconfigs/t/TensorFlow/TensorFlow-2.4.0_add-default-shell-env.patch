@@ -1,0 +1,122 @@
+From 03fc39ebd2f201dfa170cb92dd9813af3bbcbf45 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Tue, 3 Nov 2020 12:43:54 +0100
+Subject: [PATCH] Add use_default_shell_env = True to all ctx.actions.run_shell
+ rules
+
+To start subprograms, even simple bash snippets, Bazel uses an
+executable `process-wrapper` which is potentially built using a custom
+toolchain and hence requires a set up LD_LIBRARY_PATH.
+Ommitting the `use_default_shell_env` (defaulting to false) clears the
+whole environment and the binary may try to use older system libs such
+as /lib64/libstdc++.so causing it to fail in case it is (much) older
+than the used libstdc++ from the custom toolchain which is very common
+in HPC environments.
+Hence I added `use_default_shell_env = True` as already done in e.g.
+`_local_genrule_impl`.
+---
+ tensorflow/core/kernels/mlir_generated/build_defs.bzl | 4 ++++
+ third_party/flatbuffers/build_defs.bzl                | 2 ++
+ third_party/nccl/build_defs.bzl.tpl                   | 2 ++
+ 3 files changed, 7 insertions(+)
+
+diff --git a/tensorflow/core/kernels/mlir_generated/build_defs.bzl b/tensorflow/core/kernels/mlir_generated/build_defs.bzl
+index 5b4daac8820..bcc28e642ab 100644
+--- a/tensorflow/core/kernels/mlir_generated/build_defs.bzl
++++ b/tensorflow/core/kernels/mlir_generated/build_defs.bzl
+@@ -62,6 +62,7 @@ def _gen_kernel_gpu_bin_impl(ctx):
+                 "--output=%s" % gpu_bin.path,
+             ],
+             mnemonic = "compile",
++            use_default_shell_env = True,
+         )
+         gpu_bins.append(gpu_bin)
+     return [GpuBinaryInfo(gpu_bins = gpu_bins)]
+@@ -109,6 +110,7 @@ def _gen_kernel_image_hdr_impl_cuda(ctx):
+             "--create=%s" % fatbin.path,
+         ] + images,
+         mnemonic = "fatbinary",
++        use_default_shell_env = True,
+     )
+ 
+     bin2c = _lookup_file(ctx.attr._gpu_root, "bin/bin2c")
+@@ -119,6 +121,7 @@ def _gen_kernel_image_hdr_impl_cuda(ctx):
+         command = "%s --static --const --type=char --name=%s %s 1> %s" %
+                   (bin2c.path, ctx.attr.symbol, fatbin.path, ctx.outputs.out.path),
+         mnemonic = "bin2c",
++        use_default_shell_env = True,
+     )
+ 
+ def _gen_kernel_image_hdr_impl_rocm(ctx):
+@@ -148,6 +151,7 @@ def _gen_kernel_image_hdr_impl_rocm(ctx):
+             "--outputs=%s" % fatbin.path,
+         ],
+         mnemonic = "fatbinary",
++        use_default_shell_env = True,
+     )
+ 
+     ctx.actions.run_shell(
+@@ -166,6 +170,7 @@ def _gen_kernel_image_hdr_impl_rocm(ctx):
+                 ctx.outputs.out.path,
+             )
+         ),
++        use_default_shell_env = True,
+     )
+ 
+ _gen_kernel_image_hdr_rule = rule(
+@@ -217,6 +222,7 @@ def _gen_mlir_op_impl(ctx):
+                 ctx.outputs.out.path,
+             )
+         ),
++        use_default_shell_env = True,
+     )
+ 
+ _gen_mlir_op_rule = rule(
+@@ -307,6 +313,7 @@ def _gen_unranked_kernel_fatbin_impl(ctx):
+             "--output=%s" % gpu_bin.path,
+         ],
+         mnemonic = "compile",
++        use_default_shell_env = True,
+     )
+ 
+ _gen_unranked_kernel_fatbin_rule = rule(
+diff --git a/third_party/flatbuffers/build_defs.bzl b/third_party/flatbuffers/build_defs.bzl
+index 4fe9629b9d1..22ec98e7865 100644
+--- a/third_party/flatbuffers/build_defs.bzl
++++ b/third_party/flatbuffers/build_defs.bzl
+@@ -320,6 +320,7 @@ def _gen_flatbuffer_srcs_impl(ctx):
+                 src.path,
+             ],
+             progress_message = "Generating flatbuffer files for {}:".format(src),
++            use_default_shell_env = True,
+         )
+     return [
+         DefaultInfo(files = depset(outputs)),
+@@ -388,6 +389,7 @@ def _concat_flatbuffer_py_srcs_impl(ctx):
+             ctx.attr.deps[0].files.to_list()[0].path,
+             ctx.outputs.out.path,
+         ),
++        use_default_shell_env = True,
+     )
+ 
+ _concat_flatbuffer_py_srcs = rule(
+diff --git a/third_party/nccl/build_defs.bzl.tpl b/third_party/nccl/build_defs.bzl.tpl
+index 7dd6ea58a2c..a96b57e211d 100644
+--- a/third_party/nccl/build_defs.bzl.tpl
++++ b/third_party/nccl/build_defs.bzl.tpl
+@@ -205,6 +205,7 @@ def _prune_relocatable_code_impl(ctx):
+                 out.path,
+             ],
+             command = command,
++            use_default_shell_env = True,
+         )
+         outputs.append(out)
+     return DefaultInfo(files = depset(outputs))
+@@ -237,6 +238,7 @@ def _merge_archive_impl(ctx):
+         inputs = ctx.files.srcs,  # + ctx.files._crosstool,
+         outputs = [ctx.outputs.out],
+         command = "echo -e \"%s\" | %s -M" % (mri_script, cc_toolchain.ar_executable),
++        use_default_shell_env = True,
+     )
+ 
+ _merge_archive = rule(

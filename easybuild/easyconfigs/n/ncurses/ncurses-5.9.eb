@@ -3,7 +3,7 @@ easyblock = 'ConfigureMake'
 name = 'ncurses'
 version = '5.9'
 
-homepage = 'http://www.gnu.org/software/ncurses/'
+homepage = 'https://www.gnu.org/software/ncurses/'
 description = """The Ncurses (new curses) library is a free software emulation of curses in System V Release 4.0,
  and more. It uses Terminfo format, supports pads and color and multiple highlights and forms characters and
  function-key mapping, and has all the other SYSV-curses enhancements over BSD Curses."""
@@ -13,29 +13,44 @@ toolchainopts = {'optarch': True, 'pic': True}
 
 source_urls = [GNU_SOURCE]
 sources = [SOURCE_TAR_GZ]
-patches = ['ncurses-%(version)s_configure_darwin.patch']
+patches = [
+    'ncurses-%(version)s_configure_darwin.patch',
+    'ncurses-%(version)s_fix-missing-const.patch',
+]
 checksums = [
     '9046298fb440324c9d4135ecea7879ffed8546dd1b58e59430ea07a4633f563b',  # ncurses-5.9.tar.gz
     '8c471fc2b1961a6e6e5981b7f7b3512e7fe58fcb04461aa4520157d4c1159998',  # ncurses-5.9_configure_darwin.patch
+    '027f7bd5876b761b48db624ddbdd106fa1c535dfb2752ef5a0eddeb2a8896cfd',  # ncurses-5.9_fix-missing-const.patch
 ]
 
 # need to use -P preprocessor option for recent GCC versions (cfr. https://gcc.gnu.org/gcc-5/porting_to.html)
 preconfigopts = "export CPPFLAGS='-P' && "
 
+local_common_configopts = "--with-shared --enable-overwrite --without-ada --enable-symlinks "
 configopts = [
-    # default build
-    '--with-shared --enable-overwrite',
-    # the UTF-8 enabled version (ncursesw)
-    '--with-shared --enable-overwrite --enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/'
+    # build ncurses: serial build in default paths with shared libraries
+    local_common_configopts,
+    # build ncursesw: serial with UTF-8
+    local_common_configopts + "--enable-ext-colors --enable-widec --includedir=%(installdir)s/include/ncursesw/",
 ]
 
-local_libs = ["form", "menu", "ncurses", "panel"]
+# need to take care of $CFLAGS ourselves with dummy toolchain
+# we need to add -fPIC, but should also include -O* option to avoid compiling with -O0 (default for GCC)
+buildopts = 'CFLAGS="-O2 -fPIC"'
+
+# Symlink libtinfo to libncurses
+# libncurses with this configopts has all the symbols from libtinfo, but some packages look for libtinfo specifically
+postinstallcmds = ['cd %(installdir)s/lib && for l in libncurses{.,_,w}*; do ln -s "${l}" "${l/ncurses/tinfo}"; done']
+
+_target_suffix = ['', 'w']  # '': ncurses, 'w': ncursesw
+_lib_suffix = ['%s%s' % (x, y) for x in _target_suffix for y in ['.a', '_g.a', '.' + SHLIB_EXT]]
+_lib_names = ['form', 'menu', 'ncurses', 'panel', 'tinfo']
+
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ["captoinfo", "clear", "infocmp", "infotocap", "ncurses5-config",
                                      "reset", "tabs", "tic", "toe", "tput", "tset"]] +
-             ['lib/lib%s%s.a' % (x, y) for x in local_libs for y in ['', '_g', 'w', 'w_g']] +
-             ['lib/lib%s%s.so' % (x, y) for x in local_libs for y in ['', 'w']] +
-             ['lib/libncurses++%s.a' % x for x in ['', 'w']],
+             ['lib/lib%s%s' % (x, y) for x in _lib_names for y in _lib_suffix] +
+             ['lib/libncurses++%s.a' % x for x in _target_suffix],
     'dirs': ['include', 'include/ncursesw'],
 }
 

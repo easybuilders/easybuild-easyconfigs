@@ -1,0 +1,67 @@
+name = 'Clang-AOMP'
+version = '4.5.0'
+
+homepage = 'https://github.com/RadeonOpenCompute/llvm-project'
+description = """AOMP is an open source Clang/LLVM based compiler with added
+support for the OpenMP® API on Radeon™ GPUs."""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Perl', '5.34.0'),
+    ('Python', '3.9.6'),
+    ('elfutils', '0.185'),
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('GMP', '6.2.1'),
+    ('ROCR-Runtime', '%(version)s'),
+    ('ROCT-Thunk-Interface', '%(version)s'),
+    ('Z3', '4.8.12'),
+    ('binutils', '2.37'),
+    ('libffi', '3.4.2'),
+    ('libxml2', '2.9.10'),
+    ('ncurses', '6.2'),
+    ('zlib', '1.2.11'),
+]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/RadeonOpenCompute/%(name)s/archive/'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    }],
+    'srcdir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('llvm-project', 'rocm-4.5.0', {
+        'checksums': ['b71451bf26650ba06c0c5c4c7df70f13975151eaa673ef0cc77c1ab0000ccc97'],
+    }),
+    ('ROCm-Device-Libs', 'rocm-4.5.0', {
+        'checksums': ['78412fb10ceb215952b5cc722ed08fa82501b5848d599dc00744ae1bdc196f77'],
+    }),
+    ('Clang-OpenMP', 'rocm-4.5.0', {
+        # uses same sources as llvm-project component
+        'sources': ['llvm-project-%(version)s.tar.gz'],
+        'patches': ['clang-aomp-%(version)s-openmp-remove-hardcoded-source-paths.patch'],
+        'checksums': ['b71451bf26650ba06c0c5c4c7df70f13975151eaa673ef0cc77c1ab0000ccc97',
+                      'f959dfa95ec705acf0ffb8d5e85b48cc56e2bed1b15fab22d9eda1f416dd98ca'],
+    }),
+    ('aomp-extras', 'rocm-4.5.0', {
+        'source_urls': ['https://github.com/ROCm-Developer-Tools/%(name)s/archive/'],
+        'patches': ['clang-aomp-%(version)s-aomp-extras-remove-hardcoded-devicelib-path.patch'],
+        'checksums': ['a9c32fb7659c0aabba5b1e76ec05037dda485bf893cef4144279b42ef8fae416',
+                      '1ae5a1af5ccd6c5a77dbc2882d0b40f07d33a7d0021736b29a21e46ab777803a'],
+    }),
+]
+
+modextravars = {
+    'HIP_DEVICE_LIB_PATH': '%(installdir)s/amdgcn/bitcode',
+}
+
+moduleclass = 'tools'

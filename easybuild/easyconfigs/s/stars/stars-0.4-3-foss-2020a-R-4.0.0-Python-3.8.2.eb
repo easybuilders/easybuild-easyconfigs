@@ -1,0 +1,58 @@
+easyblock = 'Bundle'
+
+name = 'stars'
+version = '0.4-3'
+local_pyver = '3.8.2'
+versionsuffix = '-R-%%(rver)s-Python-%s' % local_pyver
+
+homepage = 'https://cran.r-project.org/package=stars'
+description = """Reading, manipulating, writing and plotting spatiotemporal arrays (raster and vector data cubes)
+ in R, using GDAL bindings provided by sf, and NetCDF bindings by ncmeta and RNetCDF."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+dependencies = [
+    ('R', '4.0.0'),
+    ('Python', local_pyver),
+    ('GDAL', '3.0.4', '-Python-%s' % local_pyver),  # required for sf
+    ('GEOS', '3.8.1', '-Python-%s' % local_pyver),  # required for sf
+    ('PROJ', '7.0.0'),  # required for sf
+    ('netCDF', '4.7.4'),
+    ('sf', '0.9-5', versionsuffix),
+]
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_list = [
+    ('RNetCDF', '2.3-1', {
+        'checksums': ['7537196ee4a2ae71dd4c0e3bb4d35d2220349d82afb019a1477ed2eba06344c6'],
+    }),
+    ('ncmeta', '0.3.0', {
+        'checksums': ['4b34fd27a7bfaee87ddfbc0387ed2b45956f6bbc04652649f29c311d16053766'],
+    }),
+    ('lwgeom', '0.2-5', {
+        'checksums': ['4a1d93f96c10c2aac173d8186cf7d7bef7febcb3cf066a7f45da32251496d02f'],
+    }),
+    (name, version, {
+        'checksums': ['a2f38d5ed4130ea36b20597ffdcc2dc0619df13804c69d72486cf93528eac279'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lwgeom', name],
+}
+
+moduleclass = 'lib'

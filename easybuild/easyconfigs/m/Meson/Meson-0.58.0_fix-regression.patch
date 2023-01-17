@@ -1,0 +1,61 @@
+fix for "ERROR: List item must be one of <class 'str'>, not <class 'list'>" error,
+which is a regression in Meson 0.58.0, see https://github.com/mesonbuild/meson/issues/8727
+
+From 96e8e019303abe5626e737867e1249ab6eb53dff Mon Sep 17 00:00:00 2001
+From: Xavier Claessens <xavier.claessens@collabora.com>
+Date: Wed, 12 May 2021 16:16:41 -0400
+Subject: [PATCH] interpreter: flatten environment() initial values
+
+Turns out listify() flattens by default, but stringlistify() cannot
+flatten... How do I realize this only now?
+
+Fixes: #8727
+---
+ mesonbuild/interpreter/interpreterobjects.py | 4 +++-
+ test cases/common/41 test args/meson.build   | 2 +-
+ test cases/common/41 test args/tester.py     | 4 ++++
+ 3 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/mesonbuild/interpreter/interpreterobjects.py b/mesonbuild/interpreter/interpreterobjects.py
+index 7d43752cfcf..10e681aeb46 100644
+--- a/mesonbuild/interpreter/interpreterobjects.py
++++ b/mesonbuild/interpreter/interpreterobjects.py
+@@ -165,7 +165,9 @@ def __init__(self, initial_values=None, subproject: str = ''):
+             for k, v in initial_values.items():
+                 self.set_method([k, v], {})
+         elif initial_values is not None:
+-            for e in mesonlib.stringlistify(initial_values):
++            for e in mesonlib.listify(initial_values):
++                if not isinstance(e, str):
++                    raise InterpreterException('Env var definition must be a list of strings.')
+                 if '=' not in e:
+                     raise InterpreterException('Env var definition must be of type key=val.')
+                 (k, val) = e.split('=', 1)
+diff --git a/test cases/common/41 test args/meson.build b/test cases/common/41 test args/meson.build
+index 81d34915abe..b21f1ad00b1 100644
+--- a/test cases/common/41 test args/meson.build	
++++ b/test cases/common/41 test args/meson.build	
+@@ -23,7 +23,7 @@ test('environment variables 2', e3, env : env2)
+ env_array = ['MESONTESTING=picklerror']
+ testfile = files('testfile.txt')
+ testerpy = find_program('tester.py')
+-test('file arg', testerpy, args : testfile, env : env_array)
++test('file arg', testerpy, args : testfile, env : [env_array, 'TEST_LIST_FLATTENING=1'])
+ 
+ copy = find_program('copyfile.py')
+ tester = executable('tester', 'tester.c')
+diff --git a/test cases/common/41 test args/tester.py b/test cases/common/41 test args/tester.py
+index 0b4010ab909..b5884cc61a2 100755
+--- a/test cases/common/41 test args/tester.py	
++++ b/test cases/common/41 test args/tester.py	
+@@ -1,6 +1,10 @@
+ #!/usr/bin/env python3
+ 
+ import sys
++import os
++
++assert os.environ['MESONTESTING'] == 'picklerror'
++assert os.environ['TEST_LIST_FLATTENING'] == '1'
+ 
+ with open(sys.argv[1]) as f:
+     if f.read() != 'contents\n':

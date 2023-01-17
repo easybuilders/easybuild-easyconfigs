@@ -1,0 +1,69 @@
+name = 'OpenCV'
+version = '4.2.0'
+versionsuffix = '-Python-%(pyver)s-contrib'
+
+# the hash is version dependent! see 3rdparty/ippicv/ippicv.cmake
+local_ippicv_hash = '32e315a5b106a7b89dbed51c28f8120a48b368b4'
+
+homepage = 'https://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products.
+ Includes extra modules for OpenCV from the contrib repository."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+sources = [
+    {'source_urls': ['https://github.com/opencv/opencv/archive/'],
+     'download_filename': '%(version)s.zip', 'filename': SOURCELOWER_ZIP},
+    {'source_urls': ['https://github.com/opencv/opencv_contrib/archive/'],
+     'download_filename': '%(version)s.zip', 'filename': '%(namelower)s_contrib-%(version)s.zip'},
+    {'source_urls': ['https://raw.githubusercontent.com/opencv/opencv_3rdparty/%s/ippicv' % local_ippicv_hash],
+     'filename': 'ippicv_2019_lnx_intel64_general_20180723.tgz', 'extract_cmd': "cp %s %(builddir)s"},
+]
+checksums = [
+    '55bd939079d141a50fca74bde5b61b339dd0f0ece6320ec76859aaff03c90d9f',  # opencv-4.2.0.zip
+    'a4c0b1fb169a68085f7deefdeca8429aafadf3e1798abec0c1a1a7fc83e11a69',  # opencv_contrib-4.2.0.zip
+    'fc167cb60deb8924339a7050f3da168bb02e221b2d6b8c00139d1fa7eace0c7d',  # ippicv_2019_lnx_intel64_general_20180723.tgz
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', '-Python-%(pyver)s'),  # for numpy
+    ('zlib', '1.2.11'),
+    ('FFmpeg', '4.2.2'),
+    ('libjpeg-turbo', '2.0.4'),
+    ('libpng', '1.6.37'),
+    ('LibTIFF', '4.1.0'),
+    ('libwebp', '1.1.0'),
+    ('OpenEXR', '2.4.1'),
+    ('JasPer', '2.0.14'),
+    ('Java', '11', '', SYSTEM),
+    ('ant', '1.10.8', '-Java-%(javaver)s', SYSTEM),
+    ('GLib', '2.64.1'),
+    ('GTK+', '3.24.17'),
+    ('HDF5', '1.10.6'),  # needed by hdf from contrib
+]
+
+configopts = '-DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/%(namelower)s_contrib-%(version)s/modules'
+
+enhance_sanity_check = True
+
+local_contrib_libs = [
+    'aruco', 'bgsegm', 'bioinspired', 'ccalib', 'datasets', 'dnn_objdetect', 'dnn_superres', 'dpm', 'face', 'freetype',
+    'fuzzy', 'hdf', 'hfs', 'img_hash', 'line_descriptor', 'optflow', 'phase_unwrapping', 'plot', 'quality', 'reg',
+    'rgbd', 'saliency', 'shape', 'stereo', 'structured_light', 'superres', 'surface_matching', 'text', 'tracking',
+    'videostab', 'xfeatures2d', 'ximgproc', 'xobjdetect', 'xphoto'
+]
+
+sanity_check_paths = {
+    'files': ['lib64/libopencv_%s.%s' % (l, SHLIB_EXT) for l in local_contrib_libs],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

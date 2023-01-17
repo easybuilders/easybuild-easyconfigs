@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'lrslib'
+version = '7.0a'
+
+homepage = 'http://cgm.cs.mcgill.ca/~avis/C/lrs.html'
+description = """lrslib is a self-contained ANSI C implementation of the
+reverse search algorithm for vertex enumeration/convex hull problems"""
+
+toolchain = {'name': 'gompi', 'version': '2019a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://cgm.cs.mcgill.ca/~avis/C/lrslib/archive/']
+sources = ['lrslib-0%(version_major)s%(version_minor)s.tar.gz']
+patches = ['lrslib-%(version)s-use-EB-values.patch']
+checksums = [
+    'd38cb8633e856398b461b35daa269d960c2c0e12b3df5725359dc3940b518e0c',  # lrslib-070a.tar.gz
+    '05c695691b404ff5c7ab2179c3811ce1cd1727dd767fbef21353ff6e1a250132',  # lrslib-7.0a-use-EB-values.patch
+]
+
+dependencies = [
+    ('GMP', '6.1.2'),
+]
+
+skipsteps = ['configure']
+
+# Default built plus mplrs
+buildopts = 'lrs redund lrsgmp mplrs CFLAGS="$CFLAGS"'
+
+installopts = 'prefix=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['lrs', 'lrsgmp', 'lrsnash', 'mplrs', 'mplrsgmp', 'redund', 'redundgmp']] +
+             ['lib/liblrs.%s' % SHLIB_EXT],
+    'dirs': ['include']
+}
+
+moduleclass = 'math'

@@ -1,0 +1,51 @@
+# Author: Denis Krišťák (INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'leidenalg'
+version = '0.8.7'
+
+homepage = 'https://github.com/vtraag/leidenalg'
+description = """Implementation of the Leiden algorithm for various quality
+functions to be used with igraph in Python."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('PyYAML', '5.4.1'),
+    ('Bison', '3.7.6'),
+    ('libtool', '2.4.6'),
+    ('flex', '2.6.4'),
+    ('CMake', '3.20.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('igraph', '0.9.4'),
+    ('python-igraph', '0.9.6'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('ddt', '1.4.2', {
+        'checksums': ['64a67366a2715e636b88694cc6075cc02db292f01098b8e385397c894d395378'],
+    }),
+    (name, version, {
+        'checksums': ['4cde1c51bc110e567b63a5f17f4321ff4073d79c67e8c3c7d956f07dc90ff7be'],
+        'preinstallopts': "python setup.py build --use-pkg-config && ",
+    }),
+]
+
+sanity_check_commands = [
+    # tests require that 'leidenalg' Python module is available,
+    # so needs to be run after installation
+    "cd %(builddir)s/leidenalg/leidenalg-%(version)s && python setup.py test --use-pkg-config",
+    "python -c 'import leidenalg; import igraph as ig; "
+    "leidenalg.find_partition(ig.Graph.Erdos_Renyi(100, 0.1), "
+    "leidenalg.ModularityVertexPartition)'",
+]
+
+moduleclass = 'chem'

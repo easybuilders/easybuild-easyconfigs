@@ -1,0 +1,22 @@
+Disable a part of a test which uses the current GPUs CUDA compute capability
+This will fail if the GPU is newer than what nvcc supports.
+See https://github.com/pytorch/pytorch/issues/51950
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_cpp_extensions_jit.py b/test/test_cpp_extensions_jit.py
+index 06f3df93a9..111f9721c1 100644
+--- a/test/test_cpp_extensions_jit.py
++++ b/test/test_cpp_extensions_jit.py
+@@ -180,11 +180,9 @@ class TestCppExtensionJIT(common.TestCase):
+         #   - Architecture names
+         #   - With/without '+PTX'
+ 
+-        capability = torch.cuda.get_device_capability()
+         # expected values is length-2 tuple: (list of ELF, list of PTX)
+         # note: there should not be more than one PTX value
+         archflags = {
+-            '': (['{}{}'.format(capability[0], capability[1])], None),
+             "Maxwell+Tegra;6.1": (['53', '61'], None),
+             "Pascal 3.5": (['35', '60', '61'], None),
+             "Volta": (['70'], ['70']),

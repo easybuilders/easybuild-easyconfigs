@@ -1,0 +1,21 @@
+Author: Jakob Schiotz <schiotz@fysik.dtu.dk>
+Description: FFTW will use 1 thread instead of 12, unless the variable ABTEM_FFTW_THREADS is set.
+
+--- abtem/device.py.orig	2021-09-13 20:15:59.190194233 +0200
++++ abtem/device.py	2021-09-13 20:17:43.763802138 +0200
+@@ -3,13 +3,14 @@
+ import numpy as np
+ import psutil
+ import pyfftw
++import os
+ from numpy.core.numeric import normalize_axis_tuple
+ 
+ from abtem.cpu_kernels import abs2, complex_exponential, interpolate_radial_functions, sum_run_length_encoded
+ from abtem.interpolate import interpolate_bilinear_cpu
+ 
+ FFTW_EFFORT = 'FFTW_MEASURE'
+-FFTW_THREADS = 12
++FFTW_THREADS = int(os.getenv('ABTEM_FFTW_THREADS', '1'))
+ FFTW_TIMELIMIT = 600
+ 
+ try:  # This should be the only place import cupy, to make it a non-essential dependency

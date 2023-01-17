@@ -1,13 +1,13 @@
 #
 # Alex Domingo and Fenglai Liu
-# 
+#
 # alex.domingo.toro@vub.be
 # fenglai@accre.vanderbilt.edu
 #
 # Vrije Universiteit Brussel (VUB)
 # Vanderbilt University
 #
-easyblock = 'CMakeMake'
+easyblock = 'CMakePythonPackage'
 
 name = 'ITK'
 version = '5.0.1'
@@ -30,7 +30,7 @@ checksums = ['c6b3c33ecc73104c906e0e1a1bfaa41a09af24bf53a4ec5e5c265d7e82bdf69f']
 builddependencies = [
     ('CMake', '3.15.3'),
     ('Bison', '3.3.2'),
-    ('Eigen', '3.3.7', '', True),
+    ('Eigen', '3.3.7', '', SYSTEM),
 ]
 
 dependencies = [
@@ -44,23 +44,21 @@ dependencies = [
     ('LibTIFF', '4.0.10'),
 ]
 
-separate_build_dir = True
+local_sys_deps = ['EIGEN', 'HDF5', 'JPEG', 'PNG', 'TIFF', 'SWIG', 'ZLIB']
+local_sys_cmake = ['-DITK_USE_SYSTEM_%s=ON' % d for d in local_sys_deps]
 
 preconfigopts = 'Eigen3_DIR=$EBROOTEIGEN '
-configopts = '-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
+configopts = '-DBUILD_TESTING=OFF '
 configopts += '-DITK_WRAP_PYTHON=ON -DITK_LEGACY_SILENT=ON '
-configopts += '-DITK_USE_SYSTEM_SWIG=ON -DITK_USE_SYSTEM_EIGEN=ON -DITK_USE_SYSTEM_HDF5=ON '
-configopts += '-DITK_USE_SYSTEM_JPEG=ON -DJPEG_INCLUDE_DIR=$EBROOTLIBJPEGMINTURBO/include '
-configopts += '-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib64/libjpeg.%s ' % SHLIB_EXT
-configopts += '-DITK_USE_SYSTEM_PNG=ON -DPNG_PNG_INCLUDE_DIR=$EBROOTLIBPNG/include '
-configopts += '-DPNG_LIBRARY=$EBROOTLIBPNG/lib/libpng.%s ' % SHLIB_EXT
-configopts += '-DITK_USE_SYSTEM_TIFF=ON -DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include '
-configopts += '-DTIFF_LIBRARY=$EBROOTLIBTIFF/lib/libtiff.%s ' % SHLIB_EXT
-configopts += '-DITK_USE_SYSTEM_ZLIB=ON -DZLIB_INCLUDE_DIR=$EBROOTZLIB/include '
-configopts += '-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.%s ' % SHLIB_EXT
 configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON '
+configopts += ' '.join(local_sys_cmake)
+# Don't depend on MPICXX (which makes linking to ITK painful)
+configopts += ' -DCMAKE_CXX_FLAGS="$CXXFLAGS -DOMPI_SKIP_MPICXX"'
 
-preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+build_shared_libs = True
+
+# See https://insightsoftwareconsortium.atlassian.net/browse/ITK-3538
+prebuildopts = "LC_ALL=C "
 
 sanity_check_paths = {
     'files': ['bin/itkTestDriver',
@@ -73,9 +71,5 @@ sanity_check_paths = {
              'lib/python%(pyshortver)s/site-packages',
              'share'],
 }
-
-sanity_check_commands = [('python', "-c 'import %(namelower)s'")]
-
-modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
 moduleclass = 'data'

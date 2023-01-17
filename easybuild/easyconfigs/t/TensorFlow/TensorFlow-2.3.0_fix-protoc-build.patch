@@ -1,0 +1,37 @@
+commit c8231eb55bdbff94c44e4b554321017fbd01bda9
+Author: Alexander Grund <alexander.grund@tu-dresden.de>
+Date:   Wed Jul 29 16:57:39 2020 +0200
+
+    Fix environment for protobuf compilation
+    
+    Patch using upstream https://github.com/grpc/grpc/pull/23664
+
+https://github.com/tensorflow/tensorflow/pull/41889
+diff --git a/tensorflow/workspace.bzl b/tensorflow/workspace.bzl
+index 24446d846c..ee63c4a811 100755
+--- a/tensorflow/workspace.bzl
++++ b/tensorflow/workspace.bzl
+@@ -687,6 +687,7 @@ def tf_repositories(path_prefix = "", tf_repo_name = ""):
+         sha256 = "b956598d8cbe168b5ee717b5dafa56563eb5201a947856a6688bbeac9cac4e1f",
+         strip_prefix = "grpc-b54a5b338637f92bfcf4b0bc05e0f57a5fd8fadd",
+         system_build_file = clean_dep("//third_party/systemlibs:grpc.BUILD"),
++        patch_file = clean_dep("//third_party/grpc:generate_cc_env_fix.patch"),
+         system_link_files = {
+             "//third_party/systemlibs:BUILD": "bazel/BUILD",
+             "//third_party/systemlibs:grpc.BUILD": "src/compiler/BUILD",
+diff --git a/third_party/grpc/generate_cc_env_fix.patch b/third_party/grpc/generate_cc_env_fix.patch
+new file mode 100644
+index 0000000000..51832fe962
+--- /dev/null
++++ b/third_party/grpc/generate_cc_env_fix.patch
+@@ -0,0 +1,10 @@
++--- a/bazel/generate_cc.bzl
+++++ b/bazel/generate_cc.bzl
++@@ -141,6 +141,7 @@ def generate_cc_impl(ctx):
++         outputs = out_files,
++         executable = ctx.executable._protoc,
++         arguments = arguments,
+++        use_default_shell_env = True,
++     )
++
++     return struct(files = depset(out_files))

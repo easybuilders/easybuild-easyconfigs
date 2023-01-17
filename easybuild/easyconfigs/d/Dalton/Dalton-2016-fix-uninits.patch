@@ -1,0 +1,78 @@
+# Fix a bunch of uninitialized variables.
+#
+# Åke Sandgren
+diff --git a/DALTON/abacus/dalgnr.F b/DALTON/abacus/dalgnr.F
+index c6cea38..b674d18 100644
+--- a/DALTON/abacus/dalgnr.F
++++ b/DALTON/abacus/dalgnr.F
+@@ -403,6 +403,7 @@ C  /* Deck exeher */
+ #include "dftcom.h"
+ #include "pcmlog.h"
+ #include "qm3.h"
++#include "nuclei.h"
+ C
+ C     Run Integral section
+ C
+diff --git a/DALTON/abacus/herpar.F b/DALTON/abacus/herpar.F
+index f74c394..1804c40 100644
+--- a/DALTON/abacus/herpar.F
++++ b/DALTON/abacus/herpar.F
+@@ -1338,6 +1338,14 @@ C     This is a slave in a parallel run; check for programming error
+         call quit('Failed to allocate memory')
+       end if
+ 
++#ifdef VAR_MPI
++      ! Make dummy allocation so we don't trip on uninitialized
++      ! variables in call to HER_RVINIT
++      nelement_d = 1
++      nelement_f = 1
++      call memallocmpi(nelement_d*8,dmat_p)
++      call memallocmpi(nelement_f*8,fmat_p)
++#endif
+ !     Receive initialization from master - 1 - common block information
+ !     =================================================================
+ !
+@@ -1362,6 +1370,9 @@ C     This is a slave in a parallel run; check for programming error
+           nelement_f = n2basx*rma_win_info%nmat_max_wo_win
+       end if
+ #ifdef VAR_MPI
++      ! Free the dummy allocations before doing the real allocations
++      call memfreempi(fmat_buff)
++      call memfreempi(dmat_buff)
+       call memallocmpi(nelement_d*8,dmat_p)
+       call memallocmpi(nelement_f*8,fmat_p)
+ #endif
+diff --git a/DALTON/cc/ccsd_input.F b/DALTON/cc/ccsd_input.F
+index 4da8565..04323eb 100644
+--- a/DALTON/cc/ccsd_input.F
++++ b/DALTON/cc/ccsd_input.F
+@@ -107,6 +107,7 @@ C
+       LOGICAL   SET, NEWDEF, SIRFF
+       CHARACTER PROMPT*1, WORD*7, TABLE(NTABLE)*7, WORD1*7
+       CHARACTER*(80) LINE
++      INTEGER ITEST
+ C
+       SAVE SET
+ CSONIA/FRAN/TBPEDERSEN
+@@ -144,6 +145,8 @@ Cring-CCD for triplet (rTCCD), and SOSEX added
+ C
+       IF (SET) RETURN
+       SET = .TRUE.
++
++      ITEST = 0
+ C
+ CSPAS:8/11-13: Initialization of CCSDINP, CCLR, CCSDSYM 
+ C              and other common blocks is moved to a new routine
+diff --git a/DALTON/sirius/sirqmmm.F b/DALTON/sirius/sirqmmm.F
+index 48d132d..b0f7f34 100644
+--- a/DALTON/sirius/sirqmmm.F
++++ b/DALTON/sirius/sirqmmm.F
+@@ -4339,6 +4339,8 @@ C     Receiving data from master
+       CALL MPIXBCAST(CONMAT,1,'LOGICAL',MASTER)
+ 
+       KELF    = 1
++      KELFEL  = 1
++      KELFNU  = 1
+       IF (SPLDIP) THEN
+          KELFEL = KELF   + 3*POLDIM
+          KELFNU = KELFEL + 3*POLDIM
