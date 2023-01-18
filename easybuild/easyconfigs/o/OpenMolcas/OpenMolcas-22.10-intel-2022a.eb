@@ -1,13 +1,10 @@
-# Test-jobs enabled
-# Author: J. Sassmannshausen (Imperial College London/UK)
-
 easyblock = 'CMakeMake'
 
 name = 'OpenMolcas'
 version = '22.10'
 
 homepage = "https://gitlab.com/Molcas/OpenMolcas"
-description = "OpenMolcas is a quantum chemistry software package"
+description = "OpenMolcas is a quantum chemistry software package."
 
 toolchain = {'name': 'intel', 'version': '2022a'}
 toolchainopts = {'usempi': True}
@@ -16,22 +13,31 @@ source_urls = ['https://gitlab.com/Molcas/OpenMolcas/-/archive/v%(version)s/']
 sources = ["OpenMolcas-v%(version)s.tar.gz"]
 patches = ['OpenMolcas-21.06_mcpdft_deps.patch']
 checksums = [
-    'd1d3d6c9bd69486c36f5285a51ac18e75c03540c5b33751855e94abc764d9658',  # OpenMolcas-v22.10.tar.gz
-    '708763e060aa0174bbe9c0cc336b509fbf492066465908dd919452836a7a793a',  # OpenMolcas-21.06_mcpdft_deps.patch
+    {'OpenMolcas-v22.10.tar.gz': 'd1d3d6c9bd69486c36f5285a51ac18e75c03540c5b33751855e94abc764d9658'},
+    {'OpenMolcas-21.06_mcpdft_deps.patch': '708763e060aa0174bbe9c0cc336b509fbf492066465908dd919452836a7a793a'},
 ]
+
+builddependencies = [('CMake', '3.23.1')]
 
 dependencies = [
-    ('GlobalArrays', '5.8.1'),
-    ('HDF5', '1.12.2'),
     ('Python', '3.10.4'),
+    ('HDF5', '1.12.2'),
+    ('GlobalArrays', '5.8.1'),
 ]
 
-builddependencies = [('CMake', '3.24.3')]
+build_shared_libs = True
 
 preconfigopts = 'GAROOT=$EBROOTGLOBALARRAYS'
-configopts = '-DLINALG=MKL -DMKLROOT=$MKLROOT '
-configopts += '-DMPI=ON -DOPENMP=ON -DGA=ON '
-configopts += '-DBUILD_SHARED_LIBS=ON -DTOOLS=ON -DFDE=ON'
+_copts = [
+    '-DLINALG=MKL',
+    '-DMKLROOT=$MKLROOT',
+    '-DOPENMP=ON',
+    '-DTOOLS=ON',
+    '-DFDE=ON',
+    '-DMPI=ON',
+    '-DGA=ON',
+]
+configopts = ' '.join(_copts)
 
 modextrapaths = {'PATH': ''}
 modextravars = {
