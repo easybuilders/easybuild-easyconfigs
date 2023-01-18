@@ -485,7 +485,8 @@ class EasyConfigTest(TestCase):
 
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
-            'jax': [(r'0\.3\.9', [r'AlphaFold-2\.2\.2-foss-2021a', r'scvi-tools-0\.16\.4-foss-2021a'])],
+            # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
+            'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
@@ -537,6 +538,8 @@ class EasyConfigTest(TestCase):
                 # SimpleITK 2.1.0 requires Lua 5.3.x, MedPy and nnU-Net depend on SimpleITK
                 (r'5\.3\.5', [r'nnU-Net-1\.7\.0-', r'MedPy-0\.4\.0-', r'SimpleITK-2\.1\.0-']),
             ],
+            # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0
+            'ncbi-vdb': [(r'3\.0\.0', [r'SRA-Toolkit-3\.0\.0'])],
             # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
             # Horovod depends on TensorFlow, so same exception required there
             'NCCL': [(r'2\.11\.4', [r'TensorFlow-2\.[5-9]\.', r'Horovod-0\.2[2-9]'])],
