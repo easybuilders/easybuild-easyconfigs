@@ -1,0 +1,57 @@
+diff -ur ALM.old/python/setup.py ALM/python/setup.py
+--- ALM.old/python/setup.py	2022-12-13 21:11:49.873165941 +0000
++++ ALM/python/setup.py	2022-12-13 23:13:52.166190310 +0000
+@@ -36,10 +36,10 @@
+ # |-- $CONDA_PREFIX/lib
+ # `-- ...
+ 
+-if "CONDA_PREFIX" in os.environ:
+-    conda_prefix = os.environ["CONDA_PREFIX"]
+-else:
+-    conda_prefix = os.path.join(home, "miniconda", "envs", "alm")
++# if "CONDA_PREFIX" in os.environ:
++#    conda_prefix = os.environ["CONDA_PREFIX"]
++# else:
++#    conda_prefix = os.path.join(home, "miniconda", "envs", "alm")
+ 
+ library_dirs = []
+ extra_link_args = []
+@@ -66,15 +66,16 @@
+     extra_link_args.append("-lgomp")
+ 
+ # Lapack library
+-extra_link_args.append("-llapack")
++extra_link_args.append("-L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl")
+ 
+-spglib_dir = os.path.join(conda_prefix, "lib")
+-if not os.path.exists(os.path.join(spglib_dir, "libsymspg.a")):
+-    spglib_dir = os.path.join(conda_prefix, "lib64")
++# spglib_dir = os.path.join(conda_prefix, "lib")
++spglib_dir = os.path.join(os.environ["EBROOTSPGLIB"], "lib")
++#if not os.path.exists(os.path.join(spglib_dir, "libsymspg.a")):
++#    spglib_dir = os.path.join(conda_prefix, "lib64")
+ include_dirs = []
+ include_dirs.append(numpy.get_include())
+-include_dirs.append(os.path.join(conda_prefix, "include"))
+-include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
++#include_dirs.append(os.path.join(conda_prefix, "include"))
++#include_dirs.append(os.path.join(conda_prefix, "include", "eigen3"))
+ 
+ 
+ if compile_with_sources:
+@@ -92,10 +93,11 @@
+         "timer.cpp",
+         "writer.cpp",
+     ]
+-    if os.path.exists("src"):
+-        source_dir = "src"
+-    else:
+-        source_dir = os.path.join("..", "src")
++    #if os.path.exists("src"):
++    #    source_dir = "src"
++    #else:
++    #    source_dir = os.path.join("..", "src")
++    source_dir = os.environ["ALMSRC"]
+ 
+     include_dirs += [
+         source_dir,
