@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'Bullet'
+version = '3.24'
+
+homepage = 'http://bulletphysics.org/'
+description = """Bullet professional 3D Game Multiphysics Library provides state
+ of the art collision detection, soft body and rigid body dynamics."""
+
+toolchain = {'name': 'iccifort', 'version': '2020.1.217'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/bulletphysics/bullet3/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['6b1e987d6f8156fa8a6468652f4eaad17b3e11252c9870359e5bca693e35780b']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+multi_deps = {'Python': ['3.8', '3.9', '3.10']}
+
+# build shared libraries
+configopts = "-DBUILD_SHARED_LIBS=ON -DUSE_DOUBLE_PRECISION=1"
+
+multi_deps_load_default = False
+multi_deps_extensions_only = True
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('pybullet', '3.2.4', {
+        'modulename': 'pybullet',
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/p/pybullet/'],
+        'checksums': ['959e85bc0051324b9c4aba23d79365b77de216f9ceebc392f9d551fe63a0ebc6'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['include/%(namelower)s/btBulletCollisionCommon.h', 'include/%(namelower)s/btBulletDynamicsCommon.h', 'lib/libBulletCollision.so', 'lib/libBulletDynamics.so'],
+    'dirs': [],
+}
+
+modextrapaths = {
+    'CPATH': 'include/%(namelower)s',
+    # EBPYTHONPREFIXES directories for current python version X.Y to PYTHONPATH.
+    'EBPYTHONPREFIXES': [''],
+}
+
+moduleclass = 'phys'
