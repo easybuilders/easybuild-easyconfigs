@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'PortAudio'
+version = "190700_20210406"
+
+homepage = 'http://www.portaudio.com/'
+description = """PortAudio is a free, cross-platform, open-source, audio I/O library.  It lets you write simple audio programs in 'C' or C++ that will compile and run on many platforms including Windows, Macintosh OS X, and Unix (OSS/ALSA). It is intended to promote the exchange of audio software between developers on different platforms. Many applications use PortAudio for Audio I/O."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+#http://files.portaudio.com/archives/pa_stable_v190700_20210406.tgz
+
+source_urls = ["http://files.portaudio.com/archives/"]
+sources = ["pa_stable_v%(version)s.tgz"]
+checksums = ['47efbf42c77c19a05d22e627d42873e991ec0c1357219c0d74ce6a2948cb2def']
+
+sanity_check_paths = {
+    'files': ["include/portaudio.h", "lib/libportaudio.a", "lib/libportaudio.so"],
+    'dirs': ['include', 'lib'],
+}
+
+multi_deps = {'Python': ['3.8', '3.9', '3.10']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('PyAudio', '0.2.13', {
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'use_pip': True,
+        'checksums': ['26bccc81e4243d1c0ff5487e6b481de6329fcd65c79365c267cef38f363a2b56'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_commands = [
+    'python -c "import pyaudio; pyaudio.get_portaudio_version_text(); pyaudio.__version__"'
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'math'
