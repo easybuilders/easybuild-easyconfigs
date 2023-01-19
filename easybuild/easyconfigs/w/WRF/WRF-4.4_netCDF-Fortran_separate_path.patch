@@ -1,6 +1,13 @@
-diff -rNu WRF-4.4.old/arch/Config.pl WRF-4.4/arch/Config.pl
---- WRF-4.4.old/arch/Config.pl	2022-08-16 08:03:59.509683259 +0000
-+++ WRF-4.4/arch/Config.pl	2022-08-16 08:09:44.995276050 +0000
+# Allow netCDF library with separate directories for C and Fortran
+# ============================================================================
+# This patch has been around in EasyBuild since WRF3.5; it was committed by
+# @boegel then.  Adapted by @andreas-h to accomodate WRFv4 and foss toolchain
+#
+# updated for WPS v4.4 by Maxim Masterov (SURF)
+
+diff -Nru WRF-4.4.orig/arch/Config.pl WRF-4.4/arch/Config.pl
+--- WRF-4.4.orig/arch/Config.pl	2022-08-05 12:50:41.026673000 +0200
++++ WRF-4.4/arch/Config.pl	2022-08-05 12:53:16.487608000 +0200
 @@ -11,6 +11,7 @@
  select((select(STDOUT), $|=1)[0]);
  $sw_perl_path = perl ;
@@ -45,9 +52,9 @@ diff -rNu WRF-4.4.old/arch/Config.pl WRF-4.4/arch/Config.pl
          }
  	 }
      else                   
-diff -rNu WRF-4.4.old/arch/configure.defaults WRF-4.4/arch/configure.defaults
---- WRF-4.4.old/arch/configure.defaults	2022-08-16 08:03:59.512683284 +0000
-+++ WRF-4.4/arch/configure.defaults	2022-08-16 08:10:06.003443781 +0000
+diff -Nru WRF-4.4.orig/arch/configure.defaults WRF-4.4/arch/configure.defaults
+--- WRF-4.4.orig/arch/configure.defaults	2022-08-05 12:50:41.028943000 +0200
++++ WRF-4.4/arch/configure.defaults	2022-08-05 12:53:38.767002000 +0200
 @@ -1636,6 +1636,7 @@
  
  LIB_EXTERNAL    = \
@@ -56,9 +63,9 @@ diff -rNu WRF-4.4.old/arch/configure.defaults WRF-4.4/arch/configure.defaults
                       ../external/wavelet/libWavelet.a ../external/wavelet/lib_wavelet.a
  ESMF_IO_LIB     =    ../external/esmf_time_f90/libesmf_time.a
  LIB_BUNDLED     = \
-diff -rNu WRF-4.4.old/arch/conf_tokens WRF-4.4/arch/conf_tokens
---- WRF-4.4.old/arch/conf_tokens	2022-08-16 08:03:59.511683276 +0000
-+++ WRF-4.4/arch/conf_tokens	2022-08-16 08:10:15.317518146 +0000
+diff -Nru WRF-4.4.orig/arch/conf_tokens WRF-4.4/arch/conf_tokens
+--- WRF-4.4.orig/arch/conf_tokens	2022-08-05 12:50:41.028607000 +0200
++++ WRF-4.4/arch/conf_tokens	2022-08-05 12:53:57.832914000 +0200
 @@ -5,6 +5,7 @@
         CONFIGURE_DMPARALLEL
  CONFIGURE_RWORDSIZE
@@ -73,9 +80,9 @@ diff -rNu WRF-4.4.old/arch/conf_tokens WRF-4.4/arch/conf_tokens
  CONFIGURE_NETCDF_PATH
 +CONFIGURE_NETCDFF_PATH
  CONFIGURE_GRIB2_INC
-diff -rNu WRF-4.4.old/arch/postamble WRF-4.4/arch/postamble
---- WRF-4.4.old/arch/postamble	2022-08-16 08:03:59.516683316 +0000
-+++ WRF-4.4/arch/postamble	2022-08-16 08:30:17.807245583 +0000
+diff -Nru WRF-4.4.orig/arch/postamble WRF-4.4/arch/postamble
+--- WRF-4.4.orig/arch/postamble	2022-08-05 12:50:41.031770000 +0200
++++ WRF-4.4/arch/postamble	2022-08-05 12:54:52.759085000 +0200
 @@ -53,6 +53,7 @@
                        -I$(WRF_SRC_ROOT_DIR)/phys \
                        -I$(WRF_SRC_ROOT_DIR)/wrftladj \
@@ -97,7 +104,7 @@ diff -rNu WRF-4.4.old/arch/postamble WRF-4.4/arch/postamble
  wrfio_nf : 
  	( cd $(WRF_SRC_ROOT_DIR)/external/io_netcdf ; \
 -          make $(J) NETCDFPATH="$(NETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
-+          make $(J) NETCDFPATH="$(NETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" RNETCDFFPATH="$(NETCDFFPATH)"ANLIB="$(RANLIB)" CPP="$(CPP)" \
++          make $(J) NETCDFPATH="$(NETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" RNETCDFFPATH="$(NETCDFFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP)" \
            CC="$(SCC)" CFLAGS="$(CFLAGS)" \
            FC="$(SFC) $(PROMOTION) $(OMP) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
  
@@ -110,13 +117,13 @@ diff -rNu WRF-4.4.old/arch/postamble WRF-4.4/arch/postamble
  wrfio_pnf : 
  	( cd $(WRF_SRC_ROOT_DIR)/external/io_pnetcdf ; \
 -          make $(J) NETCDFPATH="$(PNETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP) $(ARCHFLAGS)" \
-+          make $(J) NETCDFPATH="$(PNETCDFPATH)" NETCDFFPATH="$(NETCDFFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP) $(ARCHFLAGS)" \
++          make $(J) NETCDFPATH="$(PNETCDFPATH)" NETCDFFPATH="$(PNETCDFPATH)" RANLIB="$(RANLIB)" CPP="$(CPP) $(ARCHFLAGS)" \
            FC="$(FC) $(PROMOTION) $(OMP) $(FCFLAGS)" TRADFLAG="$(TRADFLAG)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" )
  
  wrfio_grib_share :
-diff -rNu WRF-4.4.old/configure WRF-4.4/configure
---- WRF-4.4.old/configure	2022-08-16 08:04:00.360690154 +0000
-+++ WRF-4.4/configure	2022-08-16 08:25:28.940938828 +0000
+diff -Nru WRF-4.4.orig/configure WRF-4.4/configure
+--- WRF-4.4.orig/configure	2022-08-05 12:50:41.453325000 +0200
++++ WRF-4.4/configure	2022-08-05 12:57:14.821614000 +0200
 @@ -222,9 +222,13 @@
    if [ -f "$NETCDF/lib/libnetcdff.a" -o -f "$NETCDF/lib/libnetcdff.so" -o -f "$NETCDF/lib/libnetcdff.dll.a" ] ; then
      USENETCDFF="-lnetcdff"
@@ -161,9 +168,9 @@ diff -rNu WRF-4.4.old/configure WRF-4.4/configure
    configure_aaaa=$? ; export configure_aaaa
    if [ $configure_aaaa -a -z "$WRFIO_NCD_NO_LARGE_FILE_SUPPORT" ] ; then
      echo "NetCDF users note:"
-diff -rNu WRF-4.4.old/external/io_netcdf/makefile WRF-4.4/external/io_netcdf/makefile
---- WRF-4.4.old/external/io_netcdf/makefile	2022-08-16 08:04:00.735693192 +0000
-+++ WRF-4.4/external/io_netcdf/makefile	2022-08-16 08:10:53.348821790 +0000
+diff -Nru WRF-4.4.orig/external/io_netcdf/makefile WRF-4.4/external/io_netcdf/makefile
+--- WRF-4.4.orig/external/io_netcdf/makefile	2022-08-05 12:50:41.676471000 +0200
++++ WRF-4.4/external/io_netcdf/makefile	2022-08-05 15:32:21.053573000 +0200
 @@ -3,9 +3,9 @@
  OBJSL   = wrf_io.o field_routines.o module_wrfsi_static.o
  OBJS    = $(OBJSL)
@@ -204,9 +211,9 @@ diff -rNu WRF-4.4.old/external/io_netcdf/makefile WRF-4.4/external/io_netcdf/mak
              $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBFFS) ;\
            else \
              $(FC) $(FFLAGS) $(LDFLAGS) -o diffwrf diffwrf.o $(OBJSL) ../../frame/wrf_debug.o ../../frame/module_wrf_error.o ../../frame/clog.o $(ESMF_IO_LIB_EXT) $(LIBS) ;\
-diff -rNu WRF-4.4.old/external/io_pnetcdf/Makefile WRF-4.4/external/io_pnetcdf/Makefile
---- WRF-4.4.old/external/io_pnetcdf/Makefile	2022-08-16 08:04:00.758693378 +0000
-+++ WRF-4.4/external/io_pnetcdf/Makefile	2022-08-16 08:11:14.519990820 +0000
+diff -Nru WRF-4.4.orig/external/io_pnetcdf/Makefile WRF-4.4/external/io_pnetcdf/Makefile
+--- WRF-4.4.orig/external/io_pnetcdf/Makefile	2022-08-05 12:50:41.688872000 +0200
++++ WRF-4.4/external/io_pnetcdf/Makefile	2022-08-05 13:00:28.273185000 +0200
 @@ -9,8 +9,8 @@
  	  ext_pnc_put_var_td.code \
  	  ext_pnc_put_var_ti.code \
@@ -237,242 +244,9 @@ diff -rNu WRF-4.4.old/external/io_pnetcdf/Makefile WRF-4.4/external/io_pnetcdf/M
  			$(FC) $(FFLAGS) -c field_routines.f
  
  superclean:
-diff -rNu WRF-4.4.old/hydro/Rapid_routing/makefile.orig WRF-4.4/hydro/Rapid_routing/makefile.orig
---- WRF-4.4.old/hydro/Rapid_routing/makefile.orig	2022-08-16 08:04:00.849694116 +0000
-+++ WRF-4.4/hydro/Rapid_routing/makefile.orig	1970-01-01 00:00:00.000000000 +0000
-@@ -1,229 +0,0 @@
--#*******************************************************************************
--#makefile
--#*******************************************************************************
--
--#Purpose:
--#This file, along with the make utility allows compiling/linking RAPID
--#Author:
--#Cedric H. David, 2008-2015
--
--
--#*******************************************************************************
--#PETSc and TAO rules and variables (where environment variables and options are)
--#*******************************************************************************
--
--#-------------------------------------------------------------------------------
--#Default RAPID - includes optimization with TAO 
--#-------------------------------------------------------------------------------
--#FPPFLAGS=
--#include ${TAO_DIR}/conf/tao_base
--
--#-------------------------------------------------------------------------------
--#If want to use RAPID without TAO, in which case the optimization is unavailable
--#-------------------------------------------------------------------------------
--FPPFLAGS=-D NO_TAO
--include ${PETSC_DIR}/conf/variables
--include ${PETSC_DIR}/conf/rules
--
--
--#*******************************************************************************
--#Location of netCDF include and lib directories
--#*******************************************************************************
--NETCDF_LIB=-L ${TACC_NETCDF_LIB} -lnetcdf
--NETCDF_INCLUDE=-I ${TACC_NETCDF_INC}
--
--
--#*******************************************************************************
--#makefile instructions 
--#*******************************************************************************
--
--#-------------------------------------------------------------------------------
--#Test that environment variables are properly read by make
--#-------------------------------------------------------------------------------
--dummy: 
--	echo ${FLINKER} ${FPPFLAGS}
--
--#-------------------------------------------------------------------------------
--#Link RAPID main
--#-------------------------------------------------------------------------------
--rapid:	rapid_main.o \
--	rapid_init.o \
--	rapid_read_namelist.o \
--	rapid_arrays.o \
--	rapid_create_obj.o \
--	rapid_create_Qout_file.o \
--	rapid_open_Qout_file.o \
--	rapid_open_Vlat_file.o \
--	rapid_open_Qobs_file.o \
--	rapid_open_Qfor_file.o \
--	rapid_open_Qhum_file.o \
--	rapid_write_Qout_file.o \
--	rapid_read_Vlat_file.o \
--	rapid_read_Qobs_file.o \
--	rapid_read_Qfor_file.o \
--	rapid_read_Qhum_file.o \
--	rapid_close_Qout_file.o \
--	rapid_close_Vlat_file.o \
--	rapid_close_Qobs_file.o \
--	rapid_close_Qfor_file.o \
--	rapid_close_Qhum_file.o \
--	rapid_get_Qdam.o \
--	rapid_set_Qext0.o \
--	rapid_hsh_mat.o \
--	rapid_net_mat.o \
--	rapid_net_mat_brk.o \
--	rapid_obs_mat.o \
--	rapid_routing.o \
--	rapid_routing_param.o \
--	rapid_phiroutine.o \
--	rapid_destro_obj.o \
--	rapid_final.o \
--	rapid_var.o
--	${FLINKER} ${FPPFLAGS} -o \
--	rapid \
--	rapid_main.o \
--	rapid_init.o \
--	rapid_read_namelist.o \
--	rapid_arrays.o \
--	rapid_create_obj.o \
--	rapid_create_Qout_file.o \
--	rapid_open_Qout_file.o \
--	rapid_open_Vlat_file.o \
--	rapid_open_Qobs_file.o \
--	rapid_open_Qfor_file.o \
--	rapid_open_Qhum_file.o \
--	rapid_write_Qout_file.o \
--	rapid_read_Vlat_file.o \
--	rapid_read_Qobs_file.o \
--	rapid_read_Qfor_file.o \
--	rapid_read_Qhum_file.o \
--	rapid_close_Qout_file.o \
--	rapid_close_Vlat_file.o \
--	rapid_close_Qobs_file.o \
--	rapid_close_Qfor_file.o \
--	rapid_close_Qhum_file.o \
--	rapid_get_Qdam.o \
--	rapid_set_Qext0.o \
--	rapid_hsh_mat.o \
--	rapid_net_mat.o \
--	rapid_net_mat_brk.o \
--	rapid_routing.o \
--	rapid_routing_param.o \
--	rapid_obs_mat.o \
--	rapid_phiroutine.o \
--	rapid_destro_obj.o \
--	rapid_final.o \
--	rapid_var.o \
--	${TAO_FORTRAN_LIB} ${TAO_LIB} ${PETSC_LIB} ${NETCDF_LIB}
--	${RM} *.o *.mod 
--	ln -sf ../src/rapid ../run/rapid
--	ln -sf ../src/rapid ../rtk/rapid
--
--#-------------------------------------------------------------------------------
--#Compile RAPID
--#-------------------------------------------------------------------------------
--rapid_main.o: 	rapid_main.F90 rapid_var.mod 
--	${FLINKER} ${FPPFLAGS} -c rapid_main.F90 ${PETSC_FC_INCLUDES} ${TAO_INCLUDE} 
--
--rapid_final.o:		rapid_final.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_final.F90 ${PETSC_FC_INCLUDES}
--
--rapid_destro_obj.o: 	rapid_destro_obj.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_destro_obj.F90 ${PETSC_FC_INCLUDES} ${TAO_INCLUDE}
--
--rapid_phiroutine.o: 	rapid_phiroutine.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_phiroutine.F90 ${PETSC_FC_INCLUDES} ${TAO_INCLUDE} 
--
--rapid_routing.o: 	rapid_routing.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_routing.F90 ${PETSC_FC_INCLUDES} ${NETCDF_INCLUDE}
--
--rapid_init.o: 		rapid_read_namelist.o rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_init.F90 ${PETSC_FC_INCLUDES}
--
--rapid_routing_param.o: 	rapid_routing_param.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_routing_param.F90 ${PETSC_FC_INCLUDES}
--
--rapid_obs_mat.o: 	rapid_obs_mat.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_obs_mat.F90 ${PETSC_FC_INCLUDES}
--
--rapid_net_mat_brk.o: 	rapid_net_mat_brk.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_net_mat_brk.F90 ${PETSC_FC_INCLUDES}
--
--rapid_net_mat.o: 	rapid_net_mat.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_net_mat.F90 ${PETSC_FC_INCLUDES}
--
--rapid_hsh_mat.o: 	rapid_hsh_mat.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_hsh_mat.F90 ${PETSC_FC_INCLUDES}
--
--rapid_get_Qdam.o: 	rapid_get_Qdam.F90 rapid_var.mod 
--	${FLINKER} ${FPPFLAGS} -c rapid_get_Qdam.F90 ${PETSC_FC_INCLUDES}
--
--rapid_set_Qext0.o: 	rapid_set_Qext0.F90 rapid_var.mod 
--	${FLINKER} ${FPPFLAGS} -c rapid_set_Qext0.F90 ${PETSC_FC_INCLUDES}
--
--rapid_close_Qfor_file.o: 	rapid_close_Qfor_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_close_Qfor_file.F90
--
--rapid_close_Qhum_file.o: 	rapid_close_Qhum_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_close_Qhum_file.F90
--
--rapid_close_Qobs_file.o: 	rapid_close_Qobs_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_close_Qobs_file.F90
--
--rapid_close_Vlat_file.o: 	rapid_close_Vlat_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_close_Vlat_file.F90 ${NETCDF_INCLUDE} 
--
--rapid_close_Qout_file.o: 	rapid_close_Qout_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_close_Qout_file.F90 ${NETCDF_INCLUDE} 
--
--rapid_read_Qfor_file.o: 	rapid_read_Qfor_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_read_Qfor_file.F90 ${PETSC_FC_INCLUDES}
--
--rapid_read_Qhum_file.o: 	rapid_read_Qhum_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_read_Qhum_file.F90 ${PETSC_FC_INCLUDES}
--
--rapid_read_Qobs_file.o: 	rapid_read_Qobs_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_read_Qobs_file.F90 ${PETSC_FC_INCLUDES}
--
--rapid_read_Vlat_file.o: 	rapid_read_Vlat_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_read_Vlat_file.F90 ${PETSC_FC_INCLUDES} ${NETCDF_INCLUDE}
--
--rapid_write_Qout_file.o: 	rapid_write_Qout_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_write_Qout_file.F90 ${PETSC_FC_INCLUDES} ${NETCDF_INCLUDE}
--
--rapid_open_Qfor_file.o: 	rapid_open_Qfor_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_open_Qfor_file.F90 
--
--rapid_open_Qhum_file.o: 	rapid_open_Qhum_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_open_Qhum_file.F90 
--
--rapid_open_Qobs_file.o: 	rapid_open_Qobs_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_open_Qobs_file.F90 
--
--rapid_open_Vlat_file.o: 	rapid_open_Vlat_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_open_Vlat_file.F90 ${NETCDF_INCLUDE}
--
--rapid_open_Qout_file.o: 	rapid_open_Qout_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_open_Qout_file.F90 ${NETCDF_INCLUDE}
--
--rapid_create_Qout_file.o: 	rapid_create_Qout_file.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_create_Qout_file.F90 ${NETCDF_INCLUDE}
--
--rapid_create_obj.o: 	rapid_create_obj.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_create_obj.F90 ${PETSC_FC_INCLUDES} ${TAO_INCLUDE}
--
--rapid_arrays.o:	rapid_arrays.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_arrays.F90 ${PETSC_FC_INCLUDES}
--	
--rapid_read_namelist.o:	rapid_read_namelist.F90 rapid_var.mod
--	${FLINKER} ${FPPFLAGS} -c rapid_read_namelist.F90
--	
--rapid_var.o rapid_var.mod:	rapid_var.F90
--	${FLINKER} ${FPPFLAGS} -c rapid_var.F90 ${PETSC_FC_INCLUDES} ${TAO_INCLUDE} 
--	
--#-------------------------------------------------------------------------------
--#Clean
--#-------------------------------------------------------------------------------
--clean::
--	${RM} *.o *.mod rapid ../run/rapid ../rtk/rapid
--
-diff -rNu WRF-4.4.old/Makefile WRF-4.4/Makefile
---- WRF-4.4.old/Makefile	2022-08-16 08:03:59.482683040 +0000
-+++ WRF-4.4/Makefile	2022-08-16 08:22:11.207359481 +0000
+diff -Nru WRF-4.4.orig/Makefile WRF-4.4/Makefile
+--- WRF-4.4.orig/Makefile	2022-08-05 12:50:40.979120000 +0200
++++ WRF-4.4/Makefile	2022-08-05 13:03:38.672102000 +0200
 @@ -923,7 +923,7 @@
  	@ echo '--------------------------------------'
  	( cd frame ; $(MAKE) $(J) LLIST="$(LINKLIST)" framework ; \
