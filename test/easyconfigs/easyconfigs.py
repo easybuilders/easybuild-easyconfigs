@@ -1,5 +1,5 @@
 ##
-# Copyright 2013-2022 Ghent University
+# Copyright 2013-2023 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -42,6 +42,7 @@ from easybuild.base import fancylogger
 from easybuild.easyblocks.generic.configuremake import ConfigureMake
 from easybuild.easyblocks.generic.pythonpackage import PythonPackage
 from easybuild.framework.easyblock import EasyBlock
+from easybuild.framework.easyconfig.constants import EASYCONFIG_CONSTANTS
 from easybuild.framework.easyconfig.default import DEFAULT_CONFIG
 from easybuild.framework.easyconfig.format.format import DEPENDENCY_PARAMETERS
 from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, letter_dir_for
@@ -325,6 +326,25 @@ class EasyConfigTest(TestCase):
         self.assertFalse(check_conflicts(self.ordered_specs, modules_tool(), check_inter_ec_conflicts=False),
                          "No conflicts detected")
 
+    def test_deps(self):
+        """Perform checks on dependencies in easyconfig files"""
+
+        fails = []
+
+        for ec in self.parsed_easyconfigs:
+            # make sure that no odd versions (like 1.13) of HDF5 are used as a dependency,
+            # since those are released candidates - only even versions (like 1.12) are stable releases;
+            # see https://docs.hdfgroup.org/archive/support/HDF5/doc/TechNotes/Version.html
+            for dep in ec['ec'].dependencies():
+                if dep['name'] == 'HDF5':
+                    ver = dep['version']
+                    if int(ver.split('.')[1]) % 2 == 1:
+                        fail = "Odd minor versions of HDF5 should not be used as a dependency: "
+                        fail += "found HDF5 v%s as dependency in %s" % (ver, os.path.basename(ec['spec']))
+                        fails.append(fail)
+
+        self.assertFalse(len(fails), '\n'.join(sorted(fails)))
+
     def check_dep_vars(self, gen, dep, dep_vars):
         """Check whether available variants of a particular dependency are acceptable or not."""
 
@@ -465,7 +485,8 @@ class EasyConfigTest(TestCase):
 
         # some software packages require a specific (older/newer) version of a particular dependency
         alt_dep_versions = {
-            'jax': [(r'0\.3\.9', [r'AlphaFold-2\.2\.2-'])],
+            # jax 0.2.24 is used as dep for AlphaFold 2.1.2 (other easyconfigs with foss/2021a use jax 0.3.9)
+            'jax': [(r'0\.2\.24', [r'AlphaFold-2\.1\.2-foss-2021a'])],
             # arrow-R 6.0.0.2 is used for two R/R-bundle-Bioconductor sets (4.1.2/3.14 and 4.2.0/3.15)
             'arrow-R': [('6.0.0.2', [r'R-bundle-Bioconductor-'])],
             # EMAN2 2.3 requires Boost(.Python) 1.64.0
@@ -473,9 +494,21 @@ class EasyConfigTest(TestCase):
             'Boost.Python': [('1.64.0;', [r'EMAN2-2\.3-'])],
             # GATE 9.2 requires CHLEP 2.4.5.1 and Geant4 11.0.x
             'CLHEP': [('2.4.5.1;', [r'GATE-9\.2-foss-2021b'])],
+            # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
+            'glew': [
+                ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
+                                                r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
+                                                r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0',
+                                                r'wxPython-4\.2\.0',
+                                                r'GRASS-8\.2\.0',
+                                                r'QGIS-3\.28\.1']),
+            ],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # ncbi-vdb v2.x require HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
-            'HDF5': [(r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.', r'shovill-1\.1\.'])],
+            # ncbi-vdb v2.x requires HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
+            'HDF5': [
+                (r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.',
+                              r'shovill-1\.1\.']),
+            ],
             # VMTK 1.4.x requires ITK 4.13.x
             'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
@@ -505,6 +538,8 @@ class EasyConfigTest(TestCase):
                 # SimpleITK 2.1.0 requires Lua 5.3.x, MedPy and nnU-Net depend on SimpleITK
                 (r'5\.3\.5', [r'nnU-Net-1\.7\.0-', r'MedPy-0\.4\.0-', r'SimpleITK-2\.1\.0-']),
             ],
+            # SRA-toolkit 3.0.0 requires ncbi-vdb 3.0.0
+            'ncbi-vdb': [(r'3\.0\.0', [r'SRA-Toolkit-3\.0\.0'])],
             # TensorFlow 2.5+ requires a more recent NCCL than version 2.4.8 used in 2019b generation;
             # Horovod depends on TensorFlow, so same exception required there
             'NCCL': [(r'2\.11\.4', [r'TensorFlow-2\.[5-9]\.', r'Horovod-0\.2[2-9]'])],
@@ -520,11 +555,11 @@ class EasyConfigTest(TestCase):
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
-            # WhatsHap 1.4 requires Pysam >= 0.18.0
+            # WhatsHap 1.4 + medaka 1.6.0 require Pysam >= 0.18.0 (NGSpeciesID depends on medaka)
             'Pysam': [
                 ('0.16.0.1;', ['medaka-1.2.[0]-', 'medaka-1.1.[13]-', 'medaka-1.4.3-', 'decona-0.1.2-',
                                'NGSpeciesID-0.1.1.1-']),
-                ('0.18.0;', ['WhatsHap-1.4-', 'medaka-1.6.0-']),
+                ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
@@ -553,6 +588,8 @@ class EasyConfigTest(TestCase):
                 ('2.5.0;', ['AlphaFold-2.1.2-']),
                 # medaka 1.5.0 (foss/2021a) depends on TensorFlow >=2.5.2, <2.6.0
                 ('2.5.3;', ['medaka-1.5.0-']),
+                # tensorflow-probability version to TF version
+                ('2.8.4;', ['tensorflow-probability-0.16.0-']),
             ],
             # smooth-topk uses a newer version of torchvision
             'torchvision': [('0.11.3;', ['smooth-topk-1.0-20210817-'])],
@@ -561,6 +598,8 @@ class EasyConfigTest(TestCase):
             'UCX': [('1.11.0;', ['UCX-CUDA-1.11.0-'])],
             # WPS 3.9.1 requires WRF 3.9.1.1
             'WRF': [(r'3\.9\.1\.1', [r'WPS-3\.9\.1'])],
+            # wxPython 4.2.0 depends on wxWidgets 3.2.0
+            'wxWidgets': [(r'3\.2\.0', [r'wxPython-4\.2\.0', r'GRASS-8\.2\.0', r'QGIS-3\.28\.1'])],
         }
         if dep in alt_dep_versions and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -1063,9 +1102,9 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CMakePythonPackage, GoPackage, PythonBundle & PythonPackage;
+        # including CMakePythonPackage, GoPackage, JuliaBundle, PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'ModuleRC',
+        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
                      'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
@@ -1313,21 +1352,29 @@ def template_easyconfig_test(self, spec):
 
     # make sure all patch files are available
     specdir = os.path.dirname(spec)
+    basedir = os.path.dirname(os.path.dirname(specdir))
     specfn = os.path.basename(spec)
     for idx, patch in enumerate(ec['patches']):
-        if isinstance(patch, (tuple, list)):
-            patch = patch[0]
+        patch_dir = specdir
+        if isinstance(patch, str):
+            patch_name = patch
+        elif isinstance(patch, (tuple, list)):
+            patch_name = patch[0]
+        elif isinstance(patch, dict):
+            patch_name = patch['name']
+            if patch['alt_location']:
+                patch_dir = os.path.join(basedir, letter_dir_for(patch['alt_location']), patch['alt_location'])
 
         # only check actual patch files, not other files being copied via the patch functionality
-        patch_full = os.path.join(specdir, patch)
-        if patch.endswith('.patch'):
+        patch_full = os.path.join(patch_dir, patch_name)
+        if patch_name.endswith('.patch'):
             msg = "Patch file %s is available for %s" % (patch_full, specfn)
             self.assertTrue(os.path.isfile(patch_full), msg)
 
         # verify checksum for each patch file
-        if idx < len(patch_checksums) and (os.path.exists(patch_full) or patch.endswith('.patch')):
+        if idx < len(patch_checksums) and (os.path.exists(patch_full) or patch_name.endswith('.patch')):
             checksum = patch_checksums[idx]
-            error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch, ec_fn, checksum)
+            error_msg = "Invalid checksum for patch file %s in %s: %s" % (patch_name, ec_fn, checksum)
             res = verify_checksum(patch_full, checksum)
             self.assertTrue(res, error_msg)
 
@@ -1402,6 +1449,11 @@ def template_easyconfig_test(self, spec):
         orig_val = resolve_template(ec_dict[key], ec.template_values)
         dumped_val = resolve_template(dumped_ec[key], ec.template_values)
 
+        # skip SYSTEM template constant check for 2019b and older toolchain generation easyconfigs
+        # since these fail other CI checks when updated
+        regex = re.compile(r'(201\d([ab]|\.\d+))|(^[1-8]\.\d+\.\d+)')
+        skip_system_template_check = regex.match(ec['toolchain']['version'])
+
         # take into account that dumped value for *dependencies may include hard-coded subtoolchains
         # if no easyconfig was found for the dependency with the 'parent' toolchain,
         # if may get resolved using a subtoolchain, which is then hardcoded in the dumped easyconfig
@@ -1429,7 +1481,18 @@ def template_easyconfig_test(self, spec):
                 # 4th value is toolchain spec
                 if len(dumped_dep) >= 4:
                     if len(orig_dep) >= 4:
-                        self.assertEqual(dumped_dep[3], orig_dep[3])
+                        # use of `True` is deprecated in favour of the more intuitive `SYSTEM` template
+                        if orig_dep[3] is True:
+                            if skip_system_template_check:
+                                self.assertEqual(dumped_dep[3], EASYCONFIG_CONSTANTS['SYSTEM'][0])
+                            else:
+                                error_msg = (
+                                    "use of `True` to indicate the system toolchain for dependency "
+                                    "%s is deprecated, use the `SYSTEM` template constant instead" % dumped_dep[0]
+                                )
+                                self.fail(error_msg)
+                        else:
+                            self.assertEqual(dumped_dep[3], orig_dep[3])
                     else:
                         # if a subtoolchain is specifed (only) in the dumped easyconfig,
                         # it should *not* be the same as the parent toolchain
