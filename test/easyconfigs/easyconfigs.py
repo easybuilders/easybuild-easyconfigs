@@ -504,6 +504,11 @@ class EasyConfigTest(TestCase):
                                                 r'QGIS-3\.28\.1']),
             ],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
+            # MATLAB-Engine has strict requirements on its Python version
+            'MATLAB': [
+                (r'2021b', [r'MATLAB-Engine-2021b-9\.11']),
+                (r'2022a', [r'MATLAB-Engine-2022a-9\.12']),
+            ],
             # ncbi-vdb v2.x requires HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
             'HDF5': [
                 (r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.',
