@@ -1,0 +1,64 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+# A makefile is provided to build the librinchi.so.1.0.0 library BUT
+# no information about how to build the command line tool rinchi_cmdline.
+#
+# Also tests look broken, or incomplete.
+#
+# SO use the pre-compiled binaries!
+##
+
+easyblock = 'Binary'
+
+name = 'RInChI'
+version = '1.00'
+versionsuffix = '-x86_64'
+
+# NOTE not in the license list of EB
+# software_license = 'IUPAC/InChI-Trust Licence'
+software_license_urls = ['https://www.inchi-trust.org/download/RInChI/LICENCES.zip']
+docurls = [
+    'https://www.inchi-trust.org/download/RInChI/RInChI%20V1-00-0.pdf',
+]
+
+homepage = 'https://www.inchi-trust.org/'
+description = """The reaction IUPAC International Chemical Identifier (RInChI TM) is a non-proprietary
+identifier for chemical reactions that can be used in printed and electronic
+data sources thus enabling easier linking of diverse data compilations."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://www.inchi-trust.org/download/RInChI/']
+sources = ['RInChI-V%(version_major)s-%(version_minor)s.zip']
+checksums = ['e115b941185ee64e444bfbd57f1b9e80d7fd14e39bc803975843dfface2a163c']
+
+
+extract_sources = True
+
+install_cmd = 'mkdir -p %(installdir)s/bin/   && '
+install_cmd += 'install bin/rinchi_cmdline/linux/x86_64/*  %(installdir)s/bin/ && '
+install_cmd += 'cp docs/* rinchi/LICENCES/*                %(installdir)s/     && '
+install_cmd += 'mkdir -p %(installdir)s/lib64/ && '
+install_cmd += 'install bin/rinchi_lib/linux/x86_64/*      %(installdir)s/lib64/'
+
+# NOTE librinchi.so are not symlinks in the final build, but redundant copies!
+# NOTE `keepsymlinks = True` does not look to do it, so use this trick
+postinstallcmds = ["cd %(installdir)s/lib64/ && "
+                   "ln -s librinchi.so.1.* librinchi.so.1.0 && "
+                   "ln -s librinchi.so.1.0 librinchi.so.1 && "
+                   "ln -s librinchi.so.1 librinchi.so"]
+
+
+sanity_check_paths = {
+    'files': ["bin/rinchi_cmdline", "lib64/librinchi.so", "RINCHI_LICENCE.TXT"],
+    'dirs': ['lib64']
+}
+
+# NOTE help message returns a non-zero exit code. So use this trick
+sanity_check_commands = ["rinchi_cmdline 2>&1 | grep 'Usage: rinchi_cmdline'"]
+
+moduleclass = 'chem'

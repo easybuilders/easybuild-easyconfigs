@@ -1,0 +1,30 @@
+The master project 'ptx2' produces an error during compilation:
+tractvolsx.h:311:29: error: call of overloaded ‘round(float)’ is ambiguous
+It has therefore been disabled.
+Also: EasyBuild creates the site-packages directory for the python
+package 'fslpy' in the wrong place, so it must be created in the fsl
+directory, before 'fslpy' is installed. 'fslpy' provides the tools
+imglob and imcp, which would otherwise have to be provided by the conda
+script fslpython. These tools *must* be in the fsl/bin directory.
+Author: Henrik R. Nagel (NTNU)
+diff -Nru fsl.orig/build fsl/build
+--- fsl.orig/build	2020-06-29 17:30:36.000000000 +0200
++++ fsl/build	2021-02-26 17:30:26.000000000 +0100
+@@ -114,7 +114,6 @@
+     nma \
+     oxford_asl \
+     possum \
+-    ptx2 \
+     qboot \
+     randomise \
+     relax \
+@@ -165,4 +164,9 @@
+ else
+     echo "Build failed to build all projects.";
+ fi
++
++# Create the site-packages directory for fslpy
++mkdir -p lib/python3.7/site-packages
++ln -s lib lib64
++
+ exit $finalStatus

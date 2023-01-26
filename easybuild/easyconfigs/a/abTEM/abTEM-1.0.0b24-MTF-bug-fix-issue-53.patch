@@ -1,0 +1,34 @@
+From c2793bb69c4c49df6e5427ba62e7414fee571a84 Mon Sep 17 00:00:00 2001
+From: Matthew Helmi Leth Larsen <mhlla@slid.fysik.dtu.dk>
+Date: Sun, 12 Sep 2021 17:54:41 +0200
+Subject: [PATCH 2/2] Bug related to spacial frequencies being 1D arrays fixed.
+
+---
+ abtem/mtf.py | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/abtem/mtf.py b/abtem/mtf.py
+index b8d7842..6e82946 100644
+--- a/abtem/mtf.py
++++ b/abtem/mtf.py
+@@ -80,13 +80,16 @@ class MTF:
+ 
+         # Get spatial frequencies
+         kx, ky = spatial_frequencies(gpts, sampling)
+-        k = np.sqrt(kx ** 2 + ky ** 2)
++        
++        # Create 2D grid
++        Ky, Kx = np.meshgrid(ky,kx)
++        K = np.sqrt(Kx ** 2 + Ky ** 2)
+ 
+         # Compute MTF
+-        mtf = self.f(k, **self.params)
++        mtf = self.f(K, **self.params)
+ 
+         # Apply MTF
+-        img = np.fft.ifft2(np.fft.fft2(img) * np.sqrt(mtf))
++        img = np.fft.ifft2(np.fft.fft2(img) * mtf)
+         measurement.array[:] = img.real
+ 
+         return measurement
+

@@ -1,0 +1,40 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'ConfigureMake'
+
+name = 'libexif'
+version = '0.6.24'
+
+homepage = 'https://libexif.github.io/'
+description = "A library for parsing, editing, and saving EXIF data."
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['e5f15eeab693028cfdc4c0d78f024e1ca78baa0e1f636dc443395e9fbb0a2b7a']
+
+builddependencies = [
+    ('Autotools', '20210726'),
+    ('binutils', '2.37'),
+    ('gettext', '0.21'),
+    ('pkg-config', '0.29.2'),
+]
+
+preconfigopts = 'autoreconf -if &&'
+configopts = '--disable-docs'
+
+runtest = 'check'
+
+local_includes = ['include/%s/exif-%s.h' % (name, x) for x in [
+    'byte-order', 'content', 'data', 'data-type', 'entry', 'format', 'ifd',
+    'loader', 'log', 'mem', 'mnote-data', 'tag', 'utils']
+]
+local_libs = ['lib/%s.%s' % (name, x) for x in ['a', 'la', SHLIB_EXT]] + ['lib/pkgconfig/%(name)s.pc']
+
+sanity_check_paths = {
+    'files': local_includes + local_libs,
+    'dirs': [],
+}
+
+moduleclass = 'lib'
