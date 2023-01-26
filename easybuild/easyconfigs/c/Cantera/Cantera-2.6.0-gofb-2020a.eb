@@ -1,0 +1,70 @@
+easyblock = 'SCons'
+
+name = 'Cantera'
+version = '2.6.0'
+
+homepage = 'https://github.com/Cantera/cantera'
+description = """Chemical kinetics, thermodynamics, and transport tool suite"""
+
+toolchain = {'name': 'gofb', 'version': '2020a'}
+
+source_urls = ['https://github.com/Cantera/cantera/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-remove-pip-use-feature.patch']
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.8", "3.9", "3.10"]}
+
+# Cantera is mostly used with Python and depends on Numpy.
+dependencies = [
+    ('Boost', '1.80.0'),
+    ('SUNDIALS', '6.4.1'),
+    ('SciPy-Stack', '2022a'),
+    ('ruamel.yaml', '0.17.21'),
+]
+
+builddependencies = [
+    ('Eigen', '3.4.0'),
+    ('googletest', '1.10.0'),
+    ('fmt', '7.0.3'),
+    ('yaml-cpp', '0.7.0'),
+]
+
+local_common_opts = " ".join([
+    'env_vars=all',
+    # 'CC="$CC"',
+    # 'CXX="$CXX"',
+    # 'FORTRAN=gfortran',
+    'cc_flags="$CFLAGS"',
+    'cxx_flags="$CXXFLAGS"',
+    'blas_lapack_libs=flexiblas',
+    'blas_lapack_dir=$EBROOTFLEXIBLAS/lib',
+    'boost_inc_dir=$EBROOTBOOST/include',
+    'sundials_include=$EBROOTSUNDIALS/include',
+    'sundials_libdir=$EBROOTSUNDIALS/lib',
+    'extra_inc_dirs=$EBROOTEIGEN/include',
+    'python_cmd=$EBROOTPYTHON/bin/python',
+])
+
+buildopts = 'build ' + local_common_opts
+# tests hang, so disable them for now
+# runtest = 'test ' + local_common_opts
+installopts = 'install ' + local_common_opts
+prefix_arg = 'prefix='
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+# These setup scripts are of no use with EB and modules.
+postinstallcmds = [
+    'rm %(installdir)s/bin/setup_cantera',
+    'rm %(installdir)s/bin/setup_cantera.csh'
+]
+
+sanity_check_paths = {
+    'files': ['bin/ck2cti','bin/ctml_writer'],
+    'dirs': ['include/cantera', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import cantera'"]
+
+moduleclass = 'chem'
