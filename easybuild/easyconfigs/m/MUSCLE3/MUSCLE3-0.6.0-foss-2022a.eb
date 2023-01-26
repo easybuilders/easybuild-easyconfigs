@@ -15,10 +15,15 @@ toolchain = {'name': 'foss', 'version': '2022a'}
 
 source_urls = ['https://github.com/multiscale/%(namelower)s/archive/refs/tags/']
 sources = ['%(version)s.tar.gz']
-checksums = ['1a1e0f0680f15b092189e9e3ab8503ea01c61dd3fd1924f2fa3dea42634e28aa']
+patches = ['%(namelower)s-%(version)s_lib_path.patch']
+checksums = [
+    {'0.6.0.tar.gz': '1a1e0f0680f15b092189e9e3ab8503ea01c61dd3fd1924f2fa3dea42634e28aa'},
+    {'muscle3-0.6.0_lib_path.patch': '8dd3caebfb3c89bbe05810e6b0c50fdb34a05a856bf374d391f459f1356f4a69'},
+]
 
 builddependencies = [
     ('googletest', '1.11.0'),
+    ('tox', '3.25.1'),
 ]
 
 dependencies = [
@@ -34,6 +39,12 @@ skipsteps = ['configure']
 
 prebuildopts = 'msgpack_ROOT=$EBROOTMSGPACKMINC '
 preinstallopts = 'PREFIX=%(installdir)s '
+pretestopts = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH'
+pretestopts += ':%(builddir)s/%(namelower)s-%(version)s/libmuscle/cpp/build/libmuscle'
+pretestopts += ':%(builddir)s/%(namelower)s-%(version)s/libmuscle/cpp/build/ymmsl'
+pretestopts += ':%(builddir)s/%(namelower)s-%(version)s/libmuscle/fortran/build/libmuscle'
+pretestopts += ':%(builddir)s/%(namelower)s-%(version)s/libmuscle/fortran/build/ymmsl && '
+runtest = 'make test'
 testopts = 'googletest_ROOT=$EBROOTGOOGLETEST'
 
 exts_defaultclass = 'PythonPackage'
@@ -43,6 +54,7 @@ exts_default_options = {
     'use_pip': True,
     'download_dep_fail': True,
     'sanity_pip_check': True,
+    'runtest': '',
 }
 
 exts_list = [
