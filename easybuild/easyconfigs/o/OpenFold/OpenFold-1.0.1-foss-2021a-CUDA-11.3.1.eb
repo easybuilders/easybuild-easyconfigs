@@ -38,6 +38,7 @@ dependencies = [
 
 use_pip = True
 
+# flash_attn (FlashAttention) is optional, speeds up MSA attention for sequences with < 1000 residues
 exts_list = [
     ('flash_attn', '0.2.8', {
         'checksums': ['b54fee86463cdb9933e8d47e500c52f3eaf283f1c8a9d96099e62acc7dc0be1f'],
@@ -88,8 +89,8 @@ exts_list = [
 
 postinstallcmds = [
     'cp -a run_pretrained_openfold.py thread_sequence.py train_openfold.py %(installdir)s/bin',
-    'cp -a scripts %(installdir)s',
-    'chmod +x %(installdir)s/scripts/* %(installdir)s/scripts/alignment_db_scripts/* %(installdir)s/bin/*',
+    'cp -a scripts %(installdir)s/bin',
+    'chmod -R a+x %(installdir)s/bin',
     # manually download stereo_chemical_props.txt, openfold parameters and alphafold parameters
     # see scripts download_alphafold_params.sh, download_openfold_params.sh ,install_third_party_dependencies.sh
     # download to _resources_target_dir and add symlinks in _resources_dir
@@ -99,16 +100,15 @@ postinstallcmds = [
     # 'ln -s %s/params %s' % (_resources_target_dir, _resources_dir),
 ]
 
-fix_python_shebang_for = ['bin/*.py', 'scripts/*.py']
+fix_python_shebang_for = ['bin/*.py', '/bin/scripts/*.py']
 
 modextrapaths = {
-    'PATH': 'scripts',
-    'PYTHONPATH': '',
+    'PATH': 'bin/scripts',
 }
 
 sanity_check_paths = {
     'files': ['bin/pdbfixer', 'bin/run_pretrained_openfold.py'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'bin/scripts'],
 }
 
 sanity_check_commands = [
