@@ -33,12 +33,16 @@ dependencies = [
     # OpenFold also requires the AlphaFold modification to OpenMM
     # https://github.com/aqlaboratory/openfold/blob/v1.0.0/scripts/install_third_party_dependencies.sh#L20-L24
     # https://github.com/aqlaboratory/openfold/blob/v1.0.0/lib/openmm.patch
-    ('OpenMM', '7.5.1', '-DeepMind-patch'),
+    ('OpenMM', '7.5.1', '-CUDA-%(cudaver)s-DeepMind-patch'),
 ]
 
 use_pip = True
 
+# flash_attn (FlashAttention) is optional, speeds up MSA attention for sequences with < 1000 residues
 exts_list = [
+    ('flash_attn', '0.2.8', {
+        'checksums': ['b54fee86463cdb9933e8d47e500c52f3eaf283f1c8a9d96099e62acc7dc0be1f'],
+    }),
     ('PDBFixer', '1.7', {
         'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
@@ -80,13 +84,36 @@ exts_list = [
     }),
 ]
 
+# _resources_dir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/openfold/resources/'
+# _resources_target_dir = '/databases/bio/%(namelower)s-%(version)s'
+
+postinstallcmds = [
+    'cp -a run_pretrained_openfold.py thread_sequence.py train_openfold.py %(installdir)s/bin',
+    'cp -a scripts %(installdir)s/bin',
+    'chmod -R a+x %(installdir)s/bin',
+    # manually download stereo_chemical_props.txt, openfold parameters and alphafold parameters
+    # see scripts download_alphafold_params.sh, download_openfold_params.sh ,install_third_party_dependencies.sh
+    # download to _resources_target_dir and add symlinks in _resources_dir
+    # or download directly into _resources_dir
+    # 'ln -s %s/stereo_chemical_props.txt %s' % (_resources_target_dir, _resources_dir),
+    # 'ln -s %s/openfold_params %s' % (_resources_target_dir, _resources_dir),
+    # 'ln -s %s/params %s' % (_resources_target_dir, _resources_dir),
+]
+
+fix_python_shebang_for = ['bin/*.py', '/bin/scripts/*.py']
+
+modextrapaths = {
+    'PATH': 'bin/scripts',
+}
+
 sanity_check_paths = {
-    'files': ['bin/pdbfixer'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+    'files': ['bin/pdbfixer', 'bin/run_pretrained_openfold.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'bin/scripts'],
 }
 
 sanity_check_commands = [
     "pdbfixer --help",
+    "run_pretrained_openfold.py --help",
 ]
 
 sanity_pip_check = True
