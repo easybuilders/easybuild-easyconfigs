@@ -1,0 +1,35 @@
+easyblock = 'CMakeMake'
+
+name = 'svFSI'
+version = '2022.09.26'
+
+homepage = 'https://github.com/SimVascular/svFSI'
+description = "A multi-physics finite element solver for patient-specific blood flow simulation including fluid-structure interaction and cardiac electrophysiology Resources"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/SimVascular/%(name)s/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_cmake-rpath-fix.patch',
+]
+checksums = [
+    '4f4fbf4112402c7d037f35043f8aa77b141276a59ca957614cf8de20543bd6eb',  # 2022.09.26.tar.gz
+    'be5a4889167cf242d863fa424ade7d8556c1d3d9525a809a230611a14ab095f8',  # svFSI-2022.09.26_cmake-rpath-fix.patch
+]
+
+separate_build_dir = True
+
+builddependencies = [('CMake', '3.22.1')]
+
+configure_cmd = 'cmake -DCMAKE_INSTALL_PREFIX=%(installdir)s -DCMAKE_BUILD_TYPE=RelWithDebInfo '
+configure_cmd += '../svFSI-%(version)s/Code'
+
+sanity_check_paths = {
+    'files': ['SV/bin/svFSI', 'SV/lib/lib_simvascular_thirdparty_zlib.a'],
+    'dirs': ['SV/include/thirdparty/metis_svfsi'],
+}
+
+modextrapaths = {'PATH': 'SV/bin'}
+
+moduleclass = 'bio'
