@@ -34,8 +34,9 @@ builddependencies = [
 #    ('Python', '2.7.18', '-bare'),
 #    ('re2c', '2.1.1'),
 #     ('SciPy-Stack', '2022a'),
-     ('python-build-bundle', '2022a'),
      ('nodejs', '16.14.0'),
+    ('snappy', '1.1.8'),
+    ('JasPer', '2.0.28'),
 ]
 
 dependencies = [
@@ -51,11 +52,8 @@ dependencies = [
     ('libGLU', '9.0.1'),
     ('libjpeg-turbo', '2.0.6'),
 #    ('NSS', '3.65'),
-    ('snappy', '1.1.8'),
-    ('JasPer', '2.0.28'),
     ('bzip2', '1.0.8'),
     ('OpenSSL', '1.1', '', True),
-     ('python-build-bundle', '2022a'),
 ]
 
 # qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
@@ -84,22 +82,21 @@ exts_default_options = {
 
 #local_pylibdir = '%(installdir)s/lib/python${EBVERSIONPYTHON:0:3}/site-packages'
 local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
-local_pysharedir = '%(installdir)s/share/python${EBVERSIONPYTHON:0:3}/site-packages'
+local_pysharedir = '%(installdir)s/share/python%(pyshortver)s/site-packages'
 
-#local_pyqt5_configopts = " ".join([
-#    "configure.py",
-#    "--confirm-license --verbose --no-python-dbus",
-#    "--bindir=%(installdir)s/bin",
-#    "--destdir=%s" % local_pylibdir,
-#    "--sip=%(installdir)s/bin/sip",
-#    "--sip-incdir %s/sip" % local_pysharedir,
-#    "--sipdir=%s/sip/PyQt5" % local_pysharedir,
-#    "--designer-plugindir=%s/plugins/designer" % local_pysharedir,
-#    "--qml-plugindir=%s/plugins/PyQt5" % local_pysharedir,
-#    "--qsci-api-destdir=%s/qsci" % local_pysharedir,
-#    "--no-dist-info",
-#    "--no-stubs",
-#])
+local_pyqt5_configopts = " ".join([
+    "configure.py",
+    "--confirm-license --verbose --no-python-dbus",
+    "--bindir=%(installdir)s/bin",
+    "--destdir=%s" % local_pylibdir,
+    "--sip-incdir %s/sip" % local_pysharedir,
+    "--sipdir=%s/sip/PyQt5" % local_pysharedir,
+    "--designer-plugindir=%s/plugins/designer" % local_pysharedir,
+    "--qml-plugindir=%s/plugins/PyQt5" % local_pysharedir,
+    "--qsci-api-destdir=%s/qsci" % local_pysharedir,
+    "--no-dist-info",
+    "--no-stubs",
+])
 
 local_pyqt5_sip_install = "sip-install --verbose --target-dir " + local_pylibdir + " "
 local_pyqt5_sip_install += "--confirm-license --no-designer-plugin --no-qml-plugin --no-tools"
@@ -110,18 +107,19 @@ local_pyqtweb_configopts += "--no-stubs --no-dist-info"
 
 local_setup_env = "export PATH=%(installdir)s/bin:$PATH && "
 local_setup_env += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
-local_setup_env += "module load python-build-bundle && " 
 
 
 local_sipver = '5.5.0'
 exts_list = [
+    ('packaging', '21.3'),
+    ('toml', '0.10.2'),
     ('SIP', local_sipver, {
         'source_urls': [PYPI_SOURCE],
         'sources': [SOURCELOWER_TAR_GZ],
         'start_dir': 'sip-%s' % local_sipver,
         'use_pip': True,
 	'patches': ['Qt5-5.15-sip-python3.10.patch'],
-        #'preconfigopts': 'mkdir -p %s/sip && '%local_pysharedir,
+        'preconfigopts': 'mkdir -p %s/sip && '%local_pysharedir,
         #'configopts': '',
         'modulename': 'PyQt5.sip',
     }),
