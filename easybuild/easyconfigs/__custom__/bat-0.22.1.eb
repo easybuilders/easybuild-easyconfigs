@@ -1,0 +1,37 @@
+easyblock = 'CmdCp'
+
+name = 'bat'
+version = '0.22.1'
+
+homepage = 'https://github.com/sharkdp/bat'
+description = """A cat(1) clone with syntax highlighting and Git integration."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/sharkdp/bat/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['25e45debf7c86794281d63a51564feefa96fdfdf575381e3adc5c06653ecaeca']
+
+builddependencies = [
+    ('GCCcore', '12.2.0'),
+    ('Rust', '1.65.0', '', ('GCCcore', '12.2.0')),
+]
+
+# build_cmd = "cargo install --locked --path . --root build && cp $(find target/release/build/ -name 'bat.1' | head -1) build/bat.1"
+cmds_map = [('.*', "cargo install --locked --path . --root build && cp $(find target/release/build/ -name 'bat.1' | head -1) build/bat.1")]
+
+files_to_copy = [
+    (['build/bin/bat'], 'bin'),
+    (['build/bat.1'], 'share/man/man1'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/bat', 'share/man/man1/bat.1'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "bat --help",
+]
+
+moduleclass = 'tools'
