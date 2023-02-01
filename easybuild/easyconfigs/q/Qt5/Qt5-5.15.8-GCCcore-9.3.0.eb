@@ -89,17 +89,13 @@ local_pyqt5_configopts = " ".join([
     "--confirm-license --verbose --no-python-dbus",
     "--bindir=%(installdir)s/bin",
     "--destdir=%s" % local_pylibdir,
-    "--sip-incdir %s/sip" % local_pysharedir,
+    "--sip-incdir=%(builddir)s/PyQt5_sip/PyQt5_sip-12.11.0",
     "--sipdir=%s/sip/PyQt5" % local_pysharedir,
     "--designer-plugindir=%s/plugins/designer" % local_pysharedir,
     "--qml-plugindir=%s/plugins/PyQt5" % local_pysharedir,
-    "--qsci-api-destdir=%s/qsci" % local_pysharedir,
     "--no-dist-info",
     "--no-stubs",
 ])
-
-local_pyqt5_sip_install = "sip-install --verbose --target-dir " + local_pylibdir + " "
-local_pyqt5_sip_install += "--confirm-license --no-designer-plugin --no-qml-plugin --no-tools"
 
 local_pyqtweb_configopts = "configure.py --verbose --destdir=%s/PyQt5 " % local_pylibdir
 local_pyqtweb_configopts += "--apidir=%(installdir)s/qsci --pyqt-sipdir=%(builddir)s/PyQt5/PyQt5-5.15.5/sip "
@@ -119,8 +115,6 @@ exts_list = [
         'start_dir': 'sip-%s' % local_sipver,
         'use_pip': True,
 	'patches': ['Qt5-5.15-sip-python3.10.patch'],
-        'preconfigopts': 'mkdir -p %s/sip && '%local_pysharedir,
-        #'configopts': '',
         'modulename': 'PyQt5.sip',
     }),
     ('PyQt-builder', '1.11.0', {
@@ -142,8 +136,8 @@ exts_list = [
         'sources': [SOURCE_TAR_GZ],
         'easyblock': 'ConfigureMakePythonPackage',
         'start_dir': '%(name)s-%(version)s',
-        'skipsteps': ['configure', 'build'],
-        'install_cmd': local_setup_env + local_pyqt5_sip_install,
+        'preconfigopts': local_setup_env + 'mkdir -p %s/sip && '%local_pysharedir,
+        'configopts': local_pyqt5_configopts,
         'modulename': 'PyQt5.QtCore',
     }),
     ('PyQtWebEngine', '5.15.6', {
