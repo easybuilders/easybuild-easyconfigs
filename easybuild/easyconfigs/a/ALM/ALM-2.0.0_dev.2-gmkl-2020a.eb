@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'ALM'
+version = '2.0.0_dev.2'
+local_commit = 'b39c60e'
+
+homepage = 'https://github.com/ttadano/ALM'
+description = """Spglib is a software for calculating harmonic and anharmonic interatomic force constants in solids and molecules"""
+
+toolchain = {'name': 'gmkl', 'version': '2020a'}
+toolchainopts = {'openmp': True}
+
+sources = [{
+    'filename': 'alm-2.0.0_dev.2.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/ttadano',
+	'repo_name': 'ALM',
+	'commit': local_commit
+    }
+}]
+patches = ['ALM-2.0.0_dev.2-replace-conda.patch']
+checksums = [
+    {'alm-2.0.0_dev.2.tar.gz': '9cac920d524acc52913f773521b2a6cfa6d249dddd948b452b47a679fa5820b3'},
+    {'ALM-2.0.0_dev.2-replace-conda.patch': '8ded6e4fc808f217ac05c74376dbdd985eadc89f282480f60d3465171fef8a86'},
+]
+
+builddependencies = [
+    ('Boost', '1.80.0'),
+    ('CMake', '3.23.1'),
+    ('Eigen', '3.3.7'),
+    ('SciPy-Stack', '2022a')
+]
+
+dependencies = [
+    ('HDF5', '1.12.1'),
+    ('spglib', '2.0.2')
+]
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/{bin,include,lib}',
+    'cp %(builddir)s/easybuild_obj/alm %(installdir)s/bin/',
+    'cp %(builddir)s/ALM/include/* %(installdir)s/include/',
+    'cp %(builddir)s/easybuild_obj/libalm* %(installdir)s/lib/',
+    'export ALMSRC=%(builddir)s/ALM/src; module load python/3.8 && cd %(builddir)s/ALM/python && pip install . --prefix=%(installdir)s',
+    'export ALMSRC=%(builddir)s/ALM/src; module load python/3.9 && cd %(builddir)s/ALM/python && pip install . --prefix=%(installdir)s',
+    'export ALMSRC=%(builddir)s/ALM/src; module load python/3.10 && cd %(builddir)s/ALM/python && pip install . --prefix=%(installdir)s'
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/alm',
+	'lib/libalmcxx.so',
+	'lib/libalmcxx.a'
+    ],
+    'dirs': [
+        'include'
+    ]
+}
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'phys'
