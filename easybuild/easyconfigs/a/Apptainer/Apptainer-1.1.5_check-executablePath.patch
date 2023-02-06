@@ -1,0 +1,19 @@
+diff --git a/internal/pkg/buildcfg/confgen/gen.go b/internal/pkg/buildcfg/confgen/gen.go
+index d302e3e97..c0387fcf4 100644
+--- a/internal/pkg/buildcfg/confgen/gen.go
++++ b/internal/pkg/buildcfg/confgen/gen.go
+@@ -97,6 +97,14 @@ func getPrefix() (string) {
+ 			return
+ 		}
+ 
++		_, err = os.Stat(executablePath)
++		if err != nil {
++			// Due to mount namespace issues, os.Executable may return a non-existing
++			// location
++			installPrefix = "{{.Prefix}}"
++			return
++		}
++
+ 		bin := filepath.Dir(executablePath)
+ 		base := filepath.Base(executablePath)
+ 
