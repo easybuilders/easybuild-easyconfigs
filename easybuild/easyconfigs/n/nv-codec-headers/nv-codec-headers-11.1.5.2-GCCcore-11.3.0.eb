@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'nv-codec-headers'
+version = '11.1.5.2'
+
+homepage = 'https://git.videolan.org/git/ffmpeg/nv-codec-headers.git'
+
+description = """FFmpeg nvidia headers. Adds support for nvenc and nvdec. Requires Nvidia GPU and drivers to be present
+(picked up dynamically)."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+sources = [{
+    'git_config': {
+        'url': 'https://git.videolan.org/git/ffmpeg/',
+        'repo_name': name,
+        'tag': 'n%(version)s',
+    },
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = [None]
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+skipsteps = ['configure']
+
+preinstallopts = 'sed -i "s|PREFIX =.*|PREFIX ?= %(installdir)s|" Makefile && '
+
+sanity_check_paths = {
+    'files': ['include/ffnvcodec/nvEncodeAPI.h', 'lib/pkgconfig/ffnvcodec.pc'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
