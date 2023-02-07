@@ -1,0 +1,19 @@
+# Use /tmp for cache directory instead of non-writeable /apps
+
+diff -ruN cvmfsexec/makedist cvmfsexec_patched/makedist
+--- cvmfsexec/makedist	2021-06-16 04:57:27.000000000 +1000
++++ cvmfsexec_patched/makedist	2021-07-07 13:53:48.000000000 +1000
+@@ -110,11 +110,10 @@
+         fi
+         sed -e 's/^[ \t]*//' $SEDOPTS >$2 <<'!EOF!'
+         #!/bin/bash
+-        BASEDIR="$(cd `dirname $0` && pwd)"
+-        BASE="$BASEDIR/.cvmfsexec"
++        BASE="/tmp/.cvmfsexec_$USER"
+         if [ $0 -nt $BASE ]; then
+             rm -rf $BASE
+-            mkdir $BASE
++            mkdir -m 700 $BASE
+             TAR_START="`awk '/^__TAR_BELOW__/ {print NR + 1; exit 0; }' $0`"
+             tail -n+$TAR_START $0 | tar -xzf - -C $BASE
+         fi
