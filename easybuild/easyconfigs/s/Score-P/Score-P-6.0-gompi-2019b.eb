@@ -1,11 +1,9 @@
 ##
 # Copyright:: Copyright 2013-2020 Juelich Supercomputing Centre, Germany
-# Copyright 2020 TU Dresden, Germany
-# Authors::
-# * Bernd Mohr <b.mohr@fz-juelich.de>
-# * Markus Geimer <m.geimer@fz-juelich.de>
-# * Alexander Grund <alexander.grund@tu-dresden.de>
-# * Robert Mijakovic <robert.mijakovic@lxp.lu>
+#             Copyright 2020 TU Dresden, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+#             Alexander Grund <alexander.grund@tu-dresden.de>
 # License::   3-clause BSD
 #
 # This work is based on experiences from the UNITE project
@@ -13,8 +11,7 @@
 ##
 
 name = 'Score-P'
-version = '7.1'
-versionsuffix = '-CUDA-%(cudaver)s'
+version = '6.0'
 
 homepage = 'https://www.score-p.org'
 description = """
@@ -23,30 +20,33 @@ description = """
  applications.
 """
 
-toolchain = {'name': 'gompi', 'version': '2021a'}
+toolchain = {'name': 'gompi', 'version': '2019b'}
 
-source_urls = ['https://perftools.pages.jsc.fz-juelich.de/cicd/scorep/tags/scorep-%(version)s']
+source_urls = ['https://www.vi-hps.org/cms/upload/packages/scorep/']
 sources = ['scorep-%(version)s.tar.gz']
-checksums = ['98dea497982001fb82da3429ca55669b2917a0858c71abe2cfe7cd113381f1f7']
+patches = ['Score-P-6.0_no_PDT_for_CUDA.patch']
+checksums = [
+    '5dc1023eb766ba5407f0b5e0845ec786e0021f1da757da737db1fb71fc4236b8',  # scorep-6.0.tar.gz
+    '93e3fc5d19a89d14ce98fb772b4d9ddde4191df3ce321c9965602aa12d43fa93',  # Score-P-6.0_no_PDT_for_CUDA.patch
+]
 
 dependencies = [
-    ('CUDA', '11.3.1', '', SYSTEM),
-    ('UCX-CUDA', '1.10.0', versionsuffix),
-    ('CubeLib', '4.6'),
-    ('CubeWriter', '4.6'),
-    ('libunwind', '1.4.0'),
-    ('OPARI2', '2.0.6'),
-    ('OTF2', '2.3'),
+    ('CubeLib', '4.4.4'),
+    ('CubeWriter', '4.4.3'),
+    # Unwinding/sampling support (optional):
+    ('libunwind', '1.3.1'),
+    ('OPARI2', '2.0.5'),
+    ('OTF2', '2.2'),
     # Hardware counter support (optional):
-    ('PAPI', '6.0.0.1'),
+    ('PAPI', '6.0.0'),
     # PDT source-to-source instrumentation support (optional):
-    ('PDT', '3.25.1'),
+    ('PDT', '3.25'),
 ]
 
 configopts = '--enable-shared'
 
 local_adapters = [
-    'compiler_event', 'compiler_mgmt', 'cuda_mgmt', 'mpi_event', 'mpi_mgmt', 'opari2_mgmt', 'user_event', 'user_mgmt'
+    'compiler_event', 'compiler_mgmt', 'mpi_event', 'mpi_mgmt', 'opari2_mgmt', 'user_event', 'user_mgmt'
 ]
 sanity_check_paths = {
     'files':
