@@ -1,0 +1,78 @@
+easyblock = 'ConfigureMake'
+
+name = 'Meep'
+version = '1.25.0'
+
+homepage = 'https://meep.readthedocs.io/en/latest/'
+description = """Meep is a free and open-source software package for electromagnetics simulation via the finite-difference time-domain (FDTD) method spanning a broad range of applications."""
+
+toolchain = {'name': 'gofb', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'opt': True, 'unroll': True, 'pic': True}
+
+source_urls = ["https://github.com/NanoComp/meep/releases/download/v%(version)s"]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ["e400711d0fac38a028dbc8c12cf06a5cdec896d6f2f0907a08f2eab0f13a1459"]
+
+builddependencies = [
+    ('Harminv', '1.4.1', '', ('gcccoreflexiblas', '2020a')),
+    ('libctl', '4.5.0'),
+    ('libGDSII', '0.21'),
+    ('MPB', '1.11.1', '', ('gccflexiblas', '2020a')), # Note: Meep can only link to the serial version of MPB.
+    ('oldest-supported-numpy', '2022a'),
+    # ('SciPy-Stack', '2022a'), # for python-dateutil in tests
+]
+
+dependencies = [
+    ('GSL', '2.6'),
+    ('HDF5', '1.12.1', '-mpi'),
+    ('FFTW', '3.3.8', '-mpi'),
+    ('mpi4py', '3.1.3'),
+]
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.8", "3.9", "3.10"]}
+
+configopts = " ".join([
+    "--with-pic",
+    "--with-mpi",
+    '--with-blas="$LIBBLAS"',
+    '--with-lapack="$LIBLAPACK"',
+    "--without-gcc-arch",
+    "--with-libctl=$EBROOTLIBCTL/share/libctl",
+    "--enable-shared",
+    "--with-python",
+])
+
+# Tests passes except 3 python ones that segfaults.
+# pretestopts = "module load scipy-stack && pip install --prefix=%(builddir)s autograd parametrized jax && PYTHONPATH=%(builddir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+# runtest = "check"
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+sanity_check_paths = {
+    'files': [
+        'bin/meep',
+        'include/meep.hpp',
+        'lib/libmeep.so',
+        'lib/libpympb.so'
+    ],
+    'dirs': [
+        'bin',
+        'include',
+        'include/meep',
+        "lib/python%(pyshortver)s/site-packages",
+        'share'
+    ],
+}
+
+sanity_check_commands = [
+    "meep -V",
+    "module load scipy-stack && python -c 'import meep'",
+]
+
+# Depends on any numpy at runtime.
+modluafooter = """
+depends_on("scipy-stack")
+"""
+
+moduleclass = 'phys'
