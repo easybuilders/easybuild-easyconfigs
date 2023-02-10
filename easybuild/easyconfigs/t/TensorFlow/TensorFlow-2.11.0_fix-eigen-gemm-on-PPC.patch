@@ -1,105 +1,62 @@
 Fix a SIGSEGV in e.g. //tensorflow/core/grappler/optimizers:arithmetic_optimizer_test_cpu
 See https://gitlab.com/libeigen/eigen/-/issues/2608
 
+fix-ppc-gemm.patch based on https://gitlab.com/libeigen/eigen/-/merge_requests/1208
+
 Author: Alexander Grund (TU Dresden)
 
 diff --git a/third_party/eigen3/fix-ppc-gemm.patch b/third_party/eigen3/fix-ppc-gemm.patch
 new file mode 100644
-index 00000000000..6a9faf462e0
+index 00000000000..c674c4b590e
 --- /dev/null
 +++ b/third_party/eigen3/fix-ppc-gemm.patch
-@@ -0,0 +1,91 @@
+@@ -0,0 +1,46 @@
++diff --git a/Eigen/src/Core/arch/AltiVec/MatrixProduct.h b/Eigen/src/Core/arch/AltiVec/MatrixProduct.h
++index 3b3b558..44f9e16 100644
++--- a/Eigen/src/Core/arch/AltiVec/MatrixProduct.h
+++++ b/Eigen/src/Core/arch/AltiVec/MatrixProduct.h
++@@ -1760,7 +1760,7 @@ EIGEN_ALWAYS_INLINE void gemm_cols(
++   gemm_cols<Scalar, Packet, DataMapper, N, accCols>(res, blockA, blockB, depth, strideA, offsetA, strideB, offsetB, col, rows, remaining_rows, pAlpha, pMask);
++ 
++ template<typename Scalar, typename Packet, typename DataMapper, const Index accCols>
++-EIGEN_STRONG_INLINE void gemm_extra_cols(
+++EIGEN_ALWAYS_INLINE void gemm_extra_cols(
++   const DataMapper& res,
++   const Scalar* blockA,
++   const Scalar* blockB,
++@@ -2194,7 +2194,7 @@ EIGEN_ALWAYS_INLINE void gemm_complex_cols(
++   gemm_complex_cols<Scalar, Packet, Packetc, DataMapper, N, accCols, ConjugateLhs, ConjugateRhs, LhsIsReal, RhsIsReal>(res, blockA, blockB, depth, strideA, offsetA, strideB, offsetB, col, rows, remaining_rows, pAlphaReal, pAlphaImag, pMask);
++ 
++ template<typename Scalar, typename Packet, typename Packetc, typename DataMapper, const Index accCols, bool ConjugateLhs, bool ConjugateRhs, bool LhsIsReal, bool RhsIsReal>
++-EIGEN_STRONG_INLINE void gemm_complex_extra_cols(
+++EIGEN_ALWAYS_INLINE void gemm_complex_extra_cols(
++   const DataMapper& res,
++   const Scalar* blockA,
++   const Scalar* blockB,
 +diff --git a/Eigen/src/Core/arch/AltiVec/MatrixProductCommon.h b/Eigen/src/Core/arch/AltiVec/MatrixProductCommon.h
-+index 28868ca5a..35e7f673e 100644
++index 28868ca..1ac6629 100644
 +--- a/Eigen/src/Core/arch/AltiVec/MatrixProductCommon.h
 ++++ b/Eigen/src/Core/arch/AltiVec/MatrixProductCommon.h
-+@@ -30,23 +30,6 @@ EIGEN_ALWAYS_INLINE void gemm_extra_row(
++@@ -30,8 +30,8 @@ EIGEN_ALWAYS_INLINE void gemm_extra_row(
 +   const Packet& pAlpha,
 +   const Packet& pMask);
 + 
 +-template<typename Scalar, typename Packet, typename DataMapper, const Index accCols, bool ConjugateLhs, bool ConjugateRhs, bool LhsIsReal, bool RhsIsReal>
 +-EIGEN_STRONG_INLINE void gemm_extra_cols(
-+-  const DataMapper& res,
-+-  const Scalar* blockA,
-+-  const Scalar* blockB,
-+-  Index depth,
-+-  Index strideA,
-+-  Index offsetA,
-+-  Index strideB,
-+-  Index offsetB,
-+-  Index col,
-+-  Index rows,
-+-  Index cols,
-+-  Index remaining_rows,
-+-  const Packet& pAlpha,
-+-  const Packet& pMask);
-+-
-+ template<typename Packet>
-+ EIGEN_ALWAYS_INLINE Packet bmask(const Index remaining_rows);
+++template<typename Scalar, typename Packet, typename DataMapper, const Index accCols>
+++EIGEN_ALWAYS_INLINE void gemm_extra_cols(
++   const DataMapper& res,
++   const Scalar* blockA,
++   const Scalar* blockB,
++@@ -67,7 +67,7 @@ EIGEN_ALWAYS_INLINE void gemm_complex_extra_row(
++   const Packet& pMask);
 + 
-+diff --git a/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h b/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h
-+index aa1cbf88f..3cd4ab32a 100644
-+--- a/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h
-++++ b/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h
-+@@ -427,6 +427,49 @@ EIGEN_ALWAYS_INLINE void gemmMMA_cols(
-+   }
-+ }
-+ 
-++#define MICRO_EXTRA(MICRO_EXTRA_UNROLL, value, is_col) \
-++  switch(value) { \
-++    default: \
-++      MICRO_EXTRA_UNROLL(1) \
-++      break; \
-++    case 2: \
-++      if (is_col || (sizeof(Scalar) == sizeof(float))) { \
-++        MICRO_EXTRA_UNROLL(2) \
-++      } \
-++      break; \
-++    case 3: \
-++      if (is_col || (sizeof(Scalar) == sizeof(float))) { \
-++        MICRO_EXTRA_UNROLL(3) \
-++      } \
-++      break; \
-++  }
-++
-++#define MICRO_EXTRA_COLS(N) \
-++  gemmMMA_cols<Scalar, Packet, RhsPacket2, DataMapper, N, accCols>(res, blockA, blockB, depth, strideA, offsetA, strideB, offsetB, col, rows, remaining_rows, pAlpha, pMask);
-++
-++template<typename Scalar, typename Packet, typename RhsPacket2, typename DataMapper, const Index accCols>
-++EIGEN_STRONG_INLINE void gemmMMA_extra_cols(
-++  const DataMapper& res,
-++  const Scalar* blockA,
-++  const Scalar* blockB,
-++  Index depth,
-++  Index strideA,
-++  Index offsetA,
-++  Index strideB,
-++  Index offsetB,
-++  Index col,
-++  Index rows,
-++  Index cols,
-++  Index remaining_rows,
-++  const Packet& pAlpha,
-++  const Packet& pMask)
-++{
-++  MICRO_EXTRA(MICRO_EXTRA_COLS, cols-col, true)
-++}
-++
-++#undef MICRO_EXTRA
-++#undef MICRO_EXTRA_COLS
-++
-+ template<typename Scalar, typename Packet, typename RhsPacket, typename DataMapper, const Index accRows, const Index accCols>
-+ void gemmMMA(const DataMapper& res, const Scalar* blockA, const Scalar* blockB, Index rows, Index depth, Index cols, Scalar alpha, Index strideA, Index strideB, Index offsetA, Index offsetB)
-+ {
-+@@ -448,7 +491,7 @@ void gemmMMA(const DataMapper& res, const Scalar* blockA, const Scalar* blockB,
-+ 
-+       if (col != cols)
-+       {
-+-        gemm_extra_cols<Scalar, Packet, DataMapper, accCols>(res, blockA, blockB, depth, strideA, offsetA, strideB, offsetB, col, rows, cols, remaining_rows, pAlpha, pMask);
-++        gemmMMA_extra_cols<Scalar, Packet, RhsPacket2, DataMapper, accCols>(res, blockA, blockB, depth, strideA, offsetA, strideB, offsetB, col, rows, cols, remaining_rows, pAlpha, pMask);
-+       }
-+ }
-+ 
++ template<typename Scalar, typename Packet, typename Packetc, typename DataMapper, const Index accCols, bool ConjugateLhs, bool ConjugateRhs, bool LhsIsReal, bool RhsIsReal>
++-EIGEN_STRONG_INLINE void gemm_complex_extra_cols(
+++EIGEN_ALWAYS_INLINE void gemm_complex_extra_cols(
++   const DataMapper& res,
++   const Scalar* blockA,
++   const Scalar* blockB,
 diff --git a/third_party/eigen3/workspace.bzl b/third_party/eigen3/workspace.bzl
 index 6c8744aeec4..2a2a7b474c9 100644
 --- a/third_party/eigen3/workspace.bzl
