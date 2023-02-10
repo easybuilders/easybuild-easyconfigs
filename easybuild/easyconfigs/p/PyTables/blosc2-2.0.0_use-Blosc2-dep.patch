@@ -1,0 +1,24 @@
+make blosc2 use provided Blosc2 dependency, rather than letting it build its own vendored copy of c-blosc2
+author: Kenneth Hoste (HPC-UGent)
+--- blosc2-2.0.0/blosc2/CMakeLists.txt.orig	2023-01-19 13:20:38.055582814 +0100
++++ blosc2-2.0.0/blosc2/CMakeLists.txt	2023-01-19 13:21:03.808615093 +0100
+@@ -7,17 +7,14 @@
+ set(BUILD_FUZZERS OFF CACHE BOOL "Build C-Blosc2 fuzzers")
+ 
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+-# we want the binaries of the C-Blosc2 library to go into the wheels
+-set(BLOSC_INSTALL ON)
+-add_subdirectory(c-blosc2)
+-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/c-blosc2/include")
++include_directories("$ENV{EBROOTBLOSC2}/include")
+ include_directories("${Python_NumPy_INCLUDE_DIRS}")
+ 
+ 
+ add_cython_target(blosc2_ext blosc2_ext.pyx)
+ add_library(blosc2_ext MODULE ${blosc2_ext})
+ 
+-target_link_libraries(blosc2_ext blosc2_static)
++target_link_libraries(blosc2_ext $ENV{EBROOTBLOSC2}/lib/libblosc2.a)
+ 
+ python_extension_module(blosc2_ext)
+ 
