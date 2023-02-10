@@ -1,0 +1,70 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '5.5.2'
+versionsuffix = '-Python-%(pyver)s-mpi'
+
+homepage = "http://www.paraview.org"
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['http://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["ParaView-v%(version)s.tar.gz"]
+patches = [
+    'ParaView-%(version)s_fix-serial-vtk-with-mpi.patch',
+    'ParaView-%(version)s_fix-H5detect.c.patch',
+    'ParaView-%(version)s_fix-missing-include.patch',
+    ('ParaView-%(version)s_fix-missing-doc.patch', 1)
+]
+checksums = [
+    '64561f34c4402b88f3cb20a956842394dde5838efd7ebb301157a837114a0e2d',  # ParaView-v5.5.2.tar.gz
+    'cf0a73e614a9331596df714303eb7ce10ac27c7717ff7b78be29c12796255083',  # ParaView-5.5.2_fix-serial-vtk-with-mpi.patch
+    'bc619d7946355aa51facdcc5591e9e4280ecc670a350c3b55414f0a718eda734',  # ParaView-5.5.2_fix-H5detect.c.patch
+    'bf77d59b467c02005f769c2536043af99ebee6e9aade7d0cf7169cb083573623',  # ParaView-5.5.2_fix-missing-include.patch
+    'a50ba4a40574dd74fa77b84066b7502513cd9ac9643268cab1182dbc10d6a9e6'   # ParaView-5.5.2_fix-missing-doc.patch
+]
+
+dependencies = [
+    ('X11', '20180604'),
+    ('Mesa', '18.1.1'),
+    ('libGLU', '9.0.0'),
+    ('Qt5', '5.10.1'),
+    ('zlib', '1.2.11'),
+    ('HDF5', '1.10.2'),
+    ('Python', '2.7.15'),
+]
+
+builddependencies = [('CMake', '3.11.4')]
+
+separate_build_dir = True
+
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DVTK_OPENGL_HAS_OSMESA=ON -DPARAVIEW_USE_MPI=ON '
+configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include -DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s ' % SHLIB_EXT
+configopts += '-DOSMESA_INCLUDE_DIR=$EBROOTMESA/include -DOSMESA_LIBRARY=$EBROOTMESA/lib/libOSMesa.%s ' % SHLIB_EXT
+configopts += '-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s ' % SHLIB_EXT
+configopts += '-DVTK_USE_SYSTEM_HDF5=ON -DPARAVIEW_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON '
+# if you want to build server only Paraview, uncomment the following line:
+# configopts += '-DVTK_USE_X=OFF '
+
+# Without internet connection turn off testing (uncomment the following line)
+configopts += '-DBUILD_TESTING=OFF '
+# Or consult https://gitlab.kitware.com/vtk/vtk/blob/master/Documentation/dev/git/data.md
+# and download ExternalData to $EASYBUILD_SOURCEPATH and adjust -DExternalData_OBJECT_STORES accordingly
+# Without internet connection, comment the following two lines (configopts and prebuildopts)
+configopts += '-DExternalData_OBJECT_STORES=%(builddir)s/ExternalData '
+
+configopts += ' -DPARAVIEW_QT_VERSION=5 -DQT_QMAKE_EXECUTABLE=$EBROOTQT5/bin/qmake '
+# The ParaView server can be cranky, test downloads are quite often failing, especially in the case
+# of parallel downloads. Using ; insted of && gives a second chance to download the test files, if the
+# first serial attempt would fail.
+prebuildopts = 'make VTKData ;'
+
+sanity_check_paths = {
+    'files': ['bin/paraview'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib'],
+}
+
+moduleclass = 'vis'

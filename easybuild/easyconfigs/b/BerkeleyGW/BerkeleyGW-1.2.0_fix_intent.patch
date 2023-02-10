@@ -1,0 +1,103 @@
+* fix intent of pointer arguments that are already associated on subroutine entry
+* see https://groups.google.com/a/berkeleygw.org/forum/#!topic/help/hL_jRdFfVLo
+author: Miguel Dias Costa (National University of Singapore)
+--- Sigma/mtxel_cor.f90.orig	2018-03-14 08:50:52.920787000 +0800
++++ Sigma/mtxel_cor.f90	2018-03-14 08:51:28.489516380 +0800
+@@ -78,11 +78,11 @@
+   !> (ncoulch) Uninitialized unless freq_dep=0 .or. exact_ch=1
+   SCALAR, pointer, intent(in) :: aqsch(:)
+   !> (sig%ntband) Uninitialized in FF calculations
+-  SCALAR, pointer, intent(out) :: acht_n1(:)
++  SCALAR, pointer, intent(inout) :: acht_n1(:)
+   !> (3 or sig%nfreqeval) Uninitialized unless freq_dep=1
+-  SCALAR, pointer, intent(out) :: asxt(:), acht(:)
++  SCALAR, pointer, intent(inout) :: asxt(:), acht(:)
+ ! FHJ: static remainder, resolved over bands
+-  SCALAR, pointer, intent(out) :: achtcor_n1(:)
++  SCALAR, pointer, intent(inout) :: achtcor_n1(:)
+   SCALAR, intent(out) :: achtcor
+   SCALAR, intent(out) :: asigt_imag
+   integer, intent(in) :: nspin
+@@ -92,9 +92,9 @@
+   integer, intent(in) :: ngpown
+   !> The following pointers are uninitialized unless we are running the complex version
+   complex(DPC), pointer, intent(in) :: epsR(:,:,:),epsA(:,:,:) !< (neps,ngpown,sig%nFreq)
+-  complex(DPC), pointer, intent(out) :: achtD_n1(:) !< (sig%ntband)
+-  complex(DPC), pointer, intent(out) :: asxtDyn(:), achtDyn(:), achtDyn_cor(:), ach2tDyn(:) !< (sig%nfreqeval)
+-  complex(DPC), pointer, intent(out) :: achtDyn_corb(:) !< (sig%nfreqeval)
++  complex(DPC), pointer, intent(inout) :: achtD_n1(:) !< (sig%ntband)
++  complex(DPC), pointer, intent(inout) :: asxtDyn(:), achtDyn(:), achtDyn_cor(:), ach2tDyn(:) !< (sig%nfreqeval)
++  complex(DPC), pointer, intent(inout) :: achtDyn_corb(:) !< (sig%nfreqeval)
+   integer, intent(in) :: icalc
+ 
+   SCALAR, allocatable :: epstemp(:), aqsntemp(:,:),aqsmtemp(:,:)
+--- ./Common/wfn_rho_vxc_io_inc.f90.orig	2018-04-26 12:48:49.469693000 +0800
++++ ./Common/wfn_rho_vxc_io_inc.f90	2018-04-26 12:48:38.654492000 +0800
+@@ -8,6 +8,7 @@
+ #ifdef READ
+   #define READ_WRITE(x) read ## x
+   #define INTENT out
++  #define POINTER_INTENT inout
+   #define FLAVOR_INTENT inout
+ #else
+   #define READ_WRITE(x) write ## x
+@@ -68,13 +69,13 @@
+                               !! lattice vectors, metric tensor in reciprocal space (in a.u., bvec in units of blat)
+   integer, intent(INTENT) :: mtrx(3, 3, 48) !< symmetry matrix
+   real(DP), intent(INTENT) :: tnp(3, 48) !< fractional translation
+-  integer, pointer, intent(INTENT) :: atyp(:) !< atomic species
+-  real(DP), pointer, intent(INTENT) :: apos(:,:) !< atomic positions (in units of alat)
+-  integer, pointer, intent(INTENT) :: ngk(:) !< number of G-vectors for each k-pt, ngk(nk)
+-  real(DP), pointer, intent(INTENT) :: kw(:), kpt(:, :) !< k-weight, kw(nk); k-coord, kpt(3, nk) in crystal coords
+-  integer, pointer, intent(INTENT) :: ifmin(:, :), ifmax(:, :) !< lowest and highest occupied band, ifmin/max(nk, ns)
+-  real(DP), pointer, intent(INTENT) :: energies(:, :, :) !< energies(nbands, nk, ns) in Ry
+-  real(DP), pointer, intent(INTENT) :: occupations(:, :, :) !< occupations(nbands, nk, ns) between 0 and 1
++  integer, pointer, intent(POINTER_INTENT) :: atyp(:) !< atomic species
++  real(DP), pointer, intent(POINTER_INTENT) :: apos(:,:) !< atomic positions (in units of alat)
++  integer, pointer, intent(POINTER_INTENT) :: ngk(:) !< number of G-vectors for each k-pt, ngk(nk)
++  real(DP), pointer, intent(POINTER_INTENT) :: kw(:), kpt(:, :) !< k-weight, kw(nk); k-coord, kpt(3, nk) in crystal coords
++  integer, pointer, intent(POINTER_INTENT) :: ifmin(:, :), ifmax(:, :) !< lowest and highest occupied band, ifmin/max(nk, ns)
++  real(DP), pointer, intent(POINTER_INTENT) :: energies(:, :, :) !< energies(nbands, nk, ns) in Ry
++  real(DP), pointer, intent(POINTER_INTENT) :: occupations(:, :, :) !< occupations(nbands, nk, ns) between 0 and 1
+   integer, optional, intent(INTENT) :: nspinor !< 2 if doing a two-component spinor calculation; 1 if not present
+   logical, optional, intent(in) :: warn !< if false, suppresses warnings about inversion symmetries etc.
+   logical, optional, intent(in) :: dont_warn_kgrid !< if true, validity of kgrid read will not be checked.
+@@ -475,7 +476,7 @@
+   TEMP_SCALAR, intent(INTENT) :: data(:, :) !< (ng_bound, ns)
+ #endif
+   integer, optional, intent(INTENT) :: nrecord !< data/gvectors will be distributed among this many records
+-  integer, optional, pointer, intent(INTENT) :: ng_record(:) !< number of gvectors in each record
++  integer, optional, pointer, intent(POINTER_INTENT) :: ng_record(:) !< number of gvectors in each record
+     !! must be provided for write if nrecord > 1
+   logical, optional, intent(in) :: bcast     !< whether to do MPI_Bcast of what is read
+   integer, optional, intent(in) :: gindex(:) !< map of order in file to order in gvec
+@@ -671,13 +672,13 @@
+   real(DP), intent(INTENT) :: recvol, blat, bvec(3, 3), bdot(3, 3) !< cell volume, lattice constant,
+   integer, intent(INTENT) :: mtrx(3, 3, 48) !< symmetry matrix
+   real(DP), intent(INTENT) :: tnp(3, 48) !< fractional translation
+-  integer, pointer, intent(INTENT) :: atyp(:) !< atomic species
+-  real(DP), pointer, intent(INTENT) :: apos(:,:) !< atomic positions (in units of alat)
+-  integer, pointer, intent(INTENT) :: ngk(:) !< number of G-vectors for each k-pt, ngk(nk)
+-  real(DP), pointer, intent(INTENT) :: kw(:), kpt(:, :) !< k-weight, kw(nk); k-coord, kpt(3, nk) in crystal coords
+-  integer, pointer, intent(INTENT) :: ifmin(:, :), ifmax(:, :) !< lowest and highest occupied band, ifmin/max(nk, ns)
+-  real(DP), pointer, intent(INTENT) :: energies(:, :, :) !< energies(nbands, nk, ns) in Ry
+-  real(DP), pointer, intent(INTENT) :: occupations(:, :, :) !< occupations(nbands, nk, ns) between 0 and 1
++  integer, pointer, intent(POINTER_INTENT) :: atyp(:) !< atomic species
++  real(DP), pointer, intent(POINTER_INTENT) :: apos(:,:) !< atomic positions (in units of alat)
++  integer, pointer, intent(POINTER_INTENT) :: ngk(:) !< number of G-vectors for each k-pt, ngk(nk)
++  real(DP), pointer, intent(POINTER_INTENT) :: kw(:), kpt(:, :) !< k-weight, kw(nk); k-coord, kpt(3, nk) in crystal coords
++  integer, pointer, intent(POINTER_INTENT) :: ifmin(:, :), ifmax(:, :) !< lowest and highest occupied band, ifmin/max(nk, ns)
++  real(DP), pointer, intent(POINTER_INTENT) :: energies(:, :, :) !< energies(nbands, nk, ns) in Ry
++  real(DP), pointer, intent(POINTER_INTENT) :: occupations(:, :, :) !< occupations(nbands, nk, ns) between 0 and 1
+   integer, intent(INTENT) :: nspinor !< 2 if doing a two-component spinor calculation; 1 if not present
+   logical, optional, intent(in) :: warn !< if false, suppresses warnings about inversion symmetries etc.
+   character(len=32), optional, intent(out) :: sdate, stime !< if read, result from file is returned; if write, current is returned
+@@ -749,7 +750,7 @@
+   TEMP_SCALAR, intent(INTENT) :: data(:, :) !< (ng_bound, ns)
+ #endif
+   integer, optional, intent(INTENT) :: nrecord !< data/gvectors will be distributed among this many records
+-  integer, optional, pointer, intent(INTENT) :: ng_record(:) !< number of gvectors in each record
++  integer, optional, pointer, intent(POINTER_INTENT) :: ng_record(:) !< number of gvectors in each record
+   logical, optional, intent(in) :: bcast     !< whether to do MPI_Bcast of what is read
+   integer, optional, intent(in) :: gindex(:) !< map of order in file to order in gvec
+   logical, optional, intent(in) :: dont_read !< if true, records will just be skipped; only for unformatted

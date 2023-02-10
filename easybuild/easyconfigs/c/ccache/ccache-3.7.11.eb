@@ -1,0 +1,41 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+##
+easyblock = 'ConfigureMake'
+
+name = 'ccache'
+version = '3.7.11'
+
+homepage = 'https://ccache.dev/'
+description = """Ccache (or “ccache”) is a compiler cache. It speeds up recompilation by 
+caching previous compilations and detecting when the same compilation is being done again"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/ccache/ccache/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['34309a59d4b6b6b33756366aa9d3144a4655587be9f914476b4c0e2d36365f01']
+
+osdependencies = [('glibc-static', 'libc6-dev')]
+
+local_gccver = '9.3.0'
+builddependencies = [
+    ('GCC', local_gccver),
+    ('Autotools', '20180311', '', ('GCCcore', local_gccver)),
+    ('zlib', '1.2.11', '', ('GCCcore', local_gccver)),
+]
+
+buildopts = 'LDFLAGS="-static"'
+
+sanity_check_paths = {
+    'files': ['bin/ccache'],
+    'dirs': []
+}
+sanity_check_commands = ['ccache --help']
+
+moduleclass = 'tools'

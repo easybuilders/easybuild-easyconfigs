@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'libxc'
+version = '4.0.3'
+
+homepage = 'https://www.tddft.org/programs/libxc'
+description = """Libxc is a library of exchange-correlation functionals for density-functional theory.
+ The aim is to provide a portable, well tested and reliable set of exchange and correlation functionals."""
+
+toolchain = {'name': 'foss', 'version': '2017a'}
+# Results for some functionals (e.g. mgga_c_tpss) deviate with too aggressive optimization settings.
+toolchainopts = {'lowopt': True}
+
+source_urls = ['https://www.tddft.org/programs/libxc/down.php?file=%(version)s/']
+sources = [SOURCE_TAR_GZ]
+patches = ['libxc-%(version_major_minor)s_no-longdouble.patch']
+checksums = [
+    '85aec0799bb77c0eca13f11b7124601d4b2ba5961dd390a98a3163fc9f1dbae7',  # libxc-4.0.3.tar.gz
+    '588631b4a18f1f64e6c8e9ff701f15fec0e34c0871e402b8a934fcd97c3d043b',  # libxc-4.0_no-longdouble.patch
+]
+
+configopts = '--enable-static --enable-shared --enable-fortran'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['lib/libxc%s.%s' % (x, y) for x in ['', 'f90'] for y in ['a', SHLIB_EXT]],
+    'dirs': ['include'],
+}
+
+parallel = 1
+
+moduleclass = 'chem'

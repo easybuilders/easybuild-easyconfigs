@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'pbdagcon'
+version = '20170330'
+local_commit = 'fd8fbad'
+
+homepage = 'https://github.com/PacificBiosciences/pbdagcon'
+description = """pbdagcon is a tool that implements DAGCon (Directed Acyclic Graph Consensus) which is a sequence
+ consensus algorithm based on using directed acyclic graphs to encode multiple sequence alignment."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = [
+    'https://github.com/PacificBiosciences/pbdagcon/archive/',
+    'https://github.com/PacificBiosciences/DALIGNER/archive/',
+    'https://github.com/PacificBiosciences/DAZZ_DB/archive/',
+]
+sources = [
+    '%s.tar.gz' % local_commit,  # pbdagcon
+    '583de37.tar.gz',  # DALIGNER
+    '7954b44.tar.gz',  # DAZZ_DB
+]
+
+dependencies = [
+    ('blasr_libcpp', '20170426'),
+]
+
+prebuildopts = "rmdir DAZZ_DB && ln -s %(builddir)s/DAZZ_DB* DAZZ_DB && cd DAZZ_DB && pwd && make && cd .. && "
+prebuildopts += "export CPATH=$PWD/DAZZ_DB:$CPATH && export LIBRARY_PATH=$PWD/DAZZ_DB:$LIBRARY_PATH && "
+prebuildopts += "rmdir DALIGNER && ln -s %(builddir)s/DALIGNER* DALIGNER && cd DALIGNER && pwd && make && cd .. && "
+prebuildopts += "./configure.py && export DALIGNER_SRC=$PWD/DALIGNER && export DAZZ_DB_SRC=$PWD/DAZZ_DB && "
+
+files_to_copy = [(['src/cpp/pbdagcon'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/pbdagcon'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

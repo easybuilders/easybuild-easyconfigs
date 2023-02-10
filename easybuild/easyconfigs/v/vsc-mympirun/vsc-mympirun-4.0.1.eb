@@ -1,0 +1,33 @@
+easyblock = 'PythonPackage'
+
+name = 'vsc-mympirun'
+version = '4.0.1'
+
+homepage = 'https://github.com/hpcugent/vsc-mympirun'
+description = """VSC-tools is a set of Python libraries and scripts that are commonly used within HPC-UGent."""
+
+# we build this to work with every python version
+toolchain = SYSTEM
+
+sources = [SOURCE_TAR_GZ]
+checksums = ['b5b08e6291a68802d29c344d5807e4c2a1945375055b57c819721151775789f0']
+
+builddependencies = [('vsc-install', '0.10.26')]
+dependencies = [('vsc-base', '2.5.8')]
+
+osdependencies = ['python-setuptools']
+
+# we ship something in bin/fake
+modextrapaths = {'PATH': 'bin/fake'}
+
+# don't check for import of vsc.mympirun, since that may fail if vsc-base is picked up from the OS
+options = {'modulename': 'vsc'}
+
+local_pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
+sanity_check_paths = {
+    'files': ['bin/mympirun', 'bin/mympisanity'],
+    'dirs': ['bin/fake', 'lib/python%s/site-packages' % local_pyshortver],
+}
+sanity_check_commands = ["mympirun --help"]
+
+moduleclass = 'tools'

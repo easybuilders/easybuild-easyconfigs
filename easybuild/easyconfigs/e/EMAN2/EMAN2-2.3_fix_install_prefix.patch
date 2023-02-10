@@ -1,0 +1,39 @@
+Fix some install related paths for EB.
+
+Åke Sandgren, 20191029
+diff -ru eman2-2.3.orig/CMakeLists.txt eman2-2.3/CMakeLists.txt
+--- eman2-2.3.orig/CMakeLists.txt	2019-04-25 21:03:56.000000000 +0200
++++ eman2-2.3/CMakeLists.txt	2019-10-29 07:51:59.390728285 +0100
+@@ -41,30 +41,10 @@
+ MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
+ OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
+ 
+-# Set EMAN_PREFIX
+-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+-	message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
+-	if(NOT WIN32)
+-		set(EMAN_PREFIX $ENV{PREFIX})
+-	else()
+-		set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
+-	endif()
+-else()
+-	find_package(Conda REQUIRED)
+-		
+-	if(CONDA_PREFIX)
+-		if(NOT WIN32)
+-			set(EMAN_PREFIX ${CONDA_PREFIX})
+-		else()
+-			set(EMAN_PREFIX ${CONDA_PREFIX}/Library)
+-		endif()
+-	endif()
+-endif()
+-
++set(EMAN_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH "installation prefix" FORCE)
+ set(EMAN_PREFIX_INC      ${EMAN_PREFIX}/include)
+ set(EMAN_PREFIX_LIB      ${EMAN_PREFIX}/lib)
+-set(CMAKE_INSTALL_PREFIX ${EMAN_PREFIX} CACHE PATH "installation prefix" FORCE)
+-set(CMAKE_PREFIX_PATH    ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
++#set(CMAKE_PREFIX_PATH    ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+ message_var(CMAKE_PREFIX_PATH)
+ 
+ find_package(Python REQUIRED)

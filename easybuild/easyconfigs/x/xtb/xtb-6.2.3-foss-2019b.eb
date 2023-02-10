@@ -1,0 +1,41 @@
+easyblock = 'MesonNinja'
+
+name = 'xtb'
+version = '6.2.3'
+
+homepage = 'https://xtb-docs.readthedocs.io'
+description = """ xtb - An extended tight-binding semi-empirical program package. """
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['620dfb93aa07fd5144d25134613a5d7f4c1fa4fb5070c30768a6335c8c0b4187']
+
+github_account = 'grimme-lab'
+builddependencies = [
+    ('Meson', '0.59.1', '-Python-3.7.4'),
+    ('Ninja', '1.9.0'),
+]
+
+configopts = "-Dla_backend='custom' "
+configopts += "-Dcustom_libraries='openblas' "
+configopts += "--optimization=2 "
+configopts += "--buildtype release "
+configopts += "--warnlevel 0 "
+configopts += "-Dpython=false"
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj -t 60'  # Ensure test don't timeout
+
+sanity_check_paths = {
+    'files': ['bin/xtb', 'include/xtb/xtb.h'] + ['lib/libxtb.%s' % e for e in ('a', SHLIB_EXT)],
+    'dirs': ['share'],
+}
+
+modextravars = {
+    'XTBHOME': '%(installdir)s',
+    'XTBPATH': '%(installdir)s',
+}
+
+moduleclass = 'chem'

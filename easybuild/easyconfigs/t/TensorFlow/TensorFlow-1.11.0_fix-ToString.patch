@@ -1,0 +1,34 @@
+fix for compilation error "error: 'class tensorflow::StringPiece' has no member named 'ToString'"
+inspired by https://github.com/tensorflow/tensorflow/pull/21956
+author: Kenneth Hoste (HPC-UGent)
+--- tensorflow-1.11.0/tensorflow/contrib/mpi/mpi_rendezvous_mgr.h.orig	2018-09-27 21:14:38.710102680 +0200
++++ tensorflow-1.11.0/tensorflow/contrib/mpi/mpi_rendezvous_mgr.h	2018-09-27 21:15:23.259862728 +0200
+@@ -71,7 +71,7 @@
+ 
+   void Init(const Rendezvous::ParsedKey& parsed, const int64 step_id,
+             const bool is_dead) {
+-    mRes_.set_key(parsed.FullKey().ToString());
++    mRes_.set_key(string(parsed.FullKey()));
+     mRes_.set_step_id(step_id);
+     mRes_.mutable_response()->set_is_dead(is_dead);
+     mRes_.mutable_response()->set_send_start_micros(
+--- tensorflow-1.11.0/tensorflow/contrib/mpi/mpi_rendezvous_mgr.cc.orig	2018-09-27 21:15:30.669823055 +0200
++++ tensorflow-1.11.0/tensorflow/contrib/mpi/mpi_rendezvous_mgr.cc	2018-09-27 21:15:59.589668203 +0200
+@@ -136,7 +136,7 @@
+ 
+   MPIRendezvousMgr* mgr =
+       reinterpret_cast<MPIRendezvousMgr*>(this->rendezvous_mgr_);
+-  mgr->QueueRequest(parsed.FullKey().ToString(), step_id_,
++  mgr->QueueRequest(string(parsed.FullKey()), step_id_,
+                     std::move(request_call), rendezvous_call);
+ }
+ 
+@@ -258,7 +258,7 @@
+         std::function<MPISendTensorCall*()> res = std::bind(
+             send_cb, status, send_args, recv_args, val, is_dead, mpi_send_call);
+ 
+-        SendQueueEntry req(parsed.FullKey().ToString().c_str(), std::move(res));
++        SendQueueEntry req(string(parsed.FullKey()).c_str(), std::move(res));
+ 
+         this->QueueSendRequest(req);
+ 

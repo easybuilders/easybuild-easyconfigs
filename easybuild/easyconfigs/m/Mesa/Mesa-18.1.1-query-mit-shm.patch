@@ -1,0 +1,23 @@
+#Query MIT-SHM before using it, to avoid issues with MobaXterm/Xming.
+#https://gitlab.freedesktop.org/mesa/mesa/merge_requests/200
+# Bart Oldeman <bart.oldeman@calculquebec.ca> Feb 4, 2019
+--- mesa-18.3.1/src/gallium/winsys/sw/xlib/xlib_sw_winsys.c~	2018-12-11 21:13:57.000000000 +0000
++++ mesa-18.3.1/src/gallium/winsys/sw/xlib/xlib_sw_winsys.c	2019-02-03 02:33:35.354730123 +0000
+@@ -396,6 +396,7 @@
+ {
+    struct xlib_displaytarget *xlib_dt;
+    unsigned nblocksy, size;
++   int ignore;
+ 
+    xlib_dt = CALLOC_STRUCT(xlib_displaytarget);
+    if (!xlib_dt)
+@@ -410,7 +411,8 @@
+    xlib_dt->stride = align(util_format_get_stride(format, width), alignment);
+    size = xlib_dt->stride * nblocksy;
+ 
+-   if (!debug_get_option_xlib_no_shm()) {
++   if (!debug_get_option_xlib_no_shm() &&
++       XQueryExtension(xlib_dt->display, "MIT-SHM", &ignore, &ignore, &ignore)) {
+       xlib_dt->data = alloc_shm(xlib_dt, size);
+       if (xlib_dt->data) {
+          xlib_dt->shm = True;

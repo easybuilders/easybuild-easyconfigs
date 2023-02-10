@@ -3,16 +3,19 @@ easyblock = 'ConfigureMake'
 name = 'OpenMPI'
 version = '1.6.5'
 
-homepage = 'http://www.open-mpi.org/'
+homepage = 'https://www.open-mpi.org/'
 description = """The Open MPI Project is an open source MPI-2 implementation."""
 
 toolchain = {'name': 'GCC', 'version': '4.8.3'}
 
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 sources = [SOURCELOWER_TAR_GZ]
-source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
-
 patches = [
     'OpenMPI-1.6.5-vt_cupti_events.patch',
+]
+checksums = [
+    'ac308dc38e77c622aedea5f3fd368c800b6636d0500f2124c36a505a65806559',  # openmpi-1.6.5.tar.gz
+    '7de06818f3e83e64ca004458acac679e95ba1c658f051e6a91db2b726c53f9bc',  # OpenMPI-1.6.5-vt_cupti_events.patch
 ]
 
 configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-openib '
@@ -23,13 +26,13 @@ configopts += '--with-hwloc=$EBROOTHWLOC '
 dependencies = [('hwloc', '1.8.1')]
 
 # needed for --with-openib
-osdependencies = [('libibverbs-dev', 'libibverbs-devel')]
+osdependencies = [('libibverbs-dev', 'libibverbs-devel', 'rdma-core-devel')]
 
-libs = ["mpi_cxx", "mpi_f77", "mpi_f90", "mpi", "ompitrace", "open-pal", "open-rte",
-        "vt", "vt-hyb", "vt-mpi", "vt-mpi-unify"]
+local_libs = ['mpi_cxx', 'mpi_f77', 'mpi_f90', 'mpi', 'ompitrace', 'open-pal', 'open-rte',
+              'vt', 'vt-hyb', 'vt-mpi', 'vt-mpi-unify']
 sanity_check_paths = {
-    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
-             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
+    'files': ["bin/%s" % x for x in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (x, SHLIB_EXT) for x in local_libs] +
              ["include/%s.h" % x for x in ["mpi-ext", "mpif-common", "mpif-config", "mpif",
                                            "mpif-mpi-io", "mpi", "mpi_portable_platform"]],
     'dirs': ["include/openmpi/ompi/mpi/cxx"],

@@ -3,28 +3,30 @@ easyblock = 'ConfigureMake'
 name = 'OpenMPI'
 version = '1.10.2'
 
-homepage = 'http://www.open-mpi.org/'
+homepage = 'https://www.open-mpi.org/'
 description = """The Open MPI Project is an open source MPI-2 implementation."""
 
 toolchain = {'name': 'GCC', 'version': '4.9.3-2.25'}
 
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
 sources = [SOURCELOWER_TAR_GZ]
-source_urls = ['http://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+checksums = ['01db467676cb5d974166591d403a8ffe38dfac4becb67071f59971e86bef0f63']
 
 dependencies = [('hwloc', '1.11.2')]
 
 configopts = '--with-threads=posix --enable-shared --enable-mpi-thread-multiple --with-verbs '
 configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
 configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
-configopts += '--disable-dlopen '  # statically link component, don't do dynamic loading
+configopts += '--without-ucx '  # hard disable UCX, to dance around bug (https://github.com/open-mpi/ompi/issues/4345)
 
 # needed for --with-verbs
-osdependencies = [('libibverbs-dev', 'libibverbs-devel')]
+osdependencies = [('libibverbs-dev', 'libibverbs-devel', 'rdma-core-devel')]
 
-libs = ["mpi_cxx", "mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte", "vt", "vt-hyb", "vt-mpi", "vt-mpi-unify"]
+local_libs = ['mpi_cxx', 'mpi_mpifh', 'mpi', 'ompitrace', 'open-pal', 'open-rte',
+              'vt', 'vt-hyb', 'vt-mpi', 'vt-mpi-unify']
 sanity_check_paths = {
-    'files': ["bin/%s" % binfile for binfile in ["ompi_info", "opal_wrapper", "orterun"]] +
-             ["lib/lib%s.%s" % (libfile, SHLIB_EXT) for libfile in libs] +
+    'files': ["bin/%s" % x for x in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (x, SHLIB_EXT) for x in local_libs] +
              ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
     'dirs': ["include/openmpi/ompi/mpi/cxx"],
 }

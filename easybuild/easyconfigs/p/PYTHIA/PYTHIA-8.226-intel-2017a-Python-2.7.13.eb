@@ -1,0 +1,37 @@
+easyblock = 'ConfigureMake'
+
+name = 'PYTHIA'
+version = '8.226'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://home.thep.lu.se/~torbjorn/Pythia.html'
+description = """PYTHIA is a standard tool for the generation of events in high-energy collisions,
+ comprising a coherent set of physics models for the evolution from a few-body hard
+ process to a complex multiparticle final state."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://home.thep.lu.se/~torbjorn/pythia8/']
+sources = ['pythia%(version_major)s%(version_minor)s.tgz']
+checksums = ['8ff4281bce9d22b17f1ec88e9e9353e8172512d5ef96296ace9486860e9ed2c9']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Python', '2.7.13'),
+    ('ROOT', '6.10.04', versionsuffix),
+]
+
+configopts = '--cxx="$CXX" --cxx-common="$CXXFLAGS" '
+configopts += '--with-gzip --with-python --with-python-include=$EBROOTPYTHON/include/python*/ --with-root'
+
+sanity_check_paths = {
+    'files': ['bin/pythia%(version_major)s-config', 'lib/libpythia%(version_major)s.a',
+              'lib/libpythia%%(version_major)s.%s' % SHLIB_EXT, 'lib/pythia8.py', 'lib/_pythia8.%s' % SHLIB_EXT],
+    'dirs': ['include/Pythia%(version_major)s', 'include/Pythia%(version_major)sPlugins', 'share'],
+}
+sanity_check_commands = ["python -c 'import pythia%(version_major)s'"]
+
+modextrapaths = {'PYTHONPATH': 'lib'}
+
+moduleclass = 'phys'

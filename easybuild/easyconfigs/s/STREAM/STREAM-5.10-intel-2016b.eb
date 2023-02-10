@@ -3,31 +3,29 @@ easyblock = 'CmdCp'
 name = 'STREAM'
 version = '5.10'
 
-homepage = 'http://www.cs.virginia.edu/stream/'
+homepage = 'https://www.cs.virginia.edu/stream/'
 description = """The STREAM benchmark is a simple synthetic benchmark program that measures sustainable
  memory bandwidth (in MB/s) and the corresponding computation rate for simple vector kernels."""
 
 toolchain = {'name': 'intel', 'version': '2016b'}
 toolchainopts = {'openmp': True}
 
-source_urls = ['http://www.cs.virginia.edu/stream/FTP/Code/']
-sources = ['%(namelower)s.c']
-checksums = ['dd2941e3a28ff90a79b571273c10aacf']
-
-skipsteps = ['source']
+source_urls = ['https://www.cs.virginia.edu/stream/FTP/Code/']
+sources = [{'download_filename': '%(namelower)s.c', 'filename': 'stream-%(version)s.c', 'extract_cmd': "cp %s ."}]
+checksums = ['a52bae5e175bea3f7832112af9c085adab47117f7d2ce219165379849231692b']
 
 # 10 million array elements (1000 runs): requires ~224MB of memory
-cmds_str = "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=10000000 -DNTIMES=1000 -o stream_1Kx10M; "
+local_cmds = "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=10000000 -DNTIMES=1000 -o stream_1Kx10M; "
 # 100 million array elements (1000 runs): requires ~2.2GiB of memory
-cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=100000000 -DNTIMES=1000 -o stream_1Kx100M; "
+local_cmds += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=100000000 -DNTIMES=1000 -o stream_1Kx100M; "
 # 1 billion array elements (1000 runs): requires ~22.4 GiB of memory
-cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=1000000000 -DNTIMES=1000 -o stream_1Kx1B; "
+local_cmds += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=1000000000 -DNTIMES=1000 -o stream_1Kx1B; "
 # 2.5 billion array elements (1000 runs): requires ~56 GiB of memory
-cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=2500000000 -DNTIMES=1000 -o stream_1Kx2.5B; "
+local_cmds += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=2500000000 -DNTIMES=1000 -o stream_1Kx2.5B; "
 # 5 billion array elements (1000 runs): requires ~111 GiB of memory
-cmds_str += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=5000000000 -DNTIMES=1000 -o stream_1Kx5B; "
+local_cmds += "$CC $CFLAGS %(source)s -mcmodel=large -DSTREAM_ARRAY_SIZE=5000000000 -DNTIMES=1000 -o stream_1Kx5B; "
 
-cmds_map = [('stream.c', cmds_str)]
+cmds_map = [('stream-%(version)s.c', local_cmds)]
 
 files_to_copy = [(['stream_1Kx10M', 'stream_1Kx100M', 'stream_1Kx1B', 'stream_1Kx2.5B', 'stream_1Kx5B'], 'bin')]
 

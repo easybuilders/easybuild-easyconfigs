@@ -1,0 +1,35 @@
+easyblock = 'PythonPackage'
+
+name = 'molmod'
+version = '1.4.4'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://molmod.github.io/molmod/'
+description = "MolMod is a Python library with many compoments that are useful to write molecular modeling programs."
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+source_urls = ['https://github.com/molmod/molmod/releases/download/%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['b5c0a5c7c4453a4b3d0ba7058a3b5318e5750db9c7ceede41e48c134bf5a90bc']
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('matplotlib', '3.0.3', versionsuffix),
+]
+
+download_dep_fail = True
+use_pip = True
+
+# required because we're building a Python package using Intel compilers on top of Python built with GCC
+check_ldshared = True
+
+runtest = "export MATPLOTLIBRC=$PWD; echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc;"
+runtest += "python setup.py build_ext -i; nosetests -v"
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'math'

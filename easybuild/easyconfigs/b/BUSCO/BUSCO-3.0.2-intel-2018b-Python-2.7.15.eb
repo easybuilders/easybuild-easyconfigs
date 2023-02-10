@@ -1,0 +1,41 @@
+easyblock = 'PythonPackage'
+
+name = 'BUSCO'
+version = '3.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://busco.ezlab.org/'
+description = "BUSCO: assessing genome assembly and annotation completeness with single-copy orthologs"
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+source_urls = ['https://gitlab.com/ezlab/%(namelower)s/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_BZ2]
+checksums = ['df022cffecb39b0bcbf32d5c5ae91217e6e44ca50c932ee6efdf9b2b1d4b9f5c']
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('BLAST+', '2.7.1'),
+    ('HMMER', '3.2.1'),
+    ('AUGUSTUS', '3.3.2', versionsuffix),
+    ('EMBOSS', '6.6.0'),
+]
+
+download_dep_fail = True
+use_pip = True
+
+postinstallcmds = [
+    'mkdir %(installdir)s/bin %(installdir)s/doc',
+    'cp %(builddir)s/%(namelower)s-%(version)s/scripts/* %(installdir)s/bin',
+    'cp %(builddir)s/%(namelower)s-%(version)s/BUSCO_v3_userguide.pdf %(installdir)s/doc',
+    'cp %(builddir)s/%(namelower)s-%(version)s/LICENSE %(installdir)s/doc',
+    'cp -r %(builddir)s/%(namelower)s-%(version)s/sample_data %(installdir)s',
+    'cp -r %(builddir)s/%(namelower)s-%(version)s/config %(installdir)s',
+]
+
+sanity_check_paths = {
+    'files': ['bin/run_BUSCO.py'],
+    'dirs': ['sample_data', 'lib/python%(pyshortver)s/site-packages/busco']
+}
+
+moduleclass = 'bio'

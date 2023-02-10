@@ -1,0 +1,59 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonPackage'
+
+name = 'LiBis'
+version = '20200428'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/Dangertrip/LiBis'
+description = "An ultrasensitive alignment method for low input bisulfite sequencing"
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+github_account = 'Dangertrip'
+local_commit = 'f0e73063ba51ccd82bca94f999fd1c5aaaf3c38e'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['LiBis-%(version)s_fix-pure-name.patch']
+checksums = [
+    '75eb9f8a003c3e879e93d6b2cdd9b4f11446f55728ed94e9bdc5096f9144fcd6',  # LiBis-20200428.tar.gz
+    '4fa96d0058c1539f791ebbb583a5dba95904c4c88a0622bd3262545d66509845',  # LiBis-20200428_fix-pure-name.patch
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('FastQC', '0.11.9', '-Java-11', SYSTEM),
+    ('SciPy-bundle', '2019.10', versionsuffix),  # pandas
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('cutadapt', '2.7', versionsuffix),
+    ('Trim_Galore', '0.6.5', '-Java-11%s' % versionsuffix),
+    ('scikit-learn', '0.21.3', versionsuffix),
+    ('BEDTools', '2.29.2'),
+    ('SAMtools', '1.10'),
+    ('Pysam', '0.15.3'),
+    ('MOABS', '1.3.9.6'),
+    ('Seaborn', '0.10.0', versionsuffix),
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+options = {'modulename': False}
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+}
+sanity_check_commands = ["%(name)s --help"]
+
+# Running tests requires FASTA file containing the reference genome as well.
+# https://github.com/Dangertrip/LiBis#run-libis
+# please provide path to FASTA reference
+local_test_cmd = """%(name)s -n \
+sample1_mate1.fq.gz,sample1_mate2.fq.gz sample2_mate1.fq.gz,sample2_mate2.fq.gz -r /PATH_TO_FASTA_REFERENCE"""
+# sanity_check_commands += ["cd %%(builddir)s/%%(name)s-%s/Example/ && %s" % (local_commit, local_test_cmd)]
+
+moduleclass = 'bio'

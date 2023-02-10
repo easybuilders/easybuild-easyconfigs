@@ -1,0 +1,37 @@
+easyblock = 'MakeCp'
+
+name = 'CaDiCaL'
+version = '1.3.0'
+
+homepage = 'https://github.com/arminbiere/cadical'
+description = """
+CaDiCaL is a simplified satisfiability solver. The original goal of the
+development of CaDiCaL was to obtain a CDCL solver, which is easy to understand
+and change, while at the same time not being much slower than other
+state-of-the-art CDCL solvers."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'arminbiere'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['rel-%(version)s.tar.gz']
+checksums = ['8577c0cbf34eeff6d455e34eb489aae52a0b97b3ef1d02d0c7d2e8a82b572c1b']
+
+# Custom execution of configure at build time because CaDiCal has a custom script incompatible with configure step
+prebuildopts = './configure CXX="$CXX" CXXFLAGS="$CXXFLAGS" && '
+
+local_bins = ['cadical', 'mobical']
+local_libs = ['libcadical.a']
+
+files_to_copy = [
+    (['build/%s' % x for x in local_bins], 'bin'),
+    (['build/%s' % l for l in local_libs], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins] + ['lib/%s' % l for l in local_libs],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'

@@ -1,0 +1,93 @@
+fix compilation error "error: reference to 'bad_function_call' is ambiguous"
+bad_function_call is also defined in std namespace
+author: Kenneth Hoste (HPC-UGent)
+see also https://sourceforge.net/p/loki-lib/bugs/194/
+--- loki-0.1.7/test/Function/FunctionTest.cpp.orig	2006-10-17 22:36:13.000000000 +0200
++++ loki-0.1.7/test/Function/FunctionTest.cpp	2018-06-28 17:30:17.979259810 +0200
+@@ -56,8 +56,6 @@
+ #ifndef LOKI_FUNCTORS_ARE_COMPARABLE
+ 
+ 
+-using namespace std;
+-
+ int global_int;
+ 
+ struct write_five_obj{void operator()() const {global_int = 5;}};
+@@ -74,8 +72,8 @@
+ struct generate_three_obj    {int operator()() const {return 3;}};
+ static int generate_five()    {return 5;}
+ static int generate_three()    {return 3;}
+-static string identity_str(const string& s){return s;}
+-static string string_cat(const string& s1, const string& s2){return s1+s2;}
++static std::string identity_str(const std::string& s){return s;}
++static std::string string_cat(const std::string& s1, const std::string& s2){return s1+s2;}
+ static int sum_ints(int x, int y){return x+y;}
+ 
+ struct write_const_1_nonconst_2
+@@ -225,12 +223,12 @@
+ 
+     // Swapping
+     v1 = five;
+-    swap(v1, v2);
++    std::swap(v1, v2);
+     v2();
+     BOOST_CHECK(global_int == 5);
+     v1();
+     BOOST_CHECK(global_int == 3);
+-    swap(v1, v2);
++    std::swap(v1, v2);
+     v1.clear();
+ 
+     // Assignment
+@@ -575,15 +573,15 @@
+ 
+ static void test_one_arg()
+ {
+-    negate<int> neg;
++    std::negate<int> neg;
+ 
+     function<int (int)> f1(neg);
+     BOOST_CHECK(f1(5) == -5);
+ 
+-    function<string (string)> id(&identity_str);
++    function<std::string (std::string)> id(&identity_str);
+     BOOST_CHECK(id("str") == "str");
+ 
+-    function<string (const char*)> id2(&identity_str);
++    function<std::string (const char*)> id2(&identity_str);
+     BOOST_CHECK(id2("foo") == "foo");
+ 
+     add_to_obj add_to(5);
+@@ -596,7 +594,7 @@
+ 
+ static void test_two_args()
+ {
+-    function<string (const string&, const string&)> cat(&string_cat);
++    function<std::string (const std::string&, const std::string&)> cat(&string_cat);
+     BOOST_CHECK(cat("str", "ing") == "string");
+ 
+     function<int (short, short)> sum(&sum_ints);
+@@ -713,12 +711,12 @@
+ 
+     add_with_throw_on_copy(const add_with_throw_on_copy&)
+     {
+-        throw runtime_error("But this CAN'T throw");
++        throw std::runtime_error("But this CAN'T throw");
+     }
+ 
+     add_with_throw_on_copy& operator=(const add_with_throw_on_copy&)
+     {
+-        throw runtime_error("But this CAN'T throw");
++        throw std::runtime_error("But this CAN'T throw");
+     }
+ };
+ 
+@@ -737,7 +735,7 @@
+ #endif
+         
+     }
+-    catch(runtime_error e)
++    catch(std::runtime_error e)
+     {
+ #ifndef TEST_LOKI_FUNCTION
+         BOOST_ERROR("Nonthrowing constructor threw an exception");

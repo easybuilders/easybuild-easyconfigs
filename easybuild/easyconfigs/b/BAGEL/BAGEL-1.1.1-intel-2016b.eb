@@ -1,0 +1,37 @@
+easyblock = 'ConfigureMake'
+
+name = 'BAGEL'
+version = '1.1.1'
+
+homepage = "http://www.nubakery.org"
+description = """BAGEL (Brilliantly Advanced General Electronic-structure Library)
+is a parallel electronic-structure program."""
+
+# Note: A compiler bug(?) in template deduction prevents newer versions of icpc to compile this software.
+toolchain = {'name': 'intel', 'version': '2016b'}
+
+source_urls = ['https://github.com/nubakery/bagel/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['60d46496c25d18698acf67f39ca7150d0c6daf49944a8e47cf0c10a0e31d245f']
+
+builddependencies = [
+    ('Autotools', '20150215'),
+]
+
+dependencies = [
+    ('Boost', '1.61.0'),
+    ('libxc', '2.2.3'),
+]
+
+# Hack, because bagel-v1.1.1 uses outdated filenames:
+preconfigopts = 'sed -i "s|-gcc-mt||g" configure.ac && '
+preconfigopts += './autogen.sh && '
+preconfigopts += 'CXXFLAGS="$CXXFLAGS -DNDEBUG" '
+configopts = ' --with-boost=$BOOST_ROOT --with-mpi=intel --enable-mkl --with-libxc '
+
+sanity_check_paths = {
+    'files': ['bin/BAGEL', 'lib/libbagel.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'phys'

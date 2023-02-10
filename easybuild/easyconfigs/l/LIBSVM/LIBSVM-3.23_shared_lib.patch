@@ -1,0 +1,22 @@
+# Create a symlink from libsvm.so.$(SHVER) to libsvm.so, so that it can be correctly linked from other programs.
+#
+# Tom Strempel, UFZ
+--- Makefile.orig	2019-11-04 10:10:12.475917486 +0100
++++ Makefile	2019-11-04 10:10:53.375314778 +0100
+@@ -3,7 +3,7 @@
+ SHVER = 2
+ OS = $(shell uname)
+ 
+-all: svm-train svm-predict svm-scale
++all: svm-train svm-predict svm-scale lib
+ 
+ lib: svm.o
+ 	if [ "$(OS)" = "Darwin" ]; then \
+@@ -12,6 +12,7 @@
+ 		SHARED_LIB_FLAG="-shared -Wl,-soname,libsvm.so.$(SHVER)"; \
+ 	fi; \
+ 	$(CXX) $${SHARED_LIB_FLAG} svm.o -o libsvm.so.$(SHVER)
++	ln -s libsvm.so.$(SHVER) libsvm.so
+ 
+ svm-predict: svm-predict.c svm.o
+ 	$(CXX) $(CFLAGS) svm-predict.c svm.o -o svm-predict -lm

@@ -1,0 +1,36 @@
+easyblock = 'PythonPackage'
+
+name = 'yaff'
+version = '1.5.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://molmod.github.io/yaff/'
+description = """Yaff stands for 'Yet another force field'. It is a pythonic force-field code."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+
+source_urls = ['https://github.com/molmod/yaff/releases/download/%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['50b314185629826883825854790a5541005ae24b6855741c303412c943db1823']
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('h5py', '2.9.0'),
+    ('molmod', '1.4.4', versionsuffix),
+]
+
+download_dep_fail = True
+use_pip = True
+
+# required because we're building a Python package using Intel compilers on top of Python built with GCC
+check_ldshared = True
+
+runtest = "export MATPLOTLIBRC=$PWD; echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc; "
+runtest += "python setup.py build_ext -i; nosetests -v"
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,46 @@
+easyblock = 'CMakeMake'
+
+name = 'libgpuarray'
+version = '0.7.6'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://deeplearning.net/software/%(name)s/'
+description = "Library to manipulate tensors on the GPU."
+
+toolchain = {'name': 'fosscuda', 'version': '2018b'}
+
+source_urls = ['https://github.com/Theano/%(name)s/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['887b6433a30282cb002117da89b05812c770fd9469f93950ff3866ddd02bfc64']
+
+builddependencies = [('CMake', '3.12.1')]
+
+
+dependencies = [
+    ('Python', '3.6.6'),
+    ('Mako', '1.0.7', versionsuffix),
+    ('NCCL', '2.3.7'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+exts_list = [
+    (name, version, {
+        'modulename': 'pygpu',
+        'source_tmpl': SOURCE_TAR_GZ,
+        'source_urls': ['https://github.com/Theano/%(name)s/releases/download/v%(version)s/'],
+        'checksums': ['887b6433a30282cb002117da89b05812c770fd9469f93950ff3866ddd02bfc64'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['lib/%%(name)s.%s' % SHLIB_EXT, 'lib/%(name)s-static.a'],
+    'dirs': ['include/gpuarray', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'lib'

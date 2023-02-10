@@ -1,0 +1,59 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'ITK'
+version = '4.12.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/InsightSoftwareConsortium/ITK/releases/download/v%(version)s/']
+sources = ['InsightToolkit-%(version)s.tar.gz']
+patches = ['ITK-4.12.2_update-download-URLs.patch']
+checksums = [
+    '8ba2183111723c4405af80724c60d07484c2bff8120ee4cef543bb726d07855e',  # InsightToolkit-4.12.2.tar.gz
+    '73f8588b4a0c7595c654ecebb1030158a27d1b18c2a461560d6b188b5f89102d',  # ITK-4.12.2_update-download-URLs.patch
+]
+
+builddependencies = [
+    ('CMake', '3.7.1'),
+    ('Bison', '3.0.4'),
+]
+
+dependencies = [
+    ('Python', '2.7.12'),
+    ('HDF5', '1.8.17'),
+    ('PCRE', '8.38'),
+    ('SWIG', '3.0.11', versionsuffix),
+    ('VTK', '6.3.0', versionsuffix),
+    ('X11', '20160819')
+]
+
+local_sys_deps = ['HDF5', 'SWIG']
+local_sys_cmake = ['-DITK_USE_SYSTEM_%s=ON' % d for d in local_sys_deps]
+
+configopts = '-DITK_WRAP_PYTHON=ON '
+configopts += '-DBUILD_TESTING=OFF '
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON '
+configopts += ' '.join(local_sys_cmake)
+# Don't depend on MPICXX (which makes linking to ITK painful)
+configopts += ' -DCMAKE_CXX_FLAGS="$CXXFLAGS -DOMPI_SKIP_MPICXX"'
+
+# See https://insightsoftwareconsortium.atlassian.net/browse/ITK-3538
+prebuildopts = "export LC_ALL=C && "
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver',
+              'lib/libITKVtkGlue-%(version_major_minor)s.a',
+              'lib/libitkjpeg-%(version_major_minor)s.a', 'lib/libitkpng-%(version_major_minor)s.a'],
+    'dirs': ['include/ITK-%(version_major_minor)s',
+             'lib/python%(pyshortver)s/site-packages',
+             'share'],
+}
+
+moduleclass = 'data'

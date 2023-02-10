@@ -1,0 +1,46 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'ConfigureMake'
+
+name = 'LASTZ'
+version = '1.02.00'
+
+homepage = 'http://www.bx.psu.edu/~rsharris/lastz/'
+
+description = """LASTZ is a program for aligning DNA sequences, a pairwise aligner. Originally designed to 
+ handle sequences the size of human chromosomes and from different species, it is also useful for sequences 
+ produced by NGS sequencing technologies such as Roche 454."""
+
+toolchain = {'name': 'goolf', 'version': '1.7.20'}
+
+source_urls = ['http://www.bx.psu.edu/miller_lab/dist/']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+
+# the tarball includes some test data which is not copied when doing the "make install" step.
+# We use the buildininstalldir option to keep this test data in the %(installdir)s
+buildininstalldir = True
+
+parallel = 1
+
+unpack_options = '--strip-components=1'
+
+skipsteps = ['configure']
+
+# by default definedForAll variable in src/Makefile contains -Werror which works with gcc-4.4 
+# but crashes with newer gcc versions so we override definedForAll to remove the -Werror option
+buildopts = " definedForAll='-Wall -Wextra -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE'"
+
+# use the LASTZ_INSTALL variable to define the directory where to copy the binaries during "make install" step
+# Tarball includes an empty bin/ folder. In case the tarball doesn't include a bin/ folder you can do
+# preinstallopts = 'mkdir %(installdir)s/bin/ && '
+installopts = " LASTZ_INSTALL='%(installdir)s/bin'"
+
+sanity_check_paths = {
+    'files': ["bin/lastz", "bin/lastz_D"],
+    'dirs': []
+}
+
+moduleclass = 'bio'

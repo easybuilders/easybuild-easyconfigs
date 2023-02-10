@@ -1,0 +1,48 @@
+easyblock = 'PythonBundle'
+
+name = 'numba'
+version = '0.43.1'
+
+homepage = 'https://numba.pydata.org/'
+description = """Numba is an Open Source NumPy-aware optimizing compiler for Python sponsored by Continuum Analytics,
+ Inc. It uses the remarkable LLVM compiler infrastructure to compile Python syntax to machine code."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+toolchainopts = {'pic': True}
+
+multi_deps = {'Python': ['3.7.2', '2.7.15']}
+
+dependencies = [
+    ('SciPy-bundle', '2019.03'),
+    ('LLVM', '7.0.1'),
+]
+
+use_pip = True
+
+# required because we're building Python packages using Intel compilers on top of Python built with GCC
+check_ldshared = True
+
+exts_list = [
+    ('llvmlite', '0.28.0', {
+        'patches': ['llvmlite-0.26.0_fix-ffi-Makefile.patch'],
+        'checksums': [
+            'a189c0cd8a80e8bbd002a1e422b1efcc2bceab2cb63b961f2d03ab711c3ba45b',  # llvmlite-0.28.0.tar.gz
+            # llvmlite-0.26.0_fix-ffi-Makefile.patch
+            '40e6fe6de48709b45daebf8082f65ac26f73a4afdf58fc1e8099b97c575fecae',
+        ],
+    }),
+    (name, version, {
+        'checksums': ['e7789d473f332a17e40166d2960826d821edd75d148b4ed340a893a334b46fae'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['bin/numba', 'bin/pycc'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["numba --help"]
+
+moduleclass = 'lang'

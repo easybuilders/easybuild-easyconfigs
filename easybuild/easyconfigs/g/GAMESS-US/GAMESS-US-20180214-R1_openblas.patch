@@ -1,0 +1,46 @@
+* include support for OpenBLAS in config and lked scripts
+author: Paul Jähne
+--- config.orig 2018-07-12 07:21:06.837873821 +0200
++++ config      2018-07-12 07:29:27.196839747 +0200
+@@ -562,7 +562,7 @@
+    echo "Type 'ls /opt/pgi/osx86-64/*/lib/*       to look for libblas.a from PGI"
+ endif
+ echo " "
+-echo -n "Enter your choice of 'mkl' or 'atlas' or 'acml' or 'pgiblas' or 'none': "
++echo -n "Enter your choice of 'mkl' or 'atlas' or 'acml' or 'pgiblas' or 'openblas' or 'none': "
+ set GMS_MATHLIB=$<
+ #
+ switch ($GMS_MATHLIB)
+@@ -788,6 +788,18 @@
+       endif
+       set GMS_MATHLIB_PATH=$pgipath
+       breaksw
++   case openblas:
++      badopenblas:
++      echo -n "Enter full path to OpenBLAS libraries (without 'lib' subdirectory): "
++      set openblaspath=$<
++      if (!(-d $openblaspath)) then
++         echo " "
++         echo "The directory $openblaspath does not exist."
++         echo " "
++         goto badopenblas
++      endif
++      set GMS_MATHLIB_PATH=$openblaspath/lib
++      breaksw
+    default:
+       echo "You didn't provide a valid math library name, try again."
+       echo " "
+--- lked.orig   2018-07-12 07:29:35.080886460 +0200
++++ lked        2018-07-12 07:30:34.349237609 +0200
+@@ -442,6 +442,11 @@
+       set BLAS=' '
+       breaksw
+ 
++   case openblas:
++      set MATHLIBS="$GMS_MATHLIB_PATH/libopenblas.a"
++      set BLAS=' '
++      breaksw
++
+    case none:
+    default:
+       echo "Warning.  No math library was found, you should install one."

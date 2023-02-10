@@ -1,0 +1,32 @@
+easyblock = "CMakeMake"
+
+name = 'magma'
+version = '2.5.1'
+
+homepage = 'https://icl.cs.utk.edu/magma/'
+description = """The MAGMA project aims to develop a dense linear algebra library similar to
+ LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
+
+toolchain = {'name': 'fosscuda', 'version': '2019a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['https://icl.cs.utk.edu/projectsfiles/magma/downloads/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['ce32c199131515336b30c92a907effe0c441ebc5c5bdb255e4b06b2508de109f']
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+]
+
+local_gpu_target = '-DGPU_TARGET="Kepler Maxwell Pascal Volta"'
+# make sure both static and shared libs are built
+configopts = [
+    '-DBUILD_SHARED_LIBS=%s %s ' % (local_shared, local_gpu_target) for local_shared in ('ON', 'OFF')
+]
+
+sanity_check_paths = {
+    'files': ['lib/libmagma.so', 'lib/libmagma.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'

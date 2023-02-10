@@ -1,0 +1,45 @@
+bug fix, obtained from https://github.com/OpenFOAM/OpenFOAM-dev/commit/03b641d2c7575738d94461527f12ce918dbd1922
+
+From 03b641d2c7575738d94461527f12ce918dbd1922 Mon Sep 17 00:00:00 2001
+From: Henry Weller <http://openfoam.org>
+Date: Fri, 10 Nov 2017 16:02:12 +0000
+Subject: [PATCH] decomposedBlockData: fixed reconstruction problem
+
+Patch contributed by Mattijs Janssens
+Resolves bug-report https://bugs.openfoam.org/view.php?id=2744
+---
+ .../db/IOobjects/decomposedBlockData/decomposedBlockData.C         | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/src/OpenFOAM/db/IOobjects/decomposedBlockData/decomposedBlockData.C b/src/OpenFOAM/db/IOobjects/decomposedBlockData/decomposedBlockData.C
+index fd1b1d4e9..c87d90a88 100644
+--- a/src/OpenFOAM/db/IOobjects/decomposedBlockData/decomposedBlockData.C
++++ b/src/OpenFOAM/db/IOobjects/decomposedBlockData/decomposedBlockData.C
+@@ -825,8 +825,8 @@ bool Foam::decomposedBlockData::writeBlocks
+             labelPair masterData(startAndSize);
+             if (UPstream::master(comm))
+             {
+-                label totalSize = 0;
+-                label proci = masterData[0];
++                label totalSize = recvSizes[masterData[0]];
++                label proci = masterData[0]+1;
+                 while
+                 (
+                     proci < nProcs
+@@ -844,7 +844,6 @@ bool Foam::decomposedBlockData::writeBlocks
+                 masterData[1] = proci-masterData[0];
+             }
+ 
+-
+             // Scatter masterData
+             UPstream::scatter
+             (
+@@ -856,7 +855,7 @@ bool Foam::decomposedBlockData::writeBlocks
+                 comm
+             );
+ 
+-            if (startAndSize[1] == 0)
++            if (startAndSize[0] == nProcs || startAndSize[1] == 0)
+             {
+                 break;
+             }

@@ -1,0 +1,34 @@
+easyblock = 'ConfigureMake'
+
+name = 'OpenMPI'
+version = '2.0.2'
+versionsuffix = '-opa'
+
+homepage = 'https://www.open-mpi.org/'
+description = """The Open MPI Project is an open source MPI-2 implementation."""
+
+toolchain = {'name': 'GCC', 'version': '6.3.0-2.27'}
+
+source_urls = ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['32914cc64780d3980066f3be3920b028cd381c94d1262a55415fc1d002bae0a5']
+
+dependencies = [('hwloc', '1.11.5')]
+
+configopts = '--enable-shared --enable-mpi-thread-multiple --with-psm2 '
+configopts += '--enable-mpirun-prefix-by-default '  # suppress failure modes in relation to mpirun path
+configopts += '--with-hwloc=$EBROOTHWLOC '  # hwloc support
+configopts += '--without-ucx '  # hard disable UCX, to dance around bug (https://github.com/open-mpi/ompi/issues/4345)
+
+# needed for --with-psm2
+osdependencies = [('libpsm2', 'libpsm2-devel')]
+
+local_libs = ["mpi_mpifh", "mpi", "ompitrace", "open-pal", "open-rte"]
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in ["ompi_info", "opal_wrapper", "orterun"]] +
+             ["lib/lib%s.%s" % (x, SHLIB_EXT) for x in local_libs] +
+             ["include/%s.h" % x for x in ["mpi-ext", "mpif-config", "mpif", "mpi", "mpi_portable_platform"]],
+    'dirs': [],
+}
+
+moduleclass = 'mpi'

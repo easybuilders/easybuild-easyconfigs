@@ -1,0 +1,40 @@
+--- stampy-1.0.31/makefile.orig	2016-12-01 17:28:32.000000000 +0100
++++ stampy-1.0.31/makefile	2017-04-04 09:59:04.057705404 +0200
+@@ -3,6 +3,10 @@
+ #   Compiles with gcc 5.4.0 and Apple LLVM version 6.1.0
+ #   
+ 
++CC?=gcc
++CXX?=g++
++CFLAGS?=-O2
++CXXFLAGS?=
+ SHELL=/bin/bash
+ python?=python
+ platform=`uname`
+@@ -31,21 +35,21 @@
+ 
+ $(bdir)/c/%.o:
+ 	mkdir -p $(bdir)/c
+-	gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -fPIC `$(python)-config --includes` -c c/$*.c -o $@
++	$(CC) -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -fPIC `$(python)-config --includes` -c c/$*.c -o $@
+ 
+ $(bdir)/pyx/%.o:
+ 	mkdir -p $(bdir)/pyx
+ 	ln -s -f `pwd`/pyx/$(ucs)/$*.c pyx/$*.c
+-	gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -fPIC `$(python)-config --includes` -c pyx/$*.c -o $@
++	$(CC) -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -fPIC `$(python)-config --includes` -c pyx/$*.c -o $@
+ 
+ $(bdir)/%.o:
+-	gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -fPIC `$(python)-config --includes` -c ext/readalign/$*.cc -o $@
++	$(CC) -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -fPIC `$(python)-config --includes` -c ext/readalign/$*.cc -o $@
+ 
+ build-stampy: $(objs)
+ 	cp -r build/python2.7/* .
+ 	@if [ $(platform) = Linux ]; then \
+-	 g++ `$(python)-config --ldflags` -pthread -shared $(objs) -o maptools.so ; \
++	 $(CXX) `$(python)-config --ldflags` -pthread -shared $(objs) -o maptools.so ; \
+ 	else \
+-	 g++ `$(python)-config --ldflags` -pthread -dynamiclib $(objs) -o maptools.so ; \
++	 $(CXX) `$(python)-config --ldflags` -pthread -dynamiclib $(objs) -o maptools.so ; \
+ 	fi
+ 

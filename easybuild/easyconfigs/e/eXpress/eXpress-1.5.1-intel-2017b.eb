@@ -1,0 +1,49 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# updated by Kenneth Hoste (HPC-UGent)
+
+easyblock = 'CMakeMake'
+
+name = 'eXpress'
+version = '1.5.1'
+
+homepage = 'https://pachterlab.github.io/eXpress'
+description = "Streaming quantification for high-throughput sequencing"
+
+source_urls = ['https://pachterlab.github.io/eXpress/downloads/express-%(version)s/']
+sources = ['express-%(version)s-src.tgz']
+patches = ['eXpress-%(version)s_fix-Intel-compilation.patch']
+checksums = [
+    '0c5840a42da830fd8701dda8eef13f4792248bab4e56d665a0e2ca075aff2c0f',  # express-1.5.1-src.tgz
+    '97e935c884b53aedec7afa38c41afca72b22de9ee2c63007db26d7fd1e42254f',  # eXpress-1.5.1_fix-Intel-compilation.patch
+]
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'cstd': 'c++11'}
+
+builddependencies = [
+    ('CMake', '3.10.1'),
+    ('BamTools', '2.5.1'),
+]
+dependencies = [
+    ('Boost', '1.66.0'),
+    ('zlib', '1.2.11'),
+    ('gperftools', '2.6.3'),
+    ('protobuf', '3.5.1'),
+]
+
+# -lrt is required on CentOS 6 to fix linking issue
+preconfigopts = 'export LDFLAGS="$LDFLAGS -lrt" && '
+
+# BamTools directories are expected to be provided via symlink (include + both lib and lib64)
+prebuildopts = "mkdir bamtools && ln -s $EBROOTBAMTOOLS/include/bamtools bamtools/include && "
+prebuildopts += "ln -s $EBROOTBAMTOOLS/lib* bamtools/lib64 && ln -s $EBROOTBAMTOOLS/lib* bamtools/lib && "
+
+sanity_check_paths = {
+    'files': ['bin/express'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'FDS'
+version = '6.5.3'
+
+homepage = 'https://pages.nist.gov/fds-smv/'
+description = """Fire Dynamics Simulator (FDS) is a large-eddy simulation (LES) code for low-speed flows,
+ with an emphasis on smoke and heat transport from fires."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/firemodels/fds/archive/']
+sources = ['FDS%(version)s.tar.gz']
+checksums = ['e15173651512575967e3769f6730425e616a3deb0291475564db729cf526be13']
+
+unpack_options = '--strip-components=1'
+
+start_dir = 'Build'
+
+# just run make in the install dir
+skipsteps = ['configure', 'install']
+buildininstalldir = True
+
+buildopts = 'impi_intel_linux_64 FFLAGS="$FFLAGS -fpp" FCOMPL="$FC" obj=fds'
+
+modextrapaths = {'PATH': 'Build'}
+
+sanity_check_paths = {
+    'files': ['Build/fds'],
+    'dirs': [],
+}
+
+sanity_check_commands = [("fds 2>&1 | grep 'MPI Enabled;'", '')]
+
+moduleclass = 'phys'

@@ -1,0 +1,42 @@
+easyblock = 'CMakeNinja'
+
+name = 'pocl'
+version = '1.6'
+
+homepage = 'https://portablecl.org'
+description = "Pocl is a portable open source (MIT-licensed) implementation of the OpenCL standard"
+
+toolchain = {'name': 'iccifort', 'version': '2020.4.304'}
+
+source_urls = ['https://github.com/pocl/pocl/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['b0a4c0c056371b6f0db726b88fbb76bbee94948fb2abd4dbc8d958f7c42f766c']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('Ninja', '1.10.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Clang', '11.0.1'),
+    ('hwloc', '2.2.0'),
+    ('libtool', '2.4.6'),
+    ('libxml2', '2.9.10'),
+]
+
+separate_build_dir = True
+
+# disable attempt to find an ICD loader, always build libOpenCL.so
+configopts = "-DENABLE_ICD=0 -DINSTALL_OPENCL_HEADERS=1 "
+# make sure we use the easybuild Clang
+configopts += "-DWITH_LLVM_CONFIG=$EBROOTCLANG/bin/llvm-config -DSTATIC_LLVM=ON "
+# avoid host CPU auto-detection (which may fail on recent CPUs)
+configopts += "-DLLC_HOST_CPU=native "
+
+sanity_check_paths = {
+    'files': ['bin/poclcc', 'lib64/libOpenCL.%s' % SHLIB_EXT],
+    'dirs': ['include/CL', 'lib64/pkgconfig'],
+}
+
+moduleclass = 'lib'

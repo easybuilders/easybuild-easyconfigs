@@ -1,0 +1,69 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'CMakeMake'
+
+name = 'QGIS'
+version = '3.4.12'
+versionsuffix = '-Python-3.7.2'
+
+homepage = 'http://www.qgis.org/'
+description = "QGIS is a user friendly Open Source Geographic Information System (GIS)"
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'pic': True, 'cstd': 'gnu++11'}
+
+source_urls = ['http://qgis.org/downloads/']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = ['QGIS-%(version)s_fix-SIP-macro.patch']
+checksums = [
+    'cddddc445a9899c765051478504c64b71f06e3a0828d1ec2cb0676fe89b38771',  # qgis-3.4.12.tar.bz2
+    '74ab6ac14a670a7bbcab1c44fe95f5e690da480c2cd4a826ce5ac93a1c7ad5aa',  # QGIS-3.4.12_fix-SIP-macro.patch
+]
+
+dependencies = [
+    ('Qt5', '5.12.3'),
+    ('Qt5Webkit', '5.212.0-alpha3'),
+    ('PROJ', '6.0.0'),
+    ('GEOS', '3.7.2', versionsuffix),
+    ('SQLite', '3.27.2'),
+    ('libspatialite', '4.3.0a', versionsuffix),
+    ('libspatialindex', '1.8.5'),
+    ('GDAL', '3.0.0', versionsuffix),
+    ('Qwt', '6.1.4'),
+    ('QwtPolar', '1.1.1'),
+    ('expat', '2.2.6'),
+    ('QCA', '2.1.3'),
+    ('PyQt5', '5.12.1', versionsuffix),
+    # QScintilla must be listed after PyQt5 due to Python bindings 'overriding' those of PyQt5
+    ('QScintilla', '2.11.2', versionsuffix),
+    ('GSL', '2.5'),
+    ('QJson', '0.9.0'),
+    ('psycopg2', '2.8.3', versionsuffix),
+    ('libzip', '1.5.2'),
+    ('QtKeychain', '0.9.1'),
+    ('ICU', '64.2'),
+]
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.0.5'),
+]
+
+separate_build_dir = True
+
+# specify locations that CMake can't figure out correctly
+configopts = "-DCMAKE_PREFIX_PATH=$EBROOTQT -DQJSON_DIR=$EBROOTQJSON/lib/cmake/qjson "
+configopts += "-DQSCINTILLA_LIBRARY=$EBROOTQSCINTILLA/lib/libqscintilla2_qt5.%s " % SHLIB_EXT
+configopts += "-DQt5WebKit_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKit "
+configopts += "-DQt5WebKitWidgets_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKitWidgets "
+configopts += "-DPYQT5_SIP_DIR=$EBROOTPYQT/share/sip/PyQt5 -DQSCI_SIP_DIR=$EBROOTQSCINTILLA/share/sip/PyQt5"
+
+sanity_check_paths = {
+    'files': ['bin/qgis', 'bin/qgis_bench', 'lib/libqgis_analysis.%s' % SHLIB_EXT,
+              'lib/libqgis_app.%s' % SHLIB_EXT, 'lib/libqgis_core.%s' % SHLIB_EXT, 'lib/libqgis_gui.%s' % SHLIB_EXT,
+              'lib/libqgis_native.%s' % SHLIB_EXT, 'lib/libqgispython.%s' % SHLIB_EXT],
+    'dirs': ['include/qgis', 'man', 'share/qgis'],
+}
+
+moduleclass = 'geo'

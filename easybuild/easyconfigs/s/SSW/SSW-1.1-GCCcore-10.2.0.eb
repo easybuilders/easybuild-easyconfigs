@@ -1,0 +1,48 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'MakeCp'
+
+name = 'SSW'
+version = '1.1'
+
+homepage = 'https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library'
+description = """SSW is a fast implementation of the Smith-Waterman algorithm, which uses the
+ Single-Instruction Multiple-Data (SIMD) instructions to parallelize the algorithm at the
+ instruction level. SSW library provides an API that can be flexibly used by programs written in
+ C, C++ and other languages. We also provide a software that can do protein and genome alignment
+ directly. Current version of our implementation is ~50 times faster than an ordinary
+ Smith-Waterman. It can return the Smith-Waterman score, alignment location and traceback path
+ (cigar) of the optimal alignment accurately; and return the sub-optimal alignment score and
+ location heuristically.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+source_urls = ['https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-1.1_build-cpp-lib.patch']
+checksums = [
+    'cdbc20740daeb188ed39413ea5ff9ae4cf72c4d7ccff1d2de2cac0446d64d99f',  # v1.1.tar.gz
+    'fe0d1f536ecd526dda8879b2f41b62c3c82b39d236f023ee735c1c18d584f06a',  # SSW-1.1_build-cpp-lib.patch
+]
+
+builddependencies = [('binutils', '2.35')]
+
+dependencies = [('zlib', '1.2.11')]
+
+start_dir = 'src'
+
+buildopts = 'default'
+
+files_to_copy = [
+    (['ssw_test'], 'bin'),
+    (['*.%s*' % SHLIB_EXT], 'lib'),
+    (['*.h'], 'include/ssw'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ssw_test', 'lib/libssw.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

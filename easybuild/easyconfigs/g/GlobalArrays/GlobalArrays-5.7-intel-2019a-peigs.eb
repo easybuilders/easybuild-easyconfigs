@@ -1,0 +1,44 @@
+# Includes the parallel eigen value solver (used by NWChem).
+# This requires additional external symbols during linking, so it won't work for software that doesn't use it.
+
+easyblock = 'ConfigureMake'
+name = 'GlobalArrays'
+version = '5.7'
+versionsuffix = '-peigs'
+
+homepage = 'https://hpc.pnl.gov/globalarrays'
+description = "Global Arrays (GA) is a Partitioned Global Address Space (PGAS) programming model"
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://github.com/GlobalArrays/ga/releases/download/']
+sources = ['v%(version)s/ga-%(version)s.tar.gz']
+
+# patch for bugs on v5.7 causing errors on NWChem
+patches = [
+    'GlobalArrays-v5.7_ga_diag_std.patch',             # fix bug ga_diag_std https://github.com/GlobalArrays/ga/pull/101
+    'GlobalArrays-v5.7-intel-2018b-MKL_issue.patch',   # fix MKL issue https://github.com/GlobalArrays/ga/pull/122
+]
+
+checksums = [
+    '3ed1ab47adfda7bceb7beca12fc05a2e1631732f0e55bbaf9036dad4e3da4774',
+    '8049543e6442e13acb54cb4afd9a6ad78102864b2ef138ad9f4b1a45bd0666bb',  # GlobalArrays-v5.7_ga_diag_std.patch
+    'e5b9fff47d471b3552b167b82153f8f1fd6406c52e39a11b693cb9c4bf12645e',  # GlobalArrays-v5.7-intel-2018b-MKL_issue.patch
+]
+
+configopts = ' --with-mpi --enable-i8'
+configopts += ' --with-blas8="-L$EBROOTIMKL/mkl/lib/intel64 -lmkl_sequential -lmkl_intel_ilp64"'
+configopts += ' --with-scalapack8="-L$EBROOTIMKL/mkl/lib/intel64 -lmkl_sequential -lmkl_scalapack_ilp64"'
+# Required by NWChem:
+configopts += ' --enable-peigs --enable-underscoring'
+
+# select armci network as (Comex) MPI-1 two-sided
+configopts += ' --with-mpi-ts'
+
+sanity_check_paths = {
+    'files': ['bin/adjust.x', 'bin/collisions.x', 'bin/ga-config', 'lib/libarmci.a', 'lib/libcomex.a', 'lib/libga.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'

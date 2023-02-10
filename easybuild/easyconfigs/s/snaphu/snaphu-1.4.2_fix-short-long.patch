@@ -1,0 +1,50 @@
+fix type for row/col values, short (16-bit, so max. values of 32768) is not enough in some cases
+this fixes a segfault problem that occurs with large inputs:
+"Segmentation fault      snaphu -d -f snaphu.conf 938"
+author: Kenneth Hoste (HPC-UGent)
+--- snaphu-v1.4.2_linux/src/snaphu.h	2018-02-12 18:23:02.000000000 +0100
++++ snaphu-v1.4.2/src/snaphu.h	2018-04-19 12:23:52.633772217 +0200
+@@ -394,7 +394,7 @@
+ 
+ /* node data structure */
+ typedef struct nodeST{
+-  short row,col;                /* row, col of this node */
++  long row,col;                /* row, col of this node */
+   unsigned long level;          /* tree level */
+   struct nodeST *next;          /* ptr to next node in thread or bucket */
+   struct nodeST *prev;          /* ptr to previous node in thread or bucket */
+@@ -431,7 +431,7 @@
+ typedef struct candidateST{
+   nodeT *from, *to;             /* endpoints of candidate arc */
+   long violation;               /* magnitude of arc violation */
+-  short arcrow,arccol;          /* indexes into arc arrays */
++  long arcrow,arccol;          /* indexes into arc arrays */
+   signed char arcdir;           /* direction of arc (1=fwd, -1=rev) */
+ }candidateT;
+ 
+@@ -450,8 +450,8 @@
+ 
+ /* secondary arc data structure */
+ typedef struct scndryarcST{
+-  short arcrow;                 /* row of arc in secondary network array */
+-  short arccol;                 /* col of arc in secondary network array */
++  long arcrow;                 /* row of arc in secondary network array */
++  long arccol;                 /* col of arc in secondary network array */
+   nodeT *from;                  /* secondary node at tail of arc */
+   nodeT *to;                    /* secondary node at head of arc */
+   signed char fromdir;          /* direction from which arc enters head */
+@@ -460,11 +460,11 @@
+ 
+ /* supplementary data structure for secondary nodes */
+ typedef struct nodesuppST{
+-  short row;                    /* row of node in primary network problem */
+-  short col;                    /* col of node in primary network problem */
++  long row;                    /* row of node in primary network problem */
++  long col;                    /* col of node in primary network problem */
+   nodeT **neighbornodes;        /* pointers to neighboring secondary nodes */
+   scndryarcT **outarcs;         /* pointers to secondary arcs to neighbors */
+-  short noutarcs;               /* number of arcs from this node */
++  long noutarcs;               /* number of arcs from this node */
+ }nodesuppT;
+ 
+ 

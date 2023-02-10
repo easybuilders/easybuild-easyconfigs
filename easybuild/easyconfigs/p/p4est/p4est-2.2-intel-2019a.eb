@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'p4est'
+version = '2.2'
+
+homepage = 'https://www.p4est.org'
+description = """p4est is a C library to manage a collection (a forest) of multiple
+connected adaptive quadtrees or octrees in parallel."""
+
+toolchain = {'name': 'intel', 'version': '2019a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = [
+    'https://p4est.github.io/release',
+]
+sources = [
+    '%(name)s-%(version)s.tar.gz',
+]
+patches = [
+    'p4est-2.2_increase_limit_in_dmatrix_text.patch',
+    'p4est-2.2_remove_loadsave_tests.patch',
+]
+checksums = [
+    '1549cbeba29bee2c35e7cc50a90a04961da5f23b6eada9c8047f511b90a8e438',  # p4est-2.2.tar.gz
+    # p4est-2.2_increase_limit_in_dmatrix_text.patch
+    '4ae1fe8e127a9b06dd22983a5dbb1e3da62efcbcbf325b6755e18d689b25e2a9',
+    '20cabc7985edbc007fb8190fafc51b873a2c3eb879700ff93432646b563ec642',  # p4est-2.2_remove_loadsave_tests.patch
+]
+
+builddependencies = [
+    ('Autotools', '20180311')
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('METIS', '5.1.0')
+]
+
+configopts = '--enable-openmp --enable-mpi --with-metis '
+configopts += '--with-blas="$LIBBLAS" --with-lapack="$LIBLAPACK" '
+
+runtest = 'check VERBOSE=1'
+
+sanity_check_paths = {
+    'files': ['bin/p4est_simple', 'bin/p4est_step1', 'bin/p4est_step2', 'bin/p4est_step3', 'bin/p4est_step4',
+              'lib/libp4est-%%(version)s.%s' % SHLIB_EXT, 'lib/libp4est.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'math'

@@ -1,0 +1,39 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    Stephane Thiell <sthiell@stanford.edu>
+###
+
+easyblock = 'ConfigureMake'
+
+name = 'LAME'
+version = '3.99.5'
+
+homepage = 'http://lame.sourceforge.net/'
+description = """LAME is a high quality MPEG Audio Layer III (MP3) encoder licensed under the LGPL."""
+
+toolchain = {'name': 'foss', 'version': '2016b'}
+
+source_urls = ['https://sourceforge.net/projects/lame/files/lame/%(version_major_minor)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['LAME-3.99.5_check-tgetent.patch']
+checksums = [
+    '24346b4158e4af3bd9f2e194bb23eb473c75fb7377011523353196b19b9a23ff',  # lame-3.99.5.tar.gz
+    '8bfb6a73f2db1511baf90fbd7174f11043ec4b592a4917edc30ccfb53bf37256',  # LAME-3.99.5_check-tgetent.patch
+]
+
+builddependencies = [('Autotools', '20150215')]
+
+dependencies = [('ncurses', '6.0')]
+
+preconfigopts = "autoconf && "
+
+# configure is broken: add workaround to find libncurses...
+configure_cmd_prefix = "FRONTEND_LDADD='-L${EBROOTNCURSES}/lib' "
+
+sanity_check_paths = {
+    'files': ['bin/lame', 'include/lame/lame.h', 'lib/libmp3lame.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'data'

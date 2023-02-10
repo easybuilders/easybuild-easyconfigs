@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'AUGUSTUS'
+version = '3.2.3'
+versionsuffix = '-Python-2.7.13'
+
+homepage = 'http://bioinf.uni-greifswald.de/augustus/'
+description = "AUGUSTUS is a program that predicts genes in eukaryotic genomic sequences"
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+source_urls = [
+    'http://bioinf.uni-greifswald.de/augustus/binaries/',
+    'http://bioinf.uni-greifswald.de/augustus/binaries/old/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['AUGUSTUS-%(version)s_fix-hardcoding.patch']
+checksums = [
+    'a1af128aefd228dea0c46d6f5234910fdf068a2b9133175ca8da3af639cb4514',  # augustus-3.2.3.tar.gz
+    '12870afdd184c11d49268ddb9ec2bf81dc3ccce74072857990a7aac07d8b4d7d',  # AUGUSTUS-3.2.3_fix-hardcoding.patch
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Boost', '1.63.0', versionsuffix),
+    ('SQLite', '3.17.0'),
+    ('GSL', '2.3'),
+    ('SuiteSparse', '4.5.5', '-ParMETIS-4.0.3'),
+    ('lpsolve', '5.5.2.5'),
+    ('BamTools', '2.4.1'),
+]
+
+skipsteps = ['configure']
+
+prebuildopts = "unset LDFLAGS && unset LIBS && "
+buildopts = 'COMPGENEPRED=true SQLITE=true ZIPINPUT=true CXX="$CXX" LINK.cc="$CXX"'
+installopts = 'INSTALLDIR=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/aln2wig', 'bin/augustus', 'bin/bam2hints', 'bin/bam2wig', 'bin/espoca', 'bin/etraining',
+              'bin/fastBlockSearch', 'bin/filterBam', 'bin/getSeq', 'bin/homGeneMapping', 'bin/joingenes',
+              'bin/load2sqlitedb', 'bin/prepareAlign'],
+    'dirs': ['config', 'scripts'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+modextravars = {
+    'AUGUSTUS_BIN_PATH': '%(installdir)s/bin',
+    'AUGUSTUS_CONFIG_PATH': '%(installdir)s/config',
+    'AUGUSTUS_SCRIPTS_PATH': '%(installdir)s/scripts',
+}
+
+moduleclass = 'bio'

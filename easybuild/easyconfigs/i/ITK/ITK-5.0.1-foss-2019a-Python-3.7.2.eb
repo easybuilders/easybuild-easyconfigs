@@ -1,0 +1,75 @@
+#
+# Alex Domingo and Fenglai Liu
+#
+# alex.domingo.toro@vub.be
+# fenglai@accre.vanderbilt.edu
+#
+# Vrije Universiteit Brussel (VUB)
+# Vanderbilt University
+#
+easyblock = 'CMakePythonPackage'
+
+name = 'ITK'
+version = '5.0.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+# Set optarch to false to not override ITK_CXX_OPTIMIZATION_FLAGS. Otherwise,
+# compilation errors may happen on systems with unsupported features, such as AVX512.
+toolchain = {'name': 'foss', 'version': '2019a'}
+toolchainopts = {'pic': True, 'cstd': 'c++11', 'optarch': False}
+
+source_urls = ['https://github.com/InsightSoftwareConsortium/ITK/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['c6b3c33ecc73104c906e0e1a1bfaa41a09af24bf53a4ec5e5c265d7e82bdf69f']
+
+builddependencies = [
+    ('CMake', '3.13.3'),
+    ('Bison', '3.0.5'),
+    ('Eigen', '3.3.7', '', SYSTEM),
+]
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('HDF5', '1.10.5'),
+    ('PCRE', '8.43'),
+    ('SWIG', '3.0.12'),
+    ('VTK', '8.2.0', versionsuffix),
+    ('X11', '20190311'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('LibTIFF', '4.0.10'),
+]
+
+local_sys_deps = ['EIGEN', 'HDF5', 'JPEG', 'PNG', 'TIFF', 'SWIG', 'ZLIB']
+local_sys_cmake = ['-DITK_USE_SYSTEM_%s=ON' % d for d in local_sys_deps]
+
+preconfigopts = 'Eigen3_DIR=$EBROOTEIGEN '
+configopts = '-DBUILD_TESTING=OFF '
+configopts += '-DITK_WRAP_PYTHON=ON -DITK_LEGACY_SILENT=ON '
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON '
+configopts += ' '.join(local_sys_cmake)
+# Don't depend on MPICXX (which makes linking to ITK painful)
+configopts += ' -DCMAKE_CXX_FLAGS="$CXXFLAGS -DOMPI_SKIP_MPICXX"'
+
+build_shared_libs = True
+
+# See https://insightsoftwareconsortium.atlassian.net/browse/ITK-3538
+prebuildopts = "LC_ALL=C "
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver',
+              'lib/libITKCommon-%%(version_major)s.0.%s' % SHLIB_EXT,
+              'lib/libITKIOHDF5-%%(version_major)s.0.%s' % SHLIB_EXT,
+              'lib/libITKVTK-%%(version_major)s.0.%s' % SHLIB_EXT,
+              'lib/libITKVtkGlue-%%(version_major)s.0.%s' % SHLIB_EXT,
+              'lib/libITKReview-%%(version_major)s.0.%s' % SHLIB_EXT],
+    'dirs': ['include/ITK-%(version_major)s.0',
+             'lib/python%(pyshortver)s/site-packages',
+             'share'],
+}
+
+moduleclass = 'data'

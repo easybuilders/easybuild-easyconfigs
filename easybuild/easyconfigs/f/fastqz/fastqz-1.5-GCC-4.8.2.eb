@@ -1,5 +1,5 @@
 ##
-# This file is an EasyBuild reciPY as per https://github.com/hpcugent/easybuild
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
 #
 # Copyright:: Copyright 2012-2015 NTUA
 # Authors::   Fotis Georgatos <fotis@cern.ch>
@@ -11,6 +11,7 @@ easyblock = 'CmdCp'
 
 name = 'fastqz'
 version = '1.5'
+local_minver = ''.join(version.split('.'))
 
 homepage = 'http://mattmahoney.net/dc/fastqz/'
 description = """fastqz is a compressor for FASTQ files. FASTQ is the output of DNA sequencing machines.
@@ -18,19 +19,22 @@ description = """fastqz is a compressor for FASTQ files. FASTQ is the output of 
  FASTQ and SAM Format Sequencing Data. (mirror) PLoS ONE 8(3): e59190. doi:10.1371/journal.pone.0059190"""
 
 toolchain = {'name': 'GCC', 'version': '4.8.2'}
-toolchainopts = {'opt': True, 'optarch': True}
+toolchainopts = {'opt': True}
 
-minver = ''.join(version.split('.'))
-sources = ['fastqz%s.cpp' % minver, 'fapack.cpp']
 source_urls = [homepage]
-checksums = ['0a55cd15605ddf32c31dac5af8c0f442', '490efab4389637da5566cf5173b1d274']
+sources = [
+    {'filename': 'fastqz%s.cpp' % local_minver, 'extract_cmd': "cp %s ."},
+    {'filename': 'fapack.cpp', 'extract_cmd': "cp %s ."},
+]
+checksums = [
+    '67ead53084fe96bad337e66f4447070c113b71726f7e5e586bec0ade4a5b85dd',  # fastqz15.cpp
+    'cedfb0f3641f7c47333a0a66deff1da1356509fda80a60b1777759c95090b1da',  # fapack.cpp
+]
 
 dependencies = [('ZPAQ', '7.00')]
 
-skipsteps = ['source']
-
 cmds_map = [
-    ('fastqz%s.cpp' % minver, '$CXX $CFLAGS -lpthread %%(source)s $EBROOTZPAQ/include/libzpaq.cpp -o %(name)s'),
+    ('fastqz%s.cpp' % local_minver, '$CXX $CFLAGS -lpthread %%(source)s $EBROOTZPAQ/include/libzpaq.cpp -o %(name)s'),
     ('fapack.cpp', '$CXX $CFLAGS -s %(source)s -o %(target)s')
 ]
 

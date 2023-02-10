@@ -1,0 +1,33 @@
+easyblock = "ConfigureMake"
+
+name = 'magma'
+version = '2.4.0'
+
+homepage = 'http://icl.cs.utk.edu/magma/'
+description = """The MAGMA project aims to develop a dense linear algebra library similar to
+ LAPACK but for heterogeneous/hybrid architectures, starting with current Multicore+GPU systems."""
+
+toolchain = {'name': 'fosscuda', 'version': '2018b'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = ['http://icl.cs.utk.edu/projectsfiles/magma/downloads/']
+sources = [SOURCE_TAR_GZ]
+patches = [('magma-2.3.0-fix-makefile.patch')]
+checksums = [
+    '4eb839b1295405fd29c8a6f5b4ed578476010bf976af46573f80d1169f1f9a4f',  # magma-2.4.0.tar.gz
+    '47e734cf30577b563377c946fb7897da2fd53d050f7e4fe83d8bb11b8d157913',  # magma-2.3.0-fix-makefile.patch
+]
+
+skipsteps = ['configure']
+
+prebuildopts = 'touch make.inc && '
+prebuildopts += 'GPU_TARGET="Kepler Maxwell Pascal Volta" '
+
+installopts = 'prefix=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['lib/libmagma.so', 'lib/libmagma.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'math'

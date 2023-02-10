@@ -1,0 +1,55 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2016 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+# Authors::
+# * Wiktor Jurkowski <wiktor.jurkowski@gmail.com>
+# * Fotis Georgatos <fotis@cern.ch>
+# * George Tsouloupas <g.tsouloupas@cyi.ac.cy>
+# * Kenneth Hoste <kenneth.hoste@ugent.be>
+# * Adam Huffman <adam.huffman@crick.ac.uk>
+# License::   MIT/GPL
+##
+
+name = 'GROMACS'
+version = '2016.4'
+
+homepage = 'http://www.gromacs.org'
+description = """
+GROMACS is a versatile package to perform molecular dynamics,
+ i.e. simulate the Newtonian equations of motion for systems with hundreds to millions of particles.
+
+This is a GPU enabled build, containing both MPI and threadMPI binaries.
+"""
+
+toolchain = {'name': 'intelcuda', 'version': '2017b'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = [
+    'https://ftp.gromacs.org/pub/gromacs/',
+    'ftp://ftp.gromacs.org/pub/gromacs/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'GROMACS-2018_fix_search_for_nvml_include.patch',
+    'GROMACS-2018_amend_search_for_nvml_lib.patch',
+    'GROMACS-2016.4_Fix_incorrect_cuda_target_single_multiple_compilation_unit.patch',
+]
+checksums = [
+    '4be9d3bfda0bdf3b5c53041e0b8344f7d22b75128759d9bfa9442fe65c289264',  # gromacs-2016.4.tar.gz
+    # GROMACS-2018_fix_search_for_nvml_include.patch
+    '59d59316337ce08134d600b44c6501240f2732826ea5699f4b0ae83bb1ae0bd3',
+    '769cf8aab2e76bb1b36befa4b60df0b975a35877994218725426bb2c597f321b',  # GROMACS-2018_amend_search_for_nvml_lib.patch
+    # GROMACS-2016.4_Fix_incorrect_cuda_target_single_multiple_compilation_unit.patch
+    '2ce949f193bfd60fdb061417724d37f82b114656122e3b03a08160b54cb2d534',
+]
+
+configopts = '-DCUDA_HOST_COMPILER=$EBROOTGCCCORE/bin/gcc '
+configopts += '-DCUDA_PROPAGATE_HOST_FLAGS=OFF -DCUDA_NVCC_FLAGS="-std=c++11" '
+
+builddependencies = [
+    ('CMake', '3.9.5'),
+]
+
+moduleclass = 'bio'

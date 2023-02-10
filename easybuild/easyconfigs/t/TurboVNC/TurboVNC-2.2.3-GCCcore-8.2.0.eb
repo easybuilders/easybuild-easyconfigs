@@ -1,0 +1,71 @@
+easyblock = 'CMakeMake'
+
+name = 'TurboVNC'
+version = '2.2.3'
+
+homepage = 'https://www.turbovnc.org'
+description = """TurboVNC is a derivative of VNC (Virtual Network Computing) that is tuned to provide
+ peak performance for 3D and video workloads."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['TurboVNC-%(version)s_fix-libX11-libs.patch']
+checksums = [
+    '1c3de5abc66b3a2c45fb7ec6c75ddf54241153e5770f7d05ffd2dfef5d086981',  # turbovnc-2.2.3.tar.gz
+    'c3e29c2a11e0cf8e37080b1eae6f35811f64d3c05dc1b58485cb17918c465dd5',  # TurboVNC-2.2.3_fix-libX11-libs.patch
+]
+
+builddependencies = [
+    ('binutils', '2.31.1'),
+    ('CMake', '3.13.3'),
+]
+
+dependencies = [
+    ('X11', '20190311'),
+    ('pixman', '0.38.0'),
+    ('libjpeg-turbo', '2.0.2'),
+    ('Mesa', '19.0.1'),
+    ('libGLU', '9.0.0'),
+    ('libglvnd', '1.2.0'),
+    # OS dependency should be preferred if the OS version is more recent then this version,
+    # it's nice to have an up to date OpenSSL for security reasons
+    # ('OpenSSL', '1.1.1b'),
+]
+
+osdependencies = [
+    ('openssl-devel', 'libssl-dev', 'libopenssl-devel'),
+    ('pam-devel', 'libpam0g-dev'),
+]
+
+configopts = "-DTVNC_BUILDJAVA=0 -DTVNC_SYSTEMX11=1 "
+configopts += "-DX11_X11_LIB=$EBROOTX11/lib/libX11.%s " % SHLIB_EXT
+configopts += "-DX11_Xau_LIB=$EBROOTX11/lib/libXau.%s " % SHLIB_EXT
+configopts += "-DX11_SM_LIB=$EBROOTX11/lib/libSM.%s " % SHLIB_EXT
+configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libICE.%s " % SHLIB_EXT
+configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libXext.%s " % SHLIB_EXT
+configopts += "-DX11_ICE_LIB=$EBROOTX11/lib/libICE.%s " % SHLIB_EXT
+configopts += "-DX11_Pixman_LIB=$EBROOTPIXMAN/lib/libpixman-1.%s.0 " % SHLIB_EXT
+configopts += "-DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
+configopts += "-DOPENGL_egl_LIBRARY=$EBROOTLIBGLVND/lib/libEGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_opengl_LIBRARY=$EBROOTLIBGLVND/lib/libOpenGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_glx_LIBRARY=$EBROOTLIBGLVND/lib/libGLX.%s " % SHLIB_EXT
+
+# if installdir starts with /opt, i.e. /opt/xxx, CMake will set SYSCONFDIR to /etc/opt/xxx instead of /opt/xxx/etc
+# https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
+# the solution is to define CMAKE_INSTALL_SYSCONFDIR explicitly
+configopts += "-DCMAKE_INSTALL_SYSCONFDIR=%(installdir)s/etc "
+
+# remove etc/turbovncserver-security.conf, to avoid errors like:
+# (EE) Fatal server error:
+# (EE) ERROR: .../TurboVNC/2.2.3-GCCcore-8.2.0/etc/turbovncserver-security.conf must be owned by you or by root
+postinstallcmds = ["rm -rf %(installdir)s/etc/turbovncserver-security.conf"]
+
+sanity_check_paths = {
+    'files': ['bin/vncserver', 'bin/vncpasswd', 'bin/Xvnc'],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

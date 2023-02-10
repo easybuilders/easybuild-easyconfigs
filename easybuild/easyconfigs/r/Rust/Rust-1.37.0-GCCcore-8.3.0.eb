@@ -1,0 +1,35 @@
+easyblock = 'ConfigureMake'
+
+name = 'Rust'
+version = '1.37.0'
+
+homepage = 'https://www.rust-lang.org'
+description = """Rust is a systems programming language that runs blazingly fast, prevents segfaults,
+ and guarantees thread safety."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+source_urls = ['https://static.rust-lang.org/dist/']
+sources = ['rustc-%(version)s-src.tar.gz']
+checksums = ['120e7020d065499cc6b28759ff04153bfdc2ac9b5adeb252331a4eb87cbe38c3']
+
+builddependencies = [
+    ('binutils', '2.32'),
+    ('CMake', '3.15.3'),
+    ('Python', '2.7.16', '-bare'),
+]
+
+configopts = "--enable-extended --sysconfdir=%(installdir)s/etc"
+
+# Use ./x.py to bootstrap so that options like -j N are correctly passed through
+# see: https://rustc-dev-guide.rust-lang.org/building/how-to-build-and-run.html#what-is-xpy
+# (ConfigureMake already adds `-j %(parallel)s` to the `build_cmd`)
+build_cmd = "./x.py build"
+install_cmd = "./x.py install -j %(parallel)s"
+
+sanity_check_paths = {
+    'files': ['bin/cargo', 'bin/rustc', 'bin/rustdoc'],
+    'dirs': ['lib/rustlib', 'share/doc', 'share/man'],
+}
+
+moduleclass = 'lang'

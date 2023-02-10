@@ -1,0 +1,50 @@
+# Fix CXX/CC/LD so it takes the valus from EB
+#
+# Åke Sandgren, 20180702
+diff -ru p4vasp-0.3.30.orig/odpdom/Makefile p4vasp-0.3.30/odpdom/Makefile
+--- p4vasp-0.3.30.orig/odpdom/Makefile	2015-10-06 21:52:37.000000000 +0200
++++ p4vasp-0.3.30/odpdom/Makefile	2018-07-02 10:48:52.490398433 +0200
+@@ -1,5 +1,5 @@
+-CPP     = g++
+-LD      = g++
++CXX     ?= g++
++LD      = $(CXX)
+ LIBS    =
+ LDFLAGS += -shared -L.
+ FLAGS   = -DPY_DOMEXC_MODULE="\"xml.dom.\""
+@@ -44,7 +44,7 @@
+ 	ar -r libODP.a $(OBJECTS)
+ 	ranlib libODP.a
+ %.o:%.cpp
+-	$(CPP) $(CFLAGS) -c $< -o $@
++	$(CXX) $(CFLAGS) -c $< -o $@
+ 
+ cleanwrap:
+ 	-rm cODP_wrap.cpp
+diff -ru p4vasp-0.3.30.orig/src/Makefile p4vasp-0.3.30/src/Makefile
+--- p4vasp-0.3.30.orig/src/Makefile	2015-10-06 21:52:37.000000000 +0200
++++ p4vasp-0.3.30/src/Makefile	2018-07-02 10:48:37.666231086 +0200
+@@ -1,9 +1,7 @@
+ -include Configuration.mk
+ 
+-CPP=g++
+-LD=g++
+-#CPP=icc
+-#LD=icc
++CXX ?= g++
++LD = $(CXX)
+ 
+ FLAGS= -Wall -DPY_DOMEXC_MODULE="\"p4vasp.ODPdom.\"" \
+        -DCHECK=1 \
+@@ -56,9 +54,9 @@
+ all: _cp4vasp.so
+ 
+ %.o: %.cpp
+-	$(CPP) $(CFLAGS) -c $< -o $@
++	$(CXX) $(CFLAGS) -c $< -o $@
+ %.o: %.c 
+-	$(CPP) $(CFLAGS) -c $< -o $@
++	$(CC) $(CFLAGS) -c $< -o $@
+ cp4vasp_wrap.cpp: cp4vasp.i
+ 	$(SWIG) $(SWIGFLAGS) -o cp4vasp_wrap.cpp cp4vasp.i 
+ 	

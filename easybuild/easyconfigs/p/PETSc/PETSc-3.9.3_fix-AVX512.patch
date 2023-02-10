@@ -1,0 +1,56 @@
+see https://bitbucket.org/petsc/petsc/pull-requests/982 & https://bitbucket.org/petsc/petsc/commits/000ffbc36055d9fa1c221e66925052620a8661b2
+
+From 000ffbc36055d9fa1c221e66925052620a8661b2 Mon Sep 17 00:00:00 2001
+From: Vaclav Hapla <vaclav.hapla@erdw.ethz.ch>
+Date: Tue, 12 Jun 2018 16:11:02 +0200
+Subject: [PATCH] aijperm.c: obey PETSC_USE_AVX512_KERNELS
+ (--with-avx512-kernels)
+
+---
+ src/mat/impls/aij/seq/aijperm/aijperm.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/mat/impls/aij/seq/aijperm/aijperm.c b/src/mat/impls/aij/seq/aijperm/aijperm.c
+index 7c49399..9c25972 100644
+--- a/src/mat/impls/aij/seq/aijperm/aijperm.c
++++ b/src/mat/impls/aij/seq/aijperm/aijperm.c
+@@ -12,7 +12,7 @@
+ 
+ #include <../src/mat/impls/aij/seq/aij.h>
+ 
+-#if defined(PETSC_HAVE_IMMINTRIN_H) && defined(__AVX512F__) && defined(PETSC_USE_REAL_DOUBLE) && !defined(PETSC_USE_COMPLEX) && !defined(PETSC_USE_64BIT_INDICES)
++#if defined(PETSC_HAVE_IMMINTRIN_H) && defined(__AVX512F__) && defined(PETSC_USE_AVX512_KERNELS) && defined(PETSC_USE_REAL_DOUBLE) && !defined(PETSC_USE_COMPLEX) && !defined(PETSC_USE_64BIT_INDICES)
+ #include <immintrin.h>
+ 
+ #if !defined(_MM_SCALE_8)
+@@ -300,7 +300,7 @@ PetscErrorCode MatMult_SeqAIJPERM(Mat A,Vec xx,Vec yy)
+ #if !(defined(PETSC_USE_FORTRAN_KERNEL_MULTAIJPERM) && defined(notworking))
+   PetscInt          i,j;
+ #endif
+-#if defined(PETSC_HAVE_IMMINTRIN_H) && defined(__AVX512F__) && defined(PETSC_USE_REAL_DOUBLE) && !defined(PETSC_USE_COMPLEX) && !defined(PETSC_USE_64BIT_INDICES)
++#if defined(PETSC_HAVE_IMMINTRIN_H) && defined(__AVX512F__) && defined(PETSC_USE_AVX512_KERNELS) && defined(PETSC_USE_REAL_DOUBLE) && !defined(PETSC_USE_COMPLEX) && !defined(PETSC_USE_64BIT_INDICES)
+   __m512d           vec_x,vec_y,vec_vals;
+   __m256i           vec_idx,vec_ipos,vec_j;
+   __mmask8           mask;
+@@ -400,7 +400,7 @@ PetscErrorCode MatMult_SeqAIJPERM(Mat A,Vec xx,Vec yy)
+ #pragma _CRI prefervector
+ #endif
+ 
+-#if defined(PETSC_HAVE_IMMINTRIN_H) && defined(__AVX512F__) && defined(PETSC_USE_REAL_DOUBLE) && !defined(PETSC_USE_COMPLEX) && !defined(PETSC_USE_64BIT_INDICES)
++#if defined(PETSC_HAVE_IMMINTRIN_H) && defined(__AVX512F__) && defined(PETSC_USE_AVX512_KERNELS) && defined(PETSC_USE_REAL_DOUBLE) && !defined(PETSC_USE_COMPLEX) && !defined(PETSC_USE_64BIT_INDICES)
+             vec_y = _mm512_setzero_pd();
+             ipos = ip[i];
+             for (j=0; j<(nz>>3); j++) {
+@@ -435,7 +435,7 @@ PetscErrorCode MatMult_SeqAIJPERM(Mat A,Vec xx,Vec yy)
+            * worthwhile to vectorize across the rows, that is, to do the
+            * matvec by operating with "columns" of the chunk. */
+           for (j=0; j<nz; j++) {
+-#if defined(PETSC_HAVE_IMMINTRIN_H) && defined(__AVX512F__) && defined(PETSC_USE_REAL_DOUBLE) && !defined(PETSC_USE_COMPLEX) && !defined(PETSC_USE_64BIT_INDICES)
++#if defined(PETSC_HAVE_IMMINTRIN_H) && defined(__AVX512F__) && defined(PETSC_USE_AVX512_KERNELS) && defined(PETSC_USE_REAL_DOUBLE) && !defined(PETSC_USE_COMPLEX) && !defined(PETSC_USE_64BIT_INDICES)
+             vec_j = _mm256_set1_epi32(j);
+             for (i=0; i<((isize>>3)<<3); i+=8) {
+               vec_y    = _mm512_loadu_pd(&yp[i]);
+-- 
+2.10.5
+
+

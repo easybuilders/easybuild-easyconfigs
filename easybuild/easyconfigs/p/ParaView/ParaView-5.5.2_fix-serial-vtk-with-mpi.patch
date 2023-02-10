@@ -1,0 +1,24 @@
+These dummy redefinitions of MPI_COMM_WORLD and MPI_INFO_NULL break compilation, when the actual
+definitions are included from mpi.h. The definitions must therefore be correct here, even though
+each ParaView process runs VTK sequentially.
+
+Henrik R. Nagel, 20190912
+diff -ru ParaView-v5.5.2.orig/VTK/ThirdParty/netcdf/vtknetcdf/include/ncdispatch.h ParaView-v5.5.2/VTK/ThirdParty/netcdf/vtknetcdf/include/ncdispatch.h
+--- ParaView-v5.5.2.orig/VTK/ThirdParty/netcdf/vtknetcdf/include/ncdispatch.h	2018-06-15 21:09:45.000000000 +0200
++++ ParaView-v5.5.2/VTK/ThirdParty/netcdf/vtknetcdf/include/ncdispatch.h	2019-08-16 12:23:53.000000000 +0200
+@@ -88,10 +88,11 @@
+ typedef int NCerror;
+ 
+ #if !defined HDF5_PARALLEL && !defined USE_PNETCDF
+-typedef int MPI_Comm;
+-typedef int MPI_Info;
+-#define MPI_COMM_WORLD 0
+-#define MPI_INFO_NULL 0
++// typedef int MPI_Comm;
++// typedef int MPI_Info;
++// #define MPI_COMM_WORLD 0
++// #define MPI_INFO_NULL 0
++#include <mpi.h>
+ #endif
+ 
+ /* Define a struct to hold the MPI info so it can be passed down the

@@ -1,0 +1,157 @@
+backporting Boost 1.66 support from BLAST+ 2.8 alpha
+author: Albert Bogdanowicz
+diff -Nru ncbi-blast-2.7.1+-src.orig/c++/src/corelib/teamcity_boost.cpp ncbi-blast-2.7.1+-src/c++/src/corelib/teamcity_boost.cpp
+--- ncbi-blast-2.7.1+-src.orig/c++/src/corelib/teamcity_boost.cpp	2017-05-03 13:23:39.000000000 +0200
++++ ncbi-blast-2.7.1+-src/c++/src/corelib/teamcity_boost.cpp	2018-04-26 11:17:07.787295628 +0200
+@@ -12,7 +12,7 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  * 
+- * $Id: teamcity_boost.cpp 534856 2017-05-03 11:23:39Z ivanov $
++ * $Revision: 549230 $
+ */
+ 
+ #include <sstream>
+@@ -83,6 +83,17 @@
+     virtual void entry_context_start(std::ostream&, boost::unit_test::log_level);
+     virtual void log_entry_context(std::ostream&, boost::unit_test::const_string);
+     virtual void entry_context_finish(std::ostream&);
++
++#if BOOST_VERSION >= 106500
++     // Since v1.65.0 the log level is passed to the formatters for the contexts
++     // See boostorg/test.git:fcb302b66ea09c25f0682588d22fbfdf59eac0f7
++     void log_entry_context(std::ostream& os, boost::unit_test::log_level, boost::unit_test::const_string ctx) {
++         log_entry_context(os, ctx);
++     }
++     void entry_context_finish(std::ostream& os, boost::unit_test::log_level) {
++         entry_context_finish(os);
++     }
++#endif
+ };
+ 
+ // Fake fixture to register formatter
+@@ -90,14 +101,17 @@
+     TeamcityFormatterRegistrar() {
+         if (underTeamcity()) {
+             boost::unit_test::unit_test_log.set_formatter(new TeamcityBoostLogFormatter());
+-            boost::unit_test::unit_test_log.set_threshold_level
+-                (RTCFG(but::log_level, LOG_LEVEL, log_level));
++            boost::unit_test::unit_test_log.set_threshold_level(boost::unit_test::log_test_units);
+         }
+     }
+ };
+ 
+ BOOST_GLOBAL_FIXTURE(TeamcityFormatterRegistrar);
+ 
++// Dummy method used to keep object file in case of static library linking
++// See README.md and https://github.com/JetBrains/teamcity-cpp/pull/19
++void TeamcityGlobalFixture() {}
++
+ // Formatter implementation
+ static std::string toString(boost::unit_test::const_string bstr) {
+     std::stringstream ss;
+diff -Nru ncbi-blast-2.7.1+-src.orig/c++/src/corelib/test_boost.cpp ncbi-blast-2.7.1+-src/c++/src/corelib/test_boost.cpp
+--- ncbi-blast-2.7.1+-src.orig/c++/src/corelib/test_boost.cpp	2017-04-27 13:53:27.000000000 +0200
++++ ncbi-blast-2.7.1+-src/c++/src/corelib/test_boost.cpp	2018-04-26 11:16:58.863187073 +0200
+@@ -1,4 +1,4 @@
+-/*  $Id: test_boost.cpp 534439 2017-04-27 11:53:27Z ivanov $
++/*  $Id: test_boost.cpp 549229 2017-10-23 14:47:48Z ucko $
+  * ===========================================================================
+  *
+  *                            PUBLIC DOMAIN NOTICE
+@@ -95,8 +95,15 @@
+ 
+ #if BOOST_VERSION >= 106000
+ #  define attr_value utils::attr_value
+-#  define RTCFG(type, new_name, old_name) \
+-    but::runtime_config::get<type >(but::runtime_config::new_name)
++#  if BOOST_VERSION >= 106400
++     // Everything old is new again, apparently...
++#    define RTCFG(type, new_name, old_name) \
++      but::runtime_config::get<type >(but::runtime_config::btrt_##old_name)
++#    define CONFIGURED_FILTERS RTCFG(std::vector<std::string>, _, run_filters)
++#  else
++#    define RTCFG(type, new_name, old_name) \
++      but::runtime_config::get<type >(but::runtime_config::new_name)
++#  endif
+ #else
+ #  define RTCFG(type, new_name, old_name) but::runtime_config::old_name()
+ #  if BOOST_VERSION >= 105900
+@@ -112,8 +119,10 @@
+ #  endif
+ #endif
+ 
+-#define CONFIGURED_FILTERS \
++#ifndef CONFIGURED_FILTERS
++  #define CONFIGURED_FILTERS \
+     RTCFG(std::vector<std::string>, RUN_FILTERS, test_to_run)
++#endif
+ 
+ #ifdef NCBI_COMPILER_MSVC
+ #  pragma warning(pop)
+@@ -278,11 +287,19 @@
+     virtual
+     void entry_context_start(ostream& ostr, but::log_level l);
+ 
++#  if BOOST_VERSION >= 106500
++    virtual
++    void log_entry_context(ostream& os, but::log_level l, but::const_string v);
++
++    virtual
++    void entry_context_finish(ostream& os, but::log_level l);
++#  else
+     virtual
+     void log_entry_context(ostream& ostr, but::const_string value);
+ 
+     virtual
+     void entry_context_finish (ostream& ostr);
++#  endif
+ #endif
+ 
+ private:
+@@ -1456,7 +1473,7 @@
+         but::test_unit* tu = GetTestUnit(test_name);
+         if (tu) {
+             list<CTempString> koef_lst;
+-            NStr::Split(reg_value, ";", koef_lst, NStr::fSplit_NoMergeDelims);
++            NStr::Split(reg_value, ";", koef_lst);
+             ITERATE(list<CTempString>, it_koef, koef_lst) {
+                 CTempString koef_str, koef_cond;
+                 if (NStr::SplitInTwo(*it_koef, ":", koef_str, koef_cond)) {
+@@ -2124,6 +2141,19 @@
+     m_Upper->entry_context_start(ostr, l);
+ }
+ 
++#  if BOOST_VERSION >= 106500
++void CNcbiBoostLogger::log_entry_context(ostream& ostr,
++                                         but::log_level l,
++                                         but::const_string value)
++{
++    m_Upper->log_entry_context(ostr, l, value);
++}
++
++void CNcbiBoostLogger::entry_context_finish(ostream& ostr, but::log_level l)
++{
++    m_Upper->entry_context_finish(ostr, l);
++}
++#  else
+ void CNcbiBoostLogger::log_entry_context(ostream& ostr,
+                                          but::const_string value)
+ {
+@@ -2134,6 +2164,7 @@
+ {
+     m_Upper->entry_context_finish(ostr);
+ }
++#  endif
+ #endif
+ 
+ void
+@@ -2316,7 +2347,7 @@
+ 
+         if (
+ #if BOOST_VERSION >= 106000
+-            runtime_config::get<bool>( runtime_config::RESULT_CODE )
++            RTCFG(bool, RESULT_CODE, result_code)
+ #else
+             !runtime_config::no_result_code()
+ #endif

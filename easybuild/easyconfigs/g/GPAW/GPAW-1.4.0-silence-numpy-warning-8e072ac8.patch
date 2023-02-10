@@ -1,0 +1,32 @@
+commit 8e072ac8f3723057c5776094dce42d0ff5da7b18
+Author: Jens Jørgen Mortensen <jensj@fysik.dtu.dk>
+Date:   Mon Jul 23 14:30:25 2018 +0200
+
+    Fix for new numpy-1.15
+
+diff --git a/gpaw/grid_descriptor.py b/gpaw/grid_descriptor.py
+index c461d56..ff4bd84 100644
+--- a/gpaw/grid_descriptor.py
++++ b/gpaw/grid_descriptor.py
+@@ -641,7 +641,7 @@ class GridDescriptor(Domain):
+         """
+         s_Gc = (np.indices(self.n_c, dtype).T + self.beg_c) / self.N_c
+         cell_cv = self.N_c * self.h_cv
+-        r_c =  np.linalg.solve(cell_cv.T, r_v)
++        r_c = np.linalg.solve(cell_cv.T, r_v)
+         # do the correction twice works better because of rounding errors
+         # e.g.: -1.56250000e-25 % 1.0 = 1.0,
+         #      but (-1.56250000e-25 % 1.0) % 1.0 = 0.0
+diff --git a/gpaw/xc/vdw.py b/gpaw/xc/vdw.py
+index 00a1d4b..8e8ac37 100644
+--- a/gpaw/xc/vdw.py
++++ b/gpaw/xc/vdw.py
+@@ -831,7 +831,7 @@ class FFTVDWFunctional(VDWFunctionalBase):
+         world.sum(v0_g)
+         world.sum(deda20_g)
+         self.timer.stop('sum')
+-        slice = self.gd.get_slice()
++        slice = tuple(self.gd.get_slice())
+         v_g += v0_g[slice]
+         deda2_g += deda20_g[slice]
+ 

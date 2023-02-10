@@ -1,0 +1,39 @@
+Make a shared library too.
+
+Åke Sandgren, 20190918
+diff -ru jbigkit-2.1.orig/libjbig/Makefile jbigkit-2.1/libjbig/Makefile
+--- jbigkit-2.1.orig/libjbig/Makefile	2019-09-18 18:21:02.754006235 +0200
++++ jbigkit-2.1/libjbig/Makefile	2019-09-18 18:23:35.828520228 +0200
+@@ -3,7 +3,7 @@
+ # Options for the compiler: A high optimization level is suggested
+ CFLAGS += -g -W -Wall -ansi -pedantic # --coverage
+ 
+-all: libjbig.a libjbig85.a tstcodec tstcodec85
++all: libjbig.so libjbig85.so tstcodec tstcodec85
+ 
+ tstcodec: tstcodec.o jbig.o jbig_ar.o
+ 	$(CC) $(CFLAGS) -o tstcodec tstcodec.o jbig.o jbig_ar.o
+@@ -16,11 +16,23 @@
+ 	ar rc libjbig.a jbig.o jbig_ar.o
+ 	-ranlib libjbig.a
+ 
++libjbig.so: libjbig.so.0
++	ln -s $< $@
++
++libjbig.so.0: libjbig.a
++	$(CC) -shared -o $@ -Wl,-soname=$@ -Wl,--whole-archive $< -Wl,--no-whole-archive
++
+ libjbig85.a: jbig85.o jbig_ar.o
+ 	rm -f libjbig85.a
+ 	ar rc libjbig85.a jbig85.o jbig_ar.o
+ 	-ranlib libjbig85.a
+ 
++libjbig85.so: libjbig85.so.0
++	ln -s $< $@
++
++libjbig85.so.0: libjbig85.a
++	$(CC) -shared -o $@ -Wl,-soname=$@ -Wl,--whole-archive $< -Wl,--no-whole-archive
++
+ jbig.o: jbig.c jbig.h jbig_ar.h
+ jbig85.o: jbig85.c jbig85.h jbig_ar.h
+ jbig_ar.o: jbig_ar.c jbig_ar.h

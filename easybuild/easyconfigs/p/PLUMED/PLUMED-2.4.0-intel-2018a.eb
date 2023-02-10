@@ -1,0 +1,43 @@
+# by Ward Poelmans <wpoely86@gmail.com>
+
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.4.0'
+
+homepage = 'http://www.plumed-code.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'intel', 'version': '2018a'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/plumed/plumed2/releases/download/v%(version)s/']
+sources = [SOURCE_TGZ]
+checksums = ['bcd54a2e910fa474dff14c6419a420b96ac697aaebfcd8591ec23426f702e41c']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('GSL', '2.4'),
+    ('libmatheval', '1.1.11'),
+]
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+configopts = ' --exec-prefix=%(installdir)s --enable-gsl --enable-modules=all'
+prebuildopts = 'source sourceme.sh && '
+
+sanity_check_paths = {
+    'files': ['bin/plumed', 'lib/libplumedKernel.%s' % SHLIB_EXT, 'lib/libplumed.%s' % SHLIB_EXT],
+    'dirs': ['lib/plumed']
+}
+
+modextrapaths = {
+    'PLUMED_KERNEL': 'lib/libplumedKernel.%s' % SHLIB_EXT,
+    'PLUMED_ROOT': 'lib/plumed',
+}
+
+moduleclass = 'chem'

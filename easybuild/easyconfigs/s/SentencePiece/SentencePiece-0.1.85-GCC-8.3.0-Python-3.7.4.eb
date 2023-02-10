@@ -1,0 +1,63 @@
+easyblock = 'Bundle'
+
+name = 'SentencePiece'
+version = '0.1.85'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/google/sentencepiece'
+description = "Unsupervised text tokenizer for Neural Network-based text generation."
+github_account = 'google'
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('gperftools', '2.7.90'),
+]
+
+default_component_specs = {
+    'source_urls': [GITHUB_LOWER_SOURCE],
+    'sources': ['v%(version)s.tar.gz'],
+    'checksums': ['dd4956287a1b6af3cbdbbd499b7227a859a4e3f41c9882de5e6bdd929e219ae6'],
+}
+
+components = [
+    (name, version, {
+        'easyblock': 'CMakeMake',
+        'separate_build_dir': True,
+        'start_dir': '%(namelower)s-%(version)s',
+    }),
+    ('sentencepiece', version, {
+        'easyblock': 'PythonPackage',
+        'start_dir': '%(namelower)s-%(version)s/python',
+        'prebuildopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ',
+        'preinstallopts': 'export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ',
+        'use_pip': True,
+        'download_dep_fail': True,
+        'sanity_pip_check': True,
+    }),
+]
+
+postinstallcmds = ['cp -a %(builddir)s/%(namelower)s-%(version)s/{data,doc} %(installdir)s/']
+
+sanity_check_paths = {
+    'files': ['bin/spm_%s' % x for x in ['decode', 'encode', 'export_vocab', 'normalize', 'train']] +
+             ['lib/libsentencepiece.%s' % SHLIB_EXT, 'lib/libsentencepiece_train.%s' % SHLIB_EXT] +
+             ['include/sentencepiece_processor.h', 'include/sentencepiece_trainer.h'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'spm_train --help',
+    "python -c 'import sentencepiece'",
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'lib'

@@ -1,0 +1,31 @@
+name = 'binutils'
+version = '2.36.1'
+
+homepage = 'https://directory.fsf.org/project/binutils/'
+description = "binutils: GNU binary utilities"
+
+toolchain = {'name': 'GCCcore', 'version': '9.4.0'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCE_TAR_GZ]
+checksums = ['e68edeaaeb6ca9687b6dcbaedd1b376506baad2d48de26a885fc5ab6acb839da']
+
+builddependencies = [
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+    # use same binutils version that was used when building GCC toolchain, to 'bootstrap' this binutils
+    ('binutils', version, '', SYSTEM)
+]
+
+dependencies = [
+    # zlib is a runtime dep to avoid that it gets embedded in libbfd.so,
+    # see https://github.com/easybuilders/easybuild-easyblocks/issues/1350
+    ('zlib', '1.2.11'),
+]
+
+# avoid build failure when makeinfo command is not available
+# see https://sourceware.org/bugzilla/show_bug.cgi?id=15345
+buildopts = 'MAKEINFO=true'
+installopts = buildopts
+
+moduleclass = 'tools'

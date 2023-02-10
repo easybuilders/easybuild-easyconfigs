@@ -1,0 +1,185 @@
+# Intel compiler don't allow redefinition of certain predefined macros.
+# Both Bazel ands Tensorflow redfines __DATE__, __TIMESTAMP__, and __TIME__
+#
+# This patch fixes the redfines in TF, but a similar patch is needed in
+# Bazel.
+#
+# Åke Sandgren HPC2N
+diff -ru tensorflow-1.7.0.orig/third_party/gpus/crosstool/CROSSTOOL_clang.tpl tensorflow-1.7.0/third_party/gpus/crosstool/CROSSTOOL_clang.tpl
+--- tensorflow-1.7.0.orig/third_party/gpus/crosstool/CROSSTOOL_clang.tpl	2018-03-28 20:54:13.000000000 +0200
++++ tensorflow-1.7.0/third_party/gpus/crosstool/CROSSTOOL_clang.tpl	2018-03-30 10:26:40.820330920 +0200
+@@ -61,14 +61,6 @@
+     flag_set {
+       action: "c-compile"
+       action: "c++-compile"
+-      flag_group {
+-        # Make C++ compilation deterministic. Use linkstamping instead of these
+-        # compiler symbols.
+-        flag: "-Wno-builtin-macro-redefined"
+-        flag: "-D__DATE__=\"redacted\""
+-        flag: "-D__TIMESTAMP__=\"redacted\""
+-        flag: "-D__TIME__=\"redacted\""
+-      }
+     }
+   }
+ 
+diff -ru tensorflow-1.7.0.orig/third_party/gpus/crosstool/CROSSTOOL_nvcc.tpl tensorflow-1.7.0/third_party/gpus/crosstool/CROSSTOOL_nvcc.tpl
+--- tensorflow-1.7.0.orig/third_party/gpus/crosstool/CROSSTOOL_nvcc.tpl	2018-03-28 20:54:13.000000000 +0200
++++ tensorflow-1.7.0/third_party/gpus/crosstool/CROSSTOOL_nvcc.tpl	2018-03-30 10:27:07.308199446 +0200
+@@ -75,13 +75,6 @@
+   # Anticipated future default.
+   unfiltered_cxx_flag: "-no-canonical-prefixes"
+ 
+-  # Make C++ compilation deterministic. Use linkstamping instead of these
+-  # compiler symbols.
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+-
+   # Security hardening on by default.
+   # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
+   # We need to undef it before redefining it as some distributions now have
+@@ -191,12 +184,6 @@
+ 
+   # Anticipated future default.
+   unfiltered_cxx_flag: "-no-canonical-prefixes"
+-  # Make C++ compilation deterministic. Use linkstamping instead of these
+-  # compiler symbols.
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+ 
+   # Security hardening on by default.
+   # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
+diff -ru tensorflow-1.7.0.orig/third_party/sycl/crosstool/CROSSTOOL.tpl tensorflow-1.7.0/third_party/sycl/crosstool/CROSSTOOL.tpl
+--- tensorflow-1.7.0.orig/third_party/sycl/crosstool/CROSSTOOL.tpl	2018-03-28 20:54:13.000000000 +0200
++++ tensorflow-1.7.0/third_party/sycl/crosstool/CROSSTOOL.tpl	2018-03-30 10:27:24.496114156 +0200
+@@ -69,13 +69,6 @@
+   tool_path { name: "objdump" path: "/usr/bin/objdump" }
+   tool_path { name: "strip" path: "/usr/bin/strip" }
+ 
+-  # Make C++ compilation deterministic. Use linkstamping instead of these
+-  # compiler symbols.
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+-
+   compiler_flag: "-fPIE"
+ 
+   # Keep stack frames for debugging, even in opt mode.
+@@ -180,13 +173,6 @@
+   tool_path { name: "objdump" path: "/usr/bin/objdump" }
+   tool_path { name: "strip" path: "/usr/bin/strip" }
+ 
+-  # Make C++ compilation deterministic. Use linkstamping instead of these
+-  # compiler symbols.
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+-
+   # All warnings are enabled. Maybe enable -Werror as well?
+   compiler_flag: "-Wall"
+ 
+@@ -214,4 +200,4 @@
+     compiler_flag: "-O2"
+     compiler_flag: "-DNDEBUG"
+   }
+-}
+\ No newline at end of file
++}
+diff -ru tensorflow-1.7.0.orig/third_party/toolchains/clang6/CROSSTOOL.tpl tensorflow-1.7.0/third_party/toolchains/clang6/CROSSTOOL.tpl
+--- tensorflow-1.7.0.orig/third_party/toolchains/clang6/CROSSTOOL.tpl	2018-03-28 20:54:13.000000000 +0200
++++ tensorflow-1.7.0/third_party/toolchains/clang6/CROSSTOOL.tpl	2018-03-30 10:27:35.736058390 +0200
+@@ -48,13 +48,6 @@
+ 
+   unfiltered_cxx_flag: "-no-canonical-prefixes"
+ 
+-  # Make C++ compilation deterministic. Use linkstamping instead of these
+-  # compiler symbols.
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+-
+   objcopy_embed_flag: "-I"
+   objcopy_embed_flag: "binary"
+ 
+diff -ru tensorflow-1.7.0.orig/third_party/toolchains/cpus/arm/CROSSTOOL.tpl tensorflow-1.7.0/third_party/toolchains/cpus/arm/CROSSTOOL.tpl
+--- tensorflow-1.7.0.orig/third_party/toolchains/cpus/arm/CROSSTOOL.tpl	2018-03-28 20:54:13.000000000 +0200
++++ tensorflow-1.7.0/third_party/toolchains/cpus/arm/CROSSTOOL.tpl	2018-03-30 10:28:03.343921449 +0200
+@@ -92,11 +92,6 @@
+   cxx_flag: "/usr/include/"
+   linker_flag: "-lstdc++"
+ 
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+-
+   unfiltered_cxx_flag: "-no-canonical-prefixes"
+   unfiltered_cxx_flag: "-fno-canonical-system-headers"
+ 
+@@ -194,13 +189,6 @@
+   unfiltered_cxx_flag: "-no-canonical-prefixes"
+   unfiltered_cxx_flag: "-fno-canonical-system-headers"
+ 
+-  # Make C++ compilation deterministic. Use linkstamping instead of these
+-  # compiler symbols.
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+-
+   # Security hardening on by default.
+   # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
+   # We need to undef it before redefining it as some distributions now have
+@@ -306,13 +294,6 @@
+   # Anticipated future default.
+   unfiltered_cxx_flag: "-no-canonical-prefixes"
+ 
+-  # Make C++ compilation deterministic. Use linkstamping instead of these
+-  # compiler symbols.
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+-
+   # Security hardening on by default.
+   # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
+   compiler_flag: "-D_FORTIFY_SOURCE=1"
+@@ -411,13 +392,6 @@
+   # Anticipated future default.
+   unfiltered_cxx_flag: "-no-canonical-prefixes"
+ 
+-  # Make C++ compilation deterministic. Use linkstamping instead of these
+-  # compiler symbols.
+-  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+-  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+-  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+-
+   # Security hardening on by default.
+   # Conservative choice; -D_FORTIFY_SOURCE=2 may be unsafe in some cases.
+   # We need to undef it before redefining it as some distributions now have
+diff -ru tensorflow-1.7.0.orig/third_party/toolchains/gpus/crosstool/CROSSTOOL tensorflow-1.7.0/third_party/toolchains/gpus/crosstool/CROSSTOOL
+--- tensorflow-1.7.0.orig/third_party/toolchains/gpus/crosstool/CROSSTOOL	2018-03-28 20:54:13.000000000 +0200
++++ tensorflow-1.7.0/third_party/toolchains/gpus/crosstool/CROSSTOOL	2018-03-30 10:28:19.359842027 +0200
+@@ -65,14 +65,6 @@
+     flag_set {
+       action: "c-compile"
+       action: "c++-compile"
+-      flag_group {
+-        # Make C++ compilation deterministic. Use linkstamping instead of these
+-        # compiler symbols.
+-        flag: "-Wno-builtin-macro-redefined"
+-        flag: "-D__DATE__=\"redacted\""
+-        flag: "-D__TIMESTAMP__=\"redacted\""
+-        flag: "-D__TIME__=\"redacted\""
+-      }
+     }
+   }
+ 

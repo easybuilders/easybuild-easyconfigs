@@ -1,0 +1,54 @@
+# Contribution from the Crick HPC team
+# uploaded by J. Sassmannshausen
+#
+# Updated: Pavel Grochal (INUITS)
+#
+
+easyblock = 'Tarball'
+
+name = 'Trim_Galore'
+version = '0.6.2'
+versionsuffix = '-Java-%(javaver)s'
+
+
+homepage = 'https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/'
+description = """Trim Galore is a wrapper around Cutadapt and FastQC to
+consistently apply adapter and quality trimming to FastQ files, with extra
+functionality for RRBS data."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.2.0'}
+
+source_urls = ['https://github.com/FelixKrueger/TrimGalore/archive/']
+sources = ['%(version)s.tar.gz']
+
+checksums = ['c50b841bdc294a6cdc6a27fb7bfbed1973541d20a68a4708584b817c58b3f376']
+
+multi_deps = {'Python': ['3.7.2', '2.7.15']}
+
+builddependencies = [('binutils', '2.31.1')]
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('pigz', '2.4'),
+    ('Perl', '5.28.1'),
+    ('FastQC', '0.11.8', '-Java-11', SYSTEM),
+    ('cutadapt', '1.18'),
+]
+
+postinstallcmds = [
+    "chmod +x %(installdir)s/%(namelower)s",
+    "sed -i '1 i#!/usr/bin/env perl' %(installdir)s/%(namelower)s",
+]
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ["trim_galore"],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "trim_galore --help"
+]
+
+moduleclass = 'bio'

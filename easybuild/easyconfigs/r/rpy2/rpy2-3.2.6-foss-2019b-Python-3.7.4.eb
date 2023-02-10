@@ -1,0 +1,48 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'rpy2'
+version = '3.2.6'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://rpy2.bitbucket.io/'
+description = """rpy2 is an interface to R running embedded in a Python process."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('R', '3.6.2'),
+    ('IPython', '7.9.0', versionsuffix),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('simplegeneric', '0.8.1', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'checksums': ['dc972e06094b9af5b855b3df4a646395e43d1c9d0d39ed345b7393560d0b9173'],
+    }),
+    ('tzlocal', '2.0.0', {
+        'checksums': ['949b9dd5ba4be17190a80c0268167d7e6c92c62b30026cf9764caf3e308e5590'],
+    }),
+    ('cffi', '1.14.0', {
+        'checksums': ['2d384f4a127a15ba701207f7639d94106693b6cd64173d6c8988e2c25f3ac2b6'],
+    }),
+    (name, version, {
+        'checksums': ['1829c23fd9f6ac9dc8cf0ea14c1bc20a2a6e4a35c6f2c4726857dcd1310329dd'],
+    }),
+]
+
+sanity_check_commands = [
+    "pytest --pyargs rpy2 "
+    # Disable tests which requires X11 present othewise it crashes with
+    # "unable to open connection to X11 display" error
+    "--ignore lib/python3.7/site-packages/rpy2/tests/ipython/test_rmagic.py "
+    "--ignore lib/python3.7/site-packages/rpy2/tests/robjects/lib/test_grdevices.py "
+]
+
+moduleclass = 'tools'

@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'Albacore'
+version = '2.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://community.nanoporetech.com/protocols/albacore-offline-basecalli/v/abec_2003_v1_revz_29nov2016'
+description = """Albacore is a software project that provides an entry point to the Oxford Nanopore basecalling
+ algorithms."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+local_pyver = '3.6.1'
+local_pymajmin = ''.join(local_pyver.split('.')[:2])
+
+dependencies = [
+    ('Python', local_pyver),
+    ('numpy', '1.13.1', versionsuffix),
+    ('h5py', '2.7.1', versionsuffix),
+]
+
+exts_list = [
+    ('ont-fast5-api', '0.4.1', {
+        'checksums': ['9c738b592613f5013c4cd3001c4448b5378454ce92e63ff795d134a4eca30fd0'],
+        'modulename': 'ont_fast5_api',
+    }),
+    ('progressbar33', '2.4', {
+        'checksums': ['51fe0d9b3b4023db2f983eeccdfc8c9846b84db8443b9bee002c7f58f4376eff'],
+        'modulename': 'progressbar',
+    }),
+    (name, version, {
+        'source_tmpl': 'ont_albacore-%%(version)s-cp%(pyv)s-cp%(pyv)sm-manylinux1_x86_64.whl' % {'pyv': local_pymajmin},
+        'source_urls': ['https://mirror.oxfordnanoportal.com/software/analysis/'],
+        'checksums': ['5473d3cdededf592cff73d8130fa1e483d51e789d46403eec7b5ff3b478db5e2'],
+        'unpack_sources': False,
+        'use_pip': True,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/full_1dsq_basecaller.py', 'bin/paired_read_basecaller.py', 'bin/read_fast5_basecaller.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = ["read_fast5_basecaller.py --help"]
+
+moduleclass = 'bio'

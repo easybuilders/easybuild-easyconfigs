@@ -1,0 +1,37 @@
+easyblock = 'ConfigureMake'
+
+name = 'libreadline'
+version = '6.3'
+
+homepage = 'http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html'
+description = """The GNU Readline library provides a set of functions for use by applications that
+ allow users to edit command lines as they are typed in. Both Emacs and vi editing modes are available.
+ The Readline library includes additional functions to maintain a list of previously-entered command lines,
+ to recall and perhaps reedit those lines, and perform csh-like history expansion on previous commands."""
+
+toolchain = {'name': 'GCCcore', 'version': '5.4.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://ftp.gnu.org/gnu/readline']
+sources = ['readline-%(version)s.tar.gz']
+patches = ['libreadline-%(version)s-bugfix.patch']
+checksums = [
+    '56ba6071b9462f980c5a72ab0023893b65ba6debb4eeb475d7a563dc65cafd43',  # readline-6.3.tar.gz
+    '46317932e1af8c5e0916930e545a354f5ce821f34fa1c5b40619b77e50400ffd',  # libreadline-6.3-bugfix.patch
+]
+
+builddependencies = [('binutils', '2.26', '', SYSTEM)]
+
+dependencies = [('ncurses', '6.0')]
+
+# for the termcap symbols, use EB ncurses
+preconfigopts = "env LDFLAGS='-lncurses'"
+
+sanity_check_paths = {
+    'files': ['lib/libreadline.a', 'lib/libhistory.a'] +
+             ['include/readline/%s' % x for x in ['chardefs.h', 'history.h', 'keymaps.h', 'readline.h', 'rlconf.h',
+                                                  'rlstdc.h', 'rltypedefs.h', 'tilde.h']],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

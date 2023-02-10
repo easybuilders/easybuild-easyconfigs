@@ -1,0 +1,32 @@
+From 2442bb24aca594bd566044fce276afbd377e0c03 Mon Sep 17 00:00:00 2001
+From: David Sheldon <david.sheldon@mindfoundry.ai>
+Date: Mon, 21 Aug 2017 13:41:31 +0100
+Subject: [PATCH] Update toposort to work with networkx 2.0
+
+Fixes #318 - networkx have changed their interface to return a generator rather than a list, so the assertion was failing when it indexed the list. Create a list before returning - this keeps the toposort interface consistent. Also documented that toposort returns a list.
+---
+ hyperopt/pyll/base.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hyperopt/pyll/base.py b/hyperopt/pyll/base.py
+index e6b3423..47fb964 100644
+--- a/hyperopt/pyll/base.py
++++ b/hyperopt/pyll/base.py
+@@ -703,7 +703,7 @@ def dfs(aa, seq=None, seqset=None):
+ 
+ def toposort(expr):
+     """
+-    Return apply nodes of `expr` sub-tree in topological order.
++    Return apply nodes of `expr` sub-tree as a list in topological order.
+ 
+     Raises networkx.NetworkXUnfeasible if subtree contains cycle.
+ 
+@@ -711,7 +711,7 @@ def toposort(expr):
+     G = nx.DiGraph()
+     for node in dfs(expr):
+         G.add_edges_from([(n_in, node) for n_in in node.inputs()])
+-    order = nx.topological_sort(G)
++    order = list(nx.topological_sort(G))
+     assert order[-1] == expr
+     return order
+ 

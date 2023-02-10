@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'SDSL'
+version = '2.1.1-20191211'
+
+homepage = 'https://github.com/simongog/sdsl-lite'
+description = """The Succinct Data Structure Library (SDSL) is a powerful and flexible C++11 library implementing
+ succinct data structures."""
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+
+local_sdsldir = 'sdsl-lite-*'
+local_extract_cmd_pattern = "pwd && ls && tar -C %s/%s --strip-components=1 -xf %%s"
+source_urls = ['https://github.com/simongog/sdsl-lite/archive/']
+
+sources = [
+    {
+        'download_filename': 'c32874c.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/simongog/libdivsufsort/archive/'],
+        'download_filename': '22e6b23.tar.gz',
+        'filename': 'libdivsufsort-2.0.1-20161201.tar.gz',
+        'extract_cmd': local_extract_cmd_pattern % (local_sdsldir, 'external/libdivsufsort'),
+    },
+]
+patches = ['SDSL-remove-googletest.patch', 'SDSL-deactivate-failed-test.patch']
+checksums = [
+    'ffab55af40d33a1a1705a693589d95ec31318270d58830a00d3723ee74b0c47b',  # SDSL-2.1.1-20191211.tar.gz
+    '211d4c64c13175a5020f4f16e418b9410facf5d22fb2cb7295a58887a61ae13f',  # libdivsufsort-2.0.1-20161201.tar.gz
+    'a355a66bffd41c21a65fe6e25e9076da81a7fd5275294cf5a0c8facec2fc42f6',  # SDSL-remove-googletest.patch
+    'd0136af5e786f05d117bce473702986373327c4b69e3a68d0fd4e081096d0807',  # SDSL-deactivate-failed-test.patch
+]
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('googletest', '1.10.0'),
+    ('binutils', '2.32')
+]
+buildopts = 'sdsl'
+runtest = 'test-sdsl'
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['lib/libsdsl.a'],
+    'dirs': ['include/sdsl'],
+}
+
+moduleclass = 'lib'

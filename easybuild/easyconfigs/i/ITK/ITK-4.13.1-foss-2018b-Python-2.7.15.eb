@@ -1,0 +1,55 @@
+easyblock = 'CMakePythonPackage'
+
+name = 'ITK'
+version = '4.13.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/InsightSoftwareConsortium/ITK/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['b352060d8b7289916a3cb033dfdbcf423423ba474643b79706966e679268e3d7']
+
+builddependencies = [
+    ('CMake', '3.11.4'),
+    ('Bison', '3.0.5'),
+]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('HDF5', '1.10.2'),
+    ('PCRE', '8.41'),
+    ('SWIG', '3.0.12', versionsuffix),
+    ('VTK', '8.1.1', versionsuffix),
+    ('X11', '20180604')
+]
+
+local_sys_deps = ['HDF5', 'SWIG']
+local_sys_cmake = ['-DITK_USE_SYSTEM_%s=ON' % d for d in local_sys_deps]
+
+configopts = '-DITK_WRAP_PYTHON=ON '
+configopts += '-DBUILD_TESTING=OFF '
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON '
+configopts += ' '.join(local_sys_cmake)
+# Don't depend on MPICXX (which makes linking to ITK painful)
+configopts += ' -DCMAKE_CXX_FLAGS="$CXXFLAGS -DOMPI_SKIP_MPICXX"'
+
+# See https://insightsoftwareconsortium.atlassian.net/browse/ITK-3538
+prebuildopts = "LC_ALL=C "
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver',
+              'lib/libITKVtkGlue-%(version_major_minor)s.a',
+              'lib/libitkjpeg-%(version_major_minor)s.a', 'lib/libitkpng-%(version_major_minor)s.a'],
+    'dirs': ['include/ITK-%(version_major_minor)s',
+             'lib/python%(pyshortver)s/site-packages',
+             'share'],
+}
+
+moduleclass = 'data'

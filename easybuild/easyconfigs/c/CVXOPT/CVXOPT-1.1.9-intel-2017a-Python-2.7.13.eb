@@ -1,0 +1,42 @@
+easyblock = "PythonPackage"
+
+name = 'CVXOPT'
+version = '1.1.9'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://cvxopt.org'
+description = """CVXOPT is a free software package for convex optimization based on the Python programming language.
+ Its main purpose is to make the development of software for convex optimization applications straightforward by
+ building on Python's extensive standard library and on the strengths of Python as a high-level programming language.
+"""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/cvxopt/cvxopt/archive/']
+sources = ['%(version)s.tar.gz']
+
+patches = ['%(name)s-%(version)s-fix-setup-py.patch']
+
+checksums = [
+    '09997fec809179c9bb9fe8cdd202ad6ecb675f890658219022f492e0797122ee',  # 1.1.9.tar.gz
+    '89058d53c55dcdc94a9b7a6ea8c6a6e78a693210d1d27a4178f68926ae5099e3',  # CVXOPT-1.1.9-fix-setup-py.patch
+]
+
+dependencies = [
+    ('Python', '2.7.13'),
+    ('SuiteSparse', '4.5.5', '-METIS-5.1.0'),
+    ('GSL', '2.3'),
+]
+
+prebuildopts = 'CVXOPT_BUILD_FFTW=1 CVXOPT_BUILD_GSL=1 CVXOPT_BLAS_EXTRA_LINK_ARGS="$LIBLAPACK" '
+prebuildopts += 'CVXOPT_FFTW_EXTRA_LINK_ARGS="$LIBFFT" CVXOPT_SUITESPARSE_SRC_DIR=$EBROOTSUITESPARSE'
+
+installopts = ' && nosetests'
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'math'

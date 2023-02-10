@@ -1,0 +1,32 @@
+# Use 64 byte alignment.
+# From https://github.com/tensorflow/tensorflow/pull/15606
+# Åke Sandgren, HPC2N
+diff -ru tensorflow-1.6.0.orig/tensorflow/compiler/aot/runtime.h tensorflow-1.6.0/tensorflow/compiler/aot/runtime.h
+--- tensorflow-1.6.0.orig/tensorflow/compiler/aot/runtime.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/compiler/aot/runtime.h	2018-03-24 12:55:47.961694231 +0100
+@@ -26,7 +26,7 @@
+ namespace runtime {
+ 
+ // Align to 32-bytes, to mimic tensorflow::Allocator::kAllocatorAlignment.
+-static constexpr size_t kAlign = 32;
++static constexpr size_t kAlign = 64;
+ 
+ // aligned_buffer_bytes returns the sum of each size in `sizes`, skipping -1
+ // values.  There are `n` entries in `sizes`.  Each buffer is aligned to kAlign
+diff -ru tensorflow-1.6.0.orig/tensorflow/core/framework/allocator.h tensorflow-1.6.0/tensorflow/core/framework/allocator.h
+--- tensorflow-1.6.0.orig/tensorflow/core/framework/allocator.h	2018-02-28 19:52:31.000000000 +0100
++++ tensorflow-1.6.0/tensorflow/core/framework/allocator.h	2018-03-24 12:55:17.389840738 +0100
+@@ -67,13 +67,8 @@
+ // device memory.
+ class Allocator {
+  public:
+-#ifdef EIGEN_VECTORIZE_AVX512
+   // Align to 64 byte boundary.
+   static constexpr size_t kAllocatorAlignment = 64;
+-#else
+-  // Align to 32 byte boundary.
+-  static constexpr size_t kAllocatorAlignment = 32;
+-#endif
+ 
+   virtual ~Allocator();
+ 

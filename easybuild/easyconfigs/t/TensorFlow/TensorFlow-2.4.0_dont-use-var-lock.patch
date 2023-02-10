@@ -1,0 +1,37 @@
+diff --git a/tensorflow/tools/ci_build/gpu_build/parallel_gpu_execute.sh b/tensorflow/tools/ci_build/gpu_build/parallel_gpu_execute.sh
+index ee70f2f608b..ab5cbe7d7b5 100755
+--- a/tensorflow/tools/ci_build/gpu_build/parallel_gpu_execute.sh
++++ b/tensorflow/tools/ci_build/gpu_build/parallel_gpu_execute.sh
+@@ -53,7 +53,7 @@ TEST_BINARY="$(rlocation $TEST_WORKSPACE/${1#./})"
+ shift
+ # *******************************************************************
+ 
+-mkdir -p /var/lock
++mkdir -p /tmp/tf-test-lock
+ # Try to acquire any of the TF_GPU_COUNT * TF_TESTS_PER_GPU
+ # slots to run a test at.
+ #
+@@ -61,7 +61,7 @@ mkdir -p /var/lock
+ # So, we iterate over TF_TESTS_PER_GPU first.
+ for j in `seq 0 $((TF_TESTS_PER_GPU-1))`; do
+   for i in `seq 0 $((TF_GPU_COUNT-1))`; do
+-    exec {lock_fd}>/var/lock/gpulock${i}_${j} || exit 1
++    exec {lock_fd}>/tmp/tf-test-lock/gpulock${i}_${j} || exit 1
+     if flock -n "$lock_fd";
+     then
+       (
+@@ -70,6 +70,7 @@ for j in `seq 0 $((TF_TESTS_PER_GPU-1))`; do
+         export CUDA_VISIBLE_DEVICES=$i
+         export HIP_VISIBLE_DEVICES=$i
+         echo "Running test $TEST_BINARY $* on GPU $CUDA_VISIBLE_DEVICES"
++        set +e
+         "$TEST_BINARY" $@
+       )
+       return_code=$?
+@@ -79,5 +80,5 @@ for j in `seq 0 $((TF_TESTS_PER_GPU-1))`; do
+   done
+ done
+ 
+-echo "Cannot find a free GPU to run the test $* on, exiting with failure..."
++echo "Cannot find a free GPU to run the test $TEST_BINARY $* on, exiting with failure..."
+ exit 1

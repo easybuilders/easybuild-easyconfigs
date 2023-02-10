@@ -1,0 +1,121 @@
+see https://github.com/trilinos/Trilinos/issues/2448 and https://github.com/trilinos/CTrilinos/pull/1
+
+patched needs to be applied in trilinos-12.12.1-Source/packages/CTrilinos/
+
+rom 749311116c2f6fe90f2c8e46de0863410d3ceba6 Mon Sep 17 00:00:00 2001
+From: edmondac-admin <a.c.edmondson@bham.ac.uk>
+Date: Sat, 31 Mar 2018 16:57:36 +0100
+Subject: [PATCH] #2448 if HAVE_EPETRA_LAPACK_GSSVD3 then add argument LWORK to
+ Epetra_LAPACK_GGSVD_double and Epetra_LAPACK_GGSVD_float
+
+---
+ src/epetra/CEpetra_LAPACK.cpp            | 23 +++++++++++++++++++----
+ src/epetra/CEpetra_LAPACK.h              | 10 ++++++++--
+ test/epetra/CEpetra_LAPACK_UnitTests.cpp |  6 ++++++
+ 3 files changed, 33 insertions(+), 6 deletions(-)
+
+diff --git a/src/epetra/CEpetra_LAPACK.cpp b/src/epetra/CEpetra_LAPACK.cpp
+index 708669e..a6ed061 100644
+--- a/src/epetra/CEpetra_LAPACK.cpp
++++ b/src/epetra/CEpetra_LAPACK.cpp
+@@ -44,6 +44,7 @@ Questions? Contact M. Nicole Lemaster (mnlemas@sandia.gov)
+ 
+ 
+ #include "CTrilinos_config.h"
++#include "Epetra_config.h"
+ 
+ #include "CTrilinos_enums.h"
+ #include "CEpetra_LAPACK.h"
+@@ -605,11 +606,18 @@ void Epetra_LAPACK_GGSVD_double (
+   const char JOBQ, const int M, const int N, const int P, int * K, 
+   int * L, double * A, const int LDA, double * B, const int LDB, 
+   double * ALPHA, double * BETA, double * U, const int LDU, 
+-  double * V, const int LDV, double * Q, const int LDQ, 
+-  double * WORK, int * IWORK, int * INFO )
++  double * V, const int LDV, double * Q, const int LDQ, double * WORK, 
++  #ifdef HAVE_EPETRA_LAPACK_GSSVD3
++    const int LWORK,
++  #endif
++  int * IWORK, int * INFO )
+ {
+     CEpetra::getConstLAPACK(selfID)->GGSVD(JOBU, JOBV, JOBQ, M, N, P, K, L, A, 
+-        LDA, B, LDB, ALPHA, BETA, U, LDU, V, LDV, Q, LDQ, WORK, IWORK, INFO);
++        LDA, B, LDB, ALPHA, BETA, U, LDU, V, LDV, Q, LDQ, WORK,
++      #ifdef HAVE_EPETRA_LAPACK_GSSVD3
++        LWORK, 
++      #endif
++        IWORK, INFO);
+ }
+ 
+ void Epetra_LAPACK_GGSVD_float ( 
+@@ -618,10 +626,17 @@ void Epetra_LAPACK_GGSVD_float (
+   int * L, float * A, const int LDA, float * B, const int LDB, 
+   float * ALPHA, float * BETA, float * U, const int LDU, float * V, 
+   const int LDV, float * Q, const int LDQ, float * WORK, 
++  #ifdef HAVE_EPETRA_LAPACK_GSSVD3
++    const int LWORK,
++  #endif
+   int * IWORK, int * INFO )
+ {
+     CEpetra::getConstLAPACK(selfID)->GGSVD(JOBU, JOBV, JOBQ, M, N, P, K, L, A, 
+-        LDA, B, LDB, ALPHA, BETA, U, LDU, V, LDV, Q, LDQ, WORK, IWORK, INFO);
++        LDA, B, LDB, ALPHA, BETA, U, LDU, V, LDV, Q, LDQ, WORK, 
++     #ifdef HAVE_EPETRA_LAPACK_GSSVD3
++        LWORK, 
++     #endif
++        IWORK, INFO);
+ }
+ 
+ void Epetra_LAPACK_GEEV_double ( 
+diff --git a/src/epetra/CEpetra_LAPACK.h b/src/epetra/CEpetra_LAPACK.h
+index 116db29..7c7f46b 100644
+--- a/src/epetra/CEpetra_LAPACK.h
++++ b/src/epetra/CEpetra_LAPACK.h
+@@ -564,8 +564,11 @@ void Epetra_LAPACK_GGSVD_double (
+   const char JOBQ, const int M, const int N, const int P, int * K, 
+   int * L, double * A, const int LDA, double * B, const int LDB, 
+   double * ALPHA, double * BETA, double * U, const int LDU, 
+-  double * V, const int LDV, double * Q, const int LDQ, 
+-  double * WORK, int * IWORK, int * INFO );
++  double * V, const int LDV, double * Q, const int LDQ, double * WORK, 
++ #ifdef HAVE_EPETRA_LAPACK_GSSVD3
++  const int LWORK,
++ #endif
++  int * IWORK, int * INFO );
+ 
+ /*! @brief Wrapper for 
+    void Epetra_LAPACK::GGSVD(const char JOBU, const char JOBV, const char JOBQ, const int M, const int N, const int P, int * K, int * L, float* A, const int LDA, float* B, const int LDB, float* ALPHA, float* BETA, float* U, const int LDU, float* V, const int LDV, float* Q, const int LDQ, float* WORK, int* IWORK, int* INFO) const
+@@ -576,6 +579,9 @@ void Epetra_LAPACK_GGSVD_float (
+   int * L, float * A, const int LDA, float * B, const int LDB, 
+   float * ALPHA, float * BETA, float * U, const int LDU, float * V, 
+   const int LDV, float * Q, const int LDQ, float * WORK, 
++ #ifdef HAVE_EPETRA_LAPACK_GSSVD3
++  const int LWORK,
++ #endif
+   int * IWORK, int * INFO );
+ 
+ /*! @brief Wrapper for 
+diff --git a/test/epetra/CEpetra_LAPACK_UnitTests.cpp b/test/epetra/CEpetra_LAPACK_UnitTests.cpp
+index 3dcc79e..38b1cc2 100644
+--- a/test/epetra/CEpetra_LAPACK_UnitTests.cpp
++++ b/test/epetra/CEpetra_LAPACK_UnitTests.cpp
+@@ -486,6 +486,9 @@ void Epetra_LAPACK_GGSVD_double (
+   int * L, double * A, const int LDA, double * B, const int LDB, 
+   double * ALPHA, double * BETA, double * U, const int LDU, 
+   double * V, const int LDV, double * Q, const int LDQ, 
++  #ifdef HAVE_EPETRA_LAPACK_GSSVD3
++    const int LWORK,
++  #endif
+   double * WORK, int * IWORK, int * INFO );
+  **********************************************************************/
+ 
+@@ -496,6 +499,9 @@ void Epetra_LAPACK_GGSVD_float (
+   int * L, float * A, const int LDA, float * B, const int LDB, 
+   float * ALPHA, float * BETA, float * U, const int LDU, float * V, 
+   const int LDV, float * Q, const int LDQ, float * WORK, 
++  #ifdef HAVE_EPETRA_LAPACK_GSSVD3
++    const int LWORK,
++  #endif
+   int * IWORK, int * INFO );
+  **********************************************************************/
+ 

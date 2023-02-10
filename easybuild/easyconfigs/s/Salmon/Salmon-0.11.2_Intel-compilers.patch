@@ -1,0 +1,37 @@
+fix support for building Salmon 0.11.2 with Intel compilers
+* fix detection of C++11-compatible compiler in CMakeLists.txt
+* uncomment preprocessor directive that guard workaround for Intel compilers that is not required for recent versions
+author: Kenneth Hoste (HPC-UGent)
+adopted by Fynn Schwietzer (HPC-UniOldenburg)
+
+--- CMakeLists.txt.orig	2018-08-28 10:48:05.642565702 +0200
++++ CMakeLists.txt	2018-08-28 11:06:52.694742007 +0200
+@@ -187,6 +187,15 @@
+     else()
+         set (PTHREAD_LIB "pthread")
+     endif()
++elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
++    execute_process(
++        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
++    set (INTEL TRUE)
++    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
++    set (BOOST_TOOLSET "intel-linux")
++    set (BOOST_CONFIGURE_TOOLSET "--with-toolset=intel-linux")
++   set (BCXX_FLAGS "-std=c++14")
++    set (BOOST_EXTRA_FLAGS toolset=intel-linux cxxflags=${BCXX_FLAGS})
+ else ()
+     message(FATAL_ERROR "Your C++ compiler does not support C++14.")
+ endif ()
+--- include/atomicops.h.orig	2018-08-28 11:10:46.299480092 +0200
++++ include/atomicops.h	2018-08-28 11:15:37.560437277 +0200
+@@ -82,8 +82,8 @@
+ 
+ } // end namespace moodycamel
+ 
+-#if (defined(AE_VCPP) && (_MSC_VER < 1700 || defined(__cplusplus_cli))) ||     \
+-    defined(AE_ICC)
++#if (defined(AE_VCPP) && (_MSC_VER < 1700 || defined(__cplusplus_cli))) // ||    \
++//    defined(AE_ICC)
+ // VS2010 and ICC13 don't support std::atomic_*_fence, implement our own fences
+ 
+ #include <intrin.h>

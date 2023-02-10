@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'XGBoost'
+version = '20171120'
+local_commit = '8817769'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://github.com/dmlc/xgboost'
+description = """XGBoost is an optimized distributed gradient boosting library designed to be highly efficient,
+ flexible and portable."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+
+sources = [{
+    'filename': SOURCELOWER_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/dmlc',
+        'repo_name': 'xgboost',
+        'commit': local_commit,
+        'recursive': True,
+    },
+}]
+# can't include reliable checksum because source tarball is created via git, commit ID should be sufficient
+checksums = [None]
+
+builddependencies = [('CMake', '3.9.5')]
+dependencies = [('Java', '1.8.0_152', '', SYSTEM)]
+
+buildopts = " && cd jvm-packages && mvn install -Dmaven.repo.local=%(builddir)s/m2"
+
+files_to_copy = ['../m2/ml/dmlc/xgboost4j/*/xgboost4j-*.jar']
+
+sanity_check_paths = {
+    'files': ['xgboost4j-0.7.jar', 'xgboost4j-0.7-jar-with-dependencies.jar'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

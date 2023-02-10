@@ -1,0 +1,38 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+name = 'Cufflinks'
+version = '20190706'
+local_commit = 'dc3b0cb'
+
+homepage = 'http://cole-trapnell-lab.github.io/%(namelower)s/'
+description = "Transcript assembly, differential expression, and differential regulation for RNA-Seq"
+
+toolchain = {'name': 'gompi', 'version': '2019a'}
+toolchainopts = {'pic': True}
+
+github_account = 'cole-trapnell-lab'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['444c632083a473fe4fd99ff189cef5bbd95daee0912e8eefe79534bf225fbcb6']
+
+builddependencies = [
+    ('Eigen', '3.3.7', '', SYSTEM),
+    ('Autotools', '20180311'),
+    ('SAMtools', '1.9'),
+]
+
+dependencies = [
+    ('Boost', '1.70.0'),
+    ('zlib', '1.2.11'),
+    ('HTSlib', '1.9'),
+]
+
+preconfigopts = 'autoreconf -i && export LIBS="${LIBS} -lhts" && '
+configopts = '--with-boost=${EBROOTBOOST} --with-bam=${EBROOTSAMTOOLS}'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

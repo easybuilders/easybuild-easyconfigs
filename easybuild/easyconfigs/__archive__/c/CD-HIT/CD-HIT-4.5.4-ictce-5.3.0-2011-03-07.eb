@@ -1,0 +1,49 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2013 The Cyprus Institute
+# Authors::   Andreas Panteli <a.panteli@cyi.ac.cy>, George Tsouloupas <g.tsouloupas@cyi.ac.cy>
+# License::   MIT/GPL
+#
+##
+
+easyblock = "MakeCp"
+
+name = 'CD-HIT'
+version = '4.5.4'
+versionsuffix = '-2011-03-07'
+
+homepage = 'http://www.bioinformatics.org/cd-hit/'
+description = """CD-HIT stands for Cluster Database at High Identity with Tolerance. The program 
+takes a fasta format sequence database as input and produces a set of 'non-redundant' (nr) 
+representative sequences as output. In addition cd-hit outputs a cluster file, documenting the 
+sequence 'groupies' for each nr sequence representative. """
+
+toolchain = {'name': 'ictce', 'version': '5.3.0'}
+toolchainopts = {'openmp': True}
+
+# eg. http://www.bioinformatics.org/downloads/index.php/cd-hit/cd-hit-v4.5.4-2011-03-07.tgz
+sources = ['%(namelower)s-v%(version)s%(versionsuffix)s.tgz']
+source_urls = ['http://www.bioinformatics.org/downloads/index.php/cd-hit/']
+
+# make sure compilation flags are passed down (e.g. to enable OpenMP)
+buildopts = ' CC="$CXX" CCFLAGS="$CPPFLAGS $CXXFLAGS"'
+
+binfiles = [
+    "cd-hit", "cd-hit-est", "cd-hit-2d", "cd-hit-est-2d", "cd-hit-div", "cd-hit-%s" % ''.join(version.split('.')),
+    "cd-hit-2d-para.pl", "cd-hit-div.pl", "cd-hit-para.pl", "clstr2tree.pl", "clstr_merge_noorder.pl",
+    "clstr_merge.pl", "clstr_reduce.pl", "clstr_renumber.pl", "clstr_rev.pl", "clstr_sort_by.pl",
+    "clstr_sort_prot_by.pl", "make_multi_seq.pl", "plot_2d.pl", "plot_len1.pl", "psi-cd-hit-2d-g1.pl",
+    "psi-cd-hit-2d.pl", "psi-cd-hit-local.pl", "psi-cd-hit.pl",
+]
+files_to_copy = [
+    (binfiles, 'bin'),
+    "cdhit-user-guide.pdf"
+]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in binfiles] + ["cdhit-user-guide.pdf"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,53 @@
+easyblock = 'PythonBundle'
+
+name = 'python-igraph'
+version = '0.9.0'
+
+homepage = 'https://igraph.org/python'
+description = """Python interface to the igraph high performance graph library, primarily aimed at complex network
+ research and analysis."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('igraph', '0.9.1'),
+    ('PyCairo', '1.20.0'),
+    ('Clang', '11.0.1'),
+    ('libxml2', '2.9.10'),
+    ('zlib', '1.2.11'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('texttable', '1.6.3', {
+        'checksums': ['ce0faf21aa77d806bbff22b107cc22cce68dc9438f97a2df32c93e9afa4ce436'],
+    }),
+    (name, version, {
+        'installopts': '--install-option="--use-pkg-config" --install-option="--static"',
+        'modulename': 'igraph',
+        'patches': ['python-igraph-%(version)s_fix-igraph-libs.patch'],
+        'checksums': [
+            '7aa1d77fa02e27475eb4f14503f3cb342c3ed8990d9224640fd29c70797f2dd6',  # python-igraph-0.9.0.tar.gz
+            # python-igraph-0.9.0_fix-igraph-libs.patch
+            '7af7a6e6a8b982ced7cdd939d82a98829512088744bebad34c714a3c4803f126',
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/igraph'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# cairo must be available for proper plotting support
+sanity_check_commands = ["python -c 'from igraph.drawing.utils import find_cairo; cairo = find_cairo(); cairo.Context'"]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'

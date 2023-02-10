@@ -1,0 +1,72 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'Waf'
+
+name = 'Essentia'
+version = '2.1_beta5'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://essentia.upf.edu'
+description = """Open-source library and tools for audio and music analysis, description and synthesis"""
+docurls = ['https://essentia.upf.edu/documentation/installing.html']
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+source_urls = [
+    'https://github.com/MTG/%(namelower)s/archive/',
+    'https://github.com/MTG/essentia-audio/archive/',
+]
+sources = [
+    'v%(version)s.tar.gz',
+    {'download_filename': 'beeca09.tar.gz', 'filename': 'essentia-audio-20190128.tar.gz'},
+]
+patches = [
+    'Essentia-%(version)s_fix-vamp-prefix.patch',
+    'Essentia-%(version)s_fix-FFmpeg-libswresample.patch',
+    'Essentia-%(version)s_fix-test-PYTHONPATH.patch',
+]
+checksums = [
+    'f2e1b2ded11c1fd74a3fca3d62a041216487cf22aebc4007515043ce631dcec6',  # v2.1_beta5.tar.gz
+    'a193d1d5114763c6b43d8b2d0ab955bb48bdff36e344df887c54505f4be804a6',  # essentia-audio-20190128.tar.gz
+    '540d5219db4ec22b31c0fb707e012114aca3088b86ffb7e7e50318ec769f1c03',  # Essentia-2.1_beta5_fix-vamp-prefix.patch
+    # Essentia-2.1_beta5_fix-FFmpeg-libswresample.patch
+    '9d6c3b09dc632dda5b6febc6fdbf714aef02ea8af6ec6b9831ea8c9ec6177e37',
+    '848aafc2aa62658863e51709bcfb78e838ff09e54e385c712b6aa6c8210eb2a5',  # Essentia-2.1_beta5_fix-test-PYTHONPATH.patch
+]
+
+builddependencies = [('pkg-config', '0.29.2')]
+
+dependencies = [
+    ('Python', '2.7.15'),
+    ('SciPy-bundle', '2019.03'),  # for numpy
+    ('FFTW', '3.3.8'),
+    ('libyaml', '0.2.2'),
+    ('PyYAML', '5.1'),
+    ('FFmpeg', '4.1.3'),
+    ('libsamplerate', '0.1.9'),
+    ('TagLib', '1.11.1'),
+    ('Chromaprint', '1.4.3'),
+    ('Gaia', '2.4.5', versionsuffix),
+    ('zlib', '1.2.11'),
+]
+
+configopts = "--mode=release --build-static --with-python --python=$EBROOTPYTHON/bin/python "
+configopts += "--with-cpptests --with-examples --with-vamp --with-gaia"
+
+runtest = "cp -a %(builddir)s/essentia-audio*/* test/audio/ && "
+# run C++ base unit tests;
+# not running Python tests because it seems like they are utterly broken
+# (see https://github.com/MTG/essentia/issues/new)
+runtest += "./waf run_tests"
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['lib/libessentia.a', 'lib/pkgconfig/essentia.pc', 'lib/vamp/libvamp_essentia.%s' % SHLIB_EXT],
+    'dirs': ['include/essentia', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import essentia'"]
+
+moduleclass = 'lib'

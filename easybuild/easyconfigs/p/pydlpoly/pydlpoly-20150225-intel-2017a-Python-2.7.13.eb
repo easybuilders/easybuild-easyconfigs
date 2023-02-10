@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'pydlpoly'
+version = '20150225'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'http://cmc.aci.ruhr-uni-bochum.de/cmc/'
+description = """Pydlpoly is a molecular dynamics simulation package which is a modified version of DL-POLY with
+ a Python language interface."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+sources = ['%(name)s_250215.tgz']
+checksums = ['cd84a4b563dd16823e22fe6c450b07fd95036e20e0c6b7fc308afdb347241122']
+
+dependencies = [
+    ('Python', '2.7.13'),  # also provides mpi4py, numpy
+    ('h5py', '2.7.0', versionsuffix),
+    ('FFTW', '2.1.5'),
+]
+
+start_dir = 'source'
+
+parallel = 1
+buildopts = 'FC="$FC" LD="$FC -o" LDFLAGS="$FFLAGS" FFLAGS="-c $FFLAGS" LDLIBS="-ldfftw" F2PY_COMP=intelem'
+
+files_to_copy = ['doc', 'py', 'scripts', 'so']
+
+sanity_check_paths = {
+    'files': ['so/_pydlpoly.%s' % SHLIB_EXT],
+    'dirs': ['py'],
+}
+sanity_check_commands = ["python -c 'import pydlpoly'"]
+
+modextrapaths = {'PYTHONPATH': ['py', 'so']}
+modextravars = {'PDLPDIR': '%(installdir)s'}
+
+moduleclass = 'chem'

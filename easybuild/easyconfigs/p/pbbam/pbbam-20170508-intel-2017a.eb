@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'pbbam'
+version = '20170508'
+local_commit = 'd62e310'
+
+homepage = 'http://pbbam.readthedocs.io/'
+description = """The pbbam software package provides components to create, query, & edit PacBio BAM files
+ and associated indices."""
+
+toolchain = {'name': 'intel', 'version': '2017a'}
+
+local_gtest_ver = '1.8.0'
+source_urls = [
+    'https://github.com/PacificBiosciences/pbbam/archive/',
+    'https://github.com/google/googletest/archive/',
+]
+sources = [
+    {'filename': '%s.tar.gz' % local_commit, 'extract_cmd': "tar xfvz %s --strip-components=1"},  # pbbam
+    'release-%s.tar.gz' % local_gtest_ver,  # googletest
+]
+
+builddependencies = [
+    ('CMake', '3.8.1'),
+    ('Doxygen', '1.8.13'),
+]
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Boost', '1.64.0'),
+    ('googletest', '1.8.0'),
+    ('HTSlib', '20160107', '-PacBio'),
+]
+
+skipsteps = ['install']
+
+buildininstalldir = True
+
+configopts = "-DHTSLIB_ROOTDIR=$EBROOTHTSLIB -DGTEST_SRC_DIR=%%(builddir)s/googletest-release-%s" % local_gtest_ver
+
+runtest = 'test'
+
+postinstallcmds = ["rm -r googletest-release-%s" % local_gtest_ver]
+
+sanity_check_paths = {
+    'files': ['bin/pbindex', 'bin/pbindexdump', 'bin/pbmerge', 'lib/libpbbam.a'],
+    'dirs': ['include/pbbam'],
+}
+
+moduleclass = 'bio'
