@@ -33,6 +33,7 @@ import re
 import shutil
 import sys
 import tempfile
+from collections import defaultdict
 from distutils.version import LooseVersion
 from unittest import TestCase, TestLoader, main, skip
 
