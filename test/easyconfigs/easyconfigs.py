@@ -935,9 +935,9 @@ class EasyConfigTest(TestCase):
             # ignore git/svn dirs & archived easyconfigs
             if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
                 continue
-            dirpath_split = dirpath.split(os.sep)
-            if len(dirpath_split) == 4:
-                name = dirpath_split[3]
+            dirpath_split = dirpath.replace(topdir, '').split(os.sep)
+            if len(dirpath_split) == 5:
+                name = dirpath_split[4]
                 names[name.lower()].append(name)
 
         # Allow these historical case-insensitive name clashes for now. DO NOT ADD TO THIS!
