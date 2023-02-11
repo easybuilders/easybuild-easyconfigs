@@ -926,6 +926,31 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
+    def test_easyconfig_name_clashes(self):
+        """Make sure there is not a name clash when all names are lowercase"""
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        names = defaultdict(list)
+        for (dirpath, _, _) in os.walk(topdir):
+            # ignore git/svn dirs & archived easyconfigs
+            if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
+                continue
+            dirpath_split = dirpath.split(os.sep)
+            if len(dirpath_split) == 4:
+                name = dirpath_split[3]
+                names[name.lower()].append(name)
+
+        # Allow these historical case-insensitive name clashes for now. DO NOT ADD TO THIS!
+        temp_whitelist = []  # 'arb', 'bamm', 'blasr', 'charmm', 'check', 'graphviz', 'libpsml', 'magma', 'nanofilt', 'ncl']
+        duplicates = {}
+        for name in names:
+            if name in temp_whitelist:
+                continue
+            if len(names[name]) > 1:
+                duplicates[name] = names[name]
+
+        if duplicates:
+            self.assertTrue(False, "EasyConfigs with case-insensitive name clash: %s" % duplicates)
+
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
