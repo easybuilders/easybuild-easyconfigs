@@ -1,0 +1,69 @@
+# Author: Jasper Grimm (UoY)
+# Updated: Denis Kristak (INUITS)
+easyblock = 'CMakeMake'
+
+name = 'vcflib'
+version = '1.0.3'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/vcflib/vcflib'
+description = """vcflib provides methods to manipulate and interpret sequence variation as it can be
+ described by VCF. The Variant Call Format (VCF) is a flat-file, tab-delimited textual format intended
+ to concisely describe reference-indexed genetic variations between individuals."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-1.0.3_use-external-deps.patch',
+    '%(name)s-1.0.3_fix-shared-linking.patch',
+]
+checksums = [
+    '5fd05f46dc251a56a322809da92c93c85318036aa9ac39a2eefc4fbd39b5df6c',  # v1.0.3.tar.gz
+    '89f99efb35eb3a5fdc5a7fdeb96c204b1af481194bcd788c939c600a985fa8a4',  # vcflib-1.0.3_use-external-deps.patch
+    '2584e33e447c07a66eefc46263161873498910e19035f9beed1600cbd05fd4b0',  # vcflib-1.0.3_fix-shared-linking.patch
+]
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('CMake', '3.20.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('Perl', '5.32.1'),
+    ('R', '4.1.0'),
+    ('XZ', '5.2.5'),
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('HTSlib', '1.12'),
+    ('tabixpp', '1.1.0'),
+    ('intervaltree', '0.1'),
+    ('fastahack', '1.0.0'),
+    ('filevercmp', '20191210'),
+    ('fsom', '20141119'),
+    ('multichoose', '1.0.3'),
+    ('smithwaterman', '20160702'),
+]
+
+preconfigopts = r"find %(builddir)s/%(name)s-%(version)s/src -type f -regextype egrep -regex '.*\.(h|cpp)' -exec sed -i"
+preconfigopts += " -e 's|SmithWatermanGotoh.h|smithwaterman/SmithWatermanGotoh.h|g'"
+preconfigopts += " -e 's|IntervalTree.h|intervaltree/IntervalTree.h|g'"
+preconfigopts += " -e 's|multichoose.h|multichoose/multichoose.h|g' -e 's|filevercmp.h|filevercmp/filevercmp.h|g'"
+preconfigopts += " -e 's|tabix.hpp|tabixpp/tabix.hpp|g' -e 's|Fasta.h|fastahack/Fasta.h|g'"
+preconfigopts += r" -e 's|disorder.h|smithwaterman/disorder.h|g' {} \; && "
+
+postinstallcmds = ["cp -r %(builddir)s/%(name)s-%(version)s/scripts %(installdir)s"]
+
+modextrapaths = {'PATH': ['scripts']}
+
+sanity_check_paths = {
+    'files': ['bin/vcfannotate', 'bin/vcfcombine', 'lib/libvcflib.%s' % SHLIB_EXT],
+    'dirs': ['scripts'],
+}
+
+sanity_check_commands = ["vcfremap"]
+
+moduleclass = 'bio'
