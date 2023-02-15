@@ -941,7 +941,7 @@ class EasyConfigTest(TestCase):
                 names[name.lower()].append(name)
 
         # Allow these historical case-insensitive name clashes for now. DO NOT ADD TO THIS!
-        temp_whitelist = ['arb', 'bamm', 'blasr', 'charmm', 'check', 'graphviz', 'libpsml', 'magma', 'nanofilt', 'ncl']
+        temp_whitelist = ['arb', 'bamm', 'blasr', 'charmm', 'check', 'graphviz', 'libpsml', 'nanofilt', 'ncl']
         duplicates = {}
         for name in names:
             if name in temp_whitelist:
