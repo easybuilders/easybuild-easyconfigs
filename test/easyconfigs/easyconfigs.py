@@ -940,12 +940,8 @@ class EasyConfigTest(TestCase):
                 name = dirpath_split[4]
                 names[name.lower()].append(name)
 
-        # Allow these historical case-insensitive name clashes for now. DO NOT ADD TO THIS!
-        temp_whitelist = ['charmm', 'check', 'graphviz', 'libpsml', 'nanofilt', 'ncl']
         duplicates = {}
         for name in names:
-            if name in temp_whitelist:
-                continue
             if len(names[name]) > 1:
                 duplicates[name] = names[name]
 
