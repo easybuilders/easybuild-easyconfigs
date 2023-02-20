@@ -1,0 +1,38 @@
+easyblock = 'Toolchain'
+
+name = 'foss'
+version = '2022a'
+versionsuffix = '-python-3.10.4'
+
+homepage = 'https://python.org/'
+description = """GNU Compiler Collection (GCC) based compiler toolchain, including
+ OpenMPI for MPI support, OpenBLAS (BLAS and LAPACK support), FFTW and ScaLAPACK.
+ Also includes a Python installation along with a number of useful extensions."""
+
+toolchain = SYSTEM
+
+_gccver = '11.3.0'
+
+# toolchain used to build foss dependencies
+_comp_mpi_tc = ('gompi', '2022a')
+_foss_tc = ('foss', '2022a')
+
+# we need GCC and OpenMPI as explicit dependencies instead of gompi toolchain
+# because of toolchain preparation functions
+dependencies = [
+    ('GCC', _gccver),
+    ('OpenMPI', '4.1.4', '', ('GCC', _gccver)),
+    ('FlexiBLAS', '3.2.0', '', ('GCC', _gccver)),
+    ('FFTW', '3.3.10', '', ('GCC', _gccver)),
+    ('FFTW.MPI', '3.3.10', '', _comp_mpi_tc),
+    ('ScaLAPACK', '2.2.0', '-fb', _comp_mpi_tc),
+    ('HDF5','1.12.2', '', _comp_mpi_tc),
+    ('Python', '3.10.4', '', ('GCCcore', _gccver)),
+    ('IPython', '8.5.0', '', ('GCCcore', _gccver)),
+    ('h5py', '3.7.0', '' , _foss_tc),
+    ('SciPy-bundle', '2022.05', '', _foss_tc),
+    ('matplotlib', '3.5.2', '', _foss_tc),
+    ('astropy','5.1.1', '', _foss_tc),
+]
+
+moduleclass = 'toolchain'
