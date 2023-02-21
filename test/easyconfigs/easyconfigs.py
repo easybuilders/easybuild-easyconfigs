@@ -931,14 +931,14 @@ class EasyConfigTest(TestCase):
         """Make sure there is not a name clash when all names are lowercase"""
         topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         names = defaultdict(list)
+        # ignore git/svn dirs & archived easyconfigs
+        ignore_dirs = ['.git', '.svn', '__archive__']
         for (dirpath, _, _) in os.walk(topdir):
-            # ignore git/svn dirs & archived easyconfigs
-            if '/.git/' in dirpath or '/.svn/' in dirpath or '__archive__' in dirpath:
-                continue
-            dirpath_split = dirpath.replace(topdir, '').split(os.sep)
-            if len(dirpath_split) == 5:
-                name = dirpath_split[4]
-                names[name.lower()].append(name)
+            if not any('/%s' % d in dirpath for d in ignore_dirs):
+                dirpath_split = dirpath.replace(topdir, '').split(os.sep)
+                if len(dirpath_split) == 5:
+                    name = dirpath_split[4]
+                    names[name.lower()].append(name)
 
         duplicates = {}
         for name in names:
