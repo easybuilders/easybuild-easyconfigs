@@ -1,0 +1,63 @@
+# This version does require cairomm 1.14 as there has been a change in the API!
+# See https://forum.skewed.de/t/error-fill-rule-even-odd-is-not-a-member-of-cairo/1397
+# It should be fixed in the upcoming version though. 
+# Author J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'graph-tool'
+version = '2.45'
+
+homepage = 'https://graph-tool.skewed.de/'
+description = """Graph-tool is an efficient Python module for manipulation and
+ statistical analysis of graphs (a.k.a. networks). Contrary to
+ most other python modules with similar functionality, the core
+ data structures and algorithms are implemented in C++, making
+ extensive use of template metaprogramming, based heavily on
+ the Boost Graph Library. This confers it a level of
+ performance that is comparable (both in memory usage and
+ computation time) to that of a pure C/C++ library."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'cstd': 'c++17'}
+
+source_urls = ['https://downloads.skewed.de/%(name)s/']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['f92da7accfda02b29791efe4f0b3ed93329f27232af4d3afc07c92421ec68668']
+
+builddependencies = [
+    ('gawk', '5.1.1'),
+    ('pkgconf', '1.8.0'),
+    ('Autotools', '20220317'),
+    ('M4', '1.4.19'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('Boost.Python', '1.79.0'),
+    ('expat', '2.4.8'),
+    ('CGAL', '4.14.3'),
+    ('sparsehash', '2.0.4'),
+    ('matplotlib', '3.5.2'),
+    ('PyCairo', '1.21.0'),
+    ('cairomm', '1.14.4', '-cairo-1.17.4'),
+    ('PyGObject', '3.42.1'),
+    ('GTK3', '3.24.33'),
+]
+
+preconfigopts = 'autoreconf -iv &&'
+configopts = '--enable-openmp --with-boost=$EBROOTBOOST  '
+configopts += '--with-boost-python=boost_python310  '
+configopts += '--with-python-module-path=%(installdir)s/lib/python%(pyshortver)s/site-packages '
+
+
+sanity_check_paths = {
+    'files': ['lib/python%(pyshortver)s/site-packages/graph_tool/all.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/graph_tool/include', 'share'],
+}
+
+sanity_check_commands = ["python -c 'from graph_tool.all import graph_draw'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'math'
