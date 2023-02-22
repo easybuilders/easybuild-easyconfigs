@@ -1,0 +1,87 @@
+--- ./common.mk.orig	2023-02-21 15:30:56.136692879 -0800
++++ ./common.mk	2023-02-21 15:31:21.852944917 -0800
+@@ -109,7 +109,7 @@
+ ifeq ($(TARGET),mingw32)
+    $(error Error: Should not build using MinGW gcc tool chain instead use MingGW-w64)
+ endif
+-ifneq ($(words $(subst -, ,$(TARGET))),3)
++ifneq ($(words $(subst -, ,$(TARGET))),4)
+    $(error Value of build TARGET does not appear to be a machine-vendor-system triplet)
+ endif
+ 
+--- ./src/Parsers/Makefile.orig	2023-02-21 15:32:44.297752939 -0800
++++ ./src/Parsers/Makefile	2023-02-21 15:33:37.014269876 -0800
+@@ -204,7 +204,7 @@
+  $(LIBTPP) | $(MKDIR)
+ 	$(LD) $(LDFLAGS) $^ $(MZPARSER_LDFLAGS) $(PWIZ_LDFLAGS) \
+ 	$(BOOST_LDFLAGS) $(GZSTREAM_LDFLAGS) $(LIBARCHIVE_LDFLAGS) \
+-        $(BZIP2_LDFLAGS) $(LZO2_LDFLAGS) -lz -o $@ 
++        $(BZIP2_LDFLAGS) $(LZO2_LDFLAGS) -lz -llzo2 -o $@ 
+ 
+ PARSERS_ALL += $(BUILD_BIN)/MzXML2Search 
+ $(BUILD_BIN)/MzXML2Search : \
+--- ./src/Visualization/Makefile.orig	2023-02-21 15:31:28.105006192 -0800
++++ ./src/Visualization/Makefile	2023-02-21 15:32:40.217712952 -0800
+@@ -256,7 +256,7 @@
+ 	$(LD) $(LDFLAGS) $^ $(LIBARCHIVE_LDFLAGS) \
+ 	   $(PWIZ_LDFLAGS) $(GSL_LDFLAGS) $(FANN_LDFLAGS)  \
+ 		$(GZSTREAM_LDFLAGS) $(BOOST_LDFLAGS) \
+-			$(LZO2_LDFLAGS) -lz -lbz2 -o $@
++			$(LZO2_LDFLAGS) -lz -lbz2 -llzo2 -o $@
+ 
+ 
+ VISUAL_ALL += $(BUILD_CGI)/ShowXIC.cgi
+--- ./extern/Makefile.orig	2023-02-21 15:33:43.758336032 -0800
++++ ./extern/Makefile	2023-02-21 15:38:23.317093690 -0800
+@@ -584,7 +584,7 @@
+ 
+ $(FANN_SRC)/ : | $(BUILD_DIR)/
+ 	tar xzf $(FANN_TGZ) -C $(dir $(FANN_SRC))
+-	cd $(FANN_SRC); ./configure \
++	cd $(FANN_SRC);  CC=gcc ./configure \
+ 	   --enable-shared=no --enable-static=yes --build=x86_64-mingw32 \
+ 	   --includedir $(BUILD_DIR)/include --libdir $(BUILD_LIB) 
+ 
+@@ -629,7 +629,7 @@
+ 
+ $(GSL_SRC)/ : | $(BUILD_DIR)/
+ 	tar xzf $(GSL_TGZ) -C $(dir $(GSL_SRC))
+-	cd $(GSL_SRC); ./configure \
++	cd $(GSL_SRC); CC=gcc ./configure \
+ 	   --enable-shared=no --enable-static=yes --build=x86_64 \
+ 	   --prefix $(BUILD_DIR) \
+ 	   --includedir $(BUILD_DIR)/include --libdir $(BUILD_LIB) 
+@@ -876,7 +876,7 @@
+ $(LIBARCHIVE_SRC)/ : | $(BUILD_DIR)/
+ 	mkdir -p $(dir $(LIBARCHIVE_SRC))
+ 	tar xzf $(LIBARCHIVE_TGZ) -C $(dir $(LIBARCHIVE_SRC))
+-	cd $(LIBARCHIVE_SRC); ./configure --build=$(TARGET) \
++	cd $(LIBARCHIVE_SRC); CC=gcc ./configure --build=$(TARGET) \
+ 	   --enable-shared=no --disable-shared \
+ 	   --enable-static=yes --enable-static=yes \
+ 	   --disable-bsdtar --disable-bsdcpio \
+@@ -978,13 +978,11 @@
+ $(LIBGD_SRC)/ : | $(BUILD_DIR)/
+ 	mkdir -p $(dir $(LIBGD_SRC))
+ 	tar xzf $(LIBGD_TGZ) -C $(dir $(LIBGD_SRC))
+-	cd $(LIBGD_SRC); ./configure --build=x86_64 \
+-	   --enable-shared=no --disable-shared \
+-	   --enable-static=yes --enable-static=yes \
++	cd $(LIBGD_SRC); CC=gcc ./configure --build=x86_64 \
+ 	   --prefix=$(BUILD_DIR) \
+ 	   --includedir=$(BUILD_DIR)/include \
+ 	   --libdir=$(BUILD_LIB) \
+-	   --with-png=$(BUILD_DIR) \
++	   --with-png=$(EBROOTGENTOO) \
+ 	   --without-x
+ 	$(foreach P, $(LIBGD_PATCHES), 					\
+ 	   @echo "### ...applying GD patch $(notdir $(P))" $(nl) 	\
+@@ -992,7 +990,7 @@
+ 	)
+ 
+ # libpng has to come before libgd because of LIBPNG_LIB requirement
+-$(LIBGD_LIB) : $(LIBPNG_LIB) | $(LIBGD_SRC)/
++$(LIBGD_LIB) : $(LIBGD_SRC)/
+ 	make -C $(LIBGD_SRC) 
+ 	make -C $(LIBGD_SRC) install
+ 
