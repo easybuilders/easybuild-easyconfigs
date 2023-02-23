@@ -1,0 +1,50 @@
+easyblock = "MakeCp"
+
+name = 'GLIMPSE'
+version = '2.0.0'
+
+homepage = 'https://odelaneau.github.io/GLIMPSE/'
+description = """
+GLIMPSE is a phasing and imputation method for large-scale low-coverage sequencing studies.
+
+Main features of the method:
+
+1. Accurate imputed genotype calls. Our method takes advantage of reference panels to produce high quality genotype calls.
+2. Accurate phasing. GLIMPSE outputs accurate phased haplotypes for the low-coverage sequenced dataset.
+3. Low-coverage sequencing outperforms SNP arrays. Imputation using low-coverage sequencing data is competitive to SNP array imputation. Results for European and African-American populations are interactively available on the website.
+4. A cost-effective paradigm. GLIMPSE realises whole genome imputation from the HRC reference panel for less than 1$.
+5. An easy-to-use framework for diploid, haploid and mixed ploidy imputation. Our method is able to perform imputation of samples with different ploidy without the need to split the data.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/odelaneau/GLIMPSE/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['GLIMPSE-2.0.0-makefile.patch']
+checksums = [
+    '9babfdbb4907d3528f16494f8913abb2b72676710a984becfeabe5f51c354854', # v2.0.0.tar.gz
+    'b9833d4140e36e2b0eab8784f99251d2f7dde052e4507d0df86db222b389b7c2', # GLIMPSE-2.0.0-makefile.patch
+]
+
+builddependencies = [
+    ('Boost', '1.72.0', '-core'),
+    ('HTSlib', '1.16'),
+]
+
+local_exes = [
+    'GLIMPSE2_chunk',
+    'GLIMPSE2_concordance',
+    'GLIMPSE2_ligate',
+    'GLIMPSE2_phase',
+    'GLIMPSE2_split_reference',
+]
+
+# Get the directory name from the executable name : remove prefix GLIMPSE
+files_to_copy = [([exe[9:] + '/bin/'+ exe for exe in local_exes], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/{}'.format(exe) for exe in local_exes],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
