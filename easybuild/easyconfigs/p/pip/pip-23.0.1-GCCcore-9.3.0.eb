@@ -1,0 +1,43 @@
+easyblock = 'PythonBundle'
+
+name = 'pip'
+version = '23.0.1'
+
+homepage = 'http://python.org/'
+
+description = """Bundle which contains pip"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'} 
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+multi_deps = {
+	'Python': ['3.7', '3.8', '3.9', '3.10', '3.11'],
+}
+
+multi_deps_load_default = False
+hidden = True
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'sanity_pip_check': False,
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'preinstallopts': "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+}
+
+# order is important!
+exts_list = [
+    ('pip', '23.0.1', {
+    	'fix_python_shebang_for': ['bin/pip', 'bin/pip3'],
+	# to workaround a bug in setuptools
+	'exts_filter': ('SETUPTOOLS_USE_DISTUTILS=stdlib python -c "import pip"', ""),
+    }),
+]
+
+
+moduleclass = 'lang'
+sanity_check_paths = {'files': [], 'dirs': ['lib/python%(pyshortver)s/site-packages']}
+sanity_pip_check = False
+
