@@ -1,0 +1,56 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'PythonBundle'
+
+name = 'Cellpose'
+version = '2.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = "https://www.cellpose.org/"
+description = """a generalist algorithm for cellular segmentation"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('CUDA', '11.7.0', '', True),
+    ('numba', '0.56.4'),
+    ('OpenCV', '4.6.0', '%s-contrib' % versionsuffix),
+    ('Python', '3.10.4'),
+    ('PyQt5', '5.15.5'),
+    ('PyTorch', '1.12.1', versionsuffix),
+    ('QtPy', '2.3.0'),
+    ('tqdm', '4.64.0'),
+]
+
+sanity_pip_check = True
+use_pip = True
+
+exts_list = [
+    ('natsort', '8.2.0', {
+        'checksums': ['57f85b72c688b09e053cdac302dd5b5b53df5f73ae20b4874fcbffd8bf783d11'],
+    }),
+    ('tifffile', '2023.2.3', {
+        'checksums': ['458df5ad9a5217f668edd636dc19fbc736062bf78aac823ab84cdbae9de8eaa6'],
+    }),
+    ('fastremap', '1.13.4', {
+        'checksums': ['77a65182fa66f278af5349cd7d36e4cb24d1f6ff889c296bde73b19752e8cf37'],
+    }),
+    ('imagecodecs', '2023.1.23', {
+        'source_tmpl': '%(name)s-%(version)s-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
+        'checksums': ['639e23902a11309e547067d06f04b02e3c3baf6aa30c3d693c9e1f782d5dc1b0'],
+    }),
+    ('pyqtgraph', '0.13.1', {
+        'checksums': ['698f87f59db965727b33602a0b29058de21291d8b143dea878b50578aec0dc08'],
+    }),
+    ('superqt', '0.4.0', {
+        'checksums': ['35af07bea5898b52ce7cbb2e683e21fab86181b1eebe2f39583d6722e0658c72'],
+    }),
+    (name, version, {
+        # OpenCV provides the required cv2, but it fails a pip check due to missing metadata
+        'preinstallopts': """sed -i "s/'opencv-python-headless',//" setup.py && """,
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'use_pip_extras': 'all',
+        'checksums': ['96356571592901746f4c69559bd7f6a7123ac1bca90391b9b66d8a56fbbe026c'],
+    }),
+]
+
+moduleclass = 'bio'
