@@ -1,0 +1,60 @@
+Patch to ensure SSL will be picked up by EasyBuild and not the OS. Important for older OpenSSL versions
+original Author: J. Sassmannshausen / GSTT
+updated for v442 by Samuel Moors (Vrije Universiteit Brussel)
+diff -ur userApps.orig/kent/src/inc/common.mk userApps/kent/src/inc/common.mk
+--- userApps.orig/kent/src/inc/common.mk	2023-01-18 01:19:26.000000000 +0100
++++ userApps/kent/src/inc/common.mk	2023-02-01 14:06:02.404382429 +0100
+@@ -133,7 +133,7 @@
+ ifneq (${SSL_DIR}, "/usr/include/openssl")
+   ifneq ($(UNAME_S),Darwin)
+     ifneq ($(wildcard ${SSL_DIR}),)
+-      L+=-L${SSL_DIR}/lib
++      L+=-L${SSL_DIR}/lib -lssl -lcrypto
+     endif
+   endif
+     HG_INC+=-I${SSL_DIR}/include
+@@ -142,44 +142,6 @@
+ ifeq (${IS_HGWDEV},yes)
+    L+=/hive/groups/browser/freetype/freetype-2.10.0/objs/.libs/libfreetype.a -lbz2
+    L+=/usr/lib64/libssl.a /usr/lib64/libcrypto.a -lkrb5 -lk5crypto -ldl
+-else
+-   ifeq (${CONDA_BUILD},1)
+-       L+=${PREFIX}/lib/libssl.a ${PREFIX}/lib/libcrypto.a -ldl
+-   else
+-     ifneq ($(wildcard /opt/homebrew/Cellar/openssl@3/3.0.7/lib/libssl.a),)
+-         L+=/opt/homebrew/Cellar/openssl@3/3.0.7/lib/libssl.a
+-     else
+-       ifneq ($(wildcard /opt/local/lib/libssl.a),)
+-         L+=/opt/local/lib/libssl.a
+-       else
+-         ifneq ($(wildcard /usr/lib/x86_64-linux-gnu/libssl.a),)
+-	   L+=/usr/lib/x86_64-linux-gnu/libssl.a
+-         else
+-           ifneq ($(wildcard /usr/local/opt/openssl/lib/libssl.a),)
+-              L+=/usr/local/opt/openssl/lib/libssl.a
+-           else
+-              L+=-lssl
+-           endif
+-         endif
+-       endif
+-     endif
+-     ifneq ($(wildcard /opt/homebrew/Cellar/openssl@3/3.0.7/lib/libcrypto.a),)
+-         L+=/opt/homebrew/Cellar/openssl@3/3.0.7/lib/libcrypto.a
+-     else
+-       ifneq ($(wildcard /opt/local/lib/libcrypto.a),)
+-          L+=/opt/local/lib/libcrypto.a
+-       else
+-          ifneq ($(wildcard /usr/local/opt/openssl/lib/libcrypto.a),)
+-             L+=/usr/local/opt/openssl/lib/libcrypto.a
+-          else
+-             L+=-lcrypto
+-          endif
+-       endif
+-     endif
+-     ifneq ($(wildcard /opt/homebrew/Cellar/zstd/1.5.2/lib/libzstd.a),)
+-          L+=/opt/homebrew/Cellar/zstd/1.5.2/lib/libzstd.a
+-     endif
+-   endif
+ endif
+ 
+ # autodetect where libm is installed

@@ -1,0 +1,61 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2022/10
+easyblock = 'PythonBundle'
+
+name = 'n2v'
+version = '0.3.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/juglab/n2v'
+description = """
+Noise2Void - Learning Denoising from Single Noisy Images
+The field of image denoising is currently dominated by discriminative deep      
+learning methods that are trained on pairs of noisy input and clean target      
+images. Recently it has been shown that such methods can also be trained without
+clean targets. Instead, independent pairs of noisy images can be used, in an    
+approach known as NOISE2NOISE (N2N). Here, we introduce NOISE2VOID (N2V), a     
+training scheme that takes this idea one step further. It does not require noisy
+image pairs, nor clean target images. Consequently, N2V allows us to train      
+directly on the body of data to be denoised and can therefore be applied when   
+other methods cannot. Especially interesting is the application to biomedical   
+image data, where the acquisition of training targets, clean or noisy, is       
+frequently not possible. We compare the performance of N2V to approaches that   
+have either clean target images and/or noisy image pairs available. Intuitively,
+N2V cannot be expected to outperform methods that have more information         
+available during training. Still, we observe that the denoising performance of  
+NOISE2VOID drops in moderation and compares favorably to training-free denoising
+methods."""
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('TensorFlow', '2.6.0', versionsuffix),
+    ('mrcfile', '1.3.0'),
+    ('tqdm', '4.61.2'),
+    ('matplotlib', '3.4.2'),
+    ('ruamel.yaml', '0.17.21'),
+    ('imagecodecs', '2022.9.26'),
+    ('JupyterLab', '3.0.16'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('tifffile', '2022.10.10', {
+        'checksums': ['50b61ba943b866d191295bc38a00191c9fdab23ece063544c7f1a264e3f6aa8e'],
+    }),
+    ('csbdeep', '0.7.2', {
+        'checksums': ['8a000eb71d04aa753f52ffe81a34c0a30a06ee986d20b9986d76272253e2fd53'],
+    }),
+    (name, version, {
+        'checksums': ['8662aa5e903e170a1c9769882da241d669b6e7efd8b164b68723c675539ec06f'],
+    }),
+]
+
+sanity_check_commands = [
+    '%s --help' % x for x in ['care_predict', 'trainN2V.py', 'care_predict']
+]
+
+moduleclass = 'bio'
