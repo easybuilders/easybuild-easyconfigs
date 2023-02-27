@@ -1,0 +1,49 @@
+easyblock = 'Tarball'
+
+name = 'netMHCII'
+version = '2.3'
+
+homepage = 'https://www.cbs.dtu.dk/services/NetMHCII/'
+description = """NetMHCII 2.3 server predicts binding of peptides to HLA-DR,
+ HLA-DQ, HLA-DP and mouse MHC class II alleles using articial neuron networks.
+ Predictions can be obtained for 25 HLA-DR alleles, 20 HLA-DQ, 9 HLA-DP, and
+ 7 mouse H2 class II alleles."""
+
+toolchain = SYSTEM
+
+# netMHCII is proprietary software, but free for academics.
+# It can be requested at https://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCII
+sources = [
+    {
+        'filename': '%(name)s-%(version)s.Linux.tar.gz',
+        'extract_cmd': 'tar --strip-components=1 -xzf %s',
+    },
+    {
+        'download_filename': 'data.Linux.tar.gz',
+        'filename': '%(name)s-%(version)s-data.Linux.tar.gz',
+    },
+]
+checksums = [
+    '8b184b2463b93bbcbb93a7351c6c0bae12d82c7827c451ebc5153b257dd0be86',  # netMHCII-2.3.Linux.tar.gz
+    '6bf8af9e2e89d96b8fe9a2752164606417c4583872bdc2e81637f6668dee30a0',  # netMHCII-2.3-data.Linux.tar.gz
+]
+
+keepsymlinks = True
+
+postinstallcmds = [
+    "sed -i -e 's|setenv[[:space:]]NMHOME.*|setenv NMHOME $EBROOTNETMHCII|' %(installdir)s/netMHCII-%(version)s",
+    "sed -i -e 's|setenv[[:space:]]*TMPDIR.*|setenv TMPDIR $TMPDIR|' %(installdir)s/netMHCII-%(version)s",
+    "cd %(installdir)s && ln -s netMHCII-2.3 netMHCII",
+    "chmod -R +rX %(installdir)s",
+]
+
+sanity_check_paths = {
+    'files': ['netMHCII-%(version)s', 'Linux_x86_64/bin/netMHCII'],
+    'dirs': ['data'],
+}
+
+sanity_check_commands = ['netMHCII-%(version)s -h']
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'
