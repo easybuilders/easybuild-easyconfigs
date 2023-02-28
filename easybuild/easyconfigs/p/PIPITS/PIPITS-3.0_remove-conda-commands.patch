@@ -1,0 +1,56 @@
+Some PIPITS scripts in the bin folder contain a hardcoded "conda list" commands.
+This patch replaces those calls by "pip list".
+
+Furthermore, it replaces the call to a Conda wrapper script for launching
+RDP-Classifier by the actual java command.
+
+Author: Bob Dröge (University of Groningen)
+
+diff -ru pipits-3.0-orig/bin/pipits_funits pipits-3.0/bin/pipits_funits
+--- pipits-3.0-orig/bin/pipits_funits	2023-01-30 12:00:47.126429480 +0100
++++ pipits-3.0/bin/pipits_funits	2023-01-30 12:01:43.330947430 +0100
+@@ -102,7 +102,7 @@
+     logger("", logging_file, display = True, timestamp = False)
+ 
+     # Log versions
+-    cmd = " ".join(["conda list"])
++    cmd = " ".join(["pip list"])
+     run_cmd(cmd, version_file, False)
+ 
+     # Start
+diff -ru pipits-3.0-orig/bin/pipits_process pipits-3.0/bin/pipits_process
+--- pipits-3.0-orig/bin/pipits_process	2023-01-30 12:00:47.087115862 +0100
++++ pipits-3.0/bin/pipits_process	2023-01-30 12:03:34.783649411 +0100
+@@ -166,7 +166,7 @@
+     logger("", logging_file, display = True, timestamp = False)
+ 
+     # Log versions
+-    cmd = " ".join(["conda list"])
++    cmd = " ".join(["pip list"])
+     run_cmd(cmd, version_file, False)
+ 
+     # Environment variable - discontinued.
+@@ -623,9 +623,10 @@
+         
+         logger(ENDC + "Assigning taxonomy with UNITE [RDP Classifier]" + ENDC, logging_file, display = True)
+         PIPITS_UNITE_RETRAINED_PROPERTIES = "pipits_db/UNITE_retrained_" + options.unite + "/UNITE_retrained/rRNAClassifier.properties"
+-        cmd = " ".join(["classifier",
++        cmd = " ".join(["java",
+                         "-Xms" + str(options.Xms),
+                         "-Xmx" + str(options.Xmx),
++                        "-jar $EBROOTRDPMINCLASSIFIER/dist/classifier.jar",
+                         "classify", 
+                         "-t " + PIPITS_UNITE_RETRAINED_PROPERTIES, 
+                         "-o", options.outDir + "/assigned_taxonomy_rdp_raw.txt", 
+@@ -703,9 +704,10 @@
+         logger("Assigning taxonomy [RDP Classifier] - Warcup", logging_file, display = True)
+         PIPITS_WARCUP_RETRAINED_PROPERTIES = "pipits_db/warcup_retrained_V2/warcup_retrained_V2/rRNAClassifier.properties"
+         cmd = " ".join([
+-            "classifier",
++            "java",
+             "-Xms" + str(options.Xms),
+             "-Xmx" + str(options.Xmx),
++            "-jar $EBROOTRDPMINCLASSIFIER/dist/classifier.jar",
+             "classify", 
+             "-t " + PIPITS_WARCUP_RETRAINED_PROPERTIES,
+             "-o", options.outDir + "/assigned_taxonomy_warcup_raw.txt", 
