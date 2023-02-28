@@ -38,6 +38,14 @@ dependencies = [
     ('libxml2', '2.10.3'),
 ]
 
+# disable Szip, zlib parallel I/O tests, since these can hang on some systems, e.g. generoso
+#  see: https://github.com/easybuilders/easybuild-easyconfigs/pull/16834
+#  and  https://github.com/easybuilders/easybuild-easyconfigs/pull/17107#issuecomment-1432947172
+preconfigopts = ("sed -i -e 's|@MPIEXEC@ -n 4 ./tst_parallel5|echo \"skipped by EasyBuild\"|g'"
+                 " -e 's|@MPIEXEC@ -n 4 ./tst_parallel_zlib|echo \"skipped by EasyBuild\"|g'"
+                 " -e 's|@MPIEXEC@ -n 4 ./tst_parallel_compress|echo \"skipped by EasyBuild\"|g'"
+                 " %(builddir)s/%(namelower)s-c-%(version)s/nc_test4/run_par_test.sh.in &&")
+
 # make sure both static and shared libs are built
 # and disable "remote" tests that access a unreliable external test server over internet
 configopts = [
