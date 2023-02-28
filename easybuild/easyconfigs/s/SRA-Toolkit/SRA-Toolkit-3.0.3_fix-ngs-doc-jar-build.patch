@@ -1,0 +1,34 @@
+Remove non-existing obj directory from the working directory path of ngs-doc_javadoc
+see issue https://github.com/ncbi/sra-tools/issues/771
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff -Nru sra-tools-3.0.3.orig/ngs/ngs-java/CMakeLists.txt sra-tools-3.0.3/ngs/ngs-java/CMakeLists.txt
+--- sra-tools-3.0.3.orig/ngs/ngs-java/CMakeLists.txt	2023-02-09 01:06:27.885993000 +0100
++++ sra-tools-3.0.3/ngs/ngs-java/CMakeLists.txt	2023-02-09 01:10:51.430171000 +0100
+@@ -140,17 +140,12 @@
+             set(SRC_FILES "${SRC_FILES} ${f}")
+         endforeach()
+ 
+-        if( ${OS} STREQUAL "windows" )
+-            set( NGS_JAVADOC_DIR ${TARGDIR} )
+-        else()
+-            set( NGS_JAVADOC_DIR ${TARGDIR}/obj )
+-        endif()
+         if ( Java_JAR_EXECUTABLE AND NOT (${OS} STREQUAL "windows") )
+             add_custom_target(
+                 ngs-doc-jar ALL COMMAND
+                 bash -c "${Java_JAR_EXECUTABLE} -cf ${CMAKE_JAR_OUTPUT_DIRECTORY}/ngs-doc.jar ."
+                 DEPENDS ngs-doc_javadoc
+-                WORKING_DIRECTORY "${NGS_JAVADOC_DIR}/ngs/ngs-java/javadoc/ngs-doc"
++                WORKING_DIRECTORY "${TARGDIR}/ngs/ngs-java/javadoc/ngs-doc"
+             )
+             install( FILES ${CMAKE_JAR_OUTPUT_DIRECTORY}/ngs-doc.jar DESTINATION ${CMAKE_INSTALL_PREFIX}/jar/ )
+ 
+@@ -166,7 +161,7 @@
+                 ngs-doc-jar ALL COMMAND
+                 "${Java_JAR_EXECUTABLE}" -cf "${CMAKE_JAR_OUTPUT_DIRECTORY}/ngs-doc.jar" .
+                 DEPENDS ngs-doc_javadoc
+-                WORKING_DIRECTORY "${NGS_JAVADOC_DIR}/ngs/ngs-java/javadoc/ngs-doc"
++                WORKING_DIRECTORY "${TARGDIR}/ngs/ngs-java/javadoc/ngs-doc"
+             )
+             install( FILES ${CMAKE_JAR_OUTPUT_DIRECTORY}/ngs-doc.jar DESTINATION ${CMAKE_INSTALL_PREFIX}/jar/ )
+ 
