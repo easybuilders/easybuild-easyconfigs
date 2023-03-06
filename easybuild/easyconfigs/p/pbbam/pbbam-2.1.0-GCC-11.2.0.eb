@@ -1,0 +1,55 @@
+easyblock = 'MesonNinja'
+
+name = 'pbbam'
+version = '2.1.0'
+
+homepage = 'http://pbbam.readthedocs.io/'
+description = """The pbbam software package provides components to create, query, & edit PacBio BAM files
+ and associated indices."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+toolchainopts = {'cstd': 'c++20'}
+
+source_urls = ['https://github.com/PacificBiosciences/pbbam/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['pbbam.git-source.patch']
+checksums = [
+    {'v2.1.0.tar.gz': '605944f09654d964ce12c31d67e6766dfb1513f730ef5d4b74829b2b84dd464f'},
+    {'pbbam.git-source.patch': '3c87d075728d776f3d081cea509a67cb641d194e7fa1414816cafea6b7ab39d1'},
+]
+
+preconfigopts = [
+  "cd %(builddir)s/%(name)s-%(version)s && \
+   sed 's/@PBBAM_GIT_SHA1@/v%(version)s/g' src/PbbamGitHash.cpp.in > src/PbbamGitHash.cpp && \
+   sed 's/@PBBAM_GIT_SHA1@/v%(version)s/g' src/LibraryGitHash.h.in > src/LibraryGitHash.h && \
+   sed 's/@PBBAM_GIT_SHA1@/v%(version)s/g' src/LibraryVersion.h.in > src/LibraryVersion.h && \
+   cd - && "
+  ]
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('Meson', '0.58.2'),
+    ('Ninja', '1.10.2'),
+    ('cram', '0.7'),
+    ('googletest', '1.11.0'),
+]
+dependencies = [
+    ('Boost', '1.77.0', '', ('GCC', '11.2.0')),
+    ('HTSlib', '1.14'),
+    ('zlib', '1.2.11'),
+    ('pbcopper', '2.0.0'),
+    ('SAMtools', '1.14', '', ('GCC', '11.2.0')),
+]
+
+
+
+sanity_check_paths = {
+
+    'files': ['bin/pbbamify', 'bin/pbindex', 'bin/pbindex', 'bin/pbindexdump', 'bin/pbmerge',
+              'lib/libpbbam.%s' % SHLIB_EXT],
+    'dirs': ['include/pbbam', 'lib/pkgconfig'],
+}
+
+sanity_check_commands = ["%s -h" % x for x in ['bam2sam', 'pbbamify', 'pbindex', 'pbindexdump', 'pbmerge']]
+
+moduleclass = 'bio'
