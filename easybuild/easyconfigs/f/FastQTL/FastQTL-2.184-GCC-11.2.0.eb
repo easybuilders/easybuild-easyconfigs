@@ -1,0 +1,67 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+# updated to GCC 11.2.0
+# J. Sassmannshausen
+
+easyblock = 'MakeCp'
+
+name = 'FastQTL'
+version = '2.184'
+
+homepage = 'http://fastqtl.sourceforge.net/'
+description = 'FastQTL is a QTL mapper'
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = ['http://fastqtl.sourceforge.net/files/']
+sources = ['%(name)s-%(version)s.linux.tgz']
+patches = ['FastQTL-makefile.patch']
+
+checksums = [
+    'b8d8959a9fbeba106483a2a3e178eaf918b907ad9f9aab7988b6817bb2108879',
+    'e289eaeaf1d18f17d0baabf23d632bf0599a4d6eaa7bcc173e6d7e305315466b',  # FastQTL-makefile.patch
+]
+
+builddependencies = [
+    ('libRmath', '4.1.2'),
+    ('binutils', '2.37'),
+    ('tabix', '0.2.6'),
+    ('Eigen', '3.4.0'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.2.5'),
+    ('GSL', '2.7'),
+    ('Boost', '1.77.0'),
+    ('FlexiBLAS', '3.0.4'),
+    ('OpenBLAS', '0.3.18'),
+]
+
+files_to_copy = [
+    'bin',
+    'doc',
+    'example',
+    'LICENCE',
+    'README',
+    'script',
+]
+
+# a simple fastQTL --help returns an exit code > 0
+sanity_check_commands = [
+    "fastQTL --help 2>&1 | grep 'Version : v2.0'",
+]
+
+sanity_check_paths = {
+    'files': ['bin/fastQTL'],
+    'dirs': []
+}
+
+# delete the binary provided with the tarball
+# it's not static and it doesn't work ;)
+postinstallcmds = ['rm %(installdir)s/bin/fastQTL.static']
+
+moduleclass = 'bio'

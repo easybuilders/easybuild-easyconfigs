@@ -1,0 +1,37 @@
+commit 8ff0a1295743fae1eb069fe8242e524f348f5937
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Tue Oct 18 14:28:47 2022 +0200
+
+    Make sure SCons sees the complete environment from EasyBuild.
+
+diff --git xmipp-3.22.07-Helios/src/xmipp/SConstruct xmipp-3.22.07-Helios/src/xmipp/SConstruct
+index 22ea72cf..c921c3c5 100644
+--- xmipp-3.22.07-Helios/src/xmipp/SConstruct
++++ xmipp-3.22.07-Helios/src/xmipp/SConstruct
+@@ -236,7 +236,7 @@ def addCppLibrary(env, name, dirs=[], tars=[], untarTargets=['configure'], patte
+     # the reason is a compilation error for CUDA, which results in a multiple symbol detection
+     # when the order is different. This has to be fixed in the future by changing the CUDA
+     # build system FIXME David Strelak
+-    env2 = Environment()
++    env2 = Environment(ENV=os.environ)
+     env2['ENV']['PATH'] = env['ENV']['PATH']
+     env2['CXXFLAGS']=list(env['CXXFLAGS']) # list(.) causes a true copy and not just a pointer 
+     env2['LINKFLAGS']=list(env['LINKFLAGS'])
+@@ -425,7 +425,7 @@ def addProgram(env, name, src=None, pattern=None, installDir=None,
+     ldLibraryPathCopy = [env['LIBPATH']]
+     appendUnique(libPathsCopy, external_libdirs) # This order is important, because if we should use Scipion libs, these will be before the system libs
+     appendUnique(libPathsCopy, env.get('LIBPATH', '').split(os.pathsep))
+-    env2 = Environment()
++    env2 = Environment(ENV=os.environ)
+     env2['ENV']['LD_LIBRARY_PATH'] = env['ENV'].get('LD_LIBRARY_PATH', '')
+     env2['ENV']['PATH'] = env['ENV']['PATH']
+ 
+@@ -486,7 +486,7 @@ def compilerConfig(env):
+ 
+ def libraryTest(env, name, lang='c'):
+     """Check the existence of a concrete C/C++ library."""
+-    env2 = Environment(LIBS=env.get('LIBS',''))
++    env2 = Environment(ENV=os.environ,LIBS=env.get('LIBS',''))
+     conf = Configure(env2)
+     conf.CheckLib(name, language=lang)
+     env2 = conf.Finish()

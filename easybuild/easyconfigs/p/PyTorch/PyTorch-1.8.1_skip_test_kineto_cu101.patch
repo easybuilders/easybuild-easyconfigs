@@ -1,0 +1,24 @@
+Skip test_kineto on CUDA 10.1 because it uses CUPTI which requires root due to a vulnerability
+on that CUDA version.
+author: Christoph Siegert (Leipzig University)
+
+diff --git a/test/test_profiler.py b/test/test_profiler.py
+index 585f569aa7..35f3ff6015 100644
+--- a/test/test_profiler.py
++++ b/test/test_profiler.py
+@@ -113,6 +113,7 @@ class TestProfiler(TestCase):
+ 
+     @unittest.skipIf(not kineto_available(), "Kineto is required")
+     @unittest.skipIf(not torch.cuda.is_available(), "CUDA is required")
++    @unittest.skipIf(torch.version.cuda == "10.1", "CUPTI requires root on CUDA 10.1")
+     def test_kineto(self):
+         with _profile(use_cuda=True, use_kineto=True):
+             self.payload()
+@@ -136,6 +137,7 @@ class TestProfiler(TestCase):
+ 
+     @unittest.skipIf(not kineto_available(), "Kineto is required")
+     @unittest.skipIf(not TEST_MULTIGPU, "Multiple GPUs needed")
++    @unittest.skipIf(torch.version.cuda == "10.1", "CUPTI requires root on CUDA 10.1")
+     def test_kineto_multigpu(self):
+         with profile(
+             activities=[

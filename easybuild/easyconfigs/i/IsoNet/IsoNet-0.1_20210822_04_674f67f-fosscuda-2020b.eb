@@ -1,0 +1,67 @@
+# Thomas Hofffmann, EMBL Heidelberg, structures-it@embl.de, 2021/09
+easyblock = 'Tarball'  # there is no setup.py -> unpack tarball and move to site-packages in postinstall.
+
+name = 'IsoNet'
+# There is no version tag available in github. Using commit and date instead.
+local_commit = '674f67f1afb8aa1353c0d67ccb55263c1f20576f'
+local_version = '0.1'
+local_commit_date = '20210822'
+local_commit_count = '04'
+version = '%s_%s_%s_%s' % (local_version, local_commit_date, local_commit_count, local_commit[:7])
+
+homepage = 'https://github.com/Heng-Z/IsoNet'
+description = """IsoNet stands for for ISOtropic reconstructioN of Electron Tomography. It trains
+deep convolutional neural networks to reconstruct meaningful contents in the mis
+sing wedge for electron tomography, and to increase signal-to-noise ratio,      
+using the information learned from the original tomogram. The software requires 
+tomograms as input. Observing at about 30A resolution, the IsoNet generated     
+tomograms are largely isotropic."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+source_urls = ['https://github.com/Heng-Z/IsoNet/archive/']
+sources = ['%s.tar.gz' % local_commit]
+checksums = ['dac1583bbab0d6b09496657b5d237b9c35c9a70ee9c0089a174e571b78892d49']
+
+install_type = 'subdir'
+postinstallcmds = [
+    'find %(installdir)s/isonet -name \'*.pyc\' -exec rm {} \\;'
+    '&& mv %(installdir)s/isonet %(installdir)s/lib/python%(pyshortver)s/site-packages/IsoNet'
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('TensorFlow', '2.4.1'),
+    ('PyQt5', '5.15.1'),
+    ('SciPy-bundle', '2020.11'),
+    ('mrcfile', '1.3.0'),
+    ('tqdm', '4.56.2'),
+    ('scikit-image', '0.18.1')  # acc. to requirements.txt: ==0.17.2 !
+]
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('fire', '0.4.0', {
+        'modulename': 'fire',
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['c5e2b8763699d1142393a46d0e3e790c5eb2f0706082df8f647878842c216a62'],
+    }),
+]
+
+modextrapaths = {
+    'PATH': 'lib/python%(pyshortver)s/site-packages/IsoNet/bin',
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages/'
+}
+sanity_check_commands = [
+    'isonet.py check',
+    'isonet.py --help',
+]
+sanity_check_paths = {
+    'files': [],
+    'dirs': ["lib/python%(pyshortver)s/site-packages/IsoNet"]
+}
+
+moduleclass = 'bio'
