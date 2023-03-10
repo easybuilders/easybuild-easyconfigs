@@ -1,7 +1,7 @@
 # Changed to FlexiBLAS and Ninja
 # J. Sassmannshausen (Imperial College London/UK)
 
-easyblock = 'CMakeNinja'
+easyblock = 'CMakeMake'
 
 name = 'Nektar++'
 version = '5.2.0'
@@ -38,14 +38,21 @@ dependencies = [
     ('VTK', '9.2.2'),
 ]
 
+# We are using FlexiBLAS instead of OpenBLAS
 preconfigopts = 'export FLEXI_HOME=$EBROOTFLEXIBLAS && '
+configopts = '-DNEKTAR_USE_FLEXIBLAS=True -DNEKTAR_USE_SYSTEM_BLAS_LAPACK=OFF '
+# We are using HDF5-1.12.x and thus we need to do it like that: 
+configopts += '-DCMAKE_C_FLAGS="-DH5_USE_110_API" -DCMAKE_CXX_FLAGS="-DH5_USE_110_API" '
+# Default options, required for a basic build:
+configopts += '-DNEKTAR_USE_HDF5=ON -DNEKTAR_USE_FFTW=ON -DNEKTAR_USE_MPI=ON '
+configopts += '-DTHIRDPARTY_BUILD_GSMPI=ON -DNEKTAR_USE_CCM=ON '
+# Optional, we can use PETSc:
+# configopts += '-DNEKTAR_USE_PETSC=ON -DTHIRDPARTY_BUILD_PETSC=OFF '
 
-configopts = '-DNEKTAR_USE_FLEXIBLAS=True '
-
-# When tested, 15 out of the 603 jobs failed with segfault. 
-# This seems to depend on the CPU architectur
-# Added the suggestions from Parv621 to see if we get more information out
-test_cmd = 'ctest -j %(parallel)s --output-on-failure'
+# When tested, 2 out of the 703 jobs failed with segfault.
+# We need to use 1 core as some tests have threading enabled it seems!
+# (Working on that with maintainer) 
+test_cmd = 'ctest -j 1 --output-on-failure'
 runtest = ''
 
 sanity_check_paths = {
