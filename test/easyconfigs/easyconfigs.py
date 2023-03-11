@@ -1411,6 +1411,7 @@ def template_easyconfig_test(self, spec):
             self.assertTrue(isinstance(ext[2], dict),
                             "3rd element of extension spec for %s must be a dictionary" % ext_name)
 
+    ext_patch_issues = []
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
         try:
@@ -1429,16 +1430,18 @@ def template_easyconfig_test(self, spec):
 
             # only check actual patch files, not other files being copied via the patch functionality
             ext_patch_full = os.path.join(specdir, ext_patch['name'])
-            if ext_patch_full.endswith('.patch'):
-                msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
-                self.assertTrue(os.path.isfile(ext_patch_full), msg)
+            if ext_patch_full.endswith('.patch') and not os.path.isfile(ext_patch_full):
+                ext_patch_issues.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
+                continue
 
             # verify checksum for each patch file
-            if idx < len(patch_checksums) and (os.path.exists(ext_patch_full) or ext_patch.endswith('.patch')):
+            if idx < len(patch_checksums) and os.path.exists(ext_patch_full):
                 checksum = patch_checksums[idx]
-                error_msg = "Invalid checksum for patch %s for %s extension in %s: %s"
-                res = verify_checksum(ext_patch_full, checksum)
-                self.assertTrue(res, error_msg % (ext_patch, ext_name, ec_fn, checksum))
+                if not verify_checksum(ext_patch_full, checksum):
+                    ext_patch_issues.append("Invalid checksum for patch %s for extension %s: %s."
+                                            % (ext_patch['name'], ext_name, checksum))
+    if ext_patch_issues:
+        self.fail("Verification of patches for %s failed:\n%s" % (ec_fn, '\n'.join(ext_patch_issues)))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
