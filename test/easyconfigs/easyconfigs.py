@@ -564,6 +564,10 @@ class EasyConfigTest(TestCase):
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
                 ('0.20.0;', ['ont-remora-2.0.0-']),
             ],
+            # Use PyTorch 1.12.1 as dep for ont-remora 2.0.0
+            'PyTorch': [
+                ('1.12.1;', ['ont-remora-2.0.0-']),
+            ],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
