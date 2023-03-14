@@ -1,0 +1,38 @@
+easyblock = 'Binary'
+
+name = 'avrocpp'
+version = '1.11.1'
+
+homepage = 'https://avro.apache.org/docs/1.11.1/api/cpp/html/'
+description = """Avro C++ is a C++ data serialization library ."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/apache/avro/archive/refs/tags/']
+sources = ['release-%(version)s.tar.gz']
+checksums = ['599f96bb405f72a35154b2477caa6254d723bb4e3f6a0e54e9ae540664321752']
+
+builddependencies = [
+    ('binutils', '2.37', '', ('GCCcore', '11.2.0')),
+    ('CMake', '3.22.1', '', ('GCCcore', '11.2.0')),
+]
+dependencies = [
+    ('Boost', '1.77.0'),
+]
+
+
+extract_sources = True
+
+install_cmd = "cd lang/c++; mkdir -p build; cd build && "
+install_cmd += ' cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=%(installdir)s/ -DCMAKE_BUILD_TYPE=Release .. && '
+install_cmd += "  make install"
+
+
+sanity_check_paths = {
+    'files': ["%(installdir)s/bin/avrogencpp"],
+    'dirs': ["%(installdir)s/lib"],
+}
+
+sanity_check_commands = ["%(installdir)s/bin/avrogencpp -h"]
+
+moduleclass = 'lib'
