@@ -1,0 +1,360 @@
+--- install.orig	2023-03-20 12:51:29.000000000 +1100
++++ install	2023-03-20 14:48:29.000000000 +1100
+@@ -39,7 +39,7 @@
+     IRAFARCH=$mach
+ fi
+ 
+-VERSION="v2.16"                         # current IRAF version
++VERSION="v2.17"                         # current IRAF version
+ 
+ defterm="xgterm"			# default terminal type
+ do_system=0				# system or personal install?
+@@ -244,22 +244,11 @@
+   fi
+ fi
+ 
+-if [ "$do_system" = 0 ]; then
+-    if [ ! -e "$HOME/.iraf" ]; then
+-        NEWLINE
+-        ECHO "Initializing $HOME/.iraf directory ....."
+-        NEWLINE
+-
+-        mkdir "$HOME/.iraf"
+-        (cd "$HOME/.iraf" && mkdir imdir cache bin)
+-    fi
+-fi
+ 
+ 
+ 
+ #=============================================================================
+ 
+-clear
+ NEWLINE
+ BOLD_ON; 
+ ECHO "		===================================="
+@@ -464,6 +453,7 @@
+   # Look around and come up with a likely candidate directory.
+   if [ "$p_lbin" ]; then
+       lbin=$p_lbin
++      mkdir -vp $lbin
+       lbin_prompt="no"
+   elif [ "$do_system" = 0 ]; then
+       d_lbin="$HOME/.iraf/bin/"
+@@ -850,21 +840,28 @@
+ ECHO "                             -------------"
+ BOLD_OFF
+ 
+-# Edit the $iraf pathname in the .login file for user 'iraf'.
+-if [ "$do_system" = 0 ]; then
+-  ECHO -n "Editing the user login/rc files ...                            "
+-  pfiles="$HOME/.bashrc $HOME/.profile $HOME/.bash_profile $HOME/.bash_login $HOME/.cshrc $HOME/.login"
+-fi
+-for file in ${pfiles}; do
+-    if [ -e "$file" ]; then
+-	if [ "$exec" = "yes" ]; then
+-            sed -i.bak -e "s+$o_iraf+$iraf+" "$file"
+-	    RM "${file}.bak"
+-	fi
+-    fi
+-done
+ DO_OK
+ 
++i="$iraf/unix/os/zgtenv.c"
++ECHO -n "Editing $i ..."
++err_seen=0
++if [ -e "$i" ]; then
++    iraf_header="$iraf/unix/hlib/libc/iraf.h"
++    sed -i.bak -e "s|#define[[:space:]]TABLE.*|#define TABLE \"$iraf_header\" /* table file */|g" $i
++    RM "${i}.bak"
++else
++    if [ "$err_seen" = 0 ]; then
++        DO_FAIL
++        err_seen=1
++        err_count=$(( err_count+1 ))
++    fi
++    MSG  "File $i not found."
++fi
++
++if [ "$err_seen" = 0 ]; then
++    DO_OK
++fi
++
+ # Edit the $iraf and $imdir paths in mkiraf.*sh, *cl.*sh, and libc/iraf.h
+ # files.
+ 
+@@ -897,28 +894,11 @@
+     # Create the root imdir as a public scratch directory, if not already
+     # created.
+     err_seen=0
+-    if [ -d "$imdir" ]; then
+-        if [ -x $"imdir" ]; then
+-            ECHO -n 'Checking imdir permissions ...'
+-            ECHO -n '                                 '
+-        else
+-            ECHO -n 'Setting mode for $imdir to 0777'
+-	    ECHO -n '                                '
+-            if [ "$exec" = "yes" ]; then
+-                chmod 777 "$imdir"
+-            fi
+-        fi
+-    else
+-	if [ "$do_system" = 1 ]; then
+           ECHO -n "Creating root imdir at $imdir ...                    "
+-	else
+-          ECHO -n 'Creating root imdir at $HOME/.iraf/imdir ...		'
+-          ECHO -n '       '
+-	fi
+         if [ "$exec" = "yes" ]; then
+-            mkdir $imdir; chmod 777 $imdir
++            mkdir -vp $imdir
+         fi
+-    fi
++
+     if [ "$err_seen" = 0 ]; then
+         DO_OK
+     fi
+@@ -927,27 +907,11 @@
+     # Create the root cache as a public scratch directory, if not already
+     # created.
+     err_seen=0
+-    if [ -d "$cache" ]; then
+-        if [ -x "$cache" ]; then
+-            ECHO -n 'Checking cache permissions ...'
+-            ECHO -n '                                 '
+-        else
+-            ECHO -n 'Setting mode for $cache to 0777                  '
+-            if [ "$exec" = "yes" ]; then
+-                chmod 777 $cache
+-            fi
+-        fi
+-    else
+-	if [ "$do_system" = 1 ]; then
+           ECHO -n "Creating root cache at $cache ...                    "
+-	else
+-          ECHO -n 'Creating root cache at $HOME/.iraf/cach  ...		'
+-          ECHO -n '       '
+-	fi
+         if [ "$exec" = "yes" ]; then
+-            mkdir $cache; chmod 777 $cache
++            mkdir -vp $cache
+         fi
+-    fi
++
+     if [ "$err_seen" = 0 ]; then
+         DO_OK
+     fi
+@@ -1010,47 +974,6 @@
+         DO_FAIL
+ 	err_count=$(( err_count+1 ))
+     fi
+-
+-
+-else			# else of 'do_system'
+-
+-    ECHO -n "Creating <iraf.h> symlink ...                                  "
+-    file1="$HOME/.iraf/iraf.h"
+-    file2="$iraf/unix/hlib/libc/iraf.h"
+-
+-    err_seen=0
+-    if [ -e "$file1" ]; then
+-        if [ "$($LS -l $file1 | grep $file2)" = "" ]; then
+-            if [ "$exec" = "yes" ]; then
+-                RM "$file1"
+-                ln -s "$file2" "$file1"
+-            fi
+-        fi
+-    else
+-        if [ "$exec" = "yes" ]; then
+-            RM "$file1"
+-            ln -s "$file2" "$file1"
+-        fi
+-    fi
+-    if [ "$exec" = "no" ]; then
+-        DO_OK
+-    elif [ "$err_seen" = 0 ] && [ -e "$file1" ]; then
+-        DO_OK
+-    else
+-        DO_FAIL
+-	err_count=$(( err_count+1 ))
+-    fi
+-
+-
+-    ECHO -n 'Marking system architecture ...                                '
+-    if [ "$exec" = "yes" ]; then
+-	if [ -e "$HOME/.iraf/arch" ]; then
+-            RM "$HOME/.iraf/arch"
+-	fi
+-        echo "$IRAFARCH" >  "$HOME/.iraf/arch"
+-    fi
+-    DO_OK
+-
+ fi			# end of 'do_system'
+ 
+ 
+@@ -1136,161 +1059,6 @@
+ 
+ 
+ #=============================================================================
+-# Common code for XGTERM/XIMTOOL installation.
+-#=============================================================================
+-
+-NEWLINE
+-BOLD_ON
+-ECHO "                    Creating Graphics Device Files"
+-ECHO "                    ------------------------------"
+-BOLD_OFF
+-
+-
+-#=============================================================================
+-# Install the default IMTOOLRC frame buffer configuration file.  The path
+-# /usr/local/lib path hardwired in to ximtool and cannot easily be changed,
+-# but if installation of the default imtoolrc in this directory is not 
+-# possible, the file can be installed in each imtool user's login directory
+-# as .imtoolrc, or the environment variable IMTOOLRC can be defined in each
+-# imtool user's # .login or .cshrc to define the path to the file.
+-#=============================================================================
+-
+-# Verify imtoolrc link.
+-if [ "$do_system" = 1 ]; then
+-    ECHO -n "Checking /usr/local/lib directory ...                          "
+-    if [ ! -e "/usr/local/lib" ]; then
+-        if [ "$exec" = "yes" ]; then
+-            if [ ! -e "/usr/local" ]; then
+-                mkdir /usr/local
+-            fi
+-            mkdir /usr/local/lib
+-            if [ -d "/usr/local/lib" ]; then
+-                DO_OK
+-            else
+-                DO_FAIL
+-    	        err_count=$(( err_count+1 ))
+-            fi
+-        else
+-            DO_OK
+-        fi
+-    else
+-        DO_OK
+-    fi
+-fi
+-
+-
+-# Verify or set the IMTOOLRC link.
+-if [ "$do_system" = 1 ]; then
+-    file1=/usr/local/lib/imtoolrc
+-    ECHO -n "Creating /usr/local/lib/imtoolrc link ...                      "
+-else
+-    file1=$HOME/.imtoolrc
+-    ECHO -n 'Creating $HOME/.imtoolrc link ...                              '
+-fi
+-/bin/rm -f "$file1"
+-file2=$iraf/dev/imtoolrc
+-
+-
+-err_seen=0
+-if [ -e "$file1" ]; then
+-    if [ "$($LS $file1)" = "$file1" ]; then
+-        if [ "$($LS -l $file1 | grep $file2)" = "" ]; then
+-            if [ "$exec" = "yes" ]; then
+-                RM "$file1"
+-                ln -s "$file2" "$file1"
+-            fi
+-        fi
+-    fi
+-else
+-    if [ "$exec" = "yes" ]; then
+-	if [ -e "$file1" ]; then
+-	    RM "$file1"
+-	fi
+-        ln -s "$file2" "$file1"
+-    fi
+-fi
+-if [ "$exec" = "no" ]; then
+-    DO_OK
+-elif [ "$err_seen" = 0 ] && [ -e "$file1" ]; then
+-    DO_OK
+-else
+-    DO_FAIL
+-    err_count=$(( err_count+1 ))
+-fi
+-
+-DO_OK
+-
+-
+-#=============================================================================
+-# Initialize the login.cl/uparm for a personal installation
+-#=============================================================================
+-
+-if [ "$do_system" = 0 ]; then
+-  NEWLINE
+-  BOLD_ON
+-  ECHO "                      Initializing Login Files"
+-  ECHO "                      ------------------------"
+-  BOLD_OFF
+-
+-  cur=$PWD
+-  if [ ! -e "$HOME/.iraf" ]; then
+-      mkdir "$HOME/.iraf"
+-  fi
+-  cd "$HOME/.iraf"
+-  ECHO -n "Creating global login.cl and uparm directory ....              "
+-  "$iraf/unix/hlib/mkiraf.sh" --default --init --term="$myterm" > /dev/null 2>&1
+-  if [ -e "$HOME/.iraf/login.cl" ]; then
+-      DO_OK
+-  else
+-      DO_FAIL
+-  fi
+-
+-  cd "$cur"
+-
+-  # Add the setup to the user's login files.
+-
+-  if [ "$do_csh" = 1 ] && [ "$exec" = "yes" ]; then
+-      cfiles="$HOME/.cshrc $HOME/.tcshrc $HOME/.login"
+-      for file in ${cfiles}; do
+-	  if ! grep -qs iraf/setup.csh "$file"; then
+-	      if [ -e "$file" ] ; then
+-		  cp "$file" "${file}.bak"
+-	      else
+-		  touch "$file"
+-	      fi
+-	      cat >> $file <<EOF
+-
+-# Add iraf setup commands
+-if ( -e $HOME/.iraf/setup.csh ) then
+-    source $HOME/.iraf/setup.csh
+-endif
+-EOF
+-	  fi
+-      done
+-  fi
+-
+-  if [ "$exec" = "yes" ]; then
+-      bfiles="$HOME/.bashrc $HOME/.profile $HOME/.bash_profile $HOME/.bash_login"
+-      for file in ${bfiles}; do
+-	  if ! grep -qs iraf/setup.sh "$file"; then
+-	      if [ -e "$file" ] ; then
+-		  cp "$file" "${file}.bak"
+-	      else
+-		  touch "$file"
+-	      fi
+-	      cat >> $file <<EOF
+-
+-# Add iraf setup commands
+-if [ -e $HOME/.iraf/setup.sh ]; then
+-    source $HOME/.iraf/setup.sh
+-fi
+-EOF
+-	  fi
+-      done
+-  fi
+-fi
+-
+-#=============================================================================
+ #  Finish up and set the exit status.
+ #=============================================================================
+ 
+@@ -1375,4 +1143,3 @@
+ fi
+ 
+ exit 0
+-

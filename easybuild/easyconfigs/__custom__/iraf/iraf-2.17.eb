@@ -1,0 +1,54 @@
+easyblock = 'MakeCp'
+with_configure = True
+configure_without_installdir = True
+
+name = 'iraf'
+version = '2.17'
+
+homepage = 'https://iraf-community.github.io/'
+description = """[PLEASE BE AWARE THE IRAF IS 35 YEARS OLD LEGACY CODE AND INSTITUTIONAL SUPPORT FOR IRAF AND ITS USAGE IS GOING AWAY QUICKLY.
+IT IS RECOMMENDED TO SEARCH ALTERNATIVE SOLUTIONS, FOR EXAMPLE IN THE ASTROPY COMMUNITY, AND NOT TO START NEW PROJECTS USING IRAF.]
+IRAF is the Image Reduction and Analysis Facility, a general purpose software system for the reduction and analysis of astronomical data.
+After reaching its end of life in 2019, IRAF is maintained by the iraf-community.
+See https://www.stsci.edu/contents/newsletters/2018-volume-35-issue-03/removing-the-institutes-dependence-on-iraf-you-can-do-it-too
+"""
+
+toolchain = SYSTEM
+toolchainopts = {'optarch': True, 'pic': True}
+osdependencies = [('gcc', 'make', 'perl', 'flex', 'libcurl-devel', 'expat-devel', 'readline-devel')]
+
+source_urls = ['https://github.com/iraf-community/iraf-%(version)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = ['iraf-2.17_dont-touch-my-homedir.patch']
+checksums = [
+    {'v2.17.tar.gz': 'a9a899e49fa355774dc9bf89d779463d4d50303f5bae3db0c44cce07de3fa66f'},
+    {'iraf-2.17_dont-touch-my-homedir.patch': '6238dc03db1cddee4c035458ac011dd88ab9e33f9a80fb68ae578f75c9e37a3f'},
+]
+
+# These build steps will probably need to change as the community version gets updated
+# Also we need to build inplace, at the install location, because iraf is designed poorly.
+buildininstalldir = True
+
+parallel = False
+configure_cmd = "./install -m linux64 -t xterm -b %(installdir)s/bin/ -c /tmp -i /tmp < /dev/null"
+build_cmd = 'PATH=%(installdir)s/bin:$PATH make linux64 sysgen'
+
+files_to_copy = []
+
+tests = ['%(installdir)s/iraf-%(version)s/test/run_tests']
+
+sanity_check_commands = ['cl']
+sanity_check_paths = {
+         'files': ['bin/cl', 'iraf-%(version)s/include/iraf.h'],
+         'dirs': ['bin','iraf-%(version)s/include']
+     }
+
+modextrapaths = {'CPATH': 'iraf-%(version)s/include'}
+modaliases = {'iraf': 'xterm -e cl &'}
+modextravars = {
+  'iraf': '%(installdir)s/iraf-%(version)s/',
+  'MACH': 'linux64',
+  'IRAFARCH': 'linux64',
+}
+
+moduleclass = 'astro'
