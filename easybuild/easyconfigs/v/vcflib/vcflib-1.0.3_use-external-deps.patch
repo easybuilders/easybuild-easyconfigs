@@ -1,6 +1,9 @@
-diff -ru vcflib-1.0.3.orig/CMakeLists.txt vcflib-1.0.3/CMakeLists.txt
---- vcflib-1.0.3.orig/CMakeLists.txt	2022-04-20 19:35:28.448614026 +0000
-+++ vcflib-1.0.3/CMakeLists.txt	2022-04-20 19:39:23.100329751 +0000
+use external dependencies
+add target to build shared library
+rename static library from libvcflib_static to libvcflib
+author: Paul Jähne
+--- vcflib.orig/CMakeLists.txt	2022-01-25 11:56:05.651519227 +0100
++++ vcflib/CMakeLists.txt	2022-01-25 12:29:40.271651816 +0100
 @@ -31,7 +31,7 @@
  set_package_properties(Threads PROPERTIES TYPE REQUIRED)
  
@@ -71,21 +74,19 @@ diff -ru vcflib-1.0.3.orig/CMakeLists.txt vcflib-1.0.3/CMakeLists.txt
      )
  
  set(BINS
-@@ -239,6 +240,13 @@
+@@ -239,6 +240,11 @@
  add_definitions(-DVCFLIB_VERSION="${BUILD_NUMBER}")
  add_definitions(-DVERSION="${BUILD_NUMBER}")
  
 +add_library(vcflib_static STATIC ${SOURCES})
 +set_target_properties(vcflib_static PROPERTIES OUTPUT_NAME vcflib)
-+target_link_libraries(vcflib_static tabixpp fastahack sw fsom filevercmp -DGIT_VERSION=0.9.0 ${LDFLAGS} ${LIBS})
 +add_library(vcflib SHARED ${SOURCES})
 +set_target_properties(vcflib PROPERTIES VERSION ${BUILD_NUMBER} SOVERSION 1)
-+target_link_libraries(vcflib tabixpp fastahack sw fsom filevercmp -DGIT_VERSION=0.9.0 ${LDFLAGS} ${LIBS})
 +
  # ---- Build htslib
  #
  # Note by default we use the distributed htslib! These are
-@@ -276,8 +284,8 @@
+@@ -276,8 +282,8 @@
  if (NOT BUILD_ONLY_LIB)
    foreach(BIN ${BINS})
      add_executable(${BIN} src/${BIN}.cpp)
@@ -96,7 +97,7 @@ diff -ru vcflib-1.0.3.orig/CMakeLists.txt vcflib-1.0.3/CMakeLists.txt
    endforeach(BIN ${BINS})
    install(TARGETS ${BINS} RUNTIME DESTINATION bin)
  
-@@ -365,7 +373,9 @@
+@@ -365,7 +371,9 @@
  
  # ---- Install
  
