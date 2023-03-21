@@ -1,0 +1,40 @@
+easyblock = 'PythonBundle'
+
+name = 'MATLAB-Engine'
+_matlab_version = '2021a'
+_engine_version = '9.10.1'
+version = "%s-%s" % (_matlab_version, _engine_version)
+
+homepage = 'https://www.mathworks.com/help/matlab/matlab-engine-for-python.html'
+description = """The MATLAB Engine API for Python provides a package for Python
+ to call MATLAB as a computational engine."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+builddependencies = [('binutils', '2.35')]
+
+dependencies = [
+    ('MATLAB', _matlab_version, '', SYSTEM),
+    ('Python', '3.8.6'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('matlabengine', _engine_version, {
+        'modulename': 'matlab.engine',
+        'checksums': ['c1610690dbe58ac00e74e8cbb20406208235ede47da7960238e0c2fd3bd496c0'],
+    }),
+]
+
+sanity_pip_check = True
+
+# Test that connection with MATLAB can be established successfully
+sanity_check_commands = ["python -c 'import matlab.engine; eng = matlab.engine.start_matlab(); eng.quit()'"]
+
+# Systems with old glibc (e.g. CentOS7) need to preload shim library
+# modluafooter = """
+# setenv("LD_PRELOAD", pathJoin(os.getenv("EBROOTMATLAB"), "bin", "glnxa64", "glibc-2.17_shim.so"))
+# """
+
+moduleclass = 'math'
