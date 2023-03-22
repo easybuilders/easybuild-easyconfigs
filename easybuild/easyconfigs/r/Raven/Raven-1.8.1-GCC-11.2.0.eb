@@ -21,7 +21,6 @@ preinstallopts = "export CMAKE_BUILD_PARALLEL_LEVEL=%(parallel)s && "
 configopts = '-DRAVEN_BUILD_EXE=1 -G Ninja '
 configopts += '-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
 
-
 dependencies = [
     ('Python', '3.9.6'),
     ('zlib', '1.2.11'),
@@ -34,15 +33,18 @@ exts_default_options = {
     'use_pip': True,
 }
 
+# inject addition CMake options to make sure that Python dependency is actually used
+local_ravenpy_preinstallopts = r"""sed -i 's|cmake_args += \["-GNinja"\]|cmake_args += \["""
+local_ravenpy_preinstallopts += r'"-GNinja", "-DPYBIND11_FINDPYTHON=ON", "-DPython_FIND_STRATEGY=LOCATION",'
+local_ravenpy_preinstallopts += r""" "-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python"\]|' setup.py && """
+
 exts_list = [
     (name, version, {
         'modulename': 'ravenpy',
         'source_urls': ['https://github.com/lbcb-sci/raven/archive/refs/tags/'],
         'sources': ['%(version)s.tar.gz'],
         'checksums': ['00009e9027761fa28313db4e2b5c5f40ebc10e6631b43b755e321ac6bbcc2c06'],
-        'preinstallopts': r'sed -i \'s|cmake_args += \["-GNinja"\]|cmake_args += \["-GNinja", \
-            "-DPYBIND11_FINDPYTHON=ON", "-DPython_FIND_STRATEGY=LOCATION",\
-            "-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python"\]|\' setup.py && '
+        'preinstallopts': local_ravenpy_preinstallopts,
     }),
 ]
 
@@ -50,7 +52,7 @@ modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 sanity_check_paths = {
     'files': ['bin/raven'],
-    'dirs': []
+    'dirs': [],
 }
 
 sanity_check_commands = [
@@ -58,4 +60,4 @@ sanity_check_commands = [
     "raven --help"
 ]
 
-moduleclass = "bio"
+moduleclass = 'bio'
