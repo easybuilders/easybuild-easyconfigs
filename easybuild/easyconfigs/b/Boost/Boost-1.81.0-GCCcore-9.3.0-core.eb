@@ -1,0 +1,40 @@
+name = 'Boost'
+version = '1.81.0'
+
+modaltsoftname = 'boost-core'
+versionsuffix = '-core'
+hidden = True
+
+homepage = 'https://www.boost.org/'
+description = """Boost provides free peer-reviewed portable C++ source libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://boostorg.jfrog.io/artifactory/main/release/%(version)s/source/']
+sources = ['%%(namelower)s_%s.tar.gz' % '_'.join(version.split('.'))]
+checksums = [
+    '205666dea9f6a7cfed87c7a6dfbeb52a2c1b9de55712c9c1a87735d7181452b6',  # boost_1_81_0.tar.gz
+]
+
+# In order to build `libboost_numpy*`
+builddependencies = [('oldest-supported-numpy','2022a'),]
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('zlib', '1.2.11'),
+    ('XZ', '5.2.5'),
+]
+
+multi_deps = {'Python': ['3.8', '3.9', '3.10', '3.11']}
+
+# we need to move files back to the temp install directory, because easyblock copies
+# from there in the installation step
+prebuildopts = [''] + ['mv %(installdir)s/* %(builddir)s/obj && '] * (len(multi_deps['Python']) - 1)
+
+# also build boost_mpi
+boost_mpi = False
+# also build boost multi-thread
+boost_multi_thread = True
+
+moduleclass = 'devel'
