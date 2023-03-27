@@ -1,0 +1,50 @@
+# Roll back to OpenMM v1.5.1, as AlphaFold-2.3 doesn't support more recent versions.
+# This patch is based on the following PR: https://github.com/openmm/pdbfixer/pull/223/files
+# Author: maxim-masterov (SURF)
+
+diff -Nru pdbfixer-1.8.1.orig/pdbfixer/pdbfixer.py pdbfixer-1.8.1/pdbfixer/pdbfixer.py
+--- pdbfixer-1.8.1.orig/pdbfixer/pdbfixer.py	2023-03-27 17:28:53.564306000 +0200
++++ pdbfixer-1.8.1/pdbfixer/pdbfixer.py	2023-03-27 17:42:24.093931265 +0200
+@@ -32,18 +32,18 @@
+ __author__ = "Peter Eastman"
+ __version__ = "1.7"
+ 
+-import openmm as mm
+-import openmm.app as app
+-import openmm.unit as unit
+-from openmm.app.internal.pdbstructure import PdbStructure
+-from openmm.app.internal.pdbx.reader.PdbxReader import PdbxReader
+-from openmm.app.element import hydrogen, oxygen
+-from openmm.app.forcefield import NonbondedGenerator
++import simtk.openmm as mm
++import simtk.openmm.app as app
++import simtk.unit as unit
++from simtk.openmm.app.internal.pdbstructure import PdbStructure
++from simtk.openmm.app.internal.pdbx.reader.PdbxReader import PdbxReader
++from simtk.openmm.app.element import hydrogen, oxygen
++from simtk.openmm.app.forcefield import NonbondedGenerator
+ 
+ # Support Cythonized functions in OpenMM 7.3
+ # and also implementations in older versions.
+ try:
+-    from openmm.app.internal import compiled
++    from simtk.openmm.app.internal import compiled
+     matchResidue = compiled.matchResidueToTemplate
+ except ImportError:
+     matchResidue = app.forcefield._matchResidue
+diff -Nru pdbfixer-1.8.1.orig/pdbfixer/ui.py pdbfixer-1.8.1/pdbfixer/ui.py
+--- pdbfixer-1.8.1.orig/pdbfixer/ui.py	2023-03-27 17:28:53.583267000 +0200
++++ pdbfixer-1.8.1/pdbfixer/ui.py	2023-03-27 17:42:32.915332264 +0200
+@@ -6,9 +6,9 @@
+ import sys
+ from math import sqrt
+ 
+-import openmm.app as app
+-import openmm.unit as unit
+-from openmm.vec3 import Vec3
++import simtk.openmm.app as app
++import simtk.unit as unit
++from simtk.openmm.vec3 import Vec3
+ 
+ from .pdbfixer import PDBFixer, proteinResidues, dnaResidues, rnaResidues, _guessFileFormat
+ from . import uiserver
