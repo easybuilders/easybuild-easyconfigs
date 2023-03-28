@@ -29,8 +29,7 @@ dependencies = [
     ('UCX-CUDA', '1.12.1', versionsuffix),
     ('cuDNN', '8.4.1.50', versionsuffix, SYSTEM),
     ('NCCL', '2.12.12', versionsuffix),
-    # AlphaFold doesn't work with latest OpenMM, so have to use v7.5.1
-    ('OpenMM', '7.5.1', '-DeepMind-patch'),
+    ('OpenMM', '7.7.0'),
 ]
 
 # commit to use for downloading stereo_chemical_props.txt and copy to alphafold/common,
@@ -61,6 +60,7 @@ components = [
             'AlphaFold-2.0.0_n-cpu.patch',
             'AlphaFold-2.1.0_fix-scp-path.patch',
             'AlphaFold-2.0.1_setup_rm_tfcpu.patch',
+            'AlphaFold-2.3.1_switch_to_openmm_7.7.0.patch',
         ],
         'checksums': [
             '1161b2609fa896b16399b900ec2b813e5a0b363fe4e2b26bd826953ba234736a',  # v2.3.1.tar.gz
@@ -70,6 +70,7 @@ components = [
             'dfda4dd5f9aba19fe2b6eb9a0ec583d12dcefdfee8ab8803fc57ad48d582db04',  # AlphaFold-2.0.0_n-cpu.patch
             '5363d403baf5ab73f4d3ddd72e19af9ff832de4b1d7ba25a5fbcc5846c1c890f',  # AlphaFold-2.1.0_fix-scp-path.patch
             '1a2e4e843bd9a4d15ee39e6c37cc63ba281311cc7a0a5610f0e43b52ef93faac',  # AlphaFold-2.0.1_setup_rm_tfcpu.patch
+            'd800bb085deac7edbe2d72916c1194043964aaf51b88a3b5a5016ab68a1090ec',  # AlphaFold-2.3.1_switch_to_openmm_7.7.0.patch
 
         ],
         'start_dir': 'alphafold-%(version)s',
@@ -83,11 +84,7 @@ exts_list = [
     ('PDBFixer', '1.8.1', {
         'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
-        'patches': ['%(namelower)s-%(version)s_roll_back_to_openmm_1.5.1.patch'],
-        'checksums': [
-            'd50551abfe9dbaefc066f4d9d400cdebe57f1fefd9de9d01e12beb87efd99595',
-            'b24abffa3e1b5066a6f3bbfd0d3bb14043f3518357e26cb35dad3fae06b866d1',
-        ],
+        'checksums': ['d50551abfe9dbaefc066f4d9d400cdebe57f1fefd9de9d01e12beb87efd99595'],
     }),
     ('toolz', '0.12.0', {
         'checksums': ['88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194'],
@@ -152,7 +149,7 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     "pdbfixer --help",
-    "python -m simtk.testInstallation",
+    "python -m openmm.testInstallation",
     "python -c 'import alphafold'",
     "alphafold --help 2>&1 | grep 'Full AlphaFold protein structure prediction script'",
 ]
