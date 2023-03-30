@@ -1,0 +1,68 @@
+name = "MEDCoupling"
+easyblock = "CMakeMake"
+version = "9.10.0"
+
+homepage = 'https://www.salome-platform.org'
+description = """The MEDCoupling tool gathers several powerful functionalities
+around the input and output data of simulation codes (meshes and fields
+mainly)."""
+
+source_urls = ['https://files.salome-platform.org/Salome/other']
+
+
+sources = [
+{
+    "filename" :'medcoupling-%(version)s.tar.gz',
+    "git_config": {
+        "url": "http://git.salome-platform.org/gitpub/tools",
+        "repo_name": "medcoupling",
+        "tag": "V9_10_0",
+        "recursive": True
+    }
+},
+]
+
+toolchain = {
+    'name': 'foss',
+    'version': '2022b'
+}
+
+toolchainopts = {'pic': True}
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'
+}
+
+dependencies = [
+    ('HDF5', '1.10.3'),
+    ('Python', '3.10.8'),
+    ('medfile', '4.1.1'),
+    ('SWIG', '4.1.1'),
+    ('SALOME_CONFIGURATION', '9.10.0', '', SYSTEM)
+]
+builddependencies = [('CMake', '3.24.3')]
+
+preconfigopts="CONFIGURATION_ROOT_DIR=${EBROOTSALOME_CONFIGURATION}"
+
+configopts=" -DMEDCOUPLING_ENABLE_PYTHON=ON"
+
+# Disable MPI features
+configopts+=" -DMEDCOUPLING_ENABLE_PARTITIONER=OFF"
+configopts+=" -DMEDCOUPLING_ENABLE_RENUMBER=OFF"
+configopts+=" -DMEDCOUPLING_PARTITIONER_METIS=OFF"
+configopts+=" -DMEDCOUPLING_PARTITIONER_PARMETIS=OFF"
+configopts+=" -DMEDCOUPLING_PARTITIONER_SCOTCH=OFF"
+configopts+=" -DMEDCOUPLING_PARTITIONER_PTSCOTCH=OFF"
+
+# Enable Reading/Writing from/to MED files.
+configopts+=" -DMEDCOUPLING_MICROMED=OFF"
+
+# Use 64 bit integer IDs.
+configopts+=" -DMEDCOUPLING_USE_64BIT_IDS=ON"
+
+# Disable tests and disable documentation
+configopts+=" -DMEDCOUPLING_BUILD_TESTS=OFF"
+configopts+=" -DMEDCOUPLING_BUILD_DOC=OFF"
+configopts+=" -DMEDCOUPLING_WITH_FILE_EXAMPLES=OFF"
+
+moduleclass = 'data'
