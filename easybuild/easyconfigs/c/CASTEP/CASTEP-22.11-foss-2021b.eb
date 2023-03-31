@@ -1,0 +1,41 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = "ConfigureMake"
+
+name = 'CASTEP'
+version = '22.11'
+
+homepage = "http://www.castep.org"
+description = """CASTEP is a full-featured materials modelling code based on a first-principles quantum mechanical
+description of electrons and nuclei. It uses the robust methods of a plane-wave basis set and pseudopotentials."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+# CASTEP is proprietary software, available under a free-of-charge license for academic use only.
+# Visit http://www.castep.org and navigate to "Getting Castep" to apply for a license.
+sources = ['%(name)s-%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_flexiblas.patch']
+checksums = [
+    {'CASTEP-22.11.tar.gz': 'aca3fc2207c677561293585a4edaf233676a759c5beb8389cf938411226ef1f5'},
+    {'CASTEP-22.11_flexiblas.patch': '618fe98433656b0f2efe1450b6e6b0c7949194a714dda3ef8d59d432a1d28f9d'},
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Perl', '5.34.0'),
+]
+
+skipsteps = ['configure']
+
+buildopts = "COMMS_ARCH=mpi castep tools utilities ARCH=linux_x86_64_gfortran10 "
+buildopts += "FFT=fftw3 FFTLIBDIR=${EBROOTFFTW}/lib MATHLIBS=flexiblas MATHLIBDIR=${EBROOTFLEXIBLAS}"
+
+preinstallopts = 'mkdir -p %(installdir)s/bin &&'
+installopts = buildopts + ' INSTALL_DIR="%(installdir)s/bin" install-castep install-tools install-utilities'
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['castep.mpi', 'optados.mpi', 'orbitals2bands', 'dispersion.pl',
+                                     'elastics.py', 'ceteprouts.pm']],
+    'dirs': [],
+}
+
+moduleclass = 'phys'
