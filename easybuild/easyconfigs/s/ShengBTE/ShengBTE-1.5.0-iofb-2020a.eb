@@ -1,0 +1,84 @@
+easyblock = 'MakeCp'
+
+name = 'ShengBTE'
+version = '1.5.0'
+
+homepage = 'http://www.shengbte.org/'
+description = """ShengBTE is a software package for solving the Boltzmann Transport Equation for phonons.
+Also installed is the 'thirdorder' package of Python scripts."""
+
+toolchain = {'name': 'iofb', 'version': '2020a'}
+toolchainopts = {'openmp': True}
+
+sources = [
+    {
+        'source_urls': ['https://bitbucket.org/sousaw/shengbte/get'],
+        'download_filename' : 'v1.5.0.tar.bz2',
+        'filename': 'ShengBTE-v%(version)s.tar.bz2',
+    },
+    {
+        'source_urls': ['https://bitbucket.org/sousaw/thirdorder/get'],
+        'download_filename' : 'v1.1.1.tar.bz2',
+        'filename': 'thirdorder-v1.1.1.tar.bz2',
+    },
+]
+checksums = [
+    '77072d6a39c647fac4576b0823c041f67e5beff0c7c872ff16f96fc906fd554c',
+    'bb329fb5f76bfcc46752755a84864dde11bd71eecf38b8227847a97dd4bea9f9',
+]
+
+builddependencies = [
+    ('spglib', '2.0.2'),
+]
+
+# thirdorder does not support Python 3.9+
+# requires numpy and scipy
+dependencies = [
+    ('Python', '3.8.10'),
+    ('SciPy-Stack', '2023a'),
+]
+
+start_dir = "Src"
+
+# Makefile requires arch.make file to exists
+prebuildopts = "touch arch.make && "
+
+# Control environment
+buildopts = ' '.join([
+    'LIBS="$LIBLAPACK"',
+    'LDFLAGS=-lsymspg', # Link to spglib
+])
+
+parallel = 1
+
+files_to_copy = [
+    (['ShengBTE', '%(builddir)s/*-thirdorder-*/thirdorder_*.py'], 'bin'),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('thirdorder', '1.1.1', {
+        'sources' : [{'filename':'%(name)s-v%(version)s.tar.bz2', 'download_filename' : 'v1.1.1.tar.bz2'}],
+        'checksums' : ['bb329fb5f76bfcc46752755a84864dde11bd71eecf38b8227847a97dd4bea9f9'],
+        'use_pip': True,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s_core'", '')
+
+sanity_check_paths = {
+    'files': [
+        'bin/ShengBTE',
+        'bin/thirdorder_castep.py',
+        'bin/thirdorder_common.py',
+        'bin/thirdorder_espresso.py',
+        'bin/thirdorder_vasp.py',
+        'lib/python%(pyshortver)s/site-packages/thirdorder_core.cpython-38-x86_64-linux-gnu.so',
+    ],
+    'dirs': [],
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+moduleclass = 'phys'
