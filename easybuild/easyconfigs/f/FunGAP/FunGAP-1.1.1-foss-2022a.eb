@@ -64,10 +64,23 @@ exts_list = [
     }),
 ]
 
+# FunGAP needs the Pfam database (280 MB download, 1.5 GB on disk)
+# if it's already available in your system change _pfam_db_dir to its location
+_pfam_db_dir = '%(installdir)s/db'
+_pfam_db_url = 'https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release'
+_pfam_db_install_cmds = [
+    "mkdir -p %s" % _pfam_db_dir,
+    "wget -P %s %s/{Pfam-A.hmm.gz,Pfam-A.hmm.dat.gz,active_site.dat.gz}" % (_pfam_db_dir, _pfam_db_url),
+    "gzip -d %s/*.gz" % _pfam_db_dir,
+    "hmmpress %s/Pfam-A.hmm" % _pfam_db_dir,
+]
+
 postinstallcmds = [
+    # install Pfam DB if missing
+    "if [ ! -f %s/Pfam-A.hmm ]; then %s; fi" % (_pfam_db_dir, " && ".join(_pfam_db_install_cmds)), 
     # execute set_dependencies.py, which creates configuration file and runs some quick tests
-    ("cd %(installdir)s && ./set_dependencies.py --pfam_db_path /databases/bio/Pfam-35 "
-     "--genemark_path $EBROOTGENEMARKMINET --maker_path $EBROOTMAKER/bin --snap_path $EBROOTSNAPMINHMM/bin"),
+    ("cd %%(installdir)s && ./set_dependencies.py --pfam_db_path %s --genemark_path $EBROOTGENEMARKMINET "
+     "--maker_path $EBROOTMAKER/bin --snap_path $EBROOTSNAPMINHMM/bin" % _pfam_db_dir),
 ]
 
 sanity_check_paths = {
