@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'UnZip'
+version = '6.0'
+
+homepage = 'http://www.info-zip.org/UnZip.html'
+description = """UnZip is an extraction utility for archives compressed
+in .zip format (also called "zipfiles"). Although highly compatible both
+with PKWARE's PKZIP and PKUNZIP utilities for MS-DOS and with Info-ZIP's
+own Zip program, our primary objectives have been portability and
+non-MSDOS functionality."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://download.sourceforge.net/infozip']
+sources = ['%(namelower)s%(version_major)s%(version_minor)s.tar.gz']
+patches = [
+    'UnZip-%(version)s_various-security-and-other-fixes-from-Ubuntu.patch',
+]
+checksums = [
+    '036d96991646d0449ed0aa952e4fbe21b476ce994abc276e49d30e686708bd37',  # unzip60.tar.gz
+    # UnZip-6.0_various-security-and-other-fixes-from-Ubuntu.patch
+    '06b9307fd5aa018896bd4126818c00c1fd284a06cc3681cf0492f951ebb57ffe',
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+]
+
+skipsteps = ['configure']
+
+buildopts = '-f unix/Makefile CC="$CC" D_USE_BZ2=-DUSE_BZIP2 L_BZ2=-lbz2 '
+buildopts += 'LF2="$LDFLAGS" '
+# Note: CF is multiple lines
+buildopts += 'CF="$CFLAGS $CPPFLAGS -I. -DACORN_FTYPE_NFS -DWILD_STOP_AT_DIR -DLARGE_FILE_SUPPORT '
+buildopts += '-DUNICODE_SUPPORT -DUNICODE_WCHAR -DUTF8_MAYBE_NATIVE -DNO_LCHMOD '
+buildopts += '-DDATE_FORMAT=DF_YMD -DUSE_BZIP2 -DIZ_HAVE_UXUIDGID -DNOMEMCPY -DNO_WORKING_ISPRINT" unzips '
+
+installopts = '-f unix/Makefile prefix=%(installdir)s '
+
+sanity_check_paths = {
+    'files': ['bin/unzip', 'bin/zipinfo'],
+    'dirs': ['man/man1']
+}
+
+sanity_check_commands = ["unzip -v"]
+
+moduleclass = 'tools'

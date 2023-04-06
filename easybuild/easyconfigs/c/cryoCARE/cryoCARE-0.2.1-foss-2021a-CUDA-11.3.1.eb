@@ -1,0 +1,58 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2022/10
+easyblock = 'PythonBundle'
+
+name = 'cryoCARE'
+version = '0.2.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/juglab/cryoCARE_pip'
+description = """This package is a memory efficient implementation of cryoCARE.
+
+This setup trains a denoising U-Net for tomographic reconstruction according to 
+ the Noise2Noise training paradigm. Therefore the user has to provide two       
+tomograms of the same sample. The simplest way to achieve this is with direct-  
+detector movie-frames.
+
+You can use Warp to generate two reconstructed tomograms based on the even/odd   
+frames. Alternatively, the movie-frames can be split in two halves (e.g. with   
+MotionCor2 -SplitSum 1 or with IMOD alignframes -debug 10000) from which two    
+identical, up to random noise, tomograms can be reconstructed.
+
+These two (even and odd) tomograms can be used as input to this cryoCARE        
+implementation."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('SciPy-bundle', '2021.05'),
+    ('TensorFlow', '2.6.0', versionsuffix),
+    ('mrcfile', '1.3.0'),
+    ('tqdm', '4.61.2'),
+    ('matplotlib', '3.4.2'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('tifffile', '2022.10.10', {
+        'checksums': ['50b61ba943b866d191295bc38a00191c9fdab23ece063544c7f1a264e3f6aa8e'],
+    }),
+    ('csbdeep', '0.7.2', {
+        'checksums': ['8a000eb71d04aa753f52ffe81a34c0a30a06ee986d20b9986d76272253e2fd53'],
+    }),
+    (name, version, {
+        'checksums': ['b66989acb6eadf771de08a46e4860d041113527205eebb2cf5d13ae3dc9cb43b'],
+    }),
+]
+
+sanity_check_commands = [
+    'cryoCARE_extract_train_data.py --help',
+    'cryoCARE_train.py --help',
+    'cryoCARE_predict.py --help',
+]
+
+moduleclass = 'vis'
