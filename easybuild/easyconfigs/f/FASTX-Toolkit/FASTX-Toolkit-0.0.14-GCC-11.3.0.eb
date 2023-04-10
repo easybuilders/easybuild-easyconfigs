@@ -8,8 +8,6 @@
 #
 # This work implements a part of the HPCBIOS project and is a component of the policy:
 # http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
-#
-# Updated: Denis Kristak (Inuits)
 ##
 
 easyblock = 'Bundle'
@@ -25,6 +23,11 @@ toolchain = {'name': 'GCC', 'version': '11.3.0'}
 toolchainopts = {'pic': True}
 
 default_easyblock = 'ConfigureMake'
+
+dependencies = [
+    ('GDGraph', '1.56'),
+    ('Perl', '5.34.1'),
+]
 
 components = [
     ('libgtextutils', '0.7', {
@@ -47,6 +50,23 @@ components = [
     }),
 ]
 
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('PerlIO::gzip', '0.20', {
+        'source_tmpl': 'PerlIO-gzip-0.20.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/N/NW/NWCLARK/'],
+        'checksums': ['4848679a3f201e3f3b0c5f6f9526e602af52923ffa471a2a3657db786bd3bdc5'],
+    }),
+]
+
+fix_perl_shebang_for = ['bin/*.pl']
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'
+}
+
 sanity_check_paths = {
     'files':
         ['bin/fastx_%s' % x for x in
@@ -61,5 +81,15 @@ sanity_check_paths = {
         ['lib/libgtextutils.%s' % SHLIB_EXT, 'lib/libgtextutils.a'],
     'dirs': []
 }
+
+sanity_check_commands = [
+    'fasta_clipping_histogram.pl',
+    'fasta_formatter -h',
+    'fastq_masker -h | grep "FASTX Toolkit %(version)s"',
+    'fastq_quality_boxplot_graph.sh',
+    'fastx_barcode_splitter.pl --help | grep "Barcode Splitter, by Assaf Gordon (gordon@cshl.edu), 11sep2008"',
+    'fastx_clipper -h | grep "FASTX Toolkit %(version)s"',
+    'fastx_nucleotide_distribution_graph.sh',
+]
 
 moduleclass = 'bio'
