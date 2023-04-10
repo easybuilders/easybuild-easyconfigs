@@ -11,21 +11,36 @@ toolchainopts = {'openmp': True}
 
 source_urls = [SOURCEFORGE_SOURCE]
 sources = ['CodingQuarry_v%(version)s.tar.gz']
-checksums = ['1198afbf7cebcf0975c5b20d92b7a2dd6d956072fcde6e86fdce6aeae4842504']
+patches = ['CodingQuarry-2.0_python3.patch']
+checksums = [
+    {'CodingQuarry_v2.0.tar.gz': '1198afbf7cebcf0975c5b20d92b7a2dd6d956072fcde6e86fdce6aeae4842504'},
+    {'CodingQuarry-2.0_python3.patch': '70b63cad753ed644338bd5e26124381c266164af6d6dbf42dbc806dc3d71fcc1'},
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+]
 
 buildopts = 'CFLAGS="$CFLAGS"'
 
 files_to_copy = [
     (['CodingQuarry', 'CufflinksGTF_to_CodingQuarryGFF3.py'], 'bin'),
     'QuarryFiles',
+    'TESTING',
 ]
+
+fix_python_shebang_for = ['bin/CufflinksGTF_to_CodingQuarryGFF3.py']
 
 sanity_check_paths = {
     'files': ['bin/CodingQuarry', 'bin/CufflinksGTF_to_CodingQuarryGFF3.py'],
-    'dirs': ['QuarryFiles/scripts', 'QuarryFiles/self_train', 'QuarryFiles/species'],
+    'dirs': ['QuarryFiles/scripts', 'QuarryFiles/self_train', 'QuarryFiles/species', 'TESTING'],
 }
 
-sanity_check_commands = ["CodingQuarry --help | grep '^CodingQuarry v. %(version)s'"]
+sanity_check_commands = [
+    "CodingQuarry --help | grep '^CodingQuarry v. %(version)s'",
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/TESTING %(builddir)s/TESTING",
+    "cd %(builddir)s/TESTING && CufflinksGTF_to_CodingQuarryGFF3.py Sp_transcripts.gtf > test.gff3",
+]
 
 modextravars = {'QUARRY_PATH': '%(installdir)s/QuarryFiles'}
 
