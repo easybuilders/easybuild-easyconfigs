@@ -1,0 +1,47 @@
+# Author: Jasper Grimm (UoY)
+# Updated to 6.5.0 and moved to foss-toolchain
+# Based on xtb-6.4.1-intel-2021a.eb and PR 15187
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'MesonNinja'
+
+name = 'xtb'
+version = '6.5.0'
+
+homepage = 'https://xtb-docs.readthedocs.io'
+description = "Semiempirical Extended Tight-Binding Program Package."
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+github_account = 'grimme-lab'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['0b39f6e87ce07abcb0884cda5d3370601b6332ad72c8213e87ffa74ae28895fb']
+
+builddependencies = [
+    ('Meson', '0.58.2'),
+    ('Ninja', '1.10.2'),
+    ('pkgconf', '1.8.0'),
+]
+
+configopts = "-Dla_backend='custom' "
+configopts += "-Dcustom_libraries='flexiblas' "
+configopts += "--buildtype release "
+
+runtest = 'meson'
+# Ensure test don't timeout and only use one process:
+testopts = 'test -C %(builddir)s/easybuild_obj -t 60 --num-processes=1'
+
+sanity_check_paths = {
+    'files': ['bin/xtb', 'include/xtb.h'] + ['lib/libxtb.%s' % x for x in ['a', SHLIB_EXT]],
+    'dirs': ['bin', 'include', 'lib', 'share'],
+}
+
+sanity_check_commands = ["xtb --help"]
+
+modextrapaths = {
+    'XTBHOME': '',
+    'XTBPATH': '',
+}
+
+moduleclass = 'chem'

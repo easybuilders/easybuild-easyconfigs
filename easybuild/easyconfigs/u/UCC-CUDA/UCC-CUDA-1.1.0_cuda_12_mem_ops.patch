@@ -1,0 +1,99 @@
+Backported fix for CUDA 12 https://github.com/openucx/ucc/pull/700
+Essentially just removes the deprecated checks for CUDA MEM OPS as they are required in CUDA 12
+author: micketeer@gmail.com
+--- src/components/ec/cuda/ec_cuda.c.orig	2023-02-02 18:44:36.085221084 +0000
++++ src/components/ec/cuda/ec_cuda.c	2023-02-02 18:47:23.726819030 +0000
+@@ -205,11 +205,10 @@
+ {
+     ucc_ec_cuda_config_t *cfg = EC_CUDA_CONFIG;
+     ucc_status_t          status;
+-    int                   device, num_devices, attr;
++    int                   device, num_devices;
+     CUdevice              cu_dev;
+     CUresult              cu_st;
+     cudaError_t           cuda_st;
+-    const char           *cu_err_st_str;
+ 
+     ucc_ec_cuda.stream                   = NULL;
+     ucc_ec_cuda.stream_initialized       = 0;
+@@ -272,9 +271,14 @@
+     } else {
+         ucc_ec_cuda.strm_task_mode = UCC_EC_CUDA_TASK_MEM_OPS;
+         ucc_ec_cuda.post_strm_task = ucc_ec_cuda_post_driver_stream_task;
++#if CUDA_VERSION < 12000
++        CUresult cu_st;
++        CUdevice cu_dev;
++        int attr;
+ 
+         cu_st = cuCtxGetDevice(&cu_dev);
+         if (cu_st != CUDA_SUCCESS){
++            const char *cu_err_st_str;
+             cuGetErrorString(cu_st, &cu_err_st_str);
+             ec_debug(&ucc_ec_cuda.super, "cuCtxGetDevice() failed: %s",
+                      cu_err_st_str);
+@@ -297,6 +301,7 @@
+                      "CUDA MEM OPS are not supported or disabled");
+             return UCC_ERR_NOT_SUPPORTED;
+         }
++#endif
+     }
+     ucc_ec_cuda.task_strm_type = cfg->task_strm_type;
+     ucc_spinlock_init(&ucc_ec_cuda.init_spinlock, 0);
+--- src/components/tl/nccl/tl_nccl_context.c.orig	2023-02-03 15:17:09.358881676 +0000
++++ src/components/tl/nccl/tl_nccl_context.c	2023-02-03 17:04:31.680185749 +0000
+@@ -101,13 +101,14 @@
+         ucc_derived_of(config, ucc_tl_nccl_context_config_t);
+     int mem_ops_attr = 0;
+     ucc_status_t status;
+-    CUresult cu_st;
+-    CUdevice cu_dev;
+ 
+     UCC_CLASS_CALL_SUPER_INIT(ucc_tl_context_t, &tl_nccl_config->super,
+                               params->context);
+     memcpy(&self->cfg, tl_nccl_config, sizeof(*tl_nccl_config));
+     if (self->cfg.sync_type != UCC_TL_NCCL_COMPLETION_SYNC_TYPE_EVENT) {
++#if CUDA_VERSION < 12000
++        CUresult cu_st;
++        CUdevice cu_dev;
+         cu_st = cuCtxGetDevice(&cu_dev);
+         if (cu_st == CUDA_SUCCESS) {
+             cu_st = cuDeviceGetAttribute(&mem_ops_attr,
+@@ -116,6 +117,9 @@
+         } else {
+             tl_info(self->super.super.lib, "failed to get cuda device");
+         }
++#else
++        mem_ops_attr = 1;
++#endif
+         if (mem_ops_attr == 0) {
+             if (self->cfg.sync_type == UCC_TL_NCCL_COMPLETION_SYNC_TYPE_MEMOPS) {
+                 tl_error(self->super.super.lib, "memops not supported");
+--- config/m4/cuda.m4.orig	2023-02-03 17:04:44.367155175 +0000
++++ config/m4/cuda.m4	2023-02-03 17:06:26.110909987 +0000
+@@ -15,6 +15,11 @@
+ ARCH10="-gencode=arch=compute_75,code=sm_75"
+ ARCH11="-gencode=arch=compute_80,code=sm_80 \
+ -gencode=arch=compute_80,code=compute_80"
++ARCH111="-gencode=arch=compute_86,code=sm_86 \
++-gencode=arch=compute_86,code=compute_86"
++ARCH120="-gencode=arch=compute_90,code=sm_90 \
++-gencode=arch=compute_90,code=compute_90"
++
+ 
+ AC_DEFUN([CHECK_CUDA],[
+ AS_IF([test "x$cuda_checked" != "xyes"],
+@@ -104,8 +109,12 @@
+                [NVCC_CFLAGS="$NVCC_CFLAGS -O3 -g -DNDEBUG"])
+          AS_IF([test "x$cuda_happy" = "xyes"],
+                [AS_IF([test "x$with_nvcc_gencode" = "xdefault"],
+-                      [AS_IF([test $CUDA_MAJOR_VERSION -eq 11],
+-                             [NVCC_ARCH="${ARCH8} ${ARCH9} ${ARCH10} ${ARCH11}"])],
++                      [AS_IF([test $CUDA_MAJOR_VERSION -eq 12],
++                             [NVCC_ARCH="${ARCH7} ${ARCH8} ${ARCH9} ${ARCH10} ${ARCH110} ${ARCH111} ${ARCH120}"],
++                             [AS_IF([test $CUDA_MAJOR_VERSION -eq 11],
++                                   [AS_IF([test $CUDA_MINOR_VERSION -lt 1],
++                                           [NVCC_ARCH="${ARCH7} ${ARCH8} ${ARCH9} ${ARCH10} ${ARCH110}"],
++                                           [NVCC_ARCH="${ARCH7} ${ARCH8} ${ARCH9} ${ARCH10} ${ARCH110} ${ARCH111}"])])])],
+                       [NVCC_ARCH="$with_nvcc_gencode"])
+                 AC_SUBST([NVCC_ARCH], ["$NVCC_ARCH"])])
+          LDFLAGS="$save_LDFLAGS"
