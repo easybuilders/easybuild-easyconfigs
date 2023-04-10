@@ -18,6 +18,10 @@ source_urls = ['https://ccb.jhu.edu/software/%(namelower)s/dl']
 sources = [SOURCE_TAR_GZ]
 checksums = ['31ee2ceb8f31338205b2de626d83d0f92d2cd55a04d48a6803193a2d0ad1b4a3']
 
+dependencies = [
+    ('Perl', '5.34.0'),
+]
+
 start_dir = 'sources'
 
 # make sure -O0 is not used as compiler option
@@ -32,14 +36,22 @@ local_train_files = ['build1', 'build2', 'build-icm', 'build-icm-noframe', 'erfa
 files_to_copy = [
     (['sources/%(namelower)s'], 'bin'),
     (['train/%s' % x for x in local_train_files], 'bin'),
+    (['train/*.pm'], 'lib/perl%(perlmajver)s'),
     'trained_dir', 'README', 'train/readme.train',
 ]
+
+fix_perl_shebang_for = ['bin/trainGlimmerHMM']
 
 sanity_check_paths = {
     'files': ['bin/%(namelower)s'],
     'dirs': ['trained_dir'],
 }
 
-sanity_check_commands = ["%(namelower)s -h"]
+sanity_check_commands = [
+    "%(namelower)s -h",
+    r"trainGlimmerHMM -h 2>&1 | grep '^[ ]*Train GlimmerHMM module'",
+]
+
+modextrapaths = {'PERL5LIB': 'lib/perl%(perlmajver)s'}
 
 moduleclass = 'bio'
