@@ -1,0 +1,105 @@
+easyblock = 'Tarball'
+
+name = 'FunGAP'
+version = '1.1.1'
+
+homepage = 'https://github.com/CompSynBioLab-KoreaUniv/FunGAP'
+description = "Fungal Genome Annotation Pipeline using evidence-based gene model evaluation."
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+# Tag v1.1.1 points to an old commit still in v1.1.0
+# pull correct sources from specific commit
+_commit = '924f3ba080f98cbf181b0b21601e095619479ce6'
+
+source_urls = ['https://github.com/CompSynBioLab-KoreaUniv/FunGAP/archive']
+sources = [{'download_filename': '%s.tar.gz' % _commit, 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'FunGAP-%(version)s_fix-snap-detection.patch',
+    'FunGAP-%(version)s_relax-dependency-checks.patch',
+    'FunGAP-%(version)s_replace-deprecated-pa-repeatmodeler.patch',
+    'FunGAP-%(version)s_fix-maker-exes.patch',
+    'FunGAP-%(version)s_fix-augustus-calls-in-runbreaker.patch',
+]
+checksums = [
+    {'FunGAP-1.1.1.tar.gz': '3d827c4b11452afdd51b71766e0e3193b7efad31db4536606115f2cac0b964c8'},
+    {'FunGAP-1.1.1_fix-snap-detection.patch': 'f782224ce186e1e2d8953898122b79d616f8a749b00ec662ec5a3fa1903550fa'},
+    {'FunGAP-1.1.1_relax-dependency-checks.patch': '73f9ae2a20cf03c34f852642a28d3b7e9858250f653ff1e711c3c9a56ae2fd77'},
+    {'FunGAP-1.1.1_replace-deprecated-pa-repeatmodeler.patch':
+     'c528aab74a070d6eedc9ff2097b6149e8d36759b9ff93c46302994179a38a774'},
+    {'FunGAP-1.1.1_fix-maker-exes.patch': 'de344cf45dad047ab46a17462e19ce0789a89071c1484cbdedd9d898f9601bd0'},
+    {'FunGAP-1.1.1_fix-augustus-calls-in-runbreaker.patch':
+     '150b6f79f95d0c8abece42231c5dcedf8610a811db9cc63ac6cc047f0dcfdc64'},
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('Perl', '5.34.1'),
+    ('AUGUSTUS', '3.5.0'),
+    ('BamTools', '2.5.2'),
+    ('bcbio-gff', '0.7.0'),
+    ('BRAKER', '2.1.6'),
+    ('BUSCO', '5.4.5'),
+    ('HISAT2', '2.2.1'),
+    ('MAKER', '3.01.04'),
+    ('matplotlib', '3.5.2'),
+    ('networkx', '2.8.4'),
+    ('PfamScan', '1.6'),
+    ('RepeatModeler', '2.0.4'),
+    ('SAMtools', '1.16.1'),
+    ('SNAP-HMM', '20221022'),
+    ('Trinity', '2.15.1'),
+    ('wget', '1.21.3'),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('markdown2', '2.4.8', {
+        'checksums': ['90475aca3d9c8e7df6d70c51de5bbbe9edf7fcf6a380bd1044d321500f5445da'],
+    }),
+]
+
+# FunGAP needs the Pfam database (280 MB download, 1.5 GB on disk)
+# if it's already available in your system change _pfam_db_dir to its location
+_pfam_db_dir = '%(installdir)s/db'
+_pfam_db_url = 'https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release'
+_pfam_db_install_cmds = [
+    "mkdir -p %s" % _pfam_db_dir,
+    "wget -P %s %s/{Pfam-A.hmm.gz,Pfam-A.hmm.dat.gz,active_site.dat.gz}" % (_pfam_db_dir, _pfam_db_url),
+    "gzip -d %s/*.gz" % _pfam_db_dir,
+    "hmmpress %s/Pfam-A.hmm" % _pfam_db_dir,
+]
+
+postinstallcmds = [
+    # install Pfam DB if missing
+    "if [ ! -f %s/Pfam-A.hmm ]; then %s; fi" % (_pfam_db_dir, " && ".join(_pfam_db_install_cmds)),
+    # execute set_dependencies.py, which creates configuration file and runs some quick tests
+    ("cd %%(installdir)s && ./set_dependencies.py --pfam_db_path %s --genemark_path $EBROOTGENEMARKMINET "
+     "--maker_path $EBROOTMAKER/bin --snap_path $EBROOTSNAPMINHMM/bin" % _pfam_db_dir),
+]
+
+sanity_check_paths = {
+    'files': ['fungap.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+modextrapaths = {
+    'PATH': '',
+    'PYTHONPATH': ['', 'lib/python%(pyshortver)s/site-packages']
+}
+
+modextravars = {
+    'FUNGAP_DIR': '%(installdir)s',
+}
+
+sanity_check_commands = [
+    ('fungap.py', '--help'),
+]
+
+moduleclass = 'bio'
