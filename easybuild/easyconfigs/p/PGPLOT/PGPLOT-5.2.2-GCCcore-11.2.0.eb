@@ -17,11 +17,10 @@ toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
 
 source_urls = ['ftp://ftp.astro.caltech.edu/pub/pgplot/']
 sources = ['%%(namelower)s%s.tar.gz' % version.replace('.', '')]
-patches = ['pgplot-compiler-pgplot522.patch']
-
+patches = ['PGPLOT-5.2.2_gfortran-deps-fixes.patch']
 checksums = [
-    'a5799ff719a510d84d26df4ae7409ae61fe66477e3f1e8820422a9a4727a5be4',   # pgplot522.tar.gz
-    'b1822eb32499dc18aa4aa4fae0b31c3c64ff8abb3a243716e78addafa7e58cec',   # pgplot-compiler-pgplot522.patch
+    {'pgplot522.tar.gz': 'a5799ff719a510d84d26df4ae7409ae61fe66477e3f1e8820422a9a4727a5be4'},
+    {'PGPLOT-5.2.2_gfortran-deps-fixes.patch': 'b1822eb32499dc18aa4aa4fae0b31c3c64ff8abb3a243716e78addafa7e58cec'},
 ]
 
 builddependencies = [
@@ -43,15 +42,18 @@ files_to_copy = [
     (['cpgplot.h'], 'include'),
 ]
 
+# create .so symlinks for shared libraries
 postinstallcmds = [
-    # create symlinks
-    "cd %(installdir)s/lib && ln -s libcpgplot.so.5.2.2 libcpgplot.so.5 ; ln -s libcpgplot.so.5.2.2 libcpgplot.so && "
-    " ln -s libpgplot.so.5.2.2 libpgplot.so.5 ; ln -s libpgplot.so.5.2.2 libpgplot.so"
+    "cd %%(installdir)s/lib && ln -s libcpgplot.%s.5.2.2 libcpgplot.%s.5" % (SHLIB_EXT, SHLIB_EXT),
+    "cd %%(installdir)s/lib && ln -s libcpgplot.%s.5.2.2 libcpgplot.%s" % (SHLIB_EXT, SHLIB_EXT),
+    "cd %%(installdir)s/lib && ln -s libpgplot.%s.5.2.2 libpgplot.%s.5" % (SHLIB_EXT, SHLIB_EXT),
+    "cd %%(installdir)s/lib && ln -s libpgplot.%s.5.2.2 libpgplot.%s" % (SHLIB_EXT, SHLIB_EXT),
 ]
 
 sanity_check_paths = {
-    'files': ['lib/libpgplot.a', 'lib/libcpgplot.a', 'lib/libpgplot.%s' % SHLIB_EXT, 'lib/libcpgplot.%s' % SHLIB_EXT],
-    'dirs': []
+    'files': ['include/cpgplot.h', 'lib/libpgplot.a', 'lib/libcpgplot.a',
+              'lib/libpgplot.%s' % SHLIB_EXT, 'lib/libcpgplot.%s' % SHLIB_EXT],
+    'dirs': ['bin'],
 }
 
 modextravars = {'PGPLOT_FONT': '%(installdir)s/share/grfont.dat'}
