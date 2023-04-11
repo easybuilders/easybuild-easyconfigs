@@ -1,0 +1,54 @@
+Set paths to AUGUSTUS installation preferably from its environment variables
+Fix location of getAnnoFastaFromJoingenes.py script from AUGUSTUS
+see https://github.com/CompSynBioLab-KoreaUniv/FunGAP/pull/98
+author: Alex Domingo (Vrije Universirteit Brussel)
+--- run_braker.py.orig	2023-04-03 12:07:35.178272000 +0200
++++ run_braker.py	2023-04-03 12:24:48.713953000 +0200
+@@ -124,8 +124,19 @@
+         logger_time.debug('START: BRAKER')
+ 
+         if not os.path.exists(gff3_braker):
+-            augustus_config_path = os.path.join(
+-                os.path.dirname(D_CONF['AUGUSTUS_PATH']), '../config')
++            augustus_bin_path = os.environ[
++                'AUGUSTUS_BIN_PATH'
++            ] or os.path.dirname(D_CONF['AUGUSTUS_PATH'])
++            augustus_config_path = os.environ[
++                'AUGUSTUS_CONFIG_PATH'
++            ] or os.path.join(
++                os.path.dirname(D_CONF['AUGUSTUS_PATH']), '../config'
++            )
++            augustus_scripts_path = os.environ[
++                'AUGUSTUS_SCRIPTS_PATH'
++            ] or os.path.join(
++                os.path.dirname(D_CONF['AUGUSTUS_PATH']), '../scripts'
++            )
+             config_species = os.path.join(
+                 augustus_config_path, 'species', prefix)
+             species = prefix
+@@ -140,7 +151,6 @@
+             bamtools_path = os.path.dirname(D_CONF['BAMTOOLS_PATH'])
+             genemark_path = os.path.dirname(D_CONF['GENEMARK_PATH'])
+             samtools_path = os.path.dirname(D_CONF['SAMTOOLS_PATH'])
+-            augustus_scripts_path = os.path.dirname(D_CONF['AUGUSTUS_PATH'])
+             working_dir = os.path.join(output_dir, prefix)
+             if not os.path.exists(working_dir):
+                 os.mkdir(working_dir)
+@@ -153,7 +163,7 @@
+                     braker_bin, fungus_flag, num_cores, adjusted_assembly,
+                     bam_file, species, augustus_config_path, bamtools_path,
+                     genemark_path, samtools_path, working_dir,
+-                    translation_table, augustus_scripts_path, log_braker))
++                    translation_table, augustus_bin_path, log_braker))
+             logger_txt.debug('[Run] %s', command1)
+             os.system(command1)
+ 
+@@ -165,7 +175,7 @@
+ 
+             augustus_dir = os.path.dirname(D_CONF['AUGUSTUS_PATH'])
+             get_anno_script = os.path.join(
+-                augustus_dir, 'getAnnoFastaFromJoingenes.py')
++                augustus_scripts_path, 'getAnnoFastaFromJoingenes.py')
+             if not os.path.exists(get_anno_script):
+                 get_anno_script = os.path.join(
+                     augustus_dir,
