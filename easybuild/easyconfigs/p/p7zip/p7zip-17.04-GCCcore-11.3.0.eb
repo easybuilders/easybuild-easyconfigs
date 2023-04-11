@@ -1,0 +1,47 @@
+easyblock = 'MakeCp'
+
+name = 'p7zip'
+version = '17.04'
+
+homepage = 'https://github.com/p7zip-project/p7zip/'
+description = """p7zip is a quick port of 7z.exe and 7za.exe (CLI version of
+7zip) for Unix. 7-Zip is a file archiver with highest compression ratio."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+github_account = 'p7zip-project'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['ea029a2e21d2d6ad0a156f6679bd66836204aa78148a4c5e498fe682e77127ef']
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+prebuildopts = "cp makefile.linux_amd64 makefile.linux &&"
+buildopts = 'all3 CC="$CC" CXX="$CXX" OPTFLAGS="$CFLAGS"'
+
+files_to_copy = [
+    (['bin/7za', 'bin/7zr', 'bin/7zCon.sfx'], 'bin'),  # stand-alone binaries
+    (['bin/7z', 'bin/7z.%s' % SHLIB_EXT, 'bin/Codecs'], 'libexec'),  # 7z requires 7z.so plugin in same directory
+]
+
+# put script in place for 7z, since it *must* be called full path, to ensure that 7z.so is found in the same directory
+# see also http://sourceforge.net/p/p7zip/discussion/383044/thread/5e4085ab/
+postinstallcmds = [
+    "echo '#!/bin/sh\n%(installdir)s/libexec/7z $@' > %(installdir)s/bin/7z",
+    "chmod +x %(installdir)s/bin/7z",  # set execution bits according to current umask
+]
+
+sanity_check_paths = {
+    'files': ['bin/7z', 'bin/7za', 'bin/7zCon.sfx', 'bin/7zr', 'libexec/7z', 'libexec/7z.%s' % SHLIB_EXT],
+    'dirs': ['libexec/Codecs'],
+}
+
+sanity_check_commands = [
+    '7z --help',
+    '7z x || test $? -gt 0',
+    "! 7z i | grep -q \"Can't load\" ",
+]
+
+moduleclass = 'tools'
