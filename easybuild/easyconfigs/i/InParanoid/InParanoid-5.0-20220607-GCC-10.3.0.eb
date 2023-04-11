@@ -1,0 +1,62 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+##
+
+easyblock = 'Tarball'
+
+name = 'InParanoid'
+version = '5.0-20220607'
+local_commit = '79d8e39bb243d403ce57b699c1ae104a8a640389'
+
+homepage = 'https://inparanoid.sbc.su.se'
+description = """InParanoid: ortholog groups with inparalogs."""
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://bitbucket.org/sonnhammergroup/inparanoid/get/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['efe1a35bbb70608385780c4bf62969a29c46dd8132fbe472034422d23ad4b0c2']  # for commit 79d8e39
+
+# NOTE some dependencies are not listed on the web site such as Java!
+dependencies = [
+    ('Perl',    '5.32.1'),  # brings libmoose-perl and libparallel-forkmanager-perl
+    ('BioPerl', '1.7.8'),
+    ('Java',    '11',     '',              SYSTEM),
+    ('BLAST',   '2.2.26', '-Linux_x86_64', SYSTEM),
+    ('DIAMOND', '2.0.13'),
+]
+
+# NOTE inparanoid.pl uses only local (same directory) paths, so patch it
+postinstallcmds = [
+    "rm -rf %(installdir)s/docker/ %(installdir)s/singularity/",
+    "chmod a+rx %(installdir)s/*.pl",
+    "chmod -x %(installdir)s/*.jar",
+    "perl -i -pe 's|helpfile = \"help\"|helpfile = \"%(installdir)s/help\"|' %(installdir)s/inparanoid.pl",
+    "perl -i -pe 's|seqstat = \"|seqstat = \"%(installdir)s/|' %(installdir)s/inparanoid.pl",
+    "perl -i -pe 's|blastParser = \"|blastParser = \"%(installdir)s/|' %(installdir)s/inparanoid.pl",
+    "perl -i -pe 's|diamondParser = \"|diamondParser = \"%(installdir)s/|' %(installdir)s/inparanoid.pl",
+    r"""perl -i -pe 's|copy\("\./|copy\("%(installdir)s/|' %(installdir)s/inparanoid.pl""",
+    r"perl -i -pe 's|\./$blastParser|$blastParser|g' %(installdir)s/inparanoid.pl",
+]
+
+fix_perl_shebang_for = ['*.pl']
+
+sanity_check_paths = {
+    'files': ['inparanoid.pl', 'blast_parser.pl', 'diamondParser.pl'],
+    'dirs': ['matrices', 'testInput'],
+}
+
+modextrapaths = {
+    'PATH': '',
+}
+
+sanity_check_commands = [
+    "cd %(builddir)s && inparanoid.pl -input-dir %(installdir)s/testInput/",
+]
+
+moduleclass = 'bio'

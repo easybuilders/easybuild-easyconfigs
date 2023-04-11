@@ -1,0 +1,72 @@
+easyblock = 'CMakeMake'
+
+name = 'WebKitGTK+'
+version = '2.27.4'
+
+homepage = 'https://webkitgtk.org/'
+description = """WebKitGTK+ is a full-featured port of the WebKit
+rendering engine, suitable for projects requiring any kind of web
+integration, from hybrid HTML/CSS applications to full-fledged web
+browsers. It offers WebKit’s full functionality and is useful in a wide
+range of systems from desktop computers to embedded systems like phones,
+tablets, and televisions."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://webkitgtk.org/releases']
+sources = ['webkitgtk-%(version)s.tar.xz']
+patches = [
+    '%(name)s-%(version)s_turn_off_various_problematic_features.patch',
+    '%(name)s-%(version)s_icuBOOL.patch'
+]
+checksums = [
+    '50550a45464993070c544ec9777594d105fc5b35269520a3c96a3e2cd54874f7',  # webkitgtk-2.27.4.tar.xz
+    # WebKitGTK+-2.27.4_turn_off_various_problematic_features.patch
+    '5aadd7898f6995bf89c558ce02d43e696ead962e283ddef88843160891494b5b',
+    '09c402193c3c03a0fa3676c143cd4eded4169c35baf75e78dac5c7a5c4ea7a3e',  # WebKitGTK+-2.27.4_icuBOOL.patch
+]
+
+osdependencies = [
+    # Would be better to use the system package due to security reasons
+    # But we need at least libgcrypt 1.7.0 and Ubuntu 16.04 and RH 7.5
+    # are both using a too old version.
+    # ('libgcrypt-dev', 'libgcrypt20-dev', 'libgcrypt-devel'),
+    # libsecret is not actually needed since USE_LIBSECRET option is disabled by default in patch
+    # ('libsecret-1-dev', 'libsecret-devel'),
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('Python', '3.9.5'),
+    ('Perl', '5.32.1'),
+    ('GObject-Introspection', '1.68.0'),
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('GLib', '2.68.2'),
+    ('gperf', '3.1'),
+    ('cairo', '1.16.0'),
+    ('GTK3', '3.24.29'),
+    ('LibSoup', '2.74.0'),
+    ('ATK', '2.36.0'),
+    ('libgcrypt', '1.9.2'),
+    ('libwebp', '1.2.0'),
+    ('libxslt', '1.1.34'),
+    ('libtasn1', '4.17.0'),
+    ('GStreamer', '1.18.4'),
+    ('OpenJPEG', '2.4.0'),
+    ('Ruby', '3.0.1'),
+]
+
+# must be built in parallel with more than 1 process (parallel > 1) to avoid build error:
+# No rule to make target 'JavaScriptCore-4.0.gir', needed by 'WebKit2-4.0.gir'
+# see https://bugs.webkit.org/show_bug.cgi?id=195251
+
+configopts = "-DPORT=GTK -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python -DRUBY_EXECUTABLE=$EBROOTRUBY/bin/ruby "
+
+sanity_check_paths = {
+    'files': ['bin/WebKitWebDriver', 'lib/libwebkit2gtk-4.0.%s' % SHLIB_EXT],
+    'dirs': ['include/webkitgtk-4.0/webkit2', 'libexec/webkit2gtk-4.0'],
+}
+
+moduleclass = 'lib'

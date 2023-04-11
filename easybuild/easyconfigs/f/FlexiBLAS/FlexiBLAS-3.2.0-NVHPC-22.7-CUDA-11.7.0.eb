@@ -1,0 +1,73 @@
+easyblock = 'Bundle'
+
+name = 'FlexiBLAS'
+version = '3.2.0'
+
+homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
+description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
+used by a program without recompiling or relinking it."""
+
+toolchain = {'name': 'NVHPC', 'version': '22.7-CUDA-11.7.0'}
+local_extra_flags = "-D__ELF__"
+toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Python', '3.10.4', '-bare'),  # required for running the tests
+]
+
+dependencies = [
+    ('OpenBLAS', '0.3.20'),
+]
+
+# note: first listed backend will be used as default by FlexiBLAS,
+# unless otherwise specified via easyconfig parameter flexiblas_default
+local_backends = ['OpenBLAS']
+
+# imkl supplies its backend via the imkl module, not as a dependency
+if ARCH == 'x86_64':
+    local_backends.append('imkl')
+
+default_component_specs = {'start_dir': '%(namelower)s-%(version)s'}
+sanity_check_all_components = True
+
+# Also build and install LAPACKE, which FlexiBLAS does not support yet
+components = [
+    (name, version, {
+        'source_urls': ['https://github.com/mpimd-csc/flexiblas/releases/download/v%(version)s/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'patches': [
+            'FlexiBLAS-3.0.4_fix-imkl.patch',
+            'FlexiBLAS-3.0.4_fix-wrapper_blas_intel.patch',
+            'FlexiBLAS-3.0.4_remove-semicolon.patch',
+            'FlexiBLAS-3.2.0_remove-intel-suffix.patch',
+        ],
+        'checksums': [
+            'a3f4d66a30b6fa6473e492de86d34abc5f9d4e69d4d91ba23618388e8df05904',  # flexiblas-3.2.0.tar.gz
+            'a078e46ad126574cc42314abd5b40461cdc6e950af79d105dbf92875c254c87c',  # FlexiBLAS-3.0.4_fix-imkl.patch
+            # FlexiBLAS-3.0.4_fix-wrapper_blas_intel.patch
+            '30ae7d1edbcff2beb18bca9b751dcaf0bf9a996d41fbe669b0a11592ec01c7ac',
+            # FlexiBLAS-3.0.4_remove-semicolon.patch
+            'a3bbcff7aeca6f8bab989e7e3a8069f2b7b660e4559042221eecaa30dc0ce300',
+            # FlexiBLAS-3.2.0_remove-intel-suffix.patch
+            '98b70ac9b10c9e45cd7c2251f8b710cda704b04311b33b6fe1a56be51aa43bc4',
+        ],
+        'configopts': '-DABI=Intel',
+        'backends': local_backends,
+    }),
+    ('LAPACK', '3.10.1', {
+        'easyblock': 'CMakeMake',
+        'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['cd005cd021f144d7d5f7f33c943942db9f03a28d110d6a3b80d718a295f7f714'],
+        'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
+        'sanity_check_paths': {
+            'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
+            'dirs': [],
+        },
+    }),
+]
+
+moduleclass = 'lib'
