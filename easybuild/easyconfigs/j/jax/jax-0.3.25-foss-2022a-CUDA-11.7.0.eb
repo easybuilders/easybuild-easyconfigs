@@ -114,6 +114,12 @@ exts_list = [
              '335a8e206d14338176bf4136a131afe5d7b75999ac2c67f0ae79031322e25936'},
             {'jax-0.4.4_cusparse.patch': '7414115533cce9f37c60850c09c69563a0ed6477c73f03c4132b9c2ae75ae60f'},
         ],
+        # deliberately not testing in parallel, as that results in (additional) failing tests;
+        # use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
+        # see https://github.com/google/jax/issues/7323 and
+        # https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
+        # use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
+        # use NVIDIA_TF32_OVERRIDE=0 to avoid lossing numerical precision by disabling TF32 Tensor Cores;
         'runtest': "NVIDIA_TF32_OVERRIDE=0 CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_ALLOCATOR=platform " +
                    "JAX_ENABLE_X64=true pytest -vv tests",
     }),
