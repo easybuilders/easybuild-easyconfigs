@@ -1,24 +1,18 @@
+change test for a warning to filterwarnings since the code may or not issue a warning depending on an arch
 see https://github.com/scipy/scipy/issues/17954 + https://github.com/scipy/scipy/pull/17975
-From: Andrew Knyazev <andrew.knyazev@ucdenver.edu>
-Date: Tue, 14 Feb 2023 17:09:13 -0500
-Subject: [PATCH 1/6] Update test_lobpcg.py
-
-test
----
- scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
 diff --git a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-index afd7a106ea0..8e6de348a34 100644
+index afd7a106ea0..87f3756c37d 100644
 --- a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
 +++ b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-@@ -255,17 +255,16 @@ def test_fiedler_large_12():
+@@ -255,17 +255,18 @@
      _check_fiedler(12, 2)
  
  
 -@pytest.mark.skipif(platform.machine() == 'aarch64',
 -                    reason="issue #15935")
 +@pytest.mark.filterwarnings("ignore:Failed at iteration")
++@pytest.mark.filterwarnings("ignore:Exited at iteration")
++@pytest.mark.filterwarnings("ignore:Exited postprocessing")
  def test_failure_to_run_iterations():
      """Check that the code exists gracefully without breaking. Issue #10974.
 +    The code may or not issue a warning, filtered out. Issue #15935, #17954.
@@ -30,156 +24,6 @@ index afd7a106ea0..8e6de348a34 100644
 -    with pytest.warns(UserWarning, match="Failed at iteration"):
 -        eigenvalues, _ = lobpcg(A, Q, maxiter=40, tol=1e-12)
 +    eigenvalues, _ = lobpcg(A, Q, maxiter=40, tol=1e-12)
-     assert np.max(eigenvalues) > 0
- 
- 
-
-From ad2054168d1eb522cc9b71eebc9ea32aa0fbd4e3 Mon Sep 17 00:00:00 2001
-From: Andrew Knyazev <andrew.knyazev@ucdenver.edu>
-Date: Tue, 14 Feb 2023 18:14:37 -0500
-Subject: [PATCH 2/6] Update test_lobpcg.py
-
-"Exited at iteration" also needs filtering out
----
- scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-index 8e6de348a34..aa3a0c29842 100644
---- a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-+++ b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-@@ -256,6 +256,7 @@ def test_fiedler_large_12():
- 
- 
- @pytest.mark.filterwarnings("ignore:Failed at iteration")
-+@pytest.mark.filterwarnings("ignore:Exited at iteration")
- def test_failure_to_run_iterations():
-     """Check that the code exists gracefully without breaking. Issue #10974.
-     The code may or not issue a warning, filtered out. Issue #15935, #17954.
-
-From 5357bcbd970cdc6ef88be5e58ff3a46d34fde61e Mon Sep 17 00:00:00 2001
-From: Andrew Knyazev <andrew.knyazev@ucdenver.edu>
-Date: Tue, 14 Feb 2023 18:34:51 -0500
-Subject: [PATCH 3/6] Update test_lobpcg.py
-
-added one more filter
-@pytest.mark.filterwarnings("ignore:Exited postprocessing")
----
- scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-index aa3a0c29842..87f3756c37d 100644
---- a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-+++ b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-@@ -257,6 +257,7 @@ def test_fiedler_large_12():
- 
- @pytest.mark.filterwarnings("ignore:Failed at iteration")
- @pytest.mark.filterwarnings("ignore:Exited at iteration")
-+@pytest.mark.filterwarnings("ignore:Exited postprocessing")
- def test_failure_to_run_iterations():
-     """Check that the code exists gracefully without breaking. Issue #10974.
-     The code may or not issue a warning, filtered out. Issue #15935, #17954.
-
-From bcad369ce894320f310c761e0136816c0a1410fb Mon Sep 17 00:00:00 2001
-From: Andrew Knyazev <andrew.knyazev@ucdenver.edu>
-Date: Wed, 15 Feb 2023 07:59:37 -0500
-Subject: [PATCH 4/6] Update test_lobpcg.py
-
-as proposed by reviewer
----
- scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-index 87f3756c37d..936cc6f8db7 100644
---- a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-+++ b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-@@ -255,9 +255,6 @@ def test_fiedler_large_12():
-     _check_fiedler(12, 2)
- 
- 
--@pytest.mark.filterwarnings("ignore:Failed at iteration")
--@pytest.mark.filterwarnings("ignore:Exited at iteration")
--@pytest.mark.filterwarnings("ignore:Exited postprocessing")
- def test_failure_to_run_iterations():
-     """Check that the code exists gracefully without breaking. Issue #10974.
-     The code may or not issue a warning, filtered out. Issue #15935, #17954.
-@@ -266,7 +263,9 @@ def test_failure_to_run_iterations():
-     X = rnd.standard_normal((100, 10))
-     A = X @ X.T
-     Q = rnd.standard_normal((X.shape[0], 4))
--    eigenvalues, _ = lobpcg(A, Q, maxiter=40, tol=1e-12)
-+    with warnings.catch_warnings():
-+        warnings.simplefilter("ignore")
-+        eigenvalues, _ = lobpcg(A, Q, maxiter=40, tol=1e-12)
-     assert np.max(eigenvalues) > 0
- 
- 
-
-From bf8f497984c2056819068d8da5231c1e430659b3 Mon Sep 17 00:00:00 2001
-From: Andrew Knyazev <andrew.knyazev@ucdenver.edu>
-Date: Wed, 15 Feb 2023 10:25:29 -0500
-Subject: [PATCH 5/6] Update test_lobpcg.py
-
-import warnings added
----
- scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-index 936cc6f8db7..db87940e6a8 100644
---- a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-+++ b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-@@ -4,6 +4,7 @@
- import itertools
- import platform
- import sys
-+import warnings
- import pytest
- import numpy as np
- from numpy import ones, r_, diag
-
-From 77b9f45041bcfcb8e531b4d44c0399f103850e4d Mon Sep 17 00:00:00 2001
-From: Andrew Knyazev <andrew.knyazev@ucdenver.edu>
-Date: Wed, 15 Feb 2023 11:51:01 -0500
-Subject: [PATCH 6/6] Update test_lobpcg.py
-
-fall back to what has passed
----
- scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-index db87940e6a8..87f3756c37d 100644
---- a/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-+++ b/scipy/sparse/linalg/_eigen/lobpcg/tests/test_lobpcg.py
-@@ -4,7 +4,6 @@
- import itertools
- import platform
- import sys
--import warnings
- import pytest
- import numpy as np
- from numpy import ones, r_, diag
-@@ -256,6 +255,9 @@ def test_fiedler_large_12():
-     _check_fiedler(12, 2)
- 
- 
-+@pytest.mark.filterwarnings("ignore:Failed at iteration")
-+@pytest.mark.filterwarnings("ignore:Exited at iteration")
-+@pytest.mark.filterwarnings("ignore:Exited postprocessing")
- def test_failure_to_run_iterations():
-     """Check that the code exists gracefully without breaking. Issue #10974.
-     The code may or not issue a warning, filtered out. Issue #15935, #17954.
-@@ -264,9 +266,7 @@ def test_failure_to_run_iterations():
-     X = rnd.standard_normal((100, 10))
-     A = X @ X.T
-     Q = rnd.standard_normal((X.shape[0], 4))
--    with warnings.catch_warnings():
--        warnings.simplefilter("ignore")
--        eigenvalues, _ = lobpcg(A, Q, maxiter=40, tol=1e-12)
-+    eigenvalues, _ = lobpcg(A, Q, maxiter=40, tol=1e-12)
-     assert np.max(eigenvalues) > 0
+     assert(np.max(eigenvalues) > 0)
  
  
