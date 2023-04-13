@@ -1,0 +1,86 @@
+easyblock = 'PythonBundle'
+
+name = 'SciPy-bundle'
+version = '2022.05'
+
+homepage = 'https://python.org/'
+description = "Bundle of Python packages for scientific software"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True, 'lowopt': True}
+
+builddependencies = [
+    ('hypothesis', '6.46.7'),
+    ('UnZip', '6.0'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('pybind11', '2.9.2'),  # required by scipy
+]
+
+use_pip = True
+
+# order is important!
+exts_list = [
+    ('numpy', '1.22.3', {
+        'patches': [
+            'numpy-1.20.3_disable_fortran_callback_test.patch',
+            'numpy-1.22.3_disable-broken-override-test.patch',
+            '%(name)s-%(version)s_skip-ppc-long-complex-test.patch',
+        ],
+        'sources': ['%(name)s-%(version)s.zip'],
+        'checksums': [
+            'dbc7601a3b7472d559dc7b933b18b4b66f9aa7452c120e87dfb33d02008c8a18',  # numpy-1.22.3.zip
+            # numpy-1.20.3_disable_fortran_callback_test.patch
+            '44975a944544fd0e771b7e63c32590d257a3713070f8f7fdf60105dc516f1d75',
+            # numpy-1.22.3_disable-broken-override-test.patch
+            '9c589bb073b28b25ff45eb3c63c57966aa508dd8b318d0b885b6295271e4983c',
+            # numpy-1.22.3_skip-ppc-long-complex-test.patch
+            '058c8128b9f7158b4d5bedb2f52ccc7e1362b99c352c3d10335f98a6194c880e',
+        ],
+    }),
+    ('ply', '3.11', {
+        'checksums': ['00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3'],
+    }),
+    ('gast', '0.5.3', {
+        'checksums': ['cfbea25820e653af9c7d1807f659ce0a0a9c64f2439421a7bba4f0983f532dea'],
+    }),
+    ('beniget', '0.4.1', {
+        'checksums': ['75554b3b8ad0553ce2f607627dad3d95c60c441189875b98e097528f8e23ac0c'],
+    }),
+    ('pythran', '0.11.0', {
+        'checksums': ['0b2cba712e09f7630879dff69f268460bfe34a6d6000451b47d598558a92a875'],
+    }),
+    ('scipy', '1.8.1', {
+        # compilation with Pythran enabled fails when using Intel compilers,
+        # see https://github.com/scipy/scipy/issues/14935
+        'prebuildopts': "export SCIPY_USE_PYTHRAN=0 && ",
+        'preinstallopts': "export SCIPY_USE_PYTHRAN=0 && ",
+        'checksums': ['9e3fb1b0e896f14a85aa9a28d5f755daaeeb54c897b746df7a55ccb02b340f33'],
+    }),
+    ('mpi4py', '3.1.3', {
+        'checksums': ['f1e9fae1079f43eafdd9f817cdb3fd30d709edc093b5d5dada57a461b2db3008'],
+    }),
+    ('numexpr', '2.8.1', {
+        'checksums': ['cd779aa44dd986c4ef10163519239602b027be06a527946656207acf1f58113b'],
+    }),
+    ('Bottleneck', '1.3.4', {
+        'checksums': ['1764a7f4ad58c558723c542847eb367ab0bbb6d880a4e5d5eef30a0ece5cecea'],
+    }),
+    ('pandas', '1.4.2', {
+        'preinstallopts': """sed -i 's@extra_compile_args = \\["-Werror"\\]@extra_compile_args = []@g' setup.py && """,
+        'checksums': ['92bc1fc585f1463ca827b45535957815b7deb218c549b7c18402c322c7549a12'],
+    }),
+    ('mpmath', '1.2.1', {
+        'checksums': ['79ffb45cf9f4b101a807595bcb3e72e0396202e0b1d25d689134b48c4216a81a'],
+    }),
+    ('deap', '1.3.3', {
+        'checksums': ['8772f1b0fff042d5e516b0aebac2c706243045aa7d0de8e0b8658f380181cf31'],
+        'modulename': 'deap.base',
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lang'
