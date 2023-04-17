@@ -17,11 +17,10 @@ builddependencies = [
     ('git', '2.33.1', '-nodocs'),
     ('pybind11', '2.7.1'),
     ('UnZip', '6.0'),
-    ('LLVM', '12.0.1'),  # for debugging with llvm-symbolizer, to be removed
 ]
 dependencies = [
-    ('CUDA', '11.4.1', '', True),
-    ('cuDNN', '8.2.2.26', versionsuffix, True),
+    ('CUDA', '11.4.1', '', SYSTEM),
+    ('cuDNN', '8.2.2.26', versionsuffix, SYSTEM),
     ('NCCL', '2.10.3', versionsuffix),
     ('Python', '3.9.6'),
     ('h5py', '3.6.0'),
@@ -63,10 +62,6 @@ exts_list = [
     }),
     ('termcolor', '1.1.0', {
         'checksums': ['1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b'],
-    }),
-    ('tensorflow-io-gcs-filesystem', '0.24.0', {
-        'source_tmpl': 'tensorflow_io_gcs_filesystem-0.24.0-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl',
-        'checksums': ['cbc71b3925508bf796644a0083a6f9284f71404654f53092bece701383a69520'],
     }),
     ('tensorflow_estimator', '2.7.0', {
         'source_tmpl': '%(name)s-%(version)s-py2.py3-none-any.whl',
@@ -119,11 +114,6 @@ exts_list = [
     }),
     ('opt_einsum', '3.3.0', {
         'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
-    }),
-    ('libclang', '13.0.0', {
-        'modulename': 'clang',
-        'source_tmpl': '%(name)s-%(version)s-py2.py3-none-manylinux1_x86_64.whl',
-        'checksums': ['9c1e623340ccafe3a10a2abbc90f59593ff29f0c854f4ddb65b6220d9d998fb4'],
     }),
     ('Keras_Preprocessing', '1.1.2', {
         'checksums': ['add82567c50c8bc648c14195bf544a5ce7c1f76761536956c3d2978970179ef3'],
@@ -178,6 +168,8 @@ exts_list = [
             'TensorFlow-2.5.0_fix-crash-on-shutdown.patch',
             'TensorFlow-2.7.1_fix_protobuf_error_message.patch',
             'TensorFlow-2.7.1_remove-duplicate-gpu-tests.patch',
+            'TensorFlow-2.7.1_remove-io-gcs-dependency.patch',
+            'TensorFlow-2.7.1_remove-libclang-dependency.patch',
             'TensorFlow-2.7.1_fix_cpu_count.patch',
         ],
         'source_tmpl': 'v%(version)s.tar.gz',
@@ -210,6 +202,8 @@ exts_list = [
             '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
             # All tests in this directory fail with segfault (TensorFlow Graph IR)
             '-//tensorflow/core/ir/importexport/tests/roundtrip/...',
+            # Fails on e.g. AMD EPYC and known to be flaky on Mac: https://github.com/tensorflow/tensorflow/issues/56717
+            '-//tensorflow/python/data/experimental/kernel_tests/service:fault_tolerance_test',
         ],
         'testopts': "--test_timeout=3600 --test_size_filters=small",
         'testopts_gpu': "--test_timeout=3600 --test_size_filters=small " +
@@ -228,13 +222,17 @@ exts_list = [
             # TensorFlow-2.5.0-fix-alias-violation-in-absl.patch
             '12454fda3330fb45cd380377e283f04488b40e0b8ae7378e786ddf731a581f75',
             # TensorFlow-2.5.0_fix-arm-vector-intrinsics.patch
-            '6abfadc0f67ff3b510d70430843201cb46d7bd65db045ec9b482af70e0c8c0c8',
+            '5edea55ce87d5adb14f6ed6996f308879e268b8cec760cf11288e3a56179a029',
             # TensorFlow-2.5.0_fix-crash-on-shutdown.patch
             '578c7493221ebd3dc25ca43d63a72cbb28fdf4112b1e2baa7390f25781bd78fd',
             # TensorFlow-2.7.1_fix_protobuf_error_message.patch
             '301ce21845987dc7868624880c0d85e60aa5491c5a0bae0f6ebc8db5727960a5',
             # TensorFlow-2.7.1_remove-duplicate-gpu-tests.patch
             'f78526a34d85f4dda59b160b576aa3a3126db7073a58c4e3b1424923f6a21483',
+            # TensorFlow-2.7.1_remove-io-gcs-dependency.patch
+            '01c439749938f9fc23fe8de17592460aa46e201575a3f9465bfb6b39ca50ef20',
+            # TensorFlow-2.7.1_remove-libclang-dependency.patc
+            'd202058c0e8a7cdef3157fe12327e23c7291ce2724a15653df0aae3b40c4dadc',
             # TensorFlow-2.7.1_fix_cpu_count.patch
             '5427a4cff0afc2fe5b24776ae9ca3616c56a79c1fde0025b37bec24837bb0698',
         ],
