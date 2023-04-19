@@ -1,0 +1,98 @@
+easyblock = "CMakeMake"
+
+name = 'Arrow'
+version = "0.16.0"
+
+homepage = "https://arrow.apache.org"
+description = """Apache Arrow is a cross-language development platform for in-memory data."""
+
+# On AVX512, there is a bug with GCC 7.3.0
+toolchain = {"name": "GCC", "version": "9.3.0"}
+toolchainopts = {"cstd": "c++17"}
+
+sources = ["apache-arrow-%(version)s.tar.gz"]
+source_urls = ["https://github.com/apache/arrow/archive/"]
+
+builddependencies = [
+    ("Boost", "1.72.0"),
+    ("SciPy-Stack", "2020a"),
+    ("CMake", "3.23.1"),
+    ("thrift", "0.13.0")
+]
+
+multi_deps = {"Python": ["3.8"]}
+
+local_cmake_opts = " ".join([
+    "-DARROW_PYTHON=ON",
+    "-DARROW_PLASMA=ON",
+    "-DARROW_PARQUET=ON",
+    "-DARROW_CSV=ON",
+    "-DARROW_JSON=ON",
+    "-DARROW_WITH_ZSTD=ON",
+    "-DZSTD_SOURCE=BUNDLED", # We must specify `ZSTD_SOURCE=BUNDLED` to ensure ZSTD is built from source.,
+    "-DARROW_WITH_BZ2=ON",
+    "-DARROW_WITH_LZ4=ON",
+    "-DARROW_BUILD_TESTS=OFF",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DBOOST_ROOT=$EBROOTBOOST",
+    "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python",
+    "-DCMAKE_SKIP_RPATH=ON",
+    "-DCMAKE_INSTALL_LIBDIR=lib", # Python bindings expect libs to be in `lib`.
+    "-DARROW_USE_CCACHE=OFF",
+])
+
+local_exports = " && ".join([
+    "export PYARROW_WITH_PLASMA=1",
+    "export PYARROW_WITH_PARQUET=1",
+    "export PYARROW_WITH_ZSTD=1",
+    'export PYARROW_CMAKE_OPTIONS="{}"'.format(local_cmake_opts),
+    "export ARROW_HOME=%(installdir)s",
+    "export PYARROW_BUILD_TYPE=Release",
+    "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH",
+])
+
+configopts = local_cmake_opts
+
+installopts = (
+      " && cd %(builddir)s/arrow-*/python "
+    + " && mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages "
+    + " && {} ".format(local_exports)
+    + " && python setup.py build_ext --inplace "
+    + " && python setup.py install --prefix=%(installdir)s "
+)
+
+postinstallcmds = [
+    "rm -r %(installdir)s/lib/cmake",
+]
+
+start_dir = "cpp"
+separate_build_dir = True
+
+# runtest = "unittest"
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+sanity_check_paths = {
+    "files": [
+        "lib/libarrow_python.so",
+        "lib/libarrow.so",
+        "lib/libplasma.so",
+        "lib/libparquet.so",
+    ],
+    "dirs": [
+        "include/arrow",
+        "include/plasma",
+        "include/parquet",
+        "lib/python%(pyshortver)s/site-packages",
+    ],
+}
+
+sanity_check_commands = [
+    "python -c 'import pyarrow'",
+    "python -c 'import pyarrow.plasma'",
+    "python -c 'import pyarrow.parquet'",
+    "python -c 'import pyarrow.csv'",
+    "python -c 'import pyarrow.json'",
+]
+
+moduleclass = "data"
