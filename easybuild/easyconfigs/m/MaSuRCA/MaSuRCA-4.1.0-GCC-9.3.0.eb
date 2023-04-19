@@ -1,0 +1,61 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2017 University of Geneva
+# Authors::   Yann Sagon <yann.sagon@unige.ch>
+# License::   MIT/GPL
+# $Id$
+# Modified by: Ali Kerrache, University of Manitoba
+# Date: March 6th, 2018.
+##
+easyblock = 'ConfigureMake'
+
+name = 'MaSuRCA'
+version = "4.1.0"
+
+homepage = 'http://www.genome.umd.edu/masurca.html'
+description = "MaSuRCA is whole genome assembly software. It combines the efficiency of the de Bruijn graph and Overlap-Layout-Consensus (OLC) approaches. MaSuRCA can assemble data sets containing only short reads from Illumina sequencing or a mixture of short reads and long reads (Sanger, 454, Pacbio and Nanopore)."
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/alekseyzimin/%(namelower)s/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['15078e24c79fe5aabe42748d64f95d15f3fbd7708e84d88fc07c4b7f2e4b0902']
+
+dependencies = [
+    ('libreadline', '8.0'),
+    ('Tcl', '8.6.8'),
+    ('Boost', '1.72.0'),
+    ('zlib', '1.2.11'),
+    ('Perl', '5.30.2', '', True),
+]
+
+buildopts = 'install-special'
+
+postinstallcmds = ['rm -f %(installdir)s/sr_config_example.txt && %(installdir)s/bin/%(namelower)s -g %(installdir)s/sr_config_example.txt && cd ../Flye && make && cp -a ../Flye %(installdir)s']
+
+start_dir = 'global-1'
+
+skipsteps = ['install']
+
+modextrapaths = {
+    'PATH': ['CA8/Linux-amd64/bin'], 
+    'PERL5LIB': ['bin/TIGR', 'CA8/Linux-amd64/bin/TIGR'],
+}
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'sr_config_example.txt', 'Flye/bin/flye'],
+    'dirs': ['bin', 'CA8', 'include', 'lib', 'libexec', 'share'],
+}
+
+modloadmsg = """
+Run the following steps / Executer les etapes suivantes:
+1. Generate the config file / Creer le fichier de configuration: conf.txt
+   %(namelower)s -g conf.txt
+2. Generate the script / Creer le script: assembler.sh
+   %(namelower)s conf.txt or %(namelower)s --skip-checking conf.txt
+3. Execute the script / Executer le script: assembler.sh
+   assembler.sh
+"""
+
+moduleclass = 'bio'
