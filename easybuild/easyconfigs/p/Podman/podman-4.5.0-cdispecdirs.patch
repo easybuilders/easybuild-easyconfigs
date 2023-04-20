@@ -1,11 +1,20 @@
---- podman-4.5.0/pkg/specgen/generate/config_linux.go~	2023-04-14 13:28:20.000000000 +0000
-+++ podman-4.5.0/pkg/specgen/generate/config_linux.go	2023-04-20 15:53:38.915095686 +0000
-@@ -22,7 +22,7 @@
- func DevicesFromPath(g *generate.Generator, devicePath string) error {
- 	if isCDIDevice(devicePath) {
- 		registry := cdi.GetRegistry(
--			cdi.WithAutoRefresh(false),
-+			cdi.WithSpecDirs([]string{"/etc/cdi", "/var/run/cdi", "/var/tmp/cdi"}...),
- 		)
- 		if err := registry.Refresh(); err != nil {
- 			logrus.Debugf("The following error was triggered when refreshing the CDI registry: %v", err)
+--- podman-4.5.0/vendor/github.com/container-orchestrated-devices/container-device-interface/pkg/cdi/spec-dirs.go~	2023-04-14 13:28:20.000000000 +0000
++++ podman-4.5.0/vendor/github.com/container-orchestrated-devices/container-device-interface/pkg/cdi/spec-dirs.go	2023-04-20 16:12:49.969361193 +0000
+@@ -28,6 +28,8 @@
+ 	DefaultStaticDir = "/etc/cdi"
+ 	// DefaultDynamicDir is the default directory for generated CDI Specs
+ 	DefaultDynamicDir = "/var/run/cdi"
++	// DefaultDynamicTmpDir is the default directory for temporary generated CDI Specs
++	DefaultDynamicTmpDir = "/var/tmp/cdi"
+ )
+ 
+ var (
+@@ -37,7 +39,7 @@
+ 	// to use a WithSpecDirs options. Otherwise the change is only
+ 	// effective if it takes place before creating the Registry or
+ 	// other Cache instances.
+-	DefaultSpecDirs = []string{DefaultStaticDir, DefaultDynamicDir}
++	DefaultSpecDirs = []string{DefaultStaticDir, DefaultDynamicDir, DefaultDynamicTmpDir}
+ 	// ErrStopScan can be returned from a ScanSpecFunc to stop the scan.
+ 	ErrStopScan = errors.New("stop Spec scan")
+ )
