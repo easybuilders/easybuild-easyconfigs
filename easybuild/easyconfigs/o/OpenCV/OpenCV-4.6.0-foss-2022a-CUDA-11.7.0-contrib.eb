@@ -32,6 +32,7 @@ sources = [
         'extract_cmd': 'cp %s %(builddir)s'
     },
 ]
+patches = [('opencv-contrib-python.egg-info', '..')]
 checksums = [
     '158db5813a891c7eda8644259fc1dbd76b21bd1ffb9854a8b4b8115a4ceec359',  # opencv-4.6.0.zip
     '588ca44e3c88ccf8e3ff7f46e966e26ff63d72607968ace83b91628d3440f8a3',  # opencv_contrib-4.6.0.zip
@@ -81,6 +82,13 @@ configopts = " ".join([
     "-DBUILD_opencv_python2=OFF",
     "-DCUDA_NVCC_FLAGS=--std=c++14",
 ])
+
+# Install a egg-info file so it is more python friendly
+local_egg_info_src = '%(builddir)s/opencv-contrib-python.egg-info'
+local_egg_info_dest = '%(installdir)s/lib/python%(pyshortver)s/site-packages/opencv-contrib-python-%(version)s.egg-info'
+postinstallcmds = [
+    'sed "s/#OPENCV_VERSION#/%%(version)s/" %s > %s' % (local_egg_info_src, local_egg_info_dest),
+]
 
 enhance_sanity_check = True
 
