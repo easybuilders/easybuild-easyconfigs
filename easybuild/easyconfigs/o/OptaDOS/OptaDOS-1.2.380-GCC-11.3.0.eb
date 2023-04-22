@@ -1,0 +1,40 @@
+easyblock = 'MakeCp'
+
+name = 'OptaDOS'
+version = '1.2.380'
+
+homepage = 'http://www.optados.org/'
+description = """OptaDOS is a program for calculating core-electron and low-loss electron energy
+loss spectra (EELS) and optical spectra along with total-, projected- and
+joint-density of electronic states (DOS) from single-particle eigenenergies and
+dipole transition coefficients."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+github_account = 'optados-developers'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['606d3db28dba791f62b05ef638ed0b1e42474763db65e04abd63a30501bb2eac']
+
+buildopts = "SYSTEM=gfortran COMMS_ARCH=serial PREFIX=%(installdir)s "
+buildopts += 'FFLAGS="$FFLAGS -fconvert=big-endian -ffree-line-length-150"'
+
+files_to_copy = [
+    (['src/%(namelower)s.gfortran.*'], 'bin'),
+    'documents',
+    'examples',
+    'tools',
+]
+
+postinstallcmds = [
+    "cd %(installdir)s/bin && ln -s %(namelower)s.gfortran.* %(namelower)s",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['documents', 'examples', 'tools']
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+
+moduleclass = 'phys'
