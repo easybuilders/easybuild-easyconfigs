@@ -1,0 +1,167 @@
+easyblock = 'PythonBundle'
+
+name = 'AlphaFold'
+version = '2.3.4'
+versionsuffix = '-ColabFold'
+_commit = '41807ea2c75706cf03f790f06ca191dc04331e41'
+
+homepage = 'https://github.com/sokrypton/alphafold'
+description = """
+AlphaFold can predict protein structures with atomic accuracy even where no
+similar structure is known.
+This package of AlphaFold contains patches for ColabFold."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    # required for installing dm-tree
+    ('Bazel', '5.1.1'),
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyYAML', '6.0'),
+    ('TensorFlow', '2.11.0'),
+    ('Biopython', '1.79'),
+    ('HH-suite', '3.3.0'),
+    ('HMMER', '3.3.2'),
+    ('Kalign', '3.3.5'),
+    ('jax', '0.3.25'),  # also provides absl-py
+    ('OpenMM', '8.0.0'),
+]
+
+# commit to use for downloading stereo_chemical_props.txt and copy to alphafold/common,
+# see docker/Dockerfile in AlphaFold repository
+local_scp_commit = '7102c6'
+
+components = [
+    (name, version, {
+        'easyblock': 'PythonPackage',
+        'source_urls': [
+            'https://github.com/sokrypton/alphafold/archive/',
+            'https://git.scicore.unibas.ch/schwede/openstructure/-/raw/%s/modules/mol/alg/src/' % local_scp_commit,
+        ],
+        'sources': [
+            {
+                'download_filename': '%s.tar.gz' % _commit,
+                'filename': '%s-%s.tar.gz' % (name.lower() + versionsuffix.lower(), version)
+            },
+            {
+                'download_filename': 'stereo_chemical_props.txt',
+                'filename': 'stereo_chemical_props-%s.txt' % local_scp_commit,
+                'extract_cmd': "cp %s .",
+            },
+        ],
+        'patches': [
+            'AlphaFold-ColabFold-2.3.4_data-dep-paths.patch',
+            'AlphaFold-2.0.0_n-cpu.patch',
+            'AlphaFold-ColabFold-2.3.4_fix-scp-path.patch',
+            'AlphaFold-2.0.1_setup_rm_tfcpu.patch',
+            'AlphaFold-2.3.1_use_openmm_7.7.0.patch',
+        ],
+        'checksums': [
+            'be6778333fc110b8662b0e262798d6fc1663a14d9341469c6558b2d7771b8024',  # alphafold-colabfold-2.3.4.tar.gz
+            '24510899eeb49167cffedec8fa45363a4d08279c0c637a403b452f7d0ac09451',  # stereo_chemical_props-7102c6.txt
+            # AlphaFold-ColabFold-2.3.4_data-dep-paths.patch
+            '3826e357c35a58b2c8c0fab41ac8ae1b4d4c135162fe47ded577a13dade0c6f3',
+            # AlphaFold-2.0.0_n-cpu.patch
+            'dfda4dd5f9aba19fe2b6eb9a0ec583d12dcefdfee8ab8803fc57ad48d582db04',
+            # AlphaFold-ColabFold-2.3.4_fix-scp-path.patch
+            '07bf81f987bc1ab67b7d71121396449289d3ffb499cddb62a135574f2ca7115a',
+            # AlphaFold-2.0.1_setup_rm_tfcpu.patch
+            '1a2e4e843bd9a4d15ee39e6c37cc63ba281311cc7a0a5610f0e43b52ef93faac',
+            # AlphaFold-2.3.1_use_openmm_7.7.0.patch
+            'd800bb085deac7edbe2d72916c1194043964aaf51b88a3b5a5016ab68a1090ec',
+        ],
+        'start_dir': 'alphafold-%s' % _commit,
+        'use_pip': True,
+    }),
+]
+
+use_pip = True
+
+exts_list = [
+    ('PDBFixer', '1.8.1', {
+        'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['d50551abfe9dbaefc066f4d9d400cdebe57f1fefd9de9d01e12beb87efd99595'],
+    }),
+    ('toolz', '0.12.0', {
+        'checksums': ['88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194'],
+    }),
+    ('chex', '0.1.6', {
+        'checksums': ['adb5d2352b5f0d248ccf594be1b1bf9ee7a2bee2a57f0eac78547538d479b0e7'],
+    }),
+    ('tabulate', '0.9.0', {
+        'checksums': ['0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c'],
+    }),
+    ('jmp', '0.0.4', {
+        'checksums': ['5dfeb0fd7c7a9f72a70fff0aab9d0cbfae32a809c02f4037ff3485ceb33e1730'],
+    }),
+    ('dm-haiku', '0.0.9', {
+        'modulename': 'haiku',
+        'source_urls': ['https://github.com/deepmind/dm-haiku/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['d550f07f5891ede30ada5faafde98f549ed1b8ceadb7a601cca3d81db7d82414'],
+    }),
+    ('dm-tree', '0.1.8', {
+        'modulename': 'tree',
+        'checksums': ['0fcaabbb14e7980377439e7140bd05552739ca5e515ecb3119f234acee4b9430'],
+    }),
+    ('websocket-client', '1.5.1', {
+        'modulename': 'websocket',
+        'checksums': ['3f09e6d8230892547132177f575a4e3e73cfdf06526e20cc02aa1c3b47184d40'],
+    }),
+    ('docker', '6.0.1', {
+        'checksums': ['896c4282e5c7af5c45e8b683b0b0c33932974fe6e50fc6906a0a83616ab3da97'],
+    }),
+    ('immutabledict', '2.2.3', {
+        'checksums': ['0e1e8a3f2b3ff062daa19795f947e9ec7a58add269d44e34d3ab4319e1343853'],
+    }),
+    ('contextlib2', '21.6.0', {
+        'checksums': ['ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869'],
+    }),
+    ('ml_collections', '0.1.1', {
+        'preinstallopts': "touch requirements.txt && touch requirements-test.txt && ",
+        'checksums': ['3fefcc72ec433aa1e5d32307a3e474bbb67f405be814ea52a2166bfc9dbe68cc'],
+    }),
+]
+
+_alphafold_buildir = '%%(builddir)s/%%(namelower)s-%s' % _commit
+
+postinstallcmds = [
+    "mkdir -p %(installdir)s/bin",
+    # run_alphafold.py script is missing a shebang...
+    "echo '#!/usr/bin/env python' > %(installdir)s/bin/run_alphafold.py",
+    "cat %s/run_alphafold.py >> %%(installdir)s/bin/run_alphafold.py" % _alphafold_buildir,
+    "chmod a+x %(installdir)s/bin/run_alphafold*.py",
+    "cd %(installdir)s/bin && ln -s run_alphafold.py alphafold",
+    "cp -a %s/scripts %%(installdir)s/" % _alphafold_buildir,
+    "cp %%(builddir)s/stereo_chemical_props-%s.txt %%(installdir)s/stereo_chemical_props.txt" % local_scp_commit,
+    # run tests for run_alphafold.py script;
+    # shouldn't do this in sanity check to avoid breaking use of --module-only
+    "PYTHONPATH=%%(installdir)s/lib/python%%(pyshortver)s/site-packages:$PYTHONPATH "
+    "python %s/run_alphafold_test.py" % _alphafold_buildir,
+]
+
+sanity_check_paths = {
+    'files': ['bin/alphafold', 'bin/pdbfixer', 'bin/run_alphafold.py', 'stereo_chemical_props.txt'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'scripts'],
+}
+
+sanity_check_commands = [
+    "pdbfixer --help",
+    "python -m openmm.testInstallation",
+    "python -c 'import alphafold'",
+    "alphafold --help 2>&1 | grep 'Full AlphaFold protein structure prediction script'",
+]
+
+sanity_pip_check = True
+
+modextravars = {
+    # 'ALPHAFOLD_DATA_DIR': '/path/to/AlphaFold_DBs',  # please adapt
+}
+
+moduleclass = 'bio'

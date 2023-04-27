@@ -1,0 +1,73 @@
+# Updated by: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'ConfigureMake'
+
+name = 'AUGUSTUS'
+version = '3.5.0'
+
+homepage = 'https://bioinf.uni-greifswald.de/augustus/'
+description = "AUGUSTUS is a program that predicts genes in eukaryotic genomic sequences"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'Gaius-Augustus'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['5ed6ce6106303b800c5e91d37a250baff43b20824657b853ae04d11ad8bdd686']
+
+builddependencies = [
+    ('Python', '3.10.4'),
+]
+
+dependencies = [
+    ('zlib', '1.2.12'),
+    ('Boost', '1.79.0'),
+    ('GSL', '2.7'),
+    ('SAMtools', '1.16.1'),
+    ('HTSlib', '1.15.1'),  # also provides tabix
+    ('BCFtools', '1.15.1'),
+    ('lpsolve', '5.5.2.11'),
+    ('SuiteSparse', '5.13.0', '-METIS-5.1.0'),
+    ('BamTools', '2.5.2'),
+    ('SQLite', '3.38.3'),
+]
+
+skipsteps = ['configure']
+
+# run "make clean" to avoid using binaries included with the source tarball
+prebuildopts = "make clean && "
+
+_tmpl = 'INCLUDE_PATH_{dep}=-I{root}{incl} LIBRARY_PATH_{dep}="-L{root}{lib} -Wl,-rpath,{root}{lib}"'
+
+buildopts = ' '.join([
+    'COMPGENEPRED=true SQLITE=true ZIPINPUT=true MYSQL=false CXX="$CXX" ',
+    _tmpl.format(dep='ZLIB', root='$EBROOTZLIB', incl='/include', lib='/lib'),
+    _tmpl.format(dep='BOOST', root='$EBROOTBOOST', incl='/include', lib='/lib'),
+    _tmpl.format(dep='LPSOLVE', root='$EBROOTLPSOLVE', incl='/include', lib='/lib'),
+    _tmpl.format(dep='SUITESPARSE', root='$EBROOTSUITESPARSE', incl='/include', lib='/lib'),
+    _tmpl.format(dep='GSL', root='$EBROOTGSL', incl='/include', lib='/lib'),
+    _tmpl.format(dep='SQLITE', root='$EBROOTSQLITE', incl='/include', lib='/lib'),
+    _tmpl.format(dep='BAMTOOLS', root='$EBROOTBAMTOOLS', incl='/include/bamtools', lib='/lib'),
+    _tmpl.format(dep='HTSLIB', root='$EBROOTHTSLIB', incl='/include/htslib', lib='/lib'),
+])
+
+preinstallopts = "sed -i '/ln -sf/d' Makefile && "
+installopts = 'INSTALLDIR=%(installdir)s '
+
+sanity_check_paths = {
+    'files': ['bin/augustus', 'bin/bam2hints', 'bin/etraining', 'bin/fastBlockSearch',
+              'bin/filterBam', 'bin/getSeq', 'bin/homGeneMapping', 'bin/joingenes',
+              'bin/load2sqlitedb', 'bin/prepareAlign'],
+    'dirs': ['config', 'scripts'],
+}
+sanity_check_commands = ['augustus --help']
+
+modextrapaths = {'PATH': 'scripts'}
+modextravars = {
+    'AUGUSTUS_BIN_PATH': '%(installdir)s/bin',
+    'AUGUSTUS_CONFIG_PATH': '%(installdir)s/config',
+    'AUGUSTUS_SCRIPTS_PATH': '%(installdir)s/scripts',
+}
+
+moduleclass = 'bio'

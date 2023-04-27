@@ -1,0 +1,40 @@
+Let CMake search for the compilers and only fail if they are not found.
+See https://gitlab.com/elsi_project/elsi_interface/-/merge_requests/304
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b8d22e53..f1570a8e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -67,14 +67,18 @@ SET(INC_PATHS "" CACHE STRING "List of include directories")
+ SET(LIBS "" CACHE STRING "List of external libraries to be linked against")
+ 
+ ### Compilers ###
+-IF(NOT DEFINED CMAKE_Fortran_COMPILER)
++INCLUDE(CheckLanguage)
++
++CHECK_LANGUAGE(Fortran)
++IF(NOT CMAKE_Fortran_COMPILER)
+   MESSAGE(FATAL_ERROR "${MAGENTA}Fortran compiler must be set${COLORRESET}")
+ ELSE()
+   MESSAGE(STATUS "${GREEN}Fortran compiler${COLORRESET}: ${CMAKE_Fortran_COMPILER}")
+   ENABLE_LANGUAGE(Fortran)
+ ENDIF()
+ IF(ENABLE_PEXSI OR ENABLE_C_TESTS OR ELPA2_KERNEL STREQUAL "AVX512" OR ELPA2_KERNEL STREQUAL "AVX2" OR ELPA2_KERNEL STREQUAL "AVX")
+-  IF(NOT DEFINED CMAKE_C_COMPILER)
++  CHECK_LANGUAGE(C)
++  IF(NOT CMAKE_C_COMPILER)
+     MESSAGE(FATAL_ERROR "${MAGENTA}C compiler must be set${COLORRESET}")
+   ELSE()
+     MESSAGE(STATUS "${GREEN}C compiler${COLORRESET}: ${CMAKE_C_COMPILER}")
+@@ -82,7 +86,8 @@ IF(ENABLE_PEXSI OR ENABLE_C_TESTS OR ELPA2_KERNEL STREQUAL "AVX512" OR ELPA2_KER
+   ENDIF()
+ ENDIF()
+ IF(ENABLE_PEXSI)
+-  IF(NOT DEFINED CMAKE_CXX_COMPILER)
++  CHECK_LANGUAGE(CXX)
++  IF(NOT CMAKE_CXX_COMPILER)
+     MESSAGE(FATAL_ERROR "${MAGENTA}C++ compiler must be set${COLORRESET}")
+   ELSE()
+     MESSAGE(STATUS "${GREEN}C++ compiler${COLORRESET}: ${CMAKE_CXX_COMPILER}")
