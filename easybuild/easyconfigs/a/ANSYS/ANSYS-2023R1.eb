@@ -15,14 +15,13 @@ sources = ['ANSYS-%(version)s.tar','ANSYS_2023R1.02_LINX64.tgz']
 checksums = ['614a23c7778bf41132d7d98dfc8e044fe0eac233f1a02d981bb85767c1e02358',
 	     '5d68c5acfaffe493abb909e83aa409718e4a01b758e81339c35b90782bcb6db4']
 extract_sources = True
-# install_cmd = "cd %(builddir)s;./INSTALL -install_dir %(installdir)s -silent"
 
 postinstallcmds = [
-  # Dont apply sp2 causes workbench mechanical crash with msgs:
+  # Avoid applying SP2 causes workbench mechanical crash with msgs:
   # Error! Unable to create model. Tcp transport error.
   # Warning! Unable to clean addins in Mechanical.  Connection refused
-  # "cd %(builddir)s;./INSTALL -install_dir %(installdir)s -silent",
-  # Directly replace setmwruntime with one that works (todo create patch)
+  #"cd %(builddir)s;./INSTALL -install_dir %(installdir)s -silent",
+  # Replace setmwruntime with one that works (create patchfile for this later)
   "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/2023R1;\
    mv %(installdir)s/v231/commonfiles/MainWin/linx64/mw/setmwruntime{,-orig};\
    cp $a/setmwruntime %(installdir)s/v231/commonfiles/MainWin/linx64/mw/setmwruntime;\
@@ -46,12 +45,12 @@ postinstallcmds = [
   # Run setrpaths.sh for any_interpreter
   "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-  # Avoid warning when starting mechanical in workbench: sh: domainname: command not found
+  # Avoid warning starting workbench mechanical: sh: domainname: command not found
   "cd %(installdir)s/v231/Tools/mono/Linux64/bin;\
    ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
   # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh'
   "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
-   grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   xargs -0 grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
    sed -i 's|\/bin\/sh|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
   # Replace '/bin/bash' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash'
   "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
@@ -65,7 +64,7 @@ postinstallcmds = [
   # Avoid warning when starting workbench: Unit[s] is not valid for quantity Time
   "cd %(installdir)s/v231/tp/CUEUnits/linx64/lib;\
    mv libCUEUnits.so libCUEUnits.so-orig;\
-   ln -s ../../../../aisol/lib/linx64/libCUEUnits.so libCUEUnits.so;"
+   ln -s ../../../../aisol/lib/linx64/libCUEUnits.so libCUEUnits.so;",
   # Avoid cfx-pre warning: libjpeg.so.62: no version information available
   "cd %(installdir)s/v231/tp/qt/5.9.6/linx64/lib;\
    mv libjpeg.so.62.0.0 libjpeg.so.62.0.0-orig;\
