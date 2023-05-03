@@ -1,0 +1,82 @@
+Use libsvm from the environment instead of the one provided with CPC2
+Author: Samuel Moors, Vrije Universiteit Brussel (VUB)
+Update: Fix incompatible syntax with Python 3
+Updated by: Denis Kristak (Inuits)
+diff -ruN cpc2_orig/bin/compress.py cpc2/bin/compress.py
+--- cpc2_orig/bin/compress.py	2018-10-22 17:58:22.000000000 +0200
++++ cpc2/bin/compress.py	2023-05-03 12:37:36.240001307 +0200
+@@ -11,7 +11,7 @@
+ 			fq_fp = gzip.open(fq_file,mode+"b",level)
+ 		else:
+ 			sys.stderr.write("[INFO] read file '%s'\n"%fq_file)
+-			fq_fp = file(fq_file,mode)
++			fq_fp = open(fq_file,mode)
+ 	except:
+ 		sys.stderr.write("Error: Fail to IO file: %s\n"%(fq_file))
+ 		sys.exit(1)
+diff -ruN cpc2_orig/bin/CPC2.py cpc2/bin/CPC2.py
+--- cpc2_orig/bin/CPC2.py	2023-05-02 16:41:34.222887000 +0200
++++ cpc2/bin/CPC2.py	2023-05-03 12:40:15.817915000 +0200
+@@ -78,7 +78,7 @@
+ 		'''
+ 		while True:
+ 			try: 
+-				codon,index = triplet_got.next()
++				codon,index = next(triplet_got)
+ 			except StopIteration:
+ 				break 
+ 			if codon in starts and codon not in stops:
+@@ -89,7 +89,7 @@
+ 				end_extension = False
+ 				while True:
+ 					try: 
+-						codon,index = triplet_got.next()
++						codon,index = next(triplet_got)
+ 					except StopIteration:
+ 						end_extension = True
+ 						integrity = -1
+@@ -245,9 +245,9 @@
+ 	'''
+ 	strinfoAmbiguous = re.compile("X|B|Z|J|U",re.I)
+ 	ptU = re.compile("U",re.I)
+-	ftmp_feat = file(outfile + ".feat","w")
+-	ftmp_svm = file(outfile + ".tmp.1","w")
+-	ftmp_result = file(outfile,"w")
++	ftmp_feat = open(outfile + ".feat","w")
++	ftmp_svm = open(outfile + ".tmp.1","w")
++	ftmp_result = open(outfile,"w")
+ 	ftmp_result.write("\t".join(map(str,["#ID","transcript_length","peptide_length","Fickett_score","pI","ORF_integrity","coding_probability","label"]))+"\n")
+ 	ftmp_result.close()
+ 	fickett_obj = Fickett()
+@@ -288,16 +288,16 @@
+ 	script_dir,filename = os.path.split(os.path.abspath(sys.argv[0]))
+ 	data_dir = script_dir + "/../data/"
+ 	lib_dir = script_dir + "/../libs/"
+-	app_svm_scale = lib_dir + "libsvm/libsvm-3.18/svm-scale"
+-	app_svm_predict = lib_dir + "libsvm/libsvm-3.18/svm-predict"
+-	os.system('test -x '+ app_svm_scale + ' || echo \"[ERROR] No excutable svm-scale on CPC2 path!\" > /dev/stderr')
+-	os.system('test -x '+ app_svm_predict + ' || echo \"[ERROR] No excutable svm-predict on CPC2 path!\" > /dev/stderr')
++	app_svm_scale = 'svm-scale'
++	app_svm_predict = 'svm-predict'
++	os.system('which ' + app_svm_scale + ' || echo \"[ERROR] No excutable svm-scale on CPC2 path!\" > /dev/stderr')
++	os.system('which ' + app_svm_predict + ' || echo \"[ERROR] No excutable svm-predict on CPC2 path!\" > /dev/stderr')
+ 	
+ 	cmd = app_svm_scale + ' -r ' + data_dir + 'cpc2.range ' + outfile + '.tmp.1 > ' + outfile + '.tmp.2 &&'
+ 	cmd = cmd + app_svm_predict + ' -b 1 -q ' + outfile + '.tmp.2 ' + data_dir + 'cpc2.model ' + outfile + '.tmp.1 &&'
+ 	cmd = cmd + 'awk -vOFS="\\t" \'{if ($1 == 1){print $2,"coding"} else if ($1 == 0){print $2,"noncoding"}}\' ' + outfile + '.tmp.1 > ' + outfile + '.tmp.2 &&'
+ 	cmd = cmd + 'paste ' + outfile + '.feat ' + outfile + '.tmp.2 >>' + outfile
+-	command = suprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++	command = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+ 	(outtext, errtext) = command.communicate()
+ 	exitstatus = command.returncode
+ 	os.system('rm -f ' + outfile + '.tmp.1 ' + outfile + '.tmp.2')
+@@ -306,7 +306,8 @@
+ 	#	pass
+ 	if exitstatus == 0:
+ 		rm_cmd = "rm -f " + outfile + '.feat'
+-		subprocess.call(rm_cmd)
++		print(rm_cmd)
++		subprocess.run(rm_cmd, shell=True)
+ 		sys.stderr.write("[INFO] Running Done!\n")
+ 		return 0
+ 	else:
