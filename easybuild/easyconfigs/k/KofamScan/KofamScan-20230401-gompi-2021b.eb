@@ -1,0 +1,59 @@
+easyblock = 'Binary'
+
+name = 'KofamScan'
+version = '1.3.0'
+
+homepage = 'https://www.genome.jp/tools/kofamkoala/'
+description = """KofamKOALA assigns K numbers to the user's sequence data by 
+HMMER/HMMSEARCH against KOfam (a customized HMM database of KEGG Orthologs 
+(KOs)).  K number assignments with scores above the predefined thresholds 
+for individual KOs are more reliable than other proposed assignments.  Such 
+high score assignments are highlighted with asterisks '*' in the output.  
+The K number assignments facilitate the interpretation of the annotation 
+results by linking the user's sequence data to the KEGG pathways and EC 
+numbers.  [code only: libraries and external binaries but no data]."""
+#software_license = 'MIT'
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+source_urls = [
+    'https://www.genome.jp/ftp/tools/kofam_scan/',
+#    'https://www.genome.jp/ftp/tools/kofam_scan/archives/kofam_scan-%(version)s/', # if moved to archives
+]
+sources = [
+    'kofam_scan-%(version)s.tar.gz',
+]
+checksums = [
+    'c50434f9d72d4958549d5f4433a294ec4d55391e295eedff4c4db8d642fca1f6',  # kofam_scan-1.3.0.tar.gz
+]
+
+dependencies = [
+    ('Ruby',     '3.0.1',),
+    ('Perl',     '5.34.0'),
+    ('parallel', '20210722'),
+    ('HMMER',    '3.3.2'),
+]
+
+extract_sources = False
+
+# NOTE The data can be added manually afterwards with for example a symlink called *data*
+# in %(installdir)s/
+# But simpler to use the InterProScan_data-*.eb file. The regular InterProScan data package
+# does not contain the lookup_service data way too large!
+install_cmd = 'tar xfz kofam_scan-%(version)s.tar.gz && '
+install_cmd += 'cd kofam_scan-%(version)s/ && '
+install_cmd += 'cp -r * %(installdir)s/ && cd .. && '
+install_cmd += 'echo "profile: %(installdir)s/db/profiles" > %(installdir)s/config.yml && '
+install_cmd += 'echo "ko_list: %(installdir)s/db/ko_list" >> %(installdir)s/config.yml && '
+install_cmd += 'echo "cpu: 2" >> %(installdir)s/config.yml '
+
+modloadmsg = """To execute KofamScan run: exec_annotation\nAlso check %(installdir)s/config.yml for default config file.\n"""
+
+sanity_check_paths = {
+    'files': ['exec_annotation'],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ["exec_annotation --version 2>&1 | grep '%(version)s'"]
+
+moduleclass = 'bio'

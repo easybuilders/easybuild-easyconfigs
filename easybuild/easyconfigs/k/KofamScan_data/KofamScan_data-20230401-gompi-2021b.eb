@@ -1,0 +1,52 @@
+easyblock = 'Binary'
+
+name = 'KofamScan_data'
+version = '1.3.0'
+
+homepage = 'https://www.genome.jp/tools/kofamkoala/'
+description = """KofamKOALA assigns K numbers to the user's sequence data by 
+HMMER/HMMSEARCH against KOfam (a customized HMM database of KEGG Orthologs 
+(KOs)).  K number assignments with scores above the predefined thresholds 
+for individual KOs are more reliable than other proposed assignments.  Such 
+high score assignments are highlighted with asterisks '*' in the output.  
+The K number assignments facilitate the interpretation of the annotation 
+results by linking the user's sequence data to the KEGG pathways and EC 
+numbers.  [data only]."""
+#software_license = 'MIT'
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+source_urls = [
+    'https://www.genome.jp/ftp/db/kofam/',
+#    'https://www.genome.jp/ftp/db/kofam/archives/YYYY-MM-DD/', # if moved to archives
+]
+sources = [
+    'ko_list.gz',
+    'profiles.tar.gz',
+]
+checksums = [
+    '099a62576b1754f31d3182e54d8ea310b61a2cacd3f6b3d5762be51ab0c711dd',  # ko_list.gz
+    'e017ead8fd52677d0a20558b9fd504876558e1723e77ec6be79aa72e6dee90a2',  # profiles.tar.gz
+]
+
+dependencies = [
+    ('KofamScan',  '%(version)s'),
+]
+
+extract_sources = False
+
+# NOTE The regular InterProScan data package does not contain the lookup_service data way too large!
+install_cmd = 'mkdir -p %(installdir)s/db/ && '
+install_cmd += 'tar xfz profiles.tar.gz --directory %(installdir)s/db/ && '
+install_cmd += 'gzip -dc ko_list.gz > %(installdir)s/db/ko_list && '
+install_cmd += 'rm -f profiles.tar.gz && '
+install_cmd += 'rm -f ko_list.gz && '
+install_cmd += 'rm -rf $EBROOTKOFAMSCAN/db && '
+install_cmd += 'ln -s %(installdir)s/db $EBROOTKOFAMSCAN/db'
+
+sanity_check_paths = {
+    'files': ['db/profiles/eukaryote.hal', 'db/profiles/prokaryote.hal', 'db/ko_list'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
