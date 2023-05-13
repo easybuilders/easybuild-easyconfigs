@@ -1,0 +1,30 @@
+From: A Mukherjee <am2455@njit.edu>
+Date: Fri, Oct 14 2022 21:07:30 -0400
+Subject: [PATCH] Add intel make file
+diff --git a/source/Irrilicht/Makefile b/source/Irrilicht/Makefile
+index bc95884..62ae313 100644
+--- a/source/Irrilicht/Makefile
++++ b/source/Irrilicht/Makefile
+@@ -88,10 +88,10 @@ endif
+ staticlib sharedlib install: SYSTEM = Linux
+ STATIC_LIB = libIrrlicht.a
+ LIB_PATH = ../../lib/$(SYSTEM)
+-INSTALL_DIR = /usr/local/lib
++INSTALL_DIR = $PWD/../../
+ sharedlib install: SHARED_LIB = libIrrlicht.so
+-sharedlib: LDFLAGS += -L/usr/X11R6/lib$(LIBSELECT) -lGL -lXxf86vm
+-staticlib sharedlib: CXXINCS += -I/usr/X11R6/include
++sharedlib: LDFLAGS += -L$(EBROOTX11)/lib -L$(EBROOTLIBGLVND)/lib -lGL -lXxf86vm
++staticlib sharedlib: CXXINCS += -I$(EBROOTX11)/include
+ 
+ #OSX specific options
+ staticlib_osx sharedlib_osx install_osx: SYSTEM = MacOSX
+@@ -123,7 +123,7 @@ all linux: staticlib
+ 
+ # Builds Irrlicht as shared lib (libIrrlicht.so.versionNumber) and copies it into lib/Linux
+ sharedlib: $(LINKOBJ)
+-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -shared -Wl,-soname,$(SONAME) -o $(SHARED_FULLNAME) $^ $(LDFLAGS)
++	$(CXX) -fPIC $(CPPFLAGS) $(CXXFLAGS) -shared -Wl,-soname,$(SONAME) -o $(SHARED_FULLNAME) $^ $(LDFLAGS)
+ 	mkdir -p $(LIB_PATH)
+ 	cp $(SHARED_FULLNAME) $(LIB_PATH)
+ 
