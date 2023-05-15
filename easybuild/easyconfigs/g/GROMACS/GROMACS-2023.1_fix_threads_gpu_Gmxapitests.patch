@@ -1,0 +1,77 @@
+Don't overwrite PYTHONPATH when executing tests, add to it instead.
+Unset OMP_NUM_THREADS when GMX_THREAD_MPI enabled.
+
+Åke Sandgren, 20200309
+Dugan Witherick, 20210112
+Christoph Siegert, 20220203
+Bob Dröge, 20230511
+
+diff -ruN gromacs-2023.1.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt gromacs-2023.1/python_packaging/sample_restraint/tests/CMakeGROMACS.txt
+--- gromacs-2023.1.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2023-04-21 15:12:07.000000000 +0200
++++ gromacs-2023.1/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2023-05-11 13:31:42.632039591 +0200
+@@ -19,12 +19,21 @@
+ 
+ get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
+ get_target_property(PLUGINPATH gmxapi_extension LIBRARY_OUTPUT_DIRECTORY)
+-add_custom_target(gmxapi_extension_pytest
+-                  COMMAND ${CMAKE_COMMAND}
+-                               -E env PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
+-                               ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
+-                               ${CMAKE_CURRENT_SOURCE_DIR}
+-                  DEPENDS gmxapi_extension _gmxapi)
++if(NOT GMX_THREAD_MPI)
++    add_custom_target(gmxapi_extension_pytest
++                      COMMAND ${CMAKE_COMMAND}
++                                   -E env PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++                                   ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
++                                   ${CMAKE_CURRENT_SOURCE_DIR}
++                      DEPENDS gmxapi_extension _gmxapi)
++else()
++    add_custom_target(gmxapi_extension_pytest
++                      COMMAND ${CMAKE_COMMAND}
++                                   -E env --unset=OMP_NUM_THREADS PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++                                   ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
++                                   ${CMAKE_CURRENT_SOURCE_DIR}
++                      DEPENDS gmxapi_extension _gmxapi)
++endif()
+ # The current test fixtures require the `gmx` tool-wrapper executable.
+ add_dependencies(gmxapi_extension_pytest gmx)
+ 
+@@ -58,7 +67,7 @@
+     #    (https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php)
+     add_custom_target(
+         gmxapi_extension_pytest_mpi
+-        COMMAND ${MPIEXEC_EXECUTABLE} -n 4 -x PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++        COMMAND ${MPIEXEC_EXECUTABLE} -n 4 -x PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}:${PYTHONPATH}
+             ${PYTHON_EXECUTABLE} -m mpi4py -m pytest -x --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+             DEPENDS gmxapi_extension _gmxapi gmx
+             )
+diff -ruN gromacs-2023.1.orig/python_packaging/gmxapi/test/CMakeLists.txt gromacs-2023.1/python_packaging/gmxapi/test/CMakeLists.txt
+--- gromacs-2023.1.orig/python_packaging/gmxapi/test/CMakeLists.txt	2023-04-21 15:12:07.000000000 +0200
++++ gromacs-2023.1/python_packaging/gmxapi/test/CMakeLists.txt	2023-05-11 11:28:16.635059246 +0200
+@@ -60,11 +60,20 @@
+     set(GMXAPI_PYTEST_FOUND TRUE CACHE INTERNAL "Suppress checking for Python pytest module.")
+ endif()
+ 
+-add_custom_target(gmxapi_pytest
+-                  COMMAND ${PYTHON_EXECUTABLE} -m pytest
+-                    -rA -l --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+-                  DEPENDS _gmxapi
+-                  WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++if(NOT GMX_THREAD_MPI)
++    add_custom_target(gmxapi_pytest
++                      COMMAND ${PYTHON_EXECUTABLE} -m pytest
++                        -rA -l --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                      DEPENDS _gmxapi
++                      WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++else()
++    add_custom_target(gmxapi_pytest
++                      COMMAND ${CMAKE_COMMAND} -E env --unset=OMP_NUM_THREADS
++                      ${PYTHON_EXECUTABLE} -m pytest
++                        -rA -l --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                      DEPENDS _gmxapi
++                      WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++endif()
+ # The current test fixtures require the `gmx` tool-wrapper executable.
+ add_dependencies(gmxapi_pytest gmx)
+ 

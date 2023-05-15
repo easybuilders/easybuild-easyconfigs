@@ -1,0 +1,206 @@
+Fix for providing a more carefully filtered environment for subprocesses, based on GROMACS PR #3574:
+https://gitlab.com/gromacs/gromacs/-/merge_requests/3574
+
+Author: Bob Dröge, University of Groningen
+
+diff -ru gromacs-2023.1-orig/python_packaging/gmxapi/src/gmxapi/commandline.py gromacs-2023.1/python_packaging/gmxapi/src/gmxapi/commandline.py
+--- gromacs-2023.1-orig/python_packaging/gmxapi/src/gmxapi/commandline.py	2023-04-21 15:12:07.000000000 +0200
++++ gromacs-2023.1/python_packaging/gmxapi/src/gmxapi/commandline.py	2023-05-09 10:42:28.800802318 +0200
+@@ -507,16 +507,9 @@
+     shell = gmx.make_constant(False)
+ 
+     if env is None:
+-
+-        @gmx.function_wrapper(
+-            # allow_duplicate=True
+-        )
+-        def _env() -> dict:
+-            import os
+-
+-            return dict(os.environ)
+-
+-        env = _env().output.data
++        env = gmx.function_wrapper(allow_duplicate=True)(
++            gmxapi.runtime.filtered_mpi_environ
++        )().output.data
+     cli_args = {"command": command, "shell": shell, "env": env}
+     cli_args.update(**kwargs)
+     if stdin is not None:
+diff -ru gromacs-2023.1-orig/python_packaging/gmxapi/src/gmxapi/runtime.py gromacs-2023.1/python_packaging/gmxapi/src/gmxapi/runtime.py
+--- gromacs-2023.1-orig/python_packaging/gmxapi/src/gmxapi/runtime.py	2023-04-21 15:12:07.000000000 +0200
++++ gromacs-2023.1/python_packaging/gmxapi/src/gmxapi/runtime.py	2023-05-09 10:44:50.869215242 +0200
+@@ -67,6 +67,8 @@
+ """
+ 
+ __all__ = (
++    "filtered_mpi_environ",
++    "filtered_prefixes",
+     "scoped_resources",
+     "ResourceAllocation",
+     "ResourceAssignment",
+@@ -75,12 +77,11 @@
+ 
+ import dataclasses
+ import functools
++import os
+ import threading
+ import typing
+ import warnings
+ import weakref
+-from typing import TYPE_CHECKING
+-from _weakref import ReferenceType
+ from contextlib import contextmanager
+ 
+ import gmxapi.utility
+@@ -100,9 +101,9 @@
+ logger.info("Importing {}".format(__name__))
+ 
+ 
+-if TYPE_CHECKING:
++if typing.TYPE_CHECKING:
+     try:
+-        import Comm as Communicator
++        import mpi4py.MPI.Comm as Communicator
+     except ImportError:
+         Communicator = None
+ 
+@@ -760,3 +761,43 @@
+         yield resources
+     finally:
+         resources.close()
++
++
++filtered_prefixes = (
++    "DCMF_",  # IBM
++    "MPICH_",
++    "MPIEXEC_",
++    "MPIO_",  # IBM
++    "MV2_",  # MVAPICH2 and some forks
++    "MVAPICH_",
++    "HYDRA_",  # MPICH
++    "OMPI_",  # OpenMPI
++    "PMI_",  # Process Management Interface
++    "PMIX_",  # Newer PMI and batch systems
++    "I_MPI_",  # Intel MPI
++)
++"""MPI-related environment variable prefixes.
++
++Environment variable prefixes known to be associated with MPI implementations,
++which may affect MPI context detection, and which should not matter outside of
++MPI contexts.
++
++References:
++    * :issue:`4423`
++    * :issue:`4736`
++
++"""
++
++
++def filtered_mpi_environ() -> dict:
++    """Return a filtered environment variables map with MPI-related entries removed.
++
++    See Also:
++        :py:data:`filtered_prefixes`
++
++    """
++    return {
++        key: value
++        for key, value in os.environ.items()
++        if not any(key.startswith(prefix) for prefix in filtered_prefixes)
++    }
+diff -ru gromacs-2023.1-orig/python_packaging/gmxapi/test/conftest.py gromacs-2023.1/python_packaging/gmxapi/test/conftest.py
+--- gromacs-2023.1-orig/python_packaging/gmxapi/test/conftest.py	2023-04-21 15:12:07.000000000 +0200
++++ gromacs-2023.1/python_packaging/gmxapi/test/conftest.py	2023-05-09 10:46:49.399228381 +0200
+@@ -73,7 +73,8 @@
+     Prepare the MD input in a freshly created working directory.
+     Solvate a 5nm cubic box with spc water. Return a dictionary of the artifacts produced.
+     """
+-    import gmxapi as gmx
++    import gmxapi
++    import gmxapi.runtime
+     from gmxapi.testsupport import scoped_chdir
+ 
+     # TODO: (#2896) Fetch MD input from package / library data.
+@@ -108,7 +109,7 @@
+             fh.write("\n")
+ 
+         assert os.path.exists(topfile)
+-        solvate = gmx.commandline_operation(
++        solvate = gmxapi.commandline_operation(
+             gmxcli,
+             arguments=["solvate", "-box", "5", "5", "5"],
+             # We use the default solvent instead of specifying one.
+@@ -117,7 +118,6 @@
+                 "-p": topfile,
+                 "-o": structurefile,
+             },
+-            env={"PATH": os.getenv("PATH")},
+         )
+         assert os.path.exists(topfile)
+ 
+@@ -154,7 +154,7 @@
+         # it will be created in the current working directory.
+         mdout_mdp = os.path.join(tempdir, "mdout.mdp")
+ 
+-        grompp = gmx.commandline_operation(
++        grompp = gmxapi.commandline_operation(
+             gmxcli,
+             "grompp",
+             input_files={
+@@ -164,7 +164,6 @@
+                 "-po": mdout_mdp,
+             },
+             output_files={"-o": tprfile},
+-            env={"PATH": os.getenv("PATH")},
+         )
+         tprfilename = grompp.output.file["-o"].result()
+         if grompp.output.returncode.result() != 0:
+diff -ru gromacs-2023.1-orig/python_packaging/sample_restraint/tests/conftest.py gromacs-2023.1/python_packaging/sample_restraint/tests/conftest.py
+--- gromacs-2023.1-orig/python_packaging/sample_restraint/tests/conftest.py	2023-04-21 15:12:07.000000000 +0200
++++ gromacs-2023.1/python_packaging/sample_restraint/tests/conftest.py	2023-05-09 10:48:39.500098358 +0200
+@@ -48,7 +48,8 @@
+ 
+     Prepare the MD input in a freshly created working directory.
+     """
+-    import gmxapi as gmx
++    import gmxapi
++    import gmxapi.runtime
+     from gmxapi.testsupport import scoped_chdir
+ 
+     # TODO: (#2896) Fetch MD input from package / library data.
+@@ -83,8 +84,8 @@
+             fh.write("\n")
+ 
+         assert os.path.exists(topfile)
+-        assert gmx.version.api_is_at_least(0, 3, 1)
+-        solvate = gmx.commandline_operation(
++        assert gmxapi.version.api_is_at_least(0, 3, 1)
++        solvate = gmxapi.commandline_operation(
+             gmxcli,
+             arguments=["solvate", "-box", "5", "5", "5"],
+             # We use the default solvent instead of specifying one.
+@@ -93,7 +94,6 @@
+                 "-p": topfile,
+                 "-o": structurefile,
+             },
+-            env={"PATH": os.getenv("PATH")},
+         )
+         assert os.path.exists(topfile)
+ 
+@@ -128,7 +128,7 @@
+         # it will be created in the current working directory.
+         mdout_mdp = os.path.join(tempdir, "mdout.mdp")
+ 
+-        grompp = gmx.commandline_operation(
++        grompp = gmxapi.commandline_operation(
+             gmxcli,
+             "grompp",
+             input_files={
+@@ -138,7 +138,6 @@
+                 "-po": mdout_mdp,
+             },
+             output_files={"-o": tprfile},
+-            env={"PATH": os.getenv("PATH")},
+         )
+         tprfilename = grompp.output.file["-o"].result()
+         if grompp.output.returncode.result() != 0:
