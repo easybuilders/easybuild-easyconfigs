@@ -1,0 +1,80 @@
+easyblock = 'PythonBundle'
+
+name = 'pytest'
+version = '7.2.2'
+
+homepage = 'https://docs.pytest.org/en/latest/'
+description = """The pytest framework makes it easy to write small,
+readable tests, and can scale to support complex functional testing for
+applications and libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+builddependencies = [
+    ('binutils', '2.37'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+]
+
+use_pip = True
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+# Note! Some of the file system related tests may fail on shared file systems.
+# Notably TestPOSIXLocalPath.test_copy_stat_file, TestPOSIXLocalPath.test_copy_stat_dir
+# and test_source_mtime_long_long are known to fail on GPFS
+# Build with buildpath and tmpdir set to a local file system to avoid this
+# or use --ignore-test-failures
+_skip_tests = [
+    'testing/io/test_terminalwriter.py',
+    'testing/test_terminal.py',
+    'testing/test_debugging.py',
+    'testing/test_config.py',
+    'testing/test_helpconfig.py',
+]
+_ignore_tests = ' --ignore='.join(_skip_tests)
+
+exts_list = [
+    ('tomli', '2.0.1', {
+        'checksums': ['de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f'],
+    }),
+    ('setuptools-scm', '7.1.0', {
+        'source_tmpl': 'setuptools_scm-%(version)s.tar.gz',
+        'checksums': ['6c508345a771aad7d56ebff0e70628bf2b0ec7573762be9960214730de278f27'],
+    }),
+    ('flit-core', '3.8.0', {
+        'source_tmpl': 'flit_core-%(version)s.tar.gz',
+        'checksums': ['b305b30c99526df5e63d6022dd2310a0a941a187bd3884f4c8ef0418df6c39f3'],
+    }),
+    ('flit-scm', '1.7.0', {
+        'source_tmpl': 'flit_scm-%(version)s.tar.gz',
+        'checksums': ['961bd6fb24f31bba75333c234145fff88e6de0a90fc0f7e5e7c79deca69f6bb2'],
+    }),
+    ('exceptiongroup', '1.1.0', {
+        'checksums': ['bcb67d800a4497e1b404c2dd44fca47d3b7a5e5433dbab67f96c1a685cdfdf23'],
+    }),
+    ('hypothesis', '6.54.6', {
+        'checksums': ['2d5e2d5ccd0efce4e0968a6164f4e4853f808e33f4d91490c975c98beec0c7c3'],
+    }),
+    ('elementpath', '4.0.1', {
+        'checksums': ['1162e4c8e5501bd36291b668f4449b8125fea5ef64a26da8d71da31126725aa5'],
+    }),
+    ('xmlschema', '2.2.2', {
+        'checksums': ['0caa96668807b4b51c42a0fe2b6610752bc59f069615df3e34dcfffb962973fd'],
+    }),
+    (name, version, {
+        'checksums': ['c99ab0c73aceb050f68929bc93af19ab6db0558791c6a0715723abe9d0ade9d4'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import pytest'",
+    'cd %%(builddir)s/%%(name)s/%%(name)s-%%(version)s && %%(installdir)s/bin/pytest --ignore=%s testing'
+    % _ignore_tests,
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
