@@ -1,0 +1,65 @@
+# Original author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics 
+
+easyblock = 'Tarball'
+
+name = 'SignalP'
+version = '4.1g'
+
+homepage = 'https://services.healthtech.dtu.dk/software.php'
+description = """SignalP predicts the presence and location of signal peptide
+    cleavage sites in amino acid sequences from different organisms"""
+
+toolchain = SYSTEM
+
+# No public download URL.  Follow link on above homepage under Protein Sorting >
+# SignalP > Version x.xx > Linux.  This will give a form to complete; after
+# submitting it, you will receive a download page link by e-mail.  The download
+# page will contain two links, one for a .txt licence file and one for a .tar.gz
+# installation file; you should download the latter and move it to the EasyBuild
+# sources directory hierarchy.
+sources = ['%(namelower)s-%(version)s.Linux.tar.gz']
+checksums = ['d72d9fcf3c74e92267bb570b02f4a32a0286826eaf165eed046ad70796db9dc1']
+
+dependencies = [('Perl', '5.36.0', '-minimal', ('GCCcore', '12.2.0'))]
+
+# Change 'scratch' below to your preferred temporary directory path under '/'.
+# We increase the limit on the number of sequences per run from 20k to 250k;
+# increase it further if that will be insufficient for you.
+local_config_cmds = 'mkdir -p %(installdir)s/man1 && mv %(installdir)s/%(namelower)s.1 %(installdir)s/man1 && '
+local_config_cmds += 'sed -i -e "s|^\\(    \\$ENV{SIGNALP} = \'\\).*\\(\';\\)$|\\1%(installdir)s\\2|" '
+local_config_cmds += '-e "s|^\\(my \\$outputDir = \\"/\\).*\\(\\";\\)$|\\1scratch\\2|" '
+local_config_cmds += '-e "s|^\\(my \\$MAX_ALLOWED_ENTRIES=\\).*\\(000;\\)$|\\1250\\2|" %(installdir)s/%(namelower)s'
+postinstallcmds = [local_config_cmds]
+
+modextrapaths = {
+    'MANPATH': '',
+    'PATH': '',
+}
+
+sanity_check_paths = {
+    'files': ['%(namelower)s'],
+    'dirs': ['bin', 'lib'],
+}
+
+# These are taken from the file %(installdir)s/signalp-4.1.readme.
+# A couple of the sanity checks need to be massaged.
+local_check_cmd_1 = 'diff -b <(%(namelower)s -t euk -f short %(installdir)s/test/euk10.fsa) '
+local_check_cmd_1 += '%(installdir)s/test/euk10.fsa.short_out'
+local_check_cmd_2 = 'diff -b <(%(namelower)s -t euk -f long %(installdir)s/test/euk10.fsa | '
+local_check_cmd_2 += 'sed \'s|^\\(\\s*48\\s\\+D\\s\\+\\)0\\.101|\\10.100|\') '
+local_check_cmd_2 += '%(installdir)s/test/euk10.fsa.long_out'
+local_check_cmd_3 = 'diff -b <(%(namelower)s -t euk -f all %(installdir)s/test/euk10.fsa | '
+local_check_cmd_3 += 'sed \'s|^\\(\\s*48\\s\\+D\\s\\+\\)0\\.101|\\10.100|\') '
+local_check_cmd_3 += '%(installdir)s/test/euk10.fsa.all_out'
+local_check_cmd_4 = 'diff -b <(%(namelower)s -t euk -f summary %(installdir)s/test/euk10.fsa) '
+local_check_cmd_4 += '%(installdir)s/test/euk10.fsa.summary_out'
+sanity_check_commands = [
+    local_check_cmd_1,
+    local_check_cmd_2,
+    local_check_cmd_3,
+    local_check_cmd_4,
+]
+
+moduleclass = 'bio'
