@@ -1,0 +1,42 @@
+easyblock = 'PythonBundle'
+
+name = 'spams'
+version = '2.6.5.4'
+local_version_majmin = '.'.join(version.split('.')[:2])
+
+homepage = 'https://thoth.inrialpes.fr/people/mairal/spams/'
+description = """SPAMS (SPArse Modeling Software) is an optimization toolbox for solving various
+ sparse estimation problems."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2022.05'),
+    ('Pillow', '8.3.2'),
+    ('LAPACK', '3.10.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    (name, version, {
+        'patches': ['spams-2.6_flixblas.patch'],
+        'checksums': [
+            {'spams-2.6.5.4.tar.gz': '4c15b01268b15d20dca1e29b04d08268775ad7aae5883891454de110b571c9a7'},
+            {'spams-2.6_flixblas.patch': '9e44ad43a4768dd3b286723e5dec6a0c4af1bd5b5248a6cb33b4ad1ab606f628'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python %(installdir)s/lib/python%(pyshortver)s/site-packages/spams/tests/test_spams.py linalg",
+]
+
+moduleclass = 'math'
