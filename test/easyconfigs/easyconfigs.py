@@ -1124,14 +1124,15 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CMakePythonPackage, GoPackage, JuliaBundle, PythonBundle & PythonPackage;
+        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
-                     'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['BuildEnv', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage',
+                     'JuliaBundle', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
-        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'ROCm']
+        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
+        # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'Python-bundle', 'ROCm']
 
         failing_checks = []
 
