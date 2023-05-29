@@ -1,0 +1,51 @@
+easyblock = 'PythonBundle'
+
+name = 'infercnvpy'
+version = '0.4.2'
+
+homepage = 'https://github.com/icbi-lab/infercnvpy'
+description = "Infer copy number variation (CNV) from scRNA-seq data. Plays nicely with Scanpy."
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('tqdm', '4.64.0'),
+    ('IPython', '8.5.0'),
+    ('leidenalg', '0.9.1'),
+    ('scanpy', '1.9.1'),
+    ('polars', '0.15.6'),  # required by gtfparse
+]
+
+use_pip = True
+
+# avoid hatchling requirement to install infercnvpy
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+local_preinstallopts = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+local_preinstallopts += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+local_preinstallopts += r"""-e 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml && """
+
+exts_list = [
+    ('setuptools', '67.6.1', {
+        'checksums': ['257de92a9d50a60b8e22abfcbb771571fde0dbf3ec234463212027a4eeecbe9a'],
+    }),
+    ('gtfparse', '2.0.1', {
+        'checksums': ['c45439af58cb48120910bebe4625371d8fb5735f12a749e8933c9d6f2b1a558c'],
+    }),
+    ('pyreadr', '0.4.7', {
+        'checksums': ['901110d62b4bedaef288f4db81425fb696edc721fe2c34c1083f5fb11050a73c'],
+    }),
+    ('session-info', '1.0.0', {
+        'sources': ['session_info-%(version)s.tar.gz'],
+        'checksums': ['3cda5e03cca703f32ae2eadbd6bd80b6c21442cfb60e412c21cb8ad6d5cbb6b7'],
+    }),
+    (name, version, {
+        'checksums': ['3cfd23afc2dbbca3508a305032c032440d2af292d037d43a7b5046c7bd36ed22'],
+        'preinstallopts': local_preinstallopts,
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
