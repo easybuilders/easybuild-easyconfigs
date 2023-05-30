@@ -33,12 +33,12 @@ checksums = ['d72d9fcf3c74e92267bb570b02f4a32a0286826eaf165eed046ad70796db9dc1']
 
 dependencies = [('Perl', '5.36.0', '-minimal', ('GCCcore', '12.2.0'))]
 
-# Change 'scratch' below to your preferred temporary directory path under '/'.
-# We increase the limit on the number of sequences per run from 20k to 250k;
-# increase it further if that will be insufficient for you.
+# We increase the limit on the number of sequences per run
+# ($MAX_ALLOWED_ENTRIES) from 20k to 250k; increase it further below if that
+# will be insufficient for you.
 local_config_cmds = 'mkdir -p %(installdir)s/man1 && mv %(installdir)s/%(namelower)s.1 %(installdir)s/man1 && '
 local_config_cmds += r'''sed -i -e "s|^\(    \$ENV{SIGNALP} = '\).*\(';\)$|\1%(installdir)s\2|" '''
-local_config_cmds += r'-e "s|^\(my \$outputDir = \"/\).*\(\";\)$|\1scratch\2|" '
+local_config_cmds += r'''-e "s|^\(my \$outputDir = \).*\(;\)$|\1\$ENV{SIGNALP_OUTPUT_DIR} \|\| '/tmp'\2|" '''
 local_config_cmds += r'-e "s|^\(my \$MAX_ALLOWED_ENTRIES=\).*\(000;\)$|\1250\2|" %(installdir)s/%(namelower)s'
 postinstallcmds = [local_config_cmds]
 
@@ -70,5 +70,10 @@ sanity_check_commands = [
     local_check_cmd_3,
     local_check_cmd_4,
 ]
+
+modloadmsg = """
+This SignalP build will use an output directory of /tmp by default.  You can
+change this by setting the environment variable SIGNALP_OUTPUT_DIR to a
+different full directory path."""
 
 moduleclass = 'bio'
