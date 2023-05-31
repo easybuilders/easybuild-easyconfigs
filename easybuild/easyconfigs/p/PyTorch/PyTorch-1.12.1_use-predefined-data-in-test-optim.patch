@@ -1,0 +1,132 @@
+The test test_optim.test_nadam has high error rate, this let's the test use
+predefined data instead to be more stable. See
+https://github.com/pytorch/pytorch/issues/98414
+
+Viktor Rehnberg
+diff --git a/test/test_optim.py b/test/test_optim.py
+index 6d587b4b352..c8ec9db87e1 100644
+--- a/test/test_optim.py
++++ b/test/test_optim.py
+@@ -244,8 +244,14 @@ class TestOptim(TestCase):
+             return set(k for k in obj.__dict__ if not k.startswith('_'))
+         self.assertEqual(getPublicAttr(optimizer), getPublicAttr(deepcopy(optimizer)))
+ 
+-    def _test_basic_cases(self, constructor, scheduler_constructors=None,
+-                          ignore_multidevice=False, constructor_accepts_maximize=False):
++    def _test_basic_cases(
++        self,
++        constructor,
++        scheduler_constructors=None,
++        ignore_multidevice=False,
++        constructor_accepts_maximize=False,
++        use_predefined_data=False,
++    ):
+         if scheduler_constructors is None:
+             scheduler_constructors = []
+ 
+@@ -254,26 +260,60 @@ class TestOptim(TestCase):
+                 return lambda weight, bias: constructor(weight, bias, maximize)
+             return constructor
+ 
++        def make_weight_tensor():
++            if use_predefined_data:
++                return torch.Tensor([
++                    [ 0.6390, -0.5524, -0.1877, -1.1132,  0.3412],
++                    [-0.6489, -0.6220, -1.2537, -0.0966,  0.5481],
++                    [-0.6923,  0.5768, -0.9141,  1.9410,  1.0036],
++                    [ 0.5842,  1.1618, -0.1871,  1.0344,  0.5668],
++                    [ 0.2123,  2.3076,  0.7522, -0.7059,  1.3849],
++                    [-0.1537,  0.5159, -1.2004,  0.2017, -0.0903],
++                    [ 0.9434, -0.7030,  0.0618, -1.2951,  1.7721],
++                    [ 0.5890, -1.0763, -1.2541, -0.8403, -0.4343],
++                    [-0.2065, -0.6883,  0.8464, -0.7792,  0.6750],
++                    [-1.6577,  0.4532,  0.0791,  0.2243,  0.1148],
++                ])
++            else:
++                return torch.randn(10, 5)
++
++        def make_bias_tensor():
++            if use_predefined_data:
++                return torch.Tensor([
++                    -2.4031, -0.9295, -1.0762,  0.4600, -1.8620, -0.6234,  0.1999, -0.0612, 0.8319, -1.6673,
++                ])
++            else:
++                return torch.randn(10)
++
++        def make_input_tensor():
++            if use_predefined_data:
++                return torch.Tensor([1.1119, -0.4309, -0.7759, -0.0659,  0.4746])
++            else:
++                return torch.randn(5)
++
++        def make_non_contiguous(tensor):
++            return torch.stack([tensor, tensor]).view(*tensor.size(), 2)[..., 0]
++
+         for maximize in (True, False):
+             self._test_state_dict(
+-                torch.randn(10, 5),
+-                torch.randn(10),
+-                torch.randn(5),
++                make_weight_tensor(),
++                make_bias_tensor(),
++                make_input_tensor(),
+                 make_two_arg_constructor(constructor, maximize),
+             )
+         self._test_basic_cases_template(
+-            torch.randn(10, 5),
+-            torch.randn(10),
+-            torch.randn(5),
++            make_weight_tensor(),
++            make_bias_tensor(),
++            make_input_tensor(),
+             constructor,
+             scheduler_constructors,
+             constructor_accepts_maximize,
+         )
+         # non-contiguous parameters
+         self._test_basic_cases_template(
+-            torch.randn(10, 5, 2)[..., 0],
+-            torch.randn(10, 2)[..., 0],
+-            torch.randn(5),
++            make_non_contiguous(make_weight_tensor()),
++            make_non_contiguous(make_bias_tensor()),
++            make_input_tensor(),
+             constructor,
+             scheduler_constructors,
+             constructor_accepts_maximize,
+@@ -282,9 +322,9 @@ class TestOptim(TestCase):
+         if not torch.cuda.is_available():
+             return
+         self._test_basic_cases_template(
+-            torch.randn(10, 5).cuda(),
+-            torch.randn(10).cuda(),
+-            torch.randn(5).cuda(),
++            make_weight_tensor().cuda(),
++            make_bias_tensor().cuda(),
++            make_input_tensor().cuda(),
+             constructor,
+             scheduler_constructors,
+             constructor_accepts_maximize,
+@@ -293,9 +333,9 @@ class TestOptim(TestCase):
+         if not torch.cuda.device_count() > 1 or ignore_multidevice:
+             return
+         self._test_basic_cases_template(
+-            torch.randn(10, 5).cuda(0),
+-            torch.randn(10).cuda(1),
+-            torch.randn(5).cuda(0),
++            make_weight_tensor().cuda(0),
++            make_bias_tensor().cuda(1),
++            make_input_tensor().cuda(0),
+             constructor,
+             scheduler_constructors,
+             constructor_accepts_maximize,
+@@ -668,7 +708,8 @@ class TestOptim(TestCase):
+             self._test_basic_cases(
+                 lambda weight, bias: optimizer(
+                     self._build_params_dict(weight, bias, lr=1e-2),
+-                    lr=1e-3)
++                    lr=1e-3),
++                use_predefined_data=True,
+             )
+             self._test_basic_cases(
+                 lambda weight, bias: optimizer([weight, bias], lr=1e-3, weight_decay=0.1, momentum_decay=6e-3)

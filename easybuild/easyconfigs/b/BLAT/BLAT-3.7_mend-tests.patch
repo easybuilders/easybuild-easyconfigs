@@ -1,0 +1,48 @@
+Create suite of test in main makefile.
+Remove tests relying on pslCheck which is distributed elsewhere.
+Fix executable paths in the tests.
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff -Nru blatSrc.orig/blat/test/makefile blatSrc/blat/test/makefile
+--- blatSrc.orig/blat/test/makefile	2021-07-07 01:07:21.000000000 +0200
++++ blatSrc/blat/test/makefile	2023-02-22 16:08:08.870093000 +0100
+@@ -1,8 +1,6 @@
+ all:  tThrowback tIntronMax
+ 
+ tThrowback:
+-	blat -verbose=0 throwback/target1.fa throwback/query1.fa throwback/test.psl
+-	pslCheck -verbose=0 throwback/test.psl
+ 	blat -verbose=0 v29skips/ex1_database.fa v29skips/ex1_query.fa v29skips/ex1.psl
+ 	diff v29skips/ex1_reference.psl v29skips/ex1.psl
+ 	blat -verbose=0 v29skips/ex2_database.fa v29skips/ex2_query.fa v29skips/ex2.psl
+diff -Nru blatSrc.orig/gfServer/makefile blatSrc/gfServer/makefile
+--- blatSrc.orig/gfServer/makefile	2021-12-29 20:13:24.000000000 +0100
++++ blatSrc/gfServer/makefile	2023-02-22 16:08:34.347451000 +0100
+@@ -6,10 +6,10 @@
+ 
+ test::
+ 	${MKDIR} tests/output
+-	${DESTBINDIR}/${A} direct tests/input/mCrea.mrna tests/input/hCreaGeno.nib \
++	${A} direct tests/input/mCrea.mrna tests/input/hCreaGeno.nib \
+ 		tests/input/mCreaGeno.nib > tests/output/testNib.out
+ 	diff tests/expected/testNib.out tests/output/testNib.out
+-	${DESTBINDIR}/${A} direct tests/input/mCrea.mrna tests/input/creaGeno.2bit \
++	${A} direct tests/input/mCrea.mrna tests/input/creaGeno.2bit \
+ 		>tests/output/testTwoBit.out
+ 	diff tests/expected/testTwoBit.out tests/output/testTwoBit.out
+ 	cd tests && ./testProtNib
+diff -Nru blatSrc.orig/makefile blatSrc/makefile
+--- blatSrc.orig/makefile	2022-02-01 00:14:03.000000000 +0100
++++ blatSrc/makefile	2023-02-22 16:22:15.992962000 +0100
+@@ -15,5 +15,12 @@
+ 	cd utils/twoBitInfo && $(MAKE)
+ 	cd webBlat && $(MAKE)
+ 
++test::
++	cd blat && ${MAKE} test
++	cd gfServer && ${MAKE} test
++	cd utils/faToTwoBit && ${MAKE} test
++	cd utils/twoBitInfo && ${MAKE} test
++	cd utils/twoBitToFa && ${MAKE} test
++
+ clean:
+ 	rm -f */*.o */*/*.o lib/*/*.a
