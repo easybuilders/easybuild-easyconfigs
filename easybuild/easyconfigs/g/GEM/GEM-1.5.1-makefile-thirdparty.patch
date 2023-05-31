@@ -1,0 +1,67 @@
+Patch for makefile, and ReadBGEN.cpp to use EasyBuild provided 
+third party software. Does not change the original DOS format to UNIX!
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/GEM-1.5.1.orig/src/ReadBGEN.cpp b/GEM-1.5.1/src/ReadBGEN.cpp
+index ecbc243..7162579 100755
+--- a/GEM-1.5.1.orig/src/ReadBGEN.cpp
++++ b/GEM-1.5.1/src/ReadBGEN.cpp
+@@ -2,8 +2,8 @@
+ #include "declars.h"
+ #include "ReadBGEN.h"
+ #include "ReadParameters.h"
+-#include "../thirdparty/zstd-1.5.5/lib/zstd.h"
+-#include "../thirdparty/libdeflate-1.18/libdeflate.h"
++#include "zstd.h"
++#include "libdeflate.h"
+ 
+ /**************************************
+ This function is revised based on the Parse function in BOLT-LMM v2.3 source code
+diff --git a/GEM-1.5.1.orig/src/makefile b/GEM-1.5.1/src/makefile
+index 969daae..3b968b2 100644
+--- a/GEM-1.5.1.orig/src/makefile
++++ b/GEM-1.5.1/src/makefile
+@@ -1,12 +1,10 @@
+ CC=gcc  # Do not change this for libdeflate package.
+ CXX=g++
+-CXXFLAGS = -std=c++11 -O2 -g
++CXXFLAGS = -std=c++11 -O2
+ 
+-BOOST_INC=../boost 
+-Eigen_INC=../eigen
+ BOOST_LIB=-lboost_thread -lboost_program_options -lboost_system -lboost_filesystem
+ 
+-DYN_LIBS=-lmkl_gf_lp64 -lmkl_sequential -lmkl_core -ldl -lpthread -lm -larmadillo
++DYN_LIBS=-lflexiblas -lzstd -ldeflate -ldl -lpthread -lm -larmadillo
+ 
+ 
+ # Uncomment line below for LAPACK/BLAS only and comment other lines beginning with LIBS.
+@@ -14,18 +12,16 @@ DYN_LIBS=-lmkl_gf_lp64 -lmkl_sequential -lmkl_core -ldl -lpthread -lm -larmadill
+ 
+ #LIBS= -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -ldl -lpthread -lm -lboost_program_options -lboost_thread -lboost_system -lboost_filesystem
+ 
+-C_SOURCES= $(wildcard ../thirdparty/zstd-1.5.5/lib/common/*.c) $(wildcard ../thirdparty/zstd-1.5.5/lib/compress/*.c) $(wildcard ../thirdparty/zstd-1.5.5/lib/decompress/*.c) $(wildcard ../thirdparty/libdeflate-1.18/lib/*.c) $(wildcard ../thirdparty/libdeflate-1.18/lib/x86/*.c) $(wildcard ../thirdparty/libdeflate-1.18/lib/arm/*.c)
+ CXX_SOURCES= MatrixUtils.cpp ReadParameters.cpp TimeUtils.cpp BinaryEUtils.cpp ReadBGEN.cpp ReadPGEN.cpp ReadBed.cpp GEM.cpp 
+ CC_SOURCES=$(wildcard ../thirdparty/plink-2.0/*.cc)
+ CXX_OBJECTS= $(CXX_SOURCES:.cpp=.o)
+-C_OBJECTS= $(C_SOURCES:.c=.o)
+ CC_OBJ= $(CC_SOURCES:.cc=.o)
+-OBJS= $(CXX_OBJECTS) $(C_OBJECTS) $(CC_OBJ)
++OBJS= $(CXX_OBJECTS) $(CC_OBJ)
+ 
+ #targets
+ all: GEM
+ 
+-GEM: $(CXX_OBJECTS) $(C_OBJECTS) $(CC_OBJ)
++GEM: $(CXX_OBJECTS) $(CC_OBJ)
+ 	$(CXX) $^ $(CXXFLAGS) $(BOOST_LIB_TD) $(BOOST_LIB) -o $@ $(DYN_LIBS)
+ 
+ %.o: %.c
+@@ -35,7 +31,7 @@ GEM: $(CXX_OBJECTS) $(C_OBJECTS) $(CC_OBJ)
+ 	$(CXX) $(CXXFLAGS) -c $< -o $@
+ 
+ %.o: %.cpp
+-	$(CXX) $(CXXFLAGS) -c $< -o $@ -I$(BOOST_INC) -I$(Eigen_INC)
++	$(CXX) $(CXXFLAGS) -I${EBROOTZSTD}/include -I${EBROOTLIBDEFLATE}/include -I${EBROOTEIGEN}/include  -c $< -o $@
+ 
+ .PHONY: clean
+ clean:
