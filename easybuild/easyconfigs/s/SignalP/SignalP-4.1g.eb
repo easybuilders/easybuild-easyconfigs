@@ -36,11 +36,15 @@ dependencies = [('Perl', '5.36.0', '-minimal', ('GCCcore', '12.2.0'))]
 # We increase the limit on the number of sequences per run
 # ($MAX_ALLOWED_ENTRIES) from 20k to 250k; increase it further below if that
 # will be insufficient for you.
-local_config_cmds = 'mkdir -p %(installdir)s/man1 && mv %(installdir)s/%(namelower)s.1 %(installdir)s/man1 && '
-local_config_cmds += r'''sed -i -e "s|^\(    \$ENV{SIGNALP} = '\).*\(';\)$|\1%(installdir)s\2|" '''
-local_config_cmds += r'''-e "s|^\(my \$outputDir = \).*\(;\)$|\1\$ENV{SIGNALP_OUTPUT_DIR} \|\| '/tmp'\2|" '''
-local_config_cmds += r'-e "s|^\(my \$MAX_ALLOWED_ENTRIES=\).*\(000;\)$|\1250\2|" %(installdir)s/%(namelower)s'
-postinstallcmds = [local_config_cmds]
+local_config_cmd_1 = 'mkdir -p %(installdir)s/man1 && mv %(installdir)s/%(namelower)s.1 %(installdir)s/man1'
+local_config_cmd_2 = r'''sed -i -e "s|^\(#!/usr/bin/\)\(perl\)$|\1env \2|" '''
+local_config_cmd_2 += r'''-e "s|^\(    \$ENV{SIGNALP} = '\).*\(';\)$|\1%(installdir)s\2|" '''
+local_config_cmd_2 += r'''-e "s|^\(my \$outputDir = \).*\(;\)$|\1\$ENV{SIGNALP_OUTPUT_DIR} \|\| '/tmp'\2|" '''
+local_config_cmd_2 += r'-e "s|^\(my \$MAX_ALLOWED_ENTRIES=\).*\(000;\)$|\1250\2|" %(installdir)s/%(namelower)s'
+postinstallcmds = [
+    local_config_cmd_1,
+    local_config_cmd_2,
+]
 
 modextrapaths = {
     'MANPATH': '',
