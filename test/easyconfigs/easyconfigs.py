@@ -846,12 +846,12 @@ class EasyConfigTest(TestCase):
 
         # some software also follows <year>{a,b} versioning scheme,
         # which throws off the pattern matching done below for toolchain versions
-        false_positives_regex = re.compile('^MATLAB-Engine-20[0-9][0-9][ab]')
+        false_positives_regex = re.compile(r'^MATLAB(-Engine)?-20[0-9][0-9][ab]')
 
         # map GCC(core) version to toolchain generations;
         # only for recent generations, where we want to limit dependency variants as much as possible
         # across all easyconfigs of that generation (regardless of whether a full toolchain or subtoolchain is used);
-        # see https://docs.easybuild.io/en/latest/Common-toolchains.html#overview-of-common-toolchains
+        # see https://docs.easybuild.io/common-toolchains/#common_toolchains_overview
         gcc_tc_gen_map = {
             '6.4': '2018a',
             '7.3': '2018b',
@@ -869,22 +869,25 @@ class EasyConfigTest(TestCase):
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
         # and GCCcore subtoolchain for common toolchains, starting with GCCcore 7.x
         patterns = [
-            # full toolchains, like foss/2019b or intel/2020a
-            '(201[89]|[2-9][0-9])[ab]',
             # compiler-only subtoolchains GCCcore and GCC
-            r'GCCcore-[7-9]\.[0-9]',
+            r'GCCcore-[7-9]\.[0-9]\.',
             # only check GCC 9.x toolchains, not older GCC versions
             # (we started checking dependency variants too late for GCC 8.x and older)
-            r'GCC-9\.[0-9]',
-            r'GCC(core)?-1[0-9]\.[0-9]',  # GCCcore 10.x, etc.
+            r'GCC(core)?-1[0-9]\.[0-9]\.',  # GCCcore 10.x, etc.
+            r'GCC-9\.[0-9]\.',
+            # full toolchains, like foss/2019b or intel/2020a
+            r'(201[89]|20[2-9][0-9])[ab]',
         ]
-        for pattern in patterns:
-            all_deps = {}
-            regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
-            # collect variants for all dependencies of easyconfigs that use a toolchain that matches
-            for ec in self.ordered_specs:
-                ec_file = os.path.basename(ec['spec'])
+        all_deps = {}
+
+        # collect variants for all dependencies of easyconfigs that use a toolchain that matches
+        for ec in self.ordered_specs:
+            ec_file = os.path.basename(ec['spec'])
+            ec_deps = None
+
+            for pattern in patterns:
+                regex = re.compile(r'^.*-(?P<tc_gen>%s).*\.eb$' % pattern)
 
                 # take into account software which also follows a <year>{a,b} versioning scheme
                 ec_file = false_positives_regex.sub('', ec_file)
@@ -894,35 +897,38 @@ class EasyConfigTest(TestCase):
                     tc_gen = res.group('tc_gen')
 
                     if tc_gen.startswith('GCC'):
-                        gcc_ver = tc_gen.split('-', 1)[1]
+                        gcc_ver = tc_gen.split('-', 1)[1].rstrip('.')
                         if gcc_ver in gcc_tc_gen_map:
                             tc_gen = gcc_tc_gen_map[gcc_ver]
-                        elif LooseVersion(gcc_ver) >= LooseVersion('10.4'):
+                        elif LooseVersion(gcc_ver) >= LooseVersion('10.2'):
                             # for recent GCC versions, we really want to have a mapping in place...
-                            print_warning("No mapping for GCC(core) %s to toolchain generation!", gcc_ver)
+                            self.fail("No mapping for GCC(core) %s to toolchain generation!" % gcc_ver)
+
+                    if ec_deps is None:
+                        ec_deps = get_deps_for(ec)
 
                     all_deps_tc_gen = all_deps.setdefault(tc_gen, {})
-                    for dep_name, dep_ver, dep_versuff, dep_mod_name in get_deps_for(ec):
+                    for dep_name, dep_ver, dep_versuff, _ in ec_deps:
                         dep_variants = all_deps_tc_gen.setdefault(dep_name, {})
                         # a variant is defined by version + versionsuffix
                         variant = "version: %s; versionsuffix: %s" % (dep_ver, dep_versuff)
                         # keep track of which easyconfig this is a dependency
                         dep_variants.setdefault(variant, set()).add(ec_file)
 
-            # check which dependencies have more than 1 variant
-            multi_dep_vars, multi_dep_vars_msg = [], ''
-            for tc_gen in sorted(all_deps.keys()):
-                for dep in sorted(all_deps[tc_gen].keys()):
-                    dep_vars = all_deps[tc_gen][dep]
-                    if not self.check_dep_vars(tc_gen, dep, dep_vars):
-                        multi_dep_vars.append(dep)
-                        multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
-                        multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
-                        multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
-                        multi_dep_vars_msg += '\n'
+        # check which dependencies have more than 1 variant
+        multi_dep_vars, multi_dep_vars_msg = [], ''
+        for tc_gen in sorted(all_deps.keys()):
+            for dep in sorted(all_deps[tc_gen].keys()):
+                dep_vars = all_deps[tc_gen][dep]
+                if not self.check_dep_vars(tc_gen, dep, dep_vars):
+                    multi_dep_vars.append(dep)
+                    multi_dep_vars_msg += "\nfound %s variants of '%s' dependency " % (len(dep_vars), dep)
+                    multi_dep_vars_msg += "in easyconfigs using '%s' toolchain generation\n* " % tc_gen
+                    multi_dep_vars_msg += '\n* '.join("%s as dep for %s" % v for v in sorted(dep_vars.items()))
+                    multi_dep_vars_msg += '\n'
 
-            error_msg = "No multi-variant dependencies found in easyconfigs:\n%s" % multi_dep_vars_msg
-            self.assertFalse(multi_dep_vars, error_msg)
+        error_msg = "No multi-variant dependencies found in easyconfigs:\n%s" % multi_dep_vars_msg
+        self.assertFalse(multi_dep_vars, error_msg)
 
     def test_sanity_check_paths(self):
         """Make sure specified sanity check paths adher to the requirements."""
