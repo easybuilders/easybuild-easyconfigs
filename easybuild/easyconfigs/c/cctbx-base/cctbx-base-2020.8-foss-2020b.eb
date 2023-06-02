@@ -1,0 +1,64 @@
+# author: Denis Kristak (Inuits)
+easyblock = 'PythonBundle'
+
+name = 'cctbx-base'
+version = '2020.8'
+
+# local_pyver_special is used to create the wheel filename
+# it contains the first two digits of the python version (with no delimiter)
+local_pyver = '3.8.6'
+local_pyver_special = ''.join(local_pyver.split('.')[:2])
+
+homepage = 'https://github.com/cctbx/cctbx_project'
+description = """
+The Computational Crystallography Toolbox (cctbx) is being developed as the open source component of the Phenix
+project. The goal of the Phenix project is to advance automation of macromolecular structure determination.
+Phenix depends on the cctbx, but not vice versa. This hierarchical approach enforces a clean design as a reusable
+library. The cctbx is therefore also useful for small-molecule crystallography and even general scientific
+applications.
+"""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+dependencies = [
+    ('Python', local_pyver),
+    ('Boost', '1.74.0'),
+    ('HDF5', '1.10.7'),
+    ('libGLU', '9.0.1'),
+    ('LIBSVM', '3.25'),
+    ('LibTIFF', '4.1.0'),
+    ('matplotlib', '3.3.3'),
+    ('mrcfile', '1.3.0'),
+]
+
+local_metadata = "%(installdir)s/lib/python%(pyshortver)s/site-packages/cctbx_base-%(version)s.dist-info/METADATA"
+
+exts_list = [
+    ('reportlab', '3.5.66', {
+        'checksums': ['63fba51babad0047def4ffaa41d0065248ca39d680e98dc9e3010de5425539b4'],
+    }),
+    (name, version, {
+        'sources': [{
+            'download_filename': 'cctbx_base-%s-0_py%sh167b89d-cp%s-cp%sm-manylinux2010_x86_64.whl' % (
+                version, local_pyver_special, local_pyver_special, local_pyver_special
+            ),
+            'filename': 'cctbx_base-%s-cp%s-cp%s-manylinux2010_x86_64.whl' % (
+                version, local_pyver_special, local_pyver_special
+            ),
+        }],
+        'checksums': ['5c7ac0710d9011072c678771876aa57ca3735986ed321d403f51989a7444e592'],
+        # remove deps (they fail during sanity check, even though they are installed)
+        'postinstallcmds': ["echo '' > %s" % local_metadata],
+        'modulename': 'cctbx',
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/smtbx.python', 'bin/cctbx.brehm_diederichs'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/cctbx_website'],
+}
+
+moduleclass = 'lib'
