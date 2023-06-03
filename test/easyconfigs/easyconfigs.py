@@ -860,8 +860,10 @@ class EasyConfigTest(TestCase):
             '9.3': '2020a',
             '10.2': '2020b',
             '10.3': '2021a',
+            '11.1': None,
             '11.2': '2021b',
             '11.3': '2022a',
+            '11.4': None,
             '12.2': '2022b',
             '12.3': '2023a',
         }
@@ -898,7 +900,7 @@ class EasyConfigTest(TestCase):
 
                     if tc_gen.startswith('GCC'):
                         gcc_ver = tc_gen.split('-', 1)[1].rstrip('.')
-                        if gcc_ver in gcc_tc_gen_map:
+                        if gcc_ver in gcc_tc_gen_map and gcc_tc_gen_map[gcc_ver] is not None:
                             tc_gen = gcc_tc_gen_map[gcc_ver]
                         elif LooseVersion(gcc_ver) >= LooseVersion('10.2'):
                             # for recent GCC versions, we really want to have a mapping in place...
