@@ -1,0 +1,14 @@
+Compiling GraphBLAS with the intel toolchain consumes *a lot* of memory
+because optimization reports are generated. This patch simply turns that off
+to make the memory requirement for compilation more sensible.
+--- GraphBLAS/CMakeLists.txt.orig	2023-03-17 14:46:24.533943000 +0100
++++ GraphBLAS/CMakeLists.txt	2023-03-17 14:46:15.393912000 +0100
+@@ -198,7 +198,7 @@
+ elseif ( "${CMAKE_C_COMPILER_ID}" STREQUAL "Intel" )
+     # options for icc: also needs -std=c11
+     set ( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -diag-disable 10397,15552 " )
+-    set ( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -qopt-report=5 -qopt-report-phase=vec" )
++    set ( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -qopt-report=0 -qopt-report-phase=vec" )
+     # the -mp1 option is important for predictable floating-point results with
+     # the icc compiler.  Without, ((float) 1.)/((float) 0.) produces NaN,
+     # instead of the correct result, Inf.

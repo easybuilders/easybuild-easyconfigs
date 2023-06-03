@@ -1,0 +1,48 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'CMakeMake'
+
+name = 'PICI-LIGGGHTS'
+version = '3.8.1'
+
+homepage = 'https://github.com/uob-positron-imaging-centre/PICI-LIGGGHTS'
+description = """UoB Positron Imaging Centre's Improved LIGGGHTS distribution with
+ an emphasis on the Python interface."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/uob-positron-imaging-centre/PICI-LIGGGHTS/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['49df8c0379b00ebb57eac7c8ec25755976c2459c0a9f569090b55a0aafee628f']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('libjpeg-turbo', '2.1.3'),
+    ('VTK', '9.2.2'),
+]
+
+configopts = '-DVTK_DIR=$EBROOTVTK'
+
+_pydir = "%(installdir)s/lib/python%(pyshortver)s/site-packages"
+postinstallcmds = [
+    "mkdir -p %s" % _pydir,
+    "cd %%(builddir)s/%%(name)s*/python && python install.py %%(installdir)s/lib %s" % _pydir,
+    "cp -r %(builddir)s/%(name)s*/examples %(installdir)s/",
+]
+start_dir = 'src'
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/liggghts', 'lib/libliggghts.a', 'lib/libliggghts.%s' % SHLIB_EXT],
+    'dirs': ['examples/LIGGGHTS/Tutorials_public', 'include'],
+}
+
+sanity_check_commands = ['python -c "import liggghts"']
+
+moduleclass = 'cae'
