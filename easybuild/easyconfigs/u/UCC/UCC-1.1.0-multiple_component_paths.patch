@@ -1,0 +1,46 @@
+Adds support for multiple extra components paths to UCC
+Was necessary to add, as they broke the logic we used for UCC_COMPONEN_PATH in 1.1.0,
+then removed it completely in 1.2.0.
+This patch also removes the need to copy over all the other plugins, thus supporting multiple external components.
+
+author: micketeer@gmail.com
+
+diff -ru ucc-1.1.0.orig/src/utils/ucc_component.c ucc-1.1.0.fixed/src/utils/ucc_component.c
+--- ucc-1.1.0.orig/src/utils/ucc_component.c	2023-04-06 15:16:18.341729973 +0200
++++ ucc-1.1.0.fixed/src/utils/ucc_component.c	2023-04-08 13:42:28.448319486 +0200
+@@ -128,6 +128,27 @@
+         return UCC_ERR_INVALID_PARAM;
+     }
+ 
++    char *extra_component_path = getenv("EB_UCC_EXTRA_COMPONENT_PATH");
++    if (extra_component_path) {
++        // Add extra room for extra paths, braces and comma (+3):
++        pattern_size =
++            strlen(ucc_global_config.component_path) + strlen(framework_name) + 16 + strlen(extra_component_path) + 3;
++        full_pattern = (char *)ucc_malloc(pattern_size, "full_pattern");
++        if (!full_pattern) {
++            ucc_error("failed to allocate %zd bytes for full_pattern",
++                      pattern_size);
++            return UCC_ERR_NO_MEMORY;
++        }
++        ucc_snprintf_safe(full_pattern, pattern_size, "{%s,%s}/libucc_%s_*.so",
++                          extra_component_path, ucc_global_config.component_path, framework_name);
++        // Replace ; typically used in PATHs variables with , for glob
++        char *current_pos = strchr(full_pattern, ';');
++        while (current_pos) {
++            *current_pos = ',';
++            current_pos = strchr(current_pos, ';');
++        }
++        glob(full_pattern, GLOB_BRACE, NULL, &globbuf);
++    } else {
+     pattern_size =
+         strlen(ucc_global_config.component_path) + strlen(framework_name) + 16;
+     full_pattern = (char *)ucc_malloc(pattern_size, "full_pattern");
+@@ -139,6 +160,7 @@
+     ucc_snprintf_safe(full_pattern, pattern_size, "%s/libucc_%s_*.so",
+                       ucc_global_config.component_path, framework_name);
+     glob(full_pattern, 0, NULL, &globbuf);
++    }
+     ucc_free(full_pattern);
+     n_loaded          = 0;
+ 
