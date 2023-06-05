@@ -1,0 +1,104 @@
+Allows building unidata 2.8 under Python 3 (C bindings, slots, module path),
+replaces the hard-coded creation of udunits.dat and lets setup.py handle that.
+
+Author: Jakub Zárybnický
+
+diff -ru unidata-2.8/Lib/__init__.py unidata-2.8-edit/Lib/__init__.py
+--- unidata-2.8/Lib/__init__.py	2016-04-12 01:12:43.000000000 +0200
++++ unidata-2.8-edit/Lib/__init__.py	2021-03-01 19:14:36.811609779 +0100
+@@ -18,8 +18,8 @@
+ """
+ import os
+ import sys
+-from udunits import udunits, addBaseUnit, addDimensionlessUnit, addScaledUnit  # noqa
+-from udunits import addOffsettedUnit, addMultipliedUnits, addInvertedUnit, addDividedUnits  # noqa
++from .udunits import udunits, addBaseUnit, addDimensionlessUnit, addScaledUnit  # noqa
++from .udunits import addOffsettedUnit, addMultipliedUnits, addInvertedUnit, addDividedUnits  # noqa
+ udunits_init = 0  # noqa
+ 
+ xml_pth = os.path.join(sys.prefix,"share","udunits","udunits2.xml")
+diff -ru unidata-2.8/Lib/udunits.py unidata-2.8-edit/Lib/udunits.py
+--- unidata-2.8/Lib/udunits.py	2016-04-12 01:12:43.000000000 +0200
++++ unidata-2.8-edit/Lib/udunits.py	2021-03-01 19:13:28.310920278 +0100
+@@ -1,10 +1,10 @@
+-import udunits_wrap
++import unidata.udunits_wrap
+ import sys
+ import string
+ import unidata
+ from collections import OrderedDict
+ version = sys.version.split()[0].split('.')
+-version = string.join(version[:2], '.')
++version = '.'.join(version[:2])
+ udunits_name = unidata.__path__[0] + '/udunits.dat'
+ known_units_units = None
+ known_units_types = None
+@@ -150,7 +150,7 @@
+     dict['THERMODYNAMIC TEMPERATURE'] # returns['degree_Kelvin', 'degree_Celsius', ...]
+ 
+     """
+-    __slots__ = ['units', '_units', 'value', '_value']
++    __slots__ = ['_units', '_value']
+ 
+     def __init__(self, value, units):
+         if isinstance(value, str):
+diff -ru unidata-2.8/setup.py unidata-2.8-edit/setup.py
+--- unidata-2.8/setup.py	2016-04-12 01:12:43.000000000 +0200
++++ unidata-2.8-edit/setup.py	2021-03-01 19:15:47.039301850 +0100
+@@ -24,6 +24,7 @@
+        url = "http://www-pcmdi.llnl.gov/software",
+        packages = ['unidata'],
+        package_dir = {'unidata': 'Lib'},
++       data_files = [('unidata', ['Src/udunits.dat'])],
+        ext_modules = [
+     Extension('unidata.udunits_wrap',
+               ['Src/udunits_wrap.c',
+@@ -36,16 +37,4 @@
+               libraries=['udunits2','expat']
+               )
+     ]
+-      )
+-
+-f=open('Src/udunits.dat')
+-version=sys.version.split()[0].split('.')
+-version='.'.join(version[:2])
+-try:
+-    f2=open(target_prefix+'/lib/python'+version+'/site-packages/unidata/udunits.dat','w')
+-except:
+-    f2=open(target_prefix+'/lib64/python'+version+'/site-packages/unidata/udunits.dat','w')
+-    
+-for l in f.xreadlines():
+-    f2.write(l)
+-f2.close()
++       )
+diff -ru unidata-2.8/Src/udunits_wrap.c unidata-2.8-edit/Src/udunits_wrap.c
+--- unidata-2.8/Src/udunits_wrap.c	2016-04-12 01:12:43.000000000 +0200
++++ unidata-2.8-edit/Src/udunits_wrap.c	2021-03-01 19:08:49.294322341 +0100
+@@ -364,15 +364,23 @@
+   {NULL, NULL} /*sentinel */
+ };
+ 
+-void 
+-initudunits_wrap()
++static struct PyModuleDef UdunitsModule =
+ {
+-  (void) Py_InitModule("udunits_wrap", MyUdunitsMethods);
++    PyModuleDef_HEAD_INIT,
++    "udunits_wrap", /* name of module */
++    "",          /* module documentation, may be NULL */
++    -1,          /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
++    MyUdunitsMethods
++};
++
++PyMODINIT_FUNC PyInit_udunits_wrap(void)
++{
++    return PyModule_Create(&UdunitsModule);
+ }
+ 
+ int main(int argc,char **argv)
+ {
+   Py_SetProgramName(argv[0]);
+   Py_Initialize();
+-  initudunits_wrap();}
++  PyInit_udunits_wrap();}
+ 

@@ -1,0 +1,110 @@
+Fix --no-multi-toc: unknown option on gold linker
+See https://gitlab.kitware.com/cmake/cmake/issues/20076
+
+diff -Naurd cmake-3.15.3/bootstrap cmake-3.15.3-patched/bootstrap
+--- cmake-3.15.3/bootstrap	2019-09-04 15:58:03.000000000 +0200
++++ cmake-3.15.3-patched/bootstrap	2019-12-09 13:13:29.004220868 +0100
+@@ -419,6 +419,7 @@
+   cmTargetCompileOptionsCommand \
+   cmTargetIncludeDirectoriesCommand \
+   cmTargetLinkLibrariesCommand \
++  cmTargetLinkOptionsCommand \
+   cmTargetPropCommandBase \
+   cmTargetPropertyComputer \
+   cmTargetSourcesCommand \
+diff -Naurd cmake-3.15.3/CompileFlags.cmake cmake-3.15.3-patched/CompileFlags.cmake
+--- cmake-3.15.3/CompileFlags.cmake	2019-09-04 15:58:00.000000000 +0200
++++ cmake-3.15.3-patched/CompileFlags.cmake	2019-12-09 13:13:29.004220868 +0100
+@@ -54,12 +54,20 @@
+ endif()
+
+ # Workaround for TOC Overflow on ppc64
++set(bigTocFlag "")
+ if(CMAKE_SYSTEM_NAME STREQUAL "AIX" AND
+    CMAKE_SYSTEM_PROCESSOR MATCHES "powerpc")
+-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-bbigtoc")
++  set(bigTocFlag "-Wl,-bbigtoc")
+ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+    CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64")
+-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-multi-toc")
++  set(bigTocFlag "-Wl,--no-multi-toc")
++endif()
++if(bigTocFlag)
++  include(CheckCXXLinkerFlag)
++  check_cxx_linker_flag(${bigTocFlag} BIG_TOC_FLAG_SUPPORTED)
++  if(BIG_TOC_FLAG_SUPPORTED)
++    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${bigTocFlag}")
++  endif()
+ endif()
+
+ if (CMAKE_CXX_COMPILER_ID STREQUAL SunPro AND
+diff -Naurd cmake-3.15.3/Source/cmCommands.cxx cmake-3.15.3-patched/Source/cmCommands.cxx
+--- cmake-3.15.3/Source/cmCommands.cxx	2019-09-04 15:58:01.000000000 +0200
++++ cmake-3.15.3-patched/Source/cmCommands.cxx	2019-12-09 13:13:29.043221389 +0100
+@@ -74,6 +74,7 @@
+ #include "cmTargetCompileOptionsCommand.h"
+ #include "cmTargetIncludeDirectoriesCommand.h"
+ #include "cmTargetLinkLibrariesCommand.h"
++#include "cmTargetLinkOptionsCommand.h"
+ #include "cmTargetSourcesCommand.h"
+ #include "cmTryCompileCommand.h"
+ #include "cmTryRunCommand.h"
+@@ -102,7 +103,6 @@
+ #  include "cmSourceGroupCommand.h"
+ #  include "cmSubdirDependsCommand.h"
+ #  include "cmTargetLinkDirectoriesCommand.h"
+-#  include "cmTargetLinkOptionsCommand.h"
+ #  include "cmUseMangledMesaCommand.h"
+ #  include "cmUtilitySourceCommand.h"
+ #  include "cmVariableRequiresCommand.h"
+@@ -259,6 +259,8 @@
+                            new cmTargetIncludeDirectoriesCommand);
+   state->AddBuiltinCommand("target_link_libraries",
+                            new cmTargetLinkLibrariesCommand);
++  state->AddBuiltinCommand("target_link_options",
++                           new cmTargetLinkOptionsCommand);
+   state->AddBuiltinCommand("target_sources", new cmTargetSourcesCommand);
+   state->AddBuiltinCommand("try_compile", new cmTryCompileCommand);
+   state->AddBuiltinCommand("try_run", new cmTryRunCommand);
+@@ -277,8 +279,6 @@
+   state->AddBuiltinCommand("install_programs", new cmInstallProgramsCommand);
+   state->AddBuiltinCommand("add_link_options", new cmAddLinkOptionsCommand);
+   state->AddBuiltinCommand("link_libraries", new cmLinkLibrariesCommand);
+-  state->AddBuiltinCommand("target_link_options",
+-                           new cmTargetLinkOptionsCommand);
+   state->AddBuiltinCommand("target_link_directories",
+                            new cmTargetLinkDirectoriesCommand);
+   state->AddBuiltinCommand("load_cache", new cmLoadCacheCommand);
+diff -Naurd cmake-3.15.3/Source/Modules/CheckCXXLinkerFlag.cmake cmake-3.15.3-patched/Source/Modules/CheckCXXLinkerFlag.cmake
+--- cmake-3.15.3/Source/Modules/CheckCXXLinkerFlag.cmake	1970-01-01 01:00:00.000000000 +0100
++++ cmake-3.15.3-patched/Source/Modules/CheckCXXLinkerFlag.cmake	2019-12-09 13:13:29.024221135 +0100
+@@ -0,0 +1,29 @@
++# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
++# file Copyright.txt or https://cmake.org/licensing for details.
++
++include_guard(GLOBAL)
++include(CheckCXXSourceCompiles)
++include(CMakeCheckCompilerFlagCommonPatterns)
++
++function(check_cxx_linker_flag _flag _var)
++  if(CMAKE_VERSION VERSION_LESS "3.14")
++    set(CMAKE_REQUIRED_LIBRARIES "${_flag}")
++  else()
++    set(CMAKE_REQUIRED_LINK_OPTIONS "${_flag}")
++  endif()
++
++  # Normalize locale during test compilation.
++  set(_locale_vars LC_ALL LC_MESSAGES LANG)
++  foreach(v IN LISTS _locale_vars)
++    set(_locale_vars_saved_${v} "$ENV{${v}}")
++    set(ENV{${v}} C)
++  endforeach()
++  check_compiler_flag_common_patterns(_common_patterns)
++  check_cxx_source_compiles("int main() { return 0; }" ${_var}
++    ${_common_patterns}
++    )
++  foreach(v IN LISTS _locale_vars)
++    set(ENV{${v}} ${_locale_vars_saved_${v}})
++  endforeach()
++  set(${_var} "${${_var}}" PARENT_SCOPE)
++endfunction()

@@ -1,0 +1,54 @@
+##
+# This is a contribution from DeepThought HPC Service, Flinders University, Adelaide, Australia
+# Homepage:     https://staff.flinders.edu.au/research/deep-thought
+#
+# Authors::     Robert Qiao <rob.qiao@flinders.edu.au>
+# License::     GLPv2
+#
+# Notes::
+##
+
+easyblock = 'CMakeMake'
+
+name = 'Salmon'
+version = '1.1.0'
+
+homepage = 'https://github.com/COMBINE-lab/salmon'
+description = """Salmon is a wicked-fast program to produce a highly-accurate,
+ transcript-level quantification estimates from RNA-seq data."""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+github_account = 'COMBINE-lab'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['550bbdc18970b015f467d418385a5779cd0d6f642cb710766c66761c12c9bc50']
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('pkg-config', '0.29.2'),
+    ('jemalloc', '5.2.1'),
+]
+
+dependencies = [
+    ('Boost', '1.71.0'),
+    ('tbb', '2019_U9'),
+]
+
+configopts = '-DJEMALLOC_ROOT=$EBROOTJEMALLOC'
+
+# need to unset the $LD_PRELOAD set be jemalloc to avoid hanging 'make test'
+# since jemalloc is statically linked in Salmon (and hence only a build dep),
+# this only affects the tests
+pretestopts = "unset LD_PRELOAD && "
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'] + ['lib/lib%s.a' % x for x in ['graphdump', 'ntcard', 'salmon_core', 'twopaco']],
+    'dirs': [],
+}
+
+sanity_check_commands = ["salmon --help"]
+
+moduleclass = 'bio'

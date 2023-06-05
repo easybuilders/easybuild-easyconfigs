@@ -1,0 +1,14 @@
+fix, on ppc64le and RHEL / CentOS 8, for: identifier "__ieee128" is undefined
+See https://github.com/easybuilders/easybuild-easyconfigs/issues/11913
+Patch by Simon Branford (University of Birmingham)
+--- CMakeLists.txt
++++ CMakeLists.txt
+@@ -183,5 +183,8 @@
+ 
+     list( APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC ${NV_SM} ${NV_COMP} ${FORTRAN_CONVENTION} )
++    if(CMAKE_SYSTEM_PROCESSOR MATCHES "(powerpc|ppc)64le")
++      list(APPEND CUDA_NVCC_FLAGS "-Xcompiler" "-mno-float128")
++    endif()
+     add_definitions( -DHAVE_CUBLAS -DMIN_CUDA_ARCH=${MIN_ARCH} )
+     message( STATUS "Define -DHAVE_CUBLAS -DMIN_CUDA_ARCH=${MIN_ARCH}" )
+ endif()

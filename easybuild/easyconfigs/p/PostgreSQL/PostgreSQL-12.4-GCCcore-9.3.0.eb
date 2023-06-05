@@ -1,0 +1,50 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'ConfigureMake'
+
+name = 'PostgreSQL'
+version = '12.4'
+
+homepage = 'https://www.postgresql.org/'
+description = """PostgreSQL is a powerful, open source object-relational database system.
+ It is fully ACID compliant, has full support for foreign keys,
+ joins, views, triggers, and stored procedures (in multiple languages).
+ It includes most SQL:2008 data types, including INTEGER,
+ NUMERIC, BOOLEAN, CHAR, VARCHAR, DATE, INTERVAL, and TIMESTAMP.
+ It also supports storage of binary large objects, including pictures,
+ sounds, or video. It has native programming interfaces for C/C++, Java,
+ .Net, Perl, Python, Ruby, Tcl, ODBC, among others, and exceptional documentation."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['http://ftp.postgresql.org/pub/source/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['9749b891b9d8f984312fe510a7a3613035134cee1e634793dac5568d1e1a5852']
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('Bison', '3.5.3'),
+    ('flex', '2.6.4'),
+    ('Perl', '5.30.2'),
+    ('Python', '3.8.2'),
+]
+
+dependencies = [
+    ('libreadline', '8.0'),
+    ('zlib', '1.2.11'),
+    # OS dependency should be preferred if the os version is more recent then this version,
+    # it's nice to have an up to date openssl for security reasons
+    # ('OpenSSL', '1.0.2h'),
+]
+
+osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
+
+configopts = '--with-python --with-openssl'
+
+sanity_check_paths = {
+    'files': ['bin/psql', 'bin/pg_config', 'lib/libpq.a', 'lib/libpq.%s' % SHLIB_EXT],
+    'dirs': ['share/postgresql'],
+}
+
+moduleclass = 'data'

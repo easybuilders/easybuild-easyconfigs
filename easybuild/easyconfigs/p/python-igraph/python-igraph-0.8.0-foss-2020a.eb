@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'python-igraph'
+version = '0.8.0'
+
+homepage = 'https://igraph.org/python'
+description = """Python interface to the igraph high performance graph library, primarily aimed at complex network
+ research and analysis."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+multi_deps = {'Python': ['3.8.2', '2.7.18']}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('igraph', '0.8.2'),
+    ('PyCairo', '1.18.2'),
+]
+
+use_pip = False
+sanity_pip_check = True
+
+exts_list = [
+    ('texttable', '1.6.3', {
+        'checksums': ['ce0faf21aa77d806bbff22b107cc22cce68dc9438f97a2df32c93e9afa4ce436'],
+    }),
+    (name, version, {
+        'buildopts': '--use-pkg-config',
+        'installopts': '--use-pkg-config',
+        'modulename': 'igraph',
+        'checksums': ['47e6bb48ec7dbfddbd89cf064a24b271783a1490fc688ebce17fbd652bcdab8e'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/igraph'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# cairo must be available for proper plotting support
+sanity_check_commands = ["python -c 'from igraph.drawing.utils import find_cairo; cairo = find_cairo(); cairo.Context'"]
+
+moduleclass = 'lib'

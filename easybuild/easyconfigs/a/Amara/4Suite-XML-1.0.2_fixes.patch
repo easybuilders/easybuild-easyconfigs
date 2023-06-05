@@ -1,0 +1,146 @@
+various fixes for 4Suite-XML 1.0.2, taken from patches in python-module-4Suite-XML-1.0.2-alt4.src.rpm  
+which is available from http://ftp.altlinux.org/pub/distributions/ALTLinux/Sisyphus/noarch/SRPMS.classic/
+
+see also https://bugzilla.altlinux.org/show_bug.cgi?id=35363, where src.rpm is mentioned (in Russian)
+as included a fix for this installed problem:
+    ValueError: invalid version number '3.0.*'
+
+diff --git a/Ft/Lib/DistExt/Dist.py b/Ft/Lib/DistExt/Dist.py
+index 959e66e..66e0f7d 100644
+--- a/Ft/Lib/DistExt/Dist.py
++++ b/Ft/Lib/DistExt/Dist.py
+@@ -652,16 +652,12 @@ class DistributionMetadata(dist.DistributionMetadata):
+     def set_requires_python(self, value):
+         if not isinstance(value, list):
+             value = [ v.strip() for v in value.split(',') ]
+-        for v in value:
+-            Version.SplitComparison(v)
+         self.requires_python = value
+ 
+     def get_requires_external(self):
+         return self.requires_external or []
+ 
+     def set_requires_external(self, value):
+-        for v in value:
+-            Version.SplitComparison(v)
+         self.requires_external = value
+ 
+     if sys.version < '2.5':
+diff -up 4Suite-XML-1.0.2/Ft/Xml/src/expat/lib/xmltok.c.expat-dos 4Suite-XML-1.0.2/Ft/Xml/src/expat/lib/xmltok.c
+--- 4Suite-XML-1.0.2/Ft/Xml/src/expat/lib/xmltok.c.expat-dos	2006-04-28 21:54:54.000000000 +0200
++++ 4Suite-XML-1.0.2/Ft/Xml/src/expat/lib/xmltok.c	2009-11-03 14:18:03.994197360 +0100
+@@ -328,13 +328,13 @@ utf8_updatePosition(const ENCODING *enc,
+                     const char *end,
+                     POSITION *pos)
+ {
+-  while (ptr != end) {
++  while (ptr < end) {
+     unsigned char ch = (unsigned char)*ptr;
+     if (ch >= 32) {
+       if (ch < 128)
+         ptr++;
+       else
+-        ptr += utf8_code_length[ch];
++        ptr += utf8_code_length[ch] ? utf8_code_length[ch] : 1;
+       pos->columnNumber++;
+     } else if (ch == 10) {
+       pos->columnNumber = 0;
+diff -up 4Suite-XML-1.0.2/Ft/Xml/src/expat/lib/xmltok_impl.c.expat-dos 4Suite-XML-1.0.2/Ft/Xml/src/expat/lib/xmltok_impl.c
+--- 4Suite-XML-1.0.2/Ft/Xml/src/expat/lib/xmltok_impl.c.expat-dos	2006-04-28 21:54:54.000000000 +0200
++++ 4Suite-XML-1.0.2/Ft/Xml/src/expat/lib/xmltok_impl.c	2009-11-03 14:17:55.169954596 +0100
+@@ -1742,7 +1742,7 @@ PREFIX(updatePosition)(const ENCODING *e
+                        const char *end,
+                        POSITION *pos)
+ {
+-  while (ptr != end) {
++  while (ptr < end) {
+     switch (BYTE_TYPE(enc, ptr)) {
+ #define LEAD_CASE(n) \
+     case BT_LEAD ## n: \
+diff -ur 4Suite-XML/Ft/Xml/src/StreamWriter.c 4Suite-XML-1.0.2/Ft/Xml/src/StreamWriter.c
+--- 4Suite-XML/Ft/Xml/src/StreamWriter.c	2006-09-24 20:11:21.000000000 +0200
++++ 4Suite-XML-1.0.2/Ft/Xml/src/StreamWriter.c	2013-12-03 19:02:39.157147468 +0100
+@@ -602,7 +602,7 @@
+ static int writer_print(PyStreamWriterObject *self, FILE *fp, int flags)
+ {
+   PyObject *repr = writer_repr(self);
+-  fprintf(fp, PyString_AS_STRING(repr));
++  fprintf(fp, "%s", PyString_AS_STRING(repr));
+   Py_DECREF(repr);
+   return 0;
+ }
+@@ -812,7 +812,7 @@
+ static int entitymap_print(PyEntityMapObject *self, FILE *fp, int flags)
+ {
+   PyObject *repr = entitymap_repr(self);
+-  fprintf(fp, PyString_AS_STRING(repr));
++  fprintf(fp, "%s", PyString_AS_STRING(repr));
+   Py_DECREF(repr);
+   return 0;
+ }
+diff -urN 4Suite-XML/test/Xml/XPath/Core/test_location_path.py 4Suite-XML-1.0.2/test/Xml/XPath/Core/test_location_path.py
+--- 4Suite-XML/test/Xml/XPath/Core/test_location_path.py	2004-10-05 00:55:01.000000000 +0200
++++ 4Suite-XML-1.0.2/test/Xml/XPath/Core/test_location_path.py	2010-02-26 16:37:33.916336763 +0100
+@@ -15,8 +15,8 @@
+     DomTree = tester.test_data['tree']
+ 
+     nt = ParsedNodeTest.ParsedNameTest('*')
+-    as = ParsedAxisSpecifier.ParsedAxisSpecifier('child')
+-    step = ParsedStep.ParsedStep(as,nt,None)
++    as_ = ParsedAxisSpecifier.ParsedAxisSpecifier('child')
++    step = ParsedStep.ParsedStep(as_,nt,None)
+     # [(expression, context, expected)...]
+     tests = [(ParsedAbbreviatedAbsoluteLocationPath(step),
+               Context.Context(DomTree.CHILD2, 1, 1),
+diff -urN 4Suite-XML/test/Xml/XPath/Core/test_step.py 4Suite-XML-1.0.2/test/Xml/XPath/Core/test_step.py
+--- 4Suite-XML/test/Xml/XPath/Core/test_step.py	2001-09-15 20:46:11.000000000 +0200
++++ 4Suite-XML-1.0.2/test/Xml/XPath/Core/test_step.py	2010-02-26 16:38:10.654334053 +0100
+@@ -21,38 +21,38 @@
+     tests = []
+ 
+     # Test 1
+-    as = ParsedAxisSpecifier.ParsedAxisSpecifier('ancestor')
++    as_ = ParsedAxisSpecifier.ParsedAxisSpecifier('ancestor')
+     nt = ParsedNodeTest.ParsedNameTest('*')
+-    s = ParsedStep.ParsedStep(as, nt)
++    s = ParsedStep.ParsedStep(as_, nt)
+     tests.append((s, [DomTree.ROOT]))
+     
+     # Test 2
+-    as = ParsedAxisSpecifier.ParsedAxisSpecifier('ancestor-or-self')
+-    s = ParsedStep.ParsedStep(as, nt, None)
++    as_ = ParsedAxisSpecifier.ParsedAxisSpecifier('ancestor-or-self')
++    s = ParsedStep.ParsedStep(as_, nt, None)
+     tests.append((s, [DomTree.ROOT, DomTree.CHILD1]))
+ 
+     # Test 3
+-    as = ParsedAxisSpecifier.ParsedAxisSpecifier('descendant-or-self')
++    as_ = ParsedAxisSpecifier.ParsedAxisSpecifier('descendant-or-self')
+     nt = ParsedNodeTest.ParsedNameTest('GCHILD')
+-    s = ParsedStep.ParsedStep(as, nt)
++    s = ParsedStep.ParsedStep(as_, nt)
+     tests.append((s, DomTree.GCHILDREN1))
+     
+     # Test 4
+-    as = ParsedAxisSpecifier.ParsedAxisSpecifier('child')
++    as_ = ParsedAxisSpecifier.ParsedAxisSpecifier('child')
+     nt = ParsedNodeTest.ParsedNameTest('GCHILD')
+     left = ParsedExpr.ParsedFunctionCallExpr('position', [])
+     right = ParsedExpr.ParsedNLiteralExpr('1')
+     exp = ParsedExpr.ParsedEqualityExpr('=', left, right)
+     pl = ParsedPredicateList.ParsedPredicateList([exp])
+-    s = ParsedStep.ParsedStep(as, nt, pl)
++    s = ParsedStep.ParsedStep(as_, nt, pl)
+     tests.append((s, [DomTree.GCHILD11]))
+ 
+     # Test 5
+     right = ParsedExpr.ParsedNLiteralExpr('1')
+     pl = ParsedPredicateList.ParsedPredicateList([right])
+-    as = ParsedAxisSpecifier.ParsedAxisSpecifier('child')
++    as_ = ParsedAxisSpecifier.ParsedAxisSpecifier('child')
+     nt = ParsedNodeTest.ParsedNameTest('GCHILD')
+-    s = ParsedStep.ParsedStep(as,nt,pl)
++    s = ParsedStep.ParsedStep(as_,nt,pl)
+     tests.append((s, [DomTree.GCHILD11]))
+     
+     tester.testDone()

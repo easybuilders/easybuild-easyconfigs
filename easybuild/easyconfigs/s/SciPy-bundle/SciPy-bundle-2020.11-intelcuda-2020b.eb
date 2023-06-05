@@ -1,0 +1,63 @@
+easyblock = 'PythonBundle'
+
+name = 'SciPy-bundle'
+version = '2020.11'
+
+homepage = 'https://python.org/'
+description = "Bundle of Python packages for scientific software"
+
+toolchain = {'name': 'intelcuda', 'version': '2020b'}
+toolchainopts = {'pic': True, 'lowopt': True}
+
+builddependencies = [('hypothesis', '5.41.2')]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('pybind11', '2.6.0'),  # required by scipy
+]
+
+use_pip = True
+
+# order is important!
+exts_list = [
+    ('numpy', '1.19.4', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'patches': [
+            'numpy-1.18.2-mkl.patch',
+            'numpy-1.19.4_disable-broken-test.patch',
+        ],
+        'checksums': [
+            '141ec3a3300ab89c7f2b0775289954d193cc8edb621ea05f99db9cb181530512',  # numpy-1.19.4.zip
+            'ea25ad5c0148c1398d282f0424e642fb9815a1a80f4512659b018e2adc378bcf',  # numpy-1.18.2-mkl.patch
+            # numpy-1.19.4_disable-broken-test.patch
+            '9cc8bbd106ecba603254536101f53fdc200e81d43ca4800b5a84be9b645e9320',
+        ],
+    }),
+    ('scipy', '1.5.4', {
+        'checksums': ['4a453d5e5689de62e5d38edf40af3f17560bfd63c9c5bd228c18c1f99afa155b'],
+    }),
+    ('mpi4py', '3.0.3', {
+        'checksums': ['012d716c8b9ed1e513fcc4b18e5af16a8791f51e6d1716baccf988ad355c5a1f'],
+    }),
+    ('numexpr', '2.7.1', {
+        'checksums': ['b0d239d9827e1bcee08344fd05835823bc60aff97232e35a928214d03ff802b1'],
+    }),
+    ('Bottleneck', '1.3.2', {
+        'checksums': ['20179f0b66359792ea283b69aa16366419132f3b6cf3adadc0c48e2e8118e573'],
+    }),
+    ('pandas', '1.1.4', {
+        'checksums': ['a979d0404b135c63954dea79e6246c45dd45371a88631cdbb4877d844e6de3b6'],
+        # strip out use of -Werror to avoid failing compilation due to Intel compiler warning
+        'preinstallopts': """sed -i 's@extra_compile_args = \\["-Werror"\\]@extra_compile_args = []@g' setup.py && """,
+    }),
+    ('mpmath', '1.1.0', {
+        'checksums': ['fc17abe05fbab3382b61a123c398508183406fa132e0223874578e20946499f6'],
+    }),
+    ('deap', '1.3.1', {
+        'checksums': ['11f54493ceb54aae10dde676577ef59fc52d52f82729d5a12c90b0813c857a2f'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lang'

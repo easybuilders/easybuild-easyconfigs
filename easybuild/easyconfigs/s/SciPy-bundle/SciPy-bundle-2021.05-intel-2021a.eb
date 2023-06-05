@@ -1,0 +1,71 @@
+easyblock = 'PythonBundle'
+
+name = 'SciPy-bundle'
+version = '2021.05'
+
+homepage = 'https://python.org/'
+description = "Bundle of Python packages for scientific software"
+
+toolchain = {'name': 'intel', 'version': '2021a'}
+toolchainopts = {'pic': True, 'lowopt': True, 'strict': True}
+
+builddependencies = [('hypothesis', '6.13.1')]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('pybind11', '2.6.2'),  # required by scipy
+]
+
+use_pip = True
+
+# order is important!
+exts_list = [
+    ('numpy', '1.20.3', {
+        'patches': [
+            'numpy-1.18.2-mkl.patch',
+            'numpy-1.20.3_disable-broken-override-test.patch',
+            'numpy-1.20.3_fix-cpu-feature-detection-intel-compilers.patch',
+            'numpy-1.20.3_fix-target-test-ccompiler-opt.patch',
+            'numpy-1.20.3_disable_fortran_callback_test.patch',
+        ],
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'checksums': [
+            'e55185e51b18d788e49fe8305fd73ef4470596b33fc2c1ceb304566b99c71a69',  # numpy-1.20.3.zip
+            'ea25ad5c0148c1398d282f0424e642fb9815a1a80f4512659b018e2adc378bcf',  # numpy-1.18.2-mkl.patch
+            # numpy-1.20.3_disable-broken-override-test.patch
+            '43cc2e675c52db1776efcc6c84ebd5fc008b48e6355c81087420d5e790e4af9b',
+            # numpy-1.20.3_fix-cpu-feature-detection-intel-compilers.patch
+            '4c0b194c9d2e2c6b9798ebc271d4517f4c3cdbf2b3cbd68de16c7d4b068bb046',
+            # numpy-1.20.3_fix-target-test-ccompiler-opt.patch
+            '3d84e8b7d48387778974a5f6ae342a690ab5989547206b6add9d9667f8d7572a',
+            # numpy-1.20.3_disable_fortran_callback_test.patch
+            '44975a944544fd0e771b7e63c32590d257a3713070f8f7fdf60105dc516f1d75',
+        ],
+    }),
+    ('scipy', '1.6.3', {
+        'checksums': ['a75b014d3294fce26852a9d04ea27b5671d86736beb34acdfc05859246260707'],
+    }),
+    ('mpi4py', '3.0.3', {
+        'checksums': ['012d716c8b9ed1e513fcc4b18e5af16a8791f51e6d1716baccf988ad355c5a1f'],
+    }),
+    ('numexpr', '2.7.3', {
+        'checksums': ['43616529f9b7d1afc83386f943dc66c4da5e052f00217ba7e3ad8dd1b5f3a825'],
+    }),
+    ('Bottleneck', '1.3.2', {
+        'checksums': ['20179f0b66359792ea283b69aa16366419132f3b6cf3adadc0c48e2e8118e573'],
+    }),
+    ('pandas', '1.2.4', {
+        'preinstallopts': """sed -i 's@extra_compile_args = \\["-Werror"\\]@extra_compile_args = []@g' setup.py && """,
+        'checksums': ['649ecab692fade3cbfcf967ff936496b0cfba0af00a55dfaacd82bdda5cb2279'],
+    }),
+    ('mpmath', '1.2.1', {
+        'checksums': ['79ffb45cf9f4b101a807595bcb3e72e0396202e0b1d25d689134b48c4216a81a'],
+    }),
+    ('deap', '1.3.1', {
+        'checksums': ['11f54493ceb54aae10dde676577ef59fc52d52f82729d5a12c90b0813c857a2f'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lang'

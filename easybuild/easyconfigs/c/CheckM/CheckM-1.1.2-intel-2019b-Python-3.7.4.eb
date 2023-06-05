@@ -1,0 +1,65 @@
+# Updated from previous config
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonPackage'
+
+name = 'CheckM'
+version = '1.1.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/Ecogenomics/CheckM'
+description = """CheckM provides a set of tools for assessing the quality of genomes recovered from isolates,
+ single cells, or metagenomes."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+source_urls = [
+    'https://pypi.python.org/packages/source/c/checkm-genome',
+    'https://data.ace.uq.edu.au/public/CheckM_databases/',
+]
+sources = [
+    'checkm-genome-%(version)s.tar.gz',
+    {
+        'filename': 'checkm_data_2015_01_16.tar.gz',
+        'extract_cmd': "mkdir -p %(builddir)s/data && cd %(builddir)s/data && tar xfvz %s",
+    },
+]
+checksums = [
+    '309c5bc4f4a895acf23c0e94fa856328d915da0d5f3aee84e5942a6ee1cc4db2',  # checkm-genome-1.1.2.tar.gz
+    '971ec469348bd6c3d9eb96142f567f12443310fa06c1892643940f35f86ac92c',  # checkm_data_2015_01_16.tar.gz
+]
+
+# Dependencies:
+# https://github.com/Ecogenomics/CheckM/blob/master/setup.py
+dependencies = [
+    ('Python', '3.7.4'),
+    ('pplacer', '1.1.alpha19', '', SYSTEM),
+    ('prodigal', '2.6.3'),
+    ('HMMER', '3.2.1'),
+    ('SciPy-bundle', '2019.10', versionsuffix),  # numpy
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('Pysam', '0.15.3'),
+    ('DendroPy', '4.4.0'),
+]
+
+download_dep_fail = True
+use_pip = True
+
+# also install CheckM databases, see https://github.com/Ecogenomics/CheckM/wiki/Installation#how-to-install-checkm
+postinstallcmds = [
+    "cp -a %(builddir)s/data %(installdir)s",
+    "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+    "%(installdir)s/bin/checkm data setRoot %(installdir)s/data",
+]
+
+sanity_check_paths = {
+    'files': ['bin/checkm'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["checkm test %(builddir)s/checkm_test_results"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

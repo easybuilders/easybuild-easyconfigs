@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'GRASP'
+version = '2018'
+local_srcver = '%(version)s-12-03'
+
+homepage = 'https://compas.github.io/grasp/'
+description = """The General Relativistic Atomic Structure Package (GRASP) is a set of
+ Fortran 90 programs for performing fully-relativistic electron structure
+ calculations of atoms."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+github_account = 'compas'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'filename': '%s.tar.gz' % local_srcver, 'extract_cmd': "tar xfvz %s --strip-components=1"}]
+checksums = ['f563e299df473b7b264940a051b42585fa189bedbcc4b90d67201ff25c40f749']
+
+start_dir = 'src'
+
+skipsteps = ['configure']
+
+# Replace hardcoded flags with equivalents from current toolchain
+prebuildopts = 'find ./ -name Makefile -exec sed -i "s/-llapack -lblas/$LIBLAPACK/" {} + && '
+
+# Set all non-default variables in the Makefiles
+local_makeopts = 'LAPACK_LIBS="$LIBLAPACK" FC_FLAGS="$FCFLAGS -fno-automatic" FC_LD="$LDFLAGS" '
+local_makeopts += 'FC_MPI="$MPIFC" FC_MPIFLAGS="$FCFLAGS -fno-automatic" FC_MPILD="$LDFLAGS" '
+
+# Add custom make variables to build and install steps
+prebuildopts += 'GRASP="%(builddir)s" ' + local_makeopts
+preinstallopts = 'GRASP="%(installdir)s" ' + local_makeopts
+
+postinstallcmds = ['cp -r %(builddir)s/grasptest %(installdir)s/grasptest']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['hf', 'jj2lsj', 'jjgen', 'lscomp.pl', 'rangular', 'rangular_mpi', 'rasfsplit',
+                                     'rbiotransform', 'rbiotransform_mpi', 'rci', 'rci_mpi', 'rcsfblock',
+                                     'rcsfgenerate', 'rcsfinteract', 'rcsfmr', 'rcsfsplit', 'rcsfzerofirst', 'rhfs',
+                                     'rhfs_lsj', 'rlevels', 'rlevelseV', 'rmcdhf', 'rmcdhf_mpi', 'rmixaccumulate',
+                                     'rmixextract', 'rnucleus', 'rsave', 'rseqenergy', 'rseqhfs', 'rseqtrans', 'rsms',
+                                     'rtabhfs', 'rtablevels', 'rtabtrans1', 'rtabtrans2', 'rtabtransE1', 'rtransition',
+                                     'rtransition_mpi', 'rwfnestimate', 'rwfnmchfmcdf', 'rwfnplot', 'rwfnrelabel',
+                                     'rwfnrotate', 'wfnplot']] +
+             ['lib/lib%s.a' % x for x in ['9290', 'dvd90', 'mcp90', 'mod', 'mpiu90', 'rang90']],
+    'dirs': ['grasptest'],
+}
+
+moduleclass = 'chem'

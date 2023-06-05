@@ -1,0 +1,173 @@
+easyblock = 'Bundle'
+
+# Ensembl does not provide releases for the Ensembl Core API.
+# We take the last available commit of branches "release/96", the last branch not in active development.
+name = 'EnsEMBLCoreAPI'
+version = '96.0-r20190601'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'https://www.ensembl.org/info/docs/api/index.html'
+description = "The Ensembl Core Perl API and SQL schema"
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+dependencies = [
+    ('Perl', '5.28.1'),
+    ('BioPerl', '1.7.2', versionsuffix),
+    ('Bio-DB-HTS', '3.01', versionsuffix),
+    ('DBD-mysql', '4.050', versionsuffix),
+    ('BLAT', '3.5'),        # Needed by Bio::DB::BigFile
+    ('snappy', '1.1.7'),    # Needed by Sereal::Decoder
+    ('zstd', '1.4.0'),      # Needed by Sereal::Decoder
+]
+
+default_easyblock = 'Tarball'
+default_component_specs = {
+    'source_urls': ['https://github.com/Ensembl/%(name)s/archive'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%%(name)s-%s.tar.gz' % version,
+        'extract_cmd': "tar -xzf %s && mv %(name)s-%(version)s %(name)s"
+    }],
+}
+
+components = [
+    ('ensembl', 'af6c2b8d45245c1838461d26238900b1e7125494', {
+        'checksums': ['8a23fd7d8952ce0b72379c60d8dca00ff0c0e2da8ca2919dd17be2734e024c3e']}),
+    ('ensembl-compara', 'a5dae17c04b97aff76a59dd91c3b2def86c87d21', {
+        'checksums': ['c7affd3094429ee135c33e9bb15b13cdac27e353c952108b3fa55a2e203d0ef6']}),
+    ('ensembl-variation', '617872b92b3e4b42425286fb0c17ca3f3b961078', {
+        'checksums': ['9eaad65b9f758205099bade7d4dda0e9c177a4624e56c002c3cfb906bfe0641d']}),
+    ('ensembl-funcgen', 'd9017396c4c1db32430d9334c7461fa2ead52725', {
+        'checksums': ['04f586413099d460642f0a590ddd645ff5dbcd3a8ce619ff9d6c6ed6538714e6']}),
+    ('ensembl-io', '6e65b3081a69ec930a0ae4beb041398fe839d0fd', {
+        'checksums': ['d7cff4b70b9d00080c876220c141e74c762b68b074bac5a1f9a650af5dd34afc']}),
+]
+
+# Needed modules installed as proper PerlModule extensions
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('Data::Predicate', '2.1.1', {
+        'source_tmpl': 'Data-Predicate-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/A/AY/AYATES/data'],
+        'checksums': ['26d40a54dd3ba3409e847562ef2564a5598bfb3f81c7bd784b608d9bf2222173'],
+    }),
+    ('String::Approx', '3.28', {
+        'source_tmpl': 'String-Approx-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/J/JH/JHI'],
+        'checksums': ['43201e762d8699cb0ac2c0764a5454bdc2306c0771014d6c8fba821480631342'],
+    }),
+    ('List::Compare', '0.53', {
+        'source_tmpl': 'List-Compare-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/J/JK/JKEENAN'],
+        'checksums': ['fdbf4ff67b3135d44475fef7fcac0cd4706407d5720d26dca914860eb10f8550'],
+    }),
+    ('XML::Hash::XS', '0.55', {
+        'source_tmpl': 'XML-Hash-XS-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/Y/YO/YOREEK'],
+        'checksums': ['a9aa5e840fddc02084ad0c2669b08356ac0db8c589eebace931fac90d4c6a0cc'],
+    }),
+    ('XML::Writer', '0.625', {
+        'source_tmpl': 'XML-Writer-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/J/JO/JOSEPHW'],
+        'checksums': ['e080522c6ce050397af482665f3965a93c5d16f5e81d93f6e2fe98084ed15fbe'],
+    }),
+    ('Date::Manip::Date', '6.81', {
+        'source_tmpl': 'Date-Manip-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SB/SBECK'],
+        'checksums': ['044c319e2213dad73abd32b7f731bf4593d1e9fa96024bdc6b6475a2e768949b'],
+    }),
+    ('IO::Scalar', '2.111', {
+        'source_tmpl': 'IO-stringy-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DS/DSKOLL'],
+        'checksums': ['8c67fd6608c3c4e74f7324f1404a856c331dbf48d9deda6aaa8296ea41bf199d'],
+    }),
+    ('Config::IniFiles', '3.000002', {
+        'source_tmpl': 'Config-IniFiles-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF'],
+        'checksums': ['d92ed6ed2db98d5addf732c96d2a9c15d9f878c7e8b355bb7a5c1668e3f8ba09'],
+    }),
+    ('Compress::Raw::Bzip2', '2.093', {
+        'source_tmpl': 'Compress-Raw-Bzip2-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/P/PM/PMQS'],
+        'checksums': ['295683131efc16024033b4b0d37da8b39e92ed9a8b32458db04a75cfbfd266e9'],
+    }),
+    ('Compress::Raw::Zlib', '2.093', {
+        'source_tmpl': 'Compress-Raw-Zlib-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/P/PM/PMQS'],
+        'checksums': ['b5ec7194fa4a15738d3b8040ce42926342bb770e48d34a8d6008a1817e23e9f4'],
+    }),
+    ('IO::Compress::Gzip', '2.093', {
+        'source_tmpl': 'IO-Compress-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/P/PM/PMQS'],
+        'checksums': ['5f8f5d06913f16c16759cc4e06749692208b8947910ffedd2c00a74ed0d60ba2'],
+    }),
+    ('Test::Builder::Tester', '1.302171', {
+        'source_tmpl': 'Test-Simple-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/E/EX/EXODIST'],
+        'checksums': ['e27f90d2b2a6bc6ffa7675a072c2f41d5caffd99858dc69b2030940cc138368a'],
+    }),
+    ('Digest::base', '1.16', {
+        'source_tmpl': 'Digest-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/G/GA/GAAS'],
+        'checksums': ['4bb708bfd666deba42993f93dcec4f81a9f9b52e6aa450fe5b764b53216dea33'],
+    }),
+    ('CGI', '4.44', {
+        'source_tmpl': 'CGI-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LEEJO'],
+        'checksums': ['12435fb7ebd3585c47b6d60ee4f5c7d6a7c114a2827d2b5acf3d62aa9fcf1208'],
+    }),
+    ('HTML::Entities', '3.69', {
+        'source_tmpl': 'HTML-Parser-3.72.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/G/GA/GAAS'],
+        'checksums': ['ec28c7e1d9e67c45eca197077f7cdc41ead1bb4c538c7f02a3296a4bb92f608b'],
+    }),
+    ('HTML::Template', '2.97', {
+        'source_tmpl': 'HTML-Template-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SA/SAMTREGAR'],
+        'checksums': ['6547af61f3aa85793f8616190938d677d7995fb3b720c16258040bc935e2129f'],
+    }),
+    ('Text::Wrap', '2013.0523', {
+        'source_tmpl': 'Text-Tabs+Wrap-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MU/MUIR/modules'],
+        'checksums': ['b9cb056fffb737b9c12862099b952bf4ab4b1f599fd34935356ae57dab6f655f'],
+    }),
+    ('Bio::DB::BigFile', '1.07', {
+        'preconfigopts': "export KENT_SRC=$EBROOTBLAT MACHTYPE='x86_64' && ",
+        'source_tmpl': 'Bio-BigFile-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LD/LDS'],
+        'checksums': ['277b66ce8acbdd52399e2c5a0cf4e3bd5c74c12b94877cd383d0c4c97740d16d'],
+    }),
+    ('Sereal::Decoder', '4.007', {
+        'source_tmpl': 'Sereal-Decoder-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/Y/YV/YVES'],
+        'checksums': ['0508118344682c22e179e85e69bb0771fb0af2965cfa5d7a7d5d097b69ffcc4b'],
+    }),
+    ('Sereal::Encoder', '4.007', {
+        'source_tmpl': 'Sereal-Encoder-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/Y/YV/YVES'],
+        'checksums': ['bf6fdddc8fcc901c78adcfb61f56c393cd64d73ab320195ebae9e4a82976eab6'],
+    }),
+    ('Sereal', '4.007', {
+        'source_urls': ['https://cpan.metacpan.org/authors/id/Y/YV/YVES'],
+        'checksums': ['450e43072e8e5afc0402f81008ca9f1d3d8d4377ff8105cff10aef96be769a59'],
+    }),
+]
+
+# This is highly unorthodox, but there is tiny piece of C that needs to be compiled
+postinstallcmds = ["cd %(installdir)s/ensembl-variation/C_code && HTSLIB_DIR=$EBROOTHTSLIB/include make"]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['ensembl/modules', 'ensembl-compara/modules', 'ensembl-funcgen/modules',
+             'ensembl-variation/modules', 'ensembl-io/modules', 'lib/perl5/site_perl/%(perlver)s/'],
+}
+
+modextrapaths = {
+    'PERL5LIB': ['ensembl/modules', 'ensembl-compara/modules', 'ensembl-funcgen/modules',
+                 'ensembl-variation/modules', 'ensembl-io/modules', 'lib/perl5/site_perl/%(perlver)s/'],
+}
+
+moduleclass = 'bio'

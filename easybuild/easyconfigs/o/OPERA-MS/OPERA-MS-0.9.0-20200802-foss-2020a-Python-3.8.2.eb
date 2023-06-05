@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+
+name = 'OPERA-MS'
+local_commit = 'c18b4f3'
+version = '0.9.0-20200802'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/CSB5/OPERA-MS'
+description = """OPERA-MS is a hybrid metagenomic assembler which combines the
+ advantages of short and long-read technologies to provide high quality
+ assemblies, addressing issues of low contiguity for short-read only assemblies,
+ and low base-pair quality for long-read only assemblies."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+source_urls = ['https://github.com/CSB5/OPERA-MS/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['fa2caa223e1cd54d26cf650b96fef7c92ced016204deedd120c9844a51656a6d']
+
+dependencies = [
+    ('Perl', '5.30.2'),
+    ('Statistics-R', '0.34'),
+    ('Python', '3.8.2'),
+]
+
+buildopts = 'CFLAGS="$CFLAGS"'
+
+files_to_copy = [
+    'OPERA-MS.pl',
+    'bin',
+    'src_utils',
+    'tools_opera_ms',
+    (['OPERA-LG/bin'], 'OPERA-LG'),
+]
+
+postinstallcmds = [
+    "echo '#!/bin/sh\n exec perl %(installdir)s/OPERA-MS.pl $@' > %(installdir)s/bin/OPERA-MS",
+    'chmod +x %(installdir)s/bin/OPERA-MS',
+    'ln -s $EBROOTPERL/bin/perl %(installdir)s/tools_opera_ms/perl',
+    '%(installdir)s/bin/OPERA-MS ' + ' '.join([
+        '--contig-file test_files/contigs.fasta',
+        '--short-read1 test_files/R1.fastq.gz',
+        '--short-read2 test_files/R2.fastq.gz',
+        '--long-read test_files/long_read.fastq',
+        '--no-ref-clustering',
+        '--out-dir $TMPDIR',
+    ]),
+]
+
+fix_perl_shebang_for = ['bin/*.pl', 'OPERA-MS.pl', 'OPERA-LG/bin/*.pl']
+fix_python_shebang_for = ['bin/*.py', 'OPERA-LG/bin/*.py']
+
+sanity_check_paths = {
+    'files': ['bin/OPERA-MS'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'OPERA-MS --help',
+    'OPERA-MS check-dependency',
+]
+
+moduleclass = 'bio'

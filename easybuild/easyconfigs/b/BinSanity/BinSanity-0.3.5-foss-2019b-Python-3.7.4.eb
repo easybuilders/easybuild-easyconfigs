@@ -1,0 +1,58 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonPackage'
+
+name = 'BinSanity'
+local_commit = '55b06d6'
+version = '0.3.5'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/edgraham/BinSanity/wiki'
+description = """BinSanity contains a suite a scripts designed to cluster contigs generated from
+metagenomic assembly into putative genomes."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+# no sources on PyPI, no tagged version of GitHub, so using commit ID...
+source_urls = ['https://github.com/edgraham/BinSanity/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % local_commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+checksums = ['9dfc6ac7229335067a418da91fdf7767c9795077c7273b683426e4fa94561199']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('Biopython', '1.75', versionsuffix),
+    ('Subread', '2.0.0'),
+    ('scikit-learn', '0.21.3', versionsuffix),
+    ('CheckM', '1.1.2', versionsuffix),
+    ('HMMER', '3.2.1'),
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+# The 'site-packages' subdir only contains Binsanity-0.3.3.dist-info
+# => skipping import sanity_check as there is nothing to import
+options = {'modulename': False}
+
+local_binaries_list = [
+    'bin_evaluation', 'Binsanity', 'Binsanity-lc', 'Binsanity-profile', 'Binsanity-refine', 'Binsanity-wf',
+    'checkm_analysis', 'concat', 'get-ids', 'simplify-fasta', 'transform-coverage-profile',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries_list],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "cd %(builddir)s/BinSanity-*/example && "
+    "Binsanity -f . -l igm.fa -p -10 -c Infant_gut_assembly.cov.x100.lognorm"
+]
+
+moduleclass = 'bio'

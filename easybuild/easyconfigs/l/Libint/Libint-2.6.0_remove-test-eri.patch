@@ -1,0 +1,36 @@
+Disable Fortran ERI tests as those have very strict error tolerances
+See https://github.com/evaleev/libint/issues/188
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff -W 152 -Nru libint-2.6.0-orig/export/cmake/CMakeLists.txt.export libint-2.6.0/export/cmake/CMakeLists.txt.export
+--- libint-2.6.0-orig/export/cmake/CMakeLists.txt.export	2020-09-24 18:41:19.058876000 +0200
++++ libint-2.6.0/export/cmake/CMakeLists.txt.export	2020-09-24 18:42:15.545662246 +0200
+@@ -342,7 +342,7 @@
+             PROPERTIES FIXTURES_REQUIRED FORTRAN_EXAMPLE_EXEC)
+ 
+     if (LIBINT_HAS_EIGEN)
+-        add_executable(fortran_test EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc)
++        add_executable(fortran_test EXCLUDE_FROM_ALL fortran/test.cc)
+         target_link_libraries(fortran_test libint_f cxx)
+         add_test(fortran_test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_test)
+         set_tests_properties(fortran_test/build PROPERTIES FIXTURES_SETUP FORTRAN_TEST_EXEC)
+diff -W 152 -Nru libint-2.6.0-orig/export/fortran/Makefile libint-2.6.0/export/fortran/Makefile
+--- libint-2.6.0-orig/export/fortran/Makefile	2020-09-24 18:41:19.053327000 +0200
++++ libint-2.6.0/export/fortran/Makefile	2020-09-24 18:41:42.531334000 +0200
+@@ -53,7 +53,7 @@
+  endif
+ endif
+ 
+-test: test.o test-eri.o libint_f.o
++test: test.o libint_f.o
+ 	$(LTLINK) $(CXX) $(CXXFLAGS) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
+ 
+ ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
+@@ -61,7 +61,7 @@
+ $(TOPDIR)/include/libint2/boost/preprocessor.hpp:: $(SRCDIR)/external/boost.tar.gz
+ 	gunzip -c $(SRCDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
+ 
+-test.cc test-eri.cc :: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
++test.cc :: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
+ 
+ endif
+ 

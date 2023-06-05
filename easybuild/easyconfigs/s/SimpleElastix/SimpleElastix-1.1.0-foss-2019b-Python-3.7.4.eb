@@ -1,0 +1,126 @@
+easyblock = 'Bundle'
+
+name = 'SimpleElastix'
+version = '1.1.0'
+versionsuffix = '-Python-%(pyver)s'
+
+local_itk_ver = '5.0.1'
+local_elastix_ver = '5.0.0'
+
+homepage = 'https://simpleelastix.github.io'
+description = "Multi-lingual medical image registration library."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('Bison', '3.3.2'),
+    ('Eigen', '3.3.7', '', SYSTEM),
+    ('googletest', '1.10.0'),
+]
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('HDF5', '1.10.5'),
+    ('PCRE', '8.43'),
+    ('SWIG', '4.0.1'),
+    ('VTK', '8.2.0', versionsuffix),
+    ('X11', '20190717'),
+    ('libjpeg-turbo', '2.0.3'),
+    ('LibTIFF', '4.0.10'),
+    ('Lua', '5.1.5'),
+    ('zlib', '1.2.11'),
+]
+
+default_easyblock = 'CMakeMake'
+
+local_itk_configopts = "-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF "
+local_itk_configopts += "-DITK_WRAP_PYTHON=OFF -DModule_ITKReview=ON "
+local_itk_configopts += "-DITK_USE_SYSTEM_SWIG=ON -DITK_USE_SYSTEM_EIGEN=ON -DITK_USE_SYSTEM_HDF5=ON "
+local_itk_configopts += "-DITK_USE_SYSTEM_JPEG=ON -DJPEG_INCLUDE_DIR=$EBROOTLIBJPEGMINTURBO/include "
+local_itk_configopts += "-DJPEG_LIBRARY=$EBROOTLIBJPEGMINTURBO/lib64/libjpeg.%s " % SHLIB_EXT
+local_itk_configopts += "-DITK_USE_SYSTEM_PNG=ON -DPNG_PNG_INCLUDE_DIR=$EBROOTLIBPNG/include "
+local_itk_configopts += "-DPNG_LIBRARY=$EBROOTLIBPNG/lib/libpng.%s " % SHLIB_EXT
+local_itk_configopts += "-DITK_USE_SYSTEM_TIFF=ON -DTIFF_INCLUDE_DIR=$EBROOTLIBTIFF/include "
+local_itk_configopts += "-DTIFF_LIBRARY=$EBROOTLIBTIFF/lib/libtiff.%s " % SHLIB_EXT
+local_itk_configopts += "-DITK_USE_SYSTEM_ZLIB=ON -DZLIB_INCLUDE_DIR=$EBROOTZLIB/include "
+local_itk_configopts += "-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.%s " % SHLIB_EXT
+# Don't depend on MPICXX (which makes linking to ITK painful)
+local_itk_configopts += ' -DCMAKE_CXX_FLAGS="$CXXFLAGS -DOMPI_SKIP_MPICXX"'
+
+local_elastix_configopts = "-DELASTIX_BUILD_EXECUTABLE=OFF "
+local_elastix_configopts += "-DITK_DIR=%%(builddir)s/ITK-%s/easybuild_obj/" % local_itk_ver
+
+local_simpleelastix_configopts = "-DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF "
+local_simpleelastix_configopts += '-DCMAKE_C_FLAGS="$CFLAGS -fpermissive" -DCMAKE_CXX_FLAGS="$CXXFLAGS -fpermissive" '
+local_simpleelastix_configopts += "-DITK_DIR=%%(builddir)s/ITK-%s/easybuild_obj/ " % local_itk_ver
+local_simpleelastix_configopts += "-DElastix_DIR=%%(builddir)s/elastix-%s/easybuild_obj/ " % local_elastix_ver
+local_simpleelastix_configopts += "-DWRAP_TCL=OFF -DWRAP_LUA=OFF -DWRAP_RUBY=OFF "
+local_simpleelastix_configopts += "-DWRAP_JAVA=OFF -DWRAP_CSHARP=OFF -DWRAP_R=OFF "
+
+local_pylib = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+local_simpleelastix_buildopts = " && cd %(builddir)s/easybuild_obj/Wrapping/Python/ && "
+local_simpleelastix_buildopts += "mkdir -p %s && export PYTHONPATH=%s:$PYTHONPATH && " % (local_pylib, local_pylib)
+local_simpleelastix_buildopts += "python Packaging/setup.py install --prefix=%(installdir)s"
+
+default_component_specs = {
+    'sources': [{
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    }],
+    'start_dir': '%(name)s-%(version)s',
+}
+components = [
+    ('ITK', local_itk_ver, {
+        'source_urls': ['https://github.com/InsightSoftwareConsortium/ITK/archive/'],
+        'checksums': ['c6b3c33ecc73104c906e0e1a1bfaa41a09af24bf53a4ec5e5c265d7e82bdf69f'],
+        'srcdir': '%%(builddir)s/ITK-%s' % local_itk_ver,
+        # we need to take matters into our own hands here to ensure we have a unique build directory per component;
+        # by default, CMakeMake will (re)use %(builddir)s/easybuild_obj, which causes trouble
+        'separate_build_dir': False,
+        'preconfigopts': "mkdir easybuild_obj && cd easybuild_obj && Eigen3_DIR=$EBROOTEIGEN ",
+        'configopts': local_itk_configopts,
+        'prebuildopts': "cd easybuild_obj && ",
+        'preinstallopts': "cd easybuild_obj && ",
+    }),
+    ('elastix', local_elastix_ver, {
+        'source_urls': ['https://github.com/SuperElastix/elastix/archive'],
+        'sources': [{
+            'download_filename': '%(version)s.tar.gz',
+            'filename': SOURCE_TAR_GZ,
+        }],
+        'checksums': ['a377ae0307231bf70c474e87ebbf07d649faca211febf1c1d981a2039fcfcd0e'],
+        'srcdir': '%%(builddir)s/elastix-%s' % local_elastix_ver,
+        'separate_build_dir': False,
+        'preconfigopts': "mkdir easybuild_obj && cd easybuild_obj && ",
+        'configopts': local_elastix_configopts,
+        'prebuildopts': "cd easybuild_obj && ",
+        'preinstallopts': "cd easybuild_obj && ",
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/SuperElastix/SimpleElastix/archive'],
+        'patches': ['SimpleElastix-0.10.0_git-version.patch'],
+        'checksums': [
+            '42f126b41d70ddf09cfd9f54a559c360eb78b769000be795684743efef39b7ff',  # v1.1.0.tar.gz
+            # SimpleElastix-0.10.0_git-version.patch
+            'fdb8d558ea295bda13b7483db0ec2a44def9e5066b794c42ae89a962c57804c7',
+        ],
+        'skipsteps': ['install'],
+        'separate_build_dir': True,
+        'configopts': local_simpleelastix_configopts,
+        'buildopts': local_simpleelastix_buildopts,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver', 'lib/libelastix-%s.a' % '.'.join(local_elastix_ver.split('.')[:2])],
+    'dirs': ['include/Core', 'include/ITK-%s' % '.'.join(local_itk_ver.split('.')[:2]),
+             'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import SimpleITK'"]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+moduleclass = 'vis'

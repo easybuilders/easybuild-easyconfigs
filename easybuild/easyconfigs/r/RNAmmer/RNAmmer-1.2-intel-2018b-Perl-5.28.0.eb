@@ -1,0 +1,44 @@
+easyblock = 'Tarball'
+
+name = 'RNAmmer'
+version = '1.2'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'https://www.cbs.dtu.dk/services/RNAmmer'
+description = "This is an example description."
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+# downloading requires registration, see https://services.healthtech.dtu.dk/software.php
+sources = ['rnammer-%(version)s.src.tar.gz']
+checksums = ['7bef4565370923a8356f655a3e2c33ab47097579a90c025f2f7c44b91737892e']
+
+dependencies = [
+    ('Perl', '5.28.0'),
+    ('XML-LibXML', '2.0132', versionsuffix),
+    ('HMMER', '3.2.1'),
+]
+
+postinstallcmds = [
+    "cp %(installdir)s/rnammer %(installdir)s/rnammer.orig",
+    # replace hardcoded '/usr/bin/perl' with '/usr/bin/env perl'
+    "for x in core-rnammer rnammer xml2fsa xml2gff; do sed -i 's@^#!/.*@#!/usr/bin/env perl@g' %(installdir)s/$x; done",
+    # fix hardcoded locations for install dir + hmmsearch and perl commands
+    r"""sed -i 's@\(INSTALL_PATH\ = "\).*\(";\)@\\1%(installdir)s\\2@g' %(installdir)s/rnammer""",
+    r'sed -i "s@\/.*\/hmmsearch@`which hmmsearch`@g" %(installdir)s/rnammer',
+    r'sed -i "s@\/.*\/bin\/perl@`which perl`@g" %(installdir)s/rnammer',
+]
+
+sanity_check_paths = {
+    'files': ['rnammer'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "rnammer -v",
+    "rnammer -S bac -m lsu,ssu,tsu -gff - < %(installdir)s/example/ecoli.fsa",
+]
+
+modextrapaths = {'PATH': ''}
+
+moduleclass = 'bio'

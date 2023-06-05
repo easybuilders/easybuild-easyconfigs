@@ -1,0 +1,36 @@
+# Author:: Michael Dickens <cmdickens@tamu.edu> - TAMU HPRC - https://hprc.tamu.edu
+
+easyblock = 'MakeCp'
+
+name = 'Scythe'
+version = '0.994'
+
+homepage = 'https://github.com/ucdavis-bioinformatics/scythe'
+
+description = """
+ Scythe uses a Naive Bayesian approach to classify contaminant substrings in
+ sequence reads. It considers quality information, which can make it robust in
+ picking out 3'-end adapters, which often include poor quality bases.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/ucdavis-bioinformatics/scythe/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['943467cbc59e7438b1db4a8e7d0e777f584ce6dbcf582053128f2924710959fc']
+
+builddependencies = [('binutils', '2.34')]
+
+prebuildopts = "sed -i 's/CC = gcc/CC := gcc/' Makefile && "
+prebuildopts += "sed -i 's/CFLAGS = -Wall/CFLAGS += -Wall/' Makefile && "
+
+files_to_copy = [(['scythe'], 'bin'), 'adap.fa', 'adapter_templates.txt']
+
+sanity_check_paths = {
+    'files': ['adap.fa', 'bin/scythe'],
+    'dirs': []
+}
+
+sanity_check_commands = ['scythe --version']
+
+moduleclass = 'bio'

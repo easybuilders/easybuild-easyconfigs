@@ -1,0 +1,41 @@
+easyblock = 'MakeCp'
+
+name = 'NetPIPE'
+version = '5.1.4'
+
+homepage = 'https://netpipe.cs.ksu.edu/'
+description = """NetPIPE is a protocol independent communication performance benchmark that visually represents
+ the network performance under a variety of conditions."""
+
+toolchain = {'name': 'iimpi', 'version': '2020b'}
+
+source_urls = ['https://netpipe.cs.ksu.edu/download/']
+sources = ['NetPIPE-%(version)s.tar.gz']
+checksums = ['738abeb9665877332d4b0cada2f15f766259809d0e31a29e327bfbf86b7e0183']
+
+local_common_buildopts = 'CC="$CC" CFLAGS="$CFLAGS -lrt"'
+
+# possible values: disk, ibverbs, memcpy, mpi, shmem, tcp, theo
+# shmem requires shmem.h (must be provided by OS?)
+buildopts = [
+    'disk ' + local_common_buildopts,
+    'ibverbs ' + local_common_buildopts,
+    'memcpy ' + local_common_buildopts,
+    'mpi ' + local_common_buildopts,
+    'tcp ' + local_common_buildopts,
+    'theo ' + local_common_buildopts,
+]
+
+files_to_copy = [(['NP*'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/NPdisk', 'bin/NPibverbs', 'bin/NPmemcpy', 'bin/NPmpi', 'bin/NPtcp', 'bin/NPtheo'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "NPmpi --help",
+    "NPtcp --help",
+]
+
+moduleclass = 'perf'

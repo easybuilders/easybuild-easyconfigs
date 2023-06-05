@@ -1,0 +1,24 @@
+On powerpc64, gcc is compiled with -mlong-double-128, and the long double
+format used on PPC is IBM's 128bit long double which is two doubles added
+together. As a result, gcc can't safely do const assignments to long
+doubles on ppc64, so it dies there.
+Taken from https://r.789695.n4.nabble.com/Build-failure-on-powerpc64-td4760605.html
+Index: src/main/arithmetic.c
+===================================================================
+--- src/main/arithmetic.c (Revision 77586)
++++ src/main/arithmetic.c (Revision 77587)
+@@ -176,8 +176,14 @@
+ #endif
+ }
+ 
++
+ #if HAVE_LONG_DOUBLE && (SIZEOF_LONG_DOUBLE > SIZEOF_DOUBLE)
++# ifdef __PPC64__
++ // PowerPC 64 (when gcc has -mlong-double-128) fails constant folding with LDOUBLE
++#  define q_1_eps (1 / LDBL_EPSILON)
++# else
+ static LDOUBLE q_1_eps = 1 / LDBL_EPSILON;
++# endif
+ #else
+ static double  q_1_eps = 1 / DBL_EPSILON;
+ #endif 

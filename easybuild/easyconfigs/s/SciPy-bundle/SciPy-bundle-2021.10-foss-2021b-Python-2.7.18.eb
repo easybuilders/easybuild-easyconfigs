@@ -1,0 +1,84 @@
+easyblock = 'PythonBundle'
+
+name = 'SciPy-bundle'
+version = '2021.10'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://python.org/'
+description = "Bundle of Python packages for scientific software"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'pic': True, 'lowopt': True}
+
+builddependencies = [
+    ('hypothesis', '4.57.1', versionsuffix),
+    ('UnZip', '6.0'),
+]
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('pybind11', '2.7.1', versionsuffix),  # required by scipy
+]
+
+use_pip = True
+
+# order is important!
+exts_list = [
+    ('numpy', '1.16.6', {
+        'patches': [
+            'numpy-1.16.2_relax-long-complex-test.patch',
+            'numpy-1.16.6_add_flexiblas_detection.patch',
+            'numpy-1.16.6_handle_failing_linalg_test.patch',
+        ],
+        'sources': ['%(name)s-%(version)s.zip'],
+        'checksums': [
+            'e5cf3fdf13401885e8eea8170624ec96225e2174eb0c611c6f26dd33b489e3ff',  # numpy-1.16.6.zip
+            # numpy-1.16.2_relax-long-complex-test.patch
+            '647dd4099c2968489e5103b50bcd1b3d970b5b536af25ec75efe86127dda07bb',
+            # numpy-1.16.6_add_flexiblas_detection.patch
+            '32ca32dd7ee8d6fcdce5875067acd50970c731cbb2603c6d1ad84ff81ff8c6d5',
+            # numpy-1.16.6_handle_failing_linalg_test.patch
+            'be9dce98649626b7322ed8d1241b74a4e28c1d1de070a8072dc912cad3eb143d',
+        ],
+    }),
+    ('ply', '3.11', {
+        'checksums': ['00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3'],
+    }),
+    ('gast', '0.5.2', {
+        'checksums': ['f81fcefa8b982624a31c9e4ec7761325a88a0eba60d36d1da90e47f8fe3c67f7'],
+    }),
+    ('beniget', '0.4.1', {
+        'checksums': ['75554b3b8ad0553ce2f607627dad3d95c60c441189875b98e097528f8e23ac0c'],
+    }),
+    ('scipy', '1.2.3', {
+        'patches': ['scipy-1.2.3_fix_nan_problem_in_vi.patch'],
+        'prebuildopts': 'export FFLAGS="$FFLAGS -fallow-argument-mismatch" && ',
+        'checksums': [
+            'ecbe6413ca90b8e19f8475bfa303ac001e81b04ec600d17fa7f816271f7cca57',  # scipy-1.2.3.tar.gz
+            # scipy-1.2.3_fix_nan_problem_in_vi.patch
+            '0513c5d0491a3f062ed024b6aa7b382706e8c42b3a3fdd26ff7a4d305ac9a30d',
+        ],
+    }),
+    ('mpi4py', '3.1.1', {
+        'checksums': ['e11f8587a3b93bb24c8526addec664b586b965d83c0882b884c14dc3fd6b9f5c'],
+    }),
+    ('numexpr', '2.7.3', {
+        'checksums': ['43616529f9b7d1afc83386f943dc66c4da5e052f00217ba7e3ad8dd1b5f3a825'],
+    }),
+    ('Bottleneck', '1.3.2', {
+        'checksums': ['20179f0b66359792ea283b69aa16366419132f3b6cf3adadc0c48e2e8118e573'],
+    }),
+    ('pandas', '0.24.2', {
+        'checksums': ['4f919f409c433577a501e023943e582c57355d50a724c589e78bc1d551a535a2'],
+    }),
+    ('mpmath', '1.2.1', {
+        'checksums': ['79ffb45cf9f4b101a807595bcb3e72e0396202e0b1d25d689134b48c4216a81a'],
+    }),
+    ('deap', '1.3.1', {
+        'checksums': ['11f54493ceb54aae10dde676577ef59fc52d52f82729d5a12c90b0813c857a2f'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lang'

@@ -1,0 +1,70 @@
+easyblock = 'PythonBundle'
+
+name = 'snakemake'
+version = '5.7.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://snakemake.readthedocs.io'
+description = "The Snakemake workflow management system is a tool to create reproducible and scalable data analyses."
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+
+dependencies = [
+    ('Python', '3.7.2'),
+    ('SciPy-bundle', '2019.03'),
+    ('PyYAML', '5.1'),
+    ('GitPython', '3.0.3', versionsuffix),
+]
+
+use_pip = True
+
+exts_list = [
+    ('zipp', '0.6.0', {
+        'checksums': ['3718b1cbcd963c7d4c5511a8240812904164b7f381b647143a89d3b98f9bcd8e'],
+    }),
+    ('importlib_metadata', '0.23', {
+        'checksums': ['aa18d7378b00b40847790e7c27e11673d7fed219354109d0e7b9e5b25dc3ad26'],
+    }),
+    ('pyrsistent', '0.15.4', {
+        'checksums': ['34b47fa169d6006b32e99d4b3c4031f155e6e68ebcc107d6454852e8e0ee6533'],
+    }),
+    ('jsonschema', '3.1.1', {
+        'checksums': ['2fa0684276b6333ff3c0b1b27081f4b2305f0a36cf702a23db50edb141893c3f'],
+    }),
+    ('datrie', '0.8', {
+        'checksums': ['bdd5da6ba6a97e7cd96eef2e7441c8d2ef890d04ba42694a41c7dffa3aca680c'],
+    }),
+    ('appdirs', '1.4.3', {
+        'checksums': ['9e5896d1372858f8dd3344faf4e5014d21849c756c8d5701f78f8a103b372d92'],
+    }),
+    ('ConfigArgParse', '0.15.1', {
+        'checksums': ['baaf0fd2c1c108d007f402dab5481ac5f12d77d034825bf5a27f8224757bd0ac'],
+    }),
+    ('ratelimiter', '1.2.0.post0', {
+        'checksums': ['5c395dcabdbbde2e5178ef3f89b568a3066454a6ddc223b76473dac22f89b4f7'],
+    }),
+    ('wrapt', '1.11.2', {
+        'checksums': ['565a021fd19419476b9362b05eeaa094178de64f8361e44468f9e9d7843901e1'],
+    }),
+    (name, version, {
+        'patches': ['snakemake-5.7.1_fix_jobs.patch'],
+        'checksums': [
+            '5ab5ee0cd7d6a538776d8081f8b9a83ae35b1b1d9f03331e4347098becded7de',  # snakemake-5.7.1.tar.gz
+            'e3d0e25adee35314ea20b0511acbd11d0b4c8badd7f7e9d78275f5ec11721ecc',  # snakemake-5.7.1_fix_jobs.patch
+        ],
+    }),
+]
+
+# site-specific: the line below is the command for loading this module with the (default) EB module naming scheme
+# if necessary, change this command to match your cluster setup
+local_snakemake_load = 'module load %(name)s/%(version)s-%(toolchain_name)s-%(toolchain_version)s%(versionsuffix)s'
+modextravars = {'SNAKEMAKE_LOAD_MODULE': local_snakemake_load}
+
+sanity_check_paths = {
+    'files': ['bin/snakemake'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/snakemake'],
+}
+
+sanity_check_commands = ['snakemake --help']
+
+moduleclass = 'tools'
