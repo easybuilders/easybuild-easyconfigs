@@ -1,0 +1,140 @@
+easyblock = 'CMakeMake'
+
+name = 'DGL'
+version = '0.9.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.dgl.ai'
+description = """DGL is an easy-to-use, high performance and scalable Python package for deep learning on graphs.
+DGL is framework agnostic, meaning if a deep graph model is a component of an end-to-end application, the rest
+of the logics can be implemented in any major frameworks, such as PyTorch, Apache MXNet or TensorFlow."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+# GCC 10.3.0 vectorizer causes errors in nanoflann on skylake and later
+# and since nanoflann is just a header file we need to turn it off for anything that uses it
+toolchainopts = {'vectorize': False}
+
+github_account = 'dmlc'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [
+    {
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(namelower)s-%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/KarypisLab/METIS/archive'],
+        'download_filename': 'v5.1.1-DistDGL-v0.5.tar.gz',
+        'filename': 'metis-5.1.1-DistDGL-v0.5.tar.gz',
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/METIS --strip-components=1 -xf %s",
+    },
+    {
+        'source_urls': ['https://github.com/KarypisLab/GKlib/archive'],
+        'download_filename': 'METIS-v5.1.1-DistDGL-0.5.tar.gz',
+        'filename': 'GKlib-METIS-v5.1.1-DistDGL-0.5.tar.gz',
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/METIS/GKlib --strip-components=1 -xf %s",
+    },
+    {
+        'filename': 'tensorpipe-20230206.tar.gz',
+        'git_config': {
+            'url': 'https://github.com/pytorch',
+            'repo_name': 'tensorpipe',
+            'commit': '6042f1a4cbce8eef997f11ed0012de137b317361',
+            'recursive': True,
+        },
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/tensorpipe --strip-components=1 -xf %s",
+    },
+    # DGL really needs cub >= 1.17, CUDA 11.3 only have 1.11
+    {
+        'source_urls': ['https://github.com/NVIDIA/thrust/archive'],
+        'download_filename': '1.17.0.tar.gz',
+        'filename': 'thrust-1.17.0.tar.gz',
+        'extract_cmd': "tar -C %(namelower)s-%(version)s/third_party/thrust --strip-components=1 -xf %s",
+    },
+    {
+        'source_urls': ['https://github.com/NVIDIA/cub/archive'],
+        'download_filename': '1.17.0.tar.gz',
+        'filename': 'cub-1.17.0.tar.gz',
+        'extract_cmd':
+            "tar -C %(namelower)s-%(version)s/third_party/thrust/dependencies/cub --strip-components=1 -xf %s",
+    },
+]
+patches = [
+    '%(name)s-%(version)s_use_externals_instead_of_submodules.patch',
+]
+checksums = [
+    '8d26ebb7ed976665bbf5bbd1792d8e6efb13a8fa16e5eb1efed75e07fb982e04',  # dgl-0.9.1.tar.gz
+    'cedf0b32d32a8496bac7eb078b2b8260fb00ddb8d50c27e4082968a01bc33331',  # metis-5.1.1-DistDGL-v0.5.tar.gz
+    '52aa0d383d42360f4faa0ae9537ba2ca348eeab4db5f2dfd6343192d0ff4b833',  # GKlib-METIS-v5.1.1-DistDGL-0.5.tar.gz
+    None,  # tensorpipe-20230206.tar.gz
+    'b02aca5d2325e9128ed9d46785b8e72366f758b873b95001f905f22afcf31bbf',  # thrust-1.17.0.tar.gz
+    '16fd4860ae3196bc3eb08bf5754fa2a9697951ddae36dc9721e6614388893618',  # cub-1.17.0.tar.gz
+    # DGL-0.9.1_use_externals_instead_of_submodules.patch'
+    '4c39420abc09d619de92ca4ee5c4472359b1f5ffe8acd898d4d665bdbeb2ce40',
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('googletest', '1.11.0'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('networkx', '2.5.1'),
+    ('tqdm', '4.61.2'),
+    ('DLPack', '0.3'),
+    ('DMLC-Core', '0.5'),
+    ('Parallel-Hashmap', '1.33'),
+    ('nanoflann', '1.4.0'),
+    ('libxsmm', '1.16.2'),
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('NCCL', '2.10.3', versionsuffix),
+    ('PyTorch', '1.12.1', versionsuffix),
+]
+
+_copts = [
+    '-DUSE_AVX=OFF',  # AVX + LIBXSMM requires libxsmm tag 1.eol
+    '-DBUILD_CPP_TEST=ON',
+    '-DUSE_CUDA=ON',  # Must be "ON", as opposed to "1" or so, due to bad CMake code in DGL
+    '-DUSE_NCCL=ON',
+    '-DUSE_SYSTEM_NCCL=ON',
+    '-DBUILD_WITH_SHARED_NCCL=ON',
+    '-DUSE_FP16=ON',
+]
+configopts = ' '.join(_copts)
+
+# Must not build shared libs, DGL uses internal versions of, among others, METIS
+# but it doesn't install these internal libraries and simply assumes that everything is
+# statically linked.
+build_shared_libs = False
+
+runtest = 'test'
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'easyblock': 'PythonPackage',
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'runtest': True,
+}
+
+exts_list = [
+    ('dgl', version, {
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'start_dir': 'python',
+        'installopts': '--use-feature=in-tree-build ',
+        'checksums': ['8d26ebb7ed976665bbf5bbd1792d8e6efb13a8fa16e5eb1efed75e07fb982e04'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['lib/libdgl.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {
+    'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'ai'

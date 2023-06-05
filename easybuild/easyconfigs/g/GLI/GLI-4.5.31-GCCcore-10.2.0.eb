@@ -1,0 +1,53 @@
+easyblock = "ConfigureMake"
+
+name = "GLI"
+version = "4.5.31"
+
+homepage = "https://pgi-jcns.fz-juelich.de/portal/pages/gli.html"
+description = "Graphics Language Interpreter"
+
+toolchain = {"name": "GCCcore", "version": "10.2.0"}
+toolchainopts = {"pic": True}
+
+source_urls = ["http://iffwww.iff.kfa-juelich.de/gli/"]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ["13b7def217672ab4fa01e39977af26f3fbbe0f7bbe7e7c42c2c4aa0ea5fc8c05"]
+
+builddependencies = [("binutils", "2.35")]
+
+dependencies = [
+    ('X11', '20201008'),
+    ('zlib', '1.2.11'),
+    ('Tk', '8.6.10'),
+    ('Tcl', '8.6.10'),
+    ('libtirpc', '1.3.1')
+]
+
+preconfigopts = 'cd src && '
+preconfigopts += 'sed -i -e "/ac_cv_c_zlib=.*with_zlib/s,},}/libz.so," configure && '
+configopts = 'CFLAGS=-DUSE_INTERP_RESULT LIBS=-ltirpc '
+configopts += '--with-zlib=$EBROOTZLIB/lib --with-zlibinclude=$EBROOTZLIB/include '
+configopts += '--with-tcllib=$EBROOTTCL/lib --with-tklib=$EBROOTTK/lib'
+
+prebuildopts = 'cd src &&'
+
+preinstallopts = 'cd src &&'
+
+parallel = 1
+
+modextravars = {
+    "GLI_WSTYPE": "217",
+    "GLI_HOME": "%(installdir)s"
+}
+
+modextrapaths = {
+    "PATH": "",
+    "LD_LIBRARY_PATH": "",
+}
+
+sanity_check_paths = {
+    "files": ["libgks.a", "libgks.%s" % SHLIB_EXT, "libgli.a", "libgus.%s" % SHLIB_EXT],
+    "dirs": ["demo", "tcl/lib"],
+}
+
+moduleclass = "vis"

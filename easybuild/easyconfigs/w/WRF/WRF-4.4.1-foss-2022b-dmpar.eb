@@ -1,0 +1,51 @@
+name = 'WRF'
+version = '4.4.1'
+buildtype = 'dmpar'
+versionsuffix = '-%s' % buildtype
+
+homepage = 'https://www.wrf-model.org'
+description = """The Weather Research and Forecasting (WRF) Model is a next-generation mesoscale
+ numerical weather prediction system designed to serve both operational forecasting and atmospheric
+ research needs."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'opt': False}  # don't use agressive optimization, stick to -O2
+
+source_urls = ['https://github.com/wrf-model/WRF/archive/']
+# sources = ['v%(version)s.tar.gz']
+sources = [{
+    'filename': 'v%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/wrf-model',
+        'repo_name': 'WRF',
+        'tag': 'v%(version)s',
+        'clone_into': 'WRF-%(version)s',
+        'recursive': True,
+    },
+}]
+patches = [
+    'WRF-4.4_netCDF-Fortran_separate_path.patch',
+]
+checksums = [
+    None,  # v4.4.1.tar.gz
+    '0e37c8a7bb4d25947083bdb6d0f2a9f4fdb825c88f6cb10c59b7580fe3d129ff',  # WRF-4.4_netCDF-Fortran_separate_path.patch
+]
+
+# csh is used by WRF install scripts
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('tcsh', '6.24.07'),
+    ('time', '1.9'),
+    ('Perl', '5.36.0'),
+]
+
+dependencies = [
+    ('JasPer', '4.0.0'),
+    ('netCDF', '4.9.0'),
+    ('netCDF-Fortran', '4.6.0'),
+]
+
+# limit parallel build to 20
+maxparallel = 20
+
+moduleclass = 'geo'

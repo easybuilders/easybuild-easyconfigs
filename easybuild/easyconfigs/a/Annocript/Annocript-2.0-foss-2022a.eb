@@ -1,0 +1,76 @@
+easyblock = 'PackedBinary'
+
+name = 'Annocript'
+version = '2.0'
+local_commit = '84fd67b'
+
+homepage = 'https://github.com/frankMusacchia/Annocript'
+description = """ Annocript is a pipeline for the annotation of de-novo generated transcriptomes.
+ It executes blast analysis with UniProt, NCBI Conserved Domain Database and Nucleotide division
+ adding also annotations from Gene Ontology, the Enzyme Commission and UniPathways.
+ Annocript also gives information about the longest ORF and the non-coding potential using external software.
+ Annocript is also capable to identify putative long non-coding RNAs by using an heuristic based on homology
+ and sequence features. """
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/frankMusacchia/Annocript/archive']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'annocript_fix_paths.patch',
+    'annocript_no_background.patch',
+]
+checksums = [
+    {'Annocript-2.0.tar.gz': '151dec3a390826fd2bcc7d794a9565535702dfc9c4672842e825a9fcf21406d9'},
+    {'annocript_fix_paths.patch': '95359e335a6a992f5f269e8f199c9df92d765f7ff41890298acead12d562685c'},
+    {'annocript_no_background.patch': 'ca02c2b02b7574c25128c9a4ce2b69a13a0bb2b409efd2ea63562053bf2e2c57'},
+]
+
+dependencies = [
+    ('Compress-Raw-Zlib', '2.202'),
+    ('Python', '3.10.4'),
+    ('Perl', '5.34.1'),
+    ('BioPerl', '1.7.8'),
+    ('R', '4.2.1'),
+    ('CPC2', '1.0.1'),
+    ('BLAST+', '2.13.0'),
+    ('LIBSVM', '3.30'),
+    ('MariaDB', '10.9.3'),
+    ('DBD-mysql', '4.050'),
+]
+
+postinstallcmds = [
+    # Extract dna2pep to annocript's bin folder, set permissions.
+    # It is just a series Python scripts and I'm not building it as a standalone dependency, as sources for this SW
+    # are not available elsewhere than in the Annocript repository anyway.
+    "mkdir %(installdir)s/bin ",
+    "cp %(builddir)s/Annocript-*/DL_PROGRAMS/dna2pep-1.1.tar.gz %(installdir)s/bin ",
+    "cd %(installdir)s/bin && tar -zxvf dna2pep-1.1.tar.gz ",
+    "rm %(installdir)s/bin/dna2pep-1.1.tar.gz && chmod 755 %(installdir)s/bin/dna2pep-1.1/dna2pep.py ",
+    # extract annocript itself
+    'mv %(installdir)s/annocript.pl %(installdir)s/bin/',
+    'sed -i -e "1s|#!.*$|#!/usr/bin/env perl|g" %(installdir)s/bin/annocript.pl',
+    'chmod a+rx %(installdir)s/bin/annocript.pl',
+]
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+exts_list = [
+    ('CGI', '4.43', {
+        'source_tmpl': 'CGI-4.43.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LEEJO/'],
+        'checksums': ['14b94f9df6e48fc26ebc4fa1e01a7b534cbc1611028a49028f9ac9d8ca27b734'],
+    }),
+]
+
+modextrapaths = {'PERL5LIB': ['', 'lib/perl5/site_perl/%(perlver)s/']}
+
+sanity_check_paths = {
+    'files': ['bin/annocript.pl'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['annocript.pl --help']
+
+moduleclass = 'bio'
