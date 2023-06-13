@@ -1,0 +1,84 @@
+easyblock = 'Bundle'
+
+name = 'Apptainer'
+modaltsoftname = 'apptainer-suid'
+version = '1.1.8'
+versionsuffix = '-suid'
+
+homepage = 'https://apptainer.org'
+description = """Apptainer/Singularity is an application containerization solution for High-Performance Computing (HPC). The goal
+of Apptainer is to allow for "mobility of computing": an application containerized on one Linux system should
+be able to run on another system, as it is, and without the need to reconcile software dependencies and Linux
+version differences between the source and target systems."""
+
+toolchain = SYSTEM
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'sources': [SOURCELOWER_TAR_GZ],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+builddependencies = [('Go', '1.18.3')]
+
+components = [
+    ('apptainer', version, {
+        'source_urls': ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s'],
+        'patches': [
+            'Apptainer-1.1.3_mksquashfs.patch',
+        ],
+        'checksums': [
+            'dafb195aa483aac309ec8ed4fcfa3b1202b9b2580a70bf0a7d8291b5bdf7c432',
+            '38a3da492afcfa5b80538803a3fc4433fa7ed7e93822ea5ddd4a10c87046005d',
+        ],
+        'configure_cmd': './mconfig',
+        'prebuildopts': 'cd builddir &&',
+        'preinstallopts': 'cd builddir &&',
+    }),
+    ('squashfuse', '0.1.105', {
+        'source_urls': ['https://github.com/vasi/%(name)s/archive/%(version)s'],
+        'patches': [
+            'https://github.com/vasi/squashfuse/pull/70.patch',
+            'https://github.com/vasi/squashfuse/pull/77.patch',
+	    'https://github.com/vasi/squashfuse/pull/81.patch',
+        ],
+        'checksums': [
+            '3f776892ab2044ecca417be348e482fee2839db75e35d165b53737cb8153ab1e',  # squashfuse-0.1.105.tar.gz
+            '76e4cac8fd60b0abda84c074436978e39de35e3ea89535dfc8e66ac7bc36954d',  # 70.patch
+            '176928e01391da9a338dbce896b136a1e2c8f722adac2eca6ad20af0da56599e',  # 77.patch
+	    '3c8871e197a2deaf139b368de3df7592dff64f224d64b8a3a4bb13894f2eaa71',  # 81.patch
+        ],
+        'preconfigopts': './autogen.sh && CFLAGS=-std=c99',
+        'configopts': '--enable-multithreading',
+        'buildopts': 'squashfuse_ll',
+        'install_cmd': 'cp squashfuse_ll %(installdir)s/libexec/apptainer/bin',
+    }),
+    ('fakeroot', '1.31', {
+        'source_urls': ['https://ftp.debian.org/debian/pool/main/f/%(name)s'],
+        'sources': ['%(name)s_%(version)s.orig.tar.gz'],
+        'checksums': ['63886d41e11c56c7170b9d9331cca086421b350d257338ef14daad98f77e202f'],
+        'configopts': '--prefix=%(installdir)s/libexec/apptainer --program-suffix=-sysv --disable-static',
+        'installopts': (' && cd %(installdir)s/libexec/apptainer ' +
+                        ' && rm -rf {lib/libfakeroot.*,share}' +
+                        ' && mv lib/libfakeroot-{0,sysv}.so' +
+                        ' && patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 bin/faked-sysv'),
+        # use OS libs in faked-sysv so it generally works inside containers.
+    }),
+]
+
+postinstallcmds = [
+    'sed -i "s@^# binary path =@binary path =' +
+     ' \\$PATH:%(installdir)s/bin:$EBROOTGENTOO/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin@"' +
+     ' %(installdir)s/etc/apptainer/apptainer.conf',
+     'ln -s /opt/software/apptainer-1.1.8/libexec/apptainer/bin/starter-suid %(installdir)s/libexec/apptainer/bin',
+]
+
+sanity_check_paths = {
+    'files': ['bin/apptainer', 'libexec/apptainer/bin/squashfuse_ll', 'libexec/apptainer/bin/fakeroot-sysv'],
+    'dirs': [],
+}
+
+sanity_check_commands = [('apptainer', '--version')]
+
+moduleclass = 'tools'

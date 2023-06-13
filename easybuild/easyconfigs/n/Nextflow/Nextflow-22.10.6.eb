@@ -1,40 +1,32 @@
-easyblock = 'CmdCp'
+easyblock = 'Binary'
 
 name = 'Nextflow'
+version = '22.10.6'
 
-version = "22.10.6"
-
-homepage = 'https://www.nextflow.io'
+homepage = 'https://www.%(namelower)s.io/'
 description = """Nextflow is a reactive workflow framework and a programming DSL 
  that eases writing computational pipelines with complex data"""
 
 toolchain = SYSTEM
 
 source_urls = ['https://github.com/%(namelower)s-io/%(namelower)s/releases/download/v%(version)s/']
-sources = [{'filename': '%(namelower)s-%(version)s-all', 'extract_cmd': 'cp %s %(builddir)s/%(namelower)s'}]
+sources = ['%(namelower)s-%(version)s-all']
 checksums = ['cde62c2b15919f3af45ba083fb28e8017c0237f01b3793f81e11f5a1fb67ae36']
 
-# specify dependency on Java/11 "wrapper", rather than a specific Java version
+dependencies = [('Java', '11')]
 
-dependencies = [
-    ('Java', '11', '', True),
-]
-
-skipsteps = [
-    'configure',
-    'build',
-]
-
-files_to_copy = [(['%(namelower)s'], '%(installdir)s/bin')]
+install_cmd = "mkdir -p %(installdir)s/bin &&"
+install_cmd += "cp %(builddir)s/%(namelower)s-%(version)s-all %(installdir)s/bin &&"
+install_cmd += "cd %(installdir)s/bin && ln -s %(namelower)s-%(version)s-all %(namelower)s &&"
+install_cmd += "chmod +x %(installdir)s/bin/%(namelower)s-%(version)s-all"
 
 postinstallcmds = [
-    "chmod +x %(installdir)s/bin/%(namelower)s",
     'sed -i -e "s/cli=(\\$(/cli=(\\$(export NFX_OPTS=\\$JAVA_TOOL_OPTIONS; unset JAVA_TOOL_OPTIONS; /g" %(installdir)s/bin/%(namelower)s',
 ]
 
 sanity_check_paths = {
-    'files': ['bin/%(namelower)s'],
-    'dirs': [],
+    'files': ['bin/%(namelower)s-%(version)s-all', 'bin/%(namelower)s'],
+    'dirs': []
 }
 
 sanity_check_commands = [

@@ -1,0 +1,58 @@
+easyblock = 'CMakeMake'
+
+name = 'DIRAC'
+version = '23.0'
+
+#versionsuffix = '-Python-%(pyver)s-mpi-int64'
+
+homepage = 'http://www.diracprogram.org'
+description = "DIRAC: Program for Atomic and Molecular Direct Iterative Relativistic All-electron Calculations"
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'i8': True}
+
+source_urls = ['https://zenodo.org/record/7670749/files/']
+sources = [{'filename': 'DIRAC-%(version)s-Source.tgz', 'download_filename': 'DIRAC-%(version)s-Source.tgz?download=1'}]
+checksums = ['a0a6b6318b3cd2e3c6042221de720bb1e87eb758999e2108a48dedb9c564e1f8']
+
+builddependencies = [('CMake', '3.16.4')]
+
+dependencies = [('Python', '2.7')]
+
+configopts  = '-DENABLE_BLAS=off '
+configopts += '-DENABLE_LAPACK=off '
+configopts += '-DMKL_FLAG=off '
+configopts += '-DBLAS_LANG=Fortran '
+configopts += '-DLAPACK_LANG=Fortran '
+configopts += '-DENABLE_MPI=True '
+configopts += '-DENABLE_OPENMP=False '
+configopts += '-DENABLE_CODE_COVERAGE=False '
+configopts += '-DENABLE_STATIC_LINKING=False '
+configopts += '-DENABLE_PROFILING=False '
+configopts += '-DENABLE_RUNTIMECHECK=False '
+configopts += '-DENABLE_64BIT_INTEGERS=True '
+configopts += '-DEXPLICIT_LIBS="${LIBSCALAPACK_MT}" '
+configopts += '-DENABLE_PCMSOLVER=OFF '
+
+parallel = 1
+
+pretestopts = 'export DIRAC_TMPDIR=%(builddir)s/scratch && '
+
+# WARNING! The following tests FAILED:
+#       31 - fde_response_mag (Failed)
+#       42 - fde_response_shield (Failed)
+#       46 - cc_restart (Failed)
+#      167 - lao_shield_rearranged (Failed)
+
+pretestopts += 'export DIRAC_MPI_COMMAND="mpirun -np 1 " && '
+
+#runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/pam-dirac', 'share/dirac/dirac.x'],
+    'dirs': ['share/dirac/basis'],
+}
+
+sanity_check_commands = ["pam-dirac --help"]
+
+moduleclass = 'chem'
