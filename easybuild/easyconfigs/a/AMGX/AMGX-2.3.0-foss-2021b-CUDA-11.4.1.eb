@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'AMGX'
+version = '2.3.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/AMGX'
+
+description = """Distributed multigrid linear solver library on GPU"""
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'openmp': True}
+
+github_account = 'NVIDIA'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+#patches = ['AMGX-2.3.0_fix_tests.patch']
+checksums = ['419b3cd5bd3eb3469cbef79d64a8d19d5db88dd5cce809e49cac6fc4fc2edff1']
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('CUDA', '11.4.1', '', SYSTEM),
+    ('UCX-CUDA', '1.11.2', versionsuffix),
+    ('magma', '2.6.2', versionsuffix),
+]
+
+#configopts = ' -DCUDA_NVCC_FLAGS="-fopenmp" '
+if '%(cuda_cc_cmake)s':
+    configopts = '-DCUDA_ARCH="%(cuda_cc_cmake)s" '
+
+local_tests = 'AggregatesCoarseGeneratorTest CAPIFailure CAPIVersionCheck '
+local_tests += 'ClassicalStrengthTest ConfigStringParsing CsrMultiplyTests_Poisson27_100_100 '
+local_tests += 'CsrMultiplyTests_Poisson27_10_10 CsrMultiplyTests_Poisson5_100_100 CsrMultiplyTests_Poisson5_10_10 '
+local_tests += 'CsrMultiplyTests_Poisson7_100_100 CsrMultiplyTests_Poisson7_10_10 CsrMultiplyTests_Poisson9_100_100 '
+local_tests += 'CsrMultiplyTests_Poisson9_10_10 CsrSparsityILU1Tests_Poisson27_100_100 '
+local_tests += 'CsrSparsityILU1Tests_Poisson27_10_10 CsrSparsityILU1Tests_Poisson5_100_100 '
+local_tests += 'CsrSparsityILU1Tests_Poisson5_10_10 CsrSparsityILU1Tests_Poisson7_100_100 '
+local_tests += 'CsrSparsityILU1Tests_Poisson7_10_10 CsrSparsityILU1Tests_Poisson9_100_100 '
+local_tests += 'CsrSparsityILU1Tests_Poisson9_10_10 CsrSparsityTests_Poisson27_100_100 '
+local_tests += 'CsrSparsityTests_Poisson27_10_10 CsrSparsityTests_Poisson5_100_100 CsrSparsityTests_Poisson5_10_10 '
+local_tests += 'CsrSparsityTests_Poisson7_100_100 CsrSparsityTests_Poisson7_10_10 CsrSparsityTests_Poisson9_100_100 '
+local_tests += 'CsrSparsityTests_Poisson9_10_10 DenseLUSolverTest_Factorization_Id_256 '
+local_tests += 'DenseLUSolverTest_Factorization_Id_32 DenseLUSolverTest_Solve_Id_256 DenseLUSolverTest_Solve_Id_32 '
+local_tests += 'DenseLUSolverTest_Solve_Poisson3D FGMRESConvergencePoisson FactoriesTest '
+local_tests += 'GenericSpMVTest IDRConvergencePoisson '
+local_tests += 'IDRmsyncConvergencePoisson LargeMatricesSupport MatrixTests MatrixVectorMultiplyTests NestedSolvers '
+local_tests += 'NormTests PermuteTests RandomMatrix SmootherBlockPoissonTest '
+local_tests += 'TemplateConfigTest TemplateTest VectorTests truncateCountTest '
+
+# runtest = "amgx_tests_launcher && tests/amgx_tests_launcher %s " % local_tests
+
+sanity_check_paths = {
+    'files': ['include/amgx_c.h', 'lib/libamgx.a', 'lib/libamgxsh.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
