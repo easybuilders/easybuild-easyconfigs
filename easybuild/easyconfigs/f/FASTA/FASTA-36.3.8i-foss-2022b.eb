@@ -1,0 +1,37 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'MakeCp'
+
+name = "FASTA"
+version = "36.3.8i"
+
+homepage = 'http://fasta.bioch.virginia.edu'
+description = """The FASTA programs find regions of local or global (new) similarity between 
+protein or DNA sequences, either by searching Protein or DNA databases, or by identifying 
+local duplications within a sequence."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+sources = [{
+    'filename': 'FASTA-36.3.8i.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/wrpearson',
+        'repo_name': 'fasta36',
+        'commit': 'bd53d2af21b21deb20cfb033d4f3e991f5c61a91',
+    },
+}]
+checksums = ['fe56ee691f1f64e3597870983b0137fa597b4e70f495e99c44742186b6806078']
+
+buildopts = '-C ./src -f ../make/Makefile.linux_sse2 all'
+
+files_to_copy = ["bin", "conf", "data", "doc", "FASTA_LIST", "misc", "README", "seq", "sql", "test"]
+
+sanity_check_paths = {
+    'files': ["FASTA_LIST", "README"] + ['bin/%s' % x for x in ['map_db']] +
+             ['bin/%s%%(version_major)s' % x for x in ['fasta', 'fastm', 'fastx', 'ggsearch', 'lalign', 'tfastf',
+                                                       'tfasts', 'tfasty', 'fastf', 'fasts', 'fasty', 'glsearch',
+                                                       'ssearch', 'tfastm', 'tfastx']],
+    'dirs': ["conf", "data", "doc", "misc", "seq", "sql", "test"]
+}
+
+moduleclass = 'bio'
