@@ -1,0 +1,50 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'PFLOTRAN_OGS'
+version = '1.8'
+local_commit = 'ecef47041ef1'
+
+homepage = 'https://docs.opengosim.com/'
+description = """
+The PFLOTRAN-OGS development continues to focus on carbon dioxide capture and storage (CCS), 
+and compared to the previous version, the latest OGS-1.8 release adds the following new elements:
+
+- Dynamic modelling of temperature for COMP3 and COMP4, to model thermal effects in depleted 
+  hydrocarbon fields.
+- Well history to reproduce reservoir initial condition before CO2 storage, see HYSTORY_DATA 
+  and ESCHED.
+- New correlations for the brine properties: Kestin [KKC81] for the viscosity, Rowe and Chou 
+  [NBS77] and Ezrokhi [ZA93] for the density.
+- Support for TRANX/Y/Z and NNC in the GRDECL grids.
+- Transmissibility computation using a local diagonal tensor (LDT), to reproduce the exact 
+  same transmissibility computation of industry standard reservoir simulators.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://bitbucket.org/opengosim/pflotran_ogs_%(version)s/get/']
+sources = ['%s.tar.gz' % local_commit]
+patches = [
+    'PFLOTRAN_OGS_1.8-fortran-10.patch',
+]
+checksums = [
+    {'ecef47041ef1.tar.gz': '8d4d64b80d3d335930db3a4897cd79d04d847340115cf6b2c3c3abb05ceec381'},
+    {'PFLOTRAN_OGS_1.8-fortran-10.patch': 'a24a339d69738a5ad4f49134d27e064f84dc0537388f3c46cb00daf86c174a04'},
+]
+
+dependencies = [
+    ('PETSc', '3.17.4'),
+]
+
+build_cmd = 'make modern_gfortran=1'
+
+sanity_check_commands = ['pflotran -h | grep "Pflotran 1.8 sv1+" &> /dev/null']
+
+sanity_check_paths = {
+    'files': ['bin/pflotran', 'lib/libpflotran.a', 'lib/libpflotranchem.a'],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'geo'

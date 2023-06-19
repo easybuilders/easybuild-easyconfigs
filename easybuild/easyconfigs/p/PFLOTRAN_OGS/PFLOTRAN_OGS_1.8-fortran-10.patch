@@ -1,0 +1,1480 @@
+Updated to use gfortran 10 and higher
+Patch based on  https://bitbucket.org/opengosim/pflotran_ogs_1.8/get/6dd0c114de27d81b3d76e96c270c64c2444c713e.tar.gz
+Authors: Daniel Stone (daniel.stone@opengosim.com)
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/Makefile b/opengosim-pflotran_ogs_1.8-6dd0c114de27/regression_tests/Makefile
+index 537fac8..1ed2687 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/Makefile
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/regression_tests/Makefile
+@@ -66,8 +66,6 @@ STANDARD_CFG = \
+ 	default/reaction_sandbox/reaction_sandbox.cfg \
+ 	default/batch/batch.cfg \
+ 	default/numerical/numerical.cfg \
+-	default/output/output.cfg \
+-	default/multicontinuum/multicontinuum.cfg \
+ 	default/velocity/velocity.cfg \
+ 	geothermal_hpt/1D_Calcite/calcite_hpt.cfg\
+         ngee/ngee.cfg \
+@@ -96,7 +94,6 @@ GEOCHEMISTRY_CFG = \
+ 	ascem/batch/batch.cfg \
+ 	default/column/column.cfg \
+ 	default/batch/batch.cfg \
+-	default/multicontinuum/multicontinuum.cfg \
+ 	geothermal_hpt/1D_Calcite/calcite_hpt.cfg\
+         ngee/ngee.cfg \
+ 	wipp/nuts/nuts.cfg
+@@ -112,7 +109,6 @@ FLOW_CFG = \
+ 
+ TRANSPORT_CFG = \
+ 	default/column/column.cfg \
+-	default/multicontinuum/multicontinuum.cfg \
+ 	default/velocity/velocity.cfg
+ 
+ MESH_CFG =
+@@ -127,7 +123,6 @@ NOHDF5_CFG = \
+ 	default/column/column.cfg \
+ 	geothermal_hpt/1D_Calcite/calcite_hpt.cfg \
+ 	wipp/nuts/nuts.cfg \
+-	default/multicontinuum/multicontinuum.cfg \
+ 	ascem/1d/1d-calcite/1d-calcite.cfg \
+ 	default/batch/batch.cfg \
+ 	ascem/batch/batch.cfg
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/multicontinuum.cfg b/opengosim-pflotran_ogs_1.8-6dd0c114de27/regression_tests/default/multicontinuum/multicontinuum.cfg
+index 8138374..7ea819e 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/multicontinuum.cfg
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/regression_tests/default/multicontinuum/multicontinuum.cfg
+@@ -1,8 +1,8 @@
+ [suites]
+-standard = tracer_1D reaction_log10
++#standard =
+ #flow = 
+-transport = tracer_1D
+-geochemistry = reaction_log10
++#transport = 
++#geochemistry = 
+ #parallel =
+ 
+ [default-test-criteria]
+@@ -16,7 +16,3 @@ volume_fraction = 1.0e-10 absolute
+ pressure = 1.0e-12 absolute
+ saturation = 1.0e-12 absolute
+ 
+-[tracer_1D]
+-
+-[reaction_log10]
+-
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/reaction_log10.in b/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/reaction_log10.in
+deleted file mode 100644
+index b6f2ec0..0000000
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/reaction_log10.in
++++ /dev/null
+@@ -1,264 +0,0 @@
+-# Description: reaction with linear kinetics
+-# Benchmark from Lichtner & Kang (2007)
+-# P.C.Lichtner/S. Karra
+-# 11/5/12
+-
+-SIMULATION
+-  SIMULATION_TYPE SUBSURFACE
+-  PROCESS_MODELS
+-    SUBSURFACE_TRANSPORT transport
+-      GLOBAL_IMPLICIT
+-      MULTIPLE_CONTINUUM
+-    /
+-  /
+-END
+-
+-SUBSURFACE
+-
+-#=========================== regression =======================================
+-REGRESSION
+-  CELLS_PER_PROCESS 5
+-END
+-
+-SPECIFIED_VELOCITY
+-  UNIFORM? YES
+-  DATASET 14.4d0 0.d0 0.d0 m/yr
+-END
+-
+-#=========================== chemistry ========================================
+-CHEMISTRY
+-  PRIMARY_SPECIES
+-    A(aq)
+-   /
+-
+-  MINERALS
+-    A(s)
+-  /
+-
+-  MINERAL_KINETICS
+-    A(s)
+-     RATE_CONSTANT 1.d-6
+-  #   ACTIVATION_ENERGY 89.d0
+-   /
+- /
+-
+- DATABASE ../../../database/hanford.dat
+-  MOLAL
+-  OUTPUT
+-    ALL
+-    TOTAL
+-  /
+-/
+-
+-#===================== Discretization =========================
+-GRID
+-  TYPE STRUCTURED
+-  ORIGIN 0.d0 0.d0 0.d0
+-  NXYZ 100 1 1
+-  BOUNDS
+-    0.d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-#===================== Solver options ========================
+-TIMESTEPPER FLOW
+-  TS_ACCELERATION 25
+-  MAX_TS_CUTS 10
+-  MAX_STEPS 100000
+-END
+-
+-NEWTON_SOLVER TRANSPORT
+-  ATOL 1D-8
+-  RTOL 1D-8
+-  STOL 1D-30
+-  MAX_NORM 1D10
+-  ITOL 1D-8
+-  ITOL_SEC 1D-8
+-  MAXIT 100
+-  MAXF 100
+-END
+-
+-FLUID_PROPERTY
+-  DIFFUSION_COEFFICIENT 1.d-9
+-/
+-
+-#========================= material properties ===================
+-MATERIAL_PROPERTY soil1
+-  ID 1
+-  POROSITY 1.d0
+-  TORTUOSITY 1.d0
+-  ROCK_DENSITY 2.8E3
+-  SPECIFIC_HEAT 1E3
+-  THERMAL_CONDUCTIVITY_WET 0.5
+-  CHARACTERISTIC_CURVES default
+-  PERMEABILITY
+-    PERM_X 1.d-15
+-    PERM_Y 1.d-15
+-    PERM_Z 1.d-15
+-  /
+-  SECONDARY_CONTINUUM
+-    TYPE SLAB
+-    LENGTH 0.009
+-    AREA 1.75e-6
+-    NUM_CELLS 20
+-    EPSILON 0.4167d0
+-    DIFFUSION_COEFFICIENT 0.8d-9
+-    POROSITY 0.4464
+-   /
+-/
+-
+-#========================= saturation functions ==================
+-CHARACTERISTIC_CURVES default
+-  SATURATION_FUNCTION VAN_GENUCHTEN
+-    M 0.5d0
+-    ALPHA  1.d-4
+-    LIQUID_RESIDUAL_SATURATION 0.1d0
+-    MAX_CAPILLARY_PRESSURE 1.d8
+-  /
+-  PERMEABILITY_FUNCTION MUALEM_VG_LIQ
+-    M 0.5d0
+-    LIQUID_RESIDUAL_SATURATION 0.1d0
+-  /
+-END
+-
+-#========================= output options =========================
+-OUTPUT
+-#  TIMES s 2.6042e4 3.9063e4 5.2083e4
+-#  PERIODIC_OBSERVATION TIMESTEP 1
+-#  PRINT_COLUMN_IDS
+-#  FORMAT TECPLOT POINT
+-/
+-
+-#======================== times ====================================
+-TIME
+-#  FINAL_TIME 5.2083e4 s
+-  FINAL_TIME 1.e3 s
+-  INITIAL_TIMESTEP_SIZE 1.d-6 s
+-  MAXIMUM_TIMESTEP_SIZE 10.d0 s
+-  MAXIMUM_TIMESTEP_SIZE 1.d2 s at 5.d3 s
+-  #MAXIMUM_TIMESTEP_SIZE 1.d3 s at 5.e4 s
+-/
+-
+-#=========================== regions ===============================
+-REGION all
+-  COORDINATES
+-    0.d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION west
+-  FACE WEST
+-  COORDINATES
+-    0.d0 0.d0 0.d0
+-    0.d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION east
+-  FACE EAST
+-  COORDINATES
+-    0.04d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION obs
+-  COORDINATES
+-    0.04d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-OBSERVATION
+-  REGION obs
+-  SECONDARY_CONCENTRATION
+-  SECONDARY_MINERAL_VOLFRAC
+-/
+-
+-#==== transport conditions=====================================================
+-TRANSPORT_CONDITION initial
+-  TYPE DIRICHLET_ZERO_GRADIENT
+-  CONSTRAINT_LIST
+-    0.d0 initial
+-  /
+-END
+-
+-TRANSPORT_CONDITION west
+-  TYPE DIRICHLET
+-  CONSTRAINT_LIST
+-    0.d0 west
+-  /
+-/
+-
+-TRANSPORT_CONDITION east
+-  TYPE ZERO_GRADIENT
+-  CONSTRAINT_LIST
+-    0.d0 east
+-  /
+-/
+-
+-#========================== initial and boundary conditions =================
+-# initial condition
+-INITIAL_CONDITION
+-FLOW_CONDITION initial
+-TRANSPORT_CONDITION initial
+-REGION all
+-END
+-
+-# west boundary condition
+-BOUNDARY_CONDITION
+-FLOW_CONDITION west
+-TRANSPORT_CONDITION west
+-REGION west
+-END
+-
+-# east boundary condition
+-BOUNDARY_CONDITION
+-FLOW_CONDITION east
+-TRANSPORT_CONDITION east
+-REGION east
+-END
+-
+-#===================== stratigraphy couplers ==============================
+-STRATA
+-REGION all
+-MATERIAL soil1
+-END
+-
+-#=========================== constraints ======================================
+-CONSTRAINT initial
+-CONCENTRATIONS
+-A(aq)  0.1  M A(s)
+-/
+-MINERALS
+-#mineral vol. frac. area
+-A(s)       1.d5     7.d2
+-/
+-/
+-
+-CONSTRAINT west
+-CONCENTRATIONS
+-A(aq)  1.e-8  T
+-/
+-/
+-
+-CONSTRAINT east
+-CONCENTRATIONS
+-A(aq)  1.E-02  T
+-/
+-/
+-
+-#==================== secondary continuum initial constraint ==================
+-SECONDARY_CONSTRAINT sec
+-CONCENTRATIONS
+-A(aq)  0.1  M A(s)
+-/
+-MINERALS
+-#mineral vol. frac. area
+-A(s)      0.5d5    17.857d2
+-/
+-/
+-
+-END_SUBSURFACE
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/reaction_log10.regression.gold b/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/reaction_log10.regression.gold
+deleted file mode 100644
+index 368b3c3..0000000
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/reaction_log10.regression.gold
++++ /dev/null
+@@ -1,44 +0,0 @@
+--- CONCENTRATION: Total A(aq) --
+-      Max:   1.0000000000081E-02
+-      Min:   5.9404378349206E-04
+-     Mean:   9.5644775661915E-03
+-        1:   5.9404378349206E-04
+-       21:   9.9998155898288E-03
+-       41:   1.0000000000081E-02
+-       61:   1.0000000000081E-02
+-       81:   1.0000000000081E-02
+--- VOLUME_FRACTION: A(s) VF --
+-      Max:   1.0000000000000E+05
+-      Min:   9.9999999941412E+04
+-     Mean:   9.9999999998142E+04
+-        1:   9.9999999941412E+04
+-       21:   1.0000000000000E+05
+-       41:   1.0000000000000E+05
+-       61:   1.0000000000000E+05
+-       81:   1.0000000000000E+05
+--- RATE: A(s) Rate --
+-      Max:  -0.0000000000000E+00
+-      Min:  -6.5841693515589E-04
+-     Mean:  -3.0486570372011E-05
+-        1:  -6.5841693515589E-04
+-       21:  -1.2908717648541E-08
+-       41:  -6.2172489379009E-19
+-       61:  -0.0000000000000E+00
+-       81:  -0.0000000000000E+00
+--- DISCRETE: Material ID --
+-      Max:         1
+-      Min:         1
+-     Mean:   1.0000000000000E+00
+-        1:         1
+-       21:         1
+-       41:         1
+-       61:         1
+-       81:         1
+--- SOLUTION: Transport --
+-   Time (seconds):   2.1028938293457E+00
+-   Time Steps:          123
+-   Newton Iterations:          231
+-   Solver Iterations:          231
+-   Time Step Cuts:            0
+-   Solution 2-Norm:   9.6957324063215E-02
+-   Residual 2-Norm:   9.5701555067002E-13
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/tracer_1D.in b/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/tracer_1D.in
+deleted file mode 100644
+index 2b0dd14..0000000
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/tracer_1D.in
++++ /dev/null
+@@ -1,264 +0,0 @@
+-# Description: 1D tracer constant flow rate
+-# P.C.Lichtner/S. Karra
+-# 11/5/12
+-
+-SIMULATION
+-  SIMULATION_TYPE SUBSURFACE
+-  PROCESS_MODELS
+-    SUBSURFACE_TRANSPORT transport
+-      GLOBAL_IMPLICIT
+-      MULTIPLE_CONTINUUM
+-    /
+-  /
+-END
+-
+-SUBSURFACE
+-
+-#=========================== regression =======================================
+-REGRESSION
+-  CELLS_PER_PROCESS 5
+-END
+-
+-SPECIFIED_VELOCITY
+-  UNIFORM? YES
+-  DATASET 14.4d0 0.d0 0.d0 m/yr
+-END
+-
+-#=========================== chemistry ========================================
+-CHEMISTRY
+-  PRIMARY_SPECIES
+-    A(aq)
+-   /
+-
+-  MINERALS
+-    A(s)
+-  /
+-
+-  MINERAL_KINETICS
+-    A(s)
+-     RATE_CONSTANT 0.d0
+-     ACTIVATION_ENERGY 89.d-3 kJ/mol
+-   /
+- /
+-
+- DATABASE ../../../database/hanford.dat
+-  MOLAL
+-  OUTPUT
+-    ALL
+-    TOTAL
+-  /
+-/
+-
+-#===================== Discretization =========================
+-GRID
+-  TYPE STRUCTURED
+-  ORIGIN 0.d0 0.d0 0.d0
+-  NXYZ 100 1 1
+-  BOUNDS
+-    0.d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-#===================== Solver options ========================
+-TIMESTEPPER FLOW
+-  TS_ACCELERATION 25
+-  MAX_TS_CUTS 10
+-  MAX_STEPS 10000
+-END
+-
+-NEWTON_SOLVER TRANSPORT
+-  ATOL 1D-15
+-  RTOL 1D-10
+-  STOL 1D-30
+-  MAX_NORM 1D30
+-  ITOL 1D-8
+-  MAXIT 100
+-  MAXF 100
+-END
+-
+-FLUID_PROPERTY
+-  DIFFUSION_COEFFICIENT 1.d-9
+-/
+-
+-#========================= material properties ===================
+-MATERIAL_PROPERTY soil1
+-  ID 1
+-  POROSITY 1.d0
+-  TORTUOSITY 1.d0
+-  ROCK_DENSITY 2.8E3
+-  SPECIFIC_HEAT 1E3
+-  THERMAL_CONDUCTIVITY_WET 0.5
+-  CHARACTERISTIC_CURVES default
+-  PERMEABILITY
+-    PERM_X 1.d-15
+-    PERM_Y 1.d-15
+-    PERM_Z 1.d-15
+-  /
+-  SECONDARY_CONTINUUM
+-    TYPE SLAB
+-    LENGTH 0.009
+-    AREA 1.75e-6
+-    NUM_CELLS 5
+-    EPSILON 0.4167d0
+-    DIFFUSION_COEFFICIENT 0.8d-9
+-    POROSITY 0.4464
+-   /
+-/
+-
+-#========================= saturation functions ==================
+-CHARACTERISTIC_CURVES default
+-  SATURATION_FUNCTION VAN_GENUCHTEN
+-    M 0.5d0
+-    ALPHA  1.d-4
+-    LIQUID_RESIDUAL_SATURATION 0.1d0
+-    MAX_CAPILLARY_PRESSURE 1.d8
+-  /
+-  PERMEABILITY_FUNCTION MUALEM_VG_LIQ
+-    M 0.5d0
+-    LIQUID_RESIDUAL_SATURATION 0.1d0
+-  /
+-END
+-
+-#========================= output options =========================
+-OUTPUT
+-#   TIMES s 2.6042e4 3.9063e4 5.2083e4 1.e6
+-#   PERIODIC_OBSERVATION TIMESTEP 1
+-#   PRINT_COLUMN_IDS
+-#   FORMAT TECPLOT POINT
+-/
+-
+-#======================== times ====================================
+-TIME
+-# reduced time to quicken regression testing.  Block coverage is actually
+-# better with shorter time.
+-#  FINAL_TIME 1.d6 s
+-  FINAL_TIME 1.d3 s
+-  INITIAL_TIMESTEP_SIZE 1.d-6 s
+-  MAXIMUM_TIMESTEP_SIZE 10.d0 s
+-  MAXIMUM_TIMESTEP_SIZE 1.d2 s at 5.d3 s
+-  MAXIMUM_TIMESTEP_SIZE 1.d3 s at 5.e4 s
+-/
+-
+-#=========================== regions ===============================
+-REGION all
+-  COORDINATES
+-    0.d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION west
+-  FACE WEST
+-  COORDINATES
+-    0.d0 0.d0 0.d0
+-    0.d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION east
+-  FACE EAST
+-  COORDINATES
+-    0.04d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION obs
+-  COORDINATES
+-    0.04d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-OBSERVATION
+-  REGION obs
+-  SECONDARY_CONCENTRATION
+-  SECONDARY_MINERAL_VOLFRAC
+-/
+-
+-#==== transport conditions=====================================================
+-TRANSPORT_CONDITION initial
+-  TYPE DIRICHLET_ZERO_GRADIENT
+-  CONSTRAINT_LIST
+-    0.d0 initial
+-  /
+-END
+-
+-TRANSPORT_CONDITION west
+-  TYPE DIRICHLET
+-  CONSTRAINT_LIST
+-    0.d0 west
+-  /
+-/
+-
+-TRANSPORT_CONDITION east
+-  TYPE ZERO_GRADIENT
+-  CONSTRAINT_LIST
+-    0.d0 east
+-  /
+-/
+-
+-#========================== initial and boundary conditions =================
+-# initial condition
+-INITIAL_CONDITION
+-FLOW_CONDITION initial
+-TRANSPORT_CONDITION initial
+-REGION all
+-END
+-
+-# west boundary condition
+-BOUNDARY_CONDITION
+-FLOW_CONDITION west
+-TRANSPORT_CONDITION west
+-REGION west
+-END
+-
+-# east boundary condition
+-BOUNDARY_CONDITION
+-FLOW_CONDITION east
+-TRANSPORT_CONDITION east
+-REGION east
+-END
+-
+-#===================== stratigraphy couplers ==============================
+-STRATA
+-REGION all
+-MATERIAL soil1
+-END
+-
+-#=========================== constraints ======================================
+-CONSTRAINT initial
+-CONCENTRATIONS
+-A(aq)  0.1  M A(s)
+-/
+-MINERALS
+-#mineral vol. frac. area
+-A(s)       1.d5     7.d2
+-/
+-/
+-
+-CONSTRAINT west
+-CONCENTRATIONS
+-A(aq)  1.e-8  T
+-/
+-/
+-
+-CONSTRAINT east
+-CONCENTRATIONS
+-A(aq)  1.E-02  T
+-/
+-/
+-
+-#==================== secondary continuum initial constraint ==================
+-SECONDARY_CONSTRAINT sec
+-CONCENTRATIONS
+-A(aq)  0.1  M A(s)
+-/
+-MINERALS
+-#mineral vol. frac. area
+-A(s)      0.5d5    17.857d2
+-/
+-/
+-
+-END_SUBSURFACE
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/tracer_1D.regression.gold b/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/tracer_1D.regression.gold
+deleted file mode 100644
+index 68bddeb..0000000
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/multicontinuum/tracer_1D.regression.gold
++++ /dev/null
+@@ -1,44 +0,0 @@
+--- CONCENTRATION: Total A(aq) --
+-      Max:   1.0000000000081E-02
+-      Min:   5.0328451303979E-04
+-     Mean:   9.5455258046423E-03
+-        1:   5.0328451303979E-04
+-       21:   9.9997814207902E-03
+-       41:   1.0000000000081E-02
+-       61:   1.0000000000081E-02
+-       81:   1.0000000000081E-02
+--- VOLUME_FRACTION: A(s) VF --
+-      Max:   1.0000000000000E+05
+-      Min:   1.0000000000000E+05
+-     Mean:   1.0000000000000E+05
+-        1:   1.0000000000000E+05
+-       21:   1.0000000000000E+05
+-       41:   1.0000000000000E+05
+-       61:   1.0000000000000E+05
+-       81:   1.0000000000000E+05
+--- RATE: A(s) Rate --
+-      Max:  -0.0000000000000E+00
+-      Min:  -0.0000000000000E+00
+-     Mean:   0.0000000000000E+00
+-        1:  -0.0000000000000E+00
+-       21:  -0.0000000000000E+00
+-       41:  -0.0000000000000E+00
+-       61:  -0.0000000000000E+00
+-       81:  -0.0000000000000E+00
+--- DISCRETE: Material ID --
+-      Max:         1
+-      Min:         1
+-     Mean:   1.0000000000000E+00
+-        1:         1
+-       21:         1
+-       41:         1
+-       61:         1
+-       81:         1
+--- SOLUTION: Transport --
+-   Time (seconds):   5.9216570854187E-01
+-   Time Steps:          123
+-   Newton Iterations:          123
+-   Solver Iterations:          123
+-   Time Step Cuts:            0
+-   Solution 2-Norm:   9.6850697370811E-02
+-   Residual 2-Norm:   5.4887134776678E-19
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/output/output.cfg b/opengosim-pflotran_ogs_1.8-6dd0c114de27/regression_tests/default/output/output.cfg
+index 1ecd107..1dbb8cf 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/output/output.cfg
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/regression_tests/default/output/output.cfg
+@@ -1,5 +1,5 @@
+ [suites]
+-standard = output_sc_tecplot
++standard = 
+ 
+ [default-test-criteria]
+ # default criteria for all tests, can be overwritten by specific tests
+@@ -13,8 +13,5 @@ pressure = 1.0e-12 absolute
+ saturation = 1.0e-12 absolute
+ charge balance = 1.0e-12 absolute
+ 
+-[output_sc_tecplot]
+-skip_check_regression = True
+-compare_ascii_output =  output_sc_tecplot-sec-rank0-obs0-000.tec
+ 
+ 
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/output/output_sc_tecplot-sec-rank0-obs0-000.tec.gold b/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/output/output_sc_tecplot-sec-rank0-obs0-000.tec.gold
+deleted file mode 100644
+index 0eaf271..0000000
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/output/output_sc_tecplot-sec-rank0-obs0-000.tec.gold
++++ /dev/null
+@@ -1,6 +0,0 @@
+-TITLE = "  0.00000E+00 [s]"
+-VARIABLES="dist [m]","2-Free ion A(aq) [molal] obs (1) (2.00E-03 0.5 0.5)","3-A(s) VF obs (1) (2.00E-03 0.5 0.5)","4-A(s) Rate obs (1) (2.00E-03 0.5 0.5)","5-A(s) SI obs (1) (2.00E-03 0.5 0.5)"
+-ZONE T="  0.00000E+00", I=    3,J=1, K=1, DATAPACKING=POINT
+- 1.500000E-03  1.000000E-02  5.000000E+04  0.000000E+00  1.000000E+00 
+- 4.500000E-03  1.000000E-02  5.000000E+04  0.000000E+00  1.000000E+00 
+- 7.500000E-03  1.000000E-02  5.000000E+04  0.000000E+00  1.000000E+00 
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/output/output_sc_tecplot.in b/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/output/output_sc_tecplot.in
+deleted file mode 100644
+index 2903f9a..0000000
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/default/output/output_sc_tecplot.in
++++ /dev/null
+@@ -1,266 +0,0 @@
+-# Description: reaction with linear kinetics
+-# Benchmark from Lichtner & Kang (2007)
+-# P.C.Lichtner/S. Karra
+-# 11/5/12
+-
+-SIMULATION
+-  SIMULATION_TYPE SUBSURFACE
+-  PROCESS_MODELS
+-    SUBSURFACE_TRANSPORT transport
+-      GLOBAL_IMPLICIT
+-      MULTIPLE_CONTINUUM
+-    /
+-  /
+-END
+-
+-SUBSURFACE
+-
+-#=========================== regression =======================================
+-REGRESSION
+-  CELLS_PER_PROCESS 5
+-END
+-
+-SPECIFIED_VELOCITY
+-  UNIFORM? YES
+-  DATASET 14.4d0 0.d0 0.d0 m/yr
+-END
+-
+-#=========================== chemistry ========================================
+-CHEMISTRY
+-  PRIMARY_SPECIES
+-    A(aq)
+-   /
+-
+-  MINERALS
+-    A(s)
+-  /
+-
+-  MINERAL_KINETICS
+-    A(s)
+-     RATE_CONSTANT 1.d-6
+-  #   ACTIVATION_ENERGY 89.d0
+-   /
+- /
+-
+- DATABASE ../../../database/hanford.dat
+-  MOLAL
+-  OUTPUT
+-    ALL
+-    TOTAL
+-  /
+-/
+-
+-#===================== Discretization =========================
+-GRID
+-  TYPE STRUCTURED
+-  ORIGIN 0.d0 0.d0 0.d0
+-  NXYZ 10 1 1
+-  BOUNDS
+-    0.d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-#===================== Solver options ========================
+-TIMESTEPPER TRANSPORT 
+-  TS_ACCELERATION 25
+-  MAX_TS_CUTS 10
+-  MAX_STEPS 0
+-END
+-
+-NEWTON_SOLVER TRANSPORT
+-  ATOL 1D-8
+-  RTOL 1D-8
+-  STOL 1D-30
+-  MAX_NORM 1D10
+-  ITOL 1D-8
+-  ITOL_SEC 1D-8
+-  MAXIT 100
+-  MAXF 100
+-END
+-
+-FLUID_PROPERTY
+-  DIFFUSION_COEFFICIENT 1.d-9
+-/
+-
+-#========================= material properties ===================
+-MATERIAL_PROPERTY soil1
+-  ID 1
+-  POROSITY 1.d0
+-  TORTUOSITY 1.d0
+-  ROCK_DENSITY 2.8E3
+-  SPECIFIC_HEAT 1E3
+-  THERMAL_CONDUCTIVITY_WET 0.5
+-  CHARACTERISTIC_CURVES default
+-  PERMEABILITY
+-    PERM_X 1.d-15
+-    PERM_Y 1.d-15
+-    PERM_Z 1.d-15
+-  /
+-  SECONDARY_CONTINUUM
+-    TYPE SLAB
+-    LENGTH 0.009
+-    AREA 1.75e-6
+-    NUM_CELLS 3 
+-    EPSILON 0.4167d0
+-    DIFFUSION_COEFFICIENT 0.8d-9
+-    POROSITY 0.4464
+-   /
+-/
+-
+-#========================= saturation functions ==================
+-CHARACTERISTIC_CURVES default
+-  SATURATION_FUNCTION VAN_GENUCHTEN
+-    M 0.5d0
+-    ALPHA  1.d-4
+-    LIQUID_RESIDUAL_SATURATION 0.1d0
+-    MAX_CAPILLARY_PRESSURE 1.d8
+-  /
+-  PERMEABILITY_FUNCTION MUALEM_VG_LIQ
+-    M 0.5d0
+-    LIQUID_RESIDUAL_SATURATION 0.1d0
+-  /
+-END
+-
+-#========================= output options =========================
+-OUTPUT
+-  TIMES s 2.6042e4 3.9063e4 5.2083e4
+-  PERIODIC_OBSERVATION TIMESTEP 1
+-  PRINT_COLUMN_IDS
+-  FORMAT TECPLOT POINT
+-/
+-
+-#======================== times ====================================
+-TIME
+-#  FINAL_TIME 5.2083e4 s
+-  FINAL_TIME 1.e2 s
+-  INITIAL_TIMESTEP_SIZE 1.d-6 s
+-  MAXIMUM_TIMESTEP_SIZE 10.d0 s
+-  MAXIMUM_TIMESTEP_SIZE 1.d2 s at 5.d3 s
+-  #MAXIMUM_TIMESTEP_SIZE 1.d3 s at 5.e4 s
+-/
+-
+-#=========================== regions ===============================
+-REGION all
+-  COORDINATES
+-    0.d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION west
+-  FACE WEST
+-  COORDINATES
+-    0.d0 0.d0 0.d0
+-    0.d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION east
+-  FACE EAST
+-  COORDINATES
+-    0.04d0 0.d0 0.d0
+-    0.04d0 1.d0 1.d0
+-  /
+-END
+-
+-REGION obs
+-  COORDINATES
+-    0.d0 0.d0 0.d0
+-    0.d0 1.d0 1.d0
+-  /
+-END
+-
+-OBSERVATION
+-  REGION obs
+-  SECONDARY_CONCENTRATION
+-  SECONDARY_MINERAL_VOLFRAC
+-  SECONDARY_MINERAL_RATE
+-  SECONDARY_MINERAL_SI
+-/
+-
+-#==== transport conditions=====================================================
+-TRANSPORT_CONDITION initial
+-  TYPE DIRICHLET_ZERO_GRADIENT
+-  CONSTRAINT_LIST
+-    0.d0 initial
+-  /
+-END
+-
+-TRANSPORT_CONDITION west
+-  TYPE DIRICHLET
+-  CONSTRAINT_LIST
+-    0.d0 west
+-  /
+-/
+-
+-TRANSPORT_CONDITION east
+-  TYPE ZERO_GRADIENT
+-  CONSTRAINT_LIST
+-    0.d0 east
+-  /
+-/
+-
+-#========================== initial and boundary conditions =================
+-# initial condition
+-INITIAL_CONDITION
+-FLOW_CONDITION initial
+-TRANSPORT_CONDITION initial
+-REGION all
+-END
+-
+-# west boundary condition
+-BOUNDARY_CONDITION
+-FLOW_CONDITION west
+-TRANSPORT_CONDITION west
+-REGION west
+-END
+-
+-# east boundary condition
+-BOUNDARY_CONDITION
+-FLOW_CONDITION east
+-TRANSPORT_CONDITION east
+-REGION east
+-END
+-
+-#===================== stratigraphy couplers ==============================
+-STRATA
+-REGION all
+-MATERIAL soil1
+-END
+-
+-#=========================== constraints ======================================
+-CONSTRAINT initial
+-CONCENTRATIONS
+-A(aq)  0.1  M A(s)
+-/
+-MINERALS
+-#mineral vol. frac. area
+-A(s)       1.d5     7.d2
+-/
+-/
+-
+-CONSTRAINT west
+-CONCENTRATIONS
+-A(aq)  1.e-8  T
+-/
+-/
+-
+-CONSTRAINT east
+-CONCENTRATIONS
+-A(aq)  1.E-02  T
+-/
+-/
+-
+-#==================== secondary continuum initial constraint ==================
+-SECONDARY_CONSTRAINT sec
+-CONCENTRATIONS
+-A(aq)  0.1  M A(s)
+-/
+-MINERALS
+-#mineral vol. frac. area
+-A(s)      0.5d5    17.857d2
+-/
+-/
+-
+-END_SUBSURFACE
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/regression_tests.py b/opengosim-pflotran_ogs_1.8-6dd0c114de27/regression_tests/regression_tests.py
+index 4683cea..eebc2f6 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/regression_tests/regression_tests.py
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/regression_tests/regression_tests.py
+@@ -31,6 +31,10 @@ import traceback
+ import difflib
+ from collections import OrderedDict
+ 
++open_fmt = 'r'
++if sys.version_info[0] < 3:
++    open_fmt += 'U'
++
+ if sys.version_info[0] == 2:
+     from ConfigParser import SafeConfigParser as config_parser
+ else:
+@@ -545,7 +549,7 @@ class RegressionTest(object):
+                         status.error = _MISSING_INFO_ERROR
+                         return
+                     else:
+-                        with open(current_filename, 'rU') as current_file:
++                        with open(current_filename, open_fmt) as current_file:
+                             current_output = current_file.readlines()
+ 
+                     gold_filename = current_filename + ".gold"
+@@ -557,7 +561,7 @@ class RegressionTest(object):
+                         status.error = _MISSING_INFO_ERROR
+                         return
+                     else:
+-                        with open(gold_filename, 'rU') as gold_file:
++                        with open(gold_filename, open_fmt) as gold_file:
+                             gold_output = gold_file.readlines()
+ 
+                     print("    diff {0} {1}".format(gold_filename, 
+@@ -587,7 +591,7 @@ class RegressionTest(object):
+                 status.error = _MISSING_INFO_ERROR
+                 return
+             else:
+-                with open(gold_filename, 'rU') as gold_file:
++                with open(gold_filename, open_fmt) as gold_file:
+                     gold_output = gold_file.readlines()
+     
+             if not os.path.isfile(current_filename):
+@@ -599,7 +603,7 @@ class RegressionTest(object):
+                 status.error = _MISSING_INFO_ERROR
+                 return
+             else:
+-                with open(current_filename, 'rU') as current_file:
++                with open(current_filename, open_fmt) as current_file:
+                     current_output = current_file.readlines()
+     
+             print("    diff {0} {1}".format(gold_filename, current_filename),
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/esched_data.F90 b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/esched_data.F90
+index 9ed0204..72fb27d 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/esched_data.F90
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/esched_data.F90
+@@ -129,6 +129,12 @@ module Esched_Data_class
+   PetscInt, public, parameter :: wellopen_wnam = 1
+   PetscInt, public, parameter :: wellopen_maxz = 1 ! Equal to last value
+ 
++  PetscInt, public, parameter :: welopen_maxi = 0 ! No integers stored
++  PetscInt, public, parameter :: welopen_maxr = 0 ! No reals    stored
++  PetscInt, public, parameter :: welopen_wnam = 1
++  PetscInt, public, parameter :: welopen_oper = 2
++  PetscInt, public, parameter :: welopen_maxz = 2 ! Equal to last value
++
+   PetscInt, public, parameter :: time_maxi   = 0 ! No integers stored
+   PetscInt, public, parameter :: time_tdays  = 1
+   PetscInt, public, parameter :: time_maxr   = 1 ! Equal to last value
+@@ -456,7 +462,9 @@ module Esched_Data_class
+       StringCompareIgnoreCase(zkey,'WCONHIST' ) .or. &
+       StringCompareIgnoreCase(zkey,'WCONINJH' ) .or. &
+       StringCompareIgnoreCase(zkey,'WELLSHUT' ) .or. &
+-      StringCompareIgnoreCase(zkey,'WELLOPEN' )      ) then
++      StringCompareIgnoreCase(zkey,'WELLOPEN' ) .or. &
++      StringCompareIgnoreCase(zkey,'WELOPEN'  )      ) then
++
+     IsEschedWellKeyword = PETSC_TRUE
+   endif
+ 
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/factory_subsurface.F90 b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/factory_subsurface.F90
+index 69a6c92..38c7858 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/factory_subsurface.F90
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/factory_subsurface.F90
+@@ -1313,11 +1313,11 @@ subroutine SubsurfaceReadRequiredCards(simulation,input)
+   type(discretization_type), pointer :: discretization
+   type(option_type), pointer :: option
+   type(input_type), pointer :: input
+-  PetscInt :: ci,cj,ck,ckl,cku,ckll,ckuu, irec, nrec
++  PetscInt :: ci,cj,ck,ckl,cku,ckll,ckuu, irec, nrec, iwell, nwell, mwell
+   PetscBool :: found
+   PetscBool,parameter::cijk_d_true =PETSC_TRUE
+   PetscBool,parameter::cijk_d_false=PETSC_FALSE
+-  PetscBool :: qerr
++  PetscBool :: qerr, well_found
+   PetscReal :: ccfuser, diam, kh, skin, rout, rw
+   character(len=MAXSTRINGLENGTH) :: zesched
+   PetscBool, parameter :: first_call_true = PETSC_TRUE
+@@ -1325,7 +1325,8 @@ subroutine SubsurfaceReadRequiredCards(simulation,input)
+   PetscBool, parameter :: set_props_false = PETSC_FALSE
+ 
+   character(len = MAXWORDLENGTH  ) :: cdir
+-  character(len = MAXSTRINGLENGTH) :: aname, wname, cerr
++  character(len = MAXSTRINGLENGTH) :: aname, wname, welli, cerr
++  character(len = MAXSTRINGLENGTH),allocatable :: wnamelist(:)
+ 
+ !  Initialise
+ 
+@@ -1361,33 +1362,92 @@ subroutine SubsurfaceReadRequiredCards(simulation,input)
+     call InputReadFilename(input,option,zesched)
+     call ESchedReader(zesched,option,first_call_true)
+     call InputPopBlock(input,option)
++
+     nrec = GetNRec()
++
++    ! Count wells
++
++    mwell=0
+     do irec=1,nrec
+       call GetKeywordname(irec,zkey)
+-      if(  StringCompareIgnoreCase(trim(zkey),'compdat') ) then
+-
+-        ci      = GetRecArgI(irec,compdat_ci )
+-        cj      = GetRecArgI(irec,compdat_cj )
+-        ckl     = GetRecArgI(irec,compdat_ckl)
+-        cku     = GetRecArgI(irec,compdat_cku)
+-
+-        ccfuser = GetRecArgR(irec,compdat_ccfu)
+-        diam    = GetRecArgR(irec,compdat_diam)
+-        rw      = 0.5D0*diam
+-        kh      = GetRecArgR(irec,compdat_kh  )
+-        skin    = GetRecArgR(irec,compdat_skin)
+-        rout    = GetRecArgR(irec,compdat_rout)
+-
+-        zlgr = 'Field'
+-        call GetRecArgZ(irec,compdat_wnam,wname)
+-        call GetRecArgZ(irec,compdat_cdir,cdir )
+-
+-        do ck=ckl,cku
+-          call SetUGrdEclCmplLocation(wname,ci,cj,ck,cijk_d_true,zlgr,cdir, &
+-                                      ccfuser,rw,kh,skin,rout,set_props_true,qerr,cerr)
+-        enddo
++      if( StringCompareIgnoreCase(zkey,'WELSPECS' ) .or. &
++          StringCompareIgnoreCase(zkey,'WELLSPEC' ) ) then
++        mwell=mwell+1
+       endif
+     enddo
++
++    ! Store wells
++
++    if( mwell>0 ) then
++
++      ! Allocate well name store
++
++      allocate(wnamelist(mwell));wnamelist=' '
++
++      ! Fill up store
++
++      nwell=0
++      do irec=1,nrec
++        call GetKeywordname(irec,zkey)
++        if( StringCompareIgnoreCase(zkey,'WELSPECS' ) .or. &
++            StringCompareIgnoreCase(zkey,'WELLSPEC' ) ) then
++
++          call GetRecArgZ(irec,universal_well_name,wname)
++
++          well_found=PETSC_FALSE
++          do iwell=1,nwell
++            welli = wnamelist(iwell)
++            if(  StringCompareIgnoreCase(trim(welli),trim(wname)) ) well_found=PETSC_TRUE
++          enddo
++
++          if( .not.well_found ) then
++            nwell=nwell+1
++            call GetRecArgZ(irec,universal_well_name,wname)
++            wnamelist(nwell)=wname
++          endif
++        endif
++      enddo
++
++      ! Loop over wells for COMPDAT scanning for each well
++
++      do iwell=1,nwell
++        welli = wnamelist(iwell)
++        do irec=1,nrec
++          call GetKeywordname(irec,zkey)
++          if(  StringCompareIgnoreCase(trim(zkey),'compdat') ) then
++
++            call GetRecArgZ(irec,compdat_wnam,wname)
++            if( StringCompareIgnoreCase(trim(wname),trim(welli)) ) then
++
++              ci      = GetRecArgI(irec,compdat_ci )
++              cj      = GetRecArgI(irec,compdat_cj )
++              ckl     = GetRecArgI(irec,compdat_ckl)
++              cku     = GetRecArgI(irec,compdat_cku)
++
++              ccfuser = GetRecArgR(irec,compdat_ccfu)
++              diam    = GetRecArgR(irec,compdat_diam)
++              rw      = 0.5D0*diam
++              kh      = GetRecArgR(irec,compdat_kh  )
++              skin    = GetRecArgR(irec,compdat_skin)
++              rout    = GetRecArgR(irec,compdat_rout)
++
++              zlgr = 'Field'
++              call GetRecArgZ(irec,compdat_cdir,cdir )
++
++              do ck=ckl,cku
++                call SetUGrdEclCmplLocation(wname,ci,cj,ck,cijk_d_true,zlgr,cdir, &
++                                            ccfuser,rw,kh,skin,rout,set_props_true,qerr,cerr)
++              enddo
++            endif
++          endif
++        enddo
++      enddo
++
++      ! Deallocate well name store
++
++      deallocate(wnamelist)
++
++    endif
+   endif
+ 
+ !  Search for 'WELL_DATA' section and read well locations if found
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/grid_grdecl.F90 b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/grid_grdecl.F90
+index 058fb0e..facfe09 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/grid_grdecl.F90
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/grid_grdecl.F90
+@@ -15,6 +15,7 @@ module Grid_Grdecl_module
+ 
+   implicit none
+ 
++  character(len = MAXSTRINGLENGTH) :: g_word = ' '
+   PetscBool, parameter :: g_callwaste = PETSC_FALSE
+ 
+   ! Dimension of coordinate line arrays
+@@ -10298,6 +10299,8 @@ subroutine InputReadPflotranStringNotComment(input, option)
+     if (word(1:2) /= '--') exit
+   enddo
+ 
++  g_word=word
++
+ end subroutine InputReadPflotranStringNotComment
+ 
+ ! *************************************************************************** !
+@@ -11658,6 +11661,7 @@ subroutine ESchedReader(filename, option, first_call)
+   !
+   use String_module
+   use Esched_Data_class
++  use Utility_module, only : PrintInt8
+ 
+   implicit none
+ 
+@@ -11678,6 +11682,7 @@ subroutine ESchedReader(filename, option, first_call)
+   PetscInt, parameter :: ma = 101
+   character(len = MAXSTRINGLENGTH) :: za(ma)
+   character(len = MAXSTRINGLENGTH) :: zerr
++  character(len = 8 ) :: z8
+ 
+   ! Initialise
+ 
+@@ -11779,6 +11784,14 @@ subroutine ESchedReader(filename, option, first_call)
+   ! Check for error
+ 
+   if( qerr ) then
++
++105 format(' Line ',A,' : ',A)
++
++    if ( (option%myrank == option%io_rank) ) then
++      call PrintInt8(input%line_number,z8)
++      write(*,105) trim(adjustl(z8)),trim(adjustl(g_word))
++    endif
++
+     if( len_trim(zerr)> 0 ) then
+       option%io_buffer = zerr
+     else
+@@ -11814,7 +11827,7 @@ subroutine UnloadStrings(ismetric,zkey, za, ma, qerr, zerr)
+   PetscInt                      , allocatable :: argi(:)
+   PetscReal                     , allocatable :: argr(:)
+   character(len=MAXSTRINGLENGTH), allocatable :: argz(:), zht, zrt
+-  character(len=MAXSTRINGLENGTH) :: wellname, zos, zinjt, zdir, zgrp, zmon
++  character(len=MAXSTRINGLENGTH) :: wellname, zos, zinjt, zdir, zgrp, zmon, operation
+   character(len=8) :: z8
+ 
+   PetscInt :: ci, cj, ckl, cku, icos, iwos, ist, lent, injt, wi, wj, iday, iyear, iht, irt
+@@ -12299,6 +12312,24 @@ subroutine UnloadStrings(ismetric,zkey, za, ma, qerr, zerr)
+ 
+    endif
+ 
++!--WELOPEN---------------------------------------------------------------------
++
++  if(  StringCompareIgnoreCase(trim(zkey),'welopen') ) then
++
++    call AllocArgs(argi,argr,argz,welopen_maxi,welopen_maxr,welopen_maxz)
++
++    wellname  = za(1)
++    operation = za(2)
++    if( len_trim(wellname)>0 ) then
++      argz(welopen_wnam) = wellname
++      argz(welopen_oper) = operation
++      call SetRec(zkey,argi,argr,argz)
++    endif
++
++    call DeallocArgs(argi,argr,argz)
++
++   endif
++
+ !--Check error flag and extract stored error message if required---------------
+ 
+    if( qerr ) then
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/makefile b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/makefile
+index eb8f9da..bc46d56 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/makefile
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/makefile
+@@ -144,6 +144,11 @@ ifdef codecov
+   LIBS += -lgcov
+ endif
+ 
++# This avoids an error with older petsc and modern gfortran, etc, compilers
++ifdef modern_gfortran
++  MYFLAGS += -fallow-argument-mismatch
++endif
++
+ ###############################################################################
+ # Assign additional compiler/preprocessor flags
+ ###############################################################################
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/pflotran-provenance.py b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/pflotran-provenance.py
+index a16820e..ff32616 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/pflotran-provenance.py
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/pflotran-provenance.py
+@@ -67,6 +67,13 @@ provenance_max_str_len_re = re.compile("(:: provenance_max_str_len = )([\d]+)")
+ # Functions
+ #
+ ################################################################################
++def safe_subprocess_check(cmd):
++    try:
++      out = subprocess.check_output(cmd,stderr=subprocess.DEVNULL).decode('utf8')
++    except:
++      return "Unknown"
++    return out
++
+ def write_provenance_module(provenance, details, max_string_length):
+     """Write the provenance file by combining a series of strings and templates.
+     """
+@@ -202,14 +209,14 @@ def clean_details(details, max_string_length):
+ 
+ def get_git_info():
+     cmd = ["git", "log", "--pretty=%H", "-1", "HEAD"]
+-    changeset = subprocess.check_output(cmd).decode('utf8')
++    changeset = safe_subprocess_check(cmd)
+ 
+     #X#cmd = ["git", "log", "-1", "HEAD"]
+     cmd = ["git", "log", "-1", "HEAD", '--pretty=commit: %H%nAuthor: %an%nDate:   %ai%n']
+-    parent = subprocess.check_output(cmd).decode('utf8')
++    parent = safe_subprocess_check(cmd)
+ 
+     cmd = ["git", "status", "-u", "no"]
+-    data = subprocess.check_output(cmd).decode('utf8')
++    data = safe_subprocess_check(cmd)
+     if data.find("working directory clean") > 0:
+         prov_status = "No modifications"
+         deets_status = "No modifications"
+@@ -264,13 +271,13 @@ def determine_petsc_provenance(provenance, details, petsc_config):
+ 
+         elif os.path.isdir("{0}/.hg".format(petsc_dir)):
+             cmd = ["hg", "parent", "--template", "'{node}'"]
+-            provenance["petsc_changeset"] = subprocess.check_output(cmd).decode('utf8')
++            provenance["petsc_changeset"] = safe_subprocess_check(cmd)
+ 
+             cmd = ["hg", "parent"]
+-            details["petsc_parent"] = subprocess.check_output(cmd).decode('utf8')
++            details["petsc_parent"] = safe_subprocess_check(cmd)
+ 
+             cmd = ["hg", "status", "-q"]
+-            data = subprocess.check_output(cmd).decode('utf8')
++            data = safe_subprocess_check(cmd)
+             if data.strip() == "":
+                 provenance["petsc_status"] = "No modifications"
+             else:
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/pmc_subsurface.F90 b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/pmc_subsurface.F90
+index 53cb624..d0620a6 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/pmc_subsurface.F90
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/pmc_subsurface.F90
+@@ -417,9 +417,19 @@ subroutine PMCSubsurfaceSetupSolvers_TimestepperBE(this)
+                                   ierr);CHKERRQ(ierr)
+ 
+       if (option%use_mc .and. (itransport == RT)) then
++      ! this is ancient code for ancient funcitonality that needs to be removed soon;
++      ! gfortran compilers v>9 react very badly to this call so we just comment it out
++      ! and exit the program if ever get to this point.
++      ! To be completely cut in future.
++
++#if 0
+         call SNESLineSearchSetPostCheck(linesearch, &
+                               SecondaryRTUpdateIterate, &
+                               realization,ierr);CHKERRQ(ierr)
++#endif
++      call PrintErrMsg(option,"These options are currently not supported. " // &
++                              "Please contact OpenGoSim for more information.")
++       
+       endif
+ 
+       ! Have PETSc do a SNES_View() at the end of each solve if
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/well_data.F90 b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/well_data.F90
+index 0e97e93..0b6c1a4 100644
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/src/pflotran/well_data.F90
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/src/pflotran/well_data.F90
+@@ -4276,12 +4276,12 @@ subroutine ScanEschedForWells(list,waytime,nwaytime,mwaytime,option)
+                dref, zref, time, timed
+   PetscReal :: orath, wrath, grath, lrath, bhph
+   PetscBool :: qfound, wfound
+-  character(len=MAXWORDLENGTH) :: zkey, zlgr, wname,cdir, zwel, zmon
++  character(len=MAXWORDLENGTH) :: zkey, zlgr, wname,cdir, zwel, zmon, oper
+   type(well_data_type)     , pointer :: well_data=>null()
+   PetscReal, pointer :: waytime(:)
+   PetscInt, intent(inout) :: nwaytime, mwaytime
+   PetscBool, parameter :: is_start_no = PETSC_FALSE
+-  PetscBool :: error_condition
++  PetscBool :: error_condition, isopen, isshut
+   character(len=MAXSTRINGLENGTH) :: error_string
+   type(option_type), pointer :: option
+ 
+@@ -4685,6 +4685,41 @@ subroutine ScanEschedForWells(list,waytime,nwaytime,mwaytime,option)
+ 
+     endif
+ 
++!--Handle WELOPEN--------------------------------------------------------------
++
++    if( StringCompareIgnoreCase(trim(zkey),'welopen') ) then
++
++      call GetRecArgZ(irec,welopen_oper,oper)
++      isopen = StringCompareIgnoreCase(oper,'open')
++      isshut = StringCompareIgnoreCase(oper,'shut')
++
++      if( isopen .or. isshut ) then
++        if( time>0.0 ) then
++          well_data%w_readtime = time
++          if (nwaytime+1 > mwaytime) call ReallocateArray(waytime, mwaytime)
++          waytime(nwaytime+1)  = time
++          nwaytime = nwaytime + 1
++        endif
++
++        if (well_data%w_readtime>0.0) then
++          if( isopen ) then
++            call StoreWellEvent(well_data, EVENT_OPEN, W_BHP_LIMIT, v)
++          else
++            call StoreWellEvent(well_data, EVENT_SHUT, W_BHP_LIMIT, v)
++          endif
++        else
++          if( isopen ) then
++            well_data%w_status   = W_STATUS_OPEN
++            well_data%w_shutcode = W_SHUTCODE_NONE
++          else
++            well_data%w_status   = W_STATUS_SHUT
++            well_data%w_shutcode = W_SHUTCODE_USER
++          endif
++        endif
++      endif
++
++    endif
++
+ !--Handle TIME-----------------------------------------------------------------
+ 
+     if( StringCompareIgnoreCase(trim(zkey),'time') ) then
+diff --git a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/tpls/pfunit/source/GenerateRealArrayNewSignature.py b/opengosim-pflotran_ogs_1.8-6dd0c114de27/tpls/pfunit/source/GenerateRealArrayNewSignature.py
+index dad0c20..01c04a3 100755
+--- a/opengosim-pflotran_ogs_1.8-ecef47041ef1.orig/tpls/pfunit/source/GenerateRealArrayNewSignature.py
++++ b/opengosim-pflotran_ogs_1.8-6dd0c114de27/tpls/pfunit/source/GenerateRealArrayNewSignature.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python2
+ # For python 2.6-2.7
+ from __future__ import print_function
+ # For python2.5
