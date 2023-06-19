@@ -1,0 +1,53 @@
+name = 'QuantumESPRESSO'
+
+version = '7.2'
+
+homepage = 'https://www.quantum-espresso.org'
+description = """Quantum ESPRESSO  is an integrated suite of computer codes for electronic-structure calculations and materials modeling at the nanoscale. It is based on density-functional theory, plane waves, and pseudopotentials (both norm-conserving and ultrasoft).
+"""
+
+toolchain = {'name': 'iofbf', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = [
+    'https://github.com/QEF/q-e/archive/refs/tags/qe-%(version)s/',
+    'https://github.com/dceresoli/qe-gipaw/archive/',
+    'https://github.com/wannier-developers/wannier90/archive/refs/tags/',
+    'https://github.com/dalcorso/thermo_pw/releases/download/1.8.1/',
+]
+sources = [
+    {'filename': 'qe-%(version)s.tar.gz', 'extract_cmd': 'tar xzf %s && mv q-e-qe-7.2 qe-7.2'},
+    {'filename': 'qe-gipaw-%(version)s.tar.gz', 'download_filename': '%(version)s.tar.gz'},
+    {'filename': 'wannier90-3.1.0.tar.gz', 'download_filename': 'v3.1.0.tar.gz'},
+    {'filename': 'thermo_pw.1.8.1.tar.gz', 'extract_cmd': 'tar xzf %s && mv thermo_pw qe-7.2/'},
+]
+checksums = [
+    {'qe-7.2.tar.gz': 'b348a4a7348b66a73545d9ca317a2645755c98d343c1cfe8def475ad030808c0'},
+    {'qe-gipaw-7.2.tar.gz': 'b348a4a7348b66a73545d9ca317a2645755c98d343c1cfe8def475ad030808c0'},
+    {'wannier90-3.1.0.tar.gz': 'b348a4a7348b66a73545d9ca317a2645755c98d343c1cfe8def475ad030808c0'},
+    {'thermo_pw.1.8.1.tar.gz': 'e0e013fecb89e2c42f82c3b65e928b6b9166f06bd76bd450efe3000f6a756bba'},
+]
+
+dependencies = [
+    ('HDF5', '1.10.6', '-mpi'),
+    #('ELPA', '2020.05.001'),
+    ('libxc', '5.1.3'),
+]
+
+with_ace = True
+
+# pw ph hp pwcond neb pp
+# pwall" same as "make pw ph pp pwcond neb"
+# cp all_currents tddfpt gwl ld1 xspectra couple epw kcw gui
+# all: same as "make pwall cp ld1 tddfpt xspectra hp"
+# gipaw w90 want yambo d3q
+
+preconfigopts  = 'cd %(builddir)s/qe-7.2/thermo_pw && make join_qe && cd - &&'
+
+buildopts = 'all gwl xspectra couple epw w90 gui all_currents gipaw kcw thermo_pw'
+
+# Parallel build tends to fail:
+
+parallel = 1
+
+moduleclass = 'chem'
