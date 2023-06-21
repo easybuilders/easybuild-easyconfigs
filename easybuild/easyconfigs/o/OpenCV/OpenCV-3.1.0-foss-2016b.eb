@@ -3,7 +3,7 @@ easyblock = 'CMakeMake'
 name = 'OpenCV'
 version = '3.1.0'
 
-homepage = 'http://opencv.org/'
+homepage = 'https://opencv.org/'
 description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
  and machine learning software library. OpenCV was built to provide
  a common infrastructure for computer vision applications and to accelerate
@@ -16,10 +16,13 @@ source_urls = [
     # the hash is version dependent! see 3rdparty/ippicv/downloader.cmake
     'https://raw.githubusercontent.com/Itseez/opencv_3rdparty/81a676001ca8075ada498583e4166079e5744668/ippicv',
 ]
-
 sources = [
     '%(version)s.zip',
     {'filename': 'ippicv_linux_20151201.tgz', 'extract_cmd': "cp %s %(builddir)s"},
+]
+checksums = [
+    '1f6990249fdb82804fff40e96fa6d99949023ab0e3277eae4bd459b374e622a4',  # 3.1.0.zip
+    '4333833e40afaa22c804169e44f9a63e357e21476b765a5683bcb3760107f0da',  # ippicv_linux_20151201.tgz
 ]
 
 builddependencies = [
@@ -34,8 +37,8 @@ dependencies = [
     ('libpng', '1.6.24'),
     ('LibTIFF', '4.0.6'),
     ('JasPer', '1.900.1'),
-    ('Java', '1.8.0_92', '', True),
-    ('ant', '1.9.7', '-Java-%(javaver)s', True),
+    ('Java', '1.8.0_92', '', SYSTEM),
+    ('ant', '1.9.7', '-Java-%(javaver)s', SYSTEM),
     ('GLib', '2.49.5'),
     ('GTK+', '2.24.31'),
 ]
@@ -44,8 +47,7 @@ dependencies = [
 local_ippicv_dir = '3rdparty/ippicv/downloads/linux-808b791a6eac9ed78d32a7666804320e/'
 preconfigopts = "mkdir -p %s && cp -a ../*.tgz %s && " % (local_ippicv_dir, local_ippicv_dir)
 
-configopts = '-DCMAKE_BUILD_TYPE=RELEASE '
-configopts += '-DBUILD_PYTHON_SUPPORT=ON '
+configopts = '-DBUILD_PYTHON_SUPPORT=ON '
 configopts += '-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages '
 configopts += '-DBUILD_NEW_PYTHON_SUPPORT=ON '
 configopts += '-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.%s ' % SHLIB_EXT
@@ -61,8 +63,11 @@ configopts += '-DJASPER_INCLUDE_DIR=$EBROOTJASPER/include '
 configopts += '-DWITH_IPP=ON '
 configopts += '-DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSE3=ON '
 configopts += '-DWITH_CUDA=OFF '
+configopts += '-DWITH_GTK_2_X=ON'
 
-postinstallcmds = ["cp 3rdparty/ippicv/unpack/ippicv_lnx/lib/intel64/libippicv.*  %(installdir)s/lib"]
+local_startdir = '%(builddir)s/%(namelower)s-%(version)s'
+postinstallcmds = ["cp %s/3rdparty/ippicv/unpack/ippicv_lnx/lib/intel64/libippicv.* %%(installdir)s/lib"
+                   % local_startdir]
 
 sanity_check_paths = {
     'files': ['lib/libopencv_core.%s' % SHLIB_EXT] +

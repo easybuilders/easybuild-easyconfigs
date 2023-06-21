@@ -1,0 +1,72 @@
+easyblock = 'PythonBundle'
+
+name = 'DROP'
+version = '1.0.3'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://gagneurlab-drop.readthedocs.io'
+description = "Pipeline to find aberrant events in RNA-Seq data, useful for diagnosis of rare disorders"
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+dependencies = [
+    ('R', '4.0.3'),
+    ('R-bundle-Bioconductor', '3.12', '-R-%(rver)s'),
+    ('tMAE', '1.0.0', '-R-%(rver)s'),
+    ('Java', '11', '', SYSTEM),
+    ('GATK', '4.2.0.0', '-Java-%(javaver)s'),
+    ('Graphviz', '2.47.0', '-Java-%(javaver)s'),
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('snakemake', '6.1.0'),
+    ('wget', '1.20.3'),
+    ('HTSlib', '1.11'),  # for tabix
+    ('SAMtools', '1.11'),
+    ('BCFtools', '1.11'),
+    ('Pandoc', '2.13', '', SYSTEM),
+]
+
+# postinstallcmds for pandoc are required to avoid that import fails because pandoc/definitions dir is not installed
+exts_list = [
+    ('wbuild', '1.8.0', {
+        'checksums': ['3088d3fcbc71106464f20e3546a73df400dc03d17f11e70bdb15d35d7e6c5a7e'],
+    }),
+    ('click-log', '0.3.2', {
+        'checksums': ['16fd1ca3fc6b16c98cea63acf1ab474ea8e676849dc669d86afafb0ed7003124'],
+    }),
+    ('graphviz', '0.16', {
+        'source_tmpl': '%(name)s-%(version)s.zip',
+        'checksums': ['d2d25af1c199cad567ce4806f0449cb74eb30cf451fd7597251e1da099ac6e57'],
+    }),
+    ('ply', '3.11', {
+        'checksums': ['00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3'],
+    }),
+    ('about', '5.2', {
+        'checksums': ['4a318ad1dcf6e9355b8ae18195c707d26413782b57ac5c740cc696b44350c959'],
+    }),
+    ('pandoc', '1.0.2', {
+        'postinstallcmds': [
+            'cp -a pandoc/definitions %(installdir)s/lib/python%(pyshortver)s/site-packages/pandoc/',
+        ],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/boisgera/pandoc/archive'],
+        'checksums': ['37134dd3a4c681e988d8570297fcc2b615f80b0604a9b4ffb41c2e6bacd2b64b'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/gagneurlab/drop/archive'],
+        'checksums': ['b4f4481bedfec212085646c6f1bebf3d113bc8490e127337d693a01bc95c7e51'],
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/drop'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['drop --help']
+
+moduleclass = 'bio'

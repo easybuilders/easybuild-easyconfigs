@@ -1,0 +1,76 @@
+see https://github.com/ANTsX/ANTs/pull/896
+
+From 756d49ebdcff3f9cb3143072c642a2cb5988bcd2 Mon Sep 17 00:00:00 2001
+From: Philip A Cook <cookpa@pennmedicine.upenn.edu>
+Date: Fri, 25 Oct 2019 16:50:39 -0400
+Subject: [PATCH] BUG: Number of iterations was offset by one level
+
+---
+ ...istrationOptimizerCommandIterationUpdate.h | 21 +++++++------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
+
+diff --git a/Examples/antsRegistrationOptimizerCommandIterationUpdate.h b/Examples/antsRegistrationOptimizerCommandIterationUpdate.h
+index 455df95c..59e27085 100644
+--- a/Examples/antsRegistrationOptimizerCommandIterationUpdate.h
++++ b/Examples/antsRegistrationOptimizerCommandIterationUpdate.h
+@@ -93,18 +93,13 @@ class antsRegistrationOptimizerCommandIterationUpdate final : public itk::Comman
+ #endif
+     if( typeid( event ) == typeid( itk::IterationEvent ) )
+       {
+-      // const unsigned int CurrentLevel = this->m_Optimizer->GetCurrentLevel();
++      // currentIteration indexed from 1 for printing to the screen and naming output
+       const unsigned int currentIteration = this->m_Optimizer->GetCurrentIteration() + 1;
+       if( currentIteration == 1 )
+         {
++        this->m_Optimizer->SetNumberOfIterations( this->m_NumberOfIterations[this->m_CurrentLevel] );
+         this->m_CurrentLevel++;
+-        }
+-
+-      const unsigned int lCurrentIteration = this->m_Optimizer->GetCurrentIteration() + 1;
+-
+ 
+-      if( lCurrentIteration  == 1 )
+-        {
+         if( this->m_ComputeFullScaleCCInterval != 0 )
+           {
+           // Print header line one time
+@@ -124,8 +119,8 @@ class antsRegistrationOptimizerCommandIterationUpdate final : public itk::Comman
+       MeasureType        metricValue = 0.0;
+       const unsigned int lastIteration = this->m_Optimizer->GetNumberOfIterations();
+       if( ( this->m_ComputeFullScaleCCInterval != 0 ) &&
+-          ( lCurrentIteration == 1 || ( lCurrentIteration % this->m_ComputeFullScaleCCInterval == 0 ) ||
+-            lCurrentIteration == lastIteration) )
++          ( currentIteration == 1 || ( currentIteration % this->m_ComputeFullScaleCCInterval == 0 ) ||
++            currentIteration == lastIteration) )
+         {
+         // This function finds the similarity value between the original fixed image and the original moving images
+         // using a CC metric type with radius 4.
+@@ -134,8 +129,8 @@ class antsRegistrationOptimizerCommandIterationUpdate final : public itk::Comman
+         }
+ 
+       if( ( this->m_WriteIterationsOutputsInIntervals != 0 ) &&
+-          ( lCurrentIteration == 1 || (lCurrentIteration % this->m_WriteIterationsOutputsInIntervals == 0 ) ||
+-         lCurrentIteration == lastIteration) )
++          ( currentIteration == 1 || (currentIteration % this->m_WriteIterationsOutputsInIntervals == 0 ) ||
++         currentIteration == lastIteration) )
+         {
+         // This function writes the output volume of each iteration to the disk.
+         // The feature can be used to observe the progress of the registration process at each iteration,
+@@ -148,7 +143,7 @@ class antsRegistrationOptimizerCommandIterationUpdate final : public itk::Comman
+         }                 // will appear before line, else a free space will be printed to keep visual alignment.
+ 
+       this->Logger() << "2DIAGNOSTIC, "
+-                     << std::setw(5) << lCurrentIteration << ", "
++                     << std::setw(5) << currentIteration << ", "
+                      << std::scientific << std::setprecision(12) << this->m_Optimizer->GetValue() << ", "
+                      << std::scientific << std::setprecision(12) << this->m_Optimizer->GetConvergenceValue() << ", "
+                      << std::setprecision(4) << now << ", "
+@@ -163,8 +158,6 @@ class antsRegistrationOptimizerCommandIterationUpdate final : public itk::Comman
+         this->Logger() << std::flush << std::endl;
+         }
+ 
+-      this->m_Optimizer->SetNumberOfIterations( this->m_NumberOfIterations[this->m_CurrentLevel] );
+-
+       this->m_lastTotalTime = now;
+       m_clock.Start();
+       }

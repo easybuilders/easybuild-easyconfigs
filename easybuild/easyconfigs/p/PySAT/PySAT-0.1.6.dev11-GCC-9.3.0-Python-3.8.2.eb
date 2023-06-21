@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'PySAT'
+version = '0.1.6.dev11'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/mvcisback/py-aiger'
+description = """
+PySAT is a Python toolkit, which aims at providing a simple and unified
+interface to a number of state-of-art Boolean satisfiability (SAT) solvers as
+well as to a variety of cardinality and pseudo-Boolean encodings."""
+
+# PySAT includes solvers in C and C++
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('py-aiger', '6.1.1', versionsuffix),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('pypblib', '0.0.4', {
+        'checksums': ['71dd930bf177ca38d6eeb473702d05df07e11f20382db0c766465297eaf49062'],
+    }),
+    ('python-sat', version, {
+        'checksums': ['0e68f3439841dab7b43b054fbbe5299297f549c3eba189ced722d8312ecfd5d5'],
+        'modulename': name.lower(),
+    }),
+]
+
+# check provided examples and solvers
+local_examples = ['fm', 'genhard', 'lbx', 'lsu', 'mcsls', 'models', 'musx', 'rc2']
+local_solvers = ['Cadical', 'Glucose3', 'Glucose4', 'Lingeling', 'MapleChrono', 'MapleCM', 'Maplesat',
+                 'Minicard', 'Minisat22', 'MinisatGH']
+
+sanity_check_paths = {
+    'files': ['bin/%s.py' % x for x in local_examples],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'from pysat.solvers import %s'" % s for s in local_solvers]
+
+moduleclass = 'cae'
