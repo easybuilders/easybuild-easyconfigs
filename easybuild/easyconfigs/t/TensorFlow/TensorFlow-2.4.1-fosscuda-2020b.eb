@@ -16,10 +16,11 @@ builddependencies = [
     ('git', '2.28.0', '-nodocs'),
     ('pybind11', '2.6.0'),
     ('pkgconfig', '1.5.1', '-python'),  # For h5py
+    ('UnZip', '6.0'),
 ]
 dependencies = [
-    ('cuDNN', '8.0.4.30', '-CUDA-11.1.1', True),
-    ('NCCL', '2.8.3', '-CUDA-11.1.1', True),
+    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', SYSTEM),
+    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
     ('Python', '3.8.6'),
     # Next 2 are for h5py
     ('SciPy-bundle', '2020.11'),
@@ -45,10 +46,8 @@ dependencies = [
     ('zlib', '1.2.11'),
 ]
 
-exts_default_options = {
-    'sanity_pip_check': True,
-}
 use_pip = True
+sanity_pip_check = True
 
 # Dependencies created and updated using findPythonDeps.sh:
 # https://gist.github.com/Flamefire/49426e502cd8983757bd01a08a10ae0d
@@ -100,6 +99,7 @@ exts_list = [
     ('grpcio', '1.32.0', {
         'modulename': 'grpc',
         'checksums': ['01d3046fe980be25796d368f8fc5ff34b7cf5e1444f3789a017a7fe794465639'],
+        'preinstallopts': "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && ",
     }),
     ('gviz-api', '1.9.0', {
         'source_tmpl': 'gviz_api-%(version)s.tar.gz',
@@ -130,6 +130,9 @@ exts_list = [
         'source_tmpl': 'tensorflow_estimator-%(version)s-py2.py3-none-any.whl',
         'unpack_sources': False,
         'checksums': ['5b7b7bf2debe19a8794adacc43e8ba6459daa4efaf54d3302623994a359b17f0'],
+    }),
+    ('astor', '0.8.1', {
+        'checksums': ['6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e'],
     }),
     ('gast', '0.3.3', {
         'checksums': ['b881ef288a49aa81440d2c5eb8aeefd4c2bb8993d5f50edae7413a85bfdb3b57'],
@@ -163,10 +166,11 @@ exts_list = [
             'TensorFlow-2.4.0_fix-eigen-on-power.patch',
             'TensorFlow-2.4.0_downgrade-required-versions.patch',
             'TensorFlow-2.4.0_add-protobuf-deps.patch',
-            'TensorFlow-2.4.0_add-ldl.patch',
             'TensorFlow-2.4.0_add-missing-llvm-deps.patch',
             'TensorFlow-2.4.0_fix-absl-on-power.patch',
             'TensorFlow-2.4.0_dont-use-var-lock.patch',
+            'TensorFlow-2.4.1_add-ldl.patch',
+            'TensorFlow-2.4.1_fix-min-priority-test.patch',
             'TensorFlow-2.4.1_remove-duplicate-gpu-tests.patch',
         ],
         'source_tmpl': 'v%(version)s.tar.gz',
@@ -189,6 +193,7 @@ exts_list = [
             '-//tensorflow/c/eager:c_api_distributed_test_gpu',
             # Race condition with port picker: https://github.com/tensorflow/tensorflow/issues/46602
             '-//tensorflow/c/eager:c_api_cluster_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_function_test',
             '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
             '-//tensorflow/c/eager:c_api_remote_test_gpu',
             # Invalid alignment: https://github.com/tensorflow/tensorflow/issues/46460
@@ -217,13 +222,15 @@ exts_list = [
             'ac8f53662ad0bb660089c17bb433faf1ce3c2238234a2c3be7d92c8e02c1a8d6',
             # TensorFlow-2.4.0_add-protobuf-deps.patch
             '0ae2f4f1f1dc5b85f61edbe8a4a91dcffd5cf7588fa46c6a143455e4bc41a64e',
-            '917ee7282e782e48673596d8917c3207e60e0851bb9acf230a2a439b067af2e3',  # TensorFlow-2.4.0_add-ldl.patch
             # TensorFlow-2.4.0_add-missing-llvm-deps.patch
             'ce8c41e75f9854e547d03de99ae72cf41afa967b20439e864bc4af3dd4f565c7',
             # TensorFlow-2.4.0_fix-absl-on-power.patch
             'cd0e1181cfc56c259cb57b7f9590816db5f5cde3fab39b3386c001359ca6e9fa',
             # TensorFlow-2.4.0_dont-use-var-lock.patch
             'b14f2493fd2edf79abd1c4f2dde6c98a3e7d5cb9c25ab9386df874d5f072d6b5',
+            'ab57637e3e64a5ff8345573effed2b229c33579b9ac3c8ceb7e554d236890d4a',  # TensorFlow-2.4.1_add-ldl.patch
+            # TensorFlow-2.4.1_fix-min-priority-test.patch
+            '389febce9a0612fd457daf4cb18c02f77fc7311bacae0963602a3198d9f2737f',
             # TensorFlow-2.4.1_remove-duplicate-gpu-tests.patch
             'f384cd97e004673ae530b6e5cc826f8fddb46646991f1a228fc07b2aac87ee80',
         ],

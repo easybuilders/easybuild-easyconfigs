@@ -1,0 +1,39 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'MakeCp'
+
+name = 'zfp'
+version = '0.5.5'
+
+homepage = 'https://github.com/LLNL/zfp'
+description = """zfp is a compressed format for representing multidimensional floating-point and integer arrays.
+zfp provides compressed-array classes that support high throughput read and write random access to individual array
+elements. zfp also supports serial and parallel (OpenMP and CUDA) compression of whole arrays, e.g., for applications
+that read and write large data sets to and from disk."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/LLNL/zfp/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['6a7f4934489087d9c117a4af327fd6495ea757924f4df467b9c537abf8bd86c4']
+
+builddependencies = [
+    ('binutils', '2.35'),
+]
+
+prebuildopts = "sed -i 's/FLAGS = -O3/FLAGS = $CFLAGS/g' Makefile && "
+buildopts = 'ZFP_WITH_OPENMP=1'
+
+runtest = 'test'
+
+files_to_copy = ['bin', 'include', 'lib']
+
+sanity_check_paths = {
+    'files': ['bin/zfp', 'bin/testzfp', 'include/zfp.h', 'lib/libzfp.a'],
+    'dirs': ['include/zfp'],
+}
+
+sanity_check_commands = ["zfp --help 2>&1 | grep 'Usage: zfp'"]
+
+moduleclass = 'lib'

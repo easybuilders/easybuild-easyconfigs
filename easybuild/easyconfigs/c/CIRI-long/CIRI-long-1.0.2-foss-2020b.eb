@@ -1,0 +1,52 @@
+easyblock = 'PythonBundle'
+
+name = 'CIRI-long'
+version = '1.0.2'
+
+homepage = 'https://github.com/bioinfo-biols/CIRI-long/'
+description = "Circular RNA Identification for Long-Reads Nanopore Sequencing Data"
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('scikit-learn', '0.23.2'),
+    ('Pysam', '0.16.0.1'),
+    ('minimap2', '2.18'),
+    ('Cython', '0.29.22'),
+    ('SAMtools', '1.11'),
+    ('Biopython', '1.78'),
+    ('pyspoa', '0.0.8'),
+    ('python-Levenshtein', '0.12.1'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('mappy', '2.17', {
+        'checksums': ['ed1460efc9c6785df28065b7e93e93c92227f623a181f1a852dca6e6acb1a15f'],
+    }),
+    ('bwapy', '0.1.4', {
+        'checksums': ['fcdad0c7311753d550b3a3aefbc2619380e7e35e7aeaa386fd491cba47e71824'],
+    }),
+    (name, version, {
+        'modulename': 'CIRI_long',
+        'preinstallopts': "make lib && sed -i '/install_requires/,+4d' setup.py && ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/bioinfo-biols/CIRI-long/archive'],
+        'checksums': ['4c83d18fb147cc37be99b79f94acbbc24caa9954286afc8ff24058a9db7e9e48'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/CIRI-long'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = [
+    'cd %(builddir)s/CIRIlong/%(name)s-%(version)s && make test',
+    'CIRI-long --help',
+]
+sanity_pip_check = True
+
+moduleclass = 'bio'

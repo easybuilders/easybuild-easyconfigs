@@ -1,0 +1,100 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'Ray-project'
+version = '1.9.2'
+
+homepage = "https://www.ray.io/"
+description = """Ray is an open source project that makes it simple to scale any
+compute-intensive Python workload — from deep learning to production model
+serving. With a rich set of libraries and integrations built on a flexible
+distributed execution framework, Ray makes distributed computing easy and
+accessible to every engineer."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+builddependencies = [
+    ('Rust', '1.54.0'),  # needed by maturin
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('aiohttp', '3.8.1'),  # also provides frozenlist
+    ('dm-tree', '0.1.6'),
+    ('Flask', '2.0.2'),
+    ('gpustat', '1.0.0b1'),
+    ('libunwind', '1.5.0'),  # needed by py-spy
+    ('OpenCensus-python', '0.8.0'),
+    ('protobuf-python', '3.17.3'),
+    ('PyYAML', '5.4.1'),
+    ('Redis', '6.2.6'),  # needed by redis-py
+    ('OpenAI-Gym', '0.21.0'),  # also provides lz4
+    ('OpenCV', '4.5.5', '-contrib'),
+    ('scikit-image', '0.19.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('grpcio', '1.43.0', {
+        'modulename': 'grpc',
+        'checksums': ['735d9a437c262ab039d02defddcb9f8f545d7009ae61c0114e19dda3843febe5'],
+    }),
+    ('prometheus_client', '0.11.0', {
+        'checksums': ['3a8baade6cb80bcfe43297e33e7623f3118d660d41387593758e2fb1ea173a86'],
+    }),
+    ('maturin', '0.12.6', {
+        'checksums': ['2b14cfae808b45a130e19b2999acea423d2e10e7a29ae2336996ba72ba442ff6'],
+    }),
+    ('py_spy', '0.3.11', {
+        'modulename': False,
+        'checksums': ['3115c6e45cdab657f81c886f8b1664e7e2208b775396031eeea60e4d16fc861d'],
+        # disable auditwheel which checks and modifies existing installations
+        'preinstallopts': "sed -i '/^bindings =.*/a skip-auditwheel = true' pyproject.toml &&",
+    }),
+    ('pydantic', '1.9.0', {
+        'checksums': ['742645059757a56ecd886faf4ed2441b9c0cd406079c2b4bee51bcc3fbcd510a'],
+    }),
+    ('wrapt', '1.13.3', {
+        'checksums': ['1fea9cd438686e6682271d36f3481a9f3636195578bab9ca3382e2f5f01fc185'],
+    }),
+    ('Deprecated', '1.2.13', {
+        'checksums': ['43ac5335da90c31c24ba028af536a91d41d53f9e6901ddb021bcc572ce44e38d'],
+    }),
+    ('redis', '4.1.1', {
+        'checksums': ['07420a3fbedd8e012c31d4fadac943fb81568946da202c5a5bc237774e5280a0'],
+    }),
+    ('smart_open', '5.2.1', {
+        'checksums': ['75abf758717a92a8f53aa96953f0c245c8cedf8e1e4184903db3659b419d4c17'],
+    }),
+    ('sniffio', '1.2.0', {
+        'checksums': ['c4666eecec1d3f50960c6bdf61ab7bc350648da6c126e3cf6898d8cd4ddcd3de'],
+    }),
+    ('anyio', '3.5.0', {
+        'checksums': ['a0aeffe2fb1fdf374a8e4b471444f0f3ac4fb9f5a5b542b48824475e0042a5a6'],
+    }),
+    ('starlette', '0.17.1', {
+        'checksums': ['57eab3cc975a28af62f6faec94d355a410634940f10b30d68d31cb5ec1b44ae8'],
+    }),
+    ('aiorwlock', '1.3.0', {
+        'checksums': ['83f12d87df4b9728a0b8fda1756585ab0d652b107bab59c6084e1b1ad692ab45'],
+    }),
+    ('ray', version, {
+        'source_tmpl': '%(namelower)s-%(version)s-cp39-cp39-manylinux2014_x86_64.whl',
+        'checksums': ['76294786421799a2a157917cbe493f758ae2f5a0acee8ac23cb885936b1a4e35'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ray'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = [
+    'ray --help'
+]
+
+moduleclass = 'tools'
