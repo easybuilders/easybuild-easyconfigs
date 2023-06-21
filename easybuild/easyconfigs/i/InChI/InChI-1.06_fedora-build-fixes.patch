@@ -1,0 +1,57 @@
+Patch made by Fedora to fix program name, linker and compilation options
+https://src.fedoraproject.org/rpms/inchi/blob/rawhide/f/inchi-rpm.patch
+
+diff -up INCHI-1-SRC/INCHI_API/demos/inchi_main/gcc/makefile.r INCHI-1-SRC/INCHI_API/demos/inchi_main/gcc/makefile
+--- INCHI-1-SRC/INCHI_API/demos/inchi_main/gcc/makefile.r	2019-06-22 20:25:28.000000000 +0200
++++ INCHI-1-SRC/INCHI_API/demos/inchi_main/gcc/makefile	2020-10-13 14:18:22.809829859 +0200
+@@ -30,7 +30,7 @@ INCHI_LIB_PATHNAME = $(LIB_DIR)/$(INCHI_
+ # === Main program name ====
+ ifndef API_CALLER_NAME
+   ifndef CALLER_IS_MOL2INCHI 
+-  API_CALLER_NAME = inchi_main$
++  API_CALLER_NAME = inchi_main
+   else
+   API_CALLER_NAME = mol2inchi$
+   endif
+@@ -43,9 +43,9 @@ endif
+ # === Linker to create Main program =====
+ ifndef LINKER
+   ifdef ISLINUX
+-	 LINKER_CWD_PATH = -Wl,-R,""
++	 LINKER_CWD_PATH =
+   endif
+-  LINKER = gcc -s $(LINKER_CWD_PATH)
++  LINKER = gcc $(LINKER_CWD_PATH)
+ endif
+ ifndef P_LIBR
+ 	P_LIBR = ../../../libinchi/src/
+@@ -70,7 +70,7 @@ endif
+ # === C Compiler Options =======
+ ifndef C_OPTIONS
+   ifndef CALLER_IS_MOL2INCHI
+-	C_OPTIONS = -ansi -O3 -c
++	C_OPTIONS = -ansi $(OPTFLAGS) -c
+   else
+ 	C_OPTIONS = -O3 -c  
+   endif
+diff -up INCHI-1-SRC/INCHI_EXE/inchi-1/gcc/makefile.r INCHI-1-SRC/INCHI_EXE/inchi-1/gcc/makefile
+--- INCHI-1-SRC/INCHI_EXE/inchi-1/gcc/makefile.r	2016-09-08 19:08:16.000000000 +0200
++++ INCHI-1-SRC/INCHI_EXE/inchi-1/gcc/makefile	2020-10-13 14:18:22.809829859 +0200
+@@ -13,7 +13,7 @@ ifndef CPP_COMPILER
+ 	CPP_COMPILER = g++
+ endif
+ ifndef LINKER
+-	LINKER = g++ -s
++	LINKER = gcc
+ endif
+ ifndef INCHI_EXECUTABLE_NAME
+ 	ifdef windir
+@@ -36,7 +36,7 @@ ifndef P_BASE
+ endif
+ #P_INCL = -I$(P_MAIN) -I$(P_BASE)
+ P_INCL = -I$(P_MAIN) -I$(P_BASE)
+-C_COMPILER_OPTIONS = $(P_INCL) -ansi -DCOMPILE_ANSI_ONLY -DTARGET_EXE_STANDALONE -O3 -c
++C_COMPILER_OPTIONS = $(P_INCL) -ansi -DCOMPILE_ANSI_ONLY -DTARGET_EXE_STANDALONE $(OPTFLAGS) -c
+ #C_COMPILER_OPTIONS = -c $(P_INCL) -ansi -O3 -fsigned-char -ffunction-sections -fexpensive-optimizations -fstack-check -fexceptions -Wall -pedantic -Wbad-function-cast -Wreturn-type -Wformat -Wuninitialized -Wcast-align -Wshadow -Wunused -Wunused-value -Wunused-variable -Wunused-function -Wunused-parameter -Wunused-label -Wcomment -Wcast-qual -Wconversion -Wimplicit-int -Wmissing-braces -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wsign-compare -Wfloat-equal -Wstrict-prototypes -Wwrite-strings -Wundef -Waggregate-return -Wchar-subscripts -Wformat-nonliteral -Wnested-externs -Wsequence-point -Wpointer-arith -mfancy-math-387 -mieee-fp -mno-soft-float
+ ifdef windir
+ # no -ansi option due to reported MinGw bug

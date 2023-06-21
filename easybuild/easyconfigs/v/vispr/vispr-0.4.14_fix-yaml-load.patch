@@ -1,0 +1,35 @@
+fix use of yaml.load, 'Loader' argument is required in PyYAML >= 6.0 
+author: Kenneth Hoste (HPC-UGent)
+diff -ru vispr-0.4.14.orig/vispr/cli.py vispr-0.4.14/vispr/cli.py
+--- vispr-0.4.14.orig/vispr/cli.py	2017-02-15 14:38:22.000000000 +0100
++++ vispr-0.4.14/vispr/cli.py	2023-04-10 19:26:01.251360284 +0200
+@@ -37,7 +37,7 @@
+     print("Loading data.")
+     for path in configs:
+         with open(path) as f:
+-            config = yaml.load(f)
++            config = yaml.load(f, Loader=yaml.Loader)
+         try:
+             app.screens.add(config, parentdir=os.path.dirname(path))
+         except KeyError as e:
+@@ -91,7 +91,7 @@
+         os.makedirs(directory)
+ 
+     with open(configpath) as f:
+-        screen = Screen(yaml.load(f), parentdir=os.path.dirname(configpath))
++        screen = Screen(yaml.load(f, Loader=yaml.Loader), parentdir=os.path.dirname(configpath))
+ 
+     def write(json, name):
+         with open(prefix + name + ".vega.json", "w") as out:
+diff -ru vispr-0.4.14.orig/vispr/server.py vispr-0.4.14/vispr/server.py
+--- vispr-0.4.14.orig/vispr/server.py	2015-11-08 00:47:23.000000000 +0100
++++ vispr-0.4.14/vispr/server.py	2023-04-10 19:25:06.417148288 +0200
+@@ -20,7 +20,7 @@
+ app.jinja_env.lstrip_blocks = True
+ 
+ with open(os.path.join(os.path.dirname(__file__), "captions.yaml")) as f:
+-    CAPTIONS = yaml.load(f)
++    CAPTIONS = yaml.load(f, Loader=yaml.Loader)
+ 
+ 
+ @app.route("/ping")

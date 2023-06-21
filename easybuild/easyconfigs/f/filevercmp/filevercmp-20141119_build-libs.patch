@@ -1,0 +1,83 @@
+# Patch to build static and dynamic libraries. Based on PR by outpaddling:
+#  https://github.com/ekg/filevercmp/pull/2
+
+diff -Nru filevercmp-1a9b779b93d0b244040274794d402106907b71b7.orig/Makefile filevercmp-1a9b779b93d0b244040274794d402106907b71b7/Makefile
+--- filevercmp-1a9b779b93d0b244040274794d402106907b71b7.orig/Makefile	2021-05-06 15:39:20.000000000 +0100
++++ filevercmp-1a9b779b93d0b244040274794d402106907b71b7/Makefile	2021-05-07 14:44:55.000000000 +0100
+@@ -1,13 +1,67 @@
+-all: filevercmp
+ 
+-clean:
+-	rm -f filevercmp
+-	rm -f filevercmp.o
++# Use ?= to allow overriding from the env or command-line, e.g.
++#
++#       make CXXFLAGS="-O3 -fPIC" install
++#
++# Package managers will override many of these variables automatically, so
++# this is aimed at making it easy to create packages (Debian packages,
++# FreeBSD ports, MacPorts, pkgsrc, etc.)
+ 
+-.PHONY: all clean
++CC ?=		cc
++CFLAGS ?=	-O -g  #-m64 #-arch ppc
+ 
+-filevercmp.o: filevercmp.c main.c filevercmp.h
+-	gcc -c filevercmp.c
++PREFIX ?=	/usr/local
++STRIP ?=	strip
++INSTALL ?=	install -c
++MKDIR ?=	mkdir -p
++AR ?=		ar
++ARFLAGS ?=	rs
+ 
+-filevercmp: filevercmp.o
+-	gcc -o filevercmp main.c filevercmp.o
++BIN =		filevercmp
++LIB =		libfilevercmp.a
++SOVERSION =	0
++SLIB =		libfilevercmp.so
++OBJS =		filevercmp.o
++
++LIBDIR = $(DESTDIR)$(PREFIX)/lib
++BINDIR = $(DESTDIR)$(PREFIX)/bin
++INCDIR = $(DESTDIR)$(PREFIX)/include/filevercmp
++
++.SUFFIXES:.c .o .pico .so
++
++.c.o:
++	$(CC) $(CFLAGS) -I. -c -o $@ $<
++
++.c.pico:
++	$(CC) $(CFLAGS) -I. -fPIC -c -o $@ $<
++
++all:	$(BIN) $(SLIB) $(LIB)
++
++$(LIB): $(OBJS)
++	$(AR) $(ARFLAGS) $@ $^
++
++$(SLIB): $(OBJS:.o=.pico)
++	$(CC) -shared -Wl,-soname,$(SLIB).$(SOVERSION) $(LDFLAGS) -o $@ $^ $(LIBS)
++	ln -sf $@ $(SLIB).$(SOVERSION)
++
++$(BIN): $(OBJS) main.c
++	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
++
++install: all
++	$(MKDIR) $(BINDIR)
++	$(MKDIR) $(LIBDIR)
++	$(MKDIR) $(INCDIR)
++	$(INSTALL) $(BIN) $(BINDIR)
++	$(INSTALL) *.h $(INCDIR)
++	$(INSTALL) $(LIB) $(SLIB) $(SLIB).$(SOVERSION) $(LIBDIR)
++
++install-strip: install
++	$(STRIP) $(BINDIR)/$(BIN) $(LIBDIR)/$(LIB)
++
++cleanlocal:
++	rm -rf $(BIN) $(LIB) $(SLIB) $(OBJS) $(DESTDIR)
++	rm -fr gmon.out *.o a.out *.dSYM $(BIN) *~ *.a tabix.aux tabix.log \
++		tabix.pdf *.class libtabix.*.dylib
++	cd htslib && $(MAKE) clean
++
++clean:	cleanlocal-recur

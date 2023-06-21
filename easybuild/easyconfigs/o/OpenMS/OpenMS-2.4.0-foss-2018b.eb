@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMS'
+version = '2.4.0'
+
+homepage = 'https://www.openms.de/'
+description = """As part of the deNBI Center for integrative Bioinformatics, OpenMS offers an open-source software
+ C++ library (+ python bindings) for LC/MS data management and analyses. It provides an infrastructure
+ for the rapid development of mass spectrometry related software as well as a rich toolset built on top of it."""
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+source_urls = [
+    'https://github.com/OpenMS/OpenMS/releases/download/Release%(version)s/',
+    'https://github.com/seqan/seqan/releases/download/seqan-v1.4.2/',
+]
+sources = [
+    '%(name)s-%(version)s-src.tar.gz',
+    'seqan-library-1.4.2.tar.bz2',
+]
+checksums = [
+    '86e8176b0f89cc86a10f5c3e60c34140d591e9e6c85f129ccbfa13ecb16a9af2',  # OpenMS-2.4.0-src.tar.gz
+    '77fb437c6f17d41ec41ce0a3bcc3533f91a3482ca63a3a55400e14cb73e64317',  # seqan-library-1.4.2.tar.bz2
+]
+
+builddependencies = [
+    ('CMake', '3.12.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Boost', '1.67.0'),
+    ('Xerces-C++', '3.2.0'),
+    ('LIBSVM', '3.23'),
+    ('GLPK', '4.65'),
+    ('Eigen', '3.3.4', '', SYSTEM),
+    ('SQLite', '3.24.0'),
+    ('bzip2', '1.0.6'),
+    ('zlib', '1.2.11'),
+    ('libtool', '2.4.6'),
+    ('Qt5', '5.10.1'),
+    ('CoinUtils', '2.11.3'),
+    ('Osi', '0.108.5'),
+    ('Clp', '1.17.3'),
+    ('Cgl', '0.60.2'),
+    ('Cbc', '2.10.3'),
+    ('WildMagic', '5.17'),
+    ('X11', '20180604'),
+]
+
+configopts = "-DCMAKE_PREFIX_PATH=%(builddir)s/seqan-library-1.4.2 -DCMAKE_CXX_STANDARD_LIBRARIES='-ldl' "
+# Disable reporting to remote servers
+configopts += "-DENABLE_UPDATE_CHECK=OFF "
+# Documentation requires an active X server display and tutorials require LaTex
+configopts += "-DENABLE_DOCS=OFF -DENABLE_TUTORIALS=OFF "
+
+sanity_check_paths = {
+    'files': ['lib/libOpenMS.%s' % SHLIB_EXT, 'lib/libOpenMS_GUI.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include/OpenMS', 'lib', 'share/OpenMS'],
+}
+sanity_check_commands = ['OpenMSInfo']
+
+# Disable notifications on new updates
+modextravars = {'OPENMS_DISABLE_UPDATE_CHECK': 1}
+
+moduleclass = "bio"

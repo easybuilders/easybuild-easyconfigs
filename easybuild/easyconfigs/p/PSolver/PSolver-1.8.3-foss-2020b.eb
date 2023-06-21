@@ -1,0 +1,44 @@
+easyblock = 'ConfigureMake'
+
+name = 'PSolver'
+version = '1.8.3'
+
+homepage = 'http://bigdft.org/devel-doc/d1/d81/group__PSOLVER.html'
+description = """
+ Interpolating scaling function Poisson Solver Library
+ """
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'pic': True, 'usempi': True, 'opt': True}
+
+source_urls = ['https://launchpad.net/bigdft/%(version_major_minor)s/%(version)s/+download/']
+sources = ['bigdft-suite-%(version)s.tar.gz']
+checksums = ['39aeae8bd62ad5d82ed20a47006aa478d93b3751ae7929027088c2e6b8439388']
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('libyaml', '0.2.5'),
+    ('futile', '1.8.3'),
+]
+
+local_cddir = ' cd psolver-%(version_major_minor)s && '
+preconfigopts = 'tar xzf psolver-%(version_major_minor)s.tar.gz &&' + local_cddir
+preconfigopts += 'export FCFLAGS="$FCFLAGS -fallow-argument-mismatch" && '
+
+configopts = '--enable-dynamic-libraries '
+configopts += '--with-futile-incs=-I$EBROOTFUTILE/include '
+configopts += '--with-ext-linalg="$LIBSCALAPACK" '
+
+prebuildopts = local_cddir
+preinstallopts = local_cddir
+
+sanity_check_paths = {
+    'files': ['include/poisson_solver.mod'] +
+             ['lib/libPSolver-1.a', 'lib/libPSolver-1.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'phys'

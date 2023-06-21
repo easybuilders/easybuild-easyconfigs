@@ -1,0 +1,45 @@
+easyblock = 'ConfigureMake'
+
+name = 'libdrs'
+version = '3.1.2'
+
+homepage = 'https://github.com/CDAT/libdrs/'
+description = """PCMDI's old DRS format implementation"""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/CDAT/libdrs/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['90e10191116a78228739276078a0ddcf0d6458516f192e9e79fecb2beeceb3fa']
+
+dependencies = [
+    ('netCDF', '4.7.4'),
+    ('g2clib', '1.6.0'),
+]
+
+start_dir = 'lib'
+
+skipsteps = ['configure']
+
+prebuildopts = 'export MAKEFILE=libdrs_Makefile.Linux.gfortran && '
+prebuildopts += 'sed "s#@cdat_EXTERNALS@#%(installdir)s#g;" $MAKEFILE.in > $MAKEFILE && '
+prebuildopts += 'sed "s#libdrs#libdrsfortran#g;" $MAKEFILE.in > $MAKEFILE.fortran && '
+prebuildopts += 'sed -i "s#@cdat_EXTERNALS@#%(installdir)s#g;" $MAKEFILE.fortran && '
+
+build_cmd = 'make -f libdrs_Makefile.Linux.gfortran && '
+build_cmd += 'make -f libdrs_Makefile.Linux.gfortran.fortran'
+
+install_cmd = 'make -f libdrs_Makefile.Linux.gfortran install && '
+install_cmd += 'make -f libdrs_Makefile.Linux.gfortran.fortran install'
+
+sanity_check_paths = {
+    'files': [
+        'include/drscdf.h', 'include/drsdef.h',
+        'lib/libdrs.a', 'lib/libdrs.%s' % SHLIB_EXT,
+        'lib/libdrsfortran.a', 'lib/libdrsfortran.%s' % SHLIB_EXT,
+    ],
+    'dirs': [],
+}
+
+moduleclass = 'geo'

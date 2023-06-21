@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'MUSCLE'
+version = '5.0.1428'
+
+homepage = 'https://drive5.com/muscle/'
+description = """MUSCLE is one of the best-performing multiple alignment programs
+ according to published benchmark tests, with accuracy and speed that are consistently
+ better than CLUSTALW. MUSCLE can align hundreds of sequences in seconds. Most users
+ learn everything they need to know about MUSCLE in a few minutes-only a handful of
+ command-line options are needed to perform common alignment tasks."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+github_account = 'rcedgar'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_add-ver-counter-header.patch']
+checksums = [
+    '59a8196890893e44a60f24134e8da24ee8381830a0f84e37378a3ca8be5430f5',  # v5.0.1428.tar.gz
+    '129e3cd5cd7ae4d9819bbb36776275781e33c82410ee1e5d480b3de2df213931',  # MUSCLE-5.0.1428_add-ver-counter-header.patch
+]
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+]
+
+start_dir = 'src'
+
+# Use build environment defined by EB
+prebuildopts = "sed -i 's/$(CPPOPTS)/$(CPPOPTS) $(CXXFLAGS) $(CPPFLAGS)/g' Makefile &&"
+buildopts = "CPP=${CXX} CC=${CC}"
+
+files_to_copy = [(['o/muscle5'], 'bin')]
+postinstallcmds = ["cd %(installdir)s/bin && ln -s muscle5 muscle"]
+
+sanity_check_paths = {
+    'files': ['bin/muscle', 'bin/muscle5'],
+    'dirs': [],
+}
+
+sanity_check_commands = [('muscle', '-h')]
+
+moduleclass = 'bio'

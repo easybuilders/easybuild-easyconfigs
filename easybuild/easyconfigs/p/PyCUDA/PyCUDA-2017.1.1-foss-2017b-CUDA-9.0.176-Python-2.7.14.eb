@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'PyCUDA'
+version = '2017.1.1'
+versionsuffix = '-CUDA-%(cudaver)s-Python-%(pyver)s'
+
+homepage = 'https://mathema.tician.de/software/pycuda'
+description = """PyCUDA lets you access Nvidias CUDA parallel computation API from Python."""
+
+toolchain = {'name': 'foss', 'version': '2017b'}
+
+dependencies = [
+    ('Python', '2.7.14'),
+    ('CUDA', '9.0.176', '', SYSTEM),
+    ('Boost.Python', '1.65.1', '-Python-%(pyver)s'),
+    ('Mako', '1.0.7', '-Python-%(pyver)s'),
+    ('pytest', '3.8.2', '-Python-%(pyver)s'),
+]
+
+local_prebuildopts = "./configure.py --cuda-root=$EBROOTCUDA --boost-inc-dir=$EBROOTBOOST/include/boost/ "
+local_prebuildopts += "--boost-lib-dir=$EBROOTBOOST/lib/ --no-use-shipped-boost "
+local_prebuildopts += "--boost-python-libname=boost_python && "
+
+use_pip = True
+sanity_pip_check = True
+
+exts_default_options = {
+    'source_urls': [PYPI_LOWER_SOURCE],
+    'source_tmpl': SOURCELOWER_TAR_GZ,
+}
+
+exts_list = [
+    ('appdirs', '1.4.4', {
+        'checksums': ['7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41'],
+    }),
+    ('pytools', '2020.1', {
+        'checksums': ['c132d17855584ad61c6e00f3ff11146499755944afc400cce9eae0ecf03d04a6'],
+    }),
+    (name, version, {
+        'prebuildopts': local_prebuildopts,
+        'use_pip': False,
+        'checksums': ['6b5a9384e38c603ee429f8a6bee424532db7b3505027ce22f7e18ad19564b563'],
+    }),
+]
+
+moduleclass = 'lang'
