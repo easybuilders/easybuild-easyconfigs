@@ -1,5 +1,5 @@
 ##
-# Copyright 2016-2020 Ghent University
+# Copyright 2016-2023 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,41 +29,50 @@ Style tests for easyconfig files. Uses pep8.
 """
 
 import glob
-import sys
-from unittest import TestCase, TestLoader, main
+from unittest import TestLoader, main, skipIf
 
 from easybuild.base import fancylogger
+from easybuild.base.testing import TestCase
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.framework.easyconfig.style import check_easyconfigs_style
 
 try:
     import pep8
 except ImportError:
-    pass
+    pep8 = None
 
 
 class StyleTest(TestCase):
     log = fancylogger.getLogger("StyleTest", fname=False)
 
+    @skipIf(not pep8, 'no pep8 available')
     def test_style_conformance(self):
         """Check the easyconfigs for style"""
-        if 'pep8' not in sys.modules:
-            print("Skipping style checks (no pep8 available)")
-            return
-
         # all available easyconfig files
         easyconfigs_path = get_paths_for("easyconfigs")[0]
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
         specs = sorted(specs)
 
+        self.mock_stderr(True)
+        self.mock_stdout(True)
         result = check_easyconfigs_style(specs)
+        stderr, stdout = self.get_stderr(), self.get_stdout()
+        self.mock_stderr(False)
+        self.mock_stdout(False)
 
-        self.assertEqual(result, 0, "Found code style errors (and/or warnings): %s" % result)
+        error_msg = '\n'.join([
+            "There shouldn't be any code style errors (and/or warnings), found %d:" % result,
+            stdout,
+            stderr,
+        ])
+        self.assertEqual(result, 0, error_msg)
 
 
-def suite():
+def suite(loader=None):
     """Return all style tests for easyconfigs."""
-    return TestLoader().loadTestsFromTestCase(StyleTest)
+    if not loader:
+        loader = TestLoader()
+    return loader.loadTestsFromTestCase(StyleTest)
 
 
 if __name__ == '__main__':

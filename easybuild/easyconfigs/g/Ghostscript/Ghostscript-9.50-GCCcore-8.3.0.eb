@@ -34,13 +34,22 @@ builddependencies = [
 
 # Do not use local copies of zlib, jpeg, freetype, and png
 preconfigopts = "mv zlib zlib.no && mv jpeg jpeg.no && mv freetype freetype.no && mv libpng libpng.no && "
-preconfigopts += 'export LIBS="$LIBS -lz" && '
+preconfigopts += 'export LIBS="$LIBS -L$EBROOTZLIB/lib -lz" && '
 
 configopts = "--with-system-libtiff --enable-dynamic"
 
+postinstallcmds = [
+    # build and install shared libs
+    "make so && make soinstall",
+    # install header files
+    "mkdir -p %(installdir)s/include/ghostscript",
+    "install -v -m644 base/*.h %(installdir)s/include/ghostscript",
+    "install -v -m644 psi/*.h %(installdir)s/include/ghostscript",
+]
+
 sanity_check_paths = {
-    'files': ['bin/gs'],
-    'dirs': ['lib/ghostscript', 'share/man'],
+    'files': ['bin/gs', 'lib/libgs.%s' % SHLIB_EXT],
+    'dirs': ['lib/ghostscript', 'include/ghostscript', 'share/man'],
 }
 
 moduleclass = 'tools'

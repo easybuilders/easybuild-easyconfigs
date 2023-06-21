@@ -1,0 +1,172 @@
+Avoid false matches by requiring that input keywords are a full line.
+Use sed pattern matching to remove arbitrary limit to 200 lines
+see issue https://github.com/sunxb05/PyFrag/issues/1
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff --git a/host/argueparce/argueparce.sh b/host/argueparce/argueparce.sh
+index 9bcc197..afdf06c 100644
+--- a/host/argueparce/argueparce.sh
++++ b/host/argueparce/argueparce.sh
+@@ -113,20 +113,20 @@ rm geometry.txt
+ input=$*
+ SCRIPTPATH="$( cd "$(dirname "$1")" ; pwd -P )"
+ 
+-grep  -A 200 'JOBSUB' $input | grep -B 200 'JOBSUB END' | grep -v 'JOBSUB' | grep -v 'JOBSUB END' > jobsub.txt
+-grep  -A 200 'ADF' $input | grep -B 200 'ADF END' | grep -v 'ADF' | grep -v 'ADF END' > adf.txt
+-grep  -A 200 'PyFrag' $input | grep -B 200 'PyFrag END' | grep -v 'PyFrag' | grep -v 'PyFrag END' > pyfrag.txt
+-grep  -A 200 'Geometrycoor' $input | grep -B 200 'Geometrycoor END' | grep -v 'Geometrycoor' | grep -v 'Geometrycoor END' > coor.xyz
+-grep  -A 200 'R1 EXTRA' $input | grep -B 200 'R1 EXTRA END' | grep -v 'R1 EXTRA' | grep -v 'R1 EXTRA END' > R1_EXTRA.txt
+-grep  -A 200 'R2 EXTRA' $input | grep -B 200 'R2 EXTRA END' | grep -v 'R2 EXTRA' | grep -v 'R2 EXTRA END' > R2_EXTRA.txt
+-grep  -A 200 'RC EXTRA' $input | grep -B 200 'RC EXTRA END' | grep -v 'RC EXTRA' | grep -v 'RC EXTRA END' > RC_EXTRA.txt
+-grep  -A 200 'TS EXTRA' $input | grep -B 200 'TS EXTRA END' | grep -v 'TS EXTRA' | grep -v 'TS EXTRA END' > TS_EXTRA.txt
+-grep  -A 200 'P EXTRA' $input | grep -B 200 'P EXTRA END' | grep -v 'P EXTRA' | grep -v 'P EXTRA END'     > P_EXTRA.txt
+-grep  -A 200 'IR EXTRA' $input | grep -B 200 'IR EXTRA END' | grep -v 'IR EXTRA' | grep -v 'IR EXTRA END' > IRC_EXTRA.txt
+-grep  -A 200 'IR_1 EXTRA' $input | grep -B 200 'IR_1 EXTRA END' | grep -v 'IR_1 EXTRA' | grep -v 'IR_1 EXTRA END' > IRC_1_EXTRA.txt
+-grep  -A 200 'fragment1 EXTRA' $input | grep -B 200 'fragment1 EXTRA END' | grep -v 'fragment1 EXTRA' | grep -v 'fragment1 EXTRA END' > fragment1_EXTRA.txt
+-grep  -A 200 'fragment2 EXTRA' $input | grep -B 200 'fragment2 EXTRA END' | grep -v 'fragment2 EXTRA' | grep -v 'fragment2 EXTRA END' > fragment2_EXTRA.txt
+-grep  -A 200 'complex EXTRA' $input | grep -B 200 'complex EXTRA END' | grep -v 'complex EXTRA' | grep -v 'complex EXTRA END' > complex_EXTRA.txt
++sed -n '/^JOBSUB$/,/^JOBSUB END$/{//!p;}' $input > jobsub.txt
++sed -n '/^ADF$/,/^ADF END$/{//!p;}' $input > adf.txt
++sed -n '/^PyFrag$/,/^PyFrag END$/{//!p;}' $input > pyfrag.txt
++sed -n '/^Geometrycoor$/,/^Geometrycoor END$/{//!p;}' $input > coor.xyz
++sed -n '/^R1 EXTRA$/,/^R1 EXTRA END$/{//!p;}' $input > R1_EXTRA.txt
++sed -n '/^R2 EXTRA$/,/^R2 EXTRA END$/{//!p;}' $input > R2_EXTRA.txt
++sed -n '/^RC EXTRA$/,/^RC EXTRA END$/{//!p;}' $input > RC_EXTRA.txt
++sed -n '/^TS EXTRA$/,/^TS EXTRA END$/{//!p;}' $input > TS_EXTRA.txt
++sed -n '/^P EXTRA$/,/^P EXTRA END$/{//!p;}' $input > P_EXTRA.txt
++sed -n '/^IR EXTRA$/,/^IR EXTRA END$/{//!p;}' $input > IRC_EXTRA.txt
++sed -n '/^IR_1 EXTRA$/,/^IR_1 EXTRA END$/{//!p;}' $input > IRC_1_EXTRA.txt
++sed -n '/^fragment1 EXTRA$/,/^fragment1 EXTRA END$/{//!p;}' $input > fragment1_EXTRA.txt
++sed -n '/^fragment2 EXTRA$/,/^fragment2 EXTRA END$/{//!p;}' $input > fragment2_EXTRA.txt
++sed -n '/^complex EXTRA$/,/^complex EXTRA END$/{//!p;}' $input > complex_EXTRA.txt
+ 
+ 
+ submit="$QMWORKS/bin/python3 $HOSTPYFRAG/job.py \\"
+diff --git a/host/standalone/adf_new/pyfragparce.sh b/host/standalone/adf_new/pyfragparce.sh
+index 182cef2..6cf5edb 100644
+--- a/host/standalone/adf_new/pyfragparce.sh
++++ b/host/standalone/adf_new/pyfragparce.sh
+@@ -74,12 +74,12 @@ fi
+ input=$*
+ SCRIPTPATH="$( cd "$(dirname "$1")" ; pwd -P )"
+ 
+-grep  -A 200 'JOBSUB' $input | grep -B 200 'JOBSUB END' | grep -v 'JOBSUB' | grep -v 'JOBSUB END' > jobsub.txt
+-grep  -A 200 'ADF' $input | grep -B 200 'ADF END' | grep -v 'ADF' | grep -v 'ADF END' > adf.txt
+-grep  -A 200 'PyFrag' $input | grep -B 200 'PyFrag END' | grep -v 'PyFrag' | grep -v 'PyFrag END' > pyfrag.txt
+-grep  -A 200 'fragment1 EXTRA' $input | grep -B 200 'fragment1 EXTRA END' | grep -v 'fragment1 EXTRA' | grep -v 'fragment1 EXTRA END' > fragment1_EXTRA.txt
+-grep  -A 200 'fragment2 EXTRA' $input | grep -B 200 'fragment2 EXTRA END' | grep -v 'fragment2 EXTRA' | grep -v 'fragment2 EXTRA END' > fragment2_EXTRA.txt
+-grep  -A 200 'complex EXTRA' $input | grep -B 200 'complex EXTRA END' | grep -v 'complex EXTRA' | grep -v 'complex EXTRA END' > complex_EXTRA.txt
++sed -n '/^JOBSUB$/,/^JOBSUB END$/{//!p;}' $input > jobsub.txt
++sed -n '/^ADF$/,/^ADF END$/{//!p;}' $input > adf.txt
++sed -n '/^PyFrag$/,/^PyFrag END$/{//!p;}' $input > pyfrag.txt
++sed -n '/^fragment1 EXTRA$/,/^fragment1 EXTRA END$/{//!p;}' $input > fragment1_EXTRA.txt
++sed -n '/^fragment2 EXTRA$/,/^fragment2 EXTRA END$/{//!p;}' $input > fragment2_EXTRA.txt
++sed -n '/^complex EXTRA$/,/^complex EXTRA END$/{//!p;}' $input > complex_EXTRA.txt
+ 
+ 
+ submit="amspython \$HOSTPYFRAG/standalone/adf_new/PyFrag.py \\"
+diff --git a/host/standalone/adf_newopen/pyfragparce.sh b/host/standalone/adf_newopen/pyfragparce.sh
+index d3216fa..95d562e 100644
+--- a/host/standalone/adf_newopen/pyfragparce.sh
++++ b/host/standalone/adf_newopen/pyfragparce.sh
+@@ -61,12 +61,12 @@ done
+ input=$*
+ SCRIPTPATH="$( cd "$(dirname "$1")" ; pwd -P )"
+ 
+-grep  -A 200 'JOBSUB' $input | grep -B 200 'JOBSUB END' | grep -v 'JOBSUB' | grep -v 'JOBSUB END' > jobsub.txt
+-grep  -A 200 'ADF' $input | grep -B 200 'ADF END' | grep -v 'ADF' | grep -v 'ADF END' > adf.txt
+-grep  -A 200 'PyFrag' $input | grep -B 200 'PyFrag END' | grep -v 'PyFrag' | grep -v 'PyFrag END' > pyfrag.txt
+-grep  -A 200 'fragment1 EXTRA' $input | grep -B 200 'fragment1 EXTRA END' | grep -v 'fragment1 EXTRA' | grep -v 'fragment1 EXTRA END' > fragment1_EXTRA.txt
+-grep  -A 200 'fragment2 EXTRA' $input | grep -B 200 'fragment2 EXTRA END' | grep -v 'fragment2 EXTRA' | grep -v 'fragment2 EXTRA END' > fragment2_EXTRA.txt
+-grep  -A 200 'complex EXTRA' $input | grep -B 200 'complex EXTRA END' | grep -v 'complex EXTRA' | grep -v 'complex EXTRA END' > complex_EXTRA.txt
++sed -n '/^JOBSUB$/,/^JOBSUB END$/{//!p;}' $input > jobsub.txt
++sed -n '/^ADF$/,/^ADF END$/{//!p;}' $input > adf.txt
++sed -n '/^PyFrag$/,/^PyFrag END$/{//!p;}' $input > pyfrag.txt
++sed -n '/^fragment1 EXTRA$/,/^fragment1 EXTRA END$/{//!p;}' $input > fragment1_EXTRA.txt
++sed -n '/^fragment2 EXTRA$/,/^fragment2 EXTRA END$/{//!p;}' $input > fragment2_EXTRA.txt
++sed -n '/^complex EXTRA$/,/^complex EXTRA END$/{//!p;}' $input > complex_EXTRA.txt
+ 
+ 
+ submit="python3 \$HOSTPYFRAG/standalone/adf_newopen/PyFrag.py \\"
+diff --git a/host/standalone/adf_old/pyfragparce.sh b/host/standalone/adf_old/pyfragparce.sh
+index 506ec3e..0edbe4d 100644
+--- a/host/standalone/adf_old/pyfragparce.sh
++++ b/host/standalone/adf_old/pyfragparce.sh
+@@ -61,13 +61,12 @@ done
+ input=$*
+ SCRIPTPATH="$( cd "$(dirname "$1")" ; pwd -P )"
+ 
+-grep  -A 200 'JOBSUB' $input | grep -B 200 'JOBSUB END' | grep -v 'JOBSUB' | grep -v 'JOBSUB END' > jobsub.txt
+-grep  -A 200 'ADF' $input | grep -B 200 'ADF END' | grep -v 'ADF' | grep -v 'ADF END' > adf.txt
+-grep  -A 200 'PyFrag' $input | grep -B 200 'PyFrag END' | grep -v 'PyFrag' | grep -v 'PyFrag END' > pyfrag.txt
+-grep  -A 200 'fragment1 EXTRA' $input | grep -B 200 'fragment1 EXTRA END' | grep -v 'fragment1 EXTRA' | grep -v 'fragment1 EXTRA END' > fragment1_EXTRA.txt
+-grep  -A 200 'fragment2 EXTRA' $input | grep -B 200 'fragment2 EXTRA END' | grep -v 'fragment2 EXTRA' | grep -v 'fragment2 EXTRA END' > fragment2_EXTRA.txt
+-grep  -A 200 'complex EXTRA' $input | grep -B 200 'complex EXTRA END' | grep -v 'complex EXTRA' | grep -v 'complex EXTRA END' > complex_EXTRA.txt
+-
++sed -n '/^JOBSUB$/,/^JOBSUB END$/{//!p;}' $input > jobsub.txt
++sed -n '/^ADF$/,/^ADF END$/{//!p;}' $input > adf.txt
++sed -n '/^PyFrag$/,/^PyFrag END$/{//!p;}' $input > pyfrag.txt
++sed -n '/^fragment1 EXTRA$/,/^fragment1 EXTRA END$/{//!p;}' $input > fragment1_EXTRA.txt
++sed -n '/^fragment2 EXTRA$/,/^fragment2 EXTRA END$/{//!p;}' $input > fragment2_EXTRA.txt
++sed -n '/^complex EXTRA$/,/^complex EXTRA END$/{//!p;}' $input > complex_EXTRA.txt
+ 
+ submit="python3 \$HOSTPYFRAG/standalone/adf_old/PyFrag.py \\"
+ subadfinputfile="--adfinputfile "$SCRIPTPATH/"adfinputfile \\"
+diff --git a/host/standalone/adf_open/pyfragparce.sh b/host/standalone/adf_open/pyfragparce.sh
+index 8fe3ead..edc3c3a 100644
+--- a/host/standalone/adf_open/pyfragparce.sh
++++ b/host/standalone/adf_open/pyfragparce.sh
+@@ -98,15 +98,15 @@ done
+ input=$*
+ SCRIPTPATH="$( cd "$(dirname "$1")" ; pwd -P )"
+ 
+-grep  -A 200 'JOBSUB' $input | grep -B 200 'JOBSUB END' | grep -v 'JOBSUB' | grep -v 'JOBSUB END' > jobsub.txt
+-grep  -A 200 'ADF' $input | grep -B 200 'ADF END' | grep -v 'ADF' | grep -v 'ADF END' > adf.txt
+-grep  -A 200 'PyFrag' $input | grep -B 200 'PyFrag END' | grep -v 'PyFrag' | grep -v 'PyFrag END' > pyfrag.txt
+-grep  -A 200 'fragment1 EXTRA' $input | grep -B 200 'fragment1 EXTRA END' | grep -v 'fragment1 EXTRA' | grep -v 'fragment1 EXTRA END' > fragment1_EXTRA.txt
+-grep  -A 200 'fragment2 EXTRA' $input | grep -B 200 'fragment2 EXTRA END' | grep -v 'fragment2 EXTRA' | grep -v 'fragment2 EXTRA END' > fragment2_EXTRA.txt
+-grep  -A 200 'complex EXTRA' $input | grep -B 200 'complex EXTRA END' | grep -v 'complex EXTRA' | grep -v 'complex EXTRA END' > complex_EXTRA.txt
+-grep  -A 200 'fragment1 open EXTRA' $input | grep -B 200 'fragment1 open EXTRA END' | grep -v 'fragment1 open EXTRA' | grep -v 'fragment1 open EXTRA END' > fragment1_open_EXTRA.txt
+-grep  -A 200 'fragment2 open EXTRA' $input | grep -B 200 'fragment2 open EXTRA END' | grep -v 'fragment2 open EXTRA' | grep -v 'fragment2 open EXTRA END' > fragment2_open_EXTRA.txt
+-grep  -A 200 'complex open EXTRA' $input | grep -B 200 'complex open EXTRA END' | grep -v 'complex open EXTRA' | grep -v 'complex open EXTRA END' > complex_open_EXTRA.txt
++sed -n '/^JOBSUB$/,/^JOBSUB END$/{//!p;}' $input > jobsub.txt
++sed -n '/^ADF$/,/^ADF END$/{//!p;}' $input > adf.txt
++sed -n '/^PyFrag$/,/^PyFrag END$/{//!p;}' $input > pyfrag.txt
++sed -n '/^fragment1 EXTRA$/,/^fragment1 EXTRA END$/{//!p;}' $input > fragment1_EXTRA.txt
++sed -n '/^fragment2 EXTRA$/,/^fragment2 EXTRA END$/{//!p;}' $input > fragment2_EXTRA.txt
++sed -n '/^complex EXTRA$/,/^complex EXTRA END$/{//!p;}' $input > complex_EXTRA.txt
++sed -n '/^fragment1 open EXTRA$/,/^fragment1 open EXTRA END$/{//!p;}' $input > fragment1_open_EXTRA.txt
++sed -n '/^fragment2 open EXTRA$/,/^fragment2 open EXTRA END$/{//!p;}' $input > fragment2_open_EXTRA.txt
++sed -n '/^complex open EXTRA$/,/^complex open EXTRA END$/{//!p;}' $input > complex_open_EXTRA.txt
+ 
+ submit="python3 \$HOSTPYFRAG/standalone/adf_open/PyFrag.py \\"
+ subadfinputfile="--adfinputfile "$SCRIPTPATH/"adfinputfile \\"
+diff --git a/host/standalone/adf_openorb/pyfragparce.sh b/host/standalone/adf_openorb/pyfragparce.sh
+index b3ba2aa..49e2adb 100644
+--- a/host/standalone/adf_openorb/pyfragparce.sh
++++ b/host/standalone/adf_openorb/pyfragparce.sh
+@@ -12,7 +12,7 @@ done < "$pyfrag"
+ input=$*
+ SCRIPTPATH="$( cd "$(dirname "$1")" ; pwd -P )"
+ 
+-grep  -A 200 'PyFrag' $input | grep -B 200 'PyFrag END' | grep -v 'PyFrag' | grep -v 'PyFrag END' > pyfrag.txt
++sed -n '/^PyFrag$/,/^PyFrag END$/{//!p;}' $input > pyfrag.txt
+ 
+ submit="python3 \$HOSTPYFRAG/standalone/adf_openorb/PyFrag.py \\"
+ 
+diff --git a/host/standalone/adf_single/pyfragparce.sh b/host/standalone/adf_single/pyfragparce.sh
+index c1444b3..6c3bc66 100644
+--- a/host/standalone/adf_single/pyfragparce.sh
++++ b/host/standalone/adf_single/pyfragparce.sh
+@@ -61,9 +61,9 @@ done
+ input=$*
+ SCRIPTPATH="$( cd "$(dirname "$1")" ; pwd -P )"
+ 
+-grep  -A 200 'JOBSUB' $input | grep -B 200 'JOBSUB END' | grep -v 'JOBSUB' | grep -v 'JOBSUB END' > jobsub.txt
+-grep  -A 200 'ADF' $input | grep -B 200 'ADF END' | grep -v 'ADF' | grep -v 'ADF END' > adf.txt
+-grep  -A 200 'PyFrag' $input | grep -B 200 'PyFrag END' | grep -v 'PyFrag' | grep -v 'PyFrag END' > pyfrag.txt
++sed -n '/^JOBSUB$/,/^JOBSUB END$/{//!p;}' $input > jobsub.txt
++sed -n '/^ADF$/,/^ADF END$/{//!p;}' $input > adf.txt
++sed -n '/^PyFrag$/,/^PyFrag END$/{//!p;}' $input > pyfrag.txt
+ 
+ submit="python3 \$HOSTPYFRAG/standalone/adf_single/PyFrag.py \\"
+ subadfinputfile="--adfinputfile "$SCRIPTPATH/"adfinputfile \\"

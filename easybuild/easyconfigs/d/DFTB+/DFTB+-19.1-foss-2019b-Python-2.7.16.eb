@@ -1,0 +1,78 @@
+easyblock = 'ConfigureMake'
+
+name = 'DFTB+'
+version = '19.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.dftb-plus.info'
+description = """DFTB+ is a fast and efficient versatile quantum mechanical simulation package.
+It is based on the Density Functional Tight Binding (DFTB) method, containing
+almost all of the useful extensions which have been developed for the DFTB
+framework so far.  Using DFTB+ you can carry out quantum mechanical simulations
+like with ab-initio density functional theory based packages, but in an
+approximate way gaining typically around two order of magnitude in speed."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'usempi': False}
+
+local_external_dir = '%%(builddir)s/dftbplus-%%(version)s/external/%s/origin/'
+local_external_extract = 'mkdir -p %s && tar -C %s' % (local_external_dir, local_external_dir)
+local_external_extract += ' --strip-components=1 -xzf %%s'
+
+sources = [
+    {
+        # DFTB+ source code
+        'source_urls': ['https://github.com/dftbplus/dftbplus/archive'],
+        'download_filename': '%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        # Slater-Koster (slakos) data for testing
+        'source_urls': ['https://github.com/dftbplus/testparams/archive'],
+        'download_filename': 'd0ea16df2b56d14c7c3dc9329a8d3bac9fea50a0.tar.gz',
+        'filename': 'slakos-data-%(version)s.tar.gz',
+        'extract_cmd': local_external_extract % ('slakos', 'slakos'),
+    },
+]
+checksums = [
+    '4d07f5c6102f06999d8cfdb1d17f5b59f9f2b804697f14b3bc562e3ea094b8a8',  # DFTB+-19.1.tar.gz
+    '9b64193368a13ae7c238399da8be2b3730a0f3273f9bf6c8054b2ff57d748823',  # slakos-data-19.1.tar.gz
+]
+
+dependencies = [
+    ('Python', '2.7.16'),
+    ('SciPy-bundle', '2019.10', '-Python-2.7.16'),
+    ('arpack-ng', '3.7.0'),
+    ('dftd3-lib', '0.9'),
+]
+
+skipsteps = ['configure']
+
+# Use appropriate makefile and flags for this toolchain
+prebuildopts = "cp sys/make.x86_64-linux-gnu make.arch && "
+prebuildopts += 'sed -i "s/-O2/$OPTFLAGS/g" make.arch && '
+
+# Link to Arpack and OpenBLAS from EB
+local_makeopts = ' WITH_ARPACK=1 ARPACK_LIBS="-L$EBROOTARPACKMINNG/lib -larpack" ARPACK_NEEDS_LAPACK=1'
+local_makeopts += ' LIB_LAPACK="$LIBLAPACK"'
+# Use DFTD3 from EB
+local_makeopts += ' WITH_DFTD3=1 COMPILE_DFTD3=0 DFTD3_INCS="-I$EBROOTDFTD3MINLIB/include"'
+local_makeopts += ' DFTD3_LIBS="-L$EBROOTDFTD3MINLIB/lib -ldftd3"'
+
+buildopts = local_makeopts
+
+runtest = 'test' + local_makeopts
+
+installopts = 'INSTALLDIR="%(installdir)s"'
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in ['dftb+', 'dp_bands', 'dp_dos', 'gen2cif', 'gen2xyz', 'makecube',
+                                   'modes', 'repeatgen', 'straingen', 'waveplot', 'xyz2gen']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+sanity_check_commands = [('python', '-c "import dptools"')]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'phys'

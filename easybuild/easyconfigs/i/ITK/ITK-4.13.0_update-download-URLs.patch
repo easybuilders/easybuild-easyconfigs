@@ -1,0 +1,151 @@
+From 716fe079a6fad64f63f1166c7cb1565acef982ee Mon Sep 17 00:00:00 2001
+From: Matt McCormick <matt.mccormick@kitware.com>
+Date: Wed, 6 Jun 2018 11:32:18 -0400
+Subject: [PATCH] BUG: Migrate midas3.kitware.com to data.kitware.com
+
+midas3.kitware.com is deprecated.
+
+Change-Id: Iba445e27b6c0f136cc6c5a361c088075dfa1facb
+---
+ CMake/ITKExternalData.cmake                   |  3 ---
+ CMake/itkExternal_FFTW.cmake                  |  8 +++---
+ Documentation/Release.md                      |  2 +-
+ Utilities/Maintenance/JREUpdate.py            |  4 +--
+ Utilities/Maintenance/SourceTarball.bash      |  2 +-
+ Wrapping/Generators/CastXML/CMakeLists.txt    | 27 +++++++++----------
+ .../Generators/SwigInterface/CMakeLists.txt   | 19 +++++++------
+ 7 files changed, 30 insertions(+), 35 deletions(-)
+
+diff --git a/CMake/ITKExternalData.cmake b/CMake/ITKExternalData.cmake
+index a97d725922c..4e2dcd29651 100644
+--- a/CMake/ITKExternalData.cmake
++++ b/CMake/ITKExternalData.cmake
+@@ -37,9 +37,6 @@ if(NOT ITK_FORBID_DOWNLOADS)
+     # Data published on Girder
+     "https://data.kitware.com:443/api/v1/file/hashsum/%(algo)/%(hash)/download"
+ 
+-    # Data published on MIDAS
+-    "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=%(hash)&algorithm=%(algo)"
+-
+     # Data published by developers using git-gerrit-push.
+     "https://itk.org/files/ExternalData/%(algo)/%(hash)"
+ 
+diff --git a/CMake/itkExternal_FFTW.cmake b/CMake/itkExternal_FFTW.cmake
+index 7b44f0d68cb..bcfae61c2ec 100644
+--- a/CMake/itkExternal_FFTW.cmake
++++ b/CMake/itkExternal_FFTW.cmake
+@@ -82,15 +82,15 @@ else()
+     endif()
+ 
+     set(_fftw_target_version 3.3.4)
+-    set(_fftw_url_md5 "2edab8c06b24feeb3b82bbb3ebf3e7b3")
+-    set(_fftw_url "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${_fftw_url_md5}&name=fftw-${_fftw_target_version}.tar.gz")
++    set(_fftw_url_hash "1ee2c7bec3657f6846e63c6dfa71410563830d2b951966bf0123bd8f4f2f5d6b50f13b76d9a7b0eae70e44856f829ca6ceb3d080bb01649d1572c9f3f68e8eb1")
++    set(_fftw_url "https://data.kitware.com/api/v1/file/hashsum/sha512/${_fftw_url_hash}/download")
+ 
+     if(ITK_USE_FFTWF)
+       itk_download_attempt_check(FFTW)
+       ExternalProject_add(fftwf
+         PREFIX fftwf
+         URL "${_fftw_url}"
+-        URL_MD5 "${_fftw_url_md5}"
++        URL_HASH SHA512="${_fftw_url_hash}"
+         DOWNLOAD_NAME "fftw-${_fftw_target_version}.tar.gz"
+         CONFIGURE_COMMAND
+           env
+@@ -118,7 +118,7 @@ else()
+       ExternalProject_add(fftwd
+         PREFIX fftwd
+         URL "${_fftw_url}"
+-        URL_MD5 "${_fftw_url_md5}"
++        URL_HASH SHA512="${_fftw_url_hash}"
+         DOWNLOAD_NAME "fftw-${_fftw_target_version}.tar.gz"
+         CONFIGURE_COMMAND
+           env
+diff --git a/Utilities/Maintenance/SourceTarball.bash b/Utilities/Maintenance/SourceTarball.bash
+index 1c0335674e2..221d88813bc 100755
+--- a/Utilities/Maintenance/SourceTarball.bash
++++ b/Utilities/Maintenance/SourceTarball.bash
+@@ -57,7 +57,7 @@ download_object() {
+   algo="$1" ; hash="$2" ; path="$3"
+   mkdir -p $(dirname "$path") &&
+   if wget "https://www.itk.org/files/ExternalData/$algo/$hash" -O "$path.tmp$$" 1>&2 || \
+-     wget "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${hash}&algorithm=${algo}" -O "$path.tmp$$" 1>&2; then
++     wget "https://slicer.kitware.com/midas3/api/rest?method=midas.bitstream.download&checksum=${hash}&algorithm=${algo}" -O "$path.tmp$$" 1>&2; then
+     mv "$path.tmp$$" "$path"
+   else
+     rm -f "$path.tmp$$"
+diff --git a/Wrapping/Generators/CastXML/CMakeLists.txt b/Wrapping/Generators/CastXML/CMakeLists.txt
+index f0254b2f4e6..efa83e0325f 100644
+--- a/Wrapping/Generators/CastXML/CMakeLists.txt
++++ b/Wrapping/Generators/CastXML/CMakeLists.txt
+@@ -25,23 +25,22 @@ else()
+   # If 64 bit Linux build host, use the CastXML binary
+   if(CMAKE_HOST_SYSTEM_NAME MATCHES "Linux" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+ 
+-    set(_castxml_hash 84c2851a4df419b5834114bbfafa8d3e)
+-    set(_castxml_url "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${_castxml_hash}&name=castxml-linux.tar.gz")
++    set(_castxml_hash 1e0f51ab98592ac9934bb1c93040fd473519a02d1e3ce0090443f4f3566eb8354eb3e5bd04a2c91d832d33d0d712363c508bd2304da34db9963787890808ec9e)
++    set(_castxml_url "https://data.kitware.com/api/v1/file/hashsum/sha512/${_castxml_hash}/download")
+     set(_download_castxml_binaries 1)
+ 
+   # If 64 bit Windows build host, use the CastXML binary
+   elseif(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "AMD64")
+ 
+-    set(_castxml_hash b862fcc384b496c0d9a39dea0386454a)
+-    set(_castxml_url https://midas3.kitware.com/midas/download/bitstream/460537/castxml-windows.zip)
+-    set(_castxml_url "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${_castxml_hash}&name=castxml-windows.zip")
++    set(_castxml_hash 1c379ea91f4c0d9b8127d841edee7c415fdde40665a2a3682aef22def75bd1cea99d26bb3b1b243e61e976d78233ed12a2614236e76206d1ae083583f4bc17ea)
++    set(_castxml_url "https://data.kitware.com/api/v1/file/hashsum/sha512/${_castxml_hash}/download")
+     set(_download_castxml_binaries 1)
+ 
+   # If 64 bit Mac OS X build host ( >= 10.9, Mavericks), use the CastXML binary
+   elseif(CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64" AND (NOT CMAKE_HOST_SYSTEM_VERSION VERSION_LESS "13.0.0"))
+ 
+-    set(_castxml_hash e784aa985f59f57f4d71339bd60e27a8)
+-    set(_castxml_url "https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${_castxml_hash}&name=castxml-macosx.tar.gz")
++    set(_castxml_hash 2fa32cd083ed901499774eb34249c70c2d32a93c55e27dbb62f5ec3c7386ab6745dbbad78c653a0909b05b5d965839ec31ad9fca294cc0b7af9dfc15e2a7e063)
++    set(_castxml_url "https://data.kitware.com/api/v1/file/hashsum/sha512/${_castxml_hash}/download")
+     set(_download_castxml_binaries 1)
+ 
+   endif()
+@@ -53,7 +52,7 @@ else()
+     endif()
+     ExternalProject_Add(castxml
+       URL ${_castxml_url}
+-      URL_MD5 ${_castxml_hash}
++      URL_HASH SHA512=${_castxml_hash}
+       CONFIGURE_COMMAND ""
+       BUILD_COMMAND ""
+       INSTALL_COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_BINARY_DIR}/castxml-prefix/src/castxml" "${CMAKE_CURRENT_BINARY_DIR}/castxml"
+@@ -98,10 +97,10 @@ else()
+         itk_download_attempt_check(Clang)
+       endif()
+       set(llvm_version 5.0.0)
+-      set(llvm_md5 e3782305ff4a60ad9bbc3a926425786f)
++      set(llvm_hash a65412cb45c73f73fcdef8016d3538114c1d0d1c6a5ed030a20e5049a6582b7926f184f2a3c065550e92e8ac27743bbf1a87b76be85949c0114d0320264018bd)
+       ExternalProject_Add(llvm
+-        URL https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${llvm_md5}&name=llvm-${llvm_version}.src.tar.gz
+-        URL_MD5 ${llvm_md5}
++        URL "https://data.kitware.com/api/v1/file/hashsum/sha512/${llvm_hash}/download"
++        URL_HASH SHA512=${llvm_hash}
+         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/llvm-${llvm_version}
+         CMAKE_ARGS -Wno-dev
+         CMAKE_GENERATOR "${CMAKE_GENERATOR}"
+@@ -115,13 +114,13 @@ else()
+           -DLLVM_INCLUDE_DOCS:BOOL=OFF
+         INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/llvm
+         )
+-      set(clang_md5 79eddb9b1f6e6ee8e9eeff1245d3f359)
++      set(clang_hash f4d46cb0e76b84d8270da7bc62927c6c3acfa42cf9982012842f5e56b4b846ca4fc6ddb1ed6370cc5b6cd224c0dc420a7f3550d867855c23bcc20a3a3ee2d1bc)
+       ExternalProject_Add(clang
+         # This is the upstream source code repackages in a .tar.gz for
+         # compatibility with older CMake. Also the tests/ and doc/ directories
+         # are removed to remove symlink files and save space.
+-        URL https://midas3.kitware.com/midas/api/rest?method=midas.bitstream.download&checksum=${clang_md5}&name=cfe-${llvm_version}.src.tar.gz
+-        URL_MD5 ${clang_md5}
++        URL "https://data.kitware.com/api/v1/file/hashsum/sha512/${clang_hash}/download"
++        URL_HASH SHA512=${clang_hash}
+         DEPENDS llvm
+         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cfe-${llvm_version}
+         CMAKE_ARGS -Wno-dev

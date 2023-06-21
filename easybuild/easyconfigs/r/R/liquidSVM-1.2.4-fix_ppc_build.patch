@@ -1,0 +1,48 @@
+The code requires C++11 but nvcc is not passed any flag for it, do that to avoid 'error: identifier "__ieee128" is undefined' on PPC
+Use uppercase __PPC64__ to detect PPC 64bit (defined by GCC)
+diff -aur liquidSVM-orig/MD5 liquidSVM/MD5
+--- liquidSVM-orig/MD5  2020-02-20 15:51:17.387058566 +0100
++++ liquidSVM/MD5   2020-02-20 16:48:06.042078399 +0100
+@@ -66,7 +66,7 @@
+ e0ea06f050a2ae8ed2f2e401d968f0ce *man/test.liquidSVM.Rd
+ 8874fc45419e3174bf06013d887f6582 *man/trainSVMs.Rd
+ 4cf2abf7c6d415a4a8cd7f5dee2df959 *man/write.liquidData.Rd
+-854c1eecccd169acdb80b03ad6d768dc *src/Makevars.in
++8c4346267f7b7f649ff27fb5288d4e23 *src/Makevars.in
+ e6d47b428caa2cc55798b431cb5e504f *src/kernel_calculator.cpp
+ 13af8529f5c2bccd4ea03288e9adf908 *src/kernel_calculator.h
+ dc2c86cbe61e7b7c5dd433f9fa41fac6 *src/liquidSVM.cpp
+@@ -155,7 +155,7 @@
+ 8b39ec05680bf3416bc1de3ad92f043f *src/sources/shared/system_support/cuda_simple_vector_operations.h
+ 806ca83732bff4b1b89adfc3494e90da *src/sources/shared/system_support/full_64bit_support.h
+ dfb08cdb449d490d86dd33bee186aac5 *src/sources/shared/system_support/memory_allocation.cpp
+-aec0000be577e69e88c040b641d6818a *src/sources/shared/system_support/memory_allocation.h
++8ea6ac178dd02e862eefa36b789b1711 *src/sources/shared/system_support/memory_allocation.h
+ 683d4ee517b1c760dc410c69c5508ce2 *src/sources/shared/system_support/memory_allocation.ins.cpp
+ cbd209324ad752e19be10d8975d65e2f *src/sources/shared/system_support/os_specifics.h
+ 54e8583d2e8e269ff2b6d7a79d57cbd5 *src/sources/shared/system_support/parallel_control.cpp
+diff -aur liquidSVM-orig/src/Makevars.in liquidSVM/src/Makevars.in
+--- liquidSVM-orig/src/Makevars.in  2020-02-20 15:51:17.377058962 +0100
++++ liquidSVM/src/Makevars.in   2020-02-20 16:47:44.042949538 +0100
+@@ -39,7 +39,7 @@
+ # The architecure flag can be set to higher values, if the hardware supports this.
+ # The value below should be safe for essentially all non stone-age systems.
+
+-NVCCFLAGS= -arch sm_30 -L$(CUDA_LIB_PATH) -DCOMPILE_WITH_CUDA__ -U__SSE2__ -U__AVX__ 
++NVCCFLAGS= -arch sm_30 -L$(CUDA_LIB_PATH) -DCOMPILE_WITH_CUDA__ -U__SSE2__ -U__AVX__ -std=c++11
+
+
+ #----------- CUDA related flags for GCC ----------------------------------------------------
+diff -aur liquidSVM-orig/src/sources/shared/system_support/memory_allocation.h liquidSVM/src/sources/shared/system_support/memory_allocation.h
+--- liquidSVM-orig/src/sources/shared/system_support/memory_allocation.h    2020-02-20 15:51:17.377058962 +0100
++++ liquidSVM/src/sources/shared/system_support/memory_allocation.h 2020-02-20 15:56:04.905673381 +0100
+@@ -42,7 +42,7 @@
+
+ // Check for GCC
+ #if __GNUC__
+-	#if __x86_64__ || __ppc64__
++	#if __x86_64__ || __ppc64__ || __PPC64__
+	#define SYSTEM_WITH_64BIT
+	#else
+	#define SYSTEM_WITH_32BIT
+

@@ -1,0 +1,65 @@
+easyblock = 'CMakeMake'
+
+name = 'FuSeq'
+version = '1.1.2'
+
+homepage = 'https://github.com/nghiavtr/FuSeq'
+description = "FuSeq is a novel method to discover fusion genes from paired-end RNA sequencing data."
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+toolchainopts = {'pic': True}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/nghiavtr/FuSeq/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/kingsfordgroup/sailfish/archive/'],
+        'download_filename': 'v0.10.0.tar.gz',
+        'filename': 'Sailfish-0.10.0.tar.gz',
+    },
+]
+patches = [
+    ('FuSeq-%(version)s_skip-included-Jellyfish.patch', '..'),
+    ('%(name)s-%(version)s_RHEL8.patch', '..'),
+]
+checksums = [
+    'c08ad145c2e7ba24738cc779502d82063d17a860c5b8dae609e416a60bc0992a',  # FuSeq-1.1.2.tar.gz
+    'dbed3d48c100cf2b97f08ef37bc66ca1fa63a1d70713fa47d0b4fe15b7062ac0',  # Sailfish-0.10.0.tar.gz
+    '70991d30526a4818970b47bfb2d30f3e57b1b3c9221c721c20e88ee196bec683',  # FuSeq-1.1.2_skip-included-Jellyfish.patch
+    'd139f1b8a17fe40784d8df38e340b8f2e100ed2bffd2017c24b6016af618751e',  # FuSeq-1.1.2_RHEL8.patch
+]
+
+builddependencies = [('CMake', '3.15.3')]
+
+dependencies = [
+    ('Boost', '1.71.0'),
+    ('tbb', '2019_U9'),
+    ('Jellyfish', '2.3.0'),
+    ('g2log', '1.0'),
+]
+
+# installation is run from sailfish directly, after FuSeq sources are copied into it...
+# see install.sh script (https://github.com/nghiavtr/FuSeq/blob/master/install.sh)
+start_dir = "../sailfish-0.10.0"
+preconfigopts = "cp -a %(builddir)s/FuSeq-%(version)s/{include,src} %(builddir)s/sailfish-0.10.0/ && "
+
+# build fails otherwise
+parallel = 1
+
+postinstallcmds = [
+    # copy createAnno and R subdirectories as well
+    "cp -a %(builddir)s/FuSeq-%(version)s/{createAnno,R} %(installdir)s/",
+    # replace /path/to with installation prefix in scripts
+    "sed -i 's@/path/to/@%(installdir)s/R/@' %(installdir)s/R/FuSeq.R",
+    "ls %(installdir)s/createAnno/*.sh | xargs sed -i 's@/path/to/FuSeq_home/@%(installdir)s/@'",
+]
+
+sanity_check_paths = {
+    'files': ['bin/FuSeq', 'bin/GenTC', 'bin/TxIndexer', 'lib/libsailfish_core.a', 'R/FuSeq.R'],
+    'dirs': ['createAnno'],
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,44 @@
+# Author:: Michael Dickens <cmdickens@tamu.edu> - TAMU HPRC - https://hprc.tamu.edu
+
+easyblock = 'MakeCp'
+
+name = 'SNPomatic'
+version = '1.0'
+
+homepage = 'https://github.com/magnusmanske/snpomatic'
+
+description = """
+ High throughput sequencing technologies generate large amounts of short reads.
+ Mapping these to a reference sequence consumes large amounts of processing
+ time and memory, and read mapping errors can lead to noisy or incorrect
+ alignments. SNP-o-matic is a fast, memory-efficient, and stringent read
+ mapping tool offering a variety of analytical output functions, with an
+ emphasis on genotyping.
+"""
+
+source_urls = ['https://github.com/magnusmanske/snpomatic/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['b90123226e24edfa5c2ca296f9414b5aa005d3da77ad80b5c576adddbb38a094']
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+builddependencies = [('binutils', '2.34')]
+
+prebuildopts = ""
+prebuildopts += "sed -i 's/CXX=g++/CXX:=g++/' Makefile && "
+prebuildopts += "sed -i 's/CXXFLAGS=/CXXFLAGS+=/' Makefile && "
+prebuildopts += "sed -i 's/LIBS=/LIBS+=/' Makefile && "
+prebuildopts += 'make reassemble && make variety && make mapcontigs &&'
+
+local_executables = ['findknownsnps', 'reassemble', 'variety', 'mapcontigs']
+
+files_to_copy = [(local_executables, 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_executables],
+    'dirs': [],
+}
+
+sanity_check_commands = ['findknownsnps']
+
+moduleclass = 'bio'

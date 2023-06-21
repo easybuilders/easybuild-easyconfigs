@@ -1,0 +1,62 @@
+easyblock = 'CMakeMake'
+
+name = 'Dalton'
+version = '2020.0'
+
+homepage = 'https://daltonprogram.org/'
+description = """The Dalton code is a powerful tool for a wide range of molecular properties
+ at different levels of theory.
+ Any published work arising from use of one of the Dalton2016 programs
+ must acknowledge that by a proper reference,
+ https://www.daltonprogram.org/www/citation.html."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://gitlab.com/dalton',
+        'repo_name': 'dalton',
+        'tag': '2020.0',
+        'recursive': True,
+    },
+}]
+patches = [
+    '%(name)s-2016-fix-cmake-install.patch',
+    '%(name)s-%(version)s_use-EB-install-for-dalton-script.patch',
+    '%(name)s-%(version)s_fix-uninits.patch',
+    '%(name)s-2016-fix-bad-includepath-add.patch',
+    '%(name)s-%(version)s_use_flexiblas.patch',
+    '%(name)s-%(version)s_disable_failing_tests.patch',
+]
+checksums = [
+    None,  # Dalton-2020.0.tar.gz
+    '3159b03a488d6f5ee23d468be02ea62eacd08cbdf68cd64ef4e5a0d469a6718b',  # Dalton-2016-fix-cmake-install.patch
+    # Dalton-2020.0_use-EB-install-for-dalton-script.patch
+    'f38b434d2af609b667b341192d8f0d7e37ee1e0461cc68c780b049c7027bfcf5',
+    'bc446cd1a9fb63836d1d621eb92be65fcd3a46095a0ba4ecb5b7f292dccbb609',  # Dalton-2020.0_fix-uninits.patch
+    '6d4dab7af92674e3e6713143f4d8886925ac1328f64c4cc5d071e6eee855c350',  # Dalton-2016-fix-bad-includepath-add.patch
+    'c1ac29f4ebfcf42b2b3858008cbd25ffbe7035675b9d954b63a5851183f72abb',  # Dalton-2020.0_use_flexiblas.patch
+    '296f550d4a4429a546c45304881a6091d482bc098c33d18b5aa123b516d8ae4b',  # Dalton-2020.0_disable_failing_tests.patch
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('Python', '3.9.5'),
+]
+
+configopts = '-DENABLE_MPI=ON '
+configopts += '-DENABLE_OMP=ON '
+
+pretestopts = 'env EBROOTDALTON=%(builddir)s/easybuild_obj DALTON_TMPDIR=%(builddir)s '
+# Just run the essential tests
+testopts = 'ARGS="-L essential" '
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/dalton', 'bin/dalton.x'],
+    'dirs': ['basis'],
+}
+
+moduleclass = 'chem'

@@ -1,0 +1,127 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'augur'
+version = '7.0.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/nextstrain/augur'
+description = "Pipeline components for real-time phylodynamic analysis"
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('Biopython', '1.75', versionsuffix),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('MAFFT', '7.453', '-with-extensions'),
+    ('IQ-TREE', '1.6.12'),
+    ('VCFtools', '0.1.16'),
+    ('RAxML', '8.2.12', '-hybrid-avx2'),
+    ('FastTree', '2.1.11'),
+    ('CVXOPT', '1.2.4', versionsuffix),
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('PyYAML', '5.1.2'),
+    ('Seaborn', '0.10.0', versionsuffix),
+    ('GitPython', '3.1.0', versionsuffix),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+local_augur_preinstallopts = """sed -i'' 's/"matplotlib >=2.0,.*/"matplotlib >=2.0",/' setup.py && """
+local_augur_preinstallopts += """sed -i'' 's/"cvxopt >=1.1.9,.*/"cvxopt >=1.1.9",/' setup.py && """
+local_augur_preinstallopts += """sed -i'' 's/"seaborn >=0.9.0,.*/"seaborn >=0.9.0",/' setup.py && """
+
+exts_list = [
+    ('appdirs', '1.4.3', {
+        'checksums': ['9e5896d1372858f8dd3344faf4e5014d21849c756c8d5701f78f8a103b372d92'],
+    }),
+    ('bcbio-gff', '0.6.6', {
+        'modulename': 'BCBio.GFF',
+        'checksums': ['74c6920c91ca18ed9cb872e9471c0be442dad143d8176345917eb1fefc86bc37'],
+    }),
+    ('ConfigArgParse', '1.2.1', {
+        'checksums': ['f30736dcd4e00455ffe3087454799ccb7f9b61d765492dd4b35bbcd62379db12'],
+    }),
+    ('datrie', '0.8.2', {
+        'checksums': ['525b08f638d5cf6115df6ccd818e5a01298cd230b2dac91c8ff2e6499d18765d'],
+    }),
+    ('importlib-metadata', '1.6.0', {
+        'modulename': 'importlib_metadata',
+        'source_tmpl': 'importlib_metadata-%(version)s.tar.gz',
+        'checksums': ['34513a8a0c4962bc66d35b359558fd8a5e10cd472d37aec5f66858addef32c1e'],
+    }),
+    ('ipython-genutils', '0.2.0', {
+        'modulename': 'ipython_genutils',
+        'source_tmpl': 'ipython_genutils-%(version)s.tar.gz',
+        'checksums': ['eb2e116e75ecef9d4d228fdc66af54269afa26ab4463042e33785b887c628ba8'],
+    }),
+    ('jsonschema', '3.2.0', {
+        'checksums': ['c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a'],
+    }),
+    ('jupyter-core', '4.6.3', {
+        'modulename': 'jupyter_core',
+        'source_tmpl': 'jupyter_core-%(version)s.tar.gz',
+        'checksums': ['394fd5dd787e7c8861741880bdf8a00ce39f95de5d18e579c74b882522219e7e'],
+    }),
+    ('nbformat', '5.0.5', {
+        'checksums': ['f0c47cf93c505cb943e2f131ef32b8ae869292b5f9f279db2bafb35867923f69'],
+    }),
+    ('packaging', '20.3', {
+        'checksums': ['3c292b474fda1671ec57d46d739d072bfd495a4f51ad01a055121d81e952b7a3'],
+    }),
+    ('phylo-treetime', '0.7.5', {
+        'modulename': 'treetime',
+        'checksums': ['8e3b8003b75ca29b7e383d2ae0eb61dd47a6593eefdbb1e9995d93174b2ed576'],
+    }),
+    ('pyrsistent', '0.16.0', {
+        'checksums': ['28669905fe725965daa16184933676547c5bb40a5153055a8dee2a4bd7933ad3'],
+    }),
+    ('ratelimiter', '1.2.0.post0', {
+        'checksums': ['5c395dcabdbbde2e5178ef3f89b568a3066454a6ddc223b76473dac22f89b4f7'],
+    }),
+    ('snakemake', '5.10.0', {
+        'checksums': ['a3fa8b12db84938c919996d61be66031bcb99c4b4d017278731324a6112b0d59'],
+    }),
+    ('toposort', '1.5', {
+        'checksums': ['dba5ae845296e3bf37b042c640870ffebcdeb8cd4df45adaa01d8c5476c557dd'],
+    }),
+    ('traitlets', '4.3.3', {
+        'checksums': ['d023ee369ddd2763310e4c3eae1ff649689440d4ae59d7485eb4cfbbe3e359f7'],
+    }),
+    ('wrapt', '1.12.1', {
+        'checksums': ['b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/nextstrain/augur/archive/'],
+        'use_pip_extras': 'full',
+        'checksums': ['bf520dfc7fe2bf72e12c8de25cd97ca84686345fbb1c4a3456b060500c9c25b3'],
+        # Change augur strict dependency on matplotlib, cvxopt and seaborn. Newer versions can be used.
+        'preinstallopts': local_augur_preinstallopts,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/augur'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+# Check if cvxopt and matplotlib imports in augur are valid
+# Check if  imports in augur are valid
+sanity_check_commands = [
+    "augur --help",
+    "python -c 'from cvxopt import matrix, solvers'",
+    """python -c '
+import matplotlib as mpl
+mpl.use("Agg")
+from matplotlib import gridspec
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+'""",
+    "python -c 'from matplotlib.colors import LinearSegmentedColormap, to_hex'",
+]
+
+moduleclass = 'bio'

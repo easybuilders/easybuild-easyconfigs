@@ -1,4 +1,4 @@
-easyblock = 'SCons'
+easyblock = 'CMakeMake'
 
 name = 'double-conversion'
 version = '3.1.4'
@@ -14,15 +14,20 @@ checksums = ['95004b65e43fefc6100f337a25da27bb99b9ef8d4071a36a33b5e83eb1f82021']
 
 builddependencies = [
     ('binutils', '2.31.1'),
-    ('SCons', '3.0.5'),
+    ('CMake', '3.13.3'),
 ]
 
-installopts = "DESTDIR=%(installdir)s prefix='' && "
-installopts += "mkdir %(installdir)s/include && cp double-conversion/*.h %(installdir)s/include"
+# Build static lib, static lib with -fPIC and shared lib
+configopts = [
+    '',
+    '-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_STATIC_LIBRARY_SUFFIX_CXX=_pic.a',
+    '-DBUILD_SHARED_LIBS=ON'
+]
 
 sanity_check_paths = {
-    'files': ['include/double-conversion.h', 'include/utils.h', 'lib/libdouble-conversion.a',
-              'lib/libdouble-conversion.%s' % SHLIB_EXT, 'lib/libdouble-conversion_pic.a'],
+    'files': ['include/double-conversion/double-conversion.h', 'include/double-conversion/utils.h',
+              'lib/libdouble-conversion.a', 'lib/libdouble-conversion_pic.a',
+              'lib/libdouble-conversion.%s' % SHLIB_EXT],
     'dirs': [],
 }
 

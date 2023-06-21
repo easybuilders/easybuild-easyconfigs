@@ -1,0 +1,112 @@
+Author: Jasper Grimm (UoY)
+Use external dependencies
+Add target to build shared library
+Rename static library from libvcflib_static to libvcflib
+diff -Nru vcflib.orig/CMakeLists.txt vcflib/CMakeLists.txt
+--- vcflib.orig/CMakeLists.txt	2021-05-05 16:17:44.000000000 +0100
++++ vcflib/CMakeLists.txt	2021-05-07 17:30:22.000000000 +0100
+@@ -31,7 +31,7 @@
+ set_package_properties(Threads PROPERTIES TYPE REQUIRED)
+ 
+ pkg_check_modules(HTSLIB REQUIRED htslib)
+-pkg_check_modules(TABIXPP tabixpp) # Optional
++#pkg_check_modules(TABIXPP tabixpp) # Optional
+ 
+ # ---- Build switches
+ 
+@@ -54,11 +54,11 @@
+ 
+ include_directories(include)
+ # include_directories(tabixpp)
+-include_directories(fastahack)
+-include_directories(intervaltree)
+-include_directories(smithwaterman)
+-include_directories(multichoose)
+-include_directories(filevercmp)
++#include_directories(fastahack)
++#include_directories(intervaltree)
++#include_directories(smithwaterman)
++#include_directories(multichoose)
++#include_directories(filevercmp)
+ 
+ if(HTSLIB_LOCAL)
+   include_directories(tabixpp/htslib)
+@@ -66,14 +66,15 @@
+ 
+ file(GLOB INCLUDES
+   src/*.h*
+-  multichoose/*.h*
+-  intervaltree/*.h*
++  # multichoose/*.h*
++  # intervaltree/*.h*
+   # tabixpp/*.h*
+-  smithwaterman/*.h*
+-  fastahack/*.h*
+-  filevercmp/*.h*)
++  # smithwaterman/*.h*
++  # fastahack/*.h*
++  # filevercmp/*.h*
++    )
+ 
+-add_library(vcflib STATIC
++set(SOURCES
+     src/Variant.h
+     src/split.h
+     src/pdflib.hpp
+@@ -90,14 +91,14 @@
+     src/ssw.hpp
+     src/ssw_cpp.hpp
+     # tabixpp/tabix.cpp # do we need this?
+-    fastahack/Fasta.cpp
+-    smithwaterman/SmithWatermanGotoh.cpp
+-    smithwaterman/Repeats.cpp
+-    smithwaterman/IndelAllele.cpp
+-    smithwaterman/disorder.cpp
+-    smithwaterman/LeftAlign.cpp
+-    fsom/fsom.c
+-    filevercmp/filevercmp.c
++    # fastahack/Fasta.cpp
++    # smithwaterman/SmithWatermanGotoh.cpp
++    # smithwaterman/Repeats.cpp
++    # smithwaterman/IndelAllele.cpp
++    # smithwaterman/disorder.cpp
++    # smithwaterman/LeftAlign.cpp
++    # fsom/fsom.c
++    # filevercmp/filevercmp.c
+     )
+ 
+ set(BINS
+@@ -192,6 +193,11 @@
+ add_definitions(-DVCFLIB_VERSION="${BUILD_NUMBER}")
+ add_definitions(-DVERSION="${BUILD_NUMBER}")
+ 
++add_library(vcflib_static STATIC ${SOURCES})
++set_target_properties(vcflib_static PROPERTIES OUTPUT_NAME vcflib)
++add_library(vcflib SHARED ${SOURCES})
++set_target_properties(vcflib PROPERTIES VERSION ${BUILD_NUMBER} SOVERSION 1)
++
+ # ---- Build htslib
+ #
+ # Note by default we use the distributed htslib! These are
+@@ -229,8 +235,8 @@
+ if (NOT BUILD_ONLY_LIB)
+   foreach(BIN ${BINS})
+     add_executable(${BIN} src/${BIN}.cpp)
+-    target_include_directories(${BIN} PUBLIC ${TABIXPP_LIBRARIES} ${HTSLIB_INCLUDE_DIRS})
+-    target_link_libraries(${BIN} vcflib tabixpp -DGIT_VERSION=0.9.0 ${TABIXPP_LIBRARIES} ${HTSLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${LIBLZMA_LIBRARIES} ${BZIP2_LIBRARIES})
++    target_include_directories(${BIN} PUBLIC ${CPPFLAGS})
++    target_link_libraries(${BIN} vcflib tabixpp fastahack sw fsom filevercmp -DGIT_VERSION=0.9.0 ${LDFLAGS} ${LIBS})
+   endforeach(BIN ${BINS})
+   install(TARGETS ${BINS} RUNTIME DESTINATION bin)
+ endif()
+@@ -311,7 +317,9 @@
+ 
+ # ---- Install
+ 
+-install(TARGETS vcflib ARCHIVE DESTINATION lib)
++#install(TARGETS vcflib ARCHIVE DESTINATION lib)
++install(TARGETS vcflib LIBRARY DESTINATION lib)
++install(TARGETS vcflib_static ARCHIVE DESTINATION lib)
+ 
+ install(FILES ${INCLUDES} DESTINATION include)
+ 
