@@ -1,0 +1,50 @@
+# Author: Caspar van leeuwen
+# Make sure to use the shared library of PUGIXML, since linking to the static library seems to result in undefined symbol errors:
+# ImportError: /home/casparl/.local/easybuild/Centos8/2021/software/ASAP/2.0-foss-2021a/lib/libmultiresolutionimageinterface.so: undefined symbol: _ZNK4pugi10xpath_node6parentEv
+diff -Nru ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a-orig/annotation/CMakeLists.txt ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a/annotation/CMakeLists.txt
+--- ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a-orig/annotation/CMakeLists.txt	2021-06-25 11:50:23.132333349 +0200
++++ ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a/annotation/CMakeLists.txt	2021-06-25 11:58:03.005555272 +0200
+@@ -25,10 +25,9 @@
+ )
+ 
+ add_library(annotation SHARED ${ANNOTATION_SOURCE} ${ANNOTATION_HEADERS})
+-target_compile_definitions(annotation PRIVATE "PUGIXML_HEADER_ONLY")
+ generate_export_header(annotation)
+ target_include_directories(annotation PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:include/annotation> PRIVATE ${DIAGPathology_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIRS} ${PugiXML_INCLUDE_DIR})
+-target_link_libraries(annotation PUBLIC core PRIVATE  multiresolutionimageinterface)
++target_link_libraries(annotation PUBLIC core PRIVATE  multiresolutionimageinterface ${PUGIXML_LIBRARY})
+ set_target_properties(annotation PROPERTIES DEBUG_POSTFIX _d)
+ 
+ install(TARGETS annotation
+diff -Nru ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a-orig/cmakemodules/FindPugiXML.cmake ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a/cmakemodules/FindPugiXML.cmake
+--- ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a-orig/cmakemodules/FindPugiXML.cmake	2021-06-25 11:50:23.180337653 +0200
++++ ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a/cmakemodules/FindPugiXML.cmake	2021-06-25 11:55:27.583630434 +0200
+@@ -5,11 +5,13 @@
+ #  PugiXML_FOUND, If false, do not try to use PugiXML.
+ 
+ find_path(PugiXML_INCLUDE_DIR pugixml.hpp)
++find_library(PUGIXML_LIBRARY NAMES pugixml)
+ 
+ # handle the QUIETLY and REQUIRED arguments and set PugiXML_FOUND to TRUE if
+ # all listed variables are TRUE
+ include(${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake)
+ FIND_PACKAGE_HANDLE_STANDARD_ARGS(PugiXML
+-                                  REQUIRED_VARS PugiXML_INCLUDE_DIR)
++                                  REQUIRED_VARS PUGIXML_LIBRARY PugiXML_INCLUDE_DIR)
+ 
+-mark_as_advanced(PugiXML_INCLUDE_DIR)
++
++mark_as_advanced(PugiXML_INCLUDE_DIR PUGIXML_LIBRARY)
+diff -Nru ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a-orig/multiresolutionimageinterface/CMakeLists.txt ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a/multiresolutionimageinterface/CMakeLists.txt
+--- ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a-orig/multiresolutionimageinterface/CMakeLists.txt	2021-06-25 11:50:23.384355944 +0200
++++ ASAP-8c9a8fbf32fd7a9dc5c5ec4d5c3552923cc4890a/multiresolutionimageinterface/CMakeLists.txt	2021-06-25 11:57:29.462554526 +0200
+@@ -66,8 +66,7 @@
+ 
+ add_library(multiresolutionimageinterface SHARED ${MULTIRESOLUTIONIMAGEINTERFACE_SRCS} ${MULTIRESOLUTIONIMAGEINTERFACE_HS} ${VSI_SOURCE_HS} ${VSI_SOURCE_SRCS})
+ target_include_directories(multiresolutionimageinterface PUBLIC $<BUILD_INTERFACE:${DIAGPathology_SOURCE_DIR}> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:include/multiresolutionimageinterface> PRIVATE ${PugiXML_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} ${TIFF_INCLUDE_DIR})
+-target_link_libraries(multiresolutionimageinterface PUBLIC core PRIVATE jpeg2kcodec libtiff Boost::disable_autolinking Boost::thread)
+-target_compile_definitions(multiresolutionimageinterface PRIVATE PUGIXML_HEADER_ONLY)
++target_link_libraries(multiresolutionimageinterface PUBLIC core PRIVATE jpeg2kcodec libtiff Boost::disable_autolinking Boost::thread ${PUGIXML_LIBRARY})
+ generate_export_header(multiresolutionimageinterface)
+ set_target_properties(multiresolutionimageinterface PROPERTIES DEBUG_POSTFIX _d)
+ 

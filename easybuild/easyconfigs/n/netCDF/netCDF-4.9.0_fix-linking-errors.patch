@@ -1,0 +1,99 @@
+fix "multiple definition" linking errors,
+see also https://github.com/Unidata/netcdf-c/issues/2419
+author: Kenneth Hoste (HPC-UGent) + Lars Viklund (Umeå University)
+--- netcdf-c-4.9.0/include/netcdf_json.h.orig	2022-06-23 08:35:33.345891769 +0200
++++ netcdf-c-4.9.0/include/netcdf_json.h	2022-06-23 08:37:38.626339409 +0200
+@@ -57,25 +57,25 @@
+ #endif
+ 
+ /* Parse a JSON string */
+-DLLEXPORT int NCJparse(const char* text, unsigned flags, NCjson** jsonp);
++DLLEXPORT static int NCJparse(const char* text, unsigned flags, NCjson** jsonp);
+ 
+ /* Reclaim a JSON tree */
+-DLLEXPORT extern void NCJreclaim(NCjson* json);
++DLLEXPORT static void NCJreclaim(NCjson* json);
+ 
+ /* Create a new JSON node of a given sort */
+-DLLEXPORT extern int NCJnew(int sort, NCjson** objectp);
++DLLEXPORT static int NCJnew(int sort, NCjson** objectp);
+ 
+ /* Create new json object with given string content */
+-DLLEXPORT extern int NCJnewstring(int sort, const char* value, NCjson** jsonp);
++DLLEXPORT static int NCJnewstring(int sort, const char* value, NCjson** jsonp);
+ 
+ /* Create new json object with given counted string content */
+-DLLEXPORT extern int NCJnewstringn(int sort, size_t len, const char* value, NCjson** jsonp);
++DLLEXPORT static int NCJnewstringn(int sort, size_t len, const char* value, NCjson** jsonp);
+ 
+ /* Get dict key value by name */
+-DLLEXPORT extern int NCJdictget(const NCjson* dict, const char* key, NCjson** valuep);
++DLLEXPORT static int NCJdictget(const NCjson* dict, const char* key, NCjson** valuep);
+ 
+ /* Convert one json sort to  value of another type; don't use union so we can know when to reclaim sval */
+-DLLEXPORT extern int NCJcvt(const NCjson* value, int outsort, struct NCJconst* output);
++DLLEXPORT static int NCJcvt(const NCjson* value, int outsort, struct NCJconst* output);
+ 
+ #ifndef NETCDF_JSON_H
+ 
+@@ -230,7 +230,7 @@
+ 
+ /**************************************************/
+ 
+-int
++static int
+ NCJparse(const char* text, unsigned flags, NCjson** jsonp)
+ {
+     int stat = NCJ_OK;
+@@ -579,7 +579,7 @@
+ 
+ /**************************************************/
+ 
+-void
++static void
+ NCJreclaim(NCjson* json)
+ {
+     if(json == NULL) return;
+@@ -621,7 +621,7 @@
+ /**************************************************/
+ /* Build Functions */
+ 
+-int
++static int
+ NCJnew(int sort, NCjson** objectp)
+ {
+     int stat = NCJ_OK;
+@@ -651,13 +651,13 @@
+     return NCJTHROW(stat);
+ }
+ 
+-int
++static int
+ NCJnewstring(int sort, const char* value, NCjson** jsonp)
+ {
+     return NCJTHROW(NCJnewstringn(sort,strlen(value),value,jsonp));
+ }
+ 
+-int
++static int
+ NCJnewstringn(int sort, size_t len, const char* value, NCjson** jsonp)
+ {
+     int stat = NCJ_OK;
+@@ -679,7 +679,7 @@
+     return NCJTHROW(stat);
+ }
+ 
+-int
++static int
+ NCJdictget(const NCjson* dict, const char* key, NCjson** valuep)
+ {
+     int i,stat = NCJ_OK;
+@@ -755,7 +755,7 @@
+ #endif
+ 
+ /* Convert a JSON value to an equivalent value of a specified sort */
+-int
++static int
+ NCJcvt(const NCjson* jvalue, int outsort, struct NCJconst* output)
+ {
+     int stat = NCJ_OK;

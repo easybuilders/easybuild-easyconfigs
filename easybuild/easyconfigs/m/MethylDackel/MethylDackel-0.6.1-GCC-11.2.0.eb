@@ -1,0 +1,52 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+# 0.6.1 Update: Christoph Siegert
+
+easyblock = 'ConfigureMake'
+
+name = 'MethylDackel'
+version = '0.6.1'
+github_account = 'dpryan79'
+
+homepage = 'https://github.com/%(github_account)s/%(name)s'
+description = """A (mostly) universal methylation extractor for BS-seq experiments."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = ['MethylDackel_fix_version.h_target.patch']
+checksums = [
+    'eeb1da4c830bcd9f3e6663a764947d957c41337643069524a4b545812fcf4819',  # 0.6.1.tar.gz
+    '3b2e0a8028d12f9f214a027746eddaa5bf9239f75c08d829dfa93fba6d6a1d71',  # MethylDackel_fix_version.h_target.patch
+]
+
+skipsteps = ['configure']
+
+buildopts = 'LIBBIGWIG="$EBROOTLIBBIGWIG/lib/libBigWig.a"'
+
+runtest = 'test'
+
+installopts = "prefix=%(installdir)s"
+modextrapaths = {'PATH': ''}
+
+builddependencies = {
+    # Python is required for testing
+    ('Python', '3.9.6'),
+}
+
+dependencies = [
+    ('HTSlib', '1.14'),
+    ('libBigWig', '0.4.6'),
+]
+
+sanity_check_paths = {
+    'files': ['%(name)s'],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "%(name)s extract -h"
+]
+
+moduleclass = 'bio'

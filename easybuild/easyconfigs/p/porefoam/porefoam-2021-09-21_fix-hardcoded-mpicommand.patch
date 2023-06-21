@@ -1,0 +1,16 @@
+# porefome hard-codes mpi command to be "mpirun.openmpi" and also fixes the "-np" switch to set the number of mpi tasks.
+# I implemeted here $POREFOAM_MPIRUN_CMD variable to set the mpirun command and the switch to set the number of mpi tasks.
+# for example for OpenMPI, use export POREFOAM_MPIRUN_CMD="mpirun -np" before you run porefoem
+# June 21st 2022 by B. Hajgato (UGent)
+diff -ru porefoam-eb02ba3ede738befe02dc7c587d21f05fd40cb9f.org/src/script/initbash porefoam-eb02ba3ede738befe02dc7c587d21f05fd40cb9f/src/script/initbash
+--- porefoam-eb02ba3ede738befe02dc7c587d21f05fd40cb9f.org/src/script/initbash	2021-09-21 19:12:45.000000000 +0200
++++ porefoam-eb02ba3ede738befe02dc7c587d21f05fd40cb9f/src/script/initbash	2022-06-21 14:24:04.255861222 +0200
+@@ -70,7 +70,7 @@
+     else
+         echo "Running $APP_NAME $@  >  $PWD/$LOG_NAME , using $np processes"
+         # --bind to none ( mpirun -x LD_LIBRARY_PATH -x PATH -x WM_PROJECT_DIR -x WM_PROJECT_INST_DIR -x MPI_BUFFER_SIZE         --mca btl_tcp_if_exclude lo --mca btl_tcp_if_exclude eth0:avahi  --hostfile  machines.txt -np $np $APP_RUN  -parallel "$@" < /dev/null > $LOG_NAME 2>&1 )
+-        nice mpirun.openmpi  -np $np $APP_RUN -parallel "$@" < /dev/null > $LOG_NAME 2>&1
++        ${POREFOAM_MPIRUN_CMD:- nice mpirun.openmpi -np} $np $APP_RUN -parallel "$@" < /dev/null > $LOG_NAME 2>&1
+         [[ $? == 0 ]] || echo "Error: $APP_RUN -parallel $@,  exit status: $?, see $(pwd)/$LOG_NAME" >&2
+     fi
+     sleep .1
