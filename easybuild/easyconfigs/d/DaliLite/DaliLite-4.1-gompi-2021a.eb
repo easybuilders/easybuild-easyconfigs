@@ -1,0 +1,60 @@
+easyblock = 'MakeCp'
+
+name = 'DaliLite'
+version = '4.1'
+
+homepage = 'http://ekhidna2.biocenter.helsinki.fi/dali/'
+description = """DaliLite is a light version of the software run by the Dali server. The web
+server has search and data visualization options which are not included in this
+package. DaliLite supports data import (import.pl) to convert PDB entries to
+Dali's internal data format and pairwise comparison (dali.pl) to structurally
+align a list of query structures to a list of target structures."""
+
+toolchain = {'name': 'gompi', 'version': '2021a'}
+
+source_urls = ['http://ekhidna2.biocenter.helsinki.fi/dali']
+sources = [{'filename': SOURCE_TAR_GZ, 'download_filename': '%(name)s.v%(version_major)s.tar.gz'}]
+patches = ['DaliLite-4.1_fix-labels-without-statements.patch']
+checksums = [
+    '6267acefd2a477dd3720f9bbb5b911bbcfc97a9c0de58ebde651f48b4e0cb5cb',  # DaliLite-4.1.tar.gz
+    # DaliLite-4.1_fix-labels-without-statements.patch
+    'fb719f2d5ce33e5e47e565f4bb82d9e5d33cf4be341cd773daa0a33fcd65fe10',
+]
+
+dependencies = [
+    ('Perl', '5.32.1'),
+]
+
+# Build
+_make_home = "HOME=%(builddir)s/%(name)s.v%(version)s"
+
+prebuildopts = "make clean %s &&" % _make_home
+buildopts = 'FC=${FC} FC_MPI=${MPIF90} CFLAGS="${FCFLAGS} -std=legacy -fallow-argument-mismatch" '
+buildopts += 'CC="${CC} ${CFLAGS}" CC_MPI=${MPICC} ' + _make_home
+
+# Installation
+_bin_files = ['dsspcmbi', 'filter95fitz', 'fssp', 'mpicompare', 'pipe', 'pipedccp', 'puu', 'puutos',
+              'selfdccp', 'serialcompare']
+_perl_scripts = ['dali.pl', 'dccp2dalicon.pl', 'fsspfilter.pl', 'fsspselect.pl', 'htmljs.pl', 'import.pl',
+                 'pairwise.pl', 'pipe96-free.pl', 'pipe96.pl', 'sortdccp.pl']
+_perl_mods = ['mpidali.pm', 'upgma.pm']
+
+files_to_copy = [
+    (['bin/%s' % x for x in _bin_files + _perl_scripts], 'bin'),
+    (['bin/%s' % x for x in _perl_mods], 'lib/perl5/site_perl/%(perlver)s/'),
+]
+
+# Fix perl scritps
+fix_perl_shebang_for = ['bin/%s' % x for x in _perl_scripts]
+postinstallcmds = ["chmod 755 %(installdir)s/bin/*.pl"]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bin_files + _perl_scripts],
+    'dirs': ['lib/perl5/site_perl/%(perlver)s/'],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/'
+}
+
+moduleclass = 'bio'

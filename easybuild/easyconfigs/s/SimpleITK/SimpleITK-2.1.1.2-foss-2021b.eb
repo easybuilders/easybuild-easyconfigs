@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'SimpleITK'
+version = '2.1.1.2'
+
+homepage = 'https://www.simpleitk.org'
+description = """SimpleITK is a simplified programming interface to the algorithms and data structures of
+ the Insight Toolkit (ITK)."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://pypi.python.org/packages/source/s/simpleitk/']
+sources = [SOURCE_TAR_GZ]
+patches = ['%(name)s-%(version)s_allow-lua54-for-code-generation.patch']
+checksums = [
+    '5c0689b007d449ce0ce17a9ea322152315fb17ed32949005a974d3d9c2f58da3',  # SimpleITK-2.1.1.2.tar.gz
+    # SimpleITK-2.1.1.2_allow-lua54-for-code-generation.patch
+    'd1a45b1b64a226b3c22bf83c2f40f7f0e8f0a7d74bea1b2e7f5c5b6ed88b1522',
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('SWIG', '4.0.2'),
+    ('Lua', '5.4.3'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('ITK', '5.2.1'),
+    ('scikit-build', '0.11.1'),
+]
+
+start_dir = 'SimpleITK'
+
+configopts = "-DWRAP_DEFAULT:BOOL=OFF -DWRAP_PYTHON=BOOL:ON "
+
+postinstallcmds = [
+    "cd %(builddir)s/easybuild_obj/Wrapping/Python && "
+    "pip install --ignore-installed --no-deps --prefix=%(installdir)s . ",
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['lib/libSimpleITK_ITKBiasCorrection-%(version_major_minor)s.a'],
+    'dirs': ['include/%(name)s-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python -c 'import %(name)s'"]
+
+moduleclass = 'tools'

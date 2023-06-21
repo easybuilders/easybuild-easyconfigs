@@ -1,0 +1,46 @@
+easyblock = 'EB_EasyBuildMeta'
+
+name = 'EasyBuild'
+version = '4.1.2'
+
+homepage = 'https://easybuilders.github.io/easybuild'
+description = """EasyBuild is a software build and installation framework
+ written in Python that allows you to install software in a structured,
+ repeatable and robust way."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    # easybuild-framework
+    'https://files.pythonhosted.org/packages/f5/8b/feb27c2f7e10cb44317663bd10adabe29504f3c43d8bb463722b32e2c3fc/',
+    # easybuild-easyblocks
+    'https://files.pythonhosted.org/packages/74/5b/7763bec9d5f9fd96bf77ad2e628cc04e7199ba1c4bb6d664fa6724739808/',
+    # easybuild-easyconfigs
+    'https://files.pythonhosted.org/packages/c2/c0/3820d06b5b62e5ba1689907e92fc78f28546dbb9a53cd80511ede33b95c0/',
+]
+sources = [
+    'easybuild-framework-%(version)s.tar.gz',
+    # there is no 4.1.2 release for easyblocks/easyconfigs,
+    # only for framework (which includes an important security-related bug fix)
+    'easybuild-easyblocks-4.1.1.tar.gz',
+    'easybuild-easyconfigs-4.1.1.tar.gz',
+]
+checksums = [
+    '132bd4f1be05134d52cc5bd11c518c8f9f556205a354173690093850b94346b0',  # easybuild-framework-4.1.2.tar.gz
+    'd82b2dee51f79d4161b65e6aa5cfc26074c09a53408bdbf7cca23a305be01a79',  # easybuild-easyblocks-4.1.1.tar.gz
+    '60dc9527c9c10d15fa040b56f7b44bdf8d2ed6200c323f1f8ab348454e58d91c',  # easybuild-easyconfigs-4.1.1.tar.gz
+]
+
+# order matters a lot, to avoid having dependencies auto-resolved (--no-deps easy_install option doesn't work?)
+# EasyBuild is a (set of) Python packages, so it depends on Python
+# usually, we want to use the system Python, so no actual Python dependency is listed
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+local_pyshortver = '.'.join(SYS_PYTHON_VERSION.split('.')[:2])
+
+sanity_check_paths = {
+    'files': ['bin/eb'],
+    'dirs': ['lib/python%s/site-packages' % local_pyshortver],
+}
+
+moduleclass = 'tools'

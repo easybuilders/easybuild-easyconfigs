@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'Ghostscript'
+version = '9.52'
+
+homepage = 'https://ghostscript.com'
+description = """Ghostscript is a versatile processor for PostScript data with the ability to render PostScript to
+ different targets. It used to be part of the cups printing stack, but is no longer used for that."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [
+    'https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs%(version_major)s%(version_minor)s/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['c2501d8e8e0814c4a5aa7e443e230e73d7af7f70287546f7b697e5ef49e32176']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('libpng', '1.6.37'),
+    ('freetype', '2.10.1'),
+    ('libjpeg-turbo', '2.0.4'),
+    ('expat', '2.2.9'),
+    ('GLib', '2.64.1'),
+    ('cairo', '1.16.0'),
+    ('LibTIFF', '4.1.0'),
+]
+
+builddependencies = [
+    # use same binutils version that was used when building GCCcore toolchain
+    ('binutils', '2.34'),
+    ('pkg-config', '0.29.2'),
+]
+
+# Do not use local copies of zlib, jpeg, freetype, and png
+preconfigopts = "mv zlib zlib.no && mv jpeg jpeg.no && mv freetype freetype.no && mv libpng libpng.no && "
+preconfigopts += 'export LIBS="$LIBS -L$EBROOTZLIB/lib -lz" && '
+
+configopts = "--with-system-libtiff --enable-dynamic"
+
+postinstallcmds = [
+    # build and install shared libs
+    "make so && make soinstall",
+    # install header files
+    "mkdir -p %(installdir)s/include/ghostscript",
+    "install -v -m644 base/*.h %(installdir)s/include/ghostscript",
+    "install -v -m644 psi/*.h %(installdir)s/include/ghostscript",
+]
+
+sanity_check_paths = {
+    'files': ['bin/gs', 'lib/libgs.%s' % SHLIB_EXT],
+    'dirs': ['lib/ghostscript', 'include/ghostscript', 'share/man'],
+}
+
+moduleclass = 'tools'

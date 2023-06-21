@@ -1,0 +1,64 @@
+easyblock = 'Bundle'
+
+name = 'IRkernel'
+version = '1.1'
+versionsuffix = '-R-%(rver)s-Python-%(pyver)s'
+
+homepage = 'https://irkernel.github.io'
+description = """The R kernel for the 'Jupyter' environment executes R code 
+ which the front-end (Jupyter Notebook or other front-ends) submits to the 
+ kernel via the network."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+dependencies = [
+    ('R', '3.6.2'),
+    ('Python', '3.7.4'),
+    ('IPython', '7.9.0', '-Python-%(pyver)s'),
+    ('ZeroMQ', '4.3.2'),
+]
+
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/',
+        'https://cran.rstudio.com/src/contrib/',
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_list = [
+    ('repr', '1.1.0', {
+        'checksums': ['743fe018f9e3e54067a970bc38b6b8c0c0498b43f88d179ac4a959c2013a5f96'],
+    }),
+    ('IRdisplay', '0.7.0', {
+        'checksums': ['91eac9acdb92ed0fdc58e5da284aa4bb957ada5eef504fd89bec136747999089'],
+    }),
+    ('pbdZMQ', '0.3-3', {
+        'checksums': ['ae26c13400e2acfb6463ff9b67156847a22ec79f3b53baf65119efaba1636eca'],
+    }),
+    (name, version, {
+        'checksums': ['2469431c468a3f586ffe8adc260fa368fd8d6b4e65bde318f941fb1692ee38ee'],
+    }),
+]
+
+modextrapaths = {
+    'R_LIBS_SITE': '',
+    'JUPYTER_PATH': '%(name)s'
+}
+
+# IPython notebook looks for the json kernel file in kernels/IRkernel
+local_kerneldir = '%(installdir)s/IRkernel'
+postinstallcmds = [
+    'mkdir -p %s/kernels/ir' % local_kerneldir,
+    'cp %s/kernelspec/* %s/kernels/ir' % (local_kerneldir, local_kerneldir)
+]
+
+sanity_check_paths = {
+    'files': ['%s/kernels/ir/kernel.json' % local_kerneldir],
+    'dirs': [name],
+}
+
+moduleclass = 'tools'

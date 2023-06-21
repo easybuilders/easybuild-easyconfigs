@@ -1,0 +1,29 @@
+# UCX is hardcoded to only load the modules it is compiled with.
+# This patch adds an optional EB_UCX_xxx_MODULES that can override this list, allowing new modules to be loaded later.
+# Author: micketeer@gmail.com - updated for UCX 1.13.1 by Kenneth Hoste (HPC-UGent)
+--- ucx-1.13.1.orig/src/ucs/sys/module.c	2022-09-07 09:16:18.000000000 +0200
++++ ucx-1.13.1/src/ucs/sys/module.c	2022-10-18 16:29:29.318490689 +0200
+@@ -271,6 +271,8 @@
+     char *modules_str;
+     char *saveptr;
+     char *module_name;
++    char *env_modules;
++    char buf[64];
+ 
+     ucs_module_loader_init_paths();
+ 
+@@ -278,7 +280,13 @@
+         ucs_assert(ucs_sys_is_dynamic_lib());
+ 
+         ucs_module_debug("loading modules for %s", framework);
+-        modules_str = ucs_strdup(modules, "modules_list");
++        ucs_snprintf_safe(buf, sizeof(buf), "EB_UCX_%s_MODULES", framework);
++        env_modules = getenv(buf);
++        if (env_modules != NULL) {
++            modules_str = ucs_strdup(env_modules, "modules_list");
++        } else {
++            modules_str = ucs_strdup(modules, "modules_list");
++        }
+         if (modules_str != NULL) {
+             saveptr     = NULL;
+             module_name = strtok_r(modules_str, ":", &saveptr);

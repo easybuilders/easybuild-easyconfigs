@@ -1,0 +1,30 @@
+From 7ea5e07d1cb59834428d982818b7cf565dcda4df Mon Sep 17 00:00:00 2001
+From: Bart Oldeman <bart.oldeman@calculquebec.ca>
+Date: Wed, 12 Feb 2020 14:11:44 +0000
+Subject: [PATCH] Fix inline asm in dscal: mark x, x1 as clobbered. Fixes #2408
+
+The leaq instructions in dscal_kernel_inc_8 modify x and x1 so they
+must be declared as input/output constraints, otherwise the compiler
+may assume the corresponding registers are not modified.
+---
+ kernel/x86_64/dscal.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/x86_64/dscal.c b/kernel/x86_64/dscal.c
+index d0d7801fd..e2436f789 100644
+--- a/kernel/x86_64/dscal.c
++++ b/kernel/x86_64/dscal.c
+@@ -136,10 +136,10 @@ static void dscal_kernel_inc_8(BLASLONG n, FLOAT *alpha, FLOAT *x, BLASLONG inc_
+ 	"jnz    1b					    \n\t"
+ 
+         :
+-          "+r" (n)      // 0
++          "+r" (n),     // 0
++          "+r" (x),     // 1
++          "+r" (x1)     // 2
+         :
+-          "r" (x),      // 1
+-          "r" (x1),     // 2
+           "r" (alpha),  // 3
+           "r" (inc_x),  // 4
+           "r" (inc_x3)  // 5

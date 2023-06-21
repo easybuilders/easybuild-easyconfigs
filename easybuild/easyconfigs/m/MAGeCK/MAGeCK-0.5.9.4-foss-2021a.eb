@@ -1,0 +1,46 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'PythonPackage'
+
+name = 'MAGeCK'
+version = '0.5.9.4'
+
+homepage = "https://sourceforge.net/p/mageck/wiki/Home/"
+description = """Model-based Analysis of Genome-wide CRISPR-Cas9 Knockout (MAGeCK) is a computational tool to identify
+ important genes from the recent genome-scale CRISPR-Cas9 knockout screens (or GeCKO) technology. MAGeCK is developed
+ by Wei Li and Han Xu from Dr. Xiaole Shirley Liu's lab at Dana-Farber Cancer Institute, and is being actively updated
+ by Wei Li lab from Children's National Medical Center."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+]
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['42875b308f2d9ee38f083fb1020d7d48fca29e2100fdb09ced1969b738b8c939']
+
+# Remove the shipped mageckGSEA and RRA binaries so that the Python install will build them
+# This avoids RPATH problems (see #15082)
+preinstallopts = "rm bin/{mageckGSEA,RRA} && "
+
+download_dep_fail = True
+sanity_pip_check = True
+use_pip = True
+
+postinstallcmds = ["cp -a demo %(installdir)s"]
+
+sanity_check_paths = {
+    'files': ['bin/mageck', 'bin/mageckGSEA', 'bin/RRA'],
+    'dirs': ['demo', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    # copy demo to build directory, after making sure it exists, so --sanity-check-only works;
+    # enable write permissions, since installation directory may be read-only
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/demo %(builddir)s/ && chmod -R u+w %(builddir)s/demo",
+    "cd %(builddir)s/demo/demo1 && ./run.sh",
+] + ["%s -h" % x for x in ['mageck', 'mageckGSEA']]
+
+moduleclass = 'bio'

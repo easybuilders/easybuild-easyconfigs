@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'libGridXC'
+version = '0.8.5'
+
+homepage = 'https://launchpad.net/libgridxc'
+description = """A library to compute the exchange and correlation energy and potential in spherical (i.e. an atom)
+ or periodic systems. It is based on SiestaXC."""
+
+toolchain = {'name': 'iimpi', 'version': '2019b'}
+
+source_urls = ['https://launchpad.net/libgridxc/trunk/0.8/+download/']
+sources = [SOURCELOWER_TGZ]
+checksums = ['66192e2d3379677d6687510915d7b24ffefeec96899b0bbf2adeec63a1d83c26']
+
+dependencies = [('libxc', '4.3.4')]
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = "mkdir build && cd build && sh ../src/config.sh && "
+prebuildopts += "cp ../extra/fortran.mk . && "
+prebuildopts += "sed -i 's/=gfortran/=${F90}/' fortran.mk && "
+prebuildopts += "sed -i 's/=mpif90/=${MPIF90}/' fortran.mk && "
+prebuildopts += "export LIBXC_ROOT=$EBROOTLIBXC && "
+prebuildopts += "make clean && "
+
+buildopts = "WITH_LIBXC=1 WITH_MPI=1 PREFIX=%(installdir)s"
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['gridxc.mk', 'libxc.mk', 'lib/libGridXC.a'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'

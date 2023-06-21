@@ -1,0 +1,90 @@
+From c9c9bb95d5ee2f4bfc7a266ac4fe869f931ee3c1 Mon Sep 17 00:00:00 2001
+From: Terje Kvernes <terje@kvernes.no>
+Date: Mon, 28 Sep 2020 20:29:28 +0200
+Subject: [PATCH] Filter out SSE usage for non-x86_64.
+
+  - Symbols are still maintained as they are used
+    in a mnumber of places.
+  - SSE should be set to 0 for non-x86_x64 so the
+    code paths expecting SSE should never be called.
+---
+ src/Rmain.cpp |  7 ++++++-
+ src/kmers.cpp | 19 +++++++++++++++++++
+ 2 files changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/src/Rmain.cpp b/src/Rmain.cpp
+index c9386fc..3459c65 100755
+--- a/src/Rmain.cpp
++++ b/src/Rmain.cpp
+@@ -3,7 +3,12 @@
+ ///#ifdef _WIN32 //  Windows
+ #if defined(_WIN32) && !defined(__MINGW32__) //  Windows and not MINGW
+ #define cpuid(info, x)    __cpuidex(info, x, 0)
+-#else //  GCC Intrinsics
++#elif defined(__ppc64__) || defined(__PPC64__) || defined(__s390x__) || defined(__aarch64__)
++void cpuid(int32_t out[4], int32_t x) {
++     // Just disable it as anything better is unimplemented.
++     out[0] = 0;
++}
++#else // GCC Intrinsics on x86_64
+ #include <cpuid.h>
+ void cpuid(int info[4], int InfoType){
+   __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
+diff --git a/src/kmers.cpp b/src/kmers.cpp
+index 651887b..5340055 100644
+--- a/src/kmers.cpp
++++ b/src/kmers.cpp
+@@ -1,6 +1,8 @@
+ #include <stdlib.h>
+ #include "dada.h"
++#if ! (defined(__ppc64__) || defined(__PPC64__) || defined(__s390x__) || defined(__aarch64__))
+ #include "emmintrin.h"
++#endif
+ // #if _WIN32
+ // #include <intrin.h>
+ // #endif
+@@ -26,6 +28,15 @@ double kmer_dist(uint16_t *kv1, int len1, uint16_t *kv2, int len2, int k) {
+   return (1. - dot);
+ }
+ 
++// These should never be called, but the symbols will have to exist
++#if (defined(__ppc64__) || defined(__PPC64__) || defined(__s390x__) || defined(__aarch64__))
++double kmer_dist_SSEi(uint16_t *kv1, int len1, uint16_t *kv2, int len2, int k) {
++    return 0.0;
++}
++double kmer_dist_SSEi_8(uint8_t *kv1, int len1, uint8_t *kv2, int len2, int k) {
++    return 0.0;
++}
++#else
+ // Computes kmer distance with SSE2 intrinsics.
+ double kmer_dist_SSEi(uint16_t *kv1, int len1, uint16_t *kv2, int len2, int k) {
+   size_t n_kmer = 1 << (2*k); // 4^k kmers
+@@ -87,6 +98,8 @@ double kmer_dist_SSEi_8(uint8_t *kv1, int len1, uint8_t *kv2, int len2, int k) {
+   dot = ((double) dotsum)/((len1 < len2 ? len1 : len2) - k + 1.);
+   return (1. - dot);
+ }
++#endif
++
+ 
+ // Computes "kmer distance" with SSE2 intrinsics, based on ordered kmers (e.g. gapless align)
+ // If different lengths, returns -1 (invalid)
+@@ -106,6 +119,11 @@ double kord_dist(uint16_t *kord1, int len1, uint16_t *kord2, int len2, int k) {
+   return (1. - dot);
+ }
+ 
++#if (defined(__ppc64__) || defined(__PPC64__) || defined(__s390x__) || defined(__aarch64__))
++double kord_dist_SSEi(uint16_t *kord1, int len1, uint16_t *kord2, int len2, int k) {
++    return 0.0;
++}
++#else
+ // Computes "kmer distance" with SSE2 intrinsics, based on ordered kmers (e.g. gapless align)
+ // If different lengths, returns -1 (invalid)
+ double kord_dist_SSEi(uint16_t *kord1, int len1, uint16_t *kord2, int len2, int k) {
+@@ -138,6 +156,7 @@ double kord_dist_SSEi(uint16_t *kord1, int len1, uint16_t *kord2, int len2, int
+   dot = ((double) dotsum)/((len1 < len2 ? len1 : len2) - k + 1.);
+   return (1. - dot);
+ }
++#endif
+ 
+ void assign_kmer8(uint8_t *kvec8, const char *seq, int k) {  // Assumes a clean seq (just 1s,2s,3s,4s)
+   int i, j, nti;
