@@ -21,18 +21,18 @@ source_urls = ['https://github.com/cancerit/%(name)s/archive/v%(version)s']
 sources = ['v%(version)s.tar.gz']
 checksums = ['dbec2d47fb4fad8ead72f55c4b6e3c02b216cbed285c05617b62e9a38c32e400']
 
-skipsteps = ['configure']
-
-buildopts = "-C c && cd perl && perl Makefile.PL INSTALL_BASE=%(installdir)s "
-preinstallopts = "cd perl && "
-installopts = " && cd .. && cp -a c/bin/alleleCounter %(installdir)s/bin/"
-
 # HTSlib 1.7 is built, used and removed again in the provided setup script
 dependencies = [
     ('Perl', '5.34.1'),
     ('HTSlib', '1.15.1'),
     ('libdeflate', '1.10'),
 ]
+
+skipsteps = ['configure']
+
+buildopts = "-C c && cd perl && perl Makefile.PL INSTALL_BASE=%(installdir)s "
+preinstallopts = "cd perl && "
+installopts = " && cd .. && cp -a c/bin/alleleCounter %(installdir)s/bin/"
 
 exts_defaultclass = 'PerlModule'
 exts_filter = ("perl -e 'require %(ext_name)s'", '')
@@ -70,12 +70,19 @@ exts_list = [
     }),
 ]
 
+postinstallcmds = ["chmod u+w %(installdir)s/bin/alleleCounter.pl"]
+
+fix_perl_shebang_for = ['bin/alleleCounter.pl']
+
 sanity_check_paths = {
-    'files': ["bin/alleleCounter", "bin/alleleCounter.pl"],
-    'dirs': ["lib/perl5"],
+    'files': ['bin/alleleCounter', 'bin/alleleCounter.pl'],
+    'dirs': ['lib/perl5'],
 }
 
-sanity_check_commands = ["alleleCounter --help"]
+sanity_check_commands = [
+    "alleleCounter --help",
+    "alleleCounter.pl --help",
+]
 
 modextrapaths = {'PERL5LIB': ['lib/perl5', 'lib/perl5/site_perl/%(perlver)s']}
 
