@@ -1,0 +1,37 @@
+easyblock = 'PackedBinary'
+
+name = 'CPC2'
+version = '1.0.1'
+
+homepage = 'http://cpc2.gao-lab.org/'
+description = """ a fast and accurate coding potential calculator based on sequence intrinsic features  """
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/gao-lab/CPC2_standalone/archive/']
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['31f3d1e2466aea25f03ffcb5abd4556cd17862ef65ed3a1e42f3d99665529d08']
+
+local_svm_orig = "lib_dir + \"libsvm/libsvm-3.18/"
+
+postinstallcmds = [
+    "sed -i 's|" + local_svm_orig + "svm-scale\"|\"$EBROOTLIBSVM/bin/svm-scale\"|g' %(installdir)s/bin/CPC2.py",
+    "sed -i 's|" + local_svm_orig + "svm-predict\"|\"$EBROOTLIBSVM/bin/svm-predict\"|g' %(installdir)s/bin/CPC2.py",
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('LIBSVM', '3.30'),
+    ('Biopython', '1.79'),
+]
+
+install_cmd = 'cp -a CPC2*/{bin,data} %(installdir)s/'
+
+sanity_check_paths = {
+    'files': ['bin/CPC2.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['CPC2.py -i %(installdir)s/data/example.fa -o example.out']
+
+moduleclass = 'lib'

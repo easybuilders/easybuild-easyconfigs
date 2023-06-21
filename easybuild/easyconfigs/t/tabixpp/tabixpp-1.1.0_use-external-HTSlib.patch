@@ -1,0 +1,125 @@
+# Patch to use an existing HTSlib rather than the one shipped with tabixpp, and
+#  build static and dynamic libaries. Based on the PR by outpaddling:
+#  https://github.com/ekg/tabixpp/pull/10
+
+diff -Nru tabixpp-1.1.0.orig/Makefile tabixpp-1.1.0/Makefile
+--- tabixpp-1.1.0.orig/Makefile	2021-05-04 15:54:06.000000000 +0100
++++ tabixpp-1.1.0/Makefile	2021-05-07 12:53:58.000000000 +0100
+@@ -1,52 +1,71 @@
+ 
+-# Use ?= to allow override from the env or command-line.
++# Use ?= to allow overriding from the env or command-line, e.g.
++#
++#       make CXXFLAGS="-O3 -fPIC" install
++#
++# Package managers will override many of these variables automatically, so
++# this is aimed at making it easy to create packages (Debian packages,
++# FreeBSD ports, MacPorts, pkgsrc, etc.)
++
++CC ?=		cc
++CXX ?= 		c++
++CXXFLAGS ?=	-g -Wall -O2 #-m64 #-arch ppc
++CPPFLAGS ?=	-Ihtslib
++LDLIBS ?=		-lhts -llzma -lbz2 -lz -lpthread -lm
++
++PREFIX ?=	/usr/local
++STRIP ?=	strip
++INSTALL ?=	install -c
++MKDIR ?=	mkdir -p
++AR ?=		ar
++ARFLAGS ?=	rs
++
++DFLAGS =	-D_FILE_OFFSET_BITS=64 -D_USE_KNETFILE
++BIN =		tabix++
++LIB =		libtabixpp.a
++SOVERSION =	1
++SLIB =		libtabixpp.so
++OBJS =		tabix.o
++
++LIBDIR = $(DESTDIR)$(PREFIX)/lib
++BINDIR = $(DESTDIR)$(PREFIX)/bin
++INCDIR = $(DESTDIR)$(PREFIX)/include/tabixpp
++
++.SUFFIXES:.cpp .o .pico .so
++
++.cpp.o:
++	$(CXX) $(CXXFLAGS) $(DFLAGS) -I. $(CPPFLAGS) -c -o $@ $<
++
++.cpp.pico:
++	$(CXX) $(CXXFLAGS) $(DFLAGS) -I. $(CPPFLAGS) -fPIC -c -o $@ $<
++
++all:	$(BIN) $(SLIB) $(LIB)
++
++$(LIB): $(OBJS)
++	$(AR) $(ARFLAGS) $@ $^
++
++$(SLIB): $(OBJS:.o=.pico)
++	$(CXX) -shared -Wl,-soname,$(SLIB).$(SOVERSION) $(LDFLAGS) -o $@ $^ $(LDLIBS)
++	ln -sf $@ $(SLIB).$(SOVERSION)
++
++$(BIN): $(OBJS) main.cpp
++	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ main.cpp $(OBJS) $(LDLIBS)
++
++install: all
++	$(MKDIR) $(BINDIR)
++	$(MKDIR) $(LIBDIR)
++	$(MKDIR) $(INCDIR)
++	$(INSTALL) $(BIN) $(BINDIR)
++	$(INSTALL) *.hpp $(INCDIR)
++	$(INSTALL) $(LIB) $(SLIB) $(SLIB).$(SOVERSION) $(LIBDIR)
+ 
+-CC?=		gcc
+-CXX?= 		g++
+-CXXFLAGS?=	-g -Wall -O2 -fPIC #-m64 #-arch ppc
+-INCLUDES?=	-Ihtslib
+-HTS_HEADERS?=	htslib/htslib/bgzf.h htslib/htslib/tbx.h
+-HTS_LIB?=	htslib/libhts.a
+-LIBPATH?=	-L. -Lhtslib
+-LIBS?=	-lhts -lpthread -lm -lbz2 -llzma -lz
+-DFLAGS=		-D_FILE_OFFSET_BITS=64 -D_USE_KNETFILE
+-PROG=		tabix++
+-SUBDIRS=.
+-
+-ifeq ($(OS),Windows_NT)
+-	LIBS += -lws2_32
+-endif
+-
+-.SUFFIXES:.c .o
+-
+-.c.o:
+-	$(CC) $(CPPFLAGS) -c $(CXXFLAGS) $(DFLAGS) $(INCLUDES) $< -o $@
+-
+-all-recur lib-recur clean-recur cleanlocal-recur install-recur:
+-	@target=`echo $@ | sed s/-recur//`; \
+-	wdir=`pwd`; \
+-	list='$(SUBDIRS)'; for subdir in $$list; do \
+-		cd $$subdir; \
+-		$(MAKE) CC="$(CC)" DFLAGS="$(DFLAGS)" CXXFLAGS="$(CXXFLAGS)" \
+-			INCLUDES="$(INCLUDES)" LIBPATH="$(LIBPATH)" $$target \
+-			|| exit 1; \
+-		cd $$wdir; \
+-	done;
+-
+-all:	$(PROG)
+-
+-tabix.o: $(HTS_HEADERS) tabix.cpp tabix.hpp
+-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c tabix.cpp $(INCLUDES)
+-
+-htslib/libhts.a:
+-	cd htslib && $(MAKE) lib-static
+-
+-tabix++: tabix.o main.cpp $(HTS_LIB)
+-	$(CXX) $(LDFLAGS) $(CPPFLAGS) $(CXXFLAGS) -o $@ main.cpp tabix.o $(INCLUDES) $(LIBPATH) $(LIBS)
++install-strip: install
++	$(STRIP) $(BINDIR)/$(BIN) $(LIBDIR)/$(LIB)
+ 
+ cleanlocal:
+-	rm -fr gmon.out *.o a.out *.dSYM $(PROG) *~ *.a tabix.aux tabix.log \
+-		tabix.pdf *.class libtabix.*.dylib libtabix.so*
++	rm -rf $(BIN) $(LIB) $(SLIB) $(OBJS) $(DESTDIR)
++	rm -fr gmon.out *.o a.out *.dSYM $(BIN) *~ *.a tabix.aux tabix.log \
++		tabix.pdf *.class libtabix.*.dylib
+ 	cd htslib && $(MAKE) clean
+ 
+-clean:cleanlocal-recur
++clean:	cleanlocal-recur

@@ -1,0 +1,89 @@
+easyblock = 'Bundle'
+
+name = 'R-INLA'
+version = '21.05.02'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://www.r-inla.org'
+description = "R-INLA is a package in R that do approximate Bayesian inference for Latent Gaussian Models."
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'openmp': True}
+
+dependencies = [
+    ('R', '4.0.4'),
+    ('GSL', '2.6'),
+    ('zlib', '1.2.11'),
+    ('SuiteSparse', '5.8.1', '-METIS-5.1.0'),
+    ('METIS', '5.1.0'),
+    ('muParser', '2.3.2'),
+    ('Rmath', '%(rver)s'),
+    ('X11', '20201008'),
+    ('rgdal', '1.5-23', versionsuffix),
+]
+
+default_easyblock = 'ConfigureMake'
+# all components are installed from the same source tarball
+default_component_specs = {
+    'source_urls': ['https://github.com/hrue/r-inla/archive/refs/tags/'],
+    'sources': [{'download_filename': 'Version_%s.tar.gz' % version, 'filename': 'R-INLA-%s.tar.gz' % version}],
+    'skipsteps': ['configure'],
+    'checksums': ['7e2f6f92ca36739ae8f948697491572cf62191955f74bbf495703e0e1ffb88a6'],
+}
+
+local_gmrflib_buildopts = ' -C r-inla-*/gmrflib PREFIX=%(installdir)s CC="$CC" FC="$FC" '
+local_gmrflib_buildopts += ' FLAGS="$CXXFLAGS -DINLA_LINK_WITH_OPENBLAS " '
+
+local_inla_buildopts = '-C r-inla-*/inlaprog PREFIX=%(installdir)s '
+local_inla_buildopts += ' CC="$CC" CXX="$CXX" FC="$FC" '
+local_inla_buildopts += ' FLAGS="$CXXFLAGS -DINLA_LINK_WITH_OPENBLAS"'
+
+components = [
+    ('taucs', version, {
+        'easyblock': 'MakeCp',
+        'prebuildopts': "cd r-inla-*/extlibs && tar xvfz taucs-2.2--my-fix.tgz && cd taucs-2.2--my-fix && ",
+        'buildopts': 'CC="$CC" CFLAGS="$CFLAGS" FC="$FC" FFLAGS="$FFLAGS" LIBBLAS="$LIBBLAS" LIBLAPACK="$LIBLAPACK"',
+        'files_to_copy': [(['r-inla-*/extlibs/taucs-2.2--my-fix/lib/linux/libtaucs.a'], 'lib')],
+    }),
+    ('fmesher', version, {
+        'checksums': default_component_specs['checksums'] + [
+            '9ec131a8a470ea2614be77f917c0d66eacecbba4b511c90d6427059fe2c36b51',
+        ],
+        'patches': ['R-INLA-%(version)s-skip-binaries.patch'],
+        'buildopts': '-C r-inla-*/fmesher PREFIX=%(installdir)s CC="$CC" CXX="$CXX" FLAGS="$CXXFLAGS -std=c++11"',
+        'installopts': '-C r-inla-*/fmesher PREFIX=%(installdir)s',
+    }),
+    ('GMRFLib', version, {
+        'buildopts': local_gmrflib_buildopts,
+        'installopts': '-C r-inla-*/gmrflib PREFIX=%(installdir)s',
+    }),
+    ('rinla', version, {
+        'checksums': default_component_specs['checksums'] + [
+            '368bef641bbb55fe198529ee350e603936efebfca7b16f54a6c60573ecef2e9d',
+        ],
+        'patches': ['R-INLA-%(version)s-foss-2020b-remove-hardcoding.patch'],
+        'easyblock': 'RPackage',
+        'start_dir': 'r-inla-Version_%s/rinla' % version,
+    }),
+    (name, version, {
+        'prebuildopts': 'export CPATH=$EBROOTR/lib64/R/include/:$CPATH && ',
+        'buildopts': local_inla_buildopts,
+        'installopts': '-C r-inla-*/inlaprog PREFIX=%(installdir)s',
+    }),
+]
+
+local_bins = ['inla', 'fmesher']
+
+postinstallcmds = ['ln -s %%(installdir)s/bin/%s %%(installdir)s/INLA/bin/linux/64bit/%s' % (x, x) for x in local_bins]
+
+sanity_check_paths = {
+    'files': ['%s/%s' % (p, x) for p in ['bin', 'INLA/bin/linux/64bit'] for x in local_bins] +
+             ['lib/libGMRFLib.a', 'lib/libGMRFLib-geo.a', 'lib/libtaucs.a'],
+    'dirs': ['doc', 'include/GMRFLib'],
+}
+
+sanity_check_commands = ["Rscript -e 'library(INLA)'"] + ["%s -h" % x for x in local_bins]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+moduleclass = 'math'

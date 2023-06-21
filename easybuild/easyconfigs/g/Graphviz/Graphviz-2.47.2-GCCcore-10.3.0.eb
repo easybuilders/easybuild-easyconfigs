@@ -1,0 +1,90 @@
+easyblock = 'ConfigureMake'
+
+name = 'Graphviz'
+version = '2.47.2'
+local_pyver_major = '3'
+
+homepage = 'https://www.graphviz.org/'
+description = """Graphviz is open source graph visualization software. Graph visualization
+ is a way of representing structural information as diagrams of
+ abstract graphs and networks. It has important applications in networking,
+ bioinformatics,  software engineering, database and web design, machine learning,
+ and in visual interfaces for other technical domains."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://gitlab.com/graphviz/graphviz/-/archive/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['Graphviz-2.42.2_skip-install-data-hook.patch']
+checksums = [
+    '0f55cc79326fc1ff37aacf1e26ac0cd0e8eb5656035a470c8fb8b103fb4d4af3',  # graphviz-2.47.2.tar.gz
+    '3d06544c435a6255f6a8f3b36df3102060667b50ffd72e4942bbe546b9363859',  # Graphviz-2.42.2_skip-install-data-hook.patch
+]
+
+builddependencies = [
+    ('Autotools', '20210128'),
+    ('binutils', '2.36.1'),
+    ('Bison', '3.7.6'),
+    ('flex', '2.6.4'),
+    ('SWIG', '4.0.2'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('Python', '3.9.5'),
+    ('FriBidi', '1.0.10'),
+    ('Gdk-Pixbuf', '2.42.6'),
+    ('Ghostscript', '9.54.0'),
+    ('GTS', '0.7.6'),
+    ('libgd', '2.3.1'),
+    ('Pango', '1.48.5'),
+    ('Perl', '5.32.1'),
+    ('Qt5', '5.15.2'),
+    ('Tcl', '8.6.11'),
+    ('zlib', '1.2.11'),
+]
+
+preconfigopts = './autogen.sh NOCONFIG && '
+
+configopts = '--enable-python%s=yes ' % local_pyver_major
+configopts += '--enable-guile=no --enable-lua=no --enable-ocaml=no '
+configopts += '--enable-r=no --enable-ruby=no --enable-php=no '
+# Use ltdl from libtool in EB
+configopts += '--enable-ltdl --without-included-ltdl --disable-ltdl-install '
+configopts += '--with-ltdl-include=$EBROOTLIBTOOL/include --with-ltdl-lib=$EBROOTLIBTOOL/lib '
+# Override the hardcoded paths to Java libraries
+configopts += '--with-javaincludedir=$JAVA_HOME/include --with-javaincludedir=$JAVA_HOME/include/linux '
+configopts += '--with-javalibdir=$JAVA_HOME/lib'
+
+prebuildopts = 'qmake -o cmd/gvedit/qMakefile cmd/gvedit/gvedit.pro && '
+
+postinstallcmds = ['%(installdir)s/bin/dot -c']  # Writes plugin configuration
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['acyclic', 'bcomps', 'ccomps', 'cluster', 'diffimg', 'dijkstra', 'dot',
+                                     'dot_builtins', 'dotty', 'edgepaint', 'gc', 'gml2gv', 'graphml2gv', 'gv2gml',
+                                     'gvcolor', 'gvedit', 'gvgen', 'gvmap', 'gvmap.sh', 'gvpack', 'gvpr', 'gxl2gv',
+                                     'lefty', 'lneato', 'mm2gv', 'nop', 'prune', 'sccmap', 'tred', 'unflatten',
+                                     'vimdot']] +
+             ['lib/%s.%s' % (x, SHLIB_EXT) for x in ['libcdt', 'libcgraph', 'libgvc', 'libgvpr', 'liblab_gamut',
+                                                     'libpathplan', 'libxdot']],
+    'dirs': ['include', 'lib/graphviz', 'lib/graphviz/java', 'lib/graphviz/python%s' % local_pyver_major,
+             'lib/pkgconfig', 'share']
+}
+
+sanity_check_commands = [
+    ("test ! -d $EBROOTTCL/lib/*/graphviz", ''),
+    ("test ! -d $EBROOTTCL/lib64/*/graphviz", ''),
+    ('python', '-c "import gv"'),
+]
+
+modextrapaths = {
+    'CLASSPATH': 'lib/graphviz/java',
+    'LD_LIBRARY_PATH': 'lib/graphviz/java',
+    'PYTHONPATH': 'lib/graphviz/python%s' % local_pyver_major,
+    'TCLLIBPATH': 'lib/graphviz/tcl',
+}
+
+moduleclass = 'vis'

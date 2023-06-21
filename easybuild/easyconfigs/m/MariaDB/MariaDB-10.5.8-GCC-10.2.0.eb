@@ -1,0 +1,71 @@
+easyblock = 'CMakeMake'
+
+name = 'MariaDB'
+version = '10.5.8'
+
+homepage = 'https://mariadb.org/'
+description = """MariaDB is an enhanced, drop-in replacement for MySQL.
+Included engines: myISAM, Aria, InnoDB, RocksDB, TokuDB, OQGraph, Mroonga."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+local_pcre2_ver = '10.34'
+source_urls = [
+    'https://archive.mariadb.org/mariadb-%(version)s/source/',
+    'http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source',
+    'https://downloads.sourceforge.net/project/pcre/pcre2/%s/' % local_pcre2_ver,
+]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {'filename': 'pcre2-%s.zip' % local_pcre2_ver, 'extract_cmd': "cp %s %(builddir)s/"},
+]
+patches = ['MariaDB-10.1.13-link-rt-for-jemalloc.patch']
+checksums = [
+    'eb4824f6f2c532cd3fc6a6bce7bf78ea7c6b949f8bdd07656b2c84344e757be8',  # mariadb-10.5.8.tar.gz
+    '75a19013a10ab543fe923bbc9b7c2750559d2cca3b4c3611ab91392e5f62041c',  # pcre2-10.34.zip
+    '8295837e623f6c782e1d64b00e0877ea98cce4bf8846755bb86c8a7732797c19',  # MariaDB-10.1.13-link-rt-for-jemalloc.patch
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('libaio', '0.3.112'),
+]
+
+dependencies = [
+    ('ncurses', '6.2'),
+    ('zlib', '1.2.11'),
+    ('LZO', '2.10'),        # optional
+    ('lz4', '1.9.2'),       # optional
+    ('XZ', '5.2.5'),        # optional
+    ('jemalloc', '5.2.1'),  # optional
+    ('snappy', '1.1.8'),    # needed by RocksDB; optional for InnoDB
+    ('libxml2', '2.9.10'),  # needed by Connect XML
+    ('Boost', '1.74.0'),    # needed by OQGraph
+    ('Judy', '1.0.5'),      # needed by OQGraph
+]
+
+# replace download URL for PCRE2 with path to pre-downloaded PRCE2 source file
+local_pcre2_path = '%%(builddir)s/pcre2-%s.zip' % local_pcre2_ver
+preconfigopts = "sed -i 's@http://.*.zip@file://%s@g' ../mariadb-%%(version)s/cmake/pcre.cmake && " % local_pcre2_path
+
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
+configopts += "-DMYSQL_MAINTAINER_MODE=OFF "  # disabled to not treat warnings as errors (-Werror)
+configopts += "-DWITH_PCRE=bundled "  # using an external PCRE is broken, see https://bugs.exim.org/show_bug.cgi?id=2173
+configopts += "-DWITH_ZLIB=system "
+configopts += "-DWITH_EMBEDDED_SERVER=ON "  # for libmysqld.so & co
+configopts += "-DWITH_SAFEMALLOC=OFF "  # Disable memory debugger with jemalloc
+
+sanity_check_paths = {
+    'files': ['bin/mysql', 'bin/mysqld_safe', 'lib/libmysqlclient.%s' % SHLIB_EXT, 'lib/libmysqld.%s' % SHLIB_EXT,
+              'lib/plugin/ha_connect.%s' % SHLIB_EXT, 'lib/plugin/ha_rocksdb.%s' % SHLIB_EXT,
+              'lib/plugin/ha_oqgraph.%s' % SHLIB_EXT, 'scripts/mysql_install_db'],
+    'dirs': ['include', 'share'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+
+# Ensure that jemalloc does not use transparent hugepages.
+# Database workloads with THP can cause memory bloat, potentially hiting OOM errors.
+modextravars = {'MALLOC_CONF': 'thp:never'}
+
+moduleclass = 'data'

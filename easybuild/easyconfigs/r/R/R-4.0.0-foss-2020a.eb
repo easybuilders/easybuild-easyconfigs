@@ -9,10 +9,15 @@ toolchain = {'name': 'foss', 'version': '2020a'}
 
 source_urls = ['https://cloud.r-project.org/src/base/R-%(version_major)s']
 sources = [SOURCE_TAR_GZ]
-checksums = ['06beb0291b569978484eb0dcb5d2339665ec745737bdfb4e873e7a5a75492940']
+patches = ['%(name)s-%(version)s_ppc64le-build-fix.patch']
+checksums = [
+    '06beb0291b569978484eb0dcb5d2339665ec745737bdfb4e873e7a5a75492940',  # R-4.0.0.tar.gz
+    'ae14b063be40ba2f2e73d95ae1ee0b8630ac7bbc8ec2d64830016c8d62f672ad',  # R-4.0.0_ppc64le-build-fix.patch
+]
 
 builddependencies = [
     ('pkg-config', '0.29.2'),
+    ('Xvfb', '1.20.9'),
 ]
 dependencies = [
     ('X11', '20200222'),
@@ -29,7 +34,7 @@ dependencies = [
     ('libpng', '1.6.37'),  # for plotting in R
     ('libjpeg-turbo', '2.0.4'),  # for plottting in R
     ('LibTIFF', '4.1.0'),
-    ('Java', '11', '', True),
+    ('Java', '11', '', SYSTEM),
     ('Tk', '8.6.10'),  # for tcltk
     ('cURL', '7.69.1'),  # for RCurl
     ('libxml2', '2.9.10'),  # for XML
@@ -72,15 +77,21 @@ exts_default_options = {
 # !! order of packages is important !!
 # packages updated on 23 July 2020
 exts_list = [
+    # include packages that are part of the base installation of R,
+    # both to make sure they are available (via sanity check),
+    # and to be able to pass the check for required dependencies when installing extensions in parallel
     'base',
+    'compiler',
     'datasets',
     'graphics',
     'grDevices',
     'grid',
     'methods',
+    'parallel',
     'splines',
     'stats',
     'stats4',
+    'tcltk',
     'tools',
     'utils',
     ('Rmpi', '0.6-9', {
@@ -114,11 +125,11 @@ exts_list = [
         'checksums': ['b6d056f75d45e315943a4618f5f62802612cd8931ba3f9f474b595140a3cfb93'],
     }),
     ('ff', '2.2-14.2', {
-        'checksums': [
-            'f8c06ac333ffe3545cdf56531619865176e1827728f7aeeba82d135d5c5e37e4',
-            'beae9b31d7962b035329e07f4dc09308ca3a527327885d1c4ba9a1dd105e0bbd'  # ff_2.2-14.2_aarch64_support.patch
-        ],
         'patches': ['ff-2.2-14.2_aarch64_support.patch'],
+        'checksums': [
+            'f8c06ac333ffe3545cdf56531619865176e1827728f7aeeba82d135d5c5e37e4',  # ff_2.2-14.2.tar.gz
+            'beae9b31d7962b035329e07f4dc09308ca3a527327885d1c4ba9a1dd105e0bbd',  # ff-2.2-14.2_aarch64_support.patch
+        ],
     }),
     ('bnlearn', '4.5', {
         'checksums': ['a8047625533260a855d309b3c0785cbeec0f9ec13f284b6664a1f61638138578'],
@@ -658,7 +669,8 @@ exts_list = [
         'checksums': ['d3df1fc848bcf1af8fae13d61eeab60e99a3d4b4db384bec4326f909f502c5d6'],
     }),
     ('codetools', '0.2-16', {
-        'checksums': ['f67a66175cb5d8882457d1e9b91ea2f16813d554fa74f80c1fd6e17cf1877501'],
+        'checksums': [('f67a66175cb5d8882457d1e9b91ea2f16813d554fa74f80c1fd6e17cf1877501',
+                       'c276757c3adabaf700f2ea25835892b09bc1bd438ebd17c805ea9073ed8a74b6')],
     }),
     ('foreach', '1.5.0', {
         'checksums': ['1af9a713418c4cdeb49c4194f6482a7ee8ae4959b995a958a8a8a19ec8b60415'],
@@ -688,7 +700,8 @@ exts_list = [
         'checksums': ['6b3531d2e7a239be9d6e3a1aa3256b2745eb68aa0bdffd2076d36552d0d7322b'],
     }),
     ('KernSmooth', '2.23-17', {
-        'checksums': ['2b3d73fe15db46dbc2f6e3b043baadb7633c46bfa4a66d9eea5aed633058e685'],
+        'checksums': [('2b3d73fe15db46dbc2f6e3b043baadb7633c46bfa4a66d9eea5aed633058e685',
+                       'b7acc6e83e92e0dffb26085660982cf11313bad7bcde878e5485a6733df32ab2')],
     }),
     ('xts', '0.12-0', {
         'checksums': ['df11e6dad7cf0a266702988fa6127aaf72437da743ca40e9abcd9e6b3d628c60'],
@@ -2121,10 +2134,9 @@ exts_list = [
         'checksums': ['3a1f166f1c71b5877a2acca1384ec6c9b430b67af67ef26125f2abbb53c66206'],
     }),
     ('liquidSVM', '1.2.4', {
-        'checksums': ['15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba'],
         'patches': ['liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch'],
         'checksums': [
-            '15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba',
+            '15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba',  # liquidSVM_1.2.4.tar.gz
             # liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch
             '46b09e441c3b59af535f20d8db0dee7f1d6a7ddd511175d252115b53cb8b86f8',
         ],
@@ -2312,7 +2324,7 @@ exts_list = [
     ('grImport2', '0.2-0', {
         'checksums': ['a102a2d877e42cd4e4e346e5510a77b2f3e57b43ae3c6d5c272fdceb506b00a7'],
     }),
-    ('preseqR', '4.0.0', {
+    ('preseqR', version, {
         'checksums': ['0143db473fb9a811f9cf582a348226a5763e62d9857ce3ef4ec41412abb559bc'],
     }),
     ('idr', '1.2', {
@@ -2519,6 +2531,188 @@ exts_list = [
     }),
     ('fasterize', '1.0.3', {
         'checksums': ['62b459625e9bdb00251ec5f6cb873e0c59713f3e86dc1e2c8332adc0cea17f81'],
+    }),
+    ('RPMM', '1.25', {
+        'checksums': ['f04a524b13918062616beda50c4e759ce2719ce14150a0e677d07132086c88c8'],
+    }),
+    ('RefFreeEWAS', '2.2', {
+        'checksums': ['de2812f166caabf6ea01c0533402e5cd9d8a525a2a7583e4757decf22319caab'],
+    }),
+    ('wordcloud', '2.6', {
+        'checksums': ['53716954430acd4f164bfd8eacd7068a908ee3358293ded6cd992d53b7f72649'],
+    }),
+    ('JADE', '2.0-3', {
+        'checksums': ['56d68a993fa16fc6dec758c843960eee840814c4ca2271e97681a9d2b9e242ba'],
+    }),
+    ('gsl', '2.1-6', {
+        'checksums': ['f5d463239693f146617018987687db31b163653708cbae0b730b9b7bed81995c'],
+    }),
+    ('awsMethods', '1.1-1', {
+        'checksums': ['50934dc20cf4e015f1304a89de6703fed27e7bd54c6b9fc9fb253cdf2ecb7541'],
+    }),
+    ('aws', '2.4-3', {
+        'checksums': ['8582dc7669242eb0e6bee204bdc87ff1c344e2e74912931da47e21279d439531'],
+    }),
+    ('ruv', '0.9.7.1', {
+        'checksums': ['a0c54e56ba3d8f6ae178ae4d0e417a79295abf5dcb68bbae26c4b874734d98d8'],
+    }),
+    ('mhsmm', '0.4.16', {
+        'checksums': ['fab573abdc0dd44e8c8bc7242a1428df20b3ec64c4c194e5f1f907393f902d01'],
+    }),
+    ('dbarts', '0.9-18', {
+        'patches': ['dbarts-0.9-18_fix-simd-on-non-x86.patch'],
+        'checksums': [
+            'fd99f99d1a24c16596767246618cf240ebd8d86fa82b0e5ce65b737b9afb4ac4',  # dbarts_0.9-18.tar.gz
+            # dbarts-0.9-18_fix-simd-on-non-x86.patch
+            '80a7e84c691d418da4e90a38db1caebed31d01771e4e7f64d24676ee8d84c104',
+        ],
+    }),
+    ('proftools', '0.99-3', {
+        'checksums': ['e034eb1531af54013143da3e15229e1d4c2260f8eb79c93846014db3bdefb724'],
+    }),
+    ('NCmisc', '1.1.6', {
+        'checksums': ['2aa85997d5ec2222e610604022684c004a4925241761d9a0104919f1cf3a8c79'],
+    }),
+    ('reader', '1.0.6', {
+        'checksums': ['905c7c5a1b035ac8213fc533fa26e511abfeea40bd22e3edfde42a49074e88f4'],
+    }),
+    ('gnumeric', '0.7-8', {
+        'checksums': ['28b10c91d693b938ebca610933889095ca160b22e6ca750c46103dfd2b009447'],
+    }),
+    ('tcltk2', '1.2-11', {
+        'checksums': ['ad183ae3b7190501504a0589e0b3be480f04267303e3384fef00987446a37dc5'],
+    }),
+    ('readODS', '1.7.0', {
+        'checksums': ['f6a8ec724df68983c9b176a1b3b3b01239cc4e99aac4bfb42ce1c2b3d40922c2'],
+    }),
+    ('nortest', '1.0-4', {
+        'checksums': ['a3850a048181d5d059c1e74903437569873b430c915b709808237d71fee5209f'],
+    }),
+    ('EnvStats', '2.3.1', {
+        'checksums': ['d753d42b42ff28c1cd25c63916fb2aa9e325941672fb16f7dfd97e218416cf2a'],
+    }),
+    ('outliers', '0.14', {
+        'checksums': ['b6ce8f1db6442481546131def8253cabdf4472116d193daea7cb935d2b76986d'],
+    }),
+    ('elementR', '1.3.7', {
+        'checksums': ['4275f88f372a2efe96ccd0afc20f4f12be92f28c7db35c68b80bb0ffb2c2ab07'],
+    }),
+    ('gWidgets2', '1.0-8', {
+        'checksums': ['1615ce9ab07a251d06c68780be15ab5a4814df877a23aa93e0faf14ccd56d45c'],
+    }),
+    ('gWidgets2tcltk', '1.0-6', {
+        'checksums': ['aa3a2f4612116a652e5573a369e3d89c5939f7c06067c6826ba40ed3bb07302b'],
+        # need to run installation via xvfb-run to avoid problems on headless systems:
+        # no DISPLAY variable so Tk is not available
+        # [tcl] invalid command name "font"
+        'preinstallopts': "xvfb-run ",
+        # skip 'import' check with library(gWidgets2tcltk), since it also fails on headless systems...
+        'modulename': False,
+    }),
+    ('mgsub', '1.7.2', {
+        'checksums': ['399f23fd311c58c019248625cf875df50c10a1e3ecf1931850d18cfd4d5a810a'],
+    }),
+    ('ie2misc', '0.8.6', {
+        'checksums': ['f3e2cc8a88f3789a5e339d2676455472a52a303c8273191f27aa2f2f02fdd8cd'],
+    }),
+    ('assertive.base', '0.0-7', {
+        'checksums': ['f02d4eca849f512500abb266a2a751d1fa2cf064f7142e5161a77c20b7f643f7'],
+    }),
+    ('assertive.properties', '0.0-4', {
+        'checksums': ['5c0663fecb4b7c30f2e1d65da8644534fcfe97fb3d8b51f74c1327cd14291a6b'],
+    }),
+    ('assertive.types', '0.0-3', {
+        'checksums': ['ab6db2eb926e7bc885f2043fab679330aa336d07755375282d89bf9f9d0cb87f'],
+    }),
+    ('assertive.numbers', '0.0-2', {
+        'checksums': ['bae18c0b9e5b960a20636e127eb738ecd8a266e5fc29d8bc5ca712498cd68349'],
+    }),
+    ('assertive.strings', '0.0-3', {
+        'checksums': ['d541d608a01640347d661cc9a67af8202904142031a20caa270f1c83d0ccd258'],
+    }),
+    ('assertive.datetimes', '0.0-3', {
+        'checksums': ['014e2162f5a8d95138ed8330f7477e71c908a29341697c09a1b7198b7e012d94'],
+    }),
+    ('assertive.files', '0.0-2', {
+        'checksums': ['be6adda6f18a0427449249e44c2deff4444a123244b16fe82c92f15d24faee0a'],
+    }),
+    ('assertive.sets', '0.0-3', {
+        'checksums': ['876975a16ed911ea1ad12da284111c6eada6abfc0118585033abc0edb5801bb3'],
+    }),
+    ('assertive.matrices', '0.0-2', {
+        'checksums': ['3462a7a7e11d7cc24180330d48cc3067cf92eab1699b3e4813deec66d99f5e9b'],
+    }),
+    ('assertive.models', '0.0-2', {
+        'checksums': ['b9a6d8786f352d53371dbe8c5f2f2a62a7866e30313f268e69626d5c3691c42e'],
+    }),
+    ('assertive.data', '0.0-3', {
+        'checksums': ['5a00fb48ad870d9b3c872ce3d6aa20a7948687a980f49fe945b455339e789b01'],
+    }),
+    ('assertive.data.uk', '0.0-2', {
+        'checksums': ['ab48dab6977e8f43d6fffb33228d158865f68dde7026d123c693d77339dcf2bb'],
+    }),
+    ('assertive.data.us', '0.0-2', {
+        'checksums': ['180e64dfe6339d25dd27d7fe9e77619ef697ef6e5bb6a3cf4fb732a681bdfaad'],
+    }),
+    ('assertive.reflection', '0.0-5', {
+        'checksums': ['c2ca9b27cdddb9b9876351afd2ebfaf0fbe72c636cd12aa2af5d64e33fbf34bd'],
+    }),
+    ('assertive.code', '0.0-3', {
+        'checksums': ['ef80e8d1d683d776a7618e78ddccffca7f72ab4a0fcead90c670bb8f8cb90be2'],
+    }),
+    ('assertive', '0.3-6', {
+        'checksums': ['c403169e83c433b65e911f7fd640b378e2a4a4765a36063584b8458168a4ea0a'],
+    }),
+    ('rdrop2', '0.8.2.1', {
+        'checksums': ['b9add765fe8e7c966f0d36eef939a9e38f253958bd2a3c656b890cbb0366300b'],
+    }),
+    ('Exact', '2.1', {
+        'checksums': ['088d291339a4d8d9396cdb956889ac571fd9e834c6e3c3d51621a8c3f0eb9f32'],
+    }),
+    ('lmom', '2.8', {
+        'checksums': ['cae2a925c39429d8e9f91bdb2682ea0d1343e9b2e5c9e8752c5929eb5f20d2d2'],
+    }),
+    ('gld', '2.6.2', {
+        'checksums': ['915860ac054ba4d29854c7d274e9c927995c5df2a7d4a6a0122b1fbc4a3c3cf3'],
+    }),
+    ('DescTools', '0.99.38', {
+        'checksums': ['bd8edce64a8f9e295611959295b85cf8d7bbf915093158016169bd334e0e1104'],
+    }),
+    ('orthopolynom', '1.0-5', {
+        'checksums': ['6da4f437aae5c8fafdf791ce3c6a66f68198df4054af3aab8406402a4dc770bf'],
+    }),
+    ('gaussquad', '1.0-2', {
+        'checksums': ['ba3a1ab6ffe92f592c9f2bb1d4070f1fb1019325226dcb4863cf725eb59e9b2d'],
+    }),
+    ('nlsem', '0.8', {
+        'checksums': ['495a5d07aa5f59efdcd43acf429ae842453abd6c0720a80e2102d663fa997c60'],
+    }),
+    ('mitools', '2.4', {
+        'checksums': ['f204f3774e29d79810f579f128de892539518f2cbe6ed237e08c8e7283155d30'],
+    }),
+    ('survey', '4.0', {
+        'checksums': ['b053f40f4cfa90507ca524f72d3b3a4b4869def52f11f907a14f1c6d90063de1'],
+    }),
+    ('tableone', '0.12.0', {
+        'checksums': ['6a5cc16f7d2303c8f42b8adcad0fc41e1ba74f24ada4e7ad3a16effb63d3575e'],
+    }),
+    ('jstable', '1.0.1', {
+        'checksums': ['2e4cfce264a2353e4655d0faafc93969222d67a21c0c9cc61a2454abd99c5cdc'],
+    }),
+    ('RCAL', '2.0', {
+        'checksums': ['10f5f938a8322d8737159e1e49ce9d12419a5130699b8a19c6ca53d6508da8cc'],
+    }),
+    ('stargazer', '5.2.2', {
+        'checksums': ['70eb4a13a6ac1bfb35af07cb8a63d501ad38dfd9817fc3fba6724260b23932de'],
+    }),
+    ('sensemakr', '0.1.3', {
+        'checksums': ['2eccda4ac3752266779d9c8ae87154c9fbaf0f73e0a768692a836a29ceaeffdd'],
+    }),
+    ('origami', '1.0.3', {
+        'checksums': ['43d33c47d66a08f84cb4914497a5ebea9dd0937151f47f41c3947e4a6d4b900c'],
+    }),
+    ('hal9001', '0.2.7', {
+        'checksums': ['6facafa87179c7efb34d4acb3746198bb4c123f749fd784c8aab1021b8d77941'],
     }),
 ]
 

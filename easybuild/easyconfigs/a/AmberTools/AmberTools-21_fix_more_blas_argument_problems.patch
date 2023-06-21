@@ -1,0 +1,64 @@
+Fix some blas argument problems with newer GCC vewrsions.
+
+Åke Sandgren, 20220623
+diff --git a/AmberTools/src/rism/amber_rism_interface.F90 b/AmberTools/src/rism/amber_rism_interface.F90
+index 7d84de1b7f..2c2a2fa389 100644
+--- a/AmberTools/src/rism/amber_rism_interface.F90
++++ b/AmberTools/src/rism/amber_rism_interface.F90
+@@ -3159,9 +3159,9 @@ contains
+        ! Outputting entropy map.
+        if (len_trim(entropyfile) /= 0 .and. rismprm%entropicDecomp == 1 .and. &
+             rism3d_canCalc_DT(rism_3d)) then
+-          call DAXPY(this%grid%totalLocalPointsR, -1d0, solvationEnergy_map, 1, excessChemicalPotential_map, 1)
++          call DAXPY(this%grid%totalLocalPointsR, -1d0, solvationEnergy_map(1,1,1), 1, excessChemicalPotential_map, 1)
+           call DAXPY(this%grid%totalLocalPointsR*this%solvent%numAtomTypes, -1d0, &
+-               solvationEnergy_V_map, 1, excessChemicalPotential_V_map, 1)
++               solvationEnergy_V_map(1,1,1,1), 1, excessChemicalPotential_V_map, 1)
+           call writeThermo(writeVolume,entropyfile, suffix, excessChemicalPotential_map,&
+                excessChemicalPotential_V_map)
+        end if
+@@ -3200,9 +3200,9 @@ contains
+           end if
+           ! Outputting entropy map.
+           if (len_trim(entropyPCPLUSfile) /= 0) then
+-             call DAXPY(this%grid%totalLocalPointsR, -1d0, solvationEnergy_map, 1, excessChemicalPotential_map, 1)
++             call DAXPY(this%grid%totalLocalPointsR, -1d0, solvationEnergy_map(1,1,1), 1, excessChemicalPotential_map, 1)
+              call DAXPY(this%grid%totalLocalPointsR*this%solvent%numAtomTypes, -1d0, &
+-                  solvationEnergy_V_map, 1, excessChemicalPotential_V_map, 1)
++                  solvationEnergy_V_map(1,1,1,1), 1, excessChemicalPotential_V_map, 1)
+              call writeVolume(trim(entropyPCPLUSfile)//suffix, excessChemicalPotential_map, this%grid, &
+                   this%solute, mpirank, mpisize, mpicomm)
+           end if
+@@ -3247,9 +3247,9 @@ contains
+              end if
+              ! Outputting entropy map.
+              if (len_trim(entropyUCfile) /= 0) then
+-                call DAXPY(this%grid%totalLocalPointsR, -1d0, solvationEnergy_map, 1, excessChemicalPotential_map, 1)
++                call DAXPY(this%grid%totalLocalPointsR, -1d0, solvationEnergy_map(1,1,1), 1, excessChemicalPotential_map, 1)
+                 call DAXPY(this%grid%totalLocalPointsR*this%solvent%numAtomTypes, -1d0, &
+-                     solvationEnergy_V_map, 1, excessChemicalPotential_V_map, 1)
++                     solvationEnergy_V_map(1,1,1,1), 1, excessChemicalPotential_V_map, 1)
+                 call writeVolume(trim(entropyUCfile)//suffix, excessChemicalPotential_map, this%grid, &
+                      this%solute, mpirank, mpisize, mpicomm)
+              end if
+@@ -3299,9 +3299,9 @@ contains
+        ! Outputting entropy map.
+        if (len_trim(entropyGFfile) /= 0 .and. rismprm%entropicDecomp == 1 .and. &
+             rism3d_canCalc_DT(rism_3d)) then
+-          call DAXPY(this%grid%totalLocalPointsR, -1d0, solvationEnergy_map, 1, excessChemicalPotential_map, 1)
++          call DAXPY(this%grid%totalLocalPointsR, -1d0, solvationEnergy_map(1,1,1), 1, excessChemicalPotential_map, 1)
+           call DAXPY(this%grid%totalLocalPointsR*this%solvent%numAtomTypes, -1d0, &
+-               solvationEnergy_V_map, 1, excessChemicalPotential_V_map, 1)
++               solvationEnergy_V_map(1,1,1,1), 1, excessChemicalPotential_V_map, 1)
+           call writeThermo(writeVolume,entropyGFfile, suffix, excessChemicalPotential_map, &
+                excessChemicalPotential_V_map)
+        end if
+@@ -3415,7 +3415,7 @@ contains
+             excessChemicalPotential_V_map,1,solventEntropy_V_map,1)
+        
+        call DAXPY(this%grid%totalLocalPointsR*this%solvent%numAtomTypes, -1d0, &
+-            solvationEnergy_V_map, 1, solventEntropy_V_map, 1)
++            solvationEnergy_V_map(1,1,1,1), 1, solventEntropy_V_map, 1)
+        call writeVolume(trim(entropyfile)//'.mol'//suffix, &
+             solvententropy_V_map(:, :, :, center_site), this%grid, &
+             this%solute, mpirank, mpisize, mpicomm)
