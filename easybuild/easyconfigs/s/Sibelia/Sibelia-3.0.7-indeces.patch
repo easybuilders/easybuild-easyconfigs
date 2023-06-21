@@ -1,0 +1,119 @@
+Fix 'indices redeclared' linker error, use the provided CC and CFLAGS instead of the hard-coded ones
+
+Author: Jakub Zárybnický <jakub@zarybnicky.com>
+
+diff -ruN Sibelia-old/src/lagan/src/fchaos.c Sibelia/src/lagan/src/fchaos.c
+--- Sibelia-old/src/lagan/src/fchaos.c	2021-06-24 12:01:17.431513317 +0200
++++ Sibelia/src/lagan/src/fchaos.c	2021-06-24 12:04:34.334513210 +0200
+@@ -29,7 +29,7 @@
+   int offset;
+ } match;
+ 
+-extern int indeces[256];
++int indeces[256];
+ 
+ 
+ void remElem(LList* tbf, int i);
+diff -ruN Sibelia-old/src/lagan/src/glocal/Makefile Sibelia/src/lagan/src/glocal/Makefile
+--- Sibelia-old/src/lagan/src/glocal/Makefile	2021-06-24 12:01:17.431513317 +0200
++++ Sibelia/src/lagan/src/glocal/Makefile	2021-06-24 12:05:56.331688662 +0200
+@@ -1,7 +1,5 @@
+-CC = g++
+-OPTFLAGS = 
+ CFLAGS = $(OPTFLAGS) -O3 -w
+-CLINKER = g++ 
++CLINKER = $(CXX)
+ # LIBDIR = -L/usr/local/lib
+ MLIB =  -lm
+ INCDIR =   -I.
+diff -ruN Sibelia-old/src/lagan/src/Makefile Sibelia/src/lagan/src/Makefile
+--- Sibelia-old/src/lagan/src/Makefile	2021-06-24 12:01:17.430513328 +0200
++++ Sibelia/src/lagan/src/Makefile	2021-06-24 12:09:40.773449864 +0200
+@@ -1,6 +1,3 @@
+-CC = gcc $(CFLAGS)
+-CPP = g++ $(CFLAGS)
+-CFLAGS = -O3 -w
+ TRGT_DIR = ..
+ 
+ all: ../anchors ../chaos ../order ../mlagan ../prolagan ../utils/bin2mf ../utils/bin2bl ../utils/cextract ../utils/cstat ../utils/contigorder ../utils/getbounds ../utils/getlength ../utils/getoverlap ../utils/rc ../utils/seqmerge ../utils/scorealign ../utils/scorecontigs ../utils/getcontigpos ../utils/fa2xfa ../utils/Glue ../utils/dotplot ../utils/overlay
+@@ -9,46 +6,46 @@
+ 	rm -f *.o *~ utils/*~ mlagan.purify core
+ 	(cd glocal; $(MAKE) clean)
+ ../anchors: anchors.c skiplist.c
+-	$(CC) -o $(TRGT_DIR)/anchors anchors.c skiplist.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/anchors anchors.c skiplist.c
+ ../chaos: fchaos.c thrtrie.c skiplist.c global.c translate.c mempage.c filebuffer.c
+-	$(CC) -o $(TRGT_DIR)/chaos fchaos.c thrtrie.c skiplist.c global.c translate.c filebuffer.c -lm -DCHAOS__FLAG
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/chaos fchaos.c thrtrie.c skiplist.c global.c translate.c filebuffer.c -lm -DCHAOS__FLAG
+ ../order: order.c diagmatrix.c filebuffer.c
+-	$(CC) -o $(TRGT_DIR)/order order.c diagmatrix.c filebuffer.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/order order.c diagmatrix.c filebuffer.c
+ ../mlagan: mlagan.c diagmatrix.c multial.c skiplist.c filebuffer.c
+-	$(CC) -o $(TRGT_DIR)/mlagan mlagan.c multial.c diagmatrix.c skiplist.c filebuffer.c -lm -DMULTIAL__FLAG
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/mlagan mlagan.c multial.c diagmatrix.c skiplist.c filebuffer.c -lm -DMULTIAL__FLAG
+ ../prolagan: prolagan.c diagmatrix.c multial.c skiplist.c filebuffer.c
+-	$(CC) -o $(TRGT_DIR)/prolagan prolagan.c multial.c diagmatrix.c skiplist.c filebuffer.c -lm -DMULTIAL__FLAG
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/prolagan prolagan.c multial.c diagmatrix.c skiplist.c filebuffer.c -lm -DMULTIAL__FLAG
+ ../utils/bin2mf: utils/bin2mf.c
+-	$(CC) -o $(TRGT_DIR)/utils/bin2mf utils/bin2mf.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/bin2mf utils/bin2mf.c
+ ../utils/bin2bl: utils/bin2bl.c
+-	$(CC) -o $(TRGT_DIR)/utils/bin2bl utils/bin2bl.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/bin2bl utils/bin2bl.c
+ ../utils/cextract: utils/cextract.c
+-	$(CC) -o $(TRGT_DIR)/utils/cextract utils/cextract.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/cextract utils/cextract.c
+ ../utils/cstat: utils/cstat.c
+-	$(CC) -o $(TRGT_DIR)/utils/cstat utils/cstat.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/cstat utils/cstat.c
+ ../utils/contigorder: utils/contigorder.c
+-	$(CC) -o $(TRGT_DIR)/utils/contigorder utils/contigorder.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/contigorder utils/contigorder.c
+ ../utils/getbounds: utils/getbounds.c
+-	$(CC) -o $(TRGT_DIR)/utils/getbounds utils/getbounds.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/getbounds utils/getbounds.c
+ ../utils/getcontigpos: utils/getcontigpos.c
+-	$(CC) -o $(TRGT_DIR)/utils/getcontigpos utils/getcontigpos.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/getcontigpos utils/getcontigpos.c
+ ../utils/getlength: utils/getlength.c
+-	$(CC) -o $(TRGT_DIR)/utils/getlength utils/getlength.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/getlength utils/getlength.c
+ ../utils/getoverlap: utils/getoverlap.c
+-	$(CC) -o $(TRGT_DIR)/utils/getoverlap utils/getoverlap.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/getoverlap utils/getoverlap.c
+ ../utils/rc: utils/rc.c
+-	$(CC) -o $(TRGT_DIR)/utils/rc utils/rc.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/rc utils/rc.c
+ ../utils/seqmerge: utils/seqmerge.c
+-	$(CC) -o $(TRGT_DIR)/utils/seqmerge utils/seqmerge.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/seqmerge utils/seqmerge.c
+ ../utils/scorealign: utils/scorealign.c
+-	$(CC) -o $(TRGT_DIR)/utils/scorealign utils/scorealign.c -lm
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/scorealign utils/scorealign.c -lm
+ ../utils/scorecontigs: utils/scorecontigs.c
+-	$(CC) -o $(TRGT_DIR)/utils/scorecontigs utils/scorecontigs.c -lm
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/scorecontigs utils/scorecontigs.c -lm
+ ../utils/fa2xfa: utils/fa2xfa.c
+-	$(CC) -o $(TRGT_DIR)/utils/fa2xfa utils/fa2xfa.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/fa2xfa utils/fa2xfa.c
+ ../utils/overlay: utils/overlay.c
+-	$(CC) -o $(TRGT_DIR)/utils/overlay utils/overlay.c
++	$(CC) $(CFLAGS) -o $(TRGT_DIR)/utils/overlay utils/overlay.c
+ ../utils/Glue: utils/Glue.cpp
+-	$(CPP) -o $(TRGT_DIR)/utils/Glue utils/Glue.cpp
++	$(CXX) $(CFLAGS) $(CXXFLAGS) -o $(TRGT_DIR)/utils/Glue utils/Glue.cpp
+ ../utils/dotplot: utils/dotplot.cpp
+-	$(CPP) -o $(TRGT_DIR)/utils/dotplot utils/dotplot.cpp
++	$(CXX) $(CFLAGS) $(CXXFLAGS) -o $(TRGT_DIR)/utils/dotplot utils/dotplot.cpp
+diff -ruN Sibelia-old/src/lagan/src/thrtrie.h Sibelia/src/lagan/src/thrtrie.h
+--- Sibelia-old/src/lagan/src/thrtrie.h	2021-06-24 12:01:17.436513266 +0200
++++ Sibelia/src/lagan/src/thrtrie.h	2021-06-24 12:04:34.334513210 +0200
+@@ -2,7 +2,7 @@
+ #define MAX_DEGEN 2
+ 
+ 
+-int indeces[256];
++extern int indeces[256];
+ 
+ typedef struct PrevHits {
+   int* inds1;

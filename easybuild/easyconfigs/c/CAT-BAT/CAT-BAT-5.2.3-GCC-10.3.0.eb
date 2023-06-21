@@ -1,0 +1,44 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+##
+
+easyblock = 'Tarball'
+
+name = 'CAT-BAT'
+version = '5.2.3'
+
+homepage = 'https://github.com/dutilh/CAT'
+description = """Tool for taxonomic classification of contigs and metagenome-assembled genomes (MAGs)."""
+# software_license = 'LicenseMIT'
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/dutilh/CAT/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['19a8eb28c0ebd3fc5a04b006d305a916dd1af00a32b70d2f30df35f32ca2929b']
+
+dependencies = [
+    ('Python',   '3.9.5'),
+    ('DIAMOND',  '2.0.11'),
+    ('prodigal', '2.6.3'),
+]
+
+postinstallcmds = [
+    "cd %(installdir)s/ && ln -s CAT_pack bin",
+    "chmod a+rx %(installdir)s/CAT_pack/*.py",
+    # fix shebang in check.py script ('/env/' should be '/env')
+    "sed -i 's@/usr/bin/env/ python3@/usr/bin/env python3@' %(installdir)s/CAT_pack/check.py",
+]
+
+sanity_check_paths = {
+    'files': ['CAT_pack/CAT', 'bin/CAT', 'README.md'],
+    'dirs': ['CAT_pack'],
+}
+
+sanity_check_commands = ["CAT --help"]
+
+moduleclass = 'bio'

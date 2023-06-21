@@ -1,0 +1,62 @@
+easyblock = 'EB_Amber'
+
+name = 'AmberTools'
+version = '20'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://ambermd.org/'
+description = """AmberTools consists of several independently developed packages that work well by themselves,
+ and with Amber itself. The suite can also be used to carry out complete molecular dynamics simulations,
+ with either explicit water or generalized Born solvent models."""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+# download requires registration, see http://ambermd.org/AmberTools17-get.html
+local_download_credentials = '?Name=Easybuild&Institution=Easybuild&City=Internet&State=Other&Country=Belgium'
+source_urls = ['https://ambermd.org/cgi-bin/AmberTools%s-get.pl' % version]
+sources = [{
+    'download_filename': local_download_credentials,
+    'filename': SOURCE_TAR_BZ2,
+}]
+patches = [
+    'AmberTools-20_fix_missing_MPI_LIBRARY_error.patch',
+    'AmberTools-20_cmake-locate-netcdf.patch',
+    'AmberTools-20_fix_xblas_missing_make_dependency.patch',
+    'AmberTools-21_dont_include_config.h_in_top_Makefile.patch',
+]
+checksums = [
+    'b1e1f8f277c54e88abc9f590e788bbb2f7a49bcff5e8d8a6eacfaf332a4890f9',  # AmberTools-20.tar.bz2
+    # AmberTools-20_fix_missing_MPI_LIBRARY_error.patch'
+    '0b89a0624167bc23876bcdefcb1055f591e38e3bd559a71d5749e342bd311acc',
+    '473e07c53b6f641d96d333974a6af2e03413fecef79f879d3fdecf7fecaab4d0',  # AmberTools-20_cmake-locate-netcdf.patch
+    # AmberTools-20_fix_xblas_missing_make_dependency.patch
+    'ff25e91fdc72347a778c3837b581e174d6a8c71efa5b46e11391b18bca84fd65',
+    # AmberTools-21_dont_include_config.h_in_top_Makefile.patch
+    'b5a20a63904344fc3d1469841f0ea7d5ddaaa01462742bab958c3bba4a9b7ad9',
+]
+
+builddependencies = [
+    ('Bison', '3.5.3'),
+    ('pkg-config', '0.29.2'),
+    ('CMake', '3.16.4'),
+    ('flex', '2.6.4'),
+    ('make', '4.3'),
+]
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('matplotlib', '3.2.1', versionsuffix),
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+    ('FFTW', '3.3.8'),
+]
+
+# pysander should link with icc and not gcc
+prebuildopts = """sed -i 's/import sys/import sys; os.environ["LDSHARED"] = "icc -shared "/g' """
+prebuildopts += "%(builddir)s/AmberTools/src/pysander/setup.py && "
+
+# Tests use pmemd which is not part of AmberTools
+runtest = True
+
+moduleclass = 'chem'
