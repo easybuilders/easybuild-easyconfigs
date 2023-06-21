@@ -1,0 +1,35 @@
+Using cython for extensions breaks builds
+author: Christoph Siegert (Leipzig University)
+
+diff -ruN lie_learn-0.0.1.post1.orig/setup.py lie_learn-0.0.1.post1/setup.py
+--- lie_learn-0.0.1.post1.orig/setup.py	2021-08-18 18:01:14.428449724 +0200
++++ lie_learn-0.0.1.post1/setup.py	2021-08-18 18:13:33.294356898 +0200
+@@ -4,13 +4,6 @@
+ 
+ from setuptools import dist, find_packages, setup, Extension
+ 
+-try:
+-    from Cython.Build import cythonize
+-
+-    use_cython = True
+-except ImportError:
+-    use_cython = False
+-
+ if sys.version_info[0] < 3:
+     setup_requires_list = ['numpy<1.17']
+ else:
+@@ -20,13 +13,9 @@
+ 
+ import numpy as np
+ 
+-ext = '.pyx' if use_cython else '.c'
++ext = '.c'
+ files = glob.glob('lie_learn/**/*' + ext, recursive=True)
+ extensions = [Extension(file.split('.')[0].replace('/', '.'), [file]) for file in files]
+-if use_cython:
+-    from Cython.Build import cythonize
+-
+-    extensions = cythonize(extensions)
+ 
+ setup(
+     name='lie_learn',

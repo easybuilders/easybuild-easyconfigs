@@ -1,0 +1,41 @@
+easyblock = 'CMakeMake'
+
+name = 'HyPo'
+version = '1.0.3'
+versionsuffix = '-Python-3.7.4'
+
+homepage = 'https://github.com/kensung-lab/hypo'
+description = "HyPo: Super Fast & Accurate Polisher for Long Read Genome Assemblies"
+
+toolchain = {'name': 'GCC', 'version': '8.3.0'}
+
+source_urls = ['https://github.com/kensung-lab/%(namelower)s/releases/download/v1.0.3']
+sources = ['%(namelower)s-v1.0.3.tar.gz']
+checksums = ['f936069830b8a1dbd8d9825593b35ee83fc891c0419c395b2f2c858f329b3810']
+
+builddependencies = [('CMake', '3.15.3')]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('KMC', '3.1.2rc1', versionsuffix),
+    ('HTSlib', '1.10.2'),
+    ('SDSL', '2.1.1-20191211'),
+]
+
+preconfigopts = "rm -r %(builddir)s/hypo*/external/install/htslib/lib && "
+
+# FIXME check whether this is really needed
+configopts = "-Doptimise_for_native=ON "
+
+# using 'Conda' as build type to make CMake honor the specified location for dependencies
+build_type = 'Conda'
+configopts += "-DHTSLIB_INSTALL_DIR=$EBROOTHTSLIB -DSDSLLIB_INSTALL_DIR=$EBROOTSDSL"
+
+sanity_check_paths = {
+    'files': ['bin/hypo'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["hypo --help"]
+
+moduleclass = 'bio'

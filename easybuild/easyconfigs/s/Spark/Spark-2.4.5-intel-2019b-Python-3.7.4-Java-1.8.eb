@@ -1,0 +1,59 @@
+easyblock = 'Tarball'
+
+name = 'Spark'
+version = '2.4.5'
+local_python_versionsuffix = '-Python-%(pyver)s'
+local_java_versionsuffix = '-Java-%(javaver)s'
+versionsuffix = local_python_versionsuffix + local_java_versionsuffix
+
+homepage = 'https://spark.apache.org'
+description = """Spark is Hadoop MapReduce done in memory"""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+source_urls = [
+    'http://www.eu.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+    'http://www.us.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+    'https://apache.belnet.be/%(namelower)s/%(namelower)s-%(version)s/',
+    'https://archive.apache.org/dist/%(namelower)s/%(namelower)s-%(version)s/',
+]
+sources = ['spark-%(version)s-bin-hadoop2.7.tgz']
+checksums = ['020be52524e4df366eb974d41a6e18fcb6efcaba9a51632169e917c74267dd81']
+
+dependencies = [
+    ('Python', '3.7.4'),
+    ('Java', '1.8', '', SYSTEM),
+    ('Hadoop', '2.10.0', '-native'),
+    ('Arrow', '0.16.0', local_python_versionsuffix),
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    # Spark requires this version specifically
+    ('py4j', '0.10.7', {
+        'source_tmpl': 'py4j-%(version)s.zip',
+        'checksums': ['721189616b3a7d28212dfb2e7c6a1dd5147b03105f1fc37ff2432acd0e863fa5'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/pyspark', 'bin/spark-shell'],
+    'dirs': ['python']
+}
+
+sanity_check_commands = [
+    "pyspark -h",
+    "python -c 'import pyspark'",
+]
+
+modextrapaths = {'PYTHONPATH': ['python', 'lib/python%(pyshortver)s/site-packages']}
+
+modextravars = {'SPARK_HOME': '%(installdir)s'}
+
+moduleclass = 'devel'

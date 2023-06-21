@@ -1,0 +1,50 @@
+easyblock = 'MakeCp'
+
+name = 'nauty'
+version = '2.7rc2'
+
+homepage = 'http://pallini.di.uniroma1.it/'
+description = """nauty and Traces are programs for computing automorphism groups of graphs and
+digraphs. They can also produce a canonical label."""
+
+toolchain = {'name': 'GCC', 'version': '8.2.0-2.31.1'}
+toolchainopts = {'pic': True}
+
+source_urls = ['http://pallini.di.uniroma1.it']
+sources = ['nauty%s.tar.gz' % version.replace('.', '')]
+checksums = ['fe5b893579d84736a6e1383e0dfe95f9df55bff6ad3eaafd44660e08745ab32f']
+
+local_executables = [
+    'addedgeg', 'amtog', 'assembleg', 'biplabg', 'catg', 'complg', 'converseg', 'copyg', 'countg', 'cubhamg',
+    'deledgeg', 'delptg', 'directg', 'dreadnaut', 'dretodot', 'dretog', 'edgetransg', 'genbg', 'genbgL', 'geng',
+    'gengL', 'genquarticg', 'genrang', 'genspecialg', 'gentourng', 'gentreeg', 'hamheuristic', 'labelg', 'linegraphg',
+    'listg', 'multig', 'newedgeg', 'NRswitchg', 'pickg', 'planarg', 'ranlabg', 'shortg', 'showg', 'subdivideg',
+    'twohamg', 'underlyingg', 'vcolg', 'watercluster2'
+]
+local_headers = [
+    'gtools.h', 'gutils.h', 'naugroup.h', 'naugstrings.h', 'naurng.h', 'nausparse.h', 'nautaux.h', 'nautinv.h',
+    'naututil.h', 'nautycliquer.h', 'nauty.h', 'planarity.h', 'quarticirred28.h', 'rng.h', 'schreier.h', 'traces.h'
+]
+local_libs = ['nauty%s.a' % l for l in ['', '1', 'L', 'L1', 'W', 'W1']]
+
+prebuildopts = "./configure && "
+
+runtest = "checks"
+
+files_to_copy = [
+    (local_executables, "bin"),
+    (local_headers, "include/%(name)s"),
+    (local_libs, "lib"),
+]
+
+# prepend "lib" to library files to standarize their name
+postinstallcmds = ["cd %%(installdir)s/lib/ && mv %s lib%s" % (l, l) for l in local_libs]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_executables] +
+             ['include/%%(name)s/%s' % h for h in local_headers] +
+             ['lib/lib%s' % l for l in local_libs],
+    'dirs': ['']
+}
+
+moduleclass = 'math'

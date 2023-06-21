@@ -1,0 +1,41 @@
+easyblock = 'MakeCp'
+
+name = 'aNCI'
+version = '2.0'
+local_nciplot_commit = '834af2e'
+
+homepage = 'https://www.lct.jussieu.fr/pagesperso/contrera/nci-MD.html'
+description = """Non-covalent interaction (NCI) for MD trajectories"""
+
+toolchain = {'name': 'iccifort', 'version': '2019.5.281'}
+
+source_urls = [
+    'https://www.lct.jussieu.fr/pagesperso/contrera/',
+    'https://github.com/juliacontrerasgarcia/nciplot/archive/',
+]
+sources = [
+    {'filename': SOURCE_ZIP, 'download_filename': 'anci-RC.zip'},
+    {'download_filename': '%s.tar.gz' % local_nciplot_commit, 'filename':  'NCIPLOT-%s.tar.gz' % local_nciplot_commit,
+     'extract_cmd': 'tar -xzf %s -C %(namelower)s --strip-components=1 nciplot*/dat'},
+]
+checksums = [
+    'd57c2969fc180c687c946a0a1ee393fe1ffc252b3534337bc71e4d95acbbf6dd',  # aNCI-2.0.zip
+    'd86943e7f4dff9098b87fdfb8ab3793478a9c8ed8b312c730cdbcb0cac4bef4d',  # NCIPLOT-834af2e.tar.gz
+]
+
+start_dir = '%(namelower)s'
+
+prebuildopts = "sed -i 's/include Makefile.inc//g' Makefile && "
+prebuildopts += "sed -i 's/nciplot: $(OBJS) $(LIBS)/nciplot: $(OBJS)/g' Makefile && "
+buildopts = 'LIBS="$LIBS" LDFLAGS="$LDFLAGS"'
+
+files_to_copy = ['note', 'dat', (['nciplot'], 'bin')]
+
+modextrapaths = {'NCIPLOT_HOME': ''}
+
+sanity_check_paths = {
+    'files': ['bin/nciplot'],
+    'dirs': ['dat'],
+}
+
+moduleclass = 'chem'

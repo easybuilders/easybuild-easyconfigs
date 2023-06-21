@@ -1,0 +1,65 @@
+easyblock = 'CMakeMake'
+
+name = 'RDKit'
+version = '2019.09.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.rdkit.org'
+description = "RDKit is a collection of cheminformatics and machine-learning software written in C++ and Python."
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+# avoid failing tests on skylake CPUs. comment out this line when building on CPUs that don't support AVX2
+# see also: https://github.com/rdkit/rdkit/issues/1674
+toolchainopts = {'optarch': 'mavx2'}
+
+source_urls = ['https://github.com/rdkit/rdkit/archive/']
+sources = ['Release_%s.tar.gz' % version.replace('.', '_')]
+patches = ['%(name)s-%(version)s_fix_tests.patch']
+checksums = [
+    '88bbc298eb6c17584471b17a34e202b1da3d59d92ea5b6b6dcda635b739f76f2',  # Release_2019_09_3.tar.gz
+    'c56af1f570e40b8b36d8c2b42fb8aadf7bdfadc48756d7caff52e5cd8cee1c81',  # RDKit-2019.09.3_fix_tests.patch
+]
+
+builddependencies = [
+    ('CMake', '3.15.3'),
+    ('Eigen', '3.3.7', '', SYSTEM),
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('Python', '3.7.4'),
+    ('SciPy-bundle', '2019.10', versionsuffix),
+    ('matplotlib', '3.1.1', versionsuffix),
+    ('Pillow', '6.2.1'),
+    ('Boost.Python', '1.71.0'),
+    ('cairo', '1.16.0'),
+]
+
+separate_build_dir = True
+
+configopts = "-DPy_ENABLE_SHARED=1 -DRDK_INSTALL_STATIC_LIBS=OFF -DRDK_INSTALL_INTREE=OFF "
+configopts += "-DBoost_INCLUDE_DIR=$EBROOTBOOST/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOST/lib "
+
+# merge source directory into build directory in order to run the tests
+pretestopts = 'cp -RT %(builddir)s/%(namelower)s-*/ ./ && '
+pretestopts += 'export RDBASE=$PWD && export PYTHONPATH=$PWD:$PYTHONPATH && '
+runtest = 'test'
+
+local_libs = ['Alignment', 'Catalogs', 'ChemicalFeatures', 'ChemReactions', 'ChemTransforms', 'coordgen', 'DataStructs',
+              'Depictor', 'Descriptors', 'DistGeometry', 'DistGeomHelpers', 'EigenSolvers', 'FileParsers',
+              'FilterCatalog', 'Fingerprints', 'FMCS', 'ForceFieldHelpers', 'ForceField', 'FragCatalog', 'GraphMol',
+              'hc', 'InfoTheory', 'maeparser', 'MMPA', 'MolAlign', 'MolCatalog', 'MolChemicalFeatures', 'MolDraw2D',
+              'MolHash', 'MolInterchange', 'MolStandardize', 'MolTransforms', 'Optimizer', 'PartialCharges', 'RDBoost',
+              'RDGeneral', 'RDGeometryLib', 'RDStreams', 'ReducedGraphs', 'RGroupDecomposition', 'RingDecomposerLib',
+              'ShapeHelpers', 'SimDivPickers', 'SLNParse', 'SmilesParse', 'StructChecker', 'Subgraphs',
+              'SubstructLibrary', 'SubstructMatch', 'Trajectory', 'URFLib']
+
+sanity_check_paths = {
+    'files': ['lib/libRDKit%s.%s' % (x, SHLIB_EXT) for x in local_libs],
+    'dirs': ['include/rdkit', 'lib/python%(pyshortver)s/site-packages/rdkit'],
+}
+
+sanity_check_commands = ["python -c 'import rdkit.rdBase'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'chem'

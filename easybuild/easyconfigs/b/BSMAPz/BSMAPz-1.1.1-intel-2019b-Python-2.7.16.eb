@@ -1,0 +1,51 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'ConfigureMake'
+
+name = 'BSMAPz'
+version = '1.1.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/zyndagj/BSMAPz'
+description = """Updated and optimized fork of BSMAP.
+BSMAPz is a short reads mapping program for bisulfite sequencing in DNA methylation study."""
+
+toolchain = {'name': 'intel', 'version': '2019b'}
+
+# https://github.com/zyndagj/BSMAPz
+github_account = 'zyndagj'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['85f8ec4d409fdcc6bf433d48a477fb3d9688819bd407d0bb7a228ccaa9b43716']
+
+builddependencies = [
+    ('zlib', '1.2.11'),
+]
+dependencies = [
+    ('Python', '2.7.16'),
+    ('SAMtools', '1.10'),
+    ('Pysam', '0.15.3'),
+]
+
+skipsteps = ['configure']
+buildopts = 'bsmapz'
+runtest = 'test'
+installopts = 'DESTDIR=%(installdir)s'
+
+local_bin_files = ['bsmapz', 'methdiff.py', 'methratio.py', 'sam2bam.sh']
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_bin_files],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    # 'bsmapz -h' returns exit-code 1 - testing it with example data instead
+    'bsmapz -a %(builddir)s/%(name)s-%(version)s/test_data/simulated.fastq -z 33 -p 2 -q 20 '
+    '-d %(builddir)s/%(name)s-%(version)s/test_data/test.fasta -S 77345 -w 1000 '
+    '-o %(builddir)s/%(name)s-%(version)s/test_r1.bam',
+    'methdiff.py -h',
+    'methratio.py -h',
+]
+
+moduleclass = 'bio'

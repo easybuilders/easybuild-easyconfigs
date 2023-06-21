@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+versionsuffix = '-osmesa'
+# available: -glx, -osmesa, -egl
+# GLEW does support GLX (onscreen or requiring VirtualGL), EGL (technically can do both onscreen and   
+# offscreen), and OSMESA (offscreen software only).
+
+name = 'glew'
+version = '2.2.0'
+
+homepage = 'https://github.com/nigels-com/glew'
+description = """The OpenGL Extension Wrangler Library (GLEW) is a cross-platform open-source
+C/C++ extension loading library. GLEW provides efficient run-time mechanisms
+for determining which OpenGL extensions are supported on the target platform."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/nigels-com/glew/releases/download/%(name)s-%(version)s/']
+sources = ['%(name)s-%(version)s.tgz']
+checksums = ['d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1']
+
+builddependencies = [('binutils', '2.37')]
+
+dependencies = [
+    ('Mesa', '21.1.7'),
+    ('X11', '20210802'),
+]
+
+local_system = 'SYSTEM=linux`echo %(versionsuffix)s|sed -e "s/-glx//g"`'
+buildopts = local_system
+
+skipsteps = ['configure']
+
+preinstallopts = 'GLEW_PREFIX=%(installdir)s GLEW_DEST=%(installdir)s '
+install_cmd = 'make install.all ' + local_system
+
+sanity_check_paths = {
+    'files': ['lib/libGLEW.a', 'lib/libGLEW.%s' % SHLIB_EXT] +
+             ['bin/glewinfo', 'bin/visualinfo'] +
+             ['include/GL/%s.h' % h for h in ['glew', 'glxew', 'wglew']],
+    'dirs': []
+}
+
+moduleclass = 'devel'

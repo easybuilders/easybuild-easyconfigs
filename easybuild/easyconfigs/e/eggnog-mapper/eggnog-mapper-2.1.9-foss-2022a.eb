@@ -1,0 +1,56 @@
+# Eggnog DB installation instructions:
+# 1. 'export EGGNOG_DATA_DIR=/<storage-location>/eggnog-mapper-data'
+# 2. run 'download_eggnog_data.py'
+# 3. Check the expected DB version with 'emapper.py --version'
+
+easyblock = 'PythonPackage'
+
+name = 'eggnog-mapper'
+version = '2.1.9'
+
+homepage = 'https://github.com/eggnogdb/eggnog-mapper'
+description = """EggNOG-mapper is a tool for fast functional annotation of novel
+sequences. It uses precomputed orthologous groups and phylogenies from the
+eggNOG database (http://eggnog5.embl.de) to transfer functional information from
+fine-grained orthologs only. Common uses of eggNOG-mapper include the annotation
+of novel genomes, transcriptomes or even metagenomic gene catalogs."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'eggnogdb'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+checksums = ['01f495a2a7cb9bf1d98cb40691b8598131c32d583cba652a98cdc20e5c8602eb']
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('Biopython', '1.79'),
+    ('HMMER', '3.3.2'),
+    ('DIAMOND', '2.1.0'),
+    ('prodigal', '2.6.3'),
+    ('wget', '1.21.3'),
+    ('MMseqs2', '14-7e284'),
+    ('XlsxWriter', '3.0.8'),
+]
+
+# strip out (too) strict version requirements for dependencies
+preinstallopts = "sed -i 's/==[0-9.]*//g' setup.cfg && "
+
+use_pip = True
+sanity_pip_check = True
+download_dep_fail = True
+
+sanity_check_paths = {
+    'files': ['bin/create_dbs.py', 'bin/download_eggnog_data.py', 'bin/emapper.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'download_eggnog_data.py --help',
+    'create_dbs.py --help',
+    'emapper.py --version | grep %(version)s',
+]
+
+options = {'modulename': 'eggnogmapper'}
+
+moduleclass = 'bio'

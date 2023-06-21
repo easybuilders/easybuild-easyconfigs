@@ -1,0 +1,53 @@
+From 79eb7a47726f7e0f644d0b9bddf3840b227a2f73 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jens=20J=C3=B8rgen=20Mortensen?= <jensj@fysik.dtu.dk>
+Date: Wed, 21 Sep 2022 12:10:16 +0200
+Subject: [PATCH] Test too strict for EasyBuild intel/2020b toolchain
+
+---
+ gpaw/test/gllb/test_variants.py | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/gpaw/test/gllb/test_variants.py b/gpaw/test/gllb/test_variants.py
+index 0b9ede0..8a51261 100644
+--- a/gpaw/test/gllb/test_variants.py
++++ b/gpaw/test/gllb/test_variants.py
+@@ -1,8 +1,8 @@
+-import pytest
+ import numpy as np
++import pytest
+ from ase.build import bulk
+-from gpaw.test import gen
+ from gpaw import GPAW
++from gpaw.test import gen
+ 
+ 
+ def run(xc):
+@@ -19,7 +19,7 @@ def run(xc):
+                 xc=xc,
+                 convergence={'density': 1e-5},
+                 kpts={'size': (1, 1, 1), 'gamma': True},
+-                txt='{}.out'.format(xc))
++                txt=f'{xc}.out')
+     atoms.calc = calc
+     atoms.get_potential_energy()
+     eig_n = calc.get_eigenvalues(kpt=0)
+@@ -35,7 +35,7 @@ def test_wrappers(xc, in_tmp_dir, add_cwd_to_setup_paths):
+     # Check values against regular xc
+     ref_eig_n = run({'GLLBLDA': 'LDA', 'GLLBPBE': 'PBE'}[xc])
+     assert np.allclose(eig_n, ref_eig_n, rtol=0, atol=1e-8), \
+-        "{} error = {}".format(xc, np.max(np.abs(eig_n - ref_eig_n)))
++        f'{xc} error = {np.max(np.abs(eig_n - ref_eig_n))}'
+ 
+ 
+ refs = {'GLLB':
+@@ -70,5 +70,5 @@ refs = {'GLLB':
+ def test_eigenvalues(xc, in_tmp_dir, add_cwd_to_setup_paths):
+     eig_n = run(xc)
+     ref_eig_n = refs[xc]
+-    assert np.allclose(eig_n, ref_eig_n, rtol=0, atol=5e-6), \
+-        "{} error = {}".format(xc, np.max(np.abs(eig_n - ref_eig_n)))
++    assert np.allclose(eig_n, ref_eig_n, rtol=0, atol=2e-5), \
++        f'{xc} error = {np.max(np.abs(eig_n - ref_eig_n))}'
+-- 
+1.8.3.1
+

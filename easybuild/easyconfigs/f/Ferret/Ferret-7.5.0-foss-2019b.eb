@@ -1,0 +1,53 @@
+name = 'Ferret'
+version = '7.5.0'
+homepage = 'https://ferret.pmel.noaa.gov/Ferret/'
+description = """Ferret is an interactive computer visualization and analysis environment
+designed to meet the needs of oceanographers and meteorologists analyzing large and complex gridded data sets."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/NOAA-PMEL/Ferret/archive/']
+sources = ['v%s.tar.gz' % version]
+checksums = [
+    '2a038c547e6e80e6bd0645a374c3247360cf8c94ea56f6f3444b533257eb16db',  # v7.5.0.tar.gz
+]
+
+dependencies = [
+    ('X11', '20190717'),
+    # often used with CDO, matching netCDF versions
+    ('netCDF', '4.7.1'),
+    ('netCDF-Fortran', '4.5.2'),
+    ('HDF5', '1.10.5'),
+    ('zlib', '1.2.11'),
+    ('Szip', '2.1.1'),
+    ('cURL', '7.66.0'),
+    ('ncurses', '6.1'),
+    ('libreadline', '8.0'),
+    ('Java', '11', '', SYSTEM),
+]
+
+# /bin/csh is required for installation by bin/make_executable_tar, bin/make_environment_tar
+# and also required by many installed scripts in bin/
+osdependencies = ['tcsh']
+
+parallel = 1
+
+prebuildopts = 'export CPP_X11="-I${EBROOTX11}/include" && '
+buildopts = 'CDFLIB="-lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lsz"'
+
+modextravars = {
+    'FER_DIR': '%(installdir)s',
+    'FER_DSETS': '%(installdir)s/fer_dsets',
+    'FER_DATA': '. %(installdir)s/fer_dsets/data %(installdir)s/contrib',
+    'FER_DESCR': '. %(installdir)s/fer_dsets/descr',
+    'FER_GRIDS': '. %(installdir)s/fer_dsets/grids',
+    'FER_GO': '. %(installdir)s/go %(installdir)s/examples %(installdir)s/contrib',
+    'FER_EXTERNAL_FUNCTIONS': '%(installdir)s/ext_func/libs',
+    'FER_PALETTE': '. %(installdir)s/ppl',
+    'SPECTRA': '%(installdir)s/ppl',
+    'FER_FONTS': '%(installdir)s/ppl/fonts',
+    'PLOTFONTS': '%(installdir)s/ppl/fonts',
+}
+
+moduleclass = 'vis'
