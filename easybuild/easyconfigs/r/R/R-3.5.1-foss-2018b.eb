@@ -1,7 +1,7 @@
 name = 'R'
 version = '3.5.1'
 
-homepage = 'http://www.r-project.org/'
+homepage = 'https://www.r-project.org/'
 description = """R is a free software environment for statistical computing and graphics."""
 
 toolchain = {'name': 'foss', 'version': '2018b'}
@@ -28,7 +28,7 @@ dependencies = [
     ('libpng', '1.6.34'),  # for plotting in R
     ('libjpeg-turbo', '2.0.0'),  # for plottting in R
     ('LibTIFF', '4.0.9'),
-    ('Java', '1.8', '', True),
+    ('Java', '1.8', '', SYSTEM),
     ('Tk', '8.6.8'),  # for tcltk
     ('cURL', '7.60.0'),  # for RCurl
     ('libxml2', '2.9.8'),  # for XML
@@ -59,9 +59,9 @@ easybuild_version = '3.5.0'
 
 exts_default_options = {
     'source_urls': [
-        'http://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
-        'http://cran.r-project.org/src/contrib/',  # current version of packages
-        'http://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
     ],
     'source_tmpl': '%(name)s_%(version)s.tar.gz',
 }
@@ -69,15 +69,21 @@ exts_default_options = {
 # !! order of packages is important !!
 # packages updated on Aug 17, 2018
 exts_list = [
+    # include packages that are part of the base installation of R,
+    # both to make sure they are available (via sanity check),
+    # and to be able to pass the check for required dependencies when installing extensions in parallel
     'base',
+    'compiler',
     'datasets',
     'graphics',
     'grDevices',
     'grid',
     'methods',
+    'parallel',
     'splines',
     'stats',
     'stats4',
+    'tcltk',
     'tools',
     'utils',
     ('Rmpi', '0.6-7', {
@@ -768,7 +774,8 @@ exts_list = [
         'checksums': ['1f06ab3660c940405230ad16ff6e4ba38d4418a59cd9b16d78a4349f8b488372'],
     }),
     ('pkgmaker', '0.27', {
-        'checksums': ['17a289d8f596ba5637b07077b3bff22411a2c2263c0b7de59fe848666555ec6a'],
+        'checksums': [('17a289d8f596ba5637b07077b3bff22411a2c2263c0b7de59fe848666555ec6a',
+                       'e5eb9058e68702c15e8dc6fee6ede41cdbe8e3914d190a5a1113079db26fb003')],
     }),
     ('rngtools', '1.3.1', {
         'checksums': ['763fc493cb821a4d3e514c0dc876d602a692c528e1d67f295dde70c77009e224'],
@@ -806,8 +813,8 @@ exts_list = [
     ('ROCR', '1.0-7', {
         'checksums': ['e7ef710f847e441a48b20fdc781dbc1377f5a060a5ee635234053f7a2a435ec9'],
     }),
-    ('later', '0.7.3', {
-        'checksums': ['5c57148c255ee5da61cb748550b73bad7094f4e045b99b362473be5e3dbc4212'],
+    ('later', '0.7.4', {
+        'checksums': ['c4d49aa91f5154ef54ea0498b17f230b8bf99da62541b64417e0c8971261bf88'],
     }),
     ('promises', '1.0.1', {
         'checksums': ['c2dbc7734adf009377a41e570dfe0d82afb91335c9d0ca1ef464b9bdcca65558'],
@@ -1225,7 +1232,8 @@ exts_list = [
         'checksums': ['8e259c2b12446197d1152b83a81bab84ccb5a5b77021a9b5645dd4c63c804bd1'],
     }),
     ('doRNG', '1.7.1', {
-        'checksums': ['27533d54464889d1c21301594137fc0f536574e3a413d61d7df9463ab12a67e9'],
+        'checksums': [('27533d54464889d1c21301594137fc0f536574e3a413d61d7df9463ab12a67e9',
+                       'bda8143e2b5554fb39fdea81af6482f8938160fdbf5c45014f3a5de40aacf4c4')],
     }),
     ('nleqslv', '3.3.2', {
         'checksums': ['f54956cf67f9970bb3c6803684c84a27ac78165055745e444efc45cfecb63fed'],
@@ -1919,17 +1927,8 @@ exts_list = [
     ('SDMTools', '1.1-221', {
         'checksums': ['a6da297a670f756ee964ffd99c3b212c55c297d385583fd0e767435dd5cd4ccd'],
     }),
-    ('later', '0.7.4', {
-        'checksums': ['c4d49aa91f5154ef54ea0498b17f230b8bf99da62541b64417e0c8971261bf88'],
-    }),
-    ('promises', '1.0.1', {
-        'checksums': ['c2dbc7734adf009377a41e570dfe0d82afb91335c9d0ca1ef464b9bdcca65558'],
-    }),
     ('ggridges', '0.5.0', {
         'checksums': ['124bc84044e56728fa965682f8232fc868f2af7d3eb7276f6b0df53be8d2dbfe'],
-    }),
-    ('bibtex', '0.4.2', {
-        'checksums': ['1f06ab3660c940405230ad16ff6e4ba38d4418a59cd9b16d78a4349f8b488372'],
     }),
     ('gbRd', '0.4-11', {
         'checksums': ['0251f6dd6ca987a74acc4765838b858f1edb08b71dbad9e563669b58783ea91b'],
@@ -2042,9 +2041,6 @@ exts_list = [
     ('aggregation', '1.0.1', {
         'checksums': ['86f88a02479ddc8506bafb154117ebc3b1a4a44fa308e0193c8c315109302f49'],
     }),
-    ('NMF', '0.21.0', {
-        'checksums': ['3b30c81c66066fab4a63c5611a0313418b840d8b63414db31ef0e932872d02e3'],
-    }),
     ('ComICS', '1.0.4', {
         'checksums': ['0af7901215876f95f309d7da6e633c38e4d7faf04112dd6fd343bc15fc593a2f'],
     }),
@@ -2115,7 +2111,8 @@ exts_list = [
         'checksums': ['76cee2393757390ad91d3db3e5aeb2c2d34c0a46822b7941498571a473417142'],
     }),
     ('cobs', '1.3-3', {
-        'checksums': ['6b1e760cf8dec6b6e63f042cdc3e5e633de5f982e8bc743a891932f6d9f91bdf'],
+        'checksums': [('6b1e760cf8dec6b6e63f042cdc3e5e633de5f982e8bc743a891932f6d9f91bdf',
+                       'f3fca282c9a258cc5e4976780f4907aca1051796524d6861fc15204ab22ab7d2')],
     }),
     ('resample', '0.4', {
         'checksums': ['f0d5f735e1b812612720845d79167a19f713a438fd10a6a3206e667045fd93e5'],

@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'eSpeak-NG'
+version = '1.50'
+
+homepage = 'https://github.com/espeak-ng/espeak-ng'
+description = """
+The eSpeak NG is a compact open source software text-to-speech synthesizer
+for Linux, Windows, Android and other operating systems.
+It supports more than 100 languages and accents.
+It is based on the eSpeak engine created by Jonathan Duddington.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+source_urls = ['https://github.com/espeak-ng/espeak-ng/archive']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_sonic_fftw.patch',
+    '%(name)s-%(version)s_mbrola_location.patch',
+]
+checksums = [
+    '5ce9f24ee662b5822a4acc45bed31425e70d7c50707b96b6c1603a335c7759fa',  # 1.50.tar.gz
+    'dc34e14ef4b8bc174c94ad220cbf35b80e6183298d24883cf252507154ef4ee4',  # eSpeak-NG-1.50_sonic_fftw.patch
+    '1bf9bb98f1fd35ddbd373b504c3215641db532093fc5dd44099a820b80c76f83',  # eSpeak-NG-1.50_mbrola_location.patch
+]
+
+builddependencies = [('Autotools', '20180311')]
+
+dependencies = [
+    ('sonic', '20180202'),
+    ('MBROLA', '3.3', '-voices-20200330'),
+]
+
+preconfigopts = './autogen.sh &&'
+
+configopts = '--disable-dependency-tracking'
+
+maxparallel = 1
+sanity_check_paths = {
+    'files': ['bin/%sspeak%s' % (x, y) for x in ['', 'e'] for y in ['', '-ng']] +
+             ['include/espeak%s/speak_lib.h' % x for x in ['', '-ng']] +
+             ['include/espeak-ng/%s.h' % x for x in ['encoding', 'espeak_ng']] +
+             ['lib/libespeak%s' % x for x in ['.la', '-ng.a', '-ng.%s' % SHLIB_EXT]],
+    'dirs': ['lib/pkgconfig']
+}
+
+sanity_check_commands = ['%sspeak%s --version' % (x, y) for x in ['', 'e'] for y in ['', '-ng']]
+
+moduleclass = 'tools'

@@ -1,0 +1,87 @@
+easyblock = 'PythonBundle'
+
+name = 'medaka'
+version = '0.11.4'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/nanoporetech/medaka'
+description = "medaka is a tool to create a consensus sequence from nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2018b'}
+
+dependencies = [
+    # Python < 3.7 required, see https://github.com/nanoporetech/medaka/issues/123
+    ('Python', '3.6.6'),  # includes cffi, numpy
+    # TensorFlow <= 1.14 required, see https://github.com/nanoporetech/medaka/pull/116
+    ('TensorFlow', '1.13.1', versionsuffix),
+    ('Biopython', '1.72', versionsuffix),
+    ('h5py', '2.8.0', versionsuffix),
+    ('Pysam', '0.15.1', versionsuffix),
+    ('SAMtools', '1.9'),
+    ('minimap2', '2.13'),
+    ('HTSlib', '1.9'),  # for tabix, bgzip
+    ('Racon', '1.4.10'),
+    ('spoa', '3.0.1'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('sortedcontainers', '2.1.0', {
+        'checksums': ['974e9a32f56b17c1bac2aebd9dcf197f3eb9cd30553c5852a3187ad162e1a03a'],
+    }),
+    ('intervaltree', '3.0.2', {
+        'checksums': ['cb4f61c81dcb4fea6c09903f3599015a83c9bdad1f0bbd232495e6681e19e273'],
+    }),
+    ('mappy', '2.17', {
+        'checksums': ['ed1460efc9c6785df28065b7e93e93c92227f623a181f1a852dca6e6acb1a15f'],
+    }),
+    ('progressbar33', '2.4', {
+        'modulename': 'progressbar',
+        'checksums': ['51fe0d9b3b4023db2f983eeccdfc8c9846b84db8443b9bee002c7f58f4376eff'],
+    }),
+    ('ont-fast5-api', '2.0.1', {
+        'checksums': ['256f97cde47f0bb569efdf0239cfe702a4ef40d1d8441bdc15630c506be8e7e5'],
+    }),
+    ('parasail', '1.1.19', {
+        'checksums': ['f3033d9817318c287b0ea4e9a681bc52ed5199141207bca5151d71c172185245'],
+    }),
+    ('networkx', '2.4', {
+        'checksums': ['f8f4ff0b6f96e4f9b16af6b84622597b5334bf9cae8cf9b2e42e7985d5c95c64'],
+    }),
+    ('pyfaidx', '0.5.7', {
+        'checksums': ['512c409b36eadfe39c40e46112d8f96b29fdc1032dc424da2bdc783d476f5b0a'],
+    }),
+    ('PyVCF', '0.6.8', {
+        'modulename': 'vcf',
+        'checksums': ['e9d872513d179d229ab61da47a33f42726e9613784d1cb2bac3f8e2642f6f9d9'],
+    }),
+    ('xopen', '0.8.4', {
+        'checksums': ['dcd8f5ef5da5564f514a990573a48a0c347ee1fdbb9b6374d31592819868f7ba'],
+    }),
+    ('biopython', '1.76', {
+        'modulename': 'Bio',
+        'checksums': ['3873cb98dad5e28d5e3f2215a012565345a398d3d2c4eebf7cd701757b828c72'],
+    }),
+    ('whatshap', '0.18', {
+        'checksums': ['c566130eca57fe9e34f5193390856dc44171c397f9708c49fcbf204e575b6695'],
+    }),
+    (name, version, {
+        'patches': ['medaka-%(version)s_use-SAMtools-dep.patch'],
+        # strip off hardcoded versions in requirements, they're a bit too strict
+        'preinstallopts': "sed -i 's/==.*//g' requirements.txt && ",
+        'checksums': [
+            'cb53ffbe9e5a3421c4f100c1fddf6111356fb3fb1b500fd7f23c1f727a93efae',  # medaka-0.11.4.tar.gz
+            '3400ebf20a1cf9edacec2091c0583424059bc5ade4c0aab88488371187d449e4',  # medaka-0.11.4_use-SAMtools-dep.patch
+        ],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/medaka', 'bin/medaka_consensus'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'bio'
