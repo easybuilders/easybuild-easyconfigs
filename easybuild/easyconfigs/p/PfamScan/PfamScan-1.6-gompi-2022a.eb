@@ -1,0 +1,57 @@
+easyblock = 'Tarball'
+
+name = 'PfamScan'
+version = '1.6'
+
+homepage = 'https://www.ebi.ac.uk/seqdb/confluence/display/THD/PfamScan'
+description = "PfamScan is used to search a FASTA sequence against a library of Pfam HMM."
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+
+source_urls = ['https://ftp.ebi.ac.uk/pub/databases/Pfam/Tools/']
+sources = [{'download_filename': '%(name)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['365c96bc150d5057349c3016d62667c58cb33afcfb6329457ae16ab5aae4f401']
+
+builddependencies = [
+    ('wget', '1.21.3'),  # needed to fetch Pfam DB
+    ('gzip', '1.12'),  # needed to decompress Pfam DB
+]
+
+dependencies = [
+    ('Perl', '5.34.1'),
+    ('BioPerl', '1.7.8'),
+    ('HMMER', '3.3.2'),
+]
+
+fix_perl_shebang_for = ['*.pl']
+
+sanity_check_paths = {
+    'files': ['pfam_scan.pl'],
+    'dirs': ['Bio/Pfam'],
+}
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': '',
+}
+
+sanity_check_commands = [
+    ('perl', '-e "use Bio::Pfam::Scan::PfamScan"'),
+    ('pfam_scan.pl', '--help'),
+]
+
+# Download Pfam database (280 MB download, 1.5 GB on disk)
+# _pfam_db_dir = '%(installdir)s/db'
+# _pfam_db_url = 'https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release'
+# postinstallcmds = [
+#     "mkdir -p %s" % _pfam_db_dir,
+#     "wget -P %s %s/{Pfam-A.hmm.gz,Pfam-A.hmm.dat.gz,active_site.dat.gz}" % (_pfam_db_dir, _pfam_db_url),
+#     "gzip -d %s/*.gz" % _pfam_db_dir,
+#     "hmmpress %s/Pfam-A.hmm" % _pfam_db_dir,
+# ]
+#
+# modloadmsg = """
+# Pfam database dir is located at %s
+# """ % _pfam_db_dir
+
+moduleclass = 'bio'
