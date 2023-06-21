@@ -16,7 +16,7 @@ toolchainopts = {'pic': True}
 builddependencies = [
     ('CMake', '3.15.3'),
     ('Bison', '3.3.2'),
-    ('Eigen', '3.3.7', '', True),
+    ('Eigen', '3.3.7', '', SYSTEM),
     ('googletest', '1.10.0'),
 ]
 
@@ -35,7 +35,7 @@ dependencies = [
 
 default_easyblock = 'CMakeMake'
 
-local_itk_configopts = "-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF "
+local_itk_configopts = "-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF "
 local_itk_configopts += "-DITK_WRAP_PYTHON=OFF -DModule_ITKReview=ON "
 local_itk_configopts += "-DITK_USE_SYSTEM_SWIG=ON -DITK_USE_SYSTEM_EIGEN=ON -DITK_USE_SYSTEM_HDF5=ON "
 local_itk_configopts += "-DITK_USE_SYSTEM_JPEG=ON -DJPEG_INCLUDE_DIR=$EBROOTLIBJPEGMINTURBO/include "
@@ -46,11 +46,13 @@ local_itk_configopts += "-DITK_USE_SYSTEM_TIFF=ON -DTIFF_INCLUDE_DIR=$EBROOTLIBT
 local_itk_configopts += "-DTIFF_LIBRARY=$EBROOTLIBTIFF/lib/libtiff.%s " % SHLIB_EXT
 local_itk_configopts += "-DITK_USE_SYSTEM_ZLIB=ON -DZLIB_INCLUDE_DIR=$EBROOTZLIB/include "
 local_itk_configopts += "-DZLIB_LIBRARY=$EBROOTZLIB/lib/libz.%s " % SHLIB_EXT
+# Don't depend on MPICXX (which makes linking to ITK painful)
+local_itk_configopts += ' -DCMAKE_CXX_FLAGS="$CXXFLAGS -DOMPI_SKIP_MPICXX"'
 
-local_elastix_configopts = "-DCMAKE_BUILD_TYPE=Release -DELASTIX_BUILD_EXECUTABLE=OFF "
+local_elastix_configopts = "-DELASTIX_BUILD_EXECUTABLE=OFF "
 local_elastix_configopts += "-DITK_DIR=%%(builddir)s/ITK-%s/easybuild_obj/" % local_itk_ver
 
-local_simpleelastix_configopts = "-DCMAKE_BUILD_TYPE=ON -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF "
+local_simpleelastix_configopts = "-DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF "
 local_simpleelastix_configopts += '-DCMAKE_C_FLAGS="$CFLAGS -fpermissive" -DCMAKE_CXX_FLAGS="$CXXFLAGS -fpermissive" '
 local_simpleelastix_configopts += "-DITK_DIR=%%(builddir)s/ITK-%s/easybuild_obj/ " % local_itk_ver
 local_simpleelastix_configopts += "-DElastix_DIR=%%(builddir)s/elastix-%s/easybuild_obj/ " % local_elastix_ver

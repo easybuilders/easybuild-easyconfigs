@@ -1,0 +1,42 @@
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+
+easyblock = 'CMakeNinja'
+
+name = 'ccache'
+version = '4.2.1'
+
+homepage = 'https://ccache.dev/'
+description = """Ccache (or “ccache”) is a compiler cache. It speeds up recompilation by
+caching previous compilations and detecting when the same compilation is being done again"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/ccache/ccache/releases/download/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['320d2b17d2f76393e5d4bb28c8dee5ca783248e9cd23dff0654694d60f8a4b62']
+
+osdependencies = [('glibc-static', 'libc6-dev')]
+
+local_gccver = '10.2.0'
+builddependencies = [
+    ('GCC', local_gccver),
+    ('CMake', '3.18.4', '', ('GCCcore', local_gccver)),
+    ('Ninja', '1.10.1', '', ('GCCcore', local_gccver)),
+    ('zstd', '1.4.5', '', ('GCCcore', local_gccver)),
+]
+
+# use BFD linker rather than default ld.gold (required on CentOS 8)
+preconfigopts = 'LDFLAGS="-static -fuse-ld=bfd"'
+configopts = '-DENABLE_DOCUMENTATION=OFF -DENABLE_IPO=ON -DZSTD_LIBRARY="$EBROOTZSTD/lib/libzstd.a" '
+# disable hunt for faster linker, since using ld.gold may fail (on CentOS 8, for example)
+configopts += '-DUSE_FASTER_LINKER=OFF'
+
+sanity_check_paths = {
+    'files': ['bin/ccache'],
+    'dirs': []
+}
+sanity_check_commands = ['ccache --help']
+
+moduleclass = 'tools'
