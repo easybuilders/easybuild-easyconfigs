@@ -1,0 +1,137 @@
+From 20a00a0328fe1ad08ef51311b93d72d939c142e7 Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Thu, 20 Aug 2020 16:39:40 +0200
+Subject: [PATCH] Include jsonCPP headers via #include "json/json.h"
+
+Don't use #include "include/json/json.h" which is unusual and therefore confusing
+This allows to remove the header symlinking done for the system lib version
+
+Closes #42303
+---
+ .../core/platform/cloud/gcs_file_system.cc    |  2 +-
+ .../platform/cloud/google_auth_provider.cc    |  2 +-
+ tensorflow/core/platform/cloud/oauth_client.h |  2 +-
+ .../profiler/convert/trace_events_to_json.cc  |  2 +-
+ .../convert/trace_events_to_json_test.cc      |  2 +-
+ .../core/profiler/internal/tfprof_timeline.h  |  2 +-
+ third_party/systemlibs/jsoncpp.BUILD          | 27 -------------------
+ 9 files changed, 8 insertions(+), 35 deletions(-)
+
+diff --git a/tensorflow/core/platform/cloud/gcs_file_system.cc b/tensorflow/core/platform/cloud/gcs_file_system.cc
+index f0d2138b379ea..59eb610fc5377 100644
+--- a/tensorflow/core/platform/cloud/gcs_file_system.cc
++++ b/tensorflow/core/platform/cloud/gcs_file_system.cc
+@@ -30,7 +30,7 @@ limitations under the License.
+ #include <io.h>  // for _mktemp
+ #endif
+ #include "absl/base/macros.h"
+-#include "include/json/json.h"
++#include "json/json.h"
+ #include "tensorflow/core/lib/gtl/map_util.h"
+ #include "tensorflow/core/platform/cloud/curl_http_request.h"
+ #include "tensorflow/core/platform/cloud/file_block_cache.h"
+diff --git a/tensorflow/core/platform/cloud/google_auth_provider.cc b/tensorflow/core/platform/cloud/google_auth_provider.cc
+index e8546ca022f22..57240fa2494b8 100644
+--- a/tensorflow/core/platform/cloud/google_auth_provider.cc
++++ b/tensorflow/core/platform/cloud/google_auth_provider.cc
+@@ -24,7 +24,7 @@ limitations under the License.
+ #include <utility>
+ 
+ #include "absl/strings/match.h"
+-#include "include/json/json.h"
++#include "json/json.h"
+ #include "tensorflow/core/platform/base64.h"
+ #include "tensorflow/core/platform/env.h"
+ #include "tensorflow/core/platform/errors.h"
+diff --git a/tensorflow/core/platform/cloud/oauth_client.h b/tensorflow/core/platform/cloud/oauth_client.h
+index ed8bf2572535e..97af3ecaf1785 100644
+--- a/tensorflow/core/platform/cloud/oauth_client.h
++++ b/tensorflow/core/platform/cloud/oauth_client.h
+@@ -18,7 +18,7 @@ limitations under the License.
+ 
+ #include <memory>
+ 
+-#include "include/json/json.h"
++#include "json/json.h"
+ #include "tensorflow/core/platform/cloud/http_request.h"
+ #include "tensorflow/core/platform/env.h"
+ #include "tensorflow/core/platform/status.h"
+diff --git a/tensorflow/core/profiler/convert/trace_events_to_json.cc b/tensorflow/core/profiler/convert/trace_events_to_json.cc
+index ba3e4516c8cae..ad40292ceffb3 100644
+--- a/tensorflow/core/profiler/convert/trace_events_to_json.cc
++++ b/tensorflow/core/profiler/convert/trace_events_to_json.cc
+@@ -21,7 +21,7 @@ limitations under the License.
+ 
+ #include "absl/strings/str_cat.h"
+ #include "absl/strings/str_format.h"
+-#include "include/json/json.h"
++#include "json/json.h"
+ #include "tensorflow/core/platform/types.h"
+ #include "tensorflow/core/profiler/protobuf/trace_events.pb.h"
+ 
+diff --git a/tensorflow/core/profiler/convert/trace_events_to_json_test.cc b/tensorflow/core/profiler/convert/trace_events_to_json_test.cc
+index dc985f2f76feb..bf08a19e0221e 100644
+--- a/tensorflow/core/profiler/convert/trace_events_to_json_test.cc
++++ b/tensorflow/core/profiler/convert/trace_events_to_json_test.cc
+@@ -15,7 +15,7 @@ limitations under the License.
+ 
+ #include "tensorflow/core/profiler/convert/trace_events_to_json.h"
+ 
+-#include "include/json/json.h"
++#include "json/json.h"
+ #include "tensorflow/core/platform/protobuf.h"
+ #include "tensorflow/core/platform/test.h"
+ #include "tensorflow/core/profiler/protobuf/trace_events.pb.h"
+diff --git a/tensorflow/core/profiler/internal/tfprof_timeline.h b/tensorflow/core/profiler/internal/tfprof_timeline.h
+index 834e3c9be911e..fb9ff8012e06f 100644
+--- a/tensorflow/core/profiler/internal/tfprof_timeline.h
++++ b/tensorflow/core/profiler/internal/tfprof_timeline.h
+@@ -17,7 +17,7 @@ limitations under the License.
+ #define TENSORFLOW_CORE_PROFILER_INTERNAL_TFPROF_TIMELINE_H_
+ 
+ #include "absl/strings/str_cat.h"
+-#include "include/json/json.h"
++#include "json/json.h"
+ #include "tensorflow/core/framework/graph.pb.h"
+ #include "tensorflow/core/framework/step_stats.pb.h"
+ #include "tensorflow/core/profiler/internal/tfprof_node_show.h"
+diff --git a/third_party/systemlibs/jsoncpp.BUILD b/third_party/systemlibs/jsoncpp.BUILD
+index 7d54f9289bfc7..b5951e3a3404f 100644
+--- a/third_party/systemlibs/jsoncpp.BUILD
++++ b/third_party/systemlibs/jsoncpp.BUILD
+@@ -5,35 +5,8 @@ filegroup(
+     visibility = ["//visibility:public"],
+ )
+ 
+-HEADERS = [
+-    "include/json/allocator.h",
+-    "include/json/assertions.h",
+-    "include/json/autolink.h",
+-    "include/json/config.h",
+-    "include/json/features.h",
+-    "include/json/forwards.h",
+-    "include/json/json.h",
+-    "include/json/reader.h",
+-    "include/json/value.h",
+-    "include/json/version.h",
+-    "include/json/writer.h",
+-]
+-
+-genrule(
+-    name = "link_headers",
+-    outs = HEADERS,
+-    cmd = """
+-      for i in $(OUTS); do
+-        i=$${i##*/}
+-        ln -sf $(INCLUDEDIR)/jsoncpp/json/$$i $(@D)/include/json/$$i
+-      done
+-    """,
+-)
+-
+ cc_library(
+     name = "jsoncpp",
+-    hdrs = HEADERS,
+-    includes = ["."],
+     linkopts = ["-ljsoncpp"],
+     visibility = ["//visibility:public"],
+ )

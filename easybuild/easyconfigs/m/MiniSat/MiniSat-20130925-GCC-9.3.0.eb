@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'MiniSat'
+version = '20130925'
+local_commit = '37dc6c67e2af26379d88ce349eb9c4c6160e8543'
+
+homepage = 'http://minisat.se/'
+description = """
+MiniSat is a minimalistic, open-source SAT solver, developed to help
+researchers and developers alike to get started on SAT."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++03'}
+
+github_account = 'niklasso'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['3db05b02f91c4b097b7962e523225aa5e6fa9a6c0d42704a170b01b069cdfcfe']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+configure_cmd = "make config"
+prefix_opt = 'prefix='
+
+# disable indiscriminate static linking to avoid needing static libs of glibc
+preconfigopts = "sed -i 's/LDFLAGS += --static/LDFLAGS += /g' Makefile &&"
+
+# lower strictness of compilation and add CXXFLAGS from EB
+local_comp_flags = "-Wno-c++11-compat -fpermissive $CXXFLAGS"
+
+prebuildopts = 'MINISAT_REL="-D NDEBUG" CXXFLAGS="%s"' % local_comp_flags
+buildopts = 'all'
+
+preinstallopts = 'CXXFLAGS="%s"' % local_comp_flags
+
+sanity_check_paths = {
+    'files': ['bin/minisat', 'lib/libminisat.a', 'lib/libminisat.%s' % SHLIB_EXT],
+    'dirs': ['include/minisat'],
+}
+
+moduleclass = 'numlib'

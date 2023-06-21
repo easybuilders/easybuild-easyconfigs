@@ -1,0 +1,52 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+easyblock = 'ConfigureMake'
+
+name = 'UCX'
+version = '1.9.0'
+local_cudaversion = '11.1.1'
+versionsuffix = '-CUDA-%s' % local_cudaversion
+
+homepage = 'http://www.openucx.org/'
+description = """Unified Communication X
+An open-source production grade communication framework for data centric
+and high-performance applications
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucx/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.gz']
+checksums = ['a7a2c8841dc0d5444088a4373dc9b9cc68dbffcd917c1eba92ca8ed8e5e635fb']
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('Autotools', '20200321'),
+    ('pkg-config', '0.29.2'),
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+dependencies = [
+    ('numactl', '2.0.13'),
+    ('CUDAcore', local_cudaversion, '', SYSTEM),
+    ('GDRCopy', '2.1', versionsuffix),
+]
+
+configure_cmd = "contrib/configure-release"
+configopts = '--enable-optimizations --enable-cma --enable-mt --with-verbs '
+configopts += '--without-java --disable-doxygen-doc '
+configopts += '--with-cuda=$EBROOTCUDACORE --with-gdrcopy=$EBROOTGDRCOPY '
+
+prebuildopts = 'unset CUDA_CFLAGS && unset LIBS && '
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/ucx_info', 'bin/ucx_perftest', 'bin/ucx_read_profile'],
+    'dirs': ['include', 'lib', 'share']
+}
+
+sanity_check_commands = ["ucx_info -d"]
+
+moduleclass = 'lib'

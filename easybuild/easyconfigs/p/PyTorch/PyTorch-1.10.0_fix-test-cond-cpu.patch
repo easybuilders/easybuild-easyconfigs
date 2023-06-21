@@ -1,0 +1,32 @@
+# Author: Caspar van Leeuwen, SURF
+#
+# Tests test_cond_cpu_complex128, test_cond_cpu_complex64,
+# test_cond_cpu_float32, test_cond_cpu_float64, failed with 
+# "numpy.linalg.LinAlgError: SVD did not converge"
+# when numpy was build with OpenBLAS 0.3.15 or newer.
+# Now, these tests simply pass if this error is raised.
+#
+# See https://github.com/pytorch/pytorch/issues/67675
+# Patch based on https://github.com/pytorch/pytorch/pull/67679
+---
+ test/test_linalg.py | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/test/test_linalg.py b/test/test_linalg.py
+index d7494dfebe10..9eb3d0bf7d99 100644
+--- a/test/test_linalg.py
++++ b/test/test_linalg.py
+@@ -1638,7 +1638,12 @@ def run_test_case(input, p):
+         a = torch.eye(3, dtype=dtype, device=device)
+         a[-1, -1] = 0  # make 'a' singular
+         for p in norm_types:
+-            run_test_case(a, p)
++            try:
++                run_test_case(a, p)
++            except np.linalg.LinAlgError:
++                # Numpy may fail to converge for some BLAS backends
++                # See the discussion in https://github.com/pytorch/pytorch/issues/67675
++                pass
+ 
+         # test for 0x0 matrices. NumPy doesn't work for such input, we return 0
+         input_sizes = [(0, 0), (2, 5, 0, 0)]

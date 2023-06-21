@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'UCC-CUDA'
+version = '1.0.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.openucx.org/'
+description = """UCC (Unified Collective Communication) is a collective
+communication operations API and library that is flexible, complete, and 
+feature-rich for current and emerging programming models and runtimes.
+
+This module adds the UCC CUDA support.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openucx/ucc/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-1.0.0_link_against_existing_UCC_libs.patch',
+]
+checksums = [
+    'd3b4aa7004bf339d35952a1699a6e408064ba578bdc93861f5f07527ad0a5e8c',  # v1.0.0.tar.gz
+    # UCC-CUDA-1.0.0_link_against_existing_UCC_libs.patch
+    '9fa11cf6779174f4e9048df5812096e4261e1769d465cc7f34a6354398876856',
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('UCC', '1.0.0'),
+    ('CUDA',  '11.7.0', '', SYSTEM),
+    ('UCX-CUDA', '1.12.1', '-CUDA-%(cudaver)s'),
+    ('NCCL', '2.12.12', '-CUDA-%(cudaver)s'),
+]
+
+preconfigopts = "./autogen.sh && "
+
+buildopts = '-C src/components/mc/cuda V=1 && make -C src/components/tl/nccl V=1'
+installopts = '-C src/components/mc/cuda && make -C src/components/tl/nccl install'
+
+# UCC_COMPONENT_PATH completely overrides $EBROOTUCC/lib/ucc so install symbolic links
+# to existing non CUDA related components
+postinstallcmds = ['for i in $EBROOTUCC/lib/ucc/*; do ln -s $i %(installdir)s/lib/ucc; done']
+
+sanity_check_paths = {
+    'files': ['lib/ucc/libucc_mc_cuda.%s' % SHLIB_EXT, 'lib/ucc/libucc_tl_nccl.%s' % SHLIB_EXT],
+    'dirs': ['lib']
+}
+
+sanity_check_commands = ["ucc_info -c"]
+
+modextravars = {'UCC_COMPONENT_PATH': '%(installdir)s/lib/ucc'}
+
+moduleclass = 'lib'

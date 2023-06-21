@@ -1,0 +1,30 @@
+Don't try to install hwloc into likwids libdir
+
+Åke Sandgren, 2022-03-22
+diff -ru likwid-5.2.0.orig/Makefile likwid-5.2.0/Makefile
+--- likwid-5.2.0.orig/Makefile	2021-06-18 18:13:47.000000000 +0200
++++ likwid-5.2.0/Makefile	2022-03-22 11:49:17.234166402 +0100
+@@ -484,7 +484,9 @@
+ 	@chmod 755 $(LIBPREFIX)
+ 	@install -m 755 $(TARGET_LIB) $(LIBPREFIX)/$(TARGET_LIB).$(VERSION).$(RELEASE)
+ 	@install -m 755 liblikwidpin.so $(LIBPREFIX)/liblikwidpin.so.$(VERSION).$(RELEASE)
+-	@install -m 755 $(TARGET_HWLOC_LIB) $(LIBPREFIX)/$(shell basename $(TARGET_HWLOC_LIB)).$(VERSION).$(RELEASE)
++	@if [ "$(USE_INTERNAL_HWLOC)" = "true" ]; then \
++		install -m 755 $(TARGET_HWLOC_LIB) $(LIBPREFIX)/$(shell basename $(TARGET_HWLOC_LIB)).$(VERSION).$(RELEASE); \
++	fi
+ 	@if [ "$(LUA_INTERNAL)" = "true" ]; then \
+ 		install -m 755 $(TARGET_LUA_LIB) $(LIBPREFIX)/$(shell basename $(TARGET_LUA_LIB)).$(VERSION).$(RELEASE); \
+ 	fi
+@@ -492,8 +494,10 @@
+ 	@cd $(LIBPREFIX) && ln -fs $(TARGET_LIB).$(VERSION).$(RELEASE) $(TARGET_LIB).$(VERSION)
+ 	@cd $(LIBPREFIX) && ln -fs $(PINLIB).$(VERSION).$(RELEASE) $(PINLIB)
+ 	@cd $(LIBPREFIX) && ln -fs $(PINLIB).$(VERSION).$(RELEASE) $(PINLIB).$(VERSION)
+-	@cd $(LIBPREFIX) && ln -fs $(shell basename $(TARGET_HWLOC_LIB)).$(VERSION).$(RELEASE) $(shell basename $(TARGET_HWLOC_LIB))
+-	@cd $(LIBPREFIX) && ln -fs $(shell basename $(TARGET_HWLOC_LIB)).$(VERSION).$(RELEASE) $(shell basename $(TARGET_HWLOC_LIB)).$(VERSION)
++	@if [ "$(USE_INTERNAL_HWLOC)" = "true" ]; then \
++		cd $(LIBPREFIX) && ln -fs $(shell basename $(TARGET_HWLOC_LIB)).$(VERSION).$(RELEASE) $(shell basename $(TARGET_HWLOC_LIB)); \
++		cd $(LIBPREFIX) && ln -fs $(shell basename $(TARGET_HWLOC_LIB)).$(VERSION).$(RELEASE) $(shell basename $(TARGET_HWLOC_LIB)).$(VERSION); \
++	fi
+ 	@if [ "$(LUA_INTERNAL)" = "true" ]; then \
+ 		cd $(LIBPREFIX) && ln -fs $(shell basename $(TARGET_LUA_LIB)).$(VERSION).$(RELEASE) $(shell basename $(TARGET_LUA_LIB)); \
+ 		cd $(LIBPREFIX) && ln -fs $(shell basename $(TARGET_LUA_LIB)).$(VERSION).$(RELEASE) $(shell basename $(TARGET_LUA_LIB)).$(VERSION); \
