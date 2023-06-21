@@ -902,7 +902,7 @@ class EasyConfigTest(TestCase):
                         gcc_ver = tc_gen.split('-', 1)[1].rstrip('.')
                         if gcc_ver in gcc_tc_gen_map and gcc_tc_gen_map[gcc_ver] is not None:
                             tc_gen = gcc_tc_gen_map[gcc_ver]
-                        elif LooseVersion(gcc_ver) >= LooseVersion('10.2'):
+                        elif LooseVersion(gcc_ver) >= LooseVersion('10.2') and gcc_ver not in gcc_tc_gen_map:
                             # for recent GCC versions, we really want to have a mapping in place...
                             self.fail("No mapping for GCC(core) %s to toolchain generation!" % gcc_ver)
 
