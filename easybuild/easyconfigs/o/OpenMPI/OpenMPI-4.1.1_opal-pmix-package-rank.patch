@@ -1,0 +1,66 @@
+see https://github.com/open-mpi/ompi/pull/9212
+
+From 8b07775d1002cc9be887c41768aea9ac896c5ecd Mon Sep 17 00:00:00 2001
+From: Ralph Castain <rhc@pmix.org>
+Date: Tue, 10 Aug 2021 08:38:15 -0700
+Subject: [PATCH] Use an OPAL-prefixed abstraction for PMIX_PACKAGE_RANK
+
+If someone configures against PMIx v4.1 or above, the configure
+logic will correctly detect the presence of PMIX_PACKAGE_RANK.
+However, the internal code only includes the opal/mca/pmix headers
+and thus only the OPAL-prefixed PMIx abstractions are available.
+Add an OPAL_PMIX_PACKAGE_RANK abstraction and update the common/ofi
+code to use it.
+
+Signed-off-by: Ralph Castain <rhc@pmix.org>
+---
+ opal/mca/common/ofi/common_ofi.c | 6 ++----
+ opal/mca/pmix/pmix_types.h       | 2 ++
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/opal/mca/common/ofi/common_ofi.c b/opal/mca/common/ofi/common_ofi.c
+index 12bed7eb6b8..769ecb75239 100644
+--- a/opal/mca/common/ofi/common_ofi.c
++++ b/opal/mca/common/ofi/common_ofi.c
+@@ -312,19 +312,17 @@ static uint32_t get_package_rank(int32_t num_local_peers, uint16_t my_local_rank
+     char *local_peers = NULL;
+     char *locality_string = NULL;
+     char *mylocality = NULL;
++    uint16_t *package_rank_ptr;
+ 
+     pname.jobid = OPAL_PROC_MY_NAME.jobid;
+     pname.vpid = OPAL_VPID_WILDCARD;
+ 
+-#if HAVE_DECL_PMIX_PACKAGE_RANK
+-    uint16_t *package_rank_ptr;
+     // Try to get the PACKAGE_RANK from PMIx
+-    OPAL_MODEX_RECV_VALUE_OPTIONAL(rc, PMIX_PACKAGE_RANK,
++    OPAL_MODEX_RECV_VALUE_OPTIONAL(rc, OPAL_PMIX_PACKAGE_RANK,
+                                    &pname, &package_rank_ptr, OPAL_UINT16);
+     if (OPAL_SUCCESS == rc) {
+         return (uint32_t)*package_rank_ptr;
+     }
+-#endif
+ 
+     // Get the local peers
+     OPAL_MODEX_RECV_VALUE(rc, OPAL_PMIX_LOCAL_PEERS,
+diff --git a/opal/mca/pmix/pmix_types.h b/opal/mca/pmix/pmix_types.h
+index d2643b2e549..816e386cbf1 100644
+--- a/opal/mca/pmix/pmix_types.h
++++ b/opal/mca/pmix/pmix_types.h
+@@ -2,6 +2,7 @@
+  * Copyright (c) 2014-2018 Intel, Inc. All rights reserved.
+  * Copyright (c) 2016      Research Organization for Information Science
+  *                         and Technology (RIST). All rights reserved.
++ * Copyright (c) 2021      Nanook Consulting.  All rights reserved.
+  * $COPYRIGHT$
+  *
+  * Additional copyrights may follow
+@@ -130,6 +131,7 @@ BEGIN_C_DECLS
+ #define OPAL_PMIX_NPROC_OFFSET                  "pmix.offset"           // (uint32_t) starting global rank of this job
+ #define OPAL_PMIX_LOCAL_RANK                    "pmix.lrank"            // (uint16_t) rank on this node within this job
+ #define OPAL_PMIX_NODE_RANK                     "pmix.nrank"            // (uint16_t) rank on this node spanning all jobs
++#define OPAL_PMIX_PACKAGE_RANK                  "pmix.pkgrank"          // (uint16_t) rank within this job on the package where this proc resides
+ #define OPAL_PMIX_LOCALLDR                      "pmix.lldr"             // (uint64_t) opal_identifier of lowest rank on this node within this job
+ #define OPAL_PMIX_APPLDR                        "pmix.aldr"             // (uint32_t) lowest rank in this app within this job
+ #define OPAL_PMIX_PROC_PID                      "pmix.ppid"             // (pid_t) pid of specified proc

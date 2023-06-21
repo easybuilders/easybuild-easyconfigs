@@ -1,0 +1,63 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonPackage'
+
+name = 'CRISPResso2'
+version = '2.2.1'
+
+homepage = 'https://github.com/pinellolab/CRISPResso2/'
+description = """CRISPResso2 is a software pipeline designed to enable rapid and
+intuitive interpretation of genome editing experiments."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+sources = [
+    {'source_urls': ['https://github.com/pinellolab/CRISPResso2/archive/'],
+     'filename': 'v%(version)s.tar.gz'},
+    {'source_urls': ['https://crispresso.pinellolab.partners.org/static/demo/'],
+     'filename': 'base_editor_v%(version)s.fastq.gz', 'download_filename': 'base_editor.fastq.gz',
+     'extract_cmd': 'cp %s %(builddir)s'}]
+checksums = [
+    '8bc46661759dbe300e927f353d5859ec0abd1ee4ddcaf4e18dacc6859be2fcb7',  # v2.2.1.tar.gz
+    '371aad07a164721188deaa80ca7589f5cd4b871119d90d55a984c6d9c8d31c7a',  # base_editor_v2.2.1.fastq.gz
+]
+
+dependencies = [
+    ('Java', '11', '', SYSTEM),
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('matplotlib', '3.3.3'),
+    ('Trimmomatic', '0.39', '-Java-%(javashortver)s', SYSTEM),
+    ('FLASH', '2.2.00'),
+    ('SAMtools', '1.11'),
+    ('Bowtie2', '2.4.2'),
+    ('Seaborn', '0.11.1'),
+]
+
+download_dep_fail = True
+use_pip = True
+
+# strip out too strict version requirements for dependencies
+preinstallopts = "sed -i 's/,<=[0-9]*//g' setup.py && sed -i 's/==/>=/g' setup.py && "
+
+# this is an example command from:
+# https://github.com/pinellolab/CRISPResso2#example-run-base-editing-experiment
+local_seq_str = 'GGCCCCAGTGGCTGCTCTGGGGGCCTCCTGAGTTTCTCATCTGTGCCCCTCCCTCCCTGGCCCAGGTGAAGGTGTGGTTCCAGAACCGGAGGACAAAGTAC'
+local_seq_str += 'AAACGGCAGAAGCTGGAGGAGGAAGGGCCTGAGTCCGAGCAGAAGAAGAAGGGCTCCCATCACATCAACCGGTGGCGCATTGCCACGAAGCAGGCCAATG'
+local_seq_str += 'GGGAGGACATCGATGTCACCTCCAATGACTAGGGTGG'
+local_test_cmd = "CRISPResso --fastq_r1 %(builddir)s/base_editor_v%(version)s.fastq.gz "
+local_test_cmd += "--amplicon_seq %s " % local_seq_str
+local_test_cmd += "--guide_seq GAGTCCGAGCAGAAGAAGAA --quantification_window_size 10 "
+local_test_cmd += "--quantification_window_center -10 --base_editor_output"
+sanity_check_commands = [
+    "CRISPResso -h",
+    local_test_cmd,
+]
+
+sanity_pip_check = True
+
+options = {'modulename': name}
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages/CRISPResso2']}
+
+moduleclass = 'bio'

@@ -1,0 +1,61 @@
+easyblock = 'ConfigureMake'
+
+name = 'Austin'
+version = '3.2.0'
+
+homepage = 'https://github.com/P403n1x87/austin'
+description = "Austin is a Python frame stack sampler for CPython written in pure C."
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/P403n1x87/austin/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['ee189af905fac77ff9173b57d8e927bdb7c4cf5e18b1bfd7f4456ac46fe04484']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('Autotools', '20210726'),
+]
+dependencies = [
+    ('Python', '3.9.6'),
+    ('lxml', '4.6.3'),
+    ('protobuf-python', '3.17.3'),
+]
+
+preconfigopts = "autoreconf --install && automake --add-missing && "
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('importlib_resources', '2.0.1', {
+        'checksums': ['f5edfcece1cc9435d0979c19e08739521f4cf1aa1adaf6e571f732df6f568962'],
+    }),
+    ('austin-python', '1.2.1', {
+        'modulename': 'austin',
+        'checksums': ['42ba109c031c8c004c348fbbe5c18f177761d3dc531917420de51fa77cdb1fab'],
+    }),
+    ('austin-tui', '1.1.0', {
+        'checksums': ['b2145a0e1da5095281974e2a37b4e67ce198f5281b7ac48e2801dbf879f46661'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/austin', 'bin/austin-tui', 'share/man/man1/austin.1'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "austin --help",
+    "austin-tui --help",
+    "pip check",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'perf'

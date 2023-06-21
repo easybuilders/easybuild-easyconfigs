@@ -7,8 +7,6 @@
 # it will try to use the llvmpipe by default. It you want swr, do:
 # GALLIUM_DRIVER=swr
 
-easyblock = 'MesonNinja'
-
 name = 'Mesa'
 version = '19.2.1'
 
@@ -39,7 +37,7 @@ checksums = [
 
 builddependencies = [
     ('binutils', '2.32'),
-    ('Meson', '0.51.2', '-Python-3.7.4'),
+    ('Meson', '0.59.1', '-Python-3.7.4'),
     ('Ninja', '1.9.0'),
     ('flex', '2.6.4'),
     ('Bison', '3.3.2'),
@@ -61,10 +59,13 @@ dependencies = [
 ]
 
 configopts = " -Dplatforms=x11 -Dosmesa=gallium -Ddri-drivers='' -Dvulkan-drivers=''"
-configopts += " -Dgallium-drivers='swrast,swr' -Dswr-arches=avx,avx2,skx,knl"
 configopts += " -Dllvm=true -Dshared-llvm=true"
 configopts += " -Dlibunwind=true"
 configopts += " -Dglvnd=true"
+
+# Easybuild will automatically add appropriate Gallium drivers for the processor architecture of the host
+# If you need a different configuration, it possible to override those values by setting your own configopts
+# configopts += " -Dgallium-drivers=swrast,swr -Dswr-arches=avx,avx2,skx,knl"
 
 # symlink indirect to mesa GLX, similar to Debian, see
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=881789
@@ -73,16 +74,5 @@ postinstallcmds = ["ln -s libGLX_mesa.so.0 %(installdir)s/lib/libGLX_indirect.so
 
 # Tells libglvnd where to find EGL libraries
 modextrapaths = {"__EGL_VENDOR_LIBRARY_DIRS": "share/glvnd/egl_vendor.d"}
-
-sanity_check_paths = {
-    'files': ['lib/libGLX_mesa.%s' % SHLIB_EXT, 'lib/libOSMesa.%s' % SHLIB_EXT,
-              'lib/libEGL_mesa.%s' % SHLIB_EXT,
-              'include/GL/glext.h', 'include/GL/gl_mangle.h',
-              'include/GL/glx.h', 'include/GL/osmesa.h',
-              'include/GL/gl.h', 'include/GL/glxext.h',
-              'include/GL/glx_mangle.h', 'include/GLES/gl.h',
-              'include/GLES2/gl2.h', 'include/GLES3/gl3.h'],
-    'dirs': ['include/GL/internal'],
-}
 
 moduleclass = 'vis'

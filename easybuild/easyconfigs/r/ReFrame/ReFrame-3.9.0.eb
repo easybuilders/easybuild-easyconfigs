@@ -1,0 +1,64 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '3.9.0'
+
+homepage = 'https://github.com/eth-cscs/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+req_py_majver = 3
+req_py_minver = 6
+
+use_pip = True
+
+exts_list = [
+    ('pip', '21.2.4', {
+        'use_pip': False,
+        'checksums': ['0eb8a1516c3d138ae8689c0c1a60fde7143310832f9dc77e11d8a4bc62de193b'],
+    }),
+    ('wheel', '0.37.0', {
+        'checksums': ['e2ef7239991699e3355d54f8e968a21bb940a1dbf34a4d226741e64462516fad'],
+    }),
+    ('setuptools', '57.4.0', {
+        'source_tmpl': 'setuptools-%(version)s.tar.gz',
+        'checksums': ['6bac238ffdf24e8806c61440e755192470352850f3419a52f26ffe0a1a64f465'],
+    }),
+    ('reframe', version, {
+        # need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing packages
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && "
+                          "PYTHONPATH=%(builddir)s/reframe/reframe-%(version)s/external:$PYTHONPATH ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/eth-cscs/reframe/archive/'],
+        'checksums': ['ccc36cb1db12148fe7658583e83c2717f5aae0d8c58f6b6ddd398e187c3edc3a'],
+    }),
+]
+
+postinstallcmds = [
+    "cp -r tutorials %(installdir)s",
+    "mkdir -p %(installdir)s/share && cp -r share/completions %(installdir)s/share/completions",
+    r"sed -i 's@/\(python[0-9.]*\)$@/\1 -S@g' %(installdir)s/bin/reframe",
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['lib', 'tutorials', 'external']
+}
+
+sanity_check_commands = ['reframe -V']
+
+sanity_pip_check = True
+
+modextrapaths = {
+    # bootstrap script installs required dependencies to 'external' subdirectory
+    'PYTHONPATH': 'external',
+}
+
+moduleclass = 'devel'

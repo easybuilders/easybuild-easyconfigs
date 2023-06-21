@@ -1,43 +1,56 @@
 name: easyconfigs unit tests
 on: [push, pull_request]
+
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
+concurrency:
+  group: ${{format('{0}:{1}:{2}', github.repository, github.ref, github.workflow)}}
+  cancel-in-progress: true
+
 jobs:
-  build:
-    runs-on: ubuntu-18.04
+  test-suite:
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [2.7, 3.5, 3.6, 3.7]
-        modules_tool: [Lmod-6.6.3, Lmod-7.8.22, Lmod-8.1.14]
+        python: [3.6]
+        modules_tool: [Lmod-7.8.22, Lmod-8.6.8]
         module_syntax: [Lua, Tcl]
-        # exclude some configurations: only test Tcl module syntax with Lmod 7.x and Python 2.7 & 3.5
+        # exclude some configurations: only test Tcl module syntax with Lmod 8.x and Python 3.6
         exclude:
-          - modules_tool: Lmod-6.6.3
-            module_syntax: Tcl
-          - modules_tool: Lmod-8.1.14
-            module_syntax: Tcl
-          - python: 3.6
-            module_syntax: Tcl
-          - python: 3.7
+          - modules_tool: Lmod-7.8.22
             module_syntax: Tcl
       fail-fast: false
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # Required for git merge-base to work
+
+    - name: Cache source files in /tmp/sources
+      id: cache-sources
+      uses: actions/cache@v2
+      with:
+        path: /tmp/sources
+        key: eb-sourcepath
 
     - name: set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{matrix.python}}
         architecture: x64
 
     - name: install OS & Python packages
       run: |
-        # apt-get update is disabled for now, because it was failing in GitHub since Fri Dec 13th 2019,
-        # due to 'Conflicting distribution' issue
+        # disable apt-get update, we don't really need it,
+        # and it does more harm than good (it's fairly expensive, and it results in flaky test runs)
         # sudo apt-get update
-        #
         # for modules tool
         sudo apt-get install lua5.2 liblua5.2-dev lua-filesystem lua-posix tcl tcl-dev
         # fix for lua-posix packaging issue, see https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
-        sudo ln -s /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
+        # needed for Ubuntu 18.04, but not for Ubuntu 20.04, so skipping symlinking if posix.so already exists
+        if [ ! -e /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so ] ; then
+            sudo ln -s /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
+        fi
         # for testing OpenMPI-system*eb we need to have Open MPI installed
         sudo apt-get install libopenmpi-dev openmpi-bin
         # required for test_dep_graph
@@ -48,7 +61,7 @@ jobs:
           cd $HOME
           # first determine which branch of easybuild-framework repo to install
           BRANCH=develop
-          if [ "x$GITHUB_BASE_REF" = 'xmaster' ]; then BRANCH=master; fi
+          if [ "x$GITHUB_BASE_REF" = 'xmain' ]; then BRANCH=main; fi
           if [ "x$GITHUB_BASE_REF" = 'x4.x' ]; then BRANCH=4.x; fi
           echo "Using easybuild-framework branch $BRANCH (\$GITHUB_BASE_REF $GITHUB_BASE_REF)"
 
@@ -56,7 +69,7 @@ jobs:
           cd easybuild-framework; git log -n 1; cd -
           pip install $PWD/easybuild-framework
 
-          git clone -b $BRANCH --depth 10 --single-branch https://github.com/hpcugent/easybuild-easyblocks.git
+          git clone -b $BRANCH --depth 10 --single-branch https://github.com/easybuilders/easybuild-easyblocks.git
           cd easybuild-easyblocks; git log -n 1; cd -
           pip install $PWD/easybuild-easyblocks
 
@@ -81,7 +94,7 @@ jobs:
         EASYBUILD_MODULE_SYNTAX: ${{matrix.module_syntax}}
       run: |
           # pull in target so we can diff against it to obtain list of touched files
-          if [ "x$GITHUB_BASE_REF" != 'xmaster' ]; then git fetch -v origin ${GITHUB_BASE_REF}:${GITHUB_BASE_REF}; fi
+          if [ "x$GITHUB_BASE_REF" != 'xmain' ]; then git fetch -v origin ${GITHUB_BASE_REF}:${GITHUB_BASE_REF}; fi
 
           # initialize environment for modules tool
           if [ -f $HOME/moduleshome ]; then export MODULESHOME=$(cat $HOME/moduleshome); fi
@@ -110,23 +123,73 @@ jobs:
           eb --show-system-info
 
           # run test suite
-          python -O -m test.easyconfigs.suite
+          # if tests failed, print error message that is picked up by boegelbot to determine end of test output
+          python -O -m test.easyconfigs.suite || (echo "ERROR: Not all tests were successful" && exit 1)
 
           unset PYTHONPATH
 
           # install easyconfigs via distribution package
-          python setup.py sdist
+          python setup.py sdist > /dev/null
           ls dist
-          pip install dist/easybuild-easyconfigs*tar.gz
+          pip install dist/easybuild-easyconfigs*tar.gz > /dev/null
 
           # robot-paths value should not be empty, but have an entry that includes easybuild/easyconfigs subdir
+          echo "eb --show-config"
           eb --show-config | tee eb_show_config.out
           grep "^robot-paths .*/easybuild/easyconfigs" eb_show_config.out
+
           # check whether some specific easyconfig files are found
+          echo "eb --search 'TensorFlow-1.14.*.eb'"
           eb --search 'TensorFlow-1.14.*.eb' | tee eb_search_TF.out
           grep '/TensorFlow-1.14.0-foss-2019a-Python-3.7.2.eb$' eb_search_TF.out
-          eb --search '^foss-2018b.eb' | tee eb_search_foss.out
-          grep '/foss-2018b.eb$' eb_search_foss.out
+
+          echo "eb --search '^foss-2019b.eb'"
+          eb --search '^foss-2019b.eb' | tee eb_search_foss.out
+          grep '/foss-2019b.eb$' eb_search_foss.out
+
+          # make sure CVS easyconfigs are included in installation (cfr. issue #10325)
+          echo "Searching for CVS easyconfigs..."
+          eb --search '^CVS-' | grep '/CVS-'
 
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
-          eb --prefix /tmp/$USER/$GITHUB_SHA M4-1.4.18.eb
+          # use /tmp/sources because that has cached downloads (see cache step above)
+          eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
+
+  test-sdist:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python: [3.6]
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{matrix.python}}
+
+    - name: Create source distribution
+      run: python setup.py sdist
+
+    - name: Inspect files included in source distribution
+      working-directory: dist
+      run: |
+          tar xfz easybuild-easyconfigs*tar.gz
+          cd easybuild-easyconfigs-*/
+
+          # .git folder should not be there in source tarball
+          dot_git_files=$(find . -name .git)
+          if [ -n "$dot_git_files" ]; then
+            echo "Found .git folders in source tarball: $dot_git_files" && false
+          else
+            echo "No .git folders found in source tarball: OK"
+          fi
+
+          # CVS easyconfigs must be included in source tarball,
+          # see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
+          cvs_easyconfigs=$(find . -name 'CVS-*.eb')
+          if [ -z "$cvs_easyconfigs" ]; then
+            echo "CVS easyconfigs not found" && false
+          else
+            echo "Found CVS easyconfigs: $cvs_easyconfigs"
+          fi

@@ -1,0 +1,54 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'PythonBundle'
+
+name = 'numba'
+version = '0.50.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://numba.pydata.org/'
+description = """Numba is an Open Source NumPy-aware optimizing compiler for
+Python sponsored by Continuum Analytics, Inc. It uses the remarkable LLVM
+compiler infrastructure to compile Python syntax to machine code."""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('LLVM', '9.0.1'),
+]
+
+# required because we're building Python packages using Intel compilers on top of Python built with GCC
+check_ldshared = True
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('llvmlite', '0.33.0', {
+        'patches': ['llvmlite-0.31.0_fix-ffi-Makefile.patch'],
+        'preinstallopts': "export LLVM_CONFIG=${EBROOTLLVM}/bin/llvm-config && ",
+        'checksums': [
+            # llvmlite-0.31.0.tar.gz
+            '9c8aae96f7fba10d9ac864b443d1e8c7ee4765c31569a2b201b3d0b67d8fc596',
+            # llvmlite-0.31.0_fix-ffi-Makefile.patch
+            '672aba7b753dcfe5cb07c731bf1ec8bde1de148d4e0e2d10f6be81fb17f34bbc',
+        ],
+    }),
+    (name, version, {
+        'checksums': ['c9e5752821530694294db41ee19a4b00e5826c689821907f6c2ece9a02756b29'],
+    }),
+]
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['bin/numba', 'bin/pycc'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["numba --help"]
+
+moduleclass = 'lang'

@@ -1,0 +1,46 @@
+easyblock = "PythonPackage"
+
+name = 'bcolz'
+version = '1.2.1'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://bcolz.blosc.org/en/latest/'
+description = """bcolz provides columnar, chunked data containers that can be compressed either in-memory and on-disk. 
+ Column storage allows for efficiently querying tables, as well as for cheap column addition and removal. 
+ It is based on NumPy, and uses it as the standard data container to communicate with bcolz objects, 
+ but it also comes with support for import/export facilities to/from HDF5/PyTables tables and pandas dataframes."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+sources = [SOURCE_TAR_GZ]
+patches = [
+    '%(name)s-%(version)s_fix-deprecation.patch',
+]
+checksums = [
+    'c017d09bb0cb5bbb07f2ae223a3f3638285be3b574cb328e91525b2880300bd1',  # bcolz-1.2.1.tar.gz
+    '90e3525c3254ab0c6b45a170423b8a4a17764fc27fa47ff45ff8465169375d35',  # bcolz-1.2.1_fix-deprecation.patch
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('Blosc', '1.17.1'),
+    ('dask', '2.18.1', versionsuffix),
+    ('numexpr', '2.7.1', versionsuffix),
+    ('PyTables', '3.6.1', versionsuffix),
+]
+
+download_dep_fail = True
+use_pip = True
+
+preinstallopts = "BLOSC_DIR=$EBROOTBLOSC"
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = ["python -c 'import bcolz; bcolz.test()'"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

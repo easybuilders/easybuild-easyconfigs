@@ -1,0 +1,46 @@
+easyblock = 'Tarball'
+
+name = 'ProtHint'
+version = '2.4.0'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/gatech-genemark/ProtHint'
+description = """ProtHint is a pipeline for predicting and scoring hints (in the form of introns, start and
+ stop codons) in the genome of interest by mapping and spliced aligning predicted genes to a database of
+ reference protein sequences."""
+
+toolchain = {'name': 'iccifort', 'version': '2019.1.144-GCC-8.2.0-2.31.1'}
+
+source_urls = ['https://github.com/gatech-genemark/%(name)s/releases/download/v%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['bcdba61ff1624e2af46497b68bfac89690c295f09a59841e3faa90b6be4eef98']
+
+dependencies = [
+    ('Perl', '5.28.1'),
+    ('Python', '3.7.2'),
+    ('GeneMark-ET', '4.38'),
+    ('DIAMOND', '0.9.24'),
+    ('spaln', '2.3.3c'),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+sanity_check_paths = {
+    'files': ['bin/prothint.py'],
+    'dirs': [],
+}
+
+# see https://github.com/gatech-genemark/ProtHint/tree/master/example
+local_test_cmd = "cp -a %(installdir)s/example %(builddir)s && cd %(builddir)s/example/input && "
+local_test_cmd += "prothint.py genome.fasta proteins.fasta --geneMarkGtf genemark.gtf --workdir ../test && "
+# verify results using recursive 'diff', which exists with non-zero exit code if a difference was found
+local_test_cmd += "cd %(builddir)s/example && "
+local_test_cmd += "diff -ru <(sort output/prothint.gff) <(sort test/prothint.gff) && "
+local_test_cmd += "diff -ru <(sort output/evidence.gff) <(sort test/evidence.gff)"
+
+sanity_check_commands = [
+    "prothint.py --help",
+    local_test_cmd,
+]
+
+moduleclass = 'bio'

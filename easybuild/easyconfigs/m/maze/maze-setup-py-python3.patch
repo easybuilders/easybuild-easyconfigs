@@ -1,0 +1,141 @@
+Add a setup.py, make it run on Python 3
+
+Author: Jakub Zárybnický <jakub@zarybnicky.com>
+
+diff -ruN maze-106803d350719188181ce39cbb5c832822b724da/extract_reference_slices.py maze-106803d350719188181ce39cbb5c832822b724da-edit/extract_reference_slices.py
+--- maze-106803d350719188181ce39cbb5c832822b724da/extract_reference_slices.py	2017-01-24 14:02:32.000000000 +0100
++++ maze-106803d350719188181ce39cbb5c832822b724da-edit/extract_reference_slices.py	2021-03-08 13:01:55.430137358 +0100
+@@ -78,7 +78,7 @@
+                 break
+ 
+ 
+-if __name__=='__main__':
++def main():
+     parser = argparse.ArgumentParser(description='Prepare reference slices for '
+                         'assemblies to be visualized in maze. If you provide '
+                         'a BED file, coordinates are taken from it in the '
+@@ -104,4 +104,7 @@
+         args.fasta = gzip.open(args.fasta.name, 'r')
+ 
+     extract_reference_slices(args.ref, args.fasta, args.out, args.coords)
+-    
++
++
++if __name__=='__main__':
++    main()
+diff -ruN maze-106803d350719188181ce39cbb5c832822b724da/MANIFEST.in maze-106803d350719188181ce39cbb5c832822b724da-edit/MANIFEST.in
+--- maze-106803d350719188181ce39cbb5c832822b724da/MANIFEST.in	1970-01-01 01:00:00.000000000 +0100
++++ maze-106803d350719188181ce39cbb5c832822b724da-edit/MANIFEST.in	2021-03-08 13:50:16.185798417 +0100
+@@ -0,0 +1,2 @@
++graft static
++graft templates
+\ No newline at end of file
+diff -ruN maze-106803d350719188181ce39cbb5c832822b724da/maze_breakpoints.py maze-106803d350719188181ce39cbb5c832822b724da-edit/maze_breakpoints.py
+--- maze-106803d350719188181ce39cbb5c832822b724da/maze_breakpoints.py	2021-03-08 14:57:06.079637462 +0100
++++ maze-106803d350719188181ce39cbb5c832822b724da-edit/maze_breakpoints.py	2021-03-08 14:57:15.995585273 +0100
+@@ -36,8 +36,8 @@
+     '''Given two DNA sequences, compute last-split alignment
+     and return matches'''
+     matches = []
+-    with NamedTemporaryFile(delete=False, suffix='.fa') as f_ref, \
+-         NamedTemporaryFile(delete=False, suffix='.fa') as f_read:
++    with NamedTemporaryFile(mode="w", delete=False, suffix='.fa') as f_ref, \
++         NamedTemporaryFile(mode="w", delete=False, suffix='.fa') as f_read:
+         fn_ref = f_ref.name
+         fn_read = f_read.name
+         print('>tmp_ref', file=f_ref)
+@@ -63,7 +63,7 @@
+     while True:
+         try:
+             ln = it.next()
+-        except StopIteration, e:
++        except StopIteration as e:
+             break
+         if ln.startswith("s"):
+             ln2 = it.next()
+diff -ruN maze-106803d350719188181ce39cbb5c832822b724da/maze.py maze-106803d350719188181ce39cbb5c832822b724da-edit/maze.py
+--- maze-106803d350719188181ce39cbb5c832822b724da/maze.py	2021-03-08 14:57:21.038558803 +0100
++++ maze-106803d350719188181ce39cbb5c832822b724da-edit/maze.py	2021-03-08 15:35:06.574155786 +0100
+@@ -11,7 +11,7 @@
+     cmd = 'mummer -{} -l {} -b -c {} {} 2>/dev/null'.format(m, l, fn1, fn2)
+     if verbose:
+         print('#', cmd)
+-    mummer_out = check_output(cmd, shell=True)
++    mummer_out = check_output(cmd, shell=True).decode()
+     fwd = []
+     rev = []
+     for l in mummer_out.splitlines():
+diff -ruN maze-106803d350719188181ce39cbb5c832822b724da/maze_server.py maze-106803d350719188181ce39cbb5c832822b724da-edit/maze_server.py
+--- maze-106803d350719188181ce39cbb5c832822b724da/maze_server.py	2017-01-24 14:02:32.000000000 +0100
++++ maze-106803d350719188181ce39cbb5c832822b724da-edit/maze_server.py	2021-03-08 14:56:35.835797882 +0100
+@@ -13,10 +13,10 @@
+ import re
+ import inspect
+ 
++absPath = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
++os.chdir(absPath)
+ app = Flask(__name__)
+ cfg = {}
+-absPath = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
+-
+ 
+ @app.route('/')
+ def index():
+@@ -34,8 +35,8 @@
+     # pairwise mode:
+     if len(queries) == len(refs):
+         for ref, query in zip(refs, queries):
+-            with NamedTemporaryFile(delete=False) as f_ref, \
+-                 NamedTemporaryFile(delete=False) as f_query:
++            with NamedTemporaryFile(mode="w", delete=False) as f_ref, \
++                 NamedTemporaryFile(mode="w", delete=False) as f_query:
+                 fn_ref = f_ref.name
+                 print('>{}'.format(ref['name']), file=f_ref)
+                 print(ref['seq'], file=f_ref)
+@@ -54,12 +55,12 @@
+ 
+     # classical mode
+     else:
+-        with NamedTemporaryFile(delete=False) as f_ref:
++        with NamedTemporaryFile(mode="w", delete=False) as f_ref:
+             fn_ref = f_ref.name
+             print('>{}'.format(refs[0]['name']), file=f_ref)
+             print(refs[0]['seq'], file=f_ref)
+         for query in queries:
+-            with NamedTemporaryFile(delete=False) as f_query:
++            with NamedTemporaryFile(mode="w", delete=False) as f_query:
+                 fn_query = f_query.name
+                 print('>{}'.format(query['name']), file=f_query)
+                 print(query['seq'], file=f_query)
+diff -ruN maze-106803d350719188181ce39cbb5c832822b724da/readfq.py maze-106803d350719188181ce39cbb5c832822b724da-edit/readfq.py
+--- maze-106803d350719188181ce39cbb5c832822b724da/readfq.py	2017-01-24 14:02:32.000000000 +0100
++++ maze-106803d350719188181ce39cbb5c832822b724da-edit/readfq.py	2021-03-08 13:27:58.676966222 +0100
+@@ -38,4 +38,4 @@
+         n += 1
+         slen += len(seq)
+         qlen += qual and len(qual) or 0
+-    print n, '\t', slen, '\t', qlen
++    print(n, '\t', slen, '\t', qlen)
+diff -ruN maze-106803d350719188181ce39cbb5c832822b724da/setup.py maze-106803d350719188181ce39cbb5c832822b724da-edit/setup.py
+--- maze-106803d350719188181ce39cbb5c832822b724da/setup.py	1970-01-01 01:00:00.000000000 +0100
++++ maze-106803d350719188181ce39cbb5c832822b724da-edit/setup.py	2021-03-08 13:48:26.469241821 +0100
+@@ -0,0 +1,19 @@
++from setuptools import setup, find_packages
++
++setup(
++    name='maze',
++    url='https://github.com/dellytools/maze',
++    packages=['.'],
++    install_requires=[
++        'Flask',
++        'click',
++        'pysam',
++    ],
++    include_package_data=True,
++    entry_points={
++        'console_scripts': [
++            'maze_server=maze_server:cli',
++            'extract_reference_slices=extract_reference_slices:main',
++        ]
++    },
++)

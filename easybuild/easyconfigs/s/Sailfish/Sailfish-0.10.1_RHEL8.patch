@@ -1,0 +1,45 @@
+# Fix CHAR_WIDTH glibc clash
+# see: https://github.com/Cantera/cantera/issues/369#issuecomment-254090244
+# https://github.com/gabime/spdlog/issues/300 and https://github.com/3Hren/blackhole/pull/184
+# SEP 24th 2020 by B. Hajgato (UGent)
+diff -ru sailfish-0.10.1.orig/include/spdlog/details/format.cc sailfish-0.10.1/include/spdlog/details/format.cc
+--- sailfish-0.10.1.orig/include/spdlog/details/format.cc	2016-06-15 19:46:33.000000000 +0200
++++ sailfish-0.10.1/include/spdlog/details/format.cc	2020-09-24 18:19:38.056114573 +0200
+@@ -480,23 +480,23 @@
+         typedef typename BasicWriter<Char>::CharPtr CharPtr;
+         Char fill = internal::CharTraits<Char>::cast(spec_.fill());
+         CharPtr out = CharPtr();
+-        const unsigned CHAR_WIDTH = 1;
+-        if (spec_.width_ > CHAR_WIDTH) {
++        const unsigned CHAR_WIDTH_NOCLASH = 1;
++        if (spec_.width_ > CHAR_WIDTH_NOCLASH) {
+             out = writer_.grow_buffer(spec_.width_);
+             if (spec_.align_ == ALIGN_RIGHT) {
+-                std::fill_n(out, spec_.width_ - CHAR_WIDTH, fill);
+-                out += spec_.width_ - CHAR_WIDTH;
++                std::fill_n(out, spec_.width_ - CHAR_WIDTH_NOCLASH, fill);
++                out += spec_.width_ - CHAR_WIDTH_NOCLASH;
+             }
+             else if (spec_.align_ == ALIGN_CENTER) {
+                 out = writer_.fill_padding(out, spec_.width_,
+-                                           internal::check(CHAR_WIDTH), fill);
++                                           internal::check(CHAR_WIDTH_NOCLASH), fill);
+             }
+             else {
+-                std::fill_n(out + CHAR_WIDTH, spec_.width_ - CHAR_WIDTH, fill);
++                std::fill_n(out + CHAR_WIDTH_NOCLASH, spec_.width_ - CHAR_WIDTH_NOCLASH, fill);
+             }
+         }
+         else {
+-            out = writer_.grow_buffer(CHAR_WIDTH);
++            out = writer_.grow_buffer(CHAR_WIDTH_NOCLASH);
+         }
+         *out = internal::CharTraits<Char>::cast(value);
+     }
+@@ -1419,4 +1419,4 @@
+ 
+ #ifdef _MSC_VER
+ # pragma warning(pop)
+-#endif
+\ No newline at end of file
++#endif
