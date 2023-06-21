@@ -1,0 +1,38 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'ConfigureMake'
+
+name = 'dSFMT'
+version = '2.2.5'
+
+homepage = 'https://github.com/MersenneTwister-Lab/dSFMT'
+description = "Double precision SIMD-oriented Fast Mersenne Twister."
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+github_account = 'MersenneTwister-Lab'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['dSFMT-2.2.5_autotools.patch']
+checksums = [
+    'b7bc498cd140b4808963b1ff9f33b42a491870f54775c1060ecad0e02bcaffb4',  # v2.2.5.tar.gz
+    '1df9824414428cef26b0912bb03585a008ac1055dd526c58f483cd1cc5d11857',  # dSFMT-2.2.5_autotools.patch
+]
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('Autotools', '20200321'),
+    ('Autoconf-archive', '2021.02.19'),
+]
+
+preconfigopts = "autoreconf -i -f &&"
+
+local_libs = ['lib%%(name)s%s' % x for x in ['', '-11213', '-1279', '-132049', '-19937', '-216091',
+                                             '-2203', '-4253', '-44497', '-521', '-86243']]
+
+sanity_check_paths = {
+    'files': ['include/dSFMT.h'] + ['lib/%s.%s' % (x, SHLIB_EXT) for x in local_libs],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

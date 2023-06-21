@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'ecCodes'
+version = '2.17.0'
+
+homepage = 'https://software.ecmwf.int/wiki/display/ECC/ecCodes+Home'
+description = """ecCodes is a package developed by ECMWF which provides an application programming interface and
+ a set of tools for decoding and encoding messages in the following formats: WMO FM-92 GRIB edition 1 and edition 2,
+ WMO FM-94 BUFR edition 3 and edition 4, WMO GTS abbreviated header (only decoding)."""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+
+source_urls = ['https://confluence.ecmwf.int/download/attachments/45757960/']
+sources = ['eccodes-%(version)s-Source.tar.gz']
+checksums = ['762d6b71993b54f65369d508f88e4c99e27d2c639c57a5978c284c49133cc335']
+
+builddependencies = [('CMake', '3.15.3')]
+
+dependencies = [
+    ('netCDF', '4.7.1'),
+    ('JasPer', '2.0.14'),
+    ('libjpeg-turbo', '2.0.3'),
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+]
+
+configopts = "-DENABLE_NETCDF=ON -DENABLE_PNG=ON -DENABLE_PYTHON=OFF "
+configopts += "-DENABLE_JPG=ON -DENABLE_JPG_LIBJASPER=ON "
+configopts += "-DENABLE_ECCODES_THREADS=ON"  # multi-threading with pthreads
+
+local_exes = ['%s_%s' % (a, b)
+              for a in ['bufr', 'grib', 'gts', 'metar']
+              for b in ['compare', 'copy', 'dump', 'filter', 'get', 'ls']]
+local_exes += ['codes_%s' % c for c in ['count', 'info', 'split_file']]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_exes] +
+             ['lib/libeccodes_f90.%s' % SHLIB_EXT, 'lib/libeccodes.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'tools'
