@@ -864,8 +864,10 @@ class EasyConfigTest(TestCase):
             '11.2': '2021b',
             '11.3': '2022a',
             '11.4': None,
+            '12.1': None,
             '12.2': '2022b',
             '12.3': '2023a',
+            '13.1': None,
         }
 
         # restrict to checking dependencies of easyconfigs using common toolchains (start with 2018a)
