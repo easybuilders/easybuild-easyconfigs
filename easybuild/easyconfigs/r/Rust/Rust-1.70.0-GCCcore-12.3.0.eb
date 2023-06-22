@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'Rust'
+version = '1.70.0'
+
+homepage = 'https://www.rust-lang.org'
+description = """Rust is a systems programming language that runs blazingly fast, prevents segfaults,
+ and guarantees thread safety."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://static.rust-lang.org/dist/']
+sources = ['rustc-%(version)s-src.tar.gz']
+patches = ['Rust-1.70_sysroot-fix-interpreter.patch']
+checksums = [
+    {'rustc-1.70.0-src.tar.gz': 'b2bfae000b7a5040e4ec4bbc50a09f21548190cb7570b0ed77358368413bd27c'},
+    {'Rust-1.70_sysroot-fix-interpreter.patch': '220129db55e022a98d25028da5dcc9f26b252dd995c3ac92f6312dbb1e362cb1'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+    ('Python', '3.11.3'),
+    ('Ninja', '1.11.1'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+configopts = "--enable-extended --sysconfdir=%(installdir)s/etc "
+
+# Use ./x.py to bootstrap so that options like -j N are correctly passed through
+# see: https://rustc-dev-guide.rust-lang.org/building/how-to-build-and-run.html#what-is-xpy
+# (ConfigureMake already adds `-j %(parallel)s` to the `build_cmd`)
+build_cmd = "./x.py build"
+install_cmd = "./x.py install -j %(parallel)s"
+
+# avoid failure when home directory is an NFS mount,
+# see https://github.com/rust-lang/cargo/issues/6652
+prebuildopts = "export CARGO_HOME=%(builddir)s/cargo && "
+preinstallopts = prebuildopts
+
+sanity_check_paths = {
+    'files': ['bin/cargo', 'bin/rustc', 'bin/rustdoc'],
+    'dirs': ['lib/rustlib', 'share/doc', 'share/man'],
+}
+
+sanity_check_commands = [
+    "cargo --version",
+    "rustc --version",
+]
+
+moduleclass = 'lang'

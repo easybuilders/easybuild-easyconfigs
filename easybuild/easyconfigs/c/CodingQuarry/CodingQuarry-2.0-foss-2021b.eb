@@ -1,0 +1,51 @@
+easyblock = 'MakeCp'
+
+name = 'CodingQuarry'
+version = '2.0'
+
+homepage = 'https://sourceforge.net/p/codingquarry'
+description = "Highly accurate hidden Markov model gene prediction in fungal genomes using RNA-seq transcripts"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'openmp': True}
+
+source_urls = [SOURCEFORGE_SOURCE]
+sources = ['CodingQuarry_v%(version)s.tar.gz']
+patches = ['CodingQuarry-2.0_python3.patch']
+checksums = [
+    {'CodingQuarry_v2.0.tar.gz': '1198afbf7cebcf0975c5b20d92b7a2dd6d956072fcde6e86fdce6aeae4842504'},
+    {'CodingQuarry-2.0_python3.patch': '8e1b117431d8b104f2114875d8f751aa91c1c3c1b0ddd5a4f85251605c2ab9df'},
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Biopython', '1.79'),
+]
+
+buildopts = 'CFLAGS="$CFLAGS"'
+
+files_to_copy = [
+    (['CodingQuarry', 'CufflinksGTF_to_CodingQuarryGFF3.py'], 'bin'),
+    'QuarryFiles',
+    'TESTING',
+]
+
+fix_python_shebang_for = [
+    'bin/CufflinksGTF_to_CodingQuarryGFF3.py',
+    'QuarryFiles/scripts/*.py',
+]
+
+sanity_check_paths = {
+    'files': ['bin/CodingQuarry', 'bin/CufflinksGTF_to_CodingQuarryGFF3.py'],
+    'dirs': ['QuarryFiles/scripts', 'QuarryFiles/self_train', 'QuarryFiles/species', 'TESTING'],
+}
+
+sanity_check_commands = [
+    "CodingQuarry --help | grep '^CodingQuarry v. %(version)s'",
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/TESTING %(builddir)s/TESTING",
+    "cd %(builddir)s/TESTING && CufflinksGTF_to_CodingQuarryGFF3.py Sp_transcripts.gtf > test.gff3",
+]
+
+modextravars = {'QUARRY_PATH': '%(installdir)s/QuarryFiles'}
+
+moduleclass = 'bio'

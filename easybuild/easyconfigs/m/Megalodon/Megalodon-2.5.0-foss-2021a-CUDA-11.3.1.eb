@@ -1,0 +1,61 @@
+easyblock = 'PythonBundle'
+
+name = 'Megalodon'
+version = '2.5.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/nanoporetech/megalodon'
+description = """Megalodon is a research command line tool to extract high accuracy modified base and sequence variant
+calls from raw nanopore reads by anchoring the information rich basecalling neural network output to a reference
+genome/transriptome."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('h5py', '3.2.1'),
+    ('ont-fast5-api', '4.0.0'),
+    ('ont-remora', '1.0.0', versionsuffix),
+    ('Pysam', '0.16.0.1'),
+    ('SAMtools', '1.13'),
+    ('scikit-learn', '0.24.2'),
+    ('Seaborn', '0.11.2'),
+    ('tqdm', '4.61.2'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('mappy', '2.24', {
+        'checksums': ['35a2fb73ef14173283d5abb31e7a318429e0330c3be95851df38dd83d4ff9af9'],
+    }),
+    ('ont-pyguppy-client-lib', '6.0.6', {
+        'modulename': 'pyguppy_client_lib',
+        'source_tmpl': 'ont_pyguppy_client_lib-%(version)s-cp39-cp39-manylinux2014_x86_64.whl',
+        'checksums': ['ba1f7e7aa02830d1d4760f7871710b1d097a7ab9e5412b127c00474974c271fa'],
+    }),
+    ('megalodon', version, {
+        'patches': ['Megalodon-2.5.0_fix-samtools-test.patch'],
+        'checksums': [
+            # megalodon-2.5.0.tar.gz
+            '60ad1f1191b86d9a1423dcb9c934c7577cf1ce083689337646937be2538953a3',
+            # Megalodon-2.5.0_fix-samtools-test.patch
+            'd90ec766e459a1c657ab8db94a208432845f091550e6bac197ec2d99d7058faa',
+        ],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/megalodon'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "megalodon -h",
+]
+
+moduleclass = 'bio'

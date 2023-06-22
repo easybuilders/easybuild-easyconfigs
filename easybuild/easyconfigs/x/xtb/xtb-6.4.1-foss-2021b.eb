@@ -1,0 +1,40 @@
+easyblock = 'MesonNinja'
+
+name = 'xtb'
+version = '6.4.1'
+
+homepage = 'https://xtb-docs.readthedocs.io'
+description = """ xtb - An extended tight-binding semi-empirical program package. """
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['cd7b6ec9b7963012ce71220a70773641f0d9e06e0691750a25b83e823510d1d7']
+
+github_account = 'grimme-lab'
+builddependencies = [
+    ('Meson', '0.58.2'),
+    ('Ninja', '1.10.2'),
+]
+
+configopts = "-Dla_backend='custom' "
+configopts += "-Dcustom_libraries='flexiblas' "
+configopts += "--buildtype release "
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj -t 60'  # Ensure test don't timeout
+
+sanity_check_paths = {
+    'files': ['bin/xtb', 'include/xtb/xtb.h'] + ['lib/libxtb.%s' % e for e in ('a', SHLIB_EXT)],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = ["xtb --help"]
+
+modextravars = {
+    'XTBHOME': '%(installdir)s',
+    'XTBPATH': '%(installdir)s',
+}
+
+moduleclass = 'chem'

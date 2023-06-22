@@ -1,8 +1,16 @@
 name: Static Analysis
 on: [push, pull_request]
+
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
+concurrency:
+  group: ${{format('{0}:{1}:{2}', github.repository, github.ref, github.workflow)}}
+  cancel-in-progress: true
+
 jobs:
   python-linting:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
@@ -18,3 +26,6 @@ jobs:
 
     - name: Run flake8 to verify PEP8-compliance of Python code
       run: flake8
+
+    - name: Run flake8 to verify PEP8-compliance of Easyconfigs
+      run: flake8 --select W605  --filename '*.eb'
