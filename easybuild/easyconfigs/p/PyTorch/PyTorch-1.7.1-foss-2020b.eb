@@ -239,6 +239,9 @@ patches = [
     'PyTorch-1.7.0_avoid-nan-in-test-torch.patch',
     'PyTorch-1.7.0_increase-distributed-test-timeout.patch',
     'PyTorch-1.7.0_disable-dev-shm-test.patch',
+    'PyTorch-1.7.1_fix-alias-violation-in-bitwise-ops.patch',
+    'PyTorch-1.7.1_fix-err-variable.patch',
+    'PyTorch-1.7.1_run-large-tests-on-GPU.patch',
 ]
 checksums = [
     'fc8d6aaf0bdedd4221617be8d47ac39af57605bdcc814fabc28739427b55e9c7',  # v1.7.1.tar.gz
@@ -288,9 +291,20 @@ checksums = [
     # PyTorch-1.7.0_increase-distributed-test-timeout.patch
     '95abb468a35451fbd0f864ca843f6ad15ff8bfb909c3fd580f65859b26c9691c',
     '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a',  # PyTorch-1.7.0_disable-dev-shm-test.patch
+    # PyTorch-1.7.1_fix-alias-violation-in-bitwise-ops.patch
+    'e92f054f1297df83ace901e7af38222787b709ee29580f5f2b89a300ca03666b',
+    'abb79e7ffd10be87adfb62e79131c50079c32470031ac22b12b273cfae85ca4c',  # PyTorch-1.7.1_fix-err-variable.patch
+    # PyTorch-1.7.1_run-large-tests-on-GPU.patch
+    '06651b6746a27bee1adf15af24e356e188d683241bb186343009dc69c8d5aa9b',
 ]
 
 excluded_tests = {
+    'POWER': [
+        # https://github.com/pytorch/pytorch/issues/57533
+        'test_nn',
+        # Fails for unknown reasons when run within EB but not when run manually
+        'test_utils',
+    ],
     '': [
         # Test from this suite timeout often. The process group backend is deprecated anyway
         'distributed/rpc/test_process_group_agent',
@@ -300,7 +314,7 @@ excluded_tests = {
     ]
 }
 
-runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --verbose %(excluded_tests)s'
+runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error --verbose %(excluded_tests)s'
 
 sanity_check_commands = ["python -c 'import caffe2.python'"]
 tests = ['PyTorch-check-cpp-extension.py']

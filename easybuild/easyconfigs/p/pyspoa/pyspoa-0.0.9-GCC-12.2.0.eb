@@ -1,0 +1,52 @@
+easyblock = 'PythonPackage'
+
+name = 'pyspoa'
+version = '0.0.9'
+
+homepage = 'https://github.com/nanoporetech/pyspoa'
+description = "Python bindings to spoa."
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/nanoporetech/pyspoa/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': 'pyspoa-%(version)s.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/USCiLab/cereal/archive/'],
+        'download_filename': '3e4d1b8.tar.gz',
+        'filename': 'cereal-20200423.tar.gz',
+    },
+]
+patches = ['pyspoa-0.0.8_use-spoa-dep.patch']
+checksums = [
+    {'pyspoa-0.0.9.tar.gz': '30b883b8dfc2355a6062f9f848e825f7ffac169657190d797cf17b4314d588fe'},
+    {'cereal-20200423.tar.gz': '284cd14c1e60b36c966bcc8ce650d0b798b8a836d6c379e021e0da0dbe6ddf38'},
+    {'pyspoa-0.0.8_use-spoa-dep.patch': 'a98c82ae8346b48952b171675f9df7ab1c95ea5421afcf5bcd778c01c5ee5a52'},
+]
+
+builddependencies = [('CMake', '3.24.3')]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('pybind11', '2.10.3'),
+    ('spoa', '4.0.7'),
+]
+
+download_dep_fail = True
+
+preinstallopts = "mkdir -p src/vendor/cereal && ln -s %(builddir)s/cereal-*/include src/vendor/cereal/include && "
+# strip out cmake requirements, since we provide that as proper dependency
+preinstallopts += "sed -i 's/.cmake==[0-9.]*.//g' setup.py && "
+
+use_pip = True
+
+options = {'modulename': 'spoa'}
+
+sanity_pip_check = True
+
+sanity_check_commands = ["cd %(builddir)s/*/tests && python test_pyspoa.py"]
+
+moduleclass = 'lib'
