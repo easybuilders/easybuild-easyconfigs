@@ -33,6 +33,7 @@ import re
 import shutil
 import sys
 import tempfile
+from collections import defaultdict
 from distutils.version import LooseVersion
 from unittest import TestCase, TestLoader, main, skip
 
@@ -382,8 +383,12 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS; Gurobi and Rgurobi
-        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS'), ('Gurobi', 'Rgurobi')]:
+        # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit
+        multiple_allowed_variants = [('HTSlib', 'BCFtools'),
+                                     ('WRF', 'WPS'),
+                                     ('Gurobi', 'Rgurobi'),
+                                     ('ncbi-vdb', 'SRA-Toolkit')]
+        for dep_name, parent_name in multiple_allowed_variants:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     ecs = dep_vars[key]
@@ -926,6 +931,27 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
+    def test_easyconfig_name_clashes(self):
+        """Make sure there is not a name clash when all names are lowercase"""
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        names = defaultdict(list)
+        # ignore git/svn dirs & archived easyconfigs
+        ignore_dirs = ['.git', '.svn', '__archive__']
+        for (dirpath, _, _) in os.walk(topdir):
+            if not any('/%s' % d in dirpath for d in ignore_dirs):
+                dirpath_split = dirpath.replace(topdir, '').split(os.sep)
+                if len(dirpath_split) == 5:
+                    name = dirpath_split[4]
+                    names[name.lower()].append(name)
+
+        duplicates = {}
+        for name in names:
+            if len(names[name]) > 1:
+                duplicates[name] = names[name]
+
+        if duplicates:
+            self.assertTrue(False, "EasyConfigs with case-insensitive name clash: %s" % duplicates)
+
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
@@ -1102,14 +1128,16 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CMakePythonPackage, GoPackage, JuliaBundle, PythonBundle & PythonPackage;
+        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
+        #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
-                     'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['BuildEnv', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage',
+                     'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
-        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'ROCm']
+        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
+        # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'Python-bundle', 'ROCm']
 
         failing_checks = []
 
@@ -1389,6 +1417,7 @@ def template_easyconfig_test(self, spec):
             self.assertTrue(isinstance(ext[2], dict),
                             "3rd element of extension spec for %s must be a dictionary" % ext_name)
 
+    ext_patch_issues = []
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
         try:
@@ -1407,16 +1436,18 @@ def template_easyconfig_test(self, spec):
 
             # only check actual patch files, not other files being copied via the patch functionality
             ext_patch_full = os.path.join(specdir, ext_patch['name'])
-            if ext_patch_full.endswith('.patch'):
-                msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
-                self.assertTrue(os.path.isfile(ext_patch_full), msg)
+            if ext_patch_full.endswith('.patch') and not os.path.isfile(ext_patch_full):
+                ext_patch_issues.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
+                continue
 
             # verify checksum for each patch file
-            if idx < len(patch_checksums) and (os.path.exists(ext_patch_full) or ext_patch.endswith('.patch')):
+            if idx < len(patch_checksums) and os.path.exists(ext_patch_full):
                 checksum = patch_checksums[idx]
-                error_msg = "Invalid checksum for patch %s for %s extension in %s: %s"
-                res = verify_checksum(ext_patch_full, checksum)
-                self.assertTrue(res, error_msg % (ext_patch, ext_name, ec_fn, checksum))
+                if not verify_checksum(ext_patch_full, checksum):
+                    ext_patch_issues.append("Invalid checksum for patch %s for extension %s: %s."
+                                            % (ext_patch['name'], ext_name, checksum))
+    if ext_patch_issues:
+        self.fail("Verification of patches for %s failed:\n%s" % (ec_fn, '\n'.join(ext_patch_issues)))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()

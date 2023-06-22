@@ -1,0 +1,64 @@
+##
+# This is a contribution from DeepThought HPC Service, Flinders University, Adelaide, Australia
+# Homepage:     https://staff.flinders.edu.au/research/deep-thought
+#
+# Authors::     Robert Qiao <rob.qiao@flinders.edu.au>
+# License::     GLPv2
+#
+# Notes::
+##
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# uploaded by J. Sassmannshausen
+# Thanks to people like Simon Brandord, Mikael Oehmann and Kenneth Hoste
+# for their help with the ICE
+
+easyblock = 'CMakeMake'
+
+name = 'Salmon'
+version = '1.9.0'
+
+homepage = 'https://github.com/COMBINE-lab/salmon'
+description = """Salmon is a wicked-fast program to produce a highly-accurate,
+ transcript-level quantification estimates from RNA-seq data."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+github_account = 'COMBINE-lab'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['450d953a5c43fe63fd745733f478d3fbaf24d926cb52731fd38ee21c4990d613']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('pkgconf', '1.8.0'),
+    ('jemalloc', '5.2.1'),
+    ('Cereal', '1.3.0', '', SYSTEM),
+]
+
+dependencies = [
+    ('Boost', '1.79.0'),
+    ('tbb', '2021.5.0'),
+    ('cURL', '7.83.0'),
+    ('libiconv', '1.17'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.2.5'),
+    ('zlib', '1.2.12'),
+]
+
+# Disable link-time optimizations (-flto) because it triggers a segfault/internal compiler error (ICE)
+# this issue might magically disappear in future versions of Salmon or GCC
+# see https://github.com/COMBINE-lab/salmon/issues/778
+configopts = '-DJEMALLOC_ROOT=$EBROOTJEMALLOC -DNO_IPO=1'
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'] + ['lib/lib%s.a' % x for x in ['graphdump', 'ntcard', 'salmon_core', 'twopaco']],
+    'dirs': [],
+}
+
+sanity_check_commands = ["salmon --help"]
+
+moduleclass = 'bio'
