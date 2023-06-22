@@ -383,8 +383,12 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS; Gurobi and Rgurobi
-        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS'), ('Gurobi', 'Rgurobi')]:
+        # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit
+        multiple_allowed_variants = [('HTSlib', 'BCFtools'),
+                                     ('WRF', 'WPS'),
+                                     ('Gurobi', 'Rgurobi'),
+                                     ('ncbi-vdb', 'SRA-Toolkit')]
+        for dep_name, parent_name in multiple_allowed_variants:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     ecs = dep_vars[key]
@@ -1124,10 +1128,11 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PythonBundle & PythonPackage;
+        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
+        #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
         whitelist = ['BuildEnv', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage',
-                     'JuliaBundle', 'ModuleRC', 'PythonBundle', 'PythonPackage', 'Toolchain']
+                     'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
