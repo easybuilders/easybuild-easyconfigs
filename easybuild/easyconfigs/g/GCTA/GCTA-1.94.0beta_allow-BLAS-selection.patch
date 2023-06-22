@@ -1,0 +1,218 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Description: Allow selection of BLAS, instead of automatically enabling MKL or
+ OpenBLAS depending on system architecture.
+-------------------------------------------------------------------------------
+diff -Nru gcta-1.94.0beta.orig/CMakeLists.txt gcta-1.94.0beta/CMakeLists.txt
+--- gcta-1.94.0beta.orig/CMakeLists.txt	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/CMakeLists.txt	2022-06-08 14:35:08.000000000 +0100
+@@ -63,15 +63,9 @@
+ 
+ 
+ message(STATUS "ARCHITECTURE:${CMAKE_LIBRARY_ARCHITECTURE}")
+-if(CMAKE_LIBRARY_ARCHITECTURE STREQUAL "aarch64")
+-    SET(OPENBLAS "$ENV{OPENBLAS}")
+-    IF(NOT OPENBLAS)
+-        MESSAGE(FATAL_ERROR "Specify environment variable OPENBLAS to the location of OPENBLAS package")
+-    ENDIF()
+-    INCLUDE_DIRECTORIES("${OPENBLAS}/include")
+-
+-    find_library(lib_openblas NAMES openblas PATHS "${OPENBLAS}" "${OPENBLAS}/lib")
+-    set(BLAS_LIB ${lib_openblas})
++if(NOT USE_MKL)
++    INCLUDE_DIRECTORIES("$ENV{BLAS_INC_DIR}")
++    set(BLAS_LIB "$ENV{LIBBLAS}")
+ 
+     if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -pthread")
+diff -Nru gcta-1.94.0beta.orig/include/cpu_f77blas.h gcta-1.94.0beta/include/cpu_f77blas.h
+--- gcta-1.94.0beta.orig/include/cpu_f77blas.h	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/include/cpu_f77blas.h	2022-06-08 14:35:08.000000000 +0100
+@@ -37,7 +37,7 @@
+   #define GCTA_CPU_ARM 0
+ #endif
+ 
+-#if GCTA_CPU_x86
++#if USE_MKL
+   #ifndef EIGEN_USE_MKL_ALL
+   #define EIGEN_USE_MKL_ALL
+   #endif
+diff -Nru gcta-1.94.0beta.orig/include/cpu.h gcta-1.94.0beta/include/cpu.h
+--- gcta-1.94.0beta.orig/include/cpu.h	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/include/cpu.h	2022-06-08 14:35:08.000000000 +0100
+@@ -37,7 +37,7 @@
+   #define GCTA_CPU_ARM 0
+ #endif
+ 
+-#if GCTA_CPU_x86
++#if USE_MKL
+   #ifndef EIGEN_USE_MKL_ALL
+   #define EIGEN_USE_MKL_ALL
+   #endif
+diff -Nru gcta-1.94.0beta.orig/include/Matrix.hpp gcta-1.94.0beta/include/Matrix.hpp
+--- gcta-1.94.0beta.orig/include/Matrix.hpp	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/include/Matrix.hpp	2022-06-08 14:35:08.000000000 +0100
+@@ -29,7 +29,7 @@
+     int info, cols = (int)A.cols();
+     char uplo = 'L';
+     LOGGER.ts("LLT");
+-#if GCTA_CPU_x86
++#if USE_MKL
+     dpotrf(&uplo, &cols, vi, &cols, &info);
+ #else
+     dpotrf_(&uplo, &cols, vi, &cols, &info);
+@@ -38,7 +38,7 @@
+     if(info == 0){
+         logdet = A.diagonal().array().square().log().sum();
+         //LOGGER.ts("LLT_INV");
+-#if GCTA_CPU_x86        
++#if USE_MKL        
+         dpotri(&uplo, &cols, vi, &cols, &info);
+ #else
+         dpotri_(&uplo, &cols, vi, &cols, &info);
+diff -Nru gcta-1.94.0beta.orig/main/mkl.cpp gcta-1.94.0beta/main/mkl.cpp
+--- gcta-1.94.0beta.orig/main/mkl.cpp	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/main/mkl.cpp	2022-06-08 14:35:07.000000000 +0100
+@@ -362,7 +362,7 @@
+     // MKL's Cholesky decomposition
+     int info = 0, int_n = (int) n;
+     char uplo = 'L';
+-#if GCTA_CPU_x86
++#if USE_MKL
+     dpotrf(&uplo, &int_n, Vi_mkl, &int_n, &info);
+ #else
+     dpotrf_(&uplo, &int_n, Vi_mkl, &int_n, &info);
+@@ -383,7 +383,7 @@
+ 
+         //LOGGER << "start inverse" << endl;
+         // Calcualte V inverse
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dpotri(&uplo, &int_n, Vi_mkl, &int_n, &info);
+ #else
+         dpotri_(&uplo, &int_n, Vi_mkl, &int_n, &info);
+@@ -428,7 +428,7 @@
+     int LWORK = N*N;
+     double *WORK = new double[n * n];
+     int INFO;
+-#if GCTA_CPU_x86
++#if USE_MKL
+     dgetrf(&N, &N, Vi_mkl, &N, IPIV, &INFO);
+ #else
+     dgetrf_(&N, &N, Vi_mkl, &N, IPIV, &INFO);
+@@ -447,7 +447,7 @@
+         }
+ 
+         // Calcualte V inverse
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dgetri(&N, Vi_mkl, &N, IPIV, WORK, &LWORK, &INFO);
+ #else
+         dgetri_(&N, Vi_mkl, &N, IPIV, WORK, &LWORK, &INFO);
+@@ -490,7 +490,7 @@
+     int LWORK = N*N;
+     double *WORK = new double[n * n];
+     int INFO;
+-#if GCTA_CPU_x86
++#if USE_MKL
+     dgetrf(&N, &N, Vi_mkl, &N, IPIV, &INFO);
+ #else
+     dgetrf_(&N, &N, Vi_mkl, &N, IPIV, &INFO);    
+@@ -511,7 +511,7 @@
+         }
+ 
+         // Calcualte V inverse
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dgetri(&N, Vi_mkl, &N, IPIV, WORK, &LWORK, &INFO);
+ #else
+         dgetri_(&N, Vi_mkl, &N, IPIV, WORK, &LWORK, &INFO);
+diff -Nru gcta-1.94.0beta.orig/src/FastFAM.cpp gcta-1.94.0beta/src/FastFAM.cpp
+--- gcta-1.94.0beta.orig/src/FastFAM.cpp	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/src/FastFAM.cpp	2022-06-08 14:35:08.000000000 +0100
+@@ -22,7 +22,7 @@
+ #include <algorithm>
+ #include <Eigen/SparseCholesky>
+ 
+-#if GCTA_CPU_x86
++#if USE_MKL
+ #include <Eigen/PardisoSupport>
+ #endif
+ 
+@@ -1137,7 +1137,7 @@
+     const double b1 = 0;
+     const double b2 = 1.0;
+     const int incr = 1;
+-#if GCTA_CPU_x86
++#if USE_MKL
+     dgemv(&nT, &num_covar, &numi_indi, &a1, H.data(), &num_covar, y.data(), &incr, &b1, Hy, &incr);
+     dgemv(&nT, &numi_indi, &num_covar, &a2, covar.data(), &numi_indi, Hy, &incr, &b2, y.data(), &incr);
+ #else 
+diff -Nru gcta-1.94.0beta.orig/src/GRM.cpp gcta-1.94.0beta/src/GRM.cpp
+--- gcta-1.94.0beta.orig/src/GRM.cpp	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/src/GRM.cpp	2022-06-08 14:35:08.000000000 +0100
+@@ -972,20 +972,20 @@
+     static char uplo='L';
+    // A * At 
+     if(part_keep_indices.first == 0){
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dsyrk(&uplo, &notrans, &n, &curNumValidMarkers, &alpha, stdGeno, &n_sample, &beta, grm, &m);
+ #else
+         dsyrk_(&uplo, &notrans, &n, &curNumValidMarkers, &alpha, stdGeno, &n_sample, &beta, grm, &m);
+ #endif
+     }else{
+         //dgemm(&notrans, &trans, &m, &n, &num_marker, &alpha, stdGeno + part_keep_indices.first, &n_sample, stdGeno, &n_sample, &beta, grm, &m);
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dgemm(&notrans, &trans, &m, &s_n, &curNumValidMarkers, &alpha, stdGeno + part_keep_indices.first, &n_sample, stdGeno, &n_sample, &beta, grm, &m);
+ #else
+         dgemm_(&notrans, &trans, &m, &s_n, &curNumValidMarkers, &alpha, stdGeno + part_keep_indices.first, &n_sample, stdGeno, &n_sample, &beta, grm, &m);
+ #endif
+         double * grm_start = grm + ((uint64_t)s_n) * m;
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dsyrk(&uplo, &notrans, &m, &curNumValidMarkers, &alpha, stdGeno + part_keep_indices.first, &n_sample, &beta, grm_start, &m); 
+ #else
+         dsyrk_(&uplo, &notrans, &m, &curNumValidMarkers, &alpha, stdGeno + part_keep_indices.first, &n_sample, &beta, grm_start, &m); 
+diff -Nru gcta-1.94.0beta.orig/src/LD.cpp gcta-1.94.0beta/src/LD.cpp
+--- gcta-1.94.0beta.orig/src/LD.cpp	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/src/LD.cpp	2022-06-08 14:35:08.000000000 +0100
+@@ -62,7 +62,7 @@
+     double alpha = 1.0 / (nr - 1);
+     double *ptr1 = geno_buffer[cacl_index_buffer].get();
+     double *res1 = new double[nc1 * nc1];
+-#if GCTA_CPU_x86
++#if USE_MKL
+     dsyrk(&uplo, &trans, &nc1, &nr, &alpha, ptr1, &nr, &zero, res1, &nc1);
+ #else
+     dsyrk_(&uplo, &trans, &nc1, &nr, &alpha, ptr1, &nr, &zero, res1, &nc1);
+@@ -76,7 +76,7 @@
+         nc2 = cur_buffer_offset[!cacl_index_buffer] / nr;
+         double *ptr2 = geno_buffer[!cacl_index_buffer].get();
+         res2 = new double[nc2 * nc1];
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dgemm(&trans, &notrans, &nc2, &nc1, &nr, &alpha, ptr2, &nr, ptr1, &nr, &zero, res2, &nc2);
+ #else
+         dgemm_(&trans, &notrans, &nc2, &nc1, &nr, &alpha, ptr2, &nr, ptr1, &nr, &zero, res2, &nc2);
+diff -Nru gcta-1.94.0beta.orig/src/StatLib.cpp gcta-1.94.0beta/src/StatLib.cpp
+--- gcta-1.94.0beta.orig/src/StatLib.cpp	2022-06-08 14:30:39.000000000 +0100
++++ gcta-1.94.0beta/src/StatLib.cpp	2022-06-08 14:35:08.000000000 +0100
+@@ -89,7 +89,7 @@
+         int info = 0;
+         int lda = n;
+         int lwork = n;
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dgeqrf(&n, &n, X, &lda, tau, work, &lwork, &info);
+ #else
+         dgeqrf_(&n, &n, X, &lda, tau, work, &lwork, &info);
+@@ -113,7 +113,7 @@
+ 
+         char side = 'L';
+         char t = 'N';
+-#if GCTA_CPU_x86
++#if USE_MKL
+         dormqr(&side, &t, &n, &n, &n, X, &lda, tau, c, 
+                 &lda, work, &lwork, &info);
+ #else

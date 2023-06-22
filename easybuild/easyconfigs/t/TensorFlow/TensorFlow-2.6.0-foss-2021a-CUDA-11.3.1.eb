@@ -19,8 +19,8 @@ builddependencies = [
     ('UnZip', '6.0'),
 ]
 dependencies = [
-    ('CUDA', '11.3.1', '', True),
-    ('cuDNN', '8.2.1.32', versionsuffix, True),
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('cuDNN', '8.2.1.32', versionsuffix, SYSTEM),
     ('NCCL', '2.10.3', versionsuffix),
     ('Python', '3.9.5'),
     ('h5py', '3.2.1'),
@@ -88,6 +88,7 @@ exts_list = [
     ('grpcio', '1.39.0', {
         'modulename': 'grpc',
         'checksums': ['57974361a459d6fe04c9ae0af1845974606612249f467bbd2062d963cb90f407'],
+        'preinstallopts': "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && ",
     }),
     # Required for tensorboard_plugin_profile
     ('gviz-api', '1.9.0', {
@@ -183,7 +184,7 @@ exts_list = [
             # TensorFlow-2.5.0-fix-alias-violation-in-absl.patch
             '12454fda3330fb45cd380377e283f04488b40e0b8ae7378e786ddf731a581f75',
             # TensorFlow-2.5.0_fix-arm-vector-intrinsics.patch
-            '6abfadc0f67ff3b510d70430843201cb46d7bd65db045ec9b482af70e0c8c0c8',
+            '5edea55ce87d5adb14f6ed6996f308879e268b8cec760cf11288e3a56179a029',
             # TensorFlow-2.5.0_fix-crash-on-shutdown.patch
             '578c7493221ebd3dc25ca43d63a72cbb28fdf4112b1e2baa7390f25781bd78fd',
             # TensorFlow-2.5.0_fix_numpy_1.20_compatibility.patch
@@ -216,11 +217,15 @@ exts_list = [
             '-//tensorflow/c/eager:c_api_cluster_test_gpu',
             '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
             '-//tensorflow/c/eager:c_api_remote_test_gpu',
+            # Flaky, potentially using to much device space
+            '-//tensorflow/c/experimental/gradients:custom_gradient_test_gpu',
             # Fails to open its own test.xml(?)
             '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
             # Fails on non-AVX-512 systems: https://github.com/tensorflow/tensorflow/issues/46532
             '-//tensorflow/core/common_runtime:mkl_layout_pass_test',
             '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
+            # Fails on AMD EPYC systems: https://github.com/tensorflow/tensorflow/issues/52151
+            '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
         ],
         'testopts': "--test_timeout=3600 --test_size_filters=small",
         'testopts_gpu': "--test_timeout=3600 --test_size_filters=small " +

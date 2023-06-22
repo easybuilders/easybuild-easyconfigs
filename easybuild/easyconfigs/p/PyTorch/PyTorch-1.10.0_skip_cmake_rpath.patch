@@ -1,0 +1,195 @@
+# Author: Caspar van Leeuwen
+# PyTorch's CMAKE configuration by default sets RUNPATH on libraries if they link other libraries
+# that are outside the build tree, which is done because of the CMAKE config on 
+# https://github.com/pytorch/pytorch/blob/v1.10.0/cmake/Dependencies.cmake#L10.
+# This provides problems, since the cuda stubs library path then also gets added to the RUNPATH.
+# As a result, at runtime, the stub version of things like libcuda.so.1 gets picked up, instead of the real drivers
+# See https://github.com/easybuilders/easybuild-easyconfigs/issues/14359
+# This line https://github.com/pytorch/pytorch/blob/v1.10.0/cmake/Dependencies.cmake#L16
+# Makes sure that any path that is linked, is also added to the RUNPATH.
+# This has been reported upstream in https://github.com/pytorch/pytorch/issues/35418
+# and a fix was attempted in https://github.com/pytorch/pytorch/pull/37737 but it was reverted
+#
+# This EasyBuild patch changes behavior for the libraries that were failing, i.e. the ones in this list:
+# https://github.com/easybuilders/easybuild-easyconfigs/issues/14359#issuecomment-970479904
+# This is done by setting INSTALL_RPATH_USE_LINK_PATH to false, and instead, specifying the RPATH
+# explicitely by defining INSTALL_RPATH, but only adding directories that do not match to the "stubs" regex
+# It has been upstreamed in this PR https://github.com/pytorch/pytorch/pull/68912 (not accepted yet at the time of writing)
+diff -Nru pytorch.orig/caffe2/CMakeLists.txt pytorch/caffe2/CMakeLists.txt
+--- pytorch.orig/caffe2/CMakeLists.txt	2021-11-17 11:46:01.797337624 +0100
++++ pytorch/caffe2/CMakeLists.txt	2021-11-18 19:05:35.637707235 +0100
+@@ -630,8 +630,33 @@
+     else()
+       set(DELAY_LOAD_FLAGS "")
+     endif()
+-    target_link_libraries(caffe2_nvrtc ${CUDA_NVRTC} ${CUDA_CUDA_LIB} ${CUDA_NVRTC_LIB} ${DELAY_LOAD_FLAGS})
++    # message("CUDA_NVRTC: ${CUDA_NVRTC}")
++    # message("CUDA_NVRTC_LIB: ${CUDA_NVRTC_LIB}")
++    # message("CUDA_CUDA_LIB: ${CUDA_CUDA_LIB}")
++    # message("DELAY_LOAD_FLAGS: ${DELAY_LOAD_FLAGS}")
++    # if(CUDA_CUDA_LIB MATCHES "stubs")
++    #   message("stubs libraries found in the CUDA_CUDA_LIB: ${CUDA_CUDA_LIB}")
++    # else()
++    #   message("Stubs libs not found in CUDA_CUDA_LIB: ${CUDA_CUDA_LIB}")
++    # endif()
++    # Make sure the CUDA stubs folder doesn't end up in the RPATH of CAFFE2_NVRTC:
++    set(CAFFE2_NVRTC_LIBS ${CUDA_NVRTC} ${CUDA_CUDA_LIB} ${CUDA_NVRTC_LIB})
++    foreach(LIB IN LISTS CAFFE2_NVRTC_LIBS)
++      message("LIB: ${LIB}")
++      if(LIB MATCHES "stubs")
++        message("Filtering ${LIB} from being set in caffe2_nvrtc's RPATH, because it appears to point to the CUDA stubs directory, which should not be RPATHed.")
++      else()
++        cmake_path(GET LIB PARENT_PATH LIB_PATH)
++        message("LIBPATH: ${LIB_PATH}")
++	list(APPEND CAFFE2_NVRTC_RPATH ${LIB_PATH})
++      endif()
++    endforeach()
++    message("CAFFE2_NVRTC_RPATH: ${CAFFE2_NVRTC_RPATH}")
++    set_target_properties(caffe2_nvrtc PROPERTIES INSTALL_RPATH_USE_LINK_PATH FALSE)
++    set_target_properties(caffe2_nvrtc PROPERTIES INSTALL_RPATH "${CAFFE2_NVRTC_RPATH}")
++    target_link_libraries(caffe2_nvrtc ${CAFFE2_NVRTC_LIBS} ${DELAY_LOAD_FLAGS})
+     target_include_directories(caffe2_nvrtc PRIVATE ${CUDA_INCLUDE_DIRS})
++#    message(FATAL_ERROR "STOP HERE, we're debugging")
+     install(TARGETS caffe2_nvrtc DESTINATION "${TORCH_INSTALL_LIB_DIR}")
+     if(USE_NCCL AND BUILD_SPLIT_CUDA)
+       list(APPEND Caffe2_GPU_SRCS_CPP
+diff -Nru pytorch.orig/test/cpp/api/CMakeLists.txt pytorch/test/cpp/api/CMakeLists.txt
+--- pytorch.orig/test/cpp/api/CMakeLists.txt	2021-11-17 11:46:02.991350652 +0100
++++ pytorch/test/cpp/api/CMakeLists.txt	2021-11-18 19:06:41.207423777 +0100
+@@ -61,6 +61,22 @@
+     ${CUDA_CUDA_LIB}
+     ${TORCH_CUDA_LIBRARIES})
+ 
++  # Make sure the CUDA stubs folder doesn't end up in the RPATH of test_api:
++  set(TEST_API_LIBS ${CUDA_LIBRARIES} ${CUDA_NVRTC_LIB} ${CUDA_CUDA_LIB} ${TORCH_CUDA_LIBRARIES})
++  foreach(LIB IN LISTS TEST_API_LIBS)
++    message("LIB: ${LIB}")
++    if(LIB MATCHES "stubs")
++      message("Filtering ${LIB} from being set in caffe2_nvrtc's RPATH, because it appears to point to the CUDA stubs directory, which should not be RPATHed.")
++    else()
++      cmake_path(GET LIB PARENT_PATH LIB_PATH)
++      message("LIBPATH: ${LIB_PATH}")
++      list(APPEND TEST_API_RPATH ${LIB_PATH})
++    endif()
++  endforeach()
++  message("TEST_API_RPATH: ${TEST_API_RPATH}")
++  set_target_properties(test_api PROPERTIES INSTALL_RPATH_USE_LINK_PATH FALSE)
++  set_target_properties(test_api PROPERTIES INSTALL_RPATH "${TEST_API_RPATH}")
++
+   target_compile_definitions(test_api PRIVATE "USE_CUDA")
+ endif()
+ 
+diff -Nru pytorch.orig/test/cpp/dist_autograd/CMakeLists.txt pytorch/test/cpp/dist_autograd/CMakeLists.txt
+--- pytorch.orig/test/cpp/dist_autograd/CMakeLists.txt	2021-11-17 11:46:02.993350674 +0100
++++ pytorch/test/cpp/dist_autograd/CMakeLists.txt	2021-11-18 19:06:18.389174421 +0100
+@@ -16,6 +16,22 @@
+       ${CUDA_CUDA_LIB}
+       ${TORCH_CUDA_LIBRARIES})
+ 
++    # Make sure the CUDA stubs folder doesn't end up in the RPATH of test_dist_autograd:
++    set(DIST_AUTOGRAD_LIBS ${CUDA_LIBRARIES} ${CUDA_NVRTC_LIB} ${CUDA_CUDA_LIB} ${TORCH_CUDA_LIBRARIES})
++    foreach(LIB IN LISTS DIST_AUTOGRAD_LIBS)
++      message("LIB: ${LIB}")
++      if(LIB MATCHES "stubs")
++        message("Filtering ${LIB} from being set in caffe2_nvrtc's RPATH, because it appears to point to the CUDA stubs directory, which should not be RPATHed.")
++      else()
++        cmake_path(GET LIB PARENT_PATH LIB_PATH)
++        message("LIBPATH: ${LIB_PATH}")
++        list(APPEND DIST_AUTOGRAD_RPATH ${LIB_PATH})
++      endif()
++    endforeach()
++    message("DIST_AUTOGRAD_RPATH: ${DIST_AUTOGRAD_RPATH}")
++    set_target_properties(test_dist_autograd PROPERTIES INSTALL_RPATH_USE_LINK_PATH FALSE)
++    set_target_properties(test_dist_autograd PROPERTIES INSTALL_RPATH "${DIST_AUTOGRAD_RPATH}")
++
+     target_compile_definitions(test_dist_autograd PRIVATE "USE_CUDA")
+   endif()
+ 
+diff -Nru pytorch.orig/test/cpp/jit/CMakeLists.txt pytorch/test/cpp/jit/CMakeLists.txt
+--- pytorch.orig/test/cpp/jit/CMakeLists.txt	2021-11-17 11:46:02.989350630 +0100
++++ pytorch/test/cpp/jit/CMakeLists.txt	2021-11-18 19:05:41.396770168 +0100
+@@ -94,6 +94,7 @@
+   list(APPEND JIT_TEST_DEPENDENCIES onnx_library)
+ endif(MSVC)
+ 
++
+ target_link_libraries(test_jit PRIVATE ${JIT_TEST_DEPENDENCIES})
+ target_include_directories(test_jit PRIVATE ${ATen_CPU_INCLUDE})
+ 
+@@ -109,6 +110,22 @@
+     ${CUDA_CUDA_LIB}
+     ${TORCH_CUDA_LIBRARIES})
+ 
++  # Make sure the CUDA stubs folder doesn't end up in the RPATH of test_jit:
++  set(TEST_JIT_LIBS ${CUDA_LIBRARIES} ${CUDA_NVRTC_LIB} ${CUDA_CUDA_LIB} ${TORCH_CUDA_LIBRARIES})
++  foreach(LIB IN LISTS TEST_JIT_LIBS)
++    message("LIB: ${LIB}")
++    if(LIB MATCHES "stubs")
++      message("Filtering ${LIB} from being set in test_jit's RPATH, because it appears to point to the CUDA stubs directory, which should not be RPATHed.")
++    else()
++      cmake_path(GET LIB PARENT_PATH LIB_PATH)
++      message("LIBPATH: ${LIB_PATH}")
++      list(APPEND TEST_JIT_RPATH ${LIB_PATH})
++    endif()
++  endforeach()
++  message("TEST_JIT_RPATH: ${TEST_JIT_RPATH}")
++  set_target_properties(test_jit PROPERTIES INSTALL_RPATH_USE_LINK_PATH FALSE)
++  set_target_properties(test_jit PROPERTIES INSTALL_RPATH "${TEST_JIT_RPATH}")
++
+   target_compile_definitions(test_jit PRIVATE USE_CUDA)
+ elseif(USE_ROCM)
+   target_link_libraries(test_jit PRIVATE
+diff -Nru pytorch.orig/test/cpp/rpc/CMakeLists.txt pytorch/test/cpp/rpc/CMakeLists.txt
+--- pytorch.orig/test/cpp/rpc/CMakeLists.txt	2021-11-17 11:46:02.991350652 +0100
++++ pytorch/test/cpp/rpc/CMakeLists.txt	2021-11-18 19:06:30.502306793 +0100
+@@ -39,6 +39,22 @@
+     ${CUDA_CUDA_LIB}
+     ${TORCH_CUDA_LIBRARIES})
+ 
++  # Make sure the CUDA stubs folder doesn't end up in the RPATH of test_cpp_rpc:
++  set(CPP_RPC_LIBS ${CUDA_LIBRARIES} ${CUDA_NVRTC_LIB} ${CUDA_CUDA_LIB} ${TORCH_CUDA_LIBRARIES})
++  foreach(LIB IN LISTS CPP_RPC_LIBS)
++    message("LIB: ${LIB}")
++    if(LIB MATCHES "stubs")
++      message("Filtering ${LIB} from being set in caffe2_nvrtc's RPATH, because it appears to point to the CUDA stubs directory, which should not be RPATHed.")
++    else()
++      cmake_path(GET LIB PARENT_PATH LIB_PATH)
++      message("LIBPATH: ${LIB_PATH}")
++      list(APPEND CPP_RPC_RPATH ${LIB_PATH})
++    endif()
++  endforeach()
++  message("CPP_RPC_RPATH: ${CPP_RPC_RPATH}")
++  set_target_properties(test_cpp_rpc PROPERTIES INSTALL_RPATH_USE_LINK_PATH FALSE)
++  set_target_properties(test_cpp_rpc PROPERTIES INSTALL_RPATH "${CPP_RPC_RPATH}")
++
+   target_compile_definitions(test_cpp_rpc PRIVATE "USE_CUDA")
+ endif()
+ 
+diff -Nru pytorch.orig/test/cpp/tensorexpr/CMakeLists.txt pytorch/test/cpp/tensorexpr/CMakeLists.txt
+--- pytorch.orig/test/cpp/tensorexpr/CMakeLists.txt	2021-11-17 11:46:02.993350674 +0100
++++ pytorch/test/cpp/tensorexpr/CMakeLists.txt	2021-11-18 19:06:00.988984273 +0100
+@@ -62,6 +62,24 @@
+     ${CUDA_CUDA_LIB}
+     ${TORCH_CUDA_LIBRARIES})
+   target_compile_definitions(tutorial_tensorexpr PRIVATE USE_CUDA)
++
++  # Make sure the CUDA stubs folder doesn't end up in the RPATH of tutorial_tensorexpr:
++  set(CUDA_LINK_LIBS ${CUDA_LIBRARIES} ${CUDA_NVRTC_LIB} ${CUDA_CUDA_LIB} ${TORCH_CUDA_LIBRARIES})
++  foreach(LIB IN LISTS CUDA_LINK_LIBS)
++    message("LIB: ${LIB}")
++    if(LIB MATCHES "stubs")
++      message("Filtering ${LIB} from being set in test_tensorexpr and tutorial_tensorexpr RPATH, because it appears to point to the CUDA stubs directory, which should not be RPATHed.")
++    else()
++      cmake_path(GET LIB PARENT_PATH LIB_PATH)
++      message("LIBPATH: ${LIB_PATH}")
++      list(APPEND TENSOREXPR_RPATH ${LIB_PATH})
++    endif()
++  endforeach()
++  message("TENSOREXPR_RPATH: ${TENSOREXPR_RPATH}")
++  set_target_properties(test_tensorexpr PROPERTIES INSTALL_RPATH_USE_LINK_PATH FALSE)
++  set_target_properties(test_tensorexpr PROPERTIES INSTALL_RPATH "${TENSOREXPR_RPATH}")
++  set_target_properties(tutorial_tensorexpr PROPERTIES INSTALL_RPATH_USE_LINK_PATH FALSE)
++  set_target_properties(tutorial_tensorexpr PROPERTIES INSTALL_RPATH "${TENSOREXPR_RPATH}")
+ elseif(USE_ROCM)
+   target_link_libraries(test_tensorexpr PRIVATE
+     ${ROCM_HIPRTC_LIB}

@@ -18,14 +18,25 @@ dependencies = [
 
 default_easyblock = 'PythonPackage'
 
+local_sipdir = '%(installdir)s/share/sip'
+
 local_pylibdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
 
 local_pyqt5_sip_install = "sip-install --verbose --target-dir " + local_pylibdir + " "
-local_pyqt5_sip_install += "--confirm-license --no-designer-plugin --no-qml-plugin --no-tools"
+local_pyqt5_sip_install += "--confirm-license --no-designer-plugin --no-qml-plugin "
 
 local_pyqtweb_configopts = "configure.py --verbose --destdir=%s/PyQt5 " % local_pylibdir
-local_pyqtweb_configopts += "--apidir=%(installdir)s/qsci --pyqt-sipdir=%(builddir)s/PyQt5-%(version)s/sip "
+local_pyqtweb_configopts += "--apidir=%(installdir)s/qsci "
+local_pyqtweb_configopts += "--pyqt-sipdir=%s " % local_sipdir
+local_pyqtweb_configopts += "--sipdir=%s " % local_sipdir
 local_pyqtweb_configopts += "--no-stubs --no-dist-info"
+
+local_pyqt_configopts = "configure.py --verbose --destdir=%s " % local_pylibdir
+local_pyqt_configopts += "--no-stubs  "
+local_pyqt_configopts += "--confirm-license --no-designer-plugin --no-qml-plugin "
+# prevent installing pyrcc5 and other tools into $EBROOTPYTHON/bin:
+local_pyqt_configopts += "--bindir=%(installdir)s/bin "
+local_pyqt_configopts += "--sipdir=%s " % local_sipdir
 
 local_setup_env = "export PATH=%(installdir)s/bin:$PATH && "
 local_setup_env += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
@@ -57,10 +68,10 @@ components = [
         'source_urls': [PYPI_SOURCE],
         'sources': [SOURCE_TAR_GZ],
         'checksums': ['2a69597e0dd11caabe75fae133feca66387819fc9bc050f547e5551bce97e5be'],
-        'easyblock': 'Binary',
+        'easyblock': 'ConfigureMakePythonPackage',
         'start_dir': '%(name)s-%(version)s',
-        'skipsteps': ['configure', 'build'],
-        'install_cmd': local_setup_env + local_pyqt5_sip_install,
+        'preconfigopts': local_setup_env,
+        'configopts': local_pyqt_configopts
     }),
     ('PyQtWebEngine', version, {
         'source_urls': [PYPI_SOURCE],
@@ -75,13 +86,17 @@ components = [
 ]
 
 sanity_check_paths = {
-    'files': ['bin/pyqt-bundle', 'bin/sip-build', 'bin/sip-install', 'bin/sip5'],
+    'files': ['bin/%s' % x for x in [
+        'pyrcc5', 'pyuic5', 'pylupdate5', 'pyqt-bundle', 'sip-build', 'sip-install', 'sip5']],
     'dirs': ['lib/python%(pyshortver)s/site-packages'],
 }
 
 sanity_check_commands = [
     "python -c 'import PyQt5.QtCore'",
     "sip5 --help",
+    "pyuic5 --help",
+    "pylupdate5 -version 2>&1 | grep 'pylupdate5 v%(version)s'",
+    "pyrcc5 -version 2>&1 | grep 'pyrcc5 v%(version)s'",
 ]
 
 modextrapaths = {
