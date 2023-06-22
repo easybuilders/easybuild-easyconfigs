@@ -1,0 +1,67 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'PythonBundle'
+
+name = 'RNA-SeQC'
+version = '2.4.2'
+
+homepage = "https://github.com/getzlab/rnaseqc"
+description = """Fast, efficient RNA-Seq metrics for quality control and process optimization"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'extra_cflags': '-fpermissive'}
+
+dependencies = [
+    ('bx-python', '0.8.11'),
+    ('bzip2', '1.0.8'),
+    ('IPython', '7.25.0'),
+    ('matplotlib', '3.4.2'),
+    ('pyBigWig', '0.3.18'),
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('Seaborn', '0.11.2'),
+    ('Boost', '1.76.0'),
+    ('XZ', '5.2.5'),
+    ('zlib', '1.2.11'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('pycryptodomex', '3.9.8', {
+        'modulename': 'Cryptodome',
+        'checksums': ['48cc2cfc251f04a6142badeb666d1ff49ca6fdfc303fd72579f62b768aaa52b9'],
+    }),
+    ('rsa', '4.6', {
+        'checksums': ['109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa'],
+    }),
+    ('agutil', '4.1.1', {
+        'preinstallopts': r"sed -i 's/package\.req/package.requirement/g' setup.py &&",
+        'checksums': ['e58ed53ae209007328311603bd6e05e8cd2c509204b5e542c87f971a2530fb0d'],
+    }),
+    ('qtl', '0.1.8', {
+        'checksums': ['8fdb99cda1ceff578a233db6c15a944fa57b43a2826af41c292e36848906117b'],
+    }),
+    ('rnaseqc', '0.0.3', {
+        # Build RNA-SeQC in the preinstall opts for the associated Python package
+        # RNA-SeQC bundles SeqLib, with HTSlib and BWA. These are old versions so we cannot use deps here
+        # rnaseqc version is from python/rnaseqc/__init__.py in the RNA-SeQC source code
+        'patches': [
+            'RNA-SeQC-2.4.2_Makefile.patch',
+            'RNA-SeQC-2.4.2_rle_auxtab-gcc-10.patch',
+        ],
+        'source_tmpl': 'rnaseqc.v2.4.2.full_source.tar.gz',
+        'source_urls': ['https://github.com/getzlab/rnaseqc/releases/download/v2.4.2'],
+        'checksums': [
+            'b214151408696430aead56921b255e2b09efe5f6087a68446deae399227a1303',  # rnaseqc.v2.4.2.full_source.tar.gz
+            '05b537eeef398646f51552c1dd26333e268b9b9eb3af2148681cb40ea0a5e4ba',  # RNA-SeQC-2.4.2_Makefile.patch
+            # RNA-SeQC-2.4.2_rle_auxtab-gcc-10.patch
+            'efb9ab63932bf25f3589de1e8f0c17bc1ef5ae928ba73e55d430b8a9761209cb',
+        ],
+        'preinstallopts': "make && mkdir -p %(installdir)s/bin && cp rnaseqc %(installdir)s/bin/. && cd python &&",
+    }),
+]
+
+sanity_check_commands = ["rnaseqc --version"]
+
+moduleclass = 'bio'

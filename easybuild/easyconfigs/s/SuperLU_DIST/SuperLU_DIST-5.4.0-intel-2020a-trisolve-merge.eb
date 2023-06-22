@@ -1,0 +1,44 @@
+easyblock = "EB_SuperLU"
+
+name = 'SuperLU_DIST'
+version = '5.4.0'
+versionsuffix = '-trisolve-merge'
+
+homepage = 'https://crd-legacy.lbl.gov/~xiaoye/SuperLU/'
+description = """SuperLU is a general purpose library for the direct solution of large, sparse, nonsymmetric systems
+ of linear equations on high performance machines."""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+github_account = 'xiaoyeli'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ["v%(version)s%(versionsuffix)s.tar.gz"]
+checksums = ['ba6ffd45246727f79510ff1f5fcccaf5ae1221165ac37213373c4c017ed2cc69']
+
+builddependencies = [('CMake', '3.16.4')]
+
+dependencies = [
+    ('ParMETIS', '4.0.3'),
+]
+
+configopts = '-DTPL_PARMETIS_INCLUDE_DIRS="${EBROOTPARMETIS}/include" '
+configopts += '-DTPL_PARMETIS_LIBRARIES="${EBROOTPARMETIS}/lib/libparmetis.a;${EBROOTPARMETIS}/lib/libmetis.a" '
+
+# tests on this version of SuperLU_DIST are broken on intel mpi.
+# HYD_spawn (../../../../../src/pm/i_hydra/libhydra/spawn/intel/hydra_spawn.c:128):
+# execvp error on file pdtest (No such file or directory)
+# disabling tests as this version is created as dependency for OpenSees easyconfigs
+runtest = False
+
+postinstallcmds = [
+    "rm %(installdir)s/lib64/libsuperlu.a",  # remove broken symlink to libsuperlu.a
+    "ln -s %(installdir)s/lib64 %(installdir)s/lib",
+]
+
+sanity_check_paths = {
+    'files': ['lib64/libsuperlu_dist.a'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'numlib'

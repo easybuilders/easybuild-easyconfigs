@@ -1,0 +1,104 @@
+easyblock = 'Bundle'
+
+name = 'SRA-Toolkit'
+version = '2.10.9'
+
+homepage = 'https://github.com/ncbi/sra-tools'
+description = """The SRA Toolkit, and the source-code SRA System Development
+ Kit (SDK), will allow you to programmatically access data housed within SRA
+ and convert it from the SRA format"""
+github_account = 'ncbi'
+
+toolchain = {'name': 'gompi', 'version': '2020b'}
+
+builddependencies = [
+    ('Perl', '5.32.0'),
+    ('Python', '3.8.6'),
+]
+
+dependencies = [
+    ('NGS', '2.10.9'),
+    ('file', '5.39'),  # provides libmagic
+    ('HDF5', '1.10.7'),
+    ('libxml2', '2.9.10'),
+]
+
+# Add addtional libraries needed to statically link HDF5 from EB
+local_base_preconfig = "sed -i 's/-lhdf5 -Wl,-Bdynamic/-lhdf5 -Wl,-Bdynamic -lmpi -lsz/' setup/konfigure.perl && "
+
+# Change default build directory and add paths to dependencies in EB
+local_base_config = '--build-prefix=%(builddir)s --with-ngs-sdk-prefix=$EBROOTNGS '
+local_base_config += '--with-hdf5-prefix=$EBROOTHDF5 --with-xml2-prefix=$EBROOTLIBXML2'
+local_vdb_config = local_base_config + ' --with-ngs-java-prefix=$EBROOTNGS/jar/ngs-java.jar'
+# SRA-Tools need the source and build directory of NCBI-VDB
+local_sra_config = local_base_config + ' --with-ncbi-vdb-sources=%(builddir)s/ncbi-vdb-%(version)s'
+local_sra_config += ' --with-ncbi-vdb-build=%(builddir)s/ncbi-vdb '
+
+# Replace hardcoded optimization flags with flags from EB
+local_base_prebuild = "find build/ -name \"Makefile*\" -exec sed -i 's/-O3/$(EBFLAGS)/g' {} + && "
+local_base_prebuild += 'EBFLAGS="$CFLAGS" '
+local_base_preinstall = 'EBFLAGS="$CFLAGS" '
+
+# Standalone compilation of utf8proc to ensure that its shared objects are available
+local_sra_prebuild = "make -C tools/driver-tool/utf8proc && "
+# Add addtional libraries needed to statically link HDF5 from EB
+local_sra_prebuild += "sed -i 's/-sm/-sm -lmpi -lsz/' tools/pacbio-load/Makefile && "
+# Add additional libraries needed to statically link libxml2 from EB
+local_sra_prebuild += "find build/ -name \"ld*.sh\" -exec sed -i 's/-lxml2/-lxml2 -lz -llzma/g' {} + && "
+local_sra_prebuild += local_base_prebuild
+
+default_easyblock = 'ConfigureMake'
+default_component_specs = {
+    'source_urls': [GITHUB_LOWER_SOURCE],
+    'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'start_dir': '%(namelower)s-%(version)s',
+    'preconfigopts': local_base_preconfig,
+    'preinstallopts': local_base_preinstall,
+}
+
+components = [
+    # NCBI-VDB has to be installed as component instead of dependency because SRA-Tools needs its sources
+    ('NCBI-VDB', version, {
+        'patches': ['NCBI-VDB-%(version)s_fix-LD_LIBRARY_PATH.patch'],
+        'checksums': [
+            '3707f81412dbf6ce2b29d3e65e364116c86acc534543e5a084cf8a666b81960d',  # NCBI-VDB-2.10.9.tar.gz
+            # NCBI-VDB-2.10.9_fix-LD_LIBRARY_PATH.patch
+            'd59fe4a4fa302485f72a6313a6348c3eda3570f9c9309737ddfb77abf28701b5',
+        ],
+        'configopts': local_vdb_config,
+        'prebuildopts': local_base_prebuild,
+    }),
+    ('SRA-Tools', version, {
+        'patches': ['SRA-Toolkit-%(version)s_fix-LD_LIBRARY_PATH.patch'],
+        'checksums': [
+            '9f9f31cd861bb52a49114c553ea38a0166e4e161345f12c364167865f4dbdaae',  # SRA-Tools-2.10.9.tar.gz
+            # SRA-Toolkit-2.10.9_fix-LD_LIBRARY_PATH.patch
+            'dd2b6a14d42104a513cc7aeb28a37ac9f685aa2b1713cc02ef27c49280e775f3',
+        ],
+        'configopts': local_sra_config,
+        'prebuildopts': local_sra_prebuild,
+    }),
+]
+
+local_bin = ['abi-dump', 'abi-load', 'align-info', 'bam-load', 'cache-mgr', 'cg-load', 'copycat', 'fasterq-dump',
+             'fastq-dump', 'fastq-load', 'helicos-load', 'illumina-dump', 'illumina-load', 'kar', 'kdbmeta', 'kget',
+             'latf-load', 'magic', 'pacbio-load', 'prefetch', 'rcexplain', 'sam-dump', 'sff-dump', 'sff-load',
+             'srapath', 'sra-pileup', 'sra-sort', 'sra-stat', 'sratools', 'srf-load', 'test-sra', 'vdb-config',
+             'vdb-copy', 'vdb-decrypt', 'vdb-dump', 'vdb-encrypt', 'vdb-lock', 'vdb-passwd', 'vdb-unlock',
+             'vdb-validate']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bin] +
+             ['include/ncbi-vdb/NGS.hpp', ('lib/libncbi-ngs-c++.a', 'lib64/libncbi-ngs-c++.a')] +
+             [('lib/libncbi-%s.%s' % (l, e), 'lib64/libncbi-%s.%s' % (l, e))
+              for l in ['vdb', 'wvdb'] for e in ['a', SHLIB_EXT]],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "abi-dump --help",
+    "kar --help",
+    "sra-sort --help",
+]
+
+moduleclass = 'bio'

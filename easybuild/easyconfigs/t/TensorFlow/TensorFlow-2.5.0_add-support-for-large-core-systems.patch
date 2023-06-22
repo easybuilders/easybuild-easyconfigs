@@ -1,0 +1,32 @@
+Enhance NumSchedulableCPUs to allow for nodes with more than 1024 cores
+See https://github.com/tensorflow/tensorflow/issues/49833
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/core/platform/default/port.cc b/tensorflow/core/platform/default/port.cc
+index 8c8c8641b2c..e648f99c7f4 100644
+--- a/tensorflow/core/platform/default/port.cc
++++ b/tensorflow/core/platform/default/port.cc
+@@ -71,9 +71,19 @@ string JobName() {
+ 
+ int NumSchedulableCPUs() {
+ #if defined(__linux__) && !defined(__ANDROID__)
+-  cpu_set_t cpuset;
+-  if (sched_getaffinity(0, sizeof(cpu_set_t), &cpuset) == 0) {
+-    return CPU_COUNT(&cpuset);
++  for(int ncpus = 1024; ncpus < std::numeric_limits<int>::max() / 2; ncpus *= 2) {
++      size_t setsize = CPU_ALLOC_SIZE(ncpus);
++      cpu_set_t* mask = CPU_ALLOC(ncpus);
++      if (!mask)
++        break;
++      if (sched_getaffinity(0, setsize, mask) == 0) {
++        int result = CPU_COUNT_S(setsize, mask);
++        CPU_FREE(mask);
++        return result;
++      }
++      CPU_FREE(mask);
++      if (errno != EINVAL)
++        break;
+   }
+   perror("sched_getaffinity");
+ #endif

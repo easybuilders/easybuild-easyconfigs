@@ -1,0 +1,84 @@
+From 308226bf119f9e9a432c624dd26caa9842dd334c Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Wed, 19 May 2021 13:22:33 +0200
+Subject: [PATCH] Fix arange functions for VSX specializations of Vec256
+
+Need a templated 2nd parameter to support e.g. double steps even for int vectors
+---
+ aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h | 3 ++-
+ aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h  | 3 ++-
+ aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h  | 3 ++-
+ aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h  | 3 ++-
+ aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h  | 3 ++-
+ 5 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h
+index cfa0914a5e6bc..949201a44cbbb 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_double_vsx.h
+@@ -141,7 +141,8 @@ class Vec256<double> {
+         vec_sel(a._vec0, b._vec0, mask._vecb0),
+         vec_sel(a._vec1, b._vec1, mask._vecb1)};
+   }
+-  static Vec256<double> arange(double base = 0., double step = 1.) {
++  template <typename step_t>
++  static Vec256<double> arange(double base = 0., step_t step = static_cast<step_t>(1)) {
+     return Vec256<double>(base, base + step, base + 2 * step, base + 3 * step);
+   }
+ 
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h
+index 586f32e8a853d..3d2c47603fc97 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_float_vsx.h
+@@ -135,7 +135,8 @@ class Vec256<float> {
+         vec_sel(a._vec1, b._vec1, mask._vecb1)};
+   }
+ 
+-  static Vec256<float> arange(float base = 0.f, float step = 1.f) {
++  template <typename step_t>
++  static Vec256<float> arange(float base = 0.f, step_t step = static_cast<step_t>(1)) {
+     return Vec256<float>(
+         base,
+         base + step,
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h
+index 4eb580052c2de..2ede5dde3cdfd 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_int16_vsx.h
+@@ -201,7 +201,8 @@ class Vec256<int16_t> {
+         vec_sel(a._vec1, b._vec1, mask._vecb1)};
+   }
+ 
+-  static Vec256<int16_t> arange(int16_t base = 0, int16_t step = 1) {
++  template <typename step_t>
++  static Vec256<int16_t> arange(int16_t base = 0, step_t step = static_cast<step_t>(1)) {
+     return Vec256<int16_t>(
+         base,
+         base + step,
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h
+index 8df4de480e955..00f3847e10e66 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_int32_vsx.h
+@@ -154,7 +154,8 @@ class Vec256<int32_t> {
+         vec_sel(a._vec1, b._vec1, mask._vecb1)};
+   }
+ 
+-  static Vec256<int32_t> arange(int32_t base = 0.f, int32_t step = 1.f) {
++  template <typename step_t>
++  static Vec256<int32_t> arange(int32_t base = 0.f, step_t step = static_cast<step_t>(1)) {
+     return Vec256<int32_t>(
+         base,
+         base + step,
+diff --git a/aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h b/aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h
+index 0887c0dc1df3a..b57a0ffce79b8 100644
+--- a/aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h
++++ b/aten/src/ATen/cpu/vec256/vsx/vec256_int64_vsx.h
+@@ -116,7 +116,8 @@ class Vec256<int64_t> {
+         vec_sel(a._vec0, b._vec0, mask._vecb0),
+         vec_sel(a._vec1, b._vec1, mask._vecb1)};
+   }
+-  static Vec256<int64_t> arange(int64_t base = 0., int64_t step = 1.) {
++  template <typename step_t>
++  static Vec256<int64_t> arange(int64_t base = 0., step_t step = static_cast<step_t>(1)) {
+     return Vec256<int64_t>(base, base + step, base + 2 * step, base + 3 * step);
+   }
+ 
