@@ -1,0 +1,64 @@
+easyblock = 'CMakeMake'
+
+name = 'libjxl'
+version = '0.5'
+local_lodepng_version = "48e5364"
+
+homepage = 'https://github.com/libjxl/libjxl'
+description = "JPEG XL image format reference implementation"
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+toolchainopts = {'optarch': False}  # optarch causes some test failures
+
+github_account = 'libjxl'
+source_urls = [GITHUB_SOURCE]
+sources = [
+    'v%(version)s.tar.gz',
+    {'filename': 'lodepng-%s.tar.gz' % local_lodepng_version,
+     'download_filename': local_lodepng_version,
+     'source_urls': ['https://github.com/lvandeve/lodepng/tarball/'],
+     'extract_cmd': 'tar -C libjxl-%(version)s/third_party/lodepng --strip-components=1 -xf %s'},
+]
+patches = [
+    'libjxl-0.3.7_external_lcms2.patch',
+    'libjxl-%(version)s_remove-broken-test.patch',
+]
+checksums = [
+    '911cb4b50eb621131ca22382166f40d4914a4ff4453dd299ade1e3292f311f89',  # v0.5.tar.gz
+    'f38176fc103fe1f6d23ba6addd5b14e6a54d546dfaa64663306acfe7b6d912ea',  # lodepng-48e5364.tar.gz
+    '9e6decaf6be74eeccfd5728df175930b4be33de6cbdf9e1816f68cb4b718fa1b',  # libjxl-0.3.7_external_lcms2.patch
+    '5b62751da5b3b3c4aad58a841d49cc506bc330425bbd0df7f19f99aa98c52c26',  # libjxl-0.5_remove-broken-test.patch
+]
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('CMake', '3.20.1'),
+    ('googletest', '1.11.0'),
+    ('pkg-config', '0.29.2'),
+    ('Highway', '0.12.2'),  # Highway only has a static library
+]
+
+dependencies = [
+    ('LittleCMS', '2.12'),
+    ('Brotli', '1.0.9'),
+    ('libjpeg-turbo', '2.0.6'),
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+    ('giflib', '5.2.1'),
+    ('libwebp', '1.2.0'),
+    ('OpenEXR', '3.0.1'),
+    ('gperftools', '2.9.1'),
+]
+
+configopts = '-DJPEGXL_WARNINGS_AS_ERRORS=OFF -DJPEGXL_ENABLE_SJPEG=OFF -DJPEGXL_ENABLE_SKCMS=OFF '
+# building man pages requires/uses asciidoc (which may be installed in OS, and may fail)
+configopts += '-DJPEGXL_ENABLE_MANPAGES=OFF'
+
+runtest = "test"
+
+sanity_check_paths = {
+    'files': ['bin/cjxl', 'bin/djxl', 'lib/libjxl.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+moduleclass = 'lib'

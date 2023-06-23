@@ -29,7 +29,7 @@ dependencies = [
     ('libpng', '1.6.36'),  # for plotting in R
     ('libjpeg-turbo', '2.0.2'),  # for plottting in R
     ('LibTIFF', '4.0.10'),
-    ('Java', '11', '', True),
+    ('Java', '11', '', SYSTEM),
     ('Tk', '8.6.9'),  # for tcltk
     ('cURL', '7.63.0'),  # for RCurl
     ('libxml2', '2.9.8'),  # for XML
@@ -71,15 +71,21 @@ exts_default_options = {
 # !! order of packages is important !!
 # packages updated on June 7, 2019
 exts_list = [
+    # include packages that are part of the base installation of R,
+    # both to make sure they are available (via sanity check),
+    # and to be able to pass the check for required dependencies when installing extensions in parallel
     'base',
+    'compiler',
     'datasets',
     'graphics',
     'grDevices',
     'grid',
     'methods',
+    'parallel',
     'splines',
     'stats',
     'stats4',
+    'tcltk',
     'tools',
     'utils',
     ('Rmpi', '0.6-9', {
@@ -600,7 +606,8 @@ exts_list = [
         'checksums': ['678a7e6a87a2723089daeb780ea37ac3d4319b37eabe26928ea3fa9c9b1eda0d'],
     }),
     ('codetools', '0.2-16', {
-        'checksums': ['f67a66175cb5d8882457d1e9b91ea2f16813d554fa74f80c1fd6e17cf1877501'],
+        'checksums': [('f67a66175cb5d8882457d1e9b91ea2f16813d554fa74f80c1fd6e17cf1877501',
+                       'c276757c3adabaf700f2ea25835892b09bc1bd438ebd17c805ea9073ed8a74b6')],
     }),
     ('foreach', '1.4.4', {
         'checksums': ['c0a71090d5b70b9a95a6936091dabae9c26e1fc6b9609bfe5fb6346033905e48'],
@@ -792,7 +799,8 @@ exts_list = [
         'checksums': ['1f06ab3660c940405230ad16ff6e4ba38d4418a59cd9b16d78a4349f8b488372'],
     }),
     ('pkgmaker', '0.27', {
-        'checksums': ['17a289d8f596ba5637b07077b3bff22411a2c2263c0b7de59fe848666555ec6a'],
+        'checksums': [('17a289d8f596ba5637b07077b3bff22411a2c2263c0b7de59fe848666555ec6a',
+                       'e5eb9058e68702c15e8dc6fee6ede41cdbe8e3914d190a5a1113079db26fb003')],
     }),
     ('rngtools', '1.3.1.1', {
         'checksums': ['99e1a8fde6b81128d0946746c1ef84ec5b6c2973ad843a080098baf73aa3364c'],
@@ -1257,7 +1265,8 @@ exts_list = [
         'checksums': ['8e259c2b12446197d1152b83a81bab84ccb5a5b77021a9b5645dd4c63c804bd1'],
     }),
     ('doRNG', '1.7.1', {
-        'checksums': ['27533d54464889d1c21301594137fc0f536574e3a413d61d7df9463ab12a67e9'],
+        'checksums': [('27533d54464889d1c21301594137fc0f536574e3a413d61d7df9463ab12a67e9',
+                       'bda8143e2b5554fb39fdea81af6482f8938160fdbf5c45014f3a5de40aacf4c4')],
     }),
     ('nleqslv', '3.3.2', {
         'checksums': ['f54956cf67f9970bb3c6803684c84a27ac78165055745e444efc45cfecb63fed'],
@@ -2079,7 +2088,13 @@ exts_list = [
         'checksums': ['982b9f34dbcf98136a8406b9ce4717faf155c7d5d923dcdf0dca6a9d53e27219'],
     }),
     ('liquidSVM', '1.2.2.1', {
-        'checksums': ['95e5620fa1561b8410398ea56480c540555615b2c94bb0356106f4638e7cfce8'],
+        'patches': ['liquidSVM-1.2.4-fix_ppc_build.patch'],
+        'checksums': [
+            '95e5620fa1561b8410398ea56480c540555615b2c94bb0356106f4638e7cfce8',
+            '21e65c8ff3f14678e43c19b4f8c36fce9bed796965abf161a147040941fc55ab',  # liquidSVM-1.2.4-fix_ppc_build.patch
+        ],
+        # Don't add optimization flags by liquidSVM which may not be known e.g. on PPC
+        'preinstallopts': 'LIQUIDSVM_TARGET="empty"',
     }),
     ('oddsratio', '1.0.3', {
         'checksums': ['b33861d8beae189c66e6b94d59cc698bf08aeafb47262b5f7a1d2e88a2b2b8cd'],
@@ -2127,7 +2142,8 @@ exts_list = [
         'checksums': ['76cee2393757390ad91d3db3e5aeb2c2d34c0a46822b7941498571a473417142'],
     }),
     ('cobs', '1.3-3', {
-        'checksums': ['6b1e760cf8dec6b6e63f042cdc3e5e633de5f982e8bc743a891932f6d9f91bdf'],
+        'checksums': [('6b1e760cf8dec6b6e63f042cdc3e5e633de5f982e8bc743a891932f6d9f91bdf',
+                       'f3fca282c9a258cc5e4976780f4907aca1051796524d6861fc15204ab22ab7d2')],
     }),
     ('resample', '0.4', {
         'checksums': ['f0d5f735e1b812612720845d79167a19f713a438fd10a6a3206e667045fd93e5'],
@@ -2193,7 +2209,8 @@ exts_list = [
         'checksums': ['71750b741672a435ecf749b69c72f0681aa8bb795e317f4e3056d5e33f6d79e8'],
     }),
     ('LaplacesDemon', '16.1.1', {
-        'checksums': ['779ed1dbfed523a15701b4d5d891d4f1f11ab27518826a8a7725807d4c42bd77'],
+        'checksums': [('779ed1dbfed523a15701b4d5d891d4f1f11ab27518826a8a7725807d4c42bd77',
+                       '98d30fbc5594f46818632a6795febaa81df12e9598d31d17500bc7300289aea1')],
     }),
     ('rda', '1.0.2-2.1', {
         'checksums': [('6918b62f51252b57f2c05b99debef6136b370f594dc3ae6466268e4c35578ef8',

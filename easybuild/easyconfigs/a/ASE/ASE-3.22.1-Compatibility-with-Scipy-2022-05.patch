@@ -1,0 +1,66 @@
+From ead1bd015b52e60cab729081d7c1da2951f1f95c Mon Sep 17 00:00:00 2001
+From: Ask Hjorth Larsen <asklarsen@gmail.com>
+Date: Sat, 16 Jul 2022 12:48:01 +0200
+Subject: [PATCH] remove test which compares our units to scipy codata.  All
+ the surrounding modules/methods in scipy seem to be deprecated
+
+---
+ ase/test/test_units.py | 39 +--------------------------------------
+ 1 file changed, 1 insertion(+), 38 deletions(-)
+
+diff --git a/ase/test/test_units.py b/ase/test/test_units.py
+index b8a1293..fcbe451 100644
+--- a/ase/test/test_units.py
++++ b/ase/test/test_units.py
+@@ -2,47 +2,10 @@
+ implementation that SciPy brings with it.
+ """
+ 
+-import numpy as np
+ import pytest
+ 
+ import ase.units
+-from ase.units import CODATA, create_units
+-import scipy.constants.codata
+-
+-
+-# Scipy lacks data for some of the codata versions:
+-codata_scipy_versions = set(CODATA) - {'1998', '1986'}
+-
+-
+-@pytest.mark.parametrize('version', sorted(codata_scipy_versions))
+-def test_units(version):
+-    name_map = {'_c': 'speed of light in vacuum',
+-                '_mu0': 'mag. const.',
+-                '_Grav': 'Newtonian constant of gravitation',
+-                '_hplanck': 'Planck constant',
+-                '_e': 'elementary charge',
+-                '_me': 'electron mass',
+-                '_mp': 'proton mass',
+-                '_Nav': 'Avogadro constant',
+-                '_k': 'Boltzmann constant',
+-                '_amu': 'atomic mass unit-kilogram relationship'}
+-
+-    scipy_CODATA = getattr(scipy.constants.codata,
+-                           f'_physical_constants_{version}', None)
+-    if version == '2018' and scipy_CODATA is None:
+-        pytest.skip('No CODATA for 2018 with this scipy')
+-
+-    assert scipy_CODATA is not None
+-
+-    for asename, scipyname in name_map.items():
+-        aseval = CODATA[version][asename]
+-        try:
+-            scipyval = scipy_CODATA[scipyname][0]
+-        except KeyError:
+-            # XXX Can we be more specific?
+-            continue  # 2002 in scipy contains too little data
+-
+-        assert np.isclose(aseval, scipyval), scipyname
++from ase.units import create_units
+ 
+ 
+ def test_create_units():
+-- 
+1.8.3.1
+

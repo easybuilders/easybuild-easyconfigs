@@ -1,0 +1,81 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'MakeCp'
+
+name = 'pIRS'
+version = '2.0.2'
+
+homepage = 'https://github.com/galaxy001/pirs'
+description = """pIRS (profile based Illumina pair-end Reads Simulator) is a program for simulating paired-end reads
+from a reference genome. It is optimized for simulating reads similar to those generated from the Illumina platform."""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+toolchainopts = {'cstd': 'c++11', 'openmp': True}
+
+# https://github.com/galaxy001/pirs
+github_account = 'galaxy001'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix-Makefiles.patch']
+checksums = [
+    'f80051819ee2c4307ad7ff74d35785c6ba864e8219673e6b0f12ff326eedb2e4',  # v2.0.2.tar.gz
+    '61cd267caeffd28eb7e53fb676d9c204ba1608cd4101f49fd17201bd3338d016',  # pIRS-2.0.2_fix-Makefiles.patch
+]
+
+dependencies = [
+    ('Perl', '5.30.0'),
+    ('zlib', '1.2.11'),
+    ('Boost', '1.71.0'),
+    ('gzip', '1.10'),
+    ('gnuplot', '5.2.8'),
+    ('SAMtools', '1.10'),
+    ('Coreutils', '8.32'),
+]
+
+buildopts = 'CC="$CC" CXX="$CXX" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" PKGDATADIR="%(installdir)s"'
+
+runtest = 'test'
+
+local_bins = ['gc_coverage_bias', 'pirs']
+local_perl_files = [
+    'alignment_stator', 'baseCalling_Matrix_analyzer', 'baseCalling_Matrix_calculator',
+    'baseCalling_Matrix_merger', 'gc_coverage_bias_plot', 'indelstat_sam_bam'
+]
+
+files_to_copy = [
+    (['src/stator/alignment_stator.pl',
+      'src/stator/baseCallingMatrix/baseCalling_Matrix_analyzer.pl',
+      'src/stator/baseCallingMatrix/baseCalling_Matrix_calculator.pl',
+      'src/stator/baseCallingMatrix/baseCalling_Matrix_merger.pl',
+      'src/stator/gcContCvgBias/gc_coverage_bias',
+      'src/stator/gcContCvgBias/gc_coverage_bias_plot.pl',
+      'src/stator/indelstat_sam_bam.pl',
+      'src/pirs/pirs',
+      'src/pirs/Profiles',
+      ], 'bin'),
+]
+
+# cd to bin dir and make link for all perl files
+postinstallcmds = [" && ". join(['cd %(installdir)s/bin'] + ["ln -s %s.pl %s" % (f, f) for f in local_perl_files])]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_bins + local_perl_files],
+    'dirs': []
+}
+
+# grep is used here because most of the 'help' commands below returns non-zero exit codes
+sanity_check_commands = [
+    # Binaries
+    ("gc_coverage_bias -h 2>&1 | grep 'it is a program to stat about the gc_depth'", ''),
+    ("pirs -h | grep 'pirs (Profile-based Illumina pair-end Reads Simulator)'", ''),
+    # Perl files
+    'alignment_stator --help',
+    ("baseCalling_Matrix_analyzer -h 2>&1 | grep 'analyse the matrix about reads'", ''),
+    'baseCalling_Matrix_calculator --help',
+    ("baseCalling_Matrix_merger -h 2>&1 | grep 'merge the baseCalling matrix together'", ''),
+    ("gc_coverage_bias_plot 2>&1 | grep 'gc_coverage_bias_plot <datfile>'", ''),
+    ("indelstat_sam_bam --help 2>&1 | grep 'indelstat_sam_bam <single_sam_bam_file> <output_prefix>'", ''),
+]
+
+moduleclass = 'bio'

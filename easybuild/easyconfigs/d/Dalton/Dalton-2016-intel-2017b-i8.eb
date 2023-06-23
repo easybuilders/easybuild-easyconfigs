@@ -1,0 +1,61 @@
+easyblock = 'CMakeMake'
+
+name = 'Dalton'
+version = '2016'
+versionsuffix = '-i8'
+
+homepage = 'https://daltonprogram.org/'
+description = """The Dalton code is a powerful tool for a wide range of molecular properties
+ at different levels of theory.
+ Any published work arising from use of one of the Dalton2016 programs
+ must acknowledge that by a proper reference,
+ https://www.daltonprogram.org/www/citation.html."""
+
+toolchain = {'name': 'intel', 'version': '2017b'}
+toolchainopts = {'i8': True, 'usempi': True, 'openmp': True}
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://gitlab.com/dalton',
+        'repo_name': 'dalton',
+        'tag': 'release/2016',
+        'recursive': True,
+    },
+}]
+patches = [
+    '%(name)s-%(version)s-fix-cmake-install.patch',
+    '%(name)s-%(version)s-use-EB-install-for-dalton-script.patch',
+    '%(name)s-%(version)s-fix-uninits.patch',
+    '%(name)s-%(version)s-fix-bad-includepath-add.patch',
+    '%(name)s-%(version)s_cmake-obey-EB-variables.patch',
+    '%(name)s-%(version)s_intel_lowopt.patch',
+]
+checksums = [
+    None,  # no checksum for Dalton-2016.tar.gz source tarball which is created via 'git clone'
+    '3159b03a488d6f5ee23d468be02ea62eacd08cbdf68cd64ef4e5a0d469a6718b',  # Dalton-2016-fix-cmake-install.patch
+    # Dalton-2016-use-EB-install-for-dalton-script.patch
+    '570bd128fe0be69ef377c373b69bf64eb8d0908bc960903509cbc68ff275ae13',
+    '5d93c59e8afa24d8b07a216bc73d7cc250230709a988cf8e1dd107f8a69543fc',  # Dalton-2016-fix-uninits.patch
+    '6d4dab7af92674e3e6713143f4d8886925ac1328f64c4cc5d071e6eee855c350',  # Dalton-2016-fix-bad-includepath-add.patch
+    '69c6d9c110c78c064544052ae5dcb8721f49744f7a5cbf3a0f4d1170d7d22927',  # Dalton-2016_cmake-obey-EB-variables.patch
+    '4942d95e77845fab8b196c88f390e630971559e51632ca280434dbc0eed26757',  # Dalton-2016_intel_lowopt.patch
+]
+
+builddependencies = [('CMake', '3.9.5')]
+
+separate_build_dir = True
+
+configopts = '-DENABLE_MPI=ON '
+configopts += '-DENABLE_OMP=ON '
+# Only enable for BLAS/LAPACK having 8 byte integers (basically MKL) adjust the configopts 'i8' option accordingly
+configopts += '-DENABLE_64BIT_INTEGERS=ON '
+configopts += '-DENABLE_SCALAPACK=ON '
+configopts += '-DBLACS_IMPLEMENTATION=intelmpi '
+
+sanity_check_paths = {
+    'files': ['bin/dalton', 'bin/dalton.x'],
+    'dirs': ['basis'],
+}
+
+moduleclass = 'chem'

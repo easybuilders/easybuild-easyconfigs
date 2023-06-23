@@ -1,0 +1,21 @@
+# The fallback branch in simd.c for non-x86 and non-x64 systems (like ARM and PowerPC) has a
+# syntactically invalid definition: https://github.com/vdorie/dbarts/blob/master/src/misc/simd.c#L34-L38
+#
+# The function needs to be non-static to have linkage as indicated by its declaration and is missing
+# its opening curly brace.
+#
+# https://github.com/vdorie/dbarts/issues/35
+#
+# Author: Lars Viklund (@zao)
+diff -ru dbarts.orig/src/misc/simd.c dbarts/src/misc/simd.c
+--- dbarts.orig/src/misc/simd.c	2019-08-19 21:14:16.000000000 +0200
++++ dbarts/src/misc/simd.c	2020-10-09 10:53:05.299232350 +0200
+@@ -33,7 +33,7 @@
+ 
+ // if not on any x86 descendent, use pure C no matter what
+ #if !defined(__i386) && !defined(_X86_) && !defined(__x86_64__) && !defined(_M_AMD64) && !defined (_M_X64)
+-static misc_simd_instructionSet misc_simd_getMaxSIMDInstructionSet(void)
++misc_simd_instructionSet misc_simd_getMaxSIMDInstructionSet(void) {
+   return MISC_INST_C;
+ }
+ #else

@@ -1,0 +1,150 @@
+# Replaces OpenFOAM third-party libraries with EASYBUILD variants.
+# Uses the OpenFOAM prefs mechanism and the FOAM_CONFIG_ETC variable
+# to define the preferred settings without patching the original files
+#
+# Authors: Mark Olesen <Mark.Olesen@esi-group.com>
+# -------------------------------------------------------------------------
+--- /dev/null	2020-12-14 09:05:45.272769166 +0100
++++ OpenFOAM-v2112/etc/prefs.sh	2020-12-14 10:02:26.488430802 +0100
+@@ -0,0 +1,7 @@
++##Easybuild## settings -*- sh -*-
++
++export FOAM_CONFIG_ETC="etc/easybuild"
++
++export WM_MPLIB=EASYBUILDMPI
++
++##Easybuild##
+--- /dev/null	2020-12-14 09:05:45.272769166 +0100
++++ OpenFOAM-v2112/etc/easybuild/config.sh/CGAL	2020-12-14 10:10:55.991841204 +0100
+@@ -0,0 +1,6 @@
++##Easybuild## settings -*- sh -*-
++
++export BOOST_ARCH_PATH="$EBROOTBOOST"
++export CGAL_ARCH_PATH="$EBROOTCGAL"
++
++##Easybuild##
+--- /dev/null	2020-12-14 09:05:45.272769166 +0100
++++ OpenFOAM-v2112/etc/easybuild/config.sh/FFTW	2020-12-14 10:10:53.735843322 +0100
+@@ -0,0 +1,5 @@
++##Easybuild## settings -*- sh -*-
++
++export FFTW_ARCH_PATH="$EBROOTFFTW"
++
++##EasyBuild##
+--- /dev/null	2020-12-14 09:05:45.272769166 +0100
++++ OpenFOAM-v2112/etc/easybuild/config.sh/metis	2020-12-11 21:23:28.774934024 +0100
+@@ -0,0 +1,6 @@
++##Easybuild## settings -*- sh -*-
++
++METIS_VERSION="metis-$EBVERSIONMETIS"
++[ -d "$METIS_ARCH_PATH" ] || METIS_ARCH_PATH="$METIS_ROOT"
++
++##Easybuild##
+--- /dev/null	2020-12-14 09:05:45.272769166 +0100
++++ OpenFOAM-v2112/etc/easybuild/config.sh/readline	2020-12-11 21:23:22.534951043 +0100
+@@ -0,0 +1,5 @@
++##Easybuild## settings -*- sh -*-
++
++export READLINE_ARCH_PATH="$EBROOTLIBREADLINE"
++
++##Easybuild##
+--- /dev/null	2020-12-14 09:05:45.272769166 +0100
++++ OpenFOAM-v2112/etc/easybuild/config.sh/scotch	2020-12-11 21:23:17.586964539 +0100
+@@ -0,0 +1,7 @@
++##Easybuild## settings -*- sh -*-
++
++export SCOTCH_VERSION="scotch_$EBVERSIONSCOTCH"
++export SCOTCH_ARCH_PATH="$EBROOTSCOTCH"
++[ -d "$SCOTCH_ARCH_PATH" ] || SCOTCH_ARCH_PATH="$SCOTCH_ROOT"
++
++##Easybuild##
+--- /dev/null	2020-12-14 09:05:45.272769166 +0100
++++ OpenFOAM-v2112/etc/easybuild/config.sh/vtk	2020-12-11 21:22:55.463024882 +0100
+@@ -0,0 +1,9 @@
++##Easybuild## settings -*- sh -*-
++
++export VTK_DIR="$EBROOTVTK"
++export MESA_ARCH_PATH="$EBROOTMESA"
++
++# Define paraview-mesa directory as required
++unset ParaView_MESA_DIR
++
++##Easybuild##
+--- /dev/null	2020-12-14 09:05:45.272769166 +0100
++++ OpenFOAM-v2112/etc/easybuild/config.sh/paraview	2020-12-14 10:13:53.583674383 +0100
+@@ -0,0 +1,75 @@
++##Easybuild## settings -*- sh -*-
++#
++# Largely a knockoff of the OpenFOAM etc/config.sh/paraview-system
++# readjusted for easybuild
++#
++# Copyright (C) 2020 OpenCFD Ltd.
++#
++#------------------------------------------------------------------------------
++# Compiler-specific location for ThirdParty installations
++archDir="$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER"
++
++# Clean path and library path of previous settings
++eval \
++    "$($WM_PROJECT_DIR/bin/foamCleanPath -sh-env=PATH \
++    $ParaView_DIR $archDir/ParaView- $archDir/qt-)"
++
++eval \
++    "$($WM_PROJECT_DIR/bin/foamCleanPath -sh-env=LD_LIBRARY_PATH \
++    $ParaView_DIR $archDir/ParaView- $archDir/qt-)"
++
++
++#------------------------------------------------------------------------------
++
++##Easybuild## settings
++
++ParaView_VERSION="$EBVERSIONPARAVIEW"
++export ParaView_DIR="$EBROOTPARAVIEW"
++
++#------------------------------------------------------------------------------
++
++unset PV_PLUGIN_PATH
++
++# Set API to correspond to VERSION
++# pv_api is <digits>.<digits> from ParaView_VERSION
++#-
++# Extract API from VERSION
++pv_api=$(echo "$ParaView_VERSION" | \
++    sed -ne 's/^[^0-9]*\([0-9][0-9]*\.[0-9][0-9]*\).*$/\1/p')
++
++pv_plugin_dir="$FOAM_LIBBIN/paraview-$pv_api"
++
++# Set paths if binaries are present
++if [ -r "$ParaView_DIR" ]
++then
++    export PATH="$ParaView_DIR/bin:$PATH"
++
++    # ParaView libraries
++    # - 5.5 and later:   lib/, but could also be lib64/
++    for libDir in lib64 lib
++    do
++        pvLibDir="$libDir/paraview-$pv_api"
++        if [ -d "$ParaView_DIR/$pvLibDir" ]
++        then
++            export LD_LIBRARY_PATH="$ParaView_DIR/$libDir:$LD_LIBRARY_PATH"
++            break
++        fi
++    done
++
++    # OpenFOAM plugin directory must be the first in PV_PLUGIN_PATH
++    # and have paraview-major.minor encoded in its name
++    if [ -d "$pv_plugin_dir" ]
++    then
++        export PV_PLUGIN_PATH="$pv_plugin_dir"
++    fi
++fi
++
++
++#------------------------------------------------------------------------------
++
++unset ParaView_VERSION
++
++unset archDir libDir
++unset pv_api pv_plugin_dir pvLibDir
++
++#------------------------------------------------------------------------------

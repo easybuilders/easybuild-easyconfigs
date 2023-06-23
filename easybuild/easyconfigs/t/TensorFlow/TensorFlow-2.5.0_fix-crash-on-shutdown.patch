@@ -1,0 +1,20 @@
+Releasing and reaquiring the GIL during Python shutdown is not possible and leads to force termination.
+Remove that.
+See https://github.com/tensorflow/tensorflow/issues/50853
+
+Author: Alexander Grund
+
+diff --git a/tensorflow/python/client/tf_session_wrapper.cc b/tensorflow/python/client/tf_session_wrapper.cc
+index 306381347c7..1208aa2ce61 100644
+--- a/tensorflow/python/client/tf_session_wrapper.cc
++++ b/tensorflow/python/client/tf_session_wrapper.cc
+@@ -557,8 +557,7 @@ PYBIND11_MODULE(_pywrap_tf_session, m) {
+ 
+   m.def("TF_NewGraph", TF_NewGraph, py::return_value_policy::reference,
+         py::call_guard<py::gil_scoped_release>());
+-  m.def("TF_DeleteGraph", TF_DeleteGraph,
+-        py::call_guard<py::gil_scoped_release>());
++  m.def("TF_DeleteGraph", TF_DeleteGraph);
+ 
+   m.def("TF_GraphGetOpDef",
+         [](TF_Graph* graph, const char* op_name, TF_Buffer* output_op_def) {

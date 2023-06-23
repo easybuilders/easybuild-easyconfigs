@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '1.2.5042'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://www.rstudio.com/'
+description = """This is the RStudio Server version.
+RStudio is a set of integrated tools designed to help you be more productive with R.
+
+The server can be started with:
+  rserver --server-daemonize=0 --www-port 8787 --rsession-which-r=$(which R)
+"""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'rstudio-1.2.5033_fix_boost_170_compat.patch',
+    'rstudio-1.2.5033_update_gwt.patch',
+]
+checksums = [
+    '2bcd1d525d92e9ce42f4c7a57383c025e10d34313f8ed245429f02980b47c1fc',  # v1.2.5042.tar.gz
+    'd252111e28a7de8602b4df1f66b36dded260061f094b504895e5c789f8681091',  # rstudio-1.2.5033_fix_boost_170_compat.patch
+    'e0b4e165e45357bfaaefbd6f20a7ee69701c56bd623fa2bdfe6df4a1cabc4415',  # rstudio-1.2.5033_update_gwt.patch
+]
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('CMake', '3.15.3'),
+    ('ant', '1.10.7', '-Java-%(javaver)s', SYSTEM),
+]
+
+dependencies = [
+    ('Boost', '1.71.0'),
+    ('R', '3.6.2'),
+    ('Java', '11', '', SYSTEM),
+]
+
+osdependencies = [
+    ('pam-devel', 'libpam0g-dev')
+]
+
+build_type = "Release"
+local_dep_dir = "%(builddir)s/rstudio-%(version)s/dependencies/common"
+preconfigopts = ("(cd %s && ./install-dictionaries && "
+                 "./install-pandoc && ./install-mathjax && ./install-gwt) && ") % local_dep_dir
+configopts = "-DRSTUDIO_TARGET=Server -DRSTUDIO_BOOST_SIGNALS_VERSION=2"
+
+sanity_check_paths = {
+    'files': ["bin/rstudio-server"],
+    'dirs': ['bin', 'extras', 'resources', 'www', 'www-symbolmaps', 'R'],
+}
+
+moduleclass = 'lang'

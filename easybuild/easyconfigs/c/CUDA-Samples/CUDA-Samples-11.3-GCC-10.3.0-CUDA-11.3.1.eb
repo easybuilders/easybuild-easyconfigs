@@ -1,0 +1,53 @@
+easyblock = 'MakeCp'
+
+name = 'CUDA-Samples'
+version = '11.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVIDIA/cuda-samples'
+description = "Samples for CUDA Developers which demonstrates features in CUDA Toolkit"
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/NVIDIA/cuda-samples/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2bee5f7c89347259aaab75aa6df6e10375059bdbbaf04cc7936f5db7d54fa3ac']
+
+dependencies = [
+    ('CUDA', '11.3.1', '', SYSTEM),
+]
+
+# Get rid of pre-built Windows DLLs and only build deviceQuery for now.
+prebuildopts = "rm -r bin/win64 && "
+
+# Filter out samples that require extensive dependencies.
+local_filters = "Samples/EGLStream_CUDA_Interop/Makefile "
+local_filters += "Samples/boxFilterNPP/Makefile "
+local_filters += "Samples/cannyEdgeDetectorNPP/Makefile "
+local_filters += "Samples/cudaNvSci/Makefile "
+local_filters += "Samples/cudaNvSciNvMedia/Makefile "
+local_filters += "Samples/simpleGL/Makefile "
+local_filters += "Samples/warpAggregatedAtomicsCG/Makefile "
+local_filters += "Samples/simpleVulkan/Makefile "
+local_filters += "Samples/simpleVulkanMMAP/Makefile "
+local_filters += "Samples/streamOrderedAllocationIPC/Makefile "
+local_filters += "Samples/vulkanImageCUDA/Makefile"
+buildopts = "HOST_COMPILER=g++ FILTER_OUT='%s'" % local_filters
+
+files_to_copy = [
+    (['bin/%s/linux/release/*' % ARCH], 'bin'),
+    'LICENSE',
+]
+
+local_binaries = ['deviceQuery', 'matrixMul', 'bandwidthTest', 'cudaOpenMP']
+
+# Only paths are used for sanity checks.
+# Commands may fail due to missing compatibility libraries that might be needed
+# to be able to use this specific CUDA version in combination with the available
+# NVIDIA drivers.
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries],
+    'dirs': [],
+}
+
+moduleclass = 'lang'
