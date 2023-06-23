@@ -1,0 +1,48 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez (Swiss Institute of Bioinformatics, Biozentrum - University of Basel)
+# 7.305 modified by:
+# Adam Huffman (The Francis Crick Institute)
+# 7.453 switch to Bundle by:
+# Alex Domingo (Vrije Universiteit Brussel)
+
+easyblock = 'Bundle'
+
+name = 'MAFFT'
+version = '7.490'
+versionsuffix = '-with-extensions'
+
+homepage = 'https://mafft.cbrc.jp/alignment/software/source.html'
+description = """MAFFT is a multiple sequence alignment program for unix-like operating systems.
+It offers a range of multiple alignment methods, L-INS-i (accurate; for alignment
+of <∼200 sequences), FFT-NS-2 (fast; for alignment of <∼30,000 sequences), etc."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+default_easyblock = 'ConfigureMake'
+default_component_specs = {
+    'source_urls': ['https://mafft.cbrc.jp/alignment/software/'],
+    'sources': ['mafft-%(version)s%(versionsuffix)s-src.tgz'],
+    'checksums': ['d6eef33d8b9e282e20f9b25b6b6fb2757b9b6900e397ca621d56da86d9976541'],
+    'skipsteps': ['configure'],
+    'installopts': 'PREFIX=%(installdir)s',
+}
+
+components = [
+    (name, version, {
+        'start_dir': 'mafft-%(version)s%(versionsuffix)s/core',
+    }),
+    ('%s Extensions' % name, version, {
+        'start_dir': 'mafft-%(version)s%(versionsuffix)s/extensions',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mafft', 'libexec/mafft/mxscarnamod'],  # mxscarnamod installed by MAFFT Extensions
+    'dirs': ['libexec/mafft'],
+}
+
+sanity_check_commands = ['mafft --version']
+
+modextrapaths = {'MAFFT_BINARIES': 'libexec/mafft'}
+
+moduleclass = 'bio'

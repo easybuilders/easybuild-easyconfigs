@@ -1,0 +1,19 @@
+The stacktrace library uses dladdr and friends but doesn't link libdl
+See https://github.com/tensorflow/tensorflow/issues/45013
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/core/platform/BUILD b/tensorflow/core/platform/BUILD
+index 0a324f31023..56a9c9e2455 100644
+--- a/tensorflow/core/platform/BUILD
++++ b/tensorflow/core/platform/BUILD
+@@ -961,7 +961,8 @@ cc_library(
+     copts = tf_copts(),
+     linkopts = select({
+         "//tensorflow:windows": [],
+-        "//conditions:default": ["-lm"],
++        "//tensorflow:freebsd": ["-lm"],
++        "//conditions:default": ["-lm", "-ldl"],
+     }),
+     deps = [
+         ":platform",

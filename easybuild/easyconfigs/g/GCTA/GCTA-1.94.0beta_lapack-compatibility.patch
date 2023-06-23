@@ -1,0 +1,157 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Description: Update function names to be compatible with recent LAPACK
+-------------------------------------------------------------------------------
+diff -Nru gcta-1.94.0beta_p1/include/Matrix.hpp gcta-1.94.0beta_p2/include/Matrix.hpp
+--- gcta-1.94.0beta_p1/include/Matrix.hpp	2022-06-08 14:48:52.000000000 +0100
++++ gcta-1.94.0beta_p2/include/Matrix.hpp	2022-06-08 14:49:55.000000000 +0100
+@@ -32,7 +32,7 @@
+ #if USE_MKL
+     dpotrf(&uplo, &cols, vi, &cols, &info);
+ #else
+-    dpotrf_(&uplo, &cols, vi, &cols, &info);
++    LAPACK_dpotrf(&uplo, &cols, vi, &cols, &info);
+ #endif    
+     //LOGGER << "  LLT time: " << LOGGER.tp("LLT") << std::endl;
+     if(info == 0){
+@@ -41,7 +41,7 @@
+ #if USE_MKL        
+         dpotri(&uplo, &cols, vi, &cols, &info);
+ #else
+-        dpotri_(&uplo, &cols, vi, &cols, &info);
++        LAPACK_dpotri(&uplo, &cols, vi, &cols, &info);
+ #endif
+         //LOGGER << "  LLT inverse time: " << LOGGER.tp("LLT_INV") << std::endl;
+         if(info == 0){
+diff -Nru gcta-1.94.0beta_p1/main/mkl.cpp gcta-1.94.0beta_p2/main/mkl.cpp
+--- gcta-1.94.0beta_p1/main/mkl.cpp	2022-06-08 14:48:52.000000000 +0100
++++ gcta-1.94.0beta_p2/main/mkl.cpp	2022-06-08 14:49:54.000000000 +0100
+@@ -365,7 +365,7 @@
+ #if USE_MKL
+     dpotrf(&uplo, &int_n, Vi_mkl, &int_n, &info);
+ #else
+-    dpotrf_(&uplo, &int_n, Vi_mkl, &int_n, &info);
++    LAPACK_dpotrf(&uplo, &int_n, Vi_mkl, &int_n, &info);
+ #endif
+     //LOGGER << "Finished decompose" << endl;
+     //spotrf( &uplo, &n, Vi_mkl, &n, &info );
+@@ -386,7 +386,7 @@
+ #if USE_MKL
+         dpotri(&uplo, &int_n, Vi_mkl, &int_n, &info);
+ #else
+-        dpotri_(&uplo, &int_n, Vi_mkl, &int_n, &info);
++        LAPACK_dpotri(&uplo, &int_n, Vi_mkl, &int_n, &info);
+ #endif
+         //LOGGER << "Inverse finished" << endl;
+         //spotri( &uplo, &n, Vi_mkl, &n, &info );
+diff -Nru gcta-1.94.0beta_p1/src/StatLib.cpp gcta-1.94.0beta_p2/src/StatLib.cpp
+--- gcta-1.94.0beta_p1/src/StatLib.cpp	2022-06-08 14:48:52.000000000 +0100
++++ gcta-1.94.0beta_p2/src/StatLib.cpp	2022-06-08 14:49:55.000000000 +0100
+@@ -117,7 +117,7 @@
+         dormqr(&side, &t, &n, &n, &n, X, &lda, tau, c, 
+                 &lda, work, &lwork, &info);
+ #else
+-        dormqr_(&side, &t, &n, &n, &n, X, &lda, tau, c, 
++        LAPACK_dormqr(&side, &t, &n, &n, &n, X, &lda, tau, c, 
+                 &lda, work, &lwork, &info);
+ #endif
+         if(info != 0){
+diff -Nru gcta-1.94.0beta_p1/submods/plink-ng/1.9/plink_matrix.c gcta-1.94.0beta_p2/submods/plink-ng/1.9/plink_matrix.c
+--- gcta-1.94.0beta_p1/submods/plink-ng/1.9/plink_matrix.c	2022-06-08 14:45:46.000000000 +0100
++++ gcta-1.94.0beta_p2/submods/plink-ng/1.9/plink_matrix.c	2022-06-08 14:49:47.000000000 +0100
+@@ -288,7 +288,7 @@
+ }
+ #else  // !NOLAPACK
+ int32_t invert_matrix(__CLPK_integer dim, double* matrix, MATRIX_INVERT_BUF1_TYPE* int_1d_buf, double* dbl_2d_buf) {
+-  // dgetrf_/dgetri_ is more efficient than dpotrf_/dpotri_ on OS X.
++  // dgetrf_/dgetri_ is more efficient than LAPACK_dpotrf/LAPACK_dpotri on OS X.
+   __CLPK_integer lwork = dim * dim;
+   __CLPK_integer info;
+   dgetrf_(&dim, &dim, matrix, &dim, int_1d_buf, &info);
+diff -Nru gcta-1.94.0beta_p1/submods/plink-ng/2.0/plink2_matrix.cc gcta-1.94.0beta_p2/submods/plink-ng/2.0/plink2_matrix.cc
+--- gcta-1.94.0beta_p1/submods/plink-ng/2.0/plink2_matrix.cc	2022-06-08 14:45:48.000000000 +0100
++++ gcta-1.94.0beta_p2/submods/plink-ng/2.0/plink2_matrix.cc	2022-06-08 14:49:51.000000000 +0100
+@@ -110,7 +110,7 @@
+               __CLPK_integer* lwork, __CLPK_integer* iwork,
+               __CLPK_integer* liwork, __CLPK_integer* info);
+ 
+-  int dpotrf_(char* uplo, __CLPK_integer* n, __CLPK_doublereal* a,
++  int LAPACK_dpotrf(char* uplo, __CLPK_integer* n, __CLPK_doublereal* a,
+               __CLPK_integer* lda, __CLPK_integer* info);
+ 
+ 
+@@ -118,7 +118,7 @@
+                __CLPK_doublereal* a, __CLPK_integer* lda, __CLPK_doublereal* b,
+                __CLPK_integer* ldb, __CLPK_integer* info);
+ 
+-  int dpotri_(char* uplo, __CLPK_integer* n, __CLPK_doublereal* a,
++  int LAPACK_dpotri(char* uplo, __CLPK_integer* n, __CLPK_doublereal* a,
+               __CLPK_integer* lda, __CLPK_integer* info);
+ 
+ #        ifndef USE_CBLAS_XGEMM
+@@ -569,11 +569,11 @@
+ BoolErr InvertSymmdefMatrix(__CLPK_integer dim, double* matrix, __maybe_unused MatrixInvertBuf1* int_1d_buf, __maybe_unused double* dbl_2d_buf) {
+   char uplo = 'U';
+   __CLPK_integer info;
+-  dpotrf_(&uplo, &dim, matrix, &dim, &info);
++  LAPACK_dpotrf(&uplo, &dim, matrix, &dim, &info);
+   if (info) {
+     return 1;
+   }
+-  dpotri_(&uplo, &dim, matrix, &dim, &info);
++  LAPACK_dpotri(&uplo, &dim, matrix, &dim, &info);
+   assert(info == 0);
+   return 0;
+ }
+@@ -583,7 +583,7 @@
+   char uplo = 'U';
+   double norm = dlansy_(&cc, &uplo, &dim, matrix, &dim, dbl_2d_buf);
+   __CLPK_integer info;
+-  dpotrf_(&uplo, &dim, matrix, &dim, &info);
++  LAPACK_dpotrf(&uplo, &dim, matrix, &dim, &info);
+   if (info > 0) {
+     return 1;
+   }
+@@ -592,7 +592,7 @@
+   if (rcond < kMatrixSingularRcond) {
+     return 1;
+   }
+-  dpotri_(&uplo, &dim, matrix, &dim, &info);
++  LAPACK_dpotri(&uplo, &dim, matrix, &dim, &info);
+   return 0;
+ }
+ 
+@@ -639,7 +639,7 @@
+   char uplo = 'U';
+   double norm = dlansy_(&cc, &uplo, &dim, half_inverted, &dim, dbl_2d_buf);
+   __CLPK_integer info;
+-  dpotrf_(&uplo, &dim, half_inverted, &dim, &info);
++  LAPACK_dpotrf(&uplo, &dim, half_inverted, &dim, &info);
+   if (info > 0) {
+     return 1;
+   }
+@@ -667,7 +667,7 @@
+ void InvertSymmdefFmatrixSecondHalf(__CLPK_integer dim, uint32_t stride, double* half_inverted, float* inverted_result, __maybe_unused MatrixInvertBuf1* int_1d_buf, __maybe_unused double* dbl_2d_buf) {
+   char uplo = 'U';
+   __CLPK_integer info;
+-  dpotri_(&uplo, &dim, half_inverted, &dim, &info);
++  LAPACK_dpotri(&uplo, &dim, half_inverted, &dim, &info);
+   const double* read_row = half_inverted;
+   float* write_row = inverted_result;
+   for (uint32_t row_idx = 0; row_idx != S_CAST(uint32_t, dim); ++row_idx) {
+@@ -1348,14 +1348,14 @@
+   char uplo = 'U';
+   __CLPK_integer tmp_n = predictor_ct;
+   __CLPK_integer info;
+-  dpotrf_(&uplo, &tmp_n, xtx_inv, &tmp_n, &info);
++  LAPACK_dpotrf(&uplo, &tmp_n, xtx_inv, &tmp_n, &info);
+   if (info) {
+     return 1;
+   }
+   memcpy(fitted_coefs_phenomaj, xt_y_phenomaj, predictor_ct * pheno_ct * sizeof(double));
+   dpotrs_(&uplo, &tmp_n, &pheno_ct, xtx_inv, &tmp_n, fitted_coefs_phenomaj, &tmp_n, &info);
+   assert(!info);
+-  dpotri_(&uplo, &tmp_n, xtx_inv, &tmp_n, &info);
++  LAPACK_dpotri(&uplo, &tmp_n, xtx_inv, &tmp_n, &info);
+   return (info != 0);
+ }
+ #endif  // !NOLAPACK

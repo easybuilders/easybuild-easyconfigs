@@ -29,7 +29,7 @@ dependencies = [
     ('libpng', '1.6.37'),  # for plotting in R
     ('libjpeg-turbo', '2.0.4'),  # for plottting in R
     ('LibTIFF', '4.1.0'),
-    ('Java', '11', '', True),
+    ('Java', '11', '', SYSTEM),
     ('Tk', '8.6.10'),  # for tcltk
     ('cURL', '7.69.1'),  # for RCurl
     ('libxml2', '2.9.10'),  # for XML
@@ -71,15 +71,21 @@ exts_default_options = {
 # !! order of packages is important !!
 # packages updated on 25 March 2020
 exts_list = [
+    # include packages that are part of the base installation of R,
+    # both to make sure they are available (via sanity check),
+    # and to be able to pass the check for required dependencies when installing extensions in parallel
     'base',
+    'compiler',
     'datasets',
     'graphics',
     'grDevices',
     'grid',
     'methods',
+    'parallel',
     'splines',
     'stats',
     'stats4',
+    'tcltk',
     'tools',
     'utils',
     ('Rmpi', '0.6-9', {
@@ -112,8 +118,12 @@ exts_list = [
     ('filehash', '2.4-2', {
         'checksums': ['b6d056f75d45e315943a4618f5f62802612cd8931ba3f9f474b595140a3cfb93'],
     }),
-    ('ff', '2.2-14', {
-        'checksums': ['1c6307847275b1b8ad9e2ffdce3f4df3c9d955dc2e8a45e3fd7bfd2b0926e2f0'],
+    ('ff', '2.2-14.2', {
+        'checksums': [
+            'f8c06ac333ffe3545cdf56531619865176e1827728f7aeeba82d135d5c5e37e4',
+            'beae9b31d7962b035329e07f4dc09308ca3a527327885d1c4ba9a1dd105e0bbd'  # ff_2.2-14.2_aarch64_support.patch
+        ],
+        'patches': ['ff-2.2-14.2_aarch64_support.patch'],
     }),
     ('bnlearn', '4.5', {
         'checksums': ['a8047625533260a855d309b3c0785cbeec0f9ec13f284b6664a1f61638138578'],
@@ -651,7 +661,8 @@ exts_list = [
         'checksums': ['d3df1fc848bcf1af8fae13d61eeab60e99a3d4b4db384bec4326f909f502c5d6'],
     }),
     ('codetools', '0.2-16', {
-        'checksums': ['f67a66175cb5d8882457d1e9b91ea2f16813d554fa74f80c1fd6e17cf1877501'],
+        'checksums': [('f67a66175cb5d8882457d1e9b91ea2f16813d554fa74f80c1fd6e17cf1877501',
+                       'c276757c3adabaf700f2ea25835892b09bc1bd438ebd17c805ea9073ed8a74b6')],
     }),
     ('foreach', '1.4.8', {
         'checksums': ['ac3ce7e4bd603fb0ae2728c2f9fc379ad4540d636fb71125405c18ee042d8ef7'],
@@ -2102,10 +2113,12 @@ exts_list = [
         'checksums': ['3a1f166f1c71b5877a2acca1384ec6c9b430b67af67ef26125f2abbb53c66206'],
     }),
     ('liquidSVM', '1.2.4', {
-        'patches': ['liquidSVM-1.2.4-fix_ppc_build.patch'],
+        'checksums': ['15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba'],
+        'patches': ['liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch'],
         'checksums': [
             '15a9c7f2930e2ed3f4c5bcd9b042884ea580d2b2e52e1c68041600c196046aba',
-            '21e65c8ff3f14678e43c19b4f8c36fce9bed796965abf161a147040941fc55ab',  # liquidSVM-1.2.4-fix_ppc_build.patch
+            # liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch
+            '46b09e441c3b59af535f20d8db0dee7f1d6a7ddd511175d252115b53cb8b86f8',
         ],
         # Don't add optimization flags by liquidSVM which may not be known e.g. on PPC
         'preinstallopts': 'LIQUIDSVM_TARGET="empty"',

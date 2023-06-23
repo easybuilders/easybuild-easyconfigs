@@ -1,0 +1,17 @@
+Only use __asm__ on x86 - see https://grigoriefflab.umassmed.edu/comment/1703#comment-1703
+Patch added by Simon Branford (University of Birmingham)
+--- src/core/matrix.cpp.orig	2021-07-10 19:11:51.226608000 +0100
++++ src/core/matrix.cpp	2021-07-10 19:12:09.421456198 +0100
+@@ -4,7 +4,11 @@
+ // think i got it from a book i had about game programming in c.. it's probably slower than what the compiler would do these days.
+ 
+ #define AL_PI        3.14159265358979323846
+-#define _AL_SINCOS(x, s, c)  __asm__ ("fsincos" : "=t" (c), "=u" (s) : "0" (x))
++#if defined(__i386__) || defined(__x86_64__)
++#define _AL_SINCOS(x, s, c) __asm__ ("fsincos" : "=t" (c), "=u" (s) : "0" (x))
++#else
++#define _AL_SINCOS(x, s, c) s = sinf(x); c = cosf(x);
++#endif
+ #define FLOATSINCOS(x, s, c)  _AL_SINCOS((x) * AL_PI / 128.0, s ,c)
+ 
+ #define MAKE_ROTATION_f(x, y, z)                \

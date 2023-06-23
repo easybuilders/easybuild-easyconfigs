@@ -25,7 +25,7 @@ dependencies = [
     ('SQLite', '3.27.2'),
     ('XZ', '5.2.4'),
     ('GMP', '6.1.2'),  # required for pycrypto
-    ('libffi', '3.2.1'),  # required for cryptography
+    ('libffi', '3.2.1'),
     # OS dependency should be preferred if the os version is more recent then this version,
     # it's nice to have an up to date openssl for security reasons
     # Python 3.7 requires OpenSSL >= 1.0.2, uncomment line below if OS version is too old (e.g. CentOS 6)
@@ -34,9 +34,7 @@ dependencies = [
 
 osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]
 
-# symlink 'pip' command to 'pip3' that is included with Python installation
-# required so we can update pip to version included in extensions, using pip
-installopts = " && ln -s %(installdir)s/bin/pip3 %(installdir)s/bin/pip"
+install_pip = True
 
 exts_default_options = {
     'download_dep_fail': True,
@@ -48,19 +46,15 @@ exts_default_options = {
 # order is important!
 # package versions updated Mar 15th 2019
 exts_list = [
-    ('pip', '19.0.3', {
-        'checksums': ['6e6f197a1abfb45118dbb878b5c859a0edbdd33fd250100bc015b67fded4b9f2'],
-        # don't use --ignore-installed, i.e. let pip remove older pip version included with Python
-        'pip_ignore_installed': False,
-    }),
     ('setuptools', '40.8.0', {
         'source_tmpl': '%(name)s-%(version)s.zip',
         'checksums': ['6e4eec90337e849ade7103723b9a99631c1f0d19990d6e8412dc42f5ae8b304d'],
-        # don't use --ignore-installed, i.e. let pip remove older setuptools version included with Python
-        'pip_ignore_installed': False,
     }),
     ('wheel', '0.33.1', {
         'checksums': ['66a8fd76f28977bb664b098372daef2b27f60dc4d1688cfab7b37a09448f0e9d'],
+    }),
+    ('pip', '19.0.3', {
+        'checksums': ['6e6f197a1abfb45118dbb878b5c859a0edbdd33fd250100bc015b67fded4b9f2'],
     }),
     ('nose', '1.3.7', {
         'checksums': ['f1bffef9cbc82628f6e7d7b40d7e255aefaa1adb6a1b1d26c69a8b79e6208a98'],
@@ -98,8 +92,13 @@ exts_list = [
         'modulename': 'arff',
     }),
     ('pycrypto', '2.6.1', {
-        'checksums': ['f2ce1e989b272cfcb677616763e0a2e7ec659effa67a88aa92b3a65528f60a3c'],
         'modulename': 'Crypto',
+        'patches': ['pycrypto-2.6.1_remove-usr-include.patch'],
+        'checksums': [
+            'f2ce1e989b272cfcb677616763e0a2e7ec659effa67a88aa92b3a65528f60a3c',  # pycrypto-2.6.1.tar.gz
+            # pycrypto-2.6.1_remove-usr-include.patch
+            '06c3d3bb290305e1360a023ea03f9281116c230de62382e6be9474996086712e',
+        ],
     }),
     ('ecdsa', '0.13', {
         'checksums': ['64cf1ee26d1cde3c73c6d7d107f835fed7c6a2904aef9eac223d57ad800c43fa'],

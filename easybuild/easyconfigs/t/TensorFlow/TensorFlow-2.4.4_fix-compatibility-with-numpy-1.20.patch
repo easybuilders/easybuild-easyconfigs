@@ -1,0 +1,58 @@
+Fix compatibility with NumPy 1.20+
+See issue: https://github.com/tensorflow/models/issues/9706
+
+From 0f8fde42d09b199d02cf5d9d79fe76ebf1d260ef Mon Sep 17 00:00:00 2001
+From: Ben Greiner <code@bnavigator.de>
+Date: Thu, 6 May 2021 12:13:40 +0200
+Subject: [PATCH 01/14] Fix NumPy 1.20 error with np.prod()
+
+Reference: #47691, https://stackoverflow.com/questions/66373169
+---
+ tensorflow/python/ops/array_ops.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tensorflow/python/ops/array_ops.py b/tensorflow/python/ops/array_ops.py
+index 519f2ef26fcef..d143ee96a2fc9 100644
+--- a/tensorflow/python/ops/array_ops.py
++++ b/tensorflow/python/ops/array_ops.py
+@@ -36,6 +36,7 @@
+ from tensorflow.python.framework.constant_op import constant
+ from tensorflow.python.ops import gen_array_ops
+ from tensorflow.python.ops import gen_math_ops
++from tensorflow.python.ops import math_ops
+ # go/tf-wildcard-import
+ # pylint: disable=wildcard-import
+ from tensorflow.python.ops.gen_array_ops import *
+@@ -2894,7 +2895,7 @@ def matrix_set_diag(
+ 
+ def _constant_if_small(value, shape, dtype, name):
+   try:
+-    if np.prod(shape) < 1000:
++    if math_ops.reduce_prod(shape) < 1000:
+       return constant(value, shape=shape, dtype=dtype, name=name)
+   except TypeError:
+     # Happens when shape is a Tensor, list with Tensor elements, etc.
+
+From 9a4642fb897e8ac7901253a4225d0d346715545e Mon Sep 17 00:00:00 2001
+From: Ben Greiner <code@bnavigator.de>
+Date: Thu, 2 Sep 2021 13:01:12 +0200
+Subject: [PATCH 14/14] catch NotImplementedError from failed recursive
+ conversion to ndarray
+
+---
+ tensorflow/python/framework/test_util.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tensorflow/python/framework/test_util.py b/tensorflow/python/framework/test_util.py
+index 272351517655d..b1f6ca1775ef4 100644
+--- a/tensorflow/python/framework/test_util.py
++++ b/tensorflow/python/framework/test_util.py
+@@ -2790,7 +2790,7 @@ def _assertAllCloseRecursive(self,
+             atol=atol,
+             msg="Mismatched value: a%s is different from b%s. %s" %
+             (path_str, path_str, msg))
+-      except (ValueError, TypeError) as e:
++      except (ValueError, TypeError, NotImplementedError) as e:
+         if len(a) != len(b):
+           raise ValueError(
+               "Mismatched length: a%s has %d items, but b%s has %d items. %s" %
