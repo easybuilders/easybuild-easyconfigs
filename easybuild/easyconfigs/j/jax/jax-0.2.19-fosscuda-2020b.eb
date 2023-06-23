@@ -22,7 +22,7 @@ dependencies = [
     ('Python', '3.8.6'),
     ('SciPy-bundle', '2020.11'),
     ('flatbuffers-python', '1.12'),
-    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', True),
+    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', SYSTEM),
     ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
 ]
 
@@ -110,12 +110,13 @@ exts_list = [
             'a431ce1b6588b5098872f36575dc2c5023b1010760bf6aaa889125c9a09227b0',
         ],
         # deliberately not testing in parallel, as that results in (additional) failing tests;
-        # use XLA_PYTHON_CLIENT_ALLOCATOR=platform when running GPU tests in parallel,
-        # to avoid each test fully allocating the GPU memory...,
+        # use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
         # see https://github.com/google/jax/issues/7323 and
         # https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
         # use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
-        'runtest': 'CUDA_VISIBLE_DEVICES=0 JAX_ENABLE_X64=true pytest tests',
+        # use NVIDIA_TF32_OVERRIDE=0 to avoid lossing numerical precision by disabling TF32 Tensor Cores;
+        'runtest': "NVIDIA_TF32_OVERRIDE=0 CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_ALLOCATOR=platform "
+                   "JAX_ENABLE_X64=true pytest tests",
     }),
 ]
 

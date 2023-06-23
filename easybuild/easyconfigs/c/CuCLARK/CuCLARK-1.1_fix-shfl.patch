@@ -1,0 +1,15 @@
+replace use of deprecated/no longer supported in recent CUDA compute capabilities (7.0 & up) __shfl with __shfl_sync
+see also https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#warp-shuffle-functions
+
+author: Kenneth Hoste (HPC-UGent)
+--- cuclark-1.1/src/CuClarkDB.cu.orig	2017-01-04 10:35:20.000000000 +0100
++++ cuclark-1.1/src/CuClarkDB.cu	2019-12-09 17:02:51.982293942 +0100
+@@ -1218,7 +1218,7 @@
+ #endif
+ 				sharedResultRow[0+wid*(pitch/sizeof(RESULTS))] = total;
+ 			}
+-			total = __shfl(total, warpSize-1);	// get total from last lane
++			total = __shfl_sync(0xFFFFFFFF, total, warpSize-1);	// get total from last lane
+ 		}
+
+

@@ -1,0 +1,54 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# Modified by: Robert Schmidt <rjeschmi@gmail.com>
+# Ottawa Hospital Research Institute - Bioinformatics Team
+# Modified by: Adam Huffman <adam.huffman@crick.ac.uk>
+# The Francis Crick Institute
+# Modified by: Kurt Lust, UAntwerp
+# Modified by: Sebastien Moretti for non-x86_64 systems
+# SIB Swiss Institute of Bioinformatics
+
+name = 'Bowtie2'
+version = '2.4.4'
+_simde_version = '20220504'
+_simde_commit = 'cbef1c1'
+
+homepage = 'https://bowtie-bio.sourceforge.net/bowtie2/index.shtml'
+description = """ Bowtie 2 is an ultrafast and memory-efficient tool for aligning sequencing reads
+ to long reference sequences. It is particularly good at aligning reads of about 50 up to 100s or 1,000s
+ of characters, and particularly good at aligning to relatively long (e.g. mammalian) genomes.
+ Bowtie 2 indexes the genome with an FM Index to keep its memory footprint small: for the human genome,
+ its memory footprint is typically around 3.2 GB. Bowtie 2 supports gapped, local, and paired-end alignment modes."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+toolchainopts = {'pic': True, 'cstd': 'gnu++98'}
+
+source_urls = [('https://sourceforge.net/projects/bowtie-bio/files/%(namelower)s/%(version)s', 'download')]
+sources = ['%(namelower)s-%(version)s-source.zip']
+checksums = ['b9fc1d6e5b898f832c590023bcb15e2a7b76e0ffac486800a9897e7cba2175fc']
+
+# SIMD Everywhere implementations only, for non-x86_64 systems
+if ARCH != 'x86_64':
+    source_urls += ['https://github.com/simd-everywhere/simde-no-tests/archive']
+    sources += [
+        {'download_filename': '%s.zip' % _simde_commit,
+         'filename': 'simde-%s.zip' % _simde_version,
+         'extract_cmd': 'unzip %%s && mv simde*-%s*/* %%(namelower)s-%%(version)s/third_party/simde/' % _simde_commit,
+         }
+    ]
+    checksums += ['d01f084ef5ff69b0a9b96370ae314fe1e55ef3339b25afcd3385958ac0e6ad68']
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Perl', '5.34.0'),
+    ('Python', '3.9.6'),
+]
+
+# to add script folder to path just uncomment this line
+# modextrapaths = {'PATH': 'scripts'}
+
+sanity_check_commands = ['bowtie2 --help', 'bowtie2-build --help']
+
+moduleclass = 'bio'
