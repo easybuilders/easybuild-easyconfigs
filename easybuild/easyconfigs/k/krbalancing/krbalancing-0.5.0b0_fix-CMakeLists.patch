@@ -1,0 +1,42 @@
+remove workaround for problem with conan and pybind11 (which is fixed in recent conan versions),
+and fix for: ERROR: No remote 'conan-center' defined in remotes
+author: Kenneth Hoste (HPC-UGent)
+see also https://github.com/deeptools/Knight-Ruiz-Matrix-balancing-algorithm/issues/24
+--- Knight-Ruiz-Matrix-balancing-algorithm-0.5.0b0/CMakeLists.txt.orig	2023-02-15 10:51:06.719532727 +0100
++++ Knight-Ruiz-Matrix-balancing-algorithm-0.5.0b0/CMakeLists.txt	2023-02-15 10:50:25.589499665 +0100
+@@ -27,31 +27,20 @@
+ message(STATUS " project version ${CMAKE_PROJECT_VERSION}")
+ add_definitions(-DCMAKE_PROJECT_VERSION=\"${CMAKE_PROJECT_VERSION}\")
+ 
+-# pybind11 config file has a bug that makes is impossible to use with
+-# conan_cmake_configure.
+-# https://github.com/conan-io/conan-center-index/pull/4445
+ conan_cmake_configure(REQUIRES 
+-    # pybind11/2.6.1
++    pybind11/2.6.1
+     eigen/3.3.9
+     GENERATORS cmake_find_package)
+-# find_package(pybind11 REQUIRED)
+ 
+ conan_cmake_autodetect(settings)
+ conan_cmake_install(PATH_OR_REFERENCE .
+     BUILD missing
+-    REMOTE conan-center
++    REMOTE conancenter
+     SETTINGS ${settings})
+ 
++find_package(pybind11 REQUIRED)
+ find_package(Eigen3 REQUIRED)
+ 
+-
+-# hack around pybind11 bug 
+-# https://github.com/conan-io/conan-center-index/pull/4445
+-conan_cmake_run(REQUIRES pybind11/2.6.1 
+-    BASIC_SETUP NO_OUTPUT_DIRS CMAKE_TARGETS
+-    BUILD missing)
+-
+-
+ pybind11_add_module(krbalancing  src/krbalancing.cpp)
+-target_link_libraries(krbalancing PRIVATE Eigen3::Eigen CONAN_PKG::pybind11)
++target_link_libraries(krbalancing PRIVATE Eigen3::Eigen pybind11::pybind11)
+ target_link_libraries(krbalancing PRIVATE OpenMP::OpenMP_CXX)

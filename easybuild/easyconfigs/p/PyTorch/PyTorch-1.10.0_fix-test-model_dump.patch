@@ -1,0 +1,36 @@
+From https://github.com/pytorch/pytorch/pull/84744
+
+Author: Alexander Grund (TU Dresden)
+
+From 4d99f72dcf71bffa7ff4275750cb86d872ac653f Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Fri, 9 Sep 2022 11:10:05 +0200
+Subject: [PATCH] Fix failing test_model_dump due to empty file
+
+The `torch.jit.save` call on a file object may not actually write the
+data to disk due to buffering. The call to `model_dump.main` on that
+file will when fail with an error like
+
+> zipfile.BadZipFile: File is not a zip file
+
+Inspecting the file confirms that it is either empty (usually) or
+incomplete (possible).
+
+Fix this by flushing the file after saving the model.
+---
+ test/test_model_dump.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/test/test_model_dump.py b/test/test_model_dump.py
+index a8add0e2cd923..3c682b6ce6805 100644
+--- a/test/test_model_dump.py
++++ b/test/test_model_dump.py
+@@ -131,6 +131,8 @@ def test_main(self):
+ 
+         with tempfile.NamedTemporaryFile() as tf:
+             torch.jit.save(torch.jit.script(SimpleModel()), tf)
++            # Actually write contents to disk so we can read it below
++            tf.flush()
+ 
+             stdout = io.StringIO()
+             torch.utils.model_dump.main(
