@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'G-PhoCS'
+version = '1.2.3'
+
+homepage = 'http://compgen.cshl.edu/GPhoCS/'
+
+description = """G-PhoCS is a software package for inferring ancestral population sizes, population divergence
+times, and migration rates from individual genome sequences. G-PhoCS accepts as input a set of multiple sequence
+alignments from separate neutrally evolving loci along the genome. Parameter inference is done in a Bayesian manner,
+using a Markov Chain Monte Carlo (MCMC) to jointly sample model parameters and genealogies at the input loci.
+"""
+
+toolchain = {'name': 'iccifort', 'version': '2019.1.144-GCC-8.2.0-2.31.1'}
+
+source_urls = ['http://compgen.cshl.edu/GPhoCS/downloads/']
+sources = ['GPhoCS-%(version)s.tar.gz']
+checksums = ['e3854591f68b2111d5095f64221007456ae7a601bf760a21bd00ca5c21273776']
+
+parallel = 1
+
+buildopts = 'CC="$CC"'
+
+local_dash_ver = '-'.join(version.split('.'))
+files_to_copy = [(['bin/readTrace', 'bin/G-PhoCS-%s' % local_dash_ver], 'bin')]
+
+postinstallcmds = ["cd %%(installdir)s/bin && ln -s G-PhoCS-%s G-PhoCS" % local_dash_ver]
+
+sanity_check_paths = {
+    'files': ['bin/G-PhoCS', 'bin/readTrace'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "G-PhoCS --help | grep 'G-Phocs ver %(version)s'",
+    "readTrace --help",
+]
+
+moduleclass = 'bio'
