@@ -1,0 +1,51 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '3.0'
+versionsuffix = '-amd'
+
+homepage = 'https://developer.amd.com/amd-cpu-libraries/blas-library/'
+description = """AMD's fork of BLIS. BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/amd/blis/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-0.8.1_fix_dgemm-fpe-signalling-on-broadwell.patch',
+    '%(name)s-2.2_enable-ppc-autodetect.patch',
+]
+checksums = [
+    'ac848c040cd6c3550fe49148dbdf109216cad72d3235763ee7ee8134e1528517',  # 3.0.tar.gz
+    # BLIS-0.8.1_fix_dgemm-fpe-signalling-on-broadwell.patch
+    '345fa39933e9d1442d2eb1e4ed9129df3fe4aefecf4d104e5d4f25b3bca24d0d',
+    # BLIS-2.2_enable-ppc-autodetect.patch
+    '9abf334d0abb6cfdd18bec21c27d114b78a7d97be45883626a547eceea046ccd',
+]
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('Python', '3.9.5'),
+    ('Perl', '5.32.1'),
+]
+
+# Build Serial and multithreaded library
+configopts = ['--enable-cblas --enable-shared CC="$CC" auto',
+              '--enable-cblas --enable-threading=openmp --enable-shared CC="$CC" auto']
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT,
+              'lib/libblis-mt.a', 'lib/libblis-mt.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'

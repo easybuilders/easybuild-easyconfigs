@@ -15,6 +15,8 @@ uses maximum-likelihood (ML) optimality criterion. Its search heuristic
 
 toolchain = {'name': 'gompi', 'version': '2019b'}
 
+local_extract_lib = 'tar --strip-components=1 -C %%(builddir)s/raxml-ng-%%(version)s/libs/%s -xzf %%s'
+
 sources = [
     {
         'source_urls': ['https://github.com/amkozlov/raxml-ng/archive/'],
@@ -22,26 +24,28 @@ sources = [
     },
     {
         'source_urls': ['https://github.com/amkozlov/terraphast-one/archive/'],
-        'download_filename': '%s.zip' % local_terrap_commit,
-        'filename': 'terraphist-one.zip',
+        'download_filename': '%s.tar.gz' % local_terrap_commit,
+        'filename': 'terraphast-one-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'terraphast',
     },
     {
         'source_urls': ['https://github.com/ddarriba/pll-modules/archive/'],
-        'download_filename': '%s.zip' % local_pllmod_commit,
-        'filename': 'pll-modules.zip',
+        'download_filename': '%s.tar.gz' % local_pllmod_commit,
+        'filename': 'pll-modules-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'pll-modules',
     },
     {
         'source_urls': ['https://github.com/xflouris/libpll-2/archive/'],
-        'download_filename': '%s.zip' % local_libpll_commit,
-        'filename': 'libpll-2.zip',
+        'download_filename': '%s.tar.gz' % local_libpll_commit,
+        'filename': 'libpll-2-%(version)s.tar.gz',
+        'extract_cmd': local_extract_lib % 'pll-modules/libs/libpll',
     },
 ]
-
 checksums = [
     '43b95ee1bddae0daee84644e9ee760a77f28bb16e2071e95cca79a30f39373e5',  # 0.9.0.tar.gz
-    'eef5e2f365619da3bb1679f07920b29dfcd5202191fdf37b9f8fec4a52c1286b',  # terraphist-one.zip
-    '486f55cc2b4a63ddba8d00db79afcbf03f2499e35687eef56e4730f23d96b90a',  # pll-modules.zip
-    '6c90af957d4b06b88ef6568f6ba53ac3507285d042dc9ebc95f9837a7077d044',  # libpll-2.zip
+    '79ed9aebd1b7a58af1c9e99b087005e1b5ea10b99202c387f59f9c2f886b1c66',  # terraphast-one-0.9.0.tar.gz
+    '59fd7464dd697a819dff2aa167182cca81dbd3be75af2785ab74ded6a2ec4697',  # pll-modules-0.9.0.tar.gz
+    '6197cf7a4ae80060517ad2b47434b2a36c4aca0154b8390e278e40d6a11741b8',  # libpll-2-0.9.0.tar.gz
 ]
 
 dependencies = [
@@ -56,22 +60,13 @@ builddependencies = [
     ('Bison', '3.3.2'),
 ]
 
-# copy dependencies into place
-preconfigopts = "cp -a %%(builddir)s/terraphast-one-%s/* " % local_terrap_commit
-preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/terraphast/ && "
-
-preconfigopts += "cp -a %%(builddir)s/pll-modules-%s/* " % local_pllmod_commit
-preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/pll-modules/ && "
-
-preconfigopts += "cp -a %%(builddir)s/libpll-2-%s/* " % local_libpll_commit
-preconfigopts += "%(builddir)s/raxml-ng-%(version)s/libs/pll-modules/libs/libpll/ && "
-
 configopts = '-DUSE_MPI=ON '
 configopts += '-DUSE_GMP=ON '
 
-build_type = 'Release'
-
-separate_build_dir = True
+# too much parallellism makes the build fail with:
+# No rule to make target 'localdeps/lib/libterraces.a';
+# see https://github.com/amkozlov/raxml-ng/issues/108
+maxparallel = 10
 
 files_to_copy = [
     (["bin/raxml-ng-mpi"], "bin"),
@@ -81,5 +76,7 @@ sanity_check_paths = {
     'files': ['bin/raxml-ng-mpi'],
     'dirs':  [],
 }
+
+sanity_check_commands = ['raxml-ng-mpi -h']
 
 moduleclass = 'bio'

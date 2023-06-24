@@ -1,0 +1,100 @@
+# author: Denis Kristak
+
+easyblock = 'Tarball'
+
+name = 'PRINSEQ'
+version = '0.20.4'
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://prinseq.sourceforge.net'
+description = """A bioinformatics tool to PRe-process and show INformation of SEQuence data."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['http://sourceforge.net/projects/prinseq/files/standalone/']
+sources = ['%(namelower)s-lite-%(version)s.tar.gz']
+checksums = ['9b5e0dce3b7f02f09e1cc7e8a2dd77c0b133e5e35529d570ee901f53ebfeb56f']
+
+dependencies = [
+    ('Perl', '5.32.0'),
+    ('cairo', '1.16.0'),
+]
+
+# these are the perl libraries dependencies
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perldoc -lm %(ext_name)s ", "")
+
+# prevent that sanity check requires PRINSEQ itself to be available as a Perl module
+options = {'modulename': False}
+
+exts_list = [
+    ('ExtUtils::Depends', '0.8001', {
+        'source_tmpl': 'ExtUtils-Depends-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+        'checksums': ['673c4387e7896c1a216099c1fbb3faaa7763d7f5f95a1a56a60a2a2906c131c5'],
+    }),
+    ('ExtUtils::PkgConfig', '1.16', {
+        'source_tmpl': 'ExtUtils-PkgConfig-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+        'checksums': ['bbeaced995d7d8d10cfc51a3a5a66da41ceb2bc04fedcab50e10e6300e801c6e'],
+    }),
+    ('Pod::Usage', '2.0', {
+        'source_tmpl': 'Pod-Usage-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MAREKR/'],
+        'checksums': ['530943a9ac3ba00404d7be8ee8572f30f6db9de123cd725af3647333a87d4fea'],
+    }),
+    ('Cairo', '1.109', {
+        'source_tmpl': 'Cairo-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/X/XA/XAOC/'],
+        'checksums': ['8219736e401c2311da5f515775de43fd87e6384b504da36a192f2b217643077f'],
+    }),
+    ('Statistics::PCA', '0.0.1', {
+        'source_tmpl': 'Statistics-PCA-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DS/DSTH/'],
+        'checksums': ['f8adb10b00232123d103a5b49161ad46370f47fe0f752e5462a4dc15f9d46bc4'],
+    }),
+    ('MIME::Base64', '3.15', {
+        'source_tmpl': 'MIME-Base64-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/G/GA/GAAS/'],
+        'checksums': ['7f863566a6a9cb93eda93beadb77d9aa04b9304d769cea3bb921b9a91b3a1eb9'],
+    }),
+    ('Math::Cephes::Matrix', '0.5305', {
+        'source_tmpl': 'Math-Cephes-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/'],
+        'checksums': ['561a800a4822e748d2befc366baa4b21e879a40cc00c22293c7b8736caeb83a1'],
+    }),
+    ('Math::MatrixReal', '2.13', {
+        'source_tmpl': 'Math-MatrixReal-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LETO/'],
+        'checksums': ['4f9fa1a46dd34d2225de461d9a4ed86932cdd821c121fa501a15a6d4302fb4b2'],
+    }),
+    ('Text::SimpleTable', '2.07', {
+        'source_tmpl': 'Text-SimpleTable-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MR/MRAMBERG/'],
+        'checksums': ['256d3f38764e96333158b14ab18257b92f3155c60d658cafb80389f72f4619ed'],
+    }),
+    ('Contextual::Return', '0.2.1', {
+        'source_tmpl': 'Contextual-Return-v%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/D/DC/DCONWAY/'],
+        'checksums': ['17a1ed1043a2abe123920894d6023709e834de66ef766be86e4cfbb96b1dd16c'],
+    }),
+]
+
+fix_perl_shebang_for = ["*.pl"]
+
+postinstallcmds = ["chmod +x %(installdir)s/*.pl"]
+
+# this is the script which relies in many extra Perl libraries so we verify it's working fine
+sanity_check_commands = ['%(installdir)s/prinseq-graphs.pl']
+
+sanity_check_paths = {
+    'files': ['prinseq-lite.pl', 'prinseq-graphs.pl', 'prinseq-graphs-noPCA.pl'],
+    'dirs': []
+}
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': 'lib/perl5/site_perl/%(perlver)s/',
+}
+
+moduleclass = 'bio'
