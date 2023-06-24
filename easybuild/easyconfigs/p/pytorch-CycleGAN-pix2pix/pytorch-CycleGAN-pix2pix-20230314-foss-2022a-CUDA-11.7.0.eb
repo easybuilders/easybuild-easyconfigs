@@ -1,0 +1,59 @@
+easyblock = 'Binary'
+
+name = 'pytorch-CycleGAN-pix2pix'
+version = '20230314'
+_commit = '9f8f61e'
+versionsuffix = '-CUDA-11.7.0'
+
+homepage = 'https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix'
+description = """
+PyTorch implementations for both unpaired and paired image-to-image translation."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [{
+    'source_urls': ['https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/archive'],
+    'download_filename': '%s.tar.gz' % _commit,
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = ['%(name)s-%(version)s_fix_pytorch_order.patch']
+checksums = [
+    {'pytorch-CycleGAN-pix2pix-20230314.tar.gz': '8a50fd9431b5720767b9a3803d8d8e8dd10119555acbf04eaa2a79ffc9cdefca'},
+    {'pytorch-CycleGAN-pix2pix-20230314_fix_pytorch_order.patch':
+     '5afc81d510fd1ead98e1b9788734659328edac81240af9c97ee02267b0cd7d56'},
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('torchvision', '0.13.1', versionsuffix),
+    ('wandb', '0.13.4'),
+    ('dominate', '2.8.0'),
+    ('visdom', '0.2.4'),
+]
+
+extract_sources = True
+
+_pylib = 'lib/python%(pyshortver)s/site-packages'
+
+postinstallcmds = [
+    'cd %(installdir)s && mkdir bin && mv train.py test.py bin/ && chmod a+rx bin/*.py',
+    'cd %%(installdir)s && mkdir -p %s && mv data models options util %s' % (_pylib, _pylib),
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+sanity_check_paths = {
+    'files': ['bin/train.py', 'bin/test.py'],
+    'dirs': ['datasets', 'docs', 'imgs', 'scripts', _pylib],
+}
+
+sanity_check_commands = [
+    'train.py --help',
+    'test.py --help',
+]
+
+modextrapaths = {'PYTHONPATH': _pylib}
+
+moduleclass = 'vis'
