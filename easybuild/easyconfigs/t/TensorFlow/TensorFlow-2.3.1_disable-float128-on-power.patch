@@ -1,0 +1,35 @@
+CUDA < 11 does not support float128 leading to compile failures with GLIBC >= 2.26
+This disables the type when compiled with NVCC on POWER
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/BUILD b/tensorflow/BUILD
+index d00608ccc98..9da4f5aeace 100644
+--- a/tensorflow/BUILD
++++ b/tensorflow/BUILD
+@@ -406,6 +406,11 @@ config_setting(
+     },
+ )
+ 
++selects.config_setting_group(
++    name = "nvcc_on_ppc64le",
++    match_all = [":using_cuda_nvcc", ":linux_ppc64le"],
++)
++
+ config_setting(
+     name = "using_cuda_nvcc_with_dynamic_build",
+     define_values = {
+diff --git a/tensorflow/tensorflow.bzl b/tensorflow/tensorflow.bzl
+index 3ba217c4930..793fee29007 100644
+--- a/tensorflow/tensorflow.bzl
++++ b/tensorflow/tensorflow.bzl
+@@ -1384,6 +1384,9 @@ def _cuda_copts(opts = []):
+         "@local_config_cuda//cuda:using_clang": ([
+             "-fcuda-flush-denormals-to-zero",
+         ]),
++    }) + select({
++        "//conditions:default": [],
++        clean_dep("//tensorflow:nvcc_on_ppc64le"): ["-nvcc_options=compiler-options=-mno-float128"],
+     }) + if_cuda_is_configured_compat(opts)
+ 
+ # Build defs for TensorFlow kernels

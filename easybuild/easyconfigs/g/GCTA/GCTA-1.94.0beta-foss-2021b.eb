@@ -1,0 +1,69 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'CMakeMakeCp'
+
+name = 'GCTA'
+version = '1.94.0beta'
+_plink_commit = '3744540'
+
+homepage = 'https://yanglab.westlake.edu.cn/software/gcta/'
+description = """
+GCTA (Genome-wide Complex Trait Analysis) is a software package, which was
+ initially developed to estimate the proportion of phenotypic variance explained
+ by all genome-wide SNPs for a complex trait but has been extensively extended
+ for many other analyses of data from genome-wide association studies (GWASs).
+"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/jianyangqt/gcta/archive'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/zhilizheng/plink-ng/archive'],
+        'download_filename': '%s.tar.gz' % _plink_commit,
+        'filename': 'plink-ng-%s.tar.gz' % _plink_commit,
+        'extract_cmd': "tar xzvf %%s --strip-components 1 -C gcta-%s/submods/plink-ng" % version,
+    },
+]
+patches = [
+    'GCTA-1.94.0beta_allow-BLAS-selection.patch',
+    'GCTA-1.94.0beta_lapack-compatibility.patch',
+]
+checksums = [
+    '9220a6c40f31e3b1ce3d25f7eee3d8c62403bee8d6ed624bd8b61891badcb14f',  # GCTA-1.94.0beta.tar.gz
+    'a7c70c237d49d64fc1668ced373036c09b41d7c61d0b8b24b47e2fb76474455d',  # plink-ng-3744540.tar.gz
+    '320a5d82d12cf453f1396b228723ac18dc98e32bc459394dd4d712fc16b24747',  # GCTA-1.94.0beta_allow-BLAS-selection.patch
+    '643282a2e2c02fc683431b673a4623a498129870431481d33d33e19a509026ce',  # GCTA-1.94.0beta_lapack-compatibility.patch
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    # Eigen and SpectrA are header-only C++ libraries
+    ('Eigen', '3.4.0'),
+    ('SpectrA', '1.0.1'),
+]
+
+dependencies = [
+    ('Boost', '1.77.0'),
+    ('SQLite', '3.36'),
+    ('zstd', '1.5.0'),
+    ('GSL', '2.7'),
+    ('FlexiBLAS', '3.0.4'),
+]
+
+preconfigopts = 'EIGEN3_INCLUDE_DIR=$EBROOTEIGEN/include SPECTRA_LIB=$EBROOTSPECTRA/include'
+preconfigopts += ' BOOST_LIB=$EBROOTBOOST/include '
+
+files_to_copy = [(['gcta64'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/gcta64'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["gcta64 | grep -e 'Analysis started'"]
+
+moduleclass = 'bio'

@@ -1,0 +1,90 @@
+The AVX/AVX2 detection seems to be based on compiler instead of CPU capabilities
+which can lead to broken binaries as result of the build (eg AVX2 binaries in Intel IvyBridge)
+Completetly disable this detection as it is already set by EasyBuild
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- prov/psm3/configure.m4.orig	2021-06-18 23:47:26.752607000 +0200
++++ prov/psm3/configure.m4	2021-06-18 23:47:47.015363000 +0200
+@@ -88,45 +88,45 @@
+ 			])
+ 		CFLAGS=$save_CFLAGS
+ 
+-		AC_MSG_CHECKING([for -mavx support])
+-		save_CFLAGS=$CFLAGS
+-		CFLAGS="$PSM3_STRIP_OPTFLAGS -mavx -O0"
+-		AC_LINK_IFELSE(
+-			[AC_LANG_PROGRAM(
+-				[[#include <immintrin.h>]],
+-				[[unsigned long long _a[4] = {1ULL,2ULL,3ULL,4ULL};
+-				  __m256i vA = _mm256_loadu_si256((__m256i *)_a);
+-				  __m256i vB;
+-				  _mm256_store_si256(&vB, vA);
+-				  return 0;]])
+-			],[
+-				AC_MSG_RESULT([yes])
+-				PSM3_ARCH_CFLAGS="-mavx"
+-			],[
+-				psm3_happy=0
+-				AC_MSG_RESULT([no])
+-				AC_MSG_NOTICE([psm3 requires minimum of avx instruction set to build])
+-			])
+-		CFLAGS=$save_CFLAGS
++dnl		AC_MSG_CHECKING([for -mavx support])
++dnl		save_CFLAGS=$CFLAGS
++dnl		CFLAGS="$PSM3_STRIP_OPTFLAGS -mavx -O0"
++dnl		AC_LINK_IFELSE(
++dnl			[AC_LANG_PROGRAM(
++dnl				[[#include <immintrin.h>]],
++dnl				[[unsigned long long _a[4] = {1ULL,2ULL,3ULL,4ULL};
++dnl				  __m256i vA = _mm256_loadu_si256((__m256i *)_a);
++dnl				  __m256i vB;
++dnl				  _mm256_store_si256(&vB, vA);
++dnl				  return 0;]])
++dnl			],[
++dnl				AC_MSG_RESULT([yes])
++dnl				PSM3_ARCH_CFLAGS="-mavx"
++dnl			],[
++dnl				psm3_happy=0
++dnl				AC_MSG_RESULT([no])
++dnl				AC_MSG_NOTICE([psm3 requires minimum of avx instruction set to build])
++dnl			])
++dnl		CFLAGS=$save_CFLAGS
+ 
+-		AC_MSG_CHECKING([for -mavx2 support])
+-		save_CFLAGS=$CFLAGS
+-		CFLAGS="$PSM3_STRIP_OPTFLAGS -mavx2 -O0"
+-		AC_LINK_IFELSE(
+-			[AC_LANG_PROGRAM(
+-				[[#include <immintrin.h>]],
+-				[[unsigned long long _a[4] = {1ULL,2ULL,3ULL,4ULL};
+-				  __m256i vA = _mm256_loadu_si256((__m256i *)_a);
+-				  __m256i vB = _mm256_add_epi64(vA, vA);
+-				  (void)vB;
+-				  return 0;]])
+-			],[
+-				AC_MSG_RESULT([yes])
+-				PSM3_ARCH_CFLAGS="-mavx2"
+-			],[
+-				AC_MSG_RESULT([no])
+-			])
+-		CFLAGS=$save_CFLAGS
++dnl		AC_MSG_CHECKING([for -mavx2 support])
++dnl		save_CFLAGS=$CFLAGS
++dnl		CFLAGS="$PSM3_STRIP_OPTFLAGS -mavx2 -O0"
++dnl		AC_LINK_IFELSE(
++dnl			[AC_LANG_PROGRAM(
++dnl				[[#include <immintrin.h>]],
++dnl				[[unsigned long long _a[4] = {1ULL,2ULL,3ULL,4ULL};
++dnl				  __m256i vA = _mm256_loadu_si256((__m256i *)_a);
++dnl				  __m256i vB = _mm256_add_epi64(vA, vA);
++dnl				  (void)vB;
++dnl				  return 0;]])
++dnl			],[
++dnl				AC_MSG_RESULT([yes])
++dnl				PSM3_ARCH_CFLAGS="-mavx2"
++dnl			],[
++dnl				AC_MSG_RESULT([no])
++dnl			])
++dnl		CFLAGS=$save_CFLAGS
+ 
+ 		AS_IF([test x$with_psm3_rv = xno],
+ 		      [psm3_CPPFLAGS="$psm3_CPPFLAGS -URNDV_MOD"],

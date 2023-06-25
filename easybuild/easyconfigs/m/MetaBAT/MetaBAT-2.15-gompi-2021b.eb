@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'MetaBAT'
+version = '2.15'
+
+homepage = 'https://bitbucket.org/berkeleylab/metabat'
+description = "An efficient tool for accurately reconstructing single genomes from complex microbial communities"
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+source_urls = ['https://bitbucket.org/berkeleylab/metabat/get/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'MetaBAT-2.15_zlib-htslib.patch',
+    'MetaBAT-2.15_fix-aarch64.patch',
+]
+checksums = [
+    {'v2.15.tar.gz': '550487b66ec9b3bc53edf513d00c9deda594a584f53802165f037bde29b4d34e'},
+    {'MetaBAT-2.15_zlib-htslib.patch': 'f03b8d5717958df3e23dc6905155663b388ad330ec16eab546133d9cceeb5e77'},
+    {'MetaBAT-2.15_fix-aarch64.patch': '061b43d6c0ac4a9acf3bd7cf3c62efc856661993a61e7d4652ed68aafb7aa7af'},
+]
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('CMake', '3.22.1'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Perl', '5.34.0'),
+    ('Boost', '1.77.0'),
+    ('zlib', '1.2.11'),
+    ('SAMtools', '1.14'),
+    ('XZ', '5.2.5'),
+    ('bzip2', '1.0.8'),
+]
+
+configopts = '-DZLIB_LIBRARY="$EBROOTZLIB/lib/libz.a" -DHTSLIB_LIBRARY="$EBROOTSAMTOOLS/lib/libhts.a" '
+# SAMtools's libhts.a requires additional libraries like cURL to be linked
+configopts += '-DCMAKE_EXE_LINKER_FLAGS_RELEASE="-lcurl -llzma -lbz2 -lssl -lcrypto" '
+
+fix_perl_shebang_for = ['bin/*.pl']
+
+sanity_check_paths = {
+    'files': ['bin/aggregateBinDepths.pl', 'bin/aggregateContigOverlapsByBin.pl', 'bin/metabat', 'bin/metabat2'],
+    'dirs': [""],
+}
+
+moduleclass = 'bio'

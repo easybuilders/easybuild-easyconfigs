@@ -1,0 +1,53 @@
+name = 'OpenBLAS'
+version = '0.3.17'
+
+homepage = 'http://www.openblas.net/'
+description = "OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = [
+    # order matters, trying to download the large.tgz/timing.tgz LAPACK tarballs from GitHub causes trouble
+    'https://www.netlib.org/lapack/timing/',
+    'https://github.com/xianyi/OpenBLAS/archive/',
+]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    ('large.tgz', '.'),
+    ('timing.tgz', '.'),
+    'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch',
+    'OpenBLAS-%(version)s_workaround-gcc11-miscompiling-C-ZBLAS3-tests.patch',
+    'OpenBLAS-%(version)s_fix-segfault-ztrsv.patch',
+    'OpenBLAS-0.3.21_fix-order-vectorization.patch',
+    'OpenBLAS-0.3.21_disable-fma-in-cscal-zscal.patch',
+    'OpenBLAS-0.3.21_avoid-crash-in-zdot.patch',
+]
+checksums = [
+    {'v0.3.17.tar.gz': 'df2934fa33d04fd84d839ca698280df55c690c86a5a1133b3f7266fce1de279f'},
+    {'large.tgz': 'f328d88b7fa97722f271d7d0cfea1c220e0f8e5ed5ff01d8ef1eb51d6f4243a1'},
+    {'timing.tgz': '999c65f8ea8bd4eac7f1c7f3463d4946917afd20a997807300fe35d70122f3af'},
+    {'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch':
+     'e6b326fb8c4a8a6fd07741d9983c37a72c55c9ff9a4f74a80e1352ce5f975971'},
+    {'OpenBLAS-0.3.17_workaround-gcc11-miscompiling-C-ZBLAS3-tests.patch':
+     'ea76320bc047eff1bf2a2f50c1c19acb4fd6d2b8a5bf81a4dce73145a2a5cfcb'},
+    {'OpenBLAS-0.3.17_fix-segfault-ztrsv.patch': 'b1f89d90cc46b486534069135854e6081994b5a1a88370d32dae982e0f040111'},
+    {'OpenBLAS-0.3.21_fix-order-vectorization.patch':
+     '08af834e5d60441fd35c128758ed9c092ba6887c829e0471ecd489079539047d'},
+    {'OpenBLAS-0.3.21_disable-fma-in-cscal-zscal.patch':
+     'bd6836206a883208dc8bc997946f97e4c97d91d8e101fc54db414aaa56902fc3'},
+    {'OpenBLAS-0.3.21_avoid-crash-in-zdot.patch': '3dac2c1ec896df574f1b37cde81a16f24550b7f1eb81fbfacb0c4449b0dc7894'},
+]
+
+builddependencies = [
+    ('make', '4.3'),
+    # required by LAPACK test suite
+    ('Python', '3.9.6', '-bare'),
+]
+
+run_lapack_tests = True
+max_failing_lapack_tests_num_errors = 150
+
+# extensive testing can be enabled by uncommenting the line below
+# runtest = 'PATH=.:$PATH lapack-timing'
+
+moduleclass = 'numlib'
