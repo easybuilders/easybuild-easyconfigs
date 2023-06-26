@@ -1,0 +1,105 @@
+easyblock = 'Bundle'
+
+name = 'podman'
+version = '4.5.0'
+
+homepage = 'https://podman.io'
+description = """Podman is a daemonless container engine for developing, managing,
+and running OCI Containers on your Linux System."""
+
+toolchain = SYSTEM
+
+source_urls = [
+    'https://github.com/NVIDIA/libnvidia-container/archive/refs/tags/',
+    'https://github.com/containers/conmon/archive/refs/tags/',
+    'https://github.com/containers/podman/archive/refs/tags/',
+]
+
+builddependencies = [('Go', '1.18.3')]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'skipsteps': ['configure'],
+    'start_dir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('libnvidia-container', '1.13.0', {
+        'sources': ['v%(version)s.tar.gz'],
+	'checksums': ['0789bd04ddf92a28346b6fc6a0fae1a639833b9141fcc5dc4ae94c9a24b07ae2'],
+	'buildopts': 'REVISION=release prefix=%(installdir)s WITH_TIRPC=yes WITH_LIBELF=yes',
+	'installopts': 'REVISION=release prefix=%(installdir)s WITH_TIRPC=yes WITH_LIBELF=yes',
+    }),
+    ('nvidia-container-toolkit', '1.13.0', {
+        'sources': [{'source_urls': ['https://github.com/NVIDIA/nvidia-container-toolkit/archive/refs/tags/'],
+	             'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+	'checksums': ['a1487c86ce4fc31ba528bf92db3f4d083872e987b41083a53b2718206fd6c9b0'],
+	'buildopts': 'REVISION=release binaries',
+	'install_cmd': 'cp -p nvidia-* %(installdir)s/bin',
+    }),
+    ('conmon', '2.1.7', {
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['7d0f9a2f7cb8a76c51990128ac837aaf0cc89950b6ef9972e94417aa9cf901fe'],
+	'install_cmd': 'make podman PREFIX=%(installdir)s',
+    }),
+    ('podman', '4.5.0', {
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['830a633630bf6e61f2b8d4ca00efdd9a173ef25cdd49d4a4364c293e088561df',
+	              'da57559d43e2261b465a394d686d6de8e7a0cb619cb803efceac85f8b28cd335'],
+	'patches': ['podman-4.5.0-cdispecdirs.patch'],
+        # silence warnings we can't avoid, prefix etc and usr/share for config files
+	'prebuildopts': ('sed -i "s!/usr/libexec/podman/conmon!%(installdir)s/libexec/podman/conmon!g" '
+                         + 'vendor/github.com/containers/common/pkg/config/default.go && '
+                         + 'sed -i "s!logrus.Warnf\(.*force_mask\)!logrus.Debugf\\1!" '
+                         + 'vendor/github.com/containers/storage/drivers/overlay/overlay.go && '
+                         + 'sed -i "s!logrus.Warnf\(.*rootless\)!logrus.Debugf\\1!" '
+                         + 'pkg/rootless/rootless_linux.go && '
+                         + 'sed -i "s!logrus.ErrorLevel!logrus.DebugLevel!" '
+                         + 'pkg/rootless/rootless_linux.go && '
+                         + 'sed -i "s!/usr/share!%(installdir)s/share!" '
+                         + 'vendor/github.com/containers/storage/types/options_linux.go '
+                         + 'vendor/github.com/containers/common/pkg/config/config_linux.go && '
+                         + 'sed -i "s!/etc/!%(installdir)s/etc/!" '
+                         + 'vendor/github.com/containers/common/pkg/config/config_linux.go && '
+                         + 'sed -i "s!/etc/containers!%(installdir)s/etc/containers!" '
+                         + 'vendor/github.com/containers/storage/types/options_linux.go '
+                         + 'vendor/github.com/containers/common/pkg/config/default.go '
+                         + 'vendor/github.com/containers/image/v5/signature/policy_paths_common.go '
+                         + 'pkg/trust/registries.go '
+                         + 'vendor/github.com/containers/image/v5/pkg/sysregistriesv2/paths_common.go && '),
+        'buildopts': 'BUILDTAGS="selinux seccomp exclude_graphdriver_btrfs"',
+	'installopts': 'PREFIX=%(installdir)s',
+    }),
+]
+
+local_storage_conf = '''
+%s
+driver = "overlay"
+
+%s
+ignore_chown_errors = "true"
+force_mask = "700"
+''' % ('[storage]', '[storage.options.overlay]')
+
+local_containers_conf = '''
+%s
+ipcns = "host"
+netns = "host"
+''' % ('[containers]')
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/etc/containers',
+    'cat > %(installdir)s/etc/containers/storage.conf <<EOF' + local_storage_conf + 'EOF',
+    'cat > %(installdir)s/etc/containers/containers.conf <<EOF' + local_containers_conf + 'EOF',
+    'curl -o %(installdir)s/etc/containers/policy.json https://raw.githubusercontent.com/containers/skopeo/main/default-policy.json',
+    'curl -o %(installdir)s/etc/containers/registries.conf https://src.fedoraproject.org/rpms/containers-common/raw/main/f/registries.conf',
+]
+
+sanity_check_paths = {
+    'files': ['bin/podman', 'bin/podman-remote'],
+    'dirs': ['lib/tmpfiles.d', 'libexec/podman',
+             'share/man/man1', 'share/man/man5'],
+}
+
+moduleclass = 'tools'

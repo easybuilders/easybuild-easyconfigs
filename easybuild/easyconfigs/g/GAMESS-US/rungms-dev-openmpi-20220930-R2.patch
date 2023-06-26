@@ -1,0 +1,110 @@
+--- gamess/rungms-dev	2022-10-01 04:59:49.000000000 +0000
++++ gamess/rungms-dev	2023-06-22 21:44:06.872266077 +0000
+@@ -62,8 +62,10 @@
+ #
+ # Make life simple and set GMSPATH as the current directory
+ #
+-set GMSPATH=`pwd`
++#set GMSPATH=`pwd`
++set GMSPATH=$EBROOTGAMESSMINUS
+ #OVERRIDE GMSPATH
++if ( ! $?GMS_OPENMPI_FLAGS) set GMS_OPENMPI_FLAGS="--mca pml ucx --mca osc ucx --oversubscribe"
+ #
+ if ( -e $GMSPATH/install.info ) then
+   set echo
+@@ -153,27 +155,28 @@
+       set SCR=/scratch/$PBS_JOBID
+    endif
+ else if ($SCHED == SLURM) then
+-  if ($?TMPDIR) then
+-     set SCR=$TMPDIR/$SLURM_JOBID
++ if ( ! $?SCR) then
++  if ($?SLURM_TMPDIR) then
++    set SCR=$SLURM_TMDPIR
++   else  if ( -d /scratch/$USER )  then
++      set SCR=/scratch/$USER/$SLURM_JOBID
++   else
++       SCR=`pwd`/scratch
++   endif
++   mkdir -p $SCR
+   else
+-    if ( $GMS_HPC_SYSTEM_TARGET == birch ) then
+-       set SCR=`pwd`/scratch
+-    else
+-       set SCR=/scratch/$USER/$SLURM_JOBID
+-    endif
++     echo "SCR defined as $SCR"
+   endif
+ else
+   # Running locally
+-  if ( -d /scratch ) then
+-     set SCR=/scratch
+-  else if ( -d /local ) then
+-     if ( -d /local/$USER ) then
+-       set SCR=/local/$USER
+-     else
+-       set SCR=/local
+-     endif
+-  else
++  if (! $?SCR) then
++   if ($?SCRATCH) then
++     set SCR=$SCRATCH
++   else
+      set SCR=`pwd`/scratch
++     mkdir -p $SCR
++   endif
++  echo "SCR is defined a $SCR"
+   endif
+ endif
+ #
+@@ -221,12 +224,8 @@
+ #
+ #OVERRIDE USERSCR
+ if (! $?USERSCR ) then
+-  if ( -d $HOME/restart ) then
+-    set USERSCR=$HOME/restart
+-  else
+-    mkdir -p $HOME/restart
+-    set USERSCR=$HOME/restart
+-  endif
++    mkdir -p $PWD/restart
++    set USERSCR=$PWD/restart
+ endif
+ #
+ # Computing facility specific setup for $USERSCR
+@@ -1068,7 +1067,7 @@
+         if ($NNODES == 1) then
+           orterun --mca orte_base_help_aggregate 0 \
+             --mca orte_tmpdir_base /tmp \
+-            --mca btl vader,self,tcp \
++             $GMS_OPENMPI_FLAGS \
+           -np $NPROCS \
+           --bind-to none \
+           -map-by ppr:${PPN2}:socket \
+@@ -1077,7 +1076,7 @@
+         else
+           orterun --mca orte_base_help_aggregate 0 \
+             --mca orte_tmpdir_base /tmp \
+-            --mca btl vader,self,tcp \
++            $GMS_OPENMPI_FLAGS \
+           -np $NPROCS \
+           --bind-to none \
+           -map-by ppr:${PPN2}:node \
+@@ -1098,7 +1097,7 @@
+           orterun \
+             --mca orte_base_help_aggregate 0 \
+             --mca orte_tmpdir_base /tmp \
+-            --mca btl vader,self,tcp \
++             $GMS_OPENMPI_FLAGS \
+           -np $NPROCS \
+           --map-by ppr:${PPN2}:node \
+           --report-bindings \
+@@ -1425,7 +1424,7 @@
+        breaksw
+      case orte:
+        set echo
+-       orterun --mca btl vader,self,tcp -np $NPROCS --bind-to socket \
++       orterun $GMS_OPENMPI_FLAGS -np $NPROCS --bind-to socket \
+                --map-by ppr:${NPROCS}:node \
+                --report-bindings \
+                $GMSPATH/gamess.cchem.$VERNO.x < /dev/null

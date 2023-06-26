@@ -13,7 +13,7 @@ toolchain = SYSTEM
 # specify CMC server LMCOMSOL_LICENSE_FILE to comsol.py
 # advance arrangements must be made with CMC for ebuser
 # license_file = '/cvmfs/restricted.computecanada.ca/easybuild/sources/c/COMSOL/license.dat'
-license_file = '6601@199.241.162.97'
+license_file = '6601@127.0.0.1'
 
 sources = ['%(name)s-%(version)s.tar.gz']
 
@@ -23,7 +23,10 @@ checksums = ['86674565d7a0a8ff5cffb33040e3f1a97489d4d5c929ce0b888134e21471e13d']
 postinstallcmds = [
 	"""sed -i -e 's/LIBDIRS="\(.*\)"/LIBDIRS="$$EBROOTGENTOO\/lib \\1"/g' -e 's/readlink/readlink -f/g' %(installdir)s/bin/comsol""",
 	"rm %(installdir)s/license/license.dat %(installdir)s/license/license.paid",
-	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s" 
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+        "find %(installdir)s/lib/glnxa64/gcc \( -type f -o -type l \) -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+        "cd %(installdir)s/lib/glnxa64/gcc; ln -s libstdc++.so.6 %(installdir)s/lib/glnxa64/gcc/libstdc++.so",
+        "ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/usr/x86_64-pc-linux-gnu/lib/gcc/libstdc++.so.6 %(installdir)s/lib/glnxa64/gcc/libstdc++.so.6"
 ]
 
 modluafooter = """

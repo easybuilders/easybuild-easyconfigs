@@ -1,0 +1,83 @@
+# This easyconfig is to build AmberTools with  MPI and CUDA - enabled QUICK binaries 
+# It can be adapted to buld PMEMD with NCCL  by fixing the following issues:
+# CMake config fails to build PMEMD (and AmberTools as well) with NCCL library due to bugs in CMake scripts
+# 1. FindNCCL function is never called even when NCCL build is enabled (3rdPartyTools.cmake, l.538)
+# 2. The logic to check for NCCL is wrong; it emits error when NCCL is found (PMEMDCompilerFlags.cmake, l.230) 
+
+easyblock = 'EB_Amber'
+
+name = 'AmberTools'
+version = "23"
+patchlevels = (9, 0)
+
+homepage = "https://ambermd.org/AmberTools.php"
+description = "AmberTools consists of several independently developed packages that work well by themselves, and with Amber20 itself. The suite can also be used to carry out complete molecular dynamics simulations, with either explicit water or generalized Born solvent models."
+
+toolchain = {'name': 'gofbc', 'version': '2020.1.403.114'}
+toolchainopts = {'openmp': True}   #, 'usempi': True}
+
+sources = ["AmberTools%(version)s.tar.bz2"]
+patches = [
+        #"%(name)s-%(version)s-pathscripts.patch",
+        #"%(name)s-%(version)s_quick_cuda11.4.patch",
+	"AmberTools-20_cmake-locate-netcdf.patch",
+        #"%(name)s-%(version)s_CMake-FlexiBLAS.patch",
+        "%(name)s-22_CMake-FlexiBLAS.patch",
+]
+checksums = [
+    {'AmberTools23.tar.bz2': 'debb52e6ef2e1b4eaa917a8b4d4934bd2388659c660501a81ea044903bf9ee9d'},
+    {'AmberTools-20_cmake-locate-netcdf.patch': '473e07c53b6f641d96d333974a6af2e03413fecef79f879d3fdecf7fecaab4d0'},
+    {'AmberTools-22_CMake-FlexiBLAS.patch': '9543812c24c4b7842f64f1f8abaf2c92b5c4c0fadcdbd9811e76b81a778f0d36'},
+]
+
+builddependencies = [('CMake', '3.23.1')]
+
+dependencies = [
+    ('Python', '3.10'),
+    ('SciPy-Stack', '2023a'),
+    ('Perl', '5.30.2'),
+    ('Boost', '1.72.0'),
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+    ('arpack-ng', '3.9.0'),
+    ('PnetCDF', '1.12.2'),
+    ('FFTW', '3.3.8', '-mpi'),
+    ('mpi4py', '3.0.3'),
+]
+
+separate_build_dir = True
+
+configopts = ' ' 
+configopts =  ' -DBUILD_QUICK=TRUE '    
+#configopts += ' -DCUDA=TRUE' => handled by EasyBlock
+#configopts += ' -DOPENMP=TRUE' => handled by EasyBlock and toolchainopts
+configopts += ' -DMPI=TRUE'  #  => handled by the EasyBlock and toolchainopts
+#configopts += ' -DCOMPILER=GNU'   # => compiler auto in EasyBlock
+#configopts += ' -DDOWNLOAD_MINICONDA=FALSE' => handled in EasyBlock
+#configopts += ' -DTRUST_SYSTEM_LIBS=TRUE' => handled in EasyBlock
+configopts += ' -DFORCE_DISABLE_LIBS=plumed'
+configopts += ' -DINSTALL_TESTS=TRUE'  #=> removed by EasyBlock
+#configopts += ' -DNetCDF_INCLUDES=$EBROOTNETCDFMINFORTRAN/include '
+
+postinstallcmds = [
+   ' '.join([
+        '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh',
+        '--path %(installdir)s/',
+        '--any_interpreter',
+        '--add_origin',
+        '--add_path %(installdir)s/lib',
+    ])
+]
+
+modextravars = {
+    'AMBERHOME': '%(installdir)s',
+    'QUICK_BASIS': '%(installdir)s/AmberTools/src/quick/basis',
+}
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+    'PERL5LIB': ['lib/perl'],
+}
+
+
+moduleclass = 'chem'

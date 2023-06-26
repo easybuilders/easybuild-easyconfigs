@@ -1,0 +1,34 @@
+easyblock = 'Binary'
+
+name = 'CUDA-compat'
+version = '11.8'
+local_nv_version = '520.61.05'
+hidden = True
+
+homepage = 'https://developer.nvidia.com/cuda-toolkit'
+description = """Compatibility libraries for running CUDA on systems with older
+ drivers (those corresponding to CUDA 10.2 or later)."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/']
+sources = ['cuda-compat-11-8-%s-1.x86_64.rpm' % local_nv_version]
+checksums = ['fc71d77e8ffebcb0e20e35379c510eecbdcce50dbce6016758121675160d266d']
+
+install_cmd = "rpm2cpio %s | cpio -idm;" % sources[0]
+install_cmd += "mv usr/local/cuda-%(version)s/compat %(installdir)s/lib"
+
+# RSNT_LD_LIBRARY_PATH deals with newgrp
+modluafooter = """
+prepend_path("LD_LIBRARY_PATH","%(installdir)s/lib")
+prepend_path("RSNT_LD_LIBRARY_PATH","%(installdir)s/lib")
+"""
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s.%s' % (f, SHLIB_EXT, local_nv_version) for f in
+              ('cuda', 'nvidia-nvvm', 'nvidia-ptxjitcompiler')],
+    'dirs': ['lib'],
+}
+
+
+moduleclass = 'system'
