@@ -1,0 +1,66 @@
+easyblock = 'CMakeMake'
+
+name = 'MuJoCo'
+version = '2.3.6'
+
+homepage = 'https://mujoco.org/'
+description = """MuJoCo stands for Multi-Joint dynamics with Contact. It is a general purpose
+physics engine that aims to facilitate research and development in robotics,
+biomechanics, graphics and animation, machine learning, and other areas which
+demand fast and accurate simulation of articulated structures interacting with
+their environment."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/deepmind/mujoco/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+checksums = ['3ede20f8be574baa65ee6164f90c91b787adbe2b877cc4cc8bd1c6678f747354']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('SciPy-Stack', '2022a'),
+    ('GLFW', '3.3.8'),
+]
+
+multi_deps = {'Python': ['3.9', '3.10', '3.11']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE], 'use_pip': True}
+exts_list = [
+    ('mujoco', version, {
+        'preinstallopts': " export MUJOCO_PATH=%(installdir)s && "
+                          " export MUJOCO_PLUGIN_PATH=%(installdir)s/share/mujoco/model/plugin && ",
+        'sources': ['mujoco-%(version)s.tar.gz'],
+        'checksums': ['1870fb2857d008482961cb64dd261cb75b24da254985c32f953ef19d16141386'],
+    }),
+    ('absl-py', '1.2.0', {     # Import name is absl but package name is absl-py
+        'modulename': 'absl',
+        'checksums': ['f568809938c49abbda89826223c992b630afd23c638160ad7840cfe347710d97'],
+    }),
+    ('PyOpenGL', '3.1.6', {   # Import name is OpenGL but package name is PyOpenGL
+        'modulename': 'OpenGL',
+        'checksums': ['8ea6c8773927eda7405bffc6f5bb93be81569a7b05c8cac50cd94e969dce5e27'],
+    }),
+]
+
+configopts = "-DCMAKE_C_FLAGS='-O2 -ftree-vectorize -march=core-avx2 -fno-math-errno -Wno-error=stringop-truncation ' "
+
+exts_filter = ("python -c 'import %(ext_name)s'", "")
+
+sanity_check_paths = {
+    'files': ['bin/basic', 'bin/derivative', 'bin/record', 'bin/simulate',
+              'lib64/libmujoco.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share/mujoco/model'],
+}
+
+sanity_check_commands = ['basic']
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'phys'
