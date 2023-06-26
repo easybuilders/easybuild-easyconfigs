@@ -1,0 +1,45 @@
+easyblock = 'CmdCp'
+
+name = 'Nextflow'
+
+version = "22.10.8"
+
+homepage = 'https://www.nextflow.io'
+description = """Nextflow is a reactive workflow framework and a programming DSL 
+ that eases writing computational pipelines with complex data"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/%(namelower)s-io/%(namelower)s/releases/download/v%(version)s/']
+sources = [{'filename': '%(namelower)s-%(version)s-all', 'extract_cmd': 'cp %s %(builddir)s/%(namelower)s'}]
+checksums = ['56c8979edada822a5f8a75721dbb8079a4dd8c94b9688337fc3cc95a15e3e7b1']
+
+# specify dependency on Java/11 "wrapper", rather than a specific Java version
+
+dependencies = [
+    ('Java', '13'),
+]
+
+skipsteps = [
+    'configure',
+    'build',
+]
+
+files_to_copy = [(['%(namelower)s'], '%(installdir)s/bin')]
+
+postinstallcmds = [
+    "chmod +x %(installdir)s/bin/%(namelower)s",
+    'sed -i -e "s/cli=(\\$(/cli=(\\$(export NFX_OPTS=\\$JAVA_TOOL_OPTIONS; unset JAVA_TOOL_OPTIONS; /g" %(installdir)s/bin/%(namelower)s',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "%(namelower)s -v",
+    "%(namelower)s help",
+]
+
+moduleclass = 'tools'

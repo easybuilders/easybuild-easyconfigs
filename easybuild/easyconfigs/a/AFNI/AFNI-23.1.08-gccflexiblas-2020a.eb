@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'AFNI'
+version = "23.1.08"
+
+homepage = 'http://afni.nimh.nih.gov/'
+description = """AFNI is a set of C programs for processing, analyzing, and displaying functional MRI (FMRI) data -
+ a technique for mapping human brain activity."""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2020a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/']
+sources = ['AFNI_%(version)s.tar.gz']
+checksums = ['9a561944094a82ce76a9e97491ac3a08d031e01c8e2cb5e52703f893174a4cec']
+
+builddependencies = [
+    ('M4', '1.4.18'),
+]
+
+dependencies = [
+    ('R', '4.2.1'),
+    ('Qt5', '5.12.8'),
+    ('GSL', '2.6'),
+    ('R-bundle-Bioconductor', '3.16', '-R-4.2.1'),
+    ('expat', '2.2.9'),
+    ('Python', '3.10'),
+]
+
+prebuildopts = "cd src && cp Makefile.linux_centos_7_64  Makefile && "
+
+buildopts = 'totality LGIFTI="$EBROOTEXPAT/lib/libexpat.so" LDPYTHON="-lpython%(pyshortver)s" CC="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \\$(CEXTRA)" CCVOL="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \\$(CEXTRA)" CCFAST="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \\$(CEXTRA)" CCOLD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \\$(CEXTRA)" CCMIN="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \\$(CEXTRA)" CCSVD="${CC} ${CFLAGS} -fPIC -DREAD_WRITE_64 -DLINUX2 \\$(CEXTRA)" LD="${CC} \\$(CPROF)" LZLIB="${EBROOTZLIB}/lib/libz.so" XLIBS="-lXm -lXt" IFLAGS="-I. -I$EBROOTPYTHON/include/python%(pyshortver)s -I$EBROOTGLIB/lib/glib-2.0/include -I$EBROOTGLIB/include/glib-2.0" COMP_SUMA=True  INSTALLDIR=%(installdir)s'
+
+parallel = 1
+
+postinstallcmds = ['chmod -R go+X %(installdir)s']
+
+skipsteps = [
+    'configure',
+    'install',
+]
+
+sanity_check_paths = {
+    'files': ['%(namelower)s'],
+    'dirs': [],
+}
+
+modextrapaths = {'PATH': ['']}
+
+moduleclass = 'bio'

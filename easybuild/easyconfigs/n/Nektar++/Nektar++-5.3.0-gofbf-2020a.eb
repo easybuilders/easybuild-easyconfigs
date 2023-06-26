@@ -1,0 +1,105 @@
+easyblock = 'CMakeMake'
+
+name = 'Nektar++'
+version = "5.3.0"
+
+homepage = 'https://www.nektar.info/'
+description = """Nektar++ is a tensor product based finite element package designed to allow one to construct efficient classical low polynomial order h-type solvers (where h is the size of the finite element) as well as higher p-order piecewise polynomial order solvers."""
+
+toolchain = {'name': 'gofbf', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = ['https://gitlab.nektar.info/nektar/nektar/-/archive/v%(version)s/']
+sources = ['nektar-%(version)s.tar.gz']
+checksums = ['38e812b39aae2d8d8268a98cdbfcb3a912b059d823a82009eb74dea3b1605b04']
+
+builddependencies = [('CMake', '3.13.3')]
+
+dependencies = [
+    ('Boost', '1.80.0', '-mpi'),
+    ('HDF5', '1.12.1', '-mpi'),
+    #('FFTW', '3.3.8'),              # Provided from the toolchain.
+    ('arpack-ng', '3.9.0'),
+    #('PETSc', '3.17.1'),
+    ('Python', '3.10'),
+    ('METIS', '5.1.0'),
+    #('STAMP', '1.3'),
+    #('SCOTCH', '7.0.3'),
+    #('VTK', '8.2.0'),
+]
+
+separate_build_dir = True
+
+preconfigopts = 'export HDF5_INCLUDE_DIRS=$EBROOTHDF5/include && '
+
+configure_cmd_prefix = ' CC=mpicc CXX=mpicxx FC=mpif90 FF=mpif77 '
+
+configopts  = ' -DCMAKE_BUILD_TYPE=Release -DNEKTAR_USE_MPI=ON '
+configopts += ' -DBoost_INCLUDE_DIR=${EBROOTBOOST}/include '
+configopts += ' -DNEKTAR_USE_FFTW=ON -DFFTW_LIB=$EBROOTFFTW/lib/libfftw3.a '
+configopts += ' -DBLAS_LAPACK="$LIBBLAS $LIBLAPACK" '
+configopts += ' -DNEKTAR_USE_HDF5=ON -DHDF5_IS_PARALLEL=ON '
+configopts += ' -DNEKTAR_USE_ARPACK=ON '
+
+configopts += ' -DTHIRDPARTY_BUILD_SCOTCH=ON '
+configopts += ' -DNEKTAR_USE_SCOTCH=ON '
+
+configopts += ' -DNEKTAR_BUILD_SOLVERS=ON '
+configopts += ' -DNEKTAR_SOLVER_ACOUSTIC=ON '
+configopts += ' -DNEKTAR_SOLVER_ADR=ON '
+configopts += ' -DNEKTAR_SOLVER_CARDIAC_EP=ON '
+configopts += ' -DNEKTAR_SOLVER_COMPRESSIBLE_FLO=ON '
+configopts += ' -DNEKTAR_SOLVER_DIFFUSION=ON '
+configopts += ' -DNEKTAR_SOLVER_DUMMY=ON '
+configopts += ' -DNEKTAR_SOLVER_ELASTICITY=ON '
+configopts += ' -DNEKTAR_SOLVER_INCNAVIERSTOKES=ON '
+configopts += ' -DNEKTAR_SOLVER_MMF=ON '
+configopts += ' -DNEKTAR_SOLVER_PULSEWAVE=ON '
+configopts += ' -DNEKTAR_SOLVER_SHALLOW_WATER=ON '
+
+configopts += ' -DTHIRDPARTY_BUILD_BLAS_LAPACK=OFF '
+configopts += ' -DTHIRDPARTY_BUILD_BOOST=OFF '
+configopts += ' -DTHIRDPARTY_BUILD_TINYXML=OFF '
+configopts += ' -DTHIRDPARTY_BUILD_ZLIB=OFF '
+
+configopts += ' -DNEKTAR_BUILD_DEMOS=ON '
+configopts += ' -DNEKTAR_BUILD_DOC=OFF '
+configopts += ' -DNEKTAR_BUILD_LIBRARY=ON '
+configopts += ' -DNEKTAR_BUILD_PYTHON=ON '
+configopts += ' -DNEKTAR_BUILD_TESTS=ON '
+configopts += ' -DNEKTAR_BUILD_UNIT_TESTS=ON '
+configopts += ' -DNEKTAR_BUILD_UTILITIES=ON '
+configopts += ' -DNEKTAR_DISABLE_BACKUPS=ON '
+
+configopts += ' -DNEKTAR_FULL_DEBUG=ON '
+configopts += ' -DNEKTAR_TEST_ALL=ON '
+configopts += ' -DNEKTAR_TEST_USE_HOSTFILE=ON '
+configopts += ' -DNEKTAR_USE_SYSTEM_BLAS_LAPACK=OFF '
+configopts += ' -DNEKTAR_USE_CWIPI=OFF '
+configopts += ' -DNEKTAR_USE_LIKWID=OFF '
+configopts += ' -DNEKTAR_USE_METIS=ON '
+configopts += ' -DNEKTAR_USE_VTK=OFF '
+configopts += ' -DNEKTAR_USE_TINYXML_STL=ON '
+configopts += ' -DNEKTAR_USE_CCM=ON '
+configopts += ' -DNEKTAR_USE_MEMORY_POOLS=OFF '
+configopts += ' -DNEKTAR_USE_MESHGEN=ON '
+configopts += ' -DNEKTAR_USE_PETSC=OFF '
+configopts += ' -DNEKTAR_USE_THREAD_SAFETY=ON '
+configopts += ' -DNEKTAR_UTILITY_FIELDCONVERT=ON '
+configopts += ' -DNEKTAR_UTILITY_NEKMESH=ON '
+
+configopts += ' -DTHIRDPARTY_USE_SSL=ON '
+configopts += ' -DTINYXML_INCLUDE_DIR=$EBROOTGENTOO/include '
+configopts += ' -DTINYXML_LIBRARY=$EBROOTGENTOO/lib/libtinyxml.so '
+
+configopts += ' -DNEKTAR_ERROR_ON_WARNINGS=OFF '
+configopts += ' -DNEKTAR_LIB_DIR=lib '
+
+#runtest = 'test'
+
+sanity_check_paths = {
+    'files': [('bin/NekMesh')],
+    'dirs': ['bin', 'include', 'lib64'],
+}
+
+moduleclass = 'numlib'

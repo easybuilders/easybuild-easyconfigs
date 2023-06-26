@@ -1,0 +1,59 @@
+##
+# @author :: Ali Kerrache, WestGrid/Compute Canada, University of Manitoba.
+# @date :: Apr 25, 2022
+##
+
+easyblock = 'CMakeMake'
+
+name = 'OpenFAST'
+version = "3.5.0"
+
+#versionsuffix = '-dp'
+#modaltsoftname = 'openfast-dp'
+
+homepage = 'https://openfast.readthedocs.io/en/main/index.html'
+description = """OpenFAST is a multi-physics, multi-fidelity tool for simulating the coupled dynamic response of wind turbines. Practically speaking, OpenFAST is the framework (or “glue code”) that couples computational modules for aerodynamics, hydrodynamics for offshore structures, control and electrical system (servo) dynamics, and structural dynamics to enable coupled nonlinear aero-hydro-servo-elastic simulation in the time domain. OpenFAST enables the analysis of a range of wind turbine configurations, including two- or three-blade horizontal-axis rotor, pitch or stall regulation, rigid or teetering hub, upwind or downwind rotor, and lattice or tubular tower. The wind turbine can be modeled on land or offshore on fixed-bottom or floating substructures."""
+
+toolchain = {'name': 'iccifortflexiblas', 'version': '2020a'}
+toolchainopts = {'openmp': True}
+
+source_urls = ['https://github.com/OpenFAST/openfast/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['159bdd00d8483da77146c7a2d316e65150eee027a5a63dd1efbbbddee677e793']
+
+builddependencies = [
+    ("CMake", "3.23.1"),
+]
+
+local_configopts_single  = '-DBUILD_DOCUMENTATION=OFF '
+local_configopts_single += '-DBUILD_FASTFARM=ON '
+local_configopts_single += '-DBUILD_OPENFAST_CPP_API=OFF '
+local_configopts_single += '-DBUILD_OPENFAST_SIMULINK_API=OFF '
+local_configopts_single += '-DBUILD_TESTING=OFF '
+local_configopts_single += '-DFPE_TRAP_ENABLED=ON '
+local_configopts_single += '-DGENERATE_TYPES=ON '
+local_configopts_single += '-DOPENMP=ON '
+local_configopts_single += '-DORCA_DLL_LOAD=ON '
+local_configopts_single += '-DUSE_DLL_INTERFACE=ON '
+local_configopts_single += '-DBLAS_LIBRARIES="$LIBBLAS" '
+
+local_configopts_single += '-DDOUBLE_PRECISION=ON '
+
+configopts = [ 
+    local_configopts_single + '-DBUILD_SHARED_LIBS=ON',
+    local_configopts_single + '-DBUILD_SHARED_LIBS=OFF',
+]
+
+local_openfast_bins = [
+    "aerodyn_driver", "FAST.Farm", "hydrodyn_driver", "moordyn_driver", 
+    "openfast_cpp", "servodyn_driver", "turbsim", "beamdyn_driver",
+    "feam_driver", "inflowwind_driver", "openfast", "orca_driver",
+    "subdyn_driver", "unsteadyaero_driver",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_openfast_bins],
+    'dirs': ['include/openfast'],
+}
+
+moduleclass = 'phys'
