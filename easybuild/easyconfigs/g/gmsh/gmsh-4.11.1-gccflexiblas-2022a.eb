@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'gmsh'
+version = "4.11.1"
+
+homepage = 'https://gmsh.info/'
+description = """Gmsh is a 3D finite element grid generator with a build-in CAD engine and post-processor."""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2022a'}
+toolchainopts = {'openmp': True, 'pic': True}
+
+source_urls = ['https://gmsh.info/src/']
+sources = ['%(name)s-%(version)s-source.tgz']
+checksums = ['c5fe1b7cbd403888a814929f2fd0f5d69e27600222a18c786db5b76e8005b365']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('SWIG', '4.0.1'),
+    ('HDF5', '1.12.2', '-serial'),
+    ('occt', '7.4.0'),
+]
+
+separate_build_dir = True
+
+configopts  = ' '.join([
+    "-DENABLE_WRAP_PYTHON=ON",
+    "-DENABLE_BUILD_SHARED=1",
+    "-DENABLE_BUILD_DYNAMIC=1",
+    "-DENABLE_OPENMP=1",
+    "-DENABLE_GRAPHICS=1",
+    "-DENABLE_OCC=ON",
+    "-DENABLE_OCC_CAF=ON",
+    "-DENABLE_MESH=ON",
+    "-DENABLE_OPTHOM=ON",
+    "-DENABLE_ALGLIB=ON",
+    "-DENABLE_3M=ON",
+    "-DENABLE_BLAS_LAPACK=ON",
+    "-DENABLE_EIGEN=OFF",  # Without this, it still enforce Eigen and not BLAS/LAPACK
+])
+
+sanity_check_paths = {
+    'files': ['bin/gmsh', 'lib64/gmsh.py', 'lib/libgmsh.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "gmsh --help",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib'}
+
+moduleclass = 'math'
