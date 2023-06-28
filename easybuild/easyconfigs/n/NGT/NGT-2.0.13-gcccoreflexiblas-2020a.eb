@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'NGT'
+version = '2.0.13'
+
+homepage = 'https://github.com/yahoojapan/NGT'
+description = "NGT provides commands and a library for performing high-speed approximate nearest neighbor searches against a large volume of data in high dimensional vector data space (several ten to several thousand dimensions)."
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2020a'}
+toolchainopts = {'pic': True}
+
+github_account = 'yahoojapan'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    '716e83eb0ecccd344b1e3ebafe5fe2011f4f93d06ae35d15c6a17cfc0a5d561e', # v2.0.13.tar.gz
+    '956cda4fcd0ad90f14d57303c3b7979b23a9339dcbd96abc7cc647b0fb410468', # NGT-2.0.13-fix_flexiblas.patch
+]
+patches = ['NGT-2.0.13-fix_flexiblas.patch']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('python-build-bundle', '2023a'),
+    ('oldest-supported-numpy', '2022a'),
+]
+
+multi_deps = {'Python': ['3.9', '3.10', '3.11']}
+multi_deps_extensions_only = True
+
+# Build from the same sources but from the python directory
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    (name.lower(), version, {
+        'modulename': 'ngtpy',
+        'sources': sources,
+        'checksums': checksums,
+        'patches': patches,
+        'start_dir': 'python',
+        'use_pip': True,
+        'preinstallopts': 'python setup.py build --verbose --shared-library-without-avx && ', # This avoid --march=native and EB adds arch opts
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': ['bin/ngt', 'bin/qbg', 'lib/libngt.so'],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ['ngt --help']
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'lib'

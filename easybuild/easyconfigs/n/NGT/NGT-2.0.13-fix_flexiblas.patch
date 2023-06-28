@@ -1,0 +1,46 @@
+diff --git a/lib/NGT/CMakeLists.txt b/lib/NGT/CMakeLists.txt
+index fd93bde..d52707f 100644
+--- a/lib/NGT/CMakeLists.txt
++++ b/lib/NGT/CMakeLists.txt
+@@ -21,13 +21,13 @@ if( ${UNIX} )
+ 	add_dependencies(ngt ngtstatic) 
+ 	if(${APPLE})
+ 		if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+-			target_link_libraries(ngt lapack blas OpenMP::OpenMP_CXX)
++			target_link_libraries(ngt flexiblas OpenMP::OpenMP_CXX)
+ 		else()
+-			target_link_libraries(ngt lapack blas gomp)
++			target_link_libraries(ngt flexiblas gomp)
+ 		endif()
+ 	else(${APPLE})
+ 		#target_link_libraries(ngt gomp rt)
+-		target_link_libraries(ngt gomp rt lapack blas)
++		target_link_libraries(ngt gomp rt flexiblas)
+ 	endif(${APPLE})
+ 
+ 	add_custom_command(OUTPUT command DEPENDS ${NGT_SOURCES} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND sh ${PROJECT_SOURCE_DIR}/utils/mk_version_defs_h.sh ${PROJECT_SOURCE_DIR} version_defs.h)
+diff --git a/python/setup.py b/python/setup.py
+index 21abc29..56dcef0 100644
+--- a/python/setup.py
++++ b/python/setup.py
+@@ -138,17 +138,17 @@ if sys.version_info.major >= 3:
+ 
+     shared_lib_params = {
+         'library_dirs': ['/usr/local/lib', '/usr/local/lib64'],
+-        'libraries': ['ngt', openmplib, 'blas', 'lapack']
++        'libraries': ['ngt', openmplib, 'flexiblas']
+     }
+     included_lib_params = {
+         'library_dirs': ['/usr/local/lib', '/usr/local/lib64'],
+-        'libraries': ['ngt', openmplib, 'blas', 'lapack'],
++        'libraries': ['ngt', openmplib, 'flexiblas'],
+         'extra_link_args': ['-static-libstdc++']
+     }
+     static_lib_params = {
+         'library_dirs': ['/usr/local/lib', '/usr/local/lib64'],
+         'extra_objects': ['../build-ngtpy-release/lib/NGT/libngt.a'],
+-        'libraries': [openmplib, 'blas', 'lapack'],
++        'libraries': [openmplib, 'flexiblas'],
+     }
+     if static_library or static_library_native or static_library_avx2:
+         params.update(static_lib_params)
