@@ -1,0 +1,60 @@
+easyblock = 'MakeCp'
+
+name = 'Calib'
+version = '0.3.4'
+
+homepage = 'https://github.com/vpc-ccg/calib'
+description = """Calib clusters paired-end reads using their barcodes and sequences. Calib is suitable for amplicon
+sequencing where a molecule is tagged, then PCR amplified with high depth, also known as Unique Molecule Identifier
+(UMI) sequencing."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/vpc-ccg/calib/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/rvaser/spoa/archive/'],
+        'download_filename': '1.1.3.zip',
+        'filename': 'SPOA-1.1.3.zip',
+    },
+]
+checksums = [
+    'edfa254d90a7dc7222ce5e7565808250a9535e5e94ec73252110ec7c8aebe920',  # Calib-0.3.4.tar.gz
+    '0a96c175e39b3e8badc7050f00f767f808efbf4b1bfb5c17a02b66b4a9803d94',  # SPOA-1.1.3.zip
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+# avoid using hardcoded compiler flags
+buildopts = 'CXXFLAGS="$CXXFLAGS -pthread -Iclustering/ -lz" && '
+
+# building calib_cons requires SPOA, so build that first
+buildopts += "mv %(builddir)s/spoa-1.1.3 %(builddir)s/calib-%(version)s/consensus/spoa_v1.1.3 && "
+buildopts += "mkdir consensus/spoa_v1.1.3/build && cd consensus/spoa_v1.1.3/build && "
+buildopts += "cmake -DCMAKE_VERBOSE_MAKEFILE=ON .. && make && "
+buildopts += "cd - && make -C consensus"
+
+files_to_copy = [(['calib', 'consensus/calib_cons'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/calib', 'bin/calib_cons'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "calib --help",
+    "calib_cons --help",
+]
+
+moduleclass = 'bio'

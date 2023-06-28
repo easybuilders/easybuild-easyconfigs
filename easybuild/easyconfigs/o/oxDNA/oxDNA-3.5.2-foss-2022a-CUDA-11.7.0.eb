@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'oxDNA'
+version = '3.5.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/lorenzo-rovigatti/oxDNA'
+description = """oxDNA is a simulation code that was initially conceived as an implementation
+ of the coarse-grained DNA model introduced by T. E. Ouldridge, J. P. K. Doye and A. A. Louis.
+ It has been since reworked and it is now an extensible simulation+analysis framework.
+ It natively supports DNA, RNA, Lennard-Jones and patchy particle simulations of different kinds
+ on both single CPU cores and NVIDIA GPUs."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'lorenzo-rovigatti'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['d76351b572334421aedb7774bb095db6f8f0a9c851e0242f0b665887d9d754bb']
+
+builddependencies = [
+    ('CMake', '3.23.1')
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+]
+
+configopts = "-DCUDA=1 -DCUDA_COMMON_ARCH=ON -DPython=ON -DOxpySystemInstall=ON "
+# configopts += "-DMPI=ON "  # still "unsupported feature that should be used by developers only"?
+
+postinstallcmds = [
+    "mkdir %(installdir)s/lib",
+    "mv %(builddir)s/easybuild_obj/bin %(installdir)s/bin",
+    "mv %(builddir)s/easybuild_obj/oxpy/lib_oxpy_lib.a %(installdir)s/lib/",
+    "mv %%(builddir)s/easybuild_obj/src/liboxdna_common.%s %%(installdir)s/lib/" % SHLIB_EXT,
+    "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages",
+    "mv %(builddir)s/easybuild_obj/oxpy/python/oxpy %(installdir)s/lib/python%(pyshortver)s/site-packages/",
+]
+
+sanity_check_paths = {
+    'files': ['bin/confGenerator', 'bin/DNAnalysis', 'bin/oxDNA',
+              'lib/liboxdna_common.%s' % SHLIB_EXT, 'lib/lib_oxpy_lib.a'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/oxpy'],
+}
+
+sanity_check_commands = ["python -c 'import oxpy'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'

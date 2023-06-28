@@ -1,0 +1,44 @@
+name = 'ScaLAPACK'
+version = '2.1.0'
+versionsuffix = '-bl'
+
+homepage = 'https://www.netlib.org/scalapack/'
+description = """The ScaLAPACK (or Scalable LAPACK) library includes a subset of LAPACK routines
+ redesigned for distributed memory MIMD parallel computers."""
+
+toolchain = {'name': 'gompi', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+source_urls = [homepage]
+sources = [SOURCELOWER_TGZ]
+patches = ['ScaLAPACK-%(version)s_fix-GCC-10.patch']
+checksums = [
+    '61d9216cf81d246944720cfce96255878a3f85dec13b9351f1fa0fd6768220a6',  # scalapack-2.1.0.tgz
+    'bbb713c9fcabac802811c7f2c3a957c2d5d19dfd118ed1f6578c1436b82c7c43',  # ScaLAPACK-2.1.0_fix-GCC-10.patch
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+
+dependencies = [
+    ('BLIS', '0.8.0'),
+    ('LAPACK', '3.9.1'),
+]
+
+# Config Opts based on AOCL User Guide:
+# https://developer.amd.com/wp-content/resources/AOCL_User%20Guide_2.2.pdf
+
+configopts = '-DBUILD_SHARED_LIBS=ON '
+configopts += '-DBLAS_LIBRARIES="$EBROOTBLIS/lib/libblis.a" '
+configopts += '-DLAPACK_LIBRARIES="$EBROOTLAPACK/lib/liblapack.a" '
+configopts += '-DCMAKE_C_COMPILER=mpicc '
+configopts += '-DCMAKE_Fortran_COMPILER=mpif90 '
+configopts += '-DCMAKE_Fortran_FLAGS="-lpthread -fopenmp $DCMAKE_Fortran_FLAGS" '
+
+sanity_check_paths = {
+    'files': ['lib/libscalapack.%s' % SHLIB_EXT, 'lib64/libscalapack.%s' % SHLIB_EXT],
+    'dirs': ["lib", "lib64"],
+}
+
+moduleclass = 'numlib'

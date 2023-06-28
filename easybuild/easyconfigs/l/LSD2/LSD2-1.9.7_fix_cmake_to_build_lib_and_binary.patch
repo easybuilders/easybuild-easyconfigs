@@ -1,0 +1,69 @@
+Fix cmake config to build library and binary at the same time.
+And add an install target.
+
+Åke Sandgren, 20201217
+diff -u lsd2-1.9.7.orig/CMakeLists.txt lsd2-1.9.7/CMakeLists.txt
+--- lsd2-1.9.7.orig/CMakeLists.txt	2020-10-26 15:34:41.000000000 +0100
++++ lsd2-1.9.7/CMakeLists.txt	2020-12-17 19:04:44.000000000 +0100
+@@ -2,15 +2,14 @@
+ # LSD2 cmake build definition
+ # Added by Bui Quang Minh in April 2020
+ ##################################################################
++cmake_minimum_required(VERSION 3.5)
+ 
+ # Build Release mode by default with compiler optimizations turned on (e.g. -O3)
+ if (NOT CMAKE_BUILD_TYPE)
+     set(CMAKE_BUILD_TYPE "Release")
+ endif()
+ 
+-if (USE_LSD2)
+-    # compile LSD2 as a library
+-    add_library(lsd2
++set(SOURCE_FILES 
+         src/confidence_interval.cpp
+         src/confidence_interval.h
+         src/date.h
+@@ -33,32 +32,15 @@
+         src/subtree.h
+         src/utils.cpp
+         src/utils.h
+-    )
+-else()
+-    # compile LSD2 as a stand-alone program
+-    add_executable(lsd2
+-        src/confidence_interval.cpp
+-        src/confidence_interval.h
+-        src/date.h
+-        src/dating.cpp
+-        src/dating.h
+-        src/estimate_root.cpp
+-        src/estimate_root.h
+-        src/lsd.cpp
+-        src/lsd.h
+-        src/node.h
+-        src/options.cpp
+-        src/options.h
+-        src/outliers.cpp
+-        src/outliers.h
+-        src/pair.h
+-        src/part.h
+-        src/pr.h
+-        src/readData.cpp
+-        src/readData.h
+-        src/subtree.h
+-        src/utils.cpp
+-        src/utils.h
+-    )
+-endif()
++)
++
++# compile LSD2 as a library
++add_library(liblsd2 ${SOURCE_FILES})
++set_target_properties(liblsd2 PROPERTIES OUTPUT_NAME lsd2)
++
++# compile LSD2 as a stand-alone program
++add_executable(lsd2 ${SOURCE_FILES})
+ 
++install (TARGETS lsd2 DESTINATION bin)
++install (TARGETS liblsd2 DESTINATION lib)
++install (FILES src/lsd.h DESTINATION include)
