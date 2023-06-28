@@ -1,0 +1,168 @@
+diff -ruN vt-0.57721_orig/hts_utils.cpp vt-0.57721/hts_utils.cpp
+--- vt-0.57721_orig/hts_utils.cpp	2018-05-09 02:33:23.000000000 +0200
++++ vt-0.57721/hts_utils.cpp	2021-07-14 14:19:04.897424632 +0200
+@@ -1,17 +1,13 @@
+ /* The MIT License
+-
+    Copyright (c) 2013 Adrian Tan <atks@umich.edu>
+-
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+-
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+-
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+@@ -40,36 +36,13 @@
+  */
+ char *faidx_fetch_uc_seq(const faidx_t *fai, const char *c_name, int p_beg_i, int p_end_i, int *len)
+ {
+-    int l;
+-    char c;
+-    khiter_t iter;
+-    faidx1_t val;
+-    char *seq=NULL;
+-
+-    // Adjust position
+-    iter = kh_get(s, fai->hash, c_name);
+-    if(iter == kh_end(fai->hash)) return 0;
+-    val = kh_value(fai->hash, iter);
+-    if(p_end_i < p_beg_i) p_beg_i = p_end_i;
+-    if(p_beg_i < 0) p_beg_i = 0;
+-    else if(val.len <= p_beg_i) p_beg_i = val.len - 1;
+-    if(p_end_i < 0) p_end_i = 0;
+-    else if(val.len <= p_end_i) p_end_i = val.len - 1;
+-
+-    // Now retrieve the sequence
+-    int ret = bgzf_useek(fai->bgzf, val.offset + p_beg_i / val.line_blen * val.line_len + p_beg_i % val.line_blen, SEEK_SET);
+-    if ( ret<0 )
+-    {
+-        *len = -1;
+-        fprintf(stderr, "[fai_fetch_seq] Error: fai_fetch failed. (Seeking in a compressed, .gzi unindexed, file?)\n");
+-        return NULL;
+-    }
+-    l = 0;
+-    seq = (char*)malloc(p_end_i - p_beg_i + 2);
+-    while ( (c=bgzf_getc(fai->bgzf))>=0 && l < p_end_i - p_beg_i + 1)
+-        if (isgraph(c)) seq[l++] = toupper(c);
+-    seq[l] = '\0';
+-    *len = l;
++    char* seq = faidx_fetch_seq(fai, c_name, p_beg_i, p_end_i, len);
++   
++    for (int32_t i=0; i<*len; ++i)
++    {
++        if (isgraph(seq[i])) seq[i] = toupper(seq[i]);
++    }
++    
+     return seq;
+ }
+ 
+@@ -330,7 +303,7 @@
+             kputw(bam_cigar_oplen(cigar[i]), &str);
+             char* stop;
+             uint32_t len = strtol(str.s, &stop, 10);
+-            assert(stop);
++            //assert(stop);
+ 
+             if (op=='M')
+             {
+@@ -425,7 +398,11 @@
+  */
+ void bcf_hdr_print(bcf_hdr_t *h)
+ {
+-    if ( h->dirty ) bcf_hdr_sync(h);
++    if (h->dirty && bcf_hdr_sync(h)<0) 
++    {
++        fprintf(stderr, "[%s:%d %s] Cannot update header\n", __FILE__, __LINE__, __FUNCTION__);
++        exit(1);
++    }
+     kstring_t htxt = {0,0,0};
+     bcf_hdr_format(h, 0, &htxt);
+     std::cerr << htxt.s;
+diff -ruN vt-0.57721_orig/hts_utils.h vt-0.57721/hts_utils.h
+--- vt-0.57721_orig/hts_utils.h	2018-05-09 02:33:23.000000000 +0200
++++ vt-0.57721/hts_utils.h	2021-07-14 14:18:46.925356770 +0200
+@@ -1,17 +1,13 @@
+ /* The MIT License
+-
+    Copyright (c) 2013 Adrian Tan <atks@umich.edu>
+-
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+-
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+-
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+@@ -47,13 +43,6 @@
+ 
+ KHASH_MAP_INIT_STR(s, faidx1_t)
+ 
+-struct __faidx_t {
+-    BGZF *bgzf;
+-    int n, m;
+-    char **name;
+-    khash_t(s) *hash;
+-};
+-
+ /**
+  * An alternate sequence fetcher for upper case sequence.
+  */
+@@ -118,12 +107,12 @@
+ /**
+  * Gets the 1 based start position of the first mapped base in the read.
+  */
+-#define bam_get_pos1(s) ((s)->core.pos + 1)
++#define bam_get_pos1(s) ((int32_t)(s)->core.pos + 1)
+ 
+ /**
+  * Gets the 0 based start position of the first mapped base in the read.
+  */
+-#define bam_get_pos0(s) ((s)->core.pos)
++#define bam_get_pos0(s) ((int32_t)(s)->core.pos)
+ 
+ /**
+  * Gets the end position of the last mapped base in the read.
+@@ -451,7 +440,7 @@
+ /**
+  * Get 0-based position
+  */
+-#define bcf_get_pos0(v) ((v)->pos)
++#define bcf_get_pos0(v) ((int32_t)(v)->pos)
+ 
+ /**
+  * Set 0-based position
+@@ -461,12 +450,12 @@
+ /**
+  * Get 1-based position
+  */
+-#define bcf_get_pos1(v) ((v)->pos+1)
++#define bcf_get_pos1(v) ((int32_t)(v)->pos+1)
+ 
+ /**
+  * Get 1-based end position
+  */
+-#define bcf_get_end1(v) ((v)->pos + strlen((v)->d.allele[0]))
++#define bcf_get_end1(v) ((int32_t)(v)->pos + strlen((v)->d.allele[0]))
+ 
+ /**
+  * Set 1-based position
+@@ -648,4 +637,4 @@
+  */
+ void notice(const char * msg, ...);
+ 
+-#endif
++#endif
+\ No newline at end of file

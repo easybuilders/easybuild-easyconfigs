@@ -1,0 +1,41 @@
+easyblock = 'ConfigureMake'
+
+name = 'Meep'
+version = '1.4.3'
+
+homepage = 'https://github.com/stevengj/meep'
+description = """Meep (or MEEP) is a free finite-difference time-domain (FDTD) simulation software package
+ developed at MIT to model electromagnetic systems."""
+
+toolchain = {'name': 'intel', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'opt': True, 'unroll': True, 'pic': True}
+
+source_urls = ['https://github.com/stevengj/meep/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['Meep-1.3_version-string-without-spaces.patch']
+checksums = [
+    '1105b369c3f7f4aae0de62e933e49f4e3c94b8031a7eb39e2ee315d4cea46b02',  # meep-1.4.3.tar.gz
+    '9d1ade5d656ab20feb18661a06a73aa9a36e1e583b98a630b7810ca7ffc91af6',  # Meep-1.3_version-string-without-spaces.patch
+]
+
+dependencies = [
+    ('Harminv', '1.4.1'),
+    ('HDF5', '1.10.6'),
+    ('libctl', '4.0.0'),
+    ('GSL', '2.6'),
+    ('FFTW', '3.3.8'),
+    ('Guile', '2.2.4'),
+]
+
+configopts = "--with-pic --with-mpi --with-blas=mkl_em64t --with-lapack=mkl_em64t --without-gcc-arch "
+configopts += "--with-libctl=$EBROOTLIBCTL/share/libctl --enable-shared "
+
+# fix for guile-config being broken because shebang line contains full path to bin/guile
+configopts += 'GUILE_CONFIG="$EBROOTGUILE/bin/guile -e main -s $EBROOTGUILE/bin/guile-config"'
+
+sanity_check_paths = {
+    'files': ['bin/meep', 'include/meep.hpp', 'lib/libmeep.a', 'lib/libmeep.%s' % SHLIB_EXT, 'lib/pkgconfig/meep.pc'],
+    'dirs': ['include/meep', 'share/meep'],
+}
+
+moduleclass = 'phys'

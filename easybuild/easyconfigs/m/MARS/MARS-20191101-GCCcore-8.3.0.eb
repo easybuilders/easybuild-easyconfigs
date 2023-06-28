@@ -1,0 +1,45 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'MakeCp'
+
+name = 'MARS'
+local_commit = '011be82e4c294969d09076a7d26a6d71275170db'
+version = '20191101'
+
+homepage = 'https://github.com/lorrainea/MARS'
+description = "improving Multiple circular sequence Alignment using Refined Sequences"
+
+toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
+toolchainopts = {'openmp': True}
+
+# https://github.com/lorrainea/MARS
+github_account = 'lorrainea'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['6a5a607aa9e77dfa598cd3ab1b8dc2d8a8b0f50da98c790a74055e0d18aa3268']
+
+builddependencies = [
+    ('binutils', '2.32'),
+]
+
+dependencies = [
+    ('SeqAn', '2.4.0'),
+    ('SDSL', '2.1.1-20191211'),
+]
+
+local_links = '-L ./libsdsl/lib/ -lsdsl -ldivsufsort -ldivsufsort64'
+local_includes = ' -I ./ -I ./libsdsl/include/'
+# Space at the end of CFLAGS is significant! For more info see the Makefile
+buildopts = 'CC="$CXX" CFLAGS="$CFLAGS %s " LFLAGS="$LDFLAGS %s"' % (local_includes, local_links)
+
+files_to_copy = [(['mars'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/mars'],
+    'dirs': []
+}
+# mars -h returns exit 1
+sanity_check_commands = [("mars -h 2>&1 | grep 'Usage: mars <options>'", '')]
+
+moduleclass = 'bio'

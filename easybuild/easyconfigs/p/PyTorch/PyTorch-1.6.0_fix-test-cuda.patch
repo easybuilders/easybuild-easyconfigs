@@ -1,0 +1,28 @@
+From baf2afeb278d37282465dc2192650a5d2e395f3a Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Tue, 14 Jul 2020 14:38:53 +0200
+Subject: [PATCH] Fix flaky test_stream_event_nogil due to missing event sync
+
+The test asserts that the stream is "ready" but doesn't wait for the
+event to be "executed" which makes it fail on some platforms where the
+`query` call occurs "soon enough".
+
+Fixes #38807
+---
+ test/test_cuda.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/test/test_cuda.py b/test/test_cuda.py
+index af1e3f6305c39..8b1001bf20d58 100644
+--- a/test/test_cuda.py
++++ b/test/test_cuda.py
+@@ -1025,7 +1025,8 @@ def _event_wait(self, spin_time_cycles):
+         with torch.cuda.stream(s1):
+             torch.cuda._sleep(10)
+         s1.synchronize()
+-        s1.record_event(e_tok)
++        e_tok.record()
++        e_tok.synchronize()
+ 
+         self.assertTrue(s0.query())
+         self.assertTrue(s1.query())

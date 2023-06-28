@@ -1,0 +1,39 @@
+easyblock = 'EB_Amber'
+
+name = 'AmberTools'
+version = '17'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://ambermd.org/'
+description = """AmberTools consists of several independently developed packages that work well by themselves,
+ and with Amber itself. The suite can also be used to carry out complete molecular dynamics simulations,
+ with either explicit water or generalized Born solvent models."""
+
+toolchain = {'name': 'foss', 'version': '2018a'}
+toolchainopts = {'usempi': True}
+
+# download requires registration, see http://ambermd.org/AmberTools17-get.html
+sources = ['AmberTools%(version)s.tar.bz2']
+patches = ['AmberTools-17_fixes.patch']
+checksums = [
+    '4fbb2cf57d27422949909cc6f7e434c9855333366196a1d539264617c8bc5dec',  # AmberTools17.tar.bz2
+    '14ff6778e3ed6d9a5c00b627332998ce9e189295bf11afca9b2ee65842331e18',  # AmberTools-17_fixes.patch
+]
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('tcsh', '6.20.00'),
+]
+dependencies = [
+    ('Python', '2.7.14'),
+    ('netCDF', '4.6.0'),
+    ('netCDF-Fortran', '4.4.4'),
+]
+
+# fix linking to netCDF library: also requires linking to HDF5 & cURL libs, which in turns require others,
+# all of which are indirect dependencies via netCDF
+local_netcdf_libs = "-lnetcdf -lhdf5 -lsz -ldl -lcurl -lssl -lcrypto -lz -lm -lpthread"
+preconfigopts = "sed -i'' 's/-lnetcdf/%s/g' AmberTools/src/cpptraj/configure && " % local_netcdf_libs
+configopts = "-nosanderapi"
+
+moduleclass = 'chem'

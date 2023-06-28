@@ -1,0 +1,28 @@
+commit 5b3b9c7fe7501acd6bd69abe26fd3f9e0f1df4ef
+Author: Alexander Grund <alexander.grund@tu-dresden.de>
+Date:   Wed Aug 12 15:48:17 2020 +0200
+
+    Use nasmlink genrule
+    
+    Avoids cyclic dependency as the name and src must not be the same
+
+diff --git a/third_party/nasm/BUILD.system b/third_party/nasm/BUILD.system
+index 7f74da7595..52f608187f 100644
+--- a/third_party/nasm/BUILD.system
++++ b/third_party/nasm/BUILD.system
+@@ -5,8 +5,14 @@ filegroup(
+     visibility = ["//visibility:public"],
+ )
+ 
++genrule(
++    name = "lnnasmlink",
++    outs = ["nasmlink"],
++    cmd = "ln -s $$(which nasm) $@",
++)
++
+ sh_binary(
+     name = "nasm",
+-    srcs = ["nasm"],
++    srcs = ["nasmlink"],
+     visibility = ["@libjpeg_turbo//:__pkg__"],
+ )
