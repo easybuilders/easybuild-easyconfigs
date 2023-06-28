@@ -1,0 +1,392 @@
+fix compatiblity with Python 3.8
+see https://github.com/molmod/tamkin/pull/31
+
+From cda6a121392c4d3d58aed6cff1754c7574835e4c Mon Sep 17 00:00:00 2001
+From: Toon Verstraelen <toon.verstraelen@UGent.be>
+Date: Tue, 16 Jun 2020 10:29:23 +0200
+Subject: [PATCH] Drop timer module
+
+---
+ tamkin/__init__.py                     |  1 -
+ tamkin/examples/010_adk/analyse-adk.py | 81 ++++-----------------
+ tamkin/test/test_timer.py              | 62 ----------------
+ tamkin/timer.py                        | 98 --------------------------
+ 4 files changed, 12 insertions(+), 230 deletions(-)
+ delete mode 100644 tamkin/test/test_timer.py
+ delete mode 100644 tamkin/timer.py
+
+diff --git a/tamkin/__init__.py b/tamkin/__init__.py
+index dcdc533..5110aa5 100644
+--- a/tamkin/__init__.py
++++ b/tamkin/__init__.py
+@@ -44,6 +44,5 @@
+ from tamkin.nmatools import *
+ from tamkin.partf import *
+ from tamkin.rotor import *
+-from tamkin.timer import *
+ from tamkin.pftools import *
+ from tamkin.tunneling import *
+diff --git a/tamkin/examples/010_adk/analyse-adk.py b/tamkin/examples/010_adk/analyse-adk.py
+index aaf6f53..61d20df 100644
+--- a/tamkin/examples/010_adk/analyse-adk.py
++++ b/tamkin/examples/010_adk/analyse-adk.py
+@@ -37,121 +37,68 @@
+ from tamkin import *
+ 
+ 
+-def do_NMA(filecor, filehess, filechk, jobtimer):
++def do_NMA(filecor, filehess, filechk):
+     # Load the data.
+-    jobtimer.sample("start loading")
+-    jobtimer.dump()
+     molecule = load_molecule_charmm(filecor,filehess)
+ 
+     # Perform the normal mode analysis
+-    jobtimer.sample("nma")
+-    jobtimer.dump()
+     nma = NMA(molecule)
+ 
+     # Write to file
+-    jobtimer.sample("start writing")
+-    jobtimer.dump()
+     nma.write_to_file(filechk)
+ 
+-    jobtimer.sample("done")
+-    jobtimer.dump()
+ 
+-
+-def do_MBH(filecor, filehess, filefixed, filechk, jobtimer):
++def do_MBH(filecor, filehess, filefixed, filechk):
+     # Load the data.
+-    jobtimer.sample("start loading")
+-    jobtimer.dump()
+     molecule = load_molecule_charmm(filecor,filehess)
+-    jobtimer.sample("start loading fixed")
+     fixed = load_blocks_txt(filefixed)
+ 
+     # Perform the normal mode analysis
+-    jobtimer.sample("mbh")
+-    jobtimer.dump()
+     nma = NMA(molecule, MBH(fixed))
+ 
+     # Write to file
+-    jobtimer.sample("start writing")
+-    jobtimer.dump()
+     nma.write_to_file(filechk)
+ 
+-    jobtimer.sample("done")
+-    jobtimer.dump()
+ 
+-def do_VSA(filecor, filehess, filefixed, filechk, jobtimer):
++def do_VSA(filecor, filehess, filefixed, filechk):
+     # Load the data.
+-    jobtimer.sample("start loading")
+-    jobtimer.dump()
+     molecule = load_molecule_charmm(filecor,filehess)
+-    jobtimer.sample("start loading fixed")
+     subs = load_subs_txt(filefixed)
+ 
+     # Perform the normal mode analysis
+-    jobtimer.sample("vsa")
+-    jobtimer.dump()
+     nma = NMA(molecule, VSA(subs))
+ 
+     # Write to file
+-    jobtimer.sample("start writing")
+-    jobtimer.dump()
+     nma.write_to_file(filechk)
+ 
+-    jobtimer.sample("done")
+-    jobtimer.dump()
+ 
+-def take_cut(filechk,jobtimer):
++def take_cut(filechk):
+     # Read the NMA object
+-    jobtimer.sample("start reading")
+-    jobtimer.dump()
+     nma = NMA.read_from_file(filechk)
+ 
+-    jobtimer.sample("done")
+-    jobtimer.dump()
+-
+ 
+-def do_gibbs(filechk, filethermo, jobtimer):
+-    jobtimer.sample("start reading")
+-    jobtimer.dump()
++def do_gibbs(filechk, filethermo):
+     nma = NMA.read_from_file(filechk)
+ 
+-    jobtimer.sample("gibbs")
+-    jobtimer.dump()
+     pf = PartFun(nma, [Vibrations(), ExtTrans(), ExtRot(1)] )
+ 
+-    jobtimer.sample("thermo analysis")
+-    jobtimer.dump()
+     ta = ThermoAnalysis(pf, [300.0])
+     ta.write_to_file(filethermo)
+ 
+-    jobtimer.sample("done")
+-    jobtimer.dump()
+ 
+-
+-def overlap(filecor1, filecor2, filechk, fileoverlap, jobtimer):
++def overlap(filecor1, filecor2, filechk, fileoverlap):
+ 
+     # Get delta vector
+-    jobtimer.sample("delta")
+-    jobtimer.dump()
+     delta = get_delta_vector_charmmcor(filecor1, filecor2, normalize=True)
+ 
+     # Read the NMA object
+-    jobtimer.sample("start reading")
+-    jobtimer.dump()
+     nma = NMA.read_from_file(filechk)
+ 
+     # Calculate overlap
+-    jobtimer.sample("start overlap")
+-    jobtimer.dump()
+     calculate_overlap(nma.modes,nma.freqs, delta,[0.0],filename=fileoverlap)
+ 
+-    jobtimer.sample("done")
+-    jobtimer.dump()
+-
+-
+ 
+ def get_delta(filecor1,filecor2,filedelta):
+-    jobtimer.sample("start delta")
+-    jobtimer.dump()
+     get_delta_vector_charmmcor(filecor1, filecor2, normalize=True)
+ 
+ 
+@@ -225,38 +172,34 @@ def get_delta(filecor1,filecor2,filedelta):
+ 
+     options, args = parser.parse_args()
+ 
+-    jobtimer = Timer()
+-    jobtimer.sample("start")
+-
+-
+ 
+     if options.job == "nma":
+         if None in [options.filecor, options.filehess, options.filechk]:
+             print("at least one of the variables filecor, filehess or filechk is empty")
+             print("Doing nothing...")
+         else:
+-            do_NMA(options.filecor, options.filehess, options.filechk, jobtimer)
++            do_NMA(options.filecor, options.filehess, options.filechk)
+ 
+     if options.job == "mbh":
+         if None in [options.filecor, options.filehess, options.filefixed, options.filechk]:
+             print("at least one of the variables filecor, filehess, filefixed or filechk is empty")
+             print("Doing nothing...")
+         else:
+-            do_MBH(options.filecor, options.filehess, options.filefixed, options.filechk, jobtimer)
++            do_MBH(options.filecor, options.filehess, options.filefixed, options.filechk)
+ 
+     if options.job == "vsa":
+         if None in [options.filecor, options.filehess, options.filefixed, options.filechk]:
+             print("at least one of the variables filecor, filehess, filefixed or filechk is empty")
+             print("Doing nothing...")
+         else:
+-            do_VSA(options.filecor, options.filehess, options.filefixed, options.filechk, jobtimer)
++            do_VSA(options.filecor, options.filehess, options.filefixed, options.filechk)
+ 
+     elif options.job == "cut":
+         if options.filechk is None:
+             print("variable filechk is empty")
+             print("Doing nothing...")
+         else:
+-            take_cut(options.filechk, jobtimer)
++            take_cut(options.filechk)
+ 
+     elif options.job == "delta":
+         if None in [options.filecor, options.filecor2, options.filedelta]:
+@@ -272,14 +215,14 @@ def get_delta(filecor1,filecor2,filedelta):
+             print("Doing nothing...")
+         else:
+             overlap(options.filecor, options.filecor2,
+-                    options.filechk, options.fileoverlap, jobtimer)
++                    options.filechk, options.fileoverlap)
+ 
+     elif options.job == "gibbs":
+         if None in [options.filechk, options.filethermo]:
+             print("at least one of the variables filechk or filethermo is empty")
+             print("Doing nothing...")
+         else:
+-            do_gibbs(options.filechk, options.filethermo, jobtimer)
++            do_gibbs(options.filechk, options.filethermo)
+ 
+     elif options.job is None:
+         print("no job specified")
+diff --git a/tamkin/test/test_timer.py b/tamkin/test/test_timer.py
+deleted file mode 100644
+index c0f2ad2..0000000
+--- a/tamkin/test/test_timer.py
++++ /dev/null
+@@ -1,62 +0,0 @@
+-# -*- coding: utf-8 -*-
+-# TAMkin is a post-processing toolkit for normal mode analysis, thermochemistry
+-# and reaction kinetics.
+-# Copyright (C) 2008-2012 Toon Verstraelen <Toon.Verstraelen@UGent.be>, An Ghysels
+-# <An.Ghysels@UGent.be> and Matthias Vandichel <Matthias.Vandichel@UGent.be>
+-# Center for Molecular Modeling (CMM), Ghent University, Ghent, Belgium; all
+-# rights reserved unless otherwise stated.
+-#
+-# This file is part of TAMkin.
+-#
+-# TAMkin is free software; you can redistribute it and/or
+-# modify it under the terms of the GNU General Public License
+-# as published by the Free Software Foundation; either version 3
+-# of the License, or (at your option) any later version.
+-#
+-# In addition to the regulations of the GNU General Public License,
+-# publications and communications based in parts on this program or on
+-# parts of this program are required to cite the following article:
+-#
+-# "TAMkin: A Versatile Package for Vibrational Analysis and Chemical Kinetics",
+-# An Ghysels, Toon Verstraelen, Karen Hemelsoet, Michel Waroquier and Veronique
+-# Van Speybroeck, Journal of Chemical Information and Modeling, 2010, 50,
+-# 1736-1750W
+-# http://dx.doi.org/10.1021/ci100099g
+-#
+-# TAMkin is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, see <http://www.gnu.org/licenses/>
+-#
+-# --
+-
+-
+-from __future__ import print_function, division
+-
+-import os
+-import unittest
+-
+-from molmod.test.common import tmpdir
+-
+-from tamkin import *
+-
+-
+-__all__ = ["TimerTestCase"]
+-
+-
+-class TimerTestCase(unittest.TestCase):
+-    def test_timer(self):
+-        timer = Timer()
+-        timer.sample("start")
+-        for i in range(100000):
+-            j = i**2
+-        timer.sample("done")
+-        self.assertEqual(timer.labels[0], "start")
+-        self.assertEqual(timer.labels[1], "done")
+-        #timer.dump()  # to write logfile to screen
+-        # just testing whether writing to file works
+-        with tmpdir(__name__, 'test_timer') as dn:
+-            timer.write_to_file(os.path.join(dn, "logfile-timings.txt"))
+diff --git a/tamkin/timer.py b/tamkin/timer.py
+deleted file mode 100644
+index 2799b63..0000000
+--- a/tamkin/timer.py
++++ /dev/null
+@@ -1,98 +0,0 @@
+-# -*- coding: utf-8 -*-
+-# TAMkin is a post-processing toolkit for normal mode analysis, thermochemistry
+-# and reaction kinetics.
+-# Copyright (C) 2008-2012 Toon Verstraelen <Toon.Verstraelen@UGent.be>, An Ghysels
+-# <An.Ghysels@UGent.be> and Matthias Vandichel <Matthias.Vandichel@UGent.be>
+-# Center for Molecular Modeling (CMM), Ghent University, Ghent, Belgium; all
+-# rights reserved unless otherwise stated.
+-#
+-# This file is part of TAMkin.
+-#
+-# TAMkin is free software; you can redistribute it and/or
+-# modify it under the terms of the GNU General Public License
+-# as published by the Free Software Foundation; either version 3
+-# of the License, or (at your option) any later version.
+-#
+-# In addition to the regulations of the GNU General Public License,
+-# publications and communications based in parts on this program or on
+-# parts of this program are required to cite the following article:
+-#
+-# "TAMkin: A Versatile Package for Vibrational Analysis and Chemical Kinetics",
+-# An Ghysels, Toon Verstraelen, Karen Hemelsoet, Michel Waroquier and Veronique
+-# Van Speybroeck, Journal of Chemical Information and Modeling, 2010, 50,
+-# 1736-1750W
+-# http://dx.doi.org/10.1021/ci100099g
+-#
+-# TAMkin is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, see <http://www.gnu.org/licenses/>
+-#
+-# --
+-"""Timer to keep track of wall and cpu time"""
+-
+-from __future__ import print_function, division
+-
+-import time
+-import sys
+-
+-
+-__all__ = ["Timer"]
+-
+-
+-class Timer(object):
+-    """Timer object to keep track of the time spent in several parts of TAMKin.
+-
+-       This timer works like a stopwatch. Each time the :meth:`sample` method is
+-       called the current cpu and wall times are recorded toghether with a label
+-
+-       The methods :meth:`dump` and :meth:`write_to_file` can be used to
+-       generate a report.
+-    """
+-
+-    def __init__(self):
+-        self.cpu_times = []
+-        self.wall_times = []
+-        self.labels = []
+-
+-    def sample(self, label):
+-        """Record the current timings and associate them with the given label
+-
+-           Argument:
+-            | label  --  A string describing this point in the code.
+-        """
+-        self.cpu_times.append(time.clock())
+-        self.wall_times.append(time.time())
+-        self.labels.append(label)
+-
+-    def dump(self, f=sys.stdout):
+-        """Dump the logfile with timing information, to screen or to a file stream.
+-
+-           Optional argument:
+-            | f  --  the stream to write to. [default=sys.stdout]
+-        """
+-        print("-------------------", file=f)
+-        print("Printing LOG jobtimer", file=f)
+-        print('%12s %12s %21s %16s %30s' %("cpu times [s]", "diff [s]", "wall times [s]", "diff [s]", "labels" ), file=f)
+-        for i,label in enumerate(self.labels[:-1]):
+-            print('%12.3f %12.3f %21.3f %16.3f %30s' %(self.cpu_times[i],
+-                                         self.cpu_times[i+1]-self.cpu_times[i],
+-                                         self.wall_times[i],
+-                                         self.wall_times[i+1]-self.wall_times[i],
+-                                         label), file=f)
+-        print('%12.3f %12s %21.3f %16s %30s' %(self.cpu_times[-1], "",
+-                                         self.wall_times[-1], "",
+-                                         self.labels[-1]), file=f)
+-        print("-------------------", file=f)
+-
+-    def write_to_file(self, filename):
+-        """Write the logfile with timing information to filename.
+-
+-           Argument:
+-            | filename  --  the file to write to.
+-        """
+-        with open(filename, 'w') as f:
+-            self.dump(f)

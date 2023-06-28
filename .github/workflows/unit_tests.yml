@@ -1,29 +1,40 @@
 name: easyconfigs unit tests
 on: [push, pull_request]
+
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
+concurrency:
+  group: ${{format('{0}:{1}:{2}', github.repository, github.ref, github.workflow)}}
+  cancel-in-progress: true
+
 jobs:
   test-suite:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [2.7, 3.5, 3.6, 3.7]
-        modules_tool: [Lmod-6.6.3, Lmod-7.8.22, Lmod-8.1.14]
+        python: [3.6]
+        modules_tool: [Lmod-7.8.22, Lmod-8.6.8]
         module_syntax: [Lua, Tcl]
-        # exclude some configurations: only test Tcl module syntax with Lmod 7.x and Python 2.7 & 3.5
+        # exclude some configurations: only test Tcl module syntax with Lmod 8.x and Python 3.6
         exclude:
-          - modules_tool: Lmod-6.6.3
-            module_syntax: Tcl
-          - modules_tool: Lmod-8.1.14
-            module_syntax: Tcl
-          - python: 3.6
-            module_syntax: Tcl
-          - python: 3.7
+          - modules_tool: Lmod-7.8.22
             module_syntax: Tcl
       fail-fast: false
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # Required for git merge-base to work
+
+    - name: Cache source files in /tmp/sources
+      id: cache-sources
+      uses: actions/cache@v2
+      with:
+        path: /tmp/sources
+        key: eb-sourcepath
 
     - name: set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{matrix.python}}
         architecture: x64
@@ -36,7 +47,10 @@ jobs:
         # for modules tool
         sudo apt-get install lua5.2 liblua5.2-dev lua-filesystem lua-posix tcl tcl-dev
         # fix for lua-posix packaging issue, see https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
-        sudo ln -s /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
+        # needed for Ubuntu 18.04, but not for Ubuntu 20.04, so skipping symlinking if posix.so already exists
+        if [ ! -e /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so ] ; then
+            sudo ln -s /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
+        fi
         # for testing OpenMPI-system*eb we need to have Open MPI installed
         sudo apt-get install libopenmpi-dev openmpi-bin
         # required for test_dep_graph
@@ -47,7 +61,7 @@ jobs:
           cd $HOME
           # first determine which branch of easybuild-framework repo to install
           BRANCH=develop
-          if [ "x$GITHUB_BASE_REF" = 'xmaster' ]; then BRANCH=master; fi
+          if [ "x$GITHUB_BASE_REF" = 'xmain' ]; then BRANCH=main; fi
           if [ "x$GITHUB_BASE_REF" = 'x4.x' ]; then BRANCH=4.x; fi
           echo "Using easybuild-framework branch $BRANCH (\$GITHUB_BASE_REF $GITHUB_BASE_REF)"
 
@@ -80,7 +94,7 @@ jobs:
         EASYBUILD_MODULE_SYNTAX: ${{matrix.module_syntax}}
       run: |
           # pull in target so we can diff against it to obtain list of touched files
-          if [ "x$GITHUB_BASE_REF" != 'xmaster' ]; then git fetch -v origin ${GITHUB_BASE_REF}:${GITHUB_BASE_REF}; fi
+          if [ "x$GITHUB_BASE_REF" != 'xmain' ]; then git fetch -v origin ${GITHUB_BASE_REF}:${GITHUB_BASE_REF}; fi
 
           # initialize environment for modules tool
           if [ -f $HOME/moduleshome ]; then export MODULESHOME=$(cat $HOME/moduleshome); fi
@@ -109,7 +123,8 @@ jobs:
           eb --show-system-info
 
           # run test suite
-          python -O -m test.easyconfigs.suite
+          # if tests failed, print error message that is picked up by boegelbot to determine end of test output
+          python -O -m test.easyconfigs.suite || (echo "ERROR: Not all tests were successful" && exit 1)
 
           unset PYTHONPATH
 
@@ -137,18 +152,19 @@ jobs:
           eb --search '^CVS-' | grep '/CVS-'
 
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
-          eb --prefix /tmp/$USER/$GITHUB_SHA M4-1.4.18.eb
+          # use /tmp/sources because that has cached downloads (see cache step above)
+          eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
 
   test-sdist:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [2.7, 3.6, 3.7]
+        python: [3.6]
     steps:
     - uses: actions/checkout@v2
 
     - name: set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{matrix.python}}
 

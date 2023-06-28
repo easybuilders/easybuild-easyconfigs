@@ -1,0 +1,55 @@
+TensorFlow adds some GPU tests twice increasing the runtime of the test suite.
+This filters out the test part meant for CPU.
+
+See https://github.com/tensorflow/tensorflow/issues/47081
+From https://github.com/tensorflow/tensorflow/pull/59129
+
+Author: Alexander Grund (TU Dresden)
+---
+ tensorflow/tensorflow.bzl | 33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
+
+diff --git a/tensorflow/tensorflow.bzl b/tensorflow/tensorflow.bzl
+index 649c8e22dcc95..d3fc0e3221497 100644
+--- a/tensorflow/tensorflow.bzl
++++ b/tensorflow/tensorflow.bzl
+@@ -1461,22 +1461,23 @@ def tf_gpu_cc_test(
+         linkopts = [],
+         **kwargs):
+     targets = []
+-    tf_cc_test(
+-        name = name,
+-        size = size,
+-        srcs = srcs,
+-        args = args,
+-        data = data,
+-        extra_copts = extra_copts + if_cuda(["-DNV_CUDNN_DISABLE_EXCEPTION"]),
+-        kernels = kernels,
+-        linkopts = linkopts,
+-        linkstatic = linkstatic,
+-        suffix = "_cpu",
+-        tags = tags,
+-        deps = deps,
+-        **kwargs
+-    )
+-    targets.append(name + "_cpu")
++    if 'gpu' not in tags:
++        tf_cc_test(
++            name = name,
++            size = size,
++            srcs = srcs,
++            args = args,
++            data = data,
++            extra_copts = extra_copts + if_cuda(["-DNV_CUDNN_DISABLE_EXCEPTION"]),
++            kernels = kernels,
++            linkopts = linkopts,
++            linkstatic = linkstatic,
++            suffix = "_cpu",
++            tags = tags,
++            deps = deps,
++            **kwargs
++        )
++        targets.append(name + "_cpu")
+     tf_cc_test(
+         name = name,
+         size = size,

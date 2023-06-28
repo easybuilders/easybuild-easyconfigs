@@ -1,0 +1,70 @@
+easyblock = 'PythonBundle'
+
+name = 'CuPy'
+version = '11.4.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://cupy.dev'
+description = "CuPy is an open-source array library accelerated with NVIDIA CUDA."
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+builddependencies = [
+    ('pytest', '7.2.2'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('CUDA', '11.4.1', '', SYSTEM),
+    ('cuDNN', '8.2.2.26', versionsuffix, SYSTEM),
+    ('NCCL', '2.10.3', versionsuffix),
+    ('cuTENSOR', '1.6.1.5', versionsuffix, SYSTEM),
+    # Adding cuSPARSELt currently makes the build fail. Keeping it around for later versions to pick up.
+    # ('cuSPARSELt', '0.3.0.3', versionsuffix, SYSTEM),
+]
+
+use_pip = True
+
+exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
+
+# A bunch of the tests are failing or are just having problems.
+_skip_tests = [
+    'tests/cupyx_tests/scipy_tests',
+    'tests/cupyx_tests/distributed_tests',
+    'tests/cupyx_tests/tools_tests',
+    'tests/example_tests',
+    'tests/cupy_tests/testing_tests/test_parameterized.py',
+    'tests/cupy_tests/fft_tests/test_fft.py',
+]
+_ignore_list = ' --ignore='.join(_skip_tests)
+
+_deselect_tests = [
+    'tests/cupy_tests/core_tests/test_carray.py::TestCArray32BitBoundary_param_',
+    # float16 has too low precision for these tests as they are written
+    # See https://github.com/easybuilders/easybuild-easyconfigs/pull/17526#issuecomment-1470843170 for details.
+    'tests/cupy_tests/linalg_tests/test_product.py::TestProduct',
+]
+_deselect_list = ' --deselect='.join(_deselect_tests)
+
+exts_list = [
+    ('fastrlock', '0.5', {
+        'checksums': ['9ae1a31f6e069b5f0f28ba63c594d0c952065de0a375f7b491d21ebaccc5166f'],
+    }),
+    ('cupy', version, {
+        # Must run tests here since the required version of pytest is a builddep
+        # Note! test_cudnn and some others will likely fail on T4 GPUs due to out of memory.
+        'runtest': 'export CUPY_TEST_GPU_LIMIT=1 CUPY_CACHE_DIR="%%(builddir)s" && '
+                   'pytest --ignore=%s --deselect=%s tests' % (_ignore_list, _deselect_list),
+        'testinstall': True,
+        'checksums': ['03d52b2626e02a3a2b46d714c1cd03e702c8fe33915fcca6ed8de5c539964f49'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import cupy'",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'

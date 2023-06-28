@@ -1,0 +1,71 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'CMakeMake'
+
+name = 'libjxl'
+version = '0.6.1'
+local_lodepng_version = "48e5364"
+
+homepage = 'https://github.com/libjxl/libjxl'
+description = "JPEG XL image format reference implementation"
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+toolchainopts = {'optarch': False}  # optarch causes some test failures
+
+github_account = 'libjxl'
+source_urls = [GITHUB_SOURCE]
+sources = [
+    'v%(version)s.tar.gz',
+    {'filename': 'lodepng-%s.tar.gz' % local_lodepng_version,
+     'download_filename': local_lodepng_version,
+     'source_urls': ['https://github.com/lvandeve/lodepng/tarball/'],
+     'extract_cmd': 'tar -C libjxl-%(version)s/third_party/lodepng --strip-components=1 -xf %s'},
+]
+patches = [
+    'libjxl-0.6.1_external_lcms2.patch',
+    'libjxl-%(version)s_remove-broken-test.patch',
+]
+checksums = [
+    'ccbd5a729d730152303be399f033b905e608309d5802d77a61a95faa092592c5',  # v0.6.1.tar.gz
+    'f38176fc103fe1f6d23ba6addd5b14e6a54d546dfaa64663306acfe7b6d912ea',  # lodepng-48e5364.tar.gz
+    '1948d2527c658637939327eec093301539b164714f5bf146ed2e0dcadffadf00',  # libjxl-0.6.1_external_lcms2.patch
+    '11b7cf639049afd9acd1c362287a743cdbe1a6f55e6f9d42b6eaa75ac6a0e6da',  # libjxl-0.6.1_remove-broken-test.patch
+]
+
+builddependencies = [
+    ('binutils', '2.35'),
+    ('CMake', '3.18.4'),
+    ('googletest', '1.10.0'),
+    ('pkg-config', '0.29.2'),
+    ('Highway', '0.12.2'),  # Highway only has a static library
+]
+
+dependencies = [
+    ('LittleCMS', '2.11'),
+    ('Brotli', '1.0.9'),
+    ('libjpeg-turbo', '2.0.5'),
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+    ('giflib', '5.2.1'),
+    ('libwebp', '1.1.0'),
+    ('OpenEXR', '2.5.5'),
+    ('gperftools', '2.9.1'),
+]
+
+configopts = '-DJPEGXL_WARNINGS_AS_ERRORS=OFF -DJPEGXL_ENABLE_SJPEG=OFF -DJPEGXL_ENABLE_SKCMS=OFF '
+# building man pages requires/uses asciidoc (which may be installed in OS, and may fail)
+configopts += '-DJPEGXL_ENABLE_MANPAGES=OFF'
+
+runtest = "test"
+
+sanity_check_paths = {
+    'files': ['bin/cjxl', 'bin/djxl', 'lib/libjxl.%s' % SHLIB_EXT],
+    'dirs': ['include/jxl'],
+}
+
+sanity_check_commands = [
+    "cjxl --help",
+    "djxl --help",
+]
+
+moduleclass = 'lib'

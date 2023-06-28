@@ -1,7 +1,10 @@
-.. image:: https://easybuilders.github.io/easybuild/images/easybuild_logo_small.png
+.. image:: https://github.com/easybuilders/easybuild/raw/develop/logo/png/easybuild_logo_2022_horizontal_dark_bg_transparent.png
    :align: center
+   :height: 400px
 
-`EasyBuild <https://easybuilders.github.io/easybuild>`_ is a software build
+.. image:: https://github.com/easybuilders/easybuild-easyconfigs/workflows/easyconfigs%20unit%20tests/badge.svg
+
+`EasyBuild <https://easybuild.io>`_ is a software build
 and installation framework that allows you to manage (scientific) software
 on High Performance Computing (HPC) systems in an efficient way.
 
@@ -11,7 +14,7 @@ Easyconfig files are used to specify which software to build, which
 version of the software (and its dependencies), which build parameters
 to use (e.g., which compiler toolchain to use), etc.
 
-The EasyBuild documentation is available at http://easybuild.readthedocs.org/.
+The EasyBuild documentation is available at http://docs.easybuild.io/.
 
 The easybuild-easyconfigs package is hosted on GitHub, along
 with an issue tracker for bug reports and feature requests, see
@@ -31,14 +34,3 @@ Related Python packages:
   * a collection of easyblocks that implement support for building and installing (groups of) software packages
   * GitHub repository: https://github.com/easybuilders/easybuild-easyblocks
   * package on PyPi: https://pypi.python.org/pypi/easybuild-easyblocks
-
-*Build status overview:*
-
-* **master** branch:
-
-
-  .. image:: https://github.com/easybuilders/easybuild-easyconfigs/workflows/easyconfigs%20unit%20tests/badge.svg?branch=master
-
-* **develop** branch:
-
-  .. image:: https://github.com/easybuilders/easybuild-easyconfigs/workflows/easyconfigs%20unit%20tests/badge.svg
