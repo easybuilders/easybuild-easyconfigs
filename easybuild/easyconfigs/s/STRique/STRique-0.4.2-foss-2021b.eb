@@ -1,0 +1,79 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Jakub Zarybnicky (INUITS), Denis Kristak (INUITS)
+
+easyblock = 'PythonBundle'
+
+name = 'STRique'
+version = '0.4.2'
+
+homepage = 'https://github.com/giesselmann/STRique'
+description = """STRique is a python package to analyze repeat expansion and
+methylation states of short tandem repeats (STR) in Oxford Nanopore Technology
+(ONT) long read sequencing data."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+builddependencies = [('CMake', '3.21.1')]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('zlib', '1.2.11'),
+    ('h5py', '3.6.0'),
+    ('SeqAn', '2.4.0'),
+    ('PyYAML', '5.4.1'),
+    ('networkx', '2.6.3'),
+    ('scikit-image', '0.19.1'),
+]
+
+local_preconfigopts = r"sed -i -e '/\<SeqAn/Id' CMakeLists.txt && "
+local_preconfigopts += "sed -i -e 's/#pomegranate/pomegranate/' requirements.txt && "
+
+exts_list = [
+    ('pomegranate', '0.10.0', {
+        'sources': [{
+            'source_urls': ['https://github.com/jmschrei/pomegranate/archive/'],
+            'download_filename': '523fb286b5199c64a271a35d49c1ac8fb524408d.tar.gz',
+            'filename': 'pomegranate-0.10.0.tar.gz'
+        }],
+        'checksums': ['9a16eef72a374094dcf6a04527f07ed61ed46b47719b624ccbed4180b0805ce9'],
+    }),
+    ('ont-fast5-api', '4.0.0', {
+        'modulename': 'ont_fast5_api',
+        'checksums': ['a249813104439bfe3d4e346bb560756e23217655273410c60b9bade205eb3e66'],
+    }),
+    ('progressbar33', '2.4', {
+        'modulename': 'progressbar',
+        'checksums': ['51fe0d9b3b4023db2f983eeccdfc8c9846b84db8443b9bee002c7f58f4376eff'],
+    }),
+    (name, version, {
+        'modulename': 'STRique_lib',
+        'postinstallcmds': [
+            'cat <(echo "#!/usr/bin/env python") scripts/STRique.py > %(installdir)s/bin/STRique',
+            'cat <(echo "#!/usr/bin/env python") scripts/STRique_test.py > %(installdir)s/bin/STRique_test',
+            'cat <(echo "#!/usr/bin/env python") scripts/fast5Masker.py > %(installdir)s/bin/fast5Masker',
+            'chmod +x %(installdir)s/bin/*',
+        ],
+        'preconfigopts': local_preconfigopts,
+        'sources': [{
+            'filename': '%(name)s-%(version)s.tar.gz',
+            'git_config': {
+                'url': 'https://github.com/giesselmann',
+                'repo_name': 'STRique', 'commit': '585273215abff7956f5d6277601f0a6be2211a96',
+                'recursive': True
+            }
+        }],
+        'checksums': [None],
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/STRique', 'bin/fast5Masker'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = ['STRique count --help']
+
+moduleclass = 'bio'

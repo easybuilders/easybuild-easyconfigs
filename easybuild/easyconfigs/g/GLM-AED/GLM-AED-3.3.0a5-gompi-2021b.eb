@@ -1,0 +1,51 @@
+easyblock = 'CmdCp'
+
+name = 'GLM-AED'
+version = '3.3.0a5'
+
+homepage = 'https://github.com/AquaticEcoDynamics/glm-aed'
+description = """The General Lake Model (GLM) is a water balance and one-dimensional vertical
+stratification hydrodynamic model, which is dynamically coupled with the AED
+water quality modelling library. GLM-AED is suitable for simulating conditions
+in a wide range of natural and engineered lakes, including shallow (well-mixed)
+and deep (stratified) systems. The model has been successfully applied to
+systems from the scale of individual ponds and wetlands, to actively operated
+reservoirs, upto the scale of the Great Lakes."""
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/AquaticEcoDynamics',
+        'repo_name': '%(namelower)s',
+        'tag': 'v%(version)s',
+        'recursive': True,
+    }
+}]
+patches = ['GLM-AED-3.3.0a5_disable-deb-pkg.patch']
+checksums = [
+    None,  # can't add proper SHA256 checksum, because source tarball is created locally after recursive 'git clone'
+    'b5c1a0c0d1c5a47068ad38ec54def75373ea0bb04f6fa43c0d0a0f7f960e26c6',  # GLM-AED-3.3.0a5_disable-deb-pkg.patch
+]
+
+dependencies = [
+    ('netCDF-Fortran', '4.5.3'),
+]
+
+start_dir = 'glm-source'
+
+# Use build environment from EasyBuild
+_prebuildcmd = "sed -i 's/FFLAGS=/FFLAGS+=/g' */Makefile && "
+cmds_map = [('.*', _prebuildcmd + "./build_glm.sh --gfort")]
+
+files_to_copy = [(['GLM/glm'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/glm'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["glm -h"]
+
+moduleclass = 'geo'

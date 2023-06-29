@@ -1,0 +1,50 @@
+easyblock = 'CMakeMake'
+
+name = 'DCMTK'
+version = '3.6.7'
+
+homepage = 'https://dicom.offis.de/dcmtk'
+description = """DCMTK is a collection of libraries and applications implementing large parts the DICOM standard.
+It includes software for examining, constructing and converting DICOM image files, handling offline media, sending
+and receiving images over a network connection, as well as demonstrative image storage and worklist servers."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+local_stripped_version = version.replace('.', '')
+
+source_urls = ['https://dicom.offis.de/download/%(namelower)s/dcmtk{}/'.format(local_stripped_version)]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['7c58298e3e8d60232ee6fc8408cfadd14463cc11a3c4ca4c59af5988c7e9710a']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+]
+dependencies = [
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('zlib', '1.2.12'),
+    ('libjpeg-turbo', '2.1.3'),
+    ('LibTIFF', '4.3.0'),
+    ('libpng', '1.6.37'),
+    ('libxml2', '2.9.13'),
+    ('libiconv', '1.17'),
+]
+
+configopts = [
+    '-DBUILD_SHARED_LIBS=OFF',
+    '-DBUILD_SHARED_LIBS=ON'
+]
+
+
+sanity_check_paths = {
+    'files': ['bin/dcmdump', 'bin/dcmj2pnm'],
+    'dirs': ['lib'],
+}
+
+local_test_modules = ['dcmdata', 'dcmect', 'dcmfg', 'dcmiod', 'dcmnet', 'dcmrt', 'dcmseg', 'dcmsr', 'dcmtls', 'ofstd']
+sanity_check_commands = [
+    '%s_tests | grep " 0 failed"' % s for s in local_test_modules
+]
+
+moduleclass = 'data'

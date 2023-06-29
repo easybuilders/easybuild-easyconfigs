@@ -1,0 +1,20 @@
+The @settings decorator overwrites `suppress_health_check` accidentally removing the `too_slow` filter
+inherited by the profile.
+Add it explicitely.
+See https://github.com/easybuilders/easybuild-easyconfigs/issues/17615#issuecomment-1504930435
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/quantization/core/test_quantized_op.py b/test/quantization/core/test_quantized_op.py
+index 41e90bc6ec7..c19324cf86a 100644
+--- a/test/quantization/core/test_quantized_op.py
++++ b/test/quantization/core/test_quantized_op.py
+@@ -5569,7 +5569,7 @@ class TestQNNPackOps(TestCase):
+                              msg="QNNPACK Sigmoid failed (FBGEMM ref)!")
+ 
+     """Tests the correctness of the quantized::add (qnnpack) op."""
+-    @settings(suppress_health_check=(HealthCheck.filter_too_much,))
++    @settings(suppress_health_check=(HealthCheck.filter_too_much, HealthCheck.too_slow))
+     @given(A=hu.tensor(shapes=hu.array_shapes(1, 5, 1, 5),
+                        qparams=hu.qparams(dtypes=[torch.quint8, torch.qint8])),
+            zero_point=st.sampled_from([0, 2, 5, 15, 127]),

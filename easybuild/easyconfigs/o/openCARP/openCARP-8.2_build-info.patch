@@ -1,0 +1,72 @@
+avoid having to build from cloned Git repository by adding simulator/build_info.h file,
+which was generated using "PETSC_DIR=/foo make build_info.h" in Git repo that corresponds with openCARP v8.2 sources
+author: Kenneth Hoste (HPC-UGent)
+update to v8.2: Maxime Van den Bossche (HPC-KULeuven)
+--- openCARP-v8.2.orig/simulator/CMakeLists.txt 2022-01-06 10:41:19.549302000 +0100
++++ openCARP-v8.2/simulator/CMakeLists.txt	2022-01-06 10:53:36.486316000 +0100
+@@ -3,13 +3,6 @@
+
+ #######################################################################
+ find_package (Python)
+
+-add_custom_command(OUTPUT "build_info.h"
+-    COMMAND Python::Interpreter
+-    ${CMAKE_CURRENT_SOURCE_DIR}/build_info.py
+-    DEPENDS build_info.py
+-    COMMENT "Generate a C header file defining some information about the build"
+-    VERBATIM
+-)
+
+ set(CARP_FILES "openCARP_d.h" "openCARP_p.cc" "openCARP_p.h")
+ add_custom_command(OUTPUT ${CARP_FILES}
+--- openCARP-v8.2.orig/simulator/build_info.h   1970-01-01 01:00:00.000000000 +0100
++++ openCARP-v8.2/simulator/build_info.h        2022-01-06 10:53:36.486316000 +0100
+@@ -0,0 +1,13 @@
++#ifndef __BUILD_INFO__
++#define __BUILD_INFO__
++
++#define GIT_COMMIT_TAG       "v8.2"
++#define GIT_COMMIT_HASH      "dbfd16fdd472375694190b4c7802c0bfba114146"
++#define GIT_COMMIT_COUNT     1257
++#define GIT_PATH             "https://git.opencarp.org/openCARP/openCARP.git"
++
++#define SUBREPO_REVISIONS ""
++
++#define SUBREPO_COMMITS ""
++
++#endif
+--- openCARP-v8.2.orig/simulator/build_info.py  2022-01-06 10:41:19.549302000 +0100
++++ openCARP-v8.2/simulator/build_info.py       2022-01-06 10:53:36.486316000 +0100
+@@ -157,25 +157,13 @@
+ """
+
+ def generate():
+-
+-    info = git(os.path.dirname(os.path.abspath(__file__)))
+-
+-    # Get subrepo info
+-    repo_versions = []
+-    repo_commits  = []
+-
+-    # we currently have no sub-repos. still, we leave the mechanism in here for later
+-
+-    # repo_versions.append(('slimfem',       git('../fem/slimfem')['revision']))
+-    # repo_commits.append(( 'slimfem',       git('../fem/slimfem')['commit']))
+-
+-    info['subrepo'] = ','.join(['{0[0]}={0[1]}'.format(v) for v in repo_versions])
+-
+-    # Assemble commit hashes / revisions
+-    newline = '," \\\n' + ' ' * 24 + '"'
+-    info['subrepocommit'] = newline.join(['{0[0]}={0[1]}'.format(v) for v in repo_commits])
+-
+-    return TEMPLATE.format(**info)
++    return TEMPLATE.format(tag='v8.2',
++                           commit='dbfd16fdd472375694190b4c7802c0bfba114146',
++                           revision=1257,
++                           url='https://git.opencarp.org/openCARP/openCARP.git',
++                           subrepo='',
++                           subrepocommit='',
++                           )
+
+ def print_build_info(filename):
+     """

@@ -1,0 +1,59 @@
+easyblock = 'PythonBundle'
+
+name = 'CellOracle'
+version = '0.12.0'
+
+homepage = 'https://github.com/morris-lab/CellOracle'
+description = """CellOracle is a Python library for in silico gene perturbation analyses using single-cell omics data
+and Gene Regulatory Network models."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('R', '4.2.1'),
+    ('SciPy-bundle', '2022.05'),
+    ('numba', '0.56.4'),
+    ('matplotlib', '3.5.2'),
+    ('Seaborn', '0.12.1'),
+    ('scikit-learn', '1.1.2'),
+    ('h5py', '3.7.0'),
+    ('velocyto', '0.17.17'),
+    ('umap-learn', '0.5.3'),
+    ('Arrow', '8.0.0'),
+    ('tqdm', '4.64.0'),
+    ('igraph', '0.10.3'),
+    ('IPython', '8.5.0'),
+    ('scanpy', '1.9.1'),
+    ('GOATOOLS', '1.3.1'),
+    ('genomepy', '0.15.0'),
+    ('GimmeMotifs', '0.17.2'),
+    ('Qtconsole', '5.4.0'),
+]
+
+use_pip = True
+
+# remove louvain from requirements, since CellOracle doesn't actually use it at all
+local_preinstallopts = "sed -i '/louvain/d' requirements.txt && "
+# drop strict version requirement for gimmemotifs dependency
+local_preinstallopts += "sed -i 's/gimmemotifs.*/gimmemotifs/g' requirements.txt && "
+
+exts_list = [
+    ('jupyter-console', '6.4.4', {
+        'sources': ['jupyter_console-%(version)s.tar.gz'],
+        'checksums': ['172f5335e31d600df61613a97b7f0352f2c8250bbd1092ef2d658f77249f89fb'],
+    }),
+    ('jupyter', '1.0.0', {
+        'checksums': ['d9dc4b3318f310e34c82951ea5d6683f67bed7def4b259fafbfe4f1beb1d8e5f'],
+    }),
+    ('celloracle', version, {
+        'checksums': ['9d533ee3e8c14828b6859ea195e92d184b050b0782fee430eda3b01359a564d5'],
+        'preinstallopts': local_preinstallopts,
+    }),
+]
+
+sanity_check_commands = ["python -c 'import celloracle; celloracle.check_python_requirements()'"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'
