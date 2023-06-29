@@ -1,0 +1,48 @@
+easyblock = 'ConfigureMake'
+
+name = 'Julia'
+version = '1.9.1'
+
+homepage = 'https://julialang.org'
+description = "Julia is a high-level, high-performance dynamic programming language for numerical computing"
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/JuliaLang/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['1989055bd96861c63c6e80162e5465768b217a93d41fb351c3fc3d243d9dd708']
+
+builddependencies = [('imkl', '2020.1.217')]
+
+# Use bfd linker so libcurl is compatible with binary packages
+prebuildopts = ""
+prebuildopts += "sed -i 's@https://github.com/jinfeihan57@https://github.com/p7zip-project@' deps/p7zip.mk && "
+prebuildopts += "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+prebuildopts += "LDFLAGS=\"$LDFLAGS -fuse-ld=bfd\" "
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+
+buildopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+preinstallopts = "declare -A ARCH_MAP=( [sse3]=nocona [avx]=sandybridge [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [sse3]='' [avx]='OPENBLAS_TARGET_ARCH=SANDYBRIDGE' [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+installopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+# so that the Pardiso Julia package can find MKL
+postinstallcmds = ["patchelf --set-rpath '$ORIGIN:$ORIGIN/..:'\"$MKLROOT/lib/intel64\" %(installdir)s/lib/julia/libjulia-internal.so.1.9"]
+
+skipsteps = ['configure']
+
+sanity_check_paths = {
+    'files': ['bin/julia', 'include/julia/julia.h', 'lib/libjulia.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'share']
+}
+
+sanity_check_commands = ['julia --help']
+
+# : means the default path, this way extension modules can append to it
+
+modluafooter = '''
+append_path("JULIA_DEPOT_PATH", ":")
+'''
+
+moduleclass = 'lang'
