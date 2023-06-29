@@ -1,0 +1,89 @@
+From 97f2eafce46a8e86f875019ccdb1b5f7a9bef862 Mon Sep 17 00:00:00 2001
+From: Elliot Saba <staticfloat@gmail.com>
+Date: Tue, 20 Sep 2022 09:49:08 -0700
+Subject: [PATCH] Limit initial OpenBLAS thread count
+
+We set OpenBLAS's initial thread count to `1` to prevent runaway
+allocation within OpenBLAS's initial thread startup.  LinearAlgebra will
+later call `BLAS.set_num_threads()` to the actual value we require.
+diff --git a/deps/openblas.mk b/deps/openblas.mk
+index f949143f393b1..6e3c4f8cb0fab 100644
+--- a/deps/openblas.mk
++++ b/deps/openblas.mk
+@@ -105,7 +105,12 @@ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-power-test.patch-applied: $(BUILDD
+ 		patch -p1 -f < $(SRCDIR)/patches/openblas-power-test.patch
+ 	echo 1 > $@
+ 
+-$(BUILDDIR)/$(OPENBLAS_SRC_DIR)/build-configured: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-power-test.patch-applied
++$(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-default-num-threads.patch-applied: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-power-test.patch-applied
++	cd $(BUILDDIR)/$(OPENBLAS_SRC_DIR) && \
++		patch -p1 -f < $(SRCDIR)/patches/openblas-default-num-threads.patch
++	echo 1 > $@
++
++$(BUILDDIR)/$(OPENBLAS_SRC_DIR)/build-configured: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/openblas-default-num-threads.patch-applied
+ 	echo 1 > $@
+ 
+ $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/build-compiled: $(BUILDDIR)/$(OPENBLAS_SRC_DIR)/build-configured
+diff --git a/deps/patches/openblas-default-num-threads.patch b/deps/patches/openblas-default-num-threads.patch
+new file mode 100644
+index 0000000000000..6580e9a41d1eb
+--- /dev/null
++++ b/deps/patches/openblas-default-num-threads.patch
+@@ -0,0 +1,57 @@
++commit d2ce93179f6747380488db2a56102dab6fde18ca
++Author: Elliot Saba <staticfloat@gmail.com>
++Date:   Thu Sep 22 10:38:36 2022 -0700
++
++    Add `OPENBLAS_DEFAULT_NUM_THREADS`
++    
++    This allows Julia to set a default number of threads (usually `1`) to be
++    used when no other thread counts are specified [0], to short-circuit the
++    default OpenBLAS thread initialization routine that spins up a different
++    number of threads than Julia would otherwise choose.
++    
++    The reason to add a new environment variable is that we want to be able
++    to configure OpenBLAS to avoid performing its initial memory
++    allocation/thread startup, as that can consume significant amounts of
++    memory, but we still want to be sensitive to legacy codebases that set
++    things like `OMP_NUM_THREADS` or `GOTOBLAS_NUM_THREADS`.  Creating a new
++    environment variable that is openblas-specific and is not already
++    publicly used to control the overall number of threads of programs like
++    Julia seems to be the best way forward.
++    
++    [0] https://github.com/JuliaLang/julia/pull/46844
++
++diff --git a/driver/others/init.c b/driver/others/init.c
++index cc3145a6..cd10e8d3 100644
++--- a/driver/others/init.c
+++++ b/driver/others/init.c
++@@ -823,6 +823,8 @@ void gotoblas_affinity_init(void) {
++ 
++   if (numprocs == 0) numprocs = readenv_atoi("OMP_NUM_THREADS");
++ 
+++  if (numprocs == 0) numprocs = readenv_atoi("OPENBLAS_DEFAULT_NUM_THREADS");
+++
++   numnodes = 1;
++ 
++   if (numprocs == 1) {
++diff --git a/driver/others/openblas_env.c b/driver/others/openblas_env.c
++index ef91a08e..35b2270d 100644
++--- a/driver/others/openblas_env.c
+++++ b/driver/others/openblas_env.c
++@@ -67,10 +67,16 @@ void openblas_read_env() {
++   openblas_env_thread_timeout=(unsigned int)ret;
++ 
++   ret=0;
++-  if (readenv(p,"OPENBLAS_NUM_THREADS")) ret = atoi(p);
+++  if (readenv(p,"OPENBLAS_DEFAULT_NUM_THREADS")) ret = atoi(p);
++   if(ret<0) ret=0;
++   openblas_env_openblas_num_threads=ret;
++ 
+++  ret=0;
+++  if (readenv(p,"OPENBLAS_NUM_THREADS")) ret = atoi(p);
+++  if(ret<0) ret=0;
+++  if(ret != 0 || openblas_env_openblas_num_threads == 0)
+++    openblas_env_openblas_num_threads=ret;
+++
++   ret=0;
++   if (readenv(p,"GOTO_NUM_THREADS")) ret = atoi(p);
++   if(ret<0) ret=0;
