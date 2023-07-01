@@ -24,6 +24,9 @@ patches = [
     'PyTorch-1.11.0_increase_c10d_gloo_timeout.patch',
     'PyTorch-1.11.0_increase-distributed-test-timeout.patch',
     'PyTorch-1.11.0_install-vsx-vec-headers.patch',
+    'PyTorch-1.11.1_skip-test_init_from_local_shards.patch',
+    'PyTorch-1.12.1_add-hypothesis-suppression.patch',
+    'PyTorch-1.12.1_fix-autograd-thread_shutdown-test.patch',
     'PyTorch-1.12.1_fix-cuda-gcc-version-check.patch',
     'PyTorch-1.12.1_fix-skip-decorators.patch',
     'PyTorch-1.12.1_fix-test_cpp_extensions_jit.patch',
@@ -41,7 +44,7 @@ patches = [
     'PyTorch-1.12.1_remove-flaky-test-in-testnn.patch',
     'PyTorch-1.12.1_skip-ao-sparsity-test-without-fbgemm.patch',
     'PyTorch-1.12.1_skip-failing-grad-test.patch',
-    'PyTorch-1.12.1_skip-test_round_robin_create_destroy.patch',
+    'PyTorch-1.12.1_skip-test_round_robin.patch',
 ]
 checksums = [
     '031c71073db73da732b5d01710220564ce6dd88d812ba053f0cc94296401eccb',  # pytorch-v1.12.1.tar.gz
@@ -64,6 +67,12 @@ checksums = [
     # PyTorch-1.11.0_increase-distributed-test-timeout.patch
     '087ad20163a1291773ae3457569b80523080eb3731e210946459b2333a919f3f',
     'f2e6b9625733d9a471bb75e1ea20e28814cf1380b4f9089aa838ee35ddecf07d',  # PyTorch-1.11.0_install-vsx-vec-headers.patch
+    # PyTorch-1.11.1_skip-test_init_from_local_shards.patch
+    '4aeb1b0bc863d4801b0095cbce69f8794066748f0df27c6aaaf729c5ecba04b7',
+    # PyTorch-1.12.1_add-hypothesis-suppression.patch
+    'e71ffb94ebe69f580fa70e0de84017058325fdff944866d6bd03463626edc32c',
+    # PyTorch-1.12.1_fix-autograd-thread_shutdown-test.patch
+    'd97cd6b0570a167ecc3e631dc4ea884d95ace285cc38aa980566f4fec2c0d089',
     # PyTorch-1.12.1_fix-cuda-gcc-version-check.patch
     'a650f4576f06c749f244cada52ff9c02499fa8f182019129488db3845e0756ab',
     'e3ca6e42b2fa592ea095939fb59ab875668a058479407db3f3684cc5c6f4146c',  # PyTorch-1.12.1_fix-skip-decorators.patch
@@ -91,8 +100,8 @@ checksums = [
     # PyTorch-1.12.1_skip-ao-sparsity-test-without-fbgemm.patch
     'edd464ec8c37b44c07a72008d732604f6837f2dd61c7810c391a86ba4945ca39',
     '1c89e7e67287fe6b9a95480a4178d3653b94d0ab2fe68edf227606c8ae548fdc',  # PyTorch-1.12.1_skip-failing-grad-test.patch
-    # PyTorch-1.12.1_skip-test_round_robin_create_destroy.patch
-    '1435fcac3234edc865479199673b902eb67f6a2bd046af7d731141f03594666d',
+    # PyTorch-1.12.1_skip-test_round_robin.patch
+    '63d4849b78605aa088fdff695637d9473ea60dee603a3ff7f788690d70c55349',
 ]
 
 osdependencies = [OS_PKG_IBVERBS_DEV]
@@ -131,6 +140,21 @@ excluded_tests = {
         'distributed/test_distributed_spawn',
         # Broken on CUDA 11.6/11.7: https://github.com/pytorch/pytorch/issues/75375
         'distributions/test_constraints',
+        # Those 2 abort on some machines. Skip for now
+        'distributed/fsdp/test_fsdp_input',
+        'distributed/fsdp/test_fsdp_mixed_precision',
+        # Produces a single test failure on some systems
+        # See https://github.com/easybuilders/easybuild-easyconfigs/issues/17615
+        'distributed/fsdp/test_fsdp_core',
+        # failing on broadwell
+        # See https://github.com/easybuilders/easybuild-easyconfigs/issues/17615
+        'test_native_mha',
+        # flaky test which fails on some systems,
+        # see https://github.com/easybuilders/easybuild-easyconfigs/issues/17615
+        'distributed/elastic/multiprocessing/api_test',
+        # Fails on A10s: https://github.com/pytorch/pytorch/issues/63079
+        # Fails intermittently: https://github.com/pytorch/pytorch/issues/98414
+        'test_optim',
     ]
 }
 

@@ -1,0 +1,43 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   Inge Gutheil <i.gutheil@fz-juelich.de>, Alan O'Cais <a.ocais@fz-juelich.de>
+# License::   MIT/GPL
+#
+##
+
+name = 'ELPA'
+version = '2022.05.001'
+
+homepage = 'https://elpa.mpcdf.mpg.de'
+description = """Eigenvalue SoLvers for Petaflop-Applications."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['https://gitlab.mpcdf.mpg.de/elpa/elpa/-/archive/new_release_%(version)s/']
+sources = ['elpa-new_release_%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s_fix_hardcoded_perl_path.patch']
+checksums = [
+    {'elpa-new_release_2022.05.001.tar.gz': '96ff14abe53cc3652ba290a0e309d238147fbbfe054d783efee9890f5f23802d'},
+    {'ELPA-2022.05.001_fix_hardcoded_perl_path.patch':
+     '1666a133393b3947a80069ae170a51f4d574956f384c01b7018e4b551726a3a2'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    # remove_xcompiler script requires 'python' command,
+    ('Python', '3.10.4'),
+    ('Perl', '5.34.1'),
+]
+
+preconfigopts = './autogen.sh && '
+preconfigopts += 'export LDFLAGS="-lm $LDFLAGS" && '
+preconfigopts += 'autoreconf && '
+
+# When building in parallel, the file test_setup_mpi.mod is sometimes
+# used before it is built, leading to an error.  This must be a bug in
+# the makefile affecting parallel builds.
+maxparallel = 1
+
+moduleclass = 'math'
