@@ -16,8 +16,10 @@ toolchainopts = {'cstd': 'c++11'}
 
 source_urls = ['https://gitlab.com/graphviz/graphviz/-/archive/%(version)s']
 sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-%(version)s_skip-install-data-hook.patch']
 checksums = [
     'f8cc576694ae93659f453b6b4a4c2f04572a90cfccdca2d4271f2e7c60bb3d60',  # graphviz-5.0.0.tar.gz
+    '4cafb6eac6f59fa4e90cef6e83c276ad5e4e24b10992b18d4b51c6d28dfe4ca1',  # Graphviz-5.0.0_skip-install-data-hook.patch
 ]
 
 builddependencies = [
@@ -30,7 +32,7 @@ builddependencies = [
 ]
 
 dependencies = [
-    ('Java', '11', '', True),
+    ('Java', '11', '', SYSTEM),
     ('Python', '3.10.4'),
     ('FriBidi', '1.0.12'),
     ('Gdk-Pixbuf', '2.42.8'),
@@ -42,6 +44,9 @@ dependencies = [
     ('Qt5', '5.15.5'),
     ('Tcl', '8.6.12'),
     ('zlib', '1.2.12'),
+    ('bzip2', '1.0.8'),
+    ('libjpeg-turbo', '2.1.3'),
+    ('expat', '2.4.8'),
 ]
 
 preconfigopts = './autogen.sh NOCONFIG && '
@@ -55,6 +60,8 @@ configopts += '--with-ltdl-include=$EBROOTLIBTOOL/include --with-ltdl-lib=$EBROO
 # Override the hardcoded paths to Java libraries
 configopts += '--with-javaincludedir=$JAVA_HOME/include --with-javaincludedir=$JAVA_HOME/include/linux '
 configopts += '--with-javalibdir=$JAVA_HOME/lib'
+configopts += '--with-expatincludedir=$EBROOTEXPAT/include --with-expatlibdir=$EBROOTEXPAT/lib'
+configopts += '--with-zincludedir=$EBROOTZLIB/include --with-zlibdir=$EBROOTZLIB/lib'
 
 prebuildopts = 'qmake -o cmd/gvedit/qMakefile cmd/gvedit/gvedit.pro && '
 
@@ -62,9 +69,10 @@ postinstallcmds = ['%(installdir)s/bin/dot -c']  # Writes plugin configuration
 
 sanity_check_paths = {
     'files': ['bin/%s' % x for x in ['acyclic', 'bcomps', 'ccomps', 'cluster', 'diffimg', 'dijkstra', 'dot',
-                                     'dot_builtins', 'dot', 'edgepaint', 'gc', 'gml2gv', 'graphml2gv', 'gv2gml',
+                                     'dot_builtins', 'edgepaint', 'gc', 'gml2gv', 'graphml2gv', 'gv2gml',
                                      'gvcolor', 'gvedit', 'gvgen', 'gvmap', 'gvmap.sh', 'gvpack', 'gvpr', 'gxl2gv',
-                                     'mm2gv', 'nop', 'prune', 'sccmap', 'tred', 'unflatten', 'vimdot']] +
+                                     'neato', 'mm2gv', 'nop', 'prune', 'sccmap', 'tred', 'unflatten',
+                                     'vimdot']] +
              ['lib/%s.%s' % (x, SHLIB_EXT) for x in ['libcdt', 'libcgraph', 'libgvc', 'libgvpr', 'liblab_gamut',
                                                      'libpathplan', 'libxdot']],
     'dirs': ['include', 'lib/graphviz', 'lib/graphviz/java', 'lib/graphviz/python%s' % local_pyver_major,

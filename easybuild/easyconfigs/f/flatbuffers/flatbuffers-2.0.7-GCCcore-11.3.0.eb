@@ -1,0 +1,60 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'CMakeNinja'
+
+name = 'flatbuffers'
+version = '2.0.7'
+
+homepage = 'https://github.com/google/flatbuffers/'
+description = """FlatBuffers: Memory Efficient Serialization Library
+
+Includes the Flatbuffers compiler, C/C++ bindings and Python runtime library.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/google/flatbuffers/archive/v%(version)s/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['4c7986174dc3941220bf14feaacaad409c3e1526d9ad7f490366fede9a6f43fa']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+    ('Ninja', '1.10.2'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+]
+
+# Install into the same dir as the Python extension which is /lib
+configopts = '-DFLATBUFFERS_ENABLE_PCH=ON -DCMAKE_INSTALL_LIBDIR=lib'
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+
+exts_list = [
+    ('flatbuffers', version, {
+        'sources': {
+            'download_filename': SOURCE_TAR_GZ,
+            'filename': '%(name)s-python-%(version)s.tar.gz',
+        },
+        'checksums': ['0ae7d69c5b82bf41962ca5fde9cc43033bc9501311d975fd5a25e8a7d29c1245'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['include/flatbuffers/flatbuffers.h', 'bin/flatc', 'lib/libflatbuffers.a'],
+    'dirs': ['lib/cmake', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'devel'
