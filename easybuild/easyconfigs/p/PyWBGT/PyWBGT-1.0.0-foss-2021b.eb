@@ -1,0 +1,56 @@
+easyblock = 'PythonBundle'
+
+name = 'PyWBGT'
+version = '1.0.0'
+
+homepage = 'https://github.com/QINQINKONG/PyWBGT'
+description = """Cython source code for estimating wet bulb globe temperature (WBGT) from datasets of standard
+meterological measurements using models developed by Liljegren et al (2008)"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'openmp': True}
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('xarray', '0.20.1'),
+]
+
+use_pip = True
+
+# strip out extra compiler flags -qopenmp and -Ofast, which cause trouble (GCC doesn't know about -qopenmp)
+local_common_preinstallopts = r"""sed -i "s/'-qopenmp'//g" setup.py && sed -i "s/,'-Ofast'//g" setup.py && """
+
+# inject correct version into setup.py to avoid 0.0.0 version in installation
+local_common_preinstallopts += r"""sed -i "s/name=/version='%(version)s', name=/g" setup.py && """
+
+exts_list = [
+    ('cftime', '1.6.2', {
+        'checksums': ['8614c00fb8a5046de304fdd86dbd224f99408185d7b245ac6628d0276596e6d2'],
+    }),
+    ('WBGT', version, {
+        'source_urls': ['https://github.com/QINQINKONG/PyWBGT/archive/'],
+        'sources': [{
+            'download_filename': 'v%(version)s.tar.gz',
+            'filename': 'PyWBGT-%(version)s.tar.gz',
+        }],
+        'checksums': ['476d18a65a1bce9bdd1e82076ecdbdeda199fd2fe3a2fbe0cc013d11d7b1b6e8'],
+        'start_dir': 'src',
+        'preinstallopts': "rm *.so && ln -s setupWBGT.py setup.py && " + local_common_preinstallopts,
+        'modulename': 'WBGT',
+    }),
+    ('coszenith', version, {
+        'source_urls': ['https://github.com/QINQINKONG/PyWBGT/archive/'],
+        'sources': [{
+            'download_filename': 'v%(version)s.tar.gz',
+            'filename': 'PyWBGT-%(version)s.tar.gz',
+        }],
+        'checksums': ['476d18a65a1bce9bdd1e82076ecdbdeda199fd2fe3a2fbe0cc013d11d7b1b6e8'],
+        'start_dir': 'src',
+        'preinstallopts': "rm *.so && ln -s setupcoszenith.py setup.py && " + local_common_preinstallopts,
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
