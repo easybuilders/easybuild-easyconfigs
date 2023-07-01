@@ -1,0 +1,45 @@
+Author: Jasper Grimm <jasper.grimm@york.ac.uk>
+Description: add targets to build shared libraries
+diff -Nru spooles-2.2.p1/makefile spooles-2.2.p2/makefile
+--- spooles-2.2.p1/makefile	2022-11-25 16:06:54.000000000 +0000
++++ spooles-2.2.p2/makefile	2022-11-25 16:14:28.000000000 +0000
+@@ -123,8 +123,10 @@
+ 	cd Utilities        ; make lib
+ 	cd ZV               ; make lib
+ 	cd misc             ; make lib
+-#cd MPI              ; make lib
+-#cd MT               ; make lib
++	cd MPI                 ; make lib
++	cd MT                  ; make lib
++	$(CC) -shared */*/*.lo -Wl,-soname,libspooles.so.2.2 -o libspooles.so.2.2 -lmpi -lpthread -lm
++	ln -s libspooles.so.2.2 libspooles.so
+ 
+ global :
+ 	cd A2/src             ; make -f makeGlobalLib
+diff -Nru spooles-2.2.p1/makeLib spooles-2.2.p2/makeLib
+--- spooles-2.2.p1/makeLib	2022-11-25 16:06:54.000000000 +0000
++++ spooles-2.2.p2/makeLib	2022-11-25 16:13:02.000000000 +0000
+@@ -64,14 +64,19 @@
+    $srcname = " \\\n     " . $src ;
+    print $srcname ;
+ }
++print "\n\n.SUFFIXES: .c .o .lo .a .so" ;
+ print "\n\nOBJ_FILES = \$\{SRC:.c=.o\}" ;
++print "\n\nLOBJ_FILES = \$\{SRC:.c=.lo\}" ;
+ print "\n\n" ;
+ print <<'EOF' ;
+ .c.o :
+-	$(PURIFY) $(CC) -c $(CFLAGS) $*.c -o $(OBJ)_$*.o
++	$(PURIFY) $(CC) -c $(CFLAGS) $*.c -o $(OBJ)_$*.o $(MPI_INCLUDE_DIR)
+ 
+-../../spooles.a : ${OBJ_FILES}
+-	$(AR) $(ARFLAGS) ../../spooles.a $(OBJ)_*.o
++.c.lo:
++	$(PURIFY) $(CC) -c $(CFLAGS) $*.c -fPIC -DPIC -o $(OBJ)_$*.lo $(MPI_INCLUDE_DIR)
++
++../../libspooles.a : ${OBJ_FILES} ${LOBJ_FILES}
++	$(AR) $(ARFLAGS) ../../libspooles.a $(OBJ)_*.o
+ 	rm -f $(OBJ)_*.o
+-	$(RANLIB) ../../spooles.a
++	$(RANLIB) ../../libspooles.a
+ EOF
