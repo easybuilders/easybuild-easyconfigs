@@ -1160,7 +1160,7 @@ class EasyConfigTest(TestCase):
                 failing_checks.append("Found -DCMAKE_BUILD_TYPE in configopts. Use build_type instead: %s" % ec_fn)
             if build_type == 'Release':
                 failing_checks.append("build_type was set to the default of 'Release'. "
-                                      "Ommit this to base it on toolchain_opts.debug: %s" % ec_fn)
+                                      "Omit this to base it on toolchain_opts.debug: %s" % ec_fn)
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
