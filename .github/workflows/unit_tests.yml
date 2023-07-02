@@ -1,14 +1,22 @@
 name: easyconfigs unit tests
 on: [push, pull_request]
+
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
+concurrency:
+  group: ${{format('{0}:{1}:{2}', github.repository, github.ref, github.workflow)}}
+  cancel-in-progress: true
+
 jobs:
   test-suite:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [2.7, 3.6]
+        python: [3.6]
         modules_tool: [Lmod-7.8.22, Lmod-8.6.8]
         module_syntax: [Lua, Tcl]
-        # exclude some configurations: only test Tcl module syntax with Lmod 8.x and Python 2.7 & 3.6
+        # exclude some configurations: only test Tcl module syntax with Lmod 8.x and Python 3.6
         exclude:
           - modules_tool: Lmod-7.8.22
             module_syntax: Tcl
@@ -26,7 +34,7 @@ jobs:
         key: eb-sourcepath
 
     - name: set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{matrix.python}}
         architecture: x64
@@ -148,15 +156,15 @@ jobs:
           eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
 
   test-sdist:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [2.7, 3.6, 3.7]
+        python: [3.6]
     steps:
     - uses: actions/checkout@v2
 
     - name: set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{matrix.python}}
 
