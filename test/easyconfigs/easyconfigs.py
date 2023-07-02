@@ -33,6 +33,7 @@ import re
 import shutil
 import sys
 import tempfile
+from collections import defaultdict
 from distutils.version import LooseVersion
 from unittest import TestCase, TestLoader, main, skip
 
@@ -99,7 +100,7 @@ def skip_if_not_pr_to_non_main_branch():
     return lambda func: func
 
 
-def get_files_from_diff(diff_filter, ext, basename=True):
+def get_files_from_diff(diff_filter, ext):
     """Return the files changed on HEAD relative to the current target branch"""
     target_branch = get_target_branch()
 
@@ -123,10 +124,7 @@ def get_files_from_diff(diff_filter, ext, basename=True):
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
     out, _ = run_cmd(cmd, simple=False)
-    if basename:
-        files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith(ext)]
-    else:
-        files = [f for f in out.strip().split('\n') if f.endswith(ext)]
+    files = [os.path.join(top_dir, f) for f in out.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
     return files
@@ -218,8 +216,10 @@ class EasyConfigTest(TestCase):
     def _get_changed_easyconfigs(self):
         """Gather all added or modified easyconfigs"""
         # get list of changed easyconfigs
-        changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
-        added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
+        changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
+        added_ecs_files = get_eb_files_from_diff(diff_filter='A')
+        changed_ecs_filenames = [os.path.basename(f) for f in changed_ecs_files]
+        added_ecs_filenames = [os.path.basename(f) for f in added_ecs_files]
         if changed_ecs_filenames:
             print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
         if added_ecs_filenames:
@@ -229,41 +229,36 @@ class EasyConfigTest(TestCase):
 
         # grab parsed easyconfigs for changed easyconfig files
         changed_ecs = []
-        for ec_fn in changed_ecs_filenames + added_ecs_filenames:
-            match = None
-            for ec in self.parsed_easyconfigs:
-                if os.path.basename(ec['spec']) == ec_fn:
-                    match = ec['ec']
-                    break
+        easyconfigs_path = get_paths_for("easyconfigs")[0]
+        for ec_file in changed_ecs_files + added_ecs_files:
+            # Search in already parsed ECs first
+            match = next((ec['ec'] for ec in EasyConfigTest._parsed_easyconfigs if ec['spec'] == ec_file), None)
 
             if match:
                 changed_ecs.append(match)
+            elif ec_file.startswith(easyconfigs_path):
+                ec = process_easyconfig(ec_file)
+                # Cache non-archived files
+                if '__archive__' not in ec_file:
+                    EasyConfigTest._parsed_easyconfigs.extend(ec)
+                changed_ecs.append(ec[0]['ec'])
             else:
-                # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
-                # so as a last resort, try to find the easyconfig file in __archive__
-                easyconfigs_path = get_paths_for("easyconfigs")[0]
-                specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
-                if len(specs) == 1:
-                    ec = process_easyconfig(specs[0])[0]
-                    changed_ecs.append(ec['ec'])
-                else:
-                    raise RuntimeError("Failed to find parsed easyconfig for %s"
-                                       " (and could not isolate it in easyconfigs archive either)" % ec_fn)
+                raise RuntimeError("Failed to find parsed easyconfig for %s" % os.path.basename(ec_file))
         EasyConfigTest._changed_ecs = changed_ecs
 
     def _get_changed_patches(self):
         """Gather all added or modified patches"""
 
         # get list of changed/added patch files
-        changed_patches_filenames = get_files_from_diff(diff_filter='M', ext='.patch', basename=False)
-        added_patches_filenames = get_files_from_diff(diff_filter='A', ext='.patch', basename=False)
+        changed_patches = get_files_from_diff(diff_filter='M', ext='.patch')
+        added_patches = get_files_from_diff(diff_filter='A', ext='.patch')
 
-        if changed_patches_filenames:
-            print("\nList of changed patch files in this PR:\n\t%s" % '\n\t'.join(changed_patches_filenames))
-        if added_patches_filenames:
-            print("\nList of added patch files in this PR:\n\t%s" % '\n\t'.join(added_patches_filenames))
+        if changed_patches:
+            print("\nList of changed patch files in this PR:\n\t%s" % '\n\t'.join(changed_patches))
+        if added_patches:
+            print("\nList of added patch files in this PR:\n\t%s" % '\n\t'.join(added_patches))
 
-        EasyConfigTest._changed_patches = changed_patches_filenames + added_patches_filenames
+        EasyConfigTest._changed_patches = changed_patches + added_patches
 
     @property
     def parsed_easyconfigs(self):
@@ -382,8 +377,12 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS; Gurobi and Rgurobi
-        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS'), ('Gurobi', 'Rgurobi')]:
+        # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit
+        multiple_allowed_variants = [('HTSlib', 'BCFtools'),
+                                     ('WRF', 'WPS'),
+                                     ('Gurobi', 'Rgurobi'),
+                                     ('ncbi-vdb', 'SRA-Toolkit')]
+        for dep_name, parent_name in multiple_allowed_variants:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     ecs = dep_vars[key]
@@ -504,11 +503,6 @@ class EasyConfigTest(TestCase):
                                                 r'QGIS-3\.28\.1']),
             ],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # ncbi-vdb v2.x requires HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
-            'HDF5': [
-                (r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.',
-                              r'shovill-1\.1\.']),
-            ],
             # VMTK 1.4.x requires ITK 4.13.x
             'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
@@ -926,6 +920,27 @@ class EasyConfigTest(TestCase):
                     if not (dirpath.endswith('/easybuild/easyconfigs') and filenames == ['TEMPLATE.eb']):
                         self.assertTrue(False, "List of easyconfig files in %s is empty: %s" % (dirpath, filenames))
 
+    def test_easyconfig_name_clashes(self):
+        """Make sure there is not a name clash when all names are lowercase"""
+        topdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        names = defaultdict(list)
+        # ignore git/svn dirs & archived easyconfigs
+        ignore_dirs = ['.git', '.svn', '__archive__']
+        for (dirpath, _, _) in os.walk(topdir):
+            if not any('/%s' % d in dirpath for d in ignore_dirs):
+                dirpath_split = dirpath.replace(topdir, '').split(os.sep)
+                if len(dirpath_split) == 5:
+                    name = dirpath_split[4]
+                    names[name.lower()].append(name)
+
+        duplicates = {}
+        for name in names:
+            if len(names[name]) > 1:
+                duplicates[name] = names[name]
+
+        if duplicates:
+            self.assertTrue(False, "EasyConfigs with case-insensitive name clash: %s" % duplicates)
+
     @skip_if_not_pr_to_non_main_branch()
     def test_pr_sha256_checksums(self):
         """Make sure changed easyconfigs have SHA256 checksums in place."""
@@ -1102,14 +1117,16 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CMakePythonPackage, GoPackage, JuliaBundle, PythonBundle & PythonPackage;
+        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
+        #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
-                     'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['BuildEnv', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage',
+                     'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
-        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'ROCm']
+        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
+        # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'Python-bundle', 'ROCm']
 
         failing_checks = []
 
@@ -1192,6 +1209,23 @@ class EasyConfigTest(TestCase):
 
                 if check_https_url(http_url):
                     failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_CMAKE_BUILD_TYPE(self):
+        """Make sure -DCMAKE_BUILD_TYPE is no longer used (replaced by build_type)"""
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            configopts = ec.get('configopts')
+            build_type = ec.get('build_type')
+
+            if configopts and '-DCMAKE_BUILD_TYPE' in configopts:
+                failing_checks.append("Found -DCMAKE_BUILD_TYPE in configopts. Use build_type instead: %s" % ec_fn)
+            if build_type == 'Release':
+                failing_checks.append("build_type was set to the default of 'Release'. "
+                                      "Omit this to base it on toolchain_opts.debug: %s" % ec_fn)
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
@@ -1389,6 +1423,7 @@ def template_easyconfig_test(self, spec):
             self.assertTrue(isinstance(ext[2], dict),
                             "3rd element of extension spec for %s must be a dictionary" % ext_name)
 
+    ext_patch_issues = []
     # After the sanity check above, use collect_exts_file_info to resolve templates etc. correctly
     for ext in app.collect_exts_file_info(fetch_files=False, verify_checksums=False):
         try:
@@ -1407,16 +1442,18 @@ def template_easyconfig_test(self, spec):
 
             # only check actual patch files, not other files being copied via the patch functionality
             ext_patch_full = os.path.join(specdir, ext_patch['name'])
-            if ext_patch_full.endswith('.patch'):
-                msg = "Patch file %s is available for %s" % (ext_patch_full, specfn)
-                self.assertTrue(os.path.isfile(ext_patch_full), msg)
+            if ext_patch_full.endswith('.patch') and not os.path.isfile(ext_patch_full):
+                ext_patch_issues.append("Patch file %s for extension %s is missing." % (ext_patch['name'], ext_name))
+                continue
 
             # verify checksum for each patch file
-            if idx < len(patch_checksums) and (os.path.exists(ext_patch_full) or ext_patch.endswith('.patch')):
+            if idx < len(patch_checksums) and os.path.exists(ext_patch_full):
                 checksum = patch_checksums[idx]
-                error_msg = "Invalid checksum for patch %s for %s extension in %s: %s"
-                res = verify_checksum(ext_patch_full, checksum)
-                self.assertTrue(res, error_msg % (ext_patch, ext_name, ec_fn, checksum))
+                if not verify_checksum(ext_patch_full, checksum):
+                    ext_patch_issues.append("Invalid checksum for patch %s for extension %s: %s."
+                                            % (ext_patch['name'], ext_name, checksum))
+    if ext_patch_issues:
+        self.fail("Verification of patches for %s failed:\n%s" % (ec_fn, '\n'.join(ext_patch_issues)))
 
     # check whether all extra_options defined for used easyblock are defined
     extra_opts = app.extra_options()
