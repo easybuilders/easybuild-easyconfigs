@@ -1,4 +1,4 @@
-easyblock = 'PerlModule'
+easyblock = 'PerlBundle'
 
 name = 'PSORTb'
 version = '3.0.6'
@@ -8,16 +8,6 @@ description = """PSORTb is the most precise bacterial localization prediction to
 
 toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
 
-source_urls = ['http://www.psort.org/download/']
-sources = ['bio-tools-psort-all.%(version)s.tar.gz']
-patches = [
-    'PSORTb-3.0.4-libpsortb.patch',
-]
-checksums = [
-    {'bio-tools-psort-all.3.0.6.tar.gz': '9804c5b21faa283509d3021561e9cdcf64dfd2ef5cda8c7e249688f5d20f9c4c'},
-    {'PSORTb-3.0.4-libpsortb.patch': '0e5bcc77459a9663707b384c92f93ee0653fa7463a4790977d69c8dfe28d5d7c'},
-]
-
 builddependencies = [('binutils', '2.38')]
 
 dependencies = [
@@ -26,16 +16,68 @@ dependencies = [
     ('BioPerl', '1.7.8'),
     ('BLAST', '2.2.26', '-Linux_x86_64', SYSTEM),
     ('pftoolsV3', '3.2.12'),
+    ('Java', '11', '', SYSTEM), # required by some Bio::Tools::Run modules
 ]
 
-options = {'modulename': 'Bio::Tools::PSort'}
-
-preconfigopts = "export PSORTROOT=%(installdir)s && "
-
-prebuildopts = 'sed -i "s/CC = cc/CC ?= gcc/" bio-tools-psort-modhmm/Makefile && '
-
-postinstallcmds = [
-    "cp -r psort/* %(installdir)s/.",
+exts_list = [
+    ('Bio::Variation', '1.7.5', {
+        'source_tmpl': 'Bio-Variation-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CJ/CJFIELDS'],
+        'checksums': ['4bffdd060b5e793919f700e46056eb3f0195ed4df2e60ad68b383c31e51f824f'],
+    }),
+    ('Bio::Cluster', '1.7.3', {
+        'source_tmpl': 'Bio-Cluster-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CJ/CJFIELDS'],
+        'checksums': ['1967fb3899b92f245b5bf6cb64ef076fc3f8427b1a96ca5f7b74d220b6191fbb'],
+    }),
+    ('Bio::ASN1::EntrezGene', '1.73', {
+        'source_tmpl': 'Bio-ASN1-EntrezGene-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CJ/CJFIELDS'],
+        'checksums': ['f9e778db705ce5c35ad2798e38a8490b644edfdc14253aa1b74a1f5e79fc6a4b'],
+    }),
+    ('Bio::DB::EUtilities', '1.77', {
+        'source_tmpl': 'Bio-EUtilities-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CJ/CJFIELDS'],
+        'checksums': ['4d018c8cbda73c3d71487165261a3dfc4e823f8e22747497f6a586d5ad6f737f'],
+    }),
+    ('XML-XPathEngine', '0.14', {
+        'source_tmpl': 'XML-XPathEngine-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MI/MIROD'],
+        'checksums': ['d2fe7bcbbd0beba1444f4a733401e7b8aa5282fad4266d42735dd74582b2e264'],
+    }),
+    ('Bio::FeatureIO', '1.6.905', {
+        'source_tmpl': 'Bio-FeatureIO-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CJ/CJFIELDS'],
+        'checksums': ['322e5757b374f2fb90b8f20bdbdc75631f5cb4d122f81a4d35c3a177cf950c7a'],
+    }),
+    ('Config::Any', '0.33', {
+        'source_tmpl': 'Config-Any-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/H/HA/HAARG'],
+        'checksums': ['c0668eb5f2cd355bf20557f04dc18a25474b7a0bcfa79562e3165d9a3c789333'],
+    }),
+    ('File::Sort', '1.01', {
+        'source_tmpl': 'File-Sort-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CN/CNANDOR'],
+        'checksums': ['f1bf27c5fa98973632f4d43ba951cda23e84d23b3e1b1b514f0aa56c1c3c532c'],
+    }),
+    ('Bio::Tools::Run::StandAloneBlast', '1.007003', {
+        'source_tmpl': 'BioPerl-Run-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/C/CJ/CJFIELDS'],
+        'checksums': ['e62e529352f0644bc26509065595d0a47fb6217e5f1301acad76182c2f062071'],
+    }),
+    (name, version, {
+        'modulename': 'Bio::Tools::PSort',
+        'patches': ['PSORTb-3.0.4-libpsortb.patch'],
+        'postinstallcmds': ['cp -r psort/* %(installdir)s/.'],
+        'prebuildopts': 'sed -i "s/CC = cc/CC ?= gcc/" bio-tools-psort-modhmm/Makefile && ',
+        'preconfigopts': "export PSORTROOT=%(installdir)s && ",
+        'source_urls': ['http://www.psort.org/download/'],
+        'sources': ['bio-tools-psort-all.%(version)s.tar.gz'],
+        'checksums': [
+            {'bio-tools-psort-all.3.0.6.tar.gz': '9804c5b21faa283509d3021561e9cdcf64dfd2ef5cda8c7e249688f5d20f9c4c'},
+            {'PSORTb-3.0.4-libpsortb.patch': '0e5bcc77459a9663707b384c92f93ee0653fa7463a4790977d69c8dfe28d5d7c'},
+        ],
+    }),
 ]
 
 sanity_check_paths = {
