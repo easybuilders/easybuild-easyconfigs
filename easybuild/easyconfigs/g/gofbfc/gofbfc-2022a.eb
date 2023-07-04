@@ -1,0 +1,34 @@
+# This is an easyconfig file for EasyBuild, see https://easybuilders.github.io/easybuild
+easyblock = "Toolchain"
+
+name = 'gofbfc'
+version = '2022a'
+
+homepage = '(none)'
+description = """GNU Compiler Collection (GCC) based compiler toolchain,
+ alongside Open MPI, FlexiBLAS and CUDA."""
+
+toolchain = SYSTEM
+
+local_gccver = '11.3.0'
+local_comp_mpi_tc = ('gompi', version)
+
+# specify subtoolchains as builddependencies
+# this way they will be considered as subtoolchains but
+# are not loaded in the modulefile or software compiled
+# with this toolchain
+builddependencies = [
+    ('gofbc', version),
+    ('foss', version),
+]
+
+dependencies = [
+    ('GCC', local_gccver),  # part of gcccuda
+    ('FlexiBLAS', '3.2.0', '', ('GCC', local_gccver)),
+    ('OpenMPI', '4.1.4', '', ('GCC', local_gccver)),
+    ('CUDA', '11.7', '', ('gompi', version)),
+    ('FFTW.MPI', '3.3.10', '', local_comp_mpi_tc),
+    ('ScaLAPACK', '2.2.0', '-fb', local_comp_mpi_tc),
+]
+
+moduleclass = 'toolchain'
