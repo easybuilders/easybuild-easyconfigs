@@ -1,0 +1,34 @@
+diff -ru kahypar-1.3.2.old/CMakeLists.txt kahypar-1.3.2/CMakeLists.txt
+--- kahypar-1.3.2.old/CMakeLists.txt	2023-06-02 13:14:51.597699817 +0000
++++ kahypar-1.3.2/CMakeLists.txt	2023-06-02 13:16:00.907224424 +0000
+@@ -17,9 +17,7 @@
+ message(STATUS "Found Threads: ${CMAKE_THREAD_LIBS_INIT}")
+ 
+ #ensure that gmock is built before tests are executed
+-add_subdirectory(external_tools/googletest EXCLUDE_FROM_ALL)
+-include_directories(SYSTEM ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+-include_directories(SYSTEM ${gtest_SOURCE_DIR}/../googlemock/include ${gtest_SOURCE_DIR}/../googlemock/)
++find_package(GTest REQUIRED)
+ 
+ if(NOT CMAKE_BUILD_TYPE OR 
+   ((NOT CMAKE_BUILD_TYPE STREQUAL "Debug") AND 
+@@ -33,6 +31,7 @@
+ 
+ # add third-party algorithms to project
+ include_directories(external_tools)
++include_directories(..) #for WHFC
+ 
+ option(KAHYPAR_PYTHON_INTERFACE
+   "Enable building the python interface" OFF)
+diff -ru kahypar-1.3.2.old/python/CMakeLists.txt kahypar-1.3.2/python/CMakeLists.txt
+--- kahypar-1.3.2.old/python/CMakeLists.txt	2023-06-02 12:58:59.786465212 +0000
++++ kahypar-1.3.2/python/CMakeLists.txt	2023-06-02 13:16:33.120468249 +0000
+@@ -10,7 +10,7 @@
+ #file(GLOB_RECURSE KAHYPAR_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} *.h)
+ 
+ 
+-add_subdirectory(pybind11)
++find_package(pybind11 REQUIRED)
+ include_directories(${PROJECT_SOURCE_DIR})
+ pybind11_add_module(kahypar_python module.cpp)
+ target_link_libraries(kahypar_python PRIVATE ${Boost_LIBRARIES})
