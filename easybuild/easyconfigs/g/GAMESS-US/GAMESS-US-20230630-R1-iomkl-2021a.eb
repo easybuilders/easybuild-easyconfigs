@@ -1,0 +1,75 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Grigory Shamov, University of Manitoba / ComputeCanada
+# 
+# A recipe for GAMESS-US without interactive Easyblock
+# 
+# The recent version of GAMESS seem to not require actvte.x anymore
+# So providing install.info as a patch seems to work. Change the patch for a given system.
+# It is difficult to keep track of hardcoded Fortran options in the "comp" to make EB toolchain options work
+# Therefore a CPU dispatch for linux64 ifort -axCORE-AVX512,CORE-AVX2  is added as comp.patch
+# For running GAMESS, rungms-dev is used, and copied over rungms. install.info should BTW refer to
+# the final installation directory for it to work; thus at the build time, it is overridden 
+# in the prebuild and make steps.
+#
+# OpenMPI should be 4.x , better 4.1, for mixed mode to work properly support for "yield" is needed.
+# The runmgs-dev patch contains hardcoded UCX pml and osc options! A variable GMS_OPENMPI_FLAGS can be used
+# to override them, depending on the fabric drivers used.
+# As an alternative, OMPI_ options may be added to install.info patch, which gets sourced by runmgs-dev.
+#
+# As of GAMESS 2023 R1, it seems to do away with Makefile.in and just uses a big Makefile. 
+# GAS: to avoid patch quirkiness in different EB versions, copy tuple is used for install.info and rungms
+#
+
+easyblock = 'MakeCp'
+name = 'GAMESS-US'
+version = "20230630-R1"
+
+homepage = 'https://www.msg.chem.iastate.edu/GAMESS/GAMESS.html'
+description = """
+The General Atomic and Molecular Electronic Structure System (GAMESS) is a general ab initio quantum chemistry package. This version of GAMESS-US is built with Intel compilers, mixed DDI, and OpenMPI 4.1. 
+"""
+
+toolchain = {'name': 'iomkl', 'version': '2021a'}
+toolchainopts = {'openmp': False }
+
+sources = ['gamess-current-%(version)s.tar.gz']
+patches = [ 
+'compddi-GAMESS-US-20230630-R1.patch',
+'comp-GAMESS-US-20230630-R1.patch',
+'gms-files-20230630-R1.patch',
+( 'install.info-20230630-R1', 'gamess/install.info' ),
+('rungms-dev_openmpi-20230630-R1', 'gamess/rungms' ),
+]
+checksums = [
+    {'gamess-current-20230630-R1.tar.gz': 'baafee128fb1d5e1367e8c06ead70f2727dc134e94896544d7898b83901707e7'},
+    {'compddi-GAMESS-US-20230630-R1.patch': '585cb39c60b95829ce48531dc88079ebef3bff17c7208b493d2e15b1671b1b16'},
+    {'comp-GAMESS-US-20230630-R1.patch': '59d77526cb382e390ec72f32edf17d94df823b4b0aad0b0b8734b16fb9f2df18'},
+    {'gms-files-20230630-R1.patch': '6fe58ad83c06434e49832427ed8b436d12971336b72dec8b8faa385c9fbb738f'},
+    {'install.info-20230630-R1': '58e2116c8cfd763704433b33db14509c58da506ffb02015b184d3d110168c7cd'},
+    {'rungms-dev_openmpi-20230630-R1': 'f94458267675fbc49694f886b69fae6ca85033fd546636b3d198e54116018921'},
+]
+
+start_dir = 'gamess'
+
+prebuildopts = ' cd %(builddir)s/gamess &&  EBROOTGAMESSMINUS=%(builddir)s/gamess make ddi GMS_PATH=%(builddir)s/gamess&& EBROOTGAMESSMINUS=%(builddir)s/gamess make modules GMS_PATH=%(builddir)s/gamess && EBROOTGAMESSMINUS=%(builddir)s/gamess'
+
+buildopts = 'GMS_PATH=%(builddir)s/gamess GMS_BUILD_PATH=%(builddir)s/gamess && chmod 755 %(builddir)s/gamess/rungms '
+
+parallel = 24
+
+files_to_copy = [
+    'gamess.00.x', 'rungms', 'gms-files.csh', 'runall', 'CITATION.md', 'VERSION.md',
+     'tests', 'auxdata', 'tools', 'install.info', 'DEVELOPERS.md', 'bin/my_ipcrm',
+     'docs-hardware.txt',  'docs-input.txt',  'docs-intro.txt',  'docs-prog.txt',  'docs-references.txt',  'docs-tests.txt',
+]
+
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s ",
+]
+
+sanity_check_paths = { 'files': ["rungms", "gamess.00.x", "gms-files.csh", "install.info", "runall", ], 'dirs': ['tests', 'auxdata', 'tools',  ], }
+
+modextrapaths = { 'PATH': '', }
+
+moduleclass = 'chem'
+

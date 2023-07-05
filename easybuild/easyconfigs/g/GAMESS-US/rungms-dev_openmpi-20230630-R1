@@ -1,0 +1,1834 @@
+#!/bin/csh -f
+#
+# Last updated by Sarom S. Leang - Sept. 30, 2021
+#
+# This is a slim down version of the rungms script.
+# Supports GAMESS and GAMESS+LIBCCHEM (CPU + GPU)
+# Supports sockets, mpi, ga targets
+# Supports mpi vendors: impi, mpich*, mvapich*, openmpi
+# Supports mpi kickoffs: hydra, orte
+# Supports singularity containers launch
+# Supports slurm, pbs, pbe
+#
+# This script is will get you started but it may
+# require some additional configuration.
+#
+#  This is a C-shell script to execute GAMESS, by typing
+#       ./rungms-dev JOB VERNO NCPUS PPN LOGN >& JOB.log &
+#  JOB    is the name of the 'JOB.inp' file to be executed,
+#  VERNO  is the number of the executable you chose at 'lked' time,
+#  NCPUS  is the number of processors to be used, or the name of
+#         a host list file (see an example below, starting from "node1 4".
+#  PPN    processors (actually core?) per node (MPI and cray-xt)
+#  LOGN   logical node size (how many cores per logical node),
+#         as used by GDDI runs.
+#         For MPI, LOGN should be between 1 and PPN.
+#         For sockets, LOGN is only used when run on 1 multicore node.
+#         For other cases, prepare a node file passed as NCPUS;
+#         In this node file, repeat node names several times, for
+#         example, for 2 physical nodes with 12 cores split into
+#         6 logical nodes with 4 cores, use a node file like this:
+#
+#         node1 4
+#         node1 4
+#         node1 4
+#         node2 4
+#         node2 4
+#         node2 4
+#
+#         A physical node can be split into an integer number of
+#         logical nodes.
+#
+#         For 8 cores, meaningful values of LOGN are 1, 2 and 4.
+#         Simple guide: you may like to define NGROUP logical nodes,
+#         where NGROUP is a parameter in $GDDI.
+#
+# Please send your issues to the GAMESS public
+# issue tracker on GitHub:
+# https://github.com/gms-bbg/gamess-issues/issues
+#
+# Clean up any pre-existing semaphores
+#
+if ( -f $HOME/bin/my_ipcrm ) then
+  #
+  # This is only called if the file exists.
+  # This file is used for semaphore removal.
+  # A copy of this script is provided in $GMS_PATH/bin/my_ipcrm
+  #
+  $HOME/bin/my_ipcrm
+endif
+#
+# Source the install.info to grab all the necessary information.
+#
+# Make life simple and set GMSPATH as the current directory
+#
+#set GMSPATH=`pwd`
+set GMSPATH=$EBROOTGAMESSMINUS
+#OVERRIDE GMSPATH
+if ( ! $?GMS_OPENMPI_FLAGS) set GMS_OPENMPI_FLAGS="--mca pml ucx --mca osc ucx --oversubscribe"
+#
+if ( -e $GMSPATH/install.info ) then
+  set echo
+  source $GMSPATH/install.info
+  unset echo
+else
+  echo "Please run 'config' first, to set up GAMESS compiling information" >> /dev/stderr
+  exit 4
+endif
+if (! $?LD_LIBRARY_PATH ) then
+  setenv LD_LIBRARY_PATH
+endif
+#
+if ($GMS_LIBCCHEM == true) setenv LD_LIBRARY_PATH $GMSPATH/libcchem/lib:$LD_LIBRARY_PATH
+#
+# Check to see if $GMS_CUDA_PATH is even set.
+#
+if ( $?GMS_CUDA_PATH ) then
+  #
+  # Check to see if $GMS_CUDA_PATH is not blank.
+  # This fixes previous issue of prepending /lib64 when $GMS_CUDA_PATH was
+  # blank.
+  #
+  if ( "$GMS_CUDA_PATH/lib64" != "/lib64") then
+    setenv LD_LIBRARY_PATH $GMS_CUDA_PATH/lib64:$GMS_CUDA_PATH/lib:$LD_LIBRARY_PATH
+  endif
+endif
+#
+# set TARGET=ga for LIBCCHEM
+# set TARGET=mpi for GAMESS Fortran using MPI for all communication
+# set TARGET=sockets for GAMESS Fortran using TCP/IP for all communication
+# set TARGET=mixed for GAMESS Fortran using TCP/IP and MPI for small and large messages, respectively.
+# set TARGET=hpe-* for GAMESS Fortran on a HPE system
+# set TARGET=cray-xc for GAMESS Fortran on a cray-xc system
+# set TARGET=serial for serial execution fo GAMESS (serial vs serial-debug is picked up from install.info)
+#
+# Our default TARGET is below
+#
+set TARGET=mpi
+#
+# See if GMS_DDI_COMM env exists. If it does, then let us use it!
+#
+if ( $?GMS_DDI_COMM ) set TARGET=$GMS_DDI_COMM
+if ( $?GMS_TARGET ) then
+   if ( $GMS_TARGET =~ hpe-*) set TARGET=$GMS_TARGET
+   if ( $GMS_TARGET == cray-xc) set TARGET=$GMS_TARGET
+endif
+if ( $?GMS_LIBCCHEM ) then
+   if ($GMS_LIBCCHEM == true) set TARGET=ga
+endif
+#OVERRIDE TARGET
+#
+                      set SCHED=none
+if ($?PBS_O_LOGNAME)  set SCHED=PBS
+if ($?SGE_O_LOGNAME)  set SCHED=SGE
+if ($?SLURM_JOB_ID)   set SCHED=SLURM
+if ($?LSFUSER)        set SCHED=LSF
+#
+if ($SCHED == SGE) then
+   echo "SGE   has assigned the following compute nodes to this run:"
+   uniq $TMPDIR/machines
+else if ($SCHED == PBS) then
+   echo "PBS   has assigned the following compute nodes to this run:"
+   uniq $PBS_NODEFILE
+else if ($SCHED == SLURM) then
+   echo "SLURM has assigned the following compute nodes to this run:"
+   scontrol show hostname | uniq
+else if ($SCHED == LSF) then
+   echo "LSF has assigned the following compute nodes to this run:"
+   uniq $LSB_DJOB_HOSTFILE | tail -n +2
+else
+   echo "No scheduler so we must be running locally on "`hostname`
+endif
+#
+# Must define path to a SCR directory.
+#
+if ($SCHED == SGE) then
+   set SCR=$TMPDIR
+else if ($SCHED == PBS) then
+   if ($?WORK_O_DIR) then
+      set SCR=$WORK_O_DIR
+   else if ($?JOBDIR) then
+      set SCR=$JOBDIR
+   else if ($?TMPDIR) then
+      set SCR=$TMPDIR
+   else
+      set SCR=/scratch/$PBS_JOBID
+   endif
+else if ($SCHED == SLURM) then
+ if ( ! $?SCR) then
+  if ($?SLURM_TMPDIR) then
+    set SCR=$SLURM_TMPDIR
+   else  if ( -d /scratch/$USER )  then
+      set SCR=/scratch/$USER/$SLURM_JOBID
+   else
+       SCR=`pwd`/scratch
+   endif
+   mkdir -p $SCR
+  else
+     echo "SCR defined as $SCR"
+  endif
+else
+  # Running locally
+  if (! $?SCR) then
+   if ($?SCRATCH) then
+     set SCR=$SCRATCH
+   else
+     set SCR=`pwd`/scratch
+     mkdir -p $SCR
+   endif
+  echo "SCR is defined a $SCR"
+  endif
+endif
+  
+
+#
+# Computing facility specific setup for $SCR
+#
+if ( $?GMS_HPC_SYSTEM_TARGET ) then
+   if ( $GMS_HPC_SYSTEM_TARGET == nautilus ) then
+      set TMPDIR=`srun -N 1 bash -c 'echo $TMPDIR'`
+      set SCR=$TMPDIR/$SLURM_JOBID
+      mkdir -p $SCR
+      srun mkdir -p $SCR
+   endif
+   if ( $GMS_HPC_SYSTEM_TARGET == onyx ) then
+      set SCR=$WORKDIR/$PBS_JOBID
+   endif
+   if ( $GMS_HPC_SYSTEM_TARGET == summit ) then
+      set lsb_project_name=`echo "$LSB_PROJECT_NAME" | tr '[A-Z]' '[a-z]'`
+      set SCR=$MEMBERWORK/$lsb_project_name/$LSB_BATCH_JID
+   endif
+   if ( $GMS_HPC_SYSTEM_TARGET == narwhal ) then
+      if ( $?LOCALWORKDIR ) then
+         set SCR=$LOCALWORKDIR/$PBS_JOBID
+      endif
+   endif
+   if ( $GMS_HPC_SYSTEM_TARGET == perlmutter ) then
+      if ( $?PSCRATCH ) then
+         set SCR=$PSCRATCH/$SLURM_JOBID
+      endif
+   endif
+   if ( $GMS_HPC_SYSTEM_TARGET == cori ) then
+      if ( $?SCRATCH ) then
+         set SCR=$SCRATCH/$SLURM_JOBID
+      endif
+   endif
+endif
+#
+# Create it if it doesnt exist
+#
+if (! -d $SCR) then
+  if ($SCHED == SLURM) then
+    set echo
+    srun mkdir -p $SCR
+    unset echo
+  else
+    mkdir -p $SCR
+  endif
+endif
+#
+# Must define path to a USERSCR directory.
+# All files associated with restarts will be stored here.
+#
+#OVERRIDE USERSCR
+if (! $?USERSCR ) then
+    mkdir -p $PWD/restart
+    set USERSCR=$PWD/restart
+endif
+#
+# Computing facility specific setup for $USERSCR
+#
+if ( $?GMS_HPC_SYSTEM_TARGET ) then
+   if ( $GMS_HPC_SYSTEM_TARGET == summit ) then
+      set lsb_project_name=`echo "$LSB_PROJECT_NAME" | tr '[A-Z]' '[a-z]'`
+      set USERSCR=$MEMBERWORK/$lsb_project_name
+   endif
+endif
+#
+# Create it if it doesnt exist
+#
+if (! -d $USERSCR) then
+  mkdir -p $USERSCR
+endif
+#
+set INPUT=$1 # name of the input file xxx.inp, give only the xxx part
+#OVERRIDE INPUT
+#
+echo Input file supplied : $INPUT
+#
+if ($INPUT:r.inp != $INPUT) set INPUT=$1.inp
+
+set VERNO=$2    # version number of the executable created by 'lked' step
+#OVERRIDE VERNO
+set NCPUS=$3    # number of compute processes to run
+if (null$3 == null) then
+   set NCPUS=1
+endif
+#OVERRIDE NCPUS
+if (null$4 == null) then
+   set NNODES=1 # we are running on a single node
+else
+   set CPUS_PER_NODE = $4
+   @ NNODES = $NCPUS / $CPUS_PER_NODE
+endif
+#OVERRIDE NNODES
+#
+set LOGN=$5     # number of cores per logical node
+#OVERRIDE LOGN
+#
+# provide defaults if last three arguments are not given to this script
+if (null$VERNO == null) set VERNO=00
+if (null$NCPUS == null) set NCPUS=1
+if (null$LOGN == null)  set LOGN=0
+#
+#  ---- the top third of the script is input and other file assignments ----
+#
+echo "----- GAMESS execution script 'rungms-dev' -----"
+set parent=`hostname`
+echo This job is running on host $parent
+echo under operating system `uname` at `date` with $TARGET communication mode
+echo "Available scratch disk space (Kbyte units) at beginning of the job is"
+df -k $SCR
+echo "GAMESS temporary binary files will be written to $SCR"
+echo "GAMESS supplementary output files will be written to $USERSCR"
+#
+#        this added as experiment, February 2007, as 8 MBytes
+#        increased to 32 MB in October 2013 for the VB2000 code.
+#        its intent is to detect large arrays allocated off the stack
+limit stacksize 32768
+#
+#  Grab a copy of the input file.
+#  In the case of examNN jobs, file is in tests/standard subdirectory.
+#  In the case of exam-vbNN jobs, file is in vb2000 tests subdirectory.
+#
+set JOB=`basename $INPUT`
+set FULL_PATH=`readlink -f $JOB`
+set JOB_PATH=`dirname $FULL_PATH`
+#
+if ($JOB:r.inp == $JOB) then
+  set JOB=$JOB:r      # strip off possible .inp
+# All previous $JOB related files in the scratch directory is deleted.
+  set nonomatch
+  foreach file ("$SCR/$JOB."*)
+          if (-f "$file" && -w "$file") rm -v "$file"
+  end
+  unset nonomatch
+  unset file
+endif
+#
+echo "Copying input file $JOB.inp to your run's scratch directory..."
+if (-e $INPUT) then
+   (set echo; cp $INPUT $SCR/$JOB.F05)
+   if ($SCHED == SLURM) sbcast -f $INPUT $SCR/$JOB.F05
+else
+   if (-e $GMSPATH/tests/standard/$JOB.inp) then
+      (set echo; cp $GMSPATH/tests/standard/$JOB.inp $SCR/$JOB.F05)
+      if ($SCHED == SLURM) sbcast -f $GMSPATH/tests/standard/$JOB.inp $SCR/$JOB.F05
+   else
+      if (-e $GMSPATH/tests/$JOB.inp) then
+         (set echo; cp $GMSPATH/tests/$JOB.inp $SCR/$JOB.F05)
+         if ($SCHED == SLURM) sbcast -f $GMSPATH/tests/$JOB.inp $SCR/$JOB.F05
+      else
+         echo "Input file $JOB.inp does not exist." >> /dev/stderr
+         echo "This job expected the input file to be in directory `pwd`" >> /dev/stderr
+         echo "Please fix your file name problem, and resubmit." >> /dev/stderr
+         exit 4
+      endif
+   endif
+endif
+#
+#    define many environment variables setting up file names.
+#    anything can be overridden by a users own choice, read 2nd.
+#
+source $GMSPATH/gms-files.csh
+if (-e $HOME/.gmsrc) then
+   echo "reading your own $HOME/.gmsrc"
+   source $HOME/.gmsrc
+endif
+#
+#        choose remote shell execution program.
+#    Parallel run do initial launch of GAMESS on remote nodes by the
+#    following program.  Note that the authentication keys for ssh
+#    must have been set up correctly.
+#    If you wish, choose rsh/rcp using .rhosts authentication instead.
+setenv DDI_RSH ssh
+setenv DDI_RCP scp
+#
+#    If a $GDDI input group is present, the calculation will be using
+#    subgroups within DDI (the input NGROUP=0 means this isnt GDDI).
+#
+#    The parent within each group must have a copy of INPUT, which is
+#    dealt with below (prior to execution), once we know something about
+#    the host names where INPUT is required.  The INPUT does not have
+#    the global rank appended to its name, unlike all other files.
+#
+#    OUTPUT and PUNCH (and perhaps many other files) are opened on all
+#    processes (not just the parent in each subgroup), but unique names
+#    will be generated by appending the global ranks.  Note that OUTPUT
+#    is not opened by the parent in the first group, but is used by all
+#    other groups.  Typically, the OUTPUT from the first groups parent
+#    is the only one worth saving, unless perhaps if runs crash out.
+#
+#    The other files that GDDI runs might use are already defined above.
+#
+set ngddi=`grep -i '^ \$GDDI' $SCR/$JOB.F05 | grep -iv 'NGROUP=0 ' | wc -l`
+if ($ngddi > 0) then
+   set GDDIjob=true
+   echo "This is a GDDI run, keeping various output files on local disks"
+   set echo
+   setenv  OUTPUT $SCR/$JOB.F06
+   setenv   PUNCH $SCR/$JOB.F07
+   unset echo
+else
+   set GDDIjob=false
+endif
+#
+#             replica-exchange molecular dynamics (REMD)
+#     option is active iff runtyp=md as well as mremd=1 or 2.
+#     It utilizes multiple replicas, one per subgroup.
+#     Although REMD is indeed a GDDI kind of run, it handles its own
+#     input file manipulations, but should do the GDDI file defs above.
+set runmd=`grep -i runtyp=md $SCR/$JOB.F05 | wc -l`
+set mremd=`grep -i mremd= $SCR/$JOB.F05 | grep -iv 'mremd=0 ' | wc -l`
+if (($mremd > 0) && ($runmd > 0) && ($ngddi > 0)) then
+   set GDDIjob=false
+   set REMDjob=true
+   echo "This is a REMD run, keeping various output files on local disks"
+   set echo
+   setenv TRAJECT     $SCR/$JOB.F04
+   setenv RESTART $USERSCR/$JOB.rst
+   setenv    REMD $USERSCR/$JOB.remd
+   unset echo
+   set GDDIinp=(`grep -i '^ \$GDDI' $JOB.inp`)
+   set numkwd=$#GDDIinp
+   @ g = 2
+   @ gmax = $numkwd - 1
+   while ($g <= $gmax)
+      set keypair=$GDDIinp[$g]
+      set keyword=`echo $keypair | awk '{split($1,a,"="); print a[1]}'`
+      if (($keyword == ngroup) || ($keyword == NGROUP)) then
+         set nREMDreplica=`echo $keypair | awk '{split($1,a,"="); print a[2]}'`
+         @ g = $gmax
+      endif
+      @ g++
+   end
+   unset g
+   unset gmax
+   unset keypair
+   unset keyword
+else
+   set REMDjob=false
+endif
+#
+#    Data left over from a previous run might be precious so maybe alter
+#    this section and remove the "rm commands". To save data from a previous
+#    calculation you can also write protect it with 'chmod -w'
+#
+if (-f "$CASINO"  && -w "$CASINO")  echo "rm $CASINO"  && rm "$CASINO"
+if (-f "$CIMDMN"  && -w "$CIMDMN")  echo "rm $CIMDMN"  && rm "$CIMDMN"
+if (-f "$CIMFILE" && -w "$CIMFILE") echo "rm $CIMFILE" && rm "$CIMFILE"
+if (-f "$COSDATA" && -w "$COSDATA") echo "rm $COSDATA" && rm "$COSDATA"
+if (-f "$COSPOT"  && -w "$COSPOT")  echo "rm $COSPOT"  && rm "$COSPOT"
+if (-f "$GAMMA"   && -w "$GAMMA")   echo "rm $GAMMA"   && rm "$GAMMA"
+if (-f "$MAKEFP"  && -w "$MAKEFP")  echo "rm $MAKEFP"  && rm "$MAKEFP"
+if (-f "$MDDIP"   && -w "$MDDIP")   echo "rm $MDDIP"   && rm "$MDDIP"
+if (-f "$OPTHES1" && -w "$OPTHES1") echo "rm $OPTHES1" && rm "$OPTHES1"
+if (-f "$OPTHES2" && -w "$OPTHES2") echo "rm $OPTHES2" && rm "$OPTHES2"
+if (-f "$PUNCH"   && -w "$PUNCH")   echo "rm $PUNCH"   && rm "$PUNCH"
+if (-f "$QMWAVE"  && -w "$QMWAVE")  echo "rm $QMWAVE"  && rm "$QMWAVE"
+if (-f "$RESTART" && -w "$RESTART") echo "rm $RESTART" && rm "$RESTART"
+if (-f "$TRAJECT" && -w "$TRAJECT") echo "rm $TRAJECT" && rm "$TRAJECT"
+#
+#  ---- the middle third of the script is to execute GAMESS ----
+#
+#   Most workstations run DDI over TCP/IP sockets, and therefore execute
+#   according to the following clause.  The installer must
+#      a) Set the path to point to the DDIKICK and GAMESS executables.
+#      b) Build the HOSTLIST variable as a word separated string, i.e. ()s.
+#         There should be one host name for every compute process that is
+#         to be run.  DDIKICK will automatically generate a set of data
+#         server processes (if required) on the same hosts.
+#   An extended explanation of the arguments to ddikick.x can be found
+#   in the file gamess/ddi/readme.ddi, if you have any trouble executing.
+#
+if ($TARGET == sockets) then
+#      -- some special settings for certain operating systems --
+   set os=`uname`
+#         Fedora Core 1 cant run DDI processes w/o placing a finite
+#         but large limit on the stack size (2**27 bytes seems OK)
+   if ($os == Linux) limit stacksize 131072
+#         In case this Linux system is using Intels Math Kernel Library
+#         to obtain its BLAS, we insist each process runs single-threaded.
+#         one variable is for MKL up to 9, the other from 10 on up.
+#  if ($os == Linux) setenv MKL_SERIAL YES
+#  if ($os == Linux) setenv MKL_NUM_THREADS 1
+#         it is unlikely that you would need to change DDI_VER from 'new'!
+#         some antique system lacking pthreads, for example, might have
+#         to use the old DDI code, so we keep an execution example below.
+   set DDI_VER='new'
+   if (`hostname` == antique.msg.chem.iastate.edu) set DDI_VER='old'
+#
+#       Get host list from the scheduler
+#
+   if ($NNODES > 1) then
+      set NCPUS=$SCR/$JOB.nodes.cpus
+      touch $NCPUS
+      if ($SCHED == SGE) then
+         uniq -c $TMPDIR/machines > $NCPUS
+      else if ($SCHED == PBS) then
+         uniq -c $PBS_NODEFILE > $NCPUS
+      else if ($SCHED == SLURM) then
+         scontrol show hostnames $SLURM_JOB_NODELIST | sort | uniq -c > $NCPUS
+      endif
+   endif
+#
+   if (-e $NCPUS) then
+      set HOSTLIST=()
+      @ CPU=1
+      set ncores=0
+      while ($CPU <= $NNODES)
+         set node=`sed -n -e "$CPU p" <$NCPUS`
+         set c=`echo $node | awk '{ print $1 }'`
+         set n=`echo $node | awk '{ print $2 }'`
+         set HOSTLIST=($HOSTLIST ${n}:cpus=$c)
+         @ CPU++
+         @ ncores += $c
+      end
+      echo Using $NNODES nodes and $ncores cores from $NCPUS.
+      set NCPUS=$ncores
+      goto skipsetup
+   endif
+#
+#       Sequential execution is sure to be on this very same host
+#
+   if ($NCPUS == 1) then
+      set NNODES=1
+      set HOSTLIST=(`hostname`)
+   endif
+#
+#       This is an example of how to run on a multi-core SMP enclosure,
+#       where all CPUs (aka COREs) are inside a -single- NODE.
+#
+   if ($NCPUS > 1) then
+      switch ( `hostname` )
+         default:
+            echo " "
+            echo Assuming a single but multicore node.
+            if($LOGN == 0) then
+               set NNODES=1
+               set HOSTLIST=(`hostname`:cpus=$NCPUS)
+            else
+               @ NNODES = $NCPUS / $LOGN
+               echo Splitting it into $NNODES logical nodes with $LOGN cores each.
+               set HOSTLIST=()
+               set i=1
+               while ($i <= $NNODES)
+                  set HOSTLIST=($HOSTLIST `hostname`:cpus=$LOGN)
+                  @ i++
+               end
+            endif
+            echo " "
+      endsw
+   endif
+#
+skipsetup:
+#
+#        we have now finished setting up a correct HOSTLIST.
+#
+echo "The generated host list is"
+echo $HOSTLIST
+#
+#        One way to be sure that the parent node of each subgroup
+#        has its necessary copy of the input file is to stuff a
+#        copy of the input file onto every single node right here.
+#
+   if ($GDDIjob == true) then
+      @ n=2   # parent in parent group already did 'cp' above
+      while ($n <= $NNODES)
+         set host=$HOSTLIST[$n]
+         set host=`echo $host | cut -f 1 -d :` # drop anything behind a colon
+         echo $DDI_RCP $SCR/$JOB.F05 ${host}:$SCR/$JOB.F05
+              $DDI_RCP $SCR/$JOB.F05 ${host}:$SCR/$JOB.F05
+         @ n++
+      end
+   endif
+
+   if ($REMDjob == true) then
+      source $GMSPATH/tools/remd.csh $TARGET $nREMDreplica
+      if ($status > 0) exit $status
+   endif
+#
+#        Just make sure we have the binaries, before we try to run
+#
+   if ((-x $GMSPATH/gamess.$VERNO.x) && (-x $GMSPATH/ddikick.x)) then
+   else
+      echo "The GAMESS executable gamess.$VERNO.x" >> /dev/stderr
+      echo "or else the DDIKICK executable ddikick.x" >> /dev/stderr
+      echo "could not be found in directory $GMSPATH," >> /dev/stderr
+      echo "or else they did not properly link to executable permission." >> /dev/stderr
+      exit 8
+   endif
+#
+   echo '-----debug-----'
+   echo the execution path is
+   echo $path
+   echo the library path is
+   echo $LD_LIBRARY_PATH
+   echo The dynamically linked libraries for this binary are
+   echo $GMSPATH/gamess.$VERNO.x :
+   echo
+   ldd $GMSPATH/gamess.$VERNO.x
+   echo '--------------'
+
+#
+#        OK, now we are ready to execute!
+#    The kickoff program initiates GAMESS process(es) on all CPUs/nodes.
+#
+   if ($DDI_VER == new) then
+      set echo
+      $GMSPATH/ddikick.x $GMSPATH/gamess.$VERNO.x $JOB \
+          -ddi $NNODES $NCPUS $HOSTLIST \
+          -scr $SCR < /dev/null
+      unset echo
+   else
+      set path=($GMSPATH $path)
+      set echo
+      ddikick.x $JOB $GMSPATH gamess.$VERNO.x $SCR $NCPUS $HOSTLIST < /dev/null
+      unset echo
+   endif
+endif
+#                     - a typical MPI example -
+#
+#         This section is customized to two possible MPI libraries:
+#             Intel MPI
+#
+#         See ~/gamess/tools/gms, which is a front-end script to submit
+#         this file 'rungms' as a back-end script, to either scheduler.
+#
+#                   if you are using some other MPI:
+#         See ~/gamess/ddi/readme.ddi for information about launching
+#         processes using other MPI libraries (each may be different).
+#         Again: we do not know how to run openMPI effectively.
+#
+#                   if you are using some other batch scheduler:
+#         Illustrating other batch scheduler's way's of providing the
+#         hostname list is considered beyond the scope of this script.
+#         Suffice it to say that
+#             a) you will be given hostnames at run time
+#             b) a typical way is a disk file, named by an environment
+#                variable, containing the names in some format.
+#             c) another typical way is an blank separated list in some
+#                environment variable.
+#         Either way, whatever the batch scheduler gives you must be
+#         sliced-and-diced into the format required by your MPI kickoff.
+#
+if (($TARGET == mpi) || ($TARGET == mixed)) then
+   #
+   #      Besides the usual three arguments to 'rungms' (see top),
+   #      well pass in a "processers per node" value, that is,
+   #      all nodes are presumed to have equal numbers of cores.
+   #
+   set PPN=$4
+   #OVERRIDE PPN
+   if (null$PPN == null) set PPN=$NCPUS
+   #
+   #      Allow for compute process and data servers (one pair per core)
+   #      note that NCPUS = #cores, and NPROCS = #MPI processes
+   #
+   @ NPROCS = $NCPUS + $NCPUS
+   #
+   #      User customization required here:
+   #       1. specify your MPI choice: impi
+   #       2. specify your MPI librarys top level path just below,
+   #          this will have directories like include/lib/bin below it.
+   #       3. a bit lower, perhaps specify your ifort path information.
+   #
+   set DDI_MPI_CHOICE=$GMS_MPI_LIB
+   #
+   if ($DDI_MPI_CHOICE == impi) then
+      set DDI_MPI_ROOT=$GMS_MPI_PATH/intel64
+      if (! -d $GMS_MPI_PATH/lib64) then
+         setenv LD_LIBRARY_PATH $DDI_MPI_ROOT/lib/release/:$LD_LIBRARY_PATH
+      endif
+   else
+      set DDI_MPI_ROOT=$GMS_MPI_PATH
+   endif
+   #
+   #        pre-pend our MPI choice to the library and execution paths.
+   setenv LD_LIBRARY_PATH $DDI_MPI_ROOT/lib:$LD_LIBRARY_PATH
+   if ( $?GMS_BOOST_PATH ) then
+       if ( -d $GMS_BOOST_PATH/lib ) setenv LD_LIBRARY_PATH $GMS_BOOST_PATH/lib:$LD_LIBRARY_PATH
+   endif
+   set path=($DDI_MPI_ROOT/bin $path)
+   #
+   #       you probably dont need to modify the kickoff style (see below).
+   #
+   if ($DDI_MPI_CHOICE == impi)     set MPI_KICKOFF_STYLE=hydra
+   if ($DDI_MPI_CHOICE =~ mpich*)   set MPI_KICKOFF_STYLE=hydra
+   if ($DDI_MPI_CHOICE == mvapich2) set MPI_KICKOFF_STYLE=hydra
+   if ($DDI_MPI_CHOICE == openmpi)  set MPI_KICKOFF_STYLE=orte
+   if ($DDI_MPI_CHOICE == spectrum) then
+      if ( $?GMS_HPC_SYSTEM_TARGET ) then
+         if ( $GMS_HPC_SYSTEM_TARGET == summit ) then
+            set MPI_KICKOFF_STYLE=jsrun
+         endif
+         if ( $GMS_HPC_SYSTEM_TARGET == hokulea ) then
+            set MPI_KICKOFF_STYLE=orte
+         endif
+      else
+         set MPI_KICKOFF_STYLE=orte
+      endif
+   endif
+   if ( $GMS_HPC_SYSTEM_TARGET == nautilus ) set MPI_KICKOFF_STYLE=srun
+   #
+   #  Argonnes MPICH2, offers two possible kick-off procedures,
+   #  guided by two disk files (A and B below).
+   #  Other MPI implementations are often derived from Argonnes,
+   #  and so usually offer these same two styles.
+   #  For example, iMPI and MVAPICH2 can choose either "3steps" or "hydra",
+   #  but openMPI uses its own Open Run Time Environment, "orte".
+   #
+   #  Kickoff procedure #1 uses mpd demons, which potentially collide
+   #  if the same user runs multiple jobs that end up on the same nodes.
+   #  This is called "3steps" here because three commands (mpdboot,
+   #  mpiexec, mpdallexit) are needed to run.
+   #
+   #  Kickoff procedure #2 is little faster, easier to use, and involves
+   #  only one command (mpiexec.hydra).  It is called "hydra" here.
+   #
+   #  A. build HOSTFILE,
+   #     This file is explicitly used only by "3steps" initiation,
+   #     but it is always used below during file cleaning,
+   #     and while creating the PROCFILE at step B,
+   #     so we always make it.
+   #
+   setenv HOSTFILE $SCR/$JOB.nodes.mpd
+   if (-f "$HOSTFILE" && -w "$HOSTFILE") rm "$HOSTFILE"
+   touch $HOSTFILE
+   #
+   if ($SCHED == SGE) then
+      uniq $TMPDIR/machines $HOSTFILE
+      set NNODES=`wc -l $HOSTFILE`
+      set NNODES=$NNODES[1]
+   else if ($SCHED == PBS) then
+     uniq $PBS_NODEFILE $HOSTFILE
+     set NNODES=`wc -l $HOSTFILE`
+     set NNODES=$NNODES[1]
+   else if ($SCHED == SLURM) then
+     scontrol show hostname | uniq > $HOSTFILE
+     set NNODES=`wc -l $HOSTFILE`
+     set NNODES=$NNODES[1]
+   else if ($SCHED == LSF) then
+     set NNODES=`uniq $LSB_DJOB_HOSTFILE | tail -n +2 | wc -l`
+   else
+     echo `hostname` >> $HOSTFILE
+     set NNODES=1
+   endif
+   #           uncomment next lines if you need to debug host configuration.
+   echo '-----debug----'
+   echo HOSTFILE $HOSTFILE contains
+   cat $HOSTFILE
+   echo '--------------'
+   #
+   #  B. the next file forces explicit "which process on what node" rules.
+   #     The contents depend on the kickoff style.  This file is how
+   #     we tell MPI to double-book the cores with two processes,
+   #     thus accounting for both compute processes and data servers.
+   #
+   setenv PROCFILE $SCR/$JOB.processes.mpd
+   if (-f "$PROCFILE" && -w "$PROCFILE") rm "$PROCFILE"
+   touch $PROCFILE
+
+   switch ($MPI_KICKOFF_STYLE)
+
+   case 3steps:
+
+   if ($NCPUS == 1) then
+      echo "-n $NPROCS -host `hostname` $GMSPATH/gamess.$VERNO.x" >> $PROCFILE
+   else
+      if ($NNODES == 1) then
+             # when all processes are inside a single node, it is simple!
+             # all MPI processes, whether compute processes or data servers,
+             # are just in this node.   (note: NPROCS = 2*NCPUS!)
+         echo "-n $NPROCS -host `hostname` $GMSPATH/gamess.$VERNO.x" >> $PROCFILE
+      else
+             # For more than one node, we want PPN compute processes on
+             # each node, and of course, PPN data servers on each.
+             # Hence, PPN2 is doubled up.
+             # Front end script 'gms' is responsible to ensure that NCPUS
+             # is a multiple of PPN, and that PPN is less than or equals
+             # the actual number of cores in the node.
+         @ PPN2 = $PPN + $PPN
+         @ n=1
+         while ($n <= $NNODES)
+            set host=`sed -n -e "$n p" $HOSTFILE`
+            set host=$host[1]
+            echo "-n $PPN2 -host $host $GMSPATH/gamess.$VERNO.x" >> $PROCFILE
+            @ n++
+         end
+      endif
+   endif
+   breaksw
+
+   case hydra:
+
+   if ($NNODES == 1) then
+             # when all processes are inside a single node, it is simple!
+             # all MPI processes, whether compute processes or data servers,
+             # are just in this node.   (note: NPROCS = 2*NCPUS!)
+      @ PPN2 = $PPN + $PPN
+      echo "`hostname`:$NPROCS" > $PROCFILE
+   else
+             # For more than one node, we want PPN compute processes on
+             # each node, and of course, PPN data servers on each.
+             # Hence, PPN2 is doubled up.
+             # Front end script 'gms' is responsible to ensure that NCPUS
+             # is a multiple of PPN, and that PPN is less than or equals
+             # the actual number of cores in the node.
+      @ PPN2 = $PPN + $PPN
+      @ n=1
+      while ($n <= $NNODES)
+         set host=`sed -n -e "$n p" $HOSTFILE`
+         set host=$host[1]
+         echo "${host}:$PPN2" >> $PROCFILE
+         @ n++
+      end
+   endif
+   breaksw
+
+   case orte:
+
+   if ($NNODES == 1) then
+             # when all processes are inside a single node, it is simple!
+             # all MPI processes, whether compute processes or data servers,
+             # are just in this node.   (note: NPROCS = 2*NCPUS!)
+      @ PPN2 = $PPN + $PPN
+      echo "`hostname` slots=$NPROCS max_slots=$PPN2" > $PROCFILE
+   else
+             # For more than one node, we want PPN compute processes on
+             # each node, and of course, PPN data servers on each.
+             # Hence, PPN2 is doubled up.
+             # Front end script 'gms' is responsible to ensure that NCPUS
+             # is a multiple of PPN, and that PPN is less than or equals
+             # the actual number of cores in the node.
+      @ PPN2 = $PPN + $PPN
+      @ n=1
+      while ($n <= $NNODES)
+         set host=`sed -n -e "$n p" $HOSTFILE`
+         set host=$host[1]
+         echo "${host} slots=$PPN2 max_slots=$PPN2" >> $PROCFILE
+         @ n++
+      end
+   endif
+   breaksw
+
+   case jsrun:
+
+             # Summit specific handling.
+             # PPN2 contains the total number of MPI ranks per node for the job.
+             #
+      @ PPN2 = $PPN + $PPN
+             #
+             # PPRS contains the total number of MPI ranks per resourse set for the job.
+             # Resource sets are defined within a node. Because we request 42 cores per node
+             # we divide this value up by PPN2.  Then check to see if the resultant value
+             # is a factor of 42 so that MPI ranks are equally distributed across the two
+             # P9 sockets.
+             #
+      @ PPRS = 42 / $PPN2
+      switch ($PPRS)
+      case 1:
+      case 2:
+      case 3:
+      case 6:
+      case 7:
+      case 14:
+      case 21:
+      case 42:
+         echo "Number of MPI ranks per resource set is a multiple of 42:"
+         echo "42 / (NCPUS + NCPUS) = $PPRS"
+      breaksw
+      default:
+         echo "Number of MPI ranks per resource set is NOT a multiple of 42:" >> /dev/stderr
+         echo "42 / (NCPUS + NCPUS) = $PPRS" >> /dev/stderr
+         exit 1
+      endsw
+   breaksw
+
+   endsw
+   #
+   sed -i "s/\.local//g" $PROCFILE
+   #
+   #           uncomment next lines if you need to debug host configuration.
+   echo '-----debug----'
+   echo PROCFILE $PROCFILE contains
+   cat $PROCFILE
+   echo '--------------'
+   #
+   #     ==== values that influence the MPI operation ====
+   #
+   #     tunings below are specific to Intel MPI 3.2 and/or 4.0:
+   #        a very important option avoids polling for incoming messages
+   #           which allows us to compile DDI in pure "mpi" mode,
+   #           and get sleeping data servers if the run is SCF level.
+   #        trial and error showed process pinning slows down GAMESS runs,
+   #        set debug option to 5 to see messages while kicking off,
+   #        set debug option to 200 to see even more messages than that,
+   #        set statistics option to 1 or 2 to collect messaging info,
+   #        iMPI 4.0 on up defaults fabric to shm,dapl: dapl only is faster.
+   #
+   if ($DDI_MPI_CHOICE == impi) then
+      if ($GMS_OPENMP == true)  then
+         set echo
+         setenv I_MPI_PIN enable
+         setenv I_MPI_PIN_DOMAIN omp
+         unset echo
+      else
+         set echo
+         setenv I_MPI_PIN disable
+         unset echo
+      endif
+      #
+
+      if (! -d $GMS_MPI_PATH/lib64) then
+        #
+        # Intel 2019
+        #
+        set echo
+        setenv I_MPI_SHM_OPT shm
+        setenv I_MPI_WAIT_MODE 1
+        setenv I_MPI_DEBUG 0
+        unset echo
+        #setenv I_MPI_FABRICS shm:ofi
+      else
+        #
+        # Pre-Intel 2019
+        #
+        set echo
+        setenv I_MPI_WAIT_MODE enable
+        setenv I_MPI_DEBUG 0
+        setenv I_MPI_STATS 0
+        # Force use of "shared memory copy" large message transfer mechanism
+        # The "direct" mechanism was introduced and made default for IPS 2017,
+        # and makes GAMESS hang when DD_GSum() is called. See IPS 2017 release notes
+        # for more details.
+        setenv I_MPI_SHM_LMT shm
+        #      Next two select highest speed mode of an Infiniband
+        #--setenv I_MPI_FABRICS dapl
+        #--setenv I_MPI_DAT_LIBRARY libdat2.so
+        #      Next two select TCP/IP, a slower way to use Infiniband.
+        #      The device could be eth0 if IP over IB is not enabled.
+        #--setenv I_MPI_FABRICS tcp
+        #--setenv I_MPI_TCP_NETMASK ib0
+        #      In case someone wants to try the "tag matching interface",
+        #      An option which unfortunately ignores the WAIT_MODE in 4.0.2!
+        #--setenv I_MPI_FABRICS tmi
+        #--setenv I_MPI_TMI_LIBRARY libtmi.so
+        #--setenv I_MPI_TMI_PROVIDER psm
+        #--setenv TMI_CONFIG $DDI_MPI_ROOT/etc/tmi.conf
+        unset echo
+      endif
+   endif
+   #
+   if ($DDI_MPI_CHOICE == mvapich2) then
+      set echo
+      setenv MV2_USE_BLOCKING 1
+      setenv MV2_ENABLE_AFFINITY 0
+      unset echo
+   endif
+   #
+   if ($DDI_MPI_CHOICE == openmpi) then
+      set echo
+      setenv OMPI_MCA_mpi_yield_when_idle 1
+      unset echo
+   endif
+   #
+   #
+   #         ... thus ends setting up the process initiation,
+   #             tunings, pathnames, library paths, for the MPI.
+   #
+   #
+   #    Compiler library setup (ifort)
+   #        just ignore this (or comment out) if you're using gfortran.
+   #
+   #    Math library setup (MKL or Atlas):
+   #
+   #          set up Intel MKL (math kernel library):
+   #          GAMESS links MKL statically, for single threaded execution,
+   #          so if you use MKL, you can probably skip this part.
+   #
+   #setenv MKL_NUM_THREADS 1
+   #
+   #
+   #   =========== runtime path/library setup is now finished! ===========
+   #     any issues with paths and libraries can be debugged just below:
+   #
+   echo '-----debug----'
+   echo the execution path is
+   echo $path
+   echo " "
+   echo the library path is
+   echo $LD_LIBRARY_PATH
+   echo " "
+   echo The dynamically linked libraries for this binary are
+   echo  $GMSPATH/gamess.$VERNO.x :
+   echo
+   if ($GMS_TARGET == singularity) then
+     echo  $GMS_CONTAINER_PATH/$GMS_CONTAINER /opt/gamess/gamess.$VERNO.x :
+     singularity exec $GMS_CONTAINER_PATH/$GMS_CONTAINER ldd /opt/gamess/gamess.$VERNO.x
+   else
+     echo  $GMSPATH/gamess.$VERNO.x :
+     ldd $GMSPATH/gamess.$VERNO.x
+   endif
+   echo '--------------'
+   #
+   #           the next two setups are GAMESS-related
+   #
+   #     Set up Fragment MO runs (or other runs exploiting subgroups).
+   #     One way to be sure that the parent node of each subgroup
+   #     has its necessary copy of the input file is to stuff a
+   #     copy of the input file onto every single node right here.
+   if ($GDDIjob == true) then
+      set nmax=`wc -l $HOSTFILE`
+      set nmax=$nmax[1]
+      set lasthost=$parent
+      echo GDDI has to copy your input to every node....
+      @ n=2   # input has already been copied into the parent node.
+      while ($n <= $nmax)
+         set host=`sed -n -e "$n p" $HOSTFILE`
+         set host=$host[1]
+         if ($host != $lasthost) then
+            echo $DDI_RCP $SCR/$JOB.F05 ${host}:$SCR/$JOB.F05
+                 $DDI_RCP $SCR/$JOB.F05 ${host}:$SCR/$JOB.F05
+            set lasthost=$host
+         endif
+         @ n++
+      end
+      #      The default for the logical node size is all cores existing
+      #      in the physical node (just skip setting the value).
+      #      GDDI runs require that the number of groups should not be
+      #      less than the number of logical nodes.
+      #      For example, if you run on 2 physical nodes with 12 cores each
+      #      and you want to use 6 GDDI groups, then you would set LOGN to 4
+      #       (12*2/6).
+      #      By doing this, you will get 6 groups with 4 cores each;
+      #      if you do not do this (and run with 2 nodes), you can only ask
+      #      for at most 2 groups.
+      if($LOGN != 0) setenv DDI_LOGICAL_NODE_SIZE $LOGN
+   endif
+   #
+   if ($REMDjob == true) then
+      source $GMSPATH/tools/remd.csh $TARGET $nREMDreplica
+      if ($status > 0) exit $status
+   endif
+   #
+   #  Now, at last, we can actually kick-off the MPI processes...
+   #
+   echo "MPI kickoff will run GAMESS on $NCPUS cores in $NNODES nodes."
+   echo "The binary to be executed is $GMSPATH/gamess.$VERNO.x"
+   echo "MPI will run $NCPUS compute processes and $NCPUS data servers,"
+   echo "    placing $PPN of each process type onto each node."
+   echo "The scratch disk space on each node is $SCR, with free space"
+   df -k $SCR
+   #
+   chdir $SCR
+   #
+   switch ($MPI_KICKOFF_STYLE)
+
+   case 3steps:
+      #
+      #  a) bring up a 'ring' of MPI demons
+      #
+      set echo
+      mpdboot --rsh=ssh -n $NNODES -f $HOSTFILE
+      #
+      #  b) kick off the compute processes and the data servers
+      #
+      mpiexec -configfile $PROCFILE < /dev/null
+      #
+      #  c) shut down the 'ring' of MPI demons
+      #
+      mpdallexit
+      unset echo
+      breaksw
+   #
+   case hydra:
+      if ($DDI_MPI_CHOICE == impi) then
+         set echo
+         setenv I_MPI_HYDRA_ENV all
+         setenv I_MPI_PERHOST $PPN2
+         unset echo
+      endif
+      if ($DDI_MPI_CHOICE == mvapich2) then
+         set echo
+         setenv HYDRA_ENV all
+         unset echo
+      endif
+      set echo
+      mpiexec.hydra -f $PROCFILE -n $NPROCS \
+            $GMSPATH/gamess.$VERNO.x < /dev/null
+      unset echo
+      breaksw
+   case orte:
+      set echo
+#     rm -r /dev/shm/*shm*
+      if ($GMS_OPENMP == true) then
+        if ($NNODES == 1) then
+          orterun --mca orte_base_help_aggregate 0 \
+            --mca orte_tmpdir_base /tmp \
+             $GMS_OPENMPI_FLAGS \
+          -np $NPROCS \
+          --bind-to none \
+          -map-by ppr:${PPN2}:socket \
+          --report-bindings \
+          $GMSPATH/gamess.$VERNO.x < /dev/null
+        else
+          orterun --mca orte_base_help_aggregate 0 \
+            --mca orte_tmpdir_base /tmp \
+            $GMS_OPENMPI_FLAGS \
+          -np $NPROCS \
+          --bind-to none \
+          -map-by ppr:${PPN2}:node \
+          --report-bindings \
+          $GMSPATH/gamess.$VERNO.x < /dev/null
+        endif
+      else
+        if ($GMS_TARGET == singularity) then
+          orterun \
+            --mca orte_base_help_aggregate 0 \
+            --mca orte_tmpdir_base /tmp \
+            --mca btl vader,self,tcp \
+          -np $NPROCS \
+          --map-by ppr:${PPN2}:node:OVERSUBSCRIBE \
+          --report-bindings \
+          singularity exec --bind $SCR $GMS_CONTAINER_PATH/$GMS_CONTAINER /opt/gamess/gamess.00.x < /dev/null
+        else
+          orterun \
+            --mca orte_base_help_aggregate 0 \
+            --mca orte_tmpdir_base /tmp \
+             $GMS_OPENMPI_FLAGS \
+          -np $NPROCS \
+          --map-by ppr:${PPN2}:node \
+          --report-bindings \
+          $GMSPATH/gamess.$VERNO.x < /dev/null
+        endif
+      endif
+#     rm -r /dev/shm/*shm*
+      unset echo
+      breaksw
+   case jsrun:
+      module load job-step-viewer
+      if ($GMS_OPENMP == true) then
+         set echo
+         jsrun    -n $NNODES -c 42 -a $PPN2 \
+                  -b packed:$OMP_NUM_THREADS \
+                 --latency_priority cpu-cpu \
+                 --launch_distribution cyclic \
+                   $GMSPATH/gamess.$VERNO.x
+         unset echo
+      else
+         set echo
+         jsrun    -n $NNODES -c 42 -a $PPN2 \
+                  -b packed:$PPRS \
+                 --latency_priority cpu-cpu \
+#                --launch_distribution packed \
+                 --launch_distribution cyclic \
+#                --launch_distribution plane:$PPN2  \
+                   $GMSPATH/gamess.$VERNO.x
+         unset echo
+      endif
+      breaksw
+   case srun:
+      # GAMESS compute processes per node
+      set PPN=$4
+      if (null$PPN == null) set PPN=$NCPUS
+
+      # total number of nodes (recompute since we might have requested more nodes for the SLURM job)
+      @ NNODES_REQUIRED = $NCPUS / $PPN
+
+      # total number of GAMESS processes (# compute processes + # data servers)
+      @ NCPUS2 = $NCPUS + $NCPUS
+
+      # total number of MPI ranks per node (1 MPI rank for each compute process + 1 MPI rank for each data server)
+      @ PPN2 = $PPN + $PPN
+
+      if ( $NNODES > $NNODES_REQUIRED ) then
+         echo " "
+         echo "******************************************************************************"
+         echo " SLURM requested ${NNODES} node(s) but your job is configured to run on ${NNODES_REQUIRED} node(s)"
+         echo " "
+         echo " You might want to resubmit to avoid wasting your compute resource allocation "
+         echo "******************************************************************************"
+         echo " "
+         set NNODES = $NNODES_REQUIRED
+      endif
+
+      if ($GMS_OPENMP == false) then
+         (set echo; srun --exclusive --export=ALL --cpu-bind verbose,cores -N $NNODES -n $NCPUS2 --ntasks-per-node=$PPN2 $GMSPATH/gamess.$VERNO.x $JOB)
+      else
+         (set echo; srun --exclusive --export=ALL --cpu-bind verbose,cores -N $NNODES -n $NCPUS2 --ntasks-per-node=$PPN2 -c ${OMP_NUM_THREADS} $GMSPATH/gamess.$VERNO.x $JOB)
+      endif
+      breaksw
+   case default:
+      echo "rungms: No valid DDI-over-MPI startup procedure was chosen." >> /dev/stderr
+      exit
+   endsw
+   #
+   #    keep HOSTFILE, as it is passed to the file erasing step below
+   if (-f "$PROCFILE" && -w "$PROCFILE") rm "$PROCFILE"
+   #
+endif
+#      ------ end of the MPI execution section -------
+if ($TARGET == ga) then
+   #
+   #      This section is used if and only if you run GAMESS+LIBCCHEM,
+   #      over Global Arrays (GA) which is running over MPI.
+   #
+   #      To save space, the more verbose notes in the MPI section are
+   #      not all here.  See the MPI section for extra comments.
+   #
+   #      LIBCCHEM wants only one process per assigned node, hence the
+   #      hardwiring of processes per node to just 1.  In effect, the input
+   #      value NCPUS, and thus NPROCS, are node counts, not core counts.
+   #      Parallelization inside the nodes is handled by LIBCCHEM threads.
+   #      The lack of data servers is due to GA as the message passing agent.
+   #
+   set PPN=1
+   @ NPROCS = $NCPUS
+   #
+   #      User customization here!
+   #         select MPI from just two: impi,mvapich2
+   #         select MPI top level directory pathname.
+   #
+   set GA_MPI_CHOICE=$GMS_MPI_LIB
+   #
+   if ($GA_MPI_CHOICE == impi) then
+      set GA_MPI_ROOT=$GMS_MPI_PATH/intel64
+   else
+      set GA_MPI_ROOT=$GMS_MPI_PATH
+   endif
+   #        pre-pend our MPI choice to the library and execution paths.
+   setenv LD_LIBRARY_PATH $GA_MPI_ROOT/lib:$LD_LIBRARY_PATH
+   setenv LD_LIBRARY_PATH $GMS_BOOST_PATH/lib:$LD_LIBRARY_PATH
+   setenv LD_LIBRARY_PATH $GMS_HDF5_PATH/lib:$LD_LIBRARY_PATH
+   set path=($GA_MPI_ROOT/bin $path)
+   #
+   if ($GA_MPI_CHOICE == impi)     set MPI_KICKOFF_STYLE=hydra
+   if ($GA_MPI_CHOICE =~ mpich*)   set MPI_KICKOFF_STYLE=hydra
+   if ($GA_MPI_CHOICE == mvapich2) set MPI_KICKOFF_STYLE=hydra
+   if ($GA_MPI_CHOICE == openmpi)  set MPI_KICKOFF_STYLE=orte
+   if ($GA_MPI_CHOICE == spectrum) set MPI_KICKOFF_STYLE=jsrun
+   #
+   #   ===== set up MPI control files to execute 1 process per node =====
+   #
+   #  A. build HOSTFILE,
+   #
+   setenv HOSTFILE $SCR/$JOB.nodes.mpd
+   if (-f "$HOSTFILE" && -w "$HOSTFILE") rm "$HOSTFILE"
+   touch $HOSTFILE
+   #
+   if ($SCHED == SGE) then
+      uniq $TMPDIR/machines $HOSTFILE
+      set NNODES=`wc -l $HOSTFILE`
+      set NNODES=$NNODES[1]
+   else if ($SCHED == PBS) then
+     uniq $PBS_NODEFILE $HOSTFILE
+     set NNODES=`wc -l $HOSTFILE`
+     set NNODES=$NNODES[1]
+   else if ($SCHED == SLURM) then
+     scontrol show hostname | uniq > $HOSTFILE
+     set NNODES=`wc -l $HOSTFILE`
+     set NNODES=$NNODES[1]
+   else
+     echo `hostname` >> $HOSTFILE
+     set NNODES=1
+   endif
+   #           uncomment next lines if you need to debug host configuration.
+   echo '-----debug----'
+   echo HOSTFILE $HOSTFILE contains
+   cat $HOSTFILE
+   echo '--------------'
+   #
+   #  B. the next file forces explicit "which process on what node" rules.
+   #
+   setenv PROCFILE $SCR/$JOB.processes.mpd
+   if (-f "$PROCFILE" && -w "$PROCFILE") rm "$PROCFILE"
+   touch $PROCFILE
+   #
+   switch ($MPI_KICKOFF_STYLE)
+
+   case 3steps:
+
+   if ($NCPUS == 1) then
+      echo "-n $NPROCS -host `hostname` $GMSPATH/gamess.cchem.$VERNO.x" >> $PROCFILE
+   else
+      if ($NNODES == 1) then
+             # when all processes are inside a single node, it is simple!
+             # all MPI processes, whether compute processes or data servers,
+             # are just in this node.   (note: NPROCS = 2*NCPUS!)
+         echo "-n $NPROCS -host `hostname` $GMSPATH/gamess.cchem.$VERNO.x" >> $PROCFILE
+      else
+         @ n=1
+         while ($n <= $NNODES)
+            set host=`sed -n -e "$n p" $HOSTFILE`
+            set host=$host[1]
+            echo "-n $PPN -host $host $GMSPATH/gamess.cchem.$VERNO.x" >> $PROCFILE
+            @ n++
+         end
+      endif
+   endif
+   breaksw
+
+   case hydra:
+
+   if ($NNODES == 1) then
+             # when all processes are inside a single node, it is simple!
+      echo "`hostname`:$PPN" > $PROCFILE
+   else
+      @ n=1
+      while ($n <= $NNODES)
+         set host=`sed -n -e "$n p" $HOSTFILE`
+         set host=$host[1]
+         echo "${host}:$PPN" >> $PROCFILE
+         @ n++
+      end
+   endif
+   breaksw
+
+   endsw
+   #
+   #           uncomment next lines if you need to debug host configuration.
+   echo '-----debug----'
+   echo PROCFILE $PROCFILE contains
+   cat $PROCFILE
+   echo '--------------'
+   #
+   #  next line finds Intel MKL (math kernel library) libraries
+   #  While pure-GAMESS steps run, we want serial execution here, note that
+   #  at times LIBCCHEM manipulates some of its steps to use threaded MKL.
+   #  Atlas is an acceptable substitute for MKL, if you linked to Atlas.
+   #            the examples are our exalted/bolt clusters
+   #
+   setenv MKL_NUM_THREADS 1
+   #
+   #      any issues with run-time libraries can be debugged just below
+   echo '-----debug libcchem----'
+   echo the execution path is
+   echo $path
+   echo the library path is
+   echo $LD_LIBRARY_PATH
+   echo The dynamically linked libraries for this binary are
+   echo $GMSPATH/gamess.cchem.$VERNO.x :
+   echo
+   if ($GMS_TARGET == singularity) then
+     singularity exec $GMS_CONTAINER ldd /opt/gamess/gamess.cchem.$VERNO.x
+   else
+     ldd $GMSPATH/gamess.cchem.$VERNO.x
+   endif
+   echo '--------------'
+   #
+   #     ==== values that influence the MPI operation ====
+   #
+   #     There is a known problem with GA on QLogics brand infiniband,
+   #     for which the high speed IB mode "dapl" does not work correctly.
+   #     In our experience, Mellanox brand infiniband works OK.
+   #
+   #
+   if ($GA_MPI_CHOICE == impi) then
+      set echo
+      setenv I_MPI_WAIT_MODE enable
+      setenv I_MPI_PIN disable
+      setenv I_MPI_DEBUG 0
+      setenv I_MPI_STATS 0
+      # Force use of "shared memory copy" large message transfer mechanism
+      # The "direct" mechanism was introduced and made default for IPS 2017,
+      # and makes GAMESS hang when DD_GSum() is called. See IPS 2017 release notes
+      # for more details.
+      setenv I_MPI_SHM_LMT shm
+      #      Qlogics Infiniband must run in IPoIB mode due to using GA.
+      #      recently, device ib0 stopped working, but eth1 is OK.
+      #--setenv I_MPI_FABRICS tcp
+      #--setenv I_MPI_TCP_NETMASK eth1
+      #      Mellanox Infiniband can launch GA in a native IB mode
+      #--env I_MPI_FABRICS dapl
+      #--env I_MPI_DAT_LIBRARY libdat2.so
+      unset echo
+   endif
+   #
+   #      Similar tunings for MVAPICH2 are
+   #      DPM=dynamic process management (GA does MPI spawning)
+   #      See MPI explanation for QLogics/Mellanox choice about IPoIB/DAPL
+   #
+   if ($GA_MPI_CHOICE == mvapich2) then
+      set echo
+      setenv MV2_USE_BLOCKING 1
+      setenv MV2_USE_THREAD_WARNING 0
+      setenv MV2_ENABLE_AFFINITY 0
+      setenv MV2_SUPPORT_DPM 1
+      #   comment out the next line if you are using DAPL instead of IPoIB
+      setenv HYDRA_IFACE ib0
+      unset echo
+   endif
+   #
+   #          ===== Runtime control over LIBCCHEM =====
+   #      set GMS_CCHEM to 1 to enable calls to LIBCCHEM.
+   #      set CCHEM to control use of GPUs, or memory used.
+   #                for example, setenv CCHEM 'devices=;memory=100m'
+   #                disables the usage of GPUs,
+   #                and limits memory/node to 100m (units m,g both OK)
+   #      set OMP_NUM_THREADS to limit core usage to fewer than all cores.
+   #
+   setenv GMS_CCHEM '1'
+   #
+   #      Our 'gms' front end for PBS batch submission changes the value
+   #      of NUMGPU to 2 or 4 depending on users request, or else
+   #      leaves NUMGPU at 0 if the user decides to ignore any GPUs.
+   #
+   #      Please set to your number of GPUs if you are not using
+   #      the front end 'gms' to correctly change this value.
+   #      The 0 otherwise leads to ignoring GPUs (OK if you have none).
+   #
+   #      Approximately 1 GByte of memory should be given per CPU thread.
+   #      Our system is hex-core nodes, your memory setting might vary.
+   @ NUMGPU=1
+   #
+   # Controls how much memory to give libcchem
+   #
+   setenv CCHEM 'devices=0,1,2,3;memory=200g'
+   setenv CUDA_VISIBLE_DEVICES 0,1,2,3
+   #
+   #  Now, at last, we can actually kick-off the MPI/GA processes...
+   #
+   echo "MPI kickoff will start GAMESS on $NCPUS cores in $NNODES nodes."
+   if ( $?OMP_NUM_THREADS ) then
+     echo "Each node will has OMP_NUM_THREADS set to $OMP_NUM_THREADS."
+   endif
+   echo "LIBCCHEM will generate threads on all other cores in each node."
+   echo "LIBCCHEM will run threads on $NUMGPU GPUs per node."
+   echo "LIBCCHEM's control setting for CCHEM is $CCHEM"
+   echo "The binary to be executed is $GMSPATH/gamess.cchem.$VERNO.x"
+   echo "The scratch disk space on each node is $SCR, with free space"
+   df -k $SCR
+   chdir $SCR
+   #
+   switch ($MPI_KICKOFF_STYLE)
+     case 3steps:
+       #
+       #  a) bring up a 'ring' of MPI demons
+       #
+       set echo
+       mpdboot --rsh=ssh -n $NNODES -f $HOSTFILE
+       #
+       #  b) kick off the compute processes and the data servers
+       #
+       mpiexec -configfile $PROCFILE < /dev/null
+       #
+       #  c) shut down the 'ring' of MPI demons
+       #
+       mpdallexit
+       unset echo
+       breaksw
+
+#          never succeeded in getting next kickoff stuff to actually work!
+     case mpirun_rsh:
+       set echo
+       mpirun_rsh -ssh -np $NNODES -hostfile $HOSTFILE \
+            $GMSPATH/gamess.cchem.$VERNO.x
+       unset echo
+       breaksw
+
+     case hydra:
+       if ($GA_MPI_CHOICE == impi) then
+         set echo
+         setenv I_MPI_HYDRA_ENV all
+         setenv I_MPI_PERHOST $PPN
+         unset echo
+       endif
+       if ($GA_MPI_CHOICE =~ mpich*) then
+         set echo
+         setenv HYDRA_ENV all
+         setenv HYDRA_DEBUG 0
+         unset echo
+       endif
+       if ($GA_MPI_CHOICE == mvapich2) then
+         set echo
+         setenv HYDRA_ENV all
+         setenv HYDRA_DEBUG 0
+         unset echo
+       endif
+       set echo
+       which mpiexec
+       mpiexec.hydra -f $PROCFILE -n $NPROCS \
+             $GMSPATH/gamess.cchem.$VERNO.x < /dev/null
+       unset echo
+       breaksw
+     case orte:
+       set echo
+       orterun $GMS_OPENMPI_FLAGS -np $NPROCS --bind-to socket \
+               --map-by ppr:${NPROCS}:node \
+               --report-bindings \
+               $GMSPATH/gamess.cchem.$VERNO.x < /dev/null
+       unset echo
+       breaksw
+     case jsrun:
+       set echo
+       jsrun -n $NNODES -c $NCPUS -a $NPROCS -g $NUMGPU $GMSPATH/gamess.cchem.$VERNO.x
+       #jsrun --nrs $NPROCS --tasks_per_rs 1 --cpu_per_rs 1 --gpu_per_rs 1 \
+       #--rs_per_host $NPROCS  \
+       #$GMSPATH/gamess.cchem.$VERNO.x
+       unset echo
+     case default:
+       echo "No valid GA/MPI startup procedure chosen." >> /dev/stderr
+       exit
+       breaksw
+   endsw
+   #
+   #    keep HOSTFILE, as it is passed to the file erasing step below
+   if (-f "$PROCFILE" && -w "$PROCFILE") rm "$PROCFILE"
+   #
+endif
+#      ------ end of the GA execution section -------
+#
+#      ------ hpe-* execution -----
+#
+if ($TARGET =~ hpe-*) then
+   if ($GDDIjob == true) then
+      echo GDDI has to copy your input to every node ...
+      if ($SCHED == PBS) then
+         foreach host (`uniq $PBS_NODEFILE`)
+            echo "Creating $SCR on $host"
+            $DDI_RSH ${host} -q "mkdir -p $SCR"
+            echo "Copying $SCR/$JOB.F05 to $host"
+            $DDI_RCP -q $SCR/$JOB.F05 ${host}:$SCR/$JOB.F05
+         end
+      else if ($SCHED == SLURM) then
+         foreach host (`scontrol show hostname | uniq`)
+            echo "Creating $SCR on $host"
+            $DDI_RSH ${host} -q "mkdir -p $SCR"
+            echo "Copying $SCR/$JOB.F05 to $host"
+            $DDI_RCP -q $SCR/$JOB.F05 ${host}:$SCR/$JOB.F05
+         end
+      endif
+   endif
+   #
+   if ($REMDjob == true) then
+      source $GMSPATH/tools/remd.csh $TARGET $nREMDreplica
+      if ($status > 0) exit $status
+   endif
+   if ( $?GMS_HPC_SYSTEM_TARGET ) then
+      if (( $GMS_HPC_SYSTEM_TARGET == narwhal ) || \
+          ( $GMS_HPC_SYSTEM_TARGET == polaris )) then
+         if (! $?GMS_LAUNCHER ) setenv GMS_LAUNCHER mpiexec
+         if ($GMS_LAUNCHER == aprun) then
+            #
+            # number of cores per node
+            #
+            set SMP_SIZE=128
+            #
+            # number of processes per node (TPN=tasks/node)
+            #
+            if (null$4 == null) then
+               set PPN=$NCPUS
+            else
+               set PPN=$4
+            endif
+            #OVERRIDE PPN
+            set TPN=$PPN
+            if (null$TPN == null) set TPN=$SMP_SIZE
+            if ($TPN > $SMP_SIZE) set TPN=$SMP_SIZE
+            if ($TPN < $SMP_SIZE) set TPN=$TPN
+            #
+            # TPN has to be greater than 1 (need at least 1 compute + 1 data server).
+            #
+            if ($TPN == 1) then
+               set TPN=2
+               @ NCPU2 = $NCPUS + $NCPUS
+               set NCPUS = $NCPU2
+            endif
+            #
+            # execute, with a few run-time tunings set first
+            #
+            set echo
+            if (! $?DDI_DS_PER_NODE ) setenv DDI_DS_PER_NODE 1
+            setenv MPICH_MAX_SHORT_MSG_SIZE 4000
+            #
+            if ($GMS_OPENMP == false) setenv OMP_NUM_THREADS 1
+            #
+            aprun -n $NCPUS -N $TPN -d $OMP_NUM_THREADS $GMSPATH/gamess.$VERNO.x $JOB
+            unset echo
+         endif
+         if ($GMS_LAUNCHER == mpiexec) then
+            set echo
+            mpiexec -n $NCPUS $GMSPATH/gamess.$VERNO.x $JOB
+            unset echo
+         endif
+      endif
+      #
+      if (( $GMS_HPC_SYSTEM_TARGET == crusher ) || \
+          ( $GMS_HPC_SYSTEM_TARGET == frontier ) || \
+          ( $GMS_HPC_SYSTEM_TARGET == perlmutter )) then
+         # GAMESS compute processes per node
+         set PPN=$4
+         if (null$PPN == null) set PPN=$NCPUS
+
+         # total number of nodes (recompute since we might have requested more nodes for the SLURM job)
+         @ NNODES_REQUIRED = $NCPUS / $PPN
+
+         # total number of GAMESS processes (# compute processes + # data servers)
+         @ NCPUS2 = $NCPUS + $NCPUS
+
+         # total number of MPI ranks per node (1 MPI rank for each compute process + 1 MPI rank for each data server)
+         @ PPN2 = $PPN + $PPN
+
+         if ( $NNODES > $NNODES_REQUIRED ) then
+            echo " "
+            echo "******************************************************************************"
+            echo " SLURM requested ${NNODES} node(s) but your job is configured to run on ${NNODES_REQUIRED} node(s)"
+            echo " "
+            echo " You might want to resubmit to avoid wasting your compute resource allocation "
+            echo "******************************************************************************"
+            echo " "
+            set NNODES = $NNODES_REQUIRED
+         endif
+
+         setenv LD_LIBRARY_PATH ${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+         chdir $SCR
+
+         srun $GMSPATH/bin/my_ipcrm
+         if ($GMS_OPENMP == false) then
+            (set echo; srun --exclusive --export=ALL --cpu-bind verbose,cores -N $NNODES -n $NCPUS2 --ntasks-per-node=$PPN2 $GMSPATH/gamess.$VERNO.x $JOB)
+         else
+            if ($GMS_OPENMP_OFFLOAD == true) then
+               @ NGPUS = 8 * $NNODES
+               (set echo; srun --propagate=STACK --exclusive --export=ALL --cpu-bind verbose,cores -N $NNODES -n $NCPUS2 --ntasks-per-node=$PPN2 -c ${OMP_NUM_THREADS} --gpus=${NGPUS} --gpu-bind=closest $GMSPATH/gamess.$VERNO.x $JOB)
+            else
+               (set echo; srun --exclusive --export=ALL --cpu-bind verbose,cores -N $NNODES -n $NCPUS2 --ntasks-per-node=$PPN2 -c ${OMP_NUM_THREADS} $GMSPATH/gamess.$VERNO.x $JOB)
+            endif
+         endif
+         srun $GMSPATH/bin/my_ipcrm
+
+      endif
+   endif
+endif
+#
+#      ------ cray-xc execution -----
+#
+if ($TARGET == cray-xc) then
+   if ($GMS_HPC_SYSTEM_TARGET == cori) then
+      # GAMESS compute processes per node
+      set PPN=$4
+      if (null$PPN == null) set PPN=$NCPUS
+      @ PPN2 = $PPN + $PPN
+
+      # total number of GAMESS processes (# compute processes + # data servers)
+      @ NCPU2 = $NCPUS + $NCPUS
+      set NCPUS = $NCPU2
+      #
+      # Intel IMPI
+      #
+      if ( $?I_MPI_ROOT ) then
+         #
+         # set runtime parameters for Intel MPI
+         #
+         if ($GMS_OPENMP == true)  then
+            set echo
+            setenv I_MPI_PIN enable
+            setenv I_MPI_PIN_DOMAIN omp
+            unset echo
+         else
+            set echo
+            setenv I_MPI_PIN disable
+            unset echo
+         endif
+         #
+         if ( ($INTEL_VERSION =~ 19.*) || ($INTEL_VERSION =~ 20.*) ) then
+           #
+           # Intel 2019
+           #
+           set echo
+           setenv I_MPI_SHM_OPT shm
+           setenv I_MPI_WAIT_MODE 1
+           setenv I_MPI_DEBUG 0
+           setenv I_MPI_FABRICS shm:ofi
+           unset echo
+         else
+           #
+           # Pre-Intel 2019
+           #
+           set echo
+           setenv I_MPI_WAIT_MODE 1
+           setenv I_MPI_DEBUG 0
+           setenv I_MPI_STATS 0
+           setenv I_MPI_SHM_LMT shm
+           unset echo
+         endif
+      #
+      # Cray MPI
+      #
+      else
+         set echo
+         setenv MV2_USE_CUDA 1
+         setenv MV2_ENABLE_AFFINITY 0
+         setenv MPICH_MAX_SHORT_MSG_SIZE 4000
+         unset echo
+      endif
+      #
+      set echo
+      #
+      setenv LD_LIBRARY_PATH ${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+      #
+      if ($GMS_OPENMP == false) then
+         srun --exclusive --export=ALL --cpu-bind verbose,cores -N $NNODES -n $NCPUS --ntasks-per-node=$PPN2 $GMSPATH/gamess.$VERNO.x $JOB
+      else
+         srun --exclusive --export=ALL --cpu-bind verbose,cores -N $NNODES -n $NCPUS --ntasks-per-node=$PPN2 -c ${OMP_NUM_THREADS} $GMSPATH/gamess.$VERNO.x $JOB
+      endif
+      unset echo
+   else
+      #
+      # number of cores per node
+      #
+      if ( $?GMS_HPC_SYSTEM_TARGET ) then
+         if ( $GMS_HPC_SYSTEM_TARGET == onyx ) then
+            if ($GMS_PHI == none) set SMP_SIZE=44
+            if ($GMS_PHI == knl)  set SMP_SIZE=64
+         endif
+         if ( $GMS_HPC_SYSTEM_TARGET == theta ) then
+            if ($GMS_PHI == knl)  set SMP_SIZE=64
+         endif
+      endif
+      #
+      # number of processes per node (TPN=tasks/node)
+      #
+      set TPN=$4
+      if (null$TPN == null) set TPN=$SMP_SIZE
+      if ($TPN > $SMP_SIZE) set TPN=$SMP_SIZE
+      #
+      # execute, with a few run-time tunings set first
+      #
+      set echo
+      if (! $?DDI_DS_PER_NODE ) setenv DDI_DS_PER_NODE 1
+      setenv MPICH_MAX_SHORT_MSG_SIZE 4000
+      #
+      if ($GMS_OPENMP == false) then
+         setenv OMP_NUM_THREADS 1
+      endif
+      aprun -j 1 -n $NCPUS -N $TPN $GMSPATH/gamess.$VERNO.x $JOB
+      unset echo
+   endif
+endif
+#
+#      ------ end of cray-xc execution section -----
+#
+#      ------ serial execution -----
+#
+#  Serial execution is mainly used for debugging.
+#  Therefore we directly include the gdb debugger in the
+#  command line.
+#
+if ($TARGET == serial) then
+#
+#      -- some special settings for certain operating systems --
+#
+   set os=`uname`
+   if ($os == Linux) limit stacksize 131072
+#         In case this Linux system is using Intel's Math Kernel Library
+#         to obtain its BLAS, we insist each process runs single-threaded.
+#         one variable is for MKL up to 9, the other from 10 on up.
+   if ($os == Linux) setenv MKL_SERIAL YES
+   if ($os == Linux) setenv MKL_NUM_THREADS 1
+#
+#        Just make sure we have the binaries, before we try to run
+#
+   if (!(-x $GMSPATH/gamess.$VERNO.x)) then
+      echo "The GAMESS executable gamess.$VERNO.x" >> /dev/stderr
+      echo "could not be found in directory $GMSPATH," >> /dev/stderr
+      echo "or else they did not properly link to executable permission." >> /dev/stderr
+      exit 8
+   endif
+#
+#        OK, now we are ready to execute!
+#
+   set path=($GMSPATH $path)
+   if ($GMS_DDI_COMM == serial) then
+      set echo
+      $GMSPATH/gamess.$VERNO.x "$JOB -scr $SCR < /dev/null"
+      unset echo
+   else if ($GMS_DDI_COMM == serial-debug) then
+      set echo
+      gdb --args $GMSPATH/gamess.$VERNO.x "$JOB -scr $SCR < /dev/null"
+      unset echo
+   endif
+endif
+#      ------ end of serial execution ------
+#
+#  ---- the bottom third of the script is to clean up all disk files ----
+#  It is quite useful to display to users how big the disk files got to be.
+#
+echo ----- accounting info -----
+#
+#   in the case of GDDI runs, we save the first PUNCH file only.
+#   If something goes wrong, the .F06.00x, .F07.00x, ... from the
+#   other groups are potentially interesting to look at.
+if ($GDDIjob == true) cp $SCR/$JOB.F07 $USERSCR/$JOB.dat
+#
+#   Clean up the parent scratch directory.
+#
+echo Files used on the parent node $parent were:
+ls -lF $SCR/$JOB.*
+set nonomatch
+foreach file ("$SCR/$JOB.F"*)
+        if (-f "$file" && -w "$file") rm "$file"
+end
+unset nonomatch
+unset file
+#   Delete the scratch folder for a SLURM job
+if ($SCHED == SLURM) then
+  cd $SLURM_SUBMIT_DIR
+  srun rm -r "$SCR"
+  rm -rf "$SCR"
+endif
+#--use-with-care rm -v "$SCR/"*
+#
+#   Clean/Rescue any files created by the VB2000 plug-in
+#
+  # if (-e $SCR/$JOB.V84)        mv $SCR/$JOB.V84     $USERSCR
+  # if (-e $SCR/$JOB.V80) then
+  #    set nonomatch
+  #    foreach file ("$SCR/$JOB.V"*)
+  #            if (-f "$file" && -w "$file") rm "$file"
+  #    end
+  #    unset nonomatch
+  #    unset file
+  # endif
+  # if (-e $SCR/$JOB.TEMP02) then
+  #    set nonomatch
+  #    foreach file ("$SCR/$JOB.TEMP"*)
+  #            if (-f "$file" && -w "$file") rm "$file"
+  #    end
+  #    unset nonomatch
+  #    unset file
+  # endif
+  # if (-e $SCR/$JOB.orb)        mv $SCR/$JOB.orb     $USERSCR
+  # if (-e $SCR/$JOB.vec)        mv $SCR/$JOB.vec     $USERSCR
+  # if (-e $SCR/$JOB.mol)        mv $SCR/$JOB.mol     $USERSCR
+  # if (-e $SCR/$JOB.molf)       mv $SCR/$JOB.molf    $USERSCR
+  # if (-e $SCR/$JOB.mkl)        mv $SCR/$JOB.mkl     $USERSCR
+  # if (-e $SCR/$JOB.xyz)        mv $SCR/$JOB.xyz     $USERSCR
+  # ls $SCR/${JOB}-*.cube > $SCR/${JOB}.lis
+  # if (! -z $SCR/${JOB}.lis) mv $SCR/${JOB}*.cube $USERSCR
+  # if (-f "$SCR/${JOB}.lis" && -w "$SCR/${JOB}.lis") rm "$SCR/${JOB}.lis"
+  # ls $SCR/${JOB}-*.grd > $SCR/${JOB}.lis
+  # if (! -z $SCR/${JOB}.lis) mv $SCR/${JOB}*.grd $USERSCR
+  # if (-f "$SCR/${JOB}.lis" && -w "$SCR/${JOB}.lis") rm "$SCR/${JOB}.lis"
+  # ls $SCR/${JOB}-*.csv > $SCR/${JOB}.lis
+  # if (! -z $SCR/${JOB}.lis) mv $SCR/${JOB}*.csv $USERSCR
+  # if (-f "$SCR/${JOB}.lis" && -w "$SCR/${JOB}.lis") rm "$SCR/${JOB}.lis"
+#
+#  and this is the end
+#
+date
+time
+if ( -f $HOME/bin/my_ipcrm ) then
+  $HOME/bin/my_ipcrm
+endif
+exit
