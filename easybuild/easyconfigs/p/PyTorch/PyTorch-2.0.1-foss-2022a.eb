@@ -1,0 +1,92 @@
+name = 'PyTorch'
+version = '2.0.1'
+
+homepage = 'https://pytorch.org/'
+description = """Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+PyTorch is a deep learning framework that puts Python first."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/pytorch',
+        'repo_name': 'pytorch',
+        'tag': 'v%(version)s',
+        'recursive': True,
+    },
+}]
+patches = [
+    'PyTorch-1.7.0_disable-dev-shm-test.patch',
+    'PyTorch-1.11.0_fix-fsdp-fp16-test.patch',
+    'PyTorch-1.11.1_skip-test_init_from_local_shards.patch',
+    'PyTorch-1.12.1_add-hypothesis-suppression.patch',
+    'PyTorch-1.12.1_fix-test_cpp_extensions_jit.patch',
+    'PyTorch-1.12.1_fix-TestTorch.test_to.patch',
+    'PyTorch-1.12.1_skip-test_round_robin.patch',
+    'PyTorch-1.13.1_skip-ao-sparsity-test-without-fbgemm.patch',
+    'PyTorch-1.13.1_fix-test-ops-conf.patch',
+    # 'PyTorch-1.13.1_no-cuda-stubs-rpath.patch',
+    'PyTorch-1.13.1_increase-tolerance-test_ops.patch',
+    'PyTorch-2.0.1_skip-test.patch',
+]
+checksums = [
+    None,  # PyTorch-2.0.1.tar.gz
+    {'PyTorch-1.7.0_disable-dev-shm-test.patch': '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a'},
+    {'PyTorch-1.11.0_fix-fsdp-fp16-test.patch': 'bb1c4e6d6fd4b0cf57ff8b824c797331b533bb1ffc63f5db0bae3aee10c3dc13'},
+    {'PyTorch-1.11.1_skip-test_init_from_local_shards.patch':
+     '4aeb1b0bc863d4801b0095cbce69f8794066748f0df27c6aaaf729c5ecba04b7'},
+    {'PyTorch-1.12.1_add-hypothesis-suppression.patch':
+     'e71ffb94ebe69f580fa70e0de84017058325fdff944866d6bd03463626edc32c'},
+    {'PyTorch-1.12.1_fix-test_cpp_extensions_jit.patch':
+     '1efc9850c431d702e9117d4766277d3f88c5c8b3870997c9974971bce7f2ab83'},
+    {'PyTorch-1.12.1_fix-TestTorch.test_to.patch': '75f27987c3f25c501e719bd2b1c70a029ae0ee28514a97fe447516aee02b1535'},
+    {'PyTorch-1.12.1_skip-test_round_robin.patch': '63d4849b78605aa088fdff695637d9473ea60dee603a3ff7f788690d70c55349'},
+    {'PyTorch-1.13.1_skip-ao-sparsity-test-without-fbgemm.patch':
+     '92cd48ef6d01aa7e07ccce1dcaf40bc3fb0f220c4aa4fea15f3e05fb42e37909'},
+    {'PyTorch-1.13.1_fix-test-ops-conf.patch': 'df652eec7753864ebebbfeca546929a53e3fb8f24259d5c9b964266a8551198c'},
+    {'PyTorch-1.13.1_increase-tolerance-test_ops.patch':
+     'd53e98bf0da7788b68042dcc31bc5708dae962fde3f110cc827eb807a5d08e49'},
+    {'PyTorch-2.0.1_skip-test.patch': '70480fcd747c81de648bfd3f7b47925ee08ee5cc403118e13b535592a360d7be'},
+]
+
+osdependencies = [OS_PKG_IBVERBS_DEV]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('hypothesis', '6.46.7'),
+    ('pytest-xdist', '2.5.0'),
+    ('pytest-rerunfailures', '11.1'),
+    ('pytest-shard', '0.1.2'),
+]
+
+dependencies = [
+    ('Ninja', '1.10.2'),  # Required for JIT compilation of C++ extensions
+    ('Python', '3.10.4'),
+    ('protobuf', '3.19.4'),
+    ('protobuf-python', '3.19.4'),
+    ('pybind11', '2.9.2'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyYAML', '6.0'),
+    ('MPFR', '4.1.0'),
+    ('GMP', '6.2.1'),
+    ('numactl', '2.0.14'),
+    ('FFmpeg', '4.4.2'),
+    ('Pillow', '9.1.1'),
+    ('expecttest', '0.1.3'),
+    ('sympy', '1.11.1'),
+    ('networkx', '2.8.4'),
+]
+
+excluded_tests = {
+    '': [
+        # no xdoctest
+        'doctests',
+    ]
+}
+
+runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
+
+tests = ['PyTorch-check-cpp-extension.py']
+
+moduleclass = 'ai'

@@ -1,0 +1,44 @@
+Skip
+* sparse.sampled_addmm test that gives unexpected success
+* test_dynamic_shapes that incorrectly calls function
+* test_shuffle_reproducibility that opens too many files at once
+Patch by Simon Branford (University of Birmingham)
+--- test/distributed/_tensor/test_dtensor_ops.py.orig	2023-04-01 19:37:18.844034000 +0100
++++ test/distributed/_tensor/test_dtensor_ops.py	2023-04-01 19:38:17.282388276 +0100
+@@ -428,7 +428,6 @@
+     xfail("select"),
+     xfail("select_scatter"),
+     xfail("sort"),
+-    xfail("sparse.sampled_addmm"),
+     xfail("sparse.mm", "reduce"),
+     xfail("special.airy_ai"),
+     xfail("special.bessel_j0"),
+@@ -538,6 +537,7 @@
+     skip("prod"),
+     skip("_segment_reduce", "lengths"),
+     skip("_segment_reduce", "offsets"),
++    skip("sparse.sampled_addmm"),
+ 
+     # TODO: fix the following ops
+     skip("squeeze"),
+--- test/dynamo/test_subgraphs.py.orig	2023-04-01 19:41:49.810687000 +0100
++++ test/dynamo/test_subgraphs.py	2023-04-01 19:43:26.368315433 +0100
+@@ -349,7 +349,7 @@
+ 
+         self._common(fn, 2, 6)
+ 
+-    @disable_cache_limit()
++    @unittest.skip("incorrect call")
+     def test_dynamic_shapes(self):
+         def fn(a, b):
+             return a - b * 10
+--- test/test_dataloader.py.orig	2023-06-24 12:34:50.498356000 +0100
++++ test/test_dataloader.py	2023-06-24 12:37:36.897796583 +0100
+@@ -1542,6 +1542,7 @@
+     def test_shuffle_batch(self):
+         self._test_shuffle(self._get_data_loader(self.dataset, batch_size=2, shuffle=True))
+ 
++    @unittest.skipIf(True, "ulimit issue")
+     def test_shuffle_reproducibility(self):
+         for fn in (
+             lambda: DataLoader(self.dataset, shuffle=True, num_workers=0, generator=torch.Generator().manual_seed(42)),
