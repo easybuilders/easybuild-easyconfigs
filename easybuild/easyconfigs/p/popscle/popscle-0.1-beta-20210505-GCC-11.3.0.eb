@@ -1,0 +1,49 @@
+# Author: Arne Soete
+# VIB-UGent Center for Inflammation Research
+# updated by Kenneth Hoste (HPC-UGent)
+easyblock = 'CMakeMake'
+
+name = 'popscle'
+version = '0.1-beta-20210505'
+local_commit = 'da70fc7'
+
+homepage = 'https://github.com/statgen/popscle'
+description = """A suite of
+population scale analysis tools for single-cell genomics data including
+implementation of Demuxlet / Freemuxlet methods and auxilary tools """
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++14'}
+
+source_urls = ['https://github.com/statgen/popscle/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['popscle-0.1-beta-20210505_fix-limits.patch']
+checksums = [
+    {'popscle-0.1-beta-20210505.tar.gz': 'f4723a8f098f88262e04ecd4d3e62b7d6884e2a3d4eb0b08196aab1651a95d6c'},
+    {'popscle-0.1-beta-20210505_fix-limits.patch': 'c476b9f1b8a340bbb8873bff8a831261ade03e48f4b354b2d956bd0204278071'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('HTSlib', '1.15.1'),
+    ('XZ', '5.2.5'),
+    ('bzip2', '1.0.8'),
+]
+
+configopts = "-DHTS_INCLUDE_DIRS=$EBROOTHTSLIB/include -DHTS_LIBRARIES=$EBROOTHTSLIB/lib/libhts.a "
+configopts += "-DBZIP2_INCLUDE_DIRS=$EBROOTBZIP2/include -DBZIP2_LIBRARIES=$EBROOTBZIP2/lib/libbz2.a "
+configopts += "-DLZMA_INCLUDE_DIRS=$EBROOTXZ/include -DLZMA_LIBRARIES=$EBROOTXZ/lib/liblzma.a "
+
+install_cmd = "mkdir %(installdir)s/bin && install %(builddir)s/%(name)s-*/bin/popscle %(installdir)s/bin/"
+
+sanity_check_paths = {
+    'files': ['bin/popscle'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["popscle --help"]
+
+moduleclass = 'bio'
