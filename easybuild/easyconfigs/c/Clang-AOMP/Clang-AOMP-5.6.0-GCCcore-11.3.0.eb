@@ -1,0 +1,70 @@
+name = 'Clang-AOMP'
+_rocm_version = '5.6.0'
+version = _rocm_version
+
+homepage = 'https://github.com/RadeonOpenCompute/llvm-project'
+description = """AOMP is an open source Clang/LLVM based compiler with added
+support for the OpenMP® API on Radeon™ GPUs."""
+docurls = ['https://rocmdocs.amd.com']
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Perl', '5.34.1'),
+    ('Python', '3.10.4'),
+    ('elfutils', '0.187'),
+    ('pkgconf', '1.8.0'),
+]
+
+dependencies = [
+    ('binutils', '2.38'),
+    ('zlib', '1.2.12'),
+    ('hwloc', '2.7.1'),
+    ('GMP', '6.2.1'),
+    ('libxml2', '2.9.13'),
+    ('ncurses', '6.3'),
+    ('libffi', '3.4.2'),
+    ('libdrm', '2.4.110'),
+    ('numactl', '2.0.14'),
+    ('Z3', '4.10.2'),
+]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'source_urls': ['https://github.com/RadeonOpenCompute/%(name)s/archive/'],
+    'sources': [{
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-%(version)s.tar.gz',
+    }],
+    'srcdir': '%(name)s-%(version)s',
+}
+
+components = [
+    ('llvm-project', 'rocm-%s' % _rocm_version, {
+    }),
+    ('ROCm-Device-Libs', 'rocm-%s' % _rocm_version, {
+    }),
+    ('ROCT-Thunk-Interface', 'rocm-%s' % _rocm_version, {
+        'preconfigopts': r"""sed -i 's/\({HSAKMT_LINK_FLAGS}\)" \(-.*\) )/\1 \2" )/g' ../ROCT-*/CMakeLists.txt && """,
+        'configopts': "-DCMAKE_INSTALL_LIBDIR=%(installdir)s/lib -DBUILD_SHARED_LIBS=ON",
+        'installopts': " && cp -a %(builddir)s/%(name)s-%(version)s/include %(installdir)s/",
+    }),
+    ('ROCR-Runtime', 'rocm-%s' % _rocm_version, {
+        'srcdir': '%(name)s-%(version)s/src',
+    }),
+    ('Clang-OpenMP', 'rocm-%s' % _rocm_version, {
+        # uses same sources as llvm-project component
+        'sources': ['llvm-project-%(version)s.tar.gz'],
+    }),
+    ('aomp-extras', 'rocm-%s' % _rocm_version, {
+        'source_urls': ['https://github.com/ROCm-Developer-Tools/%(name)s/archive/'],
+    }),
+]
+
+modextravars = {
+    'HIP_DEVICE_LIB_PATH': '%(installdir)s/amdgcn/bitcode',
+}
+
+moduleclass = 'tools'
