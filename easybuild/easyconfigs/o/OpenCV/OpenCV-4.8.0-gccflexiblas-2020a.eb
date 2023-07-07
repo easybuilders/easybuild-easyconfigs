@@ -1,0 +1,117 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenCV'
+version = '4.8.0'
+
+homepage = 'http://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2020a'}
+
+sources = [
+    {'source_urls': ['https://github.com/%(namelower)s/%(namelower)s/archive/'], 'download_filename': '%(version)s.zip', 'filename': SOURCE_ZIP},
+    {'source_urls': ['https://github.com/%(namelower)s/opencv_contrib/archive/'], 'download_filename': '%(version)s.tar.gz', 'filename': '%(name)s-contrib-%(version)s.tar.gz'},
+    # %(namelower)s-contrib
+]
+patches = ['%(name)s-4.2.0-hal-internal.patch']
+checksums = [
+    {'OpenCV-4.8.0.zip': '9dc6a9a95edc133e165e9f6db9412dd899e28d4e5e4979f17cb5966f4b7f3fb1'},
+    {'OpenCV-contrib-4.8.0.tar.gz': 'b4aef0f25a22edcd7305df830fa926ca304ea9db65de6ccd02f6cfa5f3357dbb'},
+    {'OpenCV-4.2.0-hal-internal.patch': 'aad798f0017694ba82abf4fc29ecc23db891075d0f50467cfd4cc7cd4443d4c4'},
+]
+
+builddependencies = [
+    ('ant', '1.10.8', '', SYSTEM),
+    ('Java', '13', '', SYSTEM),
+    ('Eigen', '3.3.7', '', SYSTEM),
+    ('JasPer', '2.0.16', '', SYSTEM),
+    ('CMake', '3.23.1', '', SYSTEM),
+    ('HDF5', '1.10.6', None, ('GCC', '9.3.0')),
+    ('Julia', '1.8.5', '', ('GCCcore', '9.3.0')),
+    ('oldest-supported-numpy', '2022a', '', ('GCCcore', '9.3.0')),
+]
+multi_deps = {'Python': ['3.8', '3.9', '3.10', '3.11']}
+
+configopts = "-DWITH_IPP=ON -DWITH_OPENMP=ON -DWITH_CUDA=OFF -DOPENCV_SKIP_LAPACK_EXTERN_C=ON -DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages -DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python3 -DPYTHON3_NUMPY_INCLUDE_DIRS=$EBROOTOLDESTMINSUPPORTEDMINNUMPY/lib/python%(pyshortver)s/site-packages/numpy/core/include -DENABLE_HEADLESS=ON -DENABLE_CONTRIB=ON -DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/opencv_contrib-%(version)s/modules -DOPENCV_GENERATE_PKGCONFIG=ON"
+
+# This step does not iterate as sanity_check does.
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.8/site-packages --add_path %(installdir)s/lib64",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_python
+Version: %(version)s' > %(installdir)s/lib/python3.8/site-packages/opencv_python-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_contrib_python
+Version: %(version)s' > %(installdir)s/lib/python3.8/site-packages/opencv_contrib_python-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_python_headless
+Version: %(version)s' > %(installdir)s/lib/python3.8/site-packages/opencv_python_headless-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_contrib_python_headless
+Version: %(version)s' > %(installdir)s/lib/python3.8/site-packages/opencv_contrib_python_headless-%(version)s.egg-info""",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.9/site-packages --add_path %(installdir)s/lib64",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_python
+Version: %(version)s' > %(installdir)s/lib/python3.9/site-packages/opencv_python-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_contrib_python
+Version: %(version)s' > %(installdir)s/lib/python3.9/site-packages/opencv_contrib_python-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_python_headless
+Version: %(version)s' > %(installdir)s/lib/python3.9/site-packages/opencv_python_headless-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_contrib_python_headless
+Version: %(version)s' > %(installdir)s/lib/python3.9/site-packages/opencv_contrib_python_headless-%(version)s.egg-info""",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.10/site-packages --add_path %(installdir)s/lib64",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_python
+Version: %(version)s' > %(installdir)s/lib/python3.10/site-packages/opencv_python-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_contrib_python
+Version: %(version)s' > %(installdir)s/lib/python3.10/site-packages/opencv_contrib_python-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_python_headless
+Version: %(version)s' > %(installdir)s/lib/python3.10/site-packages/opencv_python_headless-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_contrib_python_headless
+Version: %(version)s' > %(installdir)s/lib/python3.10/site-packages/opencv_contrib_python_headless-%(version)s.egg-info""",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python3.11/site-packages --add_path %(installdir)s/lib64",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_python
+Version: %(version)s' > %(installdir)s/lib/python3.11/site-packages/opencv_python-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_contrib_python
+Version: %(version)s' > %(installdir)s/lib/python3.11/site-packages/opencv_contrib_python-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_python_headless
+Version: %(version)s' > %(installdir)s/lib/python3.11/site-packages/opencv_python_headless-%(version)s.egg-info""",
+    """echo -e 'Metadata-Version: 2.3
+Name: opencv_contrib_python_headless
+Version: %(version)s' > %(installdir)s/lib/python3.11/site-packages/opencv_contrib_python_headless-%(version)s.egg-info""",
+]
+multi_deps_load_default = False
+# Depends on any numpy at runtime.
+modluafooter = """
+depends_on("scipy-stack")
+
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+    extensions("opencv_python/%(version)s,opencv_contrib_python/%(version)s,opencv_python_headless/%(version)s,opencv_contrib_python_headless/%(version)s")
+end
+"""
+
+sanity_check_paths = {
+    'files': ['lib/libopencv_core.so', 'bin/opencv_annotation', 'bin/opencv_interactive-calibration', 'bin/opencv_version', 'bin/opencv_visualisation', 'lib/python%(pyshortver)s/site-packages/opencv_python-%(version)s.egg-info', 'lib/python%(pyshortver)s/site-packages/opencv_contrib_python-%(version)s.egg-info', 'lib/python%(pyshortver)s/site-packages/opencv_python_headless-%(version)s.egg-info', 'lib/python%(pyshortver)s/site-packages/opencv_contrib_python_headless-%(version)s.egg-info', 'lib64/libopencv_alphamat.so', 'lib64/libopencv_aruco.so', 'lib64/libopencv_bgsegm.so', 'lib64/libopencv_bioinspired.so', 'lib64/libopencv_ccalib.so', 'lib64/libopencv_datasets.so', 'lib64/libopencv_dnn_objdetect.so', 'lib64/libopencv_dnn_superres.so', 'lib64/libopencv_dpm.so', 'lib64/libopencv_face.so', 'lib64/libopencv_freetype.so', 'lib64/libopencv_fuzzy.so', 'lib64/libopencv_hdf.so', 'lib64/libopencv_hfs.so', 'lib64/libopencv_img_hash.so', 'lib64/libopencv_line_descriptor.so', 'lib64/libopencv_optflow.so', 'lib64/libopencv_phase_unwrapping.so', 'lib64/libopencv_plot.so', 'lib64/libopencv_quality.so', 'lib64/libopencv_reg.so', 'lib64/libopencv_rgbd.so', 'lib64/libopencv_saliency.so', 'lib64/libopencv_shape.so', 'lib64/libopencv_stereo.so', 'lib64/libopencv_structured_light.so', 'lib64/libopencv_superres.so', 'lib64/libopencv_surface_matching.so', 'lib64/libopencv_text.so', 'lib64/libopencv_tracking.so', 'lib64/libopencv_videostab.so', 'lib64/libopencv_xfeatures2d.so', 'lib64/libopencv_ximgproc.so', 'lib64/libopencv_xobjdetect.so', 'lib64/libopencv_xphoto.so'],
+    'dirs': ['bin', 'include', 'lib/python%(pyshortver)s/site-packages', 'lib64', 'share'],
+}
+
+sanity_check_commands = ["module load scipy-stack && python -c 'import cv2'"]
+
+modextrapaths = {
+    'CLASSPATH': 'share/java/opencv4',
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'vis'
