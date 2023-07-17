@@ -1054,33 +1054,36 @@ class EasyConfigTest(TestCase):
                         if exts_default_options.get(key) is None:
                             failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
-            # if Python is a dependency, that should be reflected in the versionsuffix
+            # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
+            has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
+                                         for dep in ec['dependencies'] if dep['name'] == 'Python')
+            has_old_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
+                                     for dep in ec['dependencies'] if dep['name'] == 'Python')
             # Tkinter is an exception, since its version always matches the Python version anyway
-            # Python 3.8.6 and later are also excluded, as we consider python 3 the default python
-            # Also whitelist some updated versions of Amber
+            # Z3 is an exception, since it has easyconfigs with and without Python bindings
+            exception_python_suffix = ['Tkinter', 'Z3']
+            # Also whitelist some specific easyconfigs from this check
+            # TODO: clean whitelist in EB 5.0
             whitelist_python_suffix = [
                 'Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
                 'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb',
                 'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
             ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
-            has_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
-                                 for dep in ec['dependencies'] if dep['name'] == 'Python')
-            if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
-                if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
-                    # This is only a failure for newly added ECs, not for existing ECS
-                    # As that would probably break many ECs
-                    if ec_fn in self.added_ecs_filenames:
-                        failing_checks.append(msg)
-                    else:
-                        print('\nNote: Failed non-critical check: ' + msg)
-            else:
-                has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
-                                             for dep in ec['dependencies'] if dep['name'] == 'Python')
-                if has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
+
+            if ec.name in exception_python_suffix or whitelisted:
+                continue
+            elif has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
+                # This is only a failure for newly added ECs, not for existing ECS
+                # As that would probably break many ECs
+                if ec_fn in self.added_ecs_filenames:
                     failing_checks.append(msg)
+                else:
+                    print('\nNote: Failed non-critical check: ' + msg)
+            elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
+                failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if easyblock in ['PythonBundle', 'PythonPackage']:
