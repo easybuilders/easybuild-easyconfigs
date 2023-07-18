@@ -1,0 +1,78 @@
+easyblock = 'CMakeMake'
+
+name = 'RStudio-Server'
+version = '4.2'
+
+homepage = 'https://www.rstudio.com/'
+description = """RStudio Server enables you to provide a browser
+based interface to a version of R running on a remote Linux
+server, bringing the power and productivity of the
+RStudio IDE to server-based deployments of R."""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2020a'}
+
+source_urls = ['https://github.com/rstudio/rstudio/archive/']
+sources = ['v2022.12.0+353.tar.gz']
+checksums = [
+    'e4f3503e2ad4229301360f56fd5288e5c8e769c490073dae7fe40366237ecce0',
+    'ce2cf5d344a5d254aacfff628ce1eeae6968730a81d01319a823ad828a1a3be6', # rstudio-1.2.1335.patch
+]
+
+patches = ['rstudio-1.2.1335.patch']
+
+builddependencies = [
+    ('Boost', '1.80.0', '-core'),
+    ('ant', '1.10.8'),
+    ('SOCI', '4.0.2'),
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('Java', '13.0.2'),
+    ('R', '%(version)s.1', '', ('gcccoreflexiblas', '2020a')),
+]
+
+separate_build_dir = False
+
+preconfigopts = " && ".join([
+    "unset JAVA_TOOLS_OPTIONS",
+    "export RSTUDIO_TOOLS_ROOT=%(builddir)s", # otherwise sudo
+    "cd %(builddir)s/rstudio-*/dependencies/common",
+    "./install-cef",
+    "./install-dictionaries",
+    "./install-mathjax",
+    "./install-pandoc",
+    "./install-packages",
+    "./install-yaml-cpp",
+    "./install-npm-dependencies",
+    "cd %(builddir)s/rstudio-*/",
+    "", # To append &&
+])
+
+configopts = " ".join([
+    '-DCMAKE_BUILD_TYPE=RELEASE',
+    '-DRSTUDIO_TARGET=Server',
+    '-DRSTUDIO_BOOST_SIGNALS_VERSION=2',
+    "-DSOCI_CORE_LIB=$EBROOTSOCI/lib/libsoci_core.so",
+    "-DSOCI_POSTGRESQL_LIB=$EBROOTSOCI/lib/libsoci_postgresql.so",
+    "-DSOCI_SQLITE_LIB=$EBROOTSOCI/lib/libsoci_sqlite3.so",
+    "-DQUARTO_ENABLED=OFF",
+])
+
+sanity_check_paths = {
+    'files': ["bin/rstudio-server", "bin/rsession", "bin/rserver", "bin/rserver-pam", "bin/rpostback"],
+    'dirs': ["R", "resources", "www", "www-symbolmaps"],
+}
+
+sanity_check_commands = [
+    # This command requires environment variables R_HOME and R_DOC_DIR
+    "R_HOME=$EBROOTR/lib64/R R_DOC_DIR=$R_HOME/doc rsession --verify-installation=1",
+
+    # This command requires a db conf (this may also be needed for live use)
+    # and need the current user, otherwise defaults to root
+    ' && '.join([
+        'MYTMP=$(mktemp -d)',
+        'echo -e "provider=sqlite\ndirectory=$MYTMP/db" >> $MYTMP/db.conf',
+        'rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf --server-data-dir=$MYTMP/sdd --server-user=$USER',
+    ])
+]
