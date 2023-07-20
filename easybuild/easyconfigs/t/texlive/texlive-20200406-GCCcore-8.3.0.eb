@@ -4,6 +4,7 @@ easyblock = 'Tarball'
 
 name = 'texlive'
 version = '20200406'
+local_version_year = version[:4]
 
 homepage = 'https://tug.org'
 description = """TeX is a typesetting language. Instead of visually formatting your text, you enter your manuscript
@@ -13,7 +14,10 @@ description = """TeX is a typesetting language. Instead of visually formatting y
 
 toolchain = {'name': 'GCCcore', 'version': '8.3.0'}
 
-source_urls = ['ftp://tug.org/texlive/historic/2020/']
+source_urls = [
+    'ftp://tug.org/texlive/historic/%s/' % local_version_year,
+    'https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/%s/' % local_version_year,
+]
 sources = [
     {
         'download_filename': 'install-tl-unx.tar.gz',
@@ -41,10 +45,11 @@ postinstallcmds = [
     'echo "TEXMFSYSCONFIG %(installdir)s/texmf-config" >> %(installdir)s/texlive.profile && '
     'echo "TEXMFSYSVAR    %(installdir)s/texmf-var" >> %(installdir)s/texlive.profile && '
     '%(builddir)s/install-tl-%(version)s/install-tl -profile %(installdir)s/texlive.profile'
+    ' -repository ' + 'https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/%s/tlnet-final' % local_version_year
 ]
 
 modextrapaths = {
-    'PATH': 'bin/x86_64-linux',
+    'PATH': 'bin/%(arch)s-linux',
     'INFOPATH': 'texmf-dist/doc/info',
     'MANPATH': 'texmf-dist/doc/man',
 }
@@ -53,8 +58,8 @@ modextravars = {
 }
 
 sanity_check_paths = {
-    'files': ['bin/x86_64-linux/tex', 'bin/x86_64-linux/latex'],
-    'dirs': ['bin/x86_64-linux', 'texmf-dist'],
+    'files': ['bin/%(arch)s-linux/tex', 'bin/%(arch)s-linux/latex'],
+    'dirs': ['bin/%(arch)s-linux', 'texmf-dist'],
 }
 
 moduleclass = 'devel'

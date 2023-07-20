@@ -1,0 +1,85 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'Binary'
+
+name = 'BigDFT'
+version = '1.9.1'
+
+homepage = 'https://gitlab.com/l_sim/bigdft-suite'
+description = """BigDFT: electronic structure calculation based on Daubechies wavelets.
+bigdft-suite is a set of different packages to run bigdft."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+local_extra_flags = '-fallow-argument-mismatch'
+toolchainopts = {
+    'usempi': True,
+    'extra_fflags': local_extra_flags, 'extra_fcflags': local_extra_flags, 'extra_f90flags': local_extra_flags,
+}
+
+source_urls = ['https://gitlab.com/l_sim/bigdft-suite/-/archive/%(version)s/']
+sources = ['bigdft-suite-%(version)s.tar.gz']
+patches = ['BigDFT-1.9.1_fix-index-bug.patch']
+checksums = [
+    '3c334da26d2a201b572579fc1a7f8caad1cbf971e848a3e10d83bc4dc8c82e41',  # bigdft-suite-1.9.1.tar.gz
+    'df887c4df1eb3aa4bfe70e52c405525079bcfa54ac26ec5b8f2511fb6204d179',  # BigDFT-1.9.1_fix-index-bug.patch
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Autotools', '20210726'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('OpenCV', '4.5.5', '-contrib'),
+    ('XZ', '5.2.5'),
+    ('libarchive', '3.5.1'),
+    ('bzip2', '1.0.8'),
+    ('attr', '2.5.1'),
+    ('libyaml', '0.2.5'),
+]
+
+extract_sources = True
+
+local_install_opts = '--enable-mpi --with-yaml-path=\\"$EBROOTLIBYAML\\" '
+local_install_opts += '--with-ext-linalg=\\"-L$SCALAPACK_LIB_DIR $LIBSCALAPACK -L$LAPACK_LIB_DIR $LIBBLAS\\" '
+# make sure that Python packages like futile are installed to right location by BigDFT install script
+local_install_opts += '--with-python_prefix=%(builddir)s/bigdft-suite-%(version)s/bigdft_builddir/install '
+local_install_opts += 'CC=\\"$MPICC\\" FC=\\"$MPIFC\\" '
+local_install_opts += 'FCFLAGS=\\"$CPPFLAGS $FCFLAGS -fallow-argument-mismatch -std=legacy\\" '
+local_install_opts += 'FFLAGS=\\"$CPPFLAGS $FFLAGS -fallow-argument-mismatch -std=legacy\\" '
+local_install_opts += 'F90FLAGS=\\"$CPPFLAGS $F90FLAGS -fallow-argument-mismatch -std=legacy\\" '
+
+install_cmd = "mkdir bigdft_builddir && cd bigdft_builddir && "
+install_cmd += "python3 ../Installer.py build bigdft -y -v -c %s && " % local_install_opts
+install_cmd += "cp -a install/* %(installdir)s"
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/bigdft', 'bin/bigdftvars.sh', 'include/futile.mod', 'include/futile.h',
+              'lib/python%(pyshortver)s/site-packages/BigDFT/Systems.py',
+              'lib/libbigdft-1.a'],
+    'dirs': [],
+}
+
+local_test_script = """
+from BigDFT.Systems import System
+from BigDFT.Fragments import Fragment
+from BigDFT.IO import XYZReader
+N2 = System()
+with XYZReader("N2") as ifile:
+    N2["N:0"] = Fragment([next(ifile)])
+    N2["N:1"] = Fragment([next(ifile)])
+print(N2.get_posinp())
+"""
+
+local_sanity_cmd = "tmpdir=$(mktemp -d) && echo '" + local_test_script + "' > " + "$tmpdir/bigdft_test.py && "
+local_sanity_cmd += "python $tmpdir/bigdft_test.py && rm -r $tmpdir"
+
+sanity_check_commands = [
+    "bigdft -h",
+    local_sanity_cmd,
+]
+
+moduleclass = 'phys'
