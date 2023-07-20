@@ -1,0 +1,75 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMC'
+version = '0.13.3'
+
+homepage = 'https://docs.openmc.org/en/stable/'
+description = """ OpenMC is a
+community-developed Monte Carlo neutron and photon transport simulation code.
+It is capable of performing fixed source, k-eigenvalue, and subcritical
+multiplication calculations on models built using either a constructive solid
+geometry or CAD representation. OpenMC supports both continuous-energy and
+multigroup transport. The continuous-energy particle interaction data is based
+on a native HDF5 format that can be generated from ACE files produced by NJOY.
+Parallelism is enabled via a hybrid MPI and OpenMP programming model.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+source_urls = ['https://github.com/openmc-dev/openmc/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ['OpenMC-0.13.2_remove-gitsubmodules.patch']
+checksums = [
+    "dbdd0f9ee1cbfccfeefcdb7b50e9b9c9d57ffdb76fa0e2bf4144508c2b7f482e",  # v0.13.2.tar.gz
+    "38c72817076fc0d18a329d5d405e6fa0306810e9efeb0390ea29110c37781fff",  # OpenMC-0.13.2_remove-gitsubmodules.patch
+]
+
+multi_deps = {"Python": ["3.9", "3.10", "3.11"]}
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('SciPy-Stack', '2023a'),
+    ('xtensor', '0.24.2'),
+    ('GSL-lite', '0.40.0'),
+    ('fmt', '7.0.3'),
+]
+
+dependencies = [
+    ('HDF5', '1.12.1', '', '-mpi'),
+]
+
+configopts = " ".join([
+    "-DHDF5_PREFER_PARALLEL=ON",
+    "-DOPENMC_USE_MPI=ON",
+    "-DOPENMC_BUILD_TESTS=OFF",
+])
+
+separate_build_dir = False
+installopts = " && pip install --prefix=%(installdir)s . "
+
+sanity_check_paths = {
+    'files': [
+        'bin/openmc',
+        'lib/libopenmc.so'
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages',
+        'include/openmc',
+        'bin',
+    ],
+}
+
+sanity_check_commands = [
+    "openmc --version",
+    "python -c 'import openmc'",
+    "python -c 'import openmc.lib'",
+]
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+# Depends on any numpy at runtime.
+modluafooter = """
+depends_on("scipy-stack")
+"""
+
+moduleclass = 'lib'
