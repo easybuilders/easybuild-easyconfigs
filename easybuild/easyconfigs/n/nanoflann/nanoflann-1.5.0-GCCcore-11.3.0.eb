@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'nanoflann'
+version = '1.5.0'
+
+homepage = 'https://github.com/jlblancoc/nanoflann'
+description = "nanoflann is a C++11 header-only library for building KD-Trees of datasets with different topologies."
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'vectorize': False, 'opt': 'low'}  # GCC 10.3.0 vectorizer causes test errors on skylake and later
+
+
+github_account = 'jlblancoc'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-1.4.0_use_external_googletest.patch',
+    '%(name)s-%(version)s_disable_failing_test.patch'
+]
+checksums = [
+    {'v1.5.0.tar.gz': '89aecfef1a956ccba7e40f24561846d064f309bc547cc184af7f4426e42f8e65'},
+    {'nanoflann-1.4.0_use_external_googletest.patch':
+     '5f0b99b0558bdf76c19d52eb82d10cdcc104eb6c2fb1891e033b5c96fb47f7b9'},
+    {'nanoflann-1.5.0_disable_failing_test.patch': '36971fa1116f5db5d03ca6521377b1a30fdba404cfead8baf5fd99dea7046fca'},
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.24.3'),
+    ('googletest', '1.11.0'),
+]
+
+configopts = '-DNANOFLANN_BUILD_TESTS=ON'
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['include/nanoflann.hpp', ],  # 'share/pkgconfig/nanoflann.pc'],
+    'dirs': ['share/nanoflann/cmake'],
+}
+
+moduleclass = 'lib'
