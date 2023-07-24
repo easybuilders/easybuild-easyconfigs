@@ -10,17 +10,22 @@ Included engines: myISAM, Aria, InnoDB, RocksDB, TokuDB, OQGraph, Mroonga."""
 
 toolchain = {'name': 'GCC', 'version': '11.2.0'}
 
-source_urls = ['http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source']
-sources = [SOURCELOWER_TAR_GZ]
-patches = ['MariaDB-10.1.13-link-rt-for-jemalloc.patch']
-checksums = [
-    '75bf9b147a95d38160d01a73b098d50a1960563b46d16a235971fff64d99643c',  # mariadb-10.6.4.tar.gz
-    '8295837e623f6c782e1d64b00e0877ea98cce4bf8846755bb86c8a7732797c19',  # MariaDB-10.1.13-link-rt-for-jemalloc.patch
+local_pcre2_ver = '10.37'
+source_urls = [
+    'https://archive.mariadb.org/mariadb-%(version)s/source/',
+    'http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source',
+    'https://downloads.sourceforge.net/project/pcre/pcre2/%s/' % local_pcre2_ver,
 ]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {'filename': 'pcre2-%s.zip' % local_pcre2_ver, 'extract_cmd': "cp %s %(builddir)s/"},
+]
+patches = ['MariaDB-10.1.13-link-rt-for-jemalloc.patch']
 
 builddependencies = [
     ('CMake', '3.21.1'),
     ('libaio', '0.3.112'),
+    ('Boost', '1.75.0'),    # needed by OQGraph
 ]
 
 dependencies = [
@@ -32,13 +37,12 @@ dependencies = [
     ('jemalloc', '5.2.1'),  # optional
     ('snappy', '1.1.9'),    # needed by RocksDB; optional for InnoDB
     ('libxml2', '2.9.10'),  # needed by Connect XML
-    ('Boost', '1.75.0'),    # needed by OQGraph
     ('Judy', '1.0.5'),      # needed by OQGraph
-    ('PCRE2', '10.37'),
     ('OpenSSL', '1.1', '', True),     # runtime dep for mysql and PCRE2 for mysqltest
 ]
 
-separate_build_dir = True
+local_pcre2_path = '%%(builddir)s/pcre2-%s.zip' % local_pcre2_ver
+preconfigopts = "sed -i 's@http://.*.zip@file://%s@g' ../mariadb-%%(version)s/cmake/pcre.cmake && " % local_pcre2_path
 
 configopts = "-DCMAKE_BUILD_TYPE=Release "
 configopts += "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
@@ -47,6 +51,7 @@ configopts += "-DWITH_PCRE=auto "  # External download sometimes fails so we bui
 configopts += "-DWITH_ZLIB=system "
 configopts += "-DWITH_EMBEDDED_SERVER=ON "  # for libmysqld.so & co
 configopts += "-DWITH_SAFEMALLOC=OFF "  # Disable memory debugger with jemalloc
+configopts += "-DBoost_USE_STATIC_LIBS=ON"
 
 sanity_check_commands = ["mysql --help", "mysqltest --help"]
 
