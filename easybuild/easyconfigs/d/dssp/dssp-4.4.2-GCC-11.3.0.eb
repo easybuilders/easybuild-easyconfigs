@@ -1,0 +1,53 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/07
+easyblock = 'CMakeMake'
+
+name = 'dssp'
+version = '4.4.2'
+
+homepage = 'https://github.com/PDB-REDO/dssp'
+description = """
+This is a rewrite of DSSP, now offering full mmCIF support. The difference with previous   
+releases of DSSP is that it now writes out an annotated mmCIF file by default, storing the 
+secondary structure information in the _struct_conf category.
+
+Another new feature in this version of DSSP is that it now defines Poly-Proline helices as well.
+
+The DSSP program was designed by Wolfgang Kabsch and Chris Sander to standardize secondary 
+structure assignment. DSSP is a database of secondary structure assignments (and much more)
+for all protein entries in the Protein Data Bank (PDB). DSSP is also the program that      
+calculates DSSP entries from PDB entries.
+
+DSSP does not predict secondary structure.
+"""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = []
+checksums = ['9c08f909c495c69cc11775ca524521422a46a93217220e72aba0570bd0649181']
+
+github_account = 'PDB-REDO'
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('libmcfp', '1.2.4'),
+    ('Boost', '1.79.0'),  # req. for testing
+]
+dependencies = [
+    ('libcifpp', '5.1.0.1'),
+]
+
+postinstallcmds = [
+    'cd %(installdir)s/bin && ln -s mkdssp dssp',
+    'cd %(installdir)s/share/man && ln -s mkdssp.1 dssp.1',
+]
+
+configopts = '-DENABLE_TESTING=ON -DUSE_RSRC=ON'
+sanity_check_commands = ['dssp -h']
+sanity_check_paths = {
+    'files': ['bin/dssp'],
+    'dirs': ['include', 'lib', 'share', 'bin']
+}
+
+moduleclass = 'bio'
