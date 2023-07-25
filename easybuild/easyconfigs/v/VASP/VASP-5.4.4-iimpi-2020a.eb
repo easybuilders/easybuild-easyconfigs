@@ -9,14 +9,13 @@ materials modelling, e.g. electronic structure calculations and quantum-mechanic
 based on Density Futional Theory (DFT). In this version VASPsol (https://github.com/henniggroup/VASPsol) 
 has been implemented to the original version of vasp """
 
-toolchain = {'name': 'iimpi', 'version': '2020a'}
+toolchain = {'name': 'intel', 'version': '2020a'}
 builddependencies = [
     ('libbeef', '0.1.2'),
     ('wannier90', '1.2'),
     ('FFTW', '3.3.8'),
     ('ScaLAPACK', '2.1.0'),
     ('BLACS', '1.1'),
-    ('FlexiBLAS', '3.0.4'),
 ]
 
 local_vstat = 'vtstcode-180'
@@ -39,7 +38,8 @@ prebuildopts += 'cp src/solvation.F src/solvation.F.orig && '
 prebuildopts += 'cp ../VASPsol-1.0/src/solvation.F src  && '
 prebuildopts += 'unset LIBS && '
 prebuildopts += 'cp -r ../%s/* src && ' %local_vstat
-build_cmd = 'make FC=mpiifort FCL="mpiifort" SCALAPACK="-lflexiblas_intel -lscalapack -lfftw3 -lwannier" %s' %local_makeparam
+#build_cmd = 'make FC=mpiifort FCL="mpiifort" SCALAPACK="-lflexiblas_intel -lscalapack -lfftw3 -lwannier" %s' %local_makeparam
+build_cmd = 'make FC=mpiifort FCL="mpiifort" SCALAPACK="-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core"  %s' %local_makeparam
 
 postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
 parallel = 1
