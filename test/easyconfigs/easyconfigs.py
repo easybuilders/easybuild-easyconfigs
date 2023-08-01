@@ -499,6 +499,7 @@ class EasyConfigTest(TestCase):
                                                 r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
                                                 r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0',
                                                 r'wxPython-4\.2\.0',
+                                                r'wxPython-4\.2\.1',
                                                 r'GRASS-8\.2\.0',
                                                 r'QGIS-3\.28\.1']),
             ],
