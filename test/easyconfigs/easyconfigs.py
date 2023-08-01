@@ -496,7 +496,9 @@ class EasyConfigTest(TestCase):
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
+                                                r'libwpe-1\.14\.1-GCCcore-11\.3\.0',
                                                 r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
+                                                r'wpebackend-fdo-1\.14\.1-GCCcore-11\.3\.0',
                                                 r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0',
                                                 r'wxPython-4\.2\.0',
                                                 r'wxPython-4\.2\.1',
