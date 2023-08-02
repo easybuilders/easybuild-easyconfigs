@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'BAGEL'
+version = '1.2.2'
+
+homepage = "http://www.nubakery.org"
+description = """BAGEL (Brilliantly Advanced General Electronic-structure Library)
+is a parallel electronic-structure program."""
+
+# Note: A compiler bug(?) in template deduction prevents newer versions of icpc to compile this software.
+toolchain = {'name': 'foss', 'version': '2021a'}
+patches = [
+    '%(name)s-%(version)s_serialization.patch',
+]
+source_urls = ['https://github.com/nubakery/bagel/archive/']
+sources = ['v%(version)s.tar.gz']
+
+checksums = [
+    {'v1.2.2.tar.gz': '5dd54b064188771ccf6dd19fe08204da'},
+    {'BAGEL-1.2.2_serialization.patch': '25a79715f747b28c01621215456a5f66'},
+]
+
+builddependencies = [
+    ('Autotools', '20210128'),
+]
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('libxc', '5.1.5'),
+]
+
+preconfigopts = './autogen.sh && '
+preconfigopts += 'CXXFLAGS="$CXXFLAGS -DNDEBUG " '
+preconfigopts += 'CXXFLAGS="$CXXFLAGS -lflexiblas " '
+configopts = ' --with-boost=$BOOST_ROOT   --with-libxc --with-mpi=openmpi '
+
+sanity_check_paths = {
+    'files': ['bin/BAGEL', 'lib/libbagel.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'phys'
+
