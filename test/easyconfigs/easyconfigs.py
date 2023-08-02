@@ -546,6 +546,14 @@ class EasyConfigTest(TestCase):
                                r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-',
                                r'umap-learn-0\.4\.6-']),
             ],
+            'OpenFOAM': [
+                # CFDEMcoupling requires OpenFOAM 5.x
+                (r'5\.0-20180606', [r'CFDEMcoupling-3\.8\.0']),
+            ],
+            'ParaView': [
+                # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
+                (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
+            ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
             # decona 0.1.2 and NGSpeciesID 0.1.1.1 depend on medaka 1.1.3
