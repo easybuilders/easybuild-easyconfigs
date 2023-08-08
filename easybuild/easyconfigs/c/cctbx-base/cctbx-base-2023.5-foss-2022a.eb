@@ -1,0 +1,78 @@
+easyblock = 'Binary'
+
+name = 'cctbx-base'
+version = '2023.5'
+
+homepage = 'https://github.com/cctbx/cctbx_project'
+description = "Computational Crystallography Toolbox"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/cctbx/cctbx_project/releases/download/v2023.5/']
+sources = ['cctbx-%(version)s.tar.gz']
+patches = ['cctbx-base-%(version)s_do-not-use-non-public-boost-python-function.patch']
+checksums = [
+    {'cctbx-2023.5.tar.gz': '9983a4296e27f5c344555f079170a9abfc1513a3788a8e6087ae156003c8b2af'},
+    {'cctbx-base-2023.5_do-not-use-non-public-boost-python-function.patch':
+     '6e1a6669e5ddf94ed8d68c863c03013bc8c9239f8946381722e4de2a9a0442ec'},
+]
+
+builddependencies = [
+    ('SCons', '4.4.0'),
+    ('Eigen', '3.4.0'),
+    ('pybind11', '2.9.2'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('Boost', '1.79.0'),
+    ('Boost.Python-NumPy', '1.79.0'),
+    ('HDF5', '1.12.2'),
+    ('LibTIFF', '4.3.0'),
+]
+
+extract_sources = True
+
+local_adaptbx_sconscript = 'modules/cctbx_project/boost_adaptbx/SConscript'
+
+local_bootstrap_build_cmd = "python bootstrap.py build --builder=cctbx --with-python $EBROOTPYTHON/bin/python "
+local_bootstrap_build_cmd += "--no-boost-src --nproc %(parallel)s "
+local_bootstrap_build_cmd += "--config-flags='--use_environment_flags' --config-flags='--skip_phenix_dispatchers' "
+
+local_libtbx_python_cmd = "./build/bin/libtbx.python lib/libtbx/auto_build/conda_build/install_build.py "
+local_libtbx_python_cmd += "--prefix %(installdir)s --sp-dir %(installdir)s/lib/python%(pyshortver)s/site-packages "
+local_libtbx_python_cmd += "--ext-dir %(installdir)s/lib/python%(pyshortver)s/lib-dynload --preserve-egg-dir "
+
+install_cmds = [
+    # prepare
+    "rm -r modules/{boost,eigen,scons}",
+    "mkdir -p modules/boost && cd modules/boost && ln -s $EBROOTBOOST/include/boost",
+    "ln -s lib/libtbx/auto_build/bootstrap.py",
+    "export CCTBX_SKIP_CHEMDATA_CACHE_REBUILD=1",
+
+    # patch SConscript scripts to use Boost* dependencies
+    "sed -i 's/build_boost_libs = True/build_boost_libs = False/g' %s" % local_adaptbx_sconscript,
+    """sed -i "s/'boost_python'/'boost_python%%(pymajver)s%%(pyminver)s'/g" %s""" % local_adaptbx_sconscript,
+    """sed -i "s/'boost_numpy'/'boost_numpy%%(pymajver)s%%(pyminver)s'/g" %s""" % local_adaptbx_sconscript,
+    """sed -i 's/"boost_python"/"boost_python%(pymajver)s%(pyminver)s"/g' modules/dxtbx/SConscript""",
+
+    # build
+    local_bootstrap_build_cmd,
+    "cd build && ./bin/libtbx.configure cma_es crys3d fable rstbx spotinder",
+    "cd build && ./bin/libtbx.scons -j %(parallel)s",
+
+    # patch bootstrap.py to not blindly overwrite $LD_LIBRARY_PATH
+    # cfr. https://github.com/cctbx/cctbx_project/commit/c53e5ec15b3a7172087dce11c1a908f03144b45c
+    r"sed 's@\(export LD_LIBRARY_PATH=\.\./base/lib\)\n@\1:$LD_LIBRARY_PATH\n@g' bootstrap.py",
+
+    # install
+    "mkdir -p %(installdir)s/{bin,include,lib,share}",
+    "mkdir -p %(installdir)s/lib/python%(pyshortver)s/{lib-dynload,site-packages}",
+    local_libtbx_python_cmd,
+
+    # install Python bindings
+    "cd modules/cctbx_project && pip install --no-deps --ignore-installed --prefix %(installdir)s .",
+]
+
+
+moduleclass = 'lib'

@@ -1,0 +1,65 @@
+# created by Denis Kristak (Inuits)
+easyblock = 'PythonBundle'
+
+name = 'AlphaPulldown'
+version = '0.30.7'
+
+homepage = 'https://github.com/KosinskiLab/AlphaPulldown'
+description = """AlphaPulldown is a Python package that streamlines protein-protein
+interaction screens and high-throughput modelling of higher-order oligomers using AlphaFold-Multimer"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('OpenMM', '8.0.0'),
+    ('Kalign', '3.3.5'),
+    ('PyYAML', '6.0'),
+    ('cctbx-base', '2023.5'),
+    ('jax', '0.3.25'),  # also provides absl-py
+    ('Biopython', '1.79'),
+    ('h5py', '3.7.0'),
+    ('IPython', '8.5.0'),
+    ('JupyterLab', '3.5.0'),
+    ('matplotlib', '3.5.2'),
+    ('TensorFlow', '2.11.0'),
+    ('tqdm', '4.64.0'),
+    ('dm-tree', '0.1.8'),
+    ('py3Dmol', '2.0.1.post1'),
+    ('AlphaFold', '2.3.4', '-ColabFold'),  # must match with AlphaFold dep of ColabFold
+    ('ColabFold', '1.5.2'),
+]
+
+use_pip = True
+
+# note: rely on extensions included in AlphaFold installation (PDBFixer, dm-haiku, contextlib2, ml-collections)
+exts_list = [
+    ('importlib-resources', '5.13.0', {
+        'source_tmpl': 'importlib_resources-%(version)s.tar.gz',
+        'checksums': ['82d5c6cca930697dbbd86c93333bb2c2e72861d4789a11c2662b933e5ad2b528'],
+        'modulename': 'importlib_resources',
+    }),
+    (name, version, {
+        'sources': ['%(namelower)s-%(version)s.tar.gz'],
+        'patches': ['AlphaPulldown-%(version)s_AlphaFold-ColabFold-deps.patch'],
+        'checksums': [
+            {'alphapulldown-0.30.7.tar.gz': 'e089e4b3b238fe2874c7e4cc38368a6784f3e4664ad11b0b3d9088d1cdfa7c96'},
+            {'AlphaPulldown-0.30.7_AlphaFold-ColabFold-deps.patch':
+             'f9d756c7e6a34016697361ac5d94a04afa26b666199cb7326c7e58dc1ea649af'},
+        ],
+        # loosen up strict version requirements for required Python packages,
+        # and remove copies of AlphaFold + ColabFold that are included (to use provided dependencies instead)
+        'preinstallopts': "sed -i 's/==/>=/g' setup.cfg && rm -rf alphafold colabold alphapulldown/ColabFold && ",
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/run_multimer_jobs.py', 'bin/rename_colab_search_a3m.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/alphapulldown'],
+}
+
+sanity_check_commands = ["run_multimer_jobs.py --help 2>&1 | grep 'USAGE:'"]
+
+moduleclass = 'bio'
