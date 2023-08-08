@@ -496,9 +496,12 @@ class EasyConfigTest(TestCase):
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
+                                                r'libwpe-1\.14\.1-GCCcore-11\.3\.0',
                                                 r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
+                                                r'wpebackend-fdo-1\.14\.1-GCCcore-11\.3\.0',
                                                 r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0',
                                                 r'wxPython-4\.2\.0',
+                                                r'wxPython-4\.2\.1',
                                                 r'GRASS-8\.2\.0',
                                                 r'QGIS-3\.28\.1']),
             ],
@@ -545,6 +548,14 @@ class EasyConfigTest(TestCase):
                 (r'0\.52\.0', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
                                r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-',
                                r'umap-learn-0\.4\.6-']),
+            ],
+            'OpenFOAM': [
+                # CFDEMcoupling requires OpenFOAM 5.x
+                (r'5\.0-20180606', [r'CFDEMcoupling-3\.8\.0']),
+            ],
+            'ParaView': [
+                # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
+                (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
