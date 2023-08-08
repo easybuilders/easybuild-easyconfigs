@@ -1,0 +1,51 @@
+name = 'OpenFOAM'
+version = '11'
+
+homepage = 'https://www.openfoam.org/'
+description = """OpenFOAM is a free, open source CFD software package.
+ OpenFOAM has an extensive range of features to solve anything from complex fluid flows
+ involving chemical reactions, turbulence and heat transfer,
+ to solid dynamics and electromagnetics."""
+
+toolchain = {'name': 'gompi', 'version': '2020a'}
+
+source_urls = ['https://github.com/OpenFOAM/OpenFOAM-%(version_major)s/archive']
+sources = ['version-%(version)s.tar.gz']
+patches = [
+	'OpenFOAM-%(version)s-cleanup.patch'
+]
+checksums = [
+    'ebc0f86ead699abba61290ba8aac5b730aa93256e675d1d93a5d5f116d51e0c0',  # version-11.tar.gz
+    '622c34ee54ef2d4c62393d6aa643fd7df6dc1811fbc96b7b5ba7c806c8793b59',  # OpenFOAM-11-cleanup.patch
+]
+
+builddependencies = [
+    ('Bison', '3.7.6'),
+    ('CMake', '3.20.1'),
+    ('flex', '2.6.4'),
+]
+
+
+
+sanity_check_paths = {
+    # For some reason, dirs is ignored for building, even if it works for a
+    # dry run. Checks for a few default OpenFOAM solvers should be sufficient.
+    'files': ['%(name)s-%(version)s/platforms/linux64GccDPInt32Opt/bin/icoFoam',
+        '%(name)s-%(version)s/platforms/linux64GccDPInt32Opt/bin/chemFoam',
+        '%(name)s-%(version)s/platforms/linux64GccDPInt32Opt/bin/magneticFoam'],
+    'dirs': [],
+}
+
+	
+dependencies = [
+    ('libreadline', '8.1'),
+    ('ncurses', '6.2'),
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '6.1.2', '-no-thread'),
+    ('CGAL', '4.14.3'),
+    ('ParaView', '5.10.0', '-gompi-2020a'),
+    ('gnuplot', '5.4.2'),
+    ('Python', '3.9'),
+]
+
+moduleclass = 'cae'
