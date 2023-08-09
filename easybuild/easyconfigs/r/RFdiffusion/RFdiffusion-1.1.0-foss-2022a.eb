@@ -15,11 +15,8 @@ Model files are available in $RFDIFFUSION_MODELS"""
 toolchain = {'name': 'foss', 'version': '2022a'}
 toolchainopts = {}
 
-_models_url = 'http://files.ipd.uw.edu/pub/RFdiffusion'
-_pysp = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
-_models_dst = '%(installdir)s/models/'
-_schedules_dst = '%(installdir)s/schedules/'
-
+_data_dir = '%(installdir)s'                # place schedules and models in installation directory
+# _data_dir = '/data/%(name)s/%(version)s/'  # or place them in separate location.
 _models = [
     ("Base_ckpt.pt", "6f5902ac237024bdd0c176cb93063dc4"),
     ("Complex_base_ckpt.pt", "e29311f6f1bf1af907f9ef9f44b8328b"),
@@ -31,10 +28,11 @@ _models = [
     ("Complex_beta_ckpt.pt", "f572d396fae9206628714fb2ce00f72e"),
     ("RF_structure_prediction_weights.pt", "1befcb9b28e2f778f53d47f18b7597fa"),
 ]
+_models_url = 'http://files.ipd.uw.edu/pub/RFdiffusion'
+_schedules_url = 'https://files.ipd.uw.edu/krypton/'
+_schedules_fn = 'schedules.zip'
 
-checksums = [
-    # schedules_v1.1.0.zip
-    '9fbb47ddb92f1c0cf234bec39ba6ba64d179501fbff53a4d10b4e55afd75e44a',
+_model_checksums = [
     # Base_ckpt.pt
     '0fcf7d7c32b4848030aca3a051e6768de194616f96ba6c38186351a33bfc6eca',
     # Complex_base_ckpt.pt
@@ -54,31 +52,48 @@ checksums = [
     # RF_structure_prediction_weights.pt
     '6414e9e60b0b01011e5a182def40b4e6de4e137554c887b2916d43566733ed95',
 ]
+_schedules_checksum = '9fbb47ddb92f1c0cf234bec39ba6ba64d179501fbff53a4d10b4e55afd75e44a'
+
+_pysp = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+_models_dst = '%s/models/' % _data_dir
+_schedules_dst = '%s/schedules/' % _data_dir
+_get_models = '&&'.join(["cd %s && wget -nc %s/%s/%s" % (_models_dst, _models_url, _lv, _ln) for _ln, _lv in _models])
+# wget: do not overwrite
+_get_models += '&&'
+_get_models += '&&'.join(["[ $(shasum -a 256 %s/%s |awk '{print $1}') == %s ] || echo wrong chesum for %s" %
+                         (_models_dst, _ln, _lcs, _ln) for (_ln, _), _lcs in zip(_models, _model_checksums)])
+_get_schedules = 'cd %s && wget %s/%s ' % (_schedules_dst, _schedules_url, _schedules_fn)
+_get_schedules += "&& [ $(shasum -a 256 %s |awk '{print $1}') == %s ]" % (_schedules_fn, _schedules_checksum)
+_get_schedules += '&& unzip -n %s' % _schedules_fn  # unzip: do not overwrite
+_get_schedules += '&& mv RFdiffusion/schedules/* . && rm RFdiffusion %s -rf' % _schedules_fn
 
 
-components = [('schedules', version, {
-    'easyblock': 'CmdCp',
-    'source_urls': ['https://files.ipd.uw.edu/krypton/'],
-    'sources': [{
-        'filename': '%(name)s_v%(version)s.zip',
-        'download_filename': '%(name)s.zip',
-        'extract_cmd': 'unzip -j %s'
-    }],
-    'cmds_map': [('.*', '')],
-    'files_to_copy': [(['*.pkl'], _schedules_dst)],
-})]
-
-components += [
-    (_lname, _lver, {
-        'easyblock': 'CmdCp',
-        'source_urls': ['%s/%%(version)s/' % _models_url],
-        'sources': [{
-            'filename': '%(name)s_v%(version)s',
-            'download_filename': '%(name)s',
-            'extract_cmd': 'cp %s ' + _lname}],
-        'cmds_map': [('.*', '')],
-        'files_to_copy': [(['*.pt'], _models_dst)],
-    }) for _lname, _lver in _models]
+# uncomment for installing models and schedules as components.
+# Then comment out _get_schedules and _get_models in postinstallcmds
+#
+# checksums = [_schedules_checksum] + _model_checksums
+# components = [('schedules', version, {
+#    'easyblock': 'CmdCp',
+#    'source_urls': [_schedules_url],
+#    'sources': [{
+#        'filename': '%(name)s_v%(version)s.zip',
+#        'download_filename': '%(name)s.zip',
+#        'extract_cmd': 'unzip -j %s'
+#    }],
+#    'cmds_map': [('.*', '')],
+#    'files_to_copy': [(['*.pkl'], _schedules_dst)],
+# })]
+# components += [
+#    (_lname, _lver, {
+#        'easyblock': 'CmdCp',
+#        'source_urls': ['%s/%%(version)s/' % _models_url],
+#        'sources': [{
+#            'filename': '%(name)s_v%(version)s',
+#            'download_filename': '%(name)s',
+#            'extract_cmd': 'cp %s ' + _lname}],
+#        'cmds_map': [('.*', '')],
+#        'files_to_copy': [(['*.pt'], _models_dst)],
+#    }) for _lname, _lver in _models]
 
 dependencies = [
     ('Python', '3.10.4'),
@@ -127,30 +142,42 @@ exts_list = [
         'checksums': [
             {'RFdiffusion-1.1.0.tar.gz': '57d82f0d43540c2912eda3f1d34ad90b13db14966ee069c427e217fe78f0297f'},
             {'RFdiffusion-1.1.0_setup.patch': '1d17fae9d4d3716814f0d9bb6587658590dc07772c87e92fb9ad81cda6a2539d'},
-            {'RFdiffusion-1.1.0_data_paths.patch': '78461d7325d02bb7f1777aca84a53a39c1dd503aeb64b50ab37caba776bd3fd5'},
+            {'RFdiffusion-1.1.0_data_paths.patch': 'e4987c73e12deb08f22aad1b7928f891e7a9cb6289dff59a2f22e0d77745cd20'},
         ],
     }),
 ]
 
-modextravars = {'RFDIFFUSION_MODELS': _models_dst}
+
+modextravars = {
+    'RFDIFFUSION_MODELS': _models_dst,
+    'RFDIFFUSION_SCHEDULES': _schedules_dst
+}
 postinstallcmds = [
-    'cp -rpP config  %(installdir)s',
-    'cp -rpP examples %(installdir)s',
-    'cd %s/%%(namelower)s/ && ln -s ../../../../{models,schedules,examples}  .' % _pysp
+    'cp -rpP config examples %s/%%(namelower)s' % _pysp,
+    'cd %s/%%(namelower)s/ && ln --relative -s %s %s .' % (_pysp, _models_dst,  _schedules_dst),
+    'mkdir -p %s %s' % (_models_dst, _schedules_dst),
+    #
+    # comment out two following lines if you prefer to download models 
+    # (https://github.com/RosettaCommons/RFdiffusion/blob/main/scripts/download_models.sh) and schedules 
+    # https://files.ipd.uw.edu/krypton/schedules.zip) manually or if you prefer to install them as a component:
+    _get_schedules,
+    _get_models
 ]
+
 sanity_check_commands = [
     "run_inference.py --help",
     "run_inference.py 'contigmap.contigs=[150-150]' " +
     "inference.output_prefix=test_outputs/test inference.num_designs=1"
 ]
+
 sanity_check_paths = {
     'files': ['%s/%s' % (_models_dst, x) for (x, _) in _models],
     'dirs': [
         '%s/%%(namelower)s/inference' % _pysp,
-        'examples',
-        'schedules',
-        'models',
-        'config/inference']
+        '%s/%%(namelower)s/examples' % _pysp,
+        _models_dst,
+        _schedules_dst,
+        '%s/%%(namelower)s/config/inference' % _pysp]
 }
 
 moduleclass = 'bio'
