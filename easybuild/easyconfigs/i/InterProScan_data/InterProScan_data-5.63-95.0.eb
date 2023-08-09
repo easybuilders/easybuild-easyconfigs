@@ -1,0 +1,40 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan_data'
+version = "5.63-95.0"
+
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """This module containes only InterProScan data part. 
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+toolchain = SYSTEM
+
+source_urls = ['http://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/']
+sources = ['interproscan-%(version)s-64-bit.tar.gz']
+checksums = ['4687a1bd02795c70d6a91f11c3005e32566ed9bd6e3686e52f50b0c951ffb925']
+
+builddependencies = [
+    ('Python', '3.10'),
+]
+
+postinstallcmds = [
+    'cd %(installdir)s/ && python %(installdir)s/setup.py -f interproscan.properties',
+    'cd %(installdir)s/ && sh ./interproscan.sh || true',
+    'cd %(installdir)s/ && ls | sed -e "/data/d" | xargs -n1 rm -rf && for i in h3f h3i h3m h3p; do find . -name "*.${i}" -exec rm {} + ; done',
+    #'chmod -R a+r %(installdir)s/*',
+]
+
+local_data_dirs = [
+    "antifam", "cdd", "funfam", "gene3d", "hamap", "ncbifam", 
+    "panther", "pfam", "phobius", "pirsf", "pirsr", "prints", 
+    "prosite", "sfld", "smart", "superfamily", "tmhmm", 
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['data/%s' % x for x in local_data_dirs],
+}
+
+moduleclass = 'bio'
