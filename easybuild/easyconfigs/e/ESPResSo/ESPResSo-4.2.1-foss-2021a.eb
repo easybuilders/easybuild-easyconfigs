@@ -27,9 +27,14 @@ dependencies = [
 ]
 
 configopts = ' -DCMAKE_SKIP_RPATH=OFF -DWITH_TESTS=ON -DWITH_CUDA=OFF '
-configopts += '-DCTEST_ARGS:STRING=-j%(parallel)s '
+configopts += '-DCTEST_ARGS:STRING=-j%(parallel)s -DTEST_TIMEOUT=1200 '
 
-runtest = '-j%(parallel)s check_unit_tests && make check_python'
+# Avoid that ESPResSo tests all get bound to the first core
+# see https://github.com/easybuilders/easybuild-easyconfigs/pull/18517#issuecomment-1674612814
+local_OMPI_test_vars = 'OMPI_MCA_hwloc_base_binding_policy=none '
+pretestopts = local_OMPI_test_vars
+runtest = '-j%(parallel)s check_unit_tests '
+runtest += '&& %s make check_python' % local_OMPI_test_vars
 
 modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
 
