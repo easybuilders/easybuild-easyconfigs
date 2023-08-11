@@ -1,0 +1,55 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan'
+version = "5.63-95.0"
+
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+toolchain = {'name': 'system', 'version': 'system'}
+
+source_urls = ['ftp://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/%(version)s']
+sources = ['%(namelower)s-%(version)s-64-bit.tar.gz']
+checksums = ['4687a1bd02795c70d6a91f11c3005e32566ed9bd6e3686e52f50b0c951ffb925']
+
+dependencies = [
+    ('Java', '11.0.2'),
+    ('Python', '3.10'),
+    ('Perl', '5.30.2'),
+    ('InterProScan_data',  '%(version)s'),
+]
+
+local_data_dirs = [
+    "antifam", "cdd", "funfam", "gene3d", "hamap", "ncbifam", 
+    "panther", "pfam", "phobius", "pirsf", "pirsr", "prints", 
+    "prosite", "sfld", "smart", "superfamily", "tmhmm", 
+]
+
+postinstallcmds = [
+    'sed -i "s/head -n 1/grep version/g" %(installdir)s/%(namelower)s.sh',
+    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --any_interpreter',
+    'find %(installdir)s/bin -type d | xargs -i /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter',
+    'find %(installdir)s/lib -type d | xargs -i /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter',
+    'cd %(installdir)s/data && rm -rf {data_dir}; ln -s ${ebrootinterproscan_data}/data/{data_dir} {data_dir};".format(data_dir=data_dir, ebrootinterproscan_data="EBROOTINTERPROSCAN_DATA") for data_dir in local_data_dirs"',
+]
+
+#"cd %(installdir)s/data && rm -rf {data_dir}; ln -s ${ebrootinterproscan_data}/data/{data_dir} {data_dir};".format(data_dir=data_dir, ebrootinterproscan_data="EBROOTINTERPROSCAN_DATA") for data_dir in local_data_dirs"",
+#"cd %(installdir)s/data && for i in antifam cdd funfam gene3d hamap ncbifam panther pfam phobius pirsf pirsr prints prosite sfld smart superfamily tmhmm; do rm -rf ${i}; ln -s ${EBROOTINTERPROSCAN_DATA}/data/${i} ${i}; done",
+#"[ln -s ${EBROOTINTERPROSCAN_DATA}/data/%s %(installdir)s/data/%s % x for x in local_data_dirs]",
+
+
+sanity_check_paths = {
+    'files': ['%(namelower)s-%(version_major)s.jar', '%(namelower)s.sh', '%(namelower)s.properties'],
+    'dirs': ['bin', 'lib'],
+}
+
+modextrapaths = {
+    'PATH': '.',
+}
+
+modextravars = {'JAVA': '/cvmfs/soft.computecanada.ca/easybuild/software/2020/Core/java/%(javaver)s/bin/java'}
+
+moduleclass = 'bio'
