@@ -1,0 +1,53 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'Ray-project'
+version = '2.6.2'
+
+homepage = "https://docs.ray.io/en/latest/"
+description = "Ray is a fast and simple framework for building and running distributed applications."
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'usempi': True}
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    ('protobuf-python', '4.23.0'),
+    ('PyYAML', '6.0'),
+    ('redis-py', '4.6.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('grpcio', '1.51.1', {
+        'modulename': 'grpc',
+        'preinstallopts': "export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s && ",
+        'checksums': ['e6dfc2b6567b1c261739b43d9c59d201c1b89e017afd9e684d85aa7a186c9f7a'],
+    }),
+    ('aiosignal', '1.3.1', {
+        'checksums': ['54cd96e15e1649b75d6c87526a6ff0b6c1b0dd3459f43d9ca11d48c339b68cfc'],
+    }),
+    ('frozenlist', '1.3.3', {
+        'checksums': ['58bcc55721e8a90b88332d6cd441261ebb22342e238296bb330968952fbb3a6a'],
+    }),
+    ('Ray', version, {
+        'source_tmpl': '%(namelower)s-%(version)s-cp310-cp310-manylinux2014_x86_64.whl',
+        'checksums': ['050d3c2ac71a8ca7779c7b590a91400f45e071b298b67727949ffdcc096406e0'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ray'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'ray --help'
+]
+
+moduleclass = 'tools'
