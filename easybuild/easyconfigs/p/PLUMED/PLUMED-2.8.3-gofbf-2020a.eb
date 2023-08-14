@@ -1,0 +1,84 @@
+# Built with EasyBuild version 4.3.0-rc09d6ca14937467ccd390604052ab2d1c3a0ba6e on 2020-10-21_18-01-15
+easyblock = 'ConfigureMake'
+
+name = 'PLUMED'
+version = '2.8.3'
+local_ext_version = '2.8.2.2'
+
+homepage = 'https://www.plumed.org'
+description = """PLUMED is an open source library for free energy calculations in molecular systems which
+ works together with some of the most popular molecular dynamics engines. Free energy calculations can be
+ performed as a function of many order parameters with a particular  focus on biological problems, using
+ state of the art methods such as metadynamics, umbrella sampling and Jarzynski-equation based steered MD.
+ The software, written in C++, can be easily interfaced with both fortran and C/C++ codes.
+"""
+
+toolchain = {'name': 'gofbf', 'version': '2020a'}
+toolchainopts = {'usempi': 'True'}
+
+source_urls = ['https://github.com/%(namelower)s/plumed2/releases/download/v%(version)s/']
+sources = [SOURCE_TGZ]
+# checksums are now on checksums.json
+
+builddependencies = [
+]
+dependencies = [
+    ('GSL', '2.6', '', ('GCC', '9.3.0')),
+    ('libmatheval', '1.1.11'),
+    ('SciPy-Stack', '2022a', '', True),
+    ('Boost', '1.72.0', '', ('GCC', '9.3.0')),
+    ('XDRfile', '1.1.4', '', ('GCCcore', '9.3.0')),
+]
+multi_deps = {'Python': ['3.8', '3.9', '3.10', '3.11']}
+
+preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
+configopts = " ".join([
+    "--exec-prefix=%(installdir)s",
+    "--enable-gsl",
+    "--enable-modules=all",
+    "--enable-boost_graph",
+    "--enable-boost_serialization",
+    "--enable-asmjit",
+])
+
+prebuildopts = "source sourceme.sh && "
+
+# copy GROMACS patches to applying them to latest GROMACS releases.
+preinstallopts =  'cp    patches/gromacs-2022.5.config   patches/gromacs-2022.6.config && '
+preinstallopts += 'cp -r patches/gromacs-2022.5.diff     patches/gromacs-2022.6.diff   && '
+
+multi_deps_load_default = False
+multi_deps_extensions_only = True
+exts_defaultclass = 'PythonPackage'
+exts_filter = (
+    "python -c 'import %(ext_name)s'",
+    '',
+)
+
+exts_list = [
+    ('plumed', local_ext_version, {
+        'prebuildopts': '',
+        'preinstallopts': '',
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        # checksums are now on checksums.json
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'lib/libplumedKernel.so', 'lib/libplumed.so'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["python%(pyshortver)s -c 'import %(namelower)s'"]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+modextravars = {
+    'PLUMED_KERNEL': '%(installdir)s/lib/libplumedKernel.so',
+    'PLUMED_ROOT': '%(installdir)s/lib/%(namelower)s',
+    'PLUMED_VERSION': '%(version)s',
+}
+
+moduleclass = 'chem'
+
