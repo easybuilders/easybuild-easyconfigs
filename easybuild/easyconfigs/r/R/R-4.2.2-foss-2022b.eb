@@ -78,6 +78,9 @@ exts_default_options = {
 # !! order of packages is important !!
 # packages updated on 17th March 2023
 exts_list = [
+    # include packages that are part of the base installation of R,
+    # both to make sure they are available (via sanity check),
+    # and to be able to pass the check for required dependencies when installing extensions in parallel
     'base',
     'compiler',
     'datasets',
@@ -2370,6 +2373,7 @@ exts_list = [
         'checksums': ['be50f9fdef0f4bf9676b9c3c2906d0431afc678af55cf48b1119f9fc0adac44f'],
     }),
     ('liquidSVM', '1.2.4', {
+        # Don't add optimization flags by liquidSVM which may not be known e.g. on PPC
         'patches': ['liquidSVM-1.2.4-fix_ppc_and_aarch64_build.patch'],
         'preinstallopts': 'LIQUIDSVM_TARGET="empty"',
         'checksums': [
@@ -2885,8 +2889,12 @@ exts_list = [
         'checksums': ['d4d9ef7b2788efeb8209aa8dd610af4cd86286392fbdf9ea70bcfeafda95d4c5'],
     }),
     ('gWidgets2tcltk', '1.0-8', {
-        'modulename': False,
+        # need to run installation via xvfb-run to avoid problems on headless systems:
+        # no DISPLAY variable so Tk is not available
+        # [tcl] invalid command name "font"
         'preinstallopts': "xvfb-run ",
+        # skip 'import' check with library(gWidgets2tcltk), since it also fails on headless systems...
+        'modulename': False,
         'checksums': ['10399cc636eeeb5484c3379970c37c56df10d979bf866a35b66d0c75b7222c0a'],
     }),
     ('mgsub', '1.7.3', {
