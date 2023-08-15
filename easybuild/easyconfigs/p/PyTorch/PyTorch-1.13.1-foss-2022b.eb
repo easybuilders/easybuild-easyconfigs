@@ -39,6 +39,7 @@ patches = [
     'PyTorch-1.13.1_no-cuda-stubs-rpath.patch',
     'PyTorch-1.13.1_remove-flaky-test-in-testnn.patch',
     'PyTorch-1.13.1_skip-failing-grad-test.patch',
+    'PyTorch-1.13.1_skip-failing-singular-grad-test.patch',
     'PyTorch-1.13.1_skip-tests-without-fbgemm.patch',
 ]
 checksums = [
@@ -88,6 +89,8 @@ checksums = [
     {'PyTorch-1.13.1_remove-flaky-test-in-testnn.patch':
      'be83ff61fe2dedab6d49c232936d5622df81ab49154264490021c6c828e53315'},
     {'PyTorch-1.13.1_skip-failing-grad-test.patch': '6681200f9509893cb9231b5c93ac9bc5e6d9d9ae4febefca52e7cbc843ba8f51'},
+    {'PyTorch-1.13.1_skip-failing-singular-grad-test.patch':
+     '72688a57b2bb617665ad1a1d5e362c5111ae912c10936bb38a089c0204729f48'},
     {'PyTorch-1.13.1_skip-tests-without-fbgemm.patch':
      '481e595f673baf8ae58b41697a6792b83048b0264aa79b422f48cd8c22948bb7'},
 ]
@@ -138,6 +141,11 @@ excluded_tests = {
 }
 
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'
+
+# Especially test_quantization has a few corner cases that are triggered by the random input values,
+# those cannot be easily avoided, see https://github.com/pytorch/pytorch/issues/107030
+# So allow a low number of tests to fail as the tests "usually" succeed
+max_failed_tests = 2
 
 tests = ['PyTorch-check-cpp-extension.py']
 
