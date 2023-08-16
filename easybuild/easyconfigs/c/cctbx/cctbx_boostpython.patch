@@ -1,0 +1,80 @@
+diff -ru modules/cctbx_project/boost_adaptbx/SConscript modules/cctbx_project/boost_adaptbx/SConscript
+--- modules/cctbx_project/boost_adaptbx/SConscript	2023-06-30 22:32:31.000000000 +0200
++++ modules/cctbx_project/boost_adaptbx/SConscript	2023-07-14 10:49:06.186537065 +0200
+@@ -11,12 +11,14 @@
+ import sys
+ from shutil import copystat
+ Import("env_base", "env_etc")
++env_base['LIBPATH'].append(os.path.join(os.getenv("EBROOTBOOSTPYTHON"),"lib"))
++libtbx.env.boost_version=int(os.getenv("BOOST_VERSION_STRING"))
+ # Boost source exists, some Boost libraries will be built
+ env_etc.boost_dist = libtbx.env.dist_path("boost")
+ env_etc.boost_include = env_etc.boost_dist
+ build_boost_libs = True
+-env_etc.boost_python_lib = 'boost_python'
+-env_etc.boost_numpy_lib = 'boost_numpy'
++env_etc.boost_python_lib = get_boost_library_with_python_version("boost_python", env_base["LIBPATH"])
++env_etc.boost_numpy_lib = get_boost_library_with_python_version("boost_numpy", env_base["LIBPATH"]) 
+ # Boost source does not exist, headers and libraries exist
+ # boost directory in cctbx_project is picked up by find_in_repositories
+ if not os.path.isdir(env_etc.boost_dist) or 'cctbx_project' in env_etc.boost_dist \
+Only in cctbx_project/boost_adaptbx: .SConscript.swn
+Only in cctbx_project/scitbx/array_family/boost_python: .SConscript.swp
+diff -ru cctbx_project/smtbx/SConscript cctbx_project/smtbx/SConscript
+--- modules/cctbx_project/smtbx/SConscript	2023-06-30 22:32:31.000000000 +0200
++++ modules/cctbx_project/smtbx/SConscript	2023-07-13 18:18:34.261076072 +0200
+@@ -2,7 +2,10 @@
+ import libtbx.load_env
+ Import("env_base", "env_etc")
+ import sys
++import os
+ 
++env_base['LIBPATH'].append(os.path.join(os.getenv("EBROOTBOOSTPYTHON"),"lib"))
++libtbx.env.boost_version=int(os.getenv("BOOST_VERSION_STRING"))
+ if not libtbx.env.build_options.enable_boost_threads:
+   print(
+     "Module smtbx requires Boost.Threads.\n" +
+diff -ru dxtbx/SConscript dxtbx/SConscript
+--- modules/dxtbx/SConscript	2023-06-29 10:43:58.000000000 +0200
++++ modules/dxtbx/SConscript	2023-07-13 18:57:24.164452157 +0200
+@@ -16,7 +16,8 @@
+     # We have to build CBFlib bindings ourselves
+     build_cbf_bindings = True
+ 
+-Import("env_etc")
++Import("env_etc", "env_base")
++env_base['LIBPATH'].append(os.path.join(os.getenv("EBROOTBOOSTPYTHON"),"lib"))
+ 
+ env_etc.dxtbx_dist = libtbx.env.dist_path("dxtbx")
+ env_etc.dxtbx_include = os.path.join(env_etc.dxtbx_dist, "src")
+@@ -40,7 +41,7 @@
+     env.Append(LIBPATH=env_etc.conda_libpath)
+     env_etc.dxtbx_common_includes.extend(env_etc.conda_cpppath)
+ else:
+-    boost_python = "boost_python"
++    boost_python = get_boost_library_with_python_version("boost_python", env_base["LIBPATH"])
+ 
+ env_etc.dxtbx_libs = ["tiff", boost_python]
+ env_etc.dxtbx_lib_paths = [
+diff -ru dxtbx/src/dxtbx/SConscript dxtbx/src/dxtbx/SConscript
+--- modules/dxtbx/src/dxtbx/SConscript	2023-06-29 10:43:58.000000000 +0200
++++ modules/dxtbx/src/dxtbx/SConscript	2023-07-13 18:14:48.719803188 +0200
+@@ -16,7 +16,8 @@
+     # We have to build CBFlib bindings ourselves
+     build_cbf_bindings = True
+ 
+-Import("env_etc")
++Import("env_etc", "env_base")
++env_base['LIBPATH'].append(os.path.join(os.getenv("EBROOTBOOSTPYTHON"),"lib"))
+ 
+ env_etc.dxtbx_dist = libtbx.env.dist_path("dxtbx")
+ env_etc.dxtbx_include = os.path.join(env_etc.dxtbx_dist, "src")
+@@ -40,7 +41,7 @@
+     env.Append(LIBPATH=env_etc.conda_libpath)
+     env_etc.dxtbx_common_includes.extend(env_etc.conda_cpppath)
+ else:
+-    boost_python = "boost_python"
++    boost_python = get_boost_library_with_python_version("boost_python", env_base["LIBPATH"])
+ 
+ env_etc.dxtbx_libs = ["tiff", boost_python]
+ env_etc.dxtbx_lib_paths = [

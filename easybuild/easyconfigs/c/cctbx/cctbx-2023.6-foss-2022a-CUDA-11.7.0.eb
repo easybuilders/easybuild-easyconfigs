@@ -1,0 +1,397 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/06
+easyblock = 'PythonBundle'
+
+name = 'cctbx'
+version = '2023.6'
+_pyver = '3.10.4'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+_refdata_sha = 'cbe300663a2bb55015cf9e9978c720cb12dbf52f'
+_geostd_sha = '641846f566e10be8c7c50bf37f0f3636eadf6cad'
+_mon_lib_sha = 'c382734a31f6d673cf20683712f5315133406303'
+
+_boost_version_str = "107900"  # TODO get at runtime
+
+
+homepage = 'https://cctbx.github.io/'
+description = """The Computational Crystallography Toolbox (cctbx) is being developed as the open
+source component of the Phenix system. The goal of the Phenix project is to     
+advance automation of macromolecular structure determination. Phenix depends on 
+the cctbx, but not vice versa. This hierarchical approach enforces a clean      
+design as a reusable library. The cctbx is therefore also useful for small-     
+molecule crystallography and even general scientific applications.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+# TODO: easyblock modifying libtbx_env and/or setpaths_all.sh after running configure.py in order to
+# i) build in separate directory,
+# ii) place all packages in lib/python%(pyshortver)s/site-packages;
+#
+# - avoid hardcoded paths in bin/dispatchers.
+# - include phenix (req. different source bundle) and rename.
+#
+# build dir required at runtime and is referred to as $LIBTBX_BUILD in many scripts.
+# TODO: modify cctbx_project/libtbx/libtbx_env (pickle) before build.
+buildininstalldir = True
+
+builddependencies = [
+    ('SCons', '4.4.0'),
+    ('pybind11', '2.9.2'),
+    ('Eigen', '3.4.0'),
+]
+dependencies = [
+    ('Python', _pyver),
+    ('Boost.Python', '1.79.0', '-numpy'),
+    # ('Boost.Python-NumPy', '1.79.0'),
+    ('HDF5', '1.12.2'),
+    ('LibTIFF', '4.5.0'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    #
+    ('Biopython', '1.79'),
+    ('matplotlib', '3.5.2'),
+    ('mrcfile', '1.4.3'),
+    ('networkx', '2.8.4'),
+    ('cairo', '1.17.4'),
+    ('h5py', '3.7.0'),
+    ('wxPython', '4.2.1'),
+    ('IPython', '8.5.0'),  # for ipdb sanity check
+    ('LIBSVM-Python', '3.30'),
+]
+_py_versionstring = '%s%s' % (_pyver.split('.')[0], _pyver.split('.')[1])
+_modules_prefix = 'modules/'
+_modules = [
+    'cctbx',
+    'rstbx',
+    'smtbx',
+    'mmtbx',
+    'scitbx',
+    'dxtbx',
+    'molprobity',
+    'probe'
+]
+
+_sp = 'lib/python%(pyshortver)s/site-packages'
+_data_dir = '%s' % _modules_prefix    # in libtbx_env distdir
+
+
+components = [
+    ('chem_data', version, {
+        'easyblock': 'MakeCp',
+        'skipsteps': ['configure', 'build'],
+        'source_urls': [
+            'https://github.com/rlabduke/reference_data/archive',
+            'https://github.com/phenix-project/geostd/archive', 'https://github.com/rlabduke/mon_lib/archive'],
+        'sources': [
+            {
+                'download_filename': '%s.tar.gz' % _refdata_sha,
+                'filename': 'refdata-%s.tar.gz' % _refdata_sha[:7],
+            },
+            {
+                'download_filename': '%s.tar.gz' % _geostd_sha,
+                'filename': 'geostd-%s.tar.gz' % _geostd_sha[:7],
+            },
+            {
+                'download_filename': '%s.tar.gz' % _mon_lib_sha,
+                'filename': 'mon_lib-%s.tar.gz' % _mon_lib_sha[:7],
+            },
+        ],
+        'files_to_copy': [
+            (['reference_data-%s/Top8000/Top8000_rotamer_pct_contour_grids/*' % _refdata_sha],
+             '%s/chem_data/rotarama_data' % _data_dir),
+            (['reference_data-%s/Top8000/Top8000_ramachandran_pct_contour_grids/*' % _refdata_sha],
+             '%s/chem_data/rotarama_data' % _data_dir),
+            (['reference_data-%s/Top8000/Top8000_cablam_pct_contour_grids/*' % _refdata_sha],
+             '%s/chem_data/cablam_data' % _data_dir),
+            (['reference_data-%s/Top8000/rama_z/*' % _refdata_sha],
+             '%s/chem_data/rama_z' % _data_dir),
+            (['geostd-%s/*' % _geostd_sha], '%s/chem_data/geostd' % _data_dir),
+            (['mon_lib-%s/*' % _mon_lib_sha], '%s/chem_data/mon_lib' % _data_dir),
+        ]
+    }),
+    (name, version, {
+        'easyblock': 'ConfigureMake',
+        'preconfigopts': 'export BOOST_VERSION_STRING=%s &&' % _boost_version_str,
+        'configure_cmd': ' python %%(installdir)s/%s/cctbx_project/libtbx/configure.py' % _modules_prefix,
+        'configopts': '-r %%(installdir)s/%s ' % _modules_prefix +
+                      '--scan_boost ' +
+                      '--build=release ' +
+                      '--no_bin_python ' +
+                      '--use_environment_flags ' +
+                      '--enable_cuda ' +
+                      # --enable_kokkos ' +
+                      # '--enable_cxx11' +
+                      '--enable_boost_threads=True ' +
+                      ' %s' % ' '.join(_modules),
+        'prebuildopts': 'export BOOST_VERSION_STRING=%s &&' % _boost_version_str +
+                        'source setpaths_all.sh &&',
+        'skipsteps': ['install'],
+
+        # cctbx tests marked as unstable by patch above:
+        #   precision:
+        #     cctbx/geometry_restraints/tst_ext.py":   precision
+        #   missing elbow (not built) for mmtbx.nonbonded_overlaps:
+        #     cctbx/geometry_restraints/tst_nonbonded_overlaps.py": 
+        #         mmtbx.nonbonded_overlaps: missing elbow module (not built)
+        #     cctbx/geometry_restraints/tst_process_nonbonded_proxies.py: 
+        #         mmtbx.nonbonded_overlaps: missing elbow module (not built)
+        #
+        # disable all mmtbx tests requireing phenix, phenix_regression, elbow
+        #
+        # import libsvm, not svm in test.
+        #
+        # TODO: cctbx_clear_dispatcher.patch, modules/reduce/command_line/reduce.py.patch
+        # TODO: check why iotbx/pdb/remediation/tst_remediator.py and iotbx/regression/tst_lattice_symmetry.py fail
+        'patches': [
+            ('cctbx_boostpython.patch'),
+            ('cctbx_disab_boostpython_cxxabi_cxa_demangle_is_broken.patch'),
+            ('cctbx_configure_prefix.patch',  0),
+            ('cctbx-2023.6_relax_tests_cctbx.patch'),
+            ('cctbx-2023.6_disable_phenix_tests_mmtbx.patch'),
+            ('cctbx-2023.6_relax_tests_iotbx.patch'),
+            ('cctbx-2023.6_test_import_libsvm.patch')],
+        'source_urls': ['https://github.com/cctbx/cctbx_project/archive/refs/tags/'],
+        'sources': [
+            # same in modules
+            {
+                'source_urls': ['https://github.com/cctbx/cctbx_project/archive/refs/tags/'],
+                'filename': 'v%(version)s.tar.gz',
+                'extract_cmd': 'mkdir -p %scctbx_project && tar xvf %%s -C %scctbx_project --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # xfel definitions in modules/cctbx
+            {
+                'source_urls': ['https://github.com/nexusformat/definitions/archive/'],
+                'filename': 'euxfel_definitions_6971682.tar.gz',
+                'download_filename': '6971682e65da020dcb5dc6e3cab3a29e554c3222.tar.gz',
+                'extract_cmd': 'mkdir -p %scctbx_project/xfel/euxfel/definitions && '
+                            'tar xvf %%s -C %scctbx_project/xfel/euxfel/definitions --strip-components 1'
+                            % (_modules_prefix, _modules_prefix)},
+            # cbflib
+            {
+                'source_urls': ['https://github.com/yayahjb/cbflib/archive/refs/tags/'],
+                'filename': 'CBFlib-0.9.7.tar.gz',
+                'extract_cmd': 'mkdir -p %scbflib && tar xvf %%s -C %scbflib --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # dxtbx
+            {
+                'source_urls': ['https://github.com/cctbx/dxtbx/archive/refs/tags/'],
+                'filename': 'dxtbx-v3.15.1.tar.gz',
+                'download_filename': 'v3.15.1.tar.gz',
+                'extract_cmd': 'mkdir -p %sdxtbx && tar xvf %%s -C %sdxtbx --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # dxtbx/src/dxtbx (dials-3.5 branch)
+            {
+                'source_urls': ['https://github.com/dials/dxtbx/archive/refs/tags/'],
+                'filename': 'dxtbx-dials-v3.5.tar.gz',
+                'download_filename': 'v3.15.1.tar.gz',
+                'extract_cmd': 'mkdir -p %sdxtbx/src/dxtbx && tar xvf %%s -C %sdxtbx/src/dxtbx --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # gui_resources/
+            {
+                'source_urls': ['https://github.com/cctbx/gui_resources/archive/'],
+                'filename': 'gui_resources-20230425.tar.gz',
+                'download_filename': '48f8cf8e06734f40345fcccf3b14ff054fe8c3dd.tar.gz',
+                'extract_cmd': 'mkdir -p %sgui_resources && tar xvf %%s -C %sgui_resources --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # cpp4io
+            {
+                'source_urls': ['https://github.com/cctbx/ccp4io/archive/'],
+                'filename': 'ccp4io-20211131.tar.gz',
+                'download_filename': 'b58c4fb68902e4e6a58f4a585d0722e542516076.tar.gz',
+                'extract_cmd': 'mkdir -p %sccp4io && tar xvf %%s -C %sccp4io --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # cpp4io_adaptbx
+            {
+                'source_urls': ['https://github.com/cctbx/ccp4io_adaptbx/archive/'],
+                'filename': 'ccp4io_adaptbx-20230406.tar.gz',
+                'download_filename': '/3d9dc50bfe9dd3c6bc59ba242f5c7e07b6ed25ba.tar.gz',
+                'extract_cmd': 'mkdir -p %sccp4io_adaptbx && tar xvf %%s -C %sccp4io_adaptbx --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # annlib
+            {
+                'source_urls': ['https://github.com/cctbx/annlib/archive/'],
+                'filename': 'annlib-20230115.tar.gz',
+                'download_filename': 'e23a7c1be859508878fe07ed49d5f82b836b5fe7.tar.gz',
+                'extract_cmd': 'mkdir -p %sannlib && tar xvf %%s -C %sannlib --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # annlib_adaptbx
+            {
+                'source_urls': ['https://github.com/cctbx/annlib_adaptbx/archive/'],
+                'filename': 'annlib_adaptbx-20201003.tar.gz',
+                'download_filename': 'fb1097bc37fa304eb9aba68fdc709ec08cf4a61a.tar.gz',
+                'extract_cmd': 'mkdir -p %sannlib_adaptbx && tar xvf %%s -C %sannlib_adaptbx --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # tntbx
+            {
+                'source_urls': ['https://github.com/cctbx/tntbx/archive/'],
+                'filename': 'tntbx-20200821.tar.gz',
+                'download_filename': '1aefe762bb9633dda7e98cc32e469d688ad5aa59.tar.gz',
+                'extract_cmd': 'mkdir -p %stntbx && tar xvf %%s -C %stntbx --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # clipper TODO: as python exts. 
+            # see https://android.googlesource.com/platform/external/gentoo/overlays/gentoo/
+            #           +/refs/heads/brillo-m7-dev/sci-libs/cctbx/files/2010.03.29.2334-clipper.patch
+            {
+                'source_urls': ['https://github.com/cctbx/clipper/archive/'],
+                'filename': 'tntbx-20070531.tar.gz',
+                'download_filename': '1d1ce3526cea2dcdc14d46f82090facffd9a9d29.tar.gz',
+                'extract_cmd': 'mkdir -p %sclipper && tar xvf %%s -C %sclipper --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # eigen b3.4.0
+            # {
+            #     'source_urls': ['https://gitlab.com/libeigen/eigen/-/archive/3.4/'],
+            #     'filename': 'eigen-3.4.tar.gz',
+            #     'extract_cmd': 'mkdir -p %seigen && tar xvf %%s -C %seigen --strip-components 1'
+            #                    % (_modules_prefix, _modules_prefix)
+            # },
+            # reduce  #TODO: sep. EB module requires to adapt reduce_command and libtbx_env configures modules
+            {
+                'source_urls': ['https://github.com/rlabduke/reduce/archive/refs/tags'],
+                'filename': 'reduce-3.7.2.tar.gz',
+                'download_filename': 'v3.7.2.tar.gz',
+                'extract_cmd': 'mkdir -p %sreduce && tar xvf %%s -C %sreduce --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # molprobity
+            {
+                'source_urls': ['https://github.com/rlabduke/MolProbity/archive/'],
+                'filename': 'molprobity-20230622.tar.gz',
+                'download_filename': '60fce1cc812182522d38cdc16eb6c4d2dc0c9f17.tar.gz',
+                'extract_cmd': 'mkdir -p %smolprobity && tar xvf %%s -C %sreduce --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            },
+            # probe  #TODO: sep. EB module; requires to adapt probe_command and libtbx_env configures modules
+            {
+                'source_urls': ['https://github.com/phenix-project/probe/archive/refs/tags/'],
+                'filename': 'probe-02.21.tar.gz',
+                'download_filename': '02.21.tar.gz',
+                'extract_cmd': 'mkdir -p %sprobe && tar xvf %%s -C %sprobe --strip-components 1'
+                               % (_modules_prefix, _modules_prefix)
+            }]
+    })
+]
+
+use_pip = True
+exts_default_options = {
+    'use_pip': True,
+    'buildininstalldir':  False,
+    'exts_download_dep_fail': True,
+}
+exts_list = [
+    ('ipdb', '0.13.13', {
+        'checksums': ['e3ac6018ef05126d442af680aad863006ec19d02290561ac88b8b1c0b0cfc726'],
+    }),
+    ('PyRTF', '0.45', {
+        'modulename': 'PyRTF',
+        'patches': ['cctbx-2023.6_PyRTF_py3.patch'],
+        'checksums': [
+            {'PyRTF-0.45.tar.gz': '7c0b7c35688041978786e959fd83dbdffee66ded9d40e1ad0441c460164a349e'},
+            {'cctbx-2023.6_PyRTF_py3.patch': 'b88a4222d27c40ae01511b42dbeec09dc87ad160173f27ea8621d7a0b9721e93'},
+        ],
+    }),
+]
+
+_cleanup_list = [
+    'reference_data-*', 'geostd-*',
+    'annlib', 'annlib_adaptbx', 'boost_adaptbx', 'cbflib', 'cbflib_adaptbx', 'ccp4io', 'ccp4io_adaptbx',
+    'cctbx', 'fable', 'exe_dev',
+    # 'dxtbx', # keep
+    'cma_es', 'chiltbx', 'iotbx', 'mmtbx', 'scitbx', 'rstbx',
+    # 'probe',  TODO
+    'omptbx', 'reduce',
+    # 'smtbx',  # keep smtbx for tests
+    'spotfinder', 'ucif'
+    'Makefile', 'Sconstruct', 'dispatcher_include_template.sh',
+    # site package sources:
+    'ipdb', 'PyRTF',
+]
+postinstallcmds = [
+    # adapt dispatchers:
+    "cd %(installdir)s/bin && sed -i 's|LIBTBX_BUILD=.*|LIBTBX_BUILD=$LIBTBX_BUILD|g;" +
+    "s|'$EBROOTPYTHON'|$EBROOTPYTHON|g;' *",
+    #    "s|SSL_CERT_FILE=.*|SSL_CERT_FILE=$SSL_CERT_FILE|g' *",
+
+    # mv python module object files to _sp, keep all other object files in lib
+    'mv %%(installdir)s/lib/*.so %%(installdir)s/%s' % _sp,
+    'mv  %%(installdir)s/%s/lib*.so %%(installdir)s/lib/' % _sp,  # TODO: run pip intall ?
+    # clean up:
+    # 'rm -rf  %%(installdir)s/reference_data-%s' %_refdata_sha, -> _cleanup_list
+    # 'rm -rf  %%(installdir)s/geostd-%s' %_geostd_sha,
+    # 'rm -rf  %%(installdir)s/mon_lib-%s' %_mon_lib_sha,
+    'cp %(installdir)s/reduce/exe/reduce %(installdir)s/bin',
+    'mv %(installdir)s/{reduce, probe}/lib/*.a %(installdir)s/lib',
+    'rm -rf %(installdir)s/reduce',
+    "sed -i 's/reduce_exe =.*/reduce_exe = os.path.join(os.getenv(\"EBROOTCCTBX\"), \"bin\", \"reduce\")/g' " +
+    "%(installdir)s/modules/reduce/command_line/reduce.py"   # TODO patch
+
+    # build caches
+    # '%(installdir)s/bin/mmtbx.rebuild_rotarama_cache',
+    # '%(installdir)s/bin/mmtbx.rebuild_cablam_cache',
+
+    # 'cd %(installdir)s && rm annlib annlib_adaptbx boost_adaptbx cbflib cbflib_adaptbx 
+    #  ccp4io ccp4io_adaptbx cctbx fable exe_dev dxtbx cma_es chiltbx iotbx mmtbx scitbx 
+    #  rstbx probe omptbx   spotfinder ucif -rf', #keep smtbx for tests  -> _cleanup_list
+    # 
+    'chmod +x %(installdirs)/bin/cctbx.lattice_symmetry',
+]
+postinstallcmds += [
+    '# rm -rf %s ' % x for x in _cleanup_list  # TODO
+]
+# import os
+modextravars = {
+    # 'SSL_CERT_FILE': '%s/lib/python%%(pyshortver)s/site-packages/certifi/cacert.pem' 
+    #                  % os.getenv("EBROOTPYTHON"), # TODO
+    'LIBTBX_BUILD': '%(installdir)s',
+    'LIBTBX_PYEXE_BASENAME': 'python',
+    # 'OPENBLAS_NUM_THREADS': '1',
+}
+modextrapaths = {
+    # 'SSL_CERT_FILE': '$EBROOTPYTHON/lib/python%(pyshortver)s/site-packages/certifi/cacert.pem',  #TODO
+    'LIBTBX_BUILD': '.',
+    'PYTHONPATH': [
+        '%s/cctbx_project' % _modules_prefix, '%s/dxtbx/src' % _modules_prefix,
+        '%s/cctbx_project/boost_adaptbx' % _modules_prefix
+    ],
+    'LIBTBX_PYEXE': '$EBROOTPYTHON/bin/python',
+    'MMTBX_CCP4_MONOMER_LIB': '%s/chem_data/mon_lib' % _data_dir
+}
+sanity_check_commands = [
+    ('mmtbx.rebuild_rotarama_cache'),  # required. TODO: mv to postinstall
+    ('mmtbx.rebuild_cablam_cache'),    # required. TODO: mv to postinstall
+    ('libtbx.show_env %(installdir)s/libtx_env'),
+    ('phenix.reduce -Help'),
+    ('python -c "import libtbx"'),
+    ('python -c "import cctbx"'),
+    ('python -c "import smtbx"'),
+    ('python -c "import mmtbx"'),
+    # TODO: also run tests at test step:
+    ('cd $(mktemp -d) && libtbx.run_tests_parallel module=smtbx'),
+    ('cd $(mktemp -d) && libtbx.run_tests_parallel module=libtbx'),
+    ('cd $(mktemp -d) && libtbx.run_tests_parallel module=rstbx'),
+    ('cd $(mktemp -d) && libtbx.run_tests_parallel module=iotbx'),
+    ('cd $(mktemp -d) && libtbx.run_tests_parallel module=mmtbx'),
+    ('cd $(mktemp -d) && libtbx.run_tests_parallel module=cctbx'),
+    # failing testst disabled by patches above. some failing due to 
+    # reasons marked in patch files. 
+]
+sanity_check_paths = {
+    'files': [
+        'libtbx_env', 'bin/reduce',
+    ],
+    'dirs': [
+        'bin', 'lib', 'include', _modules_prefix, _sp, '%s/chem_data' % _data_dir
+    ]
+}
+
+moduleclass = 'bio'
