@@ -1,0 +1,33 @@
+easyblock = 'CMakeMake'
+
+name = 'ginkgo'
+version = '1.6.0'
+
+homepage = 'https://ginkgo-project.github.io/'
+description = """FFTW is a C subroutine library for computing the discrete Fourier transform (DFT)
+ in one or more dimensions, of arbitrary input size, and of both real and complex data."""
+
+toolchain = {'name': 'gompic', 'version': '2020a'}
+
+source_urls = ['https://github.com/%(name)s-project/%(name)s/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-find_cublas.patch']
+checksums = [
+    'c59f574090eac212d272c57f0858db0c13ef41ce5547e38331a74c85ef7fba99',  # v1.6.0.tar.gz
+    '2710b7b9c2951d09317600ac53d1a11f6e318445177515ac33e72b535884e55b',  # %(name)s-%(version)s-find_cublas.patch
+]
+
+builddependencies = [
+    ('CMake', '3.23.1', '', SYSTEM),
+    ('VTune', '2022.2', '', SYSTEM),
+    ('METIS', '5.1.0', '', ('GCCcore', '9.3.0')),
+]
+
+configopts = "-DGINKGO_BUILD_BENCHMARKS=OFF -DGINKGO_BUILD_EXAMPLES=OFF -DGINKGO_BUILD_TESTS=OFF"
+
+sanity_check_paths = {
+    'files': ['include/%(name)s/%(name)s.hpp', 'lib/libginkgo_cuda.so', 'lib/libginkgo_device.so', 'lib/libginkgo_dpcpp.so', 'lib/libginkgo_hip.so', 'lib/libginkgo_omp.so', 'lib/libginkgo_reference.so', 'lib/libginkgo.so'],
+    'dirs': ['lib', 'include'],
+}
+
+moduleclass = 'numlib'
