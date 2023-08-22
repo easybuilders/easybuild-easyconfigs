@@ -1,0 +1,54 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+# Author:    Jasper Grimm (UoY)
+##
+name = 'PETSc'
+version = '3.19.4'
+
+homepage = 'https://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+source_urls = [
+    'https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/',
+    'ftp://ftp.mcs.anl.gov/pub/petsc/release-snapshots/',
+]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'PETSc-%(version)s_fix_ranlib.patch',
+]
+checksums = [
+    '7c941b71be52c3b764214e492df60109d12f97f7d854c97a44df0c4d958b3906',  # petsc-3.19.4.tar.gz
+    '7921894ff1fca1a80dc7586b16714ccf81a2de3e5c678c447241f3288d304b20',  # PETSc-3.19.4_fix_ranlib.patch
+]
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('mpi4py', '3.1.4'),
+    ('Boost', '1.82.0'),
+    ('METIS', '5.1.0'),
+    ('SCOTCH', '7.0.3'),
+    ('MUMPS', '5.5.1', '-metis'), # PETSc-3.19.4 supports MUMPS up to v5.5.1
+    ('SuiteSparse', '5.13.0', '-METIS-5.1.0'),
+    ('Hypre', '2.28.0'),
+    ('ParMETIS', '4.0.3'),
+    ('SuperLU_DIST', '8.1.2'),
+]
+
+# enabling --with-mpi4py seems to be totally broken, leads to make errors like:
+# No rule to make target 'mpi4py-build'
+configopts = '--LIBS="$LIBS -lrt" --with-mpi4py=0 '
+
+shared_libs = 1
+
+# only required when building PETSc in a SLURM job environment
+# configopts += '--with-batch=1 --known-mpi-shared-libraries=1 --known-64-bit-blas-indices=0 '
+# prebuildopts = "srun ./conftest-arch-linux2-c-opt && ./reconfigure-arch-linux2-c-opt.py && "
+
+moduleclass = 'numlib'
