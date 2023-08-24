@@ -1,0 +1,40 @@
+Fix some install related paths for EB.
+
+Åke Sandgren, 20191029
+Update ver 2.91: Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/12
+diff -ru eman2-2.91/CMakeLists.txt eman2-2.91_fix_install_prefix/CMakeLists.txt
+--- eman2-2.91/CMakeLists.txt	2021-03-08 18:13:26.000000000 +0100
++++ eman2-2.91_fix_install_prefix/CMakeLists.txt	2021-12-22 17:47:26.731526247 +0100
+@@ -52,30 +52,10 @@
+ 
+ MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
+ 
+-# Set EMAN_PREFIX
+-if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+-	message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
+-	if(NOT WIN32)
+-		set(EMAN_PREFIX $ENV{PREFIX})
+-	else()
+-		set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
+-	endif()
+-else()
+-	find_package(Conda REQUIRED)
+-		
+-	if(CONDA_PREFIX)
+-		if(NOT WIN32)
+-			set(EMAN_PREFIX ${CONDA_PREFIX})
+-		else()
+-			set(EMAN_PREFIX ${CONDA_PREFIX}/Library)
+-		endif()
+-	endif()
+-endif()
+-
++set(EMAN_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH "installation prefix" FORCE)
+ set(EMAN_PREFIX_INC      ${EMAN_PREFIX}/include)
+ set(EMAN_PREFIX_LIB      ${EMAN_PREFIX}/lib)
+-set(CMAKE_INSTALL_PREFIX ${EMAN_PREFIX} CACHE PATH "installation prefix" FORCE)
+-set(CMAKE_PREFIX_PATH    ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
++#set(CMAKE_PREFIX_PATH    ${EMAN_PREFIX} ${EMAN_PREFIX}/..)
+ cmake_print_variables(CMAKE_PREFIX_PATH)
+ 
+ include(cmake/find_all.cmake)
