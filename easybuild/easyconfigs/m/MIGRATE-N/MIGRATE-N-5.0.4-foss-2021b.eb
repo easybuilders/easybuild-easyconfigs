@@ -1,0 +1,49 @@
+easyblock = 'MakeCp'
+
+name = 'MIGRATE-N'
+version = '5.0.4'
+
+homepage = 'https://peterbeerli.com/migrate-html5/index.html'
+description = """
+Migrate estimates population parameters, effective population sizes
+and migration rates of n populations, using genetic data.  It 
+uses a coalescent theory approach taking into account history of 
+mutations and uncertainty of the genealogy. 
+"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ["https://peterbeerli.com/migrate-html5/download_version4"]
+sources = ['migrate-%(version)s.src.tar.gz']
+patches = [
+    'migrate-%(version)s_install.patch',
+    'migrate-%(version)s_locale.patch',
+]
+checksums = [
+    'd25ba8ed112b81ee5fdc77759a5886b0f50ece834fd8db445b9c833742c3a1b9',  # migrate-5.0.4.src.tar.gz
+    'aaba4dbd8d868f80afd9645ae84d5b8c153de85a4f616a8585950593655d6fcf',  # migrate-5.0.4_install.patch
+    '67f2dec0a2fcd432e12747f979a381f7d5e5ad73b885b485c829e50613aba35b',  # migrate-5.0.4_locale.patch
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+]
+
+parallel = 1
+start_dir = 'src'
+
+prebuildopts = './configure --prefix=%(installdir)s --enable-A4 "CC=$CC" STDCPLUS=-lstdc++ && '
+buildopts = ' && make mpis CC="$MPICC"'
+files_to_copy = [(['migrate-n', 'migrate-n-mpi'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['migrate-n', 'migrate-n-mpi']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "echo Q | migrate-n",
+    "echo Q | mpirun -np 1 migrate-n-mpi",
+]
+
+moduleclass = 'bio'

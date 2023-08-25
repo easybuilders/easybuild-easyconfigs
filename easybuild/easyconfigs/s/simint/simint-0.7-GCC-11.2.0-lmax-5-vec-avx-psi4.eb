@@ -1,0 +1,78 @@
+# For the various build options see here:
+# https://www.bennyp.org/research/simint/README.txt
+# lmax is set to 5 which is widely used it seems
+# vec is set to avx, which should work on most platforms
+# This might be changed to other values, if required
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'simint'
+version = '0.7'
+local_lmax = '5'
+# supported: {scalar, sse, avx, avxfma, micavx512}
+# scalar ONLY FOR USE WITH simint-scalar (and only useful for benchmarks), micavx512 experimental!
+local_vec = 'avx'
+
+# custom configuration, to be used as dependency for PSI4
+versionsuffix = '-lmax-%s-vec-%s-psi4' % (local_lmax, local_vec)
+
+homepage = 'https://www.bennyp.org/research/simint/'
+description = """Simint is a vectorized implementation of the Obara-Saika (OS) 
+method of calculating electron repulsion integrals. Speedup is gained by 
+vectorizing the primitive loop of the OS algorithm, with additional vectorization 
+and optimizations left to the compiler."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+
+source_urls = ['https://www.bennyp.org/research/simint/download/']
+sources = ['%(name)s-v%(version)s.tar.bz2']
+checksums = ['9851fa2323924d4732dd611b366219f4408c8561556abb5e4fa6dbb64a8f919c']
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('binutils', '2.37'),
+]
+
+local_common_configopts = '-DSIMINT_MAXAM=%s ' % local_lmax
+local_common_configopts += '-DSIMINT_VECTOR=%s ' % local_vec
+local_common_configopts += '-DENABLE_TESTS=ON '
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+# Run test to valicate accuracy.
+# List of all available tests. Running all of them will take quite some time!
+# local_tests = [
+#     'Al2Cl6.6-31gss.mol', 'anthracene.aug-cc-pvqz.mol', 'benzene.aug-cc-pvtz.mol', 'C4H4Cl2F2.dzp.mol',
+#     'ethane.roos-ano-tz.mol', 'R-camphor.roos-ano-tz.mol', 'water.sto-3g.mol', 'Al2Cl6.aug-cc-pvqz.mol',
+#     'anthracene.aug-cc-pvtz.mol', 'benzene.dzp.mol', 'C4H4Cl2F2.roos-ano-tz.mol', 'ethane.sto-3g.mol',
+#     'R-camphor.sto-3g.mol', 'Al2Cl6.aug-cc-pvtz.mol', 'anthracene.dzp.mol', 'benzene.roos-ano-tz.mol',
+#     'C4H4Cl2F2.sto-3g.mol', 'water.6-31gss.mol', 'Al2Cl6.dzp.mol', 'anthracene.roos-ano-tz.mol',
+#     'benzene.sto-3g.mol', 'ethane.6-31gss.mol', 'R-camphor.6-31gss.mol', 'water.aug-cc-pvqz.mol',
+#     'Al2Cl6.roos-ano-tz.mol', 'anthracene.sto-3g.mol', 'C4H4Cl2F2.6-31gss.mol', 'ethane.aug-cc-pvqz.mol',
+#     'R-camphor.aug-cc-pvqz.mol', 'water.aug-cc-pvtz.mol', 'Al2Cl6.sto-3g.mol', 'benzene.6-31gss.mol',
+#     'C4H4Cl2F2.aug-cc-pvqz.mol', 'ethane.aug-cc-pvtz.mol', 'R-camphor.aug-cc-pvtz.mol  water.dzp.mol',
+# ]
+
+# This runs fast but does not give any guarantee if the installation is numerically correct!
+local_tests = ['ethane.sto-3g.mol']
+
+# Run selected tests:
+sanity_check_commands = [
+    'cd %%(builddir)s/easybuild_obj/ && '
+    'OMP_NUM_THREADS=4 test/test_eri ../%%(name)s-v%%(version)s/test/dat/%s' % x for x in local_tests
+]
+
+postinstallcmds = [
+    "echo 'Please check results of the test(s) run in sanity check command manually to see if there are any errors'",
+]
+
+sanity_check_paths = {
+    'files': ['lib/libsimint.a', 'lib/libsimint.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'chem'

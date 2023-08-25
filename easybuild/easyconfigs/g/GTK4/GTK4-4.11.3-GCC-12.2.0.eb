@@ -1,0 +1,85 @@
+easyblock = 'Bundle'
+
+name = 'GTK4'
+version = '4.11.3'
+
+homepage = 'https://docs.gtk.org/gtk4/'
+description = """GTK+ is the primary library used to construct user interfaces in GNOME. It
+ provides all the user interface controls, or widgets, used in a common
+ graphical application. Its object-oriented API allows you to construct
+ user interfaces without dealing with the low-level details of drawing and
+ device interaction.
+"""
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+builddependencies = [
+    ('binutils', '2.39'),
+    ('Autotools', '20220317'),
+    ('GObject-Introspection', '1.74.0'),
+    ('gettext', '0.21.1'),
+    ('pkgconf', '1.9.3'),
+    ('cairo', '1.17.4'),
+    ('Perl', '5.36.0'),
+    ('Meson', '0.64.0'),
+    ('Ninja', '1.11.1'),
+]
+dependencies = [
+    ('ATK', '2.38.0'),
+    ('at-spi2-atk', '2.38.0'),
+    ('Gdk-Pixbuf', '2.42.10'),
+    ('Pango', '1.50.12'),
+    ('libepoxy', '1.5.10'),
+    ('X11', '20221110'),
+    ('FriBidi', '1.0.12'),
+    ('GST-plugins-bad', '1.22.5'),
+    ('Wayland', '1.22.0'),
+    ('PyGObject', '3.44.1'),
+]
+
+default_easyblock = 'ConfigureMake'
+
+default_component_specs = {
+    'sources': [SOURCELOWER_TAR_XZ],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('GTK', version, {
+        'easyblock': 'MesonNinja',
+        'source_urls': [FTPGNOME_SOURCE],
+        'configopts': "-Dintrospection=enabled -Dgtk_doc=false",
+        'patches': ['GTK4-4.11.3_g_set_str.patch'],
+        'checksums': [
+            '22b9b21a13b205d4f430b9d73a0d216f133047cf638a2563fcd9297a4b39eb00',
+            '96c114de353f2798ce57de9823c6d2eaa6b92175b49c3333d209dd3d3a0b7ce4'],  # GTK4-4.11.3_g_set_str.patch
+    }),
+    ('hicolor-icon-theme', '0.17', {
+        'source_urls': ['https://icon-theme.freedesktop.org/releases/'],
+        'checksums': ['317484352271d18cbbcfac3868eab798d67fff1b8402e740baa6ff41d588a9d8'],
+    }),
+    ('adwaita-icon-theme', '44.0', {
+        'preconfigopts': 'autoreconf -f -i && ',
+        'source_urls': ['https://ftp.gnome.org/pub/GNOME/sources/%(namelower)s/%(version_major)s'],
+        'patches': ['adwaita-icon-theme-44.0_disable-svg-conversion.patch'],
+        'checksums': [
+            '4889c5601bbfecd25d80ba342209d0a936dcf691ee56bd6eca4cde361f1a664c',
+            # adwaita-icon-theme-44.0_disable-svg-conversion.patch
+            'f70ad3d11d52e3104cf1548eccd161efc9448d41f9521c7ac4670228b19ca2b9'
+        ],
+    }),
+]
+
+postinstallcmds = ['gtk4-update-icon-cache']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['gtk4-demo', 'gtk4-demo-application', 'gtk4-icon-browser', 'gtk4-widget-factory',
+                                     'gtk4-builder-tool', 'gtk4-launch', 'gtk4-query-settings',
+                                     'gtk4-update-icon-cache', 'gtk4-widget-factory']] +
+             ['lib/libgtk-4.%s' % SHLIB_EXT],
+    'dirs': ['include/%s-%%(version_major)s.0/%s' % ('gtk', x) for x in ['gdk', 'gsk', 'gtk']] +
+            ['share/icons/hicolor', 'share/icons/Adwaita'],
+}
+
+
+moduleclass = 'vis'
