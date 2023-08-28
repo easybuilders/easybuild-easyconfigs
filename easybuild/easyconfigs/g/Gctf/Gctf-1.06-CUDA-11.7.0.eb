@@ -14,7 +14,7 @@ versionsuffix = '-CUDA-%(cudaver)s'
 homepage = 'https://www.mrc-lmb.cam.ac.uk/kzhang/'
 description = """Gctf is a tool for real-time CTF determination and correction."""
 
-toolchain = {'name': 'dummy', 'version': ''}
+toolchain = SYSTEM
 
 source_urls = ['https://www.mrc-lmb.cam.ac.uk/kzhang/Gctf/']
 sources = ['%(name)s_v%(version)s_and_examples.tar.gz']
@@ -29,22 +29,22 @@ builddependencies = [
     ('CUDA', '11.7.0', '', True),
 ]
 
-bin_sm_20 = "bin/%(name)s-v%(version)s_sm_20_cu8.0_x86_64"
-bin_sm_30 = "bin/%(name)s-v%(version)s_sm_30_cu8.0_x86_64"
+local_bin_sm_20 = "bin/%(name)s-v%(version)s_sm_20_cu8.0_x86_64"
+local_bin_sm_30 = "bin/%(name)s-v%(version)s_sm_30_cu8.0_x86_64"
 
 # Copy to installation folder
 install_cmd = "rm -rf %(installdir)s/*; mkdir %(installdir)s/bin;"
-install_cmd += "cp %(name)s_v%(version)s/{} %(installdir)s/bin;".format(bin_sm_20)
-install_cmd += "cp %(name)s_v%(version)s/{} %(installdir)s/bin;".format(bin_sm_30)
+install_cmd += "cp %(name)s_v%(version)s/{} %(installdir)s/bin;".format(local_bin_sm_20)
+install_cmd += "cp %(name)s_v%(version)s/{} %(installdir)s/bin;".format(local_bin_sm_30)
 
 # Set rpath for these binaries to link to correct CUDA.
 # Only needed for institutes who use rpath's instead of LD_LIBRARY_PATH
-install_cmd += "patchelf --set-rpath $EBROOTCUDA/lib64 %(installdir)s/{};".format(bin_sm_20)
-install_cmd += "patchelf --set-rpath $EBROOTCUDA/lib64 %(installdir)s/{}".format(bin_sm_30)
+install_cmd += "patchelf --set-rpath $EBROOTCUDA/lib64 %(installdir)s/{};".format(local_bin_sm_20)
+install_cmd += "patchelf --set-rpath $EBROOTCUDA/lib64 %(installdir)s/{}".format(local_bin_sm_30)
 
 sanity_check_paths = {
-    'files': ['%s' % bin_sm_20,
-              '%s' % bin_sm_30],
+    'files': ['%s' % local_bin_sm_20,
+              '%s' % local_bin_sm_30],
     'dirs': ['bin'],
 }
 
