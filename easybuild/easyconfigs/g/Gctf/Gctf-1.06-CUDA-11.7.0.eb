@@ -1,0 +1,51 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author:    Caspar van Leeuwen <caspar.vanleeuwen@surfsara.nl>
+# Institute: SURFsara
+##
+
+easyblock = 'PackedBinary'
+
+name = 'Gctf'
+version = '1.06'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://www.mrc-lmb.cam.ac.uk/kzhang/'
+description = """Gctf is a tool for real-time CTF determination and correction."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+source_urls = ['https://www.mrc-lmb.cam.ac.uk/kzhang/Gctf/']
+sources = ['%(name)s_v%(version)s_and_examples.tar.gz']
+
+checksums = ['bfb6305f36571f895402bb22a2e8c6c5c4f13e28d3354ff8fe101ec25b351d77']
+
+# Patchelf is only needed for institutes who use rpath's instead of LD_LIBRARY_PATH
+# We use CUDA as builddependency, so that it doesn't conflict with tools that use newer CUDA versions.
+# We then rely on the RPATH that we set in order to make sure the correct cuda is used at runtime
+builddependencies = [
+    ('patchelf','0.15.0', '', ('GCCcore', '11.3.0')),
+    ('CUDA', '11.7.0', '', True),
+]
+
+bin_sm_20 = "bin/%(name)s-v%(version)s_sm_20_cu8.0_x86_64"
+bin_sm_30 = "bin/%(name)s-v%(version)s_sm_30_cu8.0_x86_64"
+
+# Copy to installation folder
+install_cmd = "rm -rf %(installdir)s/*; mkdir %(installdir)s/bin;"
+install_cmd += "cp %(name)s_v%(version)s/{} %(installdir)s/bin;".format(bin_sm_20)
+install_cmd += "cp %(name)s_v%(version)s/{} %(installdir)s/bin;".format(bin_sm_30)
+
+# Set rpath for these binaries to link to correct CUDA.
+# Only needed for institutes who use rpath's instead of LD_LIBRARY_PATH
+install_cmd += "patchelf --set-rpath $EBROOTCUDA/lib64 %(installdir)s/{};".format(bin_sm_20)
+install_cmd += "patchelf --set-rpath $EBROOTCUDA/lib64 %(installdir)s/{}".format(bin_sm_30)
+
+sanity_check_paths = {
+    'files': ['%s' % bin_sm_20,
+              '%s' % bin_sm_30],
+    'dirs': ['bin'],
+}
+
+moduleclass = 'bio'
