@@ -1,0 +1,53 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'ConfigureMake'
+
+name = 'ioapi'
+versionsuffix = '-mpi'
+version = '3.2-20200828'
+local_cplmode = 'nocpl'
+#versionsuffix = '-%s' % _cplmode
+
+homepage = "https://www.cmascenter.org/ioapi/"
+description = """The Models-3/EDSS Input/Output Applications Programming Interface (I/O API) provides the
+ environmental model developer with an easy-to-learn, easy-to-use programming library for data storage and
+ access, available from both Fortran and C. The same routines can be used for both file storage (using netCDF
+ files) and model coupling (using PVM mailboxes). It is the standard data access library for both the
+ NCSC/CMAS's EDSS project and EPA's Models-3, CMAQ, and SMOKE, as well as various other atmospheric and
+ hydrological modeling systems."""
+
+toolchain = {'name': 'iompi', 'version': '2020a'}
+toolchainopts = {'pic': True, 'usempi': True}
+source_urls = ['https://github.com/cjcoats/ioapi-3.2/archive/']
+sources = ['20200828.tar.gz']
+checksums = ['574e8f94e0ee501207132cb7fe794cd3', #20200828.tar.gz,
+             '5febbfb32b04256c97de9f12a134ec8f', #ioapi-3.2-2020.08.28.patch
+	     ]
+patches = ['%(namelower)s-%(version)s.patch']
+dependencies = [
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.2'),
+]
+
+skipsteps = ['configure']
+
+local_makevars = "BIN=Linux2_x86_64ifort CPLMODE=%s " % local_cplmode
+local_makevars += "INSTALL=%(installdir)s LIBINST=%(installdir)s/lib BININST=%(installdir)s/bin"
+
+prebuildopts = "cp Makefile.template Makefile && touch m3tools/Makefile ioapi/Makefile && "
+prebuildopts += "make configure %s && " % local_makevars
+buildopts = " %s " % local_makevars
+
+installopts = " %s " % local_makevars
+
+postinstallcmds = [
+    "mkdir %(installdir)s/include && "
+    "cp %(builddir)s/%(name)s-%(version)s/ioapi/fixed_src/*.EXT %(installdir)s/include/. && "
+    "cp %(builddir)s/%(name)s-%(version)s/ioapi/*.h %(installdir)s/include/."
+]
+
+sanity_check_paths = {
+    'files': ['lib/libioapi.a'] + ['bin/%s' % x for x in ['airs2m3', 'gregdate', 'latlon', 'm3merge', 'projtool']],
+    'dirs': [],
+}
+
+moduleclass = 'tools'

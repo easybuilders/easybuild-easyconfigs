@@ -1,0 +1,195 @@
+Patch to use FLEXIBLAS instead of the LAPACK and BLAS reference libraries.
+
+@Author: Oliver Stueker <oliver.stueker@ace-net.ca>
+@Date:   Fri 25 Aug 2023
+
+diff -ur geopsypack-src-3.4.2.orig/ArrayCore/configure-3.3 geopsypack-src-3.4.2/ArrayCore/configure-3.3
+--- geopsypack-src-3.4.2.orig/ArrayCore/configure-3.3	2021-07-30 11:20:19.000000000 -0230
++++ geopsypack-src-3.4.2/ArrayCore/configure-3.3	2023-08-25 11:17:20.193666067 -0230
+@@ -550,16 +550,16 @@
+ echo "* Dependency lib names [platform dependent]..."
+ case "$PLATFORM" in
+   "LINUX")
+-    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -llapack -lblas -lQGpCoreStat "
++    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -lflexiblas -lQGpCoreStat "
+   ;;
+   "SUNOS")
+-    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -llapack -lblas -lQGpCoreStat "
++    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -lflexiblas -lQGpCoreStat "
+   ;;
+   "MINGW")
+-    LIBS="-lQGpCoreTools2 -lQGpCoreMath1 -lGeopsyCore4 -lQGpCoreWave2 -lDinverCore1 -lDinverDCCore2 -lQGpCompatibility1 -llapack -lblas -lQGpCoreStat1 "
++    LIBS="-lQGpCoreTools2 -lQGpCoreMath1 -lGeopsyCore4 -lQGpCoreWave2 -lDinverCore1 -lDinverDCCore2 -lQGpCompatibility1 -lflexiblas -lQGpCoreStat1 "
+   ;;
+   "MAC")
+-    LIBS="-framework QGpCoreTools -framework QGpCoreMath -framework GeopsyCore -framework QGpCoreWave -framework DinverCore -framework DinverDCCore -framework QGpCompatibility -llapack -lblas -framework QGpCoreStat "
++    LIBS="-framework QGpCoreTools -framework QGpCoreMath -framework GeopsyCore -framework QGpCoreWave -framework DinverCore -framework DinverDCCore -framework QGpCompatibility -lflexiblas -framework QGpCoreStat "
+   ;;
+ esac
+ 
+@@ -568,7 +568,7 @@
+ ###############################################################
+ echo "* Dependency lib include paths..."
+ cd $BASE_SOURCE_DIR
+-for LLIB in -lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -llapack -lblas -lQGpCoreStat; do
++for LLIB in -lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -lflexiblas -lQGpCoreStat; do
+   LIB_BASENAME=$(echo $LLIB | sed "s/^-l//g")
+   LIB_PATH_FOUND="no"
+   for LIB_PATH in $(find . -name "${LIB_BASENAME}" | sed "s/^\.\///"); do
+diff -ur geopsypack-src-3.4.2.orig/ArrayCore/configure-3.4 geopsypack-src-3.4.2/ArrayCore/configure-3.4
+--- geopsypack-src-3.4.2.orig/ArrayCore/configure-3.4	2021-07-30 11:20:19.000000000 -0230
++++ geopsypack-src-3.4.2/ArrayCore/configure-3.4	2023-08-25 11:17:20.180332620 -0230
+@@ -557,13 +557,13 @@
+ echo "* Dependency lib names [platform dependent]..."
+ case "$PLATFORM" in
+   "LINUX" | "SUNOS")
+-    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -llapack -lblas -lQGpCoreStat "
++    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -lflexiblas -lQGpCoreStat "
+   ;;
+   "MINGW")
+-    LIBS="-lQGpCoreTools2 -lQGpCoreMath1 -lGeopsyCore4 -lQGpCoreWave2 -lDinverCore1 -lDinverDCCore2 -lQGpCompatibility1 -llapack -lblas -lQGpCoreStat1 "
++    LIBS="-lQGpCoreTools2 -lQGpCoreMath1 -lGeopsyCore4 -lQGpCoreWave2 -lDinverCore1 -lDinverDCCore2 -lQGpCompatibility1 -lflexiblas -lQGpCoreStat1 "
+   ;;
+   "MAC")
+-    LIBS="-framework QGpCoreTools -framework QGpCoreMath -framework GeopsyCore -framework QGpCoreWave -framework DinverCore -framework DinverDCCore -framework QGpCompatibility -llapack -lblas -framework QGpCoreStat "
++    LIBS="-framework QGpCoreTools -framework QGpCoreMath -framework GeopsyCore -framework QGpCoreWave -framework DinverCore -framework DinverDCCore -framework QGpCompatibility -lflexiblas -framework QGpCoreStat "
+   ;;
+ esac
+ 
+@@ -572,7 +572,7 @@
+ ###############################################################
+ echo "* Dependency lib include paths..."
+ cd $BASE_SOURCE_DIR
+-for LLIB in -lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -llapack -lblas -lQGpCoreStat; do
++for LLIB in -lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -lflexiblas -lQGpCoreStat; do
+   LIB_BASENAME=$(echo $LLIB | sed "s/^-l//g")
+   LIB_PATH_FOUND="no"
+   for LIB_PATH in $(find . -name "${LIB_BASENAME}" | sed "s/^\.\///"); do
+diff -ur geopsypack-src-3.4.2.orig/ArrayCore/configure-testing geopsypack-src-3.4.2/ArrayCore/configure-testing
+--- geopsypack-src-3.4.2.orig/ArrayCore/configure-testing	2021-07-30 11:20:19.000000000 -0230
++++ geopsypack-src-3.4.2/ArrayCore/configure-testing	2023-08-25 11:17:20.165860966 -0230
+@@ -550,16 +550,16 @@
+ echo "* Dependency lib names [platform dependent]..."
+ case "$PLATFORM" in
+   "LINUX")
+-    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -llapack -lblas -lQGpCoreStat "
++    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -lflexiblas -lQGpCoreStat "
+   ;;
+   "SUNOS")
+-    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -llapack -lblas -lQGpCoreStat "
++    LIBS="-lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -lflexiblas -lQGpCoreStat "
+   ;;
+   "MINGW")
+-    LIBS="-lQGpCoreTools2 -lQGpCoreMath1 -lGeopsyCore4 -lQGpCoreWave2 -lDinverCore1 -lDinverDCCore2 -lQGpCompatibility1 -llapack -lblas -lQGpCoreStat1 "
++    LIBS="-lQGpCoreTools2 -lQGpCoreMath1 -lGeopsyCore4 -lQGpCoreWave2 -lDinverCore1 -lDinverDCCore2 -lQGpCompatibility1 -lflexiblas -lQGpCoreStat1 "
+   ;;
+   "MAC")
+-    LIBS="-framework QGpCoreTools -framework QGpCoreMath -framework GeopsyCore -framework QGpCoreWave -framework DinverCore -framework DinverDCCore -framework QGpCompatibility -llapack -lblas -framework QGpCoreStat "
++    LIBS="-framework QGpCoreTools -framework QGpCoreMath -framework GeopsyCore -framework QGpCoreWave -framework DinverCore -framework DinverDCCore -framework QGpCompatibility -lflexiblas -framework QGpCoreStat "
+   ;;
+ esac
+ 
+@@ -568,7 +568,7 @@
+ ###############################################################
+ echo "* Dependency lib include paths..."
+ cd $BASE_SOURCE_DIR
+-for LLIB in -lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -llapack -lblas -lQGpCoreStat; do
++for LLIB in -lQGpCoreTools -lQGpCoreMath -lGeopsyCore -lQGpCoreWave -lDinverCore -lDinverDCCore -lQGpCompatibility -lflexiblas -lQGpCoreStat; do
+   LIB_BASENAME=$(echo $LLIB | sed "s/^-l//g")
+   LIB_PATH_FOUND="no"
+   for LIB_PATH in $(find . -name "${LIB_BASENAME}" | sed "s/^\.\///"); do
+diff -ur geopsypack-src-3.4.2.orig/QGpCoreMath/configure-3.3 geopsypack-src-3.4.2/QGpCoreMath/configure-3.3
+--- geopsypack-src-3.4.2.orig/QGpCoreMath/configure-3.3	2021-07-30 11:20:19.000000000 -0230
++++ geopsypack-src-3.4.2/QGpCoreMath/configure-3.3	2023-08-25 11:20:20.549300491 -0230
+@@ -550,16 +550,16 @@
+ echo "* Dependency lib names [platform dependent]..."
+ case "$PLATFORM" in
+   "LINUX")
+-    LIBS="-lQGpCoreTools -llapack -lblas "
++    LIBS="-lQGpCoreTools -lflexiblas "
+   ;;
+   "SUNOS")
+-    LIBS="-lQGpCoreTools -llapack -lblas "
++    LIBS="-lQGpCoreTools -lflexiblas "
+   ;;
+   "MINGW")
+-    LIBS="-lQGpCoreTools2 -llapack -lblas "
++    LIBS="-lQGpCoreTools2 -lflexiblas "
+   ;;
+   "MAC")
+-    LIBS="-framework QGpCoreTools -llapack -lblas "
++    LIBS="-framework QGpCoreTools -lflexiblas "
+   ;;
+ esac
+ 
+@@ -568,7 +568,7 @@
+ ###############################################################
+ echo "* Dependency lib include paths..."
+ cd $BASE_SOURCE_DIR
+-for LLIB in -lQGpCoreTools -llapack -lblas; do
++for LLIB in -lQGpCoreTools -lflexiblas; do
+   LIB_BASENAME=$(echo $LLIB | sed "s/^-l//g")
+   LIB_PATH_FOUND="no"
+   for LIB_PATH in $(find . -name "${LIB_BASENAME}" | sed "s/^\.\///"); do
+diff -ur geopsypack-src-3.4.2.orig/QGpCoreMath/configure-3.4 geopsypack-src-3.4.2/QGpCoreMath/configure-3.4
+--- geopsypack-src-3.4.2.orig/QGpCoreMath/configure-3.4	2021-07-30 11:20:19.000000000 -0230
++++ geopsypack-src-3.4.2/QGpCoreMath/configure-3.4	2023-08-25 11:20:20.536307849 -0230
+@@ -557,13 +557,13 @@
+ echo "* Dependency lib names [platform dependent]..."
+ case "$PLATFORM" in
+   "LINUX" | "SUNOS")
+-    LIBS="-lQGpCoreTools -llapack -lblas "
++    LIBS="-lQGpCoreTools -lflexiblas "
+   ;;
+   "MINGW")
+-    LIBS="-lQGpCoreTools2 -llapack -lblas "
++    LIBS="-lQGpCoreTools2 -lflexiblas "
+   ;;
+   "MAC")
+-    LIBS="-framework QGpCoreTools -llapack -lblas "
++    LIBS="-framework QGpCoreTools -lflexiblas "
+   ;;
+ esac
+ 
+@@ -572,7 +572,7 @@
+ ###############################################################
+ echo "* Dependency lib include paths..."
+ cd $BASE_SOURCE_DIR
+-for LLIB in -lQGpCoreTools -llapack -lblas; do
++for LLIB in -lQGpCoreTools -lflexiblas; do
+   LIB_BASENAME=$(echo $LLIB | sed "s/^-l//g")
+   LIB_PATH_FOUND="no"
+   for LIB_PATH in $(find . -name "${LIB_BASENAME}" | sed "s/^\.\///"); do
+diff -ur geopsypack-src-3.4.2.orig/QGpCoreMath/configure-testing geopsypack-src-3.4.2/QGpCoreMath/configure-testing
+--- geopsypack-src-3.4.2.orig/QGpCoreMath/configure-testing	2021-07-30 11:20:19.000000000 -0230
++++ geopsypack-src-3.4.2/QGpCoreMath/configure-testing	2023-08-25 11:20:20.523591293 -0230
+@@ -550,16 +550,16 @@
+ echo "* Dependency lib names [platform dependent]..."
+ case "$PLATFORM" in
+   "LINUX")
+-    LIBS="-lQGpCoreTools -llapack -lblas "
++    LIBS="-lQGpCoreTools -lflexiblas "
+   ;;
+   "SUNOS")
+-    LIBS="-lQGpCoreTools -llapack -lblas "
++    LIBS="-lQGpCoreTools -lflexiblas "
+   ;;
+   "MINGW")
+-    LIBS="-lQGpCoreTools2 -llapack -lblas "
++    LIBS="-lQGpCoreTools2 -lflexiblas "
+   ;;
+   "MAC")
+-    LIBS="-framework QGpCoreTools -llapack -lblas "
++    LIBS="-framework QGpCoreTools -lflexiblas "
+   ;;
+ esac
+ 
+@@ -568,7 +568,7 @@
+ ###############################################################
+ echo "* Dependency lib include paths..."
+ cd $BASE_SOURCE_DIR
+-for LLIB in -lQGpCoreTools -llapack -lblas; do
++for LLIB in -lQGpCoreTools -lflexiblas; do
+   LIB_BASENAME=$(echo $LLIB | sed "s/^-l//g")
+   LIB_PATH_FOUND="no"
+   for LIB_PATH in $(find . -name "${LIB_BASENAME}" | sed "s/^\.\///"); do
