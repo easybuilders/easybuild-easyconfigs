@@ -1,0 +1,50 @@
+easyblock = 'Bundle'
+
+name = 'LevelDB'
+version = '1.22'
+
+homepage = 'https://github.com/google/leveldb'
+description = """LevelDB is a fast key-value storage library written at Google that provides an
+ordered mapping from string keys to string values."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('LevelDB', version, {
+        'source_urls': ['https://github.com/google/leveldb/archive/'],
+        'sources': ['%(version)s.tar.gz'],
+        'configopts': "-DBUILD_SHARED_LIBS=ON -DLEVELDB_BUILD_BENCHMARKS=OFF ",
+    }),
+    ('leveldb', '0.201', {
+        'easyblock': 'PythonPackage',
+        'source_urls': [PYPI_SOURCE],
+        'sources': [SOURCE_TAR_GZ],
+        'use_pip': True,
+        'download_dep_fail': True,
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['include/leveldb/cache.h', 'include/leveldb/table.h',
+              'lib/libleveldb.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'devel'
