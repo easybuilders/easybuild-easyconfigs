@@ -1,0 +1,95 @@
+name = 'ANSYS'
+version = '2023R2'
+local_sfx = 'v232'
+
+homepage = 'http://www.ansys.com'
+description = """ANSYS simulation software enables organizations to confidently predict 
+    how their products will operate in the real world. We believe that every product is 
+    a promise of something greater."""
+
+toolchain = SYSTEM
+
+# create tar ball from the installation iso files
+sources = ['ANSYS-%(version)s.tar','ANSYS_2023R2.01_LINX64.tgz']
+checksums = ['7c5aaca5fa0113ccb32d1b7b6cb1b97b5562623e71d8a529f833ab904741a5a7',
+             '440702124fe86125de3bf5f4ff8ad72f41915a5f2295533c2c08fceaafd0541e']
+
+extract_sources = True
+
+postinstallcmds = [
+  # Avoid applying SP2 causes workbench mechanical crash with msgs:
+  # Error! Unable to create model. Tcp transport error.
+  # Warning! Unable to clean addins in Mechanical.  Connection refused
+  "cd %(builddir)s;./INSTALL -install_dir %(installdir)s -silent",
+  # Replace setmwruntime with one that works (create patchfile for this later)
+  "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYS/patch/2023R2;\
+   mv %(installdir)s/v232/commonfiles/MainWin/linx64/mw/setmwruntime{,-orig};\
+   cp $a/setmwruntime %(installdir)s/v232/commonfiles/MainWin/linx64/mw/setmwruntime;\
+   chmod 755 %(installdir)s/v232/commonfiles/MainWin/linx64/mw/setmwruntime;",
+  # Set same perms on all directories
+  "find %(installdir)s -type d -exec chmod 755 {} \;",
+  # Set same perms on all shared libraries to avoid warning in log file
+  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} \;",
+  # Rename some libs as these maybe older than system equivalents and missing new symbols
+  "find %(installdir)s \( -type f -o -type l \) -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgcc_s.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libfreetype*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so*' -exec mv {} {}.bak \;",
+  "find %(installdir)s \( -type f -o -type l \) -name 'libgfortran.so.3*bak' -print0 | while IFS= \
+   read -r -d $'\\0' file; do echo \"Removing bak from $file\"; mv \"$file\" \"${file%.bak}\"; done;",
+  # Find all non-binary files containing  [:"]/usr/lib or [:"]/lib on one line and remove them from the paths
+  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s); do echo Modifying file $f; \
+   sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+  # Run setrpaths.sh in all directories
+  "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s",
+  # Run setrpaths.sh for any_interpreter
+  "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
+   /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
+  # Avoid warning starting workbench mechanical: sh: domainname: command not found
+  "cd %(installdir)s/v232/Tools/mono/Linux64/bin;\
+   ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
+  # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh'
+  "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
+   xargs -0 grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   sed -i 's|\/bin\/sh|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
+  # Replace '/bin/bash' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash'
+  "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
+   xargs -0 grep -riIlZ '/bin/bash' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   sed -i 's|\/bin\/bash|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/bash|g' \"$file\"; done;",
+  # Remove /sbin/ from both of the /sbin/lspci entries inside libApipWrapper.so
+  "find %(installdir)s -type f ! -size 0 -name 'libApipWrapper.so' -print0 | xargs -0 \
+   grep -rilZ '/sbin/lspci' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
+   perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; \
+   perl -0777 -pe 's/\/sbin\//substr q{}.\"\\0\"x length$&,0,length$&/e or die \"pattern not found\"' -i \"$file\"; done;",
+  # Avoid warning when starting workbench: Unit[s] is not valid for quantity Time
+  "cd %(installdir)s/v232/tp/CUEUnits/linx64/lib;\
+   mv libCUEUnits.so libCUEUnits.so-orig;\
+   ln -s ../../../../aisol/lib/linx64/libCUEUnits.so libCUEUnits.so;",
+  # Avoid cfx-pre warning: libjpeg.so.62: no version information available
+  "cd %(installdir)s/v232/tp/qt/5.9.6/linx64/lib;\
+   mv libjpeg.so.62.0.0 libjpeg.so.62.0.0-orig;\
+   mv libjpeg.so.62 libjpeg.so.62-orig;\
+   ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/usr/lib/libjpeg.so.62 libjpeg.so.62;"
+]
+
+modextravars = {
+    'ANS_FLEXLM_DISABLE_DEFLICPATH': '1',
+}
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("__ANSYS_LICENSE_FILE", "ansys")
+if (not found) then
+	local error_message = [[
+We did not find a suitable license for ANSYS. If you have access to one, you can create the file $HOME/.licenses/ansys.lic with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it. For more information about configuring an ANSYS license, please see https://docs.computecanada.ca/wiki/ANSYS 
+
+Nous n'avons pas trouve de licence utilisable pour ANSYS. Si vous avez acces a une licence de ANSYS, vous pouvez creer le fichier $HOME/.licenses/ansys.lic avec l'information de la licence. Si vous   pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer. Pour plus d'information sur la facon de configurer une licence pour ANSYS, veuillez consulter la page https://docs.computecanada.ca/wiki/ANSYS/fr
+	]]
+	LmodError(error_message)
+elseif (path) then
+	-- load the license file which should contain Lua commands to set the license path
+	assert(loadfile(path))()
+end
+"""
+
+moduleclass = 'tools'
