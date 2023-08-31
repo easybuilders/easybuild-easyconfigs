@@ -30,6 +30,8 @@ dependencies = [
     ('snakemake', '7.32.3'),
     ('pyfaidx', '0.7.2.1'),
     ('Greenlet', '2.0.2'),
+    # DRMAA is not needed but it can be used on clusters with Slurm
+    # ('drmaa-python', '0.7.9', '-slurm'),
 ]
 
 use_pip = True
@@ -38,7 +40,7 @@ sanity_pip_check = True
 local_old_line = 'from scipy._build_utils import numpy_nodepr_api'
 local_new_line = """numpy_nodepr_api = dict(define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_9_API_VERSION")])"""
 # hardcoded value, used to be imported from scipy._build_utils (which is no longer available since scipy 1.10)'
-local_code_patch_cmd = f"sed -i 's/{local_old_line}/{local_new_line}/g' setup.py"
+local_code_patch_cmd = "sed -i 's/%s/%s/g' setup.py" % (local_old_line, local_new_line)
 # drmaa-python is not necessary and it would require slurm-drmaa while Slurm is not available on all clusters
 local_dep_patch_cmd = "sed -i '/^drmaa$/d' requirements.txt"
 
@@ -72,7 +74,7 @@ exts_list = [
         'checksums': ['75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782'],
     }),
     (name, version, {
-        'preinstallopts': f"{local_code_patch_cmd} && {local_dep_patch_cmd} && ",
+        'preinstallopts': "%s && %s && " % (local_code_patch_cmd, local_dep_patch_cmd),
         'modulename': name,
         'checksums': ['6d8844bacacc776214cf35cb148fa638c029b2972751d04fc1f7d0d8f3e961c2'],
     }),
