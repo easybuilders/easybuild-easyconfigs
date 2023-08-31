@@ -1,0 +1,41 @@
+easyblock = 'Conda'
+
+name = 'FSL'
+version = '6.0.7.2'
+
+homepage = 'https://www.fmrib.ox.ac.uk/fsl/'
+description = """FSL is a comprehensive library of analysis tools for FMRI, MRI and DTI brain imaging data."""
+
+source_urls = ['https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/']
+sources = ['fsl-%(version)s_linux-64.yml']
+checksums = ['8aa113063abe4660a2a4aa795f24084c3e861fe10ecdacb0907fbd97faf589df']
+
+toolchain = SYSTEM
+
+builddependencies = [('Miniconda3', '23.5.2-0')]
+
+environment_file = 'fsl-%(version)s_linux-64.yml'
+
+sanity_check_commands = ['qiime info']
+
+sanity_check_paths = {
+    'files': ['bin/flirt', 'bin/fsl', 'bin/fslpython', 'bin/imcp', 'lib/libfsl-surface.%s' % SHLIB_EXT],
+    'dirs': ['include/fslsurface', 'lib/python3.11/site-packages'],
+}
+
+sanity_check_commands = [
+    "source $FSLDIR/etc/fslconf/fsl.sh && fslpython --help",
+    "python -c 'import fsl'",
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python3.11/site-packages',
+}
+
+modextravars = {
+    'FSLDIR': '%(installdir)s',
+}
+
+modloadmsg = "To start using FSL, first run 'source $FSLDIR/etc/fslconf/fsl.sh'"
+
+moduleclass = 'bio'
