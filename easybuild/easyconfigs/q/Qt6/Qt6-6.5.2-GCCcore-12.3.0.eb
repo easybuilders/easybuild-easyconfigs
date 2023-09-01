@@ -21,16 +21,12 @@ patches = [
     # QT_CFLAGS_ARCH_HASWELL in cmake/QtCompilerOptimization.cmake should be patched?
     # 'Qt5-5.13.1_fix-avx2.patch',
     # 'Qt5-5.13.1_fix-qmake-libdir.patch',
-    'Qt6-6.5.2_fix_OF-Gentoo.patch',
     # 'Qt5-5.15.2_fix-qtwebengine-breakpad-glibc-2.34.patch',
+    'Qt6-6.5.2_fix_OF-Gentoo.patch',
 ]
 checksums = [
     {'qt-everywhere-src-6.5.2.tar.xz': 'cde57be663d0f875759797298bdc37a936d517c39f2013e4e6ece5e12edeed12'},
-    # {'Qt5-5.13.1_fix-avx2.patch': '6f46005f056bf9e6ff3e5d012a874d18ee03b33e685941f2979c970be91a9dbc'},
-    # {'Qt5-5.13.1_fix-qmake-libdir.patch': '511ca9c0599ceb1989f73d8ceea9199c041512d3a26ee8c5fd870ead2c10cb63'},
     {'Qt6-6.5.2_fix_OF-Gentoo.patch': '908f7dae7685c76fe651e52391e46a2337a3cd32dee70a5da54b154da7d4917c'},
-    # {'Qt5-5.15.2_fix-qtwebengine-breakpad-glibc-2.34.patch':
-    #  '74590de2b9e32f2c88123cb096c4f5c3001b00710aad096a4d16444a8e9eb991'},
 ]
 
 builddependencies = [
@@ -42,7 +38,6 @@ builddependencies = [
     ('Bison', '3.8.2'),
     ('flex', '2.6.4'),
     ('gperf', '3.1'),
-    ('Python', '3.11.3'),
     ('re2c', '3.1'),
 ]
 
@@ -61,7 +56,9 @@ dependencies = [
     ('FFmpeg', '6.0'),
     ('X11', '20230603'),
     ('fontconfig', '2.14.2'),
-    ('html5lib', '1.1'),  # WebEngine
+    ('zlib', '1.2.13'),
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),  # WebEngine
     ('freetype', '2.13.0'),  # WebEngine
     ('DBus', '1.15.4'),
     ('libevent', '2.1.12'),  # WebEngine
@@ -72,34 +69,23 @@ dependencies = [
     ('OpenSSL', '1.1', '', SYSTEM),
     ('ICU', '73.2'),  # WebEngine, optional
     ('nodejs', '18.17.1'),  # WebEngine, required
-    # ('gRPC', '1.52.2'),  # Qt needs protobuf <=21.x, still error
-    # ('bzip2', '1.0.8'),
-    # ('zlib', '1.2.13'),
-    # ('libopus', '1.4'), 
-    # ('LittleCMS', '2.15'), 
+    # ('gRPC', '1.52.2'),  # WebEngine needs older Abseil/gRPC/protobuf
 ]
 
-# Error when trying native gRPC
-# In file included from gen/extensions/browser/browser_sources_jumbo_7.cc:13:
-# ./../../../../../../qt-everywhere-src-6.5.2/qtwebengine/src/3rdparty/chromium/extensions/browser/api/web_request/form_data_parser.cc: In member function virtual bool extensions::FormDataParserUrlEncoded::SetSource(base::StringPiece):  # noqa: E501
-# ./../../../../../../qt-everywhere-src-6.5.2/qtwebengine/src/3rdparty/chromium/extensions/browser/api/web_request/form_data_parser.cc:429:11: error: using StringPiece = class absl::string_view {aka class absl::string_view} has no member named set  # noqa: E501
-#   429 |   source_.set(source.data(), source.size());
-#       |           ^~~
-# ./../../../../../../qt-everywhere-src-6.5.2/qtwebengine/src/3rdparty/chromium/extensions/browser/api/web_request/form_data_parser.cc: In member function virtual bool extensions::FormDataParserMultipart::SetSource(base::StringPiece):  # noqa: E501
-# ./../../../../../../qt-everywhere-src-6.5.2/qtwebengine/src/3rdparty/chromium/extensions/browser/api/web_request/form_data_parser.cc:573:11: error: using StringPiece = class absl::string_view {aka class absl::string_view} has no member named set  # noqa: E501
-#   573 |   source_.set(source.data(), source.size());
-#       |           ^~~
-
 preconfigopts = 'sed -i "s/MultiMedia/Multimedia/g" ../qt-everywhere-src-%(version)s/qtcharts/CMakeLists.txt &&'  # Typo
+preconfigopts += 'sed -i "23i set(Python3_ROOT_DIR \\$ENV{EBROOTPYTHON})" ' \
+                 '../qt-everywhere-src-6.5.2/qtwebengine/src/gn/CMakeLists.txt &&'
+
 configopts = '-Wno-dev '
 configopts += '-DFEATURE_qtpdf_build=OFF '  # Requires CUPS
+configopts += '-DQT_AVOID_CMAKE_ARCHIVING_API=ON '
+configopts += '-DPython3_ROOT_DIR=$EBROOTPYTHON '
 configopts += '-DBUILD_qtwayland=OFF '  # Does not work on CentOS 7
-# configopts += '-DBUILD_qtgamepad=OFF '  # Gamepad does not work on CentOS 7, removed from Qt6.0.0 and not added back
+# Removed from Qt6.0.0 by may be added back in the future
+# configopts += '-DBUILD_qtgamepad=OFF '  # Does not work on CentOS 7
 
-# make sure QtWebEngine component is being built & installed
-# check_qtwebengine = True
 sanity_check_paths = {
-    'files': ['bin/qmake6', 'lib/libQt6Core.so', 'lib/libQt6WebEngineCore.so'],
+    'files': ['bin/qmake6', 'lib/libQt6Core.%s' % SHLIB_EXT, 'lib/libQt6WebEngineCore.%s' % SHLIB_EXT],
     'dirs': ['include/QtCore', 'include/QtWebEngineCore'],
 }
 
