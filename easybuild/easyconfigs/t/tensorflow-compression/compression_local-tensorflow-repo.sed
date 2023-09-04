@@ -1,3 +1,5 @@
+# Convert http repo for tensorflow to local repo
+# Copied from jax/jaxlib_local-tensorflow-repo.sed
 /^http_archive(/{
     :a;N;/\n)/!ba;
     /org_tensorflow/{
