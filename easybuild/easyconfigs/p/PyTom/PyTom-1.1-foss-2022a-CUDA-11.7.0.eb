@@ -1,0 +1,131 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/09
+
+easyblock = 'PythonPackage'
+name = 'PyTom'
+version = '1.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pytom.sites.uu.nl'
+description = """
+PyTom is a software package for the analysis of volumetric data obtained by     
+cryo electron tomography (cryo-ET). It covers a complete pipeline of processing 
+steps for tomogram reconstruction, localization of macromolecular complexes in 
+tomograms, fine alignment of subtomograms extracted at these locations, and    
+their classification.
+
+PyTom is mostly written in Python making it fairly easy to add new functionality
+as well as to customize existing methods for specific purposes. The package is  
+developed in the Förster lab in the Structural Biochemistry group at Utrecht    
+University. PyTom is an open source project and we highly encourage developers'
+contributions.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True, 'cstd': 'gnu++17', 'opt': False}
+# opt False: -O3 causes segfault at Python module import. 
+use_pip = True
+
+github_account = 'SBC-Utrecht'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(version)s.tar.gz']
+patches = [
+    'PyTom-%(version)s_fix_version.patch',
+    'PyTom-%(version)s_test_paths.patch',       # look for test data in _spdir/pytom/...
+    'PyTom-1.1_disable_external_build.patch',   # do not build sh_alignment, mpi4py, and nfft (dep.)
+    'PyTom-1.1_fix_dependencies.patch',         # remove requirement "boost" (https://pypi.org/project/boost/)
+    'PyTom-1.1_fix_wrappers.patch',             # adapt path to LICENCE.txt and (i)python
+    'PyTom-1.0b_fix_cupy_fftpack.patch',        # use cupyx.scipy.fft, and not cupyx.scipy.fftpack.fft
+]
+checksums = [
+    {'1.1.tar.gz': 'd993770993d61228c6388b2e6445da4322148d45e9f5b8ff72ca8667896d93b6'},
+    {'PyTom-1.1_fix_version.patch': 'dcf3d76f2dd274eede89c7b23a1d746097eeebc7b8f5b05f033bbc8fc8b7e375'},
+    {'PyTom-1.1_test_paths.patch': '1726c6428d150fafd5dd5c3f4ede4ee9a7445dc1e6f0181f875f3215cd40bac7'},
+    {'PyTom-1.1_disable_external_build.patch': 'abcec4dc401912e9f6cb6e33a166fb75a8b074fee0e09bcff529441eb1d7b97e'},
+    {'PyTom-1.1_fix_dependencies.patch': 'b61d3a6c1c4bb09a0b099fb9d40815fdba1cd7f3fa93317e21da810bdb78a8a7'},
+    {'PyTom-1.1_fix_wrappers.patch': '56e9fdc18887d779c09d1b0d678cef13f0a13ae4e2063a4ade1a588bc35304f4'},
+    {'PyTom-1.0b_fix_cupy_fftpack.patch': '5e7c19f64bdbf6880a0881cc66597709afb507222a9b24882b990599322691ae'},
+]
+
+unpack_options = '--strip-components=1'
+
+examples = '%(installdir)s/examples'
+
+builddependencies = [
+    ('SWIG', '4.0.2'),
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python',  '3.10.4'),
+    ('IPython', '8.5.0'),
+    ('NFFT', '3.5.3'),
+    ('lxml', '4.9.1'),
+    # filt_bspline tests fail -> keep using voltools (0.3.2) distributed with PyTom
+    # ('voltools', '0.6.0', versionsuffix),  
+    ('matplotlib', '3.5.2'),
+    ('PyQt5', '5.15.5'),
+    ('mrcfile', '1.4.3'),
+    ('scikit-image', '0.19.3'),
+    ('PyQtGraph', '0.13.3'),
+    ('Boost.Python', '1.79.0'),
+    ('numba', '0.56.4', versionsuffix),
+    ('tqdm', '4.64.0'),
+    ('CuPy', '12.1.0', versionsuffix),
+    # optionial
+    # ('MotionCor2', '1.6.4'),
+    # ('IMOD', '4.12.17', versionsuffix),
+
+]
+
+sanity_pip_check = True
+
+_exp_cflags = 'export CFLAGS="$CFLAGS -pedantic -fpermissive"  &&'
+_exp_cflags += 'export GCCSWIGFLAGS="$CFLAGS -c -w  " &&'
+_exp_cflags += 'export CFLAGS="$CFLAGS -fthread-jumps -falign-functions" &&'
+
+_del_unused_sources = "rm -rf pytom/external/src/nfft-3.1.3/&& "
+_del_unused_sources += "rm -rf pytom/external/lib/python3.7/site-packages/mpi4py && "
+_del_unused_sources += "rm -rf ./pytom/external/{share,include}/nfft* && "
+
+preinstallopts = _del_unused_sources + _exp_cflags
+
+_spdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages'
+
+
+_link_to_bin = [
+    # any script containing "ScriptOption" located below _spdir/pytom but not in "tutorials"
+    'reconstruction/alignmentOptimization.py', 'convert/ccp42em.py', 'convert/ccp42mrc.py', 'convert/em2ccp4.py',
+    'convert/em2gui.py', 'convert/em2mrc.py', 'localization/getSubtoms.py', 'alignment/GFRMAlignment.py',
+    'alignment/GWienerFilterAlignment.py', 'convert/mdoc2meta.py', 'simulation/membrane.py', 'convert/mmCIF2em.py',
+    'convert/mrc2ccp4.py', 'convert/mrc2em.py', 'convert/pdb2em.py', 'plotting/plistQuality.py',
+    'tools/plotAngleDistribution.py', 'plotting/plotFSC.py', 'simulation/potential.py',
+    'reconstruction/reconstruct_INFR.py', 'reconstruction/reconstruct_subvolumes_INFR.py',
+    'reconstruction/reconstruct_wbp.py', 'tools/script_helper.py', 'localization/selectParticleList.py',
+    'simulation/simulateProjections.py', 'alignment/WienerFilterAlignment.py'
+]
+
+postinstallcmds = [
+    # replace pytomGUI wrapper by symlink
+    'rm %(installdir)s/bin/pytomGUI -f',
+    'ln --relative -s %s/pytom/gui/pytomGUI.py %%(installdir)s/bin/pytomGUI ' % _spdir,
+    'chmod +x %s/pytom/gui/pytomGUI.py' % _spdir,
+    # keep tests, examples, and tutorials
+    'cp %(builddir)s/{tests,examples,tutorials} %(installdir)s -rpP||exit 1 ',
+    # move some stuff around and clean up.
+    'mv %(builddir)s/pytom/pytomc/libs/libtomc/include %(installdir)s ',
+    'mv %s/pytom/lib/libtomc.%s %%(installdir)s/lib/ ' % (_spdir, SHLIB_EXT),
+    # Link some scripts into %(installdir)s/bin for convenience':
+] + ['ln -s --relative %s/pytom/%s %%(installdir)s/bin' % (_spdir, x) for x in _link_to_bin]
+
+
+sanity_check_commands = [
+    'export PYTOM_GPU=0 && cd tests && python -m unittest discover',
+]
+
+sanity_check_paths = {
+    'files': ['bin/pytom', 'bin/ipytom', 'bin/pytomGUI'],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages/pytom/angles/angleLists',
+    ]
+}
+moduleclass = 'bio'
