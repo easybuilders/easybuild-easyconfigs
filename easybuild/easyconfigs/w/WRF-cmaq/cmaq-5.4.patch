@@ -1,0 +1,171 @@
+--- CMAQ-CMAQv5.4_14Oct2022/config_cmaq.csh.orig	2023-08-29 05:56:07.669356516 +0000
++++ CMAQ-CMAQv5.4_14Oct2022/config_cmaq.csh	2023-08-28 23:12:36.456146070 +0000
+@@ -80,25 +80,30 @@
+     case intel:
+ 
+         #> I/O API, netCDF Library Locations -- used in WRF-CMAQ
+-        setenv NETCDF netcdf_root_intel # Note please combine netCDF-C & Fortran Libraries 
+-        setenv IOAPI  ioapi_root_intel  
+-        setenv WRF_ARCH # [1-75]  
++        setenv NETCDF ${EBROOTPNETCDF} # Note please combine netCDF-C & Fortran Libraries 
++	setenv NETCDFF ${EBROOTNETCDFMINFORTRAN}
++        setenv IOAPI ${EBROOTIOAPI} 
++	setenv HDF5 ${EBROOTHDF5}
++	setenv PHDF5 ${EBROOTHDF5}
++
++
++        setenv WRF_ARCH 20 # [1-75]  
+     
+         #> I/O API, netCDF, and MPI Library Locations -- used in CMAQ
+-        setenv IOAPI_INCL_DIR   ioapi_inc_intel             #> I/O API include header files
+-        setenv IOAPI_LIB_DIR    ioapi_lib_intel             #> I/O API libraries
+-        setenv NETCDF_LIB_DIR   netcdf_lib_intel            #> netCDF C directory path
+-        setenv NETCDF_INCL_DIR  netcdf_inc_intel            #> netCDF C directory path
+-        setenv NETCDFF_LIB_DIR  netcdff_lib_intel           #> netCDF Fortran directory path
+-        setenv NETCDFF_INCL_DIR netcdff_inc_intel           #> netCDF Fortran directory path
++        setenv IOAPI_INCL_DIR   ${EBROOTIOAPI}/include             #> I/O API include header files
++        setenv IOAPI_LIB_DIR    ${EBROOTIOAPI}/lib             #> I/O API libraries
++        setenv NETCDF_LIB_DIR   ${EBROOTNETCDF}/lib            #> netCDF C directory path
++        setenv NETCDF_INCL_DIR  ${EBROOTPNETCDF}/lib            #> netCDF C directory path
++        setenv NETCDFF_LIB_DIR  ${EBROOTNETCDFMINFORTRAN}/lib          #> netCDF Fortran directory path
++        setenv NETCDFF_INCL_DIR ${EBROOTNETCDFMINFORTRAN}/include           #> netCDF Fortran directory path
+         setenv MPI_INCL_DIR     mpi_incl_intel              #> MPI Include directory path
+         setenv MPI_LIB_DIR      mpi_lib_intel               #> MPI Lib directory path
+     
+         #> Compiler Aliases and Flags
+         #> set the compiler flag -qopt-report=5 to get a model optimization report in the build directory with the optrpt extension
+-        setenv myFC mpiifort
+-        setenv myCC icc       
+-        setenv myFSTD "-O3 -fno-alias -mp1 -fp-model source -ftz -simd -align all -xHost -vec-guard-write -unroll-aggressive"
++        setenv myFC mpifort
++        setenv myCC icc
++        setenv myFSTD "-O3 -fno-alias -mp1 -fp-model source -ftz -simd -align all  -vec-guard-write -unroll-aggressive"
+         setenv myDBG  "-O0 -g -check bounds -check uninit -fpe0 -fno-alias -ftrapuv -traceback"
+         setenv myLINK_FLAG #"-qopenmp-simd" openMP not supported w/ CMAQ
+         setenv myFFLAGS "-fixed -132"
+@@ -148,12 +153,12 @@
+         setenv WRF_ARCH # [1-75]   
+   
+         #> I/O API, netCDF, and MPI Library Locations -- used in CMAQ
+-        setenv IOAPI_INCL_DIR   iopai_inc_gcc             #> I/O API include header files
+-        setenv IOAPI_LIB_DIR    ioapi_lib_gcc             #> I/O API libraries
+-        setenv NETCDF_LIB_DIR   netcdf_lib_gcc            #> netCDF C directory path
+-        setenv NETCDF_INCL_DIR  netcdf_inc_gcc            #> netCDF C directory path
+-        setenv NETCDFF_LIB_DIR  netcdff_lib_gcc           #> netCDF Fortran directory path
+-        setenv NETCDFF_INCL_DIR netcdff_inc_gcc           #> netCDF Fortran directory path
++        setenv IOAPI_INCL_DIR   ${EBROOTIOAPI}/include             #> I/O API include header files
++        setenv IOAPI_LIB_DIR    ${EBROOTIOAPI}/lib             #> I/O API libraries
++        setenv NETCDF_LIB_DIR   ${EBROOTNETCDF}/lib             #> netCDF C directory path
++        setenv NETCDF_INCL_DIR  ${EBROOTPNETCDF}/lib            #> netCDF C directory path
++        setenv NETCDFF_LIB_DIR  ${EBROOTNETCDFMINFORTRAN}/lib           #> netCDF Fortran directory path
++        setenv NETCDFF_INCL_DIR ${EBROOTNETCDFMINFORTRAN}/include           #> netCDF Fortran directory path
+         setenv MPI_INCL_DIR     mpi_incl_gcc              #> MPI Include directory path
+         setenv MPI_LIB_DIR      mpi_lib_gcc               #> MPI Lib directory path
+ 
+@@ -213,13 +218,13 @@
+  if ( ! -d $CMAQ_LIB ) mkdir -p $CMAQ_LIB
+  if (   -e $MPI_DIR  ) rm -rf $MPI_DIR
+      mkdir $MPI_DIR
+-     ln -s $MPI_LIB_DIR $MPI_DIR/lib
++#     ln -s $MPI_LIB_DIR $MPI_DIR/lib
+      ln -s $MPI_INCL_DIR $MPI_DIR/include
+  if ( ! -d $NETCDF_DIR )  mkdir $NETCDF_DIR
+- if ( ! -e $NETCDF_DIR/lib ) ln -sfn $NETCDF_LIB_DIR $NETCDF_DIR/lib
++# if ( ! -e $NETCDF_DIR/lib ) ln -sfn $NETCDF_LIB_DIR $NETCDF_DIR/lib
+  if ( ! -e $NETCDF_DIR/include ) ln -sfn $NETCDF_INCL_DIR $NETCDF_DIR/include
+  if ( ! -d $NETCDFF_DIR )  mkdir $NETCDFF_DIR
+- if ( ! -e $NETCDFF_DIR/lib ) ln -sfn $NETCDFF_LIB_DIR $NETCDFF_DIR/lib
++# if ( ! -e $NETCDFF_DIR/lib ) ln -sfn $NETCDFF_LIB_DIR $NETCDFF_DIR/lib
+  if ( ! -e $NETCDFF_DIR/include ) ln -sfn $NETCDFF_INCL_DIR $NETCDFF_DIR/include
+  if ( ! -d $IOAPI_DIR ) then
+     mkdir $IOAPI_DIR
+--- CMAQ-CMAQv5.4_14Oct2022/UTIL/bldmake/src/bldmake.f.orig	2023-08-26 07:16:35.516001384 +0000
++++ CMAQ-CMAQv5.4_14Oct2022/UTIL/bldmake/src/bldmake.f	2023-08-26 19:06:58.397871747 +0000
+@@ -299,8 +299,8 @@
+ 
+ ! print header lines
+       if ( twoway) then
+-         write( lfn, *) 'IOAPI_PATH = $(IOAPI)/$(LIOAPI)'
+-         write( lfn, *) 'IOAPI_INC_PATH = $(IOAPI)/ioapi/fixed_src'
++         write( lfn, *) 'IOAPI_PATH = $(IOAPI)/lib'
++         write( lfn, *) 'IOAPI_INC_PATH = $(IOAPI)/include'
+          write( lfn, *)
+          if ( Index( f_flags, '-Mfixed') > 0) then
+             write( lfn, *) 'EXTEND_FLAG = -Mextend'
+ 
+--- CMAQ-CMAQv5.4_14Oct2022/CCTM/src/biog/megan3/BDSNP_MOD.F.orig	2023-08-29 06:11:36.718441559 +0000
++++ CMAQ-CMAQv5.4_14Oct2022/CCTM/src/biog/megan3/BDSNP_MOD.F	2023-08-29 06:12:11.166741492 +0000
+@@ -170,7 +170,7 @@
+       LOGICAL, SAVE :: FIRSTIME = .TRUE.
+       CHARACTER( 256 ) :: MESG            ! message buffer
+       CHARACTER( 16 )  :: PNAME = 'BDSNPHRNO'  ! procedure name
+-
++      LOGICAL, EXTERNAL :: FLUSH3
+ C-----------------------------------------------------------------------
+       IF ( FIRSTIME ) THEN
+ 
+--- CMAQ-CMAQv5.4_14Oct2022/CCTM/scripts/bldit_cctm.csh.orig	2023-08-29 21:32:28.085156407 +0000
++++ CMAQ-CMAQv5.4_14Oct2022/CCTM/scripts/bldit_cctm.csh	2023-08-31 06:19:46.514112498 +0000
+@@ -13,7 +13,7 @@
+  if ( $#argv == 1 ) then
+     setenv compiler $argv[1]
+     setenv compilerVrsn Empty
+- else if ( $#argv == 2 ) then
++ else if ( $#argv >= 2 ) then
+     #> Compiler Name and Version have been provided
+     setenv compiler $1
+     setenv compilerVrsn $2
+@@ -67,7 +67,7 @@
+                                        #>   comment out for a single processor (serial) executable
+ #set DistrEnv                          #> uncomment to distribute environmental variables to multiple machines
+                                        #>   comment out for a single processor (serial) executable (MPI only)
+-#set build_parallel_io                 #> uncomment to build with parallel I/O (pnetcdf); 
++set build_parallel_io                 #> uncomment to build with parallel I/O (pnetcdf); 
+                                        #>   comment out to use standard netCDF I/O
+ #set Debug_CCTM                        #> uncomment to compile CCTM with debug option equal to TRUE
+                                        #>   comment out to use standard, optimized compile process
+@@ -81,7 +81,7 @@
+ #set DDM3D_CCTM                        #> uncomment to compile CCTM with DD3D activated
+                                        #>   comment out to use standard process
+ #> Two-way WRF-CMAQ 
+-#set build_twoway                      #> uncomment to build WRF-CMAQ twoway; 
++set build_twoway                      #> uncomment to build WRF-CMAQ twoway; 
+                                        #>   comment out for off-line chemistry 
+ 
+ #> Potential vorticity free-troposphere O3 scaling
+@@ -100,7 +100,7 @@
+  set CFG   = CCTM_${VRSN}.cfg          #> configuration file name
+ 
+  if ( $?build_twoway ) then            # WRF Version used for WRF-CMAQ Model (must be v4.4+)
+-    set WRF_VRSN = v4.4
++    set WRF_VRSN = V4.4
+  endif   
+ 
+ #========================================================================
+@@ -797,12 +797,10 @@
+     cd $CMAQ_HOME/CCTM/scripts
+   
+     # Downlad WRF repository from GitHub and put CMAQv5.4 into it
+-    set WRF_BLD = BLD_WRF${WRF_VRSN}_CCTM_${VRSN}_${compilerString}
+-    setenv wrf_path ${CMAQ_HOME}/CCTM/scripts/${WRF_BLD}
++    set WRF_BLD = WRF${WRF_VRSN}
++    setenv wrf_path ../../../${WRF_BLD}
+     setenv WRF_CMAQ 1
+ 
+-    if ( ! -d $WRF_BLD ) then 
+-      git clone --branch ${WRF_VRSN} https://github.com/wrf-model/WRF.git ./$WRF_BLD >& /dev/null
+       cd $wrf_path
+       mv $Bld ./cmaq
+   
+@@ -812,11 +810,6 @@
+         1
+ EOF
+ 
+-    else
+-      # Clean-up 
+-      rm -r $Bld
+-      cd $wrf_path
+-    endif
+ 
+      # Compile WRF-CMAQ
+      ./compile em_real |& tee -a wrf-cmaq_buildlog.log
