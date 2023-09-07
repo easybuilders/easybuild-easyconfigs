@@ -1317,7 +1317,7 @@ def template_easyconfig_test(self, spec):
     self.assertTrue(ec['moduleclass'] in build_option('valid_module_classes'))
     # base is the default value for moduleclass, which should never be used,
     # and moduleclass should always be set in the easyconfig file
-    self.assertNotEqual(ec['moduleclass'], 'base')
+   self.assertNotEqual(ec['moduleclass'], 'base', "moduleclass should be set, and not be set to 'base', for %s", spec)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
