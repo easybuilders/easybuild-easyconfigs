@@ -31,6 +31,7 @@ import glob
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 from collections import defaultdict
@@ -1226,6 +1227,29 @@ class EasyConfigTest(TestCase):
 
                 if check_https_url(http_url):
                     failing_checks.append("Found http:// URL in %s, should be https:// : %s" % (ec_fn, http_url))
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
+    def test_ec_file_permissions(self):
+        """Make sure correct access rights are set for easyconfigs."""
+
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            st = os.stat(ec.path)
+            read_perms = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
+            exec_perms = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            wrong_perms = []
+            if (st.st_mode & read_perms) != read_perms:
+                wrong_perms.append("readable (owner, group, other)")
+            if st.st_mode & exec_perms:
+                wrong_perms.append("not executable")
+            if not (st.st_mode & stat.S_IWUSR):
+                wrong_perms.append("at least owner writable")
+            if wrong_perms:
+                failing_checks.append("%s must be %s, is: %s" % (ec_fn, ", ".join(wrong_perms), oct(st.st_mode)))
+
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
