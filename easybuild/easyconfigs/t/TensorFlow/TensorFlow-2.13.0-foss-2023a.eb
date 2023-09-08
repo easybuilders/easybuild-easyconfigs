@@ -81,6 +81,9 @@ exts_list = [
     ('grpcio', '1.57.0', {
         'modulename': 'grpc',
         'preinstallopts': "GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s " +
+                          # Required to avoid building with non-default C++ standard but keep other flags,
+                          # see https://github.com/grpc/grpc/issues/34256
+                          "GRPC_PYTHON_CFLAGS='-fvisibility=hidden -fno-wrapv -fno-exceptions' " +
                           " ".join(["GRPC_PYTHON_BUILD_SYSTEM_%s=True" % i for i in
                                     (
                                         'OPENSSL',
@@ -229,8 +232,9 @@ exts_list = [
             '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
             '-//tensorflow/core/ir/importexport/tests/roundtrip/...',
         ],
-        'testopts': "--test_timeout=3600 --test_size_filters=small",
-        'testopts_gpu': "--test_timeout=3600 --test_size_filters=small "
+        # Need to have $HOME set for tests on PPC: https://github.com/tensorflow/tensorflow/issues/61814
+        'testopts': "--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small",
+        'testopts_gpu': "--test_env=HOME=/tmp --test_timeout=3600 --test_size_filters=small "
                         "--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute",
         'with_xla': True,
     }),
