@@ -1,0 +1,73 @@
+easyblock = 'EB_FlexiBLAS'
+
+name = 'FlexiBLAScore'
+version = '3.3.1'
+hidden = True
+
+homepage = 'https://gitlab.mpi-magdeburg.mpg.de/software/flexiblas-release'
+description = """FlexiBLAS is a wrapper library that enables the exchange of the BLAS and LAPACK implementation
+used by a program without recompiling or relinking it."""
+
+toolchain = SYSTEM
+local_extra_flags = "-fstack-protector-strong -fstack-clash-protection"
+toolchainopts = {'pic': True, 'extra_cflags': local_extra_flags, 'extra_fflags': local_extra_flags}
+
+source_urls = ['https://gitlab.mpi-magdeburg.mpg.de/api/v4/projects/386/packages/generic/flexiblas-source/v3.3.1/']
+sources = ['flexiblas-%(version)s.tar.gz']
+patches = ['FlexiBLAS-3.0.4_fix-imkl.patch', 'FlexiBLAS-3.3.1_rsnt-arch.patch']
+checksums = [
+    'bbeebf5e5a006924558fec43f49affbe1aaa4cbacfc472a9ff6066ffda142e18',  # flexiblas-3.3.1.tar.gz
+    'a078e46ad126574cc42314abd5b40461cdc6e950af79d105dbf92875c254c87c',  # FlexiBLAS-3.0.4_fix-imkl.patch
+    '0fdb8e7a31a2eb71b0f889e873db93996228e065b4c3b7fc57a7683777161d3f',  # FlexiBLAS-3.3.1_rsnt-arch.patch
+]
+
+builddependencies = [
+    ('imkl', '2023.2.0'),
+    ('CMake', '3.26.3'),
+]
+
+configopts = ['', ' -DINTEGER8=ON -Dimkl_LIBRARY="mkl_gf_ilp64;mkl_gnu_thread;mkl_core;gomp;pthread;m;dl"']
+
+# note: first listed backend will be used as default by FlexiBLAS,
+# unless otherwise specified via easyconfig parameter flexiblas_default
+local_backends = []
+
+# imkl supplies its backend via the imkl module, not as a dependency
+if ARCH == 'x86_64':
+    local_backends.append('imkl')
+
+backends = local_backends
+
+# Install LAPACKe as extension; it's not a Python package, but this extension class can be
+# used anyway to build it.
+exts_defaultclass = 'CMakePythonPackage'
+exts_list = [
+    ('LAPACK', '3.11.0', {
+        'easyblock': 'CMakePythonPackage',
+        'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['4b9ba79bfd4921ca820e83979db76ab3363155709444a787979e81c22285ffa9'],
+        'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
+                       '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
+        'sanity_check_paths': {
+            'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
+            'dirs': [],
+        },
+	'modulename': False, # skips Python-specific sanity check
+    }),
+]
+
+# these can be accessed via the RSNT_ARCH patch in arch-specific hidden FlexiBLAS modules
+postinstallcmds = [
+    'echo "[BLIS]" > %(installdir)s/etc/flexiblasrc.d/BLIS.conf',
+    'echo "library = libflexiblas_blis.so" >> %(installdir)s/etc/flexiblasrc.d/BLIS.conf',
+    'echo "[OpenBLAS]" > %(installdir)s/etc/flexiblasrc.d/OpenBLAS.conf',
+    'echo "library = libflexiblas_openblas.so" >> %(installdir)s/etc/flexiblasrc.d/OpenBLAS.conf',
+    'echo "[BLIS]" > %(installdir)s/etc/flexiblas64rc.d/BLIS.conf',
+    'echo "library = libflexiblas_blis.so" >> %(installdir)s/etc/flexiblas64rc.d/BLIS.conf',
+    'echo "[OpenBLAS]" > %(installdir)s/etc/flexiblas64rc.d/OpenBLAS.conf',
+    'echo "library = libflexiblas_openblas.so" >> %(installdir)s/etc/flexiblas64rc.d/OpenBLAS.conf',
+]
+
+moduleclass = 'lib'
