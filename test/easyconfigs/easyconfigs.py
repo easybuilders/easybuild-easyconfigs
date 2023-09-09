@@ -218,6 +218,15 @@ class EasyConfigTest(TestCase):
         # get list of changed easyconfigs
         changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
         added_ecs_files = get_eb_files_from_diff(diff_filter='A')
+
+        # ignore template easyconfig (TEMPLATE.eb) and archived easyconfigs
+        def filter_ecs(ecs):
+            archive_path = os.path.join('easybuild', 'easyconfigs', '__archive__')
+            return [ec for ec in ecs if os.path.basename(ec) != 'TEMPLATE.eb' and archive_path not in ec]
+
+        changed_ecs_files = filter_ecs(changed_ecs_files)
+        added_ecs_files = filter_ecs(added_ecs_files)
+
         changed_ecs_filenames = [os.path.basename(f) for f in changed_ecs_files]
         added_ecs_filenames = [os.path.basename(f) for f in added_ecs_files]
         if changed_ecs_filenames:
