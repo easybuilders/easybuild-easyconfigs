@@ -1,0 +1,65 @@
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = ["%(name)s-v%(version)s.tar.gz"]
+
+patches = ['ParaView-5.11.1-remove_glew_init_warning.patch', ('ParaView-5.11.1-fix_thrust_vtk_m.patch', 'VTK/ThirdParty/vtkm/vtkvtkm/vtk-m/')]
+
+builddependencies = [('CMake', '3.24.3')]
+
+dependencies = [
+    ('CUDA', '12.2.0', '', SYSTEM),
+    ('OptiX', '7.2.0', '', SYSTEM),
+    ('Boost', '1.81.0'),
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    ('XZ', '5.2.7'),
+    ('HDF5', '1.14.0'),
+    ('netCDF', '4.9.0'),
+    ('libdrm', '2.4.114'),
+    ('Mesa', '22.2.4'),
+    ('Qt5', '5.15.7'),
+    ('zlib', '1.2.12'),
+    ('FFmpeg', '5.1.2'),
+    ('Szip', '2.1.1'),
+]
+
+# Paraview
+configopts = '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON -DPARAVIEW_BUILD_SHARED_LIBS=ON '
+configopts += '-DPARAVIEW_USE_MPI=ON '
+# Enable NVidia IndeX
+configopts += '-DPARAVIEW_USE_CUDA=ON '
+configopts += '-DPARAVIEW_ENABLE_FFMPEG=ON '
+configopts += '-DPARAVIEW_USE_PYTHON=ON '
+# Enable OptiX raytracing
+configopts += '-DPARAVIEW_ENABLE_RAYTRACING=ON '
+configopts += '-DVTK_ENABLE_OSPRAY=OFF '
+configopts += '-DVTK_ENABLE_OPTIX=ON '
+configopts += '-DPARAVIEW_ENABLE_XDMF2=ON '
+configopts += '-DPARAVIEW_ENABLE_XDMF3=ON '
+configopts += '-DPython3_ROOT_DIR=$EBROOTPYTHON '
+configopts += '-DCMAKE_CUDA_ARCHITECTURES=70 72 80 86 87 89 90 90a '
+# OpenGL & Mesa
+configopts += '-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include '
+configopts += '-DEGL_INCLUDE_DIR=$EBROOTLIBGLVND/include '
+configopts += '-DEGL_LIBRARY=$EBROOTLIBGLVND/lib/libEGL.%s ' % SHLIB_EXT
+configopts += '-DEGL_opengl_LIBRARY=$EBROOTLIBGLVND/libOpenGL.%s ' % SHLIB_EXT
+configopts += '-DVTK_OPENGL_HAS_EGL=ON '
+configopts += '-DVTK_USE_X=ON '
+configopts += '-DVTK_OPENGL_HAS_OSMESA=OFF '
+
+
+sanity_check_paths = {
+    'files': ['bin/paraview', 'bin/pvserver', 'bin/pvpython'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['python -c "import paraview"']
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'vis'
