@@ -4,18 +4,24 @@
 > Greatest absolute difference: 1.430511474609375e-05 at index (4, 5) (up to 1e-05 allowed)
 > Greatest relative difference: 4.65393206065873e-06 at index (4, 5) (up to 1.3e-06 allowed)
 
-Author: Alexander Grund (TU Dresden)
-Updated for PyTorch 1.13.1: Simon Branford (University of Birmingham)
+See https://github.com/pytorch/pytorch/pull/86365
 
---- a/test/test_ops.py
-+++ b/test/test_ops.py
-@@ -545,6 +545,9 @@
-             else list(supported_dtypes)[0]
-         )
- 
-+        if dtype is torch.float32:
-+            self.precision, self.rel_tol = (1.5e-05, 1e-05)
-+
-         samples = op.sample_inputs(device, dtype)
-         for sample in samples:
-             # calls it normally to get the expected result
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_methods_invocations.py b/torch/testing/_internal/common_methods_invocations.py
+index 4b2d0ebabc46b..bab7843a72b74 100644
+--- a/torch/testing/_internal/common_methods_invocations.py
++++ b/torch/testing/_internal/common_methods_invocations.py
+@@ -8503,7 +8503,11 @@ op_db: List[OpInfo] = [
+                DecorateInfo(
+                    toleranceOverride({torch.float32: tol(atol=1.3e-05, rtol=1.3e-05),
+                                       torch.complex64: tol(atol=1e-05, rtol=1.2e-03)}),
+-                   'TestCommon', 'test_numpy_refs')],
++                   'TestCommon', 'test_numpy_refs'),
++               DecorateInfo(
++                   toleranceOverride({torch.float32: tol(atol=1.5e-05, rtol=1e-05)}),
++                   'TestCommon', 'test_out'),
++           ],
+            skips=(
+                # NVIDIA only assures that bfloat16 is supported by bmm if SM >= 5.3
+                DecorateInfo(unittest.skip("Skipped!"), 'TestCommon', 'test_dtypes', device_type='cuda', active_if=not SM53OrLater),

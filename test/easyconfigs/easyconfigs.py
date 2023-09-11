@@ -31,6 +31,7 @@ import glob
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 from collections import defaultdict
@@ -218,6 +219,15 @@ class EasyConfigTest(TestCase):
         # get list of changed easyconfigs
         changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
         added_ecs_files = get_eb_files_from_diff(diff_filter='A')
+
+        # ignore template easyconfig (TEMPLATE.eb) and archived easyconfigs
+        def filter_ecs(ecs):
+            archive_path = os.path.join('easybuild', 'easyconfigs', '__archive__')
+            return [ec for ec in ecs if os.path.basename(ec) != 'TEMPLATE.eb' and archive_path not in ec]
+
+        changed_ecs_files = filter_ecs(changed_ecs_files)
+        added_ecs_files = filter_ecs(added_ecs_files)
+
         changed_ecs_filenames = [os.path.basename(f) for f in changed_ecs_files]
         added_ecs_filenames = [os.path.basename(f) for f in added_ecs_files]
         if changed_ecs_filenames:
@@ -496,9 +506,12 @@ class EasyConfigTest(TestCase):
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
+                                                r'libwpe-1\.14\.1-GCCcore-11\.3\.0',
                                                 r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
+                                                r'wpebackend-fdo-1\.14\.1-GCCcore-11\.3\.0',
                                                 r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0',
                                                 r'wxPython-4\.2\.0',
+                                                r'wxPython-4\.2\.1',
                                                 r'GRASS-8\.2\.0',
                                                 r'QGIS-3\.28\.1']),
             ],
@@ -545,6 +558,14 @@ class EasyConfigTest(TestCase):
                 (r'0\.52\.0', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
                                r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-',
                                r'umap-learn-0\.4\.6-']),
+            ],
+            'OpenFOAM': [
+                # CFDEMcoupling requires OpenFOAM 5.x
+                (r'5\.0-20180606', [r'CFDEMcoupling-3\.8\.0']),
+            ],
+            'ParaView': [
+                # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
+                (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
@@ -1054,33 +1075,36 @@ class EasyConfigTest(TestCase):
                         if exts_default_options.get(key) is None:
                             failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
-            # if Python is a dependency, that should be reflected in the versionsuffix
+            # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
+            has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
+                                         for dep in ec['dependencies'] if dep['name'] == 'Python')
+            has_old_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
+                                     for dep in ec['dependencies'] if dep['name'] == 'Python')
             # Tkinter is an exception, since its version always matches the Python version anyway
-            # Python 3.8.6 and later are also excluded, as we consider python 3 the default python
-            # Also whitelist some updated versions of Amber
+            # Z3 is an exception, since it has easyconfigs with and without Python bindings
+            exception_python_suffix = ['Tkinter', 'Z3']
+            # Also whitelist some specific easyconfigs from this check
+            # TODO: clean whitelist in EB 5.0
             whitelist_python_suffix = [
                 'Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
                 'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb',
                 'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
             ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
-            has_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
-                                 for dep in ec['dependencies'] if dep['name'] == 'Python')
-            if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
-                if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
-                    # This is only a failure for newly added ECs, not for existing ECS
-                    # As that would probably break many ECs
-                    if ec_fn in self.added_ecs_filenames:
-                        failing_checks.append(msg)
-                    else:
-                        print('\nNote: Failed non-critical check: ' + msg)
-            else:
-                has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
-                                             for dep in ec['dependencies'] if dep['name'] == 'Python')
-                if has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
+
+            if ec.name in exception_python_suffix or whitelisted:
+                continue
+            elif has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
+                # This is only a failure for newly added ECs, not for existing ECS
+                # As that would probably break many ECs
+                if ec_fn in self.added_ecs_filenames:
                     failing_checks.append(msg)
+                else:
+                    print('\nNote: Failed non-critical check: ' + msg)
+            elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
+                failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if easyblock in ['PythonBundle', 'PythonPackage']:
@@ -1125,8 +1149,11 @@ class EasyConfigTest(TestCase):
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
+        # Jupyter-bundle: JupyterHub + JupyterLab + notebook + nbclassic + jupyter-server-proxy
+        # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'Python-bundle', 'ROCm']
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
+                             'Python-bundle', 'ROCm']
 
         failing_checks = []
 
@@ -1213,6 +1240,29 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
+    def test_ec_file_permissions(self):
+        """Make sure correct access rights are set for easyconfigs."""
+
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            st = os.stat(ec.path)
+            read_perms = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
+            exec_perms = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            wrong_perms = []
+            if (st.st_mode & read_perms) != read_perms:
+                wrong_perms.append("readable (owner, group, other)")
+            if st.st_mode & exec_perms:
+                wrong_perms.append("not executable")
+            if not (st.st_mode & stat.S_IWUSR):
+                wrong_perms.append("at least owner writable")
+            if wrong_perms:
+                failing_checks.append("%s must be %s, is: %s" % (ec_fn, ", ".join(wrong_perms), oct(st.st_mode)))
+
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
     def test_pr_CMAKE_BUILD_TYPE(self):
         """Make sure -DCMAKE_BUILD_TYPE is no longer used (replaced by build_type)"""
         failing_checks = []
@@ -1277,6 +1327,10 @@ def template_easyconfig_test(self, spec):
     # sanity check for software name, moduleclass
     self.assertEqual(ec['name'], name)
     self.assertTrue(ec['moduleclass'] in build_option('valid_module_classes'))
+    # base is the default value for moduleclass, which should never be used,
+    # and moduleclass should always be set in the easyconfig file
+    self.assertNotEqual(ec['moduleclass'], 'base',
+                        "moduleclass should be set, and not be set to 'base', for %s" % spec)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
