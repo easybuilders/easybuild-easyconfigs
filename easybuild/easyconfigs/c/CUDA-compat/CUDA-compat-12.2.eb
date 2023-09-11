@@ -1,0 +1,39 @@
+easyblock = 'Binary'
+
+name = 'CUDA-compat'
+version = '12.2'
+local_nv_version = '535.104.05'
+hidden = True
+
+homepage = 'https://docs.nvidia.com/deploy/cuda-compatibility/index.html'
+description = """Using the CUDA Forward Compatibility package,
+ system administrators can run applications built using a newer toolkit
+ even when an older driver that does not satisfy the minimum required driver version
+ is installed on the system.
+ This forward compatibility allows the CUDA deployments in data centers and enterprises
+ to benefit from the faster release cadence and the latest features and performance of CUDA Toolkit.
+"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/']
+sources = ['cuda-compat-12-2-%s-1.x86_64.rpm' % local_nv_version]
+checksums = ['1f7758d28f329ee7a608ad584545acde6ee694ba8dd498fe82324045de654f6f']
+
+install_cmd = "rpm2cpio %s | cpio -idm;" % sources[0]
+install_cmd += "mv usr/local/cuda-%(version)s/compat %(installdir)s/lib"
+
+# RSNT_LD_LIBRARY_PATH deals with newgrp
+modluafooter = """
+prepend_path("LD_LIBRARY_PATH","%(installdir)s/lib")
+prepend_path("RSNT_LD_LIBRARY_PATH","%(installdir)s/lib")
+"""
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s.%s' % (f, SHLIB_EXT, local_nv_version) for f in
+              ('cuda', 'nvidia-nvvm', 'nvidia-ptxjitcompiler')],
+    'dirs': ['lib'],
+}
+
+
+moduleclass = 'system'

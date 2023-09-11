@@ -10,7 +10,6 @@ toolchain = {"name": "gcccuda", "version": "2020.1.114"}
 toolchainopts = {"cstd": "c++17"}
 
 # Fetching from Github to obtain test data which is not part of released tarball
-
 sources = [{
     'filename': 'apache-arrow-%(version)s.tar.gz',
     'git_config': {
@@ -21,8 +20,6 @@ sources = [{
         'keep_git_dir': False,
     },
 }]
-#checksums = ['95353f6c929b26f01cb32c6726ba6cbcb1edf7267e905b60f28b95d8ef9e502d']
-
 # Must use --disable-enforce-checksums as checksums are not reliable on a JIT created tarball
 
 builddependencies = [
@@ -42,7 +39,6 @@ local_cmake_opts = " ".join([
     "-DARROW_FILESYSTEM=ON",
     "-DARROW_CUDA=ON",
     "-DCMAKE_PREFIX_PATH=$EBROOTCUDA/lib64/stubs",
-    #"-DARROW_PLASMA=ON",
     "-DARROW_PARQUET=ON",
     "-DARROW_DATASET=ON",
     "-DARROW_HDFS=OFF",
@@ -66,7 +62,6 @@ local_cmake_opts = " ".join([
 ])
 
 local_exports = " && ".join([
-    #"export PYARROW_WITH_PLASMA=1",
     "export PYARROW_WITH_CUDA=1",
     "export PYARROW_WITH_PARQUET=1",
     "export PYARROW_WITH_DATASET=1",
@@ -85,7 +80,6 @@ configopts = local_cmake_opts
 
 # While pip install should be the way to install, python 3.9 has an issue.
 # Use python setup.py even if its deprecated now.
-
 installopts = (
       " && cd %(builddir)s/arrow*/python "
     + " && mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages "
@@ -95,7 +89,6 @@ installopts = (
 )
 
 start_dir = "cpp"
-
 separate_build_dir = True
 
 # No GPU device to test on. The tests were run with the version without CUDA.
@@ -106,14 +99,12 @@ modextrapaths = {"EBPYTHONPREFIXES": ""}
 sanity_check_paths = {
     "files": [
         "lib/libarrow.so",
-        #"lib/libplasma.so",
         "lib/libarrow_cuda.so",
         "lib/libparquet.so",
         "lib/libarrow_dataset.so",
     ],
     "dirs": [
         "include/arrow",
-        #"include/plasma",
         "include/parquet",
         "lib/python%(pyshortver)s/site-packages",
     ],
@@ -122,7 +113,6 @@ sanity_check_paths = {
 sanity_check_commands = [
     "module load scipy-stack",
     "python -c 'import pyarrow'",
-    #"python -c 'import pyarrow.plasma'",
     "python -c 'import pyarrow.cuda'",
     "python -c 'import pyarrow.parquet'",
     "python -c 'import pyarrow.dataset'",
