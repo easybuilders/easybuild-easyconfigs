@@ -1,0 +1,68 @@
+easyblock = 'CmdCp'
+
+name = 'rMATS'
+version = '4.1.2'
+
+homepage = 'http://rnaseq-mats.sourceforge.net/'
+description = """MATS is a computational tool to detect differential alternative splicing events from RNA-Seq data. The statistical model of MATS calculates the P-value and false discovery rate that the difference in the isoform ratio of a gene between two conditions exceeds a given user-defined threshold. From the RNA-Seq data, MATS can automatically detect and analyze alternative splicing events corresponding to all major types of alternative splicing patterns. MATS handles replicate RNA-Seq data from both paired and unpaired study design."""
+
+toolchain = {'name': 'gmkl', 'version': '2020a'}
+
+source_urls = ['https://github.com/Xinglab/rmats-turbo/archive']
+sources = ['v%(version)s.tar.gz']
+patches = ["rMATS-4.1.2-fix_makefile_mkl.patch"]
+checksums = [
+    {'v4.1.2.tar.gz': '29c63bb308975c83350027b0ec2d731954f87bfaab0459f5083e927069819cc8'},
+    {'rMATS-4.1.2-fix_makefile_mkl.patch': 'e730e9745cb614deebc59c6342a55bca963aaf0f1a9a3c214986281fd36dd10d'},
+]
+
+dependencies = [
+    ('SciPy-Stack', '2020b'),
+    ('Python', '3.8.2'),
+]
+
+builddependencies = [
+    ('BamTools', '2.5.1'),
+    ('SAMtools', '1.11'),
+    ('GSL', '2.6'),
+]
+
+build_cmd = " && ".join([
+    "cd %(builddir)s/%(namelower)s-turbo-%(version)s/bamtools && mkdir build && cd build && cmake .. && make",
+    "cd %(builddir)s/%(namelower)s-turbo-%(version)s/rMATS_C && make",
+    'cd %(builddir)s/%(namelower)s-turbo-%(version)s/rMATS_pipeline && python setup.py build',
+])
+
+cmds_map = [('.*', build_cmd)]
+
+files_to_copy = [
+    (['rMATS_C/rMATSexe'], 'rMATS_C'),
+    (['rMATS_P', 'rMATS_R','rmats.py', 'rMATS_pipeline/build/lib.linux-x86_64-3.*/rmats/*.so',], ''),
+    (['tests'], ''),
+]
+
+sanity_check_paths = {
+    'files': ['rMATS_C/rMATSexe',
+              'rMATS_P/FDR.py',
+              'rMATS_P/inclusion_level.py',
+              'rMATS_P/joinFiles.py',
+              'rMATS_P/paste.py',
+              'rMATS_R/paired_model.R',
+              'rmats.py',
+              'rmatspipeline.cpython-38-x86_64-linux-gnu.so',
+    ],
+    'dirs':  [
+        'rMATS_C',
+        'rMATS_R',
+        'rMATS_P',
+        'tests',
+    ],
+}
+
+sanity_check_commands = [
+    "python %(installdir)s/rmats.py -h",
+]
+
+usage = "python $EBROOTRMATS/rmats.py ..."
+
+moduleclass = 'bio'
