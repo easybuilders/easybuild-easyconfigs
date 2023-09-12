@@ -1,0 +1,38 @@
+easyblock = 'ConfigureMake'
+
+name = 'eSpeak-NG'
+version = '1.51'
+
+homepage = 'https://github.com/espeak-ng/espeak-ng'
+description = """
+The eSpeak NG is a compact open source software text-to-speech synthesizer
+for Linux, Windows, Android and other operating systems.
+It supports more than 100 languages and accents.
+It is based on the eSpeak engine created by Jonathan Duddington.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/espeak-ng/espeak-ng/archive']
+sources = ['%(version)s.tar.gz']
+checksums = [
+    'f0e028f695a8241c4fa90df7a8c8c5d68dcadbdbc91e758a97e594bbb0a3bdbf',  # 1.51.tar.gz
+]
+
+preconfigopts = './autogen.sh &&'
+
+configopts = '--disable-dependency-tracking'
+
+sanity_check_paths = {
+    'files': ['bin/%sspeak%s' % (x, y) for x in ['', 'e'] for y in ['', '-ng']] +
+             ['include/espeak%s/speak_lib.h' % x for x in ['', '-ng']] +
+             ['include/espeak-ng/%s.h' % x for x in ['encoding', 'espeak_ng']] +
+             ['lib/libespeak%s' % x for x in ['.la', '-ng.a', '-ng.%s' % SHLIB_EXT]],
+    'dirs': ['lib/pkgconfig']
+}
+
+sanity_check_commands = ['%sspeak%s --version' % (x, y) for x in ['', 'e'] for y in ['', '-ng']]
+
+modextrapaths = {'ESPEAK_DATA_PATH': 'share/%(namelower)s-data'}
+
+moduleclass = 'tools'
