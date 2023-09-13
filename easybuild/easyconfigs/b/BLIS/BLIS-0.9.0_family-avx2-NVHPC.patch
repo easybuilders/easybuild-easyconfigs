@@ -1,0 +1,172 @@
+Add avx2 target (autodetects between excavator, zen, zen3, zen2, haswell, skx).
+
+Bart Oldeman <bart.oldeman@calculquebec.ca>
+diff -urN blis-0.8.1/config/avx2/bli_family_avx2.h blis-0.8.1.new/config/avx2/bli_family_avx2.h
+--- blis-0.8.1/config/avx2/bli_family_avx2.h	1970-01-01 00:00:00.000000000 +0000
++++ blis-0.8.1.new/config/avx2/bli_family_avx2.h	2021-10-02 01:00:29.769323119 +0000
+@@ -0,0 +1,41 @@
++/*
++
++   BLIS
++   An object-based framework for developing high-performance BLAS-like
++   libraries.
++
++   Copyright (C) 2014, The University of Texas at Austin
++
++   Redistribution and use in source and binary forms, with or without
++   modification, are permitted provided that the following conditions are
++   met:
++    - Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    - Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    - Neither the name(s) of the copyright holder(s) nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++
++//#ifndef BLIS_FAMILY_H
++//#define BLIS_FAMILY_H
++
++
++
++//#endif
++
+diff -urN blis-0.8.1/config/avx2/make_defs.mk blis-0.8.1.new/config/avx2/make_defs.mk
+--- blis-0.8.1/config/avx2/make_defs.mk	1970-01-01 00:00:00.000000000 +0000
++++ blis-0.8.1.new/config/avx2/make_defs.mk	2021-10-02 01:11:01.727218695 +0000
+@@ -0,0 +1,98 @@
++#
++#
++#  BLIS    
++#  An object-based framework for developing high-performance BLAS-like
++#  libraries.
++#
++#  Copyright (C) 2014, The University of Texas at Austin
++#
++#  Redistribution and use in source and binary forms, with or without
++#  modification, are permitted provided that the following conditions are
++#  met:
++#   - Redistributions of source code must retain the above copyright
++#     notice, this list of conditions and the following disclaimer.
++#   - Redistributions in binary form must reproduce the above copyright
++#     notice, this list of conditions and the following disclaimer in the
++#     documentation and/or other materials provided with the distribution.
++#   - Neither the name(s) of the copyright holder(s) nor the names of its
++#     contributors may be used to endorse or promote products derived
++#     from this software without specific prior written permission.
++#
++#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++#
++
++
++# Declare the name of the current configuration and add it to the
++# running list of configurations included by common.mk.
++THIS_CONFIG    := avx2
++#CONFIGS_INCL   += $(THIS_CONFIG)
++
++#
++# --- Determine the C compiler and related flags ---
++#
++
++# NOTE: The build system will append these variables with various
++# general-purpose/configuration-agnostic flags in common.mk. You
++# may specify additional flags here as needed.
++CPPROCFLAGS    :=
++CMISCFLAGS     :=
++CPICFLAGS      :=
++CWARNFLAGS     :=
++
++ifneq ($(DEBUG_TYPE),off)
++CDBGFLAGS      := -g
++endif
++
++ifeq ($(DEBUG_TYPE),noopt)
++COPTFLAGS      := -O0
++else
++COPTFLAGS      := -O2
++endif
++
++# Flags specific to optimized kernels.
++CKOPTFLAGS     := $(COPTFLAGS) -O3 -fomit-frame-pointer
++ifeq ($(CC_VENDOR),gcc)
++CKVECFLAGS     := -mavx2 -mfma -mfpmath=sse -march=core-avx2
++else
++ifeq ($(CC_VENDOR),icc)
++CKVECFLAGS     := -march=core-avx2 -axCore-AVX512
++else
++ifeq ($(CC_VENDOR),nvc)
++CKVECFLAGS     := -tp=haswell
++else
++ifeq ($(CC_VENDOR),clang)
++CKVECFLAGS     := -mavx2 -mfma -mfpmath=sse -march=core-avx2
++else
++$(error gcc, icc, nvc, or clang is required for this configuration.)
++endif
++endif
++endif
++endif
++
++# Flags specific to reference kernels.
++CROPTFLAGS     := $(CKOPTFLAGS)
++ifeq ($(CC_VENDOR),gcc)
++CRVECFLAGS     := $(CKVECFLAGS) -funsafe-math-optimizations -ffp-contract=fast
++else
++ifeq ($(CC_VENDOR),clang)
++CRVECFLAGS     := $(CKVECFLAGS) -funsafe-math-optimizations -ffp-contract=fast
++else
++CRVECFLAGS     := $(CKVECFLAGS)
++endif
++endif
++
++# Store all of the variables here to new variables containing the
++# configuration name.
++$(eval $(call store-make-defs,$(THIS_CONFIG)))
++
+--- blis-0.9.0/config_registry.orig	2022-06-03 00:20:59.163777862 +0000
++++ blis-0.9.0/config_registry	2022-06-03 00:22:47.069528412 +0000
+@@ -8,6 +8,7 @@
+ #
+ 
+ # Processor families.
++avx2:           skx haswell zen3 zen2 zen excavator
+ x86_64:         intel64 amd64 amd64_legacy
+ intel64:        skx knl haswell sandybridge penryn generic
+ amd64_legacy:   excavator steamroller piledriver bulldozer generic
+--- blis-0.8.1/frame/base/bli_arch.c	2021-03-22 22:42:33.000000000 +0000
++++ blis-0.8.1.new/frame/base/bli_arch.c	2021-10-02 01:18:21.349936104 +0000
+@@ -124,7 +124,8 @@
+ 		// selection behavior.
+ 
+ 		// Architecture families.
+-		#if defined BLIS_FAMILY_INTEL64 || \
++		#if defined BLIS_FAMILY_AVX2	|| \
++		    defined BLIS_FAMILY_INTEL64 || \
+ 		    defined BLIS_FAMILY_AMD64   || \
+ 		    defined BLIS_FAMILY_X86_64  || \
+ 		    defined BLIS_FAMILY_ARM64   || \

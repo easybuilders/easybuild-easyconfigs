@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '0.9.0'
+
+homepage = 'https://github.com/flame/blis/'
+description = """BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'NVHPC', 'version': '23.7'}
+
+source_urls = ['https://github.com/flame/blis/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_blastest-enable-complex-return-intel.patch',
+    '%(name)s-%(version)s_family-avx2-NVHPC.patch',
+    '%(name)s-%(version)s_add-NVHPC-support.patch',
+]
+checksums = [
+    '1135f664be7355427b91025075562805cdc6cc730d3173f83533b2c5dcc2f308',  # 0.9.0.tar.gz
+    '0f1966b340d1f24cf02070f00f72f232b4cbfcd242ee9ce8c5f09f7220397cb4',  # BLIS-0.9.0_blastest-enable-complex-return-intel.patch
+    'cc05f0f60b7f25ca4c0bbd1e6073e73d5a8bfbb67c9fe0cad2ab48e79dd516cb',  # BLIS-0.9.0_family-avx2-NVHPC.patch
+    '56ec0149956371767edf0ee2cb9c4411116aeabfb71a160d22ec5921d974815f',  # BLIS-0.9.0_add-NVHPC-support.patch
+]
+
+preconfigopts = "declare -A ARCH_MAP=( [sse3]='x86_64' [avx]='sandybridge' [avx2]='avx2' [avx512]='skx' ) &&"
+configopts = '--complex-return=intel --enable-cblas --enable-threading=openmp --enable-shared CC="$CC" ${ARCH_MAP[$RSNT_ARCH]}'
+configopts += ' && sed -i "s/clang/nvc/g" config/{excavator,haswell,skx,zen,zen2,zen3}/make_defs.mk'
+configopts += ' && sed -i "s/-mfpmath=sse//g" config/{excavator,haswell,skx,zen,zen2,zen3}/make_defs.mk'
+configopts += ' && sed -i "s/-funsafe-math-optimizations -ffp-contract=fast//g" config/{excavator,haswell,skx,zen,zen2,zen3}/make_defs.mk'
+configopts += ' && sed -i "s/bdver4/piledriver/g" config/excavator/make_defs.mk'
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'
