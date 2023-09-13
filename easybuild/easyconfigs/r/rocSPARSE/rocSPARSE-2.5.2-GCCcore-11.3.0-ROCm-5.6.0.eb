@@ -1,0 +1,45 @@
+easyblock = 'CMakeMake'
+
+name = 'rocSPARSE'
+version = '2.5.2'
+_rocm_version = '5.6.0'
+versionsuffix = '-ROCm-%s' % _rocm_version
+
+homepage = 'https://rocsparse.readthedocs.io/en/latest'
+description = """rocSPARSE exposes a common interface that provides
+Basic Linear Algebra Subroutines for sparse computation implemented on
+top of AMD's Radeon Open eCosystem Platform ROCm runtime and toolchains.
+rocSPARSE is created using the HIP programming language and optimized
+for AMD's latest discrete GPUs.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/ROCmSoftwarePlatform/rocSPARSE/archive/'],
+        'download_filename': 'rocm-%s.tar.gz' % _rocm_version,
+        'filename': '%%(name)s-%%(version)s-rocm-%s.tar.gz' % _rocm_version,
+    },
+]
+checksums = ['5797db3deb4a532e691447e3e8c923b93bd9fe4c468f3a88f00cecd80bebcae4']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('HIP', _rocm_version, '-amd'),
+    ('rocPRIM', '2.13.0', versionsuffix),
+]
+
+preconfigopts = 'export CC=hipcc CXX=hipcc && '
+
+sanity_check_paths = {
+    'files': ['include/%(namelower)s/%(namelower)s.h', 'lib/lib%%(namelower)s.%s' % SHLIB_EXT],
+    'dirs': ['lib/cmake/%(namelower)s'],
+}
+
+moduleclass = 'lib'
