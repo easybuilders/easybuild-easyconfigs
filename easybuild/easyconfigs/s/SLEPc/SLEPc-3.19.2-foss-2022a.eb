@@ -1,0 +1,49 @@
+name = 'SLEPc'
+version = '3.19.2'
+
+homepage = 'https://slepc.upv.es/'
+description = """SLEPc (Scalable Library for Eigenvalue Problem Computations) is a software library for the solution
+ of large scale sparse eigenvalue problems on parallel computers. It is an extension of PETSc and can be used for
+ either standard or generalized eigenproblems, with real or complex arithmetic. It can also be used for computing a
+ partial SVD of a large, sparse, rectangular matrix, and to solve quadratic eigenvalue problems."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True, 'openmp': True}
+
+source_urls = ['https://slepc.upv.es/download/distrib']
+sources = [SOURCELOWER_TAR_GZ]
+
+# sources = ['%(namelower)s-%(version)s.tar.gz']
+dependencies = [('PETSc', '3.19.2')]
+# For the extension
+builddependencies = [
+    ('SciPy-Stack', '2023b'),
+    ('mpi4py', '3.1.4'),
+]
+
+multi_deps = {'Python': ['3.9', '3.10', '3.11']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('slepc4py', '3.19.2', {
+        'modulename': 'slepc4py',
+        'source_urls': [PYPI_SOURCE],
+        'preconfigopts': '#',
+	'check_ldshared': False,
+	'buildopts': '#',
+        'runtest': False,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_commands = [
+    "module load scipy-stack && python -c 'import slepc4py;'",
+]
+
+petsc_arch = 'installed-arch-linux2-c-opt'
+
+modextrapaths = {'EBPYTHONPREFIXES': [''],}
+
+moduleclass = 'numlib'
