@@ -32,14 +32,16 @@ dependencies = [
 ]
 
 preconfigopts = "LIBS='-ltirpc' "
+
+local_common_configopts = '--with-szlib=$EBROOTSZIP CFLAGS="$CFLAGS -I$EBROOTLIBTIRPC/include/tirpc" '
+local_common_configopts += '--includedir=%(installdir)s/include/%(namelower)s '
+
 configopts = [
-    '--with-szlib=$EBROOTSZIP CFLAGS="$CFLAGS -I$EBROOTLIBTIRPC/include/tirpc"',
-    '--includedir=%(installdir)s/include/%(namelower)s FFLAGS="$FFLAGS -fallow-argument-mismatch"',
-    '--with-szlib=$EBROOTSZIP CFLAGS="$CFLAGS -I$EBROOTLIBTIRPC/include/tirpc"',
-    '--includedir=%(installdir)s/include/%(namelower)s',
-    '--enable-shared',
-    '--disable-fortran',
-    '--disable-netcdf',
+    local_common_configopts,
+    # Cannot build shared libraries and Fortran...
+    # https://trac.osgeo.org/gdal/wiki/HDF#IncompatibilitywithNetCDFLibraries
+    # netcdf must be disabled to allow HDF to be used by GDAL
+    local_common_configopts + "--enable-shared --disable-fortran --disable-netcdf",
 ]
 
 
