@@ -1,0 +1,102 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# It was auto-generated based on a template easyconfig, so it should be used with care.
+
+easyblock = 'ConfigureMake'
+
+name = 'HEASoft'
+version = '6.32.1'
+
+homepage = 'https://heasarc.nasa.gov/lheasoft/'
+description = """A Unified Release of the FTOOLS and XANADU Software Packages
+
+XANADU	High-level, multi-mission tasks for X-ray astronomical spectral, timing, and imaging data analysis
+FTOOLS	General and mission-specific tools to manipulate FITS files
+FITSIO	Core library responsible for reading and writing FITS files (distributed with FTOOLS)
+fv	General FITS file browser/editor/plotter with a graphical user interface (distributed with FTOOLS)
+XSTAR	Tool for calculating the physical conditions and emission spectra of photoionized gases
+"""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+#https://heasarc.gsfc.nasa.gov/FTP/software/lheasoft/lheasoft6.32.1/heasoft-6.32.1src.tar.gz
+
+source_urls = ['https://heasarc.gsfc.nasa.gov/FTP/software/lheasoft/lheasoft%(version)s/']
+sources = ['%(namelower)s-%(version)ssrc.tar.gz']
+patches = ['heasoft-%(version)s-tclreadline-configure.patch']
+checksums = [
+    {'heasoft-6.32.1src.tar.gz': '235e3cdf84858d69f5bdfd1ac595d730a8dc4c1c08338c67cae00e3642b20d23'},
+    {'heasoft-6.32.1-tclreadline-configure.patch': 'f1f39a6f21d362b775864c744870e36ae4ecfa51a9e0df130bc1cedee143cd29'},
+]
+
+dependencies = [
+    ('Python', '3.10'),
+    ('SciPy-Stack', '2023b'),
+    #('astropy', '5.3.3'),  # installed using a virtual environment.  
+    ('Perl', '5.30.2'),
+]
+
+preconfigopts = "virtualenv %(installdir)s && source %(installdir)s/bin/activate && pip install astropy==5.3.3 --no-index && source %(installdir)s/bin/activate && deactivate && export LHEAPYTHON=$EBROOTPYTHON/bin/python3 && export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+start_dir = 'BUILD_DIR'
+
+configopts = ' --x-includes=${EBROOTGENTOO}/include '
+
+parallel = 1
+
+exts_defaultclass = 'PerlModule'
+
+exts_list = [
+    ('modules', '0.04', {
+        'runtest': 'test',
+        'source_tmpl': 'modules-0.04.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MU/MUENALAN'],
+        'checksums': ['a9bd888b9573ebb2a542b21e39bfe25ee4fd0879d4a7968131311c697ea53a5e'],
+    }),
+    ('Env', '1.04', {
+        'runtest': 'test',
+        'source_tmpl': 'Env-1.04.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/F/FL/FLORA'],
+        'checksums': ['d94a3d412df246afdc31a2199cbd8ae915167a3f4684f7b7014ce1200251ebb0'],
+    }),
+    ('ExtUtils::MakeMaker', '7.70', {
+        'runtest': 'test',
+        'source_tmpl': 'ExtUtils-MakeMaker-7.70.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/B/BI/BINGOS'],
+        'checksums': ['f108bd46420d2f00d242825f865b0f68851084924924f92261d684c49e3e7a74'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['x86_64-pc-linux-gnu-libc2.30/headas-init.sh','heacore/x86_64-pc-linux-gnu-libc2.30/bin/fpack'],
+    'dirs': ["."]
+}
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+    'PERL5LIB': [
+         'lib/perl5/site_perl/%(perlver)s/', 
+	 'lib/perl5/site_perl/%(perlver)s/x86_64-linux-thread-multi/', 
+	 'swift/x86_64-pc-linux-gnu-libc2.30/lib/perl/', 
+	 'nicer/x86_64-pc-linux-gnu-libc2.30/lib/perl/', 
+	 'x86_64-pc-linux-gnu-libc2.30/lib/perl/', 
+	 'attitude/x86_64-pc-linux-gnu-libc2.30/lib/perl/', 
+	 'maxi/x86_64-pc-linux-gnu-libc2.30/lib/perl/', 
+	 'heagen/x86_64-pc-linux-gnu-libc2.30/lib/perl/', 
+	 'tcltk/x86_64-pc-linux-gnu-libc2.30/lib/perl/', 
+	 'hitomi/x86_64-pc-linux-gnu-libc2.30/lib/perl/', 
+	 'heacore/x86_64-pc-linux-gnu-libc2.30/lib/perl/',
+    ],
+}
+
+modextravars = {'HEADAS': '%(installdir)s/x86_64-pc-linux-gnu-libc2.30'}
+
+modloadmsg = """To initialize HEASoft, 
+do (sh, ash, ksh, and bash)
+              . $HEADAS/headas-init.sh
+or (csh, tcsh)
+              source $HEADAS/headas-init.csh
+
+"""
+
+moduleclass = 'geo'
