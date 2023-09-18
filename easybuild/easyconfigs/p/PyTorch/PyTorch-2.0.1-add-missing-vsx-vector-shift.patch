@@ -1,0 +1,228 @@
+From 8538b32f2dcd40471effa68420656b63c3dce717 Mon Sep 17 00:00:00 2001
+From: Deepali Chourasia <deepch23@in.ibm.com>
+Date: Thu, 6 Apr 2023 15:53:17 +0000
+Subject: [PATCH 1/4] fallback to cpu_kernel for VSX
+
+---
+ aten/src/ATen/native/cpu/BinaryOpsKernel.cpp | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp b/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
+index 051f759def9ece..20cdb565f71d77 100644
+--- a/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
++++ b/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
+@@ -372,6 +372,14 @@ void bitwise_xor_kernel(TensorIteratorBase& iter) {
+ }
+ 
+ void lshift_kernel(TensorIteratorBase& iter) {
++#if defined(__VSX__)  || defined(CPU_CAPABILITY_VSX)
++  AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "lshift_cpu", [&]() {
++    cpu_kernel(iter,
++      [](scalar_t a, scalar_t b) -> scalar_t {
++        return static_cast<std::make_unsigned_t<scalar_t>>(a) << b;
++    });
++  });
++#else
+   AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "lshift_cpu", [&]() {
+     cpu_kernel_vec(iter,
+         [](scalar_t a, scalar_t b) -> scalar_t {
+@@ -385,6 +393,7 @@ void lshift_kernel(TensorIteratorBase& iter) {
+             return a << b;
+         });
+   });
++#endif
+ }
+ 
+ void logical_and_kernel(TensorIterator& iter) {
+@@ -445,6 +454,14 @@ void logical_xor_kernel(TensorIterator& iter) {
+ }
+ 
+ void rshift_kernel(TensorIteratorBase& iter) {
++#if defined(__VSX__)  || defined(CPU_CAPABILITY_VSX)
++  AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "rshift_cpu", [&]() {
++    cpu_kernel(iter,
++      [](scalar_t a, scalar_t b) -> scalar_t {
++        return a >> b;
++      });
++  });
++#else
+   AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "rshift_cpu", [&]() {
+     cpu_kernel_vec(iter,
+         [](scalar_t a, scalar_t b) -> scalar_t {
+@@ -459,6 +476,7 @@ void rshift_kernel(TensorIteratorBase& iter) {
+           return a >> b;
+         });
+   });
++#endif
+ }
+ 
+ void lt_kernel(TensorIteratorBase& iter) {
+
+From 97b17b58bcf37660153331a235ab213eb61945fd Mon Sep 17 00:00:00 2001
+From: Deepali Chourasia <deepch23@in.ibm.com>
+Date: Wed, 12 Jul 2023 16:35:23 +0000
+Subject: [PATCH 2/4] Revert "fallback to cpu_kernel for VSX"
+
+This reverts commit 31c7a7f4c44523b5546d008b48f82ca0629e58a3.
+---
+ aten/src/ATen/native/cpu/BinaryOpsKernel.cpp | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+diff --git a/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp b/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
+index 20cdb565f71d77..051f759def9ece 100644
+--- a/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
++++ b/aten/src/ATen/native/cpu/BinaryOpsKernel.cpp
+@@ -372,14 +372,6 @@ void bitwise_xor_kernel(TensorIteratorBase& iter) {
+ }
+ 
+ void lshift_kernel(TensorIteratorBase& iter) {
+-#if defined(__VSX__)  || defined(CPU_CAPABILITY_VSX)
+-  AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "lshift_cpu", [&]() {
+-    cpu_kernel(iter,
+-      [](scalar_t a, scalar_t b) -> scalar_t {
+-        return static_cast<std::make_unsigned_t<scalar_t>>(a) << b;
+-    });
+-  });
+-#else
+   AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "lshift_cpu", [&]() {
+     cpu_kernel_vec(iter,
+         [](scalar_t a, scalar_t b) -> scalar_t {
+@@ -393,7 +385,6 @@ void lshift_kernel(TensorIteratorBase& iter) {
+             return a << b;
+         });
+   });
+-#endif
+ }
+ 
+ void logical_and_kernel(TensorIterator& iter) {
+@@ -454,14 +445,6 @@ void logical_xor_kernel(TensorIterator& iter) {
+ }
+ 
+ void rshift_kernel(TensorIteratorBase& iter) {
+-#if defined(__VSX__)  || defined(CPU_CAPABILITY_VSX)
+-  AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "rshift_cpu", [&]() {
+-    cpu_kernel(iter,
+-      [](scalar_t a, scalar_t b) -> scalar_t {
+-        return a >> b;
+-      });
+-  });
+-#else
+   AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "rshift_cpu", [&]() {
+     cpu_kernel_vec(iter,
+         [](scalar_t a, scalar_t b) -> scalar_t {
+@@ -476,7 +459,6 @@ void rshift_kernel(TensorIteratorBase& iter) {
+           return a >> b;
+         });
+   });
+-#endif
+ }
+ 
+ void lt_kernel(TensorIteratorBase& iter) {
+
+From f32ee00c958c89abb3f37846c4e6da46473b438a Mon Sep 17 00:00:00 2001
+From: Deepali Chourasia <deepch23@in.ibm.com>
+Date: Wed, 12 Jul 2023 16:39:32 +0000
+Subject: [PATCH 3/4] add shift operators
+
+---
+ .../src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h | 13 +++++++++++++
+ .../src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h | 14 ++++++++++++++
+ .../src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h | 14 ++++++++++++++
+ 3 files changed, 41 insertions(+)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
+index 7c300c8087cff2..37c593b2110e74 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
+@@ -335,6 +335,19 @@ class Vectorized<int16_t> {
+ };
+ 
+ template <>
++Vectorized<int16_t> inline operator<<(const Vectorized<int16_t>& a, const Vectorized<int16_t>& b) {
++               vuint16 shift_vec0 = reinterpret_cast<vuint16>(b.vec0());
++               vuint16 shift_vec1 = reinterpret_cast<vuint16>(b.vec1());
++         return Vectorized<int16_t>{vec_sl(a.vec0(), shift_vec0), vec_sl(a.vec1(), shift_vec1)};
++}
++
++template <>
++Vectorized<int16_t> inline operator>>(const Vectorized<int16_t>& a, const Vectorized<int16_t>& b) {
++               vuint16 shift_vec0 = reinterpret_cast<vuint16>(b.vec0());
++               vuint16 shift_vec1 = reinterpret_cast<vuint16>(b.vec1()) ;
++         return Vectorized<int16_t>{vec_sr(a.vec0(), shift_vec0), vec_sr(a.vec1(), shift_vec1)};
++}
++
+ Vectorized<int16_t> inline maximum(
+     const Vectorized<int16_t>& a,
+     const Vectorized<int16_t>& b) {
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
+index c98ab6215e6206..1b6a82df39b530 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int32_vsx.h
+@@ -265,6 +265,20 @@ class Vectorized<int32_t> {
+   DEFINE_MEMBER_OP(operator^, int32_t, vec_xor)
+ };
+ 
++template <>
++Vectorized<int32_t> inline operator<<(const Vectorized<int32_t>& a, const Vectorized<int32_t>& b) {
++                vuint32 shift_vec0 = reinterpret_cast<vuint32>(b.vec0());
++                vuint32 shift_vec1 = reinterpret_cast<vuint32>(b.vec1()) ;
++          return Vectorized<int32_t>{vec_sl(a.vec0(), shift_vec0), vec_sl(a.vec1(), shift_vec1)};
++}
++
++template <>
++Vectorized<int32_t> inline operator>>(const Vectorized<int32_t>& a, const Vectorized<int32_t>& b) {
++                vuint32 shift_vec0 = reinterpret_cast<vuint32>(b.vec0());
++                vuint32 shift_vec1 = reinterpret_cast<vuint32>(b.vec1()) ;
++          return Vectorized<int32_t>{vec_sr(a.vec0(), shift_vec0), vec_sr(a.vec1(), shift_vec1)};
++}
++
+ template <>
+ Vectorized<int32_t> inline maximum(
+     const Vectorized<int32_t>& a,
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
+index a4171026a2b99f..a7a376ee16ec54 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int64_vsx.h
+@@ -217,6 +217,20 @@ class Vectorized<int64_t> {
+   DEFINE_MEMBER_OP(operator^, int64_t, vec_xor)
+ };
+ 
++template <>
++Vectorized<int64_t> inline operator<<(const Vectorized<int64_t>& a, const Vectorized<int64_t>& b) {
++                vuint64 shift_vec0 = reinterpret_cast<vuint64>(b.vec0());
++                vuint64 shift_vec1 = reinterpret_cast<vuint64>(b.vec1()) ;
++          return Vectorized<int64_t>{vec_sl(a.vec0(), shift_vec0), vec_sl(a.vec1(), shift_vec1)};
++}
++
++template <>
++Vectorized<int64_t> inline operator>>(const Vectorized<int64_t>& a, const Vectorized<int64_t>& b) {
++                vuint64 shift_vec0 = reinterpret_cast<vuint64>(b.vec0());
++                vuint64 shift_vec1 = reinterpret_cast<vuint64>(b.vec1()) ;
++          return Vectorized<int64_t>{vec_sr(a.vec0(), shift_vec0), vec_sr(a.vec1(), shift_vec1)};
++}
++
+ template <>
+ Vectorized<int64_t> inline maximum(
+     const Vectorized<int64_t>& a,
+
+From ee491728f538caaf5d73df1091f6a74868e4d291 Mon Sep 17 00:00:00 2001
+From: Deepali Chourasia <deepch23@in.ibm.com>
+Date: Thu, 20 Jul 2023 17:18:56 +0000
+Subject: [PATCH 4/4] added missing template<>
+
+---
+ aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
+index 37c593b2110e74..a71f50fc7aaa30 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h
+@@ -348,6 +348,7 @@ Vectorized<int16_t> inline operator>>(const Vectorized<int16_t>& a, const Vector
+          return Vectorized<int16_t>{vec_sr(a.vec0(), shift_vec0), vec_sr(a.vec1(), shift_vec1)};
+ }
+ 
++template <>
+ Vectorized<int16_t> inline maximum(
+     const Vectorized<int16_t>& a,
+     const Vectorized<int16_t>& b) {
