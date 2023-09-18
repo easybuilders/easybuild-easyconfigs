@@ -1,0 +1,33 @@
+name = 'cuDNN'
+version = '8.9.4.25'
+versionsuffix = '-CUDA-%(cudaver)s'
+homepage = 'https://developer.nvidia.com/cudnn'
+description = """The NVIDIA CUDA Deep Neural Network library (cuDNN) is
+a GPU-accelerated library of primitives for deep neural networks."""
+
+toolchain = SYSTEM
+
+# note: cuDNN is tied to specific to CUDA versions,
+# see also https://docs.nvidia.com/deeplearning/cudnn/support-matrix/index.html#cudnn-cuda-hardware-versions
+local_short_ver = '.'.join(version.split('.')[:3])
+local_cuda_major = '12'
+
+source_urls = [
+    'https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-%(cudnnarch)s/'
+]
+sources = ['%%(namelower)s-linux-%%(cudnnarch)s-%%(version)s_cuda%s-archive.tar.xz' % local_cuda_major]
+checksums = ['82d04906c0d6828561bbddc68f8b18cf0a334ef1162f6eff7bc88dc3313e15d1']
+
+dependencies = [('CUDA', '12')]
+
+sanity_check_paths = {
+    'files': [
+        'include/cudnn.h', 'lib64/libcudnn_adv_infer_static.a', 'lib64/libcudnn_adv_train_static.a',
+        'lib64/libcudnn_cnn_infer_static.a', 'lib64/libcudnn_cnn_train_static.a',
+        'lib64/libcudnn_ops_infer_static.a', 'lib64/libcudnn_ops_train_static.a',
+        'lib64/libcudnn.%s' % SHLIB_EXT
+    ],
+    'dirs': ['include', 'lib64'],
+}
+
+moduleclass = 'numlib'
