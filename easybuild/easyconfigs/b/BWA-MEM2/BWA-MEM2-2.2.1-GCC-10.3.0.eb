@@ -1,0 +1,47 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Author: Pierre Berthier
+# IBU - Interfaculty Bioinformatics Unit, University of Bern
+
+easyblock = 'ConfigureMake'
+skipsteps = ['configure', 'install']
+build_cmd_targets = ['multi']
+
+name = 'BWA-MEM2'
+version = '2.2.1'
+
+homepage = 'http://bio-bwa.sourceforge.net/'
+description = """Burrows-Wheeler Aligner (BWA) is an efficient program that aligns
+ relatively short nucleotide sequences against a long reference sequence such as the human genome."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+toolchainopts = {'pic': True}
+
+sources = [{
+    'filename': '%(namelower)s-v%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/%(namelower)s',
+        'repo_name': '%(namelower)s',
+        'tag': 'v%(version)s',
+        'recursive': True,
+        'keep_git_dir': True,
+    },
+}]
+
+dependencies = [
+    ('Perl', '5.32.1'),
+    ('zlib', '1.2.11'),
+]
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin',
+    'cp %(builddir)s/%(namelower)s/%(namelower)s %(installdir)s/bin/',
+    'cp %(builddir)s/%(namelower)s/%(namelower)s.* %(installdir)s/bin/',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['bin'],
+}
+
+moduleclass = 'bio'
