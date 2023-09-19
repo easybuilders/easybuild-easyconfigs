@@ -1,0 +1,25 @@
+Fix error:
+ERROR: /dev/shm/TensorFlow/tensorflow-2.13.0/tensorflow/python/framework/BUILD:2454:17: no such target '@com_google_protobuf//:well_known_types_py_pb2_genproto': target 'well_known_types_py_pb2_genproto' not declared in package '' defined by /dev/shm/s3248973-EasyBuild/TensorFlow/2.13.0/foss-2022a/TensorFlow/bazel-root/663b1bf019e1a9ec9827eae691fce071/external/com_google_protobuf/BUILD.bazel and referenced by '//tensorflow/python/framework:cpp_shape_inference_proto_py_genproto'
+ERROR: Analysis of target '//tensorflow/tools/pip_package:build_pip_package' failed; build aborted: 
+
+Using solution from
+https://github.com/tensorflow/tensorflow/issues/60667#issuecomment-1563522589
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/third_party/systemlibs/protobuf.BUILD b/third_party/systemlibs/protobuf.BUILD
+index 4d05ab28d12..cb48d375b27 100644
+--- a/third_party/systemlibs/protobuf.BUILD
++++ b/third_party/systemlibs/protobuf.BUILD
+@@ -111,3 +116,10 @@ py_library(
+     visibility = ["//visibility:public"],
+     deps = [dep + "_proto" for dep in proto[1][1]],
+ ) for proto in WELL_KNOWN_PROTO_MAP.items()]
++
++py_proto_library(
++    name = "well_known_types_py_pb2",
++    include = ".",
++    srcs = [proto[1][0] for proto in WELL_KNOWN_PROTO_MAP.items()],
++    visibility = ["//visibility:public"],
++)
+\ No newline at end of file
