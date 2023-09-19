@@ -1,7 +1,7 @@
 easyblock = 'MakeCp'
 
 name = 'vg'
-version = '1.48.0'
+version = '1.50.1'
 
 homepage = 'https://github.com/vgteam/vg'
 description = """variation graph data structures, interchange formats,
@@ -16,13 +16,21 @@ sources = [{
         'repo_name': '%(namelower)s',
         'tag': 'v%(version)s',
         'recursive': True,
+        'recurse_submodules': [
+            '!vcflib',
+            '!deps/htslib',
+            '!deps/tabixpp',
+        ],
         'keep_git_dir': True,
+        'extra_config_params': [
+            'submodule."deps/elfutils".url=https://sourceware.org/git/elfutils.git',
+        ]
     }
 }]
 patches = ['%(name)s-%(version)s_dep_fix.patch']
 checksums = [
     None,
-    '1ca9dd7c0f493ea41a7e5948f176a38176910b58419b06c96b868e975bd22f7d',  # vg-1.48.1_dep_fix.patch
+    '4db8da4c7b4ed3c846f03ddab47a5b99345edc7db398882b12bcebc4a0ee3fc0',  # vg-1.50.1_dep_fix.patch
 ]
 
 builddependencies = [
@@ -55,7 +63,16 @@ dependencies = [
     ('pkg-config', '0.29.2'),
     ('XZ', '5.2.5'),
     ('nodejs', '16.15.1'),
+
+    ('vcflib', '1.0.9', '-R-4.2.1'),
+    ('HTSlib', '1.15.1'),
+    ('tabixpp', '1.1.2'),
 ]
+
+prebuildopts = 'mkdir lib && '
+prebuildopts += 'ln -s $EBROOTVCFLIB/lib/libvcflib.a lib/ && '
+prebuildopts += 'ln -s $EBROOTHTSLIB/lib/libhts.a lib/ && '
+prebuildopts += 'ln -s $EBROOTTABIXPP/lib/libtabixpp.a lib/ && '
 
 files_to_copy = ['bin']
 
