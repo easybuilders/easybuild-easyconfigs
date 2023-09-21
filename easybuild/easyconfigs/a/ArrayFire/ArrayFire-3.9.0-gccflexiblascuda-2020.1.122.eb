@@ -1,0 +1,63 @@
+easyblock = 'CMakeMake'
+
+name = 'ArrayFire'
+version = '3.9.0'
+
+homepage = 'https://arrayfire.com/'
+
+description = """
+ ArrayFire is a general-purpose library that simplifies the process of
+ developing software that targets parallel and massively-parallel architectures
+ including CPUs, GPUs, and other hardware acceleration devices.
+"""
+
+toolchain = {'name': 'gccflexiblascuda', 'version': '2020.1.122'}
+
+source_urls = ['https://github.com/arrayfire/arrayfire/releases/download/v%(version)s/']
+sources = ['%(namelower)s-full-%(version)s.tar.bz2']
+patches = ['%(name)s-%(version)s-CMakeList.patch']
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+]
+dependencies = [
+    ('Boost', '1.80.0'),
+    ('FFTW', '3.3.8'),
+    ('cuDNN', '8.9'),
+    ('GLFW', '3.3.8'),
+    ('spdlog', '1.9.2'),
+]
+# Python extension hangs on import with this version
+#multi_deps = {'Python': ['3.8', '3.9', '3.10', '3.11'] }
+#multi_deps_extensions_only = True
+#exts_defaultclass = 'PythonPackage'
+#exts_default_options = {'source_urls': [PYPI_SOURCE]}
+#exts_list = [
+#    ('arrayfire', '3.8.0'),
+#]
+
+#exts_filter = ("python -c 'import %(ext_name)s'", '')
+#import %(ext_name)s'", '')
+
+separate_build_dir = True
+
+configopts = '-DCUDA_architecture_build_targets="%(cuda_cc_semicolon_sep)s" '
+configopts += '-DCBLAS_INCLUDE_DIR=$BLAS_INC_DIR -DCBLAS_LIBRARIES="$LIBBLAS" '
+configopts += '-DLAPACK_INCLUDE_DIR=$LAPACK_INC_DIR -DLAPACK_LIBRARIES="$LIBLAPACK -llapacke" '
+#configopts += '-DAF_WITH_FMT_HEADER_ONLY=ON -DAF_WITH_SPDLOG_HEADER_ONLY=ON -DAF_BUILD_FORGE=OFF '
+configopts += '-DAF_BUILD_FORGE=ON '
+
+sanity_check_paths = {
+    'files': ['include/af/version.h', 'lib64/libaf.%s' % SHLIB_EXT],
+    'dirs': [
+        'share/ArrayFire/',
+#        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+modextrapaths = {
+#	'EBPYTHONPREFIXES': '',
+	'AF_PATH': '',
+}
+
+
+moduleclass = 'math'
