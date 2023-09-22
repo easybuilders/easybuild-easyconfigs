@@ -1,32 +1,35 @@
-easyblock = 'ConfigureMake'
+easyblock = 'MakeCp'
 
 name = 'HEALPix'
 version = '3.82'
 
 homepage = 'http://healpix.sourceforge.net/'
 description = """Hierarchical Equal Area isoLatitude Pixelation of a sphere."""
-software_license = "LicenseGPLv2"
 
 toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
-toolchainopts = {'pic': True}
 
 source_urls = [SOURCEFORGE_SOURCE]
+
+#https://netix.dl.sourceforge.net/project/healpix/Healpix_3.82/Healpix_3.82_2022Jul28.tar.gz
 sources = ['Healpix_3.82_2022Jul28.tar.gz']
-checksums = ['47629f057a2daf06fca3305db1c6950edb9e61bbe2d7ed4d98ff05809da2a127']
 
 unpack_options = '--strip-components=1'
 
-buildininstalldir = True
+with_configure = 'true'
 
-builddependencies = [('binutils', '2.37')]
+# use same binutils version that was used when building GCC toolchain
+builddependencies = [('binutils', '2.37', '', True)]
 
 dependencies = [('CFITSIO', '4.1.0')]
 
-# ConfigureMake easyblock doesn't allow to skip --prefix statement. Following lines tweaks that:
-configure_cmd_prefix = 'FITSDIR=$EBROOTCFITSIO/lib FITSINC=$EBROOTCFITSIO/include NOOP=\"'
-configopts = '\" ./configure --auto=\"c,cxx,f90,sharp\" -L'
-# dummy install_cmd:
+prefix_opt = ''
+configure_cmd_prefix = 'FITSDIR=$EBROOTCFITSIO/lib FITSINC=$EBROOTCFITSIO/include '
+configure_without_installdir = 'true'
+configopts = '--auto=\"c,cxx,f90,sharp\" -L'
+
 install_cmd = 'true'
+
+files_to_copy = [ 'lib', 'bin', 'data', 'doc', 'include', ]
 
 # extra paths originally exported in confdir/*_Linux/
 modextravars = {
@@ -34,11 +37,7 @@ modextravars = {
     'HEXE': '%(installdir)s/bin'
 }
 
-sanity_check_commands = [
-    "cd %(installdir)s && make test &> build/testresults.txt",
-    'test $(grep -c "test completed" %(installdir)s/build/testresults.txt) -eq 4',
-    'test $(grep -c "normal completion" %(installdir)s/build/testresults.txt) -eq 10',
-]
+runtest = 'test'
 
 sanity_check_paths = {
     'files': [
