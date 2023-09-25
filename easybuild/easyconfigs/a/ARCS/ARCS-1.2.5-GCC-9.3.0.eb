@@ -22,12 +22,15 @@ dependencies = [
     ('btllib', '1.6.2'),
 ]
 
-preconfigopts = 'source autogen.sh && LDFLAGS="-lgcov --coverage $LDFLAGS" && '
+preconfigopts = 'source autogen.sh && '
 
 configopts = " --with-boost=$EBROOTBOOST/include"
 
-# add missing files
-postinstallcmds = ["cp bin/* %(installdir)s/bin"]
+# add missing files and fix hardcoded path
+postinstallcmds = [
+    "cp bin/* %(installdir)s/bin",
+    "sed -i -e 's#$(bin)/../src/long-to-linked-pe#long-to-linked-pe#' -e 's#../Examples##' %(installdir)s/bin/arcs-make",
+]
 
 sanity_check_paths = {
     'files': ['bin/%(namelower)s', 'bin/%(namelower)s-make', 'bin/makeTSVfile.py'],
