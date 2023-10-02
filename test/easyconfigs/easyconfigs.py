@@ -219,6 +219,15 @@ class EasyConfigTest(TestCase):
         # get list of changed easyconfigs
         changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
         added_ecs_files = get_eb_files_from_diff(diff_filter='A')
+
+        # ignore template easyconfig (TEMPLATE.eb) and archived easyconfigs
+        def filter_ecs(ecs):
+            archive_path = os.path.join('easybuild', 'easyconfigs', '__archive__')
+            return [ec for ec in ecs if os.path.basename(ec) != 'TEMPLATE.eb' and archive_path not in ec]
+
+        changed_ecs_files = filter_ecs(changed_ecs_files)
+        added_ecs_files = filter_ecs(added_ecs_files)
+
         changed_ecs_filenames = [os.path.basename(f) for f in changed_ecs_files]
         added_ecs_filenames = [os.path.basename(f) for f in added_ecs_files]
         if changed_ecs_filenames:
@@ -1140,8 +1149,11 @@ class EasyConfigTest(TestCase):
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
+        # Jupyter-bundle: JupyterHub + JupyterLab + notebook + nbclassic + jupyter-server-proxy
+        # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'Python-bundle', 'ROCm']
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
+                             'Python-bundle', 'ROCm']
 
         failing_checks = []
 
@@ -1315,6 +1327,10 @@ def template_easyconfig_test(self, spec):
     # sanity check for software name, moduleclass
     self.assertEqual(ec['name'], name)
     self.assertTrue(ec['moduleclass'] in build_option('valid_module_classes'))
+    # base is the default value for moduleclass, which should never be used,
+    # and moduleclass should always be set in the easyconfig file
+    self.assertNotEqual(ec['moduleclass'], 'base',
+                        "moduleclass should be set, and not be set to 'base', for %s" % spec)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
