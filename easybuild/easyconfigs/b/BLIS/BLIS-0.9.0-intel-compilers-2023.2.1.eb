@@ -8,6 +8,7 @@ description = """BLIS is a portable software framework for instantiating high-pe
 BLAS-like dense linear algebra libraries."""
 
 toolchain = {'name': 'intel-compilers', 'version': '2023.2.1'}
+toolchainopts = {'optarch': False}
 
 source_urls = ['https://github.com/flame/blis/archive/']
 sources = ['%(version)s.tar.gz']
@@ -34,8 +35,9 @@ builddependencies = [
     ('binutils', '2.38'),
 ]
 
-preconfigopts = "declare -A ARCH_MAP=( [avx2]='x86_64_v3' [avx512]='skx' ) &&"
-local_configopts = '--enable-cblas --enable-threading=openmp --enable-shared CC="$CC" ${ARCH_MAP[$RSNT_ARCH]}'
+preconfigopts = "sed -i 's/march=knl/march=common-avx512/g' config/knl/make_defs.mk && "
+preconfigopts += "declare -A ARCH_MAP=( [avx2]='x86_64_v3' [avx512]='skx' ) &&"
+local_configopts = '--complex-return=intel --enable-cblas --enable-threading=openmp --enable-shared CC="$CC" ${ARCH_MAP[$RSNT_ARCH]}'
 configopts = ['-i64 -b64 ' + local_configopts, local_configopts]
 buildopts = ['LIBBLIS=libblis64', '']
 installopts = buildopts
