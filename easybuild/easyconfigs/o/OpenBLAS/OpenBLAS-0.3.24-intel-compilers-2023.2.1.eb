@@ -5,7 +5,7 @@ homepage = 'http://www.openblas.net/'
 description = "OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version."
 
 toolchain = {'name': 'intel-compilers', 'version': '2023.2.1'}
-toolchainopts = {'precise': True, 'extra_cflags': '-fp-speculation=safe -ftz'}
+toolchainopts = {'precise': True, 'extra_cflags': '-fp-speculation=safe', 'optarch': False}
 
 source_urls = [
     # order matters, trying to download the large.tgz/timing.tgz LAPACK tarballs from GitHub causes trouble
@@ -38,7 +38,11 @@ builddependencies = [
 ]
 
 configopts = ['', '']
+# icx with -ax doesn't play well with FlexiBLAS, and it's not needed with DYNAMIC_ARCH anyway so optarch = False
+# above, and we add march flags for Fortran manually
 prebuildopts = "declare -A ARCH_MAP=( [avx2]='TARGET=HASWELL' [avx512]='TARGET=SKYLAKEX' ) && "
+prebuildopts += 'if [ $RSNT_ARCH==avx2 ]; then export FFLAGS="$FFLAGS -march=core-avx2 -axCore-AVX512";'
+prebuildopts +=                         ' else export FFLAGS="$FFLAGS -march=skylake-avx512"; fi && '
 prebuildopts += 'if [ $RSNT_ARCH==avx2 ]; then printf "DYNAMIC_ARCH=1\\nDYNAMIC_LIST=HASWELL ZEN SKYLAKEX\\n" >> Makefile.rule; fi && '
 prebuildopts += "sed -i 's/$(FFLAGS) $(EXTRALIB)/$(FFLAGS) $(EXTRALIB) -nofor-main/' Makefile && "
 local_buildopts = '${ARCH_MAP[$RSNT_ARCH]} NUM_THREADS=64'
@@ -47,8 +51,8 @@ buildopts = [local_buildopts + ' INTERFACE64=1 LIBPREFIX=libopenblas64',
 installopts = buildopts
 
 run_lapack_tests = True
-max_failing_lapack_tests_other_errors = 100
-max_failing_lapack_tests_num_errors = 20000
+max_failing_lapack_tests_other_errors = 60
+max_failing_lapack_tests_num_errors = 1250
 
 # extensive testing can be enabled by uncommenting the line below
 # runtest = 'PATH=.:$PATH lapack-timing'
