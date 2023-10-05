@@ -71,7 +71,13 @@ use_pip = True
 
 sanity_pip_check = True
 
-sanity_check_commands = ["python -c 'import monai; monai.config.print_config()'"]
+# 'pip check' does not verify whether all optional dependencies required to support 'extras'
+# are actually available, so we do it here via an import check;
+# Pillow is a special case, since there we need to use 'import PIL'
+sanity_check_commands = [
+    "python -c 'import monai; monai.config.print_config()'",
+    "python -c 'import PIL'",  # for Pillow required dependency
+] + ["python -c 'import %s'" % x for x in local_pip_extras.split(',') if x != 'pillow']
 
 sanity_check_paths = {
     'files': ['lib/python%%(pyshortver)s/site-packages/%%(namelower)s/_C.%s' % SHLIB_EXT],
