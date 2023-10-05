@@ -1,0 +1,114 @@
+name = 'PETSc'
+version = "3.19.2"
+versionsuffix = '-64bits'
+modaltsoftname = 'petsc-64bits'
+
+homepage = 'http://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['http://ftp.mcs.anl.gov/pub/%(namelower)s/release-snapshots']
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [
+    ('HDF5', '1.12.2', '-mpi'),
+    ('FFTW.MPI', '3.3.10'),
+]
+
+# For the extension
+builddependencies = [
+    ('SciPy-Stack', '2023b'),
+    ('mpi4py', '3.1.4'),
+    ('CMake', '3.22.1'),
+]
+
+multi_deps = {'Python': ['3.9', '3.10', '3.11']}
+multi_deps_extensions_only = True
+
+configopts = " ".join([
+    '--with-hdf5=1',
+    '--with-hdf5-dir=$EBROOTHDF5',
+    '--with-cxx-dialect=C++14',
+    '--with-memalign=64',
+    '--with-python=no',
+    '--with-mpi4py=no',
+    '--with-64-bit-indices=1',
+])
+
+
+download_deps = [
+    'triangle',
+    'hpddm',
+    'strumpack',
+]
+
+postinstallcmds = [
+    'ln -sf %(installdir)s/lib/%(namelower)s/bin %(installdir)s/bin',
+    'ln -sf %(installdir)s/lib/%(namelower)s/conf %(installdir)s/conf',
+]
+
+keepsymlinks = True
+
+shared_libs = 1
+
+# Some deps are not supported with 64bits indices
+download_deps_static = [
+    'mumps',
+    'ptscotch',
+    # 'superlu',
+    'superlu_dist',
+    'parmetis',
+    'metis',
+    # 'ml',
+    'SuiteSparse',
+    'hypre',
+    'prometheus',
+    'spooles',
+    # 'chaco',
+    'slepc',
+    # 'spai',
+    # 'party',
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('petsc4py', version, {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'petsc4py',
+        'preconfigopts': '#',
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_commands = [
+    "module load scipy-stack && python -c 'import petsc4py;'",
+    "module load scipy-stack && python -m PetscBinaryIO --help",
+]
+
+sanity_check_paths = {
+    'files': [
+        'lib/libpetsc.so',
+    ],
+    'dirs': [
+        'bin',
+        'conf',
+        'include',
+        'lib',
+        'share',
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': [''],}
+
+moduleclass = 'numlib'
+modluafooter = """
+family("%(namelower)s")
+"""
