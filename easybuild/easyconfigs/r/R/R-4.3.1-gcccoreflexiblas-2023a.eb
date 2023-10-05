@@ -1,0 +1,69 @@
+name = 'R'
+version = '4.3.1'
+
+homepage = 'https://www.r-project.org/'
+description = """R is a free software environment for statistical computing
+ and graphics."""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2023a'}
+
+source_urls = ['https://cloud.r-project.org/src/base/R-%(version_major)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['8dd0bf24f1023c6f618c3b317383d291b4a494f40d73b983ac22ffea99e4ba99']
+
+builddependencies = [
+    ('pkgconf', '1.9.3'),
+    ('Autotools', '20220317'),
+]
+dependencies = [
+    ('X11', '20230603'),
+    ('Mesa', '23.1.4'),
+    ('libGLU', '9.0.3'),
+    ('cairo', '1.17.8'),
+    ('libreadline', '8.2'),
+    ('ncurses', '6.4'),
+    ('bzip2', '1.0.8'),
+    ('XZ', '5.4.2'),
+    ('zlib', '1.2.13'),
+    ('SQLite', '3.42.0'),
+    ('PCRE2', '10.42'),
+    ('libpng', '1.6.39'),  # for plotting in R
+    ('libjpeg-turbo', '2.1.5.1'),  # for plottting in R
+    ('LibTIFF', '4.5.0'),
+    ('Java', '17', '', SYSTEM),
+    ('Tk', '8.6.12'),  # for tcltk
+    ('libgit2', '1.7.0'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+# make sure configure does not add directories in LDFLAGS to R's LD_LIBRARY_PATH
+preconfigopts = 'LDFLAGS="" '
+
+configopts = " ".join([
+    '--enable-java',
+    '--enable-largefile',
+    '--enable-long-double',
+    '--enable-openmp',
+    '--enable-R-shlib',
+    '--enable-shared',
+    '--enable-threads',
+    '--with-cairo',
+    '--with-jpeglib',
+    '--with-libpng',
+    '--with-libtiff',
+    '--with-pic',
+    '--with-readline',
+    '--with-tcl-config=${NIXUSER_PROFILE-EBROOTGENTOO}/lib/tclConfig.sh',
+    '--with-tk-config=${NIXUSER_PROFILE-EBROOTGENTOO}/lib/tkConfig.sh',
+    '--with-x=yes',
+    'FLIBS="-lgfortran -lm"',
+])
+
+installopts = ' && cd src/nmath/standalone && make && make install '
+
+# Ensure libR.so is found since --enable-R-shlib is given
+postinstallcmds = [
+    "setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib64/R/lib --any_interpreter"
+]
+
+moduleclass = 'lang'
