@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+
+import sys
+import git
+import glob
+import os
+from datetime import datetime, timezone
+import argparse
+
+
+def system_toolchain(path):
+    with open(path, 'r') as file:
+        for line in file:
+           if line.strip() == 'toolchain = SYSTEM':
+               return True
+    return False
+
+
+parser = argparse.ArgumentParser(
+        prog='archive_old',
+        description='Archives easyconfigs based on when they were first committed')
+parser.add_argument('--branch', action='store_true', help='create new branch')
+parser.add_argument('--apply', action='store_true', help='apply git mv')
+parser.add_argument('--repo', type=str, required=True)
+parser.add_argument(
+        '--cutoff',
+        type=lambda s: datetime.strptime(s, '%Y-%m-%d').astimezone(timezone.utc),
+        required=True)
+
+args = parser.parse_args()
+
+repo = git.Repo(args.repo)
+
+robot_dir = os.path.join(args.repo, 'easybuild/easyconfigs')
+archive_dir = os.path.join(robot_dir, '__archive__')
+paths = glob.glob(os.path.join(robot_dir, '?/*/*.eb'))
+
+changes_to_commit = False
+
+for path in paths:
+    if not system_toolchain(path):
+        continue
+
+    for commit in repo.iter_commits(paths=path, reverse=True):
+        # Just looking at the oldest commits for software age.
+        if commit.committed_datetime < args.cutoff:
+            if args.apply:
+                archive_path = path.replace(robot_dir, archive_dir)
+                os.makedirs(archive_path.rsplit('/', maxsplit=1)[0], exist_ok=True)
+                repo.index.move([path, archive_path])
+                changes_to_commit = True
+                print(f"Archived '{path}' from {commit.committed_datetime}")
+            else:
+                print(f"Would have archived '{path}' from {commit.committed_datetime}")
+
+        break
+
+if changes_to_commit:
+    if args.branch:
+        new_branch_name = 'archive_system_{args.cutoff}'
+        repo.create_head(new_branch_name)
+        new_branch = repo.heads[new_branch_name]
+        new_branch.checkout()
+
+    commit_message = f"Archive files on {args.cutoff.strftime('%Y-%m-%d')}"
+    print('Commit the changes with:')
+    print('git commit -m "{commit_message}"')
+    # repo.index.commit(commit_message)
+    # print(f"Committed changes to branch '{new_branch_name}'")
+else:
+    print("No changes to commit.")
+
+print("Archiving process completed.")
+
