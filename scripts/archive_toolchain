@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(
         description='Archives easyconfigs based toolchain substring in easyconfig name')
 parser.add_argument('--branch', action='store_true', help='create new branch')
 parser.add_argument('--apply', action='store_true', help='apply git mv')
+parser.add_argument('--commit', action='store_true', help='automatically commit')
 parser.add_argument('--repo', type=str, required=True, help='root dir of easyconfigs repo')
 parser.add_argument('--toolchain', type=str, required=True, help='e.g. "foss-2016a"')
 
@@ -41,9 +42,11 @@ if changes_to_commit:
         new_branch.checkout()
 
     commit_message = f"Archive {args.toolchain}"
-    print('Commit the changes with:')
-    print(f'git commit -m "{commit_message}"')
-    # repo.index.commit(commit_message)
-    # print(f"Committed changes to branch '{new_branch_name}'")
+    if args.commit:
+        repo.index.commit(commit_message)
+        print(f'Committed "{commit_message}')
+    else:
+        print('Commit the changes with:')
+        print(f'git commit -m "{commit_message}"')
 else:
     print("No changes to commit.")

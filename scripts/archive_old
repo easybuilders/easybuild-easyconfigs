@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(
         description='Archives easyconfigs based on when they were first committed')
 parser.add_argument('--branch', action='store_true', help='create new branch')
 parser.add_argument('--apply', action='store_true', help='apply git mv')
+parser.add_argument('--commit', action='store_true', help='automatically commit')
 parser.add_argument('--repo', type=str, required=True, help='root dir of easyconfigs repo')
 parser.add_argument(
         '--cutoff',
@@ -57,18 +58,17 @@ for path in paths:
 
 if changes_to_commit:
     if args.branch:
-        new_branch_name = 'archive_system_{args.cutoff}'
+        new_branch_name = f'archive_system_{args.cutoff}'
         repo.create_head(new_branch_name)
         new_branch = repo.heads[new_branch_name]
         new_branch.checkout()
 
-    commit_message = f"Archive files on {args.cutoff.strftime('%Y-%m-%d')}"
-    print('Commit the changes with:')
-    print('git commit -m "{commit_message}"')
-    # repo.index.commit(commit_message)
-    # print(f"Committed changes to branch '{new_branch_name}'")
+    commit_message = f"Archive files from before {args.cutoff.strftime('%Y-%m-%d')}"
+    if args.commit:
+        repo.index.commit(commit_message)
+        print(f'Committed "{commit_message}')
+    else:
+        print('Commit the changes with:')
+        print(f'git commit -m "{commit_message}"')
 else:
     print("No changes to commit.")
-
-print("Archiving process completed.")
-
