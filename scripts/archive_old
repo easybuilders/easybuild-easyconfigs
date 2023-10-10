@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 
-import sys
-import git
+import argparse
+from datetime import datetime, timezone
 import glob
 import os
-from datetime import datetime, timezone
-import argparse
+import git
 
 
-def system_toolchain(path):
-    with open(path, 'r') as file:
+def system_toolchain(ecpath):
+    with open(ecpath, 'r', encoding='utf8') as file:
         for line in file:
-           if line.strip() == 'toolchain = SYSTEM':
-               return True
+            if line.strip() == 'toolchain = SYSTEM':
+                return True
     return False
 
 
@@ -21,11 +20,12 @@ parser = argparse.ArgumentParser(
         description='Archives easyconfigs based on when they were first committed')
 parser.add_argument('--branch', action='store_true', help='create new branch')
 parser.add_argument('--apply', action='store_true', help='apply git mv')
-parser.add_argument('--repo', type=str, required=True)
+parser.add_argument('--repo', type=str, required=True, help='root dir of easyconfigs repo')
 parser.add_argument(
         '--cutoff',
         type=lambda s: datetime.strptime(s, '%Y-%m-%d').astimezone(timezone.utc),
-        required=True)
+        required=True,
+        help='Year-month-day (in UTC)')
 
 args = parser.parse_args()
 
