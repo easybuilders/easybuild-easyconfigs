@@ -78,7 +78,12 @@ sanity_check_commands = [
     ])
 ]
 
-# do not store user state in home directories
+# do not store user state in home directories, but keep backward compat
+# for users starting an interactive job with rstudio
 modluafooter = """
-setenv('RSTUDIO_DATA_HOME', os.getenv('SLURM_TMPDIR'))
-"""
+if os.getenv('SLURM_TMPDIR') then
+    setenv('RSTUDIO_DATA_HOME', pathJoin(os.getenv('SLURM_TMPDIR'), '.rstudio/{version}'))
+else
+    setenv('RSTUDIO_DATA_HOME', pathJoin(os.getenv('HOME'), '.rstudio/{version}'))
+end
+""".format(version=version)
