@@ -1,0 +1,57 @@
+easyblock = 'SCons'
+
+name = 'Cantera'
+version = '3.0.0'
+
+homepage = 'https://github.com/Cantera/cantera'
+description = """Chemical kinetics, thermodynamics, and transport tool suite"""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'strict': True}
+
+source_urls = ['https://github.com/Cantera/cantera/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['6d17cdef21dae9deaf91351260b68ccf7e264c37c6030c9d4bf26a2cefb2b905']
+
+builddependencies = [
+    ('SCons', '4.5.2'),
+    ('Eigen', '3.4.0'),
+    ('fmt', '10.1.0'),
+    ('googletest', '1.13.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('h5py', '3.9.0'),
+    ('pygraphviz', '1.11'),
+    ('JupyterLab', '4.0.5'),
+    ('matplotlib', '3.7.2'),
+    ('Boost', '1.82.0'),
+    ('SUNDIALS', '6.6.0'),
+    ('yaml-cpp', '0.7.0'),
+    ('ruamel.yaml', '0.17.32'),
+    ('HighFive', '2.7.1'),
+]
+
+local_common_opts = 'env_vars=all CC="$CC" CXX="$CXX" cc_flags="$CFLAGS" cxx_flags="$CXXFLAGS" '
+local_common_opts += 'blas_lapack_libs=flexiblas blas_lapack_dir=$BLAS_LAPACK_LIB_DIR '
+local_common_opts += 'sundials_include=$EBROOTSUNDIALS/include sundials_libdir=$EBROOTSUNDIALS/lib'
+buildopts = 'build ' + local_common_opts
+# tests hang, so disable them for now
+# runtest = 'test ' + local_common_opts
+installopts = 'install ' + local_common_opts
+prefix_arg = 'prefix='
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['bin/cti2yaml'],
+    'dirs': ['include/cantera', 'lib/pkgconfig', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "cti2yaml --help",
+    "python -c 'import cantera'",
+]
+
+moduleclass = 'chem'
