@@ -1,0 +1,39 @@
+easyblock = 'CMakeMake'
+
+name = 'gem'
+version = '5.1.1'
+
+homepage = 'https://github.com/ECCC-ASTD-MRD/gem'
+description = """The Global Environmental Multiscale Model (GEM) is an integrated forecasting and data assimilation system developed by the Atmospheric Numerical Prediction Research Section, Meteorological Research Division, of Environment and Climate Change Canada."""
+
+toolchain = {'name': 'gofb', 'version': '2020a'}
+
+source_urls = ['https://github.com/ECCC-ASTD-MRD/gem/archive/refs/tags/5.1.1']
+sources = ['%(version)s.tar.gz']
+patches = ['gem-5.1.1-flexiblas.patch']
+checksums = [
+    'ee63b20957e2ceef052e791ba647bdef716bc5f8b46b9669a2afdd63fb244754',
+    '921d47fa0a9ec147c656e6f2bc15bcc06f16684660d21a8f143eb7f38c153905', # gem-5.1.1-flexiblas.patch
+]
+
+builddependencies = [
+    ('FFTW', '3.3.8', '-mpi'),
+    ('CMake', '3.23.1')
+]
+
+start_dir = 'project'
+
+preconfigopts = 'sed -i -e "s/-march=native//" %(builddir)s/%(namelower)s-%(version)s/project/*.cmake && '
+
+# move back installed files to their proper directory. `work` directory is hardcoded and not configurable
+postinstallcmds = [
+    "mkdir %(installdir)s/bin",
+    "cp -vr %(builddir)s/%(namelower)s-%(version)s/work/work-CentOSLinux-7-x86_64-gnu-9.3.0/bin %(installdir)s"
+]
+
+sanity_check_paths = {
+    'files': ['bin/voir', 'bin/maingemdm'],
+    'dirs': ['bin'],
+}
+
+moduleclass = 'geo'
