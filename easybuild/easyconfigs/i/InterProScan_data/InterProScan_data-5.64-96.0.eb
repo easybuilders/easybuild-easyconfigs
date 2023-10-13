@@ -1,0 +1,35 @@
+easyblock = 'Tarball'
+
+name = 'InterProScan_data'
+version = "5.64-96.0"
+
+homepage = 'http://www.ebi.ac.uk/interpro/'
+description = """This module containes only InterProScan data part. 
+InterProScan is a sequence analysis application (nucleotide and protein 
+sequences) that combines different protein signature recognition methods 
+into one resource."""
+
+toolchain = SYSTEM
+
+source_urls = ['http://ftp.ebi.ac.uk/pub/software/unix/iprscan/%(version_major)s/%(version)s/']
+sources = ['interproscan-%(version)s-64-bit.tar.gz']
+checksums = ['9f4687cdbf63354764f6e65d98e52023b65f7bb202041dbe8c3bddaab0e02377']
+
+builddependencies = [
+    ('Python', '3.10'),
+]
+
+postinstallcmds = ['cd %(installdir)s/ && ${EBROOTPYTHON}/bin/python3 %(installdir)s/setup.py -f interproscan.properties && sh ./interproscan.sh || true && ls | sed -e "/data/d" | xargs -n1 rm -rf && chmod -R a+r %(installdir)s/*']
+
+local_data_dirs = [
+    "antifam", "cdd", "funfam", "gene3d", "hamap", "ncbifam", 
+    "panther", "pfam", "phobius", "pirsf", "pirsr", "prints", 
+    "prosite", "sfld", "smart", "superfamily", "tmhmm", 
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['data/%s' % x for x in local_data_dirs],
+}
+
+moduleclass = 'bio'
