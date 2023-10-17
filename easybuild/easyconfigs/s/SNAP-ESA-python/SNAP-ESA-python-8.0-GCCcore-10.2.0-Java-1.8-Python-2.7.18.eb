@@ -43,6 +43,10 @@ modextrapaths = {'PYTHONPATH': [local_pysite]}
 local_javaopts = " -Dsnap.pythonExecutable=python"
 local_javaopts += " -Dsnap.pythonModuleDir=%s" % local_pyinstalldir
 
-modluafooter = 'setenv("JAVA_TOOL_OPTIONS", os.getenv("JAVA_TOOL_OPTIONS").."%s")' % local_javaopts
+# update $JAVA_TOOL_OPTIONS when module is loaded, use empty string as default value if $JAVA_TOOL_OPTIONS is not set
+modluafooter = 'setenv("JAVA_TOOL_OPTIONS", (os.getenv("JAVA_TOOL_OPTIONS") or "") .. "%s")' % local_javaopts
+# likewise, but when using Tcl as module syntax
+local_tcl_JAVA_TOOL_OPTIONS = '[expr {[info exists ::env(JAVA_TOOL_OPTIONS)] ? $::env(JAVA_TOOL_OPTIONS) : ""}]'
+modtclfooter = 'setenv JAVA_TOOL_OPTIONS [concat %s "%s"]' % (local_tcl_JAVA_TOOL_OPTIONS, local_javaopts)
 
 moduleclass = 'geo'
