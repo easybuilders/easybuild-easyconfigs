@@ -1,0 +1,29 @@
+From 367387bab836c73c23719f97d929572c8b4e0fad Mon Sep 17 00:00:00 2001
+From: Nick Rossenbach <rossenbach@cs.rwth-aachen.de>
+Date: Tue, 18 Apr 2023 23:31:51 +0200
+Subject: [PATCH] Add -Wno-error=nonnull for test/cpp/api/
+
+On some platforms the build might fail due to the nonnull error
+being triggered by different compiler behavior.
+
+Fix for #99278.
+---
+ test/cpp/api/CMakeLists.txt | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/test/cpp/api/CMakeLists.txt b/test/cpp/api/CMakeLists.txt
+index 6b801a07318279..181139b01360c3 100644
+--- a/test/cpp/api/CMakeLists.txt
++++ b/test/cpp/api/CMakeLists.txt
+@@ -80,6 +80,11 @@ if(NOT MSVC)
+   target_compile_options_if_supported(test_api "-Wno-maybe-uninitialized")
+   # gcc gives nonsensical warnings about variadic.h
+   target_compile_options_if_supported(test_api "-Wno-unused-but-set-parameter")
++  # the nonnull check might trigger for some build configurations,
++  # probably happening due to different code optimization
++  # (see e.g. https://rkoucha.fr/tech_corner/nonnull_gcc_attribute.html)
++  # this happened for a riscv build: https://github.com/pytorch/pytorch/issues/99278
++  target_compile_options_if_supported(test_api "-Wno-error=nonnull")
+ endif()
+ 
+ if(INSTALL_TEST)
