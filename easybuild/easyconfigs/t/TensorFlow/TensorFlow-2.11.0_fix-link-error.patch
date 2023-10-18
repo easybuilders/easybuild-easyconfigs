@@ -1,0 +1,39 @@
+Fix errors during build such as
+Traceback (most recent call last):
+  File "/bazel-root/21e00dc5c04b924b70ed7bedd0c3533e/execroot/org_tensorflow/bazel-out/ppc-opt/bin/tensorflow/create_tensorflow.python_api_tf_python_api_gen_v2.runfiles/org_tensorflow/tensorflow/python/pywrap_tensorflow.py", line 62, in <module>
+    from tensorflow.python._pywrap_tensorflow_internal import *
+ImportError: /bazel-root/21e00dc5c04b924b70ed7bedd0c3533e/execroot/org_tensorflow/bazel-out/ppc-opt/bin/tensorflow/create_tensorflow.python_api_tf_python_api_gen_v2.runfiles/org_tensorflow/tensorflow/python/_pywrap_tensorflow_internal.so: undefined symbol: LLVMInitializePowerPCAsmParser
+
+See https://github.com/tensorflow/tensorflow/pull/59326
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/compiler/xla/mlir/transforms/runtime/BUILD b/tensorflow/compiler/xla/mlir/transforms/runtime/BUILD
+index 587d4b184c0..5ff10743cf8 100644
+--- a/tensorflow/compiler/xla/mlir/transforms/runtime/BUILD
++++ b/tensorflow/compiler/xla/mlir/transforms/runtime/BUILD
+@@ -250,7 +250,23 @@ cc_library(
+         "@llvm-project//mlir:Parser",
+         "@llvm-project//mlir:Pass",
+         "@llvm-project//mlir:ToLLVMIRTranslation",
+-    ],
++    ] + select({
++        "//tensorflow:arm_any": [
++            "@llvm-project//llvm:AArch64AsmParser",
++        ],
++        "//tensorflow:linux_ppc64le": [
++            "@llvm-project//llvm:PowerPCAsmParser",
++        ],
++        "//tensorflow:macos_arm64": [
++            "@llvm-project//llvm:AArch64AsmParser",
++        ],
++        "//tensorflow:linux_s390x": [
++            "@llvm-project//llvm:SystemZAsmParser",
++        ],
++        "//conditions:default": [
++            "@llvm-project//llvm:X86AsmParser",
++        ],
++    }),
+ )
+ 
+ cc_library(

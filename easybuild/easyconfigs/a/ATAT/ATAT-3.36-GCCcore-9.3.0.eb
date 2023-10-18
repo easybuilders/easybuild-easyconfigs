@@ -1,0 +1,72 @@
+# Copyright (c) 2020 The Rector and Visitors of the University of Virginia
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without
+# limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+# Software, and to permit persons to whom the Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions 
+# of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+# TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+# CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+#
+# Ruoshi Sun <rs7wz@virginia.edu>
+# Research Computing, University of Virginia
+# 2020-05-24
+
+easyblock = 'ConfigureMake'
+
+name = 'ATAT'
+version = '3.36'
+
+homepage = 'https://www.brown.edu/Departments/Engineering/Labs/avdw/atat/'
+description = """
+The Alloy-Theoretic Automated Toolkit (ATAT) is a generic name that refers to a collection of alloy theory tools
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['http://alum.mit.edu/www/avdw/%(namelower)s']
+sources = ['%%(namelower)s%s.tar.gz' % version.replace('.', '_')]
+checksums = ['e829da5b714a012b5fc456d1060cfdb784642a8c0cbb702d409497b65466ee39']
+
+builddependencies = [
+    ('binutils', '2.34')
+]
+
+skipsteps = ['configure']
+
+local_bindir = '%(builddir)s/%(namelower)s/bin'
+
+prebuildopts = 'mkdir -p %s && ' % local_bindir
+buildopts = 'BINDIR=%s' % local_bindir
+
+local_install1 = 'make -C src BINDIR=%s install && ' % local_bindir
+local_install2 = 'make -C glue/jobctrl BINDIR=%s install && ' % local_bindir
+local_install3 = 'make -C glue/vasp BINDIR=%s install' % local_bindir
+
+install_cmd = local_install1 + local_install2 + local_install3
+
+local_to_copy = ['bin', 'data', 'doc', 'examples', 'glue', 'license.txt']
+
+postinstallcmds = [
+    'cp -r %%(builddir)s/%%(namelower)s/%s %%(installdir)s' % x for x in local_to_copy
+]
+
+sanity_check_paths = {
+    'files': ['bin/maps'],
+    'dirs': local_to_copy[:-1]
+}
+
+sanity_check_commands = [
+    "maps --help 2>&1 | grep '^MIT Ab initio Phase Stability (MAPS) code %(version)s'"
+]
+
+modloadmsg = "First-time users please run:\necho set atatdir=$EBROOTATAT > $HOME/.atat.rc\n"
+
+moduleclass = 'chem'
