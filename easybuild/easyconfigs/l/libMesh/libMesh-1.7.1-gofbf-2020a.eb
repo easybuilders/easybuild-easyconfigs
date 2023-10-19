@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'libMesh'
+version = '1.7.1'
+
+homepage = 'https://github.com/libMesh/libmesh'
+description = """The libMesh library provides a framework for the numerical simulation of
+partial differential equations using arbitrary unstructured discretizations on serial and
+parallel platforms. A major goal of the library is to provide support for adaptive mesh
+refinement (AMR) computations in parallel while allowing a research scientist to focus on the
+physics they are modeling. """
+
+toolchain = {'name': 'gofbf', 'version': '2020a' }
+
+source_urls = ['https://github.com/libMesh/libmesh/releases/download/v%(version)s/']
+sources = ['libmesh-%(version)s.tar.gz']
+checksums = ['df13cc53f149d3378b90064fd46eeddf75e0ea45b39f38e55c65faddf7f5b060']
+
+dependencies = [
+# VTK support fails
+#	('VTK', '9.0.3', '-mpi'),
+	('GLPK', '5.0'),
+	('Eigen', '3.4.0'),
+	('PETSc', '3.17.1'),
+	('Boost', '1.80.0', '-mpi'),
+	('HDF5', '1.12.1', '-mpi'),
+	('NLopt', '2.7.1'),
+	('tbb', '2021.8.0'),
+]
+
+# netcdf conflicts with ours
+configopts = " CXX=mpic++ CC=mpicc --enable-curl --disable-strict-lgpl "
+configopts += " --with-hdf5=$EBROOTHDF5 " 
+#configopts += " --with-vtk-include=$EBROOTVTK/include/vtk-9.0 --with-vtk-lib=$EBROOTVTK/lib "
+configopts += " --with-eigen-include=$EBROOTEIGEN/include "
+configopts += " --with-glpk-include=$EBROOTGLPK/include --with-glpk-lib=$EBROOTGLPK/lib "
+configopts += " --with-nlopt-include=$EBROOTNLOPT/include --with-nlopt-lib=$EBROOTNLOPT/lib "
+configopts += " --with-curl-include=$EBROOTGENTOO/include/curl --with-curl-lib=$EBROOTGENTOO/lib "
+configopts += " --with-tbb=$EBROOTTBB/tbb "
+
+modluafooter = """
+setenv("LIBMESH_DIR", root)
+"""
