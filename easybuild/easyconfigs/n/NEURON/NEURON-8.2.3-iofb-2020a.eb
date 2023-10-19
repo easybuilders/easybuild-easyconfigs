@@ -1,0 +1,53 @@
+name = 'NEURON'
+version = '8.2.3'
+
+homepage = 'http://www.neuron.yale.edu/neuron'
+description = """Empirically-based simulations of neurons and networks of neurons."""
+
+toolchain = {'name': 'iofb', 'version': '2020a'}
+
+source_urls = ['https://github.com/neuronsimulator/nrn/releases/download/%(version)s']
+sources = ['full-src-package-%(version)s.tar.gz']
+checksums = ['93cfbbd4145f87e6bbdec661a3abf4405471566adfc7a8eaae06aa6a699db432']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('libreadline', '6.3'),
+    ('ncurses', '6.0'),
+]
+
+dependencies = [
+    ('SciPy-Stack', '2023a'),
+]
+
+multi_deps = {'Python': ['3.9', '3.10', '3.11']}
+
+configopts = ' '.join([
+    "-DCMAKE_EXE_LINKER_FLAGS=-ltinfo",
+    "-DNRN_ENABLE_INTERVIEWS=OFF",
+    "-DNRN_ENABLE_CORENEURON=ON",
+    "-DNRN_ENABLE_DOCS=OFF",
+    "-DCORENRN_ENABLE_GPU=OFF",
+    "-DNRN_ENABLE_SHARED=ON",
+    "-DNRN_RX3D_OPT_LEVEL=2",
+    "-DNRN_ENABLE_PYTHON_DYNAMIC=ON",
+    "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python3",
+    "-DNRN_MODULE_INSTALL_OPTIONS='--prefix=%(installdir)s'",
+])
+
+sanity_check_paths = {
+    'files': ['bin/nrnivmodl'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "python -c 'import neuron'",
+    "python -c 'from neuron import coreneuron'",
+    "python -c 'from neuron import h'",
+    "python -c 'from neuron import test; test()'",
+    "python -c 'from neuron.tests import test_rxd; test_rxd.test();'"
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': '', 'PYTHONPATH':'python/neuron'}
+
+moduleclass = 'math'

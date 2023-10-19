@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'FastSpar'
+version = '1.0.0'
+
+homepage = 'https://github.com/scwatts/fastspar'
+description = """FastSpar is a C++ implementation of the SparCC algorithm which is up to several thousand times faster than the original Python2 release and uses much less memory. The FastSpar implementation provides threading support and a p-value estimator which accounts for the possibility of repetitious data permutations (see this paper for further details)."""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2020a'}
+
+source_urls = ['https://github.com/scwatts/fastspar/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+patches = ['FastSpar-1.0.0-flexiblas.patch']
+checksums = [
+    '22a8f8e5199f5ebdf547a2613db914e2b0b929734936a4bc763eecfb275beb72',
+    'c174d6fcdff90f7a715f488f8a2af8def17d1de7bf97f803c6293c083946f425',  # FastSpar-1.0.0-flexiblas.patch
+]
+
+builddependencies = [
+    ('GSL', '2.6'),
+    ('Armadillo','12.6.4'),
+]
+
+preconfigopts = " ./autogen.sh && "
+
+sanity_check_paths = {
+   'files': ['bin/{}'.format(x) for x in ('fastspar', 'fastspar_bootstrap', 'fastspar_pvalues', 'fastspar_reduce')],
+   'dirs': ['bin']
+}
+
+sanity_check_commands = ['fastspar -v']
+
+moduleclass = 'bio'

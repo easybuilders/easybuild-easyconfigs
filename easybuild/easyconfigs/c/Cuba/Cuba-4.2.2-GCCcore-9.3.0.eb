@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'Cuba'
+version = '4.2.2'
+
+homepage = 'https://feynarts.de/cuba/'
+description = """
+ Cuba – a library for multidimensional numerical integration
+"""
+
+software_license = 'LicenseGPLv3' #LGPLv3
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://feynarts.de/cuba/']
+sources =['Cuba-%(version)s.tar.gz']
+
+checksums = [
+    '8d9f532fd2b9561da2272c156ef7be5f3960953e4519c638759f1b52fe03ed52', #source
+]
+
+preconfigopts = 'export CFLAGS="$CFLAGS -fPIC" && '
+
+parallel = 1
+build_cmd = 'make lib'
+
+#Also build a shared lib, commands from
+#https://github.com/JohannesBuchner/cuba/blob/master/makesharedlib.sh
+buildopts = ' && '.join([
+    '',
+    'FILES=$(ar xv libcuba.a |sed "s/x - //g")',
+    '$CC -shared -Wall $FILES -lm -o libcuba.so',
+])
+
+install_cmd = ' && '.join([
+    'make install',
+    'cp libcuba.so %(installdir)s/lib',
+])
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['lib/libcuba.a', 'lib/libcuba.so', 'include/cuba.h'],
+    'dirs': [],
+}
+
+moduleclass = 'numlib'
