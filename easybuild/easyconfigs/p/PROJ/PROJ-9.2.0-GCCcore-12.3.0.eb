@@ -1,0 +1,70 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2014-2015 The Cyprus Institute
+# Authors:: Thekla Loizou <t.loizou@cyi.ac.cy>
+# License:: MIT/GPL
+#
+##
+easyblock = 'CMakeMake'
+
+name = 'PROJ'
+version = '9.2.0'
+
+homepage = 'https://proj.org'
+description = """Program proj is a standard Unix filter function which converts
+geographic longitude and latitude coordinates into cartesian coordinates"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://download.osgeo.org/proj/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['dea816f5aa732ae6b2ee3977b9bdb28b1d848cf56a1aad8faf6708b89f0ed50e']
+
+builddependencies = [
+    ('pkgconf', '1.9.5'),
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+    ('SciPy-Stack', '2023b')
+]
+
+dependencies = [
+    ('SQLite', '3.42.0'),
+    ('LibTIFF', '4.5.0'),
+    ('cURL', '8.0.1'),
+    ('XZ', '5.4.2'),
+]
+
+multi_deps= {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('pyproj', '3.6.1', {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'pyproj',
+        'preconfigopts': '#',
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['44aa7c704c2b7d8fb3d483bbf75af6cb2350d30a63b144279a09b75fead501bf'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': ['bin/cct', 'bin/cs2cs', 'bin/geod', 'bin/gie', 'bin/proj', 'bin/projinfo',
+              'lib/libproj.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = [
+    "module load scipy-stack && python -c 'import pyproj;'",
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': [''],}
+
+moduleclass = 'lib'
