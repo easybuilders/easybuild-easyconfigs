@@ -1,0 +1,44 @@
+# Note:
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+easyblock = 'ConfigureMake'
+
+name = 'opa-psm2'
+version = '12.0.1'
+
+homepage = 'https://github.com/cornelisnetworks/opa-psm2/'
+description = """
+Low-level user-space communications interface for the Intel(R) OPA family of products.
+"""
+
+toolchain = SYSTEM
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/cornelisnetworks/opa-psm2/archive/refs/tags']
+sources = ['PSM2_%(version)s.tar.gz']
+patches = [
+    ('opa-psm2-hfi-user.patch', 1),
+]
+
+checksums = [
+    'e41af2d7d36a6ab67639ecbd5c1012aa20b2b464bf5cfbdac60e7eb37bfe58de',  # PSM2_12.0.1.tar.gz
+    '7c97f9dc3b2a6f0e5b5d80abca87d44771f03c0895fa363229398de6df4b0884',  # opa-psm2-hfi-user.patch
+]
+
+builddependencies = [('CUDAcore', '12.2.2')]
+
+configure_cmd = "sed -i 's|fprintf(stderr,|_HFI_DBG(|' psm_context.c && sed -i 's|/usr|/|' Makefile #"
+buildopts = "arch=x86_64 USE_PSM_UUID=1 PSM_CUDA=1 WERROR="
+installopts = "arch=x86_64 UDEVDIR=/lib/udev DESTDIR=%(installdir)s"
+
+# Make new name for patched library to avoid in-place replacement
+postinstallcmds = [
+    'mv %(installdir)s/lib64/libpsm2.so.2.2{,.1}',
+    'ln -sf libpsm2.so.2.2.1 %(installdir)s/lib64/libpsm2.so.2',
+]
+
+sanity_check_paths = {
+    'files': ['lib64/libpsm2.so', 'include/psm2.h'],
+    'dirs': ['include', 'lib', 'lib64']
+}
+
+hidden = True
