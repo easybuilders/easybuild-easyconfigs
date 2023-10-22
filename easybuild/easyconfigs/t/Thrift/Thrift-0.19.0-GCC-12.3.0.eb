@@ -1,0 +1,54 @@
+easyblock = "ConfigureMake"
+
+name = "thrift"
+version = "0.19.0"
+
+homepage = "https://thrift.apache.org/"
+description = """The Apache Thrift software framework, for scalable cross-language services development, combines a software stack with a code generation engine to build services that work efficiently and seamlessly between C++, Java, Python, PHP, Ruby, Erlang, Perl, Haskell, C#, Cocoa, JavaScript, Node.js, Smalltalk, OCaml and Delphi and other languages."""
+
+toolchain = {"name": "GCC", "version": "12.3.0"}
+toolchainopts = {"cstd": "c++17"}
+
+sources = ["v%(version)s.tar.gz"]
+source_urls = ["https://github.com/apache/thrift/archive"]
+checksums = ["6428911db505702c51f7d993155a4a4c8afee83fdd021b52f2eccd8d34780629"]
+
+builddependencies = [
+    ("Boost", "1.82.0"),
+]
+
+multi_deps = {"Python": ["3.10", "3.11"]}
+
+preconfigopts = " bash bootstrap.sh && export PY_PREFIX=%(installdir)s && "
+
+configopts = " ".join([
+    "--with-boost=$BOOST_ROOT",
+    "--without-d",
+    "--without-lua",
+    "--without-haskell",
+    "--without-java",
+    "--enable-tutorial=no",
+])
+
+# runtest = "check"
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+sanity_check_paths = {
+    "files": [
+        "bin/thrift",
+        "include/thrift/Thrift.h",
+        "lib/libthrift-%(version)s.so",
+        "lib/libthrift_c_glib.so",
+        "lib/libthriftz-%(version)s.so"
+    ],
+    "dirs": [
+        "lib/python%(pyshortver)s/site-packages",
+    ],
+}
+
+sanity_check_commands = [
+    "python -c 'from thrift import Thrift'"
+]
+
+moduleclass = "data"
