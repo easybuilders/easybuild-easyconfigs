@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'PMIx'
+version = '4.1.2'
+
+homepage = 'https://pmix.org/'
+description = """Process Management for Exascale Environments
+PMI Exascale (PMIx) represents an attempt to
+provide an extended version of the PMI standard specifically designed
+to support clusters up to and including exascale sizes. The overall
+objective of the project is not to branch the existing pseudo-standard
+definitions - in fact, PMIx fully supports both of the existing PMI-1
+and PMI-2 APIs - but rather to (a) augment and extend those APIs to
+eliminate some current restrictions that impact scalability, and (b)
+provide a reference implementation of the PMI-server that demonstrates
+the desired level of scalability.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/openpmix/openpmix/releases/download/v%(version)s']
+sources = ['%(namelower)s-%(version)s.tar.bz2']
+patches = ['PMIx-4.x_lchown.patch']
+checksums = [
+    {'pmix-4.1.2.tar.bz2': '670d3a02b39fb2126fe8084174cf03c484e027b5921b5c98a851108134e2597a'},
+    {'PMIx-4.x_lchown.patch': '1e89856caf69878aeb54ca08bb6b4ea1c962d24010e2080878ea70e958947a05'},
+]
+
+builddependencies = [('binutils', '2.38')]
+
+dependencies = [
+    ('libevent', '2.1.12'),
+    ('zlib', '1.2.12'),
+    ('hwloc', '2.7.1'),
+]
+
+configopts = ' --with-libevent=$EBROOTLIBEVENT --with-zlib=$EBROOTZLIB'
+configopts += ' --with-hwloc=$EBROOTHWLOC'
+configopts += ' --enable-pmix-binaries'
+
+buildopts = 'V=1'
+
+sanity_check_paths = {
+    'files': ['bin/pevent', 'bin/plookup', 'bin/pmix_info', 'bin/pps'],
+    'dirs': ['etc', 'include', 'lib', 'share']
+}
+
+moduleclass = 'lib'

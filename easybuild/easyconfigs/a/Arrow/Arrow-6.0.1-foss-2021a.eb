@@ -26,20 +26,30 @@ dependencies = [
     ('Python', '3.9.5'),
     ('SciPy-bundle', '2021.05'),
     ('Boost', '1.76.0'),
+    ('lz4', '1.9.3'),
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('zstd', '1.4.9'),
+    ('snappy', '1.1.8'),
+    ('RapidJSON', '1.1.0'),
+    ('RE2', '2022-02-01'),
+    ('utf8proc', '2.6.1'),
 ]
 
 start_dir = 'cpp'
 
 # see https://arrow.apache.org/docs/developers/python.html
-configopts = "-DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON "
-configopts += "-DCMAKE_INSTALL_LIBDIR=lib -DPython3_ROOT_DIR=$EBROOTPYTHON"
+configopts = "-DARROW_DATASET=on -DARROW_PYTHON=on -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON "
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib -DPython3_ROOT_DIR=$EBROOTPYTHON "
+configopts += "-DARROW_WITH_ZLIB=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_ZSTD=ON -DARROW_WITH_LZ4=ON "
 
 # also install Python bindings
 local_install_pyarrow_cmds = "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && "
 local_install_pyarrow_cmds += "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
 local_install_pyarrow_cmds += "cd %(builddir)s/*arrow-%(version)s/python && export XDG_CACHE_HOME=$TMPDIR && "
 local_install_pyarrow_cmds += "sed -i 's/numpy==[0-9.]*/numpy/g' pyproject.toml && "
-local_install_pyarrow_cmds += "PYARROW_WITH_PARQUET=1 pip install --prefix %(installdir)s ."
+local_install_pyarrow_cmds += "PYARROW_WITH_DATASET=1 PYARROW_WITH_PARQUET=1 "
+local_install_pyarrow_cmds += "python -m pip install --prefix %(installdir)s --no-build-isolation ."
 postinstallcmds = [local_install_pyarrow_cmds]
 
 modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
@@ -52,6 +62,7 @@ sanity_check_paths = {
 
 sanity_check_commands = [
     "python -c 'import pyarrow'",
+    "python -c 'import pyarrow.dataset'",
     "python -c 'import pyarrow.parquet'",
 ]
 
