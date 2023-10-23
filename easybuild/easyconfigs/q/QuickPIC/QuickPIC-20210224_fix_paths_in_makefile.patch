@@ -1,0 +1,49 @@
+Patch for makefile and make.GF_OPENMPI so HDF5 and json-fortran is being found
+instead of hard-coded paths
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/QuickPIC-OpenSource-776fcffaaf9e170fbae80bfe54abc95b1f84dfca.orig/source/make.GF_OPENMPI b/QuickPIC-OpenSource-776fcffaaf9e170fbae80bfe54abc95b1f84dfca/source/make.GF_OPENMPI
+index b2f08f0..c1538cf 100644
+--- a/QuickPIC-OpenSource-776fcffaaf9e170fbae80bfe54abc95b1f84dfca.orig/source/make.GF_OPENMPI
++++ b/QuickPIC-OpenSource-776fcffaaf9e170fbae80bfe54abc95b1f84dfca/source/make.GF_OPENMPI
+@@ -1,6 +1,6 @@
+ # name of the compiler 
+-JSON_LIB = /usr/local/jsonfortran-gnu-6.3.0/lib/
+-JSON_INC = /usr/local/jsonfortran-gnu-6.3.0/lib/
++JSON_LIB = ${EBROOTJSONMINFORTRAN}/lib
++JSON_INC = ${EBROOTJSONMINFORTRAN}/include
+ 
+ FC_GF_OPENMPI = mpif90 -c -I$(JSON_INC) -fopenmp
+ CC_GF_OPENMPI = mpicc -c -O3 -std=c99
+@@ -14,11 +14,11 @@ FORMAT_FIXED_GF_OPENMPI = -ffixed-form
+ 
+ # hdf5 libraries 
+ 
+-HDF5_LIB =/usr/local/hdf5/lib
+-HDF5_INC =/usr/local/hdf5/include
++HDF5_LIB =${EBROOTHDF5}/lib
++HDF5_INC =${EBROOTHDF5}/include
+ 
+ HDF_LIBPATH_GF_OPENMPI= -L$(HDF5_LIB) -lhdf5_fortran -lhdf5_hl -lhdf5 -lz 
+-HDF_INCLUDE_PATH_GF_OPENMPI= -I$(HDF5_INC) -I${HDF5_LIB} -lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5
++HDF_INCLUDE_PATH_GF_OPENMPI= -I$(HDF5_INC) -L${HDF5_LIB} -lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5
+ 
+ # other libs
+ OTHER_LIBS_GF_OPENMPI = -L$(JSON_LIB) -ljsonfortran
+diff --git a/QuickPIC-OpenSource-776fcffaaf9e170fbae80bfe54abc95b1f84dfca.orig/source/makefile b/QuickPIC-OpenSource-776fcffaaf9e170fbae80bfe54abc95b1f84dfca/source/makefile
+index faf3c77..2deff20 100644
+--- a/QuickPIC-OpenSource-776fcffaaf9e170fbae80bfe54abc95b1f84dfca.orig/source/makefile
++++ b/QuickPIC-OpenSource-776fcffaaf9e170fbae80bfe54abc95b1f84dfca/source/makefile
+@@ -42,10 +42,9 @@ OBJS_MAIN = main.o
+ 
+ OBJS = ${OBJS_BASE} ${OBJS_MAIN}
+ 
+-# hdf libraries 
+-HDF_INCLUDE_PATH = ${HDF_INCLUDE_PATH_${SYS_SFX}}
+-HDF_LIBPATH = ${HDF_LIBPATH_${SYS_SFX}}
+-HDF_LIBS = ${HDF_LIBPATH} 
++HDF_INCLUDE_PATH = -I${EBROOTHDF5}/include
++HDF_LIBPATH = -L${EBROOTHDF5}/lib64
++HDF_LIBS = -lhdf5_fortran
+ 
+ # other libs
+ OTHER_LIBS = ${OTHER_LIBS_${SYS_SFX}}

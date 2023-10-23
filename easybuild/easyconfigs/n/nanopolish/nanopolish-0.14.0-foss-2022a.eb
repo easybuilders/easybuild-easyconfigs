@@ -1,0 +1,61 @@
+easyblock = 'MakeCp'
+
+name = 'nanopolish'
+version = '0.14.0'
+
+homepage = 'https://github.com/jts/nanopolish'
+description = "Software package for signal-level analysis of Oxford Nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = [
+    'https://github.com/jts/nanopolish/archive/',
+    'https://github.com/mateidavid/fast5/archive/',
+]
+sources = [
+    {
+        'source_urls': ['https://github.com/jts/nanopolish/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'source_urls': ['https://github.com/hasindu2008/slow5lib/archive/'],
+        'download_filename': 'v1.1.0.tar.gz',
+        'filename': 'slow5lib-v1.1.0.tar.gz',
+    },
+]
+checksums = [
+    {'nanopolish-0.14.0.tar.gz': 'bcc1a7e2d23941592d817da3af9165b3843ae52b11a3ca5983d6417f1614ef78'},
+    {'slow5lib-v1.1.0.tar.gz': 'f13f08b85a9a11086b5d9378251093d1858d0dc29d8e727eabacfa57a73f4277'},
+]
+
+builddependencies = [('Eigen', '3.4.0')]
+
+dependencies = [
+    ('zlib', '1.2.12'),
+    ('Python', '3.10.4'),
+    ('Biopython', '1.79'),
+    ('Pysam', '0.19.1'),
+    ('HDF5', '1.12.2'),
+    ('HTSlib', '1.15.1'),
+    ('minimap2', '2.24'),
+    ('VBZ-Compression', '1.0.3'),
+]
+
+prebuildopts = "rmdir slow5lib && ln -s %(builddir)s/slow5lib-*/ slow5lib && "
+buildopts = "HDF5=noinstall EIGEN=noinstall HTS=noinstall MINIMAP2=noinstall"
+
+runtest = 'test ' + buildopts
+
+files_to_copy = [(['nanopolish'], 'bin'), 'scripts']
+
+postinstallcmds = ["chmod a+rx %(installdir)s/scripts/*"]
+
+sanity_check_paths = {
+    'files': ['bin/nanopolish'],
+    'dirs': ['scripts'],
+}
+
+modextrapaths = {'PATH': 'scripts'}
+
+moduleclass = 'bio'

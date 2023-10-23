@@ -1,0 +1,52 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/08
+easyblock = 'PythonBundle'
+
+name = 'LIBSVM-Python'
+version = '3.30'
+
+homepage = 'https://pypi.org/project/libsvm-official/'
+description = """This tool provides a simple Python interface to LIBSVM, a library for support   
+vector machines (http://www.csie.ntu.edu.tw/~cjlin/libsvm). The interface is    
+very easy to use as the usage is the same as that of LIBSVM. The interface is   
+developed with the built-in Python library "ctypes"."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('LIBSVM', version),
+    ('SciPy-bundle', '2022.05'),
+]
+
+sanity_pip_check = True
+use_pip = True
+exts_list = [
+    (name, version, {
+        'modulename': 'libsvm',
+        'source_urls': ['https://github.com/cjlin1/libsvm/archive/refs/tags/'],
+        'sources': ['v%s.tar.gz' % version.replace('.', '')],
+        'start_dir': 'python',
+        'checksums': ['e4fe41308c87cc210aec73e4f5f0fb4da14234d90e7a131763fbad3788ca2d80'],
+    }),
+]
+
+_t = "from libsvm.svm  import *; from libsvm.svmutil import *; import numpy as np; import scipy as sc;"
+_t += "prob = svm_problem(np.asarray([1, -1]), sc.sparse.csr_matrix(([1, 1, -1, -1], ([0, 0, 1, 1], [0, 2, 0, 2]))));"
+_t += "param = svm_parameter('-c 4');"
+_t += "m = libsvm.svm_train(prob, param);"
+_t += "svm_save_model('%(builddir)s/heart_scale.model', m);"
+_t += "x0, max_idx = gen_svm_nodearray((np.asarray([0,2]), np.asarray([1,1])));"
+_t += "label = libsvm.svm_predict(m, x0);"
+_t += "y, x = svm_read_problem('%%(builddir)s/LIBSVMPython/libsvm-%s/heart_scale');" % version.replace('.', '')
+_t += "m = svm_train(y[:200], x[:200], '-c 4');"
+_t += "p_label, p_acc, p_val = svm_predict(y[200:], x[200:], m);"
+
+sanity_check_commands = ['python -c "%s"' % _t]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ["lib/python%(pyshortver)s/site-packages/libsvm"]
+}
+
+moduleclass = 'lib'
