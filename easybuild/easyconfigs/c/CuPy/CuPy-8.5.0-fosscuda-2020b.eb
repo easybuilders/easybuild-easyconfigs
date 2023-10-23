@@ -7,15 +7,15 @@ homepage = 'https://cupy.dev'
 description = "CuPy is an open-source array library accelerated with NVIDIA CUDA."
 
 toolchain = {'name': 'fosscuda', 'version': '2020b'}
-# setup.py requirement Cython>=0.29.22. Build fails with 0.29.21 
+# setup.py requirement Cython>=0.29.22. Build fails with 0.29.21
 # after patching setup.py
 builddependencies = [('Cython', '0.29.22')]
 dependencies = [
     ('Python', '3.8.6'),
     ('SciPy-bundle', '2020.11'),
-    ('cuDNN', '8.0.4.30', '-CUDA-11.1.1', True),
-    ('NCCL', '2.8.3', '-CUDA-11.1.1', True),
-    ('cuTENSOR', '1.2.2.5', '-CUDA-11.1.1', True),
+    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', SYSTEM),
+    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
+    ('cuTENSOR', '1.2.2.5', '-CUDA-%(cudaver)s', SYSTEM),
 ]
 
 use_pip = True
@@ -24,7 +24,7 @@ exts_default_options = {'source_urls': [PYPI_LOWER_SOURCE]}
 postinstallcmds = [
     # req for sanity check on build nodes without libcuda.so.
     # will be removed my patched __init__.py at sanity check import.
-    'cp $EBROOTCUDA/./targets/x86_64-linux/lib/stubs/libcuda.* %(installdir)s/lib && ls %(installdir)s/lib'
+    'cp $EBROOTCUDA/./targets/*-linux/lib/stubs/libcuda.* %(installdir)s/lib && ls %(installdir)s/lib'
 ]
 exts_list = [
     ('fastrlock', '0.5', {

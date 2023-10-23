@@ -1,0 +1,64 @@
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Danilo Gonzalez <danilo.gonzalez@hpcnow.com>
+# License::     GPL-v3.0
+# Updated to foss-2020b to use with artic tool
+# J. Sassmannshausen (GSTT/NHS UK)
+# Updated to 1.5.0
+# Jasper Grimm (UoY)
+
+easyblock = 'PythonBundle'
+
+name = 'medaka'
+version = '1.5.0'
+
+homepage = 'https://github.com/nanoporetech/medaka'
+description = "medaka is a tool to create a consensus sequence from nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+builddependencies = [('Autotools', '20210128')]
+
+_minimap_ver = '2.20'
+dependencies = [
+    ('Python', '3.9.5'),  # includes cffi
+    # TensorFlow ~=2.5.2 required by medaka 1.5.0, see requirements.txt
+    ('TensorFlow', '2.5.3'),
+    ('Pysam', '0.16.0.1'),
+    ('SAMtools', '1.13'),
+    ('minimap2', _minimap_ver),
+    ('HTSlib', '1.12'),  # for tabix, bgzip
+    ('Racon', '1.4.21'),
+    ('edlib', '1.3.9'),
+    ('pyspoa', '0.0.8'),
+    ('python-parasail', '1.2.4'),
+    ('ont-fast5-api', '4.0.0'),
+    ('WhatsHap', '1.1'),
+    ('intervaltree-python', '3.1.0'),
+    ('BCFtools', '1.12'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('mappy', _minimap_ver, {
+        'checksums': ['00c8720783ac982b514b01b86349ede9809eeaccdf1328acb5a16dfeef51458b'],
+    }),
+    (name, version, {
+        'checksums': ['8a0b8d5997fe45b8d5a1317b2b6bfe117cb6b551928faef62e4e958cf14b5ea4'],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/medaka', 'bin/medaka_consensus', 'bin/medaka_version_report'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "medaka --help",
+    "medaka_version_report",
+]
+
+moduleclass = 'bio'
