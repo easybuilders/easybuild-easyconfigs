@@ -1,0 +1,43 @@
+From https://github.com/pytorch/pytorch/pull/84750
+
+From d5480f56374e7612d4400e845b05bc3a4507d87c Mon Sep 17 00:00:00 2001
+From: Alexander Grund <alexander.grund@tu-dresden.de>
+Date: Fri, 9 Sep 2022 14:39:49 +0200
+Subject: [PATCH] Fix Use-after-Free in qembeddingbag_byte_prepack_out
+
+When FBGEMM is not used (either manually disabled or on platforms such
+as POWER where it isn't supported at all) the fallback code requests a
+`data_ptr<float>` on a `Tensor` object returned by
+`to(ScalarType::Float)` in the same line. This object will be destroyed
+at the end of the line leading to a dangling pointer.
+
+On some platforms this manifests in wrong results being returned as the
+memory gets overwritten.
+
+Fix this by binding the temporary object (or initial object) to a const
+value reference which extents its lifetime and getting the `data_ptr`
+from that.
+
+Fixes #84748
+---
+ .../ATen/native/quantized/cpu/qembeddingbag_prepack.cpp    | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/aten/src/ATen/native/quantized/cpu/qembeddingbag_prepack.cpp b/aten/src/ATen/native/quantized/cpu/qembeddingbag_prepack.cpp
+index 614e274b54..6c04d0ae12 100644
+--- a/aten/src/ATen/native/quantized/cpu/qembeddingbag_prepack.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qembeddingbag_prepack.cpp
+@@ -242,9 +242,10 @@ Tensor& qembeddingbag_byte_prepack_out(Tensor& output, const Tensor& weight) {
+   }
+ 
+ #else
+-  const auto weight_data = weight_contig->scalar_type() == at::ScalarType::Half
+-    ? weight_contig->to(at::ScalarType::Float).data_ptr<float>()
+-    : weight_contig->data_ptr<float>();
++  const Tensor& float_weight = weight_contig->scalar_type() == at::ScalarType::Half
++    ? weight_contig->to(at::ScalarType::Float)
++    : *weight_contig;
++  const auto weight_data = float_weight.data_ptr<float>();
+   constexpr float kEpsilon = 1e-8f;
+   for (auto row: c10::irange(embedding_rows)) {
+     const float* input_row = weight_data + row * embedding_cols;
