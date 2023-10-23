@@ -1409,6 +1409,29 @@ class EasyConfigTest(TestCase):
                     failing_checks.append('Use Cargo%s instead of %s when Rust is used in %s'
                                           % (easyblock, easyblock, ec_fn))
 
+            # Avoid duplicated PYTHONPATH entries and checks (set by EasyBlock in framework)
+            default_dirs = [
+                'lib/python%(pyshortver)s/site-packages',
+            ]
+            with ec.allow_unresolved_templates():
+                default_dirs += [ec.resolve_template(d) for d in default_dirs]
+            extra_python_path = ec.get('modextrapaths', dict()).get('PYTHONPATH')
+            failing_checks.extend(f"modextrapaths should not contain {d} (automatically added by EasyBlock)"
+                                  for d in default_dirs if d in extra_python_path)
+            if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
+                sanity_check_dirs = ec.get('sanity_check_paths', dict()).get('dirs') or []
+                default_dirs = (
+                    'lib/python%(pyshortver)s/site-packages',
+                    'lib/python%(pyshortver)s/site-packages/%(name)s',
+                    'lib64/python%(pyshortver)s/site-packages',
+                    'lib64/python%(pyshortver)s/site-packages/%(name)s',
+                )
+                with ec.allow_unresolved_templates():
+                    default_dirs += [ec.resolve_template(d) for d in default_dirs]
+                failing_checks.extend(f"sanity_check_paths['dirs'] should not contain {d} "
+                                      "(automatically added by easyblock)"
+                                      for d in default_dirs if d in sanity_check_dirs)
+
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
