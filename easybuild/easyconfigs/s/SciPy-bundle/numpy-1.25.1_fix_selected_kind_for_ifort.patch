@@ -1,0 +1,65 @@
+Intel Fortran compiler does not support 10-byte reals, nor 16-byte integers.
+The f2py module needs to know the supported types to reliably build Fortran extensions.
+
+This patch was inspired by the discussion at https://github.com/numpy/numpy/issues/13053
+in particular the comments at
+  https://github.com/numpy/numpy/issues/13053#issuecomment-470314843
+and 
+  https://github.com/numpy/numpy/issues/13053#issuecomment-471008975
+by GitHub user @oleksandr-pavlyk
+
+Author: Jakob Schiotz (Tech. U. Denmark)  <schiotz@fysik.dtu.dk>
+
+--- numpy/f2py/crackfortran.py.old	2023-10-23 14:39:51.510964440 +0200
++++ numpy/f2py/crackfortran.py	2023-10-23 15:10:21.963115914 +0200
+@@ -2385,7 +2385,8 @@
+     return 'kind(' + string + ')'
+ 
+ 
+-def _selected_int_kind_func(r):
++def _selected_int_kind_func_intel(r):
++    # Intel(R) Fortran compiler only supports kinds 1, 2, 4, 8.
+     # XXX: This should be processor dependent
+     m = 10 ** r
+     if m <= 2 ** 8:
+@@ -2396,29 +2397,27 @@
+         return 4
+     if m <= 2 ** 63:
+         return 8
+-    if m <= 2 ** 128:
+-        return 16
++    # Not supported by ifort
++    #if m <= 2 ** 128:
++    #    return 16
+     return -1
+ 
++_selected_int_kind_func = _selected_int_kind_func_intel
+ 
+-def _selected_real_kind_func(p, r=0, radix=0):
++def _selected_real_kind_func_intel(p, r=0, radix=0):
++    # Intel(R) Fotran compiler only supports kinds 4, 8, 16
+     # XXX: This should be processor dependent
+-    # This is only verified for 0 <= p <= 20, possibly good for p <= 33 and above
++    # This is only good for 0 <= p <= 20
+     if p < 7:
+         return 4
+     if p < 16:
+         return 8
+-    machine = platform.machine().lower()
+-    if machine.startswith(('aarch64', 'arm64', 'power', 'ppc', 'riscv', 's390x', 'sparc')):
+-        if p <= 33:
+-            return 16
+-    else:
+-        if p < 19:
+-            return 10
+-        elif p <= 33:
+-            return 16
++    if p <= 33:
++        return 16
+     return -1
+ 
++_selected_real_kind_func = _selected_real_kind_func_intel
++
+ 
+ def get_parameters(vars, global_params={}):
+     params = copy.copy(global_params)
