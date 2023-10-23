@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'igraph'
+version = '0.10.7'
+
+homepage = 'https://igraph.org'
+description = """igraph is a collection of network analysis tools with the emphasis on 
+efficiency, portability and ease of use. igraph is open source and free. igraph can be 
+programmed in R, Python and C/C++."""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/igraph/igraph/releases/download/%(version)s']
+sources = ['%(name)s-%(version)s.tar.gz']
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('arpack-ng', '3.9.1'),
+]
+
+configopts = "-DBUILD_SHARED_LIBS=ON"
+
+multi_deps = {'Python': ['3.10', '3.11'] }
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('python-igraph', '0.11.2', {
+        'modulename': 'igraph',
+        'sources': [{'filename': '%(name)s-%(version)s.tar.gz', 'download_filename': 'igraph-%(version)s.tar.gz'}],
+        'source_urls': ['https://github.com/igraph/python-igraph/releases/download/%(version)s'],
+        'prebuildopts': " export IGRAPH_USE_PKG_CONFIG=1 && ",
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+# Since Sept. 1 2022 python-igraph is named and distributed as `igraph`. Some packages still expects `python-igraph`.
+postinstallcmds = [
+    "echo -e 'Metadata-Version: 2.3\nName: {eggname}\nVersion: %(version)s' > %(installdir)s/lib/python{py}/site-packages/{eggname}-%(version)s.egg-info".format(py=local_py, eggname='python_igraph')
+    for local_py in multi_deps["Python"]
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+sanity_check_paths = {
+    'files': ['lib/libigraph.so', 'lib/pkgconfig/igraph.pc',] +
+             ['include/igraph/igraph%s.h' % x for x in ['', '_blas', '_constants', '_lapack', '_types', '_version']],
+    'dirs': [],
+}
+
+moduleclass = 'lib'
