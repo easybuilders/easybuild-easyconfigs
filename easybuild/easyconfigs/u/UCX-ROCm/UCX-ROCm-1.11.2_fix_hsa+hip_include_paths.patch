@@ -1,0 +1,149 @@
+Fix hsa and hip include path
+
+Åke Sandgren, 2023-01-03
+diff -ru ucx-1.11.2.orig/config/m4/rocm.m4 ucx-1.11.2/config/m4/rocm.m4
+--- ucx-1.11.2.orig/config/m4/rocm.m4	2021-02-27 02:18:15.000000000 +0100
++++ ucx-1.11.2/config/m4/rocm.m4	2023-01-03 09:23:39.310360596 +0100
+@@ -84,9 +84,9 @@
+ 
+     rocm_happy=yes
+     AS_IF([test "x$rocm_happy" = xyes],
+-          [AC_CHECK_HEADERS([hsa.h], [rocm_happy=yes], [rocm_happy=no])])
++          [AC_CHECK_HEADERS([hsa/hsa.h], [rocm_happy=yes], [rocm_happy=no])])
+     AS_IF([test "x$rocm_happy" = xyes],
+-          [AC_CHECK_HEADERS([hsa_ext_amd.h], [rocm_happy=yes], [rocm_happy=no])])
++          [AC_CHECK_HEADERS([hsa/hsa_ext_amd.h], [rocm_happy=yes], [rocm_happy=no])])
+     AS_IF([test "x$rocm_happy" = xyes],
+           [AC_CHECK_LIB([hsa-runtime64], [hsa_init], [rocm_happy=yes], [rocm_happy=no])])
+ 
+@@ -111,7 +111,7 @@
+     hip_happy=no
+     AC_CHECK_LIB([hip_hcc], [hipFree], [AC_MSG_WARN([Please install ROCm-3.7.0 or above])], [hip_happy=yes])
+     AS_IF([test "x$hip_happy" = xyes],
+-          [AC_CHECK_HEADERS([hip_runtime.h], [hip_happy=yes], [hip_happy=no])])
++          [AC_CHECK_HEADERS([hip/hip_runtime.h], [hip_happy=yes], [hip_happy=no])])
+     AS_IF([test "x$hip_happy" = xyes],
+           [AC_CHECK_LIB([amdhip64], [hipFree], [hip_happy=yes], [hip_happy=no])])
+     AS_IF([test "x$hip_happy" = xyes], [HIP_CXXFLAGS="--std=gnu++11"], [])
+diff -ru ucx-1.11.2.orig/src/ucm/rocm/rocmmem.h ucx-1.11.2/src/ucm/rocm/rocmmem.h
+--- ucx-1.11.2.orig/src/ucm/rocm/rocmmem.h	2021-02-27 02:18:15.000000000 +0100
++++ ucx-1.11.2/src/ucm/rocm/rocmmem.h	2023-01-03 09:25:40.289314597 +0100
+@@ -7,7 +7,7 @@
+ #define UCM_ROCMMEM_H_
+ 
+ #include <ucm/api/ucm.h>
+-#include <hsa_ext_amd.h>
++#include <hsa/hsa_ext_amd.h>
+ 
+ /* hsa_amd_memory_pool_allocate */
+ hsa_status_t ucm_override_hsa_amd_memory_pool_allocate(
+diff -ru ucx-1.11.2.orig/src/uct/rocm/base/rocm_base.h ucx-1.11.2/src/uct/rocm/base/rocm_base.h
+--- ucx-1.11.2.orig/src/uct/rocm/base/rocm_base.h	2021-07-10 09:59:16.000000000 +0200
++++ ucx-1.11.2/src/uct/rocm/base/rocm_base.h	2023-01-03 09:24:10.206096620 +0100
+@@ -9,8 +9,8 @@
+ 
+ #include <uct/base/uct_iface.h>
+ #include <uct/base/uct_md.h>
+-#include <hsa.h>
+-#include <hsa_ext_amd.h>
++#include <hsa/hsa.h>
++#include <hsa/hsa_ext_amd.h>
+ 
+ 
+ hsa_status_t uct_rocm_base_init(void);
+diff -ru ucx-1.11.2.orig/src/uct/rocm/copy/rocm_copy_ep.c ucx-1.11.2/src/uct/rocm/copy/rocm_copy_ep.c
+--- ucx-1.11.2.orig/src/uct/rocm/copy/rocm_copy_ep.c	2021-09-23 22:36:08.000000000 +0200
++++ ucx-1.11.2/src/uct/rocm/copy/rocm_copy_ep.c	2023-01-03 09:25:35.457356174 +0100
+@@ -19,7 +19,7 @@
+ #include <ucs/type/class.h>
+ #include <ucs/arch/cpu.h>
+ 
+-#include <hsa_ext_amd.h>
++#include <hsa/hsa_ext_amd.h>
+ 
+ #define uct_rocm_memcpy_h2d(_d,_s,_l)  memcpy((_d),(_s),(_l))
+ #define uct_rocm_memcpy_d2h(_d,_s,_l)  ucs_memcpy_nontemporal((_d),(_s),(_l))
+diff -ru ucx-1.11.2.orig/src/uct/rocm/copy/rocm_copy_iface.h ucx-1.11.2/src/uct/rocm/copy/rocm_copy_iface.h
+--- ucx-1.11.2.orig/src/uct/rocm/copy/rocm_copy_iface.h	2021-02-27 02:18:15.000000000 +0100
++++ ucx-1.11.2/src/uct/rocm/copy/rocm_copy_iface.h	2023-01-03 09:24:33.245895073 +0100
+@@ -8,7 +8,7 @@
+ 
+ #include <uct/base/uct_iface.h>
+ 
+-#include <hsa.h>
++#include <hsa/hsa.h>
+ 
+ #define UCT_ROCM_COPY_TL_NAME    "rocm_cpy"
+ 
+diff -ru ucx-1.11.2.orig/src/uct/rocm/copy/rocm_copy_md.c ucx-1.11.2/src/uct/rocm/copy/rocm_copy_md.c
+--- ucx-1.11.2.orig/src/uct/rocm/copy/rocm_copy_md.c	2021-09-23 22:36:08.000000000 +0200
++++ ucx-1.11.2/src/uct/rocm/copy/rocm_copy_md.c	2023-01-03 09:25:33.073376690 +0100
+@@ -20,7 +20,7 @@
+ #include <ucm/api/ucm.h>
+ #include <ucs/type/class.h>
+ 
+-#include <hsa_ext_amd.h>
++#include <hsa/hsa_ext_amd.h>
+ 
+ static ucs_config_field_t uct_rocm_copy_md_config_table[] = {
+     {"", "", NULL,
+diff -ru ucx-1.11.2.orig/src/uct/rocm/gdr/rocm_gdr_md.c ucx-1.11.2/src/uct/rocm/gdr/rocm_gdr_md.c
+--- ucx-1.11.2.orig/src/uct/rocm/gdr/rocm_gdr_md.c	2021-09-23 22:36:08.000000000 +0200
++++ ucx-1.11.2/src/uct/rocm/gdr/rocm_gdr_md.c	2023-01-03 09:25:37.569338002 +0100
+@@ -18,7 +18,7 @@
+ #include <ucs/debug/memtrack.h>
+ #include <ucs/type/class.h>
+ 
+-#include <hsa_ext_amd.h>
++#include <hsa/hsa_ext_amd.h>
+ 
+ static ucs_config_field_t uct_rocm_gdr_md_config_table[] = {
+     {"", "", NULL,
+diff -ru ucx-1.11.2.orig/src/uct/rocm/ipc/rocm_ipc_iface.h ucx-1.11.2/src/uct/rocm/ipc/rocm_ipc_iface.h
+--- ucx-1.11.2.orig/src/uct/rocm/ipc/rocm_ipc_iface.h	2021-02-27 02:18:15.000000000 +0100
++++ ucx-1.11.2/src/uct/rocm/ipc/rocm_ipc_iface.h	2023-01-03 09:24:27.741943217 +0100
+@@ -9,7 +9,7 @@
+ 
+ #include <uct/base/uct_iface.h>
+ 
+-#include <hsa.h>
++#include <hsa/hsa.h>
+ 
+ #define UCT_ROCM_IPC_TL_NAME "rocm_ipc"
+ 
+diff -ru ucx-1.11.2.orig/src/uct/rocm/ipc/rocm_ipc_md.h ucx-1.11.2/src/uct/rocm/ipc/rocm_ipc_md.h
+--- ucx-1.11.2.orig/src/uct/rocm/ipc/rocm_ipc_md.h	2021-02-27 02:18:15.000000000 +0100
++++ ucx-1.11.2/src/uct/rocm/ipc/rocm_ipc_md.h	2023-01-03 09:25:30.109402193 +0100
+@@ -7,7 +7,7 @@
+ #define ROCM_IPC_MD_H
+ 
+ #include <uct/base/uct_md.h>
+-#include <hsa_ext_amd.h>
++#include <hsa/hsa_ext_amd.h>
+ 
+ 
+ extern uct_component_t uct_rocm_ipc_component;
+diff -ru ucx-1.11.2.orig/test/gtest/common/mem_buffer.cc ucx-1.11.2/test/gtest/common/mem_buffer.cc
+--- ucx-1.11.2.orig/test/gtest/common/mem_buffer.cc	2021-09-23 22:36:08.000000000 +0200
++++ ucx-1.11.2/test/gtest/common/mem_buffer.cc	2023-01-03 09:32:23.085955061 +0100
+@@ -31,7 +31,7 @@
+ #endif
+ 
+ #if HAVE_ROCM
+-#  include <hip_runtime.h>
++#  include <hip/hip_runtime.h>
+ 
+ #define ROCM_CALL(_code) \
+     do { \
+diff -ru ucx-1.11.2.orig/test/gtest/ucm/rocm_hooks.cc ucx-1.11.2/test/gtest/ucm/rocm_hooks.cc
+--- ucx-1.11.2.orig/test/gtest/ucm/rocm_hooks.cc	2021-09-23 22:36:08.000000000 +0200
++++ ucx-1.11.2/test/gtest/ucm/rocm_hooks.cc	2023-01-03 09:32:26.177929298 +0100
+@@ -5,7 +5,7 @@
+ */
+ #include <ucm/api/ucm.h>
+ #include <common/test.h>
+-#include <hip_runtime.h>
++#include <hip/hip_runtime.h>
+ 
+ static ucm_event_t alloc_event, free_event;
+ 
