@@ -1112,6 +1112,24 @@ class EasyConfigTest(TestCase):
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
 
+            # Avoid duplicated PYTHONPATH entries and checks (set by the easyblock)
+            if easyblock == 'PythonBundle' or easyblock.endswith('PythonPackage'):
+                extra_python_path = ec.get('modextrapaths', dict()).get('PYTHONPATH')
+                if extra_python_path == 'lib/python%(pyshortver)s/site-packages':
+                    failing_checks.append("modextrapaths should not contain %s "
+                                          "(automatically added by easyblock)" % extra_python_path)
+                sanity_check_dirs = ec.get('sanity_check_paths', dict()).get('dirs') or []
+                default_dirs = (
+                    'lib/python%(pyshortver)s/site-packages',
+                    'lib/python%(pyshortver)s/site-packages/%(name)s',
+                    'lib64/python%(pyshortver)s/site-packages',
+                    'lib64/python%(pyshortver)s/site-packages/%(name)s',
+                )
+                for d in default_dirs:
+                    if d in sanity_check_dirs:
+                        failing_checks.append("sanity_check_paths['dirs'] should not contain %s"
+                                              "(automatically added by easyblock)" % d)
+
         if failing_checks:
             self.fail('\n'.join(failing_checks))
 
