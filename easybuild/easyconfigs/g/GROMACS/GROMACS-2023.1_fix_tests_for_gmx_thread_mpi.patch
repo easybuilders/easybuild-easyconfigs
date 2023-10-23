@@ -1,0 +1,68 @@
+Make testing of GMX_THREAD_MPI work.
+Don't drop relevant PYTHONPATH and LD_LIBRARY_PATH settings.
+Make sure OMP_NUM_THREADS is not set so it doesn't fail when -ntomp is set.
+Don't use mpiexec for GMX_THREAD_MPI runs.
+
+Åke Sandgren, 2023-06-27
+diff -ru gromacs-2023.1.orig/python_packaging/gmxapi/test/CMakeLists.txt gromacs-2023.1/python_packaging/gmxapi/test/CMakeLists.txt
+--- gromacs-2023.1.orig/python_packaging/gmxapi/test/CMakeLists.txt	2023-04-21 15:12:07.000000000 +0200
++++ gromacs-2023.1/python_packaging/gmxapi/test/CMakeLists.txt	2023-06-27 08:08:49.967184214 +0200
+@@ -61,7 +61,7 @@
+ endif()
+ 
+ add_custom_target(gmxapi_pytest
+-                  COMMAND ${PYTHON_EXECUTABLE} -m pytest
++                  COMMAND ${CMAKE_COMMAND} -E env --unset=OMP_NUM_THREADS ${PYTHON_EXECUTABLE} -m pytest
+                     -rA -l --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+                   DEPENDS _gmxapi
+                   WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
+@@ -70,6 +70,7 @@
+ 
+ add_dependencies(check gmxapi_pytest)
+ 
++if (GMX_MPI)
+ if(MPIEXEC_EXECUTABLE)
+     if(NOT GMXAPI_MPI4PY_FOUND)
+         if (MPI_C_COMPILER)
+@@ -107,3 +108,4 @@
+ 
+     add_dependencies(check gmxapi_pytest_mpi)
+ endif()
++endif()
+diff -ru gromacs-2023.1.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt gromacs-2023.1/python_packaging/sample_restraint/tests/CMakeGROMACS.txt
+--- gromacs-2023.1.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2023-04-21 15:12:07.000000000 +0200
++++ gromacs-2023.1/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2023-06-27 09:10:31.134866196 +0200
+@@ -21,15 +21,18 @@
+ get_target_property(PLUGINPATH gmxapi_extension LIBRARY_OUTPUT_DIRECTORY)
+ add_custom_target(gmxapi_extension_pytest
+                   COMMAND ${CMAKE_COMMAND}
+-                               -E env PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++                               -E env --unset=OMP_NUM_THREADS LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
+                                ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
+                                ${CMAKE_CURRENT_SOURCE_DIR}
+-                  DEPENDS gmxapi_extension _gmxapi)
++                  DEPENDS gmxapi_extension _gmxapi
++                  WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++
+ # The current test fixtures require the `gmx` tool-wrapper executable.
+ add_dependencies(gmxapi_extension_pytest gmx)
+ 
+ add_dependencies(check gmxapi_extension_pytest)
+ 
++if (GMX_MPI)
+ if(MPIEXEC_EXECUTABLE)
+     if(NOT GMXAPI_MPI4PY_FOUND)
+         if (MPI_C_COMPILER)
+@@ -58,10 +61,11 @@
+     #    (https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php)
+     add_custom_target(
+         gmxapi_extension_pytest_mpi
+-        COMMAND ${MPIEXEC_EXECUTABLE} -n 4 -x PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++        COMMAND ${MPIEXEC_EXECUTABLE} -n 4 -x PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
+             ${PYTHON_EXECUTABLE} -m mpi4py -m pytest -x --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+             DEPENDS gmxapi_extension _gmxapi gmx
+             )
+ 
+     add_dependencies(check gmxapi_extension_pytest_mpi)
+ endif()
++endif()
