@@ -1,0 +1,165 @@
+From ea669c8ae938450e101140d634cca291bffd3898 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Wed, 26 Jul 2023 00:27:14 +0200
+Subject: [PATCH 1/4] simplify openmp thread limit handling
+
+---
+ common_thread.h | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/common_thread.h b/common_thread.h
+index 05e1d5489d..0a4c703b7c 100644
+--- a/common_thread.h
++++ b/common_thread.h
+@@ -136,15 +136,13 @@ typedef struct blas_queue {
+ #ifdef SMP_SERVER
+ 
+ extern int blas_server_avail;
++extern int blas_omp_number_max;
+ 
+ static __inline int num_cpu_avail(int level) {
+ 
+ #ifdef USE_OPENMP
+ int openmp_nthreads;
+-	if (blas_num_threads_set == 0)
+ 	openmp_nthreads=omp_get_max_threads();
+-	else
+-	openmp_nthreads=blas_cpu_number;
+ #endif
+ 
+ #ifndef USE_OPENMP 
+@@ -156,7 +154,13 @@ int openmp_nthreads;
+       ) return 1;        
+ 
+ #ifdef USE_OPENMP
+-  if (blas_cpu_number != openmp_nthreads) {
++     if (openmp_nthreads > blas_omp_number_max){
++#ifdef DEBUG
++     fprintf(stderr,"WARNING - more OpenMP threads requested (%d) than available (%d)\n",openmp_nthreads,blas_omp_number_max);
++#endif
++     openmp_nthreads = blas_omp_number_max;
++     }
++     if (blas_cpu_number != openmp_nthreads) {
+ 	  goto_set_num_threads(openmp_nthreads);
+   }
+ #endif
+
+From 3326b924b324d49960e0f657f049e5658e7e6c69 Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Wed, 26 Jul 2023 00:31:24 +0200
+Subject: [PATCH 2/4] remove status variable blas_num_threads_set; initialize
+ openmp thread maximum on startup
+
+---
+ driver/others/blas_server_omp.c | 4 +++-
+ driver/others/memory.c          | 4 ----
+ driver/others/memory_qalloc.c   | 1 -
+ 3 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/driver/others/blas_server_omp.c b/driver/others/blas_server_omp.c
+index 2e0c0f38c1..43764df00c 100644
+--- a/driver/others/blas_server_omp.c
++++ b/driver/others/blas_server_omp.c
+@@ -68,6 +68,7 @@
+ #endif
+ 
+ int blas_server_avail = 0;
++int blas_omp_number_max = 0;
+ 
+ extern int openblas_omp_adaptive_env();
+ 
+@@ -100,7 +101,6 @@ static void adjust_thread_buffers() {
+ 
+ void goto_set_num_threads(int num_threads) {
+ 
+-  blas_num_threads_set = 1;
+   if (num_threads < 0) blas_num_threads_set = 0;
+   if (num_threads < 1) num_threads = blas_num_threads;
+ 
+@@ -125,6 +125,8 @@ void openblas_set_num_threads(int num_threads) {
+ }
+ 
+ int blas_thread_init(void){
++if(blas_omp_number_max <= 0)
++  blas_omp_number_max = omp_get_max_threads();
+ 
+   blas_get_cpu_number();
+ 
+diff --git a/driver/others/memory.c b/driver/others/memory.c
+index 3cbd17bc2f..4fceae7545 100644
+--- a/driver/others/memory.c
++++ b/driver/others/memory.c
+@@ -422,8 +422,6 @@ This value is equal or large than blas_cpu_number. This means some threads are s
+ */
+ int blas_num_threads = 0;
+ 
+-int blas_num_threads_set = 0;
+-
+ int  goto_get_num_procs  (void) {
+   return blas_cpu_number;
+ }
+@@ -1996,8 +1994,6 @@ This value is equal or large than blas_cpu_number. This means some threads are s
+ */
+ int blas_num_threads = 0;
+ 
+-int blas_num_threads_set = 0;
+-
+ int  goto_get_num_procs  (void) {
+   return blas_cpu_number;
+ }
+diff --git a/driver/others/memory_qalloc.c b/driver/others/memory_qalloc.c
+index 0b38d1887c..6174d9b75e 100644
+--- a/driver/others/memory_qalloc.c
++++ b/driver/others/memory_qalloc.c
+@@ -283,7 +283,6 @@ The numbers of threads in the thread pool.
+ This value is equal or large than blas_cpu_number. This means some threads are sleep.
+ */
+ int blas_num_threads = 0;
+-int blas_num_threads_set = 0;
+ 
+ int  goto_get_num_procs  (void) {
+   return blas_cpu_number;
+
+From 94adf98bb80b36c9faa2fa90fe7f33b36d30748c Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Wed, 26 Jul 2023 08:31:37 +0200
+Subject: [PATCH 3/4] remove unused status variable
+
+---
+ common_thread.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/common_thread.h b/common_thread.h
+index 0a4c703b7c..06a7a1a38c 100644
+--- a/common_thread.h
++++ b/common_thread.h
+@@ -53,7 +53,6 @@ extern void goto_set_num_threads(int nthreads);
+ /* Global Parameter */
+ extern int blas_cpu_number;
+ extern int blas_num_threads;
+-extern int blas_num_threads_set;
+ extern int blas_omp_linked;
+ 
+ #define BLAS_LEGACY	0x8000U
+
+From 9ff84dc3f2536ce94e0a300a098485c7ff3d771d Mon Sep 17 00:00:00 2001
+From: Martin Kroeker <martin@ruby.chemie.uni-freiburg.de>
+Date: Wed, 26 Jul 2023 10:02:44 +0200
+Subject: [PATCH 4/4] remove unused status variable
+
+---
+ driver/others/blas_server_omp.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/driver/others/blas_server_omp.c b/driver/others/blas_server_omp.c
+index 43764df00c..fe6b4a7c06 100644
+--- a/driver/others/blas_server_omp.c
++++ b/driver/others/blas_server_omp.c
+@@ -101,7 +101,6 @@ static void adjust_thread_buffers() {
+ 
+ void goto_set_num_threads(int num_threads) {
+ 
+-  if (num_threads < 0) blas_num_threads_set = 0;
+   if (num_threads < 1) num_threads = blas_num_threads;
+ 
+   if (num_threads > MAX_CPU_NUMBER) num_threads = MAX_CPU_NUMBER;

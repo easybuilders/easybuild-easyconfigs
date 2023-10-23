@@ -1,0 +1,62 @@
+##
+# Copyright:: Copyright 2013-2020 Juelich Supercomputing Centre, Germany
+#             Copyright 2020 TU Dresden, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+#             Alexander Grund <alexander.grund@tu-dresden.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+
+name = 'Score-P'
+version = '6.0'
+
+homepage = 'https://www.score-p.org'
+description = """
+ The Score-P measurement infrastructure is a highly scalable and easy-to-use
+ tool suite for profiling, event tracing, and online analysis of HPC
+ applications.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2019b'}
+
+source_urls = ['https://www.vi-hps.org/cms/upload/packages/scorep/']
+sources = ['scorep-%(version)s.tar.gz']
+patches = ['Score-P-6.0_no_PDT_for_CUDA.patch']
+checksums = [
+    '5dc1023eb766ba5407f0b5e0845ec786e0021f1da757da737db1fb71fc4236b8',  # scorep-6.0.tar.gz
+    '93e3fc5d19a89d14ce98fb772b4d9ddde4191df3ce321c9965602aa12d43fa93',  # Score-P-6.0_no_PDT_for_CUDA.patch
+]
+
+dependencies = [
+    ('CubeLib', '4.4.4'),
+    ('CubeWriter', '4.4.3'),
+    # Unwinding/sampling support (optional):
+    ('libunwind', '1.3.1'),
+    ('OPARI2', '2.0.5'),
+    ('OTF2', '2.2'),
+    # Hardware counter support (optional):
+    ('PAPI', '6.0.0'),
+    # PDT source-to-source instrumentation support (optional):
+    ('PDT', '3.25'),
+]
+
+configopts = '--enable-shared'
+
+local_adapters = [
+    'compiler_event', 'compiler_mgmt', 'mpi_event', 'mpi_mgmt', 'opari2_mgmt', 'user_event', 'user_mgmt'
+]
+sanity_check_paths = {
+    'files':
+        ['bin/scorep', 'include/scorep/SCOREP_User.h'] +
+        ['lib/libscorep_adapter_%s.%s' % (a, e) for a in local_adapters for e in ('a', SHLIB_EXT)],
+    'dirs': [],
+}
+sanity_check_commands = ['scorep-config --help']
+
+# Ensure that local metric documentation is found by CubeGUI
+modextrapaths = {'CUBE_DOCPATH': 'share/doc/scorep/profile'}
+
+moduleclass = 'perf'

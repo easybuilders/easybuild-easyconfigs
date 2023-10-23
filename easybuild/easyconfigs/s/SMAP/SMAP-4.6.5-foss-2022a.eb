@@ -1,0 +1,84 @@
+easyblock = 'PythonBundle'
+
+name = 'SMAP'
+version = '4.6.5'
+
+homepage = 'https://ngs-smap.readthedocs.io'
+description = "SMAP is an analysis tool for stack-based NGS read mapping"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('Autotools', '20220317'),  # required for isal
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),  # for pandas
+    ('matplotlib', '3.5.2'),
+    ('BEDTools', '2.30.0'),
+    ('pybedtools', '0.9.0'),
+    ('Pysam', '0.19.1'),
+    ('Biopython', '1.79'),
+    ('openpyxl', '3.0.10'),
+    ('plotly.py', '5.12.0'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('setuptools', '67.6.1', {
+        'checksums': ['257de92a9d50a60b8e22abfcbb771571fde0dbf3ec234463212027a4eeecbe9a'],
+    }),
+    ('colorlog', '6.7.0', {
+        'checksums': ['bd94bd21c1e13fac7bd3153f4bc3a7dc0eb0974b8bc2fdf1a989e474f6e582e5'],
+    }),
+    ('primer3-py', '1.2.0', {
+        'checksums': ['9e511e90987d4beda11f1f065b81805bc0c26a08084154e87fda46136ecf7518'],
+        'modulename': 'primer3',
+    }),
+    ('dnaio', '0.10.0', {
+        'checksums': ['de51a50948f00b864297d74eddb588fbee5ac229855754e77564d18b24619d18'],
+    }),
+    ('isal', '1.1.0', {
+        'checksums': ['1364f4e3255a57d51c01422ab3ae785a43c076d516ebf49f6a25adecf8232105'],
+    }),
+    ('xopen', '1.7.0', {
+        'checksums': ['901f9c8298e95ed74767a4bd76d9f4cf71d8de27b8cf296ac3e7bc1c11520d9f'],
+    }),
+    # smap-haplotype-window 1.8.1 requires cutadapt <= 4.1 (requires cutadapt.utils.reverse_complemented_sequence)
+    ('cutadapt', '4.1', {
+        'checksums': ['be745ff24adfb4a3eaf715dfad0e2ccdfad7792ef00c1122adf4fbf3aed9227b'],
+    }),
+    ('ngs-smap', version, {
+        'patches': ['SMAP-4.6.5_no-bin-bedtools.patch'],
+        'checksums': [
+            {'ngs-smap-4.6.5.tar.gz': 'bd6fd5a9fb5be66c5d21410376ed6b13eeb23da040c498d60dad6a8fb45d9d5e'},
+            {'SMAP-4.6.5_no-bin-bedtools.patch': 'a43460694378628129d2cd3373e850fccb2ca330680f6fea3e31db9e4589d7ca'},
+        ],
+        'preinstallopts': "rm bin/bedtools && sed -i 's/~=/>=/g' setup.cfg && ",
+        'modulename': 'smap',
+    }),
+    ('smap-haplotype-window', '1.8.1', {
+        'checksums': ['5e244ecec8cb798d294014378c735dd2ab3d32f8266c7d161cf733099715fbbe'],
+        'modulename': 'smap_window',
+    }),
+    ('gffpandas', '1.2.0', {
+        'checksums': ['1a1e1c5c5120bf46ec57517222ebb42ffaab3f768c972fec54c4ac1b07b7f0c6'],
+    }),
+    ('smap-effect-prediction', '0.1.2', {
+        'checksums': ['af16135eb3a2d9c22287a06d595010c46957711358734d73daaa21059ac27ca2'],
+        'preinstallopts': "sed -i 's/~=/>=/g' setup.cfg && ",
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/smap'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["smap compare --help"]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

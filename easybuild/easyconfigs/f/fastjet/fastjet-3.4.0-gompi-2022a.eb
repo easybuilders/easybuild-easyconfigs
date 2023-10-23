@@ -1,0 +1,45 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Alexander Puck Neuwirth <alexander@neuwirth-informatik.de>
+
+easyblock = 'ConfigureMake'
+
+name = 'fastjet'
+version = '3.4.0'
+
+homepage = 'https://fastjet.fr/'
+description = """A software package for jet finding in pp and e+e- collisions"""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+source_urls = ['https://fastjet.fr/repo/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['fastjet-3.4.0_excludeSISCone.patch']
+checksums = [
+    'ee07c8747c8ead86d88de4a9e4e8d1e9e7d7614973f5631ba8297f7a02478b91',
+    '698902b4c4d54873d640239461cccc036234986ae8d6a33ceb649462ade971d3'  # fastjet-3.4.0_excludeSISCone.patch
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('siscone', '3.0.5'),
+    ('CGAL', '4.14.3'),
+]
+# For CGAL >=5
+# configopts = '--enable-cgal-header-only --enable-pyext --enable-allplugins --enable-allcxxplugins '
+configopts = '--enable-cgal --enable-pyext --enable-allplugins --enable-allcxxplugins '
+configopts += "--enable-shared"
+
+sanity_check_paths = {
+    'files': ['lib/libfastjet.%s' % SHLIB_EXT, 'bin/fastjet-config'],
+    'dirs': ['include/fastjet'],
+}
+sanity_check_commands = ["python -c 'import fastjet'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'phys'

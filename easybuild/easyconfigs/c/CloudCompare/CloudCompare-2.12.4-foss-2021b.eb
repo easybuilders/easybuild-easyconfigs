@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'CloudCompare'
+version = '2.12.4'
+
+homepage = 'https://www.cloudcompare.org/'
+description = "3D point cloud and mesh processing software"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+github_account = 'CloudCompare'
+source_urls = [GITHUB_SOURCE]
+sources = [
+    'v%(version)s.tar.gz',
+    {
+        'filename': 'CCCoreLib-20220714.tar.gz',
+        'git_config': {
+            'url': 'https://github.com/CloudCompare',
+            'repo_name': 'CCCoreLib',
+            'commit': '54ecc7104ead3f203ac6454ff999afe5dac60f2c',
+        },
+        'extract_cmd': 'tar -C %(name)s-%(version)s/libs/qCC_db/extern -xf %s',
+    },
+]
+checksums = [
+    '31c1f4f91efbdb74619cebb36f57f999d6f1a57bb6f87b13e60d21e670c38f68',
+    None,
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+]
+
+dependencies = [
+    ('Qt5', '5.15.2'),
+    ('GDAL', '3.3.2'),
+    ('Eigen', '3.4.0'),
+]
+
+_copts = [
+    '-DEIGEN_ROOT_DIR=$EBROOTEIGEN',
+    '-DOpenGL_GL_PREFERENCE=GLVND',
+    '-DOPTION_USE_GDAL=1',
+    '-DPLUGIN_GL_QEDL=1',
+    '-DPLUGIN_GL_QSSAO=1',
+    '-DPLUGIN_IO_QADDITIONAL=1',
+    '-DPLUGIN_IO_QCSV_MATRIX=1',
+    '-DPLUGIN_IO_QPHOTOSCAN=1',
+    '-DPLUGIN_STANDARD_QBROOM=1',
+    '-DPLUGIN_STANDARD_QCOMPASS=1',
+    '-DPLUGIN_STANDARD_QCSF=1',
+    '-DPLUGIN_STANDARD_QFACETS=1',
+    '-DPLUGIN_STANDARD_QHOUGH_NORMALS=1',
+    '-DPLUGIN_STANDARD_QHPR=1',
+    '-DPLUGIN_STANDARD_QM3C2=1',
+    '-DPLUGIN_STANDARD_QPCV=1',
+    '-DPLUGIN_STANDARD_QRANSAC_SD=1',
+    '-DPLUGIN_STANDARD_QSRA=1',
+]
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files':
+        ['bin/%s' % x for x in ['CloudCompare', 'ccViewer']] +
+        ['lib/cloudcompare/lib%s.%s' % (x, SHLIB_EXT) for x in [
+            'CCAppCommon', 'CCCoreLib', 'CC_FBO_LIB', 'CCPluginAPI', 'QCC_DB_LIB', 'QCC_GL_LIB', 'QCC_IO_LIB'
+        ]] +
+        ['lib/cloudcompare/plugins/lib%s_PLUGIN.%s' % (x, SHLIB_EXT) for x in [
+            'QCORE_IO', 'QEDL_GL', 'QSSAO_GL', 'QADDITIONAL_IO', 'QCSV_MATRIX_IO', 'QPHOTOSCAN_IO',
+            'QBROOM', 'QCOMPASS', 'QCSF', 'QFACETS', 'QHOUGH_NORMALS', 'QHPR', 'QM3C2',
+            'QPCV', 'QRANSAC_SD', 'QSRA',
+        ]],
+    'dirs': ['share/cloudcompare/shaders'],
+}
+
+moduleclass = 'geo'

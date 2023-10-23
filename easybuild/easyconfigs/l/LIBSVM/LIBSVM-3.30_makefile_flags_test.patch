@@ -1,0 +1,34 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/08
+# pass CFLAGS and LDFLAGS to make
+# add target test
+diff -ru libsvm-330/Makefile libsvm-330_flags/Makefile
+--- libsvm-330/Makefile	2022-08-10 15:06:45.000000000 +0200
++++ libsvm-330_flags/Makefile	2023-08-03 10:57:04.906648202 +0200
+@@ -1,5 +1,5 @@
+ CXX ?= g++
+-CFLAGS = -Wall -Wconversion -O3 -fPIC
++CFLAGS ?= -Wall -Wconversion -O3 -fPIC
+ SHVER = 3
+ OS = $(shell uname)
+ 
+@@ -9,7 +9,7 @@
+ 	if [ "$(OS)" = "Darwin" ]; then \
+ 		SHARED_LIB_FLAG="-dynamiclib -Wl,-install_name,libsvm.so.$(SHVER)"; \
+ 	else \
+-		SHARED_LIB_FLAG="-shared -Wl,-soname,libsvm.so.$(SHVER)"; \
++		SHARED_LIB_FLAG="-shared -Wl,-soname,libsvm.so.$(SHVER) $(LDFLAGS)"; \
+ 	fi; \
+ 	$(CXX) $${SHARED_LIB_FLAG} svm.o -o libsvm.so.$(SHVER)
+ 
+@@ -23,3 +23,11 @@
+ 	$(CXX) $(CFLAGS) -c svm.cpp
+ clean:
+ 	rm -f *~ svm.o svm-train svm-predict svm-scale libsvm.so.$(SHVER)
++
++
++test:
++	./svm-scale heart_scale
++	./svm-train heart_scale
++	echo 1 > t
++	./svm-predict t heart_scale.model out
++

@@ -1,0 +1,147 @@
+commit 58b57280a7f0f6853fb7239d8f13737437f519b5
+Author: Ake Sandgren <ake.sandgren@hpc2n.umu.se>
+Date:   Mon Feb 13 13:40:40 2023 +0100
+
+    Use external EasyBuild versions of some submodules
+    And make sure libxsmm links with flexiblas
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6ff98d5e..4dae1c72 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -204,21 +204,21 @@ set_property(TARGET dgl PROPERTY CXX_STANDARD 14)
+ 
+ # include directories
+ target_include_directories(dgl PRIVATE "include")
+-target_include_directories(dgl PRIVATE "third_party/dlpack/include")
+-target_include_directories(dgl PRIVATE "third_party/dmlc-core/include")
+-target_include_directories(dgl PRIVATE "third_party/phmap/")
++#target_include_directories(dgl PRIVATE "third_party/dlpack/include")
++#target_include_directories(dgl PRIVATE "third_party/dmlc-core/include")
++#target_include_directories(dgl PRIVATE "third_party/phmap/")
+ target_include_directories(dgl PRIVATE "third_party/xbyak/")
+ target_include_directories(dgl PRIVATE "third_party/METIS/include/")
+ target_include_directories(dgl PRIVATE "tensoradapter/include")
+-target_include_directories(dgl PRIVATE "third_party/nanoflann/include")
+-target_include_directories(dgl PRIVATE "third_party/libxsmm/include")
++#target_include_directories(dgl PRIVATE "third_party/nanoflann/include")
++#target_include_directories(dgl PRIVATE "third_party/libxsmm/include")
+ 
+ 
+ # For serialization
+ if (USE_HDFS)
+   option(DMLC_HDFS_SHARED "dgl has to build with dynamic hdfs library" ON)
+ endif()
+-add_subdirectory("third_party/dmlc-core")
++#add_subdirectory("third_party/dmlc-core")
+ list(APPEND DGL_LINKER_LIBS dmlc)
+ set(GOOGLE_TEST 0) # Turn off dmlc-core test
+ 
+@@ -234,17 +234,7 @@ endif(NOT MSVC)
+ 
+ # Compile LIBXSMM
+ if((NOT MSVC) AND USE_LIBXSMM)
+-  if(REBUILD_LIBXSMM)
+-    add_custom_target(libxsmm COMMAND make realclean COMMAND make -j BLAS=0
+-                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/libxsmm
+-                      )
+-  else(REBUILD_LIBXSMM)
+-    add_custom_target(libxsmm COMMAND make -j BLAS=0
+-                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/libxsmm
+-                      )
+-  endif(REBUILD_LIBXSMM)
+-  add_dependencies(dgl libxsmm)
+-  list(APPEND DGL_LINKER_LIBS -L${CMAKE_SOURCE_DIR}/third_party/libxsmm/lib/ xsmm)
++  list(APPEND DGL_LINKER_LIBS xsmm flexiblas)
+ endif((NOT MSVC) AND USE_LIBXSMM)
+ 
+ if(NOT MSVC)
+@@ -324,15 +314,17 @@ install(TARGETS dgl DESTINATION lib${LIB_SUFFIX})
+ # Testing
+ if(BUILD_CPP_TEST)
+   message(STATUS "Build with unittest")
+-  add_subdirectory(./third_party/googletest)
++  #add_subdirectory(./third_party/googletest)
+   enable_testing()
+   include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+   include_directories("include")
+-  include_directories("third_party/dlpack/include")
+-  include_directories("third_party/xbyak")
+-  include_directories("third_party/dmlc-core/include")
+-  include_directories("third_party/phmap")
+-  include_directories("third_party/libxsmm/include")
++  #include_directories("third_party/dlpack/include")
++  if (USE_AVX)
++    include_directories("third_party/xbyak")
++  endif(USE_AVX)
++  #include_directories("third_party/dmlc-core/include")
++  #include_directories("third_party/phmap")
++  #include_directories("third_party/libxsmm/include")
+   file(GLOB_RECURSE TEST_SRC_FILES ${PROJECT_SOURCE_DIR}/tests/cpp/*.cc)
+   add_executable(runUnitTests ${TEST_SRC_FILES})
+   target_link_libraries(runUnitTests gtest gtest_main)
+diff --git a/include/dgl/runtime/ndarray.h b/include/dgl/runtime/ndarray.h
+index cbcd79d5..db2caa16 100644
+--- a/include/dgl/runtime/ndarray.h
++++ b/include/dgl/runtime/ndarray.h
+@@ -14,7 +14,7 @@
+ #include <memory>
+ 
+ #include "c_runtime_api.h"
+-#include "dlpack/dlpack.h"
++#include <dlpack/dlpack.h>
+ #include "serializer.h"
+ #include "shared_mem.h"
+ 
+diff --git a/include/dgl/zerocopy_serializer.h b/include/dgl/zerocopy_serializer.h
+index 6c77c4df..53d2bfa0 100644
+--- a/include/dgl/zerocopy_serializer.h
++++ b/include/dgl/zerocopy_serializer.h
+@@ -19,7 +19,7 @@
+ #include <vector>
+ #include <memory>
+ 
+-#include "dmlc/logging.h"
++#include <dmlc/logging.h>
+ 
+ namespace dgl {
+ 
+diff --git a/include/intel/cpu_support.h b/include/intel/cpu_support.h
+index 14c5f5c4..7c554f0d 100644
+--- a/include/intel/cpu_support.h
++++ b/include/intel/cpu_support.h
+@@ -9,7 +9,7 @@
+ #include <memory>
+ #include <tuple>
+ #include <type_traits>
+-#include "dmlc/logging.h"
++#include <dmlc/logging.h>
+ #include "meta_utils.h"
+ #include "xbyak/xbyak.h"
+ #include "xbyak/xbyak_util.h"
+diff --git a/src/graph/serialize/heterograph_serialize.cc b/src/graph/serialize/heterograph_serialize.cc
+index ce3c8d51..6f7a75dc 100644
+--- a/src/graph/serialize/heterograph_serialize.cc
++++ b/src/graph/serialize/heterograph_serialize.cc
+@@ -50,7 +50,7 @@
+ #include "../heterograph.h"
+ #include "./graph_serialize.h"
+ #include "./streamwithcount.h"
+-#include "dmlc/memory_io.h"
++#include <dmlc/memory_io.h>
+ 
+ namespace dgl {
+ namespace serialize {
+diff --git a/src/graph/serialize/zerocopy_serializer.cc b/src/graph/serialize/zerocopy_serializer.cc
+index cc3f5968..5fed2b8b 100644
+--- a/src/graph/serialize/zerocopy_serializer.cc
++++ b/src/graph/serialize/zerocopy_serializer.cc
+@@ -7,7 +7,7 @@
+ #include <dgl/zerocopy_serializer.h>
+ 
+ #include "dgl/runtime/ndarray.h"
+-#include "dmlc/memory_io.h"
++#include <dmlc/memory_io.h>
+ 
+ namespace dgl {
+ 

@@ -1,0 +1,28 @@
+TestGradientsCPU.test_forward_mode_AD_linalg_det_singular_cpu_complex128 sometimes fails with
+
+        raise GradcheckError(_get_notallclose_msg(a, n, j, i, complex_indices, test_imag, is_forward_ad) + jacobians_str)
+    torch.autograd.gradcheck.GradcheckError: While considering the imaginary part of complex inputs only, Jacobian computed with forward mode mismatch for output 0 with respect to input 0,
+    numerical:tensor([-0.1722-0.0510j,  0.0925-0.0695j,  0.1424+0.0206j,  0.0174-0.0618j],
+        dtype=torch.complex128)
+    analytical:tensor([-0.0000+0.0000j, 0.0925-0.0695j, 0.1424+0.0206j, 0.0174-0.0618j],
+        dtype=torch.complex128, grad_fn=<CopyBackwards>)
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/opinfo/definitions/linalg.py b/torch/testing/_internal/opinfo/definitions/linalg.py
+index 0eb1ca07644..f3e5f9ec6ed 100644
+--- a/torch/testing/_internal/opinfo/definitions/linalg.py
++++ b/torch/testing/_internal/opinfo/definitions/linalg.py
+@@ -1341,6 +1341,12 @@ op_db: List[OpInfo] = [
+                 "test_fn_fwgrad_bwgrad",
+                 dtypes=(torch.complex128,),
+             ),
++            DecorateInfo(
++                unittest.skip(""),
++                "TestGradients",
++                "test_forward_mode_AD",
++                dtypes=(torch.complex128,),
++            ),
+             DecorateInfo(
+                 unittest.skip("Skipped, see https://github.com//issues/84192"),
+                 "TestGradients",

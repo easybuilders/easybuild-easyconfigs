@@ -1,0 +1,55 @@
+easyblock = 'Tarball'
+name = 'Trinotate'
+version = '4.0.1'
+
+homepage = 'https://github.com/Trinotate/Trinotate/wiki'
+description = """Trinotate is a comprehensive annotation suite designed for automatic functional
+annotation of transcriptomes, particularly de novo assembled transcriptomes,
+from model or non-model organisms. Trinotate makes use of a number of different
+well referenced methods for functional annotation including homology search to
+known sequence data (BLAST+/SwissProt), protein domain identification
+(HMMER/PFAM), protein signal peptide and transmembrane domain prediction
+(signalP/tmHMM), and leveraging various annotation databases (eggNOG/GO/Kegg
+databases). All functional annotation data derived from the analysis of
+transcripts is integrated into a SQLite database which allows fast efficient
+searching for terms with specific qualities related to a desired scientific
+hypothesis or a means to create a whole annotation report for a transcriptome."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = '%(name)s'
+source_urls = [GITHUB_SOURCE]
+sources = ['%(name)s-v%(version)s.tar.gz']
+checksums = ['a07cedeb59a1c2b681696ecd878dfdf10e3bdf85185f5197e89a529837518a9b']
+
+# for reference, list of dependencies in the container image used upstream:
+# https://github.com/Trinotate/Trinotate/blob/master/Docker/Dockerfile
+dependencies = [
+    ('Perl', '5.34.1'),
+    ('Python', '3.10.4'),
+    ('Trinity', '2.15.1'),
+    ('BLAST+', '2.13.0'),
+    ('DIAMOND', '2.1.0'),
+    ('eggnog-mapper', '2.1.9'),
+    ('HMMER', '3.3.2'),
+    ('Infernal', '1.1.4'),
+    ('PyBioLib', '1.1.988'),
+    ('SAMtools', '1.16.1'),
+    ('TransDecoder', '5.5.0'),
+]
+
+sanity_check_paths = {
+    'files': ['Trinotate', 'run_TrinotateWebserver.pl'],
+    'dirs': ['PerlLib', 'resources', 'testing', 'util'],
+}
+
+sanity_check_commands = [
+    'Trinotate --help 2>&1 | grep -q "Trinotate --db <sqlite.db>"',
+]
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': 'PerlLib',
+}
+
+moduleclass = 'bio'

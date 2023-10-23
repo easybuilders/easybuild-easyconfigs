@@ -1,0 +1,36 @@
+easyblock = 'MakeCp'
+
+name = 'CuCLARK'
+version = '1.1'
+
+homepage = 'https://github.com/Funatiq/cuclark'
+description = "Metagenomic classifier for CUDA-enabled GPUs"
+
+toolchain = {'name': 'fosscuda', 'version': '2019b'}
+
+source_urls = ['https://github.com/Funatiq/cuclark/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['CuCLARK-%(version)s_fix-shfl.patch']
+checksums = [
+    'fd27082aa851f43ac65d8d57918e0c928eab7941c4d2e058993b9fbfdaa4d060',  # v1.1.tar.gz
+    'f2dc781168613395ed8803a37ab635d438e68d4e2e6569d5078e9fd2a92a9b66',  # CuCLARK-1.1_fix-shfl.patch
+]
+
+buildopts = 'CXX="$CXX" CXXFLAGS="$CXXFLAGS" '
+# can't use compute_70, must use compute_60 arch because deprecated __ballot() is used
+buildopts += 'NVCCFLAGS="-gencode arch=compute_60,code=sm_70 -O2"'
+
+local_binaries = ['cuCLARK', 'cuCLARK-l', 'getAccssnTaxID', 'getfilesToTaxNodes', 'getTargetsDef']
+local_scripts = ['classify_metagenome.sh', 'clean.sh', 'download_data.sh', 'download_taxondata.sh',
+                 'make_metadata.sh', 'resetCustomDB.sh', 'updateTaxonomy.sh', 'set_targets.sh']
+
+files_to_copy = [(['exe/*'] + local_scripts, 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries + local_scripts],
+    'dirs': [],
+}
+
+sanity_check_commands = ["cuCLARK --help"]
+
+moduleclass = 'bio'

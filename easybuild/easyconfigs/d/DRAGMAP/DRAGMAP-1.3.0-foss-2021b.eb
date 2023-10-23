@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'DRAGMAP'
+version = '1.3.0'
+
+homepage = 'https://github.com/Illumina/DRAGMAP'
+description = 'Dragmap is the Dragen mapper/aligner Open Source Software.'
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/Illumina/DRAGMAP/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = ['baf546c2f53b13e2bce4c937201e38459f3ce2f1069722ca670d8726a4bae224']
+
+dependencies = {
+    ('Boost', '1.77.0'),
+    ('googletest', '1.11.0'),
+}
+
+skipsteps = ['configure']
+prebuildopts = 'sed -i "s|-msse4.2 -mavx2|$CXXFLAGS|g" config.mk &&'
+buildopts = 'CC="$CC" CXX="$CXX"'
+preinstallopts = 'mkdir %(installdir)s/bin &&'
+installopts = 'DESTDIR=%(installdir)s'
+
+sanity_check_paths = {
+    'files': ['bin/dragen-os'],
+    'dirs': []
+}
+
+sanity_check_commands = ['dragen-os --help']
+
+moduleclass = 'bio'

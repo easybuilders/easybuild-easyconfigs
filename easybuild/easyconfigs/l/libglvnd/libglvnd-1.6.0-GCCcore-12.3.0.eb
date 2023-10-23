@@ -1,0 +1,33 @@
+easyblock = 'MesonNinja'
+
+name = 'libglvnd'
+version = '1.6.0'
+
+homepage = 'https://gitlab.freedesktop.org/glvnd/libglvnd'
+description = "libglvnd is a vendor-neutral dispatch layer for arbitrating OpenGL API calls between multiple vendors."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v%(version)s/']
+sources = ['libglvnd-v%(version)s.tar.gz']
+checksums = ['efc756ffd24b24059e1c53677a9d57b4b237b00a01c54a6f1611e1e51661d70c']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '1.9.5'),
+    ('Meson', '1.1.1'),
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [('X11', '20230603')]
+
+# Let EGL find system-installed vendor files in /etc/glvnd/egl_vendor.d etc.
+allow_prepend_abs_path = True
+modextrapaths = {"__EGL_VENDOR_LIBRARY_DIRS": "/etc/glvnd/egl_vendor.d:/usr/share/glvnd/egl_vendor.d"}
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (x, SHLIB_EXT) for x in ['EGL', 'GL', 'GLX', 'OpenGL']],
+    'dirs': ['include/%s' % x for x in ['EGL', 'GL', 'GLES', 'GLES2', 'GLES3', 'glvnd', 'KHR']] + ['lib/pkgconfig'],
+}
+
+moduleclass = 'lib'

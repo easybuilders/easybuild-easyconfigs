@@ -1,0 +1,24 @@
+Fix flaky test_thread_shutdown in test_autograd
+
+From https://github.com/pytorch/pytorch/pull/86464
+
+Backport: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_autograd.py b/test/test_autograd.py
+index da1e859682e..0c0bc4f1a2a 100644
+--- a/test/test_autograd.py
++++ b/test/test_autograd.py
+@@ -4320,8 +4320,12 @@ class MyFunction(Function):
+     def backward(ctx, grad):
+         return grad
+ 
++# Run on cuda if it is available to ensure that the worker thread
++# is properly initialized by the time we exit.
++device = "cuda" if torch.cuda.is_available() else "cpu"
++
+ for shape in [(1,), ()]:
+-    v = torch.ones(shape, requires_grad=True)
++    v = torch.ones(shape, requires_grad=True, device=device)
+     MyFunction.apply(v).backward()
+ """
+         s = TestCase.runWithPytorchAPIUsageStderr(code)

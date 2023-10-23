@@ -1,0 +1,56 @@
+easyblock = 'PythonBundle'
+
+name = 'dRep'
+version = '3.4.2'
+
+homepage = 'https://drep.readthedocs.io/en/latest/'
+description = """dRep is a python program which performs rapid pair-wise comparison of genome sets.
+One of it’s major purposes is for genome de-replication, but it can do a lot more."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('Biopython', '1.79'),
+    ('Seaborn', '0.12.1'),
+    ('matplotlib', '3.5.2'),
+    ('scikit-learn', '1.1.2'),
+    ('tqdm', '4.64.0'),
+    ('Mash', '2.3'),
+    ('MUMmer', '4.0.0rc1'),
+    ('FastANI', '1.33'),
+    ('CheckM', '1.2.2'),
+    ('ANIcalculator', '1.0'),
+    ('prodigal', '2.6.3'),
+]
+
+use_pip = True
+
+exts_list = [
+    (name, version, {
+        'source_urls': ['https://github.com/MrOlm/%(namelower)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': ['9c02114a7df6d2de5810617a6715a770aee70872b293c4bd5c8076735d62e4e0'],
+    }),
+]
+
+sanity_pip_check = True
+
+local_binaries = ['dRep', 'parse_stb.py', 'ScaffoldLevel_dRep.py']
+
+sanity_check_paths = {
+    'files': ['bin/' + x for x in local_binaries],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(namelower)s'],
+}
+
+sanity_check_commands = [
+    'parse_stb.py -h',
+    'ScaffoldLevel_dRep.py -h',
+    'dRep -h',
+    # fail in case any dependency reports an ERROR, except for centrifuge
+    # (which is not used anymore according to the installation documentation)
+    '! dRep check_dependencies | grep "ERROR" | grep -v "centrifuge"',
+]
+
+moduleclass = 'bio'

@@ -26,7 +26,9 @@ patches = [
     'PyTorch-1.8.1_fix-faulty-asserts-and-skip-test.patch',
     'PyTorch-1.8.1_increase-distributed-test-timeout.patch',
     'PyTorch-1.9.0_avoid-failures-in-test_unary_ufuncs.patch',
+    'PyTorch-1.9.0_fix-kineto-crash.patch',
     'PyTorch-1.9.0_fix-vsx-vector-functions.patch',
+    'PyTorch-1.9.0_skip-autograd-thread_shutdown-test.patch',
     'PyTorch-1.9.0_skip-lstm-serialization-test.patch',
 ]
 checksums = [
@@ -46,7 +48,10 @@ checksums = [
     '7a6e512274f0b8673f4f207a5bc53387d88be7e79833f42d20365668b2118071',
     # PyTorch-1.9.0_avoid-failures-in-test_unary_ufuncs.patch
     'f600e6831f8a03af007845687d1e0f65b2394ca89a9dab5178e2cdc9bd384d43',
-    '56a46c1690467a7fe7f6b904d152f8a3e2385305c5c29717f66b98b38022bf74',  # PyTorch-1.9.0_fix-vsx-vector-functions.patch
+    '1ed5e125f7922ea577d43053a6652aedc21cc036157e101c0e3b9aee9029d3b0',  # PyTorch-1.9.0_fix-kineto-crash.patch
+    'a4733b6b16a0db4ee5f85f2b103abc29bd711cfc5253f8dd8494d2b0c1509516',  # PyTorch-1.9.0_fix-vsx-vector-functions.patch
+    # PyTorch-1.9.0_skip-autograd-thread_shutdown-test.patch
+    '94957de0fd5bcbea37482cb6d0d12b4608dccf50a10da0836e151b414954ccc3',
     # PyTorch-1.9.0_skip-lstm-serialization-test.patch
     '0fc14e29bd7530bcc09f4212df3c846072b1313216da86b827e102b85d695f49',
 ]
@@ -79,9 +84,19 @@ excluded_tests = {
         # Bad tests: https://github.com/pytorch/pytorch/issues/60260
         'distributed/elastic/utils/distributed_test',
         'distributed/elastic/multiprocessing/api_test',
+        # These tests fail on A10s at the very least, they time out forever no matter how long the timeout is.
+        # Possibly related to NCCL 2.8.3: https://docs.nvidia.com/deeplearning/nccl/release-notes/rel_2-8-3.html
+        'distributed/test_distributed_fork',
+        'distributed/test_distributed_spawn',
+        # Fails on A10s: https://github.com/pytorch/pytorch/issues/63079
+        'test_optim',
         # Test from this suite timeout often. The process group backend is deprecated anyway
         'distributed/rpc/test_process_group_agent',
-    ]
+    ],
+    'POWER': [
+        # Works when run alone, fails when run as part of the suite. So far only observed on PPC
+        'distributed/rpc/test_tensorpipe_agent',
+    ],
 }
 
 runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error  --verbose %(excluded_tests)s'

@@ -1,0 +1,89 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# 
+# Author: Jonas Demeulemeester
+# The Francis Crick Institute, London, UK
+##
+
+easyblock = 'ConfigureMake'
+
+name = 'alleleCount'
+version = '4.2.1'
+
+homepage = 'http://cancerit.github.io/alleleCount/'
+description = """ The alleleCount package primarily exists to prevent code duplication
+between some other projects, specifically AscatNGS and Battenberg. As of v4 the perl 
+code wraps the C implementation of allele counting code for BAM/CRAM processing. """
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/cancerit/%(name)s/archive/v%(version)s']
+sources = ['v%(version)s.tar.gz']
+checksums = ['dbec2d47fb4fad8ead72f55c4b6e3c02b216cbed285c05617b62e9a38c32e400']
+
+# HTSlib 1.7 is built, used and removed again in the provided setup script
+dependencies = [
+    ('Perl', '5.34.1'),
+    ('HTSlib', '1.15.1'),
+    ('libdeflate', '1.10'),
+]
+
+skipsteps = ['configure']
+
+buildopts = "-C c && cd perl && perl Makefile.PL INSTALL_BASE=%(installdir)s "
+preinstallopts = "cd perl && "
+installopts = " && cd .. && cp -a c/bin/alleleCounter %(installdir)s/bin/"
+
+exts_defaultclass = 'PerlModule'
+exts_filter = ("perl -e 'require %(ext_name)s'", '')
+exts_default_options = {
+    'buildopts': '',
+    'preinstallopts': '',
+    'installopts': '',
+}
+
+exts_list = [
+    ('Const::Fast', '0.014', {
+        'source_tmpl': 'Const-Fast-%(version)s.tar.gz',
+        'source_urls': ['https://cpan.metacpan.org/authors/id/L/LE/LEONT/'],
+        'checksums': ['f805953a08c57846a16a4d85d7b766398afaf7c36c1465fcb1dea09e5fa394db'],
+    }),
+    ('Devel::Cover', '1.40', {
+        'source_tmpl': 'Devel-Cover-%(version)s.tar.gz',
+        'source_urls': ['http://cpan.metacpan.org/authors/id/P/PJ/PJCJ/'],
+        'checksums': ['26e2f431fbcf7bff3851f352f83b84067c09ff206f40ab975cad8d2bafe711a8'],
+    }),
+    ('Pod::Coverage', '0.23', {
+        'source_tmpl': 'Pod-Coverage-%(version)s.tar.gz',
+        'source_urls': ['http://cpan.metacpan.org/authors/id/R/RC/RCLAMP/'],
+        'checksums': ['30b7a0b0c942f44a7552c0d34e9b1f2e0ba0b67955c61e3b1589ec369074b107'],
+    }),
+    ('Pod::Parser', '1.66', {
+        'source_tmpl': 'Pod-Parser-%(version)s.tar.gz',
+        'source_urls': ['http://cpan.metacpan.org/authors/id/M/MA/MAREKR/'],
+        'checksums': ['22928a7bffe61b452c05bbbb8f5216d4b9cf9fe2a849b776c25500d24d20df7c'],
+    }),
+    ('Devel::Symdump', '2.18', {
+        'source_tmpl': 'Devel-Symdump-%(version)s.tar.gz',
+        'source_urls': ['http://cpan.metacpan.org/authors/id/A/AN/ANDK/'],
+        'checksums': ['826f81a107f5592a2516766ed43beb47e10cc83edc9ea48090b02a36040776c0'],
+    }),
+]
+
+postinstallcmds = ["chmod u+w %(installdir)s/bin/alleleCounter.pl"]
+
+fix_perl_shebang_for = ['bin/alleleCounter.pl']
+
+sanity_check_paths = {
+    'files': ['bin/alleleCounter', 'bin/alleleCounter.pl'],
+    'dirs': ['lib/perl5'],
+}
+
+sanity_check_commands = [
+    "alleleCounter --help",
+    "alleleCounter.pl --help",
+]
+
+modextrapaths = {'PERL5LIB': ['lib/perl5', 'lib/perl5/site_perl/%(perlver)s']}
+
+moduleclass = 'bio'

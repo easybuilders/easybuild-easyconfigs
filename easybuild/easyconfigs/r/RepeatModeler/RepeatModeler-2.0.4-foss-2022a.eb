@@ -1,0 +1,68 @@
+easyblock = 'Tarball'
+
+name = 'RepeatModeler'
+version = '2.0.4'
+
+homepage = 'https://www.repeatmasker.org/'
+description = """RepeatModeler is a de novo transposable element (TE) family identification and modeling package. """
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://www.repeatmasker.org/RepeatModeler']
+sources = [SOURCE_TAR_GZ]
+checksums = ['94aad46cc70911d48de3001836fc3165adb95b2b282b5c53ab0d1da98c27a6b6']
+
+dependencies = [
+    ('Perl', '5.34.1'),
+    ('TRF', '4.09.1'),
+    ('RMBlast', '2.13.0'),
+    ('RepeatMasker', '4.1.4'),
+    ('RepeatScout', '1.0.6'),
+    ('RECON', '1.08'),
+    ('Kent_tools', '442'),
+    ('CD-HIT', '4.8.1'),
+    # Optional (required for LTR pipeline):
+    ('MAFFT', '7.505', '-with-extensions'),
+    ('GenomeTools', '1.6.2'),   # for LTRHarvest
+    ('LTR_retriever', '2.9.0'),
+    ('TWL-NINJA', '0.98-cluster_only'),
+]
+
+_tmpl = "\"/'%s' =>/,/'value' => '/s|'value' =>.*|'value' => '%s'|\""
+
+postinstallcmds = [
+    ' '.join([
+        'sed -i',
+        '-e', _tmpl % ('CDHIT_DIR', '$EBROOTCDMINHIT/bin'),
+        '-e', _tmpl % ('GENOMETOOLS_DIR', '$EBROOTGENOMETOOLS/bin'),
+        '-e', _tmpl % ('LTR_RETRIEVER_DIR', '$EBROOTLTR_RETRIEVER'),
+        '-e', _tmpl % ('MAFFT_DIR', '$EBROOTMAFFT/bin'),
+        '-e', _tmpl % ('NINJA_DIR', '$EBROOTTWLMINNINJA/bin'),
+        '-e', _tmpl % ('RECON_DIR', '$EBROOTRECON/bin'),
+        '-e', _tmpl % ('REPEATMASKER_DIR', '$EBROOTREPEATMASKER'),
+        '-e', _tmpl % ('RMBLAST_DIR', '$EBROOTRMBLAST/bin'),
+        '-e', _tmpl % ('RSCOUT_DIR', '$EBROOTREPEATSCOUT'),
+        '-e', _tmpl % ('TRF_DIR', '$EBROOTTRF/bin'),
+        '-e', _tmpl % ('UCSCTOOLS_DIR', '$EBROOTKENT_TOOLS/bin'),
+        '%(installdir)s/RepModelConfig.pm',
+    ]),
+]
+
+_bins = ['BuildDatabase', 'LTRPipeline', 'Refiner', 'RepeatClassifier', 'RepeatModeler', 'TRFMask',
+         'util/CntSubst', 'util/Linup']
+
+fix_perl_shebang_for = _bins + ['util/*.pl']
+
+modextrapaths = {
+    'PATH': '',
+    'PERL5LIB': '',
+}
+
+sanity_check_paths = {
+    'files': _bins + ['Job.pm', 'RepeatUtil.pm', 'RepModelConfig.pm'],
+    'dirs': ['Libraries', 'Matrices', 'util'],
+}
+
+sanity_check_commands = ["RepeatModeler -help | grep 'RepeatModeler - Model repetitive DNA'"]
+
+moduleclass = 'bio'

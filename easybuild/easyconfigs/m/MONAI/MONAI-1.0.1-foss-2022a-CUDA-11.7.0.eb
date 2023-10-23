@@ -1,0 +1,89 @@
+easyblock = 'PythonBundle'
+
+name = 'MONAI'
+version = '1.0.1'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://monai.io/'
+description = """
+MONAI is a PyTorch-based, open-source framework for deep learning in healthcare
+imaging, part of PyTorch Ecosystem.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'Project-MONAI'
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('PyTorch-Ignite', '0.4.12', versionsuffix),
+    ('einops', '0.4.1'),
+    ('ITK', '5.2.1'),
+    ('NiBabel', '4.0.2'),
+    ('scikit-image', '0.19.3'),
+    ('tensorboard', '2.10.0'),
+    ('torchvision', '0.13.1', versionsuffix),
+    ('tqdm', '4.64.0'),
+    ('Pillow', '9.1.1'),
+    ('openslide-python', '1.2.0'),
+    ('BeautifulSoup', '4.10.0'),
+]
+
+# install MONAI with list of 'extras', which require additional dependencies
+local_pip_extras = "nibabel,skimage,pillow,tensorboard,gdown,ignite,torchvision,itk,tqdm,lmdb,psutil,openslide,fire"
+
+# avoid using hatchling as build backend (since installing it for this old Python version is a nightmare)
+local_preinstallopts_termcolor = ' '.join([
+    r"""sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """,
+    r"""-e 's/^requires = \[/requires = \["setuptools"/g' """,
+    r"""-e '/"hatch/d' """,
+    # replace dynamic version with hardcoded version
+    r"""-e '/"version"/d' """,
+    r"""-e 's/^readme = .*/version = "%(version)s"/g' """,
+    r"pyproject.toml && ",
+])
+
+exts_list = [
+    ('gdown', '4.7.1', {
+        'checksums': ['347f23769679aaf7efa73e5655270fcda8ca56be65eb84a4a21d143989541045'],
+    }),
+    ('lmdb', '1.4.1', {
+        'checksums': ['1f4c76af24e907593487c904ef5eba1993beb38ed385af82adb25a858f2d658d'],
+    }),
+    ('termcolor', '2.3.0', {
+        'checksums': ['b5b08f68937f138fe92f6c089b99f1e2da0ae56c52b78bf7075fd95420fd9a5a'],
+        'preinstallopts': local_preinstallopts_termcolor,
+    }),
+    ('fire', '0.5.0', {
+        'checksums': ['a6b0d49e98c8963910021f92bba66f65ab440da2982b78eb1bbf95a0a34aacc6'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': [('dc961e0adbe1b0c87b85f69377267d60c835f24eb03c8982a21b23a93c6ec36b',
+                       'bb1a84ea3c4cd2c3756f72359a891843e0efa02da17537fb158b28c4e0b2d243')],
+        'preinstallopts': "BUILD_MONAI=1",
+        'use_pip_extras': local_pip_extras,
+    }),
+]
+
+use_pip = True
+
+sanity_pip_check = True
+
+# 'pip check' does not verify whether all optional dependencies required to support 'extras'
+# are actually available, so we do it here via an import check;
+# Pillow is a special case, since there we need to use 'import PIL'
+sanity_check_commands = [
+    "python -c 'import monai; monai.config.print_config()'",
+    "python -c 'import PIL'",  # for Pillow required dependency
+] + ["python -c 'import %s'" % x for x in local_pip_extras.split(',') if x != 'pillow']
+
+sanity_check_paths = {
+    'files': ['lib/python%%(pyshortver)s/site-packages/%%(namelower)s/_C.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

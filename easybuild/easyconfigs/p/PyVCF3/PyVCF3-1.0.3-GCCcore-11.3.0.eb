@@ -1,0 +1,56 @@
+easyblock = 'PythonBundle'
+
+name = 'PyVCF3'
+version = '1.0.3'
+
+homepage = 'https://github.com/dridk/PyVCF3'
+description = """A VCFv4.0 and 4.1 parser for Python. The intent of this module is to mimic the
+csv module in the Python stdlib, as opposed to more flexible serialization
+formats like JSON or YAML. vcf will attempt to parse the content of each record
+based on the data types specified in the meta-information lines -- specifically
+the ##INFO and ##FORMAT lines. If these lines are missing or incomplete, it
+will check against the reserved types mentioned in the spec. Failing that, it
+will just return strings.
+PyVCF3 has been created because the Official PyVCF repository is no longer
+maintained and do not accept any pull requests. This fork is for python 3 only
+and has been published on pyPI as PyVCF3."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+]
+
+use_pip = True
+
+exts_list = [
+    (name, version, {
+        'checksums': ['4b16d71c8b97010487e2c939fb4d5707b7bbfa4e2b313df9dba3e372c5ba031d'],
+        'modulename': 'vcf',
+    }),
+]
+
+_pyvcf_scripts = ["vcf_filter.py", "vcf_melt", "vcf_sample_filter.py"]
+
+postinstallcmds = [
+    # fix old scripts written for python 2, update is minor
+    "2to3 -w -n %%(installdir)s/bin/%s" % x for x in _pyvcf_scripts
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _pyvcf_scripts],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "vcf_filter.py --help",
+    "vcf_sample_filter.py --help"
+]
+
+moduleclass = 'tools'

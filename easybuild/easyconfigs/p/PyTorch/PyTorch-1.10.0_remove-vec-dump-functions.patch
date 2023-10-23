@@ -1,0 +1,114 @@
+Fix compilation on PPC due to missing <iostream> include
+
+From https://patch-diff.githubusercontent.com/raw/pytorch/pytorch/pull/66085
+
+From e0fa15d188986e2a68973e3facf9d794f6cfc5df Mon Sep 17 00:00:00 2001
+From: Nikita Shulga <nshulga@fb.com>
+Date: Mon, 4 Oct 2021 09:26:37 -0700
+Subject: [PATCH] Remove unused `dump` method from VSX vec256 methods
+
+Follow up after https://github.com/pytorch/pytorch/pull/63533
+
+Probably fixes https://github.com/pytorch/pytorch/issues/65956
+---
+ .../ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h  | 5 -----
+ .../ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h   | 8 --------
+ aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h     | 3 ---
+ aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h      | 7 -------
+ aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h     | 9 ---------
+ 5 files changed, 32 deletions(-)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
+index 888f2f0b932b..3a3e0daade09 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h
+@@ -356,11 +356,6 @@ class Vectorized<ComplexDbl> {
+     return {vec_sqrt(_vec0), vec_sqrt(_vec1)};
+   }
+ 
+-  void dump() const {
+-    std::cout << _vec0[0] << "," << _vec0[1] << ",";
+-    std::cout << _vec1[0] << "," << _vec1[1] << std::endl;
+-  }
+-
+   Vectorized<ComplexDbl> sqrt() const {
+     return map(std::sqrt);
+   }
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
+index 0aa726b9bfdd..712de24597dc 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h
+@@ -144,7 +144,6 @@ class Vectorized<ComplexFlt> {
+     // convert std::complex<V> index mask to V index mask: xy -> xxyy
+     auto mask_complex = Vectorized<ComplexFlt>(
+         vec_mergeh(mask._vec0, mask._vec0), vec_mergeh(mask._vec1, mask._vec1));
+-    // mask_complex.dump();
+     return {
+         vec_sel(a._vec0, b._vec0, mask_complex._vec0),
+         vec_sel(a._vec1, b._vec1, mask_complex._vec1),
+@@ -409,13 +408,6 @@ class Vectorized<ComplexFlt> {
+     return {vec_sqrt(_vec0), vec_sqrt(_vec1)};
+   }
+ 
+-  void dump() const {
+-    std::cout << _vec0[0] << "," << _vec0[1] << "," << _vec0[2] << ","
+-              << _vec0[3] << ",";
+-    std::cout << _vec1[0] << "," << _vec1[1] << "," << _vec1[2] << ","
+-              << _vec1[3] << std::endl;
+-  }
+-
+   Vectorized<ComplexFlt> sqrt() const {
+     return map(std::sqrt);
+   }
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h
+index 29616182fe12..0d5b5cb39384 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h
+@@ -188,9 +188,6 @@ class Vectorized<double> {
+   }
+   const double& operator[](int idx) const = delete;
+   double& operator[](int idx) = delete;
+-  void dump() const {
+-      std::cout << _vec0[0] << "," << _vec0[1] << "," << _vec1[0] << "," << _vec1[1] << std::endl;
+-  }
+   Vectorized<double> map(double (*const f)(double)) const {
+     Vectorized<double> ret;
+     for (int i = 0; i < size()/2; i++) {
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h
+index 2427276bcea2..58d4b057b507 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h
+@@ -436,13 +436,6 @@ class Vectorized<float> {
+     return {vec_neg(_vec0), vec_neg(_vec1)};
+   }
+ 
+-  void dump() const {
+-    std::cout << _vec0[0] << "," << _vec0[1] << "," << _vec0[2] << ","
+-              << _vec0[3] << ",";
+-    std::cout << _vec1[0] << "," << _vec1[1] << "," << _vec1[2] << ","
+-              << _vec1[3] << std::endl;
+-  }
+-
+   Vectorized<float> C10_ALWAYS_INLINE round() const {
+     return {vec_round(_vec0), vec_round(_vec1)};
+   }
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h
+index c335ace0ced6..2482af6ec232 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h
+@@ -369,15 +369,6 @@ struct Vectorized<c10::quint8> {
+     return {vec0, vec1};
+   }
+ 
+-  void dump() const {
+-    value_type vals[size()];
+-    store((void*)vals);
+-    for (int i = 0; i < size(); ++i) {
+-      std::cout << (int)(vals[i]) << " ";
+-    }
+-    std::cout << std::endl;
+-  }
+-
+   DEFINE_MEMBER_OP(operator==, c10::quint8, vec_cmpeq)
+   DEFINE_MEMBER_OP(operator!=, c10::quint8, vec_cmpne)
+   DEFINE_MEMBER_OP(operator<, c10::quint8, vec_cmplt)

@@ -1,0 +1,63 @@
+easyblock = 'PythonBundle'
+
+name = 'ASE'
+version = '3.22.1'
+
+homepage = 'https://wiki.fysik.dtu.dk/ase'
+description = """ASE is a python package providing an open source Atomic Simulation Environment
+ in the Python scripting language.
+
+From version 3.20.1 we also include the ase-ext package, it contains optional reimplementations
+in C of functions in ASE.  ASE uses it automatically when installed."""
+
+toolchain = {'name': 'gfbf', 'version': '2022b'}
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    ('Flask', '2.2.3'),
+    ('matplotlib', '3.7.0'),
+    ('Tkinter', '%(pyver)s'),     # Needed by GUI of ASE
+    ('spglib-python', '2.0.2'),  # optional
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('pytest-mock', '3.8.2', {
+        'checksums': ['77f03f4554392558700295e05aed0b1096a20d4a60a4f3ddcde58b0c31c8fca2'],
+    }),
+    ('ase', version, {
+        'patches': [
+            'ASE-3.22.1-Compatibility-with-pytest-from-Python-3-10.patch',
+            'ASE-3.22.1-Compatibility-with-pytest-part-2.patch',
+            'ASE-3.22.1-Compatibility-with-Scipy-2022-05.patch',
+            'ASE-3.22.1-Compatibility-with-Flask-2-2-2.patch',
+        ],
+        'checksums': [
+            '004df6b0ea04b1114c790fadfe45d4125eb0e53125c66a93425af853d82ab432',  # ase-3.22.1.tar.gz
+            # ASE-3.22.1-Compatibility-with-pytest-from-Python-3-10.patch
+            '8184765ecc9e14081b183fee5c4470da716d77caa67c25164018ac1fdd225eac',
+            # ASE-3.22.1-Compatibility-with-pytest-part-2.patch
+            '3a3473912f5f96ffc625119d87227781ba4ea581de15d4af6a58ba960cdf4601',
+            # ASE-3.22.1-Compatibility-with-Scipy-2022-05.patch
+            'c1cb07160b063d432f098efd40dd4b3c9f015b7966572c838a908613a482e0c8',
+            # ASE-3.22.1-Compatibility-with-Flask-2-2-2.patch
+            '2a05f98291dc970cb759904988783d1ecc3512ba6a0da852af1d3205667b398d',
+        ],
+    }),
+    ('ase-ext', '20.9.0', {
+        'checksums': ['a348b0e42cf9fdd11f04b3df002b0bf150002c8df2698ff08d3c8fc7a1223aed'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ase'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+# make sure Tkinter is available, otherwise 'ase gui' will not work
+sanity_check_commands = ["python -c 'import tkinter' "]
+
+moduleclass = 'chem'

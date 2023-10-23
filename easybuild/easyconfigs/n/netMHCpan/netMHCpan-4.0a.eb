@@ -3,24 +3,22 @@ easyblock = 'Tarball'
 name = 'netMHCpan'
 version = '4.0a'
 
-homepage = 'http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan'
-description = """ The NetMHCpan software predicts  binding of peptides  to any known MHC
- molecule using artificial neural networks (ANNs). """
+homepage = 'https://www.cbs.dtu.dk/services/NetMHCpan/'
+description = """The NetMHCpan software predicts binding of peptides to any known MHC
+ molecule using artificial neural networks (ANNs)."""
 
 toolchain = SYSTEM
 
-# netMHCpan is proprietary software, but free for academcs
-# see: http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan
-source_urls = ['http://www.cbs.dtu.dk/services/NetMHCpan-4.0']
+# netMHCpan is proprietary software, but free for academics.
+# It can be requested at https://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan
 sources = [
     {
         'filename': '%(name)s-%(version)s.Linux.tar.gz',
-        'extract_cmd': 'tar --strip-components=1 -xzf %s && chmod -R +rX *',
+        'extract_cmd': 'tar --strip-components=1 -xzf %s',
     },
     {
         'download_filename': 'data.Linux.tar.gz',
         'filename': '%(name)s-%(version)s-data.Linux.tar.gz',
-        'extract_cmd': 'tar -xzf %s -C Linux_x86_64 && chmod -R +rX Linux_x86_64/data'
     },
 ]
 
@@ -29,18 +27,21 @@ checksums = [
     'c2a4c9263af448f1a46e63f7c068194fd5bbfa0413413c741cf92d88e6a76b06',  # netMHCpan-4.0a-data.Linux.tar.gz
 ]
 
-postinstallcmds = [
-    'sed -i -e "s|setenv[[:space:]]NMHOME.*|setenv NMHOME \$EBROOTNETMHCPAN|" %(installdir)s/netMHCpan',
-    'sed -i -e "s|setenv[[:space:]]TMPDIR.*|setenv TMPDIR /tmp|" %(installdir)s/netMHCpan',
-]
+keepsymlinks = True
 
-modextrapaths = {'PATH': ''}
+postinstallcmds = [
+    "sed -i -e 's|setenv[[:space:]]NMHOME.*|setenv NMHOME $EBROOTNETMHCPAN|' %(installdir)s/netMHCpan",
+    "sed -i -e 's|setenv[[:space:]]*TMPDIR.*|setenv TMPDIR /tmp|' %(installdir)s/netMHCpan",
+    "chmod -R +rX %(installdir)s",
+]
 
 sanity_check_paths = {
     'files': ['netMHCpan', 'Linux_x86_64/bin/netMHCpan'],
-    'dirs': [],
+    'dirs': ['data'],
 }
 
 sanity_check_commands = ['netMHCpan -h']
+
+modextrapaths = {'PATH': ''}
 
 moduleclass = 'bio'

@@ -1,0 +1,38 @@
+easyblock = 'MakeCp'
+
+name = 'LMDB'
+version = '0.9.31'
+
+homepage = 'https://symas.com/lmdb'
+description = """LMDB is a fast, memory-efficient database. With memory-mapped files, it has the read performance
+ of a pure in-memory database while retaining the persistence of standard disk-based databases."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/LMDB/lmdb/archive/']
+sources = ['%(name)s_%(version)s.tar.gz']
+checksums = ['dd70a8c67807b3b8532b3e987b0a4e998962ecc28643e1af5ec77696b081c9b0']
+
+builddependencies = [('binutils', '2.40')]
+
+buildopts = 'CC="$CC" OPT="$CFLAGS"'
+
+runtest = 'test'
+
+local_binaries = ['mdb_copy', 'mdb_dump', 'mdb_load', 'mdb_stat']
+
+files_to_copy = [
+    (['lmdb.h', 'midl.h'], 'include'),
+    (local_binaries, 'bin'),
+    (['liblmdb.a', 'liblmdb.%s' % SHLIB_EXT], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/mdb_copy', 'bin/mdb_dump', 'bin/mdb_load', 'bin/mdb_stat', 'include/lmdb.h',
+              'include/midl.h', 'lib/liblmdb.a', 'lib/liblmdb.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%s -V" % x for x in local_binaries]
+
+moduleclass = 'lib'

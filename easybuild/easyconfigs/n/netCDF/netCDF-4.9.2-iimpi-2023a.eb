@@ -1,0 +1,59 @@
+name = 'netCDF'
+version = '4.9.2'
+
+homepage = 'https://www.unidata.ucar.edu/software/netcdf/'
+description = """NetCDF (network Common Data Form) is a set of software libraries
+ and machine-independent data formats that support the creation, access, and sharing of array-oriented
+ scientific data."""
+
+toolchain = {'name': 'iimpi', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/Unidata/netcdf-c/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    'netCDF-4.9.0_skip-nasa-test.patch',
+]
+checksums = [
+    {'v4.9.2.tar.gz': 'bc104d101278c68b303359b3dc4192f81592ae8640f1aee486921138f7f88cb7'},
+    {'netCDF-4.9.0_skip-nasa-test.patch': '19d99e03c048b037dc01f03f5b8ddc910ebaceb076d0f050540d348f26dfcd2a'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('CMake', '3.26.3'),
+    ('Doxygen', '1.9.7'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.0'),
+    ('cURL', '8.0.1'),
+    ('Szip', '2.1.1'),
+    ('zstd', '1.5.5'),
+    ('bzip2', '1.0.8'),
+    ('libxml2', '2.11.4'),
+]
+
+# disable Szip, zlib parallel I/O tests, since these can hang on some systems, e.g. generoso
+#  see: https://github.com/easybuilders/easybuild-easyconfigs/pull/16834
+#  and  https://github.com/easybuilders/easybuild-easyconfigs/pull/17107#issuecomment-1432947172
+#  and https://github.com/easybuilders/easybuild-easyconfigs/pull/18523#issuecomment-1675313158
+preconfigopts = ("sed -i -e 's|@MPIEXEC@ -n 16 ./tst_parallel3|echo \"skipped by EasyBuild\"|g'"
+                 " -e 's|@MPIEXEC@ -n 4 ./tst_parallel5|echo \"skipped by EasyBuild\"|g'"
+                 " -e 's|@MPIEXEC@ -n 4 ./tst_parallel_zlib|echo \"skipped by EasyBuild\"|g'"
+                 " -e 's|@MPIEXEC@ -n 4 ./tst_parallel_compress|echo \"skipped by EasyBuild\"|g'"
+                 " %(builddir)s/%(namelower)s-c-%(version)s/nc_test4/run_par_test.sh.in &&")
+
+# make sure both static and shared libs are built
+# and disable "remote" tests that access a unreliable external test server over internet
+configopts = [
+    "-DENABLE_DAP_REMOTE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF",
+    "-DENABLE_DAP_REMOTE_TESTS=OFF -DBUILD_SHARED_LIBS=ON",
+]
+
+# some tests try to start 16 MPI ranks, so we need to allow oversubscription to avoid failing tests
+pretestopts = "OMPI_MCA_rmaps_base_oversubscribe=1 "
+
+runtest = 'test'
+
+moduleclass = 'data'

@@ -1,0 +1,38 @@
+This combines two patches from TensorFlow 2.7.1.
+
+tensorflow-io-gcs-filesystem is not available as a binary for all architectures and
+building it requires TensorFlow to be installed, i.e. there is a cyclic dependency.
+As it is not actually required (but optional) remove it from `REQUIRED_PACKAGES`.
+See https://github.com/tensorflow/tensorflow/issues/56636
+
+libclang was introduced in
+https://github.com/tensorflow/tensorflow/commit/c211472000ff57bac7fcec9b0465cf73b37bf135
+> This is in preparation to open-source TF's TFRT backend.
+> TFRT generates code using libclang python bindings as part of the build.
+Hence it is not currently used and as it is not (easily) available for all architectures
+simply remove it.
+
+Patch added by Simon Branford (University of Birmingham)
+Updated by Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/tools/pip_package/setup.py b/tensorflow/tools/pip_package/setup.py
+index 74a1962c334..e8f6eabe4a6 100644
+--- a/tensorflow/tools/pip_package/setup.py
++++ b/tensorflow/tools/pip_package/setup.py
+@@ -88,7 +88,6 @@ REQUIRED_PACKAGES = [
+     'gast >= 0.2.1, <= 0.4.0',
+     'google_pasta >= 0.1.1',
+     'h5py >= 2.9.0',
+-    'libclang >= 13.0.0',
+     'numpy >= 1.20',
+     'opt_einsum >= 2.3.2',
+     'packaging',
+@@ -105,8 +104,6 @@ REQUIRED_PACKAGES = [
+     'termcolor >= 1.1.0',
+     'typing_extensions >= 3.6.6',
+     'wrapt >= 1.11.0',
+-    'tensorflow-io-gcs-filesystem >= 0.23.1;platform_machine!="arm64" or ' +
+-    'platform_system!="Darwin"',
+     # grpcio does not build correctly on big-endian machines due to lack of
+     # BoringSSL support.
+     # See https://github.com/tensorflow/tensorflow/issues/17882.

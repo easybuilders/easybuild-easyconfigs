@@ -1,0 +1,33 @@
+easyblock = 'PackedBinary'
+
+name = 'Schrodinger'
+version = '2022-3'
+
+homepage = 'https://www.schrodinger.com/'
+description = """ Schrodinger aims to provide integrated software solutions and services 
+ that truly meet its customers needs. We want to empower researchers around the world to 
+ achieve their goals of improving human health and quality of life through advanced computational 
+ techniques that transform the way chemists design compounds and materials. """
+
+toolchain = SYSTEM
+
+# Download from schrodinger.com
+sources = ['%(name)s_Suites_%(version)s_Linux-x86_64.tar']
+checksums = ['e607b6b2e1671030a66e7d2ab0fbe22ca5e8414794aaf50a7230c1db4417b762']
+
+install_cmd = 'cd %(builddir)s/%(name)s_Suites_%(version)s_Linux-x86_64 && '
+install_cmd += './INSTALL -d . -s %(installdir)s -k /usr/tmp -t %(installdir)s/thirdparty -b *'
+
+# Needs libnsl.so, part of glibc on CentOS7 but a separate libnsl package on RHEL8
+
+sanity_check_paths = {
+    'files': ['desmond', 'maestro'],
+    'dirs': [],
+}
+
+modextravars = {
+    'SCHROD_LICENSE_FILE': '$HOME/.schrodinger_license',
+    'SCHRODINGER': '%(installdir)s',
+}
+
+moduleclass = 'bio'

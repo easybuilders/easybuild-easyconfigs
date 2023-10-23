@@ -1,0 +1,51 @@
+Determine the number of cores available to avoid using all that the system has.
+Patch by Simon Branford (University of Birmingham)
+--- setup.py.orig	2022-10-14 11:09:52.253946000 +0100
++++ setup.py	2022-10-14 11:18:10.743520156 +0100
+@@ -104,7 +104,11 @@
+             # Build Unicycler's C++ code.
+             make_cmd = ['make']
+             try:
+-                make_cmd += ['-j', str(min(8, multiprocessing.cpu_count()))]
++                num_cpus = len(os.sched_getaffinity(0))
++            except AttributeError:
++                num_cpus = multiprocessing.cpu_count()
++            try:
++                make_cmd += ['-j', str(min(8, num_cpus))]
+             except NotImplementedError:
+                 pass
+             if self.makeargs:
+--- unicycler/unicycler.py.orig	2022-10-14 11:09:58.407681000 +0100
++++ unicycler/unicycler.py	2022-10-14 11:16:43.446404128 +0100
+@@ -627,9 +627,13 @@
+     log.log('Unicycler version: v' + __version__)
+     log.log('Using ' + str(args.threads) + ' thread' + ('' if args.threads == 1 else 's'))
+     log.log('')
+-    if args.threads > 2 * multiprocessing.cpu_count():
+-        log.log(red('Warning: you have specified a lot more threads than this machine seems to '
+-                    'have! Was this intentional?'))
++    try:
++        num_cpus = len(os.sched_getaffinity(0))
++    except AttributeError:
++        num_cpus = multiprocessing.cpu_count()
++    if args.threads > 2 * num_cpus:
++        log.log(red('Warning: you have specified a lot more threads than available! '
++                    'Was this intentional?'))
+         log.log('')
+     log.log(out_dir_message)
+ 
+--- unicycler/misc.py.orig	2022-10-14 11:10:02.942374000 +0100
++++ unicycler/misc.py	2022-10-14 11:17:30.093646345 +0100
+@@ -793,7 +793,11 @@
+ 
+ 
+ def get_default_thread_count():
+-    return min(multiprocessing.cpu_count(), settings.MAX_AUTO_THREAD_COUNT)
++    try:
++        num_cpus = len(os.sched_getaffinity(0))
++    except AttributeError:
++        num_cpus = multiprocessing.cpu_count()
++    return min(num_cpus, settings.MAX_AUTO_THREAD_COUNT)
+ 
+ 
+ def spades_path_and_version(spades_path):

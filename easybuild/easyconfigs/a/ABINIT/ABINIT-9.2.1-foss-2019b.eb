@@ -1,0 +1,59 @@
+#
+easyblock = 'ConfigureMake'
+
+name = 'ABINIT'
+version = '9.2.1'
+
+homepage = 'https://www.abinit.org/'
+description = """ABINIT is a package whose main program allows one to find the total energy,
+ charge density and electronic structure of systems made of electrons and nuclei (molecules
+ and periodic solids) within Density Functional Theory (DFT), using pseudopotentials and a
+ planewave or wavelet basis."""
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://www.abinit.org/sites/default/files/packages/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['4aa2deaeec385ff1624669a59768e1a6655f6367f8f109e69944244e000142a0']
+
+builddependencies = [
+    ('Python', '3.7.4'),
+]
+dependencies = [
+    ('libxc', '4.3.4'),
+    ('netCDF', '4.7.1'),
+    ('netCDF-Fortran', '4.5.2'),
+    ('HDF5', '1.10.5'),
+]
+
+# Ensure MPI.
+configopts = '--with-mpi="yes" --enable-openmp="no" '
+
+# BLAS/Lapack
+configopts += '--with-linalg-flavor="openblas"  LINALG_LIBS="-L${EBROOTOPENBLAS}/lib -lopenblas" '
+
+# FFTW3 support
+configopts += '--with-fft-flavor=fftw3 FFTW3_LIBS="-L${EBROOTFFTW} -lfftw3f -lfftw3" '
+
+# libxc support
+configopts += '--with-libxc=${EBROOTLIBXC} '
+
+# hdf5/netcdf4 support
+configopts += '--with-netcdf="${EBROOTNETCDF}" '
+configopts += '--with-netcdf-fortran="${EBROOTNETCDFMINFORTRAN}" '
+configopts += '--with-hdf5="${EBROOTHDF5}" '
+
+# make sure --free-line-length-none is added to FCFLAGS
+configopts += 'FCFLAGS="${FCFLAGS} --free-line-length-none" '
+
+# `make check` is just executing some basic unit tests.
+# Also running 'make tests_v1' to have some basic validation
+runtest = "check && make test_v1"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['abinit', 'aim', 'cut3d', 'conducti', 'mrgddb', 'mrgscr', 'optic']],
+    'dirs': ['lib/pkgconfig'],
+}
+
+moduleclass = 'chem'

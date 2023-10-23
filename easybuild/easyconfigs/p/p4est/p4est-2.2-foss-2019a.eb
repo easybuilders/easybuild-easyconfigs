@@ -1,0 +1,50 @@
+easyblock = 'ConfigureMake'
+
+name = 'p4est'
+version = '2.2'
+
+homepage = 'https://www.p4est.org'
+description = """p4est is a C library to manage a collection (a forest) of multiple
+connected adaptive quadtrees or octrees in parallel."""
+
+toolchain = {'name': 'foss', 'version': '2019a'}
+# disable architecture-specific optimisations to fix failing sc_test_dmatrix test
+# cfr. https://github.com/cburstedde/libsc/issues/15
+toolchainopts = {'openmp': True, 'usempi': True, 'optarch': False}
+
+source_urls = [
+    'https://github.com/cburstedde/p4est/archive',
+    'https://github.com/cburstedde/libsc/archive/',
+]
+sources = [
+    'v%(version)s.tar.gz',
+    {'download_filename': '5282025.tar.gz', 'filename': 'libsc-2.2.tar.gz'},
+]
+checksums = [
+    '7df0e9a161b6ea680324dfdbc0ffc6e0d0a6c9c9b0ea5b37c973e71a054226c2',  # v2.2.tar.gz
+    'c32682c7542ecf2c115150bf79c7b9ac379cb6396179878575d7b228cc0295c5',  # libsc-2.2.tar.gz
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('METIS', '5.1.0')
+]
+
+builddependencies = [
+    ('Autotools', '20180311')
+]
+
+preconfigopts = "rmdir sc && mv %(builddir)s/libsc-* sc && "
+preconfigopts += "echo '%(version)s' >> .tarball-version && ./bootstrap && "
+configopts = "--enable-openmp --enable-mpi --with-metis "
+configopts += "--with-blas=$EBROOTOPENBLAS/lib/libopenblas.a --with-lapack=$EBROOTOPENBLAS/lib/libopenblas.a"
+
+runtest = 'check VERBOSE=1'
+
+sanity_check_paths = {
+    'files': ['bin/p4est_simple', 'bin/p4est_step1', 'bin/p4est_step2', 'bin/p4est_step3', 'bin/p4est_step4',
+              'lib/libp4est-%%(version)s.%s' % SHLIB_EXT, 'lib/libp4est.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'math'

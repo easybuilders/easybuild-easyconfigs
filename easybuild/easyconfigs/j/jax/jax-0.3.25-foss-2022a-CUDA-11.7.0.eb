@@ -1,0 +1,130 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+# Updated by: Alex Domingo (Vrije Universiteit Brussel)
+easyblock = 'PythonBundle'
+
+name = 'jax'
+version = '0.3.25'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://pypi.python.org/pypi/jax'
+description = """Composable transformations of Python+NumPy programs:
+differentiate, vectorize, JIT to GPU/TPU, and more"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('Bazel', '5.1.1'),
+    ('pytest-xdist', '2.5.0'),
+    # git 2.x required to fetch repository 'io_bazel_rules_docker'
+    ('git', '2.36.0', '-nodocs'),
+    ('matplotlib', '3.5.2'),  # required for tests/lobpcg_test.py
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('cuDNN', '8.4.1.50', versionsuffix, SYSTEM),
+    ('NCCL', '2.12.12', versionsuffix),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('flatbuffers-python', '2.0'),
+]
+
+# downloading TensorFlow tarball to avoid that Bazel downloads it during the build
+# note: this *must* be the exact same commit as used in WORKSPACE
+local_tf_commit = 'f0fe8d4c04fab1f157854a1aa3c136377901cdef'
+local_tf_dir = 'tensorflow-%s' % local_tf_commit
+local_tf_builddir = '%(builddir)s/' + local_tf_dir
+
+# replace remote TensorFlow repository with the local one from EB
+local_jax_prebuildopts = "sed -i -f jaxlib_local-tensorflow-repo.sed WORKSPACE && "
+local_jax_prebuildopts += "sed -i 's|EB_TF_REPOPATH|%s|' WORKSPACE && " % local_tf_builddir
+
+use_pip = True
+
+default_easyblock = 'PythonPackage'
+default_component_specs = {
+    'sources': [SOURCE_TAR_GZ],
+    'source_urls': [PYPI_SOURCE],
+    'start_dir': '%(name)s-%(version)s',
+    'use_pip': True,
+    'sanity_pip_check': True,
+    'download_dep_fail': True,
+}
+
+components = [
+    ('absl-py', '1.3.0', {
+        'options': {'modulename': 'absl'},
+        'checksums': ['463c38a08d2e4cef6c498b76ba5bd4858e4c6ef51da1a5a1f27139a022e20248'],
+    }),
+    ('jaxlib', version, {
+        'sources': [
+            '%(name)s-v%(version)s.tar.gz',
+            {
+                'download_filename': '%s.tar.gz' % local_tf_commit,
+                'filename': 'tensorflow-%s.tar.gz' % local_tf_commit,
+            }
+        ],
+        'source_urls': [
+            'https://github.com/google/jax/archive/',
+            'https://github.com/tensorflow/tensorflow/archive/'
+        ],
+        'patches': [
+            ('jaxlib_local-tensorflow-repo.sed', '.'),
+            ('TensorFlow-2.7.0_cuda-noncanonical-include-paths.patch', '../' + local_tf_dir),
+        ],
+        'checksums': [
+            # jaxlib-v0.3.25.tar.gz
+            '73ebc7868631cd9d520385557bbd7f08762d748a5a6a1bebef0f3b8d7ba748ef',
+            # tensorflow-f0fe8d4c04fab1f157854a1aa3c136377901cdef.tar.gz
+            '9ebba3031e8a81993682e4b9e43891ebb8480b6287e635df8e7efaa45ab5ede7',
+            # jaxlib_local-tensorflow-repo.sed
+            'abb5c3b97f4e317bce9f22ed3eeea3b9715365818d8b50720d937e2d41d5c4e5',
+            # TensorFlow-2.7.0_cuda-noncanonical-include-paths.patch
+            '0a759010c253d49755955cd5f028e75de4a4c447dcc8f5a0d9f47cce6881a9db',
+        ],
+        'start_dir': 'jax-jaxlib-v%(version)s',
+        'prebuildopts': local_jax_prebuildopts,
+    }),
+]
+
+exts_list = [
+    ('opt_einsum', '3.3.0', {
+        'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
+    }),
+    ('etils', '0.8.0', {
+        'checksums': ['d1d5af7bd9c784a273c4e1eccfaa8feaca5e0481a08717b5313fa231da22a903'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(name)s-v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/google/jax/archive/'],
+        'patches': [
+            'jax-0.3.23_relax-testPoly5-tolerance.patch',
+            'jax-0.3.25_skip-qdwh-test-rank-deficient-deficient.patch',
+            'jax-0.3.25_skip-test-bcoo-dot-general-cusparse.patch',
+            'jax-0.4.4_cusparse.patch',
+        ],
+        'checksums': [
+            {'jax-v0.3.25.tar.gz': '49e8ce88ddd7dd0de86116c9d75d98a577a9061377ec423493fbac5ea29f79f0'},
+            {'jax-0.3.23_relax-testPoly5-tolerance.patch':
+             'be64bf36dde4884a97b6c8bb22c6b14ab5b24033cd40bfe7ce18363c55c30e87'},
+            {'jax-0.3.25_skip-qdwh-test-rank-deficient-deficient.patch':
+             '70f16f2dba03ab162ce6e13ea61774524b485e9630209bbd4bec81fd16c8812f'},
+            {'jax-0.3.25_skip-test-bcoo-dot-general-cusparse.patch':
+             '335a8e206d14338176bf4136a131afe5d7b75999ac2c67f0ae79031322e25936'},
+            {'jax-0.4.4_cusparse.patch': '7414115533cce9f37c60850c09c69563a0ed6477c73f03c4132b9c2ae75ae60f'},
+        ],
+        # deliberately not testing in parallel, as that results in (additional) failing tests;
+        # use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
+        # see https://github.com/google/jax/issues/7323 and
+        # https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
+        # use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
+        # use NVIDIA_TF32_OVERRIDE=0 to avoid lossing numerical precision by disabling TF32 Tensor Cores;
+        'runtest': "NVIDIA_TF32_OVERRIDE=0 CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_ALLOCATOR=platform " +
+                   "JAX_ENABLE_X64=true pytest -vv tests",
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'

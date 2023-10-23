@@ -1,0 +1,47 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Pablo Escobar Lopez
+# Swiss Institute of Bioinformatics
+# Biozentrum - University of Basel
+# foss-2016b modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'ConfigureMake'
+
+name = 'Exonerate'
+version = '2.4.0'
+
+homepage = 'https://www.ebi.ac.uk/about/vertebrate-genomics/software/exonerate'
+# also https://github.com/nathanweeks/exonerate
+description = """ Exonerate is a generic tool for pairwise sequence comparison.
+ It allows you to align sequences using a many alignment models, using either 
+ exhaustive dynamic programming, or a variety of heuristics. """
+
+toolchain = {'name': 'GCC', 'version': '12.2.0'}
+
+source_urls = ['https://ftp.ebi.ac.uk/pub/software/vertebrategenomics/%(namelower)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['f849261dc7c97ef1f15f222e955b0d3daf994ec13c9db7766f1ac7e77baa4042']
+
+builddependencies = [
+    ('pkgconf', '1.9.3'),
+]
+dependencies = [
+    ('GLib', '2.75.0'),
+]
+
+# parallel build fails
+parallel = 1
+
+runtest = 'check'
+
+_bins = ['exonerate', 'fastaclip', 'fastacomposition', 'fastafetch', 'fastaoverlap', 'ipcress']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = ['%s -h | grep "from exonerate version %%(version)s"' % x for x in _bins]
+
+moduleclass = 'bio'

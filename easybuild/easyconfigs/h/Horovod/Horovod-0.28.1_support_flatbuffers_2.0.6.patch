@@ -1,0 +1,110 @@
+TF 2.10+ (for us: 2.9+) use flatbuffers 2.0.6 which horovod isn't yet compatible with,
+see https://github.com/horovod/horovod/issues/3956
+
+Manually update the calls
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/horovod/common/wire/message_generated.h b/horovod/common/wire/message_generated.h
+index 33d46e2..9a7f856 100644
+--- a/horovod/common/wire/message_generated.h
++++ b/horovod/common/wire/message_generated.h
+@@ -279,18 +279,18 @@ struct Request FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+   }
+   bool Verify(flatbuffers::Verifier &verifier) const {
+     return VerifyTableStart(verifier) &&
+-           VerifyField<int32_t>(verifier, VT_REQUEST_RANK) &&
+-           VerifyField<int8_t>(verifier, VT_REQUEST_TYPE) &&
+-           VerifyField<int8_t>(verifier, VT_TENSOR_TYPE) &&
++           VerifyField<int32_t>(verifier, VT_REQUEST_RANK, 4) &&
++           VerifyField<int8_t>(verifier, VT_REQUEST_TYPE, 1) &&
++           VerifyField<int8_t>(verifier, VT_TENSOR_TYPE, 1) &&
+            VerifyOffset(verifier, VT_TENSOR_NAME) &&
+            verifier.VerifyString(tensor_name()) &&
+-           VerifyField<int32_t>(verifier, VT_ROOT_RANK) &&
+-           VerifyField<int32_t>(verifier, VT_DEVICE) &&
++           VerifyField<int32_t>(verifier, VT_ROOT_RANK, 4) &&
++           VerifyField<int32_t>(verifier, VT_DEVICE, 4) &&
+            VerifyOffset(verifier, VT_TENSOR_SHAPE) &&
+            verifier.VerifyVector(tensor_shape()) &&
+-           VerifyField<double>(verifier, VT_PRESCALE_FACTOR) &&
+-           VerifyField<double>(verifier, VT_POSTSCALE_FACTOR) &&
+-           VerifyField<int8_t>(verifier, VT_REDUCE_OP) &&
++           VerifyField<double>(verifier, VT_PRESCALE_FACTOR, 8) &&
++           VerifyField<double>(verifier, VT_POSTSCALE_FACTOR, 8) &&
++           VerifyField<int8_t>(verifier, VT_REDUCE_OP, 1) &&
+            verifier.EndTable();
+   }
+ };
+@@ -411,7 +411,7 @@ struct RequestList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+            VerifyOffset(verifier, VT_REQUESTS) &&
+            verifier.VerifyVector(requests()) &&
+            verifier.VerifyVectorOfTables(requests()) &&
+-           VerifyField<uint8_t>(verifier, VT_SHUTDOWN) &&
++           VerifyField<uint8_t>(verifier, VT_SHUTDOWN, 1) &&
+            verifier.EndTable();
+   }
+ };
+@@ -504,7 +504,7 @@ struct Response FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+   }
+   bool Verify(flatbuffers::Verifier &verifier) const {
+     return VerifyTableStart(verifier) &&
+-           VerifyField<int8_t>(verifier, VT_RESPONSE_TYPE) &&
++           VerifyField<int8_t>(verifier, VT_RESPONSE_TYPE, 1) &&
+            VerifyOffset(verifier, VT_TENSOR_NAMES) &&
+            verifier.VerifyVector(tensor_names()) &&
+            verifier.VerifyVectorOfStrings(tensor_names()) &&
+@@ -514,11 +514,11 @@ struct Response FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+            verifier.VerifyVector(devices()) &&
+            VerifyOffset(verifier, VT_TENSOR_SIZES) &&
+            verifier.VerifyVector(tensor_sizes()) &&
+-           VerifyField<int8_t>(verifier, VT_TENSOR_TYPE) &&
+-           VerifyField<double>(verifier, VT_PRESCALE_FACTOR) &&
+-           VerifyField<double>(verifier, VT_POSTSCALE_FACTOR) &&
+-           VerifyField<int32_t>(verifier, VT_LAST_JOINED_RANK) &&
+-           VerifyField<int8_t>(verifier, VT_REDUCE_OP) &&
++           VerifyField<int8_t>(verifier, VT_TENSOR_TYPE, 1) &&
++           VerifyField<double>(verifier, VT_PRESCALE_FACTOR, 8) &&
++           VerifyField<double>(verifier, VT_POSTSCALE_FACTOR, 8) &&
++           VerifyField<int32_t>(verifier, VT_LAST_JOINED_RANK, 4) &&
++           VerifyField<int8_t>(verifier, VT_REDUCE_OP, 1) &&
+            verifier.EndTable();
+   }
+ };
+@@ -641,7 +641,7 @@ struct ResponseList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+            VerifyOffset(verifier, VT_RESPONSES) &&
+            verifier.VerifyVector(responses()) &&
+            verifier.VerifyVectorOfTables(responses()) &&
+-           VerifyField<uint8_t>(verifier, VT_SHUTDOWN) &&
++           VerifyField<uint8_t>(verifier, VT_SHUTDOWN, 1) &&
+            verifier.EndTable();
+   }
+ };
+diff --git a/horovod/tensorflow/custom_call_config_generated.h b/horovod/tensorflow/custom_call_config_generated.h
+index 1406a2f..0e2543a 100644
+--- a/horovod/tensorflow/custom_call_config_generated.h
++++ b/horovod/tensorflow/custom_call_config_generated.h
+@@ -109,18 +109,18 @@ struct CustomCallConfig FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+     return VerifyTableStart(verifier) &&
+            VerifyOffset(verifier, VT_TENSOR_NAME) &&
+            verifier.VerifyString(tensor_name()) &&
+-           VerifyField<int8_t>(verifier, VT_TENSOR_TYPE) &&
++           VerifyField<int8_t>(verifier, VT_TENSOR_TYPE, 1) &&
+            VerifyOffset(verifier, VT_INPUT_SHAPES) &&
+            verifier.VerifyVector(input_shapes()) &&
+            verifier.VerifyVectorOfTables(input_shapes()) &&
+            VerifyOffset(verifier, VT_OUTPUT_SHAPES) &&
+            verifier.VerifyVector(output_shapes()) &&
+            verifier.VerifyVectorOfTables(output_shapes()) &&
+-           VerifyField<float>(verifier, VT_PRESCALE_FACTOR) &&
+-           VerifyField<float>(verifier, VT_POSTSCALE_FACTOR) &&
+-           VerifyField<int32_t>(verifier, VT_ROOT_RANK) &&
+-           VerifyField<int32_t>(verifier, VT_REDUCE_OP) &&
+-           VerifyField<int32_t>(verifier, VT_PROCESS_SET_ID) &&
++           VerifyField<float>(verifier, VT_PRESCALE_FACTOR, 4) &&
++           VerifyField<float>(verifier, VT_POSTSCALE_FACTOR, 4) &&
++           VerifyField<int32_t>(verifier, VT_ROOT_RANK, 4) &&
++           VerifyField<int32_t>(verifier, VT_REDUCE_OP, 4) &&
++           VerifyField<int32_t>(verifier, VT_PROCESS_SET_ID, 4) &&
+            verifier.EndTable();
+   }
+ };

@@ -1,0 +1,69 @@
+Handle change of type annotation handling in Python 3.10 in the JIT module.
+Fixes failures in e.g. test_jit.
+
+From https://github.com/pytorch/pytorch/pull/81334 & https://github.com/pytorch/pytorch/pull/81506
+Backport: Alexander Grund (TU Dresden)
+
+diff --git a/torch/_jit_internal.py b/torch/_jit_internal.py
+index 3c067d5c1c5..2cc3dba89b4 100644
+--- a/torch/_jit_internal.py
++++ b/torch/_jit_internal.py
+@@ -1059,11 +1059,19 @@ def _get_named_tuple_properties(obj):
+                     if field in obj._field_defaults]
+     else:
+         defaults = []
++    # In 3.10 recommended way to get annotations is to call `inspect.get_annotations` function
++    # Also, annotations from base class are not inherited so they need to be queried explicitly
++    if sys.version_info[:2] < (3, 10):
++        obj_annotations = getattr(obj, '__annotations__', {})
++    else:
++        obj_annotations = inspect.get_annotations(obj)
++        if len(obj_annotations) == 0 and hasattr(obj, "__base__"):
++            obj_annotations = inspect.get_annotations(obj.__base__)
++
+     annotations = []
+-    has_annotations = hasattr(obj, '__annotations__')
+     for field in obj._fields:
+-        if has_annotations and field in obj.__annotations__:
+-            the_type = torch.jit.annotations.ann_to_type(obj.__annotations__[field], fake_range())
++        if field in obj_annotations:
++            the_type = torch.jit.annotations.ann_to_type(obj_annotations[field], fake_range())
+             annotations.append(the_type)
+         else:
+             annotations.append(torch._C.TensorType.getInferred())
+diff --git a/torch/jit/_recursive.py b/torch/jit/_recursive.py
+index 8175d14fe5d..aa36a4561d4 100644
+--- a/torch/jit/_recursive.py
++++ b/torch/jit/_recursive.py
+@@ -5,6 +5,7 @@ import collections
+ import textwrap
+ import functools
+ import warnings
++import sys
+ from typing import Dict, List, Set, Type
+ 
+ import torch._jit_internal as _jit_internal
+@@ -134,7 +135,22 @@ def infer_concrete_type_builder(nn_module, share_types=True):
+     if isinstance(nn_module, (torch.nn.ParameterDict)):
+         concrete_type_builder.set_parameter_dict()
+ 
+-    class_annotations = getattr(nn_module, '__annotations__', {})
++    def get_annotations(obj):
++        if sys.version_info < (3, 10):
++            return getattr(obj, '__annotations__', {})
++        # In Python-3.10+ it is recommended to use inspect.get_annotations
++        # See https://docs.python.org/3.10/howto/annotations.html
++        # But also, in 3.10 annotations from base class are not inherited
++        # by unannotated derived one, so they must be manually extracted
++        annotations = inspect.get_annotations(obj)
++        if len(annotations) > 0:
++            return annotations
++        cls = obj if isinstance(obj, type) else type(obj)
++        if len(cls.__bases__) == 0:
++            return {}
++        return inspect.get_annotations(cls.__bases__[0])
++
++    class_annotations = get_annotations(nn_module)
+     if isinstance(nn_module, (torch.ao.quantization.QuantWrapper)):
+         class_annotations = {}
+ 

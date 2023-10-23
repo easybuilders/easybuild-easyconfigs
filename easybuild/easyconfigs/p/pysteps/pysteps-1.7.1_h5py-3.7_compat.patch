@@ -1,0 +1,17 @@
+Fix compatibility with h5py v3.7
+Author: Samuel Moors (Vrije Universiteit Brussel)
+diff -ur pysteps-1.7.1.orig/pysteps/io/importers.py pysteps-1.7.1/pysteps/io/importers.py
+--- pysteps-1.7.1.orig/pysteps/io/importers.py	2022-09-25 22:49:54.000000000 +0200
++++ pysteps-1.7.1/pysteps/io/importers.py	2022-11-25 13:00:14.948382946 +0100
+@@ -1377,7 +1377,10 @@
+         raise IOError("requested quantity %s not found" % qty)
+ 
+     where = f["where"]
+-    proj4str = where.attrs["projdef"].decode()
++    proj4str = where.attrs["projdef"]
++    if(not isinstance(proj4str, str)):
++        proj4str = proj4str.decode()
++
+     pr = pyproj.Proj(proj4str)
+ 
+     ll_lat = where.attrs["LL_lat"]

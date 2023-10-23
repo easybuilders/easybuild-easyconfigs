@@ -1,0 +1,21 @@
+A bug in PyTorch makes sparse Tensors report the wrong device making the test fail
+when using multiple GPUs.
+Fixed in 1.13 by https://github.com/pytorch/pytorch/pull/85240
+
+Here change the test to only run the check with the default CUDA device.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_torch.py b/test/test_torch.py
+index 0c9c00984c..99285b20dc 100644
+--- a/test/test_torch.py
++++ b/test/test_torch.py
+@@ -7687,7 +7687,7 @@ tensor([[[1.+1.j, 1.+1.j, 1.+1.j,  ..., 1.+1.j, 1.+1.j, 1.+1.j],
+ 
+         if torch.cuda.is_available():
+             for non_blocking in [True, False]:
+-                for cuda in ['cuda', 'cuda:0' if torch.cuda.device_count() == 1 else 'cuda:1']:
++                for cuda in ['cuda']:
+                     b = torch.tensor(5., device=cuda)
+                     test_copy_behavior(b, non_blocking)
+                     self.assertEqual(b.device, b.to(cuda, non_blocking=non_blocking).device)

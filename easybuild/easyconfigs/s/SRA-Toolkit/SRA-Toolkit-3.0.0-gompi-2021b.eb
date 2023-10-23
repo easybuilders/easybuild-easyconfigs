@@ -1,0 +1,83 @@
+# updated: Denis Kristak (INUITS)
+easyblock = 'ConfigureMake'
+
+name = 'SRA-Toolkit'
+version = '3.0.0'
+
+homepage = 'https://github.com/ncbi/sra-tools'
+description = """The SRA Toolkit, and the source-code SRA System Development
+ Kit (SDK), will allow you to programmatically access data housed within SRA
+ and convert it from the SRA format"""
+github_account = 'ncbi'
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+toolchainopts = {'extra_cflags': '-lxml2 -lz -llzma'}
+
+source_urls = ['https://github.com/ncbi/sra-tools/archive/refs/tags/']
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+patches = ['SRA-Toolkit-%(version)s_fix-LD_LIBRARY_PATH.patch']
+checksums = [
+    {'SRA-Toolkit-3.0.0.tar.gz': 'b6e8116ecb196b91d5ee404cc978a128eec9af24bdc96f57ff7ebfaf9059a760'},
+    {'SRA-Toolkit-3.0.0_fix-LD_LIBRARY_PATH.patch': '80b764584e377150cbc706463ef2c72e517d1a3e7493f13e26d6e7875cd7d16a'},
+]
+
+builddependencies = [
+    ('Perl', '5.34.0'),
+    ('Python', '3.9.6'),
+    ('CMake', '3.21.1'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+    ('Java', '11', '', SYSTEM),
+]
+
+dependencies = [
+    ('ncbi-vdb', '3.0.0'),
+    ('file', '5.41'),
+    ('HDF5', '1.12.1'),
+    ('libxml2', '2.9.10'),
+    ('Szip', '2.1.1'),
+    ('zlib', '1.2.11'),
+    ('XZ', '5.2.5'),
+    ('bzip2', '1.0.8'),
+    ('gzip', '1.10'),
+]
+
+# Add addtional libraries needed to statically link HDF5 from EB
+preconfigopts = "sed -i 's/-Wl,-Bstatic -lhdf5 -Wl,-Bdynamic/-lhdf5 -Wl,-Bdynamic "
+preconfigopts += "-lmpi -lsz -lz -llzma  -lpthread -licucore -lm /' setup/konfigure.perl && "
+
+# Change default build directory and add paths to dependencies in EB
+configopts = '--build-prefix=%(builddir)s --with-magic-prefix=$EBROOTFILE '
+configopts += '--with-hdf5-prefix=$EBROOTHDF5 --with-xml2-prefix=$EBROOTLIBXML2 '
+configopts += '--with-ncbi-vdb-prefix=$EBROOTNCBIMINVDB'
+
+# Replace hardcoded optimization flags with flags from EB
+prebuildopts = "sed -i 's/-sm/-sm -lmpi -lsz/' tools/pacbio-load/Makefile && "
+prebuildopts += "find build/ -name \"ld*.sh\" -exec sed -i "
+prebuildopts += "'s/-lxml2/-lxml2 -lz -llzma  -lpthread -licucore -lm /g' {} + && "
+prebuildopts += "find build/ -name \"Makefile*\" -exec sed -i 's/-O3/$(EBFLAGS)/g' {} + && "
+prebuildopts += 'export EBFLAGS="$CFLAGS" && '
+
+# Replace hardcoded optimization flags with flags from EB
+preinstallopts = 'EBFLAGS="$CFLAGS" '
+
+local_bin = ['abi-dump', 'abi-load', 'align-info', 'bam-load', 'cache-mgr', 'cg-load', 'copycat', 'fasterq-dump',
+             'fastq-dump', 'fastq-load', 'helicos-load', 'illumina-dump', 'illumina-load', 'kar', 'kdbmeta',
+             'latf-load', 'magic', 'pacbio-load', 'prefetch', 'rcexplain', 'sam-dump', 'sff-dump', 'sff-load',
+             'srapath', 'sra-pileup', 'sra-sort', 'sra-stat', 'sratools', 'srf-load', 'test-sra', 'vdb-config',
+             'vdb-copy', 'vdb-decrypt', 'vdb-dump', 'vdb-encrypt', 'vdb-get', 'vdb-lock', 'vdb-passwd', 'vdb-unlock',
+             'vdb-validate']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bin] +
+             ['include/ncbi-vdb/NGS.hpp'],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "abi-dump --help",
+    "kar --help",
+    "sra-sort --help",
+]
+
+moduleclass = 'bio'

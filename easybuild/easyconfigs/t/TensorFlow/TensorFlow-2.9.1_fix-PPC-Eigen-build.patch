@@ -1,0 +1,34 @@
+The new Eigen version used in TF 2.9 is not compatible with the custom classes
+defined in TF leading to a compile error on PPC:
+'class EigenForTFLite::internal::TensorContractionInputMapper<float, long int, 0, EigenForTFLite::TensorEvaluator<const EigenForTFLite::TensorReshapingOp<const EigenForTFLite::DSizes<long int, 2>, const EigenForTFLite::TensorImagePatchOp<-1, -1, const EigenForTFLite::TensorMap<EigenForTFLite::Tensor<const float, 4, 1, long int>, 16> > >, EigenForTFLite::ThreadPoolDevice>, std::array<long int, 1>, std::array<long int, 1>, 4, true, false, 0, EigenForTFLite::MakePointer>' has no member named 'load'
+
+See https://github.com/tensorflow/tensorflow/issues/59212 and https://gitlab.com/libeigen/eigen/-/merge_requests/764#note_1231907378
+This might be easily fixable in more recent versions of TF/Eigen
+but for now simply disable the custom TF code for PPC.
+
+diff --git a/tensorflow/core/kernels/eigen_cuboid_convolution.h b/tensorflow/core/kernels/eigen_cuboid_convolution.h
+index 729dcd3bd2a..89f1d5b6732 100644
+--- a/tensorflow/core/kernels/eigen_cuboid_convolution.h
++++ b/tensorflow/core/kernels/eigen_cuboid_convolution.h
+@@ -28,7 +28,7 @@ namespace Eigen {
+ 
+ namespace internal {
+ 
+-#if !EIGEN_ALTIVEC_USE_CUSTOM_PACK
++#ifndef EIGEN_VECTORIZE_VSX
+ // WARNING: Most of the code here implicitly assumes that the matrix is in
+ // ColMajor layout. This is guaranteed by the tensor contraction (see
+ // TensorContraction.h).
+diff --git a/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h b/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h
+index 37a41f952fa..ade41fbf103 100644
+--- a/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h
++++ b/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h
+@@ -23,7 +23,7 @@ namespace Eigen {
+ 
+ namespace internal {
+ 
+-#if !EIGEN_ALTIVEC_USE_CUSTOM_PACK
++#ifndef EIGEN_VECTORIZE_VSX
+ // WARNING: Most of the code here implicitly assumes that the matrix is in
+ // ColMajor layout. This is guaranteed by the tensor contraction (see
+ // TensorContraction.h).

@@ -1,0 +1,58 @@
+easyblock = 'Bundle'
+
+name = 'R-tesseract'
+version = '5.1.0'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://cran.r-project.org/package=tesseract'
+description = "The R extension for using tesseract"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [('pkgconf', '1.8.0')]
+
+dependencies = [
+    ('R', '4.2.1'),
+    ('poppler', '22.12.0'),
+    ('tesseract', '5.3.0'),
+]
+
+exts_defaultclass = 'RPackage'
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_list = [
+    ('askpass', '1.1', {
+        'checksums': ['db40827d1bdbb90c0aa2846a2961d3bf9d76ad1b392302f9dd84cc2fd18c001f'],
+    }),
+    ('qpdf', '1.3.2', {
+        'checksums': ['d9c905a4879274d72de0c638f2e14737ec0a59895cbba9814e05c62b43e8e976'],
+    }),
+    ('pdftools', '3.3.3', {
+        'checksums': ['ffc0dfa5205ac3c26ee22713289784cb6b9aada6c21417d79bfd4d7f5bd5909c'],
+    }),
+    ('rappdirs', '0.3.3', {
+        'checksums': ['49959f65b45b0b189a2792d6c1339bef59674ecae92f8c2ed9f26ff9e488c184'],
+    }),
+    ('tesseract', version, {
+        'preinstallopts': 'INCLUDE_DIR="$EBROOTTESSERACT/include/tesseract -I$EBROOTLEPTONICA/include/leptonica"' +
+                          ' LIB_DIR=$EBROOTTESSERACT/lib',
+        'checksums': ['6dae7cbc1d4cf6decabb2d1c56d95b5eb6a0a4a1cbc9f9a1c274ba558b31cdfa'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['tesseract/libs/tesseract.%s' % SHLIB_EXT, 'tesseract/R/tesseract'],
+    'dirs': ['askpass', 'qpdf', 'pdftools', 'rappdirs'],
+}
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+moduleclass = 'vis'

@@ -1,0 +1,28 @@
+Fix for "undeclared inclusion(s) in rule" errors when the installation directory
+for GCC is hosted in a path that is a symlink to another path.
+
+From https://github.com/tensorflow/tensorflow/pull/56360
+
+From b3a8fdbcb79e723f8d62f86bddcfdfb73fe76291 Mon Sep 17 00:00:00 2001
+From: Jinzhe Zeng <jinzhe.zeng@rutgers.edu>
+Date: Sat, 4 Jun 2022 19:06:58 -0400
+Subject: [PATCH] resolve gcc_host_compiler_path in a symlink directory
+
+Resolves a missing dependency declarations error, when gcc_host_compiler_path is in a symlink directory resolving to other directories.
+---
+ configure.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.py b/configure.py
+index bf338bdda2297..77af09a22a05d 100644
+--- a/configure.py
++++ b/configure.py
+@@ -619,7 +619,7 @@ def prompt_loop_or_load_from_env(environ_cp,
+                          'Assuming to be a scripting mistake.' %
+                          (var_name, n_ask_attempts))
+ 
+-  if resolve_symlinks and os.path.islink(val):
++  if resolve_symlinks:
+     val = os.path.realpath(val)
+   environ_cp[var_name] = val
+   return val

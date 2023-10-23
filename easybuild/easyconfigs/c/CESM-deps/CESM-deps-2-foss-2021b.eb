@@ -1,0 +1,52 @@
+easyblock = 'Bundle'
+
+name = 'CESM-deps'
+version = '2'
+
+homepage = 'https://www.cesm.ucar.edu/models/cesm2/'
+description = """CESM is a fully-coupled, community, global climate model that
+provides state-of-the-art computer simulations of the Earth's past, present,
+and future climate states."""
+
+# The following environment is suitable for CESM >= 2.2.0
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('CMake', '3.22.1'),
+    ('Python', '3.9.6'),
+    ('lxml', '4.6.3'),
+    ('Perl', '5.34.0'),
+    ('XML-LibXML', '2.0207'),
+    ('ESMF', '8.2.0'),
+    ('netCDF', '4.8.1'),
+    ('netCDF-Fortran', '4.5.3'),
+    ('netCDF-C++4', '4.3.1'),
+    ('PnetCDF', '1.12.3'),
+    ('Subversion', '1.14.1'),
+    ('git', '2.33.1', '-nodocs'),
+    ('git-lfs', '3.2.0', '', SYSTEM),
+]
+
+components = [
+    # install extra configuration tools and files for VSC clusters
+    ('cesm-config', '1.6.1', {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://github.com/vub-hpc/%(name)s/archive'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['bd88c32a08439cc0b4395936a2113e83032e43d0c683ffb4dbf651c09d1e9c88'],
+        'start_dir': '%(name)s-%(version)s',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/update-cesm-machines', 'scripts/case.pbs', 'scripts/case.slurm'],
+    'dirs': ['machines', 'irods'],
+}
+
+usage = """Environment to build and run CESM v2 simulations
+ 1. Download a release of CESM v2: `git clone -b release-cesm2.2.0 https://github.com/ESCOMP/cesm.git cesm-2.2.0`
+ 2. Add external programs for CESM: `cd cesm-2.2.0; ./manage_externals/checkout_externals`
+ 3. Update config files: `update-cesm-machines cime/config/cesm/machines/ $EBROOTCESMMINDEPS/machines/`
+ 4. Create case: `cd cime/scripts && ./create_newcase --machine ...`"""
+
+moduleclass = 'geo'

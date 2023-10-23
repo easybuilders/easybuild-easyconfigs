@@ -1,0 +1,72 @@
+##
+# This is a contribution from SIB Swiss Institute of Bioinformatics
+# Homepage:     https://www.sib.swiss/research-infrastructure/competence-centers/vital-it
+#
+# Authors::     Sebastien Moretti <sebastien.moretti@sib.swiss>
+#
+##
+
+# Cannot use *easyblock = 'Rpm'* because the RPM misses some fields:
+# Summary and License fields must be present in package: (main package)
+easyblock = 'Binary'
+
+name = 'Chemaxon-Marvin'
+version = '23.9'
+
+homepage = 'https://chemaxon.com/marvin'
+description = """Marvin suite is a chemically intelligent desktop toolkit built
+to help you draw, edit, publish, render, import and export your chemical structures
+and as well as allowing you to convert between various chemical and graphical file
+formats. It is free for individual, academic and non-commercial use."""
+
+# NOTE not in the license list of EB
+# software_license = 'Proprietary: Personal, Commercial or Academic'
+software_license_urls = ['https://www.chemaxon.com/marvin/license.html']
+docurls = [
+    'https://docs.chemaxon.com/display/docs/marvinsketch-user-s-guide.md',
+    'https://docs.chemaxon.com/display/docs/marvinview-user-s-guide.md',
+    'https://docs.chemaxon.com/display/docs/file-formats.md',
+]
+
+toolchain = SYSTEM
+
+# Download and license at https://chemaxon.com/products/marvin
+# Once logged in download files can be found here:
+# https://download.chemaxon.com/marvin
+sources = ['marvin_linux_%(version)s_openjdk11.rpm']
+checksums = ['21a3bcd75d41d614fb9768949e713bfbb299e5c782a7166eaad0cd13654b140f']
+
+osdependencies = [('rpm', 'cpio')]  # for extracting rpm-files
+
+dependencies = [
+    ('Java', '11'),
+]
+
+extract_sources = False
+
+install_cmd = 'rpm2cpio ' + sources[0] + ' | cpio -idmv && '
+install_cmd += 'cd opt/chemaxon/marvinsuite/ && '
+install_cmd += 'chmod -x bin/*.bat && '
+install_cmd += 'cp -ar . %(installdir)s/ && '
+install_cmd += 'rm -Rf %(installdir)s/jre %(installdir)s/legal'
+
+# plugins directory is empty
+sanity_check_paths = {
+    'files': ["bin/cxcalc", "bin/cxtrain", "bin/evaluate", "bin/molconvert",
+              "bin/msketch", "bin/mview", "EULA.html"],
+    'dirs': ['lib']
+}
+
+sanity_check_commands = ["molconvert"]
+
+# You need a key/license file to fully activate Chemaxon Marvin
+#
+# COMMERCIAL
+# For commercial use please contact sales@chemaxon.com
+# NON-COMMERCIAL
+# For personal   use get a key to be renewed every 2 months at https://download.chemaxon.com/marvin
+# For academic   use get a key for research or educational purposes at https://chemaxon.com/academic-program
+#
+# The license file "license.cxl" has to be placed in $HOME/.chemaxon/
+
+moduleclass = 'chem'

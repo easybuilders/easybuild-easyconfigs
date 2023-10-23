@@ -1,0 +1,43 @@
+From ffdd75cceedafac3ba7a80b86e1b103c383b260e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Thomas=20Wei=C3=9Fschuh?= <thomas@t-8ch.de>
+Date: Mon, 22 May 2023 18:24:47 +0200
+Subject: [PATCH] waitpid: only build when pidfd_open is available
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes #2256
+
+[kzak@redhat.com: - fix UL_BUILD_INIT() use]
+
+Signed-off-by: Thomas Weißschuh <thomas@t-8ch.de>
+Signed-off-by: Karel Zak <kzak@redhat.com>
+---
+ configure.ac | 1 +
+ meson.build  | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/configure.ac b/configure.ac
+index dfdcdbdce8..1f6158e7f7 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1856,6 +1856,7 @@ AC_ARG_ENABLE([waitpid],
+ )
+ UL_BUILD_INIT([waitpid])
+ UL_REQUIRES_LINUX([waitpid])
++UL_REQUIRES_SYSCALL_CHECK([waitpid], [UL_CHECK_SYSCALL([pidfd_open])], [pidfd_open])
+ AM_CONDITIONAL([BUILD_WAITPID], [test "x$build_waitpid" = xyes])
+ 
+ UL_BUILD_INIT([enosys], [check])
+diff --git a/meson.build b/meson.build
+index 3783a5be98..029f93cf49 100644
+--- a/meson.build
++++ b/meson.build
+@@ -2848,6 +2848,7 @@ if not is_disabler(exe)
+   bashcompletions += ['fadvise']
+ endif
+ 
++# XXX: HAVE_PIDFD_OPEN
+ exe = executable(
+   'waitpid',
+   waitpid_sources,

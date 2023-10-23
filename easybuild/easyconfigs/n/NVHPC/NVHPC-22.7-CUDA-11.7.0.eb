@@ -1,0 +1,68 @@
+name = 'NVHPC'
+version = '22.7'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://developer.nvidia.com/hpc-sdk/'
+description = """C, C++ and Fortran compilers included with the NVIDIA HPC SDK (previously: PGI)"""
+
+toolchain = SYSTEM
+
+local_tarball_tmpl = 'nvhpc_2022_%%(version_major)s%%(version_minor)s_Linux_%s_cuda_multi.tar.gz'
+# By downloading, you accept the HPC SDK Software License Agreement
+# https://docs.nvidia.com/hpc-sdk/eula/index.html
+# accept_eula = True
+source_urls = ['https://developer.download.nvidia.com/hpc-sdk/%(version)s/']
+sources = [local_tarball_tmpl % '%(arch)s']
+checksums = [
+    {
+        local_tarball_tmpl % 'aarch64':
+            '2aae3fbfd2d0d2d09448a36166c42311368f5600c7c346f159c280b412fe924a',
+        local_tarball_tmpl % 'ppc64le':
+            '6dd4fd382c22769e4fa9508714119abd7d1df3dc58c69414a14b0b0dbc34564f',
+        local_tarball_tmpl % 'x86_64':
+            '3ce1c346f8bc7e50defb41c545c8907fdc012ff60b27eb8985cf3213f19d863a',
+    }
+]
+
+local_gccver = '11.3.0'
+dependencies = [
+    ('GCCcore', local_gccver),
+    ('binutils', '2.38', '', ('GCCcore', local_gccver)),
+    # This is necessary to avoid cases where just libnuma.so.1 is present in the system and -lnuma fails
+    ('numactl', '2.0.14', '', ('GCCcore', local_gccver)),
+    ('CUDA', '11.7.0', '', SYSTEM),
+]
+
+# NVHPC EasyBlock supports some features, which can be set via CLI or this easyconfig.
+# The following list gives examples for the easyconfig
+#
+# NVHPC needs CUDA to work. Two options are available: 1) Use NVHPC-bundled CUDA, 2) use system CUDA
+# 1) Bundled CUDA
+#    If no easybuild dependency to CUDA is present, the bundled CUDA is taken. A version needs to be specified with
+#      default_cuda_version = "11.0"
+#    in this easyconfig file; alternatively, it can be specified through the command line during installation with
+#      --try-amend=default_cuda_version="10.2"
+# 2) CUDA provided via EasyBuild
+#    Use CUDA as a dependency, for example
+#      dependencies = [('CUDA', '11.4.1')]
+#    The parameter default_cuda_version still can be set as above.
+#    If not set, it will be deduced from the CUDA module (via $EBVERSIONCUDA)
+#
+# Define a NVHPC-default Compute Capability
+# cuda_compute_capabilities = '7.0'
+# Can also be specified on the EasyBuild command line via --cuda-compute-capabilities=8.0
+# Only single values supported, not lists of values!
+#
+# Options to add/remove things to/from environment module (defaults shown)
+# module_byo_compilers = False  # Remove compilers from PATH (Bring-your-own compilers)
+# module_nvhpc_own_mpi = True  # Add NVHPC's own pre-compiled OpenMPI
+# module_add_math_libs = True  # Add NVHPC's math libraries (which should be there from CUDA anyway)
+# module_add_profilers = True  # Add NVHPC's NVIDIA Profilers
+# module_add_nccl = True       # Add NVHPC's NCCL library
+# module_add_nvshmem = True    # Add NVHPC's NVSHMEM library
+# module_add_cuda = False      # Add NVHPC's bundled CUDA
+
+modextrapaths = {'LD_LIBRARY_PATH': 'Linux_%(arch)s/%(version)s/compilers/extras/qd/lib/'}
+
+# this bundle serves as a compiler-only toolchain, so it should be marked as compiler (important for HMNS)
+moduleclass = 'compiler'

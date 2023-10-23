@@ -1,0 +1,27 @@
+include location of PyQt .sip files in SIPCMD macro
+
+author: Kenneth Hoste (HPC-UGent)
+author: Pavel Grochal (INUITS)
+
+Updated to QGIS/3.28.1: Åke Sandgren, 2022-12-09
+diff -ru qgis-3.28.1.orig/cmake/SIPMacros.cmake qgis-3.28.1/cmake/SIPMacros.cmake
+--- qgis-3.28.1.orig/cmake/SIPMacros.cmake	2022-11-18 13:10:21.000000000 +0100
++++ qgis-3.28.1/cmake/SIPMacros.cmake	2022-12-09 08:14:33.475615182 +0100
+@@ -101,7 +101,7 @@
+       ENDIF( ${CONCAT_NUM} LESS ${SIP_CONCAT_PARTS} )
+     ENDFOREACH(CONCAT_NUM RANGE 0 ${SIP_CONCAT_PARTS} )
+ 
+-    SET(SIPCMD ${SIP_BUILD_EXECUTABLE} --no-protected-is-public --pep484-pyi --no-make --concatenate=${SIP_CONCAT_PARTS} --qmake=${QMAKE_EXECUTABLE} --include-dir=${CMAKE_CURRENT_BINARY_DIR} --include-dir=${PYQT5_SIP_DIR} ${SIP_BUILD_EXTRA_OPTIONS})
++    SET(SIPCMD ${SIP_BUILD_EXECUTABLE} --no-protected-is-public --pep484-pyi --no-make --concatenate=${SIP_CONCAT_PARTS} --qmake=${QMAKE_EXECUTABLE} --include-dir=${CMAKE_CURRENT_BINARY_DIR} --include-dir=${PYQT5_SIP_DIR} --include-dir=$ENV{EBROOTPYQT5}/share/sip --include-dir=$ENV{EBROOTQSCINTILLA}/share/sip/PyQt5 ${SIP_BUILD_EXTRA_OPTIONS})
+ 
+     ADD_CUSTOM_COMMAND(
+       OUTPUT ${_sip_output_files}
+@@ -140,7 +140,7 @@
+       ENDIF( ${CONCAT_NUM} LESS ${SIP_CONCAT_PARTS} )
+     ENDFOREACH(CONCAT_NUM RANGE 0 ${SIP_CONCAT_PARTS} )
+ 
+-    SET(SIPCMD ${SIP_BINARY_PATH} ${_sip_tags} -w -e ${_sip_x} ${SIP_EXTRA_OPTIONS} -j ${SIP_CONCAT_PARTS} -c ${CMAKE_CURRENT_BINARY_DIR}/${_module_path} -I ${CMAKE_CURRENT_BINARY_DIR}/${_module_path} ${_sip_includes} ${_configured_module_sip})
++    SET(SIPCMD ${SIP_BINARY_PATH} ${_sip_tags} -w -e ${_sip_x} ${SIP_EXTRA_OPTIONS} -j ${SIP_CONCAT_PARTS} -c ${CMAKE_CURRENT_BINARY_DIR}/${_module_path} -I ${CMAKE_CURRENT_BINARY_DIR}/${_module_path} ${_sip_includes} --include-dir=$ENV{EBROOTPYQT5}/share/sip --include-dir=$ENV{EBROOTQSCINTILLA}/share/sip/PyQt5 ${_configured_module_sip})
+     ADD_CUSTOM_COMMAND(
+       OUTPUT ${_sip_output_files}
+       COMMAND ${CMAKE_COMMAND} -E echo ${message}

@@ -1,0 +1,234 @@
+From 7a6036bf36d8d2ed038b83d26112cdde4f383747 Mon Sep 17 00:00:00 2001
+From: Matthew Mah <mmah@broadinstitute.org>
+Date: Mon, 5 Mar 2018 15:14:52 -0500
+Subject: [PATCH] Restore ploteig in bin directory with Nick's version. Fixes
+ #25.
+
+---
+ bin/ploteig | 217 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 217 insertions(+)
+ create mode 100755 bin/ploteig
+
+diff --git a/bin/ploteig b/bin/ploteig
+new file mode 100755
+index 0000000..0871daa
+--- /dev/null
++++ bin/ploteig
+@@ -0,0 +1,217 @@
++#!/usr/local/bin/perl  -w 
++
++### ploteig -i eigfile -p pops -c a:b [-t title] [-s stem] [-g gstem] [-o outfile] [-x] [-k]  [-y] [-z sep] -r colorstring -m xmul -n ymul 
++use Getopt::Std ;
++use File::Basename ;
++
++## pops : separated  -x = make postscript and pdf  -z use another separator
++##  -k keep intermediate files
++## NEW if pops is a file names are read one per line
++## scaling on x, y axes 
++
++getopts('i:o:p:c:s:d:z:t:r:m:n:g:xkyq',\%opts) ;
++$postscmode = $opts{"x"} ;
++$oldkeystyle =  $opts{"y"} ;
++$nopoptitle = $opts{"q"} ;
++$kflag = $opts{"k"} ;
++$keepflag = 1 if ($kflag) ;
++$keepflag = 1 unless ($postscmode) ;
++
++$zsep = ":" ;
++if (defined $opts{"z"}) {
++ $zsep = $opts{"z"} ;
++ $zsep = "\+" if ($zsep eq "+") ;
++}
++
++if (defined $opts{"r"}) {
++ $colorstr = $opts{"r"} ;
++ setcolor($colorstr) ;
++}
++$xmul = $opts{"m"} ; 
++$xmul = 1 unless (defined $xmul) ;
++
++$ymul = $opts{"n"} ; 
++$ymul = 1 unless (defined $ymul) ;
++
++$title = "" ;
++if (defined $opts{"t"}) {
++ $title = $opts{"t"} ;
++}
++if (defined $opts{"i"}) {
++ $infile = $opts{"i"} ;
++}
++else {
++ usage() ;
++ exit 0 ;
++}
++
++open (FF, $infile) || die "can't open $infile\n" ;
++@L = (<FF>) ;
++chomp @L ;
++$nf = 0 ;
++foreach $line (@L) { 
++ next if ($line =~ /\#/) ;
++ @Z = split " ", $line ;
++ $x = @Z ;
++ $nf = $x if ($nf < $x) ;
++}
++printf "## number of fields: %d\n", $nf ;
++$popcol = $nf-1 ;
++
++
++if (defined $opts{"p"}) {
++ $pops = $opts{"p"} ;
++}
++else {
++ die "p parameter compulsory\n" ;
++}
++
++$popsname = setpops ($pops) ;
++print "$popsname\n" ;
++
++$c1 = 1; $c2 =2 ;
++if (defined $opts{"c"}) {
++ $cols = $opts{"c"} ;
++ ($c1, $c2) = split ":", $cols ;
++ die "bad c param: $cols\n" unless (defined $cols) ;
++}
++
++$stem = "$infile.$c1:$c2" ;
++if (defined $opts{"s"}) {
++ $stem = $opts{"s"} ;
++}
++
++if (defined $opts{"g"}) {
++ $stem = $gstem = $opts{"g"} ;
++}
++
++$gstem = "$stem.$popsname" unless (defined $gstem) ; 
++$gnfile = "$gstem.xtxt" ;
++ 
++if (defined $opts{"o"}) {
++ $gnfile = $opts{"o"} ;
++}
++
++
++@T = () ; ## trash 
++open (GG, ">$gnfile") || die "can't open $gnfile\n" ;
++print GG "## " unless ($postscmode) ;
++print GG "set terminal postscript color noenhanced\n" ;
++print GG "set title  \"$title\" \n" ; 
++print GG "set key outside\n" unless ($oldkeystyle) ; 
++print GG "set xlabel  \"eigenvector $c1\" \n" if ($xmul == 1) ; 
++print GG "set xlabel  \"eigenvector $c1 (* $xmul) \" \n" if ($xmul != 1) ; 
++print GG "set ylabel  \"eigenvector $c2\" \n" if ($ymul == 1) ; 
++print GG "set ylabel  \"eigenvector $c1 (* $ymul) \" \n" if ($ymul != 1) ; 
++print GG "plot " ;
++$np = @P ;
++$lastpop = $P[$np-1] ;
++$d1 = $c1+1 ;
++$d2 = $c2+1 ;
++foreach $pop (@P)  { 
++ $dfile = "$stem:$pop" ;
++ push @T, $dfile ;
++ print GG " \"$dfile\" using (\$$d1)*$xmul:(\$$d2)*$ymul "  ;
++ print GG "notitle "  if (defined $nopoptitle) ;
++ print GG "title \"$pop\" "  unless (defined $nopoptitle) ;
++ if (defined $COL{$pop}) { 
++  $color = $COL{$pop} ; 
++  print GG "lt rgb \"$color\" " ;
++ }
++ print GG ", \\\n" unless ($pop eq $lastpop) ;
++ open (YY, ">$dfile") || die "can't open $dfile\n" ;
++ foreach $line (@L) {
++  next if ($line =~ /\#/) ;
++  @Z = split " ", $line ;
++  next unless (defined $Z[$popcol]) ;
++  next unless ($Z[$popcol] eq $pop) ;
++  print YY "$line\n" ;
++ }
++ close YY ;
++}
++print GG "\n" ;
++print GG "## "  if ($postscmode) ;
++print GG "pause 9999\n"  ;
++close GG ;
++
++if ($postscmode) { 
++$psfile = "$stem.ps" ;
++
++ if ($gnfile =~ /xtxt/) { 
++  $psfile = $gnfile ;
++  $psfile  =~ s/xtxt/ps/ ;
++ }
++system "gnuplot < $gnfile > $psfile" ;
++system "/home/np29/bin/fixgreen  $psfile" ;
++system "ps2pdf  $psfile " ;
++}
++unlink (@T) unless $keepflag ;
++
++sub setcolor {
++ my ($colorst) = @_ ; 
++ local ($cp, $pop, $color, @CP, $line) ;
++ if (-r $colorst) { 
++   open (C1, $colorst) || die "can't open $colorst\n" ;
++   foreach $line (<C1>) { 
++    chomp $line ;
++    ($pop, $color) = split " ", $line ; 
++    next if ($pop =~ /\#/) ;
++    next unless (defined $color) ;
++    print STDERR  "setting color for $pop to $color\n" ; 
++    $COL{$pop} = $color ;
++   }
++   close C1 ; 
++   return ;
++ }
++
++ @CP = split " ", $colorst ;
++ foreach $cp (@CP) { 
++  ($pop, $color) = split ":", $cp ;
++  $COL{$pop} = $color ;
++ }
++}
++
++sub usage { 
++ 
++print "ploteig -i eigfile -p pops -c a:b [-t title] [-s stem] [-o outfile] [-x] [-k] -c colorstringh [-m xmul] [-n ymul]\n" ;  
++print "-i eigfile     input file first col indiv-id last col population\n" ;
++print "## as output by smartpca in outputvecs \n" ;
++print "-c a:b         a, b columns to plot.  1:2 would be common and leading 2 eigenvectors\n" ;
++print "-p pops        Populations to plot.  : delimited.   eg  -p Bantu:San:French\n" ;
++print "## pops can also be a filename.  List populations 1 per line\n" ;
++print "[-s stem]      stem will start various output files\n"  ;
++print "[-o ofile]     ofile will be gnuplot control file.  Should have xtxt suffix\n"; 
++print "[-x]           make ps and pdf files\n" ; 
++print "[-k]           keep various intermediate files although  -x set\n" ;
++print "## necessary if .xtxt file is to be hand edited\n" ;
++print "[-r colorstringpairs or colorstringfile]\n" ;
++print "[-g gstem]     make gstem.xtxt gstem.ps  gstem.pdf  \n" ;
++print "[-y]           put key at top right inside box (old mode)\n" ;
++print "[-t]           title (legend)\n" ;
++
++print "The xtxt file is a gnuplot file and can be easily hand edited.  Intermediate files
++needed if you want to make your own plot\n" ;
++
++}
++sub setpops {      
++ my ($pops) = @_  ; 
++ local (@a, $d, $b, $e) ; 
++
++ if (-e $pops) {  
++  open (FF1, $pops) || die "can't open $pops\n" ;
++  @P = () ;
++  foreach $line (<FF1>) { 
++  ($a) = split " ", $line ;
++  next unless (defined $a) ;
++  next if ($a =~ /\#/) ;
++  push  @P, $a ;
++  }
++  $out = join ":", @P ; 
++  print "## pops: $out\n" ;
++  ($b, $d , $e) = fileparse($pops) ;
++  return $b ;
++ }
++ @P = split $zsep, $pops ;
++ return $pops ;
++
++}

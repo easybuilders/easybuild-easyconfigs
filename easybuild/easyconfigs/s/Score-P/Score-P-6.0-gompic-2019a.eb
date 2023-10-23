@@ -1,0 +1,55 @@
+##
+# This is an easyconfig file for EasyBuild, see https://github.com/easybuilders/easybuild
+# Copyright:: Copyright 2013-2019 Juelich Supercomputing Centre, Germany
+# Authors::   Bernd Mohr <b.mohr@fz-juelich.de>
+#             Markus Geimer <m.geimer@fz-juelich.de>
+# License::   3-clause BSD
+#
+# This work is based on experiences from the UNITE project
+# http://apps.fz-juelich.de/unite/
+##
+
+name = 'Score-P'
+version = '6.0'
+
+homepage = 'https://www.score-p.org'
+description = """
+ The Score-P measurement infrastructure is a highly scalable and easy-to-use
+ tool suite for profiling, event tracing, and online analysis of HPC
+ applications.
+"""
+
+toolchain = {'name': 'gompic', 'version': '2019a'}
+
+source_urls = ['https://www.vi-hps.org/cms/upload/packages/scorep/']
+sources = ['scorep-%(version)s.tar.gz']
+checksums = [
+    '5dc1023eb766ba5407f0b5e0845ec786e0021f1da757da737db1fb71fc4236b8',  # scorep-6.0.tar.gz
+]
+
+dependencies = [
+    ('CubeLib', '4.4.4'),
+    ('CubeWriter', '4.4.3'),
+    # Unwinding/sampling support (optional):
+    ('libunwind', '1.3.1'),
+    ('OPARI2', '2.0.5'),
+    ('OTF2', '2.2'),
+    # Hardware counter support (optional):
+    ('PAPI', '5.7.0'),
+    # PDT source-to-source instrumentation support (optional):
+    ('PDT', '3.25'),
+]
+
+configopts = '--enable-shared'
+
+sanity_check_paths = {
+    'files': ['bin/scorep', 'include/scorep/SCOREP_User.h',
+              'lib/libscorep_adapter_mpi_event.a',
+              'lib/libscorep_adapter_mpi_event.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+# Ensure that local metric documentation is found by CubeGUI
+modextrapaths = {'CUBE_DOCPATH': 'share/doc/scorep/profile'}
+
+moduleclass = 'perf'

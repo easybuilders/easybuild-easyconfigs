@@ -1,0 +1,74 @@
+Use external HTSlib from EasyBuild environment
+author: Alex Domingo (Vrije Univeristeit Brussel)
+--- CMakeLists.txt.orig	2023-02-21 14:15:06.928502000 +0100
++++ CMakeLists.txt	2023-02-21 14:20:48.902166000 +0100
+@@ -41,22 +41,6 @@
+     message("shared build")
+ ENDIF(LINK MATCHES static)
+ 
+-
+-include(ExternalProject)
+-ExternalProject_Add(htslib
+-    PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
+-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
+-    BUILD_IN_SOURCE 1
+-    CONFIGURE_COMMAND autoheader && autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure 
+-        --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
+-    BUILD_COMMAND make lib-static
+-    INSTALL_COMMAND ""
+-)
+-
+-include_directories(${htslib_PREFIX}/src/htslib)
+-
+-
+-
+ # add_compile_options(-Wdeprecated-register)
+ 
+ add_subdirectory(src)
+--- src/CMakeLists.txt.orig	2023-02-21 14:20:56.996543000 +0100
++++ src/CMakeLists.txt	2023-02-21 15:10:35.835647000 +0100
+@@ -3,7 +3,7 @@
+ 
+ list(REMOVE_ITEM sources main.cpp)
+ 
+-include_directories(../ext/htslib)
++include_directories(SYSTEM $ENV{EBROOTHTSLIB}/include)
+ 
+ add_library(kallisto_core ${sources} ${headers})
+ target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+@@ -11,7 +11,8 @@
+ add_executable(kallisto main.cpp)
+ 
+ find_package( Threads REQUIRED )
+-target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a)
++find_library($ENV{EBROOTHTSLIB}/lib hts)
++target_link_libraries(kallisto kallisto_core pthread hts)
+ 
+ if(LINK MATCHES static)
+     set(BUILD_SHARED_LIBS OFF)
+--- src/kseq.h.orig	2023-02-21 15:34:20.910947000 +0100
++++ src/kseq.h	2023-02-21 17:09:01.242218765 +0100
+@@ -28,6 +28,8 @@
+ #include <string.h>
+ #include <stdlib.h>
+ 
++#include "htslib/kstring.h"
++
+ #define KS_SEP_SPACE 0 // isspace(): \t, \n, \v, \f, \r
+ #define KS_SEP_TAB   1 // isspace() && !' '
+ #define KS_SEP_LINE  2 // line separator: "\n" (Unix) or "\r\n" (Windows)
+@@ -74,14 +76,6 @@
+   return (int)ks->buf[ks->begin++];                      \
+ }
+ 
+-#ifndef KSTRING_T
+-#define KSTRING_T kstring_t
+-typedef struct __kstring_t {
+-  size_t l, m;
+-  char *s;
+-} kstring_t;
+-#endif
+-
+ #ifndef kroundup32
+ #define kroundup32(x) (--(x), (x)|=(x)>>1, (x)|=(x)>>2, (x)|=(x)>>4, (x)|=(x)>>8, (x)|=(x)>>16, ++(x))
+ #endif

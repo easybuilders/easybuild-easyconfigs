@@ -1,0 +1,61 @@
+Fix failure to compile attention.cpp on some platforms, e.g. POWER.
+I.e. those 3 errors:
+
+../aten/src/ATen/native/attention.cpp:145:46: error: call to deleted function 'double& at::vec::CPU_CAPABILITY::Vectorized<double>::operator[](int)'
+  145 |                   hmax = std::max(max_input[i], hmax);
+[snip]
+../aten/src/ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h:190:11: note: declared here
+  190 |   double& operator[](int idx) = delete;
+
+../aten/src/ATen/native/attention.cpp:152:66: error: call to deleted function 'double& at::vec::CPU_CAPABILITY::Vectorized<double>::operator[](int)'
+  152 |                     hsum += std::exp(static_cast<accscalar_t>(v[i]) - hmax);
+
+../aten/src/ATen/native/attention.cpp:168:100: error: call to deleted function 'double& at::vec::CPU_CAPABILITY::Vectorized<double>::operator[](int)'
+  168 |                     input_data[t + i] = static_cast<scalar_t>(std::exp(static_cast<accscalar_t>(v[i]) - hmax) * inv_denominator);
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/native/attention.cpp b/aten/src/ATen/native/attention.cpp
+index 188de5e2cd..7f3e8e5af2 100644
+--- a/aten/src/ATen/native/attention.cpp
++++ b/aten/src/ATen/native/attention.cpp
+@@ -140,22 +140,18 @@ void masked_softmax_dropout(
+                   max_input = vec::maximum(max_input, v);
+                 }
+ 
++                __at_align__ scalar_t arr_max_input[V];
++                max_input.store(arr_max_input);
+                 auto hmax = std::numeric_limits<scalar_t>::lowest();
+                 for (auto i = 0; i < V; ++i) {
+-                  hmax = std::max(max_input[i], hmax);
++                  hmax = std::max(arr_max_input[i], hmax);
+                 }
+                 accscalar_t hsum = 0;
+-                for (auto t = 0; t < T; t += V) {
+-                  auto v = Vec::loadu(&input_data[t]);
+-                  // TODO: vectorize in accscalar_t?
+-                  for (auto i = 0; i < V; ++i) {
+-                    hsum += std::exp(static_cast<accscalar_t>(v[i]) - hmax);
+-                  }
++                for (auto t = 0; t < T; ++t) {
++                  hsum += std::exp(static_cast<accscalar_t>(input_data[t]) - hmax);
+                 }
+                 auto inv_denominator = 1.0 / hsum;
+-                for (auto t = 0; t < T; t += V) {
+-                  Vec v = Vec::loadu(&input_data[t]);
+-
++                for (auto t = 0; t < T; ++t) {
+                   // TODO: vectorize in accscalar_t?
+                   // TODO this faster solution does not work on Android build
+                   /*
+@@ -164,9 +160,7 @@ void masked_softmax_dropout(
+                   }
+                   v.store(&input_data[t]);
+                   */
+-                  for (auto i = 0; i < V; ++i) {
+-                    input_data[t + i] = static_cast<scalar_t>(std::exp(static_cast<accscalar_t>(v[i]) - hmax) * inv_denominator);
+-                  }
++                  input_data[t] = static_cast<scalar_t>(std::exp(static_cast<accscalar_t>(input_data[t]) - hmax) * inv_denominator);
+                 }
+               }
+             });

@@ -1,0 +1,18 @@
+The CUDA_VERSION returned by CMake's FindCUDA module only contains
+the major and minor version number, not the patch release.
+This makes the check if CUDA_VERSION is less than 11.4.1 broken,
+even though only CUDA 11.4.1 supports GCC 11 (11.4.0 does not).
+As we know which GCC and CUDA we're using, this patch just compares it to 11.4 anyway.
+
+Bob Dröge, University of Groningen, 2022-08-18
+--- amber20_src.orig/cmake/CudaConfig.cmake	2022-08-18 08:25:28.236089267 +0200
++++ amber20_src/cmake/CudaConfig.cmake	2022-08-18 08:24:27.122766862 +0200
+@@ -82,7 +82,7 @@
+ 		#  VERSION_EQUAL 10 means 10.0, so use a range for comparing major version.
+ 		if ( "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" AND (
+ 		       ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12
+-			AND CUDA_VERSION VERSION_GREATER_EQUAL 11.4.1
++			AND CUDA_VERSION VERSION_GREATER_EQUAL 11.4
+ 			AND CUDA_VERSION VERSION_LESS_EQUAL 11.7 )
+ 		    OR ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11
+ 			AND CUDA_VERSION VERSION_GREATER_EQUAL 11.1

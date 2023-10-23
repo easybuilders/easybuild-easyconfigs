@@ -1,0 +1,55 @@
+easyblock = 'PythonBundle'
+
+name = 'CoSymLib'
+version = '0.10.9'
+
+homepage = 'https://cosymlib.readthedocs.io'
+description = """Cosymlib is a python library for computing continuous symmetry & shape measures
+(CSMs & CShMs). Although its main aim is to provide simple and ready-to-use
+tools for the analysis of the symmetry & shape of molecules, many of the
+procedures contained in cosymlib can be easily applied to any finite
+geometrical object defined by a set of vertices or a by mass distribution
+function."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('matplotlib', '3.5.2'),
+    ('PyYAML', '6.0'),
+]
+
+use_pip = True
+
+# replace hardcoded library sonames for BLAS/LAPACK
+_fix_linker_blas = 'sed -i \'s/libraries=.*/libraries=["flexiblas", "gfortran"],/g\' setup.py &&'
+
+exts_list = [
+    ('symgroupy', '0.5.11', {
+        'checksums': ['bf59460d29ee707289c859d5e10e3984d3cd0536e5b7b001962f428cb73b3c22'],
+        'preinstallopts': _fix_linker_blas,
+    }),
+    ('wfnsympy', '0.3.5', {
+        'checksums': ['f1bede9d9e4efdc79e2a1a4f62b02bd7758908ce6bf91a2641150e0f65c32a6c'],
+        'preinstallopts': _fix_linker_blas,
+    }),
+    ('huckelpy', '0.2.3', {
+        'checksums': ['25a4309d4997332b1179de93bb5b6437c61f8ba198a9e0bcd3aec28b6cd6ce28'],
+    }),
+    ('cosymlib', version, {
+        'checksums': ['c3e74aa00570489cac609ce6f274a7b6626141948eb5a261d4b27c4e517cee94'],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['cchir', 'cosym', 'esym', 'gsym', 'mosym', 'shape',
+                                     'shape_classic', 'shape_map']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["cosym --version"]
+
+moduleclass = 'chem'

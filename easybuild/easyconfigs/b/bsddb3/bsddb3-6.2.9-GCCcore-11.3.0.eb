@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'bsddb3'
+version = '6.2.9'
+
+homepage = 'https://pypi.org/project/bsddb3/'
+description = """bsddb3 is a nearly complete Python binding of the
+Oracle/Sleepycat C API for the Database Environment, Database, Cursor,
+Log Cursor, Sequence and Transaction objects."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+]
+
+components = [
+    ('DB', '5.3.28', {
+        'source_urls': ['https://github.com/berkeleydb/libdb/releases/download/v%(version)s/'],
+        'sources': [SOURCELOWER_TAR_GZ],
+        'checksums': ['e0a992d740709892e81f9d93f06daf305cf73fb81b545afe72478043172c3628'],
+        'start_dir': '%(namelower)s-%(version)s',
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    (name, version, {
+        'preinstallopts': "unset LIBS && BERKELEYDB_DIR=%(installdir)s/ ",
+        'checksums': ['70d05ec8dc568f42e70fc919a442e0daadc2a905a1cfb7ca77f549d49d6e7801'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/db_archive', 'include/db.h', 'lib/libdb.a',
+              'lib/libdb.%s' % SHLIB_EXT],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+}
+
+moduleclass = 'data'

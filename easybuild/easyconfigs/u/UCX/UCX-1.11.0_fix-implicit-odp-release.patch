@@ -1,0 +1,26 @@
+A change in UCX 1.11.0 changed the signature of `uct_ib_mem_dereg` leading to
+an invalid pointer passed from `uct_ib_md_release_reg_method`.
+Fix this by passing in the correct struct instead, i.e. wrapping the pointer into `uct_md_mem_dereg_params_t`
+See: https://github.com/openucx/ucx/issues/9392
+Breaking commit (1.11+): https://github.com/openucx/ucx/commit/98a614188c026b7682f914ef62864a24fb44b464
+Code removed (1.15+): https://github.com/openucx/ucx/commit/de71ac67759879d9ce0659e696f0a4d371a7d382
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/src/uct/ib/base/ib_md.c b/src/uct/ib/base/ib_md.c
+index 3e7d4bdf8..4e844387e 100644
+--- a/src/uct/ib/base/ib_md.c
++++ b/src/uct/ib/base/ib_md.c
+@@ -1428,7 +1428,11 @@ static void uct_ib_md_release_reg_method(uct_ib_md_t *md)
+         ucs_rcache_destroy(md->rcache);
+     }
+     if (md->global_odp != NULL) {
+-        uct_ib_mem_dereg(&md->super, md->global_odp);
++        uct_md_mem_dereg_params_t params = {
++            .field_mask = UCT_MD_MEM_DEREG_FIELD_MEMH,
++            .memh       = md->global_odp
++        };
++        uct_ib_mem_dereg(&md->super, &params);
+     }
+ }
+ 

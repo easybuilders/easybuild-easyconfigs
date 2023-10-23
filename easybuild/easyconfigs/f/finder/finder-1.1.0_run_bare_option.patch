@@ -1,0 +1,84 @@
+adding option to the run_finder script, to be able to run without using singularity or docker
+author: Denis Kristak (INUITS)
+diff -ruN Finder-finder_v1.1.0_orig/run_finder Finder-finder_v1.1.0/run_finder
+--- Finder-finder_v1.1.0_orig/run_finder	2021-12-19 20:46:57.000000000 +0100
++++ Finder-finder_v1.1.0/run_finder	2022-12-15 12:08:39.120630477 +0100
+@@ -45,7 +45,7 @@
+     optional_named.add_argument( "--skip_cpd", "--skip_cpd", help = "Turn on this option to skip changepoint detection. Could be effective for grasses", action = "store_true" )
+     optional_named.add_argument( "--exonerate_gff3", "-egff3", help = "Enter the exonerate output in gff3 format" )
+     optional_named.add_argument( "--star_shared_mem", "--star_shared_mem", help = "Turn on this option if you want STAR to load the genome index into shared memory. This saves memory if multiple finder runs are executing on the same host, but might not work in your cluster environment.", action = "store_true" )
+-    optional_named.add_argument( "--framework", "-fm", help = "Enter your choice of framework", choices = ["docker", "singularity"], default = "docker" )
++    optional_named.add_argument( "--framework", "-fm", help = "Enter your choice of framework", choices = ["docker", "singularity", "bare"], default = "bare" )
+ 
+     # optional_named.add_argument("--intron_gff3","-intron_gff3",help="Enter the name and location of the file containing introns in gff3 format")
+     # optional_named.add_argument("--ground_truth_gtf","-gt_gtf",help="Enter the gtf filename of the actual annotation [for developmental purposes]")
+@@ -86,6 +86,12 @@
+     singularity_cmd += f" bash -c {command}"
+     os.system( singularity_cmd )
+ 
++def runBareCommand( command ):
++    """
++    Runs the command directly on the system
++    """
++    # Runs the main command
++    os.system( command )
+ 
+ def main():
+     commandLineArg = sys.argv
+@@ -98,8 +104,8 @@
+                     f"{'/'.join(options.genome.split('/')[:-1])}:{'/'.join(options.genome.split('/')[:-1])}",
+                     f"{options.output_directory}:{options.output_directory}"]
+ 
+-    cmd = f" \" ulimit -n $(ulimit -Hn) && "
+-    cmd += f" finder "
++    # cmd = f" \" "
++    cmd = f" finder "
+     cmd += f" --metadatafile {options.metadatafile} "
+     cmd += f" --output_directory {options.output_directory} "
+     cmd += f" --genome {options.genome} "
+@@ -137,20 +143,16 @@
+     cmd += f" --genemark_license {options.genemark_license}"
+     volumes_list.append( f"{'/'.join(options.genemark_license.split('/')[:-1])}:{'/'.join(options.genemark_license.split('/')[:-1])}" )
+ 
+-    cmd += f" \" "
++    # cmd += f" \" "
+ 
+     volumes_list = list( set( volumes_list ) )
+ 
+     os.system( f"mkdir -p {options.output_directory}" )
+-    os.system( f"which docker > {options.output_directory}/find_docker" )
+-    os.system( f"which singularity > {options.output_directory}/find_singularity" )
++    os.system( f"which docker > {options.output_directory}/find_docker 2> {options.output_directory}/find_docker.err" )
++    os.system( f"which singularity > {options.output_directory}/find_singularity 2> {options.output_directory}/find_singularity.err" )
+ 
+-    docker_installed = 1 if "Command not found" not in open( f"{options.output_directory}/find_docker", "r" ).read() else 0
+-    singularity_installed = 1 if "Command not found" not in open( f"{options.output_directory}/find_singularity", "r" ).read() else 0
+-
+-    if docker_installed == 0 and singularity_installed == 0:
+-        print( "You need to have either docker or singularity installed" )
+-        sys.exit()
++    docker_installed = 1 if "no docker in" not in open( f"{options.output_directory}/find_docker", "r" ).read() else 0
++    singularity_installed = 1 if "no singularity in" not in open( f"{options.output_directory}/find_singularity", "r" ).read() else 0
+ 
+     framework_of_choice = ""
+     if options.framework == "docker":
+@@ -165,6 +167,9 @@
+         else:
+             framework_of_choice = "docker"
+ 
++    elif options.framework == "bare":
++        framework_of_choice = "bare"
++
+     if framework_of_choice == "docker":
+         os.system( "docker pull sagnikbanerjee15/finder:1.1.0" )
+         runDockerCommand( name = "finder",
+@@ -189,6 +194,9 @@
+                             memory = '300g'
+             )
+ 
++    elif framework_of_choice == "bare":
++        runBareCommand(command=cmd)
++
+ 
+ if __name__ == "__main__":
+     main()

@@ -1,0 +1,54 @@
+easyblock = 'Bundle'
+
+name = 'TOPAS'
+version = '3.9'
+
+homepage = 'https://www.topasmc.org'
+description = """TOPAS wraps and extends the Geant4 Simulation Toolkit to make advanced Monte Carlo simulation of all
+forms of radiotherapy easier to use for medical physicists."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('expat', '2.4.9'),
+    ('X11', '20221110'),
+    ('Mesa', '22.2.4'),
+    ('libGLU', '9.0.2'),
+    ('Qt5', '5.15.7'),
+    ('HarfBuzz', '5.3.1'),
+    ('GDCM', '3.0.21'),
+    ('CLHEP', '2.4.6.4'),
+]
+
+local_geant4_configopts = "-DEXPAT_LIBRARY=$EBROOTEXPAT/lib/libexpat.so -DEXPAT_INCLUDE_DIR=$EBROOTEXPAT/include"
+local_geant4_configopts += " -DCLHEP_ROOT_DIR=$EBROOTCLHEP -DGEANT4_INSTALL_DATA=OFF -DGEANT4_BUILD_MULTITHREADED=ON "
+
+components = [
+    # TOPAS required Geant4 10.x, which must be built with multi-threading support
+    ('Geant4', '10.7.4', {
+        'github_account': 'Geant4',
+        'source_urls': [GITHUB_SOURCE],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}],
+        'checksums': ['602b41dfee1fa6b33b026d00c5bd940155d7e5d0b3495230a87e2a25b28f9996'],
+        'start_dir': 'geant4-%(version)s',
+        'configopts': local_geant4_configopts,
+    }),
+    (name, version, {
+        'easyblock': 'CMakeMake',
+        'download_instructions': "Manual download required, see https://www.topasmc.org/download",
+        'sources': ['topas_%(version_major)s_%(version_minor)s.zip'],
+        'checksums': ['57739f8df5fe58f47b2cc5ac646b4776ab137d52640c6e5b1f6cd199ed3c7b0f'],
+        'start_dir': 'topas_%(version_major)s_%(version_minor)s',
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/topas', 'lib/libchemistry.a', 'lib/libG4run.%s' % SHLIB_EXT, 'lib/libmain.a', 'lib/libphysics.a'],
+    'dirs': ['examples', 'include'],
+}
+
+moduleclass = 'phys'

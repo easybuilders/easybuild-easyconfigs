@@ -1,0 +1,50 @@
+easyblock = "PythonPackage"
+
+name = 'GPAW'
+version = '22.8.0'
+
+homepage = 'https://wiki.fysik.dtu.dk/gpaw/'
+description = """GPAW is a density-functional theory (DFT) Python code based on the projector-augmented wave (PAW)
+ method and the atomic simulation environment (ASE). It uses real-space uniform grids and multigrid methods or
+ atom-centered basis-functions."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'usempi': True, 'openmp': False}
+
+source_urls = [PYPI_LOWER_SOURCE]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    ('GPAW-20.1.0-Add-Easybuild-configuration-files.patch', 1),
+    ('GPAW-22.8.0-Remove-MPI-compiler-hack.patch', 0),
+]
+checksums = [
+    '311eae8cb046f720e77e2e955042758c6e66d37c1fcbaf5d35e2834294a4ed6c',  # gpaw-22.8.0.tar.gz
+    # GPAW-20.1.0-Add-Easybuild-configuration-files.patch
+    '2b337399479bf018a86156ed073dd7a78ec8c0df1f28b015f9284c6bf9fa5f15',
+    '44ca47fefb1bd409bae7da0a2f35125571dc927dc98f7cbca948ce86d25aa77e',  # GPAW-22.8.0-Remove-MPI-compiler-hack.patch
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('SciPy-bundle', '2021.10'),
+    ('ASE', '3.22.1'),
+    ('libxc', '5.1.6'),
+    ('PyYAML', '5.4.1'),
+    ('libvdwxc', '0.4.0'),
+    ('GPAW-setups', '0.9.20000', '', SYSTEM),
+]
+
+prebuildopts = 'GPAW_CONFIG=doc/platforms/Linux/EasyBuild/config_foss.py'
+preinstallopts = prebuildopts
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/gpaw%s' % x for x in ['', '-analyse-basis', '-basis', '-plot-parallel-timings',
+                                         '-runscript', '-setup', '-upfplot']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages']
+}
+
+moduleclass = 'chem'

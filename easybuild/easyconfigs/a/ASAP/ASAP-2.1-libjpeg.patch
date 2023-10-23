@@ -1,0 +1,41 @@
+# Author: Robert Jan Schlimbach (SURF)
+# ASAP/2.1 uses DCMKT jpeg sources directly by manually setting a PATH
+# see https://github.com/computationalpathologygroup/ASAP/issues/32
+# we simply replace DCMTK jpeg with the default jpeglib header.
+# Need to rename jpeg_mem_src to avoid a resulting name conflic.
+
+diff --git a/multiresolutionimageinterface/VSIImage.cpp b/multiresolutionimageinterface/VSIImage.cpp
+index 509bb18..1763201 100644
+--- a/multiresolutionimageinterface/VSIImage.cpp
++++ b/multiresolutionimageinterface/VSIImage.cpp
+@@ -11,7 +11,7 @@
+ // Include DCMTK LIBJPEG for lossy and lossless JPEG compression
+ extern "C" {
+ #define boolean ijg_boolean
+-#include "dcmtk/dcmjpeg/libijg8/jpeglib8.h"
++#include "jpeglib.h"
+ #include "jpeg_mem_src.h"
+ #undef boolean
+ #undef const
+@@ -234,7 +234,7 @@ char* VSIImage::decodeTile(int no, int row, int col) const {
+       jpeg_source_mgr src_mem;
+       jpeg_create_decompress(&cinfo);
+       cinfo.err = jpeg_std_error(&jerr);      
+-      jpeg_mem_src(&cinfo, &src_mem, (void*)buf, size);
++      jpeg_mem_src_asap(&cinfo, &src_mem, (void*)buf, size);
+       jpeg_read_header(&cinfo, true);
+       if (_compressionType == 2) {
+         cinfo.jpeg_color_space = JCS_YCbCr;
+diff --git a/multiresolutionimageinterface/jpeg_mem_src.h b/multiresolutionimageinterface/jpeg_mem_src.h
+index b9b91e9..13b9040 100644
+--- a/multiresolutionimageinterface/jpeg_mem_src.h
++++ b/multiresolutionimageinterface/jpeg_mem_src.h
+@@ -47,7 +47,7 @@ static void mem_skip_input_data( j_decompress_ptr cinfo, long num_bytes )
+ 	}
+ }
+ 
+-static void jpeg_mem_src( j_decompress_ptr cinfo, jpeg_source_mgr * const src, void const * const buffer, long nbytes )
++static void jpeg_mem_src_asap( j_decompress_ptr cinfo, jpeg_source_mgr * const src, void const * const buffer, long nbytes )
+ {
+     src->init_source = mem_init_source;
+     src->fill_input_buffer = mem_fill_input_buffer;

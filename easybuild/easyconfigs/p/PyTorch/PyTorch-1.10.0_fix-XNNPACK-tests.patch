@@ -1,0 +1,236 @@
+When XNNPACK is disabled tests run into assertion failures.
+Fix by using (most of) https://github.com/pytorch/pytorch/pull/72642
+
+Author: Digant Desai <digantdesai@fb.com>
+
+Backported by Alexander Grund (TU Dresden)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0c11507838..5b74b7f63c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -275,7 +275,14 @@ option(USE_LITE_INTERPRETER_PROFILER "Enable " ON)
+ option(USE_VULKAN_FP16_INFERENCE "Vulkan - Use fp16 inference" OFF)
+ option(USE_VULKAN_RELAXED_PRECISION "Vulkan - Use relaxed precision math in the kernels (mediump)" OFF)
+ option(USE_VULKAN_SHADERC_RUNTIME "Vulkan - Use runtime shader compilation as opposed to build-time (needs libshaderc)" OFF)
+-option(USE_XNNPACK "Use XNNPACK" ON)
++# option USE_XNNPACK: try to enable xnnpack by default.
++set(XNNPACK_MIN_CMAKE_VER 3.12)
++cmake_dependent_option(
++    USE_XNNPACK "Use XNNPACK. Requires cmake >= ${XNNPACK_MIN_CMAKE_VER}." ON
++    "CMAKE_VERSION VERSION_GREATER_EQUAL ${XNNPACK_MIN_CMAKE_VER}" OFF)
++if(NOT USE_XNNPACK AND CMAKE_VERSION VERSION_LESS ${XNNPACK_MIN_CMAKE_VER})
++  message(WARNING "USE_XNNPACK is set to OFF. XNNPACK requires CMake version ${XNNPACK_MIN_CMAKE_VER} or greater.")
++endif()
+ option(USE_ZMQ "Use ZMQ" OFF)
+ option(USE_ZSTD "Use ZSTD" OFF)
+ # Ensure that an MKLDNN build is the default for x86 CPUs
+diff --git a/cmake/Summary.cmake b/cmake/Summary.cmake
+index 6d021536c1..7c1ac64539 100644
+--- a/cmake/Summary.cmake
++++ b/cmake/Summary.cmake
+@@ -165,6 +165,7 @@ function(caffe2_print_configuration_summary)
+   message(STATUS "  USE_PROF              : ${USE_PROF}")
+   message(STATUS "  USE_QNNPACK           : ${USE_QNNPACK}")
+   message(STATUS "  USE_PYTORCH_QNNPACK   : ${USE_PYTORCH_QNNPACK}")
++  message(STATUS "  USE_XNNPACK           : ${USE_XNNPACK}")
+   message(STATUS "  USE_REDIS             : ${USE_REDIS}")
+   message(STATUS "  USE_ROCKSDB           : ${USE_ROCKSDB}")
+   message(STATUS "  USE_ZMQ               : ${USE_ZMQ}")
+diff --git a/test/jit/test_optimize_for_mobile_preserve_debug_info.py b/test/jit/test_optimize_for_mobile_preserve_debug_info.py
+index c08f3b5838..1b93f54c15 100644
+--- a/test/jit/test_optimize_for_mobile_preserve_debug_info.py
++++ b/test/jit/test_optimize_for_mobile_preserve_debug_info.py
+@@ -1,8 +1,8 @@
+ import torch
+ import torch._C
+-import torch.backends.xnnpack
+ import torch.nn.functional as F
+ from torch.testing._internal.jit_utils import JitTestCase
++from torch.testing._internal.common_utils import skipIfNoXNNPACK
+ 
+ class TestOptimizeForMobilePreserveDebugInfo(JitTestCase):
+     def check_replacement(
+@@ -34,6 +34,7 @@ class TestOptimizeForMobilePreserveDebugInfo(JitTestCase):
+                     original_source_ranges[replacements[node.kind()]],
+                 )
+ 
++    @skipIfNoXNNPACK
+     def test_replace_conv1d_with_conv2d(self):
+         class TestConv1d(torch.nn.Module):
+             def __init__(self, weight, bias):
+@@ -61,6 +62,7 @@ class TestOptimizeForMobilePreserveDebugInfo(JitTestCase):
+             jit_pass=torch._C._jit_pass_transform_conv1d_to_conv2d,
+         )
+ 
++    @skipIfNoXNNPACK
+     def test_insert_pre_packed_linear_before_inline_and_conv_2d_op(self):
+         class TestPrepackedLinearBeforeInlineAndConv2dOp(torch.nn.Module):
+             def __init__(
+@@ -137,6 +139,7 @@ class TestOptimizeForMobilePreserveDebugInfo(JitTestCase):
+             jit_pass=torch._C._jit_pass_insert_prepacked_ops,
+         )
+ 
++    @skipIfNoXNNPACK
+     def test_insert_pre_packed_linear_op(self):
+         self.check_replacement(
+             model=torch.jit.trace(torch.nn.Linear(5, 4), torch.rand(3, 2, 5)),
+@@ -228,6 +231,7 @@ class TestOptimizeForMobilePreserveDebugInfo(JitTestCase):
+             jit_pass=torch._C._jit_pass_fuse_clamp_w_prepacked_linear_conv,
+         )
+ 
++    @skipIfNoXNNPACK
+     def test_fuse_activation_with_pack_ops_linear_conv2d_1(self):
+         self.run_test_fuse_activation_with_pack_ops_linear_conv2d(
+             linear_activation=F.hardtanh,
+@@ -236,6 +240,7 @@ class TestOptimizeForMobilePreserveDebugInfo(JitTestCase):
+             conv2d_activation_kind="aten::hardtanh_"
+         )
+ 
++    @skipIfNoXNNPACK
+     def test_fuse_activation_with_pack_ops_linear_conv2d_2(self):
+         self.run_test_fuse_activation_with_pack_ops_linear_conv2d(
+             linear_activation=F.hardtanh_,
+@@ -244,6 +249,7 @@ class TestOptimizeForMobilePreserveDebugInfo(JitTestCase):
+             conv2d_activation_kind="aten::hardtanh"
+         )
+ 
++    @skipIfNoXNNPACK
+     def test_fuse_activation_with_pack_ops_linear_conv2d_3(self):
+         self.run_test_fuse_activation_with_pack_ops_linear_conv2d(
+             linear_activation=F.relu,
+@@ -252,6 +258,7 @@ class TestOptimizeForMobilePreserveDebugInfo(JitTestCase):
+             conv2d_activation_kind="aten::relu_"
+         )
+ 
++    @skipIfNoXNNPACK
+     def test_fuse_activation_with_pack_ops_linear_conv2d_4(self):
+         self.run_test_fuse_activation_with_pack_ops_linear_conv2d(
+             linear_activation=F.relu_,
+diff --git a/test/test_mobile_optimizer.py b/test/test_mobile_optimizer.py
+index 19f07e2454..21ae5d3ee9 100644
+--- a/test/test_mobile_optimizer.py
++++ b/test/test_mobile_optimizer.py
+@@ -1,9 +1,8 @@
+ import unittest
+ import torch
+ import torch.nn as nn
+-import torch.backends.xnnpack
+ import torch.utils.bundled_inputs
+-from torch.testing._internal.common_utils import TestCase, run_tests
++from torch.testing._internal.common_utils import TestCase, run_tests, skipIfNoXNNPACK
+ from torch.testing._internal.jit_utils import get_forward, get_forward_graph
+ from torch.utils.mobile_optimizer import (LintCode,
+                                           generate_mobile_module_lints,
+@@ -22,9 +21,7 @@ FileCheck = torch._C.FileCheck
+ 
+ class TestOptimizer(TestCase):
+ 
+-    @unittest.skipUnless(torch.backends.xnnpack.enabled,
+-                         " XNNPACK must be enabled for these tests."
+-                         " Please build with USE_XNNPACK=1.")
++    @skipIfNoXNNPACK
+     def test_optimize_for_mobile(self):
+         batch_size = 2
+         input_channels_per_group = 6
+@@ -263,9 +260,7 @@ class TestOptimizer(TestCase):
+             rtol=1e-2,
+             atol=1e-3)
+ 
+-    @unittest.skipUnless(torch.backends.xnnpack.enabled,
+-                         " XNNPACK must be enabled for these tests."
+-                         " Please build with USE_XNNPACK=1.")
++    @skipIfNoXNNPACK
+     def test_quantized_conv_no_asan_failures(self):
+         # There were ASAN failures when fold_conv_bn was run on
+         # already quantized conv modules. Verifying that this does
+@@ -359,6 +354,7 @@ class TestOptimizer(TestCase):
+         bi_module_lint_list = generate_mobile_module_lints(bi_module)
+         self.assertEqual(len(bi_module_lint_list), 0)
+ 
++    @skipIfNoXNNPACK
+     def test_preserve_bundled_inputs_methods(self):
+         class MyBundledInputModule(torch.nn.Module):
+             def __init__(self):
+@@ -413,9 +409,7 @@ class TestOptimizer(TestCase):
+         incomplete_bi_module_optim = optimize_for_mobile(incomplete_bi_module, preserved_methods=['get_all_bundled_inputs'])
+         self.assertTrue(hasattr(incomplete_bi_module_optim, 'get_all_bundled_inputs'))
+ 
+-    @unittest.skipUnless(torch.backends.xnnpack.enabled,
+-                         " XNNPACK must be enabled for these tests."
+-                         " Please build with USE_XNNPACK=1.")
++    @skipIfNoXNNPACK
+     def test_hoist_conv_packed_params(self):
+ 
+         if 'qnnpack' not in torch.backends.quantized.supported_engines:
+@@ -509,6 +503,7 @@ class TestOptimizer(TestCase):
+             m_optim_res = m_optim(data)
+             torch.testing.assert_close(m_res, m_optim_res, rtol=1e-2, atol=1e-3)
+ 
++    @skipIfNoXNNPACK
+     @unittest.skipUnless(HAS_TORCHVISION, "Needs torchvision")
+     def test_mobilenet_optimize_for_mobile(self):
+         m = torchvision.models.mobilenet_v3_small()
+diff --git a/test/test_model_dump.py b/test/test_model_dump.py
+index 417bb2a91a..e4a9ffa1bd 100644
+--- a/test/test_model_dump.py
++++ b/test/test_model_dump.py
+@@ -8,9 +8,10 @@ import urllib
+ import unittest
+ 
+ import torch
++import torch.backends.xnnpack
+ import torch.utils.model_dump
+ import torch.utils.mobile_optimizer
+-from torch.testing._internal.common_utils import TestCase, run_tests, IS_WINDOWS
++from torch.testing._internal.common_utils import TestCase, run_tests, IS_WINDOWS, skipIfNoXNNPACK
+ from torch.testing._internal.common_quantized import supported_qengines
+ 
+ 
+@@ -170,6 +171,7 @@ class TestModelDump(TestCase):
+         qmodel = self.get_quant_model()
+         self.do_dump_model(torch.jit.script(qmodel))
+ 
++    @skipIfNoXNNPACK
+     @unittest.skipUnless("qnnpack" in supported_qengines, "QNNPACK not available")
+     def test_optimized_quantized_model(self):
+         qmodel = self.get_quant_model()
+diff --git a/test/test_xnnpack_integration.py b/test/test_xnnpack_integration.py
+index a0f8328ec6..a737ed4b8b 100644
+--- a/test/test_xnnpack_integration.py
++++ b/test/test_xnnpack_integration.py
+@@ -51,7 +51,6 @@ class TestXNNPACKOps(TestCase):
+         output_linearprepacked = torch.ops.prepacked.linear_clamp_run(input_data, packed_weight_bias)
+         torch.testing.assert_close(ref_result, output_linearprepacked, rtol=1e-2, atol=1e-3)
+ 
+-
+     @given(batch_size=st.integers(0, 3),
+            input_channels_per_group=st.integers(1, 32),
+            height=st.integers(5, 64),
+diff --git a/torch/testing/_internal/common_utils.py b/torch/testing/_internal/common_utils.py
+index b4ef79620d..18d8925d6a 100644
+--- a/torch/testing/_internal/common_utils.py
++++ b/torch/testing/_internal/common_utils.py
+@@ -56,6 +56,7 @@ from torch._six import string_classes
+ from torch import Tensor
+ import torch.backends.cudnn
+ import torch.backends.mkl
++import torch.backends.xnnpack
+ from enum import Enum
+ 
+ torch.backends.disable_global_flags()
+@@ -908,6 +909,14 @@ def _test_function(fn, device):
+         return fn(self, device)
+     return run_test_function
+ 
++def skipIfNoXNNPACK(fn):
++    @wraps(fn)
++    def wrapper(*args, **kwargs):
++        if not torch.backends.xnnpack.enabled:
++            raise unittest.SkipTest('XNNPACK must be enabled for these tests. Please build with USE_XNNPACK=1.')
++        else:
++            fn(*args, **kwargs)
++    return wrapper
+ 
+ def skipIfNoLapack(fn):
+     @wraps(fn)

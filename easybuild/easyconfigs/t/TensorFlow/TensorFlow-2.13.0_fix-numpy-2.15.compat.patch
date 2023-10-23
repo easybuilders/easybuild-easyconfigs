@@ -1,0 +1,41 @@
+From eb5ea898c848f18a2c9d86102f7f111f19874ecc Mon Sep 17 00:00:00 2001
+From: Peter Hawkins <phawkins@google.com>
+Date: Wed, 19 Jul 2023 11:47:45 -0700
+Subject: [PATCH] [NumPy] Fix test failures under NumPy 1.25.
+
+PiperOrigin-RevId: 549381271
+---
+ tensorflow/python/eager/core_test.py | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/tensorflow/python/eager/core_test.py b/tensorflow/python/eager/core_test.py
+index 6e919d6deab96..bbac4a1833e34 100644
+--- a/tensorflow/python/eager/core_test.py
++++ b/tensorflow/python/eager/core_test.py
+@@ -318,8 +318,6 @@ def testEqualityBroadcast(self):
+         bool(np_a == np_c)
+       self.assertAllEqual(np_a == np_c, [[True, True], [True, True]])
+       self.assertAllEqual(np_a == np_d, [[True, False], [True, False]])
+-      self.assertFalse(bool(np_a == np_e))
+-      self.assertTrue(bool(np_a != np_e))
+       self.assertNotAllEqual(np_a, np_e)
+     finally:
+       if default:
+
+Basically reverts https://github.com/tensorflow/tensorflow/commit/90389e9353b804246e5661cc727a3a7fd1f98066
+Test failure fixed by the above
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/tensorflow/tools/pip_package/setup.py b/tensorflow/tools/pip_package/setup.py
+index e77e6f81449..36c8ba3f030 100644
+--- a/tensorflow/tools/pip_package/setup.py
++++ b/tensorflow/tools/pip_package/setup.py
+@@ -90,6 +90,6 @@ REQUIRED_PACKAGES = [
+     'google_pasta >= 0.1.1',
+     'h5py >= 2.9.0',
+-    'numpy >= 1.22, <= 1.24.3',
++    'numpy >= 1.22',
+     'opt_einsum >= 2.3.2',
+     'packaging',
+     'protobuf>=3.20.3,<5.0.0dev,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5',

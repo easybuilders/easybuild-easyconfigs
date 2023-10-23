@@ -1,0 +1,57 @@
+# with thanks to ComputeCanada for the initial easyconfig for 1.0.2-iomkl-2017.5.211.eb
+# updated for 1.4.2 by BEAR Software team at University of Birmingham
+easyblock = "CMakeMakeCp"
+
+name = 'ALAMODE'
+version = '1.4.2'
+
+homepage = 'http://alamode.readthedocs.io/en/latest/index.html'
+description = """ALAMODE is an open source software designed for analyzing lattice anharmonicity
+ and lattice thermal conductivity of solids. By using an external DFT package such as VASP and
+ Quantum ESPRESSO, you can extract harmonic and anharmonic force constants straightforwardly with ALAMODE.
+ Using the calculated anharmonic force constants, you can also estimate lattice thermal conductivity,
+ phonon linewidth, and other anharmonic phonon properties from first principles.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://github.com/ttadano/alamode/archive/']
+sources = ['v.%(version)s.tar.gz']
+checksums = ['18fb80a183c2a9b68488aeeccd6efa95e8c21d4cb21b08319a557389d55c067a']
+
+builddependencies = [
+    ('binutils', '2.39'),
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('Boost', '1.81.0'),
+    ('Eigen', '3.4.0'),
+    ('spglib', '2.0.2'),
+    ('FFTW', '3.3.10'),
+    ('HDF5', '1.14.0'),
+    ('Python', '3.10.8'),
+]
+
+configopts = ' '.join([
+    "-DWITH_HDF5_SUPPORT=yes",
+    "-DUSE_MKL_FFT=no",
+    "-DSPGLIB_ROOT=$EBROOTSPGLIB"
+])
+
+local_binary_files = [
+    "alm/alm", "anphon/anphon", "tools/analyze_phonons", "tools/dfc2", "tools/fc_virtual",
+    "tools/parse_fcsxml", "tools/qe2alm", "tools/analyze_phonons.py", "tools/displace.py", "tools/extract.py",
+    "tools/GenDisplacement.py", "tools/makedisp_qe.py", "tools/plotband.py", "tools/plotdos.py",
+    "tools/scph_to_qefc.py",
+]
+
+files_to_copy = [([x for x in local_binary_files], 'bin'), 'docs', 'example']
+
+sanity_check_paths = {
+    'files': ['bin/alm'],
+    'dirs': ["docs", "example"]
+}
+
+moduleclass = 'chem'

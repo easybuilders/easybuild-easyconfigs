@@ -1,0 +1,51 @@
+easyblock = 'PythonBundle'
+
+name = 'QUAST'
+version = '5.2.0'
+
+homepage = 'https://github.com/ablab/quast'
+description = """QUAST evaluates genome assemblies by computing various metrics.
+It works both with and without reference genomes. The tool accepts multiple
+assemblies, thus is suitable for comparison."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('Perl', '5.34.1'),
+    ('matplotlib', '3.5.2'),
+    ('Java', '11', '', SYSTEM),
+    ('Boost', '1.79.0'),
+]
+
+use_pip = True
+
+github_account = 'ablab'
+exts_list = [
+    (name, version, {
+        'source_urls': [GITHUB_LOWER_SOURCE],
+        'sources': ['%(namelower)s_%(version)s.tar.gz'],
+        'checksums': ['db903a6e4dd81384687f1c38d47cbe0f51bdf7f6d5e5c0bd30c13796391f4f04'],
+        'modulename': 'quast_libs',
+    }),
+]
+
+postinstallcmds = [
+    "cd %(installdir)s/bin && ln -s %(namelower)s.py %(namelower)s",
+    "cp -a %(builddir)s/QUAST/quast*%(version)s/test_data %(installdir)s/",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/%(namelower)s.py', 'bin/meta%(namelower)s.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'test_data'],
+}
+
+sanity_check_commands = [
+    "quast -h",
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/test_data %(builddir)s && cd %(builddir)s && quast.py --test",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

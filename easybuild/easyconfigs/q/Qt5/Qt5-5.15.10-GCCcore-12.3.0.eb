@@ -1,0 +1,90 @@
+easyblock = 'EB_Qt'
+
+name = 'Qt5'
+version = '5.15.10'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+]
+sources = ['qt-everywhere-opensource-src-%(version)s.tar.xz']
+patches = [
+    'Qt5-5.13.1_fix-avx2.patch',
+    'Qt5-5.13.1_fix-qmake-libdir.patch',
+    'Qt5-5.15.10_fix-OF-Gentoo.patch',
+    'Qt5-5.15.10_fix-qtwebengine-breakpad-glibc-2.34.patch',
+    'Qt5-5.15.7_GCC-12.patch',
+    'Qt5-5.15.10_webengine-chromium-drop-catapult.patch',
+    'Qt5-5.15.10_webengine-chromium-python3.patch',
+    'Qt5-5.15.10_webengine-drop-catapult.patch',
+    'Qt5-5.15.10_webengine-python3.patch',
+    'Qt5-5.15.10_webengine-python3.11.patch',
+]
+checksums = [
+    {'qt-everywhere-opensource-src-5.15.10.tar.xz': 'b545cb83c60934adc9a6bbd27e2af79e5013de77d46f5b9f5bb2a3c762bf55ca'},
+    {'Qt5-5.13.1_fix-avx2.patch': '6f46005f056bf9e6ff3e5d012a874d18ee03b33e685941f2979c970be91a9dbc'},
+    {'Qt5-5.13.1_fix-qmake-libdir.patch': '511ca9c0599ceb1989f73d8ceea9199c041512d3a26ee8c5fd870ead2c10cb63'},
+    {'Qt5-5.15.10_fix-OF-Gentoo.patch': '1c4d3b974422dadb4fd62f79581d48d25ae3d5f5f21489ae8c632e43e2e5286b'},
+    {'Qt5-5.15.10_fix-qtwebengine-breakpad-glibc-2.34.patch':
+     '3b536de3b2da9115d96323a00275fc6066bb048f3747f8e6971facd78ed4e2e2'},
+    {'Qt5-5.15.7_GCC-12.patch': '9a5bde91b223a3e2e90d3d6bec107af69a1a0f18d789593738a953080473fa68'},
+    {'Qt5-5.15.10_webengine-chromium-drop-catapult.patch':
+     '6325c6f63b144755fcf040614178923406d7526517d58b29d99b100919acec54'},
+    {'Qt5-5.15.10_webengine-chromium-python3.patch':
+     '128d58c1e83f551daec6e9122fc1cea07be76b79d4e99222969649be24334e1e'},
+    {'Qt5-5.15.10_webengine-drop-catapult.patch': '7a488a0d73b7a9f33a2bdb87996f0a16938f5f882385190833679d1d17684907'},
+    {'Qt5-5.15.10_webengine-python3.patch': '0e35606506cb218841e05d38214ec6a442f7481630c2d856a09b7863af304023'},
+    {'Qt5-5.15.10_webengine-python3.11.patch': '8486fc234de2cdf8a600b204bac5d8eb2bc0bc9b1b1d365505f801c4a201f9c3'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '1.9.5'),
+    # deps for QtWebEngine
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('gperf', '3.1'),
+    ('Ninja', '1.11.1'),
+    ('Python', '3.11.3'),
+    ('re2c', '3.1'),
+]
+
+dependencies = [
+    ('double-conversion', '3.3.0'),
+    ('GLib', '2.77.1'),
+    ('PCRE2', '10.42'),
+    ('libpng', '1.6.39'),
+    ('HarfBuzz', '5.3.1'),
+    ('graphite2', '1.3.14'),
+    # deps for QtWebEngine
+    ('X11', '20230603'),
+    ('fontconfig', '2.14.2'),
+    ('DBus', '1.15.4'),
+    ('libevent', '2.1.12'),
+    ('libGLU', '9.0.3'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('NSS', '3.89.1'),
+    ('snappy', '1.1.10'),
+    ('JasPer', '4.0.0'),
+    ('bzip2', '1.0.8'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('ICU', '73.2'),
+    ('nodejs', '18.17.1'),
+]
+
+# qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
+# qtwayland fails to build on (some) Centos 7 systems
+configopts = '-skip qtgamepad  -skip qtwayland'
+
+# make sure QtWebEngine component is being built & installed
+check_qtwebengine = True
+
+moduleclass = 'devel'

@@ -1,0 +1,50 @@
+easyblock = 'PythonBundle'
+
+name = 'CIRIquant'
+local_commit = '2d0663e'
+version = '1.1.2-20221201'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/bioinfo-biols/CIRIquant'
+description = "CIRIquant is a comprehensive analysis pipeline for circRNA detection and quantification in RNA-Seq data"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('SciPy-bundle', '2021.10', versionsuffix),
+    ('PyYAML', '5.4.1', versionsuffix),
+    ('Pysam', '0.17.0', versionsuffix),
+    ('scikit-learn', '0.20.4', versionsuffix),
+]
+
+use_pip = True
+
+exts_list = [
+    ('argparse', '1.4.0', {
+        'checksums': ['62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/bioinfo-biols/CIRIquant/archive/'],
+        'sources': [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}],
+        'checksums': ['4990122c0eb820b1ec9cfc64fcfe49d3f9680dae69719dba3f8a7d77f9c3ff54'],
+        # relax numpy version requirement, no actual need for 1.22.0
+        # (cfr. https://github.com/bioinfo-biols/CIRIquant/pull/39),
+        # and remove very strict version requirements for all required Python packages
+        'preinstallopts': "sed -i 's/numpy==1.22.0/numpy==1.16.4/g' setup.py && sed -i 's/==/>=/g' setup.py && ",
+        'modulename': 'CIRIquant',
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/CIRIquant'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["CIRIquant --help"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages/CIRIquant'}
+
+moduleclass = 'bio'

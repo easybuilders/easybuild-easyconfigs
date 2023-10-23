@@ -1,0 +1,57 @@
+# Written by Tom Strempel <tom.strempel@ufz.de>
+# Modified by Ben Langenberg <ben.langenberg@ufz.de>
+easyblock = "CMakeMake"
+
+name = 'ecFlow'
+version = '5.7.0'
+
+homepage = "https://ecflow.readthedocs.io/en/latest/index.html"
+description = """ecFlow is a client/server workflow package that enables users
+ to run a large number of programs (with dependencies on each other and on time)
+ in a controlled environment. It provides reasonable tolerance for hardware and
+ software failures, combined with restart capabilities.
+ It is used at ECMWF to run all our operational suites across a range of platforms."""
+
+toolchain = {'name': 'GCC', 'version': '10.2.0'}
+
+source_urls = ['https://confluence.ecmwf.int/download/attachments/8650755/']
+sources = ['%(name)s-%(version)s-Source.tar.gz']
+checksums = ['70cbabde5da705239a9e27b1e053dae4bdbee6c604c571a5ff07b47d0a84732f']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('Doxygen', '1.8.20'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Boost', '1.74.0'),
+    ('Boost.Python', '1.74.0'),
+    ('Qt5', '5.14.2'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+configopts = " ".join([
+    "-DBOOST_ROOT=$EBROOTBOOST",
+    "-DENABLE_STATIC_BOOST_LIBS=OFF",
+    "-DBoost_PYTHON38_LIBRARY_RELEASE=$EBROOTBOOSTPYTHON/lib/libboost_python38.so",
+    "-DPython3_ROOT_DIR=$EBROOTPYTHON",
+    "-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python",
+    "-DPython3_INCLUDE_DIRS=$EBROOTPYTHON/include/python%(pyshortver)s",
+    "-DPython3_LIBRARIES=$EBROOTPYTHON/lib/libpython%%(pyshortver)s.%s" % SHLIB_EXT,
+])
+prebuildopts = 'export LDFLAGS="$LDFLAGS -lssl" && '
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+sanity_check_paths = {
+    'files': ['bin/ecflow_client', 'bin/ecflow_server'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/ecflow', 'share/ecflow/etc'],
+}
+
+sanity_check_commands = [
+    "ecflow_client --help",
+    "python -c 'import ecflow'",
+]
+
+moduleclass = "vis"

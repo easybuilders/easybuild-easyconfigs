@@ -1,0 +1,67 @@
+easyblock = 'PythonPackage'
+
+name = 'GBprocesS'
+local_commit = '26119ab3'
+version = '4.0.0.post1'
+
+homepage = 'https://gbprocess.readthedocs.io/'
+description = """GBprocesS allows for the extraction of genomic inserts from NGS
+data for GBS experiments. Preprocessing is performed in different stages that
+are part of a linear pipeline where the steps are performed in order. GBprocesS
+provides a flexible way to adjust the functionality to your needs, as the
+operations required and the execution order vary depending on the GBS protocol
+used."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+# need to use git_config rather than just downloading source tarball,
+# because .git subdirectory is required by setuptools-scm to determine version
+sources = [{
+    'filename': 'GBprocesS-%%(version)s-%s.tar.gz' % local_commit,
+    'git_config': {
+        'url': 'https://gitlab.com/ilvo',
+        'repo_name': name,
+        'commit': local_commit,
+        'keep_git_dir': True,
+    },
+}]
+checksums = [None]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('cutadapt', '4.2'),
+    ('Biopython', '1.79'),
+    ('PEAR', '0.9.11'),
+]
+
+use_pip = True
+download_dep_fail = True
+
+preinstallopts = "sed -i 's/cutadapt~=3.5.0/cutadapt/g' setup.cfg && "
+
+postinstallcmds = ["cp -a test %(installdir)s"]
+
+sanity_check_paths = {
+    'files': ['bin/gbprocess'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'test'],
+}
+
+sanity_check_commands = [
+    "mkdir -p %(builddir)s/GBprocesS",
+    "cd %(builddir)s/GBprocesS && cp -a %(installdir)s/test . && python -m unittest discover -v -s ./test -p test_*.py",
+    "touch %(builddir)s/17146FL-13-01-01_S97_L002_R1_001.fastq",
+    "touch %(builddir)s/17146FL-13-01-01_S97_L002_R2_001.fastq",
+    # Trivial configuration file to use when running gbprocess sanity check
+    # See https://gitlab.com/dschaumont/GBprocesS/-/blob/master/docs/user_guide.rst
+    "echo '[General]' > %(builddir)s/config.ini",
+    "echo 'cores = 1' >>  %(builddir)s/config.ini",
+    "echo 'input_directory = %(builddir)s/' >>  %(builddir)s/config.ini",
+    "echo 'sequencing_type = pe' >>  %(builddir)s/config.ini",
+    "echo 'input_file_name_template = {run:25}_R{orientation:1}_001{extension}' >>  %(builddir)s/config.ini",
+    "echo 'temp_dir = %(builddir)s/' >>  %(builddir)s/config.ini",
+    "gbprocess --debug -c %(builddir)s/config.ini",
+]
+
+sanity_pip_check = True
+
+moduleclass = 'bio'

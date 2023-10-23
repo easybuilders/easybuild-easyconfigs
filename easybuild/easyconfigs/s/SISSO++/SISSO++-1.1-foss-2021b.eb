@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'SISSO++'
+version = '1.1'
+
+homepage = 'https://gitlab.com/sissopp_developers/sissopp'
+description = "C++ implementation of SISSO with built in Python bindings for an efficient python interface"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://gitlab.com/sissopp_developers/sissopp/-/archive/v%(version)s/']
+sources = [{
+    'git_config': {
+        'url': 'https://gitlab.com/sissopp_developers/',
+        'repo_name': 'sissopp',
+        'recursive': True,
+        'commit': 'v%(version)s',
+    },
+    'filename': SOURCE_TAR_GZ,
+}]
+patches = ['SISSO++-1.1_cmake-mpi-fix.patch']
+checksums = [
+    None,  # SISSO++-1.1.tar.gz
+    '614f13ef34dc1d1b2fe0e9868cdcf576a0dacb336759f5295115131d15e9c35a',
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('Doxygen', '1.9.1'),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Boost.Python', '1.77.0'),
+    ('Boost.MPI', '1.77.0'),
+    ('Clp', '1.17.7'),
+    ('NLopt', '2.7.0'),
+    ('pybind11', '2.7.1'),
+    ('fmt', '7.1.1'),
+    ('googletest', '1.11.0'),
+]
+
+preconfigopts = "export BOOST_ROOT=$EBROOTBOOSTMPI && "
+configopts = "-DEXTERNAL_BOOST=ON -DBUILD_PYTHON=ON -DPYTHON_INSTDIR=%(installdir)s"
+
+sanity_check_paths = {
+    'files': ['bin/sisso++', 'lib/libsisso.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = ["python -c 'import sissopp'"]
+
+modextrapaths = {'PYTHONPATH': ''}
+
+moduleclass = 'math'
