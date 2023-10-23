@@ -1,0 +1,40 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'CmdCp'
+
+name = 'tbl2asn'
+version = '20220427'
+versionsuffix = '-linux64'
+
+homepage = 'https://www.ncbi.nlm.nih.gov/genbank/tbl2asn2/'
+description = """Tbl2asn is a command-line program that automates the creation of
+ sequence records for submission to GenBank"""
+
+toolchain = SYSTEM
+
+# It is not entirely clean how long NCBI keeps "older" versions. At April 29, 2022, we had six timestamps/versions,
+# reporiting the same verion (tbl2asn --help -> 25.8) but 5 out of 6 (gunzipped) executables have different sha256
+# checksums.
+source_urls = ['https://ftp.ncbi.nih.gov/toolbox/ncbi_tools/converters/versions/%s/all/' %
+               (version[:4] + '-' + version[4:6] + '-' + version[6:])]
+sources = [{'download_filename': 'tbl2asn.%s.gz' % versionsuffix[1:],
+            'filename': '%(name)s-%(version)s%(versionsuffix)s.gz'}]
+checksums = ['c76481700e196ebd98a83f4174e0146569db9d6fe5753ac18691e9836d5c6a75']
+
+cmds_map = [('.*', "cp %(name)s-%(version)s%(versionsuffix)s tbl2asn")]
+
+files_to_copy = [
+    (['tbl2asn'], 'bin'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/tbl2asn'],
+    'dirs': [],
+}
+
+postinstallcmds = ["chmod +x %(installdir)s/bin/tbl2asn"]
+
+moduleclass = 'bio'
