@@ -13,7 +13,10 @@ source_urls = ['https://download.gnome.org/sources/libxslt/%(version_major_minor
 sources = [SOURCE_TAR_XZ]
 checksums = ['3a4b27dc8027ccd6146725950336f1ec520928f320f144eb5fa7990ae6123ab4']
 
-builddependencies = [('binutils', '2.39')]
+builddependencies = [
+    ('binutils', '2.39'),
+    ('pkgconf', '1.9.3'),
+]
 
 dependencies = [
     ('zlib', '1.2.12'),
@@ -21,11 +24,13 @@ dependencies = [
 ]
 
 # Make sure it doesn't pick up OS installed libgcrypt or Python
-configopts = '--with-crypto=no --with-python=no '
+# enable building static libs
+configopts = '--with-crypto=no --with-python=no --enable-static=yes '
 
 sanity_check_paths = {
-    'files': ['bin/xsltproc', 'include/libxslt/xslt.h', 'lib/%%(name)s.%s' % SHLIB_EXT],
-    'dirs': [],
+    'files': ['bin/xsltproc', 'include/libxslt/xslt.h', 'lib/%%(name)s.%s' % SHLIB_EXT, 'lib/%(name)s.a',
+              'lib/libexslt.%s' % SHLIB_EXT, 'lib/libexslt.a'],
+    'dirs': ['include/libxslt', 'include/libexslt'],
 }
 
 moduleclass = 'lib'
