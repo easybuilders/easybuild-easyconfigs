@@ -1,0 +1,43 @@
+easyblock = 'PythonPackage'
+
+name = 'tensorboardX'
+version = '2.2'
+local_pytorch_ver = '1.7.1'
+versionsuffix = '-PyTorch-%s' % local_pytorch_ver
+
+homepage = 'https://github.com/lanpa/tensorboardX'
+description = "Tensorboard for PyTorch."
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+github_account = 'lanpa'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['dff39191ca26bce9c5c82b9a013558e8c17602d17279f70270ca3341f127c4cf']
+
+# tensorboardX v2.x works with tensorboards generated with TensorFlow 2,
+# but TensorFlow is not needed to use tensorboardX
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('matplotlib', '3.3.3'),
+    ('protobuf-python', '3.14.0'),
+    ('PyTorch', local_pytorch_ver),
+    ('torchvision', '0.8.2', versionsuffix),
+]
+
+options = {'modulename': '%(name)s'}
+
+use_pip = True
+download_dep_fail = True
+
+postinstallcmds = ["cp -r %s %%(installdir)s" % d for d in ['docs', 'examples', 'tests']]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'docs', 'examples', 'tests'],
+}
+
+sanity_pip_check = True
+
+moduleclass = 'vis'

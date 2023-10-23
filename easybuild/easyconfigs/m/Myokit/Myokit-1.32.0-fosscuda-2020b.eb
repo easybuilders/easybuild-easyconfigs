@@ -1,0 +1,46 @@
+easyblock = 'PythonPackage'
+
+name = 'Myokit'
+version = '1.32.0'
+
+homepage = 'http://myokit.org'
+description = """Myokit is an open-source Python-based toolkit that facilitates modeling and simulation of cardiac
+cellular electrophysiology."""
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['393ebc85413bd1b573909736caeadd9d7757f41cceb7bd29f3b30f5107237cba']
+
+download_dep_fail = True
+use_pip = True
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('matplotlib', '3.3.3'),
+    ('Pillow', '8.0.1'),
+    ('lxml', '4.6.2'),
+    ('PyQt5', '5.15.1'),
+    ('SUNDIALS', '5.7.0'),
+    ('pocl', '1.6'),
+]
+
+# configparser is part of stdlib in Python 3
+preinstallopts = "sed -i 's/.*configparser.*//g' setup.py && "
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/myokit'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "myokit -h",
+    "myokit system",
+    "myokit opencl",  # make sure OpenCL features work (requires pocl or other dependency providing OpenCL runtime)
+    "myokit run example",
+]
+
+moduleclass = 'bio'
