@@ -1093,7 +1093,7 @@ class EasyConfigTest(TestCase):
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
 
             if ec.name in exception_python_suffix or whitelisted:
-                continue
+                pass
             elif has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
                 msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
                 # This is only a failure for newly added ECs, not for existing ECS
