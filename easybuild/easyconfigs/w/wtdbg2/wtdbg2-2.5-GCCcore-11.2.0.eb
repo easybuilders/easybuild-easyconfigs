@@ -1,0 +1,47 @@
+# Author:: Michael Dickens <cmdickens@tamu.edu> - TAMU HPRC - https://hprc.tamu.edu
+# Updated to GCC 11.2.0
+# J. Sassmannshausen NHS/GSTT
+
+easyblock = 'MakeCp'
+
+name = 'wtdbg2'
+version = '2.5'
+
+homepage = 'https://github.com/ruanjue/wtdbg2'
+
+description = """
+ Wtdbg2 is a de novo sequence assembler for long noisy reads produced by PacBio
+ or Oxford Nanopore Technologies (ONT). It assembles raw reads without error
+ correction and then builds the consensus from intermediate assembly output.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/ruanjue/wtdbg2/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['a2ffc8503d29f491a9a38ef63230d5b3c96db78377b5d25c91df511d0df06413']
+
+builddependencies = [('binutils', '2.37')]
+
+dependencies = [('Perl', '5.34.0')]
+
+prebuildopts = "sed -i 's/CFLAGS=-g3/CFLAGS+=-g3/g' Makefile && "
+
+local_executables = ['wtdbg2', 'wtdbg2.pl', 'wtpoa-cns', 'kbm2', 'wtdbg-cns', 'pgzf']
+
+files_to_copy = [(local_executables, 'bin'), 'README-ori.md', 'README.md', 'scripts']
+
+fix_perl_shebang_for = ['bin/*.pl', 'scripts/*.pl']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_executables],
+    'dirs': ['scripts'],
+}
+
+sanity_check_commands = ["wtdbg2 --help"]
+
+modextrapaths = {
+    'PATH': 'scripts',
+}
+
+moduleclass = 'bio'

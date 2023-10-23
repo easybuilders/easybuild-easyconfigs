@@ -47,9 +47,27 @@ exts_list = [
         'source_tmpl': 'v%(version)s.tar.gz',
         'source_urls': ['https://github.com/zhonge/cryodrgn/archive'],
         'checksums': ['1efecc2a0add2392411076082c122039a490f5ddf3e01f1da38aea1a81592077'],
+        'postinstallcmds': [
+            'cp utils/* analysis_scripts/* %(installdir)s/bin',
+            'chmod +x %(installdir)s/bin/*.py',
+        ],
     }),
 ]
 
-sanity_check_commands = ["%(namelower)s --help"]
+fix_python_shebang_for = ['bin/*.py']
+
+local_scripts = [
+    'add_psize', 'filter_mrcs', 'filter_pkl', 'filter_star', 'flip_hand', 'fsc', 'invert_contrast', 'kmeans',
+    'phase_flip', 'plotfsc', 'plot_loss', 'plot_z1', 'plot_z2', 'plot_z_pca', 'run_umap', 'translate_stack', 'tsne',
+    'view_header', 'view_stack', 'write_starfile'
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s.py' % x for x in local_scripts],
+    'dirs': []
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+sanity_check_commands += ['%s.py -h' % x for x in local_scripts]
 
 moduleclass = 'chem'

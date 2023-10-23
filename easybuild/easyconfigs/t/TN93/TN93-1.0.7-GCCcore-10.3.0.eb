@@ -1,0 +1,42 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Iñaki Mtz de Ilarduya Muñoz
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = "CMakeMake"
+
+name = 'TN93'
+version = '1.0.7'
+
+homepage = 'https://github.com/veg/tn93'
+description = """This is a simple program meant to compute pairwise distances between
+ aligned nucleotide sequences in sequential FASTA format using the Tamura Nei 93 distance."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://github.com/veg/tn93/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['4a088689a23e8dc92d4484431ab0de2a0f5f05109d2a56e7bd55c0cc6459c4db']
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('binutils', '2.36.1'),
+]
+
+# this is required as the DCMAKE_INSTALL_PREFIX is ignored and the cmake_install.cmake file
+# will allways end up with /usr/local as the install prefix
+install_cmd = 'mkdir -p %(installdir)s/bin &&'
+install_cmd += ' cp {fasta_diff,nucfreqsfasta,readreduce,selectreads,seqcoverage,'
+install_cmd += 'ShortestPathTN93,tn93,tn93-cluster,validate_fasta}'
+install_cmd += ' %(installdir)s/bin '
+
+sanity_check_paths = {
+    'files': ['bin/tn93'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'tn93 -v',
+]
+
+moduleclass = 'bio'

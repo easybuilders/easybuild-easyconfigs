@@ -1,0 +1,56 @@
+From: Stefano Rivera <stefano@rivera.za.net>
+Date: Tue, 15 Nov 2022 20:43:01 +0200
+Subject: Python 3.11 support
+
+Since Py_TYPE() is changed to a inline static function, Py_TYPE(obj) = new_type
+must be replaced with Py_SET_TYPE(obj, new_type): see the Py_SET_TYPE() function
+(available since Python 3.9)
+
+See: bpo-39573
+Forwarded: https://github.com/DanielStutzbach/blist/pull/101
+Bug-Debian: https://bugs.debian.org/1023905
+---
+ blist/_blist.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/blist/_blist.c b/blist/_blist.c
+index 71321e3..1ae7f5e 100644
+--- a/blist/_blist.c
++++ b/blist/_blist.c
+@@ -130,6 +130,12 @@
+ 
+ #endif
+ 
++#if PY_VERSION_HEX < 0x030900A4 && !defined(Py_SET_TYPE)
++static inline void _Py_SET_TYPE(PyObject *ob, PyTypeObject *type)
++{ ob->ob_type = type; }
++#define Py_SET_TYPE(ob, type) _Py_SET_TYPE((PyObject*)(ob), type)
++#endif
++
+ #ifndef BLIST_IN_PYTHON
+ #include "blist.h"
+ #endif
+@@ -6594,7 +6600,7 @@ py_blist_sort(PyBListRoot *self, PyObject *args, PyObject *kwds)
+         memset(&saved, 0, offsetof(PyBListRoot, BLIST_FIRST_FIELD));
+         memcpy(&saved.BLIST_FIRST_FIELD, &self->BLIST_FIRST_FIELD,
+                sizeof(*self) - offsetof(PyBListRoot, BLIST_FIRST_FIELD));
+-        Py_TYPE(&saved) = &PyRootBList_Type;
++        Py_SET_TYPE(&saved, &PyRootBList_Type);
+         Py_SET_REFCNT(&saved, 1);
+ 
+         if (extra_list != NULL) {
+@@ -7381,10 +7387,10 @@ init_blist_types1(void)
+         decref_init();
+         highest_set_bit_init();
+ 
+-        Py_TYPE(&PyBList_Type) = &PyType_Type;
+-        Py_TYPE(&PyRootBList_Type) = &PyType_Type;
+-        Py_TYPE(&PyBListIter_Type) = &PyType_Type;
+-        Py_TYPE(&PyBListReverseIter_Type) = &PyType_Type;
++        Py_SET_TYPE(&PyBList_Type, &PyType_Type);
++        Py_SET_TYPE(&PyRootBList_Type, &PyType_Type);
++        Py_SET_TYPE(&PyBListIter_Type, &PyType_Type);
++        Py_SET_TYPE(&PyBListReverseIter_Type, &PyType_Type);
+ 
+         Py_INCREF(&PyBList_Type);
+         Py_INCREF(&PyRootBList_Type);
