@@ -1,0 +1,60 @@
+name = 'MATLAB'
+version = '2023b.2'
+
+homepage = 'http://www.mathworks.com/products/matlab'
+description = """MATLAB is a high-level language and interactive environment
+ that enables you to perform computationally intensive tasks faster than with
+ traditional programming languages such as C, C++, and Fortran."""
+
+toolchain = SYSTEM
+
+# be sure to copy both DVD content to the SAME directory, 
+# including the hidden files, especially .dvd1 and .dvd2 
+sources = ['R%(version_major)s_Update_%(version_minor)s_Linux.iso']
+checksums = ['a616b893d2ad4c24c23bb1ff090b8fb6ca0b752e7e018d248ae75eae3156bb26']
+
+#skipsteps = ['fetch', 'ready', 'source', 'patch', 'prepare', 'configure', 'build', 'test', 'install']
+postinstallcmds = [
+	'chmod -R u+w %(installdir)s ',
+	# install the python engines with both python 3.10, 3.11
+	'module load python/3.10 && pushd %(installdir)s/extern/engines/python && python setup.py install --prefix=%(installdir)s/extern/engines/python && popd ', 
+	'module load python/3.11 && pushd %(installdir)s/extern/engines/python && python setup.py install --prefix=%(installdir)s/extern/engines/python && popd ', 
+	'sed -i "s!/usr!$EBROOTGENTOO!g" %(installdir)s/bin/ldd',
+	'sed -i "s!/usr!$EBROOTGENTOO!g" %(installdir)s/bin/mex',
+	"find %(installdir)s/sys/os/glnxa64 -name 'libstdc++.so*' -exec mv {} {}.bak \;",
+	"find %(installdir)s/sys/os/glnxa64 -name 'libgcc_s.so*' -exec mv {} {}.bak \;",
+	"find %(installdir)s/sys/os/glnxa64 -name 'libgfortran.so*' -exec mv {} {}.bak \;",
+	"find %(installdir)s/sys/os/glnxa64 -name 'libquadmath.so*' -exec mv {} {}.bak \;",
+	# never use included Mesa software OpenGL implementation
+	'ln -sf $EPREFIX/bin/true %(installdir)s/bin/glnxa64/need_softwareopengl',
+	'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_origin',
+	'/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/extern/engines/python --add_path %(installdir)s/bin/glnxa64 --add_origin --any_interpreter ',
+]
+java_options = '-Xmx2048m'
+dependencies = [('Java', '17')]
+modextrapaths = {'EBPYTHONPREFIXES': ['extern/engines/python']}
+
+# Uncomment and modify the following variables if needed 
+# for installation with floating license server
+
+# license_server = 'my-license-server'
+# license_server_port = '1234'
+# key = '00000-00000-00000-00000-00000-00000-00000-00000-00000-00000-00000-00000'
+# modextravars = {'LM_LICENSE_FILE': '%s@%s' % (license_server_port, license_server)}
+
+moduleclass = 'math'
+
+modluafooter = """
+require("SitePackage")
+local found = find_and_define_license_file("MLM_LICENSE_FILE","matlab")
+if (not found) then
+        local error_message = [[
+	We did not find a suitable license for Matlab. If you have access to one, you can create the file $HOME/.licenses/matlab.lic with the license information. If you think you should have access to one as    part of your institution, please write to support@computecanada.ca so that we can configure it.
+
+	Nous n'avons pas trouve de licence utilisable pour Matlab. Si vous avez acces a une licence de Matlab, vous pouvez creer le fichier $HOME/.licenses/matlab.lic avec l'information de la licence. Si vous    pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+	]]
+	LmodError(error_message)
+end
+setenv("MATLAB_LOG_DIR","/tmp")
+"""
+
