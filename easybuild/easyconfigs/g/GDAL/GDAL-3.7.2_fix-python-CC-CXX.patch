@@ -1,0 +1,18 @@
+use $CC_SEQ and $CXX_SEQ values to redefine $CC and $CXX when building GDAL Python bindings,
+to ensure that correct compiler commands are used
+Kenneth Hoste (HPC-UGent)
+--- gdal-3.0.0/swig/python/setup.py.in.orig	2019-05-05 11:50:23.000000000 +0200
++++ gdal-3.0.0/swig/python/setup.py.in	2019-09-25 21:09:07.507467548 +0200
+@@ -24,6 +24,12 @@
+ if opt is not None:
+     os.environ['OPT'] = " ".join(f for f in opt.split() if f != '-Wstrict-prototypes')
+
++for key in ['CC', 'CXX']:
++    seqkey = '%s_SEQ' % key
++    if seqkey in os.environ:
++        os.environ[key] = os.environ[seqkey]
++        print('$%s set to %s (via $%s)' % (key, os.environ[key], seqkey))
++
+ # If CXX is defined in the environment, it will be used to link the .so
+ # but distutils will be confused if it is made of several words like 'ccache g++'
+ # and it will try to use only the first word.
