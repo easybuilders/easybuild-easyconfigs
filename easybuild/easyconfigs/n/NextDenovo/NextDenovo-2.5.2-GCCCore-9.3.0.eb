@@ -1,0 +1,68 @@
+easyblock = 'MakeCp'
+
+name = 'NextDenovo'
+version = '2.5.2'
+
+homepage = 'https://github.com/Nextomics/NextDenovo'
+description = """NextDenovo is a string graph-based de novo assembler for long reads (CLR, HiFi and ONT). It uses a "correct-then-assemble" strategy similar to canu (no correction step for PacBio HiFi reads), but requires significantly less computing resources and storages. After assembly, the per-base accuracy is about 98-99.8%, to further improve single base accuracy, try NextPolish."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+# toolchain = SYSTEM
+
+source_urls = ['https://github.com/Nextomics/NextDenovo/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-fix-ldeflate.patch']
+checksums = [
+    {'v2.5.2.tar.gz': 'aa6743e680114fdf20091b70e2b501e2576a5e228c5f8f2e8383ffd4e3895e47'},
+    {'NextDenovo-2.5.2-fix-ldeflate.patch': '7982263c3f6d70cb346e00b601ba64cdc078bed05dcbb2e2c2cc442bc925458d'},
+]
+
+builddependencies = [
+    ("python-build-bundle", "2022a"),
+]
+
+dependencies = [
+    ('Python', '3.10')
+]
+
+local_libs = 'LIBS=" -ldeflate $LIBS"'
+
+# Python package paralleltask isrequired at runtime and is not pulled by the build.
+preconfigopts = " && ".join([
+    "pip install paralleltask==0.2.2 --prefix=%(installdir)s",
+    "export EBPYTHONPREFIXES=%(installdir)s:$EBPYTHONPREFIXES",
+    "" # To append &&
+])
+
+postinstallcmds = ["pip install paralleltask==0.2.2 --prefix=%(installdir)s"]
+
+
+# Don't remove the python packages just installed
+keeppreviousinstall = True
+
+sanity_check_paths = {
+    'files': [
+        'bin/bam_sort',
+    ],
+    'dirs': [
+        'bin',
+        'lib'
+        #'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+sanity_check_commands = [
+    # Something like this would be an ideal test ...
+    # "mkdir -p /tmp/next_demovo_test && cp -a %(srcdir)s/test_data /tmp/next_denovo_test && nextDenovo /tmp/next_data_test/test_data/run.cfg && rm -rf /tmp/next_denovo_test"
+]
+
+files_to_copy = ['nextDenovo',
+                 'bin',
+                 (['lib/*.so', 'lib/*.py', 'lib/htslib'], 'lib')]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+    'PATH': ''
+}
+
+moduleclass = 'bio'
