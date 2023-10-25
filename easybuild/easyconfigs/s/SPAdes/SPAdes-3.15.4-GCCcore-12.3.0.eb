@@ -1,0 +1,51 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# 3.9.0:
+# Modified by:
+# Adam Huffman
+# The Francis Crick Institute
+
+easyblock = 'CMakeMake'
+
+name = 'SPAdes'
+version = "3.15.4"
+
+homepage = 'http://cab.spbu.ru/software/spades/'
+description = "Genome assembler for single-cell and isolates data sets"
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['http://cab.spbu.ru/files/release%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['3b241c528a42a8bdfdf23e5bf8f0084834790590d08491decea9f0f009d8589f']
+
+builddependencies = [
+    ('binutils', '2.34'),
+    ('CMake', '3.18.4'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('libreadline', '8.0'),
+]
+
+configopts = " -DBoost_NO_BOOST_CMAKE=ON"
+
+start_dir = 'src'
+
+local_spades_binaries = [
+    'spades-bwa', 'spades-core', 'spades-gbuilder', 'spades-hammer',
+    'spades-ionhammer', 'spades-kmercount', 'spades.py',
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_spades_binaries],
+    'dirs': [],
+}
+
+sanity_check_commands = [('%(namelower)s.py', '--test')]
+
+moduleclass = 'bio'
