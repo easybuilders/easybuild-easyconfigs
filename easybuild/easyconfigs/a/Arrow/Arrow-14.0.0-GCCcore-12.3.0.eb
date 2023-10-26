@@ -1,0 +1,127 @@
+easyblock = "CMakeMake"
+
+name = 'Arrow'
+version = "14.0.0"
+
+homepage = "https://arrow.apache.org"
+description = """Apache Arrow is a cross-language development platform for in-memory data."""
+
+toolchain = {"name": "GCCcore", "version": "12.3.0"}
+toolchainopts = {"cstd": "c++17"}
+
+# Fetching from Github to obtain test data which is not part of released tarball
+sources = [{
+    'filename': 'apache-arrow-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://github.com/apache',
+        'repo_name': 'arrow',
+        'tag': 'apache-arrow-%(version)s',
+        'recursive': True,
+        'keep_git_dir': False,
+    },
+}]
+# Must use --disable-enforce-checksums as checksums are not reliable on a JIT created tarball
+
+builddependencies = [
+    ("CMake", "3.27.7"),
+    ("Boost", "1.82.0", "-core"),
+    ('oldest-supported-numpy', '2023b'),
+    ('Cython', '0.29.36'),
+    ("thrift", "0.19.0"),
+    ("RapidJSON", "1.1.0"),
+    ("protobuf", "24.4"),
+]
+
+multi_deps = {"Python": ["3.11", "3.10"]}
+
+local_cmake_opts = " ".join([
+    "-DARROW_COMPUTE=ON",
+    "-DARROW_FILESYSTEM=ON",
+    "-DARROW_PARQUET=ON",
+    "-DARROW_DATASET=ON",
+    "-DARROW_HDFS=OFF",
+    "-DARROW_S3=OFF",
+    "-DARROW_CSV=ON",
+    "-DARROW_JSON=ON",
+    "-DARROW_WITH_ZSTD=ON",
+    "-DARROW_WITH_BZ2=ON",
+    "-DARROW_WITH_LZ4=OFF", # A bug in v14, turn it off
+    "-DARROW_WITH_SNAPPY=ON",
+    "-DARROW_WITH_BROTLI=ON",
+    "-DARROW_WITH_ZLIB=ON",
+    "-DARROW_BUILD_TESTS=ON",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DBOOST_ROOT=$EBROOTBOOST",
+    "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python",
+    "-DCMAKE_SKIP_RPATH=ON",
+    "-DCMAKE_INSTALL_LIBDIR=lib", # Python bindings expect libs to be in `lib`.
+    "-DARROW_USE_CCACHE=ON", # Arrow ccache nows works
+    "-DARROW_SIMD_LEVEL=${RSNT_ARCH^^}",
+])
+
+local_exports = " && ".join([
+    "export PYARROW_WITH_PARQUET=1",
+    "export PYARROW_WITH_DATASET=1",
+    "export PYARROW_WITH_IPC=1",
+    "export PYARROW_WITH_ZSTD=1",
+    "export PYARROW_WITH_SNAPPY=1",
+    "export PYARROW_WITH_BROTLI=1",
+    'export PYARROW_CMAKE_OPTIONS="{}"'.format(local_cmake_opts),
+    "export ARROW_HOME=%(installdir)s",
+    "export PYARROW_BUILD_TYPE=Release",
+    "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH",
+    "export CMAKE_PREFIX_PATH=%(installdir)s:$CMAKE_PREFIX_PATH",
+])
+
+configopts = local_cmake_opts
+
+installopts = (
+      " && cd %(builddir)s/arrow*/python "
+    + " && mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages "
+    + " && {} ".format(local_exports)
+    + " && python setup.py build_ext --inplace "
+    + " && pip install --prefix=%(installdir)s ."
+)
+
+start_dir = "cpp"
+separate_build_dir = True
+
+pretestopts = " && ".join([
+    "export PARQUET_TEST_DATA=%(builddir)s/arrow/cpp/submodules/parquet-testing/data"
+    "export ARROW_TEST_DATA=%(builddir)s/arrow/testing/data"
+])
+runtest = "unittest"
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+sanity_check_paths = {
+    "files": [
+        "lib/libarrow.so",
+        "lib/libparquet.so",
+        "lib/libarrow_dataset.so",
+    ],
+    "dirs": [
+        "include/arrow",
+        "include/parquet",
+        "lib/python%(pyshortver)s/site-packages",
+    ],
+}
+
+sanity_check_commands = [
+    "module load scipy-stack",
+    "python -c 'import pyarrow'",
+    "python -c 'import pyarrow.parquet'",
+    "python -c 'import pyarrow.dataset'",
+    "python -c 'import pyarrow.csv'",
+    "python -c 'import pyarrow.json'",
+    "python -c 'import pyarrow.feather'",
+]
+
+modluafooter = """
+depends_on("scipy-stack")
+
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+    extensions("pyarrow/{}")
+end
+""".format(version)
+moduleclass = "data"
