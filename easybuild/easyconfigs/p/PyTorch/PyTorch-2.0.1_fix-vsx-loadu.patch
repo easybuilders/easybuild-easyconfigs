@@ -1,0 +1,31 @@
+Fix access to unitialized memory on PPC
+See https://github.com/pytorch/pytorch/issues/32502 & https://github.com/pytorch/pytorch/pull/109487
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_qint8_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_qint8_vsx.h
+index 806f6731abb..648ed06afa6 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_qint8_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_qint8_vsx.h
+@@ -91,7 +91,7 @@ struct Vectorized<c10::qint8> {
+           vec_vsx_ld(offset0, reinterpret_cast<const vint8*>(ptr)),
+           vec_vsx_ld(offset16, reinterpret_cast<const vint8*>(ptr))};
+     }
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+     return {vec_vsx_ld(offset0, tmp_values), vec_vsx_ld(offset16, tmp_values)};
+   }
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h
+index 891c56b53ec..db3698804a7 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h
+@@ -94,7 +94,7 @@ struct Vectorized<c10::quint8> {
+           vec_vsx_ld(offset0, reinterpret_cast<const value_type*>(ptr)),
+           vec_vsx_ld(offset16, reinterpret_cast<const value_type*>(ptr))};
+     }
+-    __at_align__ value_type tmp_values[size()];
++    __at_align__ value_type tmp_values[size()] = {};
+     std::memcpy(tmp_values, ptr, std::min(count, size()) * sizeof(value_type));
+     return {vec_vsx_ld(offset0, tmp_values), vec_vsx_ld(offset16, tmp_values)};
+   }
