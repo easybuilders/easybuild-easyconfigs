@@ -27,7 +27,6 @@ sources = [SOURCE_TAR_GZ]
 patches = [
     'IMOD-4.11.12_hdf1.12.patch',
     'IMOD-4.12.17_tiltalign_include.patch',
-    'IMOD-4.12.17_pipImport.patch',
 ]
 checksums = [
     None,  # can't include a valid checksum for source tarball, since it has to be created manually
@@ -35,8 +34,6 @@ checksums = [
     '19e5bff97b997c600f157dd56eddae96a7f34fef528e7f40e76ea8e19144810e',
     # IMOD-4.12.17_tiltalign_include.patch
     '998c01a4f78b0d48dbffc530fcb12faaa892b1d322bce4f1643df20799845ab7',
-    # IMOD-4.12.17_pipImport.patch
-    '12b431e137810a2b4174bf7ccce32efcfb4bb51153564b7934557bdcf0fbb8f6',
 ]
 
 # can't include a valid checksum, since tarball has to be created manually
@@ -97,6 +94,7 @@ preinstallopts = 'mkdir %(installdir)s/{man/cat1,bin,autodoc,SystemTemplate,lib/
 
 # patch hardcoded /usr/bin/python to use Python included as dependency
 preinstallopts += "find pysrc -name '*.py' | xargs sed -i 's@^#!/usr/bin/python@#!/usr/bin/env python@g' && "
+preinstallopts += "export PYTHONPATH=%(builddir)s/IMOD/pysrc:$PYTHONPATH && "
 preinstallopts += "ls manpages/{csvtohtml,adocdefaults} | xargs sed -i 's@^#!.*/python -u@#!/usr/bin/env python@g' && "
 preinstallopts += "xargs sed -i 's@^#!.*/python -u@#!/usr/bin/env python@g' html/makeqhp && "
 
@@ -106,6 +104,9 @@ modextravars = {
     'IMOD_JAVADIR': '$JAVA_HOME',
     'FOR_DISABLE_STACK_TRACE': '1',
 }
+
+modextrapaths = {'PYTHONPATH': 'pylib'}
+
 modloadmsg = 'Please set the environment variable $IMOD_CALIB_DIR if appropriate.'
 sanity_check_paths = {
     'files': ['VERSION', 'bin/subm'],
