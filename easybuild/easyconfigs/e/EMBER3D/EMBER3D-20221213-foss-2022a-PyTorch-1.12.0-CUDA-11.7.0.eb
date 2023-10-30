@@ -1,0 +1,91 @@
+easyblock = 'PackedBinary'
+
+name = 'EMBER3D'
+version = '20221213'
+local_commit = '45993b9'
+local_pytorch_version = '1.12.0'
+versionsuffix = '-PyTorch-' + local_pytorch_version + '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/kWeissenow/EMBER3D'
+description = """ 
+This repository contains the code for the EMBER3D protein structure and mutation effect 
+prediction system. EMBER3D is currently provided as a prototype release for preview purposes.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/kWeissenow/EMBER3D/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['9318dd63e0b222b1271d6ce8d4fa2fa177259a75444dce9804b386b188601326']
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyTorch', local_pytorch_version, '-CUDA-%(cudaver)s'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Biopython', '1.79'),
+    ('Transformers', '4.29.2'),
+    ('matplotlib', '3.5.2'),
+    ('e3nn', '0.3.3', '-CUDA-%(cudaver)s'),
+    ('networkx', '2.8.4'),
+    ('Pillow', '9.1.1'),
+    ('PyYAML', '6.0'),
+    ('PyTorch-Geometric', '2.1.0', versionsuffix),
+    ('sympy', '1.10.1'),
+    ('torchaudio', '0.12.0', versionsuffix),
+    ('torchvision', '0.13.1', '-CUDA-%(cudaver)s'),
+    ('tqdm', '4.64.0'),
+    ('DGL', '1.1.1', '-CUDA-%(cudaver)s'),
+    ('ruamel.yaml', '0.17.21'),
+    ('SentencePiece', '0.1.97'),
+]
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('charset-normalizer', '2.1.0', {
+        'checksums': ['575e708016ff3a5e3681541cb9d79312c416835686d054a23accb873b254f413'],
+    }),
+    ('dglgo', '0.0.1', {
+        'source_tmpl': 'dglgo-%(version)s-py3-none-any.whl',
+        'checksums': ['5e22a69c117b7e4752892a7685b4b4c1a0ae516a85652be5c9e686732f99cc8b'],
+    }),
+    ('importlib_metadata', '4.12.0', {
+        'checksums': ['637245b8bab2b6502fcbc752cc4b7a6f6243bb02b31c5c26156ad103d3d45670'],
+    }),
+    ('pycodestyle', '2.8.0', {
+        'checksums': ['eddd5847ef438ea1c7870ca7eb78a9d47ce0cdb4851a5523949f2601d0cbbe7f'],
+    }),
+    ('pydantic', '1.9.1', {
+        'checksums': ['1ed987c3ff29fff7fd8c3ea3a3ea877ad310aae2ef9889a119e22d3f2db0691a'],
+    }),
+    ('snowballstemmer', '2.2.0', {
+        'checksums': ['09b16deb8547d3412ad7b590689584cd0fe25ec8db3be37788be3810cbf19cb1'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': ['', 'lib/python%(pyshortver)s/site-packages']}
+
+fix_python_shebang_for = ['predict.py', 'webserver.py', 'predict_sav.py', 'render_mutation_movie.py']
+
+postinstallcmds = [
+    'chmod +x  %(installdir)s/predict.py',
+    'chmod +x  %(installdir)s/webserver.py',
+    'chmod +x  %(installdir)s/predict_sav.py',
+    'chmod +x  %(installdir)s/render_mutation_movie.py',
+]
+
+sanity_check_paths = {
+    'files': ['Ember3D.py', 'predict.py', 'webserver.py', 'predict_sav.py'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["predict.py -h", "webserver.py -h", "predict_sav.py -h"]
+
+moduleclass = 'bio'
