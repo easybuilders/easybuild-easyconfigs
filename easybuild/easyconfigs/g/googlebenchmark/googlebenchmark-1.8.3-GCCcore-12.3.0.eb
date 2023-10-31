@@ -1,0 +1,29 @@
+easyblock = 'CMakeMake'
+
+name = 'googlebenchmark'
+version = '1.8.3'
+
+homepage = 'https://github.com/google/benchmark'
+description = "Google's library to benchmark code snippets, similar to unit tests. "
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/google/benchmark/archive/']
+sources = ['v%(version)s.tar.gz']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+    ('googletest', '1.14.0'),
+]
+# build twice, once for static, once for shared libraries
+configopts = ['-DBENCHMARK_USE_BUNDLED_GTEST=OFF ', '-DBENCHMARK_USE_BUNDLED_GTEST=OFF  -DBUILD_SHARED_LIBS=ON ']
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.%s' % (local_lib, local_ext) for local_lib in ['benchmark', 'benchmark_main']
+              for local_ext in ['a', SHLIB_EXT]],
+    'dirs': ['include/benchmark'],
+}
+
+moduleclass = 'tools'
