@@ -1,0 +1,46 @@
+# Thomas Hoffmann, EBML Heidelberg, structures-it@embl.de, 2023/10
+# allow to inject cuda compute capabilities and cfalgs
+diff -ru AreTomo2-1.0.0/makefile11 AreTomo2-1.0.0_makefile/makefile11
+--- AreTomo2-1.0.0/makefile11	2023-10-26 19:49:07.000000000 +0200
++++ AreTomo2-1.0.0_makefile/makefile11	2023-10-30 19:00:07.212270395 +0100
+@@ -156,18 +156,21 @@
+ 	$(CUCPPS)
+ OBJS = $(patsubst %.cpp, %.o, $(SRCS))
+ #-------------------------------------
+-CC = g++ -std=c++11
+-CFLAG = -c -g -pthread -m64
++#CC = g++ -std=c++11
++CFLAG = -c -g -pthread -m64 $(CFLAGS)
+ NVCC = $(CUDAHOME)/bin/nvcc -std=c++11
+-CUFLAG = -Xptxas -dlcm=ca -O2 \
+-	-gencode arch=compute_80,code=sm_80 \
+-	-gencode arch=compute_75,code=sm_75 \
+-	-gencode arch=compute_70,code=sm_70 \
+-	-gencode arch=compute_61,code=sm_61 \
+-	-gencode arch=compute_60,code=sm_60 \
+-	-gencode arch=compute_53,code=sm_53 \
+-	-gencode arch=compute_52,code=sm_52 \
+-	-gencode arch=compute_86,code=sm_86
++SPACE= ' '
++SEMI= ;
++GENCODES = $(foreach x,$(subst $(SEMI),$(SPACE),$(CUDACC)),-gencode arch=compute_$x,code=sm_$x)
++CUFLAG = -Xptxas -dlcm=ca -O2 $(GENCODES)
++#	-gencode arch=compute_80,code=sm_80 \
++#	-gencode arch=compute_75,code=sm_75 \
++#	-gencode arch=compute_70,code=sm_70 \
++#	-gencode arch=compute_61,code=sm_61 \
++#	-gencode arch=compute_60,code=sm_60 \
++#	-gencode arch=compute_53,code=sm_53 \
++#	-gencode arch=compute_52,code=sm_52 \
++#	-gencode arch=compute_86,code=sm_86
+ #------------------------------------------
+ cuda: $(CUCPPS)
+ 
+@@ -183,6 +186,7 @@
+ 	-lcufft -lcudart -lcuda -lc -lm -lpthread \
+ 	-o AreTomo2
+ 	@echo AreTomo2 has been generated.
++	@echo used cuda gencodes: $(GENCODES)
+ 
+ %.o: %.cu
+ 	@$(NVCC) -c $(CUFLAG) -I$(PRJINC) -I$(CUPRJINC) $< -o $@
