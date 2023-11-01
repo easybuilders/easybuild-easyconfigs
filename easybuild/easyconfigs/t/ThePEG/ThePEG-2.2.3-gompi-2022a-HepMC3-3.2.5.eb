@@ -1,0 +1,44 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Alexander Puck Neuwirth <alexander@neuwirth-informatik.de>
+
+easyblock = 'ConfigureMake'
+
+name = 'ThePEG'
+version = '2.2.3'
+local_hepmc = "HepMC3"
+local_hepmcver = "3.2.5"
+versionsuffix = '-%s-%s' % (local_hepmc, local_hepmcver)
+
+homepage = 'http://thepeg.hepforge.org/'
+description = """
+EvtGen is a Monte Carlo event generator that simulates the decays of heavy flavour particles, primarily B and D mesons.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+source_urls = ['https://www.hepforge.org/archive/thepeg/']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['f21473197a761fc32917b08a8d24d2bfaf93ff57f3441fd605da99ac9de5d50b']
+
+dependencies = [
+    ('Rivet', '3.1.7', '%s' % versionsuffix),
+    ('HepMC3', '3.2.5'),
+    ('fastjet', '3.4.0'),
+    ('LHAPDF', '6.5.4'),
+    ('GSL', '2.7')
+]
+
+configopts = "--with-hepmc3=$EBROOTHEPMC3 --with-lhapdf=$EBROOTLHAPDF" \
+    + " --with-rivet=$EBROOTRIVET --with-fastjet=$EBROOTFASTJET"
+
+sanity_check_paths = {
+    'files': [
+        "bin/runThePEG",
+        "bin/thepeg-config",
+        "lib/ThePEG/libThePEG.%s" % SHLIB_EXT
+    ],
+    'dirs': ["include/ThePEG"],
+}
+
+moduleclass = 'phys'
