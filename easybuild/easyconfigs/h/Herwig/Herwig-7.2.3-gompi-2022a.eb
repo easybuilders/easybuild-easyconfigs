@@ -1,0 +1,44 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Alexander Puck Neuwirth <alexander@neuwirth-informatik.de>
+
+easyblock = 'ConfigureMake'
+
+name = 'Herwig'
+version = '7.2.3'
+local_hepmc = "HepMC3"
+local_hepmcver = "3.2.5"
+
+homepage = 'http://herwig.hepforge.org/'
+description = """
+EvtGen is a Monte Carlo event generator that simulates the decays of heavy flavour particles, primarily B and D mesons.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+source_urls = ['https://herwig.hepforge.org/downloads?f=']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['5599899379b01b09e331a2426d78d39b7f6ec126db2543e9d340aefe6aa50f84']
+
+dependencies = [
+    ('EvtGen', '01.07.00', '-HepMC-2.06.11'),
+    ('LHAPDF', '6.5.4'),
+    ('ThePEG', '2.2.3', '-HepMC3-3.2.5'),
+    ('fastjet', '3.4.0'),
+    ('Boost', '1.79.0'),
+    ('LHAPDF-sets', '20231013')
+]
+
+configopts = "--with-thepeg=$EBROOTTHEPEG --with-evtgen=$EBROOTEVTGEN" \
+    + " --with-fastjet=$EBROOTFASTJET --with-boost=$EBROOTBOOST"
+
+sanity_check_paths = {
+    'files': [
+        "bin/Herwig",
+        "bin/herwig-config",
+        "lib/Herwig/libHerwigAPI.%s" % SHLIB_EXT
+    ],
+    'dirs': ["include/Herwig"],
+}
+
+moduleclass = 'phys'
