@@ -1,0 +1,48 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Alexander Puck Neuwirth <alexander@neuwirth-informatik.de>
+
+easyblock = 'ConfigureMake'
+
+name = 'EvtGen'
+version = '01.07.00'
+local_hepmc = "HepMC"
+local_hepmcver = "2.06.11"
+versionsuffix = '-%s-%s' % (local_hepmc, local_hepmcver)
+
+homepage = 'http://evtgen.hepforge.org/'
+description = """
+EvtGen is a Monte Carlo event generator that simulates the decays of heavy flavour particles, primarily B and D mesons.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+source_urls = ['https://evtgen.hepforge.org/downloads?f=']
+sources = [SOURCE_TAR_GZ]
+checksums = ['7ed109ac778a6fba229337d5dbe00e2d05bc5a25776969574f9575a863a4e22d']
+
+patches = ['bootstrap.patch']
+buildopts = '-j 1'  # parallel build fails
+
+dependencies = [
+    ('HepMC', '2.06.11'),
+    ('PYTHIA', '8.2.45', '-HepMC-2.06.11'),
+]
+
+configopts = "--hepmcdir=$EBROOTHEPMC --pythiadir=$EBROOTPYTHIA"
+
+sanity_check_paths = {
+    'files': [
+        "share/DECAY.DEC",
+        "share/DECAY.XML",
+        "lib/libEvtGen.%s" % SHLIB_EXT,
+        "lib/libEvtGenExternal.%s" % SHLIB_EXT
+    ],
+    'dirs': [
+        "include/EvtGen",
+        "include/EvtGenBase",
+        "include/EvtGenModels"
+    ],
+}
+
+moduleclass = 'phys'
