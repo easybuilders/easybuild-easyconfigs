@@ -2,6 +2,7 @@ easyblock = 'CMakeMake'
 
 name = 'SUNDIALS'
 version = '6.6.0'
+versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'https://computing.llnl.gov/projects/sundials'
 
@@ -17,11 +18,13 @@ checksums = ['f90029b8da846c8faff5530fd1fa4847079188d040554f55c1d5d1e04743d29d']
 builddependencies = [('CMake', '3.26.3')]
 
 dependencies = [
-    ('SuiteSparse', '7.1.0')
+    ('SuiteSparse', '7.1.0'),
+    ('CUDA', '12.2.0', '', SYSTEM),
 ]
 
-configopts = "-DENABLE_MPI=ON -DENABLE_OPENMP=ON -DENABLE_LAPACK=ON "
+configopts = "-DENABLE_MPI=ON -DENABLE_OPENMP=ON -DENABLE_LAPACK=ON"
 configopts += "-DENABLE_KLU=ON -DKLU_INCLUDE_DIR=$EBROOTSUITESPARSE/include -DKLU_LIBRARY_DIR=$EBROOTSUITESPARSE/lib "
+configopts += "-DENABLE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES='%(cuda_cc_cmake)s' -DSUNDIALS_INDEX_SIZE=32 "
 
 local_solvers = ['arkode', 'cvode', 'cvodes', 'ida', 'idas', 'kinsol']
 
