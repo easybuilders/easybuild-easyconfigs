@@ -1,0 +1,86 @@
+easyblock = 'CMakeMake'
+
+name = 'ParaView'
+version = '5.11.2'
+
+homepage = 'https://www.paraview.org'
+description = "ParaView is a scientific parallel visualizer."
+
+toolchain = {'name': 'gofb', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+local_download_suffix = 'download.php?submit=Download&version=v%(version_major_minor)s&type=source&os=all&downloadFile='
+source_urls = ['https://www.paraview.org/paraview-downloads/%s' % local_download_suffix]
+sources = [
+    "%(name)s-v%(version)s.tar.gz",
+    "nvidia-index-libs-5.10.20210901-linux.tar.bz2"
+]
+patches = ['ParaView-5.11.1-remove_glew_init_warning.patch']
+
+builddependencies = [('CMake', '3.26.3')]
+
+dependencies = [
+    ('SciPy-Stack', '2023b'),
+    ('Boost', '1.82.0'),
+    ('XZ', '5.4.2'),
+    ('HDF5', '1.14.2'),
+    ('netCDF', '4.9.2'),
+    ('libdrm', '2.4.115'),
+    ('Mesa', '23.1.4'),
+    ('Qt5', '5.15.11'),
+    ('zlib', '1.2.13'),
+    ('FFmpeg', '6.0'),
+    ('Szip', '2.1.1'),
+    ('OSPray', '2.12.0'),
+    ('OpenVKL', '1.3.2'),
+    ('tbb', '2021.10.0'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11'] }
+
+separate_build_dir = True
+
+_copts = [
+    # Basic configuration
+    '-DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON',
+    '-DPARAVIEW_BUILD_SHARED_LIBS=ON',
+    '-DPARAVIEW_USE_MPI=ON',
+    '-DPARAVIEW_ENABLE_FFMPEG=ON',
+    '-DPARAVIEW_USE_PYTHON=ON',
+    '-DPython3_ROOT_DIR=$EBROOTPYTHON',
+    # Qt5
+    '-DPARAVIEW_USE_QT=ON',
+    '-DQt5_DIR=$EBROOTQT5/lib/cmake/Qt5',
+    # NVIDIAIndeX
+    '-DPARAVIEW_PLUGIN_ENABLE_pvNVIDIAIndeX=ON',
+    # OSPray
+    '-DPARAVIEW_ENABLE_RAYTRACING=ON',
+    # Useful input formats
+    '-DPARAVIEW_ENABLE_XDMF2=ON',
+    '-DPARAVIEW_ENABLE_XDMF3=ON',
+    # https://kitware.github.io/paraview-docs/latest/cxx/Offscreen.html
+    # EGL, X and Mesa
+    '-DVTK_OPENGL_HAS_EGL=ON',
+    '-DVTK_USE_X=ON',
+    '-DVTK_OPENGL_HAS_OSMESA=OFF']
+configopts = ' '.join(_copts)
+
+postinstallcmds = [ 
+    "ln -s lib64 %(installdir)s/lib",
+    "cp %(builddir)s/nvidia-index-libs-5.10*/lib/* %(installdir)s/lib64 ",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib64",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib64/python3.10 --add_path %(installdir)s/lib64",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib64/python3.11 --add_path %(installdir)s/lib64",
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/bin --add_path $EBROOTOPENVKL/lib64 --any_interpreter",
+]
+modextravars = {'NVINDEX_PVPLUGIN_HOME':'/cvmfs/restricted.computecanada.ca/config/licenses/nvidia-index/'}
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+sanity_check_paths = {
+    'files': ['bin/paraview', 'bin/pvserver', 'bin/pvpython'],
+    'dirs': ['include/paraview-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['python -c "import paraview"']
+
+moduleclass = 'vis'
