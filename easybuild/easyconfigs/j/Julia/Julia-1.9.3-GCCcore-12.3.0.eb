@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'Julia'
+version = '1.9.3'
+
+homepage = 'https://julialang.org'
+description = "Julia is a high-level, high-performance dynamic programming language for numerical computing"
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/JuliaLang/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    '%(name)s-1.9.1-limit-initial-OpenBLAS-threads.patch',
+    '%(name)s-1.9.3-OpenBLAS-checksum.patch',
+]
+checksums = [
+    {'julia-1.9.3.tar.gz': '8d7dbd8c90e71179e53838cdbe24ff40779a90d7360e29766609ed90d982081d'},
+    {'Julia-1.9.1-limit-initial-OpenBLAS-threads.patch':
+     'b7384de8c4f27fad6d8475105172477a4393ad6bdc660b0675900c051dd3e882'},
+    {'Julia-1.9.3-OpenBLAS-checksum.patch': '444e2822969c0ae37c856f6b0ef7c8571aa2d5a23dcfdee25239efa24e090cc0'},
+]
+
+builddependencies = [('imkl', '2023.2.0')]
+
+prebuildopts = "declare -A ARCH_MAP=( [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+buildopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+preinstallopts = prebuildopts
+installopts = buildopts
+
+# so that the Pardiso Julia package can find MKL
+postinstallcmds = ["patchelf --set-rpath '$ORIGIN:$ORIGIN/..:'\"$MKLROOT/lib/intel64\" %(installdir)s/lib/julia/libjulia-internal.so.1.9"]
+
+skipsteps = ['configure']
+
+sanity_check_paths = {
+    'files': ['bin/julia', 'include/julia/julia.h', 'lib/libjulia.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'share']
+}
+
+sanity_check_commands = ['julia --help']
+
+# : means the default path, this way extension modules can append to it
+
+modluafooter = '''
+append_path("JULIA_DEPOT_PATH", ":")
+'''
+
+moduleclass = 'lang'

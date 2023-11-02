@@ -26,7 +26,7 @@ builddependencies = [
     ('pkgconf', '1.9.5'),
     ('binutils', '2.40'),
     ('CMake', '3.26.3'),
-    ('googletest', '1.13.0'),
+    ('SciPy-Stack', '2023b')
 ]
 
 dependencies = [
@@ -34,16 +34,37 @@ dependencies = [
     ('LibTIFF', '4.5.0'),
     ('cURL', '8.0.1'),
     ('XZ', '5.4.2'),
-    ('nlohmann_json', '3.11.2'),
 ]
 
-# build twice, once for static, once for shared libraries
-configopts = ['', '-DBUILD_SHARED_LIBS=OFF']
+multi_deps= {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('pyproj', '3.6.1', {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'pyproj',
+        'preconfigopts': '#',
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['44aa7c704c2b7d8fb3d483bbf75af6cb2350d30a63b144279a09b75fead501bf'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
 
 sanity_check_paths = {
     'files': ['bin/cct', 'bin/cs2cs', 'bin/geod', 'bin/gie', 'bin/proj', 'bin/projinfo',
-              'lib/libproj.a', 'lib/libproj.%s' % SHLIB_EXT],
+              'lib/libproj.%s' % SHLIB_EXT],
     'dirs': ['include'],
 }
+
+sanity_check_commands = [
+    "module load scipy-stack && python -c 'import pyproj;'",
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': [''],}
 
 moduleclass = 'lib'

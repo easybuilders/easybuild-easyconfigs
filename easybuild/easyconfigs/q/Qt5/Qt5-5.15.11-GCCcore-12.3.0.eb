@@ -1,0 +1,122 @@
+easyblock = 'EB_Qt'
+
+name = 'Qt5'
+version = '5.15.11'
+modaltsoftname = 'qt'
+
+homepage = 'https://qt.io/'
+description = "Qt is a comprehensive cross-platform C++ application framework."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+# disabling use of -ftree-vectorize is required to avoid compilation failures on some systems (e.g. Intel Skylake X)
+toolchainopts = {'vectorize': False}
+
+source_urls = [
+    'https://download.qt.io/official_releases/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/archive/qt/%(version_major_minor)s/%(version)s/single/',
+    'https://download.qt.io/new_archive/qt/%(version_major_minor)s/%(version)s/single/',
+]
+sources = ['qt-everywhere-opensource-src-%(version)s.tar.xz']
+patches = [
+    'Qt5-5.13.1_fix-avx2.patch',
+    'Qt5-5.13.1_fix-qmake-libdir.patch',
+    'Qt5-5.15.10_fix-OF-Gentoo.patch',
+    'Qt5-5.15.7_GCC-12.patch',
+    'Qt5-5.15.11_webengine-binutils-2.41.patch',
+    'Qt5-5.15.11_webengine-chromium-drop-catapult.patch',
+    'Qt5-5.15.11_webengine-chromium-python3.patch',
+    'Qt5-5.15.11_webengine-drop-catapult.patch',
+    'Qt5-5.15.11_webengine-python3.patch',
+    'Qt5-5.15.11_webengine-python3.11.patch',
+]
+
+builddependencies = [
+#    ('binutils', '2.40'),
+#    ('pkgconf', '1.9.5'),
+    # deps for QtWebEngine
+#    ('Bison', '3.8.2'),
+#    ('flex', '2.6.4'),
+#    ('gperf', '3.1'),
+#    ('Ninja', '1.11.1'),
+#    ('Python', '2.7.18', '-bare'),
+#    ('re2c', '3.1'),
+#     ('SciPy-Stack', '2023b'),
+     ('nodejs', '18.17.1'),
+    ('snappy', '1.1.10'),
+    ('JasPer', '4.0.0'),
+]
+
+dependencies = [
+#    ('double-conversion', '3.1.5'),
+#    ('GLib', '2.68.2'),
+#    ('PCRE2', '10.36'),
+    ('libpng', '1.6.39'),
+    # deps for QtWebEngine
+    ('X11', '20230603'),
+    ('fontconfig', '2.14.2'),
+    ('DBus', '1.15.4'),
+    ('libevent', '2.1.12'),
+    ('libGLU', '9.0.3'),
+    ('libjpeg-turbo', '2.1.5.1'),
+#    ('NSS', '3.65'),
+    ('bzip2', '1.0.8'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+# qtgamepad needs recent kernel/libevdev (fails on RHEL 6.x)
+# qtwayland fails to build on (some) Centos 7 systems
+configopts = '-skip qtgamepad  -skip qtwayland'
+configopts += ' -no-feature-statx'      # bug 672856
+configopts += ' -no-feature-getentropy' # needs kernel 3.17
+configopts += ' -no-feature-renameat2'  # needs kernel 3.16
+
+# see https://patchwork.ozlabs.org/project/buildroot/patch/20180629143521.9018-1-gael.portay@savoirfairelinux.com/
+parallel = 16
+prebuildopts = "NINJAFLAGS='-j%s' "%parallel
+
+# make sure QtWebEngine component is being built & installed
+check_qtwebengine = True
+
+multi_deps = {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'  
+
+exts_default_options = {
+    'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/%(name)s/%(version)s/', PYPI_SOURCE],
+    'use_pip': True,
+}
+
+local_sipdir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/PyQt5/bindings'
+
+local_sipver = '6.7.12'
+exts_list = [
+    ('toml', '0.10.2'),
+    ('ply', '3.11'),
+    ('SIP', local_sipver, {
+        'sources': [SOURCELOWER_TAR_GZ],
+        'modulename': 'PyQt5.sip',
+    }),
+    ('PyQt-builder', '1.15.3', {
+	'modulename': 'pyqtbuild',
+    }),
+    ('PyQt5_sip', '12.13.0', {
+        'modulename': 'PyQt5.sip',
+    }),
+    ('PyQt5', '5.15.10', {
+        'preinstallopts': 'sed -i "s/not self.confirm_license:/False:/" project.py && ',
+        'modulename': 'PyQt5.QtCore',
+    }),
+    ('PyQtWebEngine', '5.15.6', {
+        'preinstallopts': ('sed -i "s@\\(^\\[tool.sip.project\\]\\)@\\1\\nsip-include-dirs = [\\\"%s\\\"]@"'
+            ' pyproject.toml && ' % local_sipdir),
+        'modulename': 'PyQt5.QtWebEngine',
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+sanity_check_paths = {'files': [], 'dirs': []}
+moduleclass = 'devel'

@@ -1,0 +1,33 @@
+easyblock = 'MakeCp'
+
+name = 'GLOST'
+version = '0.3.1'
+
+homepage = 'https://github.com/cea-hpc/glost'
+description = """
+This is GLOST, the Greedy Launcher Of Small Tasks.
+"""
+
+toolchain = {'name': 'iompi', 'version': '2023a'}
+
+source_urls = ['https://github.com/cea-hpc/%(namelower)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['15de79432d6f284a6e9873de8fa2db3c44926e23a7efbbeae261ab8cb5e19c28']
+
+skipsteps = ['install']
+
+postinstallcmds =  [
+    'mkdir -p %(installdir)s/bin && ' +
+    'cd %(builddir)s/%(namelower)s-%(version)s/ && ' +
+    'cp -r examples LICENSE man NEWS README %(installdir)s/ && ' +
+    'cp glost_bcast glost_filter.sh  glost_launch %(installdir)s/bin/',
+]
+
+files_to_copy = [(['glost_bcast', 'glost_filter.sh', 'glost_launch'], 'bin'), (['examples', ''])]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['glost_bcast', 'glost_filter.sh', 'glost_launch']],
+    'dirs': ['examples', 'man'],
+}
+
+moduleclass = 'tools'

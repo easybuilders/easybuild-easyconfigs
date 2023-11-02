@@ -1,0 +1,28 @@
+Compute Canada specific patch to teach FlexiBLAS to look in
+$RSNT_ARCH paths for backends, avoiding the need to play with
+FLEXIBLAS_LIBRARY_PATH.
+
+Bart Oldeman <bart.oldeman@calculquebec.ca>
+--- flexiblas-3.0.4/src/paths.c	2020-10-22 09:07:55.000000000 +0000
++++ flexiblas-3.0.4.new/src/paths.c	2021-10-16 14:32:24.810650633 +0000
+@@ -83,6 +83,20 @@
+ {
+     char * v;
+     char * p;
++    char * arch = getenv("RSNT_ARCH") == "avx512" ? "x86-64-v4" : "x86-64-v3";
++    if ( arch){
++        // .../easybuild/software/2023/x86-64-v3/Core/flexiblascore/3.3.1/lib64/flexiblas ->
++        // .../easybuild/software/2023/x86-64-v[34]/Compiler/gcccore/flexiblas/3.3.1/lib64/flexiblas
++        const char *default_lib_path = FLEXIBLAS_DEFAULT_LIB_PATH;
++        v = strstr(default_lib_path, "/x86-64-v3/Core/flexiblascore/");
++        if ( v){
++            size_t len = strlen(default_lib_path) + 8 + 1;
++            p = malloc(len);
++            snprintf(p, len, "%.*s/%s/Compiler/gcccore/flexiblas/%s", v - default_lib_path, default_lib_path, arch, v + 30);
++            __flexiblas_add_path(p);
++            free(p);
++        }
++    }
+     if ( getenv(ENV_FLEXIBLAS_LIBRARY_PATH)){
+         v = strdup(getenv(ENV_FLEXIBLAS_LIBRARY_PATH));
+         v = csc_str_remove_char(v, '"');

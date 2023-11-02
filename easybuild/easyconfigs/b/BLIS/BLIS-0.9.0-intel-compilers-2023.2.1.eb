@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'BLIS'
+version = '0.9.0'
+
+homepage = 'https://github.com/flame/blis/'
+description = """BLIS is a portable software framework for instantiating high-performance
+BLAS-like dense linear algebra libraries."""
+
+toolchain = {'name': 'intel-compilers', 'version': '2023.2.1'}
+toolchainopts = {'optarch': False}
+
+source_urls = ['https://github.com/flame/blis/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_disable_power9_kernels.patch',
+    '%(name)s-%(version)s_enable_ppc_autodetect.patch',
+    '%(name)s-%(version)s_family-x86_64_v3.patch',
+    '%(name)s-%(version)s_blastest-enable-complex-return-intel.patch',
+    '%(name)s-%(version)s_ifx-complex-return-intel.patch',
+]
+checksums = [
+    '1135f664be7355427b91025075562805cdc6cc730d3173f83533b2c5dcc2f308',  # 0.9.0.tar.gz
+    # BLIS-0.9.0_disable_power9_kernels.patch
+    'ed7a326bc5c5c21c42faefbec2fd7be609d1c7236981b466475edace39307279',
+    # BLIS-0.9.0_enable_ppc_autodetect.patch
+    'f373fb252c0d14036fb631f048091976cceb02abb3e570a97fbaeac2fbb12328',
+    # BLIS-0.9.0_family-x86_64_v3.patch
+    '10b59c309dba9b240c9c4c05a2f079ff3a305dc802e2d2fff61c54a4d31b197b',
+    # BLIS-0.9.0_blastest-enable-complex-return-intel.patch
+    '0f1966b340d1f24cf02070f00f72f232b4cbfcd242ee9ce8c5f09f7220397cb4',
+    '097a2647b5c66386155cf6a33a2a617b876bd0f9096a2912359eb0897a29d2d5',  # BLIS-0.9.0_ifx-complex-return-intel.patch
+]
+builddependencies = [
+    ('binutils', '2.38'),
+]
+
+preconfigopts = "sed -i 's/march=knl/march=common-avx512/g' config/knl/make_defs.mk && "
+preconfigopts += "declare -A ARCH_MAP=( [avx2]='x86_64_v3' [avx512]='skx' ) &&"
+local_configopts = '--complex-return=intel --enable-cblas --enable-threading=openmp --enable-shared CC="$CC" ${ARCH_MAP[$RSNT_ARCH]}'
+configopts = ['-i64 -b64 ' + local_configopts, local_configopts]
+buildopts = ['LIBBLIS=libblis64', '']
+installopts = buildopts
+
+runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['include/blis/cblas.h', 'include/blis/blis.h',
+              'lib/libblis64.a', 'lib/libblis64.%s' % SHLIB_EXT,
+              'lib/libblis.a', 'lib/libblis.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+modextrapaths = {'CPATH': 'include/blis'}
+
+moduleclass = 'numlib'

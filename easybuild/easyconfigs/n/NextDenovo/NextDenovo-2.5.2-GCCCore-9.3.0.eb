@@ -1,0 +1,72 @@
+easyblock = 'MakeCp'
+
+name = 'NextDenovo'
+version = '2.5.2'
+
+homepage = 'https://github.com/Nextomics/NextDenovo'
+description = """NextDenovo is a string graph-based de novo assembler for long reads (CLR, HiFi and ONT). It uses a "correct-then-assemble" strategy similar to canu (no correction step for PacBio HiFi reads), but requires significantly less computing resources and storages. After assembly, the per-base accuracy is about 98-99.8%, to further improve single base accuracy, try NextPolish."""
+
+toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
+
+source_urls = ['https://github.com/Nextomics/NextDenovo/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['%(name)s-%(version)s-fix-ldeflate.patch']
+checksums = [
+    {'v2.5.2.tar.gz': 'aa6743e680114fdf20091b70e2b501e2576a5e228c5f8f2e8383ffd4e3895e47'},
+    {'NextDenovo-2.5.2-fix-ldeflate.patch': '7982263c3f6d70cb346e00b601ba64cdc078bed05dcbb2e2c2cc442bc925458d'},
+]
+
+builddependencies = [
+    ("python-build-bundle", "2023b"),
+]
+
+multi_deps = {'Python': ['3.8', '3.9', '3.10', '3.11']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+        'source_urls': [PYPI_SOURCE],
+        'download_dep_fail': True,
+        'use_pip': True,
+}
+
+exts_list = [
+    ('Paralleltask', '0.2.2', {
+        'checksums': ['f00945e2bd5b6aff9cdc48fbd92aa7b48d23bb530d7f6643ac966fea11a7a9d5'],
+    }),
+    ('psutil', '5.9.6', {
+        'checksums': ['e4b92ddcd7dd4cdd3f900180ea1e104932c7bce234fb88976e2a3b296441225a'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/bam_sort',
+    ],
+    'dirs': [
+        'bin',
+        'lib'
+    ]
+}
+
+sanity_check_commands = [
+    # Something like this would be an ideal test ...
+    # "mkdir -p /tmp/next_demovo_test && cp -a %(srcdir)s/test_data /tmp/next_denovo_test && nextDenovo /tmp/next_data_test/test_data/run.cfg && rm -rf /tmp/next_denovo_test"
+]
+
+files_to_copy = ['nextDenovo',
+                 'bin',
+                 (['lib/*.so', 'lib/*.py', 'lib/htslib'], 'lib')]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+    'PATH': ''
+}
+
+modluafooter = """
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+        depends_on(between("python",'3.8<','<3.12'))
+end
+"""
+
+moduleclass = 'bio'

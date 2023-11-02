@@ -40,10 +40,15 @@ builddependencies = [
 	('oldest-supported-numpy', '2022a'),
 ]
 
+local_egg_names = ['faiss-cpu', 'faiss-gpu']
 postinstallcmds = [
 	'patchelf --set-rpath "\\$ORIGIN:%(installdir)s/lib64:$CUDA_HOME/lib" %(installdir)s/lib/python{pyver}/site-packages/faiss/{lib}'.format(lib=lib, pyver=py)
 	for lib in ("_swigfaiss.so", "_swigfaiss_avx2.so")
 	for py in multi_deps['Python']
+] + [
+    "echo -e 'Metadata-Version: 2.3\nName: {eggname}\nVersion: %(version)s' > %(installdir)s/lib/python{py}/site-packages/{eggname}-%(version)s.egg-info".format(py=local_py, eggname=eggname)
+    for local_py in multi_deps["Python"]
+    for eggname in local_egg_names
 ]
 
 sanity_check_paths = {

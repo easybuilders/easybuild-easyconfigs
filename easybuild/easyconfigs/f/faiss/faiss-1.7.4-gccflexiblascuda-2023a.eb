@@ -1,0 +1,78 @@
+easyblock = 'CMakeMake'
+
+name = 'faiss'
+version = '1.7.4'
+
+homepage = 'https://github.com/facebookresearch/faiss'
+description = """
+Faiss is a library for efficient similarity search and clustering of dense vectors. It
+contains algorithms that search in sets of vectors of any size, up to ones that possibly do
+not fit in RAM. It also contains supporting code for evaluation and parameter tuning.
+Faiss is written in C++ with complete wrappers for Python/numpy. Some of the most
+useful algorithms are implemented on the GPU.
+"""
+
+toolchain = {'name': 'gccflexiblascuda', 'version': '2023a'}
+
+source_urls = ['https://github.com/facebookresearch/faiss/archive/']
+sources = ["v%(version)s.tar.gz"]
+patches = ["faiss-1.7.1_fix_missing_so.patch"]
+checksums = [
+	"d9a7b31bf7fd6eb32c10b7ea7ff918160eed5be04fe63bb7b4b4b5f2bbde01ad",
+	"2704efc38ce6b309727e1015f9a73ee9eb7dc8c08c452cea2be2862709d65568",
+]
+
+# Opt. level are {generic, avx2, sse4}.
+configopts = " ".join([
+	"-DPython_EXECUTABLE=$EBROOTPYTHON/bin/python",
+	"-DBUILD_SHARED_LIBS=ON",
+	"-DFAISS_OPT_LEVEL=avx2",
+	"-DBUILD_TESTING=OFF",
+])
+buildopts = " && cd %(builddir)s/easybuild_obj/faiss/python && python setup.py bdist_wheel "
+installopts = " && pip install %(builddir)s/easybuild_obj/faiss/python/dist/faiss-%(version)s-py3-none-any.whl --prefix=%(installdir)s "
+
+multi_deps = {'Python': ['3.10', '3.11']}
+
+builddependencies = [
+	('SWIG', '4.1.1'),
+	('CMake', '3.27.7'),
+	('oldest-supported-numpy', '2023b'),
+]
+
+local_egg_names = ['faiss-cpu', 'faiss-gpu', 'faiss']
+postinstallcmds = [
+	'patchelf --set-rpath "\\$ORIGIN:%(installdir)s/lib64:$CUDA_HOME/lib" %(installdir)s/lib/python{pyver}/site-packages/faiss/{lib}'.format(lib=lib, pyver=py)
+	for lib in ("_swigfaiss.so", "_swigfaiss_avx2.so")
+	for py in multi_deps['Python']
+] + [
+    "echo -e 'Metadata-Version: 2.3\nName: {eggname}\nVersion: %(version)s' > %(installdir)s/lib/python{py}/site-packages/{eggname}-%(version)s.egg-info".format(py=local_py, eggname=eggname)
+    for local_py in multi_deps["Python"]
+    for eggname in local_egg_names
+]
+
+sanity_check_paths = {
+    'files': [
+    	'lib64/libfaiss.so',
+    	'lib/python%(pyshortver)s/site-packages/faiss/_swigfaiss.so',
+    	'lib/python%(pyshortver)s/site-packages/faiss/_swigfaiss_avx2.so',
+    	'lib/python%(pyshortver)s/site-packages/faiss/libfaiss_python_callbacks.so',
+    ],
+    'dirs': [
+    	'lib/python%(pyshortver)s/site-packages',
+    	'include/faiss'
+    ],
+}
+
+sanity_check_commands = [
+    "module load scipy-stack && python -c 'import faiss; index = faiss.IndexFlatL2(64)'",
+]
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+# Depends on any numpy at runtime.
+modluafooter = """
+depends_on("scipy-stack")
+"""
+
+moduleclass = 'lib'

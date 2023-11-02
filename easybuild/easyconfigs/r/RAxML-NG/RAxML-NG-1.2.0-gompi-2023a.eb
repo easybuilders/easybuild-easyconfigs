@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'RAxML-NG'
+version = "1.2.0"
+
+homepage = 'https://github.com/amkozlov/raxml-ng'
+description = """RAxML-NG is a phylogenetic tree inference tool which
+uses maximum-likelihood (ML) optimality criterion. Its search heuristic
+ is based on iteratively performing a series of Subtree Pruning and Regrafting
+ (SPR) moves, which allows to quickly navigate to the best-known ML tree."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'openmp': True, 'cstd': 'c++17'}
+
+sources = [
+    {'filename': SOURCE_TAR_GZ, 
+     'git_config': {'url': 'https://github.com/amkozlov', 
+     'repo_name': '%(namelower)s', 
+     'tag': '%(version)s', 
+     'recursive': True, 
+     'keep_git_dir': True}},
+]
+checksums = ['e6b8a385078fa30dcc580ad4f4255f37f32db2ba34cac53a32aa5f8dc2e60505']
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+]
+
+configopts = [
+    "-DUSE_TERRAPHAST=ON -DENABLE_PLLMOD_SIMD=ON -DENABLE_GMP=ON -DUSE_MPI=OFF ",
+    "-DUSE_TERRAPHAST=ON -DENABLE_PLLMOD_SIMD=ON -DENABLE_GMP=ON -DUSE_MPI=ON ",
+
+]
+
+# too much parallellism makes the build fail with:
+# No rule to make target 'localdeps/lib/libterraces.a';
+# see https://github.com/amkozlov/raxml-ng/issues/108
+
+maxparallel = 4
+
+runtest = 'test'
+
+build_type = 'Release'
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s-mpi', 'bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['%(namelower)s-mpi -h; %(namelower)s -h']
+
+moduleclass = 'bio'

@@ -75,3 +75,13 @@ sanity_check_commands = [
         'rserver --verify-installation=1 --database-config-file=$MYTMP/db.conf --server-data-dir=$MYTMP/sdd --server-user=$USER',
     ])
 ]
+
+# do not store user state in home directories, but keep backward compat
+# for users starting an interactive job with rstudio
+modluafooter = """
+if os.getenv('SLURM_TMPDIR') then
+    setenv('RSTUDIO_DATA_HOME', pathJoin(os.getenv('SLURM_TMPDIR'), '.rstudio/{version}'))
+else
+    setenv('RSTUDIO_DATA_HOME', pathJoin(os.getenv('HOME'), '.rstudio/{version}'))
+end
+""".format(version=version)

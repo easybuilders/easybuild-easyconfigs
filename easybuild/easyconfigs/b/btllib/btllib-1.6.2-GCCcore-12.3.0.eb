@@ -1,0 +1,42 @@
+easyblock = 'MesonNinja'
+
+name = 'btllib'
+version = '1.6.2'
+
+homepage = "https://github.com/bcgsc/btllib"
+description = """Bioinformatics Technology Lab common code library"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/bcgsc/%(name)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['06af0bccd68443bc6351d1d6d46599ae2a6e94752ae5fdf973067a77740d751c']
+
+builddependencies = [
+    ('python-build-bundle', '2023b'),
+    ('SWIG', '4.1.1'),
+    ('SAMtools', '1.18'),
+    #('Python', '3.10'),
+]
+
+preconfigopts = 'sed -i -e "s/b_coverage=true/b_coverage=false/" %(builddir)s/%(namelower)s-*/meson.build && '
+
+# Add egg-info so `pip list` see it, and requirement is fulfilled
+
+postinstallcmds = [
+    "echo -e 'Metadata-Version: 2.3\nName: %(name)s\nVersion: %(version)s' > %(installdir)s/lib/%(name)s/python/%(name)s-%(version)s.egg-info"
+]
+
+sanity_check_paths = {
+    'files': ['bin/indexlr', 'bin/mi_bf_generate', 'bin/randseq', 'lib64/libbtllib.a', 'lib/btllib/python/btllib/_btllib.so'],
+    'dirs': ['bin', 'include/btllib'],
+}
+
+sanity_check_commands = ["module load python/{} && python -c 'import btllib'".format(p) for p in ('3.10', '3.11')]
+
+modextrapaths = {'PYTHONPATH' : 'lib/btllib/python'}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("python")
+"""

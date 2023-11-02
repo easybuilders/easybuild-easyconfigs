@@ -1,0 +1,43 @@
+name = 'Gurobi'
+version = '10.0.3'
+
+homepage = 'https://www.gurobi.com'
+description = """The Gurobi Optimizer is a state-of-the-art solver for mathematical programming.
+The solvers in the Gurobi Optimizer were designed from the ground up to exploit modern
+architectures and multi-core processors, using the most advanced implementations of the
+latest algorithms."""
+
+toolchain = SYSTEM
+
+# Registration required so manually download sources instead
+# source_urls = ['https://packages.gurobi.com/%(version_major_minor)s/']
+sources = ['%(namelower)s%(version)s_linux64.tar.gz']
+# sha256sum /cvmfs/restricted.computecanada.ca/easybuild/sources/g/Gurobi/gurobi10.0.3_linux64.tar.gz
+checksums = ['82f916db110c42ce8ce13c10a14eba97c7acd63c3c0c59f98186c5085780ca83']
+
+license_file = '/cvmfs/restricted.computecanada.ca/config/licenses/%(namelower)s/clusters/computecanada.lic'
+
+postinstallcmds = [
+    "for d in $(find %(installdir)s -name 'bin' -o -name 'lib'); \
+	do echo Calling setrpaths.sh --path $d --add_path %(installdir)s/lib; \
+	/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path $d --add_path %(installdir)s/lib; done",
+    "mv %(installdir)s/lib/libgurobi_c++.a %(installdir)s/lib/libgurobi_c++.a-orig",
+    "cd %(installdir)s/src/build; gcc -v >& make.out; make >> make.out; cp libgurobi_c++.a ../../lib",
+]
+
+sanity_check_commands = ["gurobi_cl --help"]
+
+modluafooter = """
+require("SitePackage")
+local found = find_and_define_license_file("GRB_LICENSE_FILE","gurobi")
+if (not found) then
+        local error_message = [[
+        We did not find a suitable license for Gurobi. If you have access to one, you can create the file $HOME/.licenses/gurobi.lic  with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it.
+
+        Nous n'avons pas trouve de licence utilisable pour Gurobi. Si vous avez acces a une licence de Gurobi, vous pouvez creer le fichier $HOME/.licenses/gurobi.lic avec l'information de la licence. Si vous pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+        ]]
+        LmodError(error_message)
+end
+"""
+
+moduleclass = 'math'

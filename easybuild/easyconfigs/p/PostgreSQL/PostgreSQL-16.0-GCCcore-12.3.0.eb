@@ -1,0 +1,60 @@
+easyblock = 'ConfigureMake'
+
+name = 'PostgreSQL'
+version = '16.0'
+local_python_version = '2.9.9'
+
+homepage = 'https://www.postgresql.org/'
+description = """PostgreSQL is a powerful, open source object-relational database system.
+ It is fully ACID compliant, has full support for foreign keys,
+ joins, views, triggers, and stored procedures (in multiple languages).
+ It includes most SQL:2008 data types, including INTEGER,
+ NUMERIC, BOOLEAN, CHAR, VARCHAR, DATE, INTERVAL, and TIMESTAMP.
+ It also supports storage of binary large objects, including pictures,
+ sounds, or video. It has native programming interfaces for C/C++, Java,
+ .Net, Perl, Python, Ruby, Tcl, ODBC, among others, and exceptional documentation."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['http://ftp.postgresql.org/pub/source/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['58bd3a265a279a2754905ddf072a54d64d6236dcf786f20f92b5d30b916df516']
+
+builddependencies = [
+    ('Perl', '5.36.1'),
+]
+
+# ('openssl-devel', 'libssl-dev', 'libopenssl-devel')
+osdependencies = [OS_PKG_OPENSSL_DEV]
+
+configopts = '--with-python --with-openssl'
+
+multi_deps = {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+
+exts_defaultclass = 'PythonPackage'
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+exts_list = [
+    ('psycopg2', '2.9.9', {
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/p/psycopg2/'],
+        'checksums': ['d1454bde93fb1e224166811694d600e746430c006fbb031ea06ecc2ea41bf156'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        'bin/psql',
+        'bin/pg_config',
+        'lib/libpq.a',
+        'lib/libpq.%s' % SHLIB_EXT,
+    ],
+    'dirs': ['bin', 'lib', 'lib/python%(pyshortver)s/site-packages/', 'share'],
+}
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+}
+
+moduleclass = 'data'

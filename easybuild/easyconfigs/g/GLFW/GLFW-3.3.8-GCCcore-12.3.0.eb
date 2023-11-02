@@ -1,0 +1,65 @@
+easyblock = 'CMakeMake'
+
+name = 'GLFW'
+version = '3.3.8'
+
+homepage = 'https://www.glfw.org'
+description = '''GLFW is an Open Source, multi-platform library for OpenGL,
+    OpenGL ES and Vulkan development on the desktop'''
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/%(namelower)s/%(namelower)s/archive/']
+sources = ['%(version)s.tar.gz']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+local_python_versions = ['3.10', '3.11']
+# make sure both static and shared libs are built
+local_configopts = [
+    "-DBUILD_SHARED_LIBS=OFF",
+    "-DBUILD_SHARED_LIBS=ON",
+]
+configopts = local_configopts * len(local_python_versions)
+multi_deps = {'Python': sorted(local_python_versions * 2)}
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+}
+exts_list = [
+    ('glfw', '2.6.2'),
+]
+configopts = [
+    "-DBUILD_SHARED_LIBS=OFF",
+    "-DBUILD_SHARED_LIBS=ON",
+]*2
+
+sanity_check_paths = {
+    'files': [
+        'include/GLFW/glfw3.h',
+        'include/GLFW/glfw3native.h',
+        'lib/libglfw3.a',
+        'lib/libglfw.so',
+        'lib/pkgconfig/glfw3.pc',
+    ],
+    'dirs': [
+        'include/GLFW',
+        'lib/cmake/glfw3',
+        'lib/pkgconfig',
+    ],
+}
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+modextravars = {
+    'PYGLFW_LIBRARY': '%(installdir)s/lib64/libglfw.so',
+}
+
+moduleclass = 'vis'

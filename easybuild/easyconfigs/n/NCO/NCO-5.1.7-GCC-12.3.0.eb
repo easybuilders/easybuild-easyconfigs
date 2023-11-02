@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'NCO'
+version = "5.1.7"
+
+homepage = "https://nco.sourceforge.net"
+description = """manipulates and analyzes data stored in netCDF-accessible formats, including DAP, HDF4, and HDF5"""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/nco/nco/archive/']
+sources = ['%(version)s.tar.gz']
+checksums = ['2b068558a605e30a465870166747e1d37726849814a5cfe41a000764b30e2ba1']
+
+builddependencies = [
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('HDF', '4.2.16'),
+]
+
+dependencies = [
+    ('UDUNITS', '2.2.28'),
+    ('expat', '2.5.0'),
+    ('ANTLR', '2.7.7'),
+    ('libdap', '3.20.11'),
+    ('GSL', '2.7'),
+    ('netCDF', '4.9.2'),
+]
+
+configopts = "--enable-nco_cplusplus"
+
+sanity_check_paths = {
+    'files': ['bin/nc%s' % x for x in ('ap2', 'atted', 'bo', 'diff', 'ea', 'ecat', 'es',
+                                       'flint', 'ks', 'pdq', 'ra', 'rcat', 'rename', 'wa')] +
+             ['lib/libnco.a', 'lib/libnco.%s' % SHLIB_EXT, 'lib/libnco_c++.a', 'lib/libnco_c++.%s' % SHLIB_EXT],
+    'dirs': ['include'],
+}
+sanity_check_commands = [
+    "ncks -O -7 --cnk_dmn time,10 "
+    "%(builddir)s/%(namelower)s-%(version)s/data/in.nc %(builddir)s/%(namelower)s-%(version)s/data/in4.cdl"
+]
+
+moduleclass = 'tools'

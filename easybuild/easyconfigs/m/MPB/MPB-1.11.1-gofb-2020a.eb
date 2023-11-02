@@ -1,0 +1,57 @@
+easyblock = 'ConfigureMake'
+
+name = 'MPB'
+version = '1.11.1'
+versionsuffix = '-mpi'
+
+modaltsoftname = '%(namelower)s-mpi'
+
+homepage = 'https://mpb.readthedocs.io/en/latest'
+description = """MPB is a software package to compute definite-frequency eigenstates of Maxwell's equations in periodic dielectric structures. It can compute optical dispersion relations and eigenstates for structures such as strip waveguides and optical fibers. MPB is well suited for the study of photonic crystals: periodic dielectric structures exhibiting a band gap in their optical modes, prohibiting propagation of light in that frequency range."""
+
+toolchain = {'name': 'gofb', 'version': '2020a'}
+toolchainopts = {'opt': True, 'unroll': True, 'pic': True}
+
+source_urls = ["https://github.com/NanoComp/mpb/releases/download/v%(version)s"]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['dc55b081c56079727dac92d309f8e4ea84ca6eea9122ec24b7955f8c258608e1']
+
+builddependencies = [
+    ('libctl', '4.5.0'),
+]
+
+dependencies = [
+    ('HDF5', '1.10.6', '-mpi'),
+    ('FFTW', '3.3.8', '-mpi'),
+]
+
+local_opts = " ".join([
+    '--with-hdf5',
+    '--with-blas="$LIBBLAS"',
+    '--with-lapack="$LIBLAPACK"',
+    '--with-libctl=$EBROOTLIBCTL/share/libctl',
+    '--enable-shared',
+    '--with-mpi',
+    '--with-openmp',
+])
+
+configopts = [
+    local_opts,                          # mpb
+    local_opts + ' --with-inv-symmetry', # mpbi
+]
+
+runtest = "check"
+
+sanity_check_paths = {
+    'files': ["include/mpb{}_mpi.h".format(x) for x in ('', 'i')] +
+             ["bin/mpb{}-mpi".format(x) for x in ('', 'i')]+
+             ["lib/{}".format(x) for x in ("libmpb{}_mpi.{}".format(i,j) for i in ('', 'i') for j in ('so', 'la', 'a'))],
+    'dirs': ['bin', 'include', 'include/mpb', 'lib', 'share'],
+}
+
+sanity_check_commands = [
+    "mpb-mpi -V",
+    "mpbi-mpi -V",
+]
+
+moduleclass = 'phys'

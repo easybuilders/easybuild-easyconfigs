@@ -1,0 +1,117 @@
+easyblock = "CMakeMake"
+
+name = "OpenCV"
+version = "4.8.1"
+
+homepage = "http://opencv.org/"
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products."""
+
+toolchain = {"name": "gccflexiblas", "version": "2023a"}
+
+sources = [
+    {
+        # opencv
+        'source_urls': ["https://github.com/%(namelower)s/%(namelower)s/archive/"],
+        "download_filename": "%(version)s.zip",
+        "filename": "%(name)s-%(version)s.zip"
+    },
+    {
+        # opencv-contrib
+        'source_urls': ['https://github.com/%(namelower)s/opencv_contrib/archive/'],
+        'download_filename': '%(version)s.tar.gz',
+        'filename': '%(name)s-contrib-%(version)s.tar.gz',
+    }
+]
+patches = ["%(name)s-4.2.0-hal-internal.patch"]
+
+builddependencies = [
+    ("ant", "1.10.14"),
+    ("Java", "17"),
+    ("Eigen", "3.4.0"),
+    ("JasPer", "4.0.0"),
+    ("CMake", "3.27.7"),
+    ('HDF5', '1.14.2'),
+    ("Julia", "1.9.3"),
+    ('oldest-supported-numpy', '2023b'),
+]
+
+multi_deps = {"Python": ["3.10", "3.11"]}
+multi_deps_load_default = False
+
+configopts = " ".join(
+    [
+        "-DWITH_IPP=ON",
+        "-DWITH_OPENMP=ON",
+        "-DWITH_CUDA=OFF",
+        "-DOPENCV_SKIP_LAPACK_EXTERN_C=ON",
+        "-DPYTHON_PACKAGES_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages",
+        "-DPYTHON3_EXECUTABLE=$EBROOTPYTHON/bin/python3",
+        "-DPYTHON3_NUMPY_INCLUDE_DIRS=$EBROOTOLDESTMINSUPPORTEDMINNUMPY/lib/python%(pyshortver)s/site-packages/numpy/core/include",
+        "-DENABLE_HEADLESS=ON",
+        "-DENABLE_CONTRIB=ON",
+        "-DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/opencv_contrib-%(version)s/modules",
+        "-DOPENCV_GENERATE_PKGCONFIG=ON",
+    ]
+)
+
+# Provide four names as somes packages request one of the four, but mostly `opencv_python` or `opencv_contrib_python` is used.
+local_egg_names = ['opencv_python', 'opencv_contrib_python', 'opencv_python_headless', 'opencv_contrib_python_headless']
+
+# This step does not iterate as sanity_check does.
+postinstallcmds = [
+    local_cmd.format(local_py)
+    for local_py in multi_deps["Python"]
+    for local_cmd in
+        ["/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python{}/site-packages --add_path %(installdir)s/lib64"] +
+        ["echo -e 'Metadata-Version: 2.3\nName: {eggname}\nVersion: %(version)s' > %(installdir)s/lib/python{}/site-packages/{eggname}-%(version)s.egg-info".format('{}', eggname=eggname)
+         for eggname in local_egg_names]
+]
+
+local_contrib_libs = [
+    "alphamat", "aruco", "bgsegm", "bioinspired", "ccalib", "datasets", "dnn_objdetect", "dnn_superres", "dpm", "face", "freetype",
+    "fuzzy", "hdf", "hfs", "img_hash", "line_descriptor", "optflow", "phase_unwrapping", "plot", "quality", "reg",
+    "rgbd", "saliency", "shape", "stereo", "structured_light", "superres", "surface_matching", "text", "tracking",
+    "videostab", "xfeatures2d", "ximgproc", "xobjdetect", "xphoto"
+]
+
+sanity_check_paths = {
+    "files": [
+        "lib/libopencv_core.so",
+        "bin/opencv_annotation",
+        "bin/opencv_interactive-calibration",
+        "bin/opencv_version",
+        "bin/opencv_visualisation",] + [
+        "lib/python%(pyshortver)s/site-packages/{}-%(version)s.egg-info".format(n) for n in local_egg_names] + [
+        "lib64/libopencv_{}.so".format(l) for l in local_contrib_libs],
+    "dirs": [
+        "bin",
+        "include",
+        "lib/python%(pyshortver)s/site-packages",
+        "lib64",
+        "share"
+    ],
+}
+
+sanity_check_commands = [
+    "module load scipy-stack && python -c 'import cv2'",
+]
+
+modextrapaths = {
+    "CLASSPATH": "share/java/opencv4",
+    "EBPYTHONPREFIXES": "",
+}
+
+# Depends on any numpy at runtime.
+modluafooter = """
+depends_on("scipy-stack")
+
+if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
+    extensions("{}")
+end
+""".format(",".join(["{}/{}".format(eggname, version) for eggname in local_egg_names]))
+
+
+moduleclass = "vis"

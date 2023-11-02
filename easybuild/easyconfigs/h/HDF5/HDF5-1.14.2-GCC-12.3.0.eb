@@ -1,0 +1,73 @@
+name = 'HDF5'
+version = '1.14.2'
+
+homepage = 'https://portal.hdfgroup.org/display/support'
+description = """HDF5 is a data model, library, and file format for storing and managing data.
+ It supports an unlimited variety of datatypes, and is designed for flexible
+ and efficient I/O and for high volume and complex data."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%(version_major_minor)s/hdf5-%(version)s/src']
+sources = [SOURCELOWER_TAR_GZ]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('Szip', '2.1.1'),
+]
+
+# For the extensions
+builddependencies = [
+    ('Cython', '0.29.36'),
+    ('oldest-supported-numpy', '2023b'),
+    ('python-build-bundle', '2023b'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+# otherwise blosc2 libs end up in lib64 but HDF5 in lib
+preinstallopts = 'ln -s lib %(installdir)s/lib64 && '
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'download_dep_fail': True,
+    'use_pip': True,
+    'preinstallopts': "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH"
+}
+exts_list = [
+    ('cached-property', '1.5.2'),
+    ('ndindex', '1.7'),
+    ('py-cpuinfo', '9.0.0', {
+        'modulename': 'cpuinfo',
+    }),
+    ('h5py', '3.10.0', {
+        'preinstallopts': 'sed -i -e "/cmdclass = CMDCLASS,/a zip_safe = False," setup.py && H5PY_SETUP_REQUIRES=0 ',
+#       'runtest': "python -c 'import h5py; h5py.run_tests()'",
+    }),
+    ('numexpr', '2.8.7'),
+    ('blosc2', '2.2.9'),
+    ('tables', '3.9.1', {
+        # some borrowed from Gentoo dev-python/tables ebuild
+        'preinstallopts': ('unset LIBS && rm -r c-blosc/{blosc,internal-complibs} && ' +
+                         'sed -i "s@/usr/local@$EBROOTGENTOO@" setup.py && BLOSC2_DIR=%(installdir)s '),
+#       'runtest': "python setup.py test",
+    }),
+]
+
+exts_filter = ("""module load python-build-bundle/2023b oldest-supported-numpy/.2023b;  python -c 'import %(ext_name)s'""", '')
+
+sanity_check_paths = {
+    'files': [
+        'lib/libhdf5.so'
+    ],
+    'dirs': [
+        'lib/python%(pyshortver)s/site-packages'
+    ]
+}
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'data'

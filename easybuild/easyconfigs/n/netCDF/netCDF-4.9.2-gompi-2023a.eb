@@ -1,0 +1,64 @@
+name = 'netCDF'
+version = '4.9.2'
+
+homepage = 'https://www.unidata.ucar.edu/software/netcdf/'
+description = """NetCDF (network Common Data Form) is a set of software libraries
+ and machine-independent data formats that support the creation, access, and sharing of array-oriented
+ scientific data."""
+
+toolchain = {'name': 'gompi', 'version': '2023a'}
+toolchainopts = {'pic': True, 'usempi': True}
+
+source_urls = ['https://github.com/Unidata/netcdf-c/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    {'v4.9.2.tar.gz': 'bc104d101278c68b303359b3dc4192f81592ae8640f1aee486921138f7f88cb7'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('CMake', '3.26.3'),
+    ('Doxygen', '1.9.7'),
+    ('oldest-supported-numpy', '2023b'),
+    ('Cython', '0.29.36'),
+    ('mpi4py', '3.1.4'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.2'),
+    ('cURL', '8.0.1'),
+    ('Szip', '2.1.1'),
+    ('zstd', '1.5.5'),
+    ('bzip2', '1.0.8'),
+    ('libxml2', '2.11.4'),
+]
+
+local_python_versions = ['3.10', '3.11']
+# make sure both static and shared libs are built
+local_configopts = [
+    "-DBUILD_SHARED_LIBS=OFF",
+    "-DBUILD_SHARED_LIBS=ON",
+]
+configopts = local_configopts * len(local_python_versions)
+multi_deps = {'Python': local_python_versions * 2}
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+	'source_urls': [PYPI_SOURCE],
+	'download_dep_fail': True,
+	'use_pip': True,
+	'preinstallopts': "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH"
+}
+exts_list = [
+    ('certifi', '2023.7.22'),
+    ('cftime', '1.6.2'),
+    ('netCDF4', '1.6.4', {
+	'fix_python_shebang_for': ['bin/*']
+    }),
+]
+
+exts_filter = ("module load mpi4py/3.1.4 oldest-supported-numpy/.2023b; python -c 'import netCDF4'", '')
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+moduleclass = 'data'
