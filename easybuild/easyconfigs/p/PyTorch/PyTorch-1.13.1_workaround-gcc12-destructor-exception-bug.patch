@@ -23,7 +23,7 @@ index 5210d6f713d..3c91ed378e1 100644
  
    if (warning_buffer.size() > 0) {
 diff --git a/torch/csrc/Exceptions.h b/torch/csrc/Exceptions.h
-index 89256c64bba..7e09d0ebc37 100644
+index 89256c64bba..8514d08c8d0 100644
 --- a/torch/csrc/Exceptions.h
 +++ b/torch/csrc/Exceptions.h
 @@ -110,6 +110,13 @@ static inline void PyErr_SetString(PyObject* type, const std::string& message) {
@@ -50,9 +50,16 @@ index 89256c64bba..7e09d0ebc37 100644
   private:
    InternalHandler internal_handler_;
    at::WarningHandler* prev_handler_;
-@@ -399,7 +409,14 @@ auto wrap_pybind_function_impl_(Func&& f, std::index_sequence<Is...>) {
+@@ -394,12 +404,20 @@ using Arg = typename function_traits<Func>::template arg<i>::type;
+ template <typename Func, size_t... Is>
+ auto wrap_pybind_function_impl_(Func&& f, std::index_sequence<Is...>) {
+   using traits = function_traits<Func>;
++  using result_type = typename traits::result_type;
+   namespace py = pybind11;
+ 
    // f=f is needed to handle function references on older compilers
-   return [f = f](Arg<Func, Is>... args) -> typename traits::result_type {
+-  return [f = f](Arg<Func, Is>... args) -> typename traits::result_type {
++  return [f = f](Arg<Func, Is>... args) -> result_type {
      HANDLE_TH_ERRORS
 -    return f(std::forward<Arg<Func, Is>>(args)...);
 +    if constexpr (std::is_void_v<result_type>) {
