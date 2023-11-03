@@ -1,0 +1,42 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2023 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+# License::   MIT/GPL
+
+easyblock = 'CMakeMake'
+
+name = 'CoordgenLibs'
+version = '1.4.2'
+
+homepage = 'https://github.com/schrodinger/coordgenlibs'
+description = "Schrodinger-developed 2D Coordinate Generation"
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/schrodinger/coordgenlibs/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['de8886db30fbb78d08d1532c21e710c5a967e5927e46866f07a9f7eab49d8b3c'] # v1.4.2.tar.gz
+
+builddependencies = [('CMake', '3.27.7')]
+
+dependencies = [
+    ('Boost', '1.82.0'),
+    ('maeparser', '1.2.4'),
+]
+
+configopts = "-Dmaeparser_DIR=$EBROOTMAEPARSER/lib/cmake"
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/share/coordgen ',
+    'pwd ',
+    'cp -v ../%(namelower)s-%(version)s/templates.mae  %(installdir)s/share/coordgen ',
+]
+
+sanity_check_paths = {
+    'files': ['lib/libcoordgen.%s' % SHLIB_EXT],
+    'dirs': ['include/coordgen', 'lib/cmake', 'share/coordgen'],
+}
+
+moduleclass = 'chem'
