@@ -1,0 +1,78 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+easyblock = 'PythonBundle'
+
+name = 'Model-Angelo'
+versionsuffix = '-CUDA-%(cudaver)s'
+version = '1.0.9'
+
+homepage = 'https://github.com/3dem/model-angelo'
+description = """ModelAngelo is an automatic atomic model building program for cryo-EM maps"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('cppy', '1.2.1'),
+
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('tqdm', '4.64.0'),
+    ('Biopython', '1.79'),
+    ('einops', '0.4.1'),
+    ('mrcfile', '1.4.3'),
+    ('matplotlib', '3.5.2'),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('PyHMMER', '0.10.4'),
+    ('Model-Angelo_data', '1.0.9', '', SYSTEM)
+]
+
+use_pip = True
+sanity_pip_check = True
+
+github_account = '3dem'
+
+exts_list = [
+    ('loguru', '0.7.2', {
+        'checksums': ['e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac'],
+    }),
+    ('fair-esm', '2.0.0', {
+        'modulename': 'esm',
+        'checksums': ['4ed34d4598ec75ed6550a4e581d023bf8d4a8375317ecba6269bb68135f80c85'],
+    }),
+    (name, version, {
+        'modulename': 'model_angelo',
+        'patches': [
+            'Model-Angelo-1.0.9_relax_requirements.patch',
+            'Model-Angelo-1.0.9_add_init_py.patch',
+        ],
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': [
+            {'v1.0.9.tar.gz': 'a4419d12ffd7482ad39234b3b974072b24650be6274b48ed0eaa1c058d3c5c61'},
+            {'Model-Angelo-1.0.9_relax_requirements.patch':
+             '570217999537eb55f5e55bb842a60f58d00850eaace40e5726e2ac058d003986'},
+            {'Model-Angelo-1.0.9_add_init_py.patch':
+             '7d3144ddac92d5800d9a6993bf50a3850627bc836ad01917be531fdd690b72d3'},
+        ],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_commands = [
+    "model_angelo --help",
+]
+
+sanity_check_paths = {
+    'files': [
+        'lib/python%(pyshortver)s/site-packages/model_angelo/utils/stereo_chemical_props.txt'
+    ],
+
+    'dirs': ['lib/python%(pyshortver)s/site-packages/model_angelo']
+}
+
+moduleclass = 'bio'

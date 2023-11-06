@@ -1,0 +1,109 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+easyblock = 'Binary'
+
+name = 'Model-Angelo_data'
+version = '1.0.9'
+
+homepage = 'https://zenodo.org/search?q=7733060'
+description = """A Graph Neural Network Approach to Automated Model Building in Cryo-EM Maps.
+Automated model building and protein identification in cryo-EM maps."""
+
+toolchain = SYSTEM
+
+_prepare = ''
+# Uncomment and adapt to store data (10GB) elsewhere:
+#_common_data = '/easybuild/data'
+#_prepare = 'mkdir -p  %s/%%(name)s/%%(version)s/torch_home &&' % _common_data
+#_prepare += 'ln -s %s/%%(name)s/%%(version)s/torch_home %%(installdir)s/torch_home &&' % _common_data
+
+install_type = 'merge'
+buildininstalldir = True
+
+_models = [
+    'original',
+    'original_no_seq',
+    'small_gpu',
+    'nucleotides',
+    'nucleotides_no_seq'
+]
+
+_torch_home = 'torch_home/'
+_checkpoints_rel = '%s/hub/checkpoints' % _torch_home
+_checkpoints = '%%(installdir)s/%s' % _checkpoints_rel
+
+
+source_urls = [
+    'https://dl.fbaipublicfiles.com/fair-esm/models',
+    'https://dl.fbaipublicfiles.com/fair-esm/regression',
+    'https://zenodo.org/records/7733060/files/',
+    'https://zenodo.org/records/7942241/files/',
+]
+sources = [
+    {
+        'filename': 'esm1b_t33_650M_UR50S.pt',
+        'extract_cmd':
+            _prepare +
+            'mkdir -p %s/model_angelo && ' % _checkpoints +
+            'cp -n %%s %s ' % _checkpoints,
+    },
+    {
+        'filename': 'esm1b_t33_650M_UR50S-contact-regression.pt',
+        'extract_cmd': 'cp -n %%s %s ' % _checkpoints,
+    },
+    {
+        'filename':  'original-7733060.zip',
+        'download_filename': 'original.zip',
+        'extract_cmd': 'unzip -n %%s -d %s/model_angelo/ ' % _checkpoints
+    },
+    {
+        'filename':  'original_no_seq-7733060.zip',
+        'download_filename': 'original_no_seq.zip',
+        'extract_cmd': 'unzip -n %%s -d %s/model_angelo/ ' % _checkpoints
+    },
+    {
+        'filename':  'small_gpu-7733060.zip',
+        'download_filename': 'small_gpu.zip',
+        'extract_cmd': 'unzip -n %%s -d %s/model_angelo/ ' % _checkpoints
+    },
+    {
+        'filename':  'nucleotides-7942241.zip',
+        'download_filename': 'nucleotides.zip',
+        'extract_cmd': 'unzip -n %%s -d %s/model_angelo/ ' % _checkpoints
+    },
+    {
+        'filename':  'nucleotides_no_seq-7942241.zip',
+        'download_filename': 'nucleotides_no_seq.zip',
+        'extract_cmd': 'unzip -n %%s -d %s/model_angelo/ ' % _checkpoints
+    },
+]
+checksums = [
+    {'esm1b_t33_650M_UR50S.pt': 'fd2de9d62994cff03a301f43ce92e9c9a31e9317109e09276f750eddc1aa6b5e'},
+    {'esm1b_t33_650M_UR50S-contact-regression.pt': '77193a8814f0db0b36a03aebb1a311adc6b4745f463c04839defc15407bbb28a'},
+    {'original-7733060.zip': '55bda1751045030f6ed70af55670819f9ada78055b042b9370080df881b6a5bd'},
+    {'original_no_seq-7733060.zip': '2e66c7748a446b7c7845e7ff60a2b4e515853ba2093062407cff00ce38550a42'},
+    {'small_gpu-7733060.zip': '1c6d69cb568e81661aad2b10bc1197e22fa3ea91271480c0befe89ffaf314948'},
+    {'nucleotides-7942241.zip': 'f1b1d22f563977ac54c7366038c48a8ad37ca2f8870879221149d454cb051041'},
+    {'nucleotides_no_seq-7942241.zip': '3b75de921440dd6891a6c5ea129fafe86e72fd043393f821157e3eda93d685f8'},
+]
+
+skipsteps = ['configure', 'build', 'test']
+extract_sources = True
+
+_success = [
+    'echo Sucessfully downloaded model>%s/model_angelo/%s/success.txt'
+    % (_checkpoints, x) for x in _models
+]
+
+install_cmd = '%s ' % '&&'.join(_success)
+
+modextravars = {'TORCH_HOME': '%%(installdir)s/%s' % _torch_home}
+
+sanity_check_paths = {
+    'files': [
+        '%s/esm1b_t33_650M_UR50S.pt' % _checkpoints,
+        '%s/esm1b_t33_650M_UR50S-contact-regression.pt' % _checkpoints_rel,
+    ],
+    'dirs': ['%s/model_angelo/%s' % (_checkpoints, m) for m in _models]
+}
+
+moduleclass = 'data'
