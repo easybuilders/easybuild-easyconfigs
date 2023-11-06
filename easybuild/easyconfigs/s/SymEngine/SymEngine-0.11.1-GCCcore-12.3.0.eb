@@ -1,0 +1,74 @@
+easyblock = 'CMakeMake'
+
+name = 'SymEngine'
+version = '0.11.1'
+
+homepage = 'https://github.com/symengine/symengine'
+description = "SymEngine is a standalone fast C++ symbolic manipulation library."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/symengine/symengine/releases/download/v%(version)s/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['SymEngine-0.11.1-fix-flint-header.patch']
+checksums = [
+    '217b39955dc19f920c6f54c057fdc89e8e155ddee8f0e3c3cacc67b3e3850b64',
+    "49782c6ee396fad8293c63798b353b3faddc92c8bae998706cef93a28de8e45e"
+]
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('oldest-supported-numpy', '2023b'),
+    ('Cython', '0.29.36'),
+    ('FLINT', '3.0.0'),
+    ('LLVM', '16.0.6'),
+]
+
+dependencies = [
+]
+
+configopts = " ".join([
+    "-DBUILD_SHARED_LIBS=ON",
+    "-DWITH_GMP=ON",
+    "-DWITH_MPFR=ON",
+    "-DWITH_MPC=ON",
+    "-DWITH_FLINT=ON",
+    "-DWITH_LLVM=ON",
+    "-DWITH_OPENMP=ON",
+    "-DINTEGER_CLASS=FLINT",
+    "-DWITH_TCMALLOC=ON",
+])
+
+multi_deps = {'Python': ['3.10', '3.11']}
+
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('symengine', '0.10.0', {
+        'sources': [{
+            'source_urls': ["https://github.com/symengine/symengine.py/releases/download/v%(version)s/"],
+            'filename': "symengine.py-0.10.0.tar.gz",
+        }],
+        'checksums': ['923944ab54aa0a787629424c101f5ec6a87b44177c669d21c7d3b0257f725927'],
+        'use_pip': True,
+    }),
+]
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+sanity_check_paths = {
+    'files': ['lib64/libsymengine.so'],
+    'dirs': ['include/symengine', 'lib/cmake/symengine', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import symengine'",
+    "python -c 'from symengine import var;var(\"x y z\");e = (x+y+z)**2;e.expand();'",
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'lib'
