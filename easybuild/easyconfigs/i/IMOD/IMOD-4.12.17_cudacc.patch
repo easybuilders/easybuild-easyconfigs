@@ -1,0 +1,20 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+# replace hardcoded CUDA compute capabilitites in machines/rhlinux. 
+# Allow to be set by env $CUDACC
+diff -ru IMOD/machines/rhlinux IMOD_cuda_cc/machines/rhlinux
+--- IMOD/machines/rhlinux	2023-08-25 12:38:55.000000000 +0200
++++ IMOD_cuda_cc/machines/rhlinux	2023-11-06 16:24:33.990693005 +0100
+@@ -541,9 +541,10 @@
+ if ($?CUDA_DIR) then
+     set cudavers = `nvcc --version | sed -n -e '/[,.]/s// /g' -e '/^.*release/s///p'`
+     @ cudamajor = $cudavers[1]
+-    if ($cudamajor >= 4) set cuda_arch_opts = '-arch sm_20'
+-    if ($cudamajor >= 9) set cuda_arch_opts = '-arch sm_30'
+-    if ($cudamajor >= 11) set cuda_arch_opts = '-arch sm_35'
++    #if ($cudamajor >= 4) set cuda_arch_opts = '-arch sm_20'
++    #if ($cudamajor >= 9) set cuda_arch_opts = '-arch sm_30'
++    #if ($cudamajor >= 11) set cuda_arch_opts = '-arch sm_35'
++    set cuda_arch_opts = `echo "$CUDACC;8" | awk -F ';' '{for f "-gencode=arch=compute_%s,code=sm_%s " , $i, $i}'`  
+     set cudalibdir = "$CUDA_DIR/lib"
+     if ($cudamajor > 2 && $m64bit == true) set cudalibdir = "$CUDA_DIR/lib64"
+     set nvcc_flags = "$cuda_arch_opts $nvcc_flags -DUNIX -Xcompiler -fno-strict-aliasing -O3"

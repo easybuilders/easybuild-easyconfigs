@@ -15,6 +15,7 @@ Kremer, Quanren Xiong, and John Heumann at the University of Colorado."""
 
 toolchain = {'name': 'foss', 'version': '2022a'}
 toolchainopts = {'pic': True}  # openmp leads to segfault with xftoxg tool
+#cuda_compute_capabilities = ['5.0', '6.0', '7.0', '7.5', '8.0', '8.6']
 
 # download manually from mercurial repository and create source tarball:
 # hg clone --debug http://bio3d.colorado.edu/imod/nightlyBuilds/IMOD
@@ -27,13 +28,16 @@ sources = [SOURCE_TAR_GZ]
 patches = [
     'IMOD-4.11.12_hdf1.12.patch',
     'IMOD-4.12.17_tiltalign_include.patch',
+    'IMOD-4.12.17_rename_pip.patch',
+    # replace hardcoded CUDA compute capabilitites in machines/rhlinux. set as CUDACC
+    'IMOD-4.12.17_cudacc.patch',
 ]
 checksums = [
-    None,  # can't include a valid checksum for source tarball, since it has to be created manually
-    # IMOD-4.11.12_hdf1.12.patch
-    '19e5bff97b997c600f157dd56eddae96a7f34fef528e7f40e76ea8e19144810e',
-    # IMOD-4.12.17_tiltalign_include.patch
-    '998c01a4f78b0d48dbffc530fcb12faaa892b1d322bce4f1643df20799845ab7',
+    {'IMOD-4.12.17.tar.gz': '63978ef981d04ab0b9d5de406dcb8ebeebd1832b75423cd00be3d190352bd820'},
+    {'IMOD-4.11.12_hdf1.12.patch': '19e5bff97b997c600f157dd56eddae96a7f34fef528e7f40e76ea8e19144810e'},
+    {'IMOD-4.12.17_tiltalign_include.patch': '998c01a4f78b0d48dbffc530fcb12faaa892b1d322bce4f1643df20799845ab7'},
+    {'IMOD-4.12.17_rename_pip.patch': '1075b8b4023cd0738e418690fec9dea95991c6bc5b5eefa707ebfc6a56a60893'},
+    {'IMOD-4.12.17_cudacc.patch': '8e84ab5137b7a51575d53d86c4177936f975a2e579ed41a6f7cc86da701c5bd9'},
 ]
 
 # can't include a valid checksum, since tarball has to be created manually
@@ -52,19 +56,12 @@ dependencies = [
 # parallel build sometimes fails
 parallel = 1
 
-# replace hardcoded CUDA compute capabilitites in machines/rhlinux. 
-_cuda_replace = 'echo %(cuda_cc_space_sep)s|sed "s/\\.//g"|'
-_cuda_replace += '   awk \'{'
-_cuda_replace += '          printf "-arch sm_"$1; '
-_cuda_replace += '          for (i=1;i<=NF; i++){printf(" -gencode=arch=compute_%s,code=sm_%s",$i,$i) } '
-_cuda_replace += '   }\''
-_cudaarch_sed = 'sed -i "s/-arch sm_35/`' + _cuda_replace + '`/g" machines/rhlinux && '
-
 # modify all qmake pro files in order to pass CFLAGS
 _qmake_pass_cflags = "find -name *.pro -exec sed -i -e '$aQMAKE_CXXFLAGS += $$(CFLAGS)' {} \\; && "
 
 # exports required for configure and build
 _exports = 'export QTDIR=$EBROOTQT5 && '
+_exports += "export CUDACC='%(cuda_cc_cmake)s' && "
 _exports += 'export HDF5_DIR=$EBROOTHDF5 && '
 _exports += 'export QMAKESPEC=$EBROOTQT5/mkspecs/`qmake -query QMAKE_SPEC` && '
 _exports += 'export CUDA_DIR=$CUDA_HOME && '
@@ -74,7 +71,6 @@ _exports += 'export CUDA_DIR=$CUDA_HOME && '
 _exports += 'export CFLAGS="$CFLAGS -fallow-argument-mismatch" && '  # required for gfortran10
 
 preconfigopts = _exports
-preconfigopts += _cudaarch_sed
 preconfigopts += _qmake_pass_cflags
 preconfigopts += 'sed -i "s|#!/bin/csh -f|#!/usr/bin/env tcsh|g;s|#! /bin/csh -f|#!/usr/bin/env tcsh|g" '
 preconfigopts += ' %(builddir)s/IMOD/{manpages/convert,setup,setup2,machines/rhlinux,packMacApps} &&'
@@ -98,15 +94,14 @@ preinstallopts += "export PYTHONPATH=%(builddir)s/IMOD/pysrc:$PYTHONPATH && "
 preinstallopts += "ls manpages/{csvtohtml,adocdefaults} | xargs sed -i 's@^#!.*/python -u@#!/usr/bin/env python@g' && "
 preinstallopts += "xargs sed -i 's@^#!.*/python -u@#!/usr/bin/env python@g' html/makeqhp && "
 
+modextrapaths = {'PYTHONPATH': 'pylib'}
+
 modextravars = {
     'IMOD_DIR': "%(installdir)s",
     'IMOD_PLUGIN_DIR': '%(installdir)s/lib/imodplug',
     'IMOD_JAVADIR': '$JAVA_HOME',
     'FOR_DISABLE_STACK_TRACE': '1',
 }
-
-modextrapaths = {'PYTHONPATH': 'pylib'}
-
 modloadmsg = 'Please set the environment variable $IMOD_CALIB_DIR if appropriate.'
 sanity_check_paths = {
     'files': ['VERSION', 'bin/subm'],
