@@ -31,6 +31,7 @@ import glob
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 from collections import defaultdict
@@ -218,6 +219,15 @@ class EasyConfigTest(TestCase):
         # get list of changed easyconfigs
         changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
         added_ecs_files = get_eb_files_from_diff(diff_filter='A')
+
+        # ignore template easyconfig (TEMPLATE.eb) and archived easyconfigs
+        def filter_ecs(ecs):
+            archive_path = os.path.join('easybuild', 'easyconfigs', '__archive__')
+            return [ec for ec in ecs if os.path.basename(ec) != 'TEMPLATE.eb' and archive_path not in ec]
+
+        changed_ecs_files = filter_ecs(changed_ecs_files)
+        added_ecs_files = filter_ecs(added_ecs_files)
+
         changed_ecs_filenames = [os.path.basename(f) for f in changed_ecs_files]
         added_ecs_filenames = [os.path.basename(f) for f in added_ecs_files]
         if changed_ecs_filenames:
@@ -526,7 +536,7 @@ class EasyConfigTest(TestCase):
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
                 (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
-                          r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[346]\.[23]']),
+                          r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[346]\.[23]', r'SHAP-0\.42\.1']),
                 (r'10\.0\.1', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
                                r'numba-0\.52\.0-', r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3',
                                r'scanpy-1\.7\.2-', r'umap-learn-0\.4\.6-']),
@@ -1139,8 +1149,11 @@ class EasyConfigTest(TestCase):
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
+        # Jupyter-bundle: JupyterHub + JupyterLab + notebook + nbclassic + jupyter-server-proxy
+        # + jupyterlmod + jupyter-resource-usage
         # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'Python-bundle', 'ROCm']
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
+                             'Python-bundle', 'ROCm']
 
         failing_checks = []
 
@@ -1227,6 +1240,29 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
+    def test_ec_file_permissions(self):
+        """Make sure correct access rights are set for easyconfigs."""
+
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            st = os.stat(ec.path)
+            read_perms = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
+            exec_perms = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            wrong_perms = []
+            if (st.st_mode & read_perms) != read_perms:
+                wrong_perms.append("readable (owner, group, other)")
+            if st.st_mode & exec_perms:
+                wrong_perms.append("not executable")
+            if not (st.st_mode & stat.S_IWUSR):
+                wrong_perms.append("at least owner writable")
+            if wrong_perms:
+                failing_checks.append("%s must be %s, is: %s" % (ec_fn, ", ".join(wrong_perms), oct(st.st_mode)))
+
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
     def test_pr_CMAKE_BUILD_TYPE(self):
         """Make sure -DCMAKE_BUILD_TYPE is no longer used (replaced by build_type)"""
         failing_checks = []
@@ -1291,6 +1327,10 @@ def template_easyconfig_test(self, spec):
     # sanity check for software name, moduleclass
     self.assertEqual(ec['name'], name)
     self.assertTrue(ec['moduleclass'] in build_option('valid_module_classes'))
+    # base is the default value for moduleclass, which should never be used,
+    # and moduleclass should always be set in the easyconfig file
+    self.assertNotEqual(ec['moduleclass'], 'base',
+                        "moduleclass should be set, and not be set to 'base', for %s" % spec)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
