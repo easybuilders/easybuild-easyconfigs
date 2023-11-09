@@ -1,0 +1,57 @@
+GCC 12 has a regression causing misoptimization of AVX2 code on AVX512 targets (e.g. via -march=native)
+See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=112443
+
+Workaround this by using code similar to that in the AVX 512 class `vec512` "converting" the mask first.
+Condition it on the AVX512VL compiler feature.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/cpu/vec/vec256/vec256_int.h b/aten/src/ATen/cpu/vec/vec256/vec256_int.h
+index 81e9d687d10..10070109dd3 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vec256_int.h
++++ b/aten/src/ATen/cpu/vec/vec256/vec256_int.h
+@@ -71,7 +71,13 @@ public:
+   }
+   static Vectorized<int64_t> blendv(const Vectorized<int64_t>& a, const Vectorized<int64_t>& b,
+                                 const Vectorized<int64_t>& mask) {
+-    return _mm256_blendv_epi8(a.values, b.values, mask.values);
++#ifdef __AVX512VL__
++    auto msb_one = _mm256_set1_epi8(0xFF);
++    auto mask_ = _mm256_cmpeq_epi8(mask, msb_one);
++    return _mm256_blendv_epi8(a, b, mask_);
++#else
++    return _mm256_blendv_epi8(a, b, mask);
++#endif
+   }
+   template <typename step_t>
+   static Vectorized<int64_t> arange(int64_t base = 0, step_t step = static_cast<step_t>(1)) {
+@@ -183,7 +189,13 @@ public:
+   }
+   static Vectorized<int32_t> blendv(const Vectorized<int32_t>& a, const Vectorized<int32_t>& b,
+                                 const Vectorized<int32_t>& mask) {
+-    return _mm256_blendv_epi8(a.values, b.values, mask.values);
++#ifdef __AVX512VL__
++    auto msb_one = _mm256_set1_epi8(0xFF);
++    auto mask_ = _mm256_cmpeq_epi8(mask, msb_one);
++    return _mm256_blendv_epi8(a, b, mask_);
++#else
++    return _mm256_blendv_epi8(a, b, mask);
++#endif
+   }
+   template <typename step_t>
+   static Vectorized<int32_t> arange(int32_t base = 0, step_t step = static_cast<step_t>(1)) {
+@@ -593,7 +605,13 @@ public:
+   }
+   static Vectorized<T> blendv(const Vectorized<T>& a, const Vectorized<T>& b,
+                                const Vectorized<T>& mask) {
+-    return _mm256_blendv_epi8(a.values, b.values, mask.values);
++#ifdef __AVX512VL__
++    auto msb_one = _mm256_set1_epi8(0xFF);
++    auto mask_ = _mm256_cmpeq_epi8(mask, msb_one);
++    return _mm256_blendv_epi8(a, b, mask_);
++#else
++    return _mm256_blendv_epi8(a, b, mask);
++#endif
+   }
+   template <typename step_t>
+   static Vectorized<T> arange(T base = 0, step_t step = static_cast<step_t>(1)) {

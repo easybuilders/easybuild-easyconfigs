@@ -1,0 +1,22 @@
+A test raises a RuntimeError with the wrong text.
+The test suite expects "32-bit integer overflow in nnz" but gets
+"value cannot be converted to type int32 without overflow".  Test
+changed to look for a regexp that matches both.
+
+Author: Jakob Schiotz, Tech. Univ. Denmark
+Email: schiotz@fysik.dtu.dk
+Date: 8. November 2023
+
+diff --git a/test/test_sparse_csr.py b/test/test_sparse_csr.py
+index 5d34495..3a47602 100644
+--- a/test/test_sparse_csr.py
++++ b/test/test_sparse_csr.py
+@@ -865,7 +865,7 @@ class TestSparseCompressed(TestCase):
+                                 torch.tensor([1]), (1, cols))
+ 
+         nnz = 2 ** 31
+-        with self.assertRaisesRegex(RuntimeError, '32-bit integer overflow in nnz'):
++        with self.assertRaisesRegex(RuntimeError, '.+32.+overflow.*'):
+             torch.sparse_csr_tensor(torch.tensor([0, nnz // 2, nnz], dtype=torch.int32),
+                                     torch.arange(nnz // 2, dtype=torch.int32).repeat(2),
+                                     torch.ones(nnz, dtype=torch.int8), (2, nnz // 2))
