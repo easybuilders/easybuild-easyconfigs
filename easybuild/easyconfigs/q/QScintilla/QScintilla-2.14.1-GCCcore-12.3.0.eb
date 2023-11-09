@@ -1,0 +1,53 @@
+name = 'QScintilla'
+version = '2.14.1'
+
+homepage = 'https://www.riverbankcomputing.com/software/qscintilla'
+description = "QScintilla is a port to Qt of Neil Hodgson's Scintilla C++ editor control"
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+sources = [{
+    'source_urls': ['https://www.riverbankcomputing.com/static/Downloads/QScintilla/%(version)s'],
+    'filename': '%(name)s_src-%(version)s.tar.gz',
+    'extract_cmd': 'tar xfvz %s && ln -s src %(name)s_src-%(version)s/Qt4Qt5',
+}]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('Qt5', '5.15.11'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+buildopts = r'CXXFLAGS="$CXXFLAGS \$(DEFINES)" && make install'
+skipsteps = ['install']
+
+# the existing easyblock doesn't support the new python binding installation procedure
+postinstallcmds = ["""
+    cd Python
+    for pyver in 3.10 3.11; do
+        module load python/$pyver
+        cp pyproject{-qt5,}.toml
+        echo "[tool.sip.project]" >> pyproject.toml
+        sipdir=$EBROOTQT5/lib/python$pyver/site-packages/PyQt5/bindings
+        echo "sip-include-dirs=[\\"$sipdir\\"]" >> pyproject.toml
+        CPATH=$EBROOTQT5/include/QtWidgets:$EBROOTQT5/include/QtPrintSupport:$CPATH \
+            sip-install --target-dir %(installdir)s/lib/python$pyver/site-packages \
+                        --api-dir %(installdir)s/qsci/api/python \
+                        --qsci-include-dir %(installdir)s/include \
+                        --qsci-library-dir %(installdir)s/lib
+        mkdir -p %(installdir)s/share/sip/PyQt5
+        rm -rf %(installdir)s/share/sip/PyQt5/Qsci
+        mv %(installdir)s/lib/python$pyver/site-packages/PyQt5/bindings/Qsci %(installdir)s/share/sip/PyQt5/Qsci
+        ln -s ../../../../../share/sip/PyQt5/Qsci %(installdir)s/lib/python$pyver/site-packages/PyQt5/bindings/Qsci
+        patchelf --add-needed libqscintilla2_qt5.so.15 %(installdir)s/lib/python$pyver/site-packages/PyQt5/Qsci.abi3.so
+        patchelf --add-rpath '$ORIGIN/../../..' %(installdir)s/lib/python$pyver/site-packages/PyQt5/Qsci.abi3.so
+    done
+"""]
+
+moduleclass = 'vis'
