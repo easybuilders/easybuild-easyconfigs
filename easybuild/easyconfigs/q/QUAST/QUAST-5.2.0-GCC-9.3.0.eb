@@ -1,0 +1,87 @@
+# Built with EasyBuild version 4.4.0-r683080a578abde020448b4659949a23e3aec3124 on 2021-06-17_19-16-15
+# Updated from previous config
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'PythonBundle'
+
+name = 'QUAST'
+version = '5.2.0'
+
+homepage = 'https://github.com/ablab/%(namelower)s'
+description = """QUAST evaluates genome assemblies by computing various metrics.
+ It works both with and without reference genomes. The tool accepts multiple
+ assemblies, thus is suitable for comparison."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+dependencies = [
+    ('Rust', '1.47.0', '', True),
+    ('Perl', '5.30.2', '', True),
+    ('SciPy-Stack', '2022a', '', True),
+    ('Java', '13', '', True),
+    ('Boost', '1.72.0', '', True),
+    ('BWA', '0.7.17', '', True),
+    ('BEDTools', '2.30.0', '', True),
+
+]
+
+multi_deps = {"Python": ["3.8", "3.9", "3.10"]}
+multi_deps_load_default = False
+postinstallcmds = ['cd %(installdir)s/bin && ln -s %(namelower)s.py %(namelower)s']
+exts_defaultclass = 'PythonPackage'
+exts_filter = (
+    'python -c "import %(ext_name)s"',
+    '',
+)
+sanity_pip_check = True
+use_pip = True
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'runtest': True,
+    'sanity_pip_check': True,
+    'use_pip': True,
+}
+
+exts_list = [
+    ('toml', '0.10.2', {
+        'source_urls': ['https://pypi.python.org/packages/source/t/toml'],
+        'checksums': ['b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f'],
+    }),
+    ('semantic-version', '2.8.5', {
+        'source_tmpl': 'semantic_version-2.8.5.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/s/semantic-version'],
+        'checksums': ['d2cb2de0558762934679b9a104e82eca7af448c9f4974d1f3eeccff651df8a54'],
+    }),
+    ('simplejson', '3.17.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/s/simplejson'],
+        'checksums': ['2b4b2b738b3b99819a17feaf118265d0753d5536049ea570b3c43b51c4701e81'],
+    }),
+    ('joblib', '0.17.0', {
+        'source_urls': ['https://pypi.python.org/packages/source/j/joblib'],
+        'checksums': ['9e284edd6be6b71883a63c9b7f124738a3c16195513ad940eae7e3438de885d5'],
+    }),
+    (name, version, {
+        'install_target': 'install_full',
+        'modulename': 'quast_libs',
+        'source_tmpl': 'quast_%(version)s.tar.gz',
+        'source_urls': ['https://github.com/ablab/quast/archive/'],
+        'checksums': [
+            'de378952160ad5cf8a49671a9ebc1cbe',  # quast_5.0.2.tar.gz
+        ],
+    }),
+]
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'bin/%(namelower)s.py', 'bin/meta%(namelower)s.py'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "wget %(namelower)s.sf.net/test_data.tar.gz && tar xzf test_data.tar.gz && %(namelower)s.py --test && rm ./test_data.tar.gz ./test_data -rf",
+    "%(namelower)s -h",
+]
+
+moduleclass = 'bio'
