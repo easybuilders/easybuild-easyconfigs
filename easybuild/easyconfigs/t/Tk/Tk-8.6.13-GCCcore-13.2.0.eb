@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'Tk'
+version = '8.6.13'
+
+homepage = 'https://www.tcl.tk/'
+description = """Tk is an open source, cross-platform widget toolchain that provides a library of basic elements for
+ building a graphical user interface (GUI) in many different programming languages."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+
+source_urls = ["https://prdownloads.sourceforge.net/tcl"]
+sources = ['%(namelower)s%(version)s-src.tar.gz']
+patches = ['Tk-8.6.13_different-prefix-with-tcl.patch']
+checksums = [
+    {'tk8.6.13-src.tar.gz': '2e65fa069a23365440a3c56c556b8673b5e32a283800d8d9b257e3f584ce0675'},
+    {'Tk-8.6.13_different-prefix-with-tcl.patch': 'e136ff60dfe7fc4b14d98af00cf89522fbfd106e75b0a9259f410a8bfa732534'},
+]
+
+builddependencies = [('binutils', '2.40')]
+dependencies = [
+    ('Tcl', version),
+    ('X11', '20231019'),
+    ('zlib', '1.2.13'),
+]
+
+configopts = '--enable-threads --with-tcl=$EBROOTTCL/lib CFLAGS="-I$EBROOTTCL/include"'
+
+installopts = "&& make install-private-headers"
+
+postinstallcmds = ["ln -s wish%(version_major_minor)s %(installdir)s/bin/wish"]
+
+sanity_check_paths = {
+    'files': ["bin/wish", "lib/tkConfig.sh", "include/tkInt.h"],
+    'dirs': [],
+}
+
+start_dir = 'unix'
+
+moduleclass = 'vis'
