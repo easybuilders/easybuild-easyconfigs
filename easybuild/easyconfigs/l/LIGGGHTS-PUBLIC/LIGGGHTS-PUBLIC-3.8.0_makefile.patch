@@ -1,8 +1,5 @@
 Patch Makefile.mpi so FFTW3, PNG are included, C++ std set to c++11, VTK-9.1 used instead of 6.2
-Patch finish.cpp so it is same as in master branch (25.4.2022)
-Patch util.h to deal with compile problem
-Authors: J. Sassmannshausen (Imperial College London/UK) with help from Lars Viklund (UMU/Sweden)
-and Sam Moors (VUB)
+Authors: J. Sassmannshausen (Imperial College London/UK)
 diff --git a/LIGGGHTS-PUBLIC-3.8.0.orig/src/MAKE/Makefile.mpi b/LIGGGHTS-PUBLIC-3.8.0/src/MAKE/Makefile.mpi
 index 562db16..7eb07b9 100644
 --- a/LIGGGHTS-PUBLIC-3.8.0.orig/src/MAKE/Makefile.mpi
@@ -54,33 +51,3 @@ index 562db16..7eb07b9 100644
  
  # ---------------------------------------------------------------------
  # build rules and dependencies
-diff --git a/LIGGGHTS-PUBLIC-3.8.0.orig/src/finish.cpp b/LIGGGHTS-PUBLIC-3.8.0/src/finish.cpp
-index 2acb1cc..07eaded 100644
---- a/LIGGGHTS-PUBLIC-3.8.0.orig/src/finish.cpp
-+++ b/LIGGGHTS-PUBLIC-3.8.0/src/finish.cpp
-@@ -719,7 +719,7 @@ void Finish::end(int flag)
- 
-     nneighfull = 0;
-     if (m < neighbor->old_nrequest) {
--      if (neighbor->lists[m]->numneigh > 0) {
-+      if (neighbor->lists[m]->inum > 0) {
-         int inum = neighbor->lists[m]->inum;
-         int *ilist = neighbor->lists[m]->ilist;
-         int *numneigh = neighbor->lists[m]->numneigh;
-diff --git a/LIGGGHTS-PUBLIC-3.8.0.orig/src/utils.h b/LIGGGHTS-PUBLIC-3.8.0/src/utils.h
-index fab00e9..3824bd7 100644
---- a/LIGGGHTS-PUBLIC-3.8.0.orig/src/utils.h
-+++ b/LIGGGHTS-PUBLIC-3.8.0/src/utils.h
-@@ -67,7 +67,11 @@ namespace Utils {
- 
-   inline std::string int_to_string(int a)
-   {
--    return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << a ) ).str();
-+    // see https://www.cfdem.com/forums/error-non-const-lvalue-reference-type-basicostringstream-cannot-bind-temporary-type
-+    // return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << a ) ).str();
-+    std::ostringstream ss;
-+    ss << std::dec << a;
-+    return ss.str();
-   }
- 
-   inline std::string double_to_string(double dbl)
