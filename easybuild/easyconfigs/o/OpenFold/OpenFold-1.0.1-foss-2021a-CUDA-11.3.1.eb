@@ -33,12 +33,16 @@ dependencies = [
     # OpenFold also requires the AlphaFold modification to OpenMM
     # https://github.com/aqlaboratory/openfold/blob/v1.0.0/scripts/install_third_party_dependencies.sh#L20-L24
     # https://github.com/aqlaboratory/openfold/blob/v1.0.0/lib/openmm.patch
-    ('OpenMM', '7.5.1', '-DeepMind-patch'),
+    ('OpenMM', '7.5.1', '-CUDA-%(cudaver)s-DeepMind-patch'),
 ]
 
 use_pip = True
 
+# flash_attn (FlashAttention) is optional, speeds up MSA attention for sequences with < 1000 residues
 exts_list = [
+    ('flash_attn', '0.2.8', {
+        'checksums': ['b54fee86463cdb9933e8d47e500c52f3eaf283f1c8a9d96099e62acc7dc0be1f'],
+    }),
     ('PDBFixer', '1.7', {
         'source_urls': ['https://github.com/openmm/pdbfixer/archive/refs/tags/'],
         'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
@@ -80,13 +84,44 @@ exts_list = [
     }),
 ]
 
+local_resources_dir = '%(installdir)s/lib/python%(pyshortver)s/site-packages/openfold/resources/'
+# local_resources_target_dir = '/databases/bio/%(namelower)s-%(version)s'
+
+local_scp_url = 'https://git.scicore.unibas.ch/schwede/openstructure/-/raw/'
+local_scp_url += '7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt'
+
+postinstallcmds = [
+    'cp -a run_pretrained_openfold.py thread_sequence.py train_openfold.py %(installdir)s/bin',
+    'cp -a scripts %(installdir)s/bin',
+    'chmod -R a+x %(installdir)s/bin',
+    # download stereo_chemical_props.txt + copy it to openfold/resources directory,
+    # see also install_third_party_dependencies.sh script;
+    # we currently can't let EasyBuild download (and cache + checksum) this,
+    # because an extension can only have a single source file, and (Python)Bundle doesn't allow any "parent" downloads
+    "cd %%(builddir)s && curl -OL %s && cp -a stereo_chemical_props.txt %s" % (local_scp_url, local_resources_dir),
+    # manually download openfold parameters and alphafold parameters
+    # see scripts download_alphafold_params.sh + download_openfold_params.sh
+    # download to local_resources_target_dir and add symlinks in local_resources_dir
+    # or download directly into local_resources_dir
+    # 'ln -s %s/openfold_params %s' % (local_resources_target_dir, local_resources_dir),
+    # 'ln -s %s/params %s' % (local_resources_target_dir, local_resources_dir),
+]
+
+fix_python_shebang_for = ['bin/*.py', '/bin/scripts/*.py']
+
+modextrapaths = {
+    'PATH': 'bin/scripts',
+}
+
 sanity_check_paths = {
-    'files': ['bin/pdbfixer'],
-    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+    'files': ['bin/pdbfixer', 'bin/run_pretrained_openfold.py',
+              'lib/python%(pyshortver)s/site-packages/openfold/resources/stereo_chemical_props.txt'],
+    'dirs': ['bin/scripts', 'lib/python%(pyshortver)s/site-packages'],
 }
 
 sanity_check_commands = [
     "pdbfixer --help",
+    "run_pretrained_openfold.py --help",
 ]
 
 sanity_pip_check = True
