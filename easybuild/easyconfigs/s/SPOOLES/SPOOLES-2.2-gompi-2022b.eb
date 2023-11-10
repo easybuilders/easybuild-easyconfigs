@@ -1,0 +1,51 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'MakeCp'
+
+name = 'SPOOLES'
+version = '2.2'
+
+homepage = 'https://netlib.org/linalg/spooles/spooles.2.2.html'
+description = """SPOOLES is a library for solving sparse real and complex linear
+ systems of equations, written in the C language using object oriented design.
+"""
+
+toolchain = {'name': 'gompi', 'version': '2022b'}
+
+source_urls = ['https://netlib.org/linalg/spooles']
+sources = ['%(namelower)s.%(version)s.tgz']
+patches = [
+    '%(name)s-2.2_build-mpi-mt.patch',
+    '%(name)s-2.2_shared-libs.patch',
+]
+checksums = [
+    {'spooles.2.2.tgz': 'a84559a0e987a1e423055ef4fdf3035d55b65bbe4bf915efaa1a35bef7f8c5dd'},
+    {'SPOOLES-2.2_build-mpi-mt.patch': 'c983c7f37eb0904959cd2f6dff0b1fdb6a36440ca2a044fb2d324fd301e3dd7c'},
+    {'SPOOLES-2.2_shared-libs.patch': 'bca50e13e3c552240f7494c4d9f69be8725054c9f79ebc82dbe6b7531588d09e'},
+]
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('Perl', '5.36.0'),
+]
+
+build_cmd_targets = 'lib'
+buildopts = 'CC="$CC" CFLAGS="$CFLAGS" MPI_LIB_PATH="-L$MPI_LIB_DIR" MPI_INCLUDE_DIR="-I$MPI_INC_DIR"'
+
+files_to_copy = [
+    (['libspooles*'], 'lib'),
+]
+
+# install header files, keeping relative subdirectories
+_install_headers = " ".join([
+    "cd %(builddir)s && mkdir -p %(installdir)s/include/spooles &&",
+    r"find . -name '*.h' -print -exec install -D {} %(installdir)s/include/spooles/{} \;"
+])
+
+postinstallcmds = [_install_headers]
+
+sanity_check_paths = {
+    'files': ['lib/lib%%(namelower)s.%s' % x for x in ['a', SHLIB_EXT]],
+    'dirs': ['include/spooles'],
+}
+
+moduleclass = 'math'
