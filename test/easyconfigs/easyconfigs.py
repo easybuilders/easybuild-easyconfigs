@@ -31,6 +31,7 @@ import glob
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 from collections import defaultdict
@@ -100,7 +101,7 @@ def skip_if_not_pr_to_non_main_branch():
     return lambda func: func
 
 
-def get_files_from_diff(diff_filter, ext, basename=True):
+def get_files_from_diff(diff_filter, ext):
     """Return the files changed on HEAD relative to the current target branch"""
     target_branch = get_target_branch()
 
@@ -124,10 +125,7 @@ def get_files_from_diff(diff_filter, ext, basename=True):
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
     out, _ = run_cmd(cmd, simple=False)
-    if basename:
-        files = [os.path.basename(f) for f in out.strip().split('\n') if f.endswith(ext)]
-    else:
-        files = [f for f in out.strip().split('\n') if f.endswith(ext)]
+    files = [os.path.join(top_dir, f) for f in out.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
     return files
@@ -219,8 +217,19 @@ class EasyConfigTest(TestCase):
     def _get_changed_easyconfigs(self):
         """Gather all added or modified easyconfigs"""
         # get list of changed easyconfigs
-        changed_ecs_filenames = get_eb_files_from_diff(diff_filter='M')
-        added_ecs_filenames = get_eb_files_from_diff(diff_filter='A')
+        changed_ecs_files = get_eb_files_from_diff(diff_filter='M')
+        added_ecs_files = get_eb_files_from_diff(diff_filter='A')
+
+        # ignore template easyconfig (TEMPLATE.eb) and archived easyconfigs
+        def filter_ecs(ecs):
+            archive_path = os.path.join('easybuild', 'easyconfigs', '__archive__')
+            return [ec for ec in ecs if os.path.basename(ec) != 'TEMPLATE.eb' and archive_path not in ec]
+
+        changed_ecs_files = filter_ecs(changed_ecs_files)
+        added_ecs_files = filter_ecs(added_ecs_files)
+
+        changed_ecs_filenames = [os.path.basename(f) for f in changed_ecs_files]
+        added_ecs_filenames = [os.path.basename(f) for f in added_ecs_files]
         if changed_ecs_filenames:
             print("\nList of changed easyconfig files in this PR:\n\t%s" % '\n\t'.join(changed_ecs_filenames))
         if added_ecs_filenames:
@@ -230,41 +239,36 @@ class EasyConfigTest(TestCase):
 
         # grab parsed easyconfigs for changed easyconfig files
         changed_ecs = []
-        for ec_fn in changed_ecs_filenames + added_ecs_filenames:
-            match = None
-            for ec in self.parsed_easyconfigs:
-                if os.path.basename(ec['spec']) == ec_fn:
-                    match = ec['ec']
-                    break
+        easyconfigs_path = get_paths_for("easyconfigs")[0]
+        for ec_file in changed_ecs_files + added_ecs_files:
+            # Search in already parsed ECs first
+            match = next((ec['ec'] for ec in EasyConfigTest._parsed_easyconfigs if ec['spec'] == ec_file), None)
 
             if match:
                 changed_ecs.append(match)
+            elif ec_file.startswith(easyconfigs_path):
+                ec = process_easyconfig(ec_file)
+                # Cache non-archived files
+                if '__archive__' not in ec_file:
+                    EasyConfigTest._parsed_easyconfigs.extend(ec)
+                changed_ecs.append(ec[0]['ec'])
             else:
-                # if no easyconfig is found, it's possible some archived easyconfigs were touched in the PR...
-                # so as a last resort, try to find the easyconfig file in __archive__
-                easyconfigs_path = get_paths_for("easyconfigs")[0]
-                specs = glob.glob('%s/__archive__/*/*/%s' % (easyconfigs_path, ec_fn))
-                if len(specs) == 1:
-                    ec = process_easyconfig(specs[0])[0]
-                    changed_ecs.append(ec['ec'])
-                else:
-                    raise RuntimeError("Failed to find parsed easyconfig for %s"
-                                       " (and could not isolate it in easyconfigs archive either)" % ec_fn)
+                raise RuntimeError("Failed to find parsed easyconfig for %s" % os.path.basename(ec_file))
         EasyConfigTest._changed_ecs = changed_ecs
 
     def _get_changed_patches(self):
         """Gather all added or modified patches"""
 
         # get list of changed/added patch files
-        changed_patches_filenames = get_files_from_diff(diff_filter='M', ext='.patch', basename=False)
-        added_patches_filenames = get_files_from_diff(diff_filter='A', ext='.patch', basename=False)
+        changed_patches = get_files_from_diff(diff_filter='M', ext='.patch')
+        added_patches = get_files_from_diff(diff_filter='A', ext='.patch')
 
-        if changed_patches_filenames:
-            print("\nList of changed patch files in this PR:\n\t%s" % '\n\t'.join(changed_patches_filenames))
-        if added_patches_filenames:
-            print("\nList of added patch files in this PR:\n\t%s" % '\n\t'.join(added_patches_filenames))
+        if changed_patches:
+            print("\nList of changed patch files in this PR:\n\t%s" % '\n\t'.join(changed_patches))
+        if added_patches:
+            print("\nList of added patch files in this PR:\n\t%s" % '\n\t'.join(added_patches))
 
-        EasyConfigTest._changed_patches = changed_patches_filenames + added_patches_filenames
+        EasyConfigTest._changed_patches = changed_patches + added_patches
 
     @property
     def parsed_easyconfigs(self):
@@ -383,8 +387,12 @@ class EasyConfigTest(TestCase):
                 dep_vars = dict((k, v) for (k, v) in dep_vars.items() if k != empty_vsuff_vars[0])
 
         # multiple variants of HTSlib is OK as long as they are deps for a matching version of BCFtools;
-        # same goes for WRF and WPS; Gurobi and Rgurobi
-        for dep_name, parent_name in [('HTSlib', 'BCFtools'), ('WRF', 'WPS'), ('Gurobi', 'Rgurobi')]:
+        # same goes for WRF and WPS; Gurobi and Rgurobi; ncbi-vdb and SRA-Toolkit
+        multiple_allowed_variants = [('HTSlib', 'BCFtools'),
+                                     ('WRF', 'WPS'),
+                                     ('Gurobi', 'Rgurobi'),
+                                     ('ncbi-vdb', 'SRA-Toolkit')]
+        for dep_name, parent_name in multiple_allowed_variants:
             if dep == dep_name and len(dep_vars) > 1:
                 for key in list(dep_vars):
                     ecs = dep_vars[key]
@@ -498,18 +506,16 @@ class EasyConfigTest(TestCase):
             # egl variant of glew is required by libwpe, wpebackend-fdo + WebKitGTK+ depend on libwpe
             'glew': [
                 ('2.2.0; versionsuffix: -egl', [r'libwpe-1\.13\.3-GCCcore-11\.2\.0',
+                                                r'libwpe-1\.14\.1-GCCcore-11\.3\.0',
                                                 r'wpebackend-fdo-1\.13\.1-GCCcore-11\.2\.0',
+                                                r'wpebackend-fdo-1\.14\.1-GCCcore-11\.3\.0',
                                                 r'WebKitGTK\+-2\.37\.1-GCC-11\.2\.0',
                                                 r'wxPython-4\.2\.0',
+                                                r'wxPython-4\.2\.1',
                                                 r'GRASS-8\.2\.0',
                                                 r'QGIS-3\.28\.1']),
             ],
             'Geant4': [('11.0.1;', [r'GATE-9\.2-foss-2021b'])],
-            # ncbi-vdb v2.x requires HDF5 v1.10.x (HISAT2, SKESA, shovill depend on ncbi-vdb)
-            'HDF5': [
-                (r'1\.10\.', [r'ncbi-vdb-2\.11\.', r'HISAT2-2\.2\.', r'SKESA-2\.4\.',
-                              r'shovill-1\.1\.']),
-            ],
             # VMTK 1.4.x requires ITK 4.13.x
             'ITK': [(r'4\.13\.', [r'VMTK-1\.4\.'])],
             # Kraken 1.x requires Jellyfish 1.x (Roary & metaWRAP depend on Kraken 1.x)
@@ -530,7 +536,7 @@ class EasyConfigTest(TestCase):
             'LLVM': [
                 # numba 0.47.x requires LLVM 7.x or 8.x (see https://github.com/numba/llvmlite#compatibility)
                 (r'8\.', [r'numba-0\.47\.0-', r'librosa-0\.7\.2-', r'BirdNET-20201214-',
-                          r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[346]\.[23]']),
+                          r'scVelo-0\.1\.24-', r'PyTorch-Geometric-1\.[346]\.[23]', r'SHAP-0\.42\.1']),
                 (r'10\.0\.1', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
                                r'numba-0\.52\.0-', r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3',
                                r'scanpy-1\.7\.2-', r'umap-learn-0\.4\.6-']),
@@ -552,6 +558,14 @@ class EasyConfigTest(TestCase):
                 (r'0\.52\.0', [r'cell2location-0\.05-alpha-', r'cryoDRGN-0\.3\.2-', r'loompy-3\.0\.6-',
                                r'PyOD-0\.8\.7-', r'PyTorch-Geometric-1\.6\.3', r'scanpy-1\.7\.2-',
                                r'umap-learn-0\.4\.6-']),
+            ],
+            'OpenFOAM': [
+                # CFDEMcoupling requires OpenFOAM 5.x
+                (r'5\.0-20180606', [r'CFDEMcoupling-3\.8\.0']),
+            ],
+            'ParaView': [
+                # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
+                (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
@@ -1061,33 +1075,36 @@ class EasyConfigTest(TestCase):
                         if exts_default_options.get(key) is None:
                             failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
-            # if Python is a dependency, that should be reflected in the versionsuffix
+            # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
+            has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
+                                         for dep in ec['dependencies'] if dep['name'] == 'Python')
+            has_old_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
+                                     for dep in ec['dependencies'] if dep['name'] == 'Python')
             # Tkinter is an exception, since its version always matches the Python version anyway
-            # Python 3.8.6 and later are also excluded, as we consider python 3 the default python
-            # Also whitelist some updated versions of Amber
+            # Z3 is an exception, since it has easyconfigs with and without Python bindings
+            exception_python_suffix = ['Tkinter', 'Z3']
+            # Also whitelist some specific easyconfigs from this check
+            # TODO: clean whitelist in EB 5.0
             whitelist_python_suffix = [
                 'Amber-16-*-2018b-AmberTools-17-patchlevel-10-15.eb',
                 'Amber-16-intel-2017b-AmberTools-17-patchlevel-8-12.eb',
                 'R-keras-2.1.6-foss-2018a-R-3.4.4.eb',
             ]
             whitelisted = any(re.match(regex, ec_fn) for regex in whitelist_python_suffix)
-            has_python_dep = any(LooseVersion(dep['version']) < LooseVersion('3.8.6')
-                                 for dep in ec['dependencies'] if dep['name'] == 'Python')
-            if has_python_dep and ec.name != 'Tkinter' and not whitelisted:
-                if not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
-                    # This is only a failure for newly added ECs, not for existing ECS
-                    # As that would probably break many ECs
-                    if ec_fn in self.added_ecs_filenames:
-                        failing_checks.append(msg)
-                    else:
-                        print('\nNote: Failed non-critical check: ' + msg)
-            else:
-                has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
-                                             for dep in ec['dependencies'] if dep['name'] == 'Python')
-                if has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
-                    msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
+
+            if ec.name in exception_python_suffix or whitelisted:
+                continue
+            elif has_old_python_dep and not re.search(r'-Python-[23]\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                msg = "'-Python-%%(pyver)s' should be included in versionsuffix in %s" % ec_fn
+                # This is only a failure for newly added ECs, not for existing ECS
+                # As that would probably break many ECs
+                if ec_fn in self.added_ecs_filenames:
                     failing_checks.append(msg)
+                else:
+                    print('\nNote: Failed non-critical check: ' + msg)
+            elif has_recent_python3_dep and re.search(r'-Python-3\.[0-9]+\.[0-9]+', ec['versionsuffix']):
+                msg = "'-Python-%%(pyver)s' should no longer be included in versionsuffix in %s" % ec_fn
+                failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
             if easyblock in ['PythonBundle', 'PythonPackage']:
@@ -1124,14 +1141,19 @@ class EasyConfigTest(TestCase):
         """Make sure a custom sanity_check_paths value is specified for easyconfigs that use a generic easyblock."""
 
         # some generic easyblocks already have a decent customised sanity_check_paths,
-        # including CMakePythonPackage, GoPackage, JuliaBundle, PythonBundle & PythonPackage;
+        # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
+        #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage', 'JuliaBundle', 'ModuleRC',
-                     'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['BuildEnv', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage',
+                     'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
-        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co
-        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'GCC', 'FEniCS', 'ESL-Bundle', 'ROCm']
+        # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
+        # Jupyter-bundle: JupyterHub + JupyterLab + notebook + nbclassic + jupyter-server-proxy
+        # + jupyterlmod + jupyter-resource-usage
+        # Python-bundle: Python + SciPy-bundle + matplotlib + JupyterLab
+        bundles_whitelist = ['Autotools', 'CESM-deps', 'CUDA', 'ESL-Bundle', 'FEniCS', 'GCC', 'Jupyter-bundle',
+                             'Python-bundle', 'ROCm']
 
         failing_checks = []
 
@@ -1218,6 +1240,46 @@ class EasyConfigTest(TestCase):
             self.fail('\n'.join(failing_checks))
 
     @skip_if_not_pr_to_non_main_branch()
+    def test_ec_file_permissions(self):
+        """Make sure correct access rights are set for easyconfigs."""
+
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            st = os.stat(ec.path)
+            read_perms = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
+            exec_perms = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            wrong_perms = []
+            if (st.st_mode & read_perms) != read_perms:
+                wrong_perms.append("readable (owner, group, other)")
+            if st.st_mode & exec_perms:
+                wrong_perms.append("not executable")
+            if not (st.st_mode & stat.S_IWUSR):
+                wrong_perms.append("at least owner writable")
+            if wrong_perms:
+                failing_checks.append("%s must be %s, is: %s" % (ec_fn, ", ".join(wrong_perms), oct(st.st_mode)))
+
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
+    def test_pr_CMAKE_BUILD_TYPE(self):
+        """Make sure -DCMAKE_BUILD_TYPE is no longer used (replaced by build_type)"""
+        failing_checks = []
+        for ec in self.changed_ecs:
+            ec_fn = os.path.basename(ec.path)
+            configopts = ec.get('configopts')
+            build_type = ec.get('build_type')
+
+            if configopts and '-DCMAKE_BUILD_TYPE' in configopts:
+                failing_checks.append("Found -DCMAKE_BUILD_TYPE in configopts. Use build_type instead: %s" % ec_fn)
+            if build_type == 'Release':
+                failing_checks.append("build_type was set to the default of 'Release'. "
+                                      "Omit this to base it on toolchain_opts.debug: %s" % ec_fn)
+        if failing_checks:
+            self.fail('\n'.join(failing_checks))
+
+    @skip_if_not_pr_to_non_main_branch()
     def test_pr_patch_descr(self):
         """
         Check whether all patch files touched in PR have a description on top.
@@ -1265,6 +1327,10 @@ def template_easyconfig_test(self, spec):
     # sanity check for software name, moduleclass
     self.assertEqual(ec['name'], name)
     self.assertTrue(ec['moduleclass'] in build_option('valid_module_classes'))
+    # base is the default value for moduleclass, which should never be used,
+    # and moduleclass should always be set in the easyconfig file
+    self.assertNotEqual(ec['moduleclass'], 'base',
+                        "moduleclass should be set, and not be set to 'base', for %s" % spec)
 
     # instantiate easyblock with easyconfig file
     app_class = get_easyblock_class(easyblock, name=name)
