@@ -1,0 +1,55 @@
+easyblock = 'PythonBundle'
+
+name = 'sagemath'
+version = '10.1'
+versionsuffix = '_downloaded_deps'
+
+homepage = 'https://www.sagemath.org/'
+description = """SageMath is a free open-source mathematics software system licensed under the GPL. It builds on
+ top of many existing open-source packages: NumPy, SciPy, matplotlib, Sympy, Maxima, GAP, FLINT, R and many more.
+ Access their combined power through a common, Python-based language or directly via interfaces or wrappers.
+
+ This installation method is based on https://github.com/sagemath/sage#alternative-installation-using-pypi,
+ using sage_conf to download and build all the dependencies (instead of using easybuilt ones...)
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('pkgconfig', '1.5.5', '-python'),
+]
+
+dependencies = [('Python', '3.10.4')]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('sage-setup', version, {
+        'checksums': ['9b9d66072adeb930b4d9dc134a7822aa54cc45a41d1011a52bf1a44154dc6507'],
+    }),
+    ('sage-conf', version, {
+        'modulename': False,
+        'patches': ['sagemath-10.1_sageconf_setup.patch'],
+        'preinstallopts': "export DOT_SAGE=%(builddir)s SAGE_BUILD_DIR=%(builddir)s SAGE_LOCAL=%(installdir)s &&",
+        'postinstallcmds': [
+            "python -m pip install --prefix=%(installdir)s $(%(installdir)s/bin/sage-config SAGE_SPKG_WHEELS)/*.whl"
+        ],
+        'checksums': [
+            {'sage-conf-10.1.tar.gz': '23a38c8c4979895a5e35d96e547d2f7fc414eedc8dc7d2f38bc269ce5b6c2dd3'},
+            {'sagemath-10.1_sageconf_setup.patch': '2b3b26c9aabfb5d4b0ff43228687580d0ce574177ab47acda8a659ea2da5c922'},
+        ],
+    }),
+    ('sagemath-standard', version, {
+        'modulename': 'sage',
+        'checksums': ['4edbace8880b7ff3aa63bd5381ead0400820a68a929f43c68e93a4f28ee13c52'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+moduleclass = 'math'
