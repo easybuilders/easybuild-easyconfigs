@@ -5,21 +5,39 @@ Author: Jakob Schiotz, Tech. Univ. Denmark
 Email: schiotz@fysik.dtu.dk
 Date: 8. November 2023
 
-diff --git a/test/distributed/elastic/multiprocessing/api_test.py b/test/distributed/elastic/multiprocessing/api_test.py
-index 6240fbe..35990be 100644
---- a/test/distributed/elastic/multiprocessing/api_test.py
-+++ b/test/distributed/elastic/multiprocessing/api_test.py
-@@ -658,7 +658,9 @@ if not (TEST_WITH_DEV_DBG_ASAN or IS_WINDOWS or IS_MACOS):
- 
- 
- # tests incompatible with tsan or asan, the redirect functionality does not work on macos or windows
--if not (TEST_WITH_DEV_DBG_ASAN or IS_WINDOWS or IS_MACOS or IS_CI):
-+# Test disabled for EasyBuild, it fails with python_std.fileno() raising 
-+# io.UnsupportedOperation: fileno
-+if False:
- 
-     class StartProcessesNotCITest(StartProcessesTest):
-         def test_wrap_bad(self):
+Stack trace of error:
+
+_________________________________________________________ TestNN.test_batchnorm_nhwc_cpu __________________________________________________________
+Traceback (most recent call last):
+  File "/home/modules/software/Python/3.11.3-GCCcore-12.3.0/lib/python3.11/unittest/case.py", line 57, in testPartExecutor
+    yield
+  File "/home/modules/software/Python/3.11.3-GCCcore-12.3.0/lib/python3.11/unittest/case.py", line 623, in run
+    self._callTestMethod(testMethod)
+  File "/home/modules/software/Python/3.11.3-GCCcore-12.3.0/lib/python3.11/unittest/case.py", line 579, in _callTestMethod
+    if method() is not None:
+       ^^^^^^^^
+  File "/tmp/eb-19tah_22/tmplupwseoe/lib/python3.11/site-packages/torch/testing/_internal/common_utils.py", line 2388, in wrapper
+    method(*args, **kwargs)
+  File "/scratch/schiotz/eb_build/PyTorch/2.1.0/foss-2023a/pytorch-v2.1.0/test/test_nn.py", line 5106, in test_batchnorm_nhwc_cpu
+    helper(self, nn.BatchNorm3d, shape, torch.bfloat16, True, torch.channels_last_3d)
+  File "/scratch/schiotz/eb_build/PyTorch/2.1.0/foss-2023a/pytorch-v2.1.0/test/test_nn.py", line 5093, in helper
+    self.assertEqual(bn.weight.grad, ref_bn.weight.grad)
+  File "/tmp/eb-19tah_22/tmplupwseoe/lib/python3.11/site-packages/torch/testing/_internal/common_utils.py", line 3285, in assertEqual
+    raise error_metas.pop()[0].to_error(
+AssertionError: Tensor-likes are not close!
+
+Mismatched elements: 1 / 8 (12.5%)
+Greatest absolute difference: 6.866455078125e-05 at index (2,) (up to 1e-05 allowed)
+Greatest relative difference: 1.6928229342738632e-06 at index (2,) (up to 1.3e-06 allowed)
+
+To execute this test, run the following from the base repo dir:
+     python test/test_nn.py -k test_batchnorm_nhwc_cpu
+
+This message can be suppressed by setting PYTORCH_PRINT_REPRO_ON_FAILURE=0
+============================================================= short test summary info =============================================================
+FAILED [0.0156s] test_nn.py::TestNN::test_batchnorm_nhwc_cpu - AssertionError: Tensor-likes are not close!
+=================================== 1 failed, 1759 passed, 898 skipped, 3 xfailed, 2 rerun in 371.19s (0:06:11) ===================================
+
 diff --git a/test/test_nn.py b/test/test_nn.py
 index ad201da..9bbf430 100644
 --- a/test/test_nn.py
