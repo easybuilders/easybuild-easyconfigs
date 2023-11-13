@@ -1,0 +1,67 @@
+# Thomas Hoffman, EMBL Heidelberg, structures-it@embl.de, 2023/1 
+easyblock = 'PythonPackage'
+
+name = 'topaz-em'  # named topaz-em instead of topaz to be consistent with pypi
+_mainversion = '0.2.5'
+_patchdate = '2230923'
+_patchsha = 'dadfe725efa9181e55864054f492a41b4abe8c1c'
+version = '%s.%s' % (_mainversion, _patchdate)
+_cudasuffix = '-CUDA-%(cudaver)s'
+_pytorch_ver = '1.12.0'
+_pytorchsuffix = '-PyTorch-%s' % _pytorch_ver
+versionsuffix = _cudasuffix + _pytorchsuffix
+_mainversion = '0.2.5'
+_patchdate = '2230923'
+_patchsha = 'dadfe725efa9181e55864054f492a41b4abe8c1c'
+version = '%s.%s' % (_mainversion, _patchdate)
+
+homepage = 'http://cb.csail.mit.edu/cb/topaz/'
+
+description = """Particle picking software for single particle cryo-electron microscopy using    
+convolutional neural networks and positive-unlabeled learning. Includes methods
+for micrograph denoising."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+use_pip = True
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+]
+dependencies = [
+    ('CUDA', '11.7.0', '', True),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('PyTorch', _pytorch_ver, _cudasuffix),
+    ('scikit-learn', '1.1.2'),
+    ('torchvision', '0.13.1', _cudasuffix),
+]
+
+
+source_urls = [
+    'https://github.com/tbepler/topaz/archive',
+    'https://github.com/tbepler/topaz/compare/'
+]
+sources = ['v%s.tar.gz' % _mainversion]
+patches = [
+    'topaz-em-0.2.5_install_relion3_wrappers.patch',
+    'v%s..%s.patch' % (_mainversion, _patchsha)
+]
+checksums = [
+    {'v0.2.5.tar.gz': '33bba5fc071dcdf584cfc8c152ffe889a95b71ebad7ddefd15d3f81a96987417'},
+    {'topaz-em-0.2.5_install_relion3_wrappers.patch':
+     '0fe23a0ecaf887aaa89641a7e7cf37fafd3134384b0a8f46acb4e17537d1a151'},
+    {'v0.2.5..dadfe725efa9181e55864054f492a41b4abe8c1c.patch':
+     'f0dc2f0613138cff856274e5367a767d97f46dd2b47ba2a932f8ca1d20b93de1'},
+]
+
+sanity_pip_check = True
+options = {'modulename': 'topaz'}
+_relion3_wrappers = ['denoise', 'pick', 'train', 'train_denoise']
+sanity_check_commands = ['run_topaz_%s.py --help' % x for x in _relion3_wrappers] + ['topaz --help']
+sanity_check_paths = {
+    'files': ["bin/run_topaz_%s.py" % x for x in _relion3_wrappers],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
