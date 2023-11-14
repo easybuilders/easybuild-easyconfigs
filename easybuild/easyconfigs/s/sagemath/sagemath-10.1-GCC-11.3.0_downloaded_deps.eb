@@ -10,17 +10,20 @@ description = """SageMath is a free open-source mathematics software system lice
  Access their combined power through a common, Python-based language or directly via interfaces or wrappers.
 
  This installation method is based on https://github.com/sagemath/sage#alternative-installation-using-pypi,
- using sage_conf to download and build all the dependencies (instead of using easybuilt ones...)
+ using sage_conf to download and build all the dependencies, which include openblas, instead of using easybuilt ones.
 """
 
-toolchain = {'name': 'foss', 'version': '2022a'}
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
 
 builddependencies = [
     ('CMake', '3.24.3'),
     ('pkgconfig', '1.5.5', '-python'),
 ]
 
-dependencies = [('Python', '3.10.4')]
+dependencies = [
+    ('Python', '3.10.4'),
+    ('poetry', '1.2.2'),
+]
 
 use_pip = True
 sanity_pip_check = True
@@ -32,9 +35,12 @@ exts_list = [
     ('sage-conf', version, {
         'modulename': False,
         'patches': ['sagemath-10.1_sageconf_setup.patch'],
-        'preinstallopts': "export DOT_SAGE=%(builddir)s SAGE_BUILD_DIR=%(builddir)s SAGE_LOCAL=%(installdir)s &&",
+        'preinstallopts':
+            "export DOT_SAGE=%(builddir)s SAGE_BUILD_DIR=%(builddir)s SAGE_LOCAL=%(installdir)s && ",
         'postinstallcmds': [
-            "python -m pip install --prefix=%(installdir)s $(%(installdir)s/bin/sage-config SAGE_SPKG_WHEELS)/*.whl"
+            "rm $(%(installdir)s/bin/sage-config SAGE_SPKG_WHEELS)/poetry*.whl",
+            "python -m pip install --prefix=%(installdir)s --no-deps --ignore-installed --no-index \
+             --no-build-isolation $(%(installdir)s/bin/sage-config SAGE_SPKG_WHEELS)/*.whl",
         ],
         'checksums': [
             {'sage-conf-10.1.tar.gz': '23a38c8c4979895a5e35d96e547d2f7fc414eedc8dc7d2f38bc269ce5b6c2dd3'},
@@ -48,8 +54,11 @@ exts_list = [
 ]
 
 sanity_check_paths = {
-    'files': [],
-    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+    'files': ['bin/sage'],
+    'dirs': ['bin', 'etc', 'include', 'libexec', 'share',
+             'lib/python%(pyshortver)s/site-packages/'],
 }
+
+sanity_check_commands = ["sage --help"]
 
 moduleclass = 'math'
