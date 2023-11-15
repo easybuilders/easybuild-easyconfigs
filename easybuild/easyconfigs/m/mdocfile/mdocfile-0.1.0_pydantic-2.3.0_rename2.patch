@@ -1,0 +1,1765 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de
+# rename pydantic to pydantic2 in order to allow using both, pydantic < 2.0 
+# and >=2.0 (e.g. napari 4.18 is restricted to pydantic <=1.19 while mdocfile
+# requires pydantic > 2.0 due to "field_validator" and "GenericModel"
+diff -ru pydantic-2.3.0/pydantic/fields.py pydantic-2.3.0_rename2/pydantic/fields.py
+--- pydantic-2.3.0/pydantic/fields.py	2023-11-09 16:42:19.499213124 +0100
++++ pydantic-2.3.0_rename2/pydantic/fields.py	2023-11-09 16:42:19.504213249 +0100
+@@ -226,7 +226,7 @@
+             This is how you can create a field with default value like this:
+ 
+             ```python
+-            import pydantic
++            import pydantic2
+ 
+             class MyModel(pydantic.BaseModel):
+                 foo: int = pydantic.Field(4)
+@@ -250,7 +250,7 @@
+             This is how you can create a field from a bare annotation like this:
+ 
+             ```python
+-            import pydantic
++            import pydantic2
+ 
+             class MyModel(pydantic.BaseModel):
+                 foo: int  # <-- like this
+@@ -263,7 +263,7 @@
+             import annotated_types
+             from typing_extensions import Annotated
+ 
+-            import pydantic
++            import pydantic2
+ 
+             class MyModel(pydantic.BaseModel):
+                 foo: Annotated[int, annotated_types.Gt(42)]
+@@ -314,7 +314,7 @@
+             import annotated_types
+             from typing_extensions import Annotated
+ 
+-            import pydantic
++            import pydantic2
+ 
+             class MyModel(pydantic.BaseModel):
+                 foo: int = 4  # <-- like this
+diff -ru pydantic-2.3.0/pydantic/__init__.py pydantic-2.3.0_rename2/pydantic/__init__.py
+--- pydantic-2.3.0/pydantic/__init__.py	2023-11-09 16:42:19.499213124 +0100
++++ pydantic-2.3.0_rename2/pydantic/__init__.py	2023-11-09 16:42:19.504213249 +0100
+@@ -51,7 +51,7 @@
+ ValidationError = pydantic_core.ValidationError
+ 
+ # WARNING __all__ from .errors is not included here, it will be removed as an export here in v2
+-# please use "from pydantic.errors import ..." instead
++# please use "from pydantic2.errors import ..." instead
+ __all__ = [
+     # dataclasses
+     'dataclasses',
+diff -ru pydantic-2.3.0/pydantic/_internal/_dataclasses.py pydantic-2.3.0_rename2/pydantic/_internal/_dataclasses.py
+--- pydantic-2.3.0/pydantic/_internal/_dataclasses.py	2023-11-09 16:42:19.499213124 +0100
++++ pydantic-2.3.0_rename2/pydantic/_internal/_dataclasses.py	2023-11-09 16:42:19.503213224 +0100
+@@ -235,7 +235,7 @@
+     ```py
+     import dataclasses
+ 
+-    import pydantic.dataclasses
++    import pydantic2.dataclasses
+ 
+     @dataclasses.dataclass
+     class A:
+diff -ru pydantic-2.3.0/pydantic/_internal/_generics.py pydantic-2.3.0_rename2/pydantic/_internal/_generics.py
+--- pydantic-2.3.0/pydantic/_internal/_generics.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/pydantic/_internal/_generics.py	2023-11-09 16:42:19.503213224 +0100
+@@ -269,7 +269,7 @@
+         ```py
+         from typing import List, Tuple, Union
+ 
+-        from pydantic._internal._generics import replace_types
++        from pydantic2._internal._generics import replace_types
+ 
+         replace_types(Tuple[str, Union[List[str], float]], {str: int})
+         #> Tuple[int, Union[List[int], float]]
+diff -ru pydantic-2.3.0/pydantic/_internal/_known_annotated_metadata.py pydantic-2.3.0_rename2/pydantic/_internal/_known_annotated_metadata.py
+--- pydantic-2.3.0/pydantic/_internal/_known_annotated_metadata.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/pydantic/_internal/_known_annotated_metadata.py	2023-11-09 16:42:19.503213224 +0100
+@@ -97,13 +97,13 @@
+         ```py
+         from annotated_types import Ge, Len
+ 
+-        from pydantic._internal._known_annotated_metadata import expand_grouped_metadata
++        from pydantic2._internal._known_annotated_metadata import expand_grouped_metadata
+ 
+         print(list(expand_grouped_metadata([Ge(4), Len(5)])))
+         #> [Ge(ge=4), MinLen(min_length=5)]
+         ```
+     """
+-    from pydantic.fields import FieldInfo  # circular import
++    from pydantic2.fields import FieldInfo  # circular import
+ 
+     for annotation in annotations:
+         if isinstance(annotation, at.GroupedMetadata):
+@@ -306,7 +306,7 @@
+         ```py
+         from annotated_types import Gt, Len
+ 
+-        from pydantic._internal._known_annotated_metadata import collect_known_metadata
++        from pydantic2._internal._known_annotated_metadata import collect_known_metadata
+ 
+         print(collect_known_metadata([Gt(1), Len(42), ...]))
+         #> ({'gt': 1, 'min_length': 42}, [Ellipsis])
+diff -ru pydantic-2.3.0/pydantic/_internal/_std_types_schema.py pydantic-2.3.0_rename2/pydantic/_internal/_std_types_schema.py
+--- pydantic-2.3.0/pydantic/_internal/_std_types_schema.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/pydantic/_internal/_std_types_schema.py	2023-11-09 16:42:19.503213224 +0100
+@@ -27,8 +27,8 @@
+ )
+ from typing_extensions import get_args, get_origin
+ 
+-from pydantic.errors import PydanticSchemaGenerationError
+-from pydantic.fields import FieldInfo
++from pydantic2.errors import PydanticSchemaGenerationError
++from pydantic2.fields import FieldInfo
+ 
+ from ..config import ConfigDict
+ from ..json_schema import JsonSchemaValue, update_json_schema
+diff -ru pydantic-2.3.0/pydantic/json_schema.py pydantic-2.3.0_rename2/pydantic/json_schema.py
+--- pydantic-2.3.0/pydantic/json_schema.py	2023-11-09 16:42:19.499213124 +0100
++++ pydantic-2.3.0_rename2/pydantic/json_schema.py	2023-11-09 16:42:19.504213249 +0100
+@@ -39,7 +39,7 @@
+ from pydantic_core.core_schema import ComputedField
+ from typing_extensions import Annotated, Literal, assert_never
+ 
+-from pydantic._internal import _annotated_handlers, _internal_dataclass
++from pydantic2._internal import _annotated_handlers, _internal_dataclass
+ 
+ from ._internal import _core_metadata, _core_utils, _mock_val_ser, _schema_generation_shared, _typing_extra
+ from .config import JsonSchemaExtraCallable
+@@ -2300,7 +2300,7 @@
+         Example:
+             ```py
+             from pydantic import BaseModel
+-            from pydantic.json_schema import SkipJsonSchema
++            from pydantic2.json_schema import SkipJsonSchema
+ 
+             class Model(BaseModel):
+                 a: int | SkipJsonSchema[None] = None
+diff -ru pydantic-2.3.0/pydantic/mypy.py pydantic-2.3.0_rename2/pydantic/mypy.py
+--- pydantic-2.3.0/pydantic/mypy.py	2023-11-09 16:42:19.499213124 +0100
++++ pydantic-2.3.0_rename2/pydantic/mypy.py	2023-11-09 16:42:19.504213249 +0100
+@@ -76,8 +76,8 @@
+ from mypy.util import get_unique_redefinition_name
+ from mypy.version import __version__ as mypy_version
+ 
+-from pydantic._internal import _fields
+-from pydantic.version import parse_mypy_version
++from pydantic2._internal import _fields
++from pydantic2.version import parse_mypy_version
+ 
+ try:
+     from mypy.types import TypeVarDef  # type: ignore[attr-defined]
+diff -ru pydantic-2.3.0/pydantic/type_adapter.py pydantic-2.3.0_rename2/pydantic/type_adapter.py
+--- pydantic-2.3.0/pydantic/type_adapter.py	2023-11-09 16:42:19.499213124 +0100
++++ pydantic-2.3.0_rename2/pydantic/type_adapter.py	2023-11-09 16:42:19.503213224 +0100
+@@ -8,8 +8,8 @@
+ from pydantic_core import CoreSchema, SchemaSerializer, SchemaValidator, Some
+ from typing_extensions import Literal, is_typeddict
+ 
+-from pydantic.errors import PydanticUserError
+-from pydantic.main import BaseModel
++from pydantic2.errors import PydanticUserError
++from pydantic2.main import BaseModel
+ 
+ from ._internal import _config, _core_utils, _discriminated_union, _generate_schema, _typing_extra
+ from .config import ConfigDict
+diff -ru pydantic-2.3.0/pydantic/types.py pydantic-2.3.0_rename2/pydantic/types.py
+--- pydantic-2.3.0/pydantic/types.py	2023-11-09 16:42:19.499213124 +0100
++++ pydantic-2.3.0_rename2/pydantic/types.py	2023-11-09 16:42:19.503213224 +0100
+@@ -112,7 +112,7 @@
+         ```python
+         from typing_extensions import Annotated
+ 
+-        from pydantic.types import Strict
++        from pydantic2.types import Strict
+ 
+         StrictBool = Annotated[bool, Strict()]
+         ```
+diff -ru pydantic-2.3.0/pydantic/v1/_hypothesis_plugin.py pydantic-2.3.0_rename2/pydantic/v1/_hypothesis_plugin.py
+--- pydantic-2.3.0/pydantic/v1/_hypothesis_plugin.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/pydantic/v1/_hypothesis_plugin.py	2023-11-09 16:42:19.503213224 +0100
+@@ -32,10 +32,10 @@
+ 
+ import hypothesis.strategies as st
+ 
+-import pydantic
+-import pydantic.color
+-import pydantic.types
+-from pydantic.utils import lenient_issubclass
++import pydantic2
++import pydantic2.color
++import pydantic2.types
++from pydantic2.utils import lenient_issubclass
+ 
+ # FilePath and DirectoryPath are explicitly unsupported, as we'd have to create
+ # them on-disk, and that's unsafe in general without being told *where* to do so.
+diff -ru pydantic-2.3.0/pydantic/v1/__init__.py pydantic-2.3.0_rename2/pydantic/v1/__init__.py
+--- pydantic-2.3.0/pydantic/v1/__init__.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/pydantic/v1/__init__.py	2023-11-09 16:42:19.503213224 +0100
+@@ -18,7 +18,7 @@
+ __version__ = VERSION
+ 
+ # WARNING __all__ from .errors is not included here, it will be removed as an export here in v2
+-# please use "from pydantic.errors import ..." instead
++# please use "from pydantic2.errors import ..." instead
+ __all__ = [
+     # annotated types utils
+     'create_model_from_namedtuple',
+diff -ru pydantic-2.3.0/pydantic/v1/mypy.py pydantic-2.3.0_rename2/pydantic/v1/mypy.py
+--- pydantic-2.3.0/pydantic/v1/mypy.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/pydantic/v1/mypy.py	2023-11-09 16:42:19.503213224 +0100
+@@ -65,7 +65,7 @@
+ from mypy.util import get_unique_redefinition_name
+ from mypy.version import __version__ as mypy_version
+ 
+-from pydantic.utils import is_valid_field
++from pydantic2.utils import is_valid_field
+ 
+ try:
+     from mypy.types import TypeVarDef  # type: ignore[attr-defined]
+diff -ru pydantic-2.3.0/pyproject.toml pydantic-2.3.0_rename2/pyproject.toml
+--- pydantic-2.3.0/pyproject.toml	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/pyproject.toml	2023-11-09 16:43:51.355504334 +0100
+@@ -21,7 +21,7 @@
+ ]
+ 
+ [project]
+-name = 'pydantic'
++name = 'pydantic2'
+ description = 'Data validation using Python type hints'
+ authors = [
+     {name = 'Samuel Colvin', email = 's@muelcolvin.com'},
+Only in pydantic-2.3.0_rename2: .pyproject.toml.swp
+diff -ru pydantic-2.3.0/tests/benchmarks/test_fastapi_startup.py pydantic-2.3.0_rename2/tests/benchmarks/test_fastapi_startup.py
+--- pydantic-2.3.0/tests/benchmarks/test_fastapi_startup.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/benchmarks/test_fastapi_startup.py	2023-11-09 16:42:19.504213249 +0100
+@@ -6,7 +6,7 @@
+ from typing_extensions import Annotated
+ 
+ from pydantic import BaseModel, TypeAdapter, create_model
+-from pydantic.fields import FieldInfo
++from pydantic2.fields import FieldInfo
+ 
+ TYPES_DEFAULTS = {int: 0, str: '', bool: False}  # some dummy basic types with defaults for some fields
+ TYPES = [*TYPES_DEFAULTS.keys()]
+diff -ru pydantic-2.3.0/tests/benchmarks/test_north_star.py pydantic-2.3.0_rename2/tests/benchmarks/test_north_star.py
+--- pydantic-2.3.0/tests/benchmarks/test_north_star.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/benchmarks/test_north_star.py	2023-11-09 16:42:19.504213249 +0100
+@@ -19,7 +19,7 @@
+ @pytest.fixture(scope='module')
+ def pydantic_type_adapter():
+     from pydantic import BaseModel, Field, TypeAdapter
+-    from pydantic.networks import AnyHttpUrl
++    from pydantic2.networks import AnyHttpUrl
+ 
+     class Blog(BaseModel):
+         type: Literal['blog']
+diff -ru pydantic-2.3.0/tests/mypy/modules/dataclass_no_any.py pydantic-2.3.0_rename2/tests/mypy/modules/dataclass_no_any.py
+--- pydantic-2.3.0/tests/mypy/modules/dataclass_no_any.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/modules/dataclass_no_any.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,4 +1,4 @@
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ @dataclass
+diff -ru pydantic-2.3.0/tests/mypy/modules/fail1.py pydantic-2.3.0_rename2/tests/mypy/modules/fail1.py
+--- pydantic-2.3.0/tests/mypy/modules/fail1.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/modules/fail1.py	2023-11-09 16:42:19.504213249 +0100
+@@ -5,7 +5,7 @@
+ from typing import List, Optional
+ 
+ from pydantic import BaseModel
+-from pydantic.types import Json
++from pydantic2.types import Json
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/modules/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/modules/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/modules/plugin_fail_baseConfig.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/modules/plugin_fail_baseConfig.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/modules/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/modules/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/modules/plugin_fail.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/modules/plugin_fail.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/modules/plugin_success_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/modules/plugin_success_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/modules/plugin_success_baseConfig.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/modules/plugin_success_baseConfig.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import ClassVar, Generic, List, Optional, TypeVar, Union
+ 
+ from pydantic import BaseModel, Field, create_model, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/modules/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/modules/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/modules/plugin_success.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/modules/plugin_success.py	2023-11-09 16:42:19.504213249 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/modules/success.py pydantic-2.3.0_rename2/tests/mypy/modules/success.py
+--- pydantic-2.3.0/tests/mypy/modules/success.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/modules/success.py	2023-11-09 16:42:19.504213249 +0100
+@@ -45,9 +45,9 @@
+     root_validator,
+     validate_call,
+ )
+-from pydantic.fields import Field, PrivateAttr
+-from pydantic.json_schema import Examples
+-from pydantic.networks import AnyUrl
++from pydantic2.fields import Field, PrivateAttr
++from pydantic2.json_schema import Examples
++from pydantic2.networks import AnyUrl
+ 
+ 
+ class Flags(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-default_ini/fail1.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-default_ini/fail1.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-default_ini/fail1.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-default_ini/fail1.py	2023-11-09 16:42:19.504213249 +0100
+@@ -5,7 +5,7 @@
+ from typing import List, Optional
+ 
+ from pydantic import BaseModel
+-from pydantic.types import Json
++from pydantic2.types import Json
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-default_ini/plugin_success_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-default_ini/plugin_success_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-default_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-default_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import ClassVar, Generic, List, Optional, TypeVar, Union
+ 
+ from pydantic import BaseModel, Field, create_model, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-default_ini/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-default_ini/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-default_ini/plugin_success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-default_ini/plugin_success.py	2023-11-09 16:42:19.504213249 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-default_ini/success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-default_ini/success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-default_ini/success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-default_ini/success.py	2023-11-09 16:42:19.504213249 +0100
+@@ -45,9 +45,9 @@
+     root_validator,
+     validate_call,
+ )
+-from pydantic.fields import Field, PrivateAttr
+-from pydantic.json_schema import Examples
+-from pydantic.networks import AnyUrl
++from pydantic2.fields import Field, PrivateAttr
++from pydantic2.json_schema import Examples
++from pydantic2.networks import AnyUrl
+ 
+ 
+ class Flags(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_fail.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_success_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_success_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import ClassVar, Generic, List, Optional, TypeVar, Union
+ 
+ from pydantic import BaseModel, Field, create_model, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin_ini/plugin_success.py	2023-11-09 16:42:19.504213249 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_fail.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_success_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_success_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import ClassVar, Generic, List, Optional, TypeVar, Union
+ 
+ from pydantic import BaseModel, Field, create_model, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict_ini/plugin_success.py	2023-11-09 16:42:19.504213249 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict-no-any_ini/dataclass_no_any.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict-no-any_ini/dataclass_no_any.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/mypy-plugin-strict-no-any_ini/dataclass_no_any.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/mypy-plugin-strict-no-any_ini/dataclass_no_any.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,4 +1,4 @@
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ @dataclass
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-default_toml/fail1.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-default_toml/fail1.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-default_toml/fail1.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-default_toml/fail1.py	2023-11-09 16:42:19.504213249 +0100
+@@ -5,7 +5,7 @@
+ from typing import List, Optional
+ 
+ from pydantic import BaseModel
+-from pydantic.types import Json
++from pydantic2.types import Json
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-default_toml/success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-default_toml/success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-default_toml/success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-default_toml/success.py	2023-11-09 16:42:19.504213249 +0100
+@@ -45,9 +45,9 @@
+     root_validator,
+     validate_call,
+ )
+-from pydantic.fields import Field, PrivateAttr
+-from pydantic.json_schema import Examples
+-from pydantic.networks import AnyUrl
++from pydantic2.fields import Field, PrivateAttr
++from pydantic2.json_schema import Examples
++from pydantic2.networks import AnyUrl
+ 
+ 
+ class Flags(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_success_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_success_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_success_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_success_baseConfig.py	2023-11-09 16:42:19.504213249 +0100
+@@ -1,7 +1,7 @@
+ from typing import ClassVar, Generic, List, Optional, TypeVar, Union
+ 
+ from pydantic import BaseModel, Field, create_model, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin-strict_toml/plugin_success.py	2023-11-09 16:42:19.504213249 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_success_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_success_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_success_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_success_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import ClassVar, Generic, List, Optional, TypeVar, Union
+ 
+ from pydantic import BaseModel, Field, create_model, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.0.1/pyproject-plugin_toml/plugin_success.py	2023-11-09 16:42:19.505213274 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.1.1/mypy-default_ini/fail1.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.1.1/mypy-default_ini/fail1.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.1.1/mypy-default_ini/fail1.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.1.1/mypy-default_ini/fail1.py	2023-11-09 16:42:19.505213274 +0100
+@@ -5,7 +5,7 @@
+ from typing import List, Optional
+ 
+ from pydantic import BaseModel
+-from pydantic.types import Json
++from pydantic2.types import Json
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.1.1/mypy-default_ini/plugin_success_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.1.1/mypy-default_ini/plugin_success_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.1.1/mypy-default_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.1.1/mypy-default_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import ClassVar, Generic, List, Optional, TypeVar, Union
+ 
+ from pydantic import BaseModel, Field, create_model, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.1.1/mypy-default_ini/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.1.1/mypy-default_ini/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.1.1/mypy-default_ini/plugin_success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.1.1/mypy-default_ini/plugin_success.py	2023-11-09 16:42:19.505213274 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.1.1/pyproject-default_toml/fail1.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.1.1/pyproject-default_toml/fail1.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.1.1/pyproject-default_toml/fail1.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.1.1/pyproject-default_toml/fail1.py	2023-11-09 16:42:19.505213274 +0100
+@@ -5,7 +5,7 @@
+ from typing import List, Optional
+ 
+ from pydantic import BaseModel
+-from pydantic.types import Json
++from pydantic2.types import Json
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-default_ini/plugin_success_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-default_ini/plugin_success_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-default_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-default_ini/plugin_success_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import ClassVar, Generic, List, Optional, TypeVar, Union
+ 
+ from pydantic import BaseModel, Field, create_model, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-default_ini/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-default_ini/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-default_ini/plugin_success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-default_ini/plugin_success.py	2023-11-09 16:42:19.505213274 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-plugin_ini/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-plugin_ini/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-plugin_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-plugin_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-plugin_ini/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-plugin_ini/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-plugin_ini/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-plugin_ini/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-plugin-strict_ini/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-plugin-strict_ini/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-plugin-strict_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-plugin-strict_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-plugin-strict_ini/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-plugin-strict_ini/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/mypy-plugin-strict_ini/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/mypy-plugin-strict_ini/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/pyproject-plugin-strict_toml/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/pyproject-plugin-strict_toml/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/pyproject-plugin-strict_toml/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/pyproject-plugin-strict_toml/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/pyproject-plugin_toml/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/pyproject-plugin_toml/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/pyproject-plugin_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/pyproject-plugin_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.2.0/pyproject-plugin_toml/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/pyproject-plugin_toml/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.2.0/pyproject-plugin_toml/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.2.0/pyproject-plugin_toml/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-default_ini/plugin_success.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-default_ini/plugin_success.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-default_ini/plugin_success.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-default_ini/plugin_success.py	2023-11-09 16:42:19.505213274 +0100
+@@ -3,7 +3,7 @@
+ from typing_extensions import Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator, validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-plugin_ini/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-plugin_ini/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-plugin_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-plugin_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-plugin_ini/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-plugin_ini/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-plugin_ini/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-plugin_ini/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-plugin-strict_ini/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-plugin-strict_ini/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-plugin-strict_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-plugin-strict_ini/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-plugin-strict_ini/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-plugin-strict_ini/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/mypy-plugin-strict_ini/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/mypy-plugin-strict_ini/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/pyproject-plugin-strict_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/pyproject-plugin-strict_toml/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/pyproject-plugin-strict_toml/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/pyproject-plugin-strict_toml/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/pyproject-plugin-strict_toml/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/pyproject-plugin_toml/plugin_fail_baseConfig.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/pyproject-plugin_toml/plugin_fail_baseConfig.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/pyproject-plugin_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/pyproject-plugin_toml/plugin_fail_baseConfig.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Any, Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/outputs/1.4.1/pyproject-plugin_toml/plugin_fail.py pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/pyproject-plugin_toml/plugin_fail.py
+--- pydantic-2.3.0/tests/mypy/outputs/1.4.1/pyproject-plugin_toml/plugin_fail.py	2023-11-09 16:42:19.502213199 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/outputs/1.4.1/pyproject-plugin_toml/plugin_fail.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from typing import Generic, List, Optional, Set, TypeVar, Union
+ 
+ from pydantic import BaseModel, ConfigDict, Extra, Field, field_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/mypy/test_mypy.py pydantic-2.3.0_rename2/tests/mypy/test_mypy.py
+--- pydantic-2.3.0/tests/mypy/test_mypy.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/mypy/test_mypy.py	2023-11-09 16:42:19.505213274 +0100
+@@ -13,7 +13,7 @@
+     from mypy import api as mypy_api
+     from mypy.version import __version__ as mypy_version
+ 
+-    from pydantic.version import parse_mypy_version
++    from pydantic2.version import parse_mypy_version
+ 
+ except ImportError:
+     mypy_api = None
+@@ -242,10 +242,10 @@
+ 
+ def test_explicit_reexports():
+     from pydantic import __all__ as root_all
+-    from pydantic.deprecated.tools import __all__ as tools
+-    from pydantic.main import __all__ as main
+-    from pydantic.networks import __all__ as networks
+-    from pydantic.types import __all__ as types
++    from pydantic2.deprecated.tools import __all__ as tools
++    from pydantic2.main import __all__ as main
++    from pydantic2.networks import __all__ as networks
++    from pydantic2.types import __all__ as types
+ 
+     for name, export_all in [('main', main), ('network', networks), ('tools', tools), ('types', types)]:
+         for export in export_all:
+@@ -253,7 +253,7 @@
+ 
+ 
+ def test_explicit_reexports_exist():
+-    import pydantic
++    import pydantic2
+ 
+     for name in pydantic.__all__:
+         assert hasattr(pydantic, name), f'{name} is in pydantic.__all__ but missing from pydantic'
+diff -ru pydantic-2.3.0/tests/test_aliases.py pydantic-2.3.0_rename2/tests/test_aliases.py
+--- pydantic-2.3.0/tests/test_aliases.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_aliases.py	2023-11-09 16:42:19.506213299 +0100
+@@ -6,7 +6,7 @@
+ from dirty_equals import IsStr
+ 
+ from pydantic import BaseModel, ConfigDict, ValidationError
+-from pydantic.fields import AliasChoices, AliasPath, Field
++from pydantic2.fields import AliasChoices, AliasPath, Field
+ 
+ 
+ def test_alias_generator():
+diff -ru pydantic-2.3.0/tests/test_annotated.py pydantic-2.3.0_rename2/tests/test_annotated.py
+--- pydantic-2.3.0/tests/test_annotated.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_annotated.py	2023-11-09 16:42:19.506213299 +0100
+@@ -7,8 +7,8 @@
+ from typing_extensions import Annotated
+ 
+ from pydantic import BaseModel, Field, GetCoreSchemaHandler, TypeAdapter, ValidationError
+-from pydantic.errors import PydanticSchemaGenerationError
+-from pydantic.functional_validators import AfterValidator
++from pydantic2.errors import PydanticSchemaGenerationError
++from pydantic2.functional_validators import AfterValidator
+ 
+ NO_VALUE = object()
+ 
+diff -ru pydantic-2.3.0/tests/test_color.py pydantic-2.3.0_rename2/tests/test_color.py
+--- pydantic-2.3.0/tests/test_color.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_color.py	2023-11-09 16:42:19.506213299 +0100
+@@ -4,7 +4,7 @@
+ from pydantic_core import PydanticCustomError
+ 
+ from pydantic import BaseModel, ValidationError
+-from pydantic.color import Color
++from pydantic2.color import Color
+ 
+ pytestmark = pytest.mark.filterwarnings(
+     'ignore:The `Color` class is deprecated, use `pydantic_extra_types` instead.*:DeprecationWarning'
+diff -ru pydantic-2.3.0/tests/test_computed_fields.py pydantic-2.3.0_rename2/tests/test_computed_fields.py
+--- pydantic-2.3.0/tests/test_computed_fields.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_computed_fields.py	2023-11-09 16:42:19.506213299 +0100
+@@ -18,8 +18,8 @@
+     field_serializer,
+     field_validator,
+ )
+-from pydantic.alias_generators import to_camel
+-from pydantic.errors import PydanticUserError
++from pydantic2.alias_generators import to_camel
++from pydantic2.errors import PydanticUserError
+ 
+ try:
+     from functools import cached_property, lru_cache, singledispatchmethod
+diff -ru pydantic-2.3.0/tests/test_config.py pydantic-2.3.0_rename2/tests/test_config.py
+--- pydantic-2.3.0/tests/test_config.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_config.py	2023-11-09 16:42:19.506213299 +0100
+@@ -21,14 +21,14 @@
+     create_model,
+     validate_call,
+ )
+-from pydantic._internal._config import ConfigWrapper, config_defaults
+-from pydantic._internal._mock_val_ser import MockValSer
+-from pydantic.config import ConfigDict
+-from pydantic.dataclasses import dataclass as pydantic_dataclass
+-from pydantic.errors import PydanticUserError
+-from pydantic.fields import FieldInfo
+-from pydantic.type_adapter import TypeAdapter
+-from pydantic.warnings import PydanticDeprecationWarning
++from pydantic2._internal._config import ConfigWrapper, config_defaults
++from pydantic2._internal._mock_val_ser import MockValSer
++from pydantic2.config import ConfigDict
++from pydantic2.dataclasses import dataclass as pydantic_dataclass
++from pydantic2.errors import PydanticUserError
++from pydantic2.fields import FieldInfo
++from pydantic2.type_adapter import TypeAdapter
++from pydantic2.warnings import PydanticDeprecationWarning
+ 
+ if sys.version_info < (3, 9):
+     from typing_extensions import Annotated
+diff -ru pydantic-2.3.0/tests/test_create_model.py pydantic-2.3.0_rename2/tests/test_create_model.py
+--- pydantic-2.3.0/tests/test_create_model.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_create_model.py	2023-11-09 16:42:19.506213299 +0100
+@@ -16,7 +16,7 @@
+     field_validator,
+     validator,
+ )
+-from pydantic.fields import ModelPrivateAttr
++from pydantic2.fields import ModelPrivateAttr
+ 
+ 
+ def test_create_model():
+diff -ru pydantic-2.3.0/tests/test_dataclasses.py pydantic-2.3.0_rename2/tests/test_dataclasses.py
+--- pydantic-2.3.0/tests/test_dataclasses.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_dataclasses.py	2023-11-09 16:42:19.506213299 +0100
+@@ -15,7 +15,7 @@
+ from pydantic_core import ArgsKwargs, CoreSchema, SchemaValidator, core_schema
+ from typing_extensions import Annotated, Literal
+ 
+-import pydantic
++import pydantic2
+ from pydantic import (
+     BaseModel,
+     BeforeValidator,
+@@ -32,10 +32,10 @@
+     field_validator,
+     model_validator,
+ )
+-from pydantic._internal._mock_val_ser import MockValSer
+-from pydantic.dataclasses import rebuild_dataclass
+-from pydantic.fields import Field, FieldInfo
+-from pydantic.json_schema import model_json_schema
++from pydantic2._internal._mock_val_ser import MockValSer
++from pydantic2.dataclasses import rebuild_dataclass
++from pydantic2.fields import Field, FieldInfo
++from pydantic2.json_schema import model_json_schema
+ 
+ 
+ def test_simple():
+@@ -983,7 +983,7 @@
+         # language=Python
+         """\
+ import dataclasses
+-import pydantic
++import pydantic2
+ 
+ 
+ @pydantic.dataclasses.dataclass(config=pydantic.config.ConfigDict(validate_assignment=True))
+@@ -1520,7 +1520,7 @@
+     def module():
+         from typing import Optional
+ 
+-        import pydantic
++        import pydantic2
+ 
+         @pydantic.dataclasses.dataclass(config=pydantic.ConfigDict(extra='forbid'))
+         class D2:
+@@ -1577,7 +1577,7 @@
+     def module():
+         from typing import Optional
+ 
+-        import pydantic
++        import pydantic2
+ 
+         @pydantic.dataclasses.dataclass(config=pydantic.ConfigDict(extra='forbid'))
+         class D2:
+@@ -2077,7 +2077,7 @@
+         import dataclasses
+         from typing import List
+ 
+-        import pydantic
++        import pydantic2
+ 
+         @dataclasses.dataclass
+         class Recipe:
+diff -ru pydantic-2.3.0/tests/test_decorators.py pydantic-2.3.0_rename2/tests/test_decorators.py
+--- pydantic-2.3.0/tests/test_decorators.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_decorators.py	2023-11-09 16:42:19.506213299 +0100
+@@ -1,7 +1,7 @@
+ import pytest
+ 
+ from pydantic import PydanticUserError
+-from pydantic._internal._decorators import inspect_annotated_serializer, inspect_validator
++from pydantic2._internal._decorators import inspect_annotated_serializer, inspect_validator
+ 
+ 
+ def test_inspect_validator_error_wrap():
+diff -ru pydantic-2.3.0/tests/test_deprecated.py pydantic-2.3.0_rename2/tests/test_deprecated.py
+--- pydantic-2.3.0/tests/test_deprecated.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_deprecated.py	2023-11-09 16:42:19.506213299 +0100
+@@ -22,14 +22,14 @@
+     conlist,
+     root_validator,
+ )
+-from pydantic.config import Extra
+-from pydantic.deprecated.decorator import validate_arguments
+-from pydantic.deprecated.json import custom_pydantic_encoder, pydantic_encoder, timedelta_isoformat
+-from pydantic.deprecated.parse import load_file, load_str_bytes
+-from pydantic.deprecated.tools import parse_obj_as, schema_json_of, schema_of
+-from pydantic.functional_serializers import model_serializer
+-from pydantic.json_schema import JsonSchemaValue
+-from pydantic.type_adapter import TypeAdapter
++from pydantic2.config import Extra
++from pydantic2.deprecated.decorator import validate_arguments
++from pydantic2.deprecated.json import custom_pydantic_encoder, pydantic_encoder, timedelta_isoformat
++from pydantic2.deprecated.parse import load_file, load_str_bytes
++from pydantic2.deprecated.tools import parse_obj_as, schema_json_of, schema_of
++from pydantic2.functional_serializers import model_serializer
++from pydantic2.json_schema import JsonSchemaValue
++from pydantic2.type_adapter import TypeAdapter
+ 
+ if sys.version_info < (3, 11):
+     from typing_extensions import get_overloads
+@@ -772,7 +772,7 @@
+ 
+ 
+ def test_deprecated_color():
+-    from pydantic.color import Color
++    from pydantic2.color import Color
+ 
+     with pytest.warns(
+         PydanticDeprecatedSince20, match='The `Color` class is deprecated, use `pydantic_extra_types` instead.'
+diff -ru pydantic-2.3.0/tests/test_deprecated_validate_arguments.py pydantic-2.3.0_rename2/tests/test_deprecated_validate_arguments.py
+--- pydantic-2.3.0/tests/test_deprecated_validate_arguments.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_deprecated_validate_arguments.py	2023-11-09 16:42:19.506213299 +0100
+@@ -9,9 +9,9 @@
+ from typing_extensions import Annotated
+ 
+ from pydantic import BaseModel, Field, PydanticDeprecatedSince20, ValidationError
+-from pydantic.deprecated.decorator import ValidatedFunction
+-from pydantic.deprecated.decorator import validate_arguments as validate_arguments_deprecated
+-from pydantic.errors import PydanticUserError
++from pydantic2.deprecated.decorator import ValidatedFunction
++from pydantic2.deprecated.decorator import validate_arguments as validate_arguments_deprecated
++from pydantic2.errors import PydanticUserError
+ 
+ skip_pre_38 = pytest.mark.skipif(sys.version_info < (3, 8), reason='testing >= 3.8 behaviour only')
+ 
+@@ -152,7 +152,7 @@
+         module = create_module(
+             # language=Python
+             """
+-from pydantic.deprecated.decorator import validate_arguments
++from pydantic2.deprecated.decorator import validate_arguments
+ 
+ @validate_arguments
+ def foo(a, b, /, c=None):
+diff -ru pydantic-2.3.0/tests/test_discriminated_union.py pydantic-2.3.0_rename2/tests/test_discriminated_union.py
+--- pydantic-2.3.0/tests/test_discriminated_union.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_discriminated_union.py	2023-11-09 16:42:19.506213299 +0100
+@@ -9,8 +9,8 @@
+ from typing_extensions import Annotated, Literal
+ 
+ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator
+-from pydantic._internal._discriminated_union import apply_discriminator
+-from pydantic.errors import PydanticUserError
++from pydantic2._internal._discriminated_union import apply_discriminator
++from pydantic2.errors import PydanticUserError
+ 
+ 
+ def test_discriminated_union_type():
+diff -ru pydantic-2.3.0/tests/test_docs.py pydantic-2.3.0_rename2/tests/test_docs.py
+--- pydantic-2.3.0/tests/test_docs.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_docs.py	2023-11-09 16:42:19.506213299 +0100
+@@ -14,7 +14,7 @@
+ from pydantic_core import core_schema
+ from pytest_examples import CodeExample, EvalExample, find_examples
+ 
+-from pydantic.errors import PydanticErrorCodes
++from pydantic2.errors import PydanticErrorCodes
+ 
+ INDEX_MAIN = None
+ DOCS_ROOT = Path(__file__).parent.parent / 'docs'
+diff -ru pydantic-2.3.0/tests/test_edge_cases.py pydantic-2.3.0_rename2/tests/test_edge_cases.py
+--- pydantic-2.3.0/tests/test_edge_cases.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_edge_cases.py	2023-11-09 16:42:19.506213299 +0100
+@@ -41,8 +41,8 @@
+     root_validator,
+     validator,
+ )
+-from pydantic.fields import Field, computed_field
+-from pydantic.functional_serializers import (
++from pydantic2.fields import Field, computed_field
++from pydantic2.functional_serializers import (
+     field_serializer,
+     model_serializer,
+ )
+@@ -1718,7 +1718,7 @@
+ 
+ 
+ def test_str_method_inheritance():
+-    import pydantic
++    import pydantic2
+ 
+     class Foo(pydantic.BaseModel):
+         x: int = 3
+@@ -1735,7 +1735,7 @@
+ 
+ 
+ def test_repr_method_inheritance():
+-    import pydantic
++    import pydantic2
+ 
+     class Foo(pydantic.BaseModel):
+         x: int = 3
+diff -ru pydantic-2.3.0/tests/test_errors.py pydantic-2.3.0_rename2/tests/test_errors.py
+--- pydantic-2.3.0/tests/test_errors.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_errors.py	2023-11-09 16:42:19.506213299 +0100
+@@ -3,7 +3,7 @@
+ import pytest
+ 
+ from pydantic import BaseModel, PydanticUserError, ValidationError
+-from pydantic.version import version_short
++from pydantic2.version import version_short
+ 
+ 
+ def test_user_error_url():
+diff -ru pydantic-2.3.0/tests/test_exports.py pydantic-2.3.0_rename2/tests/test_exports.py
+--- pydantic-2.3.0/tests/test_exports.py	2023-11-09 16:42:19.500213149 +0100
++++ pydantic-2.3.0_rename2/tests/test_exports.py	2023-11-09 16:42:19.506213299 +0100
+@@ -7,7 +7,7 @@
+ 
+ import pytest
+ 
+-import pydantic
++import pydantic2
+ 
+ 
+ @pytest.mark.filterwarnings('ignore::DeprecationWarning')
+diff -ru pydantic-2.3.0/tests/test_fastapi_json_schema.py pydantic-2.3.0_rename2/tests/test_fastapi_json_schema.py
+--- pydantic-2.3.0/tests/test_fastapi_json_schema.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_fastapi_json_schema.py	2023-11-09 16:42:19.506213299 +0100
+@@ -16,10 +16,10 @@
+ from dirty_equals import HasRepr, IsInstance, IsStr
+ 
+ from pydantic import BaseModel, ConfigDict
+-from pydantic._internal._core_metadata import CoreMetadataHandler
+-from pydantic._internal._core_utils import CoreSchemaOrField
+-from pydantic.errors import PydanticInvalidForJsonSchema
+-from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
++from pydantic2._internal._core_metadata import CoreMetadataHandler
++from pydantic2._internal._core_utils import CoreSchemaOrField
++from pydantic2.errors import PydanticInvalidForJsonSchema
++from pydantic2.json_schema import GenerateJsonSchema, JsonSchemaValue
+ 
+ 
+ class _ErrorKey(str):
+diff -ru pydantic-2.3.0/tests/test_fields.py pydantic-2.3.0_rename2/tests/test_fields.py
+--- pydantic-2.3.0/tests/test_fields.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_fields.py	2023-11-09 16:42:19.506213299 +0100
+@@ -3,7 +3,7 @@
+ 
+ import pytest
+ 
+-import pydantic.dataclasses
++import pydantic2.dataclasses
+ from pydantic import BaseModel, Field, RootModel, ValidationError, fields
+ 
+ 
+diff -ru pydantic-2.3.0/tests/test_forward_ref.py pydantic-2.3.0_rename2/tests/test_forward_ref.py
+--- pydantic-2.3.0/tests/test_forward_ref.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_forward_ref.py	2023-11-09 16:42:19.506213299 +0100
+@@ -192,7 +192,7 @@
+     def module():
+         from typing import Optional
+ 
+-        from pydantic.dataclasses import dataclass
++        from pydantic2.dataclasses import dataclass
+ 
+         @dataclass
+         class MyDataclass:
+@@ -471,7 +471,7 @@
+ def test_forward_ref_with_create_model(create_module):
+     @create_module
+     def module():
+-        import pydantic
++        import pydantic2
+ 
+         Sub = pydantic.create_model('Sub', foo=(str, 'bar'), __module__=__name__)
+         assert Sub  # get rid of "local variable 'Sub' is assigned to but never used"
+diff -ru pydantic-2.3.0/tests/test_generics.py pydantic-2.3.0_rename2/tests/test_generics.py
+--- pydantic-2.3.0/tests/test_generics.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_generics.py	2023-11-09 16:42:19.506213299 +0100
+@@ -48,8 +48,8 @@
+     field_validator,
+     model_validator,
+ )
+-from pydantic._internal._core_utils import collect_invalid_schemas
+-from pydantic._internal._generics import (
++from pydantic2._internal._core_utils import collect_invalid_schemas
++from pydantic2._internal._generics import (
+     _GENERIC_TYPES_CACHE,
+     _LIMITED_DICT_SIZE,
+     LimitedDict,
+@@ -969,7 +969,7 @@
+         from typing import Generic, TypeVar
+ 
+         from pydantic import BaseModel
+-        from pydantic._internal._generics import _GENERIC_TYPES_CACHE
++        from pydantic2._internal._generics import _GENERIC_TYPES_CACHE
+ 
+         t = TypeVar('t')
+ 
+@@ -1044,7 +1044,7 @@
+ def test_get_caller_frame_info(create_module):
+     @create_module
+     def module():
+-        from pydantic._internal._generics import _get_caller_frame_info
++        from pydantic2._internal._generics import _get_caller_frame_info
+ 
+         def function():
+             assert _get_caller_frame_info() == (__name__, True)
+@@ -1068,7 +1068,7 @@
+ 
+         import pytest
+ 
+-        from pydantic._internal._generics import _get_caller_frame_info
++        from pydantic2._internal._generics import _get_caller_frame_info
+ 
+         with pytest.raises(RuntimeError, match='This function must be used inside another function'):
+             with patch('sys._getframe', side_effect=ValueError('getframe_exc')):
+@@ -1076,7 +1076,7 @@
+ 
+ 
+ def test_get_caller_frame_info_when_sys_getframe_undefined():
+-    from pydantic._internal._generics import _get_caller_frame_info
++    from pydantic2._internal._generics import _get_caller_frame_info
+ 
+     getframe = sys._getframe
+     del sys._getframe
+diff -ru pydantic-2.3.0/tests/test_internal.py pydantic-2.3.0_rename2/tests/test_internal.py
+--- pydantic-2.3.0/tests/test_internal.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_internal.py	2023-11-09 16:42:19.506213299 +0100
+@@ -7,8 +7,8 @@
+ from pydantic_core import SchemaValidator
+ from pydantic_core import core_schema as cs
+ 
+-from pydantic._internal._core_utils import flatten_schema_defs, inline_schema_defs
+-from pydantic._internal._repr import Representation
++from pydantic2._internal._core_utils import flatten_schema_defs, inline_schema_defs
++from pydantic2._internal._repr import Representation
+ 
+ 
+ @pytest.mark.parametrize(
+diff -ru pydantic-2.3.0/tests/test_json.py pydantic-2.3.0_rename2/tests/test_json.py
+--- pydantic-2.3.0/tests/test_json.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_json.py	2023-11-09 16:42:19.506213299 +0100
+@@ -23,17 +23,17 @@
+     NameEmail,
+     PlainSerializer,
+ )
+-from pydantic._internal._config import ConfigWrapper
+-from pydantic._internal._generate_schema import GenerateSchema
+-from pydantic.color import Color
+-from pydantic.dataclasses import dataclass as pydantic_dataclass
+-from pydantic.deprecated.json import pydantic_encoder, timedelta_isoformat
+-from pydantic.functional_serializers import (
++from pydantic2._internal._config import ConfigWrapper
++from pydantic2._internal._generate_schema import GenerateSchema
++from pydantic2.color import Color
++from pydantic2.dataclasses import dataclass as pydantic_dataclass
++from pydantic2.deprecated.json import pydantic_encoder, timedelta_isoformat
++from pydantic2.functional_serializers import (
+     field_serializer,
+ )
+-from pydantic.json_schema import JsonSchemaValue
+-from pydantic.type_adapter import TypeAdapter
+-from pydantic.types import DirectoryPath, FilePath, SecretBytes, SecretStr, condecimal
++from pydantic2.json_schema import JsonSchemaValue
++from pydantic2.type_adapter import TypeAdapter
++from pydantic2.types import DirectoryPath, FilePath, SecretBytes, SecretStr, condecimal
+ 
+ try:
+     import email_validator
+diff -ru pydantic-2.3.0/tests/test_json_schema.py pydantic-2.3.0_rename2/tests/test_json_schema.py
+--- pydantic-2.3.0/tests/test_json_schema.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_json_schema.py	2023-11-09 16:42:19.506213299 +0100
+@@ -35,8 +35,8 @@
+ from pydantic_core import CoreSchema, SchemaValidator, core_schema, to_json
+ from typing_extensions import Annotated, Literal, TypedDict
+ 
+-import pydantic
+-from pydantic import (
++import pydantic2
++from pydantic2 import (
+     BaseModel,
+     Field,
+     GetCoreSchemaHandler,
+@@ -52,12 +52,12 @@
+     field_serializer,
+     field_validator,
+ )
+-from pydantic._internal._core_metadata import CoreMetadataHandler, build_metadata_dict
+-from pydantic.color import Color
+-from pydantic.config import ConfigDict
+-from pydantic.dataclasses import dataclass
+-from pydantic.errors import PydanticInvalidForJsonSchema
+-from pydantic.json_schema import (
++from pydantic2._internal._core_metadata import CoreMetadataHandler, build_metadata_dict
++from pydantic2.color import Color
++from pydantic2.config import ConfigDict
++from pydantic2.dataclasses import dataclass
++from pydantic2.errors import PydanticInvalidForJsonSchema
++from pydantic2.json_schema import (
+     DEFAULT_REF_TEMPLATE,
+     Examples,
+     GenerateJsonSchema,
+@@ -67,9 +67,9 @@
+     model_json_schema,
+     models_json_schema,
+ )
+-from pydantic.networks import AnyUrl, EmailStr, IPvAnyAddress, IPvAnyInterface, IPvAnyNetwork, MultiHostUrl, NameEmail
+-from pydantic.type_adapter import TypeAdapter
+-from pydantic.types import (
++from pydantic2.networks import AnyUrl, EmailStr, IPvAnyAddress, IPvAnyInterface, IPvAnyNetwork, MultiHostUrl, NameEmail
++from pydantic2.type_adapter import TypeAdapter
++from pydantic2.types import (
+     UUID1,
+     UUID3,
+     UUID4,
+Only in pydantic-2.3.0_rename2/tests: .test_json_schema.py.swp
+diff -ru pydantic-2.3.0/tests/test_migration.py pydantic-2.3.0_rename2/tests/test_migration.py
+--- pydantic-2.3.0/tests/test_migration.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_migration.py	2023-11-09 16:42:19.506213299 +0100
+@@ -2,8 +2,8 @@
+ 
+ import pytest
+ 
+-from pydantic._migration import DEPRECATED_MOVED_IN_V2, MOVED_IN_V2, REDIRECT_TO_V1, REMOVED_IN_V2, getattr_migration
+-from pydantic.errors import PydanticImportError
++from pydantic2._migration import DEPRECATED_MOVED_IN_V2, MOVED_IN_V2, REDIRECT_TO_V1, REMOVED_IN_V2, getattr_migration
++from pydantic2.errors import PydanticImportError
+ 
+ 
+ def import_from(dotted_path: str):
+diff -ru pydantic-2.3.0/tests/test_model_signature.py pydantic-2.3.0_rename2/tests/test_model_signature.py
+--- pydantic-2.3.0/tests/test_model_signature.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_model_signature.py	2023-11-09 16:42:19.506213299 +0100
+@@ -6,7 +6,7 @@
+ from typing_extensions import Annotated
+ 
+ from pydantic import BaseModel, ConfigDict, Field, create_model
+-from pydantic._internal._typing_extra import is_annotated
++from pydantic2._internal._typing_extra import is_annotated
+ 
+ 
+ def _equals(a: Union[str, Iterable[str]], b: Union[str, Iterable[str]]) -> bool:
+diff -ru pydantic-2.3.0/tests/test_networks_ipaddress.py pydantic-2.3.0_rename2/tests/test_networks_ipaddress.py
+--- pydantic-2.3.0/tests/test_networks_ipaddress.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_networks_ipaddress.py	2023-11-09 16:42:19.506213299 +0100
+@@ -5,7 +5,7 @@
+ import pytest
+ 
+ from pydantic import BaseModel, IPvAnyAddress, IPvAnyInterface, IPvAnyNetwork, ValidationError
+-from pydantic.config import ConfigDict
++from pydantic2.config import ConfigDict
+ 
+ 
+ @pytest.mark.parametrize(
+diff -ru pydantic-2.3.0/tests/test_networks.py pydantic-2.3.0_rename2/tests/test_networks.py
+--- pydantic-2.3.0/tests/test_networks.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_networks.py	2023-11-09 16:42:19.506213299 +0100
+@@ -22,7 +22,7 @@
+     UrlConstraints,
+     ValidationError,
+ )
+-from pydantic.networks import validate_email
++from pydantic2.networks import validate_email
+ 
+ try:
+     import email_validator
+diff -ru pydantic-2.3.0/tests/test_parse.py pydantic-2.3.0_rename2/tests/test_parse.py
+--- pydantic-2.3.0/tests/test_parse.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_parse.py	2023-11-09 16:42:19.506213299 +0100
+@@ -4,8 +4,8 @@
+ from pydantic_core import CoreSchema
+ 
+ from pydantic import BaseModel, GetJsonSchemaHandler, ValidationError, model_validator, parse_obj_as
+-from pydantic.functional_serializers import model_serializer
+-from pydantic.json_schema import JsonSchemaValue
++from pydantic2.functional_serializers import model_serializer
++from pydantic2.json_schema import JsonSchemaValue
+ 
+ 
+ class Model(BaseModel):
+diff -ru pydantic-2.3.0/tests/test_prepare_annotations.py pydantic-2.3.0_rename2/tests/test_prepare_annotations.py
+--- pydantic-2.3.0/tests/test_prepare_annotations.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_prepare_annotations.py	2023-11-09 16:42:19.506213299 +0100
+@@ -16,8 +16,8 @@
+     TypeAdapter,
+     ValidationError,
+ )
+-from pydantic.functional_validators import AfterValidator
+-from pydantic.json_schema import JsonSchemaValue
++from pydantic2.functional_validators import AfterValidator
++from pydantic2.json_schema import JsonSchemaValue
+ 
+ 
+ def test_prepare_annotations_without_get_core_schema() -> None:
+diff -ru pydantic-2.3.0/tests/test_private_attributes.py pydantic-2.3.0_rename2/tests/test_private_attributes.py
+--- pydantic-2.3.0/tests/test_private_attributes.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_private_attributes.py	2023-11-09 16:42:19.505213274 +0100
+@@ -319,7 +319,7 @@
+ def test_layout_compatible_multiple_private_parents():
+     import typing as t
+ 
+-    import pydantic
++    import pydantic2
+ 
+     class ModelMixin(pydantic.BaseModel):
+         _mixin_private: t.Optional[str] = pydantic.PrivateAttr(None)
+diff -ru pydantic-2.3.0/tests/test_rich_repr.py pydantic-2.3.0_rename2/tests/test_rich_repr.py
+--- pydantic-2.3.0/tests/test_rich_repr.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_rich_repr.py	2023-11-09 16:42:19.505213274 +0100
+@@ -4,7 +4,7 @@
+ import pytest
+ 
+ from pydantic import BaseModel
+-from pydantic.color import Color
++from pydantic2.color import Color
+ 
+ 
+ @pytest.fixture(scope='session', name='User')
+diff -ru pydantic-2.3.0/tests/test_serialize.py pydantic-2.3.0_rename2/tests/test_serialize.py
+--- pydantic-2.3.0/tests/test_serialize.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_serialize.py	2023-11-09 16:42:19.505213274 +0100
+@@ -26,8 +26,8 @@
+     field_serializer,
+     model_serializer,
+ )
+-from pydantic.config import ConfigDict
+-from pydantic.functional_serializers import PlainSerializer, WrapSerializer
++from pydantic2.config import ConfigDict
++from pydantic2.functional_serializers import PlainSerializer, WrapSerializer
+ 
+ 
+ def test_serialize_extra_allow() -> None:
+diff -ru pydantic-2.3.0/tests/test_tools.py pydantic-2.3.0_rename2/tests/test_tools.py
+--- pydantic-2.3.0/tests/test_tools.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_tools.py	2023-11-09 16:42:19.505213274 +0100
+@@ -3,8 +3,8 @@
+ import pytest
+ 
+ from pydantic import BaseModel, PydanticDeprecatedSince20, ValidationError
+-from pydantic.dataclasses import dataclass
+-from pydantic.deprecated.tools import parse_obj_as, schema_json_of, schema_of
++from pydantic2.dataclasses import dataclass
++from pydantic2.deprecated.tools import parse_obj_as, schema_json_of, schema_of
+ 
+ pytestmark = pytest.mark.filterwarnings('ignore::DeprecationWarning')
+ 
+diff -ru pydantic-2.3.0/tests/test_type_adapter.py pydantic-2.3.0_rename2/tests/test_type_adapter.py
+--- pydantic-2.3.0/tests/test_type_adapter.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_type_adapter.py	2023-11-09 16:42:19.505213274 +0100
+@@ -8,7 +8,7 @@
+ from typing_extensions import TypeAlias, TypedDict
+ 
+ from pydantic import BaseModel, TypeAdapter, ValidationInfo, field_validator
+-from pydantic.config import ConfigDict
++from pydantic2.config import ConfigDict
+ 
+ ItemType = TypeVar('ItemType')
+ 
+diff -ru pydantic-2.3.0/tests/test_type_alias_type.py pydantic-2.3.0_rename2/tests/test_type_alias_type.py
+--- pydantic-2.3.0/tests/test_type_alias_type.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_type_alias_type.py	2023-11-09 16:42:19.505213274 +0100
+@@ -6,7 +6,7 @@
+ from typing_extensions import Annotated, TypeAliasType
+ 
+ from pydantic import Field, ValidationError
+-from pydantic.type_adapter import TypeAdapter
++from pydantic2.type_adapter import TypeAdapter
+ 
+ T = TypeVar('T')
+ 
+diff -ru pydantic-2.3.0/tests/test_types_namedtuple.py pydantic-2.3.0_rename2/tests/test_types_namedtuple.py
+--- pydantic-2.3.0/tests/test_types_namedtuple.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_types_namedtuple.py	2023-11-09 16:42:19.505213274 +0100
+@@ -5,7 +5,7 @@
+ from typing_extensions import NamedTuple as TypingExtensionsNamedTuple
+ 
+ from pydantic import BaseModel, ConfigDict, PositiveInt, TypeAdapter, ValidationError
+-from pydantic.errors import PydanticSchemaGenerationError
++from pydantic2.errors import PydanticSchemaGenerationError
+ 
+ 
+ def test_namedtuple_simple():
+diff -ru pydantic-2.3.0/tests/test_types_payment_card_number.py pydantic-2.3.0_rename2/tests/test_types_payment_card_number.py
+--- pydantic-2.3.0/tests/test_types_payment_card_number.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_types_payment_card_number.py	2023-11-09 16:42:19.505213274 +0100
+@@ -5,7 +5,7 @@
+ from pydantic_core import PydanticCustomError
+ 
+ from pydantic import BaseModel, ValidationError
+-from pydantic.types import PaymentCardBrand, PaymentCardNumber
++from pydantic2.types import PaymentCardBrand, PaymentCardNumber
+ 
+ pytestmark = pytest.mark.filterwarnings(
+     'ignore:' 'The `PaymentCardNumber` class is deprecated, use `pydantic_extra_types` instead.*' ':DeprecationWarning'
+diff -ru pydantic-2.3.0/tests/test_types.py pydantic-2.3.0_rename2/tests/test_types.py
+--- pydantic-2.3.0/tests/test_types.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_types.py	2023-11-09 16:42:19.505213274 +0100
+@@ -101,9 +101,9 @@
+     field_validator,
+     validate_call,
+ )
+-from pydantic.errors import PydanticSchemaGenerationError
+-from pydantic.functional_validators import AfterValidator
+-from pydantic.types import AllowInfNan, GetPydanticSchema, ImportString, Strict, StringConstraints
++from pydantic2.errors import PydanticSchemaGenerationError
++from pydantic2.functional_validators import AfterValidator
++from pydantic2.types import AllowInfNan, GetPydanticSchema, ImportString, Strict, StringConstraints
+ 
+ try:
+     import email_validator
+diff -ru pydantic-2.3.0/tests/test_types_typeddict.py pydantic-2.3.0_rename2/tests/test_types_typeddict.py
+--- pydantic-2.3.0/tests/test_types_typeddict.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_types_typeddict.py	2023-11-09 16:42:19.505213274 +0100
+@@ -21,9 +21,9 @@
+     PydanticUserError,
+     ValidationError,
+ )
+-from pydantic.functional_serializers import field_serializer, model_serializer
+-from pydantic.functional_validators import field_validator, model_validator
+-from pydantic.type_adapter import TypeAdapter
++from pydantic2.functional_serializers import field_serializer, model_serializer
++from pydantic2.functional_validators import field_validator, model_validator
++from pydantic2.type_adapter import TypeAdapter
+ 
+ from .conftest import Err
+ 
+diff -ru pydantic-2.3.0/tests/test_typing.py pydantic-2.3.0_rename2/tests/test_typing.py
+--- pydantic-2.3.0/tests/test_typing.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_typing.py	2023-11-09 16:42:19.505213274 +0100
+@@ -7,7 +7,7 @@
+ from typing_extensions import Literal, get_origin
+ 
+ from pydantic import Field  # noqa: F401
+-from pydantic._internal._typing_extra import (
++from pydantic2._internal._typing_extra import (
+     NoneType,
+     get_function_type_hints,
+     is_classvar,
+diff -ru pydantic-2.3.0/tests/test_utils.py pydantic-2.3.0_rename2/tests/test_utils.py
+--- pydantic-2.3.0/tests/test_utils.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_utils.py	2023-11-09 16:42:19.505213274 +0100
+@@ -11,10 +11,10 @@
+ from typing_extensions import Annotated, Literal
+ 
+ from pydantic import BaseModel
+-from pydantic._internal import _repr
+-from pydantic._internal._core_utils import _WalkCoreSchema
+-from pydantic._internal._typing_extra import all_literal_values, get_origin, is_new_type
+-from pydantic._internal._utils import (
++from pydantic2._internal import _repr
++from pydantic2._internal._core_utils import _WalkCoreSchema
++from pydantic2._internal._typing_extra import all_literal_values, get_origin, is_new_type
++from pydantic2._internal._utils import (
+     BUILTIN_COLLECTIONS,
+     ClassAttribute,
+     ValueItems,
+@@ -24,9 +24,9 @@
+     smart_deepcopy,
+     unique_list,
+ )
+-from pydantic._internal._validators import import_string
+-from pydantic.alias_generators import to_camel, to_pascal, to_snake
+-from pydantic.color import Color
++from pydantic2._internal._validators import import_string
++from pydantic2.alias_generators import to_camel, to_pascal, to_snake
++from pydantic2.color import Color
+ 
+ try:
+     import devtools
+diff -ru pydantic-2.3.0/tests/test_v1.py pydantic-2.3.0_rename2/tests/test_v1.py
+--- pydantic-2.3.0/tests/test_v1.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_v1.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,7 +1,7 @@
+ from pydantic import VERSION
+-from pydantic.v1 import VERSION as V1_VERSION
+-from pydantic.v1 import BaseModel as V1BaseModel
+-from pydantic.v1 import root_validator as v1_root_validator
++from pydantic2.v1 import VERSION as V1_VERSION
++from pydantic2.v1 import BaseModel as V1BaseModel
++from pydantic2.v1 import root_validator as v1_root_validator
+ 
+ 
+ def test_version():
+diff -ru pydantic-2.3.0/tests/test_validate_call.py pydantic-2.3.0_rename2/tests/test_validate_call.py
+--- pydantic-2.3.0/tests/test_validate_call.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_validate_call.py	2023-11-09 16:42:19.505213274 +0100
+@@ -11,7 +11,7 @@
+ from typing_extensions import Annotated, TypedDict
+ 
+ from pydantic import Field, TypeAdapter, ValidationError, validate_call
+-from pydantic.main import BaseModel
++from pydantic2.main import BaseModel
+ 
+ skip_pre_38 = pytest.mark.skipif(sys.version_info < (3, 8), reason='testing >= 3.8 behaviour only')
+ skip_pre_39 = pytest.mark.skipif(sys.version_info < (3, 9), reason='testing >= 3.9 behaviour only')
+diff -ru pydantic-2.3.0/tests/test_validators_dataclass.py pydantic-2.3.0_rename2/tests/test_validators_dataclass.py
+--- pydantic-2.3.0/tests/test_validators_dataclass.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_validators_dataclass.py	2023-11-09 16:42:19.505213274 +0100
+@@ -5,7 +5,7 @@
+ from dirty_equals import HasRepr
+ 
+ from pydantic import ValidationError, field_validator, model_validator
+-from pydantic.dataclasses import dataclass
++from pydantic2.dataclasses import dataclass
+ 
+ 
+ def test_simple():
+diff -ru pydantic-2.3.0/tests/test_validators.py pydantic-2.3.0_rename2/tests/test_validators.py
+--- pydantic-2.3.0/tests/test_validators.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_validators.py	2023-11-09 16:42:19.505213274 +0100
+@@ -29,7 +29,7 @@
+     root_validator,
+     validator,
+ )
+-from pydantic.functional_validators import AfterValidator, BeforeValidator, PlainValidator, WrapValidator
++from pydantic2.functional_validators import AfterValidator, BeforeValidator, PlainValidator, WrapValidator
+ 
+ V1_VALIDATOR_DEPRECATION_MATCH = r'Pydantic V1 style `@validator` validators are deprecated'
+ 
+diff -ru pydantic-2.3.0/tests/test_version.py pydantic-2.3.0_rename2/tests/test_version.py
+--- pydantic-2.3.0/tests/test_version.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_version.py	2023-11-09 16:42:19.505213274 +0100
+@@ -4,8 +4,8 @@
+ import pytest
+ from packaging.version import parse as parse_version
+ 
+-import pydantic
+-from pydantic.version import version_info, version_short
++import pydantic2
++from pydantic2.version import version_info, version_short
+ 
+ 
+ def test_version_info():
+diff -ru pydantic-2.3.0/tests/test_warnings.py pydantic-2.3.0_rename2/tests/test_warnings.py
+--- pydantic-2.3.0/tests/test_warnings.py	2023-11-09 16:42:19.501213174 +0100
++++ pydantic-2.3.0_rename2/tests/test_warnings.py	2023-11-09 16:42:19.505213274 +0100
+@@ -1,5 +1,5 @@
+ from pydantic import PydanticDeprecatedSince20, PydanticDeprecationWarning
+-from pydantic.version import version_short
++from pydantic2.version import version_short
+ 
+ 
+ def test_pydantic_deprecation_warning():

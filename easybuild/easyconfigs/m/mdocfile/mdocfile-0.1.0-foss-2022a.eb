@@ -1,0 +1,86 @@
+easyblock = 'PythonBundle'
+
+name = 'mdocfile'
+version = '0.1.0'
+
+homepage = 'https://github.com/teamtomo/mdocfile'
+description = """SerialEM mdoc files as pandas dataframes."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('maturin', '0.15.3'),  # required for pydantic
+    ('Rust', '1.70.0'),  # > 1.65 required to build pydantic_core
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+]
+
+
+use_pip = True
+
+# avoid hatchling requirement to install (compare genomepy-0.15.0-foss-2022a.eb) 
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+_preinstallopts_no_hatchling = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+_preinstallopts_no_hatchling += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+_preinstallopts_no_hatchling += """-e 's/dynamic = .*/version = "%(version)s"/g' pyproject.toml && """
+
+_preinstallopts_pydantic = _preinstallopts_no_hatchling
+_preinstallopts_pydantic += """ sed -i -e 's/^license =/#&/g' pyproject.toml && """
+
+_preinstallopts_annotatedtypes = _preinstallopts_pydantic
+_preinstallopts_annotatedtypes += """ sed -i -e 's/^license-files =/#&/g' pyproject.toml && """
+_preinstallopts_annotatedtypes += """ sed -i -e 's/^repository =/#&/g' pyproject.toml && """
+
+
+# mdocfile requires pydantic > 2.0 due to "field_validator" and "GenericModel".
+# This conflicts with the requirement of napari 4.18 and morphosamplers 0.0.9, both used by RELION 5
+# provide pydantic 2.3 and rename it to pydantic2 in order to use both versions concurrently 
+
+
+exts_list = [
+    ('typing_extensions', '4.8.0', {
+        'checksums': ['df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef'],
+    }),
+    ('annotated_types', '0.6.0', {
+        'preinstallopts': _preinstallopts_annotatedtypes,
+        'checksums': ['563339e807e53ffd9c267e99fc6d9ea23eb8443c08f112651963e24e22f84a5d'],
+    }),
+    ('pydantic_core', '2.6.3', {
+        'checksums': ['1508f37ba9e3ddc0189e6ff4e2228bd2d3c3a4641cbe8c07177162f76ed696c7'],
+    }),
+    ('pydantic', '2.3.0', {
+        'modulename': 'pydantic2',
+        'patches': ['mdocfile-0.1.0_pydantic-2.3.0_rename2.patch'],
+        'preinstallopts': _preinstallopts_pydantic,
+        'checksums': [
+            {'pydantic-2.3.0.tar.gz': '1607cc106602284cd4a00882986570472f193fde9cb1259bceeaedb26aa79a6d'},
+            {'mdocfile-0.1.0_pydantic-2.3.0_rename2.patch':
+             '5aacf3872fafb9dabc5b16e057df3aa121301fb5d2b904c523caade5f4d9668d'},
+        ],
+    }),
+    (name, version, {
+        'patches': ['mdocfile-0.1.0_use_pydantic2.patch'],
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': [
+            {'mdocfile-0.1.0.tar.gz': 'bcf3cc031fefc4ed6969a749b5a3a2ce0cbed0ca5cf753c803c5f7b3121e8c87'},
+            {'mdocfile-0.1.0_use_pydantic2.patch': '7cb48d7c3f067552d569e191f29232d9f465e1bc3eb0325e240fe7befe270f8f'},
+        ],
+    }),
+]
+
+postinstallcmds = [
+    'mv %(installdir)s/lib/python%(pyshortver)s/site-packages/pydantic{,2} '
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/pydantic2']
+}
+
+moduleclass = 'bio'

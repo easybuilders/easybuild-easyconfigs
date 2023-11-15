@@ -1,0 +1,54 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+easyblock = 'Binary'
+
+name = 'relion-blush_data'
+version = '1.0'
+
+homepage = 'https://zenodo.org/search?q=10072731'
+description = """This file serves as the model weights for the Blush regularization technique,   
+which is employed in the enhancement of three-dimensional reconstruction within 
+cryo-electron microscopy (cryo-EM) data processing."""
+
+toolchain = SYSTEM
+
+_prepare = ''
+#  Uncomment and adapt to store data (10GB) elsewhere:
+# _common_data = '/easybuild/data'
+# _prepare = 'mkdir -p  %s/%%(name)s/%%(version)s/torch_home &&' % _common_data
+# _prepare += 'ln -s %s/%%(name)s/%%(version)s/torch_home %%(installdir)s/torch_home &&' % _common_data
+
+buildininstalldir = True
+
+_models = [
+    'relion_blush_v%(version)s',
+]
+
+_torch_home = 'torch_home/'
+_checkpoints_rel = '%s/hub/checkpoints' % _torch_home
+_checkpoints = '%%(installdir)s/%s' % _checkpoints_rel
+
+
+source_urls = ['https://zenodo.org/records/10072731/files/']
+sources = ['blush_v1.0.ckpt.gz']
+
+checksums = ['6e42a7d80231418bb77170619eeedf67b59be84078972a25a39fc3b82cd9c34e']
+
+skipsteps = ['configure', 'build', 'test']
+extract_sources = True
+
+
+preinstallopts = _prepare
+install_cmd = 'mkdir -p %s/relion_blush/ &&' % _checkpoints
+install_cmd += 'mv %%(installdir)s/blush_v%%(version)s.ckpt %s/relion_blush/v%%(version)s.ckpt &&' % _checkpoints
+install_cmd += 'echo Sucessfully downloaded model>%s/relion_blush/v%%(version)s_installed.txt' % _checkpoints
+
+modextrapaths = {'TORCH_HOME': '%s' % _torch_home}
+
+sanity_check_paths = {
+    'files': [
+        '%s/relion_blush/v%%(version)s.ckpt' % _checkpoints_rel,
+    ],
+    'dirs': [_checkpoints_rel]
+}
+
+moduleclass = 'data'

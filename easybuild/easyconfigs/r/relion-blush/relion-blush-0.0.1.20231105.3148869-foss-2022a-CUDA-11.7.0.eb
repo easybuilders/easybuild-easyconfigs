@@ -1,0 +1,70 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+easyblock = 'PythonBundle'
+
+name = 'relion-blush'
+_v = '0.0.1'
+_sha = '3148869de884fc01cff6c51a047b1413fc0b62cb'
+_date = 20231105
+version = '%s.%s.%s' % (_v, _date, _sha[:7])
+
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/3dem/%(name)s'
+description = """This repository contains code for running Blush regularization in RELION-5.
+This project is designed to work in conjunction with tools for cryo-electron    
+microscopy (cryo-EM) three-dimensional reconstruction. For specific             
+functionalities, we leverage the capabilities of RELION, an open-source, highly 
+flexible and high-performance solution for cryo-EM.
+Estimating dynamics from cryo-EM images and use them to improve your map (maybe)"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+patches = []
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('torchvision', '0.13.1', versionsuffix),
+    ('mrcfile', '1.4.3'),
+    ('relion-blush_data', '1.0', '', SYSTEM),
+]
+
+use_pip = True
+
+exts_list = [
+    ('loguru', '0.7.0', {
+        'checksums': ['1612053ced6ae84d7959dd7d5e431a0532642237ec21f7fd83ac73fe539e03e1'],
+    }),
+    ('relion_blush', '0.0.1.20231105', {
+        'patches': [
+            'relion-blush-0.0.1_relax_requirements.patch',
+            'relion-blush-0.0.1_multi_torch_home.patch',
+            'relion-blush-0.0.1_add_script.patch',
+        ],
+        'source_urls': ['https://github.com/3dem/relion-blush/archive/'],
+        'sources': [{'download_filename': '3148869de884fc01cff6c51a047b1413fc0b62cb.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': [
+            {'relion_blush-0.0.1.20231105.tar.gz': 'f28d282a937f7a7a378919f8cacaa7dd194830fb826fff57088d15247739f859'},
+            {'relion-blush-0.0.1_relax_requirements.patch':
+             'caca03051e3a4808e56ce1ccd6147ee6b491edd1a124987d8d1bb8b4b96cd98c'},
+            {'relion-blush-0.0.1_multi_torch_home.patch':
+             '77f422fdd4d4530e8a4c5b47557416abdbb3c01ea7241fa4d261c00dd860b19e'},
+            {'relion-blush-0.0.1_add_script.patch': '91ab5f16bbb37121c09149151311d84bf9a59dd7ce98ff3636c27230607af405'},
+        ],
+    }),
+]
+
+fix_python_shebang_for = ['bin/command_line.py']
+
+postinstallcmds = ['mv %(installdir)s/bin/{command_line.py,relion_blush}']
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/relion_blush'],
+}
+sanity_check_commands = ['relion_blush -h']
+
+moduleclass = 'bio'
