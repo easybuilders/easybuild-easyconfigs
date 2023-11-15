@@ -1,0 +1,59 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+# allow to use TORCH_HOME with modextravars.
+# Automatic download of models and language is disabled for multi TORCH_HOME.
+diff -ru model-angelo-1.0.9/model_angelo/utils/misc_utils.py model-angelo-1.0.9_multi_torch_home/model_angelo/utils/misc_utils.py
+--- model-angelo-1.0.9/model_angelo/utils/misc_utils.py	2023-10-27 16:42:58.000000000 +0200
++++ model-angelo-1.0.9_multi_torch_home/model_angelo/utils/misc_utils.py	2023-11-14 18:34:46.230638397 +0100
+@@ -123,6 +123,8 @@
+     try:
+         model = esm.pretrained.load_model_and_alphabet_hub(esm_model_name)
+     except:
++        is_torch_home_multi=False if os.getenv('TORCH_HOME')==None else len(os.getenv('TORCH_HOME').split(':'))>1
++        assert is_torch_home_multi == False
+         model = esm.pretrained.load_model_and_alphabet_local(
+             os.path.join(
+                 torch.hub.get_dir(), "checkpoints", esm_model_name + ".pt"
+diff -ru model-angelo-1.0.9/model_angelo/utils/torch_utils.py model-angelo-1.0.9_multi_torch_home/model_angelo/utils/torch_utils.py
+--- model-angelo-1.0.9/model_angelo/utils/torch_utils.py	2023-10-27 16:42:58.000000000 +0200
++++ model-angelo-1.0.9_multi_torch_home/model_angelo/utils/torch_utils.py	2023-11-14 18:35:39.669951044 +0100
+@@ -446,7 +446,17 @@
+     dest = os.path.join(
+         torch.hub.get_dir(), "checkpoints", "model_angelo_v1.0", bundle_name
+     )
+-    if os.path.isfile(os.path.join(dest, "success.txt")):
++    is_torch_home_multi=False if os.getenv('TORCH_HOME')==None else len(os.getenv('TORCH_HOME').split(':'))>1
++    if (is_torch_home_multi):
++        torch_homes=os.getenv('TORCH_HOME').split(':')
++        for torch_home in torch_homes:
++            dest = os.path.join(
++                torch_home, "hub", "checkpoints", "model_angelo_v1.0", bundle_name
++            )
++            if os.path.isfile(os.path.join(dest, "success.txt")):
++                return dest
++        assert False, "Model ownload disabled, because multiple paths defined in $TORCH_HOME. %s" % dest
++    elif os.path.isfile(os.path.join(dest, "success.txt")):
+         return dest
+ 
+     print(f"Setting up bundle with name: {bundle_name} for the first time.")
+@@ -503,6 +513,20 @@
+ 
+ 
+ def download_and_install_esm_model(esm_model_name: str) -> str:
++    is_torch_home_multi=False if os.getenv('TORCH_HOME')==None else len(os.getenv('TORCH_HOME').split(':'))>1
++    if is_torch_home_multi:
++        torch_homes = os.getenv('TORCH_HOME').split(':')
++        for torch_home in torch_homes:
++            dest_model = os.path.join(
++                torch_home, "checkpoints", esm_model_name + ".pt"
++            )
++            dest_regr = os.path.join(
++                torch_home, "checkpoints", esm_model_name + "-contact-regression.pt"
++            )
++            if os.path.isfile(dest_model) and os.path.isfile(dest_regr):
++                return dest_model    
++        assert is_torch_home_multi==False, 'Language model download disabled, because multiple paths are set in $TORCH_HOME'
++        
+     permissions = (
+         stat.S_IROTH
+         | stat.S_IXOTH
+Only in model-angelo-1.0.9_multi_torch_home/model_angelo/utils: .torch_utils.py.swp
