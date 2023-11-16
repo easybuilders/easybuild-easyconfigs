@@ -1,0 +1,183 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11   
+
+easyblock = 'CMakePythonPackage'
+name = 'RELION'
+versionsuffix = '-CUDA-11.7.0'
+_version_main = '5.0.0'
+_sha = '84ba16768036bfef791f40df70af87347eccb1ad'
+_commitdate = '20231116'
+versionprefix = 'b'  # avoid beta to be default module.
+version = '%s.%s.%s' % (_version_main, _commitdate, _sha[:7])
+
+
+homepage = 'http://www2.mrc-lmb.cam.ac.uk/relion/index.php/Main_Page'
+description = """RELION (for REgularised LIkelihood OptimisatioN, pronounce rely-on) is a stand-
+  alone computer program that employs an empirical Bayesian approach to refine-
+  ment of (multiple) 3D reconstructions or 2D class averages in  electron cryo-
+  microscopy (cryo-EM).
+  Core module without dependencies for external tools.
+ """
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'opt': True}
+
+modextravars = {
+    'RELION_MOTIONCOR2_EXECUTABLE': "$(which MotionCor3)",
+    'RELION_GCTF_EXECUTABLE': '$(which Gctf)',
+    'RELION_CTFFIND_EXECUTABLE': '$(which ctffind)',
+    'RELION_UNBLUR_EXECUTABLE': '$(which unblur)',
+    'RELION_SUMMOVIE_EXECUTABLE': '$(which summovie)',
+    'RELION_RESMAP_EXECUTABLE': '$(which ResMap)',
+    'RELION_TOPAZ_EXECUTABLE': '$(which topaz)',
+    'RELION_PYTHON_EXECUTABLE': '$(which python)',
+    'RELION_IMOD_WRAPPER_EXECUTABLE': '$(yet-another-imod-wrapper)',
+    'RELION_PDFVIEWER_EXECUTABLE': '$(which evince)',
+    # RELION_EXTERNAL_RECONSTRUCT_EXECUTABLE: set externally, e.g. sidesplitter or externprior module
+    #
+    # Adapt site specific settings:
+    'RELION_SCRATCH_DIR': '$SCRATCHDIR',
+    'RELION_QSUB_NRMPI': '3',
+    'RELION_QSUB_NRTHREADS': '7',
+    'RELION_MINIMUM_DEDICATED': '15',
+    #
+    'RELION_QSUB_EXTRA_COUNT': '7',
+    'RELION_QUEUE_USE': 'true',
+    'RELION_QUEUE_NAME': 'gpu-el8',
+    'RELION_QSUB_COMMAND': 'sbatch',
+    'RELION_QSUB_EXTRA2_DEFAULT': '60GB',
+    'RELION_QSUB_EXTRA2': 'Memory',
+    'RELION_QSUB_EXTRA1': 'GPU count',
+    'RELION_QSUB_EXTRA1_DEFAULT': '2',
+    'RELION_QSUB_EXTRA3': 'Walltime',
+    'RELION_QSUB_EXTRA3_DEFAULT': '1-0:0:0',
+    'RELION_QSUB_EXTRA4': 'Extra modules',
+    'RELION_QSUB_EXTRA4_DEFAULT': '',
+    'RELION_QSUB_EXTRA5': 'Extra slurm parameter',
+    'RELION_QSUB_EXTRA5_DEFAULT': "#SBATCH --ntasks-per-core=1",
+    'RELION_QSUB_EXTRA6': 'Preprocess command',
+    'RELION_QSUB_EXTRA6_DEFAULT': "#PREPROC: replace, if required",
+    'RELION_QSUB_EXTRA7': 'Postprocess command',
+    'RELION_QSUB_EXTRA7_DEFAULT': "#POSTPROC: replace, if required",
+    'RELION_TEMPLATES': '%(installdir)s/templates/',
+    'RELION_QSUB_TEMPLATE': '${RELION_TEMPLATES}/gpu.slurm.script',
+    #
+    'RELION_DO_OWN_MOTIONCOR': '0',
+    # use GPU by default. Requires RELION-5.0.0_env_use_gpu.patch
+    'RELION_USE_GPU_ACCELERATION': '1',
+    #
+    # 'RELION_STACK_BUFFER: '0',  # see: https://github.com/3dem/relion/pull/783
+    # 'RELION_BLUSH_ARGS' '',  # TODO
+    # 'RELION_RESMAP_TEMPLATE': ''  # resmap still required?
+    # 'RELION_SCRIPT_DIRECTORY': ''  # required for relion-it on-the-fly processing.
+    #
+}
+
+_srcdirname = '%%(builddir)s/relion-%s' % _sha
+
+source_urls = ['https://github.com/3dem/relion/archive/']
+sources = [{
+    'download_filename': '%s.tar.gz' % _sha[:7], 'filename':
+    '%(name)s-%(version)s.tar.gz'
+}]
+patches = [
+    'RELION-5.0.0_target-all-cuda-compute-capabilities.patch',
+    'RELION-5.0.0_env_use_gpu.patch',
+    'RELION-5.0.0_qsub_script_expand_env.patch',
+    # inject site specific job template into %s/templates:
+    # ('RELION-5.0.0_add_templates.patch', 0)
+]
+checksums = [
+    {'RELION-5.0.0.20231031.de83020.tar.gz': 'de15b3123028c8ada58584a070254eddd89bf67c954b555de6e6e5379f295d15'},
+    {'RELION-5.0.0_target-all-cuda-compute-capabilities.patch':
+     '3e32f380477835444ef0ccc9e8f551662208445377ef226bc67109cdb810c61e'},
+    {'RELION-5.0.0_env_use_gpu.patch': 'e7bc80f71aef9ec8bf33c095449181a9dba0f4fedfbac25e86dc6fc17fcd37da'},
+    {'RELION-5.0.0_qsub_script_expand_env.patch': '4fb8a9efdfaacc8644f39ca96815572e10f52ac1422a766d774c1827c8886519'},
+    # {'RELION-5.0.0_add_templates.patch': '...'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Ghostscript', '9.56.1'),
+    ('X11', '20220504'),
+    ('FLTK', '1.3.8'),
+    ('LibTIFF', '4.3.0'),
+    ('einops', '0.4.1'),
+    ('mrcfile', '1.4.3'),
+    ('lil-aretomo', '0.1.0'),
+    ('lru-dict', '1.2.0'),
+    ('makefun', '1.15.1'),
+    ('starfile', '0.5.1'),
+    ('ctffind', '4.1.14'),
+    ('MotionCor2', '1.5.0'),  # update to 1.6.4?
+    # PR 19123 ('MotionCor3', '1.0.1', versionsuffix),
+    # PR 19120 ('AreTomo2', '1.0.0', versionsuffix),
+    # PR 18679 ('IMOD', '4.12.17', versionsuffix),
+    ('relion-blush', '0.0.1.20231105.3148869', versionsuffix),
+    # PR 19157 ('Model-Angelo', '1.0.9', versionsuffix),
+    ('DynaMight', '0.0.0.20231107.86870f3', versionsuffix),
+    # PR 19228('topaz-em', '0.2.5.20230926', versionsuffix),
+    # ('ResMap', '1.1.4') # still required?
+    # mdocfile loaded last, because it updates typing-extensions (4.8.0)...
+    ('mdocfile', '0.1.0'),
+]
+
+configopts = "-DBUILD_SHARED_LIBS=ON "
+configopts += "-DCMAKE_SHARED_LINKER_FLAGS=-lpthread "
+configopts += "-DCUDA_ARCH='%(cuda_cc_semicolon_sep)s' "
+configopts += "-DCUDA_NVCC_FLAGS='--std=c++14' "
+configopts += "-DFETCH_WEIGHTS=OFF "  # weights provided by dependencies.
+# Setting PYTHON_EXE_PATH would explicitly set python_executable and torch_home in relion_python_scripts!
+# However, we want to use ptyhon from $PATH and $TORCH_HOME set by  DynaMight and Model-Angelo.
+
+
+# avoid hatchling requirement to install (compare genomepy-0.15.0-foss-2022a.eb)
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+_preinstallopts_no_hatchling = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+_preinstallopts_no_hatchling += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+_preinstallopts_no_hatchling += """-e 's/dynamic = .*/version = "%(version)s"/g' pyproject.toml && """
+
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {'source_urls': [PYPI_SOURCE], 'download_dep_fail': True, 'use_pip': True}
+exts_list = [
+    ('morphosamplers', '0.0.9', {
+        'checksums': ['8ab44121ae1d25c1651d70e9cbcab8e49ed4b4825a1eb0560ed5a78d73907c19'],
+    }),
+    ('yet_another_imod_wrapper', '0.1.0', {
+        'preinstallopts': _preinstallopts_no_hatchling,
+        'checksums': ['2216b7fe6a97e84405704031e0a6f2fa749f1933cb92d54f574c3647b74785be'],
+    }),
+]
+
+fix_python_shebang_for = [
+    'bin/yet-another-imod-wrapper'
+]
+
+postinstallcmds = [
+    "sed -i 's/^dynamic = .*version.*/version = \"%s\"/g' %s/pyproject.toml" % (_version_main, _srcdirname),
+    "sed -i 's/^.tool.setuptools_scm./#&/g' %s/pyproject.toml" % _srcdirname,
+    "cd %s/ &&pip install . --no-deps --ignore-installed --prefix=%%(installdir)s" % _srcdirname,
+    'mkdir -p %(installdir)s/templates',
+    'cp %s/templates/* %%(installdir)s/templates' % _srcdirname,
+    'sed -i "s|SED_MODULENAME|%(module_name)s|g" %(installdir)s/templates/*'
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['lib/librelion_gui_lib.%s' % SHLIB_EXT, 'lib/librelion_jaz_gpu_util.%s' % SHLIB_EXT],
+    'dirs': [
+        'bin',
+        # 'templates'
+    ]
+}
+
+options = {'modulename': False}
+
+moduleclass = 'bio'
