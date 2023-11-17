@@ -3,16 +3,26 @@
 # Automatic download of models and language is disabled for multi TORCH_HOME.
 diff -ru model-angelo-1.0.9/model_angelo/utils/misc_utils.py model-angelo-1.0.9_multi_torch_home/model_angelo/utils/misc_utils.py
 --- model-angelo-1.0.9/model_angelo/utils/misc_utils.py	2023-10-27 16:42:58.000000000 +0200
-+++ model-angelo-1.0.9_multi_torch_home/model_angelo/utils/misc_utils.py	2023-11-14 18:34:46.230638397 +0100
-@@ -123,6 +123,8 @@
++++ model-angelo-1.0.9_multi_torch_home/model_angelo/utils/misc_utils.py	2023-11-17 18:58:36.581076278 +0100
+@@ -116,10 +116,17 @@
+     warnings.filterwarnings("ignore", ".*with given element none.*")
+     warnings.filterwarnings("ignore", ".*invalid value encountered in true\_divide.*")
+ 
+-
+ def get_esm_model(esm_model_name):
+     import esm
+     import torch
++    is_torch_home_multi=False if os.getenv('TORCH_HOME')==None else len(os.getenv('TORCH_HOME').split(':'))>1
++    if is_torch_home_multi:
++        for tmp_torch_home in os.getenv('TORCH_HOME').split(':'):
++            tmp_dst = os.path.join(tmp_torch_home, 'hub', 'checkpoints', esm_model_name + ".pt")
++            if os.path.isfile(tmp_dst): 
++                model = esm.pretrained.load_model_and_alphabet_local(tmp_dst)
++                return model
++        assert  False , "None of the paths defined in $TORCH_HOME contains %s" % esm_model_name
      try:
          model = esm.pretrained.load_model_and_alphabet_hub(esm_model_name)
      except:
-+        is_torch_home_multi=False if os.getenv('TORCH_HOME')==None else len(os.getenv('TORCH_HOME').split(':'))>1
-+        assert is_torch_home_multi == False
-         model = esm.pretrained.load_model_and_alphabet_local(
-             os.path.join(
-                 torch.hub.get_dir(), "checkpoints", esm_model_name + ".pt"
 diff -ru model-angelo-1.0.9/model_angelo/utils/torch_utils.py model-angelo-1.0.9_multi_torch_home/model_angelo/utils/torch_utils.py
 --- model-angelo-1.0.9/model_angelo/utils/torch_utils.py	2023-10-27 16:42:58.000000000 +0200
 +++ model-angelo-1.0.9_multi_torch_home/model_angelo/utils/torch_utils.py	2023-11-14 18:35:39.669951044 +0100
@@ -56,4 +66,3 @@ diff -ru model-angelo-1.0.9/model_angelo/utils/torch_utils.py model-angelo-1.0.9
      permissions = (
          stat.S_IROTH
          | stat.S_IXOTH
-Only in model-angelo-1.0.9_multi_torch_home/model_angelo/utils: .torch_utils.py.swp
