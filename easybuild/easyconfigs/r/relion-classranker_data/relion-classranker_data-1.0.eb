@@ -1,0 +1,52 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+easyblock = 'Binary'
+
+name = 'relion-classranker_data'
+version = '1.0'
+
+homepage = 'https://github.com/3dem/relion-classranker'
+description = """This file serves as the model weights for for the class ranking functionality of RELION.
+"""
+toolchain = SYSTEM
+
+_prepare = ''
+#  Uncomment and adapt to store data (10GB) elsewhere:
+# _common_data = '/easybuild/data'
+# _prepare = 'mkdir -p  %s/%%(name)s/%%(version)s/torch_home &&' % _common_data
+# _prepare += 'ln -s %s/%%(name)s/%%(version)s/torch_home %%(installdir)s/torch_home &&' % _common_data
+
+buildininstalldir = True
+
+_models = [
+    'relion_classranker_v%(version)s',
+]
+
+_torch_home = 'torch_home/'
+_checkpoints_rel = '%s/hub/checkpoints' % _torch_home
+_checkpoints = '%%(installdir)s/%s' % _checkpoints_rel
+
+
+source_urls = ['ftp://ftp.mrc-lmb.cam.ac.uk/pub/dari/']
+sources = ['classranker_v%(version)s.ckpt.gz']
+checksums = ['68a9855c16d7bab64b7e73e1e1442c7bf898f227ffd9a19c48ddfd2cf0646d73']
+
+skipsteps = ['configure', 'build', 'test']
+extract_sources = True
+
+
+preinstallopts = _prepare
+install_cmd = 'mkdir -p %s/relion_classranker/ &&' % _checkpoints
+install_cmd += 'cd %s/relion_classranker && ' % _checkpoints
+install_cmd += 'mv %(installdir)s/classranker_v%(version)s.ckpt v%(version)s.ckpt &&'
+install_cmd += 'echo Sucessfully downloaded model>v%(version)s_installed.txt'
+
+modextrapaths = {'TORCH_HOME': '%s' % _torch_home}
+
+sanity_check_paths = {
+    'files': [
+        '%s/relion_classranker/v%%(version)s.ckpt' % _checkpoints_rel,
+    ],
+    'dirs': [_checkpoints_rel]
+}
+
+moduleclass = 'data'

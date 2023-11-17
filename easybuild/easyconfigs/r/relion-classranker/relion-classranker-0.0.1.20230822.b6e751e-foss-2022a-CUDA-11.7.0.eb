@@ -1,0 +1,80 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+easyblock = 'PythonBundle'
+
+name = 'relion-classranker'
+_v = '0.0.1'
+_sha = 'b6e751e5cb4205d8e9b36d0ae38c3687b3395acb'
+_date = '20230822'
+version = '%s.%s.%s' % (_v, _date, _sha[:7])
+
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/3dem/%(name)s'
+description = """The class ranker is part of the cryogenic electron microscopy (cryo-EM) dataset 
+processing pipeline in RELION. It is used to automatically select suitable      
+particles (EM images) assigned to 2D class averages for further downstream      
+processing.
+
+This model comprises two main components: a CNN responsible for extracting image
+features, and an MLP that combines the image features with additional statistics
+to assigns a score ranging from zero to one for each 2D class average.
+
+The selection is subsequently done in RELION through a user defined cutoff for  
+the predicted score.
+
+For training, a supervised approach is adopted, where pairs of 2D classes and   
+corresponding human-assigned scores are used to teach the model.
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+patches = []
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('PyTorch', '1.12.0', versionsuffix),
+    ('torchvision', '0.13.1', versionsuffix),
+    ('relion-classranker_data', '1.0', '', SYSTEM),
+]
+
+use_pip = True
+
+exts_list = [
+    ('loguru', '0.7.2', {
+        'checksums': ['e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac'],
+    }),
+    ('relion_classranker', '0.0.1.20230822', {
+        'patches': [
+            'relion-classranker-0.0.1_relax_requirements.patch',
+            'relion-classranker-0.0.1_multi_torch_home.patch',
+            'relion-classranker-0.0.1_add_script.patch',
+        ],
+        'source_urls': ['https://github.com/3dem/relion-classranker/archive/'],
+        'sources': [{'download_filename': 'b6e751e5cb4205d8e9b36d0ae38c3687b3395acb.tar.gz', 'filename': '%(name)s-%(version)s.tar.gz'}],
+        'checksums': [
+            {'relion_classranker-0.0.1.20230822.tar.gz':
+             'f5fa204831a47155a6a509d7dc427ee216eef7c391784eb8844006d5dce6f014'},
+            {'relion-classranker-0.0.1_relax_requirements.patch':
+             '943728e60498ff154f65b29a73cccf759018f56f90970ed728d94f1a2f4b1958'},
+            {'relion-classranker-0.0.1_multi_torch_home.patch':
+             '2b1c612b687d6a552492da75dc05003c04ed677862514dfa7317941f500c9033'},
+            {'relion-classranker-0.0.1_add_script.patch':
+             'cb2c9c362f79faa25527f58fad3bdaaed4090b791c46aca70447587742600907'},
+        ],
+    }),
+]
+
+fix_python_shebang_for = ['bin/command_line.py']
+
+postinstallcmds = ['mv %(installdir)s/bin/{command_line.py,relion_classranker}']
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/relion_classranker'],
+}
+sanity_check_commands = ['relion_classranker -h']
+
+moduleclass = 'bio'
