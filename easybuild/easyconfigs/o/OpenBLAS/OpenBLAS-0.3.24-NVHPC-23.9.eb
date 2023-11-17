@@ -40,6 +40,7 @@ configopts = ['', '']
 prebuildopts = "declare -A ARCH_MAP=( [avx2]='TARGET=HASWELL' [avx512]='TARGET=SKYLAKEX' ) && "
 prebuildopts += 'if [ $RSNT_ARCH==avx2 ]; then printf "DYNAMIC_ARCH=1\\nDYNAMIC_LIST=HASWELL ZEN SKYLAKEX\\n" >> Makefile.rule; fi && '
 prebuildopts += "sed -i 's/-tp px//g' Makefile.system && " # use our own archopt
+prebuildopts += "sed -i 's/^[CZ]ASUM/#/g' kernel/x86_64/KERNEL.SKYLAKEX && " # https://github.com/OpenMathLib/OpenBLAS/issues/4162
 prebuildopts += "rm lapack-netlib/INSTALL/*tst.c && " # forces using the .f files
 local_buildopts = '${ARCH_MAP[$RSNT_ARCH]} NUM_THREADS=64'
 buildopts = [local_buildopts + ' INTERFACE64=1 LIBPREFIX=libopenblas64',
@@ -47,9 +48,7 @@ buildopts = [local_buildopts + ' INTERFACE64=1 LIBPREFIX=libopenblas64',
 installopts = buildopts
 
 run_lapack_tests = True
-# nvhpc does badly on the complex tests, but no errors on real numbers. To be investigated later.
-max_failing_lapack_tests_other_errors = 2000
-max_failing_lapack_tests_num_errors = 100000
+max_failing_lapack_tests_num_errors = 1200
 
 # extensive testing can be enabled by uncommenting the line below
 # runtest = 'PATH=.:$PATH lapack-timing'
