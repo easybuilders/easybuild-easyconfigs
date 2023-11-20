@@ -18,6 +18,7 @@ patches = [
     'OpenBLAS-0.3.15_workaround-gcc-miscompilation.patch',
     'OpenBLAS-0.3.21_fix-order-vectorization.patch',
     'OpenBLAS-0.3.23_fix-lapack-test.patch',
+    'OpenBLAS-0.3.24-fix-czasum.patch',
 ]
 checksums = [
     {'v0.3.24.tar.gz': 'ceadc5065da97bd92404cac7254da66cc6eb192679cf1002098688978d4d5132'},
@@ -28,6 +29,7 @@ checksums = [
     {'OpenBLAS-0.3.21_fix-order-vectorization.patch':
      '08af834e5d60441fd35c128758ed9c092ba6887c829e0471ecd489079539047d'},
     {'OpenBLAS-0.3.23_fix-lapack-test.patch': 'f6b3d81061f136e34aaf5359bb80fb9d2bba28825cc1dd26179b8dd01a9a0054'},
+    {'OpenBLAS-0.3.24-fix-czasum.patch': 'a54fb8ea3bdb7f6747065def1dc1bf17a968af6de393494b8eacadcf229e8282'},
 ]
 
 builddependencies = [
@@ -40,7 +42,6 @@ configopts = ['', '']
 prebuildopts = "declare -A ARCH_MAP=( [avx2]='TARGET=HASWELL' [avx512]='TARGET=SKYLAKEX' ) && "
 prebuildopts += 'if [ $RSNT_ARCH==avx2 ]; then printf "DYNAMIC_ARCH=1\\nDYNAMIC_LIST=HASWELL ZEN SKYLAKEX\\n" >> Makefile.rule; fi && '
 prebuildopts += "sed -i 's/-tp px//g' Makefile.system && " # use our own archopt
-prebuildopts += "sed -i 's/^[CZ]ASUM/#/g' kernel/x86_64/KERNEL.SKYLAKEX && " # https://github.com/OpenMathLib/OpenBLAS/issues/4162
 prebuildopts += "rm lapack-netlib/INSTALL/*tst.c && " # forces using the .f files
 local_buildopts = '${ARCH_MAP[$RSNT_ARCH]} NUM_THREADS=64'
 buildopts = [local_buildopts + ' INTERFACE64=1 LIBPREFIX=libopenblas64',
