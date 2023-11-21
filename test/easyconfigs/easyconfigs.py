@@ -577,7 +577,7 @@ class EasyConfigTest(TestCase):
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
             # pydantic 2.3.0 requires Rust > 1.65 as builddependency
-            'Rust': [(r'1\.70\.0', [r'pydantic-2\.3\.0-foss-2022b'])],
+            'Rust': [(r'1\.70\.0', [r'pydantic-2\.3\.0-'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
