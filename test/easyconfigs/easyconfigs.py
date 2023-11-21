@@ -576,7 +576,7 @@ class EasyConfigTest(TestCase):
                                'NGSpeciesID-0.1.1.1-']),
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
-            'Rust': [('1.70.0;', ['pydantic-2.3.0-']],
+            'Rust': [('1.70.0;', ['pydantic-2.3.0-'])],
             # OPERA requires SAMtools 0.x
             'SAMtools': [(r'0\.', [r'ChimPipe-0\.9\.5', r'Cufflinks-2\.2\.1', r'OPERA-2\.0\.6',
                                    r'CGmapTools-0\.1\.2', r'BatMeth2-2\.1'])],
