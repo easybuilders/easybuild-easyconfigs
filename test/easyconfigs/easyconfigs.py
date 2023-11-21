@@ -577,7 +577,7 @@ class EasyConfigTest(TestCase):
                 ('0.18.0;', ['medaka-1.6.0-', 'NGSpeciesID-0.1.2.1-', 'WhatsHap-1.4-']),
             ],
             'Rust': [
-                ('1.65.0;), ['Evcxr-REPL-0.14.2-', 'JupyterLab-4.0.3-', 'Python-3.10.8-', 'Transformers-4.30.2-',
+                ('1.65.0;', ['Evcxr-REPL-0.14.2-', 'JupyterLab-4.0.3-', 'Python-3.10.8-', 'Transformers-4.30.2-',
                             'fastparquet-2023.4.0-', 'maturin-1.1.0-', 'ripunzip-0.4.0', 'tokenizers-0.13.3-']),
                 ('1.70.0;', ['pydantic-2.3.0-']),
             ],
