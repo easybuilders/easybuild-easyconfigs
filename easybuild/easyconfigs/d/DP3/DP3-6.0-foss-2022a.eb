@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'DP3'
+version = '6.0'
+homepage = 'https://dp3.readthedocs.io/'
+description = """DP3: streaming processing pipeline for radio interferometric data."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [{
+    'filename': '%(name)s-v%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://git.astron.nl/RD',
+        'repo_name': '%(name)s',
+        'tag': 'v%(version)s',
+        'clone_into': '%(name)s',
+        'recursive': True,
+    },
+}]
+checksums = [None]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('casacore', '3.5.0'),
+    ('Boost', '1.79.0'),
+    ('CFITSIO', '4.2.0'),
+    ('WCSLIB', '7.11'),
+    ('GSL', '2.7'),
+    ('HDF5', '1.12.2'),
+    ('Python', '3.10.4'),
+    ('EveryBeam', '0.5.2'),
+    ('Armadillo', '11.4.3'),
+    ('AOFlagger', '3.4.0')
+]
+
+# Without this, the wrong (system) python is picked up by cmake
+# in cases where the system python is newer than the one used in these EasyConfigs
+# See PR # 19119
+configopts = '-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+sanity_check_paths = {
+    'files': ['include/include/dp3/base/DP3.h', 'bin/DP3'],
+    'dirs': ['bin'],
+}
+
+sanity_check_commands = [('DP3', '--version')]
+
+moduleclass = 'astro'
