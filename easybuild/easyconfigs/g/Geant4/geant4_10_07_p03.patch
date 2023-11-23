@@ -1,0 +1,210 @@
+diff -ruN geant4.10.07.p03/source/geometry/solids/specific/src/G4TessellatedSolid.cc geant4.10.07.p03-patched/source/geometry/solids/specific/src/G4TessellatedSolid.cc
+--- geant4.10.07.p03/source/geometry/solids/specific/src/G4TessellatedSolid.cc	2021-02-05 03:17:16.000000000 -0800
++++ geant4.10.07.p03-patched/source/geometry/solids/specific/src/G4TessellatedSolid.cc	2021-05-26 22:25:20.000000000 -0700
+@@ -1654,20 +1654,22 @@
+                                           const G4ThreeVector& v)const
+ {
+   G4double dist = DistanceToInCore(p,v,kInfinity);
+-#ifdef G4SPECSDEBUG
++//#ifdef G4SPECSDEBUG
+   if (dist < kInfinity)
+   {
+     if (Inside(p + dist*v) != kSurface)
+     {
+       std::ostringstream message;
+-      message << "Invalid response from facet in solid '" << GetName() << "',"
++//      message << "Invalid response from facet in solid '" << GetName() << "',"
++      message << "Calculation error in G4TessellatedSolid::DistanceToIn from facet in solid '" << GetName() << "',"
+               << G4endl
+               << "at point: " << p <<  "and direction: " << v;
+       G4Exception("G4TessellatedSolid::DistanceToIn(p,v)",
+-                  "GeomSolids1002", JustWarning, message);
++//                  "GeomSolids1002", JustWarning, message);
++                  "G4T0001", EventMustBeAborted, message);
+     }
+   }
+-#endif
++//#endif
+   return dist;
+ }
+ 
+@@ -1716,20 +1718,22 @@
+     *norm = n;
+     *validNorm = valid;
+   }
+-#ifdef G4SPECSDEBUG
++//#ifdef G4SPECSDEBUG
+   if (dist < kInfinity)
+   {
+     if (Inside(p + dist*v) != kSurface)
+     {
+       std::ostringstream message;
+-      message << "Invalid response from facet in solid '" << GetName() << "',"
++//      message << "Invalid response from facet in solid '" << GetName() << "',"
++      message << "Calculation error in G4TessellatedSolid::DistanceToOut from facet in solid '" << GetName() << "',"
+               << G4endl
+               << "at point: " << p <<  "and direction: " << v;
+       G4Exception("G4TessellatedSolid::DistanceToOut(p,v,..)",
+-                  "GeomSolids1002", JustWarning, message);
++//                  "GeomSolids1002", JustWarning, message);
++                  "G4T0001", EventMustBeAborted, message);
+     }
+   }
+-#endif
++//#endif
+   return dist;
+ }
+ 
+diff -ruN geant4.10.07.p03/source/processes/electromagnetic/dna/management/include/G4ITFinder.icc geant4.10.07.p03-patched/source/processes/electromagnetic/dna/management/include/G4ITFinder.icc
+--- geant4.10.07.p03/source/processes/electromagnetic/dna/management/include/G4ITFinder.icc	2021-02-05 03:17:16.000000000 -0800
++++ geant4.10.07.p03-patched/source/processes/electromagnetic/dna/management/include/G4ITFinder.icc	2021-05-26 21:51:21.000000000 -0700
+@@ -143,7 +143,8 @@
+           "Bad request : no node found in the IT you are searching "
+           "closest neighbourg for");
+       G4Exception("G4ITManager::FindNearest", "ITManager002",
+-          FatalErrorInArgument, exceptionDescription);
++          JustWarning, exceptionDescription);
++          //FatalErrorInArgument, exceptionDescription);
+       return 0; // coverity
+     }
+ 
+diff -ruN geant4.10.07.p03/source/processes/electromagnetic/dna/processes/src/G4DNAWaterDissociationDisplacer.cc geant4.10.07.p03-patched/source/processes/electromagnetic/dna/processes/src/G4DNAWaterDissociationDisplacer.cc
+--- geant4.10.07.p03/source/processes/electromagnetic/dna/processes/src/G4DNAWaterDissociationDisplacer.cc	2021-11-18 23:25:39.000000000 -0800
++++ geant4.10.07.p03-patched/source/processes/electromagnetic/dna/processes/src/G4DNAWaterDissociationDisplacer.cc	2022-02-10 13:35:50.000000000 -0800
+@@ -169,7 +169,7 @@
+     G4double RMSMotherMoleculeDisplacement(0.);
+ 
+     switch (decayType)
+-    {
++    {/*
+         case Ionisation_DissociationDecay:
+             RMSMotherMoleculeDisplacement = 2.0 * nanometer;
+             break;
+@@ -184,7 +184,22 @@
+             break;
+         case DissociativeAttachment:
+             RMSMotherMoleculeDisplacement = 0. * nanometer;
++            break;*/
++        case Ionisation_DissociationDecay:
++            RMSMotherMoleculeDisplacement = 1.24 * nanometer; //1.45 * nanometer;//1.45 * nanometer;
++            break;
++        case A1B1_DissociationDecay:
++            RMSMotherMoleculeDisplacement = 0. * nanometer;
+             break;
++        case B1A1_DissociationDecay:
++            RMSMotherMoleculeDisplacement = 0. * nanometer;
++            break;
++        case AutoIonisation:
++            RMSMotherMoleculeDisplacement = 1.24 * nanometer; //1.45 * nanometer;//1.45 * nanometer;
++            break;
++        case DissociativeAttachment:
++            RMSMotherMoleculeDisplacement = 0. * nanometer;
++            break;    
+     }
+ 
+     if (RMSMotherMoleculeDisplacement == 0)
+@@ -211,6 +226,11 @@
+ 
+     G4int decayType = pDecayChannel->GetDisplacementType();
+ 
++    G4double theOHRMSDisplacement = 0.93 * nanometer;
++    G4double theH3OOHDisplacement = 0.93 * nanometer; // significant
++    G4double theOH2Displacement   = 0.93 * nanometer; // not significant at lowLET
++    G4double theHOHDisplacement   = 0.93 * nanometer; // significant at lowLET
++
+     switch (decayType)
+     {
+         case Ionisation_DissociationDecay:
+@@ -227,12 +247,12 @@
+                 // H3O
+                 theRMSmap[G4H3O::Definition()] = 0. * nanometer;
+                 // OH
+-                theRMSmap[G4OH::Definition()] = 0.8 * nanometer;
++                theRMSmap[G4OH::Definition()] = theH3OOHDisplacement; //0.93 * nanometer;
+             }
+             else
+             {
+                 // H3O
+-                theRMSmap[G4H3O::Definition()] = 0.8 * nanometer;
++                theRMSmap[G4H3O::Definition()] = theH3OOHDisplacement; //0.93 * nanometer;
+                 // OH
+                 theRMSmap[G4OH::Definition()] = 0. * nanometer;
+             }
+@@ -261,7 +281,8 @@
+                 G4cout << "A1B1_DissociationDecay" << G4endl;
+                 G4cout << "Channel's name: " << pDecayChannel->GetName() << G4endl;
+             }
+-            G4double theRMSDisplacement = 2.4 * nanometer;
++            //G4double theRMSDisplacement = 2.4 * nanometer;
++            G4double theRMSDisplacement = theHOHDisplacement; //0.93 * nanometer;
+             auto RandDirection =
+                     radialDistributionOfProducts(theRMSDisplacement);
+ 
+@@ -288,7 +309,7 @@
+                 G4cout << "Channel's name: " << pDecayChannel->GetName() << G4endl;
+             }
+ 
+-            G4double theRMSDisplacement = 0.8 * nanometer;
++            G4double theRMSDisplacement = theOH2Displacement; //0.93 * nanometer;
+             auto RandDirection =
+                     radialDistributionOfProducts(theRMSDisplacement);
+ 
+@@ -305,7 +326,8 @@
+                 {
+                     // OH
+                     G4ThreeVector OxygenDisplacement = +16. / 18. * RandDirection;
+-                    G4double OHRMSDisplacement = 1.1 * nanometer;
++                    //G4double OHRMSDisplacement = 1.1 * nanometer;
++                    G4double OHRMSDisplacement = 2.0/3.0*theOHRMSDisplacement; //0.55 * nanometer; //0.50 * 1.1 * nanometer;
+ 
+                     auto OHDisplacement =
+                             radialDistributionOfProducts(OHRMSDisplacement);
+@@ -342,12 +364,12 @@
+                 // H3O
+                 theRMSmap[G4H3O::Definition()] = 0. * nanometer;
+                 // OH
+-                theRMSmap[G4OH::Definition()] = 0.8 * nanometer;
++                theRMSmap[G4OH::Definition()] = theH3OOHDisplacement; //0.93 * nanometer;
+             }
+             else
+             {
+                 // H3O
+-                theRMSmap[G4H3O::Definition()] = 0.8 * nanometer;
++                theRMSmap[G4H3O::Definition()] = theH3OOHDisplacement; //0.93 * nanometer;
+                 // OH
+                 theRMSmap[G4OH::Definition()] = 0. * nanometer;
+             }
+@@ -381,7 +403,7 @@
+                 G4cout << "DissociativeAttachment" << G4endl;
+                 G4cout << "Channel's name: " << pDecayChannel->GetName() << G4endl;
+             }
+-            G4double theRMSDisplacement = 0.8 * nanometer;
++            G4double theRMSDisplacement = theOH2Displacement; //0.93 * nanometer;
+             auto RandDirection =
+                     radialDistributionOfProducts(theRMSDisplacement);
+ 
+@@ -391,20 +413,13 @@
+                 auto pProduct = pDecayChannel->GetProduct(i);
+                 if (pProduct->GetDefinition() == G4H2::Definition())
+                 {
+-                    // In the paper of Kreipl (2009)
+-                    // theProductDisplacementVector[i] = -2. / 18. * RandDirection;
+-
+-                    // Based on momentum conservation
+-                    theProductDisplacementVector[i] = -16. / 18. * RandDirection;
++                    theProductDisplacementVector[i] = -2. / 18. * RandDirection;
+                 }
+                 else if (pProduct->GetDefinition() == G4OH::Definition())
+                 {
+-                    // In the paper of Kreipl (2009)
+-                    // G4ThreeVector OxygenDisplacement = +16. / 18. * RandDirection;
+-
+-                    // Based on momentum conservation
+-                    G4ThreeVector OxygenDisplacement = +2. / 18. * RandDirection;
+-                    G4double OHRMSDisplacement = 1.1 * nanometer;
++                    G4ThreeVector OxygenDisplacement = +16. / 18. * RandDirection;
++                    //G4double OHRMSDisplacement = 1.1 * nanometer;
++                    G4double OHRMSDisplacement = 2./3.*theOHRMSDisplacement; //0.55 * nanometer; //0.50 * 1.1 * nanometer;
+ 
+                     auto OHDisplacement =
+                             radialDistributionOfProducts(OHRMSDisplacement);
