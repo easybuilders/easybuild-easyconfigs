@@ -43,9 +43,9 @@ configopts = ['', '']
 # icx with -ax doesn't play well with FlexiBLAS, and it's not needed with DYNAMIC_ARCH anyway so optarch = False
 # above, and we add march flags for Fortran manually
 prebuildopts = "declare -A ARCH_MAP=( [avx2]='TARGET=HASWELL' [avx512]='TARGET=SKYLAKEX' ) && "
-prebuildopts += 'if [ $RSNT_ARCH==avx2 ]; then export FFLAGS="$FFLAGS -march=core-avx2 -axCore-AVX512";'
+prebuildopts += 'if [ "$RSNT_ARCH" == "avx2" ]; then export FFLAGS="$FFLAGS -march=core-avx2 -axCore-AVX512";'
 prebuildopts +=                         ' else export FFLAGS="$FFLAGS -march=skylake-avx512"; fi && '
-prebuildopts += 'if [ $RSNT_ARCH==avx2 ]; then printf "DYNAMIC_ARCH=1\\nDYNAMIC_LIST=HASWELL ZEN SKYLAKEX\\n" >> Makefile.rule; fi && '
+prebuildopts += 'if [ "$RSNT_ARCH" == "avx2" ]; then printf "DYNAMIC_ARCH=1\\nDYNAMIC_LIST=HASWELL ZEN SKYLAKEX\\n" >> Makefile.rule; fi && '
 prebuildopts += "sed -i 's/$(FFLAGS) $(EXTRALIB)/$(FFLAGS) $(EXTRALIB) -nofor-main/' Makefile && "
 local_buildopts = '${ARCH_MAP[$RSNT_ARCH]} NUM_THREADS=64'
 buildopts = [local_buildopts + ' INTERFACE64=1 LIBPREFIX=libopenblas64',
