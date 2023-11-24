@@ -1,0 +1,46 @@
+easyblock = 'ConfigureMake'
+
+name = 'BAGEL'
+version = '1.2.2'
+
+homepage = "http://www.nubakery.org"
+
+description = """
+BAGEL (Brilliantly Advanced General Electronic-structure Library)
+is a parallel electronic-structure program.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://github.com/nubakery/bagel/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_serialization.patch',
+]
+checksums = [
+    {'v1.2.2.tar.gz': 'b9ef9ad5ad9b836b5393badb5a3e5b162d6ff32da497f69d05ef9e4d091b558a'},
+    {'BAGEL-1.2.2_serialization.patch': '47fed67e0d0ccea9264b85b5d69e2ec6fffbb37e29631218871943df529d4108'},
+]
+
+
+builddependencies = [
+    ('Autotools', '20210128'),
+]
+
+dependencies = [
+    ('Boost', '1.76.0'),
+    ('libxc', '5.1.5'),
+]
+
+preconfigopts = './autogen.sh && '
+preconfigopts += 'CXXFLAGS="$CXXFLAGS -DNDEBUG " '
+preconfigopts += 'CXXFLAGS="$CXXFLAGS -lflexiblas " '
+
+configopts = ' --with-boost=$BOOST_ROOT   --with-libxc --with-mpi=openmpi '
+
+sanity_check_paths = {
+    'files': ['bin/BAGEL', 'lib/libbagel.%s' % SHLIB_EXT],
+    'dirs': []
+}
+
+moduleclass = 'phys'

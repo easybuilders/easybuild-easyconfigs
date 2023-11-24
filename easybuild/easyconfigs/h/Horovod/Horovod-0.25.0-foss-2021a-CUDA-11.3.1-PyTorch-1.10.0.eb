@@ -1,0 +1,48 @@
+easyblock = 'PythonBundle'
+
+name = 'Horovod'
+version = '0.25.0'
+local_pt_version = '1.10.0'
+local_cuda_suffix = '-CUDA-%(cudaver)s'
+versionsuffix = local_cuda_suffix + '-PyTorch-%s' % local_pt_version
+
+homepage = 'https://github.com/uber/horovod'
+description = """Horovod is a distributed training framework for TensorFlow, PyTorch and MXnet.
+This build only has PyTorch enabled."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+]
+dependencies = [
+    ('Python', '3.9.5'),
+    ('PyYAML', '5.4.1'),
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('NCCL', '2.10.3', local_cuda_suffix),
+    ('PyTorch', local_pt_version, local_cuda_suffix),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+preinstallopts = 'HOROVOD_WITH_MPI=1 HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL '
+preinstallopts += 'HOROVOD_WITHOUT_TENSORFLOW=1 HOROVOD_WITH_PYTORCH=1 HOROVOD_WITHOUT_MXNET=1 '
+
+exts_list = [
+    ('cloudpickle', '2.1.0', {
+        'checksums': ['bb233e876a58491d9590a676f93c7a5473a08f747d5ab9df7f9ce564b3e7938e'],
+    }),
+    ('horovod', version, {
+        'checksums': ['bc9fed57b67c1b55259671d2439cdbc93aa897ea6e5da459e11e7556972b2355'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/horovodrun'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["horovodrun --help"]
+
+moduleclass = 'tools'

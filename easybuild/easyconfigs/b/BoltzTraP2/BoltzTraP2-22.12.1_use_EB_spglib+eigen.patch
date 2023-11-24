@@ -1,0 +1,51 @@
+Use spglib and Eigen from EB install
+
+Åke Sandgren, 2023-04-17
+diff -ru BoltzTraP2-22.12.1.orig/setup.py BoltzTraP2-22.12.1/setup.py
+--- BoltzTraP2-22.12.1.orig/setup.py	2022-12-19 19:38:59.000000000 +0100
++++ BoltzTraP2-22.12.1/setup.py	2023-04-17 12:32:46.654682662 +0200
+@@ -187,7 +187,8 @@
+ 
+     def run(self):
+         """Run build_spglib and then delegate on the normal build_ext."""
+-        self.run_command("build_spglib")
++        # Use spglib from EB installation
++        # self.run_command("build_spglib")
+         DefaultBuildExtCommand.run(self)
+ 
+ 
+@@ -213,12 +214,6 @@
+ else:
+     extension = "cpp"
+ 
+-eigen_dir = os.path.abspath(
+-    os.path.join(
+-        os.path.dirname(__file__), "external", "eigen-eigen-3215c06819b9"
+-    )
+-)
+-
+ extensions = [
+     Extension(
+         "BoltzTraP2.sphere.frontend",
+@@ -228,10 +223,10 @@
+         ],
+         language="c++",
+         include_dirs=INCLUDE_DIRS
+-        + [np.get_include(), BuildSPGlibCommand.header_dir, eigen_dir],
++        + [np.get_include()],
+         library_dirs=LIBRARY_DIRS,
+         runtime_library_dirs=LIBRARY_DIRS,
+-        extra_objects=[BuildSPGlibCommand.static_library],
++        libraries = ['symspg'],
+     )
+ ]
+ 
+@@ -282,8 +277,6 @@
+     ext_modules=extensions,
+     cmdclass={
+         "build_ext": BuildExtCommand,
+-        "build_spglib": BuildSPGlibCommand,
+-        "clean_spglib": CleanSPGlibCommand,
+     },
+     install_requires=[
+         "spglib",
