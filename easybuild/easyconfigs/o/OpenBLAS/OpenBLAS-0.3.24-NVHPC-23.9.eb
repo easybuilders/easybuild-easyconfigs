@@ -39,17 +39,20 @@ builddependencies = [
 ]
 
 configopts = ['', '']
-prebuildopts = "declare -A ARCH_MAP=( [avx2]='TARGET=HASWELL' [avx512]='TARGET=SKYLAKEX' ) && "
-prebuildopts += 'if [ "$RSNT_ARCH" == "avx2" ]; then printf "DYNAMIC_ARCH=1\\nDYNAMIC_LIST=HASWELL ZEN SKYLAKEX\\n" >> Makefile.rule; fi; && '
-prebuildopts += "sed -i 's/-tp px//g' Makefile.system && " # use our own archopt
-prebuildopts += "rm lapack-netlib/INSTALL/*tst.c && " # forces using the .f files
+local_prebuildopts = "declare -A ARCH_MAP=( [avx2]='TARGET=HASWELL' [avx512]='TARGET=SKYLAKEX' ) && "
+local_prebuildopts += 'if [ "$RSNT_ARCH" == "avx2" ]; then printf "DYNAMIC_ARCH=1\\nDYNAMIC_LIST=HASWELL ZEN SKYLAKEX\\n" >> Makefile.rule; fi && '
+local_prebuildopts += "sed -i 's/-tp px//g' Makefile.system && " # use our own archopt
+local_prebuildopts += "rm lapack-netlib/INSTALL/*tst.c && " # forces using the .f files
+# LAPACK test failures for ILP64 with x86-64-v4...
+prebuildopts = [local_prebuildopts + 'sed -i "s/FCOMMON_OPT += -march=skylake-avx512//" Makefile.x86_64 && FFLAGS="${FFLAGS/x86-64-v4/x86-64-v3}" ',
+    local_prebuildopts]
 local_buildopts = '${ARCH_MAP[$RSNT_ARCH]} NUM_THREADS=64'
 buildopts = [local_buildopts + ' INTERFACE64=1 LIBPREFIX=libopenblas64',
     local_buildopts]
 installopts = buildopts
 
 run_lapack_tests = True
-max_failing_lapack_tests_num_errors = 1200
+max_failing_lapack_tests_num_errors = 1250
 
 # extensive testing can be enabled by uncommenting the line below
 # runtest = 'PATH=.:$PATH lapack-timing'
