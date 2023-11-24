@@ -1,0 +1,86 @@
+easyblock = 'CMakeMake'
+
+name = 'ecCodes'
+version = '2.31.0'
+
+homepage = 'https://software.ecmwf.int/wiki/display/ECC/ecCodes+Home'
+description = """ecCodes is a package developed by ECMWF which provides an application programming interface and
+ a set of tools for decoding and encoding messages in the following formats: WMO FM-92 GRIB edition 1 and edition 2,
+ WMO FM-94 BUFR edition 3 and edition 4, WMO GTS abbreviated header (only decoding)."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/ecmwf/eccodes/archive/refs/tags/']
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': '%(namelower)s-%(version)s.tar.gz'}]
+checksums = ['cb4cd3bab9cebd85a00397e12ce8e4a579b2f0a25aaf6df763436cf37db063e1']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('binutils', '2.40'),
+    ('SciPy-Stack', '2023b'),
+    ('ecBuild', '3.8.0', '', SYSTEM),
+]
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('JasPer', '4.0.0'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('libpng', '1.6.39'),
+    ('zlib', '1.2.13'),
+    ('libaec', '1.0.6'),
+]
+
+multi_deps = {'Python': ['3.10', '3.11']}
+multi_deps_extensions_only = True
+
+exts_defaultclass = 'PythonPackage'
+
+exts_list = [
+    ('eccodes', '1.6.1', {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'eccodes',
+        'patches': ['eccodes-python-1.3.2-gribapi-bindings.patch'],
+        'preconfigopts': '#',
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': [
+            '0d23e88cf9f3b4f5a2bee76f2b38080fd4b84386531d06d830831af3b1a18473',  # eccodes-1.6.1.tar.gz
+            # eccodes-python-1.3.2-gribapi-bindings.patch
+            '67f8e339bfa1400cc750f4ede7acc1d74277ad1bcf2c22fa7b72114195cbee45',
+        ],
+    }),
+    ('cfgrib', '0.9.10.4', {
+        'buildopts': '#',
+        'check_ldshared': False,
+        'modulename': 'cfgrib',
+        'preconfigopts': '#',
+        'runtest': False,
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['b490078192aa13ec89c77296110355521442325866b16a996f4b3cf421542909'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+separate_build_dir = True
+
+configopts  =  "-DENABLE_NETCDF=ON"
+configopts += " -DENABLE_JPG=ON"
+configopts += " -DENABLE_PYTHON=OFF"
+configopts += " -DENABLE_ECCODES_OMP_THREADS=ON"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['bufr_copy', 'bufr_dump', 'bufr_filter', 'bufr_ls',
+                                     'codes_count', 'codes_info', 'codes_split_file',
+                                     'grib_copy', 'grib_dump', 'grib_filter', 'grib_ls']],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+	"python -c 'import eccodes'",
+	"python -c 'import cfgrib'"
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': [''],}
+
+moduleclass = 'tools'
