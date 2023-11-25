@@ -4,7 +4,7 @@ name = 'HiC-Pro'
 version = '3.1.0'
 versionsuffix = '-R-%(rver)s'
 
-homepage = 'http://nservant.github.io/HiC-Pro'
+homepage = 'https://nservant.github.io/HiC-Pro'
 description = """HiC-Pro was designed to process Hi-C data, from raw fastq files (paired-end Illumina data) 
  to the normalized contact maps."""
 
@@ -23,16 +23,19 @@ dependencies = [
     ('iced', '0.5.10'),
 ]
 
+# there's no configure script, "configure" is a Makefile targe
 skipsteps = ['configure']
 
-prebuildopts = 'sed -i "s|PREFIX = |PREFIX = %(installdir)s|" config-install.txt && '
-prebuildopts += 'sed -i "s|BOWTIE2_PATH = |BOWTIE2_PATH = $EBROOTBOWTIE2|" config-install.txt && '
+# "configure" target only takes prefix as argument, the rest is read from config-install.txt
+prebuildopts = 'sed -i "s|BOWTIE2_PATH = |BOWTIE2_PATH = $EBROOTBOWTIE2|" config-install.txt && '
 prebuildopts += 'sed -i "s|SAMTOOLS_PATH = |SAMTOOLS_PATH = $EBROOTSAMTOOLS|" config-install.txt && '
 prebuildopts += 'sed -i "s|R_PATH = |R_PATH = $EBROOTR|" config-install.txt && '
 prebuildopts += 'sed -i "s|PYTHON_PATH = |PYTHON_PATH = $EBROOTPYTHON|" config-install.txt && '
-prebuildopts += r'sed -i "s|\$(PREFIX)/HiC-Pro_\$(VNUM)|\$(PREFIX)|" scripts/install/Makefile && '
-prebuildopts += 'make configure && '
 
+# configure
+prebuildopts += 'make configure prefix=%(installdir)s && '
+
+# install
 files_to_copy = [
     'annotation',
     'doc',
