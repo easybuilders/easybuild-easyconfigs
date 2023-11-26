@@ -1,0 +1,88 @@
+add missing stdint includes required when building with GCC 13.x
+fix for:
+include/mbgl/util/geometry.hpp:9:24: error: found : in nested-name-specifier, expected ::
+and:
+../../3rdparty/chromium/third_party/angle/src/common/angleutils.h:54:14: error: uintptr_t does not name a type
+
+see also:
+* https://gcc.gnu.org/gcc-13/porting_to.html
+* https://bugreports.qt.io/browse/QTBUG-113111 and https://invent.kde.org/qt/qt/qtlocation-mapboxgl/-/merge_requests/1
+* https://github.com/abseil/abseil-cpp/pull/1187
+diff -ru qt-everywhere-src-5.15.11.orig/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp
+--- qt-everywhere-src-5.15.11.orig/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp      2023-06-09 16:08:55.000000000 +0200
++++ qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/geometry.hpp   2023-11-24 14:19:35.465495021 +0100
+@@ -1,5 +1,7 @@
+ #pragma once
+
++#include <cstdint>
++
+ #include <mapbox/geometry/geometry.hpp>
+ #include <mapbox/geometry/point_arithmetic.hpp>
+ #include <mapbox/geometry/for_each_point.hpp>
+diff -ru qt-everywhere-src-5.15.11.orig/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp
+--- qt-everywhere-src-5.15.11.orig/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp        2023-06-09 16:08:55.000000000 +0200
++++ qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/string.hpp     2023-11-24 14:19:35.465495021 +0100
+@@ -3,6 +3,7 @@
+ #include <sstream>
+ #include <string>
+ #include <cassert>
++#include <cstdint>
+ #include <cstdlib>
+ #include <exception>
+
+diff -ru qt-everywhere-src-5.15.11.orig/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp
+--- qt-everywhere-src-5.15.11.orig/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp        2023-06-09 16:08:55.000000000 +0200
++++ qt-everywhere-src-5.15.11/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/gl/stencil_mode.hpp     2023-11-24 14:19:35.465495021 +0100
+@@ -1,5 +1,7 @@
+ #pragma once
+
++#include <cstdint>
++
+ #include <mbgl/util/variant.hpp>
+
+ namespace mbgl {
+
+diff -u qt-everywhere-src-5.15.11.orig/qtwebengine/src/3rdparty/chromium/third_party/abseil-cpp/absl/strings/internal/str_format/extension.h.orig qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/abseil-cpp/absl/strings/internal/str_format/extension.h
+--- qt-everywhere-src-5.15.11.orig/qtwebengine/src/3rdparty/chromium/third_party/abseil-cpp/absl/strings/internal/str_format/extension.h.orig     2023-11-24 15:21:06.692238955 +0100
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/abseil-cpp/absl/strings/internal/str_format/extension.h  2023-11-24 15:21:15.688260140 +0100
+@@ -17,6 +17,7 @@
+ #define ABSL_STRINGS_INTERNAL_STR_FORMAT_EXTENSION_H_
+
+ #include <limits.h>
++#include <stdint.h>
+
+ #include <cstddef>
+ #include <cstring>
+diff -ru qt-everywhere-src-5.15.11.orig/qtwebengine/src/3rdparty/chromium/components/variations/seed_response.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/components/variations/seed_response.h
+--- qt-everywhere-src-5.15.11.orig/qtwebengine/src/3rdparty/chromium/components/variations/seed_response.h	2022-09-19 16:36:40.000000000 +0200
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/components/variations/seed_response.h	2023-11-26 15:46:34.777996583 +0100
+@@ -5,6 +5,7 @@
+ #ifndef COMPONENTS_VARIATIONS_SEED_RESPONSE_H_
+ #define COMPONENTS_VARIATIONS_SEED_RESPONSE_H_
+ 
++#include <stdint.h>
+ #include <string>
+ 
+ namespace variations {
+diff -ru qt-everywhere-src-5.15.11.orig/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_driver_bug_workarounds.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_driver_bug_workarounds.h
+--- qt-everywhere-src-5.15.11.orig/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_driver_bug_workarounds.h	2022-09-19 16:36:40.000000000 +0200
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/gpu/config/gpu_driver_bug_workarounds.h	2023-11-26 15:46:48.950005075 +0100
+@@ -5,6 +5,7 @@
+ #ifndef GPU_CONFIG_GPU_DRIVER_BUG_WORKAROUNDS_H_
+ #define GPU_CONFIG_GPU_DRIVER_BUG_WORKAROUNDS_H_
+ 
++#include <stdint.h>
+ #include <vector>
+ 
+ #include "base/macros.h"
+diff -ru qt-everywhere-src-5.15.11.orig/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/system/file_wrapper.h qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/system/file_wrapper.h
+--- qt-everywhere-src-5.15.11.orig/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/system/file_wrapper.h	2022-09-19 16:36:40.000000000 +0200
++++ qt-everywhere-src-5.15.11/qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/system/file_wrapper.h	2023-11-26 15:47:10.722017828 +0100
+@@ -11,6 +11,7 @@
+ #ifndef RTC_BASE_SYSTEM_FILE_WRAPPER_H_
+ #define RTC_BASE_SYSTEM_FILE_WRAPPER_H_
+ 
++#include <stdint.h>
+ #include <stddef.h>
+ #include <stdio.h>
+ 
