@@ -1,0 +1,104 @@
+easyblock = 'CMakeMake'
+
+name = 'QGIS'
+version = '3.28.12'
+
+homepage = 'http://www.qgis.org/'
+description = "QGIS is a user friendly Open Source Geographic Information System (GIS)"
+
+toolchain = {'name': 'gccflexiblas', 'version': '2023a'}
+toolchainopts = {'pic': True, 'cstd': 'gnu++11'}
+
+source_urls = ['http://qgis.org/downloads/']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = [
+	'QGIS-3.22.14_fix-SIP-macro.patch',
+	'QGIS-3.22.14-FindPyQt5.cmake.patch'
+]
+checksums = [
+    {'qgis-3.28.12.tar.bz2': 'd6d0ea39ed3433d553f8b83324dc14cfa90f8caaf766fa484791df9169800f25'},
+    {'QGIS-3.22.14_fix-SIP-macro.patch': '7bc7d7bb199fa4257908514ddd1cdf9db35e4e53cdf0a112253752b0d5b76f24'},
+    {'QGIS-3.22.14-FindPyQt5.cmake.patch': '4e75a634ab714cf5ac95d2dc8cb5b7ad09c7f9630d4455ba9131ebfcd8bad96c'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('PostgreSQL', '16.0'),
+    ('Abseil', '20230125.3'),
+    ('HDF', '4.2.16'),
+]
+
+dependencies = [
+#    ('Qt5Webkit', '5.212.0-alpha4'),
+    ('Qt5', '5.15.11'),
+    ('SQLite', '3.42.0'),
+    ('GDAL', '3.7.2'),
+    ('libspatialindex', '1.9.3'),
+    ('Qwt', '6.2.0'),
+#    ('QwtPolar', '1.1.1'),
+    ('expat', '2.5.0'),
+    ('QCA', '2.3.7'),
+    ('QScintilla', '2.14.1'),
+    ('GSL', '2.7'),
+#    ('QJson', '0.9.0'),
+    ('libzip', '1.9.2'),
+    ('QtKeychain', '0.14.1'),
+    ('ICU', '73.2'),
+    ('protobuf', '24.4'),
+    ('SciPy-Stack', '2023b'),
+]
+multi_deps = {'Python': ['3.11', '3.10'] }
+separate_build_dir = True
+
+# specify locations that CMake can't figure out correctly
+_copts = [
+	"-DCMAKE_PREFIX_PATH=$EBROOTQT5",
+#	" -DQJSON_DIR=$EBROOTQJSON/lib/cmake/qjson",
+	"-DQSCINTILLA_LIBRARY=$EBROOTQSCINTILLA/lib/libqscintilla2_qt5.%s" % SHLIB_EXT,
+	"-DWITH_QTWEBKIT=OFF",
+#	"-DQt5WebKit_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKit",
+#	"-DQt5WebKitWidgets_DIR=$EBROOTQT5WEBKIT/lib64/cmake/Qt5WebKitWidgets",
+	"-DPYQT5_SIP_DIR=$EBROOTQT5/lib/python%(pyshortver)s/site-packages/PyQt5/bindings",
+	"-DQSCI_SIP_DIR=$EBROOTQSCINTILLA/share/sip/PyQt5",
+]
+configopts = ' '.join(_copts)
+
+sanity_check_paths = {
+    'files': ['bin/qgis', 'bin/qgis_bench', 'lib/libqgis_analysis.%s' % SHLIB_EXT,
+              'lib/libqgis_app.%s' % SHLIB_EXT, 'lib/libqgis_core.%s' % SHLIB_EXT, 'lib/libqgis_gui.%s' % SHLIB_EXT,
+              'lib/libqgis_native.%s' % SHLIB_EXT, 'lib/libqgispython.%s' % SHLIB_EXT],
+    'dirs': ['include/qgis', 'man', 'share/qgis'],
+}
+
+postinstallcmds = [
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --add_origin --add_path %(installdir)s/lib --path %(installdir)s/lib/qgis/plugins ",
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --any_interpreter --add_origin --add_path %(installdir)s/lib --path %(installdir)s/share/qgis/python ",
+]
+
+exts_defaultclass = 'PythonPackage'
+exts_list = [
+    ('psycopg2', '2.9.9', {
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['d1454bde93fb1e224166811694d600e746430c006fbb031ea06ecc2ea41bf156'],
+    }),
+    ('PyYAML', '6.0.1', {
+        'modulename': 'yaml',
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['bfdf460b1736c775f2ba9f6a92bca30bc2095067b8a9d77876d1fad6cc3b4a43'],
+    }),
+    ('OWSLib', '0.29.3', {
+        'modulename': 'owslib',
+        'source_urls': ['https://pypi.python.org/packages/source/%(nameletter)s/%(name)s'],
+        'checksums': ['3baf34058458b933767ee43e632174cb0baebf49d326da179faacb9772f98539'],
+    }),
+]
+
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+modextrapaths = {
+    'EBPYTHONPREFIXES': [''],
+    'PYTHONPATH': ['share/qgis/python', 'share/qgis/python/plugins'],
+}
+
+moduleclass = 'geo'

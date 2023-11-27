@@ -1,0 +1,41 @@
+name = 'COMSOL'
+version = '6.2'
+
+homepage = 'https://www.comsol.com'
+description = """
+COMSOL Multiphysics is a general-purpose software platform, based on
+advanced numerical methods, for modeling and simulating physics-based
+problems. 
+"""
+
+toolchain = SYSTEM
+
+# specifies CMC server LMCOMSOL_LICENSE_FILE to comsol.py
+# requires advance arrangement with CMC to enable ebuser
+license_file = '6601@127.0.0.1'
+
+sources = ['%(name)s-%(version)s.tar.gz']
+
+# sha256sum COMSOL-6.2.0.290.tar.gz
+checksums = ['80f702c79025d3b30729a8b1d51e9c0d38a3bcf04ddd23dca675a50e1c22dad4']
+
+postinstallcmds = [
+	"""sed -i -e 's/LIBDIRS="\(.*\)"/LIBDIRS="$$EBROOTGENTOO\/lib \\1"/g' -e 's/readlink/readlink -f/g' %(installdir)s/bin/comsol""",
+	"rm %(installdir)s/license/license.dat %(installdir)s/license/license.paid",
+	"/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s" 
+]
+
+modluafooter = """
+require("SitePackage")
+local found, path = find_and_define_license_file("LM_LICENSE_FILE","comsol")
+if (not found) then
+        local error_message = [[
+        We did not find a suitable license for COMSOL. If you have access to one, you can create the file $HOME/.licenses/comsol.lic  with the license information. If you think you should have access to one as part of your institution, please write to support@computecanada.ca so that we can configure it.
+
+        Nous n'avons pas trouve de licence utilisable pour COMSOL. Si vous avez acces a une licence de COMSOL, vous pouvez creer le fichier $HOME/.licenses/comsol.lic avec l'information de la licence. Si vous pensez que vous devriez automatiquement avoir acces a une licence via votre institution, veuillez ecrire a support@calculcanada.ca pour que nous puissions la configurer.
+        ]]
+        LmodError(error_message)
+end
+"""
+
+moduleclass = 'phys'
