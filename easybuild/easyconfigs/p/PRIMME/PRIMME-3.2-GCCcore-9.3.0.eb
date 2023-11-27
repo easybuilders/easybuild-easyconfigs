@@ -1,4 +1,4 @@
-easyblock = 'ConfigureMake'
+easyblock = 'MakeCp'
 
 name = 'PRIMME'
 version = '3.2'
@@ -13,63 +13,26 @@ It can find largest, smallest, or interior singular/eigenvalues, and can use pre
 toolchain = {'name': 'GCCcore', 'version': '9.3.0'}
 toolchainopts = {'pic': True}
 
-builddependencies = [
-    ('SciPy-Stack', '2023a'),
-]
-multi_deps = {'Python': ['3.9', '3.10']} #Python extention not compatible with Python 3.11
-
 source_urls = [
     'https://github.com/primme/primme/archive/refs/tags/',
 ]
 sources = ['v%(version)s.tar.gz']
-patches = ['PRIMME-3.2-fix-include-python.patch']
 checksums = [
     '8ff242a356cea465c9728a26cb6e0487712d9ae51050a362de487e3b13a2fe9b', #sources
-    'bd26258eb2e2459f72b40e0e391da7d9cce08c6b3592628564073712310b53ac', #patch
 ]
-
-# No configure
-skipsteps = ['configure']
 
 # Build static and shared libraries
 build_cmd = "make lib && make solib"
 
 # Custom install because target "make install" does not work
-# Note we can't use the "MakeCp" easyblock because we use installopts
-# to install the Python extention
-install_cmd = " && ".join([
-    "cd %(builddir)s/primme-%(version)s",
-    "cp -r lib %(installdir)s/lib",
-    "cp -r include %(installdir)s/include",
-])
-
-# Install the Python extension
-installopts = ' && '.join([
-    "",
-    "cd %(builddir)s/primme-%(version)s/Python",
-    "mkdir -p %(installdir)s/lib/python%(pyshortver)s/site-packages",
-    "python setup.py build_ext --inplace",
-    "pip install --prefix=%(installdir)s .",
-])
+files_to_copy = [
+  (["lib/*"], 'lib'),
+  (["include/*"], 'include')
+]
 
 sanity_check_paths = {
     'files': ['lib/libprimme.so', 'lib/libprimme.a'],
-    'dirs': [
-	'lib/python%(pyshortver)s/site-packages',
-	'include',
-    ]
+    'dirs': ['include']
 }
-
-sanity_check_commands = [
-    ('module load scipy-stack/2023a && python %(builddir)s/primme-%(version)s/Python/examples.py'),
-]
-
-modextrapaths = {'EBPYTHONPREFIXES': ''}
-
-modluafooter = """
-if convertToCanonical(LmodVersion()) >= convertToCanonical("8.2.9") then
-    extensions("primme/3.1.0")
-end
-"""
 
 moduleclass = 'math'
