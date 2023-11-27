@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'WASP'
+version = '4.0.3'
+
+homepage = 'https://code.ornl.gov/neams-workbench/wasp'
+description = """The Workbench Analysis Sequence Processor (WASP) was developed to streamline lexing, parsing, access, 
+validation, and analysis of ascii text files.
+"""
+
+toolchain = SYSTEM
+
+source_urls = [GITHUB_SOURCE]
+sources = [{
+    'filename': '%(name)s-%(version)s.tar.gz',
+    'git_config': {
+        'url': 'https://code.ornl.gov/neams-workbench',
+        'repo_name': '%(namelower)s',
+	'tag': '%(version)s',
+	'recursive': True
+    },
+}]
+checksums = ['c7456af36acf46ad6f41fc406cd31dfd6e7fc156011cf543814690ff87dfc5cf']
+
+builddependencies = [('CMake', '3.27.7')]
+
+separate_build_dir = True
+
+# Third party modules
+configopts = "-Dwasp_ENABLE_ALL_PACKAGES=ON "
+configopts += "-Dwasp_ENABLE_TESTS=ON "
+configopts += "-Dwasp_ENABLE_INSTALL_CMAKE_CONFIG_FILES=ON "
+configopts += "-DBUILD_SHARED_LIBS=ON "
+
+local_binaries = ["ddilist", "ddiselect", "ddivalid", "ddivalidjson", "ddixml", "docprint", "eddilist", "eddiselect", 
+		  "eddivalid", "eddivalidjson", "eddixml", "exprlist", "halite", "halitelist", "hitlist", "hitselect", 
+		  "hitvalid", "hitvalidjson", "hitxml", "jsonlist", "jsonselect", "jsonvalid", "jsonxml", "sonjson", 
+		  "sonlist", "sonschemaskel", "sonselect", "sonserver", "sonvalid", "sonvalidjson", "sonvalidxml", 
+		  "sonxml", "substitute"]
+local_libs = ["waspcore", "waspdakota", "waspddi", "waspeddi", "waspexpr", "wasphalite", "wasphit", "wasphive", 
+	      "waspjson", "wasplsp", "waspsiren", "waspson"]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binaries] + 
+             ['lib/lib%s.%s' % (x, ext) for x in local_libs for ext in ['so']] +
+	     ['wasppy/wasp2py.py'],
+    'dirs': ['include/%s' % x for x in local_libs] + ['wasppy'],
+}
+
+sanity_check_commands = []
+
+moduleclass = 'tools'

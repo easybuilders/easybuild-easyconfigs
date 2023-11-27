@@ -1,0 +1,145 @@
+diff --git a/kernel/x86_64/casum.c b/kernel/x86_64/casum.c
+index 60feec0ce..28d78d279 100644
+--- a/kernel/x86_64/casum.c
++++ b/kernel/x86_64/casum.c
+@@ -4,17 +4,17 @@
+ #define ABS_K(a) ((a) > 0 ? (a) : (-(a)))
+ #endif
+ 
+-#if defined(SKYLAKEX)
++#if defined(SKYLAKEX) || defined(COOPERLAKE) || defined(SAPPHIRERAPIDS)
+ #include "casum_microk_skylakex-2.c"
+ #endif
+ 
+ #ifndef HAVE_CASUM_KERNEL
+-static FLOAT casum_kernel(BLASLONG n, FLOAT *x1)
++static FLOAT casum_kernel(BLASLONG n, FLOAT *x)
+ {
+ 
+     BLASLONG i=0;
+     BLASLONG n_8 = n & -8;
+-    FLOAT *x = x1;
++    FLOAT *x1 = x;
+     FLOAT temp0, temp1, temp2, temp3;
+     FLOAT temp4, temp5, temp6, temp7;
+     FLOAT sum0 = 0.0;
+@@ -24,14 +24,14 @@ static FLOAT casum_kernel(BLASLONG n, FLOAT *x1)
+     FLOAT sum4 = 0.0;
+     
+     while (i < n_8) {
+-        temp0 = ABS_K(x[0]);
+-        temp1 = ABS_K(x[1]);
+-        temp2 = ABS_K(x[2]);
+-        temp3 = ABS_K(x[3]);
+-        temp4 = ABS_K(x[4]);
+-        temp5 = ABS_K(x[5]);
+-        temp6 = ABS_K(x[6]);
+-        temp7 = ABS_K(x[7]);
++        temp0 = ABS_K(x1[0]);
++        temp1 = ABS_K(x1[1]);
++        temp2 = ABS_K(x1[2]);
++        temp3 = ABS_K(x1[3]);
++        temp4 = ABS_K(x1[4]);
++        temp5 = ABS_K(x1[5]);
++        temp6 = ABS_K(x1[6]);
++        temp7 = ABS_K(x1[7]);
+         
+         sum0 += temp0;
+         sum1 += temp1;
+@@ -43,12 +43,12 @@ static FLOAT casum_kernel(BLASLONG n, FLOAT *x1)
+         sum2 += temp6;
+         sum3 += temp7;
+         
+-        x+=8;
++        x1+=8;
+         i+=4;
+     }
+ 
+      while (i < n) {
+-        sum4 += (ABS_K(x1[0]) + ABS_K(x1[1]));
++        sum4 += ABS_K(x1[0]) + ABS_K(x1[1]);
+         x1 += 2;
+         i++;
+      }
+diff --git a/kernel/x86_64/casum_microk_skylakex-2.c b/kernel/x86_64/casum_microk_skylakex-2.c
+index d261962de..10b70ff20 100644
+--- a/kernel/x86_64/casum_microk_skylakex-2.c
++++ b/kernel/x86_64/casum_microk_skylakex-2.c
+@@ -2,9 +2,9 @@
+ #ifdef __NVCOMPILER
+ #define NVCOMPVERS ( __NVCOMPILER_MAJOR__ * 100 + __NVCOMPILER_MINOR__ )
+ #endif
+-#if ((( defined(__GNUC__)  && __GNUC__   > 6 && defined(__AVX512CD__)) || (defined(__clang__) && (__clang_major__ >= 9 &&__clang_major__ !=17)) || ( defined(__NVCOMPILER) && NVCOMPVERS >= 2309)))
++#if ((( defined(__GNUC__)  && __GNUC__   > 6 && defined(__AVX512CD__)) || (defined(__clang__) && __clang_major__ >= 9)) || (defined(__NVCOMPILER) && NVCOMPVERS >= 2203))
+ 
+-#if (!(defined(__NVCOMPILER) && NVCOMPVERS < 2309))
++#if (!(defined(__NVCOMPILER) && NVCOMPVERS < 2203))
+ 
+ #define HAVE_CASUM_KERNEL 1
+ 
+@@ -20,15 +20,14 @@ static FLOAT casum_kernel(BLASLONG n, FLOAT *x)
+     
+     if (n2 < 64) {
+         __m128 accum_10, accum_11, accum_12, accum_13;
+-        __m128 abs_mask1 = abs_mask1;
++        __m128 abs_mask1;
+ 
+         accum_10 = _mm_setzero_ps();
+         accum_11 = _mm_setzero_ps();
+         accum_12 = _mm_setzero_ps();
+         accum_13 = _mm_setzero_ps();
+         
+-        abs_mask1 = (__m128)_mm_cmpeq_epi8((__m128i) abs_mask1, (__m128i) abs_mask1);
+-        abs_mask1 = (__m128)_mm_srli_epi32((__m128i) abs_mask1, 1);
++        abs_mask1 = (__m128)_mm_set1_epi32(0x7fffffff);
+                 
+         _mm_prefetch(&x1[0], _MM_HINT_T0);
+         
+diff --git a/kernel/x86_64/zasum.c b/kernel/x86_64/zasum.c
+index 80e95a2c8..3f17ab1cf 100644
+--- a/kernel/x86_64/zasum.c
++++ b/kernel/x86_64/zasum.c
+@@ -4,7 +4,7 @@
+ #define ABS_K(a) ((a) > 0 ? (a) : (-(a)))
+ #endif
+ 
+-#if defined(SKYLAKEX)
++#if defined(SKYLAKEX) || defined(COOPERLAKE) || defined(SAPPHIRERAPIDS)
+ #include "zasum_microk_skylakex-2.c"
+ #endif
+ 
+diff --git a/kernel/x86_64/zasum_microk_skylakex-2.c b/kernel/x86_64/zasum_microk_skylakex-2.c
+index dddf03fe2..f6bc8e37b 100644
+--- a/kernel/x86_64/zasum_microk_skylakex-2.c
++++ b/kernel/x86_64/zasum_microk_skylakex-2.c
+@@ -2,9 +2,9 @@
+ #ifdef __NVCOMPILER
+ #define NVCOMPVERS ( __NVCOMPILER_MAJOR__ * 100 + __NVCOMPILER_MINOR__ )
+ #endif
+-#if ((( defined(__GNUC__)  && __GNUC__   > 6 && defined(__AVX512CD__)) || (defined(__clang__) && ( __clang_major__ >= 9 && __clang_major__ != 17)) || (defined(__NVCOMPILER) && NVCOMPVERS >= 2309)))
++#if ((( defined(__GNUC__)  && __GNUC__   > 6 && defined(__AVX512CD__)) || (defined(__clang__) && __clang_major__ >= 9)) || (defined(__NVCOMPILER) && NVCOMPVERS >= 2203))
+ 
+-#if (!(defined(__NVCOMPILER) && NVCOMPVERS < 2309))
++#if (!(defined(__NVCOMPILER) && NVCOMPVERS < 2203))
+ 
+ #define HAVE_ZASUM_KERNEL 1
+ 
+@@ -21,16 +21,14 @@ static FLOAT zasum_kernel(BLASLONG n, FLOAT *x)
+ 
+     if (n2 < 32) {
+         __m128d accum_10, accum_11, accum_12, accum_13;
+-        __m128d abs_mask1 = abs_mask1;
++        __m128d abs_mask1;
+ 
+         accum_10 = _mm_setzero_pd();
+         accum_11 = _mm_setzero_pd();
+         accum_12 = _mm_setzero_pd();
+         accum_13 = _mm_setzero_pd();
+         
+-        // abs_mask1 = (__m128d)_mm_set1_epi64x(0x7fffffffffffffff);
+-        abs_mask1 = (__m128d)_mm_cmpeq_epi8((__m128i) abs_mask1, (__m128i) abs_mask1);
+-        abs_mask1 = (__m128d)_mm_srli_epi64((__m128i) abs_mask1, 1);
++        abs_mask1 = (__m128d)_mm_set1_epi64x(0x7fffffffffffffff);
+                 
+         _mm_prefetch(&x1[0], _MM_HINT_T0);
+         if (n2 >= 16){

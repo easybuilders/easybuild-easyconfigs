@@ -1,0 +1,76 @@
+name = 'Geant4'
+version = '10.7.3'
+modaltsoftname = '%(namelower)s-topasmc3.9'
+
+
+homepage = 'http://geant4.cern.ch/'
+description = """Geant4 is a toolkit for the simulation of the passage of particles through matter.
+ Its areas of application include high energy, nuclear and accelerator physics, 
+ as well as studies in medical and space science."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+toolchainopts = {'pic': True, 'openmp': True}
+
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ}]
+patches = ['geant4_10_07_p03.patch']
+checksums = [
+    {'geant4-10.7.3.tar.gz': '8ee2892529d16f60cc5f08d984ab13fb74e1566ae85a3f7e86a94ab474e93568'},
+    {'geant4_10_07_p03.patch': '38e9191f9b6d0b51041a3fc999455b4bbadc80e89a3e71063e4c01bcb064ebcb'},
+]
+
+#sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCELOWER_TAR_GZ, 'filename': '%(namelower)s-v%(version)s.tar.gz'}]
+github_account = '%(name)s'
+
+dependencies = [
+    ('expat', '2.2.9', '', True),
+    ('CLHEP', '2.4.4.0'),
+    ('Qt5', '5.12.8'),
+    ('GDCM', '2.6.8'),
+    ('Geant4-data', '10.7.3'),
+]
+
+
+builddependencies = [('CMake', '3.18.4')]
+
+# from topas-3.9-src
+#-DGEANT4_INSTALL_DATA=OFF 
+#-DGEANT4_BUILD_MULTITHREADED=ON 
+#-DCMAKE_BUILD_TYPE=Release 
+#-DGEANT4_USE_OPENGL_X11=ON 
+#-DGEANT4_USE_RAYTRACER_X11=ON 
+#-DCMAKE_INSTALL_PREFIX=~/geant4.10.07.p03-install 
+#-DGEANT4_USE_QT=ON
+
+
+configopts  = '-DGEANT4_INSTALL_DATA:BOOL=OFF -DGEANT4_INSTALL_EXAMPLES:BOOL=OFF '
+configopts += '-DGEANT4_BUILD_MULTITHREADED=ON '
+configopts += '-DBUILD_STATIC_LIBS:BOOL=ON '
+configopts += '-DGEANT4_USE_GDML:BOOL=ON '
+# configopts += '-DGEANT4_FORCE_QT4:BOOL=ON '
+configopts += '-DQT_QMAKE_EXECUTABLE=$EBROOTQT/bin/qmake '
+configopts += '-DEXPAT_LIBRARY=$EBROOTGENTOO/lib/libexpat.so '
+configopts += '-DEXPAT_INCLUDE_DIR=$EBROOTGENTOO/include '
+configopts += '-DCLHEP_DIR=$EBROOTCLHEP/lib/%(name)s-%(version)s/ '
+configopts += '-DGEANT4_BUILD_STORE_TRAJECTORY:BOOL=ON '
+configopts += '-DGEANT4_BUILD_TESTS:BOOL=ON '
+
+configopts += '-DGEANT4_USE_OPENGL_X11:BOOL=ON '
+configopts += '-DGEANT4_USE_RAYTRACER_X11:BOOL=ON '
+configopts += '-DGEANT4_USE_QT:BOOL=ON '
+configopts += 'DCMAKE_BUILT_TYPE=Release'
+
+parallel = 16
+
+modextravars = {
+# this is needed for the auto var removal on unload, value isn't important
+    'TOPAS_G4_DATA_DIR': "$EBROOTGEANT4MINDATA",
+}
+
+modluafooter = """
+conflict("geant4")
+conflict("geant4-topasmc*")
+setenv("TOPAS_G4_DATA_DIR", "" .. os.getenv("EBROOTGEANT4MINDATA"))
+"""
+
+moduleclass = 'phys'
