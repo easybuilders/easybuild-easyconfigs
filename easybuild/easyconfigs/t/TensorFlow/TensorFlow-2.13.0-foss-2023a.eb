@@ -80,7 +80,9 @@ exts_list = [
     }),
     ('grpcio', '1.57.0', {
         'modulename': 'grpc',
-        'preinstallopts': "GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s " +
+        # patch hardcoded /usr paths to prefix them with alternate sysroot path (if defined)
+        'preinstallopts': "sed -i 's@/usr@%(sysroot)s/usr@g' setup.py && " +
+                          "GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s " +
                           # Required to avoid building with non-default C++ standard but keep other flags,
                           # see https://github.com/grpc/grpc/issues/34256
                           "GRPC_PYTHON_CFLAGS='-fvisibility=hidden -fno-wrapv -fno-exceptions' " +

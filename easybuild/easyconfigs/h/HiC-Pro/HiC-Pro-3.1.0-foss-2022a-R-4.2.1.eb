@@ -1,0 +1,59 @@
+easyblock = 'MakeCp'
+
+name = 'HiC-Pro'
+version = '3.1.0'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://nservant.github.io/HiC-Pro'
+description = """HiC-Pro was designed to process Hi-C data, from raw fastq files (paired-end Illumina data) 
+ to the normalized contact maps."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/nservant/HiC-Pro/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['25a88d89813e8e9653f59ca0bd6eaad8b0c8dbb5e578e233f2b3db7b04256f2f']
+
+dependencies = [
+    ('R', '4.2.1'),
+    ('Bowtie2', '2.4.5'),
+    ('Pysam', '0.19.1'),
+    ('SAMtools', '1.16.1'),
+    ('bx-python', '0.9.0'),
+    ('iced', '0.5.10'),
+]
+
+# there's no configure script, "configure" is a Makefile target
+skipsteps = ['configure']
+
+# "configure" target only takes prefix as argument, the rest is read from config-install.txt
+prebuildopts = 'sed -i "s|BOWTIE2_PATH = |BOWTIE2_PATH = $EBROOTBOWTIE2|" config-install.txt && '
+prebuildopts += 'sed -i "s|SAMTOOLS_PATH = |SAMTOOLS_PATH = $EBROOTSAMTOOLS|" config-install.txt && '
+prebuildopts += 'sed -i "s|R_PATH = |R_PATH = $EBROOTR|" config-install.txt && '
+prebuildopts += 'sed -i "s|PYTHON_PATH = |PYTHON_PATH = $EBROOTPYTHON|" config-install.txt && '
+
+# configure
+prebuildopts += 'make configure prefix=%(installdir)s && '
+
+# install
+files_to_copy = [
+    'annotation',
+    'doc',
+    'scripts',
+    (['bin/utils', 'bin/HiC-Pro'], 'bin'),
+    'config-system.txt',
+]
+
+modextrapaths = {
+    'PATH': ['bin/utils', 'scripts'],
+    'SCRIPTS': ['scripts']
+}
+
+sanity_check_paths = {
+    'files': ['config-system.txt', 'scripts/build_matrix', 'scripts/cutsite_trimming', 'bin/HiC-Pro'],
+    'dirs': ['annotation', 'bin/utils', 'doc'],
+}
+
+sanity_check_commands = ["HiC-Pro --help"]
+
+moduleclass = 'bio'
