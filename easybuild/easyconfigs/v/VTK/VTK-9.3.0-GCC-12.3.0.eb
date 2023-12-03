@@ -1,0 +1,77 @@
+easyblock = 'CMakeMake'
+
+name = 'VTK'
+version = '9.3.0'
+
+homepage = 'http://www.vtk.org'
+description = """The Visualization Toolkit (VTK) is an open-source, freely available software system for
+ 3D computer graphics, image processing and visualization. VTK consists of a C++ class library and several
+ interpreted interface layers including Tcl/Tk, Java, and Python. VTK supports a wide variety of visualization
+ algorithms including: scalar, vector, tensor, texture, and volumetric methods; and advanced modeling techniques
+ such as: implicit modeling, polygon reduction, mesh smoothing, cutting, contouring, and Delaunay triangulation."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+source_urls = ['https://www.vtk.org/files/release/%(version_major_minor)s']
+sources = [
+    SOURCE_TAR_GZ,
+    '%(name)sData-%(version)s.tar.gz',
+]
+patches = [('vtk-version.egg-info', '.')]
+checksums = [
+    {'VTK-9.3.0.tar.gz': 'fdc7b9295225b34e4fdddc49cd06e66e94260cb00efee456e0f66568c9681be9'},
+    {'VTKData-9.3.0.tar.gz': 'f82142dd327e995c9536c1003e1370bb4092c96f23edb8119d16d2411ef35dc3'},
+    {'vtk-version.egg-info': '787b82415ae7a4a1f815b4db0e25f7abc809a05fc85d7d219627f3a7e5d3867b'},
+]
+
+multi_deps = { 'Python': ['3.10', '3.11'] }
+
+multi_deps_load_default = False
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+builddependencies = [('CMake', '3.23.1')]
+
+dependencies = [
+    ('SciPy-Stack', '2023b'),
+    ('HDF5', '1.14.2'),
+    ('netCDF', '4.9.2'),
+]
+
+separate_build_dir = True
+
+configopts = ' '.join([
+    # Third party modules
+    "-DVTK_USE_SYSTEM_LZMA=ON",
+    "-DVTK_USE_SYSTEM_HDF5=ON",
+    "-DVTK_USE_SYSTEM_NETCDF=ON",
+    # Python
+    "-DVTK_WRAP_PYTHON=ON",
+    "-DVTK_PYTHON_VERSION=3",
+    "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s",
+    "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)s.%s" % SHLIB_EXT,
+    "-DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python",
+    # Other
+    "-DCMAKE_INSTALL_LIBDIR=lib",
+])
+
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+local_egg_info_src = '%(builddir)s/VTK-%(version)s/vtk-version.egg-info'
+
+postinstallcmds = [
+    '/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib --add_path %(installdir)s/lib --any_interpreter',
+] + [
+    'sed "s/#VTK_VERSION#/%(version)s/" %(builddir)s/VTK-%(version)s/vtk-version.egg-info > %(installdir)s/lib/python{}/site-packages/vtk-%(version)s.egg-info'.format(x) for x in multi_deps['Python'] 
+]
+
+sanity_check_paths = {
+    'files': ['bin/vtk%s-%%(version_major_minor)s' % x for x in
+              ['WrapJava', 'ParseJava', 'WrapPythonInit', 'WrapPython', 'WrapHierarchy']] +
+             ['bin/vtkpython'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/', 'include/vtk-%(version_major_minor)s'],
+}
+
+sanity_check_commands = [('python', "-c 'import %(namelower)s'")]
+
+moduleclass = 'vis'
