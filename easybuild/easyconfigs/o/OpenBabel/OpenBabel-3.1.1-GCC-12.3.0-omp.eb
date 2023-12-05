@@ -1,0 +1,93 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2023 University of Luxembourg / LCSB, Cyprus Institute / CaSToRC,
+#                                 Ghent University / The Francis Crick Institute
+# License::   MIT/GPL
+
+name = 'OpenBabel'
+version = '3.1.1'
+
+modaltsoftname = 'openbabel-omp'
+versionsuffix = '-omp'
+
+homepage = 'https://openbabel.org'
+description = """Open Babel is a chemical toolbox designed to speak the many
+ languages of chemical data. It's an open, collaborative project allowing anyone
+ to search, convert, analyze, or store data from molecular modeling, chemistry,
+ solid-state materials, biochemistry, or related areas."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+# avoid failing tests on skylake and broadwell CPUs.
+# remove option 'optarch' when building on CPUs that don't support AVX2
+# see also: https://github.com/openbabel/openbabel/issues/2138
+toolchainopts = {'pic': True, 'optarch': 'mavx2'}
+
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%%(namelower)s-%s.tar.gz' % version.replace('.', '-')]
+patches = [
+    # Fix test failure with Python 3
+    # Ref: https://github.com/openbabel/openbabel/commit/7de27f309db5f7ec026ef5c5235e5b33bf7d1a85.patch
+    'OpenBabel-3.1.1_fix-distgeom-test.patch',
+    # Ref: https://github.com/openbabel/openbabel/commit/c0570bfeb2d7e0a6a6de1f257cf28e7f3cac8739.patch
+    'OpenBabel-3.1.1_fix-time-check-typo.patch',
+]
+checksums = [
+    'c97023ac6300d26176c97d4ef39957f06e68848d64f1a04b0b284ccff2744f02',  # openbabel-3-1-1.tar.gz
+    '8d7687eb49142bb5ba2997cf90805b42480f313515c44b3912a9f826aaf4fbcd',  # OpenBabel-3.1.1_fix-distgeom-test.patch
+    '70e16fe1ae60806ef1a022e6b768e9ebd0b1d832d052d4ceea30cbb76354ca7c',  # OpenBabel-3.1.1_fix-time-check-typo.patch
+]
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('SWIG', '4.1.1'),
+]
+dependencies = [
+    ('zlib', '1.2.11'),		  # in GENTOO
+    ('libxml2', '2.9.10'),	  # in GENTOO
+    ('Eigen', '3.4.0', '', True),
+    ('RapidJSON', '1.1.0'),
+    ('cairo', '1.16.0'),          # optional: for .png output; in GENTOO
+    ('Boost', '1.82.0', '',  ('GCC', '12.3.0')),  # optional: for Maestro formats
+    ('maeparser', '1.2.4'),       # avoid auto-download
+    ('CoordgenLibs', '1.4.2'),    # avoid auto-download
+]
+
+with_python_bindings = False
+
+multi_deps = {'Python': ['3.10', '3.11']}
+
+multi_deps_extensions_only = True
+exts_defaultclass = 'PythonPackage'
+exts_filter = ("python -c 'import %(ext_name)s'", '')
+
+exts_list = [
+    ('openbabel', '3.1.1.1', {
+#    	'prebuildopts': 'PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH ',
+	'buildcmd':  'build_ext',
+	'buildopts': ' -I%(installdir)s/include/openbabel3 -L%(installdir)s/lib ',
+        'source_tmpl': '%(name)s-%(version)s.tar.gz',
+        'source_urls': ['https://pypi.python.org/packages/source/o/openbabel/'],
+        'checksums': ['bb7f8cad15f3a208f4869d7943cbb14eb7125372eba397588f207f8d19e78373'],
+    }),
+]
+
+modextrapaths = {'EBPYTHONPREFIXES': ['']}
+
+configopts = '-DBoost_INCLUDE_DIR=$EBROOTBOOSTSERIAL/include -DBoost_LIBRARY_DIR_RELEASE=$EBROOTBOOSTSERIAL/lib '
+
+# Enable support for OpenMP compilation of forcefield code (optional)
+configopts += '-DENABLE_OPENMP=ON '
+
+# OpenBabel-3.1.1 creates directories named 3.1.0, which leads to BABEL_LIBDIR and BABEL_DATDIR
+# (set in the easyblock) having invalid values.  Work around this with some symlinks.
+postinstallcmds = [
+    'ln -s %(installdir)s/lib/openbabel/3.1.0 %(installdir)s/lib/openbabel/%(version)s',
+    'ln -s %(installdir)s/share/openbabel/3.1.0 %(installdir)s/share/openbabel/%(version)s',
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/openbabel --any_interpreter --add_path %(installdir)s/lib:%(installdir)s/lib64",
+]
+
+#pretestopts = 'cp lib/_openbabel.%s %%(builddir)s/openbabel-*/scripts/python/openbabel/ && ' % SHLIB_EXT
+#runtest = 'test'
+
+moduleclass = 'chem'

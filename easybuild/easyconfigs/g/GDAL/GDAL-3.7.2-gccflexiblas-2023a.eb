@@ -90,15 +90,21 @@ _base_configopts = ' '.join([
 # iterative build for both static and shared libraries
 configopts = [' '.join([_base_configopts, x]) for x in 2*['-DBUILD_SHARED_LIBS=OFF'] + 2*['']]
 
-#postinstallcmds = [
-#    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib"
-#]
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s --add_path %(installdir)s/lib64"
+]
 
 modextrapaths = {'EBPYTHONPREFIXES': '' }
+modluafooter = '''
+  extensions("osgeo/%(version)s")
+  whatis("Extensions: osgeo-%(version)s")
+'''
 
 sanity_check_paths = {
     'files': ['lib/libgdal.a', 'lib/libgdal.%s' % SHLIB_EXT],
     'dirs': ['bin', 'include', 'lib/python%(pyshortver)s/site-packages']
 }
+
+sanity_check_commands = ["python%(pyshortver)s -c 'import osgeo.gdal'"]
 
 moduleclass = 'data'

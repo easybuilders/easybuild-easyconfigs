@@ -1,0 +1,27 @@
+easyblock = 'Bundle'
+
+name = 'ipython-kernel'
+version = '3.10'
+
+homepage = 'https://ipython.org/'
+
+description = """IPython kernelspec for Python %(version)s"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+dependencies = [('Python', '%(version)s'), ('ipykernel', '2023b')]
+
+# this is a bundle of Python packages
+exts_defaultclass = 'PythonPackage'
+
+postinstallcmds = [
+    'python -m ipykernel install --name "python%(version_major)s" --prefix=%(installdir)s --display-name "Python %(version_major_minor)s"',
+]
+
+modextrapaths = {'JUPYTER_PATH': ['share/jupyter']}
+modluafooter = """
+-- in a Jupyter environment, this module should be sticky
+require("os")
+if os.getenv("JUPYTERHUB_API_TOKEN") then
+	add_property(   "lmod", "sticky")
+end
+"""
