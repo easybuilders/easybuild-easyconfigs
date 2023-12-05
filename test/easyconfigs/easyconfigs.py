@@ -405,9 +405,9 @@ class EasyConfigTest(TestCase):
                     dep_vars.pop(key)
 
         # Pairs of name, versionsuffix that should be removed from dep_vars if exactly one matching key is found.
-        # The name is checked against 'dep' and can be a list to allow multiple.
+        # The name is checked against 'dep' and can be a list to allow multiple
         # If the versionsuffix is a 2-element tuple, the second element should be set to True
-        # to interpret the first element as the start of the suffix (e.g. to include trailing version numbers).
+        # to interpret the first element as the start of the suffix (e.g. to include trailing version numbers)
         # Otherwise the whole versionsuffix must match for the filter to apply.
         filter_variants = [
             # filter out binutils with empty versionsuffix which is used to build toolchain compiler
@@ -428,6 +428,10 @@ class EasyConfigTest(TestCase):
             ('ScaLAPACK', '-bl'),
             # filter out ELSI variants with -PEXSI suffix
             ('ELSI', '-PEXSI'),
+            # For Z3 the EC including Python bindings has a matching versionsuffix
+            # filter out one per Python version
+            ('Z3', ('-Python-2', True)),
+            ('Z3', ('-Python-3', True)),
         ]
         for dep_name, version_suffix in filter_variants:
             # always retain at least one dep variant
