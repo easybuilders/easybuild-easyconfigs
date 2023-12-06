@@ -1,0 +1,63 @@
+# Contribution from the NIHR Biomedical Research Centre
+# Guy's and St Thomas' NHS Foundation Trust and King's College London
+# uploaded by J. Sassmannshausen
+
+easyblock = 'ConfigureMake'
+
+name = 'MEME'
+version = '5.5.4'
+
+homepage = 'https://meme-suite.org/meme/index.html'
+description = """The MEME Suite allows you to: * discover motifs using MEME, DREME (DNA only) or
+ GLAM2 on groups of related DNA or protein sequences, * search sequence databases with motifs using
+ MAST, FIMO, MCAST or GLAM2SCAN, * compare a motif to all motifs in a database of motifs, * associate
+ motifs with Gene Ontology terms via their putative target genes, and * analyse motif enrichment
+ using SpaMo or CentriMo."""
+
+toolchain = {'name': 'gompi', 'version': '2022b'}
+
+source_urls = ['https://%(namelower)s-suite.org/%(namelower)s/%(namelower)s-software/%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['cda6011c2b855bf2563c4e7a2c255e11e99b5b6e5e73736ff008942507580153']
+
+dependencies = [
+    ('libxml2', '2.10.3'),
+    ('libxslt', '1.1.37'),
+    ('zlib', '1.2.12'),
+    ('Perl', '5.36.0'),
+    ('Python', '3.10.8'),
+    ('Ghostscript', '10.0.0'),
+    ('XML-Compile', '1.63'),
+]
+
+configopts = '--with-perl=${EBROOTPERL}/bin/perl --with-python=${EBROOTPYTHON}/bin/python '
+configopts += '--with-gs=${EBROOTGHOSTSCRIPT}/bin/gs '
+# config.log should indicate that all required/optional dependencies were found (see scripts/dependencies.pl)
+configopts += " && grep 'All required and optional Perl modules were found' config.log"
+
+pretestopts = "OMPI_MCA_rmaps_base_oversubscribe=1 "
+# test xstreme4 fails on Ubuntu 20.04, see: https://groups.google.com/g/meme-suite/c/GlfpGwApz1Y
+runtest = 'test'
+
+fix_perl_shebang_for = ['bin/*', 'libexec/meme-%(version)s/*']
+fix_python_shebang_for = ['bin/*', 'libexec/meme-%(version)s/*']
+
+sanity_check_paths = {
+    'files': ['bin/meme', 'bin/dreme', 'bin/meme-chip', 'libexec/meme-%(version)s/meme2meme'],
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = [
+    "mpirun meme -h 2>&1 | grep 'Usage:'",
+    "meme2meme --help",
+    "perl -e 'require MemeSAX'",
+    "python -c 'import sequence_py3'",
+]
+
+modextrapaths = {
+    'PATH': ['libexec/meme-%(version)s'],
+    'PERL5LIB': ['lib/meme-%(version)s/perl'],
+    'PYTHONPATH': ['lib/meme-%(version)s/python'],
+}
+
+moduleclass = 'bio'
