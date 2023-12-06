@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'Multiwfn'
+version = '3.8_dev'
+
+homepage = 'http://sobereva.com/multiwfn/'
+description = """Multiwfn is an extremely powerful program for realizingi
+ electronic wavefunction analysis, which is a key ingredient of quantum
+ chemistry. Multiwfn is free, open-source, high-efficient, very user-friendly
+ and flexible, it supports almost all of the most important wavefunction
+ analysis methods."""
+
+toolchain = {'name': 'intel-compilers', 'version': '2022.1.0'}
+
+source_urls = [
+    'http://sobereva.com/multiwfn/misc/',
+    'http://sobereva.com/multiwfn/old/%(version)s/',
+]
+sources = ['%(name)s_%(version)s_src_Linux.zip']
+checksums = ['3ac0e898253eafa72655b703808e03007f3689e1c5dd0aa81cbb63e507268df9']
+
+dependencies = [
+    ('imkl', '2022.1.0', '', SYSTEM),
+]
+
+# grep appareantly works slightly different on RHEL7 and RHEL8
+# see: https://github.com/easybuilders/easybuild-easyconfigs/issues/11394
+prebuildopts = "sed -i 's/^grep/LC_ALL=C grep/g' noGUI.sh && "
+# Make sure the noGUI.sh script runs in bash.
+prebuildopts += '/bin/bash noGUI.sh && cd noGUI && '
+
+files_to_copy = [(['noGUI/Multiwfn'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/Multiwfn'],
+    'dirs': [],
+}
+
+moduleclass = 'chem'
