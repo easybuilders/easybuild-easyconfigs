@@ -1,0 +1,46 @@
+name = 'ESMF'
+version = '8.6.0'
+
+homepage = 'https://www.earthsystemcog.org/projects/esmf/'
+description = """The Earth System Modeling Framework (ESMF) is a suite of software tools for developing
+ high-performance, multi-component Earth science modeling applications."""
+
+toolchain = {'name': 'gofb', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'openmp': True, 'cstd': 'c++11', 'pic': True}
+
+source_urls = ['https://github.com/esmf-org/esmf/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = [
+	'ESMF-6.1.1_libopts.patch',
+]
+
+builddependencies = [
+    ('CMake', '3.27.7')
+]
+
+dependencies = [
+    ('netCDF', '4.9.2'),
+    ('netCDF-Fortran', '4.6.1'),
+    ('netCDF-C++4', '4.3.1'),
+]
+multi_deps = {'Python': ['3.10', '3.11']}
+
+buildopts = ' '.join([
+    'ESMF_NETCDF_INCLUDE=$EBROOTNETCDFMINFORTRAN/include',
+    'ESMF_NETCDF_LIBS="$(nc-config --libs) $(nf-config --flibs) $(ncxx4-config --libs)"',
+])
+
+modextrapaths = {'EBPYTHONPREFIXES': ''}
+
+# too parallel causes the build to become really slow
+maxparallel = 8
+
+# Depends on any numpy at runtime.
+modluafooter = """
+depends_on("scipy-stack")
+
+extensions("esmpy/%(version)s")
+whatis("Extensions: esmpy-%(version)s")
+"""
+
+moduleclass = 'geo'
