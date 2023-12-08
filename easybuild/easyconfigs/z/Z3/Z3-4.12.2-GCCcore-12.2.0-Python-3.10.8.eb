@@ -1,0 +1,53 @@
+easyblock = 'PythonBundle'
+
+name = 'Z3'
+version = '4.12.2'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/Z3Prover/z3'
+description = """Z3 is a theorem prover from Microsoft Research with support for bitvectors,
+booleans, arrays, floating point numbers, strings, and other data types. This
+module includes z3-solver, the Python interface of Z3.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('binutils', '2.39'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('GMP', '6.2.1'),
+]
+
+use_pip = True
+
+_fix_parallelism = """sed -i 's/str(multiprocessing.cpu_count())/"%(parallel)s"/' setup.py &&"""
+_enable_gmp = """sed -i "s/Z3_USE_LIB_GMP.*/Z3_USE_LIB_GMP' : True,/" setup.py &&"""
+
+exts_list = [
+    ('z3-solver', version + '.0', {
+        'modulename': 'z3',
+        'checksums': ['65ab47a0a8ef0bfb80db0670775beb11b32c3c0ae4b35943e44121f4af7ef411'],
+        'preinstallopts': _fix_parallelism + _enable_gmp,
+    }),
+]
+
+# make Z3 headers and libraries accessible in their usual location
+local_z3_site_path = "lib/python%(pyshortver)s/site-packages/%(namelower)s"
+local_libz3 = 'libz3.' + SHLIB_EXT
+postinstallcmds = [
+    "ln -s %s/include '%%(installdir)s/include'" % local_z3_site_path,
+    "ln -s ../%s/lib/%s '%%(installdir)s/lib/%s'" % (local_z3_site_path, local_libz3, local_libz3)
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/z3', 'include/z3_api.h', 'lib/libz3.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'tools'
