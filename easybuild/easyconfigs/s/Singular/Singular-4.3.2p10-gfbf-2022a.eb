@@ -1,0 +1,47 @@
+easyblock = 'ConfigureMake'
+
+name = 'Singular'
+version = '4.3.2p10'
+
+homepage = 'https://www.singular.uni-kl.de/'
+description = """Singular is a computer algebra system for polynomial computations,
+with special emphasis on commutative and non-commutative algebra, algebraic geometry,
+and singularity theory."""
+
+toolchain = {'name': 'gfbf', 'version': '2022a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/Singular/Singular/archive/refs/tags/']
+sources = ['Release-%s.tar.gz' % version.replace('.', '-')]
+checksums = ['692a09ef87be731f21b792721edd671ee98f1a4048539e628d92f123714279ab']
+
+builddependencies = [
+    ('Autotools', '20220317'),
+    ('Doxygen', '1.9.4'),
+    ('pkgconf', '1.8.0'),
+]
+
+dependencies = [
+    ('libreadline', '8.1.2'),
+    ('GMP', '6.2.1'),
+    ('MPFR', '4.1.0'),
+    ('FLINT', '2.9.0'),
+    ('NTL', '11.5.1'),
+    ('cddlib', '0.94m'),
+    ('4ti2', '1.6.9'),
+]
+
+preconfigopts = "./autogen.sh && "
+configopts = "--with-gmp=$EBROOTGMP --with-flint=$EBROOTFLINT --with-ntl=$EBROOTNTL"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ESingular', 'Singular', 'TSingular', 'libpolys-config', 'libsingular-config']] +
+             ['lib/lib%s.%s' % (l, e) for l in ['Singular', 'factory', 'omalloc', 'polys', 'singular_resources']
+              for e in ['a', SHLIB_EXT]],
+    'dirs': ['include/%s' % h for h in ['factory', 'omalloc', 'resources', 'singular']] +
+            ['libexec/singular', 'share'],
+}
+
+sanity_check_commands = ["Singular --help"]
+
+moduleclass = 'math'
