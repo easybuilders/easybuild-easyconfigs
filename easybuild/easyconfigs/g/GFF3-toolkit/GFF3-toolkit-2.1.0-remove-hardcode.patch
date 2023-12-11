@@ -1,0 +1,88 @@
+This patch removes the hardcoded part of the setup.py that downloads and installs BLAST+
+Author: Orient Kružík (INUITS)
+diff -ruN gff3tool-2.1.0_orig/setup.py gff3tool-2.1.0/setup.py
+--- gff3tool-2.1.0_orig/setup.py	2023-10-22 17:15:12.175583000 +0200
++++ gff3tool-2.1.0/setup.py	2023-10-22 17:20:48.098956000 +0200
+@@ -6,69 +6,12 @@
+ """
+ # Always prefer setuptools over distutils
+ from setuptools import setup, find_packages
+-from distutils.command.build import build
+ # To use a consistent encoding
+ from codecs import open
+-from os import path, remove, mkdir
+-import shutil
+-import tarfile
+-try:
+-	from urllib.request import urlretrieve
+-except ImportError:
+-	from urllib import urlretrieve
+-
+-import platform
+-import sys
+-from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+-
++from os import path
+ 
+ here = path.abspath(path.dirname(__file__))
+ 
+-
+-class bdist_wheel(_bdist_wheel):
+-    def finalize_options(self):
+-        _bdist_wheel.finalize_options(self)
+-        # Mark us as not a pure python package
+-        self.root_is_pure = False
+-
+-class CustomBuildCommand(build):
+-    def run(self):
+-        platform_system = platform.system(
+-        )  # Linux: Linux; Mac:Darwin; Windows: Windows
+-
+-        blast_path = path.join(here, 'gff3tool', 'lib', 'ncbi-blast+')
+-        blast_file = path.join(blast_path, 'blast.tgz')
+-
+-        mkdir(blast_path)
+-
+-        if platform_system == 'Linux':
+-            urlretrieve(
+-                'https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.2.31/ncbi-blast-2.2.31+-x64-linux.tar.gz',
+-                blast_file)
+-        elif platform_system == 'Windows':
+-            urlretrieve(
+-                'https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.2.31/ncbi-blast-2.2.31+-x64-win64.tar.gz',
+-                blast_file)
+-        elif platform_system == 'Darwin':
+-            urlretrieve(
+-                'https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.2.31/ncbi-blast-2.2.31+-universal-macosx.tar.gz',
+-                blast_file)
+-        else:
+-            sys.error(
+-                'GFF3 Toolkit currently only supports linux, windows, and MacOS'
+-            )
+-
+-        tar = tarfile.open(blast_file, 'r:gz')
+-        tar.extractall(blast_path)
+-        tar.close()
+-
+-        extract_path = path.join(blast_path, 'ncbi-blast-2.2.31+')
+-        shutil.move(path.join(extract_path, 'bin'), blast_path)
+-        if path.exists(blast_file):
+-            remove(blast_file)
+-        if path.exists(extract_path):
+-            shutil.rmtree(extract_path)
+-
+ # Get the long description from the README file
+ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+     long_description = f.read()
+@@ -170,11 +113,6 @@
+     #
+     packages=find_packages(exclude=['contrib', 'docs', 'tests']),  # Required
+ 
+-    cmdclass={
+-        'build': CustomBuildCommand,
+-        'bdist_wheel': bdist_wheel
+-    },
+-
+     # This field lists other packages that your project depends on to run.
+     # Any package you put here will be installed by pip when your project is
+     # installed, so they must be valid existing projects.
