@@ -1,0 +1,54 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2022/11
+easyblock = 'CMakePythonPackage'
+
+name = 'faiss'
+version = '1.7.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/facebookresearch/faiss'
+description = """Faiss is a library for efficient similarity search and clustering of dense      
+vectors. It contains algorithms that search in sets of vectors of any size, up  
+to ones that possibly do not fit in RAM. It also contains supporting code for   
+evaluation and parameter tuning. Faiss is written in C++ with complete wrappers 
+for Python/numpy. Some of the most useful algorithms are implemented on the GPU.
+It is developed primarily at Facebook AI Research."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['d49b4afd6a7a5b64f260a236ee9b2efb760edb08c33d5ea5610c2f078a5995ec']
+
+github_account = 'facebookresearch'
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('SWIG', '4.0.2'),
+    ('googletest', '1.11.0'),
+]
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('SciPy-bundle', '2022.05')
+]
+
+_configopts_common = '-DFETCHCONTENT_FULLY_DISCONNECTED=ON'
+_configopts_common += ' -DFAISS_ENABLE_C_API=ON'
+_configopts_common += ' -DCMAKE_CUDA_ARCHITECTURES="%(cuda_cc_cmake)s"'
+_configopts_common += ' -DBUILD_TESTING=ON'
+configopts = [
+    _configopts_common + ' -DBUILD_SHARED_LIBS=ON',
+    _configopts_common + ' -DBUILD_SHARED_LIBS=OFF'  # order important due to libfaiss_python_callbacks.so static link.
+]
+
+build_cmd_targets = ' faiss swigfaiss'
+# remove tests (all) from target preinstall:
+preinstallopts = 'sed -i "s/^preinstall:.*/preinstall: faiss/g" Makefile &&'
+install_cmd = 'make install && '
+install_cmd += 'cd faiss/python && pip install . --prefix=%(installdir)s --ignore-installed --no-deps'
+sanity_check_paths = {
+    'files': ['lib64/libfaiss.%s' % x for x in ['a', SHLIB_EXT]],
+    'dirs': ["lib", 'include']
+}
+
+moduleclass = 'lib'

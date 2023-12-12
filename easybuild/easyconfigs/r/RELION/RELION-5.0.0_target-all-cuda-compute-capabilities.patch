@@ -1,0 +1,57 @@
+diff -ru relion-de83020514bed78ad4c7808bccff7ffb41229cb2/cmake/BuildTypes.cmake relion-de83020514bed78ad4c7808bccff7ffb41229cb2_target-all-cuda-compute-capabilities/cmake/BuildTypes.cmake
+--- relion-de83020514bed78ad4c7808bccff7ffb41229cb2/cmake/BuildTypes.cmake	2023-11-02 10:19:13.000000000 +0100
++++ relion-de83020514bed78ad4c7808bccff7ffb41229cb2_target-all-cuda-compute-capabilities/cmake/BuildTypes.cmake	2023-11-02 16:14:23.045711268 +0100
+@@ -4,8 +4,8 @@
+ # So -D__INTEL_COMPILER just manages to avoid compiling float128-targets (see fftw3.h, for instance).
+ # Add -G to allow cuda-gdb to break inside kernels.
+ if(CUDA)
+-    set(EXTRA_NVCC_FLAGS "-D__INTEL_COMPILER --default-stream per-thread --std=c++11")
+-    set(RELION_NVCC_FLAGS "${CUDARCH} ${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
++    set(EXTRA_NVCC_FLAGS "-D__INTEL_COMPILER --default-stream per-thread")
++    set(RELION_NVCC_FLAGS "${WARN_DBL} ${EXTRA_NVCC_FLAGS}" CACHE STRING "" FORCE)
+ elseif (HIP)
+     if (${HIP_VERSION} VERSION_LESS "5.3" )
+         set(EXTRA_HIPCC_FLAGS "-fgpu-default-stream=legacy -fno-gpu-rdc -munsafe-fp-atomics")
+@@ -246,4 +246,4 @@
+     set(CMAKE_CXX_FLAGS_BENCHMARKING "${CMAKE_CXX_FLAGS_BENCHMARKING} ${RELION_DEFINITIONS_BENCHMARKING}")
+ endif()
+ #--------------------------------------------------------------------
+-# message(STATUS "CMAKE_CXX_FLAGS_BENCHMARKING : ${CMAKE_CXX_FLAGS_BENCHMARKING}")
+\ No newline at end of file
++# message(STATUS "CMAKE_CXX_FLAGS_BENCHMARKING : ${CMAKE_CXX_FLAGS_BENCHMARKING}")
+diff -ru relion-de83020514bed78ad4c7808bccff7ffb41229cb2/CMakeLists.txt relion-de83020514bed78ad4c7808bccff7ffb41229cb2_target-all-cuda-compute-capabilities/CMakeLists.txt
+--- relion-de83020514bed78ad4c7808bccff7ffb41229cb2/CMakeLists.txt	2023-11-02 10:19:13.000000000 +0100
++++ relion-de83020514bed78ad4c7808bccff7ffb41229cb2_target-all-cuda-compute-capabilities/CMakeLists.txt	2023-11-02 16:23:51.059288974 +0100
+@@ -84,13 +84,20 @@
+ 
+ set(CUDA_ARCH "" CACHE STRING "CUDA architecture to use")
+ if (CUDA_ARCH STREQUAL "")
+-	message(STATUS "Setting fallback CUDA_ARCH=50")
+-	set(CUDARCH "-arch=sm_50")
++	message(STATUS "Setting fallback CUDA_ARCH=5.0")
++	set(CUD_ARCH "5.0")
+ else ()
+ 	message(STATUS "Using provided CUDA_ARCH=${CUDA_ARCH}")
+-	set(CUDARCH "-arch=sm_${CUDA_ARCH}")
+ endif ()
+ 
++if(NOT DEFINED DEFAULT_CUDA_ARCH)
++    string(REGEX MATCH "[0-9]+\\.[0-9]+" DEFAULT_CUDA_ARCH "${CUDA_ARCH}")
++    message(STATUS "Setting fallback DEFAULT_CUDA_ARCH=${DEFAULT_CUDA_ARCH}")
++endif()
++
++string(REPLACE "." "" DEFAULT_CUDA_SM ${DEFAULT_CUDA_ARCH})
++set(CUDA_SM "-arch=sm_${DEFAULT_CUDA_SM}")
++
+ # -------------------------------------------------------------------FURTHER OPTIONS--
+ 
+ # CUDA on by default, so check for other GPU/CPU-accelration request and possible conflicting dual-requests
+@@ -203,6 +210,8 @@
+       if(CUDA)
+           add_definitions(-D_CUDA_ENABLED)
+       endif()
++      cuda_select_nvcc_arch_flags(CUDA_GENCODE "${CUDA_ARCH}")
++      list(APPEND CUDA_NVCC_FLAGS ${CUDA_SM} ${CUDA_GENCODE})      
+     else(CUDA_FOUND)
+         message(FATAL_ERROR "CUDA enabled but unlable to locate packages...")
+     endif(CUDA_FOUND)

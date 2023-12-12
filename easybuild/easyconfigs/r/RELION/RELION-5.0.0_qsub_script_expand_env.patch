@@ -1,0 +1,46 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2023/11
+# expand env variable in qsubscript. Required, if templated is parte of module and module version changes during processing the project.
+diff -ruN relion-de83020514bed78ad4c7808bccff7ffb41229cb2/src/expand.h relion-de83020514bed78ad4c7808bccff7ffb41229cb2_qsub_script_expand_env/src/expand.h
+--- relion-de83020514bed78ad4c7808bccff7ffb41229cb2/src/expand.h	1970-01-01 01:00:00.000000000 +0100
++++ relion-de83020514bed78ad4c7808bccff7ffb41229cb2_qsub_script_expand_env/src/expand.h	2023-11-10 14:30:52.059619458 +0100
+@@ -0,0 +1,19 @@
++#ifndef __EXPAND_H__
++#define __EXPAND_H__
++
++#include <iostream>
++#include <wordexp.h>
++
++inline std::string expand_env(const std::string& text)
++{
++  std::string r("");
++  wordexp_t p;
++  char** w;
++  wordexp( text.c_str(), &p, 0);
++  w = p.we_wordv;
++  for (size_t i=0; i<p.we_wordc;i++ ) r+=std::string(i!=0,' ')+w[i];
++  wordfree( &p );
++  return r;
++}
++
++#endif
+diff -ruN relion-de83020514bed78ad4c7808bccff7ffb41229cb2/src/pipeline_jobs.cpp relion-de83020514bed78ad4c7808bccff7ffb41229cb2_qsub_script_expand_env/src/pipeline_jobs.cpp
+--- relion-de83020514bed78ad4c7808bccff7ffb41229cb2/src/pipeline_jobs.cpp	2023-11-02 10:19:13.000000000 +0100
++++ relion-de83020514bed78ad4c7808bccff7ffb41229cb2_qsub_script_expand_env/src/pipeline_jobs.cpp	2023-11-10 16:40:14.788570687 +0100
+@@ -18,7 +18,7 @@
+  * author citations must be preserved.
+  ***************************************************************************/
+ #include "src/pipeline_jobs.h"
+-
++#include "src/expand.h"
+ std::vector<Node> getOutputNodesRefine(std::string outputname, std::string jobtype, int iter, int K, int dim, int nr_bodies, bool _is_tomo)
+ {
+ 	std::vector<Node> result;
+@@ -540,7 +540,7 @@
+ bool RelionJob::saveJobSubmissionScript(std::string newfilename, std::string outputname, std::vector<std::string> commands, std::string &error_message)
+ {
+ 	// Open the standard job submission file
+-	FileName fn_qsub = joboptions["qsubscript"].getString();
++	FileName fn_qsub =expand_env(joboptions["qsubscript"].getString()) ;
+ 
+ 
+ 	std::ofstream fo;
