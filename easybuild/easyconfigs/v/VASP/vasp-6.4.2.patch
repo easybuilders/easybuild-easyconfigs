@@ -1,0 +1,122 @@
+--- arch/makefile.include.intel.orig	2023-12-12 18:44:55.929640651 +0000
++++ arch/makefile.include.intel	2023-12-12 18:48:57.270799573 +0000
+@@ -11,8 +11,8 @@
+ 
+ CPP         = fpp -f_com=no -free -w0  $*$(FUFFIX) $*$(SUFFIX) $(CPP_OPTIONS)
+ 
+-FC          = mpiifort
+-FCL         = mpiifort
++FC          = mpifort
++FCL         = mpifort
+ 
+ FREE        = -free -names lowercase
+ 
+@@ -48,23 +48,32 @@
+ 
+ # When compiling on the target machine itself, change this to the
+ # relevant target when cross-compiling for another architecture
+-VASP_TARGET_CPU ?= -xHOST
+-FFLAGS     += $(VASP_TARGET_CPU)
++#VASP_TARGET_CPU ?= -xHOST
++#FFLAGS     += $(VASP_TARGET_CPU)
+ 
+ # Intel MKL (FFTW, BLAS, LAPACK, and scaLAPACK)
+ # (Note: for Intel Parallel Studio's MKL use -mkl instead of -qmkl)
+-FCL        += -qmkl=sequential
+-MKLROOT    ?= /path/to/your/mkl/installation
+-LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+-INCS        =-I$(MKLROOT)/include/fftw
++#FCL        += -qmkl=sequential
++#MKLROOT    ?= /path/to/your/mkl/installation
++#LLIBS      += -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
++#INCS        =-I$(MKLROOT)/include/fftw
++
++# Flexiblas  (FFTW, BLAS, LAPACK, and scaLAPACK)
++LLIBS      += -lflexiblas_intel -lscalapack -lfftw3 
++INCS        =-I$(EBROOTFFTW)/include
+ 
+ # HDF5-support (optional but strongly recommended)
+-#CPP_OPTIONS+= -DVASP_HDF5
+-#HDF5_ROOT  ?= /path/to/your/hdf5/installation
+-#LLIBS      += -L$(HDF5_ROOT)/lib -lhdf5_fortran
+-#INCS       += -I$(HDF5_ROOT)/include
++CPP_OPTIONS+= -DVASP_HDF5
++HDF5_ROOT  ?= $(EBROOTHDF5)
++LLIBS      +=  -lhdf5_fortran
++INCS       += -I$(HDF5_ROOT)/include
+ 
+ # For the VASP-2-Wannier90 interface (optional)
+-#CPP_OPTIONS    += -DVASP2WANNIER90
++CPP_OPTIONS    += -DVASP2WANNIER90
+ #WANNIER90_ROOT ?= /path/to/your/wannier90/installation
+-#LLIBS          += -L$(WANNIER90_ROOT)/lib -lwannier
++LLIBS          +=  -lwannier
++
++#Libxc-support
++CPP_OPTIONS += -DUSELIBXC
++LLIBS       += -lxcf03 -lxc
++
+--- src/makefile.orig	2023-12-12 18:49:14.857955797 +0000
++++ src/makefile	2023-12-12 18:50:24.872577728 +0000
+@@ -14,7 +14,7 @@
+ OFLAG=$(OFLAG_2)
+ OFLAG_IN=$(OFLAG)
+ 
+-LIB=lib parser
++LIB=lib parser pyamff_fortran
+ LLIB=-Llib -ldmy -Lparser -lparser
+ 
+ SRCDIR=../../src
+@@ -146,7 +146,7 @@
+ 	$(MAKE) -C $@ -j1
+ #	$(MAKE) -C $@
+ 
+-dependencies: sources
++dependencies: sources libs
+ 	$(MAKE) depend
+ 
+ depend: $(F90SRC)
+--- src/.objects.orig	2023-12-12 18:50:32.333644004 +0000
++++ src/.objects	2023-12-12 18:51:22.435089049 +0000
+@@ -123,6 +123,21 @@
+ 	dos.o \
+ 	elf.o \
+ 	hamil_rot.o \
++        bfgs.o \
++        dynmat.o \
++        instanton.o \
++        lbfgs.o \
++        sd.o \
++        cg.o \
++        dimer.o \
++        bbm.o \
++         fire.o \
++        lanczos.o \
++        neb.o \
++        qm.o \
++        pyamff_fortran/*.o \
++        ml_pyamff.o \
++        opt.o \
+ 	chain.o \
+ 	dyna.o \
+ 	fileio.o \
+--- src/main.F.orig	2023-12-12 18:51:36.813216768 +0000
++++ src/main.F	2023-12-12 18:53:40.190312711 +0000
+@@ -966,7 +966,7 @@
+ ! init all chains (INCAR reader)
+ !-----------------------------------------------------------------------
+       LCHAIN = IMAGES > 0 .AND. .NOT.AFQMC_SET % ACTIVE
+-      IF (LCHAIN) CALL chain_init( T_INFO, IO)
++      CALL chain_init( T_INFO, IO) 
+ !-----------------------------------------------------------------------
+ !xml finish copying parameters from INCAR to xml file
+ ! no INCAR reading from here
+@@ -3652,7 +3652,7 @@
+       ENDIF
+ 
+       CALL CHAIN_FORCE(T_INFO%NIONS,DYN%POSION,TOTEN,TIFOR, &
+-           LATT_CUR%A,LATT_CUR%B,IO%IU6)
++           TSIF,LATT_CUR%A,LATT_CUR%B,IO%IU6) 
+ 
+       CALL PARALLEL_TEMPERING(NSTEP,T_INFO%NIONS,DYN%POSION,DYN%VEL,TOTEN,TIFOR,DYN%TEBEG,DYN%TEEND, &
+            LATT_CUR%A,LATT_CUR%B,IO%IU6)
