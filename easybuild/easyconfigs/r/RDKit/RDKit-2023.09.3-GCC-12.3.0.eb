@@ -1,0 +1,76 @@
+easyblock = 'CMakeMake'
+
+name = 'RDKit'
+version = '2023.09.3'
+
+homepage = 'http://www.rdkit.org/'
+description = """RDKit is a collection of cheminformatics and machine-learning software written in C++ and Python."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0' }
+toolchainopts = {'opt': True}
+
+source_urls = ['https://github.com/rdkit/rdkit/archive']
+sources = ['Release_%s.tar.gz' % version.replace('.','_')]
+checksums = ['8e8bb732ca2dc9481940bbf5dfa1127f0f014f80b73a1faa3c56761acb899748']
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.10", "3.11"]}
+
+builddependencies = [
+    ('Eigen', '3.4.0'),
+    ('oldest-supported-numpy', '2023b'),
+    ('CMake', '3.27.7'),
+    ('Boost', '1.82.0'),
+]
+
+# Boost 1.80's own CMake config file doesn't respect the
+# Boost_USE_MULTITHREADED setting. Use CMake config instead.
+configopts = " ".join([
+    "-DBoost_NO_BOOST_CMAKE=ON",
+    "-DRDK_USE_BOOST_SERIALIZATION=ON",
+    "-DBOOST_ROOT=$EBROOTBOOST",
+    "-DCMAKE_SKIP_RPATH=ON",
+    "-DRDK_INSTALL_INTREE=OFF",
+    "-DRDK_OPTIMIZE_NATIVE=OFF",
+    "-DRDK_BUILD_CPP_TESTS=OFF",
+    "-DRDK_BUILD_AVALON_SUPPORT=ON",
+    "-DRDK_BUILD_INCHI_SUPPORT=ON",
+    "-DRDK_BUILD_CAIRO_SUPPORT=ON",
+    "-DPYTHON_VERSION_MAJOR=3",
+    "-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python",
+    # "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s$(python3-config --abiflags)",
+    # "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%(pyshortver)s$(python3-config --abiflags).so",
+    "-DPYTHON_NUMPY_INCLUDE_PATH=$EBROOTOLDESTMINSUPPORTEDMINNUMPY/lib/python%(pyshortver)s/site-packages/numpy/core/include",
+])
+
+# This step does not iterate as sanity_check does.
+postinstallcmds = [
+    "/cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path %(installdir)s/lib/python{}/site-packages --add_path %(installdir)s/lib".format(local_py)
+    for local_py in multi_deps["Python"]
+]
+
+modextrapaths = { 'EBPYTHONPREFIXES' : '' }
+moduleclass = 'chem'
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': [
+        "lib/libRDKitEigenSolvers.so",
+        "lib/libRDKitRDBoost.so",
+        "lib/libRDKitRDGeneral.so",
+        "lib/python%(pyshortver)s/site-packages/rdkit/rdBase.so",
+        "lib/python%(pyshortver)s/site-packages/rdkit/RDConfig.py",
+    ],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "python --version",
+    "python -c 'import rdkit'",
+    "module load scipy-stack && python -c 'from rdkit import Chem; m = Chem.MolFromSmiles(\"Cc1ccccc1\");'",
+]
+
+# Depends on any compatible numpy at runtime.
+modluafooter = """
+depends_on("scipy-stack")
+"""
