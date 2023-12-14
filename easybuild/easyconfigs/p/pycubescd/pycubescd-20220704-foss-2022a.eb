@@ -1,0 +1,57 @@
+easyblock = 'Tarball'
+
+name = 'pycubescd'
+version = '20220704'
+_commit = 'a254c1a'
+
+homepage = 'https://github.com/BERTHA-4c-DKS/pycubescd'
+description = """Charge-displacement analysis via natural orbitals for chemical
+valence in the four-component relativistic framework"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/BERTHA-4c-DKS/pycubescd/archive'],
+        'download_filename': '%s.tar.gz' % _commit,
+        'filename': SOURCE_TAR_GZ,
+    },
+]
+checksums = ['4747d63eae7d368c89a29f7e1864aa3e7c1a89fffde923154331187022aa7e7f']
+unpack_options = '--strip-components=1'
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('matplotlib', '3.5.2'),
+]
+
+postinstallcmds = [
+    'mv %(installdir)s/PY3 %(installdir)s/bin',
+    'mv %(installdir)s/*.sh %(installdir)s/bin/',
+    'chmod a+x %(installdir)s/bin/{*.py,*.sh}',
+    'rm %(installdir)s/*.py',
+    'rm -r %(installdir)s/modules/load_cube.py',
+]
+
+fix_python_shebang_for = ['bin/*.py']
+
+_bins = ['pycd.py', 'pycd_simple.py', 'pybader.py', 'pycdfrags.py', 'pycdexct.py', 'pyct.py', 'pydens_iso.py',
+         'py_spherical.py', 'pyadd_cube.py', 'pysub_cube.py', 'py_central.py', 'py_sphere.py']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in _bins],
+    'dirs': ['modules', 'Tools', 'test'],
+}
+
+sanity_check_commands = [
+    'pycd.py --help',
+    'pycd_simple.py --help',
+    'py_central.py --help',
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'modules',
+}
+
+moduleclass = 'chem'
