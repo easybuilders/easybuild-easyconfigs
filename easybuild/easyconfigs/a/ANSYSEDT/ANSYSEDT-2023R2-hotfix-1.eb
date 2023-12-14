@@ -52,26 +52,6 @@ cd %(builddir)s/Electronics_23.2.1_linx64;\
 ./install_patch.bash --force_overwrite  --install_dir $instdir;\
 "
 
-postinstallcmds = [
-  "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYSEDT/2023R2/Linux64-cust;\
-    for b in $(cd $a; find . -type f ! -name 'lib*.so*' -printf '%P\n'); do \
-      mv -v %(installdir)s/v232/Linux64/$b{,-orig};\
-      cp -v $a/$b %(installdir)s/v232/Linux64/$b;\
-      chmod -v 755 %(installdir)s/v232/Linux64/$b; done;\
-    for b in $(cd $a; find . -name 'lib*.so*' -printf '%P\n'); do \
-      cp -Pv $a/$b %(installdir)s/v232/Linux64/$b; done",
-  "find %(installdir)s -type d -exec chmod -v 755 {} \;",
-  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod -v 755 {} \;",
-  "mv -v %(installdir)s/v232/Linux64/defer{,-avoid}",
-  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s --exclude=*-orig); do echo Modifying file $f;\
-    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
-  "patchelf --set-interpreter $EPREFIX/lib64/ld-linux-x86-64.so.2 %(installdir)s/v232/Linux64/hf3d",
-  "find %(installdir)s -type f ! -size 0 -print0 | xargs -0 grep -ILZ {} | while IFS=\"\" read -r -d \"\" f; do \
-    if [[ `file -b --mime-type $f` == 'application/x-executable' ]]; then num=$(strings -f \"${f}\" | grep /usr/lib | wc -l);\
-      if [[ \"$num\" -eq \"0\" ]]; then patchelf --set-interpreter $EPREFIX/lib64/ld-linux-x86-64.so.2 $f; fi;\
-    fi; done",
-]
-
 sanity_check_paths = {
       'files': ['v232/Linux64/ansysedt'],
       'dirs' : ['shared_files','v232'],
