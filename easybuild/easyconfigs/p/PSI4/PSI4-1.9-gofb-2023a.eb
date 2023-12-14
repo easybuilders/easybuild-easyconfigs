@@ -1,0 +1,77 @@
+easyblock = 'CMakeMake'
+
+name = 'PSI4'
+version = '1.9'
+
+homepage = 'http://www.psicode.org/'
+description = """PSI4 is an open-source suite of ab initio quantum chemistry programs designed for
+ efficient, high-accuracy simulations of a variety of molecular properties. We can routinely perform
+ computations with more than 2500 basis functions running serially or in parallel."""
+
+# PSI4 is mainly threaded with OpenMP but the driver can use mpi4py.
+toolchain = {'name': 'gofb', 'version': '2023a'}
+
+source_urls = ['https://github.com/psi4/psi4/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['01429e9f93da3871183204a0406a1c9887329ece10d091857b5bdfbd1013dc8f']
+
+multi_deps = {'Python': ['3.10', '3.11']}
+
+builddependencies = [
+    ("Eigen", "3.4.0"),
+    ("Boost", "1.82.0"),
+    ("CMake", "3.23.1"),
+    ("python-build-bundle", "2023b"),
+]
+
+dependencies = [
+    ('libxc', '6.2.2'),
+    ('SciPy-Stack', '2023b'),
+]
+
+# Some python packages are required by the configure script and at runtime that are not pulled by the build.
+# Instead of building libxc, use our module
+preconfigopts = " && ".join([
+    "pip install msgpack-python==0.5.6 Pint==0.17 pydantic==1.8.2 qcelemental==0.25.1 qcengine==0.26.0 --prefix=%(installdir)s",
+    "sed -i -e '1 s/5.1.2/5.1.3/' %(builddir)s/%(namelower)s-%(version)s/external/upstream/libxc/CMakeLists.txt",
+    "export EBPYTHONPREFIXES=%(installdir)s:$EBPYTHONPREFIXES",
+    "" # To append &&
+])
+# Don't remove the python packages just installed
+keeppreviousinstall = True
+separate_build_dir = True
+start_dir = "%(namelower)s-%(version)s"
+
+configopts = " ".join([
+    '-DPYMOD_INSTALL_LIBDIR="/python%(pyshortver)s/site-packages"', # Location within CMAKE_INSTALL_LIBDIR (lib)
+    '-DCMAKE_PREFIX_PATH=%(installdir)s/lib/python%(pyshortver)s/site-packages',
+    '-DENABLE_XHOST=OFF',
+])
+
+
+"""
+With pytest-xdist manually run:
+    pytest $EBROOTPSI4/lib/python3.8/site-packages/psi4/tests/ -n 8
+for a full run of tests
+"""
+
+sanity_check_paths = {
+    'files': [
+        'bin/psi4',
+    ],
+    'dirs': [
+        'bin',
+        'include/psi4',
+        'lib/python%(pyshortver)s/site-packages',
+    ]
+}
+
+sanity_check_commands = [
+    "python -c 'import psi4'"
+]
+
+modextrapaths = {
+    'EBPYTHONPREFIXES': '',
+}
+
+moduleclass = 'chem'
