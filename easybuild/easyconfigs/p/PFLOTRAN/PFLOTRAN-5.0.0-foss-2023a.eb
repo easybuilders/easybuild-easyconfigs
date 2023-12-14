@@ -1,0 +1,48 @@
+easyblock = 'MakeCp'
+
+name = 'PFLOTRAN'
+version = '5.0.0'
+
+homepage = 'https://www.pflotran.org/'
+description = """
+PFLOTRAN is an open source, state-of-the-art massively parallel 
+subsurface flow and reactive transport code. PFLOTRAN solves a 
+system of generally nonlinear partial differential equations 
+describing multiphase, multicomponent and multiscale reactive flow 
+and transport in porous materials. The code is designed to run on 
+massively parallel computing architectures as well as workstations 
+and laptops.
+"""
+
+docurls = ['https://www.pflotran.org/documentation/']
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://bitbucket.org/pflotran/%(namelower)s/get/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['5ac9485a3e731f9eaf708c77b17b68cf7e48ac6bfe2b7ee5e3704671722df205']
+
+dependencies = [
+    ('PETSc', '3.20.0'),
+    ('HDF5', '1.14.2', '-mpi'), #explicitely required for linking PFLOTRAN with HDF5 libs
+]
+
+skipsteps = ['configure']
+
+start_dir = 'src/pflotran'
+
+buildopts = 'pflotran LIBS="-lhdf5_fortran -lhdf5_hl_fortran"'
+
+files_to_copy = [(['pflotran'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/pflotran'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'pflotran -pflotranin $(find %(builddir)s -name vsat_flow.in | grep shortcourse)',
+]
+
+moduleclass = 'geo'
