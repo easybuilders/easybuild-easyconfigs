@@ -1,0 +1,42 @@
+easyblock = 'PythonPackage'
+
+name = 'Pillow'
+version = '9.1.0'
+
+homepage = 'https://pillow.readthedocs.org/'
+description = """Pillow is the 'friendly PIL fork' by Alex Clark and Contributors.
+ PIL is the Python Imaging Library by Fredrik Lundh and Contributors."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+sources = [SOURCE_TAR_GZ]
+checksums = ['f401ed2bbb155e1ade150ccc63db1a4f6c1909d3d378f7d1235a44e90d75fb97']
+
+builddependencies = [('binutils', '2.36.1')]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('libjpeg-turbo', '2.0.6'),
+    ('libpng', '1.6.37'),
+    ('zlib', '1.2.11'),
+    ('LibTIFF', '4.2.0'),
+    ('freetype', '2.10.4')
+]
+
+download_dep_fail = True
+
+# patch setup.py to prefix hardcoded /usr/* and /lib paths with value of %(sysroot) template
+# (which will be empty if EasyBuild is not configured to use an alternate sysroot);
+# see also https://gitlab.com/eessi/support/-/issues/9
+preinstallopts = """sed -i 's@"/usr/@"%(sysroot)s/usr/@g' setup.py && """
+preinstallopts += """sed -i 's@"/lib@"%(sysroot)s/lib@g' setup.py && """
+
+# avoid that hardcoded paths like /usr/include are used in build commands
+installopts = "--global-option=build_ext --global-option='--disable-platform-guessing' "
+
+use_pip = True
+sanity_pip_check = True
+
+options = {'modulename': 'PIL'}
+
+moduleclass = 'vis'

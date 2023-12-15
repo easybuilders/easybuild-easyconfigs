@@ -1,22 +1,24 @@
 name: easyconfigs unit tests
 on: [push, pull_request]
+
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
+concurrency:
+  group: ${{format('{0}:{1}:{2}', github.repository, github.ref, github.workflow)}}
+  cancel-in-progress: true
+
 jobs:
   test-suite:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [2.7, 3.5, 3.6, 3.7]
-        modules_tool: [Lmod-6.6.3, Lmod-7.8.22, Lmod-8.1.14]
+        python: [3.6, '3.11']
+        modules_tool: [Lmod-7.8.22, Lmod-8.6.8]
         module_syntax: [Lua, Tcl]
-        # exclude some configurations: only test Tcl module syntax with Lmod 7.x and Python 2.7 & 3.5
+        # exclude some configurations: only test Tcl module syntax with Lmod 8.x and Python 3.6
         exclude:
-          - modules_tool: Lmod-6.6.3
-            module_syntax: Tcl
-          - modules_tool: Lmod-8.1.14
-            module_syntax: Tcl
-          - python: 3.6
-            module_syntax: Tcl
-          - python: 3.7
+          - modules_tool: Lmod-7.8.22
             module_syntax: Tcl
       fail-fast: false
     steps:
@@ -32,7 +34,7 @@ jobs:
         key: eb-sourcepath
 
     - name: set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{matrix.python}}
         architecture: x64
@@ -145,24 +147,20 @@ jobs:
           eb --search '^foss-2019b.eb' | tee eb_search_foss.out
           grep '/foss-2019b.eb$' eb_search_foss.out
 
-          # make sure CVS easyconfigs are included in installation (cfr. issue #10325)
-          echo "Searching for CVS easyconfigs..."
-          eb --search '^CVS-' | grep '/CVS-'
-
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
           # use /tmp/sources because that has cached downloads (see cache step above)
           eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
 
   test-sdist:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [2.7, 3.6, 3.7]
+        python: [3.6, '3.11']
     steps:
     - uses: actions/checkout@v2
 
     - name: set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{matrix.python}}
 
@@ -181,13 +179,4 @@ jobs:
             echo "Found .git folders in source tarball: $dot_git_files" && false
           else
             echo "No .git folders found in source tarball: OK"
-          fi
-
-          # CVS easyconfigs must be included in source tarball,
-          # see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
-          cvs_easyconfigs=$(find . -name 'CVS-*.eb')
-          if [ -z "$cvs_easyconfigs" ]; then
-            echo "CVS easyconfigs not found" && false
-          else
-            echo "Found CVS easyconfigs: $cvs_easyconfigs"
           fi

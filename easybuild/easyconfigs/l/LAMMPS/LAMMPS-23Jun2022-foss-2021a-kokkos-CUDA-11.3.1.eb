@@ -1,0 +1,174 @@
+name = 'LAMMPS'
+version = '23Jun2022'
+versionsuffix = '-kokkos'
+_cuda_suffix = '-CUDA-%(cudaver)s'
+versionsuffix += _cuda_suffix
+
+homepage = 'https://www.lammps.org'
+description = """LAMMPS is a classical molecular dynamics code, and an acronym
+for Large-scale Atomic/Molecular Massively Parallel Simulator. LAMMPS has
+potentials for solid-state materials (metals, semiconductors) and soft matter
+(biomolecules, polymers) and coarse-grained or mesoscopic systems. It can be
+used to model atoms or, more generically, as a parallel particle simulator at
+the atomic, meso, or continuum scale. LAMMPS runs on single processors or in
+parallel using message-passing techniques and a spatial-decomposition of the
+simulation domain. The code is designed to be easy to modify or extend with new
+functionality.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+# 'https://github.com/lammps/lammps/archive/'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [
+    'stable_%(version)s_update1.tar.gz',
+]
+patches = ['LAMMPS-23June2022_fix-timestep-balance-example.patch']
+checksums = [
+    {'stable_23Jun2022_update1.tar.gz': '58e3b2b984f8935bb0db5631e143be2826c45ffd48844f7c394f36624a3e17a2'},
+    {'LAMMPS-23June2022_fix-timestep-balance-example.patch':
+     '0ad6c953f08b0d539b189b7aa7cef76774aebb9d633b07d5b6001ac0fcea3081'},
+]
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('pkg-config', '0.29.2'),
+    ('archspec', '0.1.2'),
+]
+
+dependencies = [
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('UCX-CUDA', '1.10.0', _cuda_suffix),
+    ('NCCL', '2.10.3', _cuda_suffix),
+    ('Python', '3.9.5'),
+    ('libpng', '1.6.37'),
+    ('libjpeg-turbo', '2.0.6'),
+    ('netCDF', '4.8.0'),
+    ('GSL', '2.7'),
+    ('zlib', '1.2.11'),
+    ('gzip', '1.10'),
+    ('cURL', '7.76.0'),
+    ('HDF5', '1.10.7'),
+    # ('tbb', '2020.3'),  # Optionally required by Intel package but has a link problem when using nvlink
+    ('PCRE', '8.44'),
+    ('libxml2', '2.9.10'),
+    ('FFmpeg', '4.3.2'),
+    ('Voro++', '0.4.6'),
+    ('kim-api', '2.2.1'),
+    ('Eigen', '3.3.9'),
+    ('PLUMED', '2.7.2'),
+    ('ScaFaCoS', '1.0.1'),
+    ('SciPy-bundle', '2021.05'),
+    # VTK package is auto-disabled if this dep is not available
+    # ('VTK', '9.0.1'),
+]
+
+# To use additional custom configuration options, use the 'configopts' easyconfig parameter
+# See docs and lammps easyblock for more information.
+# https://github.com/lammps/lammps/blob/master/cmake/README.md#lammps-configuration-options
+
+# OpenMP-Kokkos build is default in the current easyblock. One can switch to serial backend of Kokkos,
+# which is claimed to be faster in pure MPI calculations
+# configopts  = "-DKokkos_ENABLE_SERIAL=yes "
+
+
+# packages auto-enabled by easyblock
+# 'GPU'    - if cuda package is present and kokkos is disabled
+# 'KOKKOS' - if kokkos is enabled (by default)
+
+
+# include the following extra packages into the build
+general_packages = [
+    'ASPHERE',
+    'ATC',
+    'AWPMD',
+    'BOCS',
+    'BODY',
+    'BPM',
+    'BROWNIAN',
+    'CG-DNA',
+    'CG-SDK',
+    'CLASS2',
+    'COLLOID',
+    'COLVARS',
+    'COMPRESS',
+    'CORESHELL',
+    'DIELECTRIC',
+    'DIFFRACTION',
+    'DIPOLE',
+    'DPD-BASIC',
+    'DPD-MESO',
+    'DPD-REACT',
+    'DPD-SMOOTH',
+    'DRUDE',
+    'EFF',
+    'ELECTRODE',
+    'EXTRA-COMPUTE',
+    'EXTRA-DUMP',
+    'EXTRA-FIX',
+    'EXTRA-MOLECULE',
+    'EXTRA-PAIR',
+    'FEP',
+    'GRANULAR',
+    'H5MD',
+    'INTERLAYER',
+    'KIM',
+    'KSPACE',
+    'LATBOLTZ',
+    'MANIFOLD',
+    # 'MACHDYN',  # Some issue related to Eigen 3.3.9 when using Kokkos
+    'MANYBODY',
+    'MC',
+    'MEAM',
+    'MGPT',
+    'MISC',
+    'ML-IAP',
+    'ML-PACE',
+    'ML-RANN',
+    'ML-SNAP',
+    'MOFFF',
+    'MOLECULE',
+    'MOLFILE',
+    'MPIIO',
+    'NETCDF',
+    'OPENMP',
+    'ORIENT',
+    'PERI',
+    'PHONON',
+    'PLUGIN',
+    'PLUMED',
+    'POEMS',
+    'PTM',
+    'PYTHON',
+    'QEQ',
+    'QTB',
+    'REACTION',
+    'REAXFF',
+    'REPLICA',
+    'RIGID',
+    'SCAFACOS',
+    'SHOCK',
+    'SMTBQ',
+    'SPH',
+    'SPIN',
+    'SRD',
+    'TALLY',
+    'UEF',
+    'VORONOI',
+    'VTK',
+    'YAFF',
+]
+# Excluded packages due to requiring additional (non-trivial) deps
+# - ADIOS
+# - LATTE
+# - MESONT (requires very large files downloaded during build)
+# - ML-HDNNP (requires N2P2)
+# - ML-QUIP
+# - MSCG
+# - QMMM (setup seems complex)
+
+# hardware-specific option
+# cuda_compute_capabilities = ['8.0']
+
+moduleclass = 'chem'
