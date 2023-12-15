@@ -28,7 +28,9 @@ checksums = [
 
 # builddir=/tmp/roberpj/avx2/ANSYSEDT/2023R2/system-system-hotfix-1
 # [roberpj@build-node:~/.local/easybuild/software/2020/Core/ansysedt/2023R2]
+# [roberpj@build-node:~/.local/easybuild/software/2023/x86-64-v3/Core/ansysedt/2023R2
 # [roberpj@build-node:/cvmfs/restricted.computecanada.ca/easybuild/software/2020/Core/ansysedt/2023R2] 
+# [roberpj@build-node2:/cvmfs/restricted.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/ansysedt/2023R2]
 
 extract_sources = True
 install_cmd = "\
@@ -36,7 +38,7 @@ cd %(builddir)s/Electronics_232_linx64/Linux/AnsysEM/Disk1/InstData; pwd; ls -l;
 issfile=SilentInstallationTemplate.iss;\
 licsrvr=license3.sharcnet.ca; sed -i \"s/pitrh6licsrv1/$licsrvr/g\" $issfile;\
 tmpdiry=TempDirectory; sed -i \"s/\/scratch/$tmpdiry/g\" $issfile;\
-rm -rf /tmp/AnsysEM; ./setup.exe -f \"$PWD/$issfile\" -i silent;\
+rm -rf /tmp/AnsysEM; ./setup.exe -f \"$PWD/$issfile\" -i console;\
 cd %(builddir)s/Electronics_23.2.1_linx64;\
 ./install_patch.bash --force_overwrite  --install_dir /tmp/AnsysEM;\
 echo \"find /tmp/AnsysEM -ls\";\
@@ -45,12 +47,25 @@ echo \"cp -av /tmp/AnsysEM/* %(installdir)s\";\
 cp -av /tmp/AnsysEM/* %(installdir)s;\
 "
 
-#instdir=\"%(installdir)s\"; echo \"myinstdir = $instdir\";\
-#echo \"mypost2 --- find $instdir -ls\"; find $instdir -ls;\
-#instdir2=\"$(echo \"$instdir\" | sed -e 's+[\/&]+\\\&+g')\";\
-#echo \"myinstdir2 = $instdir2\";\
-#sed -i \"s+\/tmp\/AnsysEM+$instdir2+g\" $issfile;\
-#echo \"$instdir\" | sed -e 's+[\/&]+\\\&+g';\
+postinstallcmds = [
+  "a=/cvmfs/restricted.computecanada.ca/easybuild/sources/a/ANSYSEDT/2023R2/Linux64-cust;\
+    for b in $(cd $a; find . -type f ! -name 'lib*.so*' -printf '%P\n'); do \
+      mv -v %(installdir)s/v232/Linux64/$b{,-orig};\
+      cp -v $a/$b %(installdir)s/v232/Linux64/$b;\
+      chmod -v 755 %(installdir)s/v232/Linux64/$b; done;\
+    for b in $(cd $a; find . -name 'lib*.so*' -printf '%P\n'); do \
+      cp -Pv $a/$b %(installdir)s/v232/Linux64/$b; done",
+  "find %(installdir)s -type d -exec chmod -v 755 {} \;",
+  "find %(installdir)s -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod -v 755 {} \;",
+  "mv -v %(installdir)s/v232/Linux64/defer{,-avoid}",
+  "for f in $(grep -rIl '[:\"]/usr/lib\|[:\"]/lib' %(installdir)s --exclude=*-orig); do echo Modifying file $f;\
+    sed -i -e '/[:\"]\/usr\/lib/s/:*\/usr\/lib[^:\"]*//g' -e '/[:\"]\/lib/s/:*\/lib[^:\"]*//g' $f; done",
+  "patchelf --set-interpreter $EPREFIX/lib64/ld-linux-x86-64.so.2 %(installdir)s/v232/Linux64/hf3d",
+  "find %(installdir)s -type f ! -size 0 -print0 | xargs -0 grep -ILZ {} | while IFS=\"\" read -r -d \"\" f; do \
+    if [[ `file -b --mime-type $f` == 'application/x-executable' ]]; then num=$(strings -f \"${f}\" | grep /usr/lib | wc -l);\
+      if [[ \"$num\" -eq \"0\" ]]; then patchelf --set-interpreter $EPREFIX/lib64/ld-linux-x86-64.so.2 $f; fi;\
+    fi; done",
+]
 
 sanity_check_paths = {
       'files': ['v232/Linux64/ansysedt'],
