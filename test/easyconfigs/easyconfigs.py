@@ -35,7 +35,6 @@ import stat
 import sys
 import tempfile
 from collections import defaultdict
-from distutils.version import LooseVersion
 from unittest import TestCase, TestLoader, main, skip
 
 import easybuild.main as eb_main
@@ -51,7 +50,7 @@ from easybuild.framework.easyconfig.easyconfig import get_easyblock_class, lette
 from easybuild.framework.easyconfig.easyconfig import resolve_template
 from easybuild.framework.easyconfig.parser import EasyConfigParser, fetch_parameters_from_easyconfig
 from easybuild.framework.easyconfig.tools import check_sha256_checksums, dep_graph, get_paths_for, process_easyconfig
-from easybuild.tools import config
+from easybuild.tools import config, LooseVersion
 from easybuild.tools.build_log import EasyBuildError
 from easybuild.tools.config import GENERAL_CLASS, build_option
 from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_file, remove_file
