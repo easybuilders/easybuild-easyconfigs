@@ -1,0 +1,42 @@
+easyblock = 'ConfigureMake'
+
+name = 'CoCoALib'
+version = '0.99818'
+
+homepage = 'https://cocoa.dima.unige.it/cocoa/cocoalib/'
+description = "CoCoALib is a free GPL3 C++ library for doing Computations in Commutative Algebra."
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://cocoa.dima.unige.it/cocoa/cocoalib/tgz']
+sources = [SOURCE_TGZ]
+checksums = ['7c7d6bb0bc3004ea76caaeb5f8de10ed09c8052a9131fd98716c36c6fc96d1ea']
+
+dependencies = [
+    ('GMP', '6.2.1'),
+    ('cddlib', '0.94m'),  # optional
+]
+
+# libreadline only needed for CoCoA-5
+configopts = "--only-cocoalib --no-readline --threadsafe-hack "
+# Use cddlib and GMP from EB
+configopts += "--with-libcddgmp=${EBROOTCDDLIB}/lib/libcddgmp.a --with-libgmp=$EBROOTGMP/lib/libgmp.a  "
+
+buildopts = 'CXX="$CXX" CXXFLAGS="$CXXFLAGS"'
+
+# Makefile is not smart enough to create missing directories
+preinstallopts = "mkdir %(installdir)s/{include,lib} && "
+
+# Move doc and examples from include to share
+postinstallcmds = [
+    "mkdir %(installdir)s/share",
+    "mv %(installdir)s/include/CoCoA-%(version)s/{doc,examples} %(installdir)s/share/",
+]
+
+sanity_check_paths = {
+    'files': ['lib/libcocoa.a'],
+    'dirs': ['include/CoCoA-%(version)s', 'share/doc', 'share/examples']
+}
+
+moduleclass = 'math'

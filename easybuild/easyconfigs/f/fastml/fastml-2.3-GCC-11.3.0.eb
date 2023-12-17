@@ -1,0 +1,39 @@
+easyblock = 'MakeCp'
+
+name = 'fastml'
+version = '2.3'
+
+homepage = 'http://fastml.tau.ac.il/'
+description = """Maximum likelihood reconstruction of ancestral amino-acid sequences.
+A branch-and-bound algorithm for the inference of ancestral amino-acid
+sequences when the replacement rate varies among sites."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'cstd': 'c++03'}
+
+github_account = 'sanger-pathogens'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['c02901d83ab9457852c67e8e14f41a02d2a0653130ed941b288108ba5272611d']
+
+parallel = 1
+
+# increase maximum template depth
+prebuildopts = "sed -i 's/-depth-32/-depth-64/g' {programs/Makefile*,libs/phylogeny/Makefile} && "
+
+files_to_copy = [
+    (['programs/fastml/fastml'], 'bin'),
+    (['programs/fastml/libfastml.a', 'libs/phylogeny/libEvolTree.a'], 'lib'),
+    (['AUTHORS', 'Readme.md'], 'share'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s', 'lib/lib%(name)s.a', 'lib/libEvolTree.a'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [
+    ("fastml", "-h"),
+]
+
+moduleclass = 'bio'

@@ -1,0 +1,235 @@
+easyblock = 'PythonBundle'
+
+name = 'TensorFlow'
+version = '2.13.0'
+
+homepage = 'https://www.tensorflow.org/'
+description = "An open-source software library for Machine Intelligence"
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'pic': True}
+
+builddependencies = [
+    ('Bazel', '6.3.1'),
+    # git 2.x required, see also https://github.com/tensorflow/tensorflow/issues/29053
+    ('git', '2.38.1', '-nodocs'),
+    ('pybind11', '2.10.3'),
+    ('UnZip', '6.0'),
+    # System protobuf doesn't seem to work: https://github.com/tensorflow/tensorflow/issues/61593
+    # So don't add it here
+]
+dependencies = [
+    ('Python', '3.10.8'),
+    ('h5py', '3.8.0'),
+    ('cURL', '7.86.0'),
+    ('dill', '0.3.7'),
+    ('double-conversion', '3.2.1'),
+    ('flatbuffers', '23.1.4'),
+    ('flatbuffers-python', '23.1.4'),
+    ('giflib', '5.2.1'),
+    ('hwloc', '2.8.0'),
+    ('ICU', '72.1'),
+    ('JsonCpp', '1.9.5'),
+    ('libjpeg-turbo', '2.1.4'),
+    ('NASM', '2.15.05'),
+    ('nsync', '1.26.0'),
+    ('SQLite', '3.39.4'),
+    ('patchelf', '0.17.2'),
+    ('protobuf-python', '4.23.0'),
+    ('libpng', '1.6.38'),
+    ('snappy', '1.1.9'),
+    ('zlib', '1.2.12'),
+    # Dependencies of grpcio
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('RE2', '2023-03-01'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+# Dependencies created and updated using findPythonDeps.sh:
+# https://gist.github.com/Flamefire/49426e502cd8983757bd01a08a10ae0d
+exts_list = [
+    ('wrapt', '1.15.0', {
+        'checksums': ['d06730c6aed78cee4126234cf2d071e01b44b915e725a6cb439a879ec9754a3a'],
+    }),
+    ('termcolor', '2.3.0', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['3afb05607b89aed0ffe25202399ee0867ad4d3cb4180d98aaf8eefa6a5f7d475'],
+    }),
+    ('tensorflow-estimator', version, {
+        'source_tmpl': 'tensorflow_estimator-%(version)s-py2.py3-none-any.whl',
+        'checksums': ['6f868284eaa654ae3aa7cacdbef2175d0909df9fcf11374f5166f8bf475952aa'],
+    }),
+    ('Werkzeug', '2.3.6', {
+        'checksums': ['98c774df2f91b05550078891dee5f0eb0cb797a522c757a2452b9cee5b202330'],
+    }),
+    ('tensorboard-plugin-wit', '1.8.1', {
+        'source_tmpl': 'tensorboard_plugin_wit-%(version)s-py3-none-any.whl',
+        'checksums': ['ff26bdd583d155aa951ee3b152b3d0cffae8005dc697f72b44a8e8c2a77a8cbe'],
+    }),
+    ('tensorboard-data-server', '0.7.1', {
+        'source_tmpl': 'tensorboard_data_server-%(version)s-py3-none-any.whl',
+        'checksums': ['9938bd39f5041797b33921066fba0eab03a0dd10d1887a05e62ae58841ad4c3f'],
+    }),
+    ('Markdown', '3.4.4', {
+        'checksums': ['225c6123522495d4119a90b3a3ba31a1e87a70369e03f14799ea9c0d7183a3d6'],
+    }),
+    ('grpcio', '1.56.2', {
+        'modulename': 'grpc',
+        # patch hardcoded /usr paths to prefix them with alternate sysroot path (if defined)
+        'preinstallopts': "sed -i 's@/usr@%(sysroot)s/usr@g' setup.py && " +
+                          "GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS=%(parallel)s " +
+                          " ".join(["GRPC_PYTHON_BUILD_SYSTEM_%s=True" % i for i in
+                                    (
+                                        'OPENSSL',
+                                        'ZLIB',
+                                        'RE2',
+                                        # 'ABSL',
+                                    )]),
+        'checksums': ['0ff789ae7d8ddd76d2ac02e7d13bfef6fc4928ac01e1dcaa182be51b6bcc0aaa'],
+    }),
+    ('oauthlib', '3.2.2', {
+        'checksums': ['9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918'],
+    }),
+    ('requests-oauthlib', '1.3.1', {
+        'checksums': ['75beac4a47881eeb94d5ea5d6ad31ef88856affe2332b9aafb52c6452ccf0d7a'],
+    }),
+    ('rsa', '4.9', {
+        'checksums': ['e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21'],
+    }),
+    ('pyasn1-modules', '0.3.0', {
+        'source_tmpl': 'pyasn1_modules-%(version)s.tar.gz',
+        'checksums': ['5bd01446b736eb9d31512a30d46c1ac3395d676c6f3cafa4c03eb54b9925631c'],
+    }),
+    ('cachetools', '5.3.1', {
+        'checksums': ['dce83f2d9b4e1f732a8cd44af8e8fab2dbe46201467fc98b3ef8f269092bf62b'],
+    }),
+    ('google-auth', '2.22.0', {
+        'modulename': 'google.auth',
+        'checksums': ['164cba9af4e6e4e40c3a4f90a1a6c12ee56f14c0b4868d1ca91b32826ab334ce'],
+    }),
+    ('google-auth-oauthlib', '1.0.0', {
+        'checksums': ['e375064964820b47221a7e1b7ee1fd77051b6323c3f9e3e19785f78ab67ecfc5'],
+    }),
+    ('absl-py', '1.4.0', {
+        'modulename': 'absl',
+        'checksums': ['d2c244d01048ba476e7c080bd2c6df5e141d211de80223460d5b3b8a2a58433d'],
+    }),
+    ('tensorboard', version, {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['ab69961ebddbddc83f5fa2ff9233572bdad5b883778c35e4fe94bf1798bd8481'],
+    }),
+    ('opt-einsum', '3.3.0', {
+        'source_tmpl': 'opt_einsum-%(version)s.tar.gz',
+        'checksums': ['59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549'],
+    }),
+    ('keras', '2.13.1', {
+        'source_tmpl': SOURCE_PY3_WHL,
+        'checksums': ['5ce5f706f779fa7330e63632f327b75ce38144a120376b2ae1917c00fa6136af'],
+    }),
+    ('google-pasta', '0.2.0', {
+        'modulename': 'pasta',
+        'checksums': ['c9f2c8dfc8f96d0d5808299920721be30c9eec37f2389f28904f454565c8a16e'],
+    }),
+    ('astunparse', '1.6.3', {
+        'checksums': ['5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872'],
+    }),
+    # Required by tests
+    ('portpicker', '1.5.2', {
+        'checksums': ['c55683ad725f5c00a41bc7db0225223e8be024b1fa564d039ed3390e4fd48fb3'],
+    }),
+    # System dependencies
+    ('tblib', '2.0.0', {
+        'checksums': ['a6df30f272c08bf8be66e0775fad862005d950a6b8449b94f7c788731d70ecd7'],
+    }),
+    ('astor', '0.8.1', {
+        'checksums': ['6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e'],
+    }),
+    # Optional profile plugin + dependency
+    ('gviz-api', '1.10.0', {
+        'source_tmpl': 'gviz_api-%(version)s.tar.gz',
+        'checksums': ['846692dd8cc73224fc31b18e41589bd934e1cc05090c6576af4b4b26c2e71b90'],
+    }),
+    ('tensorboard-plugin-profile', '2.13.1', {
+        'source_tmpl': 'tensorboard_plugin_profile-%(version)s.tar.gz',
+        'checksums': ['472d1cb85d7087c5294131eb640bd771f5515ecc4867030c7904718be7fc19c1'],
+    }),
+    (name, version, {
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/tensorflow/tensorflow/archive/'],
+        'patches': [
+            'TensorFlow-2.4.0_dont-use-var-lock.patch',
+            'TensorFlow-2.9.1_remove-duplicate-gpu-tests.patch',
+            'TensorFlow-2.11.0_disable-avx512-extensions.patch',
+            'TensorFlow-2.13.0_add-default-shell-env.patch',
+            'TensorFlow-2.13.0_add-missing-snappy-function.patch',
+            'TensorFlow-2.13.0_add-missing-system-absl-py-target.patch',
+            'TensorFlow-2.13.0_add-missing-system-protobuf-targets.patch',
+            'TensorFlow-2.13.0_exclude-xnnpack-on-ppc.patch',
+            'TensorFlow-2.13.0_fix-protobuf-compatibility.patch',
+            'TensorFlow-2.13.0_remove-io-gcs-filesystem-dep.patch',
+            'TensorFlow-2.13.0_remove-libclang-dep.patch',
+            'TensorFlow-2.13.0_revert-to-flatbuffers-2.0.6.patch',
+            'TensorFlow-2.13.0_unpin-gast-version.patch',
+        ],
+        'checksums': [
+            {'v2.13.0.tar.gz': 'e58c939079588623e6fa1d054aec2f90f95018266e0a970fd353a5244f5173dc'},
+            {'TensorFlow-2.4.0_dont-use-var-lock.patch':
+             'b14f2493fd2edf79abd1c4f2dde6c98a3e7d5cb9c25ab9386df874d5f072d6b5'},
+            {'TensorFlow-2.9.1_remove-duplicate-gpu-tests.patch':
+             '6fe50faab28387c622c68dc3fc0cbfb2a51000cd750c1a82f8420b54fcd2509f'},
+            {'TensorFlow-2.11.0_disable-avx512-extensions.patch':
+             'fb8e7694b5d2377cc44e6674ff85a7c50dc725f2f507cbcfda65f129f534b1cc'},
+            {'TensorFlow-2.13.0_add-default-shell-env.patch':
+             'a94b2e007bff5a08ec4e6ec3043985907a69e9eeaea69dc4fe2aa15d15b75aef'},
+            {'TensorFlow-2.13.0_add-missing-snappy-function.patch':
+             'aa063123dfea0072a80ae873bc4ffddc4e98497edb316114ba6c6f57ff18803c'},
+            {'TensorFlow-2.13.0_add-missing-system-absl-py-target.patch':
+             '94bc3b155840af942437d06c43830dabf41d94391daf61e1d0add0a7bf20a538'},
+            {'TensorFlow-2.13.0_add-missing-system-protobuf-targets.patch':
+             '77d8c8a5627493fc7c38b4de79d49e60ff6628b05ff969f4cd3ff9857176c459'},
+            {'TensorFlow-2.13.0_exclude-xnnpack-on-ppc.patch':
+             'd0818206846911d946666ded7d3216c0546e37cee1890a2f48dc1a9d71047cad'},
+            {'TensorFlow-2.13.0_fix-protobuf-compatibility.patch':
+             'a9658c035b663da1b7d1983a8e37883cc40c1c0cfa22132bb7fe19c4cbc9712a'},
+            {'TensorFlow-2.13.0_remove-io-gcs-filesystem-dep.patch':
+             '39f1cbecad4b3723481b30f18f16363ab1837c8749ee197ec88b92b493e9df67'},
+            {'TensorFlow-2.13.0_remove-libclang-dep.patch':
+             'f0d067d129e817b0d371c4e48a4a1ac08f80a2c137d52b05a3c7c4370dcbd1e5'},
+            {'TensorFlow-2.13.0_revert-to-flatbuffers-2.0.6.patch':
+             'f22757250181b6165e4b2ef1e199bd4cb344a9429be5a1086638f25bcbf650fc'},
+            {'TensorFlow-2.13.0_unpin-gast-version.patch':
+             '61e0c9b67aa6c48176fcbb429bf6aa36c4fdde604c82c02f58a043412fecf285'},
+        ],
+        'test_script': 'TensorFlow-2.x_mnist-test.py',
+        'test_tag_filters_cpu': '-gpu,-tpu,-no_cuda_on_cpu_tap,'
+                                '-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
+        'test_tag_filters_gpu': 'gpu,-no_gpu,-nogpu,-gpu_cupti,-no_cuda11,'
+                                '-no_pip,-no_oss,-oss_serial,-benchmark-test,-v1only',
+        'test_targets': [
+            '//tensorflow/core/...',
+            '-//tensorflow/core:example_java_proto',
+            '-//tensorflow/core/example:example_protos_closure',
+            '//tensorflow/cc/...',
+            '//tensorflow/c/...',
+            '//tensorflow/python/...',
+            '-//tensorflow/c/eager:c_api_test_gpu',
+            '-//tensorflow/c/eager:c_api_distributed_test',
+            '-//tensorflow/c/eager:c_api_distributed_test_gpu',
+            '-//tensorflow/c/eager:c_api_cluster_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_function_test_gpu',
+            '-//tensorflow/c/eager:c_api_remote_test_gpu',
+            '-//tensorflow/core/common_runtime:collective_param_resolver_local_test',
+            '-//tensorflow/core/kernels/mkl:mkl_fused_ops_test',
+            '-//tensorflow/core/kernels/mkl:mkl_fused_batch_norm_op_test',
+            '-//tensorflow/core/ir/importexport/tests/roundtrip/...',
+        ],
+        'testopts': "--test_timeout=3600 --test_size_filters=small",
+        'testopts_gpu': "--test_timeout=3600 --test_size_filters=small "
+                        "--run_under=//tensorflow/tools/ci_build/gpu_build:parallel_gpu_execute",
+        'with_xla': True,
+    }),
+]
+
+moduleclass = 'lib'

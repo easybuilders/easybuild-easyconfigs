@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'Ghostscript'
+version = '10.01.2'
+
+homepage = 'https://ghostscript.com'
+description = """Ghostscript is a versatile processor for PostScript data with the ability to render PostScript to
+ different targets. It used to be part of the cups printing stack, but is no longer used for that."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10012']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['a4cd61a07fec161bee35da0211a5e5cde8ff8a0aaf942fc0176715e499d21661']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('pkgconf', '1.9.5'),
+]
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('libpng', '1.6.39'),
+    ('freetype', '2.13.0'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('expat', '2.5.0'),
+    ('GLib', '2.77.1'),
+    ('cairo', '1.17.8'),
+    ('LibTIFF', '4.5.0'),
+    ('GTK3', '3.24.37'),
+]
+
+# Do not use local copies of zlib, jpeg, freetype, and png
+preconfigopts = 'mv zlib zlib.no && mv jpeg jpeg.no && mv freetype freetype.no && '
+preconfigopts += 'mv libpng libpng.no && export LIBS="$LIBS -L$EBROOTZLIB/lib -lz" && '
+configopts = "--with-system-libtiff --enable-dynamic --disable-hidden-visibility"
+
+# also build and install shared libs
+build_cmd_targets = ['', 'so']
+installopts = 'soinstall'
+
+postinstallcmds = [
+    # install header files
+    "mkdir -p %(installdir)s/include/%(namelower)s",
+    "install -v -m644 base/*.h %(installdir)s/include/%(namelower)s",
+    "install -v -m644 psi/*.h %(installdir)s/include/%(namelower)s",
+]
+
+sanity_check_paths = {
+    'files': ['bin/gs', 'lib/libgs.%s' % SHLIB_EXT],
+    'dirs': ['lib/%(namelower)s', 'include/%(namelower)s', 'share/man'],
+}
+
+sanity_check_commands = ["gs --help"]
+
+moduleclass = 'tools'

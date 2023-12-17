@@ -1,0 +1,105 @@
+easyblock = 'PythonBundle'
+
+name = 'SciPy-bundle'
+version = '2023.07'
+
+homepage = 'https://python.org/'
+description = "Bundle of Python packages for scientific software"
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+toolchainopts = {'pic': True, 'lowopt': True}
+
+builddependencies = [
+    ('hypothesis', '6.82.0'),
+    ('UnZip', '6.0'),
+    # scipy >= 1.9.0 uses Meson/Ninja
+    ('Meson', '1.1.1'),
+    ('Ninja', '1.11.1'),
+    ('pkgconf', '1.9.5'),   # required by scipy
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('pybind11', '2.11.1'),  # required by scipy
+]
+
+use_pip = True
+
+# order is important!
+exts_list = [
+    ('numpy', '1.25.1', {
+        'patches': [
+            'numpy-1.22.3_disable-broken-override-test.patch',
+            ('numpy-1.25.1_fix-duplicate-avx512-symbols.patch', 'numpy/core/src/npysort/x86-simd-sort'),
+            'numpy-1.25.1_fix-undefined-avx512-reference.patch',
+            'numpy-1.25.1_fix-test_features.patch',
+            'numpy-1.25.1_fix-test_half.patch',
+        ],
+        'checksums': [
+            {'numpy-1.25.1.tar.gz': '9a3a9f3a61480cc086117b426a8bd86869c213fc4072e606f01c4e4b66eb92bf'},
+            {'numpy-1.22.3_disable-broken-override-test.patch':
+             '9c589bb073b28b25ff45eb3c63c57966aa508dd8b318d0b885b6295271e4983c'},
+            {'numpy-1.25.1_fix-duplicate-avx512-symbols.patch':
+             '8e32087c279b7193ae3507953480601200c9eff021819f3001d78c232c5852e6'},
+            {'numpy-1.25.1_fix-undefined-avx512-reference.patch':
+             'c4b66da93bf36071663f122de1ae668386cc6ab0154d21fa3e14ed7ddfe2a72c'},
+            {'numpy-1.25.1_fix-test_features.patch':
+             '1c05ee5d105fe2f824416dd6dd5c64ed0c1cd710a002b4e6dbfafff19203adc5'},
+            {'numpy-1.25.1_fix-test_half.patch': '341b99ae1801feebf382c92591794eeefdf451bc34b98f20aa985ea897488951'},
+        ],
+    }),
+    ('ply', '3.11', {
+        'checksums': ['00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3'],
+    }),
+    ('gast', '0.5.4', {
+        'checksums': ['9c270fe5f4b130969b54174de7db4e764b09b4f7f67ccfc32480e29f78348d97'],
+    }),
+    ('beniget', '0.4.1', {
+        'checksums': ['75554b3b8ad0553ce2f607627dad3d95c60c441189875b98e097528f8e23ac0c'],
+    }),
+    ('pythran', '0.13.1', {
+        'checksums': ['8aad08162f010e5425a7b254dd68d83311b430bb29f9252dce2eff3ba39497dd'],
+    }),
+    ('versioneer', '0.29', {
+        'checksums': ['5ab283b9857211d61b53318b7c792cf68e798e765ee17c27ade9f6c924235731'],
+    }),
+    ('scipy', '1.11.1', {
+        'enable_slow_tests': True,
+        'ignore_test_result': False,
+        'patches': [
+            'scipy-1.11.1_disable-tests.patch',
+            'scipy-1.11.1_xfail-aarch64_test_maxiter_worsening.patch',
+        ],
+        'checksums': [
+            {'scipy-1.11.1.tar.gz': 'fb5b492fa035334fd249f0973cc79ecad8b09c604b42a127a677b45a9a3d4289'},
+            {'scipy-1.11.1_disable-tests.patch': '906bfb03397d94882ccdc1b93bc2c8e854e0e060c2d107c83042992394e6a4af'},
+            {'scipy-1.11.1_xfail-aarch64_test_maxiter_worsening.patch':
+             '918c8e6fa8215d459126f267764c961bde729ea4a116c7f6287cddfdc58ffcea'},
+        ],
+    }),
+    ('numexpr', '2.8.4', {
+        'checksums': ['d5432537418d18691b9115d615d6daa17ee8275baef3edf1afbbf8bc69806147'],
+    }),
+    ('Bottleneck', '1.3.7', {
+        'checksums': ['e1467e373ad469da340ed0ff283214d6531cc08bfdca2083361a3aa6470681f8'],
+    }),
+    ('tzdata', '2023.3', {
+        'checksums': ['11ef1e08e54acb0d4f95bdb1be05da659673de4acbd21bf9c69e94cc5e907a3a'],
+    }),
+    ('pandas', '2.0.3', {
+        'preinstallopts': "export PANDAS_CI=0 && ",
+        'checksums': ['c02f372a88e0d17f36d3093a644c73cfc1788e876a7c4bcb4020a77512e2043c'],
+    }),
+    ('mpmath', '1.3.0', {
+        'checksums': ['7a28eb2a9774d00c7bc92411c19a89209d5da7c4c9a9e227be8330a23a25b91f'],
+    }),
+    ('deap', '1.4.0', {
+        'modulename': 'deap.base',
+        'checksums': ['ffef2921932a0edbe634fcb6d156189e7a364bf638a2af4ae5d59931a9a4c8cc'],
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lang'
