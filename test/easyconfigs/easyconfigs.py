@@ -419,6 +419,8 @@ class EasyConfigTest(TestCase):
             # filter out BLIS and libFLAME with -amd versionsuffix
             # (AMD forks, used in gobff/*-amd toolchains)
             (['BLIS', 'libFLAME'], '-amd'),
+            # filter out OpenBLAS with -int8 versionsuffix, used by GAMESS-US
+            ('OpenBLAS', '-int8'),
             # filter out ScaLAPACK with -BLIS-* versionsuffix, used in goblf toolchain
             ('ScaLAPACK', ('-BLIS-', True)),
             # filter out ScaLAPACK with -bf versionsuffix, used in gobff toolchain
