@@ -1,0 +1,56 @@
+easyblock = 'ConfigureMake'
+
+name = 'RSEM'
+version = '1.3.3'
+
+homepage = 'http://deweylab.github.io/RSEM/'
+description = """RNA-Seq by Expectation-Maximization"""
+
+toolchain = {'name': 'gcccoreflexiblas', 'version': '2023a'}
+
+source_urls = ['https://github.com/deweylab/RSEM/archive/']
+sources = ['v%(version)s.tar.gz']
+patches = ['RSEM-1.3.1_makefiles.patch']
+checksums = [
+    '90e784dd9df8346caa2a7e3ad2ad07649608a51df1c69bfb6e16f45e611a40dc',  # v1.3.3.tar.gz
+    '2d244659206c78655b92f1bd519ee65f28a6b5f9418dfad04e887b64eca6641b',  # RSEM-1.3.1_makefiles.patch
+]
+
+skipsteps = ['configure']
+
+buildopts = ' && make ebseq '
+
+installopts = "prefix=%(installdir)s"
+
+dependencies = [
+    #('ncurses', '6.0'),
+    #('zlib', '1.2.8'),
+    ('Perl', '5.30.2'),
+    ('R', '4.3.1'),
+]
+
+local_rsem_bins = [
+    "rsem-calculate-expression", "rsem-plot-model", "rsem-plot-transcript-wiggles",
+    "rsem-bam2wig", "rsem-generate-data-matrix", "rsem-run-em", "convert-sam-for-rsem",
+]
+
+postinstallcmds = [
+    "cp -r convert-sam-for-rsem extract-transcript-to-gene-map-from-trinity  %(installdir)s/bin/",
+    "cp -r rsem-calculate-expression rsem-control-fdr rsem-generate-data-matrix  %(installdir)s/bin/",
+    "cp -r rsem-generate-ngvector rsem-plot-transcript-wiggles rsem-prepare-reference  %(installdir)s/bin/",
+    "cp -r rsem-run-ebseq rsem-run-prsem-testing-procedure %(installdir)s/bin/",
+    "cp -r EBSeq %(installdir)s/bin/",
+    "mkdir -p %(installdir)s/lib && cp rsem_perl_utils.pm %(installdir)s/lib/",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_rsem_bins],
+    'dirs': ['bin/samtools-1.3', 'bin/EBSeq'],
+}
+
+modextrapaths = {
+    'PERL5LIB': 'lib',
+    'PATH': 'bin/EBSeq'
+}
+
+moduleclass = 'bio'
