@@ -17,7 +17,7 @@ checksums = ['7c5aaca5fa0113ccb32d1b7b6cb1b97b5562623e71d8a529f833ab904741a5a7',
 extract_sources = True
 
 postinstallcmds = [
-  # Avoid applying SP2 causes workbench mechanical crash with msgs:
+  # Dont apply SP2 causes workbench mechanical crash with msgs:
   # Error! Unable to create model. Tcp transport error.
   # Warning! Unable to clean addins in Mechanical.  Connection refused
   "cd %(builddir)s;./INSTALL -install_dir %(installdir)s -silent",
@@ -45,17 +45,33 @@ postinstallcmds = [
   # Run setrpaths.sh for any_interpreter
   "find %(installdir)s -type f \( -name 'lmutil' -o -name 'lmgrd' -o -name 'NTI' \) -exec \
    /cvmfs/soft.computecanada.ca/easybuild/bin/setrpaths.sh --path {} --any_interpreter \;",
-  # Avoid warning starting workbench mechanical: sh: domainname: command not found
-  "cd %(installdir)s/v232/Tools/mono/Linux64/bin;\
-   ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname domainname",
-  # Replace '/bin/sh' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh'
-  "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
+  # Avoid warning when starting workbench mechanical: sh: domainname: command not found
+  #"whichhostname=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/hostname;\
+  #"whichhostname=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/hostname;\
+  "whichhostname=$(which hostname);\
+   echo \"whichhostname = $whichhostname\";\
+   cd %(installdir)s/v232/Tools/mono/Linux64/bin;\
+   ln -s $whichhostname domainname;",
+  # Replace '/bin/sh' instances
+  #"whichsh=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/sh;\
+  #"whichsh=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/sh;\
+  "whichsh=$(which sh);\
+   echo \"whichsh = $whichsh\";\
+   whichshesc=\"$(echo \"$whichsh\" | sed -e 's/[\/&]/\\\&/g')\";\
+   echo \"whichshesc = $whichshesc\";\
+   find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
    xargs -0 grep -riIlZ '/bin/sh' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
-   sed -i 's|\/bin\/sh|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/sh|g' \"$file\"; done;",
-  # Replace '/bin/bash' with '/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash'
-  "find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
+   sed -i \"s|\/bin\/sh|$whichshesc|g\" \"$file\"; done;",
+  # Replace '/bin/bash' instances
+  #"whichbash=/cvmfs/soft.computecanada.ca/gentoo/2020/bin/bash;\
+  #"whichbash=/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/bin/bash;\
+  "whichbash=$(which bash);\
+   echo \"my whichbash = \$whichbash\";\
+   whichbashesc=\"$(echo \"$whichbash\" | sed -e 's/[\/&]/\\\&/g')\";\
+   echo \"my whichbashesc = $whichbashesc\";\
+   find %(installdir)s -type f ! -size 0 -not -name 'fluent.dmp*' -not -name 'flprim.dmp*' -print0 | \
    xargs -0 grep -riIlZ '/bin/bash' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
-   sed -i 's|\/bin\/bash|\/cvmfs\/soft.computecanada.ca\/gentoo\/2020\/bin\/bash|g' \"$file\"; done;",
+   sed -i \"s|\/bin\/bash|$whichbashesc|g\" \"$file\"; done;",
   # Remove /sbin/ from both of the /sbin/lspci entries inside libApipWrapper.so
   "find %(installdir)s -type f ! -size 0 -name 'libApipWrapper.so' -print0 | xargs -0 \
    grep -rilZ '/sbin/lspci' | while IFS= read -r -d $'\\0' file; do echo \"$file\"; \
@@ -69,7 +85,7 @@ postinstallcmds = [
   "cd %(installdir)s/v232/tp/qt/5.9.6/linx64/lib;\
    mv libjpeg.so.62.0.0 libjpeg.so.62.0.0-orig;\
    mv libjpeg.so.62 libjpeg.so.62-orig;\
-   ln -s /cvmfs/soft.computecanada.ca/gentoo/2020/usr/lib/libjpeg.so.62 libjpeg.so.62;",
+   ln -s $EPREFIX/usr/lib64/libjpeg.so.62 libjpeg.so.62;",
   # Make sharcnet license the default for coupled solvers
   "cd %(installdir)s/shared_files/licensing;\
    echo 'SERVER=1055@license3.sharcnet.ca' > ansyslmd.ini;\
