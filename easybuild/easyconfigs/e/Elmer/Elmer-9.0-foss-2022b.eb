@@ -1,0 +1,53 @@
+easyblock = 'CMakeMake'
+
+name = 'Elmer'
+version = '9.0'
+
+homepage = 'https://www.csc.fi/web/elmer/elmer'
+description = """Elmer is an open source multiphysical simulation software mainly developed by 
+CSC - IT Center for Science (CSC). Elmer includes physical models of fluid dynamics, structural 
+mechanics, electromagnetics, heat transfer and acoustics, for example. These are described by 
+partial differential equations which Elmer solves by the Finite Element Method (FEM)."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'opt': True, 'optarch': True}
+
+source_urls = ['https://github.com/ElmerCSC/elmerfem/archive/']
+sources = ['release-%(version)s.tar.gz']
+patches = ['Elmer-9.0-DCRComplexSolve.patch', 'Elmer-9.0-Qwt-6.2-Fix.patch', 'Elmer-9.0-renderarea-Qt5.patch']
+checksums = [
+    {'release-9.0.tar.gz': '08c5bf261e87ff37456c1aa0372db3c83efabe4473ea3ea0b8ec66f5944d1aa0'},
+    {'Elmer-9.0-DCRComplexSolve.patch': '6419890b32f556fc4d531c92abed5dafb5c0867c420b73ec6477507ea6466dd9'},
+    {'Elmer-9.0-Qwt-6.2-Fix.patch': 'c831c2072f6ce8f9753074832b14a3be0c5733272991b12a5d3c69b601ccb2aa'},
+    {'Elmer-9.0-renderarea-Qt5.patch': '6218e8669477a1352faf72e52c1e7764451c6765ab2082f263054024115b2018'},
+]
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('Hypre', '2.27.0'),
+    ('MUMPS', '5.6.1', '-metis'),
+    ('Qt5', '5.15.7'),
+    ('Qwt', '6.2.0'),
+    #    ('Trilinos', '12.0.1', '-Python-2.7.9'),
+]
+
+configopts = '-DWITH_ELMERGUI:BOOL=TRUE -DWITH_QT5:BOOL=TRUE '
+configopts += '-DWITH_MPI:BOOL=TRUE '
+configopts += '-DCMAKE_C_COMPILER=$(which $CC) '
+configopts += '-DCMAKE_Fortran_COMPILER=$(which $F90) '
+configopts += '-DCMAKE_CXX_COMPILER=$(which $CXX) '
+configopts += '-DBLAS_LIBRARIES="-L$EBVARBLAS_LAPACK_INC_DIR $EBVARLIBBLAS" '
+configopts += '-DLAPACK_LIBRARIES="-L$EBVARBLAS_LAPACK_INC_DIR $EBVARLIBLAPACK" '
+configopts += '-DSCALAPACK_LIBRARIES="-L$EBVARSCALAPACK_LIB_DIR $EBVARLIBSCALAPACK" '
+
+sanity_check_paths = {
+    'files': ['lib/elmersolver/libelmersolver.so'] +
+             ['bin/%s' % x for x in ['elmerf90', 'ElmerGrid', 'elmerld', 'ElmerSolver',
+              'ElmerSolver_mpi', 'GebhardtFactors', 'matc', 'Mesh2D', 'ViewFactors']],
+    'dirs': ['share/elmersolver/include']
+}
+
+moduleclass = 'cae'
