@@ -1,0 +1,51 @@
+Fix build error with recent MPI version
+https://github.com/icl-utk-edu/hpcc/commit/d2b9a19b4498fdced2860f3394c03f27714b6160
+From d71a04d69c727b9baf0a78bb445db3ffc4ab4c91 Mon Sep 17 00:00:00 2001
+From: Francois Mazen <francois@mzf.fr>
+Date: Sat, 15 May 2021 14:49:14 +0200
+Subject: [PATCH] Apply debian patch.
+
+---
+ hpl/src/comm/HPL_packL.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/hpl/src/comm/HPL_packL.c b/hpl/src/comm/HPL_packL.c
+index ddfa230..948c08d 100644
+--- a/hpl/src/comm/HPL_packL.c
++++ b/hpl/src/comm/HPL_packL.c
+@@ -169,7 +169,7 @@ int HPL_packL
+          type[nbufs] = MPI_DOUBLE;
+          blen[nbufs] = m1;
+          if( ierr == MPI_SUCCESS )
+-            ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
++            ierr =   MPI_Get_address( bufs[nbufs], &disp[nbufs] );
+  
+          nbufs++; len -= m1; j1++; ibuf += m1;
+ /*
+@@ -183,7 +183,7 @@ int HPL_packL
+             type[nbufs] = MPI_DOUBLE;
+             blen[nbufs] = m1;
+             if( ierr == MPI_SUCCESS )
+-               ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
++               ierr =   MPI_Get_address( bufs[nbufs], &disp[nbufs] );
+  
+             nbufs++; len -= m1; j1++; ibuf += m1;
+          }
+@@ -197,7 +197,7 @@ int HPL_packL
+          type[nbufs] = MPI_DOUBLE;
+          blen[nbufs] = len;
+          if( ierr == MPI_SUCCESS )
+-            ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
++            ierr =   MPI_Get_address( bufs[nbufs], &disp[nbufs] );
+          nbufs++;
+       }
+  
+@@ -208,7 +208,7 @@ int HPL_packL
+  * construct the struct type 
+  */
+       if( ierr == MPI_SUCCESS )
+-         ierr =   MPI_Type_struct( nbufs, blen, disp, type,
++         ierr =   MPI_Type_create_struct( nbufs, blen, disp, type,
+                                    &PANEL->dtypes[IBUF] );
+ /*
+  * release temporaries

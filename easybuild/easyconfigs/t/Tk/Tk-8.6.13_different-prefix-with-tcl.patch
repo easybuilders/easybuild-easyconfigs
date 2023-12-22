@@ -1,0 +1,31 @@
+fix for:
+    _tkinter.TclError: Can't find a usable tk.tcl in the following directories: ...
+based on https://github.com/NixOS/nixpkgs/commit/decd2feb0a1bc80940e697fa66e3b25383360c30
+see also https://github.com/NixOS/nixpkgs/issues/1479
+author: Kenneth Hoste (HPC-UGent)
+
+Ported to 8.6.13 by Alexander Grund (TU Dresden)
+
+diff -ru tk8.6.13-orig/generic/tkWindow.c tk8.6.13/generic/tkWindow.c
+--- tk8.6.13-orig/generic/tkWindow.c	2023-09-26 10:56:34.715911109 +0200
++++ tk8.6.13/generic/tkWindow.c	2023-09-26 10:53:01.033046206 +0200
+@@ -1045,6 +1045,7 @@
+ 
+     Tcl_SetVar2(interp, "tk_patchLevel", NULL, TK_PATCH_LEVEL, TCL_GLOBAL_ONLY);
+     Tcl_SetVar2(interp, "tk_version",    NULL, TK_VERSION,     TCL_GLOBAL_ONLY);
++    Tcl_SetVar2(interp, "tk_library",    NULL, TK_LIBRARY,     TCL_GLOBAL_ONLY);
+ 
+     tsdPtr->numMainWindows++;
+     return tkwin;
+diff -ru tk8.6.13-orig/unix/Makefile.in tk8.6.13/unix/Makefile.in
+--- tk8.6.13-orig/unix/Makefile.in	2023-09-26 10:54:29.370096346 +0200
++++ tk8.6.13/unix/Makefile.in	2023-09-26 10:55:16.768513560 +0200
+@@ -1033,7 +1033,7 @@
+ 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tkVisual.c
+ 
+ tkWindow.o: $(GENERIC_DIR)/tkWindow.c tkUuid.h
+-	$(CC) -c $(CC_SWITCHES) -I. $(GENERIC_DIR)/tkWindow.c
++	$(CC) -c $(CC_SWITCHES) -DTK_LIBRARY=\"${TK_LIBRARY}\" -I. $(GENERIC_DIR)/tkWindow.c
+ 
+ tkButton.o: $(GENERIC_DIR)/tkButton.c
+ 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tkButton.c
