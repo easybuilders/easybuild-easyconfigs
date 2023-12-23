@@ -979,8 +979,9 @@ class EasyConfigTest(TestCase):
         # is updated in place (sources for components are added to the 'parent' sources) in Bundle's __init__;
         # therefore, we need to reset 'sources' to an empty list here if Bundle is used...
         # likewise for 'patches' and 'checksums'
+        bundle_easyblocks = ['Bundle', 'CargoPythonBundle', 'PythonBundle', 'EB_OpenSSL_wrapper']
         for ec in self.changed_ecs:
-            if ec['easyblock'] in ['Bundle', 'PythonBundle', 'EB_OpenSSL_wrapper'] or ec['name'] in ['Clang-AOMP']:
+            if ec['easyblock'] in bundle_easyblocks or ec['name'] in ['Clang-AOMP']:
                 ec['sources'] = []
                 ec['patches'] = []
                 ec['checksums'] = []
@@ -1045,13 +1046,14 @@ class EasyConfigTest(TestCase):
                     failing_checks.append("'source_urls' should not be defined when using the default value "
                                           "in %s" % ec_fn)
 
-            # use_pip should be set when using PythonPackage or PythonBundle (except for whitelisted easyconfigs)
-            if easyblock in ['PythonBundle', 'PythonPackage']:
+            # use_pip should be set when using PythonPackage or PythonBundle,
+            # or an easyblock that derives from it (except for whitelisted easyconfigs)
+            if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' should be set in %s" % ec_fn)
 
             # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
-            if easyblock == 'PythonBundle':
+            if easyblock in ['CargoPythonBundle', 'PythonBundle']:
                 if download_dep_fail or exts_download_dep_fail:
                     fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
                     failing_checks.append(fail)
@@ -1103,7 +1105,7 @@ class EasyConfigTest(TestCase):
                 failing_checks.append(msg)
 
             # require that running of "pip check" during sanity check is enabled via sanity_pip_check
-            if easyblock in ['PythonBundle', 'PythonPackage']:
+            if easyblock in ['CargoPythonBundle', 'CargoPythonPackage', 'PythonBundle', 'PythonPackage']:
                 sanity_pip_check = ec.get('sanity_pip_check') or exts_default_options.get('sanity_pip_check')
                 if not sanity_pip_check and not any(re.match(regex, ec_fn) for regex in whitelist_pip_check):
                     failing_checks.append("sanity_pip_check should be enabled in %s" % ec_fn)
@@ -1140,8 +1142,8 @@ class EasyConfigTest(TestCase):
         # including CargoPythonPackage, CMakePythonPackage, GoPackage, JuliaBundle, PerlBundle,
         #           PythonBundle & PythonPackage;
         # BuildEnv, ModuleRC and Toolchain easyblocks doesn't install anything so there is nothing to check.
-        whitelist = ['BuildEnv', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain', 'GoPackage',
-                     'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
+        whitelist = ['BuildEnv', 'CargoPythonBundle', 'CargoPythonPackage', 'CMakePythonPackage', 'CrayToolchain',
+                     'GoPackage', 'JuliaBundle', 'ModuleRC', 'PerlBundle', 'PythonBundle', 'PythonPackage', 'Toolchain']
         # Bundles of dependencies without files of their own
         # Autotools: Autoconf + Automake + libtool, (recent) GCC: GCCcore + binutils, CUDA: GCC + CUDAcore,
         # CESM-deps: Python + Perl + netCDF + ESMF + git, FEniCS: DOLFIN and co,
