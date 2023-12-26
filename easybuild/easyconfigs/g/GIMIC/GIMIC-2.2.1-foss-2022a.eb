@@ -36,14 +36,30 @@ preconfigopts = 'FCFLAGS="$FCFLAGS -fallow-argument-mismatch" '
 configopts = '-DENABLE_OPENMP=ON -DENABLE_MPI=OFF '
 # enable numerical libraries in this toolchain
 configopts += '-DENABLE_MKL_FLAG=OFF -DENABLE_BLAS=ON -DENABLE_LAPACK=ON '
+configopts += '-DPYTHON_VERSION=%(pyshortver)s '
+
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'source_urls': [PYPI_SOURCE],
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+exts_list = [
+    ('pyparsing', '2.4.7', {
+        'checksums': ['c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1'],
+    }),
+]
+
+modextrapaths = {
+    'PYTHONPATH': ['bin/QCTools', 'lib/python%(pyshortver)s/site-packages'],
+}
 
 sanity_check_paths = {
     'files': ['bin/gimic', 'lib/libgimic2.a'],
-    'dirs': ['include', 'bin/QCTools', 'lib/python/site-packages'],
+    'dirs': ['include', 'bin/QCTools', 'lib/python%(pyshortver)s/site-packages'],
 }
 
-modextrapaths = {
-    'PYTHONPATH': ['lib/python/site-packages', 'bin/QCTools'],
-}
+sanity_check_commands = ['gimic --help']
 
 moduleclass = 'chem'
