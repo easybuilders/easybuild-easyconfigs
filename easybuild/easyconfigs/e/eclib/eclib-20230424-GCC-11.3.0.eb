@@ -1,0 +1,36 @@
+easyblock = 'ConfigureMake'
+
+name = 'eclib'
+version = '20230424'
+
+homepage = 'https://github.com/JohnCremona/eclib'
+description = """The eclib package includes mwrank (for 2-descent on elliptic curves over Q)
+ and modular symbol code used to create the elliptic curve database."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/JohnCremona/eclib/releases/download/v%(version)s']
+sources = [SOURCE_TAR_BZ2]
+checksums = ['1422decfcabebb0ad42f7f58c5aefe5bd8fa11757b45e31a186384fd037cd5c1']
+
+builddependencies = [('Autotools', '20220317')]
+
+dependencies = [
+    ('NTL', '11.5.1'),
+    ('PARI-GP', '2.15.4'),
+]
+
+preconfigopts = "autoreconf --install && "
+
+configopts = "--with-ntl=$EBROOTNTL --with-pari=$EBROOTPARI"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ecnf', 'mwrank', 'pcurve', 'qexp']] +
+             ['include/eclib/%s.h' % h for h in ['curve', 'egr', 'vector']] +
+             ['lib/libec.%s' % e for e in ['a', SHLIB_EXT]],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = ["mwrank -h"]
+
+moduleclass = 'math'
