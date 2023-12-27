@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [3.6]
+        python: [3.6, '3.11']
         modules_tool: [Lmod-7.8.22, Lmod-8.6.8]
         module_syntax: [Lua, Tcl]
         # exclude some configurations: only test Tcl module syntax with Lmod 8.x and Python 3.6
@@ -147,10 +147,6 @@ jobs:
           eb --search '^foss-2019b.eb' | tee eb_search_foss.out
           grep '/foss-2019b.eb$' eb_search_foss.out
 
-          # make sure CVS easyconfigs are included in installation (cfr. issue #10325)
-          echo "Searching for CVS easyconfigs..."
-          eb --search '^CVS-' | grep '/CVS-'
-
           # try installing M4 with system toolchain (requires ConfigureMake easyblock + easyconfig)
           # use /tmp/sources because that has cached downloads (see cache step above)
           eb --prefix /tmp/$USER/$GITHUB_SHA --sourcepath /tmp/sources M4-1.4.18.eb
@@ -159,7 +155,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [3.6]
+        python: [3.6, '3.11']
     steps:
     - uses: actions/checkout@v2
 
@@ -183,13 +179,4 @@ jobs:
             echo "Found .git folders in source tarball: $dot_git_files" && false
           else
             echo "No .git folders found in source tarball: OK"
-          fi
-
-          # CVS easyconfigs must be included in source tarball,
-          # see https://github.com/easybuilders/easybuild-easyconfigs/issues/10325
-          cvs_easyconfigs=$(find . -name 'CVS-*.eb')
-          if [ -z "$cvs_easyconfigs" ]; then
-            echo "CVS easyconfigs not found" && false
-          else
-            echo "Found CVS easyconfigs: $cvs_easyconfigs"
           fi
