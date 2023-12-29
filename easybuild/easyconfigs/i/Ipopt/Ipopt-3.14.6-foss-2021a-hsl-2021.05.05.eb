@@ -1,0 +1,36 @@
+# This version included the HSL lib
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'Ipopt'
+version = '3.14.6'
+versionsuffix = '-hsl-2021.05.05'
+
+homepage = 'https://projects.coin-or.org/Ipopt'
+description = """IPOPT (Interior Point Optimizer, pronounced Eye-Pea-Opt)
+is an open source software package for large-scale nonlinear optimization. 
+This installation also includes the coinhsl package."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://github.com/coin-or/Ipopt/archive/refs/tags/releases']
+sources = ['%(version)s.tar.gz']
+checksums = ['e4f2ac6968107003ab6a7b226cc12b94cfc59443159d6bdbf74d9a07047e1d84']
+
+dependencies = [
+    ('AMPL-MP', '3.1.0'),
+    ('MUMPS', '5.4.0', '-metis'),
+    ('coinhsl', '2021.05.05'),
+]
+
+configopts = '--with-mumps-cflags="-I$EBROOTMUMPS/include" --with-mumps-lflags="-ldmumps -lmetis"'
+configopts += ' --with-lapack="$LIBLAPACK" --with-asl-cflags="-I$EBROOTAMPLMINMP/include/asl"'
+configopts += ' --with-asl-lflags="-lasl"'
+
+sanity_check_paths = {
+    'files': ['lib/libipopt.%s' % SHLIB_EXT, 'lib/libsipopt.%s' % SHLIB_EXT],
+    'dirs': ['include/coin-or', 'lib/pkgconfig'],
+}
+
+moduleclass = 'math'
