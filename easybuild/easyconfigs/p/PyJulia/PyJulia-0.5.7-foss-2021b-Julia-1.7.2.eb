@@ -1,0 +1,35 @@
+easyblock = 'PythonPackage'
+
+name = 'PyJulia'
+version = '0.5.7'
+local_julia_ver = '1.7.2'
+versionsuffix = '-Julia-%s' % local_julia_ver
+
+homepage = 'https://pyjulia.readthedocs.io'
+description = "Julia/Python bridge with IPython support."
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://pypi.python.org/packages/source/j/julia']
+sources = ['julia-%(version)s.tar.gz']
+checksums = ['f24b9788f3e30f33d53fc8854f2fcc54193c84412149cfbc652bde2edd6e8a85']
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Julia', local_julia_ver, '-linux-%s' % ARCH, True),
+]
+
+download_dep_fail = True
+use_pip = True
+
+# FIXME: need to control where Julia packages are installed somehow...
+postinstallcmds = [
+    "PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH "
+    "python -c 'import julia; julia.install()'",
+]
+
+sanity_pip_check = True
+
+options = {'modulename': 'julia'}
+
+moduleclass = 'lib'
