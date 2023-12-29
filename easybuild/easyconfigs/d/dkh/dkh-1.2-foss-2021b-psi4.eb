@@ -1,0 +1,36 @@
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'dkh'
+version = '1.2'
+versionsuffix = '-psi4'
+
+homepage = 'https://github.com/psi4/dkh'
+description = """Wolf, Reiher, and Hess's Douglas-Kroll-Hess relativistic correction 
+at 2nd–4th order (http://www.reiher.ethz.ch/software/dkh-x2c.html) wrapped in CMake 
+for Psi4 (https://github.com/psi4/psi4)"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/psi4/dkh/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['757cd4f9c1bf9a1c63c980e4478115b5a2a750b80b477522d7090d2326e43a1d']
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+]
+
+local_common_configopts = '-DBUILD_FPIC=ON '
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+
+sanity_check_paths = {
+    'files': ['lib/libdkh.a', 'lib/libdkh.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'chem'
