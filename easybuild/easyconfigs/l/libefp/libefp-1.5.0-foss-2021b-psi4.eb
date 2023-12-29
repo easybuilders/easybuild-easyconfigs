@@ -1,0 +1,51 @@
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeMake'
+
+name = 'libefp'
+version = '1.5.0'
+versionsuffix = '-psi4'
+
+homepage = 'https://github.com/ilyak/libefp'
+description = """The Effective Fragment Potential (EFP) method allows one 
+to describe large molecular systems by replacing chemically inert part of 
+a system by a set of Effective Fragments while performing regular ab 
+initio calculation on the chemically active part [1-8]. The LIBEFP library 
+is a full implementation of the EFP method. It allows users to easily 
+incorporate EFP support into their favourite quantum chemistry package. 
+LIBEFP is used by many major quantum chemistry packages, such as Q-Chem, 
+PSI4, NWChem, GAMESS, Molcas, and others."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/ilyak/libefp/archive']
+sources = ['%(version)s.tar.gz']
+
+checksums = [
+    '2ad217c56afd2e2560b2f26d01a3bf465dbb88bf488d67f2cbdfe382e6df517a'  # 1.5.0.tar.gz
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+]
+
+local_common_configopts = '-DINSTALL_DEVEL_HEADERS=ON '
+# PSI4 requires that to be off
+local_common_configopts += '-DFRAGLIB_UNDERSCORE_L=OFF -DFRAGLIB_DEEP=OFF '
+local_common_configopts += '-DFRAGLIB_DEEP=OFF -DENABLE_OPENMP=OFF '
+
+# perform iterative build to get both static and shared libraries
+configopts = [
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=OFF',
+    local_common_configopts + ' -DBUILD_SHARED_LIBS=ON',
+]
+# Despite the documentation saying so, this does actually not work.
+# See also bottom of CMakeLists.txt
+# runtest = 'check'
+
+sanity_check_paths = {
+    'files': ['lib/libefp.a', 'lib/libefp.%s' % SHLIB_EXT],
+    'dirs': ['include', 'share'],
+}
+
+moduleclass = 'lib'
