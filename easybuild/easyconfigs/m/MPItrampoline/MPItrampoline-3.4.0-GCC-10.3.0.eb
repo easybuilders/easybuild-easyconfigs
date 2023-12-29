@@ -1,0 +1,105 @@
+easyblock = 'Bundle'
+
+name = 'MPItrampoline'
+version = '3.4.0'
+
+homepage = 'https://github.com/eschnett/MPItrampoline'
+description = "A forwarding MPI implementation that can use any other MPI implementation via an MPI ABI"
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('Autotools', '20210128'),
+    ('CMake', '3.20.1'),
+    ('Python', '3.9.5'),
+]
+
+dependencies = [
+    # Pull in all OpenMPI dependencies
+    ('zlib', '1.2.11'),
+    ('hwloc', '2.4.1'),
+    ('libevent', '2.1.12'),
+    ('UCX', '1.10.0'),
+    ('libfabric', '1.12.1'),
+    ('PMIx', '3.2.3'),
+]
+
+default_easyblock = 'CMakeMake'
+
+default_component_specs = {'start_dir': '%(name)s-%(version)s'}
+
+components = [
+    ('OpenMPI', '4.1.1', {
+        'source_urls': ['https://www.open-mpi.org/software/ompi/v%(version_major_minor)s/downloads'],
+        'sources': [SOURCELOWER_TAR_BZ2],
+        'patches': [
+            'OpenMPI-4.1.1_fix-bufferoverflow-in-common_ofi.patch',
+            'OpenMPI-4.0.6_remove-pmix-check-in-pmi-switch.patch',
+            'OpenMPI-4.1.0-1-pml-ucx-datatype-memleak.patch',
+        ],
+        'checksums': [
+            'e24f7a778bd11a71ad0c14587a7f5b00e68a71aa5623e2157bafee3d44c07cda',
+            'a189d834506f3d7c31eda6aa184598a3631ea24a94bc551d5ed1f053772ca49e',
+            '8acee6c9b2b4bf12873a39b85a58ca669de78e90d26186e52f221bb4853abc4d',
+            'a94a74b174ce783328abfd3656ff5196b89ef4c819fe4c8b8a0f1277123e76ea',
+        ],
+        'start_dir': "%(namelower)s-%(version)s",
+        # OSX build of OpenMPI needs to be tweaked to work with MPItrampoline 
+        # 'preconfigopts': "find . -type f -print0 | xargs -0 perl -pi -e 's/-Wl,-flat_namespace//g' && ./autogen.pl&&",
+        # Install in a subdirectory to keep the installation out of sight
+        'configopts': "--prefix=%(installdir)s/mpiwrapper",
+        # Make sure libraries appears in both lib and lib64 (also impacts MPIwrapper)
+        'preinstallopts':
+            'mkdir -p %(installdir)s/mpiwrapper/lib && '
+            'ln -s %(installdir)s/mpiwrapper/lib %(installdir)s/mpiwrapper/lib64 && ',
+    }),
+    ('MPIwrapper', '2.3.2', {
+        'source_urls': ['https://github.com/eschnett/MPIwrapper/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'patches': ['MPIwrapper-2.3.2-default-installation-dirs.patch'],
+        'checksums': [
+            'eb1d63f691eebe87f81c6c5caad379e6baa5e851dd7565d9c62c23779ef48f06',
+            'ef6af68df1460c6760fe3a9e15425d7025b02849133e9dc2ccdceb4687f6eeab',
+        ],
+        # Install in a subdirectory to keep the installation out of sight
+        'install_target_subdir': 'mpiwrapper',
+        # It should automatically find the OpenMPI in the installation directory, but just in case...
+        'configopts': '-DMPI_HOME=%(installdir)s/mpiwrapper',
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/eschnett/MPItrampoline/archive/refs/tags/'],
+        'sources': [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+        'checksums': [
+            '9dd4d7434a2df4ac3807d07ffe46f00316a6f7f8e6393213b900d4ceb24403bb',
+        ],
+        # EasyBuild rpath-ing uses full paths for compilers but we won't want this in our wrappers
+        'preconfigopts':
+            'sed -i s#@CMAKE_C_COMPILER@#$(basename $CC)#g ../%(name)s-*/mpi[a-z]*.in && '
+            'sed -i s#@CMAKE_Fortran_COMPILER@#$(basename $FC)#g ../%(name)s-*/mpi[a-z]*.in && '
+            'sed -i s#@CMAKE_CXX_COMPILER@#$(basename $CXX)#g ../%(name)s-*/mpi[a-z]*.in && ',
+        'configopts':
+            '-DENABLE_FORTRAN=ON -DBUILD_SHARED_LIBS=ON '
+            '-DMPITRAMPOLINE_DEFAULT_LIB=%%(installdir)s/mpiwrapper/lib/libmpiwrapper.%s '
+            '-DMPITRAMPOLINE_DEFAULT_MPIEXEC=%%(installdir)s/mpiwrapper/bin/mpiwrapperexec' % SHLIB_EXT,
+    }),
+]
+
+sanity_check_paths = {
+    'files': [
+        # MPIwrapper checks
+        'mpiwrapper/bin/mpiwrapperexec', 'mpiwrapper/lib/libmpiwrapper.%s' % SHLIB_EXT,
+        # MPItrampoline checks
+        'bin/mpicc', 'bin/mpicxx', 'bin/mpiexec', 'bin/mpifc', 'bin/mpifort', 'lib/libmpi.%s' % SHLIB_EXT,
+        'lib/pkgconfig/MPItrampoline.pc',
+    ],
+    'dirs': ['include', 'lib/cmake/MPItrampoline'],
+}
+
+sanity_check_commands = [
+    "mpicc --help",
+    "mpiexec --help",
+    "mpifort --help",
+]
+
+moduleclass = 'mpi'
