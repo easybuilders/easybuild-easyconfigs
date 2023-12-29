@@ -1,0 +1,161 @@
+Don't overwrite PYTHONPATH when executing tests, add to it instead.
+Unset OMP_NUM_THREADS when GMX_THREAD_MPI enabled.
+Fix gmxapi dependency checks (M. Eric Irrgang): https://gitlab.com/gromacs/gromacs/-/merge_requests/2324
+
+Åke Sandgren, 20200309
+Dugan Witherick, 20210112
+Samuel Moors (Vrije Universiteit Brussel), 20211222
+diff -ur gromacs-2021.4.orig/python_packaging/sample_restraint/CMakeLists.txt gromacs-2021.4/python_packaging/sample_restraint/CMakeLists.txt
+--- gromacs-2021.4.orig/python_packaging/sample_restraint/CMakeLists.txt	2021-11-05 09:43:13.000000000 +0100
++++ gromacs-2021.4/python_packaging/sample_restraint/CMakeLists.txt	2021-12-22 09:18:04.316802969 +0100
+@@ -84,23 +84,12 @@
+     ######################################################
+     # The following is boiler-plate recommended by GROMACS
+     ######################################################
+-    # In principle, this could be deduced from GROMACS_IS_DOUBLE returned by
+-    # find_package(GROMACS) based on the suffix alone, but it is clearer that the
+-    # user explicitly sets what they want to get, and then need to provide a suffix
+-    # to match.
+-    option(GMX_DOUBLE "Use double precision" OFF)
+-    set(GMX_SUFFIX "" CACHE STRING "Suffix for the GROMACS installation to use (empty for default)")
+ 
+-    # This does not allow for a non-suffixed double-precision libgromacs, but
+-    # that should be rare enough for demonstration purposes.
+-    if (GMX_DOUBLE AND NOT GMX_SUFFIX)
+-        set(GROMACS_SUFFIX "_d")
+-    else()
+-        set(GROMACS_SUFFIX ${GMX_SUFFIX})
+-    endif()
++    find_package(GROMACS REQUIRED
++                 NAMES gromacs gromacs_mpi gromacs_d
++                 HINTS "$ENV{GROMACS_DIR}"
++                 )
+ 
+-    find_package(GROMACS REQUIRED)
+-    gromacs_check_double(GMX_DOUBLE)
+     gromacs_check_compiler(CXX)
+     include_directories(${GROMACS_INCLUDE_DIRS})
+     add_definitions(${GROMACS_DEFINITIONS})
+diff -ur gromacs-2021.4.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt gromacs-2021.4/python_packaging/sample_restraint/tests/CMakeGROMACS.txt
+--- gromacs-2021.4.orig/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2021-11-05 09:43:13.000000000 +0100
++++ gromacs-2021.4/python_packaging/sample_restraint/tests/CMakeGROMACS.txt	2021-12-22 09:36:20.912166000 +0100
+@@ -21,11 +21,23 @@
+ get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
+ get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
+ get_target_property(PLUGINPATH gmxapi_extension LIBRARY_OUTPUT_DIRECTORY)
+-add_custom_target(gmxapi_extension_pytest
+-                  COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN} PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}
+-                  ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+-                  DEPENDS gmxapi_extension _gmxapi
+-                  WORKING_DIRECTORY ${PLUGINPATH})
++
++if (NOT GMX_THREAD_MPI)
++        add_custom_target(gmxapi_extension_pytest
++                          COMMAND ${CMAKE_COMMAND}
++                              -E env GMXBIN=${GMXBIN} PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++                              ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
++                              ${CMAKE_CURRENT_SOURCE_DIR}
++                          DEPENDS gmxapi_extension _gmxapi)
++else()
++        add_custom_target(gmxapi_extension_pytest
++                          COMMAND ${CMAKE_COMMAND}
++                              -E env --unset=OMP_NUM_THREADS GMXBIN=${GMXBIN} PYTHONPATH=$ENV{PYTHONPATH}:${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
++                              ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
++                              ${CMAKE_CURRENT_SOURCE_DIR}
++                          DEPENDS gmxapi_extension _gmxapi)
++endif()
++
+ # The current test fixtures require the `gmx` tool-wrapper executable.
+ add_dependencies(gmxapi_extension_pytest gmx)
+ 
+diff -ur gromacs-2021.4.orig/python_packaging/src/CMakeLists.txt gromacs-2021.4/python_packaging/src/CMakeLists.txt
+--- gromacs-2021.4.orig/python_packaging/src/CMakeLists.txt	2021-11-05 09:43:13.000000000 +0100
++++ gromacs-2021.4/python_packaging/src/CMakeLists.txt	2021-12-22 09:18:04.320153467 +0100
+@@ -136,6 +136,12 @@
+                     ${GMXAPI_PYTHON_EXTENSION_SOURCES}
+                     )
+ 
++if (NOT DEFINED gmxapi_VERSION)
++    get_target_property(gmxapi_VERSION Gromacs::gmxapi VERSION)
++endif ()
++if (NOT DEFINED gmxapi_VERSION)
++    message(FATAL_ERROR "gmxapi library version not detected.")
++endif ()
+ if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
+     target_sources(_gmxapi PRIVATE gmxapi/launch_021.cpp)
+ else()
+@@ -162,9 +168,17 @@
+ if(GMXAPI_MASTER_PROJECT)
+     # TODO: This requirement is probably overly restrictive.
+     find_package(GROMACS 2021 REQUIRED
+-                 NAMES gromacs gromacs_mpi
++                 NAMES gromacs gromacs_mpi gromacs_d
+                  HINTS "$ENV{GROMACS_DIR}"
+                  )
++    if (NOT DEFINED GROMACS_IS_DOUBLE)
++        message(AUTHOR_WARNING "GROMACS_IS_DOUBLE undefined.")
++    endif ()
++else()
++    if (NOT DEFINED GMX_DOUBLE)
++        message(AUTHOR_WARNING "GMX_DOUBLE undefined.")
++    endif ()
++    set(GROMACS_IS_DOUBLE ${GMX_DOUBLE})
+ endif()
+ 
+ # Get details of GROMACS installation needed by the Python package at run time.
+@@ -200,10 +214,16 @@
+ if (NOT _gmx_bindir OR NOT _gmx_executable)
+     message(FATAL_ERROR "Could not get path for gmx wrapper binary.")
+ endif ()
++if (GROMACS_IS_DOUBLE)
++    set(_gmx_double "true")
++else()
++    set(_gmx_double "false")
++endif()
+ configure_file(gmxapi/gmxconfig.json.in ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi/gmxconfig.json)
+ unset(_gmx_executable)
+ unset(_gmx_bindir)
+ unset(_gmx_mpi_type)
++unset(_gmx_double)
+ 
+ # scikit-build sets SKBUILD when running Python packaging tools through setup.py
+ # (e.g. with pip)
+diff -ur gromacs-2021.4.orig/python_packaging/src/gmxapi/gmxconfig.json.in gromacs-2021.4/python_packaging/src/gmxapi/gmxconfig.json.in
+--- gromacs-2021.4.orig/python_packaging/src/gmxapi/gmxconfig.json.in	2021-11-05 09:43:13.000000000 +0100
++++ gromacs-2021.4/python_packaging/src/gmxapi/gmxconfig.json.in	2021-12-22 09:18:04.315687000 +0100
+@@ -1,5 +1,6 @@
+ {
+     "gmx_executable": "@_gmx_executable@",
+     "gmx_bindir": "@_gmx_bindir@",
+-    "gmx_mpi_type": @_gmx_mpi_type@
++    "gmx_mpi_type": @_gmx_mpi_type@,
++    "gmx_double": @_gmx_double@
+ }
+diff -ur gromacs-2021.4.orig/python_packaging/src/test/CMakeLists.txt gromacs-2021.4/python_packaging/src/test/CMakeLists.txt
+--- gromacs-2021.4.orig/python_packaging/src/test/CMakeLists.txt	2021-11-05 09:43:13.000000000 +0100
++++ gromacs-2021.4/python_packaging/src/test/CMakeLists.txt	2021-12-22 09:41:31.128081000 +0100
+@@ -63,11 +63,19 @@
+ 
+ # TODO: (#2961) Let the Python package discover required resources instead of passing GMXBIN
+ get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
+-add_custom_target(gmxapi_pytest
+-                  COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN}
+-                    ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+-                  DEPENDS _gmxapi
+-                  WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++if (NOT GMX_THREAD_MPI)
++    add_custom_target(gmxapi_pytest
++                      COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN}
++                        ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                      DEPENDS _gmxapi
++                      WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++else()
++    add_custom_target(gmxapi_pytest
++                      COMMAND ${CMAKE_COMMAND} -E env --unset=OMP_NUM_THREADS GMXBIN=${GMXBIN}
++                        ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
++                      DEPENDS _gmxapi
++                      WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
++endif()
+ # The current test fixtures require the `gmx` tool-wrapper executable.
+ add_dependencies(gmxapi_pytest gmx)
+ 
