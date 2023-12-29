@@ -1,0 +1,41 @@
+easyblock = "MakeCp"
+
+name = 'Oases'
+version = '0.2.09'
+versionsuffix = '-kmer_101'
+
+homepage = 'http://www.ebi.ac.uk/~zerbino/oases/'
+description = """Oases is a de novo transcriptome assembler designed to produce transcripts from
+ short read sequencing technologies, such as Illumina, SOLiD, or 454 in the absence of any genomic assembly."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+local_velvetver = '1.2.10'
+
+source_urls = [
+    'http://www.ebi.ac.uk/~zerbino/%(namelower)s',
+    'http://www.ebi.ac.uk/~zerbino/velvet',
+]
+sources = [
+    '%(namelower)s-%(version)s.tar.gz',
+    'velvet_%s.tgz' % local_velvetver,
+]
+checksums = [
+    '7aad1195b3e5d88291150669acd9a32cc328df173d88697287f1c2b9da24d3bd',  # oases-0.2.09.tar.gz
+    '884dd488c2d12f1f89cdc530a266af5d3106965f21ab9149e8cb5c633c977640',  # velvet_1.2.10.tgz
+]
+
+# listed make targets exclude 'doc' on purpose
+buildopts = 'MAXKMERLENGTH=%s ' % versionsuffix.split('_')[1]
+buildopts += 'VELVET_DIR=../velvet_%s cleanobj velvet oases' % local_velvetver
+
+parallel = 1
+
+files_to_copy = [(["oases"], 'bin'), "data", "scripts", "src", "doc", "LICENSE.txt"]
+
+sanity_check_paths = {
+    'files': ["bin/oases", "LICENSE.txt"],
+    'dirs': ["data", "scripts", "src", "doc"]
+}
+
+moduleclass = 'bio'
