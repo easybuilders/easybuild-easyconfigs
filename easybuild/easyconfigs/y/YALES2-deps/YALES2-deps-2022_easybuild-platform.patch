@@ -1,0 +1,319 @@
+Add platform files to build and run cases with YALES2 in an EasyBuild environment
+author: Alex Domingo (Vrije Universiteit Brussel)
+diff --git a/platforms/easybuild.Makefile.in b/platforms/easybuild.Makefile.in
+new file mode 100644
+index 0000000..cadf992
+--- /dev/null
++++ b/platforms/easybuild.Makefile.in
+@@ -0,0 +1,267 @@
++
++#check if the environment is OK
++ifeq ($(YALES2_HOME),)
++  $(error "the YALES2_HOME variable must be set: please check your environment")
++endif
++
++ifeq ($(YALES2_HOSTTYPE),)
++  $(error "the YALES2_HOSTTYPE variable must be set: please check your environment")
++endif
++
++ifeq ($(YALES2_TOOLS),)
++  YALES2_TOOLS=$(YALES2_HOME)/tools
++  $(info "$$YALES2_TOOLS is not set, default is $$YALES2_HOME/tools")
++endif
++
++#uncomment the following line to have a timer for each compiled file
++TIME = #time
++
++#YALES2_LIB: just a security in case the user has changed Y2_DEBUG_MODE by hand
++ifeq ($(Y2_DEBUG_MODE),TRUE)
++  YALES2_LIB=$(YALES2_HOME)/lib_debug
++else
++  YALES2_LIB=$(YALES2_HOME)/lib_optim
++endif
++
++#HDF5
++ifneq ($(strip $(EBROOTHDF5)),)
++Y2_HDF5_INC  = -I$(EBROOTHDF5)/include -DHDF5
++Y2_HDF5_LIBS = -L$(EBROOTHDF5)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl
++endif
++
++#METIS
++ifneq ($(strip $(EBROOTMETIS)),)
++Y2_METIS_INC  = -I$(EBROOTMETIS)/include -DMETIS5
++Y2_METIS_LIBS = -L$(EBROOTMETIS)/lib -lmetis
++endif
++
++#HYPRE
++ifneq ($(strip $(EBROOTHYPRE)),)
++Y2_HYPRE_INC  = -I$(EBROOTHYPRE)/include -DHYPRECART
++Y2_HYPRE_LIBS = -L$(EBROOTHYPRE)/lib -lHYPRE
++endif
++
++#PETSC
++ifneq ($(strip $(EBROOTPETSC)),)
++Y2_PETSC_INC  = -I$(EBROOTPETSC)/include -DPETSC
++Y2_PETSC_LIBS = -L$(EBROOTPETSC)/lib -lpetsc
++endif
++
++#SLEPC
++ifneq ($(strip $(EBROOTSLEPC)),)
++Y2_SLEPC_INC  = -I$(EBROOTSLEPC)/include -DSLEPC
++Y2_SLEPC_LIBS = -L$(EBROOTSLEPC)/lib -lslepc
++endif
++
++#LAPACK
++ifneq ($(strip $(EBROOTOPENBLAS)),)
++Y2_LAPACK_INC  = -I$(EBROOTOPENBLAS)/include -DLAPACK
++Y2_LAPACK_LIBS = -L$(EBROOTOPENBLAS)/lib -lopenblas -L$(EBROOTSCALAPACK)/lib -lscalapack
++endif
++
++#FFTW
++ifneq ($(strip $(EBROOTFFTW)),)
++Y2_FFTW_INC  = -I$(EBROOTFFTW)/include -DFFTW3
++Y2_FFTW_LIBS = -L$(EBROOTFFTW)/lib -lfftw3
++endif
++
++#PAPI
++ifneq ($(strip $(EBROOTPAPI)),)
++Y2_PAPI_INC  = -I$(EBROOTPAPI)/include -DPAPI
++Y2_PAPI_LIBS = -L$(EBROOTPAPI)/lib -lpapi
++endif
++
++#SCOTCH
++ifneq ($(strip $(EBROOTSCOTCH)),)
++Y2_SCOTCH_INC  = -I$(EBROOTSCOTCH)/include -DSCOTCH
++Y2_SCOTCH_LIBS = -L$(EBROOTSCOTCH)/lib -lscotch -lscotcherr
++endif
++
++#MMG
++ifneq ($(strip $(EBROOTMMG)),)
++Y2_MMG_INC  = -I$(EBROOTMMG)/include -I$(EBROOTMMG)/include/mmg -I$(EBROOTMMG)/include/mmg/mmgs -I$(EBROOTMMG)/include/mmg/mmg2d -I$(EBROOTMMG)/include/mmg/mmg3d -DMMG3D5 -DMMGS
++Y2_MMG_LIBS = -L$(EBROOTMMG)/lib -lmmg3d -lmmg2d -lmmgs
++endif
++
++#CWIPI
++ifneq ($(strip $(EBROOTCWIPI)),)
++Y2_CWIPI_INC   = -I$(EBROOTCWIPI)/include -DCWIPI
++Y2_CWIPI_LIBS  = -L$(EBROOTCWIPI)/lib -lcwp -lcwpf -lstdc++
++endif
++
++#PALM
++ifneq ($(strip $(EBROOTPALM)),)
++Y2_PALM_INC  = -I$(EBROOTPALM)/include -DPALM
++Y2_PALM_LIBS = -L$(EBROOTPALM)/lib
++endif
++
++#CVODE
++Y2_CVODE_INC  = -I$(YALES2_LIB) -DCVODE
++Y2_CVODE_LIBS = -L$(YALES2_LIB) -lcvode
++
++#SLATEC
++Y2_SLATEC_INC  = -DSLATEC
++Y2_SLATEC_LIBS =
++
++#CEQ
++Y2_CEQ_INC  = -I$(YALES2_LIB) -DCEQ
++Y2_CEQ_LIBS = -L$(YALES2_LIB) -lceq
++
++
++#COMPILER dependent flags
++ifeq ($(COMPILER),gcc)
++  COMPILER_LIBS = -lz -ldl
++else ifeq ($(COMPILER),intel)
++  COMPILER_LIBS = -lz -limf -lsvml -lifcore -lintlc -lirc -lirng
++else
++  COMPILER_LIBS =
++endif
++
++#Gather all
++ADD_LIBS = $(Y2_LAPACK_LIBS) $(Y2_FFTW_LIBS) $(Y2_CEQ_LIBS) $(Y2_METIS_LIBS) $(Y2_PAPI_LIBS) $(Y2_MMG_LIBS) $(Y2_SCOTCH_LIBS) $(Y2_PALM_LIBS) $(Y2_CVODE_LIBS) $(Y2_SLATEC_LIBS) $(Y2_CWIPI_LIBS) $(Y2_SLEPC_LIBS) $(Y2_PETSC_LIBS) $(Y2_HYPRE_LIBS) $(Y2_HDF5_LIBS) $(Y2_MKL_LIBS) $(COMPILER_LIBS)
++ADD_INC  = $(Y2_LAPACK_INC)  $(Y2_FFTW_INC)  $(Y2_CEQ_INC)  $(Y2_METIS_INC)  $(Y2_PAPI_INC)  $(Y2_MMG_INC)  $(Y2_SCOTCH_INC)  $(Y2_PALM_INC)  $(Y2_CVODE_INC)  $(Y2_SLATEC_INC)  $(Y2_CWIPI_INC)  $(Y2_SLEPC_INC)  $(Y2_PETSC_INC)  $(Y2_HYPRE_INC)  $(Y2_HDF5_INC) $(Y2_MKL_INC)  -DNO_REAL16_SUPPORT
++
++#Archive tools
++AR = ar rcv
++RANLIB = ranlib
++WARN = -ansi -fullwarn
++
++#LATEX
++LATEX_CMD = pdflatex
++
++#Make
++MAKE = make
++f90 = $(TIME) $(EBROOTOPENMPI)/bin/mpifort
++cc  = $(TIME) $(EBROOTOPENMPI)/bin/mpicc
++cxx = $(TIME) $(EBROOTOPENMPI)/bin/mpicxx
++cpp = $(TIME) $(EBROOTOPENMPI)/bin/mpicc
++F90 = $(TIME) $(EBROOTOPENMPI)/bin/mpifort
++CC  = $(TIME) $(EBROOTOPENMPI)/bin/mpicc
++CXX = $(TIME) $(EBROOTOPENMPI)/bin/mpicxx
++CPP = $(TIME) $(EBROOTOPENMPI)/bin/mpicxx
++
++ifeq ($(Y2_TARGET),)
++TARGET=DYNAMIC
++else
++  ifeq ($(Y2_TARGET),STATIC)
++    TARGET=STATIC
++  else ifeq ($(Y2_TARGET),DYNAMIC)
++    TARGET=DYNAMIC
++  else
++    $(error Y2_TARGET is defined to an unkown value: $(Y2_TARGET))
++  endif
++endif
++
++MAKE_SO = $(F90) -shared
++SO_EXT  = so
++
++# Tools to check and modify file timestamps
++Y2_TIMESTAMPS = TRUE
++touch_exec=touch
++stat_exec=stat
++TOUCH=$(shell which $(touch_exec))
++STAT=$(shell which $(stat_exec))
++ifeq ($(TOUCH),)
++  abort=TRUE
++endif
++ifeq ($(STAT),)
++  abort=TRUE
++endif
++ifeq ($(abort),TRUE)
++  $(warning I can not find the GNU utilities. Please install it!!!)
++  $(warning see yales2/install/README.md for details)
++  $(warning in short, simply type)
++  $(warning brew install coreutils findutils gnu-tar gnu-sed gawk gnutls gnu-indent gnu-getopt grep)
++  $(error ABORTING)
++endif
++MODIF_TIME = $(STAT) -c "%Y"
++
++#COMPILER dependent flags
++ifeq ($(COMPILER),gcc)
++  OPENMP = -fopenmp -DY2_c11
++  LOCAL_FORTRAN_MODULE = -J.
++  MCFLAGS = -std=gnu99 -g -fpic -pedantic -W -Wextra -Wall -Wno-comment -DFORTWRAPUNDERSCORE -DFORTWRAPLOWERCASE -DIOSWAP $(ADD_INC)
++  COPTIM  = -O3 $(YALES2_ARCH)
++  CDEBUG  = -O0 $(YALES2_ARCH)
++  MFFLAGS = -g -fpic -x f95-cpp-input -std=gnu -ffree-form -fall-intrinsics -fallow-argument-mismatch -Wall -Wextra -W -Wno-unused-function -Wno-compare-reals -fno-omit-frame-pointer -DFORTRAN2008 -DUSE_RDTSC_TIMER -DUSE_IEEE_MODULE -DUSE_MPI_MODULE -DRTLD $(ADD_INC)
++  FOPTIM  = -O3 $(YALES2_ARCH) -ftree-vectorize -ffast-math -funroll-loops -pipe
++  FDEBUG  = -O0 $(YALES2_ARCH) -fbounds-check -ffpe-trap=invalid,zero,overflow -DY2_DEBUG_MODE -DINIT_REAL_ARRAYS_WITH_NAN
++else ifeq ($(COMPILER),intel)
++  OPENMP = -qopenmp -DY2_c11
++  LOCAL_FORTRAN_MODULE = -module .
++  MCFLAGS = -g -traceback -fpic -Wall -diag-disable 193,1572,981,10006,1224,10145 -std=gnu99 -Wno-comment -DFORTWRAPUNDERSCORE -DFORTWRAPLOWERCASE -DIOSWAP $(ADD_INC) -I.
++  COPTIM  = -O2 $(YALES2_ARCH)
++  CDEBUG  = -O0 $(YALES2_ARCH)
++  MFFLAGS = -g -traceback -fpic -fpp -free -fno-omit-frame-pointer -DFORTRAN2008 -DUSE_RDTSC_TIMER -DUSE_IEEE_MODULE -DUSE_MPI_MODULE -DRTLD -stand f08 -warn all -diag-disable 7416,6477,7025,8889 $(ADD_INC) -nogen-interfaces
++  FOPTIM  = -O2 $(YALES2_ARCH) -align array64byte -align rec32byte -unroll-aggressive
++  FDEBUG  = -O0 $(YALES2_ARCH) -align array64byte -align rec32byte -check arg_temp_created,bounds,format,uninit,stack -ftrapuv -fpe-all:0 -DY2_DEBUG_MODE -DINIT_REAL_ARRAYS_WITH_NAN
++endif
++
++#Python bindings
++ifeq ($(Y2_PYTHON),TRUE)
++  ifneq ($(TARGET),DYNAMIC)
++    $(error TARGET should be set to DYNAMIC in Makefile.in to compile python bindings)
++  endif
++  ifeq ($(filter gcc intel,$(COMPILER)),)
++    $(error only gcc and intel COMPILERs are supported for python bindings)
++  endif
++  ifeq ($(Y2_PYTHON_EXEC),)
++    PYTHON       = $(shell which python)
++  else
++    PYTHON       = $(Y2_PYTHON_EXEC)
++  endif
++  F2PY_F90WRAP = $(Y2_F90WRAP)/f2py-f90wrap
++  F90WRAP      = $(Y2_F90WRAP)/f90wrap
++  NUMPYPATH    = $(shell $(PYTHON) -c "import numpy; print(numpy.__path__[0])")
++  PYVER        = $(shell $(PYTHON) -c 'from distutils import sysconfig; print(sysconfig.get_python_version())')
++  PYINC        = $(shell $(PYTHON)-config --includes)
++  PYLDFLAGS    = $(shell $(PYTHON)-config --ldflags)
++  PYBLDLIBRARY = $(PYLDFLAGS)
++  PYCC         = $(CC) -fno-strict-aliasing -O2 -g -pipe -D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -D_GNU_SOURCE -fPIC -fwrapv -DNDEBUG -I. -I$(YALES2_LIB) -I$(NUMPYPATH)/core/include $(PYINC)
++  PYF90        = $(F90) -free -fpic -I$(YALES2_LIB) -I. -I$(NUMPYPATH)/core/include $(PYINC)
++  PYLD         = $(MAKE_SO) -L. -L$(YALES2_LIB) -lyales2main $(PYBLDLIBRARY)
++  ifeq ($(COMPILER),gcc)
++    F90PPONLY    = $(F90) -E
++    PYCC        += $(CC) -Wno-unused-function -Wno-cpp
++  else ifeq ($(COMPILER),intel)
++    F90PPONLY    = $(F90) -P
++    PYCC        += $(CC) -diag-disable 193,1572,981,10006,1224,10145
++    PYLD        += -nofor_main
++  endif
++endif
++
++#Assemble flags
++ifeq ($(Y2_DEBUG_MODE),TRUE)
++   CFLAGS0 = $(OPENMP) $(MCFLAGS) $(CDEBUG)
++   FFLAGS0 = $(OPENMP) $(MFFLAGS) $(FDEBUG)
++else
++   CFLAGS0 = $(OPENMP) $(MCFLAGS) $(COPTIM)
++   FFLAGS0 = $(OPENMP) $(MFFLAGS) $(FOPTIM)
++endif
++ifeq ($(COMPILER),gcc)
++  CFLAGS     = $(CFLAGS0)
++  ifneq ($(Y2_COMPILE_MODE),)
++    CFLAGS_dep = $(CFLAGS0) -E -MM -MF
++    FFLAGS_mod = $(FFLAGS0) -J$(YALES2_LIB) -fsyntax-only
++    FFLAGS     = $(FFLAGS0) -J$(YALES2_LIB)
++    FFLAGS_alt = $(FFLAGS0) -J.
++  else
++    CFLAGS_dep =
++    FFLAGS_mod =
++    FFLAGS     = $(FFLAGS0) -J$(YALES2_LIB)
++  endif
++else ifeq ($(COMPILER),intel)
++  CFLAGS     = $(CFLAGS0)
++  ifneq ($(Y2_COMPILE_MODE),)
++    CFLAGS_dep = $(CFLAGS0) -MM -MF
++    FFLAGS_mod = $(FFLAGS0) -module $(YALES2_LIB) -fsyntax-only -no-save-temps
++    FFLAGS     = $(FFLAGS0) -module $(YALES2_LIB)
++    FFLAGS_alt = $(FFLAGS0) -module .
++  else
++    CFLAGS_dep =
++    FFLAGS_mod =
++    FFLAGS     = $(FFLAGS0) -module $(YALES2_LIB)
++  endif
++endif
++
++FLD    = $(OPENMP)
+diff --git a/platforms/easybuild.bash.env b/platforms/easybuild.bash.env
+new file mode 100644
+index 0000000..6eeee7b
+--- /dev/null
++++ b/platforms/easybuild.bash.env
+@@ -0,0 +1,5 @@
++module purge
++module load YALES2-deps
++
++module load y2o
++#module load y2py
+diff --git a/platforms/easybuild.include.f90 b/platforms/easybuild.include.f90
+new file mode 100644
+index 0000000..e69de29
+diff --git a/platforms/easybuild.slurm.run b/platforms/easybuild.slurm.run
+new file mode 100644
+index 0000000..f652c38
+--- /dev/null
++++ b/platforms/easybuild.slurm.run
+@@ -0,0 +1,10 @@
++#!/bin/bash
++#SBATCH --job-name=test_case
++#SBATCH --output=%x-%j.out
++#SBATCH --ntasks=8
++#SBATCH --time=00:60:00
++
++module load YALES2-deps
++module load y2o
++
++srun ./test_case
+diff --git a/platforms/easybuild.tools_params.sh b/platforms/easybuild.tools_params.sh
+new file mode 100755
+index 0000000..c7c5324
+--- /dev/null
++++ b/platforms/easybuild.tools_params.sh
+@@ -0,0 +1,8 @@
++#!/bin/sh
++
++sed_extended="sed -r"
++
++HTML_BROWSER="firefox"
++
++EDITOR="vim"
++
