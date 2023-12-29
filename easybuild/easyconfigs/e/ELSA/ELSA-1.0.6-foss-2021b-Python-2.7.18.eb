@@ -1,0 +1,50 @@
+# Author: Jasper Grimm (UoY)
+easyblock = 'PythonBundle'
+
+name = 'ELSA'
+version = '1.0.6'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://bitbucket.org/charade/elsa/src/master'
+description = "ELSA - Finding Time-Dependent Associations (Now Augmented with Liquid Associaiton)"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+builddependencies = [('git', '2.33.1', '-nodocs')]
+
+dependencies = [
+    ('Python', '2.7.18'),
+    ('SciPy-bundle', '2021.10', versionsuffix),
+    ('Biopython', '1.76', versionsuffix),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    (name, version, {
+        'source_urls': ['https://bitbucket.org/charade/elsa/get'],
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'patches': [
+            '%(name)s-1.0.6_numpy-operator.patch',
+            '%(name)s-1.0.6_lsa-version.patch',
+        ],
+        'checksums': [
+            '20577cfe0729189414034f0358c9bc593e6ac989362584f368fd168b5ef7d0d2',  # v1.0.6.tar.gz
+            'fd8be3adedac0d2bb10450247e619c4a86c1483c18697a75c3527505059660d2',  # ELSA-1.0.6_numpy-operator.patch
+            '191c6e57f0fc46f033a3bf69520138f0de0525d142da4a5d06044ae39a4ed25f',  # ELSA-1.0.6_lsa-version.patch
+        ],
+        'modulename': 'lsa',
+    }),
+]
+
+_bins = ['bin/%s' % x for x in ['check_data', 'fix_qv', 'la_compute', 'la_query', 'lsa_compute',
+                                'lsa_query', 'lsa_sim', 'lsa_version', 'par_ana', 'to_trend']]
+sanity_check_paths = {
+    'files': _bins,
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ["lsa_version", "la_compute -h", "lsa_compute -h"]
+
+moduleclass = 'bio'
