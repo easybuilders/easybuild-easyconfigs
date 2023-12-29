@@ -1,0 +1,39 @@
+easyblock = "CMakeMake"
+
+name = 'flexout'
+version = '20220209'
+local_commit = 'c8fcca8375e08ed5f68f8a0f06aa23a9f528860a'
+
+homepage = 'https://github.com/BoldingBruggeman/flexout'
+description = "Fortran-based flexible output manager with support for NetCDF and text formats"
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+toolchainopts = {'usempi': False, 'pic': True}
+
+github_account = 'BoldingBruggeman'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['%s.tar.gz' % local_commit]
+patches = ['flexout-20220209_use_eb_deps.patch']
+checksums = [
+    # c8fcca8375e08ed5f68f8a0f06aa23a9f528860a.tar.gz
+    'd247a4b071ec693afe3a5c1e0a04ed5b5dec3e2047d41d8d9562c465bacbea7c',
+    '4e26ce45cfd27481cae18a5b436295430f0ea7d642de0117a136eb1a225f22ff',  # flexout-20220209_use_eb_deps.patch
+]
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('Fortran-YAML', '20210420'),
+    ('netCDF-Fortran', '4.5.3'),
+]
+
+configopts = '-DBUILD_SHARED_LIBS=ON -DNetCDF_INCLUDE_DIRS=$EBROOTNETCDFMINFORTRAN/include'
+
+sanity_check_paths = {
+    'files': ['lib/libfield_manager.%s' % SHLIB_EXT, 'lib/liboutput_manager.%s' % SHLIB_EXT],
+    'dirs': ['cmake', 'include'],
+}
+
+moduleclass = 'lib'
