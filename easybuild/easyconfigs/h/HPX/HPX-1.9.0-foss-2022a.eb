@@ -1,0 +1,59 @@
+# Author: Benjamin Czaja (benjamin.czaja@surf.nl)
+# Update: Xavier Alvarez-Farre (xavier.alvarezfarre@surf.nl)
+# Institute: SURF
+easyblock = 'CMakeMake'
+
+name = 'HPX'
+version = '1.9.0'
+
+homepage = 'http://stellar-group.org/libraries/hpx/'
+description = """HPX (High Performance ParalleX) is a general-purpose C++ runtime system for
+parallel and distributed applications of any scale."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/STEllAR-GROUP/hpx/archive/refs/tags']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2a8dca78172fbb15eae5a5e9facf26ab021c845f9c09e61b1912e6cf9e72915a']
+
+# -DHPX_WITH_MAX_CPU_COUNT default value is 64.
+# The official documentation suggests setting a value at least as big as the number of (virtual)
+# cores on your system. This can be handled by a hook specific to the system.
+configopts = (
+    '-DCMAKE_CXX_COMPILER=g++ '
+    '-DCMAKE_BUILD_TYPE=Release '
+    '-DHPX_WITH_MALLOC=tcmalloc '
+    '-DHPX_WITH_HWLOC=TRUE '
+    '-DHPX_WITH_GOOGLE_PERFTOOLS=TRUE '
+    '-DHPX_WITH_NETWORKING=TRUE '
+    '-DHPX_WITH_PARCELPORT_TCP=FALSE '
+    '-DHPX_WITH_PARCELPORT_MPI=TRUE '
+    '-DHPX_WITH_TESTS=FALSE '
+    '-DHPX_WITH_EXAMPLES=TRUE '
+    '-DHPX_WITH_FETCH_ASIO=TRUE'
+)
+
+bin_lib_subdirs = ['lib/%(namelower)s/']
+
+modextrapaths = {'LD_LIBRARY_PATH': ['lib/%(namelower)s']}
+
+dependencies = [
+    ('HDF5', '1.12.2'),
+    ('Boost', '1.79.0'),
+    ('hwloc', '2.7.1'),
+    ('gperftools', '2.10'),
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('Ninja', '1.10.2'),
+    ('pkgconf', '1.8.0'),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['bin', 'lib'],
+}
+
+moduleclass = 'math'
