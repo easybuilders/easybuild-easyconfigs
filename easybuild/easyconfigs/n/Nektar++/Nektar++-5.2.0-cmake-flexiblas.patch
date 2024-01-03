@@ -1,0 +1,34 @@
+Patching CMake so we can use FlexiBlas instead of OpenBLAS
+Author: J. Sassmannshausen (Imperial College London/UK)
+diff --git a/nektar-v5.2.0.orig/cmake/FindBlasLapack.cmake b/nektar-v5.2.0/cmake/FindBlasLapack.cmake
+index a58402d..9bf33d5 100644
+--- a/nektar-v5.2.0.orig/cmake/FindBlasLapack.cmake
++++ b/nektar-v5.2.0/cmake/FindBlasLapack.cmake
+@@ -23,6 +23,8 @@ ELSE()
+         ENDIF()
+ 
+         SET(VENDOR OpenBLAS)
++    ELSEIF(NEKTAR_USE_FLEXIBLAS)
++	SET(VENDOR FlexiBLAS)
+     ELSEIF(NEKTAR_USE_ACCELERATE_FRAMEWORK)
+         SET(VENDOR Apple)
+     ELSEIF(NEKTAR_USE_ACML)
+diff --git a/nektar-v5.2.0.orig/cmake/ThirdPartyBlasLapack.cmake b/nektar-v5.2.0/cmake/ThirdPartyBlasLapack.cmake
+index 3017fb9..5e6e7eb 100644
+--- a/nektar-v5.2.0.orig/cmake/ThirdPartyBlasLapack.cmake
++++ b/nektar-v5.2.0/cmake/ThirdPartyBlasLapack.cmake
+@@ -20,10 +20,13 @@ ELSE()
+     # BLAS Support
+     CMAKE_DEPENDENT_OPTION(NEKTAR_USE_SYSTEM_BLAS_LAPACK
+         "Use the system provided blas and lapack libraries" ON
+-        "UNIX; NOT APPLE; NOT NEKTAR_USE_OPENBLAS; NOT NEKTAR_USE_MKL; NOT NEKTAR_USE_ACML; NOT NEKTAR_USE_ACCELERATE_FRAMEWORK" OFF)
++	"UNIX; NOT APPLE; NOT NEKTAR_USE_OPENBLAS; NOT NEKTAR_USE_MKL; NOT NEKTAR_USE_ACML; NOT NEKTAR_USE_ACCELERATE_FRAMEWORK; NOT NEKTAR_USE_FLEXIBLAS" OFF)
+     CMAKE_DEPENDENT_OPTION(NEKTAR_USE_OPENBLAS
+         "Use OpenBLAS library as a substitute to native BLAS." OFF
+         "NOT NEKTAR_USE_SYSTEM_BLAS_LAPACK" OFF)
++    CMAKE_DEPENDENT_OPTION(NEKTAR_USE_FLEXIBLAS
++        "Use FlexiBLAS library as a substitute to native BLAS." OFF
++        "NOT NEKTAR_USE_SYSTEM_BLAS_LAPACK" OFF)
+     CMAKE_DEPENDENT_OPTION(NEKTAR_USE_ACML
+         "Use the AMD Core Math Library (ACML) for BLAS and Lapack support." OFF
+         "NOT NEKTAR_USE_SYSTEM_BLAS_LAPACK" OFF)
