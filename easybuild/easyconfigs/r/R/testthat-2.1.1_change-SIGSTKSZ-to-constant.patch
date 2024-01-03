@@ -1,0 +1,44 @@
+# Fixes "error: size of array ‘altStackMem’ is not an integral constant-expression"
+#
+# Based on:
+#
+# https://github.com/r-lib/testthat/issues/1373
+# https://github.com/r-lib/testthat/pull/1403
+# 
+
+From 18d30664edb407d270c04b772a4eb00f4b83a9b9 Mon Sep 17 00:00:00 2001
+From: Jim Hester <james.f.hester@gmail.com>
+Date: Thu, 24 Jun 2021 10:47:29 -0400
+Subject: [PATCH 1/2] Use a constant value for the stack size
+
+Fixes #1373
+diff --git a/inst/include/testthat/vendor/catch.h b/inst/include/testthat/vendor/catch.h
+index b1b4a474e..e8a10b07e 100644
+--- a/inst/include/testthat/vendor/catch.h
++++ b/inst/include/testthat/vendor/catch.h
+@@ -6492,7 +6492,7 @@ namespace Catch {
+         static bool isSet;
+         static struct sigaction oldSigActions [sizeof(signalDefs)/sizeof(SignalDefs)];
+         static stack_t oldSigStack;
+-        static char altStackMem[SIGSTKSZ];
++        static char altStackMem[32768];
+ 
+         static void handleSignal( int sig ) {
+             std::string name = "<unknown signal>";
+@@ -6512,7 +6512,7 @@ namespace Catch {
+             isSet = true;
+             stack_t sigStack;
+             sigStack.ss_sp = altStackMem;
+-            sigStack.ss_size = SIGSTKSZ;
++            sigStack.ss_size = 32768;
+             sigStack.ss_flags = 0;
+             sigaltstack(&sigStack, &oldSigStack);
+             struct sigaction sa = { 0 };
+@@ -6543,7 +6543,7 @@ namespace Catch {
+     bool FatalConditionHandler::isSet = false;
+     struct sigaction FatalConditionHandler::oldSigActions[sizeof(signalDefs)/sizeof(SignalDefs)] = {};
+     stack_t FatalConditionHandler::oldSigStack = {};
+-    char FatalConditionHandler::altStackMem[SIGSTKSZ] = {};
++    char FatalConditionHandler::altStackMem[32768] = {};
+ 
+ } // namespace Catch
