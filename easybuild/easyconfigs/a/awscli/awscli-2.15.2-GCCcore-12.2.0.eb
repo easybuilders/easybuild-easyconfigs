@@ -1,0 +1,61 @@
+easyblock = 'PythonBundle'
+
+name = 'awscli'
+version = '2.15.2'
+
+homepage = 'https://pypi.python.org/pypi/awscli'
+description = 'Universal Command Line Environment for AWS'
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+
+builddependencies = [
+    ('binutils', '2.39'),
+    ('CMake', '3.24.3'),  # required for awscrt
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('PyYAML', '6.0'),
+    ('ruamel.yaml', '0.17.21'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('jmespath', '1.0.1', {
+        'checksums': ['90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe'],
+    }),
+    ('botocore', '1.33.13', {
+        'checksums': ['fb577f4cb175605527458b04571451db1bd1a2036976b626206036acd4496617'],
+    }),
+    ('s3transfer', '0.8.2', {
+        'checksums': ['368ac6876a9e9ed91f6bc86581e319be08188dc60d50e0d56308ed5765446283'],
+    }),
+    ('prompt-toolkit', '3.0.38', {
+        'sources': ['prompt_toolkit-%(version)s.tar.gz'],
+        'checksums': ['23ac5d50538a9a38c8bde05fecb47d0b403ecd0662857a86f886f798563d5b9b'],
+    }),
+    ('distro', '1.8.0', {
+        'checksums': ['02e111d1dc6a50abb8eed6bf31c3e48ed8b0830d1ea2a1b78c61765c2513fdd8'],
+    }),
+    ('awscrt', '0.19.19', {
+        'preinstallopts': "export AWS_CRT_BUILD_USE_SYSTEM_LIBCRYPTO=1 && ",
+        'checksums': ['1c1511535dee146a6c26a382ed3ead56259a105b3b7d7d823553ae567d038dfe'],
+    }),
+    (name, version, {
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/aws/aws-cli/archive/'],
+        'checksums': ['f71cda7e53beeea8db7d5af3b2a56efa47a0b341fe1eadf7be626be32f365960'],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/aws'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/'],
+}
+
+sanity_check_commands = ["aws help"]
+
+moduleclass = 'tools'

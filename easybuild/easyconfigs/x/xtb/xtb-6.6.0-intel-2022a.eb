@@ -1,0 +1,46 @@
+easyblock = 'MesonNinja'
+
+name = 'xtb'
+version = '6.6.0'
+
+homepage = 'https://xtb-docs.readthedocs.io'
+description = """ xtb - An extended tight-binding semi-empirical program package. """
+
+toolchain = {'name': 'intel', 'version': '2022a'}
+
+github_account = 'grimme-lab'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = [{'download_filename': 'v%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+
+patches = ['xtb-6.6.0-foss-2022a_fix-custom-libraries.patch']
+
+checksums = [
+    '1845a9ba71c7bdb414e14ef3dad676728c31a2a94b26303551da57704c78a3e3',  # v6.6.0.tar.gz
+    # xtb-6.6.0-foss-2022a_fix-custom-libraries.patch
+    '4e2e21b13a8d71b6b5d29c586fb28423a0f9a9ad518ebdca18cf0fa0cf27bc6e',
+]
+
+builddependencies = [
+    ('Meson', '0.62.1'),
+    ('Ninja', '1.10.2'),
+    ('pkgconf', '1.8.0'),
+]
+
+configopts = "--buildtype release "
+
+runtest = 'meson'
+testopts = 'test -C %(builddir)s/easybuild_obj --num-processes 1 -t 60'  # Ensure test don't timeout
+
+sanity_check_paths = {
+    'files': ['bin/xtb', 'include/xtb.h'] + ['lib/libxtb.%s' % e for e in ('a', SHLIB_EXT)],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = ["xtb --help"]
+
+modextravars = {
+    'XTBHOME': '%(installdir)s',
+    'XTBPATH': '%(installdir)s',
+}
+
+moduleclass = 'chem'

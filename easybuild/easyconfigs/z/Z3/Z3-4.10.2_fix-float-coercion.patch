@@ -1,0 +1,23 @@
+Fix potential issues when float values are involved,
+e.g. `z3.ToInt((a_ + 10) / 3.0)` fails an assertion that the parameter to ToInt is not "real".
+Also avoids truncation of floats to int.
+Backport of https://github.com/Z3Prover/z3/commit/4a451b10d8ba9f8186789048b08379e19776a4d0
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/src/api/python/z3/z3.py b/src/api/python/z3/z3.py
+index 8f227649c..b3b14d881 100644
+--- a/src/api/python/z3/z3.py
++++ b/src/api/python/z3/z3.py
+@@ -1207,6 +1207,11 @@ def _coerce_exprs(a, b, ctx=None):
+         a = StringVal(a, b.ctx)
+     if isinstance(b, str) and isinstance(a, SeqRef):
+         b = StringVal(b, a.ctx)
++    if isinstance(a, float) and isinstance(b, ArithRef):
++        a = RealVal(a, b.ctx)
++    if isinstance(b, float) and isinstance(a, ArithRef):
++        b = RealVal(b, a.ctx)
++
+     s = None
+     s = _coerce_expr_merge(s, a)
+     s = _coerce_expr_merge(s, b)

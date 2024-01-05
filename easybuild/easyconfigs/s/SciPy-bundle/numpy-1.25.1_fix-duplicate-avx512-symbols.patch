@@ -1,0 +1,322 @@
+The new dispatch method in numpy includes headers of the x86-simd-sort submodule C++ files
+compiled multiple times (with different architecture flags).
+This leads to linker errors such as
+> numpy/numpy-1.26.2/build/../numpy/core/src/npysort/x86-simd-sort/src/avx512fp16-16bit-qsort.hpp:161: multiple definition of `void avx512_qsort<_Float16>(_Float16*, long)
+See https://github.com/numpy/numpy/issues/25274
+
+Mark those functions inline, see https://github.com/intel/x86-simd-sort/pull/112
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/src/avx512-16bit-qsort.hpp b/src/avx512-16bit-qsort.hpp
+index 606f870..bf8cf7e 100644
+--- a/src/avx512-16bit-qsort.hpp
++++ b/src/avx512-16bit-qsort.hpp
+@@ -350,7 +350,7 @@ struct zmm_vector<uint16_t> {
+ };
+ 
+ template <>
+-bool comparison_func<zmm_vector<float16>>(const uint16_t &a, const uint16_t &b)
++inline bool comparison_func<zmm_vector<float16>>(const uint16_t &a, const uint16_t &b)
+ {
+     uint16_t signa = a & 0x8000, signb = b & 0x8000;
+     uint16_t expa = a & 0x7c00, expb = b & 0x7c00;
+@@ -406,7 +406,7 @@ replace_inf_with_nan(uint16_t *arr, int64_t arrsize, int64_t nan_count)
+ }
+ 
+ template <>
+-void avx512_qselect(int16_t *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect(int16_t *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qselect_16bit_<zmm_vector<int16_t>, int16_t>(
+@@ -415,7 +415,7 @@ void avx512_qselect(int16_t *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qselect(uint16_t *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect(uint16_t *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qselect_16bit_<zmm_vector<uint16_t>, uint16_t>(
+@@ -423,7 +423,7 @@ void avx512_qselect(uint16_t *arr, int64_t k, int64_t arrsize)
+     }
+ }
+ 
+-void avx512_qselect_fp16(uint16_t *arr, int64_t k, int64_t arrsize)
++X86_SIMD_SORT_INLINE void avx512_qselect_fp16(uint16_t *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(arr, arrsize);
+@@ -434,7 +434,7 @@ void avx512_qselect_fp16(uint16_t *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort(int16_t *arr, int64_t arrsize)
++inline void avx512_qsort(int16_t *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qsort_16bit_<zmm_vector<int16_t>, int16_t>(
+@@ -443,7 +443,7 @@ void avx512_qsort(int16_t *arr, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort(uint16_t *arr, int64_t arrsize)
++inline void avx512_qsort(uint16_t *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qsort_16bit_<zmm_vector<uint16_t>, uint16_t>(
+@@ -451,7 +451,7 @@ void avx512_qsort(uint16_t *arr, int64_t arrsize)
+     }
+ }
+ 
+-void avx512_qsort_fp16(uint16_t *arr, int64_t arrsize)
++X86_SIMD_SORT_INLINE void avx512_qsort_fp16(uint16_t *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(arr, arrsize);
+diff --git a/src/avx512-32bit-qsort.hpp b/src/avx512-32bit-qsort.hpp
+index c4061dd..9dc3e18 100644
+--- a/src/avx512-32bit-qsort.hpp
++++ b/src/avx512-32bit-qsort.hpp
+@@ -715,7 +715,7 @@ replace_inf_with_nan(float *arr, int64_t arrsize, int64_t nan_count)
+ }
+ 
+ template <>
+-void avx512_qselect<int32_t>(int32_t *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect<int32_t>(int32_t *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qselect_32bit_<zmm_vector<int32_t>, int32_t>(
+@@ -724,7 +724,7 @@ void avx512_qselect<int32_t>(int32_t *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qselect<uint32_t>(uint32_t *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect<uint32_t>(uint32_t *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qselect_32bit_<zmm_vector<uint32_t>, uint32_t>(
+@@ -733,7 +733,7 @@ void avx512_qselect<uint32_t>(uint32_t *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qselect<float>(float *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect<float>(float *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(arr, arrsize);
+@@ -744,7 +744,7 @@ void avx512_qselect<float>(float *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort<int32_t>(int32_t *arr, int64_t arrsize)
++inline void avx512_qsort<int32_t>(int32_t *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qsort_32bit_<zmm_vector<int32_t>, int32_t>(
+@@ -753,7 +753,7 @@ void avx512_qsort<int32_t>(int32_t *arr, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort<uint32_t>(uint32_t *arr, int64_t arrsize)
++inline void avx512_qsort<uint32_t>(uint32_t *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qsort_32bit_<zmm_vector<uint32_t>, uint32_t>(
+@@ -762,7 +762,7 @@ void avx512_qsort<uint32_t>(uint32_t *arr, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort<float>(float *arr, int64_t arrsize)
++inline void avx512_qsort<float>(float *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(arr, arrsize);
+diff --git a/src/avx512-64bit-argsort.hpp b/src/avx512-64bit-argsort.hpp
+index 80c6ce4..4687860 100644
+--- a/src/avx512-64bit-argsort.hpp
++++ b/src/avx512-64bit-argsort.hpp
+@@ -311,7 +311,7 @@ bool has_nan(type_t* arr, int64_t arrsize)
+ }
+ 
+ template <typename T>
+-void avx512_argsort(T* arr, int64_t *arg, int64_t arrsize)
++inline void avx512_argsort(T* arr, int64_t *arg, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         argsort_64bit_<zmm_vector<T>>(
+@@ -320,7 +320,7 @@ void avx512_argsort(T* arr, int64_t *arg, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_argsort(double* arr, int64_t *arg, int64_t arrsize)
++inline void avx512_argsort(double* arr, int64_t *arg, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         if (has_nan<zmm_vector<double>>(arr, arrsize)) {
+@@ -335,7 +335,7 @@ void avx512_argsort(double* arr, int64_t *arg, int64_t arrsize)
+ 
+ 
+ template <>
+-void avx512_argsort(int32_t* arr, int64_t *arg, int64_t arrsize)
++inline void avx512_argsort(int32_t* arr, int64_t *arg, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         argsort_64bit_<ymm_vector<int32_t>>(
+@@ -344,7 +344,7 @@ void avx512_argsort(int32_t* arr, int64_t *arg, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_argsort(uint32_t* arr, int64_t *arg, int64_t arrsize)
++inline void avx512_argsort(uint32_t* arr, int64_t *arg, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         argsort_64bit_<ymm_vector<uint32_t>>(
+@@ -353,7 +353,7 @@ void avx512_argsort(uint32_t* arr, int64_t *arg, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_argsort(float* arr, int64_t *arg, int64_t arrsize)
++inline void avx512_argsort(float* arr, int64_t *arg, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         if (has_nan<ymm_vector<float>>(arr, arrsize)) {
+@@ -367,7 +367,7 @@ void avx512_argsort(float* arr, int64_t *arg, int64_t arrsize)
+ }
+ 
+ template <typename T>
+-std::vector<int64_t> avx512_argsort(T* arr, int64_t arrsize)
++inline std::vector<int64_t> avx512_argsort(T* arr, int64_t arrsize)
+ {
+     std::vector<int64_t> indices(arrsize);
+     std::iota(indices.begin(), indices.end(), 0);
+diff --git a/src/avx512-64bit-keyvaluesort.hpp b/src/avx512-64bit-keyvaluesort.hpp
+index f721f5c..26153c9 100644
+--- a/src/avx512-64bit-keyvaluesort.hpp
++++ b/src/avx512-64bit-keyvaluesort.hpp
+@@ -440,7 +440,7 @@ void qsort_64bit_(type1_t *keys,
+ }
+ 
+ template <>
+-void avx512_qsort_kv<int64_t>(int64_t *keys, uint64_t *indexes, int64_t arrsize)
++inline void avx512_qsort_kv<int64_t>(int64_t *keys, uint64_t *indexes, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qsort_64bit_<zmm_vector<int64_t>, zmm_vector<uint64_t>>(
+@@ -449,7 +449,7 @@ void avx512_qsort_kv<int64_t>(int64_t *keys, uint64_t *indexes, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort_kv<uint64_t>(uint64_t *keys,
++inline void avx512_qsort_kv<uint64_t>(uint64_t *keys,
+                                uint64_t *indexes,
+                                int64_t arrsize)
+ {
+@@ -460,7 +460,7 @@ void avx512_qsort_kv<uint64_t>(uint64_t *keys,
+ }
+ 
+ template <>
+-void avx512_qsort_kv<double>(double *keys, uint64_t *indexes, int64_t arrsize)
++inline void avx512_qsort_kv<double>(double *keys, uint64_t *indexes, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(keys, arrsize);
+diff --git a/src/avx512-64bit-qsort.hpp b/src/avx512-64bit-qsort.hpp
+index 1cbcd38..1928bb2 100644
+--- a/src/avx512-64bit-qsort.hpp
++++ b/src/avx512-64bit-qsort.hpp
+@@ -784,7 +784,7 @@ static void qselect_64bit_(type_t *arr,
+ }
+ 
+ template <>
+-void avx512_qselect<int64_t>(int64_t *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect<int64_t>(int64_t *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qselect_64bit_<zmm_vector<int64_t>, int64_t>(
+@@ -793,7 +793,7 @@ void avx512_qselect<int64_t>(int64_t *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qselect<uint64_t>(uint64_t *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect<uint64_t>(uint64_t *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qselect_64bit_<zmm_vector<uint64_t>, uint64_t>(
+@@ -802,7 +802,7 @@ void avx512_qselect<uint64_t>(uint64_t *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qselect<double>(double *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect<double>(double *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(arr, arrsize);
+@@ -813,7 +813,7 @@ void avx512_qselect<double>(double *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort<int64_t>(int64_t *arr, int64_t arrsize)
++inline void avx512_qsort<int64_t>(int64_t *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qsort_64bit_<zmm_vector<int64_t>, int64_t>(
+@@ -822,7 +822,7 @@ void avx512_qsort<int64_t>(int64_t *arr, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort<uint64_t>(uint64_t *arr, int64_t arrsize)
++inline void avx512_qsort<uint64_t>(uint64_t *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         qsort_64bit_<zmm_vector<uint64_t>, uint64_t>(
+@@ -831,7 +831,7 @@ void avx512_qsort<uint64_t>(uint64_t *arr, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort<double>(double *arr, int64_t arrsize)
++inline void avx512_qsort<double>(double *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(arr, arrsize);
+diff --git a/src/avx512-common-qsort.h b/src/avx512-common-qsort.h
+index 959352e..9421de5 100644
+--- a/src/avx512-common-qsort.h
++++ b/src/avx512-common-qsort.h
+@@ -94,11 +94,11 @@ struct ymm_vector;
+ // Regular quicksort routines:
+ template <typename T>
+ void avx512_qsort(T *arr, int64_t arrsize);
+-void avx512_qsort_fp16(uint16_t *arr, int64_t arrsize);
++X86_SIMD_SORT_INLINE void avx512_qsort_fp16(uint16_t *arr, int64_t arrsize);
+ 
+ template <typename T>
+ void avx512_qselect(T *arr, int64_t k, int64_t arrsize);
+-void avx512_qselect_fp16(uint16_t *arr, int64_t k, int64_t arrsize);
++X86_SIMD_SORT_INLINE void avx512_qselect_fp16(uint16_t *arr, int64_t k, int64_t arrsize);
+ 
+ template <typename T>
+ inline void avx512_partial_qsort(T *arr, int64_t k, int64_t arrsize)
+diff --git a/src/avx512fp16-16bit-qsort.hpp b/src/avx512fp16-16bit-qsort.hpp
+index 8a9a49e..1206f82 100644
+--- a/src/avx512fp16-16bit-qsort.hpp
++++ b/src/avx512fp16-16bit-qsort.hpp
+@@ -145,7 +145,7 @@ replace_inf_with_nan(_Float16 *arr, int64_t arrsize, int64_t nan_count)
+ }
+ 
+ template <>
+-void avx512_qselect(_Float16 *arr, int64_t k, int64_t arrsize)
++inline void avx512_qselect(_Float16 *arr, int64_t k, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(arr, arrsize);
+@@ -156,7 +156,7 @@ void avx512_qselect(_Float16 *arr, int64_t k, int64_t arrsize)
+ }
+ 
+ template <>
+-void avx512_qsort(_Float16 *arr, int64_t arrsize)
++inline void avx512_qsort(_Float16 *arr, int64_t arrsize)
+ {
+     if (arrsize > 1) {
+         int64_t nan_count = replace_nan_with_inf(arr, arrsize);

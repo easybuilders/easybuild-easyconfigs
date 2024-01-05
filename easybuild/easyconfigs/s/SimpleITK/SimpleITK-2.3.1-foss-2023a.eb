@@ -1,0 +1,54 @@
+easyblock = 'CMakeMake'
+
+name = 'SimpleITK'
+version = '2.3.1'
+
+homepage = 'https://www.simpleitk.org'
+description = """SimpleITK is a simplified programming interface to the algorithms and data structures of
+ the Insight Toolkit (ITK)."""
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+source_urls = ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s']
+sources = [SOURCE_TAR_GZ]
+checksums = ['7498c1bd3ae8218027c17bcefd2346b16eda6f2a009c0b9f344bd163c4715870']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('SWIG', '4.1.1'),
+    ('Lua', '5.4.6'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('ITK', '5.3.0'),
+    ('scikit-build', '0.17.6'),
+]
+
+# Enable Python bindings
+configopts = "-DWRAP_DEFAULT:BOOL=OFF -DWRAP_PYTHON=BOOL:ON "
+
+# Install Python module as extension
+exts_defaultclass = 'PythonPackage'
+exts_default_options = {
+    'use_pip': True,
+    'download_dep_fail': True,
+    'sanity_pip_check': True,
+}
+exts_list = [
+    (name, version, {
+        'modulename': '%(name)s',
+        'source_urls': ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s'],
+        'start_dir': '%(builddir)s/easybuild_obj/Wrapping/Python',
+        'checksums': ['7498c1bd3ae8218027c17bcefd2346b16eda6f2a009c0b9f344bd163c4715870'],
+    }),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+sanity_check_paths = {
+    'files': ['lib/libSimpleITK_ITKBiasCorrection-%(version_major_minor)s.a'],
+    'dirs': ['include/%(name)s-%(version_major_minor)s', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'tools'

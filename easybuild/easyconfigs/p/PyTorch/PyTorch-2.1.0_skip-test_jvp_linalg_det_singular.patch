@@ -1,0 +1,35 @@
+test_jvp_linalg_det_singular_cpu_float32 in functorch/test_ops.py fails consistently with the error
+> Mismatched elements: 1 / 4 (25.0%)
+> Greatest absolute difference: 0.44168850779533386 at index (0, 1) (up to 1e-05 allowed)
+> Greatest relative difference: inf at index (0, 1) (up to 1.3e-06 allowed)
+
+This is an already known issue on x86 MacOS, see https://github.com/pytorch/pytorch/issues/110980
+So just skip this test.
+
+Similar for test_vmapjvpall_linalg_det_singular_cpu_float32,
+see https://github.com/pytorch/pytorch/issues/111583
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/functorch/test_ops.py b/test/functorch/test_ops.py
+index 923d75d53d9..378498d4dc5 100644
+--- a/test/functorch/test_ops.py
++++ b/test/functorch/test_ops.py
+@@ -498,7 +498,7 @@ class TestOperators(TestCase):
+         xfail('as_strided', 'partial_views'),
+         xfail('as_strided_scatter'),
+         decorate('linalg.det', 'singular',
+-                 decorator=expectedFailureIf(IS_MACOS and IS_X86)),
++                 decorator=unittest.skipIf(IS_X86, 'Known failure: #110980')),
+     }))
+     @opsToleranceOverride('TestOperators', 'test_jvp', (
+         tol1('nn.functional.conv_transpose3d',
+@@ -1053,7 +1053,7 @@ class TestOperators(TestCase):
+              {torch.float32: tol(atol=2e-04, rtol=9e-3)}),
+     ))
+     @skipOps('TestOperators', 'test_vmapjvpall', vmapjvpall_fail.union({
+-        decorate('linalg.det', 'singular', decorator=expectedFailureIf(IS_MACOS and IS_X86)),
++        decorate('linalg.det', 'singular', decorator=unittest.skipIf(IS_X86, 'Known failure: #110980')),
+     }))
+     # This is technically a superset of test_vmapjvp. We should either delete test_vmapjvp
+     # or figure out if we can split vmapjvpall. It's useful to keep test_vmapjvp intact

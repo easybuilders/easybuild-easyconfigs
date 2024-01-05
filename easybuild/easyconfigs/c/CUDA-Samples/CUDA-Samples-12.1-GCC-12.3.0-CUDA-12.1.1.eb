@@ -49,13 +49,24 @@ local_filters += "Samples/4_CUDA_Libraries/simpleCUFFT_callback/Makefile "
 # Builds a shared lib that it sticks in `bin`!
 local_filters += "Samples/2_Concepts_and_Techniques/cuHook/Makefile "
 
+# some CUDA samples fail to build on aarch64;
+# see also https://github.com/NVIDIA/cuda-samples/issues/223
+if ARCH == 'aarch64':
+    local_filters += "Samples/3_CUDA_Features/cdpBezierTessellation/Makefile "
+    local_filters += "Samples/3_CUDA_Features/cdpSimplePrint/Makefile "
+    local_filters += "Samples/3_CUDA_Features/cdpSimpleQuicksort/Makefile "
+    local_filters += "Samples/3_CUDA_Features/cdpQuadtree/Makefile "
+    local_filters += "Samples/3_CUDA_Features/cdpAdvancedQuicksort/Makefile "
+
 buildopts = "HOST_COMPILER=g++ FILTER_OUT='%s'" % local_filters
 
 # Remove libraries in the bin dir after a successful 'make'
 buildopts += " && rm bin/*/linux/release/lib*.so.*"
 
+local_binsubdir = 'sbsa' if ARCH == 'aarch64' else ARCH
+
 files_to_copy = [
-    (['bin/%s/linux/release/*' % ARCH], 'bin'),
+    (['bin/%s/linux/release/*' % local_binsubdir], 'bin'),
     'LICENSE',
 ]
 
