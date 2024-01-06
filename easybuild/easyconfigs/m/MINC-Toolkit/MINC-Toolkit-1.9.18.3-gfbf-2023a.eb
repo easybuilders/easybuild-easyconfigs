@@ -1,0 +1,52 @@
+easyblock = 'CMakeMake'
+
+name = 'MINC-Toolkit'
+version = '1.9.18.3'
+
+homepage = 'http://bic-mni.github.io/'
+description = "Medical Imaging NetCDF Toolkit"
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+source_urls = ['https://github.com/BIC-MNI/minc-toolkit-v2/releases/download/release-%(version)s']
+sources = ["%(namelower)s-v2-%(version)s.tar.gz"]
+patches = [
+    "MINC-Toolkit-1.9.18.1-ITK-build.patch",
+]
+checksums = [
+    {'minc-toolkit-v2-1.9.18.3.tar.gz': '824d656af1b5184f896d0265cd41c533e7db4c656a1111a32ca574e666ea313a'},
+    {'MINC-Toolkit-1.9.18.1-ITK-build.patch': 'e2d60311b4288a6d9ff666ba2abfdaee738317de9cd8c04d71a604d0efb0940c'},
+]
+
+dependencies = [
+    ('GSL', '2.7'),
+    ('HDF5', '1.14.2'),
+    ('ANTs', '2.5.0'),
+    ('netCDF', '4.9.2'),
+]
+builddependencies = [('CMake', '3.26.3')]
+
+preconfigopts = "sed -i -e '1iSET(ITK_LIBRARIES ${ITK_LIBRARIES} flexiblas lapacke)' ../*/patch_morphology/src/CMakeLists.txt && "
+preconfigopts = "sed -i -e 's@OpenBLAS_LIBRARIES:PATH=${OpenBLAS_LIBRARIES}@BLAS_LIBRARIES:PATH=$ENV{BLAS_LIB_DIR}/libflexiblas.so@' ../*/cmake-modules/BuildPatchMorphology.cmake && "
+configopts = '-DUSE_SYSTEM_FFTW3D=ON -DFFTW3D_DIR=$EBROOTFFTW '
+configopts += '-DUSE_SYSTEM_FFTW3F=ON '
+configopts += '-DUSE_SYSTEM_OPENJPEG=ON -DOPENJPEG_INCLUDE_DIR=$EBROOTGENTOO/include/openjpeg-2.5 '
+configopts += '-DUSE_SYSTEM_GSL=ON '
+configopts += '-DUSE_SYSTEM_HDF5=ON '
+configopts += '-DUSE_SYSTEM_NETCDF=ON '
+configopts += '-DUSE_SYSTEM_PCRE=ON '
+configopts += '-DUSE_SYSTEM_ZLIB=ON '
+configopts += '-DUSE_SYSTEM_ANTS=ON '
+configopts += '-DUSE_SYSTEM_JPEG=ON '
+configopts += '-DMT_BUILD_SHARED_LIBS=ON '
+configopts += '-DMT_BUILD_OPENBLAS=OFF '
+configopts += '-DMT_BUILD_ANTS=OFF '
+
+separate_build_dir = True
+
+sanity_check_paths = {
+    'files': ['minc-toolkit-config.sh', 'lib/libminc2.so' ],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'man', 'perl', 'pipeline', 'share' ],
+}
+
+moduleclass = 'lib'
