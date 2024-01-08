@@ -456,7 +456,7 @@ class EasyConfigTest(TestCase):
         # for some dependencies, we allow exceptions for software that depends on a particular version,
         # as long as that's indicated by the versionsuffix
         versionsuffix_deps = ['ASE', 'Boost', 'CUDA', 'CUDAcore', 'Java', 'Lua',
-                              'PLUMED', 'PyTorch', 'R', 'TensorFlow']
+                              'PLUMED', 'PyTorch', 'R', 'Rust', 'TensorFlow']
         if dep in versionsuffix_deps and len(dep_vars) > 1:
 
             # check for '-CUDA-*' versionsuffix for CUDAcore dependency
@@ -822,6 +822,29 @@ class EasyConfigTest(TestCase):
         self.assertFalse(self.check_dep_vars('2020a', 'SciPy-bundle', {
             'version: 2020.03; versionsuffix: -Python-2.7.18': ['matplotlib-3.2.1-foss-2020a-Python-2.7.18.eb'],
             'version: 2020.03; versionsuffix:': ['matplotlib-3.2.1-foss-2020a.eb'],
+        }))
+
+        # multiple dependency variants of specific software is OK, but only if indicated via versionsuffix
+        self.assertTrue(self.check_dep_vars('2019b', 'TensorFlow', {
+            'version: 1.15.2; versionsuffix: -TensorFlow-1.15.2': ['Horovod-0.18.2-fosscuda-2019b-TensorFlow-1.15.2.eb'],
+            'version: 2.2.0; versionsuffix: -TensorFlow-2.2.0-Python-3.7.4':
+                ['Horovod-0.19.5-fosscuda-2019b-TensorFlow-2.2.0-Python-3.7.4.eb'],
+            'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
+        }))
+
+        self.assertFalse(self.check_dep_vars('2019b', 'TensorFlow', {
+            'version: 1.15.2; versionsuffix: ': ['Horovod-0.18.2-fosscuda-2019b.eb'],
+            'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
+        }))
+
+        self.assertTrue(self.check_dep_vars('2022b', 'Rust', {
+            'version: 1.65.0; versionsuffix: ': ['maturin-1.1.0-GCCcore-12.2.0.eb'],
+            'version: 1.75.0; versionsuffix: -Rust-1.75.0': ['maturin-1.4.0-GCCcore-12.2.0-Rust-1.75.0.eb'],
+        }))
+
+        self.assertFalse(self.check_dep_vars('2022b', 'Rust', {
+            'version: 1.65.0; versionsuffix: ': ['maturin-1.1.0-GCCcore-12.2.0.eb'],
+            'version: 1.75.0; versionsuffix: ': ['maturin-1.4.0-GCCcore-12.2.0.eb'],
         }))
 
     def test_dep_versions_per_toolchain_generation(self):
