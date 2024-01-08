@@ -1,0 +1,55 @@
+easyblock = 'ConfigureMake'
+
+name = 'Julia'
+version = '1.10.0'
+
+homepage = 'https://julialang.org'
+description = "Julia is a high-level, high-performance dynamic programming language for numerical computing"
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/JuliaLang/%(namelower)s/releases/download/v%(version)s']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['a4136608265c5d9186ae4767e94ddc948b19b43f760aba3501a161290852054d']
+
+#patches = [
+#    '%(name)s-%(version_major_minor)s.1-limit-initial-OpenBLAS-threads.patch',
+#    '%(name)s-%(version)s-OpenBLAS-checksum.patch',
+#]
+
+builddependencies = [
+    ('imkl', '2023.2.0', '', SYSTEM),
+]
+
+prebuildopts = "declare -A ARCH_MAP=( [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+
+# Specifying JULIA_CPU_TARGET allows use on non-identical CPUs.  Doesn't affect JIT or linked toolchain components.
+
+buildopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+preinstallopts = "declare -A ARCH_MAP=( [avx2]=haswell [avx512]=skx ) && declare -A OPENBLAS_ARCH_MAP=( [avx2]='OPENBLAS_TARGET_ARCH=HASWELL' [avx512]='OPENBLAS_TARGET_ARCH=SKYLAKEX' ) && "
+
+installopts = " prefix=%(installdir)s USE_BINARYBUILDER=0 JULIA_CPU_TARGET=${ARCH_MAP[$RSNT_ARCH]} ${OPENBLAS_ARCH_MAP[$RSNT_ARCH]}"
+
+# so that the Pardiso Julia package can find MKL
+
+postinstallcmds = [
+    """patchelf --set-rpath '$ORIGIN:$ORIGIN/..:'"$MKLROOT/lib/intel64" %(installdir)s/lib/%(namelower)s/libjulia-internal.so.%(version_major_minor)s""",
+]
+
+skipsteps = ['configure']
+
+# : means the default path, this way extension modules can append to it
+
+modluafooter = """
+append_path("JULIA_DEPOT_PATH", ":")
+"""
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'include/%(namelower)s/%(namelower)s.h', 'lib/libjulia.so'],
+    'dirs': ['bin', 'etc', 'include', 'lib', 'share'],
+}
+
+sanity_check_commands = ['%(namelower)s --help']
+
+moduleclass = 'lang'
