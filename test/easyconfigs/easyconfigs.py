@@ -826,7 +826,8 @@ class EasyConfigTest(TestCase):
 
         # multiple dependency variants of specific software is OK, but only if indicated via versionsuffix
         self.assertTrue(self.check_dep_vars('2019b', 'TensorFlow', {
-            'version: 1.15.2; versionsuffix: -TensorFlow-1.15.2': ['Horovod-0.18.2-fosscuda-2019b-TensorFlow-1.15.2.eb'],
+            'version: 1.15.2; versionsuffix: -TensorFlow-1.15.2':
+                ['Horovod-0.18.2-fosscuda-2019b-TensorFlow-1.15.2.eb'],
             'version: 2.2.0; versionsuffix: -TensorFlow-2.2.0-Python-3.7.4':
                 ['Horovod-0.19.5-fosscuda-2019b-TensorFlow-2.2.0-Python-3.7.4.eb'],
             'version: 2.1.0; versionsuffix: -Python-3.7.4': ['Keras-2.3.1-foss-2019b-Python-3.7.4.eb'],
