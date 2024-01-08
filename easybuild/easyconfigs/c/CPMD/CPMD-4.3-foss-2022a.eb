@@ -1,0 +1,31 @@
+easyblock = 'MakeCp'
+
+name = 'CPMD'
+version = '4.3'
+
+homepage = 'https://github.com/CPMD-code'
+description = """The CPMD code is a parallelized plane wave / pseudopotential implementation of DFT,
+ particularly designed for ab-initio molecular dynamics."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+source_urls = ['https://github.com/CPMD-code/CPMD/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+patches = ['CPMD-4.3_gfortran.patch']
+checksums = [
+    {'4.3.tar.gz': 'e0290f9da0d255f90a612e60662b14a97ca53003f89073c6af84fa7bc8739f65'},
+    {'CPMD-4.3_gfortran.patch': 'e8760641cb1addeab27803f0d607852297c83c0b681ca900b234b7dafccf7f1a'},
+]
+
+prebuildopts = "chmod +x ./configure.sh && ./configure.sh -omp LINUX-X86_64-GFORTRAN-MPI && "
+
+files_to_copy = [(['bin/cpmd.x'], 'bin'), (['lib/libcpmd.a'], 'lib')]
+
+sanity_check_paths = {
+    'files': ['bin/cpmd.x', 'lib/libcpmd.a'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["cpmd.x 2>&1 | grep 'STOP 1'"]
+
+moduleclass = 'chem'
