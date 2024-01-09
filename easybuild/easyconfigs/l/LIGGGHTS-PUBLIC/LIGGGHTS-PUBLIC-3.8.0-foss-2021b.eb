@@ -1,0 +1,48 @@
+# Contribution from Imperial College London/UK
+# uploaded by J. Sassmannshausen 
+
+easyblock = 'MakeCp'
+
+name = 'LIGGGHTS-PUBLIC'
+version = '3.8.0'
+
+homepage = 'https://www.cfdem.com/liggghtsr-open-source-discrete-element-method-particle-simulation-code'
+description = """LIGGGHTS® is an Open Source Discrete Element Method Particle Simulation Software.
+It can be used for the simulation of particulate materials, and aims to for applications it to industrial 
+problems LIGGGHTS® is currently used by a variety of research institutions and companies world-wide."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/CFDEMproject/LIGGGHTS-PUBLIC/archive/']
+sources = ['%(version)s.tar.gz']
+patches = [
+    'LIGGGHTS-PUBLIC-3.8.0_makefile.patch',
+    'LIGGGHTS-PUBLIC-3.8.0_source.patch',
+]
+checksums = [
+    {'3.8.0.tar.gz': '9cb2e6596f584463ac2f80e3ff7b9588b7e3638c44324635b6329df87b90ab03'},
+    {'LIGGGHTS-PUBLIC-3.8.0_makefile.patch': 'd0a5fe6cfb74cc45cd2a7fec943f1e3a6648354e7548c6aaeb4ede0321bbc082'},
+    {'LIGGGHTS-PUBLIC-3.8.0_source.patch': '7c9c2897771503db6ec139d90819cf5b2888665fdab086f58ff9fb5381a5e57b'},
+]
+
+dependencies = [
+    ('VTK', '9.1.0'),
+    ('libpng', '1.6.37'),
+]
+
+prebuildopts = 'cd src && '  # uses the patched makefile
+buildopts = ' mpi '
+
+files_to_copy = [
+    (['src/lmp_mpi'], 'bin'),
+]
+
+# This is a bit annoying as without the grep command, 1 will be returned
+sanity_check_commands = ['lmp_mpi -h | grep "LIGGGHTS" &> /dev/null']
+
+sanity_check_paths = {
+    'files': ["bin/lmp_mpi"],
+    'dirs': []
+}
+
+moduleclass = 'chem'
