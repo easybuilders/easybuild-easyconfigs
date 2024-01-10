@@ -1,0 +1,61 @@
+name = 'Trilinos'
+version = "15.0.0"
+
+homepage = 'https://trilinos.org'
+description = """The Trilinos Project is an effort to develop algorithms and enabling technologies
+ within an object-oriented software framework for the solution of large-scale, complex multi-physics
+ engineering and scientific problems. A unique design feature of Trilinos is its focus on packages."""
+
+toolchain = {'name': 'gofb', 'version': '2023a'}
+toolchainopts = {'usempi': True, 'pic': True, 'strict': True}
+
+source_urls = [
+    'https://github.com/trilinos/Trilinos/archive'
+]
+sources = ['%%(namelower)s-release-%s.tar.gz' % '-'.join(version.split('.'))]
+#patches = ['Trilinos-13.4.1_fix-seacas-NC-constants.patch']
+checksums = [
+    '5651f1f967217a807f2c418a73b7e649532824dbf2742fa517951d6cc11518fb',
+]
+
+multi_deps_load_default = False
+multi_deps = {"Python": ["3.10", "3.11"]}
+
+builddependencies = [
+    ('Boost', '1.82.0'),
+    ('netCDF', '4.9.2', '-mpi'),
+    ('MATIO', '1.5.26'),
+    ('SWIG', '4.1.1'),
+    ('CMake', '3.27.7'), 
+]
+
+preconfigopts  = "unset EBPYTHONPREFIXES ; "
+preconfigopts += "pyver=$(python -c 'import sys; print(\"python%s.%s\"%sys.version_info[:2])') ; "
+preconfigopts += "pip install numpy --prefix=%(installdir)s ; "
+preconfigopts += "export PYTHONPATH=$PYTHONPATH:%(installdir)s/lib/$pyver/site-packages ; "
+preconfigopts += "export CPATH=$CPATH:%(installdir)s/lib/$pyver/site-packages/numpy/core/include ; "
+
+configopts  = '-DNetCDF_NEEDS_HDF5=ON '
+configopts += '-DShyLU_NodeTacho_ENABLE_EXAMPLES=OFF '
+configopts += '-DShyLU_Node_ENABLE_EXAMPLES=OFF '
+configopts += '-DXpetra_ENABLE_EXAMPLES=OFF '
+configopts += '-DXpetra_ENABLE_TESTS=OFF '
+configopts += '-DIfpack2_ENABLE_TESTS=OFF '
+configopts += '-DShyLU_DDFROSch_ENABLE_TESTS=OFF '
+configopts += '-DShyLU_DD_ENABLE_TESTS=OFF '
+configopts += '-DTrilinosCouplings_ENABLE_EXAMPLES=OFF '
+configopts += '-DMPI_BASE_DIR=$EBROOTOPENMPI '
+configopts += '-DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+openmp = False
+
+build_shared_libs = True 
+
+preinstallopts = preconfigopts
+
+# too parallel is too slow because of memory requirements (results in swapping), and may cause build/tests to fail
+# building with 20 cores seems to require about 100GB of memory (peak usage)
+
+maxparallel = 10 
+
+moduleclass = 'numlib'

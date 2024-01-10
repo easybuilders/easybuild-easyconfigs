@@ -1,0 +1,55 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.4.2'
+
+homepage = 'http://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+based on Density Futional Theory (DFT). In this version scripts and modules for calculating transition 
+states, VTSTTools (http://theory.cm.utexas.edu/vtsttools/)
+has been implemented to the original version of vasp This version of vasp also supports 
+HDF5, Wannier90, Libbeef, and Libxc."""
+
+toolchain = {'name': 'iofb', 'version': '2023a'}
+dependencies = [
+    ('Wannier90', '3.1.0'),
+    ('FFTW', '3.3.10'),
+    ('ScaLAPACK', '2.2.0', '-fb'),
+    ('HDF5', '1.14.2'),
+    ('libxc', '6.2.2'),
+]
+
+local_vstat = 'vtstcode-198'
+local_vtstscripts = 'vtstscripts-1033'
+local_makeparam = 'std gam ncl' 
+local_binfiles = ['vasp_std', 'vasp_gam', 'vasp_ncl']
+
+patches = ['%(namelower)s-%(version)s.patch']
+
+# Vasp is proprietary software, see http://www.vasp.at/index.php/faqs on how to get access to the code
+source_urls = ['http://theory.cm.utexas.edu/code/vtstscripts_old', 'http://theory.cm.utexas.edu/code/']
+sources = ['%(namelower)s.%(version)s.tar', '%s.tgz' %local_vtstscripts, '%s.tgz' %local_vstat]
+checksums = ['2085fe80b2ff68f070906e9b1f2cbace0f868155b86f41a6b6c2da8ba845b49e',  #vasp.6.4.2.tar,
+             '9422e548b0408a41695b0e70eec042d7663fbf9e4b7e3980c86bb2fc6cd5fafc',  #vtstscripts-1033.tgz,
+             '17caedfae0d92a90ace2595888b9685a391202df825df0ea1d74ba5ebe212d02',  #vtstcode-198.tgz,
+             '8d8b193987de1e5f7d739d61e2b6dfcb32bdf01172826bff7eeac7ba0dd12b88',  #vasp-6.4.2.patch,
+]
+prebuildopts = 'cp arch/makefile.include.intel ./makefile.include && '
+prebuildopts += 'unset LIBS && '
+prebuildopts += 'cp  -r ../%s/vtstcode6.4/* src && ' %local_vstat
+#prebuildopts += 'sed -i "s/M_sum_s(SP_GRIDC%COMM,1,Ecorr4,0,0,0))/M_sum_1(SP_GRIDC%COMM,Ecorr4))/g" src/solvation.F && '
+#prebuildopts += 'sed -i "s/M_sum_s(SP_GRIDC%COMM,1,Ecorr3,0,0,0))/M_sum_1(SP_GRIDC%COMM,Ecorr3))/g" src/solvation.F && '
+build_cmd = 'make %s' %local_makeparam
+
+postinstallcmds = ["chmod -R o-rwx %(installdir)s && ln -f -s /opt/software/easybuild/2017/avx2/MPI/intel2016.4/openmpi2.1/vasp/pseudopotentials %(installdir)s/pseudopotentials"]
+parallel = 1
+
+files_to_copy = [(['bin/%s' % x for x in local_binfiles], 'bin'), '../%s' %local_vtstscripts]
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_binfiles],
+    'dirs': []
+}
+modextrapaths = {'PATH': local_vtstscripts}
+moduleclass = 'phys'
+

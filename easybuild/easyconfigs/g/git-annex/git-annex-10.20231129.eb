@@ -1,0 +1,33 @@
+# Built with EasyBuild version 3.6.2-r7ac096157987d9f8fad6490e41038c31790fa6ee on 2018-09-11_20-12-21
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Maxime Boissonneault
+
+easyblock = "Tarball"
+
+name = 'git-annex'
+version = '10.20231129'
+
+homepage = 'http://git-annex.branchable.com/'
+description = """ git-annex allows managing files with git, without checking the file contents into git. 
+While that may seem paradoxical, it is useful when dealing with files larger than git can currently easily handle, 
+whether due to limitations in memory, time, or disk space."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://downloads.kitenet.net/git-annex/linux/current/']
+sources = [{'filename':'git-annex-%(version)s.tar.gz', 'download_filename': 'git-annex-standalone-amd64.tar.gz'}]
+checksums = ['6e0a3c16d50379f89d2064081376a3f7f6efa1a89eb1afc2a2335597e7cf9fac']
+
+# this is to prevent the directories bin, lib, lib64, etc. extracted from the tarball from appearing in the module, only the root
+# path (which now becomes the bin folder) should be added to PATH)
+
+keepsymlinks = True
+
+postinstallcmds = ["mkdir %(installdir)s/bin2; mv %(installdir)s/* %(installdir)s/bin2; mv %(installdir)s/{bin2,bin}"]
+
+sanity_check_paths = {
+    'files': ["bin/git-annex"],
+    'dirs': [""]
+}
+
+moduleclass = 'tools'

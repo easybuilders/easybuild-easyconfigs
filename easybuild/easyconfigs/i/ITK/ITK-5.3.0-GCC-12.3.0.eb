@@ -1,0 +1,67 @@
+# Contributors:
+# Fenglai Liu (fenglai@accre.vanderbilt.edu) - Vanderbilt University
+# Alex Domingo (alex.domingo.toro@vub.be) - Vrije Universiteit Brussel (VUB)
+# Denis Kristak (INUITS)
+#
+easyblock = 'CMakeMake'
+
+name = 'ITK'
+version = '5.3.0'
+
+homepage = 'https://itk.org'
+description = """Insight Segmentation and Registration Toolkit (ITK) provides
+ an extensive suite of software tools for registering and segmenting
+ multidimensional imaging data."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+toolchainopts = {'pic': True, 'cstd': 'c++11'}
+
+github_account = 'InsightSoftwareConsortium'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['64e7e8094a5023c8f68ee042459d6319581fadb35e2fe90a4ae230ce36369db1']
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Bison', '3.8.2'),
+    ('Eigen', '3.4.0'),
+]
+dependencies = [
+    ('double-conversion', '3.3.0'),
+    ('expat', '2.5.0'),
+    ('HDF5', '1.14.2'),
+    ('libjpeg-turbo', '2.1.5.1'),
+    ('libpng', '1.6.39'),
+    ('LibTIFF', '4.5.0'),
+    ('VTK', '9.3.0'),
+    ('zlib', '1.2.13'),
+]
+multi_deps = {'Python': ['3.11', '3.10'] }
+
+local_sys_deps = ['DOUBLECONVERSION', 'EIGEN', 'EXPAT', 'HDF5', 'JPEG', 'PNG', 'TIFF', 'ZLIB']
+local_sys_cmake = ['-DITK_USE_SYSTEM_%s=ON' % d for d in local_sys_deps]
+
+configopts = '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
+configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON -DModule_SimpleITKFilters=ON '
+configopts += '-DITK_WRAP_PYTHON:BOOL=ON '
+configopts += '-DITK_LEGACY_REMOVE:BOOL=OFF '  # needed by SimpleITK
+configopts += '-DPY_SITE_PACKAGES_PATH=%(installdir)s/lib/python${EBVERSIONPYTHON:0:4}/site-packages '
+configopts += ' '.join(local_sys_cmake)
+
+build_shared_libs = True
+prebuildopts = "LC_ALL=C CPATH=$CPATH:$EBROOTVTK/include/vtk-9.3 "
+
+local_lib_names = ['ITKCommon', 'ITKIOHDF5', 'ITKIOJPEG', 'ITKIOPNG', 'ITKIOTIFF',
+                   'ITKReview', 'ITKVTK', 'ITKVtkGlue', 'itkSimpleITKFilters']
+
+modextrapaths = {"EBPYTHONPREFIXES": ""}
+
+sanity_check_paths = {
+    'files': ['bin/itkTestDriver'] +
+             ['lib/lib%s-%%(version_major)s.%%(version_minor)s.%s' % (l, SHLIB_EXT) for l in local_lib_names],
+    'dirs': ['include/ITK-%(version_major)s.%(version_minor)s', 'share'],
+}
+
+sanity_check_commands = ["python -c 'import itk'"]
+
+moduleclass = 'data'

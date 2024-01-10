@@ -1,0 +1,45 @@
+# This easyconfig was created by the BEAR Software team at the University of Birmingham.
+easyblock = 'ConfigureMake'
+
+name = 'FPC'
+version = '3.2.2'
+
+homepage = "https://www.freepascal.org"
+description = """Free Pascal is a mature, versatile, open source Pascal compiler."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://sourceforge.net/projects/freepascal/files/Linux/%(version)s']
+sources = ['fpc-%(version)s.x86_64-linux.tar']
+patches = ['fpc_3.2.2_install.patch']
+checksums = [
+    '5adac308a5534b6a76446d8311fc340747cbb7edeaacfe6b651493ff3fe31e83',  # fpc-3.2.2.x86_64-linux.tar
+    '4ac2938c9db8322403157afb5d7f5f7641b7bff986f2b0c98847fed6fede72cb',  # fpc_3.2.2_install.patch
+]
+
+builddependencies = [('binutils', '2.36.1')]
+
+skipsteps = ['configure', 'build']
+
+buildininstalldir = True
+
+install_cmd = 'PREFIX=%(installdir)s INSTALL_DOCS=yes INSTALL_DEMOS=yes ./install.sh'
+
+postinstallcmds = [
+    'mkdir -p %(installdir)s/config',
+    'mv ~/.fpc.cfg %(installdir)s/config/fpc.cfg',
+    'mv ~/.fppkg %(installdir)s/config/fppkg',
+]
+
+modextravars = {
+    'PPC_CONFIG_PATH': '%(installdir)s/config',
+}
+
+sanity_check_paths = {
+    'files': ['bin/fpc', 'bin/fpcmake', 'lib/libpas2jslib.so'],
+    'dirs': ['lib/fpc'],
+}
+
+sanity_check_commands = ['fpc -h']
+
+moduleclass = 'compiler'

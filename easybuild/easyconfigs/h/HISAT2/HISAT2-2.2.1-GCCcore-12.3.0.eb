@@ -1,0 +1,117 @@
+easyblock = 'MakeCp'
+
+name = 'HISAT2'
+version = '2.2.1'
+
+homepage = 'https://daehwankimlab.github.io/hisat2/'
+description = """HISAT2 is a fast and sensitive alignment program for mapping next-generation sequencing reads
+ (both DNA and RNA) against the general human population (as well as against a single reference genome)."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+# source_urls = ['https://cloud.biohpc.swmed.edu/index.php/s/fE9QCsX3NH4QwBi/download']
+sources = ['%(namelower)s-%(version)s-source.zip']
+checksums = ['48e933330d4d8470d2b3dfe7ec3918f2e98a75f7381891e23b7df1fb4f135eb1']
+
+dependencies = [
+    ('SAMtools', '1.18'),
+]
+
+build_cmd="make all ht2lib"
+
+local_libs = ["libhisat2lib.a", "libhisat2lib.so"]
+
+local_executables = [
+    "hisat2",
+    "hisat2-align-l",
+    "hisat2-align-s",
+    "hisat2-build-l",
+    "hisat2-build-s",
+    "hisat2-build",
+    "hisat2-inspect-l",
+    "hisat2-inspect-s",
+    "hisat2-inspect",
+    "hisat2-repeat",
+]
+
+local_shell_scripts = [
+    "convert_quals.pl",
+    "gen_2b_occ_lookup.pl",
+    "gen_occ_lookup.pl",
+    "gen_solqual_lookup.pl",
+    "infer_fraglen.pl",
+    "make_a_thaliana_tair.sh",
+    "make_bdgp6.sh",
+    "make_bdgp6_tran.sh",
+    "make_b_taurus_UMD3.sh",
+    "make_canFam2.sh",
+    "make_ce10.sh",
+    "make_dm6.sh",
+    "make_e_coli.sh",
+    "make_grch37.sh",
+    "make_grch37_snp.sh",
+    "make_grch37_snp_tran_ercc.sh",
+    "make_grch37_snp_tran.sh",
+    "make_grch37_tran.sh",
+    "make_grch38_rep.sh",
+    "make_grch38.sh",
+    "make_grch38_snp_rep.sh",
+    "make_grch38_snp.sh",
+    "make_grch38_snp_tran_ercc.sh",
+    "make_grch38_snp_tran.sh",
+    "make_grch38_tran.sh",
+    "make_grcm38.sh",
+    "make_grcm38_snp.sh",
+    "make_grcm38_snp_tran.sh",
+    "make_grcm38_tran.sh",
+    "make_hg19.sh",
+    "make_hg38_allsnp.sh",
+    "make_hg38.sh",
+    "make_hg38_snp.sh",
+    "make_hg38_snp_tran.sh",
+    "make_mm10.sh",
+    "make_mm9.sh",
+    "make_r64.sh",
+    "make_r64_tran.sh",
+    "make_rn4.sh",
+    "make_rn6.sh",
+    "make_rnor6.sh",
+    "make_rnor6_tran.sh",
+    "make_sc3.sh",
+    "make_wbcel235.sh",
+    "make_wbcel235_tran.sh",
+    "make_zm3_snp_tran_ercc.sh",
+]
+
+local_python_scripts = [
+    "extract_exons.py",
+    "extract_splice_sites.py",
+    "hisat2_extract_exons.py",
+    "hisat2_extract_snps_haplotypes_UCSC.py",
+    "hisat2_extract_snps_haplotypes_VCF.py",
+    "hisat2_extract_splice_sites.py",
+    "hisat2_read_statistics.py",
+    "hisat2_simulate_reads.py",
+]
+
+files_to_copy = [
+    (local_libs, 'bin'),
+    (local_executables, 'bin'),
+    (local_python_scripts, 'bin'),
+    'scripts',
+    'example',
+]
+
+modextrapaths = {'PATH': 'scripts'}
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in local_executables + local_python_scripts + local_libs] +
+             ["scripts/%s" % x for x in local_shell_scripts],
+    'dirs': ["bin", "scripts", 'example'],
+}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("perl")
+depends_on("python")
+"""
