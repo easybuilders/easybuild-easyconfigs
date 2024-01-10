@@ -1,0 +1,48 @@
+# easyconfig file for waLBerla v6.1
+easyblock = 'CMakeMake'
+
+name = 'waLBerla'
+version = '6.1'
+
+homepage = "https://walberla.net/index.html"
+description = """Widely applicable Lattics-Boltzmann from Erlangen is a 
+block-structured high-performance framework for multiphysics simulations"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+source_urls = ['https://i10git.cs.fau.de/walberla/walberla/-/archive/v6.1']
+sources = ['%(name)s-v%(version)s.tar.gz']
+patches = ['waLBerla-6.1_fix_cmakelist_for_easybuild.patch']
+checksums = [
+    {'waLBerla-v6.1.tar.gz': 'f0acdd9ad6543bc9306c8aae953dd5065986271d4398916ae0469db8b21c007a'},
+    {'waLBerla-6.1_fix_cmakelist_for_easybuild.patch':
+     '057066d07294e8f159c2545d2d5f9138d439dbb54bc70eb75eca1f82ae650c47'},
+]
+
+builddependencies = [('CMake', '3.20.1')]
+
+dependencies = [
+    ('pybind11', '2.6.2'),
+    ('Python', '3.9.5'),
+    ('Boost.MPI', '1.76.0'),
+    ('SciPy-bundle', '2021.05'),
+]
+
+parallel = 1
+
+configopts = "-DWALBERLA_BUILD_WITH_PYTHON=ON "
+configopts += "-DWALBERLA_BUILD_SHOWCASES=OFF "
+configopts += "-DWALBERLA_BUILD_DOC=OFF "
+configopts += "-DPython_ROOT_DIR=$EBROOTPYTHON "
+
+modextrapaths = {'PYTHONPATH': ['pythonmodule']}
+
+sanity_check_paths = {
+    'files': ['waLBerlaDefinitions.h', 'pythonmodule/walberla_cpp.cpython-39-x86_64-linux-gnu.so'],
+    'dirs': ['pythonmodule']
+}
+
+sanity_check_commands = [('python', "-c 'import waLBerla'")]
+
+moduleclass = 'chem'

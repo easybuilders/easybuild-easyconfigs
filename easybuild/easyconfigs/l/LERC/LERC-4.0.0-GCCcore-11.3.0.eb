@@ -22,13 +22,19 @@ builddependencies = [
     ('CMake', '3.23.1'),
 ]
 
+configopts = '-DCMAKE_INSTALL_LIBDIR=lib'
+
 postinstallcmds = [
+    # copy the LercTest source file to a LercTest subdir in the installation directory and compile it
+    # (needs to be done here instead of in the sanity check, else it won't work when RPATH linking is enabled)
     "cd %(builddir)s/lerc-%(version)s/src/LercTest && sed -i -e 's@../LercLib/include/@@' main.cpp",
-    "cp %(builddir)s/lerc-%(version)s/src/LercTest/main.cpp %(installdir)s/test.c",
+    "mkdir %(installdir)s/LercTest",
+    "cp %(builddir)s/lerc-%(version)s/src/LercTest/main.cpp %(installdir)s/LercTest/main.cpp",
+    "cd %(installdir)s/LercTest && ${CXX} ${CXXFLAGS} main.cpp -o LercTest -I../include -L../lib -lLerc",
 ]
 
 sanity_check_commands = [
-    "mkdir -p %(builddir)s && cd %(builddir)s && g++ %(installdir)s/test.c -o lerctest -lLerc && ./lerctest",
+    "%(installdir)s/LercTest/LercTest",
 ]
 
 sanity_check_paths = {
