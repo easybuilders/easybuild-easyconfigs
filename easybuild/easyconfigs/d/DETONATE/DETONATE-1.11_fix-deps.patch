@@ -1,0 +1,144 @@
+- fix compilation flags, use $CFLAGS passed by EasyBuild
+- use Boost, SAMtools, sparsehash provided as dependencies via EasyBuild
+author: Kenneth Hoste (HPC-UGent)
+--- detonate-1.11/rsem-eval/Makefile.orig	2016-06-22 23:34:39.000000000 +0200
++++ detonate-1.11/rsem-eval/Makefile	2018-01-23 14:47:47.714929147 +0100
+@@ -7,18 +7,15 @@
+ 
+ all : $(PROGRAMS)
+ 
+-sam/libbam.a :
+-	cd sam ; ${MAKE} all
+-
+ Transcript.h : utils.h
+ 
+ Transcripts.h : utils.h my_assert.h Transcript.h
+ 
+ rsem-extract-reference-transcripts : utils.h my_assert.h GTFItem.h Transcript.h Transcripts.h extractRef.cpp
+-	$(CC) -Wall -O3 extractRef.cpp -o rsem-extract-reference-transcripts
++	$(CC) $(CFLAGS) extractRef.cpp -o rsem-extract-reference-transcripts
+ 
+ rsem-synthesis-reference-transcripts : utils.h my_assert.h Transcript.h Transcripts.h synthesisRef.cpp
+-	$(CC) -Wall -O3 synthesisRef.cpp -o rsem-synthesis-reference-transcripts
++	$(CC) $(CFLAGS) synthesisRef.cpp -o rsem-synthesis-reference-transcripts
+ 
+ BowtieRefSeqPolicy.h : RefSeqPolicy.h
+ 
+@@ -28,10 +25,10 @@
+ 
+ 
+ rsem-preref : preRef.o
+-	$(CC) preRef.o -o rsem-preref
++	$(CC) $(CFLAGS) preRef.o -o rsem-preref
+ 
+ preRef.o : utils.h RefSeq.h Refs.h PolyARules.h RefSeqPolicy.h AlignerRefSeqPolicy.h preRef.cpp
+-	$(CC) $(COFLAGS) preRef.cpp
++	$(CC) -c -I $(CFLAGS) preRef.cpp
+ 
+ 
+ SingleRead.h : Read.h
+@@ -49,14 +46,14 @@
+ 
+ SamParser.h : sam/sam.h sam/bam.h utils.h my_assert.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Transcripts.h
+ 
+-rsem-parse-alignments : parseIt.o sam/libbam.a
+-	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz -lpthread 
++rsem-parse-alignments : parseIt.o
++	$(CC) -o rsem-parse-alignments parseIt.o ${EBROOTSAMTOOLS}/lib/libbam.a -lz -lpthread 
+ 
+ parseIt.o : utils.h RefSeq.h Refs.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h Transcripts.h sam/sam.h sam/bam.h parseIt.cpp
+-	$(CC) -Wall -O2 -c -I. parseIt.cpp
++	$(CC) $(CFLAGS) -c -I. parseIt.cpp
+ 
+ rsem-build-read-index : utils.h buildReadIndex.cpp
+-	$(CC) -O3 buildReadIndex.cpp -o rsem-build-read-index
++	$(CC) $(CFLAGS) buildReadIndex.cpp -o rsem-build-read-index
+ 
+ 
+ simul.h : boost/random.hpp
+@@ -85,23 +82,23 @@
+ 
+ CalcEvalScore.h : utils.h my_assert.h Refs.h GroupInfo.h Transcript.h Transcripts.h ContigLengthDist.h
+ 
+-rsem-eval-run-em : EM.o sam/libbam.a
+-	$(CC) -o rsem-eval-run-em EM.o sam/libbam.a -lz -lpthread
++rsem-eval-run-em : EM.o
++	$(CC) -o rsem-eval-run-em EM.o ${EBROOTSAMTOOLS}/lib/libbam.a -lz -lpthread
+ 
+ EM.o : utils.h my_assert.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h sam/bam.h sam/sam.h simul.h sam_rsem_aux.h sampling.h boost/random.hpp WriteResults.h boost/math/distributions/negative_binomial.hpp ContigLengthDist.h CalcEvalScore.h EM.cpp 
+-	$(CC) $(COFLAGS) EM.cpp
++	$(CC) -c -I $(CFLAGS) EM.cpp
+ 
+ rsem-simulate-reads : simulation.o
+ 	$(CC) -o rsem-simulate-reads simulation.o
+ 
+ simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h boost/random.hpp WriteResults.h simulation.cpp
+-	$(CC) $(COFLAGS) simulation.cpp
++	$(CC) -c -I $(CFLAGS) simulation.cpp
+ 
+-rsem-sam-validator : sam/bam.h sam/sam.h my_assert.h samValidator.cpp sam/libbam.a
+-	$(CC) -O3 -Wall samValidator.cpp sam/libbam.a -lz -lpthread -o $@
++rsem-sam-validator : sam/bam.h sam/sam.h my_assert.h samValidator.cpp
++	$(CC) $(CFLAGS) samValidator.cpp ${EBROOTSAMTOOLS}/lib/libbam.a -lz -lpthread -o $@
+ 
+-rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEndReads.cpp sam/libbam.a
+-	$(CC) -O3 -Wall scanForPairedEndReads.cpp sam/libbam.a -lz -lpthread -o $@
++rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEndReads.cpp
++	$(CC) $(CFLAGS) scanForPairedEndReads.cpp ${EBROOTSAMTOOLS}/lib/libbam.a -lz -lpthread -o $@
+ 
+ clean :
+ 	rm -f *.o *~ $(PROGRAMS)
+--- detonate-1.11/ref-eval/Makefile.orig	2016-06-22 23:34:39.000000000 +0200
++++ detonate-1.11/ref-eval/Makefile	2018-01-23 15:10:47.078223944 +0100
+@@ -40,19 +40,19 @@
+ 
+ CXXFLAGS       = -W -Wno-unused-parameter -g -O3
+ CXXFLAGS_DEBUG = -g3 -fno-inline -O0 -Wall -Wextra 
+-BOOST_INC = -Iboost
+-BOOST_LIB = boost/stage/lib/libboost_program_options.a boost/stage/lib/libboost_random.a
++BOOST_INC = -I${EBROOTBOOST}/include
++BOOST_LIB = ${EBROOTBOOST}/lib/libboost_program_options.a ${EBROOTBOOST}/lib/libboost_random.a
+ LEMON_INC = -Ilemon/build -Ilemon/lemon-main-473c71baff72
+ LEMON_LIB = lemon/build/lemon/libemon.a -lpthread
+ CITY_INC  = -Icity/install/include
+ CITY_LIB  = city/install/lib/libcityhash.a
+ SAM_INC  = -I.
+-SAM_LIB  = sam/libbam.a
+-SH_INC 	  = -Isparsehash/include
++SAM_LIB  = ${EBROOTSAMTOOLS}/lib/libbam.a
++SH_INC 	  = -I${EBROOTSPARSEHASH}/include
+ DL_INC 	  = -Ideweylab
+ INC = $(BOOST_INC) $(LEMON_INC) $(CITY_INC) $(SAM_INC) $(SH_INC) $(DL_INC)
+ LIB = $(BOOST_LIB) $(LEMON_LIB) $(CITY_LIB) $(SAM_LIB)
+-TEST_LIB = boost/stage/lib/libboost_unit_test_framework.a
++TEST_LIB = ${EBROOTBOOST}/lib/libboost_unit_test_framework.a -lboost_system
+ 
+ ifeq (${NEED_CMAKE}, yes)
+   wd := $(shell pwd)
+@@ -140,7 +140,7 @@
+ 	@echo 
+ 	cd sparsehash && $(MAKE)
+ 
+-ref-eval: ref-eval.cpp boost/finished lemon/finished city/finished sam/libbam.a sparsehash/finished
++ref-eval: ref-eval.cpp lemon/finished city/finished
+ 	@echo 
+ 	@echo -----------------------------
+ 	@echo - Building REF-EVAL itself. -
+@@ -148,7 +148,7 @@
+ 	@echo 
+ 	$(CXX) $(OMP) $(CXXFLAGS) $(INC) ref-eval.cpp $(LIB) -o ref-eval
+ 
+-ref-eval-estimate-true-assembly: ref-eval-estimate-true-assembly.cpp boost/finished lemon/finished city/finished sam/libbam.a sparsehash/finished
++ref-eval-estimate-true-assembly: ref-eval-estimate-true-assembly.cpp lemon/finished city/finished
+ 	@echo 
+ 	@echo ---------------------------------------------------
+ 	@echo - Building program to estimate the true assembly. -
+@@ -170,7 +170,7 @@
+ all_tests := test_lazycsv test_line_stream test_blast test_psl test_pairset test_mask test_alignment_segment test_re_matched test_re_kc
+ 
+ .PHONY: test
+-test: test_msg ${all_tests} boost/finished lemon/finished city/finished sparsehash/finished
++test: test_msg ${all_tests} lemon/finished city/finished
+ 	./test_lazycsv
+ 	./test_line_stream
+ 	./test_blast
