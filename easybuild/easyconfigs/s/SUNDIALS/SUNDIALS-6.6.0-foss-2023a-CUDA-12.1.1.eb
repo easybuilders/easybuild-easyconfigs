@@ -2,12 +2,13 @@ easyblock = 'CMakeMake'
 
 name = 'SUNDIALS'
 version = '6.6.0'
+versionsuffix = '-CUDA-%(cudaver)s'
 
 homepage = 'https://computing.llnl.gov/projects/sundials'
 
 description = "SUNDIALS: SUite of Nonlinear and DIfferential/ALgebraic Equation Solvers"
 
-toolchain = {'name': 'foss', 'version': '2022b'}
+toolchain = {'name': 'foss', 'version': '2023a'}
 toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
 
 source_urls = ['https://github.com/LLNL/sundials/releases/download/v%(version)s/']
@@ -22,11 +23,12 @@ checksums = [
 ]
 
 builddependencies = [
-    ('CMake', '3.24.3'),
+    ('CMake', '3.26.3'),
 ]
 
 dependencies = [
-    ('SuiteSparse', '5.13.0', '-METIS-5.1.0'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('SuiteSparse', '7.1.0'),
 ]
 
 _copts = [
@@ -34,6 +36,8 @@ _copts = [
     '-DENABLE_OPENMP=ON',
     '-DENABLE_LAPACK=ON',
     '-DENABLE_KLU=ON',
+    '-DENABLE_CUDA=ON',
+    '-DCMAKE_CUDA_ARCHITECTURES="%(cuda_cc_cmake)s"',
 ]
 configopts = ' '.join(_copts)
 
