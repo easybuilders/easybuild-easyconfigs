@@ -1,5 +1,5 @@
 # update 5.15.10, sip6: THEMBL
-easyblock = 'Bundle'
+easyblock = 'PythonBundle'
 
 name = 'PyQt5'
 version = '5.15.10'
@@ -13,7 +13,8 @@ toolchainopts = {'cstd': 'c++11'}
 
 builddependencies = [
     ('binutils', '2.40'),
-    ('SIP', '6.8.1'),
+    #('SIP', '6.8.1'),
+    ('PyQt-builder', '1.15.4'),
 ]
 dependencies = [
     ('Python', '3.11.3'),
@@ -52,13 +53,6 @@ local_pyqtwebengine_configopts = local_sip_configopts_common
 default_easyblock = 'PythonPackage'
 
 components = [
-    ('PyQt-builder', '1.15.4', {
-        'source_urls': [PYPI_SOURCE],
-        'sources': [SOURCE_TAR_GZ],
-        'start_dir': 'PyQt-builder-%(version)s',
-        'use_pip': True,
-        'checksums': ['39f8c75db17d9ce17cb6bbf3df1650b5cebc1ea4e5bd73843d21cc96612b2ae1'],
-    }),
     ('%s_sip' % name, '12.13.0', {
         'source_urls': [PYPI_SOURCE],
         'sources': [SOURCE_TAR_GZ],
@@ -94,16 +88,18 @@ components = [
     })
 ]
 
-sanity_check_paths = {
-    'files': ['bin/%s' % x for x in [
-        'pyrcc5', 'pyuic5', 'pylupdate5', 'pyqt-bundle']],
-    'dirs': ['lib/python%(pyshortver)s/site-packages', 'qsci'],
-}
-
 postinstallcmds = [
     'mkdir %(installdir)s/share',
     'ln -s --relative %s/%%(name)s/bindings %s' % (local_pylibdir, local_sipdir)
 ]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in [
+        'pyrcc5', 'pyuic5', 'pylupdate5']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages', 'qsci'],
+}
+
+sanity_pip_check = True
 
 sanity_check_commands = [
     "python -c 'import %(name)s.QtCore'",
