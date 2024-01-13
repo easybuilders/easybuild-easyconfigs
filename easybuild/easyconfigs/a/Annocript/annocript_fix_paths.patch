@@ -1,0 +1,36 @@
+Do not use full paths for executables in the config file: they should be in the PATH
+Author: Samuel Moors, Vrije Universiteit Brussel (VUB)
+diff -ruN Annocript-84fd67b30b7edb0eedc4eafd0a3fad3a117055d9_orig/CONFIGURATION/config_user.txt Annocript-84fd67b30b7edb0eedc4eafd0a3fad3a117055d9/CONFIGURATION/config_user.txt
+--- Annocript-84fd67b30b7edb0eedc4eafd0a3fad3a117055d9_orig/CONFIGURATION/config_user.txt	2023-05-15 18:02:35.946010508 +0200
++++ Annocript-84fd67b30b7edb0eedc4eafd0a3fad3a117055d9/CONFIGURATION/config_user.txt	2023-05-15 18:04:08.262818993 +0200
+@@ -114,7 +114,7 @@
+ 
+ #Programs Paths
+ diamondPath =
+-blastPath = /home/francesco/bin/ncbi-blast-2.7.1+/bin/
+-lncRNAPredProgPath = /home/francesco/bin/CPC2-beta/bin/CPC2.py
+-dna2pepPath = /home/francesco/bin/dna2pep-1.1/dna2pep.py
++blastPath =
++lncRNAPredProgPath = CPC2.py
++dna2pepPath = dna2pep.py
+ ##############################
+diff -ruN Annocript-84fd67b30b7edb0eedc4eafd0a3fad3a117055d9_orig/LIB/annocript_management.pm Annocript-84fd67b30b7edb0eedc4eafd0a3fad3a117055d9/LIB/annocript_management.pm
+--- Annocript-84fd67b30b7edb0eedc4eafd0a3fad3a117055d9_orig/LIB/annocript_management.pm	2023-05-15 18:02:36.477018945 +0200
++++ Annocript-84fd67b30b7edb0eedc4eafd0a3fad3a117055d9/LIB/annocript_management.pm	2023-05-15 18:05:42.646383000 +0200
+@@ -748,9 +748,15 @@
+ 
+   #Here we collect the path to the programs using an array initialized in the beginning of the page
+   # with all the programs used by Annocript
++  # first expand executables to full path
++  use File::Which;
+   foreach my $program (@$blastProgramsInUse){
+     my $var= $program.'Path';
+-    $configHash->{$var} = $configHash->{'blastPath'}.$program;
++    $configHash->{$var} = which($program) or die "error: blast executable $program not found\n";
++  }
++  foreach my $mypath ('lncRNAPredProgPath', 'dna2pepPath', 'makeblastdbPath'){
++    my $myexec = $configHash->{$mypath};
++    $configHash->{$mypath} = which($myexec) or die "error: executable $myexec not found\n";
+   }
+   
+ 	    #CONTROLS THE PATH TO THE PROGRAMS

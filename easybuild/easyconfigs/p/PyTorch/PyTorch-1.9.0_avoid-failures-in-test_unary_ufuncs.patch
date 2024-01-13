@@ -1,0 +1,31 @@
+Avoid some failing tests due to the used libm which may cause overflows for very large complex inputs.
+See https://github.com/pytorch/pytorch/issues/60259
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/test_unary_ufuncs.py b/test/test_unary_ufuncs.py
+index 29f62c234e..1916ffa682 100644
+--- a/test/test_unary_ufuncs.py
++++ b/test/test_unary_ufuncs.py
+@@ -542,7 +542,7 @@ class TestUnaryUfuncs(TestCase):
+             torch.nan_to_num(x, out=out, nan=nan, posinf=posinf, neginf=neginf)
+             self.assertEqual(result, out)
+ 
+-    @dtypes(torch.cfloat, torch.cdouble)
++    @dtypes(torch.cdouble)
+     def test_complex_edge_values(self, device, dtype):
+         # sqrt Test Reference: https://github.com/pytorch/pytorch/pull/47424
+         x = torch.tensor(0. - 1.0e+20j, dtype=dtype, device=device)
+diff --git a/torch/testing/_internal/common_methods_invocations.py b/torch/testing/_internal/common_methods_invocations.py
+index fd45a76efa..37684d91ac 100644
+--- a/torch/testing/_internal/common_methods_invocations.py
++++ b/torch/testing/_internal/common_methods_invocations.py
+@@ -4095,7 +4095,7 @@ op_db: List[OpInfo] = [
+                    skips=(
+                        SkipInfo('TestUnaryUfuncs', 'test_reference_numerics_extremal',
+                                 device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
+-                       SkipInfo('TestUnaryUfuncs', 'test_reference_numerics_normal',
++                       SkipInfo('TestUnaryUfuncs', 'test_reference_numerics_hard',
+                                 device_type='cpu', dtypes=[torch.cfloat, torch.cdouble]),
+                        SkipInfo('TestUnaryUfuncs', 'test_reference_numerics_extremal',
+                                 device_type='cuda', dtypes=[torch.cfloat, torch.cdouble],

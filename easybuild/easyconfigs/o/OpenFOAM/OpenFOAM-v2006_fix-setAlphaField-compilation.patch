@@ -1,0 +1,81 @@
+fix compilation error for setAlphaField with intel/2020a
+obtained via https://develop.openfoam.com/Development/openfoam/-/commit/719d3f77bea23bbdb9c530ee2dde09383f03bc71.patch
+
+From 719d3f77bea23bbdb9c530ee2dde09383f03bc71 Mon Sep 17 00:00:00 2001
+From: Mark Olesen <Mark.Olesen@esi-group.com>
+Date: Tue, 1 Sep 2020 09:32:13 +0200
+Subject: [PATCH] COMP: Intel compiler bug with inheriting constructors (fixes
+ #1821)
+
+- the compiler reports
+
+      Internal error loop: assertion failed:
+      find_seq_in_lookup_table: seq_number not found
+      (shared/cfe/edgcpfe/il.c, line 4118)
+
+  Seems to be the same as the bug report
+  https://community.intel.com/t5/Intel-C-Compiler/Internal-error-loop-assertion-failed-find-seq-in-lookup-table/td-p/1087603
+
+This _should_ be fixed in icc 17.0 update 1, but appears to have
+struck here as well.
+
+- workaround: explicitly construct member elements.
+---
+ .../cylinder/cylinderImplicitFunction.C          | 13 ++++++-------
+ .../implicitFunctions/sin/sinImplicitFunction.C  | 16 +++++++---------
+ 2 files changed, 13 insertions(+), 16 deletions(-)
+
+diff --git a/applications/utilities/preProcessing/setAlphaField/alphaFieldFunctions/implicitFunctions/cylinder/cylinderImplicitFunction.C b/applications/utilities/preProcessing/setAlphaField/alphaFieldFunctions/implicitFunctions/cylinder/cylinderImplicitFunction.C
+index 909087e473..1c68b7fef2 100644
+--- a/applications/utilities/preProcessing/setAlphaField/alphaFieldFunctions/implicitFunctions/cylinder/cylinderImplicitFunction.C
++++ b/applications/utilities/preProcessing/setAlphaField/alphaFieldFunctions/implicitFunctions/cylinder/cylinderImplicitFunction.C
+@@ -69,13 +69,12 @@ Foam::implicitFunctions::cylinderImplicitFunction::cylinderImplicitFunction
+     const dictionary& dict
+ )
+ :
+-    cylinderImplicitFunction
+-    (
+-        dict.get<point>("origin"),
+-        dict.get<scalar>("radius"),
+-        dict.getOrDefault<scalar>("scale", 1),
+-        dict.get<vector>("direction")
+-    )
++    // __INTEL_COMPILER bug with inheriting constructors?? (issue #1821)
++    origin_(dict.get<point>("origin")),
++    radius_(dict.get<scalar>("radius")),
++    scale_(dict.getOrDefault<scalar>("scale", 1)),
++    direction_(dict.get<vector>("direction").normalise()),
++    project_(tensor::I - direction_*direction_) // outer product
+ {}
+ 
+ 
+diff --git a/applications/utilities/preProcessing/setAlphaField/alphaFieldFunctions/implicitFunctions/sin/sinImplicitFunction.C b/applications/utilities/preProcessing/setAlphaField/alphaFieldFunctions/implicitFunctions/sin/sinImplicitFunction.C
+index a193d2b663..4256baad94 100644
+--- a/applications/utilities/preProcessing/setAlphaField/alphaFieldFunctions/implicitFunctions/sin/sinImplicitFunction.C
++++ b/applications/utilities/preProcessing/setAlphaField/alphaFieldFunctions/implicitFunctions/sin/sinImplicitFunction.C
+@@ -72,15 +72,13 @@ Foam::implicitFunctions::sinImplicitFunction::sinImplicitFunction
+     const dictionary& dict
+ )
+ :
+-    sinImplicitFunction
+-    (
+-        dict.get<scalar>("period"),
+-        dict.getOrDefault<scalar>("phase", 0),
+-        dict.get<scalar>("amplitude"),
+-        dict.get<vector>("direction"),
+-        dict.get<vector>("up"),
+-        dict.get<vector>("origin")
+-    )
++    // __INTEL_COMPILER bug with inheriting constructors?? (issue #1821)
++    period_(dict.get<scalar>("period")),
++    phase_(dict.getOrDefault<scalar>("phase", 0)),
++    amplitude_(dict.get<scalar>("amplitude")),
++    up_(dict.get<vector>("up").normalise()),
++    direction_(dict.get<vector>("direction").normalise()),
++    origin_(dict.get<vector>("origin"))
+ {}
+ 
+ 
+-- 
+GitLab
+

@@ -1,0 +1,75 @@
+GCC 12 introduced a regression that may cause it to call the destructor twice on an object.
+See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=112301
+This is visible in e.g. `test_cpp_extensions_jit.py -k test_warning`
+See also https://github.com/pytorch/pytorch/issues/112383
+
+Workaround this by trying to avoid the throwing PyWarningHandler destructor.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/csrc/Exceptions.cpp b/torch/csrc/Exceptions.cpp
+index 5210d6f713d..3c91ed378e1 100644
+--- a/torch/csrc/Exceptions.cpp
++++ b/torch/csrc/Exceptions.cpp
+@@ -226,6 +226,10 @@ PyWarningHandler::PyWarningHandler() noexcept(true)
+ /// NOLINTNEXTLINE(bugprone-exception-escape)
+ PyWarningHandler::~PyWarningHandler() noexcept(false) {
+   c10::Warning::set_warning_handler(prev_handler_);
++  process_warnings();
++}
++
++void PyWarningHandler::process_warnings() {
+   auto& warning_buffer = internal_handler_.warning_buffer_;
+ 
+   if (warning_buffer.size() > 0) {
+diff --git a/torch/csrc/Exceptions.h b/torch/csrc/Exceptions.h
+index 89256c64bba..8514d08c8d0 100644
+--- a/torch/csrc/Exceptions.h
++++ b/torch/csrc/Exceptions.h
+@@ -110,6 +110,13 @@ static inline void PyErr_SetString(PyObject* type, const std::string& message) {
+     retstmnt;                                    \
+   }
+ 
++/** To be called inside a HANDLE_TH_ERRORS..END_HANDLE_TH_ERRORS_* block
++ * before returning a value / where no further warnings can occur.
++ * Avoids throwing an error in the destructor which triggers a bug in GCC 12+
++ * See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=112301
++ */
++#define FLUSH_TH_ERRORS __enforce_warning_buffer.process_warnings();
++
+ #define END_HANDLE_TH_ERRORS_PYBIND                                 \
+   }                                                                 \
+   catch (...) {                                                     \
+@@ -381,6 +388,9 @@ struct PyWarningHandler {
+     in_exception_ = true;
+   }
+ 
++  // Trigger processing of warnings
++  TORCH_API void process_warnings();
++
+  private:
+   InternalHandler internal_handler_;
+   at::WarningHandler* prev_handler_;
+@@ -394,12 +404,20 @@ using Arg = typename function_traits<Func>::template arg<i>::type;
+ template <typename Func, size_t... Is>
+ auto wrap_pybind_function_impl_(Func&& f, std::index_sequence<Is...>) {
+   using traits = function_traits<Func>;
++  using result_type = typename traits::result_type;
+   namespace py = pybind11;
+ 
+   // f=f is needed to handle function references on older compilers
+-  return [f = f](Arg<Func, Is>... args) -> typename traits::result_type {
++  return [f = f](Arg<Func, Is>... args) -> result_type {
+     HANDLE_TH_ERRORS
+-    return f(std::forward<Arg<Func, Is>>(args)...);
++    if constexpr (std::is_void<result_type>::value) {
++      c10::guts::invoke(f, std::forward<Arg<Func, Is>>(args)...);
++      FLUSH_TH_ERRORS
++    } else {
++      auto res = c10::guts::invoke(f, std::forward<Arg<Func, Is>>(args)...);
++      FLUSH_TH_ERRORS
++      return res;
++    }
+     END_HANDLE_TH_ERRORS_PYBIND
+   };
+ }

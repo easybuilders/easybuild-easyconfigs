@@ -1,0 +1,106 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# https://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-97.html
+##
+
+easyblock = 'CMakeMake'
+
+name = 'VTK'
+version = '8.2.0'
+
+homepage = 'https://www.vtk.org'
+description = """The Visualization Toolkit (VTK) is an open-source, freely available software system for
+ 3D computer graphics, image processing and visualization. VTK consists of a C++ class library and several
+ interpreted interface layers including Tcl/Tk, Java, and Python. VTK supports a wide variety of visualization
+ algorithms including: scalar, vector, tensor, texture, and volumetric methods; and advanced modeling techniques
+ such as: implicit modeling, polygon reduction, mesh smoothing, cutting, contouring, and Delaunay triangulation."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'usempi': True}
+
+source_urls = ['https://www.vtk.org/files/release/%(version_major_minor)s']
+sources = [
+    SOURCE_TAR_GZ,
+    '%(name)sData-%(version)s.tar.gz',
+]
+patches = [
+    'VTK-8.2.0_python_3.8_compatibility.patch',
+    'VTK-8.2.0_gcc10-fix.patch',
+    ('vtk-version.egg-info', '.'),
+]
+checksums = [
+    '34c3dc775261be5e45a8049155f7228b6bd668106c72a3c435d95730d17d57bb',  # VTK-8.2.0.tar.gz
+    'd1ff312f7a63d90d8b7033a99109801f16a462ae411d648642838aae04bcc21e',  # VTKData-8.2.0.tar.gz
+    'a7586f60501de145d4c31e48aa0589547d9fe7a39f96ab31dae8e82aa5fb4403',  # VTK-8.2.0_python_3.8_compatibility.patch
+    '4f1d2c2f0faa06551384b08356142a998a322008891472a72298152eeaa7038b',  # VTK-8.2.0_gcc10-fix.patch
+    '787b82415ae7a4a1f815b4db0e25f7abc809a05fc85d7d219627f3a7e5d3867b',  # vtk-version.egg-info
+]
+
+builddependencies = [('CMake', '3.20.1')]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('XZ', '5.2.5'),
+    ('HDF5', '1.10.7'),
+    ('netCDF', '4.8.0'),
+    ('libGLU', '9.0.1'),
+    ('X11', '20210518'),
+]
+
+separate_build_dir = True
+
+# Third party modules
+configopts = "-DVTK_USE_SYSTEM_MPI4PY=ON "
+configopts += "-DVTK_USE_SYSTEM_LZMA=ON "
+configopts += "-DVTK_USE_SYSTEM_HDF5=ON "
+configopts += "-DVTK_USE_SYSTEM_NETCDF=ON "
+configopts += "-DVTK_USE_SYSTEM_PNG=ON "
+# OpenGL
+configopts += "-DOPENGL_glu_LIBRARY=$EBROOTLIBGLU/lib/libGLU.%s " % SHLIB_EXT
+configopts += "-DOPENGL_gl_LIBRARY=$EBROOTMESA/lib/libGL.%s " % SHLIB_EXT
+configopts += "-DOPENGL_INCLUDE_DIR=$EBROOTMESA/include "
+# Python
+configopts += "-DVTK_WRAP_PYTHON=ON "
+configopts += "-DVTK_PYTHON_VERSION=%(pyver)s "
+configopts += "-DPYTHON_INCLUDE_DIR=$EBROOTPYTHON/include/python%(pyshortver)s "
+configopts += "-DPYTHON_LIBRARY=$EBROOTPYTHON/lib/libpython%%(pyshortver)s.%s " % SHLIB_EXT
+# Other
+configopts += "-DVTK_Group_MPI:BOOL=ON "
+configopts += "-DCMAKE_INSTALL_LIBDIR=lib"
+
+preinstallopts = "export PYTHONPATH=%(installdir)s/lib/python%(pyshortver)s/site-packages:$PYTHONPATH && "
+
+# Install a egg-info file so VTK is more python friendly, required for mayavi
+local_egg_info_src = '%(builddir)s/VTK-%(version)s/vtk-version.egg-info'
+local_egg_info_dest = '%(installdir)s/lib/python%(pyshortver)s/site-packages/vtk-%(version)s.egg-info'
+postinstallcmds = [
+    'sed "s/#VTK_VERSION#/%%(version)s/" %s > %s' % (local_egg_info_src, local_egg_info_dest),
+]
+
+modextrapaths = {'PYTHONPATH': ['lib/python%(pyshortver)s/site-packages']}
+
+local_vtk_exec = ['vtk%s-%%(version_major_minor)s' % x
+                  for x in ['WrapJava', 'ParseJava', 'WrapPythonInit', 'WrapPython', 'WrapHierarchy']]
+local_vtk_exec += ['vtkpython', 'pvtkpython']
+local_vtk_libs = ['CommonCore', 'IONetCDF', 'ParallelMPI', 'RenderingOpenGL2']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_vtk_exec] +
+             ['lib/libvtk%s-%%(version_major_minor)s.%s' % (l, SHLIB_EXT) for l in local_vtk_libs],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/', 'include/vtk-%(version_major_minor)s'],
+}
+
+sanity_check_commands = [
+    ('python', "-c 'import %(namelower)s'"),
+    ('python', "-c 'import pkg_resources; pkg_resources.get_distribution(\"vtk\")'"),
+]
+
+
+moduleclass = 'vis'

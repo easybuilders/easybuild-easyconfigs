@@ -1,0 +1,67 @@
+From 383400a6078d75bbfa1216c9af2c37f7e88740c9 Mon Sep 17 00:00:00 2001
+From: Tom de Vries <tdevries@suse.de>
+Date: Fri, 9 Oct 2020 11:36:10 +0200
+Subject: [PATCH] [nvptx] Set -misa=sm_35 by default
+
+The nvptx-as assembler verifies the ptx code using ptxas, if there's any
+in the PATH.
+
+The default in the nvptx port for -misa=sm_xx is sm_30, but the ptxas of the
+latest cuda release (11.1) no longer supports sm_30.
+
+Consequently we cannot build gcc against that release (although we should
+still be able to build without any cuda release).
+
+Fix this by setting -misa=sm_35 by default.
+
+Tested check-gcc on nvptx.
+
+Tested libgomp on x86_64-linux with nvpx accelerator.
+
+Both build again cuda 9.1.
+
+gcc/ChangeLog:
+
+2020-10-09  Tom de Vries  <tdevries@suse.de>
+
+	PR target/97348
+	* config/nvptx/nvptx.h (ASM_SPEC): Also pass -m to nvptx-as if
+	default is used.
+	* config/nvptx/nvptx.opt (misa): Init with PTX_ISA_SM35.
+---
+ gcc/config/nvptx/nvptx.h   | 5 ++++-
+ gcc/config/nvptx/nvptx.opt | 3 ++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/config/nvptx/nvptx.h b/gcc/config/nvptx/nvptx.h
+index 6ebcc760771..17fe157058c 100644
+--- a/gcc/config/nvptx/nvptx.h
++++ b/gcc/config/nvptx/nvptx.h
+@@ -29,7 +29,10 @@
+ 
+ #define STARTFILE_SPEC "%{mmainkernel:crt0.o}"
+ 
+-#define ASM_SPEC "%{misa=*:-m %*}"
++/* Default needs to be in sync with default for misa in nvptx.opt.
++   We add a default here to work around a hard-coded sm_30 default in
++   nvptx-as.  */
++#define ASM_SPEC "%{misa=*:-m %*; :-m sm_35}"
+ 
+ #define TARGET_CPU_CPP_BUILTINS()		\
+   do						\
+diff --git a/gcc/config/nvptx/nvptx.opt b/gcc/config/nvptx/nvptx.opt
+index 75c3d54864e..d6910a96cf0 100644
+--- a/gcc/config/nvptx/nvptx.opt
++++ b/gcc/config/nvptx/nvptx.opt
+@@ -59,6 +59,7 @@ Enum(ptx_isa) String(sm_30) Value(PTX_ISA_SM30)
+ EnumValue
+ Enum(ptx_isa) String(sm_35) Value(PTX_ISA_SM35)
+ 
++; Default needs to be in sync with default in ASM_SPEC in nvptx.h.
+ misa=
+-Target RejectNegative ToLower Joined Enum(ptx_isa) Var(ptx_isa_option) Init(PTX_ISA_SM30)
++Target RejectNegative ToLower Joined Enum(ptx_isa) Var(ptx_isa_option) Init(PTX_ISA_SM35)
+ Specify the version of the ptx ISA to use.
+-- 
+2.27.0
+

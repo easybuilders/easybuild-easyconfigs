@@ -1,0 +1,91 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+# Updated to latest version 24. Jun 2021 and bumped to foss-2020b
+# to use it with pangolin
+# J. Sassmannshausen (GSTT/NHS UK)
+
+easyblock = 'PythonBundle'
+
+name = 'artic-ncov2019'
+local_commit = 'b3f2dda5e6d95bc1c5d95a04d4ef37d304479477'
+version = '2021.06.24'
+
+homepage = "https://github.com/artic-network/artic-ncov2019"
+description = """Initial implementation of an ARTIC bioinformatics platform 
+for nanopore sequencing of nCoV2019 novel coronavirus."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Biopython', '1.78'),
+    ('Pysam', '0.16.0.1'),
+    ('BWA', '0.7.17'),
+    ('minimap2', '2.18'),
+    ('SAMtools', '1.11'),
+    ('MUSCLE', '3.8.31'),
+    ('ETE', '3.1.2'),
+    ('MAFFT', '7.475', '-with-extensions'),
+    ('IQ-TREE', '2.1.2'),
+    ('snakemake', '6.1.0'),
+    ('Longshot', '0.4.3'),
+    ('medaka', '1.4.3'),
+    ('python-parasail', '1.2.4'),
+    ('PhyML', '3.3.20200621'),
+    ('nodejs', '12.19.0'),
+    ('goalign', '0.3.2', '', SYSTEM),
+    ('gotree', '0.4.0', '', SYSTEM),
+    ('rampart', '1.2.0'),
+    ('libdeflate', '1.7'),
+    ('nanopolish', '0.13.3'),
+    ('seqtk', '1.3'),
+    ('BCFtools', '1.11'),
+    ('tqdm', '4.56.2'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('clint', '0.5.1', {
+        'checksums': ['05224c32b1075563d0b16d0015faaf9da43aa214e4a2140e51f08789e7a4c5aa'],
+    }),
+    ('args', '0.1.0', {
+        'checksums': ['a785b8d837625e9b61c39108532d95b85274acd679693b71ebb5156848fcf814'],
+    }),
+    ('PyVCF', '0.6.8', {
+        'modulename': 'vcf',
+        'checksums': ['e9d872513d179d229ab61da47a33f42726e9613784d1cb2bac3f8e2642f6f9d9'],
+    }),
+    ('fieldbioinformatics', '1.2.1', {
+        'modulename': 'artic',
+        'source_tmpl': '%(version)s.tar.gz',
+        'source_urls': ['https://github.com/artic-network/fieldbioinformatics/archive'],
+        'checksums': ['74b5fdb18dca57e73fbe872c5c4e25c110e7826fac7a062f0eb0a5453e4e7b20'],
+    }),
+]
+
+components = [
+    (name, version, {
+        'easyblock': 'Tarball',
+        'source_urls': ['https://github.com/artic-network/artic-ncov2019/archive/'],
+        'sources': [{
+            'download_filename': '%s.tar.gz' % local_commit,
+            'filename': SOURCE_TAR_GZ,
+        }],
+        'checksums': ['ac0dbf7d29038ace8e24dc172ae4dbba9a76d6803809c8f28a9fa228f98aecb6'],
+    }),
+]
+local_artic_bins = [
+    'artic', 'artic_fasta_header', 'artic_get_stats', 'artic_make_depth_mask',
+    'artic_mask', 'artic_vcf_filter', 'artic_vcf_merge'
+]
+sanity_check_paths = {
+    'files': ['bin/%s' % f for f in local_artic_bins],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+sanity_check_commands = [
+    'artic -v',
+]
+
+moduleclass = 'bio'
