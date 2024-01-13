@@ -1,0 +1,70 @@
+# Loosely based on PR #7680 
+# J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'PythonBundle'
+
+name = 'DeepLabCut'
+version = '2.2.0.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+local_version = '%(versionsuffix)s-contrib'
+
+homepage = 'http://www.mousemotorlab.org/deeplabcut'
+description = "Markerless tracking of user-defined features with deep learning"
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'pic': True}
+
+dependencies = [
+    ('CUDA', '11.3.1', '', SYSTEM),
+    ('cuDNN', '8.2.1.32', '-CUDA-%(cudaver)s', SYSTEM),
+    ('Python', '3.9.5'),
+    ('h5py', '3.2.1'),
+    ('IPython', '7.25.0'),
+    ('scikit-learn', '0.24.2'),
+    ('scikit-image', '0.18.3'),
+    ('TensorFlow', '2.6.0', versionsuffix),
+    ('PyYAML', '5.4.1'),
+    ('PyTables', '3.6.1'),
+    ('wxPython', '4.1.1'),
+    ('OpenCV', '4.5.3', local_version),
+    ('numba', '0.53.1'),
+    ('libyaml', '0.2.5'),
+    ('imgaug', '0.4.0', versionsuffix),
+    ('tqdm', '4.61.2'),
+    ('ruamel.yaml', '0.17.21'),
+    ('statsmodels', '0.12.2'),
+    ('PyTorch', '1.10.0', versionsuffix),
+    ('MoviePy', '1.0.3'),
+]
+
+sanity_pip_check = True
+use_pip = True
+
+exts_list = [
+    ('filterpy', '1.4.5', {
+        'sources': ['%(name)s-%(version)s.zip'],
+        'checksums': ['4f2a4d39e4ea601b9ab42b2db08b5918a9538c168cff1c6895ae26646f3d73b1'],
+    }),
+    ('tensorpack', '0.11', {
+        'checksums': ['022b610e416e62e3575424cd08e60af27808a5fb6914294615391caf582cbd4f'],
+    }),
+    ('tf_slim', '1.1.0', {
+        'source_urls': ['https://github.com/google-research/tf-slim/archive'],
+        'sources': ['v%(version)s.tar.gz'],
+        'checksums': ['964cde4b7728a408dcd5c841ab6b93d95137ab4b60db28b10400f86286bfeb8b'],
+    }),
+    ('msgpack-numpy', '0.4.8', {
+        'checksums': ['c667d3180513422f9c7545be5eec5d296dcbb357e06f72ed39cc683797556e69'],
+        'sources': ['msgpack-numpy-0.4.8.tar.gz'],
+    }),
+
+    (name, version, {
+        'source_tmpl': '%(namelower)s-%(version)s.tar.gz',
+        'patches': ['deeplabcut-2.2.0.6-setup.py.patch'],
+        'checksums': ['4aa6694201e2aa56b9bd3e97ab27b0bc54f1364303167216174d2376d8ae0f84',
+                      # deeplabcut-2.2.0.6-setup.py.patch:
+                      '1dbef23575b105a6b2fa39f28d67bf926701d4c0b4f48bed7a6b179b7e5df2b0'],
+    }),
+]
+
+moduleclass = 'lib'

@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'mold'
+version = '1.3.0'
+
+homepage = 'https://github.com/rui314/mold'
+description = "mold is a high-performance drop-in replacement for existing Unix linkers."
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/rui314/mold/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['02132ae717d7f22f8bc7e5c22642ad41541ec4c535fa85f095c60ecc81465a3d']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+]
+dependencies = [
+    ('zlib', '1.2.12'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+]
+
+skipsteps = ['configure']
+
+# PREFIX must be specified when building, to ensure that the mold binary looks for mold-wrapper.so in the right place
+buildopts = "PREFIX=%(installdir)s"
+installopts = buildopts
+
+sanity_check_paths = {
+    'files': ['bin/mold', 'lib/mold/mold-wrapper.%s' % SHLIB_EXT],
+    'dirs': ['share/man'],
+}
+
+sanity_check_commands = [
+    "mold --help",
+    "mold --run gcc -v",
+]
+
+moduleclass = 'tools'

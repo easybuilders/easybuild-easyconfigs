@@ -1,0 +1,43 @@
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'CMakeNinja'
+
+name = 'dftd4'
+version = '3.4.0'
+
+homepage = 'https://github.com/dftd4/dftd4'
+description = """Generally Applicable Atomic-Charge Dependent London Dispersion Correction."""
+
+toolchain = {'name': 'iimkl', 'version': '2022b'}
+
+github_account = 'dftd4'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['f3b0a16a952817ae48e819626e13676fba3b61c8beea47b0f8ada2fbb679fb7b']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('Ninja', '1.11.1'),
+]
+
+dependencies = [
+    ('mctc-lib', '0.3.1'),
+    ('mstore', '0.2.0'),
+    ('multicharge', '0.2.0'),
+]
+
+configopts = '-DBLAS_LIBRARIES="-lmkl_sequential -lmkl_intel_lp64 -lmkl_core" '
+configopts += '-DLAPACK_LIBRARIES="-lmkl_sequential -lmkl_intel_lp64 -lmkl_core" '
+
+# run suite of tests with ctest
+test_cmd = 'ctest --parallel 2'
+runtest = ''
+
+sanity_check_paths = {
+    'files': ['bin/dftd4', 'lib/libdftd4.a'],
+    'dirs': ['include/%(name)s', 'lib/cmake', 'lib/pkgconfig'],
+}
+
+sanity_check_commands = ["dftd4 --help"]
+
+moduleclass = 'chem'

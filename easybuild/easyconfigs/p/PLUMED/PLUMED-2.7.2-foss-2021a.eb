@@ -18,6 +18,10 @@ source_urls = ['https://github.com/plumed/plumed2/releases/download/v%(version)s
 sources = [SOURCE_TGZ]
 checksums = ['6069bc134f74cb15dd63e27e3587a15a31a9ddd9e7eebdd717da898f31512645']
 
+builddependencies = [
+    ('xxd', '8.2.4220'),
+]
+
 dependencies = [
     ('zlib', '1.2.11'),
     ('GSL', '2.7'),
@@ -29,7 +33,9 @@ dependencies = [
 preconfigopts = 'env FC=$MPIF90 LIBS="$LIBLAPACK $LIBS" '
 configopts = '--exec-prefix=%(installdir)s --enable-gsl --enable-modules=all --enable-python '
 configopts += '--enable-boost_graph --enable-boost_serialization '
-configopts += '--enable-asmjit '
+if ARCH == 'x86_64':
+    # the flag is not supported on aarch64
+    configopts += '--enable-asmjit '
 prebuildopts = 'source sourceme.sh && '
 
 # make sure that ld.gold linker is used

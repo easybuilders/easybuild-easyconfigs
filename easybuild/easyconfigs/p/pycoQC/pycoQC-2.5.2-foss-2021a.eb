@@ -1,0 +1,42 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'PythonPackage'
+
+name = 'pycoQC'
+version = '2.5.2'
+
+homepage = 'https://tleonardi.github.io/pycoQC'
+description = """PycoQC computes metrics and generates interactive QC plots for
+ Oxford Nanopore technologies sequencing data."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+sources = [SOURCE_TAR_GZ]
+checksums = ['8ceba86bb9a08bdf7c329a165d0218ad8b026f6772efa661fcc98750acc2c8ce']
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('h5py', '3.2.1'),
+    ('plotly.py', '5.1.0'),
+    ('tqdm', '4.61.2'),
+    ('Pysam', '0.16.0.1'),
+]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+options = {'modulename': name}
+
+# Loosen unnecessarily strict version dependency for plotly
+preinstallopts = "sed -i 's|plotly==|plotly>=|g' setup.py &&"
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in [name, 'Barcode_split', 'Fast5_to_seq_summary']],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/%(name)s'],
+}
+
+sanity_check_commands = ["%(name)s --help", "%(name)s --version"]
+
+moduleclass = 'bio'

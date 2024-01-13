@@ -1,0 +1,71 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonBundle'
+
+name = 'imagecodecs'
+version = '2021.8.26'
+
+homepage = 'https://github.com/cgohlke/imagecodecs'
+description = """Imagecodecs is a Python library that provides block-oriented, in-memory buffer transformation,
+compression, and decompression functions for use in the tifffile, czifile, zarr, and other
+scientific image input/output modules."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+local_openjpeg_maj_min = '2.4'
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),  # required for numpy
+    ('matplotlib', '3.3.3'),
+    ('Brotli', '1.0.9'),
+    ('bzip2', '1.0.8'),
+    ('Blosc', '1.21.0'),
+    ('Blosc2', '2.0.3'),
+    ('CFITSIO', '3.49'),
+    ('CharLS', '2.2.0'),
+    ('giflib', '5.2.1'),
+    ('jxrlib', '1.1'),
+    ('LittleCMS', '2.11'),
+    ('LERC', '3.0'),
+    ('libaec', '1.0.6'),
+    ('libavif', '0.9.0'),
+    ('libdeflate', '1.7'),
+    ('libjpeg-turbo', '2.0.5'),
+    ('libjxl', '0.6.1'),
+    ('LibLZF', '3.4'),
+    ('libpng', '1.6.37'),
+    ('XZ', '5.2.5'),
+    ('LibTIFF', '4.1.0'),
+    ('libwebp', '1.1.0'),
+    ('lz4', '1.9.2'),
+    ('OpenJPEG', local_openjpeg_maj_min + '.0'),
+    ('snappy', '1.1.8'),
+    ('zlib', '1.2.11'),
+    ('zlib-ng', '2.0.5'),
+    ('Zopfli', '1.0.3'),
+    ('zfp', '0.5.5'),
+    ('zstd', '1.4.5'),
+    ('Brunsli', '0.1'),
+    ('HDF5', '1.10.7'),
+    ('h5py', '3.1.0'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('bitshuffle', '0.3.5', {
+        'sources': ['%(version)s.tar.gz'],
+        'source_urls': ['https://github.com/kiyo-masui/bitshuffle/archive/'],
+        'checksums': ['c3f4461d8013e3d9db0d58defec77b143164652de505a1fba3df088eaa19be2f'],
+    }),
+    (name, version, {
+        'extract_cmd': "tar -xvf %s && find . -type f -print0 | xargs -0 dos2unix",
+        'sources': ['%(name)s-%(version)s.tar.gz'],
+        'checksums': ['e87994d918ea951a589ec46648c24d9c7e56b7b5c2466d93f3b07883f0ecea19'],
+        # required for '#include "openjpeg.h"' to work
+        'preinstallopts': "export CPATH=$EBROOTOPENJPEG/include/openjpeg-%s/:$CPATH && " % local_openjpeg_maj_min,
+    }),
+]
+
+moduleclass = 'lib'

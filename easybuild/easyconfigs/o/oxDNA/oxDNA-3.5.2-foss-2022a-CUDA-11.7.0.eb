@@ -1,0 +1,61 @@
+easyblock = 'CMakeMake'
+
+name = 'oxDNA'
+version = '3.5.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/lorenzo-rovigatti/oxDNA'
+description = """oxDNA is a simulation code that was initially conceived as an implementation
+ of the coarse-grained DNA model introduced by T. E. Ouldridge, J. P. K. Doye and A. A. Louis.
+ It has been since reworked and it is now an extensible simulation+analysis framework.
+ It natively supports DNA, RNA, Lennard-Jones and patchy particle simulations of different kinds
+ on both single CPU cores and NVIDIA GPUs."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'lorenzo-rovigatti'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['oxDNA-3.5.2_pip_install.patch']
+checksums = [
+    {'v3.5.2.tar.gz': 'd76351b572334421aedb7774bb095db6f8f0a9c851e0242f0b665887d9d754bb'},
+    {'oxDNA-3.5.2_pip_install.patch': '50cf60d4c65c7a953ec6f28ba1ce464e493565fb98221c5ffc429ba26c08d939'},
+]
+
+builddependencies = [
+    ('CMake', '3.23.1')
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('scikit-learn', '1.1.2'),
+    ('matplotlib', '3.5.2'),
+]
+
+configopts = "-DCUDA=1 -DCUDA_COMMON_ARCH=ON -DPython=ON "
+# configopts += "-DMPI=ON "  # still "unsupported feature that should be used by developers only"?
+
+postinstallcmds = [
+    "mv %(builddir)s/easybuild_obj/bin/* %(installdir)s/bin/",
+    "mv %(builddir)s/easybuild_obj/oxpy/lib_oxpy_lib.a %(installdir)s/lib/",
+    "mv %%(builddir)s/easybuild_obj/src/liboxdna_common.%s %%(installdir)s/lib/" % SHLIB_EXT,
+]
+
+sanity_check_paths = {
+    'files': ['bin/confGenerator', 'bin/DNAnalysis', 'bin/oxDNA', 'bin/oat',
+              'lib/liboxdna_common.%s' % SHLIB_EXT, 'lib/lib_oxpy_lib.a'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/oxpy',
+             'lib/python%(pyshortver)s/site-packages/oxDNA_analysis_tools'],
+}
+
+sanity_check_commands = [
+    "oxDNA 2>&1 | grep Usage",
+    "python -c 'import oxpy'",
+    "python -c 'import oxDNA_analysis_tools'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'

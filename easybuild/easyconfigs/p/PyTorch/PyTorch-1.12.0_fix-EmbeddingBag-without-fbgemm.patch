@@ -1,0 +1,48 @@
+There is a bug in the fallback path for the case where FBGEMM isn't available (e.g. on POWER)
+which leads to a race condition:
+Data is "copied" for the full buffer while it is processed in chunks by different threads.
+This a) duplicates the work and b) might write incomplete/wrong data to the output.
+
+Found in failing test_embedding_bag_half_cpu_* of nn/test_embedding:
+ERROR: test_embedding_bag_half_cpu_int32_int32 (__main__.TestEmbeddingNNDeviceTypeCPU)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/dev/shm/s3248973-EasyBuild/PyTorch/1.13.1/foss-2022a/pytorch-v1.13.1/test/nn/test_embedding.py", line 936, in _test_EmbeddingBag_vs_Embedding
+    self.assertEqual(output, ref_output, atol=dtype2prec_DONTUSE[wdtype], rtol=0)
+  File "/tmp/eb-tmp-2022a/lib/python3.10/site-packages/torch/testing/_internal/common_utils.py", line 2470, in assertEqual
+    assert_equal(
+  File "/tmp/eb-tmp-2022a/lib/python3.10/site-packages/torch/testing/_comparison.py", line 1093, in assert_equal
+    raise error_metas[0].to_error(msg)
+AssertionError: Tensor-likes are not close!
+
+Mismatched elements: 1 / 4 (25.0%)
+Greatest absolute difference: 1.18359375 at index (1, 1) (up to 0.01 allowed)
+Greatest relative difference: 1.0 at index (1, 1) (up to 0 allowed)
+
+
+Introduced by https://github.com/pytorch/pytorch/pull/74844
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/aten/src/ATen/native/EmbeddingBag.cpp b/aten/src/ATen/native/EmbeddingBag.cpp
+index 6d8cea26f52..604ea16bace 100644
+--- a/aten/src/ATen/native/EmbeddingBag.cpp
++++ b/aten/src/ATen/native/EmbeddingBag.cpp
+@@ -246,7 +246,7 @@ index_select_add(const Tensor &select_indices,
+               /*scale_bias=*/nullptr,
+               /*normalize_by_lengths=*/false,
+               /*out=*/output_data_fp32 + start_idx * ddim);
+-          for (const auto i : c10::irange(output_size)) {
++          for (const auto i : c10::irange(start_idx, end_idx)) {
+             // Convert FP32 intermediate buffer result back to FP16 for output dtype
+             for (const auto d : c10::irange(ddim)) {
+               (output_data + i * ddim)[d] = static_cast<at::Half>((output_data_fp32 + ddim * i)[d]);
+@@ -590,7 +590,7 @@ index_select_scale_add(const Tensor &select_indices,
+               /*scale_bias=*/nullptr,
+               /*normalize_by_lengths=*/false,
+               /*out=*/output_data_fp32 + start_idx * ddim);
+-          for (const auto i : c10::irange(output_size)) {
++          for (const auto i : c10::irange(start_idx, end_idx)) {
+             // Convert FP32 intermediate buffer result back to FP16 for output dtype
+             for (const auto d : c10::irange(ddim)) {
+               (output_data + i * ddim)[d] = static_cast<at::Half>((output_data_fp32 + ddim * i)[d]);

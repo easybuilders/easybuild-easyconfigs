@@ -1,0 +1,39 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Authors::   Inge Gutheil <i.gutheil@fz-juelich.de>, Alan O'Cais <a.ocais@fz-juelich.de>
+# License::   MIT/GPL
+#
+##
+
+name = 'ELPA'
+version = '2021.05.002'
+
+homepage = 'https://elpa.mpcdf.mpg.de'
+description = """Eigenvalue SoLvers for Petaflop-Applications ."""
+
+toolchain = {'name': 'intel', 'version': '2020b'}
+toolchainopts = {'openmp': True, 'usempi': True}
+
+source_urls = ['https://elpa.mpcdf.mpg.de/software/tarball-archive/Releases/%(version)s_bugfix/']
+sources = ['elpa-%(version)s_bugfix.tar.gz']
+patches = ['%(name)s-%(version)s_fix_hardcoded_perl_path.patch']
+checksums = [
+    {'elpa-2021.05.002_bugfix.tar.gz': 'deabc48de5b9e4b2f073d749d335c8f354a7ce4245b643a23b7951cd6c90224b'},
+    {'ELPA-2021.05.002_fix_hardcoded_perl_path.patch':
+     '69d2a7dcb61a7a699dd469a134a693e74c72b157dc72b3eba7a5dc12eb29893d'},
+]
+
+builddependencies = [
+    ('Autotools', '20200321'),
+    # remove_xcompiler script requires 'python' command,
+    ('Python', '3.8.6'),
+    ('Perl', '5.32.0'),
+]
+
+# When building in parallel, the file test_setup_mpi.mod is sometimes
+# used before it is built, leading to an error.  This must be a bug in
+# the makefile affecting parallel builds.
+maxparallel = 1
+
+moduleclass = 'math'

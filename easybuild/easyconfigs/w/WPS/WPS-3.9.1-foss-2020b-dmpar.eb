@@ -1,0 +1,47 @@
+name = 'WPS'
+version = '3.9.1'
+buildtype = 'dmpar'
+versionsuffix = '-%s' % buildtype
+
+homepage = 'http://www.wrf-model.org'
+description = """WRF Preprocessing System (WPS) for WRF. The Weather Research and Forecasting (WRF) Model is 
+ a next-generation mesoscale numerical weather prediction system designed to serve both operational 
+ forecasting and atmospheric research needs."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+toolchainopts = {'opt': True}
+
+source_urls = [
+    'http://www2.mmm.ucar.edu/wrf/src/',
+    'http://www.mmm.ucar.edu/wrf/src/',
+]
+sources = ['%(name)sV%(version)s.TAR.gz']
+patches = [
+    'WPS-3.8.0_netCDF-Fortran_seperate_path.patch',
+    'WPS-3.9.1_fix-intmath.patch',
+    'WPS-3.9.1_fix-JasPer-2.x.patch',
+]
+checksums = [
+    '48a05cb25d6dcfaf4ba6fc63719b361ae240c79aad8066412646c936eecfcf90',  # WPSV3.9.1.TAR.gz
+    '7ff73248b55eff304bcfd0f7b9e936c4c460dcc351088a15c2c4ac22622b9d41',  # WPS-3.8.0_netCDF-Fortran_seperate_path.patch
+    'f0c440db2c50cf67b3ee04eff349127d0b5f3b6bed79d136db5e6dcaf11e0e29',  # WPS-3.9.1_fix-intmath.patch
+    '41a82492d230178278da138c5ab530e5084e861147fd98b792392d769ad38091',  # WPS-3.9.1_fix-JasPer-2.x.patch
+]
+
+dependencies = [
+    ('WRF', '3.9.1.1', versionsuffix),
+    ('netCDF', '4.7.4'),
+    ('netCDF-Fortran', '4.5.3'),
+    ('zlib', '1.2.11'),
+    ('libpng', '1.6.37'),
+    ('JasPer', '2.0.24'),
+]
+
+# required to ensure that netcdf.mod is found
+prebuildopts = r"sed -i 's@-I\$(NETCDF)/include@-I\$(NETCDF)/include -I\$(NETCDFF)/include@g' configure.wps && "
+
+# workaround for "Type mismatch between actual argument" compiler errors,
+# see also https://www.gnu.org/software/gcc/gcc-10/porting_to.html
+prebuildopts += "sed -i 's/ -O / -O -fallow-argument-mismatch /g' configure.wps && "
+
+moduleclass = 'geo'

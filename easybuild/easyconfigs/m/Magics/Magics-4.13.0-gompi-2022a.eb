@@ -1,0 +1,44 @@
+easyblock = 'CMakeMake'
+
+name = 'Magics'
+version = '4.13.0'
+
+homepage = 'https://confluence.ecmwf.int/display/MAGP/'
+
+description = """
+Magics is ECMWF's meteorological plotting software and can be either accessed
+directly through its Python or Fortran interfaces or by using Metview."""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+
+source_urls = ['https://github.com/ecmwf/magics/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['bc9653754a9d655b14effd637d13dba6ecaf048d2f45cb8b70b3e262983b37bf']
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+    ('ecBuild', '3.7.0', '', SYSTEM),
+]
+
+dependencies = [
+    ('PROJ', '9.0.0'),
+    ('netCDF', '4.9.0'),
+    ('Pango', '1.50.7'),
+    ('expat', '2.4.8'),
+    ('ecCodes', '2.27.0'),
+]
+
+_bins = ['magics', 'magicsCompatibilityChecker', 'magjson', 'magjsonx', 'magml', 'magmlx', 'metgram', 'metgram.sh',
+         'metgramx']
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libMagPlus%s.%s' % (x, SHLIB_EXT) for x in ['', 'Double', 'Single']] +
+             ['bin/%s' % x for x in _bins],
+    'dirs': ['bin', 'lib', 'include', 'share']
+}
+
+sanity_check_commands = ['magics 2>&1 | grep "^Usage: magics"']
+
+moduleclass = 'geo'

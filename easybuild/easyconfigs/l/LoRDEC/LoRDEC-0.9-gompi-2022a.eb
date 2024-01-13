@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'LoRDEC'
+version = '0.9'
+
+homepage = 'https://www.lirmm.fr/~rivals/lordec'
+description = """Program for correcting sequencing errors in long reads (e.g., PacBio, Oxford Nanopore) using highly
+accurate short reads (e.g., Illumina)."""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+
+source_urls = ['https://gite.lirmm.fr/lordec/lordec-releases/uploads/800a96d81b3348e368a0ff3a260a88e1/']
+sources = ['lordec-src_%(version)s.tar.bz2']
+patches = [
+    'LoRDEC-0.9_GATB.patch',
+    'LoRDEC-0.9_GraphVector.patch',
+]
+checksums = [
+    {'lordec-src_0.9.tar.bz2': '8108b82a8404fbf44c7e300d3abb43358ccc28993f90546168a20ca82536923b'},
+    {'LoRDEC-0.9_GATB.patch': '8ff5e097455bb6ea515423bc76059f64d1983eb4873e640cd5021f00be85ca99'},
+    {'LoRDEC-0.9_GraphVector.patch': '8c42dda643f8e1f79ee7d4ea2e3d8904cb755dc44cb907ada35b1e2873605ae5'},
+]
+
+local_gatb_version = '1.4.2'
+dependencies = [
+    ('Boost', '1.79.0'),
+    ('GATB-Core', local_gatb_version),
+]
+
+build_cmd_targets = 'lordec_%s' % ''.join(local_gatb_version.split('.'))
+
+buildopts = "AUTOMATIC_LIBBOOST_LOCAL_INSTALL=no GATB=${EBROOTGATBMINCORE}"
+
+local_bins = ['lordec-%s' % x for x in ('build-SR-graph', 'correct', 'stat', 'trim', 'trim-split')]
+
+files_to_copy = [(local_bins, 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%s --help 2>&1 | grep 'using GATB v%s'" % (x, local_gatb_version) for x in local_bins]
+
+moduleclass = 'bio'

@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'porefoam'
+local_commit = 'eb02ba3'
+version = '2021-09-21'
+
+homepage = 'https://github.com/ImperialCollegeLondon/porefoam'
+description = "Direct pore-scale simulation of single- and two-phase flow through confined media"
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+source_urls = ['https://github.com/ImperialCollegeLondon/porefoam/archive/']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = [
+    'porefoam-2021-09-21_fix-scotch-linking.patch',
+    'porefoam-2021-09-21_fix-hardcoded-mpicommand.patch',
+]
+checksums = [
+    '61b7d23869f5cfadf001def25750576b05f13d3f117ffb409e56996a0de6d696',  # porefoam-2021-09-21.tar.gz
+    '86b7e389b62f54bbd3c931ae3dbdc363226e250faa181e7e50ed121da9959a92',  # porefoam-2021-09-21_fix-scotch-linking.patch
+    # porefoam-2021-09-21_fix-hardcoded-mpicommand.patch
+    '4cfa924c9a5d3ec38cf233312eb325ed625219644468f4b34fba8bc6ceee5ba2',
+]
+
+builddependencies = [
+    ('CMake', '3.16.4'),
+]
+
+dependencies = [
+    ('SCOTCH', '6.0.9'),
+]
+
+buildininstalldir = True
+unpack_options = '--strip-components=1'
+
+skipsteps = ['configure', 'install']
+
+prebuildopts = "export WM_COMPILER=Gcc && export WM_COMPILE_OPTION=Opt && "
+# using ld.gold linker doesn't work
+prebuildopts += 'export WM_CC="$CC $CFLAGS -fuse-ld=bfd" && export WM_CXX="$CXX $CXXFLAGS -fuse-ld=bfd" && '
+
+sanity_check_paths = {
+    'files': ['bin/interFaceFoam', 'bin/smoothMesh', 'bin/voxelToSurface'],
+    'dirs': ['include', 'lib'],
+}
+
+sanity_check_commands = ["voxelToFoam --help | grep 'convert micro-CT images to OpenFOAM mesh'"]
+
+moduleclass = 'cae'
