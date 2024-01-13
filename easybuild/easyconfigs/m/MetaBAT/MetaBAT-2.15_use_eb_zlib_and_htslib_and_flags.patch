@@ -1,0 +1,80 @@
+Use EasyBuild versions of zlib and HTSlib instead of internal
+
+Åke Sandgren, 20230224
+diff -ru berkeleylab-metabat-0db17a40717d.orig/CMakeLists.txt berkeleylab-metabat-0db17a40717d/CMakeLists.txt
+--- berkeleylab-metabat-0db17a40717d.orig/CMakeLists.txt	2020-01-04 21:14:21.000000000 +0100
++++ berkeleylab-metabat-0db17a40717d/CMakeLists.txt	2023-02-24 16:31:12.180989564 +0100
+@@ -7,9 +7,20 @@
+ 
+ message("Installing ${CMAKE_BUILD_TYPE} MetaBAT into ${CMAKE_INSTALL_PREFIX}")
+ 
+-include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
+-include(cmake/zlib.cmake)
+-include(cmake/htslib.cmake)
++#include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
++#include(cmake/zlib.cmake)
++#include(cmake/htslib.cmake)
++
++include(FindZLIB)
++
++find_package(PkgConfig)
++pkg_check_modules(PKGC_HTSLIB htslib)
++if(PKGC_HTSLIB_FOUND)
++    set(HTSLIB_FOUND ${PKGC_HTSLIB_FOUND})
++    set(HTSLIB_LIBRARIES "${PKGC_HTSLIB_LINK_LIBRARIES}")
++else()
++    message(ERROR "Can't find htslib")
++endif()
+ 
+ set(CMAKE_CXX_STANDARD 11)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+@@ -31,10 +42,10 @@
+   # using AppleClang
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+   # using GCC
+-  if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+-      set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mtune=native")
+-      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mtune=native")
+-  endif()
++#  if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
++#      set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mtune=native")
++#      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mtune=native")
++#  endif()
+ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+   # using Intel C++
+ endif()
+Only in berkeleylab-metabat-0db17a40717d: .CMakeLists.txt.swp
+diff -ru berkeleylab-metabat-0db17a40717d.orig/src/CMakeLists.txt berkeleylab-metabat-0db17a40717d/src/CMakeLists.txt
+--- berkeleylab-metabat-0db17a40717d.orig/src/CMakeLists.txt	2020-01-04 21:14:21.000000000 +0100
++++ berkeleylab-metabat-0db17a40717d/src/CMakeLists.txt	2023-02-24 16:42:42.035750712 +0100
+@@ -1,6 +1,6 @@
+ # find and use Boost
+-set(Boost_NO_BOOST_CMAKE ON) # for backwards comptibility of cmake and boost >= 1.70
+-set(Boost_USE_STATIC_LIBS   ON)
++#set(Boost_NO_BOOST_CMAKE ON) # for backwards comptibility of cmake and boost >= 1.70
++#set(Boost_USE_STATIC_LIBS   ON)
+ find_package(Boost 1.55.0 COMPONENTS program_options filesystem system graph serialization iostreams REQUIRED)
+ include_directories( ${Boost_INCLUDE_DIRS} )
+ 
+@@ -36,8 +36,8 @@
+ foreach(target ${targets})
+ 
+    add_executable(${target} ${target}.cpp)
+-   add_dependencies(${target} htslib zlib check_git_repository)
+-   target_link_libraries(${target} ${zlib_LIB} ${Boost_LIBRARIES} ${EXTRALIBS} ) 
++   #add_dependencies(${target} htslib zlib check_git_repository)
++   target_link_libraries(${target} ${ZLIB_LIBRARIES} ${Boost_LIBRARIES} ${EXTRALIBS} ) 
+ 
+ endforeach()
+ 
+@@ -48,8 +48,8 @@
+ set(targets jgi_summarize_bam_contig_depths contigOverlaps)
+ foreach(target ${targets})
+    add_executable(${target} ${target}.cpp)
+-   add_dependencies(${target} htslib zlib check_git_repository)
+-   target_link_libraries(${target} ${htslib_LIB} ${zlib_LIB} ${Boost_LIBRARIES} ) 
++   #add_dependencies(${target} htslib zlib check_git_repository)
++   target_link_libraries(${target} ${HTSLIB_LIBRARIES} ${ZLIB_LIBRARIES} ${Boost_LIBRARIES} ) 
+ endforeach()
+ 
+ 

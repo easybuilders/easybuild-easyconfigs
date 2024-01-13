@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'XBeach'
+# revision 6044
+version = '20230831'
+
+homepage = 'https://oss.deltares.nl/web/xbeach'
+description = """
+XBeach is a two-dimensional model for wave propagation, long waves and mean flow, sediment 
+transport and morphological changes of the nearshore area, beaches, dunes and backbarrier 
+during storms. 
+"""
+
+toolchain = {'name': 'gompi', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+# There is no tarball provided, only SVN checkout through: 
+# svn checkout https://svn.oss.deltares.nl/repos/xbeach/trunk@6044
+# make tarball: tar -czvf XBeach-20230831.tgz trunk
+
+sources = [SOURCE_TGZ]
+patches = ['XBeach-20230831_fix-gfortran-compilation.patch']
+checksums = [
+    None,
+    '9aa8a3593ea641a16a6d09bb75cc9935de383b5934f4a2718eeb94382386f0c4',
+]
+
+prebuildopts = 'make clean && '
+
+dependencies = [
+    ('Mako', '1.2.0'),
+    ('netCDF-Fortran', '4.6.0'),
+]
+
+parallel = 1
+
+configopts = '--with-netcdf'
+preconfigopts = './autogen.sh && '
+preconfigopts += 'export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${EBROOTNETCDFMINFORTRAN}/lib/pkgconfig" && '
+
+sanity_check_paths = {
+    'files': ['bin/xbeach', 'lib/libxbeach.a', 'lib/libxbeach.la', 'lib/libxbeach.%s' % SHLIB_EXT],
+    'dirs': []
+}
+sanity_check_commands = [
+    'xbeach -V |grep "You are using XBeach" 2>/dev/null',
+]
+
+moduleclass = 'phys'

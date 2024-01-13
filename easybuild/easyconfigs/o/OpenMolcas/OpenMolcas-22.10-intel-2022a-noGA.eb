@@ -1,0 +1,56 @@
+easyblock = 'CMakeMake'
+
+name = 'OpenMolcas'
+version = '22.10'
+versionsuffix = '-noGA'
+
+homepage = "https://gitlab.com/Molcas/OpenMolcas"
+description = """OpenMolcas is a quantum chemistry software package.
+This build does not support MPI and can only be run on a single node."""
+
+toolchain = {'name': 'intel', 'version': '2022a'}
+
+source_urls = ['https://gitlab.com/Molcas/OpenMolcas/-/archive/v%(version)s/']
+sources = ["OpenMolcas-v%(version)s.tar.gz"]
+patches = ['OpenMolcas-21.06_mcpdft_deps.patch']
+checksums = [
+    {'OpenMolcas-v22.10.tar.gz': 'd1d3d6c9bd69486c36f5285a51ac18e75c03540c5b33751855e94abc764d9658'},
+    {'OpenMolcas-21.06_mcpdft_deps.patch': '708763e060aa0174bbe9c0cc336b509fbf492066465908dd919452836a7a793a'},
+]
+
+builddependencies = [('CMake', '3.23.1')]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('HDF5', '1.12.2'),
+]
+
+build_shared_libs = True
+
+_copts = [
+    '-DLINALG=MKL',
+    '-DMKLROOT=$MKLROOT',
+    '-DOPENMP=ON',
+    '-DTOOLS=ON',
+    '-DFDE=ON',
+    '-DMPI=OFF',
+    '-DGA=OFF',
+]
+configopts = ' '.join(_copts)
+
+modextrapaths = {'PATH': ''}
+modextravars = {
+    'MOLCAS': '%(installdir)s',
+    'MOLCAS_DRIVER': '%(installdir)s/pymolcas',
+    'MOLCAS_SOURCE': '%(installdir)s',
+}
+
+sanity_check_commands = ['cd %(builddir)s/easybuild_obj; ./pymolcas verify']
+
+sanity_check_paths = {
+    'files': ['bin/dynamix.exe', 'bin/mpprop.exe', 'lib/libmolcas.%s' % SHLIB_EXT,
+              'sbin/help_basis', 'pymolcas'],
+    'dirs': ['data/', 'basis_library/'],
+}
+
+moduleclass = 'chem'

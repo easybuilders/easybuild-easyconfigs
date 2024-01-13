@@ -1,0 +1,64 @@
+# Contribution from Imperial College London, UK
+# uploaded by J. Sassmannshausen
+
+easyblock = 'CMakeMakeCp'
+
+name = 'Health-GPS'
+version = '1.1.3.0'
+
+homepage = 'https://github.com/imperialCHEPI/healthgps'
+description = """
+Health-GPS microsimulation is part of the STOP project, and support researchers 
+and policy makers in the analysis of the health and economic impacts of alternative 
+measures to tackle chronic diseases and obesity in children. The model reproduces 
+the characteristics of a population and simulates key individual event histories 
+associated with key components of relevant behaviours, such as physical activity, 
+and diseases such as diabetes or cancer.
+To run the test-jobs with HealthGPS.Tests the data-directory, found in your installation
+folder, must be in the current path. 
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/imperialCHEPI/healthgps/archive']
+sources = ['v.%(version)s.tar.gz']
+patches = ['Health-GPS-20220316-CMake.patch']
+
+checksums = [
+    '62ff13811ca0ec313aa166bb53bc89516c3135bc78a6fba6711c5a0d8d4c98ec',  # Health-GPS-1.1.3.0.tar.gz
+    '315e70c12edfe15535dbd54ac99ea66d41df3989a0917b8da7f024fdea2af609',  # Health-GPS-20220316-CMake.patch
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+    ('Ninja', '1.10.2'),
+]
+
+dependencies = [
+    ('crossguid', '20190529'),
+    ('nlohmann_json', '3.10.5'),
+    ('rapidcsv', '8.64'),
+    ('fmt', '9.1.0'),
+    ('googletest', '1.11.0'),
+    ('cxxopts', '3.0.0', '', SYSTEM),
+    ('indicators', '2.2'),
+]
+
+# We need to make sure we find the data-dir, so we just link it.
+# This is bash, so we need to do a hack about the source directory.
+prebuildopts = 'ln -s ../healthgps*/data data && '
+
+files_to_copy = [
+    (['src/HealthGPS.Console/HealthGPS.Console', 'src/HealthGPS.Tests/HealthGPS.Tests'], 'bin'),
+    'data'
+]
+
+sanity_check_paths = {
+    'files': ['bin/HealthGPS.Console', 'bin/HealthGPS.Tests'],
+    'dirs': ['data'],
+}
+
+sanity_check_commands = ['HealthGPS.Tests']
+
+moduleclass = 'bio'

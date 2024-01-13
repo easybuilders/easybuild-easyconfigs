@@ -1,0 +1,34 @@
+easyblock = 'CMakeMake'
+
+name = 'double-conversion'
+version = '3.3.0'
+
+homepage = 'https://github.com/google/double-conversion'
+description = "Efficient binary-decimal and decimal-binary conversion routines for IEEE doubles."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = ['https://github.com/google/%(name)s/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['04ec44461850abbf33824da84978043b22554896b552c5fd11a9c5ae4b4d296e']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('CMake', '3.26.3'),
+]
+
+# Build static lib, static lib with -fPIC and shared lib
+configopts = [
+    '',
+    '-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_STATIC_LIBRARY_SUFFIX_CXX=_pic.a',
+    '-DBUILD_SHARED_LIBS=ON'
+]
+
+sanity_check_paths = {
+    'files': ['include/double-conversion/%s.h' % h for h in ['bignum', 'cached-powers', 'diy-fp', 'double-conversion',
+                                                             'fast-dtoa', 'fixed-dtoa', 'ieee', 'strtod', 'utils']] +
+             ['lib/libdouble-conversion.%s' % e for e in ['a', SHLIB_EXT]] + ['lib/libdouble-conversion_pic.a'],
+    'dirs': [],
+}
+
+moduleclass = 'lib'

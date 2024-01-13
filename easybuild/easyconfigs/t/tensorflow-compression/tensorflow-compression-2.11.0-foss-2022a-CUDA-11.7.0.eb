@@ -1,0 +1,59 @@
+name = 'tensorflow-compression'
+version = '2.11.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/tensorflow/compression'
+description = "TensorFlow Compression (TFC) contains data compression tools for TensorFlow."
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+# Make sure bazel doesn't download TensorFlow by itself.
+local_tf_version = version
+local_tf_dir = 'tensorflow-%s' % local_tf_version
+local_tf_builddir = '%(builddir)s/' + local_tf_dir
+
+sources = [
+    {
+        'source_urls': ['https://github.com/tensorflow/compression/archive/'],
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename': SOURCE_TAR_GZ,
+    },
+    {
+        'filename': 'v%s.tar.gz' % local_tf_version,
+        'alt_location': 'TensorFlow/extensions',
+    },
+]
+patches = [
+    ('compression_local-tensorflow-repo.sed', '.'),
+]
+checksums = [
+    {'tensorflow-compression-2.11.0.tar.gz': '7f0127c3ff4243e41c5af59be5909a635562191f462053e2d86c234bf638be4f'},
+    {'v2.11.0.tar.gz': '99c732b92b1b37fc243a559e02f9aef5671771e272758aa4aec7f34dc92dac48'},
+    {'compression_local-tensorflow-repo.sed': '65d4d40953624148cd6395a6110eaf8239a9bcae25d1f4c89259f2c60cc4b6dc'},
+]
+
+builddependencies = [
+    ('Bazel', '5.1.1'),
+]
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('Python', '3.10.4'),
+    ('TensorFlow', local_tf_version, versionsuffix),
+    ('tensorflow-probability', '0.19.0', versionsuffix),
+]
+
+download_dep_fail = True
+use_pip = True
+sanity_pip_check = True
+
+local_prebuildopts = "sed -i -f compression_local-tensorflow-repo.sed WORKSPACE && "
+local_prebuildopts += "sed -i 's|EB_TF_REPOPATH|%s|' WORKSPACE && " % local_tf_builddir
+
+prebuildopts = local_prebuildopts
+
+sanity_check_commands = [
+    'python -m tensorflow_compression.all_tests',
+]
+
+moduleclass = 'lib'
