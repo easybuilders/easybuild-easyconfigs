@@ -1,0 +1,75 @@
+easyblock = 'PythonBundle'
+
+name = 'epiScanpy'
+version = '0.4.0'
+
+homepage = 'https://github.com/colomemaria/episcanpy'
+description = """EpiScanpy is a toolkit to analyse single-cell open chromatin
+(scATAC-seq) and single-cell DNA methylation (for example scBS-seq)
+data. EpiScanpy is the epigenomic extension of the very popular scRNA-seq
+analysis tool Scanpy (Genome Biology, 2018) [Wolf18]."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('Seaborn', '0.12.1'),
+    ('scanpy', '1.9.1'),  # includes anndata
+    ('Pysam', '0.19.1'),
+    ('scikit-learn', '1.1.2'),
+    ('statsmodels', '0.13.1'),
+    ('numba', '0.56.4'),
+    ('python-igraph', '0.10.3'),
+    ('tbb', '2021.5.0'),
+]
+
+# avoid hatchling requirement to install kneed
+# (since installing it introduces conflicting version requirements with poetry included with Python)
+local_preinstallopts_kneed = """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' """
+local_preinstallopts_kneed += """-e 's/^requires = .*/requires = ["setuptools"]/g' """
+local_preinstallopts_kneed += """-e 's/^license-files = .*//g' """
+local_preinstallopts_kneed += r"""-e 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml && """
+
+exts_list = [
+    ('pyliftover', '0.4', {
+        'checksums': ['72bcfb7de907569b0eb75e86c817840365297d63ba43a961da394187e399da41'],
+    }),
+    ('bamnostic', '1.1.8', {
+        'checksums': ['b36b1f9239c1d2d614d2e449efe9a0705efe59ebec099f79ac9464f3b1ff5732'],
+    }),
+    ('python-louvain', '0.16', {
+        'checksums': ['b7ba2df5002fd28d3ee789a49532baad11fe648e4f2117cf0798e7520a1da56b'],
+        'modulename': 'community.community_louvain',
+    }),
+    ('get_version', '3.5.4', {
+        'checksums': ['5901c846518d55d52c1f6f037f5d2433952b46bbf36e38c52f064ae836556343'],
+    }),
+    ('dunamai', '1.16.0', {
+        'checksums': ['bfe8e23cc5a1ceed1c7f791674ea24cf832a53a5da73f046eeb43367ccfc3f77'],
+    }),
+    ('legacy-api-wrap', '1.2', {
+        'checksums': ['034a44612da7e9943d3964363a98937ab54d55e3301075374abe0d521eb8101b'],
+    }),
+    ('kneed', '0.8.2', {
+        'checksums': ['cbbd34e284f049cafa63f803cd3af0aff113d5347fb398942a74bff07ce6cc62'],
+        'preinstallopts': local_preinstallopts_kneed,
+    }),
+    ('episcanpy', version, {
+        'patches': ['epiScanpy-0.4.0_fix-import.patch'],
+        'checksums': [
+            {'episcanpy-0.4.0.tar.gz': '95739149db60521b0a14e4579f8ba87d410126ffb7b916abbc2d1aff3df40ce3'},
+            {'epiScanpy-0.4.0_fix-import.patch': '593f8763a00159f3dae2aa42099a617e97b999c59cfa0452e013b7c820de4585'},
+        ],
+        # strip out tbb as required dependency, to ensure that 'pip check' passes;
+        # note that the tbb Python bindings are actually provided by the tbb dependency,
+        # but pip doesn't know about them due to the way in which they were installed...
+        'preinstallopts': "sed -i 's/tbb//' requirements.txt && ",
+        'modulename': 'episcanpy.api',
+    }),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+moduleclass = 'bio'

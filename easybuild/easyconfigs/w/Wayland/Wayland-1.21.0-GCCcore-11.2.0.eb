@@ -1,0 +1,62 @@
+# Author: Jasper Grimm (UoY)
+# URL of Wayland download changed to GitLab due to changes upstream
+# Author: J. Sassmannshausen (Imperial College London/UK)
+easyblock = 'Bundle'
+
+name = 'Wayland'
+version = '1.21.0'
+
+homepage = 'https://wayland.freedesktop.org/'
+description = """
+Wayland is a project to define a protocol for a compositor to talk to
+ its clients as well as a library implementation of the protocol.  The
+ compositor can be a standalone display server running on Linux kernel
+ modesetting and evdev input devices, an X application, or a wayland
+ client itself.  The clients can be traditional applications, X servers
+ (rootless or fullscreen) or other display servers.
+"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+    ('Meson', '0.58.2'),
+    ('Ninja', '1.10.2'),
+    ('pkgconf', '1.8.0'),
+    ('binutils', '2.37'),
+]
+
+dependencies = [
+    ('libffi', '3.4.2'),
+    ('expat', '2.4.1'),
+    ('libxml2', '2.9.10'),
+]
+
+default_easyblock = 'MesonNinja'
+default_component_specs = {
+    'source_urls': ['https://wayland.freedesktop.org/releases'],
+    'sources': [SOURCE_TAR_XZ],
+    'start_dir': '%(namelower)s-%(version)s',
+}
+
+components = [
+    ('wayland', version, {
+        'source_urls': ['https://gitlab.freedesktop.org/wayland/wayland/-/releases/%(version)s/downloads'],
+        'checksums': ['6dc64d7fc16837a693a51cfdb2e568db538bfdc9f457d4656285bb9594ef11ac'],
+        'configopts': "-Ddocumentation=false",
+    }),
+    ('wayland-protocols', '1.25', {
+        'checksums': ['f1ff0f7199d0a0da337217dd8c99979967808dc37731a1e759e822b75b571460'],
+        'preconfigopts': "PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH "
+    }),
+]
+
+_libs = ['lib/libwayland-%s.%s' % (x, SHLIB_EXT) for x in ['client', 'cursor', 'egl', 'server']]
+sanity_check_paths = {
+    'files': ['bin/wayland-scanner'] + _libs,
+    'dirs': ['lib'],
+}
+
+sanity_check_commands = ["wayland-scanner --help", "wayland-scanner --version"]
+
+moduleclass = 'vis'

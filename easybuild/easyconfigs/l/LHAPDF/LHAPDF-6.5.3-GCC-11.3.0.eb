@@ -1,0 +1,51 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Alexander Puck Neuwirth <alexander@neuwirth-informatik.de>
+
+easyblock = 'ConfigureMake'
+
+name = 'LHAPDF'
+version = '6.5.3'
+
+homepage = 'http://lhapdf.hepforge.org/'
+description = """
+Les Houches Parton Density Function
+
+LHAPDF is the standard tool for evaluating parton distribution functions (PDFs) in high-energy physics.
+"""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'optarch': True, 'pic': True}
+
+source_urls = ['http://www.hepforge.org/archive/lhapdf/']
+sources = [SOURCE_TAR_GZ]
+checksums = ['57435cd695e297065d53e69bd29090765c934936b6a975ff8c559766f2230359']
+
+dependencies = [
+    ('Python', '3.10.4'),
+]
+
+configopts = "--disable-static --enable-python"
+
+sanity_check_paths = {
+    'files': ["bin/lhapdf", "bin/lhapdf-config", "lib/libLHAPDF.%s" % SHLIB_EXT],
+    'dirs': ["share/LHAPDF"],
+}
+
+sanity_check_commands = [
+    "lhapdf --version",
+    "lhapdf-config --version",
+    "python -c 'import lhapdf'",
+]
+
+modloadmsg = """
+To use/install your own PDF data, you need to adjust the $LHAPDF_DATA_PATH:
+export LHAPDF_DATA_PATH=/local/.../path/:$LHAPDF_DATA_PATH`
+Then you can run `lhapdf update` followed by `lhapdf install your_pdf`.
+"""
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    # 'LHAPDF_DATA_PATH': '/path/to/share/LHAPDF/',  # please adapt
+}
+
+moduleclass = 'phys'

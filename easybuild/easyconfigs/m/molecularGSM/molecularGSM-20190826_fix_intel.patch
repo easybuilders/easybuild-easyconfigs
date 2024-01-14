@@ -1,0 +1,532 @@
+Fix source for building with intel compilers
+Source: https://github.com/ZimmermanGroup/molecularGSM/files/4912332/patchfile-GSM.txt
+--- GSM/ase.cpp.org	2020-07-09 08:31:35.425473399 +0200
++++ GSM/ase.cpp	2020-07-09 08:51:59.209752687 +0200
+@@ -130,7 +130,7 @@
+   string line;
+   bool success = true;
+ 
+-  success=getline(gradfile, line);
++  success=static_cast<bool>(getline(gradfile, line));
+   double V = -1 * atof(line.c_str()) / 27.2114;
+   //printf(" found E: %7.5f \n",V);
+ 
+@@ -142,7 +142,7 @@
+       grad[3*i+0] = grad[3*i+1] = grad[3*i+2] = 1.;
+       break;
+     }
+-    success=getline(gradfile, line);
++    success=static_cast<bool>(getline(gradfile, line));
+     //cout << "RR " << line << endl;
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t[]");
+--- GSM/bmat.cpp.org	2020-07-09 08:31:35.426473390 +0200
++++ GSM/bmat.cpp	2020-07-09 08:53:45.562819591 +0200
+@@ -4683,7 +4683,7 @@
+   int found = 0;
+   while(!hessfile.eof())
+   {
+-    success = getline(hessfile,line);
++    success = static_cast<bool>(getline(hessfile,line));
+     if (line.find("Hessian of the SCF Energy")!=string::npos)
+     {
+       found = 1;
+@@ -4698,7 +4698,7 @@
+   while(!hessfile.eof() && found)
+   {
+     nf++;
+-    success = getline(hessfile,line);
++    success = static_cast<bool>(getline(hessfile,line));
+     //cout << " RR0: " << line << endl;
+     for (int j=0;j<N3;j++)
+     {
+@@ -4834,13 +4834,13 @@
+   string line;
+   bool success=true;
+ 
+-  success=getline(hesspfile, line);
++  success=static_cast<bool>(getline(hesspfile, line));
+   //cout << " RR: " << line << endl;
+   int length=StringTools::cleanstring(line);  
+   tok_line = StringTools::tokenize(line, " \t");
+   natomsf = atoi(tok_line[1].c_str());
+ 
+-  success=getline(hesspfile, line);
++  success=static_cast<bool>(getline(hesspfile, line));
+   //cout << " RR: " << line << endl;
+   length=StringTools::cleanstring(line);  
+   tok_line = StringTools::tokenize(line, " \t");
+@@ -4855,7 +4855,7 @@
+ 
+   for (int i=0;i<len;i++)
+   {
+-    success=getline(hesspfile, line);
++    success=static_cast<bool>(getline(hesspfile, line));
+     length=StringTools::cleanstring(line);
+     if (length<1) break;
+     tok_line = StringTools::tokenize(line, " \t");
+--- GSM/gaussian.cpp.org	2020-07-09 08:31:35.426473390 +0200
++++ GSM/gaussian.cpp	2020-07-09 08:56:34.787334572 +0200
+@@ -141,7 +141,7 @@
+   int done = 0;
+   while (!gradfile.eof() && done<2)
+   {
+-    success=getline(gradfile, line);
++    success=static_cast<bool>(getline(gradfile, line));
+     if (line.find("SCF Energy")!=string::npos)
+     {
+       //cout << " RRe: " << line << endl;
+@@ -155,7 +155,7 @@
+       int ngf = 0;
+       while (ngf<3*natoms)
+       {
+-        success=getline(gradfile, line);
++        success=static_cast<bool>(getline(gradfile, line));
+         tok_line = StringTools::tokenize(line, " \t");
+         int lsize = tok_line.size();
+         for (int j=0;j<lsize;j++)
+--- GSM/grad.cpp.org	2020-07-09 08:31:35.427473381 +0200
++++ GSM/grad.cpp	2020-07-09 08:57:50.812667407 +0200
+@@ -377,7 +377,7 @@
+ 
+   string line;
+   int nstates0 = 0;
+-  bool success = getline(infile, line);
++  bool success = static_cast<bool>(getline(infile, line));
+   nstates0 = atoi(line.c_str());
+ 
+   infile.close();
+@@ -425,7 +425,7 @@
+   bool success=true;
+   while (!infile.eof())
+   {
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     if (success)
+       hf_lines0[nhf++] = line;
+   }
+@@ -462,7 +462,7 @@
+   int nf = 0;
+   while (!infile.eof())
+   {
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     vector<string> tok_line = StringTools::tokenize(line, " ");
+     //cout << "RR0: " << line << endl; fflush(stdout);
+ 
+@@ -690,7 +690,7 @@
+   int nf = 0;
+   while (!infile.eof())
+   {
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     vector<string> tok_line = StringTools::tokenize(line, " ");
+     if (tok_line.size()>3)
+     {
+--- GSM/gstring.cpp.org	2020-07-09 08:31:35.429473364 +0200
++++ GSM/gstring.cpp	2020-07-09 08:56:34.817334309 +0200
+@@ -1284,14 +1284,14 @@
+ 
+   string line;
+   bool success=true;
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+   if (success){
+     int length=StringTools::cleanstring(line);
+     natoms=atoi(line.c_str());
+   }
+   cout <<"  -The number of atoms is: " << natoms << endl;
+ 
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+   vector<string> tok_line0 = StringTools::tokenize(line, " \t");
+   CHARGE = 0;
+   if (tok_line0.size()>0)
+@@ -1308,7 +1308,7 @@
+ 
+   cout <<"  -Reading the atomic names...";
+   for (int i=0;i<natoms;i++){
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+     anames[i]=tok_line[0];
+@@ -1345,8 +1345,8 @@
+   for (int i=0;i<2;i++)
+   {
+     if (isSSM && i==1) break;
+-    success=getline(infile, line);
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
++    success=static_cast<bool>(getline(infile, line));
+     for (int j=0;j<natoms;j++)
+     {
+       if (infile.eof())
+@@ -1354,7 +1354,7 @@
+         printf("   end of xyz file reached early, exiting \n");
+         exit(1);
+       }
+-      success=getline(infile, line);
++      success=static_cast<bool>(getline(infile, line));
+       int length=StringTools::cleanstring(line);
+       vector<string> tok_line = StringTools::tokenize(line, " \t");
+ //      cout << " i: " << i << " string: " << line << endl;
+@@ -5997,7 +5997,7 @@
+ 
+   string line;
+   bool success=true;
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+   if (success)
+   {
+     int length=StringTools::cleanstring(line);
+@@ -6013,8 +6013,8 @@
+   for (int i=0;i<nnmax;i++)
+   {
+     if (i>0)
+-      success=getline(infile, line);
+-    success=getline(infile, line);
++      success=static_cast<bool>(getline(infile, line));
++    success=static_cast<bool>(getline(infile, line));
+     if (infile.eof())
+     {
+       printf("   end of restart.xyz reached \n");
+@@ -6026,7 +6026,7 @@
+ 
+     for (int j=0;j<natoms;j++)
+     {
+-      success=getline(infile, line);
++      success=static_cast<bool>(getline(infile, line));
+       int length=StringTools::cleanstring(line);
+       vector<string> tok_line = StringTools::tokenize(line, " \t");
+ //      cout << " i: " << i << " string: " << line << endl;
+--- GSM/icoord.cpp.org	2020-07-09 08:31:35.430473355 +0200
++++ GSM/icoord.cpp	2020-07-09 08:56:34.827334221 +0200
+@@ -1866,14 +1866,14 @@
+   
+   string line;
+   bool success=true;
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+   if (success){
+     int length=StringTools::cleanstring(line);
+     natoms=atoi(line.c_str());
+   }
+   cout <<"  natoms: " << natoms << endl;
+   
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+ //  if (success){  
+ //    comment=line;
+ //  }
+@@ -1885,7 +1885,7 @@
+     
+   //cout <<"  -Reading the atomic names...";
+   for (int i=0;i<natoms;i++){
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+     anames[i]=tok_line[0];
+@@ -1911,10 +1911,10 @@
+   
+   
+ //  for (int i=1;i<=2;i++){
+-    success=getline(infile, line);
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
++    success=static_cast<bool>(getline(infile, line));
+     for (int j=0;j<natoms;j++){
+-      success=getline(infile, line);
++      success=static_cast<bool>(getline(infile, line));
+       int length=StringTools::cleanstring(line);
+       vector<string> tok_line = StringTools::tokenize(line, " \t");
+       coords[3*j+0]=atof(tok_line[1].c_str());
+@@ -1973,10 +1973,10 @@
+   string line;
+   bool success=true;
+   int type = 1;
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+   while (!infile.eof())
+   {
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     //cout << "RR0: " << line << endl;
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+@@ -1993,7 +1993,7 @@
+ 
+         for (int i=0;i<nbonds;i++)
+         {
+-          success=getline(infile, line);
++          success=static_cast<bool>(getline(infile, line));
+           //cout << "RR: " << line << endl;
+           length=StringTools::cleanstring(line);
+           tok_line = StringTools::tokenize(line, " \t");
+@@ -2015,7 +2015,7 @@
+ 
+         for (int i=0;i<nangles;i++)
+         {
+-          success=getline(infile, line);
++          success=static_cast<bool>(getline(infile, line));
+           //cout << "RR: " << line << endl;
+           length=StringTools::cleanstring(line);
+           tok_line = StringTools::tokenize(line, " \t");
+@@ -2038,7 +2038,7 @@
+ 
+         for (int i=0;i<ntor;i++)
+         {
+-          success=getline(infile, line);
++          success=static_cast<bool>(getline(infile, line));
+           //cout << "RR: " << line << endl;
+           length=StringTools::cleanstring(line);
+           tok_line = StringTools::tokenize(line, " \t");
+--- GSM/knnr.cpp.org	2020-07-09 08:31:35.430473355 +0200
++++ GSM/knnr.cpp	2020-07-09 08:58:27.384346467 +0200
+@@ -1118,7 +1118,7 @@
+   bool success=true;
+   while (!infile.eof())
+   {
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     //cout << "RR: " << line << endl;
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+@@ -1148,10 +1148,10 @@
+   string line;
+   bool success=true;
+   int type = 1;
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+   while (!infile.eof())
+   {
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     //cout << "RR0: " << line << endl;
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+@@ -1166,7 +1166,7 @@
+ 
+         for (int i=0;i<nbonds;i++)
+         {
+-          success=getline(infile, line);
++          success=static_cast<bool>(getline(infile, line));
+           //cout << "RR: " << line << endl;
+           length=StringTools::cleanstring(line);
+           tok_line = StringTools::tokenize(line, " \t");
+@@ -1186,7 +1186,7 @@
+ 
+         for (int i=0;i<nangles;i++)
+         {
+-          success=getline(infile, line);
++          success=static_cast<bool>(getline(infile, line));
+           //cout << "RR: " << line << endl;
+           length=StringTools::cleanstring(line);
+           tok_line = StringTools::tokenize(line, " \t");
+@@ -1207,7 +1207,7 @@
+ 
+         for (int i=0;i<ntor;i++)
+         {
+-          success=getline(infile, line);
++          success=static_cast<bool>(getline(infile, line));
+           //cout << "RR: " << line << endl;
+           length=StringTools::cleanstring(line);
+           tok_line = StringTools::tokenize(line, " \t");
+@@ -1253,18 +1253,18 @@
+   
+   string line;
+   bool success=true;
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+   if (success){
+     int length=StringTools::cleanstring(line);
+     //natoms=atoi(line.c_str());
+   }
+   //printf(" natoms: %i \n",natoms);
+   
+-  success=getline(infile, line);
++  success=static_cast<bool>(getline(infile, line));
+   
+   for (int i=0;i<natoms;i++)
+   {
+-    success=getline(infile, line);
++    success=static_cast<bool>(getline(infile, line));
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+     anames[i]=tok_line[0];
+@@ -1337,8 +1337,8 @@
+     int done = 0;
+     while(!infile.eof() && !done)
+     {
+-      success = getline(infile,line);
+-      success = getline(infile,line);
++      success = static_cast<bool>(getline(infile,line));
++      success = static_cast<bool>(getline(infile,line));
+ 
+       //cout << " RR: " << line << endl; fflush(stdout);
+       int length=StringTools::cleanstring(line);
+@@ -1432,9 +1432,9 @@
+     int done = 0;
+     while(!infile.eof() && !done)
+     {
+-      success = getline(infile,line);
++      success = static_cast<bool>(getline(infile,line));
+       //cout << "RR0: " << line << endl;
+-      success = getline(infile,line);
++      success = static_cast<bool>(getline(infile,line));
+       //cout << "RR0: " << line << endl;
+       int length=StringTools::cleanstring(line);
+       vector<string> tok_line = StringTools::tokenize(line, " \t");
+--- GSM/molpro.cpp.org	2020-07-09 08:31:35.431473346 +0200
++++ GSM/molpro.cpp	2020-07-09 08:56:34.841334098 +0200
+@@ -318,7 +318,7 @@
+   int found = 0;
+   while(!outfilei.eof())
+   {
+-    success=getline(outfilei, line);
++    success=static_cast<bool>(getline(outfilei, line));
+     if (line.find("MCSCF STATE 1.1 Energy")!=string::npos)
+     {
+       //cout << " found: " << line << endl;
+@@ -481,11 +481,11 @@
+ 
+   string line;
+   bool success=true;
+-  success=getline(outfilei, line);
++  success=static_cast<bool>(getline(outfilei, line));
+   int cont = 0;
+   while(!outfilei.eof())
+   {
+-    success=getline(outfilei, line);
++    success=static_cast<bool>(getline(outfilei, line));
+     if (line.find("SA-MC GRADIENT FOR STATE")!=string::npos)
+     {
+       //cout << " found: " << line << endl;
+@@ -511,7 +511,7 @@
+   if (cont)
+   for (int i=0;i<natoms;i++)
+   {
+-    success=getline(outfilei, line);
++    success=static_cast<bool>(getline(outfilei, line));
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+     //cout << " RR: " << line << endl;
+@@ -557,11 +557,11 @@
+ 
+   string line;
+   bool success=true;
+-  success=getline(outfilei, line);
++  success=static_cast<bool>(getline(outfilei, line));
+   int cont = 0;
+   while(!outfilei.eof())
+   {
+-    success=getline(outfilei, line);
++    success=static_cast<bool>(getline(outfilei, line));
+     if (line.find("SA-MC NACME FOR STATES")!=string::npos)
+     {
+       //cout << " found: " << line << endl;
+@@ -576,7 +576,7 @@
+   if (cont)
+   for (int i=0;i<natoms;i++)
+   {
+-    success=getline(outfilei, line);
++    success=static_cast<bool>(getline(outfilei, line));
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+     //cout << " RR: " << line << endl;
+--- GSM/orca.cpp.org	2020-07-09 08:31:35.431473346 +0200
++++ GSM/orca.cpp	2020-07-09 08:56:34.846334054 +0200
+@@ -138,7 +138,7 @@
+   int done = 0;
+   while (!gradfile.eof() && done<2)
+   {
+-    success=getline(gradfile, line);
++    success=static_cast<bool>(getline(gradfile, line));
+     if (line.find("Total Energy")!=string::npos)
+     {
+       //cout << " RRe: " << line << endl; fflush(stdout);
+@@ -148,12 +148,12 @@
+     }
+     if (line.find("CARTESIAN GRADIENT")!=string::npos)
+     {
+-      success=getline(gradfile, line);
+-      success=getline(gradfile, line);
++      success=static_cast<bool>(getline(gradfile, line));
++      success=static_cast<bool>(getline(gradfile, line));
+       //cout << " RR0g: " << line << endl;
+       for (int j=0;j<natoms;j++)
+       {
+-        success=getline(gradfile, line);
++        success=static_cast<bool>(getline(gradfile, line));
+         //cout << " RRg: " << line << endl;
+         tok_line = StringTools::tokenize(line, " \t");
+         for (int k=0;k<3;k++)
+--- GSM/qchem.cpp.org	2020-07-09 08:31:35.432473337 +0200
++++ GSM/qchem.cpp	2020-07-09 08:56:34.852334001 +0200
+@@ -430,9 +430,9 @@
+   bool success = true;
+   //cout << "reading gradient... " << endl;
+ 
+-  success=getline(gradfile, line);
+-  success=getline(gradfile, line);
+-  success=getline(gradfile, line);
++  success=static_cast<bool>(getline(gradfile, line));
++  success=static_cast<bool>(getline(gradfile, line));
++  success=static_cast<bool>(getline(gradfile, line));
+ 
+   for (int i=0;i<natoms;i++)
+   {
+@@ -442,7 +442,7 @@
+       grad[3*i+0] = grad[3*i+1] = grad[3*i+2] = 1.;
+       break;
+     }
+-    success=getline(gradfile, line);
++    success=static_cast<bool>(getline(gradfile, line));
+     //cout << "RR " << line << endl;
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
+--- GSM/qchemsf.cpp.org	2020-07-09 08:31:35.432473337 +0200
++++ GSM/qchemsf.cpp	2020-07-09 08:56:34.857333958 +0200
+@@ -349,7 +349,7 @@
+   int wg = 0;
+   while (!gradfile.eof())
+   {
+-    success=getline(gradfile, line);
++    success=static_cast<bool>(getline(gradfile, line));
+     if (line.find("GSM-formatted gradient")!=string::npos)
+     {
+       double* gradn = grad1;
+@@ -360,7 +360,7 @@
+ 
+       for (int i=0;i<natoms;i++)
+       {
+-        success=getline(gradfile, line);
++        success=static_cast<bool>(getline(gradfile, line));
+         //cout << "RR " << line << endl;
+         int length=StringTools::cleanstring(line);
+         vector<string> tok_line = StringTools::tokenize(line, " \t");
+--- GSM/turbomole.cpp.org	2020-07-09 08:31:35.432473337 +0200
++++ GSM/turbomole.cpp	2020-07-09 08:56:34.863333905 +0200
+@@ -458,9 +458,9 @@
+   bool success = true;
+   cout << "reading gradient from... " << file.c_str() << endl;
+ 
+-  success=getline(gradfile, line);
+-  success=getline(gradfile, line);
+-  success=getline(gradfile, line);
++  success=static_cast<bool>(getline(gradfile, line));
++  success=static_cast<bool>(getline(gradfile, line));
++  success=static_cast<bool>(getline(gradfile, line));
+ 
+   //for (int i=0;i<natoms;i++)
+   for (int i=0;i<natoms*2+1;i++)
+@@ -471,7 +471,7 @@
+       grad[3*i+0] = grad[3*i+1] = grad[3*i+2] = 1.;
+       break;
+     }
+-    success=getline(gradfile, line);
++    success=static_cast<bool>(getline(gradfile, line));
+    // cout << "RR " << line << endl;
+     int length=StringTools::cleanstring(line);
+     vector<string> tok_line = StringTools::tokenize(line, " \t");
