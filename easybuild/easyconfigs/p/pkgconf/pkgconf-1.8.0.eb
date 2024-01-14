@@ -1,0 +1,33 @@
+easyblock = 'ConfigureMake'
+
+name = 'pkgconf'
+version = '1.8.0'
+
+homepage = 'https://github.com/pkgconf/pkgconf'
+
+description = """pkgconf is a program which helps to configure compiler and linker flags for development libraries.
+ It is similar to pkg-config from freedesktop.org."""
+
+toolchain = SYSTEM
+
+source_urls = ['https://distfiles.ariadne.space/pkgconf/']
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['d7b6fdb522d81c11f5a0e0a0629a9f5480809ec90e595058674c1517822dfb8c']
+
+# add pkgconfig directories in the system to list of default search paths
+preconfigopts = 'EB_SYS_PC_PATH=":$(find /usr -xdev -type d -name "pkgconfig" -printf %p: 2>/dev/null)";'
+configopts = '--with-pkg-config-dir="%(installdir)s/lib/pkgconfig:%(installdir)s/share/pkgconfig${EB_SYS_PC_PATH%:}"'
+
+postinstallcmds = ["cd %(installdir)s/bin && ln -s pkgconf pkg-config"]
+
+sanity_check_paths = {
+    'files': ['bin/pkg-config', 'bin/pkgconf'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "pkg-config --help",
+    "pkgconf --help",
+]
+
+moduleclass = 'devel'

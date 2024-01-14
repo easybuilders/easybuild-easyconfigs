@@ -1,0 +1,38 @@
+easyblock = 'Tarball'
+
+name = 'MaxQuant'
+version = '2.0.3.0'
+
+homepage = 'https://maxquant.org/maxquant'
+description = """MaxQuant is a quantitative proteomics software package designed for analyzing large
+ mass-spectrometric data sets. It is specifically aimed at high-resolution MS data. Several labeling
+ techniques as well as label-free quantification are supported."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+# requires registration at https://www.maxquant.org/download_asset/maxquant/latest
+sources = ['%(name)s_%(version)s.zip']
+checksums = ['463fcd29b41263c33c50c7c7c2cc608bc4b5b3e6806b77a1adc811e0f215af33']
+
+dependencies = [('Mono', '6.12.0.122')]
+
+sanity_check_paths = {
+    'files': ['%(name)s.exe', 'bin/%(name)sCmd.exe', 'bin/%(name)sGui.exe'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    ("mono $EBROOTMAXQUANT/bin/MaxQuantCmd.exe --version 2>&1 | grep -q %(version)s", ''),
+    ("mono $EBROOTMAXQUANT/bin/MaxQuantCmd.exe --help 2>&1 | grep -q USAGE", '')]
+
+modaliases = {
+    'maxquantcmd': 'mono %(installdir)s/bin/%(name)sCmd.exe',
+    'maxquantgui': 'mono %(installdir)s/bin/%(name)sGui.exe',
+}
+
+modloadmsg = """
+To run MaxQuant in command-line mode:  maxquantcmd <options>
+                in GUI mode:           maxquantgui
+"""
+
+moduleclass = 'bio'

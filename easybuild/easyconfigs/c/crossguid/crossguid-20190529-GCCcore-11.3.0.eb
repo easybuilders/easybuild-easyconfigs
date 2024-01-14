@@ -1,0 +1,55 @@
+# Contribution from Imperial College London, UK
+# uploaded by J. Sassmannshausen
+
+easyblock = 'CMakeMake'
+
+name = 'crossguid'
+local_commit = 'ca1bf4b'
+version = '20190529'
+
+homepage = 'https://github.com/graeme-hill/crossguid'
+description = """
+CrossGuid is a minimal, cross platform, C++ GUID library. 
+It uses the best native GUID/UUID generator on the given platform and has a 
+generic class for parsing, stringifying, and comparing IDs. 
+The guid generation technique is determined by your platform:"""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/graeme-hill/crossguid/archive/%s' % local_commit]
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['crossguid-20190529_fix_libuuid.patch']
+
+checksums = [
+    '6be27e0b3a4907f0cd3cfadec255ee1b925569e1bd06e67a4d2f4267299b69c4',  # crossguid-20190529.tar.gz
+    '9ee0f76e18b465ec93364d44d2adb7643081a5b5eee4524a14544472581d7782',  # crossguid-20190529_fix_libuuid.patch
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('CMake', '3.23.1'),
+]
+
+dependencies = [
+    ('util-linux', '2.38'),
+]
+
+# build demo 
+# build static and shared libraries
+configopts = ["-DCROSSGUID_TESTS=ON -DBUILD_SHARED_LIBS=%s" % local_shared for local_shared in ('OFF', 'ON')]
+
+# we want to have the crossguid-test
+postinstallcmds = [
+    'mkdir -p %(installdir)s/bin/',
+    'cp -a crossguid-test %(installdir)s/bin/',
+]
+
+sanity_check_paths = {
+    'files': ['lib/libcrossguid.a', 'bin/crossguid-test'],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = [('crossguid-test')]
+
+moduleclass = 'lib'

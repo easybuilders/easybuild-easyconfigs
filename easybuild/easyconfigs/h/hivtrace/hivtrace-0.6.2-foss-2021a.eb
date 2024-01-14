@@ -1,0 +1,69 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Iñaki Mtz de Ilarduya Muñoz
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+
+easyblock = 'PythonBundle'
+
+name = 'hivtrace'
+version = '0.6.2'
+
+homepage = 'https://github.com/veg/hivtrace'
+description = """HIV-TRACE is an application that identifies potential transmission clusters within a
+ supplied FASTA file with an option to find potential links against the Los Alamos HIV Sequence Database."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('Biopython', '1.79'),
+    ('TN93', '1.0.7'),
+    ('cURL', '7.76.0'),
+    ('Pysam', '0.16.0.1'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('hyphy-python', '0.1.10', {
+        'modulename': 'HyPhy',
+        'checksums': ['b83f7e890c0c21b301c1c761967bd6328df9fad972653888b02baad71055c186'],
+    }),
+    ('fakemp', '0.9.1', {
+        'checksums': ['320885d5851e0c568cd4247fa81e48f055e435822643e5bda9d82edc53c3b938'],
+    }),
+    ('hppy', '0.9.9', {
+        'checksums': ['9112acc888c51c14a88669f084a7ebf39fa62bdd47924a1e3cee6824cfbc4610'],
+    }),
+    ('tornado', '6.1', {
+        'checksums': ['33c6e81d7bd55b468d2e793517c909b139960b6c790a60b7991b9b6b76fb9791'],
+    }),
+    ('bioext', '0.19.9', {
+        'modulename': 'BioExt',
+        'checksums': ['bada8d7e83928a8c934e1e482bc945f43a3234c6c4ea3afcef7fa34c0ea610a3'],
+    }),
+    ('hivclustering', '1.6.2', {
+        'checksums': ['673fa81b6b44ae7a7bfa32897bc01c26cfe807052aadc3d1f5a729b0df3a335f'],
+    }),
+    (name, version, {
+        'checksums': ['f4aabd2bbc326aecb9ab22de8f6877628f908cfa8eee458feb06d48bb19425e6'],
+    }),
+]
+
+# This two files come bundled compressed but the software expects them uncompressed
+postinstallcmds = [
+    'gunzip -d  %(installdir)s/lib/python%(pyshortver)s/site-packages/hivtrace/rsrc/LANL.FASTA.gz',
+    'gunzip -d  %(installdir)s/lib/python%(pyshortver)s/site-packages/hivtrace/rsrc/LANL.TN93OUTPUT.csv.gz',
+]
+
+sanity_check_paths = {
+    'files': ['bin/hivtrace'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    'hivtrace --help',
+]
+
+moduleclass = 'bio'

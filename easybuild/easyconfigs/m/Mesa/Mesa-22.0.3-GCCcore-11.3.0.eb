@@ -1,0 +1,66 @@
+# This is a Mesa using software rendering via Gallium-DRI and libglvnd
+# - libglvnd can dynamically choose between system-installed NVidia
+# libGLX/libEGL or the software renderers provided by this Mesa
+# - EGL is available
+#
+# Software renderers enabled (swr deprecated as of v22):
+# - llvmpipe: uses LLVM for JIT code generation (multi-threaded)
+# - softpipe: a reference Gallium driver
+# Default renderer is llvmpipe. To use softpipe, set the environment
+# variable GALLIUM_DRIVER=softpipe
+
+name = 'Mesa'
+version = '22.0.3'
+
+homepage = 'https://www.mesa3d.org/'
+description = """Mesa is an open-source implementation of the OpenGL specification -
+ a system for rendering interactive 3D graphics."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = [
+    'https://mesa.freedesktop.org/archive/',
+    'https://mesa.freedesktop.org/archive/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x/%(version)s',
+    'ftp://ftp.freedesktop.org/pub/mesa/older-versions/%(version_major)s.x',
+]
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['9f2b30f5276a9abaf71aafc6979685e2636189de1a87aea2c9e69744a6d0ebb9']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('Meson', '0.62.1'),
+    ('Ninja', '1.10.2'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.8.2'),
+    ('pkgconf', '1.8.0'),
+    ('Mako', '1.2.0'),
+    ('libxml2', '2.9.13'),
+    ('expat', '2.4.8'),
+    ('gettext', '0.21'),
+]
+
+dependencies = [
+    ('zlib', '1.2.12'),
+    ('zstd', '1.5.2'),
+    ('libdrm', '2.4.110'),
+    ('libglvnd', '1.4.0'),
+    ('libunwind', '1.6.2'),
+    ('LLVM', '14.0.3'),
+    ('X11', '20220504'),
+]
+
+configopts = "-Dplatforms=x11 -Dosmesa=true -Ddri-drivers='' -Dvulkan-drivers='' "
+configopts += "-Dllvm=true -Dshared-llvm=true -Dlibunwind=true -Dglvnd=true"
+
+# Easybuild will automatically add appropriate Gallium drivers for the processor architecture of the host
+# If you need a different configuration, it possible to override those values by setting your own configopts
+# configopts += " -Dgallium-drivers=swrast"
+
+# symlink indirect to mesa GLX, similar to Debian, see
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=881789
+# This helps in certain X forwarding situations (e.g. XQuartz)
+postinstallcmds = ["ln -s libGLX_mesa.so.0 %(installdir)s/lib/libGLX_indirect.so.0"]
+
+moduleclass = 'vis'

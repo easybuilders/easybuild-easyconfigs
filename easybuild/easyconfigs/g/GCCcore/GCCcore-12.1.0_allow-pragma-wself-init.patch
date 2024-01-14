@@ -1,0 +1,451 @@
+From aabebf76e9d9a805ea5b443d4ee4f49f13155d87 Mon Sep 17 00:00:00 2001
+From: Marek Polacek <polacek@redhat.com>
+Date: Tue, 26 Jul 2022 13:55:58 -0400
+Subject: [PATCH] c-family: Honor -Wno-init-self for cv-qual vars [PR102633]
+
+Since r11-5188-g32934a4f45a721, we drop qualifiers during l-to-r
+conversion by creating a NOP_EXPR.  For e.g.
+
+  const int i = i;
+
+that means that the DECL_INITIAL is '(int) i' and not 'i' anymore.
+Consequently, we don't suppress_warning here:
+
+711     case DECL_EXPR:
+715       if (VAR_P (DECL_EXPR_DECL (*expr_p))
+716           && !DECL_EXTERNAL (DECL_EXPR_DECL (*expr_p))
+717           && !TREE_STATIC (DECL_EXPR_DECL (*expr_p))
+718           && (DECL_INITIAL (DECL_EXPR_DECL (*expr_p)) == DECL_EXPR_DECL (*expr_p))
+719           && !warn_init_self)
+720         suppress_warning (DECL_EXPR_DECL (*expr_p), OPT_Winit_self);
+
+because of the check on line 718 -- (int) i is not i.  So -Wno-init-self
+doesn't disable the warning as it's supposed to.
+
+The following patch fixes it by moving the suppress_warning call from
+c_gimplify_expr to the front ends, at points where we haven't created
+the NOP_EXPR yet.
+
+	PR middle-end/102633
+
+gcc/c-family/ChangeLog:
+
+	* c-gimplify.cc (c_gimplify_expr) <case DECL_EXPR>: Don't call
+	suppress_warning here.
+
+gcc/c/ChangeLog:
+
+	* c-parser.cc (c_parser_initializer): Add new tree parameter.  Use it.
+	Call suppress_warning.
+	(c_parser_declaration_or_fndef): Pass d down to c_parser_initializer.
+	(c_parser_omp_declare_reduction): Pass omp_priv down to
+	c_parser_initializer.
+
+gcc/cp/ChangeLog:
+
+	* decl.cc (cp_finish_decl): Call suppress_warning.
+
+gcc/testsuite/ChangeLog:
+
+	* c-c++-common/Winit-self1.c: New test.
+	* c-c++-common/Winit-self2.c: New test.
+
+(cherry picked from commit 04ce2400b35225302e0d6883bb0817378180f5d7)
+---
+ gcc/c-family/c-gimplify.cc               | 12 ---------
+ gcc/c/c-parser.cc                        | 19 ++++++++++++---
+ gcc/cp/decl.cc                           |  8 ++++++
+ gcc/testsuite/c-c++-common/Winit-self1.c | 31 ++++++++++++++++++++++++
+ gcc/testsuite/c-c++-common/Winit-self2.c | 31 ++++++++++++++++++++++++
+ 5 files changed, 85 insertions(+), 16 deletions(-)
+ create mode 100644 gcc/testsuite/c-c++-common/Winit-self1.c
+ create mode 100644 gcc/testsuite/c-c++-common/Winit-self2.c
+
+diff --git a/gcc/c-family/c-gimplify.cc b/gcc/c-family/c-gimplify.cc
+index 2b683a399821e..7e55fd73f810d 100644
+--- a/gcc/c-family/c-gimplify.cc
++++ b/gcc/c-family/c-gimplify.cc
+@@ -704,18 +704,6 @@ c_gimplify_expr (tree *expr_p, gimple_seq *pre_p ATTRIBUTE_UNUSED,
+ 	break;
+       }
+ 
+-    case DECL_EXPR:
+-      /* This is handled mostly by gimplify.cc, but we have to deal with
+-	 not warning about int x = x; as it is a GCC extension to turn off
+-	 this warning but only if warn_init_self is zero.  */
+-      if (VAR_P (DECL_EXPR_DECL (*expr_p))
+-	  && !DECL_EXTERNAL (DECL_EXPR_DECL (*expr_p))
+-	  && !TREE_STATIC (DECL_EXPR_DECL (*expr_p))
+-	  && (DECL_INITIAL (DECL_EXPR_DECL (*expr_p)) == DECL_EXPR_DECL (*expr_p))
+-	  && !warn_init_self)
+-	suppress_warning (DECL_EXPR_DECL (*expr_p), OPT_Winit_self);
+-      break;
+-
+     case PREINCREMENT_EXPR:
+     case PREDECREMENT_EXPR:
+     case POSTINCREMENT_EXPR:
+diff --git a/gcc/c/c-parser.cc b/gcc/c/c-parser.cc
+index a21449bb83a4c..80f86c177fad3 100644
+--- a/gcc/c/c-parser.cc
++++ b/gcc/c/c-parser.cc
+@@ -1513,7 +1513,7 @@ static struct c_arg_info *c_parser_parms_list_declarator (c_parser *, tree,
+ static struct c_parm *c_parser_parameter_declaration (c_parser *, tree, bool);
+ static tree c_parser_simple_asm_expr (c_parser *);
+ static tree c_parser_gnu_attributes (c_parser *);
+-static struct c_expr c_parser_initializer (c_parser *);
++static struct c_expr c_parser_initializer (c_parser *, tree);
+ static struct c_expr c_parser_braced_init (c_parser *, tree, bool,
+ 					   struct obstack *);
+ static void c_parser_initelt (c_parser *, struct obstack *);
+@@ -2278,7 +2278,7 @@ c_parser_declaration_or_fndef (c_parser *parser, bool fndef_ok,
+ 		  int flag_sanitize_save = flag_sanitize;
+ 		  if (TREE_CODE (d) == PARM_DECL)
+ 		    flag_sanitize = 0;
+-		  init = c_parser_initializer (parser);
++		  init = c_parser_initializer (parser, d);
+ 		  flag_sanitize = flag_sanitize_save;
+ 		  finish_init ();
+ 		}
+@@ -5206,11 +5206,13 @@ c_parser_type_name (c_parser *parser, bool alignas_ok)
+    Any expression without commas is accepted in the syntax for the
+    constant-expressions, with non-constant expressions rejected later.
+ 
++   DECL is the declaration we're parsing this initializer for.
++
+    This function is only used for top-level initializers; for nested
+    ones, see c_parser_initval.  */
+ 
+ static struct c_expr
+-c_parser_initializer (c_parser *parser)
++c_parser_initializer (c_parser *parser, tree decl)
+ {
+   if (c_parser_next_token_is (parser, CPP_OPEN_BRACE))
+     return c_parser_braced_init (parser, NULL_TREE, false, NULL);
+@@ -5219,6 +5221,15 @@ c_parser_initializer (c_parser *parser)
+       struct c_expr ret;
+       location_t loc = c_parser_peek_token (parser)->location;
+       ret = c_parser_expr_no_commas (parser, NULL);
++      /* This is handled mostly by gimplify.cc, but we have to deal with
++	 not warning about int x = x; as it is a GCC extension to turn off
++	 this warning but only if warn_init_self is zero.  */
++      if (VAR_P (decl)
++	  && !DECL_EXTERNAL (decl)
++	  && !TREE_STATIC (decl)
++	  && ret.value == decl
++	  && !warn_init_self)
++	suppress_warning (decl, OPT_Winit_self);
+       if (TREE_CODE (ret.value) != STRING_CST
+ 	  && TREE_CODE (ret.value) != COMPOUND_LITERAL_EXPR)
+ 	ret = convert_lvalue_to_rvalue (loc, ret, true, true);
+@@ -22393,7 +22404,7 @@ c_parser_omp_declare_reduction (c_parser *parser, enum pragma_context context)
+ 		  location_t loc = c_parser_peek_token (parser)->location;
+ 		  rich_location richloc (line_table, loc);
+ 		  start_init (omp_priv, NULL_TREE, 0, &richloc);
+-		  struct c_expr init = c_parser_initializer (parser);
++		  struct c_expr init = c_parser_initializer (parser, omp_priv);
+ 		  finish_init ();
+ 		  finish_decl (omp_priv, loc, init.value,
+ 		      	       init.original_type, NULL_TREE);
+diff --git a/gcc/cp/decl.cc b/gcc/cp/decl.cc
+index 64fba7fafac74..7569785988e29 100644
+--- a/gcc/cp/decl.cc
++++ b/gcc/cp/decl.cc
+@@ -8240,6 +8240,14 @@ cp_finish_decl (tree decl, tree init, bool init_const_expr_p,
+ 	      && !TYPE_REF_P (type))
+ 	    TREE_CONSTANT (decl) = 1;
+ 	}
++      /* This is handled mostly by gimplify.cc, but we have to deal with
++	 not warning about int x = x; as it is a GCC extension to turn off
++	 this warning but only if warn_init_self is zero.  */
++      if (!DECL_EXTERNAL (decl)
++	  && !TREE_STATIC (decl)
++	  && decl == tree_strip_any_location_wrapper (init)
++	  && !warn_init_self)
++	suppress_warning (decl, OPT_Winit_self);
+     }
+ 
+   if (flag_openmp
+diff --git a/gcc/testsuite/c-c++-common/Winit-self1.c b/gcc/testsuite/c-c++-common/Winit-self1.c
+new file mode 100644
+index 0000000000000..740b83b5e9f3d
+--- /dev/null
++++ b/gcc/testsuite/c-c++-common/Winit-self1.c
+@@ -0,0 +1,31 @@
++/* PR middle-end/102633 */
++/* { dg-do compile } */
++/* { dg-options "-Wuninitialized -Wno-init-self" } */
++
++int
++fn1 (void)
++{
++  int i = i;
++  return i;
++}
++
++int
++fn2 ()
++{
++  const int j = j;
++  return j;
++}
++
++int
++fn3 ()
++{
++  volatile int k = k;
++  return k;
++}
++
++int
++fn4 ()
++{
++  const volatile int l = l;
++  return l;
++}
+diff --git a/gcc/testsuite/c-c++-common/Winit-self2.c b/gcc/testsuite/c-c++-common/Winit-self2.c
+new file mode 100644
+index 0000000000000..13aa9efdf2615
+--- /dev/null
++++ b/gcc/testsuite/c-c++-common/Winit-self2.c
+@@ -0,0 +1,31 @@
++/* PR middle-end/102633 */
++/* { dg-do compile } */
++/* { dg-options "-Wuninitialized -Winit-self" } */
++
++int
++fn1 (void)
++{
++  int i = i; /* { dg-warning "used uninitialized" } */
++  return i;
++}
++
++int
++fn2 ()
++{
++  const int j = j; /* { dg-warning "used uninitialized" } */
++  return j;
++}
++
++int
++fn3 ()
++{
++  volatile int k = k; /* { dg-warning "used uninitialized" } */
++  return k;
++}
++
++int
++fn4 ()
++{
++  const volatile int l = l; /* { dg-warning "used uninitialized" } */
++  return l;
++}
+
+From 732d744e82332e7cc269694197c0df2a3635730f Mon Sep 17 00:00:00 2001
+From: Jakub Jelinek <jakub@redhat.com>
+Date: Mon, 16 Jan 2023 09:40:14 +0100
+Subject: [PATCH] c, c++: Allow ignoring -Winit-self through pragmas [PR105593]
+
+As mentioned in the PR, various x86 intrinsics need to return
+an uninitialized vector.  Currently they use self initialization
+to avoid -Wuninitialized warnings, which works fine in C, but
+doesn't work in C++ where -Winit-self is enabled in -Wall.
+We don't have an attribute to mark a variable as knowingly
+uninitialized (the uninitialized attribute exists but means
+something else, only in the -ftrivial-auto-var-init context),
+and trying to suppress either -Wuninitialized or -Winit-self
+inside of the _mm_undefined_ps etc. intrinsic definitions
+doesn't work, one needs to currently disable through pragmas
+-Wuninitialized warning at the point where _mm_undefined_ps etc.
+result is actually used, but that goes against the intent of
+those intrinsics.
+
+The -Winit-self warning option actually doesn't do any warning,
+all we do is record a suppression for -Winit-self if !warn_init_self
+on the decl definition and later look that up in uninit pass.
+
+The following patch changes those !warn_init_self tests which
+are true only based on the command line option setting, not based
+on GCC diagnostic pragma overrides to
+!warning_enabled_at (DECL_SOURCE_LOCATION (decl), OPT_Winit_self)
+such that it takes them into account.
+
+2023-01-16  Jakub Jelinek  <jakub@redhat.com>
+
+	PR c++/105593
+gcc/c/
+	* c-parser.cc (c_parser_initializer): Check warning_enabled_at
+	at the DECL_SOURCE_LOCATION (decl) for OPT_Winit_self instead
+	of warn_init_self.
+gcc/cp/
+	* decl.cc (cp_finish_decl): Check warning_enabled_at
+	at the DECL_SOURCE_LOCATION (decl) for OPT_Winit_self instead
+	of warn_init_self.
+gcc/testsuite/
+	* c-c++-common/Winit-self3.c: New test.
+	* c-c++-common/Winit-self4.c: New test.
+	* c-c++-common/Winit-self5.c: New test.
+
+(cherry picked from commit 98b41fd4045b7856e7b85dd58d67c600bd909379)
+---
+ gcc/c/c-parser.cc                        |  2 +-
+ gcc/cp/decl.cc                           |  2 +-
+ gcc/testsuite/c-c++-common/Winit-self3.c | 36 ++++++++++++++++++++++++
+ gcc/testsuite/c-c++-common/Winit-self4.c | 36 ++++++++++++++++++++++++
+ gcc/testsuite/c-c++-common/Winit-self5.c | 36 ++++++++++++++++++++++++
+ 5 files changed, 110 insertions(+), 2 deletions(-)
+ create mode 100644 gcc/testsuite/c-c++-common/Winit-self3.c
+ create mode 100644 gcc/testsuite/c-c++-common/Winit-self4.c
+ create mode 100644 gcc/testsuite/c-c++-common/Winit-self5.c
+
+diff --git a/gcc/c/c-parser.cc b/gcc/c/c-parser.cc
+index 80f86c177fad3..78a313fe31ef2 100644
+--- a/gcc/c/c-parser.cc
++++ b/gcc/c/c-parser.cc
+@@ -5228,7 +5228,7 @@ c_parser_initializer (c_parser *parser, tree decl)
+ 	  && !DECL_EXTERNAL (decl)
+ 	  && !TREE_STATIC (decl)
+ 	  && ret.value == decl
+-	  && !warn_init_self)
++	  && !warning_enabled_at (DECL_SOURCE_LOCATION (decl), OPT_Winit_self))
+ 	suppress_warning (decl, OPT_Winit_self);
+       if (TREE_CODE (ret.value) != STRING_CST
+ 	  && TREE_CODE (ret.value) != COMPOUND_LITERAL_EXPR)
+diff --git a/gcc/cp/decl.cc b/gcc/cp/decl.cc
+index 7569785988e29..fd1a1cbbf2cb0 100644
+--- a/gcc/cp/decl.cc
++++ b/gcc/cp/decl.cc
+@@ -8246,7 +8246,7 @@ cp_finish_decl (tree decl, tree init, bool init_const_expr_p,
+       if (!DECL_EXTERNAL (decl)
+ 	  && !TREE_STATIC (decl)
+ 	  && decl == tree_strip_any_location_wrapper (init)
+-	  && !warn_init_self)
++	  && !warning_enabled_at (DECL_SOURCE_LOCATION (decl), OPT_Winit_self))
+ 	suppress_warning (decl, OPT_Winit_self);
+     }
+ 
+diff --git a/gcc/testsuite/c-c++-common/Winit-self3.c b/gcc/testsuite/c-c++-common/Winit-self3.c
+new file mode 100644
+index 0000000000000..b83135f193bdd
+--- /dev/null
++++ b/gcc/testsuite/c-c++-common/Winit-self3.c
+@@ -0,0 +1,36 @@
++/* PR c++/105593 */
++/* { dg-do compile } */
++/* { dg-options "-W -Wall" } */
++
++void bar (int);
++
++static inline int
++baz (void)
++{
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
++  int u = u;		/* { dg-bogus "'u' is used uninitialized" } */
++#pragma GCC diagnostic pop
++  return u;
++}
++
++void
++foo (void)
++{
++  int u = baz ();
++  bar (u);
++}
++
++static inline int
++qux (void)
++{
++  int u = u;		/* { dg-warning "'u' is used uninitialized" "" { target c++ } } */
++  return u;		/* { dg-message "'u' was declared here" "" { target c++ } .-1 } */
++}
++
++void
++corge (void)
++{
++  int u = qux ();
++  bar (u);
++}
+diff --git a/gcc/testsuite/c-c++-common/Winit-self4.c b/gcc/testsuite/c-c++-common/Winit-self4.c
+new file mode 100644
+index 0000000000000..b38b7cc60b578
+--- /dev/null
++++ b/gcc/testsuite/c-c++-common/Winit-self4.c
+@@ -0,0 +1,36 @@
++/* PR c++/105593 */
++/* { dg-do compile } */
++/* { dg-options "-W -Wall -Winit-self" } */
++
++void bar (int);
++
++static inline int
++baz (void)
++{
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
++  int u = u;		/* { dg-bogus "'u' is used uninitialized" } */
++#pragma GCC diagnostic pop
++  return u;
++}
++
++void
++foo (void)
++{
++  int u = baz ();
++  bar (u);
++}
++
++static inline int
++qux (void)
++{
++  int u = u;		/* { dg-warning "'u' is used uninitialized" } */
++  return u;		/* { dg-message "'u' was declared here" "" { target *-*-* } .-1 } */
++}
++
++void
++corge (void)
++{
++  int u = qux ();
++  bar (u);
++}
+diff --git a/gcc/testsuite/c-c++-common/Winit-self5.c b/gcc/testsuite/c-c++-common/Winit-self5.c
+new file mode 100644
+index 0000000000000..db2d9a132194c
+--- /dev/null
++++ b/gcc/testsuite/c-c++-common/Winit-self5.c
+@@ -0,0 +1,36 @@
++/* PR c++/105593 */
++/* { dg-do compile } */
++/* { dg-options "-W -Wall -Wno-init-self" } */
++
++void bar (int);
++
++static inline int
++baz (void)
++{
++#pragma GCC diagnostic push
++#pragma GCC diagnostic ignored "-Winit-self"
++  int u = u;		/* { dg-bogus "'u' is used uninitialized" } */
++#pragma GCC diagnostic pop
++  return u;
++}
++
++void
++foo (void)
++{
++  int u = baz ();
++  bar (u);
++}
++
++static inline int
++qux (void)
++{
++  int u = u;		/* { dg-bogus "'u' is used uninitialized" } */
++  return u;
++}
++
++void
++corge (void)
++{
++  int u = qux ();
++  bar (u);
++}

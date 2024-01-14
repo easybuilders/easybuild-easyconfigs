@@ -1,0 +1,63 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2014 Uni.Lu/LCSB, NTUA
+# Authors::   Cedric Laczny <cedric.laczny@uni.lu>, Fotis Georgatos <fotis@cern.ch>
+# License::   MIT/GPL
+# $Id$
+#
+# This work implements a part of the HPCBIOS project and is a component of the policy:
+# http://hpcbios.readthedocs.org/en/latest/HPCBIOS_2012-94.html
+##
+
+easyblock = 'Bundle'
+
+name = 'FASTX-Toolkit'
+version = '0.0.14'
+
+homepage = 'http://hannonlab.cshl.edu/fastx_toolkit/'
+description = """The FASTX-Toolkit is a collection of command line tools for 
+ Short-Reads FASTA/FASTQ files preprocessing."""
+
+toolchain = {'name': 'GCC', 'version': '10.3.0'}
+toolchainopts = {'pic': True}
+
+default_easyblock = 'ConfigureMake'
+
+components = [
+    ('libgtextutils', '0.7', {
+        'source_urls': ['https://github.com/agordon/libgtextutils/releases/download/%(version)s/'],
+        'sources': [SOURCE_TAR_GZ],
+        'patches': ['libgtextutils-%(version)s_fix-bool.patch'],
+        'checksums': [
+            '792e0ea3c96ffe3ad65617a104b7dc50684932bc96d2adab501c952fd65c3e4a',  # libgtextutils-0.7.tar.gz
+            'bb16a4fd86c2eb12215d8780b09f0898771a73e53889a015e2351f2d737c9a00',  # libgtextutils-0.7_fix-bool.patch
+        ],
+        'start_dir': 'libgtextutils-%(version)s',
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/agordon/fastx_toolkit/releases/download/%(version)s'],
+        'sources': ['fastx_toolkit-%(version)s.tar.bz2'],
+        'checksums': ['9e1f00c4c9f286be59ac0e07ddb7504f3b6433c93c5c7941d6e3208306ff5806'],
+        'start_dir': 'fastx_toolkit-%(version)s',
+        'preconfigopts': "export PKG_CONFIG_PATH=%(installdir)s/lib/pkgconfig:$PKG_CONFIG_PATH && ",
+        'configopts': 'CXXFLAGS="$CXXFLAGS -Wno-implicit-fallthrough"',
+    }),
+]
+
+sanity_check_paths = {
+    'files':
+        ['bin/fastx_%s' % x for x in
+            ['clipper', 'trimmer', 'quality_stats', 'artifacts_filter', 'reverse_complement',
+             'collapser', 'uncollapser', 'renamer', 'barcode_splitter.pl', 'nucleotide_distribution_graph.sh',
+             'nucleotide_distribution_line_graph.sh']] +
+        ['bin/fasta_%s' % x for x in
+            ['clipping_histogram.pl', 'formatter', 'nucleotide_changer']] +
+        ['bin/fastq_%s' % x for x in
+            ['quality_boxplot_graph.sh', 'quality_converter', 'to_fasta', 'quality_filter',
+             'quality_trimmer', 'masker']] +
+        ['lib/libgtextutils.%s' % SHLIB_EXT, 'lib/libgtextutils.a'],
+    'dirs': []
+}
+
+moduleclass = 'bio'

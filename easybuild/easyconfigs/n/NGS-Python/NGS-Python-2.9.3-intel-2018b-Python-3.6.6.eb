@@ -1,0 +1,43 @@
+easyblock = 'ConfigureMake'
+
+name = 'NGS-Python'
+version = '2.9.3'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://github.com/ncbi/ngs'
+description = """NGS is a new, domain-specific API for accessing reads, alignments and pileups produced from
+ Next Generation Sequencing."""
+
+toolchain = {'name': 'intel', 'version': '2018b'}
+
+source_urls = ['https://github.com/ncbi/ngs/archive/']
+sources = ['%(version)s.tar.gz']
+patches = ['NGS-Python-%(version)s_fix-python-install-prefix.patch']
+checksums = [
+    'd16cdf340f4c66e449cc490a222e54e9074cd15fe0938cb75b951a72985f757d',  # 2.9.3.tar.gz
+    # NGS-Python-2.9.3_fix-python-install-prefix.patch
+    '72df59433ff1ad64e8313c6ed85286bcd25570eaef28c74ad5239fcaa9de8875',
+]
+
+dependencies = [('Python', '3.6.6')]
+
+# override default of using $HOME/ncbi-outdir
+configopts = "--build-prefix=%(builddir)s/ncbi-outdir"
+
+buildopts = 'CC="$CC -c" CPP="$CXX" CP="$CXX -c" -C ngs-sdk && '
+buildopts += 'make CC="$CC -c" CPP="$CXX" CP="$CXX -c" -C ngs-python'
+
+installopts = "-C ngs-sdk && make install -C ngs-python"
+
+parallel = 1
+
+sanity_check_paths = {
+    'files': ['lib64/libngs-sdk.%s' % SHLIB_EXT, 'lib64/libngs-adapt-c++.a', 'lib64/libngs-c++.a'],
+    'dirs': ['include/ngs', 'lib/python%(pyshortver)s/site-packages', 'share/examples'],
+}
+
+sanity_check_commands = ["python -c 'import ngs'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'

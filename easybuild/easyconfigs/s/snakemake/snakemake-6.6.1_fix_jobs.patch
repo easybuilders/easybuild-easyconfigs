@@ -1,0 +1,16 @@
+Load the snakemake module before running in job script, with added environment variable SNAKEMAKE_LOAD_MODULE,
+and always use the python executable defined by the environment.
+This patch is for clusters that don't support exporting the full environment into the batch job.
+Author: Samuel Moors (Vrije Universiteit Brussel)
+--- snakemake/executors/__init__.py.orig	2021-07-26 11:52:00.645527272 +0200
++++ snakemake/executors/__init__.py	2021-07-26 13:51:35.838445917 +0200
+@@ -682,7 +682,8 @@
+                     "{envvars} " "cd {workflow.workdir_init} && "
+                     if assume_shared_fs
+                     else "",
+-                    "{sys.executable} " if assume_shared_fs else "python ",
++                    os.getenv('SNAKEMAKE_LOAD_MODULE', ':') + ' && ',
++                    "python ",
+                     "-m snakemake {target} --snakefile {snakefile} ",
+                     "--force --cores {cores} --keep-target-files --keep-remote --max-inventory-time 0 ",
+                     "{waitfiles_parameter:u} --latency-wait {latency_wait} ",

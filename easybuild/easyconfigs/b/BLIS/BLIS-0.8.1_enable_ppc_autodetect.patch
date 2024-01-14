@@ -1,0 +1,91 @@
+Add autodetection for POWER7, POWER9 & POWER10
+See https://github.com/amd/blis/pull/6
+
+Author: Alexander Grund (TU Dresden)
+diff -aur a/frame/base/bli_cpuid.c b/frame/base/bli_cpuid.c
+--- a/frame/base/bli_cpuid.c	2021-03-22 23:42:33.000000000 +0100
++++ b/frame/base/bli_cpuid.c	2022-07-07 14:05:13.627541000 +0200
+@@ -429,7 +429,7 @@
+ 	return TRUE;
+ }
+ 
+-#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM)
++#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+ 
+ arch_t bli_cpuid_query_id( void )
+ {
+@@ -484,9 +484,14 @@
+ 			return BLIS_ARCH_GENERIC;
+ 		}
+ 	}
+-	else if ( vendor == VENDOR_UNKNOWN )
++	else if ( vendor == VENDOR_IBM )
+ 	{
+-		return BLIS_ARCH_GENERIC;
++		if ( model == MODEL_POWER7)
++			return BLIS_ARCH_POWER7;
++		else if ( model == MODEL_POWER9)
++			return BLIS_ARCH_POWER9;
++		else if ( model == MODEL_POWER10)
++			return BLIS_ARCH_POWER10;
+ 	}
+ 
+ 	return BLIS_ARCH_GENERIC;
+@@ -985,7 +990,7 @@
+ 	}
+ }
+ 
+-#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM)
++#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+ 
+ #define TEMP_BUFFER_SIZE 200
+ 
+@@ -1007,6 +1012,20 @@
+ 	char  feat_str[ TEMP_BUFFER_SIZE ];
+ 	char* r_val;
+ 
++#ifdef _ARCH_PPC
++	r_val = find_string_in( "cpu", proc_str, TEMP_BUFFER_SIZE, pci_str );
++	if ( r_val == NULL ) return VENDOR_IBM;
++
++	if ( strstr( proc_str, "POWER7" ) != NULL )
++		*model = MODEL_POWER7;
++	else if ( strstr( proc_str, "POWER9" ) != NULL )
++		*model = MODEL_POWER9;
++	else if ( strstr( proc_str, "POWER10" ) != NULL )
++		*model = MODEL_POWER10;
++
++	return VENDOR_IBM;
++#endif
++
+ 	//printf( "bli_cpuid_query(): beginning search\n" );
+ 
+ 	// Search /proc/cpuinfo for the 'Processor' entry.
+diff -aur a/frame/base/bli_cpuid.h b/frame/base/bli_cpuid.h
+--- a/frame/base/bli_cpuid.h	2021-03-22 23:42:33.000000000 +0100
++++ b/frame/base/bli_cpuid.h	2022-07-07 13:59:51.620586000 +0200
+@@ -158,19 +158,23 @@
+ 	FEATURE_AVX512VL = 0x4000
+ };
+ 
+-#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM)
++#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+ 
+ char* find_string_in( char* target, char* buffer, size_t buf_len, char* filepath );
+ 
+ enum
+ {
+ 	VENDOR_ARM = 0,
++	VENDOR_IBM,
+ 	VENDOR_UNKNOWN
+ };
+ enum
+ {
+ 	MODEL_ARMV7 = 0,
+ 	MODEL_ARMV8,
++	MODEL_POWER7,
++	MODEL_POWER9,
++	MODEL_POWER10,
+ 	MODEL_UNKNOWN
+ };
+ enum

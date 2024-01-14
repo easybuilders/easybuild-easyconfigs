@@ -1,0 +1,57 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'Tarball'
+
+name = 'Phantompeakqualtools'
+version = '1.2.2'
+
+homepage = "https://github.com/kundajelab/phantompeakqualtools"
+description = """It computes informative enrichment and quality measures
+for ChIP-seq/DNase-seq/FAIRE-seq/MNase-seq data."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/kundajelab/%(namelower)s/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = ['b31263b64aefe97bdc4d7fae138f515a7d7a60cd05031d38dd89a10f9ee10cd1']
+
+dependencies = [
+    ('R', '4.1.2'),
+    ('SAMtools', '1.14'),
+    ('R-bundle-Bioconductor', '3.14', '-R-%(rver)s'),
+]
+
+preinstall_cmd = "rm spp_1.14.tar.gz"
+
+exts_defaultclass = 'RPackage'
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',      # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_list = [
+    # phantompeakqualtools requires spp 1.14 or 1.15.x (1.16 is not supported)
+    ('spp', '1.15.5', {
+        'checksums': ['1c486792ac3feb194c95efe7a8a98eab4331877ba901d774561b8839c958f924'],
+    }),
+]
+
+modextrapaths = {
+    'PATH': '',
+    'R_LIBS_SITE': '',
+}
+
+sanity_check_paths = {
+    'files': ['run_spp.R'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'run_spp.R 2>&1 | grep "Usage: Rscript run_spp.R <options>"',
+]
+
+moduleclass = 'bio'

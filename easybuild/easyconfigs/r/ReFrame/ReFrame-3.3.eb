@@ -13,8 +13,6 @@ allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
 req_py_majver = 3
 req_py_minver = 6
 
-exts_default_options = {'source_urls': [PYPI_SOURCE]}
-
 use_pip = True
 
 exts_list = [
@@ -35,8 +33,10 @@ exts_list = [
 
         # Use bootstrap script to install ReFrame dependencies under `external`.
         # ReFrame adds `external` to its own python path before executing, without
-        # affecting the python path of the system
-        'preinstallopts': './bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && ',
+        # affecting the python path of the system;
+        # need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing packages
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && ",
     }),
 ]
 
@@ -57,9 +57,7 @@ sanity_check_commands = ['reframe -V']
 
 sanity_pip_check = True
 
-# need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing extensions
 modextrapaths = {
-    'PATH': 'bin',
     # bootstrap script installs required dependencies to 'external' subdirectory
     'PYTHONPATH': 'external',
 }

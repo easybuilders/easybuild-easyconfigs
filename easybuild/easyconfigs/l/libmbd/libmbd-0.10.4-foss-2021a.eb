@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'libmbd'
+version = '0.10.4'
+
+homepage = 'https://libmbd.github.io/index.html'
+description = """
+Libmbd implements the many-body dispersion (MBD) method in several programming languages and frameworks:
+
+ - The Fortran implementation is the reference, most advanced implementation, with support for analytical 
+   gradients and distributed parallelism, and additional functionality beyond the MBD method itself. 
+   It provides a low-level and a high-level Fortran API, as well as a C API. Furthermore, Python bindings 
+   to the C API are provided.
+ - The Python/Numpy implementation is intended for prototyping, and as a high-level language reference.
+ - The Python/Tensorflow implementation is an experiment that should enable rapid prototyping of machine 
+   learning applications with MBD.
+
+The Python-based implementations as well as Python bindings to the Libmbd C API are accessible from the 
+Python package called Pymbd.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+source_urls = ['https://github.com/libmbd/libmbd/archive/refs/tags/']
+sources = ['%(version)s.tar.gz']
+checksums = ['0f9ee2c69dfc2fd085127aae4b3b794fad20ef5c2dad6c89728ce5fbf300eb75']
+
+builddependencies = [
+    ('CMake', '3.20.1')
+]
+
+separate_build_dir = True
+
+local_common_configopts = "-DENABLE_SCALAPACK_MPI=ON"
+
+parallel = 1
+
+# make sure that built libraries (libmbd.so) in build directory are picked when running tests
+# this is required when RPATH linking is used
+pretestopts = "export LD_LIBRARY_PATH=%(builddir)s/easybuild_obj:$LD_LIBRARY_PATH && "
+
+runtest = 'test'
+
+sanity_check_paths = {
+    'files': ['lib/libmbd.%s' % SHLIB_EXT, 'include/mbd.h', 'include/mbd.mod'],
+    'dirs': ['lib/cmake/mbd'],
+}
+
+moduleclass = 'phys'

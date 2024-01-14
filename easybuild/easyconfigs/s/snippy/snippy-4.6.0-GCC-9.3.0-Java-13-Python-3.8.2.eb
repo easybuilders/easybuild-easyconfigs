@@ -1,0 +1,61 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'CmdCp'
+
+name = 'snippy'
+version = '4.6.0'
+local_pyversuffix = '-Python-%(pyver)s'
+local_javaversuffix = '-Java-%(javaver)s'
+versionsuffix = local_javaversuffix + local_pyversuffix
+
+homepage = 'https://github.com/tseemann/snippy'
+description = """Snippy finds SNPs between a haploid reference genome and your NGS sequence
+ reads. It will find both substitutions (snps) and insertions/deletions (indels).
+ Rapid haploid variant calling and core genome alignment."""
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+github_account = 'tseemann'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['7264e3819e249387effd3eba170ff49404b1cf7347dfa25944866f5aeb6b11c3']
+
+dependencies = [
+    ('Java', '13', '', SYSTEM),
+    ('Python', '3.8.2'),
+    ('Perl', '5.30.2'),
+    ('BioPerl', '1.7.7'),
+    ('any2fasta', '0.4.2'),
+    ('BWA', '0.7.17'),
+    ('BCFtools', '1.10.2'),
+    ('BEDTools', '2.29.2'),
+    ('freebayes', '1.3.5', local_pyversuffix),
+    ('gzip', '1.10'),
+    ('minimap2', '2.17'),
+    ('parallel', '20200522'),
+    ('samclip', '0.4.0'),
+    ('SAMtools', '1.11'),
+    ('SeqLib', '1.2.0'),
+    ('seqtk', '1.3'),
+    ('snp-sites', '2.5.1'),
+    ('snpEff', '5.0', versionsuffix),
+    ('vcflib', '1.0.2', local_pyversuffix),
+    ('vt', '0.57721'),
+]
+
+skipsteps = ['configure', 'build']
+
+pretestopts = "cd test && "
+runtest = ' '
+
+files_to_copy = ['bin', 'etc', 'perl5', 'LICENSE', 'README.md']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s', 'etc/snpeff.config'],
+    'dirs': [],
+}
+sanity_check_commands = ["%(namelower)s --check"]
+
+modextrapaths = {'PERL5LIB': 'perl5/%(name)s'}
+
+moduleclass = 'bio'

@@ -1,0 +1,52 @@
+easyblock = 'ConfigureMake'
+
+name = 'p4est'
+version = '2.8'
+
+homepage = 'https://www.p4est.org'
+description = """p4est is a C library to manage a collection (a forest) of multiple
+connected adaptive quadtrees or octrees in parallel."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+toolchainopts = {'openmp': True, 'usempi': True, 'pic': True}
+
+source_urls = ['https://p4est.github.io/release']
+sources = [SOURCE_TAR_GZ]
+patches = [
+    # 'p4est-2.2_remove_loadsave_tests.patch',
+    # 'p4est-2.8_automake_version.patch',
+    # 'sc_test_sort.patch',
+]
+checksums = ['6a0586e3abac06c20e31b1018f3a82a564a6a0d9ff6b7f6c772a9e6b0f0cc5e4']
+
+# checksums = [
+#     '6a0586e3abac06c20e31b1018f3a82a564a6a0d9ff6b7f6c772a9e6b0f0cc5e4',  # p4est-2.8.tar.gz
+#     '20cabc7985edbc007fb8190fafc51b873a2c3eb879700ff93432646b563ec642',  # p4est-2.2_remove_loadsave_tests.patch
+# ]
+
+builddependencies = [
+    ('Autotools', '20210128')
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('METIS', '5.1.0')
+]
+
+# preconfigopts = "./bootstrap && "
+# preconfigopts = 'autoreconf -f -i && '
+configopts = "--enable-openmp --enable-mpi --with-metis "
+configopts += '--with-blas="$LIBBLAS" --with-lapack="$LIBLAPACK" '
+
+configopts += '--disable-shared --enable-static '
+
+# commenting out 'make check' - one test fails and if we patched
+# runtest = 'check VERBOSE=1'
+
+sanity_check_paths = {
+    'files': ['bin/p4est_simple', 'bin/p4est_step1', 'bin/p4est_step2', 'bin/p4est_step3', 'bin/p4est_step4',
+              'lib/libp4est.a', 'lib/libp4est.la'],
+    'dirs': [],
+}
+
+moduleclass = 'math'

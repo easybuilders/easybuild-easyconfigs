@@ -1,0 +1,39 @@
+# J. Sassmannshausen /NHS/GSTT: toolchain updated to GCCcore-11.2
+
+easyblock = 'Tarball'
+
+name = 'annovar'
+version = '20200607'  # version reported by `annotate_variation.pl -h`
+versionsuffix = '-Perl-%(perlver)s'
+
+homepage = 'http://annovar.openbioinformatics.org/en/latest/'
+description = """ANNOVAR is an efficient software tool to utilize update-to-date information 
+to functionally annotate genetic variants detected from diverse genomes (including human 
+genome hg18, hg19, hg38, as well as mouse, worm, fly, yeast and many others)."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+# Registration required for download
+# http://www.openbioinformatics.org/annovar/annovar_download_form.php
+# rename after download to %(name)s-%(version)s.tar.gz
+sources = ['%(name)s-%(version)s.tar.gz']
+checksums = ['4061af3f2cc8f3d4d8187986c3d468a4b6ae145eec1858e85c7cd1059debb8ed']
+
+dependencies = [('Perl', '5.34.0')]
+
+modextrapaths = {
+    'PATH': '',
+}
+
+sanity_check_paths = {
+    'files': ["annotate_variation.pl", "coding_change.pl", "convert2annovar.pl", "retrieve_seq_from_fasta.pl",
+              "variants_reduction.pl", "table_annovar.pl"],
+    'dirs': ["example", "humandb"],
+}
+
+sanity_check_commands = [
+    "annotate_variation.pl --help 2>&1 | grep 'Version: $Date: %s-%s-%s'" % (version[:4], version[4:6], version[6:]),
+    'retrieve_seq_from_fasta.pl --help 2>&1 | grep "reformat sequences at specific genomic positions"',
+]
+
+moduleclass = 'bio'

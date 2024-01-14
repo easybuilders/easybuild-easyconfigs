@@ -1,0 +1,47 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'MakeCp'
+
+name = 'Arriba'
+version = '2.2.1'
+
+homepage = 'https://github.com/suhrig/arriba'
+description = """Arriba is a command-line tool for the detection of gene fusions from RNA-Seq data.
+ It was developed for use in a clinical research setting. Therefore, short runtimes and high
+ sensitivity were important design criteria."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/suhrig/%(namelower)s/releases/download/v%(version)s']
+sources = ['%(namelower)s_v%(version)s.tar.gz']
+checksums = ['9cc14675a65c147b4261372b038d2e4dab1f43ffa1ceadd456c16a49b842f090']
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('HTSlib', '1.14'),
+    ('libdeflate', '1.8'),
+    ('STAR', '2.7.9a'),
+    ('zlib', '1.2.11'),
+    ('XZ', '5.2.5'),
+]
+
+# make target with dynamically linked libraries is called bioconda, default is a statically linked binary
+build_cmd_targets = 'bioconda'
+# otherwise it fails to find sam.h
+buildopts = 'CPATH=${EBROOTHTSLIB}/include/htslib:CPATH'
+
+postinstallcmds = ['mkdir %(installdir)s/database']
+files_to_copy = ['%(namelower)s', 'documentation', 'download_references.sh', 'draw_fusions.R', 'LICENSE',
+                 'README.md', 'run_%(namelower)s.sh']
+
+modextrapaths = {'PATH': ''}
+
+sanity_check_paths = {
+    'files': ['%(namelower)s'],
+    'dirs': []
+}
+
+sanity_check_commands = [('%(namelower)s', '-h')]
+
+moduleclass = 'bio'

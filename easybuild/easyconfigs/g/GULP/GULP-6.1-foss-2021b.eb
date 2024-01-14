@@ -1,0 +1,63 @@
+# Contribution from Imperial College London / UK 
+# Based on GULP-6.0-foss-2020b.eb 
+# uploaded by J. Sassmannshausen
+
+easyblock = 'MakeCp'
+
+name = 'GULP'
+version = '6.1'
+
+homepage = 'https://gulp.curtin.edu.au/gulp/'
+description = """GULP is a program for performing a variety of types of simulation on materials
+ using boundary conditions of 0-D (molecules and clusters), 1-D (polymers), 2-D (surfaces, slabs
+ and grain boundaries), or 3-D (periodic solids)Band Unfolding code for Plane-wave based calculations"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'usempi': True}
+
+sources = [SOURCELOWER_TGZ]
+patches = [
+    'GULP-6.1_fftw-blas-linking-gcc-11.patch',
+]
+checksums = [
+    {'gulp-6.1.tgz': '1b52fe2928ccf2cea5d2c3466162764d0de6b4d06e86fe292ab37859d6a0e6d6'},
+    {'GULP-6.1_fftw-blas-linking-gcc-11.patch': 'd32babd56e859a9378548981a00b876a88b66e392cb532d33193b6e3362f7940'},
+]
+
+download_instructions = """Download requires registration, please see
+https://gulp.curtin.edu.au/gulp/request.cfm?rel=download
+and follow the instructions there"""
+
+start_dir = 'Src'
+
+# Use external FFTW (-f), enable parallel/MPI build (-m) and set the base compiler (-c).
+# Building it this way means both the serial and parallel build are available.
+# The serial build can be used like this:
+# $ gulp < FILE.gin > OUT.gout
+# For the parallel run, just add mpirun:
+# $ mpirun -n X gulp < FILE.gin > OUT.gout
+
+build_cmd = "./mkgulp -f -m -c gfortran"
+
+# When building in parallel, it appears that with more than 4 cores it gets confused
+maxparallel = 4
+
+
+files_to_copy = [
+    (['gulp'], 'bin'),
+    (['../Docs', '../Examples', '../Libraries', '../Utils'], ''),
+]
+
+sanity_check_paths = {
+    'files': ['bin/gulp'],
+    'dirs': ['Docs', 'Examples', 'Libraries', 'Utils'],
+}
+
+modextrapaths = {
+    'GULP_LIB': 'Libraries',
+    'GULP_DOC': 'Docs',
+    'GULP_EXAMPLES': 'Examples',
+    'GULP_UTILS': 'Utils',
+}
+
+moduleclass = 'chem'

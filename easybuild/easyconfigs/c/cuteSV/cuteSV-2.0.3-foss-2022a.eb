@@ -1,0 +1,47 @@
+easyblock = 'PythonBundle'
+
+name = 'cuteSV'
+version = '2.0.3'
+
+homepage = 'https://github.com/tjiangHIT/cuteSV'
+description = """cuteSV uses tailored methods to collect the signatures of various types of SVs
+ and employs a clustering-and-refinement method to analyze the signatures to implement sensitive SV detection."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('Pysam', '0.19.1'),
+    ('SciPy-bundle', '2022.05'),
+    ('Biopython', '1.79'),
+    ('PyVCF3', '1.0.3'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('cigar', '0.1.3', {
+        'checksums': ['5847f5e8968035b3a5b04dcfa879fb6c14dd3a42dce8994864806dcda8a4fcf2'],
+    }),
+    (name, version, {
+        'modulename': '%(name)s',
+        'patches': ['cuteSV-%(version)s_dep-fix.patch'],
+        'checksums': [
+            {'cuteSV-2.0.3.tar.gz': '79e03908990ca0089277eb7fb14f5ad77940030f0428aa50a609b41381cee089'},
+            {'cuteSV-2.0.3_dep-fix.patch': 'c8743e5bc376364a90548429b190f8926c6cdae4072b80e8aab9d23785233dd2'},
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cuteSV'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'from cuteSV.cuteSV_genotype import overlap_cover'",
+    "cuteSV --help",
+]
+
+moduleclass = 'bio'

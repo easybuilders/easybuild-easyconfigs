@@ -1,0 +1,46 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'ConfigureMake'
+
+name = 'ISA-L'
+version = '2.30.0'
+
+homepage = 'https://github.com/intel/isa-l'
+description = "Intelligent Storage Acceleration Library"
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+github_account = 'intel'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['bcf592c04fdfa19e723d2adf53d3e0f4efd5b956bb618fed54a1108d76a6eb56']
+
+builddependencies = [
+    ('Autotools', '20200321'),
+    ('binutils', '2.35'),
+    ('pkg-config', '0.29.2'),
+]
+
+dependencies = [('NASM', '2.15.05')]
+
+preconfigopts = 'autoreconf -i -f &&'
+
+runtest = 'check'
+
+_bins = ['bin/igzip']
+_includes = ['include/%(namelower)s.h']
+_includes += ['include/isa-l/%s.h' % i for i in ['crc64', 'crc', 'erasure_code', 'gf_vect_mul', 'igzip_lib',
+                                                 'mem_routines', 'raid', 'test', 'types']]
+_libs = ['lib/libisal.%s' % l for l in ['a', 'la', SHLIB_EXT]]
+
+sanity_check_paths = {
+    'files': _bins + _includes + _libs,
+    'dirs': ['bin', 'include', 'lib', 'share'],
+}
+
+sanity_check_commands = [
+    "igzip --help",
+    "igzip --version",
+]
+
+moduleclass = 'lib'

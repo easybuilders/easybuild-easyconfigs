@@ -1,0 +1,41 @@
+# Thomas Hoffmann, EMLB Heidelberg, structures-it@embl.de, 2021/10
+# EricDeveaud, 050e84f993e4de05b6aede7ea2e189b10e335d0e: allow to run amber_minimize.py on CPU (default) or GPU
+diff -ru alphafold-2.0.1/alphafold/relax/amber_minimize.py alphafold_relax_gpu/alphafold/relax/amber_minimize.py
+--- alphafold-2.0.1/alphafold/relax/amber_minimize.py	2021-09-10 14:34:22.000000000 +0200
++++ alphafold_relax_gpu/alphafold/relax/amber_minimize.py	2021-10-15 16:01:51.702378793 +0200
+@@ -15,6 +15,7 @@
+ """Restrained Amber Minimization of a structure."""
+ 
+ import io
++import os
+ import time
+ from typing import Collection, Optional, Sequence
+ 
+@@ -35,6 +36,8 @@
+ ENERGY = unit.kilocalories_per_mole
+ LENGTH = unit.angstroms
+ 
++#--- allow to run ambermininmize on selected platform CPU//GPU
++OPENMM_PLATFORM=os.environ.get('OPENMM_RELAX', 'CPU')
+ 
+ def will_restrain(atom: openmm_app.Atom, rset: str) -> bool:
+   """Returns True if the atom will be restrained by the given restraint set."""
+@@ -90,7 +93,7 @@
+     _add_restraints(system, pdb, stiffness, restraint_set, exclude_residues)
+ 
+   integrator = openmm.LangevinIntegrator(0, 0.01, 0.0)
+-  platform = openmm.Platform.getPlatformByName("CPU")
++  platform = openmm.Platform.getPlatformByName(OPENMM_PLATFORM)
+   simulation = openmm_app.Simulation(
+       pdb.topology, system, integrator, platform)
+   simulation.context.setPositions(pdb.positions)
+@@ -530,7 +533,7 @@
+   simulation = openmm_app.Simulation(openmm_pdbs[0].topology,
+                                      system,
+                                      openmm.LangevinIntegrator(0, 0.01, 0.0),
+-                                     openmm.Platform.getPlatformByName("CPU"))
++                                     openmm.Platform.getPlatformByName(OPENMM_PLATFORM))
+   energies = []
+   for pdb in openmm_pdbs:
+     try:
+Only in alphafold_relax_gpu: .git
