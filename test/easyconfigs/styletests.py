@@ -1,5 +1,5 @@
 ##
-# Copyright 2016-2021 Ghent University
+# Copyright 2016-2023 Ghent University
 #
 # This file is part of EasyBuild,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,9 +29,10 @@ Style tests for easyconfig files. Uses pep8.
 """
 
 import glob
-from unittest import TestCase, TestLoader, main, skipIf
+from unittest import TestLoader, main, skipIf
 
 from easybuild.base import fancylogger
+from easybuild.base.testing import TestCase
 from easybuild.framework.easyconfig.tools import get_paths_for
 from easybuild.framework.easyconfig.style import check_easyconfigs_style
 
@@ -52,9 +53,19 @@ class StyleTest(TestCase):
         specs = glob.glob('%s/*/*/*.eb' % easyconfigs_path)
         specs = sorted(specs)
 
+        self.mock_stderr(True)
+        self.mock_stdout(True)
         result = check_easyconfigs_style(specs)
+        stderr, stdout = self.get_stderr(), self.get_stdout()
+        self.mock_stderr(False)
+        self.mock_stdout(False)
 
-        self.assertEqual(result, 0, "Found code style errors (and/or warnings): %s" % result)
+        error_msg = '\n'.join([
+            "There shouldn't be any code style errors (and/or warnings), found %d:" % result,
+            stdout,
+            stderr,
+        ])
+        self.assertEqual(result, 0, error_msg)
 
 
 def suite(loader=None):

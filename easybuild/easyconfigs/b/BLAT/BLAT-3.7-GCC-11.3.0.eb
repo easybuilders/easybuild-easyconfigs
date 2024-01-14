@@ -1,0 +1,55 @@
+##
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+#
+# Copyright:: Copyright 2012-2013 The Cyprus Institute
+# Authors::   Andreas Panteli <a.panteli@cyi.ac.cy>, Thekla Loizou <t.loizou@cyi.ac.cy>
+# Contributors:: Alex Domingo (Vrije Universiteit Brussel)
+# License::   MIT/GPL
+#
+##
+
+name = 'BLAT'
+version = '3.7'
+
+homepage = 'https://genome.ucsc.edu/goldenPath/help/blatSpec.html'
+description = """BLAT on DNA is designed to quickly find sequences of 95% and
+greater similarity of length 25 bases or more."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://genome-test.gi.ucsc.edu/~kent/src/']
+sources = ['%%(namelower)sSrc%s.zip' % ''.join(version.split('.'))]
+patches = ['BLAT-%(version)s_mend-tests.patch']
+checksums = [
+    {'blatSrc37.zip': '88ee2b272d42ab77687c61d200b11f1d58443951069feb7e10226a2509f84cf2'},
+    {'BLAT-3.7_mend-tests.patch': '1f42c7fadf7676a5cc3a2016f70089c3541aa1d53816cf86072682c44cf311a6'},
+]
+
+# BLAT relies on a bundled old version of HTSlib. We use the bundled library
+# because it is statically linked and the newer HTSlib in this toolchain is not
+# API compatible with it.
+dependencies = [
+    ('freetype', '2.12.1'),
+    ('libiconv', '1.17'),
+    ('libpng', '1.6.37'),
+    ('MariaDB', '10.9.3'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+    ('util-linux', '2.38'),
+    ('zlib', '1.2.12'),
+]
+
+pretestopts = 'PATH="%(builddir)s/blatSrc/bin:$PATH"'
+runtest = 'test'
+
+_blat_bins = ["blat", "faToNib", "faToTwoBit", "gfClient", "gfServer", "nibFrag", "pslPretty",
+              "pslReps", "pslSort", "twoBitInfo", "twoBitToFa"]
+
+files_to_copy = [(["bin/%s" % x for x in _blat_bins] + ["webBlat/webBlat"], 'bin')]
+
+sanity_check_paths = {
+    'files': ["bin/%s" % x for x in _blat_bins + ["webBlat"]],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

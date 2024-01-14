@@ -1,0 +1,44 @@
+# This file is an EasyBuild reciPY as per https://easybuilders.github.io/easybuild/
+# Author: Pablo Escobar Lopez
+# sciCORE - University of Basel
+# SIB Swiss Institute of Bioinformatics
+# Updated: Denis Kristak
+
+easyblock = 'CmdCp'
+
+name = 'ARAGORN'
+version = '1.2.41'
+
+homepage = 'http://www.ansikte.se/ARAGORN/'
+description = "a program to detect tRNA genes and tmRNA genes in nucleotide sequences"
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['http://www.ansikte.se/ARAGORN/Downloads/']
+sources = [
+    {'filename': '%(namelower)s%(version)s.c', 'extract_cmd': 'cp %s aragorn.c'},
+    {'download_filename': 'aragorn.1', 'filename': 'aragorn-%(version)s.man', 'extract_cmd': 'cp %s aragorn.1'}
+]
+checksums = [
+    '92a31cc5c0b0ad16d4d7b01991989b775f07d2815df135fe6e3eab88f5e97f4a',  # aragorn1.2.41.c
+    '6e30f6d9da644197064744f033176969e77855964ed8d50ea00c38a3aea2c92e',  # aragorn.1
+]
+
+cmds_map = [
+    (".*.c", "$CC $CFLAGS -o aragorn aragorn.c"),
+    (".*.1", "mkdir -p share/man/man1 && cp aragorn.1 share/man/man1"),  # mapping command to manpage srcfile
+]
+
+files_to_copy = [
+    (['aragorn'], 'bin'),
+    'share',
+]
+
+sanity_check_paths = {
+    'files': ['bin/aragorn'],
+    'dirs': ['share/man'],
+}
+
+sanity_check_commands = ['aragorn --help']
+
+moduleclass = 'bio'

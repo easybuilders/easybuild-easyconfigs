@@ -1,0 +1,97 @@
+easyblock = "PythonBundle"
+
+name = 'LayoutParser'
+version = '0.3.4'
+
+homepage = 'https://layout-parser.github.io/'
+description = "A Unified Toolkit for Deep Learning Based Document Image Analysis"
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('OpenCV', '4.6.0', '-contrib'),
+    ('Pillow', '9.1.1'),
+    ('PyYAML', '6.0'),
+    ('ImageMagick', '7.1.0-37'),  # needed by Wand
+    ('poppler', '22.12.0'),  # needed by pdf2image
+    ('protobuf-python', '3.19.4'),  # needed by google-api-core
+    ('pycocotools', '2.0.6'),  # needed by effdet
+    ('PyTorch-Image-Models', '0.9.2'),  # needed by effdet
+    ('tqdm', '4.64.0'),  # needed by iopath
+    ('torchvision', '0.13.1'),  # layoutmodels extra
+]
+
+use_pip = True
+
+# remove opencv-python from requirements: since pip is not aware of cv2 in OpenCV from EB
+_del_opencv_req = "sed -i '/opencv-python/d' setup.py &&"
+# relax dependency on PyTorch of effdet
+_relax_torch_req = "sed -i 's/torch >= 1.12.1/torch >= 1.12.0/' setup.py &&"
+
+exts_list = [
+    ('portalocker', '2.7.0', {
+        'checksums': ['032e81d534a88ec1736d03f780ba073f047a06c478b06e2937486f334e955c51'],
+    }),
+    ('iopath', '0.1.10', {
+        'checksums': ['3311c16a4d9137223e20f141655759933e1eda24f8bff166af834af3c645ef01'],
+    }),
+    ('Wand', '0.6.11', {
+        'checksums': ['b661700da9f8f1e931e52726e4fc643a565b9514f5883d41b773e3c37c9fa995'],
+    }),
+    ('pdfminer.six', '20221105', {
+        'modulename': 'pdfminer',
+        'checksums': ['8448ab7b939d18b64820478ecac5394f482d7a79f5f7eaa7703c6c959c175e1d'],
+        'use_pip_extras': 'image',
+    }),
+    ('pdfplumber', '0.9.0', {
+        'checksums': ['a43a213e125ed72b2358c0d3428f9b72f83939109ec33b77ef9325eeab9846f0'],
+    }),
+    ('pdf2image', '1.16.3', {
+        'checksums': ['74208810c2cef4d9e347769b8e62a52303982ddb4f2dfd744c7ab4b940ae287e'],
+    }),
+    ('antlr4-python3-runtime', '4.9.3', {
+        'modulename': 'antlr4',
+        'checksums': ['f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b'],
+    }),
+    ('omegaconf', '2.3.0', {
+        'checksums': ['d5d4b6d29955cc50ad50c46dc269bcd92c6e00f5f90d23ab5fee7bfca4ba4cc7'],
+    }),
+    ('cachetools', '4.2.4', {
+        'checksums': ['89ea6f1b638d5a73a4f9226be57ac5e4f399d22770b92355f92dcb0f7f001693'],
+    }),
+    ('google-auth', '1.35.0', {
+        'modulename': 'google.auth',
+        'checksums': ['b7033be9028c188ee30200b204ea00ed82ea1162e8ac1df4aa6ded19a191d88e'],
+    }),
+    ('googleapis-common-protos', '1.56.4', {
+        'modulename': 'google.api',
+        'checksums': ['c25873c47279387cfdcbdafa36149887901d36202cb645a0e4f29686bf6e4417'],
+    }),
+    ('google-api-core', '1.32.0', {
+        'modulename': 'google.api_core',
+        'checksums': ['101c3c4cf8e7d53badd1dbca7071464353a04b17319a3dbb3a94eaa893da091c'],
+        'use_pip_extras': 'grpc',
+    }),
+    ('google-cloud-vision', '1.0.2', {
+        'modulename': 'google.cloud.vision',
+        'checksums': ['0c349f771ee49027781e05df2efa6fc1a8b4f7d1d74ab57675f9151a04b01d6f'],
+    }),
+    ('pytesseract', '0.3.8', {
+        'checksums': ['6148a01e4375760862e8f56ea718e22b5d13b281454df46ea8dac9807793fc5a'],
+    }),
+    ('effdet', '0.4.1', {
+        'checksums': ['ac5589fd304a5650c201986b2ef5f8e10c111093a71b1c49fa6b8817710812b5'],
+        'preinstallopts': _relax_torch_req,
+    }),
+    ('layoutparser', version, {
+        'checksums': ['0dfb2194c36a5ad1075b8310f3cbc280c00306d1758cef127d20283f7ce085ea'],
+        'preinstallopts': _del_opencv_req,
+        'use_pip_extras': 'ocr,gcv,tesseract,layoutmodels,effdet',
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'tools'

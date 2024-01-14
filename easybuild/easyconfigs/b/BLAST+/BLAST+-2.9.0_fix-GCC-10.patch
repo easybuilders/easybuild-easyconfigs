@@ -1,0 +1,26 @@
+fix compiler detection for GCC 10.x & newer
+copied from BLAST+ 2.12.0 configure script
+--- ncbi-blast-2.9.0+-src/c++/src/build-system/configure.orig	2022-02-03 17:57:09.154118530 +0100
++++ ncbi-blast-2.9.0+-src/c++/src/build-system/configure	2022-02-03 17:58:32.367608563 +0100
+@@ -8076,16 +8076,15 @@
+ case "$compiler:$ncbi_compiler_ver" in
+     WorkShop*:?.?? )   ncbi_compiler_sed='s/\([0-9]\)\.\([0-9][0-9]\)/\1\20/' ;;
+     WorkShop*:[6-9].?) ncbi_compiler_sed='s/\([0-9]\)\.\([0-9\)/\10\20/' ;;
+-    ICC:??.? )  ncbi_compiler_sed='s/\([0-9][0-9]\)\.\([0-9]\)/\1\20/' ;;
+-    ICC:??.?.? | \
+-    ICC:??.?.?.* ) ncbi_compiler_sed='s/\([0-9][0-9]\)\.\([0-9]\)\.\([0-9]\).*/\1\2\3/' ;;
++    [GI]CC:??.? ) ncbi_compiler_sed='s/\([0-9][0-9]\)\.\([0-9]\)/\1\20/' ;;
++    GCC:??.?.? | ICC:??.?.? | ICC:??.?.?.* | *Clang:??.?.? )
++        ncbi_compiler_sed='s/\([0-9][0-9]\)\.\([0-9]\)\.\([0-9]\).*/\1\2\3/' ;;
++    GCC:?? )    ncbi_compiler_sed='s/\([0-9][0-9]\)/\100/' ;;
+     *:?.?.?)    ncbi_compiler_sed='s/\([0-9]\)\.\([0-9]\)\.\([0-9]\)/\1\2\3/' ;;
+     *:?.??*)    ncbi_compiler_sed='s/\([0-9]\)\.\([0-9][0-9]\).*/\1\2/' ;;
+     *:?.?)      ncbi_compiler_sed='s/\([0-9]\).\([0-9]\)/\1\20/' ;;
+     *:?)        ncbi_compiler_sed='s/\([0-9]\)/\100/' ;;
+-    *)    { { echo "$as_me:$LINENO: error: Do not know how to parse $compiler version number $ncbi_compiler_ver" >&5
+-echo "$as_me: error: Do not know how to parse $compiler version number $ncbi_compiler_ver" >&2;}
+-   { (exit 1); exit 1; }; } ;;
++    *)    as_fn_error $? "Do not know how to parse $compiler version number $ncbi_compiler_ver" "$LINENO" 5 ;;
+ esac
+ ncbi_compiler_ver=`echo $ncbi_compiler_ver | sed "$ncbi_compiler_sed"`
+ compiler_version=$ncbi_compiler_ver

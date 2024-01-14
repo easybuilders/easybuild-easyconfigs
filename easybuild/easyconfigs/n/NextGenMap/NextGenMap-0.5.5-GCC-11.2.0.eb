@@ -1,0 +1,53 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+
+easyblock = 'CMakeMake'
+
+name = 'NextGenMap'
+version = '0.5.5'
+
+homepage = 'http://cibiv.github.io/%(name)s/'
+description = """NextGenMap is a flexible highly sensitive short read mapping tool that
+ handles much higher mismatch rates than comparable algorithms while still outperforming
+ them in terms of runtime."""
+
+toolchain = {'name': 'GCC', 'version': '11.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [' https://github.com/Cibiv/%(namelower)s/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['c205e6cb312d2f495106435f10fb446e6fb073dd1474f4f74ab5980ba9803661']
+
+builddependencies = [
+    ('CMake', '3.21.1'),
+]
+
+dependencies = [
+    ('BamTools', '2.5.2'),
+    ('zlib', '1.2.11'),
+]
+
+skipsteps = ['install']
+
+preconfigopts = r"sed -i '/add_subdirectory.*\(bamtools\|zlib\).*/d' ../NextGenMap-%(version)s/CMakeLists.txt && "
+preconfigopts += "sed -i 's/BamTools-static/bamtools/g' ../NextGenMap-%(version)s/{src,utils}/CMakeLists.txt && "
+preconfigopts += "sed -i 's/zlibstatic/z/g' ../NextGenMap-%(version)s/{src,utils}/CMakeLists.txt && "
+
+buildopts = ' && cp -r ../%(name)s-%(version)s/bin/ngm-%(version)s/. %(installdir)s/bin/'
+
+postinstallcmds = [
+    # avoid hard overwriting of $LD_LIBRARY_PATH in ngm wrapper script
+    r"sed -i 's/\(LD_LIBRARY_PATH=[^ ]*\)\"/\1:$LD_LIBRARY_PATH\"/g' %(installdir)s/bin/ngm",
+    # fix execution permissions for ngm* binaries/scripts
+    "chmod a+x %(installdir)s/bin/ngm*",
+]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ngm', 'ngm-core', 'ngm-log', 'ngm-utils', 'oclTool']],
+    'dirs': ['bin/opencl']
+}
+
+sanity_check_commands = [
+    "ngm --help 2>&1 | grep 'Usage:[ ]*ngm'",
+]
+
+moduleclass = 'bio'

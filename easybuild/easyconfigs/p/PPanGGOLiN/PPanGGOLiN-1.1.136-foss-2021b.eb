@@ -1,0 +1,66 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'PythonBundle'
+
+name = 'PPanGGOLiN'
+version = '1.1.136'
+
+homepage = 'https://github.com/labgem/PPanGGOLiN'
+description = """
+PPanGGOLiN is a software suite used to create and manipulate prokaryotic
+pangenomes from a set of either genomic DNA sequences or provided genome annotations. It is designed
+to scale up to tens of thousands of genomes. It has the specificity to partition the pangenome using
+a statistical approach rather than using fixed thresholds which gives it the ability to work with low-quality
+data such as Metagenomic Assembled Genomes (MAGs) or Single-cell Amplified Genomes (SAGs) thus taking advantage
+of large scale environmental studies and letting users study the pangenome of uncultivable species.
+"""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('tqdm', '4.62.3'),
+    ('PyTables', '3.6.1'),
+    ('prodigal', '2.6.3'),
+    ('ARAGORN', '1.2.41'),
+    ('Infernal', '1.1.4'),
+    ('MMseqs2', '13-45111'),
+    ('networkx', '2.6.3'),
+    ('SciPy-bundle', '2021.10'),
+    ('plotly.py', '5.4.0'),
+    ('gmpy2', '2.1.2'),
+    ('MAFFT', '7.490', '-with-extensions'),
+    ('rpy2', '3.4.5'),
+]
+
+local_configopts = '-DBLAS_LIBRARIES=$EBROOTOPENBLAS/lib/libopenblas.%s ' % SHLIB_EXT
+local_configopts += '-DLAPACK_LIBRARIES=$EBROOTOPENBLAS/lib/libopenblas.%s ' % SHLIB_EXT
+
+use_pip = True
+sanity_pip_check = True
+
+exts_list = [
+    ('colorlover', '0.3.0', {
+        'checksums': ['b8fb7246ab46e1f5e6715649453c1762e245a515de5ff2d2b4aab7a6e67fa4e2'],
+    }),
+    (name, version, {
+        'configopts': local_configopts,
+        'patches': ['PPanGGOLiN-%(version)s_new_compiler_compatibility.patch'],
+        'source_urls': ['https://github.com/labgem/%(name)s/archive/refs/tags/'],
+        'sources': ['%(version)s.tar.gz'],
+        'checksums': [
+            '41f814f0b9331a8f0e04f09c698cef6200429990ce726339b5bb320bb7943a70',  # 1.1.136.tar.gz
+            # PPanGGOLiN-1.1.136_new_compiler_compatibility.patch
+            'ae4dadf2f7469e4c3d56b10236aa7812bfe6f5ed231676364f7c3f0d42e8facf',
+        ],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/ppanggolin'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = ['ppanggolin --help']
+
+moduleclass = 'bio'

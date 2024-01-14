@@ -1,0 +1,46 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'PythonPackage'
+
+name = 'torchtext'
+version = '0.9.1'
+local_pytorch_version = '1.8.1'
+local_python_suffix = '-Python-%(pyver)s'
+versionsuffix = '-PyTorch-%s' % local_pytorch_version
+
+homepage = 'https://github.com/pytorch/text'
+description = "Data loaders and abstractions for text and NLP"
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+# The tarball of the final v0.9.1 release is labelled as a release candidate
+# see https://github.com/pytorch/text/releases/tag/v0.9.1-rc1
+local_tarball_version = '%(version)s-rc1'
+
+# Sources are no longer available in PyPI, it only has wheels
+source_urls = ['https://github.com/pytorch/text/archive/']
+sources = ['v%s.tar.gz' % local_tarball_version]
+checksums = ['336397dfae5587e5dbdd2235020acb86f46af36c1c75b47186c67d0b19acee12']
+
+builddependencies = [
+    ('RE2', '2021-06-01'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),
+    ('SentencePiece', '0.1.96'),
+    ('tqdm', '4.56.2'),
+    ('PyTorch', local_pytorch_version),
+    ('double-conversion', '3.1.5'),
+]
+
+# Disable bundled libraries to use those from EB: RE2, SentencePiece
+preinstallopts = "sed -i '/third_party/d;/BuildExtension/d' setup.py &&"
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+moduleclass = 'tools'

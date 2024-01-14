@@ -1,0 +1,52 @@
+Created by Jasper Grimm (UoY)
+Switch to cc.find_library to search for libraries in LD_LIBRARY_PATH
+Add dependencies on fastahack, smithwaterman
+diff -Nru freebayes-1.3.5.orig/meson.build freebayes-1.3.5/meson.build
+--- freebayes-1.3.5.orig/meson.build	2021-05-13 15:56:53.000000000 +0100
++++ freebayes-1.3.5/meson.build	2021-05-13 16:00:25.000000000 +0100
+@@ -16,10 +16,12 @@
+ lzma_dep = dependency('liblzma')
+ thread_dep = dependency('threads')
+ 
+-htslib_dep = dependency('htslib', required : false)
+-tabixpp_dep = cc.find_library('tabixpp', required : false)
+-vcflib_dep = dependency('libvcflib', required : false)
+-seqlib_dep = dependency('libseqlib', required : false)
++htslib_dep = dependency('htslib', required : true)
++tabixpp_dep = cc.find_library('tabixpp', required : true)
++vcflib_dep = cc.find_library('libvcflib', required : true)
++seqlib_dep = cc.find_library('libseqlib', required : true)
++fastahack_dep = cc.find_library('libfastahack', required : true)
++sw_dep = cc.find_library('libsw', required : true)
+ 
+ # for setting a warning_level on the external code in custom_* targets below
+ warn_quiet = ['warning_level=0']
+@@ -191,7 +193,7 @@
+     include_directories : incdir,
+     cpp_args : extra_cpp_args,
+     dependencies : [zlib_dep, lzma_dep, thread_dep, htslib_dep, tabixpp_dep,
+-                    vcflib_dep, seqlib_dep],
++                    vcflib_dep, seqlib_dep, fastahack_dep, sw_dep],
+     install : false,
+     )
+ 
+@@ -200,7 +202,8 @@
+            include_directories : incdir,
+            cpp_args : extra_cpp_args,
+            dependencies: [zlib_dep, lzma_dep, thread_dep,
+-                          htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep],
++                          htslib_dep, tabixpp_dep, vcflib_dep, seqlib_dep,
++                          fastahack_dep, sw_dep],
+            link_with : freebayes_lib,
+            install: true
+           )
+@@ -210,7 +213,8 @@
+            include_directories : incdir,
+            cpp_args : extra_cpp_args,
+            dependencies: [zlib_dep, lzma_dep, thread_dep,
+-                          htslib_dep, vcflib_dep, seqlib_dep],
++                          htslib_dep, vcflib_dep, seqlib_dep, fastahack_dep,
++                          sw_dep],
+            link_with : freebayes_lib,
+            install: true
+           )

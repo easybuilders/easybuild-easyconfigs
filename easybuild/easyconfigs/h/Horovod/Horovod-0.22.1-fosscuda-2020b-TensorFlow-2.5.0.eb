@@ -1,0 +1,46 @@
+easyblock = 'PythonBundle'
+
+name = 'Horovod'
+version = '0.22.1'
+local_tf_version = '2.5.0'
+versionsuffix = '-TensorFlow-{}'.format(local_tf_version)
+
+homepage = 'https://github.com/uber/horovod'
+description = "Horovod is a distributed training framework for TensorFlow."
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('flatbuffers', '1.12.0'),
+]
+dependencies = [
+    ('Python', '3.8.6'),
+    ('PyYAML', '5.3.1'),
+    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
+    ('TensorFlow', local_tf_version),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+preinstallopts = 'HOROVOD_WITH_MPI=1 HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL '
+preinstallopts += 'HOROVOD_WITH_TENSORFLOW=1 HOROVOD_WITHOUT_PYTORCH=1 HOROVOD_WITHOUT_MXNET=1 '
+
+parallel = 1  # Bug in CMake causes a race condition on horovod_cuda_kernels_generated_cuda_kernels.cu.o.NVCC-depend
+
+exts_list = [
+    ('cloudpickle', '1.6.0', {
+        'checksums': ['9bc994f9e9447593bd0a45371f0e7ac7333710fcf64a4eb9834bf149f4ef2f32'],
+    }),
+    ('horovod', version, {
+        'checksums': ['c45bfcb9bd96852d79c62976eda12e9320b58b64f55bee3772877b3fc6243f2a'],
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/horovodrun'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+moduleclass = 'tools'

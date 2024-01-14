@@ -1,0 +1,38 @@
+easyblock = 'CMakeMake'
+
+name = 'ncbi-vdb'
+version = '3.0.5'
+
+homepage = 'https://github.com/ncbi/ncbi-vdb'
+description = """The SRA Toolkit and SDK from NCBI is a collection of tools and libraries for
+ using data in the INSDC Sequence Read Archives."""
+
+toolchain = {'name': 'gompi', 'version': '2022b'}
+
+github_account = 'ncbi'
+source_urls = [GITHUB_SOURCE]
+sources = [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}]
+checksums = ['a32672d7f76507a77ceb29f023855eaf5bf4d150ddd21b55c013b499f3b83735']
+
+builddependencies = [
+    ('Perl', '5.36.0', '-minimal'),
+    ('Python', '3.10.8', '-bare'),
+    ('CMake', '3.24.3'),
+]
+
+dependencies = [
+    ('HDF5', '1.14.0'),
+    ('libxml2', '2.10.3'),
+    ('bzip2', '1.0.8'),
+]
+
+configopts = "-DHDF5_INCDIR=$EBROOTHDF5/include -DHDF5_LIBDIR=$EBROOTHDF5/lib "
+configopts += "-DXML2_INCDIR=$EBROOTLIBXML2/include -DXML2_LIBDIR=$EBROOTLIBXML2/lib "
+
+sanity_check_paths = {
+    'files': ['include/ncbi/ncbi.h', 'include/ncbi/vdb-blast.h'] +
+             [('lib/libncbi-%s.%s' % (k, e)) for k in ['vdb', 'wvdb'] for e in ['a', SHLIB_EXT]],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

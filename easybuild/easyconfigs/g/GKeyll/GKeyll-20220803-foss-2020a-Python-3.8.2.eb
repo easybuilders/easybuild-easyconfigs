@@ -1,0 +1,50 @@
+# Author J. Sassmannshause (Imperial College London/UK)
+
+easyblock = 'Waf'
+
+name = 'GKeyll'
+version = '20220803'
+local_commit = '4c3e568'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://gkeyll.readthedocs.io'
+description = """Gkeyll v2.0 (pronounced as in the book “The Strange Case of Dr. Jekyll 
+and Mr. Hyde”) is a computational plasma physics code mostly written in C/C++ and LuaJIT. 
+Gkeyll contains solvers for gyrokinetic equations, Vlasov-Maxwell equations, and 
+multi-fluid equations. Gkeyll contains ab-initio and novel implementations of a number 
+of algorithms, and perhaps is unique in using a JIT compiled typeless dynamic language 
+for as its main implementation language."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'usempi': True}
+
+github_account = 'ammarhakim'
+source_urls = ['https://github.com/ammarhakim/gkyl/archive']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+checksums = ['075867b602e3a50c13e72f7f0dc680c3591467ce61debd3c9a11f3e5dced0503']
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('ADIOS', '20210804', versionsuffix),
+    ('Eigen', '3.3.7'),
+    ('LuaJIT2-OpenResty', '2.1-20220411'),
+]
+
+configopts = '--luajit-inc-dir=$EBROOTLUAJIT2MINOPENRESTY/include/luajit-2.1/ '
+configopts += '--extra-link-libs=" hdf5 mxml bz2 lz4 z zfp gomp" '
+
+# Seems to be required as else all cores are being used
+buildopts = ' -j %(parallel)s'
+
+sanity_check_paths = {
+    'files': ['bin/gkyl', 'bin/gkyl', 'lib/libcomm.%s' % SHLIB_EXT,
+              'lib/libdatastruct.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "gkyl -version",
+    "ctest_Range -?",
+]
+
+moduleclass = 'phys'
