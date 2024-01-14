@@ -1,0 +1,72 @@
+easyblock = 'MakeCp'
+
+name = 'pyWannier90'
+local_commit = '8354e91'
+version = '2021-12-07'
+
+homepage = 'https://github.com/hungpham2017/pyWannier90'
+description = "A Wannier90 Python interface for VASP and PySCF"
+
+toolchain = {'name': 'gomkl', 'version': '2021a'}
+
+local_wannier90_version = '3.1.0'
+
+sources = [
+    {
+        'source_urls': ['https://github.com/hungpham2017/pyWannier90/archive/'],
+        'download_filename': '%s.tar.gz' % local_commit,
+        'filename': SOURCE_TAR_GZ
+    },
+    {
+        'source_urls': ['https://github.com/wannier-developers/wannier90/archive/'],
+        'download_filename': 'v%s.tar.gz' % local_wannier90_version,
+        'filename': 'Wannier90-%s.tar.gz' % local_wannier90_version,
+    },
+]
+checksums = [
+    {'pyWannier90-2021-12-07.tar.gz': '27233891fe39e0f45914dfa756b28319ebd4c3b5ec2124f4c9d1d3816fc0887e'},
+    {'Wannier90-3.1.0.tar.gz': '40651a9832eb93dec20a8360dd535262c261c34e13c41b6755fa6915c936b254'},
+]
+
+builddependencies = [
+    ('pybind11', '2.6.2'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('SciPy-bundle', '2021.05'),
+    ('PySCF', '1.7.6'),
+]
+
+local_wannier90_make = 'make -j %(parallel)s F90="$F90" FCOPTS="$FFLAGS -fPIC" LDOPTS="$FFLAGS" '
+local_wannier90_make += 'LIBDIR="$LAPACK_LIB_DIR" LIBS="$LIBLAPACK"'
+
+prebuildopts = "cd %%(builddir)s/wannier90-%s && touch make.inc && " % local_wannier90_version
+prebuildopts += "cp %(builddir)s/pyWannier90-*/src/wannier_lib.F90 src/wannier_lib.F90 && "
+prebuildopts += local_wannier90_make + " && "
+prebuildopts += local_wannier90_make + " lib && "
+prebuildopts += "cd %(builddir)s/pyWannier90-*/src && pwd && "
+
+buildopts = 'CPP="$CXX" LIBS="-L%%(builddir)s/wannier90-%s $LIBLAPACK -lwannier" ' % local_wannier90_version
+# with Intel compilers, use libwannier90_intel as make target
+# with GCC compilers, use libwannier90_gf as make target
+buildopts += "libwannier90_gf && "
+buildopts += """sed -i "s@W90LIB = .*@W90LIB = '%(installdir)s'@g" pywannier90.py"""
+
+files_to_copy = [
+    (['src/pywannier90.py', 'src/libwannier90.*.%s' % SHLIB_EXT], 'lib/python%(pyshortver)s/site-packages'),
+]
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "python -c 'import libwannier90'",
+    "python -c 'import pywannier90'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'chem'

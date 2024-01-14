@@ -1,0 +1,49 @@
+# author: Denis Kristak (INUITS)
+easyblock = 'Binary'
+
+name = 'CodAn'
+version = '1.2'
+
+homepage = 'https://github.com/pedronachtigall/CodAn'
+description = """CodAn (Coding sequence Annotator) is a computational tool designed to characterize the CDS and UTR
+regions on transcripts from any Eukaryote species."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+source_urls = ['https://github.com/pedronachtigall/CodAn/archive']
+sources = ['v%(version)s.tar.gz']
+checksums = ['34962ac67dc94da0bff6e032568e38388726bf1d7efceed462d6b7c841b087b7']
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Biopython', '1.79'),
+    ('BioPerl', '1.7.8'),
+    ('Perl', '5.34.0'),
+]
+
+extract_sources = True
+
+install_cmd = "cp -r %(builddir)s/* %(installdir)s/ && "
+install_cmd += "tar -xf %(installdir)s/%(name)s-%(version)s/CodAn.tar.gz && "
+install_cmd += "mkdir %(installdir)s/bin && "
+install_cmd += "mv %(installdir)s/%(name)s-%(version)s/bin/* %(installdir)s/bin && "
+install_cmd += "chmod u+rwx,go+rx %(installdir)s/bin/* "
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s.py'],
+    'dirs': [],
+}
+
+local_sanity_check_cmd = "mkdir %(builddir)s/eb_test && "
+local_sanity_check_cmd += "cp %(installdir)s/%(name)s-%(version)s/models/VERT_full.zip %(builddir)s/eb_test && "
+local_sanity_check_cmd += "cp %(installdir)s/%(name)s-%(version)s/tutorial/transcripts.fa %(builddir)s/eb_test && "
+local_sanity_check_cmd += "cd %(builddir)s/eb_test/ && "
+local_sanity_check_cmd += "unzip VERT_full.zip && "
+local_sanity_check_cmd += "codan.py -t transcripts.fa -m VERT_full | grep 'prediction finished!'"
+
+sanity_check_commands = [
+    "%(namelower)s.py --help",
+    local_sanity_check_cmd,
+]
+
+moduleclass = 'bio'

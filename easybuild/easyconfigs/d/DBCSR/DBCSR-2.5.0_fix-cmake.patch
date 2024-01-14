@@ -1,0 +1,62 @@
+Fix finding of BLAS/LAPACK libraries and add libxsmm include directory
+Patch by Simon Branford (University of Birmingham)
+--- cmake/FindBLAS.cmake.orig	2023-01-16 20:06:01.198294000 +0000
++++ cmake/FindBLAS.cmake	2023-01-16 20:15:19.521389856 +0000
+@@ -536,6 +536,22 @@
+   endif()
+ endif()
+ 
++# FlexiBLAS (https://github.com/mpimd-csc/flexiblas)
++if (BLA_VENDOR STREQUAL "FlexiBLAS" OR BLA_VENDOR STREQUAL "All")
++  if(NOT BLAS_LIBRARIES)
++    check_blas_libraries(
++      BLAS_LIBRARIES
++      BLAS
++      sgemm
++      ""
++      "flexiblas"
++      ""
++      ""
++      ""
++    )
++  endif()
++endif ()
++
+ # OpenBLAS? (http://www.openblas.net)
+ if(BLA_VENDOR STREQUAL "OpenBLAS" OR BLA_VENDOR STREQUAL "All")
+   if(NOT BLAS_LIBRARIES)
+--- cmake/FindLAPACK.cmake.orig	2023-01-16 20:05:47.292543000 +0000
++++ cmake/FindLAPACK.cmake	2023-01-16 20:16:11.193167061 +0000
+@@ -346,6 +346,22 @@
+     endif()
+   endif()
+ 
++  if(BLA_VENDOR STREQUAL "FlexiBLAS" OR BLA_VENDOR STREQUAL "All")
++    if(NOT LAPACK_LIBRARIES)
++      check_lapack_libraries(
++        LAPACK_LIBRARIES
++        LAPACK
++        cheev
++        ""
++        "flexiblas"
++        ""
++        ""
++        ""
++        "${BLAS_LIBRARIES}"
++      )
++    endif()
++  endif()
++
+   # OpenBLAS? (http://www.openblas.net)
+   if(BLA_VENDOR STREQUAL "OpenBLAS" OR BLA_VENDOR STREQUAL "All")
+     if(NOT LAPACK_LIBRARIES)
+--- CMakeLists.txt.orig	2023-01-16 20:08:49.531879436 +0000
++++ CMakeLists.txt	2023-01-16 20:08:25.968847202 +0000
+@@ -158,6 +158,7 @@
+     pkg_check_modules(LIBXSMM REQUIRED IMPORTED_TARGET GLOBAL libxsmmf)
+   endif ()
+ endif ()
++include_directories("$ENV{EBROOTLIBXSMM}/include")
+ 
+ # =================================== BLAS & LAPACK, PkgConfig
+ find_package(LAPACK REQUIRED) # needed for some of the integrated test routines,

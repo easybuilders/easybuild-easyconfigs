@@ -1,0 +1,72 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '3.5.1'
+
+homepage = 'https://github.com/eth-cscs/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+req_py_majver = 3
+req_py_minver = 6
+
+use_pip = True
+
+# bump hardcoded importlib-metadata version to more recent version, only require it with Python < 3.8
+local_preinstallopts = r"""sed -i "s/\(importlib.*\)==.*/\1==3.10.0; python_version < '3.8'/g" requirements.txt && """
+# need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing packages
+local_preinstallopts += "export PATH=%(installdir)s/bin:$PATH && "
+# use bootstrap script to install required Python packages
+local_preinstallopts += "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && "
+
+exts_list = [
+    ('pip', '21.0.1', {
+        'use_pip': False,
+        'checksums': ['99bbde183ec5ec037318e774b0d8ae0a64352fe53b2c7fd630be1d07e94f41e5'],
+    }),
+    ('wheel', '0.36.2', {
+        'checksums': ['e11eefd162658ea59a60a0f6c7d493a7190ea4b9a85e335b33489d9f17e0245e'],
+    }),
+    ('setuptools', '54.2.0', {
+        'source_tmpl': 'setuptools-%(version)s.tar.gz',
+        'checksums': ['aa9c24fb83a9116b8d425e53bec24c7bfdbffc313c2159f9ed036d4a6dd32d7d'],
+    }),
+    ('reframe', version, {
+        'preinstallopts': local_preinstallopts,
+        # install usign GitHub sources, which includes bootstrap.sh script
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/eth-cscs/reframe/archive/'],
+        'checksums': ['656ac4c5cddd2af3fc358a7782b0a57c86d61adaeec99181ab7e1ddc630427b7'],
+    }),
+]
+
+postinstallcmds = [
+    'cp -r tutorials %(installdir)s',
+    'mkdir -p %(installdir)s/share/man/man1 %(installdir)s/share/man/man8',
+    'cp docs/man/man1/reframe.1 %(installdir)s/share/man/man1',
+    'cp docs/man/man8/reframe.settings.8 %(installdir)s/share/man/man8',
+    'cp -r share/completions %(installdir)s/share/completions'
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe', 'share/man/man1/reframe.1',
+              'share/man/man8/reframe.settings.8',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['lib', 'tutorials', 'external']
+}
+
+sanity_check_commands = ['reframe -V']
+
+sanity_pip_check = True
+
+modextrapaths = {
+    # bootstrap script installs required dependencies to 'external' subdirectory
+    'PYTHONPATH': 'external',
+}
+
+moduleclass = 'devel'

@@ -1,0 +1,51 @@
+easyblock = 'PackedBinary'
+
+name = 'Fiji'
+version = '20201104-1356'
+
+homepage = 'https://fiji.sc/'
+description = """Fiji is an image processing package—a 'batteries-included' distribution of
+ ImageJ, bundling a lot of plugins which facilitate scientific image analysis.
+This release is based on ImageJ-2.1.0 and Fiji-2.1.1"""
+
+toolchain = SYSTEM
+
+source_urls = ['https://downloads.imagej.net/%(namelower)s/archive/%(version)s']
+sources = [{
+    'download_filename': '%(namelower)s-nojre.tar.gz',
+    'filename': '%(namelower)s-nojre-%(version)s.tar.gz',
+}]
+checksums = ['ea60c212f0c123c2e947f0171b3a3ec83c38f0a6bd4c2bf2d5a5c53ba5e464cb']
+
+dependencies = [('Java', '1.8', '', SYSTEM)]
+
+postinstallcmds = [
+    # Remove binaries for other platforms
+    'rm %(installdir)s/{ImageJ-win32.exe,ImageJ-win64.exe}',
+    # Enable any update site (edit existing site with same parameters to enable it)
+    # Full list at https://imagej.github.io/list-of-update-sites/
+    '%(installdir)s/ImageJ-linux64 --headless --update edit-update-site "ImageScience"'
+    ' https://sites.imagej.net/ImageScience/',
+    '%(installdir)s/ImageJ-linux64 --headless --update edit-update-site "3D ImageJ Suite"'
+    ' https://sites.imagej.net/Tboudier/',
+    '%(installdir)s/ImageJ-linux64 --headless --update edit-update-site "ilastik"'
+    ' https://sites.imagej.net/Ilastik/',
+    # Add a new update site
+    # '%(installdir)s/ImageJ-linux64 --headless --update add-update-site "New Name"'
+    # ' https://site.url/NewName/',
+    # Update the installation
+    '%(installdir)s/ImageJ-linux64 --headless --update update',
+]
+
+sanity_check_paths = {
+    'files': ['ImageJ-linux64'],
+    'dirs': [],
+}
+
+modloadmsg = """
+Additional plugins can be installed in your $HOME/.plugins folder or requested to user support
+Use ImageJ/Fiji in headless mode in your scripts with the command `ImageJ-linux64 --headless`
+More information at https://imagej.net/Headless
+"""
+
+moduleclass = 'vis'

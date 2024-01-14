@@ -1,0 +1,60 @@
+easyblock = 'MakeCp'
+
+name = 'NSS'
+version = '3.65'
+
+homepage = 'https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS'
+description = """Network Security Services (NSS) is a set of libraries designed to support cross-platform development
+ of security-enabled client and server applications."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://ftp.mozilla.org/pub/security/nss/releases/NSS_%(version_major)s_%(version_minor)s_RTM/src/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'NSS-3.39_pkgconfig.patch',
+    'NSS-3.65_CVE-2021-43527.patch',
+]
+checksums = [
+    '32170f6c188212a78bf9fdacffa2eeed0d564ef8faae63fd8ae971b208e8c637',  # nss-3.65.tar.gz
+    '5c4b55842e5afd1e8e67b90635f6474510b89242963c4ac2622d3e3da9062774',  # NSS-3.39_pkgconfig.patch
+    'b9ccfdeb692f703e40e83202366bbdea9ef9506003b368e8061fc1fa439ebbc3',  # NSS-3.65_CVE-2021-43527.patch
+]
+
+builddependencies = [('binutils', '2.36.1')]
+
+dependencies = [
+    ('NSPR', '4.30'),
+    ('zlib', '1.2.11'),
+]
+
+# building in parallel fails
+parallel = 1
+
+# disable use of -Werror to work around compilation errors with newer glibc versions,
+# see also https://sourceware.org/bugzilla/show_bug.cgi?id=27476
+buildopts = "NSS_ENABLE_WERROR=0 "
+# fix for not being able to find header files
+buildopts += 'BUILD_OPT=1 USE_64=1 CPATH="$EBROOTNSPR/include/nspr:$CPATH" '
+# fix c standard causing missing functions
+buildopts += 'OS_REL_CFLAGS="-D_XOPEN_SOURCE " && '
+# also install pkgconfig file (see patch)
+buildopts += "cd config && make PREFIX=%(installdir)s BUILD_OPT=1 USE_64=1 && cd -"
+# optional testsuite (takes a long time)
+# buildopts += " && cd %(builddir)s/%(namelower)s-%(version)s/%(namelower)s/tests && BUILD_OPT=1 USE_64=1 ./all.sh "
+
+files_to_copy = ['../dist/Linux*.OBJ/*', (['../dist/public/*'], 'include')]
+
+sanity_check_paths = {
+    'files': ['bin/nss-config', 'bin/multinit', 'lib/libnss.a'],
+    'dirs': ['include/dbm', 'include/nss'],
+}
+
+sanity_check_commands = [
+    "multinit --help",
+    "nss-config --version",
+]
+
+modextrapaths = {'CPATH': 'include/nss'}
+
+moduleclass = 'lib'

@@ -1,0 +1,45 @@
+# Author: Jasper Grimm
+
+easyblock = 'ConfigureMake'
+
+name = 'MbedTLS'
+version = '2.26.0'
+
+homepage = 'https://tls.mbed.org/'
+description = "An open source, portable, easy to use, readable and flexible SSL library."
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+github_account = 'ARMmbed'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['37949e823c7e1f6695fc56858578df355da0770c284b1c1304cfc8b396d539cd']
+
+builddependencies = [
+    ('binutils', '2.35'),
+    # Perl, Python only needed for test suite
+    ('Python', '3.8.6'),
+    ('Perl', '5.32.0'),
+]
+
+skipsteps = ['configure']
+
+buildopts = 'SHARED=ON PYTHON=python'
+
+runtest = 'check'
+
+installopts = 'DESTDIR=%(installdir)s'
+
+local_bins = ['bin/%%(namelower)s_%s' % x for x in ['aescrypt2', 'cert_app', 'ecdsa', 'ssl_client2']]
+local_libs = ['lib/libmbed%s.%s' % (x, SHLIB_EXT) for x in ['crypto', 'tls', 'x509']]
+
+sanity_check_paths = {
+    'files': local_bins + local_libs,
+    'dirs': [],
+}
+sanity_check_commands = [
+    "%(namelower)s_hello",
+    "%(namelower)s_selftest",
+]
+
+moduleclass = 'lib'

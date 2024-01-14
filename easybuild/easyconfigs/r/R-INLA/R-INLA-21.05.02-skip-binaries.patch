@@ -1,0 +1,105 @@
+# Adds links to dependencies built from source, rather than included binaries && fix scripts to work with easybuild
+# author: Denis Kristak
+diff --recursive --no-dereference -ub r-inla-Version_21.05.02_orig/build-user/linux/Makefile r-inla-Version_21.05.02/build-user/linux/Makefile
+--- r-inla-Version_21.05.02_orig/build-user/linux/Makefile	2021.05.02 14:42:11.000000000 +0200
++++ r-inla-Version_21.05.02/build-user/linux/Makefile	2021-04-12 12:54:14.608535633 +0200
+@@ -48,7 +48,7 @@
+ CXX=g++
+ FC=gfortran
+ LD=$(CXX)
+-ARGS = CC="$(CC)" CXX="$(CXX)" FC="$(FC)" LD="$(LD)"
++ARGS = CC="$(CC)" CXX="$(CXX)" FC="$(FC)" LD="$(LD)" $(EB_ARGS)
+ 
+ all :;
+ 	@(echo "";\
+@@ -152,7 +152,7 @@
+ 	@rm $(PREFIX)/bin/fmesher
+ 
+ inla :
+-	ln -sTf /usr/include $(INCPREFIX)/muParser
++	# ln -sTf /usr/include $(INCPREFIX)/muParser
+ 	$(MAKE) -C inla/inlaprog PREFIX=$(PREFIX) FLAGS="$(FLAGS_INLA)" $(ARGS) -k clean
+ 	$(MAKE) -C inla/inlaprog PREFIX=$(PREFIX) FLAGS="$(FLAGS_INLA)" $(ARGS)
+ 	$(MAKE) -C inla/inlaprog PREFIX=$(PREFIX) FLAGS="$(FLAGS_INLA)" $(ARGS) install
+diff --recursive --no-dereference -ub r-inla-Version_21.05.02_orig/fmesher/Makefile r-inla-Version_21.05.02/fmesher/Makefile
+--- r-inla-Version_21.05.02_orig/fmesher/Makefile	2021.05.02 14:42:11.000000000 +0200
++++ r-inla-Version_21.05.02/fmesher/Makefile	2021-04-14 10:15:20.159406939 +0200
+@@ -64,8 +64,7 @@
+ 	 done; \
+-	 $(INSTALL) -m755 $(FMESHER) $(PREFIX)/bin/$(FMESHER);\
++	 $(INSTALL) -m755 $(FMESHER) $(PREFIX)/bin/$(FMESHER);
+-	 test -d doc && \
+-	   $(RSYNC) -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/ $(PREFIX)/doc/fmesher/; \
+-	 $(RSYNC) -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete examples/ $(PREFIX)/doc/fmesher/examples/; 
++	#    $(RSYNC) -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/ $(PREFIX)/doc/fmesher/; \
++	#  $(RSYNC) -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete examples/ $(PREFIX)/doc/fmesher/examples/; 
+ 
+ clean:
+ 	make -C src clean
+diff --recursive --no-dereference -ub r-inla-Version_21.05.02_orig/gmrflib/Makefile r-inla-Version_21.05.02/gmrflib/Makefile
+--- r-inla-Version_21.05.02_orig/gmrflib/Makefile	2021.05.02 14:42:11.000000000 +0200
++++ r-inla-Version_21.05.02/gmrflib/Makefile	2021-04-14 10:09:44.854511197 +0200
+@@ -151,8 +151,8 @@
+ 	 done; \
+ 	 $(INSTALL) -m$$mode $(LIBNAME) $(PREFIX)/lib; \
+ 	 $(INSTALL) -m$$mode $(LIBNAMEG) $(PREFIX)/lib; \
+-	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/* $(PREFIX)/doc/GMRFLib; \
+-	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete sphere/* $(PREFIX)/doc/GMRFLib/data; \
++	#  rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/* $(PREFIX)/doc/GMRFLib; \
++	#  rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete sphere/* $(PREFIX)/doc/GMRFLib/data; \
+ 	 for header in $(HEADERS); do \
+ 	    $(INSTALL) -m$$mode $$header $(PREFIX)/include/GMRFLib; \
+ 	 done; \
+diff --recursive --no-dereference -ub r-inla-Version_21.05.02_orig/inlaprog/Makefile r-inla-Version_21.05.02/inlaprog/Makefile
+--- r-inla-Version_21.05.02_orig/inlaprog/Makefile	2021.05.02 14:42:11.000000000 +0200
++++ r-inla-Version_21.05.02/inlaprog/Makefile	2021-04-14 13:05:37.474015183 +0200
+@@ -9,13 +9,11 @@
+ 
+ ## *** chose either one of these; rgeneric requires the second version ***
+ ifeq ($(INLA_WITHOUT_LIBR),1)
+-  RLIB_INC = -DINLA_WITH_RMATH \
+-		-I/usr/include -I/usr/include/R -I/usr/share/R/include
+-  RLIB_LIB = -L/usr/lib -lRmath
++  RLIB_INC = -DINLA_WITH_RMATH
++  RLIB_LIB = -lRmath
+ else
+-  RLIB_INC = -DINLA_WITH_RMATH -DINLA_LIBR \
+-		-I/usr/include -I/usr/include/R -I/usr/share/R/include
+-  RLIB_LIB = -L/usr/lib -lRmath -L/usr/lib/R/lib -lR
++  RLIB_INC = -DINLA_WITH_RMATH -DINLA_LIBR
++  RLIB_LIB = -lRmath -lR
+ endif
+ 
+ # select compilers and optimized compiler-options, add -fopenmp or similar to use OpenMP
+@@ -32,7 +30,7 @@
+ 
+ # The external libraries to link with
+ EXTLIBS1 = -L$(PREFIX)/lib -lGMRFLib -L$(LEXTPREFIX)/lib 
+-EXTLIBS2 = -lgsl -ltaucs -lmetis -llapack -lblas -lgslcblas -lamd -lmuparser -lz -lgfortran -lcrypto
++EXTLIBS2 = -lgsl -ltaucs -lmetis -lscalapack -lopenblas -lgslcblas -lamd -lmuparser -lz -lgfortran -lcrypto # todo
+ EXTLIBS3 = -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -lm
+ 
+ ################################################################################
+@@ -89,8 +87,8 @@
+ 	 done; \
+ 	 install -m755 $(INLA) $(PREFIX)/bin/$(INLA);\
+ 	 install -m755 $(INLA) $(PREFIX)/bin/$(INLA)-$(VERSION);\
+-	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/* $(PREFIX)/doc/inla; \
+-	 rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete examples/* $(PREFIX)/doc/inla/examples; 
++	#  rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete doc/* $(PREFIX)/doc/inla; \
++	#  rsync -auv --no-p --no-o --no-g --chmod=ugo=rwX --delete examples/* $(PREFIX)/doc/inla/examples; 
+ 
+ src/TAGS : $(wildcard src/*.c src/*.h)
+ 	etags --output=$@ $^
+diff --recursive --no-dereference -ub r-inla-Version_21.05.02_orig/inlaprog/src/eval.c r-inla-Version_21.05.02/inlaprog/src/eval.c
+--- r-inla-Version_21.05.02_orig/inlaprog/src/eval.c	2021.05.02 14:42:11.000000000 +0200
++++ r-inla-Version_21.05.02/inlaprog/src/eval.c	2021-04-12 12:44:25.592540392 +0200
+@@ -41,7 +41,7 @@
+ #include <string.h>
+ #include <stdio.h>
+ 
+-#include <muParser/muParserDLL.h>
++#include <muParserDLL.h>
+ 
+ #include "GMRFLib/GMRFLib.h"
+ #include "inla.h"

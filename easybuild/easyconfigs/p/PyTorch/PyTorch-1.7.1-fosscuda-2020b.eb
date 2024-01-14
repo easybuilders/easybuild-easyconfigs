@@ -28,9 +28,9 @@ dependencies = [
     ('numactl', '2.0.13'),
     ('FFmpeg', '4.3.1'),
     ('Pillow', '8.0.1'),
-    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', True),
+    ('cuDNN', '8.0.4.30', '-CUDA-%(cudaver)s', SYSTEM),
     ('magma', '2.5.4'),
-    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s', True),
+    ('NCCL', '2.8.3', '-CUDA-%(cudaver)s'),
 ]
 
 # default CUDA compute capabilities to use (override via --cuda-compute-capabilities)
@@ -245,13 +245,20 @@ patches = [
     'PyTorch-1.7.0_avoid-nan-in-test-torch.patch',
     'PyTorch-1.7.0_increase-distributed-test-timeout.patch',
     'PyTorch-1.7.0_disable-dev-shm-test.patch',
+    'PyTorch-1.7.1_add-jit-support-for-cuda11.patch',
     'PyTorch-1.7.1_correctly-pass-jit_opt_level.patch',
     'PyTorch-1.7.1_detect-max-ccc-from-nvrtc.patch',
     'PyTorch-1.7.1_dont-use-gpu-ccc-in-test.patch',
     'PyTorch-1.7.1_validate-num-gpus-in-distributed-test.patch',
     'PyTorch-1.7.1_complex32.patch',
     'PyTorch-1.7.1_bypass-nan-compare.patch',
+    'PyTorch-1.7.1_fix-alias-violation-in-bitwise-ops.patch',
+    'PyTorch-1.7.1_fix-err-variable.patch',
     'PyTorch-1.7.1_fix-use-after-destruct-in-cudaipctypes.patch',
+    'PyTorch-1.7.1_disable-tf32-in-distributed-tests.patch',
+    'PyTorch-1.7.1_relax_precision_in_test_nn.patch',
+    'PyTorch-1.7.1_run-large-tests-on-GPU.patch',
+    'PyTorch-1.7.1_disable-failing-cuda-11.2-tests.patch',
 ]
 checksums = [
     'fc8d6aaf0bdedd4221617be8d47ac39af57605bdcc814fabc28739427b55e9c7',  # v1.7.1.tar.gz
@@ -301,6 +308,8 @@ checksums = [
     # PyTorch-1.7.0_increase-distributed-test-timeout.patch
     '95abb468a35451fbd0f864ca843f6ad15ff8bfb909c3fd580f65859b26c9691c',
     '622cb1eaeadc06e13128a862d9946bcc1f1edd3d02b259c56a9aecc4d5406b8a',  # PyTorch-1.7.0_disable-dev-shm-test.patch
+    # PyTorch-1.7.1_add-jit-support-for-cuda11.patch
+    '7a5a6ca64196f5fe0dc954d387e188695a683cc37790da67f903c52a5dd5a1e7',
     # PyTorch-1.7.1_correctly-pass-jit_opt_level.patch
     'd4d967d47f8a6172fcbf57f0a61835482968850967c4fdb01108b720696a988d',
     # PyTorch-1.7.1_detect-max-ccc-from-nvrtc.patch
@@ -310,8 +319,19 @@ checksums = [
     'd27f7b5149632512b6fe226837df914aad35c88f8b490856dc6dd90ea1e5d7e6',
     '6028bff2be720cf70acad2129db60fd10872e02c9e460c72bb274228cf90b320',  # PyTorch-1.7.1_complex32.patch
     '0943496231b6857801e2424e561d03897a6982d098cba5b6967017b391a7e977',  # PyTorch-1.7.1_bypass-nan-compare.patch
+    # PyTorch-1.7.1_fix-alias-violation-in-bitwise-ops.patch
+    'e92f054f1297df83ace901e7af38222787b709ee29580f5f2b89a300ca03666b',
+    'abb79e7ffd10be87adfb62e79131c50079c32470031ac22b12b273cfae85ca4c',  # PyTorch-1.7.1_fix-err-variable.patch
     # PyTorch-1.7.1_fix-use-after-destruct-in-cudaipctypes.patch
     '250345aad08fb72deaaee9b249d9661d4ce93d08661b32d7856ed57e4aa8142e',
+    # PyTorch-1.7.1_disable-tf32-in-distributed-tests.patch
+    '18ecad081a8c940add64040ad9698d3273366acf738a8a44eab1c793d3f49950',
+    # PyTorch-1.7.1_relax_precision_in_test_nn.patch
+    '4089bd3d2ee1939108ed9ebe9cd98da306df626ea6e59fac52fa877a5ea8a163',
+    # PyTorch-1.7.1_run-large-tests-on-GPU.patch
+    '06651b6746a27bee1adf15af24e356e188d683241bb186343009dc69c8d5aa9b',
+    # PyTorch-1.7.1_disable-failing-cuda-11.2-tests.patch
+    '2a9df4face04798f51eee0db83d28a905ea7ac53569cf25ed9f049b0a547702e',
 ]
 
 excluded_tests = {
@@ -324,7 +344,7 @@ excluded_tests = {
     ]
 }
 
-runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --verbose %(excluded_tests)s'
+runtest = 'cd test && PYTHONUNBUFFERED=1 %(python)s run_test.py --continue-through-error --verbose %(excluded_tests)s'
 
 sanity_check_commands = ["python -c 'import caffe2.python'"]
 tests = ['PyTorch-check-cpp-extension.py']

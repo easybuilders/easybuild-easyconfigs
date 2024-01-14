@@ -1,0 +1,63 @@
+easyblock = 'PythonBundle'
+
+name = 'ReFrame'
+version = '3.5.0'
+
+homepage = 'https://github.com/eth-cscs/reframe'
+description = '''ReFrame is a framework for writing regression tests for HPC systems.'''
+
+toolchain = SYSTEM
+
+allow_system_deps = [('Python', SYS_PYTHON_VERSION)]
+
+req_py_majver = 3
+req_py_minver = 6
+
+use_pip = True
+
+exts_list = [
+    ('pip', '21.0.1', {
+        'use_pip': False,
+        'checksums': ['99bbde183ec5ec037318e774b0d8ae0a64352fe53b2c7fd630be1d07e94f41e5'],
+    }),
+    ('setuptools', '53.0.0', {
+        'source_tmpl': 'setuptools-%(version)s.tar.gz',
+        'checksums': ['1b18ef17d74ba97ac9c0e4b4265f123f07a8ae85d9cd093949fa056d3eeeead5'],
+    }),
+    ('reframe', version, {
+        # need to add 'bin' subdir to $PATH explicitly to ensure right 'pip' command is used for installing packages
+        'preinstallopts': "export PATH=%(installdir)s/bin:$PATH && "
+                          "./bootstrap.sh +docs +pygelf && cp -r external %(installdir)s && ",
+        'source_tmpl': 'v%(version)s.tar.gz',
+        'source_urls': ['https://github.com/eth-cscs/reframe/archive/'],
+        'checksums': ['81b501be4252c99f12043cb21b0b7b8059207a340fc94173b180444599773f1a'],
+    }),
+]
+
+postinstallcmds = [
+    'cp -r tutorials %(installdir)s',
+    'mkdir -p %(installdir)s/share/man/man1 %(installdir)s/share/man/man8',
+    'cp docs/man/man1/reframe.1 %(installdir)s/share/man/man1',
+    'cp docs/man/man8/reframe.settings.8 %(installdir)s/share/man/man8',
+    'cp -r share/completions %(installdir)s/share/completions'
+]
+
+sanity_check_paths = {
+    'files': ['bin/reframe', 'share/man/man1/reframe.1',
+              'share/man/man8/reframe.settings.8',
+              'share/completions/reframe.bash',
+              'share/completions/reframe.fish',
+              'share/completions/reframe.tcsh'],
+    'dirs': ['lib', 'tutorials', 'external']
+}
+
+sanity_check_commands = ['reframe -V']
+
+sanity_pip_check = True
+
+modextrapaths = {
+    # bootstrap script installs required dependencies to 'external' subdirectory
+    'PYTHONPATH': 'external',
+}
+
+moduleclass = 'devel'

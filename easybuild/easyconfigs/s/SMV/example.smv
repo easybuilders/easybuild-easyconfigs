@@ -1,0 +1,43 @@
+MODULE main
+ VAR
+   s0: {noncritical, trying, critical, ready};
+   s1: {noncritical, trying, critical, ready};
+   turn: boolean;
+   pr0: process prc(s0, s1, turn, 0);
+   pr1: process prc(s1, s0, turn, 1);
+
+ASSIGN init(turn) := 0;
+
+ FAIRNESS !(s0 = critical)
+ FAIRNESS !(s1 = critical)
+
+
+ SPEC AG((s0 = critical) -> !(s1 = critical))
+ SPEC AG((s1 = critical) -> !(s0 = critical))
+
+ SPEC AG((s0 = trying) -> AF(s0 = critical))
+ SPEC AG((s1 = trying) -> AF(s1 = critical))
+
+MODULE prc(state0, state1, turn, turn0)
+
+ ASSIGN
+ init(state0) := noncritical;
+ next(state0) :=
+ case
+    (state0 = noncritical) : {trying,noncritical};
+    (state0 = trying) & ((state1 = noncritical) |
+                         (state1 = trying) |
+                         (state1 = ready)): ready;
+    (state0 = ready): critical;
+    (state0 = trying) & (state1 = trying)
+                      & (turn = turn0):  critical;
+    (state0 = critical) : {critical,noncritical};
+    1: state0;
+ esac;
+
+ next(turn) :=
+ case
+   turn = turn0 & state0 = critical: !turn;
+    1: turn;
+ esac;
+ FAIRNESS running

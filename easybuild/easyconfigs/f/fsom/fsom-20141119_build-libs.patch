@@ -1,0 +1,73 @@
+# Patch to build static and dynamic libraries. Based on PR by outpaddling:
+#  https://github.com/ekg/fsom/pull/4
+
+diff -Nru fsom-a6ef318fbd347c53189384aef7f670c0e6ce89a3.orig/Makefile fsom-a6ef318fbd347c53189384aef7f670c0e6ce89a3/Makefile
+--- fsom-a6ef318fbd347c53189384aef7f670c0e6ce89a3.orig/Makefile	2021-05-05 15:29:54.000000000 +0100
++++ fsom-a6ef318fbd347c53189384aef7f670c0e6ce89a3/Makefile	2021-05-07 14:58:43.000000000 +0100
+@@ -1,5 +1,62 @@
+-all:
+-	g++ -w -O3 -pipe -fomit-frame-pointer -ffast-math fsom.c split.cpp main.cpp -o fsom -lm
+-clean:
+-	rm -f *.o fsom
++# Use ?= to allow overriding from the env or command-line, e.g.
++#
++#       make CXXFLAGS="-O3 -fPIC" install
++#
++# Package managers will override many of these variables automatically, so
++# this is aimed at making it easy to create packages (Debian packages,
++# FreeBSD ports, MacPorts, pkgsrc, etc.)
++
++CXX ?=		g++
++CXXFLAGS ?=	-w -O3 -pipe -fomit-frame-pointer -ffast-math
++
++PREFIX ?=	/usr/local
++STRIP ?=	strip
++INSTALL ?=	install -c
++MKDIR ?=	mkdir -p
++AR ?=		ar
++ARFLAGS ?=	rs
++
++BIN =		fsom
++LIB =		libfsom.a
++SOVERSION = 	0
++SLIB =		libfsom.so
++OBJS =		fsom.o split.o
++MAIN =		main.o
++
++BINDIR = $(DESTDIR)$(PREFIX)/bin
++INCDIR = $(DESTDIR)$(PREFIX)/include/fsom
++LIBDIR = $(DESTDIR)$(PREFIX)/lib
++
++.SUFFIXES:.c .cpp .o .pico .so
++
++.c.o .cpp.o:
++	$(CXX) $(CXXFLAGS) -I. -c -o $@ $<
++
++.c.pico .cpp.pico:
++	$(CXX) $(CXXFLAGS) -I. -fPIC -c -o $@ $<
+ 
++all:	$(BIN) $(SLIB) $(LIB)
++
++$(LIB):	$(OBJS)
++	$(AR) $(ARFLAGS) $@ $^
++
++$(SLIB): $(OBJS:.o=.pico)
++	$(CXX) -shared -Wl,-soname,$(SLIB).$(SOVERSION) $(LDFLAGS) -o $@ $^ $(LIBS)
++	ln -sf $@ $(SLIB).$(SOVERSION)
++
++$(BIN): $(OBJS) $(MAIN)
++	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
++
++install: all
++	$(MKDIR) $(BINDIR)
++	$(MKDIR) $(INCDIR)
++	$(MKDIR) $(LIBDIR)
++	$(INSTALL) $(BIN) $(BINDIR)
++	$(INSTALL) *.h $(INCDIR)
++	$(INSTALL) $(LIB) $(SLIB) $(SLIB).$(SOVERSION) $(LIBDIR)
++
++install-strip: install
++	$(STRIP) $(BINDIR)/$(BIN) $(LIBDIR)/$(LIB) $(LIBDIR)/$(SLIB)
++
++clean:
++	rm -rf *.o *.pico $(BIN) $(LIB) $(SLIB) $(DESTDIR)

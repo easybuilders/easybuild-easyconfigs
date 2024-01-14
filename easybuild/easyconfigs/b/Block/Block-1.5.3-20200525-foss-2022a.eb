@@ -1,0 +1,53 @@
+easyblock = 'MakeCp'
+
+name = 'Block'
+version = '1.5.3-20200525'
+_commit = 'f95317b08043b7c531289576d59ad74a6d920741'
+
+homepage = 'https://sanshar.github.io/Block/'
+description = """Block implements the density matrix renormalization group (DMRG) algorithm for
+quantum chemistry."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'cstd': 'c++11', 'pic': True}
+
+# Version 1.5 is a major rewrite of Block that was named at some point StackBlock
+# sources are available in sanshar/StackBlock
+# sources at sanshar/Block@b0e3671aad and pyscf/Block@db27636b76 correspond to version 1.1.1
+source_urls = ['https://github.com/sanshar/StackBlock/archive']
+sources = [{'download_filename': '%s.tar.gz' % _commit, 'filename': '%(version)s.tar.gz'}]
+patches = [
+    'Block-1.5.3_use-eb-environment.patch',
+    'Block-1.5.3_replace_mpi_cxx_binds_with_boost_mpi.patch',
+]
+checksums = [
+    {'1.5.3-20200525.tar.gz': '8d793c5e460d7747a0adcb06ce4b457c6750cf2d42cead1d060db8b44643c3b1'},
+    {'Block-1.5.3_use-eb-environment.patch': '7f3e8a52f28d251441d20dfde1f9cb8cdc0c34216defab61cc6980e540a6cf60'},
+    {'Block-1.5.3_replace_mpi_cxx_binds_with_boost_mpi.patch':
+     'f53f1f88cb7b12ab38d1313f93a9bbd31c745dca1beca7a8d51d00e0ae4e762f'},
+]
+
+dependencies = [
+    ('Boost.MPI', '1.79.0'),
+]
+
+buildopts = [
+    # Multi-threaded build (block.spin_adapted-serial)
+    'OPENMP="yes" EXECUTABLE="block.spin_adapted-serial"',
+    # MPI build (block.spin_adapted)
+    'USE_MPI="yes"',
+]
+
+files_to_copy = [(['block.spin_adapted*'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/block.spin_adapted', 'bin/block.spin_adapted-serial'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    "block.spin_adapted-serial --version",
+    "%(mpi_cmd_prefix)s block.spin_adapted --version",
+]
+
+moduleclass = 'phys'

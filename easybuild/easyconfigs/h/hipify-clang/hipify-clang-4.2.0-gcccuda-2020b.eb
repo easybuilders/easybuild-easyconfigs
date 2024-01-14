@@ -1,0 +1,51 @@
+easyblock = 'CMakeMake'
+
+name = 'hipify-clang'
+version = '4.2.0'
+
+homepage = 'https://github.com/ROCm-Developer-Tools/HIPIFY'
+description = """Hipify-clang is a clang-based tool for translating CUDA
+  sources into HIP sources. It translates CUDA source into an abstract syntax
+  tree, which is traversed by transformation matchers. After applying all the
+  matchers, the output HIP source is produced."""
+
+toolchain = {'name': 'gcccuda', 'version': '2020b'}
+
+source_urls = ['https://github.com/ROCm-Developer-Tools/HIPIFY/archive/refs/tags/']
+sources = ['rocm-%(version)s.tar.gz']
+checksums = ['afdc82ae00e14e8e742be6cd47d8fb120d18fc52fe96cba8d8ac4c56176a432e']
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('zlib', '1.2.11'),
+]
+
+dependencies = [
+    ('Clang', '11.0.1'),
+    # ('cuDNN', '8.0.4.30', '-CUDA-11.1.1', SYSTEM),
+    # ('Python', '3.8.6'),
+]
+
+# NOTE: The following configuration options are needed if building with tests
+# (as activated by 'runtest' below), for these to work the above commented
+# dependencies need to be uncommented. Currently testing is disabled due to a
+# lack of 'llvm-lit'.
+# configopts = '-DHIPIFY_CLANG_TESTS=1'
+# configopts += ' -DCUDA_TOOLKIT_ROOT_DIR=$EBROOTCUDA'
+# configopts += ' -DCUDA_DNN_ROOT_DIR=$EBROOTCUDNN'
+# configopts += ' -DPYTHON_EXECUTABLE=$EBROOTPYTHON/bin/python'
+
+# runtest = 'test-hipify'
+
+# For some reason the executable is not placed in 'bin'
+postinstallcmds = [
+    'mv %(installdir)s/%(namelower)s %(installdir)s/bin/.'
+]
+
+sanity_check_commands = [('hipify-clang', '--version')]
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': ['include'],
+}
+
+moduleclass = 'devel'

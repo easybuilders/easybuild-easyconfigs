@@ -1,0 +1,41 @@
+# This patch fixes compatibility with Python-3.10. In particular the problem that 
+# the "graminit.h" header is removed from Python-3.10 together with the "parser" 
+# module.
+# See https://github.com/nwchemgit/nwchem/issues/271 for more info
+#
+# Author: maxim-masterov (SURF)
+#
+diff -Nru nwchem-7.0.2.orig/src/config/makefile.h nwchem-7.0.2/src/config/makefile.h
+--- nwchem-7.0.2.orig/src/config/makefile.h	2022-08-19 10:47:57.584912000 +0200
++++ nwchem-7.0.2/src/config/makefile.h	2022-08-19 10:50:18.158831536 +0200
+@@ -2618,12 +2618,12 @@
+   GOTPYTHON2 := $(shell command -v python2 2> /dev/null)
+   GOTPYTHON  := $(shell command -v python 2> /dev/null)
+   ifdef GOTPYTHON3
+-    PYTHONVERSION=$(shell python3 -V 2>&1 |cut -c 8-10)
++    PYTHONVERSION=$(shell python3 -c 'import sys; print("{}.{}".format(sys.version_info.major, sys.version_info.minor))')
+   else ifdef GOTPYTHON2
+-    PYTHONVERSION=$(shell python2 -V 2>&1 |cut -c 8-10)
++    PYTHONVERSION=$(shell python2 -c 'import sys; print("{}.{}".format(sys.version_info.major, sys.version_info.minor))')
+   else ifdef GOTPYTHON
+ #last try at python2
+-    PYTHONVERSION=$(shell python -V 2>&1 |cut -c 8-10)
++    PYTHONVERSION=$(shell python -c 'import sys; print("{}.{}".format(sys.version_info.major, sys.version_info.minor))')
+   else
+ errorpython3:
+ $(info )
+diff -Nru nwchem-7.0.2.orig/src/python/task_python.c nwchem-7.0.2/src/python/task_python.c
+--- nwchem-7.0.2.orig/src/python/task_python.c	2022-08-19 10:47:58.966129000 +0200
++++ nwchem-7.0.2/src/python/task_python.c	2022-08-19 10:51:34.311283000 +0200
+@@ -6,7 +6,11 @@
+ #include "ga.h"
+ 
+ #include <import.h>
++#if ( PY_MAJOR_VERSION >= 3 && PY_MINOR_VERSION >= 9)
++/* might require new headers and code */
++#else
+ #include <graminit.h>
++#endif
+ #include <pythonrun.h>
+ #include <stdlib.h>
+ #include "typesf2c.h"

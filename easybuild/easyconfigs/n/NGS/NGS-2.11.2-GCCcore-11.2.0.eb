@@ -1,0 +1,45 @@
+easyblock = 'Bundle'
+
+name = 'NGS'
+version = '2.11.2'
+
+homepage = 'https://github.com/ncbi/ngs'
+description = """NGS is a new, domain-specific API for accessing reads, alignments and pileups
+produced from Next Generation Sequencing."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('Perl', '5.34.0', '-minimal'),
+]
+
+dependencies = [('Java', '11', '', SYSTEM)]
+
+default_easyblock = 'ConfigureMake'
+default_component_specs = {
+    'source_urls': ['https://github.com/ncbi/ngs/archive'],
+    'sources': [{'download_filename': '%(version)s.tar.gz', 'filename': SOURCE_TAR_GZ}],
+    'checksums': ['7555ab7c2f04bd81160859f6c85c65376dc7f7b891804fad9e7636a7788e39c2'],
+}
+
+components = [
+    ('NGS-SDK', version, {
+        'start_dir': 'ngs-%(version)s/%(namelower)s',
+        'configopts': '--build-prefix=%(builddir)s',  # change default build directory
+    }),
+    ('NGS-Java', version, {
+        'start_dir': 'ngs-%(version)s/%(namelower)s',
+        'configopts': '--build-prefix=%(builddir)s',  # change default build directory
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['jar/ngs-java.jar', ('lib/libngs-sdk.%s' % SHLIB_EXT, 'lib64/libngs-sdk.%s' % SHLIB_EXT),
+              ('lib/libngs-adapt-c++.a', 'lib64/libngs-adapt-c++.a'), ('lib/libngs-c++.a', 'lib64/libngs-c++.a')],
+    'dirs': ['include/ngs', 'share'],
+}
+
+modextrapaths = {'CLASSPATH': 'jar/ngs-java.jar'}
+
+moduleclass = 'bio'

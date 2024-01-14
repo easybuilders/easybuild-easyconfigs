@@ -1,0 +1,50 @@
+On A100 GPUs the precision seems to be a lot less, likely due to increased parallelism
+See https://github.com/pytorch/pytorch/issues/52278
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/testing/_internal/common_nn.py b/torch/testing/_internal/common_nn.py
+index a379fa10b8..8755da5c8c 100644
+--- a/torch/testing/_internal/common_nn.py
++++ b/torch/testing/_internal/common_nn.py
+@@ -3542,6 +3542,7 @@ new_module_tests = [
+                                 .dropout(0.0)''',
+         input_size=(2, 3, 4),
+         desc='relu_activation',
++        precision=2e-2,
+     ),
+     dict(
+         module_name='TransformerEncoderLayer',
+@@ -3553,6 +3554,7 @@ new_module_tests = [
+         input_size=(2, 3, 4),
+         check_gradgrad=False,
+         desc='gelu_activation',
++        precision=2e-2,
+     ),
+     dict(
+         module_name='TransformerDecoderLayer',
+@@ -3563,6 +3565,7 @@ new_module_tests = [
+         input_fn=lambda: (torch.rand(3, 3, 4), torch.rand(2, 3, 4)),
+         check_gradgrad=False,
+         desc='relu_activation',
++        precision=2e-2,
+     ),
+     dict(
+         module_name='Transformer5e-3,DecoderLayer',
+@@ -3574,6 +3577,7 @@ new_module_tests = [
+         input_fn=lambda: (torch.rand(3, 3, 4), torch.rand(2, 3, 4)),
+         check_gradgrad=False,
+         desc='gelu_activation',
++        precision=2e-2,
+     ),
+     dict(
+         module_name='Transformer',
+@@ -3588,7 +3592,8 @@ new_module_tests = [
+                                 .activation(torch::kReLU)''',
+         input_fn=lambda:(torch.rand(3, 3, 4), torch.rand(2, 3, 4), torch.rand(3, 3)),
+         check_gradgrad=False,
+-        desc='multilayer_coder'
++        desc='multilayer_coder',
++        precision=2e-2,
+     )
+ ]

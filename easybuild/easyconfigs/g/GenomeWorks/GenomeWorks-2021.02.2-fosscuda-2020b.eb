@@ -1,0 +1,97 @@
+# author: Denis Kristak (INUITS)
+easyblock = 'CMakePythonPackage'
+
+name = 'GenomeWorks'
+version = '2021.02.2'
+local_commit = '691380d'  # corresponds to 2021.02.2 tag
+
+homepage = 'https://github.com/clara-parabricks/GenomeWorks'
+description = "SDK for GPU accelerated genome assembly and analysis"
+
+toolchain = {'name': 'fosscuda', 'version': '2020b'}
+toolchainopts = {'pic': True}
+
+sources = [{
+    'filename': SOURCE_TAR_GZ,
+    'git_config': {
+        'url': 'https://github.com/clara-parabricks',
+        'repo_name': name,
+        'commit': local_commit,
+        'recursive': True,
+    },
+}]
+# no checksum for source tarball because it's created locally via 'git clone'
+checksums = [None]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+    ('Doxygen', '1.8.20'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('Autoconf', '2.69'),
+    ('matplotlib', '3.3.3'),
+    ('SciPy-bundle', '2020.11'),
+    ('networkx', '2.5'),
+    ('tqdm', '4.56.2'),
+]
+
+# add missing include to a file
+preconfigopts = "sed -i'' 's/#include <exception>/#include <exception>\\n#include <stdexcept>/g'"
+preconfigopts += " %(builddir)s/GenomeWorks/3rdparty/spoa/src/alignment_engine.cpp && """
+
+preconfigopts += "sed -i 's/==/>=/g' %(builddir)s/GenomeWorks/pygenomeworks/requirements.txt && "
+preconfigopts += "sed -i 's/~=/>=/g' %(builddir)s/GenomeWorks/pygenomeworks/requirements.txt && "
+
+# instruction from GenomeWorks' readme
+configopts = "-Dgw_cuda_gen_all_arch=OFF "
+configopts += " -Dgw_build_shared=ON "
+
+# no test targets
+skipsteps = ['test']
+
+exts_defaultclass = 'PythonPackage'
+
+exts_default_options = {
+    'download_dep_fail': True,
+    'use_pip': True,
+    'sanity_pip_check': True,
+}
+
+local_genomeworks_preinstallopts = "sed -i 's/[=~]=/>=/g' requirements.txt && "
+local_genomeworks_preinstallopts += "export GW_INSTALL_DIR=%(installdir)s && "
+local_genomeworks_preinstallopts += "export GW_VERSION=%(version)s && "
+local_genomeworks_preinstallopts += "export GW_ROOT_DIR=%(builddir)s/GenomeWorks && "
+
+exts_list = [
+    ('sortedcollections', '2.1.0', {
+        'source_urls': [PYPI_SOURCE],
+        'checksums': ['d8e9609d6c580a16a1224a3dc8965789e03ebc4c3e5ffd05ada54a2fed5dcacd'],
+    }),
+    ('genomeworks', version, {
+        'sources': ['GenomeWorks-%(version)s.tar.gz'],
+        # no checksum for source tarball because it's created locally via 'git clone'
+        'checksums': [None],
+        'start_dir': 'pygenomeworks',
+        'preinstallopts': local_genomeworks_preinstallopts,
+    }),
+]
+
+sanity_check_paths = {
+    'files': ['bin/cudamapper', 'bin/cudapoa', 'bin/genome_simulator',
+              'lib/libgwbase.%s' % SHLIB_EXT, 'lib/libgwio.%s' % SHLIB_EXT],
+    'dirs': ['benchmarks', 'docs', 'include/claraparabricks/genomeworks',
+             'lib/python%(pyshortver)s/site-packages', 'samples', 'tests'],
+}
+
+sanity_check_commands = [
+    "cudamapper --help",
+    "cudapoa --help",
+    "genome_simulator --help",
+    "python -c 'import genomeworks'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
+
+moduleclass = 'bio'

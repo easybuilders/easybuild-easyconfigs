@@ -1,0 +1,77 @@
+From f4824c2eca26887a0f7aeebb4e966c278258142a Mon Sep 17 00:00:00 2001
+From: Ivan Yashchuk <ivan.yashchuk@aalto.fi>
+Date: Fri, 12 Mar 2021 17:54:19 +0000
+Subject: [PATCH] Fixed worksize
+
+---
+ aten/src/ATen/native/BatchLinearAlgebra.cpp       | 8 ++++----
+ aten/src/ATen/native/BatchLinearAlgebra.h         | 2 +-
+ aten/src/ATen/native/BatchLinearAlgebraKernel.cpp | 2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/aten/src/ATen/native/BatchLinearAlgebra.cpp b/aten/src/ATen/native/BatchLinearAlgebra.cpp
+index 39d4291b7a8d..2daf7a93cdea 100644
+--- a/aten/src/ATen/native/BatchLinearAlgebra.cpp
++++ b/aten/src/ATen/native/BatchLinearAlgebra.cpp
+@@ -695,7 +695,7 @@ static void apply_inverse(Tensor& self, Tensor& infos_lu, Tensor& infos_getri) {
+   int lwork = -1;
+   scalar_t wkopt;
+   lapackGetri<scalar_t>(n, self_data, lda, ipiv_data, &wkopt, lwork, &info);
+-  lwork = static_cast<int>(real_impl<scalar_t, value_t>(wkopt));
++  lwork = std::max<int>(1, real_impl<scalar_t, value_t>(wkopt));
+   Tensor work = at::empty({lwork}, self.options());
+   auto work_data = work.data_ptr<scalar_t>();
+ 
+@@ -1211,7 +1211,7 @@ static void apply_geqrf(Tensor& self, Tensor& tau, int64_t m, int64_t n,
+   int lwork = -1;
+   scalar_t wkopt;
+   lapackGeqrf<scalar_t>(m, n, self_data, m, tau_data, &wkopt, lwork, &info);
+-  lwork = static_cast<int>(real_impl<scalar_t, value_t>(wkopt));
++  lwork = std::max<int>(1, real_impl<scalar_t, value_t>(wkopt));
+   Tensor work = at::empty({lwork}, self.options());
+ 
+   for (const auto i : c10::irange(batch_size)) {
+@@ -1626,7 +1626,7 @@ static void apply_symeig(Tensor& self, Tensor& eigvals, bool eigenvectors, bool
+   }
+ 
+   lapackSymeig<scalar_t, value_t>(jobz, uplo, n, self_data, n, eigvals_data, &wkopt, lwork, rwork_data, &info);
+-  lwork = static_cast<int>(real_impl<scalar_t, value_t>(wkopt));
++  lwork = std::max<int>(1, real_impl<scalar_t, value_t>(wkopt));
+   Tensor work = at::empty({lwork}, self.options());
+ 
+   for (const auto i : c10::irange(batch_size)) {
+@@ -1782,7 +1782,7 @@ static void apply_svd(Tensor& self, Tensor& U, Tensor& S, Tensor& VT,
+   int lwork = -1;
+   scalar_t wkopt;
+   lapackSvd<scalar_t, value_t>(jobz, m, n, self_data, lda, S_data, U_data, lda, VT_data, ldvt, &wkopt, lwork, rwork_data, iwork_data, &info);
+-  lwork = static_cast<int>(real_impl<scalar_t, value_t>(wkopt));
++  lwork = std::max<int>(1, real_impl<scalar_t, value_t>(wkopt));
+   Tensor work = at::empty({lwork}, self.options());
+   auto work_data = work.data_ptr<scalar_t>();
+ 
+diff --git a/aten/src/ATen/native/BatchLinearAlgebra.h b/aten/src/ATen/native/BatchLinearAlgebra.h
+index 138819f6f4cd..59e71e2964e5 100644
+--- a/aten/src/ATen/native/BatchLinearAlgebra.h
++++ b/aten/src/ATen/native/BatchLinearAlgebra.h
+@@ -82,7 +82,7 @@ inline void apply_orgqr(Tensor& self, const Tensor& tau, Tensor& infos, int64_t
+   int lwork = -1;
+   scalar_t wkopt;
+   lapackOrgqr<scalar_t>(m, n_columns, k, self_data, lda, tau_data, &wkopt, lwork, &infos_data[0]);
+-  lwork = static_cast<int>(real_impl<scalar_t, value_t>(wkopt));
++  lwork = std::max<int>(1, real_impl<scalar_t, value_t>(wkopt));
+   Tensor work = at::empty({lwork}, self.options());
+ 
+   for (int64_t i = 0; i < batch_size; i++) {
+diff --git a/aten/src/ATen/native/BatchLinearAlgebraKernel.cpp b/aten/src/ATen/native/BatchLinearAlgebraKernel.cpp
+index ef64cef6a771..334f4d60ce44 100644
+--- a/aten/src/ATen/native/BatchLinearAlgebraKernel.cpp
++++ b/aten/src/ATen/native/BatchLinearAlgebraKernel.cpp
+@@ -115,7 +115,7 @@ void apply_eig(const Tensor& self, bool eigenvectors, Tensor& vals_, Tensor& vec
+     int info;
+     lapackEig<scalar_t, value_t>('N', jobvr, n, self_data, n, wr,
+       nullptr, 1, vecs_data, ldvr, &wkopt, -1, rwork_data, &info);
+-    int lwork = static_cast<int>(real_impl<scalar_t, value_t>(wkopt));
++    int lwork = std::max<int>(1, real_impl<scalar_t, value_t>(wkopt));
+ 
+     // call again to do the actual work
+     Tensor work = at::empty({lwork}, self.dtype());

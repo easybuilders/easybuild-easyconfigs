@@ -1,0 +1,84 @@
+name = 'OpenCV'
+version = '4.5.1'
+versionsuffix = '-contrib'
+
+# the hash is version dependent! see 3rdparty/ippicv/ippicv.cmake
+local_ippicv_hash = 'a56b6ac6f030c312b2dce17430eef13aed9af274'
+
+homepage = 'https://opencv.org/'
+description = """OpenCV (Open Source Computer Vision Library) is an open source computer vision
+ and machine learning software library. OpenCV was built to provide
+ a common infrastructure for computer vision applications and to accelerate
+ the use of machine perception in the commercial products.
+ Includes extra modules for OpenCV from the contrib repository."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+sources = [
+    {'source_urls': ['https://github.com/opencv/opencv/archive/'],
+     'download_filename': '%(version)s.zip', 'filename': SOURCELOWER_ZIP},
+    {'source_urls': ['https://github.com/opencv/opencv_contrib/archive/'],
+     'download_filename': '%(version)s.zip', 'filename': '%(namelower)s_contrib-%(version)s.zip'},
+    {'source_urls': ['https://raw.githubusercontent.com/opencv/opencv_3rdparty/%s/ippicv' % local_ippicv_hash],
+     'filename': 'ippicv_2020_lnx_intel64_20191018_general.tgz', 'extract_cmd': "cp %s %(builddir)s"},
+]
+checksums = [
+    '5fbc26ee09e148a4d494b225d04217f7c913ca1a4d46115b70cca3565d7bbe05',  # opencv-4.5.1.zip
+    'fdbd851985fd79797a04e16bdd672aff698aee89086b944295c90265f3cfffda',  # opencv_contrib-4.5.1.zip
+    '08627fa5660d52d59309a572dd7db5b9c8aea234cfa5aee0942a1dd903554246',  # ippicv_2020_lnx_intel64_20191018_general.tgz
+]
+
+builddependencies = [
+    ('CMake', '3.18.4'),
+]
+
+dependencies = [
+    ('Python', '3.8.6'),
+    ('SciPy-bundle', '2020.11'),  # for numpy
+    ('zlib', '1.2.11'),
+    ('FFmpeg', '4.3.1'),
+    ('freetype', '2.10.3'),
+    ('HarfBuzz', '2.6.7'),
+    ('libjpeg-turbo', '2.0.5'),
+    ('libpng', '1.6.37'),
+    ('LibTIFF', '4.1.0'),
+    ('libwebp', '1.1.0'),
+    ('OpenEXR', '2.5.5'),
+    ('JasPer', '2.0.24'),
+    ('Java', '11', '', SYSTEM),
+    ('ant', '1.10.9', '-Java-%(javaver)s', SYSTEM),
+    ('GLib', '2.66.1'),
+    ('GTK+', '3.24.23'),
+    ('HDF5', '1.10.7'),  # needed by hdf from contrib
+]
+
+# XXXX in configurations is a bug fix in OpenCV because ocv_check_modules is not able to recognize freetype and harfbuzz
+# ref: https://github.com/opencv/opencv/blob/6e8daaec0f46aaba9ea22e2afce47307b1dbff9f/cmake/OpenCVUtils.cmake#L861
+configopts = '-DOPENCV_EXTRA_MODULES_PATH=%(builddir)s/%(namelower)s_contrib-%(version)s/modules '
+configopts += '-DFREETYPE_FOUND=ON '
+configopts += '-DFREETYPE_INCLUDE_DIRS=$EBROOTFREETYPE/include/freetype2/ '
+configopts += '-DFREETYPE_LIBRARIES=$EBROOTFREETYPE/lib64/libfreetype.so '
+configopts += '-DFREETYPE_LINK_LIBRARIES=$EBROOTFREETYPE/lib64/libfreetype.so '
+configopts += '-DFREETYPE_LINK_LIBRARIES_XXXXX=ON '
+configopts += '-DHARFBUZZ_FOUND=ON '
+configopts += '-DHARFBUZZ_INCLUDE_DIRS=$EBROOTHARFBUZZ/include/harfbuzz '
+configopts += '-DHARFBUZZ_LIBRARIES=$EBROOTHARFBUZZ/lib64/libharfbuzz.so '
+configopts += '-DHARFBUZZ_LINK_LIBRARIES=$EBROOTHARFBUZZ/lib64/libharfbuzz.so '
+configopts += '-DHARFBUZZ_LINK_LIBRARIES_XXXXX=ON '
+configopts += '-DBUILD_opencv_python2=OFF '
+
+enhance_sanity_check = True
+
+local_contrib_libs = [
+    'aruco', 'bgsegm', 'bioinspired', 'ccalib', 'datasets', 'dnn_objdetect', 'dnn_superres', 'dpm', 'face', 'freetype',
+    'fuzzy', 'hdf', 'hfs', 'img_hash', 'line_descriptor', 'optflow', 'phase_unwrapping', 'plot', 'quality', 'reg',
+    'rgbd', 'saliency', 'shape', 'stereo', 'structured_light', 'superres', 'surface_matching', 'text', 'tracking',
+    'videostab', 'xfeatures2d', 'ximgproc', 'xobjdetect', 'xphoto'
+]
+
+sanity_check_paths = {
+    'files': ['lib64/libopencv_%s.%s' % (l, SHLIB_EXT) for l in local_contrib_libs],
+    'dirs': [],
+}
+
+moduleclass = 'vis'

@@ -7,10 +7,12 @@ description = "binutils: GNU binary utilities"
 toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
 
 source_urls = [GNU_SOURCE]
-sources = [SOURCE_TAR_GZ]
+# Due to a serious bug of the gold linker on PPC it was decided to use the 2.35.2 sources instead of a
+# (potentially large) patch. There are also some more or less minor fixes for ARM and (likely) x86 included.
+sources = ["%(name)s-%(version)s.2.tar.gz"]
 patches = ['binutils-2.34-readd-avx512-vmovd.patch']
 checksums = [
-    'a3ac62bae4f339855b5449cfa9b49df90c635adbd67ecb8a0e7f3ae86a058da6',  # binutils-2.35.tar.gz
+    'f484f61c81aa679df84d358d9818d5bf3e71fd227303f234f72b24420d98d3cd',  # binutils-2.35.2.tar.gz
     '45ecf7f5d198dd446d1a2e2a4d46b2747eb6fb8f2bfa18d7d42769e710e85716',  # binutils-2.34-readd-avx512-vmovd.patch
 ]
 
@@ -18,7 +20,7 @@ builddependencies = [
     ('flex', '2.6.4'),
     ('Bison', '3.7.1'),
     # use same binutils version that was used when building GCC toolchain, to 'bootstrap' this binutils
-    ('binutils', version, '', True)
+    ('binutils', version, '', SYSTEM)
 ]
 
 dependencies = [
@@ -31,5 +33,12 @@ dependencies = [
 # see https://sourceware.org/bugzilla/show_bug.cgi?id=15345
 buildopts = 'MAKEINFO=true'
 installopts = buildopts
+
+# symlink libbfd-2.35.so to libbfd-2.35.2.so to avoid breaking binaries/libraries that resolved libbfd.so symlink;
+# likewise for libopcodes-2.35.so
+postinstallcmds = [
+    "cd %(installdir)s/lib && ln -s libbfd-%(version)s.2.so libbfd-%(version)s.so",
+    "cd %(installdir)s/lib && ln -s libopcodes-%(version)s.2.so libopcodes-%(version)s.so",
+]
 
 moduleclass = 'tools'

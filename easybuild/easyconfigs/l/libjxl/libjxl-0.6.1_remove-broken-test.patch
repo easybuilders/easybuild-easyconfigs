@@ -1,0 +1,65 @@
+remove broken test, see also https://github.com/libjxl/libjxl/issues/500
+author: Kenneth Hoste (HPC-UGent)
+diff -ruN libjxl-0.6.1_orig/lib/jxl/decode_test.cc libjxl-0.6.1/lib/jxl/decode_test.cc
+--- libjxl-0.6.1_orig/lib/jxl/decode_test.cc	2021-11-01 14:01:50.188357223 +0000
++++ libjxl-0.6.1/lib/jxl/decode_test.cc	2021-11-01 14:02:05.128147260 +0000
+@@ -1701,59 +1701,6 @@
+   JxlDecoderDestroy(dec);
+ }
+ 
+-TEST(DecodeTest, PixelTestWithICCProfileLossy) {
+-  JxlDecoder* dec = JxlDecoderCreate(NULL);
+-
+-  size_t xsize = 123, ysize = 77;
+-  size_t num_pixels = xsize * ysize;
+-  std::vector<uint8_t> pixels = jxl::test::GetSomeTestImage(xsize, ysize, 3, 0);
+-  JxlPixelFormat format_orig = {3, JXL_TYPE_UINT16, JXL_BIG_ENDIAN, 0};
+-  jxl::CompressParams cparams;
+-  jxl::PaddedBytes compressed = jxl::CreateTestJXLCodestream(
+-      jxl::Span<const uint8_t>(pixels.data(), pixels.size()), xsize, ysize, 3,
+-      cparams, kCSBF_None, JXL_ORIENT_IDENTITY, /*add_preview=*/false,
+-      /*add_icc_profile=*/true);
+-  uint32_t channels = 3;
+-
+-  JxlPixelFormat format = {channels, JXL_TYPE_FLOAT, JXL_LITTLE_ENDIAN, 0};
+-
+-  std::vector<uint8_t> pixels2 = jxl::DecodeWithAPI(
+-      dec, jxl::Span<const uint8_t>(compressed.data(), compressed.size()),
+-      format, /*use_callback=*/false, /*set_buffer_early=*/true,
+-      /*use_resizable_runner=*/false);
+-  JxlDecoderReset(dec);
+-  EXPECT_EQ(num_pixels * channels * 4, pixels2.size());
+-
+-  // The input pixels use the profile matching GetIccTestProfile, since we set
+-  // add_icc_profile for CreateTestJXLCodestream to true.
+-  jxl::ColorEncoding color_encoding0;
+-  EXPECT_TRUE(color_encoding0.SetICC(GetIccTestProfile()));
+-  jxl::Span<const uint8_t> span0(pixels.data(), pixels.size());
+-  jxl::CodecInOut io0;
+-  io0.SetSize(xsize, ysize);
+-  EXPECT_TRUE(ConvertFromExternal(
+-      span0, xsize, ysize, color_encoding0,
+-      /*has_alpha=*/false, false, 16, format_orig.endianness,
+-      /*flipped_y=*/false, /*pool=*/nullptr, &io0.Main(), /*float_in=*/false));
+-
+-  // The output pixels are expected to be in the same colorspace as the input
+-  // profile, as the profile can be represented by enum values.
+-  jxl::ColorEncoding color_encoding1 = color_encoding0;
+-  jxl::Span<const uint8_t> span1(pixels2.data(), pixels2.size());
+-  jxl::CodecInOut io1;
+-  io1.SetSize(xsize, ysize);
+-  EXPECT_TRUE(ConvertFromExternal(
+-      span1, xsize, ysize, color_encoding1,
+-      /*has_alpha=*/false, false, 32, format.endianness,
+-      /*flipped_y=*/false, /*pool=*/nullptr, &io1.Main(), /*float_in=*/true));
+-
+-  jxl::ButteraugliParams ba;
+-  EXPECT_LE(ButteraugliDistance(io0, io1, ba, /*distmap=*/nullptr, nullptr),
+-            2.4f);
+-
+-  JxlDecoderDestroy(dec);
+-}
+-
+ // Tests the case of lossy sRGB image without alpha channel, decoded to RGB8
+ // and to RGBA8
+ TEST(DecodeTest, PixelTestOpaqueSrgbLossy) {

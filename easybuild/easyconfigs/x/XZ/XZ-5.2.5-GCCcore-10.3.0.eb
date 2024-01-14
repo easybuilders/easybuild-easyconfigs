@@ -1,0 +1,47 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'ConfigureMake'
+
+name = 'XZ'
+version = '5.2.5'
+
+homepage = 'https://tukaani.org/xz/'
+description = "xz: XZ utilities"
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://tukaani.org/xz/']
+sources = [SOURCELOWER_TAR_BZ2]
+patches = [
+    'xz-5.2.5_fix-symbols.patch',
+    'xz-5.2.5-cve-2022-1271.patch',
+]
+checksums = [
+    {'xz-5.2.5.tar.bz2': '5117f930900b341493827d63aa910ff5e011e0b994197c3b71c08a20228a42df'},
+    {'xz-5.2.5_fix-symbols.patch': 'ce80545e7bd88466fd9561a8abb9da87e62ebc71a1531c909a492fa2844da6d0'},
+    {'xz-5.2.5-cve-2022-1271.patch': '98c6cb1042284fe704ec30083f3fc87364ce9ed2ea51f62bbb0ee9d3448717ec'},
+]
+
+builddependencies = [
+    # use gettext built with system toolchain as build dep to avoid cyclic dependency (XZ -> gettext -> libxml2 -> XZ)
+    ('gettext', '0.21', '', SYSTEM),
+    # use Autotools built with system toolchain as build dep to avoid conflicting ncurses dependency
+    ('Autotools', '20220317', '', SYSTEM),
+    ('binutils', '2.36.1'),
+]
+
+# may become useful in non-x86 archs
+# configopts = ' --disable-assembler '
+
+sanity_check_paths = {
+    'files': ['bin/lzmainfo', 'bin/unxz', 'bin/xz'],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "xz --help",
+    "unxz --help",
+]
+
+moduleclass = 'tools'

@@ -1,0 +1,172 @@
+Fixes a bug with some parts of Yambo that use SLEPc
+Applies most of this commit to this version
+https://github.com/yambo-code/yambo/commit/1846c85fdd08ec80ecf90082821cf957a0c93747
+diff -ruN yambo-5.1.2.orig/src/bse/K_multiply_by_V_slepc.F yambo-5.1.2/src/bse/K_multiply_by_V_slepc.F
+--- yambo-5.1.2.orig/src/bse/K_multiply_by_V_slepc.F	2023-07-24 14:31:48.203323300 +0200
++++ yambo-5.1.2/src/bse/K_multiply_by_V_slepc.F	2023-07-24 14:35:13.933323300 +0200
+@@ -1,5 +1,5 @@
+ !
+-!        Copyright (C) 2000-2023 the YAMBO team
++!        Copyright (C) 2000-2022 the YAMBO team
+ !              http://www.yambo-code.org
+ !
+ ! Authors (see AUTHORS file for details): HM DS IMA
+@@ -26,7 +26,7 @@
+  ! Interface with the K_multiply_by_V from the Haydock method
+  ! This function has to take the same arguments as MatMult from PETSC
+  !
+- use pars,          ONLY : SP
++ use pars,          ONLY : SP,cI
+  use BS_solvers,    ONLY : Slepc_v,BSS_Slepc_double_grp
+  use BS,            ONLY : BS_T_grp,BS_nT_grps,BS_K_dim
+  use parallel_m,    ONLY : PAR_IND_T_Haydock
+@@ -45,7 +45,7 @@
+  !
+  implicit none
+  !
+- PetscScalar          :: tmp_value(1)
++ PetscScalar          :: tmp_value(1),tmp_value_star(1)
+  PetscInt             :: H_pos(1), pet_one
+  PetscErrorCode       :: ierr
+  !
+@@ -108,12 +108,13 @@
+    do i_c=1,BS_T_grp(i_g)%size
+      H_pos=start_index+i_c
+      tmp_value=cmplx(Slepc_v%Vo(i_g)%fragment(i_c,1))
++     tmp_value_star=real(Slepc_v%Vo(i_g)%fragment(i_c,1))-cI*aimag(Slepc_v%Vo(i_g)%fragment(i_c,1))
+      !SLEPC funcitons expect C indexes both in Fortran and C
+      call VecSetValues( vo, pet_one, H_pos, tmp_value, INSERT_VALUES, ierr )
+      if(BSS_slepc_double_grp) then
+        ! Expand vo to anti-resonant block
+        H_pos=start_index_dg+i_c
+-       call VecSetValues( vo, pet_one, H_pos, fac*conjg(tmp_value), INSERT_VALUES, ierr )
++       call VecSetValues( vo, pet_one, H_pos, fac*tmp_value_star, INSERT_VALUES, ierr )
+      endif
+    enddo
+  enddo
+diff -ruN yambo-5.1.2.orig/src/bse/K_multiply_by_V_transpose_slepc.F yambo-5.1.2/src/bse/K_multiply_by_V_transpose_slepc.F
+--- yambo-5.1.2.orig/src/bse/K_multiply_by_V_transpose_slepc.F	2023-07-24 14:31:48.203323300 +0200
++++ yambo-5.1.2/src/bse/K_multiply_by_V_transpose_slepc.F	2023-07-24 14:34:40.413323300 +0200
+@@ -1,5 +1,5 @@
+ !
+-!        Copyright (C) 2000-2023 the YAMBO team
++!        Copyright (C) 2000-2022 the YAMBO team
+ !              http://www.yambo-code.org
+ !
+ ! Authors (see AUTHORS file for details): HM DS IMA
+@@ -26,7 +26,7 @@
+  ! Interface with the K_multiply_by_V from the Haydock method
+  ! This function has to take the same arguments as MatMult from PETSC
+  !
+- use pars,          ONLY : SP
++ use pars,          ONLY : SP,cI
+  use BS_solvers,    ONLY : Slepc_v,BSS_Slepc_double_grp
+  use BS,            ONLY : BS_T_grp,BS_nT_grps,BS_K_dim
+  use parallel_m,    ONLY : PAR_IND_T_Haydock
+@@ -45,7 +45,7 @@
+  !
+  implicit none
+  !
+- PetscScalar          :: tmp_value(1)
++ PetscScalar          :: tmp_value(1),tmp_value_star(1)
+  PetscInt             :: H_pos(1), pet_one 
+  PetscErrorCode       :: ierr
+  !
+@@ -109,12 +109,13 @@
+    do i_c=1,BS_T_grp(i_g)%size
+      H_pos=start_index+i_c
+      tmp_value=cmplx(Slepc_v%Vo(i_g)%fragment(i_c,1))
++     tmp_value_star=real(Slepc_v%Vo(i_g)%fragment(i_c,1))-cI*aimag(Slepc_v%Vo(i_g)%fragment(i_c,1))
+      !SLEPC funcitons expect C indexes both in Fortran and C
+      call VecSetValues( vo, pet_one, H_pos, tmp_value, INSERT_VALUES, ierr )
+      if(BSS_slepc_double_grp) then
+        ! Expand vo to anti-resonant block
+        H_pos=start_index_dg+i_c
+-       call VecSetValues( vo, pet_one, H_pos, fac*conjg(tmp_value), INSERT_VALUES, ierr )
++       call VecSetValues( vo, pet_one, H_pos, fac*tmp_value_star, INSERT_VALUES, ierr )
+      endif
+    enddo
+  enddo
+diff -ruN yambo-5.1.2.orig/src/bse/K_stored_in_a_slepc_matrix.F yambo-5.1.2/src/bse/K_stored_in_a_slepc_matrix.F
+--- yambo-5.1.2.orig/src/bse/K_stored_in_a_slepc_matrix.F	2023-07-24 14:31:48.203323300 +0200
++++ yambo-5.1.2/src/bse/K_stored_in_a_slepc_matrix.F	2023-07-24 14:35:46.923323300 +0200
+@@ -1,5 +1,5 @@
+ !
+-!        Copyright (C) 2000-2023 the YAMBO team
++!        Copyright (C) 2000-2022 the YAMBO team
+ !              http://www.yambo-code.org
+ !
+ ! Authors (see AUTHORS file for details): HM DS
+@@ -53,7 +53,7 @@
+  Mat,     intent(out) :: slepc_mat
+  !
+  integer     :: i_c,i_r,i_Tk,i_Tp,i_B,H_shift(2)
+- PetscScalar         :: Mij
++ PetscScalar         :: Mij,Mij_star
+  PetscInt            :: H_pos(2),SL_K_dim(2),SL_H_dim
+  PetscErrorCode      :: ierr
+  !
+@@ -95,14 +95,17 @@
+        if (H_pos(1)+H_shift(1)>H_pos(2)+H_shift(2)) cycle
+        if (l_BS_ares_from_res.and.H_pos(1)>H_pos(2)) cycle
+        !
+-       Mij=BS_blk(i_B)%mat(i_r,i_c)
++       Mij     =      BS_blk(i_B)%mat(i_r,i_c)
++       Mij_star= real(BS_blk(i_B)%mat(i_r,i_c))-cI*aimag(BS_blk(i_B)%mat(i_r,i_c))
+        !
+        ! Add energies to the diagonal
+        !
+        if(H_pos(1)+H_shift(1)==H_pos(2)+H_shift(2)) then
+-         Mij=real(Mij)+BSS_eh_E(H_pos(1)+H_shift(1)+1)*cONE
++         Mij     =real(Mij)     +BSS_eh_E(H_pos(1)+H_shift(1)+1)*cONE
++         Mij_star=real(Mij_star)+BSS_eh_E(H_pos(1)+H_shift(1)+1)*cONE
+          if (allocated(BSS_eh_W).and..not.BSS_perturbative_width) then
+-           Mij=Mij+cI*BSS_eh_W(H_pos(1)+H_shift(1)+1)
++           Mij     =Mij            +cI*BSS_eh_W(H_pos(1)+H_shift(1)+1)
++           Mij_star=Mij_star       -cI*BSS_eh_W(H_pos(1)+H_shift(1)+1)
+          endif
+        endif
+        !
+@@ -110,35 +113,35 @@
+        case("R")
+            call MatSetValue( slepc_mat, H_pos(1), H_pos(2),       Mij , INSERT_VALUES, ierr )
+            ! The resonant block is hermitial
+-           call MatSetValue( slepc_mat, H_pos(2), H_pos(1), conjg(Mij), INSERT_VALUES, ierr )
++           call MatSetValue( slepc_mat, H_pos(2), H_pos(1),   Mij_star, INSERT_VALUES, ierr )
+          if (l_BS_ares_from_res.and.BS_K_coupling) then
+            ! The anti-resonant block is A=-R*
+-           call MatSetValue( slepc_mat, H_pos(1)+SL_K_dim(1), H_pos(2)+SL_K_dim(1),-conjg(Mij), INSERT_VALUES, ierr )
++           call MatSetValue( slepc_mat, H_pos(1)+SL_K_dim(1), H_pos(2)+SL_K_dim(1), -Mij_star, INSERT_VALUES, ierr )
+            ! The anti-resonant block is hermitian
+            call MatSetValue( slepc_mat, H_pos(2)+SL_K_dim(1), H_pos(1)+SL_K_dim(1),      -Mij, INSERT_VALUES, ierr )
+          endif
+        case("C")
+            call MatSetValue( slepc_mat, H_pos(1), H_pos(2)+SL_K_dim(1),       Mij , INSERT_VALUES, ierr )
+            ! Anti-coupling from coupling: the whole BSE matrix is Pseudo-HErmitian
+-           call MatSetValue( slepc_mat, H_pos(2)+SL_K_dim(1), H_pos(1),-conjg(Mij), INSERT_VALUES, ierr )
++           call MatSetValue( slepc_mat, H_pos(2)+SL_K_dim(1), H_pos(1), -Mij_star , INSERT_VALUES, ierr )
+            if (l_BS_ares_from_res) then
+              ! The coupling block and the anti-coupling block are symmetric
+              call MatSetValue( slepc_mat, H_pos(2), H_pos(1)+SL_K_dim(1),       Mij , INSERT_VALUES, ierr )
+-             call MatSetValue( slepc_mat, H_pos(1)+SL_K_dim(1), H_pos(2),-conjg(Mij), INSERT_VALUES, ierr )
++             call MatSetValue( slepc_mat, H_pos(1)+SL_K_dim(1), H_pos(2), -Mij_star , INSERT_VALUES, ierr )
+            endif
+        case("A")
+          ! The anti-resonant block is hermitial
+          if(BS_res_ares_n_mat==1) then
+            call MatSetValue( slepc_mat, H_pos(1)+SL_K_dim(1), H_pos(2)+SL_K_dim(1),       Mij , INSERT_VALUES, ierr )
+-           call MatSetValue( slepc_mat, H_pos(2)+SL_K_dim(1), H_pos(1)+SL_K_dim(1), conjg(Mij), INSERT_VALUES, ierr )
++           call MatSetValue( slepc_mat, H_pos(2)+SL_K_dim(1), H_pos(1)+SL_K_dim(1),  Mij_star , INSERT_VALUES, ierr )
+          else
+            call MatSetValue( slepc_mat, H_pos(1), H_pos(2),       Mij , INSERT_VALUES, ierr )
+-           call MatSetValue( slepc_mat, H_pos(2), H_pos(1), conjg(Mij), INSERT_VALUES, ierr )
++           call MatSetValue( slepc_mat, H_pos(2), H_pos(1),  Mij_star , INSERT_VALUES, ierr )
+          endif
+        case("Q")
+            call MatSetValue( slepc_mat, H_pos(1)+SL_K_dim(1), H_pos(2),       Mij , INSERT_VALUES, ierr )
+            ! Coupling from anti-coupling: the whole BSE matrix is Pseudo-HErmitian
+-           call MatSetValue( slepc_mat, H_pos(2), H_pos(1)+SL_K_dim(1),-conjg(Mij), INSERT_VALUES, ierr )
++           call MatSetValue( slepc_mat, H_pos(2), H_pos(1)+SL_K_dim(1), -Mij_star , INSERT_VALUES, ierr )
+        end select
+        !
+      enddo

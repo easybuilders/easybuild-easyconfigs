@@ -1,0 +1,64 @@
+# Updated by: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'ConfigureMake'
+
+name = 'AUGUSTUS'
+version = '3.4.0'
+
+homepage = 'https://bioinf.uni-greifswald.de/augustus/'
+description = "AUGUSTUS is a program that predicts genes in eukaryotic genomic sequences"
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+
+# https://github.com/Gaius-Augustus/Augustus/archive
+github_account = 'Gaius-Augustus'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['AUGUSTUS-%(version)s_fix-hardcoding.patch']
+checksums = [
+    '2c06cf5953da5afdce1478fa10fcd3c280a3b050f1b2367bf3e731d7374d9bb8',  # v3.4.0.tar.gz
+    'e74023f28ee3e76590f4534d195c313b88b66a92ec779da184d30d056fc8e052',  # AUGUSTUS-3.4.0_fix-hardcoding.patch
+]
+
+builddependencies = [
+    ('Python', '3.8.2'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Boost', '1.72.0'),
+    ('GSL', '2.6'),
+    ('SAMtools', '1.10'),
+    ('HTSlib', '1.10.2'),  # also provides tabix
+    ('BCFtools', '1.10.2'),
+    ('lpsolve', '5.5.2.11'),
+    ('SuiteSparse', '5.7.1', '-METIS-5.1.0'),
+    ('BamTools', '2.5.1'),
+    ('SQLite', '3.31.1'),
+]
+
+skipsteps = ['configure']
+
+# run "make clean" to avoid using binaries included with the source tarball
+prebuildopts = "make clean && "
+
+buildopts = 'COMPGENEPRED=true SQLITE=true ZIPINPUT=true MYSQL=false CXX="$CXX" LINK.cc="$CXX" '
+installopts = 'INSTALLDIR=%(installdir)s '
+
+sanity_check_paths = {
+    'files': ['bin/augustus', 'bin/bam2hints', 'bin/etraining', 'bin/fastBlockSearch',
+              'bin/filterBam', 'bin/getSeq', 'bin/homGeneMapping', 'bin/joingenes',
+              'bin/load2sqlitedb', 'bin/prepareAlign'],
+    'dirs': ['config', 'scripts'],
+}
+sanity_check_commands = ['augustus --help']
+
+modextrapaths = {'PATH': 'scripts'}
+modextravars = {
+    'AUGUSTUS_BIN_PATH': '%(installdir)s/bin',
+    'AUGUSTUS_CONFIG_PATH': '%(installdir)s/config',
+    'AUGUSTUS_SCRIPTS_PATH': '%(installdir)s/scripts',
+}
+
+moduleclass = 'bio'

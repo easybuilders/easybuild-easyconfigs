@@ -1,0 +1,33 @@
+easyblock = 'PythonPackage'
+
+name = 'XGBoost'
+version = '1.7.2'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/dmlc/xgboost'
+description = """XGBoost is an optimized distributed gradient boosting library designed to be highly efficient,
+ flexible and portable."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['f1a749aedb9330afc48007cc78b8bbbbea35ce372f48a2735f9c71bbc7b8dcfb']
+
+builddependencies = [('CMake', '3.23.1')]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('SciPy-bundle', '2022.05'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+]
+
+configopts = "-DUSE_CUDA=ON -DBUILD_WITH_CUDA_CUB=ON "
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+# use the parallel parameter from EB instead of total procs in the system
+preinstallopts = "sed -i 's/nproc = os.cpu_count.*$/nproc = %(parallel)s/' setup.py &&"
+
+moduleclass = 'lib'

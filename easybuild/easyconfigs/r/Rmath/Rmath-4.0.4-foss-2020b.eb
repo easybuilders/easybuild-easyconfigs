@@ -1,0 +1,48 @@
+# Easyconfig for Rmath
+# Author: Caspar van Leeuwen
+# SURFsara, Amsterdam, The Netherlands
+
+easyblock = 'ConfigureMake'
+
+name = 'Rmath'
+version = '4.0.4'
+
+homepage = "https://www.r-project.org/"
+description = """Rmath is the standalone version of the R math library.
+ Rmath can be used in your own C/C++ routines."""
+
+toolchain = {'name': 'foss', 'version': '2020b'}
+
+source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s/']
+sources = ['R-%(version)s.tar.gz']
+checksums = ['523f27d69744a08c8f0bd5e1e6c3d89a4db29ed983388ba70963a3cd3a4a802e']
+
+dependencies = [
+    ('bzip2', '1.0.8'),
+    ('cURL', '7.72.0'),
+    ('libreadline', '8.0'),
+    ('PCRE2', '10.35'),
+    ('XZ', '5.2.5'),
+    ('zlib', '1.2.11')
+]
+
+# Copied from R-3.3.1-intel-2016b.eb.
+# Again, unsure if these affect R-math: R documentation doesn't specify.
+configopts = "--with-pic --enable-threads --with-x=no --with-pcre2"
+
+# Since we're only installing Rmath anyway, we don't care about R packages.
+configopts += " --with-recommended-packages=no"
+
+# To build Rmath, docs say you need to execute 'make' in src/nmath/standalone
+# https://cran.r-project.org/doc/manuals/r-devel/R-admin.html#Configuration-options
+prebuildopts = 'cd src/nmath/standalone;'
+preinstallopts = prebuildopts
+
+sanity_check_paths = {
+    'files': [('lib/libRmath.a', 'lib64/libRmath.so'),
+              ('lib/libRmath.%s' % SHLIB_EXT, 'lib64/libRmath.%s' % SHLIB_EXT),
+              'include/Rmath.h'],
+    'dirs': []
+}
+
+moduleclass = 'numlib'

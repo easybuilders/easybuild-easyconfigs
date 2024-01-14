@@ -1,0 +1,16 @@
+# Thomas Hoffmann, EMBL Heidelberg, structures-it@embl.de, 2021/03.
+# allow sanity check on build nodes without nvidia driver installed.
+# stubs/libcuda.so* should be copied to lib at postinstall.
+diff -ru cupy-8.5.0/cupy/__init__.py CuPy-8.5.0_sanitycheck_fix/cupy/__init__.py
+--- cupy-8.5.0/cupy/__init__.py	2021-02-25 21:48:36.000000000 +0100
++++ CuPy-8.5.0_sanitycheck_fix/cupy/__init__.py	2021-03-15 12:00:09.333166759 +0100
+@@ -865,3 +865,9 @@
+     """Prints the current runtime configuration to standard output."""
+     _sys.stdout.write(str(_cupyx.get_runtime_info()))
+     _sys.stdout.flush()
++
++print("Removing stubs libcuda.so* from $EBROOTCUPY/lib") #SANITYCHECKFIX
++import os #SANITYCHECKFIX
++os.system("rm $EBROOTCUPY/lib/libcuda* -f") #SANITYCHECKFIX
++os.system("sed -i '/SANITYCHECKFIX$/d' $EBROOTCUPY/lib/python*/site-packages/cupy/__init__.py" ) #SANITYCHECKFIX
++

@@ -1,0 +1,39 @@
+easyblock = 'Binary'
+
+name = 'alevin-fry'
+version = '0.4.3'
+
+homepage = 'https://github.com/COMBINE-lab/alevin-fry'
+description = """alevin-fry is an efficient and flexible tool for processing single-cell sequencing data,
+ currently focused on single-cell transcriptomics and feature barcoding."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.2.0'}
+
+source_urls = ['https://github.com/COMBINE-lab/alevin-fry/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['407a1b5767a293aefa9ff1dc2eda478356e74d148e3bfa89ef58213340e87ae2']
+
+builddependencies = [
+    ('binutils', '2.37'),
+    ('Rust', '1.54.0'),
+    ('CMake', '3.21.1'),
+]
+dependencies = [
+    ('bzip2', '1.0.8'),
+]
+
+extract_sources = True
+
+# pin version of clap dependency,
+# see https://github.com/COMBINE-lab/alevin-fry/commit/dcdd91cb6ff49065f60f3b6b400bd023fc308ab6
+install_cmd = "sed -i 's/3.0.0-beta.5/=3.0.0-beta.5/g' Cargo.toml && "
+install_cmd += "cargo install --root %(installdir)s --path ."
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["%(namelower)s --help"]
+
+moduleclass = 'bio'

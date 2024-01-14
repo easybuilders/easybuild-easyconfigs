@@ -1,0 +1,49 @@
+# There is unfortunately right now no proper release, thus the
+# commit-tag is being used. Does not build in parallel.
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'MakeCp'
+
+name = 'QuickPIC'
+local_commit = '776fcff'
+version = '20210224'
+
+homepage = 'https://github.com/UCLA-Plasma-Simulation-Group/QuickPIC-OpenSource'
+description = """ QuickPIC is a 3D parallel (MPI & OpenMP Hybrid) Quasi-Static PIC code, 
+which is developed based on the framework UPIC. QuickPIC can efficiently simulate plasma 
+based accelerator problems. This is the UCLA Plasma Simulation Group's official open-source 
+repository for QuickPIC."""
+
+toolchain = {'name': 'gompi', 'version': '2021b'}
+toolchainopts = {'pic': True, 'usempi': True, 'cstd': 'c99'}
+
+source_urls = ['https://github.com/UCLA-Plasma-Simulation-Group/QuickPIC-OpenSource/archive']
+sources = [{'download_filename': '%s.tar.gz' % local_commit, 'filename': SOURCE_TAR_GZ}]
+patches = ['QuickPIC-20210224_fix_paths_in_makefile.patch']
+
+checksums = [
+    '83d3664542ce0a1c1fa055802e214bdba98790ee512f1f2525d0c087d20d88af',  # QuickPIC-20210224.tar.gz
+    'fd4be47519513ca3add974e5c5964707a7534ef68ad850f775fae3d8e0cdc987',  # QuickPIC-20210224_fix_paths_in_makefile.patch
+]
+
+dependencies = [
+    ('HDF5', '1.12.1'),
+    ('json-fortran', '8.3.0'),
+]
+
+prebuildopts = 'cd source && '
+
+# See here for documentation
+# https://portal.hdfgroup.org/display/HDF5/Migrating+from+HDF5+1.10+to+HDF5+1.12
+configopts = '  --with-default-api-version=v110'
+
+parallel = 1
+
+files_to_copy = [(['source/qpic.e'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/qpic.e'],
+    'dirs': [],
+}
+
+moduleclass = 'phys'

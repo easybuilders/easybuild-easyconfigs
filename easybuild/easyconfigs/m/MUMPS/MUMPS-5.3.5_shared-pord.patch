@@ -1,0 +1,51 @@
+Heavily inspired from https://src.fedoraproject.org/rpms/MUMPS//blob/rawhide/f/MUMPS-shared-pord.patch
+Author: micketeer@gmail.com
+
+diff -ru MUMPS_5.3.5.orig/Makefile MUMPS_5.3.5/Makefile
+--- MUMPS_5.3.5.orig/Makefile	2021-08-11 11:43:32.368348352 +0200
++++ MUMPS_5.3.5/Makefile	2021-08-11 12:06:13.277818857 +0200
+@@ -55,7 +55,7 @@
+ multi_example:	s d c z
+ 	(cd examples ; $(MAKE) multi)
+ 
+-requiredobj: Makefile.inc $(LIBSEQNEEDED) $(libdir)/libpord$(PLAT)$(LIBEXT)
++requiredobj: Makefile.inc $(LIBSEQNEEDED) $(libdir)/libpord$(PLAT)$(LIBEXT) $(libdir)/libpord$(PLAT).so
+ 
+ # dummy MPI library (sequential version)
+ 
+@@ -72,6 +72,12 @@
+ 	  cp $(LPORDDIR)/libpord$(LIBEXT) $@; \
+ 	fi;
+ 
++$(libdir)/libpord$(PLAT).so:
++	if [ "$(LPORDDIR)" != "" ] ; then \
++	cd $(LPORDDIR); make CC="$(CC)" CFLAGS="$(OPTC)" AR="$(AR)" ARFUNCT= RANLIB="$(RANLIB)" libpord$(PLAT).so; fi;
++	if [ "$(LPORDDIR)" != "" ] ; then \
++	cp -a $(LPORDDIR)/libpord*.so lib/; fi;
++
+ clean:
+ 	(cd src; $(MAKE) clean)
+ 	(cd examples; $(MAKE) clean)
+diff -ru MUMPS_5.3.5.orig/PORD/lib/Makefile MUMPS_5.3.5/PORD/lib/Makefile
+--- MUMPS_5.3.5.orig/PORD/lib/Makefile	2021-08-11 11:43:32.306348521 +0200
++++ MUMPS_5.3.5/PORD/lib/Makefile	2021-08-11 12:04:40.183055088 +0200
+@@ -9,7 +9,7 @@
+ 
+ INCLUDES = -I../include
+ 
+-COPTIONS = $(INCLUDES) $(CFLAGS) $(OPTFLAGS)
++COPTIONS = $(INCLUDES) $(CFLAGS) $(OPTFLAGS) -fPIC
+ 
+ OBJS = graph.o gbipart.o gbisect.o ddcreate.o ddbisect.o nestdiss.o \
+        multisector.o gelim.o bucket.o tree.o \
+@@ -28,6 +28,10 @@
+ 	$(AR)$@ $(OBJS)
+ 	$(RANLIB) $@
+ 
++libpord$(PLAT).so: $(OBJS)
++	$(CC) -shared $(OBJS) -Wl,-soname,libpord$(PLAT)-$(SONAME_VERSION).so -o libpord$(PLAT)-$(SONAME_VERSION).so $(OPTL) -Wl,-z,defs
++	ln -fs libpord$(PLAT)-$(SONAME_VERSION).so $@
++
+ clean:
+ 	rm -f *.o
+

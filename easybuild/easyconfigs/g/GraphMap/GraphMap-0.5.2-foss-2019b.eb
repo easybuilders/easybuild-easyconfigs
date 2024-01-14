@@ -1,0 +1,60 @@
+easyblock = 'MakeCp'
+
+name = 'GraphMap'
+version = '0.5.2'
+
+homepage = 'https://github.com/isovic/graphmap'
+description = "A highly sensitive and accurate mapper for long, error-prone reads"
+
+toolchain = {'name': 'foss', 'version': '2019b'}
+toolchainopts = {'cstd': 'c++11', 'openmp': True}
+
+sources = [
+    {
+        'source_urls': ['https://github.com/isovic/graphmap/archive'],
+        'filename': 'graphmap-20170526.tar.gz',
+        'download_filename': 'eb8c75d68b03be95464318afa69b645a59f8f6b7.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/isovic/seqlib/archive'],
+        'filename': 'seqlib-20170526.tar.gz',
+        'download_filename': 'd980be7a3cc0bc802eb910c10f084279f337992f.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/isovic/argparser/archive'],
+        'filename': 'argparser-20160623.tar.gz',
+        'download_filename': '72af9764acefbcc92ff76e3aba8a83d9a3e33671.tar.gz',
+    },
+    {
+        'source_urls': ['https://github.com/isovic/gindex/archive'],
+        'filename': 'gindex-20170304.tar.gz',
+        'download_filename': 'b1fb5ad35763632db66377348bb16fec29f381e4.tar.gz',
+    },
+]
+checksums = [
+    'f08c21f65a83922f43d3430faacf8cfeebbea6ee54dceac4ac438f985a170965',  # graphmap-20170526.tar.gz
+    '77a19d9239125f91f9a8093bb4d03638e6ba9aa4ce0e586fa8f81a422fc9118c',  # seqlib-20170526.tar.gz
+    '22132721986528851da838ccd1b3f223d4a68318f580ade3234c3b528ad8d7f4',  # argparser-20160623.tar.gz
+    '87474a597f4e1d75cd9d188c5179014b87989ea02d440f5bba07b308ad3ae4af',  # gindex-20170304.tar.gz
+]
+
+files_to_copy = [(['bin/Linux-x64/graphmap'], 'bin')]
+
+# Move sources dependencies to expected folders
+prebuildopts = "mv %(builddir)s/seqlib-*/* %(builddir)s/graphmap-*/codebase/seqlib/ && "
+prebuildopts += "mv %(builddir)s/argparser-*/* %(builddir)s/graphmap-*/codebase/argumentparser/ && "
+prebuildopts += "mv %(builddir)s/gindex-*/* %(builddir)s/graphmap-*/codebase/gindex/ && "
+
+# build flags inherited from original Makefile
+buildopts = 'GCC="$CXX" '
+buildopts += 'CC_FLAGS_RELEASE="$CXXFLAGS -DRELEASE_VERSION -c '
+buildopts += '-fdata-sections -ffunction-sections -fmessage-length=0 -ffreestanding -Werror=return-type -pthread"'
+
+sanity_check_paths = {
+    'files': ['bin/graphmap'],
+    'dirs': [],
+}
+
+sanity_check_commands = ['graphmap align -h 2>&1  | grep "GraphMap Version"']
+
+moduleclass = 'bio'

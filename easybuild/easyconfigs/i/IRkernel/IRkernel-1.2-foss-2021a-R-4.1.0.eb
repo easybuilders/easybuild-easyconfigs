@@ -1,0 +1,69 @@
+easyblock = 'Bundle'
+
+name = 'IRkernel'
+version = '1.2'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://irkernel.github.io'
+description = """The R kernel for the 'Jupyter' environment executes R code 
+ which the front-end (Jupyter Notebook or other front-ends) submits to the 
+ kernel via the network."""
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+dependencies = [
+    ('R', '4.1.0'),
+    ('Python', '3.9.5'),
+    ('IPython', '7.25.0'),
+    ('ZeroMQ', '4.3.4'),
+]
+
+exts_defaultclass = 'RPackage'
+exts_filter = ("R -q --no-save", "library(%(ext_name)s)")
+
+exts_default_options = {
+    'source_urls': [
+        'https://cran.r-project.org/src/contrib/',
+        'https://cran.rstudio.com/src/contrib/',
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s/',
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz',
+}
+
+exts_list = [
+    ('repr', '1.1.3', {
+        'checksums': ['531b43d413b51cbc96e3b9162493c975d9395bb9532e500ad51cd99b36a53562'],
+    }),
+    ('IRdisplay', '1.0', {
+        'checksums': ['8967ec58656ede561d20ab07dd9ef27de088c0ea099e325242b3860a63964b96'],
+    }),
+    ('pbdZMQ', '0.3-5', {
+        'checksums': ['4d8088b3365d612a661f0078bcba50357cb3a7ec04a699348b4312fd6fd811ed'],
+    }),
+    (name, version, {
+        'checksums': ['5fb4dbdb741d05043120a8be0eb73f054b607d9854f314bd79cfec08d219ff91'],
+    }),
+]
+
+modextrapaths = {
+    'R_LIBS_SITE': '',
+    'JUPYTER_PATH': '%(name)s'
+}
+
+# IPython notebook looks for the json kernel file in kernels/IRkernel
+# We start the kernel with default bitmapType 'cairo'. This is a more sensible default
+# for headless nodes. See https://github.com/IRkernel/IRkernel/issues/388
+local_kerneldir = '%(installdir)s/IRkernel'
+postinstallcmds = [
+    'mkdir -p %s/kernels/ir' % local_kerneldir,
+    'cp %s/kernelspec/* %s/kernels/ir' % (local_kerneldir, local_kerneldir),
+    ('sed -i \'s/"IRkernel::main()"/"options(bitmapType=\\x27cairo\\x27); IRkernel::main()"/g\''
+        ' %s/kernels/ir/kernel.json') % local_kerneldir
+]
+
+sanity_check_paths = {
+    'files': ['%s/kernels/ir/kernel.json' % local_kerneldir],
+    'dirs': [name],
+}
+
+moduleclass = 'tools'

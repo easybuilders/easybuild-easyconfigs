@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+
+name = 'VASP'
+version = '6.3.2'
+
+homepage = 'https://www.vasp.at'
+description = """The Vienna Ab initio Simulation Package (VASP) is a computer program for atomic scale
+materials modelling, e.g. electronic structure calculations and quantum-mechanical molecular dynamics,
+from first principles."""
+
+toolchain = {'name': 'nvofbf', 'version': '2022.07'}
+toolchainopts = {'openmp': True}
+
+download_instructions = """Vasp is proprietary software, see http://www.vasp.at/index.php/faqs
+ on how to get access to the code."""
+
+sources = ['%(namelower)s.%(version)s.tgz']
+checksums = ['f7595221b0f9236a324ea8afe170637a578cdd5a837cc7679e7f7812f6edf25a']
+
+prebuildopts = 'cp arch/makefile.include.nvhpc_omp_acc ./makefile.include && '
+
+# Makefile uses LIBS as a list of folders
+prebuildopts += 'unset LIBS && '
+
+local_targets = ['std', 'gam', 'ncl']
+
+buildopts = '%s ' % ' '.join(local_targets)
+buildopts += 'FFTW_ROOT="${EBROOTFFTW}" '
+buildopts += 'DEPS=1 '  # required for VASP parallel builds
+
+# https://www.vasp.at/wiki/index.php/Validation_tests
+
+# it is recommended to run the testsuite with 4 MPI processes,
+# but it's also recommended to use only 1 MPI process per GPU,
+# so running the test on GPUs requires 4 GPUs?
+local_test_mpiprocs = 4
+
+pretestopts = 'export MPIRUN="mpirun -np %s -x OMP_NUM_THREADS=4 -x OMP_STACKSIZE=512m" && ' % local_test_mpiprocs
+pretestopts += 'export VASP_TESTSUITE_EXE_STD="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_std" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_NCL="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_ncl" && '
+pretestopts += 'export VASP_TESTSUITE_EXE_GAM="$MPIRUN %(builddir)s/vasp.%(version)s/bin/vasp_gam" && '
+
+# skip tests that are too long
+local_test_skip = 'HEG_333_LW '
+
+# these tests are failing when using 4 V100 GPUs (still leaves about 50 successul tests)
+local_test_skip += "bulk_GaAs_scGW_ALGO=D_sym bulk_GaAs_scGW_ALGO=D_sym_RPR bulk_GaAs_scGW_sym bulk_GaAs_scGW_sym_RPR "
+local_test_skip += "bulk_InP_SOC_DFT_ISYM=3 bulk_InP_SOC_DFT_ISYM=3_RPR bulk_InP_SOC_PBE0_nosym bulk_InP_SOC_PBE0_sym "
+local_test_skip += "bulk_InP_SOC_PBE0_sym_RPR bulk_SiO2_HSE bulk_SiO2_HSE_RPR bulk_SiO2_LPEAD bulk_SiO2_LPEAD_RPR "
+local_test_skip += "bulk_SiO2_PBE0 bulk_SiO2_PBE0_RPR GaAs_LEPSILON_LPEAD GaAs_LEPSILON_LPEAD_RPR SiC_HSE06_ALGO=A "
+local_test_skip += "SiC_HSE06_ALGO=A_RPR SiC_HSE06_ALGO=D SiC_HSE06_ALGO=D_RPR"
+
+pretestopts += 'export VASP_TESTSUITE_SKIP_TESTS="%s" && ' % local_test_skip
+runtest = 'test'
+
+files_to_copy = [(['bin/vasp_' + x for x in local_targets], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/vasp_' + x for x in local_targets],
+    'dirs': []
+}
+
+moduleclass = 'phys'

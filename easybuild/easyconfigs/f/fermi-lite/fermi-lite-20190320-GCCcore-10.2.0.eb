@@ -1,0 +1,46 @@
+# Author: Jasper Grimm (UoY)
+
+easyblock = 'MakeCp'
+
+name = 'fermi-lite'
+version = '20190320'
+local_commit = 'b499514'
+
+homepage = 'https://github.com/lh3/fermi-lite'
+description = """Standalone C library for assembling Illumina short reads in small regions."""
+
+toolchain = {'name': 'GCCcore', 'version': '10.2.0'}
+
+github_account = 'lh3'
+source_urls = [GITHUB_SOURCE]
+sources = ['%s.tar.gz' % local_commit]
+patches = [
+    '%(name)s-20190320_avoid-bwa-namespace-conflict.patch',
+    '%(name)s-20190320_build-shared-lib.patch',
+]
+checksums = [
+    'ea1230e298b8e7193a996b5aceeff7fea44ef00852b0b87d4fcb504bdca0e712',  # b499514.tar.gz
+    # fermi-lite-20190320_avoid-bwa-namespace-conflict.patch
+    '27600733f1cea8b1d1503b1a67b9d41526e907c1b6321313ff51194e166c1842',
+    '43398559fbb3910d6d3d1a41af3fb16bf8f26bd7cc34176dfc9a068a551c3f50',  # fermi-lite-20190320_build-shared-lib.patch
+]
+
+builddependencies = [('binutils', '2.35')]
+
+dependencies = [('zlib', '1.2.11')]
+
+prebuildopts = 'CFLAGS="$CFLAGS -fcommon"'
+
+files_to_copy = [
+    (['fml-asm'], 'bin'),
+    (['*.a', '*.%s*' % SHLIB_EXT], 'lib'),
+    (['*.h'], 'include/fml'),
+    'test',
+]
+
+sanity_check_paths = {
+    'files': ['bin/fml-asm', 'lib/libfml.a', 'lib/libfml.%s' % SHLIB_EXT],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
