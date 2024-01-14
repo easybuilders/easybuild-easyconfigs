@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'librsvg'
+version = '2.51.2'
+
+homepage = 'https://wiki.gnome.org/Projects/LibRsvg'
+description = "Librsvg is a library to render SVG files using cairo."
+
+toolchain = {'name': 'GCCcore', 'version': '10.3.0'}
+
+source_urls = ['https://download.gnome.org/sources/librsvg/%(version_major_minor)s/']
+sources = [SOURCE_TAR_XZ]
+checksums = ['6b80840ef3e4724624e715398bb4470fa68368943cdbd507e681708bbe32b289']
+
+builddependencies = [
+    ('binutils', '2.36.1'),
+    ('Rust', '1.52.1'),
+]
+
+dependencies = [
+    ('cairo', '1.16.0'),
+    ('freetype', '2.10.4'),
+    ('Gdk-Pixbuf', '2.42.6'),
+    ('HarfBuzz', '2.8.1'),
+    ('Pango', '1.48.5'),
+    ('GObject-Introspection', '1.68.0'),
+]
+
+# don't GdkPixbuf loader (which gets added to the Gdk-Pixbuf installation directory)
+configopts = "--disable-pixbuf-loader"
+
+sanity_check_paths = {
+    'files': ['bin/rsvg-convert', 'lib/librsvg-%(version_major)s.a', 'lib/librsvg-%%(version_major)s.%s' % SHLIB_EXT,
+              'lib/pkgconfig/librsvg-%(version_major)s.0.pc'],
+    'dirs': ['include/librsvg-%(version_major)s.0/librsvg', 'share'],
+}
+
+sanity_check_commands = ["rsvg-convert --help"]
+
+moduleclass = 'lib'

@@ -1,0 +1,59 @@
+easyblock = 'ConfigureMake'
+
+name = 'Ghostscript'
+version = '9.56.1'
+
+homepage = 'https://ghostscript.com'
+description = """Ghostscript is a versatile processor for PostScript data with the ability to render PostScript to
+ different targets. It used to be part of the cups printing stack, but is no longer used for that."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [
+    'https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs%s/' % version.replace('.', ''),
+]
+sources = [SOURCELOWER_TAR_GZ]
+checksums = ['1598b9a38659cce8448d42a73054b2f9cbfcc40a9b97eeec5f22d4d6cd1de8e6']
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('pkgconf', '1.8.0'),
+]
+
+dependencies = [
+    ('zlib', '1.2.12'),
+    ('libpng', '1.6.37'),
+    ('freetype', '2.12.1'),
+    ('libjpeg-turbo', '2.1.3'),
+    ('expat', '2.4.8'),
+    ('GLib', '2.72.1'),
+    ('cairo', '1.17.4'),
+    ('LibTIFF', '4.3.0'),
+    ('GTK2', '2.24.33'),
+]
+
+# Do not use local copies of zlib, jpeg, freetype, and png
+preconfigopts = "mv zlib zlib.no && mv jpeg jpeg.no && mv freetype freetype.no && mv libpng libpng.no && "
+preconfigopts += 'export LIBS="$LIBS -L$EBROOTZLIB/lib -lz" && '
+
+configopts = "--with-system-libtiff --enable-dynamic"
+
+# Avoid race condition in build if too much parallelism is used
+maxparallel = 4
+
+postinstallcmds = [
+    # build and install shared libs
+    "make so && make soinstall",
+    # install header files
+    "mkdir -p %(installdir)s/include/ghostscript",
+    "install -v -m644 base/*.h %(installdir)s/include/ghostscript",
+    "install -v -m644 psi/*.h %(installdir)s/include/ghostscript",
+]
+
+sanity_check_paths = {
+    'files': ['bin/gs', 'lib/libgs.%s' % SHLIB_EXT],
+    'dirs': ['lib/ghostscript', 'include/ghostscript', 'share/man'],
+}
+
+moduleclass = 'tools'

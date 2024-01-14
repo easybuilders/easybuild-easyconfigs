@@ -1,0 +1,40 @@
+easyblock = 'ConfigureMake'
+
+name = 'Centrifuge'
+version = '1.0.4'
+
+homepage = 'https://ccb.jhu.edu/software/centrifuge'
+description = 'Classifier for metagenomic sequences'
+
+toolchain = {'name': 'gompi', 'version': '2020b'}
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['https://github.com/DaehwanKimLab/centrifuge/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = [
+    '929daed0f84739f7636cc1ea2757527e83373f107107ffeb5937a403ba5201bc',  # v1.0.4.tar.gz
+]
+
+dependencies = [
+    ('NGS', '2.10.9'),
+    ('ncbi-vdb', '2.10.9'),
+]
+
+skipsteps = ['configure']
+
+buildopts = 'CC="$CC" CPP="$CXX" RELEASE_FLAGS="$CXXFLAGS" '
+buildopts += 'USE_SRA=1 NCBI_NGS_DIR=$EBROOTNGS NCBI_VDB_DIR=$EBROOTNCBIMINUSVDB'
+
+installopts = "prefix=%(installdir)s"
+
+fix_perl_shebang_for = ['bin/centrifuge*.pl']
+
+sanity_check_paths = {
+    'files': ['bin/centrifuge%s' % x for x in ['', '-build', '-build-bin', '-class', '-download',
+                                               '-inspect', '-inspect-bin']],
+    'dirs': [],
+}
+
+sanity_check_commands = ["centrifuge --help"]
+
+moduleclass = 'bio'

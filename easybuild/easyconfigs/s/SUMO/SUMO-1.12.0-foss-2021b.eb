@@ -1,0 +1,59 @@
+easyblock = 'CMakeMake'
+
+name = 'SUMO'
+version = '1.12.0'
+
+homepage = 'https://www.eclipse.org/sumo/'
+description = """Simulation of Urban MObility" (SUMO) is an open source, highly portable,
+microscopic and continuous traffic simulation package designed to handle large
+networks. It allows for intermodal simulation including pedestrians and comes
+with a large set of tools for scenario creation."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+github_account = 'eclipse'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%s.tar.gz' % version.replace('.', '_')]
+patches = ['SUMO-1.0.0_fix-link-flags.patch']
+checksums = [
+    '049f5f50d1d27352d868cbb4b2a4b59bc0a913ef792b619c1adf1a289b3e48a7',  # v1_12_0.tar.gz
+    'fe7ef229baeba8a4ea2608f18f531ffbe31da16a274f7383e0d8e30d99e63e87',  # SUMO-1.0.0_fix-link-flags.patch
+]
+
+builddependencies = [
+    ('CMake', '3.22.1'),
+    ('SWIG', '4.0.2'),
+    ('Java', '11', '', SYSTEM),
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Xerces-C++', '3.2.3'),
+    ('FOX-Toolkit', '1.6.57'),
+    ('GL2PS', '1.4.2'),
+    ('GDAL', '3.3.2'),
+    ('PROJ', '8.1.0'),
+]
+
+local_sumo_home = 'share/sumo'
+local_pythonpath = 'lib/python%(pyshortver)s/site-packages'
+local_bins = ['activitygen', 'dfrouter', 'duarouter', 'emissionsDrivingCycle', 'emissionsMap', 'jtrrouter',
+              'marouter', 'netconvert', 'netgenerate', 'od2trips', 'polyconvert', 'sumo', 'sumo-gui']
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in local_bins] +
+             ['%s/libsumo/_libsumo.%s' % (local_pythonpath, SHLIB_EXT)],
+    'dirs': [local_sumo_home, local_pythonpath],
+}
+
+sanity_check_commands = [
+    'sumo --help',
+    "python -c 'import libsumo'",
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages',
+    'SUMO_HOME': 'share/sumo',
+}
+
+moduleclass = 'data'

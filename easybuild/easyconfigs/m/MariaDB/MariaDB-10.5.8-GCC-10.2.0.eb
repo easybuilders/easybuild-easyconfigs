@@ -9,11 +9,20 @@ Included engines: myISAM, Aria, InnoDB, RocksDB, TokuDB, OQGraph, Mroonga."""
 
 toolchain = {'name': 'GCC', 'version': '10.2.0'}
 
-source_urls = ['http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source']
-sources = [SOURCELOWER_TAR_GZ]
+local_pcre2_ver = '10.34'
+source_urls = [
+    'https://archive.mariadb.org/mariadb-%(version)s/source/',
+    'http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-%(version)s/source',
+    'https://downloads.sourceforge.net/project/pcre/pcre2/%s/' % local_pcre2_ver,
+]
+sources = [
+    SOURCELOWER_TAR_GZ,
+    {'filename': 'pcre2-%s.zip' % local_pcre2_ver, 'extract_cmd': "cp %s %(builddir)s/"},
+]
 patches = ['MariaDB-10.1.13-link-rt-for-jemalloc.patch']
 checksums = [
     'eb4824f6f2c532cd3fc6a6bce7bf78ea7c6b949f8bdd07656b2c84344e757be8',  # mariadb-10.5.8.tar.gz
+    '75a19013a10ab543fe923bbc9b7c2750559d2cca3b4c3611ab91392e5f62041c',  # pcre2-10.34.zip
     '8295837e623f6c782e1d64b00e0877ea98cce4bf8846755bb86c8a7732797c19',  # MariaDB-10.1.13-link-rt-for-jemalloc.patch
 ]
 
@@ -35,10 +44,11 @@ dependencies = [
     ('Judy', '1.0.5'),      # needed by OQGraph
 ]
 
-separate_build_dir = True
+# replace download URL for PCRE2 with path to pre-downloaded PRCE2 source file
+local_pcre2_path = '%%(builddir)s/pcre2-%s.zip' % local_pcre2_ver
+preconfigopts = "sed -i 's@http://.*.zip@file://%s@g' ../mariadb-%%(version)s/cmake/pcre.cmake && " % local_pcre2_path
 
-configopts = "-DCMAKE_BUILD_TYPE=Release "
-configopts += "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
+configopts = "-DCMAKE_SHARED_LINKER_FLAGS='-fuse-ld=bfd' "  # Linking fails with default gold linker
 configopts += "-DMYSQL_MAINTAINER_MODE=OFF "  # disabled to not treat warnings as errors (-Werror)
 configopts += "-DWITH_PCRE=bundled "  # using an external PCRE is broken, see https://bugs.exim.org/show_bug.cgi?id=2173
 configopts += "-DWITH_ZLIB=system "

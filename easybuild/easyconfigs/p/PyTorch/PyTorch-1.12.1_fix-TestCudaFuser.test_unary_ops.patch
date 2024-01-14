@@ -1,0 +1,26 @@
+Fix test failure with a commit contained in https://github.com/pytorch/pytorch/pull/78244
+
+From fade8da55e60a118c5595378896d34b862b2fcc3 Mon Sep 17 00:00:00 2001
+From: "S. Song" <41357537+shmsong@users.noreply.github.com>
+Date: Mon, 23 May 2022 16:41:01 -0700
+Subject: [PATCH] patch python test for bfloat16 (#1724)
+
+* patch python test
+---
+ test/test_jit_cuda_fuser.py | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/test/test_jit_cuda_fuser.py b/test/test_jit_cuda_fuser.py
+index 48dd8a4659f1..324a758ff713 100644
+--- a/test/test_jit_cuda_fuser.py
++++ b/test/test_jit_cuda_fuser.py
+@@ -598,7 +598,9 @@ def t(x: torch.Tensor, y: torch.Tensor):
+             #  bfloat16 kernels instead of eager mode
+             #  implementation, since mismatch in cast
+             #  adds excessive noise.
+-            o = t(x.to(torch.float64), y.to(torch.float64)).to(torch.bfloat16)
++            o = t(x.to(torch.float64), y.to(torch.float64))
++            if o.dtype.is_floating_point:
++                o = o.to(torch.bfloat16)
+         else:
+             o = t(x, y)

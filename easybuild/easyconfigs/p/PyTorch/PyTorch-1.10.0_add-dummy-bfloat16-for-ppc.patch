@@ -1,0 +1,116 @@
+Fix missing `vec_scalar_t` on PPC during compilation.
+
+From https://github.com/pytorch/pytorch/pull/67331
+
+From: Nikita Shulga <nshulga@fb.com>
+Date: Wed, 27 Oct 2021 08:04:08 -0700
+Subject: [PATCH] Add dummy bfloat16 VSX implementation
+
+Just a copy of DEFAULT bfloat16 implementation and revert restriction
+introduced by https://github.com/pytorch/pytorch/pull/61630
+
+Fixes https://github.com/pytorch/pytorch/issues/66867 and https://github.com/pytorch/pytorch/issues/62016
+---
+ aten/src/ATen/cpu/vec/functional.h            |  2 -
+ .../cpu/vec/vec256/vsx/vec256_bfloat16_vsx.h  | 54 +++++++++++++++++++
+ .../cpu/vec/vec256/vsx/vec256_common_vsx.h    |  6 +++
+ 3 files changed, 60 insertions(+), 2 deletions(-)
+ create mode 100644 aten/src/ATen/cpu/vec/vec256/vsx/vec256_bfloat16_vsx.h
+
+diff --git a/aten/src/ATen/cpu/vec/functional.h b/aten/src/ATen/cpu/vec/functional.h
+index 210ae9e9e883..388b3170d5b5 100644
+--- a/aten/src/ATen/cpu/vec/functional.h
++++ b/aten/src/ATen/cpu/vec/functional.h
+@@ -1,6 +1,4 @@
+ #pragma once
+ 
+ #include <ATen/cpu/vec/functional_base.h>
+-#if !defined(__VSX__)  || !defined(CPU_CAPABILITY_VSX)
+ #include <ATen/cpu/vec/functional_bfloat16.h>
+-#endif
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_bfloat16_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_bfloat16_vsx.h
+new file mode 100644
+index 000000000000..ee8ca997a20e
+--- /dev/null
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_bfloat16_vsx.h
+@@ -0,0 +1,54 @@
++#pragma once
++
++#include <ATen/cpu/vec/intrinsics.h>
++#include <ATen/cpu/vec/vec256/vsx/vsx_helpers.h>
++#include <ATen/cpu/vec/vec_base.h>
++namespace at {
++namespace vec {
++// See Note [Acceptable use of anonymous namespace in header]
++namespace {
++
++inline std::tuple<Vectorized<float>, Vectorized<float>> convert_bfloat16_float(
++    const Vectorized<BFloat16>& a) {
++  constexpr int64_t K = Vectorized<BFloat16>::size();
++  __at_align__ float arr[K];
++  __at_align__ BFloat16 arr2[K];
++  a.store(arr2);
++  convert(arr2, arr, K);
++  return std::make_tuple(
++      Vectorized<float>::loadu(arr),
++      Vectorized<float>::loadu(arr + Vectorized<float>::size()));
++}
++
++inline Vectorized<BFloat16> convert_float_bfloat16(
++    const Vectorized<float>& a,
++    const Vectorized<float>& b) {
++  constexpr int64_t K = Vectorized<BFloat16>::size();
++  __at_align__ float arr[K];
++  __at_align__ BFloat16 arr2[K];
++  a.store(arr);
++  b.store(arr + Vectorized<float>::size());
++  convert(arr, arr2, K);
++  return Vectorized<BFloat16>::loadu(arr2);
++}
++
++void load_fp32_from_bf16(const c10::BFloat16* data, Vectorized<float>& out) {
++  __at_align__ float values[Vectorized<float>::size()];
++  for (int k = 0; k < Vectorized<float>::size(); ++k) {
++    values[k] = data[k];
++  }
++  out = Vectorized<float>::loadu(values);
++}
++
++C10_UNUSED void load_fp32_from_bf16(
++    const c10::BFloat16* data,
++    Vectorized<float>& out1,
++    Vectorized<float>& out2) {
++  load_fp32_from_bf16(data, out1);
++  data += Vectorized<float>::size();
++  load_fp32_from_bf16(data, out2);
++}
++
++} // namespace
++} // namespace vec
++} // namespace at
+diff --git a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_common_vsx.h b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_common_vsx.h
+index 3d798a7f6268..b06f6a4bd1b5 100644
+--- a/aten/src/ATen/cpu/vec/vec256/vsx/vec256_common_vsx.h
++++ b/aten/src/ATen/cpu/vec/vec256/vsx/vec256_common_vsx.h
+@@ -3,6 +3,8 @@
+ #include <ATen/cpu/vec/intrinsics.h>
+ #include <ATen/cpu/vec/vec_base.h>
+ #include <ATen/cpu/vec/vec256/vsx/vsx_helpers.h>
++
++// Note: header order is important here
+ #include <ATen/cpu/vec/vec256/vsx/vec256_double_vsx.h>
+ #include <ATen/cpu/vec/vec256/vsx/vec256_float_vsx.h>
+ #include <ATen/cpu/vec/vec256/vsx/vec256_int16_vsx.h>
+@@ -11,8 +13,12 @@
+ #include <ATen/cpu/vec/vec256/vsx/vec256_qint32_vsx.h>
+ #include <ATen/cpu/vec/vec256/vsx/vec256_qint8_vsx.h>
+ #include <ATen/cpu/vec/vec256/vsx/vec256_quint8_vsx.h>
++
+ #include <ATen/cpu/vec/vec256/vsx/vec256_complex_float_vsx.h>
+ #include <ATen/cpu/vec/vec256/vsx/vec256_complex_double_vsx.h>
++
++#include <ATen/cpu/vec/vec256/vsx/vec256_bfloat16_vsx.h>
++
+ namespace at {
+ namespace vec {
+ 

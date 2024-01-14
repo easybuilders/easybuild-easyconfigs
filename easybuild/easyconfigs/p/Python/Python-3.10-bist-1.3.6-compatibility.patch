@@ -1,0 +1,182 @@
+From 4b88010f208080173d0976d271d4c3100bfbef17 Mon Sep 17 00:00:00 2001
+From: Steve Langasek <steve.langasek@ubuntu.com>
+Date: Thu, 18 Nov 2021 13:42:17 -0400
+Subject: [PATCH 1/2] Python 3.10 support: use Py_SET_REFCNT()
+
+Py_REFCNT() is no longer an lvalue; use Py_SET_REFCNT() instead.
+---
+ blist/_blist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/blist/_blist.c b/blist/_blist.c
+index f7fcb60..cacd6f2 100644
+--- a/blist/_blist.c
++++ b/blist/_blist.c
+@@ -6589,7 +6589,7 @@ py_blist_sort(PyBListRoot *self, PyObject *args, PyObject *kwds)
+         memcpy(&saved.BLIST_FIRST_FIELD, &self->BLIST_FIRST_FIELD,
+                sizeof(*self) - offsetof(PyBListRoot, BLIST_FIRST_FIELD));
+         Py_TYPE(&saved) = &PyRootBList_Type;
+-        Py_REFCNT(&saved) = 1;
++        Py_SET_REFCNT(&saved, 1);
+ 
+         if (extra_list != NULL) {
+                 self->children = extra_list;
+
+From fddb7837e2094560789a09790360feb75f06ed86 Mon Sep 17 00:00:00 2001
+From: Steve Langasek <steve.langasek@ubuntu.com>
+Date: Thu, 18 Nov 2021 13:42:42 -0400
+Subject: [PATCH 2/2] Python 3.10 support: use collections.abc.MutableSet
+
+collections.MutableSet is obsolete, replaced by
+collections.abc.MutableSet.
+---
+ blist/__init__.py              |  2 +-
+ blist/_btuple.py               |  2 +-
+ blist/_sorteddict.py           |  8 ++++----
+ blist/_sortedlist.py           | 24 ++++++++++++------------
+ blist/test/sortedlist_tests.py |  4 ++--
+ 5 files changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/blist/__init__.py b/blist/__init__.py
+index 931aaac..38c01a9 100644
+--- a/blist/__init__.py
++++ b/blist/__init__.py
+@@ -1,6 +1,6 @@
+ __version__ = '1.3.6'
+ from blist._blist import *
+-import collections
++import collections.abc as collections
+ if hasattr(collections, 'MutableSet'): # Only supported in Python 2.6+
+     from blist._sortedlist import sortedlist, sortedset, weaksortedlist, weaksortedset
+     from blist._sorteddict import sorteddict
+diff --git a/blist/_btuple.py b/blist/_btuple.py
+index 1e409cd..3a17972 100644
+--- a/blist/_btuple.py
++++ b/blist/_btuple.py
+@@ -1,7 +1,7 @@
+ from blist._blist import blist
+ from ctypes import c_int
+ import collections
+-class btuple(collections.Sequence):
++class btuple(collections.abc.Sequence):
+     def __init__(self, seq=None):
+         if isinstance(seq, btuple):
+             self._blist = seq._blist
+diff --git a/blist/_sorteddict.py b/blist/_sorteddict.py
+index fcdf7e4..daa132c 100644
+--- a/blist/_sorteddict.py
++++ b/blist/_sorteddict.py
+@@ -6,7 +6,7 @@ class missingdict(dict):
+     def __missing__(self, key):
+         return self._missing(key)
+ 
+-class KeysView(collections.KeysView, collections.Sequence):
++class KeysView(collections.abc.KeysView, collections.abc.Sequence):
+     def __getitem__(self, index):
+         return self._mapping._sortedkeys[index]
+     def __reversed__(self):
+@@ -23,7 +23,7 @@ def bisect_right(self, key):
+         return self._mapping._sortedkeys.bisect_right(key)
+     bisect = bisect_right
+ 
+-class ItemsView(collections.ItemsView, collections.Sequence):
++class ItemsView(collections.abc.ItemsView, collections.abc.Sequence):
+     def __getitem__(self, index):
+         if isinstance(index, slice):
+             keys = self._mapping._sortedkeys[index]
+@@ -46,7 +46,7 @@ def _from_iterable(self, it):
+       else:
+         return sortedset(it, key=lambda item: keyfunc(item[0]))
+ 
+-class ValuesView(collections.ValuesView, collections.Sequence):
++class ValuesView(collections.abc.ValuesView, collections.abc.Sequence):
+     def __getitem__(self, index):
+         if isinstance(index, slice):
+             keys = self._mapping._sortedkeys[index]
+@@ -54,7 +54,7 @@ def __getitem__(self, index):
+         key = self._mapping._sortedkeys[index]
+         return self._mapping[key]
+ 
+-class sorteddict(collections.MutableMapping):
++class sorteddict(collections.abc.MutableMapping):
+     def __init__(self, *args, **kw):
+         if hasattr(self, '__missing__'):
+             self._map = missingdict()
+diff --git a/blist/_sortedlist.py b/blist/_sortedlist.py
+index b34f69e..7b8a2f3 100644
+--- a/blist/_sortedlist.py
++++ b/blist/_sortedlist.py
+@@ -25,7 +25,7 @@ def __exit__(self, exc_type, exc_val, exc_tb):
+             del self.local.repr_count[self.ob_id]
+         return False
+ 
+-class _sortedbase(collections.Sequence):
++class _sortedbase(collections.abc.Sequence):
+     def __init__(self, iterable=(), key=None):
+         self._key = key
+         if key is not None and not hasattr(key, '__call__'):
+@@ -428,23 +428,23 @@ def __iter__(self):
+ 
+ def safe_cmp(f):
+     def g(self, other):
+-        if not isinstance(other, collections.Set):
++        if not isinstance(other, collections.abc.Set):
+             raise TypeError("can only compare to a set")
+         return f(self, other)
+     return g
+ 
+-class _setmixin2(collections.MutableSet):
+-    "methods that override or supplement the collections.MutableSet methods"
++class _setmixin2(collections.abc.MutableSet):
++    "methods that override or supplement the collections.abc.MutableSet methods"
+ 
+-    __ror__ = collections.MutableSet.__or__
+-    __rand__ = collections.MutableSet.__and__
+-    __rxor__ = collections.MutableSet.__xor__
++    __ror__ = collections.abc.MutableSet.__or__
++    __rand__ = collections.abc.MutableSet.__and__
++    __rxor__ = collections.abc.MutableSet.__xor__
+ 
+     if sys.version_info[0] < 3: # pragma: no cover
+-        __lt__ = safe_cmp(collections.MutableSet.__lt__)
+-        __gt__ = safe_cmp(collections.MutableSet.__gt__)
+-        __le__ = safe_cmp(collections.MutableSet.__le__)
+-        __ge__ = safe_cmp(collections.MutableSet.__ge__)
++        __lt__ = safe_cmp(collections.abc.MutableSet.__lt__)
++        __gt__ = safe_cmp(collections.abc.MutableSet.__gt__)
++        __le__ = safe_cmp(collections.abc.MutableSet.__le__)
++        __ge__ = safe_cmp(collections.abc.MutableSet.__ge__)
+ 
+     def __ior__(self, it):
+         if self is it:
+@@ -476,7 +476,7 @@ def __rsub__(self, other):
+         return self._from_iterable(other) - self
+ 
+     def _make_set(self, iterable):
+-        if isinstance(iterable, collections.Set):
++        if isinstance(iterable, collections.abc.Set):
+             return iterable
+         return self._from_iterable(iterable)
+ 
+diff --git a/blist/test/sortedlist_tests.py b/blist/test/sortedlist_tests.py
+index 1cff8b9..ad392e9 100644
+--- a/blist/test/sortedlist_tests.py
++++ b/blist/test/sortedlist_tests.py
+@@ -29,7 +29,7 @@ def test_empty_repr(self):
+                          repr(self.type2test()))
+ 
+     def validate_comparison(self, instance):
+-        if sys.version_info[0] < 3 and isinstance(instance, collections.Set):
++        if sys.version_info[0] < 3 and isinstance(instance, collections.abc.Set):
+             ops = ['ne', 'or', 'and', 'xor', 'sub']
+         else:
+             ops = ['lt', 'gt', 'le', 'ge', 'ne', 'or', 'and', 'xor', 'sub']
+@@ -185,7 +185,7 @@ def __cmp__(self, other): # pragma: no cover
+     def test_order(self):
+         stuff = [self.build_item(random.randrange(1000000))
+                  for i in range(1000)]
+-        if issubclass(self.type2test, collections.Set):
++        if issubclass(self.type2test, collections.abc.Set):
+             stuff = set(stuff)
+         sorted_stuff = list(sorted(stuff))
+         u = self.type2test
