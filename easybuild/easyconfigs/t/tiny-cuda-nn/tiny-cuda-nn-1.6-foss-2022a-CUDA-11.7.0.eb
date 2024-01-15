@@ -1,0 +1,55 @@
+easyblock = 'PythonPackage'
+
+name = 'tiny-cuda-nn'
+version = '1.6'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/NVlabs/tiny-cuda-nn'
+description = """is a small, self-contained framework for training and
+querying neural networks. Most notably, it contains a lightning fast
+"fully fused" multi-layer perceptron (technical paper), a versatile
+multiresolution hash encoding (technical paper), as well as support for
+various other input encodings, losses, and optimizers."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'NVlabs'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-%(version)s_use_external_fmt+cutlass.patch',
+]
+checksums = [
+    {'v1.6.tar.gz': '490c944b58af1b376bfaaa3695f86d16eef81c3f903b67acdbd4d08612b099c5'},
+    {'tiny-cuda-nn-1.6_use_external_fmt+cutlass.patch':
+     'ef01a927d6efe9c23cc83173a6fbebe3f597747c6d545a450f4928ed5971959f'},
+]
+
+builddependencies = [
+    ('Ninja', '1.10.2'),
+    ('fmt', '9.1.0'),
+    ('CUTLASS', '2.11.0', versionsuffix),  # tiny-cuda-nn is not compatible with CUTLASS 3.x yet
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('CUDA', '11.7.0', '', SYSTEM),
+    ('PyTorch', '1.12.1', versionsuffix),
+]
+
+start_dir = 'bindings/torch'
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+# Even though CMake isn't a dependency the template value is still available
+preinstallopts = 'export TCNN_CUDA_ARCHITECTURES="%(cuda_cc_cmake)s" && '
+
+options = {'modulename': 'tinycudann'}
+
+sanity_check_commands = [
+    'python -c "from tinycudann.modules import _C;"',
+]
+
+moduleclass = 'ai'
