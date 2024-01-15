@@ -485,14 +485,14 @@ class EasyConfigTest(TestCase):
                         break
 
         # for some dependencies, we allow exceptions for software with the same version
-        # but with a -64bit-int versionsuffix in both the dependency and all its dependents
-        int_64bit_deps = ['SCOTCH', 'METIS']
-        if dep in int_64bit_deps and len(dep_vars) > 1:
+        # but with a -int64 versionsuffix in both the dependency and all its dependents
+        int64_deps = ['SCOTCH', 'METIS']
+        if dep in int64_deps and len(dep_vars) > 1:
             unique_dep_vers = {version_regex.search(x).group('version') for x in list(dep_vars)}
             if len(unique_dep_vers) == 1:
                 for key in list(dep_vars):
-                    if all(re.search('-64bit-int', v) for v in dep_vars[key]) and re.search(
-                        '; versionsuffix: .*-64bit-int', key
+                    if all(re.search('-int64', v) for v in dep_vars[key]) and re.search(
+                        '; versionsuffix: .*-int64', key
                     ):
                         dep_vars.pop(key)
                     # always retain at least one dep variant
