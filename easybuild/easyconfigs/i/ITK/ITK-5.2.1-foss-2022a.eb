@@ -19,7 +19,11 @@ toolchainopts = {'pic': True, 'cstd': 'c++11'}
 github_account = 'InsightSoftwareConsortium'
 source_urls = [GITHUB_SOURCE]
 sources = ['v%(version)s.tar.gz']
-checksums = ['6022b2b64624b8bcec3333fe48d5f74ff6ebceb3bdf98258ba7d7fbbc76b99ab']
+patches = ['ITK-5.2.1_allow_legacy_with_wrapping.patch']
+checksums = [
+    {'v5.2.1.tar.gz': '6022b2b64624b8bcec3333fe48d5f74ff6ebceb3bdf98258ba7d7fbbc76b99ab'},
+    {'ITK-5.2.1_allow_legacy_with_wrapping.patch': '66d2c60498a18d5d826a7274624fdd12c41c99d84b382ac405525037a369b666'},
+]
 
 builddependencies = [
     ('CMake', '3.23.1'),
@@ -34,6 +38,7 @@ dependencies = [
     ('LibTIFF', '4.3.0'),
     ('VTK', '9.2.2'),
     ('zlib', '1.2.12'),
+    ('Python', '3.10.4'),
 ]
 
 local_sys_deps = ['EIGEN', 'EXPAT', 'HDF5', 'JPEG', 'PNG', 'TIFF', 'ZLIB']
@@ -41,8 +46,8 @@ local_sys_cmake = ['-DITK_USE_SYSTEM_%s=ON' % d for d in local_sys_deps]
 
 configopts = '-DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF '
 configopts += '-DModule_ITKReview=ON -DModule_ITKVtkGlue=ON -DModule_SimpleITKFilters=ON '
-configopts += '-DITK_WRAP_PYTHON:BOOL=OFF '
-configopts += '-DITK_LEGACY_REMOVE:BOOL=OFF '  # needed by SimpleITK
+configopts += '-DITK_WRAP_PYTHON:BOOL=ON -DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
+configopts += '-DITK_LEGACY_REMOVE:BOOL=OFF '  # SimpleITK-2.1.x relies on ITK legacy interfaces
 configopts += ' '.join(local_sys_cmake)
 
 prebuildopts = "LC_ALL=C "
@@ -53,7 +58,11 @@ local_lib_names = ['ITKCommon', 'ITKIOHDF5', 'ITKIOJPEG', 'ITKIOPNG', 'ITKIOTIFF
 sanity_check_paths = {
     'files': ['bin/itkTestDriver'] +
              ['lib/lib%s-%%(version_major)s.%%(version_minor)s.%s' % (l, SHLIB_EXT) for l in local_lib_names],
-    'dirs': ['include/ITK-%(version_major)s.%(version_minor)s', 'share'],
+    'dirs': ['include/ITK-%(version_major)s.%(version_minor)s', 'lib/python%(pyshortver)s/site-packages', 'share'],
 }
+
+sanity_check_commands = ["python -c 'import itk'"]
+
+modextrapaths = {'PYTHONPATH': 'lib/python%(pyshortver)s/site-packages'}
 
 moduleclass = 'data'
