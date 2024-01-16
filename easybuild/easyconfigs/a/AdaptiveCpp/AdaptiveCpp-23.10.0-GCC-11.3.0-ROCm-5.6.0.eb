@@ -1,0 +1,88 @@
+easyblock = 'CMakeMake'
+
+name = 'AdaptiveCpp'
+version = '23.10.0'
+local_rocmver = '5.6.0'
+versionsuffix = '-ROCm-%s' % local_rocmver
+
+homepage = 'https://adaptivecpp.github.io/'
+
+whatis = [
+    "Description: AdaptiveCpp is the independent, community-driven modern platform for C++-based heterogeneous programming models targeting CPUs and GPUs from all major vendors. AdaptiveCpp lets applications adapt themselves to all the hardware found in the system. This includes use cases where a single binary needs to be able to target all supported hardware, or utilize hardware from different vendors simultaneously."
+]
+
+description = """
+AdaptiveCpp is the independent, community-driven modern platform for C++-based heterogeneous programming models targeting CPUs and GPUs from all major vendors. AdaptiveCpp lets applications adapt themselves to all the hardware found in the system. This includes use cases where a single binary needs to be able to target all supported hardware, or utilize hardware from different vendors simultaneously.
+
+This module (only) provides support for AMD GPUs with HIP/ROCm.
+"""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'verbose': False, 'openmp': True}
+
+source_urls = ["https://github.com/AdaptiveCpp/AdaptiveCpp/archive/tags/"]
+sources = ["v%(version)s.tar.gz"]
+
+dependencies = [
+    ('Boost', '1.79.0'),
+    ('Python', '3.10.4'),
+    ('HIP', local_rocmver, '-amd'),
+]
+
+builddependencies = [
+    ('CMake', '3.23.1'),
+]
+
+local_gpuarch = 'gfx908'  # MI100
+
+configopts = '-DROCM_PATH="${ROCM_PATH}" '
+configopts += '-DCMAKE_C_COMPILER="${EBROOTCLANGMINAOMP}/bin/clang" '
+configopts += '-DCMAKE_CXX_COMPILER="${EBROOTCLANGMINAOMP}/bin/clang++" '
+configopts += '-DLLVM_INCLUDE_DIRS="${EBROOTCLANGMINAOMP}/include/llvm" '
+configopts += '-DLLVM_DIR="${EBROOTCLANGMINAOMP}/lib/cmake/llvm/" '
+configopts += '-DCLANG_EXECUTABLE_PATH="${EBROOTCLANGMINAOMP}/bin/clang++" '
+configopts += '-DCLANG_INCLUDE_PATH="${EBROOTCLANGMINAOMP}/lib/clang/16.0.0" '
+configopts += '-DWITH_ACCELERATED_CPU=ON '
+configopts += '-DWITH_CPU_BACKEND=ON '
+configopts += '-DWITH_CUDA_BACKEND=OFF '
+configopts += '-DWITH_ROCM_BACKEND=ON '
+configopts += '-DWITH_OPENCL_BACKEND=OFF '
+configopts += '-DWITH_LEVEL_ZERO_BACKEND=OFF '
+configopts += '-DDEFAULT_GPU_ARCH="%s" ' % local_gpuarch
+configopts += '-DAMDGPU_TARGETS="%s" ' % local_gpuarch
+configopts += '-DGPU_TARGETS="%s" ' % local_gpuarch
+configopts += '-DWITH_SSCP_COMPILER=OFF '
+# Additional option needed due to CMake-related bug in 23.10.0 release
+# https://github.com/AdaptiveCpp/AdaptiveCpp/issues/1268
+configopts += '-DACPP_VERSION_SUFFIX="-" '
+
+sanity_check_paths = {
+    'files': ['bin/syclcc-clang',
+              'include/AdaptiveCpp/sycl/sycl.hpp',
+              'lib/hipSYCL/librt-backend-omp.%s' % SHLIB_EXT,
+              'lib/hipSYCL/librt-backend-hip.%s' % SHLIB_EXT,
+              'lib/libacpp-clang.%s' % SHLIB_EXT,
+              'lib/libacpp-rt.%s' % SHLIB_EXT],
+    'dirs': ['include/AdaptiveCpp/CL',
+             'include/AdaptiveCpp/hipSYCL',
+             'include/AdaptiveCpp/SYCL'],
+}
+sanity_check_commands = [
+    'acpp --help',
+    'acpp-info',
+    'syclcc --help',
+]
+
+modluafooter = """
+setenv('HIPSYCL_PATH', os.getenv('EBROOTADAPTIVECPP'))
+setenv('HIPSYCL_ROCM_PATH', os.getenv('EBROOTCLANGMINAOMP'))
+setenv('HIPSYCL_TARGETS', 'hip:%s')
+""" % local_gpuarch
+
+modtclfooter = """
+setenv HIPSYCL_PATH $::env(EBROOTADAPTIVECPP)
+setenv HIPSYCL_ROCM_PATH $::env(EBROOTCLANGMINAOMP)
+setenv HIPSYCL_TARGETS hip:%s
+""" % local_gpuarch
+
+moduleclass = 'compiler'
