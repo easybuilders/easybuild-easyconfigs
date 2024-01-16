@@ -1,0 +1,48 @@
+easyblock = 'MesonNinja'
+
+name = 'freebayes'
+version = '1.3.7'
+versionsuffix = '-R-%(rver)s'
+
+homepage = 'https://github.com/freebayes/freebayes'
+description = "Bayesian haplotype-based genetic polymorphism discovery and genotyping."
+
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = [
+    '%(name)s-1.3.7_find-external-libs.patch',
+    '%(name)s-1.3.7_fix-includes.patch',
+    '%(name)s-1.3.6_install-libs-headers.patch',
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('Meson', '1.1.1'),
+    ('Ninja', '1.11.1'),
+    ('pkgconf', '1.9.5'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('R', '4.3.2'),
+    ('parallel', '20230722'),
+    ('libffi', '3.4.4'),
+    ('VCFtools', '0.1.16'),
+    ('vcflib', '1.0.9', versionsuffix),
+    ('SeqLib', '1.2.0'),
+]
+
+configopts = "-Dprefer_system_deps=true --buildtype release"
+
+sanity_check_paths = {
+    'files': ['bin/freebayes', 'bin/bamleftalign', 'scripts/freebayes-parallel'],
+    'dirs': [],
+}
+
+sanity_check_commands = ["freebayes --help"]
+
+modextrapaths = {'PATH': ['scripts']}
+
+moduleclass = 'bio'
