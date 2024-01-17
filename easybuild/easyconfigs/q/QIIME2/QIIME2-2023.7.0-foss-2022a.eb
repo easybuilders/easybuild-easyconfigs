@@ -8,6 +8,7 @@ description = """QIIME 2 is a powerful, extensible, and decentralized microbiome
 open source, and community developed."""
 
 toolchain = {'name': 'foss', 'version': '2022a'}
+
 dependencies = [
     ('Python', '3.10.4'),
     ('SciPy-bundle', '2022.05'),
@@ -146,6 +147,7 @@ exts_list = [
         'preinstallopts': """sed -i "/'nose /d" setup.py && """,
         'checksums': ['ac4f579a0881f1c827f75033a304341ae91d3a527cc6aed3fea53749f1b9951c'],
     }),
+    # using prebuilt wheels for atpublic and flufl.lock because building them requires pdm
     ('atpublic', '4.0', {
         'modulename': 'public',
         'source_tmpl': '%(name)s-%(version)s-py3-none-any.whl',
@@ -169,7 +171,7 @@ exts_list = [
         'checksums': ['087950518c53a2491deb52b8ddd66833f953882e517a42e476c007cc8f6892c5'],
     }),
     ('altair', '5.0.1', {
-        'preinstallopts': """sed -i -e 's/^build-backend = .*/build-backend = "setuptools.build_meta"/g' -e 's/^requires = .*/requires = ["setuptools"]/g' -e 's/^license-files = .*//g' -e 's/dynamic = \["version"\]/version = "%(version)s"/g' pyproject.toml &&  schemadir=%(installdir)s/lib/python%(pyshortver)s/site-packages/altair/vegalite/v5/schema/ &&  mkdir -p $schemadir && cp altair/vegalite/v5/schema/vega-lite-schema.json $schemadir && """,
+        'preinstallopts': _preinstallopts,
         'checksums': ['087d7033cb2d6c228493a053e12613058a5d47faf6a36aea3ff60305fd8b4cb0'],
     }),
     (name, version, {
@@ -323,4 +325,3 @@ sanity_check_commands = [
 modextrapaths = {'CONDA_PREFIX': ''}
 
 moduleclass = 'bio'
-
