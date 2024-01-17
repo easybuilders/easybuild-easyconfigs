@@ -1,0 +1,44 @@
+easyblock = 'MakeCp'
+
+name = 'Zeo++'
+version = '0.3'
+
+homepage = 'https://www.zeoplusplus.org/'
+description = """
+    Zeo++ is a software package for analysis of crystalline porous materials.
+    Zeo++ can be used to perform geometry-based analysis of structure and
+    topology of the void space inside a material,
+    to assemble or alternate structures as well as to generate structure
+    representations to be used in structure similarity calculations.
+    Zeo++ can be used to either analyze a single structure or perform high-throughput analysis of a large database.
+    """
+
+toolchain = {'name': 'intel-compilers', 'version': '2023.1.0'}
+
+source_urls = ['https://github.com/mharanczyk/zeoplusplus/archive/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['0361659094ec97add5d5846f14326863293e3d9a78997ba4890719f9ffae224a']
+
+# first build libvoro in voro++ subdir, which is required by Zeo++
+prebuildopts = "cd voro++ && make && ls src/libvoro* && cd - && "
+
+buildopts = "all statlib"
+
+files_to_copy = [
+    (['network', 'framework_builder', 'molecule_to_abstract'], 'bin'),
+    (['voro++/src/libvoro++.a', 'libzeo++.a'], 'lib')
+]
+
+sanity_check_paths = {
+    'files': ['bin/network', 'bin/framework_builder', 'bin/molecule_to_abstract',
+              'lib/libvoro++.a', 'lib/libzeo++.a'],
+    'dirs': []
+}
+
+sanity_check_commands = [
+    "network --help",
+    "command -v framework_builder",
+    "command -v molecule_to_abstract",
+]
+
+moduleclass = 'phys'
