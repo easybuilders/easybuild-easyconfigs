@@ -1,0 +1,35 @@
+# author: codepaster
+
+easyblock = 'Binary'
+
+name = 'Micromamba'
+version = '1.5.6-0'
+
+homepage = 'https://mamba.readthedocs.io/'
+description = """Micromamba is a fast, robust, and cross-platform package manager. It runs on Windows, OS X and Linux
+(ARM64 and PPC64LE included) and is fully compatible with conda packages and supports most of conda's commands.
+"""
+
+toolchain = SYSTEM
+
+local_inst = 'install.sh'
+source_urls = ['https://raw.githubusercontent.com/mamba-org/micromamba-releases/main']
+sources = [local_inst]
+patches = [('%(name)s-1.5.patch', 0)]
+
+install_cmds=[
+  'INIT_YES=no CONDA_FORGE_YES=yes VERSION_X=%%(version)s BIN_FOLDER=%%(installdir)s bash < %s' % local_inst,
+  'mv %(installdir)s/%(namelower)s %(installdir)s/%(namelower)s-bin',
+  'cp %(namelower)s %(installdir)s',
+  'chmod +x %(installdir)s/%(namelower)s'
+]
+
+sanity_check_commands = [
+    '%(namelower)s --version',
+    '%(namelower)s-bin --version'
+]
+
+sanity_check_paths = {
+    'files': ['%(namelower)s', '%(namelower)s-bin'],
+    'dirs': [],
+}
