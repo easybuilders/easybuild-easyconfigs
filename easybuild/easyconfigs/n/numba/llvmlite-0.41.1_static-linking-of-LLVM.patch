@@ -1,0 +1,22 @@
+Link llvmlite statically to LLVM.  This allows us to use the version of LLVM that is
+officially supported by llvmlite (14.0.3) instead of the one that is default in the toolchain
+(for 2023a, that is LLVM 16.0.6).  This is a pragmatic solution that is much easier than patching
+llvmlite to work with a different version of LLVM.
+
+Author: Jakob Schiotz, Techn. Univ. Denmark
+Email: schiotz@fysik.dtu.dk
+Date: 10. November 2023
+
+diff --git a/ffi/build.py b/ffi/build.py
+index f4f8c69..189a0e9 100755
+--- a/ffi/build.py
++++ b/ffi/build.py
+@@ -174,7 +174,7 @@ def main_posix(kind, library_ext):
+             raise RuntimeError(msg)
+ 
+     # Get LLVM information for building
+-    libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
++    libs = run_llvm_config(llvm_config, "--link-static --system-libs --libs all".split())
+     # Normalize whitespace (trim newlines)
+     os.environ['LLVM_LIBS'] = ' '.join(libs.split())
+ 
