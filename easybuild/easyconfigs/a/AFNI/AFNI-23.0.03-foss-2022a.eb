@@ -1,4 +1,4 @@
-# Updated to latest version and CMake
+# Updated to use CMake and better installation routines
 # Author: J. Sassmannshausen (Imperial College London/UK)
 
 easyblock = 'CMakeMake'
@@ -38,7 +38,22 @@ dependencies = [
     ('Pillow', '9.1.1'),
     ('matplotlib', '3.5.2'),
     ('SciPy-bundle', '2022.05'),
+    ('Xvfb', '21.1.3'),
+    ('FFmpeg', '5.0.1'),  # required for running the program
 ]
+
+# Make sure stuff does not get installed in .local
+configopts = '-DSTANDARD_PYTHON_INSTALL=OFF '
+
+# Changing permissions of some files
+postinstallcmds = ['chmod a+x %(installdir)s/bin/afni_system_check.py ;']
+postinstallcmds += ['chmod a+x %(installdir)s/bin/uber_subject.py ; ']
+postinstallcmds += ['chmod a+x %(installdir)s/bin/init_user_dotfiles.py ; ']
+# Copying apparently missing files over
+postinstallcmds += ['cp -f %(start_dir)s/src/discoraj/ClusterExplorer/ClustExp_HistTable.py %(installdir)s/bin ; ']
+postinstallcmds += ['cp -f %(start_dir)s/src/discoraj/ClusterExplorer/ClustExp_StatParse.py %(installdir)s/bin ; ']
+postinstallcmds += ['cp -rf %(start_dir)s/src/scripts_for_r %(installdir)s/bin ; ']
+postinstallcmds += ['cp -rf %(start_dir)s/src/R_scripts %(installdir)s/bin/scripts_for_r ; ']
 
 sanity_check_commands = ["afni -help"]
 
@@ -46,5 +61,7 @@ sanity_check_paths = {
     'files': ['bin/afni', 'lib/libgts.%s' % SHLIB_EXT, 'lib/libnifti2.%s' % SHLIB_EXT],
     'dirs': ['include', 'share'],
 }
+
+modextrapaths = {'PATH': ['bin/scripts_for_r']}
 
 moduleclass = 'bio'
