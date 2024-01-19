@@ -1,0 +1,60 @@
+easyblock = 'MakeCp'
+
+name = 'AutoDock-GPU'
+version = '1.5.3'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://github.com/ccsb-scripps/AutoDock-GPU'
+description = """OpenCL and Cuda accelerated version of AutoDock. It leverages its embarrasingly
+parallelizable LGA by processing ligand-receptor poses in parallel over
+multiple compute units.
+AutoDock is a suite of automated docking tools. It is designed to predict how
+small molecules, such as substrates or drug candidates, bind to a receptor of
+known 3D structure."""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+toolchainopts = {'cstd': 'c++11'}
+
+github_account = 'ccsb-scripps'
+source_urls = [GITHUB_SOURCE]
+sources = ['v%(version)s.tar.gz']
+checksums = ['6557df95eed99323befddcef6b8da8b67eba22476efccd1e69a87ffdf075e5f4']
+
+dependencies = [
+    ('CUDA', '11.7.0', '', SYSTEM),
+]
+
+parallel = 1
+
+# Default CUDA compute capabilities (override via --cuda-compute-capabilities)
+cuda_compute_capabilities = ['5.2', '6.0', '6.1', '7.0']
+# put CUDA compute capabilities in a shell variable to strip dots in make command
+prebuildopts = 'CUDA_CC_TARGETS="%(cuda_cc_space_sep)s"; '
+
+# Use complation flags from EB
+prebuildopts += "sed -i 's/^LFLAGS=.*/LFLAGS=$(LDFLAGS)/;s/^CFLAGS=.*/CFLAGS+=$(IFLAGS) $(LFLAGS)/' Makefile.Cuda && "
+
+prebuildopts += 'GPU_INCLUDE_PATH=$EBROOTCUDA/include '
+prebuildopts += 'GPU_LIBRARY_PATH=$EBROOTCUDA/lib '
+
+# build for CUDA with defined CUDA compute capabilities
+buildopts = 'DEVICE=CUDA TARGETS="${CUDA_CC_TARGETS//./}"'
+
+files_to_copy = [
+    (['bin/*'], 'bin'),
+    (['doc', 'examples', 'LICENSE', 'LICENSE_LGPL', 'README.md'], 'share'),
+    (['input'], 'share/examples'),
+]
+
+postinstallcmds = [
+    "cd %(installdir)s/bin && ln -s autodock_gpu_64wi autodock_gpu",
+]
+
+sanity_check_paths = {
+    'files': ['bin/autodock_gpu', 'bin/autodock_gpu_64wi', 'bin/adgpu_analysis'],
+    'dirs': ['share'],
+}
+
+sanity_check_commands = [('autodock_gpu', '--help')]
+
+moduleclass = 'tools'
