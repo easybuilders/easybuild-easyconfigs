@@ -1,0 +1,60 @@
+easyblock = 'MakeCp'
+
+name = 'DETONATE'
+version = '1.11'
+
+homepage = 'http://deweylab.biostat.wisc.edu/detonate/'
+description = """DETONATE (DE novo TranscriptOme rNa-seq Assembly with or without the Truth Evaluation)
+ consists of two component packages, RSEM-EVAL and REF-EVAL. Both packages are mainly intended to be used
+ to evaluate de novo transcriptome assemblies, although REF-EVAL can be used to compare sets of any kinds
+ of genomic sequences."""
+
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+
+toolchainopts = {'cstd': 'c++11'}
+
+source_urls = ['http://deweylab.biostat.wisc.edu/detonate/']
+sources = ['detonate-1.11.tar.gz']
+patches = [
+    'DETONATE-%(version)s_fix-deps.patch',
+    'DETONATE-%(version)s_fix-cast-bool.patch',
+    'DETONATE-%(version)s_include-fix.patch'
+]
+checksums = [
+    {'detonate-1.11.tar.gz': 'e1d04af1b1d2504942a6941b346d430157da6117fac043b7ee83274717d99714'},
+    {'DETONATE-1.11_fix-deps.patch': '0ab353f66d5459e1fa18fa214026589fe214365f3532a3b9ea182757c7547691'},
+    {'DETONATE-1.11_fix-cast-bool.patch': 'c72a18250857883e7075ac512bbbd532e61a1aab38868d0dc932ca4bdc412817'},
+    {'DETONATE-1.11_include-fix.patch': '9071fc8dbc6bfc26a9c4bb60befca890a26acf9668df2815a7f0038d8bcdd9f6'},
+]
+
+builddependencies = [
+    ('CMake', '3.26.3'),
+    ('SAMtools', '0.1.20'),
+]
+
+dependencies = [
+    ('Boost', '1.82.0'),
+    ('sparsehash', '2.0.4'),
+    ('BamTools', '2.5.2'),
+    ('zlib', '1.2.13'),
+]
+
+start_dir = 'ref-eval'
+
+buildopts = 'CXX="$CXX" CXXFLAGS="$CXXFLAGS -fopenmp" && cd ../rsem-eval && make CC="$CXX" CFLAGS="$CXXFLAGS"'
+
+runtest = 'test'
+
+files_to_copy = [(['ref-eval', 'ref-eval-estimate-true-assembly', '../rsem-eval/rsem-*'], 'bin')]
+
+sanity_check_paths = {
+    'files': ['bin/%s' % x for x in ['ref-eval', 'ref-eval-estimate-true-assembly', 'rsem-build-read-index',
+                                     'rsem-eval-calculate-score', 'rsem-eval-estimate-transcript-length-distribution',
+                                     'rsem-eval-run-em', 'rsem-extract-reference-transcripts',
+                                     'rsem-parse-alignments', 'rsem-plot-model', 'rsem-preref', 'rsem-sam-validator',
+                                     'rsem-scan-for-paired-end-reads', 'rsem-simulate-reads',
+                                     'rsem-synthesis-reference-transcripts']],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
