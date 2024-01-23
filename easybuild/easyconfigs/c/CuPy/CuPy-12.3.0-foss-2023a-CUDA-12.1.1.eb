@@ -1,0 +1,77 @@
+easyblock = 'PythonBundle'
+
+name = 'CuPy'
+version = '12.3.0'
+versionsuffix = '-CUDA-%(cudaver)s'
+
+homepage = 'https://cupy.dev'
+description = "CuPy is an open-source array library accelerated with NVIDIA CUDA."
+
+toolchain = {'name': 'foss', 'version': '2023a'}
+
+builddependencies = [
+    # ('pytest', '7.2.2'),
+    ('hypothesis', '6.82.0'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('SciPy-bundle', '2023.07'),
+    ('CUDA', '12.1.1', '', SYSTEM),
+    ('cuDNN', '8.9.2.26', versionsuffix, SYSTEM),
+    ('NCCL', '2.18.3', versionsuffix),
+    ('cuTENSOR', '1.7.0.1', versionsuffix, SYSTEM),
+    ('Optuna', '3.5.0'),
+    # Adding cuSPARSELt currently makes the build fail. Keeping it around for later versions to pick up.
+    # ('cuSPARSELt', '0.5.0.1', versionsuffix, SYSTEM)
+]
+
+use_pip = True
+
+# A bunch of the tests are failing or are just having problems.
+_skip_tests = [
+    'tests/cupyx_tests/scipy_tests',
+    'tests/cupyx_tests/distributed_tests',
+    'tests/cupyx_tests/tools_tests',
+    'tests/example_tests',
+    'tests/cupy_tests/testing_tests/test_parameterized.py',
+    'tests/cupy_tests/fft_tests/test_fft.py',
+]
+_ignore_list = ' --ignore='.join(_skip_tests)
+
+_deselect_tests = [
+    'tests/cupy_tests/core_tests/test_carray.py::TestCArray32BitBoundary_param_',
+    # float16 has too low precision for these tests as they are written
+    # See https://github.com/easybuilders/easybuild-easyconfigs/pull/17526#issuecomment-1470843170 for details.
+    'tests/cupy_tests/linalg_tests/test_product.py::TestProduct',
+]
+_deselect_list = ' --deselect='.join(_deselect_tests)
+
+_cupy_preininstopts = [
+    'CFLAGS="$CFLAGS -Wno-error=deprecated-declarations"',
+    'CUPY_NUM_BUILD_JOBS=%(parallel)s ',
+    'CUPY_NVCC_GENERATE_CODE=\"$(echo \'%(cuda_cc_cmake)s\'|sed -e "s/[0-9]*/arch=compute_&,code=sm_&/g")\"'
+]
+
+exts_list = [
+    ('fastrlock', '0.8.2', {
+        'checksums': ['644ec9215cf9c4df8028d8511379a15d9c1af3e16d80e47f1b6fdc6ba118356a'],
+    }),
+    ('cupy', version, {
+        'patches': ['CuPy-12.3.0_nvcc_no-dprecated-declarations.patch'],
+        'preinstallopts': ' '.join(_cupy_preininstopts),
+        # Must run tests here since the required version of pytest is a builddep
+        # Note! test_cudnn and some others will likely fail on T4 GPUs due to out of memory.
+        'runtest': 'export CUPY_TEST_GPU_LIMIT=1 CUPY_CACHE_DIR="%%(builddir)s" && '
+                   'pytest --ignore=%s --deselect=%s tests' % (_ignore_list, _deselect_list),
+        'testinstall': True,
+        'checksums': [
+            '47db32114e6fdd48d0510cbf0b08b0935522d7dfa3e39416b0c0da3914323524',
+            '377fc3446194390e156941d1f64d99d4e02d8aef3f0c136a77ff2192e7afc903',
+        ]
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
