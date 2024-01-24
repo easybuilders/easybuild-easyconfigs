@@ -1,0 +1,35 @@
+easyblock = 'CMakeMake'
+
+name = 'Racon'
+version = '1.5.0'
+
+homepage = 'https://github.com/lbcb-sci/racon'
+description = """Ultrafast consensus module for raw de novo genome assembly of long uncorrected reads."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/lbcb-sci/%(namelower)s/archive/refs/tags']
+sources = ['%(version)s.tar.gz']
+checksums = [
+    {'1.5.0.tar.gz': '41e362f71cc03b934f17d6e2c0d626e1b2997258261b14551586de006666424a'},
+]
+
+builddependencies = [('CMake', '3.27.7')]
+
+postinstallcmds =  ['cd %(builddir)s/%(namelower)s-%(version)s/ && cp -r scripts test %(installdir)s/']
+
+# Avoid `-march=native` but still use AVX2 SIMD for partial order alignments
+configopts = '-DCMAKE_BUILD_TYPE=Release -Dspoa_optimize_for_native=OFF -Dspoa_use_simde=ON '
+
+modextrapaths = {'PATH': 'scripts'}
+
+sanity_check_paths = {
+    'files': ["bin/%(namelower)s"],
+    'dirs': [],
+}
+
+moduleclass = 'bio'
+modluafooter = """
+depends_on("python")
+"""
