@@ -402,6 +402,9 @@ class EasyConfigTest(TestCase):
                 # filter out Meson variants that are only used as a dependency for meson-python
                 if all(ec.startswith('meson-python-') for ec in ecs):
                     dep_vars.pop(key)
+                # always retain at least one dep variant
+                    if len(dep_vars) == 1:
+                        break
 
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
         if dep == 'Boost' and len(dep_vars) > 1:
