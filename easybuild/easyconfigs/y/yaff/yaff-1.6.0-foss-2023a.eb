@@ -1,14 +1,7 @@
 # Updated from previous config
 # Author: Pavel Grochal (INUITS)
 # License: GPLv2
-#
-# Building this in interactive Slurm session will result in freeze during either
-# runtest phase or sanity_check_commands phase (python -c 'import yaff')
-#
-# If you submit this as non-interactive Slurm job, it will build just fine.
-# Possibly root cause: https://github.com/h5py/h5py/issues/917
-#
-easyblock = 'PythonBundle'
+easyblock = 'PythonPackage'
 
 name = 'yaff'
 version = '1.6.0'
@@ -19,7 +12,6 @@ description = """Yaff stands for 'Yet another force field'. It is a pythonic for
 toolchain = {'name': 'foss', 'version': '2023a'}
 
 builddependencies = [('pkgconfig', '1.5.5', '-python')]
-
 dependencies = [
     ('Python', '3.11.3'),
     ('SciPy-bundle', '2023.07'),
@@ -28,33 +20,31 @@ dependencies = [
     ('nose3', '1.3.8')
 ]
 
+source_urls = ['https://github.com/molmod/yaff/releases/download/%(version)s']
+sources = [SOURCE_TAR_GZ]
+patches = [
+    'yaff-1.6.0_fix-random-import.patch',
+    'yaff-1.6.0_fix-h5py.patch',
+    'yaff-1.6.0_fix-nose-dep.patch',
+]
+checksums = [
+    {'yaff-1.6.0.tar.gz': 'a266ab032778e37bb2e93152aefb67f396827aa728151651403984429c74ceaa'},
+    {'yaff-1.6.0_fix-random-import.patch':
+     'a38afacbcbfbf16a80742ae8253852e725e656c9d684310894c806f689362840'},
+    {'yaff-1.6.0_fix-h5py.patch':
+     'bd2a73f375910360fd5dd22b3ec006344527476e80dea549f4d82297257105f9'},
+    {'yaff-1.6.0_fix-nose-dep.patch':
+     '2314c487c4a847d7740d7dfc97052cf7efd764ced726d098def0a1aef0b498e0'},
+]
+
 use_pip = True
+download_dep_fail = True
 sanity_pip_check = True
 
-local_runtest = "export MATPLOTLIBRC=$PWD; echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc; "
-local_runtest += "python setup.py build_ext -i; nosetests -v"
-
-exts_list = [
-    (name, version, {
-        'patches': [
-            'yaff-1.6.0_fix-random-import.patch',
-            'yaff-1.6.0_fix-h5py.patch',
-            'yaff-1.6.0_fix-nose-dep.patch',
-        ],
-        'runtest': ("export MATPLOTLIBRC=$PWD; "
-                    "echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc; "
-                    "python setup.py build_ext -i; nosetests -v"),
-        'source_urls': ['https://github.com/molmod/yaff/releases/download/%(version)s'],
-        'checksums': [
-            {'yaff-1.6.0.tar.gz': 'a266ab032778e37bb2e93152aefb67f396827aa728151651403984429c74ceaa'},
-            {'yaff-1.6.0_fix-random-import.patch':
-             'a38afacbcbfbf16a80742ae8253852e725e656c9d684310894c806f689362840'},
-            {'yaff-1.6.0_fix-h5py.patch':
-             'bd2a73f375910360fd5dd22b3ec006344527476e80dea549f4d82297257105f9'},
-            {'yaff-1.6.0_fix-nose-dep.patch':
-             '2314c487c4a847d7740d7dfc97052cf7efd764ced726d098def0a1aef0b498e0'},
-        ],
-    }),
-]
+runtest = ' '.join([
+    "export MATPLOTLIBRC=$PWD;",
+    "echo 'backend: agg' > $MATPLOTLIBRC/matplotlibrc;",
+    "python setup.py build_ext -i; nosetests -v",
+])
 
 moduleclass = 'chem'
