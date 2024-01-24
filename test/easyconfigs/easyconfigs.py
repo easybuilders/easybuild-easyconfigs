@@ -396,7 +396,7 @@ class EasyConfigTest(TestCase):
 
         # multiple variants of Meson is OK as long as they are deps for meson-python, since meson-python should only be
         # a build dependency elsewhere
-        if dep == 'Meson' and len(dep_vars) >1:
+        if dep == 'Meson' and len(dep_vars) > 1:
             for key in list(dep_vars):
                 ecs = dep_vars[key]
                 # filter out Meson variants that are only used as a dependency for meson-python
