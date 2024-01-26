@@ -1,0 +1,66 @@
+easyblock = 'Bundle'
+
+name = 'BgeeDB'
+version = '2.26.0'
+versionsuffix = '-R-%(rver)s'
+
+# This library does not need last Bioconductor dependencies
+# but better to have its last version from the last Bioconductor version
+local_bioc_version = 3.17
+
+homepage = 'https://github.com/BgeeDB/BgeeDB_R'
+description = """Annotation and gene expression data retrieval from Bgee database.
+TopAnat, an anatomical entities Enrichment Analysis tool for UBERON ontology."""
+software_license = 'LicenseGPLv3'
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+builddependencies = [
+    ('pkg-config', '0.29.2'),
+    ('R',          '4.1.0'),
+]
+
+dependencies = [
+    ('R-bundle-Bioconductor', '3.13', versionsuffix),
+]
+
+exts_default_options = {
+    'source_urls': [
+        'https://bioconductor.org/packages/%s/bioc/src/contrib/' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/bioc/src/contrib/Archive/%%(name)s' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/data/annotation/src/contrib/' % local_bioc_version,
+        'https://bioconductor.org/packages/%s/data/experiment/src/contrib/' % local_bioc_version,
+        'https://cran.r-project.org/src/contrib/Archive/%(name)s',  # package archive
+        'https://cran.r-project.org/src/contrib/',  # current version of packages
+        'https://cran.freestatistics.org/src/contrib',  # mirror alternative for current packages
+    ],
+    'source_tmpl': '%(name)s_%(version)s.tar.gz'
+}
+
+exts_defaultclass = 'RPackage'
+
+# check whether correct version is installed in extension filter
+# (some versions in this bundle may be newer than the ones provided by R)
+local_ext_version_check = "pkgver = packageVersion('%(ext_name)s'); if (pkgver != '%(ext_version)s') "
+local_stop_msg = "stop('%(ext_name)s %(ext_version)s not installed, found ', pkgver, ' instead')"
+exts_filter = ("R -q --no-save", "%s { %s }" % (local_ext_version_check, local_stop_msg))
+
+# CRAN packages on which these Bioconductor packages depend are available in R module on which this depends
+# !! order of packages is important !!
+exts_list = [
+    ('topGO', '2.52.0', {
+        'checksums': ['c29815ef354c605ad01a856ba61e8bfa6063b0245f6e621187f8a001e396722b'],
+    }),
+    (name, version, {
+        'checksums': ['f0127b77c305ac0930fb412b5e18ea79f24acd5e242e058d77b4c5add609dbe8'],
+    }),
+]
+
+modextrapaths = {'R_LIBS_SITE': ''}
+
+sanity_check_paths = {
+    'files': [],
+    'dirs': [name],
+}
+
+moduleclass = 'bio'

@@ -1,0 +1,78 @@
+# Based on ADIOS-1.13.1-foss-2019a-Python-2.7.15.eb
+# Updated to foss-2020a toolchain and switched to ConfigureMake
+# Latest version from GitHub
+# Mini-XML updated to latest 2.x. version
+# Author: J. Sassmannshausen (Imperial College London/UK)
+
+easyblock = 'ConfigureMake'
+
+name = 'ADIOS'
+version = '20210804'
+local_commit = 'de85222'
+versionsuffix = '-Python-%(pyver)s'
+
+homepage = 'https://www.olcf.ornl.gov/center-projects/adios/'
+description = """The Adaptable IO System (ADIOS) provides a simple,
+flexible way for scientists to describe the data in their code that may
+need to be written, read, or processed outside of the running
+simulation."""
+
+toolchain = {'name': 'foss', 'version': '2020a'}
+toolchainopts = {'usempi': True, 'pic': True}
+
+github_account = 'ornladios'
+source_urls = [GITHUB_SOURCE]
+sources = ['%s.tar.gz' % local_commit]
+
+patches = [
+    '%(name)s-1.13.1_force_use_of_mpi.patch',
+    '%(name)s-1.13.1_fix_missing_thread_lib.patch',
+    '%(name)s-1.13.1_fix_search_for_szip.patch',
+]
+checksums = [
+    'c58af40cbdb13843de2c2c157379d069880835c9b932ad05e774910ec23a468f',  # de85222.tar.gz
+    '81b9b0a77b23d6137f08900a3ecda4471b806c384cf4ad19c4370fc7ca8d9a82',  # ADIOS-1.13.1_force_use_of_mpi.patch
+    'a66fab38e5daf40978f9e961d810f9cbf189de8db924a403ae42a01d405f6fdc',  # ADIOS-1.13.1_fix_missing_thread_lib.patch
+    '2e21a5041822c8b57554eb977a3135637c2714d377eee3b0194d377f1458cdab',  # ADIOS-1.13.1_fix_search_for_szip.patch
+]
+
+builddependencies = [
+    ('Autotools', '20180311'),
+]
+
+dependencies = [
+    ('Python', '3.8.2'),
+    ('SciPy-bundle', '2020.03', versionsuffix),
+    ('zlib', '1.2.11'),
+    ('bzip2', '1.0.8'),
+    ('Szip', '2.1.1'),
+    ('lz4', '1.9.2'),
+    ('netCDF', '4.7.4'),
+    ('Mini-XML', '2.12'),
+    ('zfp', '1.0.0'),
+]
+
+preconfigopts = ' autoreconf -i && export LIBS="-lgomp" && '
+configopts = '--with-zlib=$EBROOTZLIB -with-bzip2=$EBROOTBZIP2 --with-netcdf==$EBROOTNETCDF '
+configopts += '--with-lz4=$EBROOTLZ4 --with-mxml=$EBROOTMINIMINXML --with-phdf5=$EBROOTHDF5 '
+configopts += '--with-zfp=$EBROOTZFP '
+
+fix_python_shebang_for = ['bin/gpp.py']
+
+runtest = ' check'
+
+sanity_check_paths = {
+    'files': ['bin/adios_list_methods', 'bin/bpappend'],
+    'dirs': ['etc/skel/templates', 'lib/python'],
+}
+
+sanity_check_commands = [
+    'adios_list_methods',
+    'bpappend -h',
+]
+
+modextrapaths = {
+    'PYTHONPATH': 'lib/python',
+}
+
+moduleclass = 'data'

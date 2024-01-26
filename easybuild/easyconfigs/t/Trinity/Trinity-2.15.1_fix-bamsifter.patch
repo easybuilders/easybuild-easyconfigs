@@ -1,0 +1,28 @@
+Fix build of Trinity plugin bamsifter:
+* add missing headers
+* use external HTSlib from EasyBuild environment
+* use compilation flags from environment
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- trinity-plugins/bamsifter/Makefile.orig	2023-02-23 03:02:38.789520000 +0100
++++ trinity-plugins/bamsifter/Makefile	2023-02-23 03:04:57.927569000 +0100
+@@ -2,8 +2,8 @@
+ 
+ cwd = $(shell pwd)
+ 
+-sift_bam_max_cov: sift_bam_max_cov.cpp htslib/version.h
+-	g++ -std=c++11 -o _sift_bam_max_cov sift_bam_max_cov.cpp -Wall -O2 -L./htslib/build/lib/ -I./htslib/build/include -lhts
++sift_bam_max_cov: sift_bam_max_cov.cpp
++	g++ -std=c++11 $(CXXFLAGS) -Wall -I$(EBROOTHTSLIB)/include -L$(EBROOTHTSLIB)/lib -lhts -o _sift_bam_max_cov sift_bam_max_cov.cpp 
+ 
+ 
+ htslib/version.h :
+--- trinity-plugins/bamsifter/sift_bam_max_cov.cpp.orig	2023-02-23 03:05:19.083304000 +0100
++++ trinity-plugins/bamsifter/sift_bam_max_cov.cpp	2023-02-23 03:05:35.521079515 +0100
+@@ -11,6 +11,7 @@
+ #include <set>
+ #include <utility>
+ #include <vector>
++#include <string>
+ 
+ #include "htslib/sam.h"
+ #include "htslib/bgzf.h"
