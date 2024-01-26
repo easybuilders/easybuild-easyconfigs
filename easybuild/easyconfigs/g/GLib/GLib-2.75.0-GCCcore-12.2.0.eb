@@ -1,0 +1,52 @@
+easyblock = 'MesonNinja'
+
+name = 'GLib'
+version = '2.75.0'
+
+homepage = 'https://www.gtk.org/'
+description = """GLib is one of the base libraries of the GTK+ project"""
+
+toolchain = {'name': 'GCCcore', 'version': '12.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = [FTPGNOME_SOURCE]
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['6dde8e55cc4a2c83d96797120b08bcffb5f645b2e212164ae22d63c40e0e6360']
+
+builddependencies = [
+    # Python is required for building against GLib, at least when
+    # gdbus-codegen or one of the other python scripts are used.
+    # Since Meson 0.50 and later are Python >=3.5 only we can't build
+    # Python specific versions of GLib that uses Python 2.x
+    # thus Python should not be a runtime dependency for GLib.
+    # Packages that use GLib should either have an explicit
+    # (build)dependency on Python or it will use the system version
+    # EasyBuild itself uses.
+    ('Python', '3.10.8'),
+    ('Meson', '0.64.0'),
+    ('Ninja', '1.11.1'),
+    ('binutils', '2.39'),
+    ('pkgconf', '1.9.3'),
+]
+
+dependencies = [
+    ('libffi', '3.4.4'),
+    ('gettext', '0.21.1'),
+    ('libxml2', '2.10.3'),
+    ('PCRE2', '10.40'),
+    ('util-linux', '2.38.1'),
+]
+
+# avoid using hardcoded path to Python binary in build step
+preconfigopts = "export PYTHON=python && "
+
+configopts = "--buildtype=release --default-library=both "
+
+fix_python_shebang_for = ['bin/*']
+
+sanity_check_paths = {
+    'files': ['lib/libglib-%(version_major)s.0.a', 'lib/libglib-%%(version_major)s.0.%s' % SHLIB_EXT],
+    'dirs': ['bin', 'include'],
+}
+
+moduleclass = 'vis'

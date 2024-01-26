@@ -1,0 +1,44 @@
+determine location to Blosc2 library via $EBROOTBLOSC2, if defined,
+since mechanism to locate the library via blosc2-*.dist-info/RECORD doesn't work if blosc2 was not installed
+with vendored c-blosc2 library;
+author: Kenneth Hoste (HPC-UGent)
+--- tables-3.8.0/setup.py.orig	2023-01-19 20:10:15.637759755 +0100
++++ tables-3.8.0/setup.py	2023-01-19 20:11:48.590853686 +0100
+@@ -110,19 +110,25 @@
+ 
+ def get_blosc2_directories():
+     """Get Blosc2 directories for the C library by using wheel metadata"""
+-    try:
+-        import blosc2
+-    except ModuleNotFoundError:
+-        raise EnvironmentError("Cannot import the blosc2 requirement")
+-    version = blosc2.__version__
+-    basepath = Path(os.path.dirname(blosc2.__file__))
+-    recinfo = basepath.parent / f'blosc2-{version}.dist-info' / 'RECORD'
+     library_path = None
+-    for line in open(recinfo):
+-        if 'libblosc2' in line:
+-            library_path = Path(os.path.abspath(basepath.parent /
+-                                                Path(line[:line.find('libblosc2')])))
+-            break
++    blosc2_root = os.getenv('EBROOTBLOSC2')
++    if blosc2_root:
++        library_path = Path(os.path.join(blosc2_root, 'lib'))
++    else:
++        try:
++            import blosc2
++        except ModuleNotFoundError:
++            raise EnvironmentError("Cannot import the blosc2 requirement")
++        version = blosc2.__version__
++        basepath = Path(os.path.dirname(blosc2.__file__))
++        recinfo = basepath.parent / f'blosc2-{version}.dist-info' / 'RECORD'
++        library_path = None
++        for line in open(recinfo):
++            if 'libblosc2' in line:
++                library_path = Path(os.path.abspath(basepath.parent /
++                                                    Path(line[:line.find('libblosc2')])))
++                break
++
+     if not library_path:
+         raise NotADirectoryError("Library directory not found for blosc2!")
+ 

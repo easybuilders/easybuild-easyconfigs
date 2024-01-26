@@ -1,0 +1,42 @@
+easyblock = 'CMakeMake'
+
+name = 'DIRAC'
+version = '22.0'
+versionsuffix = '-int64'
+
+homepage = 'http://www.diracprogram.org'
+description = "DIRAC: Program for Atomic and Molecular Direct Iterative Relativistic All-electron Calculations"
+
+toolchain = {'name': 'intel', 'version': '2021a'}
+toolchainopts = {'usempi': True, 'i8': True}
+
+source_urls = ['https://zenodo.org/record/6010450/files/']
+sources = ['DIRAC-%(version)s-Source.tar.gz']
+checksums = ['c8c011b5bc2ca36a2ef76b2deb911638321655fcae1d1b146cacfa1b5f783711']
+
+builddependencies = [('CMake', '3.20.1')]
+
+dependencies = [
+    ('Python', '3.9.5'),
+    ('HDF5', '1.10.7')
+]
+
+configopts = '-DMKL_FLAG=sequential '
+configopts += '-DENABLE_MPI=True '
+configopts += '-DENABLE_64BIT_INTEGERS=True '
+configopts += '-DENABLE_EXATENSOR=off '
+configopts += '-DENABLE_PCMSOLVER=off '
+
+pretestopts = 'export DIRAC_TMPDIR=%(builddir)s/scratch && '
+pretestopts += 'export DIRAC_MPI_COMMAND="%(mpi_cmd_prefix)s " && '
+
+runtest = 'test ARGS="-R symmetry_scf_energy" '
+
+sanity_check_paths = {
+    'files': ['bin/pam-dirac', 'share/dirac/dirac.x'],
+    'dirs': ['share/dirac/basis'],
+}
+
+sanity_check_commands = ["pam-dirac --help"]
+
+moduleclass = 'chem'

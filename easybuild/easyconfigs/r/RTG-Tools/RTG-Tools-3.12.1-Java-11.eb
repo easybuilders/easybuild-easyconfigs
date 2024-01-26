@@ -1,0 +1,42 @@
+easyblock = 'CmdCp'
+
+name = 'RTG-Tools'
+version = '3.12.1'
+versionsuffix = '-Java-%(javaver)s'
+
+homepage = 'https://www.realtimegenomics.com/products/rtg-tools'
+description = """ RTG Tools contains utilities to easily manipulate and accurately compare multiple VCF files,
+ as well as utilities for processing other common NGS data formats. """
+
+toolchain = SYSTEM
+
+source_urls = ['https://github.com/RealTimeGenomics/rtg-tools/archive']
+sources = ['%(version)s.tar.gz']
+checksums = ['6ee0ffe1bba7b5497aa09b147a7525b77b1808e6a71368aad440cbd64658085c']
+
+builddependencies = [('ant', '1.10.12', versionsuffix)]
+dependencies = [('Java', '11')]
+
+local_comp_cmd = "export RTG_MEM=1G && "
+# NOTE Tests of RTG-Tools reserve 60% machine's memory.
+# That causes them to fail on debug clusters and work on full nodes only.
+# therefore this easyconfig has been tested on a full node and `ant runalltests` was removed from the easyconfig.
+# local_comp_cmd += 'ant runalltests && '
+local_comp_cmd += 'ant zip-nojre && '
+local_comp_cmd += 'unzip %(builddir)s/rtg-tools-%(version)s/dist/rtg-tools-%(version)s-unknown-nojre.zip'
+
+cmds_map = [('.*', local_comp_cmd)]
+
+files_to_copy = ['rtg-tools-%(version)s-unknown/*']
+
+# add default configuration: no crash reporting, no usage logging
+postinstallcmds = ["echo 'RTG_TALKBACK=false\nRTG_USAGE=' > %(installdir)s/rtg.cfg"]
+
+modextrapaths = {'PATH': ['']}
+
+sanity_check_paths = {
+    'files': ['rtg', 'rtg.cfg', 'RTG.jar'],
+    'dirs': [],
+}
+
+moduleclass = 'bio'

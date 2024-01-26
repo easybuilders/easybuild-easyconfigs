@@ -1,0 +1,24 @@
+Fix an invalid usage of `erase` leading to a use after free.
+See https://github.com/pytorch/pytorch/issues/87359
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/torch/csrc/distributed/rpc/tensorpipe_agent.cpp b/torch/csrc/distributed/rpc/tensorpipe_agent.cpp
+index 39935febe6..c160d1c771 100644
+--- a/torch/csrc/distributed/rpc/tensorpipe_agent.cpp
++++ b/torch/csrc/distributed/rpc/tensorpipe_agent.cpp
+@@ -1261,9 +1261,11 @@ void TensorPipeAgent::updateGroupMembership(
+     workerNameToInfo_.erase(name);
+     workerNameToURL_.erase(name);
+ 
+-    for (const auto& it : reverseDeviceMaps_) {
+-      if (reverseDeviceMaps.find(it.first) == reverseDeviceMaps.end()) {
+-        reverseDeviceMaps_.erase(it.first);
++    for(auto iter = reverseDeviceMaps_.begin(); iter != reverseDeviceMaps_.end(); ) {
++      if (reverseDeviceMaps.find(iter->first) == reverseDeviceMaps.end()) {
++        iter = reverseDeviceMaps_.erase(iter);
++      } else {
++        ++iter;
+       }
+     }
+ 

@@ -1,0 +1,45 @@
+easyblock = 'MakeCp'
+
+name = 'SNAP-HMM'
+version = '20221022'
+_commit = '4ad1e95'
+
+homepage = 'https://korflab.github.io/'
+description = """
+SNAP is a general purpose gene finding program suitable for both eukaryotic and
+prokaryotic genomes. SNAP is an acroynm for Semi-HMM-based Nucleic Acid
+Parser.
+"""
+
+toolchain = {'name': 'GCC', 'version': '11.3.0'}
+
+source_urls = ['https://github.com/KorfLab/SNAP/archive']
+sources = [{'download_filename': '%s.tar.gz' % _commit, 'filename': '%(version)s.tar.gz'}]
+patches = ['%(name)s-20190603_makefile_correction.patch']
+checksums = [
+    {'20221022.tar.gz': 'a85726b7d4199da1b213b613057600012a392ef1aa20198f1d571fac55bf643f'},
+    {'SNAP-HMM-20190603_makefile_correction.patch': 'd518750d4cf01278ba5403ab5717cfcd65b75b5a7c6573ae140f1cdb56b9e655'},
+]
+
+prebuildopts = 'export CFLAGS="$CFLAGS -fcommon" && '
+
+files_to_copy = [
+    (['hmm-assembler.pl', 'zff2gff3.pl', 'fathom', 'forge', 'snap', 'Zoe/zoe-loop'], 'bin'),
+    'DNA',
+    'HMM',
+    'Zoe',
+]
+
+sanity_check_paths = {
+    'files': ['bin/snap', 'bin/forge', 'bin/zoe-loop'],
+    'dirs': ['Zoe'],
+}
+
+sanity_check_commands = [
+    'snap 2>&1 | grep "^usage:"',
+    'zoe-loop | grep "^usage:"',
+]
+
+modextrapaths = {'ZOE': 'Zoe'}
+
+moduleclass = 'bio'

@@ -1,0 +1,49 @@
+easyblock = 'ConfigureMake'
+
+name = 'GDB'
+version = '13.2'
+
+homepage = 'https://www.gnu.org/software/gdb/gdb.html'
+description = "The GNU Project Debugger"
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCELOWER_TAR_XZ]
+checksums = ['fd5bebb7be1833abdb6e023c2f498a354498281df9d05523d8915babeb893f0a']
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('makeinfo', '7.0.3'),
+]
+
+dependencies = [
+    ('zlib', '1.2.13'),
+    ('libreadline', '8.2'),
+    ('ncurses', '6.4'),
+    ('expat', '2.5.0'),
+    ('Python', '3.11.3'),
+    ('ISL', '0.26'),
+    ('MPC', '1.3.1'),
+]
+
+preconfigopts = "mkdir obj && cd obj && "
+configure_cmd_prefix = '../'
+prebuildopts = "cd obj && "
+preinstallopts = prebuildopts
+
+configopts = '--with-system-zlib --with-system-readline --with-expat=$EBROOTEXPAT '
+configopts += '--with-python=$EBROOTPYTHON/bin/python --with-isl=$EBROOTISL --with-mpc=$EBROOTMPC '
+configopts += '--enable-tui --enable-plugins --disable-install-libbfd '
+
+sanity_check_paths = {
+    'files': ['bin/gdb', 'bin/gdbserver'],
+    'dirs': [],
+}
+
+sanity_check_commands = [
+    'gdb --help',
+    'gdbserver --help',
+]
+
+moduleclass = 'debugger'
