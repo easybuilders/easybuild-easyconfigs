@@ -20,6 +20,16 @@ default_component_specs = {
 
 builddependencies = [('Go', '1.21.3')]
 
+local_wrapper_script = """#!/usr/bin/env bash
+
+if [[ -z "$APPTAINER_TMPDIR" ]]; then
+        export APPTAINER_TMPDIR="/var/tmp"
+        if [[ -d "/localscratch" && -w "/localscratch" ]]; then
+                export APPTAINER_TMPDIR="/localscratch"
+        fi
+fi
+exec %(installdir)s/libexec/apptainer/bin/apptainer ${1+"$@"}"""
+
 components = [
     ('apptainer', version, {
         'source_urls': ['https://github.com/%(name)s/%(name)s/releases/download/v%(version)s'],
@@ -35,6 +45,9 @@ components = [
         'configure_cmd': './mconfig',
         'prebuildopts': 'cd builddir &&',
         'preinstallopts': 'cd builddir &&',
+        'installopts': (' && mv %(installdir)s/{bin/apptainer,libexec/apptainer/bin/apptainer}'
+                        ' && echo \'' + local_wrapper_script + '\' > %(installdir)s/bin/apptainer'
+                        ' && chmod 755 %(installdir)s/bin/apptainer'),
     }),
     ('squashfuse', '0.2.0', {
         'source_urls': ['https://github.com/vasi/%(name)s/archive/%(version)s'],
