@@ -1,0 +1,56 @@
+name = 'ANSYS'
+version = '21.1'
+
+homepage = 'http://www.ansys.com'
+description = """
+ANSYS simulation software enables organizations to confidently predict
+how their products will operate in the real world. We believe that every product
+is a promise of something greater.
+"""
+
+toolchain = SYSTEM
+
+download_instructions = """
+You MUST create a single archive from the 3 install iso files.
+Guidelines (adapt YYYYRX and paths accordingly):
+    mkdir /mnt/ansys
+    mkdir -p /opt/apps/sources/AnsysYYYYRX/ANSYSYYYYRX
+    mount -o loop ANSYSYYYYRX_LINX64_Disk1.iso /mnt/ansys
+    cp /mnt/ansys/* /opt/apps/sources/AnsysYYYYRX/ANSYSYYYYRX
+    umount /mnt/ansys
+    mount -o loop ANSYSYYYYRX_LINX64_Disk2.iso /mnt/ansys
+    cp /mnt/ansys/* /opt/apps/sources/AnsysYYYYRX/ANSYSYYYYRX
+    umount /mnt/ansys
+    mount -o loop ANSYSYYYYRX_LINX64_Disk3.iso /mnt/ansys
+    cp /mnt/ansys/* /opt/apps/sources/AnsysYYYYRX/ANSYSYYYYRX
+    umount /mnt/ansys
+Create the tarball (below)
+    cd /opt/apps/sources/AnsysYYYYRX/
+    tar czvf ../ANSYS-YY.X.tgz ANSYSYYYYRX
+    rm -rf /opt/apps/sources/AnsysYYYYRX/ANSYSYYYYRX
+"""
+
+usage = """
+You need to define the LM_LICENSE_FILE variable to effectively use this module
+(it must point to the relevant ANSYS licence server).
+Typical usage:
+     module load tools/ANSYS
+     export LM_LICENSE_FILE=$(cat $EBROOTANSYS/shared_files/licensing/ansyslmd.ini | head -n 1 | cut -d = -f 2)
+You can then check the status of the connection to the license server as follows:
+     $EBROOTANSYS/shared_files/licensing/linx64/lmutil lmstat -a
+"""
+
+sources = ['ANSYS-%s.tgz' % version]
+checksums = ['8a7bb8dbcc0489d83656f7fa9a69b89b3d4e5c29e4393283db2b50ddfbb05403']
+
+modextrapaths = {
+    'LD_LIBRARY_PATH': 'v%s/Framework/bin/Linux64/Mesa' % "".join(version.split('.')),
+}
+
+# You must have a $EBROOTANSYS/shared_files/licensing/ansyslmd.ini file
+postinstallcmds = [
+    'echo "SERVER=1055@licenceserver.domain.com"          > %(installdir)s/shared_files/licensing/ansyslmd.ini',
+    'echo "ANSYSLI_SERVERS=2325@licenceserver.domain.com" >> %(installdir)s/shared_files/licensing/ansyslmd.ini',
+]
+
+moduleclass = 'tools'
