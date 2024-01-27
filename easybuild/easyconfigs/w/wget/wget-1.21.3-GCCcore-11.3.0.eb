@@ -1,0 +1,56 @@
+##
+# Author:    Robert Mijakovic <robert.mijakovic@lxp.lu>
+##
+easyblock = 'ConfigureMake'
+
+name = 'wget'
+version = '1.21.3'
+
+homepage = 'https://www.gnu.org/software/wget'
+description = """GNU Wget is a free software package for retrieving files using HTTP, HTTPS and FTP,
+ the most widely-used Internet protocols. It is a non-interactive commandline tool,
+ so it may easily be called from scripts, cron jobs, terminals without X-Windows support, etc."""
+
+toolchain = {'name': 'GCCcore', 'version': '11.3.0'}
+
+source_urls = [GNU_SOURCE]
+sources = [SOURCE_TAR_GZ]
+patches = ['wget-1.21.3_fix_syntax_error_old_glibc_gcc11.patch']
+checksums = [
+    {'wget-1.21.3.tar.gz': '5726bb8bc5ca0f6dc7110f6416e4bb7019e2d2ff5bf93d1ca2ffcc6656f220e5'},
+    {'wget-1.21.3_fix_syntax_error_old_glibc_gcc11.patch':
+     '0e0aa7a1a4afbe1eefbafb196f162fa5068a03325e342fdc212a16e3c4c946d4'},
+]
+
+builddependencies = [
+    ('binutils', '2.38'),
+    ('pkg-config', '0.29.2'),
+    ('Perl', '5.34.1'),
+]
+dependencies = [
+    ('PCRE', '8.45'),
+    ('libidn2', '2.3.2'),
+    ('zlib', '1.2.12'),
+    ('OpenSSL', '1.1', '', SYSTEM),
+    # OS dependency should be preferred if the os version is more recent then this version,
+    # it's nice to have an up to date gnutls for security reasons
+    # ('GnuTLS', '3.7.1'),
+]
+
+# make sure pkg-config picks up system packages (OpenSSL & co)
+local_pc = "%(sysroot)s/usr/lib64/pkgconfig:"
+local_pc += "%(sysroot)s/usr/lib/pkgconfig:"
+local_pc += "%(sysroot)s/usr/lib/x86_64-linux-gnu/pkgconfig"
+preconfigopts = "export PKG_CONFIG_PATH=%s && " % local_pc
+configopts = '--with-ssl=openssl '
+
+# Optionally, you can use gnutls (default) instead of OpenSSL.
+# Do not forget to comment out configopts in that case.
+# osdependencies = [('gnutls-devel', 'gnutls-dev', 'libgnutls-devel')]
+
+sanity_check_paths = {
+    'files': ['bin/%(name)s'],
+    'dirs': []
+}
+
+moduleclass = 'devel'

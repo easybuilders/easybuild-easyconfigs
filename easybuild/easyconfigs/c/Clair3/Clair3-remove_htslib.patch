@@ -1,0 +1,88 @@
+Remove building of dependencies we provide via easybuild
+Author: Denis Kristak (Inuits), Kenneth Hoste (HPC-UGent)
+diff -ruN Clair3-1.0.4.orig/build.py Clair3-1.0.4/build.py
+--- Clair3-1.0.4.orig/build.py  2023-07-16 14:39:15.000000000 +0200
++++ Clair3-1.0.4/build.py       2023-09-20 16:57:43.713924133 +0200
+@@ -6,7 +6,7 @@
+
+ samver = "1.15.1"
+ file_directory = os.path.dirname(os.path.realpath(__file__))
+-htslib_dir = os.path.join(file_directory, 'samtools-{}'.format(samver), 'htslib-{}'.format(samver))
++htslib_dir = os.path.join(os.getenv('EBROOTHTSLIB'), 'lib')
+
+ libraries = ['m', 'z', 'lzma', 'bz2', 'pthread', 'curl', 'crypto']
+ extra_link_args = []
+@@ -53,7 +53,7 @@
+             'clair3_full_alignment.c')],
+     extra_compile_args=extra_compile_args,
+     extra_link_args=extra_link_args,
+-    extra_objects=[os.path.join(htslib_dir, 'libhts.a')]
++    extra_objects=[os.path.join(htslib_dir, 'libhts.so')]
+ )
+
+ cdef = [
+diff -ruN Clair3-1.0.4_orig/Makefile Clair3-1.0.4/Makefile
+--- Clair3-1.0.4_orig/Makefile	2023-09-07 14:28:29.842168186 +0100
++++ Clair3-1.0.4/Makefile	2023-09-07 14:35:52.320773700 +0100
+@@ -3,8 +3,10 @@
+ 
+ PYTHON ?= python3
+ 
+-all : libhts.a longphase libclair3.so
+-clean : clean_htslib clean_longphase clean_libclair3
++# all : libhts.a longphase libclair3.so
++# clean : clean_htslib clean_longphase clean_libclair3
++all : longphase libclair3.so
++clean : clean_longphase clean_libclair3
+ 
+ SAMVER	=	1.15.1
+ LPVER	=	1.3
+@@ -16,16 +18,16 @@
+ CPPFLAGS	=	-std=c++11 -Wall -O3 -I ${PREFIX}/include -L ${PREFIX}/lib -Wl,-rpath=${PREFIX}/lib
+ LP_CPPFLAGS	 =	-std=c++11 -Wall -g -O3 -I ${PREFIX}/include -L ${PREFIX}/lib -Wl,-rpath=${PREFIX}/lib
+ 
+-samtools-$(SAMVER)/Makefile:
+-		curl -L -o samtools-${SAMVER}.tar.bz2 https://github.com/samtools/samtools/releases/download/${SAMVER}/samtools-${SAMVER}.tar.bz2; \
+-		tar -xjf samtools-${SAMVER}.tar.bz2; \
+-		rm samtools-${SAMVER}.tar.bz2
+-
+-libhts.a: samtools-$(SAMVER)/Makefile
+-	# this is required only to add in -fpic so we can build python module
+-	@echo "\x1b[1;33mMaking $(@F)\x1b[0m"
+-	cd samtools-${SAMVER}/htslib-${SAMVER}; CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ./configure; make CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+-	cp samtools-${SAMVER}/htslib-${SAMVER}/$@ $@
++# samtools-$(SAMVER)/Makefile:
++# 		curl -L -o samtools-${SAMVER}.tar.bz2 https://github.com/samtools/samtools/releases/download/${SAMVER}/samtools-${SAMVER}.tar.bz2; \
++# 		tar -xjf samtools-${SAMVER}.tar.bz2; \
++# 		rm samtools-${SAMVER}.tar.bz2
++
++# libhts.a: samtools-$(SAMVER)/Makefile
++# 	# this is required only to add in -fpic so we can build python module
++# 	@echo "\x1b[1;33mMaking $(@F)\x1b[0m"
++# 	cd samtools-${SAMVER}/htslib-${SAMVER}; CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ./configure; make CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
++# 	cp samtools-${SAMVER}/htslib-${SAMVER}/$@ $@
+ 
+ 
+ longphase-$(LPVER)/Makefile:
+@@ -39,15 +41,15 @@
+ 	cp longphase-${LPVER}/$@ $@
+ 
+ 
+-libclair3.so: samtools-${SAMVER}/htslib-${SAMVER}
++libclair3.so:
+ 	${PYTHON} build.py
+ 
+ 
+-.PHONY: clean_htslib
+-clean_htslib:
+-	cd samtools-${SAMVER} && make clean || exit 0
+-	cd samtools-${SAMVER}/htslib-${SAMVER} && make clean || exit 0
+-	rm libhts.a
++# .PHONY: clean_htslib
++# clean_htslib:
++# 	cd samtools-${SAMVER} && make clean || exit 0
++# 	cd samtools-${SAMVER}/htslib-${SAMVER} && make clean || exit 0
++# 	rm libhts.a
+ 
+ .PHONY: clean_longphase
+ clean_longphase:

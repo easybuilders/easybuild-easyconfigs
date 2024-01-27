@@ -1,0 +1,63 @@
+easyblock = 'MakeCp'
+
+name = 'Clair3'
+version = '1.0.4'
+
+homepage = 'https://github.com/HKU-BAL/Clair3'
+description = """Clair3 is a germline small variant caller for long-reads.
+Clair3 makes the best of two major method categories: pileup calling handles
+most variant candidates with speed, and full-alignment tackles complicated candidates
+to maximize precision and recall. Clair3 runs fast and has superior performance,
+especially at lower coverage. Clair3 is simple and modular for easy deployment and
+integration."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+
+github_account = 'HKU-BAL'
+source_urls = [GITHUB_LOWER_SOURCE]
+sources = ['v%(version)s.tar.gz']
+patches = ['Clair3-remove_htslib.patch']
+checksums = [
+    {'v1.0.4.tar.gz': '56cc4cf43f1cc652958cc1aea95d87d0811531a924ca5c68dd564d41834654c0'},
+    {'Clair3-remove_htslib.patch': 'f77c80755c848ec90f72efbba7b61e3cbc80421d216344e06f6b94e114887285'},
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('mpath', '1.1.3'),
+    ('TensorFlow', '2.11.0'),
+    ('PyTables', '3.8.0'),
+    ('pigz', '2.7'),
+    ('cffi', '1.15.1'),
+    ('parallel', '20220722'),
+    ('SAMtools', '1.16.1'),
+    ('WhatsHap', '1.7'),
+    ('zlib', '1.2.12'),
+    ('bzip2', '1.0.8'),
+    ('Automake', '1.16.5'),
+    ('cURL', '7.83.0'),
+    ('zstd', '1.5.2'),
+    ('HTSlib', '1.15.1'),
+    ('libdeflate', '1.10'),
+    ('PyPy', '7.3.12', '-3.10', SYSTEM),
+]
+
+files_to_copy = [
+    (['clair3', 'clair3.py', 'longphase', 'preprocess', 'run_clair3.sh', 'scripts', 'shared'], 'bin'),
+    (['libclair3.*'], 'lib'),
+]
+
+sanity_check_paths = {
+    'files': ['bin/run_clair3.sh', 'bin/clair3.py', 'bin/longphase', 'lib/libclair3.%s' % SHLIB_EXT],
+    'dirs': ['bin/clair3', 'bin/preprocess', 'bin/scripts', 'bin/shared'],
+}
+
+sanity_check_commands = [
+    "longphase --help",
+    "run_clair3.sh --help",
+    "python -c 'import libclair3'",
+]
+
+modextrapaths = {'PYTHONPATH': 'lib'}
+
+moduleclass = 'bio'
