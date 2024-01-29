@@ -20,6 +20,8 @@ builddependencies = [
 
 dependencies = [
     ('Python', '3.11.3'),
+    ('Python-bundle-PyPI', '2023.06'),
+    ('SciPy-bundle', '2023.07'),
     ('PyTorch', '2.1.2'),
     ('einops', '0.7.0'),
     ('ITK', '5.3.0'),
@@ -36,7 +38,9 @@ dependencies = [
 use_pip = True
 
 # install MONAI with list of 'extras', which require additional dependencies
-local_pip_extras = "nibabel,skimage,pillow,tensorboard,gdown,ignite,torchvision,itk,tqdm,lmdb,psutil,openslide,fire"
+local_pip_extras = "einops,fire,gdown,ignite,itk,jsonschema,lmdb,nibabel,"
+local_pip_extras += "openslide,pandas,pillow,psutil,pydicom,pyyaml,scipy,"
+local_pip_extras += "skimage,tensorboard,torchvision,tqdm"
 
 # PyTorch-Ignite v0.4.11 bundled as an extension because MONAI v1.3.0 has a strict requirement on it
 exts_list = [
@@ -75,15 +79,17 @@ sanity_pip_check = True
 
 # 'pip check' does not verify whether all optional dependencies required to support 'extras'
 # are actually available, so we do it here via an import check;
-# Pillow is a special case, since there we need to use 'import PIL'
-sanity_check_commands = [
-    "python -c 'import monai; monai.config.print_config()'",
-    "python -c 'import PIL'",  # for Pillow required dependency
-] + ["python -c 'import %s'" % x for x in local_pip_extras.split(',') if x != 'pillow']
+local_extra_mod_check = {x: x for x in local_pip_extras.split(",")}
+# Some special cases with different module name than extra name
+local_extra_mod_check['pillow'] = 'PIL'
+local_extra_mod_check['pyyaml'] = 'yaml'
+
+sanity_check_commands = ["python -c 'import monai; monai.config.print_config()'"]
+sanity_check_commands += ["python -c 'import %s'" % local_extra_mod_check[x] for x in local_extra_mod_check]
 
 sanity_check_paths = {
     'files': ['lib/python%%(pyshortver)s/site-packages/%%(namelower)s/_C.%s' % SHLIB_EXT],
-    'dirs': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/ignite'],
 }
 
 moduleclass = 'vis'
