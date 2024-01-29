@@ -1,0 +1,71 @@
+# This is a contribution from HPCNow! (http://hpcnow.com)
+# Copyright::   HPCNow!
+# Authors::     Danilo Gonzalez <danilo.gonzalez@hpcnow.com>
+# License::     GPL-v3.0
+# Updated to foss-2020b to use with artic tool
+# J. Sassmannshausen (GSTT/NHS UK)
+# Updated to 1.5.0
+# Jasper Grimm (UoY)
+
+easyblock = 'PythonBundle'
+
+name = 'medaka'
+version = '1.9.1'
+
+homepage = 'https://github.com/nanoporetech/medaka'
+description = "medaka is a tool to create a consensus sequence from nanopore sequencing data."
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+toolchainopts = {'pic': True}
+
+builddependencies = [('Autotools', '20220317')]
+
+_minimap_ver = '2.26'
+dependencies = [
+    ('Python', '3.10.8'),  # includes cffi
+    # tensorflow~=2.10.0 required by medaka 1.11.3, see requirements.txt
+    ('TensorFlow', '2.13.0'),
+    ('Pysam', '0.21.0'),
+    ('SAMtools', '1.17'),
+    ('minimap2', _minimap_ver),
+    ('HTSlib', '1.17'),  # for tabix, bgzip
+    ('Racon', '1.5.0'),
+    ('edlib', '1.3.9'),
+    ('pyspoa', '0.0.9'),
+    ('python-parasail', '1.3.4'),
+    ('ont-fast5-api', '4.1.1'),
+    ('WhatsHap', '2.1'),
+    ('intervaltree-python', '3.1.0'),
+    ('BCFtools', '1.17'),
+]
+
+use_pip = True
+
+_sedcmds = [
+    "sed -i -e 's/tensorflow.*/tensorflow/g' -e 's/cffi.*/cffi/' requirements.txt",
+    "sed -i -e 's/cffi==1.15.0/cffi/' pyproject.toml",
+]
+
+exts_list = [
+    ('mappy', '2.26', {
+        'checksums': ['e53fbe9a3ea8762a64b8103f4f779c9fb16d418eaa0a731f45cebc83867a9b71'],
+    }),
+    (name, version, {
+        'preinstallopts': " && ".join(_sedcmds) + " && ",
+        'checksums': ['1018c07267d24cb4607ae823ced01a1789939b5f8143d1c240ce243dc1160ef5'],
+    }),
+]
+
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/medaka', 'bin/medaka_consensus', 'bin/medaka_version_report'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    "medaka --help",
+    "medaka_version_report",
+]
+
+moduleclass = 'bio'
