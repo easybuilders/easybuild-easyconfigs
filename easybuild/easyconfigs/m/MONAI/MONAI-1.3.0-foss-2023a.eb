@@ -16,7 +16,6 @@ github_account = 'Project-MONAI'
 dependencies = [
     ('Python', '3.11.3'),
     ('PyTorch', '2.1.2'),
-    ('PyTorch-Ignite', '0.4.11'),  # Monai 1.3.0 requires PyTorch-Ignite==0.4.11
     ('einops', '0.7.0'),
     ('ITK', '5.3.0'),
     ('NiBabel', '5.2.0'),
@@ -30,9 +29,12 @@ dependencies = [
     ('hatchling', '1.18.0'),
 ]
 
+use_pip = True
+
 # install MONAI with list of 'extras', which require additional dependencies
 local_pip_extras = "nibabel,skimage,pillow,tensorboard,gdown,ignite,torchvision,itk,tqdm,lmdb,psutil,openslide,fire"
 
+# PyTorch-Ignite v0.4.11 bundled as an extension because MONAI v1.3.0 has a strict requirement on it
 exts_list = [
     ('gdown', '4.7.1', {
         'checksums': ['347f23769679aaf7efa73e5655270fcda8ca56be65eb84a4a21d143989541045'],
@@ -47,6 +49,15 @@ exts_list = [
     ('fire', '0.5.0', {
         'checksums': ['a6b0d49e98c8963910021f92bba66f65ab440da2982b78eb1bbf95a0a34aacc6'],
     }),
+    ('pytorch-ignite', '0.4.11', {
+        'modulename': 'ignite',
+        'patches': ['PyTorch-Ignite-0.4.11_fix_error_on_importing_Events.patch'],
+        'checksums': [
+            {'pytorch-ignite-0.4.11.tar.gz': 'ee31096a58679417097ef7f3f27d88bec40b789ac5e13cd9ed08bc89ca8ce2e2'},
+            {'PyTorch-Ignite-0.4.11_fix_error_on_importing_Events.patch':
+             'd45c0da30c01f7ce47b7be49a6d5d6eb9529c94a0b9de89260d4b07d9d2359e0'},
+        ],
+    }),
     (name, version, {
         'preinstallopts': 'BUILD_MONAI=1',
         'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive'],
@@ -55,8 +66,6 @@ exts_list = [
         'checksums': ['67e0f55678faad4bd38b1ea69d5de94586b20b551b8ad745415623a8b6c1c5e2'],
     }),
 ]
-
-use_pip = True
 
 sanity_pip_check = True
 
