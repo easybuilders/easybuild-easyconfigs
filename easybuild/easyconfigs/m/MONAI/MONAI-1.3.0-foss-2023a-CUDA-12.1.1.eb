@@ -81,15 +81,17 @@ sanity_pip_check = True
 
 # 'pip check' does not verify whether all optional dependencies required to support 'extras'
 # are actually available, so we do it here via an import check;
-# Pillow is a special case, since there we need to use 'import PIL'
-sanity_check_commands = [
-    "python -c 'import monai; monai.config.print_config()'",
-    "python -c 'import PIL'",  # for Pillow required dependency
-] + ["python -c 'import %s'" % x for x in local_pip_extras.split(',') if x != 'pillow']
+local_extra_mod_check = {x: x for x in local_pip_extras.split(",")}
+# Some special cases with different module name than extra name
+local_extra_mod_check['pillow'] = 'PIL'
+local_extra_mod_check['pyyaml'] = 'yaml'
+
+sanity_check_commands = ["python -c 'import monai; monai.config.print_config()'"]
+sanity_check_commands += ["python -c 'import %s'" % local_extra_mod_check[x] for x in local_extra_mod_check]
 
 sanity_check_paths = {
     'files': ['lib/python%%(pyshortver)s/site-packages/%%(namelower)s/_C.%s' % SHLIB_EXT],
-    'dirs': [],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/ignite'],
 }
 
 moduleclass = 'vis'
