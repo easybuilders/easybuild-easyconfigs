@@ -1,0 +1,66 @@
+test_trigger_on_error in dynamo/test_exc.py fails as the output lines are ordered differently.
+Sort those to make them consistent as is done in https://github.com/pytorch/pytorch/commit/dfdc0b63c9a5befd363d304eb5e08ed1e592d7ca
+Then update the expected output.
+
+Author: Alexander Grund (TU Dresden)
+
+diff --git a/test/dynamo/test_exc.py b/test/dynamo/test_exc.py
+index c8390880aa9..a69c229a8ae 100644
+--- a/test/dynamo/test_exc.py
++++ b/test/dynamo/test_exc.py
+@@ -211,28 +211,28 @@ ReluCompileError:""",
+ translation validation failed.
+ 
+ Model:
++  ==> L['x'].size()[0]: 4
+   ==> L['x'].storage_offset(): 0
+-  ==> s0: 4
+   ==> L['x'].stride()[0]: 1
+-  ==> L['x'].size()[0]: 4
++  ==> s0: 4
+ 
+ Assertions:
++  ==> (== 0 L['x'].storage_offset())
++  ==> (== 1 L['x'].stride()[0])
+   ==> (== L['x'].size()[0] s0)
+   ==> (> s0 1)
+   ==> (Not (And (< L['x'].size()[0] 4) (>= L['x'].size()[0] 0)))
+   ==> (True)
+-  ==> (== 0 L['x'].storage_offset())
+-  ==> (== 1 L['x'].stride()[0])
+   ==> (True)
+ 
+ Target Expressions:
+-  ==> (>= 9223372036854775806 s0)
+-  ==> (== 4 L['x'].size()[0])
++  ==> (<= 2 s0)
+   ==> (== 0 L['x'].storage_offset())
+-  ==> (> s0 0)
+   ==> (== 1 L['x'].stride()[0])
+-  ==> (<= 2 s0)
++  ==> (== 4 L['x'].size()[0])
+   ==> (== 4 s0)
++  ==> (> s0 0)
++  ==> (>= 9223372036854775806 s0)
+ 
+ Failed Source Expressions:
+   ==> (!= 4 L['x'].size()[0])""",
+diff --git a/torch/fx/experimental/validator.py b/torch/fx/experimental/validator.py
+index 313e299151c..3b5e1e81aa3 100644
+--- a/torch/fx/experimental/validator.py
++++ b/torch/fx/experimental/validator.py
+@@ -559,10 +559,10 @@ class ValidationException(TorchDynamoException):
+         def joinlines(xs) -> str:
+             return "\n".join(f"  ==> {x}" for x in xs)
+ 
+-        model_str = joinlines(map(symbolstr, model))
+-        assertions_str = joinlines(map(z3str, assertions))
+-        target_exprs_str = joinlines(map(z3str, target_exprs))
+-        failed_source_exprs_str = joinlines(map(z3str, failed_source_exprs))
++        model_str = joinlines(sorted(map(symbolstr, model)))
++        assertions_str = joinlines(sorted(map(z3str, assertions)))
++        target_exprs_str = joinlines(sorted(map(z3str, target_exprs)))
++        failed_source_exprs_str = joinlines(sorted(map(z3str, failed_source_exprs)))
+ 
+         super().__init__(
+             "translation validation failed.\n\n"
