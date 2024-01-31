@@ -1,4 +1,4 @@
-easyblock = 'MakeCp'
+easyblock = 'ConfigureMake'
 
 name = 'Yambo'
 version = '5.1.1'
@@ -40,8 +40,7 @@ dependencies = [
     ('FFTW', '3.3.9'),
 ]
 
-with_configure = True
-configopts = '--enable-hdf5-par-io --enable-mpi --enable-open-mp '
+configopts = '--enable-hdf5-par-io --enable-mpi --enable-open-mp  --enable-iotk '
 configopts += '--enable-msgs-comps --enable-time-profile --enable-memory-profile '
 configopts += '--with-blas-libs="-lflexiblas" '
 configopts += '--with-lapack-libs="-lflexiblas" '
@@ -52,13 +51,13 @@ configopts += '--with-hdf5-path="$EBROOTHDF5" '
 configopts += '--with-libxc-path="$EBROOTLIBXC" '
 configopts += 'CPP="x86_64-pc-linux-gnu-gcc -E" '
 configopts += 'CPPFLAGS="-P" '
-maxparallel = 4
+parallel = 4
 buildopts = 'all'
-cleanupoldinstall = False
-files_to_copy = [
-    (['%(installdir)s.*/bin/*'], '%(builddir)s/bin'),
-    (['%(builddir)s/%(namelower)s-%(version)s/lib/external/gfortran/mpifort/bin/*'], '%(builddir)s/bin'),
-    (['%(builddir)s/bin/*'], 'bin')
+
+skipsteps = ['install']
+
+postinstallcmds = [
+    "cp -p %(builddir)s/%(namelower)s-%(version)s/lib/external/gfortran/mpifort/bin/* %(installdir)s/bin/",
 ]
 
 sanity_check_paths = {
