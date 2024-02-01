@@ -600,7 +600,7 @@ class EasyConfigTest(TestCase):
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
             ],
             'pydantic': [
-                # GTDB-Tk v2.3.2 requires pydantic 1.x
+                # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
                 ('1.10.13;', ['GTDB-Tk-2.3.2-']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
