@@ -1,0 +1,62 @@
+easyblock = 'PythonBundle'
+
+name = 'sturgeon'
+version = '0.4.3'
+
+description = 'Sturgeon is a CNS neural network classifier based on the reference dataset published by Capper et al., 2018.'
+homepage = 'https://github.com/marcpaga/sturgeon'
+
+
+github_account = 'marcpaga'
+toolchain = {'name': 'foss', 'version': '2021b'}
+
+builddependencies = [
+    ('hypothesis', '6.14.6')
+]
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('R', '4.2.0'),
+    ('ONNX-Runtime', '1.12.1'),
+    ('matplotlib', '3.5.1'),
+    ('Pysam', '0.19.0'), 
+    ('modbampy', '0.6.3'),
+    # ('SciPy-bundle', '2021.10'),
+    ('hatchling', '1.18.0'),
+]
+
+use_pip = True
+
+exts_list = [
+    ('hypothesis', '6.46.7', {  
+        'checksums': ['967009fa561b3a3f8363a73d71923357271c37dc7fa27b30c2d21a1b6092b240']
+    }),
+    ('numpy', '1.22.3', {
+        'patches': [
+            'numpy-1.20.3_disable_fortran_callback_test.patch',
+            'numpy-1.22.3_disable-broken-override-test.patch',
+            '%(name)s-%(version)s_skip-ppc-long-complex-test.patch',
+        ],
+        'sources': ['%(name)s-%(version)s.zip'],
+        'checksums': [
+            'dbc7601a3b7472d559dc7b933b18b4b66f9aa7452c120e87dfb33d02008c8a18',  # numpy-1.22.3.zip
+            # numpy-1.20.3_disable_fortran_callback_test.patch
+            '44975a944544fd0e771b7e63c32590d257a3713070f8f7fdf60105dc516f1d75',
+            # numpy-1.22.3_disable-broken-override-test.patch
+           '9c589bb073b28b25ff45eb3c63c57966aa508dd8b318d0b885b6295271e4983c',
+            # numpy-1.22.3_skip-ppc-long-complex-test.patch
+            '058c8128b9f7158b4d5bedb2f52ccc7e1362b99c352c3d10335f98a6194c880e',
+        ],
+    }),
+    ('pandas', '1.4.2', {
+        'preinstallopts': """sed -i 's@extra_compile_args = \\["-Werror"\\]@extra_compile_args = []@g' setup.py && """,
+        'checksums': ['92bc1fc585f1463ca827b45535957815b7deb218c549b7c18402c322c7549a12'],
+    }),
+    (name, version, {
+        'source_urls': ['https://github.com/%(github_account)s/%(name)s/archive/refs/tags/'],
+        'checksums': ['864d9fd50fb0ccfcc9b6f8a455929ab9e69beccfee33100590ac89b7324682e1'],
+        'sources': ['v%(version)s.tar.gz']
+    }),
+]
+
+sanity_check_commands = ['sturgeon -v', 'sturgeon models']
