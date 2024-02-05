@@ -1,0 +1,52 @@
+name = 'Gurobi'
+version = '11.0.0'
+
+homepage = 'https://www.gurobi.com'
+description = """The Gurobi Optimizer is a state-of-the-art solver for mathematical programming.
+The solvers in the Gurobi Optimizer were designed from the ground up to exploit modern
+architectures and multi-core processors, using the most advanced implementations of the
+latest algorithms."""
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+source_urls = [
+    'https://packages.gurobi.com/%(version_major_minor)s/',
+    'https://pypi.python.org/packages/source/%(nameletter)s/gurobipy',
+]
+sources = [
+    {
+        'filename': '%(namelower)s%(version)s_linux64.tar.gz',
+    },
+    {
+        'filename': 'gurobipy-%(version)s-cp311-cp311-manylinux2014_%(arch)s.manylinux_2_17_%(arch)s.whl',
+        'extract_cmd': 'cp %s %(builddir)s',
+    }
+]
+patches = ['%(name)s-11.0.0_use-eb-python-gurobi-shell.patch']
+checksums = [
+    {'gurobi11.0.0_linux64.tar.gz': '6a1ec7499b230aea0542bc893bf0642ae8ce983dd5ef0c37cb3a253d827ce634'},
+    {'gurobipy-11.0.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl':
+     'a98abda1cb45f548fff17370eb30cc6e187d04edc5d9984a68d194491598a993'},
+    {'Gurobi-11.0.0_use-eb-python-gurobi-shell.patch':
+     'ae641470aad41c1db71eb62344472eb645310a76ca8a310e32e88a4f7a3b0eb9'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+
+dependencies = [
+    ('Python', '3.11.3'),
+]
+
+# remove bundled Python interpreter in favour of the dependency in EB
+postinstallcmds = ['rm %(installdir)s/bin/python*']
+
+# license is mandatory for installation
+license_file = HOME + '/licenses/%(name)s.lic'
+
+modloadmsg = """Gurobi shell based on Python %(pyver)s can be launched with command `gurobi.sh`
+Gurobi Python Interface can be loaded in Python %(pyver)s with 'import gurobipy'
+"""
+
+moduleclass = 'math'
