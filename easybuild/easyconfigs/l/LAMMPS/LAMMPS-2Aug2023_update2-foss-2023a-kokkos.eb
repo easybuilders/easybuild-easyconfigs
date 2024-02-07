@@ -20,7 +20,17 @@ toolchainopts = {'openmp': True, 'usempi': True}
 # 'https://github.com/lammps/lammps/archive/'
 source_urls = [GITHUB_LOWER_SOURCE]
 sources = ['stable_%(version)s.tar.gz']
-checksums = ['3bcecabc9cad08d0a4e4d989b52d29c58505f7ead8ebacf43c9db8d9fd3d564a']
+patches = [
+    'LAMMPS-2Aug2023_install_lammps_python_pachage_in_eb_software_module.patch',
+    'LAMMPS-2Aug2023_fix-timestep-balance-example.patch',
+]
+checksums = [
+    {'stable_2Aug2023_update2.tar.gz': '3bcecabc9cad08d0a4e4d989b52d29c58505f7ead8ebacf43c9db8d9fd3d564a'},
+    {'LAMMPS-2Aug2023_install_lammps_python_pachage_in_eb_software_module.patch':
+     '33968fa2b6f545a7aaf9a8ef418add8913d89824197e19f0f9564b418a79fc65'},
+    {'LAMMPS-2Aug2023_fix-timestep-balance-example.patch':
+     '6f68387ced2b4bd0a06e4c3d31b0ffd47042476777d87d8a0ca6b19a4e6a1777'},
+]
 
 builddependencies = [
     ('CMake', '3.26.3'),
@@ -46,9 +56,10 @@ dependencies = [
     ('PLUMED', '2.9.0'),
     ('ScaFaCoS', '1.0.4'),
     ('SciPy-bundle', '2023.07'),
-    ('MDI', '1.4.26'),
     # VTK package is auto-disabled if this dep is not available
     ('VTK', '9.3.0'),
+    # We use a custom build of MDI
+    ('MDI', '1.4.26'),
 ]
 if ARCH == 'x86_64':
     # TBB is an optional dependency when building on Intel arch
@@ -164,5 +175,6 @@ general_packages = [
 # - MSCG
 # - QMMM (setup seems complex)
 
+#install_cmd = 'make install && python %(builddir)s/lammps-stable_%(version)s/python/install.py -p %(installdir)s/lib -l %(installdir)s/lib/liblammps.so -v %(builddir)s/src/version.h'
 
 moduleclass = 'chem'
