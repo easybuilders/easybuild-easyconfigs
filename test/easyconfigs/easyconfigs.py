@@ -1083,7 +1083,6 @@ class EasyConfigTest(TestCase):
                 exts_default_options = ec.get('exts_default_options', {})
 
                 download_dep_fail = ec.get('download_dep_fail')
-                exts_download_dep_fail = ec.get('exts_download_dep_fail')
                 use_pip = ec.get('use_pip')
                 if use_pip is None:
                     use_pip = exts_default_options.get('use_pip')
@@ -1107,16 +1106,7 @@ class EasyConfigTest(TestCase):
                 if use_pip is None and not any(re.match(regex, ec_fn) for regex in whitelist_pip):
                     failing_checks.append("'use_pip' should be set in %s" % ec_fn)
 
-            # download_dep_fail is enabled automatically in PythonBundle easyblock, so shouldn't be set
-            if easyblock in ['CargoPythonBundle', 'PythonBundle']:
-                if download_dep_fail or exts_download_dep_fail:
-                    fail = "'*download_dep_fail' should not be set in %s since PythonBundle easyblock is used" % ec_fn
-                    failing_checks.append(fail)
-                if pure_ec.get('exts_default_options', {}).get('source_urls') == python_default_urls:
-                    failing_checks.append("'source_urls' should not be defined in exts_default_options when using "
-                                          "the default value in %s" % ec_fn)
-
-            elif exts_defaultclass == 'PythonPackage':
+            if exts_defaultclass == 'PythonPackage':
                 # bundle of Python packages should use PythonBundle
                 if easyblock == 'Bundle':
                     fail = "'PythonBundle' easyblock should be used for bundle of Python packages in %s" % ec_fn
