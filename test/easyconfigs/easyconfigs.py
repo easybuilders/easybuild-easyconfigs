@@ -36,6 +36,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from unittest import TestCase, TestLoader, main, skip
+from urllib.request import urlopen
 
 import easybuild.main as eb_main
 import easybuild.tools.options as eboptions
@@ -57,7 +58,6 @@ from easybuild.tools.filetools import change_dir, is_generic_easyblock, read_fil
 from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
-from easybuild.tools.py2vs3 import string_type, urlopen
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
 from easybuild.tools.run import run_cmd
 from easybuild.tools.options import set_tmpdir
@@ -394,6 +394,18 @@ class EasyConfigTest(TestCase):
                     if all(ec.startswith('%s-%s-' % (parent_name, dep_ver)) for ec in ecs) and len(dep_vars) > 1:
                         dep_vars.pop(key)
 
+        # multiple variants of Meson is OK as long as they are deps for meson-python, since meson-python should only be
+        # a build dependency elsewhere
+        if dep == 'Meson' and len(dep_vars) > 1:
+            for key in list(dep_vars):
+                ecs = dep_vars[key]
+                # filter out Meson variants that are only used as a dependency for meson-python
+                if all(ec.startswith('meson-python-') for ec in ecs):
+                    dep_vars.pop(key)
+                # always retain at least one dep variant
+                if len(dep_vars) == 1:
+                    break
+
         # multiple versions of Boost is OK as long as they are deps for a matching Boost.Python
         if dep == 'Boost' and len(dep_vars) > 1:
             for key in list(dep_vars):
@@ -436,12 +448,12 @@ class EasyConfigTest(TestCase):
             # always retain at least one dep variant
             if len(dep_vars) == 1:
                 break
-            if isinstance(dep_name, string_type):
+            if isinstance(dep_name, str):
                 if dep != dep_name:
                     continue
             elif dep not in dep_name:
                 continue
-            if isinstance(version_suffix, string_type):
+            if isinstance(version_suffix, str):
                 match_prefix = False
             else:
                 version_suffix, match_prefix = version_suffix
@@ -586,6 +598,10 @@ class EasyConfigTest(TestCase):
             'ParaView': [
                 # OpenFOAM 5.0 requires older ParaView, CFDEMcoupling depends on OpenFOAM 5.0
                 (r'5\.4\.1', [r'CFDEMcoupling-3\.8\.0', r'OpenFOAM-5\.0-20180606']),
+            ],
+            'pydantic': [
+                # GTDB-Tk v2.3.2 requires pydantic 1.x (see https://github.com/Ecogenomics/GTDBTk/pull/530)
+                ('1.10.13;', ['GTDB-Tk-2.3.2-']),
             ],
             # medaka 1.1.*, 1.2.*, 1.4.* requires Pysam 0.16.0.1,
             # which is newer than what others use as dependency w.r.t. Pysam version in 2019b generation;
@@ -1459,7 +1475,7 @@ def template_easyconfig_test(self, spec):
         # check whether any entry in osdependencies related to OpenSSL
         openssl_osdep = False
         for osdep in osdeps:
-            if isinstance(osdep, string_type):
+            if isinstance(osdep, str):
                 osdep = [osdep]
             if any('libssl' in x for x in osdep) or any('openssl' in x for x in osdep):
                 openssl_osdep = True
@@ -1628,7 +1644,7 @@ def template_easyconfig_test(self, spec):
 
         # take into account that for some string-valued easyconfig parameters (configopts & co),
         # the easyblock may have injected additional values, which affects the dumped easyconfig file
-        elif isinstance(orig_val, string_type):
+        elif isinstance(orig_val, str):
             error_msg = "%s value '%s' should start with '%s'" % (key, dumped_val, orig_val)
             self.assertTrue(dumped_val.startswith(orig_val), error_msg)
         else:
