@@ -59,7 +59,7 @@ from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
-from easybuild.tools.run import run_cmd
+from easybuild.tools.run import run_shell_cmd
 from easybuild.tools.options import set_tmpdir
 from easybuild.tools.utilities import nub
 
@@ -111,9 +111,9 @@ def get_files_from_diff(diff_filter, ext):
     # first determine the 'merge base' between target branch and PR branch
     # cfr. https://git-scm.com/docs/git-merge-base
     cmd = "git merge-base %s HEAD" % target_branch
-    out, ec = run_cmd(cmd, simple=False, log_ok=False)
-    if ec == 0:
-        merge_base = out.strip()
+    res = run_shell_cmd(cmd)
+    if res.exit_code == 0:
+        merge_base = res.output.strip()
         print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
     else:
         msg = "Failed to determine merge base (ec: %s, output: '%s'), "
@@ -123,8 +123,8 @@ def get_files_from_diff(diff_filter, ext):
 
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
-    out, _ = run_cmd(cmd, simple=False)
-    files = [os.path.join(top_dir, f) for f in out.strip().split('\n') if f.endswith(ext)]
+    res = run_shell_cmd(cmd)
+    files = [os.path.join(top_dir, f) for f in res.output.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
     return files
