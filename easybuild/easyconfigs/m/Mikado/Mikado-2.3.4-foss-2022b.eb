@@ -1,0 +1,87 @@
+easyblock = 'PythonBundle'
+
+name = 'Mikado'
+version = '2.3.4'
+
+homepage = 'https://github.com/EI-CoreBioinformatics/mikado'
+description = """Mikado is a lightweight Python3 pipeline to identify
+ the most useful or “best” set of transcripts from multiple transcript
+ assemblies. Our approach leverages transcript assemblies generated
+ by multiple methods to define expressed loci, assign a representative
+ transcript and return a set of gene models that selects against transcripts
+ that are chimeric, fragmented or with short or disrupted CDS."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('Ninja', '1.11.1'),
+    ('Meson', '0.64.0'),
+]
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('Biopython', '1.81'),
+    ('hypothesis', '6.68.2'),
+    ('networkx', '3.0'),
+    ('SciPy-bundle', '2023.02'),
+    ('Pysam', '0.21.0'),
+    ('PyYAML', '6.0'),
+    ('snakemake', '7.32.3'),
+    ('pyfaidx', '0.7.2.1'),
+    ('Greenlet', '2.0.2'),
+    # DRMAA is not needed but it can be used on clusters with Slurm
+    # ('drmaa-python', '0.7.9', '-slurm'),
+]
+
+use_pip = True
+sanity_pip_check = True
+
+local_old_line = 'from scipy._build_utils import numpy_nodepr_api'
+local_new_line = """numpy_nodepr_api = dict(define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_9_API_VERSION")])"""
+# hardcoded value, used to be imported from scipy._build_utils (which is no longer available since scipy 1.10)'
+local_code_patch_cmd = "sed -i 's/%s/%s/g' setup.py" % (local_old_line, local_new_line)
+# drmaa-python is not necessary and it would require slurm-drmaa while Slurm is not available on all clusters
+local_dep_patch_cmd = "sed -i '/^drmaa$/d' requirements.txt"
+
+exts_list = [
+    ('SQLAlchemy', '2.0.20', {
+        'checksums': ['ca8a5ff2aa7f3ade6c498aaafce25b1eaeabe4e42b73e25519183e4566a16fc6'],
+    }),
+    ('SQLAlchemy-Utils', '0.41.1', {
+        'checksums': ['a2181bff01eeb84479e38571d2c0718eb52042f9afd8c194d0d02877e84b7d74'],
+    }),
+    ('python-rapidjson', '1.10', {
+        'modulename': 'rapidjson',
+        'checksums': ['acfecbf5edb91ec72a20a125de7f56b8c2f6161eff4c65382c8ee6a2484d3540'],
+    }),
+    ('marshmallow', '3.14.1', {
+        'checksums': ['4c05c1684e0e97fe779c62b91878f173b937fe097b356cd82f793464f5bc6138'],
+    }),
+    ('marshmallow_dataclass', '8.5.3', {
+        'checksums': ['c0c5e1ea8d0e557b6fa00343799a9a9e60757b948fb096076beb6aa76bd68d30'],
+    }),
+    ('typeguard', '4.1.2', {
+        'checksums': ['3be187945f9ef5a9f6d7a926dfe54babb7dfd807085ce05f9a5e8735f2487990'],
+    }),
+    ('typing_extensions', '4.7.1', {
+        'checksums': ['b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2'],
+    }),
+    ('typing_inspect', '0.9.0', {
+        'checksums': ['b23fc42ff6f6ef6954e4852c1fb512cdd18dbea03134f91f856a95ccc9461f78'],
+    }),
+    ('mypy_extensions', '1.0.0', {
+        'checksums': ['75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782'],
+    }),
+    (name, version, {
+        'preinstallopts': "%s && %s && " % (local_code_patch_cmd, local_dep_patch_cmd),
+        'modulename': name,
+        'checksums': ['6d8844bacacc776214cf35cb148fa638c029b2972751d04fc1f7d0d8f3e961c2'],
+    }),
+]
+
+sanity_check_commands = [
+    "python -c 'import Mikado; Mikado.test()'"
+]
+
+moduleclass = 'bio'

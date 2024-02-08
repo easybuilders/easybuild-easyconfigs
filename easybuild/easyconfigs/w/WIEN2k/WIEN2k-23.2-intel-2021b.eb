@@ -1,0 +1,78 @@
+name = 'WIEN2k'
+version = '23.2'
+
+homepage = 'http://www.wien2k.at/'
+description = """The program package WIEN2k allows to perform electronic structure calculations of solids
+using density functional theory (DFT). It is based on the full-potential (linearized) augmented plane-wave
+((L)APW) + local orbitals (lo) method, one among the most accurate schemes for band structure calculations.
+WIEN2k is an all-electron scheme including relativistic effects and has many features."""
+
+toolchain = {'name': 'intel', 'version': '2021b'}
+
+sources = ['%(name)s_%(version)s.tar']
+patches = [
+    '%(name)s-%(version)s_fix_libxc_for_lapw0_mpi.patch',
+    '%(name)s-%(version)s_fix_system_stderr_redirection.patch',
+]
+checksums = [
+    '3a71565a4fb114a2f9af9a1710bd3160781a7566bb2746bef1ba8af372b4d7b0',  # WIEN2k_23.2.tar
+    '1cc480a4824d9185ad5918dfc68c47bcb7826114626c8133d573be901bbdca84',  # WIEN2k-23.2_fix_libxc_for_lapw0_mpi.patch
+    'eb3f987b1f839b9f10c315d3f7a57e181e46bc98bec3a18e5b9942689b75fcc7',
+    # WIEN2k-23.2_fix_system_stderr_redirection.patch
+]
+
+
+download_instructions = """
+WIEN2k can be ordered at http://susi.theochem.tuwien.ac.at/index.html.
+"""
+
+dependencies = [
+    ('Python', '3.9.6'),
+    ('Perl', '5.34.0'),
+    ('DFT-D3', '3.2.0'),
+    ('ELPA', '2021.05.001'),
+    ('FFTW', '3.3.10'),
+    ('libxc', '5.1.6'),
+]
+
+osdependencies = [
+    ('glibc-devel', 'libc6-dev'),  # required for libpthread.
+    ('tcsh')
+]
+
+# remote = 'pbsssh'
+# If using a Slurm batch system it is highly recommended to use
+# 'srun -n_NP_ _EXEC_' for wien_mpirun
+wien_mpirun = 'mpirun  -np _NP_ _EXEC_'
+use_remote = False
+mpi_remote = False
+wien_granularity = True
+taskset = 'no'
+
+# Change as needed, these are the defaults
+# nmatmax = 19000
+# nume = 6000
+
+fix_perl_shebang_for = [
+    'iniel_pressure_in2reader.pl_lapw',
+    'iniel_pressure_reader.pl_lapw',
+    'setrmt_lapw',
+    'elast_setup_input.pl_lapw',
+    'bashtime2csh.pl_lapw',
+]
+
+tests = [
+    # test case 1: NaCl
+    ('NaCl', '-b', '-i 100', [r'^:DIS.*0.1', r'^:ENE.*-1248.1']),
+    # test case 2: TiO2
+    ('TiO2',
+     '-b -numk 1000 -rkmax 7.5',
+     '-in1ef -cc 0.00001 -fc 0.5 -i 100',
+     [
+         r'^:ENE.*-4018.0',
+         r'^:FGL001.*\s+[0.]+\s+[0.]+\s+[0.]+\s+total forces',
+         r'^:FGL002.*15.*total forces',
+     ]),
+]
+
+moduleclass = 'chem'
