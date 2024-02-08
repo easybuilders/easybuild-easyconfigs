@@ -111,7 +111,7 @@ def get_files_from_diff(diff_filter, ext):
     # first determine the 'merge base' between target branch and PR branch
     # cfr. https://git-scm.com/docs/git-merge-base
     cmd = "git merge-base %s HEAD" % target_branch
-    res = run_shell_cmd(cmd)
+    res = run_shell_cmd(cmd, fail_on_error=False)
     if res.exit_code == 0:
         merge_base = res.output.strip()
         print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
