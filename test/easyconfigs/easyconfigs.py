@@ -116,7 +116,7 @@ def get_files_from_diff(diff_filter, ext):
         merge_base = res.output.strip()
         print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
     else:
-        msg = "Failed to determine merge base (ec: %s, output: '%s'), "
+        msg = "Failed to determine merge base (exit_code: %s, output: '%s'), "
         msg += "falling back to specifying target branch %s"
         print(msg % (res.exit_code, res.output, target_branch))
         merge_base = target_branch
