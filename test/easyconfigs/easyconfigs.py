@@ -118,7 +118,7 @@ def get_files_from_diff(diff_filter, ext):
     else:
         msg = "Failed to determine merge base (ec: %s, output: '%s'), "
         msg += "falling back to specifying target branch %s"
-        print(msg % (ec, out, target_branch))
+        print(msg % (ec, res.output, target_branch))
         merge_base = target_branch
 
     # determine list of changed files using 'git diff' and merge base determined above
