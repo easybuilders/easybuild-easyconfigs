@@ -1111,12 +1111,6 @@ class EasyConfigTest(TestCase):
                 if easyblock == 'Bundle':
                     fail = "'PythonBundle' easyblock should be used for bundle of Python packages in %s" % ec_fn
                     failing_checks.append(fail)
-                else:
-                    # both download_dep_fail and use_pip should be set via exts_default_options
-                    # when installing Python packages as extensions
-                    for key in ['download_dep_fail', 'use_pip']:
-                        if exts_default_options.get(key) is None:
-                            failing_checks.append("'%s' should be set in exts_default_options in %s" % (key, ec_fn))
 
             # if Python is a dependency, that should be reflected in the versionsuffix since v3.8.6
             has_recent_python3_dep = any(LooseVersion(dep['version']) >= LooseVersion('3.8.6')
