@@ -37,6 +37,9 @@ builddependencies = [
 configopts = '-DCMAKE_C_COMPILER_ID=Intel '
 configopts = [configopts + '-DINTEGER8=ON -Dimkl_LIBRARY="mkl_intel_ilp64;mkl_intel_thread;mkl_core;iomp5;pthread;m;dl"', configopts]
 
+# workaround for first iteration of LAPACKe build (not used in the end), to have a temporary libflexiblas_intel.so symlink
+installopts = ['&& ln -sf libflexiblas64_intel.so %(installdir)s/lib64/libflexiblas_intel.so', '']
+
 # note: first listed backend will be used as default by FlexiBLAS,
 # unless otherwise specified via easyconfig parameter flexiblas_default
 local_backends = ['OpenBLAS', 'BLIS']
@@ -56,10 +59,10 @@ exts_list = [
         'source_urls': ['https://github.com/Reference-LAPACK/lapack/archive/'],
         'sources': ['v%(version)s.tar.gz'],
 	'checksums': ['4b9ba79bfd4921ca820e83979db76ab3363155709444a787979e81c22285ffa9'],
-        'preconfigopts': 'module unload imkl && ',
         'configopts': ('-DBUILD_SHARED_LIBS=ON -DUSE_OPTIMIZED_BLAS=ON -DLAPACKE=ON '
                        '-DUSE_OPTIMIZED_LAPACK=ON -DBUILD_DEPRECATED=ON '
-                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas'),
+                       '-DCMAKE_INSTALL_INCLUDEDIR=%(installdir)s/include/flexiblas '
+                       '-DBLAS_LIBRARIES=%(installdir)s/lib64/libflexiblas_intel.so'),
         'sanity_check_paths': {
             'files': ['lib/liblapacke.%s' % SHLIB_EXT, 'include/flexiblas/lapacke.h'],
             'dirs': [],
