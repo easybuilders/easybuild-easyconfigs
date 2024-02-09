@@ -1,0 +1,76 @@
+# Author: Pavel Grochal (INUITS)
+# License: GPLv2
+
+easyblock = 'Bundle'
+
+name = 'Percolator'
+version = '3.6.5'
+
+# homepage doesn't have correctly working https
+# stating GitHub because landing page links the homepage
+# http://percolator.ms/
+homepage = 'https://github.com/percolator/percolator'
+description = "Semi-supervised learning for peptide identification from shotgun proteomics datasets"
+
+toolchain = {'name': 'GCC', 'version': '9.3.0'}
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+    ('cURL', '7.63.0'),
+]
+
+dependencies = [
+    ('zlib', '1.2.11'),
+    ('Boost', '1.72.0'),
+    ('KyotoCabinet', '1.2.80'),
+    ('SQLite', '3.27.2'),
+    ('bzip2', '1.0.6'),
+    ('Xerces-C++', '3.2.2'),
+    ('XSD', '4.0.0'),
+]
+
+default_easyblock = 'CMakeMake'
+
+local_sw_preconfigopts = 'export XSDDIR="${EBROOTXSD}" && export XERCESCROOT="${EBROOTXERCESMINCPLUSPLUS}" && '
+# can't use %(namelower)s below, because names are derived from components
+local_unpacked_dir_name = 'percolator-rel-3-06-05'
+local_srcdir_root = '%%(builddir)s/%s/' % local_unpacked_dir_name
+local_common_configopts = '-DTARGET_ARCH=%(arch)s '
+
+github_account = 'percolator'
+default_component_specs = {
+    'source_urls': [GITHUB_LOWER_SOURCE],
+    'sources': ['rel-3-06-05.tar.gz'],
+	'checksums': [
+		'e386998046f59c34be01b1b0347709751d92f3a98e9a0079f8e7c5af5e2dcc8f',
+		'0d1b5e99723a896297d1001368461ebbe4c7bee112cfe9186d5b412e75c5ab92',
+	],
+    'start_dir': local_unpacked_dir_name,
+    'preconfigopts': local_sw_preconfigopts
+}
+
+components = [
+    (name, version, {
+        'configopts': local_common_configopts + '-DXML_SUPPORT=ON ',
+        'srcdir': local_srcdir_root,
+        'patches': ['Percolator-3.6.5-cmake-deps.patch'],
+    }),
+    ('%s_converters' % name, version, {
+        # Installation docs states using "TokyoCabinet" but from all information obtained
+        # TokyoCabinet and KyotoCabinet should be different implementations of the same protocol.
+        'configopts': local_common_configopts + '-DSERIALIZE="KyotoCabinet" ',
+        'srcdir': '%s/src/converters' % local_srcdir_root,
+    }),
+    #('%s_elude_tool' % name, version, {
+    #    'configopts': local_common_configopts,
+    #    'srcdir': '%s/src/elude_tool' % local_srcdir_root,
+    #}),
+]
+
+sanity_check_paths = {
+    'files': ['bin/percolator'],
+    'dirs': ['share/xml/percolator/'],
+}
+sanity_check_commands = ['percolator --help']
+
+moduleclass = 'bio'
