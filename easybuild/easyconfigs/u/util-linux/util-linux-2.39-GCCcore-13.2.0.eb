@@ -1,0 +1,53 @@
+easyblock = 'ConfigureMake'
+
+name = 'util-linux'
+version = '2.39'
+
+homepage = 'https://www.kernel.org/pub/linux/utils/util-linux'
+
+description = "Set of Linux utilities"
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['%s/v%%(version_major_minor)s' % homepage]
+sources = [SOURCELOWER_TAR_GZ]
+patches = [
+    'util-linux-%(version)s_fix_waitpid.patch',
+    'util-linux-2.39-fix-build-centos7.patch'
+]
+checksums = [
+    {'util-linux-2.39.tar.gz': 'b1f597ad172a2ee17b0a7ae4be7ab7e1b1a6f9394ddbd3d8ec90ae4ed7333579'},
+    {'util-linux-2.39_fix_waitpid.patch': '99cbd4ee8293f3ffad4467e9f245d0da4e10a98b6599f5e5f9d4cb99c7eebbd2'},
+    {'util-linux-2.39-fix-build-centos7.patch': '21587513f0f5f5efe790396ac39450c7f30dd55063929bb430a77352ba99f57f'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+    ('Autotools', '20220317'),  # for fix_waitpid patch
+    ('pkgconf', '2.0.3'),  # for fix_waitpid patch
+]
+
+dependencies = [
+    ('ncurses', '6.4'),
+    ('zlib', '1.2.13'),
+]
+
+# disable account related utilities (they need OS dependent pam-devel files)
+# disable wall and friends (requires group changing permissions for install user)
+# install systemd service files in install dir
+# install bash completion files in install dir
+configopts = "--disable-chfn-chsh --disable-login --disable-su --disable-rfkill "
+configopts += "--disable-wall --disable-use-tty-group "
+configopts += "--disable-makeinstall-chown --disable-makeinstall-setuid "
+configopts += "--with-systemdsystemunitdir='${prefix}/systemd' "
+configopts += "--with-bashcompletiondir='${prefix}/share/bash-completion/completions' "
+# disable building Python bindings (since we don't include Python as a dep)
+configopts += "--without-python "
+
+sanity_check_paths = {
+    'files': ['lib/lib%s.a' % x for x in ['blkid', 'mount', 'uuid']],
+    'dirs': ['include', 'bin', 'share', 'sbin'],
+}
+
+moduleclass = 'tools'

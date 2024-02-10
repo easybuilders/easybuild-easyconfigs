@@ -1,0 +1,49 @@
+easyblock = 'CMakeMake'
+
+name = 'EnergyPlus'
+version = '23.2.0'
+
+homepage = 'https://energyplus.net/'
+
+description = """EnergyPlus is a whole building energy simulation program that engineers, architects, and researchers
+ use to model both energy consumption—for heating, cooling, ventilation, lighting and plug and process loads—and 
+water use in buildings."""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': False, 'openmp': True}
+
+source_urls = ['https://github.com/NREL/%(name)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['f4df81d8b233ee511276d471c5754b5e9de3080128b8162cf47d72349d549315']
+
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('git', '2.36.0', '-nodocs'),
+]
+
+dependencies = [
+    ('Python', '3.10.4'),
+    ('X11', '20220504'),
+]
+
+configopts = '-DBUILD_FORTRAN=yes -DLINK_WITH_PYTHON=yes '
+
+install_target_subdir = 'bin'
+
+postinstallcmds = ['ln -s ${EBROOTPYTHON}/lib/python%(pyshortver)s %(installdir)s/bin/python_standard_lib']
+
+sanity_check_paths = {
+    'files': ['bin/%(namelower)s'],
+    'dirs': [
+        'bin',
+        'bin/python_standard_lib',
+    ],
+}
+
+sanity_check_commands = [
+    'energyplus --help',
+    'energyplus-%(version)s --help',
+    'ConvertInputFormat --help',
+]
+
+moduleclass = 'phys'
