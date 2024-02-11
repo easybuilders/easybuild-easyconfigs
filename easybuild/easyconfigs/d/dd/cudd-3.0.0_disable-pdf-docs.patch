@@ -1,0 +1,94 @@
+Disable building the documentation in PDF format
+author: Alex Domingo (Vrije Universiteit Brussel)
+--- configure.ac.orig	2021-01-09 00:36:31.371946000 +0100
++++ configure.ac	2021-01-09 00:37:07.878429000 +0100
+@@ -44,7 +44,7 @@
+ AC_C_BIGENDIAN
+ AM_CONDITIONAL([CROSS_COMPILING],[test x$cross_compiling = xyes])
+ 
+-# Building documentation requires doxygen, pdflatex, and makeindex.
++# Building documentation requires doxygen
+ AC_CHECK_PROGS([DOXYGEN], [doxygen])
+ if test -z "$DOXYGEN"; then
+    AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
+@@ -52,17 +52,6 @@
+ AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
+ AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
+ 
+-AC_CHECK_PROGS([PDFLATEX], [pdflatex])
+-if test -z "$PDFLATEX"; then
+-    AC_MSG_WARN([pdflatex not found - unable to compile manual to PDF])
+-fi
+-AC_CHECK_PROGS([MAKEINDEX], [makeindex])
+-if test -z "$MAKEINDEX"; then
+-    AC_MSG_WARN([makeindex not found - unable to compile manual to PDF])
+-fi
+-AM_CONDITIONAL([HAVE_PDFLATEX],[test -n "$PDFLATEX" && test -n "$MAKEINDEX"])
+-AM_COND_IF([HAVE_PDFLATEX], [AC_CONFIG_FILES([doc/cudd.tex])])
+-
+ # Checks for libraries.
+ #AC_CHECK_LIB([m],[pow])
+ AC_SEARCH_LIBS([pow],[m])
+--- Doxyfile.in.orig	2021-01-09 00:35:50.194585000 +0100
++++ Doxyfile.in	2021-01-09 00:36:07.316734582 +0100
+@@ -1444,7 +1444,7 @@
+ # The default value is: NO.
+ # This tag requires that the tag GENERATE_HTML is set to YES.
+ 
+-USE_MATHJAX            = NO
++USE_MATHJAX            = YES
+ 
+ # When MathJax is enabled you can set the default output format to be used for
+ # the MathJax output. See the MathJax site (see:
+--- Makefile.am.orig	2021-01-09 00:37:27.457616000 +0100
++++ Makefile.am	2021-01-09 00:37:41.819415000 +0100
+@@ -30,14 +30,13 @@
+ include $(top_srcdir)/dddmp/Included.am
+ include $(top_srcdir)/cplusplus/Included.am
+ include $(top_srcdir)/nanotrav/Included.am
+-include $(top_srcdir)/doc/Included.am
+ 
+ dist-hook:
+ 	rm -rf `find $(distdir) -name .svn`
+ 
+ .PHONY : 
+ 
+-all: html/index.html doc/cudd.pdf
++all: html/index.html
+ 
+ if HAVE_DOXYGEN
+ 
+--- Makefile.in.orig	2021-01-09 00:39:37.608736000 +0100
++++ Makefile.in	2021-01-09 00:42:18.376279642 +0100
+@@ -123,8 +123,6 @@
+ @DDDMP_FALSE@am__append_5 = dddmp/libdddmp.la
+ @OBJ_TRUE@am__append_6 = $(cplusplus_sources)
+ @OBJ_FALSE@am__append_7 = cplusplus/libobj.la
+-@HAVE_PDFLATEX_TRUE@am__append_8 = doc/cudd.pdf doc/cudd.aux doc/cudd.idx doc/cudd.ilg doc/cudd.ind \
+-@HAVE_PDFLATEX_TRUE@  doc/cudd.log doc/cudd.out doc/cudd.toc
+ 
+ subdir = .
+ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
+@@ -3144,21 +3142,12 @@
+ 	$(do_subst) $< > $@
+ 	chmod +x $@
+ 
+-@HAVE_PDFLATEX_TRUE@doc/cudd.pdf: doc/cudd.tex $(top_srcdir)/doc/phase.pdf
+-@HAVE_PDFLATEX_TRUE@	@if $(AM_V_P); then dest='2>&1'; else dest='> /dev/null 2>&1'; fi; \
+-@HAVE_PDFLATEX_TRUE@	cd doc && eval "$(PDFLATEX) cudd $${dest}" && \
+-@HAVE_PDFLATEX_TRUE@	eval "$(MAKEINDEX) cudd $${dest}" && \
+-@HAVE_PDFLATEX_TRUE@	eval "$(PDFLATEX) cudd $${dest}" && \
+-@HAVE_PDFLATEX_TRUE@	eval "$(PDFLATEX) cudd $${dest}"
+-
+-@HAVE_PDFLATEX_FALSE@doc/cudd.pdf:
+-
+ dist-hook:
+ 	rm -rf `find $(distdir) -name .svn`
+ 
+ .PHONY : 
+ 
+-all: html/index.html doc/cudd.pdf
++all: html/index.html
+ 
+ @HAVE_DOXYGEN_TRUE@html/index.html: Doxyfile $(lib_LTLIBRARIES)
+ @HAVE_DOXYGEN_TRUE@	@if $(AM_V_P); then dest='2>&1'; else dest='> /dev/null 2>&1'; fi; \
