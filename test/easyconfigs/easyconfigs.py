@@ -1417,6 +1417,27 @@ def template_easyconfig_test(self, spec):
 
     self.assertFalse(redefined_keys, redefined_keys_error_msg)
 
+    # make sure that download_dep_fail, use_pip, sanity_pip_check are not explicitly enabled,
+    # since they are enabled by default now in PythonPackage easyblock
+    patterns = [
+        # top-level easyconfig parameters
+        """^download_dep_fail = True""",
+        """^sanity_pip_check = True""",
+        """^use_pip = True""",
+        # for specific extensions, or in exts_default_options
+        """["']download_dep_fail["']: True""",
+        """["']sanity_pip_check["']: True""",
+        """["']use_pip["']: True""",
+    ]
+    hits = []
+    for pattern in patterns:
+        regex = re.compile(pattern, re.M)
+        hits += regex.findall(ec.rawtxt)
+
+    error_msg = "download_dep_fail, sanity_pip_check, use_pip should not be set to True "
+    error_msg += "(already enabled by default in PythonPackage easyblock)"
+    self.assertFalse(hits, error_msg)
+
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
         'github.com/hpcugent/easybuild',
