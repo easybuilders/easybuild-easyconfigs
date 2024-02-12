@@ -59,7 +59,7 @@ from easybuild.tools.filetools import verify_checksum, which, write_file
 from easybuild.tools.module_naming_scheme.utilities import det_full_ec_version
 from easybuild.tools.modules import modules_tool
 from easybuild.tools.robot import check_conflicts, resolve_dependencies
-from easybuild.tools.run import run_cmd
+from easybuild.tools.run import run_shell_cmd
 from easybuild.tools.options import set_tmpdir
 from easybuild.tools.utilities import nub
 
@@ -111,20 +111,20 @@ def get_files_from_diff(diff_filter, ext):
     # first determine the 'merge base' between target branch and PR branch
     # cfr. https://git-scm.com/docs/git-merge-base
     cmd = "git merge-base %s HEAD" % target_branch
-    out, ec = run_cmd(cmd, simple=False, log_ok=False)
-    if ec == 0:
-        merge_base = out.strip()
+    res = run_shell_cmd(cmd, fail_on_error=False)
+    if res.exit_code == 0:
+        merge_base = res.output.strip()
         print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
     else:
-        msg = "Failed to determine merge base (ec: %s, output: '%s'), "
+        msg = "Failed to determine merge base (exit_code: %s, output: '%s'), "
         msg += "falling back to specifying target branch %s"
-        print(msg % (ec, out, target_branch))
+        print(msg % (res.exit_code, res.output, target_branch))
         merge_base = target_branch
 
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
-    out, _ = run_cmd(cmd, simple=False)
-    files = [os.path.join(top_dir, f) for f in out.strip().split('\n') if f.endswith(ext)]
+    res = run_shell_cmd(cmd)
+    files = [os.path.join(top_dir, f) for f in res.output.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
     return files
@@ -1416,6 +1416,27 @@ def template_easyconfig_test(self, spec):
     redefined_keys_error_msg += ', '.join('%s (%d)' % x for x in redefined_keys)
 
     self.assertFalse(redefined_keys, redefined_keys_error_msg)
+
+    # make sure that download_dep_fail, use_pip, sanity_pip_check are not explicitly enabled,
+    # since they are enabled by default now in PythonPackage easyblock
+    patterns = [
+        # top-level easyconfig parameters
+        """^download_dep_fail = True""",
+        """^sanity_pip_check = True""",
+        """^use_pip = True""",
+        # for specific extensions, or in exts_default_options
+        """["']download_dep_fail["']: True""",
+        """["']sanity_pip_check["']: True""",
+        """["']use_pip["']: True""",
+    ]
+    hits = []
+    for pattern in patterns:
+        regex = re.compile(pattern, re.M)
+        hits += regex.findall(ec.rawtxt)
+
+    error_msg = "download_dep_fail, sanity_pip_check, use_pip should not be set to True "
+    error_msg += "(already enabled by default in PythonPackage easyblock)"
+    self.assertFalse(hits, error_msg)
 
     # make sure old GitHub urls for EasyBuild that include 'hpcugent' are no longer used
     old_urls = [
