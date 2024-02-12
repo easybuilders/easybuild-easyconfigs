@@ -28,21 +28,6 @@ author: Alex Domingo (Vrije Universiteit Brussel)
      def test_partial_flat_weights(self):
          input_size = 10
          hidden_size = 6
---- test/jit/test_freezing.py.orig	2024-01-15 14:38:11.054125484 +0100
-+++ test/jit/test_freezing.py	2024-01-15 14:49:41.689011617 +0100
-@@ -2733,7 +2733,11 @@
-                     else:
-                         FileCheck().check("aten::cudnn_convolution_relu").run(frozen_mod.graph)
- 
--                self.assertEqual(mod_eager(inp), frozen_mod(inp))
-+                if not TEST_WITH_ROCM:
-+                    with torch.backends.cudnn.flags(enabled=True, allow_tf32=False):
-+                        self.assertEqual(mod_eager(inp), frozen_mod(inp))
-+                else:
-+                    self.assertEqual(mod_eager(inp), frozen_mod(inp))
- 
-     @unittest.skipIf(not (TEST_CUDNN or TEST_WITH_ROCM), "requires CUDNN")
-     def test_freeze_conv_relu_fusion_not_forward(self):
 --- ../PyTorch/2.1.2/foss-2023a-CUDA-12.1.1/pytorch-v2.1.2/test/nn/test_convolution.py	2023-12-15 03:03:27.000000000 +0100
 +++ test/nn/test_convolution.py	2024-01-15 15:03:15.606208376 +0100
 @@ -518,7 +518,7 @@
