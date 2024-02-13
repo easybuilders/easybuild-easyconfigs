@@ -1,0 +1,43 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+# Author: Denis Kristak
+easyblock = 'ConfigureMake'
+
+name = 'CFITSIO'
+version = '4.3.1'
+
+homepage = 'https://heasarc.gsfc.nasa.gov/fitsio/'
+description = """CFITSIO is a library of C and Fortran subroutines for reading and writing data files in
+FITS (Flexible Image Transport System) data format."""
+
+toolchain = {'name': 'GCCcore', 'version': '13.2.0'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/']
+sources = [SOURCELOWER_TAR_GZ]
+patches = ['%(name)s-3.48_install_test_data.patch']
+checksums = [
+    {SOURCELOWER_TAR_GZ: '2332b965d327a15c103a7d31d6d1afaf775d00e9785dd25332ae76b9725351e4'},
+    {'%(name)s-3.48_install_test_data.patch': 'dbf16f857f133468fc1e6a793c6e89fca66d54796593e03606f2722a2a980c0c'},
+]
+
+builddependencies = [
+    ('binutils', '2.40'),
+]
+# curl for HTTPs support
+dependencies = [
+    ('cURL', '8.3.0'),
+]
+
+# make would create just static libcfitsio.a.
+# Let's create dynamic lib and testprog too.
+buildopts = "&& make shared && make testprog"
+
+
+sanity_check_paths = {
+    'files': ['lib/libcfitsio.a', 'lib/libcfitsio.so'],
+    'dirs': ['include'],
+}
+
+sanity_check_commands = ['cd %(installdir)s/share && testprog']
+
+moduleclass = 'lib'
