@@ -14,7 +14,10 @@ toolchain = {'name': 'foss', 'version': '2023b'}
 source_urls = ['https://github.com/%(name)s/%(name)s/archive']
 sources = ['v%(version)s.tar.gz']
 patches = ['casacore-3.5.0-add-C-style-header-for-GCC-13.1.patch']
-checksums = ['63f1c8eff932b0fcbd38c598a5811e6e5397b72835b637d6f426105a183b3f91']
+checksums = [
+    '63f1c8eff932b0fcbd38c598a5811e6e5397b72835b637d6f426105a183b3f91',  # casacore-3.5.0.tar.gz
+    '7b35d21cd654a7a215d604310f5372319ad21b6261f4a7ae038912b97ef22983',  # casacore-3.5.0-add-C-style-header-for-GCC-13.1.patch
+]
 
 builddependencies = [
     ('CMake', '3.27.6'),
@@ -32,11 +35,17 @@ dependencies = [
     ('ncurses', '6.4'),
 ]
 
-configopts = '-DBUILD_PYTHON=NO -DBUILD_PYTHON3=YES -Wno-dev -DCXX11="ON" -DDATA_DIR=%(installdir)s/data -DUSE_OPENMP=ON -DUSE_HDF5=ON -DUSE_MPI=ON -DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
+configopts = '-DBUILD_PYTHON=NO -DBUILD_PYTHON3=YES -Wno-dev -DCXX11="ON" '
+configopts += '-DDATA_DIR=%(installdir)s/data -DUSE_OPENMP=ON -DUSE_HDF5=ON '
+configopts += '-DUSE_MPI=ON -DPython3_EXECUTABLE=$EBROOTPYTHON/bin/python '
+
+download_cmd = 'wget --retry-connrefused ftp://anonymous@ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar '
+download_cmd += '-O /tmp/WSRT_Measures.ztar '
 
 # Install casacore data
 postinstallcmds = [
-    "wget --retry-connrefused ftp://anonymous@ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar -O /tmp/WSRT_Measures.ztar && tar xfvz /tmp/WSRT_Measures.ztar --one-top-level=%(installdir)s/data",
+    download_cmd,
+    "tar xfvz /tmp/WSRT_Measures.ztar --one-top-level=%(installdir)s/data",
 ]
 
 sanity_check_paths = {
