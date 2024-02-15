@@ -1,0 +1,46 @@
+##
+# @author :: Ali Kerrache, Prairies DRI/Digital Research Alliance of Canada, University of Manitoba.
+# @date :: Feb 15, 2024
+##
+
+easyblock = 'CMakeMake'
+
+name = 'photospline'
+version = '2.2.1'
+
+homepage = 'https://github.com/icecube/photospline'
+
+description = """
+Detector response to a high-energy physics process is often estimated by Monte Carlo simulation. For purposes of data analysis, the results of this simulation are typically stored in large multi-dimensional histograms, which can quickly become unwieldy in terms of size or numerically problematic due to unfilled bins or interpolation artifacts. Photospline is a library that uses the penalized spline technique to efficiently compute, store, and evaluate B-spline representations of such tables.
+"""
+
+toolchain = {'name': 'gccflexiblas', 'version': '2023a'}
+toolchainopts = {'pic': True}
+
+source_urls = ['https://github.com/icecube/%(name)s/archive/refs/tags/']
+sources = ['v%(version)s.tar.gz']
+checksums = ['2b455daf8736d24bf57cae9eb67d48463a6c4bd6a66c3ffacf52296454bb82ad']
+
+builddependencies = [
+    ('CMake', '3.27.7'),
+]
+
+dependencies = [
+    ('Python', '3.11'),
+    ('SciPy-Stack', '2023b'),
+    ('CFITSIO', '4.3.0'),
+    ('METIS', '5.1.0'),
+    ('SuiteSparse', '7.6.0'),
+    ('tbb', '2021.10.0'),
+]
+
+sanity_check_paths = {
+    'files': [['bin/photospline-%s' % x for x in ['config', 'eval', 'inspect']] +
+              ['libphotospline.%s' % SHLIB_EXT] +
+              ['include/photospline/%s' % x for x in ['bspline.h', 'splinetable.h']]],
+    'dirs': ['bin', 'include', 'lib64', 'share'],
+}
+
+sanity_check_commands = ['%(namelower)s-config --help']
+
+moduleclass = 'phys'
