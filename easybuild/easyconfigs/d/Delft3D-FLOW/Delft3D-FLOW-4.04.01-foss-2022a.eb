@@ -1,0 +1,72 @@
+easyblock = 'ConfigureMake'
+
+name = 'Delft3D-FLOW'
+# revision 142633
+version = '4.04.01'
+
+homepage = 'https://oss.deltares.nl/web/delft3d'
+description = """
+Simulation of multi-dimensional hydrodynamic flows and transport phenomena, including
+sediments. Delft3D-FLOW is part of Delft3D 4. 
+"""
+
+toolchain = {'name': 'foss', 'version': '2022a'}
+toolchainopts = {'usempi': True}
+
+# There is no tarball provided, only SVN checkout through: 
+# svn checkout https://svn.oss.deltares.nl/repos/delft3d/trunk@142633
+# make tarball: tar -czvf Delft3D-FLOW-4.04.01.tgz trunk
+
+sources = [SOURCE_TGZ]
+checksums = [
+    None,
+]
+
+prebuildopts = 'make clean && '
+builddependencies = [
+    ('CMake', '3.24.3'),
+    ('libtool', '2.4.7'),
+    ('Bison', '3.8.2'),
+    ('flex', '2.6.4'),
+    ('Ruby', '3.0.5'),
+]
+
+dependencies = [
+    ('netCDF-Fortran', '4.6.0'),
+    ('METIS', '5.1.0'),
+    ('PETSc', '3.17.4'),
+]
+
+parallel = 1
+
+start_dir = 'src'
+
+preconfigopts = 'export FCFLAGS="$FCFLAGS -fallow-argument-mismatch -I${CPATH//:/ -I}" && '
+preconfigopts += 'export FFLAGS="$FFLAGS -fallow-argument-mismatch -I${CPATH//:/ -I}" && '
+# syntax was made invalid in c++11
+preconfigopts += "sed -i 's/if (spec < 0)/if (spec == nullptr)/g' utils_lgpl/delftonline/src/delftonline/server.cpp && "
+# avoid comparing logical with integer
+preconfigopts += "sed -i 's/if (has_umean \/= 0)/if (has_umean .neqv. .false.)/g' "  # noqa: W605
+preconfigopts += "engines_gpl/flow2d3d/packages/flow2d3d_io/src/input/restart_trim_flow.f90 && "
+preconfigopts += "sed -i -e 's/-recursive/-frecursive/g' -e 's/-traceback/-fbacktrace/g' configure.ac && "
+preconfigopts += './autogen.sh && '
+preconfigopts += 'cd third_party_open/kdtree2 && ./autogen.sh && cd - && '
+configopts = ' --with-netcdf'
+configopts += ' --with-mpi --with-metis --with-petsc'
+
+# remove spurious double -l flags causing build failure
+prebuildopts = "sed -i.backup 's/-l -l//g' libtool config.lt config.status && "
+buildopts = 'ds-install'
+
+skipsteps = ['install']
+
+sanity_check_paths = {
+    'files': ['bin/d_hydro'],
+    'dirs': ['lib', 'share']
+}
+
+sanity_check_commands = [
+    'd_hydro -? |grep Usage:',
+]
+
+moduleclass = 'phys'
