@@ -1,5 +1,5 @@
 # easyconfig file for waLBerla v6.1
-easyblock = 'CMakeMake'
+easyblock = 'CMakeMakeCp'
 
 name = 'waLBerla'
 version = '6.1'
@@ -13,37 +13,44 @@ toolchainopts = {'usempi': True, 'pic': True}
 
 source_urls = ['https://i10git.cs.fau.de/walberla/walberla/-/archive/v6.1']
 sources = ['%(name)s-v%(version)s.tar.gz']
-patches = ['waLBerla-6.1_fix_cmakelist_for_easybuild.patch']
+patches = ['waLBerla-6.1_fix_cmakelist_for_easybuild_without_python.patch']
 checksums = [
     {'waLBerla-v6.1.tar.gz': 'f0acdd9ad6543bc9306c8aae953dd5065986271d4398916ae0469db8b21c007a'},
-    {'waLBerla-6.1_fix_cmakelist_for_easybuild.patch':
-     '057066d07294e8f159c2545d2d5f9138d439dbb54bc70eb75eca1f82ae650c47'},
+    {'waLBerla-6.1_fix_cmakelist_for_easybuild_without_python.patch':
+     'e64927d85ed6ac4c52921c33c504d4f6e7038fd618c89cf7efdadbcf638a1048'},
 ]
 
 builddependencies = [('CMake', '3.24.3')]
 
 dependencies = [
-    ('pybind11', '2.10.3'),
-    ('Python', '3.10.8'),
     ('Boost.MPI', '1.81.0'),
-    ('SciPy-bundle', '2023.02'),
-    ('mpi4py', '3.1.4'),
 ]
 
 parallel = 1
 
-configopts = "-DWALBERLA_BUILD_WITH_PYTHON=ON "
+configopts = "-DWALBERLA_BUILD_WITH_PYTHON=OFF "
 configopts += "-DWALBERLA_BUILD_SHOWCASES=OFF "
 configopts += "-DWALBERLA_BUILD_DOC=OFF "
-configopts += "-DPython_ROOT_DIR=$EBROOTPYTHON "
+configopts += "-DWALBERLA_BUILD_BENCHMARKS=OFF"
 
-modextrapaths = {'PYTHONPATH': ['pythonmodule']}
+files_to_copy = [
+    (['%(builddir)s/easybuild_obj/src/*'], 'src'),
+    (['%(builddir)s/easybuild_obj/apps/*'], 'apps'),
+    (['%(builddir)s/easybuild_obj/tests/*'], 'tests'),
+    (['%(builddir)s/easybuild_obj/utilities/*'], 'utilities')
+]
 
 sanity_check_paths = {
-    'files': ['waLBerlaDefinitions.h', 'pythonmodule/walberla_cpp.cpython-310-x86_64-linux-gnu.so'],
-    'dirs': ['pythonmodule']
+    'files': [
+        'src/waLBerlaDefinitions.h',
+        'apps/tutorials/basics/01_Tutorial_BlocksAndFields1',
+        'utilities/filterCompileCommands.py'
+    ],
+    'dirs': ['src', 'apps', 'tests', 'utilities']
 }
 
-sanity_check_commands = [('python -c "import waLBerla"')]
+sanity_check_commands = [
+    'cd apps/tutorials/lbm && ./01_BasicLBM 01_BasicLBM.prm'
+]
 
 moduleclass = 'chem'
