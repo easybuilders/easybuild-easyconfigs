@@ -971,7 +971,7 @@ class EasyConfigTest(TestCase):
 
             ok = False
             for source in ec['sources']:
-                if type(source) == dict:
+                if isinstance(source, dict):
                     if 'git_config' in source:
                         ok = True
                         break
@@ -987,7 +987,7 @@ class EasyConfigTest(TestCase):
 
             if 'components' in ec and ec['components']:
                 for component in ec['components']:
-                    if len(component) > 2 and type(component[2]) is not str:
+                    if len(component) > 2 and not isinstance(component[2], str):
                         if 'source_urls' in component[2]:
                             ok = True
                             break
