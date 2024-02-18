@@ -111,7 +111,7 @@ def get_files_from_diff(diff_filter, ext):
     # first determine the 'merge base' between target branch and PR branch
     # cfr. https://git-scm.com/docs/git-merge-base
     cmd = "git merge-base %s HEAD" % target_branch
-    res = run_shell_cmd(cmd, fail_on_error=False)
+    res = run_shell_cmd(cmd, fail_on_error=False, hidden=True)
     if res.exit_code == 0:
         merge_base = res.output.strip()
         print("Merge base for %s and HEAD: %s" % (target_branch, merge_base))
@@ -123,7 +123,7 @@ def get_files_from_diff(diff_filter, ext):
 
     # determine list of changed files using 'git diff' and merge base determined above
     cmd = "git diff --name-only --diff-filter=%s %s..HEAD --" % (diff_filter, merge_base)
-    res = run_shell_cmd(cmd)
+    res = run_shell_cmd(cmd, hidden=True)
     files = [os.path.join(top_dir, f) for f in res.output.strip().split('\n') if f.endswith(ext)]
 
     change_dir(cwd)
