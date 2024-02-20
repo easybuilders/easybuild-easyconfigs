@@ -8,7 +8,7 @@ versionsuffix = '-FLOW'
 homepage = 'https://oss.deltares.nl/web/delft3d'
 description = """
 Simulation of multi-dimensional hydrodynamic flows and transport phenomena, including
-sediments. Delft3D-FLOW is part of Delft3D 4. 
+sediments. Delft3D-FLOW is part of Delft3D 4.
 """
 
 toolchain = {'name': 'foss', 'version': '2022a'}
@@ -21,8 +21,12 @@ There is no tarball provided; it needs to be created through an svn checkout:
 """ % _revision
 
 sources = [SOURCE_TGZ]
+patches = ['Delft3D-4.04.01_use-external-esmf.patch']
 checksums = [
+    # Delft3D-4.04.01.tgz
     None,
+    # Delft3D-4.04.01_use-external-esmf.patch'
+    '86f127cf3193c6fc9256491d917051db91e695718631d1b221b111499e0f432b',
 ]
 
 builddependencies = [
@@ -40,6 +44,7 @@ dependencies = [
     ('METIS', '5.1.0'),
     ('PETSc', '3.17.4'),
     ('expat', '2.4.8'),
+    ('ESMF', '8.3.0'),
 ]
 
 parallel = 1
@@ -54,8 +59,11 @@ preconfigopts += "sed -i 's/if (spec < 0)/if (spec == nullptr)/g' utils_lgpl/del
 preconfigopts += "sed -i 's/if (has_umean \/= 0)/if (has_umean .neqv. .false.)/g' "  # noqa: W605
 preconfigopts += "engines_gpl/flow2d3d/packages/flow2d3d_io/src/input/restart_trim_flow.f90 && "
 preconfigopts += "sed -i -e 's/-recursive/-frecursive/g' -e 's/-traceback/-fbacktrace/g' configure.ac && "
+# remove esmf precompiled binaries
+preconfigopts += "rm -r third_party_open/esmf && libtoolize && "
 preconfigopts += './autogen.sh && '
 preconfigopts += 'cd third_party_open/kdtree2 && ./autogen.sh && cd - && '
+
 configopts = ' --with-netcdf'
 configopts += ' --with-mpi --with-metis --with-petsc'
 
