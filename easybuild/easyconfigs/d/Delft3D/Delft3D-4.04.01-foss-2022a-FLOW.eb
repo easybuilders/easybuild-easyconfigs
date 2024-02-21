@@ -26,7 +26,7 @@ checksums = [
     # Delft3D-4.04.01.tgz
     None,
     # Delft3D-4.04.01_use-external-esmf.patch'
-    '86f127cf3193c6fc9256491d917051db91e695718631d1b221b111499e0f432b',
+    '225d76fb3eea22e203f1a9f371b4fd07d75a8478de35a7428c1a1f85b344323c',
 ]
 
 builddependencies = [
@@ -59,6 +59,8 @@ preconfigopts += "sed -i 's/if (spec < 0)/if (spec == nullptr)/g' utils_lgpl/del
 preconfigopts += "sed -i 's/if (has_umean \/= 0)/if (has_umean .neqv. .false.)/g' "  # noqa: W605
 preconfigopts += "engines_gpl/flow2d3d/packages/flow2d3d_io/src/input/restart_trim_flow.f90 && "
 preconfigopts += "sed -i -e 's/-recursive/-frecursive/g' -e 's/-traceback/-fbacktrace/g' configure.ac && "
+# copy ESMF_RegridWeightGen_in_Delft3D-WAVE.sh script
+preconfigopts += "cp third_party_open/esmf/lnx64/scripts/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh . && "
 # remove esmf precompiled binaries
 preconfigopts += "rm -r third_party_open/esmf && libtoolize && "
 preconfigopts += './autogen.sh && '
@@ -72,8 +74,10 @@ prebuildopts = "sed -i.backup 's/-l -l//g' libtool config.lt config.status && "
 
 install_cmd = 'make ds-install'
 
+postinstallcmds = ["cp %(start_dir)s/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh %(installdir)s/bin/"]
+
 sanity_check_paths = {
-    'files': ['bin/d_hydro'],
+    'files': ['bin/d_hydro', 'bin/ESMF_RegridWeightGen_in_Delft3D-WAVE.sh'],
     'dirs': ['lib', 'share']
 }
 
