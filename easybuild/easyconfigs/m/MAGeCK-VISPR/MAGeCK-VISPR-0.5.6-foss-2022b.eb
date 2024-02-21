@@ -1,0 +1,43 @@
+# This file is an EasyBuild reciPY as per https://github.com/easybuilders/easybuild
+easyblock = 'PythonPackage'
+
+name = 'MAGeCK-VISPR'
+version = '0.5.6'
+
+homepage = "https://bitbucket.org/liulab/mageck-vispr/src/master/"
+description = """MAGeCK-VISPR is a comprehensive quality control, analysis and visualization pipeline for CRISPR/Cas9 
+screens build on top of MAGeCK and VISPR."""
+
+toolchain = {'name': 'foss', 'version': '2022b'}
+
+dependencies = [
+    ('Python', '3.10.8'),
+    ('SciPy-bundle', '2023.02'),
+    ('snakemake', '7.32.3')
+]
+
+# https://bitbucket.org/liulab/mageck-vispr
+bitbucket_account = 'liulab'
+source_urls = [BITBUCKET_SOURCE]
+sources = ['72d1b1dd92774ac8599f923536cd7b7624689ace.tar.bz2']
+checksums = ['3996ca5d62a219172c5b794bbbddd08d4fcba55e1e76336dd46661f509252675']
+
+download_dep_fail = True
+sanity_pip_check = True
+use_pip = True
+
+postinstallcmds = ["cp -a test %(installdir)s"]
+
+sanity_check_paths = {
+    'files': ['bin/mageck-vispr'],
+    'dirs': ['test', 'lib/python%(pyshortver)s/site-packages'],
+}
+
+sanity_check_commands = [
+    # copy test to build directory, after making sure it exists, so --sanity-check-only works;
+    # enable write permissions, since installation directory may be read-only
+    "mkdir -p %(builddir)s && cp -a %(installdir)s/test %(builddir)s/ && chmod -R u+w %(builddir)s/test",
+    "cd %(builddir)s/test/esc-testdata && snakemake --cores 8",
+] + ["%s -h" % x for x in ['mageck-vispr']]
+
+moduleclass = 'bio'
