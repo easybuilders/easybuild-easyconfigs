@@ -42,6 +42,12 @@ local_tfrt_commit = '4665f7483063a16b6113a05eb45f98103cc1d611'
 local_repo_opt = '--bazel_options="--override_repository=xla=%%(builddir)s/xla-%s" ' % local_xla_commit
 local_repo_opt += '--bazel_options="--override_repository=runtime=%%(builddir)s/tf_runtime-%s" ' % local_xla_commit
 
+# deliberately not testing in parallel, as that results in (additional) failing tests;
+# use XLA_PYTHON_CLIENT_ALLOCATOR=platform to allocate and deallocate GPU memory during testing,
+# see https://github.com/google/jax/issues/7323 and
+# https://github.com/google/jax/blob/main/docs/gpu_memory_allocation.rst;
+# use CUDA_VISIBLE_DEVICES=0 to avoid failing tests on systems with multiple GPUs;
+# use NVIDIA_TF32_OVERRIDE=0 to avoid lossing numerical precision by disabling TF32 Tensor Cores;
 local_test = "NVIDIA_TF32_OVERRIDE=0 CUDA_VISIBLE_DEVICES=0 "
 local_test += "XLA_PYTHON_CLIENT_ALLOCATOR=platform "
 local_test += "JAX_ENABLE_X64=true pytest -vv tests "
