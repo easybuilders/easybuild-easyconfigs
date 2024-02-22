@@ -1,0 +1,45 @@
+easyblock = 'PythonBundle'
+
+name = 'louvain'
+version = '0.8.0'
+
+homepage = 'https://pypi.org/project/louvain'
+description = "louvain is a general algorithm for methods of community detection in large networks"
+
+toolchain = {'name': 'foss', 'version': '2021a'}
+
+builddependencies = [
+    ('CMake', '3.20.1'),
+    ('flex', '2.6.4'),
+    ('Bison', '3.7.6'),
+]
+
+dependencies = [
+    ('Python', '3.9.5'),
+]
+
+use_pip = True
+
+# fix failing CMake command when building vendored igraph because of missing 'interfaces' subdirectory
+local_louvain_preinstallopts = "mkdir -p vendor/source/igraph/interfaces && "
+local_louvain_preinstallopts += "touch vendor/source/igraph/interfaces/CMakeLists.txt && "
+
+# trigger build of vendored igraph in vendor/source/igraph
+local_louvain_preinstallopts += "python setup.py build && "
+
+exts_list = [
+    ('texttable', '1.6.7', {
+        'checksums': ['290348fb67f7746931bcdfd55ac7584ecd4e5b0846ab164333f0794b121760f2'],
+    }),
+    ('igraph', '0.10.2', {
+        'checksums': ['215c53591b0bccd2082ef0e007e1919f25c040abb03014bdb4f20712173e33c2'],
+    }),
+    (name, version, {
+        'checksums': ['117411464eaa07496fe7a7f874db41a03ce0fbd9528c6fefbe7b302e49fc829a'],
+        'preinstallopts': local_louvain_preinstallopts,
+    }),
+]
+
+sanity_pip_check = True
+
+moduleclass = 'lib'
